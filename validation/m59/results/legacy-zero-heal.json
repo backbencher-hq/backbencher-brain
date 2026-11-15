@@ -1,0 +1,115 @@
+{
+  "gate": "M59.A3",
+  "issue": "#821",
+  "at": "2026-10-16T16:41:53.239Z",
+  "atCommit": "df6bc516b51bf4b33f734faf5bf2d99587af4ad2",
+  "treeModifiedInputs": 349,
+  "command": "bun run script/m59/verify-legacy-zero-heal.ts",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "fresh-index-stores-no-zero",
+      "passed": true,
+      "detail": "rows carrying 0 after a fresh index: 0",
+      "negative": false
+    },
+    {
+      "name": "snapshot-captures-by-identity",
+      "passed": true,
+      "detail": "captured id preserved with line_number=0 target=same",
+      "negative": false
+    },
+    {
+      "name": "reindex-keeps-the-row",
+      "passed": true,
+      "detail": "row survives the round-trip",
+      "negative": false
+    },
+    {
+      "name": "reindex-repoints-the-row",
+      "passed": true,
+      "detail": "target after re-index: restored to the same symbol",
+      "negative": false
+    },
+    {
+      "name": "no-zero-through-the-real-write-path",
+      "passed": true,
+      "detail": "row's line_number after the round-trip: null (was 0)",
+      "negative": false
+    },
+    {
+      "name": "heal-count-is-reported",
+      "passed": true,
+      "detail": "derived.healedZeroLines = 1 (expected exactly the 1 captured legacy row)",
+      "negative": false
+    },
+    {
+      "name": "reindex-reports-the-repoint",
+      "passed": true,
+      "detail": "derived.repairedInEdges = 3",
+      "negative": false
+    },
+    {
+      "name": "heal-is-scoped-to-the-captured-rows",
+      "passed": true,
+      "detail": "out-of-scope row (target in app.ts, never re-stored) still carries 0 — the heal did not become a global sweep",
+      "negative": true
+    },
+    {
+      "name": "capture-precedes-the-store",
+      "passed": true,
+      "detail": "snapshot taken while the pointer is live holds the row (3 rows captured); a capture taken after the FK cleared it could not",
+      "negative": false
+    },
+    {
+      "name": "fk-clears-the-pointer-not-the-row",
+      "passed": true,
+      "detail": "after the target symbol was removed the pointer is null and the row still exists (M14.JS store contract)",
+      "negative": false
+    },
+    {
+      "name": "unrepointable-row-is-still-healed",
+      "passed": true,
+      "detail": "row that could not be re-pointed carries line_number=null (re-pointed rows this call: 0)",
+      "negative": false
+    },
+    {
+      "name": "remainder-is-reported-not-hidden",
+      "passed": true,
+      "detail": "repairOut.stillUnresolved = 3 — the surviving unresolved row is named, not counted as repaired",
+      "negative": false
+    },
+    {
+      "name": "repair-writes-no-zero",
+      "passed": true,
+      "detail": "repairOut.healedZeroLines = 1",
+      "negative": false
+    },
+    {
+      "name": "mutation-detected",
+      "passed": true,
+      "detail": "rows still carrying 0 in the DB: 1 — the predicate fires on this state (it is not vacuously true above)",
+      "negative": true
+    },
+    {
+      "name": "no-zero-remains-in-the-reindexed-file",
+      "passed": true,
+      "detail": "rows carrying 0 with a target in lib.ts: 0",
+      "negative": false
+    },
+    {
+      "name": "only-the-out-of-scope-legacy-row-keeps-a-zero",
+      "passed": true,
+      "detail": "rows carrying 0 other than the untouched control row: 0",
+      "negative": false
+    }
+  ],
+  "negativeCases": 2,
+  "contract": "M14.JS repair: surviving-row re-point by captured id (+ name only inside the re-stored files) with a scoped heal of legacy line_number = 0",
+  "note": "verifies the repair path (snapshotInEdges → repairInEdges) AND the real incremental write path against a legacy-index world seeded on REAL indexed rows; the out-of-scope legacy 0 is kept as the boundedness + detector control",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-16T16:41:53.626Z",
+    "contentSha256": "1be0256a061ebc75a99120e34d94939e5fdc18f794fc7b28fb34985faf306183"
+  }
+}

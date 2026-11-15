@@ -1,0 +1,15 @@
+{
+  "issue": "CLJ-ADV F5",
+  "note": "CLJ-D5 made literal: metadata values are compile-time data — `^{:doc (meta-fn)}` must not emit a call to meta-fn (the subtree is skipped).",
+  "expectSymbols": [
+    { "name": "x", "kind": "variable" },
+    { "name": "f", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "f", "target": "real-call", "line_number": 5 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "meta-fn" },
+    { "type": "calls", "target": "meta-fn2" }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "instrument": "xml residual \u2014 re-measured on the TRUE population, after two fleet fixes this lane's findings produced (68138a1c8 population, fa2dc27e8 the contains rule)",
+  "at": "2026-10-10T00:17:00-04:00",
+  "branch": "analyzers/ontology-laptop-b",
+  "generatedBy": "recorded from the instruments named in each `evidence` field. Source citations explain an instrument's output; they are not the source of any number.",
+  "changeSinceTheLastRecord": {
+    "population": "commit 68138a1c8 \u2014 script/m14/incoming-gate.ts LANES_B and script/m14/residual-gate.ts now read xml: \"xml,xsd,dtd,svg,xsl,xslt,rng\". Admitted population 2,081 -> 11,562 files. The gap this lane reported in residual-baseline.json (18.0% of the lane) is closed.",
+    "rule": "commit fa2dc27e8 \u2014 classifyEdge gained `containsLike`, passed true for `contains`, because production resolves containment with resolveContainsTargetStmt (name + edge's OWN FILE + line, LIMIT 1) rather than the project-wide name count. Its commit message cites THIS lane's measurement (94.1% model vs 98.4% store, 97.9% same-file) as the evidence."
+  },
+  "finding1_residualOnTheTruePopulation": {
+    "before": {
+      "population": "2,081 .xml files (18.0% of the lane)",
+      "table": {
+        "contains": {
+          "edges": 30205,
+          "resolved": 1792,
+          "ambiguous": 28413,
+          "unresolved": 0
+        },
+        "references": {
+          "edges": 335,
+          "resolved": 73,
+          "ambiguous": 64,
+          "unresolved": 198
+        },
+        "imports": {
+          "edges": 136,
+          "resolved": 2,
+          "ambiguous": 0,
+          "unresolved": 134
+        },
+        "TOTAL": {
+          "edges": 30676,
+          "resolved": 1867,
+          "ambiguous": 28477,
+          "unresolved": 332,
+          "residual": "93.9%"
+        }
+      },
+      "evidence": "script/m14/residual-gate.ts --lane xml, 23:22"
+    },
+    "after": {
+      "population": "11,562 files across the lane's seven admitted spellings, 0 degraded",
+      "table": {
+        "contains": {
+          "edges": 189310,
+          "resolved": 189310,
+          "ambiguous": 0,
+          "unresolved": 0,
+          "residualPct": 0.0
+        },
+        "references": {
+          "edges": 11108,
+          "resolved": 997,
+          "ambiguous": 7582,
+          "unresolved": 2529,
+          "residualPct": 91.0
+        },
+        "extends": {
+          "edges": 1429,
+          "resolved": 84,
+          "ambiguous": 991,
+          "unresolved": 354,
+          "residualPct": 94.1
+        },
+        "imports": {
+          "edges": 473,
+          "resolved": 2,
+          "ambiguous": 0,
+          "unresolved": 471,
+          "residualPct": 99.6
+        },
+        "calls": {
+          "edges": 402,
+          "resolved": 123,
+          "ambiguous": 279,
+          "unresolved": 0,
+          "residualPct": 69.4
+        },
+        "overrides": {
+          "edges": 3,
+          "resolved": 1,
+          "ambiguous": 2,
+          "unresolved": 0,
+          "residualPct": 66.7
+        },
+        "TOTAL": {
+          "edges": 202725,
+          "resolved": 190517,
+          "ambiguous": 8854,
+          "unresolved": 3354,
+          "residual": "6.0%",
+          "extFAIL": 0,
+          "bindFAIL": 0,
+          "causeFAIL": 0
+        }
+      },
+      "evidence": "script/m14/residual-gate.ts --lane xml, 23:48-23:56; raw: validation/m14/fixtures/xml/residual-true-population.txt",
+      "reading": "The board's xml residual falls from 93.9% to 6.0% for two independent reasons, each landed as its own fix: the population now covers the lane, and `contains` is now classified by the resolver production actually uses. The residual that REMAINS is references / extends / imports, and it is what the next cause attacks."
+    }
+  },
+  "finding2_sameProjectConfirmation": {
+    "question": "is the contains ruling a mechanism or a population artefact? One repository, both instruments.",
+    "project": "libxslt \u2014 1,143 admitted xml-family files, 1 repos, 0 degraded (gate); the store instrument drew 1,230 files from the same repository and indexed 1,143 of them (125,819 symbols) into ONE project",
+    "gateModel_before_theRuleFix": {
+      "population": "1,143 files",
+      "contains": {
+        "edges": 21486,
+        "resolved": 825,
+        "ambiguous": 20661,
+        "residual": "96.1%"
+      },
+      "evidence": "validation/m14/fixtures/xml/gate-libxslt-same-project.txt (run 23:44, before commit fa2dc27e8)"
+    },
+    "realStore": {
+      "instrument": "validation/m14/fixtures/xml/store-binding-truth.mts \u2014 scratch copy, production indexProjectParallel, brain_relationship.target_symbol_id read back",
+      "artifact": "validation/m14/fixtures/xml/store-truth-libxslt.json",
+      "draw": "32a6f0ff9b1f2e3d, 1,230 files drawn / 1,143 indexed, 1 repo, indexMs 227579",
+      "contains": {
+        "edges": 39293,
+        "targetUnbound": 1797,
+        "bound": 37496,
+        "boundSameFile": 34176,
+        "boundOtherFile": 3320,
+        "boundNameExact": 34375,
+        "boundQnameExact": 343,
+        "boundNeedsLeafReduction": 3121,
+        "crossFileFlag": 3319,
+        "crossFileFlagWrong": 1
+      },
+      "reading": "bound 95.4%, same-file 87.0%, unbound 4.6%, cross-file 8.5% \u2014 against a gate model that read the same edges as 96.1% ambiguous."
+    },
+    "verdict": "MECHANISM CONFIRMED at one repository's full scale: production binds 95.4% of the containment edges the count model called ambiguous, and 87.0% of them to a declaration in the edge's own file. The 8.5% cross-file bindings are the part worth acting on later \u2014 an eager `LIMIT 1` that prefers the own file still falls back to another file when the name is not declared in it.",
+    "instrumentAnomalyDisclosed": "On this run the store holds 39,293 `contains` rows while the same files through `parseFile` emitted 21,486 (1.83x). The other four types agree to within 2% (calls 400/400, imports 99/99, overrides 3/3, references 436/445). The 120-file draw published earlier shows the same direction at 1.006x (3,097/3,077). This is NOT explained here, it is NOT this lane's instrument to change, and the percentages above are therefore quoted as RATIOS over the stored set rather than as counts: the ratio that decides the ruling (bound vs not bound) is insensitive to it, the absolute counts are not. Flagged for the instrument's owner.",
+    "whyTheDrawAndTheFullRepoDisagree": "The 120-file draw pooled 120 files from 120 repositories; this run is one repository with 1,143 files. Same-file binding falls from 97.9% to 87.0% because a bigger project gives the fallback more other-file declarations to bind to \u2014 the direction the mechanism predicts."
+  },
+  "finding3_theRealResidualAndTheNextCause": {
+    "residualByType_after": {
+      "references": 10111,
+      "imports": 471,
+      "extends": 1345,
+      "calls": 279,
+      "overrides": 2
+    },
+    "note": "residual = ambiguous + unresolved + extFAIL + bindFAIL + causeFAIL per type; contains contributes 0.",
+    "approvedNextCause": "unresolved 3354 on the true population (references 2529 + imports 471 + extends 354), starting from the analyzer's own `metadata.resolvable` classes.",
+    "classCensus": {
+      "instrument": "validation/m14/fixtures/xml/resolvable-class-census.mts \u2014 the analyzer's classes cross-tabulated against the GATE'S OWN RULE (classifyEdge imported from script/m14/incoming-rule.ts, including the containsLike arm)",
+      "samples": "60 / 200 / 400 / 800-file runs over the multi-spelling admission; the full-population run is queued",
+      "measured": {
+        "references_unresolved_edges_are_all_class_builtin": "e.g. `attribute-name`, `element-name`, `processing-instruction`, `string` \u2014 identifier-shaped targets the analyzer itself marks as XML/XSD built-ins",
+        "imports_unresolved_edges_are_all_class_external": "e.g. `https://resources.jetbrains.com/writerside/1.0/build-script.dtd`, `http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd` \u2014 URIs, never project files",
+        "marking_builtin_or_external_references_with_isExternalTarget": "what-if: unresolved -> 0, of which 7 verified + 8 unverified per 15 in a 60-file sample; 0 refuted. The unverified half are spellings the owner lookup cannot check (`attribute-name` has a hyphen), which is an honest externalUnverified and never an extFAIL.",
+        "marking_remote_imports": "path-like targets: `verifyExternalClaim` checks `pathLikeTarget` FIRST and returns externalUnverified \u2014 never refuted. A file claim (`importProjectFile`) is NOT proposed for them: it REFUTES when no candidate is an admitted file, and a URI is never one.",
+        "references_class_unresolved_X13": "NO claim proposed. The analyzer's own class says the file does not satisfy the reference; calling that `not in the population` would assert a fact the analyzer did not measure.",
+        "file_class_imports": "priced only (candidates admitted vs absent) \u2014 a miss REFUTES and extFAIL must stay 0."
+      }
+    },
+    "passRuleCited": "script/m14/incoming-gate.ts verdict(): a PASS needs bad===0 AND externalUnverified===0 AND bindingUnverified===0. So a marker that moves an edge from `unresolved` to `externalUnverified` reduces the residual column but still blocks a PASS \u2014 it is a truthful classification, not a short-cut to green."
+  },
+  "limitations": {
+    "storeInstrumentHome": "The store instrument writes ~/.bb/projects/<id>; this sandbox mounts / read-only outside the workspace, so the first two runs died `ENOENT mkdir /home/ishaq2321/.bb/projects/<id>`. The successful run relocates HOME into the workspace (`HOME=$PWD/.tmp-xml/home`). Recorded because a rerun without it fails for an environment reason that reads like a code error.",
+    "killedRuns": [
+      "23:25 whole-population gate run: exit 9, flock -w 600 timed out behind a lane holding .bb-heavy.lock; produced no output and is quoted nowhere.",
+      "23:36 and 23:47 store runs: exit 2, ENOENT on the store home (above). Reported as failures of the environment, not of the lane."
+    ]
+  },
+  "afterTheClaimMapping": {
+    "at": "2026-10-10T00:44:00-04:00",
+    "population": "11,562 files, 126 repos, production scope, 0 degraded",
+    "instrument": "script/m14/residual-gate.ts --lane xml (guarded by .bb-heavy-v3.lock)",
+    "table": {
+      "contains": {
+        "edges": 189310,
+        "resolved": 189310,
+        "resolvedAmongCollision": 183888,
+        "ambiguous": 0,
+        "unresolved": 0,
+        "residualPct": 0.0
+      },
+      "references": {
+        "edges": 11108,
+        "resolved": 997,
+        "ambiguous": 7582,
+        "unresolved": 12,
+        "residualPct": 68.4,
+        "unresolvedBefore": 2529
+      },
+      "extends": {
+        "edges": 1429,
+        "resolved": 84,
+        "ambiguous": 991,
+        "unresolved": 354,
+        "residualPct": 94.1
+      },
+      "calls": {
+        "edges": 402,
+        "resolved": 123,
+        "ambiguous": 279,
+        "unresolved": 0,
+        "residualPct": 69.4
+      },
+      "imports": {
+        "edges": 473,
+        "resolved": 2,
+        "ambiguous": 0,
+        "unresolved": 265,
+        "residualPct": 56.0,
+        "unresolvedBefore": 471
+      },
+      "overrides": {
+        "edges": 3,
+        "resolved": 1,
+        "ambiguous": 2,
+        "unresolved": 0,
+        "residualPct": 66.7
+      },
+      "TOTAL": {
+        "edges": 202725,
+        "resolved": 190517,
+        "ambiguous": 8854,
+        "unresolved": 631,
+        "residual": "4.7%",
+        "residualBefore": "6.0%",
+        "extFAIL": 0,
+        "bindFAIL": 0,
+        "causeFAIL": 0
+      }
+    },
+    "reading": "unresolved 3,354 -> 631 (-81%); total residual 6.0% -> 4.7%. The two types the claim mapping touched moved exactly where the design said: references 2,529 -> 12, imports 471 -> 265. extFAIL stayed 0 across the whole population, so no claim this lane published was refuted.",
+    "containsCollisionDisclosed": "contains is 189,310 resolved of which 183,888 (97.1%) are resolved AMONG A COLLISION: production's tie-break chose the row. The gate prints an upper bound on arbitrary bindings, not a count of wrong ones, and only the store can split it (the indexer measures 37,318 of 49,729 such picks as wrong). This is the next real question on `contains` after the claim work.",
+    "raw": "validation/m14/fixtures/xml/residual-after-claims.txt"
+  }
+}

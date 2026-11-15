@@ -1,0 +1,55 @@
+{
+  "fixtureId": "xml/xsl-include-part-of",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "XSLT's stylesheet inclusion is the SAME `part_of` contract as XInclude, in the stylesheet vocabulary, and it is the BIGGER half of this lane's inclusion population (89 `<xsl:include>` sites in 11 files, against 6 XInclude sites in 3 files). XSLT 1.0 §2.6.1: the included stylesheet's content is treated as if it were literally written at the point of the include — the included document is a fragment of the including one, shares its single scope, contributes no module, and cannot be resolved as a separate unit once included. Rung R3, no grammar change: `<xsl:include>` is a NAMESPACED ELEMENT the pinned grammar already parses as an ordinary `element` with an `Attribute` href. Detection is by RESOLVED NAMESPACE and element NAME, never by the `xsl:` prefix. THE PAIR THIS FIXTURE EXISTS FOR is the boundary between the two constructs that live on adjacent lines and share one attribute: `xsl:include` (a SPLICE → part_of) versus `xsl:import` (a MODULE import with import precedence, XSLT 1.0 §2.6.2: the imported definitions are in scope with LOWER precedence and may be overridden by this stylesheet's own → `imports`, NEVER part_of). A graph that read both as one label would see one file coupling twice and could not say which is which, so line 3 is pinned as the part_of row (target = the included stylesheet's module STEM `part`, written path `lib/part.xsl` in meta.partPath, partRole library, role xslt_include_part — the same shape as the XInclude row), line 4 is pinned as the IMPORT row (target = the written file PATH `base.xsl`, the one relationship whose target is a path, role xslt_stylesheet_import, resolvable class stamped), and the FORBID below makes the distinction one-directional-proof: NO part_of row may name `base`, the stem xsl:import WOULD have produced if it were folded into part_of. Line 5 is a second, distinct `xsl:include` so the fixture pins that the rule is not a single-site accident, and line 6 is an `<include>` in NO namespace: the detector is the resolved namespace, so an element that merely spells `include` is not an XSLT include and must emit nothing. Direction is the directive's own: source is the file carrying it — the DOCUMENT ELEMENT (`xsl:stylesheet`), because XML publishes no file-level symbol — target is what it names. Lines are read off the file.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "xsl:stylesheet",
+      "target": "part",
+      "line_number": 3,
+      "meta.partRole": "library",
+      "meta.partPath": "lib/part.xsl",
+      "meta.partSymbol": "part",
+      "meta.role": "xslt_include_part",
+      "meta.elementName": "xsl:include",
+      "meta.isFileInclusion": true,
+      "meta.isImport": false
+    },
+    {
+      "type": "part_of",
+      "from": "xsl:stylesheet",
+      "target": "plain",
+      "line_number": 5,
+      "meta.role": "xslt_include_part",
+      "meta.partPath": "plain.xsl"
+    },
+    {
+      "type": "imports",
+      "from": "xsl:stylesheet",
+      "target": "base.xsl",
+      "line_number": 4,
+      "meta.role": "xslt_stylesheet_import",
+      "meta.importKind": "stylesheet",
+      "meta.resolvable": "file"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "target": "base",
+      "note": "`xsl:import` is a MODULE IMPORT with import precedence (XSLT 1.0 §2.6.2), not a textual splice: folding it into part_of would let one construct carry two labels. Its stem `base` must never appear as a part_of target."
+    },
+    {
+      "type": "part_of",
+      "target": "not-xslt",
+      "note": "an `<include>` element OUTSIDE the XSLT namespace is not an XSLT include; detection is by resolved namespace, never by element spelling"
+    },
+    {
+      "type": "part_of",
+      "target": "base.xsl",
+      "note": "same boundary stated on the raw path spelling: the import's target belongs to `imports`, and the path itself is never symbol-shaped for part_of"
+    }
+  ]
+}

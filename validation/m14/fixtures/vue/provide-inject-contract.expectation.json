@@ -1,0 +1,22 @@
+{
+  "fixtureId": "vue/provide-inject-contract",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F2 (master review 2026-09-30, High): provide()/inject() is Vue's THIRD contract leg — what a component provides and what it depends on — and it had no branch at all. Measured over the restored corpora: `provide(` is written by 34 files, `inject(` by 45, and ZERO corpus files write the Options `provide:` / `inject:` options. Every corpus key is an IDENTIFIER (element-plus writes `provide(anchorKey, …)`, `inject(avatarGroupContextKey, undefined)`), never a string literal — so the key names a declaration this file does not own, which is structurally the F12 shape and gets the same answer: an EDGE to the key, not a copy of its members. Two consequences worth pinning: (a) the value object's keys are this component's own contribution, so `save`/`load` belong to the COMPONENT — before this they surfaced as ownerless methods, indistinguishable in the graph from module-level functions, which the corpus census measured as 4 real rows on element-plus/tour/src/tour.vue; (b) they are ANNOTATED, not duplicated, because the store's symbol key excludes owner and a second symbol at the same name and line silently replaces the first (VSD25). The pre-fix analyzer emits NONE of the edges below and leaves save/load unowned.",
+  "expectRelationships": [
+    { "type": "references", "from": "provide-inject-contract", "target": "themeKey", "meta.isProvideContract": true },
+    { "type": "references", "from": "provide-inject-contract", "target": "apiKey", "meta.isProvideContract": true },
+    { "type": "references", "from": "provide-inject-contract", "target": "themeKey", "meta.isInjectContract": true },
+    { "type": "references", "from": "provide-inject-contract", "target": "apiKey", "meta.isInjectContract": true },
+    { "type": "contains", "from": "provide-inject-contract", "target": "save" },
+    { "type": "contains", "from": "provide-inject-contract", "target": "load" }
+  ],
+  "expectSymbols": [
+    { "name": "save", "kind": "method", "ownerName": "provide-inject-contract", "meta.isProvided": true },
+    { "name": "load", "kind": "method", "ownerName": "provide-inject-contract", "meta.isProvided": true }
+  ],
+  "forbidSymbols": [
+    { "name": "themeKey" },
+    { "name": "apiKey" }
+  ]
+}

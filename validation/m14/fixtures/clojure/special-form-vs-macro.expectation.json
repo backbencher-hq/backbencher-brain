@@ -1,0 +1,20 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the derived calls oracle: the truth's special-form list contained `loop`, `letfn` and `case`. They are MACROS, not special forms; core.clj defines every one of them; and CLJ-D43 says a call to a macro the file defines IS a call. The analyzer was right about all three and the truth was wrong, and the same file had `fn*` and `let` missing from the analyzer's reach - `fn*` is a compiler intrinsic with no public var so the core-list gate cannot see it, and `let` is shadowed in core.clj. So each side had the other's gaps. The analyzer now exports CLOJURE_SPECIAL_FORMS and gates its own generic-call emission on it, which is what makes the two comparable. Pins both directions: the special forms stay silent, and the two macros are published - the second of which is the line CLJ-D44 moved, and is correct rather than a regression.",
+  "expectSymbols": [
+    { "name": "my-case", "kind": "function" },
+    { "name": "use-case", "kind": "function" },
+    { "name": "build", "kind": "function" },
+    { "name": "binds", "kind": "function" },
+    { "name": "loop", "kind": "function" },
+    { "name": "uses-loop", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "use-case", "target": "my-case", "line_number": 13 },
+    { "type": "calls", "from": "uses-loop", "target": "loop", "line_number": 24 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "fn*" },
+    { "type": "calls", "target": "let" }
+  ]
+}

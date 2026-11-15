@@ -1,0 +1,13 @@
+{
+  "issue": "CLJ-ADV F7 + W23",
+  "note": "`(case k (a b) :r …)` — a LIST in a constant position is a group of unevaluated constants, never an invocation (the fabricated `calls a`); result positions still walk (`(helper)` emits). W23 (review finding): `case`'s optional trailing DEFAULT sits at index N-1 — an EVEN index whenever present — so a LIST-shaped default was skipped by the same parity rule and its calls silently vanished from BOTH sides (mirrored). Defaults are expressions and always walk: `(helper-default k)` in h (one pair + default) and j (zero pairs + default) emits.",
+  "expectRelationships": [
+    { "type": "calls", "from": "g", "target": "helper", "line_number": 5 },
+    { "type": "calls", "from": "h", "target": "helper-default", "line_number": 11 },
+    { "type": "calls", "from": "j", "target": "helper-default", "line_number": 13 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "a" },
+    { "type": "calls", "target": "x" }
+  ]
+}

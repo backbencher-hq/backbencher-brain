@@ -1,0 +1,49 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-a4-corpus.ts",
+  "evidenceFile": "A4.json",
+  "generatedAt": "2026-09-05T22:37:33.445Z",
+  "scenarios": [
+    {
+      "name": "S1-edit-reflect",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "name": "S2-budget-decline",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "name": "S3a-lock-refusal",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "name": "S3b-real-index-race",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "name": "S4-post-race-integrity",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "name": "S5-adoption-integrity",
+      "passed": 11,
+      "failed": 0
+    }
+  ],
+  "passed": 45,
+  "failed": 0,
+  "negativeCases": 1,
+  "repo": "/home/ishaq2321/bb_tests/repositories/rake",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.551Z",
+    "contentSha256": "40ad9139ff49f7817fd1e2c27458165e69e4fd51c5d2966edf57a28edf412ef7"
+  }
+}

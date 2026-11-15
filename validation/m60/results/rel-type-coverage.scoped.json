@@ -1,0 +1,61 @@
+{
+  "at": "2026-10-01T03:26:44.401Z",
+  "scoped": true,
+  "enumValues": [
+    "calls",
+    "contains",
+    "exports",
+    "extends",
+    "implements",
+    "imports",
+    "instantiates",
+    "overrides",
+    "references",
+    "uses"
+  ],
+  "lanes": [
+    {
+      "lang": "php",
+      "emitted": [
+        "calls",
+        "contains",
+        "extends",
+        "implements",
+        "imports",
+        "instantiates",
+        "overrides",
+        "references",
+        "uses"
+      ],
+      "audited": []
+    }
+  ],
+  "graphDefault": [
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "instantiates",
+    "overrides",
+    "contains",
+    "references",
+    "imports",
+    "exports"
+  ],
+  "findings": [],
+  "inputErrors": [
+    {
+      "lang": "php",
+      "reason": "no audited-label filter found in /home/ishaq2321/backbencher-brain/script/m14/differential.ts — its shape changed, so the extraction cannot be trusted"
+    }
+  ],
+  "inputErrorLanes": [
+    "php"
+  ],
+  "baseline": {
+    "recorded": 106,
+    "regressions": 0,
+    "repaid": 106,
+    "regressionsDetail": []
+  }
+}

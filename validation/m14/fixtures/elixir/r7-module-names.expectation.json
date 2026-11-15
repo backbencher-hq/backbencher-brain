@@ -1,0 +1,31 @@
+{
+  "issue": "ELX-EXPORTS D4/D5",
+  "note": "A `defmodule` name the analyzer cannot read. D4: the extractor fell back to the whole `arguments` TEXT, so a computed or literal head published its own source line as the module's name — measured on 559 corpus files: `KernelTest.1 + 2, do: :ok` (kernel_test.exs:906), `KernelTest.:\"foo/bar\", do: :ok` (:924), `MapTest.Module.concatMapTest, DynamicUser` (map_test.exs:355), `IEx.AutocompleteTest.:\"Elixir.IEx.AutocompleteTest.Unicodé\", do: nil` (autocomplete_test.exs:564) — and because the walk still descended, the BODY of the computed module attached to the enclosing scope, publishing `contains MapTest -> name` and `contains MapTest -> age` for fields declared inside it (map_test.exs:356, :358). A name the language computes at runtime cannot be spelled statically: the module publishes nothing and its subtree is not walked, because a false owner is a worse fabrication than the name it replaced. D5: an absolute quoted-atom name is published once, under its own name (`ModuleTest.:\"Elixir.ModuleTest.RawModule\"` at module_test.exs:287 doubled its namespace), and an ATOM-named module is absolute, so it carries no owner and no `contains` edge (`defmodule :elixir_struct_from_erlang_module` inside `defmodule MapTest`, map_test.exs:506, published `MapTest.:elixir_struct_from_erlang_module` plus a false ownership edge; the test at :512 constructs `%:elixir_struct_from_erlang_module{}` unqualified, which is the proof). Falsifier: mutant elixir/r7-module-name-source-text, elixir/r7-atom-module-nested.",
+  "expectSymbols": [
+    { "name": "R7Names.Parent", "kind": "module" },
+    { "name": "Elixir.R7Names.RawModule", "kind": "module", "ownerName": "R7Names.Parent" },
+    { "name": "hello", "kind": "function", "ownerName": "Elixir.R7Names.RawModule" },
+    { "name": "R7Names.Parent.Relative", "kind": "module", "ownerName": "R7Names.Parent" },
+    { "name": ":atom_named", "kind": "module" },
+    { "name": "from_atom", "kind": "function", "ownerName": ":atom_named" },
+    { "name": "readable", "kind": "function", "ownerName": "R7Names.Parent" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "R7Names.Parent", "target": "Elixir.R7Names.RawModule", "line_number": 28 },
+    { "type": "contains", "from": "Elixir.R7Names.RawModule", "target": "hello", "line_number": 29 },
+    { "type": "contains", "from": "R7Names.Parent", "target": "R7Names.Parent.Relative", "line_number": 33 },
+    { "type": "contains", "from": ":atom_named", "target": "from_atom", "line_number": 40 },
+    { "type": "exports", "from": ":atom_named", "target": "from_atom", "line_number": 40 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "R7Names.Parent.1 + 2" },
+    { "type": "contains", "target": "Module.concat(R7Names, Computed)" },
+    { "type": "contains", "target": "inside_computed" },
+    { "type": "contains", "from": "R7Names.Parent", "target": "name" },
+    { "type": "contains", "from": "R7Names.Parent", "target": "age" },
+    { "type": "contains", "from": "R7Names.Parent", "target": "R7Names.Parent.:atom_named" },
+    { "type": "contains", "from": "R7Names.Parent", "target": ":atom_named" },
+    { "type": "contains", "target": "R7Names.Parent.Elixir.R7Names.RawModule" },
+    { "type": "contains", "target": "R7Names.Parent.\"Elixir.R7Names.RawModule\"" }
+  ]
+}

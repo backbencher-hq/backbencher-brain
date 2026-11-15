@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "tier": "t0-tiny-polyglot-like",
+  "status": "measured",
+  "currentCommit": "6db736c86a43f5dc68309a413bee8d70ff05f384",
+  "generatedAt": "2026-11-03T01:00:22.299Z",
+  "verifierCommand": "BB_DATA_DIR=validation/tools/bb_visualize/bbdata npx tsx validation/tools/bb_visualize/latency.ts t0",
+  "environment": {
+    "runtime": "v22.22.1 (node --import tsx)",
+    "host": "pop-os",
+    "loadAverageAtMeasurement": [
+      29.4,
+      24.86,
+      16.6
+    ],
+    "memory": "325 MB rss in-process",
+    "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for the whole sweep; no indexer, no write tool",
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata",
+    "measurement": "in-process handler calls after one warm call per shape; five measured warm runs per shape"
+  },
+  "referenceIndex": {
+    "projectId": "085fcfa3ba00e3cf974d244acf3aac993aba52d9",
+    "projectPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/work/fixture",
+    "files": 11,
+    "symbols": 39,
+    "relationships": 53,
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/085fcfa3ba00e3cf974d244acf3aac993aba52d9/brain.db",
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 946176,
+      "mtimeMs": 1793667527067.0713,
+      "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 0,
+      "mtimeMs": 1793667617838.0667,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source": "COUNT(*) on brain_file / brain_symbol / brain_relationship through a read-only handle"
+  },
+  "budgets": {
+    "t0DefaultP95Ms": 250,
+    "t1DefaultP95Ms": 1000,
+    "t2DefaultP95Ms": 5000,
+    "applied": 250,
+    "tier": "t0-tiny-polyglot-like"
+  },
+  "summary": [
+    {
+      "variant": "default-text",
+      "args": {},
+      "p50": 19,
+      "p95": 35,
+      "min": 8,
+      "max": 35,
+      "nodes": 38,
+      "links": 18,
+      "bytes": 1336,
+      "truncated": false
+    },
+    {
+      "variant": "json",
+      "args": {
+        "format": "json"
+      },
+      "p50": 19,
+      "p95": 53,
+      "min": 9,
+      "max": 53,
+      "nodes": 38,
+      "links": 18,
+      "bytes": 30051,
+      "truncated": false
+    },
+    {
+      "variant": "html",
+      "args": {
+        "format": "html"
+      },
+      "p50": 18,
+      "p95": 82,
+      "min": 10,
+      "max": 82,
+      "nodes": 0,
+      "links": 0,
+      "bytes": 153690,
+      "truncated": false
+    },
+    {
+      "variant": "max-budget-json",
+      "args": {
+        "format": "json",
+        "maxNodes": 2000,
+        "maxLinks": 20000
+      },
+      "p50": 11,
+      "p95": 74,
+      "min": 7,
+      "max": 74,
+      "nodes": 38,
+      "links": 18,
+      "bytes": 30054,
+      "truncated": false
+    },
+    {
+      "variant": "symbol-text",
+      "args": {
+        "scope": "symbol",
+        "target": "deep_lookup",
+        "format": "text"
+      },
+      "p50": 4,
+      "p95": 20,
+      "min": 3,
+      "max": 20,
+      "nodes": 1,
+      "links": 1,
+      "bytes": 1230,
+      "truncated": false
+    }
+  ],
+  "defaultP95WithinBudget": true,
+  "coldFirstCallMs": 53,
+  "coldWithinClientTimeout": true,
+  "readPath": null,
+  "raw": [
+    {
+      "variant": "default-text",
+      "ms": 9
+    },
+    {
+      "variant": "json",
+      "ms": 10
+    },
+    {
+      "variant": "html",
+      "ms": 18
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 11
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 4
+    },
+    {
+      "variant": "default-text",
+      "ms": 8
+    },
+    {
+      "variant": "json",
+      "ms": 9
+    },
+    {
+      "variant": "html",
+      "ms": 17
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 9
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 4
+    },
+    {
+      "variant": "default-text",
+      "ms": 19
+    },
+    {
+      "variant": "json",
+      "ms": 19
+    },
+    {
+      "variant": "html",
+      "ms": 21
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 26
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 11
+    },
+    {
+      "variant": "default-text",
+      "ms": 35
+    },
+    {
+      "variant": "json",
+      "ms": 53
+    },
+    {
+      "variant": "html",
+      "ms": 82
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 74
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 20
+    },
+    {
+      "variant": "default-text",
+      "ms": 34
+    },
+    {
+      "variant": "json",
+      "ms": 22
+    },
+    {
+      "variant": "html",
+      "ms": 10
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 7
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 3
+    }
+  ]
+}

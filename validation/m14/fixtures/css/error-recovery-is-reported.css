@@ -1,0 +1,5 @@
+@page :first { margin: 1cm; }
+
+.recovered { color: red; }
+
+@page :left { margin: 2cm; }

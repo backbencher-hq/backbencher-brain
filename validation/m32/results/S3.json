@@ -1,0 +1,39 @@
+{
+  "status": "verified",
+  "milestone": "M32",
+  "issue": "S3",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m32/verify-doctor-fix.ts",
+  "evidenceFile": "S3.json",
+  "generatedAt": "2026-11-15T04:11:40.626Z",
+  "passed": 27,
+  "failed": 0,
+  "negativeCases": 5,
+  "mutants": [
+    {
+      "name": "dry-run default removed (apply mutates without flag)",
+      "caught": true
+    },
+    {
+      "name": "target mode weakened (0644 instead of 0600)",
+      "caught": true
+    },
+    {
+      "name": "isFile re-verification removed (blind chmod)",
+      "caught": true
+    },
+    {
+      "name": "printed-change requirement removed (silent mutation)",
+      "caught": true
+    },
+    {
+      "name": "action-cap removed (unbounded repairs)",
+      "caught": true
+    }
+  ],
+  "limitations": [
+    "Fix scope is permissions-only by design; content/index repairs remain advice (bb index --force, bb setup) and are covered by S2.",
+    "The action cap (MAX_FIX_ACTIONS) is exercised structurally; tiers are bounded at 3 so the >cap path is unreachable via real state.",
+    "Binary section covers the apply and nothing-to-fix paths; dry-run on the binary equals `bb doctor` (no --fix), covered by S2's suite."
+  ]
+}

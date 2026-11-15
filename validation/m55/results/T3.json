@@ -31,7 +31,7 @@
   "evidenceFile": "T3.json",
   "generatedAt": "2026-11-09T05:22:52.053Z",
   "fixture": {
-    "workspace": "$HOME/mcp/backbencher-brain/.tools/tmp/m55-t3-ws-5KUbhx",
+    "workspace": "/home/ishaq2321/mcp/backbencher-brain/.tools/tmp/m55-t3-ws-5KUbhx",
     "projectId": "cfe303d6b8e37430a433cb98977a22386649e5ba",
     "symbols": 7,
     "rows": 12,

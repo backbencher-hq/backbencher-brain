@@ -366,7 +366,7 @@
     "derivedPhaseSecs": 898.8,
     "derivedPhaseShare": 0.407,
     "repo": "aspnetcore",
-    "path": "$HOME/fixtures/repositories/aspnetcore",
+    "path": "/home/ishaq2321/bb_tests/repositories/aspnetcore",
     "filesOnDisk": 10687,
     "arm": "linear",
     "provenance": "HEAD, cold full index, fresh BB_DATA_DIR, single run; sampled every 30s while it ran",
@@ -1914,7 +1914,7 @@
   },
   "realCorpus": {
     "repo": "element-plus",
-    "path": "$HOME/fixtures/repositories/element-plus",
+    "path": "/home/ishaq2321/bb_tests/repositories/element-plus",
     "files": 2581,
     "arms": {
       "window": {

@@ -1,0 +1,244 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/call-target-resolution.sh",
+ "authoredFrom": "Authored 2026-10-04 from the MEASUREMENT in validation/m14/fixtures/bash/probe-bash-published-resolvability.mts. That probe asks a different question from the one round 9 asked: not how many published symbols share an edge's target NAME, but whether the fields the edge PUBLISHES reduce the file's real candidate set to exactly one. Applied to the 400-file hash-order sample through production parseFile (admitted 4,133 / scanned 462,809 / 55 repos in the census denominators, 0 parse failures), the answer was: `calls` was the ONLY type no published field could answer, and `isFunctionCall: true` could not answer it either — that flag says the target IS a function declared in this file, not WHICH one, so as a filter it leaves zero candidates on 6 of 6, converting a resolvable edge into a dangling claim. Corpus shape: kubernetes/third_party/gimme/gimme, where `_version_sort` is defined at 125 and redefined at 127, with call sites at 535, 565 and 581 naming it; and nomad/demo/hostvolume/example-plugin-mkfs, `mkfsExec` at 52 and 65. The second shape this file pins is the 4 `uses` edges left bare because `declSites` keys variables, aliases and locals and never functions: a name the file declares as BOTH a function and a variable looks unique to that index while the published symbol table holds two declarations (dart-sdk/pkg/vm/tool/shared_functions.sh:58 `uses -> host_arch` against function@7 and variable@56; consul/build-support/functions/10-util.sh:613 against function@597 and variable@612; ohmyzsh/plugins/rvm/rvm.plugin.zsh:34 `rubies` against function@9 and variable@16).\n\nThe rule under test for `calls` is bash's own: functions have no nested scope, so a name resolves to the most recent definition executed before the call, which for a script read top to bottom is the latest definition at or before the call site. The rule under test for the second shape is that `$name` is a parameter expansion — it reads a variable, and a function is not reachable through `$` — so the function symbol is not a candidate for a `uses` edge at all. Both are published under their own `targetResolution` values rather than folded into `innermostScope`, because a consumer filtering candidates on kind must be able to see which rule decided a row.\n\nAFTER this change the same probe reads, over 1,881 ambiguous edges: 1,795 reduce to exactly one published declaration, 86 decline explicitly, 0 reduce to ZERO candidates, and 0 publish nothing. The edge counts did not move — calls 5,097, uses 7,856, contains 3,775, imports 44, references 44, exports 210, overrides 28, total 17,054 on 4,179 symbols, identical before and after on the same 400 files. Ten edges gained metadata (6 `calls`, 4 `uses`) and none was added or removed, which is the property that separates disambiguating from fabricating.",
+ "expectSymbols": [
+  {
+   "name": "call-target-resolution.sh",
+   "kind": "module"
+  },
+  {
+   "name": "worker_a",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "run_after_both",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "forward_reference",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "defined_later",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "probe_first",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "only_declared_once",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "caller_of_unique",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "shared_name",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "shared_name",
+   "kind": "variable",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "read_the_variable",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "call_the_function",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "caller_before_any_definition",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "late_worker",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "command_name",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "caller_of_both",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "read_the_other",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "writes_the_same_name",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "exports_from_its_own_scope",
+   "kind": "function",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "EXPORTED_NAME",
+   "kind": "variable",
+   "ownerName": "call-target-resolution.sh"
+  },
+  {
+   "name": "EXPORTED_NAME",
+   "kind": "variable",
+   "ownerName": "writes_the_same_name"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "run_after_both",
+   "target": "worker_a",
+   "meta.targetLine": 28,
+   "meta.targetKind": "function",
+   "meta.targetResolution": "latestDefinitionBeforeUse",
+   "note": "THE row for the direction of the rule. worker_a is defined at 27 and REDEFINED at 28, and the call is after both, so the language's answer is the LATER one. An implementation that kept the first declaration — which is what the `overrides` edge does, since it points BACKWARD from the redefinition to the prior one — answers line 27 here and is wrong about which definition runs. The two edges are opposites and a single rule cannot produce both."
+  },
+  {
+   "type": "calls",
+   "from": "probe_first",
+   "target": "worker_a",
+   "meta.targetLine": 28,
+   "meta.targetResolution": "latestDefinitionBeforeUse",
+   "note": "The per-EDGE half. probe_first calls worker_a twice, on lines 55 and 57, and both rows carry line 28 — but they are separate rows because the edge line differs, so the attribution is computed per call site rather than resolved once per file and reused. An implementation that cached the name's resolution would also pass the single-call rows above."
+  },
+  {
+   "type": "calls",
+   "from": "caller_before_any_definition",
+   "target": "late_worker",
+   "meta.targetResolution": "declaredAfterUse",
+   "note": "THE decline, and the only shape in this file that can produce it. late_worker is declared twice, at 112 and 113, and the call is at 109 — before both. So the name IS claimed by two published declarations (ambiguous) and NEITHER is in effect at the call site. The row says exactly that and publishes no line. bash permits the forward reference, because the callee can be defined before the caller's body runs, which is why the text order does not settle it and picking the nearer of the two would be an invented attribution. The two mutants for this file both live or die on this row: one publishes a line where none is justified, the other loses the decline entirely."
+  },
+  {
+   "type": "uses",
+   "from": "read_the_variable",
+   "target": "call-target-resolution.sh.shared_name",
+   "meta.targetLine": 85,
+   "meta.targetKind": "variable",
+   "meta.targetResolution": "readCannotBeAFunction",
+   "note": "THE row for the second shape, and the whole reason the `uses` residual was not closed by the `calls` work. `shared_name` is a function at 84 AND a variable at 85, so the published symbol table holds two declarations of the name and `declSites` — which keys variables, aliases and locals and never functions — calls it unique and publishes nothing. `$shared_name` is a parameter expansion: it reads a variable, and a function is not reachable through `$`, so the function symbol is not a candidate for this edge. Without this row the edge names one of two declarations by naming one, which is the failure the incoming-edge requirement names."
+  },
+  {
+   "type": "overrides",
+   "from": "call-target-resolution.sh",
+   "target": "worker_a",
+   "meta.overridesLine": 27,
+   "meta.redefinition": true,
+   "note": "The control that the two directions are both still emitted. The redefinition at 28 overrides the one at 27, and this edge points BACKWARD — from the later definition to the earlier — while the two `calls` rows above point FORWARD to the later one. Both endpoints are the same name, so the pair is only coherent if `overridesLine` and `targetLine` disagree, and a change that made them agree would make one of the two edges a lie."
+  },
+  {
+   "type": "calls",
+   "from": "call_the_function",
+   "target": "shared_name",
+   "meta.targetLine": 84,
+   "meta.targetKind": "function",
+   "meta.targetResolution": "commandNameIsAFunction",
+   "note": "The sign-error guard, and the reason this row and the read_the_variable row are asserted as a PAIR. `shared_name` is a function at 84 and a variable at 85. The `uses` edge must reach the VARIABLE at 85; this `calls` edge must reach the FUNCTION at 84. Both are well-formed rows — right name, real line, real published symbol, a targetResolution from this lane's own vocabulary — so a single rule applied to both types would pass whichever half it got right and produce a published answer pointing at the wrong KIND of declaration for the other. 105 whole-corpus edges have this shape (swift-nio/scripts/nio-diagnose:398 `nio_pids` against variable@136 and function@151) and the 400-file sample saw none of them, which is why the population is stated from the --all run and not from this fixture."
+  },
+  {
+   "type": "calls",
+   "from": "caller_of_both",
+   "target": "command_name",
+   "meta.targetLine": 127,
+   "meta.targetKind": "function",
+   "meta.targetResolution": "commandNameIsAFunction",
+   "note": "The same rule on a name that is not redefined: `command_name` is a function at 127 and a variable at 128, so among FUNCTION declarations it is unique. The redefinition rule would decline here — correctly, there is nothing to choose between — and the edge would publish nothing, leaving a consumer matching by target with two candidates and no way to choose. Note that position plays no part: unlike a `uses` edge there is no 'declared after the use site' case, because a COMMAND position cannot denote a variable at all."
+  },
+  {
+   "type": "uses",
+   "from": "read_the_other",
+   "target": "call-target-resolution.sh.command_name",
+   "meta.targetLine": 128,
+   "meta.targetKind": "variable",
+   "meta.targetResolution": "readCannotBeAFunction",
+   "note": "The third instance of the same pair, and the one that makes the pair a triangle rather than a row: `command_name` is a function at 127 and a variable at 128, so caller_of_both (calls, line 127) and read_the_other (uses, line 128) are the same name, the same file and two adjacent lines, and they must resolve to OPPOSITE declarations. Three rows sharing one name with two answers between them is the strongest form this file can take, because a rule that ignored kind entirely would have to get all three right by luck."
+  },
+  {
+   "type": "exports",
+   "from": "call-target-resolution.sh",
+   "target": "call-target-resolution.sh.EXPORTED_NAME",
+   "meta.targetLine": 150,
+   "meta.targetKind": "variable",
+   "meta.targetResolution": "innermostScope",
+   "note": "THE row for a nine-round-old claim that was wrong. EXPORTED_NAME is declared at 150 (file scope) and 153 (inside writes_the_same_name), and the `export` STATEMENT is on line 159 — which is neither. The edge's own line therefore answers nothing, and rounds 5 and 9 both recorded `exports` as already disambiguated on the ground that it carries the declaration's line. It carries the export's line, which coincides with the declaration's only when the export IS the declaration. Measured on the whole corpus: 29 of 96 ambiguous `exports` edges leave zero candidates under the edge's own line, e.g. `nvm_supports_xz -[exports]-> PATH @37` against constant@8 and constant@21. The answer here is 150 because an `export` statement exports the value the name currently holds, which at line 159 is the file-scope one."
+  },
+  {
+   "type": "exports",
+   "from": "exports_from_its_own_scope",
+   "target": "exports_from_its_own_scope.EXPORTED_NAME",
+   "meta.targetLine": 165,
+   "meta.targetKind": "constant",
+   "meta.targetResolution": "innermostScope",
+   "note": "THE row the missing half of a pair, and it exists because `bash/exports-resolution-inverted` SURVIVED the battery without it. This is the second time in this lane's history that a mutant passed for a structural reason rather than a careless one: with only the module-scope export asserted, an implementation that walked the scope chain from the file INWARD answers 150 here too — the same value the other row expects — so the inversion is invisible. The file-scope declaration is at 150, this function declares the name itself at 165, and the two rows are 150 and 165, so a walk that ignores scope cannot produce both. The previous version of this file asserted one of the two and its own mutant description claimed both; the claim was wrong and the mutant was right."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "caller_of_unique",
+   "target": "only_declared_once",
+   "meta.targetResolution": "latestDefinitionBeforeUse",
+   "note": "The ABSENCE row, and the payload constraint. only_declared_once is declared once, so among function declarations the name is not ambiguous and the edge must carry nothing. 5,097 `calls` edges on this sample and 55,222 on the corpus: an implementation that resolved every call rather than only the ambiguous ones would attach three keys to every one of them to say what the edge's target already said."
+  },
+  {
+   "type": "calls",
+   "from": "call_the_function",
+   "target": "shared_name",
+   "meta.targetLine": 128,
+   "note": "A published answer pointing at the wrong KIND of declaration, forbidden by line. The `call_the_function` -> `shared_name` edge must NOT reach 85, the variable of that name: a command position cannot denote a variable, and the same name's `uses` edge is asserted above reaching exactly 85. This is the only failure in the file that produces a well-formed row rather than a missing one, which is why the two kinds of mutant both need a row to die on — calls-and-read-resolution-swapped produces it, and the rule-removal mutants lose resolution instead."
+  },
+  {
+   "type": "calls",
+   "from": "forward_reference",
+   "target": "defined_later",
+   "meta.targetResolution": "declaredAfterUse",
+   "note": "The distinction between \"ambiguous and unresolved\" and \"not ambiguous\", asserted because the two read alike on a row. `defined_later` is declared ONCE, so the call is not ambiguous and nothing is published — `declaredAfterUse` belongs only to a name with two or more declarations and none of them at or before the call. An implementation that published the decline for every forward reference would pass the `late_worker` row and get this one wrong in the other direction, turning an unambiguous edge into one that says it could not be resolved."
+  },
+  {
+   "type": "calls",
+   "from": "caller_before_any_definition",
+   "target": "late_worker",
+   "meta.targetLine": 111,
+   "note": "The invented attribution, forbidden by line. Both declarations of `late_worker` are below the call site, so publishing either of them asserts a definition that is not in effect where the call is. This is the failure the whole mechanism exists to prevent, and it is the one the other mutants cannot produce — they lose resolution, this one fabricates it."
+  },
+  {
+   "type": "uses",
+   "from": "read_the_other",
+   "target": "command_name",
+   "meta.targetLine": 127,
+   "note": "The mirror of the sign error, on the other edge type: a `$command_name` read must not resolve to the function at 127. Between the two forbid rows and the two expect rows, this file asserts that one name declared twice resolves to two different declarations depending on whether it is read as a value or invoked as a command — which is the property that makes the attribution checkable rather than merely present."
+  },
+  {
+   "type": "exports",
+   "from": "call-target-resolution.sh",
+   "target": "EXPORTED_NAME",
+   "meta.targetLine": 159,
+   "note": "The dangling claim, forbidden by line. 159 is the `export` statement's own line, and no published symbol carries it for this name — an edge pointing there asserts a declaration that does not exist at that row, which is a worse failure than publishing nothing because it looks answered. This row is also why the 400-file sample could not catch the defect: it saw two ambiguous `exports` edges and in both the export line and the declaration line were the same statement, so the rule and the coincidence agreed."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

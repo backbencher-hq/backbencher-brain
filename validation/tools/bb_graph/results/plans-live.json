@@ -1,0 +1,76 @@
+{
+  "openMs": 18713.78,
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "stat1": [
+    {
+      "tbl": "brain_relationship",
+      "idx": "brain_rel_source_cross_idx",
+      "stat": "820454 13 13"
+    },
+    {
+      "tbl": "brain_relationship",
+      "idx": "brain_rel_target_idx",
+      "stat": "820454 4"
+    }
+  ],
+  "queryOnly": [
+    {
+      "query_only": 0
+    }
+  ],
+  "timings": {
+    "unattributedCallers": {
+      "ms": 10697.82,
+      "rows": 1,
+      "plan": [
+        "CO-ROUTINE casc",
+        "COMPOUND QUERY",
+        "LEFT-MOST SUBQUERY",
+        "SCAN CONSTANT ROW",
+        "UNION ALL",
+        "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)",
+        "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)",
+        "BLOOM FILTER ON casc (id=?)",
+        "SEARCH casc USING AUTOMATIC COVERING INDEX (id=?)"
+      ]
+    },
+    "callerArm": {
+      "ms": 4984.88,
+      "rows": 2,
+      "plan": [
+        "CO-ROUTINE casc",
+        "COMPOUND QUERY",
+        "LEFT-MOST SUBQUERY",
+        "SCAN CONSTANT ROW",
+        "UNION ALL",
+        "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)",
+        "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)",
+        "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)",
+        "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)",
+        "BLOOM FILTER ON casc (id=?)",
+        "SEARCH casc USING AUTOMATIC COVERING INDEX (id=?)",
+        "USE TEMP B-TREE FOR LAST 3 TERMS OF ORDER BY"
+      ]
+    },
+    "cascadeOnly": {
+      "ms": 976.5,
+      "rows": 1,
+      "plan": [
+        "COMPOUND QUERY",
+        "LEFT-MOST SUBQUERY",
+        "SCAN CONSTANT ROW",
+        "UNION ALL",
+        "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)"
+      ]
+    },
+    "rootExact": {
+      "ms": 944.59,
+      "rows": 1,
+      "plan": [
+        "SEARCH s USING INDEX brain_symbol_gravity_idx (project_id=?)",
+        "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)",
+        "USE TEMP B-TREE FOR LAST TERM OF ORDER BY"
+      ]
+    }
+  }
+}

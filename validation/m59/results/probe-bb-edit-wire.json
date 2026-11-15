@@ -1,0 +1,184 @@
+{
+  "probe": "M59.EDIT-WIRE — installed binary, real MCP stdio",
+  "milestone": "M59",
+  "at": "2026-09-21T17:59:47.364Z",
+  "commit": "5e97dc1d8bc553f0e99584cfd1f6984d4927a290",
+  "method": "fresh `node bin/bb mcp --dir <project>` per session; JSON-RPC over stdio; file bytes read from disk after each call; real-index leg uses BB_DATA_DIR=/home/ishaq2321/.bb",
+  "toolsServed": 16,
+  "editParamsAdvertised": [
+    "mode",
+    "dryRun",
+    "filePath",
+    "symbolName",
+    "lineStart",
+    "content",
+    "newContent",
+    "targetSymbolName",
+    "position",
+    "newName",
+    "force",
+    "format"
+  ],
+  "checks": [
+    {
+      "name": "CLI `bb index <project>` indexes the fixture",
+      "pass": true,
+      "detail": "indexing /tmp/m59-editwire-proj-Hc2F1u (project a5b46a81…) [brain] ✓ worker pool available — using parallel in"
+    },
+    {
+      "name": "tools/list returns a non-empty tool set",
+      "pass": true,
+      "detail": "16 tools served over the wire"
+    },
+    {
+      "name": "bb_edit is served over the wire",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bb_edit advertises exactly its documented parameters",
+      "pass": true,
+      "detail": "missing=[] extra=[]"
+    },
+    {
+      "name": "no ghost tool is advertised",
+      "pass": true,
+      "detail": "checked 8 retired names"
+    },
+    {
+      "name": "wire: update: full declaration",
+      "pass": true,
+      "detail": "edited"
+    },
+    {
+      "name": "wire: update: body fragment keeps the declaration",
+      "pass": true,
+      "detail": "edited"
+    },
+    {
+      "name": "wire: insert: after a symbol",
+      "pass": true,
+      "detail": "edited"
+    },
+    {
+      "name": "wire: delete: removes the symbol",
+      "pass": true,
+      "detail": "edited"
+    },
+    {
+      "name": "wire: write: creates a file",
+      "pass": true,
+      "detail": "edited"
+    },
+    {
+      "name": "wire: refactor: renames the declaration and its call",
+      "pass": true,
+      "detail": "edited"
+    },
+    {
+      "name": "wire: dryRun shows a plan and writes nothing",
+      "pass": true,
+      "detail": "changedOnDisk=false"
+    },
+    {
+      "name": "wire: an ambiguous name is refused and names lineStart",
+      "pass": true,
+      "detail": "{ \"ok\": false, \"mode\": \"refactor\", \"error\": \"symbol target is ambiguous; provide filePath and lineStart\", \"rolledBack\": true }"
+    },
+    {
+      "name": "wire: the same call with lineStart renames exactly the declaration",
+      "pass": true,
+      "detail": "{ \"mode\": \"refactor\", \"dryRun\": false, \"changes\": [ { \"path\": \"/tmp/m59-editwire-proj-Hc2F1u/src/object.ts\", \"before\": \"export fun"
+    },
+    {
+      "name": "real index: dryRun update plans against the live index, byte-identical file",
+      "pass": true,
+      "detail": "cold=5513ms warm=286ms warm2=298ms"
+    }
+  ],
+  "results": [
+    {
+      "case": "update: full declaration",
+      "ok": true,
+      "ms": 4820,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "update: body fragment keeps the declaration",
+      "ok": true,
+      "ms": 4188,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "insert: after a symbol",
+      "ok": true,
+      "ms": 3371,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "delete: removes the symbol",
+      "ok": true,
+      "ms": 3132,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "write: creates a file",
+      "ok": true,
+      "ms": 3583,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "refactor: renames the declaration and its call",
+      "ok": true,
+      "ms": 4086,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "dryRun",
+      "ok": true,
+      "ms": 42,
+      "refused": false,
+      "changed": false,
+      "problem": null
+    },
+    {
+      "case": "ambiguous-refusal",
+      "ok": true,
+      "ms": 9,
+      "refused": true,
+      "changed": false,
+      "problem": null
+    },
+    {
+      "case": "ambiguous-then-lineStart",
+      "ok": true,
+      "ms": 3316,
+      "refused": false,
+      "changed": true,
+      "problem": null
+    },
+    {
+      "case": "real-index-dryRun",
+      "ok": true,
+      "ms": 5513,
+      "warmMs": 286,
+      "warm2Ms": 298,
+      "refused": false,
+      "changed": false,
+      "problem": null
+    }
+  ],
+  "status": "verified"
+}

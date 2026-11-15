@@ -1,0 +1,11 @@
+{
+  "fixtureId": "typescript/interface-members",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Interface property + method signatures must extract; union return types must not corrupt names.",
+  "expectSymbols": [
+    { "name": "UserRepo" },
+    { "name": "find" },
+    { "name": "save" }
+  ]
+}

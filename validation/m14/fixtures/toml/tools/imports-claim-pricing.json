@@ -1,0 +1,89 @@
+{
+  "_what": "Pricing the SHARED `imports` file claim across the five lanes the brief named, BEFORE any claim is emitted: how many import edges name a file the lane's ADMITTED population actually carries? That number is the ceiling; a claim that misses is REFUTED and extFAIL must stay 0.",
+  "_instrument": "npx tsx validation/m14/fixtures/toml/tools/imports-claim-pricing.mts --files=200",
+  "_populationLabel": "STRIDE SAMPLE of 200 files per repo per lane (even stride, not a prefix; a corpus is ordered by directory, so a prefix would sample one subtree and call it the language). protobuf (847) and clean (312) admit fewer than 200 per repo, so those two are FULLY MEASURED, not sampled: 4,386 files measured of 11,347 admitted.",
+  "_pathLabel": "Every edge comes from `parseFile` (src/ast/pool-worker.ts), the module the incoming gate itself imports — NOT from the regex fallback the coverage gate separates out as DEGRADED.",
+  "_degraded": "2 analyzer timeouts in 4,386 files, both on `bulma/docs/vendor/fontawesome-free-6.5.2-web/scss/_variables.scss`, which returned a BASIC PARSE RESULT rather than the analyzer's output. Its edges are evidence about the fallback, not the analyzer, and they are inside the scss row below. The coverage gate draws this distinction (`ontology-coverage-gate.ts` walk line); the residual gate does not.",
+  "_extensionsFromRouter": {
+    "protobuf": ["proto"],
+    "graphql": ["graphql", "gql"],
+    "clean": ["icl", "dcl"],
+    "scss": ["scss"],
+    "zig": ["zig"],
+    "_note": "From src/ast/language-detection.ts, not a guessed list — ten lanes this session measured a fraction of their own language by assuming one. NOTE: `.sass` routes to language `sass`, NOT to `scss`, so `.sass` files are outside the scss lane's population even though the brief names them."
+  },
+  "results": [
+    {
+      "lane": "protobuf",
+      "targetShape": "`import \"...\"` is a path",
+      "sample": { "measured": 847, "population": 847, "sampled": false },
+      "edges": 1574, "resolved": 0, "ambiguous": 0, "unresolved": 1574,
+      "claimVerify": 304, "claimWouldRefute": 0, "residue": 1270,
+      "verifiableShareOfUnresolved": "19.3%",
+      "residueShape": "the well-known imports — google/protobuf/timestamp.proto 130, google/protobuf/any.proto 67, k8s.io/apimachinery/.../generated.proto 74/73/73, controller/.../options.proto 56 — none of which the population carries"
+    },
+    {
+      "lane": "graphql",
+      "targetShape": "`#import` names a document path",
+      "sample": { "measured": 1145, "population": 1911, "sampled": true },
+      "edges": 144, "resolved": 0, "ambiguous": 0, "unresolved": 144,
+      "claimVerify": 134, "claimWouldRefute": 0, "residue": 10,
+      "verifiableShareOfUnresolved": "93.1%",
+      "residueShape": "aliased and special spellings — `@circular/b.graphql`, `@b-schema`, `#b.graphql`, `shared`, `/b.graphql` — module-style names, not paths"
+    },
+    {
+      "lane": "clean",
+      "targetShape": "`Module:item` / `Module:*` — the MODULE, not a path",
+      "sample": { "measured": 312, "population": 312, "sampled": false },
+      "edges": 1891, "resolved": 0, "ambiguous": 0, "unresolved": 1891,
+      "claimVerify": 429, "claimWouldRefute": 0, "residue": 1462,
+      "verifiableShareOfUnresolved": "22.7%",
+      "residueShape": "the Clean STDLIB — StdEnv:* 52, StdString:* 23, Data.Error:* 22, Data.Maybe:* 21, StdBool:* 21 — plus project modules whose file is not admitted",
+      "candidateRule": "the module part before `:` with `.` -> `/`, tried as `<mod>.icl` and `<mod>.dcl`; the ITEM SUFFIX must be removed for the claim to be about a file at all"
+    },
+    {
+      "lane": "scss",
+      "targetShape": "`@use`/`@import` specifier, extension-less and partial-prefixed",
+      "sample": { "measured": 1591, "population": 4433, "sampled": true },
+      "edges": 1039, "resolved": 148, "ambiguous": 0, "unresolved": 891,
+      "claimVerify": 754, "claimWouldRefute": 0, "residue": 137,
+      "verifiableShareOfUnresolved": "84.6%",
+      "residueShape": "`scss/mixins::mixins`-style namespaced modules, `sass:` builtins, remote URLs (`https://fonts.googleapis.com/...`), and specifiers naming a `.sass` file this lane's population cannot hold",
+      "candidateRule": "the specifier as written, plus `_partial` and `.scss` spellings and a directory `_index.scss`, folded against the file's own directory and the root; `.sass` candidates are FILTERED OUT because they route to another language"
+    },
+    {
+      "lane": "zig",
+      "targetShape": "`@import(\"...\")` — a path when it has one, a module name otherwise",
+      "sample": { "measured": 491, "population": 3844, "sampled": true },
+      "edges": 7194, "resolved": 1124, "ambiguous": 2146, "unresolved": 3924,
+      "claimVerify": 2300, "claimWouldRefute": 0, "residue": 1624,
+      "verifiableShareOfUnresolved": "58.6%",
+      "residueShape": "bare module names (`std`, `builtin`, `root`) which name no file, and `build.zig.zon` — a package manifest that is NOT part of the `.zig` population",
+      "scopeNote": "the brief's `imports`/`references` 'name nothing' set: both types were priced here, which is why this row is an order of magnitude larger than the others"
+    }
+  ],
+  "totals": {
+    "filesMeasured": 4386, "filesAdmitted": 11347,
+    "edges": 11842, "resolved": 1272, "ambiguous": 2146, "unresolved": 8424,
+    "claimVerify": 3921, "claimWouldRefute": 0, "residue": 4503,
+    "verifiableShareOfUnresolved": "46.5%",
+    "verifiableShareOfAllEdges": "33.1%"
+  },
+  "theRuleTheRefutationColumnEstablished": {
+    "measured": "With candidates restricted ONLY by shape (any path on disk), 392 edges would REFUTE — zig 368, scss 24. Every one is an EXTENSION the lane's population cannot hold: `build.zig.zon` for zig, `_all.sass` for scss (`.sass` routes to language `sass`).",
+    "rule": "A candidate must be restricted to the extensions the lane's OWN admitted list holds — the same rule php's include claim needed for its `.inc` case. It is required by the arbiter's key space, not a convenience.",
+    "after": "With that filter, `claimWouldRefute` is 0 in all five lanes on this sample."
+  },
+  "ruling": {
+    "ruledClass": "the residue: import targets that name no admitted file",
+    "shape": "a path the population does not carry (google/protobuf/*, k8s.io/*/generated.proto), a stdlib module (Clean's StdEnv:*, zig's `std`), a non-admitted extension (`build.zig.zon`, `.sass`), or a name that is not a path at all (graphql's `@circular/b.graphql`, scss's `sass:` and remote URLs)",
+    "mechanism": "the named file is outside the admitted population — vendored, generated, a language stdlib, or an extension this lane does not admit. A per-file analyzer cannot know whether a path is in the project's admitted list; it can only check its shape and existence.",
+    "count": { "protobuf": 1270, "graphql": 10, "clean": 1462, "scss": 137, "zig": 1624, "total": 4503 },
+    "falsifierRun": "admit the named files (vendor the google/protobuf and k8s.io protos, add the Clean stdlib sources, admit `.zon`) and re-run this probe: the residue falls and the claim ceiling rises. A whole-population run that reports a materially different ratio than this stride sample also refutes the sample."
+  },
+  "routing": {
+    "sharedFixIsReal": "Yes — one candidate-arithmetic-plus-guard shape closes 3,921 edges across all five lanes, and it is the same shape json and php already implement (`importProjectFile`).",
+    "butNotOneRuleForAll": "The CANDIDATE ARITHMETIC differs per lane and cannot be shared: a path fold (protobuf, graphql, zig), Sass partial/index resolution (scss), and module-to-file with an item suffix stripped (clean). The GUARD — admitted extension, inside the project, statSync — is shared.",
+    "perLaneCeiling": "protobuf 304 · graphql 134 · clean 429 · scss 754 · zig 2300 (sample-based)"
+  }
+}

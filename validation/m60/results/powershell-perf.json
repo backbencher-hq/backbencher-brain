@@ -1,0 +1,16 @@
+{
+  "gate": "M60.powershell-perf",
+  "title": "PowerShell analyzer perf envelope — NOT MEASURED (load-contaminated)",
+  "at": "2026-09-27T04:43:14.387Z",
+  "commit": "dfddc0c765a0c9c23e8bd33149ec751866d456fb",
+  "machineLoad": {
+    "one": 44.61,
+    "five": 36.82,
+    "fifteen": 34.83,
+    "cores": 8
+  },
+  "loadContaminated": true,
+  "measured": false,
+  "reason": "The 1-minute load average was 44.61 on 8 cores, above the 8 threshold. A timing on a machine this far past its core count measures the machine, not the analyzer. This artifact is written so that it REPLACES any earlier perf record rather than leaving one in place to be read as current: the honesty contract's L0 is \"no evidence file, or stale evidence\", and a stale file that says nothing is worse than one that says it could not measure. Re-run when the load is down, or pass --force to record the load beside the numbers.",
+  "envelope": "M60 R6: one iterative DFS; a frame stack whose depth is the nesting depth; O(1) Map-backed symbol dedupe; Set-backed per-site relationship dedupe; descendant searches BOUNDED BY DEPTH (the unbounded version walked a whole DSC block per command and cost 1,870 ms on the worst file; bounded to depth 6 it is 532 ms)."
+}

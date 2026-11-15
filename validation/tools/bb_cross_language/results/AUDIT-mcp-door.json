@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "door": "MCP stdio from SOURCE (npx tsx startMcpServer) — dist/ predates the module split in this checkout",
+  "workspace": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+  "serverInfo": {
+    "name": "backbencher-brain",
+    "version": "0.3.0"
+  },
+  "descriptor": {
+    "name": "bb_cross_language",
+    "required": [
+      "symbol"
+    ],
+    "properties": [
+      "symbol",
+      "limit"
+    ]
+  },
+  "toolCount": 16,
+  "results": {
+    "success": {
+      "isError": false,
+      "textHead": "{\n  \"symbol\": \"Inventory\",\n  \"language\": \"java\",\n  \"languages\": [\n    \"java\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"24cb6a202c39689cc13693683c490bbb9ced1f80:java-scala/src/main/java/com/demo/Inventory.",
+      "symbol": "Inventory",
+      "ownFactCount": 1,
+      "memberFactCount": 2,
+      "declaredAbsent": false,
+      "limit": 200,
+      "truncated": false
+    },
+    "alias-target": {
+      "isError": false,
+      "textHead": "{\n  \"symbol\": \"Inventory\",\n  \"language\": \"java\",\n  \"languages\": [\n    \"java\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"24cb6a202c39689cc13693683c490bbb9ced1f80:java-scala/src/main/java/com/demo/Inventory.",
+      "symbol": "Inventory",
+      "ownFactCount": 1,
+      "memberFactCount": 2,
+      "declaredAbsent": false,
+      "limit": 200,
+      "truncated": false
+    },
+    "alias-symbolName": {
+      "isError": false,
+      "textHead": "{\n  \"symbol\": \"restock\",\n  \"language\": \"java\",\n  \"languages\": [\n    \"java\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"24cb6a202c39689cc13693683c490bbb9ced1f80:java-scala/src/main/java/com/demo/Inventory.ja",
+      "symbol": "restock",
+      "ownFactCount": 1,
+      "memberFactCount": 0,
+      "declaredAbsent": false,
+      "limit": 200,
+      "truncated": false
+    },
+    "alias-query": {
+      "isError": false,
+      "textHead": "{\n  \"symbol\": \"restock\",\n  \"language\": \"java\",\n  \"languages\": [\n    \"java\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"24cb6a202c39689cc13693683c490bbb9ced1f80:java-scala/src/main/java/com/demo/Inventory.ja",
+      "symbol": "restock",
+      "ownFactCount": 1,
+      "memberFactCount": 0,
+      "declaredAbsent": false,
+      "limit": 200,
+      "truncated": false
+    },
+    "bounded": {
+      "isError": false,
+      "textHead": "{\n  \"symbol\": \"Inventory\",\n  \"language\": \"java\",\n  \"languages\": [\n    \"java\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"24cb6a202c39689cc13693683c490bbb9ced1f80:java-scala/src/main/java/com/demo/Inventory.",
+      "symbol": "Inventory",
+      "ownFactCount": 1,
+      "memberFactCount": 0,
+      "declaredAbsent": false,
+      "limit": 1,
+      "truncated": true
+    },
+    "blank": {
+      "isError": true,
+      "textHead": "bb_cross_language: requires a non-empty symbol name"
+    },
+    "empty-string": {
+      "isError": true,
+      "textHead": "bb_cross_language: requires a non-empty symbol name"
+    },
+    "missing": {
+      "isError": true,
+      "textHead": "error: bb_cross_language: missing required option: symbol"
+    },
+    "unknown": {
+      "isError": true,
+      "textHead": "bb_cross_language: symbol 'no-such-name-xyz' not found — declared error, not an empty set"
+    },
+    "limit-zero": {
+      "isError": true,
+      "textHead": "bb_cross_language: limit must be a whole number between 1 and 1000"
+    },
+    "limit-too-big": {
+      "isError": true,
+      "textHead": "bb_cross_language: limit must be a whole number between 1 and 1000"
+    },
+    "limit-fractional": {
+      "isError": true,
+      "textHead": "error: bb_cross_language: limit must be a whole number (got 2.5)"
+    },
+    "limit-string": {
+      "isError": true,
+      "textHead": "error: bb_cross_language: limit must be number"
+    },
+    "unknown-option": {
+      "isError": true,
+      "textHead": "error: bb_cross_language: unknown or irrelevant options: bogus — accepted options: symbol, limit (aliases accepted: target, symbolName, query)"
+    },
+    "aliases-conflict": {
+      "isError": true,
+      "textHead": "error: bb_cross_language: symbol and target are aliases with different values (\"Inventory\" vs \"restock\") — pass one"
+    }
+  },
+  "stderrTail": [
+    "npm notice",
+    "npm notice New minor version of npm available! 11.12.1 -> 11.21.1",
+    "npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.1",
+    "npm notice To update run: npm install -g npm@11.21.1",
+    "npm notice"
+  ],
+  "generatedAt": "2026-11-01T20:31:49.863Z"
+}

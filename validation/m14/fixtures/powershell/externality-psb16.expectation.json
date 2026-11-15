@@ -1,0 +1,154 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/externality-psb16.ps1",
+ "authoredFrom": "PS-B16 — cause C, the externality marking. The ROUND brief's cause C is 'external references emitted as if local' and its stated remedy is an additive metadata key. This fixture is what makes that key a check rather than a claim. The population every number in the docstring comes from: 1,181 of 1,181 admitted files in /home/ishaq2321/bb_tests/repositories, production parseFile, no sampling cut (`npx tsx validation/m14/fixtures/powershell/ambiguity-split.mts`), analyzer digest 65fce5292f865942 — symbols 26,278, edges 173,681, relationship payload 38,081,813 B, +3,216,966 B (+9.23%) attributable to the two keys, of which externalTarget+via 1,421,952 B and noDeclarationInFile 1,795,014 B.\n\nWHAT IS ASSERTED. Two keys, and they PARTITION one fact — 'no declaration in this file binds this spelling' — so a row carrying one must not carry the other:\n\n  externalTarget:true with externalVia:\"cmdlet\"|\"qualified\"   a READING fired\n  noDeclarationInFile:true                                     no reading fired, still no binding\n\nThe mark is published only when the file declares no symbol with that spelling, which is why the negative rows matter more than the positive ones. Measured on the corpus, the unguarded Verb-Noun shape marks 32,368 live edges of which 7,040 (21.75%) point at a name the EMITTING FILE declares; the shipped guarded reading marks 25,328 with 0. That 7,040 is the size of the mislabel this fixture's row 2 and row 3 exist to prevent on one file.\n\nTHE TWO MEASURED EXCLUSIONS are rows too, because an over-claim is the failure mode that costs most: a leading QUOTE ('Content-Type', 43 corpus edges; \"Authorization\", 18; \"it:skip\", 7 — this analyzer publishes hashtable keys and command arguments verbatim), and a scope prefix this file can DECLARE INTO (global/script/local/private/function, 881 corpus edges — `function global:Helper` is ordinary PowerShell and this file declares one). `env:`/`variable:`/`using:` deliberately KEEP the qualified reading: those are runtime tables and the caller's scope.",
+ "expectSymbols": [
+  {
+   "name": "externality-psb16.ps1",
+   "kind": "module"
+  },
+  {
+   "name": "Get-Thing",
+   "kind": "function",
+   "ownerName": "externality-psb16.ps1",
+   "comment": "The Verb-Noun LOCAL that makes the guard load-bearing. Its call at line 26 carries neither key, and the cmdlet at line 13 carries both — identical spelling shape, opposite marking."
+  },
+  {
+   "name": "global:Helper",
+   "kind": "function",
+   "ownerName": "externality-psb16.ps1",
+   "comment": "Published WITH its scope prefix, which is why the scope-prefix exclusion is stated on the target rather than applied by stripping: the name this file publishes is the name the edge carries."
+  },
+  {
+   "name": "'application/json'",
+   "kind": "property",
+   "ownerName": "externality-psb16.ps1",
+   "comment": "A QUOTED hashtable key carrying a `/`, published verbatim with its quotes attached. That is pre-existing behaviour this fixture records rather than changes, and it is the reason the externality reading has to exclude a leading quote: the published name carries a qualifier byte and would otherwise be read as a qualified path. The key MUST contain `/` or `.` for this to be a test at all — 'Content-Type' carries a hyphen, which is the CMDLET byte and not a qualifier byte, so the first draft of this fixture pinned an unreachable row and its mutant SURVIVED, which is recorded rather than quietly replaced."
+  },
+  {
+   "name": "Local",
+   "kind": "class"
+  },
+  {
+   "name": "Render",
+   "kind": "method",
+   "ownerName": "Local"
+  },
+  {
+   "name": "'Content-Type'",
+   "kind": "property",
+   "ownerName": "externality-psb16.ps1",
+   "comment": "The hyphenated key alongside it, pinned because it is the OTHER shape: it carries no qualifier byte, so it would satisfy the CMDLET reading rather than the qualified one, and it is why the fixture pins both keys in one hashtable."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "externality-psb16.ps1",
+   "target": "externality-psb16.ps1.l",
+   "line_number": 84,
+   "meta.externalTarget": null,
+   "meta.noDeclarationInFile": null,
+   "comment": "THE BARE-WORD NEGATIVE. `$l.Render()` on a receiver declared in this file. 66,482 corpus edges carry `noDeclarationInFile`, so the row that pins its ABSENCE is the one a blanket rule fails: an implementation that stamped the key on every calls/uses edge would pass every positive row above and fail only here and on line 26."
+  },
+  {
+   "type": "uses",
+   "from": "externality-psb16.ps1",
+   "target": "fromElsewhere",
+   "line_number": 62,
+   "meta.externalTarget": true,
+   "meta.noDeclarationInFile": true,
+   "comment": "PSD19 REVERSES THE OLD PARTITION ON THIS ROW, and the reversal is the point. The row's older comment argued that `externalTarget: null` was honest because PowerShell binds `$fromElsewhere` at run time from a dot-sourced file, a caller's scope or a module export. It is — and that is exactly what the claim says: the project's name model has NOTHING of this spelling, which is the one fact the arbiter can check, and it checks it the same way for a bare command name (PSD10). A claim is consulted ONLY where `decls === 0`, so a variable the project really declares keeps its resolved answer and this row can never refute it. MEASURED: 12,614 bare `uses` targets are unresolved over the whole population, every one a name no admitted file declares.",
+   "meta.externalVia": "runtime-binding"
+  },
+  {
+   "type": "uses",
+   "from": "externality-psb16.ps1",
+   "target": "env:TEMP",
+   "line_number": 36,
+   "meta.isScopedEnvironmentRead": true,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "comment": "PS37 — the assignment RHS `$here = $env:TEMP`. The fixture's own row 5 called this shape 'published nothing', and it did: a bare assignment declared `$here` and said nothing about the environment it depends on. It is the same fact row 62's `fromElsewhere` states for a bare name, and the same fact the pre-PS36 interpolation reader published when the value was written `\"$env:TEMP\"`. Two spellings of one read, one of them invisible, is not a property of the language. Carries BOTH keys because it is genuinely both: a qualified runtime table AND not declared in this file."
+  },
+  {
+   "type": "uses",
+   "from": "externality-psb16.ps1",
+   "target": "externality-psb16.ps1.local",
+   "line_number": 55,
+   "comment": "PS37 — the twin of row 8. `$local2 = $local` reads a name this file declares, so NEITHER externality key may fire, and that is the control for the `env:TEMP` row above: same position in the file, same statement shape, opposite verdict. Without this row a rule that marked every assignment-RHS read would pass the `env:TEMP` row."
+  },
+  {
+   "type": "uses",
+   "from": "externality-psb16.ps1",
+   "target": "externality-psb16.ps1.headers",
+   "line_number": 72,
+   "comment": "PS37 — `$headers2 = $headers` where `$headers` is a hashtable literal declared on line 71. The reading is the RECEIVER of nothing and the KEY of nothing, so it is a bare read of a name the file declares: no key. Same shape as `local`, and it is here because the fixture already contains the hashtable row 10 needs, so the case costs no new syntax."
+  },
+  {
+   "type": "uses",
+   "from": "Get-Thing",
+   "target": "Get-Thing.Name",
+   "line_number": 21,
+   "meta.externalTarget": null,
+   "meta.noDeclarationInFile": null,
+   "comment": "A PARAMETER READ IN THE FUNCTION BODY. `function Get-Thing { param($Name); $Name }` reads its parameter at line 21; the pipeline-head read (PS38) is the rule that closes the one context where a bare `$Name` statement was invisible. Neither externality key may fire: `Name` is declared by this very function."
+  },
+  {
+   "type": "uses",
+   "from": "global:Helper",
+   "target": "global:Helper.X",
+   "line_number": 43,
+   "meta.externalTarget": null,
+   "meta.noDeclarationInFile": null,
+   "comment": "The same read for the `global:Helper` function: `$X` is its parameter and the declaration is in this file, so the qualified reading that `global:` normally attracts must NOT fire on the read."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "externality-psb16.ps1",
+   "target": "Get-Thing",
+   "meta.externalTarget": true,
+   "comment": "PRE-FIX SHAPE, stated as a forbid because a forbid is the only vocabulary that can say a KEY carries a value it must not. This is what a spelling-only implementation emits for line 26, and it is 7,040 edges' worth of the same mistake on the corpus. The positive row above asserts `externalTarget: null` on the same edge and the two fail independently — this one kills the re-added mark, that one kills a dropped mark."
+  },
+  {
+   "type": "calls",
+   "from": "externality-psb16.ps1",
+   "target": "Get-ChildItem",
+   "meta.noDeclarationInFile": true,
+   "comment": "THE PARTITION, negative half. An edge that fires a reading must not also carry the bare fact, because the reading implies it. Caught by `powershell/externality-partition-removed`, the mutant that publishes both keys on every row — which is the shape the payload counterfactual priced at 3,888,591 B against the partition's 3,216,966 B."
+  },
+  {
+   "type": "calls",
+   "from": "externality-psb16.ps1",
+   "target": "global:Helper",
+   "meta.externalTarget": true,
+   "comment": "THE SCOPE-PREFIX EXCLUSION, negative half. 881 corpus edges carry a `global:`/`script:`/`local:`/`private:`/`function:` prefix, and all five name scopes a declaration in this file can bind. Caught by `powershell/externality-scope-exclusion-removed`. Note that `env:` is deliberately NOT in that set: `$env:TEMP` reads the process environment and no declaration can shadow it, so it keeps the qualified reading — which is what the instrument's own 463-edge `env:` residual is."
+  },
+  {
+   "type": "contains",
+   "from": "externality-psb16.ps1",
+   "target": "'application/json'",
+   "meta.externalTarget": true,
+   "comment": "THE QUOTE EXCLUSION. The published name carries a `/` and would satisfy the qualified reading, but a quoted literal is not an identifier — this analyzer publishes hashtable keys and command arguments verbatim, so 'Content-Type' (43 corpus edges), \"Authorization\" (18) and \"it:skip\" (7) would all be marked external by a reading that looks only for the byte. Caught by `powershell/externality-quote-exclusion-removed`, which SURVIVED against the first draft of this fixture for the reason the symbol row records."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "calls",
+   "equals": 8,
+   "comment": "Line 13 twice, line 26 twice, line 49 twice, line 62 once (Write-Host, whose argument read is the `uses` row), line 84 once (Render) — eight, and the first draft of this file said six and the runner caught it, then a second draft said seven and the runner caught that too after row 9 was added. The count is what makes the population independent of the metadata: a change that marked every cmdlet-shaped target would leave these 8 edges in place and change nothing an edge count can see, which is the whole reason this type's verification is metadata rows and mutants rather than counts."
+  },
+  {
+   "type": "uses",
+   "equals": 7,
+   "comment": "`fromElsewhere` and `l` — the two halves of the `noDeclarationInFile` decision in one file, one carrying the key and one not. A fix that dropped the bare fact scores 1; a fix that stamped it on every calls/uses edge scores 3. Raised from 2 to 5 by PS37, which publishes three more reads this file previously did not have: `env:TEMP` (both keys), `local` and `headers` (neither). The two added rows with NO key are the control — a rule that marked every assignment-RHS read would satisfy the `env:TEMP` row and fail them. Raised 5 -> 7 by PS38 (pipeline-head reads), which publishes the two parameter reads the file previously dropped."
+  },
+  {
+   "type": "instantiates",
+   "equals": 2,
+   "comment": "`System.Version` (external, qualified reading) and `Local` (declared in this file, neither key). Same brackets, same `::`, same call — the pair is what stops a fix that marks every type reference."
+  }
+ ]
+}

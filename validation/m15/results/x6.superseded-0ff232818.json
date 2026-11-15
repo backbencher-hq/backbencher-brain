@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X6",
+  "code": "X6",
+  "tool": "bb_security",
+  "title": "handler output + docs honesty",
+  "verified": true,
+  "checks": 37,
+  "passed": 37,
+  "failed": 0,
+  "positives": 32,
+  "negatives": 5,
+  "negativePassed": 5,
+  "skipped": [],
+  "generatedAt": "2026-09-30T23:14:11.363Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T23:14:11.363Z",
+    "contentSha256": "2d3e2e4e061acc0b88deed9077d15d99f58177d6fa3d1f5da37ee8bd79d54d4a"
+  }
+}

@@ -13,7 +13,7 @@ Both halves are **wrong as stated**, and the correction matters for what to do n
 
 * `.tsx` files: **3,377 on disk** and **3,377 tracked** — exactly the gate's own `git ls-files`
   population for the `tsx` language. The 2,932 figure is a `find` that does not follow the
-  **symlink** `fixtures/repositories/proxicall -> ~/ProxiCall`, which alone carries **445** `.tsx`
+  **symlink** `bb_tests/repositories/proxicall -> ~/ProxiCall`, which alone carries **445** `.tsx`
   files. (2,932 + 445 = 3,377.)
 * Repos named `react`: **ZERO** of the 199 corpus repos. The 17 repos carrying `.tsx` are
   hasura-engine (1,367), gql-graphql-platform (575), redwood (480 tracked / 463 admitted),

@@ -1,0 +1,112 @@
+{
+  "fixtureId": "svelte/template-member-uses",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "S1 (#419): template expressions read the component's own members — {count}, text={label}, {state.value}, {#each rows as row}, {#await promise then value}, {#key limit}, {@html raw}, {@debug count}, {@const total = rows.length}, <svelte:component this={inc}> — each is a member Use. ADVRESARIAL scope shapes (vue V4 lesson, applied pre-fix): each-loop vars (row, i) and await then/catch vars (value, err) are template-LOCAL and shadow any same-named member; the inner {row} {i} are LOCAL, not member uses.",
+  "expectSymbols": [
+    {
+      "name": "count",
+      "kind": "property"
+    },
+    {
+      "name": "label",
+      "kind": "property"
+    },
+    {
+      "name": "rows",
+      "kind": "constant"
+    },
+    {
+      "name": "inc",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "count",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "label",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "state",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "rows",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "promise",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "limit",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "raw",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "inc",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "calls",
+      "from": "template-member-uses",
+      "target": "inc",
+      "meta.context": "Svelte event directive on:click"
+    },
+    {
+      "type": "renders",
+      "from": "template-member-uses",
+      "target": "MyButton",
+      "meta.isComponentUsage": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "row",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "i",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "value",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "err",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

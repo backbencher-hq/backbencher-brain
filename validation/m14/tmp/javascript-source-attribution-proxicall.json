@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-13T20:23:23.769Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/proxicall",
+  "admittedFiles": 888,
+  "sampledFiles": 120,
+  "parseCleanFiles": 120,
+  "totals": {
+    "files": 120,
+    "rows": 36877,
+    "withLine": 36877,
+    "attributed": 36877,
+    "attributedModule": 20015,
+    "attributedLocalCallable": 7928,
+    "outOfScope": 1067,
+    "unattributed": 0
+  },
+  "note": "Checks the one dimension no other instrument covers: the differential matches label + normTarget and never source, and verify-js-source-attribution.ts asserts only NULL sources. Expected sources are REPLAYED from the analyzer's own resolveCurrent rule over the tree (function names, method names, local `const f = () =>` declarators, class names for static blocks/field inits, X.prototype.m, the enclosing class for the uses walk, and the module name at top level).",
+  "examples": []
+}

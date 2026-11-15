@@ -1,0 +1,16 @@
+{
+  "fixtureId": "vue/ts-script-interface",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "lang=\"ts\" blocks were always routed through the JS analyzer even though the engine pre-parses them with the TS grammar - TS-only declarations (interfaces, types) were silently dropped. Blocks now dispatch to the language analyzer matching their lang attribute.",
+  "expectSymbols": [
+    {
+      "name": "Props",
+      "kind": "interface"
+    },
+    {
+      "name": "size",
+      "kind": "property"
+    }
+  ]
+}

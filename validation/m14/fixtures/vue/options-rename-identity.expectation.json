@@ -1,0 +1,106 @@
+{
+  "fixtureId": "vue/options-rename-identity",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. F8 (master review 2026-09-30): a `name:` option produced a SECOND Class symbol alongside the SFC's own, and the two had DISJOINT edge sets with neither reachable as a target — measured on the store, 6 edges sourced the file stem `WidgetFile` while 2 contained edges sourced `ActualName`, and 'what contains lab?' answered `ActualName` while 'what imports from this file?' answered `WidgetFile`. One component, one Class. The name is the DECLARED one (`name:` is what `components: {}` resolves by and what devtools shows); the file stem is not discarded but recorded in metadata.moduleName, because it is still the module's identity in the import graph. Every component-owned edge — the delegated imports/exports/uses AND the contains pass — must then source the ONE symbol, which is the half that a symbol-count assertion cannot see and is why the relationship rows below are here as well as the forbidSymbols row. F19 (VUE_FIX, 2026-10-04) changed ONE row of it: the delegated `exports` edge now has to be the NAMED export `api`, because the seam refuses to publish `exports -> default` (`default` is a keyword and resolves at 0 of 121 on vue-element-admin), and the F8 assertion is kept on an endpoint that resolves. F19 REPAIRED 2026-10-25 (Lead-ruled, after the fleet fixture record bdc8f1593 called the blanket drop a REAL analyzer gap): the delegate's `exports -> default` row is KEPT when the delegate MARKED it as a default-export declaration (`meta.isDefault`), and the seam publishes its own marked row (`meta.sfcDefaultExport`) ONLY for the TS dispatch's ANONYMOUS default expression — the shape the TS delegate refuses (M4: `default` is a keyword) and that published NOTHING over 23 corpus files. This fixture is the JS dispatch, so it now expects the delegate's unmarked row AT THE RENAMED IDENTITY (F8) and forbids the seam's marker.",
+  "expectSymbols": [
+    {
+      "name": "ActualName",
+      "kind": "class",
+      "meta.isVueComponent": true
+    },
+    {
+      "name": "ActualName",
+      "kind": "class",
+      "meta.moduleName": "options-rename-identity"
+    },
+    {
+      "name": "lab",
+      "kind": "property",
+      "ownerName": "ActualName"
+    },
+    {
+      "name": "upper",
+      "kind": "property",
+      "ownerName": "ActualName"
+    },
+    {
+      "name": "mounted",
+      "kind": "method",
+      "ownerName": "ActualName"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "options-rename-identity",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "ActualName",
+      "target": "lab"
+    },
+    {
+      "type": "contains",
+      "from": "ActualName",
+      "target": "upper"
+    },
+    {
+      "type": "contains",
+      "from": "ActualName",
+      "target": "mounted"
+    },
+    {
+      "type": "renders",
+      "from": "ActualName",
+      "target": "MyChild"
+    },
+    {
+      "type": "exports",
+      "from": "ActualName",
+      "target": "api"
+    },
+    {
+      "type": "imports",
+      "from": "ActualName",
+      "target": "./Child.vue:Child"
+    },
+    {
+      "type": "exports",
+      "from": "ActualName",
+      "target": "default",
+      "meta.isDefault": true,
+      "line_number": 20
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "options-rename-identity",
+      "target": "lab"
+    },
+    {
+      "type": "renders",
+      "from": "options-rename-identity",
+      "target": "MyChild"
+    },
+    {
+      "type": "exports",
+      "from": "options-rename-identity",
+      "target": "api"
+    },
+    {
+      "type": "exports",
+      "target": "default",
+      "meta.sfcDefaultExport": true,
+      "comment": "F19 REPAIRED 2026-10-25 (Lead-ruled): the delegate's `exports -> default` row is KEPT (it is the JS dispatch's own declaration row, and it now carries the F8 identity assertion above); the SEAM must not add its own marker row on the JS dispatch. `sfcDefaultExport` marks the seam's TS-dispatch row only (pinned by vue/ts-default-export), so a reader can always tell which producer wrote the row."
+    },
+    {
+      "type": "imports",
+      "from": "options-rename-identity",
+      "target": "./Child.vue:Child"
+    }
+  ]
+}

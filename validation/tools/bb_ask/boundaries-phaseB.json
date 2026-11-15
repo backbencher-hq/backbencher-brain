@@ -1,0 +1,28 @@
+{
+  "indexedDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "indexedProjectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+  "missingIndex": {
+    "dbCreated": false,
+    "isError": false,
+    "routeLine": "answer: I can't answer this: no index exists for this project. Index it first (bb_health refresh or full reindex), then ",
+    "provenance": "[provenance: unknown via quick-answer@intelligence (no-index); unknowns: No index exists for this project; run indexing first.]"
+  },
+  "limitRefusals": {
+    "zero": {
+      "isError": true,
+      "text": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refused rather than clam"
+    },
+    "overCeiling": {
+      "isError": true,
+      "text": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refused rather than clam"
+    }
+  },
+  "stallingProvider": {
+    "ms": 2080,
+    "withinCeiling": true,
+    "timeoutNote": "answer: Note: the embedding provider did not answer within 2000 ms, so this question was embedded with the local word-vector model (local-word-vectors-v3). Only 1,185 of 3,512 indexed symbols exist in that space, so the ranking below is limited to them.",
+    "retrieval": "[retrieval: method=vector, queryModel=local-word-vectors-v3, indexModel=local-word-vectors-v3, dimension=50, embeddingCoverage=34% (1185/3512 symbols embedded in this model space), libraryCoverage=34% (1185/3512 across all models), scanned=1185/20000, filtered=1185, candidates=1, embeddingTimeout=2000ms (fell back to local-word-vectors-v3)]"
+  },
+  "generatedAt": "2026-11-01T22:34:27.526Z"
+}

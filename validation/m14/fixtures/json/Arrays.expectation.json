@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Arrays.json",
+  "authoredFrom": "BD-array-identity: an array element is identified by its index UNDER THE ARRAY, and the element's own keys are owned by the ELEMENT. Two mutants attack this file and both were SURVIVORS before these fixtures existed: an element named by the path's last dot-segment, and an element's keys attributed to the array (so `a` reads as inside `objs` when it is inside `objs[0]`). The two forbid rows pin the ABSENT direction - an array's SCALAR elements are positional and unnamed, so no containment may be emitted for them, and an analyzer that emitted it would pass every expect row here. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "objs",
+      "kind": "property",
+      "ownerName": "Arrays"
+    },
+    {
+      "name": "objs[0]",
+      "kind": "class",
+      "ownerName": "objs"
+    },
+    {
+      "name": "a",
+      "kind": "property",
+      "ownerName": "objs[0]"
+    },
+    {
+      "name": "objs[1]",
+      "kind": "class",
+      "ownerName": "objs"
+    },
+    {
+      "name": "b",
+      "kind": "property",
+      "ownerName": "objs[1]"
+    },
+    {
+      "name": "scalars",
+      "kind": "property",
+      "ownerName": "Arrays"
+    },
+    {
+      "name": "Arrays",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Arrays",
+      "target": "Arrays.objs",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Arrays.objs",
+      "target": "Arrays.objs[0]",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Arrays.objs[0]",
+      "target": "Arrays.objs[0].a",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Arrays.objs",
+      "target": "Arrays.objs[1]",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Arrays.objs[1]",
+      "target": "Arrays.objs[1].b",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Arrays",
+      "target": "Arrays.scalars",
+      "line_number": 3
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "0",
+      "note": "An array's SCALAR elements are positional and unnamed, so no containment may be emitted for them. Inventing names for them would be fabrication, and this row is what a mutant walking array elements indiscriminately would trip."
+    },
+    {
+      "type": "contains",
+      "target": "1",
+      "note": "Second scalar element, so the absence is pinned twice and cannot be satisfied by a single coincidence."
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+ "fixtureId": "yaml/tag-file-include",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "An include-family tag names ANOTHER FILE. Before the tag was read this emitted zero symbols and zero relationships for it, so an entire class of cross-file dependency was invisible in the graph. Two shapes are pinned: the tag as a sequence item, and the keyword form `include_tasks:` which needs no tag at all. The corpus cannot evidence either -- `!include` occurs in ZERO of the eight pinned repositories (see script/m14/spec/yaml-completeness.json YAML-D5) -- so this fixture is the only evidence.",
+ "expectSymbols": [
+  {
+   "name": "tasks",
+   "kind": "variable"
+  },
+  {
+   "name": "include_tasks",
+   "kind": "property"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "other.yml",
+   "importType": "yaml_tag_include",
+   "isExternal": true
+  },
+  {
+   "module": "sub/tasks.yml",
+   "importType": "yaml_keyword_include",
+   "isExternal": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "tag-file-include.tasks",
+   "target": "other.yml",
+   "meta.relationshipType": "yaml_tag_include",
+   "meta.evidenceClass": "import_based",
+   "line_number": 5
+  },
+  {
+   "type": "imports",
+   "from": "tag-file-include.tasks[1].include_tasks",
+   "target": "sub/tasks.yml",
+   "meta.relationshipType": "yaml_keyword_include",
+   "line_number": 7
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7
+  ],
+  "evidenceClasses": [
+   "import_based",
+   "structural"
+  ]
+ }
+}

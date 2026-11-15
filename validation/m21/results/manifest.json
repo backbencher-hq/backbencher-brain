@@ -1,0 +1,598 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M21",
+  "githubMilestone": 21,
+  "title": "Indexing Performance & Reliability Truth",
+  "status": "open",
+  "authority": "docs/m21/M21-MASTER-PLAN.md",
+  "updatedAt": "2026-10-17T16:31:49.404Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "corpus",
+      "timings",
+      "counts",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "limitations"
+    ],
+    "missingState": "known-gap-or-blocked",
+    "timeoutState": "known-gap",
+    "unexecutedState": "planned",
+    "zeroRule": "zero is valid only when the executed operation measured zero; missing data is null or an explicit unavailable state"
+  },
+  "issues": [
+    {
+      "code": "C1",
+      "githubIssue": 445,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "evidence contract and closure gate",
+      "acceptanceCriteria": [
+        "versioned ledger",
+        "fail-closed gate"
+      ],
+      "closureRequirements": [
+        "persist C1 evidence",
+        "planted-failure test"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-governance.ts",
+        "evidenceFile": "C1.json",
+        "generatedAt": "2026-09-16T12:40:28.405Z",
+        "passed": 16,
+        "failed": 0,
+        "negativeCases": 5,
+        "blockedReason": "C1 validates governance and evidence policy only; it does not verify indexing performance or production behavior."
+      }
+    },
+    {
+      "code": "C2",
+      "githubIssue": 446,
+      "tool": "corpus",
+      "status": "verified",
+      "scope": "pinned real-repository corpus registry",
+      "acceptanceCriteria": [
+        "exact revisions",
+        "visible blocked states"
+      ],
+      "closureRequirements": [
+        "immutable identity evidence",
+        "missing/dirty negatives"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-corpus.ts",
+        "evidenceFile": "C2.json",
+        "generatedAt": "2026-09-01T13:56:25.170Z",
+        "passed": 51,
+        "failed": 0,
+        "negativeCases": 6,
+        "blockedReason": "Registry identity and checkout state are verified; this issue does not parse source files or prove indexing correctness."
+      }
+    },
+    {
+      "code": "C3",
+      "githubIssue": 447,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "benchmark integrity and bounded execution",
+      "acceptanceCriteria": [
+        "per-operation timeout",
+        "no hollow assertions"
+      ],
+      "closureRequirements": [
+        "self-audit evidence",
+        "source immutability check"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-harness.ts",
+        "evidenceFile": "C3.json",
+        "generatedAt": "2026-09-01T13:56:25.291Z",
+        "passed": 13,
+        "failed": 0,
+        "negativeCases": 3,
+        "blockedReason": "This is a harness-integrity audit; it does not prove that production indexing is fast or that every external command can be forcibly cancelled."
+      }
+    },
+    {
+      "code": "I1",
+      "githubIssue": 448,
+      "tool": "indexer",
+      "status": "verified",
+      "scope": "discovery and parser/store telemetry",
+      "acceptanceCriteria": [
+        "phase timings",
+        "no-op distinction"
+      ],
+      "closureRequirements": [
+        "production telemetry",
+        "real repository evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-i1-phases.ts",
+        "evidenceFile": "I1.json",
+        "generatedAt": "2026-09-01T14:06:05.913Z",
+        "passed": 32,
+        "failed": 0,
+        "negativeCases": 6,
+        "blockedReason": "Timings are wall-clock on this machine and include worker pool fork/concurrency noise; they are phase-boundary evidence, not a cross-machine benchmark."
+      }
+    },
+    {
+      "code": "I2",
+      "githubIssue": 449,
+      "tool": "indexer",
+      "status": "verified",
+      "scope": "post-processing and total wall time",
+      "acceptanceCriteria": [
+        "all heavy phases timed",
+        "total duration reconciles"
+      ],
+      "closureRequirements": [
+        "large-index evidence",
+        "failure visibility"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-i2-postprocessing.ts",
+        "evidenceFile": "I2.json",
+        "generatedAt": "2026-09-01T14:06:15.195Z",
+        "passed": 31,
+        "failed": 0,
+        "negativeCases": 6,
+        "blockedReason": "Timings are wall-clock on this machine and include worker pool fork/concurrency noise; they are phase-boundary evidence, not a cross-machine benchmark."
+      }
+    },
+    {
+      "code": "I3",
+      "githubIssue": 450,
+      "tool": "indexer",
+      "status": "verified",
+      "scope": "durable indexing errors and performance status",
+      "acceptanceCriteria": [
+        "structured errors persist",
+        "performance_stats populated"
+      ],
+      "closureRequirements": [
+        "compatibility tests",
+        "health/CLI parity"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-i3-durable-status.ts",
+        "evidenceFile": "I3.json",
+        "generatedAt": "2026-09-01T14:06:22.776Z",
+        "passed": 29,
+        "failed": 0,
+        "negativeCases": 6,
+        "blockedReason": "Structured errors carry phase/file/language/timestamp; retry/fallback are preserved when the pool reports them and are otherwise 0/undefined — never fabricated."
+      }
+    },
+    {
+      "code": "W1",
+      "githubIssue": 451,
+      "tool": "workers",
+      "status": "known-gap",
+      "scope": "worker lifecycle and retries",
+      "acceptanceCriteria": [
+        "one final file outcome",
+        "bounded poison handling"
+      ],
+      "closureRequirements": [
+        "crash/timeout fixtures",
+        "real corpus samples"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "currentCommit": "b091ee4936984c1ee2bb81b7c7e90901a0faa657",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-w1-worker-lifecycle.ts",
+        "evidenceFile": "W1.json",
+        "generatedAt": "2026-10-09T16:12:55.787Z",
+        "passed": 39,
+        "failed": 3,
+        "negativeCases": 7,
+        "blockedReason": "Fixture timings are wall-clock and depend on worker startup (WASM registry load) plus the fork probe; they prove lifecycle accounting and boundedness, not throughput."
+      }
+    },
+    {
+      "code": "W2",
+      "githubIssue": 452,
+      "tool": "wasm",
+      "status": "verified",
+      "scope": "WASM loading and grammar truth",
+      "acceptanceCriteria": [
+        "load results per language",
+        "fallbacks labeled"
+      ],
+      "closureRequirements": [
+        "missing/corrupt negatives",
+        "runtime matrix"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-wasm-assets.ts",
+        "evidenceFile": "W2.json",
+        "generatedAt": "2026-09-01T13:56:25.518Z",
+        "passed": 54,
+        "failed": 0,
+        "negativeCases": 3,
+        "blockedReason": "This verifies shipped artifact presence/header and mapping declarations, not successful runtime instantiation for every grammar."
+      }
+    },
+    {
+      "code": "W3",
+      "githubIssue": 453,
+      "tool": "workers/wasm",
+      "status": "verified",
+      "scope": "real-corpus reliability matrix",
+      "acceptanceCriteria": [
+        "language/error/retry counts",
+        "deterministic samples"
+      ],
+      "closureRequirements": [
+        "persist matrix",
+        "document unavailable cases"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-w3-reliability-matrix.ts",
+        "evidenceFile": "W3.json",
+        "generatedAt": "2026-09-01T14:15:29.710Z",
+        "passed": 212,
+        "failed": 0,
+        "negativeCases": 6,
+        "blockedReason": "Matrix rows are COLD runs with skipPostProcessing (post-processing is outside this issue's scope); timings include worker boot and WASM load."
+      }
+    },
+    {
+      "code": "D1",
+      "githubIssue": 454,
+      "tool": "sqlite",
+      "status": "verified",
+      "scope": "lock reproduction and concurrency",
+      "acceptanceCriteria": [
+        "controlled lock tests",
+        "writer ownership"
+      ],
+      "closureRequirements": [
+        "lock traces",
+        "no lost/duplicate writes"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-sqlite-locks.ts",
+        "evidenceFile": "D1.json",
+        "generatedAt": "2026-09-01T13:56:26.322Z",
+        "passed": 10,
+        "failed": 0,
+        "negativeCases": 4,
+        "blockedReason": "This reproduces contention with Bun's bun:sqlite; Node better-sqlite3 parity is owned by D2."
+      }
+    },
+    {
+      "code": "D2",
+      "githubIssue": 455,
+      "tool": "sqlite",
+      "status": "verified",
+      "scope": "cross-runtime lock recovery",
+      "acceptanceCriteria": [
+        "Bun/Node policy",
+        "bounded recovery"
+      ],
+      "closureRequirements": [
+        "runtime tests",
+        "real-index evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-sqlite-runtime-policy.ts",
+        "evidenceFile": "D2.json",
+        "generatedAt": "2026-10-15T06:57:21.035Z",
+        "passed": 28,
+        "failed": 0,
+        "negativeCases": 2,
+        "blockedReason": "Permanent-lock fail-closed is tested with a 12s holder; the contender's SQLITE_BUSY after the 5s busy timeout is the fail-closed path."
+      }
+    },
+    {
+      "code": "D3",
+      "githubIssue": 456,
+      "tool": "sqlite",
+      "status": "verified",
+      "scope": "flush throughput and batch scaling",
+      "acceptanceCriteria": [
+        "batch curve",
+        "rollback accounting"
+      ],
+      "closureRequirements": [
+        "controlled benchmark",
+        "large DB evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-sqlite-batch-throughput.ts",
+        "evidenceFile": "D3.json",
+        "generatedAt": "2026-09-01T13:56:26.575Z",
+        "passed": 10,
+        "failed": 0,
+        "negativeCases": 3,
+        "blockedReason": "This measures isolated Bun bun:sqlite transactions, not the production indexer's schema or workload."
+      }
+    },
+    {
+      "code": "E1",
+      "githubIssue": 457,
+      "tool": "embeddings",
+      "status": "verified",
+      "scope": "embedding/indexing separation",
+      "acceptanceCriteria": [
+        "disabled/local/provider runs",
+        "separate durations"
+      ],
+      "closureRequirements": [
+        "model/config evidence",
+        "completion semantics"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-embedding-separation.ts",
+        "evidenceFile": "E1.json",
+        "generatedAt": "2026-09-01T13:56:34.410Z",
+        "passed": 9,
+        "failed": 0,
+        "negativeCases": 3,
+        "blockedReason": "This proves phase separation on a controlled fixture using local vectors; provider/API latency is E3 scope."
+      }
+    },
+    {
+      "code": "E2",
+      "githubIssue": 458,
+      "tool": "embeddings",
+      "status": "known-gap",
+      "scope": "queue/retry/drop/fallback telemetry",
+      "acceptanceCriteria": [
+        "queue metrics",
+        "bounded flush"
+      ],
+      "closureRequirements": [
+        "failure lifecycle test",
+        "recovery evidence"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "currentCommit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-embedding-queue.ts",
+        "evidenceFile": "E2.json",
+        "generatedAt": "2026-10-15T06:51:59.436Z",
+        "passed": 0,
+        "failed": 1,
+        "negativeCases": 0,
+        "blockedReason": "Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/2077783732ad1e3c16c4024f830d8ca3301a1ea5'"
+      }
+    },
+    {
+      "code": "E3",
+      "githubIssue": 459,
+      "tool": "embeddings",
+      "status": "verified",
+      "scope": "provider/API latency diagnosis",
+      "acceptanceCriteria": [
+        "redacted request timing",
+        "rate-limit visibility"
+      ],
+      "closureRequirements": [
+        "provider-dependent classification",
+        "no secret leakage"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-embedding-provider.ts",
+        "evidenceFile": "E3.json",
+        "generatedAt": "2026-09-01T13:56:35.760Z",
+        "passed": 8,
+        "failed": 0,
+        "negativeCases": 3,
+        "blockedReason": "Local mock timing is client-path evidence only; it is not external provider latency."
+      }
+    },
+    {
+      "code": "R1",
+      "githubIssue": 460,
+      "tool": "post-processing",
+      "status": "verified",
+      "scope": "relationship/enrichment scaling",
+      "acceptanceCriteria": [
+        "increasing-input measurements",
+        "pagination analysis"
+      ],
+      "closureRequirements": [
+        "raw timings",
+        "regression budget"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-enrichment-scaling.ts",
+        "evidenceFile": "R1.json",
+        "generatedAt": "2026-09-01T13:56:36.309Z",
+        "passed": 10,
+        "failed": 0,
+        "negativeCases": 3,
+        "blockedReason": "This reproduces the enrichment join/update shape in an isolated database; it is not a real project index."
+      }
+    },
+    {
+      "code": "R2",
+      "githubIssue": 461,
+      "tool": "post-processing",
+      "status": "known-gap",
+      "scope": "gravity/taint/health/integrity scaling",
+      "acceptanceCriteria": [
+        "per-pass timing",
+        "partial failure visibility"
+      ],
+      "closureRequirements": [
+        "large-index evidence",
+        "resource metrics"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "currentCommit": "4c58eb4c21d3e920d6f4a8403aabe64b4092be10",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-postprocessing-passes.ts",
+        "evidenceFile": "R2.json",
+        "generatedAt": "2026-10-12T15:06:53.825Z",
+        "passed": 9,
+        "failed": 4,
+        "negativeCases": 3,
+        "blockedReason": "This is a controlled fixture, not a large real repository."
+      }
+    },
+    {
+      "code": "R3",
+      "githubIssue": 462,
+      "tool": "indexer",
+      "status": "verified",
+      "scope": "cancellation and resume",
+      "acceptanceCriteria": [
+        "coherent checkpoint",
+        "no duplicate/lost data"
+      ],
+      "closureRequirements": [
+        "interrupted real run",
+        "invariant checks"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-cancel-resume.ts",
+        "evidenceFile": "R3-cancel-resume.json",
+        "generatedAt": "2026-09-01T15:43:01.451Z",
+        "passed": 22,
+        "failed": 0,
+        "negativeCases": 4
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 463,
+      "tool": "benchmark",
+      "status": "verified",
+      "scope": "cold controlled indexing",
+      "acceptanceCriteria": [
+        "known ground truth",
+        "cold/no-op distinction"
+      ],
+      "closureRequirements": [
+        "raw timings",
+        "failure negatives"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-x1-cold-benchmark.ts",
+        "evidenceFile": "X1.json",
+        "generatedAt": "2026-09-04T21:59:56.924Z",
+        "passed": 33,
+        "failed": 0,
+        "negativeCases": 4,
+        "blockedReason": "Golden expectations pin the fixture's exact totals on this analyzer/engine build; the fixture is tiny and hand-written so every expectation is manually defensible, and repeat runs prove variance is zero."
+      }
+    },
+    {
+      "code": "X2",
+      "githubIssue": 464,
+      "tool": "benchmark",
+      "status": "verified",
+      "scope": "large real-repository performance",
+      "acceptanceCriteria": [
+        "pinned revisions",
+        "resource metrics"
+      ],
+      "closureRequirements": [
+        "large corpus artifacts",
+        "honest limitations"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-x2-large-repo-benchmark.ts",
+        "evidenceFile": "X2.json",
+        "generatedAt": "2026-09-01T14:13:58.945Z",
+        "passed": 48,
+        "failed": 0,
+        "negativeCases": 6,
+        "blockedReason": "Measurements are wall-clock on this machine (CPU/memory recorded per row) and include worker boot + WASM load; they are sample-bounded (250 files/repo), not full-repo indexes, so they are relative, not absolute, capacity claims."
+      }
+    },
+    {
+      "code": "X3",
+      "githubIssue": 465,
+      "tool": "closure",
+      "status": "known-gap",
+      "scope": "bottleneck classification and closure",
+      "acceptanceCriteria": [
+        "confirmed/disproven/unresolved classification",
+        "final gate"
+      ],
+      "closureRequirements": [
+        "final ledger",
+        "all limitations documented"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "currentCommit": "09a1d643b4fedfd016ebc91c838789f5d82d309c",
+        "workingTreeRelevantChanges": [],
+        "verifierCommand": "bun run script/m21/verify-x3-closure.ts",
+        "evidenceFile": "X3.json",
+        "generatedAt": "2026-10-10T00:37:53.385Z",
+        "passed": 19,
+        "failed": 42,
+        "negativeCases": 7,
+        "blockedReason": "Bottleneck verdicts are derived from X1 (controlled cold fixture) and X2 (sampled large-repo cold runs) wall-clock phase timings on this machine; they are relative consumption points, not throughput guarantees."
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T16:31:49.420Z",
+    "contentSha256": "40ce3320bc44d05b8509300a4a5ea950b376994efd22aab07ddd086ca8818706"
+  }
+}

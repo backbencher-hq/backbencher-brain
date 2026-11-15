@@ -1,0 +1,1331 @@
+{
+  "instrument": "validation/m14/fixtures/xml/inclusion-census.mts",
+  "population": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "repos": 202,
+    "admitted": 11593,
+    "admission": "git-tracked, <= 512 KiB, extension in the router's set (.xml .xsd .dtd .svg .xsl .xslt .rng)",
+    "candidatesScreened": 50,
+    "candidatesParsed": 50
+  },
+  "partOfChannels": {
+    "xinclude_include": {
+      "emits": "part_of",
+      "role": "xinclude_part",
+      "sites": 6,
+      "files": 3,
+      "hrefClasses": {
+        "admitted": 5,
+        "exists-not-admitted": 0,
+        "absent": 1,
+        "remote": 0,
+        "empty": 0
+      },
+      "parseModes": {
+        "xml": 6
+      },
+      "sitesDetail": [
+        {
+          "file": "libxslt/tests/xinclude/x1.xml",
+          "href": "x2.xml",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 4,
+          "namespace": "http://www.w3.org/2001/XInclude"
+        },
+        {
+          "file": "otp/lib/odbc/doc/src/specs.xml",
+          "href": "../specs/specs_odbc.xml",
+          "class": "absent",
+          "parseMode": "xml",
+          "line": 3,
+          "namespace": "http://www.w3.org/2001/XInclude"
+        },
+        {
+          "file": "phpunit/tests/_files/configuration_xinclude.xml",
+          "href": "configuration.xml",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 33,
+          "namespace": "http://www.w3.org/2001/XInclude"
+        },
+        {
+          "file": "phpunit/tests/_files/configuration_xinclude.xml",
+          "href": "configuration.xml",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 39,
+          "namespace": "http://www.w3.org/2001/XInclude"
+        },
+        {
+          "file": "phpunit/tests/_files/configuration_xinclude.xml",
+          "href": "configuration_codecoverage.xml",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 46,
+          "namespace": "http://www.w3.org/2001/XInclude"
+        },
+        {
+          "file": "phpunit/tests/_files/configuration_xinclude.xml",
+          "href": "configuration_logging.xml",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 50,
+          "namespace": "http://www.w3.org/2001/XInclude"
+        }
+      ],
+      "refused": {
+        "remote": 0,
+        "empty": 0
+      },
+      "expectedOccurrences": 6
+    },
+    "xslt_include": {
+      "emits": "part_of",
+      "role": "xslt_include_part",
+      "sites": 89,
+      "files": 11,
+      "hrefClasses": {
+        "admitted": 87,
+        "exists-not-admitted": 2,
+        "absent": 0,
+        "remote": 0,
+        "empty": 0
+      },
+      "parseModes": {
+        "xml": 89
+      },
+      "sitesDetail": [
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../VERSION",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 23,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "param.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 24,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../lib/lib.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 25,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../common/l10n.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 26,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../common/common.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 27,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../common/labels.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 28,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../common/titles.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 29,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../common/subtitles.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 30,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "../common/gentext.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 31,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "autotoc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 32,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "lists.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 33,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "callout.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 34,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "verbatim.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 35,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "graphics.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 36,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "xref.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 37,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "formal.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 38,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "table.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 39,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "sections.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 40,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "inline.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 41,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "footnote.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 42,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "fo.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 43,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "info.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 44,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "keywords.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 45,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "division.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 46,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "index.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 47,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "toc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 48,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "refentry.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 49,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "math.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 50,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "admon.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 51,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "component.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 52,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "biblio.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 53,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "glossary.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 54,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "block.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 55,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "qandaset.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 56,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "synop.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 57,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "titlepage.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 58,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "titlepage.templates.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 59,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "pagesetup.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 60,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "pi.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 61,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/docbook.xsl",
+          "href": "fop.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 63,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/chunk.xsl",
+          "href": "chunk-common.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 13,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/chunk.xsl",
+          "href": "chunker.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 14,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../VERSION",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 23,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "param.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 24,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../lib/lib.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 25,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../common/l10n.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 26,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../common/common.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 27,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../common/labels.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 28,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../common/titles.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 29,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../common/subtitles.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 30,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "../common/gentext.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 31,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "autotoc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 32,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "lists.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 33,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "callout.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 34,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "verbatim.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 35,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "graphics.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 36,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "xref.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 37,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "formal.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 38,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "table.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 39,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "sections.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 40,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "inline.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 41,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "footnote.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 42,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "html.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 43,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "info.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 44,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "keywords.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 45,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "division.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 46,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "toc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 47,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "index.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 48,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "refentry.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 49,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "math.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 50,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "admon.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 51,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "component.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 52,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "biblio.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 53,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "glossary.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 54,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "block.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 55,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "qandaset.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 56,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "synop.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 57,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "titlepage.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 58,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "titlepage.templates.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 59,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/docbook.xsl",
+          "href": "pi.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 60,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/ebnf.xsl",
+          "href": "docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 55,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/xtchunk.xsl",
+          "href": "chunk-common.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/xtchunk.xsl",
+          "href": "xtchunker.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 8,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/htmlhelp/htmlhelp.xsl",
+          "href": "htmlhelp-common.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 8,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/htmlhelp/xthtmlhelp.xsl",
+          "href": "htmlhelp-common.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 8,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/xhtml/docbook.xsl",
+          "href": "../html/docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 16,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-223.xsl",
+          "href": "bug-223-inc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-36-.xsl",
+          "href": "bug-36-inc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-37-.xsl",
+          "href": "bug-37-inc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        }
+      ],
+      "refused": {
+        "remote": 0,
+        "empty": 0
+      },
+      "expectedOccurrences": 89
+    },
+    "combined": {
+      "sites": 95,
+      "files": 14,
+      "hrefClasses": {
+        "admitted": 92,
+        "exists-not-admitted": 2,
+        "absent": 1,
+        "remote": 0,
+        "empty": 0
+      },
+      "refused": {
+        "remote": 0,
+        "empty": 0
+      },
+      "expectedOccurrences": 95
+    }
+  },
+  "nearMissChannels": {
+    "xslt_import": {
+      "emits": "imports",
+      "role": "xslt_stylesheet_import",
+      "sites": 43,
+      "files": 36,
+      "hrefClasses": {
+        "admitted": 28,
+        "exists-not-admitted": 13,
+        "absent": 1,
+        "remote": 1,
+        "empty": 0
+      },
+      "parseModes": {
+        "xml": 43
+      },
+      "sitesDetail": [
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "href": "html.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 9,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/doc/devhelp/devhelp2.xsl",
+          "href": "html.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 9,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/REC/stand-2.7-1.xml",
+          "href": "stand-2.7-1.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 9,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/REC/test-2.6.2-1.xsl",
+          "href": "article.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 3,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/REC/test-2.6.2-1.xsl",
+          "href": "bigfont.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 4,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/doc/book.xsl",
+          "href": "../html/chunk.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/doc/jrefhtml.xsl",
+          "href": "../docsrc/jrefhtml.xsl",
+          "class": "absent",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/doc/reference.xsl",
+          "href": "../html/docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+          "href": "docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 40,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/autoidx.xsl",
+          "href": "docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 39,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/changebars.xsl",
+          "href": "docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/chunk.xsl",
+          "href": "autoidx.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 12,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/xtchunk.xsl",
+          "href": "docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 6,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/htmlhelp/htmlhelp.xsl",
+          "href": "../html/chunk.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/htmlhelp/xthtmlhelp.xsl",
+          "href": "../html/xtchunk.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/test/test.xsl",
+          "href": "../html/docbook.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/xhtml/chunk.xsl",
+          "href": "../html/chunk.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/docbook/xhtml/xtchunk.xsl",
+          "href": "../html/xtchunk.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/exslt/common/import-test1.xsl",
+          "href": "import-test1a.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 20,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/exslt/functions/function.7.xsl",
+          "href": "function.1.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 3,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-102.xsl",
+          "href": "bug-102-inc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 4,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-130.xsl",
+          "href": "./bug-130-imp1.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 6,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-130.xsl",
+          "href": "./bug-130-imp2.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-130.xsl",
+          "href": "./bug-130-imp3.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 8,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-130.xsl",
+          "href": "./bug-130-imp4.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 9,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-131.xsl",
+          "href": "bug-131-imp.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-137.xsl",
+          "href": "bug-137.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 4,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-147.xsl",
+          "href": "./bug-147-3.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-147.xsl",
+          "href": "./bug-147-2.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 6,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-147.xsl",
+          "href": "./bug-147-1.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-147.xsl",
+          "href": "./bug-147-4.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 8,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-156.xsl",
+          "href": "bug-156.imp1.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 4,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-169.xsl",
+          "href": "bug-169.imp",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-188.xsl",
+          "href": "bug-188-imp.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 3,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-190.xsl",
+          "href": "bug-190-imp.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 7,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-191.xsl",
+          "href": "bug-191-imp.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 2,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-223.xsl",
+          "href": "bug-223-imp.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 6,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-62.xsl",
+          "href": "bug-62-inc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 3,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-8-.xsl",
+          "href": "inner.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 6,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/general/bug-93.xsl",
+          "href": "bug-93-inc.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 3,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/xmlspec/REC-xml-2e.xsl",
+          "href": "diffspec.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 5,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "libxslt/tests/xmlspec/diffspec.xsl",
+          "href": "xmlspec.xsl",
+          "class": "admitted",
+          "parseMode": "xml",
+          "line": 45,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        },
+        {
+          "file": "powershell/src/Schemas/PSMaml/Maml_HTML.xsl",
+          "href": "C:\\mamlSchema\\Maml_HTML_Style.xsl",
+          "class": "remote",
+          "parseMode": "xml",
+          "line": 6,
+          "namespace": "http://www.w3.org/1999/XSL/Transform"
+        }
+      ],
+      "refused": {
+        "remote": 1,
+        "empty": 0
+      },
+      "expectedOccurrences": 42
+    },
+    "rng_include": {
+      "emits": "none",
+      "why": "RELAX NG's <include href> merges another schema's DEFINITIONS into this schema; it is the schema-merge relation XSD's xs:include/schemaLocation already carries as `imports`, not a textual splice of content, so it is not part_of",
+      "sites": 0,
+      "files": 0,
+      "hrefClasses": {
+        "admitted": 0,
+        "exists-not-admitted": 0,
+        "absent": 0,
+        "remote": 0,
+        "empty": 0
+      },
+      "parseModes": {},
+      "sitesDetail": [],
+      "refused": {
+        "remote": 0,
+        "empty": 0
+      },
+      "expectedOccurrences": 0
+    },
+    "xinclude_draft_2003": {
+      "emits": "none",
+      "why": "the pre-REC 2003 XInclude namespace is a Working-Draft spelling; the XInclude 1.0 REC namespace is the 2001 URI, and the one corpus site is displayed example text, not a live inclusion",
+      "sites": 1,
+      "files": 1,
+      "hrefClasses": {
+        "admitted": 0,
+        "exists-not-admitted": 1,
+        "absent": 0,
+        "remote": 0,
+        "empty": 0
+      },
+      "parseModes": {
+        "text": 1
+      },
+      "sitesDetail": [
+        {
+          "file": "libxslt/doc/tutorial2/libxslt_pipes.xml",
+          "href": "libxslt_pipes.c",
+          "class": "exists-not-admitted",
+          "parseMode": "text",
+          "line": 654,
+          "namespace": "http://www.w3.org/2003/XInclude"
+        }
+      ],
+      "refused": {
+        "remote": 0,
+        "empty": 0
+      },
+      "expectedOccurrences": 1
+    },
+    "no_namespace": {
+      "emits": "none",
+      "why": "an element whose local name is include/import outside every inclusion vocabulary is not an inclusion directive",
+      "sites": 1,
+      "files": 1,
+      "hrefClasses": {
+        "admitted": 0,
+        "exists-not-admitted": 1,
+        "absent": 0,
+        "remote": 0,
+        "empty": 0
+      },
+      "parseModes": {
+        "xml": 1
+      },
+      "sitesDetail": [
+        {
+          "file": "libxslt/tests/general/bug-29-.xml",
+          "href": "bug-29-.ent",
+          "class": "exists-not-admitted",
+          "parseMode": "xml",
+          "line": 4,
+          "namespace": null
+        }
+      ],
+      "refused": {
+        "remote": 0,
+        "empty": 0
+      },
+      "expectedOccurrences": 1
+    }
+  },
+  "analyzerCrossCheck": {
+    "allAgree": true,
+    "perChannel": {
+      "xinclude_include": {
+        "emittedAs": "part_of",
+        "role": "xinclude_part",
+        "analyzerRows": 5,
+        "analyzerOccurrences": 6,
+        "censusSites": 6,
+        "refused": {
+          "remote": 0,
+          "empty": 0
+        },
+        "expectedOccurrences": 6,
+        "agrees": true
+      },
+      "xslt_include": {
+        "emittedAs": "part_of",
+        "role": "xslt_include_part",
+        "analyzerRows": 89,
+        "analyzerOccurrences": 89,
+        "censusSites": 89,
+        "refused": {
+          "remote": 0,
+          "empty": 0
+        },
+        "expectedOccurrences": 89,
+        "agrees": true
+      },
+      "xslt_import": {
+        "emittedAs": "imports",
+        "role": "xslt_stylesheet_import",
+        "analyzerRows": 42,
+        "analyzerOccurrences": 42,
+        "censusSites": 43,
+        "refused": {
+          "remote": 1,
+          "empty": 0
+        },
+        "expectedOccurrences": 42,
+        "agrees": true
+      }
+    },
+    "note": "Each channel's site count (census tree-walk) must equal the analyzer's summed occurrences for that channel's role. A disagreement is printed, never smoothed."
+  }
+}

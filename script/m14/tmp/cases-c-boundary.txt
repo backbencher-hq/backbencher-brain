@@ -1,0 +1,92 @@
+// C: pin the EXACT predicate for local val extraction.
+package p
+class K {
+  def m(): Int = { val a = 1; a }
+  val v = { val b = 2; b }
+  val w = new R { val c = 3 }
+}
+class R
+---
+// C2: anonymous class inside a def — is the val owned by anon or skipped?
+package p
+class K {
+  def m(): Any = { new R { val c = 3 } }
+}
+class R
+---
+// C3: lambda block in a CLASS body (the UnsafeUnbounded shape)
+package p
+class S {
+  testUnit("x") { val q = new U[Int]() }
+}
+class U[A]
+---
+// C4: lambda block in an OBJECT body
+package p
+object S {
+  testUnit("x") { val q = new U[Int]() }
+}
+class U[A]
+---
+// C5: val inside a given body
+package p
+object S {
+  given g: Ord[Int] with { def compare(x: Int, y: Int) = 0 }
+  given h: Ord[Int] = { val z = 1; new Ord[Int] { def compare(a:Int,b:Int)=0 } }
+}
+trait Ord[A]
+---
+// C6: val inside an extension block
+package p
+object S {
+  extension (s: String) { def shout: String = { val t = 1; s } }
+}
+---
+// C7: val inside an enum body
+package p
+enum E {
+  case A
+  val q = 1
+}
+---
+// C8: local type in a def
+package p
+class K {
+  def m(): Any = { type Cancelable[F[_]] = Int; 1 }
+}
+---
+// C9: local class in a def
+package p
+class K {
+  def m(): Any = { class Inner; new Inner }
+}
+---
+// C10: local object in a def
+package p
+class K {
+  def m(): Any = { object Inner; Inner }
+}
+---
+// C11: local val inside a LOCAL DEF
+package p
+class K {
+  def m(): Int = { def inner(): Int = { val deep = 1; deep }; inner() }
+}
+---
+// C12: symbolic method name — operator_identifier
+package p
+class K {
+  def !>(x: Int): Int = x
+}
+---
+// C13: symbolic method name — alphanumeric operator
+package p
+class K {
+  def ++(x: String): String = x
+}
+---
+// C14: local def with an operator name
+package p
+class K {
+  def m(): Int = { def !>(x: Int) = x; 1 }
+}

@@ -1,0 +1,178 @@
+{
+  "fixtureId": "protobuf/imports-and-editions",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the import surface, where the MODIFIER is the fact and the path is not. All four import forms in one file, because the three modifiers are read off three different places and a suite that tested only the plain form would pass an analyzer that ignored every modifier: `import public` is a RE-EXPORT — this file's importers reach the imported declarations through it, which is a fact about the module graph and is not derivable from the path; `import weak` says the import may be dropped if unused; `import option` is the editions FEATURE import and is the reason this lane's vendored grammar carries a patch at all, since upstream rejects it. Also pins the `edition` header (which replaced `syntax` and is metadata rather than a symbol) and the fact that a file-level `option` is code-generation DIRECTIVE rather than a declaration — the same ruling the payload fixture states for a proto3 file. PASS 2 CORRECTION: this fixture originally FORBADE the `imports` edge on a public import and required `exports` alone. Adversarial review overturned that: the forbid's stated reason ('would double the module's inbound dependency and lose the re-export fact') does not survive measurement, and the dependency edge it suppressed is the one a consumer needs. Both labels are now required, so an analyzer emitting either alone fails.",
+  "expectSymbols": [
+    {
+      "name": "imp.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Holder",
+      "kind": "class",
+      "ownerName": "imp.v1"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "imp.v1.Holder"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Holder",
+      "equals": 1
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "common/v1/types.proto",
+      "path": "common/v1/types.proto",
+      "meta.modifier": "public",
+      "note": "a RE-EXPORT. This file's own importers reach types.proto's declarations through this line, so `public` is a fact about the module graph and not derivable from the path."
+    },
+    {
+      "module": "legacy/v1/old.proto",
+      "path": "legacy/v1/old.proto",
+      "meta.modifier": "weak",
+      "note": "the import may be dropped when nothing uses it"
+    },
+    {
+      "module": "features/v1/validation.proto",
+      "path": "features/v1/validation.proto",
+      "meta.modifier": "option",
+      "note": "the editions FEATURE import. Upstream's grammar rejects this form, which is one of the patches the vendored grammar carries; if that patch were lost this row fails rather than the file silently parsing as damaged."
+    }
+  ],
+  "expectMetadata": [
+    {
+      "edition": "2023",
+      "protoPackage": "imp.v1",
+      "comment": "the editions header is FILE METADATA, not a symbol. `edition` replaced `syntax` and, like it, names no declaration."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "java_package",
+      "note": "a file-level option is a code-generation DIRECTIVE, not a declaration. It is a statement about generated code, and publishing it as a symbol would put a configuration key in the type hierarchy."
+    },
+    {
+      "name": "go_package",
+      "note": "same reason."
+    },
+    {
+      "name": "2023",
+      "note": "the edition is a version string on the header, not a declaration."
+    },
+    {
+      "name": "types",
+      "note": "an imported file's declarations are reachable, not re-declared here. `import public` makes them visible THROUGH this file; it does not move their declarations into it."
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "common/v1/types.proto",
+      "meta.modifier": null,
+      "note": "DELIBERATELY absent: a plain import of the same path. The path is right in both readings and only the modifier tells them apart, so a suite asserting the path alone cannot see the difference — this row is what makes the `public` pin mean something."
+    },
+    {
+      "module": "features/v1/validation.proto",
+      "meta.modifier": "public",
+      "note": "the feature import is NOT a re-export. Reading it as one would claim this file re-publishes the validation feature to its own importers."
+    },
+    {
+      "module": "plain/v1/plain.proto",
+      "meta.modifier": "public",
+      "note": "the plain import must NOT be recorded as a re-export. This is the strongest writable statement about the absent case: the imports matcher has no null branch, so `meta.modifier: null` can never be true (undefined === null), and the absence is pinned as a forbid instead. Reported as a harness gap rather than worked around silently."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "imp.v1",
+      "target": "imp.v1.Holder",
+      "line_number": 15,
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "imp.v1.Holder",
+      "target": "imp.v1.Holder.value",
+      "line_number": 16,
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "exports",
+      "from": "imp.v1",
+      "target": "common/v1/types.proto",
+      "line_number": 7,
+      "meta.evidenceClass": "structural",
+      "meta.viaPublicImport": true,
+      "confidenceMin": 0.9,
+      "note": "THE exports row. `import public` is a re-export, so this file's own importers reach types.proto's declarations THROUGH it — a fact about the module graph that the path alone does not carry. The SOURCE is the importing file's own module name and the TARGET is the path as written, which is the family's convention for a cross-file module edge (CSS imports from `importerName`; the store records a non-symbol endpoint as external). Taking the basename of the IMPORTED path for the source instead would make the file appear to import itself. PASS 16: the SOURCE is the file's OWN `package` namespace — already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node — aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`.",
+      "meta.moduleOwner": "package"
+    },
+    {
+      "type": "imports",
+      "from": "imp.v1",
+      "target": "legacy/v1/old.proto",
+      "line_number": 8,
+      "meta.evidenceClass": "import_based",
+      "meta.modifier": "weak",
+      "confidenceMin": 0.9,
+      "meta.moduleOwner": "package",
+      "note": "PASS 16: the SOURCE is the file's OWN `package` namespace — already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node — aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`."
+    },
+    {
+      "type": "imports",
+      "from": "imp.v1",
+      "target": "plain/v1/plain.proto",
+      "line_number": 9,
+      "meta.evidenceClass": "import_based",
+      "meta.modifier": null,
+      "confidenceMin": 0.9,
+      "note": "no modifier at all. Asserted explicitly because the ABSENT case is the one a reader hits most. PASS 16: the SOURCE is the file's OWN `package` namespace — already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node — aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`.",
+      "meta.moduleOwner": "package"
+    },
+    {
+      "type": "imports",
+      "from": "imp.v1",
+      "target": "features/v1/validation.proto",
+      "line_number": 10,
+      "meta.evidenceClass": "import_based",
+      "meta.isFeatureImport": true,
+      "confidenceMin": 0.9,
+      "note": "the editions FEATURE import. It IS a dependency of this file and is NOT a re-export: it resolves an option's definition rather than a message, so labelling it `exports` would claim this file republishes the validation feature to its own importers. PASS 16: the SOURCE is the file's OWN `package` namespace — already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node — aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`.",
+      "meta.moduleOwner": "package"
+    },
+    {
+      "type": "imports",
+      "from": "imp.v1",
+      "target": "common/v1/types.proto",
+      "line_number": 7,
+      "meta.evidenceClass": "import_based",
+      "meta.modifier": "public",
+      "meta.viaPublicImport": true,
+      "confidenceMin": 0.9,
+      "note": "THE imports row for a PUBLIC import, and it is the row pass 1 forbade. Pass 1 emitted `exports` alone and pinned this absence with a forbid whose stated reason was that emitting both 'would double the module's inbound dependency and lose the re-export fact entirely'. Neither half survived measurement: nothing is doubled, because the pair went from ZERO `imports` edges to one, and the re-export fact is not lost — it is what the `exports` row above carries. What emitting `exports` alone DID lose is the dependency: a consumer asking which files it must read to compile this one gets an incomplete answer, and `bb_impact` on types.proto cannot see a file that reaches it through a public import. protoc agrees — a public import is a `FileDescriptorProto` dependency like any other, with `public_dependency` naming its index. Both rows are now required, so relabelling one as the other fails. PASS 16: the SOURCE is the file's OWN `package` namespace — already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node — aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`.",
+      "meta.moduleOwner": "package"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "imports-and-editions.proto",
+      "target": "features/v1/validation.proto",
+      "note": "the feature import is not a re-export — see the `isFeatureImport` row above."
+    },
+    {
+      "type": "imports",
+      "from": "types.proto",
+      "target": "common/v1/types.proto",
+      "note": "the self-import shape: SOURCE and TARGET naming the same module. This is what a first draft produced by taking the basename of the IMPORTED path for the source, and `bb_graph` would read it as a file that depends on itself."
+    }
+  ]
+}

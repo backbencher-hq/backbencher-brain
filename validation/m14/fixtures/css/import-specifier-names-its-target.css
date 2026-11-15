@@ -1,0 +1,9 @@
+/* Import specifiers name the LAST SEGMENT, and only when they name a stylesheet. */
+@import "styles/layout.css";
+@import "./nested/deep/theme.css";
+@import "sibling.css";
+@import "../parent/other.scss";
+@import "https://fonts.googleapis.com/css?family=Lato:400,400i";
+@import "tailwindcss";
+@import "@fontsource-variable/figtree/index.css";
+@import url("wrapped.css");

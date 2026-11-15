@@ -1,0 +1,40 @@
+{
+  "fixtureId": "php/framework-surface-pins",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (#931) — php was the only OO lane with NO framework fixture, and the reason is visible in the artifacts: its markers were proven by script/m60/framework-surface-probe.ts, whose two php claim cases have said 'measured GAP' since 2026-09-22 and whose register records claimMisses: 2, while R8 reads MET for this lane off a runtime half (425 files, 0 findings) that cannot see a marker which never fires. Both dead markers compared against text no call site can pass: `text === \"App\\\\\"` is an exact match on a namespace string ENDING in a backslash, which no node's text carries, and `text === \"TestCase\"` is compared against the NAMESPACE (empty in the global namespace, and `App\\Http\\Controllers` here) while the base clause that names the relation is never passed to detectFramework at all. This fixture pins the two repaired spellings AND the explicit ones (`use Illuminate\\...`, `use PHPUnit\\Framework\\...` via the base) so a repair that silences a working path fails here. It also pins the PRIMARY pick, and pins it as php's actual contract — `frameworks[0]`, i.e. DOCUMENT order. That is deliberately NOT presented as the family rule: python orders by its marker table and csharp by CS_FRAMEWORK_ORDER, so php's lack of an order table is recorded in the lane plan as a family-consistency item, and a fixture that silently blessed document order would be the defect it is meant to catch. The forbidFrameworks list is the negative half: five registered frameworks that no line of this file mentions must never appear.",
+  "expectSymbols": [
+    { "name": "App\\Http\\Controllers", "kind": "namespace" },
+    { "name": "UserController", "kind": "class" },
+    { "name": "index", "kind": "method", "ownerName": "UserController" },
+    { "name": "UserControllerTest", "kind": "class" },
+    { "name": "testIndex", "kind": "method", "ownerName": "UserControllerTest" }
+  ],
+  "expectFrameworks": ["Laravel", "PHPUnit"],
+  "expectPrimaryFramework": ["Laravel"],
+  "forbidFrameworks": ["Symfony", "Doctrine", "WordPress", "Magento", "Drupal"],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "UserControllerTest",
+      "target": "TestCase",
+      "line_number": 41,
+      "comment": "the base clause that names the relation is also the node the PHPUnit marker must read (#931)"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "Illuminate\\Support\\Facades\\DB",
+      "items": ["DB"],
+      "comment": "the explicit Laravel spelling that already worked — the prefix repair must not disturb it. php emits NO `imports` relationship (its eight labels are uses/calls/contains/references/instantiates/overrides/extends/implements), so an import is pinned through `expectImports`, not through expectRelationships"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "UserController",
+      "target": "UserController",
+      "comment": "no self-edge for a class with no base clause"
+    }
+  ]
+}

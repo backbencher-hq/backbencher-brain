@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE album [
+  <!ENTITY cover   SYSTEM "cover.jpg"  NDATA jpeg>
+  <!ENTITY cover.gif SYSTEM "cover.gif" NDATA gif>
+  <!NOTATION jpeg   SYSTEM "image/jpeg">
+  <!ENTITY plain    SYSTEM "notes.ent">
+]>
+<album/>

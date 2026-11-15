@@ -1,0 +1,43 @@
+{
+  "comment": "LAYER-BOUNDARY PIN / 2026-10-18. html's contract row now REQUIRES `exports` because the kind is genuinely emitted through the embedded-script delegation, while the html LEVEL forbids it in three other fixtures (`forbidRelationships: exports`). Those facts are NOT in conflict: they describe different LAYERS of one file. This fixture is the POSITIVE side \u2014 the witness the required kind needs \u2014 and its rows carry the embedded origin markers so an auditor can tell which layer produced them. NEGATIVE CONTROL, RUN AND OBSERVED TO FAIL: removing the two `export` keywords from the `<script type=\"module\">` block makes BOTH `exports` pins below fail by name (`expected relationship not found: {type:\"exports\", from:\"embedded-module-export\", target:\"exportedThing\" / \"exportedHelper\"}`, summary pass 18 / fail 1); restoring them returns 19/19. A second, independent control on the same channel: commenting out the seam's `exports.push(e)` fails `embedded-origin-marks`' `expectExports` with `expected export not found: MOUNTED` (pass 18 / fail 1).",
+  "expectSymbols": [
+    {
+      "name": "embedded-module-export",
+      "kind": "module"
+    },
+    {
+      "name": "app",
+      "kind": "class",
+      "meta.tagName": "main"
+    },
+    {
+      "comment": "Delegate symbol from the module script; tagged as embedded origin.",
+      "name": "exportedThing",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "name": "exportedHelper",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "THE WITNESS FOR THE REQUIRED KIND: the delegated module script exports a binding, and the seam publishes the `exports` edge, tagged htmlEmbedded so the layer is auditable.",
+      "type": "exports",
+      "from": "embedded-module-export",
+      "target": "exportedThing",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "comment": "Second delegated export, same layer.",
+      "type": "exports",
+      "from": "embedded-module-export",
+      "target": "exportedHelper",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    }
+  ]
+}

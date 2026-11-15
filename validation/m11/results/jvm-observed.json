@@ -1,0 +1,692 @@
+{
+  "schemaVersion": 1,
+  "fixtureLanguage": "jvm",
+  "projectId": "8ba590f30df55edf5a3a58bf51e7d0f556117144",
+  "metrics": {
+    "wallMs": 6014.083617,
+    "cpuMs": 561.909,
+    "peakRssBytes": 83005440,
+    "databaseBytes": 1847296,
+    "filesPerSecond": 1.3302109696956015,
+    "symbolsPerSecond": 11.805622356048463,
+    "relationshipsPerSecond": 18.12412446210257
+  },
+  "files": [
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "language": "java"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "language": "groovy"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "language": "kotlin"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/Repository.java",
+      "language": "java"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "language": "scala"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "language": "java"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "language": "kotlin"
+    },
+    {
+      "path": "/tmp/bb-m11-jvm-probe-75244/service.clj",
+      "language": "clojure"
+    }
+  ],
+  "symbols": [
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "BaseService",
+      "kind": "class",
+      "start_line": 6,
+      "end_line": 23
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "prefix",
+      "kind": "property",
+      "start_line": 7,
+      "end_line": 7
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "format",
+      "kind": "method",
+      "start_line": 9,
+      "end_line": 9
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "findAll",
+      "kind": "method",
+      "start_line": 11,
+      "end_line": 13
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "findByFilter",
+      "kind": "method",
+      "start_line": 15,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "Entity",
+      "kind": "interface",
+      "start_line": 19,
+      "end_line": 22
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "getId",
+      "kind": "method",
+      "start_line": 20,
+      "end_line": 20
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/BaseService.java",
+      "name": "getName",
+      "kind": "method",
+      "start_line": 21,
+      "end_line": 21
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "com.example.groovy",
+      "kind": "namespace",
+      "start_line": 1,
+      "end_line": 3
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "Formatter",
+      "kind": "interface",
+      "start_line": 3,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "format",
+      "kind": "method",
+      "start_line": 4,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "GroovyService",
+      "kind": "class",
+      "start_line": 7,
+      "end_line": 22
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "getPrefix",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "prefix",
+      "kind": "property",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "setPrefix",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 10,
+      "end_line": 12
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "format",
+      "kind": "method",
+      "start_line": 14,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/GroovyService.groovy",
+      "name": "find",
+      "kind": "method",
+      "start_line": 19,
+      "end_line": 21
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "User",
+      "kind": "class",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "id",
+      "kind": "property",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "name",
+      "kind": "property",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "Repository",
+      "kind": "interface",
+      "start_line": 7,
+      "end_line": 9
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "save",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "BaseService",
+      "kind": "class",
+      "start_line": 11,
+      "end_line": 23
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "prefix",
+      "kind": "property",
+      "start_line": 12,
+      "end_line": 12
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "format",
+      "kind": "method",
+      "start_line": 13,
+      "end_line": 13
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "Entity",
+      "kind": "interface",
+      "start_line": 15,
+      "end_line": 18
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "id",
+      "kind": "property",
+      "start_line": 16,
+      "end_line": 16
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "name",
+      "kind": "property",
+      "start_line": 17,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "VERSION",
+      "kind": "property",
+      "start_line": 21,
+      "end_line": 21
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "Result",
+      "kind": "class",
+      "start_line": 25,
+      "end_line": 29
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "Success",
+      "kind": "class",
+      "start_line": 26,
+      "end_line": 26
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 26,
+      "end_line": 26
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "value",
+      "kind": "property",
+      "start_line": 26,
+      "end_line": 26
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "Failure",
+      "kind": "class",
+      "start_line": 27,
+      "end_line": 27
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 27,
+      "end_line": 27
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "error",
+      "kind": "property",
+      "start_line": 27,
+      "end_line": 27
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Models.kt",
+      "name": "Loading",
+      "kind": "class",
+      "start_line": 28,
+      "end_line": 28
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Repository.java",
+      "name": "Repository",
+      "kind": "interface",
+      "start_line": 6,
+      "end_line": 9
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Repository.java",
+      "name": "save",
+      "kind": "method",
+      "start_line": 7,
+      "end_line": 7
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/Repository.java",
+      "name": "findAll",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "Formatter",
+      "kind": "interface",
+      "start_line": 3,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "ScalaService",
+      "kind": "class",
+      "start_line": 7,
+      "end_line": 10
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "format",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "find",
+      "kind": "method",
+      "start_line": 9,
+      "end_line": 9
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "ScalaService",
+      "kind": "module",
+      "start_line": 12,
+      "end_line": 15
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "version",
+      "kind": "constant",
+      "start_line": 13,
+      "end_line": 13
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/ScalaService.scala",
+      "name": "create",
+      "kind": "method",
+      "start_line": 14,
+      "end_line": 14
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "UserService",
+      "kind": "class",
+      "start_line": 9,
+      "end_line": 42
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "store",
+      "kind": "property",
+      "start_line": 11,
+      "end_line": 11
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 13,
+      "end_line": 14
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "format",
+      "kind": "method",
+      "start_line": 16,
+      "end_line": 19
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "save",
+      "kind": "method",
+      "start_line": 21,
+      "end_line": 25
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "User",
+      "kind": "class",
+      "start_line": 27,
+      "end_line": 41
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "id",
+      "kind": "property",
+      "start_line": 28,
+      "end_line": 28
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "name",
+      "kind": "property",
+      "start_line": 29,
+      "end_line": 29
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 31,
+      "end_line": 34
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "getId",
+      "kind": "method",
+      "start_line": 36,
+      "end_line": 37
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.java",
+      "name": "getName",
+      "kind": "method",
+      "start_line": 39,
+      "end_line": 40
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "UserService",
+      "kind": "class",
+      "start_line": 7,
+      "end_line": 18
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 7,
+      "end_line": 7
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "_store",
+      "kind": "property",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "format",
+      "kind": "method",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "save",
+      "kind": "method",
+      "start_line": 12,
+      "end_line": 15
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "find",
+      "kind": "method",
+      "start_line": 17,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/UserService.kt",
+      "name": "createService",
+      "kind": "function",
+      "start_line": 20,
+      "end_line": 23
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/service.clj",
+      "name": "Formatter",
+      "kind": "interface",
+      "start_line": 3,
+      "end_line": 4
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/service.clj",
+      "name": "ClojureService",
+      "kind": "class",
+      "start_line": 6,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/service.clj",
+      "name": "prefix",
+      "kind": "property",
+      "start_line": 6,
+      "end_line": 6
+    },
+    {
+      "file": "/tmp/bb-m11-jvm-probe-75244/service.clj",
+      "name": "create-service",
+      "kind": "function",
+      "start_line": 10,
+      "end_line": 11
+    }
+  ],
+  "imports": [
+    {
+      "import_path": "com.example.base.BaseService",
+      "imported_name": "BaseService",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "com.example.base.BaseService",
+      "imported_name": "BaseService",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "com.example.base.BaseService",
+      "imported_name": "com.example.base.BaseService",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "com.example.base.Repository",
+      "imported_name": "com.example.base.Repository",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "com.example.models.Repository",
+      "imported_name": "Repository",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "com.example.models.User",
+      "imported_name": "User",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.HashMap",
+      "imported_name": "java.util.HashMap",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.List",
+      "imported_name": "java.util.List",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.List",
+      "imported_name": "java.util.List",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.Map",
+      "imported_name": "java.util.Map",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.Optional",
+      "imported_name": "java.util.Optional",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.concurrent.CompletableFuture",
+      "imported_name": "java.util.concurrent.CompletableFuture",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "java.util.concurrent.CompletableFuture",
+      "imported_name": "java.util.concurrent.CompletableFuture",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "calls",
+      "count": 13
+    },
+    {
+      "relationship_type": "contains",
+      "count": 61
+    },
+    {
+      "relationship_type": "extends",
+      "count": 1
+    },
+    {
+      "relationship_type": "implements",
+      "count": 3
+    },
+    {
+      "relationship_type": "instantiates",
+      "count": 3
+    },
+    {
+      "relationship_type": "overrides",
+      "count": 7
+    },
+    {
+      "relationship_type": "references",
+      "count": 11
+    },
+    {
+      "relationship_type": "uses",
+      "count": 10
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.809Z",
+    "contentSha256": "3850a65a761c56d2345a2bba1f90e085e0dea86bdb6f01f03208f4ac68bb921b"
+  }
+}

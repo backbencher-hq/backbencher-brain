@@ -1,0 +1,23 @@
+{
+  "expectSymbols": [
+    { "name": "HeadNest", "kind": "module" },
+    { "name": "def", "kind": "macro", "ownerName": "HeadNest" },
+    { "name": "defmacro", "kind": "macro", "ownerName": "HeadNest" }
+  ],
+  "expectSymbolCount": [
+    { "name": "def", "kind": "macro", "ownerName": "HeadNest", "equals": 1 },
+    { "name": "defmacro", "kind": "macro", "ownerName": "HeadNest", "equals": 1 }
+  ],
+  "forbidSymbols": [
+    { "name": "sig" },
+    { "name": "name" },
+    { "name": "Unknown" }
+  ],
+  "expectExports": [
+    { "name": "HeadNest", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "HeadNest", "target": "def" },
+    { "type": "contains", "from": "HeadNest", "target": "defmacro" }
+  ]
+}

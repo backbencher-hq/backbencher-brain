@@ -1,0 +1,130 @@
+{
+ "fixtureId": "markdown/heading-identity",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A heading's published name is its display text, and three separate ways of getting that wrong were live at once. (1) The ATX CLOSING RUN: `## Title ##` published `Title ##`, so a document that closed its headings and one that did not produced two different symbols for the same section. (2) A NAME CONTAINING A NEWLINE: a multi-line setext heading's text is its PARAGRAPH, so the previous 'node text minus the last line' fallback returned every line but the underline -- measured, a two-line setext heading published \"Multi Line Title\\nsecond line of paragraph\", carrying an embedded newline into ownerName, the qualified path and every display surface. (3) AN EMPTY HEADING PUBLISHED A MARKER AS A NAME: `#` with no content is `atx_heading > atx_h1_marker` with NO inline child (measured on the pinned wasm), the old fallback returned the marker, and a document of empty headings published a `contains` chain of symbols named `#`, `##`, `###`. That last one is the M60 R7 class -- a name that is not a name -- and it had a second-order effect pinned here: two sibling `##` headings both named `##` collided, so the later headings in this fixture were attributed to the EMPTY `#` as their owner and the whole hierarchy after them was wrong. forbidSymbols is therefore the load-bearing half of this fixture: without it, a regression that republishes markers would still satisfy every expectSymbols entry.",
+ "expectSymbolCount": [
+  {
+   "name": "A heading's name is its display text",
+   "equals": 1
+  },
+  {
+   "name": "Closed with a trailing run",
+   "equals": 1
+  },
+  {
+   "name": "Ends in a-hash#",
+   "equals": 1
+  },
+  {
+   "name": "Multi Line Setext Title",
+   "equals": 1
+  },
+  {
+   "name": "Setext Child",
+   "equals": 1
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "Closed with a trailing run",
+   "kind": "type",
+   "ownerName": "A heading's name is its display text"
+  },
+  {
+   "name": "Ends in a-hash#",
+   "kind": "type"
+  },
+  {
+   "name": "A hash with no space before it stays",
+   "kind": "type",
+   "ownerName": "Closed with a trailing run"
+  },
+  {
+   "name": "Multi Line Setext Title",
+   "kind": "type"
+  },
+  {
+   "name": "Setext Child",
+   "kind": "type"
+  },
+  {
+   "name": "Closed with a trailing run",
+   "kind": "type",
+   "meta.isMarkdownHeading": true,
+   "meta.headingLevel": 2,
+   "meta.nodeType": "atx_heading"
+  },
+  {
+   "name": "Setext Child",
+   "kind": "type",
+   "meta.headingLevel": 2,
+   "meta.nodeType": "setext_heading"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "#"
+  },
+  {
+   "name": "##"
+  },
+  {
+   "name": "###"
+  },
+  {
+   "name": "Closed with a trailing run ##"
+  },
+  {
+   "name": "Multi Line Setext Title\nand this second line is continuation"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "#",
+   "target": "##"
+  },
+  {
+   "from": "##",
+   "target": "###"
+  },
+  {
+   "from": "#",
+   "target": "A setext heading is its first line"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "A heading's name is its display text",
+   "target": "Closed with a trailing run",
+   "meta.evidenceClass": "structural",
+   "line_number": 3
+  },
+  {
+   "type": "contains",
+   "from": "A heading's name is its display text",
+   "target": "Ends in a-hash#",
+   "meta.evidenceClass": "structural",
+   "line_number": 17
+  },
+  {
+   "type": "contains",
+   "from": "A heading's name is its display text",
+   "target": "Multi Line Setext Title",
+   "meta.evidenceClass": "structural",
+   "line_number": 35
+  },
+  {
+   "type": "contains",
+   "from": "A heading's name is its display text",
+   "target": "Setext Child",
+   "meta.evidenceClass": "structural",
+   "line_number": 39
+  }
+ ],
+ "_seamNote": {
+  "what": "The closing-run read is positional (charCodeAt), not a pattern, and the lane's zero-regex property is preserved: the regex census for this analyzer still reports 0 usages.",
+  "why": "The inline grammar delivers the closing run INSIDE the `inline` child as anonymous `#` tokens, so the text has to be trimmed after the fact. Doing it by character code rather than by regex keeps the lane's strongest measured property -- 0 regex literals, 0 RegExp calls -- while still removing the run."
+ }
+}

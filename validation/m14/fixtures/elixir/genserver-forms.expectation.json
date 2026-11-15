@@ -1,0 +1,24 @@
+{
+  "expectSymbols": [
+    { "name": "MyServer", "kind": "module", "meta.isGenServer": true },
+    { "name": "start_link", "kind": "function", "ownerName": "MyServer" },
+    { "name": "init", "kind": "function", "ownerName": "MyServer", "meta.isGenServerCallback": true },
+    { "name": "handle_call", "kind": "function", "ownerName": "MyServer", "meta.isGenServerCallback": true },
+    { "name": "MySup", "kind": "module", "meta.isSupervisor": true },
+    { "name": "start_link", "kind": "function", "ownerName": "MySup" },
+    { "name": "init", "kind": "function", "ownerName": "MySup", "meta.isSupervisorCallback": true }
+  ],
+  "expectPatterns": ["Actor Model (OTP)", "Supervision Trees"],
+  "expectExports": [
+    { "name": "MyServer", "kind": "module" },
+    { "name": "MySup", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "MyServer", "target": "GenServer" },
+    { "type": "calls", "from": "MyServer.start_link/1", "target": "GenServer.start_link" },
+    { "type": "references", "from": "MySup", "target": "Supervisor" },
+    { "type": "calls", "from": "MySup.start_link/1", "target": "Supervisor.start_link" },
+    { "type": "contains", "from": "MyServer", "target": "init" },
+    { "type": "contains", "from": "MySup", "target": "init" }
+  ]
+}

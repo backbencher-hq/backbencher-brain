@@ -1,0 +1,341 @@
+{
+  "fixtureId": "haskell/operator-application",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the operator-application and constructor-application shapes VERIFY_HS9 added on 2026-10-04, and the negatives that keep them honest. Every shape was confirmed against the PINNED GRAMMAR with script/m14/tmp/hs9-ast-dump.ts BEFORE this file was written, and the file parses with hasError=false (248 nodes): `a :+: b` is match -> infix with field operator = constructor_operator; `a `Snoc` xs` is match -> infix -> infix_id -> constructor; `(<+>) x 1` is match -> apply -> prefix_id -> operator; `(.+.) :: Int -> Int -> Int` is signature -> name: prefix_id -> operator. PINS: (1) a locally declared operator's application sites are calls, across four syntactic positions (plain RHS, GUARD, case branch, and a forward-referenced prefix application); the two guard sites are a COUNT PIN, because they share source|target and differ only by line, so a dedupe-key regression collapses them silently. (2) an infix CONSTRUCTOR's application is instantiates and never calls. (3) a TICKED constructor's application is instantiates. (4) a prefix operator application is calls. NEGATIVES, each the failure the rule could plausibly make: an operator DEFINITION head emits nothing; a PATTERN-position infix constructor (`uncons (n :+: rest)`) emits nothing; a TYPE-position operator whose spelling is also a value operator in the same file emits nothing (`type Shifted = Int .+. Int`); a Prelude operator this file does not declare emits nothing (`++`, `intercalate`, `replicate`); and a raw head text never becomes a symbol name. NOT PINNED, and deliberately so: `:+:` and `Snoc` are constructor names carried on the grammar's INFIX data-constructor shape (grammar/data.js `_datacon_infix`), which extractConstructorName cannot name, so no Constructor symbol and no `contains Chain -> :+:` edge exist for them. That is measured in the lane report against the full corpus, not asserted here.",
+  "expectSymbols": [
+    {
+      "name": "Data.OperatorApplication",
+      "kind": "module"
+    },
+    {
+      "name": "Chain",
+      "kind": "type"
+    },
+    {
+      "name": "End",
+      "kind": "constructor",
+      "ownerName": "Chain"
+    },
+    {
+      "name": "SnocChain",
+      "kind": "type"
+    },
+    {
+      "name": "SnocEnd",
+      "kind": "constructor",
+      "ownerName": "SnocChain"
+    },
+    {
+      "name": "Shifted",
+      "kind": "type"
+    },
+    {
+      "name": ".+.",
+      "kind": "function"
+    },
+    {
+      "name": "<+>",
+      "kind": "function"
+    },
+    {
+      "name": "extend",
+      "kind": "function"
+    },
+    {
+      "name": "extendTwo",
+      "kind": "function"
+    },
+    {
+      "name": "push",
+      "kind": "function"
+    },
+    {
+      "name": "combine",
+      "kind": "function"
+    },
+    {
+      "name": "shifted",
+      "kind": "function"
+    },
+    {
+      "name": "render",
+      "kind": "function"
+    },
+    {
+      "name": "uncons",
+      "kind": "function"
+    },
+    {
+      "name": "useCons",
+      "kind": "function"
+    },
+    {
+      "name": "sizeOf",
+      "kind": "function"
+    },
+    {
+      "name": "lengthOf",
+      "kind": "function"
+    },
+    {
+      "name": "lengthOf2",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "Data.OperatorApplication",
+      "target": "Data.List",
+      "meta.evidenceClass": "import_based",
+      "comment": "the only import; an import is `imports`, not `references` (M60-HK)"
+    },
+    {
+      "type": "exports",
+      "source": "Data.OperatorApplication",
+      "target": "Chain",
+      "meta.evidenceClass": "structural",
+      "comment": "explicit export list at the header"
+    },
+    {
+      "type": "contains",
+      "source": "Data.OperatorApplication",
+      "target": "Chain",
+      "comment": "module -> its own type"
+    },
+    {
+      "type": "contains",
+      "source": "Chain",
+      "target": "End",
+      "comment": "type -> its prefix constructor"
+    },
+    {
+      "type": "contains",
+      "source": "Data.OperatorApplication",
+      "target": ".+.",
+      "comment": "the module owns the operator declaration, so the operator is a member like any other callable"
+    },
+    {
+      "type": "calls",
+      "source": "combine",
+      "target": ".+.",
+      "line_number": 69,
+      "meta.context": "operator application",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "(1) operator application inside a GUARD \u2014 the anchor is the operator's own line"
+    },
+    {
+      "type": "calls",
+      "source": "combine",
+      "target": ".+.",
+      "line_number": 70,
+      "meta.context": "operator application",
+      "comment": "(1) the SECOND guard site. Same source and target as the first, distinguished only by line \u2014 this is why the count pin below exists."
+    },
+    {
+      "type": "calls",
+      "source": "shifted",
+      "target": "<+>",
+      "line_number": 76,
+      "meta.context": "operator application",
+      "comment": "(4) PREFIX application `(<+>) x 1`, and a FORWARD reference: `(<+>)` is declared at 79, after this use. The same rule plain function calls already follow."
+    },
+    {
+      "type": "calls",
+      "source": "useCons",
+      "target": "uncons",
+      "line_number": 101,
+      "comment": "the pre-existing apply-head rule, pinned here so a change to operator handling cannot quietly break ordinary calls in the same file"
+    },
+    {
+      "type": "calls",
+      "source": "useCons",
+      "target": ".+.",
+      "line_number": 102,
+      "meta.context": "operator application",
+      "comment": "(1) operator application inside a CASE BRANCH \u2014 a third syntactic position"
+    },
+    {
+      "type": "instantiates",
+      "source": "extend",
+      "target": ":+:",
+      "line_number": 53,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isInfixConstructorApplication": true,
+      "comment": "(2) an infix CONSTRUCTOR application constructs. Before VERIFY_HS9 this shape emitted nothing: the walk reached the `infix` node and nothing read a `constructor_operator` operator field."
+    },
+    {
+      "type": "instantiates",
+      "source": "extendTwo",
+      "target": ":+:",
+      "line_number": 59,
+      "meta.isInfixConstructorApplication": true,
+      "comment": "(2) NESTED infix constructor application \u2014 two sites on one line, see the count pin"
+    },
+    {
+      "type": "instantiates",
+      "source": "push",
+      "target": "Snoc",
+      "line_number": 63,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isTickedConstructorApplication": true,
+      "comment": "(3) a TICKED constructor application constructs. Before VERIFY_HS9 the infix_id branch resolved only a `variable` child, so a ticked `constructor` found nothing."
+    },
+    {
+      "type": "instantiates",
+      "source": "uncons",
+      "target": "Just",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "the pre-existing prefix-constructor rule, pinned so the new shapes cannot have displaced it"
+    },
+    {
+      "type": "calls",
+      "source": "sizeOf",
+      "target": "lengthOf",
+      "line_number": 110,
+      "comment": "a forward reference to a function declared at 112 \u2014 the pre-existing apply-head rule, pinned in a function this fixture added so the operator work cannot have disturbed it"
+    },
+    {
+      "type": "calls",
+      "source": "lengthOf2",
+      "target": "sizeOf",
+      "line_number": 116,
+      "comment": "a backward reference; both ends of the reference rule are pinned so neither direction can rot"
+    },
+    {
+      "type": "calls",
+      "source": "lengthOf",
+      "target": "lengthOf",
+      "line_number": 114,
+      "comment": "self-recursion inside a multi-clause function: clause 3's body calls `lengthOf rest`. Self-recursion IS emitted, the lane's existing contract."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "source": "combine",
+      "target": ".+.",
+      "equals": 2,
+      "comment": "the two guard sites (69 and 70) share source|type|target and differ only by line. A per-set dedupe-key regression collapses them to 1 and this pin fails; a drop of both fails the two line pins above as well."
+    },
+    {
+      "type": "instantiates",
+      "source": "extendTwo",
+      "target": ":+:",
+      "equals": 1,
+      "comment": "TWO construction sites on one line (`a :+: (b :+: c)`), same source|type|target and same line, so the lane's `source|type|target|line` dedupe key yields exactly ONE edge. Pinned so the collapse is a recorded decision rather than an accident: this is the dimension-8 key, and the neighbouring multi-site group above is distinguished by line."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "source": "uncons",
+      "target": ":+:",
+      "comment": "NEGATIVE (c) `uncons (n :+: rest) = ...` MATCHES an infix constructor; matching constructs nothing. The grammar puts this in a `patterns` node, and the rule gates on that."
+    },
+    {
+      "type": "calls",
+      "source": "uncons",
+      "target": ":+:",
+      "comment": "NEGATIVE (c), the other label: a matched constructor is not a call either"
+    },
+    {
+      "type": "instantiates",
+      "source": "Shifted",
+      "target": ".+.",
+      "comment": "NEGATIVE (b) `type Shifted = Int .+. Int` is a TYPE expression. `infix` is one node type for three positions in this grammar (_exp_infix / _pat_infix / _type_infix are all aliased to `infix`, with the same field names), so a type-level operator is a bare `operator` node exactly like an expression's. If the position test were missing this edge would appear."
+    },
+    {
+      "type": "calls",
+      "source": "Shifted",
+      "target": ".+.",
+      "comment": "NEGATIVE (b), the other label"
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "++",
+      "comment": "NEGATIVE (a) `++` is Prelude's and this file does not declare it. Name resolution: only an operator the file declares is a target."
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "intercalate",
+      "comment": "NEGATIVE (a) an imported name is not a target (the FP-family rule)"
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "replicate",
+      "comment": "NEGATIVE (a) an imported Prelude name is not a target"
+    },
+    {
+      "type": "calls",
+      "source": ".+.",
+      "target": "*",
+      "comment": "the definition body `a * 10 + b` uses Prelude operators; neither is declared here, so the operator publishes no callers beyond its real ones"
+    },
+    {
+      "type": "calls",
+      "source": ".+.",
+      "target": "+",
+      "comment": "as above, for `+`"
+    },
+    {
+      "type": "calls",
+      "source": "combine",
+      "target": ">",
+      "comment": "the guard condition `x > y` uses Prelude's `>`, which this file does not declare"
+    },
+    {
+      "type": "calls",
+      "source": "<+>",
+      "target": "+",
+      "comment": "the definition body `a + b` uses Prelude's `+`"
+    },
+    {
+      "type": "instantiates",
+      "source": "lengthOf",
+      "target": "Snoc",
+      "comment": "NEGATIVE (c, ticked shape) `lengthOf (_ `Snoc` rest) = ...` MATCHES a ticked constructor in a function head pattern. Matching constructs nothing. This is the HSD14 rule applied to the shape VERIFY_HS9 added: without the gate, every pattern match of a ticked or infix constructor would be published as a construction."
+    },
+    {
+      "type": "calls",
+      "source": ".+.",
+      "target": ".+.",
+      "comment": "NEGATIVE (d) an operator DEFINITION head is not a call. `a .+. b = a * 10 + b` names `.+.`; the head is not an application of it, and the body calls only `*` and `+` (both Prelude). Without the pattern-position gate this edge would appear \u2014 the HSD19 rule applied to operator heads."
+    },
+    {
+      "type": "calls",
+      "source": "<+>",
+      "target": "<+>",
+      "comment": "NEGATIVE (d) the same for a PREFIX_ID operator head: `a <+> b = a + b` names `<+>` and does not apply it."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "a .+. b",
+      "comment": "NEGATIVE: an operator definition is named by the OPERATOR (`.+.`), never by the raw head text \u2014 the HSD3 rule, which the operator-application path must not undo"
+    },
+    {
+      "name": "Int :+: Chain",
+      "comment": "NEGATIVE: the infix data-constructor shape's raw text is not a name. (The shape yields NO symbol at all today \u2014 see the rationale.)"
+    },
+    {
+      "name": "n :+: rest",
+      "comment": "NEGATIVE: a pattern head is never a symbol"
+    },
+    {
+      "name": "(:+>)",
+      "comment": "NEGATIVE: an operator definition's paren-wrapped spelling is not the name; the operator is"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "combine",
+      "equals": 3,
+      "comment": "measured, not guessed: `| x > y = ... / | otherwise = ...` is a `guards` node and each guard set is a decision point in this lane's complexity model, so the symbol's complexity is 1 base + the guard sets. Written after the first run reported 3 against my assumed 1."
+    }
+  ]
+}

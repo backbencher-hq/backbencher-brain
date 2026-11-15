@@ -1,0 +1,17 @@
+{
+  "fixtureId": "vue/component-name-identifier",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F17 (2026-10-31): the value of a `name:` option is not always a string literal — it can be an IMPORTED IDENTIFIER, whose value lives in another module. The analyzer took the value node's text whatever its type, so the component's identity became the VARIABLE's name: option.vue published `COMPONENT_NAME` with 21 edges sourced at it, select.vue with 43. A name that is not written anywhere as this component's name is a graph lie, and a worse one than the stem fallback F8 chose deliberately, so a non-literal `name:` now keeps the stem AND records `declaredNameUnreadable`. The forbid rows are the point of this fixture: `COMPONENT_NAME` must not be published under either spelling, and `component-name-identifier` (the file stem) must be — which is what F8's fallback already did correctly for a component that declares no name at all, so the two cases are now indistinguishable in the name and distinguishable in the metadata.",
+  "expectSymbols": [
+    { "name": "component-name-identifier", "kind": "class", "meta.declaredNameUnreadable": true },
+    { "name": "go", "kind": "method", "ownerName": "component-name-identifier" }
+  ],
+  "expectRelationships": [
+    { "source": "component-name-identifier", "target": "go", "type": "uses" }
+  ],
+  "forbidSymbols": [
+    { "name": "COMPONENT_NAME" },
+    { "name": "\"COMPONENT_NAME\"" }
+  ]
+}

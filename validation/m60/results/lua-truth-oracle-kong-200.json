@@ -1,0 +1,616 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "kong",
+  "sample": 200,
+  "filesDrawn": 200,
+  "parseErrorFiles": 0,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 13011,
+    "observedEdges": 24767,
+    "missing": 0,
+    "missingFromAnalyzer": [],
+    "exportsDirectPath": {
+      "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+      "filesProbed": 150,
+      "truth": 318,
+      "hit": 318,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 150,
+        "checks": 300
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 150,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 150,
+        "distinctValues": 5,
+        "values": [
+          70,
+          80,
+          85,
+          90,
+          95
+        ],
+        "mean": 87.1,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 150,
+      "totalDisclosures": 4
+    },
+    "relationshipsDirectPath": {
+      "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+      "filesProbed": 150,
+      "truth": 8342,
+      "hit": 8342,
+      "missed": 0,
+      "spurious": 7009,
+      "loopCoincidenceExempted": 0,
+      "loopCoincidenceSample": [],
+      "recall": 1,
+      "precision": 0.543417,
+      "missedSample": [],
+      "spuriousSample": [
+        "uses global -> \"base_path\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"stats_folders_prefix\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"folder\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"file_name\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"stats_file\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"loaded\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"loaded_stats\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"stat_data\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"strip_prefix\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"f_name\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"data\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"rel_stat_data\"  .ci/luacov-stats-aggregator.lua",
+        "uses global -> \"data\"  autodoc/cli/data.lua",
+        "uses global -> \"_G\"  autodoc/cli/generate.lua",
+        "uses global -> \"cmd\"  autodoc/cli/generate.lua",
+        "uses global -> \"cmds\"  autodoc/cli/generate.lua",
+        "uses global -> \"outpath\"  autodoc/cli/generate.lua",
+        "references global -> \"header\"  autodoc/cli/generate.lua",
+        "uses write -> \"str\"  autodoc/cli/generate.lua",
+        "references global -> \"command_intro\"  autodoc/cli/generate.lua",
+        "uses global -> \"info\"  autodoc/cli/generate.lua",
+        "references global -> \"footer\"  autodoc/cli/generate.lua",
+        "uses global -> \"_G\"  autodoc/pdk/generate.lua",
+        "references global -> \"format\"  autodoc/pdk/generate.lua",
+        "uses global -> \"cmd\"  autodoc/pdk/generate.lua"
+      ]
+    },
+    "pipelineDiscardEvidence": {
+      "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+      "filesProbed": 150,
+      "cap": 150,
+      "provenDiscarded": [],
+      "observedOnBothSides": [
+        "calls",
+        "contains",
+        "exports",
+        "extends",
+        "imports",
+        "instantiates",
+        "references",
+        "uses"
+      ]
+    },
+    "missingByPipelineDiscard": {
+      "total": 0,
+      "byLabel": [],
+      "labelsAbsentFromPipeline": []
+    },
+    "missingByPipelineNoiseFilter": 0,
+    "noiseTargetsHit": [],
+    "unexplained": 11756,
+    "lineChecked": 13011,
+    "lineExact": 13011,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 4948,
+      "observed": 4948,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "contains": {
+      "truth": 6820,
+      "observed": 6820,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "extends": {
+      "truth": 51,
+      "observed": 51,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "instantiates": {
+      "truth": 8,
+      "observed": 8,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 746,
+      "observed": 746,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "exports": {
+      "truth": 438,
+      "observed": 438,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "missingByShape": [],
+  "unexplainedByShape": [
+    {
+      "shape": "uses other",
+      "n": 7183
+    },
+    {
+      "shape": "references other",
+      "n": 4573
+    }
+  ],
+  "analyzerAttributableSample": [],
+  "analyzerAttributableUnexplainedSample": [
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "base_path",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stats_folders_prefix",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "folder",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "file_name",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stats_file",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "loaded",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "loaded_stats",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stat_data",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "strip_prefix",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "f_name",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "data",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "rel_stat_data",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "data",
+      "rel": "autodoc/cli/data.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "_G",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmd",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmds",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "outpath",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "header",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "write",
+      "target": "str",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "command_intro",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "info",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "footer",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "_G",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "format",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmd",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "ok",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "code",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stderr",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "outputpath",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stdout",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "modules",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "outputfolder",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "name",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "file",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "generated_name",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "template",
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "t",
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "output_folder",
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "_G",
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "new_nav_yml",
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    }
+  ],
+  "missingSample": [],
+  "unexplainedSample": [
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "base_path",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stats_folders_prefix",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "folder",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "file_name",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stats_file",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "loaded",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "loaded_stats",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "stat_data",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "strip_prefix",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "f_name",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "data",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "rel_stat_data",
+      "rel": ".ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "data",
+      "rel": "autodoc/cli/data.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "_G",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmd",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmds",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "outpath",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "header",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "write",
+      "target": "str",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "command_intro",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "info",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "footer",
+      "rel": "autodoc/cli/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "_G",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "format",
+      "rel": "autodoc/pdk/generate.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmd",
+      "rel": "autodoc/pdk/generate.lua"
+    }
+  ],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": false
+  },
+  "hardFailures": true,
+  "status": "fail"
+}

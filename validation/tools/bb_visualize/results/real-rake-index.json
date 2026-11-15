@@ -1,0 +1,45 @@
+{
+  "key": "rake",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/rake",
+  "language": "Ruby",
+  "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/132aab0103080d56a8ce5ef28cf2034710b21a80/brain.db",
+  "db": {
+    "path": "brain.db",
+    "exists": true,
+    "size": 22683648,
+    "sha256": "c61b1ff4c9fd7dd8a704889c55b1698beb27fb22a116e3a1aefdd16e8e7642b3"
+  },
+  "wal": {
+    "path": "brain.db-wal",
+    "exists": true,
+    "size": 8928072,
+    "sha256": "e13c59ad3c166d81841a88aa7132174d22c8e48d1e41cf93ec2bce19113b30ec"
+  },
+  "files": 109,
+  "symbols": 1593,
+  "relationships": 9075,
+  "languages": [
+    {
+      "language": "ruby",
+      "files": 97
+    },
+    {
+      "language": "yaml",
+      "files": 9
+    },
+    {
+      "language": "c",
+      "files": 3
+    }
+  ],
+  "indexMs": 16545,
+  "reused": false,
+  "targets": {
+    "file": "test/test_rake_file_list.rb",
+    "module": "test",
+    "symbol": "invoke",
+    "feature": "invo",
+    "fallbackModuleFile": ".github/dependabot.yml"
+  }
+}

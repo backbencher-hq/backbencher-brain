@@ -1,0 +1,72 @@
+{
+  "population": {
+    "rule": "the ADMITTED SET is the GIT-TRACKED set (git ls-files) restricted to the router's extensions (.groovy, .gvy, .gradle) and to files under the 1 MB cap; the REPO COUNT is the repositories carrying an admitted file",
+    "corpus_root": "/home/ishaq2321/bb_tests/repositories",
+    "extensions": [
+      "groovy",
+      "gvy",
+      "gradle"
+    ],
+    "size_cap_bytes": 1048576,
+    "admitted_files": 8102,
+    "repos": 8,
+    "repo_names": [
+      "Exposed",
+      "dart-http",
+      "flutter-packages",
+      "fmt",
+      "geb",
+      "grails-core",
+      "graphql-java",
+      "pb-grpc"
+    ],
+    "per_repo": {
+      "grails-core": 7018,
+      "geb": 693,
+      "graphql-java": 367,
+      "dart-http": 13,
+      "flutter-packages": 6,
+      "pb-grpc": 3,
+      "fmt": 1,
+      "Exposed": 1
+    },
+    "excluded_over_cap": 0,
+    "excluded_absent": 3,
+    "measured_files": 100,
+    "measured_slice": [
+      "/home/ishaq2321/bb_tests/repositories/Exposed/documentation-website/Writerside/snippets/exposed-modules-groovy-gradle/build.gradle",
+      "/home/ishaq2321/bb_tests/repositories/geb/doc/manual-snippets/src/test/groovy/configuration/NavigatorFactoryConfigSpec.groovy"
+    ],
+    "slice_offset": 0,
+    "is_whole_population": false,
+    "symlinked_directories_found_corpuswide": 137,
+    "symlinked_directories_followed": 0,
+    "symlinked_directories_note": "ZERO, by construction: `git ls-files` lists a symlink as an ENTRY, never the files under it, so the git-tracked walk cannot reach a file through a symlinked directory."
+  },
+  "grammar": {
+    "served_wasm": "wasm/tree-sitter-groovy.wasm",
+    "sha256": "f1e68cb398e63f3498c63b1675bb65496a33bd194efb65ec461bb3f589cece04",
+    "bytes": 4388255,
+    "node_inventory": "validation/m14/measurements/groovy-grammar-nodes.json"
+  },
+  "counts": {
+    "traitDeclarations": 0,
+    "distinctTraitNames": 0,
+    "traitAppliedByImplements": 0,
+    "traitAppliedByExtends": 0,
+    "distinctAppliedTraitNames": 0,
+    "gstringTemplateExpressions": 0,
+    "partTokenOccurrences": 0,
+    "parseFailures": 21,
+    "heritageClauses": 62,
+    "heritageCoveredByTheAnalyzerLookup": 62,
+    "heritageMissedByTheAnalyzerLookup": 0,
+    "heritageShapes": {
+      "type_identifier": 61,
+      "scoped_type_identifier": 1
+    },
+    "heritageMissedExamples": [],
+    "gspTemplateFiles": 683
+  },
+  "applied_trait_names": []
+}

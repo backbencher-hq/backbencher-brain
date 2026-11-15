@@ -1,0 +1,95 @@
+{
+  "fixtureId": "cpp/bare-macro-statements",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "#915: a BARE top-level macro must not become a `variable`. This is the bare sibling of the call-shaped class `isMacroFunctionShape` already suppresses. Both shapes in this file are taken from the measured fmt sites, not invented: a run of bare macros at file scope immediately before a conditional closes (`include/fmt/os.h` 412-418 `#endif  // FMT_USE_FCNTL` blank `FMT_END_EXPORT` `FMT_END_NAMESPACE` blank `#endif  // FMT_OS_H_`, and `include/fmt/base.h` 2950-2953 `FMT_PRAGMA_GCC(pop_options)` `FMT_PRAGMA_MSVC(warning(pop))` `FMT_END_EXPORT` `FMT_END_NAMESPACE`). The grammar recovers that run as a `declaration` whose \"type\" is itself a macro and whose terminator is MISSING — the measured tree for os.h 416-417 is literally `declaration / type_identifier \\\"FMT_END_EXPORT\\\" / identifier \\\"FMT_END_NAMESPACE\\\" / ; [MISSING]` — and the declaration branch then names a symbol after the last macro. MEASURED ON THIS EXACT FILE, through the production entry `parseFile`, only `src/ast/real-cpp-analyzer.ts` differing (HEAD vs the fix): PRE-FIX 5 symbols and 3 relationships, POST-FIX 4 symbols and the SAME 3 relationships — the one removed symbol is `variable FMT_END_NAMESPACE` at line 27, and every other symbol and relationship is byte-identical between the two builds. The class size on the real corpus is 13 symbols in a 58-file fmt draw (`FMT_END_NAMESPACE` x8, `FMT_INLINE` x2, `GTEST_ATTRIBUTE_UNUSED_` x2, plus `FMT_BEGIN_EXPORT`) and 0 on nlohmann-json's 17-file draw; that fix removed exactly 13 and added 0. The class is deliberately THREE-CONDITION (ALL-CAPS name + error-recovered node + no hard type specifier) because the first two alone lose real symbols: an `int MAX_SIZE;` or `MyType *MAX_SIZE;` is a real declaration, and a clean `MyType MAX_SIZE;` is kept because its terminator is real. The `Widget`/`size_`/`helper`/`after_macros` block is the CONTROL — a real declaration inside the same conditional and a real file-scope function after it must both keep their real symbol, so an implementation that simply dropped declarations inside error-recovered regions fails here. NOTE ON THE UPSTREAM-FIX CASE: if tree-sitter-groovy's sibling defect (the same shape in cpp) is ever fixed in the grammar, this pin does not misfire — a clean parse of this file produces no declaration for the macro run at all, so the forbidden symbols stay absent and the control symbols stay present. The load-bearing assertions are `expectSymbolCount` 0 for the three macro names (count, not just absence-of-kind — a re-kinded phantom still fails) and the control symbols plus the three relationships, which is what makes the pin proof against the suppression over-firing. REFINED 2026-09-30 (D9): the `equals: 0` pins above were NAME-scoped, which is a coarser proxy than the invariant this file documents — the fabrication is a symbol of kind `variable` minted by the declaration branch off a macro-typed ERROR-recovered `declaration`. D9 began publishing a REAL `#define` DECLARATION (kind `constant`, sourced from the `preproc_def` node itself), which is a different symbol with the same NAME, so a name-only pin could not tell the fabrication from the declaration and both could not hold at once. The pins are now kind-scoped — no `variable` by any of the three names — which is the invariant as written, and a POSITIVE pin now requires the declaration to exist, so this fixture got STRICTER, not looser: it fails if the fabrication returns AND if the declaration goes missing. Parity note: the C lane reached the opposite conclusion for the same question in #901 (`real-c-analyzer.ts` `extractMacro`), where a value-less `#define` is explicitly a declaration — 'Include guards are therefore minted too; they cost one symbol per guarded file and produce no edge, which is the right trade for not losing reads.' The two lanes disagreed; they now agree, and this file is the cpp side of that ruling.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "size_",
+      "kind": "property",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "after_macros",
+      "kind": "function"
+    },
+    {
+      "name": "FMT_BEGIN_EXPORT",
+      "kind": "constant"
+    },
+    {
+      "name": "FMT_END_EXPORT",
+      "kind": "constant"
+    },
+    {
+      "name": "FMT_END_NAMESPACE",
+      "kind": "constant"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "FMT_END_NAMESPACE",
+      "equals": 0,
+      "kind": "variable"
+    },
+    {
+      "name": "FMT_END_EXPORT",
+      "equals": 0,
+      "kind": "variable"
+    },
+    {
+      "name": "FMT_BEGIN_EXPORT",
+      "equals": 0,
+      "kind": "variable"
+    },
+    {
+      "name": "Widget",
+      "equals": 1
+    },
+    {
+      "name": "size_",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "size_"
+    },
+    {
+      "type": "uses",
+      "from": "helper",
+      "target": "size_",
+      "meta.relationshipType": "field_access"
+    },
+    {
+      "type": "uses",
+      "from": "after_macros",
+      "target": "size_",
+      "meta.relationshipType": "field_access"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "FMT_END_NAMESPACE",
+      "kind": "variable"
+    },
+    {
+      "name": "FMT_END_EXPORT",
+      "kind": "variable"
+    },
+    {
+      "name": "FMT_BEGIN_EXPORT",
+      "kind": "variable"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "fixtureId": "javascript/accessor-slot-semantics",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 #758 B5: get/set pairs collapsed to one symbol via the owner:name dedup key \u2014 the getter was deadSpanned (nested symbols pruned, body calls skipped) and the setter's body walked under the getter's slot. Contract now: accessor pairs emit BOTH Property symbols with accessorKind metadata and BOTH bodies' calls (val->track AND val->wrap). Cross-kind: a data member REPLACES the whole descriptor slot \u2014 Overwrite.x must be exactly ONE method symbol (pre-fix residue: the killed accessor half survived as a zombie); makeX() must NOT emit (the accessor's body is dead when the data member replaces it). B4: static Sub2.greet2 must NOT override instance Base2.greet2 (pre-fix fabricated Sub2.greet2->Base2.greet2 for every static/same-name pair).",
+  "expectSymbols": [
+    {
+      "name": "val",
+      "kind": "property",
+      "note": "getter slot"
+    },
+    {
+      "name": "val",
+      "kind": "property",
+      "note": "setter slot \u2014 both survive"
+    },
+    {
+      "name": "data",
+      "kind": "method"
+    },
+    {
+      "name": "x",
+      "kind": "method",
+      "note": "data member wins the slot"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "x",
+      "kind": "property",
+      "note": "no accessor half survives a data-member replacement"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "val",
+      "target": "track",
+      "note": "getter body walked (pre-fix dropped)"
+    },
+    {
+      "type": "calls",
+      "from": "val",
+      "target": "wrap",
+      "note": "setter body walked"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "makeX",
+      "note": "Overwrite accessor body is dead once the data member replaces the slot"
+    },
+    {
+      "type": "overrides",
+      "from": "Sub2.greet2",
+      "target": "greet2",
+      "note": "B4 fabrication must stay dead"
+    }
+  ]
+}

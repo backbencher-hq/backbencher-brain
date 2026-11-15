@@ -1,0 +1,80 @@
+{
+  "fixtureId": "javascript/jsx-usage",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS JSX component usage as the canonical RENDERS relation (2026-10-18: RelationshipType.Renders landed in src/ast/types.ts df5a03eb2; the row was `uses` before because no canonical value existed). Source = the enclosing symbol, target = the component tag name. One row per JSX ELEMENT: the paired <Panel>…</Panel> emits exactly ONE renders row (pinned by expectRelationshipCount equals:1) while its nested self-closing <Button/> is its own element; lowercase intrinsics (div, span) and fragments emit nothing. Pre-fix (2022 J8 era) JSX emitted nothing at all, then emitted `uses`; the name rule is unchanged, only the label moved.",
+  "expectSymbols": [
+    {
+      "name": "App",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Button",
+      "meta.jsxElement": "Button",
+      "comment": "two elements: the top-level <Button/> and the nested one inside <Panel>"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Other",
+      "meta.jsxElement": "Other"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Panel",
+      "meta.jsxElement": "Panel",
+      "comment": "a PAIRED element emits ONE row, never one per opening/closing tag"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "div",
+      "comment": "lowercase intrinsic is not a component"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "span",
+      "comment": "lowercase intrinsic is not a component"
+    },
+    {
+      "type": "uses",
+      "from": "App",
+      "target": "Button",
+      "comment": "the pre-2026-10-18 spelling is gone: a JSX element is a renders row, not a read"
+    },
+    {
+      "type": "uses",
+      "from": "App",
+      "target": "div"
+    },
+    {
+      "type": "uses",
+      "from": "App",
+      "target": "span"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Panel",
+      "equals": 1,
+      "comment": "the paired element is ONE element, not two tag rows"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Button",
+      "equals": 2,
+      "comment": "two distinct Button elements"
+    }
+  ]
+}

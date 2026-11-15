@@ -1,0 +1,421 @@
+{
+  "instrument": "xml emitted-vs-stored — the 1.83x question, isolated by parsing the same files before AND after the index",
+  "repo": "libxslt",
+  "files": 300,
+  "root": "/tmp/bb-xml-evs-izukxA",
+  "projectId": "4ba07a34536ba2298b7f5f0c95e0ceefaa72957f",
+  "indexMs": 73644,
+  "parsePasses": {
+    "before": {
+      "parsed": 300,
+      "failed": 0,
+      "degraded": 6
+    },
+    "after": {
+      "parsed": 300,
+      "failed": 0,
+      "degraded": 6
+    }
+  },
+  "table": [
+    {
+      "type": "calls",
+      "emittedBefore": 47,
+      "emittedBeforeDistinctKeys": 47,
+      "stored": 47,
+      "storedDistinctIds": 47,
+      "emittedAfter": 47,
+      "emittedAfterDistinctKeys": 47,
+      "storedOverEmittedBefore": 1,
+      "storedOverEmittedAfter": 1
+    },
+    {
+      "type": "contains",
+      "emittedBefore": 4375,
+      "emittedBeforeDistinctKeys": 2840,
+      "stored": 4369,
+      "storedDistinctIds": 4369,
+      "emittedAfter": 4375,
+      "emittedAfterDistinctKeys": 2840,
+      "storedOverEmittedBefore": 0.999,
+      "storedOverEmittedAfter": 0.999
+    },
+    {
+      "type": "imports",
+      "emittedBefore": 38,
+      "emittedBeforeDistinctKeys": 37,
+      "stored": 38,
+      "storedDistinctIds": 38,
+      "emittedAfter": 38,
+      "emittedAfterDistinctKeys": 37,
+      "storedOverEmittedBefore": 1,
+      "storedOverEmittedAfter": 1
+    },
+    {
+      "type": "references",
+      "emittedBefore": 100,
+      "emittedBeforeDistinctKeys": 97,
+      "stored": 91,
+      "storedDistinctIds": 91,
+      "emittedAfter": 100,
+      "emittedAfterDistinctKeys": 97,
+      "storedOverEmittedBefore": 0.91,
+      "storedOverEmittedAfter": 0.91
+    }
+  ],
+  "inflationDiagnosis": {
+    "storedContainsSrcAggregate": {
+      "rows": 4369,
+      "srcIds": 2150,
+      "triples": 4369,
+      "targets": 684,
+      "nullSource": 0
+    },
+    "heaviestFiles": [
+      {
+        "fid": "4ba07a34536ba2298b7f5f0c95e0ceefaa72957f:libxslt/tests/docbook/common/common.xsl",
+        "rows": 294,
+        "srcIds": 131,
+        "targets": 117,
+        "lines": 182
+      },
+      {
+        "fid": "4ba07a34536ba2298b7f5f0c95e0ceefaa72957f:libxslt/doc/devhelp/html.xsl",
+        "rows": 179,
+        "srcIds": 81,
+        "targets": 87,
+        "lines": 89
+      },
+      {
+        "fid": "4ba07a34536ba2298b7f5f0c95e0ceefaa72957f:libxslt/doc/EXSLT/devhelp/html.xsl",
+        "rows": 179,
+        "srcIds": 81,
+        "targets": 87,
+        "lines": 89
+      }
+    ],
+    "repeatedSourceTargetLine": [
+      {
+        "src": "xsl:stylesheet",
+        "tgt": "xsl",
+        "line": 2,
+        "rows": 87,
+        "srcIds": 87
+      },
+      {
+        "src": "xsl:stylesheet",
+        "tgt": "version",
+        "line": 1,
+        "rows": 73,
+        "srcIds": 73
+      },
+      {
+        "src": "xsl:stylesheet",
+        "tgt": "version",
+        "line": 2,
+        "rows": 46,
+        "srcIds": 46
+      },
+      {
+        "src": "xsl:stylesheet",
+        "tgt": "xsl:template",
+        "line": 3,
+        "rows": 36,
+        "srcIds": 36
+      },
+      {
+        "src": "xsl:template",
+        "tgt": "match",
+        "line": 3,
+        "rows": 36,
+        "srcIds": 36
+      },
+      {
+        "src": "gentext",
+        "tgt": "key",
+        "line": 8,
+        "rows": 28,
+        "srcIds": 28
+      },
+      {
+        "src": "gentext",
+        "tgt": "text",
+        "line": 8,
+        "rows": 28,
+        "srcIds": 28
+      },
+      {
+        "src": "localization",
+        "tgt": "gentext",
+        "line": 8,
+        "rows": 28,
+        "srcIds": 28
+      }
+    ],
+    "sideBySideHeaviestFile": {
+      "file": "libxslt/tests/docbook/common/common.xsl",
+      "storeRowsForFile": 294,
+      "storeDistinctSrcIds": 131,
+      "storeSample": [
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "xsl",
+          "line": 2
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "doc",
+          "line": 3
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "exclude-result-prefixes",
+          "line": 4
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "version",
+          "line": 5
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "default",
+          "line": 19
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "doc:reference",
+          "line": 19
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "referenceinfo",
+          "line": 20
+        },
+        {
+          "src": "referenceinfo",
+          "tgt": "releaseinfo",
+          "line": 21
+        },
+        {
+          "src": "releaseinfo",
+          "tgt": "role",
+          "line": 21
+        },
+        {
+          "src": "author",
+          "tgt": "surname",
+          "line": 24
+        },
+        {
+          "src": "referenceinfo",
+          "tgt": "author",
+          "line": 24
+        },
+        {
+          "src": "author",
+          "tgt": "firstname",
+          "line": 25
+        },
+        {
+          "src": "copyright",
+          "tgt": "year",
+          "line": 26
+        },
+        {
+          "src": "referenceinfo",
+          "tgt": "copyright",
+          "line": 26
+        },
+        {
+          "src": "copyright",
+          "tgt": "holder",
+          "line": 27
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "title",
+          "line": 30
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "partintro",
+          "line": 32
+        },
+        {
+          "src": "partintro",
+          "tgt": "section",
+          "line": 33
+        },
+        {
+          "src": "section",
+          "tgt": "title",
+          "line": 33
+        },
+        {
+          "src": "section",
+          "tgt": "para",
+          "line": 35
+        },
+        {
+          "src": "para",
+          "tgt": "quote",
+          "line": 39
+        },
+        {
+          "src": "xsl:preserve-space",
+          "tgt": "elements",
+          "line": 54
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "xsl:preserve-space",
+          "line": 54
+        },
+        {
+          "src": "xsl:strip-space",
+          "tgt": "elements",
+          "line": 56
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "xsl:strip-space",
+          "line": 56
+        }
+      ],
+      "emittedSample": [
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "xsl",
+          "line": 2
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "doc",
+          "line": 3
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "exclude-result-prefixes",
+          "line": 4
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "version",
+          "line": 5
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "doc:reference",
+          "line": 19
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "default",
+          "line": 19
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "referenceinfo",
+          "line": 20
+        },
+        {
+          "src": "referenceinfo",
+          "tgt": "releaseinfo",
+          "line": 21
+        },
+        {
+          "src": "releaseinfo",
+          "tgt": "role",
+          "line": 21
+        },
+        {
+          "src": "referenceinfo",
+          "tgt": "author",
+          "line": 24
+        },
+        {
+          "src": "author",
+          "tgt": "surname",
+          "line": 24
+        },
+        {
+          "src": "author",
+          "tgt": "firstname",
+          "line": 25
+        },
+        {
+          "src": "referenceinfo",
+          "tgt": "copyright",
+          "line": 26
+        },
+        {
+          "src": "copyright",
+          "tgt": "year",
+          "line": 26
+        },
+        {
+          "src": "copyright",
+          "tgt": "holder",
+          "line": 27
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "title",
+          "line": 30
+        },
+        {
+          "src": "doc:reference",
+          "tgt": "partintro",
+          "line": 32
+        },
+        {
+          "src": "partintro",
+          "tgt": "section",
+          "line": 33
+        },
+        {
+          "src": "section",
+          "tgt": "title",
+          "line": 33
+        },
+        {
+          "src": "section",
+          "tgt": "para",
+          "line": 35
+        },
+        {
+          "src": "para",
+          "tgt": "quote",
+          "line": 39
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "xsl:preserve-space",
+          "line": 54
+        },
+        {
+          "src": "xsl:preserve-space",
+          "tgt": "elements",
+          "line": 54
+        },
+        {
+          "src": "xsl:stylesheet",
+          "tgt": "xsl:strip-space",
+          "line": 56
+        },
+        {
+          "src": "xsl:strip-space",
+          "tgt": "elements",
+          "line": 56
+        }
+      ],
+      "emittedSampleSize": 25
+    }
+  },
+  "reading": {
+    "noAnomaly": "stored == emittedBefore == emittedAfter",
+    "instrumentOrdering": "stored ~= emittedBefore but emittedAfter is materially lower: the emitted column of the ORIGINAL probe is an undercount caused by parsing after a heavy index in one process",
+    "storeWritesMore": "emittedBefore == emittedAfter < stored: the store really holds more rows than the analyzer emits, and the cause is in the indexer, not in the probe"
+  }
+}

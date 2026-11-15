@@ -1,0 +1,201 @@
+{
+ "fixtureId": "python/implements-interface-bases",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Python expresses interface conformance INSIDE the base list - there is no `implements` clause. Measured over the whole derived corpus (5,984 python files through production parseFile) the grammar produces 117 node types and NONE of interface_declaration / protocol_declaration / abstract_class_declaration / implements_clause / trait_declaration, against 21,008 class_definition nodes, so the construct cannot arrive as its own grammar node. Every base was being published as `extends`, which is right for `class C(Base)` and wrong for `class C(Mapping)`. This fixture pins the whole rule. The positive rows are the relabel; the forbid rows are the boundaries an over-eager implementation crosses. The rule is a test on the FILE'S OWN IMPORT rather than on the name, and the `class ABC` row is why: `ABC` is a legal name a user can define, and 27 `Protocol` base occurrences in this corpus are exactly that (24 inside CPython's own typing.py, which defines the class it then names). `typing.Generic` is measured at 291 base occurrences - more than ABC and Protocol combined - and is a type-parameter marker, so it stays `extends`; without that row `implements` would have been 301 edges at NFILES=200 rather than 10, and wrong about all of them. The `MixedBase` row is the only place the two labels appear together, and it is what makes a double-label implementation visible: emitting both types for both bases would publish four edges there and two elsewhere.",
+ "expectSymbols": [
+  {
+   "name": "FromAbc",
+   "kind": "class",
+   "note": "a class declaring an abstract interface implementation. Its own symbol kind is unchanged - adding a relationship type must not change what the class IS"
+  },
+  {
+   "name": "ABC",
+   "kind": "class",
+   "note": "THE SHADOWING ROW. This file does `from abc import ABC` AND declares its own class ABC. Both exist in the source; the import binds the module-level name and the class rebinds it, and the analyzer publishes the class as a symbol while the base-list rule keys on the IMPORT rather than on the spelling, which is the only reason the extends rows below stay correct"
+  },
+  {
+   "name": "RowLike",
+   "kind": "class",
+   "note": "a class that declares conformance with NO inheritance - it appears in no base list at all"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "FromAbc",
+   "target": "ABC",
+   "line_number": 47,
+   "meta.interfaceKind": "abc",
+   "note": "THE FIX. `from abc import ABC` is the proof; the base is an abstract base class, so the edge is `implements` and NOT `extends`"
+  },
+  {
+   "type": "implements",
+   "from": "AliasedAbc",
+   "target": "BaseABC",
+   "line_number": 55,
+   "meta.interfaceKind": "abc",
+   "note": "THE ALIAS ROW, and it caught a real bug in the first implementation. `from abc import ABC as BaseABC` PROVES the imported name ABC and BINDS the alias BaseABC; an implementation that compared the BOUND name against the literal \"ABC\" failed to prove it, so the single most unambiguously abstract base class in the fixture was published as `extends`. Both names have to be read and they are not the same name"
+  },
+  {
+   "type": "implements",
+   "from": "FromCollectionsAbc",
+   "target": "Mapping",
+   "line_number": 63,
+   "meta.interfaceKind": "collections.abc",
+   "note": "confidence 1.0 here rests on a measurement, not a convention: all 25 names CPython's collections.abc exports are abstract base classes - 7 declare metaclass=ABCMeta, 18 inherit it from a base that does, and the module's one non-ABC class (_CallableGenericAlias) is not exported"
+  },
+  {
+   "type": "implements",
+   "from": "Structural",
+   "target": "Protocol",
+   "line_number": 79,
+   "meta.interfaceKind": "typing",
+   "note": "a protocol is an interface - conformance to it is structural and stating it is a conformance declaration"
+  },
+  {
+   "type": "implements",
+   "from": "Backported",
+   "target": "BackportProtocol",
+   "line_number": 83,
+   "meta.interfaceKind": "typing",
+   "note": "typing_extensions proves Protocol exactly as typing does. Measured on the corpus: pydantic writes `from typing_extensions import Protocol` in 21 of its base lists, so accepting only `typing` would have missed the corpus's largest single source of Protocol declarations. This row fails if the module list is narrowed to typing alone"
+  },
+  {
+   "type": "implements",
+   "from": "Dotted",
+   "target": "ABC",
+   "line_number": 90,
+   "meta.interfaceKind": "abc",
+   "note": "the self-proving dotted form. `import abc` is in this file, so `abc.ABC` cannot be a user class. Without the root-import condition this row would relabel a dotted base in any file at all"
+  },
+  {
+   "type": "implements",
+   "from": "MixedBase",
+   "target": "Sequence",
+   "line_number": 107,
+   "meta.interfaceKind": "collections.abc",
+   "note": "one half of the mixed base list - proven interface"
+  },
+  {
+   "type": "extends",
+   "from": "MixedBase",
+   "target": "Marker",
+   "line_number": 107,
+   "note": "THE ROW THAT MAKES THE RELABEL VISIBLE. The same base list, one proven interface and one ordinary class, so it emits one edge of each label. An implementation that emitted both labels for both bases would publish four edges here; an implementation that relabelled everything would publish two implements and zero extends. This is the only place in the fixture where both labels appear and it is what makes either failure visible from the outside"
+  },
+  {
+   "type": "extends",
+   "from": "GenericOnly",
+   "target": "Generic",
+   "line_number": 134,
+   "note": "BOUNDARY, and the row that keeps `implements` small. `typing.Generic` appears in 291 base lists in this corpus - more than ABC and Protocol combined - and it is a type-parameter marker, not an interface. Labelling it `implements` would have made implements the largest type in this analyzer and been wrong about every one of them"
+  },
+  {
+   "type": "extends",
+   "from": "NotAnInterface",
+   "target": "Marker",
+   "line_number": 130,
+   "note": "the ordinary case, unchanged by this work: a class base is `extends`"
+  },
+  {
+   "type": "implements",
+   "from": "RowLike",
+   "target": "Sequence",
+   "line_number": 165,
+   "meta.reasonCode": "virtual-registration",
+   "note": "CONFORMANCE WITH NO INHERITANCE AT ALL. `Sequence.register(RowLike)` is python stating that RowLike conforms to Sequence while inheriting nothing. This is the strongest available evidence that the language has the construct, and it is also a real corpus site: cpython-stdlib/sqlite3/dbapi2.py:54 `collections.abc.Sequence.register(Row)`. Confidence 0.9 rather than 1.0 because the receiver is proven but the argument is read as a leaf name and the class may not have been read at all"
+  },
+  {
+   "type": "extends",
+   "from": "Unbound",
+   "target": "Protocol",
+   "line_number": 94,
+   "note": "THE ROW THAT KILLS A MUTANT. `vendor_base.Protocol` is spelled like the proven dotted forms but this file never imports `vendor_base`, so the root is not bound and the spelling proves nothing. Mutant M6 deleted the `importRoots.has(root)` condition and all 21 python fixtures still passed, because the only dotted base present was `abc.ABC` - genuinely provable, so the deleted condition changed no outcome anywhere. Without this row the condition is untested rather than verified, which is how a surviving mutant hides"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "extends",
+   "from": "FromAbc",
+   "target": "ABC",
+   "note": "THE DOUBLE-LABEL ROW. One base, one edge, most specific true label. Publishing extends as well would put two brain_relationship rows for one syntactic fact, and the pairwise co-occurrence measure in script/m14/python-six-questions.mts exists to make exactly that visible. This is the same decision the C# lane made on the same construct (real-csharp-analyzer.ts:1371-1380, `isImplements ? Implements : Extends`)"
+  },
+  {
+   "type": "extends",
+   "from": "FromCollectionsAbc",
+   "target": "Mapping"
+  },
+  {
+   "type": "extends",
+   "from": "Structural",
+   "target": "Protocol"
+  },
+  {
+   "type": "extends",
+   "from": "AliasedAbc",
+   "target": "BaseABC",
+   "note": "the pre-fix behaviour for the alias form"
+  },
+  {
+   "type": "extends",
+   "from": "Dotted",
+   "target": "ABC"
+  },
+  {
+   "type": "implements",
+   "from": "GenericOnly",
+   "target": "Generic",
+   "note": "THE FABRICATION ROW. Generic is not an interface; see the extends expectation above",
+   "line_number": 134
+  },
+  {
+   "type": "implements",
+   "from": "MixedBase",
+   "target": "Marker",
+   "note": "relabelling indiscriminately. Marker is an ordinary class declared in this very file, so there is no proof available even in principle - the strongest form of this forbid",
+   "line_number": 107
+  },
+  {
+   "type": "implements",
+   "from": "NotAnInterface",
+   "target": "Marker",
+   "note": "same, one class down",
+   "line_number": 130
+  },
+  {
+   "type": "implements",
+   "from": "RowLike",
+   "target": "_registry",
+   "note": "THE HOMONYM ROW, and the reason `.register(` is not enough to emit anything. Measured over 5,984 corpus files there are 493 `X.register(Y)` calls and ONE with a provably abstract receiver: `site.register` is 241 of them, then selector.register 21, SyncManager.register 17, self.register 17, and Flask's blueprint.register. An implementation keyed on the spelling rather than on a proven receiver would fabricate all 492 and poison bb_graph on any project using a plugin registry"
+  },
+  {
+   "type": "implements",
+   "from": "DeclaresAbstract",
+   "target": "ABCMeta",
+   "note": "DECLARING IS NOT CONFORMING. `metaclass=ABCMeta` says THIS CLASS is the interface; there is no second endpoint in the source, so no edge is published. Measured: 85 such classes in this corpus, and 113 that declare an interface by carrying @abstractmethod methods. A self-edge here would be a fabrication"
+  },
+  {
+   "type": "implements",
+   "from": "DeclaresAbstract",
+   "target": "DeclaresAbstract"
+  },
+  {
+   "type": "implements",
+   "from": "LocalAbstract",
+   "target": "ABCMeta",
+   "note": "same, dotted spelling"
+  },
+  {
+   "type": "implements",
+   "from": "Unbound",
+   "target": "Protocol",
+   "note": "the pre-M6 behaviour. A dotted spelling is self-proving only once its ROOT is importable in this file; `vendor_base` is not, so this is a user module's own class named Protocol and relabelling it would fabricate an edge on a name this analyzer has never read",
+   "line_number": 94
+  }
+ ],
+ "_seamNote": {
+  "what": "A class base emits `implements` instead of `extends` when - and only when - this file proves the base is an interface: an import binding (`from abc import ABC|ABCMeta`, `from typing|typing_extensions import Protocol`, `from collections.abc import X`), or a dotted spelling whose root this file imported. Aliases are followed, so the proof follows the IMPORTED name and the edge names the BOUND one. `typing.Generic` is excluded by measurement. `.register(Y)` emits `implements` only when its receiver is a proven or locally-declared abstract class. `metaclass=ABCMeta` and a body of @abstractmethod methods emit nothing, because they declare an interface rather than conform to one and the class is the only endpoint the source names.",
+  "why": "The single-base rule exists because one base is one syntactic fact, and a graph that states it twice under two labels is not richer, it is ambiguous: a consumer asking `does C implement Mapping` and one asking `does C extend Mapping` get different answers from the same line of source. The C# lane reached the identical conclusion on the identical construct. The import-based proof exists because `ABC` and `Protocol` are names a python programmer is free to reuse, and 27 base occurrences of `Protocol` in this corpus do exactly that - CPython's own typing.py declares the class and then inherits from it, which is `extends`. Keying on the spelling would have relabelled those 27 correctly-labelled edges and made the new type wrong on its first appearance. The Generic exclusion exists because the raw number is the trap: at 291 occurrences it is the most frequent interface-shaped base in the corpus and it is not an interface at all, so a rule that accepted it would have looked better on the scoreboard than the rule that does not. The `.register` homonym proof exists for the same reason as the spelling proof: 492 of 493 call sites are a different method entirely, and a fabricated edge is counted as unexplained and propagates into bb_graph, bb_impact and bb_migrate as wrong refactoring advice. Declaring emits nothing because there is nowhere to point: an interface declared by `metaclass=ABCMeta` has no second endpoint in the source, and inventing one is the fabrication rule this workstream was written to prevent."
+ }
+}

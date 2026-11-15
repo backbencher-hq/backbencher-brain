@@ -1,0 +1,116 @@
+{
+  "issue": "M61.V4 verifier lint (issue #845)",
+  "code": "V4",
+  "milestone": "M61",
+  "status": "known-gap",
+  "checks": 32,
+  "passed": 23,
+  "failed": 9,
+  "realFailed": 9,
+  "failures": [
+    "G1: every lane script that runs checks is a gate or a declared non-gate — G1: script/m24/verify-hover-docs.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m24/verify-usage-scope.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m25/editor_evidence.ts runs checks but owns no lane record and is not declared a non-gate",
+    "G2: every orphan record is a declared artifact — G2: validation/m25/results/F-ANTIGRAVITY-attempt.json is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason) | G2: validation/m28/results/mcp-stdout.json is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason) | G2: validation/m29/results/R3-index.json is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason)",
+    "G3: every lane record is sealed or declared legacy — G3: script/m53/verify-r1-ladder.ts record validation/m53/results/.ladder-state.json is UNSEALED | G3: script/m24/verify-hover-docs.ts owns no lane record — it produces no evidence | G3: script/m24/verify-hover-latency.ts record validation/m24/results/L6.json is UNSEALED",
+    "G4: every gate carries a can-fail proof or a declared reason — G4: script/m24/verify-callsite-agreement.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail | G4: script/m28/measure-surface-divergence.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail | G4: script/m55/verify-hover-coverage.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail | G4: script/m55/measure-address-agreement.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail",
+    "G5: every gate is wired into a tier, and fast ⊆ full — G5: script/m24/verify-hover-latency.ts is wired into NO execution tier and is not declared in declaredOnDemand with a reason | G5: script/m25/editor_evidence.ts is wired into NO execution tier and is not declared in declaredOnDemand with a reason | G5: script/m26/verify-inbound-basis.ts is wired into NO execution tier and is not declared in declaredOnDemand with a reason",
+    "G6: every BB_* env var a gate reads is declared — G6: script/m28/verify-surface-parity.ts reads undeclared env var BB_U2_FULL_SHAPE_MATRIX (declare it in declaredEnv with its role)",
+    "G7: no lane gate dynamically imports a lane module — G7: script/m24/verify-hover-latency.ts:131: dynamic import of a lane module (\"../../src/ast/parallel-indexer\") — import it statically (the TDZ class) | G7: script/m24/verify-hover-latency.ts:132: dynamic import of a lane module (\"../../src/util/project-id\") — import it statically (the TDZ class) | G7: script/m24/verify-hover-latency.ts:133: dynamic import of a lane module (\"../../src/brain/database\") — import it statically (the TDZ class)",
+    "G8: no lane gate runs a check after its last evidence write — G8: script/m24/verify-hover-docs.ts:196: a check runs AFTER the last evidence write (line 91) — the record can disagree with the run | G8: script/m24/verify-usage-scope.ts:161: a check runs AFTER the last evidence write (line 55) — the record can disagree with the run | G8: script/m25/verify-governance.ts:901: a check runs AFTER the last evidence write (line 880) — the record can disagree with the run",
+    "G0: the lint reports no unexplained failures at all — G1: script/m24/verify-hover-docs.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m24/verify-usage-scope.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m25/editor_evidence.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m26/verify-hub-group-order.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m26/verify-inbound-basis.ts runs checks but owns no lane record and is not declared a non-gate"
+  ],
+  "checksList": [
+    "ok: G0: the lint found gates",
+    "ok: G0: the lint found lane records",
+    "ok: G0: the derived tier map is non-empty",
+    "ok: G0: the registry declares at least the three lane tiers",
+    "FAIL: G1: every lane script that runs checks is a gate or a declared non-gate — G1: script/m24/verify-hover-docs.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m24/verify-usage-scope.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m25/editor_evidence.ts runs checks but owns no lane record and is not declared a non-gate",
+    "FAIL: G2: every orphan record is a declared artifact — G2: validation/m25/results/F-ANTIGRAVITY-attempt.json is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason) | G2: validation/m28/results/mcp-stdout.json is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason) | G2: validation/m29/results/R3-index.json is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason)",
+    "ok: G2: the census accounts for every record (gates + artifacts + orphans)",
+    "FAIL: G3: every lane record is sealed or declared legacy — G3: script/m53/verify-r1-ladder.ts record validation/m53/results/.ladder-state.json is UNSEALED | G3: script/m24/verify-hover-docs.ts owns no lane record — it produces no evidence | G3: script/m24/verify-hover-latency.ts record validation/m24/results/L6.json is UNSEALED",
+    "FAIL: G4: every gate carries a can-fail proof or a declared reason — G4: script/m24/verify-callsite-agreement.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail | G4: script/m28/measure-surface-divergence.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail | G4: script/m55/verify-hover-coverage.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail | G4: script/m55/measure-address-agreement.ts carries 0 can-fail proofs (< floor 1) and is not declared in declaredNoCanFail",
+    "FAIL: G5: every gate is wired into a tier, and fast ⊆ full — G5: script/m24/verify-hover-latency.ts is wired into NO execution tier and is not declared in declaredOnDemand with a reason | G5: script/m25/editor_evidence.ts is wired into NO execution tier and is not declared in declaredOnDemand with a reason | G5: script/m26/verify-inbound-basis.ts is wired into NO execution tier and is not declared in declaredOnDemand with a reason",
+    "FAIL: G6: every BB_* env var a gate reads is declared — G6: script/m28/verify-surface-parity.ts reads undeclared env var BB_U2_FULL_SHAPE_MATRIX (declare it in declaredEnv with its role)",
+    "FAIL: G7: no lane gate dynamically imports a lane module — G7: script/m24/verify-hover-latency.ts:131: dynamic import of a lane module (\"../../src/ast/parallel-indexer\") — import it statically (the TDZ class) | G7: script/m24/verify-hover-latency.ts:132: dynamic import of a lane module (\"../../src/util/project-id\") — import it statically (the TDZ class) | G7: script/m24/verify-hover-latency.ts:133: dynamic import of a lane module (\"../../src/brain/database\") — import it statically (the TDZ class)",
+    "FAIL: G8: no lane gate runs a check after its last evidence write — G8: script/m24/verify-hover-docs.ts:196: a check runs AFTER the last evidence write (line 91) — the record can disagree with the run | G8: script/m24/verify-usage-scope.ts:161: a check runs AFTER the last evidence write (line 55) — the record can disagree with the run | G8: script/m25/verify-governance.ts:901: a check runs AFTER the last evidence write (line 880) — the record can disagree with the run",
+    "FAIL: G0: the lint reports no unexplained failures at all — G1: script/m24/verify-hover-docs.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m24/verify-usage-scope.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m25/editor_evidence.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m26/verify-hub-group-order.ts runs checks but owns no lane record and is not declared a non-gate | G1: script/m26/verify-inbound-basis.ts runs checks but owns no lane record and is not declared a non-gate",
+    "ok: core: a record with declared mutants counts as proof",
+    "ok: core: a record whose checksList names M: checks counts as proof",
+    "ok: core: a record with neither counts nor M: checks has no proof",
+    "ok: core: a sealed record is recognised",
+    "ok: core: an unsealed record is not",
+    "ok: core: a relative dynamic import of a lane module is flagged (the TDZ class)",
+    "ok: core: a static import of the same module is not flagged",
+    "ok: core: a computed-URL dynamic import (the mutant harnesses) is not flagged",
+    "ok: core: a TYPE-position typeof import() is not flagged (erased at compile time)",
+    "ok: M: canfail-blind",
+    "ok: M: seal-blind",
+    "ok: M: orphan-blind",
+    "ok: M: floor-ignored",
+    "ok: M: import-order-blind",
+    "ok: M: record-order-blind",
+    "ok: M: tier-blind",
+    "ok: M: env-blind",
+    "ok: R: this verifier's own evidence is a sealed record"
+  ],
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "verifierCommand": "npx tsx script/m61/verify-lint.ts",
+  "evidenceFile": "V4.json",
+  "generatedAt": "2026-11-09T10:40:03.034Z",
+  "census": {
+    "gates": 120,
+    "records": 309,
+    "tiers": [
+      {
+        "name": "verify:fast",
+        "gateCount": 36
+      },
+      {
+        "name": "verify",
+        "gateCount": 355
+      },
+      {
+        "name": "r1-ladder",
+        "gateCount": 42
+      },
+      {
+        "name": "verify:m40",
+        "gateCount": 13
+      },
+      {
+        "name": "verify:m44-closure",
+        "gateCount": 1
+      },
+      {
+        "name": "verify:m55",
+        "gateCount": 11
+      },
+      {
+        "name": "verify:m51",
+        "gateCount": 3
+      },
+      {
+        "name": "verify:m52",
+        "gateCount": 2
+      },
+      {
+        "name": "verify:m54",
+        "gateCount": 5
+      }
+    ],
+    "orphans": 125,
+    "artifactRecords": 47,
+    "onDemandGates": 23,
+    "declaredNonGates": 12,
+    "declaredNoCanFail": 1
+  },
+  "limitations": [
+    "Gate membership is derived from the evidence (a record names its gate, or the gate's source names the record) — a gate that writes no record is invisible to the derivation and is caught by G1 instead.",
+    "Can-fail proof is a COUNT, not a quality judgement: a gate with one weak mutant passes the floor. Floor-raising per gate is a registry change, and the mutant quality is the job of the milestone's own closure.",
+    "Tier membership is read from the declared command lists (package.json + the lane ladder). A gate wired only into a tier that nothing executes is still 'wired' — executing each tier is what X1 audits."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:40:03.034Z",
+    "contentSha256": "5f88b50d35076cac4029e428612f1955f4baa467f7446ea665672bb56201ad6e"
+  }
+}

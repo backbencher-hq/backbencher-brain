@@ -1,0 +1,1610 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_ask",
+  "phase": "Phase B (fix + re-measure + red-then-green)",
+  "status": "verified",
+  "currentCommit": "3cd2fb7d0eea372b02d2e6adadfaf63d15be693c",
+  "generatedAt": "2026-11-03T20:22:45.924Z",
+  "summary": {
+    "routes": [
+      "aggregate",
+      "retrieval(vector)",
+      "retrieval(keyword-fallback)",
+      "retrieval(exact-name)",
+      "symbol-name",
+      "none",
+      "no-index"
+    ],
+    "defects": {
+      "critical": 2,
+      "high": 8,
+      "medium": 5,
+      "low": 3
+    },
+    "gateBaseline": "4 of 9 ask gates green: verify-semantic, verify-ask-adversarial, verify-ask-integration, verify-ask-stats; verify-ask-contract and verify-ask-e2e-corpus fail on the gate's MCP env forwarding; verify-ask-provenance fails on its no-match probe (observed coverage/results contradiction); verify-ask-docs is Bun-only and needs the full-repo generator plus committed evidence; verify-ask-deep crashes on the removed inline registry descriptor",
+    "latency": {
+      "T0p95Ms": 28.91,
+      "T1p95Ms": 231.97,
+      "T2p95Ms": 2095.62,
+      "T2Qualification": "warm; cold start 9.2-10.2 s; measured on a read-only backup copy"
+    },
+    "mcpDoor": "12/12 expectations met over real MCP stdio; 16 tools listed; every refusal isError with a named message"
+  },
+  "verifierCommands": [
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m13/verify-ask-contract.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m13/verify-ask-provenance.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m13/verify-ask-adversarial.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m13/verify-ask-integration.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m13/verify-ask-docs.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/verify-semantic.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m13/verify-ask-e2e-corpus.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m16/verify-ask-stats.ts",
+    "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=validation/tools/bb_ask/bbdata/bun bun run script/m15/verify-ask-deep.ts",
+    "npx tsx script/verify-tool-docs.ts --only bb_ask",
+    "npx tsx script/tools/verify-regex-policy.ts",
+    "npx tsc --noEmit"
+  ],
+  "evidence": [
+    "validation/tools/bb_ask/AUDIT-PHASE-A.md",
+    "validation/tools/bb_ask/LATENCY.json",
+    "validation/tools/bb_ask/t0-index.json",
+    "validation/tools/bb_ask/t0-index-facts.json",
+    "validation/tools/bb_ask/t0-index-api.json",
+    "validation/tools/bb_ask/t0-index-facts-api.json",
+    "validation/tools/bb_ask/t1-index.json",
+    "validation/tools/bb_ask/t1-index-facts.json",
+    "validation/tools/bb_ask/t0-latency-local.json",
+    "validation/tools/bb_ask/t0-latency-remote-query.json",
+    "validation/tools/bb_ask/t0-latency-api.json",
+    "validation/tools/bb_ask/t1-latency-local.json",
+    "validation/tools/bb_ask/t1-latency-remote-query.json",
+    "validation/tools/bb_ask/t2-index-facts.json",
+    "validation/tools/bb_ask/t2-copy-index-facts.json",
+    "validation/tools/bb_ask/t2-backup.json",
+    "validation/tools/bb_ask/t2-components-remote.json",
+    "validation/tools/bb_ask/t2-components-local.json",
+    "validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json",
+    "validation/tools/bb_ask/t2-copy-write-delta.json",
+    "validation/tools/bb_ask/limits.json",
+    "validation/tools/bb_ask/mcp-door.json",
+    "validation/tools/bb_ask/read-path-steps.json",
+    "validation/tools/bb_ask/read-path-writes.json",
+    "validation/tools/bb_ask/missing-index-and-network.json",
+    "validation/tools/bb_ask/coverage-race.json",
+    "validation/tools/bb_ask/work/baseline-bun/",
+    "validation/tools/bb_ask/work/baseline-tsx/"
+  ],
+  "gateTable": [
+    {
+      "gate": "script/verify-semantic.ts",
+      "bunExit": 0,
+      "tsxExit": 0,
+      "verdict": "SEMANTIC: PASS",
+      "state": "green"
+    },
+    {
+      "gate": "script/m13/verify-ask-contract.ts",
+      "bunExit": 1,
+      "tsxExit": 1,
+      "verdict": "A1: KNOWN-GAP (14/15)",
+      "state": "red: MCP leg does not forward BB_DATA_DIR to the stdio child"
+    },
+    {
+      "gate": "script/m13/verify-ask-provenance.ts",
+      "bunExit": 1,
+      "tsxExit": 1,
+      "verdict": "A2: KNOWN-GAP (15/19)",
+      "state": "red: no-match probe returns real vector matches on a 2-symbol fixture; observed coverage/results contradiction"
+    },
+    {
+      "gate": "script/m13/verify-ask-adversarial.ts",
+      "bunExit": 0,
+      "tsxExit": 0,
+      "verdict": "A3: VERIFIED (17/17, 7 negatives)",
+      "state": "green"
+    },
+    {
+      "gate": "script/m13/verify-ask-integration.ts",
+      "bunExit": 0,
+      "tsxExit": 0,
+      "verdict": "A4: VERIFIED (10/10, 2 negatives)",
+      "state": "green"
+    },
+    {
+      "gate": "script/m13/verify-ask-docs.ts",
+      "bunExit": 1,
+      "tsxExit": 1,
+      "verdict": "A6: KNOWN-GAP (24/28); tsx crashes on import.meta.dir",
+      "state": "red: Bun-only entry + full-repo generator + evidence known-gap"
+    },
+    {
+      "gate": "script/m13/verify-ask-e2e-corpus.ts",
+      "bunExit": 1,
+      "tsxExit": 1,
+      "verdict": "A5: KNOWN-GAP (23/24)",
+      "state": "red: MCP leg env forwarding"
+    },
+    {
+      "gate": "script/m16/verify-ask-stats.ts",
+      "bunExit": 0,
+      "tsxExit": 0,
+      "verdict": "A4: VERIFIED (8/8)",
+      "state": "green"
+    },
+    {
+      "gate": "script/m15/verify-ask-deep.ts",
+      "bunExit": 2,
+      "tsxExit": 2,
+      "verdict": "TypeError: Cannot read properties of undefined (reading split)",
+      "state": "red: scrapes the removed inline registry descriptor; cannot run"
+    }
+  ],
+  "readingInvariants": [
+    "every read must use getRawInstance(projectId, {readonly:true}) or an equivalent byte-read-only open",
+    "a read must never create a database, a WAL with content, or embedding blobs (audit C1)",
+    "limit=0 must mean zero retrieval work and an answer that does not print matches (C2)",
+    "limit must have a declared ceiling and the answer a declared truncation (C3)",
+    "confidence must not be published as measured when the ranking is declared non-discriminative (C4)",
+    "reported embedding coverage must describe the query model/dimension that was actually compared, measured after the query model is known (C5, C6)",
+    "a capped scan must be declared (C7)",
+    "stale and missing must not share one marker (C8)",
+    "aggregate answers must disclose index age or the possibility of staleness (C9)",
+    "descriptor/curation/docs must not claim similarity scores on routes that do not compute them, must not claim error-on-embedding-unavailable, must not claim \"does not rebuild embeddings\", and must state ask-time provider transmission (C11, C12)",
+    "ask-time query embedding must be bounded by the tool budget, not by a 30 s provider timeout (C16)",
+    "no regex in the bb_ask read path (C17)",
+    "no authoring/review narration in campaign files (C15)"
+  ],
+  "defects": [
+    {
+      "id": "C1",
+      "severity": "critical",
+      "title": "read path opens read-write and writes the index (migrations/WAL, background blob promotion, missing-index DB creation)",
+      "evidence": [
+        "read-path-steps.json",
+        "missing-index-and-network.json",
+        "t2-copy-write-delta.json",
+        "src/intelligence/search/semantic-search.ts:222-235",
+        "src/brain/database.ts:242"
+      ],
+      "fix": "readonly opens in quick-answer.ts + semantic-search.ts; drop promotion scheduling on read; request engine.localVocabulary readonly from the Lead"
+    },
+    {
+      "id": "C2",
+      "severity": "critical",
+      "title": "limit:0 becomes 50 in the engine, prints matches while the door says none were returned, and still pays for retrieval",
+      "evidence": [
+        "limits.json"
+      ],
+      "fix": "treat 0 as zero retrieval work in quickAnswer; declare the zero-limit answer; never print a match block under a \"no matches\" notice"
+    },
+    {
+      "id": "C3",
+      "severity": "high",
+      "title": "no declared limit ceiling and no declared truncation; up to 500 snippet blocks resolvable on T2",
+      "evidence": [
+        "limits.json",
+        "t2-components-remote.json"
+      ],
+      "fix": "declared ceiling refused at the door with the bb_search precedent, declared candidate/match counts in the answer"
+    },
+    {
+      "id": "C4",
+      "severity": "high",
+      "title": "confidence contradicts the non-discriminative disclosure",
+      "evidence": [
+        "t2-latency-end-to-end-phaseA.json"
+      ],
+      "fix": "cap confidence when discriminative===false and say the number is not a measurement"
+    },
+    {
+      "id": "C5",
+      "severity": "high",
+      "title": "embedding coverage counts all models, not the query model/dimension actually compared",
+      "evidence": [
+        "t2-components-remote.json",
+        "t2-components-local.json"
+      ],
+      "fix": "per-model coverage measured after the query model is known"
+    },
+    {
+      "id": "C6",
+      "severity": "high",
+      "title": "coverage measured before the embedding await can contradict the returned vector matches",
+      "evidence": [
+        "work/baseline-bun/verify-ask-provenance.log",
+        "coverage-race.json"
+      ],
+      "fix": "measure coverage at scan time for the query model; deterministic gate (mixed-model index)"
+    },
+    {
+      "id": "C7",
+      "severity": "high",
+      "title": "20,000-row scan cap and scanned/filtered counts never reach the caller",
+      "evidence": [
+        "t2-components-remote.json",
+        "src/intelligence/search/semantic-search.ts:307"
+      ],
+      "fix": "thread provenance.truncated and scannedRows/filteredRows into the answer"
+    },
+    {
+      "id": "C8",
+      "severity": "medium",
+      "title": "missing files are labelled as stale/changed",
+      "evidence": [
+        "src/intelligence/search/semantic-search.ts:367",
+        "src/intelligence/search/quick-answer.ts:618"
+      ],
+      "fix": "separate markers"
+    },
+    {
+      "id": "C9",
+      "severity": "medium",
+      "title": "aggregate answers are \"verified\" with no index-age disclosure",
+      "evidence": [
+        "limits.json",
+        "docs/tools/bb_ask.md"
+      ],
+      "fix": "disclose index age on aggregate answers"
+    },
+    {
+      "id": "C10",
+      "severity": "low",
+      "title": "exact-name answers print the neighbour scan fallback reason as reason=",
+      "evidence": [
+        "limits.json"
+      ],
+      "fix": "label it as the neighbour scan reason or omit"
+    },
+    {
+      "id": "C11",
+      "severity": "high",
+      "title": "descriptor and curation overclaim: similarity scores on every route, embedding-unavailable as an error, \"does not rebuild embeddings\"",
+      "evidence": [
+        "src/mcp/tools/bb_ask/descriptor.ts:16",
+        "script/tool-docs/curation/bb_ask.ts",
+        "docs/tools/bb_ask.md"
+      ],
+      "fix": "rewrite descriptor/curation to the measured route matrix and safety truth"
+    },
+    {
+      "id": "C12",
+      "severity": "high",
+      "title": "docs/BB_ASK.md stale/false claims (0.15 floor, 190 words, fixed 0.95, metadata table, privacy) and milestone narration + missing header",
+      "evidence": [
+        "docs/BB_ASK.md:93",
+        ":106",
+        ":168",
+        ":99",
+        ":196-218",
+        "validation/m18/results/Q3.json"
+      ],
+      "fix": "rewrite guide page against measurement; add §8 header; drop narration"
+    },
+    {
+      "id": "C13",
+      "severity": "medium",
+      "title": "four ask gates cannot report (MCP env forwarding, Bun-only import.meta.dir, full-repo generator, stale registry scrape), one crashes",
+      "evidence": [
+        "work/baseline-bun/",
+        "work/baseline-tsx/"
+      ],
+      "fix": "forward env, portable entry, --only generator, import descriptors; falsifiable mutants"
+    },
+    {
+      "id": "C14",
+      "severity": "medium",
+      "title": "handler imports 87 unused symbols and carries milestone/issue narration",
+      "evidence": [
+        "src/mcp/tools/bb_ask/handler.ts:12-55"
+      ],
+      "fix": "trim to the imports the handler uses; remove narration"
+    },
+    {
+      "id": "C15",
+      "severity": "low",
+      "title": "dead code and remaining narration (embeddingCoverage(), this lane, M50.A2, gate headers)",
+      "evidence": [
+        "src/intelligence/search/quick-answer.ts:192,215,382",
+        "src/intelligence/search/semantic-search.ts"
+      ],
+      "fix": "delete dead function; reword narration"
+    },
+    {
+      "id": "C16",
+      "severity": "high",
+      "title": "ask-time query embedding is bounded by a 30 s provider timeout, not the tool budget",
+      "evidence": [
+        "missing-index-and-network.json",
+        "src/brain/semantic/embedding-config.ts:118"
+      ],
+      "fix": "bound ask-time embedding inside the tool budget and declare the fallback"
+    },
+    {
+      "id": "C17",
+      "severity": "low",
+      "title": "two regex literals in the bb_ask read path (frozen debt), removable with string operations",
+      "evidence": [
+        "src/intelligence/search/quick-answer.ts:249,251",
+        "validation/tools/regex-policy.json"
+      ],
+      "fix": "replace with plain string ops; Lead updates regex-baseline.json"
+    }
+  ],
+  "blockedLegs": [],
+  "crossScopeNeeds": [
+    {
+      "0": "s",
+      "1": "r",
+      "2": "c",
+      "3": "/",
+      "4": "b",
+      "5": "r",
+      "6": "a",
+      "7": "i",
+      "8": "n",
+      "9": "/",
+      "10": "s",
+      "11": "e",
+      "12": "m",
+      "13": "a",
+      "14": "n",
+      "15": "t",
+      "16": "i",
+      "17": "c",
+      "18": "/",
+      "19": "e",
+      "20": "n",
+      "21": "g",
+      "22": "i",
+      "23": "n",
+      "24": "e",
+      "25": ".",
+      "26": "t",
+      "27": "s",
+      "28": " ",
+      "29": "l",
+      "30": "o",
+      "31": "c",
+      "32": "a",
+      "33": "l",
+      "34": "V",
+      "35": "o",
+      "36": "c",
+      "37": "a",
+      "38": "b",
+      "39": "u",
+      "40": "l",
+      "41": "a",
+      "42": "r",
+      "43": "y",
+      "44": "(",
+      "45": ")",
+      "46": ":",
+      "47": " ",
+      "48": "o",
+      "49": "p",
+      "50": "e",
+      "51": "n",
+      "52": " ",
+      "53": "r",
+      "54": "e",
+      "55": "a",
+      "56": "d",
+      "57": "-",
+      "58": "o",
+      "59": "n",
+      "60": "l",
+      "61": "y",
+      "62": " ",
+      "63": "(",
+      "64": "s",
+      "65": "h",
+      "66": "a",
+      "67": "r",
+      "68": "e",
+      "69": "d",
+      "70": " ",
+      "71": "e",
+      "72": "n",
+      "73": "g",
+      "74": "i",
+      "75": "n",
+      "76": "e",
+      "77": ")",
+      "status": "open"
+    },
+    {
+      "0": "v",
+      "1": "a",
+      "2": "l",
+      "3": "i",
+      "4": "d",
+      "5": "a",
+      "6": "t",
+      "7": "i",
+      "8": "o",
+      "9": "n",
+      "10": "/",
+      "11": "t",
+      "12": "o",
+      "13": "o",
+      "14": "l",
+      "15": "s",
+      "16": "/",
+      "17": "r",
+      "18": "e",
+      "19": "g",
+      "20": "e",
+      "21": "x",
+      "22": "-",
+      "23": "b",
+      "24": "a",
+      "25": "s",
+      "26": "e",
+      "27": "l",
+      "28": "i",
+      "29": "n",
+      "30": "e",
+      "31": ".",
+      "32": "j",
+      "33": "s",
+      "34": "o",
+      "35": "n",
+      "36": ":",
+      "37": " ",
+      "38": "r",
+      "39": "e",
+      "40": "d",
+      "41": "u",
+      "42": "c",
+      "43": "e",
+      "44": " ",
+      "45": "f",
+      "46": "r",
+      "47": "o",
+      "48": "z",
+      "49": "e",
+      "50": "n",
+      "51": " ",
+      "52": "d",
+      "53": "e",
+      "54": "b",
+      "55": "t",
+      "56": " ",
+      "57": "8",
+      "58": "7",
+      "59": " ",
+      "60": "-",
+      "61": ">",
+      "62": " ",
+      "63": "8",
+      "64": "5",
+      "65": " ",
+      "66": "a",
+      "67": "f",
+      "68": "t",
+      "69": "e",
+      "70": "r",
+      "71": " ",
+      "72": "C",
+      "73": "1",
+      "74": "7",
+      "status": "open"
+    },
+    {
+      "0": "p",
+      "1": "a",
+      "2": "c",
+      "3": "k",
+      "4": "a",
+      "5": "g",
+      "6": "e",
+      "7": ".",
+      "8": "j",
+      "9": "s",
+      "10": "o",
+      "11": "n",
+      "12": " ",
+      "13": "/",
+      "14": " ",
+      "15": "s",
+      "16": "c",
+      "17": "r",
+      "18": "i",
+      "19": "p",
+      "20": "t",
+      "21": "/",
+      "22": "v",
+      "23": "e",
+      "24": "r",
+      "25": "i",
+      "26": "f",
+      "27": "y",
+      "28": "-",
+      "29": "q",
+      "30": "u",
+      "31": "a",
+      "32": "l",
+      "33": "i",
+      "34": "t",
+      "35": "y",
+      "36": "-",
+      "37": "g",
+      "38": "a",
+      "39": "t",
+      "40": "e",
+      "41": ".",
+      "42": "t",
+      "43": "s",
+      "44": ":",
+      "45": " ",
+      "46": "w",
+      "47": "i",
+      "48": "r",
+      "49": "e",
+      "50": " ",
+      "51": "t",
+      "52": "h",
+      "53": "e",
+      "54": " ",
+      "55": "n",
+      "56": "e",
+      "57": "w",
+      "58": " ",
+      "59": "s",
+      "60": "c",
+      "61": "r",
+      "62": "i",
+      "63": "p",
+      "64": "t",
+      "65": "/",
+      "66": "m",
+      "67": "1",
+      "68": "3",
+      "69": "/",
+      "70": "v",
+      "71": "e",
+      "72": "r",
+      "73": "i",
+      "74": "f",
+      "75": "y",
+      "76": "-",
+      "77": "a",
+      "78": "s",
+      "79": "k",
+      "80": "-",
+      "81": "h",
+      "82": "o",
+      "83": "n",
+      "84": "e",
+      "85": "s",
+      "86": "t",
+      "87": "y",
+      "88": ".",
+      "89": "t",
+      "90": "s",
+      "status": "open"
+    },
+    {
+      "0": "d",
+      "1": "o",
+      "2": "c",
+      "3": "s",
+      "4": "/",
+      "5": "E",
+      "6": "M",
+      "7": "B",
+      "8": "E",
+      "9": "D",
+      "10": "D",
+      "11": "I",
+      "12": "N",
+      "13": "G",
+      "14": "S",
+      "15": ".",
+      "16": "m",
+      "17": "d",
+      "18": " ",
+      "19": "b",
+      "20": "b",
+      "21": "_",
+      "22": "a",
+      "23": "s",
+      "24": "k",
+      "25": " ",
+      "26": "r",
+      "27": "o",
+      "28": "w",
+      "29": "s",
+      "status": "open"
+    },
+    {
+      "0": "d",
+      "1": "o",
+      "2": "c",
+      "3": "s",
+      "4": "/",
+      "5": "d",
+      "6": "a",
+      "7": "t",
+      "8": "a",
+      "9": "/",
+      "10": "p",
+      "11": "u",
+      "12": "b",
+      "13": "l",
+      "14": "i",
+      "15": "c",
+      "16": "-",
+      "17": "t",
+      "18": "o",
+      "19": "o",
+      "20": "l",
+      "21": "s",
+      "22": ".",
+      "23": "j",
+      "24": "s",
+      "25": "o",
+      "26": "n",
+      "27": " ",
+      "28": "+",
+      "29": " ",
+      "30": "w",
+      "31": "e",
+      "32": "b",
+      "33": "s",
+      "34": "i",
+      "35": "t",
+      "36": "e",
+      "37": "/",
+      "38": "s",
+      "39": "r",
+      "40": "c",
+      "41": "/",
+      "42": "d",
+      "43": "a",
+      "44": "t",
+      "45": "a",
+      "46": "/",
+      "47": "t",
+      "48": "o",
+      "49": "o",
+      "50": "l",
+      "51": "s",
+      "52": ".",
+      "53": "g",
+      "54": "e",
+      "55": "n",
+      "56": "e",
+      "57": "r",
+      "58": "a",
+      "59": "t",
+      "60": "e",
+      "61": "d",
+      "62": ".",
+      "63": "t",
+      "64": "s",
+      "65": " ",
+      "66": "r",
+      "67": "e",
+      "68": "g",
+      "69": "e",
+      "70": "n",
+      "71": "e",
+      "72": "r",
+      "73": "a",
+      "74": "t",
+      "75": "i",
+      "76": "o",
+      "77": "n",
+      "status": "open"
+    },
+    {
+      "0": "d",
+      "1": "i",
+      "2": "s",
+      "3": "t",
+      "4": "/",
+      "5": " ",
+      "6": "r",
+      "7": "e",
+      "8": "b",
+      "9": "u",
+      "10": "i",
+      "11": "l",
+      "12": "d",
+      "status": "open"
+    }
+  ],
+  "regex": {
+    "policyGate": "PASS",
+    "totalUses": 89,
+    "allowlisted": 2,
+    "frozenDebt": 87,
+    "bbAskPathRegexes": [
+      {
+        "file": "src/intelligence/search/quick-answer.ts",
+        "line": 249,
+        "use": "strip trailing sentence punctuation"
+      },
+      {
+        "file": "src/intelligence/search/quick-answer.ts",
+        "line": 251,
+        "use": "reject multi-word symbol name"
+      }
+    ],
+    "allowlistRows": 0
+  },
+  "narrationInventory": [
+    "src/mcp/tools/bb_ask/handler.ts:38-47 — M28.T1 (issue #624), M48.P1 (#696), M55.T5 / §15.1",
+    "src/intelligence/search/quick-answer.ts:192 — \"this lane added\"; :382 — \"caught by ... the M15.A2 gate\"",
+    "src/intelligence/search/semantic-search.ts:72,106,183,222 — M50.A2 (#764)",
+    "docs/BB_ASK.md:14,196-218 — M16 regression, M18 evidence, shipped in M18.Q3, Q3.json",
+    "script/m15/verify-ask-deep.ts:1,133 — \"GENUINE deep redo\", \"this lane's own review\"",
+    "script/m16/verify-ask-stats.ts:1 — milestone header"
+  ],
+  "phaseB": {
+    "summary": "Every Phase A defect is fixed; all 10 ask gates are green on bun and node (75 observed negatives); 13/13 planted mutants turned their gate red and were restored byte-identically; the real-corpus MCP-stdio proof is green with dbUnchanged:true on three repositories.",
+    "gates": {
+      "command": "node validation/tools/bb_ask/work/run-gates.mjs --mutants",
+      "verified": true,
+      "runtimeCount": 2,
+      "gateCount": 10,
+      "negativeCases": 75,
+      "table": [
+        {
+          "gate": "verify-ask-contract",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 4183,
+              "log": "gates/bun/verify-ask-contract.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 23634,
+              "log": "gates/node/verify-ask-contract.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-provenance",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 1629,
+              "log": "gates/bun/verify-ask-provenance.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 5266,
+              "log": "gates/node/verify-ask-provenance.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-adversarial",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 1700,
+              "log": "gates/bun/verify-ask-adversarial.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 3589,
+              "log": "gates/node/verify-ask-adversarial.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-integration",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 1776,
+              "log": "gates/bun/verify-ask-integration.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 4962,
+              "log": "gates/node/verify-ask-integration.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-honesty",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 1703,
+              "log": "gates/bun/verify-ask-honesty.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 5201,
+              "log": "gates/node/verify-ask-honesty.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-semantic",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 1042,
+              "log": "gates/bun/verify-semantic.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 3224,
+              "log": "gates/node/verify-semantic.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-stats",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 3073,
+              "log": "gates/bun/verify-ask-stats.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 9044,
+              "log": "gates/node/verify-ask-stats.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-deep",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 11665,
+              "log": "gates/bun/verify-ask-deep.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 32959,
+              "log": "gates/node/verify-ask-deep.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-e2e-corpus",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 90949,
+              "log": "gates/bun/verify-ask-e2e-corpus.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 117064,
+              "log": "gates/node/verify-ask-e2e-corpus.log"
+            }
+          }
+        },
+        {
+          "gate": "verify-ask-docs",
+          "verified": true,
+          "runtimes": {
+            "bun": {
+              "exit": 0,
+              "ms": 433,
+              "log": "gates/bun/verify-ask-docs.log"
+            },
+            "node": {
+              "exit": 0,
+              "ms": 1955,
+              "log": "gates/node/verify-ask-docs.log"
+            }
+          }
+        }
+      ],
+      "evidence": "validation/tools/bb_ask/gates/summary.json"
+    },
+    "mutants": {
+      "allRed": true,
+      "count": 13,
+      "redObserved": 13,
+      "restoredByteIdentically": true,
+      "evidence": "validation/tools/bb_ask/mutants.json"
+    },
+    "realCorpus": {
+      "evidence": "validation/tools/bb_ask/REAL-CORPUS.json",
+      "corpora": [
+        {
+          "name": "rake/lib (Ruby, provider-embedded)",
+          "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/real-corpus",
+          "index": {
+            "symbols": 497,
+            "files": 44,
+            "embeddings": [
+              {
+                "m": "nvidia/nemotron-3-embed-1b",
+                "d": 2048,
+                "c": 353
+              }
+            ]
+          },
+          "doorCalls": [
+            {
+              "label": "semantic question (provider space)",
+              "ms": 1356.4,
+              "method": "vector",
+              "isError": false
+            },
+            {
+              "label": "exact symbol name",
+              "ms": 232.9,
+              "method": "exact-name",
+              "isError": false
+            },
+            {
+              "label": "fallback: nonsense term",
+              "ms": 210.5,
+              "method": "vector",
+              "isError": false
+            },
+            {
+              "label": "aggregate count",
+              "ms": 41,
+              "method": null,
+              "isError": false
+            },
+            {
+              "label": "model-mismatch: local question against provider-embedded index",
+              "ms": 436.1,
+              "method": "keyword-fallback",
+              "isError": false
+            },
+            {
+              "label": "exact symbol still answers without embeddings",
+              "ms": 22.1,
+              "method": "exact-name",
+              "isError": false
+            }
+          ],
+          "dbUnchanged": true
+        },
+        {
+          "name": "graphql-js/src (TypeScript, local-embedded)",
+          "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/real-corpus",
+          "index": {
+            "symbols": 8057,
+            "files": 375,
+            "embeddings": [
+              {
+                "m": "local-word-vectors-v3",
+                "d": 50,
+                "c": 1991
+              }
+            ]
+          },
+          "doorCalls": [
+            {
+              "label": "semantic question (local space)",
+              "ms": 151.1,
+              "method": "vector",
+              "isError": false
+            },
+            {
+              "label": "exact symbol name",
+              "ms": 44.7,
+              "method": "exact-name",
+              "isError": false
+            },
+            {
+              "label": "fallback: identifier absent from vocabulary",
+              "ms": 79.9,
+              "method": "vector",
+              "isError": false
+            },
+            {
+              "label": "aggregate count",
+              "ms": 4.8,
+              "method": null,
+              "isError": false
+            }
+          ],
+          "dbUnchanged": true
+        },
+        {
+          "name": "rebar3/apps (Erlang, local-embedded)",
+          "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/real-corpus",
+          "index": {
+            "symbols": 4832,
+            "files": 203,
+            "embeddings": [
+              {
+                "m": "local-word-vectors-v3",
+                "d": 50,
+                "c": 3996
+              }
+            ]
+          },
+          "doorCalls": [
+            {
+              "label": "semantic question (local space)",
+              "ms": 182.2,
+              "method": "vector",
+              "isError": false
+            },
+            {
+              "label": "exact symbol name",
+              "ms": 57.6,
+              "method": "exact-name",
+              "isError": false
+            },
+            {
+              "label": "aggregate count",
+              "ms": 33.9,
+              "method": null,
+              "isError": false
+            }
+          ],
+          "dbUnchanged": true
+        }
+      ],
+      "totals": {
+        "corpora": 3,
+        "doorCalls": 13,
+        "allDbUnchanged": true
+      },
+      "note": "Real MCP stdio door; provider-embedded Ruby corpus plus local-embedded TypeScript and Erlang corpora; every door session left brain.db bytes and WAL frames unchanged."
+    },
+    "latency": {
+      "evidence": "validation/tools/bb_ask/LATENCY.json",
+      "tiers": {
+        "T0-local": {
+          "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+          "warmupMs": 47.26,
+          "p50": 2.26,
+          "p95": 4.16,
+          "max": 4.16,
+          "runs": [
+            {
+              "ms": 4.16,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 2.13,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 2.24,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 2.26,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 2.3,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            }
+          ],
+          "exactNameLimit1": null,
+          "indexFiles": {
+            "dbUnchanged": true,
+            "before": {
+              "db": {
+                "size": 524288,
+                "mtimeMs": 1793571693257
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571695047
+              }
+            },
+            "after": {
+              "db": {
+                "size": 524288,
+                "mtimeMs": 1793571693257
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571695047
+              }
+            }
+          }
+        },
+        "T0-provider": {
+          "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+          "warmupMs": 2052.77,
+          "p50": 1710.73,
+          "p95": 2005.49,
+          "max": 2005.49,
+          "runs": [
+            {
+              "ms": 2005.49,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 2004.35,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 1710.73,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "9",
+              "truncated": null
+            },
+            {
+              "ms": 185.68,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "9",
+              "truncated": null
+            },
+            {
+              "ms": 224.76,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "9",
+              "truncated": null
+            }
+          ],
+          "exactNameLimit1": null,
+          "indexFiles": {
+            "dbUnchanged": true,
+            "before": {
+              "db": {
+                "size": 598016,
+                "mtimeMs": 1793571700242
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571781357
+              }
+            },
+            "after": {
+              "db": {
+                "size": 598016,
+                "mtimeMs": 1793571700242
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571781357
+              }
+            }
+          }
+        },
+        "T1-local": {
+          "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+          "warmupMs": 112.44,
+          "p50": 72.59,
+          "p95": 200.79,
+          "max": 200.79,
+          "runs": [
+            {
+              "ms": 200.79,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 12.29,
+              "method": "vector",
+              "queryModel": "local-word-vectors-v3",
+              "candidates": "6",
+              "truncated": null
+            },
+            {
+              "ms": 72.59,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 14.68,
+              "method": "vector",
+              "queryModel": "local-word-vectors-v3",
+              "candidates": "27",
+              "truncated": null
+            },
+            {
+              "ms": 164.23,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            }
+          ],
+          "exactNameLimit1": null,
+          "indexFiles": {
+            "dbUnchanged": true,
+            "before": {
+              "db": {
+                "size": 42835968,
+                "mtimeMs": 1793572109267
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793572395205
+              }
+            },
+            "after": {
+              "db": {
+                "size": 42835968,
+                "mtimeMs": 1793572109267
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793572395205
+              }
+            }
+          }
+        },
+        "T2-provider-copy": {
+          "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+          "warmupMs": 2504.73,
+          "p50": 1778.68,
+          "p95": 2186.8,
+          "max": 2186.8,
+          "runs": [
+            {
+              "ms": 1813.67,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19980",
+              "truncated": null
+            },
+            {
+              "ms": 1723.46,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19957",
+              "truncated": null
+            },
+            {
+              "ms": 1778.68,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19973",
+              "truncated": null
+            },
+            {
+              "ms": 1752.17,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19923",
+              "truncated": null
+            },
+            {
+              "ms": 2186.8,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19907",
+              "truncated": null
+            }
+          ],
+          "exactNameLimit1": {
+            "query": "buildStalenessEnvelope",
+            "p50": 0.93,
+            "p95": 1.26,
+            "runs": [
+              1.26,
+              0.93,
+              0.87,
+              0.72,
+              0.95
+            ]
+          },
+          "indexFiles": {
+            "dbUnchanged": true,
+            "before": {
+              "db": {
+                "size": 3639963648,
+                "mtimeMs": 1793571742313
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571786023
+              }
+            },
+            "after": {
+              "db": {
+                "size": 3639963648,
+                "mtimeMs": 1793571742313
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571786023
+              }
+            }
+          }
+        },
+        "T2-local-copy": {
+          "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+          "warmupMs": 444.24,
+          "p50": 95.28,
+          "p95": 1325.37,
+          "max": 1325.37,
+          "runs": [
+            {
+              "ms": 70.47,
+              "method": "vector",
+              "queryModel": "local-word-vectors-v3",
+              "candidates": "2",
+              "truncated": null
+            },
+            {
+              "ms": 1325.37,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            },
+            {
+              "ms": 95.28,
+              "method": "vector",
+              "queryModel": "local-word-vectors-v3",
+              "candidates": "2",
+              "truncated": null
+            },
+            {
+              "ms": 84.56,
+              "method": "vector",
+              "queryModel": "local-word-vectors-v3",
+              "candidates": "19",
+              "truncated": null
+            },
+            {
+              "ms": 1070.59,
+              "method": "keyword-fallback",
+              "queryModel": "none",
+              "candidates": "0",
+              "truncated": null
+            }
+          ],
+          "exactNameLimit1": {
+            "query": "buildStalenessEnvelope",
+            "p50": 0.79,
+            "p95": 1.12,
+            "runs": [
+              1.12,
+              0.67,
+              0.79,
+              0.64,
+              0.83
+            ]
+          },
+          "indexFiles": {
+            "dbUnchanged": true,
+            "before": {
+              "db": {
+                "size": 3639963648,
+                "mtimeMs": 1793571742313
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571786023
+              }
+            },
+            "after": {
+              "db": {
+                "size": 3639963648,
+                "mtimeMs": 1793571742313
+              },
+              "wal": {
+                "size": 0,
+                "mtimeMs": 1793571786023
+              }
+            }
+          }
+        },
+        "T2-live-shared": {
+          "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+          "warmupMs": 16808.15,
+          "p50": 5145.58,
+          "p95": 13306.96,
+          "max": 13306.96,
+          "runs": [
+            {
+              "ms": 5145.58,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19980",
+              "truncated": null
+            },
+            {
+              "ms": 3129.76,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19957",
+              "truncated": null
+            },
+            {
+              "ms": 5125.77,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19973",
+              "truncated": null
+            },
+            {
+              "ms": 9322.51,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19923",
+              "truncated": null
+            },
+            {
+              "ms": 13306.96,
+              "method": "vector",
+              "queryModel": "nvidia/nemotron-3-embed-1b",
+              "candidates": "19907",
+              "truncated": null
+            }
+          ],
+          "exactNameLimit1": {
+            "query": "buildStalenessEnvelope",
+            "p50": 11.75,
+            "p95": 29.78,
+            "runs": [
+              29.78,
+              13.1,
+              11.29,
+              11.61,
+              11.75
+            ]
+          },
+          "indexFiles": {
+            "dbUnchanged": true,
+            "before": {
+              "db": {
+                "size": 3639963648,
+                "mtimeMs": 1793592892697
+              },
+              "wal": {
+                "size": 4120032,
+                "mtimeMs": 1793592908382
+              }
+            },
+            "after": {
+              "db": {
+                "size": 3639963648,
+                "mtimeMs": 1793592892697
+              },
+              "wal": {
+                "size": 4120032,
+                "mtimeMs": 1793592908382
+              }
+            }
+          }
+        }
+      },
+      "lexicalFallback": {
+        "evidence": "validation/tools/bb_ask/lexical-latency.json",
+        "indexSymbols": 310423,
+        "p50": 922.6,
+        "p95": 1250.3,
+        "max": 1250.3,
+        "budgetMs": 5000,
+        "withinBudget": true,
+        "runs": [
+          {
+            "query": "how does request handling work in this codebase",
+            "ms": 864.1,
+            "matchMode": "terms",
+            "probedTerms": 2,
+            "truncated": true
+          },
+          {
+            "query": "where is the index lock acquired",
+            "ms": 1250.3,
+            "matchMode": "terms",
+            "probedTerms": 2,
+            "truncated": true
+          },
+          {
+            "query": "how are tool descriptors registered",
+            "ms": 922.6,
+            "matchMode": "terms",
+            "probedTerms": 2,
+            "truncated": true
+          },
+          {
+            "query": "what parses the configuration file",
+            "ms": 855.7,
+            "matchMode": "terms",
+            "probedTerms": 2,
+            "truncated": true
+          },
+          {
+            "query": "how does the search engine rank results",
+            "ms": 1018.3,
+            "matchMode": "terms",
+            "probedTerms": 2,
+            "truncated": true
+          }
+        ],
+        "needleProbe": {
+          "term": "acquired",
+          "columns": 4,
+          "ms": 300.5,
+          "matches": 6,
+          "note": "one full-corpus substring scan; the giant-corpus terms route probes at most GIANT_TERM_BUDGET=4 words per query"
+        },
+        "fix": "Giant-corpus terms route probes at most GIANT_TERM_BUDGET=2 content words (one needle is a full 310k-row scan), defers the whole-phrase needle until the terms route is empty, and uses a header-only coverage predicate. Two independent final runs: T2 local default p50 0.08-0.10 s / p95 1.32-1.33 s (was p95 8.04 s before the fix); lexical content search p50 0.92 s / p95 1.25 s. dbUnchanged true."
+      },
+      "providerEmbeddingProbe": {
+        "note": "raw SemanticEngine.embed() calls with the configured provider, five distinct questions, same machine",
+        "measurementsMs": [
+          631,
+          2380,
+          393,
+          320,
+          228
+        ],
+        "model": "nvidia/nemotron-3-embed-1b",
+        "dimension": 2048,
+        "implication": "provider latency varies from ~0.2 s to >2 s; the tool bounds its ask-time wait at min(2000 ms, BB_EMBEDDING_TIMEOUT_MS) and declares the fallback, so a slow provider cannot stretch one call by 30 s"
+      },
+      "findings": [
+        "T2 isolated copy (provider): all five calls answered from the vector path, p50 1.78 s / p95 2.19 s; the first call in a cold process paid 2.5-11.3 s to fill page cache over the 3.6 GB index.",
+        "T2 isolated copy (local word vectors): two independent final runs gave p50 0.08-0.10 s / p95 1.32-1.33 s (max 1.33 s) — inside the 5 s default-call budget. Two of five questions fail the 0.50 local floor and take the lexical fallback; that route probes at most two content words on a giant corpus, defers the whole-phrase needle until the terms route is empty, and declares the cap. Worst fallback answer went from 8.04 s to 1.33 s end to end.",
+        "Cold page cache can still dominate: one earlier fallback measurement during heavy fleet I/O took 11.3 s before the tightening (3x fewer full scans now). The budget claim is a warm-process claim; a cold first call on a 3.6 GB index pays disk I/O that no SQL change removes, and the answer still declares its route and bounds.",
+        "T2 live shared index while other work was writing: p50 5.1 s / p95 13.3 s (WAL held 4.1 MB of frames); these are wall-clock numbers under I/O contention, not tool time. The read-only proof still holds: brain.db bytes and WAL frames were unchanged before/after every call.",
+        "Exact symbol name with limit 1 skips the dense scan: p50 0.93 ms on the isolated copy, 11.75 ms on the live shared index."
+      ]
+    },
+    "blockedLegsResolved": [
+      "content-search.ts / symbol-search.ts read-only opens landed (search lane); the honesty gate lexical-fallback leg is now green without a blocked-on-bb_search note",
+      "shared opens fixed by Lead commit 4ec588f79 (describeUnknownFilters, ASTEngine.findSymbol via getReadOnlyInstance, MCP server start-up check)",
+      "m35 envelope contract: bb_ask freshnessModes registration removed because the answer never emitted the six-key envelope; gate green"
+    ],
+    "defectResolution": {
+      "C1 read-only answer path": "quick-answer.ts + semantic-search.ts use readonly opens; promotion removed; no DB creation on missing index (boundaries-phaseB.json)",
+      "C2 limit 0 silently defaulted": "limit outside 1..100 refused with ASK_LIMIT_REFUSAL at door and handler (contract + honesty gates)",
+      "C3 no declared bounds": "every answer carries returned/totalMatches/truncated/truncationReason (provenance + honesty gates)",
+      "C4 confidence beside unreliable notice": "non-discriminative ranking publishes no number (honesty gate)",
+      "C5 model-blind coverage": "comparison reports model-space comparable vs library coverage (honesty mixed-model check)",
+      "C6 coverage measured before embed": "measured after embedding await for the compared model (semantic gate)",
+      "C7 silent scan cap": "cap exported and declared; capped scan sets truncated=true (provenance/adversarial gates)",
+      "C16 provider timeout above budget": "wait bounded at min(2 s, BB_EMBEDDING_TIMEOUT_MS) with declared local fallback (boundaries-phaseB.json)",
+      "stale vs missing conflated": "distinct markers and flags (integration gate)",
+      "descriptor/docs drift": "descriptor+curation rewritten, page regenerated, guide corrected (docs gate)",
+      "regex in read path": "removed; regex-policy baseline regenerated",
+      "dead helpers": "unused statProvenance and embeddingCoverage removed",
+      "m35 freshness-block overclaim": "freshnessModes registration removed",
+      "release-blocking fallback latency (T2 local p95 8.0 s > 5 s)": "Giant-corpus terms route probes at most GIANT_TERM_BUDGET=2 content words, defers the whole-phrase needle until the terms route is empty, and uses header-only coverage; the cap is declared through truncated + termMatch.queryTerms (content-search.ts). Measured final: T2 local default p50 0.08-0.10 s / p95 1.32-1.33 s (was 8.04 s), lexical p50 0.92 s / p95 1.25 s; dbUnchanged true. Cold-cache caveat recorded in LATENCY.phaseB.findings."
+    }
+  }
+}

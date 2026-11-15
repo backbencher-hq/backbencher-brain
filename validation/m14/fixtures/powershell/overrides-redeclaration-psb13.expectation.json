@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/overrides-redeclaration-psb13.ps1",
+  "authoredFrom": "PS28 — `overrides` under-fired by 10 of 12 edges on ONE corpus file. Authored 2026-10-03 from the corpus measurement, before observing post-fix output. Two independent defects, both in the matcher rather than in the tree. (a) `classMembers.set(className, new Set())` ran on EVERY class_statement (real-powershell-analyzer.ts, the class_statement case), so only the LAST declaration of a class name kept its members. In powershell/test/powershell/Language/Classes/scripting.Classes.inheritance.tests.ps1 the last `class B` declares only a constructor and the last `class A` declares only properties `i` and `s`, so `classMembers['B']` was empty and `classMembers['A']` held no methods; the parse tree holds 8 same-name derived/base method pairs there and the matcher could see 2. (b) The name comparison was CASE-SENSITIVE, in a language whose identifiers are not: that file's base declares `foo` and the derived class declares `fOo`. Every other name comparison in the analyzer lowercases first and `pushSymbol` states the rule in so many words. After the fix the file yields 12 `overrides` edges instead of 2. This fixture reproduces both shapes in miniature, and the redeclaration here is DELIBERATE — a fixture with one declaration per class name reaches neither defect, which is why the pass-1 suite could not see them. The fixture runner's export invariant does not apply: this file declares no exports.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "MixedCase", "kind": "class" },
+    { "name": "Later", "kind": "class" },
+    { "name": "Introduced", "kind": "class" },
+    { "name": "Introduced2", "kind": "class" },
+    { "name": "GetName", "kind": "method", "ownerName": "Base", "comment": "PS28 (b): the base spelling. The derived class below spells it `Getname`, which is the same member under PowerShell's case-insensitive identifier rules." },
+    { "name": "marker", "kind": "property", "ownerName": "MixedCase", "comment": "PS28 (a): the ONLY member of the SECOND `class MixedCase` declaration. Its existence is what makes the redeclaration a member-loss event rather than a no-op, and its ABSENCE from the base set is why the reset was lossy rather than harmless." }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "MixedCase", "target": "Base", "meta.overridesMember": "Getname", "comment": "PS28 (b), THE ROW: the derived spelling `Getname` overriding the base spelling `GetName`. Case-sensitive matching misses it entirely; this edge existing at all is the assertion." },
+    { "type": "overrides", "from": "MixedCase", "target": "Base", "meta.overridesMember": "ToStr", "comment": "PS28 (b) CONTROL: the same-named sibling on the same class pair, so a matcher that emitted only case-insensitive hits cannot satisfy this fixture by accident." },
+    { "type": "overrides", "from": "Later", "target": "MixedCase", "meta.overridesMember": "Getname", "comment": "PS28 (a), THE ROW: `Later` is declared BEFORE `MixedCase` is redeclared with only a property, so the reset left `classMembers['MixedCase']` holding just `marker` and this override published nothing before the fix. `baseClassByClass` was never affected — its `set` is already inside `if (baseClass)` — so the inheritance edge survived while the member match did not, which is why the defect presented as a missing edge rather than as a wrong one." },
+    { "type": "overrides", "from": "Later", "target": "MixedCase", "meta.overridesMember": "ToStr", "comment": "PS28 (a) CONTROL: the second member on the redeclared base, so a union that kept only one member per class cannot pass." },
+    { "type": "overrides", "from": "Introduced", "target": "Later", "meta.overridesMember": "Getname" },
+    { "type": "overrides", "from": "Introduced", "target": "Later", "meta.overridesMember": "ToStr" },
+    { "type": "overrides", "from": "Introduced2", "target": "Later", "meta.overridesMember": "Getname" },
+    { "type": "overrides", "from": "Introduced2", "target": "Later", "meta.overridesMember": "ToStr" },
+    { "type": "extends", "from": "MixedCase", "target": "Base", "comment": "CONTROL: `extends` on the class pair PS28 (b) is about. It is unaffected by both fixes, and this row is what rules out 'the matcher now fires because the inheritance reading changed'." },
+    { "type": "extends", "from": "Later", "target": "MixedCase", "comment": "CONTROL: the class pair PS28 (a) is about, and the row that proves the inheritance reading was never the broken half." }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Introduced", "target": "Later", "meta.overridesMember": "BrandNew", "comment": "PS28 direction check: a union accumulates the members a class DOES declare, it does not invent members no base has. `BrandNew` exists on `Introduced` and on no ancestor, so there is nothing to override. This is the row that keeps the union from being read as 'emit an override for every method in the class'." },
+    { "type": "overrides", "from": "Introduced2", "target": "Later", "meta.overridesMember": "LaterAdded", "comment": "PS28 direction check, second shape: same reasoning with the name reversed, so a rule keyed on 'the derived member is new' rather than on 'the base member is shared' fails here and passes the row above." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "overrides", "equals": 8, "comment": "PS28, and the count is the assertion. Four class pairs, two overriding members each, eight edges — and eight of the ten above are `overrides`. The two forbids would each pass against a matcher emitting none, and the positives would each pass against one emitting every method of every derived class, so only the count separates the three. Pre-PS28 this file yields 2." }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "issue": "M34.S1",
+  "code": "S1",
+  "milestone": "M34",
+  "status": "verified",
+  "checks": 20,
+  "passed": 20,
+  "failed": 0,
+  "negativeCases": 3,
+  "mutants": [
+    {
+      "name": "dev-only files entry added to package.json is caught by the leak scan (real mutant tarball)",
+      "caught": true
+    },
+    {
+      "name": "a zeroed bin/bb fails the installed-binary smoke (real mutant tarball)",
+      "caught": true
+    },
+    {
+      "name": "wasm registry resolves the vendored xml grammar and rejects bogus names",
+      "caught": true
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m34/verify-install-smoke.ts",
+  "evidenceFile": "S1.json",
+  "generatedAt": "2026-11-15T04:21:08.352Z",
+  "limitations": [
+    "The install leg needs network access to the npm registry for runtime deps (native modules download prebuilt binaries or compile); an offline run surfaces as a B-check failure, not a silent pass.",
+    "The installed binary is invoked as `node <prefix>/bin/bb` rather than via the npm bin shim; PATH shims are a packaging detail that varies by npm version.",
+    "The dev-only-leak regex encodes today's dev directories (script/, validation/, docs/mN/, .github/, ide/, src/); a new top-level dev directory must be added to it."
+  ]
+}

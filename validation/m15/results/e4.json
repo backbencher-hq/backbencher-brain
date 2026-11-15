@@ -1,0 +1,12 @@
+{
+  "issue": "M15.E4",
+  "code": "E4",
+  "tool": "bb_edit",
+  "title": "cross-file correctness",
+  "verified": true,
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "negatives": 8,
+  "generatedAt": "2026-11-05T04:21:18.247Z"
+}

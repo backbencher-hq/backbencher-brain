@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/SameKeyDifferentObjects.json",
+  "authoredFrom": "The NEGATIVE control for DuplicateKey.json, and the reason that fixture can be believed. `tag` occurs four times in this file and NOT ONE of them is a redefinition: it is declared once in `outer` and once in each of two array elements. A JSON key is unique only WITHIN its object, so scoping the duplicate check to the object is not a refinement \u2014 it is the whole rule, and getting it wrong in the permissive direction would have produced about 120,174 false `overrides` edges over the corpus against 21 real ones. This fixture exists because a fixture that only asserts the positive case cannot tell 'the predicate is scoped' from 'the predicate never fires', and the census number alone cannot either. Every forbid entry below is a shape the permissive version would have emitted, and all four now spell QUALIFIED endpoints: the mutant compares the LEAF segment of a `contains` target, because after the endpoint change the whole path is distinct per occurrence and a mutant keying on the path emits nothing at all. That regression was observed and is recorded on the mutant. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "tag",
+      "kind": "property",
+      "ownerName": "outer"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "SameKeyDifferentObjects.outer",
+      "target": "SameKeyDifferentObjects.outer.tag"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "SameKeyDifferentObjects.list[0]",
+      "target": "SameKeyDifferentObjects.list[0].tag",
+      "note": "The 2nd occurrence of the key `tag` in this file. Scoping the duplicate check to the OBJECT says a key repeated in a DIFFERENT object is not a redefinition; scoping it to the FILE says it is, and this is the edge that appears. This is the pin the permissive mutant trips, and it is stated with qualified endpoints because after the `contains` endpoint change the two `tag` occurrences are distinct paths and a bare-name forbid could no longer name either."
+    },
+    {
+      "type": "overrides",
+      "from": "SameKeyDifferentObjects.list[1]",
+      "target": "SameKeyDifferentObjects.list[1].tag",
+      "note": "The 3rd occurrence, pinned separately so the absence cannot be satisfied by one coincidence."
+    },
+    {
+      "type": "overrides",
+      "from": "SameKeyDifferentObjects.outer",
+      "target": "SameKeyDifferentObjects.outer.tag",
+      "note": "The 1st occurrence. A file-scoped check never fires on the first declaration of a name, so this forbid is about ordering: an implementation that reported the first occurrence instead of the later one would emit here and satisfy the two pins above by coincidence."
+    },
+    {
+      "type": "overrides",
+      "from": "SameKeyDifferentObjects",
+      "target": "tag",
+      "note": "A file-scoped implementation that attributes every repeat to the document root rather than to the object holding it. Kept because it is the other plausible wrong attribution, and it costs one row."
+    }
+  ]
+}

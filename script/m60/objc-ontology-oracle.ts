@@ -82,7 +82,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
 
 /** The one-line change `script/m60/rel-type-coverage-gate.ts` needs from master, and
  *  the shape it reads (`readOwnOracleLabels`): a `script/m14/objc-truth.ts` exporting a

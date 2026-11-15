@@ -1,0 +1,75 @@
+{
+ "fixtureId": "perl/magic-invocant",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "M14 line-contract pins on `contains`, added 2026-10-02. Every `line_number` below was transcribed from the NUMBERED source .pm file and then confirmed against one analyzer run, so the analyzer agrees with the source rather than defining it. This lane previously asserted `contains` MEMBERSHIP ONLY -- no row anywhere named a line -- which is why the two mutants `perl/contains-line-is-absent` (strips the field) and `perl/contains-line-at-declaration-start` (shifts it by +1) both SURVIVED at (0 -> 0): the transform touched a channel no fixture read. `core-oo-class-role` already said so in prose -- its `Point->sum` row carried the note that the old `line_number: null` sentinel \"asserted ignorance about a line written in the file\", and the numeric replacement it asked for was never written. Dropping the pin is not dropping the contract: the M60 line contract applies to `contains` as it does to every other label. Each row resolved to exactly ONE actual edge, so each value below is the only line that edge has and no value was inferred.",
+ "rationale": "`__PACKAGE__` is a compile-time token for the CURRENT package, not a class, so `__PACKAGE__->new` produced a phantom `instantiates __PACKAGE__.constructor` edge -- a type no source line supports. Line 1 is the unnameable case: with no package in scope the token stands for `main`, there is nothing in this file to name, and the edge is not derivable, so it is omitted rather than invented. Line 3 is the nameable one, inside `package Later`, where the honest target is the package the token stands for. Line 1 also chains: `->new->start` is one method CALL on the result, attributed to the file-scope owner `global`, and it is a `calls` edge rather than a second instantiation. The scalar-receiver half of the guard is pinned by the other fixtures: a variable invocant is a call and never an instantiation, which is why a corpus of 29,640 symbols produced zero `calls` edges to bare variables.",
+ "expectSymbols": [
+  {
+   "name": "Later",
+   "kind": "class"
+  },
+  {
+   "name": "make",
+   "kind": "method",
+   "ownerName": "Later"
+  }
+ ],
+ "expectSymbolRanges": [
+  {
+   "symbol": "Later",
+   "startLine": 2,
+   "endLine": 2
+  },
+  {
+   "symbol": "make",
+   "startLine": 3,
+   "endLine": 3
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "global",
+   "target": "start",
+   "line_number": 1,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "tier: the source states a call, confidence 0.9"
+  },
+  {
+   "type": "instantiates",
+   "from": "make",
+   "target": "Later.constructor",
+   "line_number": 3,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "contains",
+   "type": "contains",
+   "from": "Later",
+   "target": "make",
+   "line_number": 3,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "instantiates",
+   "target": "__PACKAGE__.constructor",
+   "note": "pre-fix shape: the magic token was emitted as the name of a type"
+  },
+  {
+   "type": "instantiates",
+   "from": "global",
+   "target": "main.constructor",
+   "note": "line 1 has no package in scope, so the token names nothing derivable and the edge is omitted rather than invented"
+  }
+ ],
+ "expectMetadata": [
+  {
+   "linesOfCode": 5
+  }
+ ]
+}

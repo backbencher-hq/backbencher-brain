@@ -1,0 +1,10 @@
+# The file is `module-name-collision.toml`, so the module is `module-name-collision`.
+# A table that wants that exact name makes every edge naming it ambiguous, and the
+# module's identity comes from its PATH — so the TABLE takes the suffix. This is
+# the same precedence html uses, and the corpus contains two real files of exactly
+# this shape (`doc/book/book.toml` declaring `[book]`).
+[module-name-collision]
+k = 1
+
+[other]
+k = 2

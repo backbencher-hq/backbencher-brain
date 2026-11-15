@@ -1,0 +1,451 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+  "descriptor": {
+    "description": "Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores.",
+    "limitSchema": {
+      "type": "number",
+      "description": "max results (default 5)"
+    }
+  },
+  "rows": [
+    {
+      "label": "limit omitted (default 5)",
+      "args": {
+        "query": "how does request handling work"
+      },
+      "isError": false,
+      "ms": 114.01,
+      "chars": 1522,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "limit 0",
+      "args": {
+        "query": "how does request handling work",
+        "limit": 0
+      },
+      "isError": false,
+      "ms": 19.09,
+      "chars": 1525,
+      "sourceEntries": 1,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": true,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "limit 1",
+      "args": {
+        "query": "how does request handling work",
+        "limit": 1
+      },
+      "isError": false,
+      "ms": 20.03,
+      "chars": 1522,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "limit 3",
+      "args": {
+        "query": "how does request handling work",
+        "limit": 3
+      },
+      "isError": false,
+      "ms": 13.86,
+      "chars": 1522,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "limit 500",
+      "args": {
+        "query": "how does request handling work",
+        "limit": 500
+      },
+      "isError": false,
+      "ms": 13.95,
+      "chars": 1522,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "limit 100000",
+      "args": {
+        "query": "how does request handling work",
+        "limit": 5000
+      },
+      "isError": false,
+      "ms": 14,
+      "chars": 1522,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "limit negative",
+      "args": {
+        "query": "how does request handling work",
+        "limit": -1
+      },
+      "rejectedAtDoor": "bb_ask: limit must be non-negative"
+    },
+    {
+      "label": "limit fractional",
+      "args": {
+        "query": "how does request handling work",
+        "limit": 2.5
+      },
+      "rejectedAtDoor": "bb_ask: limit must be a whole number (got 2.5)"
+    },
+    {
+      "label": "limit string",
+      "args": {
+        "query": "how does request handling work",
+        "limit": "5"
+      },
+      "rejectedAtDoor": "bb_ask: limit must be number"
+    },
+    {
+      "label": "exact symbol name",
+      "args": {
+        "query": "handleImpactRequest"
+      },
+      "isError": false,
+      "ms": 84.73,
+      "chars": 697,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "reason": "no-vector-above-threshold",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "phrase limit 1",
+      "args": {
+        "query": "request handler",
+        "limit": 1
+      },
+      "isError": false,
+      "ms": 17.24,
+      "chars": 1507,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "phrase limit 5",
+      "args": {
+        "query": "request handler"
+      },
+      "isError": false,
+      "ms": 13.8,
+      "chars": 1507,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "phrase limit 50",
+      "args": {
+        "query": "request handler",
+        "limit": 50
+      },
+      "isError": false,
+      "ms": 13.6,
+      "chars": 1507,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "phrase limit 500",
+      "args": {
+        "query": "request handler",
+        "limit": 500
+      },
+      "isError": false,
+      "ms": 13.89,
+      "chars": 1507,
+      "sourceEntries": 2,
+      "retrieval": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natu",
+        "confidence": "0.51"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings, so a symbol matching your q"
+    },
+    {
+      "label": "many-match limit 1",
+      "args": {
+        "query": "request",
+        "limit": 1
+      },
+      "isError": false,
+      "ms": 20.74,
+      "chars": 527,
+      "sourceEntries": 1,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "many-match limit 3",
+      "args": {
+        "query": "request",
+        "limit": 3
+      },
+      "isError": false,
+      "ms": 18.53,
+      "chars": 744,
+      "sourceEntries": 3,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "many-match default",
+      "args": {
+        "query": "request"
+      },
+      "isError": false,
+      "ms": 18.01,
+      "chars": 847,
+      "sourceEntries": 4,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "many-match limit 50",
+      "args": {
+        "query": "request",
+        "limit": 50
+      },
+      "isError": false,
+      "ms": 19.17,
+      "chars": 847,
+      "sourceEntries": 4,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "many-match limit 500",
+      "args": {
+        "query": "request",
+        "limit": 500
+      },
+      "isError": false,
+      "ms": 20.48,
+      "chars": 847,
+      "sourceEntries": 4,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "many-match limit 2000",
+      "args": {
+        "query": "request",
+        "limit": 2000
+      },
+      "isError": false,
+      "ms": 25.9,
+      "chars": 847,
+      "sourceEntries": 4,
+      "retrieval": {
+        "method": "exact-name",
+        "queryModel": "name-lookup",
+        "indexModel": "name-lookup",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "provenance": "indexed via quick-answer@intelligence (retrieval)",
+        "confidence": "0.9"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: Closest matches from the AST index for your query (search results, not a verified answer):"
+    },
+    {
+      "label": "aggregate question",
+      "args": {
+        "query": "how many functions are in this project"
+      },
+      "isError": false,
+      "ms": 4.4,
+      "chars": 130,
+      "sourceEntries": 0,
+      "retrieval": {
+        "provenance": "indexed via quick-answer@intelligence (aggregate)",
+        "confidence": "0.95"
+      },
+      "truncatedWordInText": false,
+      "limitWasZeroNotice": false,
+      "firstLine": "answer: There are 921 functions in this project"
+    },
+    {
+      "label": "empty query",
+      "args": {
+        "query": ""
+      },
+      "rejectedAtDoor": "bb_ask requires a non-empty query"
+    },
+    {
+      "label": "whitespace query",
+      "args": {
+        "query": "   "
+      },
+      "rejectedAtDoor": "bb_ask requires a non-empty query"
+    }
+  ],
+  "generatedAt": "2026-11-01T22:21:52.426Z"
+}

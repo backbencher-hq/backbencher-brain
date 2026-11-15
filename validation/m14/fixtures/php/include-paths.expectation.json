@@ -1,0 +1,225 @@
+{
+  "fixtureId": "php/include-paths",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "variableReadSpelling": "VARIABLE-READ SPELLING (php, 2026-10-11). The `uses` targets in this file that name a `$variable` are BINDINGS, not declaration names: the analyzer spells a variable read as `<read source>\\u0000<binding>` with `metadata.localBinding`, because a local/param/superglobal is never a published symbol and the BARE name let the store bind the read to an unrelated same-named declaration in another file. The defect and its counterfactual are in validation/m14/fixtures/php/local-read-phantom.mts; the whole-population effect is in docs/analyzers/history/php-lane-notes.md. What each row PINS (which read, from where, and how many) did not move.",
+  "rationale": "R10 (#835) — the include-path spelling contract. The pre-R10 rule read the RAW TEXT of any `binary_expression` in an include/require position, so a concatenation with a runtime operand published a reconstructed EXPRESSION as the import module AND as a `references` target. Measured on phpmyadmin src/Git.php:97 (`include $this->baseDir . 'revision-info.php'`) and reproduced on this fixture by script/m14/tmp/php-include-prefix-rule.ts, which replays the OLD rule: it emitted `$this->baseDir.'/revision-info.php'`, `$dir.'/x.php'`, `{$dir}/interpolated.php` and `__DIR__.$suffix` — spellings carrying `$`, `->`, `.` and a quote that no php symbol can ever be named. The oracle derived its truth from the same rule, so BOTH sides agreed and every per-edge gate read clean; a target-spelling fixture that does not depend on the mirror is the only instrument that can hold it. The rule now requires every operand to be statically known: the six static paths below are unchanged (including `__DIR__.'/nested/'.'deeper.php'`, so the narrowing did not also narrow legitimate concatenation), and the four dynamic spellings are forbidden. `include $dir` (a bare variable) was ALREADY skipped pre-fix and is pinned here so it stays that way. The dynamic operands' own reads are still emitted — that is the point: a dynamic include loses the fabricated PATH, not the value reads. FOLLOW-UP, SAME ROUND (R10 census, 2026-09-23): the census convicted this lane on a target this fixture had DELIBERATELY pinned as correct — `references -> __DIR__.'/helpers.php'`, the raw source text of a fully static concatenation. The earlier decision recorded that a static concatenation was legitimate (it is) but then rendered it as source syntax, and the census's standing question is a different one: is the target spelled the way the lane spells a symbol at all? A quote is not. Measured live on phpunit's autoloaders — `references -> \"__DIR__.'/src/DeprecatedClass.php\"` in tests/end-to-end/regression/6778/bootstrap.php, 4 sites in a 300-file draw of 4,096 php files — and on both php corpora the census read php as an OO lane with UNRULED separator vocabulary (`references|'`), against the owner standard's zero target for OO lanes. The rule now composes the operands' VALUES instead of returning the node's text: `__DIR__ . '/helpers.php'` publishes `__DIR__/helpers.php`, `FILE_PREFIX . '/config.php'` publishes `FILE_PREFIX/config.php`, and the two-operand case publishes `__DIR__/nested/deeper.php`. Nothing is narrowed: all six static paths still emit, the four dynamic shapes are still refused, and the phase that decides staticness is untouched — only the rendering was wrong. The pre-fix spellings are forbidden above. RELABELLED 2026-10-23 (R3, no grammar change): the six static paths are emitted as `part_of` rows, not `imports`, with `meta.partRole: \"library\"` on each and the written directive form kept row by row as `meta.includeType` — a file-level directive that names a path and creates no module binding is what `part_of` was added to spell, and the ImportInfo directive list is still published (so a consumer reading a file's includes loses nothing). The spelling rule this fixture exists for did not move: same six targets, same four refusals, same `__DIR__`/`FILE_PREFIX` composition.",
+  "expectImports": [
+    {
+      "module": "__DIR__/helpers.php",
+      "meta.includeType": "include"
+    },
+    {
+      "module": "__DIR__/runtime.php",
+      "meta.includeType": "require"
+    },
+    {
+      "module": "FILE_PREFIX/config.php",
+      "meta.includeType": "include_once"
+    },
+    {
+      "module": "__DIR__/once.php",
+      "meta.includeType": "require_once"
+    },
+    {
+      "module": "plain.php",
+      "meta.includeType": "include"
+    },
+    {
+      "module": "__DIR__/nested/deeper.php",
+      "meta.includeType": "include"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "__DIR__/helpers.php",
+      "meta.includeType": "include",
+      "meta.relationshipType": "include_path",
+      "meta.partRole": "library",
+      "note": "2026-10-23 relabel (R3, no grammar change): a file-level directive that names a path and creates no module binding is `part_of`, not `imports`. partRole is MANDATORY and is `library` because php has only the host form of Dart's two roles — the file carrying the directive includes the part. The written form is kept per row as evidence, which is what makes the include/require/include_once/require_once SPLIT measured rather than lumped."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "__DIR__/runtime.php",
+      "meta.includeType": "require",
+      "meta.partRole": "library"
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "FILE_PREFIX/config.php",
+      "meta.includeType": "include_once",
+      "meta.partRole": "library"
+    },
+    {
+      "type": "uses",
+      "from": "staticPaths",
+      "target": "FILE_PREFIX",
+      "meta.isConstRead": true
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "__DIR__/once.php",
+      "meta.includeType": "require_once",
+      "meta.partRole": "library"
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "plain.php",
+      "meta.includeType": "include",
+      "meta.partRole": "library"
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "__DIR__/nested/deeper.php",
+      "meta.includeType": "include",
+      "meta.partRole": "library"
+    },
+    {
+      "type": "uses",
+      "from": "dynamicPaths",
+      "target": "Holder.baseDir",
+      "meta.isMemberRead": true
+    },
+    {
+      "type": "uses",
+      "from": "dynamicPaths",
+      "target": "dynamicPaths\u0000dir",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "dynamicPaths",
+      "target": "dynamicPaths\u0000dir",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "dynamicPaths",
+      "target": "dynamicPaths\u0000dir",
+      "meta.isInterpolationRead": true
+    },
+    {
+      "type": "uses",
+      "from": "dynamicPaths",
+      "target": "dynamicPaths\u0000suffix",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "baseDir",
+      "meta.isContained": true
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "staticPaths",
+      "meta.isContained": true
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "dynamicPaths",
+      "meta.isContained": true
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "__DIR__.'/helpers.php'",
+      "note": "pre-fix (R10 census follow-up, 2026-09-23): the SOURCE TEXT of a fully static concatenation, quotes and operator included, published as a module path. The decision that the path was static was right; the rendering was not — no php symbol is spelled with a quote. Same for the five below."
+    },
+    {
+      "module": "FILE_PREFIX.'/config.php'",
+      "note": "same: pre-fix raw-text rendering of a static concatenation"
+    },
+    {
+      "module": "__DIR__.'/nested/'.'deeper.php'",
+      "note": "same, and the two-operand case: the composed value is `__DIR__/nested/deeper.php`"
+    },
+    {
+      "module": "$this->baseDir.'/revision-info.php'",
+      "note": "pre-fix: an expression published as a module path"
+    },
+    {
+      "module": "$dir.'/x.php'",
+      "note": "pre-fix: a variable operand collapsed into a path"
+    },
+    {
+      "module": "{$dir}/interpolated.php",
+      "note": "pre-fix: an interpolated string's text used as a path"
+    },
+    {
+      "module": "__DIR__.$suffix",
+      "note": "pre-fix: a runtime suffix concatenated into a path"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "__DIR__.'/helpers.php'",
+      "note": "pre-fix: the raw concatenation text as a `references` target — the exact spelling the R10 census caught on phpunit's autoloaders (`__DIR__.'/src/DeprecatedClass.php'`), where it read as an unruled separator in an OO lane"
+    },
+    {
+      "type": "references",
+      "target": "FILE_PREFIX.'/config.php'",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "__DIR__.'/nested/'.'deeper.php'",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "$this->baseDir.'/revision-info.php'",
+      "note": "pre-fix: the fabricated path target, both sides"
+    },
+    {
+      "type": "references",
+      "target": "$dir.'/x.php'",
+      "note": "same"
+    },
+    {
+      "type": "part_of",
+      "target": "{$dir}/interpolated.php",
+      "note": "same, under the file-inclusion kind since the 2026-10-23 relabel: a dynamic include's path must never be published as an unevaluated interpolation"
+    },
+    {
+      "type": "references",
+      "target": "__DIR__.$suffix",
+      "note": "same"
+    },
+    {
+      "type": "part_of",
+      "target": "__DIR__.'/helpers.php'",
+      "note": "same raw-concatenation forbid, under the file-inclusion kind (this row said `imports` until the 2026-10-23 relabel): the analyzer resolves __DIR__/FILE_PREFIX/$this->baseDir/$dir to a real path and must never emit the unevaluated concatenation under ANY kind it has ever used."
+    },
+    {
+      "type": "part_of",
+      "target": "FILE_PREFIX.'/config.php'",
+      "note": "same raw-concatenation forbid, under the file-inclusion kind (this row said `imports` until the 2026-10-23 relabel): the analyzer resolves __DIR__/FILE_PREFIX/$this->baseDir/$dir to a real path and must never emit the unevaluated concatenation under ANY kind it has ever used."
+    },
+    {
+      "type": "part_of",
+      "target": "__DIR__.'/nested/'.'deeper.php'",
+      "note": "same raw-concatenation forbid, under the file-inclusion kind (this row said `imports` until the 2026-10-23 relabel): the analyzer resolves __DIR__/FILE_PREFIX/$this->baseDir/$dir to a real path and must never emit the unevaluated concatenation under ANY kind it has ever used."
+    },
+    {
+      "type": "part_of",
+      "target": "$this->baseDir.'/revision-info.php'",
+      "note": "same raw-concatenation forbid, under the file-inclusion kind (this row said `imports` until the 2026-10-23 relabel): the analyzer resolves __DIR__/FILE_PREFIX/$this->baseDir/$dir to a real path and must never emit the unevaluated concatenation under ANY kind it has ever used."
+    },
+    {
+      "type": "part_of",
+      "target": "$dir.'/x.php'",
+      "note": "same raw-concatenation forbid, under the file-inclusion kind (this row said `imports` until the 2026-10-23 relabel): the analyzer resolves __DIR__/FILE_PREFIX/$this->baseDir/$dir to a real path and must never emit the unevaluated concatenation under ANY kind it has ever used."
+    }
+  ]
+}

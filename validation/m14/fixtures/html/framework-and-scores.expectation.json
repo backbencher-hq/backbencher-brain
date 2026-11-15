@@ -1,0 +1,115 @@
+{
+  "comment": "FORBIDDEN: `Web Components` \u2014 MEASURED DEFECT (2026-10-05). MEASURED DEFECT (2026-10-05). `Web Components` was in detectedFrameworks whenever a document contained ANY hyphenated tag, on the reasoning that the tag name can be joined against a JS class definition. Registration is `customElements.define(name, class)` in a JavaScript file \u2014 a CROSS-FILE fact an HTML analyzer cannot see. script/m14/html-custom-element-join.ts over 1,652 corpus documents: 2,010 hyphenated-tag occurrences, 1,005 distinct tag names, in 10 documents, and 0 of them in a file whose tag any indexed js/ts file registers; 0 distinct customElements.define(\"<name>\", \u2026) names exist in the whole corpus. 2,000 of the 2,010 are two generated Razor stress fixtures (1,000 levels of <elem-N>); the other 10 are five vuejs example pages whose <demo-grid>/<tree-item>/<transition-group> are VUE components registered through Vue.createApp, plus one svelte expected-output fixture. So the claim fired on pages that use no web components at all \u2014 the same made-up-framework defect class as `Targeted/ID-Styling` above, and the fixture now forbids it. The TAG is still counted and still visible; what was removed is the platform claim the count cannot support. Note this fixture's own <my-element is=\"my-element\"> is exactly the case: the analyzer can see the customized-built-in `is=` attribute and CANNOT see any registration for it. || FRAMEWORK DETECTION + MEASURED SCORES. (1) `Targeted/ID-Styling` is not a framework: the pre-fix analyzer published it into `detectedFrameworks` whenever ANY element carried an `id`, it appears once in the whole repository, and it fired on 88.5% of corpus files. M60.R8's runtime probe has seven OO lanes and never reached html, so nothing could see it. (2) The three scores are computed from MEASURED counts and must reach the product \u2014 the pre-fix analyzer computed them and `engine.ts`'s metadata literal never copied them, so the product saw none. (3) `architecturalInsights` is OVERWRITTEN by `framework-intelligence.ts` with its own (empty) array, and `architecturalScore` with a constant 100 that starts at full marks and only deducts, so every clean-looking html file published `excellent` regardless of its own arithmetic. This page has a skipped heading level, an image with no alt, and two unlabelled inputs; it is not excellent. || NOTE ON THE PIN ITSELF: `forbidFrameworks` compares the raw string (run-fixtures.ts:1310, `actual.includes(want)`), so an OBJECT row there never matches and never fires. The object form of this pin was written first, measured to PASS while the framework claim was restored to the analyzer, and is recorded here because a silently-passing pin is worse than no pin \u2014 it reads as coverage. The string form is the one that can fail, and the negative control that proves it is in the commit message.",
+  "expectFrameworks": [
+    "HTML5"
+  ],
+  "forbidFrameworks": [
+    "Targeted/ID-Styling",
+    "Web Components"
+  ],
+  "expectSymbols": [
+    {
+      "name": "framework-and-scores",
+      "kind": "module"
+    },
+    {
+      "name": "site-header",
+      "kind": "class"
+    },
+    {
+      "name": "title",
+      "kind": "class"
+    },
+    {
+      "name": "skips-a-level",
+      "kind": "class"
+    },
+    {
+      "name": "main",
+      "kind": "class"
+    },
+    {
+      "name": "form",
+      "kind": "class"
+    },
+    {
+      "name": "withlabel",
+      "kind": "class"
+    },
+    {
+      "name": "unlabelled",
+      "kind": "class"
+    },
+    {
+      "name": "custom",
+      "kind": "class"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "comment": "A symbol's complexity is the ADDRESSABLE SUBTREE it contains \u2014 the DOM analogue of a declaration's statement count, and what SPEC section C pins. The pre-fix value was the file-level `symbols.length` for every symbol, or absent.",
+      "symbol": "main",
+      "min": 10
+    },
+    {
+      "symbol": "framework-and-scores",
+      "min": 14
+    },
+    {
+      "symbol": "form",
+      "min": 4
+    },
+    {
+      "symbol": "title",
+      "equals": 1
+    },
+    {
+      "symbol": "logo",
+      "equals": 1
+    }
+  ],
+  "expectVisibility": [
+    {
+      "comment": "HTML has one scope: a document. There is no private/package/protected, so `public` is the only truthful value \u2014 and it is pinned here rather than left as an unexamined default.",
+      "symbol": "main",
+      "visibility": "public"
+    },
+    {
+      "symbol": "framework-and-scores",
+      "visibility": "public"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "comment": "cyclomaticComplexity is 1 + html's real decision points. The pre-fix analyzer hard-coded 1 for every file ever, so html had no decision-point count at all. This page has a <template> fragment and a custom element with an `is` attribute \u2014 two branch points over a linear document.",
+      "cyclomaticComplexity": 3
+    },
+    {
+      "comment": "accessibility is computed from MEASURED counts: 2 images with 1 alt, no aria, headings present, ONE skipped heading level (-5), 0 unlabelled labels, 2 unlabelled inputs (-2).",
+      "accessibilityScore": 68
+    },
+    {
+      "comment": "semantic share counts only real landmark/heading/sectioning elements; the pre-fix denominator counted html/head/body/script/style too, which diluted the ratio so hard that one <h1> among nine <div>s cleared the bonus.",
+      "semanticScore": 90
+    },
+    {
+      "comment": "performance counts the resource-hygiene defects decidable from the DOM.",
+      "performanceScore": 78
+    },
+    {
+      "comment": "The composite the analyzer computed. The pre-fix value never reached the product: `engine.ts`'s metadata literal did not copy the three scores, and `framework-intelligence.ts` replaced `architecturalScore` with a constant that starts at full marks and only deducts \u2014 so a page it cannot reason about at all scored PERFECT. This page skips a heading level, has an image with no `alt` and two unlabelled inputs; it is not excellent. `codeQuality` is lowercase because the framework layer owns the CASE for every language, and a pin that fought that would be pinning a cosmetic difference rather than the score.",
+      "architecturalScore": 79,
+      "codeQuality": "good"
+    },
+    {
+      "comment": "Structural depth, not a symbol count: the pre-fix value was `symbols.length`, which is not a complexity measure of anything.",
+      "complexity": 5
+    },
+    {
+      "comment": "The document's element census \u2014 the denominator of the semantic ratio and the numerator of the corpus measurements.",
+      "elementCount": 21,
+      "addressableNodeCount": 15,
+      "maxElementDepth": 4
+    }
+  ]
+}

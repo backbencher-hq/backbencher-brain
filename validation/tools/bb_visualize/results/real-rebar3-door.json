@@ -1,0 +1,364 @@
+{
+  "key": "rebar3",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/rebar3",
+  "language": "Erlang",
+  "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+  "connectMs": 4021,
+  "index": {
+    "files": 303,
+    "symbols": 7012,
+    "relationships": 38143,
+    "languages": [
+      {
+        "language": "erlang",
+        "files": 266
+      },
+      {
+        "language": "markdown",
+        "files": 18
+      },
+      {
+        "language": "bash",
+        "files": 9
+      },
+      {
+        "language": "yaml",
+        "files": 6
+      },
+      {
+        "language": "make",
+        "files": 2
+      },
+      {
+        "language": "elixir",
+        "files": 1
+      },
+      {
+        "language": "powershell",
+        "files": 1
+      }
+    ]
+  },
+  "targets": {
+    "file": "apps/rebar/src/vendored/r3_hex_erl_tar.hrl",
+    "module": "apps/rebar/src/vendored",
+    "symbol": "valid",
+    "feature": "vali",
+    "fallbackModuleFile": ".github/ISSUE_TEMPLATE.md"
+  },
+  "dbBefore": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 153477120,
+      "sha256": "9f25355e6c23f76fb58445878fb19fd24e2473c566026ae7c6f74ac50cee75b9"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 39692112,
+      "sha256": "cd6602fc4e7bf4085229397ebc29e8737149faba03483e9c0d4e494d1bb0da41"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 153477120,
+      "sha256": "9f25355e6c23f76fb58445878fb19fd24e2473c566026ae7c6f74ac50cee75b9"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 39692112,
+      "sha256": "cd6602fc4e7bf4085229397ebc29e8737149faba03483e9c0d4e494d1bb0da41"
+    }
+  },
+  "dbUnchanged": true,
+  "stderrTail": [
+    "[INFO] [11:17:07] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:17:07] [dependency-graph-visualizer] ✅ Graph Data Generated: 104 nodes, 161 links",
+    "[INFO] [11:17:07] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:17:07] [dependency-graph-visualizer] ✅ Graph Data Generated: 256 nodes, 448 links"
+  ],
+  "cases": [
+    {
+      "name": "project text (default)",
+      "args": {},
+      "isError": false,
+      "ms": 204,
+      "bytes": 1584,
+      "nodes": 200,
+      "links": 344,
+      "truncated": true,
+      "totalNodesAvailable": 7012,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json",
+      "args": {
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 500,
+      "bytes": 452056,
+      "nodes": 200,
+      "links": 344,
+      "truncated": true,
+      "totalNodesAvailable": 7012,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project html regions",
+      "args": {
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 357,
+      "bytes": 532302,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project html force",
+      "args": {
+        "format": "html",
+        "layout": "force"
+      },
+      "isError": false,
+      "ms": 543,
+      "bytes": 532298,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "force",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project json large budget",
+      "args": {
+        "format": "json",
+        "maxNodes": 1000,
+        "maxLinks": 20000
+      },
+      "isError": false,
+      "ms": 1776,
+      "bytes": 2753547,
+      "nodes": 1000,
+      "links": 2435,
+      "truncated": true,
+      "totalNodesAvailable": 7012,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json calls only",
+      "args": {
+        "format": "json",
+        "relationshipTypes": [
+          "calls"
+        ],
+        "maxNodes": 200
+      },
+      "isError": false,
+      "ms": 142,
+      "bytes": 303655,
+      "nodes": 200,
+      "links": 192,
+      "truncated": true,
+      "totalNodesAvailable": 7012,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file text",
+      "args": {
+        "scope": "file",
+        "target": "apps/rebar/src/vendored/r3_hex_erl_tar.hrl",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 36,
+      "bytes": 1410,
+      "nodes": 200,
+      "links": 122,
+      "truncated": true,
+      "totalNodesAvailable": 232,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file json",
+      "args": {
+        "scope": "file",
+        "target": "apps/rebar/src/vendored/r3_hex_erl_tar.hrl",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 57,
+      "bytes": 189305,
+      "nodes": 200,
+      "links": 122,
+      "truncated": true,
+      "totalNodesAvailable": 232,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "module json",
+      "args": {
+        "scope": "module",
+        "target": "apps/rebar/src/vendored",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 166,
+      "bytes": 630415,
+      "nodes": 200,
+      "links": 593,
+      "truncated": true,
+      "totalNodesAvailable": 1235,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol text",
+      "args": {
+        "scope": "symbol",
+        "target": "valid",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 7,
+      "bytes": 1248,
+      "nodes": 4,
+      "links": 1,
+      "truncated": false,
+      "totalNodesAvailable": 4,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol html",
+      "args": {
+        "scope": "symbol",
+        "target": "valid",
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 16,
+      "bytes": 133399,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "feature json",
+      "args": {
+        "scope": "feature",
+        "target": "vali",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 58,
+      "bytes": 74512,
+      "nodes": 60,
+      "links": 40,
+      "truncated": false,
+      "totalNodesAvailable": 68,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json offset page 2",
+      "args": {
+        "format": "json",
+        "maxNodes": 50,
+        "offset": 50
+      },
+      "isError": false,
+      "ms": 52,
+      "bytes": 57261,
+      "nodes": 50,
+      "links": 35,
+      "truncated": true,
+      "totalNodesAvailable": 7012,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project text includeTests false",
+      "args": {
+        "format": "text",
+        "includeTests": false
+      },
+      "isError": false,
+      "ms": 118,
+      "bytes": 1608,
+      "nodes": 200,
+      "links": 339,
+      "truncated": true,
+      "totalNodesAvailable": 7012,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "unknown scope refused",
+      "args": {
+        "scope": "galaxy"
+      },
+      "isError": true,
+      "ms": 2,
+      "bytes": 81,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "missing target refused",
+      "args": {
+        "scope": "symbol"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 60,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "maxNodes 0 refused",
+      "args": {
+        "maxNodes": 0
+      },
+      "isError": true,
+      "ms": 2,
+      "bytes": 222,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    }
+  ]
+}

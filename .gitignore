@@ -160,3 +160,9 @@ validation/tools/**/work/t2-*/
 /.perf-fixtures/
 /.corpus*/
 /.tmp-*/
+# The C++ audit's measurement corpus (fmt @ 10.2.1, nlohmann-json @ v3.11.3), cloned by
+# script/cpp-audit/census.ts. Two shallow upstream clones, ~30 MB of third-party source the repo
+# has no reason to carry — but they have to be PERSISTENT: /tmp on this box is a private tmpfs
+# that is wiped between shell invocations, so a clone there cannot be measured twice. Ignored
+# rather than deleted so validation/cpp-audit/census.json stays reproducible.
+/.cpp-corpus/

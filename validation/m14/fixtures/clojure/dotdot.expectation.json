@@ -1,0 +1,11 @@
+{
+  "issue": "CLJ-ADV F6",
+  "note": "`..` is not a member name — `(.. x (m1) (m2))` must not emit `uses -> \".\"` (the uses label has no oracle truth for clojure, so only a fixture can see it).",
+  "expectRelationships": [
+    { "type": "calls", "from": "j", "target": "m1", "line_number": 3 },
+    { "type": "calls", "from": "j", "target": "m2", "line_number": 3 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "target": "." }
+  ]
+}

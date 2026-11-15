@@ -1,0 +1,52 @@
+{
+  "fixtureId": "scala/exports-default-package",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `exports` SOURCE for a file in the default package. 0 of the 600 corpus files sampled declare no package, so this shape is unexercised by the corpus and the branch that decides it would have shipped untested \u2014 which is the 'fires?' question the ontology workstream asks, asked of a branch rather than of a label. With no package clause there is no package to name, and the module is the compilation unit, so the edge is sourced at the FILE_MODULE sentinel `(file)`; publishing an empty source instead would be an edge naming nothing, the class M60/SDJ-11 removed from the import path. forbids pin the three ways to get this wrong: an empty source, and the two neighbours a reader would guess at instead.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Gamma",
+      "meta.exportForm": "scala3-export-clause"
+    },
+    {
+      "type": "contains",
+      "from": "Loose",
+      "target": "make",
+      "note": "the surface edge is additional to containment, not a replacement for it"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Loose",
+      "equals": 1,
+      "note": "object-first companion pair: one export of the name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "AlsoHidden",
+      "note": "private top-level: not part of the surface"
+    },
+    {
+      "type": "exports",
+      "from": "",
+      "note": "an empty source names nothing \u2014 SDJ-11's rule, applied to the new label"
+    },
+    {
+      "type": "exports",
+      "from": "(script)",
+      "note": "(script) is this lane's FILE-LEVEL symbol sentinel for edges sourced at no declaration; the module sentinel is (file), and conflating the two would merge a module identity with a statement-attribution sentinel"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "note": "root is the import-reference source in this lane, not a module"
+    }
+  ],
+  "authoredNote": " [TASK-9 SUPERSESSION 2026-10-19 (Lead-approved dedupe): for a no-package file the surface channel is SKIPPED because its moduleName IS the (file) sentinel the export-array channel already publishes; the exact-once pin on (file)->Loose is kept, the surface-channel duplicate row is superseded.]"
+}

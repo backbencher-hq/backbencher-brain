@@ -1,0 +1,43 @@
+"""
+Heritage, member supply and the public surface.
+
+The three relationship families the ontology census measured as derivable and the
+analyzer did not read: `extends` (an `implements` clause whose supertype this
+document declares to be an OBJECT type), `overrides` (a member an object supplies
+that the interface it implements also declares — spec 3.6 requires it), and
+`exports` (the schema's public type surface, which reached no graph because
+`ParseResult.exports` has no consumer).
+"""
+interface Node {
+  id: ID!
+}
+
+"An object supplies every member the interface declares."
+type User implements Node {
+  id: ID!
+  name: String
+}
+
+"An object type is inheritance, not interface conformance."
+type Base {
+  f: Int
+}
+
+type Sub implements Base {
+  f: Int
+}
+
+"A supertype this document says nothing about stays `implements`."
+type Orphan implements Unknown {
+  g: Int
+}
+
+extend type Remote {
+  added: String
+}
+
+directive @auth(requires: Role) on OBJECT
+
+enum Role {
+  ADMIN
+}

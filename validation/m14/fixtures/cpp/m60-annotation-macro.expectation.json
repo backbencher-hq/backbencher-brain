@@ -1,0 +1,27 @@
+{
+  "fixtureId": "cpp/m60-annotation-macro",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D8. A thread-safety annotation written after a parameter list decorates the declaration in front of it and declares nothing. The grammar ends that declaration at the `)` and recovers a SECOND function_definition whose declarator is the macro and whose BODY is the real method's, so the analyzer published a member named after the macro — `GTEST_LOCK_EXCLUDED_(mutex_)` with `expandedFrom: \"macro-heading\"` — and attributed the body's reads to it. Measured: 20 such symbols in one bundled gmock file alone, 424 macro-named symbols over 13,753 files.\n\nThe pins are mostly NEGATIVE, and that is the point. Three separate rules were written for this and two of them DELETED REAL SYMBOLS before the fixture existed to catch it: a sibling-based rule deleted every `TEST(Suite, Name)` heading that followed a function declaration, and a comment-skipping backward scan deleted 20 headings in gmock. So the three CONTROLS below are load-bearing, not decoration: `TEST` is itself spelled in all caps, so any rule that asks only \"is the name a macro\" cannot tell a heading from an annotation, and the only thing that separates them is where the invocation sits. `MAX_SIZE` is an all-caps REAL function — a C++ function definition always has a return type, and that is what an annotation never has. `WithPrior::prior` is a declaration immediately before a heading, which is the exact shape the sibling rule misread as a continuation.",
+  "expectSymbols": [
+    { "name": "Guarded", "kind": "class" },
+    { "name": "current_value", "kind": "method", "ownerName": "Guarded" },
+    { "name": "suite_for", "kind": "method", "ownerName": "Guarded" },
+    { "name": "TEST(Suite, Reads)", "kind": "function" },
+    { "name": "MAX_SIZE", "kind": "function" },
+    { "name": "WithPrior", "kind": "class" },
+    { "name": "prior", "kind": "method", "ownerName": "WithPrior" },
+    { "name": "TEST(Other, Suite)", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "GTEST_LOCK_EXCLUDED_", "comment": "the annotation is a macro invocation, not a declaration; publishing it invents a member of the class" },
+    { "name": "GTEST_LOCK_EXCLUDED_(mutex_)", "comment": "the same annotation with its argument list in the NAME — the declarator is an identifier followed by a parenthesised argument the grammar reads as a function-pointer declarator" }
+  ],
+  "forbidRelationships": [
+    {
+      "source": "GTEST_LOCK_EXCLUDED_(mutex_)",
+      "type": "calls",
+      "comment": "the SECOND half of D8, and the one that is not obvious from the symbol set: the stolen BODY is a separate `compound_statement` node and reaches the macro-declared-body branch on its own, so even with the phantom symbol suppressed every read in the real method's body was still attributed to the macro. Pinned as an edge, not a symbol, because a missing symbol is indistinguishable from a file that never declared one — an edge whose SOURCE is a macro can only be a fabrication."
+    }
+  ]
+}

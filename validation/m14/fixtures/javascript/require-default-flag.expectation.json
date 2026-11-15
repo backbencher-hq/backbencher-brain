@@ -1,0 +1,11 @@
+{
+  "fixtureId": "javascript/require-default-flag",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J4 fix, CJS half: the old code hardcoded isDefault true for every require — destructured bindings (`const { a } = require`) are named, only bare-identifier bindings are default.",
+  "expectSymbols": [],
+  "expectImports": [
+    { "module": "./m", "isDefault": true },
+    { "module": "./m2", "isDefault": false }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "comment": "A TYPE and an INSTANCE for it are two declarations, and this file used to offer the name `Collision` twice: `instance == Collision where …` published its container under the instance TARGET type, so the file declared `Collision` once as the type and once as the implementation. That was a PHANTOM DECLARATION and its cost is measured on the 312-file population (`validation/m14/fixtures/clean/phantom-census.mts`): 699 containers in 94 files, 93 of them named after a type the SAME file also declares for real, and 1,009 of the lane's 6,856 residual edges reachable by removing them. The container is now `Collision::instance`, kind `impl` (the Rust lane's `<target>::impl` discipline), and the file declares `Collision` exactly ONCE. THIS FIXTURE NOW PINS THE ABSENCE OF THE COLLISION rather than the dedupe that hid it: `expectSymbolCount` 1 on the bare name is the anti-regression pin — a revert to bare-target naming fails here, and so does any second declaration of `Collision`. The old dedupe in `emitExports` is kept for the invariant it enforces (one export name, one provider) and is no longer reached by this shape: `Collision::instance` is kind `impl`, which is not an exportable kind.",
+  "expectSymbols": [
+    { "name": "Collision", "kind": "type", "ownerName": "InstanceTargetNameCollision" },
+    { "name": "Collision::instance", "kind": "impl", "ownerName": "InstanceTargetNameCollision", "comment": "the instance container — namespaced under its target, and NOT a declaration of `Collision`" },
+    { "name": "==", "kind": "method", "ownerName": "Collision", "comment": "an instance-member operator is a METHOD of the instance, and its owner is still the NOMINAL type `Collision` — the container's name change moves no edge endpoint" }
+  ],
+  "expectSymbolCount": [
+    { "name": "Collision", "equals": 1, "comment": "ONE declaration: the type. The instance no longer claims the bare name (it used to be 2)" },
+    { "name": "Collision::instance", "equals": 1, "comment": "and exactly one container, so a mutant that emits both spellings is caught" }
+  ],
+  "exportsNote": "expectExports/forbidExports match fields EXACTLY, so no `comment` key may appear inside an entry. `Collision` is exported once, as the TYPE; the container is not exported because `impl` is not an exportable kind — the old first-wins dedupe is no longer what makes this true.",
+  "expectExports": [
+    { "name": "Collision", "kind": "type" }
+  ],
+  "forbidExports": [
+    { "name": "Collision", "kind": "class", "comment": "the container is no longer a `class`, and nothing may export it under the bare name" },
+    { "name": "Collision::instance", "kind": "impl", "comment": "an implementation is not part of a module's interface" },
+    { "name": "==", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Collision", "target": "==", "line_number": 17, "comment": "instance_declaration: implements target-type -> class, on the `instance == Collision where` line (M59.O2 site line). The SOURCE is the target type, unchanged by the container rename — this row is why the rename is surgical rather than a re-pointing of every instance edge." },
+    { "type": "contains", "from": "Collision", "target": "CollisionA", "line_number": 15, "comment": "the constructor is contained by the TYPE at its own line" },
+    { "type": "contains", "from": "InstanceTargetNameCollision", "target": "Collision", "line_number": 15, "comment": "the TYPE at its definition line…" },
+    { "type": "contains", "from": "InstanceTargetNameCollision", "target": "Collision::instance", "line_number": 17, "comment": "…and the INSTANCE container at ITS line. This pair used to read two `contains -> Collision` rows, which is exactly what a per-set dedupe would have collapsed; the two sites are now also two distinct TARGETS, so the per-site rule is observable in the targets as well as in the lines." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "from": "InstanceTargetNameCollision", "target": "Collision", "equals": 1, "comment": "one containment of the bare name: the type" },
+    { "type": "contains", "from": "InstanceTargetNameCollision", "target": "Collision::instance", "equals": 1, "comment": "one containment of the container, at the instance's line" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "InstanceTargetNameCollision", "target": "Collision", "line_number": 17, "comment": "THE PHANTOM, forbidden: line 17 declares an INSTANCE for `Collision`, not `Collision`. A container named after its bare target puts this row back." }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

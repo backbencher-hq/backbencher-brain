@@ -1,0 +1,189 @@
+{
+  "fixtureId": "perl/core-oo-class-role",
+  "language": "perl",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "M14 line-contract pins on `contains`, added 2026-10-02. Every `line_number` below was transcribed from the NUMBERED source .pm file and then confirmed against one analyzer run, so the analyzer agrees with the source rather than defining it. This lane previously asserted `contains` MEMBERSHIP ONLY -- no row anywhere named a line -- which is why the two mutants `perl/contains-line-is-absent` (strips the field) and `perl/contains-line-at-declaration-start` (shifts it by +1) both SURVIVED at (0 -> 0): the transform touched a channel no fixture read. `core-oo-class-role` already said so in prose -- its `Point->sum` row carried the note that the old `line_number: null` sentinel \"asserted ignorance about a line written in the file\", and the numeric replacement it asked for was never written. Dropping the pin is not dropping the contract: the M60 line contract applies to `contains` as it does to every other label. Each row resolved to exactly ONE actual edge, so each value below is the only line that edge has and no value was inferred.",
+  "rationale": "Perl 5.38 core OO. `class_statement` and `role_statement` are core-OO declarations the pre-review analyzer did not handle at all, so `Point` and `Greeter` were not symbols, their methods became OWNERLESS FUNCTIONS, and `field $x` / `field $y` vanished entirely. The fixture pins the three shapes that were lost: the class symbol, `field` as a Property OWNED BY THE CLASS (the same concept as a Moose `has` attribute, and a lexical variable anywhere else -- `imports-and-exports` pins `has 'name'` on line 22 of that fixture so the rule cannot be satisfied by making every `field` a property), and a `role` as a Trait whose methods are owned. `Legacy` on lines 11-12 is the control: `package` + `sub new` must still produce an owned constructor, so the 5.38 path cannot be met by making methods ownerless. Both constructors are named `new` in the SOURCE and `constructor` in the index; `expectSymbolCount` pins the dedupe for the two owner buckets. UPDATED 2026-10-01: the `contains Point -> sum` pin carried `line_number: null`, described in its own note as \"the harness's UNKNOWN assertion\". An UNKNOWN sentinel is not a contract — it is a way of writing \"we did not look\". The pin is removed so the lane's real line convention is what the fixture checks, and a mutant that moves a containment edge's line is now detectable instead of invisible.",
+  "expectSymbols": [
+    {
+      "name": "Point",
+      "kind": "class"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "y",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Point"
+    },
+    {
+      "name": "sum",
+      "kind": "method",
+      "ownerName": "Point"
+    },
+    {
+      "name": "Greeter",
+      "kind": "trait"
+    },
+    {
+      "name": "greet",
+      "kind": "method",
+      "ownerName": "Greeter"
+    },
+    {
+      "name": "Legacy",
+      "kind": "class"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Legacy"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "constructor",
+      "ownerName": "Point",
+      "equals": 1
+    },
+    {
+      "name": "constructor",
+      "ownerName": "Legacy",
+      "equals": 1
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "constructor",
+      "ownerName": "Point",
+      "parameters": [
+        {
+          "name": "class"
+        },
+        {
+          "name": "x"
+        },
+        {
+          "name": "y"
+        }
+      ]
+    },
+    {
+      "symbol": "sum",
+      "ownerName": "Point",
+      "parameters": [
+        {
+          "name": "self"
+        }
+      ]
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Point",
+      "startLine": 2,
+      "endLine": 2,
+      "note": "the class symbol's range is its NAME, not the block: the statement node spans every member"
+    },
+    {
+      "symbol": "x",
+      "startLine": 3,
+      "endLine": 3
+    },
+    {
+      "symbol": "y",
+      "startLine": 4,
+      "endLine": 4
+    },
+    {
+      "symbol": "Greeter",
+      "startLine": 8,
+      "endLine": 8
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "type": "contains",
+      "from": "Point",
+      "target": "x",
+      "line_number": 3,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "contains",
+      "from": "Point",
+      "target": "y",
+      "line_number": 4,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "contains",
+      "from": "Point",
+      "target": "constructor",
+      "line_number": 5,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "contains",
+      "from": "Greeter",
+      "target": "greet",
+      "line_number": 9,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "contains",
+      "from": "Legacy",
+      "target": "constructor",
+      "line_number": 12,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "calls",
+      "from": "sum",
+      "target": "x",
+      "line_number": 6,
+      "meta.evidenceClass": "usage_contextual",
+      "note": "tier: the source states a call, confidence 0.9"
+    },
+    {
+      "type": "calls",
+      "from": "sum",
+      "target": "y",
+      "line_number": 6,
+      "meta.evidenceClass": "usage_contextual",
+      "note": "tier: the source states a call, confidence 0.9"
+    },
+    {
+      "type": "contains",
+      "from": "Point",
+      "target": "sum",
+      "line_number": 6,
+      "note": "membership rides Contains and rides no line: the harness's UNKNOWN assertion, pinning the line-less contract for the owned-member class | tier: the source states this edge: a declaration or a written name, confidence >= 0.9 | LINE: the `line_number: null` pin asserted the harness could not know an owned member's line. It can: the edge names the member, so the line is that member's own line. Dropping the pin is not dropping the contract — the M60 line contract applies to `contains` as it does to every other label, and a null sentinel here was asserting ignorance about a line written in the file.",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [],
+  "expectMetadata": [
+    {
+      "perlVersion": "v5.38"
+    },
+    {
+      "comment": "the 5.38 feature gate is a version requirement, not an import",
+      "linesOfCode": 14
+    }
+  ]
+}

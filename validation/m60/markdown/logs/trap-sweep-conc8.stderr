@@ -1,0 +1,24 @@
+[INFO] [00:33:58] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:33:58] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:34:26] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:34:39] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/cats-effect/docs/std/hotswap.md | memory access out of bounds
+[INFO] [00:34:59] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:34:59] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:35:23] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:35:23] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/flutter-packages/packages/video_player/video_player_avfoundation/README.md | memory access out of bounds
+[INFO] [00:35:44] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/gql-graphql-php/docs/concepts.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/gql-graphql-php/docs/error-handling.md | memory access out of bounds
+[INFO] [00:36:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:36:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:36:47] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/cats-effect/docs/std/hotswap.md — exiting

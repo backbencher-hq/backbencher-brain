@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Node",
+  "definitions": { "Leaf": { "type": "object" } },
+  "type": "object",
+  "properties": {
+    "child": { "$ref": "#/definitions/Leaf" },
+    "value": { "type": "string" }
+  },
+  "required": ["child"]
+}

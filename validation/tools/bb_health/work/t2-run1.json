@@ -1,0 +1,71 @@
+{
+  "projectPath": ".",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "options": {},
+  "wallMs": 12885,
+  "reportTiming": {
+    "totalMs": 10013,
+    "aggregatesMs": 7963,
+    "freshnessMs": 59,
+    "integrityMs": 0,
+    "refreshMs": 0,
+    "pathsMs": 0
+  },
+  "counts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "imports": 25122,
+    "syntaxErrors": 100
+  },
+  "freshness": {
+    "mode": "sampled",
+    "checked": 200,
+    "total": 6452,
+    "fresh": 194,
+    "stale": 6,
+    "missing": 0,
+    "reasons": {
+      "metadata-fast-path": 194,
+      "hash-match": 0,
+      "hash-differs": 6,
+      "file-gone": 0,
+      "unreadable": 0,
+      "no-row": 0
+    }
+  },
+  "warnings": [
+    "warning:SYNTAX_ERRORS",
+    "warning:STALE_FILES"
+  ],
+  "languages": 42,
+  "models": [
+    {
+      "model": "nvidia/nemotron-3-embed-1b",
+      "count": 30906,
+      "dimensions": [
+        2048
+      ]
+    },
+    {
+      "model": "local-word-vectors-v3",
+      "count": 1931,
+      "dimensions": [
+        50
+      ]
+    }
+  ],
+  "embeddedEntities": 32837,
+  "unembeddedKinds": 16,
+  "byLanguage": 42,
+  "textBytes": 1148,
+  "textLines": 14,
+  "firstLines": [
+    "project: .",
+    "projectId: 1d3d57103be91b8f9716d70199fe28a3f39245d9",
+    "files=6452 symbols=310423 relationships=820040 imports=25122 syntaxErrors=100",
+    "freshness: 194 fresh / 6 of 200 sampled stale (~194 of 6452 estimated) / 0 missing (200/6452 checked, sampled — SAMPLE, not a census)",
+    "freshness why: 194 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh); 6 stale: content changed (reindex these) — over the 200-file SAMPLE, not the project",
+    "embeddings: 32837 rows / 32837 entities / 10.6% of symbols"
+  ]
+}

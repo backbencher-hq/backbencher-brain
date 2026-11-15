@@ -1,0 +1,78 @@
+{
+  "fixtureId": "scala/annotated-supertype",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "An ANNOTATED TYPE is the type with an annotation ON it: `extends AnyRef @Marker` names the supertype `AnyRef`, and the annotation is a MODIFIER on the type, not the type. The grammar's `annotated_type` node holds the base type and then the annotation, so the analyzer has to read THROUGH it. MEASURED over the admitted population: 35 extends_clause clauses name a real supertype only through an annotated_type (22 with one, 13 with two) and every one of them published NO edge before the analyzer read through it.",
+  "expectSymbols": [
+    {
+      "name": "Marker"
+    },
+    {
+      "name": "Annotated"
+    },
+    {
+      "name": "AnnotatedGeneric"
+    },
+    {
+      "name": "AnnotatedWith"
+    },
+    {
+      "name": "Plain"
+    },
+    {
+      "name": "Base"
+    },
+    {
+      "name": "Other"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Annotated",
+      "target": "AnyRef"
+    },
+    {
+      "type": "extends",
+      "from": "AnnotatedGeneric",
+      "target": "List"
+    },
+    {
+      "type": "extends",
+      "from": "AnnotatedWith",
+      "target": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "AnnotatedWith",
+      "target": "Other"
+    },
+    {
+      "type": "extends",
+      "from": "Plain",
+      "target": "Base"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Annotated",
+      "target": "Marker"
+    },
+    {
+      "type": "extends",
+      "from": "AnnotatedGeneric",
+      "target": "Marker"
+    },
+    {
+      "type": "extends",
+      "from": "AnnotatedWith",
+      "target": "Marker"
+    },
+    {
+      "type": "mixes_in",
+      "from": "AnnotatedWith",
+      "target": "Marker"
+    }
+  ]
+}

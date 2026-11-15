@@ -60,7 +60,7 @@ import { getParser } from "../../../../src/ast/engine"
 import { RealJavaAnalyzer } from "../../../../src/ast/real-java-analyzer"
 
 // ------------------------------------------------------------------ config
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO_DIR = process.env.LANE_REPO ?? "java-lib"
 const LANE_NFILES = Number(process.env.LANE_NFILES ?? 0) // 0 = every .java file on disk
 const LANE_CONC = Number(process.env.LANE_CONC ?? 8)

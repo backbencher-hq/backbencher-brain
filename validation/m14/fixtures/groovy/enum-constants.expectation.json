@@ -1,0 +1,24 @@
+{
+  "fixtureId": "groovy/enum-constants",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M14.0.F6 drove this fixture (2026-09-15). Groovy enum constants (`HAPPY, GLOOMY`) are also a legal untyped field with two declarators, and the rebuilt #841 grammar resolved the declared [enum_constant, _variable_declarator_id] conflict toward the FIELD: `enum_body` contained ZERO enum_constant nodes, so the analyzer's enum_constant handling was dead code and constants produced no symbol at all. Measured pre-fix parse of exactly this file: `field_declaration type: (identifier GLOOMY) declarator: (variable_declarator name: Mood)` followed by `constructor_declaration name: flip` — a field and a constructor where the source has two constants, a method and a ternary. The grammar now emits enum_constant (the F6 lane's `enum_constant` uncovered=0 is the same fact from the other side), and the expectation pins what the analyzer does with them plus forbid entries for those two pre-fix nodes.",
+  "expectSymbols": [
+    { "name": "Mood", "kind": "enum" },
+    { "name": "HAPPY", "kind": "enum_member" },
+    { "name": "GLOOMY", "kind": "enum_member" },
+    { "name": "flip", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Mood", "target": "HAPPY", "line_number": 4, "note": "both constants are written on 4" },
+    { "type": "contains", "from": "Mood", "target": "GLOOMY", "line_number": 4 },
+    { "type": "contains", "from": "Mood", "target": "flip", "line_number": 6 }
+  ],
+  "forbidSymbols": [
+    { "name": "GLOOMY", "kind": "field", "note": "pre-fix: the constant read as an untyped field" },
+    { "name": "flip", "kind": "constructor", "note": "pre-fix: `Mood flip()` read as a constructor of the bogus field's type" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Mood", "target": "HAPPY", "line_number": 3, "note": "pre-fix: the enum header line, never where a constant is written" }
+  ]
+}

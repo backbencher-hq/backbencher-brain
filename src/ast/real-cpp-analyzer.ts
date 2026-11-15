@@ -3199,8 +3199,17 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             // the key is the module name, so a repeated `using std::vector;`
             // states the same dependency. The `imports` entry above is still
             // pushed for every occurrence.
-            if (!referencesSeen.has(raw)) {
-              referencesSeen.add(raw)
+            //
+            // M65: the key is TYPE-SCOPED (`depKey`, declared at the include site). This
+            // site emits `references` while the include sites emit `imports`/`part_of`;
+            // sharing one unscoped key let a `using` and an `#include` that name the same
+            // module suppress each other, which is two facts and not one. The `depKey`
+            // helper is declared at the include site below, so this arm carries its own
+            // equivalent spelling of the same rule rather than reading a `const` that is
+            // declared later in the walk.
+            const usingKey = `references\u0000${raw}`
+            if (!referencesSeen.has(usingKey)) {
+              referencesSeen.add(usingKey)
               relationships.push({
                 // File-level dependency statement → source "global" (same
                 // convention as the #include references edge above).
@@ -3476,27 +3485,45 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           // before and after, and `cpp/include-kind-imports` pins BOTH the new
           // kind and the absence of the old one.
           //
-          // D3: one edge per dependency. `referencesSeen` is keyed on the
-          // module name alone, so the EDGE is the dependency; the `imports`
-          // entry above was still pushed for every directive, which is the
-          // distinction between "how many times was it included" (a count) and
-          // "what does this file depend on" (an edge).
-          if (!referencesSeen.has(includePath)) {
-            referencesSeen.add(includePath)
+          // D3: one edge per dependency. The key is the EMITTED TARGET — not the written path —
+          // because the guard and the row must describe the same thing.
+          //
+          // ★ M65: AND IT IS SCOPED BY RELATIONSHIP TYPE. The first cut of this fix keyed the shared
+          // set on the target string alone, and that was a REGRESSION — caught by measuring row
+          // counts before and after rather than by reading the code. `part_of` (a QUOTED include) and
+          // `imports` (an ANGLE include) are TWO relationship types that can legitimately name the
+          // SAME string, and they are two different facts: in fmt's `ranges-test.cc`,
+          // `#include "fmt/ranges.h"` yields `part_of -> ranges` and `#include <ranges>` yields
+          // `imports -> ranges`, both real, neither a duplicate of the other. Keying on the target
+          // alone let the first claim the name and SUPPRESS the second: measured 5 lost `imports`
+          // rows — `ranges` 1, and `any`/`optional`/`string_view`/`variant` 4 in gtest.h, where
+          // `"absl/types/any.h"` etc. share a stem with `<any>`, `<optional>`, `<string_view>` and
+          // `<variant>`.
+          //
+          // So the key is `${type} NUL ${target}`. That preserves the original D3 intent exactly —
+          // one edge per (kind, dependency) — and makes cross-kind suppression impossible. All three
+          // call sites share this set, so the rule holds for a `using`-dependency that names a module
+          // an include also names: those are a `references` fact and an `imports` fact, not one.
+          const depKey = (t: string, target: string): string => `${t}\u0000${target}`
+          const isQuotedPart = !isSystem
+          const edgeTarget = isQuotedPart ? cppPartSymbol(includePath) : includePath
+          const edgeType = isQuotedPart ? "part_of" : "imports"
+          if (!referencesSeen.has(depKey(edgeType, edgeTarget))) {
+            referencesSeen.add(depKey(edgeType, edgeTarget))
             // PART_OF vs IMPORTS, BY THE WRITTEN FORM (see `cppPartTargetPath`):
             // a QUOTED include is the unit's own fragment ⇒ `part_of`, in the DIRECTIVE'S OWN
             // direction (the including library unit → the part), with `metadata.partRole` MANDATORY
             // ("part" for `part_of_directive`, "library" for `part_directive` — the contract's own
             // spelling). An ANGLE include is another module's header ⇒ `imports`, unchanged.
-            const isQuotedPart = !isSystem
             relationships.push({
               source: "global",
               // ★ THE TARGET IS A SYMBOL, NOT A PATH (per the measured ruling). MEASURED before this
               // change: emitting the PATH gave 0 resolved of 4,612 `part_of` edges — 100 % unresolved —
               // because the arbiter resolves TARGET STRINGS AGAINST SYMBOL NAMES and has no space for a
               // path. The contract permits either ("the part's file or its module symbol"); the symbol is
-              // the only one that can bind.
-              target: isQuotedPart ? cppPartSymbol(includePath) : includePath,
+              // the only one that can bind. `edgeTarget` is the SAME value the dedup key above now
+              // reads, so the guard and the row cannot describe two different targets again (M65).
+              target: edgeTarget,
               type: isQuotedPart ? ASTEngine.RelationshipType.PartOf : ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
               // , the C lane's rule: the include directive is the
@@ -5466,11 +5493,40 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
       const seenOv = new Set<string>()
       for (const pend of pendingOverrides) {
         for (const hit of resolves(pend.cls, pend.method, pend.params, !!pend.keyword)) {
-          const k = `${pend.cls}.${pend.method}|${hit.base}.${pend.method}`
+          // The key is INTERNAL (never emitted) but it is spelled in the same `::` as the row it
+          // keys, so a reader comparing a key to the edge it produced sees one convention and not
+          // two. The dedup semantics are unchanged: the key is still (cls, method, base, method).
+          const k = `${pend.cls}::${pend.method}|${hit.base}::${pend.method}`
           if (seenOv.has(k)) continue
           seenOv.add(k)
           relationships.push({
-            source: `${pend.cls}.${pend.method}`,
+            // ★ THE SOURCE IS THE `::`-QUALIFIED MEMBER (M65). This line read
+            // `${pend.cls}.${pend.method}` — a DOT — and the dot is not C++ scope syntax. It was
+            // not unresolvable, and that is the part worth stating precisely: the resolver's own
+            // `extractLeaf` (`pool-worker.ts:879`) splits on BOTH `:` and `.`, so a dot-spelled
+            // source still reaches its LEAF and still binds — to a NAME, not to a declaration.
+            //
+            // MEASURED, and the measurement is the whole argument. Over the two-repo M65 corpus
+            // (134 `overrides` rows), the DOT form resolved **134/134 — and 134/134 of them landed
+            // on an AMBIGUOUS key**, because the leaf is declared more than once in every file
+            // (`no_grouping.do_decimal_point` and `special_grouping.do_decimal_point` are
+            // indistinguishable once the class is dropped; in fmt's `xchar-test.cc` the leaf
+            // `do_decimal_point` is declared 4×). The `::` form resolves **134/134 as well, but
+            // 120 of them EXACTLY and unambiguously, with 14 left ambiguous** — and those 14 are
+            // genuine C++ (a declaration and an out-of-line definition of one method, e.g.
+            // `Mutex::Lock` at two lines), not a spelling defect.
+            //
+            // So this is a WRONG BINDING, not a missing one, and that distinction is why it
+            // survived: the row is present, it resolves, and no "unresolved" count moves. What it
+            // costs is `bb_impact` — the edge is attributed to an arbitrary same-named method, so
+            // changing the overriding method does not reach its base and changing a DIFFERENT
+            // class's same-named method does.
+            //
+            // The `::` spelling is also what the analyzer itself publishes for members (the L-W4
+            // block below emits `qualifiedName = Owner::member`), so this makes the source and the
+            // published key agree instead of relying on a leaf fallback the block was written to
+            // supersede.
+            source: `${pend.cls}::${pend.method}`,
             // THE TARGET IS THE DECLARED MEMBER, NOT `Base.method`. The resolver matches an
             // edge target against a SYMBOL NAME (or a qualified-name alias), and a cpp member
             // symbol publishes only its leaf — `pool-worker.ts` normalises `qualifiedName` to
@@ -6294,7 +6350,19 @@ private functionDeclaratorOf(node: Node | null): Node | null {
       // usage and says nothing about a module dependency.
       if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") { md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"; continue }
-      if (t === "imports") { md.evidenceClass = md.isImport ? "import_based" : "usage_contextual"; continue }
+      // M65: `part_of` IS A FILE-LEVEL DEPENDENCY, AND IT HAD NO ARM.
+      //
+      // A quoted `#include` is C++'s textual-inclusion directive — the same construct family as
+      // `imports` (both are `preproc_include`), separated by the WRITTEN FORM. Every row fell
+      // through to the final `usage_contextual` default below, which is the tier for a
+      // contextual usage: it said the row was an inference about a name when the row is a fact
+      // read off a NAMED grammar node. Measured over the two-repo M65 corpus: **365 of 365
+      // `part_of` rows carried `usage_contextual` and 0 carried `structural`**
+      // (`validation/cpp-audit/census.json`), while `docs/analyzers/cpp.md`'s own relationship
+      // table claimed `structural` for the type — a doc/code contradiction on every row it
+      // emits. It is the same argument the `imports` arm above was added for: a dependency row
+      // whose evidence is a directive is a module dependency, not a usage.
+      if (t === "part_of") { md.evidenceClass = "structural"; continue }
       if (t === "extends" || t === "implements" || t === "overrides") {
         md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
         continue

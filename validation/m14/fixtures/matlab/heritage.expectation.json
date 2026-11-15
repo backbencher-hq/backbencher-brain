@@ -1,0 +1,22 @@
+{
+  "fixtureId": "matlab/heritage",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the superclass-list split: `classdef Multi < BaseOne & BaseTwo & matlab.mixin.Copyable` makes Multi a subclass of BaseOne (extends) and conformant to the additional superclasses (implements). The FIRST base is never implements, and a later base is never extends. The dotted spelling `matlab.mixin.Copyable` is ONE target: the grammar's `superclasses` holds `property_name` nodes (dots inside one name), and a base must never be split into its package segments.",
+  "expectSymbols": [
+    { "name": "Multi", "kind": "class" },
+    { "name": "describe", "kind": "method", "ownerName": "Multi" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Multi", "target": "BaseOne" },
+    { "type": "implements", "from": "Multi", "target": "BaseTwo" },
+    { "type": "implements", "from": "Multi", "target": "matlab.mixin.Copyable" }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "from": "Multi", "target": "BaseOne" },
+    { "type": "extends", "from": "Multi", "target": "BaseTwo" },
+    { "type": "extends", "from": "Multi", "target": "matlab" },
+    { "type": "extends", "from": "Multi", "target": "mixin" },
+    { "type": "implements", "from": "Multi", "target": "mixin" }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "generatedAt": "2026-11-01T19:00:37.115Z",
+  "subject": "workspace reference large index (.bb-data, 11,440 files / ~3.4 GB)",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2.ts",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "note": "one timed default-argument call per candidate; call cap 120s. Full 5-run p50/p95 for candidates inside budget is in latency-t2-warm.json",
+  "perCallCapMs": 120000,
+  "rows": [
+    {
+      "name": "join",
+      "n": 21937,
+      "rank": 1,
+      "ms": 22150.7,
+      "isError": false,
+      "shownCount": 5,
+      "totalCountIfKnown": 5,
+      "directCount": 5,
+      "truncated": false,
+      "truncationReason": null,
+      "depthReached": 0,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "reproducible": true,
+      "freshness": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0
+      }
+    },
+    {
+      "name": "has",
+      "n": 7592,
+      "rank": 10,
+      "ms": 359528.3,
+      "isError": false,
+      "shownCount": 109,
+      "totalCountIfKnown": null,
+      "directCount": null,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+caller-budget-exhausted (count: time-budget-exhausted — this answer is not reproducible)",
+      "depthReached": 3,
+      "countVerification": {
+        "ran": true,
+        "timedOut": true,
+        "boundarySuspect": false
+      },
+      "reproducible": false,
+      "freshness": {
+        "fresh": 73,
+        "stale": 1,
+        "missing": 0
+      }
+    },
+    {
+      "name": "named",
+      "n": 302,
+      "rank": 100,
+      "ms": 100863.3,
+      "isError": false,
+      "shownCount": 17,
+      "totalCountIfKnown": 17,
+      "directCount": 12,
+      "truncated": false,
+      "truncationReason": null,
+      "depthReached": 3,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "reproducible": true,
+      "freshness": {
+        "fresh": 1,
+        "stale": 1,
+        "missing": 0
+      }
+    },
+    {
+      "name": "refReachable",
+      "n": 25,
+      "rank": 500,
+      "ms": 42015.1,
+      "isError": false,
+      "shownCount": 2,
+      "totalCountIfKnown": 2,
+      "directCount": 1,
+      "truncated": false,
+      "truncationReason": null,
+      "depthReached": 1,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "reproducible": true,
+      "freshness": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0
+      }
+    },
+    {
+      "name": "tagTypeName",
+      "n": 5,
+      "rank": 2000,
+      "ms": 43261.1,
+      "isError": false,
+      "shownCount": 6,
+      "totalCountIfKnown": 6,
+      "directCount": 4,
+      "truncated": false,
+      "truncationReason": null,
+      "depthReached": 2,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "reproducible": true,
+      "freshness": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0
+      }
+    },
+    {
+      "name": "emitReferenceLink",
+      "n": 2,
+      "rank": 5000,
+      "ms": 13736.3,
+      "isError": false,
+      "shownCount": 3,
+      "totalCountIfKnown": 3,
+      "directCount": 1,
+      "truncated": false,
+      "truncationReason": null,
+      "depthReached": 1,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "reproducible": true,
+      "freshness": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0
+      }
+    },
+    {
+      "name": "computeImpact",
+      "n": -1,
+      "rank": -1,
+      "ms": 23603.1,
+      "isError": false,
+      "shownCount": 7,
+      "totalCountIfKnown": 7,
+      "directCount": 7,
+      "truncated": false,
+      "truncationReason": null,
+      "depthReached": 0,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "reproducible": true,
+      "freshness": {
+        "fresh": 4,
+        "stale": 3,
+        "missing": 0
+      }
+    }
+  ]
+}

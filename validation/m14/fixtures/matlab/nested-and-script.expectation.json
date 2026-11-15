@@ -1,0 +1,15 @@
+{
+  "fixtureId": "matlab/nested-and-script",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins script-level AST reads and nested-function containment without inventing script variable declarations.",
+  "expectSymbols": [
+    { "name": "outer", "kind": "function" },
+    { "name": "inner", "kind": "function", "ownerName": "outer" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "root", "target": "display" },
+    { "type": "calls", "from": "outer", "target": "inner" },
+    { "type": "contains", "from": "outer", "target": "inner" }
+  ]
+}

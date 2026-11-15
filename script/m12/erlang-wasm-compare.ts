@@ -7,8 +7,8 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
-const ROOT = "$HOME/mcp/backbencher-brain"
-const CORPUS = "$HOME/fixtures/repositories/rebar3"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/rebar3"
 const PINNED = `${ROOT}/wasm/tree-sitter-erlang.wasm`
 const NEW = "/tmp/ts-erlang-npm/package/tree-sitter-erlang.wasm"
 

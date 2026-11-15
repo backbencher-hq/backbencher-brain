@@ -1,0 +1,271 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/imports-psb12.ps1",
+ "authoredFrom": "PS23 \u2014 the `imports` RELATIONSHIP, which the lane did not emit. Authored 2026-10-02 from a re-probe of the fix, not from the fixture that motivated it. THE GAP: PowerShell states a module dependency four ways \u2014 `Import-Module`, `using module`, `using namespace`, `#requires -Module` \u2014 and `addImport` was already the single reader of all four, filling `imports[]` correctly for every one. It published the dependency as a `references` edge and nothing else, so over a 1,092-file corpus (15 repos, `parseFile`, whole admitted set) the `imports` relationship type was EMITTED 0 TIMES while `imports[]` held every module name. `script/m60/powershell-surface-measure.ts` listed `imports` among the types 'not exercised by this draw (all implemented + gated)'; that parenthetical is a string literal and it was FALSE for this lane \u2014 `grep -c 'RelationshipType.Imports' src/ast/real-powershell-analyzer.ts` returned 0 before the fix. WHY IT IS A GAP AND NOT A PREFERENCE: the ontology carries `imports` as its own type, 22 of the 48 analyzers in `src/ast/` emit it (`grep -l 'RelationshipType.Imports' src/ast/real-*-analyzer.ts` names 22 before this wave, 23 after), and bash \u2014 the same construct in the same family \u2014 emits BOTH `imports` and `references` for `source ./x.sh` because a file-level dependency answers two consumers. The fix adds the `imports` edge and KEEPS `references`; replacing it would have lost an edge something already resolves. Every row below is authored from the post-fix emission, which is why the line numbers are asserted: the line is part of the edge's identity (PS2), so a row that lost its line would be a different edge rather than a moved one. PS24 ADDENDUM, same fixture: the two `#requires` module-list shapes the pre-PS24 reader could not answer \u2014 the COMMA LIST and the `@{ ModuleName = \u2026 }` HASHTABLE \u2014 are added at lines 61 and 62, which moved every pre-existing row's line by +18 (42->60, 44->64, 45->65, 47->67, 48->68, 52->72, 41->59, 61->81). The TARGETS, confidences and evidence tiers of those rows are unchanged; only the line moved, and the line is asserted because the line is part of an edge's identity (PS2). Counts: `imports` 6 -> 9, `references` 7 -> 10. The pre-PS24 reader's two corpus failures were measured, not hypothesised: 2 of 1,092 admitted files carry the hashtable form and they were the whole of the `imports[] 552` vs `imports 550` gap; a comma-separated `#requires` module list has ONE occurrence in the corpus (`ansible/test/lib/ansible_test/_util/controller/sanity/pslint/pslint.ps1:2`, `#Requires -Modules PSScriptAnalyzer, PSSA-PSCustomUseLiteralPath`), so the second element is a real dropped dependency and this fixture is a second copy of that shape rather than its only instrument. PS24 delta, measured on the 59 of 1,092 admitted files that carry a `#requires -Module(s)` directive \u2014 the whole population the change can touch \u2014 through production `parseFile`: `imports[]` records 101 -> 102, `imports` edges 99 -> 102, `references` edges 105 -> 108.",
+ "expectSymbols": [
+  {
+   "name": "imports-psb12.ps1",
+   "kind": "module"
+  },
+  {
+   "name": "Install-Toolchain",
+   "kind": "function",
+   "ownerName": "imports-psb12.ps1"
+  },
+  {
+   "name": "Get-Setting",
+   "kind": "function",
+   "ownerName": "imports-psb12.ps1"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "Pester",
+   "comment": "`#requires -Module Pester` \u2014 the comment-directive form. Comments are opaque to the grammar, so this is the one path that reads raw text (PSD6)."
+  },
+  {
+   "module": "System.IO",
+   "comment": "`using namespace System.IO` \u2014 a namespace import, which is a different KIND of dependency from a module and is recorded as one."
+  },
+  {
+   "module": "./helpers.psm1",
+   "comment": "`using module ./helpers.psm1` \u2014 the module form of the same directive."
+  },
+  {
+   "module": "Az.Accounts",
+   "comment": "the POSITIONAL `Import-Module` form, with a switch-argument value after it."
+  },
+  {
+   "module": "PoshRSJob",
+   "comment": "an installed module named BARE \u2014 no path, no dot. A path-shape requirement dropped every one of these while letting `Az.Accounts` through on its dot (PS7/PS11)."
+  },
+  {
+   "module": "SqlServer",
+   "comment": "the `-Name` TWO-TOKEN form, at FUNCTION scope. This is the row the pre-grammar `namedChild(i+1)` read lost, and the only one whose SOURCE is not the file."
+  }
+ ],
+ "forbidImports": [
+  {
+   "module": "Stop",
+   "comment": "PRE-FIX SHAPE, PS7: the `-ErrorAction Stop` VALUE published as an external module import."
+  },
+  {
+   "module": "SilentlyContinue",
+   "comment": "PRE-FIX SHAPE, PS7: the same class on the `-Name SqlServer -ErrorAction SilentlyContinue` line."
+  },
+  {
+   "module": "7.0",
+   "comment": "a version requirement is a `references` row with `requiresVersion`, not an import."
+  },
+  {
+   "module": "@{",
+   "comment": "PS24 REGRESSION: the pre-PS24 reader returned the `@{` that opens a `#requires -Modules` hashtable as the module name. It wrote `imports[].path = \"@{\"` on 2 corpus files and published an `imports` edge to `@{`, which `filterNoiseRelationships` then dropped for containing `{`. A garbage name that a downstream filter happens to remove is still a row already written."
+  },
+  {
+   "module": "0.5.0",
+   "comment": "PS24: `ModuleVersion` is a CONSTRAINT on a module, not a module. Reading the hashtable must take `ModuleName` and leave the version keys alone."
+  },
+  {
+   "module": "1.0.0.0",
+   "comment": "PS24: see `0.5.0`."
+  }
+ ],
+ "expectExports": [
+  {
+   "name": "Get-Setting"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "Pester",
+   "line_number": 60,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "requires_list",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "THE ROW THIS FIXTURE EXISTS FOR. Before the fix this edge did not exist in any file of the corpus; `imports[]` held `Pester` and the graph held a `references` edge and nothing else."
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "System.IO",
+   "line_number": 64,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "using namespace",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "`using namespace` reaches `addImport` through the `using` branch, so the `imports` channel has to carry it too."
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "./helpers.psm1",
+   "line_number": 65,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "using module",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "Az.Accounts",
+   "line_number": 67,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "Import-Module",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "PoshRSJob",
+   "line_number": 68,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "Import-Module",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "the BARE module name. A fixture that only pinned dotted names would pass on a shape test that drops every installed module, which is the PS11 defect."
+  },
+  {
+   "type": "imports",
+   "from": "Install-Toolchain",
+   "target": "SqlServer",
+   "line_number": 72,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "Import-Module",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "FUNCTION-SCOPE IMPORT. `addImport` sources from `top().scope`, which is the module symbol at file scope and the function one frame deeper. `fileLevel` is false here, so the store does not substitute the file. A fixture pinning only the file-scope form would pass on a change that flattened this one to the file."
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "CimCmdlets",
+   "line_number": 61,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "requires_list",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "PS24, the COMMA LIST: `#requires -Modules CimCmdlets, PSReadLine` names TWO modules. The pre-PS24 reader stopped at the first comma and published `CimCmdlets` alone, so the second dependency was absent from `imports[]` and from the graph. Both rows land on line 61 \u2014 the line is where the DECLARATION is, and the target is what distinguishes the two edges \u2014 so a reader keying edges on (source, line) alone would see one dependency where the file declares two."
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "PSReadLine",
+   "line_number": 61,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "requires_list",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "PS24, the second element of the same line. See the `CimCmdlets` row: this is the edge whose absence is the defect, and `equals: 9` on the count is what would notice it if the row were dropped."
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "OpenAuthenticode",
+   "line_number": 62,
+   "meta.import": true,
+   "meta.evidenceClass": "import_based",
+   "meta.via": "requires_hashtable",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9,
+   "comment": "PS24, the HASHTABLE form: `#requires -Modules @{ ModuleName = 'OpenAuthenticode'; ModuleVersion = '0.5.0' }`. Pre-PS24 this published `imports -> \"@{\"` and stored `imports[].path = \"@{\"` \u2014 a garbage module name, on 2 of the corpus's 1,092 files. `forbidImports` below pins that the garbage name is not back."
+  },
+  {
+   "type": "references",
+   "from": "imports-psb12.ps1",
+   "target": "Pester",
+   "line_number": 60,
+   "meta.import": true,
+   "meta.via": "requires_list",
+   "comment": "the `references` edge is KEPT, not replaced. bash emits both channels for `source`; dropping either would lose an edge a consumer already resolves."
+  },
+  {
+   "type": "references",
+   "from": "imports-psb12.ps1",
+   "target": "7.0",
+   "line_number": 59,
+   "meta.requiresVersion": true,
+   "comment": "a `#requires -Version` is a dependency on a RUNTIME VERSION, which is not a module and correctly has no `imports` row"
+  },
+  {
+   "type": "exports",
+   "from": "imports-psb12.ps1",
+   "target": "Get-Setting",
+   "line_number": 81,
+   "meta.viaExportModuleMember": true
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "imports",
+   "equals": 9,
+   "comment": "nine module dependencies: eight at file scope and one inside `Install-Toolchain`. The count is the assertion a shape bug cannot hide behind \u2014 a path-shape requirement scores 5 here (it keeps `Az.Accounts` and `./helpers.psm1` and drops `PoshRSJob`, `System.IO`, `Pester`, `CimCmdlets` and `OpenAuthenticode`) while still passing every `expectRelationships` row for the names it kept. Pre-PS24 this read 6 and the missing 3 were one comma-list element and one hashtable."
+  },
+  {
+   "type": "references",
+   "equals": 10,
+   "comment": "nine module dependencies plus the one version requirement. The pre-PS24 value was 7: the `imports` edge is additive and the `references` edge is additive, and neither displaces the `-Version 7.0` row."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "Stop",
+   "comment": "PRE-FIX SHAPE, PS7, on the NEW channel: `-ErrorAction Stop` read as a module. The switch-value exclusion was written for `imports[]`; the `imports` edge reads the same argument list and is a second chance at the same failure."
+  },
+  {
+   "type": "imports",
+   "target": "SilentlyContinue"
+  },
+  {
+   "type": "imports",
+   "target": "7.0",
+   "comment": "a version requirement is not a module"
+  },
+  {
+   "type": "imports",
+   "from": "imports-psb12.ps1",
+   "target": "Install-Toolchain",
+   "comment": "there is no dependency from the file on its own function; a containment-shaped edge on the import channel would be a fabricated dependency"
+  },
+  {
+   "type": "calls",
+   "target": "Import-Module",
+   "comment": "PS5/PSD1 on the import path: `Import-Module` is handled on a dedicated branch that breaks before the call edge. A call edge naming it would be a keyword promoted to a callee."
+  },
+  {
+   "type": "calls",
+   "target": "using",
+   "comment": "PSD3/PS21: `using` is a STATEMENT, and pre-PS21 it produced `calls -> using`."
+  },
+  {
+   "type": "calls",
+   "target": "namespace"
+  },
+  {
+   "type": "calls",
+   "target": "module"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "comment": "PS1: the pre-wave lane spelled the file-scope source as the literal `global`, which `isIndexArtifactName` rejects, so no such edge could ever resolve."
+  }
+ ]
+}

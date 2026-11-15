@@ -1,0 +1,51 @@
+{
+ "fixtureId": "yaml/compose-depends-on",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "`depends_on` names a SIBLING record in the same file, so it is a real edge and it resolves. Both halves are pinned: `db` resolves to its service path at confidence 1.0, and `absent` stays unresolved with a reason. The resolver reads an index built during the walk; it was a scan of the whole shape index per reference, which is O(refs x symbols) and would not have shown up on a small corpus at all.",
+ "expectFrameworks": [
+  "Docker Compose"
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "compose-depends-on.services.web.depends_on",
+   "target": "compose-depends-on.services.db",
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "meta.relationshipType": "yaml_depends_on",
+   "line_number": 9
+  },
+  {
+   "type": "references",
+   "from": "compose-depends-on.services.web.depends_on",
+   "target": "absent",
+   "confidenceMax": 0.9,
+   "meta.resolved": false,
+   "meta.unresolvedReason": "not-declared-in-file",
+   "meta.confidenceReason": "unresolved-sibling-name",
+   "meta.evidenceClass": "inferred",
+   "line_number": 9
+  }
+ ],
+ "expectPatterns": [
+  "Service Dependencies"
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   5,
+   6,
+   7,
+   8,
+   9,
+   12,
+   13
+  ],
+  "evidenceClasses": [
+   "inferred",
+   "structural",
+   "usage_contextual"
+  ]
+ }
+}

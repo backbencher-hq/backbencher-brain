@@ -1,0 +1,152 @@
+{
+  "fixtureId": "css/custom-property-redefinition-overrides",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M14 ONTOLOGY PASS 2. `overrides` was EMITTED at handover on 4 corpus occurrences, all of them `@keyframes`. The pass-2 adversarial probe then found the same construct where the lane did not look: a `--custom-property` assigned TWICE inside ONE declaration block. Measured on the parse tree of the whole admitted corpus (probe Q3, validation/m14/census/css-boundary-probe.ts), and every occurrence is Bulma's minified bundles writing `--bulma-light-l: 90%` then `--bulma-light-l: 96%` inside one `:root` block. This is not a different construct from the `@keyframes` case already pinned — it is the same rule from a different spec. CSS Cascade 5 §6.1: 'The last declaration in document order wins.' CSS Variables 1 §2: 'Custom properties are ordinary properties, so they can be declared on any element, are resolved with the normal inheritance and cascade rules.' Two declarations in one block share origin, context, layer, specificity and importance, so position is the only separator and the later one replaces the earlier one outright — so the first is dead, which is exactly the claim `keyframes-redefinition-overrides.css` already pins for a second `@keyframes` of one name. WHY A FIXTURE WITH THREE NEGATIVE CASES IS THE POINT: a fixture pinning only the positive direction would not constrain where the boundary is, and the boundary IS the content of the claim. `--scoped` is assigned once under `:root` and once under `.dark` — same file, same name, DIFFERENT elements, so the cascade chooses per element and the second does not replace the first; an edge there is the false claim the lane's own identity merge already makes unreadable from a name alone. `--guarded` is assigned `!important` and then not, and Cascade 5 §6.1 sorts importance ABOVE document order, so the later declaration LOSES and an edge would be backwards. `--twice` is separated by another declaration, so a naive adjacent-duplicate test would miss it; `--thrice` is a chain, so the SECOND declaration is itself superseded and the type must emit one edge per supersession rather than one per name; `--conditional` repeats inside a `@media` body, which is itself a `rule_set`, so block identity is the NODE and not the nesting depth. The edge's two ends are the same string by construction — the lane publishes one symbol per name — so the payload asserted is the LINE PAIR, the same reason `keyframes-redefinition-overrides` asserts `supersedesLine` and not just the type.",
+  "expectSymbols": [
+    {
+      "name": "--twice",
+      "kind": "variable"
+    },
+    {
+      "name": "--between",
+      "kind": "variable"
+    },
+    {
+      "name": "--thrice",
+      "kind": "variable"
+    },
+    {
+      "name": "--scoped",
+      "kind": "variable"
+    },
+    {
+      "name": "--guarded",
+      "kind": "variable"
+    },
+    {
+      "name": "--conditional",
+      "kind": "variable"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "--twice",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "--thrice",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "--scoped",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "--guarded",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "--conditional",
+      "equals": 1,
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "source": "--twice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--twice",
+      "line_number": 42,
+      "meta.evidenceClass": "structural",
+      "meta.isCustomPropertyRedefinition": true,
+      "meta.supersedesLine": 40,
+      "meta.distinctSites": true
+    },
+    {
+      "type": "overrides",
+      "source": "--thrice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--thrice",
+      "line_number": 47,
+      "meta.evidenceClass": "structural",
+      "meta.isCustomPropertyRedefinition": true,
+      "meta.supersedesLine": 46,
+      "meta.distinctSites": true
+    },
+    {
+      "type": "overrides",
+      "source": "--thrice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--thrice",
+      "line_number": 48,
+      "meta.evidenceClass": "structural",
+      "meta.isCustomPropertyRedefinition": true,
+      "meta.supersedesLine": 47,
+      "meta.distinctSites": true
+    },
+    {
+      "type": "overrides",
+      "source": "--conditional",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--conditional",
+      "line_number": 67,
+      "meta.evidenceClass": "structural",
+      "meta.isCustomPropertyRedefinition": true,
+      "meta.supersedesLine": 66,
+      "meta.distinctSites": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "--scoped",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--scoped"
+    },
+    {
+      "type": "overrides",
+      "source": "--guarded",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--guarded"
+    },
+    {
+      "type": "overrides",
+      "source": "--between",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--between"
+    },
+    {
+      "type": "overrides",
+      "source": "--twice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--twice",
+      "line_number": 40
+    },
+    {
+      "type": "overrides",
+      "source": "--thrice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--thrice",
+      "line_number": 46
+    },
+    {
+      "type": "overrides",
+      "source": "--thrice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--thrice",
+      "line_number": 49
+    },
+    {
+      "type": "extends",
+      "source": "--twice",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--twice"
+    },
+    {
+      "type": "references",
+      "source": ".dark",
+      "target": "fixtures/css/custom-property-redefinition-overrides::--scoped"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

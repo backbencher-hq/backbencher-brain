@@ -23,7 +23,7 @@ No `bb_sentinel` tool is exposed. The persistence service is reached through
 three public surfaces and only those:
 
 - `bb_health` with `history: true` returns all finding kinds and run history;
-- `bb_security` with `recordRun: true` / `history: true` persists and reads security scans;
+- `bb_security` with `recordRun: true` / `history: true` persists and reads security lead scans;
 - `bb_patterns` with `recordRun: true` / `history: true` persists and reads pattern scans.
 
 `bb_analyze` does NOT read or write analysis history: none of its eleven modes

@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/class-expression-heritage",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JD4 regression: the analyzer's declaration switch had no `case \"class\"`, so a CLASS EXPRESSION produced no extends edge at all — and the differential's heritage walk was gated on the same shape, so both sides were blind and the lane reported agreement on a form neither could see. The oracle moved with the analyzer; an edge emitted on one side alone would have registered as a fabrication. Three binding shapes are pinned because the edge needs a name: a const-bound expression (the binding names it), an expression with its OWN name (that name wins), and an assignment-bound expression (the form a custom-element base is written in). A QUALIFIED base keeps its dotted spelling per the declared JSD19 contract, already pinned by js-member-heritage. The unbound anonymous `export default class extends Base` is pinned as SILENCE: nothing names it, so no edge is derivable — the first cut of this fix pushed `source: \"\"` and produced a dangling row whose source is not a symbol.",
+  "expectRelationships": [
+    { "type": "extends", "from": "K", "target": "Base" },
+    { "type": "extends", "from": "Inner", "target": "Base", "note": "the expression's own name wins over the const binding" },
+    { "type": "extends", "from": "Bound", "target": "Base" },
+    { "type": "extends", "from": "Qualified", "target": "Lib.Base", "note": "qualified base keeps its dotted spelling (JSD19)" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "", "note": "an unbound anonymous class expression names nothing — an edge from the empty string is a dangling row" }
+  ]
+}

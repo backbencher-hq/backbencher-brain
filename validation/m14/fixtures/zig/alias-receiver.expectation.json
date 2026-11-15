@@ -1,0 +1,151 @@
+{
+  "fixtureId": "zig/alias-receiver",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Z66, from the incoming-edge audit's cause C. `const std = @import(\"std\")` is the commonest binding form in Zig; the analyzer recorded the import's MODULE PATH and discarded WHICH LOCAL NAME it bound, so every read through that alias reached the edge layer as a bare leaf. Measured over 300 corpus files through production parseFile: 3,688 of 18,612 distinct (uses|calls|references) (source, target) pairs name the leaf of a dotted path rooted at an @import of a bare module path, and 1,009 of those carry a leaf that some declaration in the window publishes \u2014 so they bound, to the wrong declaration, and brain_relationship's `misattached` measure cannot see that class because it fires only when the attached symbol's name DIFFERS from the leaf. This fixture pins the receiver being published, the two shapes that must STAY unqualified, and the case where the receiver is not a name at all. Every forbid row is a place where a plausible implementation would keep publishing the leaf, which is the pre-fix behaviour and satisfies no positive row here.",
+  "expectSymbols": [
+    {
+      "name": "externalTypes",
+      "kind": "function",
+      "note": "the scope the qualified declared-type and generic-application reads are attributed to"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ArrayList",
+      "note": "an external std container in a type position must never be minted as a declaration of this file, and neither must the qualified spelling be \u2014 the receiver names a module, not a symbol here"
+    },
+    {
+      "name": "COUNT",
+      "note": "`const c = @import(\"c.zig\")` names a FILE in this project. `c.COUNT` is a read of that file's declaration, so minting a local `COUNT` from the read would duplicate whatever the module file itself publishes."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "externalTypes",
+      "target": "std.ArrayList",
+      "meta.zigExternalRef": null,
+      "meta.zigImportAlias": "std",
+      "meta.zigImportModule": "std",
+      "note": "THE TWO-SEGMENT CASE, and the row that used to assert the marker. `std.ArrayList(u8)` is a generic type application that parses as a call_expression; its receiver is a name this file binds by @import, so the edge still publishes the path the source writes and still names the module. THE MARKER IS CORRECTLY ABSENT, and that is the point of this row (measured 2026-10-10, `validation/m14/fixtures/zig/external-claim-audit.ts` on the gate's 60-file stride): the arbiter reads `zigExternalRef` as an OWNER claim and verifies it by looking the owner up, and this target's owner IS the alias the source wrote (`std.ArrayList` -> owner `std`). Z35 publishes `const std = @import(\"std\")` as a `constant` named `std`, so the claim was refuted on every one of the 259 such edges in the run and satisfied nothing. What the row still pins is the RECEIVER: the target is the qualified path and `zigImportAlias`/`zigImportModule` name the module, so a consumer can still exclude the edge by rule. The deep-path rows (`std.debug.assert`, `std.io.getStdOut`, `g.Object.new`) keep `zigExternalRef: true`, so a rule that dropped the key EVERYWHERE fails this fixture."
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "std.ArrayList",
+      "meta.zigExternalRef": null,
+      "meta.zigImportAlias": "std",
+      "meta.zigImportModule": "std",
+      "note": "the declared-type twin of the row above, re-pinned the same way: the target is still the receiver path and the alias/module are still named, and the OWNER claim is gone because the owner here is `std` itself. THE MARKER IS CORRECTLY ABSENT, and that is the point of this row (measured 2026-10-10, `validation/m14/fixtures/zig/external-claim-audit.ts` on the gate's 60-file stride): the arbiter reads `zigExternalRef` as an OWNER claim and verifies it by looking the owner up, and this target's owner IS the alias the source wrote (`std.ArrayList` -> owner `std`). Z35 publishes `const std = @import(\"std\")` as a `constant` named `std`, so the claim was refuted on every one of the 259 such edges in the run and satisfied nothing. What the row still pins is the RECEIVER: the target is the qualified path and `zigImportAlias`/`zigImportModule` name the module, so a consumer can still exclude the edge by rule. The deep-path rows (`std.debug.assert`, `std.io.getStdOut`, `g.Object.new`) keep `zigExternalRef: true`, so a rule that dropped the key EVERYWHERE fails this fixture."
+    },
+    {
+      "type": "calls",
+      "source": "externalValues",
+      "target": "std.debug.assert",
+      "meta.zigExternalRef": true,
+      "meta.zigImportAlias": "std",
+      "note": "a TWO-SEGMENT path. `std.debug.assert(true)` nests as field(base = field(base = std, debug), assert), and an implementation that reads the path off the node's own text, or that climbs to the outermost field_expression, publishes `assert` or misses the receiver entirely. This row is what separates the descent from either."
+    },
+    {
+      "type": "uses",
+      "source": "externalValues",
+      "target": "std.debug",
+      "meta.zigExternalRef": null,
+      "note": "the INNER field_expression of `std.debug.assert(true)` is a separate `uses` edge and must carry its OWN path (climbing to the outermost node would name `std.debug.assert` here, a path this node did not spell) \u2014 that half is unchanged. What changed is the marker: `std.debug`'s owner is `std`. THE MARKER IS CORRECTLY ABSENT, and that is the point of this row (measured 2026-10-10, `validation/m14/fixtures/zig/external-claim-audit.ts` on the gate's 60-file stride): the arbiter reads `zigExternalRef` as an OWNER claim and verifies it by looking the owner up, and this target's owner IS the alias the source wrote (`std.ArrayList` -> owner `std`). Z35 publishes `const std = @import(\"std\")` as a `constant` named `std`, so the claim was refuted on every one of the 259 such edges in the run and satisfied nothing. What the row still pins is the RECEIVER: the target is the qualified path and `zigImportAlias`/`zigImportModule` name the module, so a consumer can still exclude the edge by rule. The deep-path rows (`std.debug.assert`, `std.io.getStdOut`, `g.Object.new`) keep `zigExternalRef: true`, so a rule that dropped the key EVERYWHERE fails this fixture."
+    },
+    {
+      "type": "uses",
+      "source": "localModule",
+      "target": "COUNT",
+      "meta.zigExternalRef": null,
+      "note": "THE LOCAL HALF, as a positive row rather than a forbid: `const c = @import(\"c.zig\")` names a file in THIS project, so `c.COUNT` must keep the bare leaf. Qualifying it would replace a target that binds with a path nothing in the index publishes \u2014 a regression that makes the fix look larger than it is. meta.zigExternalRef: null forbids the ABSENCE of the key, so the row fails for any implementation that drops the flag rather than setting it false."
+    },
+    {
+      "type": "uses",
+      "source": "shadowedBinding",
+      "target": "print",
+      "meta.zigExternalRef": null,
+      "note": "THE SHADOW GUARD. `ext` is bound by @import of the BARE module `extpkg` at :37 AND re-bound to a struct literal inside `shadowedBinding`, so `ext.print` need not be a module member at all. This analyzer does not model which binding wins at which site, so the alias is dropped from the map entirely and the leaf stays. The module path being BARE is what makes the row a decision: the `localModule` row above is already refused for being local, so a local module path could not tell a working guard from a missing one."
+    },
+    {
+      "type": "calls",
+      "source": "receiverIsACall",
+      "target": "std.io.getStdOut",
+      "meta.zigExternalRef": true,
+      "note": "the receiver IS a name here, even though the surrounding chain is not: `std.io.getStdOut()` has a name receiver down to `getStdOut`. Published as the path; the `.writer()` on top of it is the refused case below."
+    },
+    {
+      "type": "calls",
+      "source": "aliasedModule",
+      "target": "g.Object.new",
+      "meta.zigExternalRef": true,
+      "meta.zigImportAlias": "g",
+      "meta.zigImportModule": "gobject",
+      "note": "THE ALIAS SPELLING, WHICH IS NOT THE MODULE SPELLING. `const g = @import(\"gobject\")` at :54, so the source writes `g.Object.new` and never `gobject.Object.new`. The target is pinned to the source's spelling and the module is carried in metadata instead. On every other row in this fixture the alias and the module are the same string (`std`), so an implementation that published the MODULE name would satisfy all of them; this row is the only one that can tell the two apart, and the forbid below pins the difference rather than leaving it to be inferred."
+    },
+    {
+      "type": "calls",
+      "source": "receiverIsACall",
+      "target": "writer",
+      "meta.zigExternalRef": null,
+      "note": "A CALL RESULT IS NOT A NAME. `std.io.getStdOut().writer()` has no receiver this analyzer can spell a path out of, so the leaf `writer` is published bare and meta.zigExternalRef must be ABSENT rather than false. This is a positive row and not only a forbid, because the refusal is structural \u2014 the descent requires every segment to be an `identifier` \u2014 so no one-line mutation reaches it and a forbid alone would look falsifiable without being so. The sibling positive row (`std.io.getStdOut`) is what stops this one being satisfied by refusing the whole expression."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "externalTypes",
+      "target": "ArrayList",
+      "note": "THE PRE-FIX SPELLING of the first positive row. Without this row a regression to the bare leaf would satisfy nothing else in this fixture that names the edge, and the whole change would be untested in the direction that matters."
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "ArrayList",
+      "note": "the declared-type twin of the same forbid. One forbid cannot fail for both passes, and a regression that fixed only `calls` is exactly the half-finished state this fixture exists to catch."
+    },
+    {
+      "type": "calls",
+      "source": "externalValues",
+      "target": "assert",
+      "note": "the leaf of a two-segment path. Publishing `assert` is the pre-fix behaviour and it is indistinguishable from a call to a local `assert`."
+    },
+    {
+      "type": "uses",
+      "source": "externalValues",
+      "target": "std.debug.assert",
+      "note": "THE OVER-CORRECTION. The inner `std.debug` field_expression is its own `uses` edge, and naming the whole access here would attribute an access this node did not make. A positive row above (`std.debug`) plus this forbid is what pins the descent length; either alone is satisfiable by the wrong implementation."
+    },
+    {
+      "type": "uses",
+      "source": "localModule",
+      "target": "c.COUNT",
+      "note": "a LOCAL module alias must never be qualified. `c.zig` is a file in this project and its members are published under their own names, so `c.COUNT` is a target that binds and must be left alone."
+    },
+    {
+      "type": "uses",
+      "source": "shadowedBinding",
+      "target": "ext.print",
+      "note": "the shadow guard's own spelling, on a BARE external module path so the guard is the only thing refusing it. This is the fabrication the guard exists to prevent: the source never writes `ext.print` as a module member. On a local module path the row would be satisfied by the local refusal and would prove nothing about the guard."
+    },
+    {
+      "type": "calls",
+      "source": "receiverIsACall",
+      "target": "std.io.getStdOut().writer",
+      "note": "A CALL RESULT IS NOT A NAME. `std.io.getStdOut().writer()` has no receiver this analyzer can spell a path out of, so the leaf `writer` is correct and any dotted spelling of it would be invented. The positive row above pins that the nameable part of the same chain IS published, so this forbid cannot be satisfied by refusing the whole expression."
+    },
+    {
+      "type": "uses",
+      "source": "receiverIsACall",
+      "target": "out.print",
+      "note": "`out` is a local variable, not an import alias. Its method read keeps the bare leaf, which is the shared callee-leaf contract (rust/go) and is not weakened by Z66."
+    },
+    {
+      "type": "calls",
+      "source": "aliasedModule",
+      "target": "gobject.Object.new",
+      "note": "the MODULE spelling of the row above. It is not a spelling this file contains, so publishing it would break the anti-fabrication property the corpus control measures: 3,351 of 3,351 qualified targets occur verbatim in their own file's whitespace-collapsed source."
+    }
+  ]
+}

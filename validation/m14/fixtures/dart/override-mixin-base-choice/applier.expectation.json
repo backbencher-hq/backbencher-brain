@@ -1,0 +1,27 @@
+{
+  "fixtureId": "dart/override-mixin-base-choice/applier",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE APPLIER — the class that applies BOTH mixins, and the class whose bases are all in ONE file so the first-parent answer and the declares-member answer can be told apart. The measured extFAIL on dart-http's `--index` arm: `class StreamHandler extends Object with TerminatableMixin, ClosableMixin` applies TWO mixins, `onCheckForClose` is declared by the SECOND one (`ClosableMixin`), the analyzer's first-parent fallback named the FIRST (`TerminatableMixin`), and the `isExternalBase` marker (\"the project does not publish this base\") was REFUTED by the arbiter for every such row — 5 on dart-http, 86 on the whole-population `--index` arm. THE FIX WAS NOT IN THE ANALYZER: the analyzer's Pass 2 already walks the heritage graph for a base that declares the member; it was never REACHED because the with-clause's mixin NAMES were not in the project index at all (Dart's `mixin_declaration` has no `name` field, so the index read \"\" for every mixin). The fix is one `nameResolver` on the dart index spec. THESE PINS ARE THE FLAT-FILE HALF: they run WITHOUT an index, so they pin the no-index arm's shape — the first-parent GUESS at 0.8, carrying a claim about the RUN. The indexed arm (where the base is CHOSEN at 0.95 with no external claim) is pinned by `script/m14/dart-override-mixin-base-check.ts`, because the flat runner gives dart no project index.",
+  "expectSymbols": [
+    { "name": "StreamHandler", "kind": "class" },
+    { "name": "onCheckForClose", "kind": "method", "ownerName": "StreamHandler" },
+    { "name": "onClosing", "kind": "method", "ownerName": "StreamHandler" },
+    { "name": "onTerminated", "kind": "method", "ownerName": "StreamHandler" },
+    { "name": "ownHelper", "kind": "method", "ownerName": "StreamHandler" },
+    { "name": "SingleMixinApplier", "kind": "class" },
+    { "name": "NeitherMixinApplier", "kind": "class" },
+    { "name": "onUndeclared", "kind": "method", "ownerName": "NeitherMixinApplier" }
+  ],
+  "expectRelationships": [
+    { "type": "mixes_in", "source": "StreamHandler", "target": "TerminatableMixin", "confidenceMin": 1.0, "meta.isMixin": true, "meta.evidenceClass": "structural", "note": "THE WITH-CLAUSE, first mixin — the base the first-parent fallback would name." },
+    { "type": "mixes_in", "source": "StreamHandler", "target": "ClosableMixin", "confidenceMin": 1.0, "meta.isMixin": true, "meta.evidenceClass": "structural", "note": "THE WITH-CLAUSE, second mixin — the base that actually DECLARES `onCheckForClose` and `onClosing`." },
+    { "type": "overrides", "source": "StreamHandler.onCheckForClose", "target": "TerminatableMixin.onCheckForClose", "confidenceMin": 0.8, "note": "THE NO-INDEX ARM'S ANSWER — a GUESS. Without an index the run cannot see that `ClosableMixin` declares the member, so it names the first mixin at 0.8 and marks the row as a claim about the RUN (`baseBeyondRunScope`), never as a resolution. This row is CORRECT for this arm and WRONG for the indexed arm; the indexed arm's answer is pinned by `script/m14/dart-override-mixin-base-check.ts`. The pin is here so that the no-index arm's shape is not silently changed by a fix meant for the other one." },
+    { "type": "overrides", "source": "StreamHandler.onTerminated", "target": "TerminatableMixin.onTerminated", "confidenceMin": 0.8, "note": "THE CONTROL, on the no-index arm: a member the FIRST mixin declares keeps that mixin, so a fix that moved every row would fail here." }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "source": "StreamHandler.ownHelper", "target": "TerminatableMixin.ownHelper", "note": "BOUNDARY — `ownHelper` is declared by no base and carries no `@override`, so no override edge is owed. A reader that treats every method of a class with a with-clause as an override would publish this." },
+    { "type": "overrides", "source": "StreamHandler.ownHelper", "target": "ClosableMixin.ownHelper", "note": "the same boundary on the second mixin." },
+    { "type": "overrides", "source": "StreamHandler.ownHelper", "target": "StreamHandler.ownHelper", "note": "and the self-edge, which is never an override." }
+  ]
+}

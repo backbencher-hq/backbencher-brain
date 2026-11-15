@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "currentCommit": "f83622e45003e5fe29333ef14892762925899f18",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/wave2/verify-governance.ts",
+  "evidenceFile": "G3.json",
+  "generatedAt": "2026-11-06T04:20:42.957Z",
+  "passed": 22,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": []
+}

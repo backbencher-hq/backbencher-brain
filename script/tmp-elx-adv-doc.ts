@@ -14,9 +14,9 @@ const mod: any = await import("../src/ast/real-elixir-analyzer")
 const analyzer = new mod.RealElixirAnalyzer()
 
 const files = [
-  "$HOME/fixtures/repositories/elixir/lib/elixir/lib/supervisor.ex",
-  "$HOME/fixtures/repositories/elixir/lib/elixir/lib/gen_event.ex",
-  "$HOME/fixtures/repositories/phoenix/lib/phoenix/router/helpers.ex",
+  "/home/ishaq2321/bb_tests/repositories/elixir/lib/elixir/lib/supervisor.ex",
+  "/home/ishaq2321/bb_tests/repositories/elixir/lib/elixir/lib/gen_event.ex",
+  "/home/ishaq2321/bb_tests/repositories/phoenix/lib/phoenix/router/helpers.ex",
 ]
 for (const fp of files) {
   const src = fs.readFileSync(fp, "utf8")

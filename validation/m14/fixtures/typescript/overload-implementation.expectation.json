@@ -1,0 +1,9 @@
+{
+  "fixtureId": "typescript/overload-implementation",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Overload signatures + implementation: single method symbol expected (signature-only declarations have no body); no phantom duplicates.",
+  "expectSymbols": [
+    { "name": "Formatter" }
+  ]
+}

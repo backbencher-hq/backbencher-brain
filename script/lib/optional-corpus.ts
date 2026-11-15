@@ -33,15 +33,15 @@ export function optionalCorpusCandidates(name: string, envVar?: string): string[
     path.join(home, name),
     // A sibling of the repo, inside the fixture-corpus group directory. An earlier
     // version of this list claimed to handle "the layout this workspace uses" but built
-    // `../<name>` — so where the corpus really is `../fixtures/repositories`, the
+    // `../<name>` — so where the corpus really is `../bb_tests/repositories`, the
     // resolver reported it absent. A declared block that is declared because the helper
     // looked in the wrong place is worse than no helper: it turns "this machine cannot
     // run this gate" into a claim, and the gate reports it as fact.
     // In the reference workspace the repo and the corpus group are siblings, so the
     // sibling-of-repo candidate is TWO levels up, not one. The one-level form stays as
     // a fallback for a checkout that sits directly beside the corpus group.
-    path.resolve(process.cwd(), `../../fixtures/${name}`),
-    path.resolve(process.cwd(), `../fixtures/${name}`),
+    path.resolve(process.cwd(), `../../bb_tests/${name}`),
+    path.resolve(process.cwd(), `../bb_tests/${name}`),
     path.resolve(process.cwd(), `../${name}`),
     path.resolve(process.cwd(), name),
   ].filter((c): c is string => typeof c === "string" && c.length > 0)

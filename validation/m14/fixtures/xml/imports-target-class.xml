@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE local SYSTEM "local-entities.ent">
+<?xml-stylesheet type="text/xsl" href="#local-style"?>
+<?xml-stylesheet type="text/xsl" href="../shared/remote-style.xsl"?>
+<?xml-stylesheet type="text/xsl" href="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="urn:local" schemaLocation="schemas/local.xsd"/>
+  <xs:include schemaLocation="/absolute/rooted.xsd"/>
+  <xs:import namespace="urn:remote" schemaLocation="https://example.invalid/remote.xsd"/>
+</xs:schema>

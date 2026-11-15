@@ -1,0 +1,41 @@
+{
+  "schemaVersionDb": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-02T04:25:12.067Z",
+  "currentCommit": "3cd2fb7d0eea372b02d2e6adadfaf63d15be693c",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/annotation-write/projects/893ece0fd6dea5990d7f1d93b0cb8dba851d95d2/brain.db",
+  "steps": [
+    {
+      "step": "baseline",
+      "delta": 0,
+      "schemaVersion": 149
+    },
+    {
+      "step": "trigger comparison",
+      "installedPresent": true,
+      "guardIsStale": true,
+      "installedBodyHead": "BEFORE INSERT ON brain_annotation WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human') BEGIN SELE",
+      "wantsBodyHead": "BEFORE INSERT ON brain_annotation WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human') BEGIN SELE"
+    },
+    {
+      "step": "exec(ANNOTATION_DDL) alone",
+      "delta": 0,
+      "schemaVersion": 149
+    },
+    {
+      "step": "exec(TRIGGER_DDL) alone",
+      "delta": 0,
+      "schemaVersion": 149
+    },
+    {
+      "step": "ensureAnnotationTable",
+      "delta": 4,
+      "schemaVersion": 153
+    },
+    {
+      "step": "ensureAnnotationTable again",
+      "delta": 4,
+      "schemaVersion": 157
+    }
+  ]
+}

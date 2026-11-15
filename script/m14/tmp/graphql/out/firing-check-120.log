@@ -1,0 +1,15 @@
+firing-check: graphql … [INFO] [08:24:28] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [08:24:28] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_936797_677c35cfmp"}
+7/10 fired, 27780 edges, 120/120 files
+
+firing check — production parseFile, 120-file stride sample per language
+corpus: /home/ishaq2321/bb_tests/repositories
+
+lang       files       fired   rels        degraded  analyzerfired types
+--------------------------------------------------------------------------------------------------------------
+graphql    120/120     7/10    27,780      0         stable  uses,contains,imports,references,exports,implements,overrides
+--------------------------------------------------------------------------------------------------------------
+
+A type reading 0 here is a FIRING FACT, not a ruling. Turning 0 into RULED needs a corpus
+measurement and a written reason — script/m14/ontology-coverage-gate.ts does that, not this.
+A language with corpusTotal 0 is UNMEASURED, which is not the same as failing.

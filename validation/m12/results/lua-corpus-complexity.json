@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "lua_corpus_tracked_complexity",
   "corpus": "kong",
-  "corpusPath": "$HOME/fixtures/repositories/kong",
+  "corpusPath": "/home/ishaq2321/bb_tests/repositories/kong",
   "revision": "94b6c29509f6ff8f4f5326a8c86bc9345cc7248b",
   "currentCommit": "e76d972f92f90beb3df18ca31aed695fc241af83",
   "trackedLuaFiles": 1309,

@@ -724,7 +724,24 @@ class Host
         if (base !== "Base") problems.push(`in-file base metadata ${JSON.stringify(base)} != Base (leaf target must record the pair)`)
       }
       if (!inSvc) problems.push("in-file overrides edge missing")
-      else if ((inSvc.confidence ?? 0) < 0.9) problems.push(`in-file confidence ${inSvc.confidence} < 0.9 (verified tier must hold; 0.95 php/ruby/python/js/perl family, 1.0 java/swift Pass-1)`)
+      else if (lang === "php") {
+        // THE PHP CONTRACT MOVED WITH ITS EVIDENCE (commit 38023ca0f, 2026-11-11): per-file
+        // local overrides are now 0.85 INFERRED — reasonCode `local-declaration-hierarchy`,
+        // evidenceClass `inferred`, bounded signature checks recorded (`signatureCompatibility:
+        // checked`) — because the stored resolution is a declaration-hierarchy inference, not a
+        // compiler-verified override. `docs/analyzers/php.md` states it as the contract ("Per-file
+        // local candidates also use 0.85 inferred evidence; name-only companion candidates remain
+        // 0.65 inferred"). This probe used to pin the family's 0.95/structural tier, which php
+        // deliberately retired; it now pins the DOCUMENTED contract instead of the retired one.
+        // The php-specific half below (an unverified cross-file guess must NOT be published) is
+        // unchanged.
+        if (Math.abs((inSvc.confidence ?? 0) - 0.85) > 1e-9) problems.push(`php in-file confidence ${inSvc.confidence} != 0.85 (documented inferred tier)`)
+        const md: any = inSvc.metadata ?? {}
+        if (md.evidenceClass !== "inferred") problems.push(`php in-file evidenceClass ${md.evidenceClass} != inferred`)
+        if (md.reasonCode !== "local-declaration-hierarchy") problems.push(`php in-file reasonCode ${md.reasonCode} != local-declaration-hierarchy`)
+        if (md.signatureCompatibility !== "checked") problems.push(`php in-file signatureCompatibility ${md.signatureCompatibility} != checked`)
+      }
+      else if ((inSvc.confidence ?? 0) < 0.9) problems.push(`in-file confidence ${inSvc.confidence} < 0.9 (verified tier must hold; 0.95 ruby/python/js/perl family, 1.0 java/swift Pass-1)`)
       if (lang === "php") {
         // M12.PHP-OVERRIDE-AUDIT (real-php-analyzer.ts:2195-2220): php DELETED the 0.5
         // "first-parent-guess" edge this probe was written around, and the ruling is

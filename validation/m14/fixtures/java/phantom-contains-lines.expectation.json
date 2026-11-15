@@ -1,0 +1,36 @@
+{
+  "fixtureId": "java/phantom-contains-lines",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Java SYNTHESISES members in two places and neither is written in the source: lombok @Data generates getOwner/setOwner/getBalance/setBalance from the FIELDS (so their symbol range is the field's — 8 and 9), and Spring-Data repositories get save/findById/findAll/deleteById/delete/count from the INTERFACE (range 12). The containment edge used to take that range, so `contains Account -> getOwner` claimed line 8 — the `private String owner;` declaration, where the name `getOwner` appears nowhere — and a tool navigating to it opened the field. That is the exact defect the tool/graph layer reported on the JVM family (a line that can never satisfy a source check). The line is now OMITTED for a synthesised name, and DECLARED members keep their real line (owner 8, balance 9, findByOwner 13, the extends at 12), so the fixture pins both halves plus forbid entries for the pre-fix positions.",
+  "expectSymbols": [
+    { "name": "Account", "kind": "class" },
+    { "name": "AccountRepository", "kind": "interface" },
+    { "name": "getOwner", "kind": "method" },
+    { "name": "setBalance", "kind": "method" },
+    { "name": "findByOwner", "kind": "method" },
+    { "name": "save", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Account", "target": "getOwner", "line_number": null, "note": "lombok-generated: names the field's range (8) but is written nowhere" },
+    { "type": "contains", "from": "Account", "target": "setOwner", "line_number": null, "note": "lombok-generated" },
+    { "type": "contains", "from": "Account", "target": "getBalance", "line_number": null, "note": "lombok-generated" },
+    { "type": "contains", "from": "Account", "target": "setBalance", "line_number": null, "note": "lombok-generated" },
+    { "type": "contains", "from": "AccountRepository", "target": "save", "line_number": null, "note": "Spring-Data-generated: names the interface's range (12)" },
+    { "type": "contains", "from": "AccountRepository", "target": "findById", "line_number": null, "note": "Spring-Data-generated" },
+    { "type": "contains", "from": "AccountRepository", "target": "findAll", "line_number": null, "note": "Spring-Data-generated" },
+    { "type": "contains", "from": "AccountRepository", "target": "deleteById", "line_number": null, "note": "Spring-Data-generated" },
+    { "type": "contains", "from": "AccountRepository", "target": "delete", "line_number": null, "note": "Spring-Data-generated" },
+    { "type": "contains", "from": "AccountRepository", "target": "count", "line_number": null, "note": "Spring-Data-generated" },
+    { "type": "contains", "from": "Account", "target": "owner", "line_number": 8, "note": "DECLARED member: keeps its real line" },
+    { "type": "contains", "from": "Account", "target": "balance", "line_number": 9, "note": "DECLARED member: keeps its real line" },
+    { "type": "contains", "from": "AccountRepository", "target": "findByOwner", "line_number": 13, "note": "DECLARED member: keeps its real line" },
+    { "type": "extends", "from": "AccountRepository", "targetEndsWith": "JpaRepository", "line_number": 12, "note": "heritage keeps its real line too" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Account", "target": "getOwner", "line_number": 8, "note": "pre-fix (#825): the lombok-generated name claimed the FIELD's line" },
+    { "type": "contains", "from": "Account", "target": "setBalance", "line_number": 9, "note": "pre-fix (#825): same, from the second field" },
+    { "type": "contains", "from": "AccountRepository", "target": "save", "line_number": 12, "note": "pre-fix (#825): the Spring-Data name claimed the INTERFACE's line" },
+    { "type": "contains", "from": "AccountRepository", "target": "count", "line_number": 12, "note": "pre-fix (#825): same" }
+  ]
+}

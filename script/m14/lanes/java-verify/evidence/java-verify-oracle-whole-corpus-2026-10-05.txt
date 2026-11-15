@@ -4,13 +4,13 @@ population: 3275 .java files on disk · MEASURED 3275 · sampling: ALL (lexicogr
 audited types: calls extends implements instantiates references contains uses overrides
 
 [INFO] [12:25:46] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
-[INFO] [12:25:46] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [12:26:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [12:27:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [12:28:01] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [12:28:20] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [12:28:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [12:29:31] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:25:46] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:26:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:27:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:28:01] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:28:20] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:28:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [12:29:31] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 MEASURED 3275/3275 files · 0 failures · 243006 ms
 
 | type | analyzer edges | analyzer distinct | oracle edges | oracle distinct | TP | FP (files) | FN (files) | precision | recall |

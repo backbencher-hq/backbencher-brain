@@ -2,12 +2,12 @@
 
 Status: **posted** — `gh issue comment 764 --body-file` succeeded and the
 comment is live at
-https://github.com/backbencher-hq/backbencher-brain/issues/764#issuecomment-5647016254
+https://github.com/ishaq2321/backbencher-brain/issues/764#issuecomment-5647016254
 (the first attempt via `--body` failed with `proxyconnect tcp: no route to
 host`, then the proxy let it through).
 
 Still blocked: the **push**. The environment routes git through
-`http://…@REDACTED-PROXY`, which answers `no route to host` for every
+`http://…@138.226.70.135:7825`, which answers `no route to host` for every
 attempt (and port 443/22 direct are unreachable too), so commit `c7948b19`
 remains local-only. The comment text is kept here verbatim as the receipt of
 record until the push lands.

@@ -1,0 +1,28 @@
+{
+  "issue": "INCOMING_RUST — a bare TUPLE-SHAPE call is a decidable construction; the same spelling in another module is not",
+  "note": "RUST-D30 dropped EVERY bare single-segment callee from `instantiates`, which is right that `Ok(())` is the prelude's variant and wrong that the spelling settles it: ripgrep/crates/globset/src/fnv.rs:15 calls `Hasher(Hasher::OFFSET_BASIS)` three lines below `struct Hasher(u64)` and published `calls` alone — the site the F5 oracle reported MISSING. What replaced the ban is not a list of the four prelude spellings (measured: 0 of 1,175 bare PascalCase callee sites in the 110-file ripgrep corpus are both a prelude spelling and an in-file tuple shape, so no list is load-bearing) but two conditions a reader can check: the callee names a TUPLE shape this file declares, and that declaration is VISIBLE where the call is written. Rust modules scope their own items, so `Ok(7)` inside the module declaring `struct Ok(u32)` is that tuple struct — the local item shadows the prelude in its own module — while `Ok(1u32)` in a sibling module is the prelude's `Result::Ok`. The two rows below that differ only in which module they sit in are the whole argument: no name list separates them, module scope does. Provenance: the EXPECT rows are the rule as stated plus the corpus measurement; the FORBID rows are the RUST-D30 collision class (a foreign callee, a same-named free function, a unit struct, a tuple VARIANT reached through a path, and the cross-module prelude spelling). Nothing here was transcribed from an analyzer run.",
+  "expectSymbols": [
+    { "name": "makers", "kind": "module" },
+    { "name": "Ok", "kind": "struct", "ownerName": "makers" },
+    { "name": "Hasher", "kind": "struct" },
+    { "name": "Kind", "kind": "enum" },
+    { "name": "Unit", "kind": "struct" },
+    { "name": "build", "kind": "function" },
+    { "name": "seeded", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "build", "target": "Ok", "comment": "inside the declaring module: the local tuple struct shadows the prelude, so this IS a construction" },
+    { "type": "instantiates", "from": "seeded", "target": "Hasher", "comment": "the decidable site — ripgrep's fnv.rs:15 shape" },
+    { "type": "instantiates", "from": "default_ish", "target": "Hasher", "comment": "second call site, second function: the rule is per site, not per type" },
+    { "type": "calls", "from": "build", "target": "Ok", "comment": "the CALL edge is unaffected — a construction is an invocation too" },
+    { "type": "calls", "from": "seeded", "target": "Hasher" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "prelude_side", "target": "Ok", "comment": "THE decisive row: the same spelling as `build -> Ok`, in a module where `makers::Ok` is not in scope, so it is the prelude's Result::Ok. Module scope is what separates them." },
+    { "type": "instantiates", "from": "shapes", "target": "Foreign", "comment": "a bare callee this file does not declare — foreign, and unknowable from this file" },
+    { "type": "instantiates", "from": "shapes", "target": "PascalFn", "comment": "a bare PascalCase callee that is a free FUNCTION, not a type" },
+    { "type": "instantiates", "from": "shapes", "target": "Unit", "comment": "a unit struct is constructed by NAMING it; the rule keys on the SHAPE, not on the symbol kind" },
+    { "type": "instantiates", "from": "shapes", "target": "Kind", "comment": "`Kind::Tuple(3)` reaches a tuple VARIANT through a path, and the family contract makes that a `calls` edge naming `Tuple`, never an `instantiates` naming the enum" },
+    { "type": "instantiates", "from": "prelude_side", "target": "Result", "comment": "a std type is not a local construction" }
+  ]
+}

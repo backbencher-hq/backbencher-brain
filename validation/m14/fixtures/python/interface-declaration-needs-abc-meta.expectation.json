@@ -1,0 +1,160 @@
+{
+ "fixtureId": "python/interface-declaration-needs-abc-meta",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-29. `python/interface-implements` pins WHICH base names make an interface and HOW a bare name is resolved positionally. It could not pin the boundary this file exists for, because that boundary is not about the base: it is about a class that names an interface and DECLARES NONE. The rule accepted 'any method decorated @abstractmethod / @abstractproperty / @abstractclassmethod' as a fourth way for a class's OWN declaration to declare an interface, and CPython refutes that with a measurement rather than an opinion. `__abstractmethods__` is computed by `ABCMeta.__new__`, so on a class whose metaclass is `type` the decorator is a marker and nothing more. Asked directly: `class ProductBuilder(object)` with `@abc.abstractmethod` has metaclass=type, isabstract=False, `__abstractmethods__ == frozenset()`, and `ProductBuilder()` returns an instance. The shape is not exotic — swift-corpus's `swift_build_support/products/product.py` declares `class ProductBuilder(object)` at L544 with four `@abc.abstractmethod` at L562/587/597/606 — so before this fixture every subclass of such a class received a FABRICATED `implements` edge at confidence 1.0 with evidenceClass=structural, the strongest claim this analyzer makes. Reproduced through production `parseFile` on a legal four-class file: one fabricated edge, `implements SubBuilder -> ProductBuilder`, conf=1.0, reasonCode=in-file-interface-base. The tier also added NO reach: under the declared-interface semantics this lane already holds (and this repo's `Qualified(abc.ABC)` row already pins), an ABCMeta-shaped header declares an interface with or without the decorator, so the tier's entire contribution was the false positives. The ORDER half was a second, independent defect in the same tier: `hasAbstractDecorator` was set on the FIRST class in the file that did not already carry it rather than on the class the decorator decorates, so a plain class declared before the interface class became 'an interface'. Reproduced the same way: `implements SubProduct -> Product` at conf=1.0 on a file whose `Product` is `class Product(object)`. Deleting the tier removes both, because the header test is the whole of the declaration now. A third, smaller correction rides along: a subscripted base whose head is a `dotted_name` (`typing.Protocol[RuntimeT]`, the ordinary way to parameterise a protocol) was classified UNQUALIFIED by `b.type === 'attribute'`, so it was resolved as a bare name against whatever the file last bound `Protocol` to; `extractClass` already reads that head as qualified for `qualifiedBases`, so this applies the rule the same file already uses. The expect rows below exist so deleting the rule cannot pass this file by leaving nothing to delete — four header shapes plus the parameterised qualified head. The last pair is a DECLARED boundary, not an oversight: `class EmptyAbc(ABC)` has an empty `__abstractmethods__` and CPython instantiates it, so this lane's `implements` says the source NAMES a supertype it declares to be an interface rather than that the runtime refuses instantiation. The enforcement reading was measured and rejected because it would delete `python/interface-implements`'s `Qualified(abc.ABC)` row, which this repo has already adjudicated; the row is repeated here by name so a future move has to break it on purpose.",
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "RealContract",
+   "target": "ABC",
+   "line_number": 88,
+   "meta.reasonCode": "stdlib-interface-marker",
+   "note": "the ABC base is the declaration. `@abstractmethod` on a member is NOT half of it — see the forbid on `SubNoopAbstract`"
+  },
+  {
+   "type": "implements",
+   "from": "AbcBase",
+   "target": "ABC",
+   "line_number": 103,
+   "meta.reasonCode": "stdlib-interface-marker"
+  },
+  {
+   "type": "implements",
+   "from": "SubAbcBase",
+   "target": "AbcBase",
+   "line_number": 109,
+   "meta.reasonCode": "in-file-interface-base"
+  },
+  {
+   "type": "implements",
+   "from": "SubMetaclassBase",
+   "target": "MetaclassBase",
+   "line_number": 120,
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "`MetaclassBase(metaclass=ABCMeta)` declares its interface in the header keyword and needs no import and no positional reading"
+  },
+  {
+   "type": "implements",
+   "from": "ProtocolBase",
+   "target": "Protocol",
+   "line_number": 125,
+   "meta.reasonCode": "stdlib-interface-marker",
+   "note": "PEP 544. CPython refuses to instantiate a protocol outright, so this one is both declared AND enforced"
+  },
+  {
+   "type": "implements",
+   "from": "SubProtocolBase",
+   "target": "ProtocolBase",
+   "line_number": 130,
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "a concrete class inheriting a Protocol: CPython instantiates `SubProtocolBase`, which is the whole point of the relationship"
+  },
+  {
+   "type": "implements",
+   "from": "ParameterisedBase",
+   "target": "Protocol",
+   "line_number": 145,
+   "meta.reasonCode": "stdlib-interface-marker",
+   "note": "the QUALIFIED head of a subscript. `b.type === \"attribute\"` classified `dotted_name(\"typing.Protocol\")` as a BARE name, so this edge used to be produced by the positional binding test on `Protocol` rather than by the qualified spelling it is written with"
+  },
+  {
+   "type": "implements",
+   "from": "SubParameterisedBase",
+   "target": "ParameterisedBase",
+   "line_number": 150,
+   "meta.reasonCode": "in-file-interface-base"
+  },
+  {
+   "type": "implements",
+   "from": "EmptyAbc",
+   "target": "ABC",
+   "line_number": 175,
+   "meta.reasonCode": "stdlib-interface-marker",
+   "note": "DECLARED BOUNDARY, pinned here by name. `EmptyAbc(ABC)` has an EMPTY `__abstractmethods__` and CPython instantiates it, so under an ENFORCEMENT reading this row would not exist. It exists because `implements` in this lane is a declared interface relationship — the source names a supertype it declares to be an interface — and `python/interface-implements` already depends on that reading for `Qualified(abc.ABC)`. Moving to the enforcement reading has to break both rows deliberately"
+  },
+  {
+   "type": "implements",
+   "from": "SubEmptyAbc",
+   "target": "EmptyAbc",
+   "line_number": 179,
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "the same declared reading applied to tier 1: the base is an in-file ABC-shaped class"
+  },
+  {
+   "type": "extends",
+   "from": "SubNoopAbstract",
+   "target": "NoopAbstract",
+   "line_number": 51,
+   "note": "ADDITIVE, and the row that matters most in this file. The inheritance fact is a TRUE fact and it survives: the refuted `implements` edge was an EXTRA edge, not a wrong `extends` edge, so deleting the tier loses nothing from the graph"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "implements",
+   "from": "SubNoopAbstract",
+   "target": "NoopAbstract",
+   "note": "CPython: `NoopAbstract` has metaclass=type, `__abstractmethods__ == frozenset()` and `NoopAbstract()` constructs. The `@abc.abstractmethod` on `build` is a MARKER — `ABCMeta.__new__` is what computes `__abstractmethods__`, and it never runs for a class whose metaclass is `type`. This is the row that kills the deleted tier, and it was a fabricated edge at confidence 1.0 / evidenceClass=structural before the fix"
+  },
+  {
+   "type": "implements",
+   "from": "SubNoopAbstractDecorators",
+   "target": "NoopAbstractDecorators",
+   "note": "the same no-op under the two other spellings. CPython folds `abstractproperty` and `abstractclassmethod` into `abstractmethod` when the class is created, so on a `type`-metaclass class all three are equally inert: metaclass=type, isabstract=False, constructs"
+  },
+  {
+   "type": "implements",
+   "from": "SubPlain",
+   "target": "Plain",
+   "note": "the ORDER half of the deleted tier. `Plain` is declared at 83, BEFORE `RealContract` at 88, so a decorator-attribution rule that records the flag on the first class in the file without it made `Plain` an interface and emitted THIS edge — fabricated at confidence 1.0, with the fabricated `implements RealContract -> ABC` still emitted correctly beside it. Attribution has to be to the class the decorator decorates; with the tier gone there is nothing to misattribute"
+  },
+  {
+   "type": "implements",
+   "from": "NoopAbstract",
+   "target": "object",
+   "note": "`object` is a base of everything and is not a contract"
+  },
+  {
+   "type": "implements",
+   "from": "Plain",
+   "target": "object",
+   "note": "the same fact for the class the ORDER defect used to promote"
+  },
+  {
+   "type": "implements",
+   "from": "SubMetaclassBase",
+   "target": "ABCMeta",
+   "note": "`ABCMeta` is a METACLASS. It is named in the header as `metaclass=ABCMeta` and never as a base, so a lane that let the leaf into the base list would emit this"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "NoopAbstract",
+   "equals": 1
+  },
+  {
+   "name": "SubNoopAbstract",
+   "equals": 1
+  },
+  {
+   "name": "Plain",
+   "equals": 1
+  },
+  {
+   "name": "SubPlain",
+   "equals": 1
+  },
+  {
+   "name": "MetaclassBase",
+   "equals": 1
+  },
+  {
+   "name": "ParameterisedBase",
+   "equals": 1
+  }
+ ],
+ "_seamNote": {
+  "what": "A class declares an interface when its own HEADER makes it an ABCMeta class: a base leaf of `ABC`/`abc.ABC`, a base leaf of `Protocol`/`typing.Protocol`, or `metaclass=ABCMeta`. Nothing else, and specifically not a bare `@abstractmethod`.",
+  "why": "The first two of those are how python SPELLS an interface — there is no `interface` keyword, so the declaration is the base list, and the fact being read is the author's declaration rather than runtime enforceability. The third is the same fact with no import and no positional reading. The fourth was tried and CPython refuted it: `__abstractmethods__` is computed by `ABCMeta.__new__`, so on a `type`-metaclass class the decorator changes nothing and the class constructs. The enforcement reading (only count a class the runtime will refuse) was measured across all seven shapes and REJECTED, because `class C(ABC): pass` is instantiable and deleting that edge would also delete `python/interface-implements`'s `Qualified(abc.ABC)` row. The limitation is declared rather than hidden: `implements` here is a declared interface relationship, and the measured split on the corpus is in docs/analyzers/python.md."
+ }
+}

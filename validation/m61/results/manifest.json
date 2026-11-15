@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M61",
+  "githubMilestone": 61,
+  "title": "Verifier Truth — the machinery that watches the machinery",
+  "status": "open",
+  "authority": "docs/m61/M61-MASTER-PLAN.md (Issues / Issue groups table)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
+  "prerequisite": "M29 and M44 completion bars met, and the M53 lane integration accepted — re-audited by G1 on every run through the persisted closure records and the 40-gate lane ladder record",
+  "laneDiscipline": "D-7: script/m61/* and validation/m61/* only (plus docs/m61/*); co-agent lanes (M14/M37/M59/M60) are read-only",
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 848,
+      "tool": "m61-governance",
+      "status": "known-gap",
+      "scope": "the M61 ledger; seal verification of every trusted record (V1); lock discipline (V2); the bar re-audit that re-executes V1–V6 on every run; the chain wiring audit",
+      "acceptanceCriteria": [
+        "gate exits 0 only on a fully verified ledger; a hollow closure, a removed issue, a mis-ordered group, a lane escape, a tampered record and an unwired gate each FAIL (proven by in-memory negatives)",
+        "this run's own ledger entry is written from measurements and validated whole, never asserted",
+        "the lane's own bars (M29/M44 closures, M53 integration + ladder) are re-audited here on every run"
+      ],
+      "closureRequirements": [
+        "G1 evidence (verified, sealed) at the closing HEAD",
+        "the bar re-audit reports V1–V6 green in the same run",
+        "verify-chain wiring present"
+      ],
+      "artifacts": [
+        "script/m61/verify-governance.ts",
+        "validation/m61/results/manifest.json"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "verifierCommand": "npx tsx script/m61/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 29,
+        "failed": 15,
+        "realFailed": 4,
+        "mutantsCaught": 26,
+        "mutantsTotal": 26,
+        "blockedReason": "Bar re-audit re-executes V1–V6 (the milestone's own gates). The LANE bar (m24→m44) is re-audited transitively through the persisted closures and the ladder record listed in the prerequisite block — re-running the 41-gate ladder here would cost ~40 minutes per governance run and is X1's job.",
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "V1",
+      "githubIssue": 842,
+      "tool": "m61-sealing",
+      "status": "verified",
+      "scope": "ONE evidence write/read path carrying a sha256 seal over the record content; migration for the legacy unsealed corpus; adoption across the IDE-lane gates",
+      "acceptanceCriteria": [
+        "every evidence record is written through writeSealed and read through the trusted path; a tampered, half-written or hand-edited record is refused, never believed",
+        "the migration re-seals legacy records with field preservation; the transition window warns on legacy, fails on new",
+        "mutants prove tamper detection, wrong-payload hashing, seal-skipping writes and lossy migration"
+      ],
+      "closureRequirements": [
+        "V1 evidence (verified, sealed) at the closing HEAD",
+        "the lane's write/read adoption audited; the residue declared with reasons",
+        "mutants prove every seal law can fail"
+      ],
+      "artifacts": [
+        "script/lib/evidence.ts",
+        "script/m61/verify-sealing.ts"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m61/verify-sealing.ts",
+        "evidenceFile": "V1.json",
+        "passed": 34,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 18,
+        "mutantsTotal": 18,
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "V2",
+      "githubIssue": 843,
+      "tool": "m61-lock",
+      "status": "verified",
+      "scope": "a declared lock per results dir: bounded wait, loud refusal, stale detection that never silently steals, reentrancy within a process",
+      "acceptanceCriteria": [
+        "a second writer waits (bounded) and then REFUSES with a reason; it never silently steals a stale lock or clobbers a record",
+        "the lock is integrated at the one write path, so no gate can opt out",
+        "mutants prove release, stale detection, the refusal path and the concurrent-run serialization"
+      ],
+      "closureRequirements": [
+        "V2 evidence (verified, sealed) at the closing HEAD",
+        "a real-process refusal recorded, and 200 concurrent writes each landing exactly once",
+        "no lock file left behind by any lane results dir"
+      ],
+      "artifacts": [
+        "script/lib/lock.ts",
+        "script/m61/verify-lock.ts"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m61/verify-lock.ts",
+        "evidenceFile": "V2.json",
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "V3",
+      "githubIssue": 844,
+      "tool": "m61-reproducibility",
+      "status": "known-gap",
+      "scope": "an auditor that re-executes the recorded command of a DECLARED evidence sample inside an isolated worktree of HEAD and diffs the fresh record against the stored one field by field",
+      "acceptanceCriteria": [
+        "the sample is declared, not chosen ad hoc; every member reproduces or is BLOCKED with its reason (a missing runtime is never recorded as non-reproducibility)",
+        "a timeout/signal kill is distinguished from a command failure — the m53 RC=124 lesson, made machinery",
+        "mutants prove a doctored record, a silent skip and an in-place clobber are all caught"
+      ],
+      "closureRequirements": [
+        "V3 evidence (verified, sealed) at the closing HEAD",
+        "the declared sample reproduced with the stored evidence byte-unchanged",
+        "the auditor wired into both chains"
+      ],
+      "artifacts": [
+        "script/m61/reproducibility.ts",
+        "script/m61/reproducibility-sample.json",
+        "script/m61/verify-reproducibility.ts"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "verifierCommand": "npx tsx script/m61/verify-reproducibility.ts",
+        "evidenceFile": "V3.json",
+        "passed": 34,
+        "failed": 3,
+        "realFailed": 3,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "blockedReason": "The sample is runtime-light by design (component-level gates): the audit proves the recorded commands reproduce, not that every heavy editor/giant-repo leg does. Heavy legs are re-run by their own milestone closures; extending the sample is a one-line change to the sample file.",
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "V4",
+      "githubIssue": 845,
+      "tool": "m61-lint",
+      "status": "known-gap",
+      "scope": "the verifier lint: gate/record census, attribution, sealing, can-fail floor, execution-tier wiring, declared env vars, static import order, and record-must-agree-with-the-run",
+      "acceptanceCriteria": [
+        "every lane script is a gate that owns a sealed record or a declared non-gate with a reason; every orphan record is a declared artifact",
+        "every gate carries the declared can-fail floor or a declared no-can-fail reason; every gate is in an execution tier or declared on-demand with one",
+        "mutants prove each rule can fail (canfail, seal, orphan, floor, env, tier, import order, record order)"
+      ],
+      "closureRequirements": [
+        "V4 evidence (verified, sealed) at the closing HEAD",
+        "the lint green over the real lane with a reported census",
+        "the lint wired into both chains"
+      ],
+      "artifacts": [
+        "script/m61/gate_lint.ts",
+        "script/m61/gate-registry.json",
+        "script/m61/verify-lint.ts"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "verifierCommand": "npx tsx script/m61/verify-lint.ts",
+        "evidenceFile": "V4.json",
+        "passed": 23,
+        "failed": 9,
+        "realFailed": 9,
+        "mutantsCaught": 8,
+        "mutantsTotal": 8,
+        "blockedReason": "Gate membership is derived from the evidence (a record names its gate, or the gate's source names the record) — a gate that writes no record is invisible to the derivation and is caught by G1 instead.",
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "V5",
+      "githubIssue": 846,
+      "tool": "m61-claims",
+      "status": "known-gap",
+      "scope": "every published number re-derived at gate-run time from the evidence it cites, with the audit set DECLARED over README + website + docs",
+      "acceptanceCriteria": [
+        "a row-anchored template is rendered from the derived values and must appear verbatim in its doc; a mismatch is drift",
+        "the coverage set is declared: a doc publishing this lane's counts is pinned, and a doc declared out-of-scope that publishes one fails",
+        "mutants prove a prose edit, a blocked derivation, an unfilled template, a broken registry, a dead scan and both coverage defects"
+      ],
+      "closureRequirements": [
+        "V5 evidence (verified, sealed) at the closing HEAD",
+        "the coverage census reported (published vs pinned) with the residue visible",
+        "the pins wired into both chains"
+      ],
+      "artifacts": [
+        "script/m61/claim_pins.ts",
+        "script/m61/claims.json",
+        "script/m61/verify-claims.ts"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "verifierCommand": "npx tsx script/m61/verify-claims.ts",
+        "evidenceFile": "V5.json",
+        "passed": 33,
+        "failed": 4,
+        "realFailed": 4,
+        "mutantsCaught": 11,
+        "mutantsTotal": 11,
+        "blockedReason": "The tool pins the claims DECLARED in script/m61/claims.json, and coverage (#846's audit set: README + website + docs) is enforced by the scan — an out-of-scope doc that publishes a lane count fails. The residue on the pinned doc is reported as the `coverage` census rather than hidden: a count-claim line not covered by a pin is visible in the record and is the registry's next extension.",
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "V6",
+      "githubIssue": 847,
+      "tool": "m61-extinction",
+      "status": "known-gap",
+      "scope": "the bug-class extinction pack: every historical verifier-bug class carries a permanent mutant in the gate that owns it, traced to its incident, in an automated tier, recorded in that gate's sealed evidence",
+      "acceptanceCriteria": [
+        "six declared classes (TDZ import, silent capability cap, self-staling byte-gated doc, concurrent clobber, unsealed evidence trust, on-demand gate rot) each proven extinct from live facts",
+        "every mutant carries a comment naming the incident it memorializes",
+        "mutants prove the pack fails on a missing mutant, an untraced mutant, an unwired mutant gate and a proof-less record"
+      ],
+      "closureRequirements": [
+        "V6 evidence (verified, sealed) at the closing HEAD",
+        "the six classes' owning gates carry their mutants with can-fail proofs in their records",
+        "the pack wired into both chains"
+      ],
+      "artifacts": [
+        "script/m61/extinction_core.ts",
+        "script/m61/extinction-classes.json",
+        "script/m61/verify-extinction.ts"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "verifierCommand": "npx tsx script/m61/verify-extinction.ts",
+        "evidenceFile": "V6.json",
+        "passed": 18,
+        "failed": 4,
+        "realFailed": 4,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "blockedReason": "Presence is a source fact: this gate proves the mutant exists, is traced, is wired, and that its owner's sealed record shows it ran. It does not re-execute every owner (two of them are heavy measurement gates) — re-execution is the lane ladder's and X1's job.",
+        "recordCommit": "8def4a5d56c9e987b6b19fab29e2ceffeb473cca"
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 849,
+      "tool": "m61-closure",
+      "status": "known-gap",
+      "scope": "the program-closure audit: M61's ledger plus the IDE lane (m24/m29/m42/m44/m55 closures, and the 40-gate ladder record) re-audited at HEAD, with the spot-check pack the owner's verdict is made from",
+      "acceptanceCriteria": [
+        "X1 green at the closing HEAD with the full-lane re-audit run sequentially (V2 discipline)",
+        "at least 5 mutants; the known-gaps inventory is generated from the records and byte-gated",
+        "the spot-check pack is present and names every issue; the verdict stays the owner's"
+      ],
+      "closureRequirements": [
+        "X1 evidence (verified, sealed) at the closing HEAD",
+        "all M61 issues closed with pinned evidence",
+        "the owner verdict per the IDE Honesty Contract §8 evidence rules (5) recorded, not inferred"
+      ],
+      "artifacts": [
+        "script/m61/verify-closure.ts",
+        "validation/m61/results/SPOT-CHECK-PACK.md"
+      ],
+      "evidence": {
+        "status": "known-gap",
+        "verifierCommand": "npx tsx script/m61/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 17,
+        "failed": 10,
+        "realFailed": 10,
+        "mutantsCaught": 24,
+        "mutantsTotal": 24,
+        "blockedReason": "X1 is the auditor, so its own ledger entry is written from THIS run's measurements (the projection rule) and then validated whole — a pre-existing pin would make a fresh HEAD unverifiable, and the m29 self-referential-trap rationale applies.",
+        "recordCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff"
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T18:17:23.433Z",
+    "contentSha256": "ba7aeebbe4dca108743d17fc0c1d484017d52def0eccf50c26c45af6f220494f"
+  }
+}

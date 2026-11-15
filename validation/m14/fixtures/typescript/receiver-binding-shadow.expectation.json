@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/receiver-binding-shadow",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A function starting at byte zero owns its own receiver facts. An untyped local binding still hides the outer receiver or class of the same name.",
+  "expectRelationships": [
+    { "type": "calls", "from": "firstAtByteZero", "target": "run", "meta.owner": "Other" },
+    { "type": "calls", "from": "moduleReceiver", "target": "run", "meta.owner": "Outer" },
+    { "type": "calls", "from": "unknownParameter", "target": "run", "meta.owner": null },
+    { "type": "calls", "from": "unknownLocal", "target": "run", "meta.owner": null },
+    { "type": "calls", "from": "classNamesake", "target": "run", "meta.owner": null },
+    { "type": "calls", "from": "blockScopes", "target": "run", "line_number": 36, "meta.owner": "Other" },
+    { "type": "calls", "from": "blockScopes", "target": "run", "line_number": 38, "meta.owner": "Outer" },
+    { "type": "calls", "from": "hoistedVar", "target": "run", "line_number": 45, "meta.owner": "Other" }
+  ]
+}

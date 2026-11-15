@@ -32,14 +32,14 @@
  *
  * USAGE
  *   bun script/m14/kotlin-exports-diff.ts [repoDir ...]
- *   NFILES=200 BB_CORPUS=$HOME/fixtures/repositories bun …
+ *   NFILES=200 BB_CORPUS=/home/ishaq2321/bb_tests/repositories bun …
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { deriveKotlinExportsTruth } from "./oracles/kotlin-exports"
 
 const ROOT = process.env.BB_ROOT || join(import.meta.dir, "..", "..")
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const REPOS = process.argv.slice(2).length ? process.argv.slice(2) : ["kotlin"]
 const VERBOSE = process.env.VERBOSE === "1"

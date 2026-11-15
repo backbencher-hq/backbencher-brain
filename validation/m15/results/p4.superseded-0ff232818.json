@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P4",
+  "code": "P4",
+  "tool": "bb_patterns",
+  "title": "measured time complexity",
+  "verified": true,
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:16:46.035Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.339Z",
+    "contentSha256": "002951fc80299e68f2141e6c77662a82256bd441bff6ccbee161b2cff7dd9afa"
+  }
+}

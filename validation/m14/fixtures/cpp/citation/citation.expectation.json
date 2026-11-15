@@ -1,0 +1,140 @@
+{
+  "fixtureId": "cpp/citation/citation",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE ISO C++ CITATION CLAIM (`iso-cpp-stdlib`), pinned in BOTH DIRECTIONS — and the direction the FIXTURE SUITE can see is the FLAG-OFF one, which is a positive assertion about the accepted D1-D6 behaviour rather than a placeholder. WHY THE OFF STATE IS THE ONE A FIXTURE CAN PIN: the emission is flag-gated (`BB_CPP_CITATION=1`) so that the accepted D1-D6 behaviour is byte-identical without it, and the fixture suite runs WITHOUT the flag. So this fixture pins the OFF state — which is a real, falsifiable contract: the flag must not leak, the claim must not be emitted unasked, and the ROWS themselves (the `calls` edges, their targets, their lines, their qualified spellings) must be exactly these whether or not the claim is on. The ON state is pinned in the other direction by the dedicated red-capable control `script/m14/cpp-citation-verify.ts` (12/12 PASS, `--prove-red` exits 3), which sets the flag and asserts the claims, the negatives, the vocabulary-copy drift guard, and the flag-off row-identity. The two controls together cover both directions of the same emission, which is what the lane's own discipline requires; neither is left unpinned. THE VOCABULARY is committed in script/m14/citations.ts (Lead-owned) and the analyzer holds a LITERAL COPY of it (an analyzer may not import script/), so the copy can drift — the drift guard lives in the verifier, and the vocabulary's REACH is what this fixture's rows exercise. A `calls` row's TARGET is the callee LEAF (`move`, `max`), never the qualified path — the qualified spelling rides metadata.qualified — so a claim that read the target's root would find no root to check. The claim is therefore emitted from the QUALIFIED spelling: a listed symbol whose own spelling root is `std`. THE POLICY MARKER is the narrowing contract the lane's OWN falsifier produced (§18.27): the pre-narrowing emission moved `resolved` by 12,883 — 43x the lane's pre-committed 300 bound — because a citation may DISPLACE a name-model answer, and 12,883 of those were DECOY CORRECTIONS (duckdb declares its own `move` at src/include/duckdb/common/helper.hpp:153, so the name model bound every `std::move(...)` row to it). The `languageNamespacePolicy: \"strict-absent\"` marker tells the arbiter to verify the namespace claim ONLY where the run's declaration count for the target is 0, and to fall through to the name model otherwise. A claim that can displace an answer is not accepted even when the answer is wrong, so the marker is part of the claim's MEANING.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "move",
+      "line_number": 8,
+      "meta.qualified": "std::move",
+      "note": "THE POSITIVE SHAPE. `std::move(x)` — the symbol is in the committed vocabulary, the spelling's own root is `std`, so with the flag ON this row carries the claim (the verifier asserts it). What the FIXTURE pins is the row itself: the target is the callee LEAF `move` (a cpp calls row names the callee leaf, never the qualified path — the qualified spelling rides metadata.qualified), and the row is emitted AT ALL, with this line and this spelling. A claim naming anything other than the leaf would be unverifiable against the committed list, and a row that stopped being emitted would take the claim with it."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "string",
+      "line_number": 9,
+      "meta.qualified": "std::string",
+      "note": "`std::string(\"x\")` is an EXPRESSION, so it is a `calls` row and not a type declaration — the second shape the verifier claims."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "max",
+      "line_number": 10,
+      "meta.qualified": "std::max",
+      "note": "the third claimed shape, and the one the §18.27 displacement instrument measured as a decoy class (2 rows)."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "for_each",
+      "line_number": 11,
+      "meta.qualified": "std::for_each",
+      "note": "THE UNLISTED SYMBOL. The root IS `std` and the spelling IS qualified, but `for_each` is not in the committed vocabulary — so NO claim, in either flag state. This is the shape the citation's design depends on: a `std::` root alone is not a citation, the SYMBOL must be listed. An unlisted claimed root REFUTES (extFAIL), so a claim that reached here would be counted AGAINST the lane."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "move",
+      "line_number": 12,
+      "meta.qualified": "mylib::move",
+      "note": "THE SAME SYMBOL UNDER ANOTHER ROOT. `move` IS listed, but this spelling's root is `mylib` — a PROJECT namespace, which this file declares on line 5. Claiming it would assert that a project-owned function is the platform's — the exact false claim a namespace citation must never make, and the one the vendoring caveat (`absl`/`json`/`testing` are EXCLUDED for the same reason) is about."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "move",
+      "line_number": 13,
+      "meta.qualified": "move",
+      "note": "THE UNQUALIFIED CALL. The symbol is listed but the spelling carries no root, so there is nothing to check the vocabulary against. The claim kind is a NAMESPACE claim: without a namespace it has no subject, and a claim the arbiter cannot refute is a blanket excuse."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "utility",
+      "line_number": 3,
+      "note": "THE `#include <utility>` ROW. It is here for a specific reason: the standard-library HEADER is included, which is why the `std::` symbols in this file are the platform's and not the project's. The row's presence is what makes the three positive `calls` rows MEANINGFUL — a `std::move` with no `<utility>` include would be a spelling, not a use of the platform's."
+    },
+    {
+      "type": "contains",
+      "from": "mylib",
+      "target": "move",
+      "line_number": 5,
+      "note": "THE PROJECT'S OWN `move`, inside `mylib`. This is the DECOY the §18.27 displacement instrument measured at scale: duckdb declares its own `move` at src/include/duckdb/common/helper.hpp:153, so the name model bound every `std::move(...)` row to a project declaration. The 12,883 displaced rows were CORRECT readings, and they were still withheld — a claim may not displace an answer, even when the answer is wrong. The containment row is pinned because it is what makes the decoy REAL in this file rather than hypothetical."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "for_each",
+      "meta.languageNamespace": ["for_each"],
+      "note": "THE FABRICATION THIS FIXTURE EXISTS FOR, in the positive direction: an UNLISTED `std::` symbol must carry NO claim. `for_each` is in the analyzer's own file but not in the committed list, and a claim on it would be REFUTED by the arbiter (extFAIL) — the must-not-rise column. This forbidden row is TRUE in the flag-off state the suite runs, and the verifier asserts it in the flag-on state, so the emission is pinned in both directions."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "move",
+      "meta.languageNamespace": ["move"],
+      "meta.qualified": "mylib::move",
+      "note": "the project-root negative, stated as a FORBIDDEN pairing: a claim on the `mylib::move` row would assert that the project's own `mylib::move` is the platform's `std::move`. A namespace claim that ignored the root would make this row a false external citation — the same class the vendoring caveat excludes `absl`/`json`/`testing` for."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "move",
+      "meta.languageNamespace": ["move"],
+      "meta.qualified": "move",
+      "note": "the unqualified negative, stated as a FORBIDDEN pairing: no root, no subject, no claim."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "for_each",
+      "meta.languageNamespacePolicy": "strict-absent",
+      "note": "THE MARKER MUST NOT LEAK. The policy marker is the companion of a claim; on a row that carries no claim it would tell the arbiter to apply the strict-absent rule to a row nothing claimed, and the arbiter's narrowing decision would be made on a row whose claim it never read. The marker is emitted EXACTLY on the claimed rows and NOWHERE else — the verifier's `policy-marker-only-with-claim` assertion is the other half of this one."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "for_each",
+      "meta.languageNamespace": ["for_each"],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "note": "the same leak, restated for the unlisted symbol specifically: an unlisted `std::` symbol carries NEITHER the claim NOR the marker. A marker without a claim is the shape the arbiter's narrowing rule would misread."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "mylib",
+      "kind": "namespace",
+      "note": "the project's own namespace, declared on line 5. It exists so the `mylib::move` row has a REAL project declaration behind it — the negative is then a claim the project REFUTES, not a claim about a name nothing owns."
+    },
+    {
+      "name": "move",
+      "kind": "function",
+      "ownerName": "mylib",
+      "note": "the project's own `move`, inside `mylib`. This is the DECOY the §18.27 displacement instrument measured at scale: duckdb declares its own `move` at src/include/duckdb/common/helper.hpp:153, so the name model bound every `std::move(...)` row to a project declaration. The 12,883 displaced rows were CORRECT readings, and they were still withheld — a claim may not displace an answer."
+    },
+    {
+      "name": "target",
+      "kind": "function",
+      "note": "the enclosing function; every `calls` row above is emitted inside it, and the `from` of each is this symbol — a calls row attributed to `global` would be a scope defect the whole cpp truth-fix wave was about."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "for_each",
+      "kind": "function",
+      "note": "an UNLISTED `std::` symbol is not published as a project declaration. The analyzer publishes the project's own symbols; the platform's are the citation's business, and the committed list is what says which."
+    },
+    {
+      "name": "std",
+      "kind": "namespace",
+      "note": "the platform's `std` is not a project namespace. Publishing it as one would make every `std::`-rooted call a PROJECT call — the class of falsehood the citation exists to prevent."
+    }
+  ]
+}

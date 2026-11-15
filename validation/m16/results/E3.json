@@ -1,0 +1,21 @@
+{
+  "issue": "(delete dangling-reference guard)",
+  "code": "E3",
+  "tool": "bb_edit",
+  "title": "E3",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 0,
+  "runLog": {
+    "validated": true,
+    "reindexed": true,
+    "warnings": [
+      "delete lookup_prerequisite (forced): 1 reference(s) remain — task.rb line 62: call",
+      "delete lookup_prerequisite (forced): 1 indexed caller(s) were bypassed by force=true — the index still records them; review with bb_graph or bb_impact before relying on this deletion",
+      "delete lookup_prerequisite: import cleanup was not attempted — import pruning is implemented for TypeScript/JavaScript only; ruby imports were left unchanged rather than pattern-matched"
+    ]
+  },
+  "generatedAt": "2026-11-05T04:27:52.024Z"
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-v11-plpgsql-embedded-sql",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "SHIPPED, and the largest single recall gain in this lane. Supersedes V6 and V8.",
+  "date": "2026-09-28",
+  "defect": {
+    "statement": "Every SQL statement inside a plpgsql body failed to parse, so a body contributed SYMBOLS but ZERO RELATIONSHIPS.",
+    "measured": [
+      { "input": "SELECT 1 FROM pg_policies;", "atTopLevel": "uses global->pg_policies" },
+      { "input": "DO $$ BEGIN SELECT 1 FROM pg_policies; END $$;", "atTopLevel": "ERROR node, zero edges" },
+      { "input": "DO $$ BEGIN INSERT INTO t VALUES (1); END $$;", "atTopLevel": "ERROR, zero edges" }
+    ],
+    "cause": "Mine. plpgsql_block and every control structure repeated _plpgsql_statement, which DELIBERATELY excludes $.statement; the rule that wraps $.statement with its ';' was used only at the body's top level. So a procedural block could hold procedural forms and nothing else.",
+    "alsoCorrectsAnEarlierClaim": "The recall gains reported for V6 and V8 came from files parsing FURTHER — the declaration sweep and resync reaching more nodes — not from reading the SQL inside bodies. That was not the mechanism described at the time."
+  },
+  "whyTheFixNeededAPair": {
+    "problem": "Parsing alone measured WORSE. A body the scaffolding could not satisfy failed the rule and took the DECLARATION with it: postgis_topology fell from 34 function symbols to 2, and postgis_raster from 422 to 234, while the EXECUTE-literal pass was identical under both (122 literals found, 2 recovered) — which located the loss precisely.",
+    "solution": "Pair the structured forms with an OPAQUE-BODY FALLBACK. This is the opposite of V3 and the difference is the whole point: V3 made the opaque form the ONLY body and was rejected for collapsing 49 files by up to 95.8%. Here the structured forms come first, and the external scanner emits the opaque token only when the start tag is not a valid symbol, i.e. only when the structured form is unavailable. A body the scaffolding can read is read in full; one it cannot degrades to a token instead of taking its declaration with it."
+  },
+  "shipped": {
+    "wired": {
+      "sha256": "848e08124724…",
+      "bytes": 12620599,
+      "surface": { "ids": 825, "uniqueNames": 822, "namedIds": 594, "namedUnique": 590, "anonIds": 232, "anonUnique": 232, "fieldCount": 62 }
+    }
+  },
+  "measuredOutcome": {
+    "instrument": "a SELF-VERIFYING probe: it asserts the analyzer's grammar handoff landed and the engine's temp wasm is refreshed before it reports a number, because the engine resolves the wasm through a temp copy and hands the analyzer its grammar asynchronously",
+    "extensionCorpus387Files": {
+      "functionSymbols": { "V8": 3342, "V11": 6189 },
+      "distinctFunctionNames": { "V8": "922/1170", "V11": "1,004/1170" },
+      "tableSymbols": { "V8": 13, "V11": 91 },
+      "relationships": { "V8": 5253, "V11": 11765 }
+    },
+    "pristineBaseline": { "functionSymbols": 3342, "distinctFunctionNames": "999/1170", "tableSymbols": 13 },
+    "proxiCallEdges": { "V8": 12454, "V11": 13406, "resolveRate": "98.18%", "labelledExternal": 146, "unlabelledGap": 98 }
+  },
+  "gates": {
+    "contractBattery": "54/54",
+    "fixtureLane": "12/12",
+    "mutants": "13/13 caught, 0 survivors (1 retired with its reason)",
+    "nodeTypeGate": "83 referenced, 0 dead, 0 unjustified",
+    "differential": "84/84 facts, recall 1.000, precision 0.988 (1 false positive)",
+    "resyncAndSweepGate": "C1-C3 pass plus the S1-sweep-watch",
+    "perfGate": "P1-P5 pass",
+    "pinContract": "sql lane re-pinned to the V11 bytes",
+    "typecheck": "0 errors"
+  },
+  "residualGaps": [
+    "One differential false positive: rel:Queries.sql:uses:global:recent_users, the CTE-alias class, appearing only in file context while the identical query inline is clean. The deep walk can reach a top-level statement after a later one has cleared the CTE scope; refreshing at dispatch time fixes nothing measurable and costs a contract case, so it was reverted.",
+    "PERFORM 1 FROM t does not parse: plpgsql's PERFORM takes a full query and the shipped rule accepts only an expression. PERFORM my_func(1) parses.",
+    "@placeholder@ templating (154 extension files) is unaddressed and needs a template token in identifier and type positions.",
+    "282 of 387 extension files still contain at least one ERROR.",
+    "Structurally unreachable, not a defect: 93 function names and 1,358 declarations whose identifiers are composed at run time inside EXECUTE fragments, and 63 edges to PostgreSQL's own catalogs."
+  ],
+  "evidence": [
+    "bb_tests/sql/grammar/src/grammar/statements/plpgsql.js",
+    "bb_tests/sql/grammar/src/grammar/statements/create-function.js",
+    "bb_tests/sql/grammar/patched-sql-v11.wasm",
+    "validation/m14/grammar-pins.json",
+    "docs/analyzers/sql.md",
+    "bb_tests/sql/out/gen-v9c.log"
+  ]
+}

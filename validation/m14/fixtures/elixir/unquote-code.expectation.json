@@ -1,0 +1,10 @@
+{
+  "issue": "ELX-ADV X7",
+  "note": "`unquote`/`unquote_splicing` arguments EXECUTE (expansion-time code) — their calls emit while the rest of the quote stays data (`hidden()` emits nothing).",
+  "expectRelationships": [
+    { "type": "calls", "from": "EU.m/0", "target": "compute", "line_number": 5 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "hidden" }
+  ]
+}

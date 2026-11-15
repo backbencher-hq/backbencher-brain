@@ -1,0 +1,19 @@
+{
+  "fixtureId": "typescript/computed-import-specifier",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a MODULE SPECIFIER is only an edge target when it is written out. `import(`data:...${x}`)` is computed - the path is assembled at run time - and the analyzer used to publish the template's LITERAL PREFIX as the module (`data:text/javascript;charset=utf-8,:*`), an endpoint no index can join. The oracle refused to derive a row for it and that disagreement is how the row was found: 1 row of 2,926 on a 200-file draw. The control rows are the same rule from the other side: a literal dynamic import and a literal require are real dependencies and must keep publishing, so a fix that simply stopped emitting dynamic imports would fail here.",
+  "expectSymbols": [
+    { "name": "generateFromSource" },
+    { "name": "loadLiteral" },
+    { "name": "loadRequire" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "computed-import-specifier\u0000./helper.js:*", "meta.localBinding": true },
+    { "type": "imports", "target": "computed-import-specifier\u0000node:path:*", "meta.localBinding": true }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "data:text/javascript;charset=utf-8,:*" },
+    { "type": "imports", "target": "data:text/javascript;charset=utf-8,${encodeURIComponent(src)}:*" }
+  ]
+}

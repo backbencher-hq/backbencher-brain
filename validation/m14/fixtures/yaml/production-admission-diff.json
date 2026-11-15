@@ -1,0 +1,304 @@
+{
+ "admitted": 18364,
+ "excluded": 53,
+ "byPattern": {
+  "/\\/coverage\\//": 1,
+  "/\\/generated\\//i": 6,
+  "/.*\\.(generated|Generated|gen|Gen)\\./i": 15,
+  "/pnpm-lock\\.yaml$/": 10,
+  "/\\/platforms\\//": 1,
+  "/\\/build\\//": 7,
+  "/\\/\\.env/": 2,
+  "/\\/deps\\//": 9,
+  "/\\/tree-sitter-clean\\//": 2
+ },
+ "byRepo": {
+  "Documenter.jl": 1,
+  "Grace": 4,
+  "boundary": 4,
+  "consul": 6,
+  "docker": 3,
+  "element-plus": 1,
+  "gql-graphql-eslint": 1,
+  "hasura-engine": 5,
+  "hledger": 1,
+  "kong": 1,
+  "kubernetes": 4,
+  "nomad": 2,
+  "phpunit": 2,
+  "powershell": 1,
+  "redis": 9,
+  "shadcn-svelte": 2,
+  "svelte": 1,
+  "tree-sitter-clean": 2,
+  "vault": 2,
+  "vue-core": 1
+ },
+ "files": [
+  {
+   "repo": "Documenter.jl",
+   "rel": "coverage/.codecov.yml",
+   "pattern": "/\\/coverage\\//"
+  },
+  {
+   "repo": "Grace",
+   "rel": "sdk/generated/matrix/openapi-generator/python/.github/workflows/python.yml",
+   "pattern": "/\\/generated\\//i"
+  },
+  {
+   "repo": "Grace",
+   "rel": "sdk/generated/matrix/openapi-generator/python/.gitlab-ci.yml",
+   "pattern": "/\\/generated\\//i"
+  },
+  {
+   "repo": "Grace",
+   "rel": "sdk/generated/matrix/openapi-generator/python/.travis.yml",
+   "pattern": "/\\/generated\\//i"
+  },
+  {
+   "repo": "Grace",
+   "rel": "sdk/generated/matrix/openapi-generator/rust/.travis.yml",
+   "pattern": "/\\/generated\\//i"
+  },
+  {
+   "repo": "boundary",
+   "rel": "buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "boundary",
+   "rel": "buf.openapiv2.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "boundary",
+   "rel": "buf.testing.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "boundary",
+   "rel": "internal/bsr/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "consul",
+   "rel": "agent/grpc-middleware/testutil/testservice/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "consul",
+   "rel": "internal/protohcl/testproto/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "consul",
+   "rel": "internal/tools/protoc-gen-grpc-clone/e2e/proto/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "consul",
+   "rel": "proto-public/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "consul",
+   "rel": "proto/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "consul",
+   "rel": "ui/pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "docker",
+   "rel": "vendor/github.com/containerd/platforms/.golangci.yml",
+   "pattern": "/\\/platforms\\//"
+  },
+  {
+   "repo": "docker",
+   "rel": "vendor/github.com/containerd/ttrpc/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "docker",
+   "rel": "vendor/github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "element-plus",
+   "rel": "pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "gql-graphql-eslint",
+   "rel": "pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "hasura-engine",
+   "rel": "cli/internal/metadataobject/actions/testdata/build/t1/metadata/actions.yaml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "hasura-engine",
+   "rel": "community/boilerplates/event-triggers/google-cloud-functions/nodejs6/mutation/.env.yaml",
+   "pattern": "/\\/\\.env/"
+  },
+  {
+   "repo": "hasura-engine",
+   "rel": "community/boilerplates/event-triggers/google-cloud-functions/nodejs8/mutation/.env.yaml",
+   "pattern": "/\\/\\.env/"
+  },
+  {
+   "repo": "hasura-engine",
+   "rel": "contrib/metadata-types/generated/HasuraMetadataV2.yaml",
+   "pattern": "/\\/generated\\//i"
+  },
+  {
+   "repo": "hasura-engine",
+   "rel": "contrib/metadata-types/generated/HasuraMetadataV3.yaml",
+   "pattern": "/\\/generated\\//i"
+  },
+  {
+   "repo": "hledger",
+   "rel": "hledger-web/test/browser/pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "kong",
+   "rel": "build/package/nfpm.yaml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "kubernetes",
+   "rel": "build/dependencies.yaml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "kubernetes",
+   "rel": "build/pause/cloudbuild.yaml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "kubernetes",
+   "rel": "vendor/github.com/containerd/ttrpc/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "kubernetes",
+   "rel": "vendor/github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "nomad",
+   "rel": "pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "nomad",
+   "rel": "tools/buf/buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "phpunit",
+   "rel": "build/scripts/phar-set-timestamps/vendor/seld/phar-utils/.github/dependabot.yml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "phpunit",
+   "rel": "build/scripts/phar-set-timestamps/vendor/seld/phar-utils/.github/workflows/zizmor.yml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "powershell",
+   "rel": ".github/actions/build/ci/action.yml",
+   "pattern": "/\\/build\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/hiredis/.github/release-drafter-config.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/hiredis/.github/workflows/build.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/hiredis/.github/workflows/release-drafter.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/hiredis/.github/workflows/test.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/hiredis/.travis.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/hiredis/appveyor.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/jemalloc/.appveyor.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/jemalloc/.cirrus.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "redis",
+   "rel": "deps/jemalloc/.travis.yml",
+   "pattern": "/\\/deps\\//"
+  },
+  {
+   "repo": "shadcn-svelte",
+   "rel": "packages/cli/test/fixtures/project-pnpm/pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "shadcn-svelte",
+   "rel": "pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "svelte",
+   "rel": "pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "tree-sitter-clean",
+   "rel": ".github/workflows/ci.yml",
+   "pattern": "/\\/tree-sitter-clean\\//"
+  },
+  {
+   "repo": "tree-sitter-clean",
+   "rel": ".github/workflows/publish.yml",
+   "pattern": "/\\/tree-sitter-clean\\//"
+  },
+  {
+   "repo": "vault",
+   "rel": "buf.gen.yaml",
+   "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+  },
+  {
+   "repo": "vault",
+   "rel": "ui/pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  },
+  {
+   "repo": "vue-core",
+   "rel": "pnpm-lock.yaml",
+   "pattern": "/pnpm-lock\\.yaml$/"
+  }
+ ]
+}

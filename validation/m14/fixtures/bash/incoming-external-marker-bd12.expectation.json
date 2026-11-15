@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/incoming-external-marker-bd12.sh",
+  "authoredFrom": "BD12. The incoming gate measured `855 unresolved of 2,590 edges` with ZERO edges carrying an external marker (`npx tsx script/m14/incoming-gate.ts bash sh 60`). The marker is a CLAIM the corpus checks, so this fixture pins the one shape the file's text proves \u2014 a command word containing `/` cannot be a shell function name, so the target is a FILE and never a project declaration \u2014 and pins the ABSENCE of the marker on unqualified calls, where a wider rule was measured and withdrawn: it marked 435 edges of which 82 named a `function_definition` the same repository declares (`probe-bash-incoming-split.mts` marked-set audit). AMENDED 2026-10-19 (fleet baseline \u00a721.32): the relative-path half of the original rationale ('it is a path, not a function name') was measured FALSE at whole population \u2014 102 refuted claims, all ./-relative script calls resolving INSIDE the corpus. The marker is now WITHHELD for relative paths (./ ../ .\\ ..\\) exactly as it already was for unqualified names; kept for absolute/rooted paths (/bin/expr) which a project cannot contain. The ./helper.sh row flips to NOT MARKED and a forbid pins the withdrawn shape.",
+  "expectSymbols": [
+    {
+      "name": "incoming-external-marker-bd12.sh",
+      "kind": "module"
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "ownerName": "incoming-external-marker-bd12.sh"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "incoming-external-marker-bd12.sh",
+      "target": "/bin/expr",
+      "line_number": 17,
+      "meta.isExternal": true,
+      "meta.externalEvidence": "pathInvokedCommand"
+    },
+    {
+      "type": "calls",
+      "from": "incoming-external-marker-bd12.sh",
+      "target": "./helper.sh",
+      "line_number": 20,
+      "comment": "BD12-RELATIVE amendment (\u00a721.32): relative-path claims withdrawn at whole population (102 refuted, all ./script.sh inside the corpus). NOT MARKED now.",
+      "meta.isExternal": null
+    },
+    {
+      "type": "calls",
+      "from": "incoming-external-marker-bd12.sh",
+      "target": "grep",
+      "line_number": 25,
+      "meta.isExternal": null
+    },
+    {
+      "type": "calls",
+      "from": "incoming-external-marker-bd12.sh",
+      "target": "sed",
+      "line_number": 28,
+      "meta.isExternal": null
+    },
+    {
+      "type": "calls",
+      "from": "incoming-external-marker-bd12.sh",
+      "target": "helper",
+      "line_number": 34,
+      "meta.isExternal": null,
+      "meta.isFunctionCall": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "grep",
+      "meta.isExternal": true
+    },
+    {
+      "type": "calls",
+      "target": "sed",
+      "meta.isExternal": true
+    },
+    {
+      "type": "calls",
+      "target": "helper",
+      "meta.isExternal": true
+    },
+    {
+      "type": "calls",
+      "target": "./helper.sh",
+      "meta.isExternal": true,
+      "comment": "withdrawn shape: a relative-path invocation cannot be claimed external by a single-file analyzer; the gate's admitted-file check owns that question (102 whole-pop refutations)"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "equals": 5
+    }
+  ]
+}

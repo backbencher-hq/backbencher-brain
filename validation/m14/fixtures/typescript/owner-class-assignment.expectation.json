@@ -1,0 +1,25 @@
+{
+  "fixtureId": "typescript/owner-class-assignment",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE ASSIGNMENT-PROVEN CLASS: an assignment (`late = new Worker()`) after a type-less declaration states the receiver type; the evidence class is `assignment`. The second row pins the AUTHORITY ORDER: an explicit annotation (`let base: Base`) is not overwritten by a later assignment (`base = new Derived()`), so the owner stays `Base` and the evidence stays `annotation` — re-typing it from the assignment would be a guess the store then acts on.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useAssignment",
+      "target": "run",
+      "line_number": 10,
+      "meta.owner": "Worker",
+      "meta.ownerEvidence": "assignment"
+    },
+    {
+      "type": "calls",
+      "from": "useAssignment",
+      "target": "baseOnly",
+      "line_number": 13,
+      "meta.owner": "Base",
+      "meta.ownerEvidence": "annotation"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+// Minimal Sass fixture for the M12 language-coverage gate.
+//
+// Deliberately the INDENTED syntax, because that is what separates `.sass` from
+// `.scss` and is therefore the only form that can distinguish the two languages.
+// `sass` is a key in SUPPORTED_LANGUAGES but no extension in EXTENSION_LANGUAGE
+// maps to it — this fixture is how the gate measures that, rather than assuming it.
+
+$coverage-accent: #336699
+
+@mixin coverage-panel($pad)
+  padding: $pad
+  border: 1px solid $coverage-accent
+
+.coverage-panel
+  color: $coverage-accent
+  +coverage-panel(4px)

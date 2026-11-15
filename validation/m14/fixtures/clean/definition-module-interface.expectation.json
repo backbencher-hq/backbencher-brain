@@ -1,0 +1,35 @@
+{
+  "comment": "A Clean definition module is declarations only, so its declared interface IS the file. Pins all four `signature_name` shapes (identifier, constructor-as-function, parenthesized_operator, parenthesized_name) each publishing a symbol marked as a declaration AND appearing in the export list. Measured pre-fix: a `.dcl` yielded its module symbol and nothing else, and the export predicate `!sym.ownerName` — the exact negation of the rule its own comment stated — left 312 of 312 corpus files exporting at most one thing. Mutant `clean/declarations-not-published` reverts exactly this state.",
+  "expectSymbols": [
+    { "name": "interfaceFunction", "kind": "function", "ownerName": "DefinitionModuleInterface", "meta.isDeclaration": true },
+    { "name": "NSMakeSize", "kind": "function", "meta.isDeclaration": true, "comment": "uppercase name typed `constructor` by the grammar: Clean lets an uppercase name be a FUNCTION" },
+    { "name": "%.", "kind": "function", "meta.isDeclaration": true, "comment": "`(%.` infixl 9 :: …` — the published name is the unparenthesized operator" },
+    { "name": "bitxor", "kind": "function", "meta.isDeclaration": true, "comment": "`(bitxor) :: …` — a parenthesized NAME, not an operator symbol" }
+  ],
+  "expectExportsNote": "expectExports matches fields EXACTLY, so no `comment` key may appear inside an entry. The export list is the module's interface: a declared name that does not appear here is not importable.",
+  "expectExports": [
+    { "name": "interfaceFunction", "kind": "function" },
+    { "name": "NSMakeSize", "kind": "function" },
+    { "name": "%.", "kind": "function" },
+    { "name": "bitxor", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "(", "comment": "a parenthesized shape must never leak its punctuation as a name" },
+    { "name": ")", "comment": "" },
+    { "name": "%.", "kind": "type", "comment": "an operator declaration is a function, never a type" }
+  ],
+  "expectSymbolCount": [
+    { "name": "NSMakeSize", "kind": "function", "equals": 1, "comment": "one declaration, one entity" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "DefinitionModuleInterface", "target": "interfaceFunction", "line_number": 22, "comment": "each declaration's membership edge carries THAT declaration's line (M59.O2) — the four shapes are on four consecutive lines, so a per-set or off-by-one line cannot pass all four" },
+    { "type": "contains", "from": "DefinitionModuleInterface", "target": "NSMakeSize", "line_number": 23 },
+    { "type": "contains", "from": "DefinitionModuleInterface", "target": "%.", "line_number": 24 },
+    { "type": "contains", "from": "DefinitionModuleInterface", "target": "bitxor", "line_number": 25 }
+  ],
+  "expectRelationshipCount": [
+    { "type": "references", "from": "DefinitionModuleInterface", "target": "StdEnv", "equals": 1 },
+    { "type": "contains", "from": "DefinitionModuleInterface", "target": "interfaceFunction", "equals": 1 }
+  ],
+  "forbidErrors": [{}]
+}

@@ -1,0 +1,29 @@
+{
+  "fixtureId": "rust/part-of-include-macro",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS rust's part_of R3 emission from `include!` (2026-10-23): the fleet's L-2026-10-21-06 ruling rejects `mod` for this cell (ownership/split — a resolvable unit is the opposite of a fragment), so the construct is the TEXTUAL file splice, measured at 4 sites in the 2,532-file population. The edge must exist only when the macro reaches the analyzer as a real `macro_invocation` node carrying a `string_literal` — recovery text emits nothing and this expectation fails. The near-miss refusals are pinned with equals: 0: `include_str!` is DATA inclusion (not a compilation-unit part) and a NON-LITERAL include argument is refused and counted. partRole is MANDATORY (types.ts:178-183) and the target is the PATH with the importProjectFile claim resolved against the including file's directory, so a confirmed row lands extOK rather than silent-unresolved (php's §8 form).",
+  "expectSymbols": [
+    { "name": "connect", "kind": "function" },
+    { "name": "data_inclusion_is_not_part_of", "kind": "function" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "part_of", "from": "(file)", "target": "included-part.rs", "equals": 1 },
+    { "type": "part_of", "meta.partRole": "library", "equals": 1 },
+    { "type": "part_of", "meta.isFileInclusion": true, "equals": 1 },
+    { "type": "part_of", "target": "data.txt", "equals": 0 },
+    { "type": "part_of", "equals": 1 },
+    { "type": "calls", "from": "connect", "target": "helper", "equals": 1 },
+    { "type": "calls", "from": "data_inclusion_is_not_part_of", "target": "include_str", "equals": 1 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "(file)",
+      "target": "included-part.rs",
+      "meta.partRole": "library",
+      "meta.isFileInclusion": true,
+      "meta.macroInvocation": true
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "shape": "CHUNKED WHOLE POPULATION — union of per-repo arms; classification columns sum exactly; arbitraryTwin/nothingAnywhere/closure are RUN-SCOPED per repo and MUST NOT be pooled",
+  "admitted_repos": 27,
+  "admitted_files": 50589,
+  "chunks_recorded": 1,
+  "chunks_pending": [
+    "kubernetes",
+    "docker",
+    "consul",
+    "vault",
+    "boundary",
+    "nomad",
+    "terraform",
+    "go-tools",
+    "waypoint",
+    "terragrunt",
+    "gh-cli",
+    "traefik",
+    "pixie",
+    "helm",
+    "packer",
+    "caddy",
+    "hasura-engine",
+    "yq",
+    "tflint",
+    "gql-genqlient",
+    "mvdan-sh",
+    "tfsec",
+    "nvim-treesitter",
+    "kong",
+    "ansible",
+    "tree-sitter-clean"
+  ],
+  "exclusions": [
+    {
+      "repo": "kubernetes",
+      "absent": 0,
+      "oversize": 4
+    },
+    {
+      "repo": "boundary",
+      "absent": 0,
+      "oversize": 1
+    },
+    {
+      "repo": "nomad",
+      "absent": 0,
+      "oversize": 1
+    },
+    {
+      "repo": "waypoint",
+      "absent": 0,
+      "oversize": 2
+    }
+  ],
+  "aggregate_classification_columns": {
+    "files_parsed": 888,
+    "TOTAL": 187536,
+    "resolved": 116241,
+    "collRes": 17657,
+    "ambDecl": 51190,
+    "ambKind": 25948,
+    "unresolved": 13594,
+    "extOK": 6511,
+    "extQ": 0,
+    "extFAIL": 0,
+    "bindOK": 0,
+    "bindQ": 0,
+    "bindFAIL": 0,
+    "causeOK": 0,
+    "causeFAIL": 0
+  },
+  "chunks": [
+    {
+      "repo": "gql-gqlgen",
+      "runtime_s": 89.4,
+      "files_parsed": 888,
+      "files_sampled": 888,
+      "population_line": "population: 888 parsed of 888 sampled (corpus has 888 .go files across 1 repos; stride sample)",
+      "parse_failures": "parse failures: 0   degraded (regex fallback): 0",
+      "TOTAL": 187536,
+      "resolved": 116241,
+      "collRes": 17657,
+      "ambDecl": 51190,
+      "ambKind": 25948,
+      "unresolved": 13594,
+      "extOK": 6511,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0,
+      "failures": 0,
+      "intended": 22941,
+      "sameFileUnproven": 45492,
+      "arbitraryTwin_run_scoped": 98998,
+      "nothingAnywhere_run_scoped": 20105,
+      "noTarget": 0,
+      "closure": "EXACT",
+      "verdict": "VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 64784 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  5",
+      "dump_file": ".tmp-go/dumps/gql-gqlgen.txt"
+    }
+  ]
+}

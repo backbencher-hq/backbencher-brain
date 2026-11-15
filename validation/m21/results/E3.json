@@ -1,0 +1,42 @@
+{
+  "issue": "M21.E3",
+  "code": "E3",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 8,
+  "passed": 8,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-embedding-provider.ts",
+  "evidenceFile": "E3.json",
+  "generatedAt": "2026-09-01T13:56:35.760Z",
+  "corpus": {
+    "kind": "local-http-mock",
+    "host": "127.0.0.1",
+    "revision": null
+  },
+  "timings": {
+    "successMs": 38.86085600000001,
+    "slowMockMs": 84.26709599999998
+  },
+  "outcomes": {
+    "success": "success",
+    "rateLimit": "error",
+    "malformed": "error"
+  },
+  "redaction": {
+    "secretRecorded": false,
+    "placeholder": "[REDACTED]"
+  },
+  "limitations": [
+    "Local mock timing is client-path evidence only; it is not external provider latency.",
+    "The current production client exposes errors but does not persist structured request timing or retry/rate-limit counters; E2/E3 production telemetry remains open."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.383Z",
+    "contentSha256": "13e6aab3001704c07c383c88bd947cdc9d6a49ccbe3042f4e83e968219cb115c"
+  }
+}

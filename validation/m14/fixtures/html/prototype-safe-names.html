@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  HTML ONTOLOGY — EVERY VOCABULARY HERE IS KEYED BY A STRING THE DOCUMENT SUPPLIES.
+
+  A tag name, a `<link rel>` token, a `<param name>`, an attribute name and an
+  `id` are all arbitrary author-chosen strings. On a plain object literal such a
+  lookup answers `Object.prototype.<key>` for any key the table does not declare,
+  and the caller cannot tell that from a real entry.
+
+  MEASURED, on this lane's corpus (validation/m14/probes/html/construct-probe.mts
+  §4, 1,185 git-tracked documents / 24 repositories): 1 document, 4 elements.
+  `RESOURCE_RULES["constructor"]` is the `Object` FUNCTION, so `rules.length` is 1
+  (its arity), `rules[0]` is `undefined`, and the loop dereferences `undefined.attr`.
+  The file is `csharp-sample/extensions/copilot/src/platform/parser/test/node/fixtures/chatSetup.ts.getStructure.html`
+  — a TypeScript code-dump fixture with `<CONSTRUCTOR>` at line 174, 88,229 bytes.
+  Production `parseFile` reports `analyzer timeout, returning basic parse result …
+  "undefined is not an object (evaluating 'rule.attr')"` and the document publishes
+  ZERO symbols, ZERO relationships and no metadata at all, while every other
+  document over 4 KiB in the same draw publishes both. ONE FILE, and the whole
+  document is gone.
+
+  The truthiness tables failed the same way WITHOUT throwing, which is why they are
+  in this fixture too and not only the site that crashes: `SEMANTIC_ELEMENTS
+  ["tostring"]`, `INTERACTIVE_ELEMENTS["tostring"]` and `FORM_ELEMENTS["valueof"]`
+  are all truthy, so a `<tostring>` element counts as a landmark, an interactive
+  control AND a form element — three wrong facts and a wrong `semanticScore`,
+  published with no error anywhere. That failure mode is worse than the crash,
+  because nothing reports it.
+
+  `<div id="__proto__">` is the same defect in the HANDLE maps: on a plain object
+  `obj["__proto__"] = v` writes the PROTOTYPE rather than a key, so
+  `handleToSymbol["__proto__"]` answers `Object.prototype` instead of `undefined`
+  and the duplicate-suffix walk starts from `Object.prototype`. Measured: 0
+  occurrences of an `id`/`name` handle that is an inherited member across the
+  corpus — recorded as NOT-YET-REACHED rather than as absent, because the corpus is
+  not the input space. This fixture is where it stops being theoretical.
+-->
+<html lang="en">
+<head>
+  <title>Prototype-safe names</title>
+  <link rel="stylesheet" href="/p.css">
+  <param name="src" value="/p.swf">
+</head>
+<body>
+  <!-- `constructor` is the tag that crashes the analyzer, reproduced verbatim from
+       the corpus document so the pin and the corpus finding are the same input. -->
+  <constructor id="c1"><a href="/from-constructor">link</a></constructor>
+  <toString id="c2"></toString>
+  <valueOf id="c3"></valueOf>
+  <hasOwnProperty id="c4"></hasOwnProperty>
+  <isPrototypeOf id="c5"></isPrototypeOf>
+  <propertyIsEnumerable id="c6"></propertyIsEnumerable>
+  <toLocaleString id="c7"></toLocaleString>
+
+  <!-- the handle-map half: `__proto__` is a legal `id`, and it must behave like
+       any other handle — a symbol named `__proto__`, resolvable, no prototype
+       write, and a duplicate of it allocated as `__proto__#2`. -->
+  <div id="__proto__" data-note="first">one</div>
+  <div id="__proto__" data-note="second">two</div>
+  <a href="#__proto__">anchor to the first __proto__ handle</a>
+
+  <p id="tail">An ordinary element, to prove the walk did not stop.</p>
+</body>
+</html>

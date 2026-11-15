@@ -34,7 +34,7 @@ import path from "node:path"
 import { tmpdir } from "node:os"
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.env.BB_PROBE_REPO ?? "duckdb"
 const SUBDIR = process.env.BB_PROBE_SUBDIR ?? "data/json"
 const SRC = path.join(CR, REPO)

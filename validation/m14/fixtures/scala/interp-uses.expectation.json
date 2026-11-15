@@ -1,0 +1,13 @@
+{
+  "fixtureId": "scala/interp-uses",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G4 gap: string interpolation s\"hi $name\" USES the interpolated identifier — the simple $name form has a direct identifier child under the interpolation node (kotlin K4 analog). The ${expr} block form is expression-use territory (scala emits no expression-level uses by design — D1/D3 boundary) and stays silent.",
+  "expectSymbols": [
+    { "name": "G", "kind": "module" },
+    { "name": "greet", "ownerName": "G" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "greet", "target": "name", "meta.evidenceClass": "usage_contextual" }
+  ]
+}

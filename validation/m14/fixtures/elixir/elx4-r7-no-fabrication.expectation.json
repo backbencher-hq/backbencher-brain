@@ -1,0 +1,100 @@
+{
+  "issue": "ELX4 \u2014 the R7 fabrications measured on 605 corpus files",
+  "note": "Every forbid below was an emitted edge at HEAD, named here by its site. (1) `@spec require/import/alias(...)` is a TYPESPEC naming a function, not a directive: it published `references -> \"[Path.t], require_opts\"` (kernel/parallel_compiler.ex:278) and 22 siblings. (2) `alias :lists, as: MyList` glued the options into the module name (`references -> \":lists, as: MyList\"`, alias_test.exs:18). (3) `%URI{uri | path: \"/bar\"}.path` and `%Point{}.foo_bar` published a struct EXPRESSION as a call target \u2014 the conviction sample validation/m60/target-spelling-register.json names for this lane. (4) `x.foo` is a field read and must not be a call. (5) `defmacro (..)` published a macro named `(` \u2014 EX-A15's own fix was dead on arrival. (6) `defmodule Module.concat(A, B)` published its own SOURCE LINE as a module name and a `%__MODULE__{}` inside it fabricated an `instantiates` target; the body must not attach to the enclosing module either. (7) `defmodule :\"Elixir.Abs\"` is absolute and must not be re-prefixed with its scope.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "ELX4.R7Host.head/0",
+      "target": ":lists.flatten",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "ELX4.R7Host",
+      "target": ":lists",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "instantiates",
+      "from": "ELX4.R7Host.on_struct/0",
+      "target": "URI"
+    },
+    {
+      "type": "contains",
+      "from": "ELX4.R7Host",
+      "target": ".."
+    },
+    {
+      "type": "contains",
+      "from": "ELX4.R7Host.Absolute",
+      "target": "Elixir.ELX4.Abs"
+    },
+    {
+      "type": "contains",
+      "from": "Elixir.ELX4.Abs",
+      "target": "hello"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "..",
+      "kind": "macro"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "[Path.t], require_opts"
+    },
+    {
+      "type": "references",
+      "target": ":lists, as: MyList"
+    },
+    {
+      "type": "calls",
+      "target": "%URI{uri | path: \"/bar\"}.path"
+    },
+    {
+      "type": "calls",
+      "target": "foo"
+    },
+    {
+      "type": "calls",
+      "target": "path"
+    },
+    {
+      "type": "contains",
+      "target": "("
+    },
+    {
+      "type": "contains",
+      "target": "ELX4.R7Host.Absolute.Elixir.ELX4.Abs"
+    },
+    {
+      "type": "contains",
+      "target": "sample"
+    },
+    {
+      "type": "contains",
+      "target": "name"
+    },
+    {
+      "type": "instantiates",
+      "target": "ELX4.R7Host.Computed.Module.concatELX4, R7Host"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ELX4.R7Host.Computed.Module.concatELX4, R7Host"
+    },
+    {
+      "name": "("
+    },
+    {
+      "name": "path"
+    },
+    {
+      "name": "foo"
+    }
+  ]
+}

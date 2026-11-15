@@ -38,7 +38,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const ARGS = process.argv.slice(2)
 const WANT_JSON = ARGS.includes("--json")
 const REPO_FILTER = ARGS.find((a) => a.startsWith("--repo="))?.slice(7)

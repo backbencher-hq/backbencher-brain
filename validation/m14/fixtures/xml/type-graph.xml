@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:acme"
+           targetNamespace="urn:acme">
+  <xs:import namespace="urn:acme:shared" schemaLocation="shared.xsd"/>
+  <xs:include schemaLocation="types.xsd"/>
+  <xs:element name="catalog" type="tns:CatalogType"/>
+  <xs:complexType name="CatalogType">
+    <xs:sequence>
+      <xs:element name="label" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

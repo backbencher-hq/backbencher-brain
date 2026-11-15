@@ -1,0 +1,17 @@
+{
+  "fixtureId": "cpp/package-scope/package_scope_ambiguous",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE AMBIGUOUS ATTRIBUTION, pinned in the flag-off state (the emission is flag-gated; the ON state is pinned by script/m14/cpp-package-scope-verify.ts). THE UNIT INCLUDES TWO DECLARED PACKAGES' HEADERS, so the root `acme` matches more than one declared package's alias set (`acme` strictly, `acme_extra` by the word-boundary prefix). THE ATTRIBUTION MUST BE UNAMBIGUOUS, so the claim is WITHHELD. This fixture exists because the lane's own verifier caught the looser version of the rule, which claimed EVERY bare call in a unit as the declared package's member — a claim that is false for the names that came from another header, and exactly the kind of over-claim the fleet's clause-4 would count against the lane.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "make",
+      "line_number": 14,
+      "meta.qualified": "acme::make",
+      "meta.packageScope": null,
+      "note": "the AMBIGUOUS claimed shape. The spelling is qualified and the namespace agrees with an include root, but TWO declared packages match that root, so the attribution is not unique and the claim is withheld (the verifier asserts that no row in this unit carries a claim). The fixture pins the row and the absence of the claim."
+    }
+  ]
+}

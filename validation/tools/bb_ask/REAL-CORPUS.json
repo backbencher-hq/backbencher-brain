@@ -4,8 +4,8 @@
   "title": "real-corpus MCP stdio proof (provider + local embeddings)",
   "generatedAt": "2026-11-02T04:11:17.070Z",
   "currentCommit": "81771412ee8ce06e91c9f5f35b04970553d89cd1",
-  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/real-corpus",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/real-corpus",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "runtime": "node v22.22.1 + tsx",
   "commands": {
     "indexOne": "BB_DATA_DIR=<isolated> [BB_EMBEDDING_DISABLED=1] npx tsx validation/tools/bb_ask/work/real-corpus.mts",
@@ -14,7 +14,7 @@
   "corpora": [
     {
       "name": "rake/lib (Ruby, provider-embedded)",
-      "projectDir": "$HOME/fixtures/repositories/rake/lib",
+      "projectDir": "/home/ishaq2321/bb_tests/repositories/rake/lib",
       "embedding": "provider",
       "index": {
         "ms": 36851,
@@ -185,7 +185,7 @@
     },
     {
       "name": "graphql-js/src (TypeScript, local-embedded)",
-      "projectDir": "$HOME/fixtures/repositories/graphql-js/src",
+      "projectDir": "/home/ishaq2321/bb_tests/repositories/graphql-js/src",
       "embedding": "local",
       "index": {
         "ms": 89053,
@@ -297,7 +297,7 @@
     },
     {
       "name": "rebar3/apps (Erlang, local-embedded)",
-      "projectDir": "$HOME/fixtures/repositories/rebar3/apps",
+      "projectDir": "/home/ishaq2321/bb_tests/repositories/rebar3/apps",
       "embedding": "local",
       "index": {
         "ms": 30041,

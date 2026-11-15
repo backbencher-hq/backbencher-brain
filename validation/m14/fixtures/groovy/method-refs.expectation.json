@@ -1,0 +1,21 @@
+{
+  "fixtureId": "groovy/method-refs",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G4 gap: method references (Foo::bar) emit a reference to the receiver type. Groovy semantics: Foo::bar references the type Foo (the java analyzer already emits this; groovy was silent). this::helper is not a type reference.",
+  "expectSymbols": [
+    { "name": "Foo", "kind": "class" },
+    { "name": "RefSvc", "kind": "class" },
+    { "name": "run" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "run", "target": "Foo", "meta.relationshipType": "method_reference" },
+    {
+      "type": "references",
+      "target": "Foo",
+      "meta.relationshipType": "method_reference",
+      "line_number": 9,
+      "note": "EDGE-LEVEL pin, deliberately with no `from`: `Foo::bar` must emit a method_reference references edge naming the receiver type Foo, and the ONLY edge in this fixture that can satisfy it is the one that edge is. `from` is left unconstrained on purpose — the method-scoped attribution the row above demands is an open finding (the lane's resolver sources every declared-type edge at the enclosing class), and this row must not quietly ratify either side of it. It pins that the edge EXISTS, so dropping it (a whole-channel relationship loss) is a failure, while who owns it stays a separate, still-failing question."
+    }
+  ]
+}

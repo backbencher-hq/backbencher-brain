@@ -1,0 +1,14 @@
+{
+  "fixtureId": "javascript/import-default-flag",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J4 fix: isDefault follows the clause shape (a direct identifier child IS the default import) — the old items-count heuristic flagged default imports false and side-effect imports true.",
+  "expectSymbols": [],
+  "expectImports": [
+    { "module": "./m", "isDefault": true },
+    { "module": "./m2", "isDefault": false },
+    { "module": "./m3", "isDefault": false },
+    { "module": "./side-effect", "isDefault": false },
+    { "module": "./m4", "isDefault": true }
+  ]
+}

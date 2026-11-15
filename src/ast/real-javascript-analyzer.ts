@@ -142,9 +142,76 @@ function isPlainJsIdentifier(text: string): boolean {
   return true
 }
 
+/**
+ * THE `@implements` NAMES A JSDoc BLOCK STATES — `/** @implements {IFoo} *\/`.
+ *
+ * WHY THIS IS THE FIX FOR `implements` IN JAVASCRIPT. The language has no `implements` CLAUSE (that
+ * is TypeScript), so the tagged-union ruling recorded 2026-11 ruled the relationship out entirely.
+ * That ruling was measured against the grammar and the emitted vocabulary, and it was correct about
+ * BOTH — but it never tested the one path JavaScript actually uses to state conformance: JSDoc.
+ * Measured on real code, `svelte/packages/svelte/src/compiler/utils/compile_diagnostic.js` carries
+ *
+ *     /** @typedef {{ code: string; … }} ICompileDiagnostic *\/
+ *     /** @implements {ICompileDiagnostic} *\/
+ *     export class CompileDiagnostic { … }
+ *
+ * which is a real, resolvable interface/conformance pair in a plain `.js` production file. So the
+ * ruling is overturned on a code path, not on a technicality.
+ *
+ * PARSED AS TEXT, no regex — the same discipline the other JSDoc helpers in this file follow. Every
+ * form the ecosystem writes is handled:
+ *   `@implements {IFoo}`            -> IFoo
+ *   `@implements IFoo`              -> IFoo        (no braces; Closure also accepts this)
+ *   `@implements {Iterable<T>}`     -> Iterable    (the type ARGUMENT is not a name)
+ *   `@implements {A|B}`             -> A, B        (a union states both)
+ *   `@implements {ns.IFoo}`         -> ns.IFoo is qualified, so the LEAF `IFoo` is taken —
+ *                                     the same spelling the `extends` edge publishes for
+ *                                     `extends ns.Base`
+ * A tag whose argument is not a name at all (`@implements` with nothing after it) contributes
+ * nothing rather than a guess.
+ */
+function jsdocImplementsNames(text: string): string[] {
+  const out: string[] = []
+  let from = 0
+  for (;;) {
+    const at = text.indexOf("@implements", from)
+    if (at < 0) break
+    from = at + "@implements".length
+    const rest = text.slice(from)
+    const newline = rest.indexOf("\n")
+    const brace = rest.indexOf("{")
+    let inner: string
+    if (brace >= 0 && (newline < 0 || brace < newline)) {
+      const close = rest.indexOf("}", brace + 1)
+      if (close < 0) continue
+      inner = rest.slice(brace + 1, close)
+    } else {
+      // `@implements IFoo` — the argument is the rest of the LINE
+      inner = newline >= 0 ? rest.slice(0, newline) : rest
+    }
+    // THE COMMENT TERMINATOR IS NOT PART OF THE NAME. A one-line `/** @implements IBase *\/` takes
+    // the bare branch, where the line runs to the end of the comment and therefore carries `*\/`.
+    // Measured: without this cut the bare form produced NO row (the candidate was `IBase *\/`,
+    // which is not an identifier) while every braced form worked — a silent, shape-dependent loss.
+    const terminator = inner.indexOf("*/")
+    if (terminator >= 0) inner = inner.slice(0, terminator)
+    // a union states several; `|` is normalised to the comma separator WITHOUT a regex
+    for (const rawPart of inner.split("|").join(",").split(",")) {
+      // the type argument of a generic is not a name: `Iterable<string>` implements `Iterable`
+      let head = rawPart.trim()
+      const lt = head.indexOf("<")
+      if (lt >= 0) head = head.slice(0, lt).trim()
+      // a qualified spelling keeps its LEAF, matching the `extends ns.Base` convention
+      const dot = head.lastIndexOf(".")
+      if (dot >= 0) head = head.slice(dot + 1).trim()
+      if (isPlainJsIdentifier(head) && !out.includes(head)) out.push(head)
+    }
+  }
+  return out
+}
+
 /** The length of the LEADING identifier of `text` (`location.hash` -> 8, `(el).x` -> 0). */
-function jsIdentifierPrefixEnd(text: string): number {
-  let end = 0
+function jsIdentifierPrefixEnd(text: string): number {  let end = 0
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i)
     const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
@@ -441,6 +508,42 @@ function bindingNameAbove(value: Node): string | undefined {
     return undefined
   }
   return undefined
+}
+
+/**
+ * THE CLASS THAT OWNS THE MEMBERS AT OR ABOVE `n` — and it is the SAME identity `containerOwnerName`
+ * publishes for them: a class DECLARATION's own name, a class EXPRESSION's BINDING.
+ *
+ * WHY THIS IS A FUNCTION AND NOT TWO RULES. `containerOwnerName` decides which NAME a member's
+ * `contains` edge and `ownerName` carry; the receiver-type map has to key `this.<field>` by the same
+ * name, or the two disagree. Measured: the first attempt at keying the field map used
+ * `enclosingThisClass` and returned null for a class EXPRESSION, which would have dropped every
+ * field owner inside `const K = class { svc = new Service() }` — a form this lane deliberately
+ * supports (the bound variable is the symbol, design_decision 30 / X11). The owner the symbol carries
+ * and the owner the field is filed under must be one string.
+ *
+ * Scope: the nearest class-like ancestor whose immediate child is a `class_body` — so a class nested
+ * in a method's `class` expression resolves to ITS OWN binding, not the outer declaration's.
+ */
+function classMemberOwnerAt(n: Node): string | null {
+  for (let p: Node | null = n.parent; p; p = p.parent) {
+    // ONLY a class reached THROUGH a `class_body` names a member's container. The check walks the
+    // ancestor chain from `n` up to `p` and looks for the body, which is an OFFSET/ID question, not
+    // an identity one: web-tree-sitter hands back a FRESH wrapper object per access, so a
+    // `wrapper === wrapper` or `wrapper.parent === p` test is false for the very node it just
+    // returned. Measured — the first two versions compared wrappers and every field silently
+    // resolved to `(module)`, which the typecheck did not catch (TS2448 was the only symptom).
+    if (p.type !== "class_declaration" && p.type !== "class") continue
+    let sawBody = false
+    for (let q: Node | null = n; q && q.id !== p.id; q = q.parent) {
+      if (q.type === "class_body") { sawBody = true; break }
+    }
+    if (!sawBody) continue
+    return p.type === "class_declaration"
+      ? (p.childForFieldName("name")?.text ?? null)
+      : (containerOwnerName(p) ?? null)
+  }
+  return null
 }
 
 function containerOwnerName(n: Node): string | undefined {
@@ -855,6 +958,37 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     metadata: { ...mix.metadata, isMixin: true },
                   })
                 }
+              }
+            }
+
+            // `implements` — THE JSDoc ROUTE, and the reason this lane now emits the label.
+            //
+            // JavaScript has no `implements` CLAUSE, so the 2026-11 ruling declared the relationship
+            // unexpressible after measuring the grammar (no `implements_clause` node, `implements C`
+            // parses as an ERROR sibling) and the vocabulary. Both measurements were right and both
+            // answered the wrong question: they tested what the GRAMMAR accepts and never tested how
+            // JavaScript code actually states conformance. JSDoc does it, and real production code
+            // uses it — `svelte/packages/svelte/src/compiler/utils/compile_diagnostic.js` carries a
+            // `@typedef {...} ICompileDiagnostic` and then `@implements {ICompileDiagnostic}` on
+            // `export class CompileDiagnostic`.
+            //
+            // PARITY WITH `extends`, deliberately: source = the class, target = the interface NAME,
+            // confidence 1.0, and the target is resolved later by the store exactly as a base is. The
+            // row is marked `viaJSDoc` so a consumer can tell a type-system claim from a language
+            // clause — and so nobody mistakes it for a `class_heritage` reading.
+            const doc = this.precedingJsdocBlock(node)
+            if (doc !== null) {
+              for (const iface of jsdocImplementsNames(doc.text)) {
+                // a class cannot implement itself; that would be an edge to its own declaration
+                if (iface === name) continue
+                relationships.push({
+                  source: name,
+                  target: iface,
+                  type: ASTEngine.RelationshipType.Implements,
+                  confidence: 1.0,
+                  ...this.lineField(doc.node),
+                  metadata: { viaJSDoc: true },
+                })
               }
             }
           }
@@ -2418,6 +2552,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       return best === null ? null : best.types.get(name) ?? null
     }
+    /**
+     * FIELD OWNER AT A SITE. An expression's class resolves to its BINDING (so the field is filed
+     * under the same name its symbol carries); a declaration resolves to its own name; anything
+     * outside a class body — including a plain function — is `(module)`, where the field cannot be
+     * resolved by position at all.
+     *
+     * DECLARED BEFORE THE WALK on purpose: the three write arms below call `recordField`, and a
+     * block-scoped const read before its declaration is a TS2448 error, not a runtime accident.
+     */
+    const fieldOwnerAt = (node: Node): string | null => classMemberOwnerAt(node)
+    const recordField = (node: Node, field: string, type: string, evidence: ReceiverEvidence): void => {
+      record(fieldTypes, fieldKey(fieldOwnerAt(node), field), type, evidence)
+    }
     const stack: Node[] = [root]
     while (stack.length) {
       const n = stack.pop()!
@@ -2435,11 +2582,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (n.type === "field_definition") {
         // CLASS FIELD INITIALISED WITH `new` — `class C { svc = new Service() }` states the
         // type of `this.svc` exactly as the constructor assignment does.
+        //
+        // THE `#` IS NOT OPTIONAL, and it is not cosmetic: the grammar types a private field's
+        // property node `private_property_identifier`, so a `property_identifier` test silently
+        // dropped every private field. Measured on svelte's `size.js` (`#listeners = new WeakMap()`)
+        // and on a public/private twin: the public field yielded `owner=Dep`, the private one no
+        // owner at all. The reader's `field()` has no type test, so the writer was the only half
+        // refusing — which is the parity gap with the TypeScript twin
+        // (`real-typescript-analyzer.ts` accepts all three spellings).
         const prop = n.childForFieldName("property")
         const value = n.childForFieldName("value")
         const ctor = newCtorLeaf(value)
-        if (prop?.type === "property_identifier" && ctor !== null) {
-          record(fieldTypes, `this.${prop.text}`, ctor, "assignment")
+        if (prop && (prop.type === "property_identifier" || prop.type === "private_property_identifier") && ctor !== null) {
+          recordField(n, `this.${prop.text}`, ctor, "assignment")
           // also readable unqualified inside instance methods in some styles; keep the
           // this.-key only — an unqualified use is a bare local read, not a proven receiver.
         }
@@ -2456,8 +2611,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           else if (left.type === "member_expression") {
             const obj = left.childForFieldName("object")
             const prop = left.childForFieldName("property")
-            if (obj?.type === "this" && prop?.type === "property_identifier") {
-              record(fieldTypes, `this.${prop.text}`, ctor, "assignment")
+            // `this.#x = new C()` is the same shape with a private property node; the type test is
+            // per spelling because the grammar has one node type per spelling.
+            if (obj?.type === "this" && prop &&
+                (prop.type === "property_identifier" || prop.type === "private_property_identifier")) {
+              recordField(n, `this.${prop.text}`, ctor, "assignment")
             }
           }
         } else if (left && right && left.type === "member_expression" && right.type === "identifier") {
@@ -2465,9 +2623,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // in scope: the assignment carries the parameter's stated type onto `this.dep`.
           const obj = left.childForFieldName("object")
           const prop = left.childForFieldName("property")
-          if (obj?.type === "this" && prop?.type === "property_identifier") {
+          if (obj?.type === "this" && prop &&
+              (prop.type === "property_identifier" || prop.type === "private_property_identifier")) {
             const paramType = jsdocParamTypeAt(line, right.text)
-            if (paramType !== null) record(fieldTypes, `this.${prop.text}`, paramType, "jsdoc")
+            if (paramType !== null) recordField(n, `this.${prop.text}`, paramType, "jsdoc")
           }
         }
       }
@@ -2476,11 +2635,64 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push(child)
       }
     }
+    /**
+     * THE DECLARING CLASS'S OWN extends BASE, by NAME — `null` when the heritage is not a plain
+     * identifier (`extends Lib.Base`) or there is none. Used ONLY to walk an inherited FIELD
+     * (`this.svc` written in the parent is `this.svc` on the child), never to resolve a class.
+     */
+    const baseNameOf = (cls: string | null): string | null => {
+      if (cls === null) return null
+      const st: Node[] = [root]
+      while (st.length > 0) {
+        const n = st.pop()!
+        if (n.type === "class_declaration" || n.type === "class") {
+          const nm = n.type === "class_declaration" ? n.childForFieldName("name")?.text ?? null : containerOwnerName(n) ?? null
+          if (nm === cls) {
+            const h = this.findChildByType(n, "class_heritage")
+            const b = h ? (this.findChildByType(h, "identifier") ?? this.findChildByType(h, "member_expression")) : null
+            if (!b) return null
+            // a qualified base keeps its LAST segment (`extends Lib.Base` -> `Base`): the same
+            // spelling the `extends` edge publishes, so the walk follows the edge the graph has.
+            return b.type === "identifier" ? b.text : (b.childForFieldName("property")?.text ?? b.text)
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+      }
+      return null
+    }
+    /** `(owner, field)` — the class is IN the key. A field written in class A is not visible in B.
+     *  A HOISTED `function`, not a `const`: the three write arms call `recordField` during the walk,
+     *  and a block-scoped const is in its TDZ until its declaration is reached. Measured — the const
+     *  form compiled clean and threw `Cannot access 'fieldKey' before initialization` at runtime. */
+    function fieldKey(owner: string | null, field: string): string { return `${owner ?? "(module)"} ${field}` }
+    /**
+     * THE FIELD'S TYPE AS THE RECEIVER'S OWN CLASS SEES IT: the class's own declaration first, then
+     * the inherited one up the `extends` chain.
+     *
+     * WHY THE INHERITED ARM IS NOT A GUESS. `class Derived extends Base` where `Base` writes
+     * `this.svc = new Svc()` really does give a `Derived` instance a `svc` of that type, and the
+     * `extends` edge is already emitted by this analyzer, so the walk follows an edge the graph
+     * has. Without it the first cut of this keying DROPPED every inherited-field owner — measured
+     * as a coverage regression on the `field-inherited-by-subclass` probe, and it is the same
+     * over-withdrawal the old file-level key was criticised for, one level down. The chain is
+     * cycle-guarded; a class that appears twice contributes its own arm once.
+     */
+    const fieldAt = (owner: string | null, field: string): ReceiverType | null | undefined => {
+      let cls = owner
+      const seen = new Set<string>()
+      while (cls !== null && !seen.has(cls)) {
+        seen.add(cls)
+        const own = fieldTypes.get(fieldKey(cls, field))
+        if (own !== undefined) return own
+        cls = baseNameOf(cls)
+      }
+      return undefined
+    }
     return {
       localAt: (node: Node, name: string) => typedNames.has(name)
         ? localTypes.get(scopeAt(node, name))?.get(name) ?? undefined
         : undefined,
-      field: (name: string) => fieldTypes.get(name) ?? undefined,
+      field: (field: string, at: Node) => fieldAt(fieldOwnerAt(at), field),
     }
   }
 
@@ -2701,10 +2913,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     const cls = this.enclosingThisClass(fn)
                     if (cls) recv = { type: cls, evidence: "this" }
                   } else if (object.type === "member_expression") {
-                    // `this.x.m()` — the constructor-assignment key is spelled exactly so.
+                    // `this.x.m()` — the field is looked up under the class this `this` belongs to,
+                    // which is what the file-level key could not express: a field written in class A
+                    // is not visible to a read of the same name inside class B.
                     const inner = object.childForFieldName("object")
                     const prop = object.childForFieldName("property")
-                    if (inner?.type === "this" && prop) recv = receiverTypes.field(`this.${prop.text}`)
+                    if (inner?.type === "this" && prop) recv = receiverTypes.field(`this.${prop.text}`, fn) ?? undefined
                   }
                   return recv ? { owner: recv.type, ownerEvidence: recv.evidence } : {}
                 })() : {}),
@@ -3728,16 +3942,43 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nm = node.childForFieldName("name")?.text
         if (v && nm && (v.type === "arrow_function" || v.type === "function_expression")) nextMethod = nm
       } else if (node.type === "arrow_function" || node.type === "function_expression") {
-        // X.prototype.m = function () {} — reads inside source to m
-        // (mirrors the calls walk's assignment_expression rule).
-        const parent = node.parent
-        if (parent?.type === "assignment_expression") {
-          const left = parent.childForFieldName("left")
-          const obj = left?.childForFieldName("object")
-          const prop = left?.childForFieldName("property")
-          if (obj?.type === "member_expression" && obj.childForFieldName("property")?.text === "prototype" && prop) {
-            nextMethod = prop.text
-            nextOwner = obj.childForFieldName("object")?.text ?? owner
+        // A NAMED function EXPRESSION rebinds the read-actor to its OWN name, exactly as the calls
+        // walk's `resolveCurrent` already does. Without this the two walks DISAGREED at the same
+        // site, and the `uses` half named a function that does not contain the read:
+        //
+        //   function bootstrapHandler(element, fn) {
+        //     return function handler(event) {
+        //       if (handler.oneOff) EventHandler.off(...)      // line 348
+        //     };
+        //   }
+        //
+        //   calls L348  handler            -> off
+        //   uses  L348  bootstrapHandler   -> handler\0EventHandler / oneOff / type / fn
+        //
+        // The reads happen inside `handler`; `bootstrapHandler` merely returns it. Measured on
+        // bootstrap's bundle (53 such rows) and lodash's UMD wrapper (77). `resolveCurrent` has
+        // listed `function_expression` since the calls walk was written, so this is the uses walk
+        // catching up to a rule the same analyzer already applies one function away.
+        //
+        // The prototype rule moves into the `else`: a named function expression is not necessarily a
+        // prototype assignment, and when it IS both, the expression's own name is the closer actor.
+        const namedFn = node.type === "function_expression"
+          ? node.childForFieldName?.("name")?.text
+          : undefined
+        if (namedFn) {
+          nextMethod = namedFn
+        } else {
+          // X.prototype.m = function () {} — reads inside source to m
+          // (mirrors the calls walk's assignment_expression rule).
+          const parent = node.parent
+          if (parent?.type === "assignment_expression") {
+            const left = parent.childForFieldName("left")
+            const obj = left?.childForFieldName("object")
+            const prop = left?.childForFieldName("property")
+            if (obj?.type === "member_expression" && obj.childForFieldName("property")?.text === "prototype" && prop) {
+              nextMethod = prop.text
+              nextOwner = obj.childForFieldName("object")?.text ?? owner
+            }
           }
         }
       }
@@ -3820,12 +4061,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!isCallCallee) {
           // M59 (#825): each segment keeps the node that writes it, so the
           // segment's OWN line is available (a chain can wrap: `a\n  .b\n  .c`).
-          const parts: Array<{ seg: string; node: Node }> = []
+          const parts: Array<{ seg: string; node: Node; receiver: Node | null }> = []
           let cur: Node | null | undefined = node
           // flatten nested member_expression chain into segments
           while (cur && cur.type === "member_expression") {
             const prop = cur.childForFieldName("property")
-            if (prop) parts.unshift({ seg: prop.text, node: prop })
+            // THE RECEIVER AT THIS SEGMENT, recorded with it. `parts` is built outside-in, so index
+            // 0 is the HEAD (`w` in `w.a.b`): only that segment's receiver is the identifier the
+            // file types. `w.a.b`'s receiver is the VALUE of `w.a`, which nothing here states.
+            if (prop) parts.unshift({ seg: prop.text, node: prop, receiver: cur.childForFieldName("object") })
             cur = cur.childForFieldName("object")
           }
           const head = cur ? cur.text : ""
@@ -3899,7 +4143,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   })
                 }
               }
-              for (const { seg, node: segNode } of parts) {
+              for (const { seg, node: segNode, receiver } of parts) {
                 // M49 W15 #814 (owner rule: converge on METHOD source). JSD2
                 // used to source `this.x`/`super.x` to the enclosing TYPE
                 // (citing a java/swift precedent that no longer holds — both
@@ -3933,14 +4177,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // the owner and the evidence that produced it. NOTHING is attached otherwise:
                   // a wrong owner is worse than none, because the store withdraws the name
                   // binding for an owner-carrying row and then declines.
+                  //
+                  // ★ THE RECEIVER IS THIS SEGMENT'S OWN, not the chain's. The closure below used
+                  // to read the chain ROOT (`cur`/`head`) for every segment, so `w.a.b` gave `b`
+                  // the same owner as `a` — measured as 392 such segments on apollo-server and 143
+                  // on bootstrap, of which one named a member the root's class declares (so the
+                  // store would have bound it to a declaration the receiver is not). Only a segment
+                  // whose receiver IS the identifier can inherit that identifier's type; a segment
+                  // whose receiver is another member_expression has no type this file states.
                   const recvOwner = (() => {
-                    if (cur?.type === "identifier" && head) {
-                      return receiverTypes.localAt(cur, head) ??
-                        this.staticClassReceiver(cur, head) ??
-                        this.thisAliasOwnerAt(cur, head) ??
+                    if (!receiver) return undefined
+                    if (receiver.type === "identifier") {
+                      return receiverTypes.localAt(receiver, receiver.text) ??
+                        this.staticClassReceiver(receiver, receiver.text) ??
+                        this.thisAliasOwnerAt(receiver, receiver.text) ??
                         undefined
                     }
-                    if (cur?.type === "this") {
+                    if (receiver.type === "this") {
                       const cls = this.enclosingThisClass(node)
                       return cls ? { type: cls, evidence: "this" as ReceiverEvidence } : undefined
                     }
@@ -4845,6 +5098,32 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Callers therefore pass the NAME node and this returns nothing when there is
    * none — never `0`, because `0` reads as "unknown" and unknown must be absent.
    */
+  /**
+   * THE JSDoc BLOCK IMMEDIATELY PRECEDING A DECLARATION, with the comment NODE so an edge it
+   * produces can carry the line the claim is written on.
+   *
+   * The climb is the same one the receiver-typing JSDoc helpers use: a declaration is usually
+   * wrapped (`export class X`), so the comment sits before the outermost STATEMENT, not before the
+   * `class_declaration` node itself. Returning the node as well as the text matters for
+   * `line_number`: a JSDoc-derived edge has no reference node to point at, and pointing it at the
+   * class would claim the claim was written on the class line.
+   */
+  private precedingJsdocBlock(node: Node): { text: string; node: Node } | null {
+    let stmt: Node = node
+    while (
+      stmt.parent &&
+      stmt.parent.type !== "program" &&
+      stmt.parent.type !== "statement_block" &&
+      stmt.parent.type !== "class_body" &&
+      stmt.parent.type !== "switch_body"
+    ) {
+      stmt = stmt.parent
+    }
+    const prev = stmt.previousSibling
+    if (!prev || prev.type !== "comment") return null
+    return prev.text.startsWith("/**") ? { text: prev.text, node: prev } : null
+  }
+
   private lineField(nameNode: Node | null | undefined, fallback?: Node | null): { line_number?: number } {
     const n = nameNode ?? fallback
     return n ? { line_number: n.startPosition.row + 1 } : {}

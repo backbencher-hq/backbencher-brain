@@ -1,0 +1,26 @@
+{
+  "fixtureId": "kotlin/parameters-payload",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Matrix 1b parameters payload (section C — cell PENDING -> #383). Kotlin semantics: method symbols carry a parameters list with name and declared type. vararg is a MODIFIER on a normal type in Kotlin (unlike Java's String... / Groovy's spread), so parts keeps type String — the declared type is what the source writes.",
+  "expectSymbols": [
+    { "name": "ParamSvc", "kind": "class" },
+    { "name": "apply", "ownerName": "ParamSvc" },
+    { "name": "join", "ownerName": "ParamSvc" }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "apply",
+      "parameters": [
+        { "name": "amount", "type": "Double" },
+        { "name": "percent", "type": "Int" }
+      ]
+    },
+    {
+      "symbol": "join",
+      "parameters": [
+        { "name": "parts", "type": "String" }
+      ]
+    }
+  ]
+}

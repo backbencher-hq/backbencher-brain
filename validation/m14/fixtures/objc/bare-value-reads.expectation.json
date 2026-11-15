@@ -1,0 +1,375 @@
+{
+  "fixtureId": "objc/bare-value-reads",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "First OO-review wave (M60 addendum 2026-09-25: the block-pointer-parameter declaration pin \u2014 `runBlock`, with the parameter's declared name forbidden as a read and its call pinned, plus the local argument read that proves the name resolves): OC-E bare-identifier value reads (parameters, body locals incl. bare declarators, same-file ivars/properties, file globals incl. pointer declarators; receivers + arguments inside sends), OC-B category extensions never export (swift precedent: the Trim category must not export the extended class name NSString), OC-D C type-inventory parity (struct/enum/typedef). Every pin probe-verified against both the analyzer and the deriveObjcEdges oracle before pinning; lanes confirm the pair agrees on corpora. OC-E BINDING SPELLING (family contract, DARTD8; `BINDING_SEP` + `metadata.localBinding`, src/ast/types.ts:190). A unit-local read names a binding, not a declaration: the store publishes no parameters or locals, so the bare name could never be answered, and where a same-named declaration existed elsewhere in the project the read was bound to THAT declaration (2,002 such false links measured over the whole 262-file admitted population). The pin below is the spelling the analyzer actually emits, read off `binding-spelling-dump.ts`, and is the form dart (`local-read/reads.expectation.json`) and php already pin. Superseded copy of this file as it stood before the change: `bare-value-reads.expectation.superseded-fb93f6f18.json`. The binding spelling is pinned in BOTH directions: the local reads carry the claim, and the three reads whose names THIS FILE publishes (`store`, `_count`, `gItems`) stay bare and are asserted NOT to carry `meta.localBinding` \u2014 an over-reaching claim would turn a correct link into an unbound one.",
+  "expectSymbols": [
+    {
+      "name": "Cache",
+      "kind": "class"
+    },
+    {
+      "name": "level",
+      "kind": "property",
+      "ownerName": "Cache"
+    },
+    {
+      "name": "gTotal",
+      "kind": "variable"
+    },
+    {
+      "name": "gLabel",
+      "kind": "variable"
+    },
+    {
+      "name": "gItems",
+      "kind": "variable"
+    },
+    {
+      "name": "store",
+      "kind": "property",
+      "ownerName": "Cache"
+    },
+    {
+      "name": "_count",
+      "kind": "property",
+      "ownerName": "Cache"
+    },
+    {
+      "name": "objectForKey:",
+      "kind": "method",
+      "ownerName": "Cache"
+    },
+    {
+      "name": "tick",
+      "kind": "method",
+      "ownerName": "Cache"
+    },
+    {
+      "name": "bumpLimit",
+      "kind": "function"
+    },
+    {
+      "name": "runBlock",
+      "kind": "function"
+    },
+    {
+      "name": "NSString",
+      "kind": "extension"
+    },
+    {
+      "name": "trimmed",
+      "kind": "method",
+      "ownerName": "NSString"
+    },
+    {
+      "name": "Counter",
+      "kind": "type"
+    },
+    {
+      "name": "Point",
+      "kind": "struct"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "y",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "next",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "Color",
+      "kind": "enum"
+    },
+    {
+      "name": "Red",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "Green",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "Blue",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "Size",
+      "kind": "struct"
+    },
+    {
+      "name": "w",
+      "kind": "property",
+      "ownerName": "Size"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "_label",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "maker",
+      "kind": "method",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "Value",
+      "kind": "struct"
+    },
+    {
+      "name": "i",
+      "kind": "property",
+      "ownerName": "Value"
+    },
+    {
+      "name": "f",
+      "kind": "property",
+      "ownerName": "Value"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "level",
+      "comment": "OC-E: self.level field read"
+    },
+    {
+      "type": "calls",
+      "source": "objectForKey:",
+      "target": "objectForKey:",
+      "comment": "message send still intact"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "store",
+      "meta.localBinding": null,
+      "comment": "OC-E: ivar message receiver reads"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000k",
+      "meta.localBinding": true,
+      "comment": "OC-E: parameter read as send argument"
+    },
+    {
+      "type": "calls",
+      "source": "objectForKey:",
+      "target": "retain",
+      "comment": "zero-arg selector still a call"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000hit",
+      "meta.localBinding": true,
+      "comment": "OC-E: local receiver reads"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000depth",
+      "meta.localBinding": true,
+      "comment": "OC-E: local reads (RHS, call args)"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000err",
+      "meta.localBinding": true,
+      "comment": "OC-E: bare declarator local reads (&err)"
+    },
+    {
+      "type": "calls",
+      "source": "objectForKey:",
+      "target": "fetch:error:",
+      "comment": "multi-keyword send intact"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "gItems",
+      "meta.localBinding": null,
+      "comment": "OC-E: bare pointer global reads"
+    },
+    {
+      "type": "calls",
+      "source": "objectForKey:",
+      "target": "use:",
+      "comment": "block-body send sources from the method"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "x",
+      "comment": "OC-E: for-in variable reads (in block)"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000n",
+      "meta.localBinding": true,
+      "comment": "OC-E: block parameter reads"
+    },
+    {
+      "type": "calls",
+      "source": "objectForKey:",
+      "target": "blk",
+      "comment": "block variable invoked: call, not read"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "_count",
+      "meta.localBinding": null,
+      "comment": "OC-E: ivar read on compound RHS"
+    },
+    {
+      "type": "uses",
+      "source": "tick",
+      "target": "count",
+      "comment": "OC-E: update-expression operands read (C parity)"
+    },
+    {
+      "type": "uses",
+      "source": "bumpLimit",
+      "target": "bumpLimit\u0000limit",
+      "meta.localBinding": true,
+      "comment": "OC-E: C function parameter reads"
+    },
+    {
+      "type": "uses",
+      "source": "bumpLimit",
+      "target": "gTotal",
+      "comment": "OC-E: global reads in C functions"
+    },
+    {
+      "type": "uses",
+      "source": "bumpLimit",
+      "target": "bumpLimit\u0000r",
+      "meta.localBinding": true,
+      "comment": "OC-E: C local reads (return)"
+    },
+    {
+      "type": "uses",
+      "source": "maker",
+      "target": "_label",
+      "comment": "OC-E: synthesize-declared ivar reads"
+    },
+    {
+      "type": "uses",
+      "source": "maker",
+      "target": "maker\u0000s",
+      "meta.localBinding": true,
+      "comment": "OC-E: local reads (return)"
+    },
+    {
+      "type": "uses",
+      "source": "runBlock",
+      "target": "runBlock\u0000tag",
+      "meta.localBinding": true,
+      "comment": "M60: the block parameter is INVOKED with the local `tag` as its argument \u2014 the argument is a read, so the parameter genuinely resolves; the read exists, the declaration edge must not"
+    },
+    {
+      "type": "calls",
+      "source": "runBlock",
+      "target": "handler",
+      "comment": "M60: the block parameter's ONLY edge is the call where it is invoked"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "gTotal",
+      "comment": "OC-E: assignment LHS is a write (gTotal read in bumpLimit proves the name resolves)"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "retain",
+      "comment": "OC-E: zero-arg selectors are names even when a local shares the spelling"
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "blk",
+      "comment": "OC-E: call callees are calls (CGD17 parity); declaration names never self-read"
+    },
+    {
+      "type": "uses",
+      "source": "maker",
+      "target": "fire",
+      "comment": "OC-E: @selector names never read"
+    },
+    {
+      "type": "uses",
+      "source": "Holder",
+      "target": "_label",
+      "comment": "OC-R2: @synthesize wires storage without reading; class scope never sources reads"
+    },
+    {
+      "type": "uses",
+      "source": "runBlock",
+      "target": "handler",
+      "comment": "M60 (#D-fix): a block-pointer parameter's DECLARED NAME is never a read. Pre-fix the analyzer published this edge from the declaration line alone (`void (^handler)(NSString *)`, no read in the function) \u2014 the mutant objc/emit-param-decl-as-bare-read re-emits exactly that shape. The `calls runBlock -> handler` pin above proves the parameter resolves: this is a declaration-name gate, not a missing binding."
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "k",
+      "comment": "OC-E BINDING BOUNDARY, negative half: a unit-local read must NOT keep the bare spelling. The bare target is what let the store bind this read to an unrelated same-named declaration; reverting the binding spelling would restore that false link and this forbid fires on it."
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000store",
+      "comment": "OC-E BINDING BOUNDARY, over-reach half: `store` is an IVAR this file publishes, so the name denotes a declaration the store can bind and the bare spelling is correct. A binding claim here would be false and would destroy a correct link \u2014 the over-reach the analyzer's `publishedNames` test refuses."
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000_count",
+      "comment": "OC-E BINDING BOUNDARY, over-reach half: `_count` is an ivar this file publishes, so the name denotes a declaration the store can bind and the bare spelling is correct. A binding claim here would be false and would destroy a correct link \u2014 the over-reach the analyzer's `publishedNames` test refuses."
+    },
+    {
+      "type": "uses",
+      "source": "objectForKey:",
+      "target": "objectForKey:\u0000gItems",
+      "comment": "OC-E BINDING BOUNDARY, over-reach half: `gItems` is a file-scope GLOBAL this file publishes, so the name denotes a declaration the store can bind and the bare spelling is correct. A binding claim here would be false and would destroy a correct link \u2014 the over-reach the analyzer's `publishedNames` test refuses."
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Cache"
+    },
+    {
+      "name": "Point"
+    },
+    {
+      "name": "Value"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "NSString"
+    }
+  ]
+}

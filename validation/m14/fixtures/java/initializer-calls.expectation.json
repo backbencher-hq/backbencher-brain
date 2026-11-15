@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/initializer-calls",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419 G4: calls outside method bodies must be visible. Java semantics: static field initializer (base = seed()), static initializer block, instance initializer block, enum-constant-body method, and enum field initializer ALL execute code and MUST produce Calls edges on seed(). Authored from JLS 8.3.2/8.6/8.7/8.9.3 before observing analyzer output; proven failing pre-fix (G4), now pinned so it cannot regress.",
+  "expectSymbols": [
+    { "name": "InitializerCalls", "kind": "class" },
+    { "name": "seed", "kind": "method" },
+    { "name": "Mode", "kind": "enum" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "sourceEndsWith": "InitializerCalls", "target": "seed" },
+    { "type": "calls", "sourceEndsWith": "Mode", "target": "seed" }
+  ]
+}

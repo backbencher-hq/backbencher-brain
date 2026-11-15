@@ -1,0 +1,2744 @@
+{
+  "tool": "validation/m14/fixtures/xml/stride-sample-composition.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "limit": 120,
+  "workers": 1,
+  "corpusTotal": 11611,
+  "stride": 96,
+  "sampledFiles": 120,
+  "reproduction": "PROVEN against /tmp/opencode/xml-firing-ndjson.json — all 10 per-type EDGE totals identical",
+  "firingCheckFileCountDivergence": [
+    {
+      "type": "contains",
+      "mine": 118,
+      "firingCheck": 1
+    },
+    {
+      "type": "imports",
+      "mine": 6,
+      "firingCheck": 1
+    },
+    {
+      "type": "references",
+      "mine": 5,
+      "firingCheck": 1
+    }
+  ],
+  "concentration": {
+    "zeroRelFiles": 2,
+    "zeroSymFiles": 1,
+    "degraded": 0,
+    "parseFailed": 0
+  },
+  "fired": [
+    "contains",
+    "imports",
+    "references"
+  ],
+  "notFired": [
+    "calls",
+    "uses",
+    "exports",
+    "extends",
+    "implements",
+    "overrides",
+    "instantiates"
+  ],
+  "edgesByType": {
+    "contains": 1517,
+    "imports": 7,
+    "references": 11
+  },
+  "filesByType": {
+    "contains": 118,
+    "imports": 6,
+    "references": 5
+  },
+  "xsdByExtension": 1,
+  "xsdDerivationSitesInSample": 0,
+  "xsdDetail": [
+    {
+      "file": "gql-graphql-mesh/e2e/soap-demo/SOAP.Demo.QueryByName.DS.cls.xsd",
+      "symbols": 42,
+      "relationships": 46,
+      "extendsEdges": 0,
+      "derivationSites": 0
+    }
+  ],
+  "reposByXmlFileCount": [
+    {
+      "name": "bulma",
+      "files": 5309
+    },
+    {
+      "name": "libxslt",
+      "files": 1144
+    },
+    {
+      "name": "dbeaver",
+      "files": 850
+    },
+    {
+      "name": "cargo",
+      "files": 389
+    },
+    {
+      "name": "flutter-packages",
+      "files": 362
+    },
+    {
+      "name": "ggplot2",
+      "files": 325
+    },
+    {
+      "name": "grails-core",
+      "files": 318
+    },
+    {
+      "name": "scala3",
+      "files": 309
+    },
+    {
+      "name": "phpunit",
+      "files": 295
+    },
+    {
+      "name": "proxicall",
+      "files": 292
+    },
+    {
+      "name": "Fabulous",
+      "files": 241
+    },
+    {
+      "name": "hasura-engine",
+      "files": 216
+    },
+    {
+      "name": "phpmyadmin",
+      "files": 214
+    },
+    {
+      "name": "wagtail",
+      "files": 138
+    },
+    {
+      "name": "otp",
+      "files": 121
+    },
+    {
+      "name": "powershell",
+      "files": 83
+    },
+    {
+      "name": "Exposed",
+      "files": 62
+    },
+    {
+      "name": "r-cli",
+      "files": 54
+    },
+    {
+      "name": "terragrunt",
+      "files": 50
+    },
+    {
+      "name": "vue-element-admin",
+      "files": 46
+    },
+    {
+      "name": "vega",
+      "files": 44
+    },
+    {
+      "name": "redwood",
+      "files": 36
+    },
+    {
+      "name": "vault",
+      "files": 34
+    },
+    {
+      "name": "Aporia",
+      "files": 31
+    },
+    {
+      "name": "FSharp.Data",
+      "files": 29
+    },
+    {
+      "name": "pb-reference",
+      "files": 27
+    },
+    {
+      "name": "Paket",
+      "files": 25
+    },
+    {
+      "name": "dark",
+      "files": 24
+    },
+    {
+      "name": "dart-http",
+      "files": 24
+    },
+    {
+      "name": "helm",
+      "files": 23
+    },
+    {
+      "name": "gql-graphql-mesh",
+      "files": 21
+    },
+    {
+      "name": "Fake",
+      "files": 20
+    },
+    {
+      "name": "waypoint",
+      "files": 19
+    },
+    {
+      "name": "gql-graphql-yoga",
+      "files": 16
+    },
+    {
+      "name": "dart-sdk",
+      "files": 13
+    },
+    {
+      "name": "pb-grpc",
+      "files": 13
+    },
+    {
+      "name": "Falco",
+      "files": 12
+    },
+    {
+      "name": "kotlinx-coroutines",
+      "files": 12
+    },
+    {
+      "name": "nlohmann-json",
+      "files": 12
+    },
+    {
+      "name": "r-pkgdown",
+      "files": 12
+    },
+    {
+      "name": "postgrest",
+      "files": 11
+    },
+    {
+      "name": "r-scales",
+      "files": 11
+    },
+    {
+      "name": "dplyr",
+      "files": 10
+    },
+    {
+      "name": "fsharp",
+      "files": 10
+    },
+    {
+      "name": "gql-federation",
+      "files": 10
+    },
+    {
+      "name": "gql-graphql-platform",
+      "files": 10
+    },
+    {
+      "name": "r-rlang",
+      "files": 10
+    },
+    {
+      "name": "r-vctrs",
+      "files": 10
+    },
+    {
+      "name": "element-plus",
+      "files": 9
+    },
+    {
+      "name": "fantomas",
+      "files": 9
+    },
+    {
+      "name": "geb",
+      "files": 9
+    },
+    {
+      "name": "gql-graphql-eslint",
+      "files": 9
+    },
+    {
+      "name": "r-testthat",
+      "files": 9
+    },
+    {
+      "name": "r-withr",
+      "files": 9
+    },
+    {
+      "name": "julia",
+      "files": 8
+    },
+    {
+      "name": "usethis",
+      "files": 8
+    },
+    {
+      "name": "gql-graphql-tools",
+      "files": 7
+    },
+    {
+      "name": "gql-saleor",
+      "files": 7
+    },
+    {
+      "name": "primer-css",
+      "files": 7
+    },
+    {
+      "name": "riverpod",
+      "files": 7
+    },
+    {
+      "name": "FSharp.Formatting",
+      "files": 6
+    },
+    {
+      "name": "bootstrap",
+      "files": 6
+    },
+    {
+      "name": "consul",
+      "files": 6
+    },
+    {
+      "name": "graphql-js",
+      "files": 6
+    },
+    {
+      "name": "graphql-js-full",
+      "files": 6
+    },
+    {
+      "name": "water.css",
+      "files": 6
+    },
+    {
+      "name": "elmish",
+      "files": 5
+    },
+    {
+      "name": "kubernetes",
+      "files": 5
+    },
+    {
+      "name": "bash-completion",
+      "files": 4
+    },
+    {
+      "name": "buckaroo",
+      "files": 4
+    },
+    {
+      "name": "clojure",
+      "files": 4
+    },
+    {
+      "name": "docker",
+      "files": 4
+    },
+    {
+      "name": "duckdb",
+      "files": 4
+    },
+    {
+      "name": "hledger",
+      "files": 4
+    },
+    {
+      "name": "shadcn-svelte",
+      "files": 4
+    },
+    {
+      "name": "solidity",
+      "files": 4
+    },
+    {
+      "name": "traefik",
+      "files": 4
+    },
+    {
+      "name": "Aqua.jl",
+      "files": 3
+    },
+    {
+      "name": "Documenter.jl",
+      "files": 3
+    },
+    {
+      "name": "FSharpPlus",
+      "files": 3
+    },
+    {
+      "name": "Grace",
+      "files": 3
+    },
+    {
+      "name": "alamofire",
+      "files": 3
+    },
+    {
+      "name": "cython",
+      "files": 3
+    },
+    {
+      "name": "gql-gqlgen",
+      "files": 3
+    },
+    {
+      "name": "terraform",
+      "files": 3
+    },
+    {
+      "name": "yq",
+      "files": 3
+    },
+    {
+      "name": "ansible",
+      "files": 2
+    },
+    {
+      "name": "clj-kondo",
+      "files": 2
+    },
+    {
+      "name": "core",
+      "files": 2
+    },
+    {
+      "name": "fmt",
+      "files": 2
+    },
+    {
+      "name": "ghostty",
+      "files": 2
+    },
+    {
+      "name": "go-tools",
+      "files": 2
+    },
+    {
+      "name": "gql-genqlient",
+      "files": 2
+    },
+    {
+      "name": "gql-graphql-dotnet",
+      "files": 2
+    },
+    {
+      "name": "jq",
+      "files": 2
+    },
+    {
+      "name": "nomad",
+      "files": 2
+    },
+    {
+      "name": "ohmyzsh",
+      "files": 2
+    },
+    {
+      "name": "pico",
+      "files": 2
+    },
+    {
+      "name": "redis",
+      "files": 2
+    },
+    {
+      "name": "suave",
+      "files": 2
+    },
+    {
+      "name": "zls",
+      "files": 2
+    },
+    {
+      "name": "Bolero",
+      "files": 1
+    },
+    {
+      "name": "DifferentialEquations.jl",
+      "files": 1
+    },
+    {
+      "name": "FSharpx.Extras",
+      "files": 1
+    },
+    {
+      "name": "Graphs.jl",
+      "files": 1
+    },
+    {
+      "name": "R6",
+      "files": 1
+    },
+    {
+      "name": "Saturn",
+      "files": 1
+    },
+    {
+      "name": "cats-effect",
+      "files": 1
+    },
+    {
+      "name": "cloogle.org",
+      "files": 1
+    },
+    {
+      "name": "gh-cli",
+      "files": 1
+    },
+    {
+      "name": "gql-ruby",
+      "files": 1
+    },
+    {
+      "name": "graphql-java",
+      "files": 1
+    },
+    {
+      "name": "graphql-nim",
+      "files": 1
+    },
+    {
+      "name": "kong",
+      "files": 1
+    },
+    {
+      "name": "lodash",
+      "files": 1
+    },
+    {
+      "name": "nim",
+      "files": 1
+    },
+    {
+      "name": "nim-lang-nimble",
+      "files": 1
+    },
+    {
+      "name": "packer",
+      "files": 1
+    },
+    {
+      "name": "r-air",
+      "files": 1
+    },
+    {
+      "name": "requests",
+      "files": 1
+    },
+    {
+      "name": "ripgrep",
+      "files": 1
+    },
+    {
+      "name": "rocks.nvim",
+      "files": 1
+    },
+    {
+      "name": "sdwebimage",
+      "files": 1
+    },
+    {
+      "name": "shellcheck",
+      "files": 1
+    },
+    {
+      "name": "slim",
+      "files": 1
+    },
+    {
+      "name": "spectre",
+      "files": 1
+    },
+    {
+      "name": "sqlite",
+      "files": 1
+    },
+    {
+      "name": "vue-core",
+      "files": 1
+    }
+  ],
+  "rows": [
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/Aporia/share/gtksourceview-2.0/language-specs/language.dtd",
+      "bytes": 2411,
+      "symbols": 0,
+      "relationships": 0,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 0,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/Exposed/exposed-tests/src/main/resources/log4j2.xml",
+      "bytes": 612,
+      "symbols": 24,
+      "relationships": 21,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 21,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/Fabulous/samples/avalonia/Mvu/GameOfLife/Platform/Android/AndroidManifest.xml",
+      "bytes": 296,
+      "symbols": 8,
+      "relationships": 7,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 7,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/Fabulous/samples/maui/CounterApp/Resources/Splash/splash.svg",
+      "bytes": 1811,
+      "symbols": 23,
+      "relationships": 13,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 12,
+        "imports": 1,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/Fake/docs/content/img/homepage/code-sample-2.svg",
+      "bytes": 235165,
+      "symbols": 26,
+      "relationships": 13,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 13,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/brand/Bulma Logo White.svg",
+      "bytes": 4205,
+      "symbols": 16,
+      "relationships": 10,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 10,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/creative-commons-zero.svg",
+      "bytes": 844,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/google-plus-square.svg",
+      "bytes": 678,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/openid.svg",
+      "bytes": 514,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/superpowers.svg",
+      "bytes": 580,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/regular/calendar-plus.svg",
+      "bytes": 730,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/regular/map.svg",
+      "bytes": 759,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/bacterium.svg",
+      "bytes": 1680,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/carrot.svg",
+      "bytes": 730,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/deaf.svg",
+      "bytes": 1179,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/file.svg",
+      "bytes": 447,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/hands.svg",
+      "bytes": 958,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/list-ol.svg",
+      "bytes": 1496,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/peace.svg",
+      "bytes": 654,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/satellite.svg",
+      "bytes": 1245,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/stop-circle.svg",
+      "bytes": 430,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/umbrella-beach.svg",
+      "bytes": 849,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/brands/acquisitions-incorporated.svg",
+      "bytes": 1571,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/brands/delicious.svg",
+      "bytes": 726,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/brands/hacker-news.svg",
+      "bytes": 440,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/brands/perbyte.svg",
+      "bytes": 926,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/brands/themeisle.svg",
+      "bytes": 3459,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/regular/clipboard.svg",
+      "bytes": 615,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/regular/pause-circle.svg",
+      "bytes": 612,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/bath.svg",
+      "bytes": 812,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/chart-bar.svg",
+      "bytes": 922,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/dice-three.svg",
+      "bytes": 603,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/fist-raised.svg",
+      "bytes": 1290,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/head-side-cough-slash.svg",
+      "bytes": 954,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/luggage-cart.svg",
+      "bytes": 852,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/percent.svg",
+      "bytes": 718,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/seedling.svg",
+      "bytes": 468,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/stroopwafel.svg",
+      "bytes": 2664,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-5.15.2-web/svgs/solid/user-alt-slash.svg",
+      "bytes": 584,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/brands/app-store-ios.svg",
+      "bytes": 937,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/brands/digital-ocean.svg",
+      "bytes": 587,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/brands/instalod.svg",
+      "bytes": 451,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/brands/pix.svg",
+      "bytes": 1179,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/brands/steam-symbol.svg",
+      "bytes": 905,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/regular/calendar-days.svg",
+      "bytes": 734,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/regular/hand-lizard.svg",
+      "bytes": 838,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/arrow-down-long.svg",
+      "bytes": 510,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/bitcoin-sign.svg",
+      "bytes": 787,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/car-burst.svg",
+      "bytes": 1277,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/clone.svg",
+      "bytes": 508,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/drum.svg",
+      "bytes": 1006,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/file-invoice.svg",
+      "bytes": 787,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/hand-peace.svg",
+      "bytes": 972,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/i.svg",
+      "bytes": 471,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/martini-glass-citrus.svg",
+      "bytes": 713,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/people-group.svg",
+      "bytes": 1214,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/puzzle-piece.svg",
+      "bytes": 1204,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/shrimp.svg",
+      "bytes": 925,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/table-columns.svg",
+      "bytes": 441,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/umbrella.svg",
+      "bytes": 942,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/bulma/docs/vendor/fontawesome-free-6.5.2-web/svgs/solid/wine-glass.svg",
+      "bytes": 563,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/cargo/tests/testsuite/cargo_add/normalize_name_git/stderr.term.svg",
+      "bytes": 991,
+      "symbols": 29,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/cargo/tests/testsuite/cargo_help/nested_alias_dash_joined/stderr.term.svg",
+      "bytes": 493,
+      "symbols": 14,
+      "relationships": 13,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 13,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/cargo/tests/testsuite/cargo_init/inferred_bin_with_git/stderr.term.svg",
+      "bytes": 960,
+      "symbols": 29,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/cargo/tests/testsuite/cargo_test/no_keep_going/stderr.term.svg",
+      "bytes": 1846,
+      "symbols": 71,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dart-sdk/samples/ffi/sqlite/docs/lib/scenario-full.svg",
+      "bytes": 11995,
+      "symbols": 614,
+      "relationships": 56,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 55,
+        "imports": 1,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.ext.cdata.ui/plugin.xml",
+      "bytes": 1605,
+      "symbols": 35,
+      "relationships": 21,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 21,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.ext.hana/plugin.xml",
+      "bytes": 14558,
+      "symbols": 416,
+      "relationships": 95,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 94,
+        "imports": 0,
+        "references": 1,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.ext.vertica/plugin.xml",
+      "bytes": 14975,
+      "symbols": 371,
+      "relationships": 105,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 103,
+        "imports": 0,
+        "references": 2,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.model/icons/tree/folder_table.svg",
+      "bytes": 492,
+      "symbols": 31,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.tasks.ui/plugin.xml",
+      "bytes": 1091,
+      "symbols": 27,
+      "relationships": 15,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 15,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.ui.swt.macos/pom.xml",
+      "bytes": 608,
+      "symbols": 13,
+      "relationships": 12,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 12,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.ui/icons/misc/filter_objects.svg",
+      "bytes": 817,
+      "symbols": 31,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dbeaver/plugins/org.jkiss.dbeaver.ui/icons/sql/resultset_next.svg",
+      "bytes": 355,
+      "symbols": 19,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/dplyr/man/figures/lifecycle-superseded.svg",
+      "bytes": 971,
+      "symbols": 63,
+      "relationships": 35,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 35,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/flutter-packages/packages/file_selector/file_selector_android/android/src/main/AndroidManifest.xml",
+      "bytes": 137,
+      "symbols": 3,
+      "relationships": 2,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 2,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/flutter-packages/packages/pigeon/example/native_interop_app/android/app/src/main/res/values-night/styles.xml",
+      "bytes": 995,
+      "symbols": 11,
+      "relationships": 5,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 5,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/flutter-packages/packages/webview_flutter/webview_flutter_android/android/src/main/AndroidManifest.xml",
+      "bytes": 67,
+      "symbols": 2,
+      "relationships": 1,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 1,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/flutter-packages/third_party/packages/flutter_svg/example/assets/w3samples/alphachannel.svg",
+      "bytes": 263,
+      "symbols": 22,
+      "relationships": 9,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 9,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/ggplot2/tests/testthat/_snaps/geom-abline-hline-vline/straight-lines-in-mercator.svg",
+      "bytes": 16027,
+      "symbols": 155,
+      "relationships": 33,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 33,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/ggplot2/tests/testthat/_snaps/guide-axis/align-facet-labels-facets-vertical.svg",
+      "bytes": 50994,
+      "symbols": 2327,
+      "relationships": 38,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 38,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/ggplot2/tests/testthat/_snaps/scale-/no-size-breaks-no-legend.svg",
+      "bytes": 5093,
+      "symbols": 189,
+      "relationships": 38,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 38,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/gql-graphql-mesh/e2e/soap-demo/SOAP.Demo.QueryByName.DS.cls.xsd",
+      "bytes": 972,
+      "symbols": 42,
+      "relationships": 46,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 41,
+        "imports": 0,
+        "references": 5,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/grailaprrentice.svg",
+      "bytes": 1842,
+      "symbols": 25,
+      "relationships": 24,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 23,
+        "imports": 1,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/grails-core/grails-profiles/web/skeleton/grails-app/assets/images/spring.svg",
+      "bytes": 721,
+      "symbols": 16,
+      "relationships": 14,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 14,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/issue-11102/grails-app/assets/images/grails-cupsonly-logo-white.svg",
+      "bytes": 6937,
+      "symbols": 206,
+      "relationships": 52,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 52,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/graphql-js/website/icons/stackoverflow.svg",
+      "bytes": 552,
+      "symbols": 11,
+      "relationships": 7,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 7,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/hasura-engine/docs/static/img/use-case-overview/gql-backend.svg",
+      "bytes": 12232,
+      "symbols": 360,
+      "relationships": 69,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 69,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/hasura-engine/frontend/libs/console/legacy-ee/src/lib/components/Services/Metrics/images/failure.svg",
+      "bytes": 550,
+      "symbols": 22,
+      "relationships": 15,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 15,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/doc/xsltproc.xml",
+      "bytes": 17354,
+      "symbols": 514,
+      "relationships": 70,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 67,
+        "imports": 2,
+        "references": 1,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/REC/test-5.2-8.xsl",
+      "bytes": 172,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/XSLTMark/dbsql250.xsl",
+      "bytes": 3974,
+      "symbols": 139,
+      "relationships": 16,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 14,
+        "imports": 0,
+        "references": 2,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/docbook/dtd/3.1.7/tblxchg.xml",
+      "bytes": 511,
+      "symbols": 22,
+      "relationships": 15,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 14,
+        "imports": 1,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/docbook/html/xtchunk.xsl",
+      "bytes": 309,
+      "symbols": 11,
+      "relationships": 8,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 8,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/exslt/date/add.1.xsl",
+      "bytes": 506,
+      "symbols": 17,
+      "relationships": 12,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 12,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/exslt/math/min.1.xml",
+      "bytes": 127,
+      "symbols": 5,
+      "relationships": 1,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 1,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/general/bug-12-.xsl",
+      "bytes": 365,
+      "symbols": 13,
+      "relationships": 12,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 12,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/general/bug-165.xsl",
+      "bytes": 275,
+      "symbols": 7,
+      "relationships": 6,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 6,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/general/bug-208.xml",
+      "bytes": 69,
+      "symbols": 6,
+      "relationships": 5,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 5,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/general/bug-48-.xml",
+      "bytes": 7,
+      "symbols": 1,
+      "relationships": 0,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 0,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/libxslt/tests/general/bug-93.xsl",
+      "bytes": 272,
+      "symbols": 9,
+      "relationships": 8,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 8,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/nomad/ui/public/crossdomain.xml",
+      "bytes": 662,
+      "symbols": 4,
+      "relationships": 3,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 2,
+        "imports": 1,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/otp/lib/xmerl/test/xmerl_xsd_SUITE_data/sis/dummy_action_mim.xml",
+      "bytes": 4128,
+      "symbols": 144,
+      "relationships": 51,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 51,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/phpmyadmin/public/themes/bootstrap/img/dark/col.svg",
+      "bytes": 220,
+      "symbols": 6,
+      "relationships": 5,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 5,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/phpmyadmin/public/themes/bootstrap/img/edit.svg",
+      "bytes": 196,
+      "symbols": 5,
+      "relationships": 4,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 4,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/phpunit/.github/img/tideways.svg",
+      "bytes": 5901,
+      "symbols": 54,
+      "relationships": 18,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 18,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/phpunit/tests/_files/configuration_logging.xml",
+      "bytes": 338,
+      "symbols": 13,
+      "relationships": 12,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 12,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/phpunit/tests/end-to-end/error-handler/_files/deprecation-filter/phpunit.xml",
+      "bytes": 642,
+      "symbols": 14,
+      "relationships": 13,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 13,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/phpunit/tests/unit/Framework/TestRunner/_files/with-resolvers.xml",
+      "bytes": 473,
+      "symbols": 9,
+      "relationships": 6,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 6,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/powershell/tools/performance/PowerShell.Regions.xml",
+      "bytes": 16130,
+      "symbols": 465,
+      "relationships": 30,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 30,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/proxicall/website/public/flags/dz.svg",
+      "bytes": 294,
+      "symbols": 13,
+      "relationships": 6,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 6,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/proxicall/website/public/flags/mo.svg",
+      "bytes": 1370,
+      "symbols": 24,
+      "relationships": 15,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 15,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/proxicall/website/public/flags/vg.svg",
+      "bytes": 10018,
+      "symbols": 185,
+      "relationships": 36,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 36,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/r-scales/man/figures/lifecycle-soft-deprecated.svg",
+      "bytes": 1334,
+      "symbols": 75,
+      "relationships": 39,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 39,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/scala3/scaladoc/resources/dotty_res/images/bulb/light/default.svg",
+      "bytes": 3456,
+      "symbols": 54,
+      "relationships": 10,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 10,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/scala3/scaladoc/resources/dotty_res/images/icon-buttons/gitter/dark/focus.svg",
+      "bytes": 310,
+      "symbols": 9,
+      "relationships": 8,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 8,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/scala3/scaladoc/resources/dotty_res/images/icon-buttons/plus/light/focus.svg",
+      "bytes": 506,
+      "symbols": 11,
+      "relationships": 10,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 10,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/scala3/tests/untried/neg/t7494-multi-right-after/scalac-plugin.xml",
+      "bytes": 97,
+      "symbols": 3,
+      "relationships": 2,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 2,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/vault/ui/public/eco/gcp.svg",
+      "bytes": 821,
+      "symbols": 18,
+      "relationships": 8,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 8,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/repositories/vue-element-admin/src/icons/svg/nested.svg",
+      "bytes": 821,
+      "symbols": 6,
+      "relationships": 5,
+      "byType": {
+        "calls": 0,
+        "uses": 0,
+        "contains": 5,
+        "imports": 0,
+        "references": 0,
+        "exports": 0,
+        "extends": 0,
+        "implements": 0,
+        "overrides": 0,
+        "instantiates": 0
+      }
+    }
+  ]
+}

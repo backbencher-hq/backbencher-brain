@@ -1,0 +1,16 @@
+{
+  "fixtureId": "fsharp/measure-attribute",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "FS-D27 (fsharp lane, 2026-09-29) — the last text read in this analyzer, and the one rule in it that was not AST-derived. A UNIT OF MEASURE was detected with `n.text.includes(\"Measure\") || n.text.includes(\"[<Measure\")` on any `attribute` descendant, and that has two defects. The second clause is dead, being a substring of the first. The first is worse: `[<MeasureAnnotatedAbbreviation>]` is a DIFFERENT and entirely ordinary F# attribute — it marks a generic abbreviation — and it CONTAINS the substring. `fsharp/src/FSharp.Core/prim-types.fs:483` writes `[<MeasureAnnotatedAbbreviation>] type float<[<Measure>] 'Measure> = float`, where the real measure marker is on the TYPE PARAMETER and the type itself is an abbreviation. A substring cannot tell those apart.\n\nThe name is now read from the tree, on the `attributes` node that is a DIRECT child of the type, and matched EXACTLY against the two spellings the language provides:\n\n    type_definition\n      attributes \"[<Measure>]\"\n        attribute \"Measure\"\n          simple_type \"Measure\" -> long_identifier \"Measure\" -> identifier \"Measure\"\n\nThe tree is printed by script/m14/tmp/fs030-object-expr-name.ts on\n`fsharp/src/Compiler/Utilities/range.fs:444`, the one real measure in 400 corpus files.\n\nWhy a marker type with NO body is the discriminating shape: the classifier's chain sets Class\nfor a record, Enum for a union or enum, Interface, and Type for an abbreviation or delegate, so\n`isMeasure` only survives for a type that matches NONE of those — which is exactly a bare marker\ntype. That is why `[<Measure>] type X = int` cannot tell the old rule from the new one, and why a\nfixture built from the body-carrying form would have passed against the broken analyzer. Every\ndeclaration here is therefore bodyless, deliberately.\n\nThis is the last of the lane's known text reads. `docs/M14-HONESTY-CONTRACT.md` and the M12\nregex census both care about source-text decisions, and a substring test is a source-text\ndecision whether or not it is a regex.",
+  "expectSymbols": [
+    { "name": "Marker1", "kind": "type" },
+    { "name": "Marker2", "kind": "class" },
+    { "name": "Marker3", "kind": "type" },
+    { "name": "Marker4", "kind": "class" }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Marker2", "target": "Marker2", "note": "Marker2 is a FORBID row written as a shape rather than as an edge: the defect was never a relationship, it was a SYMBOL KIND, and this lane's expectation format has no forbid-symbols list yet. `Marker2` is expected as `class` above, and the class row is what fails if the substring test returns — which is the point. A forbid that cannot be expressed is a gap in the expectation format, and it is recorded here rather than papered over by asserting the same fact twice." }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "fixtureId": "go/renders-template-execution",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RENDERS for Go has ONE honest construct: a symbol whose body EXECUTES an `html/template`, where the template is a PUBLISHED symbol (the contract: source = the rendering symbol, target = the rendered component; here the template is the component). The `calls` row for the Execute invocation is a DIFFERENT and also-true fact, so this fixture forbids nothing about `calls` — the render row is additive, not a relabel. THE FIRES: `Handler -> pageTemplate` (a package-level template var constructed by `template.Must(template.New(\"page\").Parse(...))`) and `Handler -> indexTemplate` (a template SET; `ExecuteTemplate(w, \"index\", ...)` names the rendered sub-template, and that NAME rides in `metadata.templateName`, never as the edge target — a name string would let the arbiter bind an unrelated declaration, the false-edge direction this programme refuses). THE FORBIDS ARE EACH A MEASURED IMPOSTOR CLASS, not decoration: (1) `constructedOnly` — a template that is never executed; construction is not a render. (2) `localRender` — a LOCAL template var; Go locals are not symbols (LocalsAreNotSymbols). (3) `paramsOnly` — a template PARAMETER, also not a published symbol. (4) `valueReceiver` — an expression receiver (a call result), not a symbol. (5) `textOnlyPage` — `text/template`, the measured impostor class (151 corpus files, almost all code generators); the fixture aliases it as a SECOND import and the constructor qualifier is resolved against the html/template import's OWN local name (`template`), so the alias cannot smuggle a row in. (6) `cmdRunner` — a package-level value whose `Execute` method is not a template execution. (7) `Handler -> Execute` and `Handler -> index` and `Handler -> page` — the method name, the sub-template name and the template's own name are NOT the rendered component; the published template SYMBOL is. (8) THE LINE CONVENTION: `Handler`'s first call is written with the selector WRAPPED (`pageTemplate.` on one line, `Execute(w, nil)` on the next), so the row's line is the OPERAND's line — the name-bearing node's line (M59.A7) — and the Execute token's line is forbidden. The expected line numbers were read off the fixture source (72 = `pageTemplate.`, 74 = `indexTemplate`) before the run.",
+  "expectSymbols": [
+    { "name": "Handler", "kind": "function" },
+    { "name": "localRender", "kind": "function" },
+    { "name": "paramsOnly", "kind": "function" },
+    { "name": "valueReceiver", "kind": "function" },
+    { "name": "pageTemplate", "kind": "variable" },
+    { "name": "indexTemplate", "kind": "variable" },
+    { "name": "constructedOnly", "kind": "variable" },
+    { "name": "textOnlyPage", "kind": "variable" },
+    { "name": "cmdRunner", "kind": "variable" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "Handler",
+      "target": "pageTemplate",
+      "line_number": 72,
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "meta.relationshipType": "go_template_render",
+      "meta.isRenderHost": true,
+      "meta.renderHost": "html/template",
+      "meta.renderMethod": "Execute",
+      "meta.templateName": "page",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "render_relation_inferred_from_an_html_template_execution_and_the_template_symbols_own_construction"
+    },
+    {
+      "type": "renders",
+      "from": "Handler",
+      "target": "indexTemplate",
+      "line_number": 74,
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "meta.relationshipType": "go_template_render",
+      "meta.isRenderHost": true,
+      "meta.renderHost": "html/template",
+      "meta.renderMethod": "ExecuteTemplate",
+      "meta.templateName": "index",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "render_relation_inferred_from_an_html_template_execution_and_the_template_symbols_own_construction"
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "from": "Handler", "target": "pageTemplate", "line_number": 73, "note": "pre-fix shape: the Execute TOKEN's line; the rendered symbol's name is written on 72" },
+    { "type": "renders", "from": "Handler", "target": "Execute" },
+    { "type": "renders", "from": "Handler", "target": "index" },
+    { "type": "renders", "from": "Handler", "target": "page" },
+    { "type": "renders", "target": "constructedOnly" },
+    { "type": "renders", "target": "textOnlyPage" },
+    { "type": "renders", "target": "cmdRunner" },
+    { "type": "renders", "from": "localRender" },
+    { "type": "renders", "from": "paramsOnly" },
+    { "type": "renders", "from": "valueReceiver" }
+  ]
+}

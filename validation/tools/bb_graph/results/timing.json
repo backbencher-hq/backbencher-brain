@@ -1,0 +1,88 @@
+{
+  "likeContains": [
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/graph/graph-engine.ts:likeContains:1421",
+      "name": "likeContains",
+      "symbol_type": "function",
+      "line_start": 1421,
+      "relative_path": "src/intelligence/graph/graph-engine.ts",
+      "inc": 3,
+      "out": 0
+    }
+  ],
+  "traverseGraph": [
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/graph/graph-engine.ts:traverseGraph:500",
+      "name": "traverseGraph",
+      "symbol_type": "function",
+      "line_start": 500,
+      "relative_path": "src/intelligence/graph/graph-engine.ts",
+      "inc": 2,
+      "out": 169
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/ast/graph.ts:traverseGraph:164",
+      "name": "traverseGraph",
+      "symbol_type": "function",
+      "line_start": 164,
+      "relative_path": "src/ast/graph.ts",
+      "inc": 21,
+      "out": 46
+    }
+  ],
+  "graphTraversal": [
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:script/m14/tmp/anon-source-index-probe.ts:graphTraversal:61",
+      "name": "graphTraversal",
+      "symbol_type": "constant",
+      "line_start": 61,
+      "relative_path": "script/m14/tmp/anon-source-index-probe.ts",
+      "inc": 75,
+      "out": 0
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/graph/graph-engine.ts:graphTraversal:1435",
+      "name": "graphTraversal",
+      "symbol_type": "function",
+      "line_start": 1435,
+      "relative_path": "src/intelligence/graph/graph-engine.ts",
+      "inc": 0,
+      "out": 12
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:script/m14/tmp/verify-855-site.ts:graphTraversal:51",
+      "name": "graphTraversal",
+      "symbol_type": "constant",
+      "line_start": 51,
+      "relative_path": "script/m14/tmp/verify-855-site.ts",
+      "inc": 0,
+      "out": 0
+    }
+  ],
+  "timings": {
+    "unattributedCallers": {
+      "label": "unattributed-callers",
+      "ms": 12286.95,
+      "value": {
+        "c": 1
+      }
+    },
+    "unattributedCallees": {
+      "label": "unattributed-callees",
+      "ms": 13505.09,
+      "value": {
+        "c": 0
+      }
+    },
+    "callerArm": {
+      "label": "caller-arm",
+      "ms": 19540.89,
+      "value": 2
+    },
+    "callerArmRepeat": {
+      "label": "caller-arm-repeat",
+      "ms": 17059.96,
+      "value": 2
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/clause-merge-range.erl",
+  "authoredFrom": "The pinned grammar's own node extents for THIS file, read off `wasm/tree-sitter-erlang.wasm` before the analyzer was run on it — not off analyzer output. ER-D26: Erlang has one function per (name, arity), so `pick/1` is ONE symbol whose range spans every `;`-separated clause and ends on the grammar's `fun_decl`. Measured for this file: fun_decl [1038,1058) and [1059,1078) against function_clause [1038,1057) and [1059,1077) — the two node types differ by exactly the clause-terminating `.`, and the second clause's fun_decl is the one that ends the function, so the merged end is 1078 and never 1077. `nodeToRange` publishes tree-sitter's EXCLUSIVE end as `endColumn: node.endPosition.column + 1`, which is why 1078 reads as endColumn 10 on line 21. The three shapes are: two clauses, two clauses whose last clause ends a line it does not start, and three clauses (so a range that stopped at the second clause would be visibly short rather than one character short).",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "clause_merge_range", "kind": "module" },
+    {
+      "name": "pick",
+      "kind": "function",
+      "ownerName": "clause_merge_range",
+      "meta.arity": 1,
+      "meta.clauseCount": 2,
+      "startLine": 18,
+      "startColumn": 1,
+      "endLine": 21,
+      "endColumn": 10,
+      "note": "ER-D44 merge path. Spans fun_decl [1038,1058) AND [1059,1078). The end is the SECOND clause's fun_decl (1078), not its function_clause (1077) and not the first clause's fun_decl (1058). Taking the clause ends the symbol one character early, so `source.slice(startIndex, endIndex)` — the text a consumer reads back — loses the closing `.` of `pick(X) ->\n    {X}.`"
+    },
+    {
+      "name": "head",
+      "kind": "function",
+      "ownerName": "clause_merge_range",
+      "meta.arity": 1,
+      "meta.clauseCount": 2,
+      "startLine": 25,
+      "startColumn": 1,
+      "endLine": 28,
+      "endColumn": 15,
+      "note": "ER-D44 merge path, with a clause head that is a PATTERN (`head([H|_])`). fun_decl [1218,1241) and [1242,1267) against function_clause [1218,1240) and [1242,1266): the merged end is 1267. The second clause ends on line 28 at column 14 (exclusive 15), so a range that ended on the FIRST clause's line would be caught here and not only by the column."
+    },
+    {
+      "name": "wide",
+      "kind": "function",
+      "ownerName": "clause_merge_range",
+      "meta.arity": 2,
+      "meta.clauseCount": 3,
+      "startLine": 31,
+      "startColumn": 1,
+      "endLine": 36,
+      "endColumn": 12,
+      "note": "ER-D26 + ER-D44 together: three clauses of one (name, arity) are ONE symbol, so the range must reach the THIRD clause's fun_decl [1406,1431). fun_decl extents are [1360,1382) [1383,1405) [1406,1431); a range stopping at the second clause would be 1405, twenty-six characters and two lines short, which is a visibly different defect from the one-character one."
+    }
+  ],
+  "expectSymbolCount": [
+    { "name": "pick", "kind": "function", "equals": 1, "note": "ER-D26: the two clauses merge into ONE symbol, so a reader asking for `pick` finds one function, not two." },
+    { "name": "head", "kind": "function", "equals": 1 },
+    { "name": "wide", "kind": "function", "equals": 1, "note": "three clauses, one symbol — the case that separates 'merged' from 'the first clause won'." }
+  ],
+  "expectExports": [
+    { "name": "pick", "arity": 1 },
+    { "name": "head", "arity": 1 },
+    { "name": "wide", "arity": 2 }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "clause_merge_range", "target": "pick" },
+    { "type": "contains", "from": "clause_merge_range", "target": "head" },
+    { "type": "contains", "from": "clause_merge_range", "target": "wide" }
+  ]
+}

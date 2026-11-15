@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/reserved-word-not-a-call.sh",
+  "authoredFrom": "M60 reserved-word guard. Authored from a corpus measurement, 2026-10-02, not from reading the analyzer. `validation/m14/fixtures/bash/guard-ab-bash-calls.ts` over 200 hash-ordered corpus files found 30 of 2,945 emitted `calls` edges (1.02%) whose target is a POSIX reserved word — `if`, `then`, `elif`, `else`, `fi`, `esac`, `case`, `do` — every one of them produced by grammar recovery after the pinned grammar lost a construct, and none of them a command any script could run. The five source shapes here are verbatim corpus lines: kubernetes/cluster/gce/config-test.sh:468 (`if [[ -n ... ]]; then` with its `fi` in an unreadable fragment), kubernetes/third_party/gimme/gimme:935 (`if ! case \"${GIMME_TYPE}\" in`), ohmyzsh/lib/clipboard.zsh:66 (one line, `elif` and `then` together) and :945 (`esac; then`). The A/B also measured the ALTERNATIVE and rejected it: refusing every `calls` edge out of a damaged region removes 96 (3.26%) of which 15 are real calls to kube::log::status in kubernetes/test/e2e_node/gubernator.sh, so the guard is scoped to the NAME being a reserved word and nothing else. The positive expectation on /usr/bin/true is the half that pins that scope: it is a real command sitting in the same damaged region, and the over-refusing mutant bash/reserved-word-guard-over-refuses-builtins is caught by it.",
+  "expectSymbols": [
+    {
+      "name": "reserved-word-not-a-call.sh",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "reserved-word-not-a-call.sh",
+      "target": "/usr/bin/true",
+      "line_number": 29,
+      "confidenceMin": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "if"
+    },
+    {
+      "type": "calls",
+      "target": "then"
+    },
+    {
+      "type": "calls",
+      "target": "elif"
+    },
+    {
+      "type": "calls",
+      "target": "else"
+    },
+    {
+      "type": "calls",
+      "target": "fi"
+    },
+    {
+      "type": "calls",
+      "target": "esac"
+    },
+    {
+      "type": "calls",
+      "target": "case"
+    },
+    {
+      "type": "calls",
+      "target": "do"
+    },
+    {
+      "type": "calls",
+      "target": "done"
+    },
+    {
+      "type": "calls",
+      "target": "function"
+    },
+    {
+      "type": "calls",
+      "target": "in"
+    },
+    {
+      "type": "calls",
+      "target": "select"
+    },
+    {
+      "type": "calls",
+      "target": "while"
+    },
+    {
+      "type": "calls",
+      "target": "until"
+    },
+    {
+      "type": "calls",
+      "target": "time"
+    },
+    {
+      "type": "calls",
+      "target": "{"
+    },
+    {
+      "type": "calls",
+      "target": "}"
+    },
+    {
+      "type": "calls",
+      "target": "!"
+    },
+    {
+      "type": "calls",
+      "target": "[["
+    },
+    {
+      "type": "calls",
+      "target": "]]"
+    },
+    {
+      "type": "calls",
+      "target": "(("
+    },
+    {
+      "type": "calls",
+      "target": "))"
+    },
+    {
+      "type": "calls",
+      "target": "coproc"
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    }
+  ]
+}

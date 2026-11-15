@@ -1,0 +1,223 @@
+{
+  "fixtureId": "zig/relationship-classes",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Wave 4 (2026-09-29): the blunt question — is any relationship type the engine defines left unaccounted for? script/m14/zig-relationship-census.ts reads the type list from the source enums and requires every one to be emitted-and-gated or ruled with a reason, and it caught its own lane: `exports` was unclassified. Three types were missing or thin, and this fixture pins one site of each. Z30 `imports`: a module dependency is a first-class type (16 lanes emit it, the graph engine reads it), and a relative path cannot be a declaration name. Z30b: `pub const X = @import(...)` is the canonical re-export idiom and 119 of them were absent from the export surface. Z32 `instantiates`: two statically derivable classes — a call to an in-file `fn ... type`, and a construction of an in-file type, bare or QUALIFIED (the first mirror accepted only a bare identifier and read 2 PHANTOM rows). Z33 `exports`: `pub` and `export` both publish, while a `pub` inside a container is a `contains` edge and a visibility (Z20). Z31: the type-bearing payload is canonicalized like the name, or the declared type is unjoinable against the edge that names it. Z36 (wave 5): the pipeline sweep — does a NEW relationship type survive the graph, the store and the MCP handler? — found that `imports` and `exports` were published as `usage_contextual` and that `instantiates` was classified by a predicate reading two fields the lane never set. The family rule is explicit in ~26 analyzers, and the MCP handler prefers a STORED evidenceClass over one derived from the type, so a wrong stored value wins over a correct derivation. It cannot be pinned HERE: the fixture runner's matchConstraints does not apply relationship-metadata keys and says so (\"inert assertion\") rather than accepting a row that asserts nothing — so the tier is gated by script/m14/tmp/zigw-evidence-tier.ts instead. Z38/Z39 (wave 5, found by the SOURCE-KEYED gate): the type-position guard saw only the direct parent, so each segment of a dotted type path in a signature was published as a read of a type name (480 rows / 200 files, invisible at name level); and neither attribution pass recognised `test_declaration`, so every read inside a named test was attributed to `(global)`. The rows above pin both, and the source-keyed gate convicts them in both directions.",
+  "expectSymbols": [
+    {
+      "name": "helper",
+      "kind": "constant",
+      "note": "Z30: the binding of an @import is a symbol; the dependency is an `imports` edge"
+    },
+    {
+      "name": "prefixed",
+      "kind": "constant",
+      "note": "Z30: `@import(\"std\").ArrayList` — a module PREFIX on a longer expression, the shape that recorded nothing at all (460 sites / 400 files)"
+    },
+    {
+      "name": "reexported",
+      "kind": "constant",
+      "note": "Z30b: a `pub const` re-export"
+    },
+    {
+      "name": "Scaled",
+      "kind": "function",
+      "note": "Z32: the in-file `fn ... type` whose call sites are type applications"
+    },
+    {
+      "name": "Small",
+      "kind": "type",
+      "note": "Z32: `Scaled(u8, 4)` — a generic type application bound to a name"
+    },
+    {
+      "name": "Point",
+      "kind": "struct",
+      "note": "Z32: the constructed type"
+    },
+    {
+      "name": "origin",
+      "kind": "constant",
+      "note": "Z32: `Point{ .x = 0, .y = 0 }` — construction in value position (ZIG.GAP.3's class)"
+    },
+    {
+      "name": "Nested",
+      "kind": "struct",
+      "note": "Z32: a container holding a qualified construction"
+    },
+    {
+      "name": "made",
+      "kind": "constant",
+      "note": "Z32: `Inner{ .v = 1 }` inside a container"
+    },
+    {
+      "name": "published",
+      "kind": "constant",
+      "note": "Z33: a file-scope `pub const`"
+    },
+    {
+      "name": "alsoPublished",
+      "kind": "function",
+      "note": "Z33: a file-scope `pub fn`"
+    },
+    {
+      "name": "cAbiExported",
+      "kind": "function",
+      "note": "Z33: `export fn` is the C-ABI form and publishes too"
+    },
+    {
+      "name": "NotAModuleExport",
+      "kind": "struct",
+      "note": "Z20: the container, which is itself a module export"
+    },
+    {
+      "name": "member_level",
+      "kind": "constant",
+      "note": "Z20/Z33: a `pub` member is a member, NOT a module export"
+    },
+    {
+      "name": "Quoted",
+      "kind": "struct",
+      "note": "Z31: the container whose quoted types are canonicalized"
+    },
+    {
+      "name": "odd field",
+      "kind": "property",
+      "note": "Z31: `@\"odd field\"` is PUBLISHED as `odd field` (#924-E: quoting is syntax)"
+    },
+    {
+      "name": "usesQuoted",
+      "kind": "method",
+      "note": "Z31: the method whose parameter and return types are published unquoted"
+    },
+    {
+      "name": "dottedPathInSignature",
+      "kind": "function",
+      "note": "Z38: the function whose signature carries a dotted type path"
+    },
+    {
+      "name": "Opts",
+      "kind": "struct",
+      "note": "Z38: the nested type the signature names"
+    },
+    {
+      "name": "Res",
+      "kind": "struct",
+      "note": "Z38: the second segment's target type"
+    },
+    {
+      "name": "fileLevelValue",
+      "kind": "constant",
+      "note": "Z39: the file-scope value the named test reads"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "member_level_export_only",
+      "note": "Z20: a container member must never appear as a module-level export binding"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "../helper.zig",
+      "note": "Z30: the dependency itself, keyed on the module path Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for.",
+      "source": "(global)",
+      "meta.relationshipType": "zig_import"
+    },
+    {
+      "type": "imports",
+      "target": "reexported.zig",
+      "note": "Z30b: a re-export is also a dependency",
+      "source": "(global)"
+    },
+    {
+      "type": "instantiates",
+      "target": "Scaled",
+      "note": "Z32: `Scaled(u8, 4)` is a type application of an in-file `fn ... type` Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for.",
+      "source": "(global)",
+      "meta.relationshipType": "zig_instantiation"
+    },
+    {
+      "type": "instantiates",
+      "target": "Point",
+      "note": "Z32: `Point{ .x = 0, .y = 0 }` instantiates the in-file type Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for.",
+      "source": "(global)",
+      "meta.relationshipType": "zig_instantiation"
+    },
+    {
+      "type": "instantiates",
+      "target": "Inner",
+      "note": "Z32: the QUALIFIED construction head `Inner{ .v = 1 }`",
+      "source": "(global)"
+    },
+    {
+      "type": "exports",
+      "target": "published",
+      "note": "Z33: a file-scope `pub const` Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for.",
+      "source": "(file)",
+      "meta.relationshipType": "zig_export"
+    },
+    {
+      "type": "exports",
+      "target": "alsoPublished",
+      "note": "Z33: a file-scope `pub fn`",
+      "source": "(file)"
+    },
+    {
+      "type": "exports",
+      "target": "cAbiExported",
+      "note": "Z33: `export fn` publishes as well",
+      "source": "(file)"
+    },
+    {
+      "type": "exports",
+      "target": "NotAModuleExport",
+      "note": "Z33: the container is a module export",
+      "source": "(file)"
+    },
+    {
+      "type": "contains",
+      "source": "Nested",
+      "target": "Nested.made",
+      "note": "Z20: the member is containment, and it is what makes `member_level` not an export Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for.",
+      "meta.relationshipType": "zig_ownership"
+    },
+    {
+      "type": "uses",
+      "source": "readsInsideANamedTestAreAttributedToTheTest",
+      "target": "fileLevelValue",
+      "note": "Z39: a read of a file-scope value inside a NAMED TEST is attributed to the TEST, not to `(global)`. The shared F5 matcher keys on `label + target` and discards the source, so this row asserts something no lane gate could see before the source-keyed gate (zigw-uses-calls.ts), which convicts it in both directions."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "member_level",
+      "note": "Z20/Z33: a `pub` inside a container names no importable unit, so it must never be published as a module export",
+      "source": "(file)"
+    },
+    {
+      "type": "uses",
+      "target": "@\"weird type\"",
+      "note": "Z31: a declared type is published as the bare name; a quoted spelling in the target is unjoinable against the symbol name"
+    },
+    {
+      "type": "uses",
+      "target": "Local",
+      "source": "dottedPathInSignature",
+      "note": "Z38: the BASE of a dotted TYPE path in a signature is a declared-type fact, not a read — the declared-type class already publishes it as `references (declared-type)`"
+    },
+    {
+      "type": "uses",
+      "target": "Opts",
+      "source": "dottedPathInSignature",
+      "note": "Z38: and so is every other segment of that path"
+    },
+    {
+      "type": "uses",
+      "target": "Res",
+      "source": "dottedPathInSignature",
+      "note": "Z38: the same for the second parameter"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "fixtureId": "javascript/reexport-forms",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60/JSD40 (the boundary, one statement per form). The re-export rule is scoped to the clause that WRITES a member name, so this fixture pins the other four forms in one file:\n\n  line 1 `export * as ns from`  - a namespace binding, no member name -> `./m:*` at 0.6, unresolved\n  line 2 `export { default as D }` - the member is `default` (what the source module exports), NOT the alias `D` this module exports it under. The edge resolves against the SOURCE module's surface, so `./m:default`; `metadata.exportedAs` carries the alias\n  line 3 `export { readFile as read } from \"fs\"` - the same distinction on a bare (non-relative) module: `fs:readFile` at 1.0, not `fs:read`\n  line 4 `export {} from` - an EMPTY clause writes no member name and still takes the dependency -> `./m:*` at 0.6\n  line 5 `export { \"a-b\" as c } from` - ES2022 arbitrary module namespace names: the member is a STRING LITERAL, so the unquoting is part of the contract\n\nThe `forbidRelationships` rows are the two spellings the pre-fix `alias ?? name` shape produced (`fs:read`, `./m:D`) and the module-level collapse for a clause that writes members.",
+  "expectSymbols": [],
+  "expectRelationships": [
+    { "type": "imports", "from": "(file)", "target": "./m:*", "confidence": 0.6, "line_number": 1, "meta.unresolved": true, "note": "namespace binding: no member name is written" },
+    { "type": "imports", "from": "(file)", "target": "./m:default", "confidence": 1, "line_number": 2, "meta.declaredName": "default", "meta.exportedAs": "D", "note": "member first, alias second" },
+    { "type": "imports", "from": "(file)", "target": "fs:readFile", "confidence": 1, "line_number": 3, "meta.exportedAs": "read", "note": "the edge is about the member the SOURCE module exports" },
+    { "type": "imports", "from": "(file)", "target": "./m:*", "confidence": 0.6, "line_number": 4, "meta.unresolved": true, "note": "empty clause: dependency taken, no member named" },
+    { "type": "imports", "from": "(file)", "target": "./m:a-b", "confidence": 1, "line_number": 5, "meta.declaredName": "a-b", "note": "a string-literal member name, unquoted" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "(file)", "target": "fs:read", "note": "pre-fix shape: the ALIAS was used as the target, but the alias is a name in THIS module, not a member of fs" },
+    { "type": "imports", "from": "(file)", "target": "./m:D", "note": "pre-fix shape for a default re-export" },
+    { "type": "imports", "from": "(file)", "target": "./m:*", "line_number": 2, "note": "the module-level collapse must not fire on a clause that writes a member" },
+    { "type": "imports", "from": "(file)", "target": "./m:*", "line_number": 5, "note": "nor on one that writes a string-literal member" }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "fixtureId": "typescript/import-target-shapes",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The `imports` label had NO oracle in the instrument: `deriveTypeScriptEdges` emits calls/instantiates/uses/references, so every dependency edge this lane emitted \u2014 vue alone emitted 2,789 \u2014 was stored and compared against nothing, and an invented module or a dropped dependency would have read green. Building `oracles/typescript-imports-exports.ts` found the defect this fixture pins. On a 152-file element-plus draw the oracle agreed with the analyzer on 1,201 of 1,201 NAMED import rows and derived 12 the analyzer did not emit at all: side-effect-only imports. `import './style.css'` has no clause and so contributed no items, and the loop emitted nothing \u2014 element-plus's every component does `import '@element-plus/theme-chalk/src/<name>.scss'`, so the style half of every component was invisible. The analyzer now publishes `<specifier>:*` when the `import_clause` is ABSENT, which is what distinguishes a side-effect import from `import {} from \"m\"` (an empty binding list, not a dependency on side effects). This fixture also pins the rest of the target contract: an alias is not part of the name, because the name is what the EXPORTING module calls it and that is what two files can join on.",
+  "expectSymbols": [
+    {
+      "name": "usesAll"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "import-target-shapes\u0000./side-effect.css:*", "meta.localBinding": true,
+      "meta.isSideEffectImport": true
+    },
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "import-target-shapes\u0000@scope/pkg/styles:*", "meta.localBinding": true,
+      "meta.isSideEffectImport": true
+    },
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "import-target-shapes\u0000./namespace:*", "meta.localBinding": true
+    },
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "alpha"
+    },
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "beta"
+    },
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "defaultExport"
+    },
+    {
+      "type": "imports",
+      "from": "import-target-shapes",
+      "target": "import-target-shapes\u0000./legacy:*", "meta.localBinding": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "import-target-shapes",
+      "target": "renamed",
+      "type": "imports"
+    },
+    {
+      "from": "import-target-shapes",
+      "target": "default",
+      "type": "imports"
+    }
+  ]
+}

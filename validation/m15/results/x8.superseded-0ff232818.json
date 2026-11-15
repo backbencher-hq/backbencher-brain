@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X8",
+  "code": "X8",
+  "tool": "bb_security",
+  "title": "entry-point parity + determinism + anti-vacuity",
+  "verified": true,
+  "checks": 28,
+  "passed": 28,
+  "failed": 0,
+  "positives": 22,
+  "negatives": 6,
+  "negativePassed": 6,
+  "skipped": [],
+  "generatedAt": "2026-09-30T23:15:21.962Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T23:15:21.962Z",
+    "contentSha256": "b40a2ad70971749c93d85ab8a13516cc2f8bacc0c3030a37fa9825f67962ed60"
+  }
+}

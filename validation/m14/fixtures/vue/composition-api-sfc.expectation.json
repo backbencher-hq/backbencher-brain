@@ -1,0 +1,28 @@
+{
+  "fixtureId": "vue/composition-api-sfc",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. PINS script-setup extraction through the production SFC pre-parse: imports, refs/computed constants, functions, template component usage.",
+  "expectSymbols": [
+    {
+      "name": "save"
+    },
+    {
+      "name": "count"
+    },
+    {
+      "name": "doubled"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "vue"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "targetEndsWith": "ChildCard"
+    }
+  ]
+}

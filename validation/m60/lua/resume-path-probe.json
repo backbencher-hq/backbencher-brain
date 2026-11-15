@@ -1,0 +1,125 @@
+{
+  "finding": "LUA-55",
+  "title": "the coverage arbiter's resume path observes nothing and still exits 0",
+  "gate": "script/m14/ontology-coverage-gate.ts",
+  "sharedMachinery": true,
+  "mechanism": "observed is written only inside the run callback; resumableWalk calls run only for files absent from its checkpoint; a fully-resumed run therefore tallies 0 edges while walkedPct reports 100.0% and partial stays false",
+  "population": {
+    "corpusFilesOffered": 3,
+    "samplePaths": [
+      "/home/ishaq2321/bb_tests/repositories/kong/kong/pdk/log.lua",
+      "/home/ishaq2321/bb_tests/repositories/kong/kong/tools/table.lua",
+      "/home/ishaq2321/bb_tests/repositories/kong/kong/cache/init.lua"
+    ],
+    "note": "a 3-file walk, not the 3,250-file corpus — the behaviour is a property of the checkpoint, not of the corpus, so the population is stated rather than inflated"
+  },
+  "walks": [
+    {
+      "label": "run 1 (cold checkpoint)",
+      "runCalls": 3,
+      "edges": 206,
+      "pct": 100,
+      "partial": false,
+      "walked": 3,
+      "alreadyDone": 0,
+      "total": 3
+    },
+    {
+      "label": "run 2 (same checkpoint)",
+      "runCalls": 0,
+      "edges": 0,
+      "pct": 100,
+      "partial": false,
+      "walked": 0,
+      "alreadyDone": 3,
+      "total": 3
+    }
+  ],
+  "sourceShape": {
+    "observedDeclaredAtLine": 292,
+    "runArmAtLine": 313,
+    "observedSetLines": [
+      322
+    ],
+    "observedSetOutsideRun": [],
+    "emittedRowAtLine": 481,
+    "walkedPctCountsAlreadyDone": true
+  },
+  "theTwoRealRuns": {
+    "command": "npx tsx script/m14/ontology-coverage-gate.ts lua",
+    "fresh": {
+      "command": "npx tsx script/m14/ontology-coverage-gate.ts lua --fresh",
+      "emitted": 9,
+      "ruledSound": 1,
+      "falsified": 0,
+      "exit": 0,
+      "edges": 219981
+    },
+    "resumed": {
+      "command": "npx tsx script/m14/ontology-coverage-gate.ts lua",
+      "emitted": 0,
+      "ruledSound": 10,
+      "falsified": 0,
+      "exit": 0,
+      "edges": 0
+    },
+    "logs": [
+      "validation/m60/lua/resume-path-gate-FRESH.log",
+      "validation/m60/lua/resume-path-gate-RESUMED.log"
+    ]
+  },
+  "checks": [
+    {
+      "name": "run-1 does the work",
+      "ok": true,
+      "detail": "runCalls=3/3 edges=206 walked=3"
+    },
+    {
+      "name": "RESUMED RUN INVOKES run ZERO TIMES",
+      "ok": true,
+      "detail": "runCalls=0 while the gate's tally lives only inside run — every edge count is unrecoverable"
+    },
+    {
+      "name": "THE TALLY IS EMPTY ON THE RESUMED RUN",
+      "ok": true,
+      "detail": "run1=206 -> run2=0"
+    },
+    {
+      "name": "the log REPORTS 100% COVERAGE for a run that measured nothing",
+      "ok": true,
+      "detail": "walkedPct=100.0% with newly walked=0"
+    },
+    {
+      "name": "the honesty guard does NOT fire",
+      "ok": true,
+      "detail": "walkStats.partial=false — partial is derived from the checkpoint log, so a complete log silences the guard that exists to catch an incomplete walk"
+    },
+    {
+      "name": "observed is declared before its writes",
+      "ok": true,
+      "detail": "line 292"
+    },
+    {
+      "name": "the run callback is locatable",
+      "ok": true,
+      "detail": "run arm at line 313, closes at 324"
+    },
+    {
+      "name": "EVERY write to observed is inside run",
+      "ok": true,
+      "detail": "1 inside run (lines 322), 0 outside"
+    },
+    {
+      "name": "walkedPct counts RESUMED files as coverage",
+      "ok": true,
+      "detail": "const walkedPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100"
+    },
+    {
+      "name": "the EMITTED branch reads the same in-memory map",
+      "ok": true,
+      "detail": "EMITTED row at line 481; an empty map makes every type fall through to RULED.find"
+    }
+  ],
+  "failures": [],
+  "verdict": "REPRODUCED"
+}

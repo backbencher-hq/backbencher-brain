@@ -1,7 +1,7 @@
 {
   "instrument": "markdown ontology census (validation/m14/fixtures/markdown/ontology-census.ts)",
   "entryPoint": "parseFile (src/ast/pool-worker.ts)",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "seed": "markdown-ontology-census-v1",
   "requestedSample": 400,
   "admittedByExtension": 12729,

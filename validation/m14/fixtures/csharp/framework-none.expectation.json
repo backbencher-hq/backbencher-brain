@@ -1,0 +1,17 @@
+{
+  "fixtureId": "csharp/framework-none",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CONV-CS-2 (#751): the cross-language payload-contract inconsistency was part of the finding — undefined (csharp) vs [] (python) vs a string (java) for the same concept. This fixture pins the aligned none-value: the three framework keys are ALWAYS present, empty arrays when nothing is detected, and framework resolves to null (expectPrimaryFramework compares `framework ?? null`). A revert to a key-absent payload fails here even before the detection fixture.",
+  "expectSymbols": [
+    { "name": "Plain", "kind": "class" }
+  ],
+  "expectPrimaryFramework": [null],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": [],
+      "frameworkPatterns": [],
+      "hasFrameworkIntelligence": true
+    }
+  ]
+}

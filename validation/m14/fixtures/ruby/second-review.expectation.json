@@ -1,0 +1,101 @@
+{
+  "fixtureId": "ruby/second-review",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Ruby second review (RB-F..RB-J): constructs the first review missed because lanes agree by silence or shared junk. Endless bodies invisible (RB-F), defined?/undef leaking reads/calls (RB-G), attr string names dropped (RB-H), dynamic class creation without symbols (RB-I), autoload without imports (RB-J), endless bare-identifier bodies suppressed by the def-name guard (positional fix).",
+  "expectSymbols": [
+    {
+      "name": "fetch",
+      "kind": "method"
+    },
+    {
+      "name": "name",
+      "kind": "property"
+    },
+    {
+      "name": "Point",
+      "kind": "class"
+    },
+    {
+      "name": "Cfg",
+      "kind": "class"
+    },
+    {
+      "name": "Watcher",
+      "kind": "class"
+    },
+    {
+      "name": "hook",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "fetch",
+      "target": "get",
+      "comment": "RB-F: endless body walked"
+    },
+    {
+      "type": "calls",
+      "from": "label",
+      "target": "name",
+      "comment": "endless bare-identifier body reads as a call"
+    },
+    {
+      "type": "references",
+      "from": "Global",
+      "target": "json/parser",
+      "comment": "RB-J: autoload records the import"
+    },
+    {
+      "type": "uses",
+      "from": "hook",
+      "target": "@cfg",
+      "comment": "RB-K: singleton-def ivar receiver reads at definition time"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "check",
+      "target": "other",
+      "comment": "RB-G: defined? operand never reads"
+    },
+    {
+      "type": "uses",
+      "from": "check",
+      "target": "@cfg",
+      "comment": "RB-G: defined? operand never reads (member form)"
+    },
+    {
+      "type": "calls",
+      "from": "check",
+      "target": "helper",
+      "comment": "RB-G: undef names removals, never calls"
+    },
+    {
+      "type": "calls",
+      "from": "hook",
+      "target": "cached",
+      "comment": "RB-K: nested def names never read (name-field match)"
+    },
+    {
+      "type": "calls",
+      "from": "hook",
+      "target": "memo",
+      "comment": "RB-K: nested def names never read"
+    },
+    {
+      "type": "calls",
+      "from": "hook",
+      "target": "obj",
+      "comment": "RB-K: bound local receivers never read"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "json/parser"
+    }
+  ]
+}

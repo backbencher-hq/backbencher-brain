@@ -1,0 +1,60 @@
+{
+  "instrument": "THE SCOPING REMEDY AND THE SECOND EMITTER \u2014 three arms, acceptance answered on both",
+  "at": "2026-10-12T14:05:00-04:00",
+  "theThreeArms": {
+    "threeFixes_mechanismLive": {
+      "exports": "7,254 \u00b7 resolved 3,089 \u00b7 amb 4,165",
+      "TOTAL": "33,632 \u00b7 resolved 20,591 \u00b7 amb 5,748",
+      "extOK": 6841
+    },
+    "scoped": {
+      "exports": "7,254 \u00b7 resolved 4,680 \u00b7 amb 2,574",
+      "TOTAL": "33,632 \u00b7 resolved 22,182 \u00b7 amb 4,157",
+      "extOK": 6841,
+      "committedAs": "76b5ec225 (secured by the Lead's commit, not by me)"
+    },
+    "scopedPlusGuard": {
+      "exports": "**5,651** \u00b7 resolved **4,668** \u00b7 amb **983**",
+      "TOTAL": "32,029 \u00b7 resolved **22,170** \u00b7 amb **2,566**",
+      "extOK": 6841
+    }
+  },
+  "acceptance": {
+    "exportsAmb": "4,165 -> **983** \u2014 FELL by 3,182",
+    "exportsResolved": "3,089 -> **4,668** \u2014 ROSE by 1,579",
+    "whichOfTheTwoHappened": "BOTH, and the Lead asked for exactly this distinction: ambiguity fell by SCOPING (the first 1,591, with edges unchanged at 7,254) and then by DROPPING EDGES (1,603), and **the dropped edges were re-emissions of ANOTHER module's members by the importing file** \u2014 the second emitter \u2014 not this file's own exports. Evidence: `bulma/docs/_sass/docs/backers.scss` emitted 54 `exports` edges for 27 members, 27 scoped and 27 bare; the bare half is gone, the scoped half remains (resolved 4,680 -> 4,668, i.e. only the 12 that were never resolvable).",
+    "netAgainstTheNoIndexBaseline": "no-index TOTAL was 30,426 \u00b7 resolved 20,567 \u00b7 amb 2,566. The guard arm is **32,029 \u00b7 resolved 22,170 \u00b7 amb 2,566** \u2014 so the mechanism now adds **+1,603 edges and +1,603 resolved with ZERO added ambiguity**. It is a pure gain, which is the opposite of the arm it had when it first became reachable."
+  },
+  "theSecondEmitter": {
+    "what": "`emitModuleExports` \u2014 the loop that publishes ONE `exports` edge per member THIS FILE declares. It selects by `kind` + `isScssVariable`/`scssCallable` + `!scope`, and the cross-file resolver's emitted symbols carry exactly those markers, so it re-exported every imported member by its BARE name. That is the 1,591-bare/27-scoped split measured inside one file.",
+    "fix": "`if (sym.metadata?.scssImportedFrom) continue` \u2014 a member resolved from another module is not this module's declaration. ONE GUARD, which is the Lead's third possibility: the remedy was a missing condition, not a new mechanism.",
+    "backtickCheck": "3 backticks in the edited region, all inside comments \u2014 no SQL template literal is touched by this change."
+  },
+  "regressionDetector": {
+    "extOK": "6,841 -> 6,841 -> 6,841 across all three arms \u2014 held."
+  },
+  "cssControl": {
+    "verdict": "0 of 6 columns differ; TOTAL byte-identical 487,844 \u00b7 482,781 \u00b7 0 \u00b7 180 \u00b7 80 \u00b7 4,803 \u00b7 residual 0.1%. Exit 0."
+  },
+  "gates": [
+    {
+      "cmd": "npx tsx script/m14/incoming-gate.ts scss scss 0 --index",
+      "exit": 1
+    },
+    {
+      "cmd": "npx tsx script/m14/residual-gate.ts --lane css",
+      "exit": 0
+    },
+    {
+      "cmd": "npx tsc --noEmit",
+      "exit": 0
+    }
+  ],
+  "raw": [
+    "scss-gate-fixed.txt",
+    "scss-gate-scoped.txt",
+    "scss-gate-guard.txt",
+    "css-gate-guard-control.txt",
+    "second-emitter-probe.mts"
+  ]
+}

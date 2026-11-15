@@ -1,0 +1,67 @@
+{
+  "expectSymbols": [
+    {
+      "name": "StructFn",
+      "kind": "module"
+    },
+    {
+      "name": "build",
+      "kind": "function",
+      "ownerName": "StructFn"
+    },
+    {
+      "name": "build_self",
+      "kind": "function",
+      "ownerName": "StructFn"
+    },
+    {
+      "name": "build_dyn",
+      "kind": "function",
+      "ownerName": "StructFn"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "StructFn",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "StructFn.build/1",
+      "target": "User"
+    },
+    {
+      "type": "instantiates",
+      "from": "StructFn.build_self/1",
+      "target": "StructFn"
+    },
+    {
+      "type": "contains",
+      "from": "StructFn",
+      "target": "build"
+    },
+    {
+      "type": "contains",
+      "from": "StructFn",
+      "target": "build_self"
+    },
+    {
+      "type": "contains",
+      "from": "StructFn",
+      "target": "build_dyn"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "struct"
+    },
+    {
+      "type": "instantiates",
+      "from": "StructFn.build_dyn",
+      "target": "mod"
+    }
+  ]
+}

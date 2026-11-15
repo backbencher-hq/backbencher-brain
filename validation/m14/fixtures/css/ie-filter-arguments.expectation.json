@@ -1,0 +1,34 @@
+{
+  "fixtureId": "css/ie-filter-arguments",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "An IE filter argument is a `name = value` PAIR, and `parenthesized_value` allowed exactly one value, so the whole argument list was an ERROR. Measured A/B over 533 corpus files in 13 repositories: 61 error files -> 24, 37 fixed, 0 regressed, 0 collateral, grails-core 20.94% -> 1.57%. The first attempt (adding `=` to `arguments`' separators) was provably inert and is recorded in the review so it is not written twice. This file also carries an `@supports` block, because that class was a second omission the corpus rotation exposed — 16 scopes published, 0 rules attributed.",
+  "expectSymbols": [
+    {
+      "name": ".gradient",
+      "kind": "class"
+    },
+    {
+      "name": "@supports (display: grid)",
+      "kind": "interface"
+    },
+    {
+      "name": ".grid",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "target": "fixtures/css/ie-filter-arguments::.grid",
+      "meta.evidenceClass": "structural",
+      "meta.isSupportsScope": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

@@ -1,0 +1,100 @@
+{
+  "fixtureId": "vb/edge-endpoint-integrity",
+  "language": "vb",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Four defects in the relationship GRAPH this lane published, each of them a fabricated or un-navigable ENDPOINT rather than a missing one, and each of them invisible to a per-type edge count because the count stayed healthy. (1) A construction that is WHOLE (carries its own arguments) whose receiver is read further along an access chain published the MEMBER as the constructed type: `New StackFrame(1).GetMethod().Name` gave `instantiates -> GetMethod`, and `New String() {\"x\",\"y\"}.ToList()` would have given `-> ToList`. The \"is my parent a member access whose object I am?\" test cannot tell `New System.Text.StringBuilder` (a namespace prefix, where climbing is required) from `New StackFrame(1).GetMethod()` (a whole construction, where climbing fabricates). Measured on the lane corpus: 322 of the 15,543 construction nodes sitting in an access chain were whole constructions whose target was read off the wrong node, and an INDEPENDENT source-text oracle -- script/m14/vb-instantiates-oracle.ts, which reads no grammar at all, because a second walker over the same grammar cannot see a shared grammar bug -- put the error at 1.07% of all `instantiates` edges before the fix (targets `ToList` 59, `Message` 6, `Length` 4, `GetMethod` 4, `Contains` 4, `Clone` 2) and 0.00% after. (2) `Implements IEnumerable(Of String).GetEnumerator` published the target `IEnumerable(Of String).GetEnumerator`; the type arguments are not part of the name, so that string is in no symbol table. 94 of 286 `implements` edges -- the normal shape of a member-level interface implementation in generic VB code. (3) `Function F() As (Range As ValueRange, Name As String)` published the `references` target `(Range As ValueRange, Name As String)`: a PARAMETER LIST, because `namingToken` had no case for `tuple_type` and returned the node itself. 3 sites. (4) The same relationship row was emitted more than once in one file -- 6,590 rows over the corpus (references 3,813, instantiates 1,840, calls 935, imports 2) -- and `bb_impact` counts degrees, so three `As String` in one signature made `String` look three times as depended-upon. Every shape below is real VB source taken from the corpus pattern that produced each defect; a fixture that pins a shape the corpus never contains proves nothing about the corpus.",
+  "expectSymbols": [
+    { "name": "Endpoints", "kind": "class" },
+    { "name": "Trace", "kind": "method", "ownerName": "Endpoints" },
+    { "name": "GetEnumerator", "kind": "method", "ownerName": "Endpoints" },
+    { "name": "Requirements", "kind": "method", "ownerName": "Endpoints" },
+    { "name": "ThreeStrings", "kind": "method", "ownerName": "Endpoints" },
+    { "name": "Twice", "kind": "method", "ownerName": "Endpoints" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "FIX 1a. The construction is WHOLE -- `New StackFrame(1)` -- so the constructed type is StackFrame. `.GetMethod` is a call on the object just built and `.Name` a property of its result; neither is a type anything constructs.",
+      "type": "instantiates", "from": "Trace", "target": "StackFrame", "meta.qualifiedConstruction": false
+    },
+    {
+      "comment": "FIX 1b, and the half that must NOT regress. `New System.Text.StringBuilder` holds only `New System`; the type continues in the access chain, so climbing is REQUIRED and StringBuilder is the answer. This row is the control for the fix: a repair that stopped climbing would satisfy the forbid rows above while making this one disappear, so it is pinned.",
+      "type": "instantiates", "from": "Trace", "target": "StringBuilder", "meta.qualifiedConstruction": true
+    },
+    {
+      "comment": "FIX 2. The type arguments are dropped, and the arity is recorded so the reduction is visible rather than silent. The target keeps its `IEnumerable` qualifier deliberately: `GetEnumerator` alone would collapse `implements GetEnumerator -> GetEnumerator`, a self-edge that answers none of the questions anyone asks of it.",
+      "type": "implements", "from": "GetEnumerator", "target": "IEnumerable.GetEnumerator", "meta.heritageForm": "member", "meta.openGenericArity": 1
+    },
+    {
+      "comment": "FIX 3. A tuple type names SEVERAL types, so it emits one `references` edge per element rather than the single name `namingToken` could return.",
+      "type": "references", "from": "Requirements", "target": "ValueRange", "meta.role": "returnType"
+    },
+    {
+      "comment": "FIX 3, second element. Both are `role: returnType` because both element types are part of the declared return type.",
+      "type": "references", "from": "Requirements", "target": "String", "meta.role": "returnType"
+    },
+    {
+      "comment": "FIX 4. Three `As String` reads on ONE line collapsed to ONE row, and `duplicateRows: 3` keeps the raw count visible so the dedupe hides nothing. `roles` records that the collapsed copies were not all the same fact.",
+      "type": "references", "from": "ThreeStrings", "target": "String", "meta.duplicateRows": 3, "meta.roles": ["parameter", "returnType"]
+    },
+    {
+      "comment": "FIX 4 does NOT collapse across lines. Two constructions of one type on two lines are two facts about the program, and the M59.A7 per-site line contract requires both rows -- a per-pair dedupe would silently discard it. `sites` on the `uses` row below is the paired fact: same target, two read sites, one edge.",
+      "type": "instantiates", "from": "Twice", "target": "StackFrame", "line_number": 85
+    },
+    {
+      "type": "instantiates", "from": "Twice", "target": "StackFrame", "line_number": 86 },
+    {
+      "comment": "The read of `.Name` happens twice on two lines and is ONE `uses` edge with `sites: 2`, which is the family's own `uses` dedupe (csharp keys on `source::uses::name`).",
+      "type": "uses", "from": "Twice", "target": "Name", "meta.sites": 2
+    },
+    {
+      "comment": "A member READ is a `uses` edge, and the reads are `.Empty` and `.Count` off a generic-qualified name -- neither is a call and neither is an index, so both are the value slot.",
+      "type": "uses", "from": "Trace", "target": "Empty"
+    },
+    { "type": "uses", "from": "Trace", "target": "Count" },
+    {
+      "comment": "`System.Text` inside `New System.Text.StringBuilder` is the namespace continuation. The chain's non-identifier segments are not reads of a member, so the emitted read is the last segment.",
+      "type": "uses", "from": "Trace", "target": "Text"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "FIX 1a forbid. The pre-fix analyzer climbed the access chain off a construction that carried its own arguments and published the METHOD. This row is what makes the mutant `construction-climbs-any-access-chain` die.",
+      "type": "instantiates", "from": "Trace", "target": "GetMethod"
+    },
+    {
+      "comment": "FIX 1a forbid, second form. `New StackFrame(1).GetMethod().Name` climbs two levels, so the old code published the OUTER member as well.",
+      "type": "instantiates", "from": "Trace", "target": "Name"
+    },
+    {
+      "comment": "FIX 1b forbid. `New String() {\"x\", \"y\"}.ToList()` -- the arguments are an `array_initializer`, not a `bounds` field, so the pre-fix `bounds`-only reasoning still climbed and named the method. 59 `ToList` targets on a 200-file draw came from this shape.",
+      "type": "instantiates", "from": "Trace", "target": "ToList"
+    },
+    {
+      "comment": "FIX 2 forbid. The type arguments are not part of a name; this string is in no symbol table and no oracle can match it.",
+      "type": "implements", "from": "GetEnumerator", "target": "IEnumerable(Of String).GetEnumerator"
+    },
+    {
+      "comment": "FIX 3 forbid. The whole `( ... )` tuple text is a PARAMETER LIST, not a name: not written as an identifier anywhere, not navigable, and unmatchable.",
+      "type": "references", "from": "Requirements", "target": "(Range As ValueRange, Name As String)"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "comment": "FIX 4, stated as an exact count rather than as a forbid, because a `forbid` on `references ThreeStrings -> String` would contradict the legitimate single row above and fail for the wrong reason. Three `As String` reads at one line, ONE row. This exact count is the assertion that kills a mutant which restores the duplicate emission: the row is present either way, so nothing except the count can see it.",
+      "type": "references", "from": "ThreeStrings", "target": "String", "equals": 1
+    },
+    {
+      "comment": "FIX 4, per line. Two lines, two rows -- the dedupe is per (source, target, type, LINE), not per pair. A mutant that dedupes per PAIR would report 1 here and fail.",
+      "type": "instantiates", "from": "Twice", "target": "StackFrame", "equals": 2
+    }
+  ],
+  "expectMetadata": [
+    {
+      "comment": "The disclosure rule, pinned whole rather than per key, because `expectMetadata` compares `metadata[k]` with strict JSON equality and a dotted key like `vbGaps.construction-without-readable-name` would resolve to a top-level field that does not exist -- an UNSATISFIABLE assertion that reads as coverage. `New String() {\"x\", \"y\"}` puts an `array_type` wrapping a `predefined_type` in the construction's `type` field, and a `predefined_type` is a keyword token with no identifier leaf under it, so there is no name to publish. The edge is not invented and it is not silently dropped: the count is here. `relationship-duplicate-rows-collapsed: 1` is the FIX 4 disclosure -- one file had identical rows to collapse, so the count is the number of FILES in which a collapse happened, not the number of rows, and that distinction is the reason it is named as it is.",
+      "vbGaps": {
+        "construction-without-readable-name": 1,
+        "relationship-duplicate-rows-collapsed": 1
+      }
+    }
+  ]
+}

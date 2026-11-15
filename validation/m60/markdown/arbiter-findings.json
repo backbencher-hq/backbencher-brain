@@ -142,7 +142,7 @@
         "terraform/CHANGELOG.md",
         "usethis/tests/testthat/_snaps/tibble.md"
       ],
-      "rootPaths": "$HOME/fixtures/repositories/",
+      "rootPaths": "/home/ishaq2321/bb_tests/repositories/",
       "loadAtTheTime": {
         "cores": 8,
         "loadAverage": 18.1,

@@ -1,0 +1,19 @@
+{
+  "fixtureId": "typescript/contains-overrides",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the contains + overrides relationship kinds (section B). TS semantics: a class contains its members (contains edges); override run()/helper() declare an override of the base method (overrides edges, class-qualified sources).",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Impl", "kind": "class" },
+    { "name": "run", "ownerName": "Impl" },
+    { "name": "helper", "ownerName": "Impl" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Impl", "target": "Base" },
+    { "type": "contains", "from": "Impl", "target": "run" },
+    { "type": "contains", "from": "Impl", "target": "helper" },
+    { "type": "overrides", "from": "Impl.run", "target": "Base.run" },
+    { "type": "overrides", "from": "Impl.helper", "target": "Base.helper" }
+  ]
+}

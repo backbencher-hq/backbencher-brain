@@ -1,0 +1,305 @@
+[
+  {
+    "id": "empty-vs-all-kinds",
+    "defaultShown": 6,
+    "emptyShown": 7,
+    "allKindsShown": 7,
+    "emptyRuleTypes": [],
+    "explicitRuleTypes": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "contains",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "overrides"
+    ],
+    "emptyEqualsAllKinds": true,
+    "emptyNames": [
+      "run",
+      "b1",
+      "b2",
+      "b3",
+      "Service",
+      "c1",
+      "d1"
+    ],
+    "defaultNames": [
+      "run",
+      "b1",
+      "b2",
+      "b3",
+      "c1",
+      "d1"
+    ],
+    "extraKindsNames": [
+      {
+        "name": "Service",
+        "rel": "contains",
+        "via": "exact"
+      }
+    ]
+  },
+  {
+    "id": "count-walk-failure",
+    "isError": false,
+    "payload": {
+      "shownCount": 5,
+      "totalCountIfKnown": 0,
+      "directCount": 0,
+      "truncated": true,
+      "truncationReason": "traversal: caller-depth-cap-reached",
+      "reproducible": true,
+      "depthReached": 4,
+      "countVerification": {
+        "ran": true,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "ruleTypes": [],
+      "cascade": {
+        "exact": 5,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "freshness": {
+        "fresh": 6,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null,
+      "names": [
+        "hop1",
+        "hop2",
+        "hop3",
+        "hop4",
+        "hop5"
+      ],
+      "staleFlags": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "id": "count-walk-failure-control",
+    "payload": {
+      "shownCount": 5,
+      "totalCountIfKnown": 5,
+      "directCount": 1,
+      "truncated": true,
+      "truncationReason": "traversal: caller-depth-cap-reached",
+      "reproducible": true,
+      "depthReached": 4,
+      "countVerification": {
+        "ran": true,
+        "timedOut": false,
+        "boundarySuspect": true
+      },
+      "ruleTypes": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements"
+      ],
+      "cascade": {
+        "exact": 5,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "freshness": {
+        "fresh": 6,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null,
+      "names": [
+        "hop1",
+        "hop2",
+        "hop3",
+        "hop4",
+        "hop5"
+      ],
+      "staleFlags": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "id": "unknown-params",
+    "isError": true,
+    "payload": null
+  },
+  {
+    "id": "non-string-symbol",
+    "isError": true,
+    "text": "bb_impact: bb/impact: symbol '12345' not found — no impact set exists (declared error; run `bb index` or check the name)"
+  },
+  {
+    "id": "blank-symbol",
+    "isError": true,
+    "text": "bb_impact: bb/impact: symbol '   ' not found — no impact set exists (declared error; run `bb index` or check the name)"
+  },
+  {
+    "id": "bogus-kind",
+    "isError": true,
+    "payload": null
+  },
+  {
+    "id": "mixed-types-array",
+    "isError": true,
+    "payload": null
+  },
+  {
+    "id": "no-dependents",
+    "isError": false,
+    "payload": {
+      "shownCount": 0,
+      "totalCountIfKnown": 0,
+      "directCount": 0,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 0,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "ruleTypes": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements"
+      ],
+      "cascade": {
+        "exact": 0,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "freshness": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null,
+      "names": [],
+      "staleFlags": []
+    }
+  },
+  {
+    "id": "stale-default",
+    "payload": {
+      "shownCount": 6,
+      "totalCountIfKnown": 6,
+      "directCount": 3,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 2,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "ruleTypes": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements"
+      ],
+      "cascade": {
+        "exact": 6,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "freshness": {
+        "fresh": 3,
+        "stale": 1,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)",
+      "names": [
+        "run",
+        "b1",
+        "b2",
+        "b3",
+        "c1",
+        "d1"
+      ],
+      "staleFlags": [
+        false,
+        true,
+        true,
+        true,
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "id": "stale-refresh-false",
+    "payload": {
+      "shownCount": 6,
+      "totalCountIfKnown": 6,
+      "directCount": 3,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 2,
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false
+      },
+      "ruleTypes": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements"
+      ],
+      "cascade": {
+        "exact": 6,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "freshness": {
+        "fresh": 3,
+        "stale": 1,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)",
+      "names": [
+        "run",
+        "b1",
+        "b2",
+        "b3",
+        "c1",
+        "d1"
+      ],
+      "staleFlags": [
+        false,
+        true,
+        true,
+        true,
+        false,
+        false
+      ]
+    }
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "fixtureId": "cpp/keyword-names-957",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D1 (#957): a published name that is a C++ keyword is a fabrication by construction — the language has no identifier spelled that way, so nothing a consumer can see resolves it. #924 fixed ONE class of this (a callee spelled with a builtin TYPE keyword, 17 sites) with a 16-name set checked in ONE place; the defect was the enumeration, not the fix. The full-corpus register then measured 6,940 rows over 1,722 real C++ files: static_cast 5,534, reinterpret_cast 1,013, noexcept 81, const_cast 76, __has_include 63, defined 36, and `if` 29 / `for` / `switch` as CALL TARGETS — a control-flow keyword is not a callee in any language. This fixture pins all three gate positions: the call-target descent, the declared-name funnel, and the value roster. It also pins the two directions the rule must NOT go, because a keyword set that swept them in would be a different and wrong rule: contextual keywords (`final`, `override`, `import`, `requires`) are legal identifiers and stay callable, and operator overloads are ordinary names — `operator` is in the set as an EXACT spelling only. MEASURED on this file as published: 11 keyword call targets and 0 keyword symbols; after the rule, 0 and 0.  M14 ONTOLOGY (2026-10-04): `#include` is C++'s FILE INCLUSION and is now a first-class `imports` edge \u2014 the same kind, with the same metadata, the C lane already emits for the identical construct (pinned there by c/macro-composed-include, reverted there by the `c/include-kind-downgraded` mutant). The measured reason: the one consumer that answers \"what does this module depend on\" is the LSP usages file-level section, which filters on `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts, src/lsp/graph_usages.ts), so a C++ include was invisible to it no matter what its metadata said. A LABEL move, not an edge move \u2014 5,404 include sites in 905 corpus files, 5,118 distinct module names, and the include-dependency row count is identical before and after. Every row is still asserted with its line, its metadata and (where pinned) its exact count, and the `references` label is FORBIDDEN so a downgrade fails the fixture rather than only moving a number in a census. A `using`-dependency row stays `references`: an include dependency and a using-dependency are two facts, and only the first is file inclusion.",
+  "expectSymbols": [
+    { "name": "main", "kind": "function", "note": "an ordinary function is unaffected." },
+    { "name": "casts_only", "kind": "function" },
+    { "name": "unreachable_after", "kind": "function" },
+    { "name": "total", "kind": "variable" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "main", "target": "add", "note": "the control for the gate being too broad: a LAMBDA called by name is a real callee and must survive the keyword gate. MEASURED: the gate is a test on the callee's TEXT, so a non-keyword callee is untouched." },
+    { "type": "calls", "from": "main", "target": "apply" },
+    { "type": "calls", "from": "main", "target": "hash_code", "note": "a member call through a type-id expression — the callee leaf is an ordinary name and is unaffected." },
+    { "type": "uses", "from": "main", "target": "total", "note": "D1's ROSTER gate: a file-scope value is still readable, so the `uses` position is not over-suppressed by the same set that silences keywords." },
+    { "type": "imports", "from": "global", "target": "string" },
+    { "type": "imports", "from": "global", "target": "vector" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "main", "target": "static_cast", "note": "D1: the cast family is the class #924's type-only set could not see. `static_cast<int>(x)` parses as call_expression[function=template_function[name=identifier(static_cast)]] — the cast OPERATOR in the name slot." },
+    { "type": "calls", "from": "main", "target": "typeid", "note": "D1: `typeid` is an operator ([expr.type.query]), not a function." },
+    { "type": "calls", "from": "casts_only", "target": "static_cast" },
+    { "type": "calls", "from": "casts_only", "target": "dynamic_cast" },
+    { "type": "calls", "from": "casts_only", "target": "sizeof" },
+    { "type": "calls", "from": "casts_only", "target": "alignof" },
+    { "type": "calls", "from": "casts_only", "target": "noexcept", "note": "the noexcept OPERATOR is callable syntax, so the grammar makes a call_expression — but it names no function." },
+    { "type": "calls", "from": "casts_only", "target": "throw", "note": "same shape as noexcept." },
+    { "type": "calls", "from": "unreachable_after", "target": "if", "note": "the strongest form of the argument: a control-flow KEYWORD as a call target is a fabrication with no reading at all. 29 sites corpus-wide." },
+    { "type": "calls", "from": "unreachable_after", "target": "return" },
+    { "type": "calls", "from": "main", "target": "main" },
+    { "type": "references", "target": "string", "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses, and the reason a silent relabel cannot pass." },
+    { "type": "references", "target": "vector", "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses, and the reason a silent relabel cannot pass." }
+  ],
+  "forbidSymbols": [
+    { "name": "static_cast", "kind": "variable", "note": "D1, DECLARED-NAME GATE: a declared name is an identifier. Measured `static_cast` published as a `variable` on the real corpora." },
+    { "name": "dynamic_cast" },
+    { "name": "const_cast" },
+    { "name": "reinterpret_cast" },
+    { "name": "typeid" },
+    { "name": "noexcept", "kind": "function", "note": "measured as a published `function` symbol." },
+    { "name": "if", "kind": "variable", "note": "measured as a published `variable` (3 sites) — the grammar's recovery invents call_expression nodes for statements." },
+    { "name": "for", "kind": "variable" },
+    { "name": "switch", "kind": "variable" },
+    { "name": "friend", "kind": "property", "note": "`friend void f();` inside a class reached the declarator read and published a property named for the keyword." },
+    { "name": "void" },
+    { "name": "bool" },
+    { "name": "auto" },
+    { "name": "operator", "note": "`operator` alone declares nothing; `operator+` and `operator()` are ordinary names and are NOT in the set." }
+  ]
+}

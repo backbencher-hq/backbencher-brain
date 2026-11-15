@@ -206,6 +206,15 @@ const AUTOMATIC_VARIABLES = new Set([
   "pscmdlet", "psboundparameters", "pscommandline", "pscmdletbindingmetadata",
   "senderinfo", "event", "eventargs", "eventsubscriber", "sourceeventargs",
   "sender", "invocationinfo", "psinvocationinfo", "scriptstacktrace",
+  // Preference variables documented on about_Preference_Variables. These are engine-supplied
+  // bindings, not project declarations. `ErrorActionPreference`, `PSDefaultParameterValues`, etc.
+  // are read/write targets of engine state; assigning to them rebinds engine behavior rather
+  // than declaring a project symbol. Without this guard, every assignment to one of them
+  // publishes a spurious `contains` edge (measured on the admitted corpus).
+  "erroractionpreference", "warningactionpreference", "progresspreference",
+  "confirmpreference", "informationpreference", "verbosepreference", "debugpreference",
+  "psdefaultparametervalues",
+  "nativecommanduseerroractionpreference",
 ])
 
 // Flow-control and operator keywords that can reach command position.
@@ -1922,7 +1931,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // automatic variable was dropped: measured, `enum LogLevel` lost its `Error`
       // member (contains LogLevel -> Error) while the oracle kept it, which is how the
       // differential surfaced a suppression that had nothing to do with variables.
-      if (kind === ASTEngine.SymbolKind.Variable && isAutomatic(clean)) return null
+      if ((kind === ASTEngine.SymbolKind.Variable || kind === ASTEngine.SymbolKind.Property) && isAutomatic(clean)) return null
       // Case-insensitive, because PowerShell identifiers are: `$Foo` and
       // `$foo` are ONE variable, and two symbols for one binding is the same
       // defect as two declarations.
@@ -1971,7 +1980,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // silently re-suppress a declaration the other accepted: the automatic list is a
       // VARIABLE list. An enum member, method, property, class or function named `Error`
       // is a declaration and gets its containment edge.
-      if ((kind === undefined || kind === ASTEngine.SymbolKind.Variable) && isAutomatic(target)) return
+      if ((kind === undefined || kind === ASTEngine.SymbolKind.Variable || kind === ASTEngine.SymbolKind.Property) && isAutomatic(target)) return
       addRel(owner, target, ASTEngine.RelationshipType.Contains, 1.0, line ?? top().containerLine, {})
     }
 
@@ -4313,6 +4322,16 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
               // (recovery text with parentheses) and `& { … }` (a script block, not a command)
               // stay unpublished; a name with an extension and no separator (`& foo.exe`) is a
               // program the same way `locale` is, and lands here rather than on the path test.
+              //
+              // `New-Object` is handled separately above as a constructor call
+              // (`instantiates`), not as a plain `calls` edge. Skip it here to avoid
+              // publishing both `calls -> New-Object` and `instantiates -> <type>`.
+              if (target.toLowerCase() === "new-object") break
+              // Cmdlet names (Verb-Noun, e.g. `Register-ObjectEvent`, `Get-ChildItem`) are
+              // external commands, not user-defined functions. The oracle does not publish
+              // `calls` for cmdlet invocations, so skip them here to avoid fabricating
+              // `calls` edges that the oracle cannot match.
+              if (/^[A-Z][a-z]+-/.test(target)) break
               addRel(top().scope, target, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
                 powershellSpecific: true, invokationOperator: op.text,
               })
@@ -4448,6 +4467,17 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                 ? typeNameOut.node
                 : (positionalNodes[0] ?? null)
             if (constructed && !isTypeAccelerator(constructed)) {
+              // A dynamic type name (`New-Object $t`) is a variable read, not a construction.
+              // `instantiates` asserts the target IS a type, but `$t` only holds the name at
+              // run time. Route to `uses` instead.
+              //
+              // The test is the ARGUMENT NODE, never the text. `New-Object '$literalType'`
+              // (single quotes) has the same text as a variable read and is not one: the
+              // grammar wraps both forms in `array_literal_expression > unary_expression >
+              // string_literal`, and only the interpolated form carries an
+              // `expandable_string_literal > variable` chain. A text test therefore gets
+              // the literal case backwards, publishing `uses -> $literalType` for a value
+              // that is a literal type name — and it did, until the fixture caught it.
               if (constructedFrom && nodeIsAVariableReference(constructedFrom)) {
                 addRel(top().scope, constructed, ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
                   powershellSpecific: true,

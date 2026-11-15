@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_impact",
+  "tier": "T2",
+  "subject": "workspace reference large index (.bb-data, 11,440 files, ~3.4 GB)",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-final.ts",
+  "openMode": "byte-read-only (BrainDatabase.getRawInstance(projectId,{readonly:true})); the handler opens the same way",
+  "generatedAt": "2026-11-01T23:11:04.431Z",
+  "loadAverage": [
+    18.53,
+    22.26,
+    18.61
+  ],
+  "indexes": [
+    "sqlite_autoindex_brain_symbol_1",
+    "sqlite_autoindex_brain_relationship_1",
+    "brain_symbol_project_idx",
+    "brain_symbol_file_idx",
+    "brain_symbol_name_idx",
+    "brain_symbol_type_idx",
+    "brain_symbol_qualified_idx",
+    "brain_rel_project_idx",
+    "brain_rel_source_idx",
+    "brain_rel_target_idx",
+    "brain_rel_type_idx",
+    "brain_rel_source_type_idx",
+    "brain_rel_proj_type_target_idx",
+    "brain_rel_confidence_idx",
+    "brain_rel_cross_file_idx",
+    "brain_rel_target_ext_idx",
+    "brain_symbol_owner_idx",
+    "brain_sym_proj_file_idx",
+    "brain_sym_proj_name_idx",
+    "brain_sym_proj_name_nocase_idx",
+    "brain_sym_proj_type_idx",
+    "brain_sym_proj_name_type_idx",
+    "brain_symbol_gravity_idx",
+    "brain_rel_proj_target_idx",
+    "brain_rel_proj_source_idx",
+    "brain_rel_proj_type_idx",
+    "brain_rel_target_type_idx",
+    "brain_rel_cross_lang_idx",
+    "brain_rel_target_cross_idx",
+    "brain_rel_source_cross_idx",
+    "brain_symbol_project_owner_idx"
+  ],
+  "walkQueryPlan": [
+    "CO-ROUTINE casc",
+    "COMPOUND QUERY",
+    "LEFT-MOST SUBQUERY",
+    "SCAN CONSTANT ROW",
+    "UNION ALL",
+    "SEARCH m USING INDEX brain_symbol_project_owner_idx (project_id=? AND owner_symbol_id>? AND owner_symbol_id<?)",
+    "SCAN casc",
+    "SEARCH r USING INDEX brain_rel_proj_type_target_idx (project_id=? AND relationship_type=? AND target_symbol_id=?)",
+    "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)",
+    "SEARCH f USING COVERING INDEX sqlite_autoindex_brain_file_1 (id=?)",
+    "USE TEMP B-TREE FOR ORDER BY"
+  ],
+  "dbFiles": [
+    "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-wal",
+    "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-shm"
+  ],
+  "before": {
+    "brain.db": "dfde822e5036b2d29468aacf30817b9dc4a17984794fe1744cdf50be8694b79e",
+    "brain.db-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "brain.db-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  "after": {
+    "brain.db": "dfde822e5036b2d29468aacf30817b9dc4a17984794fe1744cdf50be8694b79e",
+    "brain.db-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "brain.db-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  "dbUnchanged": true,
+  "changedFiles": [],
+  "results": [
+    {
+      "name": "join",
+      "n": 21937,
+      "rank": 1,
+      "calls": 5,
+      "warm": true,
+      "runsMs": [
+        327.7,
+        284.2,
+        245,
+        298.3,
+        198.4
+      ],
+      "p50Ms": 284.2,
+      "p95Ms": 327.7,
+      "outcome": {
+        "shownCount": 5,
+        "totalCountIfKnown": 5,
+        "directCount": 5,
+        "truncated": false,
+        "truncationReason": null,
+        "depthReached": 0,
+        "engineTruncationReason": null,
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": null
+        },
+        "reproducible": true,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0
+        },
+        "autoRefresh": null
+      }
+    },
+    {
+      "name": "named",
+      "n": 302,
+      "rank": 100,
+      "calls": 5,
+      "warm": true,
+      "runsMs": [
+        185.2,
+        151.1,
+        321.2,
+        200.7,
+        59.9
+      ],
+      "p50Ms": 185.2,
+      "p95Ms": 321.2,
+      "outcome": {
+        "shownCount": 17,
+        "totalCountIfKnown": 17,
+        "directCount": 12,
+        "truncated": false,
+        "truncationReason": null,
+        "depthReached": 3,
+        "engineTruncationReason": null,
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": null
+        },
+        "reproducible": true,
+        "freshness": {
+          "fresh": 0,
+          "stale": 2,
+          "missing": 0
+        },
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    },
+    {
+      "name": "refReachable",
+      "n": 25,
+      "rank": 500,
+      "calls": 5,
+      "warm": true,
+      "runsMs": [
+        162.7,
+        236,
+        34.4,
+        62.6,
+        46.2
+      ],
+      "p50Ms": 62.6,
+      "p95Ms": 236,
+      "outcome": {
+        "shownCount": 2,
+        "totalCountIfKnown": 2,
+        "directCount": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "depthReached": 1,
+        "engineTruncationReason": null,
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": null
+        },
+        "reproducible": true,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0
+        },
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    },
+    {
+      "name": "computeImpact",
+      "n": -1,
+      "rank": -1,
+      "calls": 5,
+      "warm": true,
+      "runsMs": [
+        153.6,
+        37.3,
+        39.3,
+        42.9,
+        63.5
+      ],
+      "p50Ms": 42.9,
+      "p95Ms": 153.6,
+      "outcome": {
+        "shownCount": 7,
+        "totalCountIfKnown": 7,
+        "directCount": 7,
+        "truncated": false,
+        "truncationReason": null,
+        "depthReached": 0,
+        "engineTruncationReason": null,
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": null
+        },
+        "reproducible": true,
+        "freshness": {
+          "fresh": 2,
+          "stale": 5,
+          "missing": 0
+        },
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "expectComments": [
+    {
+      "symbol": "DocSig",
+      "contains": "Module sigil docs."
+    },
+    {
+      "symbol": "f",
+      "contains": "Inline sigil doc"
+    },
+    {
+      "symbol": "DocCtl",
+      "contains": "Module string docs."
+    },
+    {
+      "symbol": "g",
+      "contains": "Plain doc"
+    }
+  ]
+}

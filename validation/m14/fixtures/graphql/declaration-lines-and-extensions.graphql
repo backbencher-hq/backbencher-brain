@@ -1,0 +1,29 @@
+"A described type — `type A` is written on line 2, its docstring on line 1."
+type A {
+  "a described field"
+  f: Int
+}
+
+type B
+  implements I1
+  & I2
+  & I3
+{
+  x: Int
+}
+
+interface I1 { a: Int }
+interface I2 { b: Int }
+interface I3 { c: Int }
+
+union U = M1 | M2 | M3
+type M1 { p: Int }
+type M2 { q: Int }
+type M3 { r: Int }
+
+extend type A {
+  g: String
+}
+
+extend union U = M4
+type M4 { s: Int }

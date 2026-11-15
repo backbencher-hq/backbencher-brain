@@ -5,7 +5,7 @@ Measured 2026-10-05 on branch `analyzer/R7_AUDIT_FLEET` at `9dc60acc0`.
 - instrument: `script/incoming-rust/rust-r7-audit.ts` (`--repo=ripgrep`)
 - entry: `parseFile` from `src/ast/pool-worker` — what the indexer calls, not `analyze()`
 - population: **110 `.rs` files**, derived from `git ls-files` over
-  `$HOME/fixtures/repositories/ripgrep` filtered by
+  `/home/ishaq2321/bb_tests/repositories/ripgrep` filtered by
   `detectLanguageFromPath`, 1,901,836 bytes. 0 parse failures. 5,150 symbols,
   0 empty symbol names, 0 empty/unknown symbol kinds.
 - raw: `r7-ripgrep-before.json` (machine) / `r7-ripgrep-before.txt` (instrument's own report)

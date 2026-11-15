@@ -1,0 +1,170 @@
+{
+  "fixtureId": "go/bare-value-reads",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "GO1 (#736 go wave): the analyzer emitted NO bare-identifier edges at all while call args, index operands and return expressions all read file-visible values. Every bare identifier naming a package-scope var/const/func is now a Uses edge with lexical scoping (params/receiver/block/short-var/range/for/if-init/select-assign/type-switch bindings shadow) and the exclusion discipline (entity names, struct-literal keys, call callees incl. generic climb, member leaves, qualified non-leaves, channel operands, LHS writes, go/defer callees, labels, paths, blank). Case-label const reads (Red) and generic-callee args emit; shadowing (shadowed param, withlocal blocks, loop vars) stays silent.",
+  "expectSymbols": [
+    {
+      "name": "Global",
+      "kind": "variable"
+    },
+    {
+      "name": "Limit",
+      "kind": "constant"
+    },
+    {
+      "name": "reader",
+      "kind": "function"
+    },
+    {
+      "name": "hiddenHelper",
+      "kind": "function"
+    },
+    {
+      "name": "sized",
+      "kind": "function"
+    },
+    {
+      "name": "keyed",
+      "kind": "function"
+    },
+    {
+      "name": "writeonly",
+      "kind": "function"
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "hiddenHelper",
+      "visibility": "private"
+    },
+    {
+      "symbol": "ShownCaller",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "Global"
+    },
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "Limit"
+    },
+    {
+      "type": "uses",
+      "from": "target_fn",
+      "target": "Global"
+    },
+    {
+      "type": "uses",
+      "from": "usecase",
+      "target": "Red"
+    },
+    {
+      "type": "uses",
+      "from": "usetmpl",
+      "target": "Global"
+    },
+    {
+      "type": "uses",
+      "from": "ShownCaller",
+      "target": "Global"
+    },
+    {
+      "type": "calls",
+      "from": "reader",
+      "target": "takes"
+    },
+    {
+      "type": "calls",
+      "from": "reader",
+      "target": "target_fn"
+    },
+    {
+      "type": "calls",
+      "from": "usetmpl",
+      "target": "identity"
+    },
+    {
+      "type": "calls",
+      "from": "ShownCaller",
+      "target": "hiddenHelper"
+    },
+    {
+      "type": "uses",
+      "from": "sized",
+      "target": "N",
+      "comment": "GO10: array length reads the file const"
+    },
+    {
+      "type": "uses",
+      "from": "keyed",
+      "target": "Red",
+      "comment": "GO11: map-literal keys read"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "Global"
+    },
+    {
+      "type": "uses",
+      "from": "usetmpl",
+      "target": "identity"
+    },
+    {
+      "type": "uses",
+      "from": "writeonly",
+      "target": "wa",
+      "comment": "GO9: multi-assign LHS writes"
+    },
+    {
+      "type": "uses",
+      "from": "writeonly",
+      "target": "wb",
+      "comment": "GO9: multi-assign LHS writes"
+    },
+    {
+      "type": "uses",
+      "from": "writeplain",
+      "target": "wa",
+      "comment": "GO9: single-assign LHS writes"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "hiddenHelper"
+    },
+    {
+      "name": "X"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "_"
+    },
+    {
+      "name": "~int | ~string"
+    },
+    {
+      "name": "int | string"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "reads",
+      "startLine": 1,
+      "startColumn": 1,
+      "endLine": 1,
+      "endColumn": 14,
+      "startIndex": 0,
+      "endIndex": 13
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "fixtureId": "cpp/imports-include-910",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "ONTOLOGY `imports`. The lane emitted 913 `#include` rows over 128 admitted C++ files as `references`, and 0 as `imports` \u2014 so the `imports` relationship type existed in the engine's enum, was the kind the ONE downstream reader of file-level dependencies filters on (`src/lsp/graph_request.ts`: `WHERE relationship_type = 'imports' AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = ?`), and a C++ translation unit's include list was unreachable there. This is the relabel the C lane made in M60/#910 and the one `script/m14/mutate-analyzer.ts` already carries a reverting mutant for ('downgrades the include edge from the first-class `imports` kind back to the old `references` + metadata shape \u2014 the asymmetry every harness was blind to'). `references` is NOT emptied by it: the `using`-dependency shape stays `references`, because an include dependency and a using-dependency are two facts about two different constructs and the fixture pins them apart by TARGET (`vector` vs `std::vector`) as well as by kind. `module` and `fileLevel` are pinned because they are the contract: `module` is what a consumer reads as the module specifier and `fileLevel` is what tells the indexer that a row with no resolvable source symbol belongs to the FILE. EXPECTED-RELATIONSHIP, not `equals`: three `#include <string>` lines must still produce one EDGE (D3) while the `imports` ARRAY keeps three entries, and the two are different questions.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "vector",
+      "meta.module": "vector",
+      "meta.fileLevel": true,
+      "meta.isSystem": true,
+      "note": "the include dependency, first kind `imports`. `module` is the key a consumer reads as the module specifier and `fileLevel` is what tells `parallel-indexer.ts` that a relationship with no resolvable source symbol belongs to the FILE \u2014 absent it, the row loses its importer."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "meta.isSystem": false,
+      "meta.relationshipType": "part_of_directive",
+      "meta.partRole": "part",
+      "note": "THE TARGET IS NOW PINNED, BECAUSE IT IS NOW STABLE. It was left unconstrained while it was a PATH - a path varies with the checkout, and pinning one would have made the fixture a test of the machine. It is now the part's MODULE SYMBOL (its file stem), the same on every machine and the only form the arbiter can bind: MEASURED path => 0 resolved of 4,612 and symbol => 383 resolved of 4,612, same population, same 2,000-file stride sample, the target's FORM the only variable. A CONSTRAINT THAT CAN NOW BE PINNED IS A CHECK THAT SHOULD NOW BE OWNED, so this fixture asserts the stem itself rather than merely that some part_of row exists.",
+      "target": "local_header",
+      "meta.partSymbol": "local_header"
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "string",
+      "note": "the repeated `<string>` include."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "std::vector",
+      "note": "CONTROL: the `using` shape stays `references`. It names a namespace, not a header, and the target is deliberately different from the `vector` include's \u2014 one edge per fact, and the facts are different."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "global",
+      "target": "vector",
+      "note": "THE REGRESSION THIS FIXTURE EXISTS FOR: the include as `references`. With the pre-fix analyzer this fixture fails here, because that is what the analyzer emitted \u2014 and every cpp fixture that mentioned the include still passed, because a fixture that expects the wrong kind pins the wrong kind."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "local_header.h",
+      "note": "same, for the quoted form."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "string",
+      "note": "same, for the repeated include."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "std::vector",
+      "note": "the other direction: the `using` dependency must not be promoted to `imports`. It is a name-scope fact about one namespace, not a file-level dependency on a header, and putting it in `imports` would put a non-header module specifier into the section that answers 'what does this file include'."
+    },
+    {
+      "type": "imports",
+      "from": "Holder",
+      "target": "items",
+      "note": "`contains` is not `imports`; a member is not a dependency."
+    },
+    {
+      "type": "imports",
+      "from": "Holder",
+      "target": "Holder::items",
+      "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "local_header.h",
+      "note": "A QUOTED include is not `imports`: the contract keeps `part_of` and `imports` DISTINCT, so a defect that leaves this row on `imports` is caught here. This replaces the retired claim that the two written forms were 'a metadata distinction, not a relationship-type one' \u2014 that was true when the vocabulary had no `part_of`; it is false now."
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "string",
+      "note": "the `imports` ARRAY keeps every occurrence \u2014 three `#include <string>` lines push three entries, while the GRAPH keeps one edge. 'How many times was it included' is a count; 'what does this file depends on' is an edge."
+    }
+  ]
+}

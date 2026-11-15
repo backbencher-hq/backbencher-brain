@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/quoted-keys",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave M2 fix: quoted method keys resolve unquoted (save-data, not \"save-data\"), while computed [dyn] keys — variables unknowable statically — are skipped, never kept raw as symbol names.",
+  "expectSymbols": [
+    { "name": "save-data", "kind": "method" }
+  ],
+  "forbidSymbols": [
+    { "name": "[dyn]" }
+  ]
+}

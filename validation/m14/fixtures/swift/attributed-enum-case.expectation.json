@@ -1,0 +1,27 @@
+{
+  "fixtureId": "swift/attributed-enum-case",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#924 (swift half, M60 name surface — found by the R10 whitespace-class split, script/m60/target-spelling-census.ts). An enum case with a preceding `@available(...)` attribute puts a `modifiers` node FIRST, so the member-name pick (`firstNamedChild`) published the ATTRIBUTE PAYLOAD as the member's name. Measured on swift-nio/Sources/NIOHTTP1/HTTPTypes.swift: five cases (`invalidHost`, `invalidPort`, `invalidPath`, `invalidQueryString`, `invalidFragment`) were absent as symbols, and the artifact carried one `contains HTTPParserError -> @available(*, deprecated, message: \"Cannot be thrown\")` whose 'name' is a decorator payload. The name is the identifier after `case`; the attribute is metadata. This fixture spells two DIFFERENT payloads, because the corpus's five are IDENTICAL and a revert would otherwise collapse into one target and could hide. The pins: both real names exist with their owner; no symbol and no relationship target carries the payload; the unattributed case and a real construction from a (now-correctly named) attributed case still work.",
+  "expectSymbols": [
+    { "name": "ParseError", "kind": "enum" },
+    { "name": "invalidHost", "kind": "enum_member", "ownerName": "ParseError", "note": "the name is the identifier after `case`, never the `modifiers` node" },
+    { "name": "invalidPort", "kind": "enum_member", "ownerName": "ParseError" },
+    { "name": "invalidChunkSize", "kind": "enum_member", "ownerName": "ParseError" },
+    { "name": "legacy", "kind": "method", "ownerName": "ParseError" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "ParseError", "target": "invalidHost", "line_number": 30, "note": "M59.A7: the declaration's own line — the `case` line (30), not the `@available` line above it (29)" },
+    { "type": "contains", "source": "ParseError", "target": "invalidPort", "line_number": 33 },
+    { "type": "instantiates", "source": "legacy", "target": "ParseError", "meta.isEnumConstruction": true, "note": "the named case resolves against the correctly-named member set" }
+  ],
+  "forbidSymbols": [
+    { "name": "@available(*, deprecated, message: \"Cannot be thrown\")", "comment": "#924: a decorator PAYLOAD is not a name — pre-fix this was the enum member's published name" },
+    { "name": "@available(*, deprecated, message: \"Legacy spelling\")", "comment": "the second spelling, so the revert cannot hide behind the corpus's identical strings" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "source": "ParseError", "target": "@available(*, deprecated, message: \"Cannot be thrown\")", "comment": "#924: the payload must never be a target either" },
+    { "type": "contains", "source": "ParseError", "target": "@available(*, deprecated, message: \"Legacy spelling\")" },
+    { "type": "contains", "source": "ParseError", "target": "invalidHost", "line_number": 29, "comment": "M59.A7 line pin: 29 is the `@available` line — a symbol's line is its DECLARATION line (30)" }
+  ]
+}

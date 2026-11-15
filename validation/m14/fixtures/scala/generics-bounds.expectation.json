@@ -1,0 +1,31 @@
+{
+  "fixtureId": "scala/generics-bounds",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Generic bounds must not corrupt symbol names or create phantom supertype edges to T/Comparable.",
+  "expectSymbols": [
+    {
+      "name": "Box"
+    },
+    {
+      "name": "swap"
+    },
+    {
+      "name": "item"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "targetEndsWith": "Comparable"
+    },
+    {
+      "type": "implements",
+      "targetEndsWith": "Comparable"
+    },
+    {
+      "type": "mixes_in",
+      "targetEndsWith": "Comparable"
+    }
+  ]
+}

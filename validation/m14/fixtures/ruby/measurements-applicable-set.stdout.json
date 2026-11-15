@@ -1,0 +1,865 @@
+{
+ "schemaVersion": 1,
+ "instrument": "script/m14/ruby-applicable-set.ts",
+ "measuredAt": "2026-10-18T18:30:57.667Z",
+ "language": "ruby",
+ "admissibilityRule": "APPLICABLE iff every construct production the value needs exists in the pinned grammar's own enumeration AND the analyzer has an emission site AND at least one fixture carries a positive expectation row AND that fixture goes RED when the emission is removed. A NOT-APPLICABLE value must have zero emissions over the fixture corpus. A value failing any conjunct is a finding, not a note.",
+ "canonicalVocabulary": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "mixes_in",
+  "overrides",
+  "instantiates",
+  "implements",
+  "decorates",
+  "renders",
+  "part_of"
+ ],
+ "applicableValues": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "mixes_in",
+  "overrides",
+  "instantiates"
+ ],
+ "notApplicableValues": [
+  "implements",
+  "decorates",
+  "renders",
+  "part_of"
+ ],
+ "grammar": {
+  "wasm": "wasm/tree-sitter-ruby.wasm",
+  "sha256": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39",
+  "slotCount": 353,
+  "namedTypeCount": 108,
+  "anonymousTokenCount": 176,
+  "namedTypes": [
+   "alternative_pattern",
+   "argument_list",
+   "array",
+   "array_pattern",
+   "as_pattern",
+   "assignment",
+   "bare_string",
+   "bare_symbol",
+   "begin_block",
+   "binary",
+   "block",
+   "block_argument",
+   "block_body",
+   "block_parameter",
+   "block_parameters",
+   "body_statement",
+   "call",
+   "case_match",
+   "chained_string",
+   "character",
+   "class_variable",
+   "comment",
+   "complex",
+   "conditional",
+   "constant",
+   "delimited_symbol",
+   "destructured_left_assignment",
+   "destructured_parameter",
+   "do_block",
+   "element_reference",
+   "empty_statement",
+   "encoding",
+   "end_block",
+   "escape_sequence",
+   "exception_variable",
+   "exceptions",
+   "expression_reference_pattern",
+   "false",
+   "file",
+   "find_pattern",
+   "float",
+   "forward_argument",
+   "forward_parameter",
+   "global_variable",
+   "hash",
+   "hash_key_symbol",
+   "hash_pattern",
+   "hash_splat_argument",
+   "hash_splat_nil",
+   "hash_splat_parameter",
+   "heredoc_beginning",
+   "heredoc_body",
+   "heredoc_content",
+   "heredoc_end",
+   "identifier",
+   "if_guard",
+   "if_modifier",
+   "in_clause",
+   "instance_variable",
+   "integer",
+   "interpolation",
+   "keyword_parameter",
+   "keyword_pattern",
+   "lambda",
+   "lambda_parameters",
+   "left_assignment_list",
+   "line",
+   "match_pattern",
+   "method",
+   "method_parameters",
+   "operator",
+   "operator_assignment",
+   "optional_parameter",
+   "pair",
+   "parenthesized_pattern",
+   "parenthesized_statements",
+   "pattern",
+   "program",
+   "range",
+   "rational",
+   "regex",
+   "rescue_modifier",
+   "rest_assignment",
+   "right_assignment_list",
+   "scope_resolution",
+   "self",
+   "setter",
+   "simple_symbol",
+   "singleton_class",
+   "singleton_method",
+   "splat_argument",
+   "splat_parameter",
+   "string",
+   "string_array",
+   "string_content",
+   "subshell",
+   "super",
+   "superclass",
+   "symbol_array",
+   "test_pattern",
+   "true",
+   "unary",
+   "uninterpreted",
+   "unless_guard",
+   "unless_modifier",
+   "until_modifier",
+   "variable_reference_pattern",
+   "while_modifier"
+  ],
+  "anonymousTokens": [
+   "!",
+   "!=",
+   "!~",
+   "\"",
+   "#{",
+   "%",
+   "%=",
+   "%i(",
+   "%w(",
+   "&",
+   "&&",
+   "&&=",
+   "&.",
+   "&=",
+   "(",
+   ")",
+   "*",
+   "**",
+   "**=",
+   "*=",
+   "+",
+   "+=",
+   "+@",
+   ",",
+   "-",
+   "-=",
+   "->",
+   "-@",
+   ".",
+   "..",
+   "...",
+   "/",
+   "/=",
+   ":",
+   ":\"",
+   "::",
+   ";",
+   "<",
+   "<<",
+   "<<=",
+   "<=",
+   "<=>",
+   "=",
+   "==",
+   "===",
+   "=>",
+   "=~",
+   ">",
+   ">=",
+   ">>",
+   ">>=",
+   "?",
+   "BEGIN",
+   "END",
+   "[",
+   "[]",
+   "[]=",
+   "]",
+   "^",
+   "^=",
+   "__END__",
+   "_arg",
+   "_argument",
+   "_argument_list_with_trailing_comma",
+   "_array_pattern_body",
+   "_array_pattern_n",
+   "_array_pattern_n_repeat1",
+   "_body_expr",
+   "_body_statement",
+   "_body_statement_repeat1",
+   "_call",
+   "_chained_command_call",
+   "_constant_suffix",
+   "_expression",
+   "_find_pattern_body",
+   "_formal_parameter",
+   "_function_identifier",
+   "_guard",
+   "_hash_pattern_any_rest",
+   "_hash_pattern_body",
+   "_hash_pattern_body_repeat1",
+   "_heredoc_body_start",
+   "_identifier_suffix",
+   "_int_or_float",
+   "_keyword_variable",
+   "_lhs",
+   "_line_break",
+   "_literal",
+   "_literal_contents",
+   "_method_name",
+   "_method_rest",
+   "_mlhs",
+   "_mlhs_repeat1",
+   "_no_line_break",
+   "_nonlocal_variable",
+   "_numeric",
+   "_pattern_constant",
+   "_pattern_expr",
+   "_pattern_expr_alt",
+   "_pattern_expr_basic",
+   "_pattern_lambda",
+   "_pattern_literal",
+   "_pattern_primitive",
+   "_pattern_top_expr_body",
+   "_pattern_value",
+   "_primary",
+   "_short_interpolation",
+   "_simple_formal_parameter",
+   "_simple_numeric",
+   "_statement",
+   "_statements",
+   "_statements_repeat1",
+   "_terminator",
+   "_variable",
+   "`",
+   "alias",
+   "alternative_pattern_repeat1",
+   "and",
+   "begin",
+   "block_parameters_repeat1",
+   "break",
+   "case",
+   "case_match_repeat1",
+   "case_repeat1",
+   "chained_string_repeat1",
+   "class",
+   "command_argument_list_repeat1",
+   "constant_suffix_token1",
+   "def",
+   "defined?",
+   "do",
+   "else",
+   "elsif",
+   "end",
+   "ensure",
+   "exceptions_repeat1",
+   "for",
+   "hash_repeat1",
+   "heredoc_body_repeat1",
+   "i",
+   "identifier_suffix_token1",
+   "if",
+   "in",
+   "module",
+   "next",
+   "nil",
+   "not",
+   "or",
+   "parameters_repeat1",
+   "program_token1",
+   "r",
+   "redo",
+   "rescue",
+   "retry",
+   "return",
+   "ri",
+   "string_array_repeat1",
+   "string_array_token1",
+   "symbol_array_repeat1",
+   "then",
+   "undef",
+   "undef_repeat1",
+   "unless",
+   "until",
+   "when",
+   "when_repeat1",
+   "while",
+   "yield",
+   "{",
+   "|",
+   "|=",
+   "||",
+   "||=",
+   "}",
+   "~",
+   "~@"
+  ],
+  "fieldCount": 0,
+  "fields": []
+ },
+ "constructSurface": {
+  "calls": {
+   "applicable": true,
+   "constructs": [
+    "call",
+    "argument_list",
+    "block"
+   ],
+   "present": [
+    "call",
+    "argument_list",
+    "block"
+   ],
+   "absent": [],
+   "rule": "a `call` whose callee is not a builtin (the pinned grammar has exactly ONE call node type — `command`/`command_call` cannot occur); bare identifiers in expression position that are not locals are calls with `bareCall: true`; the source is the enclosing method, else the owner, else the file-scope sentinel.",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:911",
+    "src/ast/real-ruby-analyzer.ts:2368",
+    "src/ast/real-ruby-analyzer.ts:2555",
+    "src/ast/real-ruby-analyzer.ts:2605"
+   ],
+   "implementationSymbol": "RelationshipType.Calls"
+  },
+  "uses": {
+   "applicable": true,
+   "constructs": [
+    "instance_variable",
+    "call"
+   ],
+   "present": [
+    "instance_variable",
+    "call"
+   ],
+   "absent": [],
+   "rule": "instance-variable READS (`memberRead`) and ActiveRecord association macros (`activerecordMacro`); writes — including compound-assignment LHS — stay silent.",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:867",
+    "src/ast/real-ruby-analyzer.ts:1098",
+    "src/ast/real-ruby-analyzer.ts:1805",
+    "src/ast/real-ruby-analyzer.ts:2453"
+   ],
+   "implementationSymbol": "RelationshipType.Uses"
+  },
+  "contains": {
+   "applicable": true,
+   "constructs": [
+    "class",
+    "module",
+    "method",
+    "singleton_method",
+    "assignment",
+    "do_block"
+   ],
+   "present": [
+    "class",
+    "module",
+    "method",
+    "singleton_method",
+    "assignment",
+    "do_block"
+   ],
+   "absent": [],
+   "rule": "one edge per OWNED symbol (methods/constants/DSL-block members), from `ownerName`; a factory-declared type (`K = Class.new(Base) do belongs_to :acct end`) owns the block's members, a bare `Class.new do … end` named by nothing owns nothing (the oracle's NAMABLE-OWNER rule is the analyzer's too).",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:1418"
+   ],
+   "implementationSymbol": "RelationshipType.Contains"
+  },
+  "imports": {
+   "applicable": true,
+   "constructs": [
+    "call",
+    "string",
+    "string_content"
+   ],
+   "present": [
+    "call",
+    "string",
+    "string_content"
+   ],
+   "absent": [],
+   "rule": "`require`/`require_relative`/`load`/`autoload` — one `imports` edge per required path (file-level, `requireMethod` metadata, `resolution: file-relative | load-path`) and the same fact as a `references` row; the `imports[]` payload channel is written one-for-one with the edge.",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:2044"
+   ],
+   "implementationSymbol": "RelationshipType.Imports"
+  },
+  "references": {
+   "applicable": true,
+   "constructs": [
+    "constant",
+    "scope_resolution",
+    "call"
+   ],
+   "present": [
+    "constant",
+    "scope_resolution",
+    "call"
+   ],
+   "absent": [],
+   "rule": "constant/scope-resolution mentions in read/type positions, plus the require/load path strings (the `references` half of the load-fact pair).",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:2035"
+   ],
+   "implementationSymbol": "RelationshipType.References"
+  },
+  "exports": {
+   "applicable": true,
+   "constructs": [
+    "assignment",
+    "method",
+    "singleton_method",
+    "call"
+   ],
+   "present": [
+    "assignment",
+    "method",
+    "singleton_method",
+    "call"
+   ],
+   "absent": [],
+   "rule": "ADAPTED SEMANTICS, declared: Ruby has no export keyword, but a FILE UNIT has a reachable surface — top-level constants/defs, source = the file unit, with the measured refusals (singleton-class members, `private_constant`, reopens/duplicates are one unit, unnameable symbols).",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:1264"
+   ],
+   "implementationSymbol": "RelationshipType.Exports"
+  },
+  "extends": {
+   "applicable": true,
+   "constructs": [
+    "class",
+    "call"
+   ],
+   "present": [
+    "class",
+    "call"
+   ],
+   "absent": [],
+   "rule": "`class B < A` when the base is a statically nameable constant path (the edge's line is the base type node, #825), plus the factory spelling `K = Class.new(Base)` (both ends written).",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:593",
+    "src/ast/real-ruby-analyzer.ts:1037"
+   ],
+   "implementationSymbol": "RelationshipType.Extends"
+  },
+  "mixes_in": {
+   "applicable": true,
+   "constructs": [
+    "call",
+    "module",
+    "class"
+   ],
+   "present": [
+    "call",
+    "module",
+    "class"
+   ],
+   "absent": [],
+   "rule": "CANONICAL mixin composition, relabelled from the family's previous adaptation: `include M` / `prepend M` compose M into the class's ancestor chain and `extend M` composes it into the singleton class — source = the composing class/module, target = the mixin, `metadata.mixinRole` records which keyword; dynamic (lowercase/computed) arguments emit nothing (mixin targets must be statically nameable constants).",
+   "implementationSites": [],
+   "implementationSymbol": "RelationshipType.MixesIn"
+  },
+  "overrides": {
+   "applicable": true,
+   "constructs": [
+    "method",
+    "class"
+   ],
+   "present": [
+    "method",
+    "class"
+   ],
+   "absent": [],
+   "rule": "a subclass method redefining a base-class method: 0.95 when the base method is verifiable from local declarations or the project companion index, 0.5 with `reasonCode: first-parent-guess` when the base is external and unverifiable (the declared-cause channel).",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:1358",
+    "src/ast/real-ruby-analyzer.ts:1378"
+   ],
+   "implementationSymbol": "RelationshipType.Overrides"
+  },
+  "instantiates": {
+   "applicable": true,
+   "constructs": [
+    "call",
+    "constant"
+   ],
+   "present": [
+    "call",
+    "constant"
+   ],
+   "absent": [],
+   "rule": "`X.new` on a constant receiver; a receiverless `new` names the enclosing class (`resolvedTarget: enclosing-class`); expression/variable receivers emit nothing (RB-A).",
+   "implementationSites": [
+    "src/ast/real-ruby-analyzer.ts:2524"
+   ],
+   "implementationSymbol": "RelationshipType.Instantiates"
+  }
+ },
+ "notApplicableSurface": {
+  "implements": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "interface",
+    "implements_clause",
+    "super_interfaces",
+    "conformance"
+   ],
+   "productionsFound": [],
+   "reason": "Ruby has no interface/conformance construct — no keyword, no production, no enforcement; duck typing is not a declared conformance. The edges this lane used to publish under `implements` are `include`/`prepend` module composition, which the canonical vocabulary spells `mixes_in`.",
+   "vocabularyRuling": "canonical value, NOT APPLICABLE to Ruby after the RUBY-D1 relabel (the previous adaptation is recorded, not erased: implements 17 edges at the cap-50 baseline become mixes_in, delta measured)."
+  },
+  "decorates": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "decorator",
+    "annotation",
+    "annotation_declaration"
+   ],
+   "productionsFound": [],
+   "reason": "no decorator/annotation production exists in the pinned Ruby grammar; `attr_reader`/`attr_accessor` macros are DSL CALLS (the analyzer carries the ActiveRecord macros as `uses`), not applied decorators — a macro names no callable that wraps the declaration.",
+   "vocabularyRuling": "extended value, NOT APPLICABLE to Ruby."
+  },
+  "renders": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "jsx_element",
+    "jsx_self_closing_element",
+    "jsx_opening_element"
+   ],
+   "productionsFound": [],
+   "reason": "no JSX/element-construction production exists in the pinned Ruby grammar; ERB/HTML templates are other languages/files and are routed to their own analyzers.",
+   "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to Ruby."
+  },
+  "part_of": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "part_directive",
+    "part_of_directive",
+    "part_clause"
+   ],
+   "productionsFound": [],
+   "reason": "Ruby's file-inclusion construct is `require`/`load`, which creates load/binding scope and is published as `imports`+`references`; there is no shared-scope part-file directive that imports nothing (the distinction `part_of` exists to draw).",
+   "vocabularyRuling": "extended value (Dart `part`/`part of`), NOT APPLICABLE to Ruby."
+  }
+ },
+ "notApplicableEmission": {
+  "implements": {
+   "edges": 6,
+   "fixtures": [
+    "callsite-lines-825.rb",
+    "file-scope-owner-pins.rb",
+    "payload-and-complexity.rb"
+   ]
+  },
+  "decorates": {
+   "edges": 0,
+   "fixtures": []
+  },
+  "renders": {
+   "edges": 0,
+   "fixtures": []
+  },
+  "part_of": {
+   "edges": 0,
+   "fixtures": []
+  }
+ },
+ "fixturePins": {
+  "calls": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/file-scope-owner-pins",
+    "ruby/m60-deep-round",
+    "ruby/master-review-wave",
+    "ruby/payload-and-complexity",
+    "ruby/rack-wave-regressions",
+    "ruby/second-review"
+   ],
+   "positiveRows": 22,
+   "forbidRows": 22
+  },
+  "uses": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/file-scope-owner-pins",
+    "ruby/framework-surface-pins",
+    "ruby/m60-deep-round",
+    "ruby/payload-and-complexity",
+    "ruby/rack-wave-regressions",
+    "ruby/second-review"
+   ],
+   "positiveRows": 24,
+   "forbidRows": 12
+  },
+  "contains": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/external-override",
+    "ruby/file-scope-owner-pins",
+    "ruby/framework-surface-pins",
+    "ruby/m60-deep-round",
+    "ruby/master-review-wave",
+    "ruby/ontology-imports-exports",
+    "ruby/payload-and-complexity"
+   ],
+   "positiveRows": 27,
+   "forbidRows": 3
+  },
+  "imports": {
+   "positiveFixtures": [
+    "ruby/ontology-imports-exports"
+   ],
+   "positiveRows": 4,
+   "forbidRows": 3
+  },
+  "references": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/m60-deep-round",
+    "ruby/ontology-imports-exports",
+    "ruby/payload-and-complexity",
+    "ruby/second-review"
+   ],
+   "positiveRows": 8,
+   "forbidRows": 5
+  },
+  "exports": {
+   "positiveFixtures": [
+    "ruby/ontology-imports-exports"
+   ],
+   "positiveRows": 4,
+   "forbidRows": 7
+  },
+  "extends": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/external-override",
+    "ruby/file-scope-owner-pins",
+    "ruby/framework-surface-pins",
+    "ruby/master-review-wave",
+    "ruby/payload-and-complexity"
+   ],
+   "positiveRows": 8,
+   "forbidRows": 5
+  },
+  "mixes_in": {
+   "positiveFixtures": [],
+   "positiveRows": 0,
+   "forbidRows": 0
+  },
+  "overrides": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/external-override"
+   ],
+   "positiveRows": 5,
+   "forbidRows": 8
+  },
+  "instantiates": {
+   "positiveFixtures": [
+    "ruby/callsite-lines-825",
+    "ruby/file-scope-owner-pins",
+    "ruby/m60-deep-round",
+    "ruby/master-review-wave",
+    "ruby/ontology-imports-exports",
+    "ruby/payload-and-complexity",
+    "ruby/rack-wave-regressions"
+   ],
+   "positiveRows": 12,
+   "forbidRows": 3
+  }
+ },
+ "fixtureBaseline": {
+  "command": "imported runLang('ruby') from script/m14/run-fixtures.ts (the real runner)",
+  "pass": 10,
+  "fail": 1,
+  "failingFixtures": [
+   "ruby/ontology-factory-and-names"
+  ]
+ },
+ "redProof": {
+  "calls": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 3,
+   "mutatedFail": 8,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/file-scope-owner-pins",
+    "ruby/m60-deep-round",
+    "ruby/master-review-wave",
+    "ruby/payload-and-complexity",
+    "ruby/rack-wave-regressions",
+    "ruby/second-review"
+   ],
+   "redProven": true
+  },
+  "uses": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 3,
+   "mutatedFail": 8,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/file-scope-owner-pins",
+    "ruby/framework-surface-pins",
+    "ruby/m60-deep-round",
+    "ruby/payload-and-complexity",
+    "ruby/rack-wave-regressions",
+    "ruby/second-review"
+   ],
+   "redProven": true
+  },
+  "contains": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 2,
+   "mutatedFail": 9,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/external-override",
+    "ruby/file-scope-owner-pins",
+    "ruby/framework-surface-pins",
+    "ruby/m60-deep-round",
+    "ruby/master-review-wave",
+    "ruby/ontology-imports-exports",
+    "ruby/payload-and-complexity"
+   ],
+   "redProven": true
+  },
+  "imports": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 9,
+   "mutatedFail": 2,
+   "fixturesThatWentRed": [
+    "ruby/ontology-imports-exports"
+   ],
+   "redProven": true
+  },
+  "references": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 5,
+   "mutatedFail": 6,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/m60-deep-round",
+    "ruby/ontology-imports-exports",
+    "ruby/payload-and-complexity",
+    "ruby/second-review"
+   ],
+   "redProven": true
+  },
+  "exports": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 9,
+   "mutatedFail": 2,
+   "fixturesThatWentRed": [
+    "ruby/ontology-imports-exports"
+   ],
+   "redProven": true
+  },
+  "extends": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 4,
+   "mutatedFail": 7,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/external-override",
+    "ruby/file-scope-owner-pins",
+    "ruby/framework-surface-pins",
+    "ruby/master-review-wave",
+    "ruby/payload-and-complexity"
+   ],
+   "redProven": true
+  },
+  "mixes_in": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 10,
+   "mutatedFail": 1,
+   "fixturesThatWentRed": [],
+   "redProven": false
+  },
+  "overrides": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 8,
+   "mutatedFail": 3,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/external-override"
+   ],
+   "redProven": true
+  },
+  "instantiates": {
+   "baselinePass": 10,
+   "baselineFail": 1,
+   "mutatedPass": 3,
+   "mutatedFail": 8,
+   "fixturesThatWentRed": [
+    "ruby/callsite-lines-825",
+    "ruby/file-scope-owner-pins",
+    "ruby/m60-deep-round",
+    "ruby/master-review-wave",
+    "ruby/ontology-imports-exports",
+    "ruby/payload-and-complexity",
+    "ruby/rack-wave-regressions"
+   ],
+   "redProven": true
+  }
+ },
+ "redProofMethod": "the REAL analyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+ "findings": [
+  "mixes_in: NO implementation site (no RelationshipType.MixesIn emission in src/ast/real-ruby-analyzer.ts)",
+  "mixes_in: NO fixture carries a positive expectation row for it",
+  "mixes_in: fixture-pinned but NO fixture went RED when the emission was removed",
+  "implements: ruled NOT APPLICABLE but the analyzer emits 6 edge(s) over the fixture corpus (callsite-lines-825.rb, file-scope-owner-pins.rb, payload-and-complexity.rb)"
+ ],
+ "ok": false
+}

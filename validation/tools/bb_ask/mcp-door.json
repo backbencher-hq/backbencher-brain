@@ -1,0 +1,246 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+  "entry": "real MCP stdio: node --import tsx → src/mcp/server.ts (source door)",
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": "1"
+  },
+  "listTools": {
+    "found": true,
+    "description": "Answer a question about the codebase from the index, with the route and its limits stated. Four routes: (1) an EXACT AGGREGATE over indexed rows (counts of symbols/functions/classes/interfaces/structs/enums/traits/types/constants/relationships/imports/files, optionally by language; the largest file; the most complex function) — exact about the indexed snapshot, with that snapshot's time reported, and never a similarity claim; (2) an EXACT SYMBOL NAME lookup when the query is a single symbol name — matched by name, not by similarity, with its neighbours listed and labelled as neighbours; (3) SEMANTIC RETRIEVAL over stored embeddings — only vectors from the same model and dimension as the query are compared, similarities are cosine scores, and the answer reports which model space it compared, how many symbols exist in that space versus across the whole library, whether the scan cap was reached, and whether the provider embedding timed out (then a capped local 50-dimension fallback runs); (4) a KEYWORD FALLBACK when embeddings are unavailable or nothing clears the similarity floor — lexical matches that carry NO similarity score, with the reason stated. Every answer reports its confidence kind: a mean of returned similarities (bounded 0.2–0.85), a declared floor when no score was computed, or NO confidence number at all when the ranking is declared non-discriminative (the answer then says the scores do not separate candidates). Every answer declares `returned`/`totalMatches`/`truncated` bounds so a prefix is never read as a complete match set. Cited sources carry `[STALE — file changed since index]` or `[MISSING — file no longer on disk]` markers, and nothing is auto-refreshed. `limit` is the page size: whole number 1..100, default 5, values outside refused rather than clamped. When embeddings are configured, the natural-language question itself is sent to the configured embedding provider to compute the query vector; with local word vectors everything stays offline.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "natural-language question, or a symbol name for the exact-name route"
+        },
+        "limit": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "max results (default 5; whole number 1..100; values outside are refused, not clamped). A larger page also means a larger work budget."
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "toolCount": 16
+  },
+  "calls": [
+    {
+      "label": "success: aggregate question",
+      "args": {
+        "query": "how many functions are in this project"
+      },
+      "thrown": null,
+      "isError": false,
+      "ms": 258.53,
+      "chars": 348,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": true,
+      "text": "answer: There are 921 functions in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-01T22:21:42.000Z (21440 s ago); these counts describe the indexed snapshot, not the working tree]\n\n[bounds: returned=0, totalMatches=unknown, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (aggregate)]"
+    },
+    {
+      "label": "success: aggregate declares an index snapshot and bounds",
+      "args": {
+        "query": "how many files are in this project"
+      },
+      "thrown": null,
+      "isError": false,
+      "ms": 16.04,
+      "chars": 337,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": true,
+      "text": "answer: There are 97 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-01T22:21:42.000Z (21440 s ago); these counts describe the indexed snapshot, not the working tree]\n\n[bounds: returned=0, totalMatches=0, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (aggregate)]"
+    },
+    {
+      "label": "success: semantic question",
+      "args": {
+        "query": "where is request handling implemented"
+      },
+      "thrown": null,
+      "isError": false,
+      "ms": 596.91,
+      "chars": 1301,
+      "sourceLines": 1,
+      "expectationMet": true,
+      "hasBounds": true,
+      "text": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings in the space this query was compared in, so a symbol matching your question may be absent from this list entirely.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: t0005_relations.ts (Line 119) ---\n[function] isUsageSite — similarity 0.515\n```\nexport function isUsageSite(site: ClassifiableSite): boolean {\n  return site.reversed === true && !isDeclarationRelationship(site.relationshipType)\n}\n```\n\n\n— Use bb_search for precise symbol lookup: \"bb_search(query='where is request handling implemented')\".\n— Use bb_search with mode=\"file\" to read any indexed file.\n\nconfidence: 0.51 (mean of the returned similarities, bounded 0.2–0.85)\n\n1. t0005_relations.ts:119\n   isUsageSite\n\n[retrieval: method=vector, queryModel=local-word-vectors-v3, indexModel=local-word-vectors-v3, dimension=50, embeddingCoverage=34% (1185/3512 symbols embedded in this model space), libraryCoverage=34% (1185/3512 across all models), scanned=1185/20000, filtered=1185, candidates=1]\n\n[bounds: returned=1, totalMatches=1, truncated=false]\n\n[provenance: semantic_candidate via quick-answer@intelligenc…[+101 chars]"
+    },
+    {
+      "label": "success: exact symbol name",
+      "args": {
+        "query": "handleImpactRequest"
+      },
+      "thrown": null,
+      "isError": false,
+      "ms": 777.15,
+      "chars": 929,
+      "sourceLines": 2,
+      "expectationMet": true,
+      "hasBounds": true,
+      "text": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n`handleImpactRequest` is a symbol in this project (function). Matched by NAME, not by similarity — this is an exact lookup, so what follows is its neighbours, not better matches.\n\n--- t0020_impact_request.ts:61 — function handleImpactRequest\n\n\nconfidence: 0.9 (exact name lookup, not a similarity claim)\n\n1. t0020_impact_request.ts:61\n   handleImpactRequest\n2. t0020_impact_request.ts:61\n   handleImpactRequest\n\n[retrieval: method=exact-name, queryModel=name-lookup, indexModel=name-lookup, embeddingCoverage=34% (1185/3512 symbols embedded in this model space), libraryCoverage=34% (1185/3512 across all models), neighbourScanReason=no-vector-above-threshold, scanned=1185/20000, filtered=1185, candidates=0]\n\n[bounds: returned=2, totalMatches=2, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (retrieval)]"
+    },
+    {
+      "label": "success: limit bounds the source list",
+      "args": {
+        "query": "request handling",
+        "limit": 1
+      },
+      "thrown": null,
+      "isError": false,
+      "ms": 133.58,
+      "chars": 1845,
+      "sourceLines": 1,
+      "expectationMet": true,
+      "hasBounds": true,
+      "text": "answer: Note: only 1,185 of 3,512 indexed symbols (34%) have embeddings in the space this query was compared in, so a symbol matching your question may be absent from this list entirely.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: t0063_doc-engine.ts (Line 1343) ---\n[function] addOptionalUnknowns — similarity 0.664\n```\nfunction addOptionalUnknowns(request: DocRequest, unknowns: DocUnknown[]): void {\n  if (request.includeExamples === true) {\n    unknowns.push({ statement: \"No example was emitted: an example requires a cited source snippet or a verified API contract, and neither was available in this scope.\", reason: \"not-observed\", affectedSection: concern(\"examples\") })\n  }\n  if (request.includeDiagrams === true) {\n    unknowns.push({ statement: \"No diagram was emitted: a diagram requires cited graph nodes and links, and this implementation does not resolve them.\", reason: \"not-observed\", affectedSection: concern(\"diagrams\") })\n  }\n}\n```\n\n\n— Use bb_search for precise symbol lookup: \"bb_search(query='request handling')\".\n— Use bb_search with mode=\"file\" to read any indexed file.\n\nconfidence: 0.66 (mean of the returned simila…[+645 chars]"
+    },
+    {
+      "label": "refusal: empty query",
+      "args": {
+        "query": ""
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 7.37,
+      "chars": 40,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask requires a non-empty query"
+    },
+    {
+      "label": "refusal: whitespace query",
+      "args": {
+        "query": "   "
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 12.21,
+      "chars": 40,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask requires a non-empty query"
+    },
+    {
+      "label": "refusal: missing query",
+      "args": {},
+      "thrown": null,
+      "isError": true,
+      "ms": 10.58,
+      "chars": 45,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: missing required option: query"
+    },
+    {
+      "label": "refusal: unknown option",
+      "args": {
+        "query": "x",
+        "mode": "explain"
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 4.97,
+      "chars": 83,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit"
+    },
+    {
+      "label": "refusal: negative limit",
+      "args": {
+        "query": "x",
+        "limit": -1
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 10.38,
+      "chars": 41,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: limit must be non-negative"
+    },
+    {
+      "label": "refusal: fractional limit",
+      "args": {
+        "query": "x",
+        "limit": 2.5
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 4.17,
+      "chars": 53,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: limit must be a whole number (got 2.5)"
+    },
+    {
+      "label": "refusal: limit wrong type",
+      "args": {
+        "query": "x",
+        "limit": "5"
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 6.72,
+      "chars": 35,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: limit must be number"
+    },
+    {
+      "label": "refusal: limit=0 refuses with the page-size sentence",
+      "args": {
+        "query": "x",
+        "limit": 0
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 5.97,
+      "chars": 211,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refused rather than clamped."
+    },
+    {
+      "label": "refusal: limit=101 refuses with the page-size sentence",
+      "args": {
+        "query": "x",
+        "limit": 101
+      },
+      "thrown": null,
+      "isError": true,
+      "ms": 9.07,
+      "chars": 211,
+      "sourceLines": 0,
+      "expectationMet": true,
+      "hasBounds": false,
+      "text": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refused rather than clamped."
+    },
+    {
+      "label": "refusal: unknown tool name",
+      "isError": true,
+      "text": "unknown tool: bb_ask_typo",
+      "expectationMet": true
+    }
+  ],
+  "failures": 0,
+  "serverStderr": "",
+  "generatedAt": "2026-11-02T04:19:03.872Z"
+}

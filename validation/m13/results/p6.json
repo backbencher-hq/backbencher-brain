@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.40",
+  "code": "P6",
+  "tool": "bb_patterns",
+  "title": "bb_patterns handler contract: read-only, bounded page, bounded history, honest staleness/evidence",
+  "gate": "script/m13/verify-patterns-handler-contract.ts",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": 42,
+  "passed": 42,
+  "failed": 0,
+  "negativeCases": 10,
+  "summary": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0
+  },
+  "decisions": {
+    "readOnly": "reads must leave the database and WAL unchanged",
+    "bounds": "page and history are bounded, and refusals are named rather than clamped",
+    "staleness": "the answer never promises a refresh the schema does not publish"
+  },
+  "limitations": [
+    "Covers bb_patterns only.",
+    "Runs against tmpdir fixtures with embeddings disabled."
+  ],
+  "status": "verified",
+  "verifierCommand": "bun run script/m13/verify-patterns-handler-contract.ts",
+  "generatedAt": "2026-11-04T00:34:41.590Z"
+}

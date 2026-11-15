@@ -1,0 +1,65 @@
+{
+ "fixtureId": "python/qualified-endpoint-spellings",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "INCOMING_PY (ontology workstream), the lane's stated mandate: make every emitted edge resolvable to a real stable symbol. Four types published an endpoint that names something the file itself never wrote, and all four lost the qualifier that would have made the endpoint findable. `extends` published `TestCase` for `class C(unittest.TestCase)`; `uses` published `Table` for `pa.Table`; `references` published `Table` for the annotation `pa.Table`; `calls` already carried its spelling and is the precedent all three now follow. Measured over the 679-file INCOMING_PY corpus by `script/m60/python-resolution-census.ts`, before the spelling was recorded: extends 84/484 resolved in-file and 400 (82.6%) to nothing; uses 4,553/14,580 in-file and 9,069 (62.2%) to nothing; references 331/1,498 in-file and 614 (41.0%) to nothing. After: extends 344 (71.1%) and uses 9,069 (62.2%) and references' remainder are each reachable through a name the source actually wrote — the import root, the alias, or the dotted path. The TARGET stays the leaf in every case, because the leaf is the member and the member is what a reader wants to see; `qualified` is the route to the node behind it, and it is `meta.qualified` (inside metadata) on all four types, which is asserted here because a field that lives at the top level on one type and inside metadata on another is two fields with one name. The two forbid rows are the negative channel: a base or a receiver spelled WITHOUT a qualifier must record none, because inventing `qualified: Bare` or `qualified: rows` out of a bare identifier would be a spelling nobody wrote.",
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "from": "SiblingCase",
+   "target": "TestCase",
+   "meta.qualified": "unittest.TestCase",
+   "meta.evidenceClass": "structural",
+   "note": "the leaf is the base; `unittest` is the import root that carries the lookup. `import unittest` is on line 17 of this file, so the edge now joins to something the parse declared."
+  },
+  {
+   "type": "extends",
+   "from": "Derived",
+   "target": "Bare",
+   "meta.qualified": null,
+   "note": "NEGATIVE, asserted because it is the interesting half: a base spelled as a bare identifier has no receiver, so recording nothing is correct and recording `Bare` would be a spelling the source never wrote."
+  },
+  {
+   "type": "uses",
+   "from": "read_rows",
+   "target": "Table",
+   "meta.qualified": "pa.Table",
+   "meta.reasonCode": "member-read",
+   "note": "through an import ALIAS, which is the common form in python and the case a bare leaf cannot survive"
+  },
+  {
+   "type": "uses",
+   "from": "read_rows",
+   "target": "num_rows",
+   "meta.qualified": "table.num_rows",
+   "note": "through a PARAMETER. The receiver's type is still written nowhere — `qualified` records the spelling, it does not claim the type is known."
+  },
+  {
+   "type": "uses",
+   "from": "read_local",
+   "target": "num_rows",
+   "meta.qualified": "rows.num_rows",
+   "note": "the same leaf name as the row above from a different function. `contains`-style name collisions are why the endpoint needs a route, not just a name."
+  },
+  {
+   "type": "references",
+   "from": "read_rows",
+   "target": "Table",
+   "meta.qualified": "pa.Table",
+   "meta.reasonCode": "annotation-type",
+   "note": "the ANNOTATION case. A parameter annotation qualifies its type with `attribute`, so the leaf's PARENT is the spelling — a different tree shape from `calls`' sibling attribute, which is why it needed its own reader rather than the existing one."
+  },
+  {
+   "type": "references",
+   "from": "read_rows",
+   "target": "pa",
+   "meta.qualified": null,
+   "note": "NEGATIVE: the RECEIVER identifier of the chain is the module alias, not the type being named, so it carries no qualifier. It is still a published reference (the lane's existing behaviour, and the oracle's), and this row exists so that changing which half of the chain is treated as the type fails here."
+  }
+ ],
+ "_seamNote": {
+  "what": "`metadata.qualified` — the spelling the source wrote — on `extends` (a dotted base), `uses` (the receiver chain) and `references` (the annotation's qualifier). `target` remains the leaf in all three.",
+  "why": "The store resolves a target by NAME. A name alone is enough when the declaration is in the same file and useless when it is not, and python puts a great deal of its vocabulary behind `import x` / `import x as y` — so `Table`, `TestCase` and `Path` are among the most common targets this lane emits and among the least findable. Recording the qualifier costs nothing at emission (the string is already materialised by the walk) and turns an unresolvable endpoint into one reachable in two hops through an `imports` edge the lane already emits.",
+  "whatItDoesNotClaim": "`qualified` is a SPELLING, not a type. `table.num_rows` records that the source wrote `table.num_rows`; nothing here says what `table` is. The dispatch `reasonCode` is where that uncertainty lives, and this fixture pins both on the same edge because they are two different questions about it."
+ }
+}

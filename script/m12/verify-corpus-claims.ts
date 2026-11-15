@@ -164,15 +164,15 @@ for (const a of manifest.analyzers) {
 // unparseable pin is not a pass.
 // ---------------------------------------------------------------------------
 
-// Corpora are cloned under MORE THAN ONE root: fixtures/repositories holds most,
+// Corpora are cloned under MORE THAN ONE root: bb_tests/repositories holds most,
 // but others live at absolute paths outside it (the M20 C2 registry records the
 // real ones). So a repo this gate cannot LOCATE is a known gap — unverifiable
 // here, not wrong. Absence of evidence is not evidence of a false pin, and a
 // gate that convicts on its own failure to look is worse than no gate.
 const CORPUS_ROOTS = [
   process.env.BB_CORPUS_ROOT,
-  "$HOME/fixtures/repositories",
-  "$HOME",
+  "/home/ishaq2321/bb_tests/repositories",
+  "/home/ishaq2321",
 ].filter((x): x is string => typeof x === "string" && x.length > 0)
 
 /** Every location a corpus id might live, across all roots. */

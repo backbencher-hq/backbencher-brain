@@ -1,0 +1,32 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it \u2014 U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` \u2014 a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/local-read/reads",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Transcribed from a measured run (script/m14/tmp/dt-fixture-dump.ts) against this file. This file is the READING half of a TWO-FILE fixture: `declares.dart` sits beside it and declares an unrelated `Telemetry.counter`, which is what makes the forbid row below a statement about a real collision rather than a hypothetical one. The pair lives in a subdirectory, so the harness treats the two files as one project and every member of it carries its own expectation file (script/m14/run-fixtures.ts enumerates sub-directory members as fixtures).",
+  "rationale": "PINS THE SPELLING OF A BINDING, which is the half the whole-corpus gate cannot check and the store cannot report. The family contract publishes no locals, parameters or lambda parameters as symbols (DARTD8), so a read of one has no declaration to name — but the analyzer must still say WHICH binding it read, and the string it writes is what the store resolves: `parallel-indexer.resolveRelationships` matches a target against `qualified_name` (Strategy 1) and then against a bare `name` admitted only while the name is declared exactly once in the project (Strategy 2), and it never reads the edge's metadata. A bare local name is therefore indistinguishable from a declaration's name, and `Telemetry.counter` in the sibling file is exactly the collision that turns the read into a false dependency (`local-read-phantom.ts` reproduces it with the store's own rule and shows the binding resolving to an unrelated class's field). The target is `run` + `BINDING_SEP` + `counter` — the enclosing callable, the separator, and the binding's own name — and it carries `localBinding` so the arbiter can check the claim against its OWN key space (`verifyBindingClaim`). The separator was written `#` here when this fixture was authored on 2026-10-08 and has been U+0000 since commit c95c8485f; the row below carries the current spelling and `correction_2026_10_09` records the change with its measurement. The forbid row is the pre-2026-10-08 spelling: it is fireable in the exact shape a revert would produce, which is the form this programme requires of a forbid after finding a fixture whose forbids could not fire at all.",
+  "expectSymbols": [
+    { "name": "reads", "kind": "module" },
+    { "name": "run", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000counter",
+      "line_number": 15,
+      "confidence": 0.9,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "the read of the function's OWN local: `#` not `.`, because a dot would make the target a member spelling the store would try to bind, and the consumers' leaf rule (after the last colon, then after the last dot) would reduce it back to the bare name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "counter",
+      "note": "THE PRE-2026-10-08 SPELLING, and the one the store misbinds: `Telemetry.counter` in the sibling file is the only declaration of that name in the project, so a bare `counter` target resolves to it (Strategy 2, metadata unread) and the stored row asserts that `run` depends on an unrelated class's field. A revert to the bare spelling must fail here, not merely stop being counted."
+    }
+  ]
+}

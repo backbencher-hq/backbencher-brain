@@ -1,0 +1,102 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/references-target-ledger.mts",
+  "question": "is the target of every `references` edge a value the file writes, under the source that claims it",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "admittedTotal": 11464,
+    "admitted": 120,
+    "workers": 1,
+    "method": "git-tracked files only, 512 KiB cap, detectLanguageFromPath(abs, text) — the gate's own rule",
+    "fallbackFiles": 0,
+    "unparsedByOwnParser": 0,
+    "unparsedExamples": []
+  },
+  "edges": {
+    "total": 95,
+    "files": 9
+  },
+  "byClass": {
+    "value-elsewhere": {
+      "edges": 33,
+      "files": 33,
+      "examples": [
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: _name -references-> string resolvable=in-document role=attribute_qname_reference written under data/ref/define, not under _name",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: name -references-> string resolvable=in-document role=attribute_qname_reference written under data/ref/define, not under name",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: style -references-> string resolvable=in-document role=attribute_qname_reference written under data/ref/define, not under style",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: _section -references-> string resolvable=in-document role=attribute_qname_reference written under data/ref/define, not under _section",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: section -references-> string resolvable=in-document role=attribute_qname_reference written under data/ref/define, not under section",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: version -references-> string resolvable=in-document role=attribute_qname_reference written under data/ref/define, not under version",
+        "Aporia/share/gtksourceview-2.0/language-specs/language2.rng: id -references-> string resolvable=unresolved role=attribute_qname_reference written under data, not under id",
+        "Aporia/share/gtksourceview-2.0/language-specs/language2.rng: id-type -references-> string resolvable=unresolved role=attribute_qname_reference written under data, not under id-type"
+      ]
+    },
+    "covered": {
+      "edges": 62,
+      "files": 62,
+      "examples": [
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> attlist.language resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> escape-char resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> line-comment resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> block-comment resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> string resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> syntax-item resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> pattern-item resolvable=in-document role=xslt_named_template_reference",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng: ref -references-> keyword-list resolvable=in-document role=xslt_named_template_reference"
+      ]
+    }
+  },
+  "byResolvabilityThenClass": {
+    "in-document": {
+      "value-elsewhere": 13,
+      "covered": 47
+    },
+    "unresolved": {
+      "value-elsewhere": 9
+    },
+    "builtin": {
+      "covered": 15,
+      "value-elsewhere": 11
+    }
+  },
+  "graded": {
+    "note": "`in-document` and `unresolved` only. `builtin` names are declared in the XML Schema specification and `external` names live in a file this document imports, so neither is expected to have a local value.",
+    "classes": [
+      "in-document",
+      "unresolved"
+    ],
+    "total": 69,
+    "covered": 47,
+    "coveredRate": 0.6811594202898551,
+    "byResolvability": {
+      "in-document": {
+        "total": 60,
+        "covered": 47,
+        "elsewhere": 13,
+        "noValue": 0,
+        "sourceAbsent": 0
+      },
+      "unresolved": {
+        "total": 9,
+        "covered": 0,
+        "elsewhere": 9,
+        "noValue": 0,
+        "sourceAbsent": 0
+      },
+      "builtin": {
+        "total": 26,
+        "covered": 15,
+        "elsewhere": 11,
+        "noValue": 0,
+        "sourceAbsent": 0
+      }
+    }
+  },
+  "noValueByRole": {},
+  "limitations": [
+    "It grades the TARGET only. Whether the source is a name the file declares is derivation-accounting.mts's question, and it is a separate ledger.",
+    "`value-elsewhere` is not a defect: the file writes the name on a different element, which is ordinary in a schema whose content models name each other's types. It is counted so the reader can see it rather than folded into `covered`.",
+    "It matches a target by LOCAL part, so `xs:string` and a document-local `string` are the same key. That is the analyzer's own target convention (a prefix is a property of the file, not of the component) and this probe does not audit it.",
+    "It is one-directional. It does not enumerate reference-carrier attributes, because a QName-shaped superset includes `id=\"foo\"` and adjudicating those grows a second analyzer rather than a measurement.",
+    "It is a second walker over the same tree-sitter-xml, so a grammar-level fault is invisible to both it and the analyzer."
+  ]
+}

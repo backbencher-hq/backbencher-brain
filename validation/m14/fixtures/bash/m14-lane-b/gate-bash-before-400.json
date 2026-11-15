@@ -1,0 +1,2231 @@
+{
+  "lang": "bash",
+  "population": {
+    "sampled": 400,
+    "parsed": 400,
+    "failed": 0,
+    "corpusTotal": 3351,
+    "repos": 118,
+    "degraded": 0,
+    "degradedFiles": [],
+    "qualifiedNameAliases": 3605,
+    "excluded": {
+      "absent": 394,
+      "overCap": 0,
+      "overCapLargest": 0,
+      "sizeCapBytes": 1048576
+    }
+  },
+  "verdict": "FAIL",
+  "reason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 5096 ambiguous/unresolved + 15 refuted claim(s) + 20 claim(s) no check can reach (ext? 20, bind? 0)  ||  CLAUSE 4 (extFAIL / bindFAIL / causeFAIL = 0) FAILS — extFAIL 15 · bindFAIL 0 · causeFAIL 0  --  264 ambiguous + 4832 unresolved of 16284 edges, resolved against the file's OWN PROJECT (production's scope), and 15 external claim(s) REFUTED by the project; 20 external claim(s) unverifiable (0 verified + 20 unverifiable external)",
+  "ambiguityMetric": "declarations (distinct-kind shown for comparison only)",
+  "resolutionScope": "per project (the repository a file belongs to) — parallel-indexer.resolveRelationships' scope",
+  "instrumentSelfTest": {
+    "ok": true,
+    "failures": []
+  },
+  "perType": {
+    "calls": {
+      "type": "calls",
+      "edges": 4957,
+      "project": {
+        "resolved": 1191,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 76,
+        "ambiguousByKind": 5,
+        "unresolved": 3655,
+        "markedExternal": 35,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 20,
+        "externalRefuted": 15,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "cleanup",
+            "declarations": 4,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "usage",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "main",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "err_usage",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "fetch",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "download",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "bundle",
+            "declarations": 3,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "setup",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "clipcopy",
+            "declarations": 12,
+            "kinds": "function"
+          },
+          {
+            "name": "error",
+            "declarations": 2,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "fail",
+            "declarations": 9,
+            "kinds": "function"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "basename",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "sed",
+            "type": "calls"
+          },
+          {
+            "name": "find",
+            "type": "calls"
+          },
+          {
+            "name": "cat",
+            "type": "calls"
+          },
+          {
+            "name": "mkdir",
+            "type": "calls"
+          },
+          {
+            "name": "tee",
+            "type": "calls"
+          },
+          {
+            "name": "tail",
+            "type": "calls"
+          },
+          {
+            "name": "osascript",
+            "type": "calls"
+          },
+          {
+            "name": "dotnet",
+            "type": "calls"
+          },
+          {
+            "name": "python3",
+            "type": "calls"
+          },
+          {
+            "name": "adb",
+            "type": "calls"
+          },
+          {
+            "name": "sleep",
+            "type": "calls"
+          },
+          {
+            "name": "tr",
+            "type": "calls"
+          },
+          {
+            "name": "sort",
+            "type": "calls"
+          },
+          {
+            "name": "cp",
+            "type": "calls"
+          },
+          {
+            "name": "wc",
+            "type": "calls"
+          },
+          {
+            "name": "cut",
+            "type": "calls"
+          },
+          {
+            "name": "readlink",
+            "type": "calls"
+          },
+          {
+            "name": "curl",
+            "type": "calls"
+          },
+          {
+            "name": "ansible-test",
+            "type": "calls"
+          },
+          {
+            "name": "pip",
+            "type": "calls"
+          },
+          {
+            "name": "shell",
+            "type": "calls"
+          },
+          {
+            "name": "mktemp",
+            "type": "calls"
+          }
+        ],
+        "refutedNames": [
+          {
+            "name": "./test.sh",
+            "type": "calls"
+          },
+          {
+            "name": "./hack/make.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".ci/scripts/tool_runner.sh",
+            "type": "calls"
+          },
+          {
+            "name": "./fmt-actions.sh",
+            "type": "calls"
+          },
+          {
+            "name": "hack/update-internal-modules.sh",
+            "type": "calls"
+          },
+          {
+            "name": "hack/update-vendor-licenses.sh",
+            "type": "calls"
+          },
+          {
+            "name": "test/conformance/gen-specsummaries.sh",
+            "type": "calls"
+          },
+          {
+            "name": "test/conformance/spec-to-yaml.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".github/scripts/init-pre-release.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".github/scripts/release-docs.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".github/scripts/create-artifacts.sh",
+            "type": "calls"
+          },
+          {
+            "name": "./IntegrationTests/run-tests.sh",
+            "type": "calls"
+          }
+        ],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 2779,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 1402,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 216,
+        "ambiguousByKind": 48,
+        "unresolved": 3304,
+        "markedExternal": 35,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 20,
+        "externalRefuted": 15,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "id",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "cleanup",
+            "declarations": 16,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "run_test",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "die",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "retry",
+            "declarations": 6,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "error",
+            "declarations": 6,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "usage",
+            "declarations": 8,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "main",
+            "declarations": 12,
+            "kinds": "function"
+          },
+          {
+            "name": "err_usage",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "status",
+            "declarations": 11,
+            "kinds": "variable"
+          },
+          {
+            "name": "fail",
+            "declarations": 11,
+            "kinds": "function"
+          },
+          {
+            "name": "fetch",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "download",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "bundle",
+            "declarations": 4,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "generate",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "check",
+            "declarations": 2,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "run_tests",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "log",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "setup",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "arch",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "pkg",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "clipcopy",
+            "declarations": 12,
+            "kinds": "function"
+          },
+          {
+            "name": "r",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "install",
+            "declarations": 2,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "node",
+            "declarations": 9,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "basename",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "sed",
+            "type": "calls"
+          },
+          {
+            "name": "find",
+            "type": "calls"
+          },
+          {
+            "name": "cat",
+            "type": "calls"
+          },
+          {
+            "name": "mkdir",
+            "type": "calls"
+          },
+          {
+            "name": "tee",
+            "type": "calls"
+          },
+          {
+            "name": "tail",
+            "type": "calls"
+          },
+          {
+            "name": "osascript",
+            "type": "calls"
+          },
+          {
+            "name": "dotnet",
+            "type": "calls"
+          },
+          {
+            "name": "python3",
+            "type": "calls"
+          },
+          {
+            "name": "adb",
+            "type": "calls"
+          },
+          {
+            "name": "sleep",
+            "type": "calls"
+          },
+          {
+            "name": "tr",
+            "type": "calls"
+          },
+          {
+            "name": "sort",
+            "type": "calls"
+          },
+          {
+            "name": "cp",
+            "type": "calls"
+          },
+          {
+            "name": "wc",
+            "type": "calls"
+          },
+          {
+            "name": "cut",
+            "type": "calls"
+          },
+          {
+            "name": "readlink",
+            "type": "calls"
+          },
+          {
+            "name": "curl",
+            "type": "calls"
+          },
+          {
+            "name": "ansible-test",
+            "type": "calls"
+          },
+          {
+            "name": "pip",
+            "type": "calls"
+          },
+          {
+            "name": "shell",
+            "type": "calls"
+          },
+          {
+            "name": "mktemp",
+            "type": "calls"
+          }
+        ],
+        "refutedNames": [
+          {
+            "name": "./test.sh",
+            "type": "calls"
+          },
+          {
+            "name": "./hack/make.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".ci/scripts/tool_runner.sh",
+            "type": "calls"
+          },
+          {
+            "name": "./fmt-actions.sh",
+            "type": "calls"
+          },
+          {
+            "name": "hack/update-internal-modules.sh",
+            "type": "calls"
+          },
+          {
+            "name": "hack/update-vendor-licenses.sh",
+            "type": "calls"
+          },
+          {
+            "name": "test/conformance/gen-specsummaries.sh",
+            "type": "calls"
+          },
+          {
+            "name": "test/conformance/spec-to-yaml.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".github/scripts/init-pre-release.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".github/scripts/release-docs.sh",
+            "type": "calls"
+          },
+          {
+            "name": ".github/scripts/create-artifacts.sh",
+            "type": "calls"
+          },
+          {
+            "name": "./IntegrationTests/run-tests.sh",
+            "type": "calls"
+          }
+        ],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 1,
+          "unresolved": 2428,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 1094,
+        "arbitraryTwin": 524,
+        "noDeclaration": 3339
+      }
+    },
+    "uses": {
+      "type": "uses",
+      "edges": 7202,
+      "project": {
+        "resolved": 6108,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 133,
+        "ambiguousByKind": 2,
+        "unresolved": 961,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "cur",
+            "declarations": 62,
+            "kinds": "variable"
+          },
+          {
+            "name": "COMPREPLY",
+            "declarations": 6,
+            "kinds": "variable"
+          },
+          {
+            "name": "words",
+            "declarations": 62,
+            "kinds": "variable"
+          },
+          {
+            "name": "comp_args",
+            "declarations": 61,
+            "kinds": "variable"
+          },
+          {
+            "name": "options",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "REQUIRE_PEERS",
+            "declarations": 3,
+            "kinds": "constant"
+          },
+          {
+            "name": "REQUIRED_SERVICES",
+            "declarations": 11,
+            "kinds": "constant"
+          },
+          {
+            "name": "PATH",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "LOG_TRAP_STACK",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "KUBE_CONFIG_FILE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "ZONE",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "KUBE_ROOT",
+            "declarations": 21,
+            "kinds": "variable"
+          },
+          {
+            "name": "KUBECTL",
+            "declarations": 3,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "verify-codegen.sh.SCRIPT_ROOT",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "verify-codegen.sh.TMP_DIFFROOT",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "verify-codegen.sh.DIFFROOT",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "verify-codegen.sh.ret",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "PROXY_PORT",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "PROXY_PID",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "PROXY_PORT_FILE",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "wait_for_nomad_api.sh.current_time",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "wait_for_nomad_api.sh.start_time",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "wait_for_nomad_api.sh.elapsed_time",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "wait_for_nomad_api.sh.TIMEOUT",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "wait_for_nomad_api.sh.INTERVAL",
+            "declarations": 2,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "GTK_DEBUG_LAUNCHER",
+            "type": "uses"
+          },
+          {
+            "name": "GTK_DEBUG_GDB",
+            "type": "uses"
+          },
+          {
+            "name": "PREFIX",
+            "type": "uses"
+          },
+          {
+            "name": "PIPESTATUS",
+            "type": "uses"
+          },
+          {
+            "name": "CONFIG",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SCREENSHOT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_ANDROID_PACKAGE_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "sample_names",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          },
+          {
+            "name": "COMP_WORDS",
+            "type": "uses"
+          },
+          {
+            "name": "COMP_CWORD",
+            "type": "uses"
+          },
+          {
+            "name": "BASH_SOURCE",
+            "type": "uses"
+          },
+          {
+            "name": "S",
+            "type": "uses"
+          },
+          {
+            "name": "P",
+            "type": "uses"
+          },
+          {
+            "name": "COVERAGE",
+            "type": "uses"
+          },
+          {
+            "name": "CHANGED",
+            "type": "uses"
+          },
+          {
+            "name": "UNSTABLE",
+            "type": "uses"
+          },
+          {
+            "name": "ANSIBLE_TEST_PYTHON_VERSION",
+            "type": "uses"
+          },
+          {
+            "name": "OSTYPE",
+            "type": "uses"
+          },
+          {
+            "name": "HOME",
+            "type": "uses"
+          },
+          {
+            "name": "COLLECTION_NAME",
+            "type": "uses"
+          },
+          {
+            "name": "OUTPUT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "INVENTORY_PATH",
+            "type": "uses"
+          },
+          {
+            "name": "OTP",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 15,
+          "unresolved": 800,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 6101,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 263,
+        "ambiguousByKind": 8,
+        "unresolved": 838,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "OUTFILE",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "HOME",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "cur",
+            "declarations": 62,
+            "kinds": "variable"
+          },
+          {
+            "name": "COMPREPLY",
+            "declarations": 8,
+            "kinds": "variable"
+          },
+          {
+            "name": "words",
+            "declarations": 62,
+            "kinds": "variable"
+          },
+          {
+            "name": "comp_args",
+            "declarations": 61,
+            "kinds": "variable"
+          },
+          {
+            "name": "options",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "GOOS",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "GOARCH",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "REQUIRE_PEERS",
+            "declarations": 3,
+            "kinds": "constant"
+          },
+          {
+            "name": "REQUIRED_SERVICES",
+            "declarations": 11,
+            "kinds": "constant"
+          },
+          {
+            "name": "main.release_json",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "main.bin_dir",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "bin_dir",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "tmpdir",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "PATH",
+            "declarations": 10,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "controller",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "pkg",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "REPLY",
+            "declarations": 11,
+            "kinds": "variable"
+          },
+          {
+            "name": "MODE",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "LOG_TRAP_STACK",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "KUBE_CONFIG_FILE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "ZONE",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "KUBE_ROOT",
+            "declarations": 21,
+            "kinds": "variable"
+          },
+          {
+            "name": "KUBECTL",
+            "declarations": 3,
+            "kinds": "constant|variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "GTK_DEBUG_LAUNCHER",
+            "type": "uses"
+          },
+          {
+            "name": "GTK_DEBUG_GDB",
+            "type": "uses"
+          },
+          {
+            "name": "PREFIX",
+            "type": "uses"
+          },
+          {
+            "name": "PIPESTATUS",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SCREENSHOT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_ANDROID_PACKAGE_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "sample_names",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          },
+          {
+            "name": "COMP_WORDS",
+            "type": "uses"
+          },
+          {
+            "name": "COMP_CWORD",
+            "type": "uses"
+          },
+          {
+            "name": "BASH_SOURCE",
+            "type": "uses"
+          },
+          {
+            "name": "S",
+            "type": "uses"
+          },
+          {
+            "name": "P",
+            "type": "uses"
+          },
+          {
+            "name": "COVERAGE",
+            "type": "uses"
+          },
+          {
+            "name": "CHANGED",
+            "type": "uses"
+          },
+          {
+            "name": "UNSTABLE",
+            "type": "uses"
+          },
+          {
+            "name": "ANSIBLE_TEST_PYTHON_VERSION",
+            "type": "uses"
+          },
+          {
+            "name": "OSTYPE",
+            "type": "uses"
+          },
+          {
+            "name": "COLLECTION_NAME",
+            "type": "uses"
+          },
+          {
+            "name": "OUTPUT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "INVENTORY_PATH",
+            "type": "uses"
+          },
+          {
+            "name": "OTP",
+            "type": "uses"
+          },
+          {
+            "name": "BASH_REMATCH",
+            "type": "uses"
+          },
+          {
+            "name": "CLASSPATH",
+            "type": "uses"
+          },
+          {
+            "name": "BASH_REAMTCH",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 109,
+          "unresolved": 699,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 6065,
+        "arbitraryTwin": 299,
+        "noDeclaration": 838
+      }
+    },
+    "contains": {
+      "type": "contains",
+      "edges": 3605,
+      "project": {
+        "resolved": 3605,
+        "resolvedAmongCollision": 1194,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 3605,
+        "resolvedAmongCollision": 1509,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 3605,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      }
+    },
+    "imports": {
+      "type": "imports",
+      "edges": 108,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 108,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "virtualenv.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${SCRIPT_DIR}/functions.sh",
+            "type": "imports"
+          },
+          {
+            "name": "helpers.windows.bash",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/${CLUSTER}/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/capture.sh",
+            "type": "imports"
+          },
+          {
+            "name": "defaults.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/vars.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/global-setup-windows.sh",
+            "type": "imports"
+          },
+          {
+            "name": "$SCRIPTDIR/make/$bundle",
+            "type": "imports"
+          },
+          {
+            "name": "$scriptroot/tools.sh",
+            "type": "imports"
+          },
+          {
+            "name": "$script",
+            "type": "imports"
+          },
+          {
+            "name": "$scriptroot/common-library.sh",
+            "type": "imports"
+          },
+          {
+            "name": "$HOME/.sdkman/bin/sdkman-init.sh",
+            "type": "imports"
+          },
+          {
+            "name": ".hasura-dev-python-venv/bin/activate",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/common.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/lib/release.sh",
+            "type": "imports"
+          },
+          {
+            "name": "/etc/os-release",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/env.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/kube-util.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/gce/util.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/hack/lib/util.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/common.sh",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 67,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 108,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "virtualenv.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${SCRIPT_DIR}/functions.sh",
+            "type": "imports"
+          },
+          {
+            "name": "helpers.windows.bash",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/${CLUSTER}/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/capture.sh",
+            "type": "imports"
+          },
+          {
+            "name": "defaults.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/vars.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${CASE_DIR}/global-setup-windows.sh",
+            "type": "imports"
+          },
+          {
+            "name": "$SCRIPTDIR/make/$bundle",
+            "type": "imports"
+          },
+          {
+            "name": "$scriptroot/tools.sh",
+            "type": "imports"
+          },
+          {
+            "name": "$script",
+            "type": "imports"
+          },
+          {
+            "name": "$scriptroot/common-library.sh",
+            "type": "imports"
+          },
+          {
+            "name": "$HOME/.sdkman/bin/sdkman-init.sh",
+            "type": "imports"
+          },
+          {
+            "name": ".hasura-dev-python-venv/bin/activate",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/common.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/lib/release.sh",
+            "type": "imports"
+          },
+          {
+            "name": "/etc/os-release",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/env.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/kube-util.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/gce/util.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/hack/lib/util.sh",
+            "type": "imports"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/common.sh",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 67,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 108
+      }
+    },
+    "references": {
+      "type": "references",
+      "edges": 108,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 108,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "virtualenv.sh",
+            "type": "references"
+          },
+          {
+            "name": "${SCRIPT_DIR}/functions.sh",
+            "type": "references"
+          },
+          {
+            "name": "helpers.windows.bash",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/${CLUSTER}/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/capture.sh",
+            "type": "references"
+          },
+          {
+            "name": "defaults.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/vars.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/global-setup-windows.sh",
+            "type": "references"
+          },
+          {
+            "name": "$SCRIPTDIR/make/$bundle",
+            "type": "references"
+          },
+          {
+            "name": "$scriptroot/tools.sh",
+            "type": "references"
+          },
+          {
+            "name": "$script",
+            "type": "references"
+          },
+          {
+            "name": "$scriptroot/common-library.sh",
+            "type": "references"
+          },
+          {
+            "name": "$HOME/.sdkman/bin/sdkman-init.sh",
+            "type": "references"
+          },
+          {
+            "name": ".hasura-dev-python-venv/bin/activate",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/common.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/lib/release.sh",
+            "type": "references"
+          },
+          {
+            "name": "/etc/os-release",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/env.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/kube-util.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/gce/util.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/hack/lib/util.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/common.sh",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 67,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 108,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "virtualenv.sh",
+            "type": "references"
+          },
+          {
+            "name": "${SCRIPT_DIR}/functions.sh",
+            "type": "references"
+          },
+          {
+            "name": "helpers.windows.bash",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/${CLUSTER}/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/capture.sh",
+            "type": "references"
+          },
+          {
+            "name": "defaults.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/vars.sh",
+            "type": "references"
+          },
+          {
+            "name": "${CASE_DIR}/global-setup-windows.sh",
+            "type": "references"
+          },
+          {
+            "name": "$SCRIPTDIR/make/$bundle",
+            "type": "references"
+          },
+          {
+            "name": "$scriptroot/tools.sh",
+            "type": "references"
+          },
+          {
+            "name": "$script",
+            "type": "references"
+          },
+          {
+            "name": "$scriptroot/common-library.sh",
+            "type": "references"
+          },
+          {
+            "name": "$HOME/.sdkman/bin/sdkman-init.sh",
+            "type": "references"
+          },
+          {
+            "name": ".hasura-dev-python-venv/bin/activate",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/common.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/build/lib/release.sh",
+            "type": "references"
+          },
+          {
+            "name": "/etc/os-release",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/env.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/kube-util.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/gce/util.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/hack/lib/util.sh",
+            "type": "references"
+          },
+          {
+            "name": "${KUBE_ROOT}/cluster/common.sh",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 67,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 108
+      }
+    },
+    "exports": {
+      "type": "exports",
+      "edges": 279,
+      "project": {
+        "resolved": 249,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 30,
+        "ambiguousByKind": 14,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "runme.sh.ANSIBLE_STDOUT_CALLBACK",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_FORCE_COLOR",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_TIMEOUT",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_CALLBACK_RESULT_FORMAT",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_GATHERING",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "vars.sh.REQUIRED_SERVICES",
+            "declarations": 11,
+            "kinds": "constant"
+          },
+          {
+            "name": "vars.sh.REQUIRE_PEERS",
+            "declarations": 3,
+            "kinds": "constant"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 249,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 30,
+        "ambiguousByKind": 14,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "runme.sh.ANSIBLE_STDOUT_CALLBACK",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_FORCE_COLOR",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_TIMEOUT",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_CALLBACK_RESULT_FORMAT",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "runme.sh.ANSIBLE_GATHERING",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "vars.sh.REQUIRED_SERVICES",
+            "declarations": 11,
+            "kinds": "constant"
+          },
+          {
+            "name": "vars.sh.REQUIRE_PEERS",
+            "declarations": 3,
+            "kinds": "constant"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 207,
+        "sameFileUnproven": 72,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      }
+    },
+    "extends": {
+      "type": "extends",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      }
+    },
+    "implements": {
+      "type": "implements",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      }
+    },
+    "overrides": {
+      "type": "overrides",
+      "edges": 25,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 25,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "fetch",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "download",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "clipcopy",
+            "declarations": 12,
+            "kinds": "function"
+          },
+          {
+            "name": "clippaste",
+            "declarations": 13,
+            "kinds": "function"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 25,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "fetch",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "download",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "clipcopy",
+            "declarations": 12,
+            "kinds": "function"
+          },
+          {
+            "name": "clippaste",
+            "declarations": 13,
+            "kinds": "function"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 25,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      }
+    },
+    "instantiates": {
+      "type": "instantiates",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      }
+    }
+  },
+  "totals": {
+    "resolved": 11153,
+    "resolvedAmongCollision": 1194,
+    "ambiguousByDecl": 264,
+    "ambiguousByKind": 21,
+    "unresolved": 4832,
+    "markedExternal": 35,
+    "externalVerified": 0,
+    "externalVerifiedByOwner": 0,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 20,
+    "externalRefuted": 15,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": [],
+    "namesOmitted": {
+      "ambiguous": 0,
+      "unresolved": 0,
+      "refuted": 0,
+      "cause": 0
+    },
+    "ambiguousWithClaim": {}
+  },
+  "totalsPooled": {
+    "resolved": 11357,
+    "resolvedAmongCollision": 1509,
+    "ambiguousByDecl": 534,
+    "ambiguousByKind": 70,
+    "unresolved": 4358,
+    "markedExternal": 35,
+    "externalVerified": 0,
+    "externalVerifiedByOwner": 0,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 20,
+    "externalRefuted": 15,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": [],
+    "namesOmitted": {
+      "ambiguous": 0,
+      "unresolved": 0,
+      "refuted": 0,
+      "cause": 0
+    },
+    "ambiguousWithClaim": {}
+  }
+}

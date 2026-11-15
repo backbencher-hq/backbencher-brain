@@ -1,0 +1,95 @@
+{
+  "fixtureId": "lua/stdlib-globals",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-57, authored FROM THE RULE before the analyzer was run against this file, and every line number read off the .lua rather than copied off a run. The rule is the receiver rule's sibling at `markStdlibExternal`: a `calls` or `uses` edge whose TARGET is a bare identifier naming one of the twenty-six documented Lua 5.4 basic-library globals (`LUA54_GLOBALS`, transcribed from reference manual §6.1 'Basic Functions'), where this file declares no symbol under that name at or before the edge's line. WHY THIS IS NOT THE RULE THIS LANE ALREADY REJECTED: the rejected list was the standard FIELDS, and its fatal case is a bare `insert(x)` — Lua 5.4 publishes no global named `insert`, so the name cannot tell the library from a user's global. A name in `LUA54_GLOBALS` is the one case where the bare spelling IS the documented global (`_G.tostring`), which is why the same technique is sound on this list and unsound on that one; rows E and F are the two edges of that distinction (a field name, and a 5.1-only name).",
+  "authoringNote": "NOTE ON `expectUnmarkedRelationships`. Five of the nine rows below assert that an edge IS published and carries NO `external` mark. That assertion cannot be made with `forbid`, which collapses 'absent' and 'present but unmarked' into one outcome; the runner asserts the edge exists, so a rule that stopped publishing the edge fails here rather than passing vacuously. The positives use the ordinary `expectRelationships` with `meta.external: \"true\"`, so both directions are pinned. `meta.externalReceiver` is deliberately NOT asserted on the positives: there is no receiver for a global read, and the rule writes none — a row asserting its absence is not expressible in this schema, so the check lives in the mutant probe instead.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "tostring",
+      "line_number": 23,
+      "meta.external": true,
+      "meta.externalKind": "lua54-global",
+      "comment": "L23 case A, POSITIVE. A bare `tostring(1)`: target is the documented basic-library global, the file declares no symbol under that name, and there is no receiver to look through."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "ipairs",
+      "line_number": 27,
+      "meta.external": true,
+      "meta.externalKind": "lua54-global",
+      "comment": "L27 case B, POSITIVE. The same rule on a different name, so the mark is a property of the transcription rather than of one entry."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "tonumber",
+      "line_number": 31,
+      "meta.external": true,
+      "meta.externalKind": "lua54-global",
+      "comment": "L31 case C, POSITIVE, and the row that shows the rule is not call-only. `tonumber` is READ as a value and never called; the claim is the same, because the name a bare read resolves through `_ENV` is the library's."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "select",
+      "line_number": 36,
+      "meta.external": true,
+      "meta.externalKind": "lua54-global",
+      "comment": "L36 case D1, POSITIVE, and the language's own timing rule. This file declares `select` at L66; a Lua local is visible from its declaration line and is not hoisted, so the L36 call still reads the global. The one-sided guard (`l <= line`) is what makes this row and row I the same rule rather than two."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "select",
+      "kind": "variable",
+      "comment": "L66. The declaration that arms D1: it must NOT withhold the L36 mark, because it is written after the read."
+    },
+    {
+      "name": "warn",
+      "kind": "variable",
+      "comment": "L62. The declaration that arms I: written at the line above the call, it withholds the mark."
+    },
+    {
+      "name": "mine",
+      "kind": "variable",
+      "comment": "L52. The file-local table that arms G: `mine.error` is a member read whose field happens to be spelled like a global."
+    }
+  ],
+  "whichRowsCarryTheWeight": "The five `expectUnmarkedRelationships` rows. The four positive rows would pass against a rule that marked every bare identifier whose text is in some list — which is the shape this lane has already measured and refused — so D1/I (the guard, read in both directions), E/F (a field name and a 5.1-only name, the two ways a name list goes wrong) and G/H (a member read and a non-identifier receiver, the two shapes that only the NODE test separates) are the half that can catch a regression.",
+  "expectUnmarkedRelationships": [
+    {
+      "type": "calls",
+      "target": "sub",
+      "line_number": 42,
+      "comment": "L42 case E. `sub` is a standard FIELD (`string.sub`) and Lua 5.4 publishes no global of that name. A list widened to 'any documented standard name' claims this row; the §6.1 transcription does not."
+    },
+    {
+      "type": "calls",
+      "target": "unpack",
+      "line_number": 47,
+      "comment": "L47 case F. `unpack` was a basic function in 5.1 and is `table.unpack` in 5.4, so a list transcribed from an older manual, or from memory, claims it."
+    },
+    {
+      "type": "calls",
+      "target": "error",
+      "line_number": 53,
+      "comment": "L53 case G. `mine.error` — a MEMBER call whose target spelling is a documented global and whose name-bearing node is the same node type as a bare identifier. Only the shape test excludes it."
+    },
+    {
+      "type": "calls",
+      "target": "next",
+      "line_number": 58,
+      "comment": "L58 case H. `(\"x\"):next()` — the receiver is not an identifier at all, so the global rule must not reach it even though `next` IS in the list. This is the row that rejects a text-only test."
+    },
+    {
+      "type": "calls",
+      "target": "warn",
+      "line_number": 63,
+      "comment": "L63 case I. `warn` is declared at L62, one line above, so this file binds the name and the call is not the library's. Same rule as D1, opposite answer, decided by a line."
+    }
+  ]
+}

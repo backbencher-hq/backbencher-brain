@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<doc xmlns:xi="http://www.w3.org/2001/XInclude"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <xi:include href="sections/intro.xml"/>
+  <xi:include href="appendix.xml" parse="text"/>
+  <a href="linked-doc.xml"/>
+  <include href="not-xinclude.xml"/>
+  <section xsi:schemaLocation="urn:example common.xsd"/>
+</doc>

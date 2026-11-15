@@ -1,0 +1,52 @@
+{
+ "fixtureId": "yaml/json-pointer-resolve",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A `$ref` is a JSON pointer INTO THIS FILE and it resolves. The pre-fix detector treated any string beginning `#/` as a reference with no target, so 9,542 corpus edges pointed at nothing. Pinned both directions: the resolvable pointer becomes a real graph edge at confidence 1.0, and the pointer nothing declares stays unresolved WITH a reason and a sub-1.0 confidence, because a dangling reference reported as resolved is worse than one reported as dangling.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "json-pointer-resolve.use.$ref",
+   "target": "json-pointer-resolve.definitions.Thing",
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 10
+  },
+  {
+   "type": "references",
+   "from": "json-pointer-resolve.alsoUse.$ref",
+   "target": "#/definitions/Missing",
+   "confidenceMax": 0.95,
+   "meta.resolved": false,
+   "meta.unresolvedReason": "pointer-not-declared-in-file",
+   "meta.confidenceReason": "pointer-not-declared-in-file",
+   "line_number": 12
+  }
+ ],
+ "expectQualifiedCalls": [
+  {
+   "symbol": "$ref",
+   "ownerName": "json-pointer-resolve.use",
+   "contains": "json-pointer-resolve.definitions.Thing"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ],
+  "evidenceClasses": [
+   "reference_qualified",
+   "structural"
+  ]
+ }
+}

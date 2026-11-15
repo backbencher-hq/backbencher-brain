@@ -1,0 +1,68 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+  "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+  "dbReadonlyHandle": true,
+  "counts": {
+    "files": 5,
+    "symbols": 13,
+    "relationships": 26,
+    "imports": 2,
+    "embeddingRows": 9,
+    "embeddedEntities": 9
+  },
+  "embeddingModels": [
+    {
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "rows": 9
+    }
+  ],
+  "files": {
+    "before": {
+      "db": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+        "size": 524288,
+        "mtimeMs": 1793571693256.6829,
+        "mtime": "2026-11-01T22:21:33.256Z"
+      },
+      "wal": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db-wal",
+        "size": 0,
+        "mtimeMs": 1793571695046.7095,
+        "mtime": "2026-11-01T22:21:35.046Z"
+      },
+      "shm": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db-shm",
+        "size": 32768,
+        "mtimeMs": 1793571695047.5803,
+        "mtime": "2026-11-01T22:21:35.047Z"
+      }
+    },
+    "after": {
+      "db": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+        "size": 524288,
+        "mtimeMs": 1793571693256.6829,
+        "mtime": "2026-11-01T22:21:33.256Z"
+      },
+      "wal": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db-wal",
+        "size": 0,
+        "mtimeMs": 1793571695046.7095,
+        "mtime": "2026-11-01T22:21:35.046Z"
+      },
+      "shm": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db-shm",
+        "size": 32768,
+        "mtimeMs": 1793571779382.7654,
+        "mtime": "2026-11-01T22:22:59.382Z"
+      }
+    },
+    "dbUnchanged": true,
+    "walContentChanged": false,
+    "dbUnchangedNote": "db bytes unchanged AND no WAL frames added; a newly present 0-byte -wal and a touched -shm are connection artifacts, not writes"
+  },
+  "generatedAt": "2026-11-01T22:22:59.386Z"
+}

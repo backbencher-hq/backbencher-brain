@@ -3,7 +3,7 @@
   "kind": "m60-haskell-line-coverage",
   "generatedAt": "2026-09-26T03:34:01.708Z",
   "corpus": {
-    "dir": "$HOME/fixtures/repositories/hledger",
+    "dir": "/home/ishaq2321/bb_tests/repositories/hledger",
     "files": 186,
     "maxFiles": 3000
   },

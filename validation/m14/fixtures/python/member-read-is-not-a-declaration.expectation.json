@@ -1,0 +1,107 @@
+{
+ "fixtureId": "python/member-read-is-not-a-declaration",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "PY-D24 (round 12). `isinstance(x, self._self_owner)`, `issubclass(source.__class__, field.related_model)` and `isinstance(w.message, passlib_exc.PasslibHashWarning)` take the TYPE ARGUMENT from an attribute of a local object. The emitter published the last identifier as the target (`_self_owner`, `related_model`, `PasslibHashWarning`) with the whole spelling in `metadata.qualified`, so the row named a declaration-like name that no file declares and the verdict could only call it UNEXPLAINED — exactly these 3 rows of the round-11 residual, plus `gdb.SignalEvent`, whose root is bound by nothing at all and is covered by the round-12 `not-bound-in-file` axis instead (`.tmp-py/price-bare-names.py` classified all 4). The rule is gated on the receiver's ROOT through python's own lexical walk: only a receiver that is a LOCAL of an enclosing function can have no static target here, so an import-bound root keeps the `qualified-external` route and a class this file declares keeps the chance to resolve against the store. The three negative rows are what keeps the rule narrow, and one of them was found by running the first version of the rule rather than by reasoning about it: the RECEIVER leaf (`field`, `mod`, `cfg`) was relabelled `member-read` too, which the probe showed immediately. `authoredBeforeAnalyzerRun` is FALSE: the population was priced first, the code landed, then this file pinned the shipped behaviour.",
+ "expectSymbols": [
+  {
+   "name": "Config",
+   "kind": "class",
+   "note": "The in-file class kept for the `cfg = Config()` row: the receiver of one member read is not a parameter but a LOCAL assignment, and the rule must treat both the same way."
+  },
+  {
+   "name": "DEFAULTS",
+   "kind": "property",
+   "ownerName": "Config",
+   "note": "The ONLY `DEFAULTS` symbol in the file is the class's own attribute — which is the point: `cfg.DEFAULTS` is a member read on an OBJECT, and it must fabricate nothing even though a symbol of that name exists. The count row below pins the count at 1."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "reads_members",
+   "target": "_self_owner",
+   "line_number": 33,
+   "confidence": 0.95,
+   "meta.reasonCode": "member-read",
+   "meta.qualified": "self._self_owner",
+   "note": "THE POSITIVE ROW. `self` is a parameter, so the receiver is a runtime object: the read has no static target, and `member-read` is the lane's own word for it (the same code the `uses` emitter has published for member reads since before this round). `metadata.qualified` keeps the full spelling, so the route is not lost — the reason NARROWS from the position to the binding, which is what M14 §4 asks a reason code to say."
+  },
+  {
+   "type": "references",
+   "from": "reads_members",
+   "target": "related_model",
+   "line_number": 34,
+   "confidence": 0.95,
+   "meta.reasonCode": "member-read",
+   "meta.qualified": "field.related_model",
+   "note": "The corpus shape, verbatim: wagtail's `wagtail/models/copying.py:80` is `issubclass(source.__class__, field.related_model)`."
+  },
+  {
+   "type": "references",
+   "from": "reads_members",
+   "target": "Thing",
+   "line_number": 35,
+   "confidence": 0.95,
+   "meta.reasonCode": "member-read",
+   "meta.qualified": "mod.Thing",
+   "note": "A receiver that is a PARAMETER by another name: the root test reads the leftmost identifier of the receiver, not the leaf's spelling, so `mod.Thing` and `self._self_owner` are one rule."
+  },
+  {
+   "type": "references",
+   "from": "reads_members",
+   "target": "DEFAULTS",
+   "line_number": 36,
+   "confidence": 0.95,
+   "meta.reasonCode": "member-read",
+   "meta.qualified": "cfg.DEFAULTS",
+   "note": "A receiver bound by an ASSIGNMENT in the same function (`cfg = Config()`) — the rule asks the function's local set, which is built by PY-D14's collector, so it holds for every binding kind that collector knows, not only for parameters."
+  },
+  {
+   "type": "references",
+   "from": "reads_members",
+   "target": "field",
+   "line_number": 34,
+   "confidence": 0.95,
+   "meta.reasonCode": "local-binding-target",
+   "note": "THE NEGATIVE ROW THAT WAS A REAL DEFECT FOR ONE RUN. The RECEIVER leaf (`field` inside `field.__class__`) is a local binding, and its correct code is `local-binding-target`. The first version of the member-read rule keyed on the parent node alone and relabelled this row `member-read` — a reason that claims the name has no static target when the file states the binding two words to the left. The shipped rule requires the leaf to be the attribute's LAST component (the same test `typeQualifier` uses), so a receiver can never take this code."
+  },
+  {
+   "type": "references",
+   "from": "import_bound_root",
+   "target": "PathLike",
+   "line_number": 41,
+   "confidence": 0.95,
+   "meta.reasonCode": "instanceof-check",
+   "meta.qualified": "os.PathLike",
+   "note": "THE IMPORT-BOUND NEGATIVE ROW. `os` is bound by an `import` at module scope, not by a local, so the reason stays `instanceof-check` and the verdict's `qualified-external` axis keeps the row: the member is reachable through the import edge and is NOT dynamic. A rule that keyed on `attribute` alone would have swallowed this row — and, with it, the 893 rows the `qualified-external` axis currently carries."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "_self_owner",
+   "equals": 0,
+   "note": "FABRICATION GUARD. `self._self_owner` is an attribute of a parameter, not a declaration: publishing a symbol for it would invent a project-wide name that python itself cannot resolve."
+  },
+  {
+   "name": "related_model",
+   "equals": 0,
+   "note": "Same, the corpus shape."
+  },
+  {
+   "name": "Thing",
+   "equals": 0,
+   "note": "Same, on a parameter receiver."
+  },
+  {
+   "name": "PathLike",
+   "equals": 0,
+   "note": "Same, on an IMPORT-bound receiver: the member of a module is not a declaration in this file either — it is the import's business, which is why the row stays `instanceof-check` rather than being declared dynamic."
+  },
+  {
+   "name": "DEFAULTS",
+   "equals": 1,
+   "note": "Exactly ONE `DEFAULTS` symbol exists — the class attribute. This row is the sharpest falsifier in the file: a rule that published a symbol for the member READ would produce 2 here, and the count alone catches it."
+  }
+ ]
+}

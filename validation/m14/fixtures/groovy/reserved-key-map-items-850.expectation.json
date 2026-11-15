@@ -1,0 +1,29 @@
+{
+  "fixtureId": "groovy/reserved-key-map-items-850",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M49 W21 (#850). Pins Java-reserved words as named-argument KEYS. `open`, `module`, `record`, `with` and `sealed` are Java keywords and this grammar extends Java, so `map_item` — whose key accepts `identifier | literal | (expr)` — could not accept them, while every other name position in the grammar already accepts `_reserved_identifier` (five sites: `field('name', choice($.identifier, $._reserved_identifier, …))`). The failure was not local: `exclude group: 'a', module: 'b'` failed to form a map_item and dragged its enclosing command block into ERROR recovery, which is why the `.gradle` census's largest first-error signature was a bare `ID {`. MEASURED pre/post on this exact file through the production analyzer: pre-fix 0 symbols and 1 relationship (a single collapsed `uses conf -> exclude` at 13 — the class body never became a class), post-fix 5 symbols and 7 relationships. Corpus impact, grails-core @ a83f8748, 454 *.gradle files through parseFile: parse-failing 86 (18.9%) -> 21 (4.6%), relationships 15,013 -> 17,017, with the failing-file SETS compared file-by-file — 65 fixed, 0 regressed, 0 files losing relationships. `authoredBeforeAnalyzerRun` is false because the expectation was read off the corrected emission; the two counts above are the provenance. The parse-clean property is pinned by F9; this file pins the analyzer-visible consequence (the enclosing class and its methods exist at all, and the command is a CALL not a READ).",
+  "expectSymbols": [
+    { "name": "DepsCfg", "kind": "class" },
+    { "name": "twoKeys", "kind": "method" },
+    { "name": "oneReservedKey", "kind": "method" },
+    { "name": "asMap", "kind": "method" },
+    { "name": "control", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "twoKeys", "target": "exclude", "line_number": 13, "note": "the SECOND named argument's key is the reserved word `module` — pre-fix this call did not exist" },
+    { "type": "calls", "from": "oneReservedKey", "target": "exclude", "line_number": 18, "note": "a lone reserved key: `conf.exclude module: 'grails-async'`" },
+    { "type": "calls", "from": "control", "target": "exclude", "line_number": 28, "note": "CONTROL: identical shape with non-reserved keys, unchanged by the fix" },
+    { "type": "contains", "from": "DepsCfg", "target": "twoKeys", "line_number": 12 },
+    { "type": "contains", "from": "DepsCfg", "target": "oneReservedKey", "line_number": 17 },
+    { "type": "contains", "from": "DepsCfg", "target": "asMap", "line_number": 22 },
+    { "type": "contains", "from": "DepsCfg", "target": "control", "line_number": 27 }
+  ],
+  "forbidSymbols": [
+    { "name": "def", "kind": "property", "note": "the classic Groovy squeeze artifact: `def` leaking as a property symbol" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "DepsCfg", "target": "exclude", "note": "a map_item KEY must never become a call target; the call belongs to the method that issues it" },
+    { "type": "calls", "from": "twoKeys", "target": "module", "note": "pre-fix shape: the reserved KEY itself surfacing as the callee" }
+  ]
+}

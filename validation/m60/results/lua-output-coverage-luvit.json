@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-output-coverage",
+  "repo": "luvit",
+  "files": 199,
+  "skipped": [],
+  "parseError": [],
+  "symbols": {
+    "emitted": 3724,
+    "lost": 9,
+    "spurious": 0
+  },
+  "relationships": {
+    "emitted": 7050,
+    "lost": 0,
+    "spurious": 0
+  },
+  "exports": {
+    "emitted": 187,
+    "lost": 0,
+    "spurious": 0
+  },
+  "imports": {
+    "emitted": 549,
+    "lost": 0,
+    "spurious": 0
+  },
+  "lossByRule": {
+    "symbols: UNIVERSAL denylist (a keyword or a synthetic tree-sitter artifact name)": 9
+  },
+  "lossByRuleRelType": {},
+  "lossByTargetName": {},
+  "unexplained": [],
+  "spurious": [],
+  "droppedSymbolNames": {
+    "root": 6,
+    "self": 2,
+    "super": 1
+  },
+  "importSample": [],
+  "totals": {
+    "directRels": 7050,
+    "pipelineRels": 7050,
+    "directSymbols": 3733,
+    "pipelineSymbols": 3724,
+    "directExports": 187
+  },
+  "mutation": "none"
+}

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A vocabulary DECLARATION's range must CONTAIN the constructs it contains.
+
+  M60 containment ledger, finding: `src/ast/real-xml-analyzer.ts` anchored a declaration's
+  symbol range to the `name=` Attribute node whenever the value shared the attribute's line.
+  That is the right LINE and the wrong SPAN, and `contains` is made of spans:
+
+    <xsd:complexType name="Address">     symbol `Address` @ name="Address"
+      <xsd:sequence>                     symbol `xsd:sequence` @ <xsd:sequence>...
+
+  produced the edge `Address -contains-> xsd:sequence` — which is TRUE — with a target that
+  is not inside its source, and the attribute symbol `name` occupied the identical byte
+  range as the declaration itself. Measured over 400 corpus files: 253 byte ranges held by
+  two distinct names, and 474 of 4,383 `contains` edges whose containment claim no span can
+  express. Both are invisible to a resolution rate, which is 100 % on this type.
+
+  Three shapes are pinned, because the fix is PARTIAL and each shape is a different
+  decision. The rule is "anchor the ELEMENT when the tag, the `name=` attribute and its
+  value all share one line" — the only shape in which the element's row and the
+  attribute's row are the same row, and therefore the only one where moving the anchor
+  cannot move the reported LINE.
+
+    shape 1  lines 31-35, tag/attribute/value all on one line -> anchor the ELEMENT, so
+             `Address` at 1818..1963 contains `name` at 1835..1849, `xsd:sequence` at
+             1855..1942 and `street` at 1876..1922
+    shape 2  lines 36-38, the attribute on the NEXT line     -> anchor the Attribute, and
+             the reported line stays 37, the line the name is written on
+    shape 3  lines 39-41, the value on a line of its own      -> anchor the AttValue, and
+             the reported line stays 40
+
+  Shapes 2 and 3 keep the old anchor, so their containment stays unverifiable by span: on
+  shape 3 the `name` Attribute node at 2055..2084 ENCLOSES the declaration at 2067..2084,
+  which is why `ValueOnNextLine -contains-> name` is a true edge with an inverted range
+  order. That is the declared cost of the fix, pinned here so it cannot be quietly
+  forgotten: if a future change anchors shapes 2 and 3 to the element, both symbols report
+  the TAG's line and this fixture fails.
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:example:containment">
+  <xsd:complexType name="Address">
+    <xsd:sequence>
+      <xsd:element name="street" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:attribute
+      name="AttrOnNextLine"
+      type="xsd:string"/>
+  <xsd:element name=
+      "ValueOnNextLine"
+      type="xsd:string"/>
+</xsd:schema>

@@ -1,0 +1,6 @@
+;; CLJ-EX3 (2026-10-20): AN EDN DATA FILE. Lists, symbols and keywords here are VALUES, not
+;; calls; the analyzer must publish NOTHING for this file. The .clj twin (edn-data-rule-code.clj)
+;; spells the same forms as CODE and keeps its rows — that pair is the two-direction pin.
+{:tasks [(shell "echo hi") (clojure.test/is true)]
+ :libs  {foo.bar/baz 1}
+ :hooks [(clojure.test/testing "x" (is true))]}

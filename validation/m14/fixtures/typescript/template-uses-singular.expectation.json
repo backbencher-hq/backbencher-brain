@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/template-uses-singular",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave template-double fix: one template read emits exactly one edge — the template walk owns substitutions, so the general identifier walk must not add a second References edge for the same read (previously Uses+References for cfg).",
+  "expectSymbols": [
+    { "name": "show", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "show", "target": "cfg", "meta.evidenceClass": "usage_contextual" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "show", "target": "cfg" }
+  ]
+}

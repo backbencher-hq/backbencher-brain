@@ -239,7 +239,7 @@
         "p95": 180,
         "max": 180,
         "verdict": "OK",
-        "detail": "ok bytes=781 :: project: $HOME/mcp/backbencher-brain projectId: 1d3d57103be91b8f9716d70199fe28a3f39245d9 f"
+        "detail": "ok bytes=781 :: project: /home/ishaq2321/mcp/backbencher-brain projectId: 1d3d57103be91b8f9716d70199fe28a3f39245d9 f"
       },
       "before": {
         "p50": 366,

@@ -1,0 +1,309 @@
+{
+  "probe": "bb_graph door",
+  "section": "refusals",
+  "at": "2026-11-01T20:26:59.504Z",
+  "project": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbBefore": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564587420
+  },
+  "refusals": [
+    {
+      "id": "missing-symbol",
+      "args": {},
+      "ok": false,
+      "error": "bb_graph: missing required option: symbol",
+      "ms": 0.51
+    },
+    {
+      "id": "blank-symbol",
+      "args": {
+        "symbol": "   "
+      },
+      "ok": false,
+      "error": "bb_graph requires symbol",
+      "ms": 1.85
+    },
+    {
+      "id": "unknown-symbol",
+      "args": {
+        "symbol": "no_such_symbol_9f3a"
+      },
+      "ok": false,
+      "error": "bb_graph: Symbol 'no_such_symbol_9f3a' not found",
+      "ms": 12201
+    },
+    {
+      "id": "maxDepth-0",
+      "args": {
+        "symbol": "likeContains",
+        "maxDepth": 0
+      },
+      "ok": false,
+      "error": "bb_graph maxDepth must be a whole number between 1 and 10",
+      "ms": 0.16
+    },
+    {
+      "id": "maxDepth-11",
+      "args": {
+        "symbol": "likeContains",
+        "maxDepth": 11
+      },
+      "ok": false,
+      "error": "bb_graph maxDepth must be a whole number between 1 and 10",
+      "ms": 0.07
+    },
+    {
+      "id": "maxDepth-fractional",
+      "args": {
+        "symbol": "likeContains",
+        "maxDepth": 2.5
+      },
+      "ok": false,
+      "error": "bb_graph maxDepth must be a whole number between 1 and 10",
+      "ms": 0.05
+    },
+    {
+      "id": "maxDepth-string",
+      "args": {
+        "symbol": "likeContains",
+        "maxDepth": "3"
+      },
+      "ok": false,
+      "error": "bb_graph: maxDepth must be number",
+      "ms": 0.33
+    },
+    {
+      "id": "direction-invalid",
+      "args": {
+        "symbol": "likeContains",
+        "direction": "up"
+      },
+      "ok": false,
+      "error": "bb_graph: direction must be one of: callers, callees, both",
+      "ms": 0.13
+    },
+    {
+      "id": "relationshipTypes-empty",
+      "args": {
+        "symbol": "likeContains",
+        "relationshipTypes": []
+      },
+      "ok": false,
+      "error": "bb_graph relationshipTypes must name at least one relationship kind",
+      "ms": 0.08
+    },
+    {
+      "id": "relationshipTypes-blank-entry",
+      "args": {
+        "symbol": "likeContains",
+        "relationshipTypes": [
+          ""
+        ]
+      },
+      "ok": false,
+      "error": "bb_graph relationshipTypes must be an array of non-empty relationship kind names",
+      "ms": 3.39
+    },
+    {
+      "id": "relationshipTypes-string",
+      "args": {
+        "symbol": "likeContains",
+        "relationshipTypes": "calls"
+      },
+      "ok": false,
+      "error": "bb_graph: relationshipTypes must be array",
+      "ms": 0.08
+    },
+    {
+      "id": "relationshipTypes-number-entry",
+      "args": {
+        "symbol": "likeContains",
+        "relationshipTypes": [
+          7
+        ]
+      },
+      "ok": false,
+      "error": "bb_graph: relationshipTypes must be array",
+      "ms": 0.06
+    },
+    {
+      "id": "edgeLimit-0",
+      "args": {
+        "symbol": "likeContains",
+        "edgeLimit": 0
+      },
+      "ok": false,
+      "error": "bb_graph edgeLimit must be a whole number between 1 and 5000",
+      "ms": 0.08
+    },
+    {
+      "id": "edgeLimit-negative",
+      "args": {
+        "symbol": "likeContains",
+        "edgeLimit": -5
+      },
+      "ok": false,
+      "error": "bb_graph: edgeLimit must be non-negative",
+      "ms": 0.06
+    },
+    {
+      "id": "edgeLimit-fractional",
+      "args": {
+        "symbol": "likeContains",
+        "edgeLimit": 2.5
+      },
+      "ok": false,
+      "error": "bb_graph: edgeLimit must be a whole number (got 2.5)",
+      "ms": 0.07
+    },
+    {
+      "id": "maxEdges-0",
+      "args": {
+        "symbol": "likeContains",
+        "maxEdges": 0
+      },
+      "ok": false,
+      "error": "bb_graph maxEdges must be a whole number between 1 and 5000",
+      "ms": 0.06
+    },
+    {
+      "id": "maxEdges-fractional",
+      "args": {
+        "symbol": "likeContains",
+        "maxEdges": 2.5
+      },
+      "ok": false,
+      "error": "bb_graph maxEdges must be a whole number between 1 and 5000",
+      "ms": 0.04
+    },
+    {
+      "id": "timeBudget-negative",
+      "args": {
+        "symbol": "likeContains",
+        "timeBudgetMs": -1
+      },
+      "ok": false,
+      "error": "bb_graph timeBudgetMs must be a non-negative number (0 disables the bound)",
+      "ms": 107.79
+    },
+    {
+      "id": "includeCrossLanguage-string",
+      "args": {
+        "symbol": "likeContains",
+        "includeCrossLanguage": "false"
+      },
+      "ok": false,
+      "error": "bb_graph: includeCrossLanguage must be boolean",
+      "ms": 0.14
+    },
+    {
+      "id": "unknown-option",
+      "args": {
+        "symbol": "likeContains",
+        "depth": 2
+      },
+      "ok": false,
+      "error": "bb_graph: unknown or irrelevant options: depth — accepted options: symbol, maxDepth, direction, relationshipTypes, includeCrossLanguage, timeBudgetMs, maxEdges, edgeLimit (aliases accepted: target, symbolName, query)",
+      "ms": 1.73
+    },
+    {
+      "id": "alias-target",
+      "args": {
+        "target": "likeContains"
+      },
+      "ok": true,
+      "error": null,
+      "ms": 162.48,
+      "rootName": "likeContains",
+      "rootMatch": "exact",
+      "edges": 19,
+      "maxDepth": 5,
+      "edgeLimit": 200,
+      "maxEdges": 1000,
+      "scope": {
+        "direction": "both",
+        "relationshipTypes": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "includeCrossLanguage": true
+      },
+      "truncated": false,
+      "filterNarrowed": false,
+      "filterReason": null,
+      "truncationReasons": []
+    },
+    {
+      "id": "alias-query",
+      "args": {
+        "query": "likeContains"
+      },
+      "ok": true,
+      "error": null,
+      "ms": 48.51,
+      "rootName": "likeContains",
+      "rootMatch": "exact",
+      "edges": 19,
+      "maxDepth": 5,
+      "edgeLimit": 200,
+      "maxEdges": 1000,
+      "scope": {
+        "direction": "both",
+        "relationshipTypes": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "includeCrossLanguage": true
+      },
+      "truncated": false,
+      "filterNarrowed": false,
+      "filterReason": null,
+      "truncationReasons": []
+    },
+    {
+      "id": "alias-conflict",
+      "args": {
+        "symbol": "likeContains",
+        "target": "matchedMember"
+      },
+      "ok": false,
+      "error": "bb_graph: symbol and target are aliases with different values (\"likeContains\" vs \"matchedMember\") — pass one",
+      "ms": 0.09
+    }
+  ],
+  "dbAfter": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564819531
+  },
+  "dbUnchanged": false
+}

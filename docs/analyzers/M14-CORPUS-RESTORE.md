@@ -16,7 +16,7 @@ diagnosis was wrong, and the correction is the first section because it is the r
 | `git fetch --depth 1 origin <40-hex pin>` | `Proxy CONNECT aborted` ×2, then `No route to host` | succeeds, first attempt |
 | `curl https://codeload.github.com/<owner>/<repo>/tar.gz/<pin>` | `000`, 0 bytes (recorded before) | `200`, 1,458,194 bytes for `jq` at its pin |
 
-`http_proxy`/`https_proxy` in this shell point at `REDACTED-PROXY`. That proxy answers a plain
+`http_proxy`/`https_proxy` in this shell point at `109.166.48.109:49815`. That proxy answers a plain
 GET (which is why the earlier probe's `curl https://github.com` read 200 and its `ls-remote` did not)
 and **aborts git's CONNECT**. "The network path to github.com is blocked" generalised from one probe
 shape; there was always a second one, and it works.

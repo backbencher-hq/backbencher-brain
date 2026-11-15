@@ -5,7 +5,7 @@
  *
  * `script/m12/cpp-wasm-compare.ts` already made this comparison for the M12
  * grammar swap, but its paths are hardcoded to another machine
- * (`$HOME/...`, `/tmp/ts-cpp-npm/...`). This is the same measurement with
+ * (`/home/ishaq2321/...`, `/tmp/ts-cpp-npm/...`). This is the same measurement with
  * the two files supplied as arguments, plus the parse-error counts that decide
  * whether the local rules are LOAD-BEARING (a fork nobody can feel is just a
  * different build; a fork that fixes N files is part of the pin).
@@ -21,7 +21,7 @@ if (!wiredPath || !upstreamPath) {
   console.error("usage: grammar-provenance.ts <wired.wasm> <upstream.wasm> [repo...]")
   process.exit(2)
 }
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/sano/ishaq/bb_tests/repositories"
 const REPOS = repoArgs.length ? repoArgs : (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2").split(",").filter(Boolean)
 const EXTS = [".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++"]
 const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-debug"])

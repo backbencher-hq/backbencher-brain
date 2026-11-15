@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || fileURLToPath(new URL("../..", import.meta.url))
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const MAXBYTES = 512 * 1024
 
 /** The R7 placeholder classes. `unknown` is the one the rule names; the rest are the

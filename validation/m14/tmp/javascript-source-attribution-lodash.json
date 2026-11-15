@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-13T20:20:56.327Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/lodash",
+  "admittedFiles": 51,
+  "sampledFiles": 51,
+  "parseCleanFiles": 51,
+  "totals": {
+    "files": 51,
+    "rows": 23489,
+    "withLine": 23489,
+    "attributed": 23489,
+    "attributedModule": 9750,
+    "attributedLocalCallable": 11870,
+    "outOfScope": 786,
+    "unattributed": 0
+  },
+  "note": "Checks the one dimension no other instrument covers: the differential matches label + normTarget and never source, and verify-js-source-attribution.ts asserts only NULL sources. Expected sources are REPLAYED from the analyzer's own resolveCurrent rule over the tree (function names, method names, local `const f = () =>` declarators, class names for static blocks/field inits, X.prototype.m, the enclosing class for the uses walk, and the module name at top level).",
+  "examples": []
+}

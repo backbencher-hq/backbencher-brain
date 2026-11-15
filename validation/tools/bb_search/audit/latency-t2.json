@@ -1,0 +1,131 @@
+{
+  "tier": "T2-reference",
+  "runtime": "compiled dist via node bin/bb mcp — node v22.22.1 (better-sqlite3)",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+  "env": {
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "runsPerCall": 5,
+  "generatedAt": "2026-11-01T22:37:17.268Z",
+  "results": [
+    {
+      "label": "symbols.named",
+      "args": {
+        "query": "searchSymbols"
+      },
+      "isError": false,
+      "runs": [
+        312.29,
+        317.8,
+        302.48,
+        355.74,
+        351.86
+      ],
+      "p50": 317.8,
+      "p95": 355.74,
+      "min": 302.48,
+      "max": 355.74,
+      "warmTextHead": "searchSymbols [function] src/intelligence/search/symbol-search.ts:104 (typescript) [STALE]\nsearchSymbols [constant] scri"
+    },
+    {
+      "label": "symbols.broad",
+      "args": {
+        "query": "search"
+      },
+      "isError": false,
+      "runs": [
+        416.86,
+        318.33,
+        314.7,
+        307.69,
+        299.64
+      ],
+      "p50": 314.7,
+      "p95": 416.86,
+      "min": 299.64,
+      "max": 416.86,
+      "warmTextHead": "search [function] script/m14/name-falsifier.ts:65 (typescript)\nsearch [function] script/test-stale-handle.ts:32 (typescr"
+    },
+    {
+      "label": "content.default",
+      "args": {
+        "mode": "content",
+        "query": "serialize cache entry"
+      },
+      "isError": false,
+      "runs": [
+        601.69,
+        577.56,
+        583.06,
+        575.92,
+        573.43
+      ],
+      "p50": 577.56,
+      "p95": 601.69,
+      "min": 573.43,
+      "max": 601.69,
+      "warmTextHead": "{\n  \"searchMode\": \"content\",\n  \"query\": \"serialize cache entry\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 2,\n  \"fr"
+    },
+    {
+      "label": "symbol.default",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "getProjectId"
+      },
+      "isError": false,
+      "runs": [
+        7.1,
+        7.78,
+        7.23,
+        6.7,
+        7.22
+      ],
+      "p50": 7.22,
+      "p95": 7.78,
+      "min": 6.7,
+      "max": 7.78,
+      "warmTextHead": "{\n  \"matches\": [\n    {\n      \"id\": \"1d3d57103be91b8f9716d70199fe28a3f39245d9:script/verify-mcp-e2e.ts:getProjectId:67\",\n"
+    },
+    {
+      "label": "file.default",
+      "args": {
+        "mode": "file",
+        "filePath": "src/mcp/server.ts"
+      },
+      "isError": false,
+      "runs": [
+        5.79,
+        5.32,
+        5.05,
+        6.07,
+        5.44
+      ],
+      "p50": 5.44,
+      "p95": 6.07,
+      "min": 5.05,
+      "max": 6.07,
+      "warmTextHead": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/mcp/server.ts\",\n  \"fileId\": \"1d3d57103be91b8f9716d70199fe28a3f39245d9:src/mcp/s"
+    },
+    {
+      "label": "regex.option",
+      "args": {
+        "query": "^get.*Cache",
+        "regex": true
+      },
+      "isError": false,
+      "runs": [
+        574.61,
+        575.33,
+        773.94,
+        806.56,
+        955.27
+      ],
+      "p50": 773.94,
+      "p95": 955.27,
+      "min": 574.61,
+      "max": 955.27,
+      "warmTextHead": "no results for \"^get.*Cache\"\nscan was cut short (scan-cap) over some candidate rows — this is NOT a complete answer\n[mat"
+    }
+  ]
+}

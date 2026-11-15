@@ -2,7 +2,7 @@
   "probe": "M50.A2-blob-backfill-real",
   "at": "2026-09-12T04:11:49.392Z",
   "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-  "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
   "budgetMsPerPass": 60000,
   "passes": 1,
   "promoted": 11124,

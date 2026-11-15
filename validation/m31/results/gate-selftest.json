@@ -1,0 +1,109 @@
+{
+  "status": "verified",
+  "currentCommit": "8f449a26e9badb54503abd55edcc6adec1b2e015",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/verify-gate-selftest.ts",
+  "runnerUsed": "bun",
+  "evidenceFile": "gate-selftest.json",
+  "generatedAt": "2026-11-04T01:39:06.512Z",
+  "passed": 69,
+  "failed": 0,
+  "negativeCases": 19,
+  "gates": [
+    {
+      "name": "m31-closure",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "tool-mode-corpus",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tool-docs-deep",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tool-docs-deep-badschema",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tool-docs-deep-stale",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-bb-docs-truth-mode",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-bb-docs-truth-invocation",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-bb-docs-truth-mutability",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tools-overview-sections",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tools-overview-facts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tools-overview-artifacts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-tools-overview-crosslink",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "tool-docs-generator",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m20-doc-truth-cap",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m20-doc-truth-signature",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m20-doc-modes-contract",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m20-doc-citations-freshness",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m20-doc-examples-honest",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m31-governance",
+      "mutationFailed": true,
+      "controlPassed": true
+    }
+  ]
+}

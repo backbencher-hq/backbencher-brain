@@ -59,7 +59,7 @@ const MAX_BYTES = 512 * 1024
 
 const files: Array<{ repo: string; dir: string; rel: string; abs: string; text: string }> = []
 const seen = new Set<string>()
-for (const dir of [...REPOS.map((e) => path.join(process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories", e)), ...EXTRA]) {
+for (const dir of [...REPOS.map((e) => path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e)), ...EXTRA]) {
   let tracked: string[]
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }
   for (const rel of tracked) {

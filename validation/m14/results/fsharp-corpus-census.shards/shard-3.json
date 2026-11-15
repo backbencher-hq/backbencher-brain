@@ -1,0 +1,747 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-fsharp-corpus-census",
+  "generatedAt": "2026-09-26T02:24:24.930Z",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories/fsharp",
+    "roots": [
+      "/tmp/fsharp-census/shard-3.txt"
+    ],
+    "files": 1326,
+    "discovered": 1326,
+    "repoRevision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "dirty": false
+  },
+  "note": "First honest corpus measurement of the fsharp lane (no differential lane exists: fsharp is in neither LANGS nor the oracle table of script/m14/differential.ts). Measures exit distribution, symbol kinds, relationship types, dangling endpoints (edge endpoint naming no symbol of the file) and path-valued endpoints. Not an oracle comparison — a census.",
+  "totals": {
+    "symbols": 42460,
+    "relationships": 118382,
+    "danglingSource": 1044,
+    "danglingTarget": 60254,
+    "qualifiedSourceMismatches": 717,
+    "pathEndpoints": 0,
+    "parseErrorsOrHasError": 253,
+    "analyzerThrew": 0
+  },
+  "symbolKinds": {
+    "class": 3274,
+    "function": 8780,
+    "method": 9702,
+    "constructor": 243,
+    "variable": 8855,
+    "interface": 234,
+    "module": 2943,
+    "type": 421,
+    "namespace": 297,
+    "property": 3771,
+    "enum": 835,
+    "enum_member": 3104,
+    "macro": 1
+  },
+  "relationshipTypes": {
+    "calls": 79845,
+    "extends": 442,
+    "contains": 34398,
+    "references": 2398,
+    "overrides": 727,
+    "implements": 542,
+    "instantiates": 30
+  },
+  "topDanglingNames": [
+    {
+      "name": "Next",
+      "count": 9712
+    },
+    {
+      "name": "sprintf",
+      "count": 9347
+    },
+    {
+      "name": "AreEqual",
+      "count": 3219
+    },
+    {
+      "name": "string",
+      "count": 1303
+    },
+    {
+      "name": "failwith",
+      "count": 914
+    },
+    {
+      "name": "True",
+      "count": 896
+    },
+    {
+      "name": "map",
+      "count": 851
+    },
+    {
+      "name": "shouldEqual",
+      "count": 778
+    },
+    {
+      "name": "Some",
+      "count": 773
+    },
+    {
+      "name": "Equal",
+      "count": 616
+    },
+    {
+      "name": "Fail",
+      "count": 547
+    },
+    {
+      "name": "getCompletionInfo",
+      "count": 436
+    },
+    {
+      "name": "assertHasItemWithNames",
+      "count": 412
+    },
+    {
+      "name": "System",
+      "count": 378
+    },
+    {
+      "name": "not",
+      "count": 353
+    },
+    {
+      "name": "Xunit",
+      "count": 323
+    },
+    {
+      "name": "Contains",
+      "count": 323
+    },
+    {
+      "name": "CheckThrowsArgumentNullException",
+      "count": 320
+    },
+    {
+      "name": "seq",
+      "count": 311
+    },
+    {
+      "name": "CheckThrowsArgumentException",
+      "count": 299
+    },
+    {
+      "name": "False",
+      "count": 297
+    },
+    {
+      "name": "box",
+      "count": 277
+    },
+    {
+      "name": "WriteLine",
+      "count": 262
+    },
+    {
+      "name": "getParseAndCheckResults",
+      "count": 252
+    },
+    {
+      "name": "areEqual",
+      "count": 233
+    },
+    {
+      "name": "iter",
+      "count": 222
+    },
+    {
+      "name": "filter",
+      "count": 218
+    },
+    {
+      "name": "ref",
+      "count": 200
+    },
+    {
+      "name": "fsc",
+      "count": 200
+    },
+    {
+      "name": "QuickThrowOnFailure",
+      "count": 185
+    },
+    {
+      "name": "Line",
+      "count": 176
+    },
+    {
+      "name": "Col",
+      "count": 172
+    },
+    {
+      "name": "VerifySeqsEqual",
+      "count": 170
+    },
+    {
+      "name": "Create",
+      "count": 168
+    },
+    {
+      "name": "ParseAndCheckProject",
+      "count": 166
+    },
+    {
+      "name": "Wait",
+      "count": 160
+    },
+    {
+      "name": "mkPos",
+      "count": 159
+    },
+    {
+      "name": "assertTooltipContains",
+      "count": 159
+    },
+    {
+      "name": "failwithf",
+      "count": 157
+    },
+    {
+      "name": "shouldBe",
+      "count": 154
+    }
+  ],
+  "qualifiedSourceNames": [
+    {
+      "name": "TypeImpl.GetCustomAttributes",
+      "count": 18
+    },
+    {
+      "name": "Foo.ToString",
+      "count": 12
+    },
+    {
+      "name": "TypeImpl.Name",
+      "count": 9
+    },
+    {
+      "name": "TypeImpl.GetCustomAttributesData",
+      "count": 9
+    },
+    {
+      "name": "TypeImpl.IsDefined",
+      "count": 9
+    },
+    {
+      "name": "TypeImpl.DeclaringType",
+      "count": 9
+    },
+    {
+      "name": "TypeImpl.MemberType",
+      "count": 9
+    },
+    {
+      "name": "OkComplete.Meth1",
+      "count": 6
+    },
+    {
+      "name": "BaseCollection.GetHashCode",
+      "count": 6
+    },
+    {
+      "name": "BaseCollection.Equals",
+      "count": 6
+    },
+    {
+      "name": "Foo.Invoke",
+      "count": 6
+    },
+    {
+      "name": "ConstructorImpl.Invoke",
+      "count": 6
+    },
+    {
+      "name": "ConstructorImpl.GetCustomAttributes",
+      "count": 6
+    },
+    {
+      "name": "TypeImpl.ToString",
+      "count": 6
+    },
+    {
+      "name": "TypeImpl.Attributes",
+      "count": 6
+    },
+    {
+      "name": "TypeImpl.ReflectedType",
+      "count": 6
+    },
+    {
+      "name": "D2.M",
+      "count": 4
+    },
+    {
+      "name": "Gaussian1D.Density",
+      "count": 4
+    },
+    {
+      "name": "Gaussian1D.AbsoluteDifference",
+      "count": 4
+    },
+    {
+      "name": "Gaussian1D.Sample",
+      "count": 4
+    },
+    {
+      "name": "CTest.S1",
+      "count": 4
+    },
+    {
+      "name": "CTest.S2",
+      "count": 4
+    },
+    {
+      "name": "CTest.S3",
+      "count": 4
+    },
+    {
+      "name": "CTest.G1",
+      "count": 4
+    },
+    {
+      "name": "CTest.G2",
+      "count": 4
+    },
+    {
+      "name": "CTest.G3",
+      "count": 4
+    },
+    {
+      "name": "C.P",
+      "count": 4
+    },
+    {
+      "name": "Partial.Meth2",
+      "count": 4
+    },
+    {
+      "name": "MyType.GetCustomAttributes",
+      "count": 4
+    },
+    {
+      "name": "OperatorsModule2.ToString",
+      "count": 3
+    }
+  ],
+  "pathEndpointNames": [],
+  "buckets": {
+    "tests": {
+      "files": 1326,
+      "errorFiles": 253,
+      "symbols": 42460,
+      "relationships": 118382
+    }
+  },
+  "worstFiles": [
+    {
+      "file": "tests/fsharp/core/printf/test.fsx",
+      "dangling": 9866,
+      "total": 18681
+    },
+    {
+      "file": "tests/fsharp/core/large/sequential/LargeSequential-maxtested.fs",
+      "dangling": 6706,
+      "total": 6708
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/ProjectAnalysisTests.fs",
+      "dangling": 1216,
+      "total": 1261
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/SeqModule2.fs",
+      "dangling": 1131,
+      "total": 1247
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/DeltaMetadata/FSharpDeltaMetadataWriterTests.fs",
+      "dangling": 1080,
+      "total": 1464
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/ArrayModule.fs",
+      "dangling": 1054,
+      "total": 1306
+    },
+    {
+      "file": "tests/fsharp/tests.fs",
+      "dangling": 846,
+      "total": 1092
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/ArrayModule2.fs",
+      "dangling": 804,
+      "total": 1002
+    },
+    {
+      "file": "tests/fsharp/core/large/lets/LargeLets-maxtested.fs",
+      "dangling": 786,
+      "total": 788
+    },
+    {
+      "file": "tests/FSharp.Test.Utilities/Compiler.fs",
+      "dangling": 748,
+      "total": 1442
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/SeqModule.fs",
+      "dangling": 684,
+      "total": 775
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/XmlDocTests.fs",
+      "dangling": 676,
+      "total": 1010
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/ListModule.fs",
+      "dangling": 655,
+      "total": 813
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Core/OptionModule.fs",
+      "dangling": 616,
+      "total": 665
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/DeltaMetadata/MetadataDeltaTestHelpers.fs",
+      "dangling": 605,
+      "total": 744
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Reflection/FSharpReflection.fs",
+      "dangling": 585,
+      "total": 1033
+    },
+    {
+      "file": "tests/fsharp/tools/eval/test.fsx",
+      "dangling": 561,
+      "total": 1053
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/ServiceUntypedParseTests.fs",
+      "dangling": 557,
+      "total": 701
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/ListModule2.fs",
+      "dangling": 556,
+      "total": 622
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/PrimTypes.fs",
+      "dangling": 542,
+      "total": 816
+    },
+    {
+      "file": "tests/fsharp/core/large/mixed/LargeSequentialLet-500.fs",
+      "dangling": 501,
+      "total": 503
+    },
+    {
+      "file": "tests/fsharp/core/large/mixed/LargeSequentialLet-maxtested.fs",
+      "dangling": 501,
+      "total": 503
+    },
+    {
+      "file": "tests/fsharp/core/large/lets/LargeLets-500.fs",
+      "dangling": 500,
+      "total": 502
+    },
+    {
+      "file": "tests/fsharp/core/large/sequential/LargeSequential-500.fs",
+      "dangling": 500,
+      "total": 502
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/Symbols.fs",
+      "dangling": 485,
+      "total": 629
+    },
+    {
+      "file": "tests/fsharp/core/control/test.fsx",
+      "dangling": 479,
+      "total": 653
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/EditorTests.fs",
+      "dangling": 412,
+      "total": 519
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Core/IntConversionsGenerated.fs",
+      "dangling": 387,
+      "total": 591
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/SetModule.fs",
+      "dangling": 361,
+      "total": 407
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/MapModule.fs",
+      "dangling": 360,
+      "total": 390
+    },
+    {
+      "file": "tests/FSharp.Test.Utilities/ProjectGeneration.fs",
+      "dangling": 344,
+      "total": 684
+    },
+    {
+      "file": "tests/FSharp.Compiler.Service.Tests/ExprTests.fs",
+      "dangling": 343,
+      "total": 525
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Control/Tasks.fs",
+      "dangling": 343,
+      "total": 687
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/OperatorsModule2.fs",
+      "dangling": 342,
+      "total": 620
+    },
+    {
+      "file": "tests/fsharp/core/libtest/test.fsx",
+      "dangling": 340,
+      "total": 931
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Core/BigIntType.fs",
+      "dangling": 328,
+      "total": 412
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/ComparersRegression.fs",
+      "dangling": 318,
+      "total": 9529
+    },
+    {
+      "file": "tests/FSharp.Compiler.Private.Scripting.UnitTests/DependencyManagerInteractiveTests.fs",
+      "dangling": 316,
+      "total": 347
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Control/AsyncModule.fs",
+      "dangling": 314,
+      "total": 409
+    },
+    {
+      "file": "tests/FSharp.Core.UnitTests/FSharp.Core/Microsoft.FSharp.Collections/Array2Module.fs",
+      "dangling": 310,
+      "total": 396
+    }
+  ],
+  "samples": [
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_TryFinallyIncompleteStructuredConstruct.fs",
+      "type": "calls",
+      "source": "f",
+      "target": "                        // <- error\n    try",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_TryFinallyIncompleteStructuredConstruct.fs",
+      "type": "calls",
+      "source": "f",
+      "target": "finally",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_UnexpectedKeywordAs01.fs",
+      "type": "extends",
+      "source": "Explicit",
+      "target": "Base",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_UnexpectedKeywordAs01.fs",
+      "type": "extends",
+      "source": "Explicit",
+      "target": "Base",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_UnexpectedKeywordAs01.fs",
+      "type": "calls",
+      "source": "constructor",
+      "target": "BaseMember",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_UnexpectedSymbol01.fs",
+      "type": "references",
+      "source": "Microsoft.FSharp.Control",
+      "target": "Microsoft.FSharp.Control",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/E_UnexpectedSymbol01.fs",
+      "type": "references",
+      "source": "Microsoft.FSharp.Control",
+      "target": "Microsoft.FSharp.Control",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/MutatingImmutable01.fs",
+      "type": "references",
+      "source": "System.Threading",
+      "target": "System.Threading",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/MutatingImmutable01.fs",
+      "type": "references",
+      "source": "System.Threading",
+      "target": "System.Threading",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/MutatingImmutable01.fs",
+      "type": "calls",
+      "source": "test",
+      "target": "CancellationTokenSource",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/TypecheckSignature01.fs",
+      "type": "calls",
+      "source": "nextPrime",
+      "target": "failwith",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_CreateIDisposable.fs",
+      "type": "references",
+      "source": "Test",
+      "target": "System.IO",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_CreateIDisposable.fs",
+      "type": "calls",
+      "source": "Bar",
+      "target": "OpenRead",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_CreateIDisposable.fs",
+      "type": "calls",
+      "source": "Bar",
+      "target": "StreamReader",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_CreateIDisposable.fs",
+      "type": "calls",
+      "source": "Bar",
+      "target": "StreamReader",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_FailwithRedundantArgs.fs",
+      "type": "calls",
+      "source": "f",
+      "target": "failwith",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_FailwithRedundantArgs.fs",
+      "type": "calls",
+      "source": "g",
+      "target": "failwith",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_FailwithfRedundantArgs.fs",
+      "type": "calls",
+      "source": "f",
+      "target": "failwithf",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_FailwithfRedundantArgs.fs",
+      "type": "calls",
+      "source": "g",
+      "target": "failwith",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_FailwithfRedundantArgs.fs",
+      "type": "calls",
+      "source": "h",
+      "target": "ksprintf",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_FailwithfRedundantArgs.fs",
+      "type": "calls",
+      "source": "h",
+      "target": "failwithf",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_InvalidOpRedundantArgs.fs",
+      "type": "calls",
+      "source": "f",
+      "target": "invalidOp",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_InvalidOpRedundantArgs.fs",
+      "type": "calls",
+      "source": "g",
+      "target": "invalidOp",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_NullArgRedundantArgs.fs",
+      "type": "calls",
+      "source": "f",
+      "target": "nullArg",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Diagnostics/General/W_NullArgRedundantArgs.fs",
+      "type": "calls",
+      "source": "g",
+      "target": "nullArg",
+      "line": null
+    }
+  ]
+}

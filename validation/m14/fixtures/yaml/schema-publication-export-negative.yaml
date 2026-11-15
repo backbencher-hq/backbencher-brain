@@ -1,0 +1,12 @@
+# The negative half, and the fixture that makes the gate meaningful. The SAME container
+# names and the SAME depth — `definitions.Item` at the document's top level — in a file
+# that never declares `openapi:` or `swagger:`. A container name is a coincidence of
+# spelling; the document has to CLAIM to be an API description before its children are
+# published for other documents to `$ref`. Without that claim this is a bag of values,
+# and an `exports` edge on a bag of values is a fabricated edge.
+version: 2
+definitions:
+  Item:
+    type: object
+  Page:
+    type: object

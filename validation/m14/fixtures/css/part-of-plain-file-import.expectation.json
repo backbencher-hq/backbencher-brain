@@ -1,0 +1,39 @@
+{
+  "fixtureId": "css/part-of-plain-file-import",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The `part_of` split for `@import` in the plain-file form, pinned in both directions by ONE file. Sass and Less INLINE a plain-file import at compile time, so the imported source becomes part of this stylesheet and the edge is an inclusion — `part_of` with `partRole:\"library\"` (this file is the library: it carries the directive naming its part). A `@import` that loads a stylesheet keeps `imports`. The grammar answers the question as a SHAPE, not a spelling, so the fixture puts one shape per line, and the discriminator is: exactly ONE named child, its type `string_value`, the specifier not ending `.css`, and not a `//`/`http(s)://` protocol URL nor a `sass:`/`data:` scheme. line 8 is the fire case; lines 9-13 are the five must-not classes, each failing a DIFFERENT half of the predicate (suffix / child type / second child / protocol / scheme), which is what stops a later widening of any one condition from passing silently. The label move is NOT a gain or a loss: source, target, line and the project-file claim are unchanged, so both `expectRelationships` and `forbidRelationships` pin the same (from,target,line) triple in opposite labels.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "part-of-plain-file-import.css",
+      "target": "components/base",
+      "meta.partRole": "library",
+      "meta.isCssPartImport": true,
+      "meta.evidenceClass": "structural"
+    },
+    { "type": "imports", "from": "part-of-plain-file-import.css", "target": "print.css", "meta.isCssImport": true },
+    { "type": "imports", "from": "part-of-plain-file-import.css", "target": "icons.css", "meta.isCssImport": true },
+    { "type": "imports", "from": "part-of-plain-file-import.css", "target": "screen-only.css", "meta.isCssImport": true },
+    { "type": "imports", "from": "part-of-plain-file-import.css", "target": "https://cdn.example.com/normalize.css", "meta.isCssImport": true },
+    { "type": "imports", "from": "part-of-plain-file-import.css", "target": "sass:math", "meta.isCssImport": true }
+  ],
+  "expectImports": [
+    { "module": "components/base" },
+    { "module": "print.css" },
+    { "module": "icons.css" },
+    { "module": "screen-only.css" },
+    { "module": "https://cdn.example.com/normalize.css" },
+    { "module": "sass:math" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "components/base" },
+    { "type": "part_of", "target": "print.css" },
+    { "type": "part_of", "target": "icons.css" },
+    { "type": "part_of", "target": "screen-only.css" },
+    { "type": "part_of", "target": "https://cdn.example.com/normalize.css" },
+    { "type": "part_of", "target": "sass:math" },
+    { "type": "part_of", "target": "\"components/base\"" },
+    { "type": "imports", "target": "\"components/base\"" }
+  ]
+}

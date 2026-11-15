@@ -2,7 +2,7 @@
 import { ASTEngine } from "../../src/ast/engine"
 import { execSync } from "child_process"
 
-const root = process.argv[2] || "$HOME/fixtures/repositories/cython"
+const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/cython"
 const files = execSync(`find ${root} -name "*.py" -size +1k`, { encoding: "utf8" })
   .trim().split("\n").filter(Boolean)
 

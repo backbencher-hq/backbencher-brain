@@ -1,0 +1,13 @@
+@layer reset, base, components;
+
+@layer base {
+  .btn {
+    color: red;
+  }
+}
+
+@layer components {
+  .card {
+    color: blue;
+  }
+}

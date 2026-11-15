@@ -1,0 +1,48 @@
+{
+  "_treeLine": { "HEAD": "8958299f9 + this step", "note": "src/ast/real-vue-analyzer.ts is vue's own file; the union lanes hold batches over other src/ast files and none was touched." },
+  "THE_QUESTION": "Is the `isComponentUsage` class that names SVG MARKUP a fabrication, and does filtering it remove exactly that class?",
+  "THE_THREE_ARMS, SAME POPULATION (1,155/1,155 .vue files, `vue-population-partition.mts --files=0`), PRE-REGISTERED ORDER": {
+    "1_BASELINE": {
+      "instantiates": { "edges": 2692, "resolved": 67, "amb": 88, "unresolved": 2537 },
+      "isComponentUsage": 2676, "svgMarkupBucket": 377, "stemHit": 186, "library": 1931, "other": 182,
+      "TOTAL": { "edges": 24982, "resolved": 3703, "amb": 6464, "unresolved": 14815 }
+    },
+    "2_CONTROL_setPresent_NOT_wired": {
+      "instantiates": { "edges": 2692, "resolved": 67, "amb": 88, "unresolved": 2537 },
+      "isComponentUsage": 2676, "svgMarkupBucket": 377, "stemHit": 186, "library": 1931, "other": 182,
+      "TOTAL": { "edges": 24982, "resolved": 3703, "amb": 6464, "unresolved": 14815 },
+      "VERDICT": "PASSES — EVERY ROW IDENTICAL to the baseline, so the edit alone moves nothing and any movement in arm 3 is attributable to the FILTER rather than to the file having changed. tsc=0."
+    },
+    "3_FALSIFIER_set_WIRED": {
+      "instantiates": { "edges": 2251, "resolved": 67, "amb": 24, "unresolved": 2160 },
+      "isComponentUsage": 2235, "svgMarkupBucket": 0, "stemHit": 122, "library": 1931, "other": 182,
+      "TOTAL": { "edges": 24541, "resolved": 3703, "amb": 6400, "unresolved": 14438 },
+      "NO_OTHER_TYPE_MOVED": "calls 7960 · uses 5319 · contains 1469 · imports 3898 · references 3632 · exports 2 · extends 10 — all IDENTICAL to the baseline."
+    }
+  },
+  "THE_OUTCOME_AGAINST_THE_PRE_REGISTERED_BRANCHES": {
+    "prediction": "instantiates falls by 377",
+    "observed": "falls by 441 (2692 -> 2251), of which unresolved falls 377 and amb falls 64",
+    "BRANCH_TAKEN": "**FALLS BY MORE THAN 377 — 'the filter removes more than the SVG set names, which means the set is matching something it should not, and the difference is a second class.'** The difference is EXACTLY 64 and it is NAMED.",
+    "theSecondClass": "`filter` and `mask` are the only two names in the SVG set that ALSO exist as local `.vue` component stems in the corpus (measured over all six repos' tracked `.vue` files). The 64 edges are tags whose name matches a local component file — so a NAME-ONLY filter cannot tell `<mask>` (SVG markup) from `<Mask/>` (a local component), and it suppresses 64 edges that my own classifier had counted as stem hits (svgMarkupBucket 377 -> 0, stemHit 186 -> 122).",
+    "arithmetic": "377 (the class my probe measured after the stem check) + 64 (the stem hits whose tag is also in the set) = 441 = the observed fall. EXACT."
+  },
+  "WHAT_IS_CONFIRMED_AND_WHAT_IS_NOT": {
+    "CONFIRMED": "The fabricated class is REAL: after wiring, `svgMarkupBucket` is 0 and `instantiates` falls — the analyzer had been emitting SVG markup as component usages. Nothing else moved, so the filter is scoped to `isComponentUsage`.",
+    "NOT_CONFIRMED": "that a NAME-ONLY filter is the right fix. It over-reaches by 64 edges, and the over-reach is exactly the two ambiguous names.",
+    "THE_REFINEMENT_IS_CONTEXT_NOT_THE_SET": "filter a tag only inside an `<svg>` subtree (or when no local component stem matches), which needs the element's ANCESTOR CHAIN rather than its name. That is the next step and it has its own prediction: the fall should be ~377 with the `filter`/`mask` component usages preserved."
+  },
+  "THE_FIX_IS_NOT_LANDED": "the wiring is REVERTED, so the tree behaves as the baseline; the set stays in the file with the finding written beside it, because the next worker needs to know both that the class is real and that the predicate is wrong. `tsc --noEmit` 0 with the revert in place.",
+  "EARNED": [
+    "A three-arm falsifier (baseline, control, wired) over the SAME population, with the control proving the edit alone moves nothing.",
+    "The class CONFIRMED as fabricated, and the count NO OTHER TYPE MOVED as its scope test.",
+    "The over-reach found, measured (64), and NAMED to two tag names with the arithmetic closing exactly.",
+    "A refinement specified with its own prediction, and the fix NOT landed while it over-reaches."
+  ],
+  "NOT_EARNED": [
+    "No fix landed: the tree is back at the baseline behaviour.",
+    "The context-aware refinement is specified, NOT written and NOT measured.",
+    "The receiver zero stays inconclusive; the `imports` class (3,807 unresolved) is still unpriced at its emission site.",
+    "No store run; the lane is not through the bar."
+  ]
+}

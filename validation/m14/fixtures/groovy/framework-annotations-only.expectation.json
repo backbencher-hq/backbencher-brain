@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/framework-annotations-only",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Spring detection must work through fully-qualified annotations WITHOUT imports (conflict avoidance / generated code pattern), mirroring the Java and Kotlin analyzers. Also pins that method symbols carry decorators (the consistency fix) - @Transactional on a method is visible via decorators, not only metadata.",
+  "expectSymbols": [
+    { "name": "GroovyController", "kind": "class" },
+    { "name": "list" }
+  ],
+  "expectFrameworks": [
+    "spring"
+  ],
+  "expectPrimaryFramework": ["spring"],
+  "expectDecorators": [
+    { "symbol": "list", "contains": "Transactional" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "fixtureId": "typescript/overload-implementation-body",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Overload groups (N declarations + 1 implementation) must keep the LAST declaration: it carries the full parameter list and the body. First-wins dedupe kept the body-less SIGNATURE - complexity 1, no qualified_calls, no taint data - while the relationship walker still emitted body-derived call edges sourced from that same symbol. The kept symbol must expose the implementation's params (id + opts), its decision points (if -> complexity 2) and its qualified calls.",
+  "expectSymbols": [
+    { "name": "Api", "kind": "class" },
+    { "name": "fetch", "kind": "method" }
+  ],
+  "expectComplexity": [
+    { "symbol": "fetch", "equals": 2 }
+  ]
+}

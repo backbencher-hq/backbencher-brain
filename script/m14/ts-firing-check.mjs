@@ -6,7 +6,7 @@
 // `script/m14/firing-check-v2.mjs` is MASTER-owned and its REPO is a hardcoded
 // absolute path to the main checkout:
 //
-//     const REPO = "$HOME/backbencher-brain"
+//     const REPO = "/home/ishaq2321/backbencher-brain"
 //
 // so running it from a lane worktree measures the MAIN checkout's analyzer, not
 // the branch under review. That is fine for a lane that has changed nothing and
@@ -36,7 +36,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const REPO_ROOT = join(import.meta.dir, "..", "..")
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 const argOf = (f) => {

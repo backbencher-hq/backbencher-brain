@@ -1,0 +1,508 @@
+{
+  "generatedAt": "2026-09-28T23:01:18.978Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories"
+  ],
+  "files": 8528,
+  "errors": 0,
+  "treeTruth": 250863,
+  "analyzerEdges": 285868,
+  "missing": 63,
+  "unexplained": 507,
+  "outsideAudited": 0,
+  "missingByLabel": {
+    "contains": 59,
+    "instantiates": 3,
+    "calls": 1
+  },
+  "unexplainedByLabel": {
+    "overrides": 5,
+    "calls": 31,
+    "uses": 18,
+    "contains": 451,
+    "instantiates": 2
+  },
+  "outsideByLabel": {},
+  "unexplainedExamples": {
+    "overrides": [
+      {
+        "file": "mastodon/app/lib/request.rb",
+        "line": 401,
+        "from": "ProxySocket.check_private_address",
+        "target": "Socket.check_private_address",
+        "conf": 0.95,
+        "md": {
+          "isOverride": true,
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actioncable/test/subscription_adapter/redis_test.rb",
+        "line": 169,
+        "from": "ConnectorCustomID.cable_config",
+        "target": "ConnectorDefaultID.cable_config",
+        "conf": 0.95,
+        "md": {
+          "isOverride": true,
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actioncable/test/subscription_adapter/redis_test.rb",
+        "line": 173,
+        "from": "ConnectorCustomID.connection_id",
+        "target": "ConnectorDefaultID.connection_id",
+        "conf": 0.95,
+        "md": {
+          "isOverride": true,
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actioncable/test/subscription_adapter/redis_test.rb",
+        "line": 193,
+        "from": "ConnectorWithExcluded.expected_connection",
+        "target": "ConnectorDefaultID.expected_connection",
+        "conf": 0.95,
+        "md": {
+          "isOverride": true,
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rubocop/lib/rubocop/cop/variable_force/branch.rb",
+        "line": 224,
+        "from": "Case.always_run?",
+        "target": "Base.always_run?",
+        "conf": 0.95,
+        "md": {
+          "isOverride": true,
+          "evidenceClass": "structural"
+        }
+      }
+    ],
+    "calls": [
+      {
+        "file": "mastodon/app/models/admin/moderation_action.rb",
+        "line": 119,
+        "from": "text_for_warning",
+        "target": "text",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 29,
+        "from": "show",
+        "target": "bad_request",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 37,
+        "from": "show",
+        "target": "forbidden",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 45,
+        "from": "show",
+        "target": "gone",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 53,
+        "from": "show",
+        "target": "internal_server_error",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 61,
+        "from": "show",
+        "target": "not_acceptable",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 69,
+        "from": "show",
+        "target": "not_found",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/spec/controllers/concerns/error_responses_spec.rb",
+        "line": 77,
+        "from": "show",
+        "target": "service_unavailable",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      }
+    ],
+    "uses": [
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 101,
+        "from": "AdminSettings",
+        "target": "@registrations_mode",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 102,
+        "from": "AdminSettings",
+        "target": "@site_contact_username",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 102,
+        "from": "AdminSettings",
+        "target": "@site_contact_email",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 104,
+        "from": "AdminSettings",
+        "target": "@bootstrap_timeline_accounts",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 105,
+        "from": "AdminSettings",
+        "target": "@show_domain_blocks",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 106,
+        "from": "AdminSettings",
+        "target": "@show_domain_blocks_rationale",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 107,
+        "from": "AdminSettings",
+        "target": "@local_live_feed_access",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/models/form/admin_settings.rb",
+        "line": 108,
+        "from": "AdminSettings",
+        "target": "@remote_live_feed_access",
+        "conf": 0.9,
+        "md": {
+          "memberRead": true,
+          "evidenceClass": "usage_contextual"
+        }
+      }
+    ],
+    "contains": [
+      {
+        "file": "mastodon/db/migrate/20170823162448_create_status_pins.rb",
+        "line": 6,
+        "from": "CreateStatusPins",
+        "target": "account",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20170823162448_create_status_pins.rb",
+        "line": 7,
+        "from": "CreateStatusPins",
+        "target": "status",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20171116161857_create_list_accounts.rb",
+        "line": 6,
+        "from": "CreateListAccounts",
+        "target": "list",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20171116161857_create_list_accounts.rb",
+        "line": 7,
+        "from": "CreateListAccounts",
+        "target": "account",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20171116161857_create_list_accounts.rb",
+        "line": 8,
+        "from": "CreateListAccounts",
+        "target": "follow",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20171119172437_create_admin_action_logs.rb",
+        "line": 6,
+        "from": "CreateAdminActionLogs",
+        "target": "account",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20171125024930_create_invites.rb",
+        "line": 6,
+        "from": "CreateInvites",
+        "target": "user",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/db/migrate/20180628181026_create_custom_filters.rb",
+        "line": 6,
+        "from": "CreateCustomFilters",
+        "target": "account",
+        "conf": 1,
+        "md": {
+          "evidenceClass": "structural"
+        }
+      }
+    ],
+    "instantiates": [
+      {
+        "file": "rails/activesupport/test/deep_mergeable_test.rb",
+        "line": 14,
+        "from": "[]",
+        "target": "Wrapper",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rubocop/lib/rubocop/cop/mixin/hash_transform_method/autocorrection.rb",
+        "line": 9,
+        "from": "from_each_with_object",
+        "target": "Autocorrection",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      }
+    ]
+  },
+  "sigA": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigB": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigC": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "missingExamples": [
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/lib/abstract_controller/callbacks.rb",
+      "label": "contains",
+      "target": "skip_#{callback}_action"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/lib/abstract_controller/callbacks.rb",
+      "label": "contains",
+      "target": "prepend_#{callback}_action"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/lib/abstract_controller/callbacks.rb",
+      "label": "contains",
+      "target": "#{callback}_action"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/filters_test.rb",
+      "label": "contains",
+      "target": "try_#{i}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/filters_test.rb",
+      "label": "contains",
+      "target": "fail_#{i}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/routing_test.rb",
+      "label": "contains",
+      "target": "test_request_method_recognized_with_#{request_method}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/send_file_test.rb",
+      "label": "contains",
+      "target": "test_default_send_#{method}_status"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/send_file_test.rb",
+      "label": "contains",
+      "target": "test_send_#{method}_content_type"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/send_file_test.rb",
+      "label": "contains",
+      "target": "test_send_#{method}_status"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/test_case_test.rb",
+      "label": "contains",
+      "target": "test_#{variable}_missing_for_#{method}_raises_error"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/controller/url_for_integration_test.rb",
+      "label": "contains",
+      "target": "test_#{url.gsub(/\\W/, '_')}_#{i}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/dispatch/cookies_test.rb",
+      "label": "contains",
+      "target": "test_deleting_cookie_#{method}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/journey/router_test.rb",
+      "label": "contains",
+      "target": "test_recognize_#{name}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionpack/test/journey/router_test.rb",
+      "label": "contains",
+      "target": "test_recognize_#{expected.keys.map(&:to_s).join('_')}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionview/test/template/erb_util_test.rb",
+      "label": "contains",
+      "target": "test_json_escape_#{expected.gsub(/\\W/, '')}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionview/test/template/erb_util_test.rb",
+      "label": "contains",
+      "target": "test_html_escape_#{expected.gsub(/\\W/, '')}"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/lib/active_record/encryption/config.rb",
+      "label": "contains",
+      "target": "has_#{key}?"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/lib/active_record/encryption/properties.rb",
+      "label": "contains",
+      "target": "#{name}="
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/lib/active_record/migration.rb",
+      "label": "instantiates",
+      "target": "ActiveRecord"
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/test/cases/arel/visitors/dot_test.rb",
+      "label": "contains",
+      "target": "test_#{klass.name.gsub('::', '_')}"
+    }
+  ]
+}

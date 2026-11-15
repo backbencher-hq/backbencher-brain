@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <main id="app">
+    <!-- THE SEAM CARRIES RELATIONSHIP TYPES HTML ITSELF CANNOT EXPRESS, and the
+         label on each row is the only thing that says so.
+
+         `extends`, `implements`, `overrides` and `exports` were all RULED for this
+         lane on a corpus measurement — and the measurement was wrong, because the
+         one document in the corpus carrying the constructs is a 2.6 MB bundled
+         trace viewer (go-stdlib/src/internal/trace/traceviewer/static/
+         trace_viewer_full.html) whose analysis takes 109.5–127.9 s against the
+         engine's 120 s cap. On a draw where that cap fired, the document published
+         0 symbols and 0 relationships and the corpus measured 0 of all four. On a
+         draw where it did not, the same document published 31 `extends`, 193
+         `overrides`, 3 `exports` and 1,319 `instantiates`.
+
+         A ruling has to be falsifiable by a probe, and this one was falsified by
+         one. What is being pinned here is therefore the SHAPE of the delegation,
+         not a count: that a relationship type html's own source cannot construct
+         reaches an `.html` payload anyway, and that it arrives labelled to the
+         language that produced it. A delegate row that is not labelled to its
+         source is invisible to exactly the reader who could fix it — `real-html-
+         analyzer.ts` constructs no `extends` at all, which is true and is also why
+         the defect was invisible for a whole wave. -->
+    <script type="text/javascript">
+      class TrackedShape {
+        describe() { return "shape"; }
+      }
+
+      class TrackedSeries extends TrackedShape {
+        describe() { return "series"; }
+        total() { return 0; }
+      }
+
+      class Unrelated {
+        render() { return 1; }
+      }
+
+      const registry = new TrackedSeries();
+      const plain = new Unrelated();
+      document.title = registry.describe() + plain.render();
+    </script>
+  </main>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "issue": "EX-A8/EX-A9/EX-A10",
+  "note": "Three defect classes the lane's own gates could not see, found by the oracle-blind audit `script/m14/tmp/elixir-deep-audit.ts` (A8 range coverage measured off the TREE, A3 owner integrity) and by the tree census `script/m14/tmp/elixir-raise-census.ts`. (A8) A merged multi-clause definition kept only its FIRST clause's range while its own metadata said `heads: 2` — 2,321 merged groups in 559 elixir@024beb1b files, 184 in a 60-file ecto_sql slice (`def loaders/2` heads=7, range 211..211). The extent is now first clause .. LAST CLAUSE (the rule real-clean-analyzer.ts already applies to a multi-clause `f x = ...`), and every clause's exact range rides metadata.clauseRanges — necessary, not decorative: 195 of the 2,321 groups (8.4%) have OTHER declarations between their first and last clause, and `classify` below is exactly that shape (helper_of sits between clause 1 and clause 3). (A9) `raise Mod` / `raise Mod, msg` / `reraise Mod, stack` is a struct CONSTRUCTION through Kernel.raise's exception entry point — the same edge class the lane already emits for `struct/2` (ELXD19) and a `%Mod{}` literal — but it emitted nothing: 401 alias-named raise sites in 200 files of elixir@024beb1b carried no dependency edge. A bare `raise \"msg\"` names no type and stays silent. (A10) A nested `defmodule` carried NO ownerName/ownerKind, contradicting this lane's own symbol contract ('nested modules owned by the parent') and the M14 ledger ruling that `ownerName` is the innermost enclosing declaration (#867); 100% of nested-module symbols on the ecto_sql slice had it undefined, and only the indexer's `ownerName || scope` fallback kept the graph right. All three pins are per-class: mutant elixir/merged-head-range-first-clause, elixir/merged-head-clause-ranges-dropped, elixir/raise-no-instantiates and elixir/nested-module-ownerless each revert one of them.",
+  "expectSymbols": [
+    { "name": "classify", "kind": "function", "ownerName": "ExtentFixture" },
+    {
+      "name": "classify",
+      "kind": "function",
+      "ownerName": "ExtentFixture",
+      "meta.heads": 2,
+      "meta.clauseRanges": [
+        { "startLine": 8, "startColumn": 3, "endLine": 8, "endColumn": 35, "startIndex": 462, "endIndex": 494 },
+        { "startLine": 10, "startColumn": 3, "endLine": 10, "endColumn": 32, "startIndex": 537, "endIndex": 566 }
+      ]
+    },
+    { "name": "total", "kind": "function", "ownerName": "ExtentFixture" },
+    { "name": "ExtentFixture.Nested", "kind": "module", "ownerName": "ExtentFixture" },
+    { "name": "ping", "kind": "function", "ownerName": "ExtentFixture.Nested" },
+    { "name": "explode", "kind": "function", "ownerName": "ExtentFixture.Raiser" }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "classify",
+      "ownerName": "ExtentFixture",
+      "startLine": 8,
+      "startColumn": 3,
+      "endLine": 10,
+      "endColumn": 32,
+      "startIndex": 462,
+      "endIndex": 566
+    },
+    {
+      "symbol": "total",
+      "ownerName": "ExtentFixture",
+      "startLine": 13,
+      "startColumn": 3,
+      "endLine": 14,
+      "endColumn": 39,
+      "startIndex": 626,
+      "endIndex": 685
+    },
+    {
+      "symbol": "ExtentFixture.Nested",
+      "ownerName": "ExtentFixture",
+      "startLine": 24,
+      "endLine": 27
+    }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "ExtentFixture.exception_paths/0", "target": "ExtentFixture.Missing", "line_number": 19 },
+    { "type": "instantiates", "from": "ExtentFixture.Raiser.explode/1", "target": "ExtentFixture.Missing", "line_number": 34 },
+    { "type": "references", "from": "ExtentFixture.Raiser", "target": "ExtentFixture.Missing", "line_number": 31 },
+    { "type": "contains", "from": "ExtentFixture", "target": "classify", "line_number": 8 },
+    { "type": "contains", "from": "ExtentFixture", "target": "ExtentFixture.Nested", "line_number": 24 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "raise" },
+    { "type": "calls", "target": "reraise" },
+    { "type": "instantiates", "target": "plain message" }
+  ]
+}

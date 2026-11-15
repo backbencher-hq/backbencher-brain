@@ -26,7 +26,7 @@
   "evidenceFile": "T4.json",
   "generatedAt": "2026-11-09T05:22:57.547Z",
   "fixture": {
-    "workspace": "$HOME/mcp/backbencher-brain/.tools/tmp/m55-t4-ws-tQUmnZ",
+    "workspace": "/home/ishaq2321/mcp/backbencher-brain/.tools/tmp/m55-t4-ws-tQUmnZ",
     "projectId": "262c9c56ca0d6b786d288d051c6bfc7a17aea493",
     "symbols": 10,
     "storedShapes": [

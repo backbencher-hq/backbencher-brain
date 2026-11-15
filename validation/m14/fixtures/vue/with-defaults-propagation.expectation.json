@@ -1,0 +1,55 @@
+{
+  "fixtureId": "vue/with-defaults-propagation",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F3 (vue master review 2026-09-30): `withDefaults(defineProps<T>(), { \u2026 })` is the documented way to give a typed prop a default, and the defaults argument was walked past \u2014 the macro handler read the inner defineProps call and never looked one frame up at the withDefaults wrapping it. Measured: 98 corpus files declare a default this way (all of them element-plus) and every one lost it. THREE paths are pinned because F12 split them: (a) the inline type literal, (b) a same-file binding, both of which yield component-owned prop symbols and so can carry `defaultValue` per prop; and (c) the NAMED form, which is 100% of the corpus and has no prop symbol at all, so the defaults map rides the contract edge rather than fabricating per-prop symbols that would duplicate the imported interface's members. `variant` and `count` are not the only assertions \u2014 `defaultKeys` is a COUNT so the edge assertion cannot be satisfied by a single value, and `plainDefault` in the binding path is a control that has no `?` in its type and must still receive its default. A fifth and sixth assertion cover the INDIRECT shape, which is the shape the remaining 16 of the 98 corpus files use: the defaults argument is an identifier IMPORTED from a sibling module (`withDefaults(defineProps<InputProps>(), inputPropsDefaults)`), or a call (`omit(messageDefaults, 'appendTo')`). Resolving either is cross-file constant resolution, which this lane does not do and must not fake \u2014 so the expression is stored as text instead. `defaultKeys` is deliberately NOT set to 0 for these: zero keys would assert the component declares no defaults, which is the opposite of the truth, and the difference between 'no defaults' and 'defaults, elsewhere' is the whole point of recording it.",
+  "expectSymbols": [
+    {
+      "name": "WithDefaultsPropagation",
+      "kind": "class"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.defaultValue": "0"
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.defaultValue": "'hi'"
+    },
+    {
+      "name": "bound",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.defaultValue": "true"
+    },
+    {
+      "name": "localBinding",
+      "kind": "constant"
+    },
+    {
+      "name": "m",
+      "kind": "property",
+      "meta.isProp": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "source": "WithDefaultsPropagation",
+      "target": "NamedProps",
+      "type": "references",
+      "meta.isPropContract": true,
+      "meta.defaultKeys": 2
+    },
+    {
+      "source": "WithDefaultsPropagation",
+      "target": "NamedProps2",
+      "type": "references",
+      "meta.isPropContract": true,
+      "meta.defaultsExpression": "importedDefaults"
+    }
+  ]
+}

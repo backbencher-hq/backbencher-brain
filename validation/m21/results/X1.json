@@ -1,0 +1,148 @@
+{
+  "issue": "M21.X1",
+  "code": "X1",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 33,
+  "passed": 33,
+  "failed": 0,
+  "negativeCases": 4,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-x1-cold-benchmark.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-09-04T21:59:56.924Z",
+  "fixture": {
+    "files": [
+      "src/a.ts",
+      "src/b.ts",
+      "src/c.py",
+      "src/d.rb",
+      "README.md",
+      "data.json"
+    ],
+    "expectations": {
+      "typescriptFiles": 2,
+      "pythonFiles": 1,
+      "rubyFiles": 1,
+      "totalFiles": 6,
+      "minSymbols": 6,
+      "minImports": 1
+    }
+  },
+  "goldenRun": {
+    "files": 6,
+    "success": 6,
+    "error": 0,
+    "timeout": 0,
+    "symbols": 15,
+    "relationships": 12,
+    "imports": 1,
+    "byLanguage": {
+      "markdown": {
+        "files": 1,
+        "success": 1,
+        "error": 0,
+        "timeout": 0,
+        "fallback": 0
+      },
+      "json": {
+        "files": 1,
+        "success": 1,
+        "error": 0,
+        "timeout": 0,
+        "fallback": 0
+      },
+      "typescript": {
+        "files": 2,
+        "success": 2,
+        "error": 0,
+        "timeout": 0,
+        "fallback": 0
+      },
+      "ruby": {
+        "files": 1,
+        "success": 1,
+        "error": 0,
+        "timeout": 0,
+        "fallback": 0
+      },
+      "python": {
+        "files": 1,
+        "success": 1,
+        "error": 0,
+        "timeout": 0,
+        "fallback": 0
+      }
+    }
+  },
+  "coldTimingsMs": {
+    "discoveryMs": 70,
+    "workerStartupMs": 455,
+    "parseMs": 1157,
+    "dbFlushMs": 49,
+    "finalAccountingMs": 54,
+    "totalWallMs": 1834
+  },
+  "repeatRuns": [
+    {
+      "files": 6,
+      "success": 6,
+      "error": 0,
+      "timeout": 0,
+      "symbols": 15,
+      "relationships": 12,
+      "imports": 1
+    },
+    {
+      "files": 6,
+      "success": 6,
+      "error": 0,
+      "timeout": 0,
+      "symbols": 15,
+      "relationships": 12,
+      "imports": 1
+    }
+  ],
+  "repeatRunVariance": [
+    0,
+    0
+  ],
+  "noopRun": {
+    "noop": true,
+    "successFiles": 0,
+    "skippedFiles": 6,
+    "parsedFiles": 0,
+    "parseMs": 0
+  },
+  "negatives": {
+    "parserFailure": {
+      "timeoutFiles": 1,
+      "successFiles": 0,
+      "timeoutVisible": true
+    },
+    "wasmFailure": {
+      "typescriptLoaded": true,
+      "nimFailedVisibly": true
+    },
+    "dbFailure": {
+      "threw": true,
+      "cleanSuccess": false
+    },
+    "embeddingFailure": {
+      "surfaced": true,
+      "tfidfRows": 8
+    }
+  },
+  "limitations": [
+    "Golden expectations pin the fixture's exact totals on this analyzer/engine build; the fixture is tiny and hand-written so every expectation is manually defensible, and repeat runs prove variance is zero.",
+    "The parser-failure negative uses a worker self-timeout (BB_FILE_TIMEOUT_MS=150) on a 999KB TypeScript file — a real timeout, not a synthetic flag.",
+    "The WASM negative exercises the runtime load path: getParser('nim') is an advertised-but-unloadable grammar and must throw; byte-level corrupt-asset validity is covered by W2.",
+    "The embedding negative patches SemanticEngine.embedMany to throw (the real path never throws — API failure falls back to local word vectors), proving the drainer surfaces the failure and the TF-IDF fallback keeps the index intact."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.389Z",
+    "contentSha256": "8c563f1f3ff3376153890124b3210dc7955808bd1af1f8867fbc3f12b47be4f2"
+  }
+}

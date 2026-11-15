@@ -1,0 +1,221 @@
+{
+ "fixtureId": "perl/imports-and-exports",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "M14 line-contract pins on `contains`, added 2026-10-02. Every `line_number` below was transcribed from the NUMBERED source .pm file and then confirmed against one analyzer run, so the analyzer agrees with the source rather than defining it. This lane previously asserted `contains` MEMBERSHIP ONLY -- no row anywhere named a line -- which is why the two mutants `perl/contains-line-is-absent` (strips the field) and `perl/contains-line-at-declaration-start` (shifts it by +1) both SURVIVED at (0 -> 0): the transform touched a channel no fixture read. `core-oo-class-role` already said so in prose -- its `Point->sum` row carried the note that the old `line_number: null` sentinel \"asserted ignorance about a line written in the file\", and the numeric replacement it asked for was never written. Dropping the pin is not dropping the contract: the M60 line contract applies to `contains` as it does to every other label. Each row resolved to exactly ONE actual edge, so each value below is the only line that edge has and no value was inferred.",
+ "rationale": "Six import/export rules the pre-review analyzer got wrong in four different ways, in one file so they cannot be fixed one at a time. (1) `no strict` / `no warnings` (3-4) DISABLE a feature and were recorded as dependency imports -- a dependency edge on a file that loads nothing; `no` is the unnamed first token of the same node type as `use`. (2) `use VERSION` (1-2) is a language version requirement and was recorded as metadata, never as an import named `5.010`. (3) A DOUBLE-quoted argument (5-6) is an `interpolated_string_literal` and was unread, so `use feature \"class\"` and `use lib \"./t/lib\"` both lost their items. (4) `use constant` (7-8) is a DECLARATION: each fat-comma key is a Constant and no import is emitted; the pre-review shape was `import { module: \"constant\" }` plus no constant at all. (5) `require` (11) is a runtime dependency and was not an import at all -- 39 such sites in mojo alone. (6) The Exporter surface is `@EXPORT`, `@EXPORT_OK` AND `%EXPORT_TAGS`; reading only `@EXPORT` lost the whole optional half of every Exporter module. Lines 16-20 define the exported subs because the harness's exports invariant requires every export name to resolve to a real top-level symbol -- a module that lists names it does not define is not a shape a corpus produces.",
+ "expectSymbols": [
+  {
+   "name": "PI",
+   "kind": "constant"
+  },
+  {
+   "name": "MAX",
+   "kind": "constant"
+  },
+  {
+   "name": "MIN",
+   "kind": "constant"
+  },
+  {
+   "name": "EXPORT",
+   "kind": "constant"
+  },
+  {
+   "name": "EXPORT_OK",
+   "kind": "constant"
+  },
+  {
+   "name": "EXPORT_TAGS",
+   "kind": "constant"
+  },
+  {
+   "name": "ISA",
+   "kind": "variable"
+  },
+  {
+   "name": "alpha",
+   "kind": "function"
+  },
+  {
+   "name": "beta",
+   "kind": "function"
+  },
+  {
+   "name": "gamma",
+   "kind": "function"
+  },
+  {
+   "name": "delta",
+   "kind": "function"
+  },
+  {
+   "name": "all",
+   "kind": "function"
+  },
+  {
+   "name": "Impl",
+   "kind": "class"
+  },
+  {
+   "name": "name",
+   "kind": "property",
+   "ownerName": "Impl"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "PI",
+   "kind": "constant",
+   "equals": 1
+  },
+  {
+   "name": "name",
+   "ownerName": "Impl",
+   "equals": 1
+  }
+ ],
+ "expectSymbolRanges": [
+  {
+   "symbol": "PI",
+   "startLine": 7,
+   "endLine": 7
+  },
+  {
+   "symbol": "EXPORT",
+   "startLine": 12,
+   "endLine": 12
+  },
+  {
+   "symbol": "EXPORT_OK",
+   "startLine": 13,
+   "endLine": 13
+  },
+  {
+   "symbol": "EXPORT_TAGS",
+   "startLine": 14,
+   "endLine": 14
+  },
+  {
+   "symbol": "Impl",
+   "startLine": 21,
+   "endLine": 21
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "feature",
+   "items": [
+    "class"
+   ]
+  },
+  {
+   "module": "lib",
+   "items": [
+    "./t/lib"
+   ]
+  },
+  {
+   "module": "parent",
+   "items": [
+    "-norequire",
+    "Base"
+   ]
+  },
+  {
+   "module": "Mojo::Base",
+   "items": [
+    "-base"
+   ]
+  },
+  {
+   "module": "Runtime::Only",
+   "isDefault": false
+  },
+  {
+   "module": "role",
+   "items": [
+    "Role::Two"
+   ]
+  }
+ ],
+ "forbidImports": [
+  {
+   "module": "strict",
+   "note": "pre-fix shape: `no strict` was recorded as a dependency import"
+  },
+  {
+   "module": "5.010",
+   "note": "pre-fix shape: a version requirement emitted as an import put a fake module in the dependency graph"
+  },
+  {
+   "module": "constant",
+   "note": "pre-fix shape: `use constant` emitted an import and lost the constants"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "strict",
+   "note": "the dependency-edge form of the same defect"
+  },
+  {
+   "type": "imports",
+   "target": "5.010"
+  },
+  {
+   "type": "imports",
+   "target": "constant"
+  }
+ ],
+ "expectExports": [
+  {
+   "name": "alpha"
+  },
+  {
+   "name": "beta"
+  },
+  {
+   "name": "gamma"
+  },
+  {
+   "name": "delta"
+  },
+  {
+   "name": "all"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "Impl",
+   "target": "One",
+   "line_number": 23,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "implements",
+   "from": "Impl",
+   "target": "Two",
+   "line_number": 24,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "contains",
+   "type": "contains",
+   "from": "Impl",
+   "target": "name",
+   "line_number": 22,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  }
+ ],
+ "expectMetadata": [
+  {
+   "perlVersion": "v5.36",
+   "comment": "the FIRST version requirement wins the scalar field; the full list is in perlVersions"
+  }
+ ]
+}

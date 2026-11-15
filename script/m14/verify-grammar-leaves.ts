@@ -107,7 +107,7 @@ const LANES: Record<string, Lane> = {
   // controls. Use the battery to screen; use this lane for a gated verdict.
   powershell: { wasm: "wasm/tree-sitter-powershell.wasm", repos: ["powershell"], sample: 400 },
 }
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 
 const LANG = argValue("--lang", "cpp")!
 const CANDIDATE = argValue("--candidate")

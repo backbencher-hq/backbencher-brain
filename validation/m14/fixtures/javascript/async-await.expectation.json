@@ -1,0 +1,13 @@
+{
+  "fixtureId": "javascript/async-await",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "async methods extract with isAsync semantics; await call targets (fetch) surface as calls.",
+  "expectSymbols": [
+    { "name": "Loader" },
+    { "name": "load" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "targetEndsWith": "fetch" }
+  ]
+}

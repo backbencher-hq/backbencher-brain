@@ -43,7 +43,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
 
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default

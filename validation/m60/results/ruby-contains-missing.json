@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-01T05:17:59.546Z",
+  "filesParsed": 800,
+  "truthContainsTargets": 6561,
+  "missing": 24,
+  "classes": {
+    "other: call>argument_list>call": 1,
+    "plain method member": 11,
+    "NOT FOUND as any name leaf in the tree": 3,
+    "other: argument_list>call>body_statement": 5,
+    "member of a `X.new { }` block": 1,
+    "member of `class << self` (unnamed singleton)": 1,
+    "class/module name": 1,
+    "other: interpolation>string>argument_list": 1
+  },
+  "examples": {
+    "other: call>argument_list>call": [
+      "rails/actionpack/test/controller/filters_test.rb:569 -> values\n         | assert_equal [\"before\", \"action\", \"after\"], controller.values"
+    ],
+    "plain method member": [
+      "rails/actionpack/test/dispatch/routing_assertions_test.rb:32 -> name\n         | def self.name",
+      "rails/actionview/test/template/structured_event_subscriber_test.rb:349 -> view_cache_dependencies\n         | def @view.view_cache_dependencies; []; end",
+      "rails/actionview/test/template/structured_event_subscriber_test.rb:350 -> combined_fragment_cache_key\n         | def @view.combined_fragment_cache_key(*); \"ahoy_2 `controller` dependency\"; end"
+    ],
+    "NOT FOUND as any name leaf in the tree": [
+      "rails/actionpack/test/dispatch/routing_assertions_test.rb:0 -> secure\n         | # frozen_string_literal: true",
+      "rails/actionpack/test/dispatch/routing_assertions_test.rb:0 -> block\n         | # frozen_string_literal: true",
+      "rails/actionpack/test/dispatch/routing_assertions_test.rb:0 -> query\n         | # frozen_string_literal: true"
+    ],
+    "other: argument_list>call>body_statement": [
+      "rails/activemodel/test/cases/validations_test.rb:217 -> validator_a\n         | klass.validate :validator_a, if: -> { true }",
+      "rails/activemodel/test/cases/validations_test.rb:218 -> validator_b\n         | klass.validate :validator_b, prepend: true",
+      "rails/activemodel/test/cases/validations_test.rb:219 -> validator_c\n         | klass.validate :validator_c, unless: -> { true }"
+    ],
+    "member of a `X.new { }` block": [
+      "rails/activerecord/test/cases/adapters/mysql2/mysql2_adapter_test.rb:340 -> query_options\n         | assert_changes(-> { @conn.raw_connection.query_options[:database_timezone] }, from: :utc, "
+    ],
+    "member of `class << self` (unnamed singleton)": [
+      "rails/activerecord/test/cases/adapters/sqlite3/sqlite3_adapter_test.rb:1285 -> new_client\n         | def new_client(config)"
+    ],
+    "class/module name": [
+      "rails/activesupport/test/fork_tracker_test.rb:173 -> fark\n         | pid = object.fark do"
+    ],
+    "other: interpolation>string>argument_list": [
+      "rails/railties/test/isolation/abstract_unit.rb:547 -> name\n         | app_file(\"app/controllers/#{name}_controller.rb\", contents)"
+    ]
+  }
+}

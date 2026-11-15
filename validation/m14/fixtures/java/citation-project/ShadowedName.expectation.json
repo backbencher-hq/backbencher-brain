@@ -1,0 +1,42 @@
+{
+  "fixtureId": "java/citation-project/ShadowedName",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "NEGATIVE half: the FILE declares a member type with the imported name, so a bare `Filter` reference is a PROJECT reference (JLS 6.4.1 shadowing) and must carry NO bare-symbol citation; the DOTTED `jakarta.servlet.Filter` import row is still a genuine library dependency and KEEPS its prefix citation (the two facts are independent). This exercises the file-declared half of the fail-closed guard through a real project index. The project-owns-FQN half (a registry-rooted FQN the project declares \u2014 the 87 over-claimed pairs the Lead's reproduction found) needs fixture paths that mirror package directories; the runner indexes one flat sub-directory, so that half is arm-measured and recorded as a stated gap in JAVA-DEPTH-D7.md \u00a7C2 rather than pretended here.",
+  "expectSymbols": [
+    {
+      "name": "ShadowedName",
+      "kind": "class"
+    },
+    {
+      "name": "Filter",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "app",
+      "target": "jakarta.servlet.Filter",
+      "meta.languageNamespace": [
+        "jakarta"
+      ]
+    },
+    {
+      "type": "references",
+      "source": "ShadowedName",
+      "target": "Filter",
+      "meta.languageNamespace": null
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "Filter",
+      "meta.languageNamespace": [
+        "Filter"
+      ],
+      "comment": "the file declares Filter: a bare-symbol citation here would claim the project's own member type as external"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "fixtureId": "c/instantiates-allocator-register-989",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #989's second half. `MALLOC_FUNCTIONS` held five names and the corpus says five names is the wrong SHAPE for the construct: measured over 359 sqlite files, 680 allocation call sites carry a type recoverable from the parse (an enclosing cast, or `sizeof(<type>)` in the argument list, which is where C states it) and 152 of those name a type the file DECLARES -- of which sqlite3_malloc64 accounts for 82, sqlite3_malloc 45 and sqlite3_realloc64 23, none of them in the list, against malloc's 2. So 150 of 152 (98.7%) produced nothing, and the whole of what the relation emitted on this corpus was those 2. The three positives below are the two spellings through a project wrapper; the three negatives are what makes the added names safe rather than merely wider. This is a REGISTER and is named as such: C's own allocator set is the five standard ones, and a project that wraps malloc under another name needs its name here or its allocation edges go missing. Also pinned: the evidenceClass, which this relation carried wrong on 100% of its edges (it set `usage_contextual` inline and `classifyEvidenceTier` skips any edge that already has one, so the lane's own `instantiates -> structural` rule never ran).",
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "c989_standard",
+      "target": "Node",
+      "meta.evidenceClass": "structural",
+      "comment": "CONTROL: the shape that already worked before #989, and it must keep working. `malloc` is still in the register; the change is additive and a control that moves is how an additive change proves it."
+    },
+    {
+      "type": "instantiates",
+      "from": "c989_wrapped",
+      "target": "Table",
+      "meta.evidenceClass": "structural",
+      "comment": "THE PINNED ROW. A PROJECT's allocator wrapper, cast spelling. This is ext/fts3/fts3.c's `sqlite3_malloc64((sqlite3_int64)sizeof(Fts3Table))` shape: 82 recoverable sites on this corpus through this one name, all of them invisible before."
+    },
+    {
+      "type": "instantiates",
+      "from": "c989_wrapped_sizeof_only",
+      "target": "Seg",
+      "comment": "The sizeof-ONLY spelling through the wrapper: no cast at all, so the type is recovered from the argument list. This row is why the wrapper case needs the sizeof path and not only the cast one -- 23 sites on this corpus are `sqlite3_realloc64`, whose argument is the OLD pointer, so the cast is usually absent."
+    },
+    {
+      "type": "calls",
+      "from": "c989_wrapped",
+      "target": "sqlite3_malloc64",
+      "comment": "CONTROL: the `calls` edge the allocation edges pair with. The M12 truth states the pairing is intentional -- a call-graph fact plus an allocation semantic -- so a change to the allocator register must not disturb the call edge."
+    },
+    {
+      "type": "calls",
+      "from": "c989_untyped",
+      "target": "sqlite3_malloc",
+      "comment": "CONTROL: an untyped allocation still records the CALL even though it publishes no `instantiates` edge. The allocation remains a fact; only the named-type half is absent."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "c989_untyped",
+      "target": "void",
+      "comment": "THE NEGATIVE THAT MATTERS MOST. `sqlite3_malloc(n)` allocates BYTES and instantiates no named type, so there is nothing to point at. 528 of sqlite's 680 allocation sites are this shape, so widening the register must not widen it into these."
+    },
+    {
+      "type": "instantiates",
+      "from": "c989_untyped",
+      "target": "sqlite3_malloc",
+      "comment": "REGRESSION ROW for the defect #962 corrected. The truth's original C row pinned `instantiates -> malloc`, and the fix moved the TARGET to a type; adding four allocator names must not bring the function target back."
+    },
+    {
+      "type": "instantiates",
+      "from": "c989_cross_file_target",
+      "target": "Opaque",
+      "comment": "C-D2, and the limit the register widening does NOT remove. The cast and the `sizeof` both name `struct Opaque`, and `Opaque` is declared in ANOTHER file. The target must be a type the file DECLARES, so no edge -- an edge whose target names nothing is the fabrication class #962 corrected with a different spelling."
+    },
+    {
+      "type": "instantiates",
+      "from": "c989_frees",
+      "target": "Seg",
+      "comment": "A FREE is not an instantiation. `sqlite3_free` is on the FREE register, added by the same measurement, and #962 pinned that the free side publishes no `instantiates` edge -- only `calls` and `freeCount`."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "instantiates",
+      "equals": 3,
+      "note": "c989_standard, c989_wrapped, c989_wrapped_sizeof_only. The count is here so a register that fires on the untyped or the cross-file case fails HERE as well as through its forbid row."
+    }
+  ]
+}

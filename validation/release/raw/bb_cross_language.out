@@ -1,0 +1,128 @@
+{
+  "symbol": "GraphQLSchema",
+  "language": "typescript",
+  "languages": [
+    "typescript"
+  ],
+  "copies": [
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189",
+      "symbol": "GraphQLSchema",
+      "file": "graphql-js/type/schema.ts",
+      "language": "typescript",
+      "line": 189,
+      "crossRowCount": 2
+    }
+  ],
+  "copyCount": 1,
+  "copiesTruncated": false,
+  "copiesCap": 200,
+  "copiesNote": null,
+  "ambiguous": false,
+  "ambiguityNote": null,
+  "facts": [
+    {
+      "self": {
+        "symbol": "GraphQLSchema",
+        "file": "graphql-js/type/schema.ts",
+        "language": "typescript",
+        "line": 189
+      },
+      "direction": "callee",
+      "other": {
+        "symbol": "create",
+        "file": "rebar3/rebar/src/rebar_templater.erl",
+        "language": "erlang",
+        "line": 163
+      },
+      "pair": "typescript → erlang",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.9,
+      "relationshipType": "calls",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189:create:calls:367",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "GraphQLSchema",
+        "file": "graphql-js/type/schema.ts",
+        "language": "typescript",
+        "line": 189
+      },
+      "direction": "callee",
+      "other": {
+        "symbol": "create",
+        "file": "rebar3/rebar/src/rebar_templater.erl",
+        "language": "erlang",
+        "line": 163
+      },
+      "pair": "typescript → erlang",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.9,
+      "relationshipType": "calls",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189:create:calls:370",
+      "match": "exact"
+    }
+  ],
+  "ownFactCount": 2,
+  "ownFactsTruncated": false,
+  "memberFacts": [
+    {
+      "self": {
+        "symbol": "getDirective",
+        "file": "graphql-js/type/schema.ts",
+        "language": "typescript",
+        "line": 769
+      },
+      "direction": "callee",
+      "other": {
+        "symbol": "find",
+        "file": "rebar3/rebar/src/rebar_app_utils.erl",
+        "language": "erlang",
+        "line": 53
+      },
+      "pair": "typescript → erlang",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.9,
+      "relationshipType": "calls",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getDirective:769:find:calls:770",
+      "match": "owner-cascade",
+      "owner": {
+        "symbol": "GraphQLSchema",
+        "file": "graphql-js/type/schema.ts",
+        "language": "typescript",
+        "line": 189
+      },
+      "matchedMember": {
+        "symbol": "getDirective",
+        "file": "graphql-js/type/schema.ts",
+        "language": "typescript",
+        "line": 769
+      },
+      "matchedMemberId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getDirective:769"
+    }
+  ],
+  "memberFactCount": 1,
+  "memberFactsTruncated": false,
+  "memberCount": 1,
+  "memberNote": "1 member symbol(s) of 'GraphQLSchema' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'GraphQLSchema's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+  "factCount": 3,
+  "pairCount": 1,
+  "signatureCount": 1,
+  "storedRowCount": 3,
+  "unpairableRowCount": 0,
+  "collapsedRowCount": 0,
+  "limit": 200,
+  "truncated": false,
+  "truncationReason": null,
+  "totalCountIfKnown": 3,
+  "declaredAbsent": false,
+  "deeperDescendantRowCount": 0,
+  "deeperDescendantNote": null,
+  "absenceNote": null,
+  "pairlessRowNote": null,
+  "silentItselfButNotItsMembers": false
+}

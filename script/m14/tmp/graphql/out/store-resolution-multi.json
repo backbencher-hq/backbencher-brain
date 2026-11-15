@@ -1,0 +1,153 @@
+{
+  "perRepo": [
+    {
+      "repo": "gql-genqlient",
+      "files": 4,
+      "symbols": 7004,
+      "rel": 22859,
+      "types": 6
+    },
+    {
+      "repo": "gql-gqlgen",
+      "files": 110,
+      "symbols": 1625,
+      "rel": 4118,
+      "types": 6
+    },
+    {
+      "repo": "gql-graphql-eslint",
+      "files": 47,
+      "symbols": 757,
+      "rel": 2016,
+      "types": 5
+    },
+    {
+      "repo": "gql-graphql-mesh",
+      "files": 130,
+      "symbols": 2050,
+      "rel": 6611,
+      "types": 6
+    },
+    {
+      "repo": "gql-graphql-platform",
+      "files": 150,
+      "symbols": 2758,
+      "rel": 10668,
+      "types": 6
+    },
+    {
+      "repo": "gql-graphql-tools",
+      "files": 150,
+      "symbols": 6745,
+      "rel": 20195,
+      "types": 7
+    },
+    {
+      "repo": "gql-ruby",
+      "files": 23,
+      "symbols": 2511,
+      "rel": 7870,
+      "types": 6
+    },
+    {
+      "repo": "hasura-engine",
+      "files": 136,
+      "symbols": 753,
+      "rel": 3956,
+      "types": 4
+    }
+  ],
+  "totals": {
+    "contains": {
+      "edges": 38824,
+      "t_un": 36,
+      "s_un": 0
+    },
+    "references": {
+      "edges": 22087,
+      "t_un": 13048,
+      "s_un": 0
+    },
+    "overrides": {
+      "edges": 2524,
+      "t_un": 0,
+      "s_un": 0
+    },
+    "exports": {
+      "edges": 3307,
+      "t_un": 0,
+      "s_un": 3307
+    },
+    "uses": {
+      "edges": 10745,
+      "t_un": 5639,
+      "s_un": 399
+    },
+    "implements": {
+      "edges": 740,
+      "t_un": 0,
+      "s_un": 0
+    },
+    "imports": {
+      "edges": 66,
+      "t_un": 66,
+      "s_un": 66
+    }
+  },
+  "targets": [
+    [
+      "spec built-in scalar",
+      {
+        "edges": 13067,
+        "names": {}
+      }
+    ],
+    [
+      "spec built-in directive",
+      {
+        "edges": 139,
+        "names": {}
+      }
+    ],
+    [
+      "dotted",
+      {
+        "edges": 1922,
+        "names": {}
+      }
+    ],
+    [
+      "bare, not spec",
+      {
+        "edges": 3634,
+        "names": {}
+      }
+    ],
+    [
+      "spec introspection",
+      {
+        "edges": 27,
+        "names": {}
+      }
+    ]
+  ],
+  "sources": [
+    [
+      "file path (fileLevel contract)",
+      {
+        "edges": 3373,
+        "names": {}
+      }
+    ],
+    [
+      "symbol-shaped, unresolved",
+      {
+        "edges": 399,
+        "names": {}
+      }
+    ]
+  ],
+  "files": 750,
+  "symbols": 24203,
+  "rel": 78293
+}

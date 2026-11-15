@@ -1,0 +1,28 @@
+{
+  "fixtureId": "python/callee-shapes",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 #902, the CALL position: which callee a call is allowed to NAME. `callLeafName` listed `identifier` and `attribute` and then FELL THROUGH to `namedChild(0)` for every other shape, so a parenthesised conditional callee `(f if flag else g)()` published `calls -> f` — the `if` branch, which is the callee only when the condition is true, and is a fabricated call site otherwise. The differential's oracle (`derivePythonEdges`, the same shape list) names such a callee NOTHING, which is why the fabrication surfaced as the python lane's one UNEXPLAINED edge on cython:python (tests/run/withstat_py.py, `with (cm1_getter if use_first else cm2_getter)():`). The fix is an ALLOWLIST: identifier and attribute name their callee, `parenthesized_expression` unwraps (grouping is genuinely transparent), and every other shape — conditional, lambda, call, subscript, string — names NOTHING. Four shapes are pinned here because three of them were silently fabricated by the same fallback: the conditional branch (target f, and g by the same rule), the lambda's BODY (`(lambda: f)()` named f, a call no source writes). The fourth — the outer call of `f()()` — is written into the fixture but is NOT adjudicated, because `pushRel` dedupes by (type, source, target) with no line component and the outer call's leaf IS the inner call's leaf, so the two are byte-identical in the emitted set; see the top-level `comment`. Grouped `(f)()` is the control that proves the allowlist is not simply refusing everything: it must still publish `calls f`. A revert to the fallthrough fails the two forbid pins; a revert to `return undefined` for everything fails the control/grouped/nested expect pins.",
+  "expectSymbols": [
+    { "name": "f", "kind": "function" },
+    { "name": "g", "kind": "function" },
+    { "name": "control", "kind": "function" },
+    { "name": "grouped", "kind": "function" },
+    { "name": "conditional", "kind": "function" },
+    { "name": "lam", "kind": "function" },
+    { "name": "lam_param", "kind": "function" },
+    { "name": "nested", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "control", "target": "f", "comment": "the control: an ordinary callee is still named" },
+    { "type": "calls", "from": "grouped", "target": "f", "comment": "grouping is transparent — the allowlist unwraps `parenthesized_expression`" },
+    { "type": "calls", "from": "nested", "target": "f", "comment": "the INNER call of f()() — a true edge that must survive" }
+  ],
+  "comment": "The `nested` shape is written but NOT separately adjudicated, and the reason is structural rather than a gap: `pushRel` dedupes by (type, source, target) with no line component, and the outer call's callee leaf IS the inner call's leaf on the same line, so the fallback's second edge and the true first edge are byte-identical in the emitted set. No pin can separate them — an `equals: 1` count passes in both states and is decoration, so it is not written. The discriminating shapes are `conditional` and both `lambda` forms, whose fabrications carry a (source, target) pair no true edge produces. MEASURED on the full cython draw (475 files, same sample hash before and after): the fallback fabricated FIVE edges corpus-wide — `calls manager_from_ternary -> cm1_getter` (tests/run/withstat_py.py:218, #902 itself), `calls InLambdaInClass -> y_global` (extra_walrus.py:136), `calls in_lambda_in_list_comprehension2 -> z` (extra_walrus.py:151), `calls complicated_cint_times_list -> n` (seq_mul.py:159, `(lambda: n)()`), and `extends T -> namedtuple` (test_dataclasses.py:1637, the base sibling pinned by python/base-shapes). Three of the five were lambdas.",
+  "forbidRelationships": [
+    { "type": "calls", "from": "conditional", "target": "f", "comment": "#902 verbatim: the `if` branch of a conditional callee. The callee is whichever branch the condition selects — the analyzer knows neither" },
+    { "type": "calls", "from": "conditional", "target": "g", "comment": "the same rule for the `else` branch: a fallback that descends to a different child is the same fabrication" },
+    { "type": "calls", "from": "lam", "target": "f", "comment": "`f` is the lambda's BODY and is written nowhere as a call — naming it fabricated a call site the source does not contain" },
+    { "type": "calls", "from": "lam_param", "target": "y", "comment": "the measured real-corpus form: a lambda that takes a parameter makes its first named child a PARAMETER, so the fallback published `calls -> y_global` (extra_walrus.py:136) and `calls -> z` (line 151) — a parameter named as a called function" }
+  ]
+}

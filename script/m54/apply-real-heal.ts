@@ -10,7 +10,7 @@ import { realpathSync, existsSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
-const realDataDir = "$HOME/.bb"
+const realDataDir = "/home/ishaq2321/.bb"
 const realRepo = realpathSync(ROOT)
 
 const pid = createHash("sha1").update(realRepo).digest("hex")

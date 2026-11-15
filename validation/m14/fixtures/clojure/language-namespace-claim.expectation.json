@@ -1,0 +1,77 @@
+{
+  "issue": "CLJ-EX2",
+  "note": "LANGUAGE-NAMESPACE CLAIM (2026-10-20): a row whose target's ROOT is in the closed language/runtime namespace set (clojure, cljs, js, goog, java, javax) carries metadata.languageNamespace = the declared root list and metadata.languageNamespacePolicy = 'strict-absent' (the cpp precedent: the claim is honored only where the run declares nothing for the target, so it can never displace a name-model answer). The third-party root `babashka` is deliberately NOT claimed — the list is the claim's evidence, and whether a project vendors a library is a project fact a single-file analyzer cannot know. Before this rule these rows were unresolved; the whole-population arm showed 901 ext? owner claims that could never verify.",
+  "expectSymbols": [
+    {
+      "name": "user",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "clojure.string/trim",
+      "line_number": 5,
+      "meta.languageNamespace": [
+        "clojure",
+        "cljs",
+        "js",
+        "goog",
+        "java",
+        "javax"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent"
+    },
+    {
+      "type": "references",
+      "from": "user",
+      "target": "clojure.string",
+      "line_number": 5,
+      "meta.languageNamespace": [
+        "clojure",
+        "cljs",
+        "js",
+        "goog",
+        "java",
+        "javax"
+      ]
+    },
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "java.time.Instant/now",
+      "line_number": 6,
+      "meta.languageNamespace": [
+        "clojure",
+        "cljs",
+        "js",
+        "goog",
+        "java",
+        "javax"
+      ]
+    },
+    {
+      "type": "instantiates",
+      "from": "user",
+      "target": "java.io.File",
+      "line_number": 7,
+      "meta.languageNamespace": [
+        "clojure",
+        "cljs",
+        "js",
+        "goog",
+        "java",
+        "javax"
+      ]
+    },
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "babashka.fs/exists?",
+      "line_number": 8,
+      "note": "third-party root: the row EXISTS but is NOT claimed; the docs pin the closed list"
+    }
+  ],
+  "forbidRelationships": []
+}

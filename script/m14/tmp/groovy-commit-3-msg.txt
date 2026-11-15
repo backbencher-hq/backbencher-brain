@@ -1,0 +1,53 @@
+groovy: publish the `decorates` edge (R3) and add the population census
+
+THE FIXTURE ALLOWANCE IS 0 AND STAYS 0. All 82 groovy fixtures pass, and the
+new `groovy/decorates-edges` fixture is the behavioural proof for the one
+extended type this lane now implements.
+
+`decorates` — a decorator is APPLIED to a declaration, and the direction is the
+DECORATED DECLARATION -> THE DECORATOR (src/ast/types.ts). Groovy annotations
+are exactly that: @Service on a class, @Transactional on a method, @Column on a
+field. THE RUNG IS R3: the construct is implemented with an EXISTING node type
+(`annotation` / `marker_annotation` under `modifiers`, both named in the served
+build's node-type inventory, validation/m14/measurements/groovy-grammar-nodes.json)
+and NO GRAMMAR CHANGE WAS NEEDED — the names were already collected on the
+symbols, and only the edge was missing.
+
+The shape is the family's, not a local invention: source = the decorated
+declaration's name, target = the decorator's NAME LEAF, line_number = the
+decorator's OWN line, metadata = { isDecorator: true, decoratorLine }. The
+family emitters are javascript (src/ast/real-javascript-analyzer.ts:3003) and
+python (src/ast/real-python-analyzer.ts:6112). The tier is `structural`, not the
+`usage_contextual` default: a decorator is WRITTEN in the declaration's header
+at confidence 1.0, which is a declaration fact — the python classifier says so
+in its own words (src/ast/real-python-analyzer.ts:6493).
+
+The fixture pins the four ways the edge could be wrong: the class is decorated
+and not only the members; a decorator WITH ARGUMENTS names only the decorator
+(`@Transactional(readOnly = true)` is `decorates[save->Transactional]`, and
+`readOnly`/`true` are not decorators — they are forbidden); a fully-qualified
+decorator is published under its LEAF, so the edge and the symbol's own
+`decorators` list can be joined; and a decorated FIELD carries the edge too,
+because @Column on a field is the GORM/JPA idiom.
+
+script/m14/groovy-population-census.ts is the lane's own population census, and
+the counter every groovy ruling's falsifier cites. It walks the ADMITTED SET —
+the git-tracked set (`git ls-files`) restricted to the router's extensions
+(.groovy, .gvy, .gradle) and to files under the 1 MB cap — and prints the
+admitted count, the per-repository breakdown, the exclusions, and the
+symlinked-directory count. Measured over the corpus: 8,102 admitted files
+across 8 repositories (grails-core 7,018, geb 693, graphql-java 367, dart-http
+13, flutter-packages 6, pb-grpc 3, fmt 1, Exposed 1), 0 over the cap, 3
+tracked-but-absent, 137 symlinked directories in the corpus of which 0 are
+followed (the git-tracked walk lists a symlink as an entry, never the files
+under it, so it cannot reach a file through one — a directory walk would, which
+is why the two populations are counted separately).
+
+It also counts the constructs the extended-type rulings turn on: trait
+declarations, the two ways a trait is applied (`implements` and `extends`, with
+the trait names resolved across the whole population), the `renders` near miss
+(a GString `template_expression` renders a VALUE, not a COMPONENT) and the
+`part_of` near miss (the `part` / `part of` token shapes).
+
+The measurement trail (fixture runs, the census dumps, the trait tree) is under
+script/m14/tmp/groovy-*.

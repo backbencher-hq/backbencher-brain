@@ -1,0 +1,131 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/implicit-binding-sites.sh",
+ "authoredFrom": "Authored 2026-10-03 from the pinned grammar's PARSE TREE, not from analyzer output: validation/m14/fixtures/bash/probe-bash-binding-shapes.mts dumps the node type of every binding-site shape this file exercises, and every expect/forbid row below follows from that dump. The nine expected symbols are the nine constructs POSIX and bash define as binding a name without a NAME= node (for, read, read-with-a-value-flag, read-behind-an-env-prefix, mapfile, printf -v, and read inside a function). The forbidden symbols are the shapes whose node type is NOT `word` — a string carrying an expansion, a concatenation, a glob, a comment, a string literal, a heredoc body — plus the two shell-defined names, so a text matcher cannot pass this file by declaring a variable out of a comment or a heredoc. The `read -p Enter value extra_target` row exists so the value-option TABLE is observable: `Enter` is the prompt, and a collector that does not know `-p` takes a value declares it. That row is what makes bash/implicit-binding-value-option-table-emptied catchable — without it the mutant survived the battery, which said the fixture could not tell the two rules apart rather than that the mutant was equivalent. The four `uses` rows deliberately carry NO line_number: they assert that the target RESOLVES (meta.isAssignedInFile is true), which is what round 4 changed, and the runner treats an unspecified constraint field as a wildcard. Pinning lines here made the fixture fail every time a row was inserted above it, which is a fixture that measures the wrong thing.",
+ "expectSymbols": [
+  {
+   "name": "implicit-binding-sites.sh",
+   "kind": "module"
+  },
+  {
+   "name": "loop_var",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "bare_var",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "plain_target",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "prompted",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "split_args",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "fd_target",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "prompt_reply",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "offset_array",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "extra_target",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "fmt_target",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "fmt_source",
+   "kind": "variable",
+   "ownerName": "implicit-binding-sites.sh"
+  },
+  {
+   "name": "inner_target",
+   "kind": "variable",
+   "ownerName": "scoped_reader"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "implicit-binding-sites.sh",
+   "target": "implicit-binding-sites.sh.loop_var",
+   "meta.isVariableReference": true,
+   "meta.isAssignedInFile": true
+  },
+  {
+   "type": "uses",
+   "from": "implicit-binding-sites.sh",
+   "target": "implicit-binding-sites.sh.prompted",
+   "meta.isVariableReference": true,
+   "meta.isAssignedInFile": true
+  },
+  {
+   "type": "uses",
+   "from": "scoped_reader",
+   "target": "scoped_reader.inner_target",
+   "meta.isVariableReference": true,
+   "meta.isAssignedInFile": true
+  },
+  {
+   "type": "uses",
+   "from": "implicit-binding-sites.sh",
+   "target": "implicit-binding-sites.sh.fmt_target",
+   "meta.isVariableReference": true,
+   "meta.isAssignedInFile": true
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "computed_target"
+  },
+  {
+   "name": "commented_out"
+  },
+  {
+   "name": "quoted_out"
+  },
+  {
+   "name": "heredoc_out"
+  },
+  {
+   "name": "*.txt"
+  },
+  {
+   "name": "$2"
+  },
+  {
+   "name": "REPLY"
+  },
+  {
+   "name": "3"
+  },
+  {
+   "name": "Enter"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

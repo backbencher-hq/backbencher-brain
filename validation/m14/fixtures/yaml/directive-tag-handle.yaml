@@ -1,0 +1,10 @@
+# A %TAG directive declares a HANDLE, and a tag that uses it resolves THROUGH that
+# declaration: the third of the four tag forms, and the only one a document-model parser
+# and a syntax parser both have to reason about to agree. The shape-safety gate found this
+# gap rather than a review — `tag_directive` was named by the analyzer and present in the
+# grammar, and nothing exercised it, so the branch was unproven.
+%TAG !e! tag:example.com,2000:
+---
+local: !!str 7
+global: !e!thing 8
+verbatim: !<tag:example.com,2000:str> 9

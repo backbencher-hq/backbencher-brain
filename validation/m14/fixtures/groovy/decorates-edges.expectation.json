@@ -1,0 +1,30 @@
+{
+  "fixtureId": "groovy/decorates-edges",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE `decorates` EDGE — a decorator is APPLIED TO a declaration, and the edge is the canonical vocabulary for that fact (src/ast/types.ts: the direction is the DECORATED DECLARATION -> THE DECORATOR, and the family's emitters are javascript src/ast/real-javascript-analyzer.ts:3003 and python src/ast/real-python-analyzer.ts:6112). Groovy annotations are exactly that: @Service on a class, @Transactional on a method, @Column on a field. THE RUNG IS R3 — the construct is implemented with an EXISTING node type (`annotation` / `marker_annotation` under `modifiers`, both named in the SERVED build's node-type inventory validation/m14/measurements/groovy-grammar-nodes.json), and NO GRAMMAR CHANGE WAS NEEDED: the names were already collected on the symbols, and only the EDGE was missing. THE SHAPE IS THE FAMILY'S: source = the decorated declaration's name, target = the decorator's NAME LEAF, line_number = the decorator's OWN line, metadata = { isDecorator: true, decoratorLine }. FOUR FACTS ARE PINNED, and each one is a way the edge could be wrong: (1) the CLASS is decorated, not only the members; (2) a decorator WITH ARGUMENTS names only the decorator — `@Transactional(readOnly = true)` is `decorates[save->Transactional]`, and `readOnly`/`true` are not decorators; (3) a FULLY-QUALIFIED decorator is published under its LEAF, matching the symbol's own `decorators` list and the lane's short-name rule (groovy/class-decorators pins `PostConstruct` for `@javax.annotation.PostConstruct`), so the EDGE and the SYMBOL LIST can be joined; (4) a decorated FIELD carries the edge too — @Column on a field is THE GORM/JPA idiom. THE TIER IS `structural`, not `usage_contextual`: a decorator is WRITTEN in the declaration's header at confidence 1.0, which is a declaration fact (the python lane's classifier says the same in its own words, src/ast/real-python-analyzer.ts:6493).",
+  "expectSymbols": [
+    { "name": "PlainService", "kind": "class" },
+    { "name": "save" },
+    { "name": "init" },
+    { "name": "id" }
+  ],
+  "expectDecorators": [
+    { "symbol": "PlainService", "contains": "Service" },
+    { "symbol": "save", "contains": "Transactional" },
+    { "symbol": "init", "contains": "PostConstruct" },
+    { "symbol": "id", "contains": "Column" }
+  ],
+  "expectRelationships": [
+    { "type": "decorates", "from": "PlainService", "target": "Service", "line_number": 3, "meta.isDecorator": true, "meta.decoratorLine": 3, "meta.evidenceClass": "structural", "confidenceMin": 1.0 },
+    { "type": "decorates", "from": "save", "target": "Transactional", "line_number": 6, "meta.isDecorator": true, "meta.decoratorLine": 6, "meta.evidenceClass": "structural", "confidenceMin": 1.0 },
+    { "type": "decorates", "from": "init", "target": "PostConstruct", "line_number": 9, "meta.isDecorator": true, "meta.decoratorLine": 9, "meta.evidenceClass": "structural", "confidenceMin": 1.0 },
+    { "type": "decorates", "from": "id", "target": "Column", "line_number": 12, "meta.isDecorator": true, "meta.decoratorLine": 12, "meta.evidenceClass": "structural", "confidenceMin": 1.0 }
+  ],
+  "forbidRelationships": [
+    { "type": "decorates", "target": "readOnly", "comment": "a decorator's ARGUMENT is not a decorator: `@Transactional(readOnly = true)` names `Transactional` and nothing else" },
+    { "type": "decorates", "target": "true", "comment": "same: the argument's VALUE is not a decorator" },
+    { "type": "decorates", "target": "name", "comment": "same, for the FQ decorator's named argument: `@Column(name = \"id\")` names `Column`" },
+    { "type": "decorates", "from": "PlainService", "target": "String", "comment": "a field's TYPE is not a decorator" }
+  ]
+}

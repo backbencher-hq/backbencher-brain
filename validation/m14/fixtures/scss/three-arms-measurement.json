@@ -1,0 +1,71 @@
+{
+  "instrument": "the THREE ARMS \u2014 no-index, empty-index, built-index \u2014 and why the cross-file mechanism contributes nothing even on the third",
+  "at": "2026-10-11T22:35:00-04:00",
+  "commands": [
+    {
+      "cmd": "npx tsx script/m14/residual-gate.ts --lane scss",
+      "exit": 0,
+      "arm": "no-index (the reproducible row)"
+    },
+    {
+      "cmd": "npx tsx script/m14/incoming-gate.ts scss scss 0 --index (before the gate fix)",
+      "exit": 1,
+      "arm": "empty-index \u2014 0 indexes built"
+    },
+    {
+      "cmd": "npx tsx script/m14/incoming-gate.ts scss scss 0 --index (after the gate fix)",
+      "exit": 1,
+      "arm": "built-index \u2014 25 repo indexes over 4,433 files"
+    },
+    {
+      "cmd": "npx tsx script/m14/residual-gate.ts --lane css",
+      "exit": 0,
+      "arm": "css control"
+    }
+  ],
+  "theThreeArms": {
+    "noIndex": {
+      "total": "30,426 edges \u00b7 resolved 20,567 \u00b7 amb 2,566 \u00b7 unresolved 452 \u00b7 extOK 6,841",
+      "exports": "4,048 \u00b7 resolved 3,065 \u00b7 amb 983",
+      "references": "9,358 \u00b7 resolved 4,124 \u00b7 amb 1,501"
+    },
+    "emptyIndex": {
+      "index": "project index: USED \u2014 0 repo index(es) (0 built) over 0 file(s)",
+      "total": "resolved 19,637 \u00b7 amb 3,933 \u00b7 unresolved 436 \u00b7 extOK 0",
+      "exports": "resolved 2,455 \u00b7 amb 1,593",
+      "references": "resolved 3,819 \u00b7 amb 2,212 \u00b7 extOK 0"
+    },
+    "builtIndex": {
+      "index": "project index: USED \u2014 25 repo index(es) (25 built, 0 from cache, 0 damaged) over 4,433 file(s)",
+      "total": "30,426 \u00b7 resolved 20,567 \u00b7 amb 2,566 \u00b7 unresolved 452 \u00b7 extOK 6,841",
+      "exports": "4,048 \u00b7 resolved 3,065 \u00b7 amb 983",
+      "references": "9,358 \u00b7 resolved 4,124 \u00b7 amb 1,501 \u00b7 extOK 3,733"
+    }
+  },
+  "findings": {
+    "1_extOKRestored": "**extOK returns to exactly 6,841 with a real index** \u2014 the Lead's condition: it did NOT stay at 0, so the empty-index degradation was the broken build path, not a second claim-side defect.",
+    "2_theMechanismMovesNothing": "with 25 indexes built and the correct spec, **exports and references are IDENTICAL to the no-index arm** \u2014 `resolveModuleImports` contributes no edge on this population, which is the row the work was for.",
+    "3_why_it_contributes_nothing": {
+      "a_closedMembersIsNotSerialized": "`project-index.ts:983` sets `(index as any).__closedMembers = allMembers` at RUNTIME, and the serializer (`:1062-1070`) writes only version/typeKinds/typeMembers/typeBases/symbolNames/damagedFiles/stats. The resolver reads `(index as any).__closedMembers?.get(...)` and returns when absent \u2014 so on EVERY deserialized index (the worker and gate path) it returns early. Measured: `__closedMembers present? false` on both the freshly built and the round-tripped index.",
+      "b_theSpecExtractsNothing": "the built index is EMPTY of SCSS declarations \u2014 `typeMembers keys = []` and `symbolNames = []` for real files, including `bulma/sass/utilities/functions.scss`, which the grammar gives **12 `function_statement` nodes** and root type `stylesheet` (matching the spec's `typeNodes` key exactly). So the spec's keys are right and the extraction still finds nothing.",
+      "c_pathVersusBasename": "the resolver matches `@use` SPECIFIERS against index type names with `typeName === modulePath || typeName.endsWith('/' + modulePath)`. A specifier is a path (`'../utilities/css-variables'`) and the index names a module by its basename \u2014 measured: no key ends with `/../utilities/css-variables`."
+    }
+  },
+  "cssControl": {
+    "verdict": "0 of 6 columns differ after the gate fix \u2014 references, imports, uses, contains, overrides, TOTAL all identical. The verified neighbour is unmoved.",
+    "exit": 0
+  },
+  "theReachabilityFixes": {
+    "export": "`export const SCSS_DECLARATION_SPEC` \u2014 ALREADY AT HEAD (secured by 6448c5b71); my edit duplicated it and the script ratchet caught it (TS1030 'export modifier already seen'), which is the ratchet working.",
+    "specByLang": "`scss: mod.SCSS_DECLARATION_SPEC` \u2014 ALREADY AT HEAD, same story (TS1117 duplicate property, also caught).",
+    "gateEntry": "`INDEX_SPECS.scss` \u2014 MISSING, and now landed (commit 061a20860). This is the one that made the exercising arm unproducible: the gate reported 0 indexes built for the lane while production carried `.scss`."
+  },
+  "raw": [
+    "scss-gate-secured.txt",
+    "scss-gate-secured-indexed.txt",
+    "scss-gate-built-index.txt",
+    "css-gate-secured.txt",
+    "css-gate-after-gatefix.txt",
+    "index-shape-probe.mts"
+  ]
+}

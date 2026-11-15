@@ -1,0 +1,61 @@
+{
+ "fixtureId": "yaml/framework-shape-negative",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The negative half, and the fixture that makes the positive meaningful: the SAME key names, one level down. A suffix comparison matches these and claims frameworks for a file that is none of them; a document-relative lookup does not, because `nested.version` is not `version`. The `uses:` here also pins the other half of the `uses:` contract -- outside a workflow it is a sub-1.0 reference carrying a reason, NOT an import.",
+ "forbidFrameworks": [
+  "GitHub Actions",
+  "Docker Compose",
+  "GitLab CI",
+  "Kubernetes",
+  "Ansible",
+  "CircleCI",
+  "OpenAPI"
+ ],
+ "expectMetadata": [
+  {
+   "framework": null
+  },
+  {
+   "frameworkPatterns": []
+  },
+  {
+   "detectedFrameworks": []
+  }
+ ],
+ "forbidImports": [
+  {
+   "module": "something"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "framework-shape-negative.nested.uses",
+   "target": "something",
+   "confidenceMax": 0.8,
+   "meta.relationshipType": "yaml_action_use_unverified",
+   "meta.resolved": false,
+   "meta.unresolvedReason": "file-shape-is-not-a-github-workflow",
+   "meta.confidenceReason": "shape-not-workflow",
+   "meta.evidenceClass": "inferred",
+   "line_number": 10
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10
+  ],
+  "evidenceClasses": [
+   "inferred",
+   "structural"
+  ]
+ }
+}

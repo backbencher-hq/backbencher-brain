@@ -1,0 +1,28 @@
+{
+  "fixtureId": "php/nullsafe-member-reads",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.13 follow-up wave-2 gate fixture (php dual-lens #606, PHPD11): PHP 8 nullsafe member READS must emit uses exactly like the non-null form. `$this->svc->name` parses as member_access_expression with a \"name\" field; `$this->svc?->name` parses as nullsafe_member_access_expression with the SAME \"name\" field (probe-verified 2026-09-07), but the walkBody member-read branch only matched member_access_expression, so every nullsafe read silently dropped the trailing member edge. 20 occurrences across phpunit+phpmyadmin+slim (4,231 files), differential-invisible because the oracle shared the shallow gate. Writes (`$this->feature?->name = $v`) and RMW (`$this->feature?->name .= '!'`) stay gated exactly like the plain form via the byte-range first-child rule. The receiver reads (feature/nested) are real member reads on both sides (csharp/java/ruby family precedent: the container is fetched to dereference).",
+  "expectSymbols": [
+    { "name": "Feature", "kind": "class" },
+    { "name": "name", "kind": "property", "ownerName": "Feature" },
+    { "name": "nested", "kind": "property", "ownerName": "Feature" },
+    { "name": "label", "kind": "method", "ownerName": "Feature" },
+    { "name": "Consumer", "kind": "class" },
+    { "name": "feature", "kind": "property", "ownerName": "Consumer" },
+    { "name": "describe", "kind": "method", "ownerName": "Consumer" },
+    { "name": "rewrite", "kind": "method", "ownerName": "Consumer" },
+    { "name": "bump", "kind": "method", "ownerName": "Consumer" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "describe", "target": "Consumer.feature", "meta.isMemberRead": true },
+    { "type": "uses", "source": "describe", "target": "nested", "meta.isMemberRead": true },
+    { "type": "uses", "source": "describe", "target": "name", "meta.isMemberRead": true },
+    { "type": "uses", "source": "rewrite", "target": "Consumer.feature", "meta.isMemberRead": true },
+    { "type": "uses", "source": "bump", "target": "Consumer.feature", "meta.isMemberRead": true }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "rewrite", "target": "name" },
+    { "type": "uses", "source": "bump", "target": "name" }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "fixtureId": "make/macro-call-and-bare-expression",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the numbered source: `mk` defined on 15, `two_args` on 19, `pkg` on 24 calling on 25, the bare foreach/eval expression on 28, `combined` on 31 calling on 32. The call at line 28 is sourced from the MODULE, not from a rule, because there is no enclosing rule — that is the whole point of the fixture and the source is asserted explicitly rather than left as a wildcard.",
+  "rationale": "`$(call NAME)` is a call, and a bare top-level expression is still a place references live. Two separate defects are pinned. (1) A macro must be a FUNCTION: a `$(call mk)` that resolves to a `constant` is a callee that cannot be called. (2) References used to be collected only beneath a `variable_assignment` and a `rule`, so a bare top-level expression — a `function_call` DIRECTLY under `makefile` — contributed nothing at all. That is not a corner case: `$(foreach t,… $(eval $(call mk,$(t))))` is the idiom nomad/GNUmakefile uses to reify its package targets, the corpus has one such site, and it produced ZERO edges before the fix. Positional parameters `$(1)`/`$(2)` are not declarations and must not become symbols.",
+  "expectSymbols": [
+    {
+      "name": "macro-call-and-bare-expression.mk",
+      "kind": "module"
+    },
+    {
+      "name": "mk",
+      "kind": "function"
+    },
+    {
+      "name": "two_args",
+      "kind": "function"
+    },
+    {
+      "name": "pkg",
+      "kind": "function"
+    },
+    {
+      "name": "combined",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "mk",
+      "line_number": 15,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "two_args",
+      "line_number": 19,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "pkg",
+      "line_number": 24,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "combined",
+      "line_number": 31,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "calls",
+      "from": "pkg",
+      "target": "mk",
+      "line_number": 25,
+      "meta.evidenceClass": "call"
+    },
+    {
+      "type": "calls",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "mk",
+      "line_number": 28,
+      "meta.evidenceClass": "call"
+    },
+    {
+      "type": "uses",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "t",
+      "line_number": 28,
+      "meta.evidenceClass": "local_binding"
+    },
+    {
+      "type": "calls",
+      "from": "combined",
+      "target": "two_args",
+      "line_number": 32,
+      "meta.evidenceClass": "call"
+    },
+    {
+      "type": "exports",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "pkg",
+      "line_number": 24,
+      "meta.evidenceClass": "export_target"
+    },
+    {
+      "type": "exports",
+      "from": "macro-call-and-bare-expression.mk",
+      "target": "combined",
+      "line_number": 31,
+      "meta.evidenceClass": "export_target"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "1",
+      "note": "`$(1)` is a positional parameter inside a macro body, not a declaration"
+    },
+    {
+      "name": "2",
+      "note": "same"
+    },
+    {
+      "name": "mk",
+      "kind": "constant",
+      "note": "a macro must be a FUNCTION: a `calls` edge that resolves to a constant is a callee that cannot be called"
+    },
+    {
+      "name": "two_args",
+      "kind": "constant",
+      "note": "same"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "foreach",
+      "note": "`foreach` is a GNU Make builtin function, not a macro — a call edge to it would dangle"
+    },
+    {
+      "type": "calls",
+      "target": "eval",
+      "note": "same"
+    },
+    {
+      "type": "calls",
+      "target": "shell",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "mk",
+      "note": "a `$(call mk)` is a CALL, not a bare reference; the two are different facts and the label follows the call"
+    },
+    {
+      "type": "uses",
+      "target": "mk",
+      "note": "the inverse: a macro this file defines must not be demoted to a `uses` edge"
+    }
+  ]
+}

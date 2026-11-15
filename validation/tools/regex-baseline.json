@@ -1,0 +1,530 @@
+{
+  "schemaVersion": 1,
+  "note": "Regex debt frozen at campaign start. Pay it down or promote a row to the allowlist with tests.",
+  "commit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530",
+  "generatedAt": "2026-11-01T20:40:52.106Z",
+  "entries": [
+    {
+      "file": "src/ast/brain-surgical-patcher.ts",
+      "kind": "literal",
+      "source": "/(?<!\\r)\\n/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/ast/brain-surgical-patcher.ts",
+      "kind": "literal",
+      "source": "/\\r\\n/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/brain-relationship-enrichment.ts",
+      "kind": "literal",
+      "source": "/_/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/brain-relationship-enrichment.ts",
+      "kind": "literal",
+      "source": "/^(on|handle|listen|notify|emit|fire|addListener|removeListener|subscribe|unsubscribe)/i",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/schema-ddl.ts",
+      "kind": "literal",
+      "source": "/\\s+/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/schema-ddl.ts",
+      "kind": "literal",
+      "source": "/\\s+/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/semantic/embedding-config.ts",
+      "kind": "literal",
+      "source": "/(Bearer\\s+)[A-Za-z0-9._~+/=-]{8,}/gi",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/semantic/embedding-config.ts",
+      "kind": "literal",
+      "source": "/\\/+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/semantic/local-embed.ts",
+      "kind": "literal",
+      "source": "/([A-Z]+)([A-Z][a-z])/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/semantic/local-embed.ts",
+      "kind": "literal",
+      "source": "/([a-z0-9])([A-Z])/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/semantic/local-embed.ts",
+      "kind": "literal",
+      "source": "/[^A-Za-z0-9]+/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/brain/semantic/local-embed.ts",
+      "kind": "literal",
+      "source": "/^\\d+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "constructor",
+      "source": "<dynamic>",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/[.*+?^${}()|[\\]\\\\]/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/\\r?\\n/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/^[\\t ]*$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/^[\\t ]+/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/function|method/i",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/method|constructor/i",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/syntax error/i",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/migration/migration-source.ts",
+      "kind": "literal",
+      "source": "/[%_]/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/migration/migration-source.ts",
+      "kind": "literal",
+      "source": "/\\/+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/migration/migration-source.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/migration/migration-source.ts",
+      "kind": "literal",
+      "source": "/^\\.\\//",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/search/quick-answer.ts",
+      "kind": "literal",
+      "source": "/[.,;:!?]+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/search/quick-answer.ts",
+      "kind": "literal",
+      "source": "/\\s/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/search/symbol-search.ts",
+      "kind": "literal",
+      "source": "/[^\\x00-\\x7F]/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/(^|\\n)\\s*(\\/\\/|\\/\\*|#)/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\.(?:toBe|toEqual|toStrictEqual|toThrow|toBeTruthy|toBeFalsy|toMatch|toContain|rejects|resolves)\\s*\\(/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\b(?:it|test)\\.each\\b|\\b(?:describe|it|test)\\s*\\(\\s*`|%s|\\$[a-zA-Z]/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\b(?:it|test|describe)\\s*\\(\\s*['\"`][^'\"`]{24,}['\"`]/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\b(jest|sinon)\\.(fn|spyOn|mock)\\b|vi\\.(fn|spyOn|mock)|\\.mockImplementation|nock\\(/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\b(rejects|resolves)\\b/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\bassert(?:\\.[A-Za-z]+)?\\s*\\(/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\bcatch\\s*\\(/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\bexpect\\s*\\(/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\bshould\\./g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\btoThrow|throws\\b/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "kind": "literal",
+      "source": "/\\btry\\s*\\{/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "kind": "literal",
+      "source": "/[\\\\%_]/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "kind": "literal",
+      "source": "/\\/$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "kind": "literal",
+      "source": "/\\/$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/'/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/\"/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/[\\r\\n\\u2028\\u2029]+/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/&/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/</g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/annotation_ui.ts",
+      "kind": "literal",
+      "source": "/>/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/(^|[^\\w$])new\\s+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/[A-Za-z0-9_$]/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/\\.+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/\\s/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/\\s/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/\\s/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/call_hierarchy.ts",
+      "kind": "literal",
+      "source": "/^(\\s*)/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/\\r$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/\\s?\\*+\\/\\s*$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/\\s+$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/^\\s*--+\\s?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/^\\s*\\*\\s?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/^\\s*\\/\\*+\\s?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/^\\s*\\/\\/\\/\\s?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/^\\s*#\\s?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/doc_comment.ts",
+      "kind": "literal",
+      "source": "/^\\s*#+\\s?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/enrichment.ts",
+      "kind": "literal",
+      "source": "/^one_of_(\\d+)$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/graph_request.ts",
+      "kind": "literal",
+      "source": "/^Symbol '.+' not found$/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/identity.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/identity.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/navigation.ts",
+      "kind": "literal",
+      "source": "/[A-Za-z0-9_$]/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/positions.ts",
+      "kind": "literal",
+      "source": "/\\r\\n|\\r|\\n/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/rich_hover.ts",
+      "kind": "literal",
+      "source": "/[\\\\/]/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/server.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/server.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/server.ts",
+      "kind": "literal",
+      "source": "/Content-Length:\\s*(\\d+)\\s*(?:\\r\\n.*)?$/is",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/signature.ts",
+      "kind": "literal",
+      "source": "/[{\\[]\\s*\"?[A-Za-z_][A-Za-z0-9_]*\"?\\s*:/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/symbols.ts",
+      "kind": "literal",
+      "source": "/[A-Za-z0-9_$]/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/lsp/type_inference_surface.ts",
+      "kind": "literal",
+      "source": "/(^|[^A-Za-z0-9_])(void|Unit)($|[^A-Za-z0-9_])/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/mcp/tool-validation.ts",
+      "kind": "literal",
+      "source": "/^bb_edit (?:batch entry \\d+: )?/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/mcp/tools/bb_annotate/handler.ts",
+      "kind": "literal",
+      "source": "/[\\u0000-\\u001F\\u007F]/",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/mcp/tools/bb_migrate/handler.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/mcp/tools/bb_migrate/handler.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/mcp/tools/shared.ts",
+      "kind": "literal",
+      "source": "/not a traversable root|owning-declaration/i",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    },
+    {
+      "file": "src/mcp/tools/shared.ts",
+      "kind": "literal",
+      "source": "/not found/i",
+      "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+    }
+  ]
+}

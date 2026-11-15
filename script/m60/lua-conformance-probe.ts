@@ -69,7 +69,7 @@ import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const OUT = path.resolve(ROOT, arg("--out", "validation/m60/lua/conformance-probe.json")!)
 

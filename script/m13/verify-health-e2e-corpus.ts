@@ -123,7 +123,7 @@ const runCliTool = (args: Record<string, unknown>) =>
 rmSync(root, { recursive: true, force: true })
 
 // ── 3. Corpus: internally consistent health reports ───────────────────────
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see
+// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see
 // script/lib/corpus-root.ts, which is where the corpus actually lives on THIS machine.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 const SAMPLE: Array<[string, string, string]> = [

@@ -1,0 +1,247 @@
+{
+  "fixtureId": "julia/imports-and-exports",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS two types this lane RULED and then got wrong, and pins the THIRD distinction that made both rulings look reasonable. `imports` and `exports` were each declined, then ruled non-applicable; each ruling named its own overturn condition, and in both cases the condition was worded so that doing the right thing could not satisfy it. `imports` demanded 'a row whose source is the importing declaration rather than the literal root' — which is exactly `src/ast/real-python-analyzer.ts:979` for `import a.b`, and what the lua, yaml, nim and typescript lanes already emit; the `brain_import` serialization it cites as the blocker is the same string all of them write through, so it blocked nobody. `exports` demanded 'a count above the ExportInfo count for the same corpus', which emitting one row per ExportInfo entry cannot exceed, so it could only ever be satisfied by an edge that was WRONG. A falsifiable ruling must name a count that a CORRECT implementation moves. What both got right and both then used wrongly: `RelationshipType.Imports`/`Exports` rows did not exist, so every count in the corpus read zero, and a zero reads like an absence until you ask what a correct implementation would emit. These edges are emitted on the same walk that already fills the `ImportInfo[]`/`ExportInfo[]` channels — the python precedent at `real-python-analyzer.ts:1166` — so the payload and the graph cannot disagree about one file. The pinned SOURCE is the part a census cannot see: emit every row from `root` and all corpus counts stay byte-identical, so only an assertion distinguishes a module-scoped import from a file-scoped one. `using Base: isexpr` pins the SELECTIVE-import shape, which was a live defect independent of the rulings: 583 of the 1,675 import statements on the 971 admitted corpus files have `selected_import` as their only named child, `importTargets` matched neither `import_path` nor a bare `identifier` there, and it returned an empty list for every one — dropping the dependency on `Base` at `julia/Compiler/src/Compiler.jl:40` with no ERROR node, no throw, and a file still publishing hundreds of symbols. `export parse_pair` precedes its own declaration, so the exports row must be emitted from the export site rather than gated on the name already being a symbol; and `export` names a BINDING of undetermined kind, which is why `Exported` is a `class` and `export_declare` a `function` under one export statement and the edge asserts neither. ADDED 2026-10-04, after two independent oracles were written for the two types this file's first two rulings were about — `script/m14/oracles/julia-imports.ts` and `julia-exports.ts` — and both found defects the verdict could not see. `using A, B`: the analyzer published ONE edge and called the second module an item of the first, 167 of 440 derived import edges MISSING on a 200-file draw (38% of the type), with `DataFrames.jl/src/DataFrames.jl:3-19` a single `using` naming 17 modules of which 1 was published. `import A as B`: published nothing at all. `public = 1`: the grammar's `public_statement` misparse published 4 fabricated `exports` edges corpus-wide, two of them for a local variable and a function PARAMETER. The instrument that found all three is a tree walk that shares no rule with the analyzer; the census that could not find them reads the production path, so the filter and the measurement were on the same side.",
+  "expectSymbols": [
+    {
+      "name": "SelectiveImports",
+      "kind": "module"
+    },
+    {
+      "name": "Exported",
+      "kind": "class"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Exported"
+    },
+    {
+      "name": "parse_pair",
+      "kind": "function"
+    },
+    {
+      "name": "export_declare",
+      "kind": "function"
+    },
+    {
+      "name": "exported_macro",
+      "kind": "macro"
+    },
+    {
+      "name": "top_level_publication",
+      "kind": "function"
+    },
+    {
+      "name": "stdcall_probe",
+      "kind": "function"
+    },
+    {
+      "name": "documented_publication",
+      "kind": "function",
+      "ownerName": "SelectiveImports"
+    },
+    {
+      "name": "fields",
+      "kind": "constant",
+      "ownerName": "SelectiveImports"
+    },
+    {
+      "name": "select_probe",
+      "kind": "function",
+      "ownerName": "SelectiveImports"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "Base",
+      "items": [
+        "isexpr"
+      ]
+    },
+    {
+      "module": "StructUtils",
+      "items": [
+        "lift"
+      ]
+    },
+    {
+      "module": "LinearAlgebra"
+    },
+    {
+      "module": "Statistics"
+    },
+    {
+      "module": "Compat"
+    },
+    {
+      "module": "Logging"
+    },
+    {
+      "module": "ChainRulesCore",
+      "items": []
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "parse_pair"
+    },
+    {
+      "name": "Exported"
+    },
+    {
+      "name": "exported_macro"
+    },
+    {
+      "name": "export_declare"
+    },
+    {
+      "name": "top_level_publication"
+    },
+    {
+      "name": "documented_publication"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "Base"
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "StructUtils"
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "LinearAlgebra"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Statistics"
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "Exported"
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "export_declare"
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "exported_macro"
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "parse_pair"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "top_level_publication"
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "Compat"
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "Logging"
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "ChainRulesCore"
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "documented_publication"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Base",
+      "comment": "The module-scoped `using Base: isexpr` must be attributed to SelectiveImports. Sourcing it from `root` is the shape this lane's own `imports` RULED as impossible while python/lua/yaml/nim/typescript all emit it."
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "Statistics",
+      "comment": "`using Statistics` is at FILE scope, outside every module, and 71.9% of corpus files open no module at all. Attributing it to SelectiveImports would assert a dependency the source does not have."
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "Exported",
+      "comment": "`export Exported` is inside `module SelectiveImports`, so its source is that module. A root-sourced row here would make a file-scoped export indistinguishable from a module-scoped one — the exact collapse this fixture exists to prevent."
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "top_level_publication",
+      "comment": "`public top_level_publication` is at file scope, so its source is the file's own scope and not SelectiveImports."
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "isexpr",
+      "comment": "The selective-import form names the MODULE as the dependency and the selected names as payload. `using Base: isexpr` is a dependency on Base; an edge to `isexpr` would invert the relation and make every selective import look like a locally-declared binding."
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "@exported_macro",
+      "comment": "The exported NAME is `exported_macro`, matching the symbol the macro definition publishes. `export`/`public` strips the sigil, so the edge target and the symbol name are the same string and an edge to `@exported_macro` would not resolve to anything."
+    },
+    {
+      "type": "imports",
+      "source": "SelectiveImports",
+      "target": "CRC",
+      "comment": "`import ChainRulesCore as CRC` asserts the MODULE, not the local name `as` binds it to. `CRC` is not a module anything can depend on; an edge to it names a binding this file invents. Pinned because the old `import_alias` branch was gated on a `pending` a single-child statement never had, so the whole statement published nothing and nothing in the corpus counts could see it."
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "public",
+      "comment": "`public = 1` is a BINDING ASSIGNMENT, not a keyword statement: `public` is a contextual keyword in julia, a keyword only when a name list follows. The production grammar emits a `public_statement` for it anyway, so this row pins the refusal. It also pins what the refusal does NOT do: the variable `public` is NOT published as a symbol, because the misparse means no `assignment` node exists for the binding case to read — so this is a coverage gap recorded as one, not a name this analyzer invents. Recovering it would mean re-deriving the left-hand side from an ERROR node's tokens, which is exactly the kind of text surgery this lane's oracles exist to distrust."
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "Logging",
+      "comment": "`using Compat, Logging` names TWO modules and neither is exported. An implementation that confuses an import list with an export list — the exact confusion the old `pending` state machine made on the imports channel — would publish this."
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "fields",
+      "comment": "THE MISPARSE, and the pin that makes the refusal worth having. `public = get(fields, select_probe, true)` is a BINDING ASSIGNMENT — `public` is a contextual keyword in julia, a keyword only when a name list follows — and the production grammar emits a `public_statement` for it anyway. The pre-fix walk returned one string per NAMED CHILD of that node, so it published `exports` edges for `fields` and `select_probe`: two module EXPORTS the source does not contain. The same shape produced 4 fabricated edges corpus-wide, one of them for a function PARAMETER (`julia/stdlib/REPL/src/docview.jl:408` -> `binding`). The RHS carries identifiers on purpose — a misparse over a bare literal published nothing even before the fix and would pin nothing."
+    },
+    {
+      "type": "exports",
+      "source": "SelectiveImports",
+      "target": "select_probe",
+      "comment": "The second name the pre-fix walk published from the misparsed `public = …`. Both names ARE declared in this module, so these two edges are the dangerous kind: they resolve, they are merely FALSE, and a graph consumer cannot tell that from a real export."
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "public",
+      "comment": "`public = …` imports nothing. Refusing the misparsed STATEMENT must not become publishing an edge on the imports channel either; the binding is covered on the symbols channel."
+    }
+  ]
+}

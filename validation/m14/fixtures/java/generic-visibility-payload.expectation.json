@@ -1,0 +1,20 @@
+{
+  "fixtureId": "java/generic-visibility-payload",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b generics + visibility payloads for java: class-level <T extends Comparable<T>>, method-level <R>, private field, protected method.",
+  "expectSymbols": [
+    { "name": "Store" },
+    { "name": "item" },
+    { "name": "map" }
+  ],
+  "expectTypeParameters": [
+    { "symbol": "Store", "includes": ["T"] },
+    { "symbol": "map", "includes": ["R"] }
+  ],
+  "expectVisibility": [
+    { "symbol": "item", "visibility": "private" },
+    { "symbol": "map", "visibility": "protected" },
+    { "symbol": "Store", "visibility": "public" }
+  ]
+}

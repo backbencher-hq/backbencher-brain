@@ -1,0 +1,11 @@
+{
+  "fixtureId": "python/builtin-type-name-is-not-a-control-flow-edge",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the boundary against the OTHER reading of D2: that a builtin exception named in an `except` clause should produce a `references` edge. It must not, and the reason is not the name — it is the POSITION. `except Exception as ex:` names a value the interpreter matches at runtime; it is not a type position (no annotation, no isinstance, no return annotation), and the analyzer's declared-type graph is defined over type positions only. Evidence for the position's provenance, not its absence: measured on a synthetic source containing every candidate position, `except Exception as ex:` and `raise ValueError(\"x\")` emit NO references edge at all, while `def f() -> Exception`, `def g(x: BaseException)`, `class C: field: Exception` and `isinstance(x, Exception)` each emit exactly one. So the 180 BaseException + 97 Exception edges D2 counted in the corpus come from annotations and isinstance checks, and this fixture makes that falsifiable: if a change ever makes the except clause emit, both FORBID rows fire.",
+  "expectRelationships": [],
+  "forbidRelationships": [
+    { "type": "references", "target": "Exception" },
+    { "type": "references", "target": "BaseException" }
+  ]
+}

@@ -4,7 +4,7 @@
 import { readFileSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 
-const ROOT = "$HOME/fixtures/repositories/Clyde"
+const ROOT = "/home/ishaq2321/bb_tests/repositories/Clyde"
 const NEW_WASM = "/tmp/ts-objc-npm/package/tree-sitter-objc.wasm"
 const MIN_BYTES = 256
 

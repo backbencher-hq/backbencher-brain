@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "externalArm": "m48 C1 corpus lane — the full tool battery on one real repository",
+  "repo": "elixir",
+  "command": "BB_NO_AUTO_REFRESH=1 npx tsx script/m48/c1-repo-worker.ts elixir",
+  "isolatedDataDir": "mkdtemp under tmpdir, owned by the worker (private BB_DATA_DIR)",
+  "indexSeconds": 118.226,
+  "fileCount": 692,
+  "negatives": 1,
+  "workerExit": 0,
+  "perTool": {
+    "ok": true,
+    "declaredAbsent": true,
+    "ms": 6,
+    "args": "{\"symbol\":\"exists?\"}",
+    "outHead": "{\"symbol\":\"exists?\",\"language\":\"elixir\",\"languages\":[\"elixir\"],\"copies\":[{\"id\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:248\",\"sy"
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_cross_language",
+      "repo": "elixir",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"exists?\",\n  \"language\": \"elixir\",\n  \"languages\": [\n    \"elixir\"\n  ],\n  \"copies\": [\n  "
+    }
+  ],
+  "failures": [],
+  "toolChecksPassed": true,
+  "generatedAt": "2026-11-01T20:32:55.130Z",
+  "note": "the raw part file stays in validation/m48/results/C1-parts/ (the m48 lane owns it); this summary is the tool-scoped external-arm evidence the campaign requires. The credential is the predicate: every cross-check is a real predicate over real handler output, and the M48.C1 predicate itself is measured by script/m63/verify-cl1-corpus-predicate.ts (19/19)."
+}

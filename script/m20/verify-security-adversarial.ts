@@ -1,5 +1,16 @@
 // script/m20/verify-security-adversarial.ts — security behavioral adversarial verification.
 //
+// M72 PATH DECLARATION — THIS GATE PINS THE RETIRED (ROLLBACK) TOKEN ENGINE.
+// The Phase-1 default pipeline runs the per-language spec engine and persists leads
+// into `brain_security_flow`; the old token detector is rollback-only under
+// `BB_SECURITY_LEGACY=1`. This file asserts the retired engine's state machine
+// (confirmed/mitigated/source_only/unresolved), its confidence calibration, its
+// filters and its mutation response, so it sets the rollback switch explicitly
+// before indexing. The default lead contract is asserted by
+// script/m13/verify-security-{handler,adversarial}.ts and
+// script/m20/verify-security-history.ts; the M72 engine/store gates live in
+// script/m72/**.
+//
 // 1. Policy matrix: deterministic injected taint rows; every row has an exact
 //    expected state/severity/confidence, derived from the documented model
 //    (docs/BB_SECURITY.md states + confidence calibration).
@@ -38,6 +49,8 @@ if (!process.env.BB_DATA_DIR) {
   process.env.BB_DATA_DIR = path.join(rootDir, "validation", "tools", "bb_security", "bbdata")
 }
 process.env.BB_NO_AUTO_REFRESH = "1"
+// Rollback switch: the retired engine's rows are produced only on this path.
+process.env.BB_SECURITY_LEGACY = "1"
 
 // The shared harness. An inline `check`/`negative` pair that routes a disproof
 // through `ck()` counts it as a check as well and overstates coverage; and a

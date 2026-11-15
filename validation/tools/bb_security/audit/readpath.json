@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-03T17:48:27.899Z",
+  "currentCommit": "5eae556d3974e84fdb45ac57f5d1827deb8c845d",
+  "command": "BB_DATA_DIR=… BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_security/work/probe-readpath.ts",
+  "probes": [
+    {
+      "id": "A-t0-default-mcp",
+      "door": "MCP stdio (source)",
+      "project": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/readpath",
+        "projectId": "56bbc1f8169ff7061c28476e094f88779f1e0019",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath",
+        "tier": "T0-fixture"
+      },
+      "args": {},
+      "call": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 1609,
+        "textBytes": 473,
+        "textHead": "security: 1 critical / 0 high / 0 medium / 0 low / 1 unknown (1 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 2 finding(s); showing 1 finding(s) and 1 of 1 unvalidated observa"
+      },
+      "before": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728087223.8816,
+          "sha256": "666065a7050006989ce480d6ecd65f2832e2e7fe56c0d380f1ea9c24d6e11b37"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "after": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728091438.9326,
+          "sha256": "c95141b2b0ad406b08232967d7fb8f58044b1e8c35a395e8c3b9930048788702"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "changes": [
+        "brain.db-shm: mtime 2026-11-03T17:48:07.223Z->2026-11-03T17:48:11.438Z",
+        "brain.db-shm: sha256 changed"
+      ],
+      "dbUnchanged": true
+    },
+    {
+      "id": "B-t0-readonly-control",
+      "door": "fresh process, getRawInstance(readonly:true)",
+      "project": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/readpath",
+        "projectId": "56bbc1f8169ff7061c28476e094f88779f1e0019",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath",
+        "tier": "T0-fixture"
+      },
+      "call": {
+        "exit": 0,
+        "stdout": "{\"projectId\":\"56bbc1f8169ff7061c28476e094f88779f1e0019\",\"dataDir\":\"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath\",\"readonly\":true,\"counts\":{\"files\":2,\"taintFlows\":2}}\n",
+        "stderr": ""
+      },
+      "before": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728091438.9326,
+          "sha256": "c95141b2b0ad406b08232967d7fb8f58044b1e8c35a395e8c3b9930048788702"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "after": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728092699.5337,
+          "sha256": "c95141b2b0ad406b08232967d7fb8f58044b1e8c35a395e8c3b9930048788702"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "changes": [
+        "brain.db-shm: mtime 2026-11-03T17:48:11.438Z->2026-11-03T17:48:12.699Z"
+      ],
+      "dbUnchanged": true
+    },
+    {
+      "id": "A2-t0-history-mcp",
+      "door": "MCP stdio (source)",
+      "args": {
+        "history": true
+      },
+      "call": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 1594,
+        "textBytes": 367,
+        "textHead": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"findingsTotal\": 0,\n  \"findingsShown\": 0,\n  \"findingsTruncated\": 0,\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  },\n  \"census\": {\n    \"runsTotal\": 0,\n    \"runLimit\": 20,\n    \"findings"
+      },
+      "before": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728092699.5337,
+          "sha256": "c95141b2b0ad406b08232967d7fb8f58044b1e8c35a395e8c3b9930048788702"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "after": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728094334.9292,
+          "sha256": "c95141b2b0ad406b08232967d7fb8f58044b1e8c35a395e8c3b9930048788702"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "changes": [
+        "brain.db-shm: mtime 2026-11-03T17:48:12.699Z->2026-11-03T17:48:14.334Z"
+      ],
+      "dbUnchanged": true
+    },
+    {
+      "id": "C-t2-shared-default-mcp",
+      "door": "MCP stdio (source)",
+      "project": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain",
+        "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+        "tier": "T2-reference",
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "dbBytes": 3885883392,
+        "dbMtime": "2026-11-03T17:05:51.029Z"
+      },
+      "call": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 2314,
+        "textBytes": 2905,
+        "textHead": "security: 500 critical / 0 high / 0 medium / 0 low (500 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (launchMatch) @ ide/vscode/esbuild-extension.mjs:152 <- database_read -> database_write\n  [critical] Command injection (launchMatch) @ ide/vscode/esbuild-extension.mjs:152 <- database_read -> shell_execution\n  [critical] SQL injection (serverVersionSatisfiesMinimum) @ ide/vscode/src/server-resolution.ts:105 <- database_read -> database_write\n  [critical] Command "
+      },
+      "before": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+          "exists": true,
+          "size": 3885883392,
+          "mtimeMs": 1793725551029.1978,
+          "sha256": null
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728095318.5173,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-wal",
+          "exists": true,
+          "size": 0,
+          "mtimeMs": 1793728095316.9795,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "after": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+          "exists": true,
+          "size": 3885883392,
+          "mtimeMs": 1793725551029.1978,
+          "sha256": null
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728097126.0518,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-wal",
+          "exists": true,
+          "size": 0,
+          "mtimeMs": 1793728095316.9795,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "changes": [
+        "brain.db-shm: mtime 2026-11-03T17:48:15.318Z->2026-11-03T17:48:17.126Z"
+      ],
+      "dbUnchanged": true,
+      "secondCall": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 2072,
+        "textBytes": 2905
+      },
+      "secondChanges": [
+        "brain.db-shm: mtime 2026-11-03T17:48:17.126Z->2026-11-03T17:48:19.314Z"
+      ],
+      "concurrentWriterNote": "the fleet shares .bb-data and writes this index; fixture A is the controlled measurement",
+      "countsFromReadOnlyOpen": {
+        "files": 6452,
+        "taintFlows": 14701
+      }
+    },
+    {
+      "id": "D-unindexed-project",
+      "project": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/unindexed",
+        "projectId": "a14775e309f9469acaadbea958adbddd59a62c72",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/unindexed"
+      },
+      "mcpDoor": {
+        "ok": true,
+        "isError": true,
+        "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/unindexed\".",
+        "createdFiles": []
+      },
+      "cliDoor": {
+        "exit": 0,
+        "stdout": "{\"exit\":1,\"stdout\":\"\",\"stderr\":\"error: No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/unindexed. Run: bb index \\\"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/unindexed\\\" (or restart bb mcp after indexing).\\n\"}\n",
+        "stderr": "",
+        "createdFiles": []
+      },
+      "libraryDoor": {
+        "exit": 0,
+        "stdout": "{\"ok\":false,\"isError\":true,\"error\":\"bb_security: no index found for project a14775e309f9469acaadbea958adbddd59a62c72: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/unindexed/projects/a14775e309f9469acaadbea958adbddd59a62c72/brain.db — run: bb index <project>\"}\n",
+        "stderr": "",
+        "createdFiles": []
+      }
+    },
+    {
+      "id": "E-t0-recordrun-mcp",
+      "door": "MCP stdio (source)",
+      "args": {
+        "recordRun": true
+      },
+      "call": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 2258,
+        "textHead": "security: 1 critical / 0 high / 0 medium / 0 low / 1 unknown (1 resolved flows, 1 unvalidated sources, 0 mitigated)\nrecorded run: 3a699278-c94f-423b-b181-61fb8bb19bc6\nnew=1 repeated=0 resolved=0\n1 findings recorded\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 2 finding(s); showing 1 finding(s) and 1 of 1 unvalidated observat"
+      },
+      "before": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 4096,
+          "mtimeMs": 1793728087220.8816,
+          "sha256": "14948fa5e2d8f2d2f9d9f9349a2626f275b36c870d724b183d7c9216d676f20e"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-shm",
+          "exists": true,
+          "size": 32768,
+          "mtimeMs": 1793728094334.9292,
+          "sha256": "c95141b2b0ad406b08232967d7fb8f58044b1e8c35a395e8c3b9930048788702"
+        },
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db-wal",
+          "exists": true,
+          "size": 1775752,
+          "mtimeMs": 1793728089488.909,
+          "sha256": "ef5e7efbf8c6d4d404915457fb8c91b2538829bfff545489f2e31009efd52bc5"
+        }
+      ],
+      "after": [
+        {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/readpath/projects/56bbc1f8169ff7061c28476e094f88779f1e0019/brain.db",
+          "exists": true,
+          "size": 479232,
+          "mtimeMs": 1793728107844.1309,
+          "sha256": "112eafa58215d1ffb672daa709629f646e2e0dd9f5911a55946d3e9185ef0252"
+        }
+      ],
+      "changes": [
+        "brain.db: size 4096->479232",
+        "brain.db: mtime 2026-11-03T17:48:07.220Z->2026-11-03T17:48:27.844Z",
+        "brain.db: sha256 changed"
+      ],
+      "dbUnchanged": false,
+      "note": "recordRun is the one documented write; a change here is correct behaviour, not a defect"
+    }
+  ]
+}

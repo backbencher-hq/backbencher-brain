@@ -1,0 +1,12 @@
+{
+  "issue": "CLJ-ADV F16",
+  "note": "`(defrecord Rec \"doc\" [x y])` — the fields vector is the first direct vec_lit child, so a docstring no longer hides the x/y property symbols.",
+  "expectSymbols": [
+    { "name": "Rec", "kind": "class" },
+    { "name": "x", "kind": "property" },
+    { "name": "y", "kind": "property" }
+  ],
+  "expectComments": [
+    { "symbol": "Rec", "contains": "record docs" }
+  ]
+}

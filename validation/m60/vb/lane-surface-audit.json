@@ -1,0 +1,4723 @@
+[
+  {
+    "lang": "vb",
+    "repos": [
+      "P3D-Legacy"
+    ],
+    "files": 400,
+    "filesWithEdges": 400,
+    "edges": 12327,
+    "symbols": 4335,
+    "labels": {
+      "calls": 4090,
+      "contains": 3862,
+      "references": 3498,
+      "overrides": 498,
+      "extends": 331,
+      "imports": 28,
+      "implements": 20
+    },
+    "noLine": {},
+    "zeroLine": {},
+    "missingSeamKeys": {},
+    "kinds": {
+      "variable": 1344,
+      "method": 766,
+      "property": 624,
+      "class": 394,
+      "constructor": 384,
+      "namespace": 306,
+      "enum_member": 254,
+      "constant": 215,
+      "enum": 35,
+      "type": 5,
+      "event": 4,
+      "struct": 3,
+      "module": 1
+    },
+    "unlinedSample": [],
+    "unlinedSampleCount": 0,
+    "badNames": [],
+    "ghosts": [],
+    "ghostCount": 0,
+    "contractNames": [
+      {
+        "file": "P3D-Legacy/P3D/Resources/GameModeManager.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 361
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/GameModeManager.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 395
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/GameModeManager.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 1273
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/FontContainer.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 14
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/ContentPackManager.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 182
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 252
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 261
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 270
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 289
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "symbol": "operator",
+        "kind": "method",
+        "line": 330
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Blur/GaussianBlur.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 27
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Blur/BlurHandler.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Blur/BlurHandler.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 30
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/SongContainer.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/MusicManager.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/SoundContainer.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 7
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Other/SignModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/WallModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/FloorModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/CeilingModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/BillModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/CrossModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/DoubleFloorModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Steps/StepModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Steps/InsideStepModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Steps/OutsideStepModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Cliffs/CliffModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Cliffs/CliffCornerModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Cliffs/CliffInsideModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/CubeModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/BlockModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/StairsModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/SlideModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/InsideCornerModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/PyramidModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/CornerModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/DiagonalWallModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/HalfDiagonalWallModel.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/HashSecureBase.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 51
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/FileValidation.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 163
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/KeyboardInput.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/KeyboardInput.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 361
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/SelectMenu.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 31
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/MessageBox.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Textbox.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 142
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Button.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 44
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Control.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 43
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Control.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 347
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/Trainer.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 58
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/Trainer.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 61
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleAnimationScreenV2.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 7
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleCameraV2.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleScreen.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 135
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleScreen.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 146
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleMenu.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 17
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleMenu.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 383
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleMenu.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 477
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 579
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 587
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "symbol": "operator",
+        "kind": "method",
+        "line": 613
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "symbol": "operator",
+        "kind": "method",
+        "line": 617
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/TextQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 23
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/TextQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 41
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/TriggerNewRoundPVPQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ChoosePokemonQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/QueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 35
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/CameraQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 100
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/CameraQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 116
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/CameraQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 132
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ScreenFadeQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 25
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/DisplayLevelUpQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/AnimationQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 25
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/LearnMovesQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 14
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/PlayMusicQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/PlaySoundQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/PlaySoundQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 16
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/SwitchPokemonQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 251
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleEntityQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 22
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleEntityQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 38
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleEntityQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 52
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/StartRoundQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/DelayQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/MathHPQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 21
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/MathHPQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 126
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/RoamingPokemonFledQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleMenuQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/AfterFaintQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/EndBattleQueryObject.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityMove.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 29
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAPlaySound.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityOpacity.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntitySetPosition.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityFaceRotate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BABackground.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityOscillateMove.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 25
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BACameraOscillateMove.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 23
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityTextureChange.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityColor.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BattleAnimation3D.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 36
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityRotate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 17
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityScale.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BACameraChangeAngle.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/RoamingPokemon.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/PokedexEntry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Pokemon.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 1353
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/PokemonInteractions.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 713
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/PokemonInteractions.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 765
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 68
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 75
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 122
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 173
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "symbol": "operator",
+        "kind": "method",
+        "line": 1030
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "symbol": "operator",
+        "kind": "method",
+        "line": 1034
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/QuickBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LevelBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/MoonBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LureBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/CherishBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/Pokeball.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/UltraBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/HealBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/FastBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/SportBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/TimerBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/DuskBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LoveBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/RepeatBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/SafariBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LuxuryBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/Masterball.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/HeavyBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/PremierBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/DiveBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/GreatBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/NestBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/FriendBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/NetBall.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/InsectPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/PixiePlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/SkyPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/ZapPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/DreadPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/DracoPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/IronPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/FlamePlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/SplashPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/MindPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/StonePlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/FistPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/SpookyPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/MeadowPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/EarthPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/ToxicPlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/IciclePlate.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/SailFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/CoverFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/RootFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedDino.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/SkullFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedFish.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/DomeFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedDrake.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/ClawFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/HelixFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedBird.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/ArmorFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/JawFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/PlumeFossil.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/OldAmber.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/DawnStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/ShinyStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/FireStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/LeafStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/SunStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/Everstone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/StickyRock.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/DuskStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/MoonStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/WaterStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/IceStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/BlackAurugite.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/ThunderStone.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/BlackAugurite.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/ItemAttribute.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/AirMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/HeartMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/WaveMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/GreetMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/SteelMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/ShadowMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/ReplyMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/InquiryMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/MechMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/GrassMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/TunnelMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/DreamMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailD.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/LikeMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/GlitterMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BloomMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/SnowMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailV.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/WoodMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailM.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/TropicMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/HarborMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/KolbenMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/FavoredMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/RetroMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/SpaceMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/MosaicMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/FabMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/RSVPMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/ThanksMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailT.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BeadMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailS.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/OrangeMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BrickMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BubbleMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/FlameMail.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KebiaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/BabiriBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/GanlonBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KelpsyBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChestoBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/HabanBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WepearBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChopleBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CobaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MagostBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PersimBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PamtreBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/JabocaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CustapBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RoseliBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/YacheBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/HondewBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RabutaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/GrepaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MicleBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/NanabBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LumBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/OccaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PomegBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/BelueBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/QualotBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/NomelBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PechaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/IapapaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PayapaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ShucaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PetayaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WacanBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/EnigmaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ApicotBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/StarfBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CheriBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LansatBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WikiBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/FigyBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/DurinBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/SpelonBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MagoBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/TangaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MarangaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LeppaBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/AspearBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RawstBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RazzBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ColburBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LiechiBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KasibBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PasshoBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChartiBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChilanBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CornnBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/BlukBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KeeBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WatmelBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/AguavBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RowapBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PinapBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/SalacBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RindoBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/SitrusBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/OranBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/TamatoBerry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/GemItem.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/PlateItem.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 16
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Vitamins/HPUp.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Vitamins/Protein.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Vitamins/Iron.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Vitamins/Calcium.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Vitamins/Carbos.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Vitamins/Zinc.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/GameModeItem.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 53
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berry.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 47
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/FossilItem.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 16
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/GuardSpec.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/XSpeed.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/XAttack.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/XAccuracy.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/DireHit.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/XSpDef.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/XSpAtk.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/XDefend.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM45.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM134.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM39.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM15.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM13.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM79.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM95.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM123.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/HM03.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM83.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM151.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM72.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM66.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM23.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM62.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM158.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM44.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM06.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM54.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM171.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM128.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM21.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM104.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM77.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM111.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/HM06.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM147.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM33.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM47.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM69.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM14.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM64.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM109.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM70.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM146.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM96.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM161.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM73.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/HM02.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM19.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM56.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM157.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM101.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM34.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM126.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM108.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM07.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM17.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM43.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM106.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM31.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM61.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM116.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM179.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM05.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM132.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM141.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM97.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM25.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM98.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM105.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM167.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM169.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM143.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM115.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM173.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM133.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM09.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM130.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM16.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM65.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM51.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM100.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM91.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM156.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM59.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM138.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM60.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM142.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM03.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM36.vb",
+        "symbol": "constructor",
+        "kind": "constructor",
+        "line": 8
+      }
+    ],
+    "contractNameCount": 389,
+    "contractTargets": [
+      {
+        "file": "P3D-Legacy/P3D/Resources/GameModeManager.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 361
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/GameModeManager.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 395
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/GameModeManager.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 1273
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/FontContainer.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 14
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/ContentPackManager.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 182
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 252
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 261
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 270
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 289
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Shader/BasicEffectWithAlphaTest.vb",
+        "label": "contains",
+        "target": "operator",
+        "line": 330
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Blur/GaussianBlur.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 27
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Blur/BlurHandler.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Blur/BlurHandler.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 30
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/SongContainer.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/MusicManager.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/SoundContainer.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 7
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Other/SignModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/WallModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/FloorModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/CeilingModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/BillModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/CrossModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/2D/DoubleFloorModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Steps/StepModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Steps/InsideStepModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Steps/OutsideStepModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Cliffs/CliffModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Cliffs/CliffCornerModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Cliffs/CliffInsideModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/CubeModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/BlockModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/StairsModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/SlideModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/InsideCornerModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/PyramidModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/CornerModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/DiagonalWallModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Models/Blocks/HalfDiagonalWallModel.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 5
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/HashSecureBase.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 51
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/FileValidation.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 163
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/KeyboardInput.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/KeyboardInput.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 361
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/SelectMenu.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 31
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/MessageBox.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Textbox.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 142
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Button.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 44
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Control.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 43
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Control.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 347
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/Trainer.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 58
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/Trainer.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 61
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleAnimationScreenV2.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 7
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleCameraV2.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleScreen.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 135
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleScreen.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 146
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleMenu.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 17
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleMenu.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 383
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/BattleMenu.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 477
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 579
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 587
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "label": "contains",
+        "target": "operator",
+        "line": 613
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/PokemonProfile.vb",
+        "label": "contains",
+        "target": "operator",
+        "line": 617
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/TextQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 23
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/TextQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 41
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/TriggerNewRoundPVPQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ChoosePokemonQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/QueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 35
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/CameraQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 100
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/CameraQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 116
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/CameraQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 132
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ScreenFadeQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 25
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/DisplayLevelUpQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/LearnMovesQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 14
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/PlayMusicQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/PlaySoundQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/PlaySoundQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 16
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/SwitchPokemonQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 251
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleEntityQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 22
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleEntityQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 38
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleEntityQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 52
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/StartRoundQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/DelayQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/MathHPQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 21
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/MathHPQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 126
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/RoamingPokemonFledQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/ToggleMenuQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/AfterFaintQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleSystemV2/QueryObjects/EndBattleQueryObject.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityMove.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 29
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAPlaySound.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityOpacity.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntitySetPosition.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityFaceRotate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BABackground.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 26
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityOscillateMove.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 25
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BACameraOscillateMove.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 23
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityTextureChange.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityColor.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BattleAnimation3D.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 36
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityRotate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 17
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BAEntityScale.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Battle/BattleAnimations/BACameraChangeAngle.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/RoamingPokemon.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/PokedexEntry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Pokemon.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 1353
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/PokemonInteractions.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 713
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/PokemonInteractions.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 765
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 68
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 75
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 122
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 173
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "label": "contains",
+        "target": "operator",
+        "line": 1030
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Monster/Element.vb",
+        "label": "contains",
+        "target": "operator",
+        "line": 1034
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/QuickBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LevelBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/MoonBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LureBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/CherishBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/Pokeball.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/UltraBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/HealBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/FastBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/SportBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/TimerBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/DuskBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LoveBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/RepeatBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/SafariBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/LuxuryBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/Masterball.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/HeavyBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/PremierBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/DiveBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/GreatBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 12
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/NestBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/FriendBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Balls/NetBall.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/InsectPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/PixiePlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/SkyPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/ZapPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/DreadPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/DracoPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/IronPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/FlamePlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/SplashPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/MindPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/StonePlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/FistPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/SpookyPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/MeadowPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/EarthPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/ToxicPlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Plates/IciclePlate.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/SailFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/CoverFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/RootFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedDino.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/SkullFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedFish.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/DomeFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedDrake.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/ClawFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/HelixFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/FossilizedBird.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/ArmorFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/JawFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/PlumeFossil.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Fossils/OldAmber.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/DawnStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/ShinyStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/FireStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/LeafStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/SunStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/Everstone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/StickyRock.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 13
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/DuskStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/MoonStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/WaterStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/IceStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/BlackAurugite.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/ThunderStone.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Stones/BlackAugurite.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/ItemAttribute.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/AirMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/HeartMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/WaveMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/GreetMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/SteelMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/ShadowMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/ReplyMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/InquiryMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/MechMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/GrassMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/TunnelMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/DreamMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailD.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/LikeMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/GlitterMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BloomMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/SnowMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailV.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/WoodMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailM.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/TropicMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/HarborMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/KolbenMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/FavoredMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/RetroMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/SpaceMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/MosaicMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/FabMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/RSVPMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/ThanksMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailT.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BeadMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BridgeMailS.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/OrangeMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BrickMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/BubbleMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Mail/FlameMail.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KebiaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/BabiriBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/GanlonBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KelpsyBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChestoBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/HabanBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WepearBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChopleBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CobaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MagostBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PersimBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PamtreBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/JabocaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CustapBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RoseliBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/YacheBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/HondewBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RabutaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/GrepaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MicleBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/NanabBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LumBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/OccaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PomegBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/BelueBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/QualotBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/NomelBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PechaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/IapapaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PayapaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ShucaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PetayaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WacanBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/EnigmaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ApicotBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/StarfBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CheriBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LansatBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WikiBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/FigyBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/DurinBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/SpelonBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MagoBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/TangaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/MarangaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LeppaBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/AspearBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RawstBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RazzBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ColburBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/LiechiBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KasibBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PasshoBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChartiBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/ChilanBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/CornnBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/BlukBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/KeeBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/WatmelBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/AguavBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RowapBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/PinapBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/SalacBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/RindoBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/SitrusBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/OranBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berries/TamatoBerry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 9
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/GemItem.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 15
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/PlateItem.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 16
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/GameModeItem.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 53
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Berry.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 47
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/FossilItem.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 16
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/GuardSpec.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/XItems/DireHit.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 11
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM45.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM134.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM39.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM15.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM13.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM79.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM95.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM123.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/HM03.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM83.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM151.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM72.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM66.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM23.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM62.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM158.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM44.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM06.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 10
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM54.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM171.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM128.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM21.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM104.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM77.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM111.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/HM06.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM147.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM33.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM47.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM69.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM14.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM64.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM109.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM70.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM146.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM96.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM161.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM73.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/HM02.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM19.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM56.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM157.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM101.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM34.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM126.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM108.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM07.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM17.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM43.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM106.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM31.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM61.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM116.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM179.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM05.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM132.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM141.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM97.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM25.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM98.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM105.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM167.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM169.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM143.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM115.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM173.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM133.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM09.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM130.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM16.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM65.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM51.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM100.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM91.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM156.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM59.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM138.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM60.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM142.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM03.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      },
+      {
+        "file": "P3D-Legacy/P3D/Pokemon/Items/Machines/TM36.vb",
+        "label": "contains",
+        "target": "constructor",
+        "line": 8
+      }
+    ],
+    "contractTargetCount": 376,
+    "parseErrors": [
+      {
+        "file": "P3D-Legacy/P3D/Resources/ContentPackManager.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/MusicManager.vb",
+        "error": "3 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Resources/Sound/SoundManager.vb",
+        "error": "15 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/HashSecureBase.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/HackerAlerts.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Security/FileValidation.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/My Project/AssemblyInfo.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Dialogues/ChooseBox.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Dialogues/TextBox.vb",
+        "error": "2 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Dialogues/ImageView.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Dialogues/PokemonImageView.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/KeyboardInput.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/Controls.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/ControllerHandler.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/KeyboardHandler.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/SelectMenu.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/MessageBox.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/ColorProvider.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/ControlList.vb",
+        "error": "1 parse error(s)"
+      },
+      {
+        "file": "P3D-Legacy/P3D/Input/UI/Controls/Textbox.vb",
+        "error": "1 parse error(s)"
+      }
+    ],
+    "parseErrorCount": 88
+  }
+]

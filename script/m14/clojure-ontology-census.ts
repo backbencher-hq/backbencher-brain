@@ -28,7 +28,7 @@
 // lookup, matching the analyzer's own zero-regex policy.
 //
 // Usage:
-//   BB_CORPUS=$HOME/fixtures/repositories BB_REPO=<repo> \
+//   BB_CORPUS=/home/ishaq2321/bb_tests/repositories BB_REPO=<repo> \
 //   BB_CORPUS_DIR=clj-kondo bun script/m14/clojure-ontology-census.ts
 //
 // Named `clojure-ontology-census.ts` to follow the tracked lane convention
@@ -39,8 +39,8 @@
 import { readdirSync, statSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
-const REPO = process.env.BB_REPO || "$HOME/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const REPO = process.env.BB_REPO || "/home/ishaq2321/backbencher-brain"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const DIR = process.env.BB_CORPUS_DIR || "clj-kondo"
 const LIMIT = Number(process.env.BB_LIMIT || 0) // 0 = whole population
 const EXT = [".clj", ".cljs", ".cljc"]

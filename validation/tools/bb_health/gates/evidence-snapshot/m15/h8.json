@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H8",
+  "code": "H8",
+  "tool": "bb_health",
+  "title": "mode coverage — status + refresh modes",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:16:40.891Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.337Z",
+    "contentSha256": "d7168c244cd006b7f3dd4b941c75eacad1f04b945457b270470a8a6d3504fafe"
+  }
+}

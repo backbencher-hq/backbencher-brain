@@ -1,0 +1,20 @@
+{
+  "fixtureDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+  "embeddingDisabled": true,
+  "indexMs": 314,
+  "counts": {
+    "files": 97,
+    "symbols": 3512,
+    "embeddingRows": 1185
+  },
+  "embeddingModels": [
+    {
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "rows": 1185
+    }
+  ],
+  "generatedAt": "2026-11-01T22:21:42.614Z"
+}

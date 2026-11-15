@@ -1,0 +1,130 @@
+{
+  "fixtureId": "php/enum-self-heritage",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Self-heritage is determined by namespace-qualified identity, not display-name equality. In Fixture\\EnumSelf, \\SelfQualified names a different global declaration. \\Fixture\\EnumSelf\\Separable is the enum itself and must be omitted. Bare self-references remain omitted. Native global/namespaced class, interface and enum controls live in verify-php-type-identities.mts.",
+  "expectSymbols": [
+    {
+      "name": "Fixture\\EnumSelf",
+      "kind": "namespace"
+    },
+    {
+      "name": "Marker",
+      "kind": "interface"
+    },
+    {
+      "name": "mark",
+      "kind": "method",
+      "ownerName": "Marker"
+    },
+    {
+      "name": "SelfQualified",
+      "kind": "enum",
+      "meta.superTypes": [
+        "SelfQualified"
+      ],
+      "note": "The leading backslash names a global interface, distinct from the namespaced enum."
+    },
+    {
+      "name": "A",
+      "kind": "enum_member",
+      "ownerName": "SelfQualified"
+    },
+    {
+      "name": "BareSelf",
+      "kind": "enum",
+      "meta.superTypes": null,
+      "note": "(2) bare self-reference on an enum"
+    },
+    {
+      "name": "B",
+      "kind": "enum_member",
+      "ownerName": "BareSelf"
+    },
+    {
+      "name": "BareSelfClass",
+      "kind": "class",
+      "meta.superTypes": null,
+      "note": "(3) the same rule on a class: invalid PHP, and the graph must not answer it with a self-loop"
+    },
+    {
+      "name": "BareSelfIface",
+      "kind": "interface",
+      "meta.superTypes": null,
+      "note": "(3) and on an interface"
+    },
+    {
+      "name": "Honest",
+      "kind": "enum",
+      "meta.superTypes": [
+        "Marker"
+      ],
+      "note": "(4) CONTROL: a real interface, so the edge and the payload must both exist"
+    },
+    {
+      "name": "C",
+      "kind": "enum_member",
+      "ownerName": "Honest"
+    },
+    {
+      "name": "mark",
+      "kind": "method",
+      "ownerName": "Honest"
+    },
+    {
+      "name": "Separable",
+      "kind": "enum",
+      "meta.superTypes": null,
+      "note": "The fully qualified spelling is this enum itself; no heritage is published."
+    },
+    {
+      "name": "D",
+      "kind": "enum_member",
+      "ownerName": "Separable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "Honest",
+      "target": "Marker",
+      "note": "(4) the control edge: it separates 'skips self-reference' from 'skips heritage'"
+    },
+    {
+      "type": "implements",
+      "source": "SelfQualified",
+      "target": "SelfQualified",
+      "meta.targetIdentity": "selfqualified"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "source": "BareSelf",
+      "target": "BareSelf",
+      "note": "(2) the bare spelling on an enum"
+    },
+    {
+      "type": "implements",
+      "source": "BareSelfClass",
+      "target": "BareSelfClass",
+      "note": "(3) and on a class"
+    },
+    {
+      "type": "extends",
+      "source": "BareSelfIface",
+      "target": "BareSelfIface",
+      "note": "(3) and an interface extending itself"
+    },
+    {
+      "type": "extends",
+      "target": "BareSelfIface",
+      "note": "the same strength for the interface's self-extends"
+    },
+    {
+      "type": "implements",
+      "source": "Separable",
+      "note": "The target is the exact qualified identity of the enum itself."
+    }
+  ]
+}

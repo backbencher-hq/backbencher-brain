@@ -1,0 +1,20 @@
+{
+  "gate": "M54.X1",
+  "issue": 729,
+  "milestone": "M54",
+  "at": "2026-10-15T06:58:27.497Z",
+  "commit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+  "checks": 15,
+  "passed": 10,
+  "failed": 5,
+  "verifierCommand": "npx tsx script/m54/verify-closure.ts",
+  "status": "known-gap",
+  "downstream": {
+    "m21.D2": true,
+    "m51.A1": true,
+    "m51.A2": true,
+    "m13.H3": false,
+    "m21.R2": false,
+    "m52.V1": false
+  }
+}

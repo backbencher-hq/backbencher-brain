@@ -1,0 +1,144 @@
+{
+  "fixtureId": "php/line-contract",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 (#929) — the M59.A7 / R6 line base, asserted once per LABEL rather than once per lane. The completion matrix's `lines` cell is defined as 'line_number alive (M59.A7)', i.e. whether the field is written ANYWHERE, and php satisfied it with a single label: `references`, added 2026-09-22 by the R9 declared-type graph. MEASURED with script/m60/lane-surface-audit.ts over php's two pinned corpora (phpunit + phpmyadmin): 2,123 of 2,418 edges (87.8%) carried no line_number — every label except `references` — while the cell read PASS. Three instruments were blind to it, each for its own reason: the differential matches on (label, from, target) and never compares lines, so a gap present on BOTH sides is invisible by construction and php's lane is clean at full 2,907-file extent; M60.P1 asks `alive`, not coverage; and php's twelve fixtures pinned a line on two labels in total (both `references`). The cell definition was the bug, not just the analyzer. This fixture closes the analyzer half by naming, for each label, the node that NAMES the edge, and pinning its line: the base clause for extends/implements, the trait name for a trait use, the declared member for contains, the member name for a read, the callee for calls, the constructed class name for instantiates, the overriding method for overrides, the static path for a reference. Every pin is HAND-DERIVED from the source's own line map (written above the code) and then run; the accompanying reverting mutant php/lines-dropped is what proves the pins can fail. The mirror half — strengthening the `lines` cell from `alive` to coverage — is owed to the matrix and is NOT done here.",
+  "expectSymbols": [
+    {
+      "name": "Named",
+      "kind": "trait"
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "ownerName": "Named"
+    },
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "area",
+      "kind": "method",
+      "ownerName": "Shape"
+    },
+    {
+      "name": "Figure",
+      "kind": "class"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "ownerName": "Figure"
+    },
+    {
+      "name": "Circle",
+      "kind": "class"
+    },
+    {
+      "name": "build",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "Figure",
+      "target": "Shape",
+      "line_number": 25,
+      "comment": "the base clause names it: `abstract class Figure implements Shape` (line 25)"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Figure",
+      "target": "Named",
+      "meta.isTraitUse": true,
+      "line_number": 27,
+      "comment": "the trait name in `use Named;` (line 27) — a `mixes_in` row since 2026-10-23 (relabelled from `uses` at R3, 1:1); the line rule is unchanged, which is the point of this fixture"
+    },
+    {
+      "type": "contains",
+      "source": "Figure",
+      "target": "title",
+      "line_number": 29,
+      "comment": "the declared property `public string $title` (line 29)"
+    },
+    {
+      "type": "contains",
+      "source": "Figure",
+      "target": "area",
+      "line_number": 31,
+      "comment": "the declared method `public function area()` (line 31)"
+    },
+    {
+      "type": "uses",
+      "target": "width",
+      "meta.isMemberRead": true,
+      "line_number": 33,
+      "comment": "the member NAME in `$this->width`, not the statement (line 33)"
+    },
+    {
+      "type": "extends",
+      "source": "Circle",
+      "target": "Figure",
+      "line_number": 38,
+      "comment": "the base clause in `class Circle extends Figure` (line 38)"
+    },
+    {
+      "type": "contains",
+      "source": "Circle",
+      "target": "area",
+      "line_number": 40,
+      "comment": "the overriding method's own declaration (line 40)"
+    },
+    {
+      "type": "overrides",
+      "source": "Circle.area",
+      "target": "Figure.area",
+      "line_number": 40,
+      "comment": "the overriding METHOD, not the base it shadows (line 40)"
+    },
+    {
+      "type": "uses",
+      "target": "radius",
+      "meta.isMemberRead": true,
+      "line_number": 42,
+      "comment": "the member NAME in `$this->radius` (line 42)"
+    },
+    {
+      "type": "part_of",
+      "targetEndsWith": "autoload.php",
+      "meta.partRole": "library",
+      "line_number": 49,
+      "comment": "the static path in `include_once 'vendor/autoload.php'` (line 49) — a `part_of` row since 2026-10-23 (relabelled from `imports` at R3: a file-level directive that names a path and creates no module binding), and `partRole: \"library\"` because php has only the host form of the two Dart roles"
+    },
+    {
+      "type": "instantiates",
+      "source": "build",
+      "target": "Circle",
+      "line_number": 50,
+      "comment": "the constructed class name in `new Circle()` (line 50)"
+    },
+    {
+      "type": "calls",
+      "source": "build",
+      "target": "area",
+      "line_number": 51,
+      "comment": "the callee NAME in `$shape->area()` (line 51)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "source": "Figure",
+      "line_number": 26,
+      "comment": "the class header's brace line is NOT the node that names the implements edge"
+    },
+    {
+      "type": "extends",
+      "source": "Circle",
+      "line_number": 1,
+      "comment": "the file's first line never names an inheritance edge (the M59 fabricated-0 class)"
+    }
+  ]
+}

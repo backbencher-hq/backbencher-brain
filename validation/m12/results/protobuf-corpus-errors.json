@@ -5,7 +5,7 @@
   "corpus": "pb-reference",
   "corpusRepo": "protobuf-reference",
   "corpusUrl": "https://github.com/protocolbuffers/protobuf",
-  "corpusPath": "$HOME/fixtures/protobuf/repos/pb-reference",
+  "corpusPath": "/home/ishaq2321/bb_tests/protobuf/repos/pb-reference",
   "revision": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
   "currentCommit": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
   "extensions": [

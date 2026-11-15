@@ -1,0 +1,134 @@
+{
+  "analyzer": "html",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "corpusRepo": "svelte",
+  "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+  "extensions": [
+    "*.html",
+    "*.htm"
+  ],
+  "mode": "full-corpus",
+  "trackedFilesInCorpus": 246,
+  "measuredFiles": 246,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 8,
+  "cleanFiles": 238,
+  "missingNodeFiles": 0,
+  "errorNodeFiles": 8,
+  "errorRates": {
+    "any": 3.3,
+    "missing": 0,
+    "error": 3.3
+  },
+  "grammarErrorFiles": 8,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 550,
+  "missingTokens": {},
+  "errorLineSignatures": {
+    "<!--[--><ID><ID>ID&ID;/ID>&ID;ID>ID(ID)&ID;/ID>&ID;ID>ID</ID><ID>ID: I": 16,
+    "<!--[--><ID ID=ID>&ID;ID>ID(ID)&ID;/ID></ID> <ID ID=ID>&ID;ID>ID(ID)&I": 10,
+    "<!----><ID><ID>ID</ID><!----></ID><!----> <ID><ID>ID</ID><!----></ID>": 4,
+    "<!ID:0>": 4,
+    "ID<ID><ID>ID ID!!!\\ID/</ID></ID>ID": 3,
+    "<ID ID=ID>--!>&ID;ID ID=ID ID=ID(1)>&ID;!--</ID>": 2,
+    "<ID ID=ID>-->&ID;ID ID=ID ID=ID(1)>&ID;!--</ID>": 2,
+    "<!--[--><!----><ID ><!----><ID ><!----></ID><!----><!----></ID><!---->": 2
+  },
+  "firstErrorLineSignatures": {
+    "<!----><ID><ID>ID</ID><!----></ID><!----> <ID><ID>ID</ID><!----></ID>": 1,
+    "<ID ID=ID>--!>&ID;ID ID=ID ID=ID(1)>&ID;!--</ID>": 1,
+    "<ID ID=ID>-->&ID;ID ID=ID ID=ID(1)>&ID;!--</ID>": 1,
+    "<!--[--><ID ID=ID>&ID;ID>ID(ID)&ID;/ID></ID> <ID ID=ID>&ID;ID>ID(ID)&I": 1,
+    "<!ID:0>": 1,
+    "<!--[--><!----><ID ><!----><ID ><!----></ID><!----><!----></ID><!---->": 1,
+    "<!--[--><ID><ID>ID&ID;/ID>&ID;ID>ID(ID)&ID;/ID>&ID;ID>ID</ID><ID>ID: I": 1,
+    "ID<ID><ID>ID ID!!!\\ID/</ID></ID>ID": 1
+  },
+  "errorFileList": [
+    {
+      "file": "packages/svelte/tests/hydration/samples/raw-repair/_expected.html",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<!----><p><p>invalid</p><!----></p><!----> <p><p>invalid</p><!----></p>",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/boundary-error-html-comment-close-bang-escape/_expected.html",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<p class=\"error\">--!>&lt;img src=x onerror=alert(1)>&lt;!--</p>",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/boundary-error-html-comment-escape/_expected.html",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<p class=\"error\">-->&lt;img src=x onerror=alert(1)>&lt;!--</p>",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/contenteditable-bindings-escaped/_expected.html",
+      "nodes": 10,
+      "missingTokens": [],
+      "errorNodes": 10,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<!--[--><div contenteditable=\"\">&lt;script>alert('pwnd')&lt;/script></div> <div contenteditable=\"\">&lt;script>alert('pwn",
+      "pipelineErrors": 20
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/head-meta-hydrate-duplicate/_expected_head.html",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 6,
+      "firstKind": "ERROR",
+      "firstLine": "<!ssr:0>",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/invalid-nested-svelte-element/_expected.html",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<!--[--><!----><p ><!----><p ><!----></p><!----><!----></p><!----><!--]-->",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/option-body-escaped/_expected.html",
+      "nodes": 16,
+      "missingTokens": [],
+      "errorNodes": 16,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<!--[--><select><option>a&lt;/option>&lt;script>alert(\"pwnd\")&lt;/script>&lt;option>puppa</option><option>selected: a&lt",
+      "pipelineErrors": 32
+    },
+    {
+      "file": "packages/svelte/tests/server-side-rendering/samples/raw-mustaches/_expected.html",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "before<span><em>raw html!!!\\o/</span></em>after",
+      "pipelineErrors": 6
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

@@ -1,7 +1,7 @@
 # VENDORED external artifacts — provenance and how to run them
 
 Files here were authored on this machine **outside** the repository, under
-`$HOME/fixtures/`, and are cited by name from lane documentation in
+`/home/ishaq2321/bb_tests/`, and are cited by name from lane documentation in
 this repo. They were moved in on 2026-10-01 so that the repository is the one
 place the work lives, rather than a laptop-local path that stops existing the
 moment the laptop does.
@@ -11,9 +11,9 @@ verified with `cmp` at the moment of the move (36 files, 0 mismatches).
 
 ## Why these and not others
 
-The repository cites `$HOME/fixtures/…` from 45 `.md` files. Most of
+The repository cites `/home/ishaq2321/bb_tests/…` from 45 `.md` files. Most of
 those citations are **corpora** (`repositories/`, `hcl/`, `nim/…` clones) or
-**tool installs** (`fixtures/bin/`) — all of which are meant to be re-fetched, and
+**tool installs** (`bb_tests/bin/`) — all of which are meant to be re-fetched, and
 none of which is work product. What follows is the subset that is genuinely
 irreplaceable: measured patches, measurement outputs, probes and repro fixtures
 that no other clone can produce.
@@ -22,9 +22,9 @@ that no other clone can produce.
 
 | file | was at | bytes |
 |---|---|---|
-| `0001-nim-dopragma.patch` | `fixtures/nim/out/` | 2,481 |
-| `damage-census.txt` | `fixtures/nim/out/` | 5,785 |
-| `damage-classes.txt` | `fixtures/nim/out/` | 789 |
+| `0001-nim-dopragma.patch` | `bb_tests/nim/out/` | 2,481 |
+| `damage-census.txt` | `bb_tests/nim/out/` | 5,785 |
+| `damage-classes.txt` | `bb_tests/nim/out/` | 789 |
 
 The patch adds a `do_pragma_expression` production for Nim's `expr.#[ … ].#`. It
 was written 2026-09-27 and **measured on 2026-09-28 against the whole pinned
@@ -49,13 +49,13 @@ build artefact of the rejected patch, and this repository gitignores
 
 | file | was at | bytes |
 |---|---|---|
-| `grammar-gate.sh` | `fixtures/grammar-repro/` | 2,598 |
-| `repair-loop.sh` | `fixtures/grammar-repro/` | 2,215 |
-| `grammar-floor.json` | `fixtures/validation/` | 2,367 |
-| `repro-cases/*.vb` (27) | `fixtures/grammar-repro/cases/` | 112 KB |
+| `grammar-gate.sh` | `bb_tests/grammar-repro/` | 2,598 |
+| `repair-loop.sh` | `bb_tests/grammar-repro/` | 2,215 |
+| `grammar-floor.json` | `bb_tests/validation/` | 2,367 |
+| `repro-cases/*.vb` (27) | `bb_tests/grammar-repro/cases/` | 112 KB |
 
 **These now run from the repository.** They did not when first vendored: all four
-resolved paths from `$HOME/…`, so a clone could not execute them at
+resolved paths from `/home/ishaq2321/…`, so a clone could not execute them at
 all. They now derive `ROOT` from their own location, and every remaining absolute
 path is an `env`-overridable default (`BB_REPO`, `BB_VB_CORPUS`, `BB_VB_BIN`,
 `BB_CORE_WASM`, `VB_WASM`, `OUT`, `BB_VB_CANDIDATE`, `BB_VB_BUILDLOG`).
@@ -115,7 +115,7 @@ against. That hash still matches the wired `wasm/tree-sitter-vbnet.wasm`
 
 `boundary-truncate.ts`, `defect-census.ts`, `gate-compare.py`,
 `grammar-bakeoff.ts`, `grammar-baseline.ts`, `grammar-cases.ts`,
-`vb-analyzer-e2e.ts`, `vb-source.ts` — from `fixtures/probes/`, 49 KB total. These are the instruments
+`vb-analyzer-e2e.ts`, `vb-source.ts` — from `bb_tests/probes/`, 49 KB total. These are the instruments
 that produced the VB lane's numbers, and `reviews/vb/master-review.md` cites them
 as the evidence for specific claims (the defect-class ranking, the end-to-end pass
 through the production entry point, the bakeoff against other grammars). They are

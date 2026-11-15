@@ -1,0 +1,26 @@
+{
+  "fixtureId": "cpp/macro-heading-owner-range",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D14: an owner symbol's range must span the edges it owns. The analyzer's macro-heading recovery built its range from the HEADING node — the macro invocation — and on the measured nlohmann-json shape (`tests/src/unit-class_const_iterator.cpp:14-15`, where TEST_CASE's opening brace sits on its OWN LINE rather than beside the invocation) that node ends at the heading line while the recovered function_definition, and every edge its body emits, runs on to the closing brace hundreds of lines later. MEASURED corpus-wide at HEAD: 39,787 macro-heading edges outside their owner's range across 1,076 offending symbols, of 234,111 owner-checkable edges; after the fix, 0. On the unit-class_const_iterator site itself the register reported `TEST_CASE(\"const_iterator class\")@15-15<-226`. This pin takes that shape. The `same line` block is the CONTROL and the reason this is not a one-sided pin: when the brace is on the same line as the invocation the heading node and the recovered definition coincide, so the range was already correct at HEAD, and a 'fix' that simply widened every macro heading to some fixed number of lines would pass the defect case and be caught by nothing here. The `deep` block pins that the range follows the definition to its true closing brace rather than stopping at one nesting level — the corpus residual of 21 offending symbols was concentrated in deeply nested SECTION blocks (nlohmann-json `unit-iterators2.cpp` `SECTION(\"addition and subtraction\")@251-382` carrying 112 out-of-range edges). expectSymbolRanges is used rather than a line count because the defect IS the range: asserting only that a symbol exists would pass at HEAD, since HEAD published all three.",
+  "expectSymbolRanges": [
+    { "symbol": "TEST_CASE(\"outer\")", "startLine": 23, "endLine": 30 },
+    { "symbol": "TEST_CASE(\"same line\")", "startLine": 37, "endLine": 41 },
+    { "symbol": "TEST_CASE(\"deep\")", "startLine": 45, "endLine": 57 }
+  ],
+  "expectSymbols": [
+    { "name": "TEST_CASE(\"outer\")", "kind": "function" },
+    { "name": "TEST_CASE(\"same line\")", "kind": "function" },
+    { "name": "TEST_CASE(\"deep\")", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "TEST_CASE(\"outer\")", "target": "SECTION" },
+    { "type": "calls", "from": "TEST_CASE(\"outer\")", "target": "helper" },
+    { "type": "calls", "from": "TEST_CASE(\"outer\")", "target": "consume" },
+    { "type": "calls", "from": "TEST_CASE(\"same line\")", "target": "helper" },
+    { "type": "calls", "from": "TEST_CASE(\"same line\")", "target": "consume" },
+    { "type": "calls", "from": "TEST_CASE(\"deep\")", "target": "SECTION" },
+    { "type": "calls", "from": "TEST_CASE(\"deep\")", "target": "helper" },
+    { "type": "calls", "from": "TEST_CASE(\"deep\")", "target": "consume" }
+  ]
+}

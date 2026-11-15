@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/complexity-sol18.sol",
+  "authoredFrom": "SOL-18 \u2014 per-symbol complexity and `ownerKind`. Authored 2026-09-30 from the analyzer's measured output. Before SOL-18 every Solidity symbol reported complexity 1: `pool-worker.ts` defaults to `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither, so the field was populated across the whole corpus with a constant that reads as a measurement. Over 389 files it now reaches 25, with 690 symbols above 1.",
+  "note": "Complexity is attributed through the FRAME stack as the walk proceeds \u2014 one increment per branch node, no second traversal per declaration, which is the cost the TypeScript lane measured and removed. The bug this fixture exists to pin was silent: `declareSymbol` CALLED `pushSymbol` and discarded the result, so every frame carried `sym: null`, the exit branch had nothing to write to, and `symbolsWithComplexity` was 0 \u2014 a feature that measured nothing while still reporting the pool-worker's default of 1. `straight` is the shape that makes a measured 1 distinguishable from a defaulted 1. `loopAndTernary` pins the counting rule: `else` is PART of `if_statement` in this grammar, so an if/else pair is ONE branch, and a rule counting the two keywords separately would report 4 here. `oneBranch` shows a modifier body counting its own branches. `ownerKind` is pinned on the INTERFACE and LIBRARY members as well as the contract's, because a member of a library reporting `contract` would be a plausible-looking wrong answer. `fromLibrary` was pinned as `contract` when this fixture was first written \u2014 a bug in SOL-18 itself: `declareSymbol` maps BOTH `contract_declaration` and `library_declaration` to `SymbolKind.Class`, so deriving ownerKind from the Kind reported every library member as a contract member. Found by reading `contracts/utils/Strings.sol` back, not by any gate, and it is the second time in two commits that a `SymbolKind` collapse has cost a real distinction: the first was `return_parameter` vs `parameter`.",
+  "expectSymbols": [
+    {
+      "name": "twoBranches",
+      "kind": "method",
+      "ownerName": "Base",
+      "complexity": 3,
+      "ownerKind": "contract"
+    },
+    {
+      "name": "straight",
+      "kind": "method",
+      "ownerName": "Derived",
+      "complexity": 1,
+      "ownerKind": "contract"
+    },
+    {
+      "name": "loopAndTernary",
+      "kind": "method",
+      "ownerName": "Derived",
+      "complexity": 3,
+      "ownerKind": "contract"
+    },
+    {
+      "name": "oneBranch",
+      "kind": "method",
+      "ownerName": "Derived",
+      "complexity": 2,
+      "ownerKind": "contract"
+    },
+    {
+      "name": "gated",
+      "kind": "method",
+      "ownerName": "Derived",
+      "complexity": 1,
+      "ownerKind": "contract"
+    },
+    {
+      "name": "external1",
+      "kind": "method",
+      "ownerName": "IThing",
+      "complexity": 1,
+      "ownerKind": "interface"
+    },
+    {
+      "name": "fromLibrary",
+      "kind": "method",
+      "ownerName": "Lib",
+      "complexity": 1,
+      "ownerKind": "library"
+    },
+    {
+      "name": "i",
+      "kind": "variable",
+      "ownerKind": null,
+      "comment": "A local variable's owner is the FUNCTION, not a type, so `ownerKind` must be ABSENT. `forbidSymbols` was the wrong instrument for this \u2014 it asserts the symbol does not exist at all, and `i` exists; the right home is an `expectSymbols` row with a null value, which reads as 'this field must be absent or null'. A rule that fell back to the enclosing declaration would report 'contract' here."
+    }
+  ]
+}

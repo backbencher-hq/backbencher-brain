@@ -1,0 +1,5 @@
+# The negative twin: a tag whose name merely CONTAINS "include" is not an include, and
+# a local tag with a spaced value is a value rather than a filename.
+steps:
+  - !included_decoration free text
+  - !include_real value

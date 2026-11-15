@@ -1,0 +1,694 @@
+{
+  "analyzer": "bash",
+  "gate": "M12.bash-node-types",
+  "title": "Every node type occurring in a real corpus is classified; every consulted literal exists in the pinned grammar; every unconsulted name-carrier's loss is measured",
+  "instrument": {
+    "file": "script/m12/bash-node-types-compare.ts",
+    "replaces": "script/m12/bash-node-types-legacy-inventory.ts",
+    "reason": "the retired instrument hardcoded its 35-entry 'referenced' list instead of measuring it, and never computed observed\\referenced, so it could not fail and hid 21 unclassified corpus node types",
+    "authorities": {
+      "grammar": "Language.load(wasm/tree-sitter-bash.wasm) nodeTypeForId — the same oracle F1 uses; no node-type list is written in this file",
+      "source": "analyzer string literals at node-type positions, extracted by parsing src/ast/real-bash-analyzer.ts with the tree-sitter TypeScript grammar (the F1 method, not a regex)",
+      "corpus": "pinned git revisions read with `git show HEAD:<path>`, so the bytes measured are the committed bytes",
+      "loss": "production parseFile edge endpoints compared against the names inside each unconsulted name-carrier"
+    },
+    "noHardcodedNodeTypeList": true,
+    "selfAudit": "This instrument carried three defects of its own before it was trusted, all of the species it exists to catch: (1) it hardcoded its referenced list; (2) it attributed a name-bearing node to its own type instead of to its nearest non-carrier ancestor, which made every container look empty and the gap count structurally zero; (3) it iterated OBSERVED types to find dead branches, so a literal the grammar cannot produce - which by definition never appears in a tree - was invisible, and it reported unknown_type 0 while F1 was reporting bash's `identifier` dead branch. Each was found by a number that contradicted an independent measurement, not by inspection. The reasons are recorded here and in the commit so the next reader does not re-add them."
+  },
+  "corpus": [
+    {
+      "corpus": "/home/ishaq2321/bb_tests/repositories/fsharp",
+      "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "files": 32
+    }
+  ],
+  "fixtureFiles": [
+    "Common.sh",
+    "Deploy.sh",
+    "Negative.sh"
+  ],
+  "inputFiles": 35,
+  "grammarNodeTypeCount": 280,
+  "observedNodeTypeCount": 56,
+  "observedNodeTypeCountAllNodes": 124,
+  "anonymousTokenCount": 68,
+  "anonymousTokenOccurrences": {
+    "\"": 4227,
+    "$": 1850,
+    "=": 1248,
+    ")": 571,
+    ";": 472,
+    "then": 383,
+    "}": 359,
+    "fi": 348,
+    "if": 348,
+    "]]": 314,
+    "[[": 314,
+    "${": 274,
+    ";;": 241,
+    "$(": 233,
+    "|": 184,
+    "]": 156,
+    "[": 156,
+    "local": 153,
+    "&&": 114,
+    "==": 113,
+    "+=": 102,
+    "(": 94,
+    "{": 86,
+    "else": 74,
+    "!=": 66,
+    "done": 64,
+    "do": 64,
+    ":-": 64,
+    "in": 52,
+    ">": 51,
+    "function": 43,
+    "while": 42,
+    "!": 41,
+    "||": 41,
+    "/": 37,
+    "elif": 35,
+    "esac": 31,
+    "case": 31,
+    "))": 23,
+    "for": 22,
+    ">&": 21,
+    "`": 20,
+    "export": 19,
+    "//": 14,
+    "((": 13,
+    "+": 11,
+    "$((": 10,
+    "&>": 9,
+    "=~": 8,
+    "#": 7,
+    "-": 7,
+    "/#": 6,
+    "%%": 6,
+    "<": 4,
+    "%": 4,
+    "unset": 4,
+    "<<<": 3,
+    "<<": 3,
+    ":=": 3,
+    ":": 3,
+    "##": 2,
+    "++": 2,
+    "*": 2,
+    "readonly": 1,
+    ":+": 1,
+    "<(": 1,
+    "declare": 1,
+    "**": 1
+  },
+  "sourceTypeRefCount": 33,
+  "sourceTypeRefs": {
+    "arithmetic_expansion": 2,
+    "array": 1,
+    "binary_expression": 1,
+    "c_style_for_statement": 2,
+    "case_item": 1,
+    "command": 2,
+    "command_name": 4,
+    "command_substitution": 2,
+    "compound_statement": 2,
+    "concatenation": 5,
+    "declaration_command": 2,
+    "elif_clause": 1,
+    "ERROR": 2,
+    "expansion": 2,
+    "for_statement": 1,
+    "function_definition": 3,
+    "if_statement": 1,
+    "list": 1,
+    "pipeline": 2,
+    "postfix_expression": 1,
+    "process_substitution": 1,
+    "program": 1,
+    "raw_string": 3,
+    "simple_expansion": 3,
+    "special_variable_name": 1,
+    "string": 4,
+    "subscript": 1,
+    "subshell": 1,
+    "test_command": 1,
+    "variable_assignment": 3,
+    "variable_name": 8,
+    "while_statement": 1,
+    "word": 17
+  },
+  "consultedButNotObserved": [],
+  "counts": {
+    "handled_verified": 33,
+    "internal_silent": 22,
+    "gap": 1,
+    "dead_branch": 0
+  },
+  "deadBranchLiterals": [],
+  "crossValidation": {
+    "against": "validation/m14/results/M14.0.F1.json (script/m14/audit-analyzer-grammar.ts)",
+    "f1ReferencedTypeLiterals": 33,
+    "f1UnknownNodeTypes": [],
+    "thisInstrumentSourceTypeRefs": 33,
+    "countsAgree": true,
+    "note": "F1 counts every node-type literal in the analyzer; this instrument counts the same population by a separate TypeScript-AST walk. A disagreement means one extraction is wrong, so the gate refuses to pass rather than publishing either number alone."
+  },
+  "gaps": [
+    {
+      "type": "unset_command",
+      "occurrences": 4,
+      "identifierCarriers": 4,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "gap",
+      "unmeasuredNames": 0
+    }
+  ],
+  "totalUnmeasuredNames": 0,
+  "unmeasuredSamples": {},
+  "errorNodesByType": {
+    "ERROR": 1,
+    "}": 2
+  },
+  "rows": [
+    {
+      "type": "ansi_c_string",
+      "occurrences": 5,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "arithmetic_expansion",
+      "occurrences": 10,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "array",
+      "occurrences": 39,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "binary_expression",
+      "occurrences": 320,
+      "identifierCarriers": 8,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "c_style_for_statement",
+      "occurrences": 1,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "case_item",
+      "occurrences": 243,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "case_statement",
+      "occurrences": 31,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "command",
+      "occurrences": 1585,
+      "identifierCarriers": 3122,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "command_name",
+      "occurrences": 1586,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 4,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "command_substitution",
+      "occurrences": 243,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "comment",
+      "occurrences": 480,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "compound_statement",
+      "occurrences": 97,
+      "identifierCarriers": 6,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "concatenation",
+      "occurrences": 150,
+      "identifierCarriers": 1,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 5,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "declaration_command",
+      "occurrences": 174,
+      "identifierCarriers": 14,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "do_group",
+      "occurrences": 64,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "elif_clause",
+      "occurrences": 35,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "else_clause",
+      "occurrences": 74,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "ERROR",
+      "occurrences": 1,
+      "identifierCarriers": 2,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "expansion",
+      "occurrences": 274,
+      "identifierCarriers": 221,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "extglob_pattern",
+      "occurrences": 213,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "file_descriptor",
+      "occurrences": 27,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "file_redirect",
+      "occurrences": 76,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "for_statement",
+      "occurrences": 21,
+      "identifierCarriers": 21,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "function_definition",
+      "occurrences": 74,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 3,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "heredoc_body",
+      "occurrences": 3,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "heredoc_content",
+      "occurrences": 1,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "heredoc_end",
+      "occurrences": 3,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "heredoc_redirect",
+      "occurrences": 3,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "heredoc_start",
+      "occurrences": 3,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "herestring_redirect",
+      "occurrences": 3,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "if_statement",
+      "occurrences": 348,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "list",
+      "occurrences": 134,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "negated_command",
+      "occurrences": 17,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "number",
+      "occurrences": 381,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "parenthesized_expression",
+      "occurrences": 6,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "pipeline",
+      "occurrences": 80,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 2,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "postfix_expression",
+      "occurrences": 2,
+      "identifierCarriers": 1,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "process_substitution",
+      "occurrences": 1,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "program",
+      "occurrences": 35,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "raw_string",
+      "occurrences": 151,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 3,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "redirected_statement",
+      "occurrences": 74,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "regex",
+      "occurrences": 55,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "simple_expansion",
+      "occurrences": 1844,
+      "identifierCarriers": 1844,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 3,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "special_variable_name",
+      "occurrences": 95,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "string",
+      "occurrences": 2113,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 4,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "string_content",
+      "occurrences": 1284,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "subscript",
+      "occurrences": 53,
+      "identifierCarriers": 53,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "subshell",
+      "occurrences": 12,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "test_command",
+      "occurrences": 417,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "test_operator",
+      "occurrences": 203,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "unary_expression",
+      "occurrences": 183,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "internal_silent"
+    },
+    {
+      "type": "unset_command",
+      "occurrences": 4,
+      "identifierCarriers": 4,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 0,
+      "classification": "gap",
+      "unmeasuredNames": 0
+    },
+    {
+      "type": "variable_assignment",
+      "occurrences": 1309,
+      "identifierCarriers": 1309,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 3,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "variable_name",
+      "occurrences": 3387,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 8,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "while_statement",
+      "occurrences": 42,
+      "identifierCarriers": 0,
+      "literalWords": 0,
+      "inGrammar": true,
+      "consultedInSource": 1,
+      "classification": "handled_verified"
+    },
+    {
+      "type": "word",
+      "occurrences": 3413,
+      "identifierCarriers": 0,
+      "literalWords": 1875,
+      "inGrammar": true,
+      "consultedInSource": 17,
+      "classification": "handled_verified"
+    }
+  ],
+  "legacyComparison": {
+    "note": "the retired instrument's own numbers, kept so the change is auditable rather than a silent replacement",
+    "legacyLiveReferenced": 35,
+    "legacyDeadDefensive": 0,
+    "legacyObservedNodeTypeCount": 56,
+    "legacyWalkedNamedChildrenOnly": true,
+    "measuredSourceRefs": 33,
+    "inflationOfLegacyInventory": 2,
+    "unclassifiedThenUnreported": 21
+  },
+  "policy": "Every NAMED node type occurring in the pinned corpora or the fixtures is classified into handled_verified / internal_silent / gap / unknown_type from two independent authorities: the wasm grammar's own node-type table and the analyzer source's type-position literals. A name-bearing node is attributed to its nearest non-carrier ancestor, so a `gap` is a structural type that OWNS names the analyzer never reaches. Anonymous grammar tokens are terminals with no extraction semantics; they are counted in `anonymousTokenOccurrences` and excluded from the classification universe rather than inflating it. The count of names inside each gap for which no edge was emitted is measured, not asserted. The gate is red whenever an unknown_type exists (a consulted literal the grammar does not have - a branch that can never fire), whenever any gap exists, or whenever totalUnmeasuredNames > 0.",
+  "passed": true
+}

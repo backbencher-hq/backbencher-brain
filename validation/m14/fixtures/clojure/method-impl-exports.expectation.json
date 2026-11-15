@@ -1,0 +1,56 @@
+{
+  "issue": "A1",
+  "note": "A1 (task-35 Part B): a METHOD IMPLEMENTATION is not a namespace-level definition. `defmethod` impl symbols carry metadata.isMethodImpl and record/type/proxy/reify impls carry isProtocolMethodImpl; the export pass now skips both. Two-direction: real namespace-level definitions (record/defmulti/defn) KEEP their exports, and the impl members keep their legitimate CONTAINS rows (they are members, not namespace vars).",
+  "expectSymbols": [
+    {
+      "name": "Box",
+      "kind": "class"
+    },
+    {
+      "name": "impl-target",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "fixture.method-impl-exports",
+      "target": "Box",
+      "line_number": 13
+    },
+    {
+      "type": "exports",
+      "from": "fixture.method-impl-exports",
+      "target": "render",
+      "line_number": 15
+    },
+    {
+      "type": "exports",
+      "from": "fixture.method-impl-exports",
+      "target": "impl-target",
+      "line_number": 18
+    },
+    {
+      "type": "contains",
+      "from": "fixture.method-impl-exports",
+      "target": "print-method",
+      "note": "a defmethod IMPL is still a member (contains), just never a namespace export"
+    },
+    {
+      "type": "contains",
+      "from": "fixture.method-impl-exports",
+      "target": "toString",
+      "note": "a proxy method impl is still a member (contains), never an export"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "print-method"
+    },
+    {
+      "type": "exports",
+      "target": "toString"
+    }
+  ]
+}

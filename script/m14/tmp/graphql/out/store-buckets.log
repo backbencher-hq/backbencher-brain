@@ -1,0 +1,120 @@
+project dbs: 12
+  docs                     NOT IN CORPUS (tmp dir name: docs)
+  example                  NOT IN CORPUS (tmp dir name: example)
+  generate                 NOT IN CORPUS (tmp dir name: generate)
+  genqlient                NOT IN CORPUS (tmp dir name: gql-genqlient)
+  gqlgen                   NOT IN CORPUS (tmp dir name: gql-gqlgen)
+  graphql-eslint           NOT IN CORPUS (tmp dir name: gql-graphql-eslint)
+  graphql-mesh             NOT IN CORPUS (tmp dir name: gql-graphql-mesh)
+  graphql-platform         NOT IN CORPUS (tmp dir name: gql-graphql-platform)
+  graphql-tools            NOT IN CORPUS (tmp dir name: gql-graphql-tools)
+  ruby                     NOT IN CORPUS (tmp dir name: gql-ruby)
+  internal                 NOT IN CORPUS (tmp dir name: internal)
+declaration index: 244 distinct declared names over 1 repos
+  hasura-engine              407 .graphql/.gql files in corpus
+NO DB docs
+NO DB example
+NO DB generate
+NO DB internal
+
+=== population: 78293 relationships, 18789 target-unresolved ===
+  contains      38824 edges      36 target-unresolved
+  references    22087 edges   13048 target-unresolved
+  uses          10745 edges    5639 target-unresolved
+  exports        3307 edges       0 target-unresolved
+  overrides      2524 edges       0 target-unresolved
+  implements      740 edges       0 target-unresolved
+  imports          66 edges      66 target-unresolved
+
+=== imports: 66 edges ===
+  target shapes (non-alnum stripped): [["//",14],["/",41],["",11]]
+  sources that look like FILE PATHS: 66/66
+  targets that look like FILE PATHS: 64/66
+  repos carrying imports edges: ["gql-graphql-eslint","gql-graphql-tools"]
+  gql-graphql-eslint     invalid-query-default.gql                  -> ./fragments/bar-fragment.gql               ln 1 meta {"isGraphqlImport":true,"importSource":"invalid-query-default.gql","importForm":
+  gql-graphql-eslint     valid-query-default.gql                    -> ./fragments/foo-fragment.gql               ln 3 meta {"isGraphqlImport":true,"importSource":"valid-query-default.gql","importForm":"b
+  gql-graphql-eslint     test-directives-with-import.graphql        -> ./user-fields.graphql                      ln 1 meta {"isGraphqlImport":true,"importSource":"test-directives-with-import.graphql","im
+  gql-graphql-tools      a.graphql                                  -> ../import-all/b.graphql                    ln 1 meta {"isGraphqlImport":true,"importSource":"a.graphql","importForm":"from_binding","
+  gql-graphql-tools      b.graphql                                  -> ../import-all/c.graphql                    ln 1 meta {"isGraphqlImport":true,"importSource":"b.graphql","importForm":"from_binding","
+  gql-graphql-tools      1.mutation.graphql                         -> ./1.model.graphql                          ln 1 meta {"isGraphqlImport":true,"importSource":"1.mutation.graphql","importForm":"from_b
+  gql-graphql-tools      index.graphql                              -> ./1.mutation.graphql                       ln 3 meta {"isGraphqlImport":true,"importSource":"index.graphql","importForm":"from_bindin
+  gql-graphql-tools      index.graphql                              -> ./1.query.graphql                          ln 2 meta {"isGraphqlImport":true,"importSource":"index.graphql","importForm":"from_bindin
+  gql-graphql-tools      index.graphql                              -> ./1/index.graphql                          ln 1 meta {"isGraphqlImport":true,"importSource":"index.graphql","importForm":"from_bindin
+  gql-graphql-tools      10.mutation.graphql                        -> ./10.model.graphql                         ln 1 meta {"isGraphqlImport":true,"importSource":"10.mutation.graphql","importForm":"from_
+  gql-graphql-tools      index.graphql                              -> ./10.mutation.graphql                      ln 3 meta {"isGraphqlImport":true,"importSource":"index.graphql","importForm":"from_bindin
+  gql-graphql-tools      index.graphql                              -> ./10.query.graphql                         ln 2 meta {"isGraphqlImport":true,"importSource":"index.graphql","importForm":"from_bindin
+
+=== dotted targets: 191 distinct (top 60 by edges) ===
+  gql-genqlient          Query.me                                         n=   1  suffix me                           published no
+  gql-gqlgen             RecursiveInputSlice.self                         n=   2  suffix self                         published no
+  gql-graphql-eslint     Picture.width                                    n=   1  suffix width                        published no
+  gql-graphql-eslint     Picture.uri                                      n=   1  suffix uri                          published no
+  gql-graphql-eslint     Picture.height                                   n=   1  suffix height                       published no
+  gql-graphql-eslint     ./user-fields.graphql                            n=   1  suffix /user-fields.graphql         published no
+  gql-graphql-eslint     ./fragments/foo-fragment.gql                     n=   1  suffix /fragments/foo-fragment.gql  published no
+  gql-graphql-eslint     ./fragments/bar-fragment.gql                     n=   1  suffix /fragments/bar-fragment.gql  published no
+  gql-graphql-mesh       Query.me                                         n=   3  suffix me                           published no
+  gql-graphql-mesh       Patient.gender                                   n=   2  suffix gender                       published no
+  gql-graphql-mesh       Patient.address                                  n=   2  suffix address                      published no
+  gql-graphql-mesh       Location.managingOrganization                    n=   1  suffix managingOrganization         published no
+  gql-graphql-mesh       Location.address                                 n=   1  suffix address                      published no
+  gql-graphql-mesh       ForecastDay.state_code                           n=   1  suffix state_code                   published no
+  gql-graphql-mesh       ForecastDay.data                                 n=   1  suffix data                         published no
+  gql-graphql-mesh       ForecastDay.country_code                         n=   1  suffix country_code                 published no
+  gql-graphql-mesh       ForecastDay.city_name                            n=   1  suffix city_name                    published no
+  gql-graphql-mesh       Error.message                                    n=   1  suffix message                      published YES(1)
+  gql-graphql-mesh       Error.code                                       n=   1  suffix code                         published no
+  gql-graphql-mesh       CustomerResourceCustomerList.data                n=   1  suffix data                         published no
+  gql-graphql-platform   JiraUserIssueFieldConfiguration.userFieldConfig  n=  62  suffix userFieldConfig              published no
+  gql-graphql-platform   JiraUserIssueFieldConfiguration.__typename       n=  62  suffix __typename                   published no
+  gql-graphql-platform   JiraIssueFieldConfiguration.fieldConfig          n=  62  suffix fieldConfig                  published no
+  gql-graphql-platform   JiraIssueFieldConfiguration.__typename           n=  62  suffix __typename                   published no
+  gql-graphql-platform   JiraIssueField.__typename                        n=  62  suffix __typename                   published no
+  gql-graphql-platform   AtlassianAccountUser.zoneinfo                    n=  12  suffix zoneinfo                     published no
+  gql-graphql-platform   AtlassianAccountUser.locale                      n=  12  suffix locale                       published no
+  gql-graphql-platform   AtlassianAccountUser.email                       n=  12  suffix email                        published YES(5)
+  gql-graphql-platform   Cat.isPurring                                    n=   7  suffix isPurring                    published no
+  gql-graphql-platform   ResultDefaulted.int                              n=   6  suffix int                          published no
+  edges on a dotted target whose FINAL SEGMENT is published in that project: 61
+  edges on a dotted target whose final segment is NOT published:            698
+  edges on a dotted target whose WHOLE string is published:                  0
+
+=== bare, not spec: 501 distinct targets ===
+  edges whose target IS declared in the whole repo (outside the 150-file window): 82
+  edges whose target is declared NOWHERE in the whole repo:                          2798
+  targets declared nowhere, by edge count:
+    hasura-engine          kind                           n=261
+    hasura-engine          ofType                         n=140
+    hasura-engine          description                    n=126
+    gql-graphql-platform   __typename                     n=71
+    gql-graphql-platform   isRequired                     n=62
+    gql-graphql-platform   isPinned                       n=62
+    gql-graphql-platform   isEditable                     n=62
+    gql-graphql-platform   JiraUserIssueFieldConfiguration n=62
+    gql-graphql-platform   JiraIssueFieldConfiguration    n=62
+    gql-graphql-platform   JiraIssueField                 n=62
+    gql-graphql-mesh       @md                            n=58
+    hasura-engine          __type                         n=54
+    hasura-engine          fields                         n=47
+    hasura-engine          movie_id                       n=32
+    hasura-engine          TrackId                        n=32
+    hasura-engine          Track                          n=27
+    hasura-engine          first_name                     n=24
+    gql-graphql-platform   int                            n=23
+    hasura-engine          actor_id                       n=20
+    hasura-engine          Asc                            n=20
+    hasura-engine          location                       n=19
+    hasura-engine          Tracks                         n=19
+    hasura-engine          args                           n=18
+    gql-graphql-platform   medium                         n=17
+    hasura-engine          author_id                      n=17
+    hasura-engine          Desc                           n=17
+    gql-graphql-platform   optionId                       n=16
+    gql-graphql-platform   isDisabled                     n=16
+    gql-graphql-platform   avatar                         n=16
+    hasura-engine          InstitutionMany                n=16
+
+=== neither spec nor a bare type name: 3 distinct targets ===
+  gql-graphql-platform   $object                                        n=3
+  gql-graphql-platform   $list                                          n=3
+  gql-graphql-tools      @b-schema                                      n=1

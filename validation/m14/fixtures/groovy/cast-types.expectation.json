@@ -1,0 +1,14 @@
+{
+  "fixtureId": "groovy/cast-types",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G5 gap: cast expressions ((String) o, (List<String>) s) emit a reference to the cast type. Groovy semantics: a cast is a type assertion, so the cast type is a type reference. Previously cast_expression was silent.",
+  "expectSymbols": [
+    { "name": "CastSvc", "kind": "class" },
+    { "name": "run" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "run", "target": "String", "meta.relationshipType": "cast_type" },
+    { "type": "references", "from": "run", "target": "List", "meta.relationshipType": "cast_type" }
+  ]
+}

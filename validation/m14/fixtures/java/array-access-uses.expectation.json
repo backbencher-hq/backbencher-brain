@@ -1,0 +1,19 @@
+{
+  "fixtureId": "java/array-access-uses",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JAD1/JAD2 (M37 java wave #595): array READS are uses sourced to the enclosing METHOD (two-walks-one-owner family rule: calls attribute to the method, so reads agree); array WRITES (xs[i] = v LHS) are gated like every other managed-OO analyzer. This pin replaces the old #419 G1 contract that sourced reads to the class and treated writes as reads — both sides of the old pin were the defect the JAD wave fixed. Authored from the verified emission contract, probed against the fixed analyzer.",
+  "expectSymbols": [
+    { "name": "ArrayAccessUses", "kind": "class" },
+    { "name": "xs", "kind": "property" },
+    { "name": "grid", "kind": "property" },
+    { "name": "f", "kind": "method", "ownerName": "ArrayAccessUses" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "f", "target": "xs", "meta.isArrayAccess": true },
+    { "type": "uses", "source": "f", "target": "grid", "meta.isArrayAccess": true }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "ArrayAccessUses", "target": "xs", "comment": "JAD2: reads inside a method body source to the method, not the type" }
+  ]
+}

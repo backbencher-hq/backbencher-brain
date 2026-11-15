@@ -1,0 +1,369 @@
+{
+  "fixtureId": "graphql/executable-and-descriptions",
+  "language": "graphql",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The executable half of the contract, and the description VALUE (not the raw text). Six findings, all measured. (1) A field selection inside a fragment or an inline fragment targets `<Type>.<field>`, because the document itself states the type it is written against \u2014 `... on Admin { level }` is `Admin.level`, and `fragment UserFields on User { id }` is `User.id`. Both resolve to an SDL property; the pre-fix bare targets resolved to nothing. (2) An ALIAS is not the fact: `nick: name` references `name`. (3) A VARIABLE REFERENCE is a fact: `user(id: $id)` and `@include(if: $withPosts)` are uses-edges from the operation to `$id` / `$withPosts`. The pre-fix analyzer declared both variables and recorded no use of either, so every variable in a real query read as dead. (4) A description is a VALUE: `\"` and `\\` are resolved, and a block string is dedented per \u00a72.9.4. The pre-fix implementation returned the raw inner text with its backslashes intact, published `a \\\"quote\\\"` where the source says `a \"quote\"`, and left a block description's common indent and its blank lines in place. (5) `isOptional` follows GraphQL's own rule \u2014 an argument is optional only when it is NULLABLE *and* has a default. The pre-fix asked only whether the type carried `!`, so it reported both nullable shapes as optional and inverted the one distinction the specification makes. (6) A directive applied to a selection is a real reference to the `@directive` function symbol, and a directive on an enum value is a real reference too; the pre-fix analyzer dropped both, and Apollo Federation's `@key`/`@external`/`@requires` are the whole structure of a federated subgraph. Also pinned: a fragment spread and an inline fragment's type condition are uses-edges, and the nested selections of a FIELD are bare, because inside a field's own selection set the parent type is the field's return type and an executable document does not carry it. Every executable relationship carries `meta.selectionPath`, and the fixture pins it, so 'qualified where the document states the type, bare where it does not' is an assertion and not a description: `User.id` at path `id` (the fragment's own root) and bare `id` at path `user.posts.edges.node.id` are the same fixture, and only the path tells them apart. (7) Ledger rule R9: the positions where a DECLARATION writes a type name are `references` carrying metadata.relationshipType='declared_type', not `uses` \u2014 and two `forbidRelationships` rows pin the old label so a reversion is caught rather than tolerated. (8) `exports` is published as an EDGE as well as ExportInfo, because nothing in the product reads ParseResult.exports; three rows here and the census's 1,428 over 426 corpus files.",
+  "expectSymbols": [
+    {
+      "name": "GetUser",
+      "kind": "method"
+    },
+    {
+      "name": "$id",
+      "kind": "variable",
+      "ownerName": "GetUser"
+    },
+    {
+      "name": "$withPosts",
+      "kind": "variable",
+      "ownerName": "GetUser"
+    },
+    {
+      "name": "UserFields",
+      "kind": "method"
+    },
+    {
+      "name": "Doc",
+      "kind": "class"
+    },
+    {
+      "name": "field",
+      "kind": "property",
+      "ownerName": "Doc"
+    },
+    {
+      "name": "other",
+      "kind": "property",
+      "ownerName": "Doc"
+    },
+    {
+      "name": "Filter",
+      "kind": "class"
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "ownerName": "Filter"
+    },
+    {
+      "name": "limit",
+      "kind": "property",
+      "ownerName": "Filter"
+    },
+    {
+      "name": "Color",
+      "kind": "enum"
+    },
+    {
+      "name": "RED",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "GREEN",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "GetUser",
+      "startLine": 1
+    },
+    {
+      "symbol": "UserFields",
+      "startLine": 10
+    },
+    {
+      "symbol": "Doc",
+      "startLine": 16,
+      "note": "the keyword's line; the Description is on 15"
+    },
+    {
+      "symbol": "field",
+      "ownerName": "Doc",
+      "startLine": 23,
+      "note": "its Description block ends on 22"
+    },
+    {
+      "symbol": "other",
+      "ownerName": "Doc",
+      "startLine": 25,
+      "note": "a single-line block description is on 24"
+    },
+    {
+      "symbol": "RED",
+      "ownerName": "Color",
+      "startLine": 36,
+      "note": "its description is on 35"
+    },
+    {
+      "symbol": "GREEN",
+      "ownerName": "Color",
+      "startLine": 37
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "name",
+      "ownerName": "Filter",
+      "expected": [
+        {
+          "name": "name",
+          "type": "String",
+          "isOptional": false,
+          "note": "NULLABLE with NO default \u21d2 REQUIRED. The pre-fix rule (`!isNonNull`) called this optional, which is the opposite of \u00a73.6.1."
+        },
+        {
+          "name": "limit",
+          "type": "Int",
+          "isOptional": true,
+          "defaultValue": "10",
+          "note": "NULLABLE with a default \u21d2 optional"
+        }
+      ]
+    }
+  ],
+  "expectDocstrings": [
+    {
+      "symbol": "Doc",
+      "expected": "A regular quoted description with a \"quoted\" word and a \\ backslash.",
+      "note": "the escapes are RESOLVED. Pre-fix, this published the raw inner text with both backslashes still in it."
+    },
+    {
+      "symbol": "field",
+      "expected": "A block description.\n\n  indented by four\nindented by two",
+      "note": "\u00a72.9.4 BlockStringValue: the common indent of every non-blank line after the first is 2, so it is removed; leading and trailing blank lines are dropped. Pre-fix, the value kept the 2-space indent and both blank lines."
+    },
+    {
+      "symbol": "other",
+      "expected": "A single-line block description.",
+      "note": "a single-line block string still dedents and trims"
+    },
+    {
+      "symbol": "name",
+      "expected": "an input field"
+    },
+    {
+      "symbol": "RED",
+      "expected": "an enum value"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "user",
+      "line_number": 2,
+      "meta.relationshipRole": "field_selection",
+      "meta.selectionPath": "user"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "$id",
+      "line_number": 2,
+      "meta.relationshipRole": "variable_reference",
+      "note": "a declared variable with a real use site; pre-fix, `$id` was declared and never referenced"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "UserFields",
+      "line_number": 3,
+      "meta.relationshipRole": "fragment_spread"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "Admin",
+      "line_number": 4,
+      "meta.relationshipRole": "inline_fragment_type_condition"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "Admin.level",
+      "line_number": 4,
+      "meta.relationshipRole": "field_selection",
+      "note": "QUALIFIED by the inline fragment's type condition, so it resolves to the SDL property `Admin.level`",
+      "meta.selectionPath": "user.level"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "name",
+      "line_number": 5,
+      "meta.relationshipRole": "field_selection",
+      "note": "the ALIAS is not the fact: `nick: name` references `name`"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "posts",
+      "line_number": 6,
+      "meta.selectionPath": "user.posts"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "@include",
+      "line_number": 6,
+      "meta.relationshipRole": "directive_application"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "$withPosts",
+      "line_number": 6,
+      "meta.relationshipRole": "variable_reference"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "edges",
+      "line_number": 6,
+      "note": "inside a field's own selection set the parent type is the field's return type, which an executable document does not carry, so the target stays bare"
+    },
+    {
+      "type": "uses",
+      "from": "UserFields",
+      "target": "User",
+      "line_number": 10,
+      "meta.relationshipRole": "fragment_type_condition"
+    },
+    {
+      "type": "uses",
+      "from": "UserFields",
+      "target": "User.id",
+      "line_number": 11,
+      "meta.relationshipRole": "field_selection",
+      "note": "a fragment's selections are written against its type condition, so they qualify",
+      "meta.selectionPath": "id"
+    },
+    {
+      "type": "uses",
+      "from": "UserFields",
+      "target": "User.name",
+      "line_number": 12,
+      "meta.relationshipRole": "field_selection"
+    },
+    {
+      "type": "contains",
+      "from": "Doc",
+      "target": "Doc.field",
+      "line_number": 23
+    },
+    {
+      "type": "references",
+      "from": "Doc.field",
+      "target": "Int",
+      "line_number": 23,
+      "meta.relationshipType": "declared_type",
+      "note": "R9: a field's RETURN type is the single most common declared-type position in the language, and it is `references` + declared_type rather than `uses`."
+    },
+    {
+      "type": "references",
+      "from": "Filter.name",
+      "target": "String",
+      "line_number": 30,
+      "meta.relationshipRole": "input_field_type",
+      "meta.relationshipType": "declared_type",
+      "note": "R9: the position that WRITES a type name is a `references` edge carrying metadata.relationshipType='declared_type'; java/kotlin/scala/csharp/go/typescript/rust all label it that way and none of them emits `uses` for it."
+    },
+    {
+      "type": "contains",
+      "from": "Color",
+      "target": "Color.RED",
+      "line_number": 36
+    },
+    {
+      "type": "uses",
+      "from": "Color.GREEN",
+      "target": "@deprecated",
+      "line_number": 37,
+      "meta.relationshipRole": "directive_application",
+      "note": "a directive on an ENUM VALUE is a real reference; pre-fix it was dropped"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "id",
+      "line_number": 6,
+      "meta.relationshipRole": "field_selection",
+      "meta.selectionPath": "user.posts.edges.node.id",
+      "note": "the BARE form, and it is correct: inside a field's own selection set the parent type is the field's return type, which an executable document does not carry. The path is what distinguishes it from the fragment's `User.id` on 11, and pinning both by path is the only way to say 'qualified where the document states the type, bare where it does not'."
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Doc",
+      "line_number": 16,
+      "note": "the schema's public surface, published as an EDGE. `ParseResult.exports` alone reached no graph: parallel-indexer reads `result.imports` into brain_import and reads nothing named `exports`, so before this the lane listed 4 exports here and the graph had none."
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Filter",
+      "line_number": 28
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Color",
+      "line_number": 34
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "nick",
+      "note": "the ALIAS is not a schema field"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "level",
+      "note": "the pre-fix BARE target: `... on Admin { level }` is `Admin.level`"
+    },
+    {
+      "type": "uses",
+      "from": "GetUser",
+      "target": "$id",
+      "line_number": null,
+      "note": "M59: the variable reference carries a REAL line (the `$id` on 2). An edge that named no line would be indistinguishable from the pre-fix state, in which there was no edge at all."
+    },
+    {
+      "type": "uses",
+      "from": "Filter.name",
+      "target": "String",
+      "line_number": 30,
+      "note": "the pre-R9 label for the same fact. The edge is `references` and NOT ALSO `uses`: two labels for one fact is the divergence class R10 exists to catch, and the sibling lanes that satisfy R9 emit no `uses` at all for a declared type."
+    },
+    {
+      "type": "uses",
+      "from": "Doc.field",
+      "target": "Int",
+      "line_number": 23,
+      "note": "the same, for a field's RETURN type \u2014 the single most common declared-type position in the language."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "nick"
+    },
+    {
+      "name": "Admin"
+    },
+    {
+      "name": "User"
+    },
+    {
+      "name": "@include"
+    },
+    {
+      "name": "id"
+    }
+  ]
+}

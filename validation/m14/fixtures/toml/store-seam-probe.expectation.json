@@ -1,0 +1,196 @@
+{
+  "comment": "THE STORE SEAM. These pins are the same facts the pipeline e2e gate asserts against brain.db, written here so the fixture lane catches them first. The lane's payload is the simplest of any language's — one relationship type — and that is exactly why it needed asserting: a thin graph is easy to emit correctly and easy to lose on the way to disk without anyone noticing. Every payload class TOML produces appears here, and so does the thing that must NOT be a node: a value.",
+  "expectSymbols": [
+    {
+      "name": "store-seam-probe",
+      "kind": "module",
+      "comment": "named from the file STEM, so the store holds `store-seam-probe` and not `store-seam-probe.toml`"
+    },
+    {
+      "name": "package",
+      "kind": "namespace"
+    },
+    {
+      "name": "package.name",
+      "kind": "property",
+      "meta.valueType": "string"
+    },
+    {
+      "name": "package.version",
+      "kind": "property"
+    },
+    {
+      "name": "target.\"cfg(unix)\".dependencies",
+      "kind": "namespace",
+      "comment": "the QUOTED segment survives into the store — a consumer searching `cfg(unix)` must find it, and a consumer reading the name must see which segments were bare",
+      "meta.impliedParents": [
+        "target",
+        "target.\"cfg(unix)\""
+      ]
+    },
+    {
+      "name": "target.\"cfg(unix)\".dependencies.libc",
+      "kind": "property"
+    },
+    {
+      "name": "bin",
+      "kind": "namespace",
+      "meta.isArrayOfTables": true
+    },
+    {
+      "name": "bin.name",
+      "kind": "property"
+    },
+    {
+      "name": "bin#2",
+      "kind": "namespace",
+      "meta.isArrayOfTables": true,
+      "comment": "the second `[[bin]]` element is a DISTINCT node in the store, not an overwrite of the first"
+    },
+    {
+      "name": "bin#2.name",
+      "kind": "property"
+    },
+    {
+      "name": "dotted",
+      "kind": "namespace"
+    },
+    {
+      "name": "dotted.a.b",
+      "kind": "property",
+      "comment": "a dotted KEY is one symbol with the full path, not three"
+    },
+    {
+      "name": "root_level",
+      "kind": "property",
+      "comment": "a key before any header belongs to the implicit root table, so its owner is the module"
+    },
+    {
+      "name": "inline",
+      "kind": "property",
+      "meta.valueType": "inline-table",
+      "meta.inlineKeys": [
+        "x",
+        "y"
+      ],
+      "comment": "an inline table's keys ride on the key's metadata, so they are IN the store without being nodes"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "libc = \"0.2\"",
+      "comment": "the SOURCE TEXT of a pair is never a name — the pre-analyzer fallback published exactly this, and 11 of its 28 names on a ten-line file contained whitespace"
+    },
+    {
+      "name": "\"store-seam\"",
+      "comment": "a VALUE is data. `\"store-seam\"` is the string `package.name` holds, and it is not a node of the file."
+    },
+    {
+      "name": "x",
+      "comment": "an inline table's key is part of ONE value expression; it rides on `inline.inlineKeys` instead"
+    },
+    {
+      "name": "y",
+      "comment": "same"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.root_level",
+      "line_number": 18,
+      "meta.isKeyContainment": true,
+      "comment": "owner is the MODULE — a key before any header is in the implicit root table"
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.inline",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.package",
+      "line_number": 21,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe.package",
+      "target": "store-seam-probe.package.name",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe.package",
+      "target": "store-seam-probe.package.version",
+      "line_number": 23
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.target.\"cfg(unix)\".dependencies",
+      "line_number": 25,
+      "meta.isTableHeader": true,
+      "comment": "`target` and `target.\"cfg(unix)\"` are IMPLIED parents recorded in metadata, never nodes — so the module is the owner and two prefixes are simply not in the graph"
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe.target.\"cfg(unix)\".dependencies",
+      "target": "store-seam-probe.target.\"cfg(unix)\".dependencies.libc",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.bin",
+      "line_number": 28,
+      "meta.isArrayOfTables": true
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe.bin",
+      "target": "store-seam-probe.bin.name",
+      "line_number": 29
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.bin#2",
+      "line_number": 31,
+      "meta.isArrayOfTables": true,
+      "comment": "the SECOND `[[bin]]` element is a distinct node in the store, not an overwrite of the first"
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe.bin#2",
+      "target": "store-seam-probe.bin#2.name",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe",
+      "target": "store-seam-probe.dotted",
+      "line_number": 34,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "store-seam-probe.dotted",
+      "target": "store-seam-probe.dotted.a.b",
+      "line_number": 35
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "comment": "TOML defines no reference mechanism, so there is nothing to point at. A `uses` edge here would be a fabricated dependency on a string."
+    },
+    {
+      "type": "imports",
+      "comment": "nothing in a configuration document is fetched or imported"
+    }
+  ]
+}

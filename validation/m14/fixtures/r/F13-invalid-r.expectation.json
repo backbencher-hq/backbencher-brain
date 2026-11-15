@@ -1,0 +1,60 @@
+{
+  "fixtureId": "r/F13-invalid-r",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The negative half of the arrow question, and the fixture whose stated belief was WRONG until R was run against it. R desugars both rightward forms to `<-`(value, name) at parse time, so a name on the LEFT of `->` is not a declaration -- it is a runtime error, `invalid (do_set) left-hand side to assignment` -- and publishing a symbol for `name_on_left -> 6` invents a binding R refuses to make. An earlier revision of the analyzer read whichever side happened to be an identifier and did exactly that. tree-sitter-r does NOT desugar, which is why the two sides have to be distinguished from the operator field. The comment in this file used to assert that `function() 1 -> valid_fn_right` is a declaration. IT IS NOT, and the oracle that \"verified\" it was the wrong instrument: R's own parser puts the rightward assignment INSIDE the function body -- `eval(parse(text=\"function() 1 -> x\"), new.env())` leaves `ls()` empty on R 4.6.1 -- and tree-sitter-r agrees, giving `function_definition > binary_operator op=\"->\"`. Parenthesising the value is what makes it a declaration, and `(function() 1) -> valid_fn_right_parens` is pinned as one. The three forbids and the three pins are the same assertion from both directions: the OPERATOR decides which side binds, and nothing else about the line does.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "valid_right",
+      "kind": "variable"
+    },
+    {
+      "name": "valid_super_right",
+      "kind": "variable"
+    },
+    {
+      "name": "valid_fn_right_parens",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "valid_right"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "valid_super_right"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "valid_fn_right_parens"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "name_on_left"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "super_a"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "6"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "7"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "issue": "CLJ-ADV F2",
+  "note": "`(:refer-clojure :exclude [replace reverse])` — the name-list is VAR names, not a libspec: no references edges to the var names, no imports of package \"replace\"/\"reverse\". Found on 43 corpus files (string.clj fabricated `references -> replace` + an import row).",
+  "expectRelationships": [
+    { "type": "calls", "from": "rewrite", "target": "clojure.string/replace", "line_number": 5, "meta.callArity": 3 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "replace" },
+    { "type": "references", "target": "reverse" }
+  ],
+  "forbidImports": [
+    { "module": "replace" },
+    { "module": "reverse" }
+  ]
+}

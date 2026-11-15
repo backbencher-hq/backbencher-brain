@@ -1,0 +1,300 @@
+{
+  "fixtureId": "python/payload-and-complexity",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the python analyzer's managed-OO family surface (csharp/dart/php/ruby/swift/objc precedent): class extends (with suppression of the self-shadowing class X(X) fabrication), instantiates (in-file declared only), calls (builtin-filtered; leaf of self.orders.append is the call), instance-attribute Properties from self.x = ... writes (PYD1: the pre-fix LHS gate was dead code \u2014 attribute LHS never reached the Property branch), member READ uses (write LHS and call receivers excluded), per-symbol complexity (if/elif/for/while/match/case/try/except/with/ternary + and/or), evidence tiers on every edge. Authored as a .py file BEFORE the analyzer's M14 wave run; expectations reflect the verified family contract, not the analyzer's current output.",
+  "expectSymbols": [
+    {
+      "name": "Order",
+      "kind": "class"
+    },
+    {
+      "name": "OrderStatus",
+      "kind": "enum"
+    },
+    {
+      "name": "PENDING",
+      "kind": "enum_member",
+      "ownerName": "OrderStatus"
+    },
+    {
+      "name": "PAID",
+      "kind": "enum_member",
+      "ownerName": "OrderStatus"
+    },
+    {
+      "name": "OrderRepository",
+      "kind": "class"
+    },
+    {
+      "name": "add",
+      "kind": "method",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "total_for",
+      "kind": "method",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "describe",
+      "kind": "method",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "clock",
+      "kind": "property",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "rate",
+      "kind": "property",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "orders",
+      "kind": "property",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "_memo",
+      "kind": "property",
+      "ownerName": "Dispatcher",
+      "visibility": "protected",
+      "comment": "PYD3: underscore class-var visibility is a PYTHON semantic \u2014 class body no longer hard-codes public"
+    },
+    {
+      "name": "Colors",
+      "kind": "enum"
+    },
+    {
+      "name": "RED",
+      "kind": "enum_member",
+      "ownerName": "Colors",
+      "comment": "PYD4: auto()-valued member is symbolized (canonical enum idiom)"
+    },
+    {
+      "name": "BLUE",
+      "kind": "enum_member",
+      "ownerName": "Colors"
+    },
+    {
+      "name": "Decorated",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "Decorated"
+    },
+    {
+      "name": "helper",
+      "kind": "method",
+      "ownerName": "Decorated"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "OrderStatus",
+      "target": "Enum",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "OrderRepository",
+      "target": "BaseRepo",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "imports",
+      "target": "enum:Enum",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "shared:BaseRepo",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "sys:*",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "sibling",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "glob:*",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "json:*",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "contains",
+      "source": "OrderStatus",
+      "target": "PENDING",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "OrderRepository",
+      "target": "add",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "OrderRepository",
+      "target": "describe",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "add",
+      "target": "Order",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "add",
+      "target": "append",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "add",
+      "target": "orders",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "total_for",
+      "target": "orders",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "total_for",
+      "target": "rate",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "describe",
+      "target": "label",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "references",
+      "source": "add",
+      "target": "Order",
+      "meta.relationshipType": "return_type",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "uses",
+      "source": "run",
+      "target": "base_name",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "PYD5: read in run's body INCLUDING text inside the nested def keeps source=run (the symbol-level owner)"
+    },
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "helper",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "the nested def step's body call also sources to run (calls contract)"
+    },
+    {
+      "type": "contains",
+      "source": "Colors",
+      "target": "RED",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "Looped",
+      "target": "Looped"
+    },
+    {
+      "type": "calls",
+      "source": "total_for",
+      "target": "sum"
+    },
+    {
+      "type": "uses",
+      "source": "total_for",
+      "target": "subtotal"
+    },
+    {
+      "type": "uses",
+      "source": "step",
+      "target": "helper",
+      "comment": "PYD5: a nested def is not a symbol \u2014 no edge may source from it"
+    },
+    {
+      "type": "uses",
+      "source": "run",
+      "target": "svc"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "add",
+      "ownerName": "OrderRepository",
+      "equals": 1
+    },
+    {
+      "symbol": "total_for",
+      "ownerName": "OrderRepository",
+      "equals": 4,
+      "comment": "1 for + 1 if + 1 while + base"
+    },
+    {
+      "symbol": "describe",
+      "ownerName": "OrderRepository",
+      "equals": 2,
+      "comment": "1 if + base"
+    },
+    {
+      "symbol": "classify",
+      "ownerName": "OrderStatus",
+      "equals": 3,
+      "comment": "if + elif + base"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "engine",
+      "kind": "property",
+      "ownerName": "OrderRepository"
+    },
+    {
+      "name": "classify",
+      "kind": "function"
+    },
+    {
+      "name": "step",
+      "kind": "function",
+      "comment": "PYD5: nested defs are NOT symbols"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "fixtureId": "csharp/override-member-kinds",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The `overrides` DERIVATION finding turned out to hide a second defect under it. csharp's `overrides` label is excluded from the differential's compared set on both sides (C923), so `rel-type-coverage-gate` CHECK 1 reports it as \"stored and compared against nothing\" \u2014 which is true and says nothing about whether the edges are RIGHT. The lane therefore built its own independent derivation (`script/m14/tmp/cs-ont-07-overrides.ts`), and that instrument reported 118 rows on 250 roslyn files that the tree supports and the analyzer did not publish. The first was a property: `public override int Prop => 1;` emitted a symbol, a `contains` edge and a declared-type `references` edge, and NO `overrides` edge, because the only branch that pushed an OverrideTask was the method branch. Five member kinds are pinned here, and the forbids are as load-bearing as the expects: a `virtual` member with no `override` modifier and a `new` HIDER must produce no edge, because an edge for either would be an override the source does not declare. `overriddenMemberKind` is asserted on every row because a payload field that says `method_override` on a property is a false claim about what was read, and the honesty contract makes a published field a claim. (`relationshipType` keeps its historical `method_override` spelling: a lane fixture pins it and master-owned SPEC evidence records the pinned marker set, so renaming it blind would desync an artifact this lane does not own. Reported to master instead.)",
+  "expectSymbols": [
+    {
+      "name": "BaseThing",
+      "kind": "class"
+    },
+    {
+      "name": "DerivedThing",
+      "kind": "class",
+      "ownerName": "Acme.Overrides"
+    },
+    {
+      "name": "Prop",
+      "kind": "property",
+      "ownerName": "DerivedThing",
+      "note": "the symbol existed before this change too \u2014 what was missing was its `overrides` edge, which is why no symbol-count metric could have found the defect"
+    },
+    {
+      "name": "Field",
+      "kind": "property",
+      "ownerName": "DerivedThing",
+      "note": "a FIELD is published as a Property symbol; kind precision is a modelling choice and is deliberately not asserted by a gate"
+    },
+    {
+      "name": "Changed",
+      "kind": "event",
+      "ownerName": "DerivedThing"
+    },
+    {
+      "name": "this",
+      "kind": "property",
+      "ownerName": "DerivedThing"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "target": "Prop",
+      "from": "DerivedThing.Prop",
+      "line_number": 34,
+      "meta.overriddenMemberKind": "property"
+    },
+    {
+      "type": "overrides",
+      "target": "this",
+      "from": "DerivedThing.this",
+      "line_number": 35,
+      "meta.overriddenMemberKind": "indexer",
+      "note": "the indexer's parameter list is part of its signature in C# \u2014 `this[int]` and `this[string]` are different members \u2014 and the STATED LIMIT is that the published label is name-keyed, so the signature is used to RESOLVE and then dropped from the label"
+    },
+    {
+      "type": "overrides",
+      "target": "Field",
+      "from": "DerivedThing.Field",
+      "line_number": 36,
+      "meta.overriddenMemberKind": "field"
+    },
+    {
+      "type": "overrides",
+      "target": "Changed",
+      "from": "DerivedThing.Changed",
+      "line_number": 37,
+      "meta.overriddenMemberKind": "event",
+      "note": "an EVENT is overridable in C#, in both the field-like and accessor forms; this is the accessor form"
+    },
+    {
+      "type": "overrides",
+      "target": "Method",
+      "from": "DerivedThing.Method",
+      "line_number": 38,
+      "meta.overriddenMemberKind": "method",
+      "note": "the historical case, unchanged: still emitted, still 1.0, still `method_override`"
+    },
+    {
+      "type": "overrides",
+      "target": "Overloaded",
+      "from": "DerivedThing.Overloaded",
+      "line_number": 39,
+      "meta.overriddenMemberKind": "method",
+      "note": "`public override void Overloaded()` resolves to the PARAMETERLESS base overload, not the `int` one: C# requires the signatures to match for an override, so the base with the same name AND signature is the only legal target"
+    },
+    {
+      "type": "overrides",
+      "target": "Field",
+      "from": "FieldPair.Field",
+      "line_number": 54,
+      "meta.overriddenMemberKind": "field"
+    },
+    {
+      "type": "overrides",
+      "target": "Other",
+      "from": "FieldPair.Other",
+      "line_number": 55,
+      "meta.overriddenMemberKind": "field",
+      "note": "`Other` does NOT exist on `BaseThing`. C# would reject this code (CS0115), so the edge is the lane's documented deterministic first-parent default rather than a verified target \u2014 and it is pinned, because a rule whose behaviour on non-compiling input is unspecified is a rule that drifts"
+    },
+    {
+      "type": "overrides",
+      "target": "MultiA",
+      "from": "FieldPair.MultiA",
+      "meta.overriddenMemberKind": "field",
+      "note": "the multi-declarator field, FIRST member: `public override int MultiA, MultiB;` is one declaration and TWO overridable members"
+    },
+    {
+      "type": "overrides",
+      "target": "MultiB",
+      "from": "FieldPair.MultiB",
+      "meta.overriddenMemberKind": "field",
+      "note": "the SECOND member of the same declaration, on the SAME line as the first. A rule that pushes one task per field DECLARATION drops this row and keeps the first, so the two rows sharing a line are exactly what pins that rule \u2014 and the mutant csharp/override-field-tasks-per-declaration, which collapses them to one per line, is caught only by this second row"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "NewVirtual",
+      "note": "`public virtual void NewVirtual()` overrides NOTHING \u2014 `virtual` makes a member overridable, it does not override. Emitting an edge here would be an override the source never writes."
+    },
+    {
+      "type": "overrides",
+      "target": "Hider",
+      "note": "`public new void Hider()` HIDES a base member; C# has no base-member edge for a hide, and publishing one would assert an override relationship the language does not have"
+    },
+    {
+      "type": "overrides",
+      "target": "Shadow",
+      "from": "DerivedThing.Shadow",
+      "note": "an overload by NAME is not an override. This is also where the STATED LIMIT is visible: the published label drops the signature (`localEdgeLabel`), so `DerivedThing.Shadow` is the label a hypothetical `DerivedThing.Shadow(string)` would also carry. The RESOLUTION still uses the signature, so the edge is right; only the label is coarser than the language, and that is recorded rather than left to be discovered downstream."
+    }
+  ]
+}

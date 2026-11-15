@@ -1,0 +1,904 @@
+{
+ "draws": {
+  "clojure": {
+   "files": 60,
+   "hash": "e0395ac2bf495bf0"
+  },
+  "clj-kondo": {
+   "files": 60,
+   "hash": "93bd5239a044ad6d"
+  }
+ },
+ "post_oracle_fix": {
+  "clojure": {
+   "truth": 4177,
+   "covered": 4140,
+   "missing": 37,
+   "unexplained": 46
+  },
+  "clj-kondo": {
+   "truth": 1872,
+   "covered": 1864,
+   "missing": 8,
+   "unexplained": 31
+  }
+ },
+ "classes": {
+  "M-A": [
+   {
+    "label": "calls",
+    "from": "causes",
+    "target": "causes",
+    "line": null,
+    "file": "test/clojure/test_helper.clj"
+   },
+   {
+    "label": "calls",
+    "from": "add-loader-url",
+    "target": "add-loader-url",
+    "line": null,
+    "file": "src/clj/clojure/repl/deps.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_35_25",
+    "target": "lambda_35_25",
+    "line": null,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "calls",
+    "from": "pprint-vector",
+    "target": "pprint-vector",
+    "line": null,
+    "file": "src/clj/clojure/pprint/dispatch.clj"
+   },
+   {
+    "label": "calls",
+    "from": "pprint-set",
+    "target": "pprint-set",
+    "line": null,
+    "file": "src/clj/clojure/pprint/dispatch.clj"
+   },
+   {
+    "label": "calls",
+    "from": "pprint-ns",
+    "target": "pprint-ns",
+    "line": null,
+    "file": "src/clj/clojure/pprint/dispatch.clj"
+   },
+   {
+    "label": "calls",
+    "from": "pprint-cond",
+    "target": "pprint-cond",
+    "line": null,
+    "file": "src/clj/clojure/pprint/dispatch.clj"
+   },
+   {
+    "label": "calls",
+    "from": "pprint-condp",
+    "target": "pprint-condp",
+    "line": null,
+    "file": "src/clj/clojure/pprint/dispatch.clj"
+   },
+   {
+    "label": "calls",
+    "from": "iterate-sublist",
+    "target": "iterate-sublist",
+    "line": null,
+    "file": "src/clj/clojure/pprint/cl_format.clj"
+   },
+   {
+    "label": "calls",
+    "from": "iterate-list-of-sublists",
+    "target": "iterate-list-of-sublists",
+    "line": null,
+    "file": "src/clj/clojure/pprint/cl_format.clj"
+   },
+   {
+    "label": "calls",
+    "from": "iterate-main-list",
+    "target": "iterate-main-list",
+    "line": null,
+    "file": "src/clj/clojure/pprint/cl_format.clj"
+   },
+   {
+    "label": "calls",
+    "from": "iterate-main-sublists",
+    "target": "iterate-main-sublists",
+    "line": null,
+    "file": "src/clj/clojure/pprint/cl_format.clj"
+   },
+   {
+    "label": "calls",
+    "from": "test-dispatch",
+    "target": "test-dispatch",
+    "line": null,
+    "file": "test/clojure/test_clojure/pprint/test_pretty.clj"
+   },
+   {
+    "label": "calls",
+    "from": "aconcat",
+    "target": "aconcat",
+    "line": null,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "test-spliterator-tryadvance-then-forEach",
+    "target": "test-spliterator-tryadvance-then-forEach",
+    "line": null,
+    "file": "test/clojure/test_clojure/vectors.clj"
+   },
+   {
+    "label": "calls",
+    "from": "test-spliterator-trySplit",
+    "target": "test-spliterator-trySplit",
+    "line": null,
+    "file": "test/clojure/test_clojure/vectors.clj"
+   },
+   {
+    "label": "calls",
+    "from": "threading-loop-recur",
+    "target": "threading-loop-recur",
+    "line": null,
+    "file": "test/clojure/test_clojure/macros.clj"
+   },
+   {
+    "label": "calls",
+    "from": "proxy",
+    "target": "proxy",
+    "line": null,
+    "file": "src/clj/clojure/core_proxy.clj"
+   },
+   {
+    "label": "calls",
+    "from": "var-node",
+    "target": "var-node",
+    "line": null,
+    "file": "parser/clj_kondo/impl/rewrite_clj/node/reader_macro.clj"
+   },
+   {
+    "label": "calls",
+    "from": "eval-node",
+    "target": "eval-node",
+    "line": null,
+    "file": "parser/clj_kondo/impl/rewrite_clj/node/reader_macro.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lint-arg-types",
+    "target": "lint-arg-types",
+    "line": null,
+    "file": "src/clj_kondo/impl/types.clj"
+   },
+   {
+    "label": "calls",
+    "from": "analyze-alias-uri",
+    "target": "analyze-alias-uri",
+    "line": null,
+    "file": "src/clj_kondo/impl/analyzer/clojure_data_xml.clj"
+   }
+  ],
+  "M-B": [
+   {
+    "label": "calls",
+    "from": "clojure.test-clojure.multimethods",
+    "target": "with-var-roots",
+    "line": null,
+    "file": "test/clojure/test_clojure/multimethods.clj"
+   },
+   {
+    "label": "calls",
+    "from": "global-hierarchy-test",
+    "target": "with-var-roots",
+    "line": null,
+    "file": "test/clojure/test_clojure/multimethods.clj"
+   },
+   {
+    "label": "calls",
+    "from": "clojure.test-clojure.metadata",
+    "target": "eval-in-temp-ns",
+    "line": null,
+    "file": "test/clojure/test_clojure/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "interaction-of-def-with-metadata",
+    "target": "eval-in-temp-ns",
+    "line": null,
+    "file": "test/clojure/test_clojure/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "interaction-of-def-with-metadata",
+    "target": "def-quux",
+    "line": null,
+    "file": "test/clojure/test_clojure/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "defn-primitive-args",
+    "target": "eval-in-temp-ns",
+    "line": null,
+    "file": "test/clojure/test_clojure/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_44_26",
+    "target": "datafy",
+    "line": null,
+    "file": "src/clj/clojure/reflect/java.clj"
+   },
+   {
+    "label": "calls",
+    "from": "clojure.java.shell",
+    "target": "as-file",
+    "line": null,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "stream-to-bytes",
+    "target": "copy",
+    "line": null,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "stream-to-string",
+    "target": "copy",
+    "line": null,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "sh",
+    "target": "as-file",
+    "line": null,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "sh",
+    "target": "copy",
+    "line": null,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "var-same-except-name-case-test",
+    "target": "assert-submaps",
+    "line": null,
+    "file": "test/clj_kondo/var_same_name_except_case_test.clj"
+   }
+  ],
+  "M-C": [
+   {
+    "label": "calls",
+    "from": "lambda_40_40",
+    "target": ".getDeclaredMethods",
+    "line": null,
+    "file": "test/clojure/test_clojure/annotations/java_9.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_40_40",
+    "target": ".getDeclaredMethods",
+    "line": null,
+    "file": "test/clojure/test_clojure/annotations/java_8.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_474_34",
+    "target": ".trySplit",
+    "line": null,
+    "file": "test/clojure/test_clojure/vectors.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_154_69",
+    "target": ".getPath",
+    "line": null,
+    "file": "test/clj_kondo/test_utils.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_187_48",
+    "target": ".getPath",
+    "line": null,
+    "file": "test/clj_kondo/test_utils.clj"
+   }
+  ],
+  "M-D": [
+   {
+    "label": "calls",
+    "from": "clojure.test-clojure.api",
+    "target": "defspec",
+    "line": null,
+    "file": "test/clojure/test_clojure/api.clj"
+   },
+   {
+    "label": "calls",
+    "from": "clojure.test-clojure.data-structures-interop",
+    "target": "defspec",
+    "line": null,
+    "file": "test/clojure/test_clojure/data_structures_interop.clj"
+   },
+   {
+    "label": "calls",
+    "from": "clojure.test-clojure.reducers",
+    "target": "defspec",
+    "line": null,
+    "file": "test/clojure/test_clojure/reducers.clj"
+   },
+   {
+    "label": "calls",
+    "from": "compojure.consumer",
+    "target": "defroutes",
+    "line": null,
+    "file": "corpus/compojure/consumer.clj"
+   }
+  ],
+  "M-E": [
+   {
+    "label": "calls",
+    "from": "clojure.pprint",
+    "target": "defdirectives",
+    "line": null,
+    "file": "src/clj/clojure/pprint/cl_format.clj"
+   }
+  ],
+  "U-EXPORTS": [
+   {
+    "label": "exports",
+    "from": "clojure.test-helper",
+    "target": "assert-expr",
+    "line": 47,
+    "file": "test/clojure/test_helper.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.test-helper",
+    "target": "clojure.test/assert-expr",
+    "line": 134,
+    "file": "test/clojure/test_helper.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "startElement",
+    "line": 35,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "endElement",
+    "line": 52,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "characters",
+    "line": 58,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "setDocumentLocator",
+    "line": 65,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "startDocument",
+    "line": 66,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "endDocument",
+    "line": 67,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "startPrefixMapping",
+    "line": 68,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "endPrefixMapping",
+    "line": 69,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "ignorableWhitespace",
+    "line": 70,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "processingInstruction",
+    "line": 71,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.xml",
+    "target": "skippedEntity",
+    "line": 72,
+    "file": "src/clj/clojure/xml.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.pprint",
+    "target": "write-token",
+    "line": 112,
+    "file": "src/clj/clojure/pprint/pretty_writer.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.pprint",
+    "target": "emit-nl?",
+    "line": 187,
+    "file": "src/clj/clojure/pprint/pretty_writer.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.pprint",
+    "target": "tok",
+    "line": 254,
+    "file": "src/clj/clojure/pprint/pretty_writer.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.test-clojure.evaluation",
+    "target": "evaluates-to-itself?",
+    "line": 57,
+    "file": "test/clojure/test_clojure/evaluation.clj"
+   },
+   {
+    "label": "exports",
+    "from": "resolution-test",
+    "target": "baz",
+    "line": 87,
+    "file": "test/clojure/test_clojure/evaluation.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clojure.test-clojure.def",
+    "target": "\"bad docstring\"",
+    "line": 38,
+    "file": "test/clojure/test_clojure/def.clj"
+   },
+   {
+    "label": "exports",
+    "from": "clj-kondo.test-utils",
+    "target": "t/report",
+    "line": 16,
+    "file": "test/clj_kondo/test_utils.clj"
+   },
+   {
+    "label": "exports",
+    "from": "datascript",
+    "target": "#?@(:clj [seqable?]\n          :cljs [^boolean seqable?])",
+    "line": 4,
+    "file": "corpus/cljc/datascript.cljc"
+   },
+   {
+    "label": "exports",
+    "from": "clj-kondo.impl.toolsreader.v1v2v2.clojure.tools.reader.impl.utils",
+    "target": "print-method",
+    "line": 50,
+    "file": "inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/impl/utils.clj"
+   }
+  ],
+  "U-CONTAINS": [
+   {
+    "label": "contains",
+    "from": "clojure.test-clojure.test-fixtures",
+    "target": "*a*",
+    "line": 17,
+    "file": "test/clojure/test_clojure/test_fixtures.clj"
+   },
+   {
+    "label": "contains",
+    "from": "clojure.test-clojure.test-fixtures",
+    "target": "*b*",
+    "line": 17,
+    "file": "test/clojure/test_clojure/test_fixtures.clj"
+   },
+   {
+    "label": "contains",
+    "from": "clojure.test-clojure.test-fixtures",
+    "target": "*c*",
+    "line": 17,
+    "file": "test/clojure/test_clojure/test_fixtures.clj"
+   },
+   {
+    "label": "contains",
+    "from": "clojure.test-clojure.test-fixtures",
+    "target": "*d*",
+    "line": 17,
+    "file": "test/clojure/test_clojure/test_fixtures.clj"
+   },
+   {
+    "label": "contains",
+    "from": "clojure.test-clojure.genclass.examples",
+    "target": "-toString",
+    "line": 34,
+    "file": "test/clojure/test_clojure/genclass/examples.clj"
+   },
+   {
+    "label": "contains",
+    "from": "clojure.test-clojure.def",
+    "target": "\"bad docstring\"",
+    "line": 38,
+    "file": "test/clojure/test_clojure/def.clj"
+   },
+   {
+    "label": "contains",
+    "from": "datascript",
+    "target": "#?@(:clj [seqable?]\n          :cljs [^boolean seqable?])",
+    "line": 4,
+    "file": "corpus/cljc/datascript.cljc"
+   },
+   {
+    "label": "contains",
+    "from": "myapp",
+    "target": "-not-in-kondo",
+    "line": 3,
+    "file": "corpus/macro-from-source-if-kondo/src/myapp.clj"
+   }
+  ],
+  "U-CALLS": [
+   {
+    "label": "calls",
+    "from": "global-hierarchy-test",
+    "target": "clojure.test-helper/with-var-roots",
+    "line": 134,
+    "file": "test/clojure/test_clojure/multimethods.clj"
+   },
+   {
+    "label": "calls",
+    "from": "fjinvoke",
+    "target": "fjtask",
+    "line": 30,
+    "file": "src/clj/clojure/core/reducers.clj"
+   },
+   {
+    "label": "calls",
+    "from": "map",
+    "target": "folder",
+    "line": 132,
+    "file": "src/clj/clojure/core/reducers.clj"
+   },
+   {
+    "label": "calls",
+    "from": "take-while",
+    "target": "reducer",
+    "line": 193,
+    "file": "src/clj/clojure/core/reducers.clj"
+   },
+   {
+    "label": "calls",
+    "from": "interaction-of-def-with-metadata",
+    "target": "clojure.test-helper/eval-in-temp-ns",
+    "line": 50,
+    "file": "test/clojure/test_clojure/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "is-leaf",
+    "target": "atom?",
+    "line": 36,
+    "file": "src/clj/clojure/inspector.clj"
+   },
+   {
+    "label": "calls",
+    "from": "getValueAt",
+    "target": "vals",
+    "line": 87,
+    "file": "src/clj/clojure/inspector.clj"
+   },
+   {
+    "label": "calls",
+    "from": "preduce",
+    "target": "reducer",
+    "line": 171,
+    "file": "src/clj/clojure/parallel.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_44_26",
+    "target": "clojure.datafy/datafy",
+    "line": 45,
+    "file": "src/clj/clojure/reflect/java.clj"
+   },
+   {
+    "label": "calls",
+    "from": "stream-to-bytes",
+    "target": "clojure.java.io/copy",
+    "line": 63,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "sh",
+    "target": "clojure.java.io/as-file",
+    "line": 116,
+    "file": "src/clj/clojure/java/shell.clj"
+   },
+   {
+    "label": "calls",
+    "from": "generate-proxy",
+    "target": "proxy-name",
+    "line": 50,
+    "file": "src/clj/clojure/core_proxy.clj"
+   },
+   {
+    "label": "calls",
+    "from": "generate-proxy",
+    "target": "method-sig",
+    "line": 217,
+    "file": "src/clj/clojure/core_proxy.clj"
+   },
+   {
+    "label": "calls",
+    "from": "proxy-call-with-super",
+    "target": "proxy-mappings",
+    "line": 390,
+    "file": "src/clj/clojure/core_proxy.clj"
+   },
+   {
+    "label": "calls",
+    "from": "proxy-call-with-super",
+    "target": "update-proxy",
+    "line": 391,
+    "file": "src/clj/clojure/core_proxy.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_418_3",
+    "target": "pmap",
+    "line": 419,
+    "file": "src/clj/clojure/core_proxy.clj"
+   },
+   {
+    "label": "calls",
+    "from": "no-redundant-fn-wrapper-test",
+    "target": "clojure.test/is",
+    "line": 25,
+    "file": "test/clj_kondo/redundant_fn_wrapper_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "no-redundant-fn-wrapper-test",
+    "target": "clojure.test/testing",
+    "line": 52,
+    "file": "test/clj_kondo/redundant_fn_wrapper_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "docstring-format-test",
+    "target": "clojure.test/testing",
+    "line": 10,
+    "file": "test/clj_kondo/docstring_format_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "multi-line-docstring-with-summary-test",
+    "target": "clojure.test/is",
+    "line": 106,
+    "file": "test/clj_kondo/docstring_format_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "alias-same-as-ns-test",
+    "target": "clojure.test/is",
+    "line": 15,
+    "file": "test/clj_kondo/alias_same_as_ns_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_4_9",
+    "target": "clojure.test/testing",
+    "line": 6,
+    "file": "corpus/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_4_9",
+    "target": "clojure.test/is",
+    "line": 8,
+    "file": "corpus/metadata.clj"
+   },
+   {
+    "label": "calls",
+    "from": "unexpected-recur",
+    "target": "clojure.test/testing",
+    "line": 11,
+    "file": "test/clj_kondo/recur_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "unexpected-recur",
+    "target": "clojure.test/is",
+    "line": 20,
+    "file": "test/clj_kondo/recur_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "unused-import-test",
+    "target": "clojure.test/testing",
+    "line": 8,
+    "file": "test/clj_kondo/unused_import_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "unused-import-test",
+    "target": "clojure.test/is",
+    "line": 69,
+    "file": "test/clj_kondo/unused_import_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "invalid-arity-test",
+    "target": "clojure.test/is",
+    "line": 30,
+    "file": "test/clj_kondo/invalid_arity_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "invalid-arity-test",
+    "target": "clojure.test/testing",
+    "line": 47,
+    "file": "test/clj_kondo/invalid_arity_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "lambda_351_20",
+    "target": "clj-kondo.impl.utils/select-keys",
+    "line": 362,
+    "file": "src/clj_kondo/impl/types.clj"
+   },
+   {
+    "label": "calls",
+    "from": "ret-tag-from-call",
+    "target": "clj-kondo.impl.utils/get-in",
+    "line": 458,
+    "file": "src/clj_kondo/impl/types.clj"
+   },
+   {
+    "label": "calls",
+    "from": "expr->tag",
+    "target": "number->tag",
+    "line": 568,
+    "file": "src/clj_kondo/impl/types.clj"
+   },
+   {
+    "label": "calls",
+    "from": "nonexistent-config-path-test",
+    "target": "clojure.test/testing",
+    "line": 30,
+    "file": "test/clj_kondo/config_paths_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "home-config-test",
+    "target": "clojure.test/is",
+    "line": 58,
+    "file": "test/clj_kondo/config_paths_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "missing-body-in-when-error-test",
+    "target": "clojure.test/testing",
+    "line": 7,
+    "file": "test/clj_kondo/missing_body_in_when_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "missing-body-in-when-valid-test",
+    "target": "clojure.test/is",
+    "line": 25,
+    "file": "test/clj_kondo/missing_body_in_when_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "var-same-except-name-case-test",
+    "target": "clj-kondo.test-utils/assert-submaps",
+    "line": 7,
+    "file": "test/clj_kondo/var_same_name_except_case_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "var-same-except-name-case-test",
+    "target": "clojure.test/is",
+    "line": 28,
+    "file": "test/clj_kondo/var_same_name_except_case_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "unresolved-namespace-test",
+    "target": "clojure.test/is",
+    "line": 28,
+    "file": "test/clj_kondo/unresolved_namespace_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "unresolved-namespace-extra-analysis-test",
+    "target": "clojure.test/testing",
+    "line": 75,
+    "file": "test/clj_kondo/unresolved_namespace_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "error-in-macro-fn-test",
+    "target": "clojure.test/is",
+    "line": 73,
+    "file": "test/clj_kondo/hooks_test.clj"
+   },
+   {
+    "label": "calls",
+    "from": "location-test",
+    "target": "clojure.test/testing",
+    "line": 87,
+    "file": "test/clj_kondo/hooks_test.clj"
+   }
+  ],
+  "U-EXTENDS": [
+   {
+    "label": "extends",
+    "from": "clojure.test-clojure.annotations",
+    "target": "clojure.lang.Box",
+    "line": 76,
+    "file": "test/clojure/test_clojure/annotations/java_9.clj"
+   },
+   {
+    "label": "extends",
+    "from": "clojure.test-clojure.annotations",
+    "target": "clojure.lang.Box",
+    "line": 76,
+    "file": "test/clojure/test_clojure/annotations/java_8.clj"
+   },
+   {
+    "label": "extends",
+    "from": "clojure.test-clojure.genclass.examples",
+    "target": "java.lang.ClassLoader",
+    "line": 49,
+    "file": "test/clojure/test_clojure/genclass/examples.clj"
+   }
+  ],
+  "U-IMPL": [
+   {
+    "label": "implements",
+    "from": "clojure.test-clojure.genclass.examples",
+    "target": "clojure.test_clojure.genclass.examples.ExampleInterface",
+    "line": 22,
+    "file": "test/clojure/test_clojure/genclass/examples.clj"
+   }
+  ],
+  "U-IMPORTS": [
+   {
+    "label": "imports",
+    "from": "clojure.test-clojure.metadata",
+    "target": "ns",
+    "line": 34,
+    "file": "test/clojure/test_clojure/metadata.clj"
+   }
+  ]
+ }
+}

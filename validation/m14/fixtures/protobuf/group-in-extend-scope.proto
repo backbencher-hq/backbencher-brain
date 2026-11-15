@@ -1,0 +1,99 @@
+// A proto2 `group` DECLARED IN AN `extend` BLOCK BELONGS TO THE BLOCK'S OWN SCOPE;
+// ONLY ITS FIELD BELONGS TO THE EXTENDEE.
+//
+// This is the rule the containment fixtures cannot see. `extend-and-group.proto`
+// puts every group inside an ordinary message body, where the block's position and
+// the extendee are the same question. A regression that attributed a group's TYPE to
+// the extendee would pass that file.
+//
+// The distinction is real and protoc states it. `pb-reference/src/google/protobuf/
+// test_messages_proto2.proto` writes, in package `protobuf_test_messages.proto2`:
+//
+//   extend TestAllTypesProto2 {
+//     optional group GroupField = 121 {
+//       optional int32  group_int32  = 122;
+//       optional uint32 group_uint32 = 123;
+//     }
+//   }
+//
+// and its descriptor says:
+//
+//   top-level message  protobuf_test_messages.proto2.GroupField
+//     field group_int32, field group_uint32
+//   extension  `groupfield`  extendee .…TestAllTypesProto2
+//                                    type_name .…protobuf_test_messages.proto2.GroupField
+//
+// The group's TYPE is a FILE-SCOPE message. The extendee is not a scope, and neither
+// is it the owner of the type it is extended by. The pre-fix analyzer published a
+// nested type `…TestAllTypesProto2.GroupField`, which no compiler defines, and
+// published the group's two members under it. Four of this lane's edges named a
+// declaration that does not exist.
+//
+// The same shape appears in `unittest_custom_options.proto`, which writes
+// `optional group ComplexOpt6 = 7595468` inside a file-scope
+// `extend google.protobuf.MessageOptions`, and there the group's type
+// `proto2_unittest.ComplexOpt6` is also at file scope.
+syntax = "proto2";
+
+package gie.demo;
+
+// ROW 1 — the row this fixture exists for. The block is at FILE SCOPE, so the
+// group's type is a top-level message in `gie.demo` and NOT nested in `Target`.
+//
+// protoc's answer, read back from its descriptor: the top-level message is
+// `gie.demo.Hoisted`, and the extension `hoisted` carries
+// `type_name = .gie.demo.Hoisted` with `extendee = .gie.demo.Target`.
+//
+// Pre-fix answer: a nested type `gie.demo.Target.Hoisted`, published by no file.
+extend Target {
+  optional group Hoisted = 2001 {
+    optional int32  inner_a = 1;
+    optional string inner_b = 2;
+  }
+}
+
+// ROW 2 — the block is inside a MESSAGE, so the group's type is hoisted to THAT
+// message's scope and not to the package. `protoc` reports the nested message
+// `gie.demo.Outer.Inner` and the extension `inner` with
+// `extendee = .gie.demo.Outer.Holder`, `type_name = .gie.demo.Outer.Inner`.
+//
+// This row and row 1 are what make the rule "the scope the block is WRITTEN in"
+// rather than either "always the package" or "always the extendee". A fix that
+// hoisted every group's type to file scope passes row 1 and fails this one; a fix
+// that left it at the extendee fails both.
+message Outer {
+  message Holder {
+    optional int32 base = 1;
+
+    extensions 3000 to max;
+  }
+
+  extend Holder {
+    optional group Inner = 3001 {
+      optional int32 deep = 1;
+    }
+  }
+}
+
+// ROW 3 — an ordinary group in an ordinary message body, with no `extend` anywhere
+// near it. The group's type is nested in `Plain` and its field is owned by `Plain`
+// too, because `owner` and `scope` are the same string here. This row is what a
+// regression in the OTHER direction would break: hoisting a group whose block is
+// already inside its owner.
+message Plain {
+  optional group Innermost = 2003 {
+    optional int32 value = 1;
+  }
+}
+
+// The extendee, declared here so the file compiles. `protoc` requires the extendee
+// to be visible and to admit extension numbers, exactly as
+// `unittest_custom_options.proto` imports `google/protobuf/descriptor.proto` before
+// extending `google.protobuf.MessageOptions`. The grammar does not require either,
+// so both are here to let this fixture be adjudicated by the reference compiler
+// rather than only by this lane's own reading of the tree.
+message Target {
+  optional int32 base = 1;
+
+  extensions 2000 to max;
+}

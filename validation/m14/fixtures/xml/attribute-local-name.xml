@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A namespaced attribute is published under its LOCAL name.
+
+  The store reduces every edge target to its last `:`/`.` segment before it looks
+  anything up (`parallel-indexer.ts:3375-3390`, `extractLeaf`), so an edge spelled
+  `xml:space` is searched for as `space`. While the DECLARATION was published as
+  `xml:space`, nothing in the project matched that search: the attribute's own
+  `contains` edge stayed unbound, or bound to a declaration of `space` in some
+  unrelated file, because `resolveContainsTargetStmt`
+  (`parallel-indexer.ts:2354-2360`) only ORDERS same-file first and never FILTERS
+  to the edge's file.
+
+  Measured through the real indexer on the 120-file draw `08d7fb24a87da7e7`
+  (`validation/m14/fixtures/xml/store-binding-truth.mts`): of 3,803 `contains`
+  rows, 179 were unbound and 35 bound to another file; 178 of the 179 had a
+  project-unique declaration of the LOCAL name, so the declaration was present the
+  whole time and the spelling hid it. The top unbound targets were `xml:space`,
+  `rdf:resource`, `xlink:href`, `rdf:about`, `cc:Work`, `dc:format` — every one a
+  prefixed name.
+
+  `id` and `fill` are the CONTROL: unprefixed, already local, and must be
+  unchanged by any fix. An implementation that stripped the last segment instead
+  of the first (`inkscape:label` -> `label` but also `a:b:c` -> `c`, or worse
+  `foo.bar` -> `bar` on an unprefixed name containing a dot) would pass every
+  prefixed row here and fail these two.
+
+  `xlink` is here because `xmlns:` declarations are published by the SAME call
+  site and were ALREADY local (`name = namespacePrefix`), so they are the control
+  that says the convention is one rule and not two.
+-->
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10">
+  <g xml:space="preserve" id="g1">
+    <path d="M0 0" fill="red"/>
+  </g>
+  <use xlink:href="#g1" x="1"/>
+</svg>

@@ -1,0 +1,31 @@
+{
+  "latency": {
+    "coldFirst": 691,
+    "warmAll": [
+      567,
+      572,
+      573,
+      592,
+      691
+    ],
+    "p95": 691,
+    "median": 573,
+    "lastDerivedMs": 14,
+    "note": "absolute wall-clock on shared machine; dominated by pre-existing pool startup — flagged for perf follow-up"
+  },
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a3-write-parity.ts",
+  "generatedAt": "2026-11-05T04:29:59.884Z",
+  "passed": 30,
+  "failed": 0,
+  "negativeCases": 5,
+  "mutation": "not-run (control)",
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-05T04:29:59.885Z",
+    "contentSha256": "91e815b2f37e37ad19aac8c40a3174e8616b9aa9494a0de9146039d901c05e3f"
+  }
+}

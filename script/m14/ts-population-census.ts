@@ -267,7 +267,7 @@ function main() {
   const mdIdx = process.argv.indexOf("--md")
   const mdOut = mdIdx >= 0 ? process.argv[mdIdx + 1] : ""
   const CR = useDefaultRoot
-    ? "$HOME/fixtures/repositories"
+    ? "/home/ishaq2321/bb_tests/repositories"
     : (process.env.BB_CORPUS_ROOT ?? path.resolve(process.cwd(), ".corpus"))
 
   const exts = laneExtensions("typescript", ["ts", "tsx", "mts", "cts"])

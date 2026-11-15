@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/payload-psb11.ps1",
+  "authoredFrom": "PS11/PS23 — the symbol payload the STORE actually reads. Authored 2026-09-26. `pool-worker.ts` carries a symbol across the worker boundary by NAMING its fields and drops the whole `metadata` object except the narrow `isDeclaration` key. The pre-wave lane wrote `isStatic`, `isHidden`, `annotations`, `type` and `docstring` INTO `metadata`, so every one was discarded before the store saw it — measured at the store: a `static [int]` property stored with `is_static = 0` and `[ValidateSet('a','b')]` stored with `annotations = NULL`, on a project where the analyzer had extracted both. Two shapes are pinned per finding, because each took two attempts: `[CmdletBinding()]` lives on `function_statement > script_block > param_block > attribute_list` (a direct-child read found none, and so did a `param_block`-child read), and a parameter's TYPE is spelled as an attribute, so it sits at `script_parameter > attribute_list > attribute > type_literal` — two levels down, and discriminated from `[Parameter()]`/`[ValidateSet()]` by having a DIRECT `type_literal` child. The docstring channel also pins the ADJACENCY rule: the first scanner skipped blank lines while walking upward and published this file's own banner as `Get-Report`'s documentation.",
+  "expectSymbols": [
+    { "name": "payload-psb11.ps1", "kind": "module" },
+    { "name": "Get-Report", "kind": "function", "ownerName": "payload-psb11.ps1" },
+    { "name": "Store", "kind": "class", "ownerName": "payload-psb11.ps1" },
+    { "name": "Token", "kind": "property", "ownerName": "Store" },
+    { "name": "Version", "kind": "property", "ownerName": "Store" },
+    { "name": "Root", "kind": "property", "ownerName": "Store" },
+    { "name": "Path", "kind": "method", "ownerName": "Store" },
+    { "name": "Level", "kind": "enum", "ownerName": "payload-psb11.ps1" },
+    { "name": "Low", "kind": "enum_member", "ownerName": "Level" },
+    { "name": "High", "kind": "enum_member", "ownerName": "Level" }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "Get-Report",
+      "comment": "an UNTYPED parameter reads `untyped`, not `any` — `[int]$d = 0` and `$d = 0` are different contracts and the store's `parameters` JSON is the only place either survives. (This sentence sat inside a `parameters` entry on first authoring; the parameter matcher exempts only `note` and `isNamed`, so a `comment` there is read as a FIELD and the pin could never match. `comment`/`note` are documentation only at the ENTRY level.)",
+      "parameters": [
+        { "name": "Window", "type": "string", "isOptional": false },
+        { "name": "Limit", "type": "int", "isOptional": true },
+        { "name": "Untyped", "type": "untyped", "isOptional": false }
+      ]
+    },
+    {
+      "symbol": "Path",
+      "ownerName": "Store",
+      "parameters": [{ "name": "Leaf", "type": "string", "isOptional": false }]
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "Get-Report",
+      "types": ["any"],
+      "comment": "PRE-FIX SHAPE: the placeholder the pre-wave reader emitted for a parameter whose type it could not read. Because a parameter's type is spelled as an attribute, EVERY typed parameter in the language read `any` — which is the same blind spot the csharp R7 paydown closed family-wide, and the reason `forbidParameters.types` exists at all."
+    },
+    { "symbol": "Path", "ownerName": "Store", "types": ["any"] }
+  ],
+  "expectDecorators": [
+    { "symbol": "Get-Report", "contains": "[CmdletBinding()]", "comment": "PS11: the attribute is on the `param_block`, two levels below the function statement. Measured pre-fix: every PowerShell function stored with `annotations = NULL`. It is pinned on the FUNCTION's symbol, not on a parameter: `[CmdletBinding()]` declares the function as an ADVANCED function, and a parameter has its own list." }
+  ],
+  "forbidDecorators": [
+    { "symbol": "Version", "contains": "static", "comment": "a PowerShell class attribute is NOT a decorator. `static` and `hidden` are bare keywords in the member list — `class_attribute` in the grammar — while a decorator is the bracketed `[...]` form (`[CmdletBinding()]`, `[ValidateSet()]`, `[Parameter()]`). Modelling `static` as a decorator would be the csharp spelling imported into a language that does not have it, and it is pinned here as absent so the two stay distinct. The static-ness is carried by `isStatic`, asserted below." },
+    { "symbol": "Token", "contains": "hidden" }
+  ],
+  "expectIsStatic": [
+    { "symbol": "Version", "ownerName": "Store", "isStatic": true },
+    { "symbol": "Token", "ownerName": "Store", "isStatic": false, "comment": "`hidden` is not `static` — a regression that mapped `hidden` onto `isStatic` would satisfy a presence check and fail this" },
+    { "symbol": "Root", "ownerName": "Store", "isStatic": false }
+  ],
+  "expectReturnType": [
+    { "symbol": "Path", "ownerName": "Store", "returnType": "string", "comment": "the declared return type of a class method" },
+    { "symbol": "Get-Report", "returnType": "any", "comment": "a PowerShell function has no declared return type; `any` is the honest value and is distinct from a declared `any`" }
+  ],
+  "expectDocstring": [
+    { "symbol": "Get-Report", "contains": ".SYNOPSIS", "minLength": 40, "comment": "PS23: comment-based help IS a PowerShell function's documentation (`about_Comment_Based_Help`). The pre-wave lane read no comment but `#requires`, so `docstring` was `null` for every symbol in the language." },
+    { "symbol": "Get-Report", "contains": ".DESCRIPTION" }
+  ],
+  "forbidDocstring": [
+    { "symbol": "Store", "contains": "separated from", "comment": "the ADJACENCY rule: this file's comment above `enum Level` is a blank line away from `Store`, so it is not `Store`'s documentation. The first scanner skipped blank lines and published the FILE BANNER as the docstring of whichever declaration came first — a resolvable, plausible, wholly wrong row." },
+    { "symbol": "Store", "comment": "and no docstring at all: the file banner belongs to the file, not to a declaration that happens to follow it" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "calls", "target": "global" }
+  ]
+}

@@ -136,14 +136,14 @@ GitHub assigned issue numbers independently of execution order. The normative or
 
 | Order | Issue |
 | --- | --- |
-| M10.01 | [#116](https://github.com/backbencher-hq/backbencher-brain/issues/116) |
-| M10.02 | [#118](https://github.com/backbencher-hq/backbencher-brain/issues/118) |
-| M10.03 | [#113](https://github.com/backbencher-hq/backbencher-brain/issues/113) |
-| M10.04 | [#117](https://github.com/backbencher-hq/backbencher-brain/issues/117) |
-| M10.05 | [#114](https://github.com/backbencher-hq/backbencher-brain/issues/114) |
-| M10.06 | [#121](https://github.com/backbencher-hq/backbencher-brain/issues/121) |
-| M10.07 | [#120](https://github.com/backbencher-hq/backbencher-brain/issues/120) |
-| M10.08 | [#115](https://github.com/backbencher-hq/backbencher-brain/issues/115) |
+| M10.01 | [#116](https://github.com/ishaq2321/backbencher-brain/issues/116) |
+| M10.02 | [#118](https://github.com/ishaq2321/backbencher-brain/issues/118) |
+| M10.03 | [#113](https://github.com/ishaq2321/backbencher-brain/issues/113) |
+| M10.04 | [#117](https://github.com/ishaq2321/backbencher-brain/issues/117) |
+| M10.05 | [#114](https://github.com/ishaq2321/backbencher-brain/issues/114) |
+| M10.06 | [#121](https://github.com/ishaq2321/backbencher-brain/issues/121) |
+| M10.07 | [#120](https://github.com/ishaq2321/backbencher-brain/issues/120) |
+| M10.08 | [#115](https://github.com/ishaq2321/backbencher-brain/issues/115) |
 
 ## Decision Rules
 

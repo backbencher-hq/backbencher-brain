@@ -1,0 +1,11 @@
+{
+  "_planted": "CASE B — a ZERO-SITES ruling: the construct exists in the language and occurs 0 times in OUR corpus. It must STAY in the denominator.",
+  "language": "php",
+  "gap": {
+    "_description": "planted",
+    "gaps": [
+      { "id": "P-Z1", "label": "imports", "severity": "ruled",
+        "ruling": "RULED INAPPLICABLE for this corpus: the construct exists and is implemented, but a corpus census over the admitted population counted 0 occurrences, so nothing can fire." }
+    ]
+  }
+}

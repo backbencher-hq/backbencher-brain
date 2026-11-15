@@ -1,0 +1,42 @@
+{
+  "fixtureId": "javascript/override-qualification",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J2 fix: only METHOD declarations pair (verified Sub.ok->Base.ok at 0.95 with reasonCode) \u2014 a same-named FIELD (Base.foo) or constructor never pairs, and an in-file base without the method (Base.bar missing) proves non-override so not even the guess tier fires (guesses are for external bases only, pinned by external-override).",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Sub",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Sub.ok",
+      "target": "ok",
+      "confidenceMin": 0.95,
+      "meta.reasonCode": "verified-in-file"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Sub.foo",
+      "target": "foo"
+    },
+    {
+      "type": "overrides",
+      "from": "Sub.constructor",
+      "target": "constructor"
+    },
+    {
+      "type": "overrides",
+      "from": "Sub.bar",
+      "target": "bar"
+    }
+  ]
+}

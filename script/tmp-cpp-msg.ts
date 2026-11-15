@@ -13,7 +13,7 @@ p.setLanguage(g)
 const anaMod: any = await import("../src/ast/real-cpp-analyzer")
 const diffMod: any = await import("./m14/differential")
 
-const F = "$HOME/fixtures/repositories/fmt/test/std-test.cc"
+const F = "/home/ishaq2321/bb_tests/repositories/fmt/test/std-test.cc"
 const src = fs.readFileSync(F, "utf8")
 const root = p.parse(src).rootNode
 const analyzer = new anaMod.RealCppAnalyzer()

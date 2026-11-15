@@ -1,0 +1,126 @@
+{
+  "instrument": "powershell-silent-bucket-probe",
+  "question": "Does the F9 spec's internal_silent claim still hold? Specifically: 'a file of pure arithmetic publishes no edges and no symbols'.",
+  "verdict": "SEE per-case detail; the claim is about the EXPRESSION LADDER being silent, and a ladder that carries VARIABLE READS is not silent",
+  "cases": [
+    {
+      "id": "pure-arith-no-vars",
+      "why": "the spec's own probe: literals only, so NO variable read exists and 'no edges' is the right answer",
+      "source": "$a = 1 + 2 ; $b = 3 * 4 ; $c = 5 - 6 ; $d = 7 / 8 ; ",
+      "symbols": [
+        "module:pure-arith-no-vars",
+        "variable:a",
+        "variable:b",
+        "variable:c",
+        "variable:d"
+      ],
+      "relationships": [
+        "contains:pure-arith-no-vars->a@1",
+        "contains:pure-arith-no-vars->b@2",
+        "contains:pure-arith-no-vars->c@3",
+        "contains:pure-arith-no-vars->d@4"
+      ],
+      "symbolCount": 5,
+      "relationshipCount": 4,
+      "usesEdges": 0
+    },
+    {
+      "id": "pure-arith-with-reads",
+      "why": "same expression ladder, but the operands are VARIABLE reads. The ladder is still a ladder; the READS are not.",
+      "source": "$p = 10 ; $q = 20 ; $r = $p + $q ; $s = $p - $q ; $t = $p * $q ; ",
+      "symbols": [
+        "module:pure-arith-with-reads",
+        "variable:p",
+        "variable:q",
+        "variable:r",
+        "variable:s",
+        "variable:t"
+      ],
+      "relationships": [
+        "contains:pure-arith-with-reads->p@1",
+        "contains:pure-arith-with-reads->q@2",
+        "contains:pure-arith-with-reads->r@3",
+        "contains:pure-arith-with-reads->s@4",
+        "contains:pure-arith-with-reads->t@5"
+      ],
+      "symbolCount": 6,
+      "relationshipCount": 5,
+      "usesEdges": 0
+    },
+    {
+      "id": "comparison-and-logical",
+      "why": "the other silent families: comparison_expression, logical_expression, bitwise_expression",
+      "source": "$m = 1 ; $n = 2 ; $o = $m -lt $n ; $p = $m -and $n ; $q = $m -band $n ; ",
+      "symbols": [
+        "module:comparison-and-logical",
+        "variable:m",
+        "variable:n",
+        "variable:o",
+        "variable:p",
+        "variable:q"
+      ],
+      "relationships": [
+        "contains:comparison-and-logical->m@1",
+        "contains:comparison-and-logical->n@2",
+        "contains:comparison-and-logical->o@3",
+        "contains:comparison-and-logical->p@4",
+        "contains:comparison-and-logical->q@5"
+      ],
+      "symbolCount": 6,
+      "relationshipCount": 5,
+      "usesEdges": 0
+    },
+    {
+      "id": "compound-assign-reads",
+      "why": "compound assignment reads its target. If the target read is published, a '+=' line is not silent.",
+      "source": "$acc = 1 ; $acc += 2 ; $acc *= 3 ; ",
+      "symbols": [
+        "module:compound-assign-reads",
+        "variable:acc"
+      ],
+      "relationships": [
+        "contains:compound-assign-reads->acc@1",
+        "uses:compound-assign-reads->acc@2",
+        "uses:compound-assign-reads->acc@3"
+      ],
+      "symbolCount": 2,
+      "relationshipCount": 3,
+      "usesEdges": 2
+    },
+    {
+      "id": "range-expression",
+      "why": "range_expression is in the silent list, but 1..3 enumerates values",
+      "source": "$xs = 1..3 ; foreach ($x in $xs) { $x } ; ",
+      "symbols": [
+        "module:range-expression",
+        "variable:xs",
+        "variable:x"
+      ],
+      "relationships": [
+        "contains:range-expression->xs@1",
+        "calls:range-expression->1..3@1",
+        "contains:range-expression->x@2"
+      ],
+      "symbolCount": 3,
+      "relationshipCount": 3,
+      "usesEdges": 0
+    },
+    {
+      "id": "format-expression",
+      "why": "format_expression is in the silent list; -f takes a format and arguments",
+      "source": "$v = 42 ; $s = '{0}' -f $v ; ",
+      "symbols": [
+        "module:format-expression",
+        "variable:v",
+        "variable:s"
+      ],
+      "relationships": [
+        "contains:format-expression->v@1",
+        "contains:format-expression->s@2"
+      ],
+      "symbolCount": 3,
+      "relationshipCount": 2,
+      "usesEdges": 0
+    }
+  ]
+}

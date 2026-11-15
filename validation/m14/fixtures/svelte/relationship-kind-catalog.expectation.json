@@ -1,0 +1,40 @@
+{
+  "fixtureId": "svelte/relationship-kind-catalog",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419-B: relationship-kind catalog for Svelte. Pins instantiates (template tag), calls (on: handler leaf), imports (ESM), exports (export let), contains (component->prop), extends (in-script class heritage via embedded-script truth).",
+  "expectSymbols": [
+    {
+      "name": "Derived",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "target": "Card",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "target": "open"
+    },
+    {
+      "type": "imports",
+      "source": "relationship-kind-catalog"
+    },
+    {
+      "type": "exports",
+      "target": "label"
+    },
+    {
+      "type": "contains",
+      "target": "label"
+    },
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base"
+    }
+  ]
+}

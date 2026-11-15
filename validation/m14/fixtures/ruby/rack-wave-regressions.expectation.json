@@ -1,0 +1,32 @@
+{
+  "fixtureId": "ruby/rack-wave-regressions",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two-corpus F5 gate wave (rack second corpus) regression pins, verified on rack + rake at 100%/0/0 (2026-09). RB-A: `Class.new { ... }.new` has an expression receiver — an anonymous instantiation; NO calls:new junk may be emitted (rack spec_lock.rb: 3 Global->new fabrications). RB-B: default-argument VALUE expressions are call sites of the method (mutex = Mutex.new -> instantiates from initialize; app = @app -> uses from context) — previously only the body was walked. RB-C: `class X < Struct.new(...)` superclass expressions construct the base; the Struct.new call must surface as an instantiates (rack directory.rb DirectoryBody). RB-D: member reads with no enclosing def (spec/DSL blocks) belong to the file-level owner Global (rack spec_media_type.rb @content_type/@empty_hash). RB-E: alias_method makes the alias a callable member — calls:local_path with aliasedTo (rack uploaded_file.rb).",
+  "expectSymbols": [
+    { "name": "LockLike", "kind": "class" },
+    { "name": "BodyLike", "kind": "class" },
+    { "name": "UploadedLike", "kind": "class" },
+    { "name": "initialize", "kind": "method", "ownerName": "LockLike" },
+    { "name": "context", "kind": "method", "ownerName": "LockLike" },
+    { "name": "original_filename", "kind": "property", "ownerName": "UploadedLike" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "source": "Global", "target": "Class", "meta.evidenceClass": "structural" },
+    { "type": "instantiates", "source": "initialize", "target": "Mutex", "meta.evidenceClass": "structural" },
+    { "type": "uses", "source": "context", "target": "@app", "meta.memberRead": true },
+    { "type": "calls", "source": "context", "target": "call" },
+    { "type": "instantiates", "source": "Global", "target": "Struct", "meta.evidenceClass": "structural" },
+    { "type": "uses", "source": "Global", "target": "@content_type", "meta.memberRead": true },
+    { "type": "uses", "source": "Global", "target": "@empty_hash", "meta.memberRead": true },
+    { "type": "calls", "source": "UploadedLike", "target": "local_path", "meta.aliasedTo": "original_filename" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "new" },
+    { "type": "uses", "source": "Global", "target": "@app" }
+  ],
+  "expectComplexity": [
+    { "symbol": "context", "ownerName": "LockLike", "equals": 1 },
+    { "symbol": "initialize", "ownerName": "LockLike", "equals": 1 }
+  ]
+}

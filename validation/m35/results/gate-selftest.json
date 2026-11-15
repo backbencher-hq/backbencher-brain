@@ -1,0 +1,90 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/verify-gate-selftest.ts",
+  "evidenceFile": "gate-selftest.json",
+  "generatedAt": "2026-09-04T01:54:54.712Z",
+  "passed": 59,
+  "failed": 0,
+  "negativeCases": 12,
+  "gates": [
+    {
+      "name": "m35-envelope-handler",
+      "script": "script/m35/verify-envelope-contract.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-envelope-remediation",
+      "script": "script/m35/verify-envelope-contract.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-s1-stale-flag",
+      "script": "script/m35/verify-s1-read-paths.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-s1-envelope-counts",
+      "script": "script/m35/verify-s1-read-paths.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-s2-stale-finding-fresh",
+      "script": "script/m35/verify-s2-derived.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-s3-stale-plan-unflagged",
+      "script": "script/m35/verify-s3-graph-migrate.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-s3-link-wrong-endpoint",
+      "script": "script/m35/verify-s3-graph-migrate.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-c1-baseline-tamper",
+      "script": "script/m35/staleness-corpus.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-d1-doc-claims-unimplemented",
+      "script": "script/m35/verify-docs-staleness.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-x1-subordinate-evidence-flip",
+      "script": "script/m35/verify-closure.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-freshness-core",
+      "script": "script/m35/verify-freshness-core.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    },
+    {
+      "name": "m35-governance",
+      "script": "script/m35/verify-governance.ts",
+      "mutationFailed": true,
+      "controlPassed": true
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.482Z",
+    "contentSha256": "a6efcb690ed8dc5c2dccd38c57c75161288c053b0f419750c6bce8c2a400bd40"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "phase": "B — fixed, gated, measured",
+  "generatedAt": "2026-11-01T20:33:44.574Z",
+  "currentCommit": "2571e60b555da914f23e47eb04ff4e6cee7734bb",
+  "gates": [
+    {
+      "gate": "validation/tools/bb_cross_language/verify-cross-language.ts",
+      "command": "BB_NO_AUTO_REFRESH=1 BB_GATE_CORPUS_DIR=validation/tools/bb_cross_language/bbdata BB_GATE_CORPUS_PROJECT=a0e74040fb5c01a56dabd69d78711044402b104e npx tsx validation/tools/bb_cross_language/verify-cross-language.ts",
+      "before": "did not exist",
+      "after": "VERIFIED 43/43 checks, 8/8 mutants caught"
+    },
+    {
+      "gate": "script/m63/verify-cl1-cross-language.ts",
+      "command": "BB_CL1_DB=$PWD/validation/tools/bb_cross_language/bbdata BB_CL1_PROJECT=a0e74040fb5c01a56dabd69d78711044402b104e BC_NO_AUTO_REFRESH=1 npx tsx script/m63/verify-cl1-cross-language.ts",
+      "before": "KNOWN-GAP 343/344 checks, 10/16 mutants",
+      "after": "VERIFIED 403/403 checks, 16/16 mutants caught"
+    },
+    {
+      "gate": "script/m63/verify-cl1-wiring.ts",
+      "command": "npx tsx script/m63/verify-cl1-wiring.ts",
+      "before": "KNOWN-GAP 23/30, 10/16 anchors live",
+      "after": "VERIFIED 31/31, 16/16 anchors live"
+    },
+    {
+      "gate": "script/m26/verify-cross-language-hover.ts",
+      "command": "npx tsx script/m26/verify-cross-language-hover.ts",
+      "before": "KNOWN-GAP 20/21, 4/4 mutants (floor 5)",
+      "after": "VERIFIED 21/21, 5/5 mutants caught"
+    },
+    {
+      "gate": "script/m55/verify-tiers.ts",
+      "command": "npx tsx script/m55/verify-tiers.ts",
+      "before": "VERIFIED",
+      "after": "VERIFIED 72/72, 7/7 mutants"
+    },
+    {
+      "gate": "script/verify-tool-docs.ts --only bb_cross_language",
+      "command": "npx tsx script/verify-tool-docs.ts --only bb_cross_language",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "MCP stdio door (source)",
+      "command": "node validation/tools/bb_cross_language/work/mcp-door.mjs",
+      "before": "15/15 cases",
+      "after": "15/15 cases"
+    },
+    {
+      "gate": "m48 C1 external arm",
+      "command": "BB_NO_AUTO_REFRESH=1 npx tsx script/m48/c1-repo-worker.ts elixir",
+      "before": "stale 5-check badge",
+      "after": "perTool.ok=true, 6ms, cross-check pass, 1 negative; /tmp private BB_DATA_DIR; 692 files/118s"
+    },
+    {
+      "gate": "m28 U1 (Lead scope, re-run only)",
+      "command": "npx tsx script/m28/verify-union.ts",
+      "before": "red after split",
+      "after": "VERIFIED 30/30, 6/6 mutants"
+    },
+    {
+      "gate": "m28 V1 (Lead scope, re-run only)",
+      "command": "npx tsx script/m28/verify-mcp-surface.ts",
+      "before": "12/13",
+      "after": "VERIFIED 13/13, 2/2 mutants (after script/m48/sync-ledger.ts)"
+    },
+    {
+      "gate": "m28 T1 (Lead scope, re-run only)",
+      "command": "npx tsx script/m28/verify-mcp-tools.ts",
+      "before": "15/24, 0/2",
+      "after": "KNOWN-GAP 23/24, 1/2 — surviving mutant is the bb_impact one, reported to the Lead"
+    },
+    {
+      "gate": "m28 U2 parity (Lead scope, re-run only)",
+      "command": "npx tsx script/m28/verify-surface-parity.ts",
+      "before": "n/a",
+      "after": "KNOWN-GAP 36/39, 3/5 observed — two bb_graph anchors missing, reported to the Lead"
+    }
+  ],
+  "defectsFixed": [
+    "D1 false absence",
+    "D2 deeper-count direction",
+    "D3 member-fact shape",
+    "D4 reference-index cost",
+    "D5 pairCount meaning",
+    "D6 pre/post-truncation names",
+    "D7 handler coercion",
+    "D8 duplicate bullet",
+    "D9 authorship narrative",
+    "D10 performance prose",
+    "D11 schema bounds"
+  ],
+  "latency": {
+    "file": "LATENCY.json",
+    "T0": {
+      "p50Ms": 8.3,
+      "p95Ms": 8.6
+    },
+    "T1": {
+      "p50Ms": 38.9,
+      "p95Ms": 59.7
+    },
+    "T2handler": {
+      "Command": {
+        "p50Ms": 7.6,
+        "p95Ms": 7.8
+      },
+      "file": {
+        "p50Ms": 112.1,
+        "p95Ms": 168.9
+      },
+      "type": {
+        "p50Ms": 278,
+        "p95Ms": 328.4
+      }
+    },
+    "budget": "within — worst p95 328ms against 5s"
+  },
+  "blockedLegs": [
+    {
+      "leg": "m26 external arm plan",
+      "command": "npx tsx script/m26/verify-external-arm-plan.ts",
+      "reason": "golden baseline project 064be526… absent from this machine; Lead will decide the golden-fixture story at integration"
+    },
+    {
+      "leg": "compiled door (node bin/bb mcp)",
+      "command": "node bin/bb mcp --dir test/fixtures/polyglot",
+      "reason": "dist/ predates the module split; Lead rebuilds dist and re-runs compiled evidence"
+    }
+  ]
+}

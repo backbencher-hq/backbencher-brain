@@ -1,0 +1,12 @@
+{
+  "issue": "bb_ask evidence completeness and verifier self-audit",
+  "code": "A8",
+  "tool": "bb_ask",
+  "title": "evidence + gate self-audit",
+  "verified": true,
+  "checks": 7,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-03T20:25:43.800Z"
+}

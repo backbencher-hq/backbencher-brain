@@ -65,7 +65,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const KOTLIN_DIR = process.env.BB_KOTLIN_DIR ?? join(CORPUS_ROOT, "kotlin")
 const NFILES = Number(process.env.NFILES || 400)
 const OUT_DIR = path.join(ROOT, "validation", "m14", "results")

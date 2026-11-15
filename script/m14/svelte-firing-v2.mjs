@@ -48,7 +48,7 @@ import { fileURLToPath } from "node:url"
 // and "the shared instrument cannot point at a worktree" is reported to master,
 // not fixed here.
 const REPO = process.env.BB_REPO || fileURLToPath(new URL("../..", import.meta.url))
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

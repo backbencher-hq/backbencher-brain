@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-04T23:09:03.006Z",
+  "summary": {
+    "S0": {
+      "derived": "full",
+      "symbols": 6,
+      "relationships": 9,
+      "nullTargetBaseline": 0
+    },
+    "S1": {
+      "exitCode": 0,
+      "derived": "bounded",
+      "edgesIntoLib": 9,
+      "libNewResolved": true
+    },
+    "S2": {
+      "reindexed": true,
+      "derivedPass": "bounded",
+      "lateFnResolved": true
+    },
+    "S3": {
+      "derivedPass": "skipped-unchanged",
+      "extraFnGone": true,
+      "orphanEdges": 0,
+      "baseline": 0
+    },
+    "S6": {
+      "staleAfterEdit": 1,
+      "flaggedFile": true,
+      "refreshCompleted": true,
+      "staleAfterRefresh": 0
+    },
+    "S4": {
+      "cancelled": true,
+      "resumeExit": 0,
+      "resumeDerived": "bounded",
+      "symbols": 1502,
+      "relationships": 4502
+    },
+    "S5": {
+      "adopted": true,
+      "exitCode": 0,
+      "symbols": 2,
+      "resolvedEdges": 4
+    }
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-04T23:09:03.007Z",
+    "contentSha256": "e4847f2a186a1062c1a198e28c0c810bdf57194e093240253975c8bd7c785efd"
+  }
+}

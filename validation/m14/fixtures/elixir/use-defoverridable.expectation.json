@@ -1,0 +1,152 @@
+{
+  "issue": "ELIXIR_FIX2-O1/O2",
+  "note": "`overrides` — Elixir HAS the construct: `defoverridable` marks a default implementation as replaceable (26 corpus sites / 14 files) and `super(...)` calls it (17 / 4), and the analyzer read NEITHER before this lane's change. Both mark forms are pinned: `defoverridable f: 1` names the PROVIDER's own f/1, and `defoverridable SomeModule` (the form a __using__ template writes — agent.ex:231, application.ex:416, dict.ex:218, eex/engine.ex:108) names every function of that module, readable only when the module is declared in the same file. Three forbids: a definition whose name is not in the overridable set is a NEW function, not an override (publishing it would be the fabrication the whole ruling turns on); the whole-module form must not fire for a function of a module this file does not declare; and a `defoverridable` inside a __using__ TEMPLATE is quoted code that applies to the module that USES the template, not to the one that defines it — 14 of the 26 corpus sites are that shape (Cc1.WithTemplate pins it, with `template_only` marked ONLY inside the quote so a template-credited mark has an observable consequence). MEASURED AND STATED: the two-endpoint shape is 0 sites in 601 corpus files (probe E8), so `overrides` does not fire on bb_tests/repositories/{elixir,otp}. This fixture is where it fires. Falsifiers: mutant elixir/overrides-dropped, elixir/overrides-fabricated, elixir/overrides-quoted-leak.",
+  "expectSymbols": [
+    {
+      "name": "Cc1.Base",
+      "kind": "module"
+    },
+    {
+      "name": "Cc1.Derived",
+      "kind": "module"
+    },
+    {
+      "name": "Cc1.WholeModule",
+      "kind": "module"
+    },
+    {
+      "name": "Cc1.WholeUser",
+      "kind": "module"
+    },
+    {
+      "name": "base_fun",
+      "kind": "function",
+      "ownerName": "Cc1.Base"
+    },
+    {
+      "name": "base_fun",
+      "kind": "function",
+      "ownerName": "Cc1.Derived"
+    },
+    {
+      "name": "derived_only",
+      "kind": "function",
+      "ownerName": "Cc1.Derived"
+    },
+    {
+      "name": "overridable_fun",
+      "kind": "function",
+      "ownerName": "Cc1.WholeUser"
+    },
+    {
+      "name": "Cc1.TemplateUser",
+      "kind": "module"
+    },
+    {
+      "name": "extra_fun",
+      "kind": "function",
+      "ownerName": "Cc1.WholeUser"
+    },
+    {
+      "name": "template_only",
+      "kind": "function",
+      "ownerName": "Cc1.TemplateUser"
+    },
+    {
+      "name": "template_default",
+      "kind": "function",
+      "ownerName": "Cc1.WithTemplate"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Cc1.Derived.base_fun",
+      "target": "Cc1.Base.base_fun",
+      "line_number": 29,
+      "confidence": 0.9,
+      "meta.elixirOverridesKind": "use_of_defoverridable",
+      "meta.provider": "Cc1.Base",
+      "meta.reasonCode": "elixir_use_defoverridable"
+    },
+    {
+      "type": "overrides",
+      "from": "Cc1.WholeUser.overridable_fun",
+      "target": "Cc1.WholeModule.overridable_fun",
+      "line_number": 50,
+      "confidence": 0.9,
+      "meta.provider": "Cc1.WholeModule"
+    },
+    {
+      "type": "references",
+      "from": "Cc1.Derived",
+      "target": "Cc1.Base",
+      "line_number": 25,
+      "confidence": 0.9,
+      "meta.directive": "use"
+    },
+    {
+      "type": "overrides",
+      "from": "Cc1.TemplateUser.template_default",
+      "target": "Cc1.WithTemplate.template_default",
+      "line_number": 93,
+      "confidence": 0.9,
+      "meta.provider": "Cc1.WithTemplate"
+    },
+    {
+      "type": "references",
+      "from": "Cc1.TemplateUser",
+      "target": "Cc1.WithTemplate",
+      "line_number": 91,
+      "confidence": 0.9,
+      "meta.directive": "use"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Cc1.Derived.derived_only"
+    },
+    {
+      "type": "overrides",
+      "from": "Cc1.Base.base_fun"
+    },
+    {
+      "type": "overrides",
+      "target": "Cc1.WholeModule.another_fun"
+    },
+    {
+      "type": "overrides",
+      "target": "Cc1.Base.base_fun",
+      "from": "Cc1.Base.base_fun"
+    },
+    {
+      "type": "overrides",
+      "target": "Cc1.WithTemplate.template_other"
+    },
+    {
+      "type": "overrides",
+      "from": "Global"
+    },
+    {
+      "type": "overrides",
+      "target": "unknown"
+    },
+    {
+      "type": "overrides",
+      "target": "Cc1.WholeModule.extra_fun"
+    },
+    {
+      "type": "overrides",
+      "target": "Cc1.WithTemplate.template_only"
+    },
+    {
+      "type": "overrides",
+      "from": "Cc1.TemplateUser.template_only"
+    },
+    {
+      "type": "overrides",
+      "from": "Cc1.WholeUser.extra_fun"
+    }
+  ]
+}

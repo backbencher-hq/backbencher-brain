@@ -1,0 +1,58 @@
+{
+  "instrument": "`overrides` SHAPE SPLIT and PRICING — NAMING versus MECHANISM, in the gate's own columns",
+  "lane": "rust",
+  "population": {
+    "admitted": 110,
+    "parsed": 110,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "ripgrep"
+    ],
+    "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default",
+  "overridesEdges": 1011,
+  "targetSpellings": {
+    "dotted": 0,
+    "colon": 0,
+    "slash": 0,
+    "bare": 1011,
+    "sample": [
+      "default",
+      "read",
+      "fmt",
+      "from",
+      "drop",
+      "write",
+      "flush",
+      "supports_color"
+    ],
+    "distinct": 82
+  },
+  "theThreeWaySplit": {
+    "ownFileDeclaresLeaf": 1011
+  },
+  "pricing": {
+    "asEmitted": {
+      "ambDeclOnly": 937,
+      "ambBoth": 64,
+      "resolved": 10
+    },
+    "onLeaf": {
+      "ambDeclOnly": 937,
+      "ambBoth": 64,
+      "resolved": 10
+    },
+    "onOwnerDoubleColon": {
+      "ambDeclOnly": 937,
+      "ambBoth": 64,
+      "resolved": 10
+    },
+    "onOwnerDoubleColon_available": 0
+  },
+  "reading": {
+    "split": "ownFileDeclaresLeaf = a TRUE row the resolver failed to bind (the overriding class declares the member in the same file) · projectDeclaresLeafElsewhere = the member exists on another declaration in the project · NOTHING-DECLARES-IT = a WRONG row, not a resolution failure (clause 1).",
+    "pricing": "asEmitted is the gate's columns for the target as written; onLeaf is the same for the LAST dotted segment. Both columns are reported, because a fix that turns unresolved into ambiguous has moved the problem rather than solved it."
+  }
+}

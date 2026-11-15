@@ -1,0 +1,92 @@
+{
+ "probe": "indexed-read",
+ "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+ "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-indexed/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+ "firstCall": {
+  "ms": 41,
+  "isError": false,
+  "textHead": [
+   "migration target: python",
+   "dependency order: basePrice (partial)"
+  ]
+ },
+ "before": {
+  "files": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793578559687
+   },
+   "-wal": null,
+   "-shm": null
+  },
+  "sha256": "0fd4ef5ecef28028faac5f524ecf3b1108de736d40d63b592cf69d44b84c2190",
+  "stat": {
+   "dev": 66307,
+   "mode": 33188,
+   "nlink": 1,
+   "uid": 1000,
+   "gid": 1000,
+   "rdev": 0,
+   "blksize": 4096,
+   "ino": 291261,
+   "size": 589824,
+   "blocks": 1152,
+   "atimeMs": 1793578559686.0242,
+   "mtimeMs": 1793578559687.0242,
+   "ctimeMs": 1793578559687.0242,
+   "birthtimeMs": 1793578559686.0242
+  }
+ },
+ "afterFirst": {
+  "files": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793578559687
+   },
+   "-wal": {
+    "size": 98912,
+    "mtimeMs": 1793578602475
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793578602454
+   }
+  },
+  "sha256": "0fd4ef5ecef28028faac5f524ecf3b1108de736d40d63b592cf69d44b84c2190"
+ },
+ "afterSecond": {
+  "files": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793578559687
+   },
+   "-wal": {
+    "size": 197792,
+    "mtimeMs": 1793578602485
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793578602454
+   }
+  },
+  "sha256": "0fd4ef5ecef28028faac5f524ecf3b1108de736d40d63b592cf69d44b84c2190"
+ },
+ "walAppearedOnFirstRead": true,
+ "dbBytesChangedInProcess": false,
+ "secondCallMs": 6
+}
+{
+ "probe": "unindexed-read",
+ "unindexedDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project",
+ "projectId": "0550d4a9e4fa42175c01e8c975658cb99da4a334",
+ "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-unindexed/projects/0550d4a9e4fa42175c01e8c975658cb99da4a334/brain.db",
+ "existedBefore": false,
+ "existsAfter": true,
+ "sizeAfter": 4096,
+ "dbCreatedByRead": true,
+ "outcome": {
+  "threw": false,
+  "isError": false,
+  "textHead": "migration target: python"
+ }
+}

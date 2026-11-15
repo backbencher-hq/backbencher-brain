@@ -1,0 +1,73 @@
+"""
+The root of the schema.
+"""
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+"An object type with heritage, arguments, list types and directives."
+type Query implements Node & Timestamped @key(fields: "id") {
+  "Fetch one user by id."
+  user(id: ID!, withPosts: Boolean = false): User
+  search(term: String!, limit: Int = 10): [SearchResult!]!
+  node(id: ID!): Node
+}
+
+interface Node {
+  id: ID!
+}
+
+interface Timestamped {
+  createdAt: String!
+}
+
+type User implements Node & Timestamped @key(fields: "id") {
+  id: ID!
+  createdAt: String!
+  role: Role!
+  status: Status
+  posts(first: Int): [Post]
+}
+
+type Post implements Node {
+  id: ID!
+  title: String!
+  author: User!
+}
+
+union SearchResult = User | Post
+
+enum Role {
+  "Can do anything."
+  ADMIN
+  USER
+  GUEST @deprecated(reason: "unused")
+}
+
+enum Status {
+  ACTIVE
+  ARCHIVED
+}
+
+scalar DateTime
+
+input UserFilter {
+  "Match on the name."
+  name: String
+  nested: UserFilter
+  limit: Int = 10
+  required: Boolean!
+}
+
+type Mutation {
+  createUser(input: UserInput!): User!
+}
+
+input UserInput {
+  name: String!
+  role: Role = USER
+}
+
+directive @auth(requires: Role = ADMIN) on OBJECT | FIELD_DEFINITION
+directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT

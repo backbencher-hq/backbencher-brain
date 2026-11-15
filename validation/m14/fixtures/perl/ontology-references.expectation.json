@@ -1,0 +1,114 @@
+{
+ "fixtureId": "perl/ontology-references",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "SUPERSEDED 2026-10-26: targets corrected to the leaf contract (the green peer code-references fixture's rule) and the `calls -> isa` forbid REPLACED by an EXPECT per the Lead's ruling; the byte-identical predecessor is `ontology-references.expectation.superseded-2026-10-26.json`.",
+ "rationale": "SUPERSESSION RECORD (2026-10-26), measured against the analyzer's own output (script/m14/perl-fixture-divergence.mts).\nCHANGED ROWS, old -> live.\n  · the four `references` TARGETS were the FULLY QUALIFIED names; the analyzer publishes the LEAF with the written package in `meta.qualifiedAs`, and that leaf rule is the one the GREEN peer fixture code-references pins (`references run -> Class` for `$self->isa('Other::Class')`). The green contract wins: targets are now the leaves (Types, Other, Role, Types).\n  · `references from tested target isa` … the old file ALSO forbade `calls -> isa` (\"isa is a UNIVERSAL builtin nothing defines\"). THE LEAD RULED THE OTHER WAY on 2026-10-26: a method invocation IS a `calls` edge, and an external or builtin target is exactly what the `external` bucket exists for — the fleet does not suppress a call because nothing in the project defines it. The forbid is REPLACED by an EXPECT row pinning `calls tested -> isa` (so a revert that deletes the call goes red), and the losing full-qualified `references` targets are forbidden instead.\n  · the bless/ref-comparison rows are IMPLEMENTED here (they emitted nothing before): `bless $self, 'Class'` names the class as the LAST argument, and `ref($x) eq 'Class'` is an `equality_expression` (not `binary_expression`, the type a reader would guess).\nUNCHANGED: the ARRAY/HASH builtin-type forbids, the variable/computed refusal forbids, and every symbol.\n\n`references` did not exist for perl. Perl has FOUR ways to name a class it depends on without invoking anything of it, and `bless` is perl's declared-TYPE position — the analogue of java's `instanceof` and kotlin's field-type reference. None of the four can be a `calls` edge: `bless`, `ref` and `isa` are in `PERL_BUILTINS` and are suppressed as call targets, and the CLASS being named is not the thing being called. Before this wave `$obj->isa('X')` produced `calls -> isa`, naming a UNIVERSAL method no project declares — 22 such edges on mojo's first 40 files, all of them `isa`. The seven `forbidRelationships` rows are the half that matters more than the four: `ref($x) eq 'ARRAY'` names perl's OWN type vocabulary rather than a class, and an edge `references -> ARRAY` names a type no declaration in any perl project carries. Measured on mojo: `ref(...) eq 'X'` occurs 67 times and 66 of them are `ARRAY` (30), `HASH` (23) or `CODE` (13); exactly one is a class. A rule written from the SHAPE rather than the ROLE would therefore have been 98.5% fabricated. The internal names are DERIVED, not hand-listed, the same way `PERL_BUILTINS` is — from the names a perl 5.34 interpreter itself produces for an unblessed reference. THE TARGET IS THE FULL WRITTEN NAME. The first version published `leafName(written)` and the M59 line oracle then read 152 of 200 corpus `references` edges as unverifiable while looking entirely correct: the target `UNIX` is not a whole word in `$handle->isa('IO::Socket::UNIX')`, because the character before it is `:`. It is the PERL-MR11 leaf-collapse a third time — `IO::Socket::UNIX`, `Mojo::DOM` and `Mojolicious::Command` all become bare leaves, and `bb_impact` on `UNIX` reaches every class whose name ends that way.",
+ "expectSymbols": [
+  {
+   "name": "Ontology::Types",
+   "kind": "class"
+  },
+  {
+   "name": "literal",
+   "kind": "method",
+   "ownerName": "Ontology::Types"
+  },
+  {
+   "name": "kind",
+   "kind": "method",
+   "ownerName": "Ontology::Types"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "literal",
+   "target": "Types",
+   "line_number": 6,
+   "meta.reasonCode": "bless-class-literal",
+   "meta.evidenceClass": "usage_contextual",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9",
+   "meta.qualifiedAs": "Ontology::Types"
+  },
+  {
+   "type": "references",
+   "from": "tested",
+   "target": "Other",
+   "line_number": 7,
+   "meta.reasonCode": "type-query-literal",
+   "note": "`$obj->isa('X')` is perl's TYPE TEST. It used to produce `calls -> isa`, naming a UNIVERSAL builtin that no project declares.",
+   "meta.qualifiedAs": "Ontology::Other",
+   "meta.query": "isa"
+  },
+  {
+   "type": "references",
+   "from": "claims",
+   "target": "Role",
+   "line_number": 8,
+   "meta.reasonCode": "type-query-literal",
+   "note": "the ROLE half of the same test. `implements` points class -> role and cannot express the subject -> role direction this line carries, so this is the only edge that does.",
+   "meta.qualifiedAs": "Ontology::Role",
+   "meta.query": "DOES"
+  },
+  {
+   "type": "references",
+   "from": "kind",
+   "target": "Types",
+   "line_number": 9,
+   "meta.reasonCode": "ref-class-comparison",
+   "note": "the type test written as a COMPARISON. The node is `equality_expression` in this grammar, NOT `binary_expression` — looking for the latter reports 0 occurrences of a construct mojo uses 67 times.",
+   "meta.qualifiedAs": "Ontology::Types"
+  },
+  {
+   "type": "calls",
+   "from": "tested",
+   "target": "isa",
+   "line_number": 7,
+   "meta.reasonCode": "dynamic-receiver",
+   "note": "RULED 2026-10-26: `$obj->isa('X')` INVOKES `isa`, so it is a `calls` edge even though nothing in the project defines the target — that is the `external` bucket's job. This EXPECT is the pin: a revert that suppresses the call goes red."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "target": "ARRAY",
+   "note": "line 10: `ref($x) eq 'ARRAY'` says what KIND OF THING the reference is. There is no declaration anywhere named ARRAY, and 66 of mojo's 67 ref-comparisons are exactly this."
+  },
+  {
+   "type": "references",
+   "target": "HASH",
+   "note": "line 11, same class"
+  },
+  {
+   "type": "references",
+   "from": "dynamic",
+   "note": "line 12 `$obj->isa($class)` names a VARIABLE. A target that is not written cannot be verified, so it is a fabricated claim rather than a weak one."
+  },
+  {
+   "type": "references",
+   "from": "runtime",
+   "note": "line 13 `bless $self, $class` is perl's commonest `bless` and names a variable, so no type can be recovered from the file and none is published."
+  },
+  {
+   "type": "references",
+   "from": "computed",
+   "note": "line 14 `ref($obj) eq \"${class}::Thing\"` is an INTERPOLATED literal — the class is computed at runtime, so nothing written can be resolved."
+  },
+  {
+   "type": "references",
+   "target": "Ontology::Types",
+   "note": "the FULLY QUALIFIED target the superseded file pinned. It must never come back: the leaf + meta.qualifiedAs rule is the one the green code-references fixture pins, and a widening that publishes the qualified name puts one class in the graph under a second target."
+  },
+  {
+   "type": "references",
+   "target": "Ontology::Other",
+   "note": "the FULLY QUALIFIED target the superseded file pinned. It must never come back: the leaf + meta.qualifiedAs rule is the one the green code-references fixture pins, and a widening that publishes the qualified name puts one class in the graph under a second target."
+  },
+  {
+   "type": "references",
+   "target": "Ontology::Role",
+   "note": "the FULLY QUALIFIED target the superseded file pinned. It must never come back: the leaf + meta.qualifiedAs rule is the one the green code-references fixture pins, and a widening that publishes the qualified name puts one class in the graph under a second target."
+  }
+ ]
+}

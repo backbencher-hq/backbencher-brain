@@ -1,0 +1,15 @@
+{
+  "fixtureId": "scala/pattern-refs",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G2 gap: pattern types are real type usages — case p: Point (typed_pattern) and case Point(a, b) (case_class_pattern) reference Point. Previously only the case-class parameter types emitted declared_type refs; the pattern type was invisible. infix_pattern (case a :: b) carries NO type_identifier and stays silent — it is a binding pattern, not a type-carrying one.",
+  "expectSymbols": [
+    { "name": "Point", "kind": "class" },
+    { "name": "M", "kind": "module" },
+    { "name": "m", "ownerName": "M" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "m", "target": "Point", "meta.relationshipType": "pattern_type", "meta.declaredOn": "typed_pattern" },
+    { "type": "references", "from": "m", "target": "Point", "meta.relationshipType": "pattern_type", "meta.declaredOn": "case_class_pattern" }
+  ]
+}

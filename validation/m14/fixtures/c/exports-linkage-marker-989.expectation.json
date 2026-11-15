@@ -1,0 +1,44 @@
+{
+  "fixtureId": "c/exports-linkage-marker-989",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "C has no export construct -- no keyword, no module, no visibility attribute -- so an `exports` edge in C can only ever describe a CONVENTION, and #963 pinned that convention to five macro NAMES. A name list is the same defect every time: right about the codebases it was written from, silent about the next one. Measured over 359 sqlite C/H files with `script/m14/tmp/c-audit/c-ontology-verdicts.ts`: the corpus defines SEVEN marker names and the five-name list matches NONE of them, so `exports` fired 0 times on that corpus. Two of the seven are `extern` markers the analyzer had never heard of -- `autosetup/jimsh0.c:723 #define JIM_EXPORT extern` and `ext/wasm/libcmpp.c:104,111 #define CMPP_EXPORT extern` / `... extern __declspec(dllexport)` -- carrying 274 declarations. The structural half of the convention is derivable with no list: a macro whose replacement list OPENS with the linkage keyword `extern` contributes linkage and nothing else, so every declaration it prefixes is externally linked. This rule reads the file's own `preproc_def` nodes, same-file only (C-D2). THE REFUSALS ARE THE POINT and each is a real corpus shape: `ext/wasm/libcmpp.c:5256 #define CMPP_PRIVATE static` (52 declarations that are INTERNAL linkage -- the opposite marker), `src/mutex_unix.c:39,41 #define ALIGN128` (an alignment attribute on one branch, nothing on the other), `src/sqliteInt.h:1329,1335 #define SQLITE_WSD` (thread-local). All three are EMPTY replacement lists. An empty macro contributes no tokens, so STRUCTURE cannot tell what it means -- only its NAME can, and the name is the list this change removes. 58 declarations ride the empty branch on this corpus and at least 52 are not exports. The genuine empty-marker case in this corpus is sqlite's own `SQLITE_API` (`src/sqlite.h.in:75`) and it is unreachable per-file anyway: `sqlite3.h` is GENERATED at build time, so no corpus file defines it. The controls are the five #963 conventions, which must keep working (the list is still required for markers defined in another header -- the kernel macros live in a file this analyzer never reads), and the platform-varied marker, where `#ifdef` picks the replacement list and both branches are `extern`.",
+  "expectSymbols": [
+    { "name": "c989_plain_export", "kind": "function", "note": "exported through a marker this file defines to `extern` -- the structural rule" },
+    { "name": "c989_pointer_export", "kind": "function", "note": "a pointer return does not change the marker shape" },
+    { "name": "c989_ms_export", "kind": "function", "note": "`#define PUBLIC_API_MS extern __declspec(dllexport)` -- the replacement list OPENS with the keyword and carries an attribute behind it" },
+    { "name": "c989_curl_extern", "kind": "function", "note": "CONTROL: a #963 convention, still published through the fixed list" },
+    { "name": "c989_git_extern", "kind": "function", "note": "CONTROL: the #963 paren form, where the macro's argument IS the return type" },
+    { "name": "c989_redis_api", "kind": "function", "note": "CONTROL: `REDISMODULE_API` is defined EMPTY in this file, so on this fixture it can only be published through the fixed list -- which is the point of keeping it" },
+    { "name": "c989_platform_export", "kind": "function", "note": "the platform-varied marker: `#ifdef` picks which replacement list the macro has and BOTH branches are `extern`" },
+    { "name": "c989_private_api", "kind": "function", "note": "CONTROL: `PRIVATE_API` expands to `static` -- 52 such declarations in sqlite's libcmpp.c and none of them is an export" },
+    { "name": "c989_attribute_only", "kind": "function", "note": "CONTROL: an EMPTY replacement list, the CMPP_PRIVATE / ALIGN128 / SQLITE_WSD class" },
+    { "name": "c989_not_linkage", "kind": "function", "note": "CONTROL: a LINKAGE keyword that is not `extern` -- the refusal in a form nobody has to guess at" },
+    { "name": "c989_ordinary", "kind": "function", "note": "CONTROL: an ordinary declaration with no marker at all" },
+    { "name": "PUBLIC_API", "kind": "constant" },
+    { "name": "PUBLIC_API_MS", "kind": "constant" },
+    { "name": "PRIVATE_API", "kind": "constant" },
+    { "name": "ATTRIBUTE_ONLY", "kind": "constant" },
+    { "name": "C989_PLATFORM_API", "kind": "constant" },
+    { "name": "C989_NOT_LINKAGE", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "c989_plain_export", "target": "PUBLIC_API", "note": "THE PINNED ROW. A marker the analyzer had never heard of, published because its replacement list opens with `extern`." },
+    { "type": "exports", "from": "c989_pointer_export", "target": "PUBLIC_API", "note": "the source is always the DECLARED NAME and the target always the marker as written -- #963's contract, unchanged" },
+    { "type": "exports", "from": "c989_ms_export", "target": "PUBLIC_API_MS", "note": "a calling convention / visibility attribute BEHIND the keyword does not change the fact that the macro's contribution starts with linkage" },
+    { "type": "exports", "from": "c989_platform_export", "target": "C989_PLATFORM_API", "note": "the platform-varied marker, which is why the rule keys on the replacement list and not on the name" },
+    { "type": "exports", "from": "c989_curl_extern", "target": "CURL_EXTERN", "note": "CONTROL: #963's userspace prefix convention" },
+    { "type": "exports", "from": "c989_git_extern", "target": "GIT_EXTERN", "note": "CONTROL: #963's paren form" },
+    { "type": "exports", "from": "c989_redis_api", "target": "REDISMODULE_API", "note": "CONTROL: this fixture defines REDISMODULE_API EMPTY, so only the fixed list can publish it -- a generalized rule that dropped the list would regress every codebase #963 was written for" },
+    { "type": "exports", "from": "kernel_exported_symbol", "target": "EXPORT_SYMBOL", "note": "CONTROL: the kernel call form, whose argument IS the name" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "c989_private_api", "target": "PRIVATE_API", "note": "CONTROL, and the class that decided the empty branch: `static` is INTERNAL linkage, so publishing an export here is false. sqlite `ext/wasm/libcmpp.c:5256` has 52 of these." },
+    { "type": "exports", "from": "c989_attribute_only", "target": "ATTRIBUTE_ONLY", "note": "CONTROL: an EMPTY replacement list. An empty macro contributes no tokens, so structure cannot tell an export marker from an alignment attribute (sqlite `#define ALIGN128`) or a thread-local marker (sqlite `#define SQLITE_WSD`). Deciding it by name is the fixed list this change removes, and sqlite's own genuine empty marker `SQLITE_API` is unreachable per-file because `sqlite3.h` is generated at build time." },
+    { "type": "exports", "from": "c989_not_linkage", "target": "C989_NOT_LINKAGE", "note": "CONTROL: `static` again, in a form that makes the direction of the rule unambiguous -- the test is `extern`, not `is a linkage keyword`." },
+    { "type": "exports", "from": "c989_ordinary", "target": "c989_ordinary", "note": "CONTROL: an unmarked declaration must publish no export edge under any reading" },
+    { "type": "exports", "from": "int", "target": "PUBLIC_API", "note": "CONTROL, and #962's defect restated: in every prefixed form the macro's argument is a RETURN TYPE, so reading the name from the macro's argument would publish a type as an exported name" },
+    { "type": "exports", "from": "PUBLIC_API", "target": "PUBLIC_API", "note": "CONTROL: the exported NAME can never be the marker itself -- the recovery-split self-reference #963 pinned" },
+    { "type": "exports", "from": "c989_plain_export", "target": "KERNEL_EXPORT", "note": "CONTROL: `KERNEL_EXPORT` is a synthesised constant written in no source file anywhere; the edge to it was the fabrication #963 removed and nothing may bring it back" }
+  ]
+}

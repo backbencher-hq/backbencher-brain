@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Imports.json",
+  "authoredFrom": "BD-ontology: a `$ref` naming another FILE is a dependency, which is what `imports` is for. The first ruling said JSON has no imports because the grammar has no import node - and that is the wrong question, because a `$ref` is a STRING and a grammar cannot see what a string names. The ontology gate measured 58 file-to-file `$ref`s across 12 files once the probe was narrowed to `$ref` VALUES (its first version scanned every string and found 2,651 false positives, the examples being filenames in a `files` array). A local pointer (`#/definitions/N`) and a URL are neither: a URL names a VOCABULARY, a JSON-Schema draft identifier. This fixture pins all three shapes at once, so the type cannot pass by treating every `$ref` as an import.  The predicate that decides this was itself over-strict at first: it also demanded a `/` or a leading `.`, on the theory that a bare word ending in `.json` might not be a path. That rejected `other.schema.json`, which plainly is one. The extension is the test: a $ref whose value is a document name is naming a document. The corpus count is UNAFFECTED and re-measured to confirm it: still 58 across 12 files, because every file-naming `$ref` in the corpus happens to carry a directory. So the predicate was under-BROAD while the number was right, and I initially wrote the opposite into this note - that the count was an undercount - before re-measuring and finding it unchanged. The gap surfaced only because a fixture asked for the shape the corpus happened not to contain, which is the whole argument for fixtures over census numbers: a census tells you what is in the corpus, and a fixture tells you what the CODE does. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge. The mechanical migration resolves a bare name against the fixture's own qualifiedName and could not choose between this file's THREE `$ref` symbols, so the 3 pins naming `$ref` as an endpoint were corrected BY HAND from the fixture source (line 8 is `allOf[1]`'s `$ref`, line 12 is `anyOf[0]`'s, and Imports line 4 is `N`'s). Their owner, child and line are unchanged.",
+  "expectSymbols": [
+    {
+      "name": "$schema",
+      "kind": "property",
+      "ownerName": "Imports"
+    },
+    {
+      "name": "properties",
+      "kind": "class",
+      "ownerName": "Imports"
+    },
+    {
+      "name": "local",
+      "kind": "class",
+      "ownerName": "properties"
+    },
+    {
+      "name": "$ref",
+      "kind": "property",
+      "ownerName": "local"
+    },
+    {
+      "name": "definitions",
+      "kind": "class",
+      "ownerName": "Imports"
+    },
+    {
+      "name": "N",
+      "kind": "class",
+      "ownerName": "definitions"
+    },
+    {
+      "name": "$ref",
+      "kind": "property",
+      "ownerName": "N"
+    },
+    {
+      "name": "Imports",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Imports",
+      "target": "Imports.$schema",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Imports",
+      "target": "Imports.properties",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Imports.properties",
+      "target": "Imports.properties.local",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Imports.properties.local",
+      "target": "Imports.properties.local.$ref",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Imports.definitions.N",
+      "target": "Imports.definitions.N.$ref",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "Imports.definitions.N",
+      "target": "Imports.definitions.N.$ref",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "Imports.definitions.N",
+      "target": "Imports.definitions.N.$ref",
+      "line_number": 4
+    },
+    {
+      "type": "references",
+      "from": "Imports.properties.local.$ref",
+      "target": "Imports.definitions.N",
+      "line_number": 3
+    },
+    {
+      "type": "imports",
+      "from": "Imports.definitions.N.$ref",
+      "target": "other.schema.json#/definitions/N",
+      "line_number": 4
+    },
+    {
+      "type": "references",
+      "from": "Imports.definitions.N.$ref",
+      "target": "other.schema.json#/definitions/N",
+      "line_number": 4
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "https://json-schema.org/draft/2020-12/schema",
+      "note": "A URL is a VOCABULARY reference, not a file. Forbidden so an analyzer that treats every $ref as an import cannot pass."
+    }
+  ]
+}

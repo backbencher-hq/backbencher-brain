@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/record-ops-er2.erl",
+  "authoredFrom": "ER2 record-member contract (user finding #1, closes ER-G4; ER-D7/ER-D12/ER-D13) authored from the pinned grammar probe (script/m14/tmp/erlang-er2-shapes-probe.ts, 2026-09-18) before this fixture's F3 run: reads/updates/index reads emit uses -> record AND uses -> touched field (java member-read parity, #739/#740), in EVALUATION contexts only (clause heads are patterns - heady's #state{count = C} emits nothing); record field defaults attribute their calls to the RECORD (erlang:make_ref at the -record line); updates are member writes, never instantiates (ER-D4); complexity is per-ARM (base 1 + cr/if/catch arms + receive_after + andalso/orelse + extra clauses): transitions 3+2+1 arms +1 base = 7, guarded 2 if-arms + andalso + 1 = 4, heady 1. The update on line 21 and the inner read share (source,target,line) so the ancestor's edge wins the dedup - the values are read off the text, not off a guess.",
+  "expectSymbols": [
+    {
+      "name": "record_ops_er2",
+      "kind": "module"
+    },
+    {
+      "name": "state",
+      "kind": "struct",
+      "ownerName": "record_ops_er2"
+    },
+    {
+      "name": "timer",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "transitions",
+      "kind": "function",
+      "ownerName": "record_ops_er2",
+      "meta.arity": 1
+    },
+    {
+      "name": "guarded",
+      "kind": "function",
+      "ownerName": "record_ops_er2",
+      "meta.arity": 1
+    },
+    {
+      "name": "heady",
+      "kind": "function",
+      "ownerName": "record_ops_er2",
+      "meta.arity": 1
+    },
+    {
+      "name": "get_count",
+      "kind": "function",
+      "ownerName": "record_ops_er2",
+      "meta.arity": 1
+    },
+    {
+      "name": "idx",
+      "kind": "function",
+      "ownerName": "record_ops_er2",
+      "meta.arity": 0
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "state",
+      "target": "erlang:make_ref",
+      "meta.context": "remote function call",
+      "meta.callArity": 0,
+      "line_number": 13,
+      "note": "record field DEFAULT (ER-D12): the call inside -record's default value attributes to the RECORD symbol"
+    },
+    {
+      "type": "uses",
+      "from": "transitions",
+      "target": "state",
+      "meta.context": "record member read",
+      "line_number": 16,
+      "note": "the case scrutinee read: uses -> record at the #state name's line"
+    },
+    {
+      "type": "uses",
+      "from": "transitions",
+      "target": "count",
+      "meta.context": "record member read",
+      "line_number": 16
+    },
+    {
+      "type": "uses",
+      "from": "transitions",
+      "target": "state",
+      "meta.context": "record field update",
+      "line_number": 22,
+      "note": "the OTP state-transition idiom - uses -> record AND -> each assigned field"
+    },
+    {
+      "type": "uses",
+      "from": "transitions",
+      "target": "count",
+      "meta.context": "record field update",
+      "line_number": 22
+    },
+    {
+      "type": "calls",
+      "from": "transitions",
+      "target": "transitions",
+      "meta.context": "local function call",
+      "meta.callArity": 1,
+      "line_number": 22,
+      "note": "self-recursion inside the receive arm - evaluation context, emitted"
+    },
+    {
+      "type": "uses",
+      "from": "get_count",
+      "target": "state",
+      "meta.context": "record member read",
+      "line_number": 36
+    },
+    {
+      "type": "uses",
+      "from": "get_count",
+      "target": "count",
+      "meta.context": "record member read",
+      "line_number": 36
+    },
+    {
+      "type": "uses",
+      "from": "idx",
+      "target": "state",
+      "meta.context": "record member read",
+      "line_number": 38,
+      "note": "#state.label index read - same contract as dot reads"
+    },
+    {
+      "type": "uses",
+      "from": "idx",
+      "target": "label",
+      "meta.context": "record member read",
+      "line_number": 38
+    },
+    {
+      "type": "contains",
+      "from": "record_ops_er2",
+      "target": "transitions"
+    },
+    {
+      "type": "contains",
+      "from": "state",
+      "target": "count"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "transitions",
+      "equals": 7
+    },
+    {
+      "symbol": "guarded",
+      "equals": 4
+    },
+    {
+      "symbol": "heady",
+      "equals": 1
+    },
+    {
+      "symbol": "get_count",
+      "equals": 1
+    },
+    {
+      "symbol": "idx",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "heady",
+      "target": "state",
+      "note": "head-pattern record: a match, not a construction"
+    },
+    {
+      "type": "uses",
+      "from": "heady",
+      "target": "state",
+      "note": "head-pattern record: a match, not an evaluation - pattern position is silent"
+    },
+    {
+      "type": "uses",
+      "from": "heady",
+      "target": "count",
+      "note": "ditto for the field"
+    },
+    {
+      "type": "calls",
+      "from": "heady",
+      "target": "heady"
+    },
+    {
+      "type": "instantiates",
+      "from": "transitions",
+      "target": "state",
+      "note": "an UPDATE is a member write (ER-D4), never a construction"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "C",
+      "note": "a head-pattern binding is not a symbol"
+    },
+    {
+      "name": "New"
+    }
+  ]
+}

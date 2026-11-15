@@ -1,0 +1,15 @@
+{
+  "issue": "F5-CERT",
+  "note": "THE ERROR NODE IS A HANDLED SHAPE, PINNED. clojure's completeness spec has carried `ERROR` in handled_verified since the lane's first census, but no fixture ever produced one, so the fixture-coverage gate reported it UNCOVERED and the claim was unfalsifiable. This file is deliberately MALFORMED (the second form is missing its closing delimiter): tree-sitter-clojure emits `ERROR` for the damaged region and the analyzer must still publish the intact declaration while publishing NOTHING out of the damaged tail. The measured contract at HEAD: the parse carries one ERROR node at line 14; the analyzer publishes the module symbol plus the `intact` function, two relationships (contains and exports module->intact at line 12), and one file-level syntax-error warning; `damaged` is not a symbol. The forbid rows are the point: a recovery fixture that fabricated a symbol or a call out of the damaged region would pass a bare `expect` check and fail here.",
+  "expectSymbols": [
+    { "name": "error-recovery", "kind": "module" },
+    { "name": "intact", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "error-recovery", "target": "intact", "line_number": 12 },
+    { "type": "exports", "from": "error-recovery", "target": "intact", "line_number": 12 }
+  ],
+  "forbidSymbols": [
+    { "name": "damaged" }
+  ]
+}

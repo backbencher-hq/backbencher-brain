@@ -1,0 +1,17 @@
+{
+  "fixtureId": "c/swallowed-identifier-arrival-907",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#907 (M60-C) round 2, the most degraded arrival. Verbatim jq vendor/decNumber/decNumber.c L1939-2320 — the enclosing damaged function plus the definitions it swallowed. In `ERROR[2284-2346]` all 132 named children are flat identifiers: the `decNumber *` return type AND the function_declarator node are gone, so a bare name is all the tree offers. Measured discrimination: at the pre-round-2 tree this file yields NO function symbols at all; after the identifier rule it yields decNumberPower L20 and the three public API definitions at L365/L385/L390. Expected lines were derived from the fixture text (slice offset +12 header lines) before the analyzer ran. The authored control at the end is the fabrication test: `C907_LOOP(x)` expands to a `for` loop and is invoked both at file scope followed by a block and inside a function — the same bare-identifier + argument-list + block shape — and the declaration-header guard (a type/storage token must precede the name) refuses both, while the enclosing real definition c907_control is emitted. Corpus-level backing: the 434-file A/B added 23 symbols versus HEAD, all 23 at genuine definition headers, 0 non-definition additions, 0 new duplicate names.",
+  "expectSymbols": [
+    { "name": "decNumberQuantize", "kind": "function" },
+    { "name": "decNumberNormalize", "kind": "function" },
+    { "name": "decNumberReduce", "kind": "function" },
+    { "name": "decNumberPower", "kind": "function" },
+    { "name": "c907_control", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "C907_LOOP", "kind": "function" },
+    { "name": "x", "kind": "function" }
+  ]
+}

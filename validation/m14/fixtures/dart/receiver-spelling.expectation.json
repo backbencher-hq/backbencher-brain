@@ -1,0 +1,174 @@
+{
+  "fixtureId": "dart/receiver-spelling",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE RECEIVER-TYPE SPELLING, pinned with its boundaries. A bare member whose receiver's type the run cannot see used to drop the owner and keep the leaf; the census priced the spelling (`Type.member`) against the gate's own key space — on riverpod's calls 966 ambiguous rows resolve while 129 resolved rows stop being resolvable, and the rest stay honestly unresolved — so the row is now spelled and the claim that makes it honest is attached: `baseBeyondRunScope: <type>`, the declared cause whose contract is 'the run that wrote this edge could not look the owner up'. It can never raise a resolution (the gate reads it only where the target names NOTHING) and its reason is checked against the edge's own target owner. Four boundaries are pinned because a spelling that fires one case too widely moves thousands of corpus rows silently: (C) a LOWERCASE head names no type, so no spelling exists and the old decline must stay exactly as it was; (D) a type visible in the file that declares the member keeps resolving through the visible-type path, with NO claim; (F) a type visible in the file that does NOT declare the member keeps `receiverMemberOutsideRun` and its bare target — the project cannot declare `Bare.missingMember`, because `Bare` is declared here without it. THE CLAIM MUST ALSO SURVIVE THE METADATA TERNARIES: the first application of this change dropped it at three sites whose metadata was written `q.target ? {qualifier: …} : {…receiverCut(q)}`, and the `uses` read of `args.first` came out spelled with NO marker — a spelling whose non-resolution the gate would charge to the lane. The dump caught it, not the reading, which is why case C's `List.first` row is pinned with both its qualifier AND its claim.",
+  "expectSymbols": [
+    { "name": "receiver-spelling", "kind": "module" },
+    { "name": "Local", "kind": "class" },
+    { "name": "own", "kind": "method", "ownerName": "Local" },
+    { "name": "callOwn", "kind": "method", "ownerName": "Local" },
+    { "name": "Bare", "kind": "class" },
+    { "name": "other", "kind": "method", "ownerName": "Bare" },
+    { "name": "typeOutsideRun", "kind": "function", "scope": "" },
+    { "name": "typedLocal", "kind": "function", "scope": "" },
+    { "name": "untypedLocal", "kind": "function", "scope": "" },
+    { "name": "sdkType", "kind": "function", "scope": "" },
+    { "name": "memberOutsideRun", "kind": "function", "scope": "" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "typeOutsideRun",
+      "target": "ExternalThing.make",
+      "meta.qualifier": "chain",
+      "meta.baseBeyondRunScope": "ExternalThing",
+      "meta.receiverCause": null,
+      "note": "case A — a CAPITALIZED head whose type this file does not declare. The target names the type instead of the bare leaf `make`, and the claim names the owner the run could not look up. `receiverCause: null` pins the mutual exclusion: a spelled row carries the CLAIM, never a cut cause."
+    },
+    {
+      "type": "calls",
+      "from": "typedLocal",
+      "target": "ExternalThing.make",
+      "meta.baseBeyondRunScope": "ExternalThing",
+      "note": "case B, first half — the constructor call itself is spelled by the same branch"
+    },
+    {
+      "type": "calls",
+      "from": "typedLocal",
+      "target": "ExternalThing.frob",
+      "meta.qualifier": "chain",
+      "meta.baseBeyondRunScope": "ExternalThing",
+      "note": "case B, the row this class exists for — `ext.frob()` where `ext` is a local with an EXPLICIT type. The site writes a value and the run still knows the type name, which is why `receiverTypeOutsideRun` was never only about capitalized literals"
+    },
+    {
+      "type": "uses",
+      "from": "typedLocal",
+      "target": "typedLocal\u0000ext",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "the local read is a BINDING and is untouched by the spelling — its target is already unspeakable as a declaration"
+    },
+    {
+      "type": "calls",
+      "from": "untypedLocal",
+      "target": "frob",
+      "meta.receiverCause": "receiverTypeUnknown",
+      "meta.baseBeyondRunScope": null,
+      "note": "case C, the lower boundary — `args.first` names no type, so the head stays a VALUE, the target stays the bare leaf, and the cut still reports `receiverTypeUnknown`. `baseBeyondRunScope: null` is the pin that catches a spelling that overruns: if the branch ever fires here, this row gains a claim and the check fails."
+    },
+    {
+      "type": "uses",
+      "from": "untypedLocal",
+      "target": "List.first",
+      "meta.isMemberRead": true,
+      "meta.qualifier": "head",
+      "meta.baseBeyondRunScope": "List",
+      "note": "the row that caught the dropped claim: `args` is typed `List<dynamic>`, the head's type resolves to `List`, the target is spelled — and the claim MUST ride with it, or a row the project cannot resolve reads as an unmarked gap. Both the qualifier and the claim are pinned, because the two ternaries that write them were the defect"
+    },
+    {
+      "type": "uses",
+      "from": "untypedLocal",
+      "target": "untypedLocal\u0000ext",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true
+    },
+    {
+      "type": "uses",
+      "from": "untypedLocal",
+      "target": "untypedLocal\u0000args",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true
+    },
+    {
+      "type": "calls",
+      "from": "sdkType",
+      "target": "String.trim",
+      "meta.qualifier": "chain",
+      "meta.baseBeyondRunScope": "String",
+      "note": "case E — an SDK type (implicit `dart:core`). The spelling fires and the claim is what keeps the row honest: `String` is outside every project this corpus holds, so no index of the project could ever have resolved it"
+    },
+    {
+      "type": "uses",
+      "from": "sdkType",
+      "target": "sdkType\u0000value",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true
+    },
+    {
+      "type": "calls",
+      "from": "callOwn",
+      "target": "Local.own",
+      "meta.qualifier": "enclosing",
+      "meta.baseBeyondRunScope": null,
+      "note": "case D, the upper control — the declaring type is in this file, the enclosing-class rule resolves the call, and the new branch must not touch it. `baseBeyondRunScope: null` is the assertion that the spelling did not spread to rows the analyzer already answered"
+    },
+    {
+      "type": "calls",
+      "from": "memberOutsideRun",
+      "target": "missingMember",
+      "meta.receiverCause": "receiverMemberOutsideRun",
+      "meta.baseBeyondRunScope": null,
+      "note": "case F — the type IS visible here and does not declare the member, so the declaring type is elsewhere. Deliberately NOT spelled this round: the project cannot declare `Bare.missingMember` because `Bare` is declared here without it, so a spelling would convert an ambiguity into a certain non-resolution"
+    },
+    {
+      "type": "references",
+      "from": "memberOutsideRun",
+      "target": "Bare",
+      "meta.isTypeMention": true
+    },
+    {
+      "type": "instantiates",
+      "from": "memberOutsideRun",
+      "target": "Bare"
+    },
+    {
+      "type": "uses",
+      "from": "memberOutsideRun",
+      "target": "memberOutsideRun\u0000b",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true
+    },
+    { "type": "contains", "from": "Local", "target": "Local.own" },
+    { "type": "contains", "from": "Local", "target": "Local.callOwn" },
+    { "type": "contains", "from": "Bare", "target": "Bare.other" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "typeOutsideRun",
+      "target": "make",
+      "note": "the OLD bare shape, pinned as forbidden: the whole point of the change is that `ExternalThing.make` replaces `make`, and the bare form would be an ambiguous leaf again"
+    },
+    {
+      "type": "uses",
+      "from": "untypedLocal",
+      "target": "first",
+      "note": "case C, negative side — the bare leaf must not survive beside the spelling"
+    },
+    {
+      "type": "calls",
+      "from": "untypedLocal",
+      "target": "ExternalThing.frob",
+      "note": "case C, THE BOUNDARY — a lowercase head names no type, so this spelling must NOT exist. A branch that fell back to the local's own name (the pre-cut behaviour the fixture `receiver-cause` already refuted once) would produce exactly this row"
+    },
+    {
+      "type": "calls",
+      "from": "callOwn",
+      "target": "own",
+      "note": "case D — the resolved call must not also appear bare"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "equals": 7,
+      "note": "four spelled (A, B's two, E) + one enclosing (D) + two declined (C, F)"
+    },
+    {
+      "type": "uses",
+      "equals": 6,
+      "note": "one spelled member read (`List.first`) + five bindings"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/optional-chaining",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANTI-SKIP GUARANTEE: optional-chain segments (account, owner, label) must each appear as edge targets. Root-anchoring is the documented limitation.",
+  "expectSymbols": [
+    { "name": "Guard" },
+    { "name": "probe" }
+  ],
+  "expectRelationships": [
+    { "targetEndsWith": "account" },
+    { "targetEndsWith": "owner" },
+    { "targetEndsWith": "label" }
+  ]
+}

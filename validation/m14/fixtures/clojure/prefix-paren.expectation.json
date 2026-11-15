@@ -1,0 +1,13 @@
+{
+  "issue": "CLJ-ADV F15",
+  "note": "Paren prefix-list `(prefix (sub :as sp))` — the list twin of the vec form: nested aliases register, `sub` targets are references, and `(a/one)` resolves to `clj.fixture.prefix.alpha/one` (not the raw `a/one`).",
+  "expectRelationships": [
+    { "type": "references", "from": "clj.fixture.prefixparen", "target": "clj.fixture.prefix", "line_number": 2 },
+    { "type": "references", "from": "clj.fixture.prefixparen", "target": "clj.fixture.prefix.alpha", "line_number": 3 },
+    { "type": "references", "from": "clj.fixture.prefixparen", "target": "clj.fixture.prefix.beta", "line_number": 4 },
+    { "type": "calls", "from": "go", "target": "clj.fixture.prefix.alpha/one", "line_number": 6 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "a/one" }
+  ]
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M60 X13: a bare reference this document does not satisfy is a real claim and
+     was being dropped. `CT_Shadow` lives in the xs:included file; `string` is a
+     built-in that the included file may shadow; `nope:int` uses a prefix this
+     document never declares and must be refused outright. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:example:x13m12">
+  <xs:include schemaLocation="shared.xsd"/>
+  <xs:element name="a" type="CT_Shadow"/>
+  <xs:element name="b" type="string"/>
+  <xs:element name="c" type="nope:int"/>
+</xs:schema>

@@ -1,0 +1,32 @@
+{
+ "fixtureId": "php/local-read/reads",
+ "language": "php",
+ "authoredBeforeAnalyzerRun": false,
+ "authoredNote": "Transcribed from a measured run against this file (the dump is reproduced in validation/m14/fixtures/php/local-read-phantom.mts, which asserts the same edges by rule rather than by list). The READING half of the two-file local-read fixture; `declares.expectation.json` is the other half.",
+ "rationale": "THE PIN IS THE SPELLING. Every `uses` edge here is a BARE `$variable` read — a parameter, a foreach value, an accumulator — and a local binding is never a published symbol, so the string the edge writes is the only thing that says which binding it read. Under the bare-name rule that string was `counter`, and `declares.php` declares a `counter` property on an unrelated class in another file: measured against the gate's own rule (`classifyEdge`), the bare spelling classifies `resolved (decls=1, kinds=property)` and binds `run`'s own local to `Telemetry::$counter`. The fix spells a binding as `<read source>\\u0000<binding>` with `metadata.localBinding` (`BINDING_SEP`, `src/ast/types.ts:190`), which no published key can carry, so both lookup strategies miss it and the row is stored unresolved instead of mis-bound. The `forbidRelationships` rows below are what makes that a test rather than a description: the bare spelling must not come back.",
+ "expectSymbols": [
+  { "name": "Fixture\\LocalRead", "kind": "namespace" },
+  { "name": "run", "kind": "function", "ownerName": "Fixture\\LocalRead" },
+  { "name": "tally", "kind": "function", "ownerName": "Fixture\\LocalRead" }
+ ],
+ "expectRelationships": [
+  { "type": "uses", "from": "run", "target": "run\u0000xs", "line_number": 15, "comment": "parameter read — a binding, spelled as one" },
+  { "type": "uses", "from": "run", "target": "run\u0000counter", "line_number": 16, "comment": "the accumulator the sibling file's `counter` property used to steal (loop body)" },
+  { "type": "uses", "from": "run", "target": "run\u0000x", "line_number": 16, "comment": "foreach value binding, read" },
+  { "type": "uses", "from": "run", "target": "run\u0000counter", "line_number": 18, "comment": "the SAME binding read at the return — read twice, one identity" },
+  { "type": "uses", "from": "tally", "target": "tally\u0000rows", "line_number": 27, "comment": "parameter read in the second function" },
+  { "type": "uses", "from": "tally", "target": "tally\u0000summary", "line_number": 28, "comment": "SUBSCRIPT BASE arm (`$summary[] = ...`) — the same defect, a different emission site" },
+  { "type": "uses", "from": "tally", "target": "tally\u0000row", "line_number": 28, "comment": "foreach value binding, read" },
+  { "type": "uses", "from": "tally", "target": "tally\u0000summary", "line_number": 30, "comment": "the subscript base read again on return" },
+  { "type": "contains", "from": "Fixture\\LocalRead", "target": "run", "line_number": 12 },
+  { "type": "contains", "from": "Fixture\\LocalRead", "target": "tally", "line_number": 24 }
+ ],
+ "forbidRelationships": [
+  { "type": "uses", "from": "run", "target": "counter", "comment": "REGRESSION GUARD: the bare spelling is the false link — `declares.php` would answer it" },
+  { "type": "uses", "from": "run", "target": "xs" },
+  { "type": "uses", "from": "run", "target": "x" },
+  { "type": "uses", "from": "tally", "target": "summary", "comment": "REGRESSION GUARD through the SUBSCRIPT BASE arm" },
+  { "type": "uses", "from": "tally", "target": "rows" },
+  { "type": "uses", "from": "tally", "target": "row" }
+ ]
+}

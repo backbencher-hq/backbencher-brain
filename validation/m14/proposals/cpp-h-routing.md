@@ -52,7 +52,7 @@ already behaves the way the definition of done wants.
 
 ## 3 · The measured population the cpp lane is missing
 
-Corpus: `$BB_CORPUS_ROOT/repositories` (default `$HOME/fixtures/repositories`), every
+Corpus: `$BB_CORPUS_ROOT/repositories` (default `/home/ishaq2321/bb_tests/repositories`), every
 tracked file of every real git checkout, read this session:
 
 | population | files |

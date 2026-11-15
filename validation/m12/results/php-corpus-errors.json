@@ -1,6 +1,6 @@
 {
   "analyzer": "php",
-  "corpus": "$HOME/fixtures/repositories/phpunit",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/phpunit",
   "corpusRepo": "phpunit",
   "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
   "extensions": [

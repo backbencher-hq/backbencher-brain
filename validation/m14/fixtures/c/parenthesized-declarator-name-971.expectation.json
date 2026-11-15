@@ -1,0 +1,65 @@
+{
+  "fixtureId": "c/parenthesized-declarator-name-971",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#971. A declarator wrapped in parentheses is legal C that means nothing but grouping, but the grammar gives the grouping its own node, so the declared name sits under `parenthesized_declarator`. That parent type was missing from the declaration-parent list, so the name was classified as a READ OF ITSELF and published as `uses global -> grouped_name` -- from the same occurrence that also emitted the function symbol. Wrong (a declaration is not a read) and redundant. Measured: 109 spurious `uses` edges removed across 2,498 corpus files, corpus evidence redis/deps/lua/src/lauxlib.c:229 `LUALIB_API void (luaL_register) (...)`. The control is the body reads of the SAME names, which must still be published -- otherwise the fix has only moved the gate. The fix distinguishes GROUPING from a function POINTER by what the parens contain: a pointer_declarator inside means pointer-to-function (a variable), anything else means grouping (a function). `grouped_pointer` is the control that keeps that distinction honest -- it must stay a variable.",
+  "expectSymbols": [
+    {
+      "name": "grouped_scalar",
+      "kind": "function"
+    },
+    {
+      "name": "grouped_void_return",
+      "kind": "function"
+    },
+    {
+      "name": "prototyped",
+      "kind": "function"
+    },
+    {
+      "name": "grouped_pointer",
+      "kind": "variable",
+      "comment": "CORRECTION, and the point of the whole fix: `int (*(grouped_pointer))(int n);` is a genuine function POINTER -- the parens contain a pointer_declarator -- so it is a variable, not a function. The pre-#971 test keyed on the parentheses alone and got BOTH shapes wrong: it published grouped prototypes as variables AND would have had no way to tell this one apart. The fix tests what the parens CONTAIN."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "uses_the_names",
+      "target": "grouped_scalar",
+      "comment": "A real call of a parenthesised-declarator function. The fix suppresses only the DECLARING occurrence; the call site is untouched."
+    },
+    {
+      "type": "uses",
+      "from": "uses_the_names",
+      "target": "grouped_pointer",
+      "comment": "CONTROL: a genuine read of a parenthesised-declarator name inside a body. If this edge disappears the fix over-suppressed."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "grouped_scalar",
+      "comment": "THE defect #971 fixes. The declaring occurrence is a declaration, not a read of itself."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "grouped_pointer",
+      "comment": "Same, for the parenthesised POINTER declarator -- the deepest shape, where the identifier sits two levels under function_declarator."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "grouped_void_return",
+      "comment": "Same, with a void return type."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "prototyped",
+      "comment": "Same on a PROTOTYPE rather than a definition -- the shape the corpus evidence actually had (lauxlib.c:229)."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# A symbol carries its own complexity — how many keys or items it DIRECTLY holds — so
+# a wide configuration node scores above a leaf. The previous lane had a file-level
+# `configurationComplexity = visitedNodes` and no per-symbol value at all.
+wide:
+  a: 1
+  b: 2
+  c: 3
+  d: 4
+leaf: 1
+list:
+  - 1
+  - 2
+  - 3
+nested:
+  inner:
+    deep: 1

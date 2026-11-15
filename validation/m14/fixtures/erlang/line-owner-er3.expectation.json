@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/line-owner-er3.erl",
+  "authoredFrom": "M59 (#825) plus the 400-file corpus draw. Every declaration here is written SPLIT across lines so the name-bearing node and the construct that contains it sit on DIFFERENT lines, which is the only way to pin the rule. Measured on otp/lib/snmp/src/manager/snmpm_net_if.erl: its two -ifdef/-else branches each define worker/4, and the analyzer carried the -define( lines (208, 219) where the macro names are (209, 220). Every expected line is read off this file's text.",
+  "expectSymbols": [
+    {
+      "name": "line_owner_er3",
+      "kind": "module"
+    },
+    {
+      "name": "plain_macro",
+      "kind": "constant",
+      "ownerName": "line_owner_er3",
+      "meta.isMacro": true
+    },
+    {
+      "name": "FUNNY",
+      "kind": "macro",
+      "ownerName": "line_owner_er3",
+      "meta.isFunctionLike": true
+    },
+    {
+      "name": "spread",
+      "kind": "struct",
+      "ownerName": "line_owner_er3"
+    },
+    {
+      "name": "f",
+      "kind": "property",
+      "ownerName": "spread"
+    },
+    {
+      "name": "spread_type",
+      "kind": "type",
+      "ownerName": "line_owner_er3"
+    },
+    {
+      "name": "go",
+      "kind": "function",
+      "ownerName": "line_owner_er3",
+      "meta.arity": 0
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "plain_macro",
+      "line_number": 11,
+      "note": "the macro NAME's line; the -define( keyword is on 10"
+    },
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "FUNNY",
+      "line_number": 14,
+      "note": "the name is on 14, the -define(FUNNY(X), opens on 14 too - the multi-line body is on 15"
+    },
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "spread",
+      "line_number": 18,
+      "note": "the record NAME's line; -record( is on 17"
+    },
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "spread_type",
+      "line_number": 22,
+      "note": "the type NAME's line; -type is on 21"
+    },
+    {
+      "type": "contains",
+      "from": "spread",
+      "target": "f",
+      "line_number": 19
+    },
+    {
+      "type": "references",
+      "from": "FUNNY",
+      "target": "plain_macro",
+      "line_number": 15,
+      "note": "the macro use inside the other macro's body"
+    },
+    {
+      "type": "references",
+      "from": "go",
+      "target": "FUNNY",
+      "line_number": 25
+    },
+    {
+      "type": "references",
+      "from": "spread_type",
+      "target": "integer",
+      "line_number": 22
+    },
+    {
+      "type": "instantiates",
+      "from": "go",
+      "target": "spread",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "go",
+      "line_number": 24
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "spread",
+      "line_number": 17,
+      "note": "the CONSTRUCT's line is the pre-fix answer: -record( is on 17"
+    },
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "spread_type",
+      "line_number": 21,
+      "note": "ditto: -type is on 21"
+    },
+    {
+      "type": "contains",
+      "from": "line_owner_er3",
+      "target": "plain_macro",
+      "line_number": 10
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "X"
+    }
+  ]
+}

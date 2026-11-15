@@ -1,0 +1,20 @@
+{
+  "fixtureId": "vue/options-inheritance",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F1 (master review 2026-09-30, High): Options-API INHERITANCE produced no relationship of any kind. `extends:` and `mixins:` have no branch in extractOptionsApi, so Vue's own class heritage was absent from the graph — the base component surfaced only as a bare `uses` from the sub-analyzer at whatever confidence a name mention gets. The counterfactual is the finding: the SAME text as a .ts file emits `extends: Child->BasePanel`, so the graph distinguished inheritance in typescript and not in vue. Vue 2 documents `extends` as class inheritance and `mixins` as an options merge; both make the named component's options part of this one, so both are `extends` edges, distinguished by metadata.mixin, which keeps every row inside the differential's ALREADY-AUDITED relation set for this lane (rel-type-coverage gate CHECK 1 lists extends as audited for vue) instead of inventing a relation no oracle compares. The inline-object form `extends: { methods: {…} }` is the same merge semantically, so its members become this component's members.",
+  "expectRelationships": [
+    { "type": "extends", "from": "Child", "target": "BasePanel", "meta.isMixin": false },
+    { "type": "extends", "from": "Child", "target": "useMixin", "meta.isMixin": true },
+    { "type": "extends", "from": "Child", "target": "LegacyMixin", "meta.isMixin": true },
+    { "type": "contains", "from": "Child", "target": "own" }
+  ],
+  "expectSymbols": [
+    { "name": "Child", "kind": "class" },
+    { "name": "own", "kind": "method", "ownerName": "Child" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "defineProps" },
+    { "type": "calls", "target": "defineEmits" }
+  ]
+}

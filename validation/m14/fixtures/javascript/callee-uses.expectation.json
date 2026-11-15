@@ -1,0 +1,16 @@
+{
+  "fixtureId": "javascript/callee-uses",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the call-callee family contract (gap J4): a member_expression in call-callee position emits the Calls edge only — the Uses edge is NOT emitted because calls covers the dependency. Non-callee field accesses (this.value read/write) still emit Uses. Pre-fix: svc.run() emitted BOTH calls and uses (double-emission).",
+  "expectSymbols": [
+    { "name": "handler", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "handler", "target": "fetch" },
+    { "type": "uses", "from": "handler", "target": "value", "meta.isFieldAccess": true }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "svc", "target": "fetch" }
+  ]
+}

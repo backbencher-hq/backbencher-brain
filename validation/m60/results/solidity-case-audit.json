@@ -1,0 +1,61 @@
+{
+  "gate": "M60.solidity-case-audit",
+  "title": "no switch case in the Solidity analyzer is dead",
+  "question": "A case with a real body, no emissions, and an emitting type beneath it is the `revert_statement` shape: work written, never reached, reading as coverage.",
+  "totals": {
+    "casesInSwitch": 103,
+    "typesThatEmit": 31,
+    "silentButLive": 62,
+    "trivialBody": 53,
+    "suspicious": 9
+  },
+  "trivialBodyNote": "A case whose body is only `break` (or a descend flag plus `break`) cannot lose a row by construction. That is a mechanical fact about the source, not a reviewer's opinion.",
+  "suspicious": {
+    "found": [
+      "binary_expression",
+      "catch_clause",
+      "import_directive",
+      "inheritance_specifier",
+      "meta_type_expression",
+      "parenthesized_expression",
+      "pragma_directive",
+      "struct_expression",
+      "yul_function_call"
+    ],
+    "expected": [
+      "binary_expression",
+      "catch_clause",
+      "import_directive",
+      "inheritance_specifier",
+      "meta_type_expression",
+      "parenthesized_expression",
+      "pragma_directive",
+      "struct_expression",
+      "yul_function_call"
+    ],
+    "matched": [
+      "binary_expression",
+      "catch_clause",
+      "import_directive",
+      "inheritance_specifier",
+      "meta_type_expression",
+      "parenthesized_expression",
+      "pragma_directive",
+      "struct_expression",
+      "yul_function_call"
+    ],
+    "unmatched": [],
+    "stale": [],
+    "reasons": {
+      "binary_expression": "Counts `&&`/`||` as complexity decision points. A real body, but it feeds the COMPLEXITY metric, not a relationship — the audit counts relationship emissions only, so a correct case looks silent here. The clearest illustration that 'no relationship' and 'no work' are different claims.",
+      "parenthesized_expression": "A pass-through wrapper whose job is to stop the callee descent recursing into parentheses; what it wraps is read by a LATER case. Emitting nothing of its own is the point of it.",
+      "import_directive": "Emits in a POST-PASS over the collected `importEdges`, not inline — the same reason `override_specifier` and `inheritance_specifier` read as silent.",
+      "inheritance_specifier": "The `extends`/`implements` edge is emitted by the enclosing `contract_declaration` case, which reads the ancestor from here. This case's job is to hand the ancestor up.",
+      "meta_type_expression": "Requires the named type to be declared IN THIS FILE. All 86 corpus occurrences name a cross-file type, so zero is the correct count — the class exists in the F5 adjudication as `meta-type-mention-of-a-cross-file-type`.",
+      "catch_clause": "Emits `references -> <custom error>` only when the catch NAMES A TYPE. All 10 corpus catch clauses bind an unnamed `bytes memory`, so zero is correct.",
+      "pragma_directive": "A pragma is not a relationship. The case reads the version and comparison tokens for the file's metadata; emitting an edge to a version string would put a target in the graph that no project declares.",
+      "struct_expression": "SOL-10 — emits `isStructConstructor` only when the struct expression is NOT a call's callee. All 13 corpus occurrences are call-with-options (`target.call{value: v}(…)`), which the `call_expression` case claims, so zero here is correct and each still emits a `calls` row with `hasCallOptions`.",
+      "yul_function_call": "SOL-8 — a `yul_function_call` whose callee is a `yul_evm_builtin` is an OPCODE, not a call, and is deliberately suppressed. All 2,800 corpus Yul calls name a builtin, so the count is zero BY DESIGN and is why the corpus cannot under-represent Yul."
+    }
+  }
+}

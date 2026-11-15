@@ -1,0 +1,24 @@
+{
+  "issue": "M15.E2",
+  "code": "E2",
+  "tool": "bb_edit",
+  "verified": true,
+  "state": "verified",
+  "checks": 9,
+  "passed": 9,
+  "failed": 0,
+  "negatives": 1,
+  "surface": {
+    "files": [
+      "src/intelligence/edit/edit-engine.ts",
+      "src/ast/import-pruner.ts",
+      "src/ast/brain-surgical-patcher.ts",
+      "src/ast/safety-primitives.ts",
+      "src/mcp/tools/bb_edit/handler.ts",
+      "src/mcp/tools/bb_edit/descriptor.ts"
+    ],
+    "uses": 13,
+    "snapshotRows": 13
+  },
+  "generatedAt": "2026-11-05T04:21:20.735Z"
+}

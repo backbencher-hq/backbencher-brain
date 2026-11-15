@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H6",
+  "code": "H6",
+  "tool": "bb_health",
+  "title": "docs honesty",
+  "verified": true,
+  "checks": 12,
+  "passed": 12,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:23:12.395Z"
+}

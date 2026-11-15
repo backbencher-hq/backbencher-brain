@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.33",
+  "code": "H5",
+  "tool": "bb_health",
+  "title": "bb_health: integration + e2e + corpus",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e",
+    "integration",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "freshness: sampled mode honors sampleSize",
+      "pass": true,
+      "detail": "checked=2"
+    },
+    {
+      "name": "freshness: sampled mode detects the stale file",
+      "pass": true,
+      "detail": "stale=1"
+    },
+    {
+      "name": "freshness: complete mode checks every file",
+      "pass": true,
+      "detail": "checked=5"
+    },
+    {
+      "name": "freshness: complete mode detects the stale file",
+      "pass": true,
+      "detail": "stale=1"
+    },
+    {
+      "name": "freshness: complete covers the sampled one (sampled subset of complete)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "CLI: health reports counts",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-e2e-C41fSf\nprojectId: 8506170398047a5a304bea978ba203"
+    },
+    {
+      "name": "CLI: health reports freshness line",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-e2e-C41fSf\nprojectId: 8506170398047a5a304bea978ba203"
+    },
+    {
+      "name": "CLI: verbose adds the language breakdown",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-e2e-C41fSf\nprojectId: 8506170398047a5a304bea978ba2031a121e9179\nfiles=5 s"
+    },
+    {
+      "name": "CLI: default output does NOT leak the verbose breakdown [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-e2e-C41fSf\nprojectId: 8506170398047a5a304bea978ba2031a121e9179\nfiles=5 s"
+    },
+    {
+      "name": "MCP: health reports counts",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-e2e-C41fSf\nprojectId: 8506170398047a5a304bea978ba203"
+    },
+    {
+      "name": "MCP: integrity report present",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-e2e-C41fSf\nprojectId: 8506170398047a5a304bea978ba2031a121e9179\nfiles=5 s"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): files count matches DB",
+      "pass": true,
+      "detail": "report=43 db=43"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): symbols count matches DB",
+      "pass": true,
+      "detail": "report=496 db=496"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): freshness totals consistent",
+      "pass": true,
+      "detail": "checked=43 total=43"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): embedding totals consistent",
+      "pass": true,
+      "detail": "total=353"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): schema version is a positive number",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): files count matches DB",
+      "pass": true,
+      "detail": "report=203 db=203"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): symbols count matches DB",
+      "pass": true,
+      "detail": "report=4828 db=4828"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): freshness totals consistent",
+      "pass": true,
+      "detail": "checked=203 total=203"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): embedding totals consistent",
+      "pass": true,
+      "detail": "total=3996"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): schema version is a positive number",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): files count matches DB",
+      "pass": true,
+      "detail": "report=199 db=199"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): symbols count matches DB",
+      "pass": true,
+      "detail": "report=1163 db=1163"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): freshness totals consistent",
+      "pass": true,
+      "detail": "checked=199 total=199"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): embedding totals consistent",
+      "pass": true,
+      "detail": "total=565"
+    },
+    {
+      "name": "corpus go_tools/go/analysis/passes (Go): schema version is a positive number",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 26,
+    "passed": 26,
+    "failed": 0
+  },
+  "decisions": {
+    "freshness": "sampled honors sampleSize (checked <= sampleSize); complete checks every file; both detect staleness",
+    "transports": "compiled CLI via `node bin/bb tool bb_health`; MCP via StdioClientTransport → src/mcp/server.ts",
+    "corpus": "health counts must equal direct DB queries on the same project; probes recorded"
+  },
+  "limitations": [
+    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14."
+  ],
+  "generatedAt": "2026-10-11T18:48:33.815Z"
+}

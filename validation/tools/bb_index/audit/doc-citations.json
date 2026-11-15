@@ -1,0 +1,61 @@
+{
+ "stale": [
+  {
+   "doc": "docs/tools/bb_index.md",
+   "docLine": 58,
+   "target": "src/new-file.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/INDEXER-REVIEW.md",
+   "docLine": 144,
+   "target": "src/env/config.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/INDEXER-REVIEW.md",
+   "docLine": 145,
+   "target": "src/bin/tool.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/INDEXER-REVIEW.md",
+   "docLine": 145,
+   "target": "src/out/box.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/INDEXER-REVIEW.md",
+   "docLine": 145,
+   "target": "src/gen/api.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/INDEXER-REVIEW.md",
+   "docLine": 147,
+   "target": "src/deps/container.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/README.md",
+   "docLine": 249,
+   "target": "src/services/auth.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  },
+  {
+   "doc": "docs/indexing/README.md",
+   "docLine": 359,
+   "target": "src/components/button.ts",
+   "citedLine": null,
+   "status": "missing-file"
+  }
+ ],
+ "okCount": 159
+}

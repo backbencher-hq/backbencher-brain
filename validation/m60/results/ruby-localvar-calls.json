@@ -1,0 +1,857 @@
+{
+  "at": "2026-09-29T07:06:34.637Z",
+  "filesParsed": 1200,
+  "suspects": [
+    "t",
+    "sort"
+  ],
+  "counts": {
+    "t": 112,
+    "sort": 121
+  },
+  "localBound": 0,
+  "notLocalBound": 233,
+  "local": [],
+  "notLocal": [
+    {
+      "file": "mastodon/app/controllers/admin/account_moderation_notes_controller.rb",
+      "line": 13,
+      "target": "t",
+      "source": "create",
+      "body": "redirect_to admin_account_path(@account_moderation_note.target_account_id), notice: I18n.t('admin.ac"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/account_moderation_notes_controller.rb",
+      "line": 26,
+      "target": "t",
+      "source": "destroy",
+      "body": "redirect_to admin_account_path(@account_moderation_note.target_account_id), notice: I18n.t('admin.ac"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/email_subscriptions_controller.rb",
+      "line": 23,
+      "target": "t",
+      "source": "disable",
+      "body": "redirect_to admin_email_subscriptions_path, notice: I18n.t('admin.email_subscriptions.disabled_msg')"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/email_subscriptions_controller.rb",
+      "line": 29,
+      "target": "t",
+      "source": "purge",
+      "body": "redirect_to admin_email_subscriptions_path, notice: I18n.t('admin.email_subscriptions.purged_msg')"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/relays_controller.rb",
+      "line": 65,
+      "target": "t",
+      "source": "warn_signatures_not_enabled!",
+      "body": "flash.now[:error] = I18n.t('admin.relays.signatures_not_enabled') if authorized_fetch_mode?"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/trends/tags_controller.rb",
+      "line": 18,
+      "target": "t",
+      "source": "batch",
+      "body": "flash[:alert] = I18n.t('admin.trends.tags.no_tag_selected')"
+    },
+    {
+      "file": "mastodon/app/controllers/auth/omniauth_callbacks_controller.rb",
+      "line": 21,
+      "target": "t",
+      "source": "provides_callback_for",
+      "body": "flash[:alert] = I18n.t('devise.failure.omniauth_user_creation_failure') if is_navigational_format?"
+    },
+    {
+      "file": "mastodon/app/controllers/auth/omniauth_callbacks_controller.rb",
+      "line": 59,
+      "target": "t",
+      "source": "configured_provider_name",
+      "body": "I18n.t(\"auth.providers.#{@provider}\", default: @provider.to_s.chomp('_oauth2').capitalize)"
+    },
+    {
+      "file": "mastodon/app/controllers/concerns/challengable_concern.rb",
+      "line": 36,
+      "target": "t",
+      "source": "require_challenge!",
+      "body": "flash.now[:alert] = I18n.t('challenge.invalid_password')"
+    },
+    {
+      "file": "mastodon/app/controllers/settings/deletes_controller.rb",
+      "line": 15,
+      "target": "t",
+      "source": "destroy",
+      "body": "redirect_to new_user_session_path, notice: I18n.t('deletes.success_msg')"
+    },
+    {
+      "file": "mastodon/app/controllers/settings/deletes_controller.rb",
+      "line": 17,
+      "target": "t",
+      "source": "destroy",
+      "body": "redirect_to settings_delete_path, alert: I18n.t('deletes.challenge_not_passed')"
+    },
+    {
+      "file": "mastodon/app/controllers/settings/pictures_controller.rb",
+      "line": 12,
+      "target": "t",
+      "source": "destroy",
+      "body": "redirect_to settings_profile_path, notice: I18n.t('generic.changes_saved_msg'), status: 303"
+    },
+    {
+      "file": "mastodon/app/controllers/settings/profiles_controller.rb",
+      "line": 13,
+      "target": "t",
+      "source": "update",
+      "body": "redirect_to settings_profile_path, notice: I18n.t('generic.changes_saved_msg')"
+    },
+    {
+      "file": "mastodon/app/controllers/settings/verifications_controller.rb",
+      "line": 12,
+      "target": "t",
+      "source": "update",
+      "body": "redirect_to settings_verification_path, notice: I18n.t('generic.changes_saved_msg')"
+    },
+    {
+      "file": "mastodon/app/helpers/admin/account_actions_helper.rb",
+      "line": 7,
+      "target": "t",
+      "source": "account_action_type_label",
+      "body": "I18n.t(\"simple_form.labels.admin_account_action.types.#{type}\"),"
+    },
+    {
+      "file": "mastodon/app/helpers/admin/account_actions_helper.rb",
+      "line": 8,
+      "target": "t",
+      "source": "account_action_type_label",
+      "body": "content_tag(:span, I18n.t(\"simple_form.hints.admin_account_action.types.#{type}\"), class: 'hint'),"
+    },
+    {
+      "file": "mastodon/app/helpers/admin/disputes_helper.rb",
+      "line": 6,
+      "target": "t",
+      "source": "strike_action_label",
+      "body": "t(key_for_action(appeal),"
+    },
+    {
+      "file": "mastodon/app/helpers/filters_helper.rb",
+      "line": 9,
+      "target": "t",
+      "source": "filter_action_label",
+      "body": "t(\"simple_form.labels.filters.actions.#{action}\"),"
+    },
+    {
+      "file": "mastodon/app/helpers/filters_helper.rb",
+      "line": 10,
+      "target": "t",
+      "source": "filter_action_label",
+      "body": "content_tag(:span, t(\"simple_form.hints.filters.actions.#{action}\"), class: 'hint'),"
+    },
+    {
+      "file": "mastodon/app/helpers/statuses_helper.rb",
+      "line": 13,
+      "target": "t",
+      "source": "nothing_here",
+      "body": "t('accounts.nothing_here')"
+    },
+    {
+      "file": "mastodon/app/helpers/statuses_helper.rb",
+      "line": 30,
+      "target": "t",
+      "source": "media_summary",
+      "body": "text = attachments.to_a.reject { |_, value| value.zero? }.map { |key, value| I18n.t(\"statuses.attach"
+    },
+    {
+      "file": "mastodon/app/helpers/statuses_helper.rb",
+      "line": 34,
+      "target": "t",
+      "source": "media_summary",
+      "body": "I18n.t('statuses.attached.description', attached: text)"
+    },
+    {
+      "file": "mastodon/app/helpers/statuses_helper.rb",
+      "line": 40,
+      "target": "t",
+      "source": "status_text_summary",
+      "body": "I18n.t('statuses.content_warning', warning: status.spoiler_text)"
+    },
+    {
+      "file": "mastodon/app/lib/admin/metrics/dimension/sources_dimension.rb",
+      "line": 13,
+      "target": "t",
+      "source": "perform_query",
+      "body": "dimension_data_rows.map { |row| { key: row['name'] || 'web', human_key: row['name'] || I18n.t('admin"
+    },
+    {
+      "file": "mastodon/app/models/account_migration.rb",
+      "line": 81,
+      "target": "t",
+      "source": "validate_target_account",
+      "body": "errors.add(:acct, I18n.t('migrations.errors.not_found'))"
+    },
+    {
+      "file": "mastodon/app/models/account_migration.rb",
+      "line": 83,
+      "target": "t",
+      "source": "validate_target_account",
+      "body": "errors.add(:acct, I18n.t('migrations.errors.missing_also_known_as')) unless target_account.also_know"
+    },
+    {
+      "file": "mastodon/app/models/account_migration.rb",
+      "line": 84,
+      "target": "t",
+      "source": "validate_target_account",
+      "body": "errors.add(:acct, I18n.t('migrations.errors.already_moved')) if account.moved? && account.moved_to_a"
+    },
+    {
+      "file": "mastodon/app/models/account_migration.rb",
+      "line": 85,
+      "target": "t",
+      "source": "validate_target_account",
+      "body": "errors.add(:acct, I18n.t('migrations.errors.move_to_self')) if account.id == target_account.id"
+    },
+    {
+      "file": "mastodon/app/models/account_migration.rb",
+      "line": 90,
+      "target": "t",
+      "source": "validate_migration_cooldown",
+      "body": "errors.add(:base, I18n.t('migrations.errors.on_cooldown')) if account.migrations.within_cooldown.exi"
+    },
+    {
+      "file": "mastodon/app/models/list.rb",
+      "line": 41,
+      "target": "t",
+      "source": "validate_account_lists_limit",
+      "body": "errors.add(:base, I18n.t('lists.errors.limit')) if account.owned_lists.count >= PER_ACCOUNT_LIMIT"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/admin/existing_domain_block_error_serializer.rb",
+      "line": 9,
+      "target": "t",
+      "source": "error",
+      "body": "I18n.t('admin.domain_blocks.existing_domain_block', name: existing_domain_block.domain)"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/instance_serializer.rb",
+      "line": 34,
+      "target": "t",
+      "source": "thumbnail",
+      "body": "description: I18n.t('about.default_thumbnail_description', locale: object.languages[0]),"
+    },
+    {
+      "file": "mastodon/app/services/create_collection_service.rb",
+      "line": 36,
+      "target": "t",
+      "source": "build_items",
+      "body": "raise Mastodon::NotPermittedError, I18n.t('accounts.errors.cannot_be_added_to_collections') unless A"
+    },
+    {
+      "file": "mastodon/app/validators/disallowed_hashtags_validator.rb",
+      "line": 8,
+      "target": "t",
+      "source": "validate",
+      "body": "status.errors.add(:text, I18n.t('statuses.disallowed_hashtags', tags: disallowed_hashtags.map(&:name"
+    },
+    {
+      "file": "mastodon/app/validators/status_pin_validator.rb",
+      "line": 7,
+      "target": "t",
+      "source": "validate",
+      "body": "pin.errors.add(:base, I18n.t('statuses.pin_errors.reblog')) if pin.status.reblog?"
+    },
+    {
+      "file": "mastodon/app/validators/status_pin_validator.rb",
+      "line": 8,
+      "target": "t",
+      "source": "validate",
+      "body": "pin.errors.add(:base, I18n.t('statuses.pin_errors.ownership')) if pin.account_id != pin.status.accou"
+    },
+    {
+      "file": "mastodon/app/validators/status_pin_validator.rb",
+      "line": 9,
+      "target": "t",
+      "source": "validate",
+      "body": "pin.errors.add(:base, I18n.t('statuses.pin_errors.direct')) if pin.status.direct_visibility?"
+    },
+    {
+      "file": "mastodon/app/validators/status_pin_validator.rb",
+      "line": 10,
+      "target": "t",
+      "source": "validate",
+      "body": "pin.errors.add(:base, I18n.t('statuses.pin_errors.limit')) if pin.account.status_pins.count >= PIN_L"
+    },
+    {
+      "file": "mastodon/spec/helpers/languages_helper_spec.rb",
+      "line": 15,
+      "target": "t",
+      "source": "Global",
+      "body": "expect(helper.native_locale_name(nil)).to eq(I18n.t('generic.none'))"
+    },
+    {
+      "file": "mastodon/spec/helpers/languages_helper_spec.rb",
+      "line": 21,
+      "target": "t",
+      "source": "Global",
+      "body": "expect(helper.native_locale_name('und')).to eq(I18n.t('generic.none'))"
+    },
+    {
+      "file": "mastodon/spec/helpers/languages_helper_spec.rb",
+      "line": 47,
+      "target": "t",
+      "source": "Global",
+      "body": "expect(helper.standard_locale_name(nil)).to eq(I18n.t('generic.none'))"
+    },
+    {
+      "file": "mastodon/spec/models/list_spec.rb",
+      "line": 22,
+      "target": "t",
+      "source": "Global",
+      "body": "it { is_expected.to_not allow_value(account).for(:account).against(:base).with_message(I18n.t('lists"
+    },
+    {
+      "file": "mastodon/spec/requests/admin/confirmations_spec.rb",
+      "line": 52,
+      "target": "t",
+      "source": "Global",
+      "body": ".to include(I18n.t('admin.accounts.resend_confirmation.already_confirmed'))"
+    },
+    {
+      "file": "mastodon/spec/requests/admin/export_domain_blocks_spec.rb",
+      "line": 13,
+      "target": "t",
+      "source": "Global",
+      "body": ".to include(I18n.t('admin.export_domain_blocks.no_file'))"
+    },
+    {
+      "file": "mastodon/spec/requests/api/v1/reports_spec.rb",
+      "line": 57,
+      "target": "t",
+      "source": "Global",
+      "body": "subject: eq(I18n.t('admin_mailer.new_report.subject', instance: Rails.configuration.x.local_domain, "
+    },
+    {
+      "file": "mastodon/spec/requests/auth/challenges_spec.rb",
+      "line": 30,
+      "target": "t",
+      "source": "Global",
+      "body": ".to include(I18n.t('challenge.prompt'))"
+    },
+    {
+      "file": "mastodon/spec/requests/localization_spec.rb",
+      "line": 18,
+      "target": "t",
+      "source": "Global",
+      "body": "I18n.t('auth.login', locale: 'zh-HK')"
+    },
+    {
+      "file": "mastodon/spec/requests/localization_spec.rb",
+      "line": 28,
+      "target": "t",
+      "source": "Global",
+      "body": "I18n.t('auth.login', locale: 'es')"
+    },
+    {
+      "file": "mastodon/spec/requests/localization_spec.rb",
+      "line": 38,
+      "target": "t",
+      "source": "Global",
+      "body": "I18n.t('auth.login', locale: 'en')"
+    },
+    {
+      "file": "mastodon/spec/services/post_status_service_spec.rb",
+      "line": 268,
+      "target": "t",
+      "source": "Global",
+      "body": "I18n.t('media_attachments.validations.not_found', ids: media.id)"
+    },
+    {
+      "file": "mastodon/spec/services/post_status_service_spec.rb",
+      "line": 284,
+      "target": "t",
+      "source": "Global",
+      "body": "I18n.t('media_attachments.validations.too_many')"
+    },
+    {
+      "file": "mastodon/spec/services/post_status_service_spec.rb",
+      "line": 306,
+      "target": "t",
+      "source": "Global",
+      "body": "I18n.t('media_attachments.validations.images_and_video')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/accounts_spec.rb",
+      "line": 62,
+      "target": "t",
+      "source": "button_for_suspend",
+      "body": "I18n.t('admin.accounts.perform_full_suspension')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/accounts_spec.rb",
+      "line": 66,
+      "target": "t",
+      "source": "button_for_approve",
+      "body": "I18n.t('admin.accounts.approve')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/accounts_spec.rb",
+      "line": 70,
+      "target": "t",
+      "source": "button_for_reject",
+      "body": "I18n.t('admin.accounts.reject')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/accounts_spec.rb",
+      "line": 74,
+      "target": "t",
+      "source": "selection_error_text",
+      "body": "I18n.t('admin.accounts.no_account_selected')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/confirmations_spec.rb",
+      "line": 15,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.accounts.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/confirmations_spec.rb",
+      "line": 21,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.accounts.confirm') }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/confirmations_spec.rb",
+      "line": 24,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.accounts.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/confirmations_spec.rb",
+      "line": 42,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.accounts.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/confirmations_spec.rb",
+      "line": 43,
+      "target": "t",
+      "source": "Global",
+      "body": ".and have_text(I18n.t('admin.accounts.resend_confirmation.success'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/confirmations_spec.rb",
+      "line": 48,
+      "target": "t",
+      "source": "resend_confirmation",
+      "body": "click_on I18n.t('admin.accounts.resend_confirmation.send')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/email_subscriptions/accounts_spec.rb",
+      "line": 29,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.email_subscriptions.accounts.show.enable_feature') }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/email_subscriptions/accounts_spec.rb",
+      "line": 33,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.email_subscriptions.accounts.show.disable_feature') }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/follow_recommendations_spec.rb",
+      "line": 15,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('admin.follow_recommendations.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 22,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.reports.resolved')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 29,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.reports.report', id: resolved_report.id))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 41,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.reports.mark_as_resolved')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 45,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.reports.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 46,
+      "target": "t",
+      "source": "Global",
+      "body": ".and have_text(I18n.t('admin.reports.resolved_msg'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 64,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.reports.mark_as_unresolved')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 68,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.reports.report', id: report.id))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 86,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.reports.assign_to_self')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 89,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.reports.report', id: report.id))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 96,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.reports.unassign')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/reports_spec.rb",
+      "line": 98,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.reports.report', id: report.id))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/settings/content_retention_spec.rb",
+      "line": 13,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.settings.content_retention.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/terms_of_service/distributions_spec.rb",
+      "line": 15,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.terms_of_service.preview.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/terms_of_service/distributions_spec.rb",
+      "line": 17,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.terms_of_service.preview.send_to_all', count: 1, display_count: 1) }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/terms_of_service/distributions_spec.rb",
+      "line": 21,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.terms_of_service.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/trends/links/preview_card_providers_spec.rb",
+      "line": 15,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.trends.preview_card_providers.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/trends/links/preview_card_providers_spec.rb",
+      "line": 57,
+      "target": "t",
+      "source": "button_for_allow",
+      "body": "I18n.t('admin.trends.allow')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/trends/links/preview_card_providers_spec.rb",
+      "line": 61,
+      "target": "t",
+      "source": "button_for_disallow",
+      "body": "I18n.t('admin.trends.disallow')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/trends/links/preview_card_providers_spec.rb",
+      "line": 65,
+      "target": "t",
+      "source": "selection_error_text",
+      "body": "I18n.t('admin.trends.links.publishers.no_publisher_selected')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 16,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('admin.webhooks.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 21,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('admin.webhooks.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 30,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.webhooks.add_new')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 32,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('admin.webhooks.new'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 47,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('admin.webhooks.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 61,
+      "target": "t",
+      "source": "submit_form",
+      "body": "click_on I18n.t('admin.webhooks.add_new')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 72,
+      "target": "t",
+      "source": "Global",
+      "body": "click_on I18n.t('admin.webhooks.edit')"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 94,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.webhooks.rotate_secret') }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 97,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('admin.webhooks.title'))"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 107,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.webhooks.delete') }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 121,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.webhooks.disable') }"
+    },
+    {
+      "file": "mastodon/spec/system/admin/webhooks_spec.rb",
+      "line": 125,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('admin.webhooks.enable') }"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 17,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('settings.aliases'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 34,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('aliases.created_msg'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 47,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('settings.aliases'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 52,
+      "target": "t",
+      "source": "submit_form",
+      "body": "click_on I18n.t('aliases.add_new')"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 65,
+      "target": "t",
+      "source": "Global",
+      "body": "expect { click_on I18n.t('aliases.remove') }"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 69,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('settings.aliases'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/aliases_spec.rb",
+      "line": 70,
+      "target": "t",
+      "source": "Global",
+      "body": ".and have_text(I18n.t('aliases.deleted_msg'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/preferences/notifications_spec.rb",
+      "line": 21,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_title(I18n.t('settings.notifications'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/verifications_spec.rb",
+      "line": 36,
+      "target": "t",
+      "source": "Global",
+      "body": ".to have_text(I18n.t('activerecord.errors.messages.invalid_domain_on_line', value: 'invalid_com'))"
+    },
+    {
+      "file": "mastodon/spec/system/settings/verifications_spec.rb",
+      "line": 43,
+      "target": "t",
+      "source": "verification_summary",
+      "body": "I18n.t('verification.website_verification')"
+    },
+    {
+      "file": "mastodon/spec/validators/poll_options_validator_spec.rb",
+      "line": 13,
+      "target": "t",
+      "source": "Global",
+      "body": "it { is_expected.to_not allow_values([]).for(:options).with_message(I18n.t('polls.errors.too_few_opt"
+    },
+    {
+      "file": "mastodon/spec/validators/poll_options_validator_spec.rb",
+      "line": 19,
+      "target": "t",
+      "source": "Global",
+      "body": "it { is_expected.to_not allow_values(%w(One Two Three)).for(:options).with_message(I18n.t('polls.err"
+    },
+    {
+      "file": "mastodon/spec/validators/poll_options_validator_spec.rb",
+      "line": 23,
+      "target": "t",
+      "source": "Global",
+      "body": "it { is_expected.to_not allow_values(%w(One One One)).for(:options).with_message(I18n.t('polls.error"
+    },
+    {
+      "file": "mastodon/spec/validators/poll_options_validator_spec.rb",
+      "line": 42,
+      "target": "t",
+      "source": "Global",
+      "body": "it { is_expected.to_not allow_values(%w(Airplane Two Three)).for(:options).with_message(I18n.t('poll"
+    },
+    {
+      "file": "rails/actionpack/test/controller/new_base/base_test.rb",
+      "line": 27,
+      "target": "sort",
+      "source": "show_actions",
+      "body": "render body: \"actions: #{action_methods.to_a.sort.join(', ')}\""
+    },
+    {
+      "file": "rails/actionpack/test/controller/parameters/equality_test.rb",
+      "line": 78,
+      "target": "sort",
+      "source": "ParametersAccessorsTest",
+      "body": "assert_equal %i[name addresses].sort, rest.keys.map(&:to_sym).sort"
+    },
+    {
+      "file": "rails/actionpack/test/controller/parameters/equality_test.rb",
+      "line": 78,
+      "target": "sort",
+      "source": "ParametersAccessorsTest",
+      "body": "assert_equal %i[name addresses].sort, rest.keys.map(&:to_sym).sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 71,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(file foo), params.keys.sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 82,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(file foo), params.keys.sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 93,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(file foo), params.keys.sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 106,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(file foo), params.keys.sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 118,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(file flowers foo), params.keys.sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 134,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(files foo), params.keys.sort"
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/request/multipart_params_parsing_test.rb",
+      "line": 144,
+      "target": "sort",
+      "source": "MultipartParamsParsingTest",
+      "body": "assert_equal %w(submit-name), params.keys.sort"
+    }
+  ]
+}

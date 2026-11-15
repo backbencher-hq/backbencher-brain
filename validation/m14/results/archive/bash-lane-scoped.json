@@ -1,0 +1,89 @@
+{
+  "gate": "M14.277-bash-lane-scoped",
+  "title": "Bash lane measurement, lane-scoped and NOT the canonical baseline",
+  "scope": {
+    "canonical": false,
+    "why": [
+      "loadavg1 was 4.2x the core count at measurement time, and a pinned perf row measured under load is a row whose number is contention (#871)",
+      "the working tree carried 258 dirty files including a concurrent session's in-flight work, and canonical M14 evidence requires a clean tree",
+      "validation/m14/differential-baseline.json is SHARED: a scoped --update-baseline merges the measured lanes into `counts` but overwrites the top-level `loadContext`, so pinning bash from a scoped run would re-stamp all 175 other rows with this machine's load (the lane-scoped-artifact-confuses-a-shared-file trap, d88724fe)"
+    ],
+    "consequence": "M14.0.SPEC section-e (differential floor) and section-f (perf budget) remain RED for bash. That is the correct state: the gate says the canonical ceremony has not happened, and this file exists so the ceremony is a re-measure rather than a re-discovery.",
+    "ceremony": [
+      "on a clean tree, at loadavg1 below the core count: bun run script/m14/differential.ts   (canonical, both corpora)",
+      "the same run with --update-baseline pins the otp:bash and fsharp:bash rows, and only those lanes' rows are ADDED — but the run's loadContext becomes the file's, which is correct for a canonical run and is why a scoped run may not do it",
+      "re-run script/m14/completeness-inventory.ts --lang bash and expect sections e and f to close"
+    ]
+  },
+  "measuredAt": "2026-09-27T00:19:20.281Z",
+  "commit": "c3c9490744e4de39d17df358fba93d60f3ac8c4d",
+  "treeDirty": true,
+  "loadContext": {
+    "loadAvg1": 34.84,
+    "cpus": 8,
+    "ratio": 4.36,
+    "scored": false
+  },
+  "corpora": [
+    {
+      "repo": "fsharp",
+      "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "files": 32,
+      "symbols": 773,
+      "relationships": 3216,
+      "truthEdges": 1951,
+      "covered": 1951,
+      "missing": 0,
+      "unexplained": 0,
+      "coverage": 100,
+      "relsWithLine": 3216,
+      "relsWithoutLine": 0,
+      "edgeSourcesNotASymbol": 0,
+      "emptyNames": 0,
+      "unknownKinds": 0,
+      "symbolFreeFiles": 0,
+      "symlinkedFiles": 0,
+      "disagreements": []
+    },
+    {
+      "repo": "otp",
+      "revision": "9e84d463ac3d79520c1e972da89701178b587919",
+      "files": 80,
+      "symbols": 867,
+      "relationships": 4464,
+      "truthEdges": 2128,
+      "covered": 2128,
+      "missing": 0,
+      "unexplained": 0,
+      "coverage": 100,
+      "relsWithLine": 4464,
+      "relsWithoutLine": 0,
+      "edgeSourcesNotASymbol": 0,
+      "emptyNames": 0,
+      "unknownKinds": 0,
+      "symbolFreeFiles": 0,
+      "symlinkedFiles": 0,
+      "disagreements": []
+    }
+  ],
+  "headline": [
+    {
+      "repo": "fsharp",
+      "files": 32,
+      "coverage": "100%",
+      "missing": 0,
+      "unexplained": 0,
+      "relsWithLine": "3216/3216",
+      "edgeSourcesNotASymbol": 0
+    },
+    {
+      "repo": "otp",
+      "files": 80,
+      "coverage": "100%",
+      "missing": 0,
+      "unexplained": 0,
+      "relsWithLine": "4464/4464",
+      "edgeSourcesNotASymbol": 0
+    }
+  ]
+}

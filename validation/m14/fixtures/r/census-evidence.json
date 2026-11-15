@@ -1,0 +1,902 @@
+{
+  "lang": "r",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "sampling": "git-tracked files routed to \"r\", first 250 per repo, git ls-files order",
+  "repos": [
+    "Matrix",
+    "R6",
+    "S7",
+    "dplyr",
+    "ggplot2",
+    "nvim-treesitter",
+    "r-Rcpp",
+    "r-air",
+    "r-cli",
+    "r-pkgdown",
+    "r-rlang",
+    "r-scales",
+    "r-testthat",
+    "r-vctrs",
+    "r-withr",
+    "usethis"
+  ],
+  "filesSampled": 2058,
+  "filesParsed": 2058,
+  "totalSymbols": 27746,
+  "totalRelationships": 77107,
+  "distinctCorpusNames": 11796,
+  "symbolsWithEmptyName": 0,
+  "symbolsWithEmptyKind": 0,
+  "filesWithErrors": 14,
+  "gateCounters": {
+    "heuristicS3Generic": 0,
+    "memberReadsSuppressedByCall": 2947,
+    "memberReadsUnresolvedScope": 7869,
+    "memberReadsWithComputedIndex": 28,
+    "memberWrites": 3221,
+    "throughClosure": 2434,
+    "unnameableCallee": 111,
+    "unresolvedScope": 127438
+  },
+  "instrumentA": {
+    "treesParsed": 2058,
+    "treesFailed": 0,
+    "distinctNodeTypes": 97,
+    "nodeTypeCounts": {
+      "identifier": 495695,
+      "argument": 348277,
+      "(": 226761,
+      ")": 226749,
+      "arguments": 206294,
+      "call": 195893,
+      "comma": 176700,
+      "\"": 156627,
+      "comment": 82554,
+      "binary_operator": 80294,
+      "string": 79126,
+      "string_content": 76816,
+      "=": 73144,
+      "float": 53073,
+      "<-": 52856,
+      "braced_expression": 34365,
+      "{": 34365,
+      "}": 34365,
+      "parameter": 30468,
+      "extract_operator": 21906,
+      "$": 18056,
+      "function_definition": 14675,
+      "parameters": 14675,
+      "function": 14625,
+      "if_statement": 12627,
+      "if": 12627,
+      "integer": 9786,
+      "L": 9786,
+      "unary_operator": 9674,
+      "true": 8816,
+      "subset": 7139,
+      "[": 7139,
+      "]": 7139,
+      "!": 7080,
+      "false": 6088,
+      "dots": 6023,
+      "namespace_operator": 5863,
+      "null": 5830,
+      "::": 5749,
+      ":": 5651,
+      "escape_sequence": 4804,
+      "else": 4668,
+      "na": 4625,
+      "NA": 3880,
+      "@": 3850,
+      "==": 3528,
+      "subset2": 3262,
+      "[[": 3262,
+      "]]": 3262,
+      "+": 3255,
+      "-": 3022,
+      "return": 2688,
+      "parenthesized_expression": 2672,
+      "special": 2479,
+      "program": 2057,
+      "&&": 2003,
+      "'": 1600,
+      "*": 1282,
+      "|>": 1152,
+      ">": 1083,
+      "~": 1027,
+      "||": 961,
+      "!=": 913,
+      "/": 838,
+      "for_statement": 764,
+      "for": 764,
+      "in": 764,
+      "<": 645,
+      "inf": 358,
+      ">=": 342,
+      "&": 311,
+      "<<-": 291,
+      "<=": 282,
+      "|": 260,
+      "nan": 260,
+      "NA_character_": 259,
+      "^": 258,
+      "NA_real_": 249,
+      "complex": 240,
+      "i": 240,
+      "NA_integer_": 220,
+      ":=": 165,
+      "while_statement": 118,
+      "while": 118,
+      ":::": 118,
+      "dot_dot_i": 107,
+      "?": 51,
+      "\\": 50,
+      "next": 47,
+      "->": 40,
+      "ERROR": 35,
+      "repeat_statement": 34,
+      "repeat": 34,
+      "break": 33,
+      "NA_complex_": 17,
+      "**": 13,
+      "->>": 8
+    }
+  },
+  "instrumentB": {
+    "calls.named_callee": {
+      "occurrences": 192769,
+      "files": 1961,
+      "examples": [
+        "Matrix/R/00_Class.R :: callNextMethod(...)",
+        "Matrix/R/00_Class.R :: ...length(...)",
+        "Matrix/R/00_Class.R :: any(...)"
+      ]
+    },
+    "contains.construct_file_bindings": {
+      "occurrences": 27733,
+      "files": 1774,
+      "examples": [
+        "Matrix/R/00_Class.R :: .initialize",
+        "Matrix/R/00_Class.R :: .Object",
+        "Matrix/R/00_Class.R :: .new"
+      ]
+    },
+    "contains.construct_files_with_any_binding": {
+      "occurrences": 2058,
+      "files": 2058,
+      "examples": [
+        "Matrix/R/00_Class.R :: bindings=23",
+        "Matrix/R/00_Generic.R :: bindings=0",
+        "Matrix/R/Auxiliaries.R :: bindings=90"
+      ]
+    },
+    "exports.roxygen_export": {
+      "occurrences": 3698,
+      "files": 718,
+      "examples": [
+        "R6/R/aslist.R :: #' @export",
+        "R6/R/is.R :: #' @export",
+        "R6/R/is.R :: #' @export"
+      ]
+    },
+    "extends.construct_R6Class": {
+      "occurrences": 226,
+      "files": 46,
+      "examples": [
+        "R6/tests/manual/encapsulation.R :: AC bases=[]",
+        "R6/tests/manual/encapsulation.R :: BC bases=[AC]",
+        "R6/tests/manual/encapsulation.R :: CC bases=[BC]"
+      ]
+    },
+    "extends.construct_new_base_class": {
+      "occurrences": 12,
+      "files": 1,
+      "examples": [
+        "S7/R/base.R :: logical bases=[]",
+        "S7/R/base.R :: integer bases=[]",
+        "S7/R/base.R :: double bases=[]"
+      ]
+    },
+    "extends.construct_new_class": {
+      "occurrences": 252,
+      "files": 34,
+      "examples": [
+        "S7/R/zzz.R :: S7_method bases=[class_function]",
+        "S7/inst/doc/S7.R :: Dog bases=[]",
+        "S7/inst/doc/S7.R :: Cat bases=[]"
+      ]
+    },
+    "extends.construct_setClass": {
+      "occurrences": 197,
+      "files": 25,
+      "examples": [
+        "Matrix/R/00_Class.R :: Matrix bases=[VIRTUAL]",
+        "Matrix/R/00_Class.R :: generalMatrix bases=[VIRTUAL,Matrix]",
+        "Matrix/R/00_Class.R :: symmetricMatrix bases=[VIRTUAL,Matrix]"
+      ]
+    },
+    "extends.construct_setRefClass": {
+      "occurrences": 8,
+      "files": 4,
+      "examples": [
+        "r-Rcpp/R/00_classes.R :: C++Field bases=[]",
+        "r-Rcpp/R/00_classes.R :: C++OverloadedMethods bases=[]",
+        "r-Rcpp/R/00_classes.R :: C++Constructor bases=[]"
+      ]
+    },
+    "implements.construct_s3_dotted_name": {
+      "occurrences": 1800,
+      "files": 297,
+      "examples": [
+        "Matrix/R/00_Class.R :: has.x",
+        "Matrix/R/00_Class.R :: i.uns",
+        "Matrix/R/Auxiliaries.R :: Matrix.verbose"
+      ]
+    },
+    "imports.library_require_identifier": {
+      "occurrences": 293,
+      "files": 141,
+      "examples": [
+        "Matrix/inst/doc/Comparisons.R :: library(stats)",
+        "Matrix/inst/doc/Comparisons.R :: library(utils)",
+        "Matrix/inst/doc/Comparisons.R :: library(Matrix)"
+      ]
+    },
+    "imports.library_require_string": {
+      "occurrences": 10,
+      "files": 7,
+      "examples": [
+        "S7/tests/testthat/test-external-generic.R :: library(\"t2\")",
+        "S7/tests/testthat/test-external-generic.R :: library(\"t0\")",
+        "S7/tests/testthat/test-external-generic.R :: library(\"t1\")"
+      ]
+    },
+    "instantiates.construct_dollar_new.other_class": {
+      "occurrences": 132,
+      "files": 55,
+      "examples": [
+        "R6/tests/manual/test-inheritance.R :: BC$new()",
+        "dplyr/R/deprec-do.R :: Progress$new()",
+        "dplyr/R/filter.R :: DataMask$new()"
+      ]
+    },
+    "instantiates.construct_dollar_new.same_file_class": {
+      "occurrences": 150,
+      "files": 17,
+      "examples": [
+        "R6/tests/manual/encapsulation.R :: BC$new()",
+        "R6/tests/manual/encapsulation.R :: CC$new()",
+        "R6/tests/manual/encapsulation.R :: AC$new()"
+      ]
+    },
+    "instantiates.construct_new_call.other_class": {
+      "occurrences": 384,
+      "files": 66,
+      "examples": [
+        "Matrix/R/Auxiliaries.R :: new(\"cl\")",
+        "Matrix/R/Auxiliaries.R :: new(\"cld\")",
+        "Matrix/R/Auxiliaries.R :: new(\"cld\")"
+      ]
+    },
+    "instantiates.construct_new_call.same_file_class": {
+      "occurrences": 25,
+      "files": 9,
+      "examples": [
+        "Matrix/R/00_Class.R :: new(\"dgeMatrix\")",
+        "Matrix/R/00_Class.R :: new(\"dtrMatrix\")",
+        "Matrix/R/00_Class.R :: new(\"dtpMatrix\")"
+      ]
+    },
+    "overrides.construct_same_file_member_shadow": {
+      "occurrences": 34,
+      "files": 5,
+      "examples": [
+        "R6/tests/manual/encapsulation.R :: BC$x shadows AC$x",
+        "R6/tests/manual/encapsulation.R :: BC$getx shadows AC$getx",
+        "R6/tests/testthat/test-clone.R :: C$getx_super shadows B$getx_super"
+      ]
+    },
+    "overrides.construct_setMethod": {
+      "occurrences": 999,
+      "files": 50,
+      "examples": [
+        "Matrix/R/00_Class.R :: Matrix$initialize",
+        "Matrix/R/00_Class.R :: CsparseMatrix$initialize",
+        "Matrix/R/00_Class.R :: RsparseMatrix$initialize"
+      ]
+    },
+    "uses.extract_in_callee": {
+      "occurrences": 2947,
+      "files": 340,
+      "examples": [
+        "R6/R/clone.R :: value$clone parent=call",
+        "R6/R/clone.R :: .subset2(e, \".__enclos_env__\")$private$f parent=call",
+        "R6/R/env_utils.R :: inherit$get_inherit parent=call"
+      ]
+    },
+    "uses.extract_not_callee": {
+      "occurrences": 18959,
+      "files": 938,
+      "examples": [
+        "Matrix/R/00_Class.R :: .Object@Dimnames parent=binary_operator",
+        "Matrix/R/00_Class.R :: .Object@Dimnames parent=argument",
+        "Matrix/R/00_Class.R :: def@prototype parent=argument"
+      ]
+    }
+  },
+  "typesAbsent": [],
+  "types": [
+    {
+      "type": "calls",
+      "edges": 48008,
+      "files": 1259,
+      "fileExamples": [
+        "Matrix/R/00_Class.R",
+        "Matrix/R/00_Generic.R",
+        "Matrix/R/Auxiliaries.R",
+        "Matrix/R/BunchKaufman.R",
+        "Matrix/R/Cholesky.R",
+        "Matrix/R/HBMM.R",
+        "Matrix/R/KhatriRao.R",
+        "Matrix/R/Math.R",
+        "Matrix/R/Ops.R",
+        "Matrix/R/Schur.R"
+      ],
+      "confidence": {
+        "1": 46348,
+        "0.7": 1660
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 45975,
+      "localResolvedAtTarget": 5036,
+      "localResolvedBoth": 4970,
+      "localRealAtSource": 45975,
+      "localRealAtTarget": 5036,
+      "localRealBoth": 4970,
+      "corpusRealAtSource": 46447,
+      "corpusRealAtTarget": 28629,
+      "corpusResolvedAtSource": 46447,
+      "corpusResolvedAtTarget": 28629,
+      "selfEdges": 117,
+      "globalScopeEndpoints": 0,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "return": 1396,
+        "is.null": 932,
+        "paste0": 832,
+        "invisible": 767,
+        "identical": 371,
+        "sprintf": 308,
+        "any": 304,
+        "missing": 251,
+        "switch": 251,
+        "inherits": 249,
+        "paste": 247,
+        "UseMethod": 236,
+        "cli::cli_abort": 234,
+        "lapply": 230,
+        "parent.frame": 226,
+        "seq_len": 200,
+        "stopifnot": 191,
+        "attr": 189,
+        "getOption": 175,
+        "grepl": 165,
+        "cat": 159,
+        "gsub": 155,
+        "is.character": 154,
+        "seq_along": 153,
+        "tryCatch": 132
+      },
+      "examples": [
+        "Matrix/R/00_Class.R  initialize -[calls 1]-> missing",
+        "Matrix/R/00_Class.R  initialize -[calls 1]-> is.unsorted",
+        "Matrix/R/00_Class.R  initialize -[calls 1]-> is.na",
+        "Matrix/R/00_Class.R  initialize -[calls 1]-> is.integer"
+      ]
+    },
+    {
+      "type": "contains",
+      "edges": 16730,
+      "files": 1763,
+      "fileExamples": [
+        "Matrix/R/00_Class.R",
+        "Matrix/R/00_Generic.R",
+        "Matrix/R/Auxiliaries.R",
+        "Matrix/R/BunchKaufman.R",
+        "Matrix/R/Cholesky.R",
+        "Matrix/R/HBMM.R",
+        "Matrix/R/KhatriRao.R",
+        "Matrix/R/Math.R",
+        "Matrix/R/Ops.R",
+        "Matrix/R/Schur.R"
+      ],
+      "confidence": {
+        "1": 16730
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 16653,
+      "localResolvedAtTarget": 16719,
+      "localResolvedBoth": 16642,
+      "localRealAtSource": 890,
+      "localRealAtTarget": 16719,
+      "localRealBoth": 888,
+      "corpusRealAtSource": 967,
+      "corpusRealAtTarget": 16719,
+      "corpusResolvedAtSource": 16730,
+      "corpusResolvedAtTarget": 16719,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 15763,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "me": 4,
+        "super": 2,
+        "root": 2,
+        "this": 2,
+        "source_file": 1
+      },
+      "examples": [
+        "Matrix/R/00_Class.R  global -[contains 1]-> Matrix",
+        "Matrix/R/00_Class.R  Matrix -[contains 1]-> Dim",
+        "Matrix/R/00_Class.R  Matrix -[contains 1]-> Dimnames",
+        "Matrix/R/00_Class.R  global -[contains 1]-> initialize"
+      ]
+    },
+    {
+      "type": "exports",
+      "edges": 3587,
+      "files": 709,
+      "fileExamples": [
+        "R6/R/aslist.R",
+        "R6/R/is.R",
+        "R6/R/print.R",
+        "R6/R/r6_class.R",
+        "S7/R/S3.R",
+        "S7/R/S4.R",
+        "S7/R/base.R",
+        "S7/R/class-spec.R",
+        "S7/R/class.R",
+        "S7/R/convert.R"
+      ],
+      "confidence": {
+        "1": 3587
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 3587,
+      "localResolvedAtTarget": 3585,
+      "localResolvedBoth": 3585,
+      "localRealAtSource": 0,
+      "localRealAtTarget": 3585,
+      "localRealBoth": 0,
+      "corpusRealAtSource": 0,
+      "corpusRealAtTarget": 3585,
+      "corpusResolvedAtSource": 3587,
+      "corpusResolvedAtTarget": 3585,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 3587,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "super": 1,
+        "source_file": 1
+      },
+      "examples": [
+        "R6/R/aslist.R  global -[exports 1]-> as.list.R6",
+        "R6/R/is.R  global -[exports 1]-> is.R6",
+        "R6/R/is.R  global -[exports 1]-> is.R6Class",
+        "R6/R/print.R  global -[exports 1]-> format.R6"
+      ]
+    },
+    {
+      "type": "extends",
+      "edges": 349,
+      "files": 59,
+      "fileExamples": [
+        "Matrix/R/00_Class.R",
+        "Matrix/tests/Class+Meth.R",
+        "Matrix/tests/group-methods.R",
+        "R6/tests/manual/encapsulation.R",
+        "R6/tests/testthat/test-clone.R",
+        "R6/tests/testthat/test-cloning-inheritance.R",
+        "R6/tests/testthat/test-finalizer.R",
+        "R6/tests/testthat/test-nonportable-inheritance.R",
+        "R6/tests/testthat/test-portable-inheritance.R",
+        "S7/inst/doc/S7.R"
+      ],
+      "confidence": {
+        "1": 349
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 349,
+      "localResolvedAtTarget": 257,
+      "localResolvedBoth": 257,
+      "localRealAtSource": 349,
+      "localRealAtTarget": 257,
+      "localRealBoth": 257,
+      "corpusRealAtSource": 349,
+      "corpusRealAtTarget": 313,
+      "corpusResolvedAtSource": 349,
+      "corpusResolvedAtTarget": 313,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 0,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "VIRTUAL": 34,
+        "matrix": 1,
+        "Soo1": 1
+      },
+      "examples": [
+        "Matrix/R/00_Class.R  Matrix -[extends 1]-> VIRTUAL",
+        "Matrix/R/00_Class.R  generalMatrix -[extends 1]-> VIRTUAL",
+        "Matrix/R/00_Class.R  generalMatrix -[extends 1]-> Matrix",
+        "Matrix/R/00_Class.R  symmetricMatrix -[extends 1]-> VIRTUAL"
+      ]
+    },
+    {
+      "type": "implements",
+      "edges": 1125,
+      "files": 218,
+      "fileExamples": [
+        "Matrix/R/Auxiliaries.R",
+        "Matrix/R/Ops.R",
+        "Matrix/R/abstract.R",
+        "Matrix/R/cbind2.R",
+        "Matrix/R/coerce-graph.R",
+        "Matrix/R/coerce.R",
+        "Matrix/R/dim.R",
+        "Matrix/R/models.R",
+        "Matrix/R/show.R",
+        "Matrix/R/zzz.R"
+      ],
+      "confidence": {
+        "0.8": 1125
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 1125,
+      "localResolvedAtTarget": 371,
+      "localResolvedBoth": 371,
+      "localRealAtSource": 1125,
+      "localRealAtTarget": 371,
+      "localRealBoth": 371,
+      "corpusRealAtSource": 1125,
+      "corpusRealAtTarget": 942,
+      "corpusResolvedAtSource": 1125,
+      "corpusResolvedAtTarget": 942,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 0,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "as": 54,
+        "is": 29,
+        "assert": 4,
+        "chk": 4,
+        "Rcpp": 4,
+        "rbind": 3,
+        "graph": 3,
+        "conditionMessage": 3,
+        "levels": 3,
+        "vec_ptype2_data": 3,
+        "vec_cast_data": 3,
+        "non0": 2,
+        "Sys": 2,
+        "|": 2,
+        "tbl_sum": 2,
+        "as_tibble": 2,
+        "min": 2,
+        "max": 2,
+        "pillar_shaft": 2,
+        "type_sum": 2,
+        "median": 2,
+        "quantile": 2,
+        "xtfrm": 2,
+        "unique": 2,
+        "anyDuplicated": 2
+      },
+      "examples": [
+        "Matrix/R/Auxiliaries.R  Matrix.verbose -[implements 0.8]-> Matrix",
+        "Matrix/R/Auxiliaries.R  Matrix.warn -[implements 0.8]-> Matrix",
+        "Matrix/R/Auxiliaries.R  Matrix.message -[implements 0.8]-> Matrix",
+        "Matrix/R/Auxiliaries.R  non0.i -[implements 0.8]-> non0"
+      ]
+    },
+    {
+      "type": "imports",
+      "edges": 2052,
+      "files": 1077,
+      "fileExamples": [
+        "Matrix/R/coerce-graph.R",
+        "Matrix/R/determinant.R",
+        "Matrix/R/kappa.R",
+        "Matrix/data/CAex.R",
+        "Matrix/data/KNex.R",
+        "Matrix/data/USCounties.R",
+        "Matrix/data/wrld_1deg.R",
+        "Matrix/inst/doc/Comparisons.R",
+        "Matrix/inst/doc/Design-issues.R",
+        "Matrix/inst/doc/Intro2Matrix.R"
+      ],
+      "confidence": {
+        "1": 1774,
+        "0.8": 278
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 2052,
+      "localResolvedAtTarget": 13,
+      "localResolvedBoth": 13,
+      "localRealAtSource": 0,
+      "localRealAtTarget": 13,
+      "localRealBoth": 0,
+      "corpusRealAtSource": 0,
+      "corpusRealAtTarget": 724,
+      "corpusResolvedAtSource": 2052,
+      "corpusResolvedAtTarget": 724,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 2052,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "withr": 242,
+        "utils": 121,
+        "lifecycle": 83,
+        "Rcpp": 70,
+        "stats": 62,
+        "testthat": 62,
+        "purrr": 60,
+        "xml2": 42,
+        "R6": 33,
+        "tools": 27,
+        "vctrs": 26,
+        "grDevices": 20,
+        "gh": 19,
+        "inline": 18,
+        "callr": 18,
+        "dplyr": 18,
+        "rmarkdown": 17,
+        "gert": 17,
+        "usethis": 16,
+        "devtools": 15,
+        "pkgload": 14,
+        "tidyselect": 13,
+        "rstudioapi": 12,
+        "rbenchmark": 11,
+        "jsonlite": 11
+      },
+      "examples": [
+        "Matrix/R/coerce-graph.R  global -[imports 1]-> graph",
+        "Matrix/R/determinant.R  global -[imports 1]-> base",
+        "Matrix/R/kappa.R  global -[imports 1]-> base",
+        "Matrix/data/CAex.R  global -[imports 1]-> methods"
+      ]
+    },
+    {
+      "type": "instantiates",
+      "edges": 3,
+      "files": 2,
+      "fileExamples": [
+        "R6/tests/testthat/test-clone.R",
+        "r-testthat/R/reporter-silent.R"
+      ],
+      "filesOver12": [
+        "R6/tests/testthat/test-clone.R",
+        "r-testthat/R/reporter-silent.R"
+      ],
+      "confidence": {
+        "0.9": 3
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 3,
+      "localResolvedAtTarget": 3,
+      "localResolvedBoth": 3,
+      "localRealAtSource": 3,
+      "localRealAtTarget": 3,
+      "localRealBoth": 3,
+      "corpusRealAtSource": 3,
+      "corpusRealAtTarget": 3,
+      "corpusResolvedAtSource": 3,
+      "corpusResolvedAtTarget": 3,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 0,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {},
+      "examples": [
+        "R6/tests/testthat/test-clone.R  initialize -[instantiates 0.9]-> AC",
+        "R6/tests/testthat/test-clone.R  initialize -[instantiates 0.9]-> BC",
+        "r-testthat/R/reporter-silent.R  capture_expectations -[instantiates 0.9]-> SilentReporter"
+      ]
+    },
+    {
+      "type": "overrides",
+      "edges": 97,
+      "files": 9,
+      "fileExamples": [
+        "R6/tests/manual/encapsulation.R",
+        "R6/tests/testthat/test-clone.R",
+        "R6/tests/testthat/test-finalizer.R",
+        "R6/tests/testthat/test-nonportable-inheritance.R",
+        "R6/tests/testthat/test-portable-inheritance.R",
+        "S7/inst/doc/S7.R",
+        "S7/inst/doc/generics-methods.R",
+        "r-testthat/R/reporter-junit.R",
+        "r-testthat/R/reporter-progress.R"
+      ],
+      "filesOver12": [
+        "R6/tests/manual/encapsulation.R",
+        "R6/tests/testthat/test-clone.R",
+        "R6/tests/testthat/test-finalizer.R",
+        "R6/tests/testthat/test-nonportable-inheritance.R",
+        "R6/tests/testthat/test-portable-inheritance.R",
+        "S7/inst/doc/S7.R",
+        "S7/inst/doc/generics-methods.R",
+        "r-testthat/R/reporter-junit.R",
+        "r-testthat/R/reporter-progress.R"
+      ],
+      "confidence": {
+        "0.95": 97
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 96,
+      "localResolvedAtTarget": 97,
+      "localResolvedBoth": 96,
+      "localRealAtSource": 96,
+      "localRealAtTarget": 97,
+      "localRealBoth": 96,
+      "corpusRealAtSource": 97,
+      "corpusRealAtTarget": 97,
+      "corpusResolvedAtSource": 97,
+      "corpusResolvedAtTarget": 97,
+      "selfEdges": 0,
+      "globalScopeEndpoints": 0,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {},
+      "examples": [
+        "R6/tests/manual/encapsulation.R  AC -[overrides 0.95]-> x",
+        "R6/tests/manual/encapsulation.R  AC -[overrides 0.95]-> inc_x",
+        "R6/tests/manual/encapsulation.R  AC -[overrides 0.95]-> inc",
+        "R6/tests/manual/encapsulation.R  AC -[overrides 0.95]-> inc_y"
+      ]
+    },
+    {
+      "type": "references",
+      "edges": 387,
+      "files": 201,
+      "fileExamples": [
+        "Matrix/inst/doc/Comparisons.R",
+        "Matrix/inst/doc/Design-issues.R",
+        "Matrix/inst/doc/Intro2Matrix.R",
+        "Matrix/inst/doc/sparseModels.R",
+        "Matrix/inst/test-tools-1.R",
+        "Matrix/tests/Class+Meth.R",
+        "Matrix/tests/Simple.R",
+        "Matrix/tests/abIndex-tsts.R",
+        "Matrix/tests/base-matrix-fun.R",
+        "Matrix/tests/bind.R"
+      ],
+      "confidence": {
+        "1": 106,
+        "0.8": 281
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 387,
+      "localResolvedAtTarget": 46,
+      "localResolvedBoth": 46,
+      "localRealAtSource": 42,
+      "localRealAtTarget": 46,
+      "localRealBoth": 42,
+      "corpusRealAtSource": 42,
+      "corpusRealAtTarget": 126,
+      "corpusResolvedAtSource": 387,
+      "corpusResolvedAtTarget": 126,
+      "selfEdges": 21,
+      "globalScopeEndpoints": 345,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "testthat": 34,
+        "Rcpp": 27,
+        "utils": 19,
+        "inline": 18,
+        "stats": 16,
+        "rbenchmark": 11,
+        "readr": 8,
+        "docopt": 8,
+        "dplyr": 5,
+        "tidyverse": 4,
+        "prettyunits": 4,
+        "httr": 3,
+        "lmArmadillo.R": 3,
+        "lmGSL.R": 3,
+        "compiler": 3,
+        "jsonlite": 3,
+        "grDevices": 2,
+        "R6": 2,
+        "purrr": 2,
+        "tidyr": 2,
+        "ggplot2": 2,
+        "RcppGSL": 2,
+        "KernSmooth": 2,
+        "testRcppClass": 2,
+        "cpp/rmath.cpp": 2
+      },
+      "examples": [
+        "Matrix/inst/doc/Comparisons.R  global -[references 0.8]-> stats",
+        "Matrix/inst/doc/Comparisons.R  global -[references 0.8]-> utils",
+        "Matrix/inst/doc/Comparisons.R  global -[references 0.8]-> Matrix",
+        "Matrix/inst/doc/Design-issues.R  global -[references 0.8]-> utils"
+      ]
+    },
+    {
+      "type": "uses",
+      "edges": 4769,
+      "files": 568,
+      "fileExamples": [
+        "Matrix/R/00_Class.R",
+        "Matrix/R/Auxiliaries.R",
+        "Matrix/R/Cholesky.R",
+        "Matrix/R/HBMM.R",
+        "Matrix/R/KhatriRao.R",
+        "Matrix/R/Math.R",
+        "Matrix/R/Ops.R",
+        "Matrix/R/Schur.R",
+        "Matrix/R/Summary.R",
+        "Matrix/R/abstract.R"
+      ],
+      "confidence": {
+        "1": 4534,
+        "0.7": 235
+      },
+      "heuristicUnder07": 0,
+      "localResolvedAtSource": 4583,
+      "localResolvedAtTarget": 395,
+      "localResolvedBoth": 393,
+      "localRealAtSource": 4583,
+      "localRealAtTarget": 395,
+      "localRealBoth": 393,
+      "corpusRealAtSource": 4607,
+      "corpusRealAtTarget": 3013,
+      "corpusResolvedAtSource": 4607,
+      "corpusResolvedAtTarget": 3013,
+      "selfEdges": 12,
+      "globalScopeEndpoints": 0,
+      "unknownEndpoints": 0,
+      "lineMissing": 0,
+      "unresolvedTargets": {
+        "package": 37,
+        "double.eps": 31,
+        "integer.max": 22,
+        "bs_version": 21,
+        "OS.type": 16,
+        "subscript_arg": 14,
+        "remote": 14,
+        "group": 13,
+        "total": 13,
+        "upstream": 13,
+        "className": 12,
+        "file_out": 12,
+        "repo_spec": 12,
+        "x_aes": 11,
+        "y_aes": 11,
+        "description": 11,
+        "sysname": 11,
+        "visible": 11,
+        "progress": 11,
+        "unit": 11,
+        "host_url": 11,
+        "lineend": 10,
+        "prefix": 10,
+        "amount": 10,
+        "can_push": 10
+      },
+      "examples": [
+        "Matrix/R/00_Class.R  initialize -[uses 1]-> ix",
+        "Matrix/R/00_Class.R  initialize -[uses 1]-> x",
+        "Matrix/R/Auxiliaries.R  Matrix.verbose -[uses 1]-> verbose",
+        "Matrix/R/Auxiliaries.R  Matrix.warn -[uses 1]-> warn"
+      ]
+    }
+  ]
+}

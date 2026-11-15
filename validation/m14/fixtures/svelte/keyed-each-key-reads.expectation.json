@@ -1,0 +1,27 @@
+{
+  "fixtureId": "svelte/keyed-each-key-reads",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the Svelte 5 rule that a keyed `{#each xs as b (K)}` binds `b` and evaluates `K`, and from the grammar's own shape (probed: `each_start` carries TWO `svelte_raw_text` fragments — the collection, then `b` or `b (K)` — so a rule that splits on the first `(` is reading the grammar, not guessing). Line pins read off the post-fix run and checked against the fixture's text: `(sortKey)` on 39, `{id}` on 50, the unkeyed collection on 53.",
+  "rationale": "JOB 2 of the svelte ontology pass. The keyed each form's KEY was never read, and its property leaves were registered as TEMPLATE-LOCAL SHADOWS. Corpus measurement: the keyed form occurs 699 times in 486 of the 6,439 .svelte files. Two defects in one rule: `{#each todos as todo (todo.id)}` silenced a member named `id` for the whole block (pinned below as the `id` read on line 50), and `{#each rows as row (keyOf(row))}` published `uses rows` and nothing for `keyOf`. The head is the binding list and the parenthesised tail is a READ on the same S1 argument as the collection. The collector's own dot rule keeps the ordinary keyed block `{#each rows as row (row.id)}` silent at `id`, which is pinned so a future widening cannot publish the most common false edge there is. The unkeyed control `{#each rows as row, i}` on line 53 is the regression stop: a rule that collected the whole fragment as reads would publish the bindings `row` and `i`, and the forbids catch exactly that.",
+  "expectSymbols": [
+    { "name": "rows" },
+    { "name": "keyOf", "kind": "function" },
+    { "name": "sortKey" },
+    { "name": "id" },
+    { "name": "list", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "target": "keyOf", "meta.isTemplateExpression": true },
+    { "type": "uses", "target": "sortKey", "line_number": 39 },
+    { "type": "uses", "target": "id", "line_number": 50, "meta.isTemplateExpression": true },
+    { "type": "uses", "target": "rows", "line_number": 53 },
+    { "type": "calls", "target": "list", "meta.context": "Svelte {@render} tag" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "target": "row", "comment": "the each BINDING is a template-local, never a member read. The pre-fix rule and a naive whole-fragment collector both publish it." },
+    { "type": "uses", "target": "i", "comment": "the second each binding is a template-local too — the S5 shadow case, and the control for the unkeyed form on line 53" },
+    { "type": "uses", "target": "n", "comment": "`row.n` is a member LEAF on a binding; the collector's dot rule skips it, so no component-level read of `n` is derivable" },
+    { "type": "uses", "target": "id", "line_number": 49, "comment": "`{#each rows as row (row.id)}` on line 49 contributes NO read of a member named `id` — the key's leaf belongs to the binding. The member read of `id` on line 50 is a separate fact and is pinned above; if the rule published the key's leaf this forbid would fire on the wrong target." }
+  ]
+}

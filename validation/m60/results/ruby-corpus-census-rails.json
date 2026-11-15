@@ -1,0 +1,172 @@
+{
+  "generatedAt": "2026-09-28T19:34:49.592Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories/rails",
+    "400"
+  ],
+  "files": 400,
+  "errors": 0,
+  "treeTruth": 9508,
+  "analyzerEdges": 19727,
+  "missing": 28,
+  "unexplained": 103,
+  "outsideAudited": 6726,
+  "missingByLabel": {
+    "overrides": 6,
+    "uses": 22
+  },
+  "unexplainedByLabel": {
+    "uses": 103
+  },
+  "outsideByLabel": {
+    "references": 727,
+    "contains": 5999
+  },
+  "unexplainedExamples": {
+    "uses": [
+      {
+        "file": "actionview/test/fixtures/project.rb",
+        "line": 4,
+        "from": "Project",
+        "target": "developers",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_and_belongs_to_many",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 7,
+        "from": "Virus",
+        "target": "octopus",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 11,
+        "from": "Octopus",
+        "target": "virus",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_one",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 15,
+        "from": "Pass",
+        "target": "bus",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 19,
+        "from": "Bus",
+        "target": "passes",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_many",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 23,
+        "from": "Mess",
+        "target": "crises",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_and_belongs_to_many",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 27,
+        "from": "Crisis",
+        "target": "messes",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_and_belongs_to_many",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "activerecord/test/cases/associations/eager_singularization_test.rb",
+        "line": 28,
+        "from": "Crisis",
+        "target": "analyses",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_many",
+          "evidenceClass": "inferred"
+        }
+      }
+    ]
+  },
+  "sigA": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigB": {
+    "sampled": 2,
+    "files": 1,
+    "examples": [
+      {
+        "file": "activerecord/test/cases/timestamp_test.rb",
+        "line": 378,
+        "from": "TimestampTest",
+        "boundLocal": "klass",
+        "target": "pet"
+      },
+      {
+        "file": "activerecord/test/cases/timestamp_test.rb",
+        "line": 400,
+        "from": "TimestampTest",
+        "boundLocal": "wheel_klass",
+        "target": "wheelable"
+      }
+    ]
+  },
+  "sigC": {
+    "sampled": 6,
+    "files": 1,
+    "examples": [
+      {
+        "file": "actionmailer/lib/action_mailer/base.rb",
+        "target": "Base._raise_error"
+      },
+      {
+        "file": "actionmailer/lib/action_mailer/base.rb",
+        "target": "Base.[]="
+      },
+      {
+        "file": "actionmailer/lib/action_mailer/base.rb",
+        "target": "Base.inline"
+      },
+      {
+        "file": "actionmailer/lib/action_mailer/base.rb",
+        "target": "Base.respond_to?"
+      },
+      {
+        "file": "actionmailer/lib/action_mailer/base.rb",
+        "target": "Base.header"
+      },
+      {
+        "file": "actionmailer/lib/action_mailer/base.rb",
+        "target": "Base.body"
+      }
+    ]
+  }
+}

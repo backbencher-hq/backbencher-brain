@@ -34,7 +34,7 @@
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.argv.includes("--out") ? process.argv[process.argv.indexOf("--out") + 1] : "/tmp/opencode/pb/probes.json"
 const ROOT = process.cwd()
 

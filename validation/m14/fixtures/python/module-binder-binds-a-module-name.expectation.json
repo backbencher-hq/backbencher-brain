@@ -1,0 +1,141 @@
+{
+  "fixtureId": "python/module-binder-binds-a-module-name",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PY-D23 (round 12). A module-scope binding written by a statement that is NOT an assignment \u2014 `for key, value in PAIRS:`, `with open(...) as fh`, `except ValueError as err` \u2014 published NOTHING, so a read of one had no declaration to resolve against. The corpus row is measured: `wagtail/wagtail/snippets/api/v3/router.py:76` reads `mixin` inside a module-level `for` loop over `mixins` and was UNEXPLAINED as `references \u2026 -> mixin [instancecheck]` on the round-11 dump. POPULATION, priced with CPython's own `ast` before the code existed (`.tmp-py/price-module-bindings.py`): 351 module `for` targets, 98 `with \u2026 as`, 48 `except \u2026 as` in 283 files, and 13 `for` targets in class bodies \u2014 516 names in total, of which exactly ONE carried a residual row (`.tmp-py/module-bindings-price.json`). `authoredBeforeAnalyzerRun` is FALSE and that is the difference from round 11: the code landed first here, the PRICE did not \u2014 the population and the residual blast were both measured before the walker was written, and this file pins what the shipped analyzer does with those shapes. The function-scope rows are the negative direction: the same statements inside a `def` bind LOCALS, which are not symbols, and their counts must stay zero or the rule has been widened into a fabrication. ROUND 13 EXTENDS THIS FILE with the one thing the differential exposed: a class-body binder is a MEMBER and is therefore addressed by name AND LINE, so TWO `for x in PAIRS:` statements in one class body are TWO members (pinned by `expectSymbolCount: x equals 2` plus a `contains` row at EACH site), while two module-scope `for single in PAIRS:` statements are ONE module Variable (`equals: 1`, the module half's measured per-name publication). `x` was the row that proved it: the truth oracle's per-site derivation reported `AnsibleUnwantedChecker -> method @L157` as MISSING while the analyzer had published that member at L141 only.",
+  "expectSymbols": [
+    {
+      "name": "key",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.boundByBinder": "for",
+      "note": "THE POSITIVE ROW, and the corpus shape: `for key, value in PAIRS:` binds both names in the module namespace, each published at the target's own position with `boundByBinder` naming WHICH statement bound it \u2014 the counterpart of PY-D18's `boundByGlobalWrite`, so a reader triaging the symbol does not have to go find the statement."
+    },
+    {
+      "name": "value",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.boundByBinder": "for",
+      "note": "The second name of the same `for` target, read through the SHARED pattern walker \u2014 `for k, v in \u2026` binds two, and `addPatternTargets` is the one authority on what a target is."
+    },
+    {
+      "name": "fh",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.boundByBinder": "with",
+      "note": "`with open(\"x\") as fh:` \u2014 the `with` spelling. Its target lives at `with_item value -> as_pattern -> as_pattern_target` (the shape round 10 pinned after nine rounds of reading a field that is null on every real node), which is why this reader calls `asBindingTarget` instead of guessing a field."
+    },
+    {
+      "name": "err",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.boundByBinder": "except",
+      "note": "`except ValueError as err:` \u2014 python deletes this binding at the end of the handler, and it is STILL a module-scope name for every lexically visible read (and python itself treats the scope as the enclosing one). The fact published is the one the source writes; the deletion is a runtime detail nothing in the file's surface states."
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Holder",
+      "meta.boundByBinder": "for",
+      "note": "CLASS SCOPE: a `for` directly in a class body binds a class ATTRIBUTE, so the class half publishes a Property with the class as owner \u2014 and, separately, the `contains` edges below. The scope rule is the walker's: a `for` inside a METHOD is that function's local and appears in no symbol table."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "reads_the_module_binders",
+      "target": "key",
+      "line_number": 54,
+      "confidence": 0.9,
+      "meta.reasonCode": "bare-name-callee",
+      "note": "The row the mechanism exists for: the call sits 37 lines below the binding. `bare-name-callee` is CORRECT and is not a bug \u2014 the name IS a module-level value and the reason code says its route is a bare name (not a local, member or dispatch). What changed is that the name now RESOLVES, because the declaration is in the store."
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "x",
+      "line_number": 42,
+      "note": "The class-scope half is a MEMBER, so it gets the containment edge every other member gets. `contains` resolves by name AND LINE, which is why the SECOND site is a second row rather than a duplicate: a consumer reading line 49 has to find the declaration written there."
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "x",
+      "line_number": 49,
+      "note": "THE ROUND-13 ROW. Round 12 deduped class-body binders on `(class, name)` and published ONE member at L42, so this line had no declaration at all \u2014 the differential's per-site truth derivation reported it MISSING (`AnsibleUnwantedChecker -> method @L157` in the corpus). The price for the fix is exact: ONE name in the whole corpus has more than one class-body binder site, and ZERO binder names are also declared in the same class by an assignment, method or import."
+    },
+    {
+      "type": "references",
+      "from": "module_binder_binds_a_module_name",
+      "target": "fh",
+      "line_number": 38,
+      "confidence": 0.95,
+      "meta.reasonCode": "annotation-type",
+      "note": "The REFERENCE half, pinned independently of the call emitter: `ANNOTATED: fh = None` at module scope names the `with` binding. A fix that reached only `processCall` would leave every annotation naming a binder unresolved, and this row is the falsifier."
+    },
+    {
+      "type": "calls",
+      "from": "locals_stay_locals",
+      "target": "locals_stay_locals\u0000m",
+      "line_number": 59,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "THE SCOPE ROW. `for m, n in PAIRS:` inside a `def` binds LOCALS \u2014 python gives the function its own namespace \u2014 so the call is a local call and `m` is not a project-wide name. This row was already correct before the round (PY-D14's collector reads the same shapes through the same walker) and is pinned because the round edited that surface: if the module-scope reading were widened into function bodies, this code flips away from `local-callee`. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "locals_stay_locals",
+      "target": "locals_stay_locals\u0000local_fh",
+      "line_number": 61,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "The `with \u2026 as` local, same scope rule. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "locals_stay_locals",
+      "target": "locals_stay_locals\u0000local_err",
+      "line_number": 65,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "The `except \u2026 as` local, same scope rule \u2014 and the one shape where a wrong reading is least visible, because the name is deleted at runtime and nothing else in the file would contradict a fabricated member. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "key",
+      "equals": 1,
+      "note": "One symbol per bound name. A walker that published per container element rather than per identifier would report 2."
+    },
+    {
+      "name": "single",
+      "equals": 1,
+      "note": "THE MODULE HALF IS PER NAME, and this row is the pin. Two `for single in PAIRS:` statements at module scope are one module Variable \u2014 priced at 70 such names in the corpus. It is a deliberate, measured deferral rather than an oversight: a module Variable has no owner, hence no `contains` edge, so nothing in the differential or the store's member channel disagrees with it, and making it per site would add ~100 symbols whose effect on the RESOLVED/AMBIGUOUS split is not yet measured."
+    },
+    {
+      "name": "x",
+      "equals": 2,
+      "note": "THE CLASS HALF IS PER SITE, and this count is the whole point of the round-13 row: two `for x in PAIRS:` statements in one class body are two members at two lines, exactly as two `x = \u2026` assignments in a class body are two Properties. A walker that regressed to `(class, name)` deduplication would report 1 and the `contains` row at L49 above would go unexplained."
+    },
+    {
+      "name": "m",
+      "equals": 0,
+      "note": "FABRICATION GUARD. `for m, n in PAIRS:` inside a `def` binds function locals, and locals are not symbols on this family's contract. The correct reading is `local-callee`; a publication here is the defect."
+    },
+    {
+      "name": "n",
+      "equals": 0,
+      "note": "Same, the second name of the same function-scope target."
+    },
+    {
+      "name": "local_fh",
+      "equals": 0,
+      "note": "The `with \u2026 as` shape inside a function: the LOCAL half of the same statement the module half publishes."
+    },
+    {
+      "name": "local_err",
+      "equals": 0,
+      "note": "The `except \u2026 as` shape inside a function."
+    }
+  ]
+}

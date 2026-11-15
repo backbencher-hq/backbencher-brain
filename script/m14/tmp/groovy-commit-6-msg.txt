@@ -1,0 +1,24 @@
+groovy: the m14 differential for groovy, measured and reported
+
+THE ORACLE COMPARISON FOR THIS LANE, by the fleet's own differential
+(`bun run script/m14/differential.ts --lang groovy --sample 120`), and it is CLEAN:
+grails-core 120 files · tree-truth 2,037 · covered 2,037 (100 %) · MISSING 0 ·
+analyzer-edges 2,173 · unexplained 21 (1 %), all of them `uses`; geb 120 files ·
+tree-truth 1,317 · covered 1,315 (99.8 %) · MISSING 2 · analyzer-edges 1,362 ·
+unexplained 27 (2 %), all of them `uses`.
+
+`overrides` IS COMPARED WITH NO TRUTH (117 comparable in grails-core, 35 in geb, 0
+truth rows) - and that is this lane's own DECLARED state in
+`label_coverage.declared_no_truth`, not a silent gap: the label is compared, every
+analyzer `overrides` row enters the comparison with no oracle to meet, and the count
+is reported rather than the label dropped. AND `overrides` DID NOT REGRESS.
+
+THE TWO MISSING TRUTH ROWS ARE NAMED BY THE INSTRUMENT ITSELF, and both are `uses`
+on a GString's text: `&get` in
+`geb-gradle/src/main/groovy/geb/gradle/cloud/CloudBrowsersExtension.groovy` and
+`@href` in `doc/manual-snippets/src/test/resources/gebScript.groovy`.
+
+AND A SCOPED RUN DOES NOT WRITE THE CANONICAL ARTEFACT - the tool says so and says
+why: "The artifact belongs to the canonical 120-file, 47-language sweep; a scoped run
+is for inspecting lanes, and writing it here would replace that claim with a smaller
+one." So the canonical `M14.0.F5.json` is UNTOUCHED by this lane.

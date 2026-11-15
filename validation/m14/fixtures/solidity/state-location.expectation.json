@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "state-location",
+  "why": "grammar.js:682 — `state_location: choice('transient')`, reached only through `state_variable_declaration`'s `location` field. Solidity 0.8.28 transient storage; OpenZeppelin at this rev does not use it.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "state_location",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

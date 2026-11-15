@@ -1,0 +1,24 @@
+{
+  "fixtureId": "javascript/deep-cjs-exports",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "module.exports.sub = ... is part of the module public surface but only direct module.exports / exports.* assignments were recognized - deep property assignments were silently dropped. M37 JSD1: the CJS write shapes also PIN the uses write gate — assignment-LHS member writes (module.exports.tag = 1, svc.limit = 2) emit NO uses edges (pre-fix: uses module -> exports, uses module -> tag, uses svc -> limit leaked into the graph).",
+  "expectSymbols": [],
+  "expectExports": [
+    {
+      "name": "sub"
+    },
+    {
+      "name": "direct"
+    },
+    {
+      "name": "tag"
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "module", "target": "exports" },
+    { "type": "uses", "from": "module", "target": "tag" },
+    { "type": "uses", "from": "svc", "target": "limit" },
+    { "type": "uses", "from": "exports", "target": "direct" }
+  ]
+}

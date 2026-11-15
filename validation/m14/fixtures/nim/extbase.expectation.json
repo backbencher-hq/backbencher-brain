@@ -1,0 +1,15 @@
+{
+  "comment": "The BASE half of the cross-file override pair. `ExtBase` and its `{.base.}` render live in THIS file while the derived type and its overriding method live in extderived.nim, so an `overrides` edge between them cannot be derived from either file alone — it needs the project-wide companion index. This file is what the companion is BUILT from: `buildOverrideCompanion` turns its symbols into owner -> declared-method-names, which is why a method must declare `ownerName` (its receiver) for the index to see it at all.",
+  "expectSymbols": [
+    { "name": "ExtBase", "kind": "class" },
+    { "name": "label", "kind": "property" },
+    { "name": "render", "kind": "method", "ownerName": "ExtBase", "comment": "the receiver IS the owner: a Nim method belongs to its receiver type, and `ownerName` is the family-standard field that says so. Without it the method is invisible to every owner-based mechanism in the codebase, the companion index included" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "ExtBase", "target": "render", "comment": "a method is owned by its receiver type" }
+  ],
+  "expectDecorators": [
+    { "symbol": "render", "contains": "base", "comment": "`{.base.}` marks the root of the override chain" }
+  ],
+  "forbidErrors": [{}]
+}

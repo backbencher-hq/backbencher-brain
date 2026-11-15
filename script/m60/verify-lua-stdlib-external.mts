@@ -43,7 +43,7 @@ import { createHash } from "node:crypto"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const MAX_FILES = Number(arg("--files", "5000"))
 const OUT = arg("--out")

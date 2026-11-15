@@ -1,0 +1,657 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "NS_ENUM/NS_OPTIONS member recovery",
+  "generatedAt": "2026-09-30T03:22:45.991Z",
+  "method": "for every NS_ENUM/NS_OPTIONS/NS_CLOSED_ENUM/NS_STRING_ENUM declaration in the router universe (329 files), count member names from the source text with a balanced-brace reader, then ask the analyzer's symbols for each name",
+  "why": "the second review ruled this construct 'verified unparseable, not minable' against a small corpus; at the router's full universe it is 22 files in two production codebases, and the loss is a list of named constants that is the declaration's entire reason to exist",
+  "declarationsFound": 35,
+  "filesAffected": 29,
+  "totalMembersInSource": 164,
+  "totalMembersLost": 2,
+  "recoveryRate": 0.9878,
+  "declarationsFullyRecovered": 34,
+  "declarationsWhollyLost": 1,
+  "enumTypeSymbolsPresent": 34,
+  "decls": [
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFImageDownloader.h",
+      "line": 32,
+      "endLine": 35,
+      "macro": "NS_ENUM",
+      "enumName": "AFImageDownloadPrioritization",
+      "membersInSource": 2,
+      "membersRecovered": 0,
+      "membersLost": 2,
+      "enumTypeSymbolPresent": false,
+      "lostMemberNames": [
+        "AFImageDownloadPrioritizationFIFO",
+        "AFImageDownloadPrioritizationLIFO"
+      ],
+      "membersSample": [
+        "AFImageDownloadPrioritizationFIFO",
+        "AFImageDownloadPrioritizationLIFO"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImagePlayer.h",
+      "line": 14,
+      "endLine": 31,
+      "macro": "NS_ENUM",
+      "enumName": "SDAnimatedImagePlaybackMode",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDAnimatedImagePlaybackModeNormal",
+        "SDAnimatedImagePlaybackModeReverse",
+        "SDAnimatedImagePlaybackModeBounce",
+        "SDAnimatedImagePlaybackModeReversedBounce"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDCallbackQueue.h",
+      "line": 13,
+      "endLine": 22,
+      "macro": "NS_ENUM",
+      "enumName": "SDCallbackPolicy",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDCallbackPolicySafeExecute",
+        "SDCallbackPolicyDispatch",
+        "SDCallbackPolicyInvoke",
+        "SDCallbackPolicySafeAsyncMainThread"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDGraphicsImageRenderer.h",
+      "line": 23,
+      "endLine": 32,
+      "macro": "NS_ENUM",
+      "enumName": "SDGraphicsImageRendererFormatRange",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDGraphicsImageRendererFormatRangeUnspecified",
+        "SDGraphicsImageRendererFormatRangeAutomatic",
+        "SDGraphicsImageRendererFormatRangeExtended",
+        "SDGraphicsImageRendererFormatRangeStandard"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCache.h",
+      "line": 18,
+      "endLine": 58,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDImageCacheOptions",
+      "membersInSource": 7,
+      "membersRecovered": 7,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCacheQueryMemoryData",
+        "SDImageCacheQueryMemoryDataSync",
+        "SDImageCacheQueryDiskDataSync",
+        "SDImageCacheScaleDownLargeImages",
+        "SDImageCacheDecodeFirstFrameOnly",
+        "SDImageCachePreloadAllFrames",
+        "SDImageCacheMatchAnimatedImageClass"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCacheConfig.h",
+      "line": 13,
+      "endLine": 30,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCacheConfigExpireType",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCacheConfigExpireTypeAccessDate",
+        "SDImageCacheConfigExpireTypeModificationDate",
+        "SDImageCacheConfigExpireTypeCreationDate",
+        "SDImageCacheConfigExpireTypeChangeDate"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCacheDefine.h",
+      "line": 16,
+      "endLine": 37,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCacheType",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCacheTypeNone",
+        "SDImageCacheTypeDisk",
+        "SDImageCacheTypeMemory",
+        "SDImageCacheTypeAll"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCachesManager.h",
+      "line": 13,
+      "endLine": 18,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCachesManagerOperationPolicy",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCachesManagerOperationPolicySerial",
+        "SDImageCachesManagerOperationPolicyConcurrent",
+        "SDImageCachesManagerOperationPolicyHighestOnly",
+        "SDImageCachesManagerOperationPolicyLowestOnly"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.h",
+      "line": 14,
+      "endLine": 21,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCoderDecodeSolution",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCoderDecodeSolutionAutomatic",
+        "SDImageCoderDecodeSolutionCoreGraphics",
+        "SDImageCoderDecodeSolutionUIKit"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.h",
+      "line": 27,
+      "endLine": 34,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageForceDecodePolicy",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageForceDecodePolicyAutomatic",
+        "SDImageForceDecodePolicyNever",
+        "SDImageForceDecodePolicyAlways"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.h",
+      "line": 38,
+      "endLine": 45,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageHDRType",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageHDRTypeSDR",
+        "SDImageHDRTypeISOHDR",
+        "SDImageHDRTypeISOGainMap"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloader.h",
+      "line": 20,
+      "endLine": 98,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDWebImageDownloaderOptions",
+      "membersInSource": 12,
+      "membersRecovered": 12,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDWebImageDownloaderLowPriority",
+        "SDWebImageDownloaderProgressiveLoad",
+        "SDWebImageDownloaderUseNSURLCache",
+        "SDWebImageDownloaderIgnoreCachedResponse",
+        "SDWebImageDownloaderContinueInBackground",
+        "SDWebImageDownloaderHandleCookies",
+        "SDWebImageDownloaderAllowInvalidSSLCertificates",
+        "SDWebImageDownloaderHighPriority"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderConfig.h",
+      "line": 13,
+      "endLine": 23,
+      "macro": "NS_ENUM",
+      "enumName": "SDWebImageDownloaderExecutionOrder",
+      "membersInSource": 2,
+      "membersRecovered": 2,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDWebImageDownloaderFIFOExecutionOrder",
+        "SDWebImageDownloaderLIFOExecutionOrder"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageTransition.h",
+      "line": 17,
+      "endLine": 33,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDWebImageAnimationOptions",
+      "membersInSource": 13,
+      "membersRecovered": 13,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDWebImageAnimationOptionAllowsImplicitAnimation",
+        "SDWebImageAnimationOptionCurveEaseInOut",
+        "SDWebImageAnimationOptionCurveEaseIn",
+        "SDWebImageAnimationOptionCurveEaseOut",
+        "SDWebImageAnimationOptionCurveLinear",
+        "SDWebImageAnimationOptionTransitionNone",
+        "SDWebImageAnimationOptionTransitionFlipFromLeft",
+        "SDWebImageAnimationOptionTransitionFlipFromRight"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+Transform.h",
+      "line": 12,
+      "endLine": 19,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageScaleMode",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageScaleModeFill",
+        "SDImageScaleModeAspectFit",
+        "SDImageScaleModeAspectFill"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+Transform.h",
+      "line": 24,
+      "endLine": 30,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDRectCorner",
+      "membersInSource": 5,
+      "membersRecovered": 5,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDRectCornerTopLeft",
+        "SDRectCornerTopRight",
+        "SDRectCornerBottomLeft",
+        "SDRectCornerBottomRight",
+        "SDRectCornerAllCorners"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImagePlayer.h",
+      "line": 14,
+      "endLine": 31,
+      "macro": "NS_ENUM",
+      "enumName": "SDAnimatedImagePlaybackMode",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDAnimatedImagePlaybackModeNormal",
+        "SDAnimatedImagePlaybackModeReverse",
+        "SDAnimatedImagePlaybackModeBounce",
+        "SDAnimatedImagePlaybackModeReversedBounce"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDCallbackQueue.h",
+      "line": 13,
+      "endLine": 22,
+      "macro": "NS_ENUM",
+      "enumName": "SDCallbackPolicy",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDCallbackPolicySafeExecute",
+        "SDCallbackPolicyDispatch",
+        "SDCallbackPolicyInvoke",
+        "SDCallbackPolicySafeAsyncMainThread"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDGraphicsImageRenderer.h",
+      "line": 23,
+      "endLine": 32,
+      "macro": "NS_ENUM",
+      "enumName": "SDGraphicsImageRendererFormatRange",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDGraphicsImageRendererFormatRangeUnspecified",
+        "SDGraphicsImageRendererFormatRangeAutomatic",
+        "SDGraphicsImageRendererFormatRangeExtended",
+        "SDGraphicsImageRendererFormatRangeStandard"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCache.h",
+      "line": 18,
+      "endLine": 58,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDImageCacheOptions",
+      "membersInSource": 7,
+      "membersRecovered": 7,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCacheQueryMemoryData",
+        "SDImageCacheQueryMemoryDataSync",
+        "SDImageCacheQueryDiskDataSync",
+        "SDImageCacheScaleDownLargeImages",
+        "SDImageCacheDecodeFirstFrameOnly",
+        "SDImageCachePreloadAllFrames",
+        "SDImageCacheMatchAnimatedImageClass"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCacheConfig.h",
+      "line": 13,
+      "endLine": 30,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCacheConfigExpireType",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCacheConfigExpireTypeAccessDate",
+        "SDImageCacheConfigExpireTypeModificationDate",
+        "SDImageCacheConfigExpireTypeCreationDate",
+        "SDImageCacheConfigExpireTypeChangeDate"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCacheDefine.h",
+      "line": 16,
+      "endLine": 37,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCacheType",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCacheTypeNone",
+        "SDImageCacheTypeDisk",
+        "SDImageCacheTypeMemory",
+        "SDImageCacheTypeAll"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCachesManager.h",
+      "line": 13,
+      "endLine": 18,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCachesManagerOperationPolicy",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCachesManagerOperationPolicySerial",
+        "SDImageCachesManagerOperationPolicyConcurrent",
+        "SDImageCachesManagerOperationPolicyHighestOnly",
+        "SDImageCachesManagerOperationPolicyLowestOnly"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCoderHelper.h",
+      "line": 14,
+      "endLine": 21,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageCoderDecodeSolution",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageCoderDecodeSolutionAutomatic",
+        "SDImageCoderDecodeSolutionCoreGraphics",
+        "SDImageCoderDecodeSolutionUIKit"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCoderHelper.h",
+      "line": 27,
+      "endLine": 34,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageForceDecodePolicy",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageForceDecodePolicyAutomatic",
+        "SDImageForceDecodePolicyNever",
+        "SDImageForceDecodePolicyAlways"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCoderHelper.h",
+      "line": 38,
+      "endLine": 45,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageHDRType",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageHDRTypeSDR",
+        "SDImageHDRTypeISOHDR",
+        "SDImageHDRTypeISOGainMap"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloader.h",
+      "line": 20,
+      "endLine": 98,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDWebImageDownloaderOptions",
+      "membersInSource": 12,
+      "membersRecovered": 12,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDWebImageDownloaderLowPriority",
+        "SDWebImageDownloaderProgressiveLoad",
+        "SDWebImageDownloaderUseNSURLCache",
+        "SDWebImageDownloaderIgnoreCachedResponse",
+        "SDWebImageDownloaderContinueInBackground",
+        "SDWebImageDownloaderHandleCookies",
+        "SDWebImageDownloaderAllowInvalidSSLCertificates",
+        "SDWebImageDownloaderHighPriority"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloaderConfig.h",
+      "line": 13,
+      "endLine": 23,
+      "macro": "NS_ENUM",
+      "enumName": "SDWebImageDownloaderExecutionOrder",
+      "membersInSource": 2,
+      "membersRecovered": 2,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDWebImageDownloaderFIFOExecutionOrder",
+        "SDWebImageDownloaderLIFOExecutionOrder"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageTransition.h",
+      "line": 17,
+      "endLine": 33,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDWebImageAnimationOptions",
+      "membersInSource": 13,
+      "membersRecovered": 13,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDWebImageAnimationOptionAllowsImplicitAnimation",
+        "SDWebImageAnimationOptionCurveEaseInOut",
+        "SDWebImageAnimationOptionCurveEaseIn",
+        "SDWebImageAnimationOptionCurveEaseOut",
+        "SDWebImageAnimationOptionCurveLinear",
+        "SDWebImageAnimationOptionTransitionNone",
+        "SDWebImageAnimationOptionTransitionFlipFromLeft",
+        "SDWebImageAnimationOptionTransitionFlipFromRight"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+Transform.h",
+      "line": 12,
+      "endLine": 19,
+      "macro": "NS_ENUM",
+      "enumName": "SDImageScaleMode",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDImageScaleModeFill",
+        "SDImageScaleModeAspectFit",
+        "SDImageScaleModeAspectFill"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+Transform.h",
+      "line": 24,
+      "endLine": 30,
+      "macro": "NS_OPTIONS",
+      "enumName": "SDRectCorner",
+      "membersInSource": 5,
+      "membersRecovered": 5,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "SDRectCornerTopLeft",
+        "SDRectCornerTopRight",
+        "SDRectCornerBottomLeft",
+        "SDRectCornerBottomRight",
+        "SDRectCornerAllCorners"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.h",
+      "line": 27,
+      "endLine": 32,
+      "macro": "NS_ENUM",
+      "enumName": "AFNetworkReachabilityStatus",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "AFNetworkReachabilityStatusUnknown",
+        "AFNetworkReachabilityStatusNotReachable",
+        "AFNetworkReachabilityStatusReachableViaWWAN",
+        "AFNetworkReachabilityStatusReachableViaWiFi"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFSecurityPolicy.h",
+      "line": 25,
+      "endLine": 29,
+      "macro": "NS_ENUM",
+      "enumName": "AFSSLPinningMode",
+      "membersInSource": 3,
+      "membersRecovered": 3,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "AFSSLPinningModeNone",
+        "AFSSLPinningModePublicKey",
+        "AFSSLPinningModeCertificate"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLRequestSerialization.h",
+      "line": 85,
+      "endLine": 87,
+      "macro": "NS_ENUM",
+      "enumName": "AFHTTPRequestQueryStringSerializationStyle",
+      "membersInSource": 1,
+      "membersRecovered": 1,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "AFHTTPRequestQueryStringDefaultStyle"
+      ]
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFNetworkActivityIndicatorManager.m",
+      "line": 27,
+      "endLine": 32,
+      "macro": "NS_ENUM",
+      "enumName": "AFNetworkActivityManagerState",
+      "membersInSource": 4,
+      "membersRecovered": 4,
+      "membersLost": 0,
+      "enumTypeSymbolPresent": true,
+      "lostMemberNames": [],
+      "membersSample": [
+        "AFNetworkActivityManagerStateNotActive",
+        "AFNetworkActivityManagerStateDelayingStart",
+        "AFNetworkActivityManagerStateActive",
+        "AFNetworkActivityManagerStateDelayingEnd"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "comment": "SCHEME CONTRACT. A hyperlink is not a code dependency. Decoding runs BEFORE the scheme test, which is the whole point of lines 20-21: `&#106;avascript:` and `&#0000106;avascript:` are the same string to an HTML parser as `javascript:`, and the pre-fix bare `startsWith` filter missed both AND existed only in the <a> branch \u2014 so `<form action=\"javascript:\u2026\">` emitted a `calls` edge and an `imports` row for one. A form endpoint is a dependency on a backend route and is NOT a call: `Calls` claims \"this symbol invokes that symbol\", which is false for a URL.  LINE NOTE: the four line-pinned navigation/form expectations below were re-measured after a 10-line block (the `href=\"#\"` / empty-href / real-hash cases) was added above them; each moved down by exactly 11 lines (10 inserted + 1 blank separator). HONESTY \u00a74.1, pinned on the 0.9 tier. Every relationship below 1.0 must carry a MACHINE-READABLE reason code, and this tier's only justification was a comment in the analyzer's source. Measured over the corpus (1,186 git-tracked documents / 25 repositories): 60,285 html-native edges sat at this tier \u2014 59,953 `navigation` and 332 `form-action` \u2014 and 0 of them carried a field a consumer or an audit could read. The five rows pinned here are one of each kind, so a regression that drops the field fails a pin rather than nothing. The tier is not a defect: an observed hyperlink is not a derived fact, and the code says so in a place `bb_graph` can filter on.",
+  "expectRelationships": [
+    {
+      "comment": "In-project navigation is a real dependency and stays, at 0.9 \u2014 an observed link is not a derived fact.",
+      "type": "uses",
+      "from": "nav-orders",
+      "target": "/orders",
+      "line_number": 36,
+      "meta.isNavigation": true,
+      "meta.evidenceClass": "usage_contextual",
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "confidence": 0.9,
+      "meta.resourceType": "navigation",
+      "meta.confidenceReason": "observed-hyperlink-not-derived"
+    },
+    {
+      "type": "uses",
+      "from": "nav-sibling",
+      "target": "details.html",
+      "line_number": 37,
+      "meta.isNavigation": true,
+      "confidence": 0.9,
+      "meta.resourceType": "navigation",
+      "meta.confidenceReason": "observed-hyperlink-not-derived",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "comment": "A form endpoint is a dependency and is NOT a `calls` edge.",
+      "type": "uses",
+      "from": "search",
+      "target": "/api/search",
+      "line_number": 44,
+      "meta.resourceType": "form-action",
+      "meta.isFormEndpoint": true,
+      "confidence": 0.9,
+      "meta.confidenceReason": "observed-hyperlink-not-derived",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "override",
+      "target": "/api/override",
+      "line_number": 50,
+      "meta.resourceType": "form-action",
+      "confidence": 0.9,
+      "meta.confidenceReason": "observed-hyperlink-not-derived",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "img-submit",
+      "target": "/api/image",
+      "line_number": 51,
+      "meta.resourceType": "form-action",
+      "confidence": 0.9,
+      "meta.confidenceReason": "observed-hyperlink-not-derived",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "img-submit",
+      "target": "/assets/go.png",
+      "line_number": 51,
+      "meta.resourceType": "input-image",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "comment": "All five javascript: spellings are recognised, including both entity-obfuscated forms.",
+      "type": "uses",
+      "from": "ext-js",
+      "target": "javascript:",
+      "line_number": 17,
+      "meta.isScriptUrl": true
+    },
+    {
+      "type": "uses",
+      "from": "ext-js-case",
+      "target": "javascript:",
+      "line_number": 18,
+      "meta.isScriptUrl": true
+    },
+    {
+      "type": "uses",
+      "from": "ext-js-ws",
+      "target": "javascript:",
+      "line_number": 19,
+      "meta.isScriptUrl": true
+    },
+    {
+      "type": "uses",
+      "from": "ext-js-ent",
+      "target": "javascript:",
+      "line_number": 20,
+      "meta.isScriptUrl": true
+    },
+    {
+      "type": "uses",
+      "from": "ext-js-ent2",
+      "target": "javascript:",
+      "line_number": 21,
+      "meta.isScriptUrl": true
+    },
+    {
+      "type": "uses",
+      "from": "js-form",
+      "target": "javascript:",
+      "line_number": 47,
+      "meta.isScriptUrl": true
+    },
+    {
+      "comment": "An unrecognised reference, a reference missing its semicolon, and a bare ampersand all survive VERBATIM \u2014 dropping half a URL would silently invent a different resource.",
+      "type": "uses",
+      "from": "odd-ref",
+      "target": "/search?a=1&notarealentity;=2",
+      "line_number": 61
+    },
+    {
+      "type": "uses",
+      "from": "no-semi",
+      "target": "/search?a=1&amp=2",
+      "line_number": 62
+    },
+    {
+      "type": "uses",
+      "from": "prose-amp",
+      "target": "/search?q=R&D",
+      "line_number": 63
+    },
+    {
+      "comment": "A bare `#` and an empty href are 'no destination' and emit nothing; a real path is a dependency.",
+      "type": "uses",
+      "from": "real-hash",
+      "target": "/real/path"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls"
+    },
+    {
+      "comment": "Cross-origin and non-resource schemes are counted, never graphed.",
+      "from": "ext-abs"
+    },
+    {
+      "from": "ext-abs",
+      "target": "https://example.com/page"
+    },
+    {
+      "from": "ext-proto"
+    },
+    {
+      "from": "ext-proto",
+      "target": "//cdn.example.net/asset"
+    },
+    {
+      "from": "ext-mail"
+    },
+    {
+      "from": "ext-mail",
+      "target": "mailto:someone@example.com"
+    },
+    {
+      "from": "ext-tel"
+    },
+    {
+      "from": "ext-data"
+    },
+    {
+      "comment": "The full javascript: URL is never a target \u2014 only the recognisable scheme marker is, so the payload is not a second copy of the source text.",
+      "target": "javascript:void(0)"
+    },
+    {
+      "target": "JavaScript:alert(1)"
+    },
+    {
+      "target": " javascript:alert(2)"
+    },
+    {
+      "target": "&#106;avascript:alert(3)"
+    },
+    {
+      "target": "javascript:submit()"
+    },
+    {
+      "comment": "formaction is a form endpoint only on a submitting control.",
+      "from": "plain-input"
+    },
+    {
+      "from": "plain-input",
+      "target": "/api/never"
+    },
+    {
+      "comment": "Target-only twins of the five cross-origin forbids above: the pre-fix state attributed an unowned `<a href>` to the DOCUMENT, so a forbid that names the element as `from` cannot see it. A fabrication is caught by the TARGET, whatever claims to be its source.",
+      "target": "https://example.com/page"
+    },
+    {
+      "target": "//cdn.example.net/asset"
+    },
+    {
+      "target": "mailto:someone@example.com"
+    },
+    {
+      "target": "tel:+15550100"
+    },
+    {
+      "target": "data:text/plain;base64,SGVsbG8="
+    },
+    {
+      "comment": "`href=\"#\"` is the top of THIS document. An edge to the literal `#` is a node that is neither a symbol nor a file \u2014 the unresolvable-identity class, reintroduced by the rewrite and caught only by hand-auditing the M12 Negative fixture's documented contract against live output.",
+      "target": "#"
+    },
+    {
+      "target": ""
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "javascript:void(0)"
+    },
+    {
+      "module": "javascript:submit()"
+    },
+    {
+      "module": "https://example.com/page"
+    },
+    {
+      "module": "/api/search"
+    },
+    {
+      "module": "/api/override"
+    },
+    {
+      "module": "/api/image"
+    },
+    {
+      "module": "/api/never"
+    },
+    {
+      "module": "/orders"
+    },
+    {
+      "module": "details.html"
+    }
+  ]
+}

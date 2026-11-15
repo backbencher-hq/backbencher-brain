@@ -1,0 +1,189 @@
+{
+  "fixtureId": "javascript/decorator-metadata-868",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #868 pre-declared contract (decorator metadata for javascript: attached, referenced at the decorator's own line, never a call/read of the enclosing scope, and kept on an EXPORTED class whose decorator the grammar puts on the wrapping export_statement). The numbers below were then read off the post-fix run and agree with the fixture's own text (`@sealed` 46 / `export class Service` 47, `@inject(DB)` 48 / `pool = make()` 49, `@sealed` 51 / `method() {}` 52, `@inject(\"getter\")` 54 / `get value()` 55).",
+  "rationale": "M49 (#868), javascript half of the web family's decorator contract, on one shape. FOUR things are pinned. (1) A FIELD's decorator is attached — the class and method paths called the own-child collector and the field path never did, so `pool` carried no decorator while the identical typescript shape yielded decorators=[\"inject\"]. (2) Every decorator's name is a `references` edge FROM the decorated symbol at the DECORATOR's own line (46/48/51/54), never the declaration's (47/49/52/55) — each decorator is on a different line from the name it decorates, so the near-miss answer is a different number, and the name list is `metadata.decoratorLines`, parallel to `decorators` (the M59 #860 lockstep the typescript twin already has). (3) A decorator is METADATA, not a call or a read by whoever encloses it: `@inject(DB)` used to emit `calls Service -> inject` from the class that carries it, and the bare-read pass emitted `uses Service -> sealed` / `uses method -> sealed`, i.e. a class appearing to call and read a decorator it never mentions in its body; the family rule (typescript's `inDecoratorPosition`, JVM annotations as metadata, the python oracle's PYD1) leaves only the reference edges. (4) An EXPORTED class keeps its decorator: this grammar puts the class decorator on the wrapping export_statement when the class is exported (`export_statement [decorator@46, export@47, class_declaration@47]`), where the own-child reader never looked, so `@sealed export class Service` used to produce NO decorator entry and NO reference edge at all. DISCRIMINATION built into the text so a too-broad rule fails instead of passing: `make()` in the field INITIALIZER is a genuine call and must survive, and the getter's body must still emit its own read — decorator position is positional, not 'anything near a decorator'. 2026-10-18 CANONICAL VOCABULARY: the decorator rows are `decorates` now (RelationshipType.Decorates, landed in src/ast/types.ts df5a03eb2), not `references`: source = the decorated declaration, target = the decorator name leaf, line = the decorator's own line, one row per decorator and none for a decorator's arguments. The four near-miss forbids moved with the label so borrowing the declaration's line still fails.",
+  "expectSymbols": [
+    {
+      "name": "sealed",
+      "kind": "function"
+    },
+    {
+      "name": "inject",
+      "kind": "function"
+    },
+    {
+      "name": "DB",
+      "kind": "constant"
+    },
+    {
+      "name": "make",
+      "kind": "function"
+    },
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Service"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Service"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Service",
+      "startLine": 47,
+      "comment": "the class name line; the decorator is on 46 (and on the export_statement, not the class)"
+    },
+    {
+      "symbol": "pool",
+      "startLine": 49,
+      "comment": "the field name line; the decorator is on 48"
+    },
+    {
+      "symbol": "method",
+      "startLine": 52,
+      "comment": "the method name line; the decorator is on 51"
+    },
+    {
+      "symbol": "value",
+      "startLine": 55,
+      "comment": "the accessor name line; the decorator is on 54"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "pool",
+      "line_number": 49
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "method",
+      "line_number": 52
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "value",
+      "line_number": 55
+    },
+    {
+      "type": "exports",
+      "target": "Service",
+      "line_number": 47,
+      "comment": "the export names the line the class is written on"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 46,
+      "comment": "contract 4: the EXPORTED class's decorator, read off the wrapping export_statement, at the decorator's line"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 48,
+      "comment": "contract 1: the FIELD's decorator is attached and referenced from the field"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 51,
+      "comment": "the method's decorator, from the method"
+    },
+    {
+      "type": "decorates",
+      "from": "value",
+      "target": "inject",
+      "line_number": 54,
+      "comment": "the accessor's decorator, from the accessor"
+    },
+    {
+      "type": "calls",
+      "from": "Service",
+      "target": "make",
+      "line_number": 49,
+      "comment": "DISCRIMINATION: the field INITIALIZER is a genuine call and must survive the decorator-position rule"
+    },
+    {
+      "type": "uses",
+      "from": "value",
+      "target": "pool",
+      "line_number": 56,
+      "comment": "DISCRIMINATION: the getter's BODY still emits its own member read"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "Service",
+      "target": "inject",
+      "comment": "contract 3 pre-fix: the decorator invocation emitted as a CALL by the class that carries it"
+    },
+    {
+      "type": "uses",
+      "from": "Service",
+      "target": "sealed",
+      "comment": "contract 3 pre-fix: the class decorator as a bare READ from the class"
+    },
+    {
+      "type": "uses",
+      "from": "method",
+      "target": "sealed",
+      "comment": "contract 3 pre-fix: the method decorator as a bare READ from the method"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 47,
+      "comment": "the near-miss: borrowing the DECLARATION's line for the decorator edge"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 49,
+      "comment": "the near-miss: borrowing the field declaration's line"
+    },
+    {
+      "type": "decorates",
+      "from": "value",
+      "target": "inject",
+      "line_number": 55,
+      "comment": "the near-miss: borrowing the accessor declaration's line"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "pool",
+      "line_number": 48,
+      "comment": "contract 1 pre-fix/near-miss: the decorator's line on the containment edge"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": null,
+      "comment": "the pre-#860 state: a decorator edge with no line at all"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "instrument": "validation/m14/fixtures/xml/overrides-filter-census.mts",
+  "question": "which rows does the shared filterNoiseRelationships eat on this lane, and is the emission real?",
+  "population": {
+    "filesScreened": 559,
+    "screen": "files carrying <xsl:template match="
+  },
+  "result": {
+    "eatenRows": 0,
+    "byType": {},
+    "byBannedChar": {},
+    "allControlsKept": true,
+    "rows": []
+  },
+  "reading": "The closure's `overrides 0` is the STORE PATH's truth: the analyzer emits 3, the shared filter eats 3 (all by `=`, all derived template identities), and every control row is kept. The 2026-10-09 coverage census measured 3 because it predates the `=` ban (ea8df6bbc, 2026-10-21)."
+}

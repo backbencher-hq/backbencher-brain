@@ -1,0 +1,20 @@
+{
+  "fixtureId": "csharp/export-global-scope",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The no-namespace half of the export surface, which cannot share a file with the namespaced half: C#'s file-scoped namespace applies to every declaration after it, so a file either has a namespace or does not. Two pins, and the second is the one that matters. (1) a `public` type at global scope IS exported, under its BARE name — `GlobalScopeType`, not `Acme.Anything.GlobalScopeType`, because the assembly has no namespace to qualify it with. (2) an `internal` type at global scope is NOT, which is the same visibility rule as the namespaced fixture and is pinned twice on purpose: a rule that is only tested inside a namespace is a rule whose behaviour outside one is unknown. Without this fixture the qualified-name change could have shipped a bare-name regression in the one case where a bare name is correct.",
+  "expectSymbols": [
+    { "name": "GlobalScopeType", "kind": "class", "visibility": "public", "note": "no ownerName: a top-level type in a file with no namespace has no enclosing symbol" },
+    { "name": "GlobalScopeInternal", "kind": "class", "visibility": "internal" }
+  ],
+  "expectExports": [
+    { "name": "GlobalScopeType", "comment": "BARE, because there is no namespace to qualify with. The namespaced fixture pins the qualified spelling; this pins the unqualified one, and a rule that produced the qualified form here would be publishing a name the assembly does not export." }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "target": "GlobalScopeType", "line_number": 7, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "GlobalScopeType", "target": "Free" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "GlobalScopeInternal", "note": "the visibility rule holds with no namespace in scope too" }
+  ]
+}

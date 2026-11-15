@@ -1,0 +1,57 @@
+{
+  "instrument": "xml claim mapping — the analyzer's OWN resolvability classes routed to the gate claim whose check can verify them",
+  "at": "2026-10-10T00:45:00-04:00",
+  "branch": "analyzers/ontology-laptop-b",
+  "question": "the gate counted 332 edges as `unresolved` on the 2,081-file `.xml` draw. The analyzer already knew what they were (`metadata.resolvable`). Which claim key can VERIFY each class, so the bucket becomes attributed rather than merely smaller?",
+  "change": {
+    "file": "src/ast/real-xml-analyzer.ts",
+    "marker": "isExternalTarget (script/m14/incoming-rule.ts EXTERNAL_KEYS, claim kind `owner`)",
+    "sites": [
+      "references / attribute_qname_reference — marked when the analyzer's class is `builtin` or `external`",
+      "references / entity_reference — marked when the class is `builtin` (the five predefined entities)",
+      "imports / processing_instruction_href — marked when importTargetClass(target) === `external`",
+      "imports / doctype_external_id (extractExternalId) — marked when importTargetClass(path) === `external`"
+    ],
+    "notMarked": {
+      "references / unresolvable X13 class": "no claim. The analyzer's own class says THIS FILE does not satisfy the reference; calling that `not in the population` would assert a fact the analyzer did not measure.",
+      "imports / class `file` (relative paths, incl. every schema_location, which skips remote URIs before emitting)": "no claim. `importProjectFile` VERIFIES when a candidate is an admitted file and REFUTES when none is; a refutation is `extFAIL`, which must stay 0. The analyzer cannot see the project's file list, so it cannot make that claim safely.",
+      "references / xslt_named_template_reference and parameter_entity_reference": "emit only `in-document` / `unresolved` classes — nothing external to claim."
+    }
+  },
+  "beforeAfter": {
+    "population": "2,081 `.xml` files across 51 repositories, 0 degraded, 0 parse failures — the identical draw both runs, guarded by .bb-heavy-v3.lock",
+    "instrument": "npx tsx script/m14/incoming-gate.ts xml xml 0",
+    "before": {
+      "references": { "edges": 335, "resolved": 73, "ambiguous": 78, "unresolved": 198, "extOK": 0, "extUnverified": 0, "extFAIL": 0 },
+      "imports": { "edges": 136, "resolved": 2, "ambiguous": 0, "unresolved": 134, "extOK": 0, "extUnverified": 0, "extFAIL": 0 },
+      "TOTAL": { "edges": 30676, "resolved": 30280, "ambiguous": 78, "unresolved": 332, "extOK": 0, "extUnverified": 0, "extFAIL": 0 },
+      "verdict": "VERDICT: FAIL — 64 ambiguous + 332 unresolved of 30676 edges"
+    },
+    "after": {
+      "references": { "edges": 335, "resolved": 73, "ambiguous": 78, "unresolved": 15, "extOK": 175, "extUnverified": 8, "extFAIL": 0 },
+      "imports": { "edges": 136, "resolved": 2, "ambiguous": 0, "unresolved": 108, "extOK": 0, "extUnverified": 26, "extFAIL": 0 },
+      "TOTAL": { "edges": 30676, "resolved": 30280, "ambiguous": 78, "unresolved": 123, "extOK": 175, "extUnverified": 34, "extFAIL": 0 },
+      "verdict": "VERDICT: FAIL — 64 ambiguous + 123 unresolved of 30676 edges; 34 external claim(s) unverifiable (175 verified + 34 unverifiable external)"
+    },
+    "reading": {
+      "unresolved": "332 -> 123 (-63%)",
+      "references": "198 -> 15, with 175 VERIFIED externals and 8 the owner lookup cannot reach",
+      "imports": "134 -> 108, all 26 of the claimed ones unverifiable — a URI is path-like and verifyExternalClaim returns externalUnverified before any owner lookup",
+      "residualEdges": "396 -> 187 (ambiguous + unresolved)",
+      "extFAIL": "0 -> 0. No claim this lane made was refuted: the control that matters.",
+      "fixtures": "xml 31 pass / 0 fail (npx tsx script/m14/run-fixtures.ts --lang xml), unchanged by the metadata addition"
+    },
+    "raw": "validation/m14/fixtures/xml/claim-mapping-before-after.txt"
+  },
+  "whyThisIsClassificationAndNotLaundering": {
+    "theGatesOwnRule": "script/m14/incoming-gate.ts verdict(): a PASS requires bad===0 AND externalUnverified===0 AND bindingUnverified===0. Moving an edge from `unresolved` into `externalUnverified` LOWERS the residual column and still blocks a green row — the 34 unverifiable claims above are visible in the verdict line, not hidden.",
+    "theClaimIsChecked": "`isExternalTarget` is verified by `verifyExternalClaim` against the project's key space: an identifier-shaped target is `externalVerified` only when nothing in the project declares it, and `externalRefuted` when something does. 175 edges earned that verification here.",
+    "theDirectionOfError": "The rule checks `pathLikeTarget(tgt)` FIRST and returns externalUnverified for a path, so a URI or a hyphenated DTD name (`attribute-name`, `element-name`, `processing-instruction`) can never be a false refutation. This is the opposite of the failure another lane hit tonight, where a FILE's stem was asked an OWNER question and produced 103 refutations.",
+    "unattributedBecomesAttributed": "The objective's bar is externalRefuted = 0 AND every non-resolved edge attributed to a named cause. Before, 332 edges carried no reason at all; after, 209 of them carry a verified or unverifiable external claim and 123 remain, each of them a class the analyzer deliberately did not claim (X13 `unresolved` references, `file`-class imports)."
+  },
+  "carriedForward": {
+    "containsAnomalyStillOpen": "DISCLOSED, NOT SMOOTHED, and re-stated here so it is not lost: the libxslt store run holds 39,293 `contains` rows where `parseFile` emitted 21,486 (1.83x; the other four types agree within 2%; the 120-file draw showed 1.006x; libxslt has zero SVG, so it is not a language-routing effect). It is in `validation/m14/fixtures/xml/store-binding-truth.mts`, outside this lane's write scope. The store artifact quotes ratios over the stored set and flags the absolute counts until its owner explains it.",
+    "containsCollisionQuality": "On this draw `contains` reads 30,205 resolved of which 28,413 are `collRes` — resolved among a collision, so production's tie-break chose the row. The gate's own note measures 37,318 of 49,729 such picks as WRONG. That is the next real question on this type after the claim work.",
+    "nextCauses": "`extends` 354 unresolved on the true population (94.1% residual), then `calls` 279 ambiguous of 402 (69.4%) which is small enough to enumerate and name individually; `overrides` (3 edges) is not worth a turn."
+  }
+}

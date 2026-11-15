@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
+  "evidenceFile": "S1.json",
+  "generatedAt": "2026-09-04T01:50:06.529Z",
+  "passed": 74,
+  "failed": 0,
+  "negativeCases": 5,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.480Z",
+    "contentSha256": "23aebc82f3e8471bb64cea4de15ae8736d36b6925615d00ace99209711f6f049"
+  }
+}

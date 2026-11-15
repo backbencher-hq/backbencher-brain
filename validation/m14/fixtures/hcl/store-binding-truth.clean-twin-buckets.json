@@ -1,0 +1,99 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.clean.mts \u2014 the SECOND population for the pre-registered twin buckets (Cause 20/21)",
+  "repos": [
+    "Clyde",
+    "clean-stdlib",
+    "eastwood"
+  ],
+  "perRepo": [
+    [
+      "Clyde",
+      109,
+      3033,
+      360,
+      38,
+      2635
+    ],
+    [
+      "clean-stdlib",
+      74,
+      1428,
+      160,
+      1268,
+      0
+    ],
+    [
+      "eastwood",
+      73,
+      399,
+      105,
+      19,
+      275
+    ]
+  ],
+  "totals": {
+    "twinExists": 4860,
+    "twinReachable": 625,
+    "twinUnreachable": 1325,
+    "twinUndecidable": 2910
+  },
+  "decidableFraction": {
+    "reachableShareOfDecidable": 32.1
+  },
+  "perType": {
+    "references": {
+      "twinExists": 4625,
+      "twinReachable": 545,
+      "twinUnreachable": 1195,
+      "twinUndecidable": 2885
+    },
+    "contains": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    },
+    "exports": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    },
+    "calls": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    },
+    "uses": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    },
+    "imports": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    },
+    "instantiates": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    },
+    "implements": {
+      "twinExists": 235,
+      "twinReachable": 80,
+      "twinUnreachable": 130,
+      "twinUndecidable": 25
+    },
+    "overrides": {
+      "twinExists": 0,
+      "twinReachable": 0,
+      "twinUnreachable": 0,
+      "twinUndecidable": 0
+    }
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "fixtureId": "php/receiver-owner",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 php round — the RECEIVER OWNER, at all six member-position emission sites. A member is PUBLISHED as (bare name, ownerName) and the EDGE carried no owner, so `$this->render()`, `self::render()`, `parent::render()` and `Widget::render()` published the same target string and were mutually indistinguishable; `render` is a method on many classes, so the reverse walk picked one declaration by a rule nobody chose. The receiver node was on hand at every emission site and was discarded. `expectRelationships` pins the owner per receiver shape, and — the half that matters more — `meta.owner: null` pins the THREE shapes where no owner may appear: a plain-variable receiver (a), a chained receiver `$this->svc->m()` (b), and `parent::` in a class with NO base clause (c). Those guard the expensive direction, where a wrong owner sends a reverse walk to a real method on the WRONG class and becomes wrong refactoring advice rather than a missing edge. A fourth case is pinned separately and is NOT a no-owner case: `External extends DeclaredInAnotherFile` DOES declare a base, so the owner is that name, which this file does not publish — right and unresolved, and collapsing it into (c) would make a rule that is merely incomplete look like one that invents. `self::class` is pinned as `uses`-absent because a class_constant_access naming `class` is the `::class` keyword, not a member. The pins are hand-written from the grammar, not dumped from a run: the receiver classification reads node types and FIELD names only (`scoped_property_access_expression` has [scope] and [name]; `class_constant_access_expression` has NO field names and is read positionally, both probed against the pinned grammar).",
+  "expectSymbols": [
+    {
+      "name": "Fixture\\ReceiverOwner",
+      "kind": "namespace"
+    },
+    {
+      "name": "DeclaredBase",
+      "kind": "class"
+    },
+    {
+      "name": "inherited",
+      "kind": "method",
+      "ownerName": "DeclaredBase"
+    },
+    {
+      "name": "Target",
+      "kind": "class"
+    },
+    {
+      "name": "named",
+      "kind": "method",
+      "ownerName": "Target"
+    },
+    {
+      "name": "Receiver",
+      "kind": "class"
+    },
+    {
+      "name": "viaThis",
+      "kind": "method",
+      "ownerName": "Receiver"
+    },
+    {
+      "name": "viaNullsafeThis",
+      "kind": "method",
+      "ownerName": "Receiver"
+    },
+    {
+      "name": "viaSelf",
+      "kind": "method",
+      "ownerName": "Receiver"
+    },
+    {
+      "name": "viaStatic",
+      "kind": "method",
+      "ownerName": "Receiver"
+    },
+    {
+      "name": "viaPlainVariable",
+      "kind": "method",
+      "ownerName": "Receiver"
+    },
+    {
+      "name": "viaChainedReceiver",
+      "kind": "method",
+      "ownerName": "Receiver"
+    },
+    {
+      "name": "OrphanCaller",
+      "kind": "class"
+    },
+    {
+      "name": "Qualified",
+      "kind": "class"
+    },
+    {
+      "name": "onlyViaAbsolutePath",
+      "kind": "method",
+      "ownerName": "Qualified"
+    },
+    {
+      "name": "External",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Receiver",
+      "target": "DeclaredBase"
+    },
+    {
+      "type": "extends",
+      "source": "External",
+      "target": "DeclaredInAnotherFile"
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "Receiver.viaThis",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "Receiver.viaNullsafeThis",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "Receiver.viaSelf",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "Receiver.viaStatic",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "DeclaredBase.inherited",
+      "meta.owner": "DeclaredBase",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "Target.named",
+      "meta.owner": "Target",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "Qualified.onlyViaAbsolutePath",
+      "meta.owner": "Qualified",
+      "note": "The ONLY edge to this target comes from `\\Fixture\\ReceiverOwner\\Qualified::onlyViaAbsolutePath()`, so this row pins the reduction of a qualified scope to its LEAF name. With only the unqualified twin present the row would be satisfied by it and the reduction would go unpinned, because a fixture row matches with some().",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "viaPlainVariable",
+      "meta.owner": null,
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "viaChainedReceiver",
+      "meta.owner": null,
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "goUndeclared",
+      "target": "orphan",
+      "meta.owner": null,
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "calls",
+      "source": "goExternal",
+      "target": "orphan",
+      "meta.owner": "DeclaredInAnotherFile",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "Receiver.prop",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "Receiver.staticProp",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "Target.count",
+      "meta.owner": "Target",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "Receiver.OWN_CONST",
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "Target.TARGET_CONST",
+      "meta.owner": "Target",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "DeclaredBase.BASE_CONST",
+      "meta.owner": "DeclaredBase",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "viaThis",
+      "meta.isMemberRead": true,
+      "meta.owner": "Receiver",
+      "note": "Property syntax does not name the viaThis method; retain the read without qualifying it to that declaration.",
+      "meta.phpMemberReference": true
+    },
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "Receiver.viaThis",
+      "meta.isTearOff": true,
+      "meta.owner": "Receiver",
+      "meta.phpMemberReference": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "everything",
+      "target": "class",
+      "note": "`self::class` is the ::class KEYWORD, not a member. The existing rule skips it; this row stops an owner rule that reads the node from attaching an owner to it."
+    }
+  ]
+}

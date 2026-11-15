@@ -1,0 +1,41 @@
+{
+ "fixtureId": "php/member-value-reads",
+ "language": "php",
+ "authoredBeforeAnalyzerRun": true,
+ "variableReadSpelling": "VARIABLE-READ SPELLING (php, 2026-10-11). The `uses` targets in this file that name a `$variable` are BINDINGS, not declaration names: the analyzer spells a variable read as `<read source>\\u0000<binding>` with `metadata.localBinding`, because a local/param/superglobal is never a published symbol and the BARE name let the store bind the read to an unrelated same-named declaration in another file. The defect and its counterfactual are in validation/m14/fixtures/php/local-read-phantom.mts; the whole-population effect is in docs/analyzers/history/php-lane-notes.md. What each row PINS (which read, from where, and how many) did not move.",
+ "rationale": "First PHP review wave: PHP-A receiver reads, PHP-H static reads, PHP-D const fetches, PHP-E tear-offs, PHP-F interpolation, PHP-B subscript bases, PHP-C closure captures, PHP-O1 trait uses (oracle hole). Every pin probe-verified against both the analyzer and derivePhpEdges before pinning; lanes confirm the pair agrees on corpora.",
+ "expectSymbols": [
+  {"name": "T", "kind": "trait"},
+  {"name": "hello", "kind": "method", "ownerName": "T"},
+  {"name": "Suit", "kind": "enum"},
+  {"name": "Hearts", "kind": "enum_member", "ownerName": "Suit"},
+  {"name": "C", "kind": "class"},
+  {"name": "total", "kind": "property", "ownerName": "C"},
+  {"name": "useAll", "kind": "method", "ownerName": "C"},
+  {"name": "writeOnly", "kind": "method", "ownerName": "C"}
+ ],
+ "expectRelationships": [
+  {"type": "mixes_in", "source": "C", "target": "T", "comment": "PHP-O1, relabelled 2026-10-23 (R3, no grammar change): a trait composition is `mixes_in`, not a value read — the `uses` row this pin used to assert was the ten failing to spell the construct honestly. 1:1 relabel, so this row's source/target are the same edges; the `uses` class loses exactly this row and nothing else moves."},
+  {"type": "calls", "source": "useAll", "target": "run", "comment": "receiver-chain call intact"},
+  {"type": "uses", "source": "useAll", "target": "dep", "comment": "PHP-A: call receivers read"},
+  {"type": "calls", "source": "useAll", "target": "fetch", "comment": "chained call intact"},
+  {"type": "uses", "source": "useAll", "target": "box", "comment": "PHP-A: intermediate links read"},
+  {"type": "uses", "source": "useAll", "target": "C.total", "comment": "PHP-H: C/self/static reads merge"},
+  {"type": "uses", "source": "useAll", "target": "Suit.Hearts", "comment": "PHP-D: enum constant fetch reads"},
+  {"type": "uses", "source": "useAll", "target": "handler", "comment": "PHP-E: sole-... tear-off references"},
+  {"type": "calls", "source": "useAll", "target": "run", "comment": "PHP-E: ordinary call with args still calls"},
+  {"type": "uses", "source": "useAll", "target": "useAll\u0000name", "comment": "PHP-F: interpolation reads"},
+  {"type": "uses", "source": "useAll", "target": "useAll\u0000cap", "comment": "PHP-C: closure captures read outer values"},
+  {"type": "uses", "source": "useAll", "target": "useAll\u0000n", "comment": "PHP-F: braced interpolation reads"},
+  {"type": "uses", "source": "useAll", "target": "count", "comment": "PHP-F: member inside interpolation reads"},
+  {"type": "uses", "source": "useAll", "target": "useAll\u0000other", "comment": "PHP-F: interpolation blanket reads receivers"},
+  {"type": "uses", "source": "useAll", "target": "useAll\u0000xs", "comment": "PHP-B: subscript bases read (read and write positions)"},
+  {"type": "uses", "source": "useAll", "target": "useAll\u0000m", "comment": "PHP-B: map subscript base reads"}
+ ],
+ "forbidRelationships": [
+  {"type": "calls", "source": "useAll", "target": "handler", "comment": "PHP-E: tear-offs never invoke"},
+  {"type": "uses", "source": "writeOnly", "target": "slot", "comment": "PHP-A: plain-= member writes never read"},
+  {"type": "uses", "source": "writeOnly", "target": "total", "comment": "PHP-H: static writes never read"},
+  {"type": "uses", "source": "useAll", "target": "class", "comment": "PHP-D: ::class is a keyword, never a member"}
+ ]
+}

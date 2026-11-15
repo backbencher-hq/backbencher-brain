@@ -1,0 +1,12 @@
+{
+  "fixtureId": "javascript/destructured-params",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J8 fix (TS parity): destructured-with-default parameters (`{ verbose } = {}`) record a parameter entry instead of vanishing — the assignment_pattern branch only handled identifier left sides.",
+  "expectSymbols": [
+    { "name": "describe", "kind": "function" }
+  ],
+  "expectParameters": [
+    { "symbol": "describe", "parameters": [{ "name": "user" }, { "name": "{ verbose } = {}" }] }
+  ]
+}

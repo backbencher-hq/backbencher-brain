@@ -1,0 +1,92 @@
+{
+ "fixtureId": "python/interface-qualified-subscript-head",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-29, second behaviour. `python/interface-implements` already pins that a base spelled `abc.ABC` is the stdlib class whatever else the file binds the bare name to, and that a BARE marker is resolved positionally against the bindings. Neither row can falsify the SUBSCRIPT case, because in that file the bare name `Protocol` is bound to the stdlib by `from typing import Protocol` on every line a subscripted base appears on \u2014 so the qualified reading and the bare reading agree, and a fixture built that way cannot tell which one produced the edge. This file removes the agreement by construction: it imports `typing` and does NOT import `Protocol` from it, and it declares a LOCAL `class Protocol` at line 33. `Protocol[RuntimeT]` is a `subscript` node whose head is `dotted_name(\"typing.Protocol\")`, and the pre-pass read \"qualified\" as `b.type === \"attribute\"`, which classified that head as a BARE name. So the two readings now disagree on both sides of the file: the qualified one says `QualifiedProtocolBase` declares an interface (CPython: metaclass `_ProtocolMeta`, `_is_protocol=True`, and `QualifiedProtocolBase()` is refused with \"Protocols cannot be instantiated\"), and the bare one says the base is the local class three lines above and nothing is declared. `extractClass` already read the same subscript head as qualified for `qualifiedBases` \u2014 the same rule one position over, in the same file \u2014 so the pre-pass was the odd spelling out and this fixture is what makes the difference observable. `QualifiedAbcBase(typing.Generic[RuntimeT])` is the control: a qualified subscript head that is NOT an interface marker must produce no edge, so a mutant that simply treats every dotted head as an interface marker is caught as well as one that treats every dotted head as bare.",
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "QualifiedProtocolBase",
+   "target": "Protocol",
+   "line_number": 38,
+   "meta.reasonCode": "stdlib-interface-marker",
+   "note": "the source spelled it QUALIFIED \u2014 `typing.Protocol[RuntimeT]` \u2014 so it names a module and the stdlib class is what the base list holds, whatever the local `class Protocol` at 33 binds the bare name to. With `b.type === \"attribute\"` this head was read as bare, `stdlibBoundAt` found the local class, and BOTH rows below died"
+  },
+  {
+   "type": "implements",
+   "from": "SubQualifiedProtocolBase",
+   "target": "QualifiedProtocolBase",
+   "line_number": 43,
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "tier 1 depends on the row above: the base is an in-file class that declares an interface"
+  },
+  {
+   "type": "implements",
+   "from": "SubQualifiedProtocolBase",
+   "target": "QualifiedProtocolBase",
+   "line_number": 43,
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "TIER 1 depends on the row above, and it is the row that keeps the two readings apart: the base is an in-file class whose OWN header declares an interface. A rule that relabelled only names it recognised as stdlib markers would leave this one as ordinary inheritance, and the class really does conform \u2014 CPython has `typing.Protocol` in `QualifiedProtocolBase.__mro__`, so it is in this one's too."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "extends",
+   "from": "QualifiedProtocolBase",
+   "target": "Protocol",
+   "line_number": 38,
+   "note": "PY-34 (ruling 2026-10-09). THIS ROW WAS AN EXPECT when the file was merged, called ADDITIVE, on the reasoning that `issubclass(QualifiedProtocolBase, typing.Protocol)` is True and `Protocol` is in its `__mro__`, so a second edge was needed to keep the inheritance fact. It is now a forbid: that fact is published where the store WALKS it \u2014 `metadata.superTypes` from the FULL base list, copied into `brain_symbol.super_types`, read by `member-owner-resolution` and `override-retarget` \u2014 while the relationship label stays the most specific true one, exactly as `python/implements-interface-bases` forbids `extends FromAbc -> ABC` and for the same reason. The row's second justification was refuted by the code it appealed to: `extractOverrideRelationships` builds its MRO walk from `ctx.basesByClassKey`, the class's recorded base list, and only falls back to a name-keyed table built from `extends` rows when no owner declaration was recorded, so no override derivation loses anything when this edge is not emitted."
+  },
+  {
+   "type": "implements",
+   "from": "InheritsTheLocalProtocol",
+   "target": "Protocol",
+   "note": "the bare name at line 53 is the LOCAL class declared at 33, and this file binds it to nothing else. CPython: `InheritsTheLocalProtocol` has metaclass `type`, `_is_protocol` is False, and it constructs. A lane that asked \"is `Protocol` ever an interface in this file?\" would emit this because of the row at 38 \u2014 which is the whole-file question the positional rule exists to refuse"
+  },
+  {
+   "type": "implements",
+   "from": "QualifiedAbcBase",
+   "target": "Generic",
+   "note": "CONTROL. `typing.Generic[RuntimeT]` is a qualified subscript head too, and `Generic` is not an interface marker. CPython: metaclass `type`, `isabstract` False, constructs. A mutant that treats every dotted head as an interface marker dies here as surely as one that treats every dotted head as bare dies on the rows above \u2014 the fix has to be about WHICH dotted head, not about dotted heads"
+  },
+  {
+   "type": "implements",
+   "from": "SubQualifiedAbcBase",
+   "target": "QualifiedAbcBase",
+   "note": "WHICH dotted head. `QualifiedAbcBase`'s only qualification is `typing.Generic[RuntimeT]`, and CPython says it is not an interface: metaclass `type`, `isabstract` False, it constructs. This row is the one a mutant that accepts ANY qualified base as an interface marker dies on \u2014 the row above it is not, because the emission site filters the marker leaf a second time and so never emitted `QualifiedAbcBase -> Generic` even when the declaration test was widened. Pinning the SUBCLASS is what makes the declaration test itself observable"
+  },
+  {
+   "type": "implements",
+   "from": "SubQualifiedProtocolBase",
+   "target": "Protocol",
+   "note": "NOT AN MRO WALK, in either direction. `SubQualifiedProtocolBase`'s DIRECT base is `QualifiedProtocolBase`, and its own header is not a marker \u2014 so the chain is carried by `extends` and not by a second edge to a base the source does not name. `python/interface-implements` pins the same boundary for `LeafRepo`; it is repeated here so that closing it requires editing two fixtures on purpose"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "Protocol",
+   "equals": 1,
+   "note": "the LOCAL class. It is what makes line 53 ordinary inheritance, and its existence is the whole reason this file exists \u2014 a fixture that imported the stdlib `Protocol` under that name could not tell the two readings apart"
+  },
+  {
+   "name": "QualifiedProtocolBase",
+   "equals": 1
+  },
+  {
+   "name": "SubQualifiedProtocolBase",
+   "equals": 1
+  },
+  {
+   "name": "QualifiedAbcBase",
+   "equals": 1
+  },
+  {
+   "name": "SubQualifiedAbcBase",
+   "equals": 1
+  }
+ ],
+ "_seamNote": {
+  "what": "\"Qualified\" means the SOURCE spelled the marker with a module: `b.type === \"attribute\"`, or a `subscript` whose head is an `attribute`. It is read from the header, not from what the name happens to be bound to.",
+  "why": "A dotted spelling names a module, so `typing.Protocol[RuntimeT]` is the stdlib class whatever this file binds the bare name to \u2014 and `typing.Generic[RuntimeT]`, read the same way, is not a marker at all. The two halves are the same predicate over two different heads, so reading the subscript head is not an extension of the rule but the rule applied consistently: `extractClass` already derives `qualifiedBases` this way for the override resolver's \"a base spelled qualified is a class this file has not read\" test, and two spellings of one predicate in one file is how they drift apart."
+ }
+}

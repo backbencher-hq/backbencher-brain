@@ -1,0 +1,435 @@
+{
+  "at": "2026-10-05T12:32:11.172Z",
+  "lang": "typescript",
+  "corpusRoot": "/tmp/opencode/corpus",
+  "filesAdmitted": 3607,
+  "filesParsed": 3607,
+  "filesFailed": 0,
+  "filesWithRelationships": 3592,
+  "totalSymbols": 29984,
+  "totalRelationships": 132307,
+  "population": {
+    "reposScanned": [
+      {
+        "repo": "typeorm",
+        "tracked": 3813,
+        "admitted": 3607,
+        "declaration": 0
+      }
+    ],
+    "trackedPathsSeen": 3813,
+    "droppedOverSizeCap": 0,
+    "droppedNotThisLanguage": 206,
+    "admittedFiles": 3607,
+    "admittedAmbientDeclarationFiles": 0,
+    "admittedImplementationFiles": 3607,
+    "admittedTsxFiles": 5,
+    "admittedPlainTypescriptFiles": 3602,
+    "servedLanguageKeys": [
+      "typescript",
+      "tsx"
+    ],
+    "sizeCapBytes": 524288,
+    "filter": "typeorm"
+  },
+  "parseErrorFiles": [],
+  "fallbackFiles": [],
+  "types": {
+    "calls": {
+      "count": 67077,
+      "files": 1438,
+      "fileListSample": [
+        "typeorm/docs/docusaurus.config.ts",
+        "typeorm/docs/src/pages/index.tsx",
+        "typeorm/docs/src/components/tabs/database-tabs.tsx",
+        "typeorm/packages/codemod/src/cli/parse-args.ts",
+        "typeorm/packages/codemod/src/cli/list-transforms.ts",
+        "typeorm/packages/codemod/src/cli/print-todos.ts",
+        "typeorm/packages/codemod/src/cli/print-summary.ts",
+        "typeorm/docs/src/pages/maintainers.tsx",
+        "typeorm/packages/codemod/src/cli/print-guide.ts",
+        "typeorm/packages/codemod/src/cli/print-usage.ts",
+        "typeorm/packages/codemod/src/cli/run-dependencies.ts",
+        "typeorm/packages/codemod/src/cli/run-transforms.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 17317,
+      "targetResolves": 4413,
+      "bothResolve": 3720,
+      "emptyEndpoints": 0,
+      "selfLoops": 386,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 104,
+      "confidenceHistogram": {
+        "0.9": 67077
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 67077
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "docusaurus.config -> getFullYear",
+        "docusaurus.config -> getFullYear",
+        "HomepageHeader -> useDocusaurusContext",
+        "HomepageHeader -> clsx",
+        "Feature -> clsx"
+      ]
+    },
+    "uses": {
+      "count": 3196,
+      "files": 350,
+      "fileListSample": [
+        "typeorm/docs/src/pages/index.tsx",
+        "typeorm/docs/src/components/tabs/database-tabs.tsx",
+        "typeorm/packages/codemod/src/cli/parse-args.ts",
+        "typeorm/packages/codemod/src/cli/list-transforms.ts",
+        "typeorm/packages/codemod/src/cli/print-todos.ts",
+        "typeorm/packages/codemod/src/cli/print-summary.ts",
+        "typeorm/docs/src/pages/maintainers.tsx",
+        "typeorm/packages/codemod/src/cli/run-dependencies.ts",
+        "typeorm/packages/codemod/src/cli/run-transforms.ts",
+        "typeorm/packages/codemod/src/dependencies/upgrade.ts",
+        "typeorm/packages/codemod/src/lib/colors.ts",
+        "typeorm/packages/codemod/src/lib/error.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 3196,
+      "targetResolves": 2383,
+      "bothResolve": 2383,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 167,
+      "confidenceHistogram": {
+        "0.9": 62,
+        "0.85": 3134
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 3196
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "HomepageHeader -> Heading",
+        "HomepageHeader -> Link",
+        "HomepageHeader -> Link",
+        "Feature -> Icon",
+        "Feature -> Heading"
+      ]
+    },
+    "contains": {
+      "count": 13703,
+      "files": 2254,
+      "fileListSample": [
+        "typeorm/packages/codemod/src/cli/parse-args.ts",
+        "typeorm/packages/codemod/src/cli/print-summary.ts",
+        "typeorm/packages/codemod/src/cli/run-dependencies.ts",
+        "typeorm/packages/codemod/src/cli/run-transforms.ts",
+        "typeorm/packages/codemod/src/cli/run.ts",
+        "typeorm/packages/codemod/src/dependencies/config.ts",
+        "typeorm/packages/codemod/src/dependencies/upgrade.ts",
+        "typeorm/packages/codemod/src/lib/spinner.ts",
+        "typeorm/packages/codemod/src/transforms/ast-helpers.ts",
+        "typeorm/packages/codemod/src/transforms/index.ts",
+        "typeorm/packages/codemod/src/transforms/transformer.ts",
+        "typeorm/packages/codemod/src/transforms/v1/connection-options-reader.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 13703,
+      "targetResolves": 13689,
+      "bothResolve": 13689,
+      "emptyEndpoints": 1,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 89,
+      "placeholderTargetEndpoints": 843,
+      "confidenceHistogram": {
+        "1": 13703
+      },
+      "evidenceClassHistogram": {
+        "structural": 13703
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "CliOptions -> version",
+        "CliOptions -> paths",
+        "CliOptions -> transform",
+        "CliOptions -> dry",
+        "CliOptions -> list"
+      ]
+    },
+    "imports": {
+      "count": 18251,
+      "files": 3441,
+      "fileListSample": [
+        "typeorm/docs/docusaurus.config.ts",
+        "typeorm/docs/sidebars.ts",
+        "typeorm/docs/src/pages/index.tsx",
+        "typeorm/docs/src/components/tabs/database-tabs.tsx",
+        "typeorm/docs/src/components/icons/github-icon.tsx",
+        "typeorm/docs/src/components/icons/linkedin-icon.tsx",
+        "typeorm/packages/codemod/src/cli/list-transforms.ts",
+        "typeorm/packages/codemod/src/cli/print-todos.ts",
+        "typeorm/packages/codemod/src/cli/print-summary.ts",
+        "typeorm/docs/src/pages/maintainers.tsx",
+        "typeorm/packages/codemod/src/cli/print-guide.ts",
+        "typeorm/packages/codemod/src/cli/print-usage.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 9159,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 139,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 18251
+      },
+      "evidenceClassHistogram": {
+        "import_based": 18251
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "docusaurus.config -> @docusaurus/preset-classic:*",
+        "docusaurus.config -> @docusaurus/types:Config",
+        "docusaurus.config -> @signalwire/docusaurus-plugin-llms-txt:PluginOptions",
+        "docusaurus.config -> prism-react-renderer:themes",
+        "docusaurus.config -> ./redirects:redirects"
+      ]
+    },
+    "references": {
+      "count": 20390,
+      "files": 3241,
+      "fileListSample": [
+        "typeorm/docs/docusaurus.config.ts",
+        "typeorm/docs/sidebars.ts",
+        "typeorm/docs/src/pages/index.tsx",
+        "typeorm/docs/src/components/tabs/database-tabs.tsx",
+        "typeorm/docs/src/components/icons/github-icon.tsx",
+        "typeorm/docs/src/components/icons/linkedin-icon.tsx",
+        "typeorm/packages/codemod/src/cli/parse-args.ts",
+        "typeorm/packages/codemod/src/cli/print-todos.ts",
+        "typeorm/packages/codemod/src/cli/print-summary.ts",
+        "typeorm/docs/src/pages/maintainers.tsx",
+        "typeorm/packages/codemod/src/cli/run-dependencies.ts",
+        "typeorm/packages/codemod/src/cli/run-transforms.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 19828,
+      "targetResolves": 2286,
+      "bothResolve": 2250,
+      "emptyEndpoints": 2,
+      "selfLoops": 125,
+      "placeholderSourceEndpoints": 706,
+      "placeholderTargetEndpoints": 132,
+      "confidenceHistogram": {
+        "1": 8247,
+        "0.95": 11100,
+        "0.8": 1043
+      },
+      "evidenceClassHistogram": {
+        "reference_qualified": 20390
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "config -> Config",
+        "config -> Preset.Options",
+        "config -> Preset.ThemeConfig",
+        "config -> LLMsTXTPluginOptions",
+        "sidebars -> SidebarsConfig"
+      ]
+    },
+    "exports": {
+      "count": 3052,
+      "files": 2424,
+      "fileListSample": [
+        "typeorm/docs/docusaurus.config.ts",
+        "typeorm/docs/sidebars.ts",
+        "typeorm/docs/redirects.ts",
+        "typeorm/docs/src/pages/index.tsx",
+        "typeorm/docs/src/constants/databases.ts",
+        "typeorm/docs/src/components/tabs/database-tabs.tsx",
+        "typeorm/docs/src/components/icons/github-icon.tsx",
+        "typeorm/docs/src/components/icons/linkedin-icon.tsx",
+        "typeorm/packages/codemod/src/cli/parse-args.ts",
+        "typeorm/packages/codemod/src/cli/list-transforms.ts",
+        "typeorm/packages/codemod/src/cli/print-todos.ts",
+        "typeorm/packages/codemod/src/cli/print-summary.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 2192,
+      "targetResolves": 2939,
+      "bothResolve": 2188,
+      "emptyEndpoints": 0,
+      "selfLoops": 2038,
+      "placeholderSourceEndpoints": 45,
+      "placeholderTargetEndpoints": 148,
+      "confidenceHistogram": {
+        "1": 3052
+      },
+      "evidenceClassHistogram": {
+        "structural": 3052
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "docusaurus.config -> config",
+        "sidebars -> sidebars",
+        "redirects -> redirects",
+        "index -> Home",
+        "databases -> databases"
+      ]
+    },
+    "extends": {
+      "count": 526,
+      "files": 294,
+      "fileListSample": [
+        "typeorm/packages/codemod/src/transforms/ast-helpers.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/query-builder-replace-property-names/query-builder-replace-property-names.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/query-builder-replace-property-names/query-builder-replace-property-names.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/repository-abstract/repository-abstract.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/repository-abstract/repository-abstract.output.ts",
+        "typeorm/packages/legacy-naming-strategies/src/legacy-oracle-naming-strategy.ts",
+        "typeorm/packages/legacy-naming-strategies/src/naming-strategy-v03.ts",
+        "typeorm/packages/typeorm/src/decorator/options/ColumnOptions.ts",
+        "typeorm/packages/typeorm/src/driver/aurora-mysql/AuroraMysqlQueryRunner.ts",
+        "typeorm/packages/typeorm/src/driver/aurora-postgres/AuroraPostgresDataSourceOptions.ts",
+        "typeorm/packages/typeorm/src/driver/aurora-postgres/AuroraPostgresDriver.ts",
+        "typeorm/packages/typeorm/src/driver/aurora-mysql/AuroraMysqlDataSourceOptions.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 526,
+      "targetResolves": 196,
+      "bothResolve": 196,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 7,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 526
+      },
+      "evidenceClassHistogram": {
+        "structural": 526
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "ClassPropertyWithDecorators -> ClassProperty",
+        "MyQueryBuilder -> SelectQueryBuilder",
+        "MyQueryBuilder -> SelectQueryBuilder",
+        "UserRepository -> AbstractRepository",
+        "PostRepository -> typeorm.AbstractRepository"
+      ]
+    },
+    "implements": {
+      "count": 158,
+      "files": 153,
+      "fileListSample": [
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-chained-access.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-chained-access.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-computed-key.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-computed-key.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-destructure-conflict.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-destructure-conflict.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-destructure-negative.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-destructure-negative.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-module-ds-unused.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-nested-shadow.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-nested-shadow.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/connection-to-datasource/connection-to-datasource-module-ds-unused.output.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 158,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 158
+      },
+      "evidenceClassHistogram": {
+        "structural": 158
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "SubscriberService -> EntitySubscriberInterface",
+        "SubscriberService -> EntitySubscriberInterface",
+        "UserProfileSubscriber -> EntitySubscriberInterface",
+        "UserProfileSubscriber -> EntitySubscriberInterface",
+        "UserProfileSubscriber -> EntitySubscriberInterface"
+      ]
+    },
+    "overrides": {
+      "count": 48,
+      "files": 3,
+      "fileListSample": [
+        "typeorm/packages/typeorm/src/driver/aurora-postgres/AuroraPostgresDriver.ts",
+        "typeorm/packages/typeorm/src/driver/mongodb/bson.typings.ts",
+        "typeorm/packages/typeorm/src/driver/mongodb/typings.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 0,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "0.95": 48
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 48
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "AuroraPostgresDriver.createQueryRunner -> PostgresWrapper.createQueryRunner",
+        "Binary.inspect -> BSONValue.inspect",
+        "BSONRegExp.inspect -> BSONValue.inspect",
+        "BSONSymbol.inspect -> BSONValue.inspect",
+        "Code.inspect -> BSONValue.inspect"
+      ]
+    },
+    "instantiates": {
+      "count": 5906,
+      "files": 938,
+      "fileListSample": [
+        "typeorm/docs/src/pages/index.tsx",
+        "typeorm/docs/src/pages/maintainers.tsx",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-computed-keys.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-computed-keys.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-catch-shadow.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-catch-shadow.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-cjs-namespace.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-cjs-namespace.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-cjs.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-class-shadow.input.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-cjs.output.ts",
+        "typeorm/packages/codemod/test/transforms/v1/fixtures/column-readonly/column-readonly-metadata-args-class-shadow.output.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 1996,
+      "targetResolves": 306,
+      "bothResolve": 59,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 5,
+      "placeholderTargetEndpoints": 18,
+      "confidenceHistogram": {
+        "1": 5896,
+        "0.95": 10
+      },
+      "evidenceClassHistogram": {
+        "structural": 5906
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "HomepageFeatures -> Feature",
+        "Home -> HomepageHeader",
+        "Home -> HomepageFeatures",
+        "Home -> CodeExampleSection",
+        "Home -> SupportedDatabases"
+      ]
+    }
+  },
+  "notEmitted": []
+}

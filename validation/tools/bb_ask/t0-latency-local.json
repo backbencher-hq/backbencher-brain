@@ -1,0 +1,149 @@
+{
+  "tier": "T0",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+  "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+  "embeddingDisabled": true,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T0",
+    "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+    "validation/tools/bb_ask/t0-latency-local.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": "1",
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 47.26,
+  "warmupChars": 407,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 4.16,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "no-vector-above-threshold",
+        "scanned": "9/20000",
+        "filtered": "9",
+        "candidates": "0",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "741",
+        "lines": "9"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 2.13,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "no-vector-above-threshold",
+        "scanned": "9/20000",
+        "filtered": "9",
+        "candidates": "0",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "741",
+        "lines": "9"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 2.24,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "degenerate-query-vector",
+        "scanned": "0/20000",
+        "candidates": "0",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "727",
+        "lines": "9"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 2.26,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "no-vector-above-threshold",
+        "scanned": "9/20000",
+        "filtered": "9",
+        "candidates": "0",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "741",
+        "lines": "9"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 2.3,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "degenerate-query-vector",
+        "scanned": "0/20000",
+        "candidates": "0",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "727",
+        "lines": "9"
+      }
+    }
+  ],
+  "exactName": null,
+  "indexFiles": {
+    "before": {
+      "db": {
+        "size": 524288,
+        "mtimeMs": 1793571693257
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571695047
+      }
+    },
+    "after": {
+      "db": {
+        "size": 524288,
+        "mtimeMs": 1793571693257
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571695047
+      }
+    },
+    "dbUnchanged": true
+  },
+  "p50": 2.26,
+  "p95": 4.16,
+  "max": 4.16,
+  "generatedAt": "2026-11-02T00:13:05.212Z"
+}

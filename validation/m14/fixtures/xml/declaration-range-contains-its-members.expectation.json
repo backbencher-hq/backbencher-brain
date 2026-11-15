@@ -1,0 +1,136 @@
+{
+ "fixtureId": "xml/declaration-range-contains-its-members",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 containment ledger. A vocabulary DECLARATION's range must CONTAIN the constructs it contains, and `contains` is made of ranges. `src/ast/real-xml-analyzer.ts` anchored a declaration's symbol range to the `name=` Attribute node whenever the value shared the attribute's line — the right LINE (M19) and the wrong SPAN. `<xsd:complexType name=\"Address\">` therefore published `Address` at `name=\"Address\"`, which is INSIDE the element, so the edge `Address -contains-> xsd:sequence` was true with a target outside its source, and the attribute symbol `name` occupied the identical byte range as the declaration. Measured over 400 corpus files: 253 byte ranges held by two distinct names, and 474 of 4,383 `contains` edges whose containment no span can express. Neither is visible to a resolution rate, which is 100 % on this type. The offsets below are computed from the file's own text and state what each range must be for the containment claims to be checkable at all: `Address` spans the whole `<xsd:complexType>` at 2469..2614, so its `name` attribute at 2486..2500, its `xsd:sequence` child at 2506..2593 and that child's `street` at 2527..2573 are all strictly inside it. Shapes 2 and 3 (lines 45-47 and 48-50) keep the old anchor by design and are pinned so the residual is visible rather than forgotten: `AttrOnNextLine` shares its byte range with its own `name` attribute (2638..2659 for both) and `ValueOnNextLine` at 2713..2730 is ENCLOSED by its `name` attribute at 2701..2730. Both reported LINES stay on the name — 46 and 49 — and if a future change anchors those two shapes to the element, both symbols report the tag's line (45 and 48) and this fixture fails. Note that `meta.isVocabDeclaration` is deliberately NOT asserted anywhere: production `parseFile` does not forward it, because pool-worker's per-symbol metadata is a whitelist.",
+ "expectSymbols": [
+  {
+   "name": "Address",
+   "kind": "class",
+   "ownerName": "xsd:schema"
+  },
+  {
+   "name": "name",
+   "kind": "property",
+   "ownerName": "Address"
+  },
+  {
+   "name": "xsd:sequence",
+   "kind": "class",
+   "ownerName": "Address"
+  },
+  {
+   "name": "street",
+   "kind": "class",
+   "ownerName": "xsd:sequence"
+  },
+  {
+   "name": "AttrOnNextLine",
+   "kind": "class",
+   "ownerName": "xsd:schema"
+  },
+  {
+   "name": "ValueOnNextLine",
+   "kind": "class",
+   "ownerName": "xsd:schema"
+  }
+ ],
+ "expectSymbolRanges": [
+  {
+   "symbol": "Address",
+   "ownerName": "xsd:schema",
+   "startIndex": 2469,
+   "endIndex": 2614,
+   "startLine": 40
+  },
+  {
+   "symbol": "name",
+   "ownerName": "Address",
+   "startIndex": 2486,
+   "endIndex": 2500
+  },
+  {
+   "symbol": "xsd:sequence",
+   "ownerName": "Address",
+   "startIndex": 2506,
+   "endIndex": 2593
+  },
+  {
+   "symbol": "street",
+   "ownerName": "xsd:sequence",
+   "startIndex": 2527,
+   "endIndex": 2573
+  },
+  {
+   "symbol": "AttrOnNextLine",
+   "ownerName": "xsd:schema",
+   "startIndex": 2638,
+   "endIndex": 2659,
+   "startLine": 46
+  },
+  {
+   "symbol": "name",
+   "ownerName": "AttrOnNextLine",
+   "startIndex": 2638,
+   "endIndex": 2659
+  },
+  {
+   "symbol": "ValueOnNextLine",
+   "ownerName": "xsd:schema",
+   "startIndex": 2713,
+   "endIndex": 2730,
+   "startLine": 49
+  },
+  {
+   "symbol": "name",
+   "ownerName": "ValueOnNextLine",
+   "startIndex": 2701,
+   "endIndex": 2730
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Address",
+   "target": "name"
+  },
+  {
+   "type": "contains",
+   "from": "Address",
+   "target": "xsd:sequence"
+  },
+  {
+   "type": "contains",
+   "from": "xsd:sequence",
+   "target": "street"
+  },
+  {
+   "type": "contains",
+   "from": "AttrOnNextLine",
+   "target": "name"
+  },
+  {
+   "type": "contains",
+   "from": "ValueOnNextLine",
+   "target": "name"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "xsd:schema",
+   "target": "xsd:sequence"
+  },
+  {
+   "type": "contains",
+   "from": "name",
+   "target": "xsd:sequence"
+  },
+  {
+   "type": "contains",
+   "from": "xsd:sequence",
+   "target": "name"
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

@@ -1,0 +1,17 @@
+{
+  "fixtureId": "javascript/stdlib-colliding-names",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ADVERSARIAL NAMING RULE: user methods get/map must extract, and their call edges from renderAll must survive suppression filters.",
+  "expectSymbols": [
+    { "name": "Cache" },
+    { "name": "get" },
+    { "name": "map" },
+    { "name": "renderAll" }
+  ],
+  "expectQualifiedCalls": [],
+  "expectRelationships": [
+    { "type": "calls", "from": "renderAll", "targetEndsWith": "map" },
+    { "type": "calls", "from": "renderAll", "targetEndsWith": "get" }
+  ]
+}

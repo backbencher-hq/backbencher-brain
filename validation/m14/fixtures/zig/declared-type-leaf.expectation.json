@@ -1,0 +1,264 @@
+{
+  "fixtureId": "zig/declared-type-leaf",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Z13/Z16/Z18 (deep review, 2026-09-28). The declared-type graph is zig's LARGEST UNAUDITED relationship class: the differential compares only `calls` and `uses` for this lane, so a whole class of edges had no second opinion (that is Z14, the finding this fixture's sibling gate work addresses). Its leaf was chosen by walking every `identifier` under the declaration, dropping the first as the name and taking the last \u2014 and the grammar never agreed to that story: it hands the type over as a FIELD (`parameter.type` 78,895, `container_field.type` 49,424, `variable_declaration.type` 43,949, `function_declaration.type` 37,129 in the pinned corpora). The walk was wrong wherever a declaration has a DEFAULT VALUE, because a value contributes identifiers after the type: `size: Size = .byte` published a reference to `byte` (an enum member) and never to `Size`; `normal = @sizeOf(u8)` published `u8`. It was also wrong where a type NAMES nothing: an anonymous struct type in a parameter position has fields, not a name, so the last identifier under it was a FIELD name (`references -> FLAG`); an error set is unnamed, and `!T` keeps its dependency in the `ok` half, not in a member of the set (`fn f() error{A}!u32` published `-> A`). And the class was one position short: the family declares four (field, parameter, return, local) and the collector covered three. Z18: the one regex this analyzer carried sat on this path, where its receiver can only be an `identifier` node's text \u2014 so on a plain identifier it was provably a no-op, and on a QUOTED identifier it corrupted a legitimate name (`@\"zig lib\"` -> `@\"ziglib\"`; 1,916 of the corpora's 34,132 quoted identifiers carry a character from its junk class). #924 E half (a7368a80) has since ruled that @\"@\u2026\"@ is quoting SYNTAX and the name is its content, so these rows carry the bare name \u2014 the two rulings together are what make a quoted declaration resolvable instead of mangled. The counts are measurements (script/m14/tmp/zigw-decltype.ts, zigw-typedleaf.ts); the expectations are derived from the grammar's field and the Zig reference.",
+  "expectSymbols": [
+    {
+      "name": "Size",
+      "kind": "enum"
+    },
+    {
+      "name": "byte",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Slice",
+      "kind": "struct"
+    },
+    {
+      "name": "Mode",
+      "kind": "enum"
+    },
+    {
+      "name": "Fmt",
+      "kind": "struct"
+    },
+    {
+      "name": "size",
+      "kind": "property",
+      "ownerName": "Fmt",
+      "returnType": "Size",
+      "comment": "Z17b: a property publishes its declared type; the old five-node-type list left every NAMED type unpublished"
+    },
+    {
+      "name": "fixed",
+      "kind": "property",
+      "returnType": "[4]Size",
+      "comment": "Z17b: an array type too"
+    },
+    {
+      "name": "maybe",
+      "kind": "property",
+      "returnType": "?*Slice"
+    },
+    {
+      "name": "Boom",
+      "kind": "enum"
+    },
+    {
+      "name": "NotFound",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Only",
+      "kind": "struct"
+    },
+    {
+      "name": "Holder",
+      "kind": "struct"
+    },
+    {
+      "name": "weird type",
+      "kind": "type",
+      "comment": "Z11: a quoted alias of a builtin is still a type alias"
+    },
+    {
+      "name": "odd field",
+      "kind": "property",
+      "returnType": "weird type",
+      "comment": "Z18 + #924-E (a7368a80): the pre-fix target was @\"@weirdtype\"@ \u2014 the junk-class strip deleted the spaces INSIDE the quotes. #924 E half then ruled that @\"@\u2026\"@ is quoting SYNTAX and the name is its content, so this row carries the bare name; the two rulings together are what make a quoted declaration resolvable instead of mangled"
+    },
+    {
+      "name": "anon",
+      "kind": "function"
+    },
+    {
+      "name": "errUnion",
+      "kind": "function"
+    },
+    {
+      "name": "errUnionAnon",
+      "kind": "function"
+    },
+    {
+      "name": "errUnionVoid",
+      "kind": "function"
+    },
+    {
+      "name": "wrapped",
+      "kind": "function"
+    },
+    {
+      "name": "qualified",
+      "kind": "function"
+    },
+    {
+      "name": "local",
+      "kind": "function"
+    },
+    {
+      "name": "localOnly",
+      "kind": "function"
+    },
+    {
+      "name": "usesQuoted",
+      "kind": "function"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "qualified",
+      "parameters": [
+        {
+          "name": "w",
+          "type": "std2.mem.Allocator"
+        }
+      ],
+      "comment": "Z17c: a qualified parameter type used to publish nothing (the five-node-type list had no case for a field_expression). The declared-type edge takes the LEAF (`Allocator`), while the signature carries the type as written (`std2.mem.Allocator`) - the family convention, and the two are the same fact at two resolutions."
+    },
+    {
+      "symbol": "usesQuoted",
+      "parameters": [
+        {
+          "name": "x",
+          "type": "weird type"
+        }
+      ],
+      "comment": "Z18: as written"
+    },
+    {
+      "symbol": "anon",
+      "parameters": [
+        {
+          "name": "s",
+          "type": "struct { FLAG: u8 }"
+        }
+      ],
+      "comment": "Z13b: the anonymous type is carried verbatim as a SIGNATURE while publishing no declared-type reference - a type that names nothing cannot be a dependency"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Size",
+      "meta.relationshipType": "declared_type",
+      "line_number": 18,
+      "comment": "Z13a: from `size: Size = .byte` \u2014 the TYPE, not the default value"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Mode",
+      "meta.relationshipType": "declared_type",
+      "line_number": 19,
+      "comment": "Z13a: from `mode: Mode = .a`"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Slice",
+      "meta.relationshipType": "declared_type",
+      "line_number": 21,
+      "comment": "Z13a: from `view: Slice = .{}` \u2014 an anonymous initializer is not a type name either"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Fmt",
+      "meta.relationshipType": "declared_type",
+      "line_number": 34,
+      "comment": "Z13b: `Boom!Fmt` \u2014 the dependency is in the `ok` half"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "std2.mem.Allocator",
+      "meta.relationshipType": "declared_type",
+      "line_number": 38,
+      "comment": "Z13: a qualified type resolves to its leaf, the family convention",
+      "note": "Z13: a qualified type resolves to its leaf, the family convention \u2014 and Z66 bounds it. This file writes `std2.mem.Allocator` where `const std2 = @import(\"std\")` at :83, so the path is published whole with meta.zigImportAlias=std2 and meta.zigImportModule=std. A LOCAL module alias keeps the leaf, and zig/alias-receiver pins both halves of that boundary."
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Only",
+      "meta.relationshipType": "declared_type",
+      "line_number": 58,
+      "comment": "Z16: the LOCAL position \u2014 `var o: Only = undefined;` inside a function body, a type named nowhere else in the file so the dedupe cannot hide it"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "weird type",
+      "meta.relationshipType": "declared_type",
+      "line_number": 74,
+      "comment": "Z18 + #924-E (a7368a80): the pre-fix target was @\"@weirdtype\"@ \u2014 the junk-class strip deleted the spaces INSIDE the quotes. #924 E half then ruled that @\"@\u2026\"@ is quoting SYNTAX and the name is its content, so this row carries the bare name; the two rulings together are what make a quoted declaration resolvable instead of mangled"
+    },
+    {
+      "type": "references",
+      "source": "(global)",
+      "target": "std",
+      "meta.isImport": true,
+      "line_number": 12,
+      "comment": "Z16 does not touch imports: `@import` is an import fact, not a type"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "byte",
+      "comment": "Z13a: the DEFAULT VALUE was the pre-fix leaf \u2014 an enum member is not a type"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "a",
+      "comment": "Z13a: same shape, `mode: Mode = .a`"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "undefined",
+      "comment": "Z13a: `= undefined` is not a type"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "FLAG",
+      "comment": "Z13b: an anonymous struct type has FIELDS, not a name"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "NotFound",
+      "comment": "Z13b: an error SET is unnamed; the `!` union keeps its dependency in `ok`"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Fresh",
+      "comment": "Z13b: an inline anonymous error set, same rule"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "@\"weirdtype\"",
+      "comment": "Z18: the pre-fix corrupted spelling \u2014 the junk-strip removed the space inside a legitimate quoted identifier"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "u8",
+      "comment": "builtins are excluded (the family rule), including when reached through a wrapper"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Allocator",
+      "note": "pre-Z66 spelling, same line 38. The declared-type pass qualifies through the same alias map as the two code-relationship passes, so this forbid is what catches a regression that fixes only one of them."
+    }
+  ]
+}

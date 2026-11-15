@@ -1,0 +1,658 @@
+{
+  "instrument": "markdown firing-corpus census + instrument A re-run (validation/m14/fixtures/markdown/firing-corpus-census.ts)",
+  "whatThisIs": "production `parseFile` over the WHOLE redwood markdown population (firing-check's own corpus and admission), plus the pinned grammars' node-type union re-tested against each A-row vocabulary with a planted positive control",
+  "whatThisIsNot": "script/m14/firing-check.mjs's output — that instrument strides 120 files, this one measures every admitted file, and the two are reported together, never merged",
+  "command": "bun validation/m14/fixtures/markdown/firing-corpus-census.ts --shards 4",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpusDirs": [
+    "traefik",
+    "bulma",
+    "vega",
+    "scala3"
+  ],
+  "admission": ".md, < 400000 bytes, no .git/node_modules",
+  "analyzerSha256": "5817913f9ab76ff2268ee35ac7e81cbd9f189f3d2f4b3030c12e7d9f855be273",
+  "population": 1198,
+  "shards": 4,
+  "lostShards": [],
+  "parsed": 1198,
+  "degraded": {
+    "count": 0,
+    "files": []
+  },
+  "types": {
+    "contains": 11704,
+    "uses": 7683,
+    "imports": 105,
+    "references": 206
+  },
+  "importSites": [
+    {
+      "file": "bulma/docs/documentation/features/themes.md",
+      "target": "docs/elements/step.html",
+      "line": 80
+    },
+    {
+      "file": "bulma/docs/documentation/features/themes.md",
+      "target": "docs/elements/step.html",
+      "line": 81
+    },
+    {
+      "file": "bulma/docs/documentation/features/themes.md",
+      "target": "docs/elements/step.html",
+      "line": 82
+    },
+    {
+      "file": "bulma/docs/documentation/features/themes.md",
+      "target": "docs/elements/step.html",
+      "line": 83
+    },
+    {
+      "file": "traefik/docs/content/getting-started/faq.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 255
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/api-dashboard.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 258
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/kubernetes-gateway.md",
+      "target": "includes/kubernetes-requirements.md",
+      "line": 23
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/kubernetes-gateway.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 154
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/others/file.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 125
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/tls/certificate-resolvers/acme.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 335
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/digestauth.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 84
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/forwardauth.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 162
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/oauth2-client-credentials.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 256
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/overview.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 59
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/stripprefix.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 66
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/tls/tls-certificates.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 185
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/kubernetes/knative.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 96
+    },
+    {
+      "file": "vega/docs/docs/marks/image.md",
+      "target": "properties.md",
+      "line": 24
+    },
+    {
+      "file": "vega/docs/docs/marks/rule.md",
+      "target": "properties.md",
+      "line": 13
+    },
+    {
+      "file": "vega/docs/docs/marks/trail.md",
+      "target": "properties.md",
+      "line": 20
+    },
+    {
+      "file": "bulma/docs/_posts/2019-10-15-light-dark-colors.md",
+      "target": "docs/elements/anchor.html",
+      "line": 24
+    },
+    {
+      "file": "bulma/docs/_posts/2019-10-15-light-dark-colors.md",
+      "target": "docs/elements/anchor.html",
+      "line": 48
+    },
+    {
+      "file": "bulma/docs/_posts/2019-10-15-light-dark-colors.md",
+      "target": "docs/elements/anchor.html",
+      "line": 109
+    },
+    {
+      "file": "bulma/docs/_posts/2019-10-15-light-dark-colors.md",
+      "target": "docs/elements/anchor.html",
+      "line": 121
+    },
+    {
+      "file": "bulma/docs/_posts/2019-10-15-light-dark-colors.md",
+      "target": "docs/elements/anchor.html",
+      "line": 134
+    },
+    {
+      "file": "bulma/docs/_posts/2019-10-15-light-dark-colors.md",
+      "target": "docs/elements/anchor.html",
+      "line": 165
+    },
+    {
+      "file": "bulma/docs/documentation/features/color-palettes.md",
+      "target": "docs/components/single-color-row.html",
+      "line": 118
+    },
+    {
+      "file": "bulma/docs/documentation/features/color-palettes.md",
+      "target": "docs/elements/background-foreground-row.html",
+      "line": 193
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/kubernetes-ingress-nginx.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 278
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/tls/certificate-resolvers/overview.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 20
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/apikey.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 56
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/oauth2-token-introspection.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 209
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/routing/router.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 122
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/tls/tls-options.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 365
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/kubernetes/gateway-api.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 915
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/udp/routing/rules-priority.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 110
+    },
+    {
+      "file": "traefik/docs/content/secure/secure-api-access-with-jwt.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 204
+    },
+    {
+      "file": "traefik/docs/content/setup/docker.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 298
+    },
+    {
+      "file": "vega/docs/docs/marks/arc.md",
+      "target": "properties.md",
+      "line": 26
+    },
+    {
+      "file": "vega/docs/docs/marks/line.md",
+      "target": "properties.md",
+      "line": 23
+    },
+    {
+      "file": "vega/docs/docs/marks/shape.md",
+      "target": "properties.md",
+      "line": 17
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 38
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 50
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 60
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 81
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 91
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 109
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 119
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 129
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-13-website-redesign.md",
+      "target": "docs/elements/anchor.html",
+      "line": 139
+    },
+    {
+      "file": "traefik/docs/content/getting-started/configuration-overview.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 95
+    },
+    {
+      "file": "traefik/docs/content/getting-started/kubernetes.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 334
+    },
+    {
+      "file": "traefik/docs/content/migrate/v2-to-v3.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 161
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/docker.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 430
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/knative.md",
+      "target": "includes/kubernetes-requirements.md",
+      "line": 18
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/knative.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 142
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/kubernetes-ingress.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 185
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/overview.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 227
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/basicauth.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 95
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/headers.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 327
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/jwt.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 233
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/oidc.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 433
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/waf.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 64
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/other-providers/docker.md",
+      "target": "includes/service-by-label.md",
+      "line": 103
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/udp/service.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 111
+    },
+    {
+      "file": "traefik/docs/content/secure/secure-api-access-with-oidc.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 110
+    },
+    {
+      "file": "traefik/docs/content/setup/kubernetes.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 400
+    },
+    {
+      "file": "vega/docs/docs/marks/area.md",
+      "target": "properties.md",
+      "line": 22
+    },
+    {
+      "file": "vega/docs/docs/marks/path.md",
+      "target": "properties.md",
+      "line": 22
+    },
+    {
+      "file": "vega/docs/docs/marks/symbol.md",
+      "target": "properties.md",
+      "line": 21
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-14-migration-to-v070.md",
+      "target": "docs/elements/anchor.html",
+      "line": 16
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-14-migration-to-v070.md",
+      "target": "docs/elements/anchor.html",
+      "line": 50
+    },
+    {
+      "file": "bulma/docs/_posts/2018-04-14-migration-to-v070.md",
+      "target": "docs/elements/anchor.html",
+      "line": 80
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/anchor.html",
+      "line": 52
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/anchor.html",
+      "line": 70
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/anchor.html",
+      "line": 80
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 366
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 367
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 369
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 370
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 371
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 372
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/primary-colors.html",
+      "line": 374
+    },
+    {
+      "file": "bulma/docs/documentation/features/dark-mode.md",
+      "target": "docs/elements/color-swatch.html",
+      "line": 390
+    },
+    {
+      "file": "scala3/docs/_spec/index.md",
+      "target": "table-of-contents.yml",
+      "line": 6
+    },
+    {
+      "file": "traefik/docs/content/getting-started/docker.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 162
+    },
+    {
+      "file": "traefik/docs/content/observe/overview.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 80
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/observability/logs-and-accesslogs.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 446
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/kubernetes/kubernetes-crd.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 241
+    },
+    {
+      "file": "traefik/docs/content/reference/install-configuration/providers/swarm.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 467
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/hmac.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 207
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/ldap.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 105
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/opa.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 73
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/middlewares/redirectregex.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 88
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/routing/multi-layer-routing.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 188
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/http/tls/overview.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 136
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/kubernetes/ingress.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 466
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/other-providers/swarm.md",
+      "target": "includes/service-by-label.md",
+      "line": 126
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/tcp/routing/router.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 105
+    },
+    {
+      "file": "traefik/docs/content/reference/routing-configuration/tcp/tls.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 168
+    },
+    {
+      "file": "traefik/docs/content/secure/secure-api-access-with-waf.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 190
+    },
+    {
+      "file": "traefik/docs/content/setup/swarm.md",
+      "target": "includes/traefik-for-business-applications.md",
+      "line": 330
+    },
+    {
+      "file": "vega/docs/docs/marks/group.md",
+      "target": "properties.md",
+      "line": 26
+    },
+    {
+      "file": "vega/docs/docs/marks/rect.md",
+      "target": "properties.md",
+      "line": 23
+    },
+    {
+      "file": "vega/docs/docs/marks/text.md",
+      "target": "properties.md",
+      "line": 37
+    }
+  ],
+  "errors": [],
+  "instrumentA": {
+    "unionDistinct": 108,
+    "parsedFiles": 17456,
+    "shards": 24,
+    "populationHashes": [
+      "1d079c4fff2092ce0e11b8090c69d8e86d6e4fba4569b6886653170f6c020781"
+    ],
+    "rows": [
+      {
+        "type": "extends",
+        "vocabularySize": 10,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 11,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "implements",
+        "vocabularySize": 8,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 9,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "instantiates",
+        "vocabularySize": 8,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 9,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "exports",
+        "vocabularySize": 8,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 9,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "overrides",
+        "vocabularySize": 6,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 7,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "calls",
+        "vocabularySize": 9,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 10,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      }
+    ],
+    "controlsFired": 6
+  },
+  "wasmPins": {
+    "block": {
+      "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+      "pinnedSha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+      "matches": true
+    },
+    "inline": {
+      "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+      "pinnedSha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+      "matches": true
+    }
+  }
+}

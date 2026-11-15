@@ -1,0 +1,20 @@
+{
+  "issue": "CLJ1",
+  "note": "C8: calls OUTSIDE any function attribute to the namespace (the load-time context that invokes them, meta.isTopLevel pins the marking) instead of being dropped — def/defonce initializers were silent pre-fix. deftest is a function symbol whose body calls attribute to the test itself; `is` stays a core-filtered builtin (forbid).",
+  "expectSymbols": [
+    { "name": "state", "kind": "variable" },
+    { "name": "once", "kind": "variable" },
+    { "name": "behavior", "kind": "function" },
+    { "name": "after", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "clj.fixture.toplevelcalls", "target": "make-state", "line_number": 3, "meta.isTopLevel": true },
+    { "type": "calls", "from": "clj.fixture.toplevelcalls", "target": "make-once", "line_number": 4, "meta.isTopLevel": true },
+    { "type": "calls", "from": "behavior", "target": "works", "line_number": 7 },
+    { "type": "calls", "from": "behavior", "target": "checks", "line_number": 8 },
+    { "type": "calls", "from": "after", "target": "ok", "line_number": 10 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "is" }
+  ]
+}

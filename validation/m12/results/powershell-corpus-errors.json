@@ -1,6 +1,6 @@
 {
   "analyzer": "powershell",
-  "corpus": "$HOME/fixtures/repositories/powershell",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/powershell",
   "revision": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
   "extensions": [
     "*.ps1",

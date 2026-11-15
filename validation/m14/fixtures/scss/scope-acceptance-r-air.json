@@ -1,0 +1,35 @@
+{
+  "repo": "r-air",
+  "files": 1,
+  "partition": {
+    "before": {
+      "references": {
+        "resolved": 1,
+        "total": 1
+      },
+      "exports": {
+        "resolved": 2,
+        "total": 2
+      }
+    },
+    "after": {
+      "references": {
+        "resolved": 1,
+        "total": 1
+      },
+      "exports": {
+        "resolved": 2,
+        "total": 2
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 0,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 3,
+    "falseBindings": 0
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "fixtureId": "svelte/dedupe-template-read-record",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the lane's own dedupe rule (`type|source|target`, one row per triple) and from the ordering of `analyze` — the script delegate merge (step 3b) precedes the template read pass (step 3c) — then read off the post-fix run and checked against the fixture's text: `$: doubled = count * 2` on line 26, `{count}` on 29, `{doubled}` on 30, `{onlyTemplate}` on 31.",
+  "rationale": "JOB 2 of the svelte ontology pass, and the measured shape of the DERIVATION finding this lane carries. The dedupe kept the FIRST row for a triple and the delegate's rows are pushed first, so a template read of a member the script also read was dropped with nothing recorded. 384 of 5,781 template reads (6.6%) on the 3,085 corpus files where an independent oracle's shadow model is provably equivalent to this analyzer's. The graph contract — one edge per (type, source, target) — is NOT changed: `count` still publishes exactly one `uses`, at the script's line and the script's confidence. What is new is that the dropped template site is visible: `templateReadLines: [29]` and `isTemplateRead: true`. The forbids pin the two halves of that decision: no SECOND `uses` row for the same pair (which would be the fabrication this lane has fixed twice), and no relabelling of the surviving row's line or confidence (which would move a field the shared payload budget and differential baseline own). `onlyTemplate` is the control — a template-only read must still get its own 0.95 `isTemplateExpression` row.",
+  "expectSymbols": [
+    {
+      "name": "count"
+    },
+    {
+      "name": "onlyTemplate"
+    },
+    {
+      "name": "doubled"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "count",
+      "line_number": 26,
+      "meta.isTemplateRead": true,
+      "meta.sfcDelegated": true,
+      "meta.templateReadSites": [
+        29
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "doubled",
+      "line_number": 30,
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "target": "onlyTemplate",
+      "line_number": 31,
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "contains",
+      "target": "doubled"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "count",
+      "meta.isTemplateExpression": true,
+      "comment": "the template read must NOT become a SECOND row for a triple the delegate already published: one edge per (type, source, target) is the lane's graph contract, and two rows would double-count one fact"
+    },
+    {
+      "type": "uses",
+      "target": "count",
+      "line_number": 29,
+      "comment": "the surviving row's line stays the SCRIPT's line (26). Moving it to the template site would rewrite a payload field the shared payload budget and the differential baseline pin, so the template site is recorded as metadata instead"
+    },
+    {
+      "type": "uses",
+      "target": "onlyTemplate",
+      "meta.isTemplateRead": true,
+      "comment": "a member read ONLY in the template has no script twin; it must keep its own `isTemplateExpression` row and must not be marked as a recorded template site on some other row"
+    }
+  ]
+}

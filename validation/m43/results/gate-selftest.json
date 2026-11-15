@@ -1,0 +1,48 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-gate-selftest.ts",
+  "generatedAt": "2026-09-05T22:40:08.359Z",
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "gates": [
+    {
+      "code": "P1",
+      "script": "script/m43/verify-p1-index-lock.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A1",
+      "script": "script/m43/verify-a1-mcp-auto-refresh.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A2",
+      "script": "script/m43/verify-a2-cli-auto-refresh.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A3",
+      "script": "script/m43/verify-a3-flag-semantics.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A4",
+      "script": "script/m43/verify-a4-corpus.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    }
+  ],
+  "allProven": true,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.552Z",
+    "contentSha256": "0aa80b494b80ab0cab8898cac29f20a3ea64caab37688e296ecea3e3c006d1bc"
+  }
+}

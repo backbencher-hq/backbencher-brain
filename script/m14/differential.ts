@@ -6314,6 +6314,107 @@ export function deriveTypeScriptDecoratorTruth(root: any): { label: string; from
   return out
 }
 
+/**
+ * THE `implements` ORACLE — JSDoc `@implements`, the ONLY way JavaScript states conformance.
+ *
+ * WHY THE ORACLE HAD TO MOVE WITH THE ANALYZER. `deriveJavaScriptExtends` reads the `class_heritage`
+ * CLAUSE, and JavaScript cannot have an implements clause at all — so the label had no truth behind it
+ * and the lane ruled it unexpressible. It was then measured that JSDoc carries the relationship in real
+ * production code:
+ *
+ *     svelte/packages/svelte/src/compiler/utils/compile_diagnostic.js
+ *       /** @typedef {{ code: string; … }} ICompileDiagnostic *\/
+ *       /** @implements {ICompileDiagnostic} *\/
+ *       export class CompileDiagnostic { … }
+ *
+ * so the analyzer now emits `implements`. WITHOUT this oracle the new edge reads as a FABRICATION —
+ * measured: the analyzer change alone reported `unexplained=1, unexplained-by-label: implements=1` on
+ * svelte, which is the harness correctly saying "the analyzer claims something my truth does not
+ * derive". The remedy is to derive it, exactly as the class-expression heritage fix had to move
+ * `deriveJavaScriptExtends` in the same commit as its analyzer change.
+ *
+ * THE PARSER IS DELIBERATELY A SEPARATE IMPLEMENTATION from the analyzer's `jsdocImplementsNames`.
+ * An oracle that shares the analyzer's code cannot catch an analyzer bug in that code: one wrong
+ * algorithm would be wrong on both sides and the lane would report agreement. Two implementations
+ * agreeing on a fixture is evidence; one implementation called twice is not.
+ *
+ * `from: "(class)"` follows `deriveJavaScriptExtends` — the comparison is site-agnostic (label +
+ * target), so the class NAME is not compared and is not derived here.
+ */
+export function deriveJavaScriptImplements(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (iface: string): void => {
+    const t = iface.trim()
+    if (!t || seen.has(t)) return
+    seen.add(t)
+    edges.push({ label: "implements", from: "(class)", target: t })
+  }
+  /** the JSDoc block immediately preceding a declaration's outermost STATEMENT */
+  const docBefore = (node: any): string | null => {
+    let stmt: any = node
+    while (
+      stmt.parent && stmt.parent.type !== "program" && stmt.parent.type !== "statement_block" &&
+      stmt.parent.type !== "class_body" && stmt.parent.type !== "switch_body"
+    ) {
+      stmt = stmt.parent
+    }
+    const prev = stmt.previousSibling
+    if (!prev || prev.type !== "comment") return null
+    const text = String(prev.text ?? "")
+    return text.startsWith("/**") ? text : null
+  }
+  /** the names a block states after each `@implements` — `{IFoo}`, bare `IFoo`, `{A|B}`, `{ns.IFoo}` */
+  const namesIn = (text: string): string[] => {
+    const out: string[] = []
+    const tag = "@implements"
+    let from = 0
+    for (;;) {
+      const at = text.indexOf(tag, from)
+      if (at < 0) break
+      from = at + tag.length
+      const rest = text.slice(from)
+      const nl = rest.indexOf("\n")
+      const openBrace = rest.indexOf("{")
+      let body: string
+      if (openBrace >= 0 && (nl < 0 || openBrace < nl)) {
+        const closeBrace = rest.indexOf("}", openBrace + 1)
+        if (closeBrace < 0) continue
+        body = rest.slice(openBrace + 1, closeBrace)
+      } else {
+        body = nl >= 0 ? rest.slice(0, nl) : rest
+      }
+      // a one-line bare form carries the comment terminator; it is not part of the name
+      const end = body.indexOf("*/")
+      if (end >= 0) body = body.slice(0, end)
+      for (const piece of body.replace(/\|/g, ",").split(",")) {
+        let name = piece.trim()
+        const generic = name.indexOf("<")
+        if (generic >= 0) name = name.slice(0, generic).trim()
+        const dot = name.lastIndexOf(".")
+        if (dot >= 0) name = name.slice(dot + 1).trim()
+        if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) && !out.includes(name)) out.push(name)
+      }
+    }
+    return out
+  }
+  const walk = (n: any): void => {
+    if (n.type === "class_declaration") {
+      const cls = n.childForFieldName("name")?.text
+      const doc = docBefore(n)
+      if (cls && doc) {
+        for (const iface of namesIn(doc)) if (iface !== cls) push(iface)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
 export function deriveJavaScriptEdges(root: any, options: { callSources?: boolean } = {}): TreeEdge[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -24627,6 +24728,12 @@ async function main() {
         for (const e of deriveJavaScriptMixins(root)) {
           ;(truth as any[]).push(e)
         }
+        // The `implements` oracle (JSDoc `@implements`). JavaScript has no implements CLAUSE, so
+        // without this the label had no truth and the analyzer's JSDoc-derived rows read as
+        // fabrications — measured: `unexplained-by-label: implements=1` on svelte before this loop.
+        for (const e of deriveJavaScriptImplements(root)) {
+          ;(truth as any[]).push(e)
+        }
         // The `overrides` oracle, with a declared platform-builtin prototype chain.
         for (const e of deriveJavaScriptOverrides(root)) {
           ;(truth as any[]).push(e)
@@ -28824,7 +28931,20 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     // is kept by bareName, so the name can never equal a declaration's, and the map
     // returns it unchanged — but the analyzer publishes these reads with the SCOPE PREFIX
     // (`uses script:x` is its own documented form, PS19), so the row is emitted as written.
-    push("uses", ownerOf(v), canonicalName(ownerOf(v), name))
+    //
+    // QUALIFY THE TARGET WHEN THERE'S A UNIQUE DECLARATION. The analyzer's variable-reference
+    // retarget (cause D / PSD20) republishes a variable read under the declaring scope's
+    // qualified name (`New-PwshResource.ProfileType`) when there is exactly one visible
+    // declaration that is unique project-wide. The oracle must match: qualify with the owner
+    // when there is exactly one declaration of this name in the owner scope. Without this,
+    // every retargeted read is counted as both MISSING (bare target in truth) and UNEXPECTED
+    // (qualified target in analyzer) — the largest single disagreement class on this lane.
+    const ownerName = ownerOf(v)
+    const declList = varDeclSpellings.get(ownerName.toLowerCase())
+    const visibleCount = declList ? declList.filter((d) => d.name.toLowerCase() === name.toLowerCase()).length : 0
+    const canon = canonicalName(ownerName, name)
+    const target = visibleCount === 1 ? `${ownerName}.${canon}` : canon
+    push("uses", ownerName, target)
   }
 
   // --- EXPORTS: Export-ModuleMember ---------------------------------------
@@ -29114,8 +29234,13 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     // the analyzer routes that to `uses` (PS29) because `instantiates` would assert the
     // target IS a type when the source only says it holds one. Publishing the raw
     // `$crypto_ns.X509Certificate2` as an instantiated type was a target no symbol can
-    // have and a claim the file does not make.
-    if (typeName.includes("$")) continue
+    // have and a claim the file does not make. Route it to `uses` with the sigil stripped,
+    // matching the analyzer's own PSD29 handling.
+    if (typeName.includes("$")) {
+      const dyn = typeName.replace(/^\$/, "")
+      if (!PS_TYPE_ACCELERATORS.has(dyn.replace(/\[\]$/, "").toLowerCase())) push("uses", ownerOf(c), dyn)
+      continue
+    }
     if (typeName && !PS_TYPE_ACCELERATORS.has(typeName.replace(/\[\]$/, "").toLowerCase())) {
       push("instantiates", ownerOf(c), typeName)
     }

@@ -1,0 +1,53 @@
+{
+  "issue": "M21.I3",
+  "code": "I3",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-i3-durable-status.ts",
+  "evidenceFile": "I3.json",
+  "generatedAt": "2026-09-01T14:06:22.776Z",
+  "corpus": {
+    "kind": "temporary-fixture-plus-real-repository",
+    "fixtureFiles": 2,
+    "realRepository": "/home/ishaq2321/bb_tests/repositories/rake"
+  },
+  "timings": {
+    "cleanRunMs": 1125,
+    "seededErrorRunMs": null,
+    "cleanAfterErrorMs": 15,
+    "realRunMs": 5516
+  },
+  "counts": {
+    "errorsAfterClean": 0,
+    "errorsAfterSeededErrorRun": 2,
+    "errorsAfterCleanAgain": 2,
+    "structuredErrorsAfterSeededRun": 2,
+    "perfRunsAfterTwoRuns": 2,
+    "realSuccessFiles": 57,
+    "realPerfRuns": 1
+  },
+  "outcomes": {
+    "cleanRun": "executed",
+    "errorRun": "error-recorded",
+    "cleanAfterError": "errors-preserved",
+    "legacyMigration": "legacy-preserved",
+    "healthParity": "parity",
+    "realRepository": "executed"
+  },
+  "limitations": [
+    "Structured errors carry phase/file/language/timestamp; retry/fallback are preserved when the pool reports them and are otherwise 0/undefined — never fabricated.",
+    "Performance stats history is bounded to the 10 most recent runs by design.",
+    "The legacy-migration check simulates a pre-I3 schema in a temporary database only."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.384Z",
+    "contentSha256": "1df065efac37612bdc8d3265c5d612748397643928dd1191626989a0ae406b26"
+  }
+}

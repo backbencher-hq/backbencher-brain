@@ -1,0 +1,56 @@
+{
+  "issue": "M21.E2",
+  "code": "E2",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 35,
+  "passed": 35,
+  "failed": 0,
+  "negativeCases": 4,
+  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-embedding-queue.ts",
+  "evidenceFile": "E2.json",
+  "generatedAt": "2026-11-01T19:16:50.775Z",
+  "corpus": {
+    "kind": "temporary-fixtures",
+    "files": 1,
+    "revision": null
+  },
+  "metricsObserved": {
+    "happyPath": {
+      "queued": 5,
+      "embedded": 5,
+      "dropped": 0,
+      "failed": 0,
+      "fallback": 0,
+      "skipped": 0
+    },
+    "providerFailure": {
+      "queued": 5,
+      "embedded": 0,
+      "dropped": 0,
+      "failed": 0,
+      "fallback": 5,
+      "skipped": 0
+    }
+  },
+  "flushOutcomes": {
+    "happy": {
+      "resolved": "drained",
+      "pendingItems": 0
+    },
+    "providerFailure": {
+      "resolved": "drained",
+      "pendingItems": 0
+    },
+    "bounded": {
+      "resolved": "timeout",
+      "pendingItems": 0
+    }
+  },
+  "limitations": [
+    "Provider failure is simulated by patching SemanticEngine.embedMany to throw — the shape any dead/unavailable provider produces.",
+    "The queue is process-wide; counters are deltas between snapshots to stay isolation-safe."
+  ]
+}

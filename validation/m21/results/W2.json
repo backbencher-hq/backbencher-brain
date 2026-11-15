@@ -1,0 +1,384 @@
+{
+  "issue": "M21.W2",
+  "code": "W2",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 54,
+  "passed": 54,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-wasm-assets.ts",
+  "evidenceFile": "W2.json",
+  "generatedAt": "2026-09-01T13:56:25.518Z",
+  "dedicatedCount": 44,
+  "genericFallbacks": [
+    "nim",
+    "vb",
+    "protobuf"
+  ],
+  "observations": [
+    {
+      "language": "typescript",
+      "asset": "tree-sitter-typescript.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 2342690,
+      "evidenceEligible": true
+    },
+    {
+      "language": "tsx",
+      "asset": "tree-sitter-tsx.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 2411272,
+      "evidenceEligible": true
+    },
+    {
+      "language": "javascript",
+      "asset": "tree-sitter-javascript.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 647334,
+      "evidenceEligible": true
+    },
+    {
+      "language": "html",
+      "asset": "tree-sitter-html.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 18468,
+      "evidenceEligible": true
+    },
+    {
+      "language": "css",
+      "asset": "tree-sitter-css.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 128668,
+      "evidenceEligible": true
+    },
+    {
+      "language": "svelte",
+      "asset": "tree-sitter-svelte.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 47873,
+      "evidenceEligible": true
+    },
+    {
+      "language": "json",
+      "asset": "tree-sitter-json.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 5961,
+      "evidenceEligible": true
+    },
+    {
+      "language": "perl",
+      "asset": "tree-sitter-perl.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 4757625,
+      "evidenceEligible": true
+    },
+    {
+      "language": "yaml",
+      "asset": "tree-sitter-yaml.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 189255,
+      "evidenceEligible": true
+    },
+    {
+      "language": "c",
+      "asset": "tree-sitter-c.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 625918,
+      "evidenceEligible": true
+    },
+    {
+      "language": "cpp",
+      "asset": "tree-sitter-cpp.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 3434931,
+      "evidenceEligible": true
+    },
+    {
+      "language": "rust",
+      "asset": "tree-sitter-rust.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 1102547,
+      "evidenceEligible": true
+    },
+    {
+      "language": "go",
+      "asset": "tree-sitter-go.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 235957,
+      "evidenceEligible": true
+    },
+    {
+      "language": "java",
+      "asset": "tree-sitter-java.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 430239,
+      "evidenceEligible": true
+    },
+    {
+      "language": "kotlin",
+      "asset": "tree-sitter-kotlin.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 5837109,
+      "evidenceEligible": true
+    },
+    {
+      "language": "scala",
+      "asset": "tree-sitter-scala.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 3971488,
+      "evidenceEligible": true
+    },
+    {
+      "language": "python",
+      "asset": "tree-sitter-python.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 457883,
+      "evidenceEligible": true
+    },
+    {
+      "language": "ruby",
+      "asset": "tree-sitter-ruby.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 2106447,
+      "evidenceEligible": true
+    },
+    {
+      "language": "php",
+      "asset": "tree-sitter-php.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 1058041,
+      "evidenceEligible": true
+    },
+    {
+      "language": "lua",
+      "asset": "tree-sitter-lua.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 50917,
+      "evidenceEligible": true
+    },
+    {
+      "language": "elixir",
+      "asset": "tree-sitter-elixir.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 1617756,
+      "evidenceEligible": true
+    },
+    {
+      "language": "erlang",
+      "asset": "tree-sitter-erlang.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 401807,
+      "evidenceEligible": true
+    },
+    {
+      "language": "haskell",
+      "asset": "tree-sitter-haskell.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 3805902,
+      "evidenceEligible": true
+    },
+    {
+      "language": "clean",
+      "asset": "tree-sitter-clean.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 6535635,
+      "evidenceEligible": true
+    },
+    {
+      "language": "clojure",
+      "asset": "tree-sitter-clojure.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 91957,
+      "evidenceEligible": true
+    },
+    {
+      "language": "swift",
+      "asset": "tree-sitter-swift.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 3147876,
+      "evidenceEligible": true
+    },
+    {
+      "language": "dart",
+      "asset": "tree-sitter-dart.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 1158738,
+      "evidenceEligible": true
+    },
+    {
+      "language": "csharp",
+      "asset": "tree-sitter-c_sharp.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 5350581,
+      "evidenceEligible": true
+    },
+    {
+      "language": "r",
+      "asset": "tree-sitter-r.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 490899,
+      "evidenceEligible": true
+    },
+    {
+      "language": "sql",
+      "asset": "tree-sitter-sql.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 2440507,
+      "evidenceEligible": true
+    },
+    {
+      "language": "bash",
+      "asset": "tree-sitter-bash.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 1405135,
+      "evidenceEligible": true
+    },
+    {
+      "language": "objective-c",
+      "asset": "tree-sitter-objc.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 7708264,
+      "evidenceEligible": true
+    },
+    {
+      "language": "groovy",
+      "asset": "tree-sitter-groovy.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 1127515,
+      "evidenceEligible": true
+    },
+    {
+      "language": "vue",
+      "asset": "tree-sitter-vue.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 23895,
+      "evidenceEligible": true
+    },
+    {
+      "language": "hcl",
+      "asset": "tree-sitter-hcl.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 92478,
+      "evidenceEligible": true
+    },
+    {
+      "language": "terraform",
+      "asset": "tree-sitter-hcl.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 92478,
+      "evidenceEligible": true
+    },
+    {
+      "language": "graphql",
+      "asset": "tree-sitter-graphql.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 41223,
+      "evidenceEligible": true
+    },
+    {
+      "language": "zig",
+      "asset": "tree-sitter-zig.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 690754,
+      "evidenceEligible": true
+    },
+    {
+      "language": "fsharp",
+      "asset": "tree-sitter-fsharp.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 12613928,
+      "evidenceEligible": true
+    },
+    {
+      "language": "powershell",
+      "asset": "tree-sitter-powershell.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 983236,
+      "evidenceEligible": true
+    },
+    {
+      "language": "markdown",
+      "asset": "tree-sitter-markdown.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 421534,
+      "evidenceEligible": true
+    },
+    {
+      "language": "toml",
+      "asset": "tree-sitter-toml.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 25436,
+      "evidenceEligible": true
+    },
+    {
+      "language": "xml",
+      "asset": "tree-sitter-xml.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 50008,
+      "evidenceEligible": true
+    },
+    {
+      "language": "make",
+      "asset": "tree-sitter-make.wasm",
+      "present": true,
+      "valid": true,
+      "bytes": 148909,
+      "evidenceEligible": true
+    }
+  ],
+  "limitations": [
+    "This verifies shipped artifact presence/header and mapping declarations, not successful runtime instantiation for every grammar.",
+    "Engine runtime failure classification and fallback accounting remain open for W2 implementation work."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.386Z",
+    "contentSha256": "4d916db656298089940c67029ff2db7193073c877c843aecdfa2fbdc464f3bb0"
+  }
+}

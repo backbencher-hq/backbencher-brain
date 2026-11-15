@@ -1,0 +1,12 @@
+{
+  "issue": "M15.P3",
+  "code": "P3",
+  "tool": "bb_patterns",
+  "title": "cross-file orphan + rules correctness",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:23:16.129Z"
+}

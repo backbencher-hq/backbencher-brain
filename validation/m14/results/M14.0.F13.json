@@ -1,0 +1,45 @@
+{
+  "checks": [
+    {
+      "description": "every published include name is a single token",
+      "id": "V1-no-whitespace-name",
+      "status": "pass"
+    },
+    {
+      "description": "every name appears as <name> or \"name\" in its own directive",
+      "id": "V2-name-is-written",
+      "status": "pass"
+    },
+    {
+      "description": "isSystemInclude/isSystem agree with the angle-vs-quoted form on every site",
+      "id": "V3-systemness-from-written-form",
+      "status": "pass"
+    },
+    {
+      "description": "pre-fix extraction re-derived from the same directives: V1 would flag 304 names (304 comment-glued), V3 would flag 998 system-ness lies — the gate can fail on the defect it was written for",
+      "id": "V4-selftest-prefix-is-caught",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "9f6ea4cb0228a65c36013ffe1274ced2a187a911",
+  "committedAt": "2026-09-23T14:53:13-04:00",
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F13",
+  "layers": [
+    "corpus",
+    "differential",
+    "mutation"
+  ],
+  "limitations": [
+    "sample: up to 40 files per lane from the four pinned corpora (jq, sqlite, fmt, nlohmann-json); a full-corpus sweep is the A/B in script/m60/probe-cpp-include-names.ts",
+    "V1's invariant (a header name contains no whitespace) is a language fact, not a parser fact — a lane that publishes a comment as part of a name violates it in any C/C++ file",
+    "the differential oracle downstream of this lane derives its include truth from the same extraction, so F5 could not see this class; this gate is deliberately independent of the analyzer's rules",
+    "the pre-fix names in V4 are re-derived from the directive lines, so the self-test measures the real defect shape rather than a synthetic string"
+  ],
+  "regeneratedAt": "2026-09-23T19:39:09.906Z",
+  "regeneratedAtCommit": "9f6ea4cb0228a65c36013ffe1274ced2a187a911",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "C/C++ include names are the source's own name"
+}

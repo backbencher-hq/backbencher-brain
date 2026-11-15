@@ -1,0 +1,139 @@
+{
+  "tier": "T2-COPY",
+  "projectDir": ".",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2b",
+  "route": "handler (source door): createToolHandlers().bb_patterns — the same handler src/mcp/server.ts calls",
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2b",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "protocol": "warm: one excluded warmup per shape, then five measured calls; p50/p95 over the five; BB_NO_AUTO_REFRESH=1",
+  "indexBefore": {
+    "db": {
+      "bytes": 3848355840,
+      "mtime": "2026-11-03T16:34:19.895Z"
+    },
+    "wal": {
+      "bytes": 209629752,
+      "mtime": "2026-11-03T16:34:19.364Z"
+    },
+    "shm": {
+      "bytes": 425984,
+      "mtime": "2026-11-03T16:40:58.344Z"
+    }
+  },
+  "shapes": [
+    {
+      "shape": "default-all",
+      "args": {},
+      "warmupMs": 20392.4,
+      "warmupChars": 2141,
+      "runs": [
+        {
+          "ms": 7959.24,
+          "cpuMs": 8143,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 10320.74,
+          "cpuMs": 10563,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 8594.3,
+          "cpuMs": 8817,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 9343.25,
+          "cpuMs": 9533,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 10141,
+          "cpuMs": 9577,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        }
+      ],
+      "p50Ms": 9343.25,
+      "p95Ms": 10320.74,
+      "maxMs": 10320.74,
+      "minMs": 7959.24,
+      "medianOfRuns": [
+        7959.24,
+        8594.3,
+        9343.25,
+        10141,
+        10320.74
+      ],
+      "isError": false
+    }
+  ],
+  "generatedAt": "2026-11-03T16:41:29.837Z",
+  "indexAfter": {
+    "db": {
+      "bytes": 3848355840,
+      "mtime": "2026-11-03T16:34:19.895Z"
+    },
+    "wal": {
+      "bytes": 209629752,
+      "mtime": "2026-11-03T16:34:19.364Z"
+    },
+    "shm": {
+      "bytes": 425984,
+      "mtime": "2026-11-03T16:41:30.090Z"
+    }
+  },
+  "readMovedIndex": false,
+  "shmMoved": true,
+  "cpuMs": {
+    "default-all": [
+      8143,
+      10563,
+      8817,
+      9533,
+      9577
+    ]
+  }
+}

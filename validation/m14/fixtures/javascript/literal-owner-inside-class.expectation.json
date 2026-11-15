@@ -1,0 +1,112 @@
+{
+  "fixtureId": "javascript/literal-owner-inside-class",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JD3-CLOSURE regression. The analyzer's `method_definition` case read `scopeOwnerName(scopeStack) ?? containerOwnerName(node)`, and `scopeOwnerName` is a CLASS-SCOPE lookup — so inside a class body it answered for every object literal nested there, and the same construct gave two answers depending on where it was written: `class C { m() { const api = { run(){} } } }` published `contains C -> run` while the module-scope `const api = { run(){} }` published `contains api -> run`. Measured consequence: the 2 rows published for `svelte/src/legacy/legacy-client.js` (`new Proxy({}, { get(){}, has(){} })`) registered as UNEXPLAINED fabrications at confidence 1.0 on a 600-file svelte draw, because the oracle's nameability rule declines a literal it cannot bind. Three shapes are pinned so the fix cannot over-reach: a NAMED literal inside a class takes the literal's binding; an UNNAMED literal inside a class takes NO owner at all — a call argument names nothing, and a class is not a better answer than silence, which is what the module-scope path already did; and a real class member still belongs to its class.",
+  "expectSymbols": [
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "configure",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "onStart",
+      "kind": "method",
+      "ownerName": "handlers"
+    },
+    {
+      "name": "onStop",
+      "kind": "method",
+      "ownerName": "handlers"
+    },
+    {
+      "name": "makeProxy",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "get",
+      "kind": "method",
+      "note": "a literal with no binding: the symbol survives, its owner is the qualified carrier path and it gets NO containment edge"
+    },
+    {
+      "name": "reset",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "registry",
+      "kind": "constant"
+    },
+    {
+      "name": "register",
+      "kind": "method",
+      "ownerName": "registry"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "handlers",
+      "target": "onStart",
+      "note": "the literal's binding names its member, not the enclosing class"
+    },
+    {
+      "type": "contains",
+      "from": "handlers",
+      "target": "onStop"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "configure",
+      "note": "a real class member is unaffected"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "reset"
+    },
+    {
+      "type": "contains",
+      "from": "registry",
+      "target": "register",
+      "note": "the module-scope shape, which was already right and must stay right"
+    },
+    {
+      "type": "uses",
+      "from": "configure",
+      "target": "configure\u0000handlers"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "onStart",
+      "note": "PRE-FIX: the class scope pre-empted the literal's binding, and a binding written in plain sight was discarded"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "onStop",
+      "note": "PRE-FIX, the same row"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "get",
+      "note": "a `new Proxy({}, {…})` argument names nothing, so the enclosing class is not a better owner than silence — this row is the 1.0-confidence fabrication the oracle declines"
+    },
+    {
+      "type": "contains",
+      "from": "Service.makeProxy",
+      "target": "get",
+      "note": "and neither is the qualified carrier path"
+    }
+  ]
+}

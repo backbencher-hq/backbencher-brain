@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_doc",
+  "generatedAt": "2026-11-01T18:45:20.940Z",
+  "env": {
+    "BB_DATA_DIR": "validation/tools/bb_doc/bbdata",
+    "BB_NO_AUTO_REFRESH": "(unset)"
+  },
+  "fixture": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_doc/work/refresh-qJhLqf",
+    "projectId": "03691b4b58d76cc32a35884ecec13d976f7da5d6",
+    "files": 34
+  },
+  "observations": [
+    {
+      "id": "R1.fixture-is-stale-before",
+      "ok": true,
+      "detail": "indexed=9cbaeefb9a1646cb disk=542bcb68e9ad7a0f"
+    },
+    {
+      "id": "R1.autoRefresh-declared",
+      "ok": true,
+      "detail": "auto-refreshed 1 file in 4298ms (derived pass: bounded)"
+    },
+    {
+      "id": "R1.answer-not-built-from-stale-rows",
+      "ok": false,
+      "detail": "before=[object Object] after=[object Object]"
+    },
+    {
+      "id": "R1.file-reindexed-on-disk",
+      "ok": true,
+      "detail": "hash=542bcb68e9ad7a0f"
+    },
+    {
+      "id": "R1.freshness-envelope-clean-after-repair",
+      "ok": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "R1.sources-no-longer-stale",
+      "ok": true,
+      "detail": "[\"symbol:fresh\",\"relationship:unknown\",\"relationship:unknown\",\"relationship:unknown\"]"
+    },
+    {
+      "id": "R2.decline-declared-with-reason",
+      "ok": true,
+      "detail": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+    },
+    {
+      "id": "R2.stale-envelope-present",
+      "ok": true,
+      "detail": "{\"fresh\":1,\"stale\":1,\"missing\":0,\"staleRatio\":0.5,\"mode\":\"complete\",\"remediation\":\"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"}"
+    },
+    {
+      "id": "R2.answered-from-existing-data",
+      "ok": true,
+      "detail": "[\"symbol:stale\",\"relationship:unknown\",\"relationship:unknown\",\"relationship:unknown\"]"
+    },
+    {
+      "id": "R2.markdown-declines-refresh",
+      "ok": true,
+      "detail": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+    },
+    {
+      "id": "R2.markdown-staleness-footer-wording",
+      "ok": true,
+      "detail": "1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the projec"
+    },
+    {
+      "id": "R2.markdown-footer-names-doc-citations-not-findings",
+      "ok": false,
+      "detail": "1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual"
+    },
+    {
+      "id": "R2.stale-count-matches-emitted",
+      "ok": false,
+      "detail": "quality.references.stale=2 emittedStale=1 emittedCitations=4"
+    },
+    {
+      "id": "R3.deleted-file-repair-declared",
+      "ok": true,
+      "detail": "auto-refreshed 1 file in 3754ms (derived pass: bounded)"
+    },
+    {
+      "id": "R3.deleted-file-row-removed",
+      "ok": false,
+      "detail": "null"
+    },
+    {
+      "id": "R3.no-missing-citation-survives",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "id": "R4.file-budget-declined",
+      "ok": false,
+      "detail": "auto-refreshed 2 files in 3831ms (derived pass: bounded)"
+    },
+    {
+      "id": "R4.declined-answer-cites-stale",
+      "ok": true,
+      "detail": "staleQuality=56 emitted=10"
+    },
+    {
+      "id": "R5.file-mode-envelope-remediation-scope",
+      "ok": true,
+      "detail": "kind-wording=\"\""
+    },
+    {
+      "id": "R5.file-mode-cites-one-file",
+      "ok": true,
+      "detail": "fileCitations=3 envelope={\"fresh\":1,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "R6.quality-stale-count-is-collected-not-emitted",
+      "ok": true,
+      "detail": "quality.references.stale=56 emittedStale=0 emittedCitations=10"
+    },
+    {
+      "id": "R6.quality-stale-exceeds-emitted",
+      "ok": false,
+      "detail": "quality=56 emitted=0"
+    },
+    {
+      "id": "R6.passed-not-blocked-by-stale",
+      "ok": true,
+      "detail": "passed=true freshnessPassed=false stale=56"
+    }
+  ],
+  "summary": {
+    "total": 23,
+    "failed": 6,
+    "failing": [
+      "R1.answer-not-built-from-stale-rows",
+      "R2.markdown-footer-names-doc-citations-not-findings",
+      "R2.stale-count-matches-emitted",
+      "R3.deleted-file-row-removed",
+      "R4.file-budget-declined",
+      "R6.quality-stale-exceeds-emitted"
+    ]
+  }
+}

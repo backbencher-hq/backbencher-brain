@@ -1,0 +1,126 @@
+{
+  "fixtureId": "r/F03-r6",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "R6 is the object system current tidyverse code uses, and it is 100% a CONVENTION: `R6::R6Class(\"Widget\", public = list(...))` is an ordinary call whose first argument is a STRING, so no node type in the grammar means \"class declaration\". A grammar inventory over R would rule every R6 construct absent, which is how json's `exports` ruling was wrong. The class is named in the string and the members are the NAMED entries of a `list(...)`, which is why `size` and `token` are properties while `initialize`/`grow`/`log`/`doubled` are methods. Two asymmetries are pinned. (1) `private$log(\"init\")` is a CALL and its target is the QUALIFIED `private$log` rather than `log` -- the analyzer's own rule for a call whose receiver is nameable, so the edge says which function was called instead of asserting a bare `log` that three symbols could satisfy. (2) `self$size <- self$size + by` is a WRITE followed by a READ, so exactly ONE `uses grow -> size` edge exists and `uses grow -> private` must not: `private` is the receiver of a call, and publishing it as a used member would put a name in the graph that no R6 class declares.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "size",
+      "kind": "property",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "initialize",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "grow",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "log",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "token",
+      "kind": "property",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "doubled",
+      "kind": "method",
+      "ownerName": "Widget"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Widget",
+      "target": "BaseWidget",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "size",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "token",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "log",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "doubled",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "initialize",
+      "target": "private$log",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "grow",
+      "target": "invisible",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "uses",
+      "from": "grow",
+      "target": "size",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "uses",
+      "from": "doubled",
+      "target": "size",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "self",
+      "kind": "variable"
+    },
+    {
+      "name": "private",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "grow",
+      "target": "private"
+    },
+    {
+      "type": "uses",
+      "from": "initialize",
+      "target": "log"
+    },
+    {
+      "type": "calls",
+      "from": "grow",
+      "target": "private$log"
+    }
+  ]
+}

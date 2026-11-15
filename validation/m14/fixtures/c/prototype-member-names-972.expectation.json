@@ -1,0 +1,71 @@
+{
+  "fixtureId": "c/prototype-member-names-972",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#972. The analyzer's four name maps (structs, globalVars, unions, enums) are keyed by arbitrary C identifiers but were plain `{}`, so any lookup of an Object.prototype member name returned a truthy INHERITED value -- `structs['constructor']` is `Object`, `structs['toString']` is a function. `isResolvableUseTarget` ends in a plain truthiness test over all four, so such a name passed the resolvability gate and was published as a `uses` edge whether or not anything declared it. Measured at zig/lib/libc/mingw/winpthreads/thread.c:92, where the gcc attribute token `constructor` (declared nowhere) produced `uses ctor -> constructor` -- a dangling edge to a name with no symbol, the class #962 exists to remove. `constructor` is the rare name; `toString` and `valueOf` are ordinary C identifiers, so this is a live class. Fixed with Object.create(null) at the four DECLARATIONS rather than a guard at each of the 23 lookup sites, which also closes the write hazard: a struct named `__proto__` would otherwise assign the prototype instead of adding a key. The controls exist so that a fix which made the maps refuse to answer anything would FAIL this fixture rather than pass it.",
+  "expectSymbols": [
+    { "name": "toString", "kind": "function" },
+    { "name": "valueOf", "kind": "function" },
+    { "name": "real_global", "kind": "variable" },
+    { "name": "real_function", "kind": "function" },
+    { "name": "attributed_init", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "controls",
+      "target": "toString",
+      "comment": "CONTROL: a real call of a function whose name is an Object.prototype member. Call resolution reads the symbol table, not these maps, so it must be unaffected by #972."
+    },
+    {
+      "type": "calls",
+      "from": "controls",
+      "target": "real_function",
+      "comment": "CONTROL: an ordinary call."
+    },
+    {
+      "type": "uses",
+      "from": "controls",
+      "target": "real_global",
+      "comment": "CONTROL: an ordinary read of a file-scope variable. This edge depends on globalVars answering truthfully, so it is the direct inverse of the defect."
+    },
+    {
+      "type": "uses",
+      "from": "attributed_init",
+      "target": "real_global",
+      "comment": "CONTROL: an assignment to a file-scope variable from inside a function whose HEADING carries a gcc attribute -- the corpus shape, with the attribute token now correctly ignored rather than the read beside it."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "constructor",
+      "comment": "THE defect #972 fixes. `constructor` is a gcc attribute token, declared nowhere, and resolved only because structs['constructor'] is Object."
+    },
+    {
+      "type": "uses",
+      "target": "toString",
+      "comment": "Resolved only because the inherited member is truthy. There IS a function named toString here, so this row would have looked plausible -- which is why the controls above matter."
+    },
+    {
+      "type": "uses",
+      "target": "valueOf",
+      "comment": "Same, via globalVars['valueOf']."
+    },
+    {
+      "type": "uses",
+      "target": "hasOwnProperty",
+      "comment": "Same."
+    },
+    {
+      "type": "uses",
+      "target": "propertyIsEnumerable",
+      "comment": "Same."
+    },
+    {
+      "type": "uses",
+      "target": "isPrototypeOf",
+      "comment": "Same."
+    }
+  ]
+}

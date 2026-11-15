@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_extends_census",
+  "at": "2026-10-03T20:02:42.226Z",
+  "commit": "4e79325b279953ae079800c205c0ad319d4e6e95",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "filesAdmitted": 3250
+  },
+  "totalExtendsEdges": 171,
+  "byKind": [
+    {
+      "kind": "lua_metatable",
+      "occurrences": 169,
+      "files": 130,
+      "rows": [
+        "kong/kong/api/api_helpers.lua:171: out -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/cache/init.lua:162: self -> mt  conf=1 ev=structural",
+        "kong/kong/cluster_events/init.lua:144: self -> mt  conf=1 ev=structural",
+        "kong/kong/cluster_events/strategies/postgres.lua:75: self -> mt  conf=1 ev=structural",
+        "kong/kong/clustering/control_plane.lua:111: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/data_plane.lua:73: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/init.lua:42: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/callbacks.lua:20: self.capabilities_list -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/callbacks.lua:22: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/concentrator.lua:75: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/future.lua:32: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/manager.lua:87: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/queue.lua:29: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/services/sync/hooks.lua:23: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/rpc/socket.lua:56: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/services/sync/init.lua:29: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/services/sync/rpc.lua:42: self -> _MT  conf=1 ev=structural",
+        "kong/kong/clustering/services/sync/strategies/postgres.lua:24: self -> _MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:399: vaults -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:712: active_filters -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:775: directives -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:839: plugins -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:934: enabled_headers -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:951: enabled_headers_upstream -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/conf_loader/init.lua:1083: pluginservers -> conf_constants._NOP_TOSTRING_MT  conf=1 ev=structural",
+        "kong/kong/db/dao/certificates.lua:40: name_list -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/db/dao/init.lua:967: fk_methods -> DAO  conf=1 ev=structural",
+        "kong/kong/db/dao/init.lua:1429: rows -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/db/dao/init.lua:1443: entities -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/db/dao/plugins.lua:243: strategy -> mt  conf=1 ev=structural",
+        "kong/kong/db/dao/tags.lua:16: rows -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/db/declarative/init.lua:47: self -> _MT  conf=1 ev=structural",
+        "kong/kong/db/errors.lua:165: err_t -> _err_mt  conf=1 ev=structural",
+        "kong/kong/db/errors.lua:196: self -> _M  conf=1 ev=structural",
+        "kong/kong/db/init.lua:123: self -> DB  conf=1 ev=structural",
+        "kong/kong/db/migrations/state.lua:303: schema_state -> State  conf=1 ev=structural",
+        "kong/kong/db/schema/init.lua:626: arg.if_match -> arg_mt  conf=1 ev=structural",
+        "kong/kong/db/schema/init.lua:634: arg.else_match -> arg_mt  conf=1 ev=structural",
+        "kong/kong/db/schema/init.lua:1045: copy -> cjson.array_mt  conf=1 ev=structural",
+        "kong/kong/db/schema/init.lua:1591: array -> cjson.array_mt  conf=1 ev=structural"
+      ]
+    },
+    {
+      "kind": "lua_factory_supertype",
+      "occurrences": 2,
+      "files": 1,
+      "rows": [
+        "luarocks/vendor/argparse.lua:351: Option -> Argument  conf=0.95 ev=usage_contextual",
+        "luarocks/vendor/argparse.lua:302: Command -> Parser  conf=0.95 ev=usage_contextual"
+      ]
+    }
+  ],
+  "selfEdges": {
+    "occurrences": 0,
+    "rows": []
+  },
+  "note": "LUA-51. `lua_metatable` is the pre-existing setmetatable reader; `lua_factory_supertype` is this pass's addition and is the only one that can carry a 0.95 confidence."
+}

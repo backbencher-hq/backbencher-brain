@@ -1,0 +1,10 @@
+# The negative twin: the SAME key names, one level down. A suffix comparison matches
+# these and claims three frameworks for a file that is none of them; a document-
+# relative path lookup does not.
+nested:
+  version: 2
+  services: {}
+  jobs: {}
+  on: push
+  stages: []
+  uses: something

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "javascript/export-alias",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J6 fix (TS parity): the PUBLIC name is the alias (`export { alpha as beta }` exports beta) — first-identifier lookup recorded the local name importers cannot use.",
+  "expectSymbols": [
+    { "name": "alpha" }
+  ],
+  "expectExports": [
+    { "name": "beta" }
+  ]
+}

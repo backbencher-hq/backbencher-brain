@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Embedded module export</title>
+  <!-- LAYER-BOUNDARY PIN / 2026-10-18.
+
+       This fixture exists for ONE property: an HTML document whose embedded
+       `<script type="module">` EXPORTS a binding must publish that `exports` edge,
+       tagged as coming from the DELEGATED layer (`htmlEmbedded` / `embeddedLang`),
+       not from html's own walk.
+
+       WHY IT EXISTS: html's contract row requires `exports` (the kind is genuinely
+       emitted, measured), and the html LEVEL forbids it in three other fixtures
+       (`forbidRelationships: exports`). Those two facts are NOT in conflict — they
+       describe different LAYERS of one file. This fixture is the POSITIVE side: it
+       pins the delegated export so the contract has a witness for the kind it
+       requires, and its rows carry the embedded origin markers so an auditor can
+       tell the layer apart.
+
+       NEGATIVE CONTROL (run, observed to FAIL): removing the `exports` merge from
+       the seam makes the `exports` pin here fail — see the `comment` on the pin.
+  -->
+</head>
+<body>
+  <main id="app">
+    <p>embedded module export</p>
+  </main>
+  <script type="module">
+    export const exportedThing = 41
+    export function exportedHelper() { return exportedThing + 1 }
+    const localOnly = exportedHelper()
+    globalThis.__localOnly = localOnly
+  </script>
+</body>
+</html>

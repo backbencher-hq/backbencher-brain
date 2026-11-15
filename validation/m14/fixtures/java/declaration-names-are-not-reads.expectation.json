@@ -1,0 +1,22 @@
+{
+  "fixtureId": "java/declaration-names-are-not-reads",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "GATE A OF THE BARE-READ RULE (a name is not a read unless it resolves to a declared member of the enclosing type AND is not a declaration's own name). Two declaration positions were MISSING from that gate's parent-type list, and probe on the pinned grammar showed both fabricating a read: a COMPACT CONSTRUCTOR's own name `R { ... }` (JLS 8.10.4) emitted `uses R -> R`, and an ANNOTATION TYPE ELEMENT's declaration `List<String> list();` (JLS 9.6.1) emitted `uses Ann -> list`. Both are names being DECLARED, not members being read, and GATE A let them through because the member map carried the same name. Authored from Java semantics before the fix. The positive row pins that the fix did not silence legitimate reads: the compact constructor body's `x` (the record component read on line 6) must still emit. The forbids are the two fabrications, one per fixed position.",
+  "expectSymbols": [
+    { "name": "DeclarationNamesAreNotReads", "kind": "class" },
+    { "name": "R", "kind": "class" },
+    { "name": "Ann" },
+    { "name": "list" },
+    { "name": "value" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "R", "target": "x", "meta.isBareRead": true, "line_number": 6 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "R", "target": "R", "comment": "a compact constructor's own name is its identity, not a read" },
+    { "type": "uses", "source": "Ann", "target": "list", "comment": "an annotation type element DECLARES `list`; the declaration's name is not a read of it" },
+    { "type": "uses", "source": "Ann", "target": "value", "comment": "same rule for the second element declaration" },
+    { "type": "uses", "source": "Ann", "target": "Ann", "comment": "the annotation type's own name is never a read" }
+  ]
+}

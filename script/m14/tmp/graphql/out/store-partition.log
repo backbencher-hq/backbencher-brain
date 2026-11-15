@@ -1,0 +1,94 @@
+population: 78293 relationships, 18789 target-unresolved, 3772 source-unresolved
+
+per relationship_type, the partition of its TARGET-UNRESOLVED edges:
+
+type            file-level  imports-path imports-nonpa  spec-builtin spec-introspe directive-und        window        absent   other-shape   TOTAL
+contains                 0             0             0             0             0             0             0            36             0      36
+imports                  0            64             2             0             0             0             0             0             0      66
+references               0             0             0         13041             0             0             0             7             0   13048
+uses                     0             0             0           192           776           124          1465          3017            65    5639
+ALL                      0            64             2         13233           776           124          1465          3060            65   18789
+
+sum of categories 18789 vs target-unresolved 18789: EXACT
+
+source-unresolved, by type:
+  exports        3307
+  uses            399
+  imports          66
+
+examples per category:
+  contains/absent
+    gql-genqlient Query.me n=1
+    gql-gqlgen RecursiveInputSlice.self n=2
+    gql-graphql-mesh Query.me n=3
+    gql-graphql-platform Query.me n=1
+    gql-graphql-platform Query.null n=1
+    gql-graphql-tools Viewer.me n=1
+  imports/imports-nonpath
+    gql-graphql-tools @b-schema n=1
+    gql-graphql-tools shared n=1
+  imports/imports-path
+    gql-graphql-eslint ./fragments/bar-fragment.gql n=1
+    gql-graphql-eslint ./user-fields.graphql n=1
+    gql-graphql-eslint ./fragments/foo-fragment.gql n=1
+    gql-graphql-tools ./1.model.graphql n=1
+    gql-graphql-tools ./10.model.graphql n=1
+    gql-graphql-tools ./2.model.graphql n=1
+  imports/imports-path-nonexistent
+    gql-graphql-tools a.graphql -> @b-schema n=1
+    gql-graphql-tools a.graphql -> shared n=1
+  references/absent
+    gql-graphql-mesh ApiPopulation n=2
+    gql-graphql-tools Shared n=1
+    hasura-engine AuthorOrderBy n=1
+    hasura-engine InstitutionInput n=1
+    hasura-engine NameQuery n=2
+  references/spec-builtin
+    gql-genqlient Boolean n=461
+    gql-genqlient Float n=9
+    gql-genqlient ID n=416
+    gql-genqlient Int n=750
+    gql-genqlient String n=1786
+    gql-gqlgen Boolean n=76
+  uses/absent
+    gql-graphql-eslint Bar n=1
+    gql-graphql-eslint Foo n=2
+    gql-graphql-eslint Picture n=1
+    gql-graphql-eslint Picture.height n=1
+    gql-graphql-eslint Picture.uri n=1
+    gql-graphql-eslint Picture.width n=1
+  uses/directive-undeclared
+    gql-graphql-mesh @composeDirective n=3
+    gql-graphql-mesh @external n=12
+    gql-graphql-mesh @key n=14
+    gql-graphql-mesh @live n=1
+    gql-graphql-mesh @md n=58
+    gql-graphql-mesh @provides n=2
+  uses/other-shape
+    gql-graphql-platform $any n=1
+    gql-graphql-platform $base64String n=1
+    gql-graphql-platform $boolean n=1
+    gql-graphql-platform $byte n=1
+    gql-graphql-platform $date n=1
+    gql-graphql-platform $dateTime n=1
+  uses/spec-builtin
+    gql-genqlient @deprecated n=16
+    gql-gqlgen @deprecated n=5
+    gql-graphql-mesh @deprecated n=1
+    gql-graphql-mesh @specifiedBy n=1
+    gql-graphql-mesh Boolean n=10
+    gql-graphql-mesh ID n=1
+  uses/spec-introspection
+    gql-graphql-mesh __typename n=1
+    gql-graphql-platform __typename n=71
+    gql-graphql-platform args n=4
+    gql-graphql-platform deprecationReason n=4
+    gql-graphql-platform directives n=2
+    gql-graphql-platform isDeprecated n=4
+  uses/window
+    gql-graphql-eslint profilePicture n=1
+    gql-graphql-eslint foo n=1
+    gql-graphql-eslint foo n=1
+    gql-graphql-eslint foo n=1
+    gql-graphql-eslint a n=1
+    gql-graphql-mesh AddIntegerResult n=1

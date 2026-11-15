@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/prototype-pattern",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Classic prototype pattern: LegacyWidget.prototype.render = function... must attribute render/transform to LegacyWidget as methods with contains edges AND resolve transform->render call.",
+  "expectSymbols": [
+    { "name": "LegacyWidget" },
+    { "name": "render" },
+    { "name": "transform" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "LegacyWidget", "targetEndsWith": "render" },
+    { "type": "calls", "from": "transform", "targetEndsWith": "render" }
+  ]
+}

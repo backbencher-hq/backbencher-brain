@@ -19,7 +19,7 @@ const fixtureFiles = readdirSync("validation/m12/fixtures/hcl")
   .filter((file) => /\.(tf|tfvars|hcl)$/i.test(file))
   .sort()
 
-const corpus = "$HOME/fixtures/repositories/terraform"
+const corpus = "/home/ishaq2321/bb_tests/repositories/terraform"
 const revision = execFileSync("git", ["-C", corpus, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
 const corpusFiles = execFileSync("git", ["-C", corpus, "ls-files", "*.tf", "*.tfvars", "*.hcl"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()

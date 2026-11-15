@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/wrapped-new-858",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "#858. The pinned tsx/typescript grammar does not build a new_expression when the constructor is written on the NEXT line: the statement closes at the bare `new` (an identifier(\"new\")) and the constructor call becomes the next statement's call_expression. Pre-fix the instantiation was lost and a `calls` edge was fabricated in its place. The contract this fixture pins is EQUIVALENCE: the wrapped form must emit the same edge shape as the unwrapped control two lines above it (instantiates + the shared references edge + the argument subtree still walked), not a similar-looking one. Lines are read off the fixture's own text: the control's `new Engine(1)` is on 14, the wrapped `Router(prefix())` is on 16 while its `new` keyword is on 15 — so the near-miss 'name the keyword's line' answer is a different number, and the forbid list names it. Scope note: the `references` edge to a constructed class name is pre-existing shared behaviour (the unwrapped control emits it too, and the oracle derives only `instantiates` for new_expression); it is pinned here for the equivalence it participates in, not as an endorsement — whether it belongs at all is a separate question, filed rather than changed inside this fix.",
+  "expectSymbols": [
+    { "name": "Engine", "kind": "class" },
+    { "name": "Router", "kind": "class" },
+    { "name": "prefix", "kind": "function" },
+    { "name": "build", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "build", "target": "Engine", "line_number": 14, "note": "unwrapped control: `const direct = new Engine(1)` on 14" },
+    { "type": "instantiates", "from": "build", "target": "Router", "line_number": 16, "note": "the wrapped `new`: the CONSTRUCTOR's own line (16), not the `new` keyword's line (15)" },
+    { "type": "calls", "from": "build", "target": "prefix", "line_number": 16, "note": "the wrapped call's ARGUMENTS are still walked — skipping an edge must never skip the subtree" },
+    { "type": "references", "from": "build", "target": "Engine", "line_number": 14, "note": "the shared constructed-class-name behaviour, seen here on the control" },
+    { "type": "references", "from": "build", "target": "Router", "line_number": 16, "note": "and the same shape on the wrapped form — this pair is the equivalence" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "build", "target": "Router", "note": "pre-fix fabrication: the wrapped constructor was emitted as a method call" },
+    { "type": "instantiates", "from": "build", "target": "Router", "line_number": 15, "note": "near-miss: naming the `new` keyword's line instead of the constructor's" },
+    { "type": "instantiates", "from": "build", "target": "Router", "line_number": null, "note": "pre-fix: the instantiation did not exist at all (the payload cell that went silent)" }
+  ]
+}

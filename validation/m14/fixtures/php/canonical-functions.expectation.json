@@ -1,0 +1,23 @@
+{
+  "fixtureId": "php/canonical-functions",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PHP namespace/import rules: function aliases have their own table, qualified calls use namespace aliases, only unqualified unimported calls fall back globally, and builtin leaf names can name project functions. Native execution and stored endpoint checks are in verify-php-function-identities.mts.",
+  "expectNoParseErrors": true,
+  "expectRelationships": [
+    {"source":"importedCall","type":"calls","target":"Imported","meta.phpFunctionReference":true,"meta.functionCandidates":["library\\task"]},
+    {"source":"groupedCall","type":"calls","target":"Grouped","meta.functionCandidates":["library\\task"]},
+    {"source":"mixedCall","type":"calls","target":"Mixed","meta.functionCandidates":["library\\task"]},
+    {"source":"prefixCall","type":"calls","target":"Task","meta.functionCandidates":["library\\task"]},
+    {"source":"relativeCall","type":"calls","target":"localTask","meta.functionCandidates":["app\\localtask"]},
+    {"source":"globalFallback","type":"calls","target":"externalFunction","meta.functionCandidates":["app\\externalfunction","externalfunction"]},
+    {"source":"qualifiedCount","type":"calls","target":"count","meta.functionCandidates":["library\\count"]},
+    {"source":"aliasCount","type":"calls","target":"CustomCount","meta.functionCandidates":["library\\count"]},
+    {"source":"possibleShadow","type":"calls","target":"count","meta.functionCandidates":["app\\count","count"]},
+    {"source":"tearOff","type":"uses","target":"Imported","meta.isTearOff":true,"meta.functionCandidates":["library\\task"]}
+  ],
+  "forbidRelationships": [
+    {"source":"actualBuiltin","type":"calls","target":"CoUnT"},
+    {"source":"tearOff","type":"calls","target":"Imported"}
+  ]
+}

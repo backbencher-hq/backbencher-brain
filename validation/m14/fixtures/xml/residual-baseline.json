@@ -1,0 +1,121 @@
+{
+  "instrument": "xml residual baseline — which population the board's residual is measured on, and what the REAL store does with the largest bucket",
+  "at": "2026-10-09T23:43:01-04:00",
+  "branch": "analyzers/ontology-laptop-b",
+  "generatedBy": "recorded from the instruments named in each `evidence` field. Every number below is an instrument's own output or a committed artifact this lane already owns; nothing here is inferred from reading source. The two source citations in `mechanism` fields name the rule an instrument's output is explained by, which is a different kind of statement and is labelled as such.",
+  "question": "the board reads `xml 93.9% residual — 28477 ambiguous + 332 unresolved of 30676 edges`. Which population is that, and is the largest bucket a defect in the graph?",
+  "findingA_the_board_population_is_18_percent_of_the_lane": {
+    "claim": "The residual the board carries for xml is measured over 2,081 `.xml` files, while this lane's declared corpus is 11,552 files. The instrument admits one extension; the language router maps six to `xml`. The mix is not a detail: the excluded files carry 84% of the lane's `contains` edges and 97% of its `references`.",
+    "boardInstrument": {
+      "script": "script/m14/incoming-gate.ts",
+      "argv": ["xml", "xml", "0"],
+      "admission": "admitByExtension — a path ending `.xml`",
+      "corpusTotal": 2081,
+      "evidence": "live probe, no cap: `npx tsx script/m14/incoming-gate.ts xml xml 50 --json` prints population.corpusTotal = 2081, sampled 50, repos 51, degraded 0, qualifiedNameAliases 4407"
+    },
+    "laneCorpus": {
+      "instrument": "validation/m14/fixtures/xml/coverage-census.mts",
+      "artifact": "validation/m14/fixtures/xml/coverage-census.json",
+      "admission": "every git-tracked file <= 512 KiB with detectLanguageFromPath(abs, text) === 'xml'",
+      "admitted": 11552,
+      "evidence": "coverage-census.json corpus.discovered = 11552, corpus.walked = 11552, sampling = 'every admitted file'"
+    },
+    "router": {
+      "instrument": "src/ast/language-detection.ts detectLanguageFromPath",
+      "measured": {
+        "a/b/c.xml": "xml",
+        "a/b/c.xsd": "xml",
+        "a/b/c.xsl": "xml",
+        "a/b/c.svg": "xml",
+        "a/b/c.dtd": "xml",
+        "a/b/c.rng": "xml",
+        "a/b/c.ent": null,
+        "a/b/c.mod": null,
+        "a/b/c.nvdl": null
+      },
+      "evidence": "live run over the router with an SVG body: `bun .tmp-xml/detect.mts`. Five extensions the router calls xml are not `.xml`."
+    },
+    "coverageOfTheBoardPopulation": {
+      "files": { "board": 2081, "lane": 11552, "share": 0.1801 },
+      "contains": { "board": 30205, "lane": 188224, "share": 0.1605 },
+      "references": { "board": 335, "lane": 11108, "share": 0.0302 },
+      "imports": { "board": 136, "lane": 468, "share": 0.2906 },
+      "laneEdgesTotal": 201634,
+      "evidence": "board column from the live whole-population residual table (script/m14/residual-gate.ts --lane xml, container of the gate above); lane column from coverage-census.json emitted[]"
+    },
+    "precedentInTheInstrumentItself": "script/m14/incoming-gate.ts LANES_B already records this exact defect for another lane and its fix. yaml is `yaml,yml` with the comment: `BOTH SPELLINGS, because one language does not become a different population by being spelled .yml. Measured on ansible - 13 .yaml files against 2,068 .yml, 2,081 combined - so the --all table was measuring 0.6% of the lane's files and reporting the 13-file verdict as the lane's.` xml is still `xml: \"xml\"`.",
+    "fixNotOwnedByThisLane": [
+      "script/m14/incoming-gate.ts LANES_B: xml: \"xml\" -> \"xml,xsd,xsl,svg,dtd,rng\"",
+      "script/m14/residual-gate.ts runLane(): the same map, xml: \"xml\""
+    ],
+    "whatThisMeansForTheBar": "Until that one-line change lands, no xml measurement this lane reports through the board's residual can cover the corpus the lane's own spec declares. Every before/after in this lane's work names its file population explicitly for that reason."
+  },
+  "findingB_the_largestBucket_is_a_model_artifact_not_a_graph_defect": {
+    "boardReading": {
+      "type": "contains",
+      "edges": 30205,
+      "resolved": 1792,
+      "ambiguous": 28413,
+      "unresolved": 0,
+      "residualPct": 94.1,
+      "evidence": "script/m14/residual-gate.ts --lane xml (whole 2,081-file .xml population, production scope), table row `contains`"
+    },
+    "realStore": {
+      "instrument": "validation/m14/fixtures/xml/store-binding-truth.mts — copies a draw into a scratch project, runs the PRODUCTION indexProjectParallel, and reads brain_relationship.target_symbol_id out of the store",
+      "artifact": "validation/m14/measurements/xml/store-binding-truth-120.after.json",
+      "draw": "08d7fb24a87da7e7, 120 files, 120 repositories, pooled into ONE project",
+      "contains": {
+        "edges": 3097,
+        "bound": 3048,
+        "boundSameFile": 3033,
+        "boundOtherFile": 15,
+        "targetUnbound": 49,
+        "boundNameExact": 3029,
+        "boundQnameExact": 2,
+        "boundNeedsLeafReduction": 19,
+        "crossFileFlagWrong": 0
+      },
+      "reading": "bound 98.4%, same-file 97.9%, unbound 1.6%, cross-file 0.5%"
+    },
+    "mechanism": {
+      "productionRule": "src/ast/parallel-indexer.ts resolveContainsTargetStmt: a `contains` edge carrying a line resolves at INSERT time by (s.name = leaf(target), ORDER BY same-file DESC, line_start DESC, ...). parallel-indexer.ts:4393-4397 keeps that eager resolve for `contains` even when resolution is deferred for every other type. (Source citation, not a number.)",
+      "modelRule": "script/m14/incoming-rule.ts classifyEdge(declCount, kinds, tgt, claim, facts) reads ONLY a project-wide declaration count keyed by name and by qualifiedName alias (script/m14/incoming-gate.ts:669-695). It has no file parameter and no line parameter, so it cannot express `the declaration in this edge's own file`. (Source citation, not a number.)",
+      "consequence": "an edge production binds to its own file's declaration is counted `ambDeclOnly` by the model whenever the bare local name occurs more than once in the project — which for markup it always does (`path`, `name`, `item`, `template`)."
+    },
+    "populationCaveat": "The two numbers are not over the same files, and the difference runs AGAINST the claim being flattering: the store draw pools 120 files from 120 repositories into ONE key space (harsher than production's per-repo scope, which can only bind MORE same-file), while the gate table is the 2,081-file `.xml` corpus. A same-project run on libxslt (both instruments, one repository) is queued behind .bb-heavy.lock and is the next measurement to land.",
+    "verdict": "RULED, not fixed: the 28,413-edge `contains` bucket is an artifact of the gate's model, not 28,413 broken edges. What remains real for this type in the store draw is 49 unbound (1.6%) and 15 cross-file (0.5%).",
+    "edgesSplitByRole_wholeCorpus": {
+      "xml_attribute": 111060,
+      "xml_element": 64173,
+      "xml_namespace": 12743,
+      "dtd_entity_declaration": 181,
+      "processing_instruction": 25,
+      "pseudo_attribute": 14,
+      "dtd_element_declaration": 12,
+      "dtd_attribute_declaration": 10,
+      "dtd_ndata_notation": 4,
+      "dtd_notation_declaration": 2,
+      "evidence": "validation/m14/fixtures/xml/coverage-census.json emitted[type=contains].roles — the whole 11,552-file corpus"
+    },
+    "siteAuthenticityAlreadyMeasured": {
+      "contains": { "edges": 188224, "siteConfirmed": 188219, "rate": 0.99997 },
+      "evidence": "validation/m14/measurements/xml/containment-ledger-6ff124541.json — every emitted contains edge is checked for a real nesting behind it on the parse tree. So the question this finding answers was only ever about TARGET resolution, and the endpoints are real."
+    }
+  },
+  "findingC_theRealResidual_andItsMechanism": {
+    "boardTable": {
+      "contains": { "edges": 30205, "resolved": 1792, "ambiguous": 28413, "unresolved": 0 },
+      "references": { "edges": 335, "resolved": 73, "ambiguous": 64, "unresolved": 198 },
+      "imports": { "edges": 136, "resolved": 2, "ambiguous": 0, "unresolved": 134 },
+      "TOTAL": { "edges": 30676, "resolved": 1867, "ambiguous": 28477, "unresolved": 332, "extFAIL": 0, "bindFAIL": 0, "causeFAIL": 0 },
+      "evidence": "script/m14/residual-gate.ts --lane xml, live"
+    },
+    "unresolvedByType": { "references": 198, "imports": 134 },
+    "mechanism": "src/ast/real-xml-analyzer.ts already PUBLISHES the classification the gate needs — metadata.resolvable is one of in-document | builtin | external | unresolved (sites at :1639-1751, :1918-1974) — and carries NONE of the gate's claim keys (script/m14/incoming-rule.ts EXTERNAL_KEYS, FILE_CLAIM_KEY = importProjectFile, IMPORT_CLAIM_KEY = importOutsideProject). So a target the analyzer itself knows is a builtin or an imported-namespace name reaches the gate with no claim and is counted `unresolved`. This is the next cause, and it is fixable inside this lane's write scope.",
+    "notYetClaimed": "The mapping from each resolvable class to a claim key is not decided here: `builtin` and imported-namespace targets are different claims with different verification (owner lookup vs the project's own file list), and marking a target external that the key space can actually answer is REFUTED by the gate rather than ignored. Deciding it needs the per-class counts at the `.xml` population, which is the next measurement."
+  },
+  "killedRunsReportedAsKilled": [
+    "23:25 `( flock -w 600 9 || exit 9; npx tsx script/m14/incoming-gate.ts xml xml 0 ) 9>.bb-heavy.lock` -> exit 9, flock timed out at 600 s waiting for another lane; the walk never started and produced no output. NOT a result.",
+    "23:36 store-binding-truth on libxslt queued behind the same lock with -w 1800; reported as pending, not as a measurement, until it prints."
+  ]
+}

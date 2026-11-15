@@ -64,7 +64,7 @@ const argOf = (flag: string): string | undefined => {
   for (const a of argv) if (a.startsWith(flag + "=")) return a.slice(flag.length + 1)
   return undefined
 }
-const CORPUS_DIR = argOf("--repo-dir") ?? "$HOME/fixtures/repositories/typescript"
+const CORPUS_DIR = argOf("--repo-dir") ?? "/home/ishaq2321/bb_tests/repositories/typescript"
 const LIMIT = Number(argOf("--limit") ?? "200")
 const OUT = argOf("--out")
 const SELFTEST = argv.includes("--selftest")

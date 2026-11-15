@@ -1,0 +1,19 @@
+{
+  "fixtureId": "javascript/static-block",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS static-block / field-initializer call attribution (gap J5, kotlin K7 analog). Calls inside static { } blocks and static field initializers belong to the ENCLOSING CLASS, not the module. Pre-fix: they attributed to the module.",
+  "expectSymbols": [
+    { "name": "Registry", "kind": "class" },
+    { "name": "instance", "kind": "method", "ownerName": "Registry" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Registry", "target": "initRegistry" },
+    { "type": "calls", "from": "Registry", "target": "seed" },
+    { "type": "calls", "from": "Registry", "target": "buildField" },
+    { "type": "calls", "from": "instance", "target": "helper" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "static-block", "target": "initRegistry" }
+  ]
+}

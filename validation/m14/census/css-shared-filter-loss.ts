@@ -55,7 +55,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { RealCssAnalyzer } from "../../../src/ast/real-css-analyzer"
 import { parseFile, filterNoiseRelationships } from "../../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const LIMIT = Number(process.argv[2] ?? 250)
 const SIZE_CAP = 512 * 1024
 const WASM = path.join(process.cwd(), "wasm", "tree-sitter-css.wasm")

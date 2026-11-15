@@ -2,7 +2,7 @@
   "lane": "VUE_FIX",
   "mode": "prod",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "repo": "element-plus",
     "tracked": 1009,
     "admitted": 1009,

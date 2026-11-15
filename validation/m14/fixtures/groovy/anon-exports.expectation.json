@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/anon-exports",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave G7 gap under the M49 exports ruling: the anonymous-class noise name never exports (nor does the field member hosting it — members ride Contains). The anonymous symbol itself must still exist (members attribute to it). Requires the forbidExports gate.",
+  "expectSymbols": [
+    { "name": "Svc", "kind": "class" },
+    { "name": "anonymous_Runnable", "kind": "class" }
+  ],
+  "expectExports": [
+    { "name": "Svc" }
+  ],
+  "forbidExports": [
+    { "name": "anonymous_Runnable" },
+    { "name": "handler" }
+  ]
+}

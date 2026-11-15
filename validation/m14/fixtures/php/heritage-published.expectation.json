@@ -1,0 +1,144 @@
+{
+  "fixtureId": "php/heritage-published",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Canonical namespace identity decides self-heritage. A namespaced InvalidArgumentException extending the global builtin has a real dependency even though both display leaves are equal. The native type-identity regression verifies this distinction. Heritage payloads mirror the emitted display spellings; canonical identities are stored separately.",
+  "expectSymbols": [
+    {
+      "name": "Fixture\\Heritage",
+      "kind": "namespace"
+    },
+    {
+      "name": "First",
+      "kind": "interface"
+    },
+    {
+      "name": "Second",
+      "kind": "interface"
+    },
+    {
+      "name": "Labeled",
+      "kind": "interface"
+    },
+    {
+      "name": "PlainIface",
+      "kind": "interface",
+      "meta.superTypes": null,
+      "note": "An interface with no parents. ABSENT, and the row kills a payload that names a heritage this declaration does not have."
+    },
+    {
+      "name": "Base",
+      "kind": "class",
+      "meta.superTypes": [
+        "First"
+      ]
+    },
+    {
+      "name": "WithBaseAndInterfaces",
+      "kind": "class",
+      "meta.superTypes": [
+        "Base",
+        "Second",
+        "Labeled"
+      ],
+      "note": "THE row that separates a complete payload from a base-only one: an implementation that mirrors only `baseClass` passes every other row in this file and fails this one."
+    },
+    {
+      "name": "WithInterfaceOnly",
+      "kind": "class",
+      "meta.superTypes": [
+        "Second"
+      ],
+      "note": "Interfaces with no base \u2014 the arm a base-only implementation gets right by accident, so it is pinned separately from the row above rather than folded into it."
+    },
+    {
+      "name": "NoHeritage",
+      "kind": "class",
+      "meta.superTypes": null
+    },
+    {
+      "name": "DerivedIface",
+      "kind": "interface",
+      "meta.superTypes": [
+        "First",
+        "Second"
+      ],
+      "note": "An interface's parents are `extends` edges; the payload must carry them, or the walk stops exactly where a PHP codebase puts most of its interfaces."
+    },
+    {
+      "name": "Suit",
+      "kind": "enum",
+      "meta.superTypes": [
+        "Labeled"
+      ]
+    },
+    {
+      "name": "FeaturesForm",
+      "kind": "class",
+      "meta.superTypes": [
+        "Forms\\User\\FeaturesForm"
+      ],
+      "note": "Same leaf as its fully-qualified external base. The QUALIFICATION must survive into the payload: re-leafing would name a class after the one it started from."
+    },
+    {
+      "name": "InvalidArgumentException",
+      "kind": "class",
+      "meta.superTypes": [
+        "InvalidArgumentException"
+      ],
+      "note": "Forms\\Setup\\InvalidArgumentException and the global InvalidArgumentException are different class identities."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "Base",
+      "target": "First"
+    },
+    {
+      "type": "extends",
+      "source": "WithBaseAndInterfaces",
+      "target": "Base",
+      "note": "The edge the payload must MIRROR \u2014 same spelling, asserted on both sides so the two cannot drift apart."
+    },
+    {
+      "type": "implements",
+      "source": "WithBaseAndInterfaces",
+      "target": "Second"
+    },
+    {
+      "type": "implements",
+      "source": "WithBaseAndInterfaces",
+      "target": "Labeled"
+    },
+    {
+      "type": "extends",
+      "source": "DerivedIface",
+      "target": "First"
+    },
+    {
+      "type": "extends",
+      "source": "DerivedIface",
+      "target": "Second"
+    },
+    {
+      "type": "implements",
+      "source": "Suit",
+      "target": "Labeled"
+    },
+    {
+      "type": "extends",
+      "source": "FeaturesForm",
+      "target": "Forms\\User\\FeaturesForm",
+      "note": "The qualified same-leaf base. This row is what makes the payload row above a mirror rather than an independent re-derivation: both must carry the qualified string."
+    },
+    {
+      "type": "extends",
+      "source": "InvalidArgumentException",
+      "target": "InvalidArgumentException",
+      "meta.targetIdentity": "invalidargumentexception",
+      "meta.external": true
+    }
+  ],
+  "forbidRelationships": []
+}

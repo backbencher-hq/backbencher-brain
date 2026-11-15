@@ -1,0 +1,1485 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R8",
+  "purpose": "No analyzer may publish a framework capability it does not have, or name one framework twice. The family contract (real-csharp-analyzer.ts CONV-CS-2 header, java sibling) is three metadata keys — `framework` (the deterministic primary pick), `detectedFrameworks` (always an array), `frameworkPatterns` (aligned) — plus the `hasFrameworkIntelligence` capability claim. Registered like the regex debt and like R7: entries are keyed by source statement (not line, because positions move and statements do not) with an exact count, so an added site and a removed one are both deliberate acts.",
+  "establishedAt": "2026-09-22",
+  "baseline": {
+    "occurrences": 99,
+    "violations": 20
+  },
+  "shrinkOnly": true,
+  "ooTarget": {
+    "violations": 0,
+    "note": "Owner standard: the seven OO lanes must reach zero, lane by lane, with a fixture and a reverting mutant each — never by editing this register. MET as of this phase: ruby (#749 — the unreachable callback trigger, the Rails/Ruby on Rails divergence, the duplicate accumulator and the missing primary pick), pinned by ruby/framework-surface-pins with four caught mutants; python (#747 — the surface was initialized and never written while the capability claim was published on every file), pinned by python/framework-surface-pins with two caught mutants (the trigger surface going dead again, and the emitted order following import order instead of the marker table); swift (#838/#836 — no primary pick, no frameworkPatterns, 81 findings over 248 real corpus files) and objective-c (CONV-OC-1 — no frameworkPatterns, 7 findings over 7 detecting files), each pinned by its own framework-surface-pins fixture and caught mutants; and php, which had the family's only two debts that were *static false negatives* and not violations — the two unreachable markers (`App\\` root, bare `TestCase`, #931, each compared against text no call site could pass) and the primary pick following DETECTION order rather than a marker table (#934, python's defect verbatim, carried because this row was already holding the markers and a row holds only what someone measured). Both fixed, each with its own pin and reverting mutant: php/framework-surface-pins + php/framework-app-root catch php/framework-app-root-marker-dead and php/framework-phpunit-base-marker-dead; php/framework-order (document order deliberately the inverse of the table order) catches php/framework-order-document. Laravel's breadth was counted before it was applied — 0 of 4,588 corpus files declare any `App` namespace — and `namespace App;` alone still deliberately does not fire."
+  },
+  "runtimeOwed": "NARROWED 2026-09-24 (#931 fixed): the runtime half has been run over 1,653 real files and reads ZERO contract findings on BOTH halves — the analyzers, and the object `ASTEngine.parseFile` publishes. What is still owed, and is why this field is not deleted: the corpus draw does NOT exercise every registered static shape. After the fix, the bare-`TestCase` branch IS exercised (the 29-file delta above, every one opened by hand); the php `App\\`-root marker is NOT — 0 files of the draw declare any `namespace App\\...`, so its witness is the fixture `php/framework-app-root` and the grammar-level marker probe, not a corpus file. A static shape with no runtime witness is a shape whose severity is inferred; it is recorded here rather than implied by the clean corpus row.",
+  "runtimeEvidence": {
+    "instrument": "script/m60/framework-surface-probe.ts (26 self-tests: 19 assertions + 7 alignment, run --repos --published --emit)",
+    "artifact": "validation/m60/results/framework-surface-runtime.json",
+    "draw": "deterministic: every matching file per repo is collected, sorted, then capped at 150/repo. The first version capped by readdir order and returned 184 files against a cap of 150, so the same command produced a different population each run.",
+    "measuredAt": "2026-09-24 (re-run after ruby's #749 false-positive fix: the bare-`describe ` trigger measured 0 true / 36 false on ruby's pinned corpus and is gone; require 'rspec' kept and proven by a positive control; require 'hanami' added, the last of #749's named list. 25/25 cases, 0 claim misses; ruby's published row went 37 -> 1 detecting files — the 36 were all rack minitest/spec files labelled rspec.",
+    "assertions": [
+      "A1-array",
+      "A2-dedupe",
+      "A3-primary",
+      "A3-default-primary (published half only)",
+      "A4-aligned",
+      "A5-one-name",
+      "A6-claim",
+      "A7-presence"
+    ],
+    "corpus": {
+      "files": 1653,
+      "withDetection": 407,
+      "contractFindings": 0,
+      "byLane": {
+        "ruby": {
+          "files": 190,
+          "withDetection": 1,
+          "findings": {}
+        },
+        "python": {
+          "files": 187,
+          "withDetection": 7,
+          "findings": {}
+        },
+        "php": {
+          "files": 425,
+          "withDetection": 50,
+          "findings": {}
+        },
+        "csharp": {
+          "files": 300,
+          "withDetection": 112,
+          "findings": {}
+        },
+        "objective-c": {
+          "files": 153,
+          "withDetection": 7,
+          "findings": {}
+        },
+        "swift": {
+          "files": 248,
+          "withDetection": 81,
+          "findings": {}
+        },
+        "dart": {
+          "files": 150,
+          "withDetection": 149,
+          "findings": {}
+        }
+      }
+    },
+    "fixtures": {
+      "cases": 25,
+      "behaving": 25,
+      "claimMisses": 0,
+      "misses": [],
+      "note": "25/25 and 0 claim misses (was 23/23). The two new cases hold the ruby false-positive fix at the published seam: plain-describe-minitest (expectAbsent rspec/minitest — the negative that used to read [\"rspec\"]) and rspec-require-positive (the positive control proving the require-level trigger survived the removal). The negative is proven load-bearing by revert: restoring `|| content.includes(\"describe \")` flips it to [\"rspec\"]."
+    },
+    "confirmedInCode": [
+      "swift PRE-FIX, kept as the measurement the fix answers: real-swift-analyzer.ts declared only `detectedFrameworks` and built it by iterating the observation map, so the payload had no primary pick and no patterns — 81 runtime findings, one per detecting file of 248. Now 0, and the emitted order is the declared SWIFT_FRAMEWORK_ORDER table.",
+      "objective-c PRE-FIX, kept as the measurement the fix answers: the lane published `detectedFrameworks` as `[...frameworks]` (Set insertion order = the file import order) and a primary of `[...frameworks][0]`, and never published `frameworkPatterns` — 7 findings on 7 detecting files of 153, i.e. every file that detected anything. Now 0, with the pick and the order taken from OBJC_FRAMEWORK_ORDER.",
+      "A7 IS NEW AND IT IS WHY THE OBJECTIVE-C FINDING IS VISIBLE AT ALL: without it the lane measured CLEAN here (153 files, 0 findings) while the census registered it, because A4/A5 read an absent frameworkPatterns as an empty one. Adding it convicted 7 files; scoping it to the exercised contract (a non-empty detection) was forced by a measurement — the strict per-file reading convicted 189 of 190 real rake/rack files for omitting `framework`/`frameworkPatterns` on files where nothing was detected, a shape with no consumer-visible effect because the pipeline writes all three keys anyway.",
+      "python PRE-FIX, kept as the measurement the fix answers: `frameworks: {}` was initialized and never written while the emit block published `hasFrameworkIntelligence: true` unconditionally on every file, including `x = 1`; the corpus read 0 detecting files of 187. Now a marker table read from the AST publishes the pick, and the corpus reads 7 detecting files with 0 findings.",
+      "ruby PRE-FIX, kept as the measurement the fix answers: duplicated `Ruby on Rails` on a real corpus file (rack/test.rb, 3 identical entries) and no primary pick — 2 runtime findings, now 0.",
+      "php PRE-FIX, kept as the measurement the fix answers: two registered markers were compared against text no call site could pass — the `App\\` root against a namespace string ENDING in a backslash (`text === \"App\\\"`, an exact match on a separator no node carries) and the bare `TestCase` against the NAMESPACE text while the base clause was never handed to the detector at all. Both cases read MISS against their own `expectDetected` while R8 read MET over the corpora, because a marker that cannot fire is a detector every corpus calls clean. Now 23/23 cases behave, 0 claim misses.",
+      "php BREADTH, counted rather than assumed. The Laravel rule was widened to `App\\`-PREFIX and the count taken BEFORE applying it: 0 of 4,588 files across php's two M14 corpora declare any `App` namespace, and `namespace App;` alone still deliberately does not fire (asserted by php/framework-app-root, which also pins the negative). The bare-`TestCase` rule was counted AFTER and opened file by file, because its evidence is a NAME: php's corpus row moved 21 -> 50 detecting files, all 29 new ones `slim/tests/*.php`, all genuinely PHPUnit tests — 24 import the base, and 5 resolve `TestCase` to their own namespace's `Slim\\Tests\\TestCase`, which is `abstract class TestCase extends PhpUnitTestCase` with `use PHPUnit\\Framework\\TestCase as PhpUnitTestCase`. Zero false positives observed; the residual risk is stated, not hidden: a project whose own base class is called `TestCase` and is NOT PHPUnit's would be one, and the analyzer reports the name match, not the resolved class.",
+      "php PRIMARY PICK PRE-FIX, the third debt on the same row: the lane published `framework: [...detectedFrameworks][0]` — a Set's INSERTION order, i.e. whichever marker fired first in the file — so the primary pick depended on the statement layout of one file. That is python's defect verbatim, named in this register; swift/objc/csharp all carry an ORDER table and php carried none. Now PHP_FRAMEWORK_ORDER, with unmatched names APPENDED rather than dropped. Corpus effect: none of the 4,588 files change their published surface (identical framework, detectedFrameworks and counts), which is why php/framework-order exists — its document order is deliberately the INVERSE of the table order, so the pre-fix reading is what a regression reproduces (php/framework-order-document, CAUGHT).",
+      "ruby FALSE POSITIVE, the third debt on the same seam: `detectRubyFrameworks` fired \"rspec\" on a BARE `describe ` substring, and rack's test/ directory is minitest/spec — test/helper.rb requires 'minitest/global_expectations/autorun', the Gemfile and gemspec carry no rspec at all, and the analyzer's own comments call these files minitest specs. Measured 36 of 190 pinned-corpus files publishing [\"rspec\"] with ZERO requiring rspec: 0 true / 36 false is a false detector, and the corpus half could not convict it because framework-intelligence runs only in the published seam — the same blindness that let #932 live. Fixed by removing the bare trigger (require 'rspec' kept, positive control added; require 'hanami' added as the last item of #749's named list, 0 corpus cost measured). ruby's published row: 37 -> 1 detecting files, all 36 removed detections false."
+    ],
+    "publishedPayload": {
+      "note": "the same files through ASTEngine.parseFile — the object a consumer actually receives. Assertion ids are prefixed P- so a published finding can never be read as an analyzer finding. This half is the only place a post-processing layer is visible: enhanceWithFrameworkIntelligence merges a second detector, re-promotes `framework`, and appends its own pattern objects. RE-MEASURED 2026-09-24: 1,650 files, 512 with detection, 0 findings, and the seam now has an assertion of its own — ruby published [\"Ruby on Rails\",\"rails\"] for ONE framework because enhanceWithFrameworkIntelligence unions its own slug vocabulary with the analyzer's, so the analyzer half could never see it (#932, fixed in framework-intelligence.ts). The new case runs through ASTEngine.parseFile and is proven load-bearing: reverting the alias flips it to MISS and the probe to 22/23.",
+      "documentedDefaultsClassified": 1138,
+      "findings": 0,
+      "openClass": "NONE OPEN. The 70 findings above were the only real published findings this half has ever reported once its A3 stopped convicting the pipeline's documented no-detection default; the three candidate resolutions were put to the owner, who chose the pipeline alignment.",
+      "byLane": {
+        "ruby": {
+          "files": 190,
+          "withDetection": 37,
+          "documentedDefaults": 153,
+          "findings": 0
+        },
+        "python": {
+          "files": 185,
+          "withDetection": 54,
+          "documentedDefaults": 131,
+          "findings": 0
+        },
+        "php": {
+          "files": 425,
+          "withDetection": 50,
+          "documentedDefaults": 375,
+          "findings": 0
+        },
+        "csharp": {
+          "files": 300,
+          "withDetection": 124,
+          "documentedDefaults": 176,
+          "findings": 0
+        },
+        "objective-c": {
+          "files": 153,
+          "withDetection": 7,
+          "documentedDefaults": 146,
+          "findings": 0
+        },
+        "swift": {
+          "files": 248,
+          "withDetection": 168,
+          "documentedDefaults": 80,
+          "findings": 0
+        },
+        "dart": {
+          "files": 149,
+          "withDetection": 72,
+          "documentedDefaults": 77,
+          "findings": 0
+        }
+      },
+      "repaid": "P-A4-aligned 70 -> 0, fixed in the pipeline merge as decided: `alignFrameworkPatterns` (exported from framework-intelligence.ts, driven directly by the probe's alignment self-tests) canonicalises each pattern entry's framework through the same alias map the detection list uses, rewrites it onto the PUBLISHED spelling, and drops entries naming a framework the published list does not carry. Measured in both directions rather than only as a falling count: 70 files were stray (swift 2 by SPELLING — the detector slug `swiftui` beside the analyzer's `SwiftUI` — and dart 68 because the lane names the SDK and the pipeline's documented filter removes it), 2 entries were rewritten and kept (swift's aligned entries survive: 53 entries over 52 files), dart's entries were dropped (0 entries, its pattern NAMES still publish in metadata.patterns), and every other lane is untouched with 0 stray entries (python 7, php 8, csharp 19, objective-c 6)."
+    }
+  },
+  "counts": {
+    "entries": 93,
+    "violations": 20,
+    "ooViolations": 0
+  },
+  "entries": [
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Docker/Kubernetes\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        766
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Cloud Native\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        767
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "shape": "dominated-trigger",
+      "key": "DECLARATION_KEYWORDS.has(keyword) ⟹ keyword === \"local\"",
+      "statement": "{ emit(vn.text, this.nodeToRange(child)) if (keyword === \"local\" && parentFn) { // positional $1..$9 defaults (local x=$1) also record parameters const valueNode = child.namedChild(1) this.collectPosi",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        436
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "shape": "name-divergence",
+      "key": "Bash ⊂ Bash Script",
+      "statement": "frameworkPatterns: [{ framework: \"Bash\", patterns: patternsArray }]",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        256
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "lang": "clojure",
+      "shape": "append-write",
+      "key": "frameworksArray",
+      "statement": "frameworksArray.push(f)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1350
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "lang": "cpp",
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "lang": "cpp",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "shape": "dominated-trigger",
+      "key": "CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"generic_name\"",
+      "statement": "{ const child = paramList.child(i) if (!child) continue const childType = child.type if (childType === \"params\") { inParamsForm = true paramsTypeNode = null continue } if (childType === \"parameter\") {",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1587
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "shape": "dominated-trigger",
+      "key": "CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"identifier\"",
+      "statement": "{ const child = paramList.child(i) if (!child) continue const childType = child.type if (childType === \"params\") { inParamsForm = true paramsTypeNode = null continue } if (childType === \"parameter\") {",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1587
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "shape": "dominated-trigger",
+      "key": "CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"qualified_name\"",
+      "statement": "{ const child = paramList.child(i) if (!child) continue const childType = child.type if (childType === \"params\") { inParamsForm = true paramsTypeNode = null continue } if (childType === \"parameter\") {",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1587
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "shape": "dominated-trigger",
+      "key": "name: repeated condition",
+      "statement": "{ depth++ const cur = queue.shift()! if (seen.has(cur)) continue seen.add(cur) const mm = membersByOwner.get(cur) ?? membersByOwner.get(leafOf(cur)) if (mm && mm.has(name)) return true for (const b of",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        2723
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "shape": "dominated-trigger",
+      "key": "potentialTargetFqn: repeated condition",
+      "statement": "{ const parent = queue.shift()! if (seen.has(parent)) continue seen.add(parent) const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}` if (symbolMap.has(potentialTargetFqn)) { targ",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        2523
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-css-analyzer.ts",
+      "lang": "css",
+      "shape": "append-write",
+      "key": "frameworkPatterns",
+      "statement": "frameworkPatterns.push({ framework: frameworks[i], patterns: [{ type: \"usage\", detected: true, description: `${frameworks[i]} usage detected` }], })",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        243
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-css-analyzer.ts",
+      "lang": "css",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(f)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        231
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "append-write",
+      "key": "frameworkPatterns",
+      "statement": "frameworkPatterns.push({ framework: frameworks[i], patterns: [{ type: \"usage\", detected: true, description: `${frameworks[i]} usage detected` }] })",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        450
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(f)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        443
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "dominated-trigger",
+      "key": "t: repeated condition",
+      "statement": "{ if (SPECIAL_FORMS.has(t)) return true if (KERNEL_FUNCTIONS.has(t)) return true if (this.isInQuotedCode(node)) return true if (this.isInAttribute(node)) return true if (this.isDefHead(node)) return t",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        814
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-erlang-analyzer.ts",
+      "lang": "erlang",
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-erlang-analyzer.ts",
+      "lang": "erlang",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "shape": "dominated-trigger",
+      "key": "FSHARP_CONSOLE_BUILTINS.has(call) ⟹ call === \"Console.WriteLine\"",
+      "statement": "{ if (FSHARP_CONSOLE_BUILTINS.has(call)) return true if (OBJECT_LEAF_METHODS.has(leaf)) return true if (call === \"Console.WriteLine\" || call.startsWith(\"Console.\")) return true return false }",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        654
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "shape": "dominated-trigger",
+      "key": "leaf: repeated condition",
+      "statement": "{ if (FSHARP_CONSOLE_BUILTINS.has(call)) return true if (OBJECT_LEAF_METHODS.has(leaf)) return true if (call === \"Console.WriteLine\" || call.startsWith(\"Console.\")) return true return false }",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        653
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-graphql-analyzer.ts",
+      "lang": "graphql",
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-graphql-analyzer.ts",
+      "lang": "graphql",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "lang": "groovy",
+      "shape": "dominated-trigger",
+      "key": "potential: repeated condition",
+      "statement": "{ // Pass 1 is the IN-FILE hierarchy pass: a candidate that is not a // class declared in this file cannot supply an in-file target. // Measured at 200-file depth on grails-core (FindAllByFinder.groov",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1116
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "lang": "groovy",
+      "shape": "dominated-trigger",
+      "key": "root: repeated condition",
+      "statement": "{ if (GROOVY_BUILTINS.has(call)) return true // Prefix-based stdlib filtering: first segment identifies the class/package. const firstDot = call.indexOf(\".\") const root = firstDot > 0 ? call.slice(0, ",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1861
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "lang": "groovy",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks, framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-haskell-analyzer.ts",
+      "lang": "haskell",
+      "shape": "append-write",
+      "key": "frameworkPatterns",
+      "statement": "frameworkPatterns.push({ framework: frameworks[i], patterns: [{ type: \"usage\", detected: true, description: `${frameworks[i]} usage detected` }], })",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        260
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-haskell-analyzer.ts",
+      "lang": "haskell",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(f)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        250
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-hcl-analyzer.ts",
+      "lang": "hcl",
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-hcl-analyzer.ts",
+      "lang": "hcl",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-html-analyzer.ts",
+      "lang": "html",
+      "shape": "append-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.push(f)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        379
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "shape": "append-write",
+      "key": "finalFrameworks",
+      "statement": "finalFrameworks.push(k)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1370
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "shape": "append-write",
+      "key": "finalFrameworks",
+      "statement": "finalFrameworks.push(\"spring_core\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1386
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "lang": "javascript",
+      "shape": "append-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.push(\"React\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1023
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "lang": "javascript",
+      "shape": "append-write",
+      "key": "detectedPatterns",
+      "statement": "detectedPatterns.push(\"JSX Components\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1024
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "lang": "javascript",
+      "shape": "dominated-trigger",
+      "key": "targetName: repeated condition",
+      "statement": "{ if (targetName === \"super\") return true if (JS_CONSOLE_BUILTINS.has(fullCallee || \"\")) return true const trimmed = stripWhitespace(fullCallee || \"\") if (JS_CONSOLE_BUILTINS.has(trimmed)) return true",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1366
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"npm/Node.js\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        421
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Composer/PHP\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        422
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"TypeScript\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        423
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"OpenAPI/Swagger\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        424
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"JSON Schema\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        425
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"AWS CloudFormation\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        426
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"React\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        427
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Vue.js\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        428
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Next.js\")",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        429
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"UIKit\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        206
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Foundation\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        207
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"AppKit\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        208
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Cocoa\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        209
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "dominated-trigger",
+      "key": "BARE_READ_SKIP.has(ktext) ⟹ ktext === \"self\"",
+      "statement": "{ // Receiver position: self/super are implicit, never reads. if (ktext === \"self\" || ktext === \"super\") continue }",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        693
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "dominated-trigger",
+      "key": "BARE_READ_SKIP.has(ktext) ⟹ ktext === \"super\"",
+      "statement": "{ // Receiver position: self/super are implicit, never reads. if (ktext === \"self\" || ktext === \"super\") continue }",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        693
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "shape": "dominated-trigger",
+      "key": "name: repeated condition",
+      "statement": "{ for (let bi = blockFrameStack.length - 1; bi >= 0; bi--) { if (blockFrameStack[bi].has(name)) return true } if (valueFrame && valueFrame.has(name)) return true const cm = classMembers.get(owner) if ",
+      "verdict": "reported",
+      "count": 3,
+      "lines": [
+        159,
+        160,
+        163
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(module === \"Mojo::Base\" ? \"Mojolicious\" : \"Moose/Moo OOP\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        208
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Moose/Moo OOP\")",
+      "verdict": "safe",
+      "count": 2,
+      "lines": [
+        249,
+        254
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"PHPUnit\")",
+      "verdict": "safe",
+      "count": 2,
+      "lines": [
+        676,
+        2366
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"WordPress\")",
+      "verdict": "safe",
+      "count": 2,
+      "lines": [
+        1362,
+        2363
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Laravel\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        2361
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Symfony\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        2362
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Magento\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        2364
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Drupal\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        2365
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Doctrine\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        2367
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Azure Az Module\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        212
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Azure AD / MSOnline\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        214
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Exchange Online\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        218
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"SharePoint PnP\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        222
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Active Directory\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        224
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"VMware / Hyper-V\")",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        226
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ const raw = name.trim() if (raw === \"\") return // Scope-qualified automatic references ($global:, $script:) are never // local declarations. if (raw.startsWith(\"$global:\") || raw.startsWith(\"$script",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        68
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "shape": "deduped-guard",
+      "key": "metadata.detectedFrameworks",
+      "statement": "detected.push(name)",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        1864
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "shape": "deduped-guard",
+      "key": "metadata.frameworkPatterns",
+      "statement": "patterns.push({ framework: name, patterns: [pattern] })",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        1868
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "shape": "dominated-trigger",
+      "key": "methodName: repeated condition",
+      "statement": "{ const methodNode = node.childForFieldName(\"method\") if (!methodNode) return const methodName = methodNode.text if (!methodName) return // --- Extract receiver (identifier before the method name) ---",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1517
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "shape": "dominated-trigger",
+      "key": "RUBY_BUILTINS.has(methodName) ⟹ methodName === \"class\"",
+      "statement": "{ const methodNode = node.childForFieldName(\"method\") if (!methodNode) return const methodName = methodNode.text if (!methodName) return // --- Extract receiver (identifier before the method name) ---",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1520
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "shape": "replace-write",
+      "key": "metadata.detectedFrameworks",
+      "statement": "detected = (metadata.detectedFrameworks ??= [])",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        1863
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "shape": "replace-write",
+      "key": "metadata.frameworkPatterns",
+      "statement": "patterns = (metadata.frameworkPatterns ??= [])",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        1867
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-rust-analyzer.ts",
+      "lang": "rust",
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ let target = leafNode.text if (!target || target === \"Self\") { const resolved = this.enclosingImplType(leafNode) if (!resolved) return target = resolved } if (gparams.has(target)) return const key =",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        622
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-rust-analyzer.ts",
+      "lang": "rust",
+      "shape": "dominated-trigger",
+      "key": "nm: repeated condition",
+      "statement": "{ const owners = valueOwners.get(nm) if (!owners) return useImported.has(nm) if (owners.has(\"\")) return true if (useImported.has(nm)) return true for (const m of fnMods) if (owners.has(m)) return true",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1674
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "shape": "append-write",
+      "key": "metadata.detectedFrameworks",
+      "statement": "metadata.detectedFrameworks!.push(fw)",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        433
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-sql-analyzer.ts",
+      "lang": "sql",
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-sql-analyzer.ts",
+      "lang": "sql",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-svelte-analyzer.ts",
+      "lang": "svelte",
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ // Svelte store auto-subscription: `{$store}` reads the VALUE of the // `store` member (`$:` rules don't apply in markup). A single-`$` // name that matches no member resolves through the sigil to a",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        692
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-svelte-analyzer.ts",
+      "lang": "svelte",
+      "shape": "dominated-trigger",
+      "key": "tgt: repeated condition",
+      "statement": "{ const tgt = (r.target ?? \"\") as string if (SVELTE_RUNES.has(tgt)) continue // module-block exports are module API, not component members if (r.type === ASTEngine.RelationshipType.Contains && isModul",
+      "verdict": "reported",
+      "count": 2,
+      "lines": [
+        585,
+        593
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-swift-analyzer.ts",
+      "lang": "swift",
+      "shape": "dominated-trigger",
+      "key": "potentialTargetFqn: repeated condition",
+      "statement": "{ const parentName = queue.shift()! if (seen.has(parentName)) continue seen.add(parentName) const potentialTargetFqn = `${parentName}.${task.methodName}` if (symbolMap.has(potentialTargetFqn)) { targe",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        1526
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-swift-analyzer.ts",
+      "lang": "swift",
+      "shape": "replace-write",
+      "key": "metadata.detectedFrameworks",
+      "statement": "metadata.detectedFrameworks = emittedFrameworks",
+      "verdict": "safe",
+      "count": 1,
+      "lines": [
+        517
+      ],
+      "note": "OO lane — owner standard: repay with a fixture and a reverting mutant."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "dominated-trigger",
+      "key": "targetName: repeated condition",
+      "statement": "{ if (targetName === \"super\") return true // Full expression match first: console.log, console.warn, ... if (TS_CONSOLE_BUILTINS.has(fullCallee || \"\")) return true // console.* accessed via optional c",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        5563
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-vue-analyzer.ts",
+      "lang": "vue",
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ if (!memberNames.has(name)) continue const key = `${moduleName}:${name}` if (seenUses.has(key)) continue seenUses.add(key) relationships.push({ source: moduleName, target: name, type: ASTEngine.Rela",
+      "verdict": "reported",
+      "count": 1,
+      "lines": [
+        484
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "lang": "yaml",
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "lang": "yaml",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "lang": "zig",
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "lang": "zig",
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1
+      ],
+      "note": "Not an OO lane: disclosed debt. Repayable by the owning lane; the class is non-recurrable meanwhile."
+    }
+  ],
+  "shrunkBy": [
+    {
+      "at": "2026-09-22",
+      "phase": "ruby framework surface (#749)",
+      "removed": [
+        "real-ruby-analyzer.ts append-write [metadata.detectedFrameworks] x2",
+        "real-ruby-analyzer.ts append-write [metadata.frameworkPatterns] x1",
+        "real-ruby-analyzer.ts dominated-trigger [RAILS_MACRO_METHODS.has(methodName) ⟹ methodName === \"after_action\" (writes metadata.frameworkPatterns)] x1",
+        "real-ruby-analyzer.ts dominated-trigger [RAILS_MACRO_METHODS.has(methodName) ⟹ methodName === \"before_action\" (writes metadata.frameworkPatterns)] x1",
+        "real-ruby-analyzer.ts dominated-trigger [RUBY_BUILTINS.has(methodName) ⟹ methodName === \"after_action\" (writes metadata.frameworkPatterns)] x1",
+        "real-ruby-analyzer.ts dominated-trigger [RUBY_BUILTINS.has(methodName) ⟹ methodName === \"before_action\" (writes metadata.frameworkPatterns)] x1",
+        "real-ruby-analyzer.ts missing-contract-key [framework (published: detectedFrameworks, frameworkPatterns)] x1",
+        "real-ruby-analyzer.ts name-divergence [Rails ⊂ Ruby on Rails] x1"
+      ],
+      "reduced": [],
+      "grew": [],
+      "violationsBefore": 32,
+      "violationsAfter": 26,
+      "ooViolationsBefore": 11,
+      "ooViolationsAfter": 5,
+      "note": "Every removal here is a site the census no longer finds, which means the source no longer contains it. That is the only way a registered violation may disappear."
+    },
+    {
+      "at": "2026-09-22",
+      "phase": "python framework surface (#747)",
+      "removed": [
+        "real-python-analyzer.ts append-write [detectedFrameworks] x1",
+        "real-python-analyzer.ts dead-surface [ctx.frameworks] x1",
+        "real-python-analyzer.ts unjustified-claim [ctx.frameworks] x1"
+      ],
+      "reduced": [],
+      "grew": [],
+      "violationsBefore": 26,
+      "violationsAfter": 24,
+      "ooViolationsBefore": 5,
+      "ooViolationsAfter": 3,
+      "note": "Every removal here is a site the census no longer finds, which means the source no longer contains it. That is the only way a registered violation may disappear."
+    },
+    {
+      "at": "2026-09-22",
+      "phase": "swift (#838/#836) and objective-c (CONV-OC-1) framework surfaces; census published-derivation hop",
+      "removed": [
+        "real-objective-c-analyzer.ts missing-contract-key [frameworkPatterns (published: detectedFrameworks, framework)] x1",
+        "real-swift-analyzer.ts append-write [metadata.detectedFrameworks] x1",
+        "real-swift-analyzer.ts missing-contract-key [framework (published: detectedFrameworks)] x1",
+        "real-swift-analyzer.ts missing-contract-key [frameworkPatterns (published: detectedFrameworks)] x1"
+      ],
+      "reduced": [],
+      "grew": [],
+      "added": [
+        "real-javascript-analyzer.ts append-write [detectedPatterns] x1 `detectedPatterns.push(\"JSX Components\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x2 `detectedFrameworks.add(\"WordPress\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 `detectedFrameworks.add(\"Laravel\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 `detectedFrameworks.add(\"Symfony\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 `detectedFrameworks.add(\"Magento\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 `detectedFrameworks.add(\"Drupal\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 `detectedFrameworks.add(\"PHPUnit\")`",
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 `detectedFrameworks.add(\"Doctrine\")`",
+        "real-powershell-analyzer.ts deduped-write [frameworks] x1 `frameworks.add(\"Azure Az Module\")`",
+        "real-powershell-analyzer.ts deduped-write [frameworks] x1 `frameworks.add(\"Azure AD / MSOnline\")`",
+        "real-powershell-analyzer.ts deduped-write [frameworks] x1 `frameworks.add(\"Exchange Online\")`",
+        "real-powershell-analyzer.ts deduped-write [frameworks] x1 `frameworks.add(\"SharePoint PnP\")`",
+        "real-powershell-analyzer.ts deduped-write [frameworks] x1 `frameworks.add(\"Active Directory\")`",
+        "real-powershell-analyzer.ts deduped-write [frameworks] x1 `frameworks.add(\"VMware / Hyper-V\")`",
+        "real-swift-analyzer.ts replace-write [metadata.detectedFrameworks] x1 `metadata.detectedFrameworks = emittedFrameworks`"
+      ],
+      "violationsBefore": 24,
+      "violationsAfter": 21,
+      "ooViolationsBefore": 3,
+      "ooViolationsAfter": 0,
+      "note": "Every removal here is a site the census no longer finds, which means the source no longer contains it — that is the only way a registered violation may disappear. The ADDED list is the census getting WIDER in the same phase: a published contract key derived from a local (`const detectedFrameworks = [...frameworks]`) hid the accumulator it was built from, so php/powershell/objective-c Set writes and swift's replace-write became visible again once the published value was followed one hop through its local binding. None of them is a new defect: every added site is `safe` or `reported`, and the violation count moved only downward."
+    },
+    {
+      "at": "2026-09-24",
+      "phase": "rust framework surface — the R8 contract key (#798)",
+      "removed": [
+        "real-rust-analyzer.ts missing-contract-key [framework (published: detectedFrameworks, frameworkPatterns)] x1"
+      ],
+      "reduced": [],
+      "grew": [],
+      "violationsBefore": 21,
+      "violationsAfter": 20,
+      "ooViolationsBefore": 0,
+      "ooViolationsAfter": 0,
+      "note": "Every removal here is a site the census no longer finds, which means the source no longer contains it. That is the only way a registered violation may disappear. This one is a PAID-DOWN violation, not a drift: rust now declares all three contract keys (`framework`, `detectedFrameworks`, `frameworkPatterns`) in its metadata literal and values the primary pick after the walk (RUST_FRAMEWORK_PRIORITY), and the A/B against HEAD's analyzer measured the change as metadata-only — 0 symbols added/removed and 0 relationships added/removed on both corpora (script/m14/tmp/rust-798-r7r8-ab.ts). What was NOT removed: the lane's two `dominated-trigger` REPORTS (the declared-type push and the read-resolution guard) — those sites are still in the source, so they stay registered, and the class stays visible to the gate. A report that is still live is not debt paid down."
+    },
+    {
+      "at": "2026-09-22",
+      "phase": "unspecified phase",
+      "removed": [],
+      "reduced": [],
+      "grew": [],
+      "added": [
+        "real-csharp-analyzer.ts dominated-trigger [CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"identifier\"] x1 `{ const child = paramList.child(i) if (!child) continue const childType = child.`",
+        "real-csharp-analyzer.ts dominated-trigger [CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"generic_name\"] x1 `{ const child = paramList.child(i) if (!child) continue const childType = child.`",
+        "real-csharp-analyzer.ts dominated-trigger [CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"qualified_name\"] x1 `{ const child = paramList.child(i) if (!child) continue const childType = child.`"
+      ],
+      "violationsBefore": 21,
+      "violationsAfter": 20,
+      "ooViolationsBefore": 0,
+      "ooViolationsAfter": 0,
+      "note": "Every removal here is a site the census no longer finds, which means the source no longer contains it. That is the only way a registered violation may disappear."
+    },
+    {
+      "at": "2026-09-22",
+      "phase": "swift lane closure (#924/#838/#836): R8's classifier now follows a collection-literal argument, so php's CHAIN-published surface (ORDER.filter(...).concat([...detectedFrameworks])) is a surface again — 52 bindings examined, php's 9 writes restored, violations unmoved at 20, self-tests 27/27; the one added entry is php's #931 base-clause PHPUnit write",
+      "removed": [],
+      "reduced": [],
+      "grew": [
+        "real-php-analyzer.ts deduped-write [detectedFrameworks] x1 -> x2"
+      ],
+      "added": [],
+      "violationsBefore": 20,
+      "violationsAfter": 20,
+      "ooViolationsBefore": 0,
+      "ooViolationsAfter": 0,
+      "note": "Every removal here is a site the census no longer finds, which means the source no longer contains it. That is the only way a registered violation may disappear."
+    }
+  ]
+}

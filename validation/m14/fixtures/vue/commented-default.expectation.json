@@ -1,0 +1,9 @@
+{
+  "fixtureId": "vue/commented-default",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave M4 fix: the default-export check is structural (first two children are the export/default keywords), so a comment between them no longer drops component ownership — methods surface with ownerName instead of via the ownerless JS fallback.",
+  "expectSymbols": [
+    { "name": "go", "kind": "method", "ownerName": "commented-default" }
+  ]
+}

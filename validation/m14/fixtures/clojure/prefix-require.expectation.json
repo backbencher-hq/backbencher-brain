@@ -1,0 +1,13 @@
+{
+  "file": "prefix-require.clj",
+  "language": "clojure",
+  "note": "F5-cert (clj-kondo meta.clj): prefix-list require `[prefix [sub :as a]]` — nested alias a -> prefix.sub resolves (a/one => clj.fixture.prefix.alpha/one) and each sub is a references target.",
+  "expectRelationships": [
+    { "type": "calls", "from": "go", "target": "clj.fixture.prefix.alpha/one", "line_number": 6 },
+    { "type": "references", "target": "clj.fixture.prefix.alpha", "line_number": 3 },
+    { "type": "references", "target": "clj.fixture.prefix.beta", "line_number": 4 }
+  ],
+  "expectSymbols": [
+    { "name": "go", "kind": "function" }
+  ]
+}

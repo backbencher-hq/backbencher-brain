@@ -1,0 +1,108 @@
+{
+  "fixtureId": "java/module-exports-jpms",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JLS 7.7 / 7.7.2 \u2014 Java HAS a named export construct and the analyzer read none of it, so `exports` fired 0 edges on the corpus. Grammar inventory over the WHOLE corpus (3,275 .java files, all parsed, 0 failed): module_declaration 3 (root.hasError=false on all), exports_module_directive 24, requires_module_directive 12, opens/provides/uses_module_directive 0/0/0. Pins: (a) the module NAME is a declaration \u2014 `module M` is the only place it is written and another module's `requires M` is how it is named \u2014 so it is a `Module` symbol; (b) each `exports P` names a PACKAGE, published as a `Namespace` symbol owned by the module, which is what lets the `exports` edge resolve at BOTH ends inside one file; (c) the edge is `exports` at confidence 1.0 with the line the PACKAGE is written on, because JLS 7.7.2 is structural syntax, not a heuristic; (d) the `to` clause of a qualified export is read into metadata and is deliberately NOT a second edge \u2014 it RESTRICTS who may read P, so an edge from the module to the target module saying `exports` would assert the opposite of what the clause says; (e) `requires` lands on the IMPORTS channel with the module name as BOTH name and path, and `requires transitive` is distinguished by importType and by metadata, because the modifier is a real fact about the clause. SUPERSEDED BEHAVIOUR UPDATED 2026-10-18 (Lead ruling task-9, per-fixture adjudication): the forbid `references -> com.example.widget.api` was written for the PRE-two-label contract and asserted that no `references` row could name the exported package. The analyzer behaviour is ADJUDICATED CORRECT \u2014 pinned by the PASSING sibling java/jpms-module-exports, which REQUIRES `references` `module_exports_mention` rows for both exported packages \u2014 because a JPMS directive publishes BOTH labels: `exports` is the DEPENDENCY on the package, `references` is the MENTION of it. COVERAGE IS NOT WEAKENED: the stale forbid is replaced by the positive mention expectations (`module_exports_mention` for api and spi, `module_requires_mention` for the two required modules), so a lost mention now FAILS instead of being forbidden; every other expectation (symbols, exports tiers with qualifiedTo, contains, imports channel, the two `to`-clause forbids) is unchanged.",
+  "expectSymbols": [
+    {
+      "name": "com.example.widget",
+      "kind": "module"
+    },
+    {
+      "name": "com.example.widget.api",
+      "kind": "namespace"
+    },
+    {
+      "name": "com.example.widget.spi",
+      "kind": "namespace"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "com.example.widget",
+      "target": "com.example.widget.api",
+      "confidenceMin": 1,
+      "meta.relationshipType": "module_exports",
+      "meta.evidenceClass": "structural",
+      "meta.qualifiedTo": null,
+      "line_number": 21
+    },
+    {
+      "type": "exports",
+      "source": "com.example.widget",
+      "target": "com.example.widget.spi",
+      "confidenceMin": 1,
+      "meta.relationshipType": "module_exports",
+      "meta.qualifiedTo": [
+        "java.logging",
+        "com.example.core"
+      ],
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "source": "com.example.widget",
+      "target": "com.example.widget.api",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "source": "com.example.widget",
+      "target": "com.example.widget.spi",
+      "confidenceMin": 1
+    },
+    {
+      "type": "references",
+      "source": "com.example.widget",
+      "target": "com.example.widget.api",
+      "meta.relationshipType": "module_exports_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.widget",
+      "target": "com.example.widget.spi",
+      "meta.relationshipType": "module_exports_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.widget",
+      "target": "java.logging",
+      "meta.relationshipType": "module_requires_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.widget",
+      "target": "com.example.core",
+      "meta.relationshipType": "module_requires_mention"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "java.logging",
+      "importType": "java-module-requires",
+      "meta.isModuleRequires": true
+    },
+    {
+      "module": "com.example.core",
+      "importType": "java-module-requires-transitive",
+      "meta.transitive": true
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "com.example.widget",
+      "kind": "module"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "java.logging"
+    },
+    {
+      "type": "exports",
+      "target": "com.example.core"
+    }
+  ]
+}

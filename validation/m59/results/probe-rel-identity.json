@@ -2,7 +2,7 @@
   "probe": "M59.A8",
   "issue": 854,
   "at": "2026-09-20T17:39:36.556Z",
-  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "repo": "/home/ishaq2321/bb_tests/repositories/cats-effect",
   "dataDir": "/tmp/m59-relident-data-aBHI0Z",
   "totals": {
     "rows": 33929,

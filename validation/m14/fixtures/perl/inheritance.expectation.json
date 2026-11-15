@@ -1,0 +1,213 @@
+{
+  "fixtureId": "perl/inheritance",
+  "language": "perl",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Every declaration form Perl accepts for a base class, one per package, because the pre-review rule read only two of the five. `use parent -norequire, 'Base'` (2) and `use base 'Other::Base'` (5) were read, and the option token must not become a parent. `use Mojo::Base -base` (8) passes only FLAGS and the class being subclassed is Mojo::Base ITSELF: the pre-review rule skipped every option-bearing form, so 53 of mojo's 118 inheritance sites produced no edge at all -- the highest-volume defect the F5 differential found. `use Mojo::Base 'Mojo::Base'` (11) names the parent outright. `our @ISA = ('Alpha', 'Beta')` (14) is the pre-Moo form and must give TWO edges. Lines 16-17 are the self-reference case: a class naming ITSELF is a real self-reference in the source and a useless edge in a graph, so it is suppressed. The guard compares FULLY QUALIFIED names, because a leaf comparison also fires for `package Foo::Bar` inheriting a different `Other::Bar` -- and that leaf guard deleted 7 legitimate override edges across mojo and plack, which is what the differential named. Every extends edge carries a line and every overrides edge carries none: the first is written in the source, the second is guessed from a first-parent chain, and `line_number: null` is the harness's way of saying exactly that. UPDATED 2026-10-01: the two `line_number: null` pins on the overrides edges were the UNKNOWN sentinel and are replaced with the real line of the overriding sub. A guessed edge still says so through `confidence: 0.5` and `meta.evidenceClass: inferred` — the confidence is where the guess lives, and the line is a fact about the source. Pinning `null` asserted that the line was unknowable when it is written in the file.",
+  "expectSymbols": [
+    {
+      "name": "UsesParent",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "UsesParent"
+    },
+    {
+      "name": "UsesBase",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "UsesBase"
+    },
+    {
+      "name": "MojoStyle",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "MojoStyle"
+    },
+    {
+      "name": "MojoNamed",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "MojoNamed"
+    },
+    {
+      "name": "IsaArray",
+      "kind": "class"
+    },
+    {
+      "name": "ISA",
+      "kind": "variable",
+      "ownerName": "IsaArray"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "IsaArray"
+    },
+    {
+      "name": "SelfNamed",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "SelfNamed"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "run",
+      "equals": 6,
+      "note": "six packages each declare `run`; the index keeps one symbol per owner bucket"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "UsesParent",
+      "startLine": 1,
+      "endLine": 1
+    },
+    {
+      "symbol": "ISA",
+      "ownerName": "IsaArray",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "symbol": "SelfNamed",
+      "startLine": 16,
+      "endLine": 16,
+      "note": "and its scope is ITSELF: the pre-fix symbol took the scope of the package declared before it"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "parent",
+      "items": [
+        "-norequire",
+        "Base"
+      ]
+    },
+    {
+      "module": "base",
+      "items": [
+        "Other::Base"
+      ]
+    },
+    {
+      "module": "Mojo::Base",
+      "items": [
+        "-base"
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "UsesParent",
+      "target": "Base",
+      "line_number": 2,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "extends",
+      "from": "UsesBase",
+      "target": "Base",
+      "line_number": 5,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "extends",
+      "from": "MojoStyle",
+      "target": "Base",
+      "line_number": 8,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "extends",
+      "from": "MojoNamed",
+      "target": "Base",
+      "line_number": 11,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "extends",
+      "from": "IsaArray",
+      "target": "Alpha",
+      "line_number": 14,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "extends",
+      "from": "IsaArray",
+      "target": "Beta",
+      "line_number": 14,
+      "meta.evidenceClass": "structural",
+      "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+    },
+    {
+      "type": "overrides",
+      "from": "UsesParent.run",
+      "target": "Base.run",
+      "confidence": 0.5,
+      "line_number": 3,
+      "meta.evidenceClass": "inferred",
+      "note": "tier: overrides is GUESSED from a first-parent chain at 0.5, so it can never clear a 0.7 structural floor and the legend's own wording for a guess applies | LINE: this used to pin line_number:null, the harness's UNKNOWN sentinel, on the theory that a GUESSED edge rides no line. The line is now KNOWN and STATED — the edge names the overriding member, so its line is that sub's own signature (UsesParent.run is `sub run { 1 }` on line 3). This is the M60 line contract other lanes already carry, and pinning `null` was pinning ignorance."
+    },
+    {
+      "type": "overrides",
+      "from": "IsaArray.run",
+      "target": "Alpha.run",
+      "confidence": 0.5,
+      "line_number": 15,
+      "meta.evidenceClass": "inferred",
+      "note": "tier: overrides is GUESSED from a first-parent chain at 0.5, so it can never clear a 0.7 structural floor and the legend's own wording for a guess applies | LINE: this used to pin line_number:null, the harness's UNKNOWN sentinel, on the theory that a GUESSED edge rides no line. The line is now KNOWN and STATED — the edge names the overriding member, so its line is that sub's own signature (UsesParent.run is `sub run { 1 }` on line 3). This is the M60 line contract other lanes already carry, and pinning `null` was pinning ignorance."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "UsesParent",
+      "target": "norequire",
+      "note": "the option token of `use parent -norequire` is a flag, not a base class"
+    },
+    {
+      "type": "extends",
+      "from": "MojoStyle",
+      "target": "base",
+      "note": "pre-fix shape: `use Mojo::Base -base` named no parent at all; 53 of mojo's 118 sites"
+    },
+    {
+      "type": "extends",
+      "from": "SelfNamed",
+      "target": "SelfNamed",
+      "note": "a class naming ITSELF as its base is a real self-reference in the source and a useless edge in a graph"
+    },
+    {
+      "type": "overrides",
+      "from": "SelfNamed.run",
+      "target": "SelfNamed.run",
+      "note": "the self-override that follows from the self-extends; the guard compares full names"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "linesOfCode": 20
+    }
+  ]
+}

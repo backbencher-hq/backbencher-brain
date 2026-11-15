@@ -1,0 +1,33 @@
+# The GraphQL file-inclusion convention: `#import "<file>"`.
+#
+# GraphQL's specification has NO import syntax — `A:import_node: 0` across 882,672 nodes
+# and 98 distinct node types on 1,905 corpus files. The convention below is read by
+# `graphql-import-node` and by `graphql-tools`, and it is a COMMENT, which the grammar
+# does produce (4,510 comment nodes across 269 files). Four real corpus shapes follow.
+
+#import "./fragments/user.gql"
+
+# import UserFields from "./fragments/user-fields.gql"
+
+# import * from "./fragments/all.gql"
+
+# import First, Second from "./fragments/pair.gql"
+
+type Query {
+  me: User
+}
+
+# ---------------------------------------------------------------------------
+# Every line below is a comment that a too-eager reader turns into an edge. The
+# fixture's value is mostly here: a keyword match without a negative case reads
+# 4,510 comments as 4,510 imports, which is a number and not a fact.
+# ---------------------------------------------------------------------------
+#
+#   # this document imports nothing at all
+#   # the loader imports every fragment eagerly
+# important: read the schema before you query it
+#import
+#import "./unterminated.graphql
+#import ./no-quotes.graphql
+# imported, # imports, # importer
+# import NoTargetFrom from

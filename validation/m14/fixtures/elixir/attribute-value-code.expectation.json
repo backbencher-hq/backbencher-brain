@@ -1,0 +1,106 @@
+{
+  "issue": "ELX-MR EX-A17 / EX-A18",
+  "note": "Master Review: a module attribute's VALUE is compile-time code. Before the fix the blanket isInAttribute gate silenced every call/instantiates edge inside it, so an Ash-style DSL section (`@section %Spark.Dsl.Section{... build: Spark.Dsl.build(...)}`) and a computed attribute (`@deferred fn -> Helper.later() end`, `@raised raise Helper.Error`) named no dependency at all: 21 attributes carrying 21 struct literals in a 250-file sample of ash, 0 elsewhere in 938 files. The DECLARATION attributes keep their silence (a typespec's %Duration{} is a TYPE reference, @behaviour/@derive are contracts, a docstring is text). EX-A18: multi-alias members that are lowercase identifiers produced zero dependency edges; measured 0 in the six corpora (latent hole, not a corpus defect). Call edges from inside a def carry the arity-qualified scope name (EX2-U2/W24 #17 convention, same as ex3-callsite-lines).",
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "AttrValueCode",
+      "target": "Spark.Dsl.Section",
+      "line_number": 5
+    },
+    {
+      "type": "calls",
+      "from": "AttrValueCode",
+      "target": "Spark.Dsl.build"
+    },
+    {
+      "type": "calls",
+      "from": "AttrValueCode",
+      "target": "Helper.later"
+    },
+    {
+      "type": "instantiates",
+      "from": "AttrValueCode",
+      "target": "Helper.Error",
+      "line_number": 7
+    },
+    {
+      "type": "references",
+      "from": "LowerMultiAlias",
+      "target": "Helper.make"
+    },
+    {
+      "type": "references",
+      "from": "LowerMultiAlias",
+      "target": "Helper.name"
+    },
+    {
+      "type": "references",
+      "from": "LowerMultiAlias",
+      "target": "Helpers.Other"
+    },
+    {
+      "type": "references",
+      "from": "LowerMultiAlias",
+      "target": "Helpers.yet_another"
+    },
+    {
+      "type": "calls",
+      "from": "LowerMultiAlias.go/0",
+      "target": "Helper.make"
+    },
+    {
+      "type": "calls",
+      "from": "LowerMultiAlias.go/0",
+      "target": "Helper.name"
+    },
+    {
+      "type": "calls",
+      "from": "LowerMultiAlias.go/0",
+      "target": "Helpers.yet_another"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "target": "Duration",
+      "line_number": 11
+    },
+    {
+      "type": "instantiates",
+      "target": "Not.A.Struct"
+    },
+    {
+      "type": "calls",
+      "target": "Helper.gone"
+    },
+    {
+      "type": "calls",
+      "target": "section"
+    },
+    {
+      "type": "calls",
+      "target": "deferred"
+    },
+    {
+      "type": "calls",
+      "target": "raised"
+    },
+    {
+      "type": "calls",
+      "target": "doc"
+    },
+    {
+      "type": "calls",
+      "target": "moduledoc"
+    },
+    {
+      "type": "calls",
+      "target": "behaviour"
+    },
+    {
+      "type": "calls",
+      "target": "derive"
+    }
+  ]
+}

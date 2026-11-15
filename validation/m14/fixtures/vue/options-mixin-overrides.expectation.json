@@ -1,0 +1,37 @@
+{
+  "fixtureId": "vue/options-mixin-overrides",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ONTOLOGY (2026-10-03; CORRECTED 2026-10-05). `overrides` was measured DEAD for this lane on every input, which is a defect and not a corpus fact: `script/m14/vue-branch-reachability.mts` writes an Options component whose `mixins` base is a `const` in the same <script> block and production parseFile emitted 0 rows, and 0 for a base that was another .vue SFC in the same directory. The shape below needs no I/O, so it fires. THE CORRECTION is the substantive part and it is authored against Vue's own merge table, NOT against observed analyzer output. `internalOptionMergeStrats` (vuejs@4ab865a, packages/runtime-core/src/componentOptions.ts:1005-1035) splits the option kinds in two: methods/computed/props/emits/inject use extend(base, own) and the CHILD WINS per key, so a same-named member IS an override; the 14 lifecycle hooks use mergeAsArray (`[...new Set([].concat(to, from))]`) and BOTH RUN, `watch` uses mergeWatchOptions and both watchers run, `data` and `provide` use mergeDataFn and BOTH factories run. The first version of this expectation asserted `MixinOverrides.mounted -> lifecycleMixin.mounted` and `MixinOverrides.beforeDestroy -> lifecycleMixin.beforeDestroy`, which Vue does not do: injectHook (apiLifecycle.ts:26-27) pushes onto `target[type] || (target[type] = [])`. MEASURED cost of that false premise: 21 name collisions over the 1,151 admitted .vue files of element-plus + vue-element-admin + vuejs, and 0 of the 21 is in the replacement half — a cross-file resolution built on the old rule would have emitted 21 fabricated rows and not one true one (script/m14/vue-overrides-crossfile-probe.mts; validation/m14/results/vue-verify8-overrides-crossfile.json). So the merge half is pinned as forbids rather than merely dropped, and the three asserted rows are the classes Vue really replaces: a `methods` key, a colliding `data` RETURNED key (mergeDataFn extends the two results, the child's last), and an `emits` key. Confidence 0.95 and `reasonCode: verified-in-file` follow the javascript and typescript producers of the same label, so a consumer's threshold does not depend on which producer fired the row. The other forbid entries pin the closed-world rule: a merge with nothing in common emits nothing, because an in-file base that declares no same-named member is PROOF of non-override rather than an unknown.",
+  "expectRelationships": [
+    { "type": "overrides", "from": "MixinOverrides.shared", "target": "localMixin.shared", "meta.reasonCode": "verified-in-file", "meta.isMixin": true, "meta.isOptionsApi": true },
+    { "type": "overrides", "from": "MixinOverrides.save", "target": "localMixin.save", "meta.reasonCode": "verified-in-file", "meta.baseOption": "localMixin" },
+    { "type": "overrides", "from": "MixinOverrides.count", "target": "localMixin.count", "meta.reasonCode": "verified-in-file", "meta.baseOption": "localMixin" },
+    { "type": "extends", "from": "MixinOverrides", "target": "BasePanel", "meta.isMixin": false },
+    { "type": "extends", "from": "MixinOverrides", "target": "localMixin", "meta.isMixin": true },
+    { "type": "contains", "from": "MixinOverrides", "target": "shared" },
+    { "type": "contains", "from": "MixinOverrides", "target": "mounted" }
+  ],
+  "expectSymbols": [
+    { "name": "MixinOverrides", "kind": "class" },
+    { "name": "shared", "kind": "method", "ownerName": "MixinOverrides" },
+    { "name": "mounted", "kind": "method", "ownerName": "MixinOverrides" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "MixinOverrides.mounted", "target": "lifecycleMixin.mounted" },
+    { "type": "overrides", "from": "MixinOverrides.beforeDestroy", "target": "lifecycleMixin.beforeDestroy" },
+    { "type": "overrides", "from": "MixinOverrides.mounted", "target": "localMixin.mounted" },
+    { "type": "overrides", "from": "MixinOverrides.beforeDestroy", "target": "localMixin.beforeDestroy" },
+    { "type": "overrides", "from": "MixinOverrides.data", "target": "localMixin.data" },
+    { "type": "overrides", "from": "MixinOverrides", "target": "localMixin.onlyInBase" },
+    { "type": "overrides", "target": "localMixin.onlyInBaseState" },
+    { "type": "overrides", "target": "unrelatedMixin.nothingInCommon" },
+    { "type": "overrides", "from": "MixinOverrides.nothingInCommon" },
+    { "type": "overrides", "from": "MixinOverrides.onlyInBase" },
+    { "type": "overrides", "from": "MixinOverrides.onlyInBaseState" },
+    { "type": "overrides", "target": "BasePanel.shared" },
+    { "type": "overrides", "target": "BasePanel.mounted" },
+    { "type": "overrides", "from": "lifecycleMixin.mounted" },
+    { "type": "overrides", "from": "MixinOverrides.mounted", "target": "unrelatedMixin.mounted" }
+  ]
+}

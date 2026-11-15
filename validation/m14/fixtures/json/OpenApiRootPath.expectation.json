@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/OpenApiRootPath.json",
+  "authoredFrom": "BD-ontology: a `/`-prefixed key whose object declares an HTTP method is an API endpoint, and the `paths` object USES it. This fixture exists to pin ONE case the rest of the suite missed: the key `/` ITSELF. The lane oracle carried the guard `key.length > 1` and therefore declined the OpenAPI root path, so the whole-population differential reported `gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/blockfrost.json` as 1 UNEXPLAINED `uses` — `blockfrost.paths -> blockfrost.paths./` — against an analyzer that was right. OpenAPI 3.0 requires each path name to BEGIN with `/`; `/` does, and blockfrost declares a `get` on it. Measured on that file after the oracle was corrected: analyzer `uses` 98, oracle `uses` 98, 0 UNEXPLAINED, 0 MISSING, and the root-path edge present on both sides. `/docs` is the NEGATIVE CONTROL: `/`-prefixed, but its object declares no HTTP method, so it earns `contains` and no `uses`. A pin that only asserted the positive could not tell a rule from a rule that fires on every `/`-prefixed key.",
+  "expectSymbols": [
+    { "name": "openapi", "kind": "property", "ownerName": "OpenApiRootPath" },
+    { "name": "paths", "kind": "class", "ownerName": "OpenApiRootPath" },
+    { "name": "/", "kind": "class", "ownerName": "paths" },
+    { "name": "get", "kind": "class", "ownerName": "/" },
+    { "name": "responses", "kind": "class", "ownerName": "get" },
+    { "name": "200", "kind": "class", "ownerName": "responses" },
+    { "name": "description", "kind": "property", "ownerName": "200" },
+    { "name": "/health", "kind": "class", "ownerName": "paths" },
+    { "name": "get", "kind": "class", "ownerName": "/health" },
+    { "name": "responses", "kind": "class", "ownerName": "get" },
+    { "name": "200", "kind": "class", "ownerName": "responses" },
+    { "name": "description", "kind": "property", "ownerName": "200" },
+    { "name": "/docs", "kind": "class", "ownerName": "paths" },
+    { "name": "summary", "kind": "property", "ownerName": "/docs" },
+    { "name": "OpenApiRootPath", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "OpenApiRootPath", "target": "OpenApiRootPath.openapi", "line_number": 2 },
+    { "type": "contains", "from": "OpenApiRootPath", "target": "OpenApiRootPath.paths", "line_number": 3 },
+    { "type": "contains", "from": "OpenApiRootPath.paths", "target": "OpenApiRootPath.paths./", "line_number": 4 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./", "target": "OpenApiRootPath.paths./.get", "line_number": 4 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./.get", "target": "OpenApiRootPath.paths./.get.responses", "line_number": 4 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./.get.responses", "target": "OpenApiRootPath.paths./.get.responses.200", "line_number": 4 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./.get.responses.200", "target": "OpenApiRootPath.paths./.get.responses.200.description", "line_number": 4 },
+    { "type": "contains", "from": "OpenApiRootPath.paths", "target": "OpenApiRootPath.paths./health", "line_number": 5 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./health", "target": "OpenApiRootPath.paths./health.get", "line_number": 5 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./health.get", "target": "OpenApiRootPath.paths./health.get.responses", "line_number": 5 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./health.get.responses", "target": "OpenApiRootPath.paths./health.get.responses.200", "line_number": 5 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./health.get.responses.200", "target": "OpenApiRootPath.paths./health.get.responses.200.description", "line_number": 5 },
+    { "type": "contains", "from": "OpenApiRootPath.paths", "target": "OpenApiRootPath.paths./docs", "line_number": 6 },
+    { "type": "contains", "from": "OpenApiRootPath.paths./docs", "target": "OpenApiRootPath.paths./docs.summary", "line_number": 6 },
+    {
+      "type": "uses",
+      "from": "OpenApiRootPath.paths",
+      "target": "OpenApiRootPath.paths./",
+      "line_number": 4,
+      "meta.reasonCode": "openapi_path_entry_declares_http_method",
+      "meta.endpoints": "qualified_path"
+    },
+    {
+      "type": "uses",
+      "from": "OpenApiRootPath.paths",
+      "target": "OpenApiRootPath.paths./health",
+      "line_number": 5,
+      "meta.reasonCode": "openapi_path_entry_declares_http_method",
+      "meta.endpoints": "qualified_path"
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "OpenApiRootPath.paths", "target": "OpenApiRootPath.paths./docs" }
+  ]
+}

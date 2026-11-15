@@ -1,0 +1,57 @@
+{
+  "fixtureId": "kotlin/anonymous-type-owner",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #867 ruling. This is the fixture that FAILS before the fix (the in-method literal reported owner=AnonOwner); the expectation records the post-ruling run's spelling, and the revert mutant below proves it is the fix and not the run that makes it pass.",
+  "rationale": "M49/M37 #867. kotlin was the outlier: its walker carries only `pClass`, so a literal declared inside a method was attributed to the enclosing CLASS while java/groovy/scala attributed it to the method. Ruled owner = innermost enclosing declaration, and kotlin now derives it from the AST (nearest function_declaration, else pClass). The class-level literal is pinned too: kotlin is the language where a fix could plausibly over-reach and re-own everything to the method, and this fixture would catch that. Kotlin also emits the two 0.5-confidence `overrides` edges from the anon members to their supertypes; they are deliberately NOT pinned here (#866/#867 owe nothing to that class, and pinning them would freeze an unrelated guess).",
+  "expectSymbols": [
+    {
+      "name": "AnonOwner",
+      "kind": "class"
+    },
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "AnonOwner",
+      "comment": "#867 context 1: class-level literal -> the class (agreed before the fix)"
+    },
+    {
+      "name": "anonymous_Comparator",
+      "kind": "class",
+      "ownerName": "inMethod",
+      "comment": "#867 context 2: in-method literal -> the method (was `AnonOwner` before the fix)"
+    },
+    {
+      "name": "classLevel",
+      "comment": "control: a class-level FIELD is a member of the class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Runnable",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Comparator",
+      "line_number": 13
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Comparator",
+      "comment": "#867 exactly the pre-fix defect: a method-local anonymous type owned by the enclosing class"
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Runnable",
+      "comment": "the mirror direction: an over-reaching fix that re-owns a class-level literal to a method"
+    }
+  ]
+}

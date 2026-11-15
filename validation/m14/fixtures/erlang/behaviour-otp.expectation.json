@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/behaviour-otp.erl",
+  "authoredFrom": "Erlang/OTP semantics: -behaviour(gen_server) is a behaviour contract (implements edge from the module); gen_server:reply/2 is a remote call; self/0 is a BIF — BIFs emit NO calls edge; handle_req has two clauses of the same arity 2, so exactly one symbol with clauseCount 2. Authored from the pinned grammar probe (2026-09-17); corrected 2026-09-17 after first run: two entries were authoring errors (cast->reply, self-call->BIF), not analyzer defects — re-pinned to language truth, not to observed output.",
+  "expectSymbols": [
+    { "name": "behaviour_otp", "kind": "module" },
+    { "name": "init", "kind": "function", "ownerName": "behaviour_otp", "meta.arity": 1 },
+    { "name": "handle_req", "kind": "function", "ownerName": "behaviour_otp", "meta.arity": 2, "meta.clauseCount": 2 },
+    { "name": "helper", "kind": "function", "ownerName": "behaviour_otp", "meta.arity": 0 }
+  ],
+  "expectSymbolCount": [
+    { "name": "handle_req", "kind": "function", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "behaviour_otp", "target": "gen_server", "meta.behaviour": "gen_server" },
+    { "type": "contains", "from": "behaviour_otp", "target": "init" },
+    { "type": "contains", "from": "behaviour_otp", "target": "handle_req" },
+    { "type": "contains", "from": "behaviour_otp", "target": "helper" },
+    { "type": "calls", "from": "handle_req", "target": "gen_server:reply" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "helper", "target": "self" }
+  ],
+  "forbidSymbols": [
+    { "name": "Who" },
+    { "name": "State" },
+    { "name": "no_state" }
+  ]
+}

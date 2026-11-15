@@ -28,7 +28,7 @@ import { ASTEngine } from "../../src/ast/engine"
 const lang = process.argv[2]
 const ext = process.argv[3]
 const count = Number(process.argv[4] ?? 80)
-const corpus = process.argv[5] ?? "$HOME/fixtures/repositories"
+const corpus = process.argv[5] ?? "/home/ishaq2321/bb_tests/repositories"
 
 const files = execFileSync(
   "bash",

@@ -249,7 +249,7 @@ function walk(dir: string, acc: string[] = []): string[] {
   }
   return acc
 }
-const files = walk("$HOME/fixtures/repositories/phoenix").slice(0, 60)
+const files = walk("/home/ishaq2321/bb_tests/repositories/phoenix").slice(0, 60)
 let syms = 0, rels = 0, lines = 0
 const t0 = performance.now()
 for (const f of files) {

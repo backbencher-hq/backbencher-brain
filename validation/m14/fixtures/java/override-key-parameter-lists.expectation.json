@@ -1,0 +1,77 @@
+{
+  "fixtureId": "java/override-key-parameter-lists",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 R10 \u2014 the java override-KEY class, found by the target-spelling census (validation/m60/target-spelling-register.json) and root-caused in grails-core: an override endpoint is built as `${ownerFqn}.${name}${signature}`, so the label comes from splitting a string that CONTAINS a parameter list, and the pre-fix rule (split on '.', last two segments, cut each at '(') split the parameter list itself whenever a parameter TYPE was written with a dot. Two live shapes are pinned here: a QUALIFIED parameter type in a non-final position (grails JpaQueryBuilder.java, 84 mangled sides on a 300-file draw \u2014 `handle.Criterion,StringBuilder,\u2026boolean)`) and a GENERIC parameter type (`Map.Entry<String, Boolean>`, the GrailsResourceUtils.java `removeEldestEntry` shape). The parameter types are written qualified on purpose: the signature carries the WRITTEN text, so an unqualified `Criterion` would not exercise the class at all. The third shape (dotted type in the LAST position) is the same rule reached from the other side \u2014 it makes the last-two window shift rather than the method name survive.",
+  "expectSymbols": [
+    {
+      "name": "Builder",
+      "kind": "class"
+    },
+    {
+      "name": "Query",
+      "kind": "interface"
+    },
+    {
+      "name": "Criterion",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Builder.query",
+      "target": "query"
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.remember",
+      "target": "remember"
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.last",
+      "target": "last"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "Builder.query",
+      "target": "query",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.remember",
+      "target": "remember",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.last",
+      "target": "last",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "query.Criterion,StringBuilder,boolean)",
+      "target": "Criterion,StringBuilder,boolean)",
+      "note": "pre-fix: the parameter list's dot (Outer.Criterion) was split as a qualifier, so BOTH sides of the edge were this string \u2014 no name, and the owner class lost. Measured on grails-core JpaQueryBuilder.java."
+    },
+    {
+      "type": "overrides",
+      "from": "Map.Entry<String, Boolean>)",
+      "target": "Entry<String, Boolean>)",
+      "note": "pre-fix: a GENERIC parameter type shifts the last-two window and leaves an unbalanced ')' \u2014 the GrailsResourceUtils.java shape, where the honest key is LinkedHashMap.removeEldestEntry."
+    },
+    {
+      "type": "overrides",
+      "from": "last.Criterion)",
+      "target": "Criterion)",
+      "note": "pre-fix: the same rule with the dotted type in the LAST position."
+    }
+  ]
+}

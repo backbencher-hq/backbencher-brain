@@ -1,0 +1,7 @@
+[INFO] [19:56:00] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:56:00] [ast-engine] language grammar allocated {"language":"groovy"}
+[INFO] [19:56:00] [ast-engine] language parser loaded {"language":"groovy","wasmPath":"/tmp/bb-wasm_tree-sitter-groovy_tree-sitter-groovy.wasm_4_53mjoca"}
+
+real	0m39.473s
+user	0m26.425s
+sys	0m4.532s

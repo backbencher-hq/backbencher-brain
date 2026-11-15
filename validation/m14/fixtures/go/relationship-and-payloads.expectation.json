@@ -1,0 +1,198 @@
+{
+  "fixtureId": "go/relationship-and-payloads",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Completeness sections B/C/D for go: pins every required relationship kind (mixes_in go_struct_embedding, implements go_interface_implementation, calls go_function_call + package-scope, instantiates go_instantiation, uses go_selector_use, contains, references declared_type + import dep), the #419-D evidence tiers on those edges (structural / usage_contextual / reference_qualified / import_based), per-symbol complexity (added go wave 2026-08-28 \u2014 go was the only sibling without symbol.complexity), and qualified_calls payloads (leaf + stdlib targets). A regression that drops any kind, tier, or payload fails this fixture.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "struct"
+    },
+    {
+      "name": "Worker",
+      "kind": "struct"
+    },
+    {
+      "name": "Run",
+      "kind": "method"
+    },
+    {
+      "name": "NewShape",
+      "kind": "function"
+    },
+    {
+      "name": "duplicate",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "target": "Shape",
+      "meta.relationshipType": "go_struct_embedding",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "implements",
+      "target": "Runner",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "target": "startWork",
+      "meta.relationshipType": "go_function_call",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "target": "Sprintf",
+      "meta.relationshipType": "go_function_call",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "target": "NewShape",
+      "meta.relationshipType": "go_function_call",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "target": "NewShape",
+      "meta.relationshipType": "go_package_scope_call",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "target": "Sprintf",
+      "meta.relationshipType": "go_package_scope_call",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "instantiates",
+      "target": "NewShape",
+      "meta.relationshipType": "go_instantiation",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "uses",
+      "target": "area",
+      "meta.relationshipType": "go_selector_use",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "persist",
+      "target": "readOnly",
+      "meta.relationshipType": "go_selector_use",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "target": "Run",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "target": "Time",
+      "meta.relationshipType": "declared_type",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.qualifiedType": "time.Time"
+    },
+    {
+      "type": "imports",
+      "target": "fmt",
+      "meta.isImport": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "instantiates",
+      "source": "NewShape",
+      "target": "Shape",
+      "meta.relationshipType": "go_composite_literal_construction",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "work",
+      "target": "Worker",
+      "meta.relationshipType": "go_composite_literal_construction",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "from": "duplicate",
+      "target": "DeepCopyValue",
+      "meta.relationshipType": "go_function_call",
+      "comment": "GO13: qualified call on a builtin-named package is a real call"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "startWork",
+      "equals": 2
+    },
+    {
+      "symbol": "NewShape",
+      "equals": 1
+    },
+    {
+      "symbol": "work",
+      "equals": 1
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "startWork",
+      "includes": [
+        "Sprintf"
+      ]
+    },
+    {
+      "symbol": "work",
+      "includes": [
+        "NewShape"
+      ]
+    },
+    {
+      "symbol": "startWork",
+      "countEquals": {
+        "path": "s.startWork",
+        "count": 1
+      }
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "float64"
+    },
+    {
+      "type": "calls",
+      "target": "len"
+    },
+    {
+      "type": "calls",
+      "target": "cap"
+    },
+    {
+      "type": "instantiates",
+      "target": "String"
+    },
+    {
+      "type": "calls",
+      "meta.relationshipType": "go_goroutine",
+      "target": "anonymous_closure"
+    },
+    {
+      "type": "calls",
+      "meta.relationshipType": "go_defer",
+      "target": "anonymous_closure"
+    },
+    {
+      "type": "uses",
+      "source": "persist",
+      "target": "writeOnly"
+    }
+  ]
+}

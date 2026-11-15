@@ -13,7 +13,7 @@
     {
       "name": "corpus rake/lib/rake (Ruby): sampled into a writable copy",
       "pass": true,
-      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/rake/lib/rake"
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/rake/lib/rake"
     },
     {
       "name": "corpus rake/lib/rake (Ruby): symbols-mode finds Application",
@@ -49,7 +49,7 @@
     {
       "name": "corpus graphql-js/src (TypeScript): sampled into a writable copy",
       "pass": true,
-      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/graphql-js/src"
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/graphql-js/src"
     },
     {
       "name": "corpus graphql-js/src (TypeScript): symbols-mode finds graphql",
@@ -85,7 +85,7 @@
     {
       "name": "corpus rebar3/apps (Erlang): sampled into a writable copy",
       "pass": true,
-      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/rebar3/apps"
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/rebar3/apps"
     },
     {
       "name": "corpus rebar3/apps (Erlang): symbols-mode finds rebar_config_dir",
@@ -121,7 +121,7 @@
     {
       "name": "corpus go-tools/go/analysis/passes (Go): sampled into a writable copy",
       "pass": true,
-      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/go-tools/go/analysis/passes"
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/go-tools/go/analysis/passes"
     },
     {
       "name": "corpus go-tools/go/analysis/passes (Go): symbols-mode finds unreachable",
@@ -170,5 +170,5 @@
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed)."
   ],
-  "generatedAt": "2026-11-04T05:38:43.553Z"
+  "generatedAt": "2026-11-05T04:17:57.569Z"
 }

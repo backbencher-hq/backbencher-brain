@@ -61,7 +61,7 @@ async function main() {
   ck("H1: patterns persist maps allPatterns (full set)", handlers.includes("allPatterns.map("))
 
   console.log("── H1.2  determinism: repeated recordRun -> same fingerprints ──")
-  const src = "$HOME/fixtures/repositories/rake"
+  const src = "/home/ishaq2321/bb_tests/repositories/rake"
   if (!existsSync(src)) {
     ck("H1: rake corpus present", false, "MISSING " + src)
   } else {

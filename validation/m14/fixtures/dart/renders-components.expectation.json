@@ -1,0 +1,74 @@
+{
+ "fixtureId": "dart/renders-components",
+ "language": "dart",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "THE `renders` FIXTURE — a component RENDERS another component, and the REFUSALS around it. THE CONTRACT (`src/ast/types.ts:131-140`): source = the rendering symbol, target = the rendered component. The fleet's other lanes publish it in this shape — typescript/javascript: the enclosing component function -> the JSX tag name; clojure: the enclosing fn -> the component symbol inside a hiccup vector; csharp: the rendering context -> the component named by a type argument. DART'S CONSTRUCT IS FLUTTER'S `build` METHOD: `class Home extends StatelessWidget { Widget build(BuildContext context) => Scaffold(); }` — `Home` IS the component and `Scaffold` IS the component it renders, the structural analogue of a React component returning `<Scaffold/>`. Dart has no JSX, so the syntax that carries the construct is the rendering ENTRY POINT, and NO GRAMMAR CHANGE is needed: the existing `method_signature`, `function_body`, `const_object_expression`, `new_expression` and `identifier`+`selector` node types carry it (R3). This fixture pins TWO things. POSITIVE: all FOUR of dart's construction spellings publish the SAME edge — the modern call `Scaffold()`, the const construction `const Scaffold()`, the `new` construction `new Scaffold()` and the block body `return Scaffold();` — because a lane that handled only one of them would pass one row and fail the other three. NEGATIVE: the refused shapes publish NO render row. The negative half is the half a prose claim cannot fake: an analyzer that published a render for EVERY construction inside a build method, or for a build method that returns a variable, or for a lowercase name, would pass every positive row in this file and fail these. The named refusals are: (1) NotReturned — the construction is NOT the returned expression, so it stays an `instantiates` row and no render is published; (2) ReturnsVariable — the build method returns a variable, so no component is NAMED; (3) ReturnsCall — it returns a call to a helper, so no component is NAMED; (4) NotAWidget — the declared return type is not `Widget`, so it is not a rendering host; (5) Lowercase — a lowercase name is not a class (dart's own naming convention, the same test the JS lane applies to a JSX tag, where `<div>` is an intrinsic and not a component). The population behind both halves is measured over the whole admitted corpus by `script/m14/dart-extended-constructs.ts` (the `renders` section of `validation/m14/measurements/dart-extended-constructs-2026-10-21.json`).",
+ "expectSymbols": [
+  { "name": "renders-components", "kind": "module" },
+  { "name": "Rendered", "kind": "class" },
+  { "name": "RenderedConst", "kind": "class" },
+  { "name": "RenderedNew", "kind": "class" },
+  { "name": "RenderedBlock", "kind": "class" },
+  { "name": "NotReturned", "kind": "class" },
+  { "name": "ReturnsVariable", "kind": "class" },
+  { "name": "ReturnsCall", "kind": "class" },
+  { "name": "NotAWidget", "kind": "class" },
+  { "name": "Lowercase", "kind": "class" },
+  { "name": "_helper", "kind": "method", "ownerName": "ReturnsCall" },
+  { "name": "scaffold", "kind": "method", "ownerName": "Lowercase" }
+ ],
+ "expectRelationships": [
+  {
+   "type": "renders",
+   "source": "Rendered",
+   "target": "Scaffold",
+   "confidenceMin": 0.9,
+   "meta.isRenderHost": true,
+   "meta.renderHost": "build",
+   "meta.evidenceClass": "usage_contextual",
+   "note": "POSITIVE 1 — THE MODERN CALL. `Widget build(BuildContext context) => Scaffold();` — the dart grammar spells this construction as a BARE `identifier` FOLLOWED BY A `selector` (the call), so a lane that only read `const_object_expression` would miss it. The source is the COMPONENT (the class), not the method, exactly as the JS lane's source is the enclosing component function."
+  },
+  {
+   "type": "renders",
+   "source": "RenderedConst",
+   "target": "Scaffold",
+   "confidenceMin": 0.9,
+   "meta.isRenderHost": true,
+   "meta.renderHost": "build",
+   "note": "POSITIVE 2 — THE CONST CONSTRUCTION. `=> const Scaffold();` is a `const_object_expression`; the component name is its `type_identifier` child, NOT the `const_builtin` keyword and NOT the argument list."
+  },
+  {
+   "type": "renders",
+   "source": "RenderedNew",
+   "target": "Scaffold",
+   "confidenceMin": 0.9,
+   "meta.isRenderHost": true,
+   "meta.renderHost": "build",
+   "note": "POSITIVE 3 — THE `new` CONSTRUCTION. `=> new Scaffold();` is a `new_expression`. Dart has no `new` in practice, but the grammar carries it and the row must not depend on which spelling the source used."
+  },
+  {
+   "type": "renders",
+   "source": "RenderedBlock",
+   "target": "Scaffold",
+   "confidenceMin": 0.9,
+   "meta.isRenderHost": true,
+   "meta.renderHost": "build",
+   "note": "POSITIVE 4 — THE BLOCK BODY. `{ return Scaffold(); }` — the returned expression is the `return_statement`'s own expression, one level deeper than the arrow body. A lane that read only the arrow form would pass the other three and fail this."
+  },
+  {
+   "type": "instantiates",
+   "source": "build",
+   "target": "Scaffold",
+   "note": "POSITIVE 5 — THE ORDINARY ROW IS NOT SWALLOWED. The construction in `NotReturned` is not the returned expression, so it stays an `instantiates` row: the render row is an ADDITIONAL fact about the widget tree, not a replacement of the call/instantiation row."
+  }
+ ],
+ "forbidRelationships": [
+  { "type": "renders", "source": "NotReturned", "note": "REFUSAL 1 — THE CONSTRUCTION IS NOT THE RETURNED EXPRESSION. `Scaffold();` on its own line is a construction, but the build method returns `_cached`, so no component is rendered: the render row must be read off the RETURNED expression only." },
+  { "type": "renders", "source": "ReturnsVariable", "note": "REFUSAL 2 — THE BUILD METHOD RETURNS A VARIABLE. `=> _cached!;` names no component, so there is nothing to render; the nearest construct is a value read and it stays a `uses` row." },
+  { "type": "renders", "source": "ReturnsCall", "note": "REFUSAL 3 — THE BUILD METHOD RETURNS A CALL. `=> _helper();` names no component either; the helper call stays a `calls` row. A lane that treated every call in a build method as a render would publish a row here." },
+  { "type": "renders", "source": "NotAWidget", "note": "REFUSAL 4 — NOT A RENDERING HOST. `int build() => 1;` — the declared return type is not `Widget`, so the method is not Flutter's rendering entry point. Without the return-type test, ANY class with a `build()` method would qualify, including the protobuf-style message builders whose `build()` returns a message and not a component." },
+  { "type": "renders", "source": "Lowercase", "target": "scaffold", "note": "REFUSAL 5 — A LOWERCASE NAME IS NOT A CLASS. dart's own naming convention, the same test the JS lane applies to a JSX tag (`<div>` is an intrinsic, not a component). The lowercase call stays a `calls` row." },
+  { "type": "renders", "target": "StatelessWidget", "note": "THE SUPERCLASS IS NOT WHAT IS RENDERED. `extends StatelessWidget` is an `extends` row; the rendered component is the one the build method RETURNS. A lane that published the superclass as the rendered component would pass every positive row above and still be wrong." },
+  { "type": "renders", "source": "build", "note": "THE SOURCE IS THE COMPONENT, NOT THE METHOD. Every render row's source is the class that renders; a row whose source is the bare method name `build` would be ambiguous across every widget in the file — and this file has SEVEN classes with a `build` method, which is what makes the check falsifiable rather than cosmetic." }
+ ]
+}

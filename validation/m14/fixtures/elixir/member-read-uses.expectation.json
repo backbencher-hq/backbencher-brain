@@ -1,0 +1,164 @@
+{
+  "issue": "ELIXIR_FIX2-U1",
+  "note": "`uses` \u2014 a member field READ is a use, not silence and not a call. Measured tree shape: `user.name` is a `call` whose target is a `dot` with no `arguments` child, the same shape as a zero-arity remote call; the receiver's first character is the only thing that separates them. Corpus 2,244 sites / 182 files. Family contract: Go selector field access at 0.7 with the callee skip rule stated verbatim, Erlang record member read, Clojure .-field. The `uses` target is the MEMBER LEAF, not the dotted text, so the callee forbids name the leaf: a capitalized receiver must stay a `calls` edge under its full qualified name, and the fabricated double-label the callee-included mutant produces is `uses -> argv`, not `uses -> System.argv`. Three further forbids, each a distinct failure mode: a `->` pattern is not an evaluation (ER-D7), a quoted block is data (M12.23 quote-as-data), and `recv[:key]` is an Access protocol dispatch, not a field read. Falsifiers: mutant elixir/member-read-dropped, elixir/member-read-as-call, elixir/member-read-callee-included, elixir/member-read-pattern-included.",
+  "expectSymbols": [
+    {
+      "name": "Cc1.MemberRead",
+      "kind": "module"
+    },
+    {
+      "name": "read",
+      "kind": "function",
+      "ownerName": "Cc1.MemberRead"
+    },
+    {
+      "name": "remote",
+      "kind": "function",
+      "ownerName": "Cc1.MemberRead"
+    },
+    {
+      "name": "pattern_read",
+      "kind": "function",
+      "ownerName": "Cc1.MemberRead"
+    },
+    {
+      "name": "quoted",
+      "kind": "function",
+      "ownerName": "Cc1.MemberRead"
+    },
+    {
+      "name": "access",
+      "kind": "function",
+      "ownerName": "Cc1.MemberRead"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "name",
+      "line_number": 25,
+      "confidence": 0.7,
+      "meta.memberAccess": true,
+      "meta.elixirUsesKind": "member_field_read",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "elixir_member_field_read"
+    },
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "address",
+      "line_number": 26,
+      "confidence": 0.7
+    },
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "city",
+      "line_number": 26,
+      "confidence": 0.7
+    },
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "id",
+      "line_number": 27,
+      "confidence": 0.7
+    },
+    {
+      "type": "calls",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "Enum.map",
+      "line_number": 27,
+      "confidence": 0.8
+    },
+    {
+      "type": "calls",
+      "from": "Cc1.MemberRead.remote/1",
+      "target": "System.argv",
+      "line_number": 42,
+      "confidence": 0.8
+    },
+    {
+      "type": "calls",
+      "from": "Cc1.MemberRead.remote/1",
+      "target": "Map.keys",
+      "line_number": 43,
+      "confidence": 0.8
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "argv"
+    },
+    {
+      "type": "uses",
+      "target": "keys"
+    },
+    {
+      "type": "uses",
+      "target": "map"
+    },
+    {
+      "type": "uses",
+      "target": "key"
+    },
+    {
+      "type": "uses",
+      "target": "injected"
+    },
+    {
+      "type": "calls",
+      "target": "name"
+    },
+    {
+      "type": "calls",
+      "target": "city"
+    },
+    {
+      "type": "calls",
+      "target": "address"
+    },
+    {
+      "type": "calls",
+      "target": "id"
+    },
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.pattern_read/2"
+    },
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.quoted/1"
+    },
+    {
+      "type": "uses",
+      "from": "Cc1.MemberRead.access/1"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "name",
+      "line_number": 25
+    },
+    {
+      "type": "mixes_in",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "address",
+      "line_number": 26
+    },
+    {
+      "type": "mixes_in",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "city",
+      "line_number": 26
+    },
+    {
+      "type": "mixes_in",
+      "from": "Cc1.MemberRead.read/2",
+      "target": "id",
+      "line_number": 27
+    }
+  ]
+}

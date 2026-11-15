@@ -1,0 +1,65 @@
+{
+  "fixtureId": "javascript/local-binding-declaration-identity",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS R2 (charter §21.41): 'A DEDUP KEY MUST CARRY THE DECLARATION'S IDENTITY WHENEVER THE ROW'S IDENTITY IS THE OCCURRENCE — NOT THE NAME.' A local read is spelled `<callable>\\u0000<name>`, so two reads of TWO DIFFERENT declarations that share a name in one callable spell IDENTICALLY. MEASURED on this lane before the fix: the two reads of `value` (the function-body declaration and the nested-block declaration that shadows it) produced ONE row and the outer read was DROPPED — a lost fact, not a wrong one. The positive half pins TWO rows for `value`, each at its own read's line (22 = the inner declaration's read, 24 = the outer declaration's read); the negative half pins that ONE declaration read TWICE stays ONE row (the second read of `total`, at line 30, must NOT be a row) — R2's warning that 'the line is not the answer' is exactly this: a line-keyed fix splits both. The forbid list also pins the bare spelling of a claimed row, so dropping the separator stays a red suite.",
+  "expectSymbols": [
+    {
+      "name": "shadowed",
+      "kind": "function"
+    },
+    {
+      "name": "readTwice",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "shadowed\u0000limit",
+      "line_number": 20,
+      "meta.localBinding": true,
+      "comment": "read of the parameter — one declaration, one row"
+    },
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "shadowed\u0000value",
+      "line_number": 22,
+      "meta.localBinding": true,
+      "comment": "read of the INNER declaration (the nested block's `const value`)"
+    },
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "shadowed\u0000value",
+      "line_number": 24,
+      "meta.localBinding": true,
+      "comment": "R2 POSITIVE: the read of the OUTER declaration is a DIFFERENT declaration, so it is a SECOND row. Before the fix this row did not exist (the outer read was dropped)."
+    },
+    {
+      "type": "uses",
+      "from": "readTwice",
+      "target": "readTwice\u0000total",
+      "line_number": 29,
+      "meta.localBinding": true,
+      "comment": "the FIRST read of the one declaration of `total`"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "readTwice",
+      "target": "readTwice\u0000total",
+      "line_number": 30,
+      "comment": "R2 NEGATIVE: one declaration read twice is ONE row. A line-keyed fix would publish the second read as a row of its own; the declaration's identity, not the line, is the key."
+    },
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "value",
+      "comment": "the bare spelling must be gone for a claimed binding read"
+    }
+  ]
+}

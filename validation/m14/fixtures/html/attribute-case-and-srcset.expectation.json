@@ -1,0 +1,170 @@
+{
+  "comment": "ATTRIBUTE FIDELITY + CANDIDATE LISTS. Attribute names are ASCII case-insensitive and MUST be lowercased \u2014 pre-fix, `<LINK HREF=\u2026>`/`<IMG SRC=\u2026>`/`<SCRIPT SRC=\u2026>` produced nothing at all. Character references are decoded before the scheme test. srcset is a WHATWG candidate list, not a first token.",
+  "expectSymbols": [
+    {
+      "name": "attribute-case-and-srcset",
+      "kind": "module"
+    },
+    {
+      "name": "mixed",
+      "kind": "class"
+    },
+    {
+      "name": "gallery",
+      "kind": "class"
+    },
+    {
+      "name": "hero-src",
+      "kind": "class"
+    },
+    {
+      "name": "hero-img",
+      "kind": "class"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Mixed-Case-Block"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "/assets/site.css",
+      "line_number": 10,
+      "meta.resourceType": "stylesheet",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "uses",
+      "target": "/assets/boot.js",
+      "line_number": 12,
+      "meta.resourceType": "script"
+    },
+    {
+      "type": "uses",
+      "target": "/assets/hero.png",
+      "line_number": 14,
+      "meta.resourceType": "img"
+    },
+    {
+      "type": "uses",
+      "target": "/assets/hero-480.png",
+      "line_number": 14,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "target": "/assets/hero-1080.png",
+      "line_number": 14,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "target": "/assets/theme.css?v=2&mode=dark",
+      "line_number": 21,
+      "meta.resourceType": "stylesheet"
+    },
+    {
+      "type": "uses",
+      "target": "/docs/page.html",
+      "line_number": 22,
+      "meta.resourceType": "navigation"
+    },
+    {
+      "type": "uses",
+      "from": "gallery",
+      "target": "/assets/gallery.jpg",
+      "line_number": 33,
+      "meta.resourceType": "img"
+    },
+    {
+      "type": "uses",
+      "from": "gallery",
+      "target": "/assets/g1.png",
+      "line_number": 34,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "from": "gallery",
+      "target": "/assets/g2.png",
+      "line_number": 34,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "from": "gallery",
+      "target": "/assets/g3.png",
+      "line_number": 34,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "from": "hero-src",
+      "target": "/assets/wide.webp",
+      "line_number": 37,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "from": "hero-src",
+      "target": "/assets/narrow.webp",
+      "line_number": 37,
+      "meta.resourceType": "img-srcset"
+    },
+    {
+      "type": "uses",
+      "from": "hero-img",
+      "target": "/assets/hero-fallback.jpg",
+      "line_number": 40,
+      "meta.resourceType": "img"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "target": "/assets/theme.css?v=2&amp;mode=dark"
+    },
+    {
+      "target": "/docs/page&#46;html"
+    },
+    {
+      "targetEndsWith": "1x"
+    },
+    {
+      "targetEndsWith": "2x"
+    },
+    {
+      "targetEndsWith": "480w"
+    },
+    {
+      "targetEndsWith": "1080w"
+    }
+  ],
+  "expectImports": [
+    {
+      "comment": "The import's range is the ATTRIBUTE node's, not the element's. `<link rel=stylesheet href=\u2026>` is written on line 10 and the attribute itself occupies columns 26-30, while the element's own start_tag opens at column 3. The pre-fix analyzer passed the ELEMENT range to every import, so a multi-line start tag produced a wrong import line and the stored import could not be checked against the source. `expectImports` compares an object payload by value for exactly this reason.",
+      "module": "/assets/site.css",
+      "range": {
+        "startLine": 10,
+        "startColumn": 26,
+        "endLine": 10,
+        "endColumn": 30,
+        "startIndex": 518,
+        "endIndex": 541
+      }
+    },
+    {
+      "comment": "`<img \u2026 src=\u2026 srcset=\u2026>` is written across four lines, so the element's start_tag and its `src` attribute are on DIFFERENT lines (32 vs 33). The pre-fix element range would answer 32; the attribute range answers 33.",
+      "module": "/assets/gallery.jpg",
+      "range": {
+        "startLine": 33,
+        "startColumn": 8,
+        "endLine": 33,
+        "endColumn": 11,
+        "startIndex": 1832,
+        "endIndex": 1857
+      }
+    }
+  ]
+}

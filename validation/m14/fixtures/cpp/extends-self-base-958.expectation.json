@@ -1,0 +1,88 @@
+{
+  "fixtureId": "cpp/extends-self-base-958",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D2 (#958): a class cannot inherit from itself, and in C++ the namespace qualifier is the whole information content of an inheritance edge. The base-class leaf clean (`split(/::|\\s+/)`, last segment) discarded the qualifier, so `char_traits : std::char_traits<T>` published `char_traits extends char_traits` \u2014 a fabrication about a REAL inheritance \u2014 and `priority_tag : priority_tag<N-1>` published the same for a different instantiation. 49 edges over 1,722 real C++ files. The override resolver already refused exactly these bases (`if (base === startCls) continue`, with this reasoning); the edge they came from did not, so one rule lived in two places and only one of them had it. The gate is per-base, which the `Mixed` case at the end pins: a class whose clause has one self-cleans and one real base must KEEP the real one. The `Circle`/`Box`/`Poly` cases are the control against a gate that swallowed every base. Also pins D6: this class is the one that had the analyzer's last two regexes, and it now has none.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Circle",
+      "target": "Shape",
+      "note": "D2d CONTROL: a distinct base keeps a real extends edge, through the qualifier."
+    },
+    {
+      "type": "extends",
+      "from": "Box",
+      "target": "Shape"
+    },
+    {
+      "type": "extends",
+      "from": "Poly",
+      "target": "Vec2",
+      "note": "a QUALIFIED TEMPLATED base (CPPD4): template arguments are arguments, never the inherited base, and the qualifier is resolved to its leaf."
+    },
+    {
+      "type": "extends",
+      "from": "Mixed",
+      "target": "Shape",
+      "note": "D2e: the gate is PER-BASE. `Mixed : public lib::Shape, public priority_tag<2>` must keep the real base while the self-cleansing one is refused."
+    },
+    {
+      "type": "extends",
+      "from": "proxy",
+      "target": "char_traits",
+      "note": "D2b: `::vendor::char_traits<char>` cleans to the LEAF `char_traits`, which is NOT this class's own name (`proxy`), so the edge is real and kept. The D2b fabrication was the case where the leaf DID equal the class's own name."
+    },
+    {
+      "type": "extends",
+      "from": "Mixed",
+      "target": "priority_tag",
+      "note": "D2e, and the sharper half of the rule: the gate compares the base against the DERIVED class's own name, not against any other declared name. `Mixed` inheriting `priority_tag<2>` is REAL inheritance from a different class, so the edge is correct and kept \u2014 a gate that refused every base whose name appears elsewhere would lose this. What is refused is `priority_tag` naming `priority_tag`."
+    },
+    {
+      "type": "overrides",
+      "from": "Circle::area",
+      "target": "area",
+      "note": "the override chain still resolves through a real base \u2014 the D2 gate must not break virtual dispatch.",
+      "meta.overriddenOwner": "Shape"
+    },
+    {
+      "type": "overrides",
+      "from": "Box::area",
+      "target": "area",
+      "meta.overriddenOwner": "Shape"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "priority_tag",
+      "target": "priority_tag",
+      "note": "D2a: `priority_tag<N-1>` is a different INSTANTIATION. Cleaning the template arguments leaves the class's own name, and the graph then asserted a class inherits from itself."
+    },
+    {
+      "type": "extends",
+      "from": "char_traits",
+      "target": "char_traits",
+      "note": "D2b: `vendor::char_traits : std::char_traits<T>` is real inheritance from a DIFFERENT class. The qualifier was the only thing that said so, and the leaf clean threw it away. This edge claimed a class inherits from itself."
+    },
+    {
+      "type": "overrides",
+      "from": "char_traits::name",
+      "target": "name",
+      "note": "the consequence of D2b, and the shape the M14 F5 probe originally found on fmt's `format_facet.do_put`. The override resolver's own self-collision guard is what already covered this; it is pinned here so the two halves of one rule cannot drift apart again.",
+      "meta.overriddenOwner": "char_traits"
+    },
+    {"type": "extends", "from": "char_traits", "target": "vendor::char_traits", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "extends", "from": "vendor::char_traits", "target": "char_traits", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "char_traits::name", "target": "char_traits::name", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"extends","from":"vendor::char_traits","target":"vendor::char_traits","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ],
+  "forbidSymbols": [
+    {
+      "name": "priority_tag",
+      "kind": "anonymous",
+      "note": "a template class whose name lives in a `template_type` (CPPD1) must not fall back to the `anonymous` sentinel \u2014 255 such phantoms were measured across fmt before CPPD1."
+    }
+  ]
+}

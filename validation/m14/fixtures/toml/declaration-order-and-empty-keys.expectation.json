@@ -1,0 +1,224 @@
+{
+  "comment": "TOML DECLARATION ORDER AND THE EMPTY KEY, authored from the TOML v1.0.0 specification before observing the corrected output. Two rulings, both found by the 1,140-file census rather than by a fixture, and both pinned here for the first time. (1) DECLARATION ORDER IS NOT SIGNIFICANT: the spec requires no super-table to be written first, so `[late.child.grandchild]` written above `[late.child]` is valid TOML and `late.child.grandchild` is INSIDE `late.child`. A walk that resolves an owner from a document-order map files it under the FILE, and the `contains` edge then points at the module instead of at the table that contains the section. Measured: 1 occurrence in 1,140 files, `ansible/pyproject.toml`, where `[tool.setuptools.dynamic]` is on line 45 and `[tool.setuptools]` on line 49. (2) AN EMPTY KEY PRODUCES NOTHING, AT EVERY LEVEL: `\"\" = 1` names nothing because an identity needs a name. That decision was pinned at the DOCUMENT ROOT, where a guard existed; inside a table there was no guard and the path is built as `${table}.${key}`, so an empty segment became a TRAILING DOT — `pb-grpc/pyproject.toml:53` published `tool.setuptools.package-dir.`, which TOML cannot parse back. The `forbidRelationships` rows are the load-bearing half: a symbol whose name ends in a bare `.` still resolves inside its own file, so no resolution-rate check can see it, and only an explicit prohibition catches it.",
+  "expectSymbols": [
+    {
+      "name": "declaration-order-and-empty-keys",
+      "kind": "module",
+      "comment": "the FILE is the module, named from its stem"
+    },
+    {
+      "name": "late.child.grandchild",
+      "kind": "namespace",
+      "comment": "declared on line 22, before BOTH of its ancestors. Its NAME was always right; what the census found wrong was its CONTAINMENT, which is why this row pairs with the relationship row below and no symbol assertion could have seen the defect."
+    },
+    {
+      "name": "late.child.grandchild.deep",
+      "kind": "property"
+    },
+    {
+      "name": "late",
+      "kind": "namespace",
+      "comment": "declared on line 25, AFTER two sections that are inside it — legal TOML, and the spec is what makes it legal"
+    },
+    {
+      "name": "late.shallow",
+      "kind": "property"
+    },
+    {
+      "name": "late.child",
+      "kind": "namespace",
+      "comment": "declared on line 28, AFTER the section that is inside it"
+    },
+    {
+      "name": "late.child.middle",
+      "kind": "property"
+    },
+    {
+      "name": "only.deep.section",
+      "kind": "namespace",
+      "comment": "declared on line 32 with its only ancestor on line 35 — the exact shape `ansible/pyproject.toml` has"
+    },
+    {
+      "name": "only.deep.section.x",
+      "kind": "property"
+    },
+    {
+      "name": "only",
+      "kind": "namespace"
+    },
+    {
+      "name": "only.y",
+      "kind": "property"
+    },
+    {
+      "name": "first",
+      "kind": "namespace"
+    },
+    {
+      "name": "first.a",
+      "kind": "property"
+    },
+    {
+      "name": "first.second",
+      "kind": "namespace",
+      "comment": "already in order, so the second pass changes nothing here. A fixture carrying only the broken order could not tell a second pass from a walk that happens to be right about this file, and it could not tell a fix from a rewrite."
+    },
+    {
+      "name": "first.second.b",
+      "kind": "property"
+    },
+    {
+      "name": "table.with.empty.key",
+      "kind": "namespace"
+    },
+    {
+      "name": "table.with.empty.key.kept",
+      "kind": "property",
+      "comment": "the key BESIDE the empty one still publishes — the ruling omits the unnamed key, not the section that contains it"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "table.with.empty.key.",
+      "comment": "THE defect, on the corpus file that produced it: `[tool.setuptools.package-dir]` followed by `\"\" = \"src/python/grpcio\"` published `tool.setuptools.package-dir.` at line 53 of `pb-grpc/pyproject.toml`. It is not a spelling TOML can parse back, so the identity does not round-trip."
+    },
+    {
+      "name": "table.with.empty.key.\"\"",
+      "comment": "the empty key, spelled the round-trippable way, is still omitted — the lane's recorded decision is that an empty name is not an identity. Pinned AT THIS LEVEL here; `toml/malformed-and-rejected` pins it at the document root, where the guard happened to be."
+    },
+    {
+      "name": "\"\"",
+      "comment": "the document-level spelling, omitted by `toml/malformed-and-rejected`. Re-stated so a reader of THIS fixture does not have to open another one to learn the rule."
+    },
+    {
+      "name": "late.child.grandchild.",
+      "comment": "no name may end in a bare `.`, at any level. The shape resolves inside its own file, so no resolution-rate check and no confidence check can see it — only an explicit prohibition can."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys",
+      "target": "declaration-order-and-empty-keys.late",
+      "line_number": 25,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.late",
+      "target": "declaration-order-and-empty-keys.late.shallow",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.late",
+      "target": "declaration-order-and-empty-keys.late.child",
+      "line_number": 28,
+      "meta.isTableHeader": true,
+      "comment": "this edge is UNCHANGED by the fix — `[late.child]` at line 28 already had its ancestor at line 25 above it. Pinned so a reader can see the second pass did not move everything."
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.late.child",
+      "target": "declaration-order-and-empty-keys.late.child.grandchild",
+      "line_number": 22,
+      "meta.isTableHeader": true,
+      "comment": "THE CORRECTION. `[late.child.grandchild]` is on line 22 and BOTH its ancestors are declared below it, so a document-order walk emits this edge from the MODULE. A symbol assertion cannot see the difference — only the edge's SOURCE can, which is why the matching `forbidRelationships` row exists."
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.late.child.grandchild",
+      "target": "declaration-order-and-empty-keys.late.child.grandchild.deep",
+      "line_number": 23,
+      "comment": "a key hangs off its own SECTION's allocated name, so re-owning the section does not move it"
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.only",
+      "target": "declaration-order-and-empty-keys.only.deep.section",
+      "line_number": 32,
+      "meta.isTableHeader": true,
+      "comment": "the CORRECT source for this edge — `[only]` is declared on line 35, three lines AFTER the section it contains"
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.only.deep.section",
+      "target": "declaration-order-and-empty-keys.only.deep.section.x",
+      "line_number": 33
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys",
+      "target": "declaration-order-and-empty-keys.only",
+      "line_number": 35,
+      "meta.isTableHeader": true,
+      "comment": "declared AFTER the section it contains; nothing about its OWN edge changes"
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.only",
+      "target": "declaration-order-and-empty-keys.only.y",
+      "line_number": 36
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys",
+      "target": "declaration-order-and-empty-keys.first",
+      "line_number": 39,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.first",
+      "target": "declaration-order-and-empty-keys.first.a",
+      "line_number": 40
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.first",
+      "target": "declaration-order-and-empty-keys.first.second",
+      "line_number": 42,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.first.second",
+      "target": "declaration-order-and-empty-keys.first.second.b",
+      "line_number": 43
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys",
+      "target": "declaration-order-and-empty-keys.table.with.empty.key",
+      "line_number": 49,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.table.with.empty.key",
+      "target": "declaration-order-and-empty-keys.table.with.empty.key.kept",
+      "line_number": 51,
+      "comment": "the section still publishes its OTHER key: the ruling omits the unnamed key, not the section"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys",
+      "target": "declaration-order-and-empty-keys.late.child.grandchild",
+      "comment": "THE MISOWNED EDGE. This is what a document-order walk emits and what the second pass replaces. An expectation file cannot ask for the absence of a correct row and the presence of the correct one at once, so the correct row is in `expectRelationships` and this one is here."
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys",
+      "target": "declaration-order-and-empty-keys.only.deep.section",
+      "comment": "same, for the single-ancestor shape `ansible/pyproject.toml` actually has. The CORRECT row for this edge is in `expectRelationships` with `from: only`."
+    },
+    {
+      "type": "contains",
+      "from": "declaration-order-and-empty-keys.table.with.empty.key",
+      "target": "table.with.empty.key.",
+      "comment": "THE EDGE WITH THE MALFORMED TARGET. Production drops it in `filterNoiseRelationships` because the leaf after the trailing `.` is empty, so it never reaches the graph — but the SYMBOL is published, and a symbol is what search, the docs engine and the store index. Pinned as forbidden so the fixture states the intent even where the pipeline hides it."
+    }
+  ]
+}

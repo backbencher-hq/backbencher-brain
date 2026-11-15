@@ -1,0 +1,42 @@
+{
+  "instrument": "m60-powershell-fabricated-calls",
+  "question": "How many `calls` edges name a target that cannot be a command name, and how many of those are range literals?",
+  "predicate": {
+    "implausibleAsCommand": "a published callee that contains a quote, is a range literal, or starts with a digit. A `$`-prefixed path is explicitly NOT suspicious: that is the correct unquoted name for a quoted interpolated path, and an earlier version of this predicate reported 4 such rows as fabrications.",
+    "looksLikeRange": "digits with a `..` range operator, e.g. 1..3, 0..9, 1..$n"
+  },
+  "totalCallsEdges": 4296,
+  "totalImplausible": 2,
+  "totalRanges": 0,
+  "distinctFilesWithImplausible": 1,
+  "perRepo": {
+    "powershell": {
+      "files": 49,
+      "calls": 3677,
+      "implausibleCount": 2,
+      "rangeCount": 0,
+      "implausibleSample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 718,
+          "target": "2RVerification"
+        },
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 2501,
+          "target": "2RVerification"
+        }
+      ],
+      "rangeSample": []
+    },
+    "ansible": {
+      "files": 24,
+      "calls": 619,
+      "implausibleCount": 0,
+      "rangeCount": 0,
+      "implausibleSample": [],
+      "rangeSample": []
+    }
+  },
+  "conclusion": "Implausible call targets exist but none are ranges — classify before fixing."
+}

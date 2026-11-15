@@ -1,0 +1,64 @@
+{
+  "instrument": "THE projectIndex COUNT FIRST \u2014 then the wiring-gap answer, then the locality rule scored before any spec was written",
+  "at": "2026-10-12T19:55:00-04:00",
+  "1_theCount": {
+    "grails-core_java": "1,942 files indexed -> 2,196 types \u00b7 15,190 members \u00b7 9,126 symbolNames \u00b7 0 damaged",
+    "geb_java_and_groovy": "653 files -> 654 types \u00b7 1,025 members \u00b7 1,134 symbolNames \u00b7 0 damaged",
+    "reading": "NON-ZERO AND RICH. A java index is producible and populated, so the wiring-gap answer is not 'a channel nobody fills'."
+  },
+  "2_theWiringGap_answer": {
+    "who_writes": "parallel-indexer.ts:1631 PROJECT_INDEX_EXTENSIONS = { .sol, .fs, .proto, .scss } -> :1685 projectIndexes = byExt -> :2251 added to the parse_batch payload",
+    "who_passes": "pool-worker.ts:1818 destructures projectIndexes, :1833 requires it non-null, :1837 iterates it, :1895 returns { projectIndex, projectRoot } to every parse",
+    "who_reads": "ctx.projectIndex (engine.ts:2392)",
+    "verdict": "SOMEONE WRITES IT AND A PRODUCTION CALLER PASSES IT \u2014 wired end to end, and today's scss arm is the positive control (25 repo indexes built, resolveModuleImports fired). The engine comment the Lead flagged is about overrideCompanion, not this field; overrideCompanion IS the discarded-computation precedent, but it is not this field.",
+    "so_the_gap_is_only": ".java and .groovy are absent from the producer's table, so no index is ever built for them."
+  },
+  "3_theLocalityRuleScored_BEFORE_theSpec": {
+    "population": "grails-core, 1,942 java files, 33,734 imports edges \u2014 the same population as the split",
+    "truth": "the FQN maps onto a file the project holds (a java package IS its directory)",
+    "R1_packagePrefix": {
+      "precision": 0.966,
+      "recall": 0.0554,
+      "falseBindings": 20,
+      "missed": 9690
+    },
+    "R2_leafInIndex": {
+      "precision": 0.8326,
+      "recall": 0.8715,
+      "falseBindings": 1798,
+      "missed": 1318,
+      "note": "THE GUARD IS VIOLATED"
+    },
+    "R3_prefixAndLeaf": {
+      "precision": 1.0,
+      "recall": 0.0505,
+      "falseBindings": 0,
+      "missed": 9740,
+      "note": "the guard holds but it reaches 5%"
+    },
+    "R4_FQN_in_qualifiedIndex": {
+      "precision": 1.0,
+      "recall": 0.851,
+      "trueLocal": 8730,
+      "falseBindings": 0,
+      "missed": 1528,
+      "note": "BOTH HALVES SATISFIED \u2014 and 8,730 is exactly the split's LOCAL count"
+    },
+    "reading": "THE INDEX AS DESIGNED \u2014 BARE TYPE NAMES \u2014 CANNOT DECIDE JAVA LOCALITY. Leaf-in-index violates the guard (1,798 false bindings); prefix-and-leaf satisfies it but reaches 5%. FILE-PATH-QUALIFIED NAMES SATISFY BOTH. A java package IS its directory and the builder already receives each file's path (the fileName the scss nameFromFile plumbing added), so the qualified name is derivable with no grammar change."
+  },
+  "4_theWiringPlan_measured": [
+    "JAVA_DECLARATION_SPEC in project-index.ts (typeNodes class/interface/enum/annotation; members method/field/constructor/enum_constant; bases superclass/super_interfaces) \u2014 the probe spec already indexes grails-core at 2,196 types / 0 damaged.",
+    "a qualifyTypeWithFile flag so the builder ALSO records <package-from-path>.<TypeName> \u2014 the scss nameFromFile plumbing already hands indexTree the fileName this needs.",
+    ".java/.groovy into PROJECT_INDEX_EXTENSIONS and specByLang (both places the scss fix touched) + a gate INDEX_SPECS entry.",
+    "the java and groovy emissions read ctx.projectIndex.typeKinds.has(fqn) and emit the LEAF with module in metadata on a hit; UNCHANGED on a miss \u2014 so the EXTERNAL half is byte-identical BY CONSTRUCTION, which is the invariant rather than a test."
+  ],
+  "5_prediction_for_the_acceptance": "java LOCAL 8,730 -> 7,594 resolved \u00b7 812 ambDeclOnly \u00b7 324 ambBoth \u00b7 0 unresolved; EXTERNAL 25,004 byte-identical; false bindings 0 (R4 measured). groovy: 1,808 + 180. If the movement is not in those columns, the difference is the finding.",
+  "6_cpp_and_c_stay_ruled": "an include names a FILE, not a declaration \u2014 leaf ceilings 12 of 1,918 and 0 of 40, so there is no local half to move.",
+  "raw": [
+    "java-index-count.mts",
+    "java-rule-score.mts",
+    "java-rule4.mts",
+    "imports-split-java.json",
+    "imports-split-groovy.json"
+  ]
+}

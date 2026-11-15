@@ -1,0 +1,17 @@
+{
+  "fixtureId": "matlab/Base",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The base half of the cross-file overrides pin: it declares `alpha` and `shared` so that the subclass fixture's `overrides Multi -> alpha` is a verified same-name shadow of a known base member, and so that a member the subclass does NOT redeclare (`shared`) can be forbidden there. A base file publishes no override of its own.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "alpha", "kind": "method", "ownerName": "Base" },
+    { "name": "shared", "kind": "method", "ownerName": "Base" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Base", "target": "alpha" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Base" }
+  ]
+}

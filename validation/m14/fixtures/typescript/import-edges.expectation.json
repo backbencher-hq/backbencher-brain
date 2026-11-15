@@ -1,0 +1,32 @@
+{
+  "fixtureId": "typescript/import-edges",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the imports relationship kind + its evidence tier (section B + D, gap T1). ECMAScript module semantics: import { List } from './data' produces a dependency on the imported module. TS emits a dedicated 'imports' relationship kind (module:item target); the tier must be import_based \u2014 the JVM-family finding (kotlin K8 / scala G1) applied to the web family: the classifier's isImport branch never fires for the 'imports' kind, so edges fell to usage_contextual.",
+  "expectSymbols": [
+    {
+      "name": "Importer",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "List",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "@pkg/core:Logger",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "Config",
+      "meta.evidenceClass": "import_based"
+    }
+  ]
+}

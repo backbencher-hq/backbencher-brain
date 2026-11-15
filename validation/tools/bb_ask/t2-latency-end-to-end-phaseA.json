@@ -1,0 +1,112 @@
+{
+  "tier": "T2-copy",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+  "embeddingDisabled": false,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T2-copy",
+    "/home/ishaq2321/mcp/backbencher-brain",
+    "validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": null,
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 10172.57,
+  "warmupChars": 4328,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 1980.68,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "11% (32837/310423 symbols embedded)",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "confidence": "0.74",
+        "chars": "7687",
+        "lines": "163"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 1708.57,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "11% (32837/310423 symbols embedded)",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "confidence": "0.7",
+        "chars": "4759",
+        "lines": "100"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 1682.35,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "11% (32837/310423 symbols embedded)",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "confidence": "0.73",
+        "chars": "4094",
+        "lines": "96"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 2095.62,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "11% (32837/310423 symbols embedded)",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "confidence": "0.66",
+        "chars": "3864",
+        "lines": "97"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 1789.9,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "11% (32837/310423 symbols embedded)",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "confidence": "0.62",
+        "chars": "3366",
+        "lines": "74"
+      }
+    }
+  ],
+  "p50": 1789.9,
+  "p95": 2095.62,
+  "max": 2095.62,
+  "generatedAt": "2026-11-01T22:20:13.999Z"
+}

@@ -1,0 +1,19 @@
+{
+  "fixtureId": "c/swallowed-root-definitions-907",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#907 (M60-C) round 2 — the SAME loss class, three arrivals the round-1 guard rejected. Round 1 required the ERROR to sit inside a `compound_statement` (jv_print.c's shape). The clang audit (validation/m12/results/c-clang-def-audit.json) then showed the class was still open on jq at four further sites: `src/jv.c:673` `jv jv_number(double x) {` under a ROOT-level `ERROR[673-2185]`; `src/util.c:617` `char* strptime(...)` under `ERROR[40-1259] > pointer_declarator > function_declarator`; `src/jv_dtoa.c:1081` `static double ulp(...)` and `:3471` `char * jvp_dtoa(...)` under `ERROR[2-4277]` with a wrapped header. The fixture is these REAL slices, verbatim (jv.c L673-700, util.c L600-640, jv_dtoa.c L1060-1100), because the glue is a property of the surrounding real text — script/m14/tmp/c907-slice-hunt.ts measured all three LOST at the pre-round-2 tree and all three recovered after. Expected lines were derived from the file text before the analyzer ran: jv_number L25, strptime L71, ulp L117. The authored control block at the end pins the two shapes the widened rule must refuse — a `#define` whose body is definition-shaped (`#define C907_DEF(n) void n(void) { }`) and its invocation form — measured in script/m14/tmp/c907-macro-probe.ts to land as a raw `preproc_arg` / `macro_type_specifier`, unreachable by the recovery. And the whole-file A/B (434 C files, 27747 symbols, /tmp/c907-before.json vs /tmp/c907-after.json) showed the widening added exactly 17 symbols, every one a real definition header, with no new duplicate names.",
+  "expectSymbols": [
+    { "name": "jv_number", "kind": "function" },
+    { "name": "strptime", "kind": "function" },
+    { "name": "ulp", "kind": "function" },
+    { "name": "jv_number_value", "kind": "function" },
+    { "name": "jvp_number_free", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "n", "kind": "function" },
+    { "name": "c907_macro_generated", "kind": "function" },
+    { "name": "c907_macro_generated_open", "kind": "function" },
+    { "name": "c907_never_defined", "kind": "function" }
+  ]
+}

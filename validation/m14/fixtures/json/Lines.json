@@ -1,0 +1,5 @@
+{
+  "top": "leaf",
+  "nested": { "inner": "value" },
+  "arr": [1, 2]
+}

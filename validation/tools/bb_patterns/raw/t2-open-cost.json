@@ -1,0 +1,81 @@
+{
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2",
+  "loadAtStart": [
+    23.06,
+    24.33,
+    22.81
+  ],
+  "openCost": {
+    "readonlyOpenMs": 19.31,
+    "readonlyQueryMs": 1969.26,
+    "readWriteOpenMs": 12234.02,
+    "readWriteQueryMs": 254.81,
+    "deltaOpenMs": 12214.71
+  },
+  "symbolCounts": {
+    "readonly": 310423,
+    "readWrite": 310423
+  },
+  "files": {
+    "before": {
+      "db": {
+        "bytes": 3639963648,
+        "mtime": "2026-11-01T23:21:55.505Z"
+      },
+      "wal": {
+        "bytes": 494432,
+        "mtime": "2026-11-01T23:40:06.624Z"
+      },
+      "shm": {
+        "bytes": 32768,
+        "mtime": "2026-11-01T23:40:06.623Z"
+      }
+    },
+    "afterReadonly": {
+      "db": {
+        "bytes": 3639963648,
+        "mtime": "2026-11-01T23:21:55.505Z"
+      },
+      "wal": {
+        "bytes": 494432,
+        "mtime": "2026-11-01T23:40:06.624Z"
+      },
+      "shm": {
+        "bytes": 32768,
+        "mtime": "2026-11-01T23:40:06.623Z"
+      }
+    },
+    "afterReadWrite": {
+      "db": {
+        "bytes": 3639963648,
+        "mtime": "2026-11-01T23:21:55.505Z"
+      },
+      "wal": {
+        "bytes": 527392,
+        "mtime": "2026-11-01T23:41:28.914Z"
+      },
+      "shm": {
+        "bytes": 32768,
+        "mtime": "2026-11-01T23:41:28.914Z"
+      }
+    },
+    "afterClose": {
+      "db": {
+        "bytes": 3639963648,
+        "mtime": "2026-11-01T23:21:55.505Z"
+      },
+      "wal": {
+        "bytes": 527392,
+        "mtime": "2026-11-01T23:41:28.914Z"
+      },
+      "shm": {
+        "bytes": 32768,
+        "mtime": "2026-11-01T23:41:28.914Z"
+      }
+    }
+  },
+  "indexWriteFromReadWriteOpen": true,
+  "generatedAt": "2026-11-01T23:41:29.193Z"
+}

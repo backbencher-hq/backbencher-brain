@@ -1,0 +1,87 @@
+{
+  "fixtureId": "typescript/local-binding-spellings",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the contract (binding spelling for parameters/type parameters, published names left bare); the rows and line numbers below were then read off the run — the note says so rather than claiming an authorship order that did not happen. Lines are from `nl -ba` of THIS file (the first draft of this note quoted the probe draft's lines instead; the file's own text is the authority): 15 `const local = cb()`, 21 `return helper()`, 25 `value: T | null`, 27 `set(v: T)`.",
+  "rationale": "PINS THE LOCAL-BINDING CLAIM (D7, restored 2026-10-19) IN BOTH DIRECTIONS. A name the family never publishes as a symbol — a parameter call, a type-parameter mention, a loop/catch binding, a local declarator — is RE-SPELLED `<callable>\\u0000<binding>` and marked `metadata.localBinding`, because a bare local name would be looked up by name (the cap-50 classification measured 69 rows unresolved/ambiguous against unrelated same-named declarations). The arbiter verifies the claim from the target's own spelling (a NUL cannot appear in a published key), so the row lands in bindOK and NEVER in resolved. THE GUARDS ARE HALF THE FIXTURE: `helper` is a nested function that IS published as a symbol, so it must stay the bare resolution target — the forbid rows make that over-claim red. HISTORY RECORDED: on 2026-10-18 this fixture was reverted to bare spellings because the differential matcher could not read a NUL target; the matcher now strips the separator (`auditTarget`, task-19.1), so the claim contract is restored rather than left as debt.",
+  "expectSymbols": [
+    {
+      "name": "outer",
+      "kind": "function"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "Box",
+      "kind": "class"
+    },
+    {
+      "name": "set",
+      "kind": "method",
+      "ownerName": "Box"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000cb",
+      "line_number": 15,
+      "note": "parameter call: binding spelling + metadata.localBinding (D7 local-binding claim); the arbiter verifies the spelling itself — bindOK, never resolved"
+    },
+    {
+      "type": "references",
+      "from": "Box",
+      "target": "Box\u0000T",
+      "line_number": 25,
+      "note": "type parameter mention: this grammar lexes a type parameter's name as `type_identifier`, and it is a lexical binding — spelled `Box\\u0000T`"
+    },
+    {
+      "type": "references",
+      "from": "set",
+      "target": "set\u0000T",
+      "line_number": 27,
+      "note": "the same type parameter reached from a method signature (source is the method)"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "helper",
+      "line_number": 21,
+      "note": "GUARD: `helper` is a nested function PUBLISHED as a symbol — it must stay the bare resolution target; re-spelling it would mask a resolution"
+    },
+    {
+      "type": "references",
+      "from": "outer",
+      "target": "helper",
+      "line_number": 21
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "cb",
+      "note": "the bare spelling of a local binding must not survive (one row, re-spelled in place)"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000helper",
+      "note": "a PUBLISHED nested symbol must never be re-spelled"
+    },
+    {
+      "type": "references",
+      "from": "Box",
+      "target": "T",
+      "note": "bare type-parameter spelling forbidden"
+    },
+    {
+      "type": "references",
+      "from": "set",
+      "target": "T"
+    }
+  ]
+}

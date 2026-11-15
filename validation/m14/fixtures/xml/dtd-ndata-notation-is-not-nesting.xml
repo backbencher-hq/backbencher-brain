@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  An `NDATA` clause is a containment the document STATES, not one it NESTS.
+
+  M60 containment ledger, residual finding. `<!ENTITY logo SYSTEM "l.png" NDATA png>`
+  names a notation the DTD declares elsewhere, and necessarily EARLIER: XML 1.0 §4.5
+  writes "NDATA NotationName" and §4.2 defines that name as identifying the notation of the
+  entity. So the notation's declaration is never inside the entity's, and the edge
+
+    test   -contains-> JPEG
+    graphic -contains-> GIF
+
+  is a true containment in the reading "this entity declaration mentions this notation"
+  and an impossible one in the reading "this notation is nested inside this entity".
+
+  Measured over the full 11,464-file admitted population: exactly 2 edges, in
+  libxslt/tests/general/bug-21-.xml and libxslt/tests/general/bug-52.xml, and in both the
+  target's span lies entirely before the source's. The edge carried
+  `evidenceClass: "structural"`, which is a claim that NESTING was observed. None was.
+
+  The tier is the fix and not the label, because `usage_contextual` already defines this
+  exact shape — "a containment the document states through an attribute rather than through
+  nesting" — and its listed precedents are the DTD content model and the NOTATION attribute
+  type. Relabelling the two edges `references` would be worse: `references` resolution has
+  four classes and an NDATA clause is not one of them.
+
+  The shape below writes the notation declaration AFTER the entity, which no real DTD would
+  do — a real one must declare it first — and the edge's target is outside its source either
+  way. Real corpus files cannot be quoted in a fixture because they are the corpus's, so
+  this one carries the general shape and the EDGE assertions are what pin the behaviour: the
+  edge is emitted, its role is `dtd_ndata_notation`, and its tier is `usage_contextual`.
+-->
+<!DOCTYPE photo [
+  <!ENTITY logo SYSTEM "l.png" NDATA png>
+  <!ELEMENT photo (caption)>
+  <!ATTLIST photo xmlns CDATA #IMPLIED>
+  <!NOTATION png SYSTEM "png.exe">
+]>
+<photo xmlns="&logo;">&caption;</photo>

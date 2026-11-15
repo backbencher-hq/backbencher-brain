@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/negative-noise.erl",
+  "authoredFrom": "Negative fixture authored from the analyzer's noise-elimination contract (docs/analyzers/erlang.md + #880): spawn/1 and length/1 are BIFs (pattern flags only, no calls edges), `!` send is binary_op_expr (no edge), worker's #unused{} sits in the clause HEAD (expr_args before clause_body) — pattern position emits NO instantiates; params/locals never become symbols. First draft (2026-09-17) wrongly put the record match in the body, where the RHS is a genuine construction; re-authored to test the head-pattern contract it intended.",
+  "expectSymbols": [
+    { "name": "negative_noise", "kind": "module" },
+    { "name": "run", "kind": "function", "ownerName": "negative_noise", "meta.arity": 1 },
+    { "name": "worker", "kind": "function", "ownerName": "negative_noise", "meta.arity": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls" },
+    { "type": "instantiates" }
+  ],
+  "forbidSymbols": [
+    { "name": "Pid" },
+    { "name": "Msg" },
+    { "name": "unused" }
+  ],
+  "expectPatterns": [
+    "Process Spawning"
+  ]
+}

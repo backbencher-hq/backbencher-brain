@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "status": "verified",
+  "generatedAt": "2026-11-03T16:39:55.281Z",
+  "method": "each mutant is written into the shipped file, the targeted assertion is run and expected to FAIL, the original bytes are restored, and the same assertion is run and expected to PASS; SHA-256 before and after proves the restore",
+  "mutants": [
+    {
+      "name": "read-path-read-write-open",
+      "contract": "a read call leaves the index database and WAL byte-identical",
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "find": "const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })",
+      "redExit": 1,
+      "greenExit": 0,
+      "restored": true,
+      "originalSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "restoredSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "red": true,
+      "green": true
+    },
+    {
+      "name": "html-payload-loses-declared-bounds",
+      "contract": "the HTML artifact carries totalNodesAvailable / originalNodes / returnedNodes in its payload",
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "find": "const graphData = { nodes: result.nodes, links: result.links, excluded: result.excluded, declared }",
+      "redExit": 1,
+      "greenExit": 0,
+      "restored": true,
+      "originalSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "restoredSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "red": true,
+      "green": true
+    },
+    {
+      "name": "kind-filter-ignores-cascade-additions",
+      "contract": "symbolKinds scopes the WHOLE answer, including symbols the owner cascade would add",
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "find": "const kept = extra.filter((node) => (!allowedKinds || allowedKinds.has(String(node.symbol_type).toLowerCase())) && (!all",
+      "redExit": 1,
+      "greenExit": 0,
+      "restored": true,
+      "originalSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "restoredSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "red": true,
+      "green": true
+    },
+    {
+      "name": "edge-set-sliced-instead-of-joined",
+      "contract": "the declared edge count is every stored row connecting two returned nodes, not a slice of the table",
+      "file": "src/intelligence/visualization/visualization-engine.ts",
+      "find": "    relationships = []\n    for (let start = 0; start < idList.length; start += RELATIONSHIP_FETCH_CHUNK) {",
+      "redExit": 1,
+      "greenExit": 0,
+      "restored": true,
+      "originalSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "restoredSha": "caa4eaef81f35a1708e55cb6ffb99f4331b3dd8ad02a22fa5ac64eb3bd11aa3a",
+      "red": true,
+      "green": true
+    },
+    {
+      "name": "published-option-dropped-from-the-request",
+      "contract": "every published option reaches the engine (excludePatterns / includeTests were once dropped)",
+      "file": "src/mcp/tools/bb_visualize/handler.ts",
+      "find": "    excludePatterns: Array.isArray(args.excludePatterns) ? args.excludePatterns.map(String) : undefined,\n",
+      "redExit": 1,
+      "greenExit": 0,
+      "restored": true,
+      "originalSha": "60847d9a12eea637d89bce93d71f2dbb0e862a4330d469b7060c3fcb2ae2ea83",
+      "restoredSha": "60847d9a12eea637d89bce93d71f2dbb0e862a4330d469b7060c3fcb2ae2ea83",
+      "red": true,
+      "green": true
+    }
+  ]
+}

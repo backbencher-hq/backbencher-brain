@@ -1,0 +1,599 @@
+{
+  "fixtureId": "vb/ontology-exports-instantiates-uses",
+  "language": "vb",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The three relationship types the Visual Basic lane had no verdict for at handover. Each is a GAP and not a ruling, because VB HAS the construct; the corpus measurement that says so is in script/m14/vb-ontology-census.ts over 2,658 tracked .vb files (p3d, dismt, pcl, tankex, runtime). (1) `exports`: VB expresses export through ACCESSIBILITY, not through a keyword. `exports_statement`, `export_list` and `assembly_attribute` are node types the grammar HAS RULES for and that occur ZERO times in 2,658 files, so a keyword-shaped `exports` in VB would be an edge the language cannot express -- which is why the verdict rests on a MODIFIER count (15,489 `public` modifiers in 2,344 files) and on the documented default-accessibility table (136 modifier-less members in a class, 20 in a module, 5 in a structure, 116 modifier-less top-level types), not on a node-type count. (2) `instantiates`: four VB construction surfaces, four shapes -- `object_creation_expression` (1,612 standalone), `array_creation_expression` (15,181 standalone), `as_clause` beginning `As New` (2,499), and a QUALIFIED construction whose `New` head is only the leading segment of an access chain (15,233 + 310 fragments). The last one is the common case in this grammar and the one that fabricates a target if read naively. (3) `uses`: 323,540 `member_access_expression` and 1,017 `with_member_access_expression` nodes are a name READ rather than a callee or an index, in 1,921 of 2,658 files. This file also pins FOUR defects found while establishing those verdicts, all of them invisible to a corpus-wide count because the counts stayed healthy: a construction published as `calls` (a `New` in the call graph), `Protected Friend` read as `internal` (one `member_modifier` node holding two words), the header clause branch dead because `headerColonIndex` compared subtree ids instead of document positions (both header clauses in the corpus published NO heritage edge), and `visibility` falling through to `internal` where VB's own table says a modifier-less Procedure/Property/Event defaults to Public. The expectation pins `meta.evidenceClass` on one edge of every class and `meta.accessLevel` / `meta.accessFromModifier` on the accessibility rows, because two of the eleven injected mutants survived a fixture that asserted only the edge's existence: an analyzer that stamped no evidence class at all, and one that read a combined `member_modifier` as a single opaque token (which empties the access-level set and silently falls back to the default table, so `Protected Friend` would have looked exported for the wrong reason). Both are dead assertions until the metadata is pinned.",
+  "expectSymbols": [
+    {
+      "name": "Api",
+      "kind": "class"
+    },
+    {
+      "name": "Explicitly",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "ImplicitlyPublic",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "ImplicitlyPublicToo",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "Hidden",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "Assembly",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "BothHalves",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "HeirsOnly",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "_implicitPrivate",
+      "kind": "variable",
+      "ownerName": "Api"
+    },
+    {
+      "name": "_publicField",
+      "kind": "variable",
+      "ownerName": "Api"
+    },
+    {
+      "name": "_friendField",
+      "kind": "variable",
+      "ownerName": "Api"
+    },
+    {
+      "name": "InAModule",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "Coord",
+      "kind": "struct"
+    },
+    {
+      "name": "X",
+      "kind": "variable",
+      "ownerName": "Coord"
+    },
+    {
+      "name": "_hidden",
+      "kind": "variable",
+      "ownerName": "Coord"
+    },
+    {
+      "name": "Helpers",
+      "kind": "module"
+    },
+    {
+      "name": "Go",
+      "kind": "method",
+      "ownerName": "Helpers"
+    },
+    {
+      "name": "_moduleField",
+      "kind": "variable",
+      "ownerName": "Helpers"
+    },
+    {
+      "name": "InternalOnly",
+      "kind": "class"
+    },
+    {
+      "name": "LooksPublic",
+      "kind": "method",
+      "ownerName": "InternalOnly"
+    },
+    {
+      "name": "ISized",
+      "kind": "interface"
+    },
+    {
+      "name": "Reset",
+      "kind": "method",
+      "ownerName": "ISized"
+    },
+    {
+      "name": "Derived",
+      "kind": "class"
+    },
+    {
+      "name": "AlsoFine",
+      "kind": "method",
+      "ownerName": "Derived"
+    },
+    {
+      "name": "Builds",
+      "kind": "class"
+    },
+    {
+      "name": "_timer",
+      "kind": "variable",
+      "ownerName": "Builds"
+    },
+    {
+      "name": "_list",
+      "kind": "variable",
+      "ownerName": "Builds"
+    },
+    {
+      "name": "EmptyArgs",
+      "kind": "method",
+      "ownerName": "Builds"
+    },
+    {
+      "name": "WithArgs",
+      "kind": "method",
+      "ownerName": "Builds"
+    },
+    {
+      "name": "Qualified",
+      "kind": "method",
+      "ownerName": "Builds"
+    },
+    {
+      "name": "Make",
+      "kind": "method",
+      "ownerName": "Builds"
+    },
+    {
+      "name": "Reads",
+      "kind": "class"
+    },
+    {
+      "name": "_name",
+      "kind": "variable",
+      "ownerName": "Reads"
+    },
+    {
+      "name": "QualifiedRead",
+      "kind": "method",
+      "ownerName": "Reads"
+    },
+    {
+      "name": "CalleeIsNotARead",
+      "kind": "method",
+      "ownerName": "Reads"
+    },
+    {
+      "name": "Invoked",
+      "kind": "method",
+      "ownerName": "Reads"
+    },
+    {
+      "name": "DottedPath",
+      "kind": "method",
+      "ownerName": "Reads"
+    },
+    {
+      "name": "Utf8",
+      "kind": "method",
+      "ownerName": "Reads"
+    }
+  ],
+  "forbidSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Api",
+      "line_number": 21
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "Explicitly",
+      "line_number": 23,
+      "meta.evidenceClass": "structural",
+      "meta.accessFromModifier": true
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "ImplicitlyPublic",
+      "line_number": 28,
+      "comment": "NO ACCESS MODIFIER, PROCEDURE: VB's documented default for a Procedure/Property/Event is PUBLIC, not Private. A modifier-less `Sub` in a Class IS callable from another assembly. The old fall-through published this `internal`.",
+      "meta.accessFromModifier": false,
+      "meta.accessLevel": "public"
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "ImplicitlyPublicToo",
+      "line_number": 32
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "BothHalves",
+      "line_number": 53,
+      "comment": "THE COMBINED MODIFIER. `Protected Friend` is 'protected OR friend', so it IS assembly-reachable through the friend half. This grammar puts the two words in ONE `member_modifier` node, so reading its text verbatim produced the single token 'protected friend', which matched no entry in the visibility order and fell through to `internal` -- 12 declarations on the lane corpus, every one wrong. accessLevel is the SET, joined.",
+      "meta.accessLevel": "protected+friend"
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "_publicField",
+      "line_number": 66,
+      "comment": "an explicitly Public FIELD"
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "InAModule",
+      "line_number": 71
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Coord",
+      "line_number": 81
+    },
+    {
+      "type": "exports",
+      "from": "Coord",
+      "target": "X",
+      "line_number": 83,
+      "comment": "THE CONTAINER IS OBSERVABLE. A modifier-less field is Private in a Class or Module and PUBLIC in a Structure, so `X` in `Coord` is an export while `_implicitPrivate` in `Api` is not. Same rule, opposite answer, one line apart in the file.",
+      "meta.accessLevel": "public",
+      "meta.accessFromModifier": false
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Helpers",
+      "line_number": 88
+    },
+    {
+      "type": "exports",
+      "from": "Helpers",
+      "target": "Go",
+      "line_number": 91,
+      "comment": "a modifier-less PROCEDURE in a MODULE: default Public",
+      "meta.accessFromModifier": false
+    },
+    {
+      "type": "exports",
+      "from": "InternalOnly",
+      "target": "LooksPublic",
+      "line_number": 104,
+      "comment": "A modifier-less top-level CLASS defaults to `Friend`, so `InternalOnly` is not an export of the assembly (`root -> InternalOnly` is in forbidRelationships) while its Public member still is, carrying `ownerAccessLevel: friend`. The edge is not suppressed by the container's visibility: a `Friend` type is assembly-visible to a FRIEND ASSEMBLY, which is per-project configuration this analyzer never sees.",
+      "meta.ownerAccessLevel": "friend"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "ISized",
+      "line_number": 114
+    },
+    {
+      "type": "exports",
+      "from": "ISized",
+      "target": "Reset",
+      "line_number": 115,
+      "comment": "an interface member: default Public"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Derived",
+      "line_number": 122
+    },
+    {
+      "type": "exports",
+      "from": "Derived",
+      "target": "AlsoFine",
+      "line_number": 123
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Builds",
+      "line_number": 128
+    },
+    {
+      "type": "exports",
+      "from": "Builds",
+      "target": "EmptyArgs",
+      "line_number": 140
+    },
+    {
+      "type": "exports",
+      "from": "Builds",
+      "target": "WithArgs",
+      "line_number": 148
+    },
+    {
+      "type": "exports",
+      "from": "Builds",
+      "target": "Qualified",
+      "line_number": 159
+    },
+    {
+      "type": "exports",
+      "from": "Builds",
+      "target": "Make",
+      "line_number": 165
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Reads",
+      "line_number": 177
+    },
+    {
+      "type": "exports",
+      "from": "Reads",
+      "target": "QualifiedRead",
+      "line_number": 182
+    },
+    {
+      "type": "exports",
+      "from": "Reads",
+      "target": "CalleeIsNotARead",
+      "line_number": 191
+    },
+    {
+      "type": "exports",
+      "from": "Reads",
+      "target": "Invoked",
+      "line_number": 200
+    },
+    {
+      "type": "exports",
+      "from": "Reads",
+      "target": "DottedPath",
+      "line_number": 211
+    },
+    {
+      "type": "exports",
+      "from": "Reads",
+      "target": "Utf8",
+      "line_number": 223
+    },
+    {
+      "type": "instantiates",
+      "from": "Builds",
+      "target": "Timer",
+      "line_number": 134,
+      "comment": "CONSTRUCTION SURFACE 4: `As New T()`. The `New` keyword is inlined away by the grammar's `as_clause` rule -- 0 of 30,001 as_clause nodes carry an `As` or `New` token -- so this is a word-bounded char scan of the node's own span. `As New Timers.Timer()` puts an `array_type` in `declared_type` because the `()` reads as bounds, so the target is the ELEMENT type.",
+      "meta.constructionForm": "as-new"
+    },
+    {
+      "type": "instantiates",
+      "from": "Builds",
+      "target": "List",
+      "line_number": 137,
+      "comment": "a GENERIC `As New`: the target is `List`, not the type argument `String`. `calleeLeaf` skips a `type_argument_list`, the same exclusion the heritage path and every other name in this analyzer apply."
+    },
+    {
+      "type": "instantiates",
+      "from": "EmptyArgs",
+      "target": "Widget",
+      "line_number": 141,
+      "comment": "CONSTRUCTION SURFACE 1: `New Foo()` with an EMPTY argument list is an `object_creation_expression`. It is `instantiates`, not `calls` -- publishing both would put one syntactic event in the call graph twice."
+    },
+    {
+      "type": "instantiates",
+      "from": "WithArgs",
+      "target": "Widget",
+      "line_number": 149,
+      "comment": "CONSTRUCTION SURFACE 2: `New Foo(1, 2)` with arguments is an `array_creation_expression` with a `type` field and a `bounds` field and NO `function` field. Keying on `invocation_expression` alone dropped every one of these: 15,181 on the lane corpus, in 1,687 of 2,658 files.",
+      "meta.constructionForm": "new-with-bounds",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "instantiates",
+      "from": "Qualified",
+      "target": "Size",
+      "line_number": 160,
+      "comment": "CONSTRUCTION SURFACE 4: a QUALIFIED construction. `New System.Drawing.Size(3, 4)` does not parse as one construction -- the `object_creation_expression` holds only `New System` and the type is the LAST leaf of the enclosing access chain. Publishing that node's own `type` field gave `instantiates -> System`, a namespace nobody constructs: the grammar's fragmentation turned into a fact about the program.",
+      "meta.qualifiedConstruction": true
+    },
+    {
+      "type": "instantiates",
+      "from": "Make",
+      "target": "Widget",
+      "line_number": 166,
+      "comment": "a construction in a RETURN, so the enclosing declaration is the source"
+    },
+    {
+      "type": "instantiates",
+      "from": "CalleeIsNotARead",
+      "target": "StringBuilder",
+      "line_number": 192
+    },
+    {
+      "type": "instantiates",
+      "from": "DottedPath",
+      "target": "StringBuilder",
+      "line_number": 212,
+      "comment": "the same qualified-construction rule reached through the `As New` surface"
+    },
+    {
+      "type": "uses",
+      "from": "Qualified",
+      "target": "Drawing",
+      "line_number": 160,
+      "comment": "`New System.Drawing.Size(3, 4)`: `Drawing` is a member-access segment in a VALUE slot -- nothing is invoked on it -- so it is a read. Its sibling `System` is the `New` head of the construction and is neither a read nor a target."
+    },
+    {
+      "type": "uses",
+      "from": "Utf8",
+      "target": "UTF8",
+      "line_number": 224,
+      "comment": "the last segment of the same chain, in a VALUE slot because nothing is invoked on it. With `UTF8()` there would be a `calls` edge instead and no `uses` edge: the callee slot is excluded so the two classes are disjoint."
+    },
+    {
+      "type": "uses",
+      "from": "Utf8",
+      "target": "Encoding",
+      "line_number": 224,
+      "comment": "the middle segment of the same chain: a TYPE name, and a read of it"
+    },
+    {
+      "type": "uses",
+      "from": "Utf8",
+      "target": "Text",
+      "line_number": 224,
+      "comment": "a NAMESPACE segment of a three-segment access chain. The tree cannot tell a namespace segment from a member of the same name, so the edge is labelled `uses` -- a read of a NAME -- and carries no claim about what kind of member it is."
+    },
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Api",
+      "line_number": 122,
+      "comment": "THE OTHER HALF OF THE HEADER CLAUSE. `Class C : Inherits B` is an `extends`, decided by reading the `Inherits` keyword out of the source span between the `:` and the first name -- the grammar inlines the keyword away, so the node types alone cannot tell `Inherits` from `Implements`. THE WHOLE HEADER BRANCH WAS DEAD before this wave: `headerColonIndex` compared node `id`s, and a web-tree-sitter `id` is an internal subtree pointer rather than a document position, so the `:` was never found. Both header clauses in the 2,658-file corpus published no heritage edge at all.",
+      "meta.heritageForm": "header"
+    },
+    {
+      "type": "implements",
+      "from": "ISized",
+      "target": "IDisposable",
+      "line_number": 114,
+      "comment": "THE KEYWORD-LESS INTERFACE HEADER. `Interface I : IDisposable` has no `Inherits`/`Implements` keyword at all, and VB has no interface inheritance, so every entry is an interface the type IMPLEMENTS. Labelled `extends`, which is the mislabel a single `seenInherits = -1` flag produced.",
+      "meta.heritageForm": "header"
+    },
+    {
+      "type": "implements",
+      "from": "ISized",
+      "target": "IComparable",
+      "line_number": 114,
+      "comment": "the second entry of the same keyword-less list -- every entry gets its own edge, and none of them is `extends`"
+    },
+    {
+      "type": "calls",
+      "from": "Invoked",
+      "target": "GetHashCode",
+      "line_number": 201,
+      "meta.evidenceClass": "inferred"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "InternalOnly",
+      "comment": "A modifier-less top-level CLASS defaults to `Friend`, which is assembly-INTERNAL. The type is not part of the assembly's public surface, and its member still is (see `InternalOnly -> LooksPublic`, which records `ownerAccessLevel: friend`)."
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "Hidden",
+      "comment": "control: `Private` is not an export"
+    },
+    {
+      "type": "uses",
+      "from": "QualifiedRead",
+      "target": "_name",
+      "comment": "SUPERSEDES an earlier `uses QualifiedRead -> _name` row. `Me._name = \"x\"` (line 183) ASSIGNS a member: the name is written, not read, and `uses` is the family\u2019s value-read class (go\u2019s GO1 and csharp\u2019s CS-D4/CS-R1 define it as a read that is neither a call nor a write). This analyzer publishes no `writes` edges at all, so the write is a DISCLOSED GAP rather than a represented fact \u2014 but absorbing it into `uses` would not fill the gap, it would mislabel a mutation as a read and make the two classes overlap on one expression. Keeping the old row is the failure mode this forbid exists to catch."
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "Assembly",
+      "comment": "control: `Friend` alone is assembly-internal, NOT exported. The pair with `BothHalves` is what makes `Protected Friend` a fact rather than 'any modifier at all'."
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "HeirsOnly",
+      "comment": "control: `Protected` alone is subclass-only, NOT assembly-exported -- the same modifier family as `BothHalves` with the opposite answer."
+    },
+    {
+      "type": "exports",
+      "from": "Api",
+      "target": "_implicitPrivate",
+      "comment": "control: a modifier-less FIELD defaults to Private. This is the row that separates the field default from the procedure default, and `Coord -> X` is the same rule with the opposite answer."
+    },
+    {
+      "type": "exports",
+      "from": "Coord",
+      "target": "_hidden",
+      "comment": "control: an explicitly Private field in a Structure is not exported, even though a modifier-less one is"
+    },
+    {
+      "type": "exports",
+      "from": "Helpers",
+      "target": "_moduleField",
+      "comment": "control: a modifier-less FIELD in a MODULE is Private. A Module's default is a PROCEDURE default, so `Helpers -> Go` is exported and this is not."
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Api_never",
+      "comment": "control: an edge to a name no declaration writes"
+    },
+    {
+      "type": "instantiates",
+      "from": "Builds",
+      "target": "System",
+      "comment": "PRE-FIX SHAPE for the qualified construction: the `object_creation_expression` holds only `New System`, so reading its own `type` field publishes a NAMESPACE as the constructed type. The grammar's fragmentation must not become a fact about the program."
+    },
+    {
+      "type": "instantiates",
+      "from": "Builds",
+      "target": "String",
+      "comment": "control: a generic type ARGUMENT is not what is constructed. `As New List(Of String)` constructs `List`; `String` is an argument."
+    },
+    {
+      "type": "calls",
+      "from": "Builds",
+      "target": "Widget",
+      "comment": "PRE-FIX SHAPE: constructions were published under `calls`, which put a constructor invocation in the call graph and double-counted one syntactic event under two labels."
+    },
+    {
+      "type": "calls",
+      "from": "EmptyArgs",
+      "target": "Widget",
+      "comment": "the same for the argument-less construction surface"
+    },
+    {
+      "type": "uses",
+      "from": "CalleeIsNotARead",
+      "target": "Append",
+      "comment": "control: `sb.Append(\"x\")` puts `Append` in the CALLEE slot, so it is a `calls` target and not a `uses` target. Publishing both labels for one name would make the two classes indistinguishable."
+    },
+    {
+      "type": "uses",
+      "from": "Invoked",
+      "target": "GetHashCode",
+      "comment": "control: the same exclusion for `Me.GetHashCode()`, where the grammar puts the member access in the `function` field of an `invocation_expression`"
+    },
+    {
+      "type": "uses",
+      "from": "Utf8",
+      "target": "System",
+      "comment": "control: `System` is the RECEIVER of the access chain, written as a bare identifier rather than a member access. The edge is the member name of a qualified access, and a bare receiver names nothing."
+    },
+    {
+      "type": "extends",
+      "from": "ISized",
+      "target": "IDisposable",
+      "comment": "PRE-FIX SHAPE for the keyword-less interface header: labelled `extends`. VB has no interface inheritance, so every entry of `Interface I : IDisposable` is an interface the type IMPLEMENTS."
+    },
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Inherits",
+      "comment": "control: a VB KEYWORD is never a heritage target. Where the grammar leaves the keyword in the tree, `Implements` parsed as a `simple_name` and the analyzer would have published `extends entry_ -> Implements`."
+    }
+  ],
+  "knownResidual": "`uses` targets are the NAME the file reads and not a resolved symbol: a qualified read usually names a member of a type this file does not declare, so the edge resolves at both ends about as often as a `calls` edge does (12.0% measured over the corpus's `calls` population) and that is the honest number for a cross-file name rather than a defect. `uses` is deduplicated per (source, target) keeping the first site, with the raw site count on `metadata.sites`, which matches the family's own `uses` emission (csharp keys on `source::uses::name`). A dotted path publishes one edge per SEGMENT the file reads, so `A.B.C` yields `uses` on `B` and on `C`, and `B` may be a namespace segment rather than a member -- the tree cannot tell, and the edge therefore claims only that the name is read. Separately, VB's grammar gives an unqualified call `Foo(x)` and an index `xs(i)` the SAME node type (`array_access_expression`), so this analyzer publishes neither as `calls`: 24,804 identifier-headed and 74,482 member-access-headed sites on the corpus have no call edge, and a heuristic that guessed which was which would be a guess published as fact. That gap is measured and declared rather than filled."
+}

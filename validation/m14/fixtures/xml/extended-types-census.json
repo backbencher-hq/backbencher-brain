@@ -1,0 +1,451 @@
+{
+  "instrument": "validation/m14/fixtures/xml/extended-types-census.mts",
+  "population": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "repos": 202,
+    "admitted": 11593,
+    "admission": "git-tracked, <= 512 KiB, extension in the router's set (.xml .xsd .dtd .svg .xsl .xslt .rng)",
+    "candidatesScreened": 695,
+    "candidatesParsed": 695
+  },
+  "buckets": {
+    "deco_android_event_handler": {
+      "describes": "android:onClick / android:onLongClick (and kin) — an event handler METHOD NAME in an attribute value; the method is declared in Java, outside any XML document",
+      "sites": 0,
+      "files": 0,
+      "examples": [],
+      "analyzerToday": {}
+    },
+    "deco_generic_onclick": {
+      "describes": "onclick= / onClick= outside the android namespace — HTML-in-XML event handler spellings",
+      "sites": 0,
+      "files": 0,
+      "examples": [],
+      "analyzerToday": {}
+    },
+    "deco_xslt_element_factory": {
+      "describes": "xsl:element element= — an AVT naming the output element; a template, not a callable applied to a declaration",
+      "sites": 0,
+      "files": 0,
+      "examples": [],
+      "analyzerToday": {}
+    },
+    "deco_pi_target": {
+      "describes": "a processing instruction whose pseudo-attribute names a stylesheet (xml-stylesheet href) — already `imports`",
+      "sites": 1,
+      "files": 1,
+      "examples": [
+        {
+          "file": "libxslt/tests/namespaces/tst5.xsl",
+          "line": 8,
+          "detail": "<?xml-stylesheet href=\"chrome://global/skin/\" type=\"text/css\"?>"
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 7,
+        "contains:xml_attribute": 8,
+        "contains:xml_namespace": 3,
+        "contains:xml_element": 9,
+        "contains:processing_instruction": 1
+      }
+    },
+    "mix_xsd_substitution_group": {
+      "describes": "XSD substitutionGroup= (§4.6) — element substitution membership; the TYPE-level relation it requires is already `extends` via derivation",
+      "sites": 326,
+      "files": 37,
+      "examples": [
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/ipo_substGroup.xsd",
+          "line": 20,
+          "detail": "substitutionGroup=\"ipo:comment\""
+        },
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/ipo_substGroup.xsd",
+          "line": 22,
+          "detail": "substitutionGroup=\"ipo:comment\""
+        },
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/netsim/EricssonSpecificAttributes.5.1.xsd",
+          "line": 10,
+          "detail": "substitutionGroup=\"xn:vsData\""
+        },
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/netsim/EricssonSpecificAttributes.5.1.xsd",
+          "line": 28,
+          "detail": "substitutionGroup=\"xn:vsData\""
+        },
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/netsim/EricssonSpecificAttributes.5.1.xsd",
+          "line": 45,
+          "detail": "substitutionGroup=\"xn:vsData\""
+        }
+      ],
+      "analyzerToday": {
+        "contains:xml_attribute": 21622,
+        "contains:xml_namespace": 47,
+        "contains:xml_element": 11453,
+        "imports:schema_location": 19,
+        "references:attribute_qname_reference": 5508,
+        "extends:xsd_derivation_base": 383,
+        "uses:xml_namespace_prefix_use": 10307,
+        "references:entity_reference": 31
+      }
+    },
+    "mix_xsd_attributegroup_ref": {
+      "describes": "XSD <xs:attributeGroup ref=\"G\"> inside a complexType/attributeGroup — composes G's attribute bundle into THIS definition: no base, no conformance",
+      "sites": 222,
+      "files": 60,
+      "examples": [
+        {
+          "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_4_0.xsd",
+          "line": 345,
+          "detail": "ref=\"javaee:web-common-attributes\""
+        },
+        {
+          "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_5_0.xsd",
+          "line": 315,
+          "detail": "ref=\"jakartaee:web-common-attributes\""
+        },
+        {
+          "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_6_0.xsd",
+          "line": 315,
+          "detail": "ref=\"jakartaee:web-common-attributes\""
+        },
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/po_attrGroup.xsd",
+          "line": 53,
+          "detail": "ref=\"ItemDelivery\""
+        },
+        {
+          "file": "phpunit/phpunit.xsd",
+          "line": 204,
+          "detail": "ref=\"configAttributeGroup\""
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 8442,
+        "contains:xml_namespace": 136,
+        "contains:xml_attribute": 19259,
+        "contains:xml_element": 10732,
+        "imports:schema_location": 64,
+        "references:attribute_qname_reference": 5603,
+        "extends:xsd_derivation_base": 259,
+        "references:entity_reference": 31
+      }
+    },
+    "mix_xsd_group_ref": {
+      "describes": "XSD <xs:group ref=\"G\"> inside a complexType — composes G's content model into THIS type: no base, no conformance",
+      "sites": 276,
+      "files": 50,
+      "examples": [
+        {
+          "file": "dbeaver/plugins/org.jkiss.dbeaver.ui.app.standalone/src/org/jkiss/dbeaver/ui/app/standalone/tipoftheday/tips.xsd",
+          "line": 51,
+          "detail": "ref=\"tipContentMarkupElement\""
+        },
+        {
+          "file": "dbeaver/plugins/org.jkiss.dbeaver.ui.app.standalone/src/org/jkiss/dbeaver/ui/app/standalone/tipoftheday/tips.xsd",
+          "line": 55,
+          "detail": "ref=\"tipNoLinksMarkupElement\""
+        },
+        {
+          "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_4_0.xsd",
+          "line": 288,
+          "detail": "ref=\"javaee:web-commonType\""
+        },
+        {
+          "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_5_0.xsd",
+          "line": 258,
+          "detail": "ref=\"jakartaee:web-commonType\""
+        },
+        {
+          "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_6_0.xsd",
+          "line": 258,
+          "detail": "ref=\"jakartaee:web-commonType\""
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 9833,
+        "contains:xml_attribute": 19570,
+        "contains:xml_namespace": 87,
+        "contains:xml_element": 10771,
+        "references:attribute_qname_reference": 5793,
+        "extends:xsd_derivation_base": 237,
+        "imports:schema_location": 27,
+        "references:entity_reference": 31
+      }
+    },
+    "mix_xsd_redefine": {
+      "describes": "XSD <xs:redefine schemaLocation=…> — inclusion-with-redefinition, a merge channel",
+      "sites": 1,
+      "files": 1,
+      "examples": [
+        {
+          "file": "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/ipo_redefine.xsd",
+          "line": 13,
+          "detail": "schemaLocation=\"address.xsd\""
+        }
+      ],
+      "analyzerToday": {
+        "contains:xml_attribute": 44,
+        "contains:xml_namespace": 2,
+        "contains:xml_element": 34,
+        "imports:schema_location": 1,
+        "references:attribute_qname_reference": 13,
+        "extends:xsd_derivation_base": 3
+      }
+    },
+    "mix_xslt_use_attribute_sets": {
+      "describes": "XSLT 1.0 §7.1.4 use-attribute-sets=\"a b\" — composes named attribute-set DEFINITIONS into this element: no base, no conformance",
+      "sites": 38,
+      "files": 9,
+      "examples": [
+        {
+          "file": "libxslt/tests/XSLTMark/attsets.xsl",
+          "line": 16,
+          "detail": "use-attribute-sets=\"attset1\""
+        },
+        {
+          "file": "libxslt/tests/XSLTMark/attsets.xsl",
+          "line": 22,
+          "detail": "use-attribute-sets=\"attset2\""
+        },
+        {
+          "file": "libxslt/tests/XSLTMark/attsets.xsl",
+          "line": 28,
+          "detail": "use-attribute-sets=\"attset1 attset2\""
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/param.xsl",
+          "line": 143,
+          "detail": "use-attribute-sets=\"normal.para.spacing\""
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/param.xsl",
+          "line": 218,
+          "detail": "use-attribute-sets=\"verbatim.properties\""
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 971,
+        "contains:xml_namespace": 82,
+        "contains:xml_attribute": 1277,
+        "contains:xml_element": 1306,
+        "references:entity_reference": 9,
+        "imports:xslt_stylesheet_import": 2
+      }
+    },
+    "mix_rng_combine": {
+      "describes": "RELAX NG <define name=X combine=\"choice\"> — merges this definition with another definition of X",
+      "sites": 12,
+      "files": 1,
+      "examples": [
+        {
+          "file": "Aporia/share/gtksourceview-2.0/language-specs/language.rng",
+          "line": 148,
+          "detail": "name=\"attlist.language\" combine=\"interleave\""
+        },
+        {
+          "file": "Aporia/share/gtksourceview-2.0/language-specs/language.rng",
+          "line": 182,
+          "detail": "name=\"attlist.escape-char\" combine=\"interleave\""
+        },
+        {
+          "file": "Aporia/share/gtksourceview-2.0/language-specs/language.rng",
+          "line": 196,
+          "detail": "name=\"attlist.line-comment\" combine=\"interleave\""
+        }
+      ],
+      "analyzerToday": {
+        "contains:xml_namespace": 2,
+        "contains:xml_attribute": 119,
+        "contains:xml_element": 135,
+        "uses:xml_namespace_prefix_use": 4,
+        "references:attribute_qname_reference": 8,
+        "references:xslt_named_template_reference": 39
+      }
+    },
+    "ren_svg_use": {
+      "describes": "SVG <use xlink:href=\"#x\"> / href=\"#x\" — renders a referenced graphic component at this point, in-document",
+      "sites": 11307,
+      "files": 156,
+      "examples": [
+        {
+          "file": "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg",
+          "line": 43,
+          "detail": "href=\"#m6bb809386a\""
+        },
+        {
+          "file": "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg",
+          "line": 53,
+          "detail": "href=\"#m2daa2affb1\""
+        },
+        {
+          "file": "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg",
+          "line": 80,
+          "detail": "href=\"#DejaVuSans-30\""
+        },
+        {
+          "file": "Documenter.jl/test/examples/images/big.svg",
+          "line": 265,
+          "detail": "href=\"#glyph0-1\""
+        },
+        {
+          "file": "Documenter.jl/test/examples/images/big.svg",
+          "line": 266,
+          "detail": "href=\"#glyph0-2\""
+        }
+      ],
+      "analyzerToday": {
+        "imports:doctype_external_id": 3,
+        "contains:xml_attribute": 63335,
+        "contains:xml_namespace": 424,
+        "contains:xml_element": 26141,
+        "uses:xml_namespace_prefix_use": 15626,
+        "references:entity_reference": 2259
+      }
+    },
+    "ren_xslt_call_template": {
+      "describes": "xsl:call-template name=X — invokes a named template (already `calls`, 402 edges)",
+      "sites": 1528,
+      "files": 104,
+      "examples": [
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 21,
+          "detail": "name=\"generate_index\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 22,
+          "detail": "name=\"generate_general\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/html.xsl",
+          "line": 50,
+          "detail": "name=\"dumptext\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/html.xsl",
+          "line": 66,
+          "detail": "name=\"dumptext\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/html.xsl",
+          "line": 93,
+          "detail": "name=\"dumptext\""
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 16479,
+        "contains:xml_namespace": 479,
+        "contains:xml_attribute": 19955,
+        "imports:xslt_stylesheet_import": 9,
+        "contains:xml_element": 18143,
+        "references:xslt_named_template_reference": 44,
+        "references:entity_reference": 645,
+        "calls:xslt_named_template_call": 481,
+        "contains:dtd_entity_declaration": 24,
+        "part_of:xslt_include_part": 80,
+        "overrides:xslt_competing_template_rule": 2
+      }
+    },
+    "ren_xslt_apply_templates": {
+      "describes": "xsl:apply-templates — template DISPATCH by match, names no component",
+      "sites": 4167,
+      "files": 258,
+      "examples": [
+        {
+          "file": "Fake/src/legacy/Test.FAKECore/ConfigFiles/ConfigTransforms.xslt",
+          "line": 15,
+          "detail": "select=\"@* | node()\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 18,
+          "detail": "select=\"files\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 19,
+          "detail": "select=\"symbols\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 27,
+          "detail": "select=\"file\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/html.xsl",
+          "line": 31,
+          "detail": "select=\"$ctxt\""
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 18852,
+        "contains:xml_attribute": 22589,
+        "contains:xml_namespace": 722,
+        "contains:xml_element": 21090,
+        "imports:xslt_stylesheet_import": 20,
+        "references:xslt_named_template_reference": 48,
+        "references:entity_reference": 1577,
+        "contains:pseudo_attribute": 1,
+        "imports:processing_instruction_href": 1,
+        "imports:doctype_external_id": 2,
+        "calls:xslt_named_template_call": 429,
+        "contains:dtd_entity_declaration": 24,
+        "part_of:xslt_include_part": 80,
+        "overrides:xslt_competing_template_rule": 2,
+        "references:attribute_qname_reference": 3,
+        "contains:processing_instruction": 1
+      }
+    },
+    "ren_xslt_value_of": {
+      "describes": "xsl:value-of select= — an XPath VALUE read, not a component",
+      "sites": 1841,
+      "files": 329,
+      "examples": [
+        {
+          "file": "dbeaver/product/repositories/org.jkiss.dbeaver.ce.repository/siteTemplate/web/site.xsl",
+          "line": 7,
+          "detail": "select=\"description\""
+        },
+        {
+          "file": "dbeaver/product/repositories/org.jkiss.dbeaver.ce.repository/siteTemplate/web/site.xsl",
+          "line": 15,
+          "detail": "select=\"@name\""
+        },
+        {
+          "file": "dbeaver/product/repositories/org.jkiss.dbeaver.ce.repository/siteTemplate/web/site.xsl",
+          "line": 18,
+          "detail": "select=\"@label\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 40,
+          "detail": "select=\"concat(@name, ': ', summary)\""
+        },
+        {
+          "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+          "line": 62,
+          "detail": "select=\"@name\""
+        }
+      ],
+      "analyzerToday": {
+        "uses:xml_namespace_prefix_use": 16276,
+        "contains:xml_attribute": 18362,
+        "contains:xml_namespace": 704,
+        "contains:xml_element": 18875,
+        "references:entity_reference": 1597,
+        "imports:xslt_stylesheet_import": 11,
+        "references:xslt_named_template_reference": 44,
+        "calls:xslt_named_template_call": 236,
+        "contains:dtd_entity_declaration": 24,
+        "part_of:xslt_include_part": 80,
+        "overrides:xslt_competing_template_rule": 1,
+        "references:attribute_qname_reference": 2,
+        "imports:doctype_external_id": 1
+      }
+    }
+  }
+}

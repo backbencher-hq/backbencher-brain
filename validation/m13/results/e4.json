@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.09",
+  "code": "E4",
+  "tool": "bb_edit",
+  "title": "bb_edit: language-aware insert body detection",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "typescript: body node \"statement_block\" is detected",
+      "pass": true,
+      "detail": "statement_block"
+    },
+    {
+      "name": "java: body node \"block\" is detected",
+      "pass": true,
+      "detail": "class_body,block"
+    },
+    {
+      "name": "rust: body node \"block\" is detected",
+      "pass": true,
+      "detail": "block"
+    },
+    {
+      "name": "python: body node \"block\" is detected",
+      "pass": true,
+      "detail": "block"
+    },
+    {
+      "name": "ruby: body node \"body_statement\" is detected",
+      "pass": true,
+      "detail": "body_statement"
+    },
+    {
+      "name": "lua: body node \"block\" is detected",
+      "pass": true,
+      "detail": "block"
+    },
+    {
+      "name": "elixir: body node \"do_block\" is detected",
+      "pass": true,
+      "detail": "do_block"
+    },
+    {
+      "name": "TS brace: inside-bottom inserts inside the braces",
+      "pass": true,
+      "detail": "export function target(): number {\n  return 1\n  const insertedLine = true\n}\n"
+    },
+    {
+      "name": "TS nested: inside-bottom lands in the outermost body (after return 0, before final brace)",
+      "pass": true,
+      "detail": "\"export function target(): number {\\n  if (true) {\\n    return 1\\n  }\\n  return 0\\n  const insertedLine = true\\n}\\n\""
+    },
+    {
+      "name": "Java single-line brace: inside-bottom explodes and inserts before the closing brace",
+      "pass": true,
+      "detail": "\"class A { int target() {\\n  return 1;\\n  return 2;\\n} }\\n\""
+    },
+    {
+      "name": "Rust single-line brace: inside-top explodes and inserts before the body",
+      "pass": true,
+      "detail": "\"fn target() -> i32 {\\n  let x = 2;\\n  1\\n}\\n\""
+    },
+    {
+      "name": "Python: inside-top inserts an indented line before the body",
+      "pass": true,
+      "detail": "\"def target():\\n    inserted_line = True\\n    return 1\\n\""
+    },
+    {
+      "name": "Python: inside-bottom inserts an indented line after the body",
+      "pass": true,
+      "detail": "\"def target():\\n    return 1\\n    inserted_line = True\\n\""
+    },
+    {
+      "name": "Ruby: inside-bottom inserts before end",
+      "pass": true,
+      "detail": "\"def target\\n  return 1\\n  inserted_line = true\\nend\\n\""
+    },
+    {
+      "name": "Lua: inside-top inserts an indented line before the body",
+      "pass": true,
+      "detail": "\"function target()\\n  local inserted_line = true\\n  local x = 1\\nend\\n\""
+    },
+    {
+      "name": "Lua: inside-bottom inserts before end",
+      "pass": true,
+      "detail": "\"function target()\\n  local x = 1\\n  local inserted_line = true\\nend\\n\""
+    },
+    {
+      "name": "Elixir do/end body fails loudly (no silent no-op) [negative: unsupported body form]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "Kotlin expression body fails loudly (no body block, no silent no-op) [negative: cannot insert inside target]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "Kotlin: full declaration replaces the declaration",
+      "pass": true,
+      "detail": "\"fun target(): Int {\\n    return 2\\n}\\n\""
+    },
+    {
+      "name": "Kotlin: the nested duplicate declaration is absent [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"fun target(): Int {\\n    return 2\\n}\\n\""
+    },
+    {
+      "name": "C#: full declaration replaces the method",
+      "pass": true,
+      "detail": "\"class A {\\n    int Target() {\\n    return 2;\\n}\\n}\\n\""
+    },
+    {
+      "name": "C#: the nested local function is absent [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"class A {\\n    int Target() {\\n    return 2;\\n}\\n}\\n\""
+    },
+    {
+      "name": "Dart: full declaration replaces the function",
+      "pass": true,
+      "detail": "\"int target() {\\n  return 2;\\n}\\n\""
+    },
+    {
+      "name": "Dart: the nested local function is absent [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"int target() {\\n  return 2;\\n}\\n\""
+    },
+    {
+      "name": "Java: full declaration replaces the method",
+      "pass": true,
+      "detail": "\"class A {\\n    int target() {\\n    return 2;\\n}\\n}\\n\""
+    },
+    {
+      "name": "Java: the return type is not duplicated (`int int`) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"class A {\\n    int target() {\\n    return 2;\\n}\\n}\\n\""
+    },
+    {
+      "name": "Java: a changed return type is honoured (declaration range, not name range)",
+      "pass": true,
+      "detail": "\"class A {\\n    long target() {\\n    return 2L;\\n}\\n}\\n\""
+    },
+    {
+      "name": "TS class method: full declaration replaces the method",
+      "pass": true,
+      "detail": "\"export class A {\\n  target(): number {\\n    return 2\\n  }\\n}\\n\""
+    },
+    {
+      "name": "JS class method: full declaration replaces the method",
+      "pass": true,
+      "detail": "\"export class A {\\n  target() {\\n    return 2\\n  }\\n}\\n\""
+    },
+    {
+      "name": "TS object-literal method: full declaration replaces the method",
+      "pass": true,
+      "detail": "\"export const api = {\\n  target(): number {\\n    return 2\\n  },\\n}\\n\""
+    },
+    {
+      "name": "Haskell: a bare binding is recognised as a full declaration",
+      "pass": true,
+      "detail": "\"target x = x + 2\\n\\n\""
+    },
+    {
+      "name": "TS body fragment still splices into the body",
+      "pass": true,
+      "detail": "\"export function target(): number {\\n  return 42\\n}\\n\""
+    },
+    {
+      "name": "TS body fragment does not replace the declaration [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"export function target(): number {\\n  return 42\\n}\\n\""
+    },
+    {
+      "name": "Kotlin body fragment still splices into the brace body",
+      "pass": true,
+      "detail": "\"fun target(): Int {\\n    return 5\\n}\\n\""
+    },
+    {
+      "name": "Kotlin body fragment does not duplicate the declaration [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"fun target(): Int {\\n    return 5\\n}\\n\""
+    },
+    {
+      "name": "Java body fragment still splices into the body",
+      "pass": true,
+      "detail": "\"class A {\\n    int target() {\\n        return 7;\\n    }\\n}\\n\""
+    },
+    {
+      "name": "Java insert before: lands before the return type, not between it and the name",
+      "pass": true,
+      "detail": "\"class A {\\n    \\nint marker = 0;\\nint target() {\\n        return 1;\\n    }\\n}\\n\""
+    },
+    {
+      "name": "Java insert after: lands after the closing brace",
+      "pass": true,
+      "detail": "\"class A {\\n    \\nint marker = 0;\\nint target() {\\n        return 1;\\n    }\\nint after = 0;\\n\\n}\\n\""
+    },
+    {
+      "name": "Java delete: removes the whole declaration (no `int` left behind) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"class A {\\n    \\nint marker = 0;\\n\\nint after = 0;\\n\\n}\\n\" "
+    }
+  ],
+  "negativeCases": 9,
+  "summary": {
+    "total": 39,
+    "passed": 39,
+    "failed": 0
+  },
+  "decisions": {
+    "bodySource": "tree-sitter body nodes (block / compound_statement / statement_block / function_body / body_statement / do_block / …) via parseForSafety.bodyRanges — no { } scan",
+    "brace": "body node starting with '{' → inside-top = open+1, inside-bottom = close-1",
+    "soft": "indented/keyword body → indented insert at body start/end",
+    "failLoud": "non-line-aligned bodies (e.g. Elixir do/end) and body-less anchors throw a clear error, never silently no-op",
+    "m71": "update decides full-declaration vs body-fragment by PARSING newContent (declaredNames from each declaration's `name` field), never by a name-adjacent keyword regex; the mutated range is the DECLARATION range, which is wider than the indexed span in languages that index from the name (measured: Java, Kotlin)"
+  },
+  "limitations": [
+    "Elixir do/end bodies are not yet inserted (do_block starts mid-line; the indentation anchor is ambiguous). Fails loudly.",
+    "Expression-bodied functions without a block (e.g. Kotlin `fun f() = expr`) have no body block; insert inside them fails loudly.",
+    "Lua `return` must be the last statement in a block, so inside-bottom after a return body is invalid Lua and the validator rejects it loudly (correct: no silent corruption).",
+    "the declaration-range widening is refused across a newline, so a multi-line modifier/annotation prefix keeps the indexed span rather than being guessed at.",
+    "a grammar that exposes no declaration names structurally (measured: Elixir) still relies on the retained keyword fallback for full-declaration updates."
+  ],
+  "generatedAt": "2026-11-05T04:08:55.719Z"
+}

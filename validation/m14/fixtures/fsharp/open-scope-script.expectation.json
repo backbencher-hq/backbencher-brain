@@ -1,0 +1,49 @@
+{
+  "fixtureId": "fsharp/open-scope-script",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-D17, half two \u2014 the same shape as `open-scope.fs` and the OPPOSITE answer, and the pair is the point. Here the `open` is above the `module` keyword, the file has one top-level module, and the import still belongs to `Global`, because `let topLevel = DateTime.UtcNow` EXECUTES before any module exists. That is what makes a file a script, and in a script the code above the first module is at the script's scope.\n\nThe fix that resolved this was a pre-pass over the file's declared scope, and its first version took the FIRST module it found \u2014 which is `Fixture.OpenScript` here and would have been exactly this fixture's forbidden row. It is the same mistake twice in one lane: a rule that is right for the common case and silently wrong for the uncommon one.\n\nCounting module nodes is not sufficient to tell the two fixtures apart, and that is worth stating because it is the obvious implementation and it does not work: `docs/fcs/project.fsx` contains `module M` and `module N` which read as two more top-level modules and are inside triple-quoted strings, so the count alone would classify a single-module file as a script. The executing binding is the fact (script/m14/tmp/fs036-top-level.ts prints the declaration set). Keying on the `.fsx` extension would have been shorter and would have been a guess about which files are scripts rather than a statement about the code \u2014 and it would have been wrong for a `.fs` file that genuinely is a script.",
+  "expectSymbols": [
+    {
+      "name": "topLevel",
+      "kind": "variable"
+    },
+    {
+      "name": "OpenScript",
+      "kind": "module"
+    },
+    {
+      "name": "other",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "Global",
+      "target": "System",
+      "line_number": 20,
+      "meta.isImport": true
+    },
+    {
+      "type": "contains",
+      "from": "OpenScript",
+      "target": "OpenScript.other",
+      "line_number": 25
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "OpenScript",
+      "target": "System",
+      "note": "FS-D17, the first version of the pre-pass. `OpenScript` is the first module in the file, and taking the first module is exactly the rule that was tried and measured: it made 128 open-path rows disagree in the other direction, all of them in a script whose imports are not inside its first module. This forbid is the entire reason the second half of the rule exists."
+    },
+    {
+      "type": "references",
+      "from": "topLevel",
+      "target": "System",
+      "note": "and not from the binding that happens to sit nearest the `open` either. The owner is a SCOPE, and a top-level binding in a script is not one."
+    }
+  ]
+}

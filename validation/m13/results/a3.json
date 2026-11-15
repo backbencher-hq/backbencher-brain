@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.25",
+  "code": "A3",
+  "tool": "bb_ask",
+  "title": "bb_ask: adversarial unit coverage",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "empty query: rejected at the boundary",
+      "pass": true,
+      "detail": "Error: bb_ask requires a non-empty query"
+    },
+    {
+      "name": "empty query: engine returns explicit metadata without an index, no crash",
+      "pass": true,
+      "detail": "method=keyword-fallback"
+    },
+    {
+      "name": "missing index: never answers a fabricated count (no 'There are 0 symbols') [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "I can't answer this: no index exists for this project. Index it first (bb_health refresh or full reindex), then ask agai"
+    },
+    {
+      "name": "missing index: provenance class is unknown",
+      "pass": true,
+      "detail": "unknown"
+    },
+    {
+      "name": "missing index: unknowns name the missing index",
+      "pass": true,
+      "detail": "[\"No index exists for this project; run indexing first.\"]"
+    },
+    {
+      "name": "missing index: zero sources",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "missing index: the read did not create an index database [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "db exists=false before=false"
+    },
+    {
+      "name": "corrupt vector: retrieval still returns a shaped answer",
+      "pass": true,
+      "detail": "method=vector"
+    },
+    {
+      "name": "corrupt vector: no result similarity is NaN [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "foreign model: index model equals the query model (never compared across spaces)",
+      "pass": true,
+      "detail": "nvidia/nemotron-3-embed-1b vs nvidia/nemotron-3-embed-1b"
+    },
+    {
+      "name": "foreign model: its 4-dimension rows are not counted as comparable [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "comparable=4 scanned=4"
+    },
+    {
+      "name": "comparison: comparable count equals the rows actually scanned when the scan is not capped",
+      "pass": true,
+      "detail": "comparable=4 scanned=4 capped=false"
+    },
+    {
+      "name": "tfidf rows are never scanned by the dense path [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "nvidia/nemotron-3-embed-1b"
+    },
+    {
+      "name": "tfidf insertion leaves no NaN similarity [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "empty embeddings: keyword fallback is engaged",
+      "pass": true,
+      "detail": "keyword-fallback"
+    },
+    {
+      "name": "empty embeddings: fallback carries a named reason",
+      "pass": true,
+      "detail": "no-matching-model-embeddings"
+    },
+    {
+      "name": "empty embeddings: no similarity is fabricated as 0 [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[null]"
+    },
+    {
+      "name": "page size 0: refused with the page-size sentence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered"
+    },
+    {
+      "name": "page size 101: refused with the page-size sentence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered"
+    },
+    {
+      "name": "page size -1: refused with the page-size sentence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered"
+    },
+    {
+      "name": "page size 2.5: refused with the page-size sentence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered"
+    },
+    {
+      "name": "engine: maxResults=0 is clamped to a bounded page, not treated as unlimited",
+      "pass": true,
+      "detail": "results=1"
+    }
+  ],
+  "negativeCases": 11,
+  "summary": {
+    "total": 22,
+    "passed": 22,
+    "failed": 0
+  },
+  "decisions": {
+    "missingIndex": "quickAnswer answers an explicit unknown and does NOT create an index database to answer a question about one",
+    "foreignModel": "only rows whose embedding_model and vector_dimension equal the query vector's are compared",
+    "corruptVectors": "malformed or non-finite vectors are skipped; every returned similarity is null or finite",
+    "pageSize": "limit outside 1..100 is refused with the page-size sentence, never clamped into a different answer"
+  },
+  "limitations": [
+    "The dense-vector cases require a dense query model; if the embedder degrades they are recorded as skipped, not failed."
+  ],
+  "generatedAt": "2026-11-05T04:04:51.698Z"
+}

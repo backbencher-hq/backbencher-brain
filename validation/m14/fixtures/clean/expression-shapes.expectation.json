@@ -1,0 +1,422 @@
+{
+  "comment": "The shapes no other clean fixture reached, pinned so the F6 spec->fixture coverage claim is real: case_expression/case_alternative, lambda_expression, guard_equation, where_block, list_comprehension, qualified_identifier, record_definition/record_field and the class trio. Two contract pins beyond coverage: a qualified call keeps its module qualification (`M.lookupOne`, the Erlang gen_server:cast precedent) and a constructor in a function HEAD pattern is never an `instantiates` \u2014 pattern territory is everything before the body FIELD, which is the live form of a gate that used to test for an `operator` child with text `=` (this grammar never produces one, so the gate could not fire). THREE PINS CHANGED in the M14.0 clean-completeness round, each because the old pin was measuring a defect rather than a contract: (1) a where-local now PUBLISHES a symbol, owned by its enclosing frame, carrying its signature's types \u2014 measured over the corpus, 1,821 where/with/let binders held 1,361 function definitions and 449 local signatures that published nothing, and 4,107 applications inside where blocks lost their attribution frame entirely; the haskell lane already solved this construct with scoped local identity and Clean did not. `nonNegative` is still NOT exported, so M11.11's export-surface exclusion is unchanged. (2) `uses` is now emitted for a record field, because a record literal and a record update are real uses of a field and this file declares `x` and `y`; the old `forbid uses` pinned the absence of an edge kind, not the absence of a false positive, and the honest pin is the FP one: only a field THIS FILE declares produces an edge. (3) the `qualified_identifier` named in the header comment is CORPUS-DEAD \u2014 measured over the 320-file universe it occurs exactly twice and both sites are this repository's own fixtures; the form real Clean code uses is `single_quoted_name` (`'Data.Map'.get`, 233 corpus sites), which is now handled too, so the alias form here is kept as the fixture for the 2-site form and `single-quoted-names.icl` is the fixture for the 233-site form.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "interface",
+      "ownerName": "ExpressionShapes"
+    },
+    {
+      "name": "area",
+      "kind": "method",
+      "ownerName": "Shape",
+      "comment": "class_member -> type_signature"
+    },
+    {
+      "name": "label",
+      "kind": "method",
+      "ownerName": "Shape",
+      "comment": "the second member: two members, not one"
+    },
+    {
+      "name": "Point",
+      "kind": "type"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Point",
+      "comment": "record_field"
+    },
+    {
+      "name": "y",
+      "kind": "property",
+      "ownerName": "Point",
+      "comment": "record_field"
+    },
+    {
+      "name": "Point::instance",
+      "kind": "impl",
+      "ownerName": "ExpressionShapes",
+      "comment": "the instance container, namespaced under its target (`<target>::instance`). It used to be named `Point`, which made this file declare `Point` twice — the type AND the implementation — and that is the phantom-declaration class this round removed: 699 containers on the 312-file population, 1,009 of 6,856 residual edges reachable by deleting them."
+    },
+    {
+      "name": "unwrap",
+      "kind": "function"
+    },
+    {
+      "name": "sumSquares",
+      "kind": "function",
+      "comment": "list comprehension in the body"
+    },
+    {
+      "name": "lookupOne",
+      "kind": "function"
+    },
+    {
+      "name": "twice",
+      "kind": "function",
+      "comment": "lambda body"
+    },
+    {
+      "name": "classify",
+      "kind": "function",
+      "comment": "case expression body"
+    },
+    {
+      "name": "describe",
+      "kind": "function",
+      "comment": "guard equations + where block"
+    },
+    {
+      "name": "nonNegative",
+      "kind": "function",
+      "ownerName": "describe",
+      "visibility": "local",
+      "comment": "CHANGED: a where-local IS published. It is owned by the frame that encloses it (`describe`), marked visibility `local`, carries the types of the signature written directly above it (`ret=String`, `params=1` for `k`), and is NOT exported. The identity that distinguishes it from a module-level `nonNegative` is its `qualifiedName` (`describe.nonNegative`), which is what the store resolves relationship endpoints against."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Point",
+      "equals": 1,
+      "comment": "CHANGED: ONE declaration of `Point` — the record type. The instance is `Point::instance`, so the file no longer declares the type twice (it was 2)."
+    },
+    {
+      "name": "Point::instance",
+      "equals": 1,
+      "comment": "and exactly one container for the one instance of `Shape` at `Point`"
+    },
+    {
+      "name": "area",
+      "equals": 2,
+      "comment": "the class member and the instance member"
+    },
+    {
+      "name": "label",
+      "equals": 2,
+      "comment": "the second class member and its instance member \u2014 the merge key carries the OWNER, so a class member and an instance member of the same name stay two symbols"
+    }
+  ],
+  "expectSymbolFields": [
+    {
+      "name": "makePoint",
+      "returnType": "Point",
+      "parameterCount": 2,
+      "comment": "`makePoint :: !Int !Int -> Point` \u2014 the domain's two `argument` types paired with the definition's two `pattern` fields positionally"
+    },
+    {
+      "name": "describe",
+      "returnType": "String",
+      "parameterCount": 1,
+      "comment": "`describe :: !Int -> String`"
+    },
+    {
+      "name": "nonNegative",
+      "returnType": "String",
+      "parameterCount": 1,
+      "comment": "the where-local's OWN signature `nonNegative :: !Int -> String` joins to the local definition, on the same frame+owner key"
+    },
+    {
+      "name": "moveX",
+      "returnType": "Point",
+      "parameterCount": 2,
+      "comment": "`moveX :: !Int Point -> Point` \u2014 two domain types, two patterns"
+    },
+    {
+      "name": "area",
+      "returnType": "Int",
+      "comment": "the CLASS member's signature `area :: a -> Int` gives the Method a result type; the class/instance merge key keeps this the class's symbol, and the instance's `area _ = 0` definition is a separate Method under the instance"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "Point",
+      "kind": "type"
+    },
+    {
+      "name": "makePoint",
+      "kind": "function"
+    },
+    {
+      "name": "moveX",
+      "kind": "function"
+    },
+    {
+      "name": "describe",
+      "kind": "function"
+    },
+    {
+      "name": "sumSquares",
+      "kind": "function"
+    },
+    {
+      "name": "lookupOne",
+      "kind": "function"
+    },
+    {
+      "name": "unwrap",
+      "kind": "function"
+    },
+    {
+      "name": "classify",
+      "kind": "function"
+    },
+    {
+      "name": "twice",
+      "kind": "function"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "Point::instance",
+      "kind": "impl",
+      "comment": "an implementation is not part of a module's surface. This is also the mechanism-side half of the export fix: `impl` is not an EXPORTABLE kind, so the container cannot be exported even though its ownerName is the module."
+    },
+    {
+      "name": "nonNegative",
+      "kind": "function",
+      "comment": "CHANGED but UNCHANGED IN EFFECT: a where-local is still not part of the module's export surface (M11.11 \u00a72). It is now a real symbol that simply is not exported \u2014 the exclusion is stated in `emitExports` rather than being a side effect of the symbol not existing."
+    },
+    {
+      "name": "area",
+      "kind": "method"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "comment": "a record FIELD is not a module-level name; its membership rides `contains`"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "x",
+      "kind": "method",
+      "comment": "a record field is a Property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Point",
+      "target": "Shape",
+      "line_number": 31,
+      "comment": "M59.O2 / formula \u00a78: the edge names its site \u2014 the `instance Shape Point where` line, on the class NAME node"
+    },
+    {
+      "type": "calls",
+      "from": "lookupOne",
+      "target": "M.lookupOne",
+      "meta.isQualifiedCall": true,
+      "line_number": 51,
+      "comment": "qualified target keeps its module qualification AND the call site line"
+    },
+    {
+      "type": "calls",
+      "from": "describe",
+      "target": "describe.nonNegative",
+      "line_number": 39,
+      "comment": "CHANGED: the guard equation `| otherwise = nonNegative n` calls the where-local, and the call resolves to the local's SCOPED identity. The old analyzer attributed nothing for it: the whole where block set `currentFunction = undefined`, so this site produced no edge at all."
+    },
+    {
+      "type": "contains",
+      "from": "describe",
+      "target": "nonNegative",
+      "line_number": 42,
+      "comment": "CHANGED: the frame owns its local, on the local's own naming line"
+    },
+    {
+      "type": "uses",
+      "from": "makePoint",
+      "target": "x",
+      "line_number": 26,
+      "comment": "CHANGED: `{ x = px, y = py }` is a record CONSTRUCTION and every field it sets is a use of that field. `x` is declared by this file, so the edge is emitted; a field name this file does not declare produces none (the FP pin below)."
+    },
+    {
+      "type": "uses",
+      "from": "makePoint",
+      "target": "y",
+      "line_number": 26
+    },
+    {
+      "type": "uses",
+      "from": "moveX",
+      "target": "x",
+      "line_number": 29,
+      "comment": "CHANGED: `{ p & x = p.x + dx }` is a record UPDATE; the field name is read from the `update_field` node, not by zipping the parallel `field`/`value` field lists"
+    },
+    {
+      "type": "references",
+      "from": "makePoint",
+      "target": "Point",
+      "line_number": 25,
+      "comment": "CHANGED: the declared-type reference graph. `makePoint :: !Int !Int -> Point` references `Point` in its result and `Int` twice in its domain; each edge carries the NAME's own line, not the signature's start."
+    },
+    {
+      "type": "references",
+      "from": "makePoint",
+      "target": "Int",
+      "line_number": 25
+    },
+    {
+      "type": "references",
+      "from": "x",
+      "target": "Int",
+      "line_number": 19,
+      "comment": "a record FIELD's declared type is a reference from the field"
+    },
+    {
+      "type": "contains",
+      "from": "Point",
+      "target": "x",
+      "line_number": 19,
+      "comment": "record fields are contained by their type, on the child's own naming line (#921 \u2014 the store resolves with this line)"
+    },
+    {
+      "type": "contains",
+      "from": "Shape",
+      "target": "area",
+      "line_number": 22,
+      "comment": "the class member's signature line"
+    },
+    {
+      "type": "references",
+      "from": "ExpressionShapes",
+      "target": "Data.Map",
+      "line_number": 17,
+      "comment": "the import edge's site line"
+    },
+    {
+      "type": "imports",
+      "from": "ExpressionShapes",
+      "target": "Data.Map:*",
+      "line_number": 17,
+      "comment": "CHANGED: a whole-module import emits the `<module>:*` edge the resolver documents as legitimately unresolved (a namespace has no single target symbol). The per-NAME edges are the ones that resolve."
+    },
+    {
+      "type": "exports",
+      "from": "ExpressionShapes",
+      "target": "describe",
+      "line_number": 36,
+      "comment": "CHANGED: an `exports` edge per exported name, on the symbol's own line. Clean has no export keyword \u2014 a `.dcl`'s definition list IS the interface \u2014 so the export surface is a first-class edge rather than a property only the exports array carries."
+    },
+    {
+      "type": "contains",
+      "from": "ExpressionShapes",
+      "target": "Point",
+      "line_number": 19,
+      "comment": "the TYPE at its definition line. CHANGED FROM 31, WHICH WAS A DEFECT IN THIS PIN AND NOT IN THE ANALYZER: the type has always been contained at L19 and both entries of this pair said 31, so both were satisfied by the container's single edge \u2014 the `expectRelationshipCount equals 2` beside them was the only thing keeping the per-site rule honest, and the pair could not tell 2 sites from 1. The container is a different name now, which is what exposed it."
+    },
+    {
+      "type": "contains",
+      "from": "ExpressionShapes",
+      "target": "Point::instance",
+      "line_number": 31,
+      "comment": "\u2026and the INSTANCE container at ITS line: PER-SITE, two edges at two lines (a per-set implementation keeps whichever line it saw first and fails one of these two)"
+    },
+    {
+      "type": "calls",
+      "from": "reportTwice",
+      "target": "describeTwice",
+      "line_number": 68,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.targetIsInFile": true,
+      "comment": "a BARE in-file call on line 68 \u2014 `reportTwice n = describeTwice (twice n)`, where BOTH callees are module-level functions declared in this file. This is the lane's DEFAULT evidence tier, `usage_contextual`: the target is a known binding identified by its name rather than by a qualified spelling. Every other `calls` row across the eight Clean fixtures is qualified (`M.lookupOne`, `describe.nonNegative`, `withLocals.helper`, `Data.Error.Ok`), so before this pair the default tier was unpinned and a mutant that classified every `calls` edge reference_qualified would have passed. `describeTwice` is defined BELOW its use, which is the forward-reference case."
+    },
+    {
+      "type": "calls",
+      "from": "reportTwice",
+      "target": "twice",
+      "line_number": 68,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.targetIsInFile": true,
+      "comment": "a BARE in-file call on line 68 \u2014 `reportTwice n = describeTwice (twice n)`, where BOTH callees are module-level functions declared in this file. This is the lane's DEFAULT evidence tier, `usage_contextual`: the target is a known binding identified by its name rather than by a qualified spelling. Every other `calls` row across the eight Clean fixtures is qualified (`M.lookupOne`, `describe.nonNegative`, `withLocals.helper`, `Data.Error.Ok`), so before this pair the default tier was unpinned and a mutant that classified every `calls` edge reference_qualified would have passed. `twice` is defined ABOVE its use. Two calls on one line, so both rows carry line 68 \u2014 the per-site line rule (M59.O2) and the name-keyed dedupe are different mechanisms and both apply."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "unwrap",
+      "target": "Just",
+      "comment": "a HEAD pattern is not a body construction"
+    },
+    {
+      "type": "instantiates",
+      "from": "makePoint",
+      "target": "Point",
+      "comment": "a record literal is not a constructor application"
+    },
+    {
+      "type": "calls",
+      "from": "lookupOne",
+      "target": "lookupOne",
+      "comment": "no self-edge: the qualified call is the whole edge"
+    },
+    {
+      "type": "uses",
+      "from": "unwrap",
+      "target": "v",
+      "comment": "the FP pin, stated positively: a pattern VARIABLE is not a field, so no `uses` edge is fabricated for it. `unwrap (Just v) = v` binds `v` and reads it; neither is a record field and neither produces an edge."
+    },
+    {
+      "type": "instantiates",
+      "from": "makePoint",
+      "target": "x",
+      "comment": "a field name is not a constructor"
+    },
+    {
+      "type": "references",
+      "from": "makePoint",
+      "target": "px",
+      "comment": "a parameter name is not a type reference"
+    },
+    {
+      "type": "references",
+      "from": "twice",
+      "target": "k",
+      "comment": "a LAMBDA parameter is not a generic: `twice = \\k -> k + k` binds `k` and names no type"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "ExpressionShapes",
+      "target": "Data.Map",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "ExpressionShapes",
+      "target": "Point",
+      "equals": 1,
+      "comment": "the TYPE, exactly once. It was 2 when the container shared the name; the per-site rule now shows up as two DIFFERENT targets (this row and the `Point::instance` row) rather than as one name twice."
+    },
+    {
+      "type": "contains",
+      "from": "ExpressionShapes",
+      "target": "Point::instance",
+      "equals": 1,
+      "comment": "the instance container, exactly once, at the `instance Shape Point where` line"
+    },
+    {
+      "type": "references",
+      "from": "makePoint",
+      "target": "Int",
+      "equals": 1,
+      "comment": "the two `!Int` domain types are ONE name, so they are one edge \u2014 dedupe is by source|type|target|line, and both domain types are on the signature's line"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ],
+  "expectMetadata": [
+    {
+      "cyclomaticComplexity": 18,
+      "comment": "THE COMPLEXITY PAYLOAD, pinned as FILE metadata because that is where clean computes it: `ctx.fileComplexity` is the whole-file decision count and the analyzer stamps it as both `metadata.complexity` and `metadata.cyclomaticComplexity` (real-clean-analyzer.ts:885-887). 18 is measured on THIS fixture (the expression/declaration shapes fixture: 18 decision sites, 21 symbols) \u2014 the CLJ1 precedent, where a metadata pin is the only instrument that can hold a complexity baseline. A mutant that drops a branch construct drops the number and fails here."
+    }
+  ]
+}

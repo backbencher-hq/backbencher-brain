@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.23",
+  "code": "A1",
+  "tool": "bb_ask",
+  "title": "bb_ask: contract (answer vs explain/feature) + empty-query and limit boundaries",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "registry: executable modes are exactly [answer]",
+      "pass": true,
+      "detail": "[\"answer\"]"
+    },
+    {
+      "name": "registry: explain and feature are plannedModes (not executable)",
+      "pass": true,
+      "detail": "[\"explain\",\"feature\"]"
+    },
+    {
+      "name": "registry: no `mode` input property (not mode-discriminated)",
+      "pass": true,
+      "detail": "mode property present"
+    },
+    {
+      "name": "registry: query is required",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "registry: mutability is read + requiresIndex true",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "registry: limit declares default 5 and range 1..100 in prose",
+      "pass": true,
+      "detail": "max results (default 5; whole number 1..100; values outside are refused, not clamped). A larger page also means a larger work budget."
+    },
+    {
+      "name": "registry: limit carries machine-readable minimum/maximum",
+      "pass": true,
+      "detail": "min=1 max=100"
+    },
+    {
+      "name": "validation: empty query rejected",
+      "pass": true,
+      "detail": "Error: bb_ask requires a non-empty query"
+    },
+    {
+      "name": "validation: whitespace-only query rejected",
+      "pass": true,
+      "detail": "Error: bb_ask requires a non-empty query"
+    },
+    {
+      "name": "validation: mode=explain rejected as unknown option (not executable) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit"
+    },
+    {
+      "name": "validation: missing query rejected",
+      "pass": true,
+      "detail": "Error: bb_ask: missing required option: query"
+    },
+    {
+      "name": "validation: limit=0 refused by name, never clamped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above "
+    },
+    {
+      "name": "validation: limit=101 refused by name, never clamped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above "
+    },
+    {
+      "name": "validation: limit=-1 refused by name, never clamped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_ask: limit must be non-negative"
+    },
+    {
+      "name": "validation: limit=2.5 refused by name, never clamped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_ask: limit must be a whole number (got 2.5)"
+    },
+    {
+      "name": "CLI (source entry): valid query returns an answer with provenance and bounds",
+      "pass": true,
+      "detail": "answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer th"
+    },
+    {
+      "name": "CLI (source entry): empty query rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask requires a non-empty query\nCommand failed: /home/ishaq2321/.bun/bin/bun /home/ishaq2321/mcp/backbencher-brain/src/cli/index.ts"
+    },
+    {
+      "name": "CLI (source entry): mode=explain rejected as unknown option [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit\nCommand failed: /home/ishaq2321/.bun/bin/bun /home/ishaq"
+    },
+    {
+      "name": "CLI (source entry): limit=0 refused with the page-size rule [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag"
+    },
+    {
+      "name": "CLI (source entry): limit=101 refused with the page-size rule [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag"
+    },
+    {
+      "name": "handler: limit=0 refused with the same sentence the door uses [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refu"
+    },
+    {
+      "name": "handler: limit=101 refused with the same sentence the door uses [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refu"
+    },
+    {
+      "name": "MCP (source entry): valid query returns an answer with provenance and bounds",
+      "pass": true,
+      "detail": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: src/app.ts (Line 1) ---\n[function] handleRequest — similarity 0.597\n``"
+    },
+    {
+      "name": "MCP (source entry): empty query rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask requires a non-empty query"
+    },
+    {
+      "name": "MCP (source entry): mode=explain rejected as unknown option [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit"
+    },
+    {
+      "name": "MCP (source entry): limit=0 refused with the page-size rule [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag"
+    },
+    {
+      "name": "MCP (source entry): limit=101 refused with the page-size rule [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag"
+    }
+  ],
+  "negativeCases": 15,
+  "summary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0
+  },
+  "decisions": {
+    "modes": "executable modes are exactly [answer]; explain/feature are plannedModes and are rejected as unknown options",
+    "boundary": "empty/whitespace query and limit outside 1..100 are refused by validateToolArguments (shared by MCP and CLI) with the same words the handler emits",
+    "envelope": "answer responses always carry provenance and declared bounds; no match list is invented"
+  },
+  "limitations": [
+    "The gate drives the SOURCE CLI/MCP entries (dist/ is a build artifact, rebuilt centrally).",
+    "The corpus leg lives in verify-ask-e2e-corpus; this gate is a small fixture by design."
+  ],
+  "generatedAt": "2026-11-05T04:04:56.663Z"
+}

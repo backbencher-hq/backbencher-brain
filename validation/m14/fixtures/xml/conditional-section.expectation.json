@@ -1,0 +1,82 @@
+{
+  "fixtureId": "xml/conditional-section",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding G2 (grammar REPAIR 2). A conditional section inside an internal DTD subset could not be reached at any upstream version: 0.5.0-0.6.x declare `conditionalSect` in the `dtd` grammar and inline it, but `_intSubset` referenced `$._markupdecl`, which does not include it; 0.7.0 \u2014 the version the pre-repair wired bytes matched exactly \u2014 does not declare it in the `xml` grammar at all. The failure was destructive and produced a PUBLISHED LIE: `<![INCLUDE[...]]>` wrapped the `doctypedecl` in an ERROR, the parser then took a LATER `Name` as the DTD's name, and the analyzer published a Type symbol literally named `INCLUDE` with a `contains` edge from it. This fixture pins the DOCTYPE name (`catalog`, line 2), the absence of any symbol named after a conditional keyword, and the declarations the section GUARDS (line 6) \u2014 which is the whole point: a conditional section is not a boundary on parsing, it is a boundary on which subset a processor must read, and bb reads the file as written. It also pins that the parameter entity named on line 4 is a DECLARATION, and that the `contains` edge it would otherwise be a `uses` of does not appear: a `PEReference` inside an internal subset is a DeclSep (XML 1.0 \u00a72.4), a separator, not a use. Lines are read off the file.",
+  "expectSymbols": [
+    {
+      "name": "catalog",
+      "kind": "type",
+      "meta.isDoctype": true,
+      "meta.dtdName": "catalog"
+    },
+    {
+      "name": "mode",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdParameterEntity": true
+    },
+    {
+      "name": "catalog",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdElementDeclaration": true
+    },
+    {
+      "name": "extId",
+      "kind": "property",
+      "ownerName": "catalog",
+      "meta.isDtdAttributeDeclaration": true,
+      "meta.defaultDeclaration": "#IMPLIED"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "mode",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "catalog",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "extId",
+      "line_number": 6
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "INCLUDE",
+      "note": "the pre-repair grammar's failure mode: the conditional keyword became the DTD's name"
+    },
+    {
+      "name": "IGNORE",
+      "note": "same"
+    },
+    {
+      "name": "conditionalSect",
+      "note": "a wrapper rule, not a declaration"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "INCLUDE",
+      "target": "catalog",
+      "note": "the pre-repair edge: a DTD named `INCLUDE` containing a declaration of `catalog`"
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "mode",
+      "line_number": 5,
+      "note": "the DECLARATION is on line 4, where `<!ENTITY % mode \"INCLUDE\">` is written; line 5 is the `]]>`-guard's opening"
+    }
+  ]
+}

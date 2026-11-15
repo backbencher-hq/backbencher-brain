@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P1",
+  "code": "P1",
+  "tool": "bb_patterns",
+  "title": "classification — orphan semantics",
+  "verified": true,
+  "checks": 5,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-08-23T17:16:42.657Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.339Z",
+    "contentSha256": "6087d8ee13094498ccd9f31671caa36142d9f7db881ef855cbf2db44bd0ff178"
+  }
+}

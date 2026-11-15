@@ -1,0 +1,252 @@
+{
+  "fixtureId": "objc/selector-identity",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "OBJCD7 (full-selector method identity) + OBJCD8 (implicit override machinery) regression pins, verified on sdwebimage + afnetworking corpora (2026-09). OBJCD7: three initWithNamespace* overloads and the setValue*/storeImage*/imageFromCacheForKey* selectors must remain DISTINCT symbols (leaf naming collapsed them \u2014 225 colliding occurrences across 35 corpus owners); message-send calls must target the full selector (initWithNamespace:diskCacheDirectory:, setValue:forKey:). OBJCD8: EvictingCache.overrideable is a VERIFIED override of StoreCache.overrideable @0.95 (in-file base declares the same full selector); StoreCacheTests methods guess-override external-base SDTestCase @0.5/inferred/first-parent-guess; StoreCache extends NSObject -> NO root guesses (universal-root exclusion).",
+  "expectSymbols": [
+    {
+      "name": "initWithNamespace:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "initWithNamespace:diskCacheDirectory:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "initWithNamespace:diskCacheDirectory:config:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "setValue:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "setValue:forKey:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "storeImage:forKey:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "imageFromCacheForKey:options:",
+      "kind": "method",
+      "ownerName": "StoreCache"
+    },
+    {
+      "name": "overrideable",
+      "kind": "method",
+      "ownerName": "EvictingCache"
+    },
+    {
+      "name": "testInitWithNamespace",
+      "kind": "method",
+      "ownerName": "StoreCacheTests"
+    },
+    {
+      "name": "StoreCache",
+      "kind": "class"
+    },
+    {
+      "name": "EvictingCache",
+      "kind": "class"
+    },
+    {
+      "name": "StoreCacheTests",
+      "kind": "class"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "initWithNamespace",
+      "kind": "method"
+    },
+    {
+      "name": "setValue",
+      "kind": "method"
+    },
+    {
+      "name": "storeImage",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "StoreCache",
+      "target": "NSObject",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "EvictingCache",
+      "target": "StoreCache",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "StoreCacheTests",
+      "target": "SDTestCase",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "testInitWithNamespace",
+      "target": "imageFromCacheForKey:options:",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "initWithNamespace:diskCacheDirectory:config:",
+      "target": "initWithNamespace:diskCacheDirectory:",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "overrideable",
+      "target": "purge",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "overrides",
+      "source": "EvictingCache.overrideable",
+      "target": "StoreCache.overrideable",
+      "line_number": 62,
+      "note": "M59.A7: the OVERRIDING member's declaration line (the base's copy is at 51, and this row is written here)"
+    },
+    {
+      "type": "overrides",
+      "source": "StoreCacheTests.testInitWithNamespace",
+      "target": "SDTestCase.testInitWithNamespace",
+      "line_number": 75,
+      "note": "M59.A7: the Pass-3 guess still names a line \u2014 the overriding declaration's (75)"
+    },
+    {
+      "type": "calls",
+      "source": "testInitWithNamespace",
+      "target": "initWithNamespace:diskCacheDirectory:",
+      "line_number": 76,
+      "note": "M59.A7: the multi-keyword selector's line is its FIRST keyword's line"
+    },
+    {
+      "type": "instantiates",
+      "source": "testInitWithNamespace",
+      "target": "StoreCache",
+      "line_number": 76,
+      "note": "M59.A7: the receiver's line inside the nested alloc send"
+    },
+    {
+      "type": "instantiates",
+      "source": "testStore",
+      "target": "StoreCache",
+      "line_number": 80,
+      "note": "M59.A7: `[StoreCache new]`"
+    },
+    {
+      "type": "calls",
+      "source": "testStore",
+      "target": "setValue:forKey:",
+      "line_number": 81,
+      "note": "M59.A7: full-selector call site"
+    },
+    {
+      "type": "calls",
+      "source": "testStore",
+      "target": "storeImage:forKey:",
+      "line_number": 82,
+      "note": "M59.A7: the next line, so the two calls cannot share a line by accident"
+    },
+    {
+      "type": "calls",
+      "source": "initWithNamespace:diskCacheDirectory:",
+      "target": "initWithNamespace:",
+      "line_number": 40,
+      "note": "M59.A7: `self = [self initWithNamespace:ns];` \u2014 the delegation's own line"
+    },
+    {
+      "type": "contains",
+      "source": "StoreCache",
+      "target": "storeImage:forKey:",
+      "line_number": 49,
+      "note": "M59.A7: the implementation's line (the @interface declaration at 29 is not symbolized \u2014 see the forbid)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "StoreCache.testInitWithNamespace"
+    },
+    {
+      "type": "calls",
+      "target": "initWithNamespace"
+    },
+    {
+      "type": "calls",
+      "target": "setValue"
+    },
+    {
+      "type": "calls",
+      "target": "storeImage"
+    },
+    {
+      "type": "overrides",
+      "source": "EvictingCache.overrideable",
+      "target": "StoreCache.overrideable",
+      "line_number": 57,
+      "comment": "M59.A7 near-miss: the @interface DECLARATION (57), not the overriding implementation (62)"
+    },
+    {
+      "type": "calls",
+      "source": "testStore",
+      "target": "setValue:forKey:",
+      "line_number": 79,
+      "comment": "M59.A7 near-miss: the method's own declaration line, one above the call"
+    },
+    {
+      "type": "contains",
+      "source": "StoreCache",
+      "target": "storeImage:forKey:",
+      "line_number": 29,
+      "comment": "M59.A7 near-miss: the @interface declaration (29), not the owning implementation (49)"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "initWithNamespace:",
+      "equals": 1
+    },
+    {
+      "name": "initWithNamespace:diskCacheDirectory:",
+      "equals": 1
+    },
+    {
+      "name": "initWithNamespace:diskCacheDirectory:config:",
+      "equals": 1
+    },
+    {
+      "name": "setValue:",
+      "equals": 1
+    },
+    {
+      "name": "setValue:forKey:",
+      "equals": 1
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "EvictingCache.overrideable",
+      "target": "StoreCache.overrideable",
+      "equals": 1
+    }
+  ]
+}

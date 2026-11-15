@@ -1,0 +1,31 @@
+{
+  "fixtureId": "fsharp/part-of-load",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS F#'s `part_of` — the R3 REMEDY (2026-10-22), and the FIRST of the four EXTENDED types this lane takes rather than rules.\n\nTHE CONSTRUCT IS ALREADY EXPRESSIBLE IN THE WIRED GRAMMAR. `#load \"Other.fs\"` parses as `(file (fsi_directive_decl (string)))` with the keyword `#load` as the node's first ANONYMOUS child and the file name as its `string` child — measured over the whole admitted population: 236 `#load` sites in 135 files, 236 of which name a string (100%), in 26 repositories.\n\nWHAT WAS WRONG WAS THE LABEL, NOT THE READ. The analyzer's `fsi_directive_decl` branch read the keyword and pushed an `imports` row for all three of `#r`, `#load` and `#I`. `#r` (838 sites) and `#I` (99 sites) ARE resource references — an assembly and an include path — and they stay `imports`. `#load` is NOT one of them: it is a TEXTUAL INCLUDE, so the two files are ONE COMPILATION UNIT. That is the `part_of` contract (\"A library unit INCLUDES a part file … a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module\"), and it is the DART LANE'S SPELLING of the same fact (`part 'x.dart'`). ⇒ THE ROW IS RELABELLED 1:1 — same source, same target rule, same line, same confidence (1.0), same evidence class — and ONLY THE STORED TYPE CHANGES.\n\nTHE DIRECTION IS THE DIRECTIVE'S OWN (types.ts:170-183): the source is the file carrying the directive, the target is what it names. F# has only ONE of Dart's two forms — there is no `part of` in F# — so every F# row is the host that INCLUDES the part, and `metadata.partRole` is `library`.\n\nTHE TARGET IS A PROJECT-RELATIVE PATH, resolved against the INCLUDING FILE'S OWN DIRECTORY, exactly as the dart lane's `part-of` fixture records. The expected spelling is `fixtures/fsharp/part-of-load/Other.fs` — the synthetic path the harness hands `analyze()`; the corpus runs pass real paths and the rule is the same one. A specifier with a SCHEME (`nuget:`, `http:`) is REFUSED, and a target that ESCAPES the project (`..`) is REFUSED: a `part_of` row whose target no project key can answer is exactly the shape this label exists to stop publishing.\n\nTHE FORBID ROWS ARE THE POINT. A relabel that ADDS `part_of` without REMOVING the `imports` row would pass an expect-only fixture, and it would be wrong: one construct, two labels. The `imports` row for this target is therefore FORBIDDEN, and so is a `part_of` row carrying the other role — the direction is the directive's own, and the row's role says which end this file is.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "source": "Host",
+      "target": "fixtures/fsharp/part-of-load/Other.fs",
+      "meta.relationshipType": "part_directive",
+      "meta.directive": "#load",
+      "meta.partRole": "library",
+      "meta.targetResolution": "project-relative-path",
+      "note": "The `#load` directive's own direction: THIS file (the host) names the file it includes. The source is the file's module scope — `Host` — which is the same source the `#r`/`#I` rows use, and it is the DIRECTIVE'S OWN source rather than an enclosing declaration's."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "fixtures/fsharp/part-of-load/Other.fs",
+      "note": "THE SUPERSEDED SHAPE — a `#load` is a part directive, not an import. Forbidden so a relabel that ADDS `part_of` without REMOVING the `imports` row cannot pass. This is the same forbid the dart lane's `part-of` fixture carries."
+    },
+    {
+      "type": "part_of",
+      "target": "fixtures/fsharp/part-of-load/Other.fs",
+      "meta.partRole": "part",
+      "note": "THE WRONG DIRECTION — F# has no `part of` form, so this file is the host that INCLUDES the part. A row with partRole `part` would claim this file is the included part, which is the opposite fact."
+    }
+  ]
+}

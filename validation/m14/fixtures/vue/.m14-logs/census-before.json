@@ -1,0 +1,846 @@
+{
+  "population": {
+    "parsed": 400,
+    "sampled": 400,
+    "corpusTotal": 1155,
+    "repos": 6,
+    "max": 400
+  },
+  "reproduction": {
+    "edges": 3892,
+    "resolved": 662,
+    "amb": 693,
+    "unresolved": 2403,
+    "mismatches": 0
+  },
+  "buckets": {
+    "instantiates\u0000component tag (isComponentUsage)\u0000unresolved": {
+      "n": 630,
+      "targets": {
+        "ElIcon": 30,
+        "ElInput": 19,
+        "ElSelect": 17,
+        "ElTable": 17,
+        "ElTableColumn": 17,
+        "ElOption": 16,
+        "ElSwitch": 14,
+        "ElTag": 14,
+        "ElSpace": 13,
+        "ElDivider": 12,
+        "ElDatePicker": 12,
+        "ElTableV2": 12,
+        "ElRadioGroup": 11,
+        "ElSelectV2": 10,
+        "ElRow": 9,
+        "ElCol": 9,
+        "ElCascader": 8,
+        "ElDialog": 8,
+        "ElFormItem": 7,
+        "ElSlider": 7,
+        "ElLink": 6,
+        "ElTooltip": 6,
+        "ElRadioButton": 6,
+        "ElDropdown": 6,
+        "ElDropdownMenu": 6,
+        "ElDropdownItem": 6,
+        "ElImage": 6,
+        "ElForm": 6,
+        "ElInputNumber": 6,
+        "ElInputTag": 6,
+        "ElTree": 6,
+        "ElRadio": 5,
+        "ElCheckboxGroup": 5,
+        "ElCheckbox": 5,
+        "ElSegmented": 5,
+        "ElSkeleton": 5,
+        "ElTabs": 5,
+        "ElTabPane": 5,
+        "ElUpload": 5,
+        "ElAnchorLink": 4
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 629,
+        "own-file-variant:download": 1
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "imports\u0000bare package specifier (composite `pkg:item`)\u0000unresolved": {
+      "n": 552,
+      "targets": {
+        "vue:ref": 183,
+        "vue:computed": 27,
+        "vue:reactive": 14,
+        "element-plus:ElMessage": 12,
+        "vue:onMounted": 10,
+        "@element-plus/hooks:useNamespace": 9,
+        "vue:h": 8,
+        "element-plus:ElMessageBox": 8,
+        "vitepress:withBase": 7,
+        "vue:watch": 7,
+        "vue:nextTick": 5,
+        "@element-plus/icons-vue:Search": 5,
+        "element-plus:ElNotification": 5,
+        "element-plus:TableV2FixedDir": 5,
+        "vue:CSSProperties": 4,
+        "element-plus:ButtonInstance": 4,
+        "element-plus:UploadProps": 4,
+        "@element-plus/components/icon:ElIcon": 4,
+        "vitepress:useData": 3,
+        "@element-plus/icons-vue:ArrowRight": 3,
+        "@element-plus/icons-vue:ArrowDown": 3,
+        "@element-plus/icons-vue:Plus": 3,
+        "element-plus:ElIcon": 3,
+        "element-plus:ElButton": 3,
+        "element-plus:CheckboxValueType": 3,
+        "dayjs:dayjs": 3,
+        "element-plus:Column": 3,
+        "element-plus:TabsPaneContext": 3,
+        "@element-plus/icons-vue:MoreFilled": 3,
+        "element-plus:TreeNodeData": 3,
+        "element-plus:UploadUserFile": 3,
+        "@vueuse/core:useCssVar": 2,
+        "@element-plus/icons-vue:Warning": 2,
+        "@element-plus/icons-vue:Loading": 2,
+        "vitepress:useRoute": 2,
+        "vue:toRefs": 2,
+        "@element-plus/icons-vue:Message": 2,
+        "@element-plus/icons-vue:ArrowLeft": 2,
+        "@element-plus/icons-vue:CloseBold": 2,
+        "element-plus:CollapseModelValue": 2
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 549,
+        "own-file-variant:Download": 1,
+        "own-file-variant:SortState": 1,
+        "own-file-variant:SortBy": 1
+      },
+      "leaf": {
+        "absent": 548,
+        "unique": 4,
+        "collision": 0,
+        "examples": [
+          "version",
+          "ElButton"
+        ]
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "imports\u0000relative non-.vue module (composite `path:item`)\u0000unresolved": {
+      "n": 78,
+      "targets": {
+        "../../composables/lang:useLang": 6,
+        "../../composables/dark:isDark": 5,
+        "../../../config/analytics:sendEvent": 4,
+        "../../../config/sponsors:Sponsor": 3,
+        "../../.vitepress/i18n/component/anchor.json:anchorLocale": 3,
+        "../../../i18n/component/sponsor.json:sponsorLocale": 2,
+        "../../composables/nav:useNav": 2,
+        "../../composables/navbar-locale:useNavbarLocale": 2,
+        "../composables/sidebar:useSidebar": 2,
+        "../../utils:isExternal": 1,
+        "../../composables/dark:toggleDark": 1,
+        "../../composables/use-toc:useToc": 1,
+        "../../composables/translation:useTranslation": 1,
+        "../../utils:useCopyColor": 1,
+        "../../../i18n/component/overview.json:overviewLocale": 1,
+        "../../../i18n/pages/resource.json:resourceLocale": 1,
+        "../../../i18n/component/api-typing.json:apiTypingLocale": 1,
+        "../../composables/use-issue-count:useIssueCount": 1,
+        "../../composables/locale:useLocale": 1,
+        "../../../i18n/component/component-meta.json:changelogLocale": 1,
+        "../../../utils/changelog-parser:VersionChangelog": 1,
+        "../../../i18n/pages/home.json:homeLocale": 1,
+        "../../composables/use-playground:usePreview": 1,
+        "../../composables/use-playground:usePreviewPR": 1,
+        "../../../config/sponsors:rightBigLogoSponsors": 1,
+        "../../../config/sponsors:rightRichTextSponsors": 1,
+        "../composables/lock-screen:useLockScreen": 1,
+        "../composables/lang:useLang": 1,
+        "../../i18n/component/skip-link.json:skipLinkLocale": 1,
+        "../composables/dark:isDark": 1,
+        "../../config/sponsors:leftLogoSponsors": 1,
+        "../../config/analytics:sendEvent": 1,
+        "../../config/sponsors:Sponsor": 1,
+        "../composables/back-top:useBackTop": 1,
+        "./alert:alertEmits": 1,
+        "./alert:AlertProps": 1,
+        "./anchor:anchorEmits": 1,
+        "./constants:anchorKey": 1,
+        "./anchor:AnchorProps": 1,
+        "./constants:AnchorLinkState": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 78
+      },
+      "leaf": {
+        "absent": 78,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "calls\u0000bare callee identifier\u0000unresolved": {
+      "n": 590,
+      "targets": {
+        "ref": 315,
+        "computed": 40,
+        "h": 21,
+        "ElMessage": 16,
+        "reactive": 15,
+        "useLang": 11,
+        "watch": 10,
+        "onMounted": 10,
+        "ElNotification": 10,
+        "useNamespace": 10,
+        "done": 9,
+        "callback": 9,
+        "resolve": 8,
+        "unref": 7,
+        "nextTick": 6,
+        "sendEvent": 5,
+        "dayjs": 5,
+        "useLocale": 4,
+        "getElement": 4,
+        "useSidebar": 3,
+        "useData": 3,
+        "isNumber": 3,
+        "addUnit": 3,
+        "useNav": 2,
+        "useNavbarLocale": 2,
+        "useRoute": 2,
+        "cb": 2,
+        "toRefs": 2,
+        "cloneVNode": 2,
+        "useSlots": 2,
+        "getScrollElement": 2,
+        "getOffsetTopDistance": 2,
+        "getScrollTop": 2,
+        "provide": 2,
+        "toggleDark": 1,
+        "useToc": 1,
+        "useTranslation": 1,
+        "useToggle": 1,
+        "useCssVar": 1,
+        "useCopyColor": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 590
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "calls\u0000receiver call `x.y` (member path)\u0000unresolved": {
+      "n": 291,
+      "targets": {
+        "map": 45,
+        "push": 26,
+        "toLowerCase": 15,
+        "includes": 12,
+        "is": 12,
+        "then": 10,
+        "reduce": 10,
+        "m": 9,
+        "getBoundingClientRect": 8,
+        "forEach": 7,
+        "replace": 6,
+        "getMonth": 6,
+        "catch": 6,
+        "confirm": 6,
+        "some": 5,
+        "setMonth": 5,
+        "getFullYear": 4,
+        "b": 4,
+        "em": 4,
+        "setProperty": 3,
+        "removeProperty": 3,
+        "unshift": 3,
+        "slice": 3,
+        "split": 3,
+        "focus": 3,
+        "querySelector": 3,
+        "setTime": 3,
+        "getTime": 3,
+        "startsWith": 2,
+        "setAttribute": 2,
+        "indexOf": 2,
+        "setFullYear": 2,
+        "fromRect": 2,
+        "remove": 2,
+        "info": 2,
+        "toDateString": 2,
+        "add": 2,
+        "every": 2,
+        "default": 2,
+        "e": 2
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 291
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 291,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "calls\u0000receiver call `x.y` (member path)\u0000ambiguous": {
+      "n": 16,
+      "targets": {
+        "format": 5,
+        "fill": 4,
+        "max": 2,
+        "handleClose": 2,
+        "reverse": 2,
+        "open": 1
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 16
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "imports\u0000relative .vue specifier (composite `path:item`)\u0000unresolved": {
+      "n": 40,
+      "targets": {
+        "./vp-menu-link.vue:VPMenuLink": 2,
+        "./vp-api-primitive.vue:Primitive": 2,
+        "../icons/dark.vue:DarkIcon": 1,
+        "../icons/light.vue:LightIcon": 1,
+        "./vp-edit-link.vue:VPEditLink": 1,
+        "../sponsors/sponsors-button.vue:SponsorsButton": 1,
+        "../sponsors/right-big-logo-list.vue:SponsorRightBigLogoList": 1,
+        "../sponsors/right-richtext-list.vue:SponsorRightTextList": 1,
+        "../sponsors/right-logo-small-list.vue:SponsorRightLogoSmallList": 1,
+        "../common/vp-link.vue:VPLink": 1,
+        "../icons/expand.vue:ExpandIcon": 1,
+        "./resources/axure-components-svg.vue:AxureComponentsSvg": 1,
+        "./resources/sketch-template-svg.vue:SketchTemplateSvg": 1,
+        "./resources/figma-template-svg.vue:FigmaTemplateSvg": 1,
+        "./resources/figma-variables-svg.vue:FigmaVariablesSvg": 1,
+        "./resources/figma-ui-kit-svg.vue:FigmaUiKitSvg": 1,
+        "./resources/master-go-ui-kit-svg.vue:MasterGoUiKitSvg": 1,
+        "../common/vp-link.vue:VpLink": 1,
+        "./vp-api-typing.vue:ApiTyping": 1,
+        "../common/vp-theme-toggler.vue:CommonThemeToggler": 1,
+        "../icons/toggle-button.vue:ToggleButton": 1,
+        "./vp-hero-content.vue:VPHeroContent": 1,
+        "./vp-doc-content.vue:VPDocContent": 1,
+        "./vp-not-found.vue:VPNotFound": 1,
+        "./globals/vp-footer.vue:VPFooter": 1,
+        "./doc-content/vp-page-footer.vue:VPPageFooter": 1,
+        "./doc-content/vp-page-nav.vue:VPPageNav": 1,
+        "./doc-content/vp-table-of-content.vue:VPTableOfContent": 1,
+        "./full-screen/vp-menu.vue:VPFullScreenMenu": 1,
+        "./full-screen/vp-translation.vue:VPFullScreenTranslation": 1,
+        "./full-screen/vp-theme-toggler.vue:VPFullScreenThemeToggler": 1,
+        "./navbar/vp-search.vue:VPNavbarSearch": 1,
+        "./navbar/vp-menu.vue:VPNavbarMenu": 1,
+        "./navbar/vp-theme-toggler.vue:VPNavbarThemeToggler": 1,
+        "./navbar/vp-translation.vue:VPNavbarTranslation": 1,
+        "./navbar/vp-social-links.vue:VPNavbarSocialLinks": 1,
+        "./navbar/vp-hamburger.vue:VPNavbarHamburger": 1,
+        "./subnav/toggle-sidebar-btn.vue:ToggleSidebarBtn": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 40
+      },
+      "leaf": {
+        "absent": 40,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "references\u0000reference with no construct marker\u0000unresolved": {
+      "n": 146,
+      "targets": {
+        "UploadProps": 9,
+        "ButtonInstance": 8,
+        "Sponsor": 6,
+        "DragEvent": 6,
+        "CSSProperties": 5,
+        "TagProps": 5,
+        "HTMLDivElement": 4,
+        "CheckboxValueType": 4,
+        "DialogTransition": 3,
+        "FormInstance": 3,
+        "Column": 3,
+        "SortBy": 3,
+        "TabsPaneContext": 3,
+        "TreeNodeData": 3,
+        "UploadUserFile": 3,
+        "VersionChangelog": 2,
+        "CollapseModelValue": 2,
+        "DatePickerType": 2,
+        "ComponentSize": 2,
+        "DropdownInstance": 2,
+        "DOMRect": 2,
+        "FormProps": 2,
+        "T": 2,
+        "TableV2FixedDir": 2,
+        "FunctionalComponent": 2,
+        "TableColumnCtx": 2,
+        "TableTooltipData": 2,
+        "RenderContentContext": 2,
+        "NodeDropType": 2,
+        "TransitionEvent": 2,
+        "SwitchInstance": 1,
+        "InputInstance": 1,
+        "TimelineItemProps": 1,
+        "Component": 1,
+        "HTMLAnchorElement": 1,
+        "CalendarInstance": 1,
+        "CalendarDateType": 1,
+        "CascaderProps": 1,
+        "CascaderNode": 1,
+        "ButtonConfigContext": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 146
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "uses\u0000template expression name\u0000ambiguous": {
+      "n": 443,
+      "targets": {
+        "value": 49,
+        "options": 33,
+        "data": 25,
+        "value1": 18,
+        "value2": 17,
+        "tableData": 14,
+        "open": 12,
+        "props": 11,
+        "columns": 11,
+        "input": 9,
+        "locale": 8,
+        "handleClick": 7,
+        "ns": 7,
+        "handleChange": 6,
+        "loading": 6,
+        "visible": 6,
+        "url": 5,
+        "config": 5,
+        "size": 5,
+        "shortcuts": 5,
+        "dialogVisible": 5,
+        "type": 4,
+        "onItemClick": 4,
+        "handleSelect": 4,
+        "color": 4,
+        "show": 3,
+        "text": 3,
+        "filterMethod": 3,
+        "cities": 3,
+        "activeNames": 3,
+        "handleClose": 3,
+        "num": 3,
+        "activeIndex": 3,
+        "open1": 3,
+        "activeName": 3,
+        "defaultProps": 3,
+        "fileList": 3,
+        "handleRemove": 3,
+        "navs": 2,
+        "lang": 2
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 443
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "calls\u0000bare callee identifier\u0000ambiguous": {
+      "n": 45,
+      "targets": {
+        "generateData": 12,
+        "generateColumns": 10,
+        "createData": 6,
+        "emit": 5,
+        "getKey": 3,
+        "createFilter": 2,
+        "loadAll": 2,
+        "clear": 2,
+        "t": 2,
+        "close": 1
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 45
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "references\u0000reference with no construct marker\u0000ambiguous": {
+      "n": 131,
+      "targets": {
+        "User": 15,
+        "Tree": 15,
+        "generateColumns": 9,
+        "Node": 9,
+        "props": 7,
+        "loading": 6,
+        "treeRef": 6,
+        "emit": 5,
+        "links": 5,
+        "isAdding": 4,
+        "optionName": 4,
+        "Option": 4,
+        "dialogVisible": 3,
+        "options": 3,
+        "ListItem": 3,
+        "data": 3,
+        "getKey": 3,
+        "lang": 2,
+        "langZhCN": 2,
+        "createFilter": 2,
+        "id": 2,
+        "dialog": 2,
+        "position": 2,
+        "clear": 2,
+        "drawerVisible": 1,
+        "srcList": 1,
+        "value": 1,
+        "select": 1,
+        "cities": 1,
+        "value1": 1,
+        "generateData": 1,
+        "checked1": 1,
+        "checked2": 1,
+        "checked3": 1,
+        "checked4": 1,
+        "visible": 1,
+        "anchorRef": 1
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 131
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "imports\u0000project alias specifier (composite `path:item`)\u0000unresolved": {
+      "n": 11,
+      "targets": {
+        "~/composables/dark:isDark": 5,
+        "~/composables/lang:useLang": 4,
+        "~/composables/sidebar:useSidebar": 1,
+        "~/components/overview-icons:overviewIcons": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 11
+      },
+      "leaf": {
+        "absent": 11,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "uses\u0000script-side use\u0000ambiguous": {
+      "n": 19,
+      "targets": {
+        "value": 9,
+        "label": 3,
+        "id": 2,
+        "Option": 2,
+        "data": 2,
+        "address": 1
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 19
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "uses\u0000template interpolation name\u0000ambiguous": {
+      "n": 37,
+      "targets": {
+        "prefix": 22,
+        "id": 7,
+        "value": 4,
+        "ns": 2,
+        "placement": 1,
+        "data": 1
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 37
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "uses\u0000template interpolation name\u0000unresolved": {
+      "n": 38,
+      "targets": {
+        "columnIndex": 19,
+        "rowIndex": 9,
+        "action": 2,
+        "percentage": 2,
+        "index": 1,
+        "reason": 1,
+        "curr": 1,
+        "files": 1,
+        "uploadFiles": 1,
+        "uploadFile": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 38
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "uses\u0000script-side use\u0000unresolved": {
+      "n": 9,
+      "targets": {
+        "ElTooltip": 2,
+        "ElIcon": 2,
+        "Timer": 2,
+        "ElTag": 2,
+        "ElCheckbox": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 9
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "instantiates\u0000component tag (isComponentUsage)\u0000ambiguous": {
+      "n": 2,
+      "targets": {
+        "Row": 2
+      },
+      "probe": {
+        "has-declaration(should-not-be-unresolved)": 2
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "references\u0000prop contract key\u0000unresolved": {
+      "n": 9,
+      "targets": {
+        "AlertProps": 1,
+        "AnchorProps": 1,
+        "AvatarProps": 1,
+        "BadgeProps": 1,
+        "BreadcrumbProps": 1,
+        "ButtonProps": 1,
+        "DateTableProps": 1,
+        "CardProps": 1,
+        "CarouselProps": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 9
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "references\u0000emit contract key\u0000unresolved": {
+      "n": 6,
+      "targets": {
+        "alertEmits": 1,
+        "anchorEmits": 1,
+        "avatarEmits": 1,
+        "buttonEmits": 1,
+        "dateTableEmits": 1,
+        "carouselEmits": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 6
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    },
+    "references\u0000provide/inject contract key\u0000unresolved": {
+      "n": 3,
+      "targets": {
+        "anchorKey": 1,
+        "avatarGroupContextKey": 1,
+        "breadcrumbKey": 1
+      },
+      "probe": {
+        "no-declaration-anywhere-in-the-run": 3
+      },
+      "leaf": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      },
+      "callee": {
+        "absent": 0,
+        "unique": 0,
+        "collision": 0,
+        "examples": []
+      }
+    }
+  }
+}

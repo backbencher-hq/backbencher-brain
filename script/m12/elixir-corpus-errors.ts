@@ -5,7 +5,7 @@ import { readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const ROOT_REPO = "$HOME/fixtures/repositories/elixir"
+const ROOT_REPO = "/home/ishaq2321/bb_tests/repositories/elixir"
 const SAMPLE = 243
 
 function collect(root: string): string[] {

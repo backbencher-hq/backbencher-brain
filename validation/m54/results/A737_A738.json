@@ -1,0 +1,28 @@
+{
+  "probe": "M54.737-738",
+  "milestone": "M54",
+  "issues": [
+    "#737",
+    "#738"
+  ],
+  "at": "2026-09-11T15:22:50.677Z",
+  "checks": 42,
+  "passed": 42,
+  "failed": 0,
+  "verifierCommand": "bun run script/m54/verify-737-738.ts && npx tsx script/m54/verify-737-738.ts",
+  "status": "verified",
+  "method": "#738: runtime-split gate — node (better-sqlite3/SQLite 3.49.2) proves the shipped correlated INSERT..SELECT rejected the outer-column ORDER BY reference ('no such column: r.target_external') and the two-pass JOIN fix resolves correctly; bun (SQLite 3.53) documents the old shape's acceptance (the asymmetry that hid the bug) and proves fix equivalence (qname-over-name priority, lowest-id tie-break, unmatched excluded). Source conformance + mutation detection on both runtimes. #737: behavioral gate over src/ast/store-diagnostics.ts — diagnose names the violating file and offending statement args, transaction that always throws proves zero persistence, stmt map restored, non-FK errors untouched, healthy files leak nothing.",
+  "e2e": "node+dist runs on the real repo: (a) post-processing run completes all phases, 0 'marked partial', 0 'no such column' (the #738 scenario). (b) COLD full index (2,930 files): completed 'derived: full', 0 errors, BUT 22 batches rolled back on FK violations — ALL named by the new FK-DIAG output. Root cause identified from the captured rows: auto-generated contains edges reference same-file symbols whose rows are not yet inserted (intra-transaction ordering; years of FK-OFF hid it). Cost in that run: ~200 files' data skipped (absorbed by skip-and-continue; recovered by any later re-index). Fix tracked as the follow-up issue; diagnostics did exactly what #737 required.",
+  "verdict": "#738 fixed on both runtimes with permanent two-runtime gate; #737 diagnostics wired into storeResults with behavioral proof of rollback guarantee and offender naming",
+  "downstream": [
+    "m54 P1 15/0",
+    "m40 A2 25/0",
+    "m21 R2 13/13",
+    "m13 H3 17/17"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.575Z",
+    "contentSha256": "e714a62adb80feba425dd26dcbbfed49aee78e27eb2b65dbd4739ae8f144edee"
+  }
+}

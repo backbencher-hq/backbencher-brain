@@ -1,0 +1,19 @@
+{
+  "fixtureId": "typescript/taint-sink-require-not-loader",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE EXCLUSION that must not widen when `require(...)` becomes a recognized signal. The fix accepts a `call_expression` whose callee is the bare `require` identifier or the `import` keyword, so that a CommonJS `require(\"child_process\")` sets the child_process signal. A `member_expression` callee is somebody else's method: `loader.require(\"child_process\")` is a custom call, not the module loader, and must NOT arm the rule — otherwise every project with a `require` method on any object would get its own bare `exec` reported as Node's shell. This needs its own fixture because the signals are per-FILE: in a file that also contained one real `require(\"child_process\")` the signal would be set regardless, and the negative would be unobservable.",
+  "expectSymbols": [
+    { "name": "Loader", "kind": "class" },
+    { "name": "load", "kind": "function" },
+    { "name": "runLocally", "kind": "function" }
+  ],
+  "expectTaintSinks": [
+    {
+      "symbol": "runLocally",
+      "notIncludes": ["exec(command)"],
+      "notIncludesVuln": ["command_injection"],
+      "note": "The signal never arrives: nothing in this file imports child_process. `loader.require(\"child_process\")` is a member call and is deliberately NOT counted, so the project's own `exec` must stay unreported — the rule must not degrade back into 'any bare exec is a shell'."
+    }
+  ]
+}

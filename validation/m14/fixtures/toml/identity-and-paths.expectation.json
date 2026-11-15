@@ -1,0 +1,169 @@
+{
+  "comment": "TOML-IDENTITY. Every symbol's NAME is its full dotted path from the document root, authored from the TOML v1.0.0 key grammar BEFORE observing output. Three facts are load-bearing here. (1) A key before any header belongs to the IMPLICIT ROOT table, so its owner is the module. (2) A quoted key is ONE segment even when it contains a dot — `a.b` and `\"a.b\"` are different keys and a name that cannot be read back is not an identity, so the ambiguous one keeps TOML's own quotes. Three spellings appear side by side to prove they stay distinct: `plain.dotted`, `\"dotted.literal\"` and `\"dotted.literal\".child`. (3) IMPLIED PARENTS ARE RECORDED, NOT MATERIALISED: `[workspace.lints.rust]` implies `workspace` and `workspace.lints`, and the file never declares either, so they appear in metadata and NOT as symbols. Fabricating them would be a guess dressed as a fact.",
+  "expectSymbols": [
+    {
+      "name": "identity-and-paths",
+      "kind": "module",
+      "comment": "the FILE is the module, named from its stem — never from the filename, so `Cargo.toml` is `Cargo`"
+    },
+    {
+      "name": "root_key",
+      "kind": "property",
+      "comment": "a key before any header belongs to the implicit root table, so its owner is the module"
+    },
+    {
+      "name": "package",
+      "kind": "namespace"
+    },
+    {
+      "name": "package.name",
+      "kind": "property"
+    },
+    {
+      "name": "package.version",
+      "kind": "property"
+    },
+    {
+      "name": "package.\"dotted.literal\"",
+      "kind": "property",
+      "comment": "a quoted key is ONE segment; the quotes are what make it readable back, and without them it would be indistinguishable from `package.plain.dotted`"
+    },
+    {
+      "name": "package.plain.dotted",
+      "kind": "property",
+      "comment": "bare dotted: three real nested tables"
+    },
+    {
+      "name": "package.\"dotted.literal\".child",
+      "kind": "property",
+      "comment": "a quoted segment followed by a bare one — the third distinct spelling of the same shape"
+    },
+    {
+      "name": "workspace.lints.rust",
+      "kind": "namespace",
+      "meta.impliedParents": [
+        "workspace",
+        "workspace.lints"
+      ],
+      "comment": "the header's own path is the name; the two tables it IMPLIES are recorded here and are not published as symbols"
+    },
+    {
+      "name": "workspace.lints.rust.unsafe_code",
+      "kind": "property",
+      "comment": "a key's name is prefixed by its table's ALLOCATED name, so the edge from the table resolves"
+    },
+    {
+      "name": "implied.a.b",
+      "kind": "namespace",
+      "meta.impliedParents": [
+        "implied",
+        "implied.a"
+      ]
+    },
+    {
+      "name": "implied.a.b.x",
+      "kind": "property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "workspace",
+      "comment": "IMPLIED PARENTS ARE RECORDED, NOT MATERIALISED. The file never declares `[workspace]`, so no symbol is invented for it — a fabricated table is a guess dressed as a fact."
+    },
+    {
+      "name": "workspace.lints",
+      "comment": "same: implied by the header, never written, so never a symbol"
+    },
+    {
+      "name": "implied",
+      "comment": "same"
+    },
+    {
+      "name": "package.dotted.literal",
+      "comment": "the UNQUOTED spelling of a key that was written quoted. If this name were published, `plain.dotted` and `\"dotted.literal\"` would be one identity and the second would silently shadow the first."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "identity-and-paths",
+      "target": "identity-and-paths.root_key",
+      "line_number": 5,
+      "meta.isKeyContainment": true
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths",
+      "target": "identity-and-paths.package",
+      "line_number": 7,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.package",
+      "target": "identity-and-paths.package.name",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.package",
+      "target": "identity-and-paths.package.version",
+      "line_number": 9
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.package",
+      "target": "identity-and-paths.package.\"dotted.literal\"",
+      "line_number": 14
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.package",
+      "target": "identity-and-paths.package.plain.dotted",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.package",
+      "target": "identity-and-paths.package.\"dotted.literal\".child",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths",
+      "target": "identity-and-paths.workspace.lints.rust",
+      "line_number": 18,
+      "meta.hasImpliedParents": true,
+      "comment": "the edge names the table that EXISTS; the implied parents are metadata, not nodes"
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.workspace.lints.rust",
+      "target": "identity-and-paths.workspace.lints.rust.unsafe_code",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths",
+      "target": "identity-and-paths.implied.a.b",
+      "line_number": 23,
+      "meta.hasImpliedParents": true
+    },
+    {
+      "type": "contains",
+      "from": "identity-and-paths.implied.a.b",
+      "target": "identity-and-paths.implied.a.b.x",
+      "line_number": 24
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "comment": "TOML DEFINES NO REFERENCE MECHANISM — no include, no import, no link. A path-shaped string like `src/main.rs` is a STRING, and treating such strings as dependencies would import ecosystem knowledge (which keys are paths in which tool) into a format that has none. So there is no `uses`, and the graph is `contains` only."
+    },
+    {
+      "type": "imports",
+      "comment": "same: nothing in a TOML document is fetched or imported."
+    }
+  ]
+}

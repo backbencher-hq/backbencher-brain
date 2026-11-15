@@ -1,0 +1,522 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "complexity scaling (load-independent)",
+  "at": "2026-09-28T09:30:58.387Z",
+  "question": "Does analyzer time grow as O(n) in input? The exponent is measured instead of ms/file because contention inflates the constant and leaves the exponent alone.",
+  "method": {
+    "estimator": "MINIMUM of 7 timed repetitions after one untimed warm-up",
+    "why": "contention can only add time, so the fastest run is the closest to the true cost; a mean on a loaded box measures the scheduler",
+    "fit": "least squares through log(min ms) vs log(keys); the slope is the exponent",
+    "gate": "e <= 1.35 — looser than 1.0 because fixed per-file cost pushes the measured exponent below 1 at small sizes and above at large ones",
+    "shapes": "wide siblings, deep nesting, many anchors — three different stress on sibling lookup, recursion and dedupe, so one shape cannot hide another"
+  },
+  "loadAt": "23.18 22.83 25.19 23/1421 216778",
+  "verdict": "all shapes linear in the measured regime",
+  "results": [
+    {
+      "shape": "wide",
+      "exponent": 0.953,
+      "worstPerDoubling": 1.01,
+      "verdict": "linear",
+      "ratios": [
+        {
+          "from": 1024,
+          "to": 2048,
+          "ratio": 1.875,
+          "perDoubling": 0.938,
+          "verdict": "linear"
+        },
+        {
+          "from": 2048,
+          "to": 4096,
+          "ratio": 2.021,
+          "perDoubling": 1.01,
+          "verdict": "linear"
+        },
+        {
+          "from": 4096,
+          "to": 8192,
+          "ratio": 1.9,
+          "perDoubling": 0.95,
+          "verdict": "linear"
+        },
+        {
+          "from": 8192,
+          "to": 16384,
+          "ratio": 1.927,
+          "perDoubling": 0.964,
+          "verdict": "linear"
+        }
+      ],
+      "rejected": [],
+      "points": [
+        {
+          "keys": 1024,
+          "bytes": 19334,
+          "min": 133.334,
+          "max": 325.895,
+          "symbols": 1029,
+          "relationships": 1028,
+          "usPerKey": 130.2091
+        },
+        {
+          "keys": 2048,
+          "bytes": 40838,
+          "min": 250.022,
+          "max": 491.852,
+          "symbols": 2053,
+          "relationships": 2052,
+          "usPerKey": 122.0812
+        },
+        {
+          "keys": 4096,
+          "bytes": 83846,
+          "min": 505.25,
+          "max": 675.001,
+          "symbols": 4101,
+          "relationships": 4100,
+          "usPerKey": 123.3521
+        },
+        {
+          "keys": 8192,
+          "bytes": 169862,
+          "min": 959.922,
+          "max": 1176.735,
+          "symbols": 8197,
+          "relationships": 8196,
+          "usPerKey": 117.1779
+        },
+        {
+          "keys": 16384,
+          "bytes": 354662,
+          "min": 1850.152,
+          "max": 7165.944,
+          "symbols": 16389,
+          "relationships": 16388,
+          "usPerKey": 112.9243
+        }
+      ]
+    },
+    {
+      "shape": "nested2",
+      "exponent": 1.0617,
+      "worstPerDoubling": 1.16,
+      "verdict": "linear",
+      "ratios": [
+        {
+          "from": 1024,
+          "to": 2048,
+          "ratio": 2.32,
+          "perDoubling": 1.16,
+          "verdict": "linear"
+        },
+        {
+          "from": 2048,
+          "to": 4096,
+          "ratio": 1.79,
+          "perDoubling": 0.895,
+          "verdict": "linear"
+        },
+        {
+          "from": 4096,
+          "to": 8192,
+          "ratio": 2.197,
+          "perDoubling": 1.099,
+          "verdict": "linear"
+        },
+        {
+          "from": 8192,
+          "to": 16384,
+          "ratio": 2.191,
+          "perDoubling": 1.096,
+          "verdict": "linear"
+        }
+      ],
+      "rejected": [],
+      "points": [
+        {
+          "keys": 1024,
+          "bytes": 23407,
+          "min": 188.395,
+          "max": 584.48,
+          "symbols": 2051,
+          "relationships": 2050,
+          "usPerKey": 183.9798
+        },
+        {
+          "keys": 2048,
+          "bytes": 49007,
+          "min": 437.039,
+          "max": 1031.927,
+          "symbols": 4099,
+          "relationships": 4098,
+          "usPerKey": 213.3979
+        },
+        {
+          "keys": 4096,
+          "bytes": 100207,
+          "min": 782.102,
+          "max": 1534.094,
+          "symbols": 8195,
+          "relationships": 8194,
+          "usPerKey": 190.9429
+        },
+        {
+          "keys": 8192,
+          "bytes": 202607,
+          "min": 1718.315,
+          "max": 2140.368,
+          "symbols": 16387,
+          "relationships": 16386,
+          "usPerKey": 209.7552
+        },
+        {
+          "keys": 16384,
+          "bytes": 420175,
+          "min": 3765.386,
+          "max": 4810.016,
+          "symbols": 32770,
+          "relationships": 16385,
+          "usPerKey": 229.8209
+        }
+      ]
+    },
+    {
+      "shape": "anchorsOnly",
+      "exponent": 1.0337,
+      "worstPerDoubling": 1.185,
+      "verdict": "linear",
+      "ratios": [
+        {
+          "from": 1024,
+          "to": 2048,
+          "ratio": 2.024,
+          "perDoubling": 1.012,
+          "verdict": "linear"
+        },
+        {
+          "from": 2048,
+          "to": 4096,
+          "ratio": 1.72,
+          "perDoubling": 0.86,
+          "verdict": "linear"
+        },
+        {
+          "from": 4096,
+          "to": 8192,
+          "ratio": 2.227,
+          "perDoubling": 1.114,
+          "verdict": "linear"
+        },
+        {
+          "from": 8192,
+          "to": 16384,
+          "ratio": 2.37,
+          "perDoubling": 1.185,
+          "verdict": "linear"
+        }
+      ],
+      "rejected": [],
+      "points": [
+        {
+          "keys": 1024,
+          "bytes": 26479,
+          "min": 211.771,
+          "max": 332.998,
+          "symbols": 2051,
+          "relationships": 2050,
+          "usPerKey": 206.8076
+        },
+        {
+          "keys": 2048,
+          "bytes": 55151,
+          "min": 428.627,
+          "max": 703.959,
+          "symbols": 4099,
+          "relationships": 4098,
+          "usPerKey": 209.2906
+        },
+        {
+          "keys": 4096,
+          "bytes": 112495,
+          "min": 737.059,
+          "max": 1421.756,
+          "symbols": 8195,
+          "relationships": 8194,
+          "usPerKey": 179.9461
+        },
+        {
+          "keys": 8192,
+          "bytes": 227183,
+          "min": 1641.646,
+          "max": 2495.937,
+          "symbols": 16387,
+          "relationships": 16386,
+          "usPerKey": 200.3962
+        },
+        {
+          "keys": 16384,
+          "bytes": 469327,
+          "min": 3891.305,
+          "max": 5004.956,
+          "symbols": 32770,
+          "relationships": 16385,
+          "usPerKey": 237.5064
+        }
+      ]
+    },
+    {
+      "shape": "aliasOne",
+      "exponent": 0.9533,
+      "worstPerDoubling": 1.122,
+      "verdict": "linear",
+      "ratios": [
+        {
+          "from": 1024,
+          "to": 2048,
+          "ratio": 1.575,
+          "perDoubling": 0.788,
+          "verdict": "linear"
+        },
+        {
+          "from": 2048,
+          "to": 4096,
+          "ratio": 2.245,
+          "perDoubling": 1.122,
+          "verdict": "linear"
+        },
+        {
+          "from": 4096,
+          "to": 8192,
+          "ratio": 1.852,
+          "perDoubling": 0.926,
+          "verdict": "linear"
+        },
+        {
+          "from": 8192,
+          "to": 16384,
+          "ratio": 2.039,
+          "perDoubling": 1.02,
+          "verdict": "linear"
+        }
+      ],
+      "rejected": [],
+      "points": [
+        {
+          "keys": 1024,
+          "bytes": 16345,
+          "min": 122.427,
+          "max": 243.892,
+          "symbols": 1029,
+          "relationships": 2052,
+          "usPerKey": 119.5571
+        },
+        {
+          "keys": 2048,
+          "bytes": 33753,
+          "min": 192.834,
+          "max": 342.32,
+          "symbols": 2053,
+          "relationships": 4100,
+          "usPerKey": 94.1573
+        },
+        {
+          "keys": 4096,
+          "bytes": 68569,
+          "min": 432.866,
+          "max": 555.32,
+          "symbols": 4101,
+          "relationships": 8196,
+          "usPerKey": 105.6803
+        },
+        {
+          "keys": 8192,
+          "bytes": 138201,
+          "min": 801.558,
+          "max": 1210.217,
+          "symbols": 8197,
+          "relationships": 16388,
+          "usPerKey": 97.8465
+        },
+        {
+          "keys": 16384,
+          "bytes": 283849,
+          "min": 1634.387,
+          "max": 2524.64,
+          "symbols": 16389,
+          "relationships": 32772,
+          "usPerKey": 99.7551
+        }
+      ]
+    },
+    {
+      "shape": "aliasDistinct",
+      "exponent": 1.0528,
+      "worstPerDoubling": 1.185,
+      "verdict": "linear",
+      "ratios": [
+        {
+          "from": 1024,
+          "to": 2048,
+          "ratio": 2.029,
+          "perDoubling": 1.015,
+          "verdict": "linear"
+        },
+        {
+          "from": 2048,
+          "to": 4096,
+          "ratio": 1.982,
+          "perDoubling": 0.991,
+          "verdict": "linear"
+        },
+        {
+          "from": 4096,
+          "to": 8192,
+          "ratio": 2.016,
+          "perDoubling": 1.008,
+          "verdict": "linear"
+        },
+        {
+          "from": 8192,
+          "to": 16384,
+          "ratio": 2.37,
+          "perDoubling": 1.185,
+          "verdict": "linear"
+        }
+      ],
+      "rejected": [],
+      "points": [
+        {
+          "keys": 1024,
+          "bytes": 45763,
+          "min": 313.259,
+          "max": 610.624,
+          "symbols": 3075,
+          "relationships": 4098,
+          "usPerKey": 305.9171
+        },
+        {
+          "keys": 2048,
+          "bytes": 95939,
+          "min": 635.701,
+          "max": 1067.785,
+          "symbols": 6147,
+          "relationships": 8194,
+          "usPerKey": 310.4009
+        },
+        {
+          "keys": 4096,
+          "bytes": 196291,
+          "min": 1259.72,
+          "max": 1972.89,
+          "symbols": 12291,
+          "relationships": 16386,
+          "usPerKey": 307.5489
+        },
+        {
+          "keys": 8192,
+          "bytes": 396995,
+          "min": 2539.983,
+          "max": 3465.84,
+          "symbols": 24579,
+          "relationships": 32770,
+          "usPerKey": 310.0566
+        },
+        {
+          "keys": 16384,
+          "bytes": 823939,
+          "min": 6021.01,
+          "max": 9349.65,
+          "symbols": 49154,
+          "relationships": 49153,
+          "usPerKey": 367.4933
+        }
+      ]
+    },
+    {
+      "shape": "mergeHeavy",
+      "exponent": 1.0088,
+      "worstPerDoubling": 1.043,
+      "verdict": "linear",
+      "ratios": [
+        {
+          "from": 1024,
+          "to": 2048,
+          "ratio": 2.086,
+          "perDoubling": 1.043,
+          "verdict": "linear"
+        },
+        {
+          "from": 2048,
+          "to": 4096,
+          "ratio": 2.038,
+          "perDoubling": 1.019,
+          "verdict": "linear"
+        },
+        {
+          "from": 4096,
+          "to": 8192,
+          "ratio": 1.92,
+          "perDoubling": 0.96,
+          "verdict": "linear"
+        },
+        {
+          "from": 8192,
+          "to": 16384,
+          "ratio": 2.044,
+          "perDoubling": 1.022,
+          "verdict": "linear"
+        }
+      ],
+      "rejected": [],
+      "points": [
+        {
+          "keys": 1024,
+          "bytes": 31619,
+          "min": 302.841,
+          "max": 454.08,
+          "symbols": 3077,
+          "relationships": 4100,
+          "usPerKey": 295.7432
+        },
+        {
+          "keys": 2048,
+          "bytes": 65411,
+          "min": 631.792,
+          "max": 946.174,
+          "symbols": 6149,
+          "relationships": 8196,
+          "usPerKey": 308.4924
+        },
+        {
+          "keys": 4096,
+          "bytes": 132995,
+          "min": 1287.417,
+          "max": 2021.22,
+          "symbols": 12293,
+          "relationships": 16388,
+          "usPerKey": 314.3107
+        },
+        {
+          "keys": 8192,
+          "bytes": 268163,
+          "min": 2471.445,
+          "max": 3980.276,
+          "symbols": 24581,
+          "relationships": 32772,
+          "usPerKey": 301.6901
+        },
+        {
+          "keys": 16384,
+          "bytes": 551267,
+          "min": 5050.994,
+          "max": 5959.504,
+          "symbols": 49157,
+          "relationships": 65540,
+          "usPerKey": 308.2882
+        }
+      ]
+    }
+  ]
+}

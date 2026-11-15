@@ -1,0 +1,15 @@
+{
+  "fixtureId": "matlab/functions",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins multiple outputs, parameters, local functions, and structurally justified function-call edges.",
+  "expectSymbols": [
+    { "name": "summarize", "kind": "function" },
+    { "name": "scale", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "summarize", "target": "sum", "meta.evidenceClass": "inferred" },
+    { "type": "calls", "from": "summarize", "target": "scale", "meta.evidenceClass": "structural" },
+    { "type": "uses", "from": "summarize", "target": "values" }
+  ]
+}

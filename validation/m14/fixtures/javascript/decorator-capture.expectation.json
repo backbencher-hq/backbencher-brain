@@ -1,0 +1,22 @@
+{
+  "fixtureId": "javascript/decorator-capture",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The pinned JS wasm produces decorator nodes (verified live) and decorators are OWN children of class_declaration/method_definition in this grammar (unlike TS). Decorators were entirely ignored - MobX/Lit/legacy-Angular patterns invisible.",
+  "expectSymbols": [
+    {
+      "name": "Store",
+      "kind": "class"
+    }
+  ],
+  "expectDecorators": [
+    {
+      "symbol": "Store",
+      "contains": "observable"
+    },
+    {
+      "symbol": "total",
+      "contains": "computed"
+    }
+  ]
+}

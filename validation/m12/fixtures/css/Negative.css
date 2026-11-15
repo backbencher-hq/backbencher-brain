@@ -1,0 +1,48 @@
+@import url("base.css");
+
+/* Universal reset rules are boilerplate — NOT symbols */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* @media is a structural scope, NOT a symbol */
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* @keyframes is a symbol (function) but keyframe blocks are not */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Nested & resolves to ONE selector (.nav .item), not two symbols */
+.nav {
+  display: flex;
+
+  & .item {
+    padding: 4px;
+  }
+}
+
+/* Utility class with pseudo — single symbol, no pseudo noise */
+.btn:hover {
+  background: #333;
+}
+
+/* Attribute selector — single symbol */
+input[type="text"] {
+  border: 1px solid #ccc;
+}
+
+/* var() references are relationships, not symbols */
+.callout {
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}

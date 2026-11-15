@@ -1,0 +1,83 @@
+{
+  "fixtureId": "rust/construction-exports",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Rust second review (#736 wave). D2: `Self { x }` and `Self::new()` construct the enclosing impl type — previously the target stayed the literal `Self` and the deferred in-file filter dropped it, so Self-construction was entirely silent. D3: exports are externally importable units — `pub(crate)` items and members of private modules (Hidden, re-exported Read path) must not enter the export list, while top-level pubs (Point, n) do; module members (f) ride Contains. RUST-D30 adds the prelude-collision case: with a local `struct Ok;` in the file, the bare `Ok(())` (which is the PRELUDE's variant) resolved to that struct and published `instantiates -> Ok` \\u2014 an edge created by a name collision, naming a type the source never mentions. A construction resolves to a local type only when the receiver is SPELLED as one. The two rows pinned alongside it exist because my first version of this rule was too broad and silently lost them: `Self(..)` must keep resolving (it is a keyword, not an ambiguous identifier, and it arrives at the instantiation surface ALREADY RESOLVED to the enclosing type, so the exemption has to be made where the keyword is still visible), and a struct literal `Spelled { a: 1 }` is spelled evidence.",
+  "expectSymbols": [
+    {
+      "name": "Point",
+      "kind": "struct"
+    },
+    {
+      "name": "new",
+      "kind": "method"
+    },
+    {
+      "name": "internal",
+      "kind": "function"
+    },
+    {
+      "name": "Wrap",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "new",
+      "target": "Point"
+    },
+    {
+      "type": "instantiates",
+      "from": "origin",
+      "target": "Point"
+    },
+    {
+      "type": "instantiates",
+      "from": "clone_it",
+      "target": "Point"
+    },
+    {
+      "type": "instantiates",
+      "from": "wrap",
+      "target": "Wrap",
+      "comment": "R14: bare Self(..) resolves to the enclosing impl type"
+    },
+    {
+      "type": "instantiates",
+      "from": "constructs_spelled",
+      "target": "Spelled",
+      "comment": "RUST-D30: a spelled struct literal still instantiates its type"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Point"
+    },
+    {
+      "name": "n"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "internal"
+    },
+    {
+      "name": "Hidden"
+    },
+    {
+      "name": "std::io::Read"
+    },
+    {
+      "name": "f"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "uses_prelude_ok",
+      "target": "Ok",
+      "comment": "RUST-D30: the bare prelude `Ok(())` must not instantiate a same-named local struct"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+type Query {
+  a: Int
+}
+
+extend type Query {
+  b: String
+  c: [Int!]!
+}
+
+interface Node {
+  id: ID!
+}
+
+extend interface Node {
+  legacyId: String
+}
+
+enum Status {
+  ACTIVE
+}
+
+extend enum Status {
+  ARCHIVED
+}
+
+union SearchResult = User
+
+extend union SearchResult = Post
+
+input UserFilter {
+  name: String
+}
+
+extend input UserFilter {
+  email: String
+}
+
+scalar DateTime
+
+extend scalar DateTime
+
+schema {
+  query: Query
+}
+
+extend schema {
+  mutation: Mutation
+}
+
+type Mutation {
+  ping: String
+}

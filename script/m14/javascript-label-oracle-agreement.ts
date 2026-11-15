@@ -67,7 +67,7 @@ function arg(name: string, fallback: string): string {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
   return hit ? hit.slice(name.length + 3) : fallback
 }
-const CR = arg("corpus", "$HOME/fixtures/repositories/svelte")
+const CR = arg("corpus", "/home/ishaq2321/bb_tests/repositories/svelte")
 const SAMPLE = parseInt(arg("sample", "600"), 10)
 const TAG = arg("tag", `${path.basename(CR)}-${SAMPLE}`)
 
@@ -75,7 +75,7 @@ const TAG = arg("tag", `${path.basename(CR)}-${SAMPLE}`)
 const diff: any = await import("./differential")
 const {
   deriveTreeEdges, deriveJavaScriptEdges, deriveJavaScriptImportEdges,
-  deriveJavaScriptExtends, deriveJavaScriptOverrides, normTarget,
+  deriveJavaScriptExtends, deriveJavaScriptOverrides, deriveJavaScriptImplements, normTarget,
 } = diff
 
 // The javascript lane's compared-label set, read off differential.ts's own
@@ -154,6 +154,11 @@ async function worker(): Promise<void> {
     for (const e of deriveJavaScriptImportEdges(root) as any[]) truth.push(e)
     for (const e of deriveJavaScriptExtends(root) as any[]) truth.push(e)
     for (const e of deriveJavaScriptOverrides(root) as any[]) truth.push(e)
+    // `implements` had NO truth behind it until the JSDoc route landed (JavaScript has no
+    // implements CLAUSE), so the label sat in COMPARED with an empty truth side. Deriving it here
+    // is the same rule as the differential's: when the analyzer starts emitting a label, its oracle
+    // moves in the SAME change, or every row it emits reads as a fabrication.
+    for (const e of deriveJavaScriptImplements(root) as any[]) truth.push(e)
 
     // ---- analyzer: the production result, filtered and collapsed as published
     const rels: any[] = (result.relationships ?? [])
@@ -208,7 +213,7 @@ const out: any = {
   instrument: {
     comparedLabels: COMPARED,
     comparisonRule: "verbatim from script/m14/differential.ts: analyzer side filtered to the compared labels and collapsed to one row per (label,target); truth side drops empty targets; covered = same label + normTarget equal; explained = same label + truth target equals OR CONTAINS the analyzer target; fabrication = unexplained at confidence >= 0.7; heuristic = unexplained below it.",
-    oraclesImported: ["deriveTreeEdges(root,'javascript')", "deriveJavaScriptEdges", "deriveJavaScriptImportEdges", "deriveJavaScriptExtends", "deriveJavaScriptOverrides"],
+    oraclesImported: ["deriveTreeEdges(root,'javascript')", "deriveJavaScriptEdges", "deriveJavaScriptImportEdges", "deriveJavaScriptExtends", "deriveJavaScriptOverrides", "deriveJavaScriptImplements"],
     limits: [
       "matching is LABEL + TARGET only, never SOURCE — a mis-attributed source is invisible to this instrument and to the differential alike",
       "both walkers read the SAME pinned grammar (wasm/tree-sitter-javascript.wasm), so a grammar bug shared by analyzer and oracle is invisible to both",

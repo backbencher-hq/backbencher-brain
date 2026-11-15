@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Inline code</title>
+  <!-- HTML-G1 / #288. The body of an inline <script>/<style> is a single opaque
+       `raw_text` leaf in the grammar, and before this seam NOTHING descended into
+       it: measured across the html-bearing corpus repos, 5,389 of 6,094 files
+       (88.4%) carry an inline block, and on the 51 hand-written-document sample
+       those blocks were 74,637 characters of JavaScript and 17,266 of CSS that
+       produced zero symbols, zero calls and zero imports.
+
+       The cause was a SEAM, not a missing branch: the engine's polyglot path
+       keys on `metadata.embeddedScriptContent`, which no analyzer in src/ast/ has
+       ever set (repo-wide three references, all readers, zero producers), and the
+       SFC sub-parse seam was gated `vue || svelte`.
+
+       The load-bearing half of this fixture is the LINES. A delegate's ranges and
+       line_number are BLOCK-relative, so every one is shifted back to file
+       coordinates by the merge and the applied offset is recorded on each row
+       (`htmlEmbedded` / `embeddedLang` / `embeddedLineOffset`) — the
+       `sfcDelegated` / `sfcLineOffset` discipline the svelte seam established, so
+       a regression that drops the shift fails these pins instead of silently
+       shipping off-by-N lines. -->
+  <style id="page-style">
+    .header { display: flex; }
+    #site-header { color: red; }
+  </style>
+</head>
+<body>
+  <header id="site-header"><h1>Title</h1></header>
+  <script type="module">
+    import { helper } from "/lib/helper.js";
+
+    function renderBanner(text) {
+      const node = document.getElementById("site-header");
+      node.textContent = text;
+      return helper(text);
+    }
+
+    const SHIPPED = renderBanner("hello");
+  </script>
+  <script>
+    // A classic (non-module) block: a bare call, no import.
+    console.log("booted", SHIPPED);
+  </script>
+</body>
+</html>

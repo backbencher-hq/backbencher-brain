@@ -1,0 +1,53 @@
+{
+  "repo": "r-pkgdown",
+  "files": 36,
+  "partition": {
+    "before": {
+      "references": {
+        "unresolved": 42,
+        "resolved": 16,
+        "total": 58
+      },
+      "contains": {
+        "resolved": 33,
+        "total": 33
+      },
+      "calls": {
+        "resolved": 1,
+        "total": 1
+      },
+      "exports": {
+        "resolved": 11,
+        "total": 11
+      }
+    },
+    "after": {
+      "references": {
+        "unresolved": 42,
+        "resolved": 16,
+        "total": 58
+      },
+      "contains": {
+        "resolved": 33,
+        "total": 33
+      },
+      "calls": {
+        "resolved": 1,
+        "total": 1
+      },
+      "exports": {
+        "resolved": 11,
+        "total": 11
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 32,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 61,
+    "falseBindings": 0
+  }
+}

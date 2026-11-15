@@ -61,7 +61,7 @@ const flag = (name: string): string | undefined => {
 }
 const positional = argv.filter((a, i) => !a.startsWith("--") && !(i > 0 && argv[i - 1].startsWith("--")))
 
-const corpus = positional[0] || "$HOME/ProxiCall"
+const corpus = positional[0] || "/home/ishaq2321/ProxiCall"
 const wasmPath = positional[1] || resolveWasmAsset("tree-sitter-sql.wasm")
 // Only a caller that KNOWS what it is measuring may label the grammar. Absent a
 // label, the artifact says so rather than asserting a version nobody verified.

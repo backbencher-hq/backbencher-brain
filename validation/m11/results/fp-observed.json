@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-18T00:32:20.614Z",
+  "symbols": [
+    {
+      "file": "order_book.ex",
+      "name": "OrderBook",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "order_book.ex",
+      "name": "order",
+      "kind": "type",
+      "start_line": 5
+    },
+    {
+      "file": "order_book.ex",
+      "name": "t",
+      "kind": "type",
+      "start_line": 6
+    },
+    {
+      "file": "order_book.ex",
+      "name": "OrderBook",
+      "kind": "struct",
+      "start_line": 8
+    },
+    {
+      "file": "order_book.ex",
+      "name": "bids",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "order_book.ex",
+      "name": "asks",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "order_book.ex",
+      "name": "new",
+      "kind": "function",
+      "start_line": 11
+    },
+    {
+      "file": "order_book.ex",
+      "name": "insert",
+      "kind": "function",
+      "start_line": 16
+    },
+    {
+      "file": "order_book.ex",
+      "name": "add_bid",
+      "kind": "function",
+      "start_line": 23
+    },
+    {
+      "file": "order_book.ex",
+      "name": "add_ask",
+      "kind": "function",
+      "start_line": 25
+    },
+    {
+      "file": "order_book.ex",
+      "name": "best_bid",
+      "kind": "function",
+      "start_line": 27
+    },
+    {
+      "file": "order_book.ex",
+      "name": "assert_depth",
+      "kind": "macro",
+      "start_line": 30
+    },
+    {
+      "file": "order_book.ex",
+      "name": "Serializable",
+      "kind": "interface",
+      "start_line": 37
+    },
+    {
+      "file": "order_book.ex",
+      "name": "serialize",
+      "kind": "method",
+      "start_line": 38
+    },
+    {
+      "file": "order_book.ex",
+      "name": "OrderBook",
+      "kind": "class",
+      "start_line": 41
+    },
+    {
+      "file": "order_book.ex",
+      "name": "serialize",
+      "kind": "method",
+      "start_line": 42
+    },
+    {
+      "file": "order_book.ex",
+      "name": "PriceFormatter",
+      "kind": "module",
+      "start_line": 45
+    },
+    {
+      "file": "order_book.ex",
+      "name": "format",
+      "kind": "function",
+      "start_line": 48
+    },
+    {
+      "file": "worker.erl",
+      "name": "worker",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "worker.erl",
+      "name": "MAX_JOBS",
+      "kind": "constant",
+      "start_line": 7
+    },
+    {
+      "file": "worker.erl",
+      "name": "POLL_MS",
+      "kind": "constant",
+      "start_line": 8
+    },
+    {
+      "file": "worker.erl",
+      "name": "id",
+      "kind": "property",
+      "start_line": 10
+    },
+    {
+      "file": "worker.erl",
+      "name": "kind",
+      "kind": "property",
+      "start_line": 10
+    },
+    {
+      "file": "worker.erl",
+      "name": "payload",
+      "kind": "property",
+      "start_line": 10
+    },
+    {
+      "file": "worker.erl",
+      "name": "job",
+      "kind": "struct",
+      "start_line": 10
+    },
+    {
+      "file": "worker.erl",
+      "name": "queue",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "worker.erl",
+      "name": "running",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "worker.erl",
+      "name": "state",
+      "kind": "struct",
+      "start_line": 11
+    },
+    {
+      "file": "worker.erl",
+      "name": "start_link",
+      "kind": "function",
+      "start_line": 14
+    },
+    {
+      "file": "worker.erl",
+      "name": "submit",
+      "kind": "function",
+      "start_line": 18
+    },
+    {
+      "file": "worker.erl",
+      "name": "stop",
+      "kind": "function",
+      "start_line": 21
+    },
+    {
+      "file": "worker.erl",
+      "name": "init",
+      "kind": "function",
+      "start_line": 24
+    },
+    {
+      "file": "worker.erl",
+      "name": "handle_call",
+      "kind": "function",
+      "start_line": 27
+    },
+    {
+      "file": "worker.erl",
+      "name": "handle_cast",
+      "kind": "function",
+      "start_line": 30
+    },
+    {
+      "file": "worker.erl",
+      "name": "count_jobs",
+      "kind": "function",
+      "start_line": 38
+    },
+    {
+      "file": "worker.erl",
+      "name": "sweep",
+      "kind": "function",
+      "start_line": 41
+    },
+    {
+      "file": "worker.erl",
+      "name": "is_stale",
+      "kind": "function",
+      "start_line": 44
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Streaming",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Stream",
+      "kind": "type",
+      "start_line": 11
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Stream",
+      "kind": "constructor",
+      "start_line": 11
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "run",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "buffer",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Sink",
+      "kind": "type",
+      "start_line": 13
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Sink",
+      "kind": "constructor",
+      "start_line": 13
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "feed",
+      "kind": "property",
+      "start_line": 13
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Mergeable",
+      "kind": "interface",
+      "start_line": 15
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "merge",
+      "kind": "method",
+      "start_line": 16
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Stream",
+      "kind": "class",
+      "start_line": 18
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "merge",
+      "kind": "method",
+      "start_line": 19
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "pipe",
+      "kind": "function",
+      "start_line": 22
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "mapS",
+      "kind": "function",
+      "start_line": 25
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "foldS",
+      "kind": "function",
+      "start_line": 28
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "consume",
+      "kind": "function",
+      "start_line": 31
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "lookupDefault",
+      "kind": "function",
+      "start_line": 36
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "classify",
+      "kind": "function",
+      "start_line": 43
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Tree",
+      "kind": "type",
+      "start_line": 48
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Leaf",
+      "kind": "constructor",
+      "start_line": 48
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "Node",
+      "kind": "constructor",
+      "start_line": 48
+    },
+    {
+      "file": "Streaming.hs",
+      "name": "depth",
+      "kind": "function",
+      "start_line": 51
+    },
+    {
+      "file": "Stats.icl",
+      "name": "Stats",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "Stats.icl",
+      "name": "Vec",
+      "kind": "type",
+      "start_line": 5
+    },
+    {
+      "file": "Stats.icl",
+      "name": "x",
+      "kind": "property",
+      "start_line": 5
+    },
+    {
+      "file": "Stats.icl",
+      "name": "y",
+      "kind": "property",
+      "start_line": 5
+    },
+    {
+      "file": "Stats.icl",
+      "name": "z",
+      "kind": "property",
+      "start_line": 5
+    },
+    {
+      "file": "Stats.icl",
+      "name": "Summarize",
+      "kind": "interface",
+      "start_line": 7
+    },
+    {
+      "file": "Stats.icl",
+      "name": "summarize",
+      "kind": "method",
+      "start_line": 8
+    },
+    {
+      "file": "Stats.icl",
+      "name": "Vec",
+      "kind": "class",
+      "start_line": 10
+    },
+    {
+      "file": "Stats.icl",
+      "name": "summarize",
+      "kind": "method",
+      "start_line": 11
+    },
+    {
+      "file": "Stats.icl",
+      "name": "sum",
+      "kind": "function",
+      "start_line": 14
+    },
+    {
+      "file": "Stats.icl",
+      "name": "mkVec",
+      "kind": "function",
+      "start_line": 17
+    },
+    {
+      "file": "Stats.icl",
+      "name": "scale",
+      "kind": "function",
+      "start_line": 20
+    },
+    {
+      "file": "Stats.icl",
+      "name": "mag2",
+      "kind": "function",
+      "start_line": 23
+    },
+    {
+      "file": "Stats.icl",
+      "name": "twice",
+      "kind": "function",
+      "start_line": 26
+    },
+    {
+      "file": "Stats.icl",
+      "name": "describe",
+      "kind": "function",
+      "start_line": 29
+    },
+    {
+      "file": "Stats.icl",
+      "name": "main",
+      "kind": "function",
+      "start_line": 32
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.806Z",
+    "contentSha256": "18a2ac31e13e612a0712310311dccaa2241bf30bff32a073db511eac814813cf"
+  }
+}

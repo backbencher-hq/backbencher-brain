@@ -34,7 +34,7 @@ const REUSE = arg("data")
 const DATA = REUSE ?? mkdtempSync(path.join(tmpdir(), "m59-relident-data-"))
 process.env.BB_DATA_DIR = DATA
 const TOP = Number(arg("top", "3"))
-const CORPUS = `$HOME/fixtures/repositories/${REPO}`
+const CORPUS = `/home/ishaq2321/bb_tests/repositories/${REPO}`
 
 async function main() {
   const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")

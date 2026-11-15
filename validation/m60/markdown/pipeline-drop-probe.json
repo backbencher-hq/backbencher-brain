@@ -1,0 +1,76 @@
+{
+  "instrument": "markdown pipeline-drop probe (validation/m14/fixtures/markdown/pipeline-drop-probe.ts)",
+  "compared": "ASTEngine.parseFile (pre-filter) vs pool-worker.parseFile (post-filter), same file, same analyzer",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "seed": "markdown-pipeline-drop-v1",
+  "admittedMarkdownFiles": 12729,
+  "drawn": 400,
+  "drawHash": "c9fc212394d6f7bf018324a38d038355766bac5de4ff77ac01480c9a99d953b4",
+  "filesCompared": 400,
+  "preFailures": 0,
+  "postFailures": 0,
+  "relationshipsPreFilter": 11806,
+  "relationshipsPostFilter": 11426,
+  "relationshipsDroppedByPipeline": 380,
+  "droppedPctOfPreFilter": "3.22%",
+  "symbolsPreFilter": 7295,
+  "symbolsPostFilter": 7295,
+  "droppedByRule": {
+    "leaf-brace-angle-backtick": 172,
+    "leaf-starts-with-space": 167,
+    "leaf-too-long": 34,
+    "leaf-too-short": 7
+  },
+  "droppedByType": {
+    "contains": 329,
+    "uses": 51
+  },
+  "droppedByRole": {
+    "heading_hierarchy": 325,
+    "markdown_internal_anchor": 11,
+    "markdown_link": 40,
+    "table_under_heading": 3,
+    "table_column": 1
+  },
+  "droppedExamples": {
+    "leaf-brace-angle-backtick": [
+      "tfsec/docs/checks/azure/compute/enable-disk-encryption/index.md: contains/heading_hierarchy \"Enable disk encryption on managed disk\" -> \"Default Severity: <span class=\"severity high\">high</span>\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`create` & `createMany` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`update` & `updateMany` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`delete` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`upsert` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Result Extensions\" -> \"Saving File lists - `saveFiles.inList()`\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: uses/markdown_internal_anchor \"2. Configuring the UI\" -> \"Saving File lists - `saveFiles.inList()`\"",
+      "redwood/docs/versioned_docs/version-8.1/typescript/utility-types.md: contains/heading_hierarchy \"Cells\" -> \"`CellSuccessProps<TData, TVariables>`\""
+    ],
+    "leaf-starts-with-space": [
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Uploading Files\" -> \"1. Setting up the File scalar\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Uploading Files\" -> \"2. Configuring the UI\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Uploading Files\" -> \"3. Logging the Item Details\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"1. Configuring the Prisma schema\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"2. Configuring the Upload savers and Uploads extension\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"3. Attaching the Uploads extension\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"4. Implementing Upload savers\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: uses/markdown_internal_anchor \"Storage Prisma Extension\" -> \"2. Configuring the Upload savers and Uploads extension\""
+    ],
+    "leaf-too-long": [
+      "redwood/packages/auth-providers/dbAuth/setup/README.md: contains/heading_hierarchy \"Examples\" -> \"User record query by email with namespaced app_metadata roles as Auth0 requires custom JWT claims to be namespaced\"",
+      "redwood/packages/auth-providers/dbAuth/setup/README.md: contains/heading_hierarchy \"Examples\" -> \"Cookies and other request information are available in the req parameter, just in case\"",
+      "redwood/docs/versioned_docs/version-8.6/tutorial/chapter4/deployment.md: uses/markdown_link \"Environment Variables\" -> \"https://www.prisma.io/docs/guides/performance-and-optimization/connection-management#recommended-connection-pool-size-1\"",
+      "redwood/docs/versioned_docs/version-7.x/redwoodrecord.md: uses/markdown_link \"Background and Terminology\" -> \"https://www.prisma.io/docs/concepts/components/prisma-schema/relations/many-to-many-relations#implicit-many-to-many-relations\"",
+      "redwood/docs/versioned_docs/version-7.x/redwoodrecord.md: uses/markdown_link \"Background and Terminology\" -> \"https://www.prisma.io/docs/concepts/components/prisma-schema/relations/many-to-many-relations#explicit-many-to-many-relations\"",
+      "kubernetes/staging/src/k8s.io/kubectl/docs/maintainers/MAINTAINERS.md: uses/markdown_link \"Issue triage\" -> \"https://github.com/kubernetes/kubernetes/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3Asig%2Fcli\"",
+      "kubernetes/staging/src/k8s.io/kubectl/docs/maintainers/MAINTAINERS.md: uses/markdown_link \"PR review\" -> \"https://github.com/kubernetes/kubernetes/pulls?utf8=%E2%9C%93&q=is%3Apr%20is%3Aopen%20label%3Asig%2Fcli\"",
+      "yq/pkg/yqlib/doc/operators/multiply-merge.md: uses/markdown_link \"Merging complex arrays together by a key field\" -> \"https://mikefarah.gitbook.io/yq/operators/multiply-merge#merge-arrays-of-objects-together-matching-on-a-key\""
+    ],
+    "leaf-too-short": [
+      "yq/pkg/yqlib/doc/usage/hcl.md: contains/heading_hierarchy \"HCL\" -> \"Roundtrip: Separate blocks with same name.\"",
+      "otp/erts/doc/references/erlc_cmd.md: contains/heading_hierarchy \"erlc\" -> \"erlc flags file1.ext file2.ext...\"",
+      "redwood/docs/versioned_docs/version-8.0/prerender.md: contains/heading_hierarchy \"Common Warnings & Errors\" -> \"Cannot prerender the query \\{queryName\\} as it requires auth.\"",
+      "redwood/docs/versioned_docs/version-6.x/prerender.md: contains/heading_hierarchy \"Common Warnings & Errors\" -> \"Cannot prerender the query \\{queryName\\} as it requires auth.\"",
+      "hledger/bin/README.md: contains/heading_hierarchy \"Scripts and add-ons\" -> \"How to...\"",
+      "nim/lib/wrappers/linenoise/README.markdown: contains/heading_hierarchy \"Linenoise\" -> \"Terminals, in 2010.\"",
+      "nim/lib/wrappers/linenoise/README.markdown: contains/heading_hierarchy \"Linenoise\" -> \"Tested with...\""
+    ]
+  }
+}

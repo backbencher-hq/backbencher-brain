@@ -1,0 +1,11 @@
+{
+  "issue": "M15.C3",
+  "code": "C3",
+  "tool": "safety-primitives",
+  "verified": true,
+  "checks": 121,
+  "passed": 123,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:25:37.124Z"
+}

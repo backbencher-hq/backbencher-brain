@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import { writeFileSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const corpus = process.argv[2] || "$HOME/fixtures/repositories/scala3"
+const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/scala3"
 const revision = execFileSync("git", ["-C", corpus, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
 const relative = execFileSync("git", ["-C", corpus, "ls-files", "*.md"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()

@@ -1,0 +1,93 @@
+{
+  "repo": "bootstrap",
+  "files": 122,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 255,
+        "total": 255
+      },
+      "extends": {
+        "unresolved": 11,
+        "resolved": 1,
+        "total": 12
+      },
+      "references": {
+        "resolved": 683,
+        "ambDeclOnly": 225,
+        "unresolved": 116,
+        "total": 1024
+      },
+      "imports": {
+        "unresolved": 173,
+        "total": 173
+      },
+      "calls": {
+        "resolved": 55,
+        "ambDeclOnly": 20,
+        "total": 75
+      },
+      "exports": {
+        "resolved": 745,
+        "ambDeclOnly": 26,
+        "total": 771
+      },
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      },
+      "overrides": {
+        "ambDeclOnly": 5,
+        "resolved": 1,
+        "total": 6
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 255,
+        "total": 255
+      },
+      "extends": {
+        "unresolved": 11,
+        "resolved": 1,
+        "total": 12
+      },
+      "references": {
+        "resolved": 908,
+        "unresolved": 116,
+        "total": 1024
+      },
+      "imports": {
+        "unresolved": 173,
+        "total": 173
+      },
+      "calls": {
+        "resolved": 75,
+        "total": 75
+      },
+      "exports": {
+        "resolved": 771,
+        "total": 771
+      },
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      },
+      "overrides": {
+        "resolved": 6,
+        "total": 6
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 55,
+    "before": {
+      "ambDeclOnly": 276
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 2026,
+    "falseBindings": 16
+  }
+}

@@ -42,7 +42,7 @@ import { Parser, Language } from "web-tree-sitter"
 import { ASTEngine } from "../../src/ast/engine"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
-const REPO = process.env.BB_SQL_PERF_REPO ?? "$HOME/ProxiCall"
+const REPO = process.env.BB_SQL_PERF_REPO ?? "/home/ishaq2321/ProxiCall"
 const HEAVY = process.env.BB_SQL_PERF_HEAVY ?? "/usr/share/postgresql/14/extension"
 const SIZE_CAP = 400_000
 

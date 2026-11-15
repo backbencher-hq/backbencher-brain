@@ -1,0 +1,140 @@
+{
+  "fixtureId": "vue/template-lines-825",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. M59 (#825). Lines read off the fixture's own text. The pre-fix values in `forbidRelationships` are MEASURED, not reconstructed: the same fixture was run through the HEAD worktree's analyzer (script/m14/tmp/web-fixture-dump.ts --root=) and every one of its 16 relationships reported no line, while the two prop symbols were stamped line 30 — the `props: { ... }` PAIR — for keys written on 31 and 32. Three separate contracts are pinned: (1) the SFC SEAM — the script block is delegated to the js/ts analyzer, whose lines are script-relative, and the wrapper's merge must shift them (the `import ChildPanel` edge is a file line here: 25, not the delegate's script-relative position); (2) the TEMPLATE — a component usage's line is its TAG (16, 18) and an interpolation read's line is the fragment the name is written in (16, 17, 19); (3) OPTIONS API — a prop's line is its KEY's line (31, 32), never the enclosing `props:` pair's (30). On the corpus the seam defect alone made 562 of 585 line-bearing vue edges INCONSISTENT before it was fixed.",
+  "expectSymbols": [
+    {
+      "name": "Panel",
+      "kind": "class"
+    },
+    {
+      "name": "label",
+      "kind": "property"
+    },
+    {
+      "name": "count",
+      "kind": "property"
+    },
+    {
+      "name": "onSave",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "./ChildPanel.vue:ChildPanel",
+      "line_number": 25,
+      "note": "SEAM: a script-relative line shifted to the file's — this name is written on file line 25"
+    },
+    {
+      "type": "renders",
+      "target": "ChildPanel",
+      "line_number": 16,
+      "note": "the template TAG's line"
+    },
+    {
+      "type": "renders",
+      "target": "TabPane",
+      "line_number": 18
+    },
+    {
+      "type": "uses",
+      "target": "label",
+      "line_number": 16,
+      "note": "`:label=\"label\"` — the binding value's line"
+    },
+    {
+      "type": "uses",
+      "target": "count",
+      "line_number": 17,
+      "note": "`{{ count }}`"
+    },
+    {
+      "type": "uses",
+      "target": "title",
+      "line_number": 19,
+      "note": "`{{ title }}`"
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "label",
+      "line_number": 31,
+      "note": "the PROP KEY's line"
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "count",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "data",
+      "line_number": 34
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "title",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "onSave",
+      "line_number": 38
+    },
+    {
+      "type": "uses",
+      "from": "onSave",
+      "target": "label",
+      "line_number": 40,
+      "note": "script-side read, shifted by the seam"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "./ChildPanel.vue:ChildPanel",
+      "line_number": null,
+      "note": "pre-fix (measured on this fixture at HEAD): no line on any of the 16 relationships"
+    },
+    {
+      "type": "uses",
+      "target": "label",
+      "line_number": null,
+      "note": "pre-fix: same silence for the template reads"
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "label",
+      "line_number": null,
+      "note": "pre-fix: and for the prop containment"
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "label",
+      "line_number": 30,
+      "note": "pre-fix (measured): the `props: {` PAIR's line, stamped onto every prop; `label` is written on 31"
+    },
+    {
+      "type": "contains",
+      "from": "Panel",
+      "target": "count",
+      "line_number": 30,
+      "note": "pre-fix (measured): the same pair line for `count`, written on 32"
+    },
+    {
+      "type": "renders",
+      "target": "ChildPanel",
+      "line_number": 15,
+      "note": "the enclosing `<div class=\"wrap\">` line — the component tag itself is written on 16"
+    }
+  ]
+}

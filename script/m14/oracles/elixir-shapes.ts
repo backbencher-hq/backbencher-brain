@@ -12,7 +12,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const ROOT = process.env.BB_LANE_ROOT ?? path.resolve(process.cwd())
-const CORPUS = process.env.BB_CORPUS ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
 const WANT = process.argv[2] ?? "defoverridable"
 const MAX = Number(process.argv[3] ?? 6)
 const prefix = WANT.endsWith("*")

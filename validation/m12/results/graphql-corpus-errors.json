@@ -5,7 +5,7 @@
   "corpus": "graphql_js",
   "corpusRepo": "graphql_js",
   "corpusUrl": "https://github.com/graphql/graphql-js",
-  "corpusPath": "$HOME/fixtures/graphql-corpus-probe",
+  "corpusPath": "/home/ishaq2321/bb_tests/graphql-corpus-probe",
   "revision": "9c245018484668b7c35f3ed219092a98855bd51e",
   "extensions": [
     "*.graphql"

@@ -1,0 +1,157 @@
+{
+  "fixtureId": "javascript/imported-binding-claims",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the evidence-verified imported-binding claim (Lead contract 2026-10-18). Two halves: (1) EVERY imports edge publishes the LOCAL names it binds in metadata.importedBindings (default import, named import incl. alias, namespace local, require() destructure/bare binding) — this is the EVIDENCE the arbiter verifies; (2) an edge whose TARGET IS that binding carries metadata.importedBinding = {specifier, binding} and the target stays BARE — no BINDING_SEP spelling, because this claim is evidence-verified rather than spelling-verified (unlike the local-binding class). The imports rows are pinnable here (arrays compare by sorted JSON); the claim OBJECT is machine-checked by the gate/arbiter control arms, and this fixture pins the half that matters for regressions: the local names on every import row and the BARE spelling of every claimed target. NEGATIVES: a name the FILE declares (localOnly) has no import evidence -> bare, unclaimed; a namespace MEMBER access (ns.foo -> target foo) is a member, not the binding; a DYNAMIC specifier (require(moduleName)) has no literal evidence -> bare, unclaimed. The imports rows ALSO pin meta.module - the arbiter's evidence KEY: the first arbiter smoke refuted six importedBinding claims because the require()/import() evidence rows carried no module field (all six were require-bound: fs, path, an absolute pg path, ../utils/logger, ../../services/...); the analyzer now publishes it on every imports row, from stringContent() of the SAME written argument the claim specifier comes from, so the two spellings cannot drift.",
+  "expectSymbols": [
+    {
+      "name": "usesNamed",
+      "kind": "function"
+    },
+    {
+      "name": "usesRequire",
+      "kind": "function"
+    },
+    {
+      "name": "localOnly",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "lodash:debounce",
+      "meta.importedBindings": [
+        "debounce"
+      ],
+      "comment": "default import binds debounce",
+      "meta.module": "lodash"
+    },
+    {
+      "type": "imports",
+      "target": "lodash:throttle",
+      "meta.importedBindings": [
+        "throttle"
+      ],
+      "comment": "named import binds throttle",
+      "meta.module": "lodash"
+    },
+    {
+      "type": "imports",
+      "target": "lodash:*",
+      "meta.importedBindings": [
+        "ns"
+      ],
+      "comment": "namespace import binds ns (the item text is `*`, the LOCAL is ns)",
+      "meta.module": "lodash"
+    },
+    {
+      "type": "imports",
+      "target": "draw",
+      "meta.importedBindings": [
+        "render"
+      ],
+      "comment": "LOCAL named module: target is the DECLARED name draw, evidence binds the alias render",
+      "meta.module": "./m2"
+    },
+    {
+      "type": "imports",
+      "target": "fs:*",
+      "meta.importedBindings": [
+        "readFile"
+      ],
+      "comment": "require destructure binds readFile",
+      "meta.module": "fs"
+    },
+    {
+      "type": "imports",
+      "target": "fs:*",
+      "meta.importedBindings": [
+        "fsMod"
+      ],
+      "comment": "bare require binding binds fsMod",
+      "meta.module": "fs"
+    },
+    {
+      "type": "calls",
+      "from": "usesNamed",
+      "target": "throttle",
+      "comment": "POSITIVE bare target (no separator) — evidence-verified claim, gate bindOK not resolved"
+    },
+    {
+      "type": "calls",
+      "from": "usesDefault",
+      "target": "debounce"
+    },
+    {
+      "type": "calls",
+      "from": "usesAlias",
+      "target": "render"
+    },
+    {
+      "type": "calls",
+      "from": "usesRequire",
+      "target": "readFile"
+    },
+    {
+      "type": "uses",
+      "from": "usesNamespace",
+      "target": "ns",
+      "comment": "namespace local READ is the binding"
+    },
+    {
+      "type": "uses",
+      "from": "usesRequireBare",
+      "target": "fsMod"
+    },
+    {
+      "type": "calls",
+      "from": "callsLocal",
+      "target": "localOnly",
+      "comment": "NEGATIVE (a): file-declared name, no import evidence"
+    },
+    {
+      "type": "calls",
+      "from": "callsNamespaceMember",
+      "target": "foo",
+      "comment": "NEGATIVE (b): member access, target is NOT the import binding"
+    },
+    {
+      "type": "calls",
+      "from": "dynamicRequire",
+      "target": "dyn",
+      "meta.importedBindings": null,
+      "comment": "NEGATIVE (c): dynamic specifier — bare, and no imports evidence row exists"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "usesNamed",
+      "target": "throttle",
+      "meta.localBinding": true,
+      "comment": "an imported binding is NOT a local-binding claim: no separator spelling, no localBinding metadata"
+    },
+    {
+      "type": "calls",
+      "from": "usesDefault",
+      "target": "debounce",
+      "meta.localBinding": true
+    },
+    {
+      "type": "calls",
+      "from": "usesRequire",
+      "target": "readFile",
+      "meta.localBinding": true
+    },
+    {
+      "type": "imports",
+      "target": "lodash:throttle",
+      "meta.importedBindings": [
+        "throttle",
+        "debounce"
+      ],
+      "comment": "the evidence is the EXACT local names of that row, never a union"
+    }
+  ]
+}

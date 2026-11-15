@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Element forms</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <!-- ELEMENT FORMS. The F6 fixture-coverage gate reported `style_element` and
+       `self_closing_tag` as two of twelve HANDLED node types that no fixture
+       exercised — the gate's whole purpose, catching that about the lane's OWN
+       fixtures rather than only about a foreign analyzer. A handled type nothing
+       pins is a type whose handling can rot silently, so this file exists to
+       close the two rows. -->
+  <style id="inline-style">
+    .header { display: flex; }
+  </style>
+</head>
+<body>
+  <!-- A SELF-CLOSING tag goes through the analyzer's OTHER container cursor
+       (`self_closing_tag`), which is a distinct branch from `start_tag` — and
+       an SVG self-closing element is the common real case. -->
+  <img id="selfclosed-img" src="/assets/a.png" alt="a"/>
+  <br id="selfclosed-br"/>
+  <hr id="selfclosed-hr" />
+  <svg id="selfclosed-svg" viewBox="0 0 16 16">
+    <path id="selfclosed-path" d="M0 0h16v16H0z"/>
+    <circle id="selfclosed-circle" cx="8" cy="8" r="4"/>
+  </svg>
+
+  <!-- The ordinary void forms, which the grammar shapes as `start_tag` under an
+       `element` with no end tag. Both container shapes therefore occur in real
+       markup and both need a pin. -->
+  <img id="void-img" src="/assets/b.png" alt="b">
+  <input id="void-input" type="text" name="q">
+  <meta id="void-meta" name="viewport" content="width=device-width">
+  <link id="void-link" rel="canonical" href="/canonical">
+
+  <!-- An XHTML-style self-closing NON-void element: the grammar must not require
+       an end tag for it, and the resource it declares must still be read. -->
+  <div id="selfclosed-div" class="x"/>
+</body>
+</html>

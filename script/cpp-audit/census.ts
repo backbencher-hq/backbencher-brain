@@ -1,0 +1,456 @@
+/**
+ * C++ LANE AUDIT — whole-population emission census through the PRODUCTION entry.
+ *
+ * WHAT IT IS FOR: the C++ lane's claims (docs/analyzers/cpp.md, docs/m14/verification/CPP-*.md)
+ * were measured on a corpus that is NOT on this machine, so none of them can be re-checked by
+ * reading them. This probe re-derives them here, on a corpus cloned for this audit
+ * (.cpp-corpus/fmt @ 10.2.1, .cpp-corpus/nlohmann-json @ v3.11.3).
+ *
+ * IT CALLS `ASTEngine.parseFile` (the call `engine.ts` itself makes), NEVER `analyze()` directly:
+ * the lane's own doc records that the two paths differ, and every number in the lane is stated for
+ * the production path.
+ *
+ * OUTPUT: JSON with per-type rows/files/distinct-pairs + the fabrication and honesty checks the
+ * lane's gates assert (D1 keywords, D2 self-extends, D3 duplicate pairs, V3 name surface, R7
+ * placeholders, confidence/evidenceClass/line presence, resolution of both endpoints against an
+ * index built FROM ANALYZER OUTPUT).
+ *
+ * Usage: bun run script/cpp-audit/census.ts [--limit=N] [--json]
+ */
+import { readFileSync } from "node:fs"
+import { readdirSync, statSync } from "node:fs"
+import { join, extname } from "node:path"
+import { ASTEngine } from "../../src/ast/engine"
+
+const CPP_EXTS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".ipp", ".inl", ".cu", ".h"])
+
+/** Keyword set — a COPY of the analyzer's CPP_KEYWORDS is NOT used on purpose: this probe must be
+ *  able to DISAGREE with the analyzer. Derived from ISO 14882 [lex.name] independently, and the
+ *  rows it flags are printed so a reader can check them by hand. */
+const ISO_KEYWORDS = new Set([
+  "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break",
+  "case", "catch", "char", "char8_t", "char16_t", "char32_t", "class", "compl", "concept",
+  "const", "consteval", "constexpr", "constinit", "const_cast", "continue", "co_await",
+  "co_return", "co_yield", "decltype", "default", "delete", "do", "double", "dynamic_cast",
+  "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto",
+  "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept", "not", "not_eq",
+  "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register",
+  "reinterpret_cast", "requires", "return", "short", "signed", "sizeof", "static",
+  "static_assert", "static_cast", "struct", "switch", "template", "this", "thread_local",
+  "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
+  "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq",
+])
+
+// TRACED, not guessed — and this set was WRONG TWICE before it was right.
+//
+// DRAFT 1 contained `null`, `unknown`, `undefined`. EVERY row it flagged was a CORRECT edge:
+//   * `null`      — fmt declares `template <typename T> struct null`, nlohmann declares
+//                   `bool null()` on every SAX interface and `value_t::null`. 66 rows traced.
+//   * `unknown`   — `enum class Color { red, green, blue, unknown }` in nlohmann's own examples.
+//                   `contains Color -> unknown` is containment of a declared enumerator. 2 traced.
+// All three are LEGAL C++ identifiers, so a placeholder test that guesses reports correct edges
+// as fabrications. `anonymous` is the only string on this list that is a genuine SENTINEL: it is
+// the analyzer's own `CPP_ANONYMOUS` constant, and ONTOLOGY/D21 made it UNPUBLISHABLE, so its
+// presence would be a real violation. `global` is the lane's file-scope SOURCE sentinel and is
+// checked separately below, because on the TARGET side it is `std::locale::global`.
+const PLACEHOLDERS = new Set(["anonymous", ""])
+
+interface Row {
+  type: string
+  source: string
+  target: string
+  confidence?: number
+  line_number?: number
+  metadata?: Record<string, unknown>
+}
+
+interface FileRec {
+  path: string
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: Row[]
+}
+
+function walk(dir: string, out: string[], cap: number): void {
+  if (out.length >= cap) return
+  let entries: string[]
+  try {
+    entries = readdirSync(dir)
+  } catch {
+    return
+  }
+  for (const e of entries) {
+    if (out.length >= cap) return
+    if (e === ".git" || e === "node_modules" || e === "build" || e === "third_party") continue
+    const p = join(dir, e)
+    let st
+    try {
+      st = statSync(p)
+    } catch {
+      continue
+    }
+    if (st.isDirectory()) walk(p, out, cap)
+    else if (st.isFile() && CPP_EXTS.has(extname(e))) out.push(p)
+  }
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2)
+  const limitArg = args.find((a) => a.startsWith("--limit="))
+  const limit = limitArg ? Number(limitArg.split("=")[1]) : 0
+  const asJson = args.includes("--json")
+
+  const files: string[] = []
+  for (const repo of ["fmt", "nlohmann-json"]) {
+    walk(join(process.cwd(), ".cpp-corpus", repo), files, limit > 0 ? limit : 1_000_000)
+  }
+  files.sort()
+  if (limit > 0) files.length = Math.min(files.length, limit)
+
+  const recs: FileRec[] = []
+  const byLang: Record<string, number> = {}
+  const failures: Array<{ path: string; error: string }> = []
+  const t0 = Date.now()
+
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]
+    let content: string
+    try {
+      const buf = readFileSync(f)
+      if (buf.length > 1_000_000) continue // the lane's own 1 MiB cap
+      content = buf.toString("utf8")
+    } catch (e) {
+      failures.push({ path: f, error: String(e) })
+      continue
+    }
+    try {
+      const res: any = await ASTEngine.parseFile(f, content)
+      const lang = String(res?.language ?? "")
+      byLang[lang] = (byLang[lang] ?? 0) + 1
+      if (lang !== "cpp") continue
+      recs.push({
+        path: f.replace(process.cwd() + "/", ""),
+        symbols: res.symbols ?? [],
+        relationships: (res.relationships ?? []) as Row[],
+      })
+    } catch (e) {
+      failures.push({ path: f, error: String(e) })
+    }
+    if ((i + 1) % 100 === 0) process.stderr.write(`  … ${i + 1}/${files.length}\n`)
+  }
+  const parseMs = Date.now() - t0
+
+  // ── index FROM ANALYZER OUTPUT (the population bb_graph resolves against) ───────────────────
+  const nameCount = new Map<string, number>()
+  const symbolNames = new Set<string>()
+  const ownerMember = new Set<string>() // `${owner}::${name}`
+  // PER-FILE declaration counts, for the override-source ambiguity measurement. A source binds to a
+  // name; it binds UNAMBIGUOUSLY only when that name is declared exactly once in the file the edge came
+  // from. Keyed `${filePath} NUL ${leafName}`.
+  const declCount = new Map<string, number>()
+  for (const r of recs) {
+    const perFile = new Map<string, number>()
+    for (const s of r.symbols) perFile.set(s.name, (perFile.get(s.name) ?? 0) + 1)
+    for (const [n, c] of perFile) declCount.set(`${r.path}\u0000${n}`, c)
+    for (const s of r.symbols) {
+      symbolNames.add(s.name)
+      nameCount.set(s.name, (nameCount.get(s.name) ?? 0) + 1)
+      const o = (s as any).ownerName
+      if (o) ownerMember.add(`${o}::${s.name}`)
+      const q = (s as any).qualifiedName
+      if (typeof q === "string" && q !== s.name) symbolNames.add(q)
+    }
+  }
+  const resolves = (t: string): boolean => {
+    if (t === "" ) return false
+    if (symbolNames.has(t)) return true
+    if (nameCount.get(t) === 1) return true
+    return false
+  }
+
+  // ── per-type aggregation ───────────────────────────────────────────────────────────────────
+  const types = new Map<string, { rows: Row[]; files: Set<string>; pairs: Set<string> }>()
+  let totalRows = 0
+  for (const r of recs) {
+    for (const rel of r.relationships) {
+      const t = String(rel.type ?? "")
+      totalRows++
+      let e = types.get(t)
+      if (!e) { e = { rows: [], files: new Set(), pairs: new Set() }; types.set(t, e) }
+      // The row carries its file (non-enumerably) so a check can ask a PER-FILE question — the
+      // override-source ambiguity is "is this leaf declared more than once IN THIS FILE", and a global
+      // count would answer a different question.
+      Object.defineProperty(rel, "__file", { value: r.path, enumerable: false, configurable: true })
+      e.rows.push(rel)
+      e.files.add(r.path)
+      e.pairs.add(`${rel.source}\u0000${rel.target}`)
+    }
+  }
+
+  // Object.create(null): `constructor` is a legal SymbolKind and a plain `{}` inherits
+  // Object.prototype.constructor, so `kindCensus["constructor"] ?? 0` read a FUNCTION and the
+  // count came out as "function Object() { [native code] }111…". That was this probe's bug,
+  // found on its own first run — recorded because a census that corrupts one kind is worse
+  // than a census that omits it.
+  const kindCensus: Record<string, number> = Object.create(null)
+  let totalSymbols = 0
+  for (const r of recs) {
+    totalSymbols += r.symbols.length
+    for (const s of r.symbols) kindCensus[s.kind] = (kindCensus[s.kind] ?? 0) + 1
+  }
+
+  // ── the checks ────────────────────────────────────────────────────────────────────────────
+  const perType: Record<string, any> = {}
+  const findings: Array<{ check: string; type?: string; count: number; sample: string[] }> = []
+
+  for (const [t, e] of [...types.entries()].sort((a, b) => b[1].rows.length - a[1].rows.length)) {
+    const rows = e.rows
+    const confMissing = rows.filter((r) => typeof r.confidence !== "number").length
+    const evClass = new Map<string, number>()
+    for (const r of rows) {
+      const k = String((r.metadata as any)?.evidenceClass ?? "ABSENT")
+      evClass.set(k, (evClass.get(k) ?? 0) + 1)
+    }
+    const lineMissing = rows.filter((r) => typeof r.line_number !== "number" || r.line_number <= 0).length
+    const emptyEndpoint = rows.filter((r) => !r.source || !r.target || r.source === "" || r.target === "").length
+    const srcResolved = rows.filter((r) => resolves(r.source) || r.source === "global").length
+    const tgtResolved = rows.filter((r) => resolves(r.target)).length
+    const reasonMissing = rows.filter((r) => typeof r.confidence === "number" && r.confidence < 1 && !(r.metadata as any)?.reasonCode).length
+    const dupPairs = rows.length - e.pairs.size
+    perType[t] = {
+      rows: rows.length,
+      files: e.files.size,
+      distinctPairs: e.pairs.size,
+      duplicatePairsVsRows: dupPairs,
+      confidenceMissing: confMissing,
+      confidenceValues: [...new Set(rows.map((r) => r.confidence))].sort() as any[],
+      evidenceClass: Object.fromEntries(evClass),
+      lineNumberMissing: lineMissing,
+      emptyEndpoint,
+      sourceResolved: `${srcResolved}/${rows.length}`,
+      targetResolved: `${tgtResolved}/${rows.length}`,
+      sub1WithoutReasonCode: reasonMissing,
+    }
+  }
+
+  // D1 — a keyword as a calls/uses/instantiates target, or as a published symbol name
+  {
+    const sample: string[] = []
+    let n = 0
+    for (const [t, e] of types) {
+      if (t !== "calls" && t !== "uses" && t !== "instantiates") continue
+      for (const r of e.rows) if (ISO_KEYWORDS.has(r.target)) { n++; if (sample.length < 12) sample.push(`${t} ${r.source} -> ${r.target}`) }
+    }
+    findings.push({ check: "D1 keyword target (calls/uses/instantiates)", count: n, sample })
+
+    const s2: string[] = []
+    let n2 = 0
+    for (const r of recs) for (const s of r.symbols) if (ISO_KEYWORDS.has(s.name)) { n2++; if (s2.length < 12) s2.push(`${s.kind} "${s.name}" @ ${r.path}`) }
+    findings.push({ check: "D1 keyword SYMBOL name", count: n2, sample: s2 })
+  }
+
+  // D2 — a class inheriting from itself
+  {
+    const sample: string[] = []
+    let n = 0
+    for (const r of types.get("extends")?.rows ?? []) if (r.source === r.target) { n++; if (sample.length < 12) sample.push(`${r.source} -> ${r.target}`) }
+    findings.push({ check: "D2 self-extends", type: "extends", count: n, sample })
+  }
+
+  // D3 — duplicate (source,target) pairs for contains/references/imports
+  {
+    // PER FILE, because the contract is per-file: two translation units that both
+    // `#include <cmath>` state two dependencies, not one duplicate.
+    for (const t of ["contains", "references", "imports", "part_of"]) {
+      let dup = 0
+      const sample: string[] = []
+      for (const r of recs) {
+        const seen = new Set<string>()
+        for (const rel of r.relationships) {
+          if (String(rel.type) !== t) continue
+          const k = `${rel.source}\u0000${rel.target}`
+          if (seen.has(k)) { dup++; if (sample.length < 8) sample.push(`${r.path}: ${rel.source} -> ${rel.target}`) }
+          else seen.add(k)
+        }
+      }
+      const present = types.has(t)
+      if (!present) continue
+      findings.push({ check: "D3 duplicate (source,target) pairs IN ONE FILE", type: t, count: dup, sample })
+    }
+  }
+
+  // V3 — a published symbol name that is not a name (whitespace / angle brackets / braces)
+  {
+    const sample: string[] = []
+    let n = 0
+    for (const r of recs) for (const s of r.symbols) {
+      const nm = s.name ?? ""
+      // `expandedFrom: "macro-heading"` is the lane's DOCUMENTED product decision: a
+      // `TEST(Suite, Name) { … }` block defines no C++ function, and the lane publishes the
+      // heading TEXT so the body's reads have an owner. It is excluded here because counting a
+      // designed answer as a defect is how a real one gets buried.
+      if ((s.metadata as any)?.expandedFrom === "macro-heading") continue
+      const bad = nm === "" || (/[\s<>{}()]/.test(nm) && !nm.startsWith("operator"))
+      if (bad) { n++; if (sample.length < 15) sample.push(`${s.kind} ${JSON.stringify(nm)} @ ${r.path}`) }
+    }
+    findings.push({ check: "V3 unpublished-shape symbol name (ws/<>/{}/() unless operator), macro-headings excluded as designed", count: n, sample })
+  }
+
+  // R7 — placeholder endpoint literals.
+  // `global` is DELIBERATELY EXCLUDED from this count and checked separately below, because on
+  // the TARGET side it is a MEASURED REAL NAME rather than a placeholder: `std::locale::global`
+  // is a function in the C++ standard library, and the analyzer's callee-leaf descent correctly
+  // reduces it to `global`. Counting it here would report a correct edge as a fabrication.
+  {
+    const sample: string[] = []
+    let n = 0
+    for (const [t, e] of types) for (const r of e.rows) {
+      if (PLACEHOLDERS.has(r.source) && r.source !== "global") { n++; if (sample.length < 10) sample.push(`${t} source="${r.source}"`) }
+      if (PLACEHOLDERS.has(r.target) && r.target !== "global") { n++; if (sample.length < 10) sample.push(`${t} target="${r.target}"`) }
+    }
+    findings.push({ check: "R7 placeholder endpoint literal (anonymous/unknown/empty, `global` handled separately)", count: n, sample })
+  }
+
+  // THE SENTINEL COLLISION — `global` as a TARGET. This is the same collision D21 fixed for
+  // `anonymous`, which the lane never fixed for `global`, and it is NOT a fabrication: the rows
+  // name `std::locale::global`, a real function whose leaf IS `global`. What is wrong is the
+  // VOCABULARY — the lane uses the literal string `global` as its file-scope SOURCE sentinel, so a
+  // real call to `std::locale::global` is indistinguishable from the sentinel to any consumer, and
+  // the lane's own R7 "0 placeholder targets" rule cannot flag it without flagging a real edge.
+  {
+    const sample: string[] = []
+    let n = 0
+    for (const [t, e] of types) for (const r of e.rows) {
+      if (r.target === "global") { n++; if (sample.length < 8) sample.push(`${t} ${r.source} -> global (metadata.qualified=${JSON.stringify((r.metadata as any)?.qualified)})`) }
+    }
+    findings.push({
+      check: "SENTINEL COLLISION: a TARGET spelled `global` (real `std::locale::global`, ambiguous with the lane's file-scope SOURCE sentinel)",
+      count: n,
+      sample,
+    })
+  }
+
+  // THE `::` vs `.` SPELLING — the lane's own L-W4 block (real-cpp-analyzer.ts:5671-5673) says the
+  // cpp scope separator is `::` and that "the analyzer's own OVERRIDE SOURCE uses the dot". That
+  // sentence is still true: the override TARGET was fixed to the leaf, the SOURCE was not.
+  {
+    const ov = types.get("overrides")
+    if (ov) {
+      const dottedSrc = ov.rows.filter((r) => r.source.includes(".")).length
+      const srcRes = ov.rows.filter((r) => resolves(r.source)).length
+      findings.push({
+        // The check's FIRST name was "the dot ... resolves to no symbol", which this probe DISPROVED:
+        // the resolver's extractLeaf (pool-worker.ts:879) splits on `.` too, so a dot source DOES bind —
+        // to a NAME, and ambiguously (see the next check). The check below counts the rows whose source
+        // is not C++ scope syntax at all, which is the spelling defect; the ambiguity is measured
+        // separately so the two are not conflated again.
+        check: "overrides SOURCE spelled with a dot (not C++ scope syntax; binds ambiguously rather than not at all)",
+        type: "overrides",
+        count: dottedSrc,
+        sample: [...new Set(ov.rows.filter((r) => r.source.includes(".")).slice(0, 6).map((r) => `${r.source} -> ${r.target}`)), `sources resolving against the in-output index: ${srcRes}/${ov.rows.length}`],
+      })
+      // THE AMBIGUITY, measured separately. A source binds iff its leaf is declared in the file; it
+      // binds UNAMBIGUOUSLY only if that leaf is declared exactly once. Counting the leaves that occur
+      // more than once is what separates "no endpoint" (which this probe first claimed, wrongly) from
+      // "an endpoint shared with another class" (the real defect).
+      let ambig = 0
+      const ambigSample: string[] = []
+      for (const r of ov.rows) {
+        const src = String(r.source)
+        // Strip the owner qualifier to get the leaf the resolver would use, then look up how many
+        // symbols in THIS file carry that name.
+        const leaf = src.includes("::") ? src.slice(src.lastIndexOf("::") + 2) : src.includes(".") ? src.slice(src.lastIndexOf(".") + 1) : src
+        if (leaf === "") continue
+        const fp = (r as any).__file as string | undefined
+        const n = fp === undefined ? 0 : (declCount.get(`${fp}\u0000${leaf}`) ?? 0)
+        if (n > 1) {
+          ambig++
+          if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> leaf "${leaf}" declared ${n}x`)
+        }
+      }
+      findings.push({
+        check: "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
+        type: "overrides",
+        count: ambig,
+        sample: [`${ambig} of ${ov.rows.length} rows have an ambiguous leaf`, ...ambigSample],
+      })
+    }
+  }
+
+  // overrides spelling — `Base.method` (dotted, unresolvable) vs `method` (leaf)
+  {
+    const ov = types.get("overrides")
+    if (ov) {
+      const dotted = ov.rows.filter((r) => r.target.includes(".")).length
+      const withOwner = ov.rows.filter((r) => typeof (r.metadata as any)?.overriddenOwner === "string").length
+      findings.push({
+        check: "overrides target spelling",
+        type: "overrides",
+        count: dotted,
+        sample: [`dotted targets (${dotted}) = unresolvable-by-name; leaf targets (${ov.rows.length - dotted}); rows carrying metadata.overriddenOwner (${withOwner})`],
+      })
+    }
+  }
+
+  // part_of target shape — a PATH target cannot resolve; a SYMBOL target can
+  {
+    const po = types.get("part_of")
+    if (po) {
+      const pathish = po.rows.filter((r) => r.target.includes("/") || r.target.includes(".") ).length
+      findings.push({
+        check: "part_of target is a PATH (unresolvable) rather than a symbol stem",
+        type: "part_of",
+        count: pathish,
+        sample: [...new Set(po.rows.filter((r) => r.target.includes("/") || r.target.includes(".")).slice(0, 8).map((r) => `${r.source} -> ${r.target}`))],
+      })
+    }
+  }
+
+  // imports / references: external-module targets are expected unresolved; count them as such
+  {
+    for (const t of ["imports", "references", "exports"]) {
+      const e = types.get(t)
+      if (!e) continue
+      const unres = e.rows.filter((r) => !resolves(r.target)).length
+      findings.push({ check: "target unresolved against in-output index", type: t, count: unres, sample: [...new Set(e.rows.filter((r) => !resolves(r.target)).slice(0, 6).map((r) => r.target))] })
+    }
+  }
+
+  const out = {
+    corpus: {
+      roots: [".cpp-corpus/fmt (fmtlib/fmt @ 10.2.1)", ".cpp-corpus/nlohmann-json (nlohmann/json @ v3.11.3)"],
+      candidateFiles: files.length,
+      admittedCpp: recs.length,
+      byLanguage: byLang,
+      parseFailures: failures.length,
+      failureSample: failures.slice(0, 10),
+      parseMs,
+    },
+    totals: { symbols: totalSymbols, relationships: totalRows, kinds: kindCensus },
+    perType,
+    findings,
+  }
+
+  if (asJson) {
+    console.log(JSON.stringify(out, null, 2))
+  } else {
+    console.log("=== CORPUS ===")
+    console.log(JSON.stringify(out.corpus, null, 2))
+    console.log("=== TOTALS ===")
+    console.log(`symbols ${totalSymbols} · relationships ${totalRows}`)
+    console.log("kinds:", JSON.stringify(kindCensus))
+    console.log("\n=== PER TYPE ===")
+    for (const [t, v] of Object.entries(perType)) {
+      console.log(`${t.padEnd(14)} rows=${String((v as any).rows).padStart(7)} files=${String((v as any).files).padStart(4)} pairs=${String((v as any).distinctPairs).padStart(7)} conf=${JSON.stringify((v as any).confidenceValues)} ev=${JSON.stringify((v as any).evidenceClass)} lineMissing=${(v as any).lineNumberMissing} srcRes=${(v as any).sourceResolved} tgtRes=${(v as any).targetResolved}`)
+    }
+    console.log("\n=== FINDINGS ===")
+    for (const f of findings) {
+      console.log(`[${f.count === 0 ? "PASS" : "HIT "}] ${f.check}${f.type ? ` (${f.type})` : ""} = ${f.count}`)
+      for (const s of f.sample) console.log(`        ${s}`)
+    }
+  }
+}
+
+main().catch((e) => {
+  console.error("FAILED:", e)
+  process.exit(1)
+})

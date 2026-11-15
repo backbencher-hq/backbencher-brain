@@ -1,0 +1,59 @@
+{
+  "fixtureId": "lua/decorator-application",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "`decorates` was ruled ONTOLOGICAL and the ruling was WITHDRAWN BY ITS OWN FALSIFIER before it was ever written into the spec — the exact nim-lane shape. The census (script/m60/lua-extended-census.ts, artifact validation/m14/measurements/lua-extended-census.json) measured 19,082 annotation COMMENT nodes (the `---@` forms are `comment` productions consumed by editors, never applied at run time) and 0 `attribute` nodes, which is enough for the annotation half of an ontological ruling. Then the runtime half fired: of 1,185 `X = f(X)` self-applications, 186 name a declaration somewhere in the file and 3 are at chunk scope, and ONE of those — `fib = cache(fib)` at redis/deps/lua/test/fib.lua:39 — is a chunk-scope application of a declared WRAPPER FACTORY (`function cache(f) ... return function(x) ... end end`) to a declared function. That is Python's `@cache def fib` written out, so the construct is real, expressible at R3 on existing node types, and IMPLEMENTED with population 1 (implemented and corpus-rare is a disclosure, not a weakness). This fixture pins the construct and the three impostor classes the census separated from it: a chunk-scope self-application whose transform returns a VALUE (185 of 186 coarse hits), an in-function rebinding even when the factory IS a wrapper (decorates a local, not a declaration), and a chunk-scope wrapper call that is not a self-application. The forbid arm on `meta.evidenceClass: structural` is the pair that makes the 0.95 meaningful: the application is a real call site, but that a wrapper-factory application is a DECORATION is a convention, and this analyzer already states the rule that a 0.95 edge must not claim `structural` (real-lua-analyzer.ts `addFactorySupertypeEdges`).",
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "fib",
+      "target": "cache",
+      "line_number": 49,
+      "meta.relationshipType": "lua_decorator_application",
+      "meta.decorator": "cache",
+      "meta.evidenceClass": "usage_contextual",
+      "confidenceMin": 0.94,
+      "confidenceMax": 0.96,
+      "comment": "THE CONSTRUCT: `fib = cache(fib)` at chunk scope (L49). Source is the DECORATED DECLARATION (`fib`, declared at L28), target is the DECORATOR (`cache`, a wrapper factory declared at L36 whose body returns `function(x) ... end`). Direction is the vocabulary's: decorated declaration -> decorator."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "from": "fib",
+      "target": "cache",
+      "meta.evidenceClass": "structural",
+      "comment": "A 0.95 EDGE CLAIMING `structural`. The call site is structural, but the READING — that applying a wrapper factory to a declaration is a decoration — is a convention over an ordinary assignment. `structural` would assert both endpoints are nodes this parse saw (true) instead of the claim being made. An implementation that derived the tier from the type alone (as `evidenceClassFor` does) satisfies the expect row and fails exactly this one."
+    },
+    {
+      "type": "decorates",
+      "from": "state",
+      "target": "normalize",
+      "comment": "FORBID 1 — the value-transform class. `state = normalize(state)` (L56) is a chunk-scope self-application, but `normalize` returns a VALUE (`return t`), never a function, so it is not a decorator. The census measured 185 of 186 coarse self-application hits in this class (`value = sub(value, 2, -2)`, `payload = json_encode(payload)`); a name-based filter would publish them all."
+    },
+    {
+      "type": "decorates",
+      "from": "work",
+      "target": "cache",
+      "comment": "FORBID 2 — the in-function rebinding. `work = cache(work)` (L63) applies a real wrapper factory to a local function declared inside a body. A decorator is applied while the DECLARATION is created, and in Lua that is chunk scope; an in-body rebinding decorates a local, and the census's 186 coarse hits are mostly this shape. The emission is guarded on the FILE-SCOPE frame for exactly this row."
+    },
+    {
+      "type": "decorates",
+      "from": "fib2",
+      "target": "cache",
+      "comment": "FORBID 3 — a chunk-scope wrapper-factory call that is NOT a self-application. `fib2 = cache(fib)` (L71) wraps `fib`'s value and binds it to `fib2`; the decorated name must be the call's ARGUMENT, so no edge between `fib2` and `cache` exists. This is the row that stops the implementation from publishing a decoration for every `X = f(Y)`."
+    },
+    {
+      "type": "decorates",
+      "from": "cache",
+      "target": "fib",
+      "comment": "DIRECTION: the edge is decorated-declaration -> decorator, never the reverse. `cache` is the wrapper and `fib` the wrapped declaration; a reversed edge would tell a consumer that `cache` carries `fib` as a decorator."
+    },
+    {
+      "type": "decorates",
+      "from": "normalize",
+      "target": "state",
+      "comment": "SEQUENCE: a self-application whose LHS is a table (`state`, declared at L55) and whose argument is that same name is NOT a decoration even if the transform were a wrapper factory — the decorated endpoint must be a DECLARED FUNCTION. This row pins the declared-function clause independently of the wrapper-factory clause FORBID 1 already exercises."
+    }
+  ]
+}

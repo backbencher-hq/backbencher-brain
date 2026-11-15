@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/array-declaration-shape.sh",
+  "authoredFrom": "BD-gap-closure (array literals are read structurally). Authored from a probe 2026-09-26. Pre-wave `extractAssignment` took an `isArray` parameter that its only caller passed as `false`, so `metadata.isArray` was constant-false on every plain assignment. `DECK2=(one two)` is the shape that catches it; `declare -a DECK=(...)` passed even pre-wave because the declaration path read a different flag.",
+  "expectSymbols": [
+    {
+      "name": "array-declaration-shape.sh",
+      "kind": "module"
+    },
+    {
+      "name": "DECK",
+      "kind": "variable",
+      "ownerName": "array-declaration-shape.sh"
+    },
+    {
+      "name": "DECK2",
+      "kind": "variable",
+      "ownerName": "array-declaration-shape.sh"
+    },
+    {
+      "name": "SCALAR",
+      "kind": "variable",
+      "ownerName": "array-declaration-shape.sh"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "array-declaration-shape.sh",
+      "target": "DECK",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "array-declaration-shape.sh",
+      "target": "DECK2",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "array-declaration-shape.sh",
+      "target": "SCALAR",
+      "line_number": 8
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "imports",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "DECK2",
+      "meta.isArray": false
+    }
+  ]
+}

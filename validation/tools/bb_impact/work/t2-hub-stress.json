@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-11-03T17:26:51.393Z",
+  "walkCeiling": 1500,
+  "callDeadline": 3200,
+  "rows": [
+    {
+      "phase": "handler-0",
+      "ms": 2313.9,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false,
+        "walkExhausted": true
+      }
+    },
+    {
+      "phase": "component-0",
+      "ms": 2227.4,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "engine-0",
+      "ms": 1947.3,
+      "value": {
+        "callers": 201,
+        "exhausted": true
+      }
+    },
+    {
+      "phase": "count-0",
+      "ms": 1198.1,
+      "value": {
+        "total": 406,
+        "rowsScanned": 1014,
+        "expansions": 407,
+        "timedOut": false,
+        "failed": false,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "handler-1",
+      "ms": 3676.2,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false,
+        "walkExhausted": true
+      }
+    },
+    {
+      "phase": "component-1",
+      "ms": 3416.5,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "engine-1",
+      "ms": 2595.7,
+      "value": {
+        "callers": 201,
+        "exhausted": true
+      }
+    },
+    {
+      "phase": "count-1",
+      "ms": 1355.3,
+      "value": {
+        "total": 406,
+        "rowsScanned": 1014,
+        "expansions": 407,
+        "timedOut": false,
+        "failed": false,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "handler-2",
+      "ms": 3619,
+      "value": {
+        "shown": 174,
+        "total": null,
+        "skipped": true,
+        "walkExhausted": true
+      }
+    },
+    {
+      "phase": "component-2",
+      "ms": 3831.5,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "engine-2",
+      "ms": 2197.1,
+      "value": {
+        "callers": 201,
+        "exhausted": true
+      }
+    },
+    {
+      "phase": "count-2",
+      "ms": 889.7,
+      "value": {
+        "total": 406,
+        "rowsScanned": 1014,
+        "expansions": 407,
+        "timedOut": false,
+        "failed": false,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "handler-3",
+      "ms": 2408.6,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false,
+        "walkExhausted": true
+      }
+    },
+    {
+      "phase": "component-3",
+      "ms": 2844.5,
+      "value": {
+        "shown": 174,
+        "total": 406,
+        "skipped": false
+      }
+    },
+    {
+      "phase": "engine-3",
+      "ms": 1917,
+      "value": {
+        "callers": 201,
+        "exhausted": true
+      }
+    },
+    {
+      "phase": "count-3",
+      "ms": 664.6,
+      "value": {
+        "total": 406,
+        "rowsScanned": 1014,
+        "expansions": 407,
+        "timedOut": false,
+        "failed": false,
+        "skipped": false
+      }
+    }
+  ]
+}

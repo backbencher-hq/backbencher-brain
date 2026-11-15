@@ -1,0 +1,163 @@
+{
+  "expectSymbols": [
+    {
+      "name": "SingleArgImpl",
+      "kind": "module"
+    },
+    {
+      "name": "SingleArgImpl",
+      "kind": "class"
+    },
+    {
+      "name": "to_string",
+      "kind": "method",
+      "ownerName": "SingleArgImpl"
+    },
+    {
+      "name": "into",
+      "kind": "method",
+      "ownerName": "SingleArgImpl"
+    },
+    {
+      "name": "SelfAlias",
+      "kind": "module"
+    },
+    {
+      "name": "who",
+      "kind": "function",
+      "ownerName": "SelfAlias"
+    },
+    {
+      "name": "ImplMacroHead",
+      "kind": "module"
+    },
+    {
+      "name": "defimpl",
+      "kind": "macro",
+      "ownerName": "ImplMacroHead"
+    },
+    {
+      "name": "Integer",
+      "kind": "class",
+      "meta.isProtocolImplementation": true,
+      "meta.forType": [
+        "Integer",
+        "Float"
+      ]
+    },
+    {
+      "name": "Float",
+      "kind": "class",
+      "meta.isProtocolImplementation": true,
+      "meta.forType": "Float"
+    },
+    {
+      "name": "SingleArgImpl",
+      "kind": "class",
+      "meta.forType": "SingleArgImpl"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "to_string",
+      "kind": "method",
+      "ownerName": "SingleArgImpl",
+      "equals": 1
+    },
+    {
+      "name": "defimpl",
+      "kind": "macro",
+      "ownerName": "ImplMacroHead",
+      "equals": 1
+    },
+    {
+      "name": "SingleArgImpl",
+      "kind": "class",
+      "equals": 2
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "String.Chars",
+      "kind": "class"
+    },
+    {
+      "name": "Unknown"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "SingleArgImpl",
+      "kind": "module"
+    },
+    {
+      "name": "SelfAlias",
+      "kind": "module"
+    },
+    {
+      "name": "ImplMacroHead",
+      "kind": "module"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "SingleArgImpl",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "SingleArgImpl",
+      "target": "String.Chars"
+    },
+    {
+      "type": "implements",
+      "from": "SingleArgImpl",
+      "target": "Collectable"
+    },
+    {
+      "type": "calls",
+      "from": "SelfAlias.who/0",
+      "target": "SelfAlias.who"
+    },
+    {
+      "type": "implements",
+      "from": "Integer",
+      "target": "W23Multi"
+    },
+    {
+      "type": "implements",
+      "from": "Float",
+      "target": "W23Multi"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "String.Chars",
+      "target": "String.Chars"
+    },
+    {
+      "type": "implements",
+      "from": "Unknown",
+      "target": "Unknown"
+    },
+    {
+      "type": "references",
+      "from": "SelfAlias",
+      "target": "SelfAlias"
+    },
+    {
+      "type": "implements",
+      "from": "[Integer, Float]",
+      "target": "W23Multi"
+    },
+    {
+      "type": "implements",
+      "from": "[Integer, Float]",
+      "target": "[Integer, Float]"
+    }
+  ],
+  "note": " EX-A12 (2026-09-28): the single-argument `defimpl P do` form recorded `forType: \"Unknown\"` \u2014 a PLACEHOLDER LITERAL in the payload while the implementation's own NAME held the real answer (the enclosing module), which the same fixture already forbids as a symbol name (`forbidSymbols: [{name: Unknown}]`). forType is now the resolved type, and ABSENT when no type is derivable at all. Pinned by meta.forType above; mutant elixir/defimpl-fortype-dropped (which also survived before these pins) catches the strip."
+}

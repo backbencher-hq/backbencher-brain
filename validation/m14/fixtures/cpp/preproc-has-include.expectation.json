@@ -1,0 +1,33 @@
+{
+  "fixtureId": "cpp/preproc-has-include",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#743b: a HEADER NAME as a preprocessor argument — `__has_include(<vector>)`, `__has_include(\"meta\")`, and the wrapper form real headers use, `FMT_HAS_INCLUDE(<string_view>)`. MEASURED before the rule landed, on this file: 15 syntax errors, every one on a header-name line (16, 19, 22, 25, 29, 32) and none on the comparison lines, and only one of the seven call rows below existed. The class reaches 16 files across the two cpp corpora — it is the guard of every portable header, and nlohmann-json's `thirdparty/hedley/hedley.hpp` becomes a fully clean file once it parses (17 error lines -> 0). The rule is scoped to the ARGUMENT position on purpose: `<` cannot BEGIN a preprocessor expression (the unary operators are `! ~ - +`), so no competing `<` token exists there and the header token wins purely on match length. The LAST TWO BLOCKS are the shapes that made that scoping necessary — `#if MAX(A < B, C > D)` (L36) and `#if A < B && C > D` (L39) are COMPARISONS and both parsed clean before the change, so they are pinned error-free here; an implementation that put `<...>` anywhere in `_preproc_expression` would have to earn those two lines back. Every expectation below is a measured value, not a guess. --- D1 CORRECTION (issue #957): this fixture used to PIN `calls global -> __has_include` as an expected relationship. That was a fixture pinning a fabrication, and the same failure mode as the CPPD15 self-agreeing `uses num_bits` — the grammar fix (#743b) made `__has_include(<h>)` PARSE, and 'it parses into a call_expression' was recorded as 'it is a call'. `__has_include` is a standard preprocessor OPERATOR ([cpp.cond]), not a function and not a macro: there is no declaration anywhere that could resolve it, so the edge pointed at nothing. It is now pinned in `forbidRelationships` instead, next to `defined`, and the three `__has_include` rows moved out of `expectRelationships`. `FMT_HAS_INCLUDE` and `MAX` are NOT keywords — they are ordinary macro names the source defines — so their edges are unchanged and stay pinned as evidence that the correction is scoped to names the language reserves, not to preprocessor text in general. The `forbidErrors` rows are untouched: the #743b grammar fix is still correct and still required; only the EDGE the parse enabled was wrong.",
+  "expectRelationships": [
+    { "type": "calls", "from": "global", "target": "FMT_HAS_INCLUDE", "line_number": 22, "note": "the wrapper form real headers use, `FMT_HAS_INCLUDE(<string_view>)`." },
+    { "type": "calls", "from": "global", "target": "FMT_HAS_INCLUDE", "line_number": 25, "note": "the same call continued across a backslash line-join with a `defined(...)` disjunction." },
+    { "type": "calls", "from": "global", "target": "FMT_HAS_INCLUDE", "line_number": 32, "note": "`FMT_CPLUSPLUS > 201703L && FMT_HAS_INCLUDE(<ranges>)`." },
+    { "type": "calls", "from": "global", "target": "MAX", "line_number": 36, "note": "the comparison guard: this call's ARGUMENTS are the comparisons `A < B` and `C > D`, and it parsed clean before the change too — so it pins that the header-name token did not eat them." }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "global", "target": "__has_include", "line_number": 16, "note": "D1 (#957): `__has_include` is a standard preprocessor OPERATOR, not a function and not a macro — no declaration can resolve it. This row was an `expectRelationships` entry until D1; the grammar fix that made it parse is still required, only the edge it enabled was wrong." },
+    { "type": "calls", "from": "global", "target": "__has_include", "line_number": 19, "note": "D1 (#957): the quoted form — same ruling as the angle-bracket form." },
+    { "type": "calls", "from": "global", "target": "__has_include", "line_number": 29, "note": "D1 (#957): the `defined(__cpp_impl_reflection) && __has_include(<meta>)` line — BOTH halves are standard preprocessor operators, so both are silent." },
+    { "type": "calls", "from": "global", "target": "defined", "note": "D1 (#957): `defined` is [cpp.cond]'s operator; it is not a function either. Never expected, pinned here so a future change cannot quietly start publishing it." }
+  ],
+  "forbidErrors": [
+    { "startLine": 16, "note": "PRE-FIX: `__has_include(<string_view>)` errored twice here." },
+    { "startLine": 19, "note": "PRE-FIX: the quoted form errored here." },
+    { "startLine": 22, "note": "PRE-FIX: `FMT_HAS_INCLUDE(<string_view>)` errored twice here." },
+    { "startLine": 25, "note": "PRE-FIX: the line-joined wrapper errored twice here." },
+    { "startLine": 29, "note": "PRE-FIX: the `__has_include(<meta>)` half errored twice here." },
+    { "startLine": 32, "note": "PRE-FIX: `FMT_HAS_INCLUDE(<ranges>)` errored twice here." },
+    { "startLine": 36, "note": "a COMPARISON that parsed clean before the change and must keep doing so." },
+    { "startLine": 39, "note": "a COMPARISON that parsed clean before the change and must keep doing so." }
+  ],
+  "forbidSymbols": [
+    { "name": "string_view", "kind": "variable", "note": "a header name is not a symbol; this is the shape a mis-scoped token would produce." },
+    { "name": "meta", "kind": "variable" },
+    { "name": "ranges", "kind": "variable" }
+  ]
+}

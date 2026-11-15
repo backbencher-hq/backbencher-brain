@@ -1,0 +1,475 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.51",
+  "code": "An1",
+  "tool": "bb_analyze",
+  "title": "bb_analyze: all 11 modes answer with their own fields, and every declared refusal refuses",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "callers: is not an error",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
+    },
+    {
+      "name": "callers: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
+    },
+    {
+      "name": "callers: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"root\":{\"id\":\"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
+    },
+    {
+      "name": "callers: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "callees: is not an error",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
+    },
+    {
+      "name": "callees: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
+    },
+    {
+      "name": "callees: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"root\":{\"id\":\"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
+    },
+    {
+      "name": "callees: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "trace: is not an error",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
+    },
+    {
+      "name": "trace: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
+    },
+    {
+      "name": "trace: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"root\":{\"id\":\"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
+    },
+    {
+      "name": "trace: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":3,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "dependencies: is not an error",
+      "pass": true,
+      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/mid.ts\",\n      \"fileId\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts\",\n      \"depend"
+    },
+    {
+      "name": "dependencies: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/mid.ts\",\n      \"fileId\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mi"
+    },
+    {
+      "name": "dependencies: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"dependencies\":[{\"file\":\"src/mid.ts\",\"fileId\":\"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts\",\"dependencies\":[{\"path\":\"src/leaf.ts\",\"external\":false,\"resolution\":\"resolved\",\"stale\":false}],\"dep"
+    },
+    {
+      "name": "dependencies: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":7,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "stats: is not an error",
+      "pass": true,
+      "detail": "{\n  \"files\": 7,\n  \"linesOfCode\": 8,\n  \"avgFileSize\": 78.57142857142857,\n  \"avgFileSizeUnit\": \"bytes\",\n  \"symbols\": 7,\n  \"symbolsWithComplexi"
+    },
+    {
+      "name": "stats: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"files\": 7,\n  \"linesOfCode\": 8,\n  \"avgFileSize\": 78.57142857142857,\n  \"avgFileSizeUnit\": \"bytes\",\n  \"symbols\": 7,\n  "
+    },
+    {
+      "name": "stats: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"files\":7,\"linesOfCode\":8,\"avgFileSize\":78.57142857142857,\"avgFileSizeUnit\":\"bytes\",\"symbols\":7,\"symbolsWithComplexity\":7,\"avgComplexity\":1,\"relationships\":25,\"callEdges\":17,\"couplingRelationshipType"
+    },
+    {
+      "name": "stats: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":7,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "complexity: is not an error",
+      "pass": true,
+      "detail": "{\n  \"target\": \"src\",\n  \"scope\": \"file\",\n  \"metrics\": {\n    \"cyclomaticAvg\": {\n      \"value\": 1,\n      \"available\": true\n    },\n    \"cyclomat"
+    },
+    {
+      "name": "complexity: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"target\": \"src\",\n  \"scope\": \"file\",\n  \"metrics\": {\n    \"cyclomaticAvg\": {\n      \"value\": 1,\n      \"available\": true\n"
+    },
+    {
+      "name": "complexity: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"target\":\"src\",\"scope\":\"file\",\"metrics\":{\"cyclomaticAvg\":{\"value\":1,\"available\":true},\"cyclomaticTotal\":{\"value\":7,\"available\":true},\"linesOfCode\":{\"value\":8,\"available\":true},\"couplingEdges\":{\"value"
+    },
+    {
+      "name": "complexity: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":5,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "impact: is not an error",
+      "pass": true,
+      "detail": "{\n  \"target\": \"leaf\",\n  \"found\": true,\n  \"root\": {\n    \"name\": \"leaf\",\n    \"symbolType\": \"function\",\n    \"file\": \"src/leaf.ts\",\n    \"line\": "
+    },
+    {
+      "name": "impact: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"target\": \"leaf\",\n  \"found\": true,\n  \"root\": {\n    \"name\": \"leaf\",\n    \"symbolType\": \"function\",\n    \"file\": \"src/le"
+    },
+    {
+      "name": "impact: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"target\":\"leaf\",\"found\":true,\"root\":{\"name\":\"leaf\",\"symbolType\":\"function\",\"file\":\"src/leaf.ts\",\"line\":1,\"candidates\":1,\"match\":\"exact\"},\"scope\":\"transitive\",\"directSymbols\":1,\"affectedFiles\":[{\"file"
+    },
+    {
+      "name": "impact: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "test_mapping: is not an error",
+      "pass": true,
+      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"symbolT"
+    },
+    {
+      "name": "test_mapping: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/leaf.ts:leaf:1\",\n      \"name\": \"l"
+    },
+    {
+      "name": "test_mapping: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"entries\":[{\"symbolId\":\"919f071bd326867d9bc5208cea7f5091c2778c33:src/leaf.ts:leaf:1\",\"name\":\"leaf\",\"symbolType\":\"function\",\"file\":\"src/leaf.ts\",\"line\":1,\"complexity\":1,\"gravity\":33,\"links\":[],\"strong"
+    },
+    {
+      "name": "test_mapping: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":5,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "test_gaps: is not an error",
+      "pass": true,
+      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n      \"name\": \"mid\",\n      \"symbolType\": "
+    },
+    {
+      "name": "test_gaps: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n      \"name\": \"mid\",\n"
+    },
+    {
+      "name": "test_gaps: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"gaps\":[{\"symbolId\":\"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"category\":\"no_evidence\",\"complexity\":1,\"gravity\":73,"
+    },
+    {
+      "name": "test_gaps: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":5,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "test_impact: is not an error",
+      "pass": true,
+      "detail": "{\n  \"target\": \"leaf\",\n  \"found\": true,\n  \"directTests\": [],\n  \"indirectTests\": [],\n  \"affectedTestFiles\": [],\n  \"truncated\": false,\n  \"trunc"
+    },
+    {
+      "name": "test_impact: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"target\": \"leaf\",\n  \"found\": true,\n  \"directTests\": [],\n  \"indirectTests\": [],\n  \"affectedTestFiles\": [],\n  \"truncat"
+    },
+    {
+      "name": "test_impact: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"target\":\"leaf\",\"found\":true,\"directTests\":[],\"indirectTests\":[],\"affectedTestFiles\":[],\"truncated\":false,\"truncationReason\":null,\"summary\":{\"returned\":0,\"total\":0,\"truncated\":false,\"truncationReason"
+    },
+    {
+      "name": "test_impact: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":0,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "test_quality: is not an error",
+      "pass": true,
+      "detail": "{\n  \"files\": [\n    {\n      \"relativePath\": \"spec/top.spec.ts\",\n      \"overall\": 0.13333333333333333,\n      \"dimensions\": [\n        {\n       "
+    },
+    {
+      "name": "test_quality: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"files\": [\n    {\n      \"relativePath\": \"spec/top.spec.ts\",\n      \"overall\": 0.13333333333333333,\n      \"dimensions\":"
+    },
+    {
+      "name": "test_quality: returns the fields it exists to return",
+      "pass": true,
+      "detail": "{\"files\":[{\"relativePath\":\"spec/top.spec.ts\",\"overall\":0.13333333333333333,\"dimensions\":[{\"id\":\"assertions\",\"relevance\":null,\"evidenceStrength\":0.3333333333333333,\"penaltyPotential\":0.6666666666666667"
+    },
+    {
+      "name": "test_quality: carries the freshness envelope",
+      "pass": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "missing mode refused by validation, not by the dispatch fallback [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: missing required option: mode"
+    },
+    {
+      "name": "unknown option is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases acc"
+    },
+    {
+      "name": "unknown option names the rule (unknown or irrelevant options) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases accepted: symbol, symbolName, query)"
+    },
+    {
+      "name": "unknown mode is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, "
+    },
+    {
+      "name": "unknown mode names the rule (mode must be one of) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality"
+    },
+    {
+      "name": "blank mode is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, "
+    },
+    {
+      "name": "blank mode names the rule (mode must be one of) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality"
+    },
+    {
+      "name": "limit: 0 is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze dependencies: limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a rea"
+    },
+    {
+      "name": "limit: 0 names the rule (limit must be at least 1) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze dependencies: limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer"
+    },
+    {
+      "name": "limit over the graph ceiling is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze callers: limit must be between 1 and 5000 — refused rather than clamped, so a returned page always means the "
+    },
+    {
+      "name": "limit over the graph ceiling names the rule (limit must be between 1 and 5000) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze callers: limit must be between 1 and 5000 — refused rather than clamped, so a returned page always means the page asked for. Above this the answer st"
+    },
+    {
+      "name": "limit over the collection ceiling is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze dependencies: limit must be between 1 and 2000 — refused rather than clamped, so a returned page always means"
+    },
+    {
+      "name": "limit over the collection ceiling names the rule (limit must be between 1 and 2000) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze dependencies: limit must be between 1 and 2000 — refused rather than clamped, so a returned page always means the page asked for. Above this the answ"
+    },
+    {
+      "name": "limit on a mode it does not bound is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze stats: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test"
+    },
+    {
+      "name": "limit on a mode it does not bound names the rule (limit does not apply to this mode) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze stats: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality) — refusing it ra"
+    },
+    {
+      "name": "target on a mode that has no target is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze stats: irrelevant options: target"
+    },
+    {
+      "name": "target on a mode that has no target names the rule (irrelevant options: target) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze stats: irrelevant options: target"
+    },
+    {
+      "name": "filePath on a mode that has no file scope is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze callers: irrelevant options: filePath"
+    },
+    {
+      "name": "filePath on a mode that has no file scope names the rule (irrelevant options: filePath) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze callers: irrelevant options: filePath"
+    },
+    {
+      "name": "blank target for a target mode is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze callers requires a non-empty target"
+    },
+    {
+      "name": "blank target for a target mode names the rule (requires a non-empty target) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze callers requires a non-empty target"
+    },
+    {
+      "name": "complexity refuses a symbol name is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: complexity: no indexed file matches \"mid\" — pass a project-relative file path (e.g. src/core/engine.ts) or a dire"
+    },
+    {
+      "name": "complexity refuses a symbol name names the rule (no indexed file matches) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: complexity: no indexed file matches \"mid\" — pass a project-relative file path (e.g. src/core/engine.ts) or a directory prefix (e.g. src/core). A symbol N"
+    },
+    {
+      "name": "negative limit is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: limit must be non-negative"
+    },
+    {
+      "name": "negative limit names the rule (non-negative) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: limit must be non-negative"
+    },
+    {
+      "name": "fractional limit is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: limit must be a whole number (got 2.5)"
+    },
+    {
+      "name": "fractional limit names the rule (whole number) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "threw: bb_analyze: limit must be a whole number (got 2.5)"
+    },
+    {
+      "name": "alias symbol= is accepted and identical",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"919f071bd326867d9bc5208cea7f5091c2778c33:src/mid.ts:mid:2\",\n    \"name\": \"mi"
+    },
+    {
+      "name": "descriptor lists 11 modes",
+      "pass": true,
+      "detail": "11"
+    },
+    {
+      "name": "descriptor registers mode callers",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode callees",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode trace",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode dependencies",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode stats",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode complexity",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode impact",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode test_mapping",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode test_gaps",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode test_impact",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "descriptor registers mode test_quality",
+      "pass": true,
+      "detail": "missing"
+    }
+  ],
+  "negativeCases": 27,
+  "summary": {
+    "total": 84,
+    "passed": 84,
+    "failed": 0
+  },
+  "decisions": {
+    "perMode": "each mode is asked for an argument IT accepts and must return a field only that mode produces",
+    "refusals": "refusals are asserted as isError:true plus a message that names the rule"
+  },
+  "limitations": [
+    "Synthetic fixture; the reference-index latency leg lives in validation/tools/bb_analyze/LATENCY.json."
+  ],
+  "generatedAt": "2026-11-11T19:33:19.454Z"
+}

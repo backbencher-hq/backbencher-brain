@@ -29,7 +29,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 const arg = (n: string, d?: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split("=")[1] ?? d
 const CAP = Number(arg("files", "150"))
 const boundMs = Number(arg("bound-ms", "60000"))

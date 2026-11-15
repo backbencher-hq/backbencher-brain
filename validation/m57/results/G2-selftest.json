@@ -1,0 +1,34 @@
+{
+  "probe": "M57.G2-selftest",
+  "at": "2026-09-12T23:17:53.856Z",
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "results": [
+    {
+      "gate": "T1",
+      "control": "pass",
+      "mutation": "rejected"
+    },
+    {
+      "gate": "T2",
+      "control": "pass",
+      "mutation": "rejected"
+    },
+    {
+      "gate": "T3",
+      "control": "pass",
+      "mutation": "rejected"
+    },
+    {
+      "gate": "T4",
+      "control": "pass",
+      "mutation": "rejected"
+    },
+    {
+      "gate": "T5",
+      "control": "pass",
+      "mutation": "rejected"
+    }
+  ]
+}

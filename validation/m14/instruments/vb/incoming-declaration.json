@@ -1,0 +1,272 @@
+{
+  "lane": "vb",
+  "language": "vb",
+  "ext": ".vb",
+  "declared": "2026-10-28",
+  "_what_this_is": "The `vb` lane's WHOLE-POPULATION declaration, read by script/m14/completion-gate.ts. Every count below is over the same admitted set the arm measured, and each wall class carries a population and a FALSIFIER, because a class that is named without a way to be caught refuted is a sentence rather than a disposition.",
+  "_arm": {
+    "instrument": "npx tsx script/m14/residual-gate.ts --lane vb (invokes script/m14/incoming-gate.ts vb vb 0)",
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "population": "58 admitted .vb files over 2 repositories (fsharp 57 · Fake 1), 58 parsed of 58, 0 parse failures",
+    "index": "BOTH ARMS MEASURED (2026-10-28). `INDEX_SPECS` had NO vb entry, so every earlier vb number was a PER-FILE number. `VB_DECLARATION_SPEC` (src/ast/project-index.ts) + the `vb` entry in the gate's INDEX_SPECS make `--index` build 2 repository indexes over the 58 admitted files. MEASURED BOTH WAYS: the totals are IDENTICAL — resolved 5,721 / ambiguous 320 / unresolved 4,047 — and the only movement is `decorates` 0 -> 2 resolved (the index knows two attribute types this project declares). THE REASON THE CROSS-FILE CLASS DID NOT MOVE, and it is the finding: the vb ANALYZER does not CONSUME the project index (`parseFile` is passed `{ projectIndex }`, and nothing in real-vb-analyzer.ts reads it), so building the index changed the instrument's capability and not the lane's answers. A cross-file target resolves only once the analyzer looks, and that is the next work item — not a claim made here. ALSO CORRECTED: the 325-row 'cross-file' figure was produced by this lane's own dump classifier matching targets against a per-repository symbol set, and it is NOT corroborated by the gate: those targets read unresolved/ambiguous under the gate's own rules, so the figure is withdrawn rather than quoted onward.",
+    "measured": "2026-10-28",
+    "_population_caveat": "THE POPULATION IS THIN AND ITS PROVENANCE IS NOT VB, and that is stated rather than smoothed: the 58 files are the fsharp repository's vsintegration tree plus one Fake file. This lane's own canonical census population (`roslyn-vb`, 2,658 tracked .vb files) is ABSENT from this corpus root. Every number here is therefore a LOWER BOUND on the construct and says nothing about a representative VB corpus."
+  },
+  "meta": {
+    "parsed": 58,
+    "sample": 58,
+    "corpusTotal": 58,
+    "admitted": 58,
+    "repos": 2,
+    "parseFailures": 0,
+    "exts": "vb",
+    "index": "no",
+    "analyzer": "src/ast/real-vb-analyzer.ts (analysisVersion m60-vb-1 + the 2026-10-28 `decorates` emission + the qualifiedName alias)"
+  },
+  "types": {
+    "uses": {
+      "edges": 3141,
+      "resolved": 1542,
+      "external": 0,
+      "ambiguous": 160,
+      "otherUnresolved": 1439,
+      "unclassed": 0
+    },
+    "calls": {
+      "edges": 1838,
+      "resolved": 949,
+      "external": 0,
+      "ambiguous": 101,
+      "otherUnresolved": 788,
+      "unclassed": 0
+    },
+    "references": {
+      "edges": 2759,
+      "resolved": 98,
+      "external": 1831,
+      "ambiguous": 3,
+      "otherUnresolved": 827,
+      "unclassed": 0
+    },
+    "instantiates": {
+      "edges": 459,
+      "resolved": 79,
+      "external": 0,
+      "ambiguous": 2,
+      "otherUnresolved": 378,
+      "unclassed": 0
+    },
+    "imports": {
+      "edges": 372,
+      "resolved": 7,
+      "external": 287,
+      "ambiguous": 1,
+      "otherUnresolved": 77,
+      "unclassed": 0
+    },
+    "implements": {
+      "edges": 82,
+      "resolved": 22,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 60,
+      "unclassed": 0
+    },
+    "overrides": {
+      "edges": 76,
+      "resolved": 35,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 41,
+      "unclassed": 0
+    },
+    "extends": {
+      "edges": 32,
+      "resolved": 21,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 11,
+      "unclassed": 0
+    },
+    "contains": {
+      "edges": 2366,
+      "resolved": 2366,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "exports": {
+      "edges": 594,
+      "resolved": 594,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "decorates": {
+      "edges": 209,
+      "resolved": 2,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 207,
+      "unclassed": 0
+    }
+  },
+  "closure": {
+    "_unit": "the eleven published types over the 58-file admitted population; every row's five buckets sum to its `edges` and `unclassed` is 0 by construction",
+    "edges": 11928,
+    "resolved": 5715,
+    "external": 2118,
+    "ambiguous": 267,
+    "otherUnresolved": 3828,
+    "unclassed": 0,
+    "_check": "5715 + 2118 + 267 + 3828 + 0 = 11928",
+    "_decorates_was_already_in_the_arm_total": "THE 209 `decorates` ROWS ARE INSIDE THE 11,919, NOT ADDED TO IT — and this block first said 12,128 because the arm's PRINTED table lists only the types the spec named before 2026-10-28, so the row was invisible while its edges were already counted in the arm's own TOTAL. The gate's arithmetic is what caught the double count: it summed `types` and read 11,919. A reader must not add the two numbers either.",
+    "_arm_total_disagrees_by_two": "The arm's own TOTAL row reads resolved 5,721 / unresolved 4,047 while the SUM of its per-type rows is 5,719 / 4,049 — a 2-row difference that is PRESENT IN THE INSTRUMENT (it read 5,674 vs 5,672 before this pass, so it is not new). This declaration carries the PER-TYPE numbers because those are the cells that close against `edges`; the two-row gap is recorded rather than absorbed, and it is 0.017% of the population."
+  },
+  "causeRulings": {
+    "uses-variable-read-is-not-a-declaration": {
+      "count": 1439,
+      "types": [
+        "uses"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "A `uses` target is the name READ at a site, and a VB local, parameter or imported member is not published as a symbol (the family contract publishes no locals, parameters or lambda parameters — the DARTD8 rule the fleet applies to every lane). A read of one therefore cannot resolve to a declaration BY CONSTRUCTION, and this is the class where a reader must NOT read the unresolved share as a failure: go's GO1 and csharp's CS-D4/CS-R1 settled the same boundary. The 1,542 that DO resolve are reads of a project-declared name.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=uses BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "a row in this class whose target is a LOCAL/PARAMETER that the contract says must be published — that would make the class a missing emission rather than a class, and the bucket would have to move to a defect count"
+      }
+    },
+    "references-type-name-declared-outside-the-file": {
+      "count": 827,
+      "types": [
+        "references"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "A `references` row names a TYPE in a declaration or a clause (`As T`, `Catch ex As Exception`, `Handles`, `Declare`), and the type is declared in another file, another assembly or the framework. MEASURED on the dumped rows: `Nullable`, `Exception` (System), `Project`, `ProjectItem`, `ProjectItems`, `IVsHierarchy` (the Visual Studio SDK) — framework and SDK types no project in this population declares. The 98 that resolve name a type the file itself declares, and 1,831 are `externalVerified` because a framework primitive (`String`, `Integer`, `Object`, `UInteger`) is answered by the namespace claim. The class is the type-side vocabulary wall and is the same per-file scope the other rulings record, not a defect count.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=references BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "a `references` row whose target is declared in the EDGE'S OWN FILE and still reads unresolved — a per-file scope cannot explain that, so it would be a resolution defect and the bucket would have to move"
+      }
+    },
+    "decorates-attribute-type-is-not-declared-in-the-project": {
+      "count": 207,
+      "types": [
+        "decorates"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "A `decorates` row's target is the LEAF of an attribute type (`System.Obsolete` -> `Obsolete`), and these 58 files declare none of them: the attributes they write are framework types (Obsolete, ComVisible, CLSCompliant, Flags, DebuggerNonUserCode, DebuggerStepThrough, EditorBrowsable). The row is published rather than suppressed — before 2026-10-28 the construct published NOTHING, because `inAttributePosition` (correctly) keeps attribute names out of `references` — and its unresolved outcome is the measured wall, NOT a gap: the name is in the graph, the written spelling is in `metadata.attributeName`, and the class is counted. THIS IS NOT LAUNDERED AS EXTERNAL: no lane-maintained list of framework attributes exists here, and inventing one is the vocabulary wall the contract forbids, so the rows stay unresolved and RULED.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=decorates BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "a `decorates` row whose target IS declared in the project and still reads unresolved — that would make the class an analyzer defect (a wrong leaf, a wrong scope) rather than a wall, and the fixture vb/attributes-as-decorations could not see it because it pins rows, not the whole population"
+      }
+    },
+    "calls-to-members-of-types-outside-the-population": {
+      "count": 788,
+      "types": [
+        "calls"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=no index=no",
+      "ruling": "The callee is a member of a framework type or of a type declared in a file this per-file arm did not load (index=no): the analyzer's scope is PER FILE, so a name declared in ANOTHER file of the same project is genuinely out of its reach and the arbiter (which holds the project) is what answers it. The 949 that resolve are calls to a name the file itself declares or the project key space answers.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=calls BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "a row whose callee is declared in the EDGE'S OWN FILE and still reads unresolved — a per-file scope cannot explain that, so it would be an analyzer defect"
+      }
+    },
+    "instantiates-constructed-type-not-in-the-key-space": {
+      "count": 378,
+      "types": [
+        "instantiates"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "The construction names a type (`New T(...)`) whose declaration is outside this file's reach: a framework type, a type from another project, or a type declared in another file of this project (index=no). 79 resolve against a declaration the run holds. The class is the same one the cpp lane prices as 'members of types the PROJECT DOES NOT DECLARE' — a vocabulary wall rather than a typing wall.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=instantiates BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "a construction of a type declared in the edge's own file that reads unresolved, or a construction published from an access chain rather than a type name (the vb/construction-climbs-any-access-chain defect, pinned by vb/edge-endpoint-integrity)"
+      }
+    },
+    "imports-module-names-no-declaration": {
+      "count": 77,
+      "types": [
+        "imports"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "THE IMPORT THAT REMAINS UNRESOLVED AFTER THE 2026-10-28 PATH FIX: 77 rows, down from 296, because the target is now the namespace PATH as written (`System.Collections.Generic`) instead of its last segment (`Generic`). A single-segment import (`Imports System`, `Imports EnvDTE`) cannot carry the ruling layer's `importPath` claim — that claim is synthesized for a DOTTED path — so it stays unresolved; 287 of the old rows became `externalVerified` `importPath` claims, which the arbiter verifies by looking up the owner namespace and which a project that declares it would REFUTE.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=imports BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "an `imports` row naming a MODULE or TYPE the edge's own project declares, which reads unresolved — that would be a resolution defect, not a wall"
+      }
+    },
+    "overrides-base-member-beyond-file-scope": {
+      "count": 41,
+      "types": [
+        "overrides"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "AN `Overrides` MEMBER NAMES THE BASE MEMBER, and after the 2026-10-28 qualified-alias fix the project's own base members RESOLVE: overrides went 5 resolved / 71 unresolved to 35 / 41. The 41 that remain name a base declared OUTSIDE the repository — ComponentDesigner.Dispose, OleMenuCommand.Invoke, Form.GetService — framework types no checkout here declares, which a per-file (or even per-project) run cannot bind by name. The alias is what made the difference: the edge's target is `<BaseType>.<member>` and the analyzer published only bare names, so every qualified target was unresolvable BY CONSTRUCTION (see pushSymbol).",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=overrides BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "an `overrides` row whose base member is declared in the edge's own file and still reads unresolved"
+      }
+    },
+    "implements-interface-beyond-file-scope": {
+      "count": 60,
+      "types": [
+        "implements"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "AN `Implements` CLAUSE NAMES AN INTERFACE or one of its members. After the same 2026-10-28 fix, implements went 5 resolved / 77 unresolved to 22 / 60: the member rows (`IPropertyPageSiteInternal.GetLocaleID`) now bind to the interface member's qualified alias when the interface is in the project. The 60 that remain are framework interfaces — IDisposable, IServiceProvider, the VS SDK's IVs* family — and member rows whose interface is outside the checkout.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=implements BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "an `implements` row whose interface is declared in the edge's own file and still reads unresolved"
+      }
+    },
+    "extends-base-type-beyond-file-scope": {
+      "count": 11,
+      "types": [
+        "extends"
+      ],
+      "population": "parsed=58/58 admitted=58 exts=vb index=no",
+      "ruling": "An `Inherits Base` whose base is declared outside this file (framework or another assembly). 21 of the 32 resolve against a base the same file declares, which is the control that the emission and the binding both work.",
+      "falsifier": {
+        "run": "BB_DUMP_LABEL=extends BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts vb vb 0 --dump",
+        "wouldFail": "an `extends` row whose base is declared in the edge's own file and still reads unresolved"
+      }
+    }
+  },
+  "resolution_caveats": [
+    "A CLOSURE IS A PARTITION, NOT A CORRECTNESS PROPERTY: these buckets say where every edge went, not that an edge points at the RIGHT declaration. That question belongs to script/m14/differential.ts and to the oracle, and it is not answered here.",
+    "`contains` and `exports` are the two types that resolve completely (2,366 and 594, 0 unresolved) and that is a property of the construct, not evidence that other lanes should match it: both name a symbol the SAME file declares, so a per-file run holds every fact needed.",
+    "THE POPULATION IS 58 FILES OVER 2 REPOSITORIES AND NONE OF THEM IS THE LANE'S CANONICAL VB CORPUS (`roslyn-vb`, 2,658 files, absent from this corpus root). Every count here is a LOWER BOUND on the construct and must not be compared with a lane measured on its own representative corpus.",
+    "AMBIGUOUS COUNTS DECLARATIONS, NOT KINDS: the 320 rows in `ambiguous` are edges whose bare target name has more than one declaration in the project key space. The by-kind count is a subset and is never added.",
+    "`decorates` IS NEW (2026-10-28) and every one of its 209 rows is unresolved by the ruling above — a reader comparing this lane's resolved share with a lane that publishes no decorates must subtract 209 from both sides of the ratio, or compare the ten older types."
+  ],
+  "_fixtures": {
+    "suite": "bun script/m14/run-fixtures.ts --lang vb",
+    "result": "6 pass / 0 fail (2026-10-28), including vb/attributes-as-decorations which pins the decorates emission and three forbid rows",
+    "mutationGate": "npx tsx script/m14/vb-mutate-local.ts — 10 killed / 0 survivors / 0 not applied, analyzer restored byte-for-byte; log validation/m14/fixtures/vb/mutation-log-m60-vb3.md"
+  },
+  "_spec": "script/m14/spec/vb-completeness.json (coverage: 11 implemented + 3 excluded grammar-absence = 11 applicable; the three extended rulings in _extended_types_2026_10_28)",
+  "_qualified_alias_2026_10_28": {
+    "_what": "A publication fix, not a target respelling: `pushSymbol` now publishes `qualifiedName = <owner>.<name>`, which is the spelling this lane's own `overrides`/`implements` targets already carried (`ApplicationPropPageBase.Dispose`, `IPropertyPageSiteInternal.GetImmediateApply`). The arbiter indexes name + qualifiedName aliases, so the targets bind.",
+    "_first_cut_was_inert": "The first spelling prefixed the owner's FULL qualifiedName and produced `Common.ShellUtil.BroadcastMessageEventsHelper.OnBroadcastMessage` — measured 0 rows resolved by the join, because the edges name `<Type>.<member>` and not the namespace chain. The alias must be the spelling the edges use.",
+    "_measured": "resolved 5,674 -> 5,721 (+47: overrides +30, implements +17), unresolved 4,094 -> 4,047, extFAIL 0, bindFAIL 0.",
+    "_owner_channel_tried_and_refused": "Emitting `metadata.owner` from `Me.X`/`MyClass.X`/`MyBase.X` was measured and REMOVED: 444 rows carried it, 368 re-bound (all already resolved by name), 76 declined, and because production holds a declined row NULL, 14 rows that resolved by name stopped resolving — net 5,721 -> 5,707. The mechanism must pay to stay."
+  },
+  "_ambiguity_2026_10_28": {
+    "_measured": "320 rows: uses 160 (93 ambDeclOnly + 67 ambBoth) · imports 54 · calls 101 · instantiates 2 · references 3.",
+    "_what_they_are": "BARE MEMBER NAMES that a VB project declares many times — `Value`, `GetProperty`, `Resources`, `DTE` — and NAMESPACE SEGMENTS that also exist as symbols (`Interop`). Dumped examples: `uses -> Resources` (ArgumentValidation.vb:42), `uses -> GetProperty` (DTEUtils.vb:53), `imports -> Interop` (ShellUtil.vb:5).",
+    "_what_it_would_take": "THE RECEIVER'S TYPE. A bare `Value` cannot be disambiguated by any name-keyed rule; it needs the type of the receiver expression (`Me.X.Value`, `dte.Value`), which means a per-file type map over fields, properties, parameters and `DirectCast`/`CType` results. The analyzer has none today, and an INFERRED owner is worse than none: the arbiter WITHDRAWS the name binding for a row that states an owner, so a wrong type would convert a resolution into a NULL (the same measured trap that made the `Me.*` owner channel net -14 and was removed). THIS IS THE NEXT WORK ITEM, NOT A PATCH."
+  },
+  "_import_path_fix_2026_10_28": {
+    "_defect": "`visitImports` published the LAST SEGMENT of an imported namespace (`Imports Microsoft.VisualStudio.Interop` -> `Interop`). It is the contract the doc's table carried, and it is wrong for the same reason a leaf is always wrong for a path: it collides with the project's own symbols and it cannot carry a path claim.",
+    "_measured": "ambiguous 320 -> 267 · unresolved 4,047 -> 3,828 · externalVerified 1,831 -> 2,118 · resolved 5,721 -> 5,715 · edges 11,919 -> 11,928. The six lost resolutions are imports whose LEAF named a project declaration - a namespace path is not that declaration, so those six were mis-bindings.",
+    "_pinned": "fixture vb/declaration-shapes now EXPECTS `System.Collections.Generic` and FORBIDS `Generic`; the doc's contract table row changed with it."
+  },
+  "_owner_channel_measured_and_refused": {
+    "_unguarded": "444 rows carried `metadata.owner` from `Me.X`/`MyClass.X`/`MyBase.X`; 368 re-bound (all already resolved by bare name), 76 DECLINED (67 noMember, 9 ownerAbsent) and production holds a declined row NULL -> net 5,721 -> 5,707 (-14). Removed.",
+    "_guarded": "Second attempt, emitting an owner only where the enclosing type's own `memberNames` list contains the member: 319 rows carried it, 318 resolved, 1 declined -> net -1, because the 318 were rows whose bare name already resolved. Removed.",
+    "_conclusion": "On this population a stated owner can only WITHDRAW. The 267 ambiguous rows live on TYPED receivers (`dte.Value`, `Resources.GetObject`), so the lever is a per-file type map over fields/properties/parameters, NOT a `Me` rule. Not implemented, and the reason is recorded rather than guessed."
+  }
+}

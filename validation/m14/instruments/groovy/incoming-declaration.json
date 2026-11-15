@@ -1,0 +1,445 @@
+{
+  "meta": {
+    "lang": "groovy",
+    "asked": "the whole-population declaration of groovy's 14-value vocabulary",
+    "instrument": "script/m14/incoming-gate.ts",
+    "instrumentVersion": "2026-10-22",
+    "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+    "corpusRoot": "$PWD/.corpus",
+    "corpusTotal": 8102,
+    "corpusRepos": 8,
+    "parsed": 8102,
+    "extension": "groovy,gvy,gradle",
+    "extensionSource": "script/m14/language-extensions.ts — THE ROUTER'S ONE TABLE, read, not copied",
+    "analyzer": "src/ast/real-groovy-analyzer.ts",
+    "closure": {
+      "formula": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges",
+      "ambKind_REPORTED_BESIDE": "amb(kind) is a SUBSET of amb(decl) and is never added; collRes is a SUBSET of resolved and is likewise reported beside",
+      "ok": true
+    },
+    "resolutionScope": "PER PROJECT (the repository a file belongs to) — production's scope: parallel-indexer.resolveRelationships fills target_symbol_id only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1",
+    "bias": "THE EDGE BUCKETS ARE THE POPULATION'S: every admitted file is measured exactly once, and an edge is a per-file fact. THE RESOLUTION BUCKETS ARE THE CHUNKED MEASUREMENT'S, AND `resolved` IS BIASED UP: the resolution scope is PER PROJECT and a repository longer than one slice STRADDLES a slice boundary, so the split half of the repository cannot see the collisions in the other half — and a collision that is INVISIBLE makes the name read UNIQUE and the edge RESOLVE. The gate says so in its own population line, which every chunk prints.",
+    "measurement": {
+      "slices": 5,
+      "instrument_per_slice": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N",
+      "merge": "script/m14/groovy-arm-merge.ts",
+      "merged": "validation/m14/measurements/groovy-arm-closure-2026-10-22.json",
+      "tiling": "CHECKED FROM THE GATE'S OWN PRINTED BOUNDS, NOT ASSERTED: the slices must abut, start at 0, and reach the gate's own admitted total"
+    },
+    "typesTool": "script/m14/groovy-declaration-writer.ts",
+    "typesStatus": "the per-type rows come from the POPULATION merge (script/m14/groovy-arm-merge.ts), which refuses a merge that is not a tiling; the rows are NOT published from a sample",
+    "generated": "2026-10-22"
+  },
+  "types": {
+    "calls": {
+      "edges": 185292,
+      "resolved": 36279,
+      "external": 0,
+      "ambiguous": 62606,
+      "otherUnresolved": 86407,
+      "unclassed": 0,
+      "ambKind": 13869,
+      "collRes": 0,
+      "closure": {
+        "resolved": 36279,
+        "ambDecl": 62606,
+        "unresolved": 86407,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "uses": {
+      "edges": 35061,
+      "resolved": 7898,
+      "external": 0,
+      "ambiguous": 11235,
+      "otherUnresolved": 15928,
+      "unclassed": 0,
+      "ambKind": 4096,
+      "collRes": 0,
+      "closure": {
+        "resolved": 7898,
+        "ambDecl": 11235,
+        "unresolved": 15928,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "contains": {
+      "edges": 44719,
+      "resolved": 44719,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 32546,
+      "closure": {
+        "resolved": 44719,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "imports": {
+      "edges": 81040,
+      "resolved": 0,
+      "external": 77504,
+      "ambiguous": 0,
+      "otherUnresolved": 3536,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 0,
+      "closure": {
+        "resolved": 0,
+        "ambDecl": 0,
+        "unresolved": 3536,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 77166,
+        "extUnknown": 338,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "references": {
+      "edges": 102124,
+      "resolved": 11131,
+      "external": 0,
+      "ambiguous": 4406,
+      "otherUnresolved": 86587,
+      "unclassed": 0,
+      "ambKind": 2241,
+      "collRes": 0,
+      "closure": {
+        "resolved": 11131,
+        "ambDecl": 4406,
+        "unresolved": 86587,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "exports": {
+      "edges": 9929,
+      "resolved": 9929,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 0,
+      "closure": {
+        "resolved": 9929,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "extends": {
+      "edges": 5138,
+      "resolved": 1605,
+      "external": 0,
+      "ambiguous": 921,
+      "otherUnresolved": 2612,
+      "unclassed": 0,
+      "ambKind": 220,
+      "collRes": 0,
+      "closure": {
+        "resolved": 1605,
+        "ambDecl": 921,
+        "unresolved": 2612,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "implements": {
+      "edges": 3007,
+      "resolved": 1304,
+      "external": 0,
+      "ambiguous": 217,
+      "otherUnresolved": 1486,
+      "unclassed": 0,
+      "ambKind": 29,
+      "collRes": 0,
+      "closure": {
+        "resolved": 1304,
+        "ambDecl": 217,
+        "unresolved": 1486,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "overrides": {
+      "edges": 5863,
+      "resolved": 5863,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 0,
+      "closure": {
+        "resolved": 5863,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "instantiates": {
+      "edges": 25428,
+      "resolved": 5747,
+      "external": 0,
+      "ambiguous": 4574,
+      "otherUnresolved": 15107,
+      "unclassed": 0,
+      "ambKind": 2509,
+      "collRes": 0,
+      "closure": {
+        "resolved": 5747,
+        "ambDecl": 4574,
+        "unresolved": 15107,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "decorates": {
+      "edges": 17915,
+      "resolved": 770,
+      "external": 0,
+      "ambiguous": 1133,
+      "otherUnresolved": 16012,
+      "unclassed": 0,
+      "ambKind": 820,
+      "collRes": 0,
+      "closure": {
+        "resolved": 770,
+        "ambDecl": 1133,
+        "unresolved": 16012,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 0,
+      "closure": {
+        "resolved": 0,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 0,
+      "closure": {
+        "resolved": 0,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "ambKind": 0,
+      "collRes": 0,
+      "closure": {
+        "resolved": 0,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bindUnknown": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "extUnknown": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    }
+  },
+  "causeRulings": {
+    "calls:": {
+      "count": 21428,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `calls:`: the class's `unres` count in the gate's own marker-set table is not 21428, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    },
+    "overrides:": {
+      "count": 5863,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `overrides:`: the class's `unres` count in the gate's own marker-set table is not 5863, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    },
+    "uses:": {
+      "count": 4327,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `uses:`: the class's `unres` count in the gate's own marker-set table is not 4327, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    },
+    "references:": {
+      "count": 2643,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `references:`: the class's `unres` count in the gate's own marker-set table is not 2643, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    },
+    "extends:": {
+      "count": 169,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `extends:`: the class's `unres` count in the gate's own marker-set table is not 169, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    },
+    "implements:": {
+      "count": 63,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `implements:`: the class's `unres` count in the gate's own marker-set table is not 63, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    },
+    "decorates:": {
+      "count": 4,
+      "class": "the target names no declaration in the PROJECT scope (the repository the file belongs to), and the edge carries this marker set",
+      "marker_set": "",
+      "population": "parsed=8102/8102 admitted=8102 exts=groovy,gvy,gradle index=no",
+      "falsifier": {
+        "run": "bun script/m14/incoming-gate.ts groovy groovy,gvy,gradle 2000 --index --offset=N   (the fleet's own gate, in the five slices; the class's count is the sum of its slices' `unres` column in the gate's own \"EDGES A MARKER SET EXPLAINS\" table)",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE for `decorates:`: the class's `unres` count in the gate's own marker-set table is not 4, or the count is not carried by edges whose target names no declaration in the project scope. A reader can falsify it in one command: re-run the gate over the same slice and read the marker-set row's `unres` column — a DIFFERENT number falsifies the ruling, and so does a count that does not add up across the five slices (the slices are a TILING of the gate's own sorted admitted list, and the merge REFUSES a merge that is not one)."
+      }
+    }
+  },
+  "causeRulingsNote": "A CAUSE RULING DISPOSITIONS A WALL: a class of edges the project scope could not resolve, with the class's COUNT from the gate's own marker-set table, the POPULATION it was counted over, and a FALSIFIER with a RUN and a WOULD-FAIL. ⇒⇒⇒ A CLASS WITHOUT A COUNT IS A COMPLAINT, AND A FALSIFIER WITHOUT A RUN IS A WISH.",
+  "resolution_caveats": [
+    "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ELEVEN-TERM CLOSURE, NOT THE ELEVEN TERMS: the gate has five buckets (resolved, external, ambiguous, otherUnresolved, unclassed) and the closure has eleven terms, so the binding* and cause* edges — which the gate has no bucket of their own for — are counted in `otherUnresolved`, and every row publishes the eleven terms themselves in `closure` so a reader can see exactly which edge is in which bucket.",
+    "amb(kind) AND collRes ARE REPORTED BESIDE EVERY ROW AND ARE NEVER ADDED TO ANY BUCKET OR TO THE CLOSURE — they are the kind-ambiguity and collision-resolved counts, and the closure formula excludes them.",
+    "THE `unclassed` CEILING IS 0, ALWAYS, AND IT IS 0 IN EVERY ROW HERE: each type's five buckets sum to that type's `edges` exactly, and the writer REFUSES to write the file when they do not.",
+    "THE CHUNKED MEASUREMENT'S BIAS, IN THE NUMBER'S OWN SENTENCE: the EDGE buckets are the POPULATION'S — every admitted file is measured exactly once across the five slices, so the edge counts are unbiased — while the RESOLUTION buckets are the CHUNKED MEASUREMENT'S: a collision in the half of a repository that is not in the slice is INVISIBLE, so the name reads UNIQUE and the edge RESOLVES, so the chunk sum's `resolved` is BIASED UP and its `unresolved` and `amb(decl)` DOWN. The gate says this in its own population line, which every slice prints: \"SAMPLE, NOT POPULATION: a stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP\".",
+    "THIS LANE'S `resolved` MEANS: the analyzer found a declaration for the target and the edge was bound to it. IT DOES NOT MEAN THE PICK IS CORRECT — a wrong-but-declared pick is `resolved` in this instrument too, and no bucket in this instrument can distinguish a right pick from a wrong one. A reader must not compare this lane's `resolved` ratio with another lane's `resolved` ratio as if they measured the same property.",
+    "RULING — `renders` IS ONTOLOGICAL, NOT A GAP: the 14-value vocabulary's own contract names a COMPONENT rendering a COMPONENT, and 683 git-tracked Grails `.gsp` Server Page templates in the corpus DO render components — but they are NOT routed to this lane (M60 #913; 39 of 39 sampled `.gsp` files parse with ERROR nodes), the in-language near miss is the GString `template_expression`, which renders a VALUE and not a COMPONENT, and the served build's 163 named node types name 0 render-ish node types. ⇒⇒⇒ A CONSTRUCT THAT IS EXPRESSIBLE IN THE SAME WAY AS AN ALREADY-IMPLEMENTED TYPE IS NOT A NEW TYPE — IT IS THAT TYPE, SPELLED DIFFERENTLY.",
+    "RULING — `part_of` IS GRAMMAR-ABSENCE: 0 of the served build's 163 named node types carries a `part` shape (the served build is a LOCAL FORK, so the digest is what says which bytes: f1e68cb398e6), and the `part '<file>'` / `part of` token shapes are the counted near miss.",
+    "RULING — `mixes_in` IS ONTOLOGICAL, NOT A GAP: Groovy HAS traits — 165 trait declarations, 150 distinct names, applied by `implements` 1030 times and by `extends` 32 times, over 140 distinct applied names — and the parse tree shows a trait as an ordinary `super_interfaces` → `type_list` → `type_identifier` with NO grammar-level distinction from an interface. The vocabulary's own contract says a mixin is the thing that is NEITHER `extends` NOR `implements` (\"no conformance is declared\"), but in Groovy the conformance IS declared, so the `implements` edge is the truthful one and no construct is left for `mixes_in` to name."
+  ],
+  "notes": [
+    "A ceiling is a claim about what is known and accepted, never that the class is fine. Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
+    "The five buckets and the eleven terms are BOTH published, because a coarsening that hides its terms is a claim nobody can check.",
+    "The wall classes are the GATE'S OWN: the rows of its `EDGES A MARKER SET EXPLAINS` table, summed over the slices — not a taxonomy invented beside the instrument."
+  ]
+}

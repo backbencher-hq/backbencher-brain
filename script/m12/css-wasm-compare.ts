@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
-const ROOT = "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples"
+const ROOT = "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/css/samples"
 const NEW_WASM = "/tmp/ts-css-npm/package/tree-sitter-css.wasm"
 
 async function loadParser(wasmPath: string) {

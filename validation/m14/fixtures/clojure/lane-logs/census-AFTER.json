@@ -1,0 +1,428 @@
+{
+  "dump": "validation/m14/fixtures/clojure/lane-logs/dump-AFTER.txt",
+  "population": {
+    "rows": 14414,
+    "files": 464,
+    "unjoinedFiles": 1
+  },
+  "labels": {
+    "calls": {
+      "rows": 7994,
+      "buckets": {
+        "externalVerified | claim kind namespace": {
+          "count": 4165,
+          "samples": [
+            "clojure.string/trim @ clj-kondo/.circleci/script/docker.clj:17",
+            "clojure.string/includes? @ clj-kondo/.circleci/script/docker.clj:39",
+            "clojure.string/split @ clj-kondo/.circleci/script/docker.clj:84"
+          ]
+        },
+        "unresolved | bare callee -> no declaration or import origin in the run": {
+          "count": 1435,
+          "samples": [
+            "pred @ clj-kondo/corpus/clojure.test.are.cljc:18",
+            "route @ clj-kondo/corpus/compojure/core_test.clj:94",
+            "route @ clj-kondo/corpus/compojure/core_test.clj:101"
+          ]
+        },
+        "ambDeclOnly | name IS declared in this file (ambiguity/shadow model, not absence)": {
+          "count": 647,
+          "samples": [
+            "expand-catch @ clj-kondo/corpus/.clj-kondo/macroexpand/try_plus.clj:29",
+            "-foo @ clj-kondo/corpus/defprotocol.clj:11",
+            "-foo @ clj-kondo/corpus/defprotocol.clj:12"
+          ]
+        },
+        "externalUnverified | claim kind packageScope": {
+          "count": 457,
+          "samples": [
+            "babashka.cli/parse-opts @ clj-kondo/.sbx/repl.clj:99",
+            "rewrite-clj.node/tag @ clj-kondo/analysis/src/clj_kondo/tools/ast.clj:19",
+            "rewrite-clj.parser/parse-string-all @ clj-kondo/analysis/src/clj_kondo/tools/ast.clj:24"
+          ]
+        },
+        "unresolved | static interop call (Class/member) -> java platform class": {
+          "count": 354,
+          "samples": [
+            "System/getenv @ clj-kondo/.circleci/script/docker.clj:10",
+            "Instant/now @ clj-kondo/.circleci/script/docker.clj:28",
+            "ManagementFactory/getThreadMXBean @ clj-kondo/benchmarks/metabase+clojure-lsp.clj:11"
+          ]
+        },
+        "externalVerified | claim kind packageScope": {
+          "count": 301,
+          "samples": [
+            "babashka.process/process @ clj-kondo/.circleci/script/docker.clj:44",
+            "babashka.process/check @ clj-kondo/.circleci/script/docker.clj:45",
+            "babashka.fs/create-dirs @ clj-kondo/.circleci/script/docker.clj:92"
+          ]
+        },
+        "ambBoth | name IS declared in this file (ambiguity/shadow model, not absence)": {
+          "count": 220,
+          "samples": [
+            "my-print @ clj-kondo/corpus/issue-1980/src/my_print.clj:6",
+            "my-test @ clj-kondo/corpus/issue-1996/src/my_test.clj:8",
+            "my-test @ clj-kondo/corpus/issue-2067/src/my_test2.clj:10"
+          ]
+        },
+        "ambBoth | bare callee -> no declaration or import origin in the run": {
+          "count": 195,
+          "samples": [
+            "bar @ clj-kondo/corpus/cljc/test_cljc.cljs:7",
+            "handler @ clj-kondo/corpus/compojure/core_test.clj:159",
+            "handler @ clj-kondo/corpus/compojure/core_test.clj:160"
+          ]
+        },
+        "ambDeclOnly | bare callee -> no declaration or import origin in the run": {
+          "count": 154,
+          "samples": [
+            "x @ clj-kondo/corpus/defmulti.clj:5",
+            "dude @ clj-kondo/corpus/issue-1996/src/my_test.clj:12",
+            "s @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/edn.cljs:271"
+          ]
+        },
+        "unresolved | qualified THIRD-PARTY call (root not a language namespace)": {
+          "count": 36,
+          "samples": [
+            "my.other/thing @ clj-kondo/corpus/hook-generated-ns/src/consumer.clj:5",
+            "b/b @ clj-kondo/corpus/prefixed_libspec.clj:14",
+            "clj-kondo.impl.rewrite-clj.node.protocols/tag @ clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/indent.clj:29"
+          ]
+        },
+        "unresolved | bare clojure.core name not suppressed (defect candidate) / local shadow": {
+          "count": 11,
+          "samples": [
+            "seq @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:735",
+            "seq @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader.clj:724",
+            "re-find @ clj-kondo/src/clj_kondo/impl/analyzer.clj:4598"
+          ]
+        },
+        "ambBoth | qualified THIRD-PARTY call (root not a language namespace)": {
+          "count": 10,
+          "samples": [
+            "clj-kondo.impl.utils/deep-merge @ clj-kondo/src/clj_kondo/impl/analyzer.clj:3922",
+            "clj-kondo.impl.utils/select-lang @ clj-kondo/src/clj_kondo/impl/analyzer.clj:4667",
+            "clj-kondo.impl.utils/deep-merge @ clj-kondo/src/clj_kondo/impl/analyzer/usages.clj:69"
+          ]
+        },
+        "ambDeclOnly | qualified THIRD-PARTY call (root not a language namespace)": {
+          "count": 4,
+          "samples": [
+            "corpus.cljc.test-cljc/foo @ clj-kondo/corpus/cljc/test_cljc.cljs:4",
+            "corpus.cljc.test-cljc/foo @ clj-kondo/corpus/cljc/test_cljc.cljs:5",
+            "corpus.cljc.test-cljc/foo @ clj-kondo/corpus/cljc/test_cljs.cljs:4"
+          ]
+        },
+        "ambDeclOnly | bare clojure.core name not suppressed (defect candidate) / local shadow": {
+          "count": 4,
+          "samples": [
+            "test @ clojure/src/clj/clojure/pprint/utilities.clj:96",
+            "test @ clojure/test/clojure/test_clojure/sequences.clj:1537",
+            "test @ clojure/test/clojure/test_clojure/sequences.clj:1540"
+          ]
+        },
+        "ambBoth | qualified language-platform call (root in platform set)": {
+          "count": 1,
+          "samples": [
+            "clojure.data/diff @ clojure/test/clojure/test_clojure/java_interop.clj:217"
+          ]
+        }
+      }
+    },
+    "references": {
+      "rows": 2557,
+      "buckets": {
+        "externalVerified | claim kind namespace": {
+          "count": 1561,
+          "samples": [
+            "clojure.string @ clj-kondo/.circleci/script/docker.clj:3",
+            "java.time @ clj-kondo/.circleci/script/docker.clj:4",
+            "clojure.string @ clj-kondo/.circleci/script/docker.clj:17"
+          ]
+        },
+        "unresolved | ns library dependency (require/import libspec) -> external or unknown module": {
+          "count": 330,
+          "samples": [
+            "System @ clj-kondo/.circleci/script/docker.clj:10",
+            "Instant @ clj-kondo/.circleci/script/docker.clj:28",
+            "ManagementFactory @ clj-kondo/benchmarks/metabase+clojure-lsp.clj:11"
+          ]
+        },
+        "externalVerified | claim kind packageScope": {
+          "count": 293,
+          "samples": [
+            "babashka.fs @ clj-kondo/.circleci/script/docker.clj:1",
+            "babashka.process @ clj-kondo/.circleci/script/docker.clj:2",
+            "babashka.process @ clj-kondo/.circleci/script/docker.clj:44"
+          ]
+        },
+        "externalUnverified | claim kind packageScope": {
+          "count": 284,
+          "samples": [
+            "babashka.cli @ clj-kondo/.sbx/repl.clj:16",
+            "babashka.cli @ clj-kondo/.sbx/repl.clj:99",
+            "planck.shell @ clj-kondo/analysis/script/private_vars.cljs:5"
+          ]
+        },
+        "ambDeclOnly | ns library dependency (require/import libspec) -> external or unknown module": {
+          "count": 69,
+          "samples": [
+            "corpus.cljc.test-cljc @ clj-kondo/corpus/cljc/test_cljc_from_clj.clj:2",
+            "corpus.cljc.test-cljc @ clj-kondo/corpus/cljc/test_cljs.cljs:2",
+            "myns @ clj-kondo/corpus/hooks/coerce_sexpr_roundtrip.clj:2"
+          ]
+        },
+        "ambBoth | ns library dependency (require/import libspec) -> external or unknown module": {
+          "count": 20,
+          "samples": [
+            "foo @ clj-kondo/corpus/compojure/core.clj:2",
+            "foo @ clj-kondo/corpus/compojure/core.clj:13",
+            "foo @ clj-kondo/corpus/compojure/core.clj:17"
+          ]
+        }
+      }
+    },
+    "uses": {
+      "rows": 1718,
+      "buckets": {
+        "unresolved | java-interop field read (.field)": {
+          "count": 1443,
+          "samples": [
+            "getLocalPort @ clj-kondo/.sbx/repl.clj:56",
+            "listFiles @ clj-kondo/benchmarks/alloc-profile.clj:16",
+            "getName @ clj-kondo/benchmarks/alloc-profile.clj:17"
+          ]
+        },
+        "ambDeclOnly | java-interop field read (.field)": {
+          "count": 229,
+          "samples": [
+            "name @ clj-kondo/extract/clj_kondo/impl/ExtractJava.clj:23",
+            "toString @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:61",
+            "toString @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:171"
+          ]
+        },
+        "ambBoth | java-interop field read (.field)": {
+          "count": 35,
+          "samples": [
+            "next @ clojure/src/clj/clojure/core/protocols.clj:37",
+            "next @ clojure/src/clj/clojure/core/protocols.clj:42",
+            "name @ clojure/src/clj/clojure/core/server.clj:249"
+          ]
+        },
+        "unresolved | java-interop static member/class": {
+          "count": 7,
+          "samples": [
+            "File @ clojure/test/clojure/test_clojure/java_interop.clj:707",
+            "AdapterExerciser @ clojure/test/clojure/test_clojure/java_interop.clj:840",
+            "AdapterExerciser @ clojure/test/clojure/test_clojure/java_interop.clj:841"
+          ]
+        },
+        "externalVerified | claim kind namespace": {
+          "count": 4,
+          "samples": [
+            "java.lang.String @ clojure/test/clojure/test_clojure/param_tags.clj:29",
+            "java.time.OffsetDateTime @ clojure/test/clojure/test_clojure/param_tags.clj:35",
+            "java.time.OffsetDateTime @ clojure/test/clojure/test_clojure/param_tags.clj:39"
+          ]
+        }
+      }
+    },
+    "imports": {
+      "rows": 715,
+      "buckets": {
+        "externalVerified | claim kind namespace": {
+          "count": 505,
+          "samples": [
+            "clojure.string @ clj-kondo/.circleci/script/docker.clj:3",
+            "java.time @ clj-kondo/.circleci/script/docker.clj:4",
+            "clojure.string @ clj-kondo/.sbx/repl.clj:19"
+          ]
+        },
+        "externalUnverified | claim kind packageScope": {
+          "count": 111,
+          "samples": [
+            "babashka.cli @ clj-kondo/.sbx/repl.clj:16",
+            "planck.shell @ clj-kondo/analysis/script/private_vars.cljs:5",
+            "planck.shell @ clj-kondo/analysis/script/unused_vars.cljs:7"
+          ]
+        },
+        "ambDeclOnly | module:item spelling unresolved (module not in project module space)": {
+          "count": 44,
+          "samples": [
+            "corpus.cljc.test-cljc @ clj-kondo/corpus/cljc/test_cljc_from_clj.clj:2",
+            "corpus.cljc.test-cljc @ clj-kondo/corpus/cljc/test_cljs.cljs:2",
+            "myns @ clj-kondo/corpus/hooks/coerce_sexpr_roundtrip.clj:2"
+          ]
+        },
+        "externalVerified | claim kind packageScope": {
+          "count": 41,
+          "samples": [
+            "babashka.fs @ clj-kondo/.circleci/script/docker.clj:1",
+            "babashka.process @ clj-kondo/.circleci/script/docker.clj:2",
+            "babashka.fs @ clj-kondo/.sbx/repl.clj:17"
+          ]
+        },
+        "ambBoth | module:item spelling unresolved (module not in project module space)": {
+          "count": 14,
+          "samples": [
+            "foo @ clj-kondo/corpus/compojure/core.clj:2",
+            "bar @ clj-kondo/corpus/config_dir/foo.clj:2",
+            "foo.foo @ clj-kondo/corpus/deprecated_var.clj:5"
+          ]
+        }
+      }
+    },
+    "instantiates": {
+      "rows": 697,
+      "buckets": {
+        "unresolved | java-interop constructor (Class.) -> external class": {
+          "count": 463,
+          "samples": [
+            "Integer @ clj-kondo/analysis/src/clj_kondo/tools/popular_vars.clj:5",
+            "sci.lang.Var @ clj-kondo/corpus/aliased_namespaces/interop.cljc:17",
+            "ConstructorExport @ clj-kondo/corpus/cljs_ns_as_as_object.cljs:7"
+          ]
+        },
+        "externalVerified | claim kind namespace": {
+          "count": 227,
+          "samples": [
+            "java.net.ServerSocket @ clj-kondo/.sbx/repl.clj:55",
+            "java.io.File @ clj-kondo/corpus/java/usages.clj:15",
+            "java.lang.String @ clj-kondo/corpus/java/usages.clj:16"
+          ]
+        },
+        "unresolved | class-shaped target -> no project declaration": {
+          "count": 5,
+          "samples": [
+            "RecordSchema @ clj-kondo/corpus/schema/defprotocol.clj:36",
+            "RecordSchema @ clj-kondo/corpus/schema/defprotocol.clj:38",
+            "RecordSchema @ clj-kondo/corpus/schema/defprotocol.clj:42"
+          ]
+        },
+        "ambDeclOnly | java-interop constructor (Class.) -> external class": {
+          "count": 1,
+          "samples": [
+            "PushbackReader @ clj-kondo/parser/clj_kondo/impl/rewrite_clj/reader.clj:226"
+          ]
+        },
+        "unresolved | tagged/ctor literal class (read-literal payload)": {
+          "count": 1,
+          "samples": [
+            "some.nonexistent.Record @ clojure/test/clojure/test_clojure/reader.cljc:713"
+          ]
+        }
+      }
+    },
+    "exports": {
+      "rows": 489,
+      "buckets": {
+        "ambDeclOnly | exported name declared by more than one namespace/file (multi-ns project)": {
+          "count": 424,
+          "samples": [
+            "one-of @ clj-kondo/.clj-kondo/hooks/one_of.clj:6",
+            "-main @ clj-kondo/.sbx/repl.clj:98",
+            "-main @ clj-kondo/analysis/script/private_vars.cljs:8"
+          ]
+        },
+        "ambBoth | exported name declared by more than one namespace/file (multi-ns project)": {
+          "count": 65,
+          "samples": [
+            "my-print @ clj-kondo/corpus/issue-1980/.clj-kondo/hooks.clj:4",
+            "my-test @ clj-kondo/corpus/issue-1996/.clj-kondo/hooks.clj:17",
+            "my-test @ clj-kondo/corpus/issue-2067/.clj-kondo/hooks.clj:11"
+          ]
+        }
+      }
+    },
+    "implements": {
+      "rows": 114,
+      "buckets": {
+        "externalVerified | claim kind namespace": {
+          "count": 64,
+          "samples": [
+            "clojure.lang.IDeref @ clojure/src/clj/clojure/core.clj:7223",
+            "clojure.lang.IBlockingDeref @ clojure/src/clj/clojure/core.clj:7225",
+            "clojure.lang.IPending @ clojure/src/clj/clojure/core.clj:7229"
+          ]
+        },
+        "unresolved | protocol/interface declared outside the run (external lib)": {
+          "count": 49,
+          "samples": [
+            "FileNameMap @ clj-kondo/corpus/defrecord.clj:12",
+            "Object @ clj-kondo/corpus/deftype.cljs:4",
+            "IPending @ clj-kondo/corpus/deftype.cljs:16"
+          ]
+        },
+        "ambDeclOnly | protocol/interface declared outside the run (external lib)": {
+          "count": 1,
+          "samples": [
+            "ExampleInterface @ clojure/test/clojure/test_clojure/protocols.clj:639"
+          ]
+        }
+      }
+    },
+    "overrides": {
+      "rows": 88,
+      "buckets": {
+        "unresolved | method-impl target name (protocol/interface method, no project declaration)": {
+          "count": 86,
+          "samples": [
+            "Foo.-foo @ clj-kondo/corpus/defprotocol.clj:9",
+            "Handler.handle @ clj-kondo/corpus/record_protocol_metadata.clj:9",
+            "Reader.read-char @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs:44"
+          ]
+        },
+        "ambBoth | method-impl target name (protocol/interface method, no project declaration)": {
+          "count": 1,
+          "samples": [
+            "assert-valid-fdecl @ clojure/src/clj/clojure/core.clj:7769"
+          ]
+        },
+        "ambDeclOnly | method-impl target name (protocol/interface method, no project declaration)": {
+          "count": 1,
+          "samples": [
+            "global-hierarchy @ clojure/src/clj/clojure/core.clj:5689"
+          ]
+        }
+      }
+    },
+    "extends": {
+      "rows": 41,
+      "buckets": {
+        "unresolved | java superclass (:gen-class/proxy) -> external class": {
+          "count": 25,
+          "samples": [
+            "ThreadLocal @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj:166",
+            "ThreadLocal @ clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj:212",
+            "ClassVisitor @ clj-kondo/src/clj_kondo/impl/analysis/java.clj:167"
+          ]
+        },
+        "externalVerified | claim kind namespace": {
+          "count": 16,
+          "samples": [
+            "java.io.BufferedOutputStream @ clj-kondo/src/clj_kondo/impl/cache.clj:58",
+            "clojure.lang.APersistentMap @ clojure/src/clj/clojure/core_proxy.clj:429",
+            "javax.swing.event.HyperlinkListener @ clojure/src/clj/clojure/java/browse_ui.clj:20"
+          ]
+        }
+      }
+    },
+    "BOUND": {
+      "rows": 1,
+      "buckets": {
+        "COMPLETE | unjoined-no-file-facts": {
+          "count": 1,
+          "samples": [
+            "14413 @ -:0"
+          ]
+        }
+      }
+    }
+  },
+  "extPricing": {
+    "packageScope|no-specifier": 741,
+    "packageScope|module-root-no-collision": 104,
+    "packageScope|module-root-collides-with-project-name": 7
+  },
+  "total": 14414
+}

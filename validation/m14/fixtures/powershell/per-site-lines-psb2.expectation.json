@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/per-site-lines-psb2.ps1",
+  "authoredFrom": "PS2 — every relationship carries the line of the node that BEARS ITS NAME, and that line is part of the edge's identity (bash BD1 adopted; M59 #825 line contract, M60 #921 name-line rule). Authored 2026-09-26. MEASURED pre-wave, not reasoned: 0 of 3,410 relationships on the production draw of powershell@91ce9844 carried a `line_number`, and the graph surface rendered `\"callSite\": {\"file\": \"Deploy.ps1\", \"line\": null}` as if it knew a position. The two traps here are the WRAPPED declaration (a `contains` edge stamped with the declaration node's start line names a line the member's name is not written on) and MULTI-SITE (one callee, three call sites, and a dedupe key without the line keeps only the first). Each is pinned twice: as the correct claim, and as the pre-fix shape in forbidRelationships.",
+  "expectSymbols": [
+    { "name": "per-site-lines-psb2.ps1", "kind": "module" },
+    { "name": "Get-Thing", "kind": "function", "ownerName": "per-site-lines-psb2.ps1" },
+    { "name": "Invoke-Helper", "kind": "function", "ownerName": "per-site-lines-psb2.ps1" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "per-site-lines-psb2.ps1", "target": "Get-Thing", "line_number": 20, "comment": "the NAME is on 20; the node starts on 20 here and the `param` block is on 22 — a start-line stamp and a name-line stamp agree on this row, which is why the wrapped DECLARATION is pinned by Invoke-Helper below" },
+    { "type": "contains", "from": "per-site-lines-psb2.ps1", "target": "Invoke-Helper", "line_number": 26 },
+    { "type": "calls", "from": "Get-Thing", "target": "Write-Host", "line_number": 23 },
+    { "type": "calls", "from": "per-site-lines-psb2.ps1", "target": "Get-Thing", "line_number": 31 },
+    { "type": "calls", "from": "per-site-lines-psb2.ps1", "target": "Get-Thing", "line_number": 32 },
+    { "type": "calls", "from": "per-site-lines-psb2.ps1", "target": "Invoke-Helper", "line_number": 33 },
+    { "type": "calls", "from": "per-site-lines-psb2.ps1", "target": "Invoke-Helper", "line_number": 34 },
+    { "type": "calls", "from": "per-site-lines-psb2.ps1", "target": "Invoke-Helper", "line_number": 35 }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "target": "Invoke-Helper", "equals": 3, "comment": "THREE sites of one callee. A per-set dedupe key (source|type|target) keeps 1 and the other two are gone — which is the haskell `edge-line-per-set` mutant exactly" },
+    { "type": "calls", "target": "Get-Thing", "equals": 2, "comment": "two sites" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "per-site-lines-psb2.ps1", "target": "Get-Thing", "line_number": 21, "note": "pre-fix shape: the wrapped declaration's BRACE line" },
+    { "type": "contains", "from": "per-site-lines-psb2.ps1", "target": "Invoke-Helper", "line_number": 27, "note": "pre-fix shape: the `param` line instead of the name line" },
+    { "type": "calls", "from": "Get-Thing", "target": "Write-Host", "line_number": 20, "note": "pre-fix shape: the enclosing declaration's start line instead of the call site's" },
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "imports", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "calls", "target": "global" }
+  ]
+}

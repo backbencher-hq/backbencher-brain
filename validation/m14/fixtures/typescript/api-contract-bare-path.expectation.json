@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/api-contract-bare-path",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CONTRACT (decided in the Kotlin wave): brain_symbol.api_contract_path stores the BARE path - doc-engine exact-matches this column and Java/Kotlin/Groovy all store bare paths. The HTTP method lives in metadata.apiMethod. Decorator-based routes must work despite method decorators being class_body siblings.",
+  "expectSymbols": [
+    { "name": "list" },
+    { "name": "fetchUsers" }
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "list", "equals": "/users" },
+    { "symbol": "fetchUsers", "equals": "/api/users" }
+  ]
+}

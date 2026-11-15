@@ -1,0 +1,18 @@
+{
+  "comment": "ERROR BUDGET. A clean document reports nothing; a document with one genuine ERROR node reports it, reports it ONCE, and the walk is capped. `expectErrors` alone cannot pin this: it is a >=1 match, so two copies of ONE error satisfy it. That is the whole reason this channel exists — the pre-fix html analyzer walked for ERROR/MISSING nodes with an UNBOUNDED stack while the engine walked the same tree capped at 50, so a 300-line broken file published 350 warnings for 300 lines. This runner executes the analyzer directly, so the engine's own walk is not in the count here; the analyzer's contribution is what is pinned.",
+  "expectErrorCount": [
+    { "equals": 0 }
+  ],
+  "forbidErrors": [
+    { "message": "Syntax ERROR detected. The Brain Engine is bypassing this broken node." }
+  ],
+  "expectSymbols": [
+    { "name": "error-budget", "kind": "module" },
+    { "name": "clean", "kind": "class" },
+    { "name": "p", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "error-budget", "target": "clean", "line_number": 5 },
+    { "type": "uses", "from": "error-budget", "target": "clean", "line_number": 7, "meta.isInternalAnchor": true }
+  ]
+}

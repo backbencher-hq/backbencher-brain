@@ -1,0 +1,47 @@
+{
+  "fixtureId": "csharp/record-struct-kind",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The kind of a record declaration, found by the grammar audit rather than by reading code. The pinned tree-sitter-c_sharp grammar spells `record class Foo` AND `record struct Foo` as ONE node type — `record_declaration` — and enumerating wasm/tree-sitter-c_sharp.wasm yields 533 node types with NO `record_struct_declaration` (script/m14/tmp/f1-csharp-record-probe.ts). The lane's kind rule was `stringIncludes(type, \"struct\")`, which can never be true for that node, so the pre-fix behaviour was measured at this fixture's source (script/m14/tmp/cs-record-struct-probe.ts): `public record struct RS(double X, double Y);` parsed with 0 errors and published kind=class, isStruct=false, isValueType=false, while docs/analyzers/csharp.md claimed record structs produce a struct. The two forms differ by an UNNAMED TOKEN child — `*record(\"record\") *class(\"class\")` versus `*record(\"record\") *struct(\"struct\")` — so the fix reads the token (csharpTypeDeclarationKind), not the node type and not the node's text. It also replaced the dead `constraint_clause` literal with the grammar's real `type_parameter_constraints_clause` and deleted eight `record_struct_declaration` disjuncts that could never be true; that half is BEHAVIOUR-NEUTRAL on every authored shape (the real node is not a declared-type node, so the guard's outcome is the same either way) and is therefore gated by F1's dead-literal register, not by an assertion here — see the round record. Measured pre-existing behaviour this fixture deliberately does NOT pin: a record's positional parameters also produce `uses <Record> -> <Positional>` self-edges (the CS-R1 rule leaves record positionals unbound so property reads flow), which is noted as an open question with its owner rather than blessed as contract.",
+  "expectSymbols": [
+    { "name": "Probe", "kind": "namespace" },
+    { "name": "RecClass", "kind": "class", "ownerName": "Probe", "meta.isRecord": true, "meta.isStruct": false },
+    { "name": "RecStruct", "kind": "struct", "ownerName": "Probe", "meta.isStruct": true, "meta.isValueType": true, "meta.isRecord": true, "comment": "THE DEFECT: pre-fix this symbol was kind=class with isStruct=false / isValueType=false" },
+    { "name": "RecBody", "kind": "struct", "ownerName": "Probe", "meta.isStruct": true, "comment": "the body form (`readonly record struct` with an explicit member list), which reaches the same node type" },
+    { "name": "RecGeneric", "kind": "struct", "ownerName": "Probe", "meta.isStruct": true, "comment": "generic record struct carrying a `where T : struct` clause, so the constraint-clause position is exercised in the same file" },
+    { "name": "PlainStruct", "kind": "struct", "ownerName": "Probe", "meta.isStruct": true, "meta.isRecord": false, "comment": "control: an ordinary struct keeps Struct and is not a record" },
+    { "name": "PlainClass", "kind": "class", "ownerName": "Probe", "meta.isStruct": false, "meta.isRecord": false, "comment": "control: an ordinary class keeps Class" },
+    { "name": "IThing", "kind": "interface", "ownerName": "Probe", "comment": "control: the fix must not disturb the other declaration kinds the same path handles" },
+    { "name": "Name", "kind": "property", "ownerName": "RecClass", "comment": "record positional -> property, unchanged by the round" },
+    { "name": "X", "kind": "property", "ownerName": "RecStruct" },
+    { "name": "Y", "kind": "property", "ownerName": "RecStruct" },
+    { "name": "Value", "kind": "property", "ownerName": "RecGeneric" },
+    { "name": "F", "kind": "property", "ownerName": "RecBody" },
+    { "name": "P", "kind": "property", "ownerName": "PlainStruct" },
+    { "name": "C", "kind": "property", "ownerName": "PlainClass" }
+  ],
+  "expectSymbolCount": [
+    { "name": "RecStruct", "kind": "struct", "equals": 1, "comment": "exactly one struct-kind symbol: the fix must not emit a struct kind AND leave a class-kind twin behind" },
+    { "name": "RecBody", "kind": "struct", "equals": 1 },
+    { "name": "RecGeneric", "kind": "struct", "equals": 1 },
+    { "name": "RecClass", "kind": "class", "equals": 1, "comment": "and the opposite direction: a record CLASS must not acquire a struct twin" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Probe", "target": "RecStruct" },
+    { "type": "contains", "from": "Probe", "target": "RecBody" },
+    { "type": "contains", "from": "Probe", "target": "RecGeneric" },
+    { "type": "contains", "from": "RecStruct", "target": "X" },
+    { "type": "contains", "from": "RecStruct", "target": "Y" },
+    { "type": "contains", "from": "RecBody", "target": "F" },
+    { "type": "contains", "from": "Probe", "target": "PlainStruct" },
+    { "type": "contains", "from": "Probe", "target": "PlainClass" },
+    { "type": "contains", "from": "Probe", "target": "IThing" }
+  ],
+  "forbidSymbols": [
+    { "name": "RecStruct", "kind": "class", "note": "the pre-fix spelling at every one of the nine `record_struct_declaration` sites: the node type never occurs, so the record-struct path fell through to the class arm" },
+    { "name": "RecBody", "kind": "class", "note": "same revert, body form (its members must also stay attached: `RecBody -> F` above)" },
+    { "name": "RecGeneric", "kind": "class", "note": "same revert, generic form with a constraint clause" },
+    { "name": "PlainStruct", "kind": "class", "note": "control for the OTHER direction: a fix that keys on \"record\" in the type name instead of the token would break the ordinary struct" },
+    { "name": "RecClass", "kind": "struct", "note": "control: `record class` must never be published as a struct — the token rule reads `class` there, and a text search for the word `struct` anywhere in the declaration would fire on the constraint clause `where T : struct` in RecGeneric" }
+  ]
+}

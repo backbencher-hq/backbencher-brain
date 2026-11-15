@@ -17,7 +17,7 @@ import * as path from "node:path"
 import { readFileSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO_OF = (rel: string): string => rel.slice(0, rel.indexOf("/"))
 const files = process.argv.slice(2).map((f) => {
   const repo = f.slice(0, f.indexOf("/"))

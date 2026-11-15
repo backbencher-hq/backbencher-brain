@@ -1,0 +1,296 @@
+{
+  "fixtureId": "go/round5-surfaces",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the seven GO26 (round 5) behavioural classes, and three controls that must survive them. Every value below was read out of the analyzer's REAL emission by `script/m14/tmp/go-round5-fixture-dump.ts` after the fix, never predicted: the source is valid, compilable Go, and the two shapes that only a non-compiling tree can reach (a bare call to a name that exists only as an interface method; a type declared twice) are pinned by `F9-PROBE-GO-BARE-CALLABLE-SET` instead. (1) C6 export rule: Go defines `exported` as a UNICODE upper-case test; the ASCII range published `Ünï`/`Ö`/`Ä` private and dropped them from the export list. (2) C5 predeclared set: `comparable` was absent, so the generic constraint leaked a dangling `Pair -> comparable` target. (3) C3 parameter-vs-result: an unnamed parameter and an unnamed result are both one-child `parameter_declaration` nodes, so arity mislabelled the parameter. (4) C4 Module range: the range was hand-built from the package NAME's length at line 1/byte 0, wrong under any `//go:build` header — which is why this file has one. (5) C15 var/const range: a grouped declaration names N symbols at N positions. (6) C19 alias-to-struct embedding: the member symbol was published and the `mixes_in` edge was not, because the embedding pass (and the oracle) read `type_spec` only. (7) GO26 framework vocabulary + struct insight: the two framework lists were written independently, so `gorm` was unreachable in `getGoFrameworkPatterns`; and five predicates named `SymbolKind.Class`, which the go analyzer has never emitted, so the whole `struct_design` insight and its score bonus were unreachable too. (8) GO26 struct-kind activation: `architecturalScore` is pinned at the value that INCLUDES the +3 struct-design bonus, so the pin is a live witness that the `SymbolKind.Class` predicate now names the kind Go emits — the five methods on `Inner` exist only to bring this file's method:struct ratio inside the [1,5] band the bonus requires. Before the fix the ratio was computed over an always-empty struct list and the bonus was unreachable, so a pinned score without that band would have been blind to the whole class. (9) GO36: a type ALIAS's field types must attribute to the ALIAS, not to the `global` pseudo-source. `resolveSource` recognised `type_spec` only, so `type Alias = struct{ ... }` fell through and the edge was unattributable. This is the second half of GO31a, which taught the EMBEDDING pass to accept `type_alias` and left the declared-type RESOLVER behind. Found by the round-6 `references` truth (the first oracle able to see this surface) and measured on go-tools as 16 MISSING + 16 UNEXPLAINED rows over 1,931 files — 0.07%, which is exactly why the 60-file draw and the earlier fixtures never saw it. `Holder` is a second type inside the alias so the pin has a target the embedded field cannot also write, since the lane's per-set convention (GO32) collapses two fields of the same type into one edge. PIN FRAGILITY, recorded because it bit once: the architecturalScore pin is live only while this file's method:struct ratio is inside the [1,5] band the bonus needs. Adding a struct for GO36 pushed the ratio to 0.889 and the pin went BLIND — the `go/struct-kind-class-vacuous` mutant reported as a SURVIVOR the moment it happened, which is the tripwire doing its job. Two methods on `Holder` put the ratio back at 1.00. A payload pin whose liveness depends on a ratio is fragile, and the honest answer is to say so and keep the mutant that detects the fragility.",
+  "expectSymbols": [
+    {
+      "name": "Ünï",
+      "kind": "struct"
+    },
+    {
+      "name": "Ö",
+      "kind": "function"
+    },
+    {
+      "name": "Pair",
+      "kind": "struct"
+    },
+    {
+      "name": "Alias",
+      "kind": "struct"
+    },
+    {
+      "name": "Inner",
+      "kind": "property",
+      "ownerName": "Alias"
+    },
+    {
+      "name": "comparable",
+      "kind": "interface",
+      "ownerName": "Embedded"
+    },
+    {
+      "name": "Gone",
+      "kind": "constant"
+    },
+    {
+      "name": "AlsoGo",
+      "kind": "constant"
+    },
+    {
+      "name": "Holder",
+      "kind": "struct"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "comparable",
+      "ownerName": "Pair"
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "Ünï",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Ö",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Ä",
+      "visibility": "public"
+    },
+    {
+      "symbol": "alpha",
+      "visibility": "private"
+    },
+    {
+      "symbol": "Beta",
+      "visibility": "public"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Ünï",
+      "kind": "struct",
+      "visibility": "public"
+    },
+    {
+      "name": "Ö",
+      "kind": "function",
+      "visibility": "public"
+    },
+    {
+      "name": "Alias",
+      "kind": "struct",
+      "visibility": "public"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "alpha"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "roundfive",
+      "startLine": 19,
+      "startColumn": 1,
+      "endLine": 19,
+      "endColumn": 18,
+      "startIndex": 896,
+      "endIndex": 913
+    },
+    {
+      "symbol": "alpha",
+      "startLine": 65,
+      "startColumn": 5,
+      "endLine": 65,
+      "endColumn": 10,
+      "startIndex": 2463,
+      "endIndex": 2468
+    },
+    {
+      "symbol": "Beta",
+      "startLine": 66,
+      "startColumn": 2,
+      "endLine": 66,
+      "endColumn": 6,
+      "startIndex": 2471,
+      "endIndex": 2475
+    },
+    {
+      "symbol": "Gone",
+      "startLine": 69,
+      "startColumn": 2,
+      "endLine": 69,
+      "endColumn": 6,
+      "startIndex": 2490,
+      "endIndex": 2494
+    },
+    {
+      "symbol": "AlsoGo",
+      "startLine": 70,
+      "startColumn": 2,
+      "endLine": 70,
+      "endColumn": 8,
+      "startIndex": 2502,
+      "endIndex": 2508
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "source": "Alias",
+      "target": "Inner",
+      "meta.relationshipType": "go_struct_embedding",
+      "line_number": 116
+    },
+    {
+      "type": "mixes_in",
+      "source": "Derived",
+      "target": "Base",
+      "meta.relationshipType": "go_struct_embedding"
+    },
+    {
+      "type": "extends",
+      "source": "Embedded",
+      "target": "comparable",
+      "meta.relationshipType": "go_interface_embedding"
+    },
+    {
+      "type": "implements",
+      "source": "Loader",
+      "target": "Cyclic",
+      "meta.relationshipType": "go_interface_implementation"
+    },
+    {
+      "type": "references",
+      "source": "Pair",
+      "target": "K",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "Pair",
+      "target": "V",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "takesUnnamed",
+      "target": "Server",
+      "meta.relationshipType": "declared_type",
+      "line_number": 56
+    },
+    {
+      "type": "references",
+      "source": "returnsUnnamed",
+      "target": "Server",
+      "meta.relationshipType": "return_type",
+      "line_number": 58
+    },
+    {
+      "type": "references",
+      "source": "namedParam",
+      "target": "Server",
+      "meta.relationshipType": "declared_type",
+      "line_number": 60
+    },
+    {
+      "type": "contains",
+      "source": "Alias",
+      "target": "Inner",
+      "line_number": 116
+    },
+    {
+      "type": "instantiates",
+      "source": "Serve",
+      "target": "Alias",
+      "meta.relationshipType": "go_composite_literal_construction"
+    },
+    {
+      "type": "calls",
+      "source": "Serve",
+      "target": "Ö",
+      "line_number": 162
+    },
+    {
+      "type": "references",
+      "source": "Alias",
+      "target": "Holder",
+      "meta.relationshipType": "declared_type",
+      "line_number": 121
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "comparable",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "takesUnnamed",
+      "target": "Server",
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "source": "namedParam",
+      "target": "Server",
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Alias",
+      "target": "Inner",
+      "line_number": null
+    },
+    {
+      "type": "references",
+      "target": "any",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "error",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "global",
+      "target": "Holder",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "global",
+      "target": "Inner",
+      "meta.relationshipType": "declared_type"
+    }
+  ],
+  "expectFrameworks": [
+    "net_http",
+    "gorm"
+  ],
+  "expectMetadata": [
+    {
+      "framework": "net_http",
+      "detectedFrameworks": [
+        "net_http",
+        "gorm"
+      ],
+      "architecturalScore": 89,
+      "codeQuality": "excellent",
+      "complexity": 1,
+      "cyclomaticComplexity": 1,
+      "linesOfCode": 167
+    }
+  ],
+  "expectPrimaryFramework": [
+    "net_http"
+  ]
+}

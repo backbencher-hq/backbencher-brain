@@ -1,0 +1,16 @@
+{
+  "issue": "CLJ-ADV F8",
+  "note": "`(letfn [(f [x] …) …] …)` — the binding-vector lists are DEFINITIONS: `f`/`g-inner` symbols mint locally, body calls attribute to the defined fn, the definition is not a call (the old `outer -> f arity 2` fabrication), and the real invocation `(f 1)` is arity 1.",
+  "expectSymbols": [
+    { "name": "f", "kind": "function" },
+    { "name": "g-inner", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "f", "target": "g-inner", "line_number": 3, "meta.callArity": 1 },
+    { "type": "calls", "from": "outer", "target": "f", "line_number": 3, "meta.callArity": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "outer", "target": "g-inner" },
+    { "type": "calls", "from": "outer", "target": "f", "meta.callArity": 2 }
+  ]
+}

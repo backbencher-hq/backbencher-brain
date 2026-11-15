@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/module-resolution-determinism",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS pure-lexical module resolution (M52 analyzer-lane follow-up): import metadata.resolvedPath must be a deterministic function of (specifier, fromFile) with zero filesystem input, so the same repo indexes identically on every machine. Bare packages record logical identity (external:), builtins canonical node: form (node: prefix stripped, not doubled), relative imports resolve by path algebra. Only machine-independent rows pin resolvedPath (absolute relative resolutions vary by checkout path by construction).",
+  "expectSymbols": [],
+  "expectImports": [
+    { "module": "lodash", "meta.resolvedPath": "external:lodash" },
+    { "module": "@scope/pkg/sub", "meta.resolvedPath": "external:@scope/pkg/sub" },
+    { "module": "fs", "meta.resolvedPath": "node:fs" },
+    { "module": "process", "meta.resolvedPath": "node:process" },
+    { "module": "node:path", "meta.resolvedPath": "node:path" },
+    { "module": "path", "meta.resolvedPath": "node:path" },
+    { "module": "./util" }
+  ]
+}

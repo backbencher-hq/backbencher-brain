@@ -1,0 +1,75 @@
+{
+  "repo": "element-plus",
+  "files": 170,
+  "partition": {
+    "before": {
+      "references": {
+        "resolved": 164,
+        "unresolved": 80,
+        "ambDeclOnly": 39,
+        "total": 283
+      },
+      "contains": {
+        "resolved": 481,
+        "total": 481
+      },
+      "uses": {
+        "resolved": 18,
+        "total": 18
+      },
+      "overrides": {
+        "resolved": 9,
+        "ambDeclOnly": 6,
+        "total": 15
+      },
+      "exports": {
+        "resolved": 274,
+        "ambDeclOnly": 32,
+        "total": 306
+      },
+      "calls": {
+        "resolved": 29,
+        "ambDeclOnly": 5,
+        "total": 34
+      }
+    },
+    "after": {
+      "references": {
+        "resolved": 203,
+        "unresolved": 80,
+        "total": 283
+      },
+      "contains": {
+        "resolved": 481,
+        "total": 481
+      },
+      "uses": {
+        "resolved": 18,
+        "total": 18
+      },
+      "overrides": {
+        "resolved": 15,
+        "total": 15
+      },
+      "exports": {
+        "resolved": 306,
+        "total": 306
+      },
+      "calls": {
+        "resolved": 34,
+        "total": 34
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 97,
+    "before": {
+      "ambDeclOnly": 82
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 1008,
+    "falseBindings": 0
+  }
+}

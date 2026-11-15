@@ -1,0 +1,284 @@
+{
+  "generatedAt": "2026-09-28T08:51:55.888Z",
+  "analyzer": "src/ast/real-ruby-analyzer.ts",
+  "grammarNodeTypes": 284,
+  "distinctCompared": [
+    "ERROR",
+    "alias",
+    "array_pattern",
+    "as_pattern",
+    "assignment",
+    "block",
+    "block_parameters",
+    "call",
+    "calls",
+    "case",
+    "class",
+    "class_variable",
+    "constant",
+    "contains",
+    "defined?",
+    "destructured_parameter",
+    "do_block",
+    "elsif",
+    "exception_variable",
+    "exports",
+    "extends",
+    "find_pattern",
+    "global_variable",
+    "hash_key_symbol",
+    "identifier",
+    "if",
+    "if_modifier",
+    "implements",
+    "imports",
+    "in_clause",
+    "instance_variable",
+    "instantiates",
+    "keyword_parameter",
+    "keyword_pattern",
+    "lambda_parameters",
+    "method",
+    "method_parameters",
+    "module",
+    "operator_assignment",
+    "optional_parameter",
+    "overrides",
+    "program",
+    "references",
+    "rescue",
+    "rescue_modifier",
+    "scope_resolution",
+    "simple_symbol",
+    "singleton_class",
+    "singleton_method",
+    "splat_parameter",
+    "string",
+    "unary",
+    "undef",
+    "unless",
+    "unless_modifier",
+    "until",
+    "until_modifier",
+    "uses",
+    "while",
+    "while_modifier"
+  ],
+  "f1Collects": [
+    "ERROR",
+    "array_pattern",
+    "as_pattern",
+    "assignment",
+    "block",
+    "block_parameters",
+    "call",
+    "case",
+    "constant",
+    "defined?",
+    "destructured_parameter",
+    "do_block",
+    "elsif",
+    "exception_variable",
+    "find_pattern",
+    "hash_key_symbol",
+    "identifier",
+    "if",
+    "if_modifier",
+    "in_clause",
+    "instance_variable",
+    "keyword_parameter",
+    "keyword_pattern",
+    "lambda_parameters",
+    "method_parameters",
+    "operator_assignment",
+    "optional_parameter",
+    "rescue",
+    "rescue_modifier",
+    "scope_resolution",
+    "simple_symbol",
+    "splat_parameter",
+    "string",
+    "unary",
+    "unless",
+    "unless_modifier",
+    "until",
+    "until_modifier",
+    "while",
+    "while_modifier"
+  ],
+  "missedSites": [
+    {
+      "literal": "class",
+      "line": 311
+    },
+    {
+      "literal": "module",
+      "line": 419
+    },
+    {
+      "literal": "method",
+      "line": 463
+    },
+    {
+      "literal": "singleton_class",
+      "line": 532
+    },
+    {
+      "literal": "singleton_method",
+      "line": 556
+    },
+    {
+      "literal": "alias",
+      "line": 631
+    },
+    {
+      "literal": "identifier",
+      "line": 657
+    },
+    {
+      "literal": "call",
+      "line": 666
+    },
+    {
+      "literal": "program",
+      "line": 679
+    },
+    {
+      "literal": "assignment",
+      "line": 692
+    },
+    {
+      "literal": "instance_variable",
+      "line": 780
+    },
+    {
+      "literal": "unary",
+      "line": 1199
+    },
+    {
+      "literal": "call",
+      "line": 1216
+    },
+    {
+      "literal": "identifier",
+      "line": 1226
+    },
+    {
+      "literal": "instance_variable",
+      "line": 1260
+    },
+    {
+      "literal": "if",
+      "line": 1280
+    },
+    {
+      "literal": "unless",
+      "line": 1280
+    },
+    {
+      "literal": "while",
+      "line": 1280
+    },
+    {
+      "literal": "until",
+      "line": 1281
+    },
+    {
+      "literal": "case",
+      "line": 1281
+    },
+    {
+      "literal": "rescue",
+      "line": 1281
+    },
+    {
+      "literal": "elsif",
+      "line": 1282
+    },
+    {
+      "literal": "if_modifier",
+      "line": 1282
+    },
+    {
+      "literal": "unless_modifier",
+      "line": 1283
+    },
+    {
+      "literal": "while_modifier",
+      "line": 1283
+    },
+    {
+      "literal": "until_modifier",
+      "line": 1284
+    },
+    {
+      "literal": "rescue_modifier",
+      "line": 1284
+    },
+    {
+      "literal": "class_variable",
+      "line": 1294
+    },
+    {
+      "literal": "global_variable",
+      "line": 1294
+    },
+    {
+      "literal": "undef",
+      "line": 1301
+    },
+    {
+      "literal": "contains",
+      "line": 2081
+    },
+    {
+      "literal": "imports",
+      "line": 2082
+    },
+    {
+      "literal": "exports",
+      "line": 2082
+    },
+    {
+      "literal": "references",
+      "line": 2082
+    },
+    {
+      "literal": "calls",
+      "line": 2083
+    },
+    {
+      "literal": "uses",
+      "line": 2083
+    },
+    {
+      "literal": "instantiates",
+      "line": 2087
+    },
+    {
+      "literal": "extends",
+      "line": 2087
+    },
+    {
+      "literal": "implements",
+      "line": 2087
+    },
+    {
+      "literal": "overrides",
+      "line": 2091
+    }
+  ],
+  "notGrammarNodeTypes": [
+    "ERROR",
+    "contains",
+    "imports",
+    "exports",
+    "references",
+    "calls",
+    "uses",
+    "instantiates",
+    "extends",
+    "implements",
+    "overrides"
+  ]
+}

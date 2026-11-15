@@ -1,0 +1,77 @@
+{
+  "fixtureId": "lua/closure-scope",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-19/LUA-20/LUA-21, authored from the lexical-scope contract: a nested function belongs to its enclosing function regardless of the `local` keyword, an anonymous function establishes a scope, and a closure sees the enclosing scope's locals. The forbidden rows are the three pre-fix behaviours, each of which was measured on real code before being fixed. Line numbers are MEASURED from this committed file.",
+  "expectSymbols": [
+    {
+      "name": "outer",
+      "kind": "function"
+    },
+    {
+      "name": "captured",
+      "comment": "LUA-21: a local of outer, visible inside inner as an upvalue"
+    },
+    {
+      "name": "inner",
+      "kind": "function",
+      "comment": "LUA-19: nested function, scoped to outer"
+    },
+    {
+      "name": "handler",
+      "comment": "LUA-20: a top-level closure is a variable holding a function"
+    },
+    {
+      "name": "copy",
+      "comment": "a closure's own local"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "payloadCopy",
+      "comment": "control: never declared"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "outer",
+      "target": "inner",
+      "line_number": 22,
+      "comment": "LUA-19: the contains edge for a nested function names its ENCLOSING function"
+    },
+    {
+      "type": "contains",
+      "from": "outer",
+      "target": "captured",
+      "line_number": 21
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "handler",
+      "line_number": 28
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "inner",
+      "comment": "LUA-19 pre-fix: the keyword test filed a nested function under global"
+    },
+    {
+      "type": "contains",
+      "from": "outer",
+      "target": "copy",
+      "comment": "LUA-21 pre-fix: a closure's local attributed to the enclosing function"
+    },
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "copy",
+      "comment": "LUA-20 pre-fix: a top-level closure's internal return published as the FILE's export"
+    }
+  ],
+  "knownResidual": "A local declared inside a NAMELESS closure is attributed to the ENCLOSING callable, which at file scope is `global`. That is deliberate: a nameless closure has no identity of its own, and inventing one (a synthetic label like `<closure@L29>`) would fabricate a symbol to solve a scoping problem. The cost is that such a local appears at global scope, where it is not in fact global. Recorded here rather than left for a reader to trip over."
+}

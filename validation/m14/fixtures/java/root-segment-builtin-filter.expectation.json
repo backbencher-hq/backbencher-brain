@@ -1,0 +1,12 @@
+{
+ "fixtureId": "java/root-segment-builtin-filter",
+ "language": "java",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M37.21 C5: the builtin/stdlib exclusion resolves a qualified call by its ROOT segment only. `A.Logger.bar()` has root `A` (user type) and mid-chain `Logger` (stdlib root name) — the pre-fix per-segment walk dropped the call as stdlib (com.mycompany.Service.doWork died on segment `com`; foo.Logger.bar on segment `Logger`). Pin: the calls edge to bar survives; mid-chain collisions never suppress user calls.",
+ "expectSymbols": [
+  { "name": "A", "kind": "class" }
+ ],
+ "expectRelationships": [
+  { "type": "calls", "target": "bar" }
+ ]
+}

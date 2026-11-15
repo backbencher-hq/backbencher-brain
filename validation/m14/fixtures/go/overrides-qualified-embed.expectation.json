@@ -1,0 +1,64 @@
+{
+  "fixtureId": "go/overrides-qualified-embed",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE DEFECT THIS PASS SHIPPED AND THEN FIXED, which is why the file exists rather than a row added to the sibling fixture. `src/archive/zip/writer.go` declares `type Writer struct{…}` with its own `Close()` AND `type nopCloser struct{ io.Writer }` with its own `Close()`, in one file. The struct half's `mixes_in` edge publishes the embedded type as the LEAF (`Writer`, the lane's R10 convention), so the first version of the promotion walk followed `io.Writer` into the LOCAL `Writer` and published `overrides nopCloser.Close -> Close` with `metadata.targetQualified: \"Writer.Close\"` (the name-surface round moved the pair spelling off the target into metadata). The edge is false: `nopCloser`'s promoted method set comes from `io.Writer`, whose only method is `Write`, so nothing is shadowed. Rule R7's fabrication class, produced by a name-keyed lookup meeting an imported name — the same shape as the `constructor`/`toString` Object.prototype hazard the interface pass already documents. The guard reads `metadata.embeddedStruct` (the raw spelling, `io.Writer`) and refuses a qualified embed, because a qualified embed is by definition another package and this per-file analyzer does not resolve one. The FORBID rows are the pin. The EXPECT rows are what stops the guard from being satisfied by a dead pass: `LocalEmbed.Close -> Writer.Close` is a genuine same-file shadow of the very same local type through an unqualified embed, so an implementation that refused every embed would fail here rather than pass by refusing the fabricated one. `OnlyEmbeds` embeds `io.Reader` and declares nothing: the empty-closure control on the qualified side. Every line was read off the declaration in this file and the expectations were run against the FIXED analyzer, after the probe diff (`script/m14/go-overrides-diff.ts`) reported the false edge as an EXTRA on the 10 corpus files that carry same-file promotion shadowing.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "LocalEmbed.Close",
+      "target": "Close",
+      "line_number": 45,
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.sameSignature": true,
+      "meta.promotedAtDepth": 1,
+      "meta.targetQualified": "Writer.Close",
+      "meta.embedder": "Writer"
+    },
+    {
+      "type": "mixes_in",
+      "from": "nopCloser",
+      "target": "Writer"
+    },
+    {
+      "type": "mixes_in",
+      "from": "LocalEmbed",
+      "target": "Writer"
+    },
+    {
+      "type": "mixes_in",
+      "from": "OnlyEmbeds",
+      "target": "Reader"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "nopCloser.Close",
+      "target": "Close",
+      "meta.targetQualified": "Writer.Close"
+    },
+    {
+      "type": "overrides",
+      "from": "nopCloser.Close",
+      "target": "Flush",
+      "meta.targetQualified": "Writer.Flush"
+    },
+    {
+      "type": "overrides",
+      "from": "OnlyEmbeds.Read",
+      "target": "Read",
+      "meta.targetQualified": "Reader.Read"
+    },
+    {
+      "type": "overrides",
+      "from": "LocalEmbed.Close",
+      "target": "Close",
+      "meta.targetQualified": "Reader.Close"
+    },
+    {
+      "type": "overrides",
+      "target": "Flush"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  M19. A VOCABULARY DECLARATION is written on its `name=` attribute, and a
+  formatted document routinely puts the attribute, and sometimes the value
+  itself, on a different line from the tag that opens the declaration.
+
+  Three shapes, all of them ordinary formatting:
+
+    shape 1  the attribute is on the next line from the tag
+             (docx4j bind.xslt: `<xsl:with-param` / `name="content"`)
+    shape 2  the KEYWORD and the VALUE are split across lines
+             (cxf rp-2.xsd: `<xsd:element name=` / `"InvalidModificationFault"`)
+    shape 3  the value has surrounding whitespace, which the analyzer trims
+             (libxml2 spectest.xml: `name=" xmlns"`)
+
+  Every declaration below is on a line that is NOT its tag's line, so a reader
+  following the reported line to the element would land one or two lines above
+  the string that spells the name. The expectation asserts the NAME's line for
+  both the symbol and the `contains` edge, which is the whole of M19.
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="urn:example:m19">
+  <xsd:element name=
+      "SplitKeywordAndValue"
+      type="xsd:string"/>
+  <xsd:complexType name="SplitKeywordAndValueType">
+    <xsd:attribute
+        name="AttrOnNextLine"
+        type="xsd:string"/>
+    <xsd:attribute name="AttrWithSpace" type="xsd:string"/>
+    <xsd:attribute
+        name=
+          "AttrKeywordSplitToo"
+        type="xsd:string"/>
+  </xsd:complexType>
+  <xsd:element name="  TrimmedName  " type="xsd:string"/>
+  <xsd:attribute name="TopLevelOnNextLine"
+                 type="xsd:string"/>
+</xsd:schema>

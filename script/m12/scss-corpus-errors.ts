@@ -39,7 +39,7 @@ import { execFileSync } from "child_process"
 import { join } from "path"
 
 const ROOT = process.cwd()
-const CORPUS = "$HOME/fixtures/repositories/element-plus"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/element-plus"
 const EXT = ".scss"
 const OUT = join(ROOT, "validation/m12/results/scss-corpus-errors.json")
 const SAMPLE = join(ROOT, "validation/m12/results/scss-corpus-sample.txt")

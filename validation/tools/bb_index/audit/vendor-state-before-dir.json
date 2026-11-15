@@ -1,0 +1,22 @@
+{
+ "projectId": "069354f5b81f8d1bc3ca023fb4083087b59e40bf",
+ "files": 3,
+ "symbols": 3,
+ "relationships": 6,
+ "needle": "VENDORED",
+ "matches": [
+  {
+   "name": "VENDORED_HELPER_SYM",
+   "file_id": "069354f5b81f8d1bc3ca023fb4083087b59e40bf:vendor/lib/helper.ts"
+  },
+  {
+   "name": "formatVendored",
+   "file_id": "069354f5b81f8d1bc3ca023fb4083087b59e40bf:src/vendor/format.ts"
+  }
+ ],
+ "vendorFiles": [
+  "src/main.ts",
+  "src/vendor/format.ts",
+  "vendor/lib/helper.ts"
+ ]
+}

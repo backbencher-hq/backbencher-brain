@@ -1,0 +1,153 @@
+{
+  "fixtureId": "groovy/exports-publication",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M60 ontology `exports` LABEL for groovy. Groovy has no `export` keyword, so this label is NOT read off a directive: it is the M49 converged family doctrine the analyzer's own ExportInfo list already implements — exports = the IMPORTABLE UNITS, i.e. top-level types and top-level (script) methods (reviews/jvm-closure-audit.md, 'the exports fork', resolved 2026-09-10). Before this change the analyzer computed that set and stored it as ExportInfo with no relationship behind it: nothing in src/ turns ParseResult.exports into edges, so every publication was computed and dropped. Four rules are load-bearing and each is a language rule, not a convenience: (1) a top-level type in a NAMED package is importable because the compiler writes <pkg>/<Name>.class and `import <pkg>.<Name>` resolves to it, so the SOURCE is the package and source + \".\" + target reconstructs exactly the dotted name an `imports` edge targets; (2) a MEMBER is never published — membership rides Contains, so `describe` and `greet` must not appear here, and an ENUM MEMBER (`RED`) must not either; (3) a script METHOD is published (it compiles to a method of the script class and `import <pkg>.<Script>.<method>` resolves to it), so scriptHelper/otherHelper must appear; (4) a type in the DEFAULT package has no importable name and is not published — forbidden by `default-package-unit` below, which is the condition a visibility-blind or package-blind implementation would fabricate; (5) a top-level type that is NOT public is not importable from another file, so `private class Hidden` and `protected class Shielded` are forbidden as EDGES — the corpus has 5 and 1 of those respectively, so a visibility-blind rule fabricates on real code, not only in this fixture. The package and visibility gates apply to the EDGE only and deliberately NOT to the ExportInfo list: the list keeps the M49 top-level-unit rule it was converged to, and two existing convergence pins (`groovy/trait-exports`, `groovy/anon-exports`) assert that list for files which declare no package. So the two representations differ, and the difference is stated rather than papered over — an edge asserts \"an importer resolves this name\" (which the package and visibility rules govern) and the list asserts \"this file declares a top-level unit\" (which they do not). That is why `Hidden`/`Shielded` are absent from `expectExports` and present in `forbidRelationships`. RE-PIN 2026-10-22, the METADATA VOCABULARY only: the `relationshipType` is `groovy_exportable_unit` with `exportForm`, not `exported_type`/`exported_function`. That is the Lead-adjudicated vocabulary for the whole family (validation/m14/fixtures/java/exported-types.expectation.json, Lead ruling task-9, 2026-10-18: \"the `exported_type` relationshipType was superseded by `java_exportable_unit` when the export edge was folded into ONE post-pass ... the surviving channel is the one with the RICHER metadata\"), and java's surviving row carries `kind` + `dottedName` + the `is<Lang>Export` flag, which is what this re-pin adds. The SET is unchanged and is the M49 exports convergence (reviews/jvm-closure-audit.md:27, user-approved): exports = importable units = top-level types AND top-level functions. A top-level `def helper() {}` in a packaged compilation unit is a method of the SCRIPT CLASS and an importer binds it with `import static <pkg>.<Script>.<method>`, so it IS reachable from another file - which is what the `exports` edge asserts. groovy/exports-publication-edge's `topLevelHelper` forbid encoded the PRE-convergence \"types only\" set and is re-pinned to match.",
+  "expectSymbols": [
+    {
+      "name": "Publisher",
+      "kind": "class"
+    },
+    {
+      "name": "Greeter",
+      "kind": "interface"
+    },
+    {
+      "name": "Shade",
+      "kind": "enum"
+    },
+    {
+      "name": "describe",
+      "kind": "method",
+      "ownerName": "Publisher"
+    },
+    {
+      "name": "greet",
+      "kind": "method",
+      "ownerName": "Greeter"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Publisher"
+    },
+    {
+      "name": "Greeter"
+    },
+    {
+      "name": "Shade"
+    },
+    {
+      "name": "scriptHelper"
+    },
+    {
+      "name": "otherHelper"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "describe"
+    },
+    {
+      "name": "greet"
+    },
+    {
+      "name": "label"
+    },
+    {
+      "name": "RED"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "Publisher",
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isGroovyExport": true,
+      "meta.kind": "class",
+      "meta.dottedName": "com.acme.pub.Publisher",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "Greeter",
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isGroovyExport": true,
+      "meta.kind": "interface",
+      "meta.dottedName": "com.acme.pub.Greeter",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "Shade",
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isGroovyExport": true,
+      "meta.kind": "enum",
+      "meta.dottedName": "com.acme.pub.Shade",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "scriptHelper",
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_function",
+      "meta.isGroovyExport": true,
+      "meta.kind": "method",
+      "meta.dottedName": "com.acme.pub.scriptHelper",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "otherHelper",
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_function",
+      "meta.isGroovyExport": true,
+      "meta.kind": "method",
+      "meta.dottedName": "com.acme.pub.otherHelper",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "describe"
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "greet"
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "label"
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "RED"
+    },
+    {
+      "type": "exports",
+      "target": "Hidden"
+    },
+    {
+      "type": "exports",
+      "target": "Shielded"
+    }
+  ]
+}

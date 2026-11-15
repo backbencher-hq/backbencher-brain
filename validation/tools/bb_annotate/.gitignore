@@ -1,0 +1,4 @@
+# This lane's working state: fixture projects/indexes and run logs are evidence
+# inputs, not source. They are reproducible from the scripts in this directory.
+work/
+bbdata/

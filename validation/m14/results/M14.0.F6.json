@@ -1,0 +1,216 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "692a74a05ba6a01ffd46105fa3d7b4ca684716f050d1a0bfc798a8bc043a0a04",
+    "sealedAt": "2026-11-13T02:09:25.000Z"
+  },
+  "checks": [
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (71 spec types, 199 fixture types)",
+      "id": "fixture-coverage-java",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (73 spec types, 212 fixture types)",
+      "id": "fixture-coverage-groovy",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (68 spec types, 198 fixture types)",
+      "id": "fixture-coverage-kotlin",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (135 spec types, 202 fixture types)",
+      "id": "fixture-coverage-scala",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (109 spec types, 237 fixture types)",
+      "id": "fixture-coverage-typescript",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (89 spec types, 175 fixture types)",
+      "id": "fixture-coverage-javascript",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (22 spec types, 29 fixture types)",
+      "id": "fixture-coverage-vue",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (34 spec types, 78 fixture types)",
+      "id": "fixture-coverage-svelte",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (25 spec types, 169 fixture types)",
+      "id": "fixture-coverage-c",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (44 spec types, 219 fixture types)",
+      "id": "fixture-coverage-cpp",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (43 spec types, 179 fixture types)",
+      "id": "fixture-coverage-rust",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (40 spec types, 133 fixture types)",
+      "id": "fixture-coverage-go",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (17 spec types, 135 fixture types)",
+      "id": "fixture-coverage-zig",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (52 spec types, 203 fixture types)",
+      "id": "fixture-coverage-csharp",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (111 spec types, 262 fixture types)",
+      "id": "fixture-coverage-dart",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (60 spec types, 197 fixture types)",
+      "id": "fixture-coverage-swift",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (44 spec types, 171 fixture types)",
+      "id": "fixture-coverage-objc",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (67 spec types, 202 fixture types)",
+      "id": "fixture-coverage-php",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (120 spec types, 181 fixture types)",
+      "id": "fixture-coverage-ruby",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (70 spec types, 154 fixture types)",
+      "id": "fixture-coverage-python",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (54 spec types, 126 fixture types)",
+      "id": "fixture-coverage-haskell",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (16 spec types, 45 fixture types)",
+      "id": "fixture-coverage-clojure",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (22 spec types, 85 fixture types)",
+      "id": "fixture-coverage-elixir",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (102 spec types, 169 fixture types)",
+      "id": "fixture-coverage-clean",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (14 spec types, 26 fixture types)",
+      "id": "fixture-coverage-html",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (18 spec types, 29 fixture types)",
+      "id": "fixture-coverage-toml",
+      "status": "pass",
+      "uncovered": []
+    },
+    {
+      "deadLiterals": [],
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (104 spec types, 178 fixture types)",
+      "id": "fixture-coverage-erlang",
+      "status": "pass",
+      "uncovered": []
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "e83c1c5458bfaf4c729c206c973a8c28878fbdd7",
+  "committedAt": "2026-11-12T21:09:25-05:00",
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F6",
+  "layers": [
+    "fixtures"
+  ],
+  "limitations": [
+    {
+      "description": "Coverage checked against single-file fixtures; per-language multi-file construct families (e.g. cross-file extends) rely on the differential gate instead"
+    }
+  ],
+  "regeneratedAt": "2026-11-12T21:09:25-05:00",
+  "regeneratedAtCommit": "e83c1c5458bfaf4c729c206c973a8c28878fbdd7",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Fixture-coverage gate: spec-handled node types must be exercised by fixtures; no dead analyzer literals"
+}

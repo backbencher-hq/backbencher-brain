@@ -1,7 +1,7 @@
 {
   "probe": "M50.A2-latency",
   "at": "2026-09-12T03:58:34.483Z",
-  "repo": "$HOME/mcp/backbencher-brain",
+  "repo": "/home/ishaq2321/mcp/backbencher-brain",
   "runtime": "node bin/bb mcp (production shape)",
   "launches": 3,
   "measuredPerLaunch": 3,

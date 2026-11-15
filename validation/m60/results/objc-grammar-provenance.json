@@ -1,0 +1,6800 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C grammar provenance: wired bytes vs a rebuild of the committed patched source vs pristine upstream",
+  "generatedAt": "2026-09-30T02:48:13.351Z",
+  "why": "objc runs a PATCHED vendored grammar and was one of 21 UNPINNED lanes, which is the worst case for a pin: the pin exists to catch 'the wired bytes are not a build of the source we think they are', and a patched grammar is exactly where that happens — grammar.js is edited, rebuilt, and nothing downstream notices. Identity is claimed on SURFACE and BEHAVIOUR, never on bytes, because a wasm build carries its emscripten version, compiler flags and section order.",
+  "builds": {
+    "wired": {
+      "path": "wasm/tree-sitter-objc.wasm",
+      "bytes": 5625072,
+      "sha256": "520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb"
+    },
+    "rebuild": {
+      "path": "/tmp/opencode/tsbuild/rebuild-objc.wasm",
+      "bytes": 5625079,
+      "sha256": "543ae3138397a0bd865a6741d2c70a3a806988b59e677f8de1f1576a66120553",
+      "of": "a fresh build of the committed patched source in grammars/tree-sitter-objc"
+    },
+    "pristine": {
+      "path": "/tmp/opencode/tsbuild/pristine-objc/package/tree-sitter-objc.wasm",
+      "bytes": 5317155,
+      "sha256": "155bf61fc94941fa9d07c86cd46895f14dfb2549fb7f646faeb83765af05c970",
+      "of": "npm tree-sitter-objc@3.0.2's own published wasm"
+    }
+  },
+  "byteIdentity": {
+    "wiredEqualsPristine": false,
+    "wiredEqualsRebuild": false,
+    "note": "expected false for both, and the reason identity is claimed on surface/behaviour instead"
+  },
+  "surface": {
+    "wired": {
+      "uniqueNamed": 421
+    },
+    "rebuild": {
+      "uniqueNamed": 421
+    },
+    "pristine": {
+      "uniqueNamed": 413
+    },
+    "wiredVsRebuild": {
+      "onlyInFirst": [],
+      "onlyInSecond": []
+    },
+    "wiredVsPristine": {
+      "onlyInFirst": [
+        "_method_trailing_modifiers",
+        "availability_macro_specifier",
+        "availability_macro_specifier_repeat1",
+        "macro_enum_arguments",
+        "macro_enum_arguments_repeat1",
+        "macro_prefixed_objc_declaration",
+        "macro_specifier",
+        "method_declaration_repeat3"
+      ],
+      "onlyInSecond": []
+    }
+  },
+  "patchEvidence": {
+    "patchAdds": [
+      "_method_trailing_modifiers",
+      "availability_macro_specifier",
+      "availability_macro_specifier_repeat1",
+      "macro_enum_arguments",
+      "macro_enum_arguments_repeat1",
+      "macro_prefixed_objc_declaration",
+      "macro_specifier",
+      "method_declaration_repeat3"
+    ],
+    "patchAddsDerivedFrom": "the wired-vs-pristine named-surface diff, so a hand-written list cannot report a rule as a missing node type",
+    "patchRulesWithNoNodeType": [
+      "macro_enum_specifier"
+    ],
+    "presentInWired": [
+      "_method_trailing_modifiers",
+      "availability_macro_specifier",
+      "availability_macro_specifier_repeat1",
+      "macro_enum_arguments",
+      "macro_enum_arguments_repeat1",
+      "macro_prefixed_objc_declaration",
+      "macro_specifier",
+      "method_declaration_repeat3"
+    ],
+    "absentFromPristine": [
+      "_method_trailing_modifiers",
+      "availability_macro_specifier",
+      "availability_macro_specifier_repeat1",
+      "macro_enum_arguments",
+      "macro_enum_arguments_repeat1",
+      "macro_prefixed_objc_declaration",
+      "macro_specifier",
+      "method_declaration_repeat3"
+    ],
+    "ABSENT_FROM_WIRED": [],
+    "additiveAtNodeTypeLevel": true
+  },
+  "sourceVsWasm": {
+    "nodeTypesJson": "grammars/tree-sitter-objc/src/node-types.json",
+    "declaredNamed": 195,
+    "wasmNamedUnique": 421,
+    "missingInWasm": []
+  },
+  "behaviour": {
+    "universe": {
+      "repos": [
+        "sdwebimage",
+        "afnetworking",
+        "Clyde"
+      ],
+      "files": 329
+    },
+    "totals": {
+      "wired": {
+        "sym": 5095,
+        "rel": 24226,
+        "err": 158
+      },
+      "rebuild": {
+        "sym": 5095,
+        "rel": 24226,
+        "err": 158
+      },
+      "pristine": {
+        "sym": 4779,
+        "rel": 23754,
+        "err": 622
+      }
+    },
+    "wiredVsRebuild": {
+      "filesDiffering": 0,
+      "files": []
+    },
+    "wiredVsPristine": {
+      "filesDiffering": 47,
+      "files": [
+        "sdwebimage/Examples/SDWebImage OSX Demo/WindowController.h",
+        "sdwebimage/SDWebImage/Core/SDAnimatedImage.h",
+        "sdwebimage/SDWebImage/Core/SDAnimatedImagePlayer.h",
+        "sdwebimage/SDWebImage/Core/SDAnimatedImageView.h",
+        "sdwebimage/SDWebImage/Core/SDCallbackQueue.h",
+        "sdwebimage/SDWebImage/Core/SDGraphicsImageRenderer.h",
+        "sdwebimage/SDWebImage/Core/SDImageCache.h",
+        "sdwebimage/SDWebImage/Core/SDImageCacheConfig.h",
+        "sdwebimage/SDWebImage/Core/SDImageCacheDefine.h",
+        "sdwebimage/SDWebImage/Core/SDImageCachesManager.h",
+        "sdwebimage/SDWebImage/Core/SDImageCoderHelper.h",
+        "sdwebimage/SDWebImage/Core/SDImageLoader.h",
+        "sdwebimage/SDWebImage/Core/SDWebImageDownloader.h",
+        "sdwebimage/SDWebImage/Core/SDWebImageDownloaderConfig.h",
+        "sdwebimage/SDWebImage/Core/SDWebImageTransition.h",
+        "sdwebimage/SDWebImage/Core/UIImage+Transform.h",
+        "sdwebimage/SDWebImage/Core/UIView+WebCache.h",
+        "sdwebimage/SDWebImage/Private/SDImageFramePool.h",
+        "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImage.h",
+        "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImagePlayer.h"
+      ]
+    }
+  },
+  "vendored": {
+    "dir": "grammars/tree-sitter-objc",
+    "fileCount": 13,
+    "files": {
+      "queries/injections.scm": {
+        "sha256": "567f5dabcabdf8287bd92a073397aa0646aef97770fa57c0b357f0e64ddee16d",
+        "bytes": 246
+      },
+      "queries/indents.scm": {
+        "sha256": "e721d3ecb16a6bb63c84329693d5756b63e1aa3d3732f03631921bfa0d13d536",
+        "bytes": 14
+      },
+      "queries/locals.scm": {
+        "sha256": "e721d3ecb16a6bb63c84329693d5756b63e1aa3d3732f03631921bfa0d13d536",
+        "bytes": 14
+      },
+      "queries/highlights.scm": {
+        "sha256": "ce7e30b5aab3d659a096812d8c227e83cd9bbb60470eb44def45bd5cb7737386",
+        "bytes": 4248
+      },
+      "queries/folds.scm": {
+        "sha256": "ab98525c9291c1d2bfc1047ef321cd34c754f965526b7f1c4dc00c2e1f643ebf",
+        "bytes": 360
+      },
+      "grammar.js": {
+        "sha256": "9ee70dc5a051c8769c146867147f0ad88eedd44257bfa180d3a919e8654dd0c6",
+        "bytes": 55510
+      },
+      "LICENSE": {
+        "sha256": "099c44248f8cf353123211318680e93465587c005a4b3730ce8cb5334de043d6",
+        "bytes": 1101
+      },
+      "README.md": {
+        "sha256": "5213606f6965e8c83e1079e5c21ece292363a8f347d6bdc4f65375206f258e3a",
+        "bytes": 1141
+      },
+      "package.json": {
+        "sha256": "0e0d6eda6e8672d9dab1fe52913709050b7666c6165c0d9deb802dca90b15465",
+        "bytes": 1250
+      },
+      "PIN.md": {
+        "sha256": "beb2356beb67d153877d5dd4801c6a5589cdf2b09a9ef5fdc5c1de60dcc9222d",
+        "bytes": 10613
+      },
+      "tree-sitter.json": {
+        "sha256": "bb1b866da701577051d738becbc7bcb43087c8481a33ce2e5c1a7c433b95546f",
+        "bytes": 937
+      },
+      "src/node-types.json": {
+        "sha256": "3522e1dfa30c73e715f1b1894cb0ec244671290b1967bd79ac6cdbe7d53b257d",
+        "bytes": 140543
+      },
+      "src/grammar.json": {
+        "sha256": "a19a9c6fb5db88367a4659b901f593dd985f8bf72f6c991d3fba3a1eb47a43df",
+        "bytes": 416570
+      }
+    }
+  },
+  "verdict": "HONEST: the wired bytes are a build of the committed patched source (surface identical in both directions, analyzer output identical on all 329 routed files), and the patches are live (8 node types present in WIRED and all absent from pristine, zero the other way; 1 added RULES have no node type by design — macro_enum_specifier). Pristine is worse on the corpus: 622 ERROR nodes vs 158 for WIRED, 4779 vs 5095 symbols, 23754 vs 24226 relationships.",
+  "rows": [
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 34
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 34
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 34
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/DetailViewController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/DetailViewController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 43
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 43
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 43
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 89
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 89
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 89
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Demo/main.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/AppDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/AppDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 15
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 15
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 15
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/ViewController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/ViewController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 70
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 70
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 70
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/WindowController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 1,
+        "symbols": 0,
+        "relationships": 1
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/WindowController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 1
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 1
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 1
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/main.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage TV Demo/AppDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage TV Demo/AppDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 12
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 12
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 12
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage TV Demo/ViewController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage TV Demo/ViewController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 16
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 16
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 16
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage TV Demo/main.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Watch Demo Extension/ExtensionDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Watch Demo Extension/ExtensionDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Watch Demo Extension/InterfaceController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Watch Demo Extension/InterfaceController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 39
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 39
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 39
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Watch Demo Extension/NotificationController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage Watch Demo Extension/NotificationController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSButton+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 24
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 24
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSButton+WebCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 130
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 130
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 130
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSData+ImageContentType.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSData+ImageContentType.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 29
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 29
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 29
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSImage+Compatibility.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSImage+Compatibility.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 85
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 85
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 85
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImage.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 36
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 36
+      },
+      "pristine": {
+        "errors": 24,
+        "symbols": 10,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImage.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 279
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 279
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 279
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImagePlayer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 27
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 27
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 20,
+        "relationships": 23
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImagePlayer.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 34,
+        "relationships": 157
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 34,
+        "relationships": 157
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 34,
+        "relationships": 157
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageRep.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageRep.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 52
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 52
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 52
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView+WebCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 61
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 61
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 61
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 36,
+        "symbols": 19,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "wired": {
+        "errors": 8,
+        "symbols": 61,
+        "relationships": 212
+      },
+      "rebuild": {
+        "errors": 8,
+        "symbols": 61,
+        "relationships": 212
+      },
+      "pristine": {
+        "errors": 8,
+        "symbols": 61,
+        "relationships": 212
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDCallbackQueue.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 15
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 15
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDCallbackQueue.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 54
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 54
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 54
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDDiskCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 19
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDDiskCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 201
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 201
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 201
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDGraphicsImageRenderer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 16
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 16
+      },
+      "pristine": {
+        "errors": 2,
+        "symbols": 11,
+        "relationships": 12
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDGraphicsImageRenderer.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 72
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 72
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 72
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageAPNGCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageAPNGCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 17
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 17
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 17
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageAWebPCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageAWebPCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 32
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 32
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 32
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCache.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 55,
+        "relationships": 62
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 55,
+        "relationships": 62
+      },
+      "pristine": {
+        "errors": 4,
+        "symbols": 46,
+        "relationships": 54
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 77,
+        "relationships": 501
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 77,
+        "relationships": 501
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 77,
+        "relationships": 501
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCacheConfig.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 25
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 25
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 19,
+        "relationships": 21
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCacheConfig.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 18
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 18
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 18
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCacheDefine.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 25
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 25
+      },
+      "pristine": {
+        "errors": 22,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCacheDefine.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 64
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 64
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 64
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCachesManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 17
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 17
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCachesManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 317
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 317
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 317
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 39,
+        "relationships": 24
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 39,
+        "relationships": 24
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 39,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 1
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 1
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 1
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 38
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 38
+      },
+      "pristine": {
+        "errors": 9,
+        "symbols": 28,
+        "relationships": 29
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.m",
+      "wired": {
+        "errors": 1,
+        "symbols": 42,
+        "relationships": 486
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 42,
+        "relationships": 486
+      },
+      "pristine": {
+        "errors": 1,
+        "symbols": 42,
+        "relationships": 486
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCodersManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCodersManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 89
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 89
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 89
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageFrame.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageFrame.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageGIFCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageGIFCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 17
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 17
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 17
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageGraphics.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 61
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 61
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 61
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageHEICCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageHEICCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 33
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 33
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 33
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.m",
+      "wired": {
+        "errors": 3,
+        "symbols": 67,
+        "relationships": 560
+      },
+      "rebuild": {
+        "errors": 3,
+        "symbols": 67,
+        "relationships": 560
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 67,
+        "relationships": 560
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 224
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 224
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 224
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageLoader.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 18
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 18
+      },
+      "pristine": {
+        "errors": 24,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageLoader.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 86
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 86
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 86
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageLoadersManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageLoadersManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 77
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 77
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 77
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageTransformer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 64
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 64
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 64
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageTransformer.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 71,
+        "relationships": 189
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 71,
+        "relationships": 189
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 71,
+        "relationships": 189
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDMemoryCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 19
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDMemoryCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 87
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 87
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 87
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageCacheKeyFilter.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageCacheKeyFilter.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageCacheSerializer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageCacheSerializer.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 15
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 15
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 15
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageCompat.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 0,
+        "relationships": 1
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 0,
+        "relationships": 1
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 0,
+        "relationships": 1
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDefine.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 31,
+        "relationships": 61
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 31,
+        "relationships": 61
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 31,
+        "relationships": 61
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloader.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 44,
+        "relationships": 47
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 44,
+        "relationships": 47
+      },
+      "pristine": {
+        "errors": 4,
+        "symbols": 30,
+        "relationships": 34
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloader.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 352
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 352
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 352
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderConfig.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 18
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 18
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderConfig.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 25
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 25
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 25
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderDecryptor.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 10
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 10
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 10
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderDecryptor.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 23
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 23
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 23
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 29
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 29
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 29
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderOperation.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 56,
+        "relationships": 365
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 56,
+        "relationships": 365
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 56,
+        "relationships": 365
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderRequestModifier.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderRequestModifier.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 33
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 33
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 33
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderResponseModifier.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloaderResponseModifier.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 39
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 39
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 39
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageError.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 1
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 1
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 1
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageIndicator.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 20
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageIndicator.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 87
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 87
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 87
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 37
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 37
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 37
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 402
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 402
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 402
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageOperation.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 1
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 1
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 1
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageOptionsProcessor.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageOptionsProcessor.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 21
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 21
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 21
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImagePrefetcher.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 22
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 22
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 22
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImagePrefetcher.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 203
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 203
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 46,
+        "relationships": 203
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageTransition.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 38,
+        "relationships": 37
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 38,
+        "relationships": 37
+      },
+      "pristine": {
+        "errors": 5,
+        "symbols": 24,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageTransition.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 54
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 54
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 54
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIButton+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 28
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 28
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 28
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIButton+WebCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 176
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 176
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 176
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+ExtendedCacheData.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+ExtendedCacheData.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+ForceDecode.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+ForceDecode.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 21
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 21
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 21
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+GIF.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+GIF.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+MemoryCacheCost.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+MemoryCacheCost.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 23
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 23
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 23
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+Metadata.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+Metadata.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 144
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 144
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 144
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+MultiFormat.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+MultiFormat.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 48
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 48
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 48
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+Transform.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 6,
+        "symbols": 13,
+        "relationships": 12
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImage+Transform.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 434
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 434
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 434
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImageView+HighlightedWebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImageView+HighlightedWebCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 57
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 57
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 57
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImageView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIImageView+WebCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 63
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 63
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 63
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 5,
+        "symbols": 9,
+        "relationships": 14
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "wired": {
+        "errors": 8,
+        "symbols": 20,
+        "relationships": 204
+      },
+      "rebuild": {
+        "errors": 8,
+        "symbols": 20,
+        "relationships": 204
+      },
+      "pristine": {
+        "errors": 8,
+        "symbols": 20,
+        "relationships": 204
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCacheOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCacheOperation.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 42
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 42
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 42
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCacheState.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCacheState.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 24
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 24
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/NSBezierPath+SDRoundedCorners.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/NSBezierPath+SDRoundedCorners.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 28
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 28
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 28
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDAssociatedObject.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDAsyncBlockOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDAsyncBlockOperation.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 33
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 33
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 33
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDDeviceHelper.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDDeviceHelper.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 34
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 34
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 34
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDDisplayLink.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 12
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 12
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 12
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDDisplayLink.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 107
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 107
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 107
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDFileAttributeHelper.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDFileAttributeHelper.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 88
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 88
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 88
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageAssetManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageAssetManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 71
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 71
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 71
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageCachesManagerOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 10
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 10
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 10
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageCachesManagerOperation.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 38
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 38
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 38
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageFramePool.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 14
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 14
+      },
+      "pristine": {
+        "errors": 10,
+        "symbols": 4,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageFramePool.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 21,
+        "relationships": 82
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 21,
+        "relationships": 82
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 21,
+        "relationships": 82
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageIOAnimatedCoderInternal.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDInternalMacros.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDWeakProxy.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDWeakProxy.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 40
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 40
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 40
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/UIColor+SDHexString.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/UIColor+SDHexString.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/NSButton+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 24
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 24
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/NSData+ImageContentType.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/NSImage+Compatibility.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImage.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 36
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 36
+      },
+      "pristine": {
+        "errors": 24,
+        "symbols": 10,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImagePlayer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 27
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 27
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 20,
+        "relationships": 23
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImageRep.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImageView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDAnimatedImageView.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 36,
+        "symbols": 19,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDCallbackQueue.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 15
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 15
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDDiskCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 19
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDGraphicsImageRenderer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 16
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 16
+      },
+      "pristine": {
+        "errors": 2,
+        "symbols": 11,
+        "relationships": 12
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageAPNGCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageAWebPCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCache.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 55,
+        "relationships": 62
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 55,
+        "relationships": 62
+      },
+      "pristine": {
+        "errors": 4,
+        "symbols": 46,
+        "relationships": 54
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCacheConfig.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 25
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 25
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 19,
+        "relationships": 21
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCacheDefine.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 25
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 25
+      },
+      "pristine": {
+        "errors": 22,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCachesManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 17
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 17
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 39,
+        "relationships": 24
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 39,
+        "relationships": 24
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 39,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCoderHelper.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 38
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 38
+      },
+      "pristine": {
+        "errors": 9,
+        "symbols": 28,
+        "relationships": 29
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCodersManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageFrame.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageGIFCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageHEICCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageIOAnimatedCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageIOCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageLoader.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 18
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 18
+      },
+      "pristine": {
+        "errors": 24,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageLoadersManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageTransformer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 64
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 64
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 62,
+        "relationships": 64
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDMemoryCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 19
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageCacheKeyFilter.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageCacheSerializer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloader.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 44,
+        "relationships": 47
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 44,
+        "relationships": 47
+      },
+      "pristine": {
+        "errors": 4,
+        "symbols": 30,
+        "relationships": 34
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloaderConfig.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 18
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 18
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloaderDecryptor.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 10
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 10
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 10
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloaderOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 29
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 29
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 18,
+        "relationships": 29
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloaderRequestModifier.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloaderResponseModifier.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageIndicator.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 20
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 37
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 37
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 28,
+        "relationships": 37
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageOptionsProcessor.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 16
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImagePrefetcher.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 22
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 22
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 22
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageTransition.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 38,
+        "relationships": 37
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 38,
+        "relationships": 37
+      },
+      "pristine": {
+        "errors": 5,
+        "symbols": 24,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIButton+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 28
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 28
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 28
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+ExtendedCacheData.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+ForceDecode.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+GIF.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+MemoryCacheCost.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+Metadata.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+MultiFormat.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImage+Transform.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 6,
+        "symbols": 13,
+        "relationships": 12
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImageView+HighlightedWebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIImageView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 5,
+        "symbols": 9,
+        "relationships": 14
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIView+WebCacheOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/UIView+WebCacheState.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImageMapKit/MapKit/MKAnnotationView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImageMapKit/MapKit/MKAnnotationView+WebCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 55
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 55
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 55
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/SDWebImageMapKit/include/SDWebImageMapKit/MKAnnotationView+WebCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 11
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDAnimatedImageTest.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 52,
+        "relationships": 754
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 52,
+        "relationships": 754
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 52,
+        "relationships": 754
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDCategoriesTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 61
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 61
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 61
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDImageCacheTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 61,
+        "relationships": 982
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 61,
+        "relationships": 982
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 61,
+        "relationships": 982
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDImageCoderTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 44,
+        "relationships": 870
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 44,
+        "relationships": 870
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 44,
+        "relationships": 870
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDImageTransformerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 506
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 506
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 38,
+        "relationships": 506
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDMockFileManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDMockFileManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 14
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 14
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 14
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDTestCase.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 10
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 10
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 10
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDTestCase.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 32
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 32
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 32
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDUtilsTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 192
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 192
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 192
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebCacheCategoriesTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 29,
+        "relationships": 628
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 29,
+        "relationships": 628
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 29,
+        "relationships": 628
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageDownloaderTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 42,
+        "relationships": 808
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 42,
+        "relationships": 808
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 42,
+        "relationships": 808
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageManagerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 26,
+        "relationships": 677
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 26,
+        "relationships": 677
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 26,
+        "relationships": 677
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImagePrefetcherTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 154
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 154
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 154
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 19
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 32,
+        "relationships": 203
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 32,
+        "relationships": 203
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 32,
+        "relationships": 203
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestCoder.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestCoder.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 27
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 27
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 27
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestDownloadOperation.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestDownloadOperation.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 40
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 40
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 40
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestLoader.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestLoader.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 47
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 47
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 47
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestTransformer.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDWebImageTestTransformer.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFHTTPSessionManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 33
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 33
+      },
+      "pristine": {
+        "errors": 54,
+        "symbols": 4,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFHTTPSessionManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 212
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 212
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 212
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 22
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 24,
+        "relationships": 22
+      },
+      "pristine": {
+        "errors": 14,
+        "symbols": 9,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.m",
+      "wired": {
+        "errors": 3,
+        "symbols": 30,
+        "relationships": 114
+      },
+      "rebuild": {
+        "errors": 3,
+        "symbols": 30,
+        "relationships": 114
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 30,
+        "relationships": 114
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFSecurityPolicy.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 17
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 14,
+        "relationships": 17
+      },
+      "pristine": {
+        "errors": 16,
+        "symbols": 5,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFSecurityPolicy.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 22,
+        "relationships": 162
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 22,
+        "relationships": 162
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 22,
+        "relationships": 162
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLRequestSerialization.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 44,
+        "relationships": 44
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 44,
+        "relationships": 44
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 42,
+        "relationships": 43
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLRequestSerialization.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 151,
+        "relationships": 721
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 151,
+        "relationships": 721
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 151,
+        "relationships": 721
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLResponseSerialization.h",
+      "wired": {
+        "errors": 1,
+        "symbols": 32,
+        "relationships": 37
+      },
+      "rebuild": {
+        "errors": 1,
+        "symbols": 32,
+        "relationships": 37
+      },
+      "pristine": {
+        "errors": 1,
+        "symbols": 32,
+        "relationships": 37
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLResponseSerialization.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 66,
+        "relationships": 293
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 66,
+        "relationships": 293
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 66,
+        "relationships": 293
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 50,
+        "relationships": 54
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 50,
+        "relationships": 54
+      },
+      "pristine": {
+        "errors": 29,
+        "symbols": 13,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "wired": {
+        "errors": 119,
+        "symbols": 133,
+        "relationships": 546
+      },
+      "rebuild": {
+        "errors": 119,
+        "symbols": 133,
+        "relationships": 546
+      },
+      "pristine": {
+        "errors": 106,
+        "symbols": 133,
+        "relationships": 546
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/Example/Classes/Models/Post.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Classes/Models/Post.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 42
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 42
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 42
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Classes/Models/User.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Classes/Models/User.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 26
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 26
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 26
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Classes/Networking Extensions/AFAppDotNetAPIClient.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Classes/Networking Extensions/AFAppDotNetAPIClient.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 10
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 10
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 10
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Today Extension Example/TodayViewController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/Today Extension Example/TodayViewController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 51
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 51
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 12,
+        "relationships": 51
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/iOS Example/AppDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/iOS Example/AppDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 24
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 24
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 24
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/iOS Example/Controllers/GlobalTimelineViewController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 2
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/iOS Example/Controllers/GlobalTimelineViewController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 52
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 52
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 52
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/iOS Example/Views/PostTableViewCell.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/iOS Example/Views/PostTableViewCell.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 49
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 49
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 49
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/macOS Example/AppDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/macOS Example/AppDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 30
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 30
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 30
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/macOS Example/main.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/main.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/watchOS Example Extension/ExtensionDelegate.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/watchOS Example Extension/ExtensionDelegate.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/watchOS Example Extension/InterfaceController.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Example/watchOS Example Extension/InterfaceController.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 8
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFAutoPurgingImageCacheTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 21,
+        "relationships": 252
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 21,
+        "relationships": 252
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 21,
+        "relationships": 252
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFCompoundResponseSerializerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 73
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 73
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 6,
+        "relationships": 73
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFHTTPRequestSerializationTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 36,
+        "relationships": 226
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 36,
+        "relationships": 226
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 36,
+        "relationships": 226
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFHTTPResponseSerializationTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 108
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 108
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 108
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFHTTPSessionManagerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 47,
+        "relationships": 573
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 47,
+        "relationships": 573
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 47,
+        "relationships": 573
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFImageDownloaderTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 30,
+        "relationships": 364
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 30,
+        "relationships": 364
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 30,
+        "relationships": 364
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFImageResponseSerializerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 61
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 61
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 61
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFJSONSerializationTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 228
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 228
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 23,
+        "relationships": 228
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFNetworkActivityManagerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 94
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 94
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 94
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFNetworkReachabilityManagerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 87
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 87
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 87
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFPropertyListRequestSerializerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 29
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 29
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 5,
+        "relationships": 29
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFPropertyListResponseSerializerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 79
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 79
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 8,
+        "relationships": 79
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFSecurityPolicyTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 57,
+        "relationships": 612
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 57,
+        "relationships": 612
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 57,
+        "relationships": 612
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFTestCase.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 17
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 17
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 17
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFTestCase.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 54
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 54
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 54
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFUIActivityIndicatorViewTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 73
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 73
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 73
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFUIButtonTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 72
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 72
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 72
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFUIImageViewTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 128
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 128
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 128
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFUIRefreshControlTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 73
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 73
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 73
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFURLSessionManagerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 47,
+        "relationships": 419
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 47,
+        "relationships": 419
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 47,
+        "relationships": 419
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFWKWebViewTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 91
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 91
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 91
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFXMLDocumentResponseSerializerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 85
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 85
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 85
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/Tests/Tests/AFXMLParserResponseSerializerTests.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 71
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 71
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 71
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFAutoPurgingImageCache.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 24,
+        "symbols": 3,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFAutoPurgingImageCache.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 124
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 124
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 27,
+        "relationships": 124
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFImageDownloader.h",
+      "wired": {
+        "errors": 3,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "rebuild": {
+        "errors": 3,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 16,
+        "relationships": 20
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFImageDownloader.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 42,
+        "relationships": 236
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 42,
+        "relationships": 236
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 42,
+        "relationships": 236
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFNetworkActivityIndicatorManager.h",
+      "wired": {
+        "errors": 6,
+        "symbols": 4,
+        "relationships": 3
+      },
+      "rebuild": {
+        "errors": 6,
+        "symbols": 4,
+        "relationships": 3
+      },
+      "pristine": {
+        "errors": 6,
+        "symbols": 4,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFNetworkActivityIndicatorManager.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 36,
+        "relationships": 114
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 36,
+        "relationships": 114
+      },
+      "pristine": {
+        "errors": 3,
+        "symbols": 32,
+        "relationships": 97
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIActivityIndicatorView+AFNetworking.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIActivityIndicatorView+AFNetworking.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 41
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 41
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 41
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIButton+AFNetworking.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 13
+      },
+      "pristine": {
+        "errors": 1,
+        "symbols": 12,
+        "relationships": 13
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIButton+AFNetworking.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 154
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 154
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 20,
+        "relationships": 154
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIImageView+AFNetworking.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 1,
+        "symbols": 8,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIImageView+AFNetworking.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 72
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 72
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 13,
+        "relationships": 72
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIProgressView+AFNetworking.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 3,
+        "relationships": 5
+      },
+      "pristine": {
+        "errors": 9,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIProgressView+AFNetworking.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 48
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 48
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 48
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIRefreshControl+AFNetworking.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 2,
+        "relationships": 4
+      },
+      "pristine": {
+        "errors": 5,
+        "symbols": 1,
+        "relationships": 3
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIRefreshControl+AFNetworking.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 41
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 41
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 10,
+        "relationships": 41
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/WKWebView+AFNetworking.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 7
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 7
+      },
+      "pristine": {
+        "errors": 1,
+        "symbols": 5,
+        "relationships": 7
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": false
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/WKWebView+AFNetworking.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 82
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 82
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 11,
+        "relationships": 82
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NSTextView+JSDExtensions.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 9
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 9
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 9,
+        "relationships": 9
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NSTextView+JSDExtensions.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 133
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 133
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 19,
+        "relationships": 133
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NSWindow+DvA.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 93
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 93
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 17,
+        "relationships": 93
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NoodleLineNumberMarker.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 4,
+        "relationships": 6
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NoodleLineNumberMarker.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 28
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 28
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 7,
+        "relationships": 28
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NoodleLineNumberView.h",
+      "wired": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 19
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 19
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 15,
+        "relationships": 19
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    },
+    {
+      "file": "Clyde/NoodleLineNumberView.m",
+      "wired": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 237
+      },
+      "rebuild": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 237
+      },
+      "pristine": {
+        "errors": 0,
+        "symbols": 25,
+        "relationships": 237
+      },
+      "wiredEqualsRebuild": true,
+      "wiredEqualsPristine": true
+    }
+  ]
+}

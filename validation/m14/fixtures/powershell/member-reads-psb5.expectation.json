@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/member-reads-psb5.ps1",
+  "authoredFrom": "PS9 — a MEMBER READ is a `uses` edge. Authored 2026-09-26. The pre-wave lane's `case \"member_access\"` had `break` as its entire body, commented \"Property reads ($obj.Prop) are not declarations or calls — no edge\", so the language emitted ZERO `uses` edges in 2,145 symbols and 3,410 relationships. This is the #740 kotlin defect class in a second language, unregistered because no corpus lane existed to see it. The six read forms PowerShell has are one per line here, so a fix that lands one and drops another fails this pin. The receiver is NOT part of the target: the family contract is the member LEAF, never the dotted chain (web-family ruling R2 / M60 R10).",
+  "expectSymbols": [
+    { "name": "member-reads-psb5.ps1", "kind": "module" },
+    { "name": "Session", "kind": "class", "ownerName": "member-reads-psb5.ps1" },
+    { "name": "User", "kind": "property", "ownerName": "Session" },
+    { "name": "Attempts", "kind": "property", "ownerName": "Session" },
+    { "name": "s", "kind": "variable", "ownerName": "member-reads-psb5.ps1" },
+    { "name": "settings", "kind": "variable", "ownerName": "member-reads-psb5.ps1" },
+    { "name": "Retries", "kind": "property", "ownerName": "member-reads-psb5.ps1", "comment": "a hashtable key DECLARES a named slot" },
+    { "name": "Label", "kind": "property", "ownerName": "member-reads-psb5.ps1" },
+    { "name": "names", "kind": "variable", "ownerName": "member-reads-psb5.ps1" },
+    { "name": "index", "kind": "variable", "ownerName": "member-reads-psb5.ps1" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "member-reads-psb5.ps1", "target": "Session", "line_number": 26 },
+    { "type": "contains", "from": "Session", "target": "User", "line_number": 27 },
+    { "type": "contains", "from": "Session", "target": "Attempts", "line_number": 28 },
+
+    { "type": "instantiates", "from": "member-reads-psb5.ps1", "target": "Session", "line_number": 31 },
+
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "User", "line_number": 32, "meta.isMemberReference": true, "comment": "form 1: `$s.User` — the plain member read" },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "Attempts", "line_number": 33, "meta.isMemberWrite": true, "comment": "form 2: `$s.Attempts = 1` is a WRITE, and a write is a use of the member. Pre-fix a property's only appearance in the graph was its declaration." },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "Label", "line_number": 36, "meta.isConstantKey": true, "comment": "form 3: `$settings['Label']` — a CONSTANT key names the slot, so the target is the key" },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "member-reads-psb5.ps1.index", "line_number": 40, "meta.isVariableReference": true, "comment": "form 4: `$names[$index]` — a VARIABLE key is a read of the KEY, not of the receiver. The key sits nine hops down the operator ladder and the receiver one hop down, so the search starts at the second direct child; started at the node it read `$names` indexing itself — a real, resolvable, meaningless row." },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "User", "line_number": 42, "meta.isMemberReference": true, "comment": "form 5: `\"user=$($s.User)\"` — an interpolated SUBEXPRESSION. This is verbatim the class reviews/m49-groovy-gstring-interpolation.md found in groovy (parse-clean, line-clean, oracle-clean, GRAPH-INCOMPLETE — 13,830 sites contributing 0 reads there, 283 here)" },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "member-reads-psb5.ps1.settings", "line_number": 43, "meta.isVariableReference": true, "comment": "form 6: `\"plain=$settings\"` — a bare interpolated variable in a double-quoted string" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "uses", "equals": 6, "comment": "exactly the six read forms, one per line. The pre-wave lane's TOTAL for the language was 0. (This row read 7 on its first authoring, counting a receiver read on the `[Session]::new()` line — a static-member instantiation has no variable receiver, so there is nothing to read. The expectation was wrong and was corrected; the analyzer was not.)" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "names", "line_number": 40, "comment": "PRE-FIX SHAPE of form 4: the RECEIVER instead of the key. Resolvable, therefore invisible to a resolvability check, and meaningless." },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "s.User" },
+    { "type": "uses", "from": "member-reads-psb5.ps1", "target": "settings.Label", "comment": "PRE-FIX SHAPE: a dotted CHAIN as the target, against the family leaf contract (R2 / M60 R10)" },
+    { "type": "uses", "from": "Session", "target": "User", "comment": "the read is attributed to the enclosing SCOPE that performs it, not to the class that declares the member — the same ruling as PS3" },
+    { "type": "uses", "target": "2.3", "comment": "PS-B24 PRE-FIX SHAPE on form 7: `$intKeys.1.2.3.4` published this as a member leaf. A numeric run is a parse shape, not a name — no project can declare it, so the row is a fabrication the project's own declaration table refutes. The receiver is not published either (family leaf contract), so the correct count on that line is ZERO." },
+    { "type": "uses", "target": "3.4", "comment": "PS-B24 PRE-FIX SHAPE on form 7: the second numeric leaf of `$intKeys.1.2.3.4`. Same fabrication, same refutation." },
+    { "type": "uses", "target": "1.2", "comment": "PS-B24 PRE-FIX SHAPE on form 7: `$1.2.3.4` — a bare numeric chain is not even a variable receiver plus member; the grammar still yields `member_name` nodes." },
+    { "type": "calls", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "calls", "target": "global" }
+  ]
+}

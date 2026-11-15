@@ -1,0 +1,35 @@
+{
+  "fixtureId": "vba/declare-lib-imports",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the `Declare ... Lib \"<library>\"` binding as this lane's `imports` relation, BEFORE the analyzer emits it. The relation is root -> LIBRARY (not root -> procedure): the procedure is declared here (it is a symbol of this module) and the LIBRARY is the external unit this module depends on. The forbid rows pin the four wrong answers a naive emission produces — attributing the import to the enclosing procedure, using the declared name as the target, leaking the library text into references/uses, and keeping the string literal's quotes on the target.",
+  "expectSymbols": [
+    { "name": "GetTickCount", "kind": "function" },
+    { "name": "MessageBox", "kind": "function" },
+    { "name": "Sleep", "kind": "method" },
+    { "name": "OutputDebugString", "kind": "method" },
+    { "name": "Wait", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "root", "target": "kernel32", "confidenceMin": 1 },
+    { "type": "imports", "from": "root", "target": "kernel32", "meta.procedure": "GetTickCount" },
+    { "type": "imports", "from": "root", "target": "kernel32", "meta.procedure": "Sleep" },
+    { "type": "imports", "from": "root", "target": "kernel32", "meta.procedure": "OutputDebugString" },
+    { "type": "imports", "from": "root", "target": "user32", "meta.importForm": "declare-lib" },
+    { "type": "imports", "from": "root", "target": "user32", "meta.procedure": "MessageBox", "meta.alias": "MessageBoxA" },
+    { "type": "imports", "from": "root", "target": "user32", "meta.ptrSafe": true }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "Wait" },
+    { "type": "imports", "from": "GetTickCount" },
+    { "type": "imports", "target": "GetTickCount" },
+    { "type": "imports", "target": "Sleep" },
+    { "type": "imports", "target": "kernel32.dll" },
+    { "type": "imports", "target": "\"kernel32\"" },
+    { "type": "references", "target": "kernel32" },
+    { "type": "references", "target": "user32" },
+    { "type": "uses", "target": "kernel32" },
+    { "type": "uses", "target": "user32" },
+    { "type": "calls", "from": "root", "target": "kernel32" }
+  ]
+}

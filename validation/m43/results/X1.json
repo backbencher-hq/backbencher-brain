@@ -1,0 +1,22 @@
+{
+  "status": "blocked",
+  "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-closure.ts",
+  "generatedAt": "2026-10-15T07:20:19.258Z",
+  "passed": 48,
+  "failed": 10,
+  "negativeCases": 3,
+  "failures": [
+    "ledger: P1 evidence block byte-conformant",
+    "ledger: A1 evidence block byte-conformant",
+    "ledger: A2 evidence block byte-conformant",
+    "ledger: A3 evidence block byte-conformant",
+    "ledger: A4 evidence block byte-conformant",
+    "live: A1 gate passes — exit 1",
+    "live: A4 gate passes — FAIL [S1-edit-reflect]: S1: baseline finds real class Task —   define_task [method] (ruby, lib/rake/task_manager.rb:23) | FAIL [S1-edit-reflect]: S1: read auto-refreshes the real repo (declared) —   define_task [method] (ruby, lib/rake/task_manager.rb:23) | FAIL [S1-edit-reflect]: S1: renamed symbol is in the repaired index — no results for \"TaskA4real\"",
+    "G1: status verified — blocked",
+    "G1: zero failures — 6",
+    "residue: no uncommitted changes on governed M43 surfaces —  M script/m43/verify-closure.ts |  M script/m43/verify-governance.ts"
+  ]
+}

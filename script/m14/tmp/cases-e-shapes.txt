@@ -1,0 +1,57 @@
+// E: name shapes and param rules that decide the rewrite.
+package p
+case class Q(a: Int, b: String)
+class R(a: Int)
+class S(case a: Int, b: String)
+---
+// E2: the operator method name node shape
+package p
+class K { def !>(x: Int): Int = x; def unary_- : Int = 1; def ++ (s: String) = s }
+---
+// E3: given shapes
+package p
+object O {
+  given Ord[Int] with { def compare(a: Int, b: Int) = 0 }
+  given named1: Ord[Int] with { def compare(a: Int, b: Int) = 0 }
+  given named2: Ord[Int] = new Ord[Int] { def compare(a: Int, b: Int) = 0 }
+  given named3[A](using A): Ord[A] = new Ord[A] { def compare(a: A, b: A) = 0 }
+}
+trait Ord[A]
+---
+// E4: enum with and without params; enum case with params
+package p
+enum E1 { case A, B; def m = 1 }
+enum E2(i: Int) { case A(i) }
+---
+// E5: val inside a local def inside a def — skip?
+package p
+class K { def m(): Int = { def a = { val q = 1; q }; a } }
+---
+// E6: object with a constructor? trait with params? class with no parens
+package p
+object O { def m = 1 }
+class NoParens { def m = 1 }
+class WithParens() { def m = 1 }
+---
+// E7: type alias name shape
+package p
+object O {
+  type Alias = Int
+  type Param[A] = List[A]
+  type Fun = Int => String
+}
+---
+// E8: a def whose name is an identifier but params contain identifiers
+package p
+class K { def real(x: Int, y: Int) = x; def op !(x: Int) = x }
+---
+// E9: anonymous class under a local def (skip rule applies only to vals)
+package p
+class K { def m(): Any = { def a = { new R { val q = 1 } }; a } }
+class R
+---
+// E10: nested anonymous classes
+package p
+class K { val o = new R { val i = new R2 { val j = 1 } } }
+class R
+class R2

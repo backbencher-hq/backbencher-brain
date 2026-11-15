@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/macros-er3.erl",
+  "authoredFrom": "Erlang preprocessor semantics + the pinned grammar's macro shapes, before this fixture's F3 run. A macro's name is its `var` child when it takes no arguments and its `atom` child when it does (`?FOO(A)` -> atom + macro_call_args): reading only the `var` would drop every argument-taking use, 2,691 of the 6,612 sites per 300 corpus files. A macro BODY may reference another macro, and that dependency is static and real. A macro body's CALL is template text, not a call site (ER-D11) - `?DOUBLE(1)` expands to `helper(1)` at run's call site, and the analyzer does not expand, so naming the template's line would invent a call site that does not exist. A function whose name collides with a macro name is still a Function: `HEAD(X) -> X` declares HEAD/1 while `-define(HEAD(X), X)` declares the macro. ER-D42 (2026-10-03): the same fixture also pins the UPPERCASE export name below, which the `fa` reader dropped for a wave.",
+  "expectSymbols": [
+    {
+      "name": "macros_er3",
+      "kind": "module"
+    },
+    {
+      "name": "TIMEOUT",
+      "kind": "constant",
+      "ownerName": "macros_er3",
+      "meta.isMacro": true,
+      "meta.isFunctionLike": false
+    },
+    {
+      "name": "RETRY",
+      "kind": "macro",
+      "ownerName": "macros_er3",
+      "meta.isMacro": true,
+      "meta.isFunctionLike": true,
+      "meta.parameterCount": 1
+    },
+    {
+      "name": "DOUBLE",
+      "kind": "macro",
+      "ownerName": "macros_er3",
+      "meta.isMacro": true,
+      "meta.isFunctionLike": true
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "macros_er3",
+      "meta.arity": 0
+    },
+    {
+      "name": "HEAD",
+      "kind": "function",
+      "ownerName": "macros_er3",
+      "meta.arity": 1,
+      "note": "a function whose name collides with a macro name"
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "ownerName": "macros_er3",
+      "meta.arity": 1
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "HEAD",
+      "kind": "macro",
+      "equals": 1,
+      "note": "the macro and the function are different symbols that share a name, and the macro takes parameters, so ER-D39 makes it kind=macro \u2014 not the constant the function-shaped name might suggest"
+    },
+    {
+      "name": "HEAD",
+      "kind": "function",
+      "equals": 1,
+      "note": "the macro and the function are different symbols that share a name"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "RETRY",
+      "target": "TIMEOUT",
+      "meta.context": "macro use",
+      "line_number": 9,
+      "note": "a macro-to-macro dependency is a static fact and is emitted even though the body is a template"
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "RETRY",
+      "meta.context": "macro use",
+      "line_number": 16,
+      "note": "an argument-taking macro use names the macro through its ATOM child"
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "TIMEOUT",
+      "meta.context": "macro use",
+      "line_number": 17
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "DOUBLE",
+      "meta.context": "macro use",
+      "line_number": 18
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "helper",
+      "meta.callArity": 1,
+      "line_number": 19,
+      "note": "a real call site"
+    },
+    {
+      "type": "contains",
+      "from": "macros_er3",
+      "target": "RETRY",
+      "line_number": 9
+    },
+    {
+      "type": "exports",
+      "from": "macros_er3",
+      "target": "HEAD",
+      "meta.arity": 1,
+      "meta.exportForm": "export",
+      "line_number": 13,
+      "note": "ER-D42: an identifier beginning with an UPPERCASE letter is a VARIABLE in Erlang, so the grammar types the `fa` name `-export([HEAD/1])` as `var`, not `atom`. The reader required `atom`, so every all-caps export name was dropped SILENTLY \u2014 no error, no counter, and the `exports` class simply had a member fewer than the file publishes. Found by the exports/imports oracle, which derives the row from the same declaration and reported it MISSING while the analyzer reported nothing. A macro is a real Erlang function name: `-define(HEAD(X), X).` plus `-export([HEAD/1])` plus `HEAD(X) -> X.` is ordinary code, so the name is read and the arity with it."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "DOUBLE",
+      "target": "helper",
+      "note": "ER-D11: a macro body's call is template text. The expansion happens at run's use site, and the analyzer does not expand - naming the template's line would invent a call site that does not exist."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "DOUBLE",
+      "note": "a macro use is a reference, never a call"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "RETRY"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "TIMEOUT"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "N"
+    },
+    {
+      "name": "A"
+    },
+    {
+      "name": "B"
+    },
+    {
+      "name": "C"
+    },
+    {
+      "name": "D"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+ "fixtureId": "yaml/comment-attribution",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Comments are `stream`-level siblings of `document`, so the walk reaches them BEFORE the key they document and a pending-comment buffer cannot see them. They are indexed by the line they precede, with their column, and attached positionally. Pinned: a leading note, a second leading note, a note at the top of a nested block, and a TRAILING note on the key's own row -- the last is what a single-line scan would lose.",
+ "expectDocstring": [
+  {
+   "symbol": "port",
+   "ownerName": "comment-attribution",
+   "contains": "the port to bind"
+  },
+  {
+   "symbol": "host",
+   "ownerName": "comment-attribution",
+   "contains": "the host name"
+  },
+  {
+   "symbol": "db",
+   "contains": "a leading note at the top of a nested block"
+  },
+  {
+   "symbol": "port",
+   "ownerName": "comment-attribution.db",
+   "contains": "the database port"
+  },
+  {
+   "symbol": "port",
+   "ownerName": "comment-attribution.db",
+   "contains": "the trailing note"
+  }
+ ],
+ "expectComments": [],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   6,
+   8,
+   10
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

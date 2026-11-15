@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <!-- A genuinely broken construct: an attribute value that is never closed, so
+       the grammar recovers with an ERROR node and a MISSING quote. The lane
+       reports it, reports it ONCE, and caps the walk. -->
+  <div id="broken" class="unterminated>text</div>
+  <p id="after">Content after the recovery point still parses.</p>
+</body>
+</html>

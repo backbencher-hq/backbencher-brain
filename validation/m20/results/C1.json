@@ -1,0 +1,21 @@
+{
+  "issue": "M20.C1",
+  "code": "C1",
+  "milestone": "M20",
+  "status": "known-gap",
+  "checks": 15,
+  "passed": 13,
+  "failed": 2,
+  "negativeCases": 5,
+  "currentCommit": "4cda8178afb1d46b76e5f3127abc5bcfc1f4b46d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-governance.ts",
+  "evidenceFile": "C1.json",
+  "generatedAt": "2026-11-04T04:41:19.364Z",
+  "ledger": "validation/m20/results/manifest.json",
+  "limitations": [
+    "This gate validates governance metadata and mutation response; it does not verify the four tool implementations.",
+    "A run with relevant uncommitted M20 files is recorded as known-gap; this record was generated from a clean relevant project revision."
+  ],
+  "sourceFingerprint": "116450a6177c98419c34bb8818d6db8cfa10aafa8f563941b57e5ea3696d0c4c"
+}

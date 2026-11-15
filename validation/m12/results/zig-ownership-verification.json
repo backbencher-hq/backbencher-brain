@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M14",
+  "kind": "zig_ownership_verification",
+  "generatedAt": "2026-09-28T22:22:52.325Z",
+  "instrument": "script/m14/tmp/zigw-ownership.ts",
+  "note": "The differential cannot audit this class: its coverage match is `label + normTarget(target)` and the SOURCE is not part of the key, so an edge that keeps its member name and changes owner is still 'covered'. This verifier keys on the owner. (owner, member) pairs are re-derived from the tree; the analyzer's own symbols are NOT used as the expectation.",
+  "corpus": {
+    "root": "/home/sano/ishaq/bb_tests/repositories",
+    "repos": [
+      "zig",
+      "zls",
+      "ghostty"
+    ],
+    "filesMeasured": 3000,
+    "orphanScanFiles": 400
+  },
+  "totals": {
+    "symbols": 130192,
+    "owned": 89362,
+    "agree": 84360,
+    "phantomOwnership": 0,
+    "orphanOwner": 0,
+    "collisions": 1509,
+    "filesWithOwnerDefect": 93
+  },
+  "samples": {
+    "phantomOwnership": [],
+    "collisions": [
+      "Link\u0000action  x2  ghostty/src/Surface.zig:355:property  |  ghostty/src/Surface.zig:4381:property",
+      "C\u0000key  x2  ghostty/src/apprt/action.zig:38:property  |  ghostty/src/apprt/action.zig:471:property",
+      "C\u0000value  x3  ghostty/src/apprt/action.zig:39:property  |  ghostty/src/apprt/action.zig:472:property  |  ghostty/src/apprt/action.zig:874:property",
+      "C\u0000len  x3  ghostty/src/apprt/action.zig:643:property  |  ghostty/src/apprt/action.zig:710:property  |  ghostty/src/apprt/action.zig:980:property",
+      "C\u0000url  x2  ghostty/src/apprt/action.zig:709:property  |  ghostty/src/apprt/action.zig:979:property",
+      "C\u0000title  x2  ghostty/src/apprt/action.zig:758:property  |  ghostty/src/apprt/action.zig:808:property",
+      "Options\u0000userdata  x2  ghostty/src/apprt/embedded.zig:43:property  |  ghostty/src/apprt/embedded.zig:469:property",
+      "KeyEvent\u0000action  x2  ghostty/src/apprt/embedded.zig:105:property  |  ghostty/src/apprt/embedded.zig:1475:property",
+      "KeyEvent\u0000mods  x2  ghostty/src/apprt/embedded.zig:106:property  |  ghostty/src/apprt/embedded.zig:1476:property",
+      "KeyEvent\u0000consumed_mods  x2  ghostty/src/apprt/embedded.zig:107:property  |  ghostty/src/apprt/embedded.zig:1477:property",
+      "KeyEvent\u0000keycode  x2  ghostty/src/apprt/embedded.zig:108:property  |  ghostty/src/apprt/embedded.zig:1478:property",
+      "KeyEvent\u0000text  x2  ghostty/src/apprt/embedded.zig:109:property  |  ghostty/src/apprt/embedded.zig:1479:property"
+    ],
+    "orphanOwner": []
+  },
+  "verdict": "1509 ownership defect(s)"
+}

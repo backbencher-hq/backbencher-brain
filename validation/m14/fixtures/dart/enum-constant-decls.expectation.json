@@ -1,0 +1,118 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it \u2014 U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` \u2014 a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/enum-constant-decls",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 dart lane, found by the M12 #933 triage rather than by a gate. `isDartDeclNameParent` — the DT-F+ #752 gate that keeps a DECLARATION name out of the bare-read branch — listed `enum_declaration` (the enum's own name) but not `enum_constant` (each value's node: `(enum_body (enum_constant (identifier)))`, probe-verified). Every enum constant was therefore emitted as a bare read of its own enum (`uses Shape -> circle`, `uses Payload -> small`) at confidence 0.6 — BELOW M12's 0.7 claim threshold, so the harness filed it as `unknown` instead of a false positive and no gate ever scored it. The forbids below pin the declaration in both directions, and the two expects pin the genuine reads that a blunt fix would also silence: the enum-constant ARGUMENT (`small(kSmall)` — a value read of a top-level constant) and a member read OF an enum constant (`Shape.circle` in describe).",
+  "expectSymbols": [
+    {
+      "name": "kSmall",
+      "kind": "constant"
+    },
+    {
+      "name": "kLarge",
+      "kind": "constant"
+    },
+    {
+      "name": "Shape",
+      "kind": "enum"
+    },
+    {
+      "name": "circle",
+      "kind": "enum_member",
+      "ownerName": "Shape"
+    },
+    {
+      "name": "square",
+      "kind": "enum_member",
+      "ownerName": "Shape"
+    },
+    {
+      "name": "Payload",
+      "kind": "enum"
+    },
+    {
+      "name": "small",
+      "kind": "enum_member",
+      "ownerName": "Payload"
+    },
+    {
+      "name": "large",
+      "kind": "enum_member",
+      "ownerName": "Payload"
+    },
+    {
+      "name": "bytes",
+      "kind": "property",
+      "ownerName": "Payload"
+    },
+    {
+      "name": "isLarge",
+      "kind": "method",
+      "ownerName": "Payload"
+    },
+    {
+      "name": "describe",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "Payload",
+      "target": "kSmall",
+      "comment": "the enum-constant ARGUMENT is a real value read of a top-level constant — the fix must not take the whole enum body with it"
+    },
+    {
+      "type": "uses",
+      "source": "Payload",
+      "target": "kLarge",
+      "comment": "second enum constant's argument, same rule"
+    },
+    {
+      "type": "uses",
+      "source": "isLarge",
+      "target": "Payload.bytes",
+      "comment": "DT-F+ bare member read inside an enum BODY still emits (0.6, refused by M12's claim threshold on purpose)"
+    },
+    {
+      "type": "uses",
+      "source": "describe",
+      "target": "Shape.circle",
+      "comment": "reading an enum constant (`Shape.circle`) is a genuine member read and stays"
+    },
+    {
+      "type": "uses",
+      "source": "describe",
+      "target": "describe\u0000s",
+      "meta.localBinding": true,
+      "comment": "the parameter read is a bound local (0.9) — respelled 2026-10-08 to `<callable>#<binding>`; the bare `s` was a name the store would have bound to any single `s` declaration in the project"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "Shape",
+      "target": "circle",
+      "comment": "an enum constant DECLARATION is a bind, never a read"
+    },
+    {
+      "type": "uses",
+      "source": "Shape",
+      "target": "square",
+      "comment": "same, second constant"
+    },
+    {
+      "type": "uses",
+      "source": "Payload",
+      "target": "small",
+      "comment": "same for the enum whose constants carry arguments"
+    },
+    {
+      "type": "uses",
+      "source": "Payload",
+      "target": "large",
+      "comment": "same, second constant"
+    }
+  ]
+}

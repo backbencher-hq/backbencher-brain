@@ -1,0 +1,21 @@
+import assert from "node:assert/strict"
+import {spawnSync} from "node:child_process"
+import {fileURLToPath} from "node:url"
+const file=fileURLToPath(new URL('./verify-typescript-receiver-scopes.mts',import.meta.url))
+const run=(args:string[])=>spawnSync(process.execPath,[file,...args],{encoding:'utf8',timeout:60_000})
+const control=run([])
+assert.equal(control.status,0,control.stdout+control.stderr)
+const mutant=run(['--mutate'])
+assert.equal(mutant.error,undefined)
+assert.equal(mutant.signal,null)
+assert.equal(mutant.status,1,mutant.stdout+mutant.stderr)
+assert.ok(mutant.stdout.includes('APPLIED receiver scope mutation'))
+assert.ok(mutant.stderr.includes('AssertionError'))
+console.log('Scoped receiver control passes; file-wide lookup mutation rejected')
+const storage=run(['--mutate-storage'])
+assert.equal(storage.error,undefined)
+assert.equal(storage.signal,null)
+assert.equal(storage.status,1,storage.stdout+storage.stderr)
+assert.ok(storage.stdout.includes('APPLIED receiver storage mutation'))
+assert.ok(storage.stderr.includes('AssertionError'))
+console.log('Unknown-receiver storage withdrawal mutation rejected')

@@ -1,0 +1,104 @@
+{
+  "fixtureId": "ruby/ontology-factory-and-names",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the two edges INSIDE an already-emitted type that were owed or wrong, on the shapes that decide them, plus the name-resolution rules. The fixture file carries the reasoning and the numbers; this file is the machine-checkable half. THE RULINGS BEHIND EVERY PIN: (1) `K = Class.new(Base)` DECLARES A SUPERCLASS — 16 sites over 7,499 files — and `Struct.new(:a, :b)` / `Data.define(:a, :b)` take MEMBER NAMES as their first argument and have NO superclass parameter (116 sites), so the rule is `Class.new` ONLY: a general factory rule fabricates seven edges per edge it gets right, and every fabricated `extends` poisons bb_graph, bb_impact and bb_migrate. (2) `define_method` takes the NAME in argument 0 and the BODY in argument 1, so `define_method(name, \"\")` names nothing statically — 2 empty-named symbols and 2 empty-target `contains` edges over the corpus before the fix. (3) A published name resolves the Ruby escapes it can state and is REFUSED when it carries one it cannot: `\\\"` and `\\\\` are text, `\\x` is a raw byte and `\\u` a non-ASCII character, and neither is a name a consumer can bind. THE SPELLING CONTRACT IS PINNED, NOT ONLY THE RELATIONSHIP (Lead ruling L-2026-10-21-07): `meta.definedBy` is pinned to the exact spelling `Class.new` on every factory edge, so a mutant that re-spells the factory base (or generalises the rule to a different receiver) is caught by the SPELLING and not merely by the relationship. The `expectRelationshipCount` rows make a superset fix fail: a mutant that published the `Struct.new`/`Data.define` counter-shapes, or the dynamic base, fails on a count even if every positive still matched.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Job",
+      "target": "BaseRunner",
+      "meta.definedBy": "Class.new",
+      "comment": "THE FACTORY PIN: `Job = Class.new(BaseRunner)` declares a superclass, and the edge carries the SPELLING that produced it — `Class.new`, not a generic `factory`. A mutant that re-spells `definedBy` fails here on the spelling alone."
+    },
+    {
+      "type": "extends",
+      "from": "Scoped",
+      "target": "BaseRunner",
+      "meta.definedBy": "Class.new",
+      "comment": "THE ABSOLUTE-SPELLING BASE: `Class.new(::BaseRunner)` names the SAME base as `Class.new(BaseRunner)` and publishes the same relationship — the leading `::` is scope resolution, not a different class."
+    },
+    {
+      "type": "extends",
+      "from": "Namespaced",
+      "target": "DefaultJob",
+      "meta.definedBy": "Class.new",
+      "comment": "THE NAMESPACED BASE: `Class.new(BenchmarkDriver::DefaultJob)` publishes the target as the LEAF `DefaultJob` — the last segment of the path — because that is the name a declaration in this project can bind. The spelling is pinned so a mutant that publishes the whole path (`BenchmarkDriver::DefaultJob`) fails here: the relationship is the same, only the SPELLING changed, and that is exactly the defect class L-2026-10-21-07 names."
+    },
+    {
+      "type": "extends",
+      "from": "Written",
+      "target": "BaseRunner",
+      "comment": "SUPERCLASS CONTROL: the WRITTEN form `class Written < BaseRunner` is the same relationship and is published by the ordinary superclass path, not by the factory path. It proves the factory pins did not teach the analyzer to invent factory edges for ordinary classes."
+    },
+    {
+      "type": "contains",
+      "from": "Naming",
+      "target": "literal_name",
+      "comment": "THE define_method NAME PIN: the name is argument 0, so `define_method(:literal_name) { 1 }` declares the method `literal_name` and the class contains it."
+    },
+    {
+      "type": "contains",
+      "from": "Naming",
+      "target": "string_name",
+      "comment": "THE STRING-SYMBOLLED NAME PIN: `define_method(\"string_name\")` declares the same kind of method — the name is a string, and the published name is the string's CONTENT, without the quotes."
+    },
+    {
+      "type": "contains",
+      "from": "Escaped",
+      "target": "say \"hi\"",
+      "comment": "THE RESOLVED-QUOTE PIN: `\\\"` is text, so the name Ruby really defines contains a plain quote. The published name carries the quote and is not escaped in the output — a name a consumer can bind."
+    },
+    {
+      "type": "contains",
+      "from": "Escaped",
+      "target": "hex \\x61 text",
+      "comment": "THE RESOLVED-BACKSLASH PIN: `\\\\` is an escaped BACKSLASH, so the name really contains `\\x61` as literal TEXT. The published name states it exactly; this is a different case from the `\\x41` byte case, which is REFUSED."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Car",
+      "comment": "THE Struct.new REFUSAL: `Car = Struct.new(:wheels, :doors)` takes MEMBER NAMES, so it is a class with members and NOT a class with a superclass. A generalised factory rule publishes `extends Car -> wheels` here, which is the seven-fabricated-edges-per-correct-edge defect the ruling names."
+    },
+    {
+      "type": "extends",
+      "from": "Point",
+      "comment": "THE Data.define REFUSAL: `Point = Data.define(:x, :y)` takes member names on the same shape as Struct.new and publishes no superclass."
+    },
+    {
+      "type": "extends",
+      "from": "Dynamic",
+      "comment": "THE DYNAMIC-BASE REFUSAL: `Class.new(base_for(some_arg))` takes a CALL, whose result is unknowable statically, so nothing is published — the same refusal as `class X < Struct.new(:a)`."
+    },
+    {
+      "type": "extends",
+      "from": "Anon",
+      "comment": "THE ANONYMOUS-BASE REFUSAL: `Class.new do ... end` has no base argument at all, so there is no superclass to publish. Its helper method is published as a `contains` row, which is a different relationship."
+    },
+    {
+      "type": "contains",
+      "target": "",
+      "comment": "THE EMPTY-NAME REFUSAL: `define_method(name, \"\")` and `define_method(name, \"an implementation body\")` name nothing statically. A method named \"\" and a `contains` edge to an empty target were 2 empty-named symbols and 2 empty-target edges over the corpus before the fix, and either would fail here."
+    },
+    {
+      "type": "contains",
+      "from": "Escaped",
+      "target": "byte \\x41 here",
+      "comment": "THE UNSTATEABLE-NAME REFUSAL: `\\x41` is the BYTE 0x41, and the analyzer declines to state this name, so NOTHING is published for it. Silence passes this forbid, which is the point: a name the analyzer cannot write is not a name. A mutant that published it unresolved fails here."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "extends",
+      "equals": 4,
+      "note": "THE SUPERSET-COUNT PIN: 3 factory bases (Job, Scoped, Namespaced) + 1 written superclass (Written). A mutant that generalised the factory rule to `Struct.new`/`Data.define`, or that published the dynamic base, raises this count and FAILS — even if every positive row above still matched. This is what makes the forbids un-bypassable."
+    },
+    {
+      "type": "contains",
+      "equals": 6,
+      "note": "Anon->helper, Naming->literal_name, Naming->string_name, Naming->runtime_named, Escaped->say \"hi\", Escaped->hex \\x61 text. The count refuses BOTH overshoots (the empty-named symbol, the `byte \\x41 here` name) and any second `contains` row for the define_method body argument. Every one of these is a row the author listed BEFORE the analyzer ran."
+    }
+  ]
+}

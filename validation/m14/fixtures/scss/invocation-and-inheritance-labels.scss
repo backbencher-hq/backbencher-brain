@@ -1,0 +1,45 @@
+// THE THREE LABELS THIS LANE EMITS FOR THREE DIFFERENT CLAIMS, in one file, so a fixture
+// can pin that a consumer can tell them apart. Before the label change every one of the
+// first three carried `uses`, which made the three indistinguishable in the graph.
+
+$radius: 4px;
+
+// A KEYFRAMES reference is the lane's surviving `uses`: the rule consumes the animation
+// without invoking it and without inheriting from it. If this edge is missing, `uses` has
+// no site in this language at all and the type is unadjudicated rather than emitted.
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+// A FUNCTION, declared here and invoked here. `double($n)` CONSTRUCTS nothing: it is a
+// call on a name this file declares, and the ontology's type for that is `calls`.
+@function double($n) {
+  @return $n * 2;
+}
+
+// A MIXIN, likewise declared here and included here.
+@mixin button-size($size: $radius) {
+  padding: $size;
+}
+
+%badge {
+  display: inline-block;
+}
+
+.fade {
+  animation: fade-in 1s ease;
+}
+
+.call-included {
+  @include button-size(8px);
+}
+
+.call-invoked {
+  width: double(4px);
+}
+
+.inherits {
+  @extend %badge;
+  color: red;
+}

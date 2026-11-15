@@ -1,0 +1,62 @@
+{
+  "instrument": "CAUSE 1 — the `imports` split (LOCAL vs EXTERNAL) with the ceiling in the gate's own columns",
+  "lane": "python",
+  "population": {
+    "admitted": 4344,
+    "parsed": 4344,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "gql-saleor"
+    ]
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default",
+  "importsEdges": 36207,
+  "shapes": {
+    "includePath": 3447,
+    "colon": 32760
+  },
+  "theSplit": {
+    "LOCAL": 24313,
+    "EXTERNAL": 11894
+  },
+  "asEmitted": {
+    "LOCAL": {
+      "ambBoth": 1810,
+      "ambDeclOnly": 4841,
+      "resolved": 16868,
+      "unresolved": 794
+    },
+    "EXTERNAL": {
+      "unresolved": 11894
+    }
+  },
+  "ceiling_onTheLeaf": {
+    "LOCAL": {
+      "ambBoth": 1810,
+      "ambDeclOnly": 4841,
+      "resolved": 16868,
+      "unresolved": 794
+    },
+    "EXTERNAL": {
+      "unresolved": 10455,
+      "ambDeclOnly": 537,
+      "ambBoth": 23,
+      "resolved": 879
+    }
+  },
+  "samples": {
+    "LOCAL": [
+      "app -> leaf app",
+      "User -> leaf User",
+      "delete_avatar -> leaf delete_avatar",
+      "App -> leaf App"
+    ],
+    "EXTERNAL": [
+      "json:*",
+      "urllib.request:*",
+      "dataclasses:dataclass",
+      "pathlib:Path"
+    ]
+  }
+}

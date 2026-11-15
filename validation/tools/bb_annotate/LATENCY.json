@@ -4,7 +4,7 @@
   "generatedAt": "2026-11-03T05:11:27.917Z",
   "runtime": "v22.22.1",
   "tree": "working-tree",
-  "root": "$HOME/mcp/backbencher-brain",
+  "root": "/home/ishaq2321/mcp/backbencher-brain",
   "protocol": "cold call recorded once; then five warm runs of the same call; p50/p95 over the warm runs",
   "environment": {
     "cpus": 8,
@@ -13,13 +13,13 @@
       9.62,
       7.21
     ],
-    "bbDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+    "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
     "bbNoAutoRefresh": "1"
   },
   "legs": {
     "T0": {
       "tier": "T0 tiny",
-      "subject": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+      "subject": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
       "index": {
         "files": 5,
         "symbols": 13,
@@ -29,10 +29,10 @@
         "mtime": "2026-11-03T04:34:26.390Z"
       },
       "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
-      "projectPath": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+      "projectPath": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
       "symbol": "basePrice",
       "path": null,
-      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
       "warm": {
         "runs": 5,
         "min": 8.327465999998822,
@@ -56,7 +56,7 @@
     },
     "T1": {
       "tier": "T1 synthetic",
-      "subject": "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "subject": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
       "index": {
         "files": 97,
         "symbols": 3512,
@@ -66,10 +66,10 @@
         "mtime": "2026-11-03T04:35:03.858Z"
       },
       "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
-      "projectPath": "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "projectPath": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
       "symbol": "map",
       "path": null,
-      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
       "warm": {
         "runs": 5,
         "min": 3.374076000000059,
@@ -93,7 +93,7 @@
     },
     "REAL:graphql-js": {
       "tier": "REAL-CORPUS graphql-js",
-      "subject": "$HOME/fixtures/repositories/graphql-js",
+      "subject": "/home/ishaq2321/bb_tests/repositories/graphql-js",
       "index": {
         "files": 564,
         "symbols": 13620,
@@ -103,10 +103,10 @@
         "mtime": "2026-11-03T05:14:42.940Z"
       },
       "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
-      "projectPath": "$HOME/fixtures/repositories/graphql-js",
+      "projectPath": "/home/ishaq2321/bb_tests/repositories/graphql-js",
       "symbol": "parse",
       "path": null,
-      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/graphql-js",
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/graphql-js",
       "warm": {
         "runs": 5,
         "min": 32.35498400000506,
@@ -129,10 +129,10 @@
       "stderrTail": "ngs ...` to show where the warning was created)\n(node:398) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:398) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
       "qualifiedName": {
         "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
-        "projectPath": "$HOME/fixtures/repositories/graphql-js",
+        "projectPath": "/home/ishaq2321/bb_tests/repositories/graphql-js",
         "symbol": "GraphQLChannels.parse",
         "path": null,
-        "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/graphql-js",
+        "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/graphql-js",
         "warm": {
           "runs": 3,
           "min": 13.883333999983734,
@@ -155,7 +155,7 @@
     },
     "REAL:rake": {
       "tier": "REAL-CORPUS rake",
-      "subject": "$HOME/fixtures/repositories/rake",
+      "subject": "/home/ishaq2321/bb_tests/repositories/rake",
       "index": {
         "files": 109,
         "symbols": 1593,
@@ -165,10 +165,10 @@
         "mtime": "2026-11-03T05:16:59.952Z"
       },
       "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
-      "projectPath": "$HOME/fixtures/repositories/rake",
+      "projectPath": "/home/ishaq2321/bb_tests/repositories/rake",
       "symbol": "task",
       "path": null,
-      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/rake",
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/rake",
       "warm": {
         "runs": 5,
         "min": 11.92808199999854,
@@ -191,10 +191,10 @@
       "stderrTail": "ngs ...` to show where the warning was created)\n(node:711) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:711) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
       "qualifiedName": {
         "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
-        "projectPath": "$HOME/fixtures/repositories/rake",
+        "projectPath": "/home/ishaq2321/bb_tests/repositories/rake",
         "symbol": "task",
         "path": null,
-        "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/rake",
+        "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/rake",
         "warm": {
           "runs": 3,
           "min": 6.022644000011496,
@@ -217,9 +217,9 @@
     },
     "T2": {
       "tier": "T2 reference large (isolated VACUUM INTO snapshot; the shared index is only read for the snapshot)",
-      "subject": "$HOME/mcp/backbencher-brain",
+      "subject": "/home/ishaq2321/mcp/backbencher-brain",
       "sourceIndex": {
-        "db": "$HOME/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "db": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
         "populationBefore": {
           "dbMtime": "2026-11-02T04:29:55.820Z",
           "dbBytes": 3639963648,
@@ -251,10 +251,10 @@
         "sampledAt": "2026-11-02T04:29:55.820Z"
       },
       "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "projectPath": "$HOME/mcp/backbencher-brain",
+      "projectPath": "/home/ishaq2321/mcp/backbencher-brain",
       "symbol": "OrderService",
       "path": null,
-      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/mcp/backbencher-brain",
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/mcp/backbencher-brain",
       "warm": {
         "runs": 5,
         "min": 18.951962999999523,

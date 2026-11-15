@@ -1,0 +1,178 @@
+{
+  "fixtureId": "dart/qualified-constant-pattern-read",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "correction_2026_10_08": "THE QUALIFIER THE SOURCE WROTE IS NOW KEPT, so the nine pattern/scrutinee rows here name `Owner.member` instead of the bare leaf: `case WalletOperationType.transfer:` was published with the target `transfer`, which in a project with more than one `transfer` is an AMBIGUOUS edge, while `WalletOperationType.transfer` is exactly one declaration (the enum member's own `qualifiedName`). The forbidRelationships rows are UNCHANGED and still hold: the enum HEAD is still never published as a read of its own — the target is the member, and `target: WalletOperationType` remains a mismatch against `WalletOperationType.transfer`. The forbid is checked by exact equality, measured in script/m14/run-fixtures.ts's matcher.",
+  "rationale": "PINS that a `qualified` name in a PATTERN position is read, in all three pattern forms, and that the same text in an EXPRESSION position keeps behaving as it already did. `M.off` parses TWO different ways and only one was read: `mode == M.off` parses as `equality_expression(identifier(M), selector(.off))`, so the DT-F member-read pass saw the `selector` and published `uses source -> off`; `case M.off:` parses as a single `qualified` node under a `constant_pattern`, and the string \"qualified\" appeared NOWHERE in the analyzer, so nothing read it. A switch case naming a declared enum member published no edge at all — not `uses`, not `references`, nothing. Same text, same meaning, two node shapes, only the common one handled. Measured over ProxiCall/lib: 2,405 edges recovered, of which 516 name a symbol declared in the same file. The corpus is full of this shape: `constant_pattern` appears 3,981 times, `variable_pattern` 325 across 110 files, and 82 files carry constant patterns naming a file-declared symbol. The scope is deliberately narrow — a `qualified` under a `constant_pattern` unambiguously names a constant being TESTED, whereas a `qualified` in a TYPE position names a type, and whether a type deserves a `uses` edge is a family decision this lane has not made. The 1,889 added edges whose target is declared ELSEWHERE (a library enum such as `TargetPlatform.iOS`) are not new behaviour: the expression form has always emitted those, because DT-F gates a member read on its shape and not on whether the target resolves, which is the same reason `uses build -> context` publishes for a parameter. The string-literal case pins that boundary from the other side: `light` IS a declared enum member in this file and `case \"light\":` must NOT read it.",
+  "expectSymbols": [
+    {
+      "name": "WalletOperationType",
+      "kind": "enum"
+    },
+    {
+      "name": "AppErrorCode",
+      "kind": "enum"
+    },
+    {
+      "name": "ColorSwatch",
+      "kind": "enum"
+    },
+    {
+      "name": "NeverDeclared",
+      "kind": "enum"
+    },
+    {
+      "name": "WalletState",
+      "kind": "class"
+    },
+    {
+      "name": "ResolvesElsewhere",
+      "kind": "class"
+    },
+    {
+      "name": "Reading",
+      "kind": "type"
+    },
+    {
+      "name": "RecordTyped",
+      "kind": "class"
+    },
+    {
+      "name": "countFields",
+      "kind": "method",
+      "ownerName": "RecordTyped"
+    },
+    {
+      "name": "describe",
+      "kind": "method",
+      "ownerName": "RecordTyped"
+    },
+    {
+      "name": "plain",
+      "kind": "method",
+      "ownerName": "RecordTyped"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "describeStatement",
+      "target": "WalletOperationType.transfer",
+      "note": "THE PIN, and the shape the corpus is full of: a `switch_statement_case` whose constant is a `qualified` under a `constant_pattern`. Pre-fix this edge did not exist in any form."
+    },
+    {
+      "type": "uses",
+      "from": "describeStatement",
+      "target": "WalletOperationType.recipientLookup"
+    },
+    {
+      "type": "uses",
+      "from": "describeStatement",
+      "target": "WalletOperationType.refresh"
+    },
+    {
+      "type": "uses",
+      "from": "describeExpression",
+      "target": "WalletOperationType.transfer",
+      "note": "The switch EXPRESSION form, a `switch_expression_case` — a different node type carrying the same `constant_pattern > qualified` shape. Pinned separately because a fix that handled only the statement form would pass the other test and leave half the corpus dark."
+    },
+    {
+      "type": "uses",
+      "from": "describeExpression",
+      "target": "WalletOperationType.recipientLookup"
+    },
+    {
+      "type": "uses",
+      "from": "isLookup",
+      "target": "WalletOperationType.recipientLookup",
+      "note": "The if-case form, the third way Dart 3 writes a pattern test."
+    },
+    {
+      "type": "uses",
+      "from": "sameTextInExpression",
+      "target": "WalletOperationType.recipientLookup",
+      "note": "THE CONTRAST, and the reason this fixture can tell a correct fix from a plausible one. The same text in an EXPRESSION already worked, because the grammar builds a `selector` there. If the fix were wrong about which shapes to read, this edge would change while the pattern ones appeared — so it is pinned to prove the fix ADDED a shape rather than reinterpreting an existing one."
+    },
+    {
+      "type": "uses",
+      "from": "classify",
+      "target": "NeverDeclared.a",
+      "note": "A qualified pattern whose target is declared in this file, with the source being the function that owns the switch. Pinned to keep the SOURCE attribution honest: the edge belongs to the function that tests the constant, not to the enum that declares it."
+    },
+    {
+      "type": "uses",
+      "from": "describeStatement",
+      "target": "WalletState.operation",
+      "note": "The SWITCH SCRUTINEE read, which the fix must not disturb. The scrutinee is a field, and the pattern constants are separate reads; conflating them would be a different defect."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "classify",
+      "target": "light",
+      "note": "THE BOUNDARY PIN. `case \"light\":` is a STRING LITERAL case, and `light` is a declared member of `ColorSwatch` in this same file. Resolving the case's text against the symbol table — rather than requiring a `qualified` node — would publish this edge for a string comparison, and 17 of the review's original 95 \"missed\" constants were exactly this mistake in the MEASUREMENT. A string constant is not a reference to an enum member, in either direction."
+    },
+    {
+      "type": "uses",
+      "from": "describeStatement",
+      "target": "WalletOperationType",
+      "note": "The enum HEAD, not its member. The expression form publishes the member (`uses source -> off`) and never the head, and the pattern form must agree: publishing `WalletOperationType` as well would invent a read of the type that the code does not make — the switch tests a constant, and the enum is only its namespace."
+    },
+    {
+      "type": "uses",
+      "from": "describeExpression",
+      "target": "WalletOperationType"
+    },
+    {
+      "type": "uses",
+      "from": "isLookup",
+      "target": "WalletOperationType"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "countFields",
+      "ownerName": "RecordTyped",
+      "parameters": [
+        {
+          "name": "pair",
+          "type": "(int, String)"
+        }
+      ]
+    },
+    {
+      "symbol": "plain",
+      "ownerName": "RecordTyped",
+      "parameters": [
+        {
+          "name": "s",
+          "type": "String"
+        }
+      ],
+      "note": "CONTROL: a plain typed parameter, so a change that degraded everything to `dynamic` is distinguishable from one that merely mishandles records."
+    }
+  ],
+  "expectReturnType": [
+    {
+      "symbol": "describe",
+      "ownerName": "RecordTyped",
+      "returnType": "({int count, String label})",
+      "note": "THE PIN the record-type mutant bites on. The return type is spelled with its field NAMES, because a record's fields are part of its type."
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "countFields",
+      "ownerName": "RecordTyped",
+      "parameters": [
+        {
+          "name": "pair",
+          "type": "dynamic"
+        }
+      ],
+      "note": "Negative twin: the pre-fix shape typed a record-typed function's return as `dynamic` when the extractor missed it."
+    }
+  ],
+  "_pin_key_note": "Keys used here are the ones script/m14/run-fixtures.ts actually reads: expectSymbols, expectParameters, expectReturnType, forbidParameters, expectRelationships, forbidRelationships. An earlier draft of this file used `expectSymbolTypes` / `forbidSymbolTypes`, which the runner does NOT read — a pin that looks like coverage and executes as nothing, which is worse than no pin at all."
+}

@@ -1,0 +1,17 @@
+{
+  "fixtureId": "scala/scaladoc-payload",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b docstring payloads for scala: ScalaDoc (block_comment starting /**) lands on BOTH class and method symbols. Previously scala symbols carried NO comments at all - scala grammar names doc comments block_comment, unlike kotlin's multiline_comment. M37 #597 KAD2-sweep: adjacency pin — the doc-less idle() must carry NO doc (dead `sibling === node` stop leaked the first ScalaDoc).",
+  "expectSymbols": [
+    { "name": "Svc" },
+    { "name": "work" },
+    { "name": "idle" }
+  ],
+  "expectComments": [
+    { "symbol": "Svc", "minCount": 1 },
+    { "symbol": "work", "minCount": 1 },
+    { "symbol": "idle", "notContains": "Svc docs" },
+    { "symbol": "idle", "notContains": "Works hard" }
+  ]
+}

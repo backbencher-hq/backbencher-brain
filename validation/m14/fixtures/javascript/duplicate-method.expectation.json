@@ -1,0 +1,17 @@
+{
+  "fixtureId": "javascript/duplicate-method",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J3 fix (last-wins, runtime + TS parity): duplicate A.save keeps the LAST body — proven via qualified_calls (beta present, alpha absent) and the dead body's call edge re-pointed (no save->alpha). The cross-class pair (B.save/gamma) doubles as the J1 owner-qualification pin: neither list may carry the other's calls.",
+  "expectSymbols": [
+    { "name": "save", "kind": "method", "ownerName": "A" },
+    { "name": "save", "kind": "method", "ownerName": "B" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "save", "ownerName": "A", "includes": ["beta"], "notIncludes": ["alpha", "gamma"] },
+    { "symbol": "save", "ownerName": "B", "includes": ["gamma"], "notIncludes": ["alpha", "beta"] }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "save", "target": "alpha" }
+  ]
+}

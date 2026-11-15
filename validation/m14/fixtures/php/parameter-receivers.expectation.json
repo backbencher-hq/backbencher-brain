@@ -1,0 +1,15 @@
+{
+  "fixtureId": "php/parameter-receivers",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "expectNoParseErrors": true,
+  "rationale": "Stable single-class parameters infer declaration owners. Reassignment, multiple types, reference parameters, and unknown argument escapes refuse owner inference. Native and worker verification lives in verify-php-parameter-receivers.mts.",
+  "expectRelationships": [
+    {"source":"stable","type":"calls","target":"run","meta.ownerIdentity":"parameters\\service","meta.receiverTypeEvidence":"stable-parameter","meta.evidenceClass":"inferred"},
+    {"source":"optional","type":"calls","target":"run","meta.ownerIdentity":"parameters\\service","meta.receiverTypeEvidence":"stable-parameter"},
+    {"source":"reassigned","type":"calls","target":"run","meta.ownerIdentity":null},
+    {"source":"unionType","type":"calls","target":"run","meta.ownerIdentity":null},
+    {"source":"escaping","type":"calls","target":"run","meta.ownerIdentity":null},
+    {"source":"byReference","type":"calls","target":"run","meta.ownerIdentity":null}
+  ]
+}

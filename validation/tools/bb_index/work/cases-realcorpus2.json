@@ -1,0 +1,4 @@
+[
+  {"label":"real corpus: dir mode on a settled corpus (eligibility-filtered walk)","arguments":{"path":".","mode":"dir"}},
+  {"label":"real corpus: file mode on an unchanged source file (no-op)","arguments":{"path":"src/language/parser.ts"}}
+]

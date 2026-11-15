@@ -1,0 +1,78 @@
+{
+  "fixtureId": "protobuf/module-edge-source-fallback",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the FALLBACK ARM of the module-edge source rule \u2014 the arm no other protobuf fixture reaches, because every other one declares a package. Since pass 16 the `imports`/`exports` SOURCE is the file's own `package` namespace symbol, which this analyzer already publishes and already hangs the file's top-level declarations from; a file with no package has no such symbol, so the source falls back to the file's basename and `metadata.moduleOwner` reads `basename` rather than `package`. Both arms are needed to tell a correct analyzer from two wrong ones: an analyzer that always used the package would publish an edge whose source is the EMPTY STRING here, and an analyzer that had never made the change would publish `module-edge-source-fallback.proto` here while every other fixture still passed, because the other nine all declare a package. The corpus sizes both arms \u2014 810 of 821 files declare a package, 11 do not, and 5 of the 1,561 `imports` edges come from the 11 (`script/m14/protobuf-module-edge-sources.mts`). This fixture also pins the second consequence of having no package: the file's top-level declaration has NO owner, so it gets NO `contains` edge, and its ids carry no package prefix. PASS 16 ADDENDUM, recorded because it happened: these line numbers were first authored as 13/17/18 and the fixture FAILED, because the header comment was miscounted rather than the file read. That is the authoredBeforeAnalyzerRun discipline working \u2014 the expectations were derived by reading the source, reading it wrong produced a red row, and the alternative available to me was to rewrite the fixture until it matched the analyzer, which is the only outcome the discipline exists to prevent.",
+  "expectSymbols": [
+    {
+      "name": "Orphan",
+      "kind": "class",
+      "note": "a message declared in a file with no package. Its id carries no prefix, which is what makes this file distinguishable from every other fixture here."
+    },
+    {
+      "name": "at",
+      "kind": "property"
+    },
+    {
+      "name": "label",
+      "kind": "property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "",
+      "note": "no symbol with an empty name. The failure mode this fixture exists to catch is a module edge whose source is the empty string, which a package-less file produces if the analyzer reads `pkg` without checking it \u2014 and an empty SOURCE is an endpoint the graph cannot walk."
+    },
+    {
+      "name": "package",
+      "note": "this file declares no package, so no `namespace` symbol may be published for it. One that was would be a symbol the file does not declare."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "module-edge-source-fallback.proto",
+      "target": "google/protobuf/timestamp.proto",
+      "line_number": 14,
+      "meta.moduleOwner": "basename",
+      "confidenceMin": 0.9,
+      "note": "THE fallback row. The source is the file's BASENAME because the file declares no package and therefore publishes no namespace symbol to hang the edge on. `metadata.moduleOwner: \"basename\"` is asserted rather than inferred: it is the field that distinguishes this edge from the 1,556 whose source is a package, so a consumer can tell an external-by-necessity source from a resolved one without re-deriving it from the file."
+    },
+    {
+      "type": "contains",
+      "from": "Orphan",
+      "target": "Orphan.at",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "Orphan",
+      "target": "Orphan.label",
+      "line_number": 20
+    },
+    {
+      "type": "references",
+      "from": "Orphan.at",
+      "target": "google.protobuf.Timestamp",
+      "line_number": 19,
+      "note": "the field's declared type is a message, so it is a reference and not a scalar. This row is here so the fixture also pins that a package-less file resolves cross-file type references NORMALLY \u2014 losing the package costs the module edge its owner, not its type resolution."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "",
+      "note": "the empty source. `pkg` is \"\" for this file and an analyzer that used it without a length check would publish this edge from nothing. An edge whose source is the empty string is a node the index does not hold."
+    },
+    {
+      "type": "exports",
+      "note": "this file has no `import public`, so there is nothing to re-export. An `exports` row here would mean a modifier was inferred from something other than the declaration."
+    },
+    {
+      "type": "uses",
+      "from": "Orphan.at",
+      "target": "google.protobuf.Timestamp",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ]
+}

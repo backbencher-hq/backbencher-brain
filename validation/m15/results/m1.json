@@ -1,0 +1,12 @@
+{
+  "issue": "M15.M1",
+  "code": "M1",
+  "tool": "bb_migrate",
+  "title": "real migration plans + unsupported + dependency order",
+  "verified": true,
+  "checks": 4,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:27:20.310Z"
+}

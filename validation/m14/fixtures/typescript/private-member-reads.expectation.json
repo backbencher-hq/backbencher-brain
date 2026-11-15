@@ -1,0 +1,18 @@
+{
+  "fixtureId": "typescript/private-member-reads",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W13: the field-access Uses rule looks the member name up in the declared-symbol set before emitting, and that set (at the time) stored private members under their CLEAN name (`count` for `#count` — the then-current spec-table contract). The rule passed the node's RAW text (`#count`) to the membership test, so it was always false and the analyzer skipped the read by itself: `this.#count` emitted nothing, while `this.count` emitted `uses read->count` and while a private METHOD call correctly emitted `calls run->#step`. So TS was blind to every private field read in a codebase. Probe-proven (public/private/method-arg/private-call matrix), not inferred. Not corpus-visible in the pinned corpora (element-plus 0, vue-element-admin 0, vue-core 1 — and that one is inside a comment in packages/compiler-core/src/babelUtils.ts), which is why no sampled differential lane ever surfaced it. Contract, as RE-RULED by M49 W15 #813 (owner: 'the symbol keeps the declared name'): the SYMBOL also carries the `#` spelling — the rule's W13 `#`-strip normalization is gone because symbols are no longer stored stripped, so `symbolNames[name]` uses the node's own text. Symbol `#step` is pinned here for exactly that reason: pre-ruling the method symbol was `step` while its calls edge already targeted `#step`.",
+  "expectSymbols": [
+    { "name": "Store", "kind": "class" },
+    { "name": "read", "kind": "method" },
+    { "name": "bump", "kind": "method" },
+    { "name": "#step", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "read", "target": "#count", "meta.isFieldAccess": true, "note": "pre-fix LOST — the lookup used the raw `#count`" },
+    { "type": "uses", "from": "bump", "target": "#version", "meta.isFieldAccess": true, "note": "pre-fix LOST — private read in an expression position" },
+    { "type": "calls", "from": "bump", "target": "#step", "note": "already worked pre-fix (the calls walk does not consult the symbol set) — pinned so the two spellings stay consistent" }
+  ],
+  "forbidRelationships": []
+}

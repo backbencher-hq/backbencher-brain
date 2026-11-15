@@ -1,9 +1,9 @@
 {
   "probe": "M59.P3",
   "issue": "#822",
-  "at": "2026-10-16T16:53:20.631Z",
-  "atCommit": "449074bf72b41270f1a0636ca298d38f3a17626d",
-  "treeModifiedInputs": 351,
+  "at": "2026-11-12T05:14:56.134Z",
+  "atCommit": "653179e683b2af0974cb15acf5d48826e5bb38fd",
+  "treeModifiedInputs": 264,
   "command": "npx tsx script/m59/verify-rel-multiplicity.ts",
   "question": "4 call sites on 4 lines — does the INDEX keep 4?",
   "trueCallSites": {
@@ -13,28 +13,28 @@
   "java": {
     "rows": [
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/Multi.java:caller:3:target:calls:4",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/Multi.java:caller:3:target:calls:4",
         "rt": "calls",
         "line": 4,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/Multi.java:caller:3:target:calls:5",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/Multi.java:caller:3:target:calls:5",
         "rt": "calls",
         "line": 5,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/Multi.java:caller:3:target:calls:6",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/Multi.java:caller:3:target:calls:6",
         "rt": "calls",
         "line": 6,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/Multi.java:caller:3:target:calls:7",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/Multi.java:caller:3:target:calls:7",
         "rt": "calls",
         "line": 7,
         "te": "target",
@@ -51,51 +51,44 @@
   "typescript": {
     "rows": [
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/multi.ts:caller:2:target:calls:3",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/multi.ts:caller:2:target:calls:3:site:93",
         "rt": "calls",
         "line": 3,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/multi.ts:caller:2:target:calls:4",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/multi.ts:caller:2:target:calls:4:site:114",
         "rt": "calls",
         "line": 4,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/multi.ts:caller:2:target:calls:5",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/multi.ts:caller:2:target:calls:5:site:135",
         "rt": "calls",
         "line": 5,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/multi.ts:caller:2:target:calls:6",
+        "id": "dd52063ed359233230ca24aeaf185f3fde7c2ea6:rel:dd52063ed359233230ca24aeaf185f3fde7c2ea6:src/multi.ts:caller:2:target:calls:6:site:156",
         "rt": "calls",
         "line": 6,
-        "te": "target",
-        "tname": "target"
-      },
-      {
-        "id": "216c682dc56cfaab229452db1232b2d316e36edb:rel:216c682dc56cfaab229452db1232b2d316e36edb:src/multi.ts:caller:2:target:references:3",
-        "rt": "references",
-        "line": 3,
         "te": "target",
         "tname": "target"
       }
     ],
     "audit": {
-      "rows": 5,
-      "knownLines": 5,
+      "rows": 4,
+      "knownLines": 4,
       "distinctLines": 4,
-      "perSite": false
+      "perSite": true
     },
-    "scope": "no line emitted by the analyzer yet (#825)"
+    "scope": "stored and graph call-site lines asserted"
   },
   "predicateCanFail": true,
   "status": "pass",
   "failures": 0,
-  "checks": 5
+  "checks": 7
 }

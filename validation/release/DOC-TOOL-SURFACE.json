@@ -1,0 +1,345 @@
+{
+  "probe": "doc-tool-surface",
+  "what": "current-facing docs mention only the registered tool surface; retired names appear only under a retired/dead/legacy marker; tool-count claims equal the registry; generated catalogs match the registry's names, modes and parameters",
+  "generatedAt": "2026-11-06T04:18:12.756Z",
+  "head": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
+  "registeredTools": [
+    {
+      "name": "bb_search",
+      "modes": [
+        "symbols",
+        "content",
+        "symbol",
+        "file"
+      ],
+      "parameters": [
+        "caseSensitive",
+        "exact",
+        "filePath",
+        "includeContent",
+        "language",
+        "limit",
+        "mode",
+        "offset",
+        "query",
+        "refresh",
+        "regex",
+        "symbolKind",
+        "symbolName"
+      ]
+    },
+    {
+      "name": "bb_ask",
+      "modes": [
+        "answer"
+      ],
+      "parameters": [
+        "limit",
+        "query"
+      ]
+    },
+    {
+      "name": "bb_health",
+      "modes": [
+        "status",
+        "refresh"
+      ],
+      "parameters": [
+        "checkUnindexed",
+        "force",
+        "freshness",
+        "history",
+        "includeAnalysisRuns",
+        "integrity",
+        "limit",
+        "paths",
+        "refresh",
+        "sampleSize",
+        "verbose",
+        "wait"
+      ]
+    },
+    {
+      "name": "bb_patterns",
+      "modes": [
+        "orphaned",
+        "all"
+      ],
+      "parameters": [
+        "confidenceThreshold",
+        "history",
+        "includeAntiPatterns",
+        "includeFramework",
+        "includeOrphaned",
+        "limit",
+        "recordRun",
+        "scope"
+      ]
+    },
+    {
+      "name": "bb_security",
+      "modes": [
+        "findings"
+      ],
+      "parameters": [
+        "history",
+        "limit",
+        "recordRun"
+      ]
+    },
+    {
+      "name": "bb_visualize",
+      "modes": [
+        "project",
+        "file",
+        "module",
+        "symbol",
+        "feature"
+      ],
+      "parameters": [
+        "excludePatterns",
+        "format",
+        "includeTests",
+        "languages",
+        "layout",
+        "maxLinks",
+        "maxNodes",
+        "offset",
+        "relationshipTypes",
+        "scope",
+        "symbolKinds",
+        "target",
+        "view"
+      ]
+    },
+    {
+      "name": "bb_migrate",
+      "modes": [
+        "plan"
+      ],
+      "parameters": [
+        "format",
+        "paths",
+        "symbolIds",
+        "symbolName",
+        "symbolNames",
+        "targetLanguage"
+      ]
+    },
+    {
+      "name": "bb_analyze",
+      "modes": [
+        "callers",
+        "callees",
+        "trace",
+        "dependencies",
+        "stats",
+        "complexity",
+        "impact",
+        "test_mapping",
+        "test_gaps",
+        "test_impact",
+        "test_quality"
+      ],
+      "parameters": [
+        "filePath",
+        "limit",
+        "mode",
+        "target"
+      ]
+    },
+    {
+      "name": "bb_doc",
+      "modes": [
+        "symbol",
+        "file",
+        "module",
+        "feature",
+        "api",
+        "project",
+        "coverage"
+      ],
+      "parameters": [
+        "audience",
+        "detail",
+        "format",
+        "includeDiagrams",
+        "includeExamples",
+        "includeTests",
+        "limit",
+        "maxTokens",
+        "mode",
+        "refresh",
+        "target"
+      ]
+    },
+    {
+      "name": "bb_edit",
+      "modes": [
+        "write",
+        "update",
+        "insert",
+        "delete",
+        "refactor",
+        "batch"
+      ],
+      "parameters": [
+        "content",
+        "dryRun",
+        "edits",
+        "filePath",
+        "files",
+        "force",
+        "format",
+        "lineStart",
+        "mode",
+        "newContent",
+        "newName",
+        "overwrite",
+        "position",
+        "symbolName",
+        "targetSymbolName"
+      ]
+    },
+    {
+      "name": "bb_index",
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "parameters": [
+        "mode",
+        "path"
+      ]
+    },
+    {
+      "name": "bb_graph",
+      "modes": [
+        "graph"
+      ],
+      "parameters": [
+        "direction",
+        "edgeLimit",
+        "includeCrossLanguage",
+        "maxDepth",
+        "maxEdges",
+        "relationshipTypes",
+        "symbol",
+        "timeBudgetMs"
+      ]
+    },
+    {
+      "name": "bb_impact",
+      "modes": [
+        "impact"
+      ],
+      "parameters": [
+        "file",
+        "refresh",
+        "relationshipTypes",
+        "symbol"
+      ]
+    },
+    {
+      "name": "bb_cross_language",
+      "modes": [
+        "cross-language"
+      ],
+      "parameters": [
+        "limit",
+        "symbol"
+      ]
+    },
+    {
+      "name": "bb_annotate",
+      "modes": [
+        "annotate"
+      ],
+      "parameters": [
+        "body",
+        "path",
+        "symbol",
+        "toolIdentity"
+      ]
+    },
+    {
+      "name": "bb_annotations",
+      "modes": [
+        "annotate"
+      ],
+      "parameters": [
+        "includeNameLevel",
+        "limit",
+        "path",
+        "symbol"
+      ]
+    }
+  ],
+  "counts": {
+    "tools": 16,
+    "scannedFiles": 54,
+    "checks": 99,
+    "negatives": 7,
+    "negativeCaught": 7,
+    "violations": 0
+  },
+  "scannedFiles": [
+    "README.md",
+    "docs/README.md",
+    "docs/TOOL-REGISTRY.md",
+    "docs/TOOLS_OVERVIEW.md",
+    "docs/TOOL-OWNERS.md",
+    "docs/LANGUAGE-TOOL-MATRIX.md",
+    "docs/GRAPH_ENGINE.md",
+    "docs/ARCHITECTURE.md",
+    "docs/EMBEDDINGS.md",
+    "docs/man/bb.1",
+    "docs/tools/bb_annotations.md",
+    "docs/tools/bb_index.md",
+    "docs/tools/bb_security.md",
+    "docs/tools/bb_annotate.md",
+    "docs/tools/bb_edit.md",
+    "docs/tools/bb_migrate.md",
+    "docs/tools/bb_cross_language.md",
+    "docs/tools/bb_patterns.md",
+    "docs/tools/bb_doc.md",
+    "docs/tools/bb_health.md",
+    "docs/tools/bb_analyze.md",
+    "docs/tools/bb_visualize.md",
+    "docs/tools/bb_search.md",
+    "docs/tools/bb_ask.md",
+    "docs/tools/bb_graph.md",
+    "docs/tools/bb_impact.md",
+    "docs/website/TOOLS.md",
+    "docs/indexing/discovery-matrix.md",
+    "docs/indexing/performance.md",
+    "docs/indexing/environment-variables.md",
+    "docs/indexing/embeddings.md",
+    "docs/indexing/README.md",
+    "docs/indexing/troubleshooting.md",
+    "docs/indexing/DEAD-ASSETS.md",
+    "docs/indexing/resume.md",
+    "docs/BB_PATTERNS.md",
+    "docs/BB_DOC_REFERENCE.md",
+    "docs/BB_CROSS_LANGUAGE.md",
+    "docs/BB_SEARCH.md",
+    "docs/BB_TEST_QUALITY.md",
+    "docs/BB_ASK.md",
+    "docs/BB_MIGRATE.md",
+    "docs/BB_VISUALIZE.md",
+    "docs/BB_ANALYSIS_HISTORY.md",
+    "docs/BB_IMPACT.md",
+    "docs/BB_ANALYZE.md",
+    "docs/BB_ANNOTATIONS.md",
+    "docs/BB_DOC_EXAMPLES.md",
+    "docs/BB_TEST_INTEL.md",
+    "docs/BB_EDIT.md",
+    "docs/BB_SECURITY.md",
+    "docs/BB_HEALTH.md",
+    "docs/BB_DOC.md",
+    "docs/BB_ANNOTATE.md"
+  ],
+  "violations": []
+}

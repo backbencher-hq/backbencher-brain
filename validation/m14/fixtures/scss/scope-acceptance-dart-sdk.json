@@ -1,0 +1,51 @@
+{
+  "repo": "dart-sdk",
+  "files": 2,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 55,
+        "total": 55
+      },
+      "imports": {
+        "unresolved": 2,
+        "total": 2
+      },
+      "references": {
+        "resolved": 20,
+        "total": 20
+      },
+      "exports": {
+        "resolved": 8,
+        "total": 8
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 55,
+        "total": 55
+      },
+      "imports": {
+        "unresolved": 2,
+        "total": 2
+      },
+      "references": {
+        "resolved": 20,
+        "total": 20
+      },
+      "exports": {
+        "resolved": 8,
+        "total": 8
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 3,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 83,
+    "falseBindings": 0
+  }
+}

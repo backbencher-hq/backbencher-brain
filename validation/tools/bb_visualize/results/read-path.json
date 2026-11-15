@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "generatedAt": "2026-11-03T16:39:31.681Z",
+  "verifierCommand": "BB_DATA_DIR=validation/tools/bb_visualize/bbdata npx tsx validation/tools/bb_visualize/read-path.ts",
+  "fixture": {
+    "projectId": "085fcfa3ba00e3cf974d244acf3aac993aba52d9",
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/085fcfa3ba00e3cf974d244acf3aac993aba52d9/brain.db"
+  },
+  "scenarios": [
+    {
+      "name": "control-import",
+      "before": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "after": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "ms": 231,
+      "notes": [
+        "imports the tool-handler assembler and opens nothing"
+      ],
+      "unchanged": true
+    },
+    {
+      "name": "open-readonly",
+      "before": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "after": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "ms": 28,
+      "notes": [
+        "readonly open; 39 symbols read"
+      ],
+      "unchanged": true
+    },
+    {
+      "name": "open-readwrite",
+      "before": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "after": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "ms": 46,
+      "notes": [
+        "read-write open; 39 symbols read"
+      ],
+      "unchanged": true
+    },
+    {
+      "name": "engine-visualize",
+      "before": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "after": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "ms": 58,
+      "notes": [
+        "engine.visualizeProject: 38 nodes, 18 links"
+      ],
+      "unchanged": true
+    },
+    {
+      "name": "handler-visualize",
+      "before": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "after": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "ms": 284,
+      "notes": [
+        "handler.bb_visualize: 30049 chars"
+      ],
+      "unchanged": true
+    },
+    {
+      "scenario": "server-call",
+      "before": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "after": {
+        "db": {
+          "exists": true,
+          "size": 946176,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "exists": true,
+          "size": 57712,
+          "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+        },
+        "schemaVersion": 1335
+      },
+      "unchanged": true
+    }
+  ],
+  "verdict": "byte-read-only across every layer"
+}

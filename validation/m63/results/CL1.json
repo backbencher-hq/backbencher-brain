@@ -25,7 +25,7 @@
       "id": "M3",
       "name": "no identity (counterparty stripped)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M4",
@@ -37,25 +37,25 @@
       "id": "M5",
       "name": "cross-project leak (row filter dropped)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M11",
       "name": "unpairable rule removed (a row with no language gets a fabricated pair)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M16",
       "name": "the final slice removed (the returned list exceeds its own declared cap)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M17",
       "name": "the depth>=2 descendant count is pinned to zero (absence over-claims again)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M15",
@@ -79,7 +79,7 @@
       "id": "M12",
       "name": "collapse rule removed (a same-named cross-language row is emitted twice)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M7",
@@ -97,13 +97,13 @@
       "id": "M9",
       "name": "cascade reported with no member to check it against",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     },
     {
       "id": "M6",
       "name": "pair fabrication where the row has no languages",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/mcp/backbencher-brain/src/shared' imported from $HOME/mcp/backbench"
+      "note": "load/throw: Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/src/shared' imported from /home/ishaq2321/mcp/backbench"
     }
   ],
   "failures": [],

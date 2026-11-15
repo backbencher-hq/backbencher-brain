@@ -1,0 +1,18 @@
+{
+  "fixtureId": "groovy/record-symbol",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G6 gap: record Point(int x, int y) emits a class-kind symbol (matching java's record handling and CC1 kind consistency) with the components x/y as public Property symbols, and new Point(...) instantiates it. Previously record_declaration produced no symbol at all (Groovy 4 records invisible).",
+  "expectSymbols": [
+    { "name": "Point", "kind": "class" },
+    { "name": "x", "kind": "property" },
+    { "name": "y", "kind": "property" },
+    { "name": "UseSvc", "kind": "class" },
+    { "name": "run" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "run", "target": "Point" },
+    { "type": "contains", "from": "Point", "target": "x" },
+    { "type": "contains", "from": "Point", "target": "y" }
+  ]
+}

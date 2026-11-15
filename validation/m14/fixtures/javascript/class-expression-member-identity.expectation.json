@@ -1,0 +1,59 @@
+{
+  "fixtureId": "javascript/class-expression-member-identity",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W13: only `class_declaration` pushed a Class scope, so `scopeOwnerName` returned undefined for every member of every ANONYMOUS CLASS EXPRESSION and they all shared the dedup key `module:<name>` — the second class expression's `constructor` (and any same-named method) replaced the first's, dead-spanning its body and dropping every edge it owned. Measured on the svelte corpus: `custom-element.js` defines two class expressions (the `SvelteElement` custom-element base and the per-component `Class` inside `create_custom_element`), each with a `constructor`, so `this.attachShadow(shadow_root_init)` in the first vanished — the second javascript-lane MISSING edge W12's 400-file measurement registered (the 60-file rotation never sampled a file with two anonymous class expressions). Contract: identity is container-scoped, exactly as W2 (#769) ruled for object literals — sibling containers never collide, duplicates INSIDE one class still collapse last-wins.",
+  "expectSymbolCount": [
+    {
+      "name": "constructor",
+      "equals": 2,
+      "note": "one per class expression; pre-fix the second replaced the first"
+    },
+    {
+      "name": "run",
+      "equals": 2,
+      "note": "same-named methods of two anonymous class expressions are distinct members"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "alpha",
+      "kind": "function"
+    },
+    {
+      "name": "beta",
+      "kind": "function"
+    },
+    {
+      "name": "First",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "attachShadow",
+      "note": "pre-fix LOST — the first class expression's constructor was dead-spanned"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "alpha",
+      "note": "pre-fix LOST — the first run was replaced by the second"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "beta",
+      "note": "the second class expression's own body"
+    },
+    {
+      "type": "uses",
+      "from": "constructor",
+      "target": "constructor\u0000init",
+      "meta.bareRead": true
+    }
+  ],
+  "forbidRelationships": []
+}

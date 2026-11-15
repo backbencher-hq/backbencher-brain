@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/positional-payload",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T6 fix: positional symbol resolution compares 1-based symbol ranges against 0-based node rows (+1 both), so same-named methods on different objects resolve to THEIR OWN body — objA.handle carries [\"callA\"] only, objB.handle carries [\"callB\"] only. Pre-fix the lookup never matched (0-based vs 1-based can never be equal) and both bodies attributed to the first-name-matched handle, colliding the qualified_calls payloads. Both owners pinned with includes AND notIncludes (CPPD10 anti-pollution pattern): an includes-only check on one symbol passes even with polluted payloads.",
+  "expectSymbols": [
+    { "name": "handle", "kind": "method", "ownerName": "objA" },
+    { "name": "handle", "kind": "method", "ownerName": "objB" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "handle", "ownerName": "objA", "includes": ["callA"], "notIncludes": ["callB"] },
+    { "symbol": "handle", "ownerName": "objB", "includes": ["callB"], "notIncludes": ["callA"] }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "fixtureId": "c/part-of-quoted-include",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The `part_of` split for `#include`, pinned in both directions by ONE file. A QUOTED include (`#include \"Service.h\"`) is the translation unit's own fragment: the preprocessor splices the header's text into this unit, so the included file shares this unit's SINGLE scope, which is the vocabulary contract's part_of. An ANGLE include (`#include <stdio.h>`) is another module's interface and stays `imports`. THE TARGET IS THE PART'S MODULE SYMBOL (the file stem, `util/Config.h` \u21d2 `Config`), because the arbiter resolves target STRINGS against SYMBOL NAMES and a path is not in that space \u2014 MEASURED on the cpp lane, whose first path-target emission gave 0 resolved of 4,612 rows. The path is kept in metadata (`partPath`) so the file identity is not lost: the path is evidence, the stem is the target. `partRole` is MANDATORY on every part_of row and reads \"library\" here because this unit carries the directive naming its own part.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "Service",
+      "meta.partRole": "library",
+      "meta.partPath": "Service.h",
+      "meta.isQuotedInclude": true
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "Config",
+      "meta.partRole": "library",
+      "meta.partPath": "util/Config.h",
+      "meta.isQuotedInclude": true
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "stdio.h",
+      "meta.isSystemInclude": true
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "pthread.h",
+      "meta.isSystemInclude": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "Service.h",
+      "note": "a QUOTED include is the unit's own part, not another module's interface"
+    },
+    {
+      "type": "imports",
+      "target": "Service",
+      "note": "the stem is the part_of target; an imports row to it would be the same edge under two labels"
+    },
+    {
+      "type": "part_of",
+      "target": "stdio.h",
+      "note": "an ANGLE include is another module's interface \u2014 never this unit's part"
+    },
+    {
+      "type": "part_of",
+      "target": "pthread.h",
+      "note": "an ANGLE include is another module's interface"
+    }
+  ]
+}

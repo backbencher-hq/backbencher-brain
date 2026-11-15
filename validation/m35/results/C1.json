@@ -1,0 +1,17 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/staleness-corpus.ts --check",
+  "evidenceFile": "C1.json",
+  "generatedAt": "2026-09-04T01:50:33.769Z",
+  "passed": 99,
+  "failed": 0,
+  "negativeCases": 25,
+  "invocations": 21,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.476Z",
+    "contentSha256": "998bc3e520c9764778852d6bb96385950281610f65a4ac587752ae076849bf99"
+  }
+}

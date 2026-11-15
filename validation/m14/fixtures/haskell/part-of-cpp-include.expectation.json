@@ -1,0 +1,84 @@
+{
+  "fixtureId": "haskell/part-of-cpp-include",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS `part_of` FROM A CPP `#include` — Haskell's ONE textual file inclusion, and an R3 emission on the served grammar's existing `cpp` node type (253 named of 552 ids, digest 37a6b07b1a83; no grammar build or patch is needed, which is why R1 and R2 are not taken). `import Module` is a MODULE LOAD: it creates binding scope and is resolvable as `Module.item`, the OPPOSITE of a fragment, so it is `imports` (the existing 32,704 rows) and never `part_of`. Under `{-# LANGUAGE CPP #-}`, `#include \"x.h\"` splices the named file's text into this module BEFORE parsing; it shares this module's single scope and has no module identity — the contract's `part_of` verbatim, and the fleet's implemented `part_of` set is unanimously textual file inclusion (cpp `#include`, fsharp `#load`, php include/require, erlang `-include`, typescript reference directives). THE TARGET IS THE PART'S MODULE SYMBOL (the file STEM), NOT A PATH: the arbiter resolves target strings against symbol NAMES and has no space for a path (the cpp lane measured 0 resolved of 4,612 rows when it emitted paths), while the contract permits either ('the part's file OR ITS MODULE SYMBOL'); the written path is kept in `metadata.partPath` so the file identity is evidence, not the target. FIRE: (1) `#include \"MachDeps.h\"` -> module scope `PartOfIncludes` part_of `MachDeps`, partRole 'library' (this file is the unit and the directive names its part), partPath 'MachDeps.h', line 39; (2) `#include \"Local/WidgetConfig.h\"` -> part_of `WidgetConfig`, the DIRECTORY stripped because the stem is the symbol, partPath 'Local/WidgetConfig.h', line 40. FORBID — the four impostor classes the whole-population census measured in the real corpus, every one of which carries the directive's TEXT without being a directive: (A) a string-built line `[\"#include \\\"\" ++ header ++ \"\\\"\"]` is DATA — no part_of to `header`; (B) the `-#include` GHC flag as a string literal — no part_of to `include`; (C) a Haddock mention of the flag — prose, no edge; (D) a JSON quasiquote carrying `#include <unix.h>` — quasiquote bodies are OPAQUE text (grammar: one `quasiquote_body` token), so the angle include there is not a directive and must produce neither part_of to `unix` nor imports to `unix.h`. An exact count pin (part_of = 2) keeps C and D silent; the forbid rows name A and B by their own endpoints so a regression cannot hide behind the count. Also pinned: the PATH is never the target (forbid part_of target 'Local/WidgetConfig.h'), and no symbol is fabricated for either header stem.",
+  "expectSymbols": [
+    { "name": "PartOfIncludes", "kind": "module", "comment": "the module scope both part_of rows are sourced from" },
+    { "name": "dirs", "kind": "function", "comment": "exported; the string-building negative's enclosing callable" },
+    { "name": "flags", "kind": "function", "comment": "exported; the flag-string negative's enclosing callable" },
+    { "name": "payload", "kind": "function", "comment": "exported; the quasiquote negative's enclosing callable" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "source": "PartOfIncludes",
+      "target": "MachDeps",
+      "line_number": 39,
+      "meta.partRole": "library",
+      "meta.partPath": "MachDeps.h",
+      "meta.isQuotedInclude": true,
+      "meta.evidenceClass": "structural",
+      "comment": "FIRE 1 — a real quoted preprocessor include. Target is the part's module STEM; the written path is evidence in metadata.partPath."
+    },
+    {
+      "type": "part_of",
+      "source": "PartOfIncludes",
+      "target": "WidgetConfig",
+      "line_number": 40,
+      "meta.partPath": "Local/WidgetConfig.h",
+      "comment": "FIRE 2 — the directory is STRIPPED from the stem (`Local/WidgetConfig.h` -> `WidgetConfig`) because the target is a symbol, while partPath keeps the path as written."
+    },
+    {
+      "type": "exports",
+      "source": "PartOfIncludes",
+      "target": "payload",
+      "comment": "the explicit export list; the export invariant requires it to resolve"
+    },
+    {
+      "type": "contains",
+      "source": "PartOfIncludes",
+      "target": "dirs",
+      "comment": "module owns the negative's callable"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "part_of",
+      "equals": 2,
+      "comment": "EXACTLY the two directive sites. This is the pin that keeps FORBID (C) the Haddock mention and FORBID (D) the quasiquote body silent: neither is a `cpp` node, so neither may add a row."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "target": "unix",
+      "comment": "FORBID (D) — `#include <unix.h>` inside the JSON quasiquote body. A quasiquote body is one opaque token; reading a directive out of it would be a text search, not a construct."
+    },
+    {
+      "type": "imports",
+      "target": "unix.h",
+      "comment": "FORBID (D), the other label — the quasiquote text must not become an angle-include import either"
+    },
+    {
+      "type": "part_of",
+      "target": "header",
+      "comment": "FORBID (A) — `[\"#include \\\"\" ++ header ++ \"\\\"\"]` builds the TEXT of a directive in a string. The concatenated identifier is not an include specifier."
+    },
+    {
+      "type": "part_of",
+      "target": "include",
+      "comment": "FORBID (B) — the `-#include` GHC FLAG as a string literal names no file"
+    },
+    {
+      "type": "part_of",
+      "target": "Local/WidgetConfig.h",
+      "comment": "THE PATH IS NEVER THE TARGET. The contract permits the file or its module symbol; the arbiter can only bind a symbol, so a path target would be a known-unresolvable row. Pinned here so the two halves of the row cannot be swapped."
+    }
+  ],
+  "forbidSymbols": [
+    { "name": "MachDeps", "comment": "the header stem is a TARGET, not a declaration of this file — no symbol may be fabricated for an external part" },
+    { "name": "WidgetConfig", "comment": "as above" },
+    { "name": "#include \"MachDeps.h\"", "comment": "the raw directive text is not a name" }
+  ]
+}

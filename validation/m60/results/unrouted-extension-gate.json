@@ -16,14 +16,14 @@
   "newKeys": [],
   "knownSources": [
     {
-      "path": "$HOME/mcp/backbencher-brain/validation/m14/measurements/unrouted-extension-census.json",
+      "path": "/home/ishaq2321/mcp/backbencher-brain/validation/m14/measurements/unrouted-extension-census.json",
       "kind": "m60-unrouted-extension-census",
       "generatedAt": "2026-10-12T21:26:05.081Z",
       "keys": 1060,
       "present": true
     },
     {
-      "path": "$HOME/mcp/backbencher-brain/validation/m60/results/unrouted-extension-rulings.json",
+      "path": "/home/ishaq2321/mcp/backbencher-brain/validation/m60/results/unrouted-extension-rulings.json",
       "kind": "m60-unrouted-extension-rulings",
       "generatedAt": "2026-10-12T20:56:55.171Z",
       "keys": 147,
@@ -31,7 +31,7 @@
     }
   ],
   "scope": {
-    "corpusRoot": "$HOME/fixtures/repositories",
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
     "reposWalked": [
       "Aporia",
       "Aqua.jl",

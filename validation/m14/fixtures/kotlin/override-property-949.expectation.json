@@ -1,0 +1,27 @@
+{
+  "fixtureId": "kotlin/override-property-949",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Source written from the pre-declared contract — an `override val`/`override var` publishes an `overrides` edge at the same two evidence tiers an `override fun` does, verified against a declared TYPE rather than a parameter list — before the analyzer was run for this shape. The corpus measurement quoted in the rationale is what made it a GAP rather than a question: the construct occurs 1,837 times in 200 files and the analyzer published 0 edges.",
+  "rationale": "M14 ontology wave (DERIV_OVERRIDES), third gap. An `override val` is an override in Kotlin exactly as an `override fun` is — the base declares `open val x`, the subclass replaces it — but the override branch was gated on `kind === Method`, so 1,837 overrides across a 200-file corpus draw produced nothing. The absence was invisible to BOTH sides of the differential: the generic `deriveTreeEdges` truth derivation indexes `function_declaration` members only, so the oracle derived none either. That is the structural blindness this workstream exists to name — an absent capability emits nothing, and every gate asks whether an edge that EXISTS is right. Two tiers are pinned because the guess tier is 99.3% of the class on the corpus (1,837 of 1,850 on a 120-file draw) and a fixture covering only the verified tier would leave the common case untested. A LIMITATION is pinned rather than left implicit: `Verified.covariant` is a legal covariant override (`Any` over `String`) and it does NOT verify, because the property tier matches declared types exactly. Kotlin permits the variance and a per-file index cannot see the base's declaration from the derived type, so the row stays at the guess tier rather than gaining an invented subtype test. The FORBIDS carry the shadowing rule: `Shadows.label` has the same name and no `override` modifier, and it must publish nothing — without that pin, a regression to 'same name in a subclass is an override' fabricates an edge for every shadowed member in the corpus.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Verified", "kind": "class" },
+    { "name": "Guesses", "kind": "class" },
+    { "name": "Shadows", "kind": "class" },
+    { "name": "label", "kind": "property", "ownerName": "Base", "comment": "open val in the base" },
+    { "name": "label", "kind": "property", "ownerName": "Verified", "comment": "override val — the member kind is Property, which is what the pre-wave gate rejected" },
+    { "name": "label", "kind": "property", "ownerName": "Shadows", "comment": "same name, NO override modifier — shadows, does not override" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "Verified.label", "target": "Base.label", "confidence": 0.9, "meta.reasonCode": "in-file-verified", "meta.evidenceClass": "structural", "meta.overrideMemberKind": "property", "meta.overrideSig": "(String)", "line_number": 45, "comment": "PASS 1: the declaring ancestor is in THIS file and the declared type matches exactly, so the BFS verifies. A property's overridable signature is its TYPE, stored parenthesised so the judge's own type-variable scan reads `(String)` the way it reads a parameter list" },
+    { "type": "overrides", "from": "Verified.count", "target": "Base.count", "confidence": 0.9, "meta.reasonCode": "in-file-verified", "meta.evidenceClass": "structural", "meta.overrideMemberKind": "property", "meta.overrideSig": "(Int)", "line_number": 46, "comment": "an `override var` is the same case; `var` vs `val` is not part of the override relation and is not part of the signature" },
+    { "type": "overrides", "from": "Verified.covariant", "target": "Base.covariant", "confidence": 0.5, "meta.reasonCode": "first-supertype-guess", "meta.evidenceClass": "inferred", "meta.overrideSig": "(Any)", "line_number": 47, "comment": "PINNED LIMITATION: `Any` over `String` is legal Kotlin and the edge is right, but exact-type matching does not verify it, so it stays at the guess tier. Recorded rather than fixed: a subtype test here would be type inference from a name, the class of guessing this lane deleted twice" },
+    { "type": "overrides", "from": "Guesses.remote", "target": "Remote.remote", "confidence": 0.5, "meta.reasonCode": "first-supertype-guess", "meta.evidenceClass": "inferred", "meta.overrideMemberKind": "property", "line_number": 51, "comment": "PASS 2: the declaring ancestor is IMPORTED, so nothing in this file declares `remote` and the tier names the first supertype at 0.5 — the honest per-file default. This is 99.3% of the class on the corpus, so it is the case that matters" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Shadows.label", "target": "Base.label", "comment": "no `override` modifier: `val label` in a subclass SHADOWS a base property, it does not override it. Publishing an edge here fabricates an override for every shadowed member in the corpus — the KDJ-1 forbid restated for the property tier" },
+    { "type": "overrides", "from": "topLevel", "target": "Base.label", "comment": "a top-level property has no owner, so it can override nothing; the edge requires an ownerName" },
+    { "type": "overrides", "from": "Verified.label", "target": "Base.count", "comment": "an override never pairs across members: `label` and `count` are distinct names and the name dimension is load-bearing (kotlinx-coroutines BroadcastChannel.kt fabricated 8 such edges when it was dropped)" }
+  ]
+}

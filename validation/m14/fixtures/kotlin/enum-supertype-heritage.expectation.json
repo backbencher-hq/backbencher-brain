@@ -1,0 +1,11 @@
+{
+ "fixtureId": "kotlin/enum-supertype-heritage",
+ "language": "kotlin",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M37.21 #610 kotlin KD19: enums are first-class heritage participants. enum class Direction(...) : Mode emits implements Direction->Mode (bare supertype); enum class Counted : Numbered(1) emits extends Counted->Numbered (constructor-invocation supertype). Pre-fix extractEnumClass never extracted superTypes so every enum-with-supertype silently dropped its heritage (Exposed ForUpdateOption.kt MODE -> ForUpdateOrShareMode was the measured corpus hit).",
+ "expectRelationships": [
+  { "type": "implements", "from": "Direction", "target": "Mode" },
+  { "type": "extends", "from": "Counted", "target": "Numbered" }
+ ],
+ "forbidRelationships": []
+}

@@ -1,0 +1,3002 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "kong",
+  "sample": 400,
+  "filesDrawn": 400,
+  "parseErrorFiles": 0,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 20629,
+    "observedEdges": 19835,
+    "missing": 794,
+    "missingFromAnalyzer": [
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "data",
+        "line": 43,
+        "rule": "return-id",
+        "rel": "autodoc/cli/data.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 35,
+        "rule": "return-id",
+        "rel": "kong/admin_gui/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 32,
+        "rule": "return-id",
+        "rel": "kong/admin_gui/utils.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "out",
+        "line": 222,
+        "rule": "return-id",
+        "rel": "kong/api/api_helpers.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 578,
+        "rule": "return-id",
+        "rel": "kong/api/api_helpers.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "args",
+        "line": 232,
+        "rule": "return-id",
+        "rel": "kong/api/arguments.lua"
+      },
+      {
+        "label": "calls",
+        "from": "query_entity",
+        "target": "dao[method or context]",
+        "line": 224,
+        "rule": "call",
+        "rel": "kong/api/endpoints.lua"
+      },
+      {
+        "label": "calls",
+        "from": "query_entity",
+        "target": "dao[context]",
+        "line": 234,
+        "rule": "call",
+        "rel": "kong/api/endpoints.lua"
+      },
+      {
+        "label": "calls",
+        "from": "query_entity",
+        "target": "dao[method]",
+        "line": 241,
+        "rule": "call",
+        "rel": "kong/api/endpoints.lua"
+      },
+      {
+        "label": "calls",
+        "from": "query_entity",
+        "target": "dao[method or context .. \"_by_\" .. endpoint_key]",
+        "line": 260,
+        "rule": "call",
+        "rel": "kong/api/endpoints.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Endpoints",
+        "line": 896,
+        "rule": "return-id",
+        "rel": "kong/api/endpoints.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "app",
+        "line": 130,
+        "rule": "return-id",
+        "rel": "kong/api/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "routes",
+        "line": 131,
+        "rule": "return-id",
+        "rel": "kong/api/routes/debug.lua"
+      },
+      {
+        "label": "contains",
+        "from": "default_filter_config_schema",
+        "target": "default",
+        "line": 62,
+        "rule": "assign-decl",
+        "rel": "kong/api/routes/kong.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "api_routes",
+        "line": 262,
+        "rule": "return-id",
+        "rel": "kong/api/routes/upstreams.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 277,
+        "rule": "return-id",
+        "rel": "kong/cache/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "cache_warmup._mock_kong",
+        "target": "kong",
+        "line": 37,
+        "rule": "assign-decl",
+        "rel": "kong/cache/warmup.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "cache_warmup",
+        "line": 221,
+        "rule": "return-id",
+        "rel": "kong/cache/warmup.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.new",
+        "target": "_init",
+        "line": 142,
+        "rule": "assign-decl",
+        "rel": "kong/cluster_events/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "poll",
+        "target": "prev_min_at",
+        "line": 286,
+        "rule": "assign-decl",
+        "rel": "kong/cluster_events/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 378,
+        "rule": "return-id",
+        "rel": "kong/cluster_events/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "off",
+        "line": 39,
+        "rule": "return-id",
+        "rel": "kong/cluster_events/strategies/off.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 194,
+        "rule": "return-id",
+        "rel": "kong/cluster_events/strategies/postgres.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "has_update",
+        "line": 113,
+        "rule": "return-id",
+        "rel": "kong/clustering/compat/checkers.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "compatible_checkers",
+        "line": 561,
+        "rule": "return-id",
+        "rel": "kong/clustering/compat/checkers.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "saved",
+        "line": 372,
+        "rule": "return-id",
+        "rel": "kong/clustering/compat/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 459,
+        "rule": "return-id",
+        "rel": "kong/clustering/compat/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 43,
+        "rule": "return-id",
+        "rel": "kong/clustering/compat/version.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 391,
+        "rule": "return-id",
+        "rel": "kong/clustering/config_helper.lua"
+      },
+      {
+        "label": "contains",
+        "from": "push_config_loop",
+        "target": "no_connected_clients_logged",
+        "line": 553,
+        "rule": "assign-decl",
+        "rel": "kong/clustering/control_plane.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 631,
+        "rule": "return-id",
+        "rel": "kong/clustering/control_plane.lua"
+      },
+      {
+        "label": "contains",
+        "from": "send_ping",
+        "target": "prev_hash",
+        "line": 159,
+        "rule": "assign-decl",
+        "rel": "kong/clustering/data_plane.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 444,
+        "rule": "return-id",
+        "rel": "kong/clustering/data_plane.lua"
+      },
+      {
+        "label": "contains",
+        "from": "init",
+        "target": "cluster_events",
+        "line": 58,
+        "rule": "assign-decl",
+        "rel": "kong/clustering/events.lua"
+      },
+      {
+        "label": "contains",
+        "from": "init",
+        "target": "worker_events",
+        "line": 59,
+        "rule": "assign-decl",
+        "rel": "kong/clustering/events.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 130,
+        "rule": "return-id",
+        "rel": "kong/clustering/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 51,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/callbacks.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 405,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/concentrator.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 89,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/future.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 55,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/json_rpc_v2.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 717,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/manager.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 73,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/queue.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 495,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/socket.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 58,
+        "rule": "return-id",
+        "rel": "kong/clustering/rpc/utils.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 194,
+        "rule": "return-id",
+        "rel": "kong/clustering/services/sync/hooks.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 96,
+        "rule": "return-id",
+        "rel": "kong/clustering/services/sync/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 551,
+        "rule": "return-id",
+        "rel": "kong/clustering/services/sync/rpc.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 108,
+        "rule": "return-id",
+        "rel": "kong/clustering/services/sync/strategies/postgres.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "tls",
+        "line": 235,
+        "rule": "return-id",
+        "rel": "kong/clustering/tls.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "res",
+        "line": 188,
+        "rule": "return-id",
+        "rel": "kong/clustering/utils.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 203,
+        "rule": "return-id",
+        "rel": "kong/clustering/utils.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.set_lvl",
+        "target": "log_lvl",
+        "line": 33,
+        "rule": "assign-decl",
+        "rel": "kong/cmd/utils/log.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.disable",
+        "target": "old_lvl",
+        "line": 39,
+        "rule": "assign-decl",
+        "rel": "kong/cmd/utils/log.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.disable",
+        "target": "log_lvl",
+        "line": 40,
+        "rule": "assign-decl",
+        "rel": "kong/cmd/utils/log.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.enable",
+        "target": "log_lvl",
+        "line": 45,
+        "rule": "assign-decl",
+        "rel": "kong/cmd/utils/log.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.enable",
+        "target": "old_lvl",
+        "line": 46,
+        "rule": "assign-decl",
+        "rel": "kong/cmd/utils/log.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 255,
+        "rule": "return-id",
+        "rel": "kong/cmd/utils/nginx_signals.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 18,
+        "rule": "return-id",
+        "rel": "kong/cmd/utils/timer.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "concurrency",
+        "line": 144,
+        "rule": "return-id",
+        "rel": "kong/concurrency.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "purged_conf",
+        "line": 1122,
+        "rule": "return-id",
+        "rel": "kong/conf_loader/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "listeners",
+        "line": 178,
+        "rule": "return-id",
+        "rel": "kong/conf_loader/listeners.lua"
+      },
+      {
+        "label": "calls",
+        "from": "check_and_parse",
+        "target": "conf_constants.TYP_CHECKS[typ]",
+        "line": 228,
+        "rule": "call",
+        "rel": "kong/conf_loader/parse.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "constants",
+        "line": 312,
+        "rule": "return-id",
+        "rel": "kong/constants.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Ca_certificates",
+        "line": 55,
+        "rule": "return-id",
+        "rel": "kong/db/dao/ca_certificates.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_Certificates",
+        "line": 225,
+        "rule": "return-id",
+        "rel": "kong/db/dao/certificates.lua"
+      },
+      {
+        "label": "calls",
+        "from": "check_update",
+        "target": "self[\"select_by_\" .. name]",
+        "line": 517,
+        "rule": "call",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "check_upsert",
+        "target": "self[\"select_by_\" .. name]",
+        "line": 596,
+        "rule": "call",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "recursion_over_constraints",
+        "target": "dao[method]",
+        "line": 653,
+        "rule": "call",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "generate_foreign_key_methods",
+        "target": "strategy[page_method_name]",
+        "line": 714,
+        "rule": "call",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "generate_foreign_key_methods",
+        "target": "self[\"select_by_\" .. name]",
+        "line": 912,
+        "rule": "call",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "DAO:select_by_cache_key",
+        "target": "self[\"select_by_\" .. ck_definition[1]]",
+        "line": 1386,
+        "rule": "call",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 1618,
+        "rule": "return-id",
+        "rel": "kong/db/dao/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "key_sets",
+        "line": 64,
+        "rule": "return-id",
+        "rel": "kong/db/dao/key_sets.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "keys",
+        "line": 132,
+        "rule": "return-id",
+        "rel": "kong/db/dao/keys.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Plugins",
+        "line": 410,
+        "rule": "return-id",
+        "rel": "kong/db/dao/plugins.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Services",
+        "line": 16,
+        "rule": "return-id",
+        "rel": "kong/db/dao/services.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_SNIs",
+        "line": 175,
+        "rule": "return-id",
+        "rel": "kong/db/dao/snis.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Tags",
+        "line": 31,
+        "rule": "return-id",
+        "rel": "kong/db/dao/tags.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_TARGETS",
+        "line": 345,
+        "rule": "return-id",
+        "rel": "kong/db/dao/targets.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Vaults",
+        "line": 97,
+        "rule": "return-id",
+        "rel": "kong/db/dao/vaults.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Workspaces",
+        "line": 44,
+        "rule": "return-id",
+        "rel": "kong/db/dao/workspaces.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "ok",
+        "line": 600,
+        "rule": "return-id",
+        "rel": "kong/db/declarative/import.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 270,
+        "rule": "return-id",
+        "rel": "kong/db/declarative/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 34,
+        "rule": "return-id",
+        "rel": "kong/db/declarative/marshaller.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "keys",
+        "line": 31,
+        "rule": "return-id",
+        "rel": "kong/db/errors.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "message",
+        "line": 105,
+        "rule": "return-id",
+        "rel": "kong/db/errors.lua"
+      },
+      {
+        "label": "contains",
+        "from": "build_relationships",
+        "target": "relationships",
+        "line": 579,
+        "rule": "assign-decl",
+        "rel": "kong/db/errors.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 1215,
+        "rule": "return-id",
+        "rel": "kong/db/errors.lua"
+      },
+      {
+        "label": "contains",
+        "from": "DB:schema_state",
+        "target": "last_schema_state",
+        "line": 431,
+        "rule": "assign-decl",
+        "rel": "kong/db/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "DB",
+        "line": 674,
+        "rule": "return-id",
+        "rel": "kong/db/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "iteration",
+        "line": 111,
+        "rule": "return-id",
+        "rel": "kong/db/iteration.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "migrate_path",
+        "line": 87,
+        "rule": "return-id",
+        "rel": "kong/db/migrations/migrate_path_280_300.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "State",
+        "line": 329,
+        "rule": "return-id",
+        "rel": "kong/db/migrations/state.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "routes",
+        "line": 222,
+        "rule": "return-id",
+        "rel": "kong/db/schema/entities/routes.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "r",
+        "line": 349,
+        "rule": "return-id",
+        "rel": "kong/db/schema/entities/upstreams.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Entity",
+        "line": 69,
+        "rule": "return-id",
+        "rel": "kong/db/schema/entity.lua"
+      },
+      {
+        "label": "calls",
+        "from": "Schema:validate_field",
+        "target": "self.validators[k]",
+        "line": 1018,
+        "rule": "call",
+        "rel": "kong/db/schema/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "global",
+        "target": "self.unvalidated_fields[k]",
+        "line": 1221,
+        "rule": "call",
+        "rel": "kong/db/schema/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "fields_proxy",
+        "line": 1449,
+        "rule": "return-id",
+        "rel": "kong/db/schema/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Schema",
+        "line": 2691,
+        "rule": "return-id",
+        "rel": "kong/db/schema/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 183,
+        "rule": "return-id",
+        "rel": "kong/db/schema/json.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "MetaSchema",
+        "line": 1040,
+        "rule": "return-id",
+        "rel": "kong/db/schema/metaschema.lua"
+      },
+      {
+        "label": "calls",
+        "from": "generate_uuid",
+        "target": "uuid_generators[\"_entities\"]",
+        "line": 621,
+        "rule": "call",
+        "rel": "kong/db/schema/others/declarative_config.lua"
+      },
+      {
+        "label": "contains",
+        "from": "DeclarativeConfig.load",
+        "target": "all_schemas",
+        "line": 978,
+        "rule": "assign-decl",
+        "rel": "kong/db/schema/others/declarative_config.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "DeclarativeConfig",
+        "line": 1050,
+        "rule": "return-id",
+        "rel": "kong/db/schema/others/declarative_config.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "plugin_loader",
+        "line": 87,
+        "rule": "return-id",
+        "rel": "kong/db/schema/plugin_loader.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "neighbors",
+        "line": 79,
+        "rule": "return-id",
+        "rel": "kong/db/schema/topological_sort.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "schema_topological_sort",
+        "line": 86,
+        "rule": "return-id",
+        "rel": "kong/db/schema/topological_sort.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "typedefs",
+        "line": 920,
+        "rule": "return-id",
+        "rel": "kong/db/schema/typedefs.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "vault_loader",
+        "line": 35,
+        "rule": "return-id",
+        "rel": "kong/db/schema/vault_loader.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Connector:store_connection",
+        "target": "past_init",
+        "line": 43,
+        "rule": "assign-decl",
+        "rel": "kong/db/strategies/connector.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Connector:get_stored_connection",
+        "target": "past_init",
+        "line": 57,
+        "rule": "assign-decl",
+        "rel": "kong/db/strategies/connector.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Connector",
+        "line": 160,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/connector.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 95,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "OffConnector",
+        "line": 68,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/off/connector.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "off",
+        "line": 454,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/off/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Plugins",
+        "line": 117,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/off/plugins.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Services",
+        "line": 63,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/off/services.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Tags",
+        "line": 19,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/off/tags.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "neighbors",
+        "line": 135,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/connector.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "res",
+        "line": 145,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/connector.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 1061,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/connector.lua"
+      },
+      {
+        "label": "calls",
+        "from": "add",
+        "target": "opts.code[i]",
+        "line": 1132,
+        "rule": "call",
+        "rel": "kong/db/strategies/postgres/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 1545,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Plugins",
+        "line": 39,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/plugins.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Services",
+        "line": 20,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/services.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Tags",
+        "line": 151,
+        "rule": "return-id",
+        "rel": "kong/db/strategies/postgres/tags.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 73,
+        "rule": "return-id",
+        "rel": "kong/db/utils.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.new",
+        "target": "ipc_counter",
+        "line": 207,
+        "rule": "assign-decl",
+        "rel": "kong/dns/client.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.init",
+        "target": "dns_client",
+        "line": 689,
+        "rule": "assign-decl",
+        "rel": "kong/dns/client.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 743,
+        "rule": "return-id",
+        "rel": "kong/dns/client.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 63,
+        "rule": "return-id",
+        "rel": "kong/dns/stats.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 343,
+        "rule": "return-id",
+        "rel": "kong/dynamic_hook/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "body",
+        "line": 39,
+        "rule": "return-id",
+        "rel": "kong/error_handlers.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_GLOBAL",
+        "line": 305,
+        "rule": "return-id",
+        "rel": "kong/global.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "shm",
+        "line": 399,
+        "rule": "return-id",
+        "rel": "kong/globalpatches.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "sock",
+        "line": 595,
+        "rule": "return-id",
+        "rel": "kong/globalpatches.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.clear_hooks",
+        "target": "hooks",
+        "line": 125,
+        "rule": "assign-decl",
+        "rel": "kong/hooks.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 129,
+        "rule": "return-id",
+        "rel": "kong/hooks.lua"
+      },
+      {
+        "label": "calls",
+        "from": "execute_global_plugins_iterator",
+        "target": "plugin.handler[phase]",
+        "line": 348,
+        "rule": "call",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "calls",
+        "from": "execute_collected_plugins_iterator",
+        "target": "plugin.handler[phase]",
+        "line": 469,
+        "rule": "call",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "UPSTREAM_KEEPALIVE_POOL_SIZE",
+        "line": 650,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "UPSTREAM_KEEPALIVE_IDLE_TIMEOUT",
+        "line": 651,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "UPSTREAM_KEEPALIVE_MAX_REQUESTS",
+        "line": 652,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "schema_state",
+        "line": 677,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "declarative_entities",
+        "line": 737,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "declarative_meta",
+        "line": 737,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init",
+        "target": "declarative_hash",
+        "line": 737,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init_worker",
+        "target": "schema_state",
+        "line": 854,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init_worker",
+        "target": "declarative_entities",
+        "line": 942,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init_worker",
+        "target": "declarative_meta",
+        "line": 943,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Kong.init_worker",
+        "target": "declarative_hash",
+        "line": 944,
+        "rule": "assign-decl",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "Kong",
+        "line": 2008,
+        "rule": "return-id",
+        "rel": "kong/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "kong",
+        "line": 318,
+        "rule": "return-id",
+        "rel": "kong/llm/adapters/bedrock.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_BedrockAdapter",
+        "line": 323,
+        "rule": "return-id",
+        "rel": "kong/llm/adapters/bedrock.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "kong",
+        "line": 354,
+        "rule": "return-id",
+        "rel": "kong/llm/adapters/gemini.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_GeminiAdapter",
+        "line": 359,
+        "rule": "return-id",
+        "rel": "kong/llm/adapters/gemini.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "tools",
+        "line": 60,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/anthropic.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "messages",
+        "line": 177,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/anthropic.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "prompt",
+        "line": 194,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/anthropic.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 602,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/anthropic.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 173,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/azure.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 690,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/bedrock.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 549,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/cohere.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 738,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/gemini.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 334,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/huggingface.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 309,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/llama2.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 205,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/mistral.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "request_table",
+        "line": 26,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/openai.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "response_string",
+        "line": 46,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/openai.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 246,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/openai.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "kong",
+        "line": 1061,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/shared.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 1065,
+        "rule": "return-id",
+        "rel": "kong/llm/drivers/shared.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 261,
+        "rule": "return-id",
+        "rel": "kong/llm/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 271,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/base.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 193,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/ctx.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 109,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/observability.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 18,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/enable-buffering.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 122,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/normalize-json-response.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 238,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/normalize-request.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 41,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/normalize-response-header.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 232,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/normalize-sse-chunk.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 64,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/parse-json-response.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 104,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/parse-request.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 73,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/parse-sse-chunk.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 94,
+        "rule": "return-id",
+        "rel": "kong/llm/plugin/shared-filters/serialize-analytics.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 8,
+        "rule": "return-id",
+        "rel": "kong/observability/logs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "notify_buffer_full_once",
+        "target": "notified_buffer_full",
+        "line": 132,
+        "rule": "assign-decl",
+        "rel": "kong/observability/logs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "notify_if_resumed",
+        "target": "notified_buffer_full",
+        "line": 143,
+        "rule": "assign-decl",
+        "rel": "kong/observability/logs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.get_worker_logs",
+        "target": "worker_logs",
+        "line": 201,
+        "rule": "assign-decl",
+        "rel": "kong/observability/logs.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "pb_data",
+        "line": 209,
+        "rule": "return-id",
+        "rel": "kong/observability/otlp/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "logs",
+        "line": 273,
+        "rule": "return-id",
+        "rel": "kong/observability/otlp/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.get_wrapped_dns_query",
+        "target": "raw_func",
+        "line": 317,
+        "rule": "assign-decl",
+        "rel": "kong/observability/tracing/instrumentation.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "str",
+        "line": 374,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/instrumentation.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.init",
+        "target": "tracer",
+        "line": 431,
+        "rule": "assign-decl",
+        "rel": "kong/observability/tracing/instrumentation.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 438,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/instrumentation.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_EXTRACTOR",
+        "line": 198,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/_base.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "AWS_EXTRACTOR",
+        "line": 92,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/aws.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "B3_EXTRACTOR",
+        "line": 219,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/b3.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "DATADOG_EXTRACTOR",
+        "line": 61,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/datadog.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "GCP_EXTRACTOR",
+        "line": 46,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/gcp.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "INSTANA_EXTRACTOR",
+        "line": 66,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/instana.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "JAEGER_EXTRACTOR",
+        "line": 76,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/jaeger.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "OT_EXTRACTOR",
+        "line": 68,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/ot.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "W3C_EXTRACTOR",
+        "line": 76,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/extractors/w3c.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_INJECTOR",
+        "line": 216,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/_base.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "AWS_INJECTOR",
+        "line": 36,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/aws.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "B3_SINGLE_INJECTOR",
+        "line": 44,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/b3-single.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "B3_INJECTOR",
+        "line": 44,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/b3.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "DATADOG_INJECTOR",
+        "line": 40,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/datadog.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "GCP_INJECTOR",
+        "line": 29,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/gcp.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "INSTANA_INJECTOR",
+        "line": 31,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/instana.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "JAEGER_INJECTOR",
+        "line": 42,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/jaeger.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "OT_INJECTOR",
+        "line": 43,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/ot.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "W3C_INJECTOR",
+        "line": 33,
+        "rule": "return-id",
+        "rel": "kong/observability/tracing/propagation/injectors/w3c.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_PDK",
+        "line": 288,
+        "rule": "return-id",
+        "rel": "kong/pdk/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "short_src",
+        "line": 107,
+        "rule": "return-id",
+        "rel": "kong/pdk/log.lua"
+      },
+      {
+        "label": "calls",
+        "from": "gen_log_func",
+        "target": "serializers[n]",
+        "line": 372,
+        "rule": "call",
+        "rel": "kong/pdk/log.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_NODE.get_id",
+        "target": "node_id",
+        "line": 84,
+        "rule": "assign-decl",
+        "rel": "kong/pdk/node.lua"
+      },
+      {
+        "label": "contains",
+        "from": "new",
+        "target": "node_id",
+        "line": 283,
+        "rule": "assign-decl",
+        "rel": "kong/pdk/node.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "checks",
+        "line": 109,
+        "rule": "return-id",
+        "rel": "kong/pdk/private/checks.lua"
+      },
+      {
+        "label": "contains",
+        "from": "initialize_node_id",
+        "target": "cached_node_id",
+        "line": 49,
+        "rule": "assign-decl",
+        "rel": "kong/pdk/private/node.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.apply_response_headers",
+        "target": "max_fields_n",
+        "line": 113,
+        "rule": "assign-decl",
+        "rel": "kong/pdk/private/rate_limiting.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 117,
+        "rule": "return-id",
+        "rel": "kong/pdk/private/rate_limiting.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "response_headers",
+        "line": 69,
+        "rule": "return-id",
+        "rel": "kong/pdk/service/response.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "EMPTY",
+        "line": 81,
+        "rule": "return-id",
+        "rel": "kong/pdk/service/response.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "v",
+        "line": 113,
+        "rule": "return-id",
+        "rel": "kong/pdk/service/response.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "NOOP",
+        "line": 138,
+        "rule": "return-id",
+        "rel": "kong/pdk/tracing.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "noop_span",
+        "line": 425,
+        "rule": "return-id",
+        "rel": "kong/pdk/tracing.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "global_tracer",
+        "line": 669,
+        "rule": "return-id",
+        "rel": "kong/pdk/tracing.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_ACLs",
+        "line": 39,
+        "rule": "return-id",
+        "rel": "kong/plugins/acl/acls.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "ACLHandler",
+        "line": 140,
+        "rule": "return-id",
+        "rel": "kong/plugins/acl/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ACMEHandler:configure",
+        "target": "CONFIG",
+        "line": 96,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/acme/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ACMEHandler:configure",
+        "target": "domains_matcher",
+        "line": 98,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/acme/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "check_domains",
+        "target": "domains_matcher",
+        "line": 114,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/acme/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ACMEHandler:certificate",
+        "target": "default_cert_key",
+        "line": 146,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/acme/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "ACMEHandler",
+        "line": 257,
+        "rule": "return-id",
+        "rel": "kong/plugins/acme/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "reserved_words",
+        "line": 7,
+        "rule": "return-id",
+        "rel": "kong/plugins/acme/reserved_words.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "schema",
+        "line": 307,
+        "rule": "return-id",
+        "rel": "kong/plugins/acme/schema.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "redis_config_adapter",
+        "line": 18,
+        "rule": "return-id",
+        "rel": "kong/plugins/acme/storage/config_adapters/redis.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 95,
+        "rule": "return-id",
+        "rel": "kong/plugins/acme/storage/kong.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 89,
+        "rule": "return-id",
+        "rel": "kong/plugins/ai-prompt-decorator/filters/decorate-prompt.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 146,
+        "rule": "return-id",
+        "rel": "kong/plugins/ai-prompt-guard/filters/guard-prompt.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 115,
+        "rule": "return-id",
+        "rel": "kong/plugins/ai-prompt-template/filters/render-prompt-template.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 66,
+        "rule": "return-id",
+        "rel": "kong/plugins/ai-prompt-template/templater.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 106,
+        "rule": "return-id",
+        "rel": "kong/plugins/ai-request-transformer/filters/transform-request.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 198,
+        "rule": "return-id",
+        "rel": "kong/plugins/ai-response-transformer/filters/transform-response.lua"
+      },
+      {
+        "label": "contains",
+        "from": "initialize",
+        "target": "LAMBDA_SERVICE_CACHE",
+        "line": 33,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/aws-lambda/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "initialize",
+        "target": "AWS_GLOBAL_CONFIG",
+        "line": 34,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/aws-lambda/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "initialize",
+        "target": "AWS",
+        "line": 35,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/aws-lambda/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "initialize",
+        "target": "initialize",
+        "line": 36,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/aws-lambda/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "AWSLambdaHandler",
+        "line": 273,
+        "rule": "return-id",
+        "rel": "kong/plugins/aws-lambda/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "azure",
+        "line": 91,
+        "rule": "return-id",
+        "rel": "kong/plugins/azure-functions/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 238,
+        "rule": "return-id",
+        "rel": "kong/plugins/basic-auth/access.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "BasicAuthHandler",
+        "line": 15,
+        "rule": "return-id",
+        "rel": "kong/plugins/basic-auth/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "BotDetectionHandler",
+        "line": 94,
+        "rule": "return-id",
+        "rel": "kong/plugins/bot-detection/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "CorrelationIdHandler:init_worker",
+        "target": "worker_uuid",
+        "line": 50,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/correlation-id/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "CorrelationIdHandler:init_worker",
+        "target": "worker_counter",
+        "line": 51,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/correlation-id/handler.lua"
+      },
+      {
+        "label": "calls",
+        "from": "CorrelationIdHandler:access",
+        "target": "generators[conf.generator]",
+        "line": 60,
+        "rule": "call",
+        "rel": "kong/plugins/correlation-id/handler.lua"
+      },
+      {
+        "label": "calls",
+        "from": "CorrelationIdHandler:header_filter",
+        "target": "generators[conf.generator]",
+        "line": 84,
+        "rule": "call",
+        "rel": "kong/plugins/correlation-id/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "CorrelationIdHandler",
+        "line": 91,
+        "rule": "return-id",
+        "rel": "kong/plugins/correlation-id/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "CorsHandler",
+        "line": 269,
+        "rule": "return-id",
+        "rel": "kong/plugins/cors/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "DatadogHandler",
+        "line": 121,
+        "rule": "return-id",
+        "rel": "kong/plugins/datadog/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "statsd_mt",
+        "line": 88,
+        "rule": "return-id",
+        "rel": "kong/plugins/datadog/statsd_logger.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "FileLogHandler",
+        "line": 82,
+        "rule": "return-id",
+        "rel": "kong/plugins/file-log/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "deco",
+        "line": 314,
+        "rule": "return-id",
+        "rel": "kong/plugins/grpc-gateway/deco.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "grpc_gateway",
+        "line": 133,
+        "rule": "return-id",
+        "rel": "kong/plugins/grpc-gateway/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "deco",
+        "line": 179,
+        "rule": "return-id",
+        "rel": "kong/plugins/grpc-web/deco.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "grpc_web",
+        "line": 106,
+        "rule": "return-id",
+        "rel": "kong/plugins/grpc-web/handler.lua"
+      },
+      {
+        "label": "calls",
+        "from": "create_hash",
+        "target": "hmac[hmac_params.algorithm]",
+        "line": 165,
+        "rule": "call",
+        "rel": "kong/plugins/hmac-auth/access.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 413,
+        "rule": "return-id",
+        "rel": "kong/plugins/hmac-auth/access.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "HMACAuthHandler",
+        "line": 17,
+        "rule": "return-id",
+        "rel": "kong/plugins/hmac-auth/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "HttpLogHandler",
+        "line": 202,
+        "rule": "return-id",
+        "rel": "kong/plugins/http-log/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "IpRestrictionHandler",
+        "line": 112,
+        "rule": "return-id",
+        "rel": "kong/plugins/ip-restriction/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "JwtHandler",
+        "line": 334,
+        "rule": "return-id",
+        "rel": "kong/plugins/jwt/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "sig",
+        "line": 60,
+        "rule": "return-id",
+        "rel": "kong/plugins/jwt/jwt_parser.lua"
+      },
+      {
+        "label": "calls",
+        "from": "encode_token",
+        "target": "alg_sign[alg]",
+        "line": 317,
+        "rule": "call",
+        "rel": "kong/plugins/jwt/jwt_parser.lua"
+      },
+      {
+        "label": "calls",
+        "from": "_M:verify_signature",
+        "target": "alg_verify[self.header.alg]",
+        "line": 386,
+        "rule": "call",
+        "rel": "kong/plugins/jwt/jwt_parser.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 471,
+        "rule": "return-id",
+        "rel": "kong/plugins/jwt/jwt_parser.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "KeyAuthHandler",
+        "line": 276,
+        "rule": "return-id",
+        "rel": "kong/plugins/key-auth/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 338,
+        "rule": "return-id",
+        "rel": "kong/plugins/ldap-auth/access.lua"
+      },
+      {
+        "label": "calls",
+        "from": "encode",
+        "target": "encoder[tag]",
+        "line": 197,
+        "rule": "call",
+        "rel": "kong/plugins/ldap-auth/asn1.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "ret",
+        "line": 217,
+        "rule": "return-id",
+        "rel": "kong/plugins/ldap-auth/asn1.lua"
+      },
+      {
+        "label": "calls",
+        "from": "decode",
+        "target": "decoder[obj.tag]",
+        "line": 254,
+        "rule": "call",
+        "rel": "kong/plugins/ldap-auth/asn1.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 342,
+        "rule": "return-id",
+        "rel": "kong/plugins/ldap-auth/asn1.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "LdapAuthHandler",
+        "line": 16,
+        "rule": "return-id",
+        "rel": "kong/plugins/ldap-auth/handler.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.bind_request",
+        "target": "ldapMessageId",
+        "line": 68,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/ldap-auth/ldap.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.unbind_request",
+        "target": "ldapMessageId",
+        "line": 104,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/ldap-auth/ldap.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_M.start_tls",
+        "target": "ldapMessageId",
+        "line": 121,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/ldap-auth/ldap.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 157,
+        "rule": "return-id",
+        "rel": "kong/plugins/ldap-auth/ldap.lua"
+      },
+      {
+        "label": "contains",
+        "from": "log",
+        "target": "is_html",
+        "line": 100,
+        "rule": "assign-decl",
+        "rel": "kong/plugins/loggly/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "LogglyLogHandler",
+        "line": 140,
+        "rule": "return-id",
+        "rel": "kong/plugins/loggly/handler.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "_M",
+        "line": 1170,
+        "rule": "return-id",
+        "rel": "kong/plugins/oauth2/access.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "oauth2_tokens",
+        "line": 13,
+        "rule": "return-id",
+        "rel": "kong/plugins/oauth2/daos/oauth2_tokens.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "OAuthHandler",
+        "line": 16,
+        "rule": "return-id",
+        "rel": "kong/plugins/oauth2/handler.lua"
+      }
+    ],
+    "missingByPipelineNoiseFilter": 499,
+    "noiseTargetsHit": [
+      "parent",
+      "text",
+      "type"
+    ],
+    "unexplained": 0,
+    "lineChecked": 19835,
+    "lineExact": 19835,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 7900,
+      "observed": 7467,
+      "missing": 433,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 0.9452
+    },
+    "contains": {
+      "truth": 11226,
+      "observed": 11080,
+      "missing": 146,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 0.987
+    },
+    "extends": {
+      "truth": 76,
+      "observed": 76,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "instantiates": {
+      "truth": 8,
+      "observed": 8,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 1204,
+      "observed": 1204,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "exports": {
+      "truth": 215,
+      "observed": 0,
+      "missing": 215,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 0
+    }
+  },
+  "missingByShape": [
+    {
+      "shape": "return <identifier> at file scope",
+      "n": 215
+    },
+    {
+      "shape": "ordinary name",
+      "n": 48
+    },
+    {
+      "shape": "ordinary call target",
+      "n": 25
+    },
+    {
+      "shape": "capitalised name (a type-like table)",
+      "n": 7
+    }
+  ],
+  "unexplainedByShape": [],
+  "analyzerAttributableSample": [
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "data",
+      "line": 43,
+      "rule": "return-id",
+      "rel": "autodoc/cli/data.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 35,
+      "rule": "return-id",
+      "rel": "kong/admin_gui/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 32,
+      "rule": "return-id",
+      "rel": "kong/admin_gui/utils.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "out",
+      "line": 222,
+      "rule": "return-id",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 578,
+      "rule": "return-id",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "args",
+      "line": 232,
+      "rule": "return-id",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "query_entity",
+      "target": "dao[method or context]",
+      "line": 224,
+      "rule": "call",
+      "rel": "kong/api/endpoints.lua"
+    },
+    {
+      "label": "calls",
+      "from": "query_entity",
+      "target": "dao[context]",
+      "line": 234,
+      "rule": "call",
+      "rel": "kong/api/endpoints.lua"
+    },
+    {
+      "label": "calls",
+      "from": "query_entity",
+      "target": "dao[method]",
+      "line": 241,
+      "rule": "call",
+      "rel": "kong/api/endpoints.lua"
+    },
+    {
+      "label": "calls",
+      "from": "query_entity",
+      "target": "dao[method or context .. \"_by_\" .. endpoint_key]",
+      "line": 260,
+      "rule": "call",
+      "rel": "kong/api/endpoints.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "Endpoints",
+      "line": 896,
+      "rule": "return-id",
+      "rel": "kong/api/endpoints.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "app",
+      "line": 130,
+      "rule": "return-id",
+      "rel": "kong/api/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "routes",
+      "line": 131,
+      "rule": "return-id",
+      "rel": "kong/api/routes/debug.lua"
+    },
+    {
+      "label": "contains",
+      "from": "default_filter_config_schema",
+      "target": "default",
+      "line": 62,
+      "rule": "assign-decl",
+      "rel": "kong/api/routes/kong.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "api_routes",
+      "line": 262,
+      "rule": "return-id",
+      "rel": "kong/api/routes/upstreams.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 277,
+      "rule": "return-id",
+      "rel": "kong/cache/init.lua"
+    },
+    {
+      "label": "contains",
+      "from": "cache_warmup._mock_kong",
+      "target": "kong",
+      "line": 37,
+      "rule": "assign-decl",
+      "rel": "kong/cache/warmup.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "cache_warmup",
+      "line": 221,
+      "rule": "return-id",
+      "rel": "kong/cache/warmup.lua"
+    },
+    {
+      "label": "contains",
+      "from": "_M.new",
+      "target": "_init",
+      "line": 142,
+      "rule": "assign-decl",
+      "rel": "kong/cluster_events/init.lua"
+    },
+    {
+      "label": "contains",
+      "from": "poll",
+      "target": "prev_min_at",
+      "line": 286,
+      "rule": "assign-decl",
+      "rel": "kong/cluster_events/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 378,
+      "rule": "return-id",
+      "rel": "kong/cluster_events/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "off",
+      "line": 39,
+      "rule": "return-id",
+      "rel": "kong/cluster_events/strategies/off.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 194,
+      "rule": "return-id",
+      "rel": "kong/cluster_events/strategies/postgres.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "has_update",
+      "line": 113,
+      "rule": "return-id",
+      "rel": "kong/clustering/compat/checkers.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "compatible_checkers",
+      "line": 561,
+      "rule": "return-id",
+      "rel": "kong/clustering/compat/checkers.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "saved",
+      "line": 372,
+      "rule": "return-id",
+      "rel": "kong/clustering/compat/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 459,
+      "rule": "return-id",
+      "rel": "kong/clustering/compat/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 43,
+      "rule": "return-id",
+      "rel": "kong/clustering/compat/version.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 391,
+      "rule": "return-id",
+      "rel": "kong/clustering/config_helper.lua"
+    },
+    {
+      "label": "contains",
+      "from": "push_config_loop",
+      "target": "no_connected_clients_logged",
+      "line": 553,
+      "rule": "assign-decl",
+      "rel": "kong/clustering/control_plane.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 631,
+      "rule": "return-id",
+      "rel": "kong/clustering/control_plane.lua"
+    },
+    {
+      "label": "contains",
+      "from": "send_ping",
+      "target": "prev_hash",
+      "line": 159,
+      "rule": "assign-decl",
+      "rel": "kong/clustering/data_plane.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 444,
+      "rule": "return-id",
+      "rel": "kong/clustering/data_plane.lua"
+    },
+    {
+      "label": "contains",
+      "from": "init",
+      "target": "cluster_events",
+      "line": 58,
+      "rule": "assign-decl",
+      "rel": "kong/clustering/events.lua"
+    },
+    {
+      "label": "contains",
+      "from": "init",
+      "target": "worker_events",
+      "line": 59,
+      "rule": "assign-decl",
+      "rel": "kong/clustering/events.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 130,
+      "rule": "return-id",
+      "rel": "kong/clustering/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 51,
+      "rule": "return-id",
+      "rel": "kong/clustering/rpc/callbacks.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 405,
+      "rule": "return-id",
+      "rel": "kong/clustering/rpc/concentrator.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 89,
+      "rule": "return-id",
+      "rel": "kong/clustering/rpc/future.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 55,
+      "rule": "return-id",
+      "rel": "kong/clustering/rpc/json_rpc_v2.lua"
+    }
+  ],
+  "analyzerAttributableUnexplainedSample": [],
+  "missingSample": [
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "data",
+      "line": 43,
+      "rule": "return-id",
+      "rel": "autodoc/cli/data.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 35,
+      "rule": "return-id",
+      "rel": "kong/admin_gui/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 32,
+      "rule": "return-id",
+      "rel": "kong/admin_gui/utils.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "type",
+      "line": 16,
+      "rule": "local-decl",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "parse_value",
+      "target": "type",
+      "line": 44,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.normalize_nested_params",
+      "target": "type",
+      "line": 96,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "global",
+      "target": "type",
+      "line": 186,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "out",
+      "line": 222,
+      "rule": "return-id",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.before_filter",
+      "target": "type",
+      "line": 260,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "new_db_on_error",
+      "target": "type",
+      "line": 354,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "on_error",
+      "target": "type",
+      "line": 399,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.handle_error",
+      "target": "type",
+      "line": 553,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.is_new_db_routes",
+      "target": "type",
+      "line": 571,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 578,
+      "rule": "return-id",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "type",
+      "line": 15,
+      "rule": "local-decl",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "combine_arg",
+      "target": "type",
+      "line": 112,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "combine",
+      "target": "type",
+      "line": 139,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "infer_value",
+      "target": "type",
+      "line": 155,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "args",
+      "line": 232,
+      "rule": "return-id",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "parse_multipart_stream",
+      "target": "type",
+      "line": 351,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "load",
+      "target": "type",
+      "line": 546,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "type",
+      "line": 8,
+      "rule": "local-decl",
+      "rel": "kong/api/arguments_decoder.lua"
+    },
+    {
+      "label": "calls",
+      "from": "nest_path",
+      "target": "type",
+      "line": 112,
+      "rule": "call",
+      "rel": "kong/api/arguments_decoder.lua"
+    },
+    {
+      "label": "calls",
+      "from": "decode_complex_arg",
+      "target": "type",
+      "line": 191,
+      "rule": "call",
+      "rel": "kong/api/arguments_decoder.lua"
+    },
+    {
+      "label": "calls",
+      "from": "decode_arg",
+      "target": "type",
+      "line": 207,
+      "rule": "call",
+      "rel": "kong/api/arguments_decoder.lua"
+    }
+  ],
+  "unexplainedSample": [],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": false
+  },
+  "hardFailures": true,
+  "status": "fail"
+}

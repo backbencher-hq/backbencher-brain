@@ -1,0 +1,42 @@
+{
+  "fixtureId": "groovy/fq-annotations",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Groovy annotation names parse as identifier OR scoped_identifier (fully-qualified). First-identifier extraction returns null for FQ forms, so @Transactional/@Service vanished from annotations and FQ @Override never triggered override resolution. The short-name normalizer (last dotted segment) must feed both. Class symbols must carry decorators too - previously extractAnnotations ran only for methods. RE-PIN 2026-10-22: the `overrides` target is the LEAF (`render`) with the owner in `meta.overriddenOwner` (`Base`) - the contract two PASSING sibling fixtures already pin (groovy/lines-825, groovy/anonymous-body-overrides) and the one a29357562 moved the family to deliberately, carrying the owner in metadata so a right edge is still distinguishable from a wrong one. The dotted `Base.render` spelling is the pre-change shape.",
+  "expectSymbols": [
+    {
+      "name": "FqService",
+      "kind": "class"
+    },
+    {
+      "name": "render"
+    },
+    {
+      "name": "save"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "FqService.render",
+      "target": "render",
+      "meta.overriddenOwner": "Base",
+      "comment": "RE-PIN 2026-10-22, the TARGET SPELLING. The row wanted the DOTTED target `Base.render`; the LEAF spelling (`render`) with the owner carried in `meta.overriddenOwner` is the current contract, and it is pinned by TWO PASSING sibling fixtures: groovy/lines-825 (`overrides[Wrapped.use->use]` + `meta.overriddenOwner: Plain`) and groovy/anonymous-body-overrides (`overrides[anonymous_TypeCodec.bsonType->bsonType]` + `meta.overriddenOwner: TypeCodec`). The change was made deliberately and measured on 2026-10-?? in a29357562 (\"the leaf spelling in three more lanes, WITH the owner carried in metadata\"), which recorded groovy 253 edges with 116 resolved and 139 amb(decl) and 0 unresolved, and it carried the owner in metadata FOR EXACTLY THIS REASON: \"a row that must tell a RIGHT edge from a WRONG one still can - and that is exactly what the updated expectations anchor on\". The dotted spelling is the PRE-change shape, so the row is re-pinned onto the leaf + owner. COVERAGE IS NOT WEAKENED: the owner is now pinned, which the dotted form only implied."
+    },
+    {
+      "type": "extends",
+      "from": "FqService",
+      "targetEndsWith": "Base"
+    }
+  ],
+  "expectDecorators": [
+    {
+      "symbol": "save",
+      "contains": "Transactional"
+    },
+    {
+      "symbol": "FqService",
+      "contains": "Service"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "fixtureId": "c/self-referential-struct-927",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A real corpus file (`curl/lib/cf-h1-proxy.c`) made `analyze()` die with 'Maximum call stack size exceeded' -- one crash in 900 curl files, against a lane that documents a crash guarantee of 0. The cause is C's tag/ordinary namespace split, not illegal C: the file declares `typedef enum {...} h1_tunnel_state;` and `struct h1_tunnel_state { ... h1_tunnel_state tunnel_state; ... };`, so one bare string names an enum AND a struct tag. `calculateMemorySize` resolved the member's type by BARE NAME against the struct map, found the struct, and recursed into the field list containing that field; `calculateAlignment` carried the identical unbounded recursion. This fixture is the crash guard: it fails loudly if `analyze()` throws, and it pins that all four entities are still catalogued, because 'do not crash' is only half the requirement -- the file must keep the content it could always recover. The three controls are the readings the rule must not break: a nested struct BY VALUE (legal recursion that has always worked), a pointer self-reference (the legal C idiom, never followed), and an unshadowed struct tag.",
+  "expectSymbols": [
+    { "name": "tunnel_phase", "kind": "enum", "note": "the enum is named by its TAG; the typedef alias below is the second entity, and the two names being different is the whole point of the fixture" },
+    { "name": "TUNNEL_IDLE", "kind": "enum_member", "ownerName": "tunnel_phase" },
+    { "name": "TUNNEL_DONE", "kind": "enum_member", "ownerName": "tunnel_phase" },
+    { "name": "tunnel_state", "kind": "type", "note": "the typedef alias -- a distinct C entity from the struct tag of the same spelling" },
+    { "name": "tunnel_state", "kind": "struct" },
+    { "name": "a", "kind": "property", "ownerName": "tunnel_state" },
+    { "name": "b", "kind": "property", "ownerName": "tunnel_state" },
+    { "name": "phase", "kind": "property", "ownerName": "tunnel_state" },
+    { "name": "c", "kind": "property", "ownerName": "tunnel_state" },
+    { "name": "outer_ok", "kind": "struct" },
+    { "name": "nested", "kind": "property", "ownerName": "outer_ok" },
+    { "name": "list_node", "kind": "struct" },
+    { "name": "next", "kind": "property", "ownerName": "list_node" },
+    { "name": "prev", "kind": "property", "ownerName": "list_node" },
+    { "name": "plain_holder", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "tunnel_state", "target": "a" },
+    { "type": "contains", "from": "tunnel_state", "target": "phase", "note": "the ENUM-typed member: the type is spelled with the tag, so it must not be resolved against the struct of the same name" },
+    { "type": "contains", "from": "outer_ok", "target": "nested", "note": "CONTROL 1: a by-value nested struct is real layout and still contributes" },
+    { "type": "contains", "from": "list_node", "target": "next", "note": "CONTROL 2: the pointer self-reference" }
+  ],
+  "forbidRelationships": []
+}

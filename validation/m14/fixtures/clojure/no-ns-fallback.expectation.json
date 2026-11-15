@@ -1,0 +1,13 @@
+{
+  "issue": "CLJ-D34",
+  "note": "WITH NO NAMESPACE FORM, THE AMBIENT `user` IS STILL A NAMESPACE. The containment pass used to skip every symbol whose owner was `user`, on the reasoning that a file with no `ns` form must not claim a namespace it never declared. That is what Clojure actually does: `(defn f \u2026)` in a file with no `ns` form interns `f` into the ambient namespace, and `user` is its conventional name. The fixture pair `in-ns-user` / `no-ns-fallback` is what settled it, and in the direction OPPOSITE to the rule's original argument \u2014 withholding the membership while keeping the export is the one option that cannot be made consistent, because the export pass's own invariant fired: \"export `undeclared-fn` does not resolve to a top-level symbol (membership rides Contains)\". Both files now behave identically, which is simpler and true, and the distinction that was invented to separate them is gone. The analyzer now also publishes the implicit namespace as a Module symbol, so the file states which namespace it belongs to rather than leaving the reader to infer it \u2014 which is what lets the export invariant resolve `undeclared-fn` at all.",
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "user",
+      "target": "undeclared-fn",
+      "line_number": 8
+    }
+  ],
+  "forbidRelationships": []
+}

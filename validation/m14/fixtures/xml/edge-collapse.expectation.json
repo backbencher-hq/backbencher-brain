@@ -1,0 +1,48 @@
+{
+  "fixtureId": "xml/edge-collapse",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding X3. Edge identity in this graph is `source|type|target`, so N declarations of one pair NECESSARILY share one edge \u2014 a property of the schema, not a bug, and the differential measures it separately for that reason. What was a bug is that the analyzer let the FIRST line stand in for all of them: measured on the 7,975-file corpus, 544,304 declaration occurrences collapsed onto 42,901 edges, and every collapsed occurrence beyond the first was unreachable. The edge now carries `occurrences` and `lines`. This fixture pins three `<child flag=\u2026/>` declarations on lines 3, 4 and 5: ONE `contains child -> flag` edge, `occurrences` 3, and `lines` [3,4,5]. The `root -> child` edge collapses identically, which is the point \u2014 a 300-element list of the same tag is one edge, and the count says so.",
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "root",
+      "target": "child",
+      "line_number": 3,
+      "meta.occurrences": 3,
+      "meta.lines": [
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "type": "contains",
+      "from": "child",
+      "target": "flag",
+      "line_number": 3,
+      "meta.occurrences": 3,
+      "meta.lines": [
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "child",
+      "target": "flag",
+      "line_number": 4,
+      "note": "the second declaration shares the first's edge; a second EDGE for the same pair is what the graph cannot represent"
+    },
+    {
+      "type": "contains",
+      "from": "child",
+      "target": "flag",
+      "line_number": 5,
+      "note": "same"
+    }
+  ]
+}

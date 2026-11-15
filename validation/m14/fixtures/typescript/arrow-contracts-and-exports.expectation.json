@@ -1,0 +1,30 @@
+{
+  "fixtureId": "typescript/arrow-contracts-and-exports",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Three payload/surface defects that only a fixture can hold, pinned together because each is 'a name or path a consumer resolves'. (1) M5: an arrow-function handler is a Function symbol and must receive the same apiContract extraction as a `function` declaration — `extractApiContract` already had an arrow_function branch, but the variable path never called it, so the dominant handler shape (Next.js/Astro/Express arrow consts) reported nothing while the identical function form reported a path. The `notAHandler` control proves the fix did not simply attach a contract to every arrow: a body with no HTTP call still gets none. (2) M4: an anonymous default export has no binding name, so `default` names no symbol anywhere; the two dangling `module -> default` edges are forbidden while the informational ExportInfo and the NAMED export edge are pinned, so the fix cannot be 'stop recording default exports'. (3) M8: linesOfCode is a cross-language metric — the same source reported 6 as .ts (non-empty lines only) and 9 as .js (all lines), measured 6 vs 9 on this exact file's shape; the pin is the authored line count, and the pre-fix non-empty count is recorded in the rationale so the two are distinguishable by a reader.",
+  "expectSymbols": [
+    { "name": "arrowGet", "kind": "function" },
+    { "name": "arrowPost", "kind": "function" },
+    { "name": "notAHandler", "kind": "function" },
+    { "name": "declarationHandler", "kind": "function" },
+    { "name": "named", "kind": "constant" }
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "arrowGet", "equals": "/api/items", "note": "THE GAIN: pre-fix this was undefined while declarationHandler below reported its path" },
+    { "symbol": "arrowPost", "equals": "/api/items" },
+    { "symbol": "declarationHandler", "equals": "/api/decl", "note": "control: the function-declaration path is unchanged by the fix" }
+  ],
+  "forbidApiContractPaths": [
+    { "symbol": "notAHandler", "note": "an arrow with no HTTP call in its body must NOT acquire a contract — the fix is not 'every arrow is a handler'" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "arrow-contracts-and-exports", "target": "named", "note": "a NAMED export keeps its edge" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "arrow-contracts-and-exports", "target": "default", "note": "pre-fix: the anonymous `export default function(){}` emitted an edge to `default`, a target no symbol can own" }
+  ],
+  "expectMetadata": [
+    { "linesOfCode": 43, "comment": "all lines (the javascript twin's count), not the 37 non-empty lines this analyzer used to report" }
+  ]
+}

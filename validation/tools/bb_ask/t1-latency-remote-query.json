@@ -1,0 +1,107 @@
+{
+  "tier": "T1-remote-query",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+  "embeddingDisabled": false,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T1-remote-query",
+    "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+    "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-remote-query.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": null,
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 576.22,
+  "warmupChars": 1966,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 255.79,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-matching-model-embeddings",
+        "confidence": "0.2",
+        "chars": "1995",
+        "lines": "55"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 277.31,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-matching-model-embeddings",
+        "confidence": "0.2",
+        "chars": "2085",
+        "lines": "55"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 186.02,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-matching-model-embeddings",
+        "confidence": "0.2",
+        "chars": "2175",
+        "lines": "55"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 297.4,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-matching-model-embeddings",
+        "confidence": "0.2",
+        "chars": "2159",
+        "lines": "55"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 331.71,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-matching-model-embeddings",
+        "confidence": "0.2",
+        "chars": "1963",
+        "lines": "55"
+      }
+    }
+  ],
+  "p50": 277.31,
+  "p95": 331.71,
+  "max": 331.71,
+  "generatedAt": "2026-11-01T22:21:49.827Z"
+}

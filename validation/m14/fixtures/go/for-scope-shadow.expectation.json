@@ -1,0 +1,101 @@
+{
+  "fixtureId": "go/for-scope-shadow",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS TWO scope leaks in `analyzeGoBareIdentifierUses` that both made a genuine read vanish — the edge is simply ABSENT rather than mislabelled, which is the failure mode no consumer can see. DEFECT 1, the `for_statement` frame. Go spec (For statements): \"The scope of a variable declared in a for statement is the for statement itself.\" The pass pushed a ScopeFrame for `function_declaration`, `method_declaration`, `func_literal` and `block`, but NOT for `for_statement`. A range target (`for N := range xs`) or a 3-clause init/cond/post variable therefore bound into the ENCLOSING block's frame, and because the loop's own `block` child pops its OWN frame, the leak SURVIVED the loop: every later read of that name anywhere in the enclosing block was dropped by `isShadowed`. DEFECT 2, the `receive_statement` write-gate. tree-sitter-go gives a `receive_statement` an `=` token child for an ASSIGNMENT (`case N = <-ch`) and a `:=` token for a DECLARATION (`case N := <-ch`) — the same shape, and the same distinction, that `assignment_statement` already carries and that the selector pass's S1 write-gate already enforces for selectors. The branch bound the expression_list UNCONDITIONALLY, so an assignment was treated as a declaration. A `select_statement` pushes no frame of its own, so that binding landed in the ENCLOSING FUNCTION's frame and dropped every later read of the name in the REST OF THE FUNCTION BODY. REAL CORPUS WITNESS FOR DEFECT 1 (kubernetes, bb_tests/repositories/kubernetes/staging/src/k8s.io/apiserver/pkg/authentication/request/websocket/protocol.go): line 33 `var protocolHeader = textproto.CanonicalMIMEHeaderKey(\"Sec-WebSocket-Protocol\")`, line 57 `for _, protocolHeader := range req.Header[protocolHeader]`, line 99 `req.Header.Set(protocolHeader, strings.Join(filteredProtocols, \",\"))`. The package var is shadowed by the range target in two nested loops and then read at 99; before the fix no `uses` row was emitted for it, after the fix `uses -> protocolHeader @99` is published. MEASURED: over the lane's own 27-repo corpus 213 files carry a shadowing binding of a package-level name, and the full-relationship differential (all types, not only `uses`) changes EXACTLY ONE file — the kubernetes witness — gaining exactly one `uses` row. A 240-file broad sample across six repos, the 369-file bettercap corpus, and 140 files carrying `case X = <-ch` all change 0 rows, so neither fix is a redistribution: both are dropped reads restored. DEFECT 2 IS SYNTHETIC-ONLY IN THE CORPUS AND THAT IS STATED RATHER THAN HIDDEN: the pattern is legal and reachable, but in real code a name assigned in a select case is almost always then read as a SELECTOR (`resp.Body`), and the selector pass has its own communication_case skip — so the identifier pass never sees it. The fixture pins the construct directly because the corpus cannot. THE FIVE POSITIVE ROWS ARE THE ASSERTION: (1) `RangeShadow -> PackageLevel @21` is the row MISSING before defect 1's fix and PRESENT after it. (2) `ThreeClauseShadow -> PackageConst @25` pins that the frame covers the init/cond/post variables of a 3-clause loop, not only `range_clause`. (3) `NoShadow -> PackageLevel @40` is the CONTROL for defect 1: a loop whose own variables never collide, read afterwards — emits before and after, so a fix that broke ordinary loops fails here. (4) `NestedBlockShadow -> PackageLevel @51` is the second CONTROL: a shadowing binding inside a nested `{ }` block must not leak past that block; `block` already had its own frame, so this emits both before and after and is the tripwire for a fix that removed the block frame to solve the for-frame problem. (5) `SelectAssignShadow -> PackageLevel @63` is the defect-2 pin: the trailing read AFTER the select must emit, and it is absent without the write-gate. CONFIDENCE/TIER are deliberately NOT pinned: every row here is `identifier_usage` at 1.0/usage_contextual, so pinning them would assert nothing about the frames. The `exports` rows and the `Module` symbol are unpinned for the same reason. NOTE ON THE DEDUPE, recorded because it nearly hid both bugs: the `uses` pass keys `emitted` on `source::uses::target`, so two reads of the same name in one function collapse to one row BY DESIGN. This fixture therefore uses exactly ONE trailing read per function — a fixture with two would have passed against the broken analyzer and pinned nothing. DEFECT 3, THE `references` SOURCE THROUGH A FUNCTION LITERAL AT PACKAGE SCOPE. `resolveSource` walks up for a `type_spec`/`type_alias` (GO36) or an enclosing function, and it stops at the var_spec it was called ON. A declaration inside a FUNC LITERAL in a package var's INITIALIZER therefore walks past the literal, past the package var_spec (neither a type_spec nor a function), and lands on `global`: `var Registry = map[string]func() *Thing{\"a\": func() *Thing { var local Thing; ... }}` published `references global -> Thing` for the `var local Thing` inside the literal. The named declaration that owns that func literal is `Registry`, and it is exactly what `resolveGoWorkSource` answers for the same node — the `uses`/`calls` passes already attributed to it, so one pass resolved the named ancestor and another fell through to the pseudo-source. Same class as GOD11 (package-scope var attributed to `global`) and the package-scope `instantiates` site: one pass resolved the named ancestor and another fell through. Measured over 6,000 files across nine repos: 573 of 611 remaining `global` references are blank-identifier declarations (`var _ X = ...`) and the rest are genuine package-scope declarations with no named ancestor to attribute to — so `global` is the honest answer for all of them after the fix, not a residual defect.",
+  "expectSymbols": [
+    { "name": "PackageLevel", "kind": "variable" },
+    { "name": "PackageConst", "kind": "constant" },
+    { "name": "RangeShadow", "kind": "function" },
+    { "name": "ThreeClauseShadow", "kind": "function" },
+    { "name": "NoShadow", "kind": "function" },
+    { "name": "NestedBlockShadow", "kind": "function" },
+    { "name": "SelectAssignShadow", "kind": "function" },
+    { "name": "Registry", "kind": "variable" },
+    { "name": "Thing", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "DEFECT 1 pin: absent before the for_statement frame, present after it.",
+      "type": "uses",
+      "from": "RangeShadow",
+      "target": "PackageLevel",
+      "line_number": 21,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "DEFECT 1 pin: the frame also covers a 3-clause loop's init/cond/post variables, not only range_clause.",
+      "type": "uses",
+      "from": "ThreeClauseShadow",
+      "target": "PackageConst",
+      "line_number": 25,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "CONTROL for defect 1: a non-colliding loop, read afterwards. Emits both before and after.",
+      "type": "uses",
+      "from": "NoShadow",
+      "target": "PackageLevel",
+      "line_number": 40,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "CONTROL for defect 1: the nested block's own frame must keep its scope. Emits both before and after; tripwire for removing the block frame.",
+      "type": "uses",
+      "from": "NestedBlockShadow",
+      "target": "PackageLevel",
+      "line_number": 51,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "DEFECT 2 pin: `case N = <-ch` is an assignment, so the trailing read after the select must emit.",
+      "type": "uses",
+      "from": "SelectAssignShadow",
+      "target": "PackageLevel",
+      "line_number": 63,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "DEFECT 3 pin: a declaration inside a func literal in a package var's INITIALIZER must attribute to that package var, not to `global`. `resolveSource` stops at the var_spec it is called on and cannot look past a func_literal, so it walked past the literal and past `var Registry = map[string]func() *Thing{...}` and answered `global`. The named declaration that owns the literal is `Registry`, which is what the uses/calls passes already answer for the same node. Line 81 is the `var local Thing` inside the literal and line 80 the map's own value type; both were `global -> Thing` before the fix.",
+      "type": "references",
+      "from": "Registry",
+      "target": "Thing"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "The loop's own range target is a DECLARATION, never a use: `for PackageLevel := range xs` must not emit a read of PackageLevel from the declaring statement. Only the trailing read at line 21 is a use.",
+      "type": "uses",
+      "from": "RangeShadow",
+      "target": "PackageLevel",
+      "line_number": 17
+    },
+    {
+      "comment": "`for PackageConst = 0; ...` is an assignment to the loop variable, not a read of the const. The init statement must not publish a use at line 24.",
+      "type": "uses",
+      "from": "ThreeClauseShadow",
+      "target": "PackageConst",
+      "line_number": 24
+    },
+    {
+      "comment": "The nested block's `PackageLevel := 1` is a declaration inside that block's own frame; it must not be read as a use of the package var at line 48.",
+      "type": "uses",
+      "from": "NestedBlockShadow",
+      "target": "PackageLevel",
+      "line_number": 48
+    },
+    {
+      "comment": "The `case PackageLevel = <-ch` clause body reads the loop-local name, and the clause itself is an assignment: no use of the package var may be published from inside the select.",
+      "type": "uses",
+      "from": "SelectAssignShadow",
+      "target": "PackageLevel",
+      "line_number": 62
+    },
+    {
+      "comment": "DEFECT 3 negative: `global -> Thing` from this file is forbidden. This file has no package-scope `var _`-style discard declaration, so any `global` source here is the pseudo-source fallback rather than an honest answer. The only `global` that would be legitimate is a blank-identifier declaration, and this file has none.",
+      "type": "references",
+      "from": "global",
+      "target": "Thing"
+    }
+  ]
+}

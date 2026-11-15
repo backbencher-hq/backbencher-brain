@@ -1,0 +1,68 @@
+{
+  "fixtureId": "scss/variables-flags-and-identity",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A Sass variable is assigned in SEVERAL places by design \u2014 a `!default` at the top and an override inside a theme \u2014 so the identity ruling that the CSS lane established, `(kind, resolved name)` with scope kept as provenance, is the load-bearing pin here. `$brand` is assigned twice and must be ONE symbol, or a `references` edge addresses one of two indistinguishable rows. The pins are per-NAME rather than a total, because a total would also pass if the lane published `$brand` once and `$pad` zero times. `!default` and `!global` are recorded as facts on the symbol rather than parsed away: they change what an assignment MEANS \u2014 a default is overridable, a global assignment leaks out of its scope \u2014 and `$a: 1 !default;` did not parse at all before grammar patch 2/2, at 210 occurrences in the corpus. Every relationship here also pins its LINE, and that is not decoration: the `line-numbers-dropped` mutant removes `line_number` from every edge, which changes no symbol and no edge COUNT, and it SURVIVED until these pins existed. Line provenance is the one class a counting gate cannot see, so it has to be asserted directly (M59/#855).",
+  "expectSymbols": [
+    {
+      "name": "$brand",
+      "kind": "variable",
+      "meta.isScssVariable": true
+    },
+    {
+      "name": "$pad",
+      "kind": "variable",
+      "meta.scssFlagDefault": true
+    },
+    {
+      "name": "$scope",
+      "kind": "variable",
+      "meta.scssFlagGlobal": true
+    },
+    {
+      "name": ".a",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "$brand",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "$pad",
+      "equals": 1,
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": ".a",
+      "target": "fixtures/scss/variables-flags-and-identity::$brand",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isScssVarRef": true,
+      "line_number": 7
+    },
+    {
+      "type": "references",
+      "from": ".a",
+      "target": "fixtures/scss/variables-flags-and-identity::$pad",
+      "meta.isScssVarRef": true,
+      "line_number": 8
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": ".a",
+      "target": "fixtures/scss/variables-flags-and-identity::$scope"
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+ "fixtureId": "python/implements-proof-requires-binding",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The sibling fixture python/implements-interface-bases proves the `implements` rule FIRES. This one proves it does not fire when the evidence is absent, which is the half a 'does it work' test never covers and the half that keeps a new relationship type from becoming a fabrication. This file imports no interface module at all, and Python does not require one either - a name is a name until something binds it - so `class C(ABC)` here is an ordinary class called ABC and `class D(abc.ABC)` is a base in a module this analyzer has not read. The corpus contains 27 base occurrences of exactly this shape: 24 inside CPython's own typing.py, which DEFINES the class Protocol and then inherits from it, plus asyncio's local `protocols` module. Every one of them is a correct `extends`, and a rule keyed on the spelling rather than on the binding would have relabelled all 27. The file exists to make two guards load-bearing: the root-import condition on a dotted base (mutant M6 deleted it and every python fixture passed, because the only dotted base elsewhere in the suite was abc.ABC, which matches the specific string anyway - a condition nothing tests is not a verified condition), and the shape guard that stops the bare-name proof firing on a DOTTED base (the PY-26 defect). The positive row is deliberate: `collections.abc.Mapping` DOES emit implements here because `import collections` is above and `collections.abc` is the standard library's own namespace, which is the same argument that makes `abc.ABC` self-proving once `abc` is bound. Two dotted bases of identical shape in one file with opposite verdicts, and the only difference is whether the root was bound - that contrast is the test.",
+ "expectSymbols": [
+  {
+   "name": "Local",
+   "kind": "class",
+   "note": "an ordinary base declared in this file, so its edges can only be `extends`"
+  },
+  {
+   "name": "BareABC",
+   "kind": "class",
+   "note": "the class whose base is the undefined name ABC. The symbol is published normally; only the relationship label is at stake, and adding a relationship type must not change what a class IS"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "from": "Shadow",
+   "target": "Local",
+   "line_number": 45,
+   "note": "the ordinary case: a class base is `extends`, and nothing in this file changes that"
+  },
+  {
+   "type": "extends",
+   "from": "BareABC",
+   "target": "ABC",
+   "line_number": 49,
+   "note": "`ABC` is undefined in this module. Publishing `implements` would name a symbol the analyzer has never read and that this file does not import. `ABC` is a legal python class name and users define it, which is the whole reason the proof is the binding and not the spelling"
+  },
+  {
+   "type": "extends",
+   "from": "BareProtocol",
+   "target": "Protocol",
+   "line_number": 54,
+   "note": "same, for the name this lane is most likely to over-credit: 45 proven Protocol bases across the corpus, and 27 unproven ones of this shape"
+  },
+  {
+   "type": "extends",
+   "from": "BareMapping",
+   "target": "Mapping",
+   "line_number": 58,
+   "note": "and the most tempting of the three. `Mapping` is the most frequent collections.abc import in the entire corpus, so a spelling-keyed rule would relabel this"
+  },
+  {
+   "type": "extends",
+   "from": "DottedABC",
+   "target": "ABC",
+   "line_number": 64,
+   "note": "THE ROW MUTANT M6 NEEDS. Spelled exactly like a self-proving dotted base, and `abc` is NOT bound in this file - the only import is `collections`. Deleting the root-import condition leaves every other python fixture passing, because the only dotted base the suite held elsewhere was abc.ABC, which matches the specific string anyway and so changed no outcome"
+  },
+  {
+   "type": "extends",
+   "from": "DottedProtocol",
+   "target": "Protocol",
+   "line_number": 69,
+   "note": "the same for `typing`, which is likewise unbound here"
+  },
+  {
+   "type": "implements",
+   "from": "DottedMapping",
+   "target": "Mapping",
+   "line_number": 73,
+   "meta.interfaceKind": "collections.abc",
+   "note": "THE CONTRAST ROW, and the positive one. `import collections` IS above, and `collections.abc.X` is the standard library's own namespace - there is no plausible user module named `collections` to shadow it, which is the identical argument that makes `abc.ABC` self-proving once `abc` is bound. Two dotted bases of identical shape in this file with OPPOSITE verdicts, differing only in whether the root was bound. This row exists because writing the fixture with `import collections` and then expecting `extends` was wrong and the analyzer was right: a fully qualified stdlib path is a statement about the standard library, not about a name this file happens to have bound"
+  },
+  {
+   "type": "extends",
+   "from": "VendorDotted",
+   "target": "VendorProtocol",
+   "line_number": 88,
+   "note": "THE BINDING-HONESTY ROW. `VendorProtocol` IS imported by this file - from `vendor.typing`, not from `typing`. Importing a name proves what it was imported FROM; it does not turn it into the stdlib's interface. A rule that recorded imported NAMES without recording which MODULE they came from would relabel this, and would have relabelled CPython's own typing.Protocol subclasses 24 times"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "implements",
+   "from": "BareABC",
+   "target": "ABC",
+   "note": "THE FABRICATION THIS FIXTURE EXISTS TO PREVENT. No binding for ABC exists in this file"
+  },
+  {
+   "type": "implements",
+   "from": "BareProtocol",
+   "target": "Protocol",
+   "note": "THE PY-26 DEFECT. In a file that also held `from typing import Protocol`, the bare-name proof fires on a DOTTED base and relabels a third-party class that shares a leaf with the stdlib one. `typing.Protocol` and `vendor.Protocol` share a leaf and nothing else, so every routing decision has to be made on the SHAPE of the base"
+  },
+  {
+   "type": "implements",
+   "from": "BareMapping",
+   "target": "Mapping"
+  },
+  {
+   "type": "implements",
+   "from": "DottedABC",
+   "target": "ABC",
+   "note": "the M6 behaviour: a dotted spelling is self-proving only once its ROOT is bound"
+  },
+  {
+   "type": "implements",
+   "from": "DottedProtocol",
+   "target": "Protocol"
+  },
+  {
+   "type": "implements",
+   "from": "VendorDotted",
+   "target": "VendorProtocol",
+   "note": "imported, but from `vendor.typing`. Binding the name is not the same as proving the interface"
+  },
+  {
+   "type": "implements",
+   "from": "Shadow",
+   "target": "Local",
+   "note": "the strongest form of the forbid: `Local` is declared in this very file, so no amount of missing evidence can make it an interface"
+  }
+ ],
+ "_seamNote": {
+  "what": "The proof for `implements` is a BINDING, never a spelling. A bare base name is proven only by an import in this file; a dotted base is proven only by a self-proving stdlib spelling whose ROOT this file has bound. `collections.abc.X` is proven by `import collections` alone, because that namespace belongs to the standard library; `abc.ABC` needs `import abc`; `vendor.Protocol` is proven by nothing, however it is imported.",
+  "why": "A python name is a name until something binds it, and `ABC` and `Protocol` are names users define freely - CPython's own typing.py declares Protocol and then inherits from it 24 times. The 45 proven Protocol bases and the 27 unproven ones are separated by one fact: an import. So the rule keys on the import, and the corpus measurement is what keeps the unproven 27 from being silently promoted by a well-meaning future edit that widens a name set. The dotted root condition is kept because it is the difference between `abc.ABC` proving itself and `someone_elses.ABC` proving itself, and a file that binds neither must see no edge. The one positive row is here to stop the rule from being over-corrected in the other direction: a fully qualified stdlib path IS a statement about the standard library, and refusing it would be refusing a true fact because the surrounding test case was written pessimistically."
+ }
+}

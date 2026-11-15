@@ -1,0 +1,33 @@
+{
+  "sourceDb": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "destDb": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "sourceProjectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "backupMs": 11781,
+  "size": 3639963648,
+  "sourceFiles": {
+    "before": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793570974843
+      },
+      "wal": null
+    },
+    "after": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793570974843
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571561981
+      }
+    },
+    "sourceUnchanged": false
+  },
+  "destProjectIdForRun": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "runWith": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+    "projectDir": "/home/ishaq2321/mcp/backbencher-brain"
+  },
+  "generatedAt": "2026-11-01T22:19:33.755Z"
+}

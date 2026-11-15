@@ -1,0 +1,39 @@
+{
+  "status": "verified",
+  "currentCommit": "1c3d0351e2325de2d5745f5a315eb4965198e462",
+  "verifierCommand": "bun run script/m48/verify-w1-website-tools.ts",
+  "evidenceFile": "W1.json",
+  "generatedAt": "2026-11-14T00:22:36.144Z",
+  "passed": 132,
+  "failed": 0,
+  "negativeCases": 3,
+  "failures": [],
+  "exercised": [
+    "bb_search",
+    "bb_ask",
+    "bb_health",
+    "bb_patterns",
+    "bb_security",
+    "bb_visualize",
+    "bb_migrate",
+    "bb_analyze",
+    "bb_doc",
+    "bb_edit",
+    "bb_index",
+    "bb_graph",
+    "bb_impact",
+    "bb_cross_language",
+    "bb_annotate",
+    "bb_annotations"
+  ],
+  "summary": {
+    "toolsDocumented": 16,
+    "phantomsAudited": 10,
+    "bytes": 60744
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T00:22:36.145Z",
+    "contentSha256": "a7c63514c86c8362c3a558d71252123ce527f416eabac39a8d20a1177cf9aee4"
+  }
+}

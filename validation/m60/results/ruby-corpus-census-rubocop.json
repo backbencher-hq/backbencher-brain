@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-09-28T19:34:57.228Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories/rubocop",
+    "400"
+  ],
+  "files": 400,
+  "errors": 0,
+  "treeTruth": 8364,
+  "analyzerEdges": 12688,
+  "missing": 13,
+  "unexplained": 0,
+  "outsideAudited": 3042,
+  "missingByLabel": {
+    "uses": 3,
+    "overrides": 10
+  },
+  "unexplainedByLabel": {},
+  "outsideByLabel": {
+    "references": 160,
+    "contains": 2882
+  },
+  "unexplainedExamples": {},
+  "sigA": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigB": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigC": {
+    "sampled": 10,
+    "files": 1,
+    "examples": [
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.extract_typed"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.extract_shareable_constant_value"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.extract_warn_indent"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.extract_rbs_inline_value"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.extract_frozen_string_literal"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.new_frozen_string_literal"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.without"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.encoding"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.tokens"
+      },
+      {
+        "file": "lib/rubocop/magic_comment.rb",
+        "target": "MagicComment.match"
+      }
+    ]
+  }
+}

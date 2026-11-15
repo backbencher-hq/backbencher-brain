@@ -1,0 +1,35 @@
+{
+  "note": "CC1-c complexity-construct policy (CLJ-D6). One rule: every conditional/loop construct counts +1 — FAIL-proof is the pre-extension run (the ten additions read 1 each, file total 8) versus the post run (2 each, total 18). Declared negatives: try/catch/finally and and/or count nothing (elixir omits try too; EX-D10 family). Clause nodes are not counted in clojure (case children are pairs, not nodes). Per-symbol exposure pins the CC1-f parity (symbol.complexity mirrors metadata.complexity for functions).",
+  "expectSymbols": [
+    { "name": "f-if-not", "kind": "function", "ownerName": "clj.fixture.complexityforms" },
+    { "name": "f-cond->>", "kind": "function", "ownerName": "clj.fixture.complexityforms" },
+    { "name": "f-try", "kind": "function", "ownerName": "clj.fixture.complexityforms" },
+    { "name": "f-logic", "kind": "function", "ownerName": "clj.fixture.complexityforms" }
+  ],
+  "expectComplexity": [
+    { "symbol": "baseline", "equals": 1 },
+    { "symbol": "f-if", "equals": 2 },
+    { "symbol": "f-cond", "equals": 2 },
+    { "symbol": "f-when", "equals": 2 },
+    { "symbol": "f-case", "equals": 2 },
+    { "symbol": "f-for", "equals": 2 },
+    { "symbol": "f-loop", "equals": 2 },
+    { "symbol": "f-when-let", "equals": 2 },
+    { "symbol": "f-if-let", "equals": 2 },
+    { "symbol": "f-if-not", "equals": 2 },
+    { "symbol": "f-when-not", "equals": 2 },
+    { "symbol": "f-if-some", "equals": 2 },
+    { "symbol": "f-when-some", "equals": 2 },
+    { "symbol": "f-condp", "equals": 2 },
+    { "symbol": "f-while", "equals": 2 },
+    { "symbol": "f-cond->", "equals": 2 },
+    { "symbol": "f-cond->>", "equals": 2 },
+    { "symbol": "f-some->", "equals": 2 },
+    { "symbol": "f-some->>", "equals": 2 },
+    { "symbol": "f-try", "equals": 1 },
+    { "symbol": "f-logic", "equals": 1 }
+  ],
+  "expectMetadata": [
+    { "cyclomaticComplexity": 18 }
+  ]
+}

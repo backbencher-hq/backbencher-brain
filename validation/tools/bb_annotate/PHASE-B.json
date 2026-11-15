@@ -1,0 +1,510 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotate",
+  "phase": "B (fixes + verification)",
+  "status": "verified",
+  "currentCommit": "56a80c5e5d46117bf55053caa56f36031f03dea2",
+  "verifierCommand": "npx tsx validation/tools/bb_annotate/phase-b-evidence.ts",
+  "generatedAt": "2026-11-03T16:11:27.032Z",
+  "runtime": "v22.22.1",
+  "passed": 5,
+  "failed": 0,
+  "blocked": 0,
+  "gateResults": [
+    {
+      "id": "m28-A1",
+      "claim": "store + real door + joint reachability + hostile body + planted mutants",
+      "command": "npx tsx script/m28/verify-annotation-store.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 25878,
+      "summary": "A1: VERIFIED (50/50 passed, 7/7 mutants)",
+      "mutantLines": [
+        "caught: A1 negative control: the pre-fix independent-halves rule disagrees with the joint answer (it would have claimed a render)",
+        "caught: A1 negative control: a renderer that preserved newlines would produce a second bullet from the hostile body",
+        "caught: A1 mutant: a handler that copies the caller's author class is caught (row must stay 'agent')",
+        "caught: A1 mutant: a location key that ignores the path is caught (two files must be two rows)",
+        "caught: A1 mutant: a handler that ANDs the two independent halves is caught by the joint rule",
+        "caught: A1 mutant: a widened body bound is caught by the declared refusal",
+        "caught: A1 mutant: a disabled control-character refusal is caught"
+      ],
+      "blockedLines": []
+    },
+    {
+      "id": "m28-A2",
+      "claim": "hover/graph rendering, author labels, escaping; real headless-editor leg",
+      "command": "npx tsx script/m28/verify-annotation-ui.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 15094,
+      "summary": "A2: VERIFIED (23/23 passed, 6/6 mutants, 0 blocked leg(s))",
+      "mutantLines": [
+        "caught: A2 mutant: author-label-dropping renderer is caught by the label rule",
+        "caught: A2 mutant: badge attached to a nameless node is rejected by the pairing rule",
+        "caught: A2 mutant: label/author disagreement is rejected by the pairing rule",
+        "caught: A2 mutant: escaper-skipping renderer is caught (real escaper transforms, real section contains only the escaped form)",
+        "caught: A2 mutant: annotation-less model renders NO badge, annotated model renders exactly one author-labeled badge (real DOM rules)",
+        "caught: A2 mutant: lying in-editor driver is caught by the assertion set"
+      ],
+      "blockedLines": []
+    },
+    {
+      "id": "docs-bb_annotate",
+      "claim": "generated page matches registry + curation",
+      "command": "npx tsx script/verify-tool-docs.ts --only bb_annotate",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 1976,
+      "summary": "TOOL DOCS: PASS (16 public tools, 1 artifacts)",
+      "mutantLines": [],
+      "blockedLines": []
+    },
+    {
+      "id": "regex-policy",
+      "claim": "no new regex uses; frozen debt only with an allowlist row",
+      "command": "npx tsx script/tools/verify-regex-policy.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 2463,
+      "summary": "REGEX POLICY: PASS — 14 allowlisted, 62 frozen debt, 0 new, 12 baseline rows now paid",
+      "mutantLines": [],
+      "blockedLines": []
+    },
+    {
+      "id": "typecheck",
+      "claim": "the tree compiles; this lane's files clean",
+      "command": "npx tsc --noEmit",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 20316,
+      "summary": "lane files clean; 0 error(s) in other writers' files: ",
+      "mutantLines": [],
+      "blockedLines": [
+        ""
+      ]
+    }
+  ],
+  "changedFiles": [
+    {
+      "file": "src/mcp/tools/bb_annotate/handler.ts",
+      "beforeAtHead": "5d7aadc51a6f3881c42d173e48a8599a4e8e0646352b642d12fe8a2b4ccb957b",
+      "afterWorkingTree": "5d7aadc51a6f3881c42d173e48a8599a4e8e0646352b642d12fe8a2b4ccb957b",
+      "changed": false
+    },
+    {
+      "file": "src/mcp/tools/bb_annotate/descriptor.ts",
+      "beforeAtHead": "59ad1a3afc48eb467a976b9f8331aaa9dcc8d1d23481f2ba933fa031e8d1f78b",
+      "afterWorkingTree": "59ad1a3afc48eb467a976b9f8331aaa9dcc8d1d23481f2ba933fa031e8d1f78b",
+      "changed": false
+    },
+    {
+      "file": "script/tool-docs/curation/bb_annotate.ts",
+      "beforeAtHead": "4fdaa2e8a483becc275359e144a6ee804a0a85f6bf82cd19ce2ea5dcfd9d96ed",
+      "afterWorkingTree": "9ce5524405913c15ff5d6df4e111be806fff4f4470c095e819f2120d7da437cf",
+      "changed": true
+    },
+    {
+      "file": "docs/tools/bb_annotate.md",
+      "beforeAtHead": "9308da5a0f950b6389d9c0af38e841f0ed7cd73eb3265670a36d81b17ac7bb5f",
+      "afterWorkingTree": "d8c13f9e874b41f24c300670bfd6fbc5fae63b892210d946a6dc14781cb2afad",
+      "changed": true
+    },
+    {
+      "file": "script/m28/verify-annotation-store.ts",
+      "beforeAtHead": "f3b6cd55e8484d997b41b11f9029f78727eebf3b771fa9db3e660070b35d4fb6",
+      "afterWorkingTree": "f3b6cd55e8484d997b41b11f9029f78727eebf3b771fa9db3e660070b35d4fb6",
+      "changed": false
+    },
+    {
+      "file": "script/m28/verify-annotation-ui.ts",
+      "beforeAtHead": "cc251dd5bafa2e3e5595764b4d8355af039293ff5d982382c72f8ae6e941c581",
+      "afterWorkingTree": "cc251dd5bafa2e3e5595764b4d8355af039293ff5d982382c72f8ae6e941c581",
+      "changed": false
+    }
+  ],
+  "evidenceHashes": {
+    "AUDIT.json": "cb655dd1c836ffc7878f853d409fae8d5a2b209a26695e8e4433c9a44cd79ff5",
+    "PHASE-A-PROBES.json": "26a4d227c75d767edb645241a128ffb6f3047b558d115d2fa1ecab91e2bd5888",
+    "LATENCY.json": "ae94b52776ea5a630a99d2ee802fdfedbbae09d2ac59ab5f1cd77458e660266d",
+    "REAL-CORPUS.json": "1668a068f79ac518a5e22feb6235982b9448e157807971af9a4de3cbf430f799",
+    "phase-a-probes.ts": "0831ce997f58b6f1fa0e285ce341ee3a5ae838e4f5835e4b7b5a6c911968b2ed",
+    "latency.ts": "65542c348e543740224d1ad06dfcfa5929b9fdaffc8e7db23efaa90b2e975217"
+  },
+  "redGreen": {
+    "PA-1 joint symbol+file reachability": {
+      "red": {
+        "observedBefore": {
+          "claimed": true,
+          "rendered": false,
+          "label": "cross-file note on greet/other.ts renders in hover"
+        },
+        "evidence": "validation/tools/bb_annotate/AUDIT.json doorEvidence.claimVsRenderMismatches"
+      },
+      "green": {
+        "postFixMismatches": 0,
+        "gate": "A1 door: joint refusal + fileMatched=false + statement names the file",
+        "mutantCaught": true
+      }
+    },
+    "PA-2 real MCP door coverage": {
+      "red": {
+        "observedBefore": "A1's only provenance proof called createToolHandlers() directly; the wire refusal contract was unmeasured",
+        "evidence": "AUDIT.json defects PA-2"
+      },
+      "green": {
+        "gateChecks": "A1 R7 (wire success, missing symbol, author_class refusal, alias, joint, qualified name, re-annotate, hostile body)",
+        "evidence": "validation/m28/results/A1.json"
+      }
+    },
+    "PA-3 real mutants": {
+      "red": {
+        "observedBefore": "A1 mutants M2/M3 were positive string checks; only M1 mutated storage",
+        "evidence": "AUDIT.json defects PA-3"
+      },
+      "green": {
+        "mutants": [
+          {
+            "name": "A1 negative control: the pre-fix independent-halves rule disagrees with the joint answer (it would have claimed a render)",
+            "caught": true
+          },
+          {
+            "name": "A1 negative control: a renderer that preserved newlines would produce a second bullet from the hostile body",
+            "caught": true
+          },
+          {
+            "name": "A1 mutant: a handler that copies the caller's author class is caught (row must stay 'agent')",
+            "caught": true
+          },
+          {
+            "name": "A1 mutant: a location key that ignores the path is caught (two files must be two rows)",
+            "caught": true
+          },
+          {
+            "name": "A1 mutant: a handler that ANDs the two independent halves is caught by the joint rule",
+            "caught": true
+          },
+          {
+            "name": "A1 mutant: a widened body bound is caught by the declared refusal",
+            "caught": true
+          },
+          {
+            "name": "A1 mutant: a disabled control-character refusal is caught",
+            "caught": true
+          }
+        ],
+        "aggregate": "7/7",
+        "anchors": "each mutant refuses to run when its anchor disappears (anchor check fails the gate)"
+      }
+    },
+    "PA-4 docs truth": {
+      "red": {
+        "observedBefore": "page claimed editor = AND of two independent booleans, 'constant-time', M28 milestone limitation, missing bounds",
+        "evidence": "AUDIT.json docsTruth.claims"
+      },
+      "green": {
+        "docsGate": "TOOL DOCS: PASS (16 public tools, 1 artifacts)",
+        "pageChecks": "A1 R9 (2000/200 chars/500/1024/JOINT, no milestone narration)"
+      }
+    },
+    "PA-5 regex debt": {
+      "red": {
+        "observedBefore": "handler contained /[\\u0000-\\u001F\\u007F]/ (frozen baseline row, no allowlist entry)",
+        "evidence": "validation/tools/regex-baseline.json"
+      },
+      "green": {
+        "after": "character-code scan in hasControlCharacter(); handler contains 0 regex literals",
+        "policy": "REGEX POLICY: PASS — 14 allowlisted, 62 frozen debt, 0 new, 12 baseline rows now paid"
+      }
+    },
+    "PA-6 declared bounds": {
+      "red": {
+        "observedBefore": "symbol and path unbounded row inputs",
+        "evidence": "AUDIT.json defects PA-6"
+      },
+      "green": {
+        "refusals": "symbol > 500, path > 1024, body > 2000, toolIdentity > 200 all refused; A1 R4 and the M4 mutant prove the refusal can fail"
+      }
+    },
+    "PA-7 §9 narration": {
+      "red": {
+        "observedBefore": "6+2+3+3 milestone/issue lines across handler/descriptor/curation/gates",
+        "evidence": "AUDIT.json section9"
+      },
+      "green": {
+        "after": "0 narrative hits in lane-owned files (the A2 fingerprint key `m28.A2` is machine data, not prose)"
+      }
+    }
+  },
+  "latency": {
+    "protocol": "cold call recorded once; then five warm runs of the same call; p50/p95 over the warm runs",
+    "environment": {
+      "cpus": 8,
+      "loadavg": [
+        11.7,
+        9.62,
+        7.21
+      ],
+      "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+      "bbNoAutoRefresh": "1"
+    },
+    "tree": "working-tree",
+    "legs": {
+      "T0": {
+        "subject": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+        "index": {
+          "files": 5,
+          "symbols": 13,
+          "relationships": 26
+        },
+        "coldMs": 53.35,
+        "warm": {
+          "p50": 9.80648100000144,
+          "p95": 17.769728000001123,
+          "runs": 5
+        },
+        "readBackCount": 1,
+        "sharedIndexUntouched": null
+      },
+      "T1": {
+        "subject": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+        "index": {
+          "files": 97,
+          "symbols": 3512,
+          "relationships": 17068
+        },
+        "coldMs": 51.04,
+        "warm": {
+          "p50": 3.6715820000026724,
+          "p95": 5.720349000002898,
+          "runs": 5
+        },
+        "readBackCount": 1,
+        "sharedIndexUntouched": null
+      },
+      "REAL:graphql-js": {
+        "subject": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+        "index": {
+          "files": 564,
+          "symbols": 13620,
+          "relationships": 61917
+        },
+        "coldMs": 1733.78,
+        "warm": {
+          "p50": 44.2834589999984,
+          "p95": 51.79250099998899,
+          "runs": 5
+        },
+        "readBackCount": 1,
+        "sharedIndexUntouched": null
+      },
+      "REAL:rake": {
+        "subject": "/home/ishaq2321/bb_tests/repositories/rake",
+        "index": {
+          "files": 109,
+          "symbols": 1593,
+          "relationships": 9075
+        },
+        "coldMs": 173.43,
+        "warm": {
+          "p50": 16.311166000028607,
+          "p95": 31.85406199999852,
+          "runs": 5
+        },
+        "readBackCount": 1,
+        "sharedIndexUntouched": null
+      },
+      "T2": {
+        "subject": "/home/ishaq2321/mcp/backbencher-brain",
+        "index": {
+          "files": 6452,
+          "symbols": 310423,
+          "relationships": 820040
+        },
+        "coldMs": 8190.76,
+        "warm": {
+          "p50": 29.930649999994785,
+          "p95": 38.00375499995425,
+          "runs": 5
+        },
+        "readBackCount": 1,
+        "sharedIndexUntouched": true
+      }
+    },
+    "gateSummary": {
+      "T0WarmUnder250ms": true,
+      "T1WarmUnder1000ms": true,
+      "T2WarmUnder5000ms": true,
+      "T2ColdUnder30000ms": true
+    }
+  },
+  "realCorpus": {
+    "corpora": [
+      {
+        "corpus": "graphql-js",
+        "subject": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+        "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+        "index": {
+          "files": 564,
+          "symbols": 13620,
+          "relationships": 61917,
+          "annotations": 0,
+          "bytes": 155222016,
+          "mtime": "2026-11-03T05:14:42.940Z"
+        },
+        "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/graphql-js",
+        "call": {
+          "tool": "bb_annotate",
+          "symbol": "parse",
+          "path": null
+        },
+        "coldMs": 1733.78,
+        "warm": {
+          "runs": 5,
+          "min": 32.35498400000506,
+          "p50": 44.2834589999984,
+          "p95": 51.79250099998899,
+          "max": 51.79250099998899,
+          "values": [
+            51.79250099998899,
+            32.35498400000506,
+            37.98341600000276,
+            44.2834589999984,
+            51.5428130000073
+          ]
+        },
+        "readBack": {
+          "tool": "bb_annotations",
+          "ms": 58.92,
+          "count": 1,
+          "declaredAbsent": false
+        },
+        "qualifiedName": {
+          "symbol": "GraphQLChannels.parse",
+          "coldMs": 2162.52,
+          "warm": {
+            "runs": 3,
+            "min": 13.883333999983734,
+            "p50": 15.952996999985771,
+            "p95": 18.581925000005867,
+            "max": 18.581925000005867,
+            "values": [
+              18.581925000005867,
+              13.883333999983734,
+              15.952996999985771
+            ]
+          },
+          "readBackCount": 1
+        }
+      },
+      {
+        "corpus": "rake",
+        "subject": "/home/ishaq2321/bb_tests/repositories/rake",
+        "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+        "index": {
+          "files": 109,
+          "symbols": 1593,
+          "relationships": 9075,
+          "annotations": 0,
+          "bytes": 22708224,
+          "mtime": "2026-11-03T05:16:59.952Z"
+        },
+        "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/rake",
+        "call": {
+          "tool": "bb_annotate",
+          "symbol": "task",
+          "path": null
+        },
+        "coldMs": 173.43,
+        "warm": {
+          "runs": 5,
+          "min": 11.92808199999854,
+          "p50": 16.311166000028607,
+          "p95": 31.85406199999852,
+          "max": 31.85406199999852,
+          "values": [
+            13.481825999973807,
+            16.311166000028607,
+            11.92808199999854,
+            31.4179390000063,
+            31.85406199999852
+          ]
+        },
+        "readBack": {
+          "tool": "bb_annotations",
+          "ms": 24.66,
+          "count": 1,
+          "declaredAbsent": false
+        },
+        "qualifiedName": {
+          "symbol": "task",
+          "coldMs": 61.23,
+          "warm": {
+            "runs": 3,
+            "min": 6.022644000011496,
+            "p50": 7.121879999991506,
+            "p95": 7.388684000005014,
+            "max": 7.388684000005014,
+            "values": [
+              7.388684000005014,
+              7.121879999991506,
+              6.022644000011496
+            ]
+          },
+          "readBackCount": 1
+        }
+      }
+    ],
+    "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+    "tree": "working-tree"
+  },
+  "section9": [
+    {
+      "file": "src/mcp/tools/bb_annotate/handler.ts",
+      "hits": []
+    },
+    {
+      "file": "src/mcp/tools/bb_annotate/descriptor.ts",
+      "hits": []
+    },
+    {
+      "file": "script/tool-docs/curation/bb_annotate.ts",
+      "hits": []
+    },
+    {
+      "file": "docs/tools/bb_annotate.md",
+      "hits": []
+    },
+    {
+      "file": "script/m28/verify-annotation-store.ts",
+      "hits": []
+    },
+    {
+      "file": "script/m28/verify-annotation-ui.ts",
+      "hits": []
+    }
+  ],
+  "a1Evidence": {
+    "status": "verified",
+    "checks": 50,
+    "passed": 50,
+    "failed": 0,
+    "mutantsCaught": 7,
+    "mutantsTotal": 7,
+    "blockedLegs": 0
+  },
+  "a2Evidence": {
+    "status": "verified",
+    "checks": 23,
+    "passed": 23,
+    "failed": 0,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "blockedLegs": []
+  },
+  "blockedLegs": []
+}

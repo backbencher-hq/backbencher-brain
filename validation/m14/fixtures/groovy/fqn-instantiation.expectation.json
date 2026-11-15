@@ -1,0 +1,21 @@
+{
+  "fixtureId": "groovy/fqn-instantiation",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CONFIRMED BUG TARGET: object_creation_expression predicate misses scoped_type_identifier; new java.util.ArrayList() must still yield Instantiates -> ArrayList. CONVENTION DECIDED (M14.1): dotted types keep FULL dotted names as edge targets, matching the Java analyzer; package segments are never split into separate edges.",
+  "expectSymbols": [
+    {
+      "name": "Builder",
+      "kind": "class"
+    },
+    {
+      "name": "make"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "targetEndsWith": "ArrayList"
+    }
+  ]
+}

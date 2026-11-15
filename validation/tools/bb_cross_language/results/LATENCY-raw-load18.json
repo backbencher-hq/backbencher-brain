@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "generatedAt": "2026-11-01T18:48:35.408Z",
+  "currentCommit": "c43282e92",
+  "rules": [
+    "BB_NO_AUTO_REFRESH=1",
+    "warm (one discarded warmup call per subject)",
+    "5 measured runs per subject",
+    "p50/p95 from the measured runs"
+  ],
+  "environment": {
+    "node": "v22.22.1",
+    "platform": "linux x64",
+    "cpus": 8,
+    "totalMemGB": 15
+  },
+  "budgets": {
+    "T0DefaultMaxMs": 250,
+    "T1DefaultMaxMs": 1000,
+    "T2DefaultMaxMs": 5000,
+    "clientTimeoutMs": 30000
+  },
+  "tiers": {
+    "T0": {
+      "subject": {
+        "workspace": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+        "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+        "indexMs": 9934,
+        "counts": {
+          "files": 5,
+          "symbols": 13,
+          "crossRows": 5,
+          "languages": [
+            "java",
+            "javascript",
+            "markdown",
+            "scala",
+            "typescript"
+          ]
+        }
+      },
+      "defaultCall": {
+        "args": {
+          "symbol": "Inventory"
+        },
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 8.771,
+        "p95Ms": 11.987,
+        "minMs": 7.606,
+        "maxMs": 11.987,
+        "bytes": {
+          "min": 4338,
+          "max": 4338
+        },
+        "answerShape": {
+          "declaredAbsent": false,
+          "ownFactCount": 1,
+          "memberFactCount": 2,
+          "copyCount": 1,
+          "copiesTruncated": false,
+          "truncated": false,
+          "totalCountIfKnown": 3
+        }
+      },
+      "limit1Call": {
+        "args": {
+          "symbol": "Inventory",
+          "limit": 1
+        },
+        "runs": 5,
+        "p50Ms": 11.198,
+        "p95Ms": 14.216,
+        "minMs": 8.825,
+        "maxMs": 14.216
+      },
+      "unknownSymbolCall": {
+        "args": {
+          "symbol": "no-such-name-xyz"
+        },
+        "runs": 5,
+        "p50Ms": 4.281,
+        "p95Ms": 4.331,
+        "minMs": 4.158,
+        "maxMs": 4.331,
+        "isError": true
+      }
+    },
+    "T1": {
+      "subject": {
+        "workspace": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+        "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+        "indexMs": 36245,
+        "counts": {
+          "files": 97,
+          "symbols": 3512,
+          "crossRows": 0,
+          "languages": [
+            "typescript"
+          ]
+        }
+      },
+      "defaultCall": {
+        "args": {
+          "symbol": "id"
+        },
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 32.516,
+        "p95Ms": 33.955,
+        "minMs": 28.367,
+        "maxMs": 33.955,
+        "bytes": {
+          "min": 11173,
+          "max": 11173
+        },
+        "answerShape": {
+          "declaredAbsent": true,
+          "ownFactCount": 0,
+          "memberFactCount": 0,
+          "copyCount": 44,
+          "copiesTruncated": false,
+          "truncated": false,
+          "totalCountIfKnown": 0
+        }
+      },
+      "limit1Call": {
+        "args": {
+          "symbol": "id",
+          "limit": 1
+        },
+        "runs": 5,
+        "p50Ms": 26.261,
+        "p95Ms": 29.872,
+        "minMs": 24.789,
+        "maxMs": 29.872
+      },
+      "unknownSymbolCall": {
+        "args": {
+          "symbol": "no-such-name-xyz"
+        },
+        "runs": 5,
+        "p50Ms": 6.036,
+        "p95Ms": 6.749,
+        "minMs": 3.375,
+        "maxMs": 6.749,
+        "isError": true
+      }
+    }
+  },
+  "t2": {
+    "measure": "shared owner module over a read-only sqlite connection — see the file header for why the handler is not used on the shared index",
+    "index": {
+      "files": 6452,
+      "symbols": 310423,
+      "relationships": 820040,
+      "crossLanguageRows": 0
+    },
+    "subjects": {
+      "type": {
+        "copies": 5392,
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 5803.193,
+        "p95Ms": 8277.984,
+        "minMs": 4646.755,
+        "maxMs": 8277.984,
+        "answer": {
+          "facts": 0,
+          "memberFacts": 0,
+          "storedRowCount": 0,
+          "deeperDescendantRowCount": 0,
+          "copiesTruncated": true
+        }
+      },
+      "file": {
+        "copies": 3457,
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 6533.335,
+        "p95Ms": 8882.88,
+        "minMs": 4906.774,
+        "maxMs": 8882.88,
+        "answer": {
+          "facts": 0,
+          "memberFacts": 0,
+          "storedRowCount": 0,
+          "deeperDescendantRowCount": 0,
+          "copiesTruncated": true
+        }
+      },
+      "Command": {
+        "copies": 34,
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 4997.629,
+        "p95Ms": 6638.754,
+        "minMs": 4516.264,
+        "maxMs": 6638.754,
+        "answer": {
+          "facts": 0,
+          "memberFacts": 0,
+          "storedRowCount": 0,
+          "deeperDescendantRowCount": 0,
+          "copiesTruncated": false
+        }
+      }
+    },
+    "readOnly": true
+  },
+  "handlerOverhead": {
+    "component": {
+      "p50Ms": 8.011,
+      "p95Ms": 21.136,
+      "minMs": 4.042,
+      "maxMs": 21.136
+    },
+    "handler": {
+      "p50Ms": 8.086,
+      "p95Ms": 15.834,
+      "minMs": 7.786,
+      "maxMs": 15.834
+    },
+    "note": "same process, same fixture; the difference is handler validation + envelope assembly + JSON.stringify"
+  },
+  "commands": {
+    "fixtures": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/work/index-fixtures.mts",
+    "latency": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/work/latency.mts"
+  },
+  "limitations": [
+    "T2's index carries ZERO stored cross-language rows (measured), so T2 exercises the absence path only; no T2 answer can contain a fact.",
+    "T2 is measured through the component because the handler opens the shared store read-write and this campaign's rule forbids writing it from a measurement. The handler's own overhead is measured on T0 in the same process.",
+    "T1's synthetic index is single-language TypeScript, so it also exercises the absence path only; T0 is the only tier with stored cross-language rows.",
+    "Wall-clock figures belong to this machine; the ratio against the same-machine component runs is the portable part."
+  ]
+}

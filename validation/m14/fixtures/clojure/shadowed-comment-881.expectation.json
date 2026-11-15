@@ -1,0 +1,97 @@
+{
+  "issue": "#881 + W23-b",
+  "note": "W23-b (M49 W24): the shadow flag is regional + order-aware (was one file-wide, order-blind pre-scan). A1: `(comment (w23b-ordered-ghost))` precedes every shadowing definition \u2014 DATA, the ghost must not surface. B: `(comment (w23b-region-ghost))` sits after the let closes, still inside w23b-region-window \u2014 the binding's region is the ENCLOSING form only, so it is DATA again. Multi-arity: clause 1's param shadows inside clause 1 ONLY (`w23b-multi-live` walked, clause 2's `w23b-multi-ghost` stays DATA). A2: `(def comment identity)` binds at form END \u2014 `w23b-defname-live` walks from there on. W24-mr1: letfn fn-spec heads shadow like binding-vector entries \u2014 C `(letfn [(comment [x] x)] (comment (target)))` WALKS (name binding, region = enclosing letfn form), D a spec param `[comment]` walks inside its own spec, E a `(comment \u2026)` AFTER the letfn form is DATA again.",
+  "expectSymbols": [
+    {
+      "name": "parameter-shadow",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "parameter-shadow",
+      "target": "live-argument"
+    },
+    {
+      "type": "calls",
+      "from": "parameter-shadow",
+      "target": "after-parameter"
+    },
+    {
+      "type": "calls",
+      "from": "local-shadow",
+      "target": "live-local"
+    },
+    {
+      "type": "calls",
+      "from": "local-shadow",
+      "target": "after-local"
+    },
+    {
+      "type": "calls",
+      "from": "still-quoted",
+      "target": "after-quoted"
+    },
+    {
+      "type": "calls",
+      "from": "w23b-region-window",
+      "target": "w23b-region-live"
+    },
+    {
+      "type": "calls",
+      "from": "w23b-region-window",
+      "target": "w23b-region-after"
+    },
+    {
+      "type": "calls",
+      "from": "w23b-multi",
+      "target": "w23b-multi-live"
+    },
+    {
+      "type": "calls",
+      "from": "w23b-multi",
+      "target": "w23b-multi-tail"
+    },
+    {
+      "type": "calls",
+      "from": "w23b-after-def",
+      "target": "w23b-defname-live"
+    },
+    {
+      "type": "calls",
+      "from": "w24-letfn-name",
+      "target": "w24-letfn-name-live"
+    },
+    {
+      "type": "calls",
+      "from": "f",
+      "target": "w24-letfn-param-live"
+    },
+    {
+      "type": "calls",
+      "from": "w24-letfn-after",
+      "target": "w24-letfn-after-live"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "target": "shadow-quoted-ghost"
+    },
+    {
+      "target": "shadow-qualified-ghost"
+    },
+    {
+      "target": "w23b-ordered-ghost"
+    },
+    {
+      "target": "w23b-region-ghost"
+    },
+    {
+      "target": "w23b-multi-ghost"
+    },
+    {
+      "target": "w24-letfn-after-ghost"
+    }
+  ]
+}

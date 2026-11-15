@@ -1,0 +1,114 @@
+{
+  "instrument": "scss \u2014 the population HOLE: a wide ERROR node makes the analysis superlinear",
+  "at": "2026-10-11T12:35:00-04:00",
+  "revision": "HEAD at the time of measurement (php/python/member-owner lanes mid-edit; this lane's file typechecks with 0 errors)",
+  "trigger": "the residual gate's POPULATION block reported `1 file(s) hold CONTENT and returned nothing`. The instrument was right and the file is a real defect, not a 0-byte file: bulma/docs/vendor/fontawesome-free-6.5.2-web/scss/_variables.scss, 5,011 lines, 163 KB.",
+  "reproduction": {
+    "directParse": "parseFile returns symbols 0 / relationships 0 after `analyzer timeout - forcefully aborting` \u2014 the ENGINE'S ANALYZER BUDGET IS 120 s (`engine.ts:1981`); the 192 s this lane first reported was the wall clock of a probe that included the parse and the fallback path, NOT the budget \u2014 the file contributes NOTHING and is invisible in every count.",
+    "scaling": {
+      "note": "analysis only, same file, prefixes of it",
+      "lines_500": "471 ms",
+      "lines_1000": "4660 ms",
+      "lines_2000": "10889 ms",
+      "lines_5011": "159593 ms (before this lane's changes) / ~250000 ms measured later under load 38, both ABOVE the engine's 120 s analyzer budget",
+      "parse": "linear, 72-1660 ms"
+    }
+  },
+  "rootCause": {
+    "shape": "the pinned SCSS grammar produces ONE `ERROR` node with **15,479 named children** for this file (2,508 `$`-variable declarations). The analyzer descends into ERROR regions ON PURPOSE (that descent was itself an earlier fix \u2014 error recovery is required by the lane's fixtures), so it walks that node's whole child list.",
+    "cost": "`namedChild(i)` measured at 176 us/call at 1,000 lines and 312 us/call at 2,000 lines; 2,619 calls >0.5 ms on that single ERROR node accounted for 5.8 s of a 9.6 s analysis. The wall clock grows superlinearly while the OUTPUT stays constant at 30 symbols.",
+    "shared": "the CSS delegate walks the same ERROR node and is a large share of the remaining cost (CSS alone: 0.93 s @1,000 lines \u00b7 3.77 s @2,000 \u00b7 38.0 s @4,000)."
+  },
+  "fixesMeasured": {
+    "ownerIndex": {
+      "what": "`ownerForNode` scanned EVERY symbol per call; replaced with a pruned interval index (sorted by span start + prefix max end, with an identity guard for the `unshift`-ed module symbol).",
+      "result": "CPU-time A/B, alternating arms (load-independent): 1.01x / 1.04x on the pathological file, and 1.19x (derived-variables) \u00b7 1.14x (bootstrap _variables, 558 symbols) \u00b7 1.16x (initial-variables) \u00b7 1.05x (element-plus var.scss) on ordinary symbol-bearing files.",
+      "equivalence": "111/111 sampled files byte-identical output (sha256 digest of every symbol and relationship), re-verified after the narrowing fix.",
+      "verdict": "KEPT"
+    },
+    "cursorWalkSwap": {
+      "what": "replacing `for (i < namedChildCount) namedChild(i)` with `for (c = firstNamedChild; c; c = c.nextNamedSibling)` in the 9 indexed walks.",
+      "result": "CPU-time A/B: **0.88x at 1,000 lines and 0.80x at 2,000 lines \u2014 a REGRESSION** (4,845 ms original vs 6,066 ms swapped at 2,000).",
+      "verdict": "REVERTED, and this is the load-bearing negative result: the idiom swap is NOT the fix, so it must not be proposed for the CSS analyzer either. The per-call cost is not index scanning; the cursor idiom's own per-step overhead is worse on these trees."
+    },
+    "earlierClaimCorrected": "an earlier non-alternating harness suggested 4.1x / 1.9x and is WITHDRAWN as load drift: the chart that alternated arms under `process.cpuUsage()` is the control. A non-alternating A/B on a loaded box measured the machine, not the change."
+  },
+  "cssLaneQuestion": {
+    "asked": "does any .css file in css's population time out the same way? (css is VERIFIED, so a hole would qualify its clause 1.)",
+    "shapeScan": "parsed the 300 largest of 1,174 corpus .css files and measured ERROR-node width: THREE files carry the catastrophic shape \u2014 shadcn-svelte/docs/src/lib/registry/styles/style-mira.css (54 KB, ERROR node with 16,621 children, 7,066 ERROR nodes), style-sera.css (16,007 / 6,886), hasura-engine/scripts/ekg/bootstrap-1.4.0.css (10,887 / 4,197).",
+    "timing": {
+      "measured": "RealCssAnalyzer on each pathological file, ONE RUN each",
+      "style-mira.css": "wall 670 ms \u00b7 cpu 1568 ms \u00b7 8 symbols \u00b7 0 relationships (ERROR node 16,621 children)",
+      "style-sera.css": "wall 499 ms \u00b7 cpu 676 ms \u00b7 13 symbols \u00b7 0 relationships (16,007 children)",
+      "bootstrap-1.4.0.css": "wall 233 ms \u00b7 cpu 303 ms \u00b7 217 symbols \u00b7 15 relationships (10,887 children)",
+      "answer": "NO \u2014 the shape is present in css's population but does NOT time out there. css's clause 1 does not rest on a hole from this mechanism, and I am not qualifying its verdict. The difference from scss is size and nesting: the scss hole is 163 KB / 5,011 lines with 2,508 top-level declarations feeding one 15,479-child ERROR node, while these css files are 54 KB and finish in under a second."
+    }
+  },
+  "raw": [
+    "gate-before.txt (the POPULATION block that found it)",
+    ".tmp-scss/css-shape.mts output",
+    ".tmp-scss/prefix.mts",
+    ".tmp-scss/accessors.mts (the accessor timing that named namedChild)"
+  ],
+  "gateBeforeAfter": {
+    "before": {
+      "run": "validation/m14/fixtures/scss/gate-before.txt (11:26)",
+      "total": "30,390 edges \u00b7 20,545 resolved \u00b7 amb(decl) 2,552 \u00b7 unresolved 452 \u00b7 extOK 6,841 \u00b7 residual 3,015",
+      "references": "9,350 / resolved 4,118 / amb 1,499",
+      "exports": "4,019 / resolved 3,045 / amb 974",
+      "population": "4,433 parsed \u00b7 degraded 1 \u00b7 files with content returning nothing: 1 (the HOLE)"
+    },
+    "after": {
+      "run": "validation/m14/fixtures/scss/gate-after.txt (12:51)",
+      "total": "30,427 edges \u00b7 20,571 resolved \u00b7 amb(decl) 2,563 \u00b7 unresolved 452 \u00b7 extOK 6,841 \u00b7 residual 3,015",
+      "references": "9,358 / resolved 4,124 / amb 1,501",
+      "exports": "4,048 / resolved 3,065 / amb 983",
+      "population": "4,433 parsed \u00b7 degraded 0 \u00b7 'files returning NO symbols AND NO relationships: UNSTATED' (the instrument did not print that clause on this run)"
+    },
+    "difference": "+37 edges (references +8, exports +29), +26 resolved, +11 amb(decl); extFAIL/bindFAIL/causeFAIL remain 0; the HOLE clause is UNSTATED on the after run rather than absent.",
+    "theControlThatMissedIt": "CLOSED TWICE, and the SECOND closure REFUTES the first. First I attributed the +37 to my owner index (arms run ~9 minutes apart, original 9,358/4,048 vs index 9,350/4,019). Then two stronger controls were run: (1) a SAME-PROCESS comparison of both analyzers over ALL 4,433 admitted files, diffing every symbol and every edge key \u2014 **0 files differ, 0 symbols or edges present with one analyzer only**; (2) three whole-population enumeration runs (index, original, index) \u2014 **all three read references 9,350 \u00b7 exports 4,019**. So the owner index is OUTPUT-NEUTRAL: the 37-edge difference was the TREE MOVING between arms, not the change, and my first attribution was itself the artifact this section was written to guard against. SAMPLE-SCOPED equivalence was the weaker claim I originally made; POPULATION-SCOPED neutrality is the claim two independent controls now support, and the +37 is neither dedupe nor members lost \u2014 it is a transient state of the tree.",
+    "whatIsAttributable": "the +37 reproduces in the cause enumeration (references 9,358, exports 4,048 \u2014 the SAME numbers as the after-gate), and that enumeration ran with this lane's analyzer; the before-gate ran with the pre-change analyzer. So the difference is consistent with this lane's change, and it is NOT separately controlled against another lane's shared-file edits in the same window (css/engine are shared and were not touched by me). Named rather than assumed either way.",
+    "howToSettleIt": "one same-revision A/B: revert the owner index in a scratch module and run the gate row for references/exports \u2014 or run the 111-file harness WITHOUT the size cap and with a stride that covers these files."
+  },
+  "idiomFixesRefuted": {
+    "at": "2026-10-11T15:45:00-04:00",
+    "attempt2": {
+      "what": "a TARGETED variant: use the sibling walk only where `namedChildCount > 64` (the wide recovery node), keep the indexed walk everywhere else \u2014 written to avoid the per-step penalty that sank the global swap.",
+      "result": "CPU-time A/B, alternating arms, same input: **0.56x at 1,000 lines and 0.84x at 2,000** \u2014 slower, so REVERTED. The file is byte-identical to the committed state (sha256 e2400903efb4ffca).",
+      "whatItRefutes": "the reading that `namedChild(i)`'s cost growth (176 us/call at 1,000 lines, 312 us/call at 2,000) is INDEX SCANNING. `nextNamedSibling` walking is slower even on the wide node, so the per-call cost is not a function of the index \u2014 it is per-node access cost itself (marshalling/allocation/GC), which grows with the tree."
+    },
+    "bothIdiomsRefuted": "global cursor swap 0.80x \u00b7 wide-node cursor path 0.56-0.84x. The iteration idiom is NOT the lever, and a fleet-wide 'fix' on it would have cost every lane.",
+    "whatRemains": [
+      "REDUCE THE NUMBER OF NODE ACCESSES \u2014 the one lever neither attempt touched. That means NOT descending into a 15k-child ERROR region, which is a SEMANTIC trade (recovery completeness for speed) and belongs to the lane owner and the Lead, not to an optimisation pass: the descent exists because refusing it once made every read inside a broken region invisible, and a fixture pins that behaviour.",
+      "OR the shared delegate's per-node cost on the same region: this lane's share of the hole is ~68% at the 2,000-line prefix (7.8 s of 11.5 s total, CSS delegate 3.7 s), so neither side alone explains it and both are node-access bound.",
+      "PRICED BUT UNMEASURED: capping the recovery descent at a child-count threshold. It would need its own before/after AND the 13 fixtures re-run, because it changes what is recovered."
+    ]
+  },
+  "boundedDescent": {
+    "ruled": "Lead: the alternative to a bounded descent on the pathological node is not full recovery, it is TOTAL LOSS.",
+    "where": "BOTH layers, because the profile said the remainder was the shared delegate's: `src/ast/real-scss-analyzer.ts` and `src/ast/real-css-analyzer.ts` (the second was Lead-authorized, css being a verified lane).",
+    "channelCorrection": "The disclosure was first attached to the file's MODULE SYMBOL on the reasoning that analyzer-internal tallies do not survive `parseFile` but a symbol's metadata does. THAT WAS WRONG, and measured wrong: `parseFile` strips symbol metadata COMPLETELY \u2014 on the pathological file every symbol arrives with no metadata keys at all (`[...new Set(symbols.flatMap(s => Object.keys(s.metadata)))]` is `[]`). What survives is RELATIONSHIP metadata, the channel the fleet's own markers ride, so the tally now rides the file's first relationship.",
+    "threshold": {
+      "value": 10000,
+      "chosenFrom": "validation/m14/fixtures/scss/wide-node-distribution.json \u2014 every admitted file's widest node, parse-only",
+      "distribution": "css 1,174 files: widest 7,745, and ZERO files above 10,000. scss 4,433 files: 29 above 1,000, 9 above 2,000, 4 above 5,000, 3 above 10,000 (43,808 plus two at 10,906), 1 above 20,000.",
+      "whyNot2000": "at 2,000 the bound also caught `Documenter.jl/assets/html/themes/documenter-light.css` (widest node 2,164) and there it LOST **161 symbols and 27 relationships** for NO time saving (18.3 s capped vs 14.0 s uncapped) \u2014 the exact trade this cap is not allowed to make. At 10,000 that case disappears: the css identity sample reads **147/147 byte-identical, 0 files bound**.",
+      "perFileDeltaWhereItBinds": "every file the 10,000 bound catches was measured capped against uncapped: the 43,808 file **delta 0 symbols / 0 rels** (345 ms vs 86.7 s), bootstrap/scss/_variables.scss (4,513 skipped at cap 2,000) **delta 0 / 0**, the two 10,906 files **delta 0 / 0**."
+    },
+    "effect": {
+      "holeFileThroughParseFile": "**12.9 s, 30 symbols, 37 relationships, `fallback: false`** \u2014 it was a 120 s timeout returning 0 and 0",
+      "disclosure": "{cap: 10000, errorNodes: 1, errorChildren: 43808, visited: 10000, skipped: 33808}",
+      "scssGateRow": "contains intended 2,240 -> 11,152 (the composed-name line fix flowing into this lane, disclosed in the same commit); extends 427/235/37 -> 426/231/40 (the bound binding on three files); TOTAL 30,390 -> 30,426 edges; residual 3,015 -> 3,018; extFAIL/bindFAIL/causeFAIL all still 0",
+      "cssGateRow": "EVERY column identical before and after this change \u2014 references, imports, uses, contains, overrides, TOTAL \u2014 because the bound binds on zero css files. Residual 260, three FAIL columns 0.",
+      "population": "the gate's POPULATION block for scss no longer reports the file as returning nothing; a direct `parseFile` on it returns 30/37 with `fallback: false`"
+    },
+    "conditions": {
+      "1_shapeNotPredicate": "yes \u2014 the bound sits on `namedChildCount > RECOVERY_CHILD_CAP` at the head of each walk, because the predicate form never bound",
+      "2_disclosurePerFileCounted": "yes \u2014 {cap, errorNodes, errorChildren, visited, skipped} on the file's first relationship, the channel that survives `parseFile`",
+      "3_outputIdentical": "yes, measured: pathological file 30/37 both arms (delta 0/0) \u00b7 css identity sample 147/147 byte-identical with 0 files bound \u00b7 every binding file measured delta 0/0",
+      "4_normalErrorFileFullyRecovered": "yes by the distribution: the bound can only fire above 10,000 children and no ordinary file reaches it; the recovery fixtures pass scss 13/13 and css 22/22",
+      "5_cssRowDisclosed": "yes \u2014 nothing moved, which is itself the disclosure",
+      "6_budgetCorrected": "yes \u2014 the engine's analyzer budget is 120 s at `engine.ts:1981`; the 192 s this lane first reported was a probe's wall clock including the parse and the fallback path, and it made the first fix look sufficient when it was not"
+    }
+  }
+}

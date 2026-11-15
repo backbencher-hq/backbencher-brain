@@ -1,0 +1,92 @@
+{
+  "lane": "clojure",
+  "gateExts": [
+    "clj",
+    "cljs",
+    "cljc",
+    "edn"
+  ],
+  "routerExts": [
+    "clj",
+    "cljs",
+    "cljc",
+    "edn"
+  ],
+  "extsAgree": true,
+  "sizeCap": 1048576,
+  "roots": {
+    "default": {
+      "root": "/home/ishaq2321/bb_tests/repositories",
+      "files": 646,
+      "repos": 3,
+      "trackedTotal": 525586,
+      "excluded": {
+        "absent": 0,
+        "overCap": 0,
+        "overCapLargest": 0
+      },
+      "byRepo": {
+        "clj-kondo": 503,
+        "clojure": 142,
+        "nvim-treesitter": 1
+      },
+      "byExt": {
+        "edn": 59,
+        "clj": 541,
+        "cljs": 26,
+        "cljc": 20
+      },
+      "repoList": [
+        "clj-kondo=503",
+        "clojure=142",
+        "nvim-treesitter=1"
+      ]
+    },
+    "farm": {
+      "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+      "files": 646,
+      "repos": 3,
+      "trackedTotal": 532921,
+      "excluded": {
+        "absent": 0,
+        "overCap": 0,
+        "overCapLargest": 0
+      },
+      "byRepo": {
+        "clj-kondo": 503,
+        "clojure": 142,
+        "nvim-treesitter": 1
+      },
+      "byExt": {
+        "edn": 59,
+        "clj": 541,
+        "cljs": 26,
+        "cljc": 20
+      },
+      "repoList": [
+        "clj-kondo=503",
+        "clojure=142",
+        "nvim-treesitter=1"
+      ]
+    }
+  },
+  "compare": {
+    "sameFileSet": true,
+    "sameFileCount": true,
+    "onlyDefault": {
+      "count": 0,
+      "sample": []
+    },
+    "onlyFarm": {
+      "count": 0,
+      "sample": []
+    }
+  },
+  "content": {
+    "compared": 646,
+    "identical": 646,
+    "differ": 0,
+    "differSample": [],
+    "samePathsDifferentBytes": false
+  }
+}

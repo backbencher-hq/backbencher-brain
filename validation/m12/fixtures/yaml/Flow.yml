@@ -1,0 +1,3 @@
+config: {enabled: true, retries: 3, ratio: 1.5, tags: [one, two], nested: {nullValue: null}}
+anchor: &base {value: 1}
+alias: *base

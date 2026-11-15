@@ -1,0 +1,14 @@
+{
+  "issue": "F5-CERT",
+  "note": "Two rulings about WHERE a type relation is anchored, both found as symmetric misses/fabrications where the COUNTS matched exactly and every key was wrong - the most misleading failure a completeness gate can have. CLJ-D48: the source is the analyzer's `activeFunction`, which is set by FUNCTION FORMS and not by `def`. A `reify` attributes to the enclosing definition (core.clj:7291 publishes `future-call -> clojure.lang.IDeref`), while a `proxy` inside a `def` INITIALISER has no enclosing function and falls back to the NAMESPACE (instant.clj:162 publishes `clojure.instant -> ThreadLocal`, not the var it builds). The existing comment asserted the opposite and was half right: written about `proxy`, applied to `reify`. I first 'corrected' the proxy superclass on the strength of ONE sample and made `extends` worse - 7 wrong of 39 becoming 33 - which is why the rule here is stated as a measurement rather than a generalisation. CLJ-D49: a namespace's aliases survive two shapes that were unread. The `ns` form carries METADATA between head and name, so the name came back as `^{:no-doc true} clj.fixture.typerel`; and the `:require` mixes a PREFIX LIST with a plain spec, and a prefix list was detected by asking whether its first child was a symbol - which a prefix list ALSO has, so `[protocols :as p]` was silently skipped. The measured symptom was an alias table of size 1 where two aliases existed. Pins all four positions.",
+  "expectSymbols": [
+    { "name": "builds-a-future", "kind": "function" },
+    { "name": "tagged", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "builds-a-future", "target": "clojure.lang.IDeref", "line_number": 17 },
+    { "type": "extends", "from": "clj.fixture.typerel", "target": "java.util.concurrent.Callable", "line_number": 25 },
+    { "type": "implements", "from": "tagged", "target": "clj.fixture.typerel.base.protocols/Marker", "line_number": 37 },
+    { "type": "implements", "from": "tagged", "target": "clj.fixture.typerel.base.shapes/Shape", "line_number": 39 }
+  ]
+}

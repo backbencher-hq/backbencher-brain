@@ -1,7 +1,7 @@
 {
   "instrument": "markdown whole-corpus census (validation/m14/fixtures/markdown/whole-corpus-census.ts)",
   "entryPoint": "parseFile (src/ast/pool-worker.ts)",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "population": {
     "admissionTest": "detectLanguageFromPath(abs, text) === \"markdown\" — the arbiter's test",
     "admittedByExtension": 17456,

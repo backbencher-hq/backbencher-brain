@@ -1,0 +1,22 @@
+@use 'tokens' as t;
+
+$radius: 4px !default;
+
+@mixin card($pad: 8px) {
+  padding: $pad;
+}
+
+@function double($n) {
+  @return $n * 2;
+}
+
+.panel {
+  @include card(12px);
+  width: double(4px);
+  color: t.$brand;
+  border-radius: $radius;
+}
+
+.panel:hover {
+  color: red;
+}

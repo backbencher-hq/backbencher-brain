@@ -48,7 +48,7 @@
      "symbols": 13,
      "relationships": 26
     },
-    "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
     "dbMtimeMs": 1793578844311
    },
    "before": {
@@ -101,7 +101,7 @@
      "symbols": 3512,
      "relationships": 17068
     },
-    "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
     "dbMtimeMs": 1793578884985
    },
    "before": {

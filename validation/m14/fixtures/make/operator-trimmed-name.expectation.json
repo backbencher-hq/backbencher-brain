@@ -1,0 +1,209 @@
+{
+  "fixtureId": "make/operator-trimmed-name",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run through ASTEngine.parseFile and checked line by line against the numbered source: declarations on 13-17, the `lint` rule on 21, its recipe on 22. Ten reference rows rather than five because the same five variables are read on BOTH lines — a target that reads one variable on two lines is two facts, and collapsing them to one would lose the address surface the product serves call-site positions from.",
+  "rationale": "An assignment's NAME, and the operator that must not become part of it. This is not cosmetic: the grammar's `word` node is inconsistent about the operator — for `CGO_ENABLED?=1` it spans `CGO_ENABLED?`, while for `CC:=1` it spans `CC` — so the two spellings of the same syntax produced different symbol names. Measured over the 99-file corpus that was 55 symbols named `CGO_ENABLED?` / `BUILD_TAGS+` and 112 edge ends that dangled BY CONSTRUCTION, because every reference names the clean identifier and so can never match a symbol that carries its operator. Each of the five operators below must yield the bare name, and each of the five references on line 21 and again on line 22 must resolve to it.",
+  "expectSymbols": [
+    {
+      "name": "operator-trimmed-name.mk",
+      "kind": "module"
+    },
+    {
+      "name": "CGO_ENABLED",
+      "kind": "constant"
+    },
+    {
+      "name": "BUILD_TAGS",
+      "kind": "constant"
+    },
+    {
+      "name": "STRICT",
+      "kind": "constant"
+    },
+    {
+      "name": "RECURSE",
+      "kind": "constant"
+    },
+    {
+      "name": "SHELL_CMD",
+      "kind": "constant"
+    },
+    {
+      "name": "lint",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "operator-trimmed-name.mk",
+      "target": "CGO_ENABLED",
+      "line_number": 13,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "operator-trimmed-name.mk",
+      "target": "BUILD_TAGS",
+      "line_number": 14,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "operator-trimmed-name.mk",
+      "target": "STRICT",
+      "line_number": 15,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "operator-trimmed-name.mk",
+      "target": "RECURSE",
+      "line_number": 16,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "operator-trimmed-name.mk",
+      "target": "SHELL_CMD",
+      "line_number": 17,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "operator-trimmed-name.mk",
+      "target": "lint",
+      "line_number": 21,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "CGO_ENABLED",
+      "line_number": 21,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "BUILD_TAGS",
+      "line_number": 21,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "STRICT",
+      "line_number": 21,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "RECURSE",
+      "line_number": 21,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "SHELL_CMD",
+      "line_number": 21,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "CGO_ENABLED",
+      "line_number": 22,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "BUILD_TAGS",
+      "line_number": 22,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "STRICT",
+      "line_number": 22,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "RECURSE",
+      "line_number": 22,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "lint",
+      "target": "SHELL_CMD",
+      "line_number": 22,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "exports",
+      "from": "operator-trimmed-name.mk",
+      "target": "lint",
+      "line_number": 21,
+      "meta.evidenceClass": "export_target"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "CGO_ENABLED?",
+      "note": "the pre-fix shape: the `?` of `?=` captured as part of the name, so every `$(CGO_ENABLED)` reference dangles"
+    },
+    {
+      "name": "BUILD_TAGS+",
+      "note": "same, for `+=`"
+    },
+    {
+      "name": "RECURSE::",
+      "note": "`::=` is not a GNU Make operator, but if a spelling ever grew one it must still be trimmed the same way"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "CGO_ENABLED",
+      "note": "the inverse error: a variable THIS FILE DECLARES published as `uses` demotes a real declaration out of the reference graph"
+    },
+    {
+      "type": "uses",
+      "target": "BUILD_TAGS",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "STRICT",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "RECURSE",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "SHELL_CMD",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "CGO_ENABLED?",
+      "note": "the reference side of the operator bug: an edge to the polluted spelling, which no reference in the file can produce"
+    },
+    {
+      "type": "references",
+      "target": "BUILD_TAGS+",
+      "note": "same"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "fixtureId": "java/implicit-overrides",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two-corpus gate wave 2026-09 (clojure:java APersistentVector.SubVector). JAO1: JLS 8.4.8 \u2014 @Override is a compile-time check, not a requirement; un-annotated instance methods with matching signatures still override (analyzer was annotation-gated, silently dropping most real overrides in annotation-light codebases; grails's annotation-heavy code masked it). JAO2: same-name-different-signature is an OVERLOAD, never an override \u2014 the name-only override truth fabricated SubVector.nth -> APersistentVector.nth for nth(int) vs nth(int, Object); both sides are now signature-aware. Private ancestor methods are never overridden (JLS 8.4.8.1).",
+  "expectSymbols": [
+    {
+      "name": "BaseThing",
+      "kind": "class"
+    },
+    {
+      "name": "DerivedThing",
+      "kind": "class"
+    },
+    {
+      "name": "total",
+      "kind": "method",
+      "ownerName": "DerivedThing"
+    },
+    {
+      "name": "find",
+      "kind": "method",
+      "ownerName": "DerivedThing"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "DerivedThing",
+      "target": "BaseThing",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "source": "DerivedThing.total",
+      "target": "total",
+      "meta.reasonCode": "exact-in-file",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "find"
+    },
+    {
+      "type": "overrides",
+      "target": "secret"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "fixtureId": "kotlin/calls-and-instantiation",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Constructor invocations in Kotlin have no 'new' keyword - ArrayList() is a call_expression that constructs. Calls within a class resolve: caller->helper, caller->make.",
+  "expectSymbols": [
+    { "name": "Factory", "kind": "class" },
+    { "name": "make" },
+    { "name": "caller" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "caller", "targetEndsWith": "helper" },
+    { "type": "calls", "from": "caller", "targetEndsWith": "make" },
+    { "type": "calls", "from": "make", "targetEndsWith": "add" }
+  ]
+}

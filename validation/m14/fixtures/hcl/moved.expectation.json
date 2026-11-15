@@ -1,0 +1,111 @@
+{
+  "fixtureId": "hcl/moved",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The FIXTURE FILENAME is the assertion: run as `moved.tf` the document root is `moved`, which is also the address of every block in the file. Names transcribed from a measured run and checked against the source. First transcription put the 2nd/3rd blocks on 15/19; re-read against the numbered source and corrected to 16/21.",
+  "rationale": "H11 (reviews/hcl/master-review.md) \u2014 a defect this lane's own fix introduced, which is why it needed its own fixture rather than a line in an existing one. Emitting a document root (H6) is right: it gives the containment graph a trunk and every non-root symbol an owner, matching the JSON/YAML/SQL/XML convention. But taking the bare file stem collides with any top-level block whose Terraform address equals it, at 308 measured corpus sites, the most frequent being `moved.tf` holding `moved {}` (13 files) and `removed.tf` holding `removed {}` (9). The top-level sibling map is therefore SEEDED with the root name, so the document keeps the bare name and the blocks are disambiguated \u2014 and the wrapper nodes (`config_file`, `body`) must PRESERVE that map rather than replacing it, since a wrapper introduces no new sibling level. Both halves were needed: seeding alone fixed nothing until the wrapper descent stopped resetting the map.",
+  "expectSymbols": [
+    {
+      "name": "moved",
+      "kind": "module"
+    },
+    {
+      "name": "moved#2",
+      "kind": "class"
+    },
+    {
+      "name": "moved#3",
+      "kind": "class"
+    },
+    {
+      "name": "moved#4",
+      "kind": "class"
+    },
+    {
+      "name": "from",
+      "kind": "property"
+    },
+    {
+      "name": "to",
+      "kind": "property"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "moved",
+      "startLine": 1,
+      "startColumn": 1
+    },
+    {
+      "symbol": "moved#2",
+      "startLine": 11,
+      "startColumn": 1
+    },
+    {
+      "symbol": "moved#3",
+      "startLine": 16,
+      "startColumn": 1
+    },
+    {
+      "symbol": "moved#4",
+      "startLine": 21,
+      "startColumn": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "aws_dynamodb_table.asset_metadata",
+      "line_number": 12
+    },
+    {
+      "type": "references",
+      "target": "module.ddb.aws_dynamodb_table.asset_metadata",
+      "line_number": 13
+    },
+    {
+      "type": "references",
+      "target": "aws_iam_policy.lambda_basic_execution",
+      "line_number": 17
+    },
+    {
+      "type": "references",
+      "target": "aws_s3_bucket.static_assets",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "moved",
+      "target": "moved#2",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "moved",
+      "target": "moved#3",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "moved",
+      "target": "moved#4",
+      "line_number": 21
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "moved#5"
+    },
+    {
+      "name": ""
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "moved",
+      "target": "moved",
+      "note": "the collision itself: the document and the block sharing one identity, which is also what collapses all three `contains` edges onto one line"
+    }
+  ]
+}

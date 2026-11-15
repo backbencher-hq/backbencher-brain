@@ -1,0 +1,105 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it \u2014 U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` \u2014 a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/bare-member-read-uses",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "correction_2026_10_08": "Two rounds meet in this file. (1) Member reads whose owner is verifiable now target `Owner.member` (Store.count / Store.total). (2) A read the enclosing function BINDS now targets `<callable>#<binding>` and carries `localBinding`, because the store resolves a target by name alone: a bare `count` from `shadowed` bound to Store's field. The gate rows all still fire — the write, the declaration bind and the zero-confidence member edge are stated against spellings a regression really produces.",
+  "rationale": "M49 #752 (CONV-DT-1). LIVE PROBE pre-fix: `class Store { int count = 0; int bare(){ return count; } int dotted(){ return this.count; } }` emitted uses(dotted->count) and NOTHING for the bare read \u2014 the DT-F selector branch handled only link selectors, so every plain identifier read of a declared member was invisible while the `this.` form was not. The fix adds the bare-identifier branch (mirroring java #739 and the #744 javascript bare-read block). Both gates are pinned in both directions: expectRelationships catches a dropped branch (bare/chained reads), forbidRelationships catches a missing gate \u2014 zero() is a plain-= WRITE, shadowed() binds a LOCAL count (CGD15: a local is not a member), and the field DECLARATION itself must never be read as a use.",
+  "expectSymbols": [
+    {
+      "name": "Store",
+      "kind": "class"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Store"
+    },
+    {
+      "name": "total",
+      "kind": "property",
+      "ownerName": "Store"
+    },
+    {
+      "name": "bare",
+      "kind": "method",
+      "ownerName": "Store"
+    },
+    {
+      "name": "dotted",
+      "kind": "method",
+      "ownerName": "Store"
+    },
+    {
+      "name": "shadowed",
+      "kind": "method",
+      "ownerName": "Store"
+    },
+    {
+      "name": "chained",
+      "kind": "method",
+      "ownerName": "Store"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "bare",
+      "target": "Store.count",
+      "comment": "#752: bare field read now emits — and since 2026-10-08 it names the declaration: the read is inside Store, which declares this member"
+    },
+    {
+      "type": "uses",
+      "source": "dotted",
+      "target": "Store.count",
+      "comment": "existing dotted read unchanged in shape, sharpened in target: `this.count` resolves to the type that DECLARES it (Store)"
+    },
+    {
+      "type": "uses",
+      "source": "chained",
+      "target": "Store.count",
+      "comment": "#752: bare read inside an additive expression"
+    },
+    {
+      "type": "uses",
+      "source": "chained",
+      "target": "Store.total",
+      "comment": "#752: second bare read in the same expression"
+    },
+    {
+      "type": "uses",
+      "source": "shadowed",
+      "target": "shadowed\u0000count",
+      "confidenceMin": 0.9,
+      "meta.localBinding": true,
+      "comment": "DT2: the locally-bound count genuinely reads as a local — and since 2026-10-08 the target SAYS so (`<callable>#<binding>`), because the store resolves by name alone and a bare `count` was bound to Store's field (Strategy 2, metadata unread)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "zero",
+      "target": "count",
+      "comment": "GATE: plain-= assignment LHS is a write, never a read"
+    },
+    {
+      "type": "uses",
+      "source": "shadowed",
+      "target": "Store.count",
+      "comment": "GATE B (CGD15): a name the current function binds locally is not a MEMBER read (confidenceMax pins the 0.6 member edge; the 0.9 local read is expected below). Retargeted 2026-10-08 from the bare `count` to `Store.count`: the bare spelling is no longer what a member read produces (it is what a BINDING produces), so a forbid left on it could not fire — the gate would have read as coverage while catching nothing.",
+      "confidenceMax": 0.6
+    },
+    {
+      "type": "uses",
+      "source": "Store",
+      "target": "count",
+      "comment": "GATE A: the field DECLARATION is a bind, not a read"
+    },
+    {
+      "type": "uses",
+      "source": "bare",
+      "target": "count",
+      "note": "2026-10-08, the third direction: where the owner IS verifiable the BARE leaf must no longer be the target. The `shadowed` row above keeps the bare form (the name is bound locally), so a blanket qualifier fails there and a dropped qualifier fails here — the two rows together pin the rule rather than its direction."
+    }
+  ]
+}

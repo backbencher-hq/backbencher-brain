@@ -1,0 +1,10 @@
+@keyframes progress {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.card {
+  progress { color: red; }
+}
+
+.spinner { animation: progress 1s linear infinite; }

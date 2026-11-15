@@ -1,0 +1,47 @@
+{
+  "fixtureId": "c/call-in-directive-condition-956",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A `call_expression` inside a preprocessor directive is not a call, and the `calls` path had no guard against it while the `uses` path has carried two since CGD40. Measured by call-edge-fidelity.ts over 200 files per corpus: 61 over-emitted call sites, every one of them `calls global -> defined` from an `#if`/`#elif` condition -- curl_trc.c:554/575/590/598, protocol.c:92/120/147, http.c:690-692/735-739/822, openldap.c:936-937, cf-ip-happy.c:76/79, curl_sha512_256.c:303, and 7 in redis. `defined` is a preprocessor OPERATOR, not a callable name, and a directive condition never executes (the preprocessor is line-anchored text, C-D2), so the edge is fabricated from file scope. This class survived a lane that had already adjudicated call edges several times over, because the guard existed on the sibling path and nobody asked why the two differed. The fix applies BOTH existing guards, and both are load-bearing for different reasons: a cleanly parsed directive keeps its preproc_* ancestor so the structural walk finds it, while an initializer list left OPEN across interleaved #ifdefs (curl_trc.c:530-556 -- guarded entries with the closing `};` eight lines later) puts the `#if` line inside an ERROR with no preproc_* ancestor, leaving only the line-anchored check. The second form is the one that actually reproduced, so a fixture written from the tidy version of this defect would have passed the fix without testing it -- the shape of error this lane keeps making, and the reason the damaged form is the one authored here.",
+  "expectSymbols": [
+    { "name": "entry", "kind": "struct" },
+    { "name": "features", "kind": "variable" },
+    { "name": "clean_directive", "kind": "function" },
+    { "name": "real_helper", "kind": "function" },
+    { "name": "live_calls", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "live_calls",
+      "target": "real_helper",
+      "note": "CONTROL: a plain call after the #ifdef chain must survive -- the guard is scoped to directive LINES, not to code that happens to sit near one."
+    },
+    {
+      "type": "calls",
+      "from": "live_calls",
+      "target": "real_helper",
+      "note": "CONTROL: a call inside an #ifdef block. Conditional CODE still walks and emits; only the CONDITION is directive text. A guard that suppressed calls merely enclosed by a conditional would break real code, and this row is where that would show."
+    },
+    {
+      "type": "calls",
+      "from": "live_calls",
+      "target": "real_helper",
+      "note": "CONTROL: a call in the #else arm. Same reasoning as the #ifdef arm."
+    },
+    {
+      "type": "calls",
+      "from": "live_calls",
+      "target": "real_helper",
+      "note": "CONTROL: a call in the #else arm, after the fully-closed conditional."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "defined",
+      "note": "THE PINNED ROW. `defined` is a preprocessor operator and a directive condition never executes. The initializer above is left open across interleaved #ifdefs so the `#if !defined(...) && !defined(...)` line parses inside an ERROR with no preproc_* ancestor -- the curl_trc.c:530-556 shape, and the only one of the two guard forms that the structural check alone cannot catch. This row appeared TWICE before the fix (one per `defined` in the condition) and is the whole defect."
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+symbols.default	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.noquery	ERR bb_search symbols mode requires a non-empty query	ERR bb_search symbols mode requires a non-empty query
+symbols.emptyquery	ERR bb_search symbols mode requires a non-empty query	ERR bb_search symbols mode requires a non-empty query
+symbols.nonstring	ERR bb_search: query must be string	ERR bb_search: query must be string
+symbols.trim	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.prefix	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.substring	TEXT RequestHandler [class] src/app.ts:17 (typescript)	TEXT RequestHandler [class] src/app.ts:17 (typescript)
+symbols.exact	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.exact.caseInsensitiveVariant	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.exact.caseSensitiveVariant	TEXT no results for "handlerequest"	TEXT no results for "handlerequest"
+symbols.caseSensitive	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.lang.upper	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.lang.lower	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.lang.unknown	ERR bb_search: language "python" is not in this project's index — indexed languages:	ERR bb_search: language "python" is not in this project's index — indexed languages:
+symbols.kind.upper	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.kind.lower	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.kind.unknown	ERR bb_search: symbolKind "bogus" is not in this project's index — indexed kinds: cl	ERR bb_search: symbolKind "bogus" is not in this project's index — indexed kinds: cl
+symbols.includeContent	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.regex.valid	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT no results for "^handle.*"
+symbols.regex.invalid	ERR invalid regex "([unclosed": Invalid regular expression: missing terminating ] fo	ERR invalid regex "([unclosed": Invalid regular expression: /([unclosed/i: Untermina
+symbols.regex.invalid2	ERR invalid regex "a{2,1}": Invalid regular expression: numbers out of order in {} q	ERR invalid regex "a{2,1}": Invalid regular expression: /a{2,1}/i: numbers out of or
+symbols.regex.exactBoth	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT no results for "^handleRequest$"
+symbols.limit0	TEXT no results for "pagedSymbol"	TEXT no results for "pagedSymbol"
+symbols.page2	TEXT pagedSymbol06 [function] src/paged.ts:6 (typescript)	TEXT pagedSymbol06 [function] src/paged.ts:6 (typescript)
+symbols.offset1000	TEXT no results for "pagedSymbol"	TEXT no results for "pagedSymbol"
+symbols.limit1	TEXT pagedSymbol01 [function] src/paged.ts:1 (typescript)	TEXT pagedSymbol01 [function] src/paged.ts:1 (typescript)
+symbols.filePath	ERR bb_search symbols mode does not accept: filePath — accepted for symbols: mode, q	ERR bb_search symbols mode does not accept: filePath — accepted for symbols: mode, q
+symbols.percent	TEXT no results for "%"	TEXT no results for "%"
+symbols.underscore	TEXT get_user [constant] src/app.ts:26 (typescript)	TEXT get_user [constant] src/app.ts:26 (typescript)
+symbols.unicode.lower	TEXT UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)	TEXT UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)
+symbols.unicode.exactcase	TEXT UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)	TEXT UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)
+symbols.limitFractional	ERR bb_search: limit must be a whole number (got 1.5)	ERR bb_search: limit must be a whole number (got 1.5)
+symbols.limitNegative	ERR bb_search: limit must be non-negative	ERR bb_search: limit must be non-negative
+symbols.refreshFalse	TEXT handleRequest [function] src/app.ts:5 (typescript)	TEXT handleRequest [function] src/app.ts:5 (typescript)
+symbols.duplicate	TEXT duplicateName [function] src/app.ts:13 (typescript)	TEXT duplicateName [function] src/app.ts:13 (typescript)
+symbols.unknownOption	ERR bb_search: unknown or irrelevant options: bogus — accepted options: mode, query,	ERR bb_search: unknown or irrelevant options: bogus — accepted options: mode, query,
+symbols.modeSymbolArgs	ERR bb_search symbols mode does not accept: symbolName — accepted for symbols: mode,	ERR bb_search symbols mode does not accept: symbolName — accepted for symbols: mode,
+symbols.unknownMode	ERR bb_search: mode must be one of: symbols, content, symbol, file	ERR bb_search: mode must be one of: symbols, content, symbol, file
+content.default	JSON total=1 ret=1 matchMode=None bodyBG=None	JSON total=1 ret=1 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.docstringPhrase	JSON total=0 ret=0 matchMode=None bodyBG=None	JSON total=0 ret=0 matchMode=terms bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.bodyOnly	JSON total=0 ret=0 matchMode=None bodyBG=None	JSON total=0 ret=0 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.multiWordNoPhrase	JSON total=0 ret=0 matchMode=None bodyBG=None	JSON total=4 ret=4 matchMode=terms bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.page	JSON total=25 ret=2 matchMode=None bodyBG=None	JSON total=25 ret=2 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.lang.upper	JSON total=2 ret=2 matchMode=None bodyBG=None	JSON total=0 ret=0 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 0, 'ratio': 1}
+content.lang.lower	JSON total=2 ret=2 matchMode=None bodyBG=None	JSON total=2 ret=2 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 3, 'ratio': 0}
+content.kind.upper	JSON total=2 ret=2 matchMode=None bodyBG=None	JSON total=0 ret=0 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 0, 'ratio': 1}
+content.lang.unknown	ERR bb_search: language "cobol" is not in this project's index — indexed languages: 	ERR bb_search: language "cobol" is not in this project's index — indexed languages: 
+content.percent	JSON total=0 ret=0 matchMode=None bodyBG=None	JSON total=0 ret=0 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.underscore	JSON total=1 ret=1 matchMode=None bodyBG=None	JSON total=1 ret=1 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.regex	ERR bb_search content mode does not accept: regex — accepted for content: mode, quer	ERR bb_search content mode does not accept: regex — accepted for content: mode, quer
+content.exact	ERR bb_search content mode does not accept: exact — accepted for content: mode, quer	ERR bb_search content mode does not accept: exact — accepted for content: mode, quer
+content.includeContent	ERR bb_search content mode does not accept: includeContent — accepted for content: m	ERR bb_search content mode does not accept: includeContent — accepted for content: m
+content.caseSensitive	ERR bb_search content mode does not accept: caseSensitive — accepted for content: mo	ERR bb_search content mode does not accept: caseSensitive — accepted for content: mo
+content.limit0	JSON total=25 ret=0 matchMode=None bodyBG=None	JSON total=25 ret=0 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.refreshFalse	JSON total=1 ret=1 matchMode=None bodyBG=None	JSON total=1 ret=1 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+content.emptyquery	ERR bb_search content mode requires a non-empty query	ERR bb_search content mode requires a non-empty query
+content.offset	JSON total=25 ret=0 matchMode=None bodyBG=None	JSON total=25 ret=0 matchMode=phrase bodyBG={'withBody': 0, 'symbols': 41, 'ratio': 0}
+symbol.exact	JSON matches=1	JSON matches=1
+symbol.queryAlias	JSON matches=1	JSON matches=1
+symbol.duplicate	JSON matches=2	JSON matches=2
+symbol.duplicate.filePath	JSON matches=1	JSON matches=1
+symbol.duplicate.baseName	JSON matches=1	JSON matches=1
+symbol.missing	JSON matches=0	JSON matches=0
+symbol.blankNameWithQuery	ERR bb_search: symbolName must not be blank when query is given — drop symbolName, o	ERR bb_search: symbolName must not be blank when query is given — drop symbolName, o
+symbol.disagree	ERR bb_search: symbolName ("handleRequest") and query ("handleResponse") disagree — 	ERR bb_search: symbolName ("handleRequest") and query ("handleResponse") disagree — 
+symbol.limit	ERR bb_search symbol mode does not accept: limit — accepted for symbol: mode, query,	ERR bb_search symbol mode does not accept: limit — accepted for symbol: mode, query,
+symbol.offset	ERR bb_search symbol mode does not accept: offset — accepted for symbol: mode, query	ERR bb_search symbol mode does not accept: offset — accepted for symbol: mode, query
+symbol.language	ERR bb_search symbol mode does not accept: language — accepted for symbol: mode, que	ERR bb_search symbol mode does not accept: language — accepted for symbol: mode, que
+symbol.includeContent	ERR bb_search symbol mode does not accept: includeContent — accepted for symbol: mod	ERR bb_search symbol mode does not accept: includeContent — accepted for symbol: mod
+symbol.stale	JSON matches=1	JSON matches=1
+symbol.deleted	JSON matches=1	JSON matches=1
+symbol.refreshFalse	JSON matches=1	JSON matches=1
+symbol.nofile	JSON matches=0	JSON matches=0
+file.fresh	JSON file stale=False len=536	JSON file stale=False len=536
+file.stale	JSON file stale=True len=128	JSON file stale=True len=128
+file.notIndexed	ERR bb_search mode=file: file is not indexed: src/notindexed.ts	ERR bb_search mode=file: file is not indexed: src/notindexed.ts
+file.missing	ERR bb_search mode=file: not found: src/does-not-exist.ts	ERR bb_search mode=file: not found: src/does-not-exist.ts
+file.escape	ERR bb_search mode=file: path escapes project root: /home/ishaq2321/mcp/backbencher-	ERR bb_search mode=file: path escapes project root: /home/ishaq2321/mcp/backbencher-
+file.directory	ERR bb_search mode=file: not a file: src	ERR bb_search mode=file: not a file: src
+file.absolute	JSON file stale=False len=536	JSON file stale=False len=536
+file.query	ERR bb_search file mode does not accept: query — accepted for file: mode, filePath	ERR bb_search file mode does not accept: query — accepted for file: mode, filePath
+file.refreshFalse	ERR bb_search file mode does not accept: refresh — accepted for file: mode, filePath	ERR bb_search file mode does not accept: refresh — accepted for file: mode, filePath
+file.limit	ERR bb_search file mode does not accept: limit — accepted for file: mode, filePath	ERR bb_search file mode does not accept: limit — accepted for file: mode, filePath
+file.deleted	ERR bb_search mode=file: not found: src/deleted.ts	ERR bb_search mode=file: not found: src/deleted.ts

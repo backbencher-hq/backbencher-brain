@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "inline-array-expression",
+  "why": "grammar.js:868 — a fixed-size array literal in a primary-expression position. OpenZeppelin never writes one.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "inline_array_expression",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

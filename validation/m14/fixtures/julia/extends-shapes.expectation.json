@@ -1,0 +1,35 @@
+{
+  "fixtureId": "julia/extends-shapes",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE `<:` SHAPES THAT ARE SUBTYPE FACTS AND THE THREE THAT ARE NOT. Until 2026-10-28 the whole-population direct oracle measured this label at 2,550 of 2,558 covered with 25 unexplained and 8 missing; every one of those 33 rows was one of these shapes, and the reason they survived is that the analyzer and the oracle were wrong in the SAME WAY on two of them — a comparison of two converged defects is invisible. (1) A CHAIN states one fact per ADJACENT PAIR and both ends are NAMES: `LB <: A <: Mid` is `LB <: A` and `A <: Mid`. Both sides used to read `left.text`, publishing a single edge whose SOURCE was the fragment `LB <: A` — a source fragment is not a symbol and can resolve to nothing (`julia/JuliaLowering/test/typedefs_ir.jl`, 10 rows), and the same defect fired on WELL-FORMED chains, which is why it is a fix and not an ERROR-shape artefact. The middle operand must also be a NAME: `A where X <: f() <: Z` is a lowering error and naming `f` as a supertype invents a relation the source rejects. (2) AN INTERPOLATED DECLARATION NAME IS A RUNTIME VALUE: `@eval struct $T <: DatePeriod` (Dates types.jl:53, test/core.jl:3025, newinterp.jl:31) has a `binary_expression` head whose LEFT is an `interpolation_expression`, so the declaration-site guard (which only looked at a type_head's DIRECT child) missed it and the name fallback read the LOOP VARIABLE — publishing types named `T`, `n`, `InterpName` that the tree cannot spell, and 4 `extends` rows plus their fabricated symbols from them. (3) A `<:` IN A TYPE PARAMETER'S BOUND IS A FACT ABOUT THE PARAMETER: `struct Parameter{T <: Mid}` makes T a subtype of Mid and says nothing about Parameter; the lane's declared rule keeps that row as `T extends Mid` with `meta.isWhereBound`. (4) A `where` BOUND INSIDE A SUPERTYPE ARGUMENT IS STILL A BOUND: `Tuple{Vararg{Y, N}} where {X, Y <: Bounded}` makes Y a subtype of Bounded, and the truth side was SILENT on it while the analyzer had it (the last MISSING row of the label) because the oracle skipped a type head wholesale. (5) THE GRAMMAR WRAPS A `where` AROUND A WHOLE COMPARISON when a comparison is what is written: `Pair{Int64, Int64} <: Tuple{Vararg{T}} where T` puts the binary FIRST and the variable after it, while a real bound puts the bound binary LAST (`f(x) where T<:Real`). Reading any binary below a where published `Pair extends Tuple` here and `typeintersect extends Tuple` in `julia/test/subtype.jl:2769`, and fabricated `X -> Ref`, `I -> Tuple` and `J -> Tuple` (:1588, :1761, :1762) on the TRUTH side — five truth rows that only appeared once the analyzer stopped agreeing with them. The one exception is a PARAMETER LIST: a chain whose own braces follow it and which sits inside an outer curly parameter list (`Pair{N, S} where {N, NTuple{N,Int}<:S<:NTuple{M,Int} where {M}}`, subtype.jl:2939) is a bound chain, and it is pinned by the corpus row rather than by this fixture. MEASURED AFTER THE FIX: the nine files that carried the 33 residual rows are EXACT at 377/377 truth/analyzer with 0 unexplained and 0 missing; the whole-population re-measurement is the arm that certifies the rest of the population.",
+  "expectSymbols": [
+    { "name": "ExtendsShapes", "kind": "module" },
+    { "name": "Root", "kind": "interface", "comment": "abstract type" },
+    { "name": "Mid", "kind": "interface", "comment": "abstract type WITH a supertype" },
+    { "name": "Leaf", "kind": "class", "comment": "POSITIVE 1" },
+    { "name": "value", "kind": "property", "ownerName": "Leaf" },
+    { "name": "chained", "kind": "function", "ownerName": "ExtendsShapes", "comment": "POSITIVE 2 — the bounded function whose `where` carries the chain" },
+    { "name": "Bounded", "kind": "class", "comment": "POSITIVE 3" },
+    { "name": "Parameter", "kind": "class", "comment": "NEGATIVE 2 — a bounded type parameter is not a supertype" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "source": "Mid", "target": "Root", "line_number": 8, "comment": "the baseline declaration" },
+    { "type": "extends", "source": "Leaf", "target": "Mid", "line_number": 11, "comment": "POSITIVE 1 — a declaration's supertype" },
+    { "type": "extends", "source": "LB", "target": "A", "line_number": 18, "meta.isWhereBound": true, "comment": "POSITIVE 2 — the chain's LOWER link, source a NAME and not the fragment `LB <: A`" },
+    { "type": "extends", "source": "A", "target": "Mid", "line_number": 18, "meta.isWhereBound": true, "comment": "POSITIVE 2 — the chain's UPPER link; the pre-fix analyzer published NEITHER of these two" },
+    { "type": "extends", "source": "Bounded", "target": "AbstractVector", "line_number": 23, "comment": "POSITIVE 3 — the declaration's supertype" },
+    { "type": "extends", "source": "Y", "target": "Bounded", "line_number": 23, "meta.isWhereBound": true, "comment": "POSITIVE 3 — a `where` bound INSIDE the supertype's argument, a fact about Y. The truth side did not derive this row until 2026-10-28, so this pin is what stops the oracle going silent again" },
+    { "type": "extends", "source": "T", "target": "Mid", "line_number": 37, "meta.isWhereBound": true, "comment": "NEGATIVE 2 read the right way: the bound is a fact about T, and it is published with T as the source" }
+  ],
+  "forbidSymbols": [
+    { "name": "Generated", "comment": "NEGATIVE 1 — `$Generated` is the loop variable; a symbol named Generated would be a name the tree cannot spell" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "source": "Generated", "target": "Root", "comment": "NEGATIVE 1 — an interpolated declaration name publishes no subtype edge" },
+    { "type": "extends", "source": "LB <: A", "comment": "POSITIVE 2's defect — a SOURCE FRAGMENT is not a symbol" },
+    { "type": "extends", "source": "Parameter", "target": "Mid", "comment": "NEGATIVE 2 — a type PARAMETER's bound must never be published as the declared type's supertype" },
+    { "type": "extends", "source": "Pair", "target": "Tuple", "comment": "NEGATIVE 3 — a comparison is not a subtype declaration" },
+    { "type": "extends", "source": "T", "target": "Tuple", "comment": "NEGATIVE 3 — the comparison's `where` variable bounds nothing; `T` here is not a parameter of a declaration" }
+  ]
+}

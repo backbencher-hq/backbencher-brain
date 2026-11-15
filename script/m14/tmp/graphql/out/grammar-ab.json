@@ -1,0 +1,256 @@
+{
+  "vendored": "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-graphql.wasm",
+  "candidate": "/home/ishaq2321/bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-ported.wasm",
+  "files": 9,
+  "vendoredErrorFiles": 4,
+  "candidateErrorFiles": 2,
+  "vendoredErrorNodes": 9,
+  "candidateErrorNodes": 4,
+  "fixed": [
+    "sdl_full",
+    "directive_defs"
+  ],
+  "broke": [],
+  "changed": [
+    "values"
+  ],
+  "typeGain": {
+    "OperationType": 1,
+    "OperationTypeDefinition": 1,
+    "ScalarTypeExtension": 1,
+    "SchemaDefinition": 1,
+    "mutation": 1,
+    "query": 1,
+    "repeatable": 2,
+    "subscription": 1
+  },
+  "typeLoss": {
+    "Alias": 2,
+    "ERROR": 2,
+    "ExecutableDefinition": 2,
+    "Field": 2,
+    "OperationDefinition": 2,
+    "Selection": 2,
+    "SelectionSet": 2
+  },
+  "rows": [
+    {
+      "label": "sdl_full",
+      "vendored": {
+        "hasError": true,
+        "errors": 2,
+        "missing": 0,
+        "types": 78,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 78,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [
+          "OperationType",
+          "OperationTypeDefinition",
+          "SchemaDefinition",
+          "mutation",
+          "query",
+          "repeatable",
+          "subscription"
+        ],
+        "lost": [
+          "Alias",
+          "ERROR",
+          "ExecutableDefinition",
+          "Field",
+          "OperationDefinition",
+          "Selection",
+          "SelectionSet"
+        ]
+      }
+    },
+    {
+      "label": "executable_full",
+      "vendored": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 48,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 48,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [],
+        "lost": []
+      }
+    },
+    {
+      "label": "fragments",
+      "vendored": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 30,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 30,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [],
+        "lost": []
+      }
+    },
+    {
+      "label": "descriptions",
+      "vendored": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 19,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 19,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [],
+        "lost": []
+      }
+    },
+    {
+      "label": "extensions",
+      "vendored": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 55,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 49,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [],
+        "lost": [
+          "Alias",
+          "ExecutableDefinition",
+          "Field",
+          "OperationDefinition",
+          "Selection",
+          "SelectionSet"
+        ]
+      }
+    },
+    {
+      "label": "directive_defs",
+      "vendored": {
+        "hasError": true,
+        "errors": 1,
+        "missing": 0,
+        "types": 30,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 30,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [
+          "repeatable"
+        ],
+        "lost": [
+          "ERROR"
+        ]
+      }
+    },
+    {
+      "label": "edge_shapes",
+      "vendored": {
+        "hasError": true,
+        "errors": 2,
+        "missing": 0,
+        "types": 51,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": true,
+        "errors": 2,
+        "missing": 0,
+        "types": 52,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [
+          "ScalarTypeExtension"
+        ],
+        "lost": []
+      }
+    },
+    {
+      "label": "values",
+      "vendored": {
+        "hasError": true,
+        "errors": 4,
+        "missing": 0,
+        "types": 39,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": true,
+        "errors": 2,
+        "missing": 0,
+        "types": 39,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [],
+        "lost": []
+      }
+    },
+    {
+      "label": "kitchen_sink",
+      "vendored": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 86,
+        "root": "source_file"
+      },
+      "candidate": {
+        "hasError": false,
+        "errors": 0,
+        "missing": 0,
+        "types": 86,
+        "root": "source_file"
+      },
+      "typeDelta": {
+        "gained": [],
+        "lost": []
+      }
+    }
+  ]
+}

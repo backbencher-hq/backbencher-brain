@@ -1,0 +1,3771 @@
+{
+  "perType": {
+    "calls": {
+      "oracleTotal": 232,
+      "analyzerTotal": 214,
+      "agree": 177,
+      "oracleOnly": 55,
+      "analyzerOnly": 37,
+      "oracleOnlyFiles": [
+        "lib/time/mkzip.go: main -> len",
+        "lib/time/mkzip.go: main -> make",
+        "src/cmd/link/internal/loadelf/ldelf.go: done -> len",
+        "src/cmd/link/internal/loadelf/ldelf.go: parseArmAttributes -> len",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> errorf",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> new"
+      ],
+      "analyzerOnlyFiles": [
+        "lib/time/mkzip.go: main -> IsDir",
+        "lib/time/mkzip.go: main -> ReadFile",
+        "lib/time/mkzip.go: main -> ToSlash",
+        "lib/time/mkzip.go: main -> CreateRaw",
+        "lib/time/mkzip.go: main -> ChecksumIEEE",
+        "lib/time/mkzip.go: main -> Write"
+      ]
+    },
+    "extends": {
+      "oracleTotal": 0,
+      "analyzerTotal": 0,
+      "agree": 0,
+      "oracleOnly": 0,
+      "analyzerOnly": 0,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": []
+    },
+    "implements": {
+      "oracleTotal": 0,
+      "analyzerTotal": 0,
+      "agree": 0,
+      "oracleOnly": 0,
+      "analyzerOnly": 0,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": []
+    },
+    "uses": {
+      "oracleTotal": 169,
+      "analyzerTotal": 376,
+      "agree": 145,
+      "oracleOnly": 24,
+      "analyzerOnly": 231,
+      "oracleOnlyFiles": [
+        "lib/time/mkzip.go: main -> Usage",
+        "src/cmd/link/internal/loadelf/ldelf.go: armAttr -> ival",
+        "src/cmd/link/internal/loadelf/ldelf.go: armAttr -> sval",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> e",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> f",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> length"
+      ],
+      "analyzerOnlyFiles": [
+        "lib/time/mkzip.go: usage -> Stderr",
+        "lib/time/mkzip.go: main -> Store",
+        "lib/time/mkzip.go: main -> usage",
+        "src/cmd/link/internal/loadelf/ldelf.go: done -> data",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> EI_DATA",
+        "src/cmd/link/internal/loadelf/ldelf.go: Load -> Ident"
+      ]
+    },
+    "brain_import": {
+      "oracleTotal": 0,
+      "analyzerTotal": 0,
+      "agree": 0,
+      "oracleOnly": 0,
+      "analyzerOnly": 0,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": []
+    },
+    "exports": {
+      "oracleTotal": 0,
+      "analyzerTotal": 138,
+      "agree": 0,
+      "oracleOnly": 0,
+      "analyzerOnly": 138,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": [
+        "src/cmd/link/internal/loadelf/ldelf.go: loadelf -> SHT_ARM_ATTRIBUTES",
+        "src/cmd/link/internal/loadelf/ldelf.go: loadelf -> ElfSect",
+        "src/cmd/link/internal/loadelf/ldelf.go: loadelf -> ElfObj",
+        "src/cmd/link/internal/loadelf/ldelf.go: loadelf -> ElfSym",
+        "src/cmd/link/internal/loadelf/ldelf.go: loadelf -> TagFile",
+        "src/cmd/link/internal/loadelf/ldelf.go: loadelf -> TagCPUName"
+      ]
+    },
+    "contains": {
+      "oracleTotal": 323,
+      "analyzerTotal": 322,
+      "agree": 322,
+      "oracleOnly": 1,
+      "analyzerOnly": 0,
+      "oracleOnlyFiles": [
+        "src/syscall/ztypes_openbsd_arm64.go: Linger -> Linger"
+      ],
+      "analyzerOnlyFiles": []
+    },
+    "references": {
+      "oracleTotal": 134,
+      "analyzerTotal": 79,
+      "agree": 54,
+      "oracleOnly": 80,
+      "analyzerOnly": 25,
+      "oracleOnlyFiles": [
+        "lib/time/mkzip.go: main -> string",
+        "lib/time/mkzip.go: main -> bool",
+        "lib/time/mkzip.go: main -> error",
+        "src/cmd/link/internal/loadelf/ldelf.go: string -> string",
+        "src/cmd/link/internal/loadelf/ldelf.go: uleb128 -> uint64",
+        "src/cmd/link/internal/loadelf/ldelf.go: armAttr -> elfAttribute"
+      ],
+      "analyzerOnlyFiles": [
+        "lib/time/mkzip.go: main -> DirEntry",
+        "src/cmd/link/internal/loadelf/ldelf.go: ElfSect -> SectionType",
+        "src/cmd/link/internal/loadelf/ldelf.go: ElfSect -> SectionFlag",
+        "src/cmd/link/internal/loadelf/ldelf.go: ElfSect -> Sym",
+        "src/cmd/link/internal/loadelf/ldelf.go: ElfObj -> Reader",
+        "src/cmd/link/internal/loadelf/ldelf.go: ElfObj -> ByteOrder"
+      ]
+    },
+    "overrides": {
+      "oracleTotal": 0,
+      "analyzerTotal": 0,
+      "agree": 0,
+      "oracleOnly": 0,
+      "analyzerOnly": 0,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": []
+    },
+    "instantiates": {
+      "oracleTotal": 4,
+      "analyzerTotal": 12,
+      "agree": 4,
+      "oracleOnly": 0,
+      "analyzerOnly": 8,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": [
+        "lib/time/mkzip.go: main -> FileHeader",
+        "src/cmd/link/internal/loadelf/ldelf.go: armAttr -> elfAttribute",
+        "src/cmd/link/internal/loadelf/ldelf.go: parseArmAttributes -> elfAttributeList",
+        "src/runtime/trace/recorder.go: endGeneration -> rawGeneration",
+        "test/fixedbugs/issue10332.go: main -> foo",
+        "test/fixedbugs/issue26094.go: F1 -> T"
+      ]
+    },
+    "imports": {
+      "oracleTotal": 0,
+      "analyzerTotal": 45,
+      "agree": 0,
+      "oracleOnly": 0,
+      "analyzerOnly": 45,
+      "oracleOnlyFiles": [],
+      "analyzerOnlyFiles": [
+        "lib/time/mkzip.go: main -> archive/zip",
+        "lib/time/mkzip.go: main -> bytes",
+        "lib/time/mkzip.go: main -> flag",
+        "lib/time/mkzip.go: main -> fmt",
+        "lib/time/mkzip.go: main -> hash/crc32",
+        "lib/time/mkzip.go: main -> io/fs"
+      ]
+    }
+  },
+  "compared": 20,
+  "disagreements": [
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "len"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "make"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "IsDir"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "ReadFile"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "ToSlash"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "CreateRaw"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "ChecksumIEEE"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "Write"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "Bytes"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "Usage"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "usage",
+        "Stderr"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "Store"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "usage"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "string"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "bool"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "error"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "DirEntry"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "instantiates",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "FileHeader"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "archive/zip"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "bytes"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "flag"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "fmt"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "hash/crc32"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "io/fs"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "log"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "os"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "path/filepath"
+      ]
+    },
+    {
+      "file": "lib/time/mkzip.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "strings"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "done",
+        "len"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "parseArmAttributes",
+        "len"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "errorf"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "new"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "uint32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "uint64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "make"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "uint"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "int"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "append"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "int32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "int64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "section",
+        "uint"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "elfmap",
+        "uint64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "readelfsym",
+        "new"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "readelfsym",
+        "uint64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "relSize",
+        "uint32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "NewReader"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "LookupOrCreateCgoExport"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Size"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Name"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "NewReader"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "armAttr",
+        "ival"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "armAttr",
+        "sval"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "e"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "f"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "length"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "entry"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "phoff"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "ehsize"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "phentsize"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "phnum"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "is64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "addr"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "off"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "entsize"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "elfmap",
+        "readOnlyMem"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "readelfsym",
+        "value"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "readelfsym",
+        "size"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "done",
+        "data"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "EI_DATA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Ident"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "EI_CLASS"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Type"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Machine"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Ehsize"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Phentsize"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Phnum"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Shentsize"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Shnum"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Shstrndx"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "EI_VERSION"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Sym64Size"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "Sym32Size"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "SRODATA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "SNOPTRBSS"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "SNOPTRDATA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "STEXT"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "SELFGOT"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "readOnlyMem"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "value"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "other"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "elfmap",
+        "length"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "elfmap",
+        "f"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "base"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "symtab"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "Sym64Size"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "e"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "symstr"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "Name"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "Shndx"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "Info"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "Sym32Size"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "sect"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "readelfsym",
+        "SXREF"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "AMD64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "ARM"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "ARM64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "I386"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "Loong64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "MIPS"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "MIPS64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "PPC64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "RISCV64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "S390X"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "Family"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_HI16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_LO16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GOT16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GOT_HI16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GOT_LO16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GPREL16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GOT_PAGE"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_JALR"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GOT_OFST"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_CALL16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GPREL32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_GOT_DISP"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_MIPS_PC32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ALIGN"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_RELAX"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ADD8"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ADD6"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_SUB6"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_SUB8"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ADD16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_SUB16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_MARK_LA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_MARK_PCREL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ADD24"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ADD32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_SUB24"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_SUB32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_B16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_B21"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_B26"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_PCALA_HI20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_PCALA_LO12"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_PCALA64_HI12"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_PCALA64_LO20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_GOT_PC_HI20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_GOT_PC_LO12"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_GOT64_PC_LO20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_GOT64_PC_HI12"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_32_PCREL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_PCREL20_S2"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_ADD64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_SUB64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_64_PCREL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_LARCH_CALL36"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_8"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_TOC16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOT16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PC16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PC16DBL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PLT16DBL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_ABS32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_GOT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_PLT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_GOTOFF"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_GOTPC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_THM_PC22"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_REL32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_CALL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_V4BX"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_GOT_PREL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_PC24"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_ARM_JUMP24"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_CALL26"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_ADR_GOT_PAGE"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_LD64_GOT_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_ADR_PREL_PG_HI21"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_ADD_ABS_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_LDST8_ABS_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_LDST16_ABS_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_LDST32_ABS_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_LDST64_ABS_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_LDST128_ABS_LO12_NC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_PREL32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_JUMP26"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_PC32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_PLT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_GOTPCREL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_GOTPCRELX"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_REX_GOTPCRELX"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_PC32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_GOT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_PLT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_GOTOFF"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_GOTPC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_386_GOT32X"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_REL24"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_REL24_NOTOC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_REL24_P9NOTOC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC_REL32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PC32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PLT32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PC32DBL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PLT32DBL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOTPCDBL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOTENT"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_X86_64_PC64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_ABS64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_AARCH64_PREL64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_ADDR64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PCREL34"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_GOT_PCREL34"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLT_PCREL34_NOTOC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GLOB_DAT"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_RELATIVE"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOTOFF"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOTPC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PC64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_GOT64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_390_PLT64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SET6"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SUB6"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SET8"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SUB8"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_RVC_BRANCH"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_RVC_JUMP"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SET16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SUB16"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_BRANCH"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_HI20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_LO12_I"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_LO12_S"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_GOT_HI20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_PCREL_HI20"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_PCREL_LO12_I"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_PCREL_LO12_S"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_ADD32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SET32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_SUB32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_32_PCREL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_JAL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_RELAX"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_CALL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_RISCV_CALL_PLT"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_TOC16_LO"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_TOC16_HI"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_TOC16_HA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_TOC16_DS"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_TOC16_LO_DS"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_REL16_LO"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_REL16_HI"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_REL16_HA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLT16_HA"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLT16_LO_DS"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLTSEQ"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLTCALL"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLTCALL_NOTOC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "relSize",
+        "R_PPC64_PLTSEQ_NOTOC"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "armAttr",
+        "TagCompatibility"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "armAttr",
+        "TagNoDefaults"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "armAttr",
+        "TagAlsoCompatibleWith"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "armAttr",
+        "TagCPUName"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "armAttr",
+        "TagCPURawName"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "parseArmAttributes",
+        "TagFile"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "parseArmAttributes",
+        "TagABIVFPArgs"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Load",
+        "SHT_ARM_ATTRIBUTES"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "SHT_ARM_ATTRIBUTES"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "ElfSect"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "ElfObj"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "ElfSym"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagFile"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagCPUName"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagCPURawName"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagCompatibility"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagNoDefaults"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagAlsoCompatibleWith"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "TagABIVFPArgs"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "Load"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "string",
+        "string"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "uleb128",
+        "uint64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "armAttr",
+        "elfAttribute"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "done",
+        "bool"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "parseArmAttributes",
+        "byte"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "parseArmAttributes",
+        "bool"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "parseArmAttributes",
+        "uint32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "parseArmAttributes",
+        "error"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "parseArmAttributes",
+        "elfAttributeList"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "int"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "string"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "int64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "uint32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "error"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "any"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "byte"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "ElfObj"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "ElfSect"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "bool"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "uint64"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Load",
+        "int32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "section",
+        "string"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "section",
+        "ElfSect"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "elfmap",
+        "error"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "readelfsym",
+        "int"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "readelfsym",
+        "error"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "relSize",
+        "string"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "relSize",
+        "uint32"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "relSize",
+        "uint8"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "relSize",
+        "error"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "cstring",
+        "byte"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "cstring",
+        "string"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSect",
+        "SectionType"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSect",
+        "SectionFlag"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSect",
+        "Sym"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfObj",
+        "Reader"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfObj",
+        "ByteOrder"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfObj",
+        "ElfSect"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSym",
+        "SymBind"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSym",
+        "SymType"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSym",
+        "SectionIndex"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "references",
+      "kind": "analyzer-only",
+      "edge": [
+        "ElfSym",
+        "Sym"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "instantiates",
+      "kind": "analyzer-only",
+      "edge": [
+        "armAttr",
+        "elfAttribute"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "instantiates",
+      "kind": "analyzer-only",
+      "edge": [
+        "parseArmAttributes",
+        "elfAttributeList"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "bytes"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "cmd/internal/bio"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "cmd/internal/objabi"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "cmd/internal/sys"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "cmd/link/internal/loader"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "cmd/link/internal/sym"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "debug/elf"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "encoding/binary"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "fmt"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "io"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "log"
+      ]
+    },
+    {
+      "file": "src/cmd/link/internal/loadelf/ldelf.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "loadelf",
+        "strings"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "len"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "Args"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "Stderr"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "main",
+        "error"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "encoding/gob"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "fmt"
+      ]
+    },
+    {
+      "file": "src/encoding/gob/dump.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "main",
+        "os"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "GOOS"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsAix"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsAndroid"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsDarwin"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsDragonfly"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsFreebsd"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsHurd"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsIllumos"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsIos"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsJs"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsLinux"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsNacl"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsNetbsd"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsOpenbsd"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsPlan9"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsSolaris"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsWasip1"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsWindows"
+      ]
+    },
+    {
+      "file": "src/internal/goos/zgoos_netbsd.go",
+      "type": "exports",
+      "kind": "analyzer-only",
+      "edge": [
+        "goos",
+        "IsZos"
+      ]
+    },
+    {
+      "file": "src/math/dim_asm.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "archMax",
+        "float64"
+      ]
+    },
+    {
+      "file": "src/math/dim_asm.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "archMin",
+        "float64"
+      ]
+    },
+    {
+      "file": "src/plugin/plugin_stubs.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "lookup",
+        "string"
+      ]
+    },
+    {
+      "file": "src/plugin/plugin_stubs.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "lookup",
+        "error"
+      ]
+    },
+    {
+      "file": "src/plugin/plugin_stubs.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "open",
+        "string"
+      ]
+    },
+    {
+      "file": "src/plugin/plugin_stubs.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "open",
+        "error"
+      ]
+    },
+    {
+      "file": "src/plugin/plugin_stubs.go",
+      "type": "imports",
+      "kind": "analyzer-only",
+      "edge": [
+        "plugin",
+        "errors"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "len"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "readBatch"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "int"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "append"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "endGeneration",
+        "len"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "endGeneration",
+        "uint64"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "endGeneration",
+        "append"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "oracle-only",
+      "edge": [
+        "mul",
+        "eventTime"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "calls",
+      "kind": "analyzer-only",
+      "edge": [
+        "traceTimeNow",
+        "runtime_traceClockNow"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "size"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Write",
+        "err"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Write",
+        "active"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Write",
+        "freq"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "Write",
+        "data"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "endGeneration",
+        "ringMu"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "endGeneration",
+        "freq"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "uses",
+      "kind": "analyzer-only",
+      "edge": [
+        "endGeneration",
+        "minTime"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "byte"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "int"
+      ]
+    },
+    {
+      "file": "src/runtime/trace/recorder.go",
+      "type": "references",
+      "kind": "oracle-only",
+      "edge": [
+        "Write",
+        "error"
+      ]
+    }
+  ]
+}

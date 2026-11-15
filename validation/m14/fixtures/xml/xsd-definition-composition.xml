@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ipo="http://example.com/ipo">
+  <xs:group name="markupElement">
+    <xs:choice><xs:element name="b"/></xs:choice>
+  </xs:group>
+  <xs:attributeGroup name="sharedAttrs">
+    <xs:attribute name="id" type="xs:ID"/>
+  </xs:attributeGroup>
+  <xs:complexType name="formattedText">
+    <xs:group ref="markupElement"/>
+    <xs:attributeGroup ref="sharedAttrs"/>
+  </xs:complexType>
+  <xs:complexType name="plainText">
+    <xs:element ref="b"/>
+    <xs:attribute name="lang" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="derivedText">
+    <xs:complexContent><xs:extension base="formattedText"/></xs:complexContent>
+  </xs:complexType>
+  <xs:element name="out" type="plainText"/>
+</xs:schema>

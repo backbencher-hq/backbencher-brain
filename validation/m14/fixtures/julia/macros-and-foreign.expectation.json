@@ -1,0 +1,97 @@
+{
+  "fixtureId": "julia/macros-and-foreign",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a C symbol reached through `ccall` is a real CALL whose target is NOT a Julia binding. Three shapes, which is the point: the FUNCTION form puts the symbol in the first argument as a `quote_expression` (`:jl_issorted`) or a `tuple_expression` naming symbol AND library (`(:malloc, :libc)`), and the MACRO form puts it in an ordinary `call_expression` inside `macro_argument_list`, where it is syntactically indistinguishable from a Julia call. Each must be marked `isForeignCall`, the library must survive, and \u2014 the assertion that matters most \u2014 NO C SYMBOL MAY BECOME A JULIA SYMBOL. Macro DEFINITIONS (`macro cached`, `@inline fast`) are declarations and appear as macro symbols owned by the enclosing module. CORRECTION, made after the gate ran and against my own expectation rather than the analyzer: `@inline fast(x) = x` was expected as a `macro`. `@inline` is the macro and `fast` is the FUNCTION it annotates, so `function` is right and the expectation was wrong. The gate found a mistake in the fixture, not in the code \u2014 which is the whole reason expectations are authored before the run instead of copied from output afterwards. TARGET KEY SHAPE, 2026-10-09: a `contains` target is now the OWNER-QUALIFIED key the member symbol publishes as its `qualifiedName` (`Counter.value`), not the bare `value`. The ownership FACT each row asserts is unchanged and every row's SOURCE is unchanged; what changed is that the target key can name exactly one declaration. The bare name could not: `contains` read 7,162 of 14,329 edges ambiguous at PROJECT scope, and the gate indexed 0 qualified aliases for this lane, because the analyzer knew the owner (it is the edge's own source) and published no key that used it. This is a measured key-shape change, not an expectation relaxed to match output: no row's source moved and no row was added or removed. The F5 differential matches on the target's LAST SEGMENT (`normTarget`), so `script/m14/oracles/julia-contains.ts`, which derives bare member names from the tree, still matches every row.",
+  "expectSymbols": [
+    {
+      "name": "Native",
+      "kind": "module"
+    },
+    {
+      "name": "cached",
+      "kind": "macro",
+      "ownerName": "Native"
+    },
+    {
+      "name": "fast",
+      "kind": "function",
+      "ownerName": "Native"
+    },
+    {
+      "name": "measure",
+      "kind": "function",
+      "ownerName": "Native"
+    },
+    {
+      "name": "allocate",
+      "kind": "function",
+      "ownerName": "Native"
+    },
+    {
+      "name": "describe_size",
+      "kind": "function",
+      "ownerName": "Native"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Native",
+      "target": "Native.cached"
+    },
+    {
+      "type": "contains",
+      "source": "Native",
+      "target": "Native.fast"
+    },
+    {
+      "type": "contains",
+      "source": "Native",
+      "target": "Native.measure"
+    },
+    {
+      "type": "contains",
+      "source": "Native",
+      "target": "Native.allocate"
+    },
+    {
+      "type": "contains",
+      "source": "Native",
+      "target": "Native.describe_size"
+    },
+    {
+      "type": "calls",
+      "source": "measure",
+      "target": "jl_issorted",
+      "meta.isForeignCall": true
+    },
+    {
+      "type": "calls",
+      "source": "allocate",
+      "target": "malloc",
+      "meta.isForeignCall": true,
+      "meta.foreignLibrary": "libc"
+    },
+    {
+      "type": "calls",
+      "source": "describe_size",
+      "target": "strlen",
+      "meta.isForeignCall": true
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "jl_issorted"
+    },
+    {
+      "name": "malloc"
+    },
+    {
+      "name": "strlen"
+    },
+    {
+      "name": "libc"
+    }
+  ]
+}

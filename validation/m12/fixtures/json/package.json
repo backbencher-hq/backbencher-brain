@@ -1,0 +1,19 @@
+{
+  "name": "graph-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node test.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "@types/react": "^18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

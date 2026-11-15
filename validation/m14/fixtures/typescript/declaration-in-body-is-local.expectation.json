@@ -1,0 +1,43 @@
+{
+  "fixtureId": "typescript/declaration-in-body-is-local",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a declaration inside a function body owns nothing, while a class member still owns its class. Found by the lane's new independent `contains` oracle, which is the first cross-check the TypeScript containment surface has ever had: `deriveJavaContainsTruth` existed for java and nothing equivalent existed for typescript, so the committed lane evidence was a `manual_audit` of five fixture files. The oracle reported 8 false `contains` edges on 200 files of an external codebase, all of them this shape. Two independent causes, both fixed: an eager scope pop in extractClass/extractInterface/extractEnum that removed a member's scope instead of their own, and `getOwnerInfo()` being asked a question about lexical nesting that a resource stack cannot answer. The stack-based alternative was implemented and MEASURED first, and it stripped real members \u2014 `class K { a(){} b(){} }` lost `K->b` \u2014 because the stack accumulates across the synchronous member loop; the tree-based rule is what shipped. The positives matter as much as the negatives here: three ordered members are pinned, plus the fact that a type alias and an interface declared in a body still CONTAIN their own members. A fix that suppressed the false edges by suppressing ownership generally would pass a negatives-only fixture and break the graph.",
+  "expectSymbols": [
+    { "name": "Report", "kind": "class" },
+    { "name": "first", "kind": "method", "ownerName": "Report" },
+    { "name": "second", "kind": "method", "ownerName": "Report", "note": "REGRESSION GUARD. The stack-based attempt resolved member 2 through member 1's leftover Method scope and dropped it, so `K->b` disappeared. Member 3 is pinned for the same reason at one more step of removal." },
+    { "name": "third", "kind": "method", "ownerName": "Report" },
+    { "name": "count", "ownerName": "Report" },
+    { "name": "build", "kind": "method", "ownerName": "Report" },
+    { "name": "helper", "kind": "function", "note": "The local. It is still a SYMBOL (a function declaration in a body is real code) \u2014 what it must not be is a member of Report." },
+    { "name": "Detail", "kind": "type", "note": "A type alias declared in a body: ownerless, but it still contains its own members." },
+    { "name": "Audit", "kind": "interface", "note": "An interface declared in a body: ownerless, but it still contains its own members." },
+    { "name": "scratch", "kind": "method", "ownerName": "Report" },
+    { "name": "temp", "kind": "method", "note": "The member of an UNBOUND object literal. Ownerless, and the symbol survives \u2014 an unbound literal at module level already behaved this way, and the method-body case used to differ only because it borrowed the class." },
+    { "name": "Registry", "kind": "namespace" },
+    { "name": "outer", "kind": "function", "ownerName": "Registry" },
+    { "name": "inner", "kind": "function", "note": "A local of a namespace function. The same rule outside a class: `contains Registry->inner` was a false edge." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Report", "target": "first" },
+    { "type": "contains", "from": "Report", "target": "second" },
+    { "type": "contains", "from": "Report", "target": "third" },
+    { "type": "contains", "from": "Report", "target": "count" },
+    { "type": "contains", "from": "Report", "target": "build" },
+    { "type": "contains", "from": "Report", "target": "scratch" },
+    { "type": "contains", "from": "Detail", "target": "id", "note": "A type alias in a body still contains its own members \u2014 the fix suppresses the false EDGE to the enclosing class, not real containment." },
+    { "type": "contains", "from": "Audit", "target": "at" },
+    { "type": "contains", "from": "Registry", "target": "outer" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Report", "target": "helper", "note": "THE PIN. A function declared in a method body is a local of that method. Pre-fix this edge existed: the graph claimed the class has a member `helper` that belongs to a closure inside `build`." },
+    { "type": "contains", "from": "Report", "target": "Detail", "note": "A type alias declared in a method body is not a class member." },
+    { "type": "contains", "from": "Report", "target": "Audit", "note": "An interface declared in a method body is not a class member." },
+    { "type": "contains", "from": "Report", "target": "temp", "note": "The member of an unbound object literal is not a class member. This edge was the object-literal half of the same finding, from a different cause: the unbound case fell back to the enclosing scope, which is invisible at module level (no scope to inherit) and wrong everywhere else." },
+    { "type": "contains", "from": "Registry", "target": "inner", "note": "Same rule for a namespace: a function declared inside a namespace function is a local." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "from": "Report", "target": "second", "equals": 1, "note": "Exact count, not >=1: a duplicated containment row is invisible to a presence assertion." }
+  ]
+}

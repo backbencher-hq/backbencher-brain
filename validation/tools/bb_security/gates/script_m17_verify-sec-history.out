@@ -1,0 +1,32 @@
+── S1.1  shared regression gate (verify-tool-history.ts) ──
+── S1.2  real-repo e2e: /home/ishaq2321/bb_tests/repositories/rake ──
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:27:11] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:27:11] [parallel-indexer] project index built {"ext":".rb","files":95,"types":104}
+[WARN] [12:27:14] [parallel-indexer] parent event loop was blocked {"ms":1010,"stalledTotalMs":1010}
+[INFO] [12:27:16] [parallel-indexer] worker pool complete {"files":109,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":1010}
+[INFO] [12:27:16] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [12:27:16] [ast-engine] language grammar allocated {"language":"ruby"}
+[INFO] [12:27:16] [ast-engine] language parser loaded {"language":"ruby","wasmPath":"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_6651_4hhbtwp"}
+[INFO] [12:27:17] [parallel-indexer] override companion (ruby): 97 owners, 56 file(s) re-analyzed, 56 reapplied, 53 confirmed, 25 still a guess, 0 failed, 53 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 25 unconfirmed id(s)
+[INFO] [12:27:17] [parallel-indexer] override companion (ruby) write-back: 53 row(s) matched of 53 id(s) attempted, 0 matched NOTHING
+[INFO] [12:27:17] [parallel-indexer] override companion (ruby) census: overrides conf = 0.5=682 0.95=53 · total=735
+[INFO] [12:27:17] [parallel-indexer] override companion (ruby) CLAUSE 4 per id: 25 of 25 unconfirmed id(s) still below the floor, 0 MOVED to or above it, 0 absent from the store
+  Resolving cross-file relationships...
+  ✓ resolved in 2703ms [plan=linear largest-intermediate=3258]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:27:20] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"ba7d68e5","danglingSources":394,"totalRelationships":9075}
+  enriching done 100%
+  ✅ Enriched 8,681 relationships (862 patterns) in 426ms
+  Computing gravity scores...
+  ✓ gravity in 30ms
+  Analyzing taint flows & security...
+[INFO] [12:27:20] [project-health] project health computed {"projectId":"ba7d68e5856d107555fbf69e77d022dbcd1d5fcb","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":3,"bottlenecks":0}
+  ✓ taint(7ms) + health(16ms)
+  ✓ health check in 47ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 42ms
+S1: VERIFIED (3/3 passed, 2 negatives)

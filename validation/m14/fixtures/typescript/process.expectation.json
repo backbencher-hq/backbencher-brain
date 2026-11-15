@@ -1,0 +1,48 @@
+{
+  "fixtureId": "typescript/process",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The FILE NAME is load-bearing here: the module leaf is `process`, which collides with the shared worker's JS_GLOBALS denylist. Lines read off `nl -ba`: import 14, interface statusCode 17, function process 20, `StatusCode.Ok` return 21.",
+  "rationale": "PINS THE CLAIM/EVIDENCE INTERACTION IN THE FILE NAME THAT BROKE IT (shared-pipeline defect round, 2026-10-19). History: the shared worker's `keepSymbol` drops the JS-family symbol `process` even though this file DECLARES and exports `function process`, and its dropped-symbol invariant then deleted every relationship whose SOURCE or TARGET is `process` — including ALL imports/exports rows, whose source is the synthetic module leaf `process`. The arbiter verifies imported-binding claims against those delivered rows, so the claims here were REFUTED (bindFAIL 2 on the whole-population arm). The Lead landed shared fix (b): the invariant now EXEMPTS the synthetic module-leaf SOURCE of imports/exports rows. Delivered evidence is back (17 imports rows measured) and this fixture pins the re-enabled claim (positive: claim + evidence) and forbids the withheld state (over-guard). The SYMBOL-sourced half (the dropped `function process`, costing this file calls 9 / instantiates 1 / references 9 / uses 2 = 21 edges) awaits shared fix (a); the analyzer still publishes the declaration — pinned by expectSymbols — so the residual is a shared-pipeline filter, not an analyzer omission.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "process",
+      "target": "@shopify/network:StatusCode",
+      "line_number": 13,
+      "meta.module": "@shopify/network",
+      "meta.importedBindings": [
+        "StatusCode"
+      ],
+      "note": "the analyzer publishes the evidence; the shared worker's fix (b) now DELIVERS imports rows even when the module-leaf name collides with a dropped symbol"
+    },
+    {
+      "type": "references",
+      "from": "HandlerCallResult",
+      "target": "StatusCode",
+      "line_number": 16,
+      "meta.importedBindingSpecifier": "@shopify/network",
+      "meta.importedBindingName": "StatusCode",
+      "note": "CLAIM RE-ENABLED after shared fix (b): the arbiter can verify it against the delivered imports evidence again (was withheld while the evidence was being deleted)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "HandlerCallResult",
+      "target": "StatusCode",
+      "meta.importedBindingName": null,
+      "note": "the WITHHELD state must not return: with the shared evidence restored there is no reason to suppress the claim, and suppressing it would be an over-guard"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "process",
+      "kind": "function"
+    },
+    {
+      "name": "HandlerCallResult",
+      "kind": "interface"
+    }
+  ]
+}

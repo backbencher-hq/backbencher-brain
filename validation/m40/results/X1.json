@@ -1,0 +1,30 @@
+{
+  "status": "blocked",
+  "currentCommit": "d83a10c0f8899c358b909d807b148a0dc7883f86",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-closure.ts",
+  "generatedAt": "2026-10-15T06:14:20.238Z",
+  "passed": 84,
+  "failed": 18,
+  "negativeCases": 3,
+  "failures": [
+    "ledger: G1 evidence block byte-conformant",
+    "ledger: A1 evidence block byte-conformant",
+    "ledger: A2 evidence block byte-conformant",
+    "ledger: A3 evidence block byte-conformant",
+    "ledger: A4 evidence block byte-conformant",
+    "ledger: A5 evidence block byte-conformant",
+    "ledger: A6 evidence block byte-conformant",
+    "ledger: A7 evidence block byte-conformant",
+    "ledger: A8 evidence block byte-conformant",
+    "ledger: A9 evidence block byte-conformant",
+    "stamps: all subordinate evidence at one commit — 48f27f0,5728453,0c80c0e,062b4d9",
+    "stamps: consensus commit is HEAD or an ancestor of HEAD — no-consensus",
+    "live: A1 gate passes — exit 1",
+    "live: A2 gate passes — exit 1",
+    "live: A3 gate passes — exit 1",
+    "live: A8 gate passes — FAIL: A8: hooks still fire WITH BB_TEST_HOOKS=1 (worker crashed as fixture demands) — status=0 err=[INFO] [02:12:59] [parallel-indexer] worker pool fork test passed — using parallel workers",
+    "live: A9 gate passes — FAIL: A9: every env var documented in the purge report (MUTATION must fail here) — undocumented: BB_SKIP_ANALYZE, BB_EMBEDDING_CACHE_MAX, BB_ENRICHMENT_MAX_ROWS, BB_FK_ENFORCE, BB_POOL_WORKER_SELFTEST, BB_JULIA_BIND_SHOW, BB_INDEX_VACUUM, BB_CLEAN_DIAG, BB_STATUS_FSYNC, BB_NO_AUTO_REFRESH, BB_AUTO_REFRESH_MAX_FILES, BB_AUTO_REFRESH_MAX_BYTES, BB_SOLIDITY_CASE_AUDIT, BB_INDEX_LOCK_GRACE_MS, BB_INDEX_LOCK_CROSS_HOST_TTL_MS, BB_TEST_INDEX_LOCK_OFF, BB_DEBUG_DOTTED, BB_DB_FLUSH_CHUNK, BB_WORKER_ECHO, BB_TEST_FAIL_STORE_ONCE, BB_TEST_FAIL_STORE_ALWAYS, BB_TEST_SKIP_EDGE_RESOLVE, BB_TEST_FORCE_EDGE_RESOLVE, BB_VECTOR_BLOB_BACKFILL_BUDGET_MS, BB_EMBEDDING_DRAIN_WAIT_MS | FAIL: A9: export describePoolWorkerUnavailable used or marked internal — inFile=1 outRefs=0 | FAIL: A9: M22 C2 gate green live (proves --post real, parser honest) — exit=1 out=es — /m22-c2-xd0ITQ/proj (project 7dbdeb43…)",
+    "residue: no uncommitted changes on governed M40 surfaces —  M package.json |  M script/m40/lifecycle-corpus.ts |  M script/m40/verify-a2-bounded-post.ts"
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "files": 4555,
+  "rawParseFailures": 0,
+  "q1": {
+    "onTree": 941,
+    "emitted": 570,
+    "anonymous": 0,
+    "selfNamed": 2,
+    "compilerRoot": 361,
+    "ownerNotPublished": 6,
+    "unmatched": 2
+  },
+  "q2": {
+    "onTree": 2998,
+    "emitted": 0,
+    "typeInFile": 698,
+    "procInFile": 625,
+    "notInFile": 1675,
+    "bothTypeAndProc": 0,
+    "alreadyEmitted": 777
+  },
+  "q3": {
+    "methodsOnTree": 178,
+    "recvInFile": 131,
+    "recvNotInFile": 10,
+    "recvNone": 37,
+    "recvInErrorNode": 0,
+    "emitted": 48,
+    "emittedWithRecvInFile": 48,
+    "emittedWithRecvNotInFile": 0,
+    "sameFileMissed": 6
+  },
+  "q1ex": {
+    "anonymous": [],
+    "selfNamed": [
+      "nim/tests/objects/tillegal_recursion.nim: Foo of Foo",
+      "nim/tests/objects/tillegal_recursion2.nim: Foo of Foo"
+    ],
+    "compilerRoot": [
+      "graphql-nim/graphql/builtin/json_respstream.nim: JsonRespStream of RootRef",
+      "graphql-nim/graphql/builtin/node_respstream.nim: NodeRespStream of RootRef",
+      "graphql-nim/graphql/builtin/toml_respstream.nim: TomlRespStream of RootRef",
+      "graphql-nim/graphql/common/ast.nim: NodeObj of RootObj",
+      "graphql-nim/graphql/graphql.nim: InstrumentObj of RootObj",
+      "graphql-nim/graphql/graphql.nim: ExecObj of RootObj",
+      "graphql-nim/graphql/graphql.nim: Graphql of RootObj",
+      "graphql-nim/graphql/httpclient.nim: GraphqlHttpClientObj of RootObj",
+      "graphql-nim/graphql/httpserver.nim: GraphqlHttpHandler of RootObj",
+      "graphql-nim/graphql/httpserver.nim: GraphqlHttpServer of RootObj"
+    ],
+    "ownerNotPublished": [
+      "nim/nimsuggest/tests/fixtures/mclass_macro.nim: `typeName` of `baseName`",
+      "nim/nimsuggest/tests/fixtures/mclass_macro.nim: `typeName` of `baseName`",
+      "nim/tests/macros/tgettypeinst.nim: _ of Model",
+      "nim/tests/stdlib/tjsonmacro.nim: MsgChallenge of MsgBase",
+      "nim/tests/stdlib/trepr.nim: TFoo of TObj",
+      "nim/tests/template/template_issues.nim: name of PNode"
+    ],
+    "unmatched": [
+      "nim/tests/objects/tillegal_recursion3.nim: Foo of ref Foo",
+      "nim/tests/overload/toverload_issues.nim: B of A"
+    ]
+  },
+  "q2ex": {
+    "typeInFile": [],
+    "procInFile": [],
+    "notInFile": [],
+    "bothTypeAndProc": []
+  },
+  "q3ex": {
+    "sameFileMissed": [],
+    "recvNotInFile": [],
+    "recvInErrorNode": [],
+    "recvNone": []
+  }
+}

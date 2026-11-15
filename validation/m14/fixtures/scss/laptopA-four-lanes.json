@@ -1,0 +1,113 @@
+{
+  "instrument": "LAPTOP A's untouched lanes \u2014 cpp \u00b7 c \u00b7 perl \u00b7 groovy, 400-file strides in the gate's own columns",
+  "at": "2026-10-12T17:30:00-04:00",
+  "method": "ROUTER FIRST, then the gate, then READ THE EMISSION before naming a cause. No fix made.",
+  "routerCheck": {
+    "how": "`detectLanguageFromPath` on each candidate extension, plus a corpus `git ls-files` count of that spelling",
+    "mapped": {
+      ".cpp": "cpp",
+      ".cc": "cpp (3,263 files)",
+      ".cxx": "cpp (3)",
+      ".c++": "cpp (1)",
+      ".hpp": "cpp (1,950)",
+      ".hxx": "cpp (2)",
+      ".c": "c (5,758)",
+      ".h": "c (17,709)",
+      ".pl": "perl (28)",
+      ".pm": "perl (154)",
+      ".t": "perl (234)",
+      ".groovy": "groovy (7,574)",
+      ".gradle": "groovy (531)"
+    },
+    "GAPS_WITH_CORPUS_FILES": {
+      ".ipp": "NOT MAPPED \u2014 11 files",
+      ".pod": "NOT MAPPED \u2014 11 files",
+      ".inl": "NOT MAPPED \u2014 3 files",
+      ".cu": "NOT MAPPED \u2014 3 files"
+    },
+    "gapTotal": 28,
+    "gaps_with_zero_corpus_files": [
+      ".hh",
+      ".gvy",
+      ".gy",
+      ".gsh",
+      ".jenkinsfile",
+      ".psgi",
+      ".tpp",
+      ".h++",
+      ".cuh"
+    ],
+    "reading": "28 corpus files across four spellings are routed to NOTHING (the `.sbt`/`.phpt`/`.cts` class). The obvious siblings with 0 corpus files are not a loss TODAY but are unmapped, so a corpus change would silently drop them."
+  },
+  "lanes": {
+    "cpp": {
+      "population": "400 parsed of 400 sampled \u2014 corpus has 6,624 .cpp,cc,cxx,c++,hpp,hxx files across 30 repos; stride",
+      "excluded": "2,071 tracked-but-absent/unreadable + 8 over the 1 MiB cap (largest 5.3 MB)",
+      "TOTAL": "79,450 edges \u00b7 20,008 resolved \u00b7 7,784 amb(decl) \u00b7 51,658 unresolved",
+      "rate_amb_plus_unres_over_edges": "74.9%",
+      "zeroResolvingTypes": {
+        "overrides": "0/86",
+        "references": "0/119",
+        "exports": "0 edges"
+      }
+    },
+    "c": {
+      "population": "400 of 400 \u2014 corpus has 20,143 .c,h files across 49 repos; stride",
+      "excluded": "3,313 tracked-but-absent/unreadable + 11 over the cap (largest 52.8 MB)",
+      "TOTAL": "30,554 \u00b7 18,350 \u00b7 1,787 \u00b7 10,417",
+      "rate": "39.9%",
+      "zeroResolvingTypes": {
+        "imports": "0/1,085",
+        "implements": "0/3",
+        "exports": "0 edges"
+      }
+    },
+    "perl": {
+      "population": "400 of 400 \u2014 corpus has 416 .pl,pm,t files across 8 repos; stride covers 96% of the lane",
+      "TOTAL": "11,749 \u00b7 4,632 \u00b7 2,943 \u00b7 4,174",
+      "rate": "60.6%",
+      "zeroResolvingTypes": {
+        "overrides": "9/1,280 \u2014 1,271 unresolved",
+        "extends": "10/183",
+        "instantiates": "7/371",
+        "imports": "0 edges",
+        "implements": "0 edges"
+      }
+    },
+    "groovy": {
+      "population": "400 of 400 \u2014 corpus has 8,102 .groovy,gradle files across 8 repos; stride",
+      "TOTAL": "20,642 \u00b7 4,567 \u00b7 2,154 \u00b7 13,921",
+      "rate": "77.9%",
+      "zeroResolvingTypes": {
+        "imports": "0/4,146",
+        "references": "0/2,103",
+        "overrides": "0/253",
+        "extends": "6/243",
+        "implements": "5/128"
+      }
+    }
+  },
+  "THE_THIRD_INSTANCE_ANSWER": {
+    "question": "does the `overrides` shape already fixed today (dotted `Owner.member`) appear in these lanes?",
+    "answer": "YES \u2014 THREE of the four: cpp, perl and groovy all emit a DOTTED target, read at the emission rather than inferred:",
+    "cpp": "`real-cpp-analyzer.ts:3769` \u2014 `target: `${hit.base}.${pend.method}`` (hand-built `Base.method`) \u00b7 0 of 86 resolved",
+    "perl": "`real-perl-analyzer.ts:1402` \u2014 `addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, Overrides, \u2026)` \u00b7 9 of 1,280 resolved, 1,271 unresolved",
+    "groovy": "`real-groovy-analyzer.ts:1613` \u2014 `const localTarget = localEdgeLabel(targetFqn)` \u2014 LITERALLY the same helper the four fixed lanes now call `localEdgeName` beside \u00b7 0 of 253 resolved",
+    "c_is_NOT_an_instance": "`real-c-analyzer.ts:3319` emits `target: name` \u2014 BARE \u2014 and resolves 9 of 35 with 20 unresolved and 6+5 ambiguous, so its zero-shaped profile has a DIFFERENT cause and must not be priced with the others.",
+    "NOT_FIXED_HERE": "per instruction (`no fix, no lever pricing`) \u2014 named and stopped."
+  },
+  "otherZeros_READ_AND_RULED": {
+    "cpp imports 7/2,792 and references 0/119": "`real-cpp-analyzer.ts:2091` `target: includePath` and `:1827` `target: raw` \u2014 a `#include` path and a `using` name. A path is not a declaration, so unresolved is CORRECT (the file dependency is the edge's own statement).",
+    "c imports 0/1,085": "`real-c-analyzer.ts:2286` `target: includePath` \u2014 same, a path.",
+    "groovy imports 0/4,146 and references 0/2,103": "`real-groovy-analyzer.ts:529/584` (`imports`) and `:499` (`references`) all emit `target: moduleName` \u2014 a Java/Groovy import names a MODULE, which no declaration carries. The same naming decision as javascript's `using_directive` \u2192 `References` and java's bare `moduleName`.",
+    "extends/implements in c, perl, groovy": "8/146 \u00b7 10/183 \u00b7 5/128 and 0/3 \u00b7 6/243 \u2014 not the dotted shape: these are type relations whose bases are declared elsewhere or outside the population, and none of them is at 100% unresolved."
+  },
+  "units": "EVERY number here is a 400-file STRIDE SAMPLE of the listed population, never a whole-corpus figure, except perl whose corpus is 416 files so its stride covers 96%. The gate prints `edges \u00b7 resolved \u00b7 amb(decl) \u00b7 unresolved`; the rate column is `(amb+unres)/edges` and is given so the four lanes are comparable with LAPTOP A's other twelve, NOT as a substituted reading.",
+  "raw": [
+    "A-cpp.txt",
+    "A-c.txt",
+    "A-perl.txt",
+    "A-groovy.txt",
+    "router-check-A-lanes.mts"
+  ]
+}

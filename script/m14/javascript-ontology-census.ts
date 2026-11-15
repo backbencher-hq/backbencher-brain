@@ -79,7 +79,7 @@ function arg(name: string, fallback: string): string {
   return hit ? hit.slice(name.length + 3) : fallback
 }
 
-const CR = arg("corpus", "$HOME/fixtures/repositories/typescript")
+const CR = arg("corpus", "/home/ishaq2321/bb_tests/repositories/typescript")
 const TAG = arg("tag", path.basename(CR))
 const SIZE_CAP = 512 * 1024
 const OUT = `validation/m14/tmp/javascript-census-${TAG}.json`

@@ -1,0 +1,31 @@
+{
+  "_what": "THE FLEET `imports` CEILING — does it generalise? One cause across eight lanes (a language import names a FILE, and a declaration key space cannot answer a file), one shared guard, and the question is whether the CEILING is one number or eight.",
+  "_instrument": "npx tsx validation/m14/fixtures/protobuf/tools/fleet-imports-ceiling.mts --files=60",
+  "_populationLabel": "BOUNDED STRIDE SAMPLE of 60 files per repo per lane, printed with each lane's sample/population. A RATE is what the question needs; the lanes whose files are fewer than 60 per repo are fully measured. Extensions come from the gate's own LANES_B table, not from a guess.",
+  "_pathLabel": "Every edge from `parseFile` (src/ast/pool-worker.ts), the module the gate itself imports.",
+  "ANSWER": "IT DOES NOT GENERALISE AS ONE NUMBER. The ceiling runs from 0.0% to 94.3% and the lanes fall into three groups, so 'the fleet ceiling' is eight measurements and four different arithmetics.",
+  "results": [
+    { "lane": "graphql", "rule": "path", "files": "520/1911", "imports": 53, "verify": 50, "verifyShare": "94.3%", "wouldRefute": 0, "residue": 3, "group": "HIGH" },
+    { "lane": "lua", "rule": "lua-dotted", "files": "763/3250", "imports": 1800, "verify": 1309, "verifyShare": "72.7%", "wouldRefute": 0, "residue": 491, "group": "HIGH", "note": "this lane has ALREADY moved its share (5,645 -> 1,796 unresolved, extOK 0 -> 3,849) with its own `moduleFileClaim`; the number here is the CEILING, not the current state" },
+    { "lane": "scss", "rule": "sass-partial", "files": "888/4433", "imports": 682, "verify": 469, "verifyShare": "68.8%", "wouldRefute": 0, "residue": 213, "group": "HIGH" },
+    { "lane": "protobuf", "rule": "path", "files": "540/847", "imports": 872, "verify": 530, "verifyShare": "60.8%", "wouldRefute": 0, "residue": 342, "group": "HIGH" },
+    { "lane": "clean", "rule": "module-to-file", "files": "236/312", "imports": 1428, "verify": 425, "verifyShare": "29.8%", "wouldRefute": 0, "residue": 1003, "group": "MODERATE" },
+    { "lane": "fsharp", "rule": "path", "files": "1428/11807", "imports": 7149, "verify": 35, "verifyShare": "0.5%", "wouldRefute": 11, "residue": 7103, "group": "NEAR-ZERO" },
+    { "lane": "r", "rule": "path", "files": "873/2184", "imports": 787, "verify": 3, "verifyShare": "0.4%", "wouldRefute": 24, "residue": 760, "group": "NEAR-ZERO" },
+    { "lane": "hcl", "rule": "path", "files": "708/9329", "imports": 84, "verify": 0, "verifyShare": "0.0%", "wouldRefute": 0, "residue": 84, "group": "NEAR-ZERO" }
+  ],
+  "theThreeGroups": {
+    "HIGH": "graphql · lua · scss · protobuf — the file claim IS the fix, each with its own arithmetic.",
+    "MODERATE": "clean — 29.8%, and its targets are `Module:item`, which is why a shared rule would have mis-bound it.",
+    "NEAR_ZERO": "fsharp · r · hcl — the file claim buys NOTHING because their `imports` are not project files: fsharp's are module/directive names, r's are package names (`library(dplyr)`) and non-source files, hcl's are registry/URL sources. Their residue is a boundary for a DIFFERENT cause, not a ceiling for this one."
+  },
+  "twoInstrumentDefectsFoundAndFixedBeforeQuoting": {
+    "1_unfoldedCandidates": "The refute column counted candidates carrying `.` segments that the guard folds away: graphql 37 -> 0, scss 234 -> 0, lua 12 -> 0 once candidates are normalised the way `foldProjectPath` normalises them. Those 'refutations' were about MY PROBE'S SPELLING, not the corpus — and the gate's own `extFAIL 0` for those lanes was the evidence, which is why the fix came before the number was quoted.",
+    "2_understatedVerify": "The same defect UNDERSTATED the verify column: graphql 26 -> 50, scss 366 -> 469 after normalisation. A verify count is a lower bound until the candidates are folded.",
+    "3_realRefutes": "r's 24 and fsharp's 11 SURVIVE normalisation and are REAL: they name files that exist on disk and are not admitted (r sources `.cpp`/`.h` from R code). They are exactly what the guard's admitted-extension clause refuses, and claiming them would REFUTE."
+  },
+  "whatEachLaneWouldHaveToMeasure": {
+    "HIGH_lanes": "their own arithmetic against their own admitted list, cross-tabbed verify-vs-refute BEFORE emitting — the guard supplies the admitting, the lane supplies the spelling.",
+    "NEAR_ZERO_lanes": "NOT a file claim at all. r's `library(pkg)` is a PACKAGE, hcl's sources are registries/URLs, fsharp's are modules and directives: each needs its own cause and its own instrument, and a file claim there would be an inert change of the kind this programme has already refused once (bash measured 44 of 787 and declined)."
+  }
+}

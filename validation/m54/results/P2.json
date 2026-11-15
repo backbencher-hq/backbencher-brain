@@ -1,0 +1,22 @@
+{
+  "gate": "M54.P2",
+  "issue": 728,
+  "milestone": "M54",
+  "at": "2026-10-15T06:57:02.417Z",
+  "commit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+  "checks": 1,
+  "passed": 1,
+  "failed": 0,
+  "verifierCommand": "npx tsx script/m54/verify-p2-stdio.ts",
+  "status": "verified",
+  "shape": {
+    "command": "node bin/bb mcp",
+    "toolsServed": 16,
+    "minExpected": 16
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-15T06:57:02.418Z",
+    "contentSha256": "3f91c65e558d9239d2901471ace046869fd7b53e67f99cc3adc236574cd8261e"
+  }
+}

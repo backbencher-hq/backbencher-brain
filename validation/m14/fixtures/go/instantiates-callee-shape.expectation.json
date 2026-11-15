@@ -1,0 +1,52 @@
+{
+  "fixtureId": "go/instantiates-callee-shape",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the CALLEE SHAPE the `instantiates` edge requires, which the lane's comment claimed and the implementation did not enforce. Go's specification has no `new` operator and no instantiation expression: a construction is a call, and the lane's rule is the constructor CONVENTION — a PascalCase call to a TOP-LEVEL function. tree-sitter-go's node-types.json gives `selector_expression` an `operand` and a `field`, and that is the only thing in the tree that separates `calleeeshape.NewReader(3)` (a package's top-level function) from `bufio.NewReader(r)` (a function in another package) and from `h.driver.Open(\"dsn\")` (a method through a field). The discriminator: the operand must be a bare identifier naming a package — an import alias, an import path's last segment, or the file's OWN package name. Measured over a 500-file stride sample of go-stdlib: 155 `instantiates` edges at confidence 0.6, 8 of them (6 files) labelled a receiver or compound-operand selector as a constructor, including `src/mime/quotedprintable/reader.go:26` where the call is `bufio.NewReader(r)` and the target is the file's own `NewReader`. FORBIDDEN rows are the four collision shapes; EXPECTED rows are the three legal ones, and the self-qualified row is the case an alias-only discriminator reports wrongly. A fourth EXPECTED row was drafted for `strconv.Itoa(2)` and REMOVED after the first run: the lane's contract is that an `instantiates` target is a top-level function of THIS file's symbol table, and `Itoa` is not one, so no edge is correct. That is a scope decision rather than a language fact and it is stated here rather than left as a silent gap. The FORBIDDEN set covers the IN-FUNCTION collision; the EXPECTED `pkgScopedOwn -> NewReader` row covers the PACKAGE-SCOPE site, which is a separate push site with the same name-only test. GOD12 CARRIED TO THIS SITE: that row used to expect `global -> NewReader`, because the package-scope push site hard-coded the `global` pseudo-source while the `calls` row beside it already used `resolveGoWorkSource`. One expression published two sources — `calls pkgScopedOwn -> NewReader` and `instantiates global -> NewReader` at the same line — and a consumer keying on source saw the declaration own the call and a pseudo-source own the construction. The comment that defended it claimed a package-scope `var x = NewThing()` has no enclosing declaration that could own the call; that is false, and the proof was nine lines above it in the same function. The dedupe key gains the source too (`inst:<source>:<leaf>`), for the reason the rationale already records for the leaf-only key: two declarations constructing the same type collapsed into one row and one of them vanished. The lane's own mutation check reported that site as a SURVIVOR until this row existed: a fixture that covers only the first push site leaves the second one unpinned, which is the shape of a gate that reports success about half the code it claims to cover.",
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "Direct",
+      "target": "NewReader"
+    },
+    {
+      "type": "instantiates",
+      "from": "SelfQualified",
+      "target": "NewReader"
+    },
+    {
+      "comment": "GOD12 carried to the package-scope push site: the source is the DECLARATION doing the construction, not the `global` pseudo-source. `var pkgScopedOwn = NewReader(4)` is work the binding `pkgScopedOwn` exists to hold, and `resolveGoWorkSource` answers that name for this very node — the `calls` row beside it already used it. The old comment claimed the package scope had no declaration that could own the call; that was false, and it made one expression publish two sources. `pkgScopedSelf` is the self-qualified twin.",
+      "type": "instantiates",
+      "from": "pkgScopedOwn",
+      "target": "NewReader"
+    },
+    {
+      "comment": "The self-qualified twin of the package-scope site: same construct, same attribution rule. Both rows publish their DECLARING name, and the dedupe key `inst:<source>:<leaf>` keeps two declarations constructing the same type from collapsing into one row — which is what the old leaf-only key did.",
+      "type": "instantiates",
+      "from": "pkgScopedSelf",
+      "target": "NewReader"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "ReceiverCollision",
+      "target": "NewReader"
+    },
+    {
+      "type": "instantiates",
+      "from": "MethodDispatch",
+      "target": "Error"
+    },
+    {
+      "type": "instantiates",
+      "from": "CompoundOperand",
+      "target": "Open"
+    },
+    {
+      "type": "instantiates",
+      "from": "global",
+      "target": "NewBuffer"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "issue": "M21.I2",
+  "code": "I2",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-i2-postprocessing.ts",
+  "evidenceFile": "I2.json",
+  "generatedAt": "2026-09-01T14:06:15.195Z",
+  "corpus": {
+    "kind": "temporary-fixture-plus-real-repository",
+    "fixtureFiles": 2,
+    "realRepository": "/home/ishaq2321/bb_tests/repositories/rake"
+  },
+  "timings": {
+    "reportedCompletionMs": 1587,
+    "totalWallMs": 1793,
+    "postProcessingMs": 101,
+    "relationshipsMs": 2,
+    "enrichmentMs": 11,
+    "gravityMs": 2,
+    "taintMs": 4,
+    "healthMs": 45,
+    "integrityMs": 10,
+    "realReportedCompletionMs": 4945,
+    "realTotalWallMs": 5376,
+    "realCmdWallMs": 5376.533087000001
+  },
+  "counts": {
+    "fixtureFiles": 2,
+    "phaseCount": 6,
+    "failedPhaseCount": 0,
+    "realSuccessFiles": 57,
+    "realPhaseCount": 6
+  },
+  "outcomes": {
+    "fixtureFullRun": "executed",
+    "forcedFailureRun": "failure-visible",
+    "forcedFailureStatus": "partial-persisted",
+    "realRepository": "executed"
+  },
+  "limitations": [
+    "Timings are wall-clock on this machine and include worker pool fork/concurrency noise; they are phase-boundary evidence, not a cross-machine benchmark.",
+    "The forced-failure run dropped brain_relationship in a temporary fixture DB only; no production database was modified.",
+    "The real repository run is one cold full-index pass; repeated cold passes vary with machine load."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.383Z",
+    "contentSha256": "20fe07e8f6098eaa43f7cccb051fb567a79f2a456141b1563dbae3364f111ee1"
+  }
+}

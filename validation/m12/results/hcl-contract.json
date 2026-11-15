@@ -1,0 +1,160 @@
+{
+  "analyzer": "hcl",
+  "checks": [
+    {
+      "name": "terraform block is a module",
+      "passed": true
+    },
+    {
+      "name": "provider block is a module",
+      "passed": true
+    },
+    {
+      "name": "variable block is a variable",
+      "passed": true
+    },
+    {
+      "name": "output block is a variable",
+      "passed": true
+    },
+    {
+      "name": "module block is a module",
+      "passed": true
+    },
+    {
+      "name": "locals block is a module",
+      "passed": true
+    },
+    {
+      "name": "data source is a class with type.name identity",
+      "passed": true
+    },
+    {
+      "name": "resource is a class with type.name identity",
+      "passed": true
+    },
+    {
+      "name": "resource is a class with type.name identity (sg)",
+      "passed": true
+    },
+    {
+      "name": "nested lifecycle block is a class",
+      "passed": true
+    },
+    {
+      "name": "nested lifecycle owner is the resource",
+      "passed": true
+    },
+    {
+      "name": "nested lifecycle scope is the resource",
+      "passed": true
+    },
+    {
+      "name": "nested backend block keeps block type in identity",
+      "passed": true
+    },
+    {
+      "name": "attribute is a property",
+      "passed": true
+    },
+    {
+      "name": "attribute owner is enclosing block",
+      "passed": true
+    },
+    {
+      "name": "attribute scope is qualified",
+      "passed": true
+    },
+    {
+      "name": "nested attribute owner is the nested block",
+      "passed": true
+    },
+    {
+      "name": "resource contains attribute",
+      "passed": true
+    },
+    {
+      "name": "resource contains nested block",
+      "passed": true
+    },
+    {
+      "name": "nested block contains its attribute",
+      "passed": true
+    },
+    {
+      "name": "references var.<name>",
+      "passed": true
+    },
+    {
+      "name": "references local.<name>",
+      "passed": true
+    },
+    {
+      "name": "references data source attribute",
+      "passed": true
+    },
+    {
+      "name": "references resource attribute",
+      "passed": true
+    },
+    {
+      "name": "depends_on references a resource",
+      "passed": true
+    },
+    {
+      "name": "template interpolation is extracted",
+      "passed": true
+    },
+    {
+      "name": "object value reference is extracted",
+      "passed": true
+    },
+    {
+      "name": "object key is NOT a reference",
+      "passed": true
+    },
+    {
+      "name": "type keyword `string` is NOT a reference",
+      "passed": true
+    },
+    {
+      "name": "for-loop iterable is extracted",
+      "passed": true
+    },
+    {
+      "name": "for-loop variable `i` is NOT a reference",
+      "passed": true
+    },
+    {
+      "name": "module import records the source path",
+      "passed": true
+    },
+    {
+      "name": "all ranges carry byte offsets",
+      "passed": true
+    },
+    {
+      "name": "clean fixture has no syntax errors",
+      "passed": true
+    },
+    {
+      "name": "malformed HCL reports a syntax error",
+      "passed": true
+    },
+    {
+      "name": "malformed count argument produces no phantom symbol",
+      "passed": true
+    },
+    {
+      "name": "malformed file still extracts valid symbols",
+      "passed": true
+    },
+    {
+      "name": "analyzer uses no regex literals or match/replace/split",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "count": 38,
+  "passedCount": 38
+}

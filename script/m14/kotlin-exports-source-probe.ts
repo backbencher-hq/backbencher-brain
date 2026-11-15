@@ -40,7 +40,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { RealKotlinAnalyzer } from "../../src/ast/real-kotlin-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
   return i !== -1 && i + 1 < process.argv.length ? process.argv[i + 1] : dflt

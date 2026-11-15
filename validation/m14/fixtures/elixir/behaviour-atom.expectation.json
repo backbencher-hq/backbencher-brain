@@ -1,0 +1,13 @@
+{
+  "issue": "W23",
+  "note": "`@behaviour :gen_server` (atom form): the Implements target is the behaviour NAME — the atom's leading colon is syntax, not identity, and was previously carried into the target (`:gen_server`), inconsistent with the alias form.",
+  "expectSymbols": [
+    { "name": "W23BehaviourAtom", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "W23BehaviourAtom", "target": "gen_server", "line_number": 2 }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "target": ":gen_server" }
+  ]
+}

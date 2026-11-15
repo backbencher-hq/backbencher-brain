@@ -1,0 +1,52 @@
+{
+  "issue": "M30.S2",
+  "code": "S2",
+  "milestone": "M30",
+  "status": "verified",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 6,
+  "mutants": [
+    {
+      "name": "TTY guard removed (hook hangs non-TTY)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "--no-setup flag ignored",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "configured-state check removed (prompt always fires)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "non-TTY notice removed",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "skip-marker write removed (user re-prompted every run)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "hook skip check removed (skipped users prompted again)",
+      "caught": true,
+      "detail": "caught"
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "sourceFingerprint": "76699eb7e7846ef780ff5065dadf64c658cc51f30bc1637f8baeb290d1ea4dc1",
+  "verifierCommand": "npx tsx script/m30/verify-first-run-hook.ts",
+  "evidenceFile": "S2.json",
+  "generatedAt": "2026-11-15T04:10:04.677Z",
+  "limitations": [
+    "Pseudo-TTY test uses util-linux `script`; on systems without it the TTY-branch check is skipped (recorded as a limitation, not a pass).",
+    "Full interactive wizard keystroke flow under TTY (provider selection through key entry) is covered by S1/S3 verifiers and manual testing, not here.",
+    "The hook is tested via direct invocation of maybeRunFirstRunSetup, not through the full bb index command pipeline."
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "fixtureId": "lua/read-classes",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60 LUA-46 and LUA-47, authored AFTER the fix and from the ROLE contracts, with every row re-derived by reading the committed read-classes.lua rather than copied from a run. This file exists because lua/name-reads was GREEN over both defects: its forbid rows named `config` and `helper`, which are RECEIVERS, and no row for `retries` or `record`, which are FIELDS. A suite that pins the head of a qualified name and is silent about its tail cannot fail on a double publication of the tail. Every class below carries a positive row (the fact IS published) and, where a neighbouring label could claim it, a forbid row (it is NOT). LUA-46: an assignment target sits in a `variable_list`, so the old `assignment_statement` exclusion was dead code on every write in the language and 14,833 qualified targets across 3,252 corpus files published a `references` edge for a member that was written and never read. LUA-47: `emitNameRead` excluded only `namedChild(0)` of a dot/method index \u2014 the RECEIVER \u2014 so the FIELD also reached `uses` while `references`/`calls` published the same member, and 8,041 member edges over 400 corpus files carried both labels for the same member on the same line. The negative half is the load-bearing half here: an implementation that published a `uses` for every identifier in the file, and a `references` for every index expression, would satisfy every positive row below.",
+  "authoringNote": "authoredBeforeAnalyzerRun is false and is stated as false. Unlike lua/name-reads, these rows are not an independent prediction: the defect was found by measurement, the fix was written, and the rows were then written from the role contracts and checked against the fixed analyzer. What makes them non-vacuous is the FORBID half, which cannot be satisfied by an over-publishing implementation, plus the mutant at script/m60/mutate-lua-read-classes.ts, which reinstates each defect in turn and requires this suite to go red.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "bare",
+      "line_number": 37,
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "meta.relationshipType": "lua_name_read",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "L37 `local read_bare = bare` \u2014 the one unambiguously bare read in the file. Confidence 0.9 and `usage_contextual` because the node proves a name is READ and the BINDING it denotes is written nowhere (honesty contract \u00a74 requires the reason code beside a sub-1.0 confidence)."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "member",
+      "line_number": 42,
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "meta.relationshipType": "lua_member_read",
+      "meta.evidenceClass": "import_based",
+      "comment": "L42 `local read_member = tbl.member` \u2014 a member read WITHOUT calling it, which is what `references` is for. `import_based` because the owning module is not written in this file."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "inner",
+      "line_number": 47,
+      "meta.relationshipType": "lua_member_read",
+      "comment": "L47 `tbl.inner.member` is TWO nested index expressions, so it names two members. `inner` is the TABLE of the outer read and is a real member access in its own right."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "callee",
+      "line_number": 52,
+      "confidenceMin": 1.0,
+      "confidenceMax": 1.0,
+      "meta.evidenceClass": "structural",
+      "comment": "L52 `tbl:callee()` \u2014 a member that is CALLED is a `calls` edge. 1.0 and `structural`: the callee is a node this parse saw, at a line this parse saw."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "plain",
+      "line_number": 55,
+      "meta.evidenceClass": "structural",
+      "comment": "L55 `tbl.plain()` \u2014 the same rule with a dot instead of a colon. Pinned separately because the two spellings are different node types and a fix that covered one would not cover the other; this is the shape that catches such a half-fix."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "literal",
+      "line_number": 60,
+      "meta.relationshipType": "lua_member_read",
+      "comment": "L60 `tbl[\"literal\"]` \u2014 a literal STRING subscript writes the member's name, so it is a name and a `references` edge. There is no identifier here at all, so this case cannot double-publish; it is pinned because LUA-22 once dropped this class entirely and LUA-30 had to restore it."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "key",
+      "line_number": 67,
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "meta.relationshipType": "lua_name_read",
+      "comment": "L67 `tbl[key]` \u2014 the subscript is a VARIABLE, and reading it is a genuine bare-name read, so it stays `uses`. This is the deliberate asymmetry with L60: a literal subscript names a member, a variable subscript names a variable. Collapsing the two would either fabricate a member name from a variable or lose a real read."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "other",
+      "line_number": 84,
+      "meta.relationshipType": "lua_member_read",
+      "comment": "L84 `tbl.member = tbl.other` \u2014 the RIGHT-HAND side is a read and is published. The left-hand side is the write at L71/L84 and publishes nothing, so this line carries exactly one `references` edge and one `member` that appears only as a write."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "member",
+      "line_number": 42,
+      "comment": "LUA-47, the case lua/name-reads did not name. `tbl.member`'s FIELD reached `uses` as well as `references`, so one access on one line carried two labels. Over 400 corpus files this pairing was 8,041 edges."
+    },
+    {
+      "type": "uses",
+      "target": "inner",
+      "line_number": 47,
+      "comment": "LUA-47 on the chain's table position. `inner` is a member name, not a bare name, so `references` owns it."
+    },
+    {
+      "type": "uses",
+      "target": "member",
+      "line_number": 47,
+      "comment": "LUA-47 on the chain's outer member."
+    },
+    {
+      "type": "uses",
+      "target": "callee",
+      "line_number": 52,
+      "comment": "LUA-47, the `uses` vs `calls` pair. A callee member is `calls`; publishing it again as `uses` states one call twice. lua/name-reads' doc comment CLAIMED this was pinned on every callee site \u2014 its forbid list had `references -> record` but no `uses -> record`, so the claim was not tested."
+    },
+    {
+      "type": "references",
+      "target": "member",
+      "line_number": 47,
+      "comment": "DEDUPE, pinned rather than assumed: `member` is read at L42 (`tbl.member`) and again at L47 (`tbl.inner.member`). `addRelationship` keys observed edges on type+source+target (LUA-01), so only the FIRST site survives and its line_number is 42. This is not a suppression of a second fact \u2014 the two reads are the same fact, `member`, stated twice \u2014 and it is the same property lua/name-reads pins for `uses -> total`. It is pinned here so that a future change which makes the edge key include the line is caught: that would DOUBLE the member edges corpus-wide, and the corpus pairing measurement in script/m60/lua-uses-references-double-publish.ts is what would show it."
+    },
+    {
+      "type": "references",
+      "target": "callee",
+      "line_number": 52,
+      "comment": "and the reverse: a member that is CALLED is not merely read, so it is not `references` either. `uses` and `references` must both be absent for a callee member."
+    },
+    {
+      "type": "uses",
+      "target": "plain",
+      "line_number": 55,
+      "comment": "LUA-47 on the dot spelling of a callee member."
+    },
+    {
+      "type": "references",
+      "target": "plain",
+      "line_number": 55,
+      "comment": "and the reverse, dot spelling."
+    },
+    {
+      "type": "uses",
+      "target": "literal",
+      "line_number": 60,
+      "comment": "a literal subscript has no identifier, so it cannot reach `uses`. Pinned so a future change that reads the STRING node as a name is caught."
+    },
+    {
+      "type": "references",
+      "target": "key",
+      "line_number": 67,
+      "comment": "the inverse of the L67 positive row: a variable-held subscript has no member NAME, so it is not `references`. This is LUA-22's rule (`dao[method .. k]` has no name) and LUA-30's restoration of the literal form; pinning both at once is what keeps the two from being collapsed."
+    },
+    {
+      "type": "references",
+      "target": "member",
+      "line_number": 71,
+      "comment": "LUA-46, the primary row. `tbl.member = 1` is a pure WRITE. Before the fix this published `references -> member`. The dead exclusion was `pt === \"assignment_statement\" && isSameNode(parent.namedChild(0), node)`, but the measured tree is assignment_statement > variable_list > dot_index_expression, so the target's parent is `variable_list` and the test could never match. 14,833 such targets across the corpus."
+    },
+    {
+      "type": "uses",
+      "target": "member",
+      "line_number": 71,
+      "comment": "LUA-46 + LUA-47 together on a write: the receiver `tbl` is excluded as a receiver and the written member must be excluded as a write, so this line publishes nothing under either label."
+    },
+    {
+      "type": "references",
+      "target": "member",
+      "line_number": 75,
+      "comment": "LUA-46 through a chain: `tbl.inner.member = 1` writes two members. Neither is a read, so neither may be `references`."
+    },
+    {
+      "type": "references",
+      "target": "inner",
+      "line_number": 75,
+      "comment": "LUA-46 on the chain's table position as a WRITE target."
+    },
+    {
+      "type": "references",
+      "target": "a",
+      "line_number": 80,
+      "comment": "LUA-46, the multi-target shape the dead exclusion was written for: `other.a, other.b = 1, 2` writes two members and reads neither. Pinned because a fix that handled only the first target would pass every other row here."
+    },
+    {
+      "type": "references",
+      "target": "b",
+      "line_number": 80,
+      "comment": "LUA-46 on the SECOND target of the same statement. The corpus contains 0 multi-target assignments among 84,354 targets, so no fixture derived from real code can reach this; it is pinned from the contract instead, and that is stated rather than implied."
+    },
+    {
+      "type": "uses",
+      "target": "a",
+      "line_number": 80,
+      "comment": "and the `uses` half of the same two writes."
+    },
+    {
+      "type": "uses",
+      "target": "b",
+      "line_number": 80,
+      "comment": "and the `uses` half of the second write."
+    },
+    {
+      "type": "uses",
+      "target": "first",
+      "line_number": 87,
+      "comment": "a declaration's target list BINDS two names and reads neither. `emitNameRead` already excluded `variable_list`; LUA-46 relies on that same exclusion for `emitMemberRead`, so this row pins the shared rule from the declaration side."
+    },
+    {
+      "type": "uses",
+      "target": "second",
+      "line_number": 87,
+      "comment": "the second bound name of the same declaration."
+    },
+    {
+      "type": "uses",
+      "target": "tbl",
+      "comment": "RECEIVER, every occurrence: `tbl` heads a qualified name at L42, L47, L52, L55, L60, L67, L71, L75 and L84. The receiver is not read on its own account. This is the row lua/name-reads DID have (as `uses -> helper`), carried forward so the receiver rule stays pinned while the field rule is added beside it."
+    },
+    {
+      "type": "uses",
+      "target": "other",
+      "line_number": 84,
+      "comment": "RECEIVER on the right-hand side of L84, where `other` heads `tbl.other`. Without this row an implementation that excluded only WRITES and not receivers would pass every other row in this file."
+    }
+  ],
+  "expectEvidenceClassOnEveryRelationship": true,
+  "expectEvidenceClasses": {
+    "uses": "usage_contextual",
+    "references": "import_based",
+    "calls": "structural",
+    "contains": "structural"
+  },
+  "evidenceClassesAssertedElsewhere": "This fixture produces no `exports`, `extends`, `implements`, `overrides` or `imports` edge, so their tiers are NOT asserted here rather than asserted vacuously: `exports` is pinned by lua/export-edges and lua/export-shapes, `overrides` by lua/override-shapes, and `extends`/`instantiates` by the corpus probes B6 and B7 recorded in validation/m60/lua/grammar-inventory.json. `script/m60/run-lua-fixtures.ts:155` refuses a tier assertion it has no edge to check, so an omission here is reported rather than passed.",
+  "whichRowsCarryTheWeight": "Measured, not assumed: script/m60/mutate-lua-read-classes.ts reinstates each defect in turn. LUA-47 is caught by SEVEN forbid rows (uses -> member L42, uses -> inner L47, uses -> callee L52, uses -> plain L55, uses -> a L80, uses -> b L80, uses -> other L84). LUA-46 is caught by exactly TWO \u2014 references -> a L80 and references -> b L80 \u2014 and NOT by the L71/L75 rows, because `member` and `inner` were already published as `references` at L42 and L47 and addRelationship dedupes on type+source+target, so the write's edge never reaches the store to be compared. Those rows are therefore correct and non-vacuous as CONTRACT rows but cannot fail on this file; the two L80 rows carry the mutant, which is why the multi-target shape is pinned even though the corpus contains 0 multi-target assignments among 84,354 targets. A fixture that relied on the L71 row alone would have reported LUA-46 as uncaught."
+}

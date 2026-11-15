@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The attribute-identity collision, at the smallest size that has one.
+
+  `fill` appears on TWO DIFFERENT ELEMENTS. Before 2026-10-05 the analyzer published
+  both as symbols named `fill` with no qualified name at all, so the store indexed
+  them under one key (`parallel-indexer.ts:3038`, `symbol.qualifiedName || symbol.name`)
+  and a reverse walk asking "what contains `fill`" chose between two indistinguishable
+  declarations that were not even siblings. `use/@fill` and `path/@fill` are not the
+  same declaration; they are two attributes of two elements.
+
+  `xmlns:pfx` is here because it is published by the SAME code path (`:2283` makes
+  `SymbolKind.Namespace` where it makes `SymbolKind.Property`), so it is covered by the
+  same one-site fix or by none of it. The 1,002 namespace symbols measured carrying a
+  bare qualified name are this line.
+
+  `width` on `<svg>` is the CONTROL in the other direction: it must qualify too, so a
+  fix that qualified only elements-with-repeated-children would fail here.
+-->
+<svg xmlns:pfx="http://example.invalid/ns" width="120" height="80">
+  <defs>
+    <path id="logo" fill="#3F96" stroke="none"/>
+    <use pfx:href="#logo" fill="currentColor"/>
+  </defs>
+  <g fill="inherit" transform="translate(4,4)">
+    <path fill="none"/>
+  </g>
+</svg>

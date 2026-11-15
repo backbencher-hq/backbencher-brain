@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-10-09T21:43:13.423Z",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "admitted": 5094,
+    "parsed": 5094
+  },
+  "emitted": {
+    "defineSites": 58,
+    "files": 18
+  },
+  "wider": {
+    "class_declaration": {
+      "sites": 4638,
+      "files": 4608
+    },
+    "interface_declaration": {
+      "sites": 235,
+      "files": 234
+    },
+    "trait_declaration": {
+      "sites": 18,
+      "files": 18
+    },
+    "enum_declaration": {
+      "sites": 49,
+      "files": 49
+    },
+    "function_definition": {
+      "sites": 321,
+      "files": 33
+    },
+    "const_declaration": {
+      "sites": 0,
+      "files": 0
+    }
+  },
+  "widerTotal": 5261
+}

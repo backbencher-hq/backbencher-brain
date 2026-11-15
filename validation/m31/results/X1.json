@@ -1,0 +1,18 @@
+{
+  "issue": "M31.X1",
+  "gate": "verify-closure.ts",
+  "status": "verified",
+  "passed": 19,
+  "failed": 0,
+  "checks": 19,
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-11-04T01:39:30.658Z",
+  "closureStamp": "8f449a26e9badb54503abd55edcc6adec1b2e015",
+  "staleCount": 0,
+  "mutationGaps": 0,
+  "negativeCases": 19,
+  "negativeCasesDescription": "planted-mutation sweep via gate self-test (every registered mutation must fail its gate)",
+  "currentCommit": "8f449a26e9badb54503abd55edcc6adec1b2e015"
+}

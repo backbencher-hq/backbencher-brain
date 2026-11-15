@@ -40,7 +40,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE = join(ROOT, "validation", "m60", "results", "lua-member-identity.json")
-const PROBE_DIR = "$HOME/fixtures/probe"
+const PROBE_DIR = "/home/ishaq2321/bb_tests/probe"
 
 const FIXTURE: Record<string, string> = {
   "members.lua": [

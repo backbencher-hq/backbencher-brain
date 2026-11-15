@@ -1,0 +1,29 @@
+{
+  "fixtureId": "groovy/chained-field-access",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANTI-SKIP GUARANTEE (corrected after ground-truth verification): every segment of a call chain (output, format, name) must appear as an edge target - no segment silently skipped. Chain-fidelity (object->field chaining vs root anchoring) is a DECLARED design limitation to be decided in wave M14.1, not pinned here.",
+  "expectSymbols": [
+    {
+      "name": "Reporter",
+      "kind": "class"
+    },
+    {
+      "name": "render"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "targetEndsWith": "output",
+      "confidenceMax": 0.99
+    },
+    {
+      "targetEndsWith": "format",
+      "confidenceMax": 0.99
+    },
+    {
+      "targetEndsWith": "name",
+      "confidenceMax": 0.99
+    }
+  ]
+}

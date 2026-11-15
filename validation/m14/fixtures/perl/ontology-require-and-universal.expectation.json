@@ -1,0 +1,112 @@
+{
+ "fixtureId": "perl/ontology-require-and-universal",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "SUPERSEDED 2026-10-26: the reference targets corrected to the leaf contract; the byte-identical predecessor is `ontology-require-and-universal.expectation.superseded-2026-10-26.json`.",
+ "rationale": "SUPERSESSION RECORD (2026-10-26), measured against the analyzer's own output (script/m14/perl-fixture-divergence.mts).\nCHANGED ROWS, old -> live.\n  · the three `references` TARGETS were the FULLY QUALIFIED class; the analyzer publishes the LEAF with the written package in `meta.qualifiedAs` (the green peer fixture code-references pins the same leaf rule). Targets are now `Universal` with qualifiedAs `Ontology::Universal`.\n  · `references from via_isa` (the METHOD spelling `$self->isa(...)`) now carries the generic `type-query-literal` reasonCode the analyzer emits for the method-query branch, beside the FUNCTION spelling's `universal-isa-literal`; the two constructs stay separable by reasonCode, which is what this row exists to prove.\n  · `require './lib/Bootstrap.pm'` and `require constant` are IMPLEMENTED (the require reader accepted only bareword/package names, so a string path published no dependency); the imports rows below matched the emitted metadata regime once it existed.\nUNCHANGED: the four refusals (interpolated path, computed variable, both can()/variable probes) — each still fires.\n\nBoth are the same defect in two places: a construct was present in the tree, the lane had a rule for the OTHER spelling of it, and no count anywhere moved because the label it belonged to was already non-zero. `require_expression`'s only child for the path form is a `string_literal`, so `findChildByType(node, \"bareword\")` — the whole read — found nothing and 912 dependencies vanished with no trace. `UNIVERSAL::isa($o, 'C')` is grammatically a plain function call, so the `method_call_expression` type-test branch could not see it, and `addCall` refuses it as a target anyway because `isa` is a builtin — which is right, since `isa` is not the thing being named. The three refusals are the half that matters more than the two constructs: an interpolated specifier (`require \"./lib/Late$stage.pm\"`), a variable specifier (`require $computed`), a computed class (`UNIVERSAL::isa($self, $class)`), and `UNIVERSAL::can` — the last because `can` names a method that MAY NOT EXIST, which is why `$obj->can(...)` is refused on the method side too and `uses` is not the label for it. One more row was added after the differential found the module-name guard: a dependency whose module is literally NAMED `constant` is a load, not the `use constant` declaration.",
+ "expectSymbols": [
+  {
+   "name": "via_path",
+   "kind": "function"
+  },
+  {
+   "name": "via_universal",
+   "kind": "function"
+  },
+  {
+   "name": "via_isa",
+   "kind": "function"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "via_universal",
+   "target": "Universal",
+   "line_number": 12,
+   "meta.reasonCode": "universal-isa-literal",
+   "meta.evidenceClass": "usage_contextual",
+   "note": "`UNIVERSAL::isa($self, 'Ontology::Universal')` — the FUNCTION spelling of the type test the method branch reads as `$self->isa('Ontology::Universal')`. The class is the LAST argument in both spellings, which is the fact the reader shares.",
+   "meta.qualifiedAs": "Ontology::Universal"
+  },
+  {
+   "type": "references",
+   "from": "via_universal_last_arg",
+   "target": "Universal",
+   "line_number": 16,
+   "meta.reasonCode": "universal-isa-literal",
+   "meta.evidenceClass": "usage_contextual",
+   "note": "the THREE-ARGUMENT form `UNIVERSAL::isa($self, ref($self), 'Ontology::Universal')`, which perl's own UNIVERSAL documents. The rule reads the LAST argument, so the shape that carries two values before the class still names the class.",
+   "meta.qualifiedAs": "Ontology::Universal"
+  },
+  {
+   "type": "references",
+   "from": "via_isa",
+   "target": "Universal",
+   "line_number": 26,
+   "meta.reasonCode": "type-query-literal",
+   "meta.evidenceClass": "usage_contextual",
+   "note": "the METHOD spelling, pinned beside the function one so the two rules are separable by reasonCode. Same label, same target, different construct.",
+   "meta.qualifiedAs": "Ontology::Universal",
+   "meta.query": "isa"
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "./lib/Bootstrap.pm",
+   "line_number": 27,
+   "meta.relationshipType": "require_file",
+   "meta.specifier": "path",
+   "meta.evidenceClass": "import_based",
+   "note": "`require './lib/Bootstrap.pm'` — the specifier is a FILENAME, not a module name, and it is WRITTEN, which is what makes it an edge rather than an inference. The target is the path as written, with the sigil-free `./` kept: a resolver needs the string the file wrote, and collapsing `./lib/Bootstrap.pm` to `Bootstrap` would be the MR11 leaf-collapse a fourth time."
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "Ontology::Runtime",
+   "line_number": 28,
+   "meta.relationshipType": "require_module",
+   "meta.reasonCode": "runtime-require",
+   "meta.evidenceClass": "import_based",
+   "note": "the MODULE spelling, pinned beside the path one. Same label, same confidence, different `relationshipType`, so a consumer can tell \"names a module\" from \"names a path\" — which is the difference between a `brain_import` row a symbol resolver can chase and one it can only display."
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "constant",
+   "line_number": 31,
+   "meta.relationshipType": "require_module",
+   "meta.reasonCode": "runtime-require",
+   "meta.evidenceClass": "import_based",
+   "note": "`require constant;` loads CPAN's module NAMED `constant` — perl5's cpan/Scalar-List-Utils/t/dualvar.t:76 writes `require constant; import constant HAVE_THREADS => 1;`. The lane used to refuse ANY dependency whose module name was `constant`, because `use constant NAME => v` is a DECLARATION and not a dependency; the `use` form never reaches that refusal (the use_statement case handles it as a declaration and breaks first), so the guard only ever dropped real loads. One MISSING truth row in a 685-row file, and it is the whole file."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "./lib/Late$stage.pm",
+   "note": "line 29 `require \"./lib/Late$stage.pm\"` is INTERPOLATED: the specifier is computed at runtime, so nothing written can be resolved. The lane's rule is the absence of a `$`, not the absence of a `\\.`."
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "$computed",
+   "note": "line 30 `require $computed` names a variable."
+  },
+  {
+   "type": "references",
+   "from": "not_a_type2",
+   "note": "line 24 `UNIVERSAL::isa($self, $class)` names a VARIABLE where the class would be. The last argument is not a literal, so there is no type to publish."
+  },
+  {
+   "type": "references",
+   "from": "not_a_type",
+   "note": "line 20 `UNIVERSAL::can($self, 'maybe')` is a METHOD-SLOT probe: it names a method that may not exist and invokes nothing. It is refused for the same reason `$obj->can(...)` is — a conditional probe carried into `bb_impact` as a real dependency is worse than no edge. The `calls -> can` edge beside it IS emitted, and is true: `can` is a real UNIVERSAL method a class can override."
+  },
+  {
+   "type": "references",
+   "target": "Ontology::Universal",
+   "note": "the FULLY QUALIFIED target the superseded file pinned; the leaf + qualifiedAs rule is the current contract."
+  }
+ ]
+}

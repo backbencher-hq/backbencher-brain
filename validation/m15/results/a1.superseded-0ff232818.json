@@ -1,0 +1,12 @@
+{
+  "issue": "M15.A1",
+  "code": "A1",
+  "tool": "bb_ask",
+  "title": "classification — stat routing + honesty guard",
+  "verified": true,
+  "checks": 6,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-09-29T05:44:13.029Z"
+}

@@ -24,7 +24,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = process.env.BB_ONLY_REPO ? [process.env.BB_ONLY_REPO] : ["powershell", "ansible"]
 const EXTS = ["ps1", "psm1", "psd1"]
 const OUT = path.join(ROOT, "validation/m60/results/powershell-damage-inventory.json")

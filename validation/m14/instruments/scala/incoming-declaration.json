@@ -1,0 +1,211 @@
+{
+ "meta": {
+  "lang": "scala",
+  "instrument": "script/m14/incoming-gate.ts (single measurement; no second instrument)",
+  "generator": "script/m14/scala-declaration.ts — transcribes the arm's TABLE 1 and REFUSES a sample",
+  "sample": 19347,
+  "corpusTotal": 19347,
+  "corpusRepos": 4,
+  "parsed": 19347,
+  "population": "parsed=19347/19347 admitted=19347 exts=scala,sc,sbt index=no",
+  "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
+  "analyzer": "src/ast/real-scala-analyzer.ts",
+  "analyzerDigest": "sha256:348a48e3afbfd0c9",
+  "generated": "2026-10-23",
+  "measurementForm": "one arm run over the whole admitted population",
+  "populationNote": "THE POPULATION IS THE WHOLE ADMITTED SET. MEASURED over BB_CORPUS_ROOT=$PWD/.corpus on 2026-10-22: 19347 admitted files of 19347 paths, 4 repositories (scala3 18,616 · cats-effect 462 · gql-sangria 267 · pixie 2), 199 symlinked directories followed over 202 corpus entries, 0 files over the 1 MiB cap. THE RULE: the admitted set is the GIT-TRACKED set, `git ls-files` per repository under the cap, extensions .scala/.sc/.sbt — NOT a disk walk. THE SCOPE: index=no, the PER-FILE population: resolution is per project (the repository a file belongs to), which is production's scope. THE ARM PARSED 19347 OF 19347 FILES, so the whole population was measured and no stride or subsample is involved. ⇒ THE PREVIOUS DECLARATION'S corpusTotal: 18964 IS SUPERSEDED: it was generated 2026-10-10 with corpusRepos: 2, and the 383-file delta is the net of corpus growth that this lane does not decompose from a number alone.",
+  "classMapping": "THE FIVE DECLARATION BUCKETS ARE THE GATE'S CLASSES, MAPPED ONCE, HERE, SO NOTHING IS HIDDEN: resolved = resolved (collRes is a SUBSET of resolved and is never added); ambiguous = amb(decl) (amb(kind) is a SUBSET of amb(decl), reported beside it and never added); otherUnresolved = unresolved + bindOK + bind? + bindFAIL + causeOK + causeFAIL (a causeOK edge is STATED, not resolved — the gate says 'NEVER folded into resolved'); external = extOK + ext? + extFAIL; unclassed = 0, ALWAYS, and it is a CEILING. THE CLOSURE: resolved + ambiguous + otherUnresolved + external + unclassed = edges, EXACTLY, and this generator CHECKS it before it writes.",
+  "closure": {
+   "edges": 1039857,
+   "resolved": 513138,
+   "ambiguous": 390565,
+   "otherUnresolved": 120487,
+   "external": 15667,
+   "unclassed": 0,
+   "sum": 1039857,
+   "exact": true,
+   "collRes_beside": 144218,
+   "ambKind_beside": 356072,
+   "residual_ambDecl_plus_unresolved": 511052,
+   "resolvedPct": 49.35
+  }
+ },
+ "rules": {
+  "measurement": "one arm run over the whole admitted population, transcribed from its own TABLE 1",
+  "population": "the whole admitted set; no stride and no subsample",
+  "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase).",
+  "elevenTerms": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges, and this lane's arm measured each of the eleven per type; the five buckets above are a declared coarsening of them, so no term is hidden by the coarsening."
+ },
+ "causeRulingsNote": "THIS LANE'S ARM MEASURED causeOK: 0 AND causeFAIL: 0, AND THAT IS THE HONEST STATE OF ITS CAUSES: the scala analyzer does NOT emit a `baseBeyondRunScope` marker, so no edge DECLARES a cause and none can be refuted. ⇒ THE UNRESOLVED EDGES ARE THEREFORE UNSTATED, NOT CAUSED, and the ruling below is about WHAT THEY ARE rather than about a marker the analyzer never writes. ⇒ A LANE THAT PUBLISHED A causeOK COUNT IT HAD NOT MEASURED WOULD BE FABRICATING A DISPOSITION; this one rules the absence.",
+ "types": {
+  "calls": {
+   "edges": 247731,
+   "resolved": 124505,
+   "ambiguous": 109650,
+   "otherUnresolved": 13576,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 85586
+  },
+  "uses": {
+   "edges": 64399,
+   "resolved": 18387,
+   "ambiguous": 36262,
+   "otherUnresolved": 9750,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 33156
+  },
+  "contains": {
+   "edges": 194234,
+   "resolved": 194234,
+   "ambiguous": 0,
+   "otherUnresolved": 0,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 144218,
+   "_ambKind": 0
+  },
+  "imports": {
+   "edges": 31635,
+   "resolved": 2057,
+   "ambiguous": 2753,
+   "otherUnresolved": 14325,
+   "external": 12500,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 2446
+  },
+  "references": {
+   "edges": 322518,
+   "resolved": 70275,
+   "ambiguous": 196483,
+   "otherUnresolved": 53073,
+   "external": 2687,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 191384
+  },
+  "exports": {
+   "edges": 57557,
+   "resolved": 57136,
+   "ambiguous": 246,
+   "otherUnresolved": 174,
+   "external": 1,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 176
+  },
+  "extends": {
+   "edges": 22281,
+   "resolved": 14653,
+   "ambiguous": 5065,
+   "otherUnresolved": 2440,
+   "external": 123,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 4587
+  },
+  "implements": {
+   "edges": 571,
+   "resolved": 412,
+   "ambiguous": 129,
+   "otherUnresolved": 30,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 118
+  },
+  "overrides": {
+   "edges": 15601,
+   "resolved": 0,
+   "ambiguous": 0,
+   "otherUnresolved": 15570,
+   "external": 31,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 0
+  },
+  "instantiates": {
+   "edges": 77588,
+   "resolved": 26923,
+   "ambiguous": 39196,
+   "otherUnresolved": 11150,
+   "external": 319,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 38023
+  },
+  "decorates": {
+   "edges": 0,
+   "resolved": 0,
+   "ambiguous": 0,
+   "otherUnresolved": 0,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 0
+  },
+  "renders": {
+   "edges": 0,
+   "resolved": 0,
+   "ambiguous": 0,
+   "otherUnresolved": 0,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 0
+  },
+  "mixes_in": {
+   "edges": 5742,
+   "resolved": 4556,
+   "ambiguous": 781,
+   "otherUnresolved": 399,
+   "external": 6,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 596
+  },
+  "part_of": {
+   "edges": 0,
+   "resolved": 0,
+   "ambiguous": 0,
+   "otherUnresolved": 0,
+   "external": 0,
+   "unclassed": 0,
+   "_collRes": 0,
+   "_ambKind": 0
+  }
+ },
+ "runEnvironment": {
+  "memAvailableKb": 6754680,
+  "swapFreeKb": 18050296,
+  "takenAt": "2026-10-23T11:46:40-04:00",
+  "note": "recorded at token take, before the arm"
+ },
+ "causeRulings": {
+  "noDeclaredCauseMarker": {
+   "population": "parsed=19347/19347 admitted=19347 exts=scala,sc,sbt index=no",
+   "edges": 120487,
+   "what": "the unresolved edges of every type, as ONE ruling, because this analyzer declares no cause marker: causeOK = 0 and causeFAIL = 0 over the whole population, so the disposition is that these targets name nothing the PER-PROJECT key space could answer, not that they were excused.",
+   "falsifier": {
+    "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/scala-declaration.ts --self-test && BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts scala scala,sc,sbt 0 --dump",
+    "wouldFail": "THIS RULING FAILS IF ANY of two things is true, and both are checked by the run above: (1) causeOK > 0 or causeFAIL > 0 in TABLE 1 — then the analyzer DOES declare causes and this ruling's premise (it declares none) is false, and the edges must be re-ruled cause by cause; or (2) the five buckets do not sum to the edge count, or unclassed is not 0 — then some edges are outside every disposition and the 'unresolved' row is not the whole of the unexplained set. ⇒ NOTE WHAT IS NOT A FALSIFIER HERE: a target being unresolvable. That is the claim."
+   }
+  }
+ },
+ "resolution_caveats": {
+  "collResSubset": "`collRes` — a resolved edge whose target has MORE THAN ONE declaration in the project — is a SUBSET of `resolved` and is NEVER added to it. It is concentrated in ONE type: `contains`, where every member of a project answers to the owner's name, so the tie-break is doing real work on almost every row. ⇒ READ `contains`'s resolved column AS A FLOOR ON CORRECTNESS, not as a count of correct edges: the fleet's own indexer measures a large share of such tie-break picks as wrong. The number is published per row above so no reader has to guess which types carry it.",
+  "ambKindSubset": "`amb(kind)` is a SUBSET of `amb(decl)` (it counts distinct KINDS among the colliding declarations, where `amb(decl)` counts distinct DECLARATIONS), reported beside it and never added. Two orders of magnitude separate them on this lane, which is the fleet's standing reason for counting by declaration.",
+  "perFileScope": "THE RESOLUTION SCOPE IS PER PROJECT — the repository a file belongs to — which is production's scope: `parallel-indexer.resolveRelationships` fills `target_symbol_id` only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1. A name declared in the corpus but in ANOTHER repository therefore reads unresolved HERE and would not necessarily read so in a pooled scope. ⇒ THE ARM PRINTS BOTH TABLES for exactly this reason and this lane publishes the PER-PROJECT one as the verdict's, because it is the scope production runs in.",
+  "implementsIsTheSelfType": "★ THE `implements` ROWS COME FROM THE SELF TYPE (`this: Logging =>`), AND THAT IS THE CONSTRUCT THAT LOOKS UNIMPLEMENTED AND IS NOT. Scala's heritage clause says a trait may REQUIRE a type of its implementor; the requirement is an obligation on whatever mixes the trait in, which is what `implements` means. MEASURED over the whole admitted population: 1,017 `self_type` sites in 636 files, of which 669 in 398 files carry a REQUIRED TYPE (348 in 253 files are a bare self NAME and publish nothing). The X→X case is suppressed by the INFORMATION test — `Pure { this: Pure => }` says nothing — and a `structural_type` (`this: { def f: Int }`) publishes NOTHING because a structural type names no declaration (4 sites). ⇒ A reader who sees `implements` on a Scala lane and expects a Java-style `implements` keyword will under-read this row; the window `self_type` is the whole of the evidence. Artefacts: `validation/m14/measurements/scala-implements-agreement.json` (571 analyzer rows against 571 oracle rows, 0 disagreements on either side, over all 19,347 files) and `script/m14/scala-implements-red-proof.ts`.",
+  "rendersAndXmlLiterals": "★ SCALA **HAS** XML LITERALS AND THEY ARE **NOT** RENDERING SITES, SO THE ABSENCE OF `renders` MUST NOT BE READ AS A BLIND SPOT. MEASURED over the whole admitted population by a PARSE-ONLY census: 979 sites across the 8 `xml`-stem node types (`xml_text` 668/17, `xml_name` 187/25, `xml_element` 60/15, `xml_expression` 39/14, `xml_pattern` 10/4, `xml_attribute` 7/3, `xml_string` 7/3, `xml_comment` 1/1). The fleet's `renders` contract (VOCABULARY-EXTENSION-PROPOSAL §2.1) fires on a CAPITALIZED COMPONENT NAME at a rendering site and its MUST-NOT list excludes string and namespaced tags; a Scala XML literal's tag is a markup name in an EXPRESSION, not a reference to a component declaration. ⇒ THE LARGEST NEAR MISS ON THIS LANE IS NOT XML AT ALL: `template_body` is 44,952 sites in 16,303 files, and a Scala 3 `template` is a POLYMORPHIC MEMBER BODY, not a rendering site. Artefact: `validation/m14/measurements/scala-node-census.json`.",
+  "partOfIsOwnership": "★ A PACKAGE IS OWNERSHIP AND NOT PART-OF, AND SCALA HAS NOTHING PART-ISH AT ALL — which is why this lane's `part_of` basis is the GRAMMAR'S ABSENCE while the csharp lane's was not (csharp has `partial`, whose row would be X→X). The fleet's `part_of` is a construct that names ANOTHER UNIT AS A PART (L-2026-10-21-06, the rust `mod` precedent: module composition is ownership). MEASURED: `package_clause` 6,704/4,790, `package_identifier` 6,705/4,790, `package_object` 168/163, `import_declaration` 26,879/8,840, `export_declaration` 271/153, `extension_definition` 1,709/716; the `part`/`partial`/`include`/`fragment` stems have 0 of the grammar's 189 named node types.",
+  "importSourceIsRoot": "★ THE `references` ROWS CARRYING `isImportDep` ARE ATTRIBUTED TO `root`, AND `root` IS A **MEASURED** ATTRIBUTION, NOT A PLACEHOLDER. `validation/m12/ground-truth/scala.json` carries all six of the hand-audited `references` rows with `sourceId: \"root\"` and was verified on both sides of a branch consolidation; the evidence decided, and a file-level import genuinely has no declaring symbol as its source. ⇒ A reader must not read `root` as 'un-attributed' and must not 'fix' it: the same import is published a SECOND time as an `imports` row with `source: \"(file)\"`, which is where a per-file reader should look.",
+  "populationIsTracked": "★ THE POPULATION IS THE GIT-TRACKED SET, NOT THE DISK: `git ls-files` per repository under the 1 MiB cap, over `.scala`/`.sc`/`.sbt`. MEASURED 2026-10-22: 19347 admitted of 19347 paths, 4 repositories (scala3 18,616 · cats-effect 462 · gql-sangria 267 · pixie 2), 199 symlinked directories followed over 202 corpus entries, 0 files over the cap. ⇒ THE PREVIOUS DECLARATION'S `corpusTotal: 18964` IS SUPERSEDED, NOT CONTRADICTED: it was generated 2026-10-10 against a corpus whose `corpusRepos` was 2. The 383-file delta is the NET of that growth and is NOT decomposed here, because a decomposition needs the old tree and this lane does not carry a 2026-10-10 checkout. ⇒ A number that does not say which rule produced it cannot be compared (FLEET-RULINGS-2026-10-22.md), and a date plus a repo count is the smallest thing that makes two numbers comparable.",
+  "measuredOnAHealthyBox": "★ THE CLOSURE ABOVE IS A NUMBER ABOUT THE POPULATION ONLY IF IT WAS MEASURED ON A MACHINE THAT COULD MEASURE IT, AND THIS LANE CAN NOW SAY WHICH MACHINE IT WAS. On 2026-10-22 the host hit 167 MB of 15,860 MB available with 19,956 MB of swap FULL, because four lanes' arms were resident at once; the kernel would have OOM-killed the next large allocation and chosen the victim itself. ⇒ **A WHOLE-POPULATION CLOSURE MEASURED WHILE THE BOX THRASHES SWAP IS A NUMBER ABOUT THE BOX** — a truncated or timed-out slice that still prints a TABLE looks identical to a complete one, which is THIS LANE'S OWN finding (`implements` before the R3 fix, and the seven near-miss censuses) in its general form. ⇒ THE DEFENCE IS THE INSTRUMENT, NOT THE PROSE: `script/m14/arm-token.sh take` now REFUSES below a memory floor and names `MemAvailable` and `SwapFree`, so the arm cannot start into an exhausted machine, and this generator records the memory state the arm ran in (`meta.runEnvironment`) so a reader can check the condition instead of trusting a sentence. ⇒ **A MEASUREMENT THAT CANNOT DISTINGUISH ITSELF FROM A BROKEN ONE IS NOT A MEASUREMENT, AND THE MEMORY GATE IS WHAT MAKES THAT CHECKABLE RATHER THAN RHETORICAL.**",
+  "sampleRefusedByTheGenerator": "★ THIS DECLARATION IS WRITTEN BY `script/m14/scala-declaration.ts`, WHICH REFUSES A SAMPLE BY NAME: it will not write a declaration whose arm output parsed fewer files than the population holds, and it refuses a population that disagrees with the tracked-set walk. ⇒ THE LANE'S PREVIOUS DECLARATION WAS A 200-FILE SAMPLE and every other field in it looked exactly like a whole-population one — that is the failure mode the completion gate exists for, and the defence chosen here is an instrument that cannot emit it."
+ }
+}

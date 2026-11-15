@@ -1,0 +1,18 @@
+{
+  "fixtureId": "vue/declare-emits-identifier-array",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F13 (full 829-file corpus draw, 2026-09-30): `defineEmits([ … ])` accepted ONLY string elements, so an IDENTIFIER element — which names a declaration rather than an event — was dropped entirely: no symbol AND no edge. Measured: 13 corpus files whose event set silently loses a member; time-select.vue writes `defineEmits([CHANGE_EVENT, 'blur', 'focus', 'clear', UPDATE_MODEL_EVENT])` and published only blur / focus / clear while referencing neither constant, so the graph asserted three events where the component emits five. Those constants are IMPORTED from @element-plus/constants, so resolving their VALUES is cross-file work this lane does not do — but the DECLARATION is nameable here, exactly as `defineProps(binding)` names one, and F12 already fixed that shape, so this is the same rule reaching a place it had not been applied. `blur` is the CONTROL proving the string path is untouched, and both a string literal and an identifier are pinned side by side in one array because that ordering is the whole distinction. `LOCAL` is declared IN THIS FILE, which is deliberate: it is still a declaration reference, not an event name — this lane does not constant-fold, and a fixture that let it become the event 'local' would be pinning a capability the lane does not claim.",
+  "expectSymbols": [
+    { "name": "LOCAL", "kind": "constant" },
+    { "name": "blur", "kind": "event", "meta.isEmit": true, "meta.isScriptSetup": true }
+  ],
+  "expectRelationships": [
+    { "target": "CHANGE_EVENT", "type": "references", "meta.isEmitContract": true },
+    { "target": "LOCAL", "type": "references", "meta.isEmitContract": true }
+  ],
+  "forbidSymbols": [
+    { "name": "CHANGE_EVENT" },
+    { "name": "blur:local" }
+  ]
+}

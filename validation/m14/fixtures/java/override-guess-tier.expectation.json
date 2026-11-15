@@ -1,0 +1,25 @@
+{
+  "fixtureId": "java/override-guess-tier",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the third override-resolution tier, `first-parent-guess` (confidence 0.5), which no fixture exercised. Reachable from a single file: the declaring ancestor only has to be absent from THIS file, so the gap was in the fixture lane, not a property of the tier. The positive case asserts the guess edge and its `reasonCode`; the forbid asserts the documented NEGATIVE \u2014 an un-annotated method of a different arity must produce no guess at all, because guessing there would fabricate an override that is really an overload. Measured error rate on grails-core: 15 of 49 verifiable guesses (30.6%) name a method their target does not declare, which is why `reasonCode` is asserted rather than left implicit in a magic 0.5.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "target": "getOrder",
+      "meta.reasonCode": "first-parent-guess"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "getOrder(int)",
+      "meta.reasonCode": "first-parent-guess"
+    },
+    {
+      "type": "overrides",
+      "target": "compare",
+      "meta.reasonCode": "first-parent-guess"
+    }
+  ]
+}

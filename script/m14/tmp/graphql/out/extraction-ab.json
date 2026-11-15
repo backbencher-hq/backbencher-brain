@@ -1,0 +1,1274 @@
+{
+  "aWasm": "/home/ishaq2321/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
+  "bWasm": "/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
+  "aLabel": "wired",
+  "bLabel": "previous-wasm",
+  "files": 47,
+  "changedFiles": 14,
+  "crashes": 0,
+  "a": {
+    "label": "wired",
+    "wasm": "/home/ishaq2321/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
+    "symbols": 8747,
+    "rels": 19974,
+    "errorFiles": 4,
+    "errorNodes": 7
+  },
+  "b": {
+    "label": "previous-wasm",
+    "wasm": "/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
+    "symbols": 8743,
+    "rels": 19896,
+    "errorFiles": 12,
+    "errorNodes": 20
+  },
+  "addedSymbolKinds": {
+    "method": 2
+  },
+  "removedSymbolKinds": {
+    "method": 1,
+    "property": 5
+  },
+  "addedRelClasses": {
+    "uses|anonymous_operation_926": 1,
+    "references": 1,
+    "uses|anonymous_operation_1566": 6
+  },
+  "removedRelClasses": {
+    "uses|AnnotatedObject.annotatedField": 1,
+    "uses|AnnotatedInterface.annotatedField": 1,
+    "uses|BaseballLeaderboard.inLeague": 1,
+    "uses|BaseballLineup.xpScore": 1,
+    "uses|BaseballPlayer.fixtureGames": 1,
+    "uses|BaseballPlayer.last15AverageScore": 1,
+    "uses|CurrentSportsUser.cumulativeLeaderboardRanks": 1,
+    "uses|CurrentSportsUser.baseballScoutingMissions": 1,
+    "uses|CurrentSportsUser.baseballLeagues": 1,
+    "uses|CurrentUser.unclaimedCashRewards": 1,
+    "uses|CurrentUser.unclaimedCardRewards": 1,
+    "uses|CurrentUser.noCardRouteInfo": 1,
+    "uses|CurrentUser.baseballScoutingMissions": 1,
+    "uses|CurrentUser.baseballLeagues": 1,
+    "uses|DHCompleteOnboardingTaskResponse.currentSportsUser": 1,
+    "uses|Mutation.deleteLineup": 1,
+    "uses|Mutation.createBaseballLeague": 1,
+    "uses|Mutation.joinBaseballLeague": 1,
+    "uses|Mutation.leaveBaseballLeague": 1,
+    "uses|NBACompleteOnboardingTaskResponse.currentSportsUser": 1,
+    "uses|NBALineup.xpScore": 1,
+    "uses|NBAPlayer.latestFinalFixtureStats": 1,
+    "uses|NBAPlayer.fixtureGames": 1,
+    "uses|NBAPlayer.tenGameAverage": 1,
+    "uses|NBAPlayerGameDetailedStats.minutes": 1,
+    "uses|PlayerInjury.updateDate": 1,
+    "uses|PrizeLevel.rarity": 1,
+    "uses|PrizeLevel.tier": 1,
+    "uses|PrizePoolPodiumPrize.rarity": 1,
+    "uses|PrizePoolPodiumPrize.tier": 1,
+    "uses|Query.currentSportsUser": 1,
+    "uses|Query.openCumulativeLeaderboards": 1,
+    "uses|Query.currentNBAUser": 1,
+    "uses|Query.baseballLeague": 1,
+    "uses|User.baseballScoutingMissions": 1,
+    "uses|LineupInterface.xpScore": 1,
+    "uses|MarketplaceListing.hasApprovalBeenRequested": 2,
+    "uses|MarketplaceListing.isApproved": 2,
+    "uses|MarketplaceListing.isDelisted": 2,
+    "uses|Organization.pinnedRepositories": 2,
+    "uses|RepositoryOwner.pinnedRepositories": 2,
+    "uses|ReviewDismissedEvent.message": 2,
+    "uses|ReviewDismissedEvent.messageHtml": 2,
+    "uses|User.pinnedRepositories": 2,
+    "uses|TestType.testDeprecatedField": 1,
+    "implements|AnotherInterface": 2,
+    "uses|Query.deprecatedField": 2,
+    "overrides": 2,
+    "uses|Query.users": 1,
+    "uses|DirectiveDescriptions.first": 1,
+    "uses|DirectiveDescriptions.second": 1,
+    "uses|DirectiveDescriptions.third": 1,
+    "uses|User.fullName": 1,
+    "uses|UserFields": 2,
+    "references": 6,
+    "uses|Product.createdBy": 1,
+    "uses|Product.notes": 1,
+    "uses|ProductDimension.unit": 1,
+    "uses|Query.deprecatedProduct": 1,
+    "contains|User": 5,
+    "uses|User.averageProductsCreatedPerYear": 1,
+    "uses|User.email": 1,
+    "uses|User.name": 1,
+    "uses|User.totalProductsCreated": 1,
+    "uses|User.yearsOfEmployment": 1
+  },
+  "perFile": [
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/codemirror-graphql/src/__tests__/kitchen-sink.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 6,
+        "rels": 27,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 6,
+        "rels": 27,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/codemirror-graphql/src/__tests__/schema-kitchen-sink.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 35,
+        "rels": 77,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 35,
+        "rels": 75,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 2,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "directive_application uses|AnnotatedObject.annotatedField|@onField",
+        "directive_application uses|AnnotatedInterface.annotatedField|@onField"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphiql-toolkit/src/graphql-helpers/__tests__/__queries__/mergedQuery.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 186,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 186,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphiql-toolkit/src/graphql-helpers/__tests__/__queries__/mergedQueryWithSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 139,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 139,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphiql-toolkit/src/graphql-helpers/__tests__/__queries__/testQuery.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 55,
+        "rels": 460,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 55,
+        "rels": 460,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphiql-toolkit/src/graphql-helpers/__tests__/__schema__/sorareSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1809,
+        "rels": 3984,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1809,
+        "rels": 3950,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 34,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "directive_application uses|BaseballLeaderboard.inLeague|@deprecated",
+        "directive_application uses|BaseballLineup.xpScore|@deprecated",
+        "directive_application uses|BaseballPlayer.fixtureGames|@deprecated",
+        "directive_application uses|BaseballPlayer.last15AverageScore|@deprecated",
+        "directive_application uses|CurrentSportsUser.cumulativeLeaderboardRanks|@deprecated",
+        "directive_application uses|CurrentSportsUser.baseballScoutingMissions|@deprecated",
+        "directive_application uses|CurrentSportsUser.baseballLeagues|@deprecated",
+        "directive_application uses|CurrentUser.unclaimedCashRewards|@deprecated",
+        "directive_application uses|CurrentUser.unclaimedCardRewards|@deprecated",
+        "directive_application uses|CurrentUser.noCardRouteInfo|@deprecated",
+        "directive_application uses|CurrentUser.baseballScoutingMissions|@deprecated",
+        "directive_application uses|CurrentUser.baseballLeagues|@deprecated"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service-server/src/__tests__/__queries__/test.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service-server/src/__tests__/__queries__/test2.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 0,
+        "rels": 0,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 0,
+        "rels": 0,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service-server/src/__tests__/__queries__/test3.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service-server/src/__tests__/__queries__/testFragment.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 5,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 5,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service-server/src/__tests__/__schema__/StarWarsSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 36,
+        "rels": 77,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 36,
+        "rels": 77,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/benchmark/fixtures/github.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 3228,
+        "rels": 7047,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 3228,
+        "rels": 7039,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 8,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "directive_application uses|MarketplaceListing.hasApprovalBeenRequested|@deprecated",
+        "directive_application uses|MarketplaceListing.isApproved|@deprecated",
+        "directive_application uses|MarketplaceListing.isDelisted|@deprecated",
+        "directive_application uses|Organization.pinnedRepositories|@deprecated",
+        "directive_application uses|RepositoryOwner.pinnedRepositories|@deprecated",
+        "directive_application uses|ReviewDismissedEvent.message|@deprecated",
+        "directive_application uses|ReviewDismissedEvent.messageHtml|@deprecated",
+        "directive_application uses|User.pinnedRepositories|@deprecated"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/benchmark/fixtures/kitchen-sink.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 9,
+        "rels": 37,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 9,
+        "rels": 37,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/interface/__tests__/__queries__/testQuery.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 0,
+        "rels": 0,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 0,
+        "rels": 0,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/interface/__tests__/__schema__/HoverTestSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 20,
+        "rels": 37,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 20,
+        "rels": 36,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 1,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "directive_application uses|TestType.testDeprecatedField|@deprecated"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/interface/__tests__/__schema__/StarWarsSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 47,
+        "rels": 103,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 47,
+        "rels": 100,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 3,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "implements implements|AnotherInterface|TestInterface",
+        "directive_application uses|Query.deprecatedField|@deprecated",
+        "interface_member_supplied overrides|AnotherInterface.testField|TestInterface.testField"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/interface/__tests__/kitchen-sink.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 6,
+        "rels": 27,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 6,
+        "rels": 27,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/interface/__tests__/queries/definitionQuery.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 2,
+        "rels": 4,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 2,
+        "rels": 4,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/interface/__tests__/queries/testQuery.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 0,
+        "rels": 0,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 0,
+        "rels": 0,
+        "grammarError": true,
+        "grammarErrorNodes": 1
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/utils/__tests__/__schema__/RecursiveSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 12,
+        "rels": 20,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 12,
+        "rels": 20,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/graphql-language-service/src/utils/__tests__/__schema__/StarWarsSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 52,
+        "rels": 100,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 52,
+        "rels": 100,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/vscode-graphql-syntax/tests/__fixtures__/StarWarsSchema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 46,
+        "rels": 100,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 46,
+        "rels": 97,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 3,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "implements implements|AnotherInterface|TestInterface",
+        "directive_application uses|Query.deprecatedField|@deprecated",
+        "interface_member_supplied overrides|AnotherInterface.testField|TestInterface.testField"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/vscode-graphql-syntax/tests/__fixtures__/consecutive-descriptions.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 17,
+        "rels": 40,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 17,
+        "rels": 36,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 4,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "directive_application uses|Query.users|@deprecated",
+        "directive_application uses|DirectiveDescriptions.first|@index",
+        "directive_application uses|DirectiveDescriptions.second|@index",
+        "directive_application uses|DirectiveDescriptions.third|@deprecated"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/vscode-graphql-syntax/tests/__fixtures__/descriptions-and-values.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 14,
+        "rels": 25,
+        "grammarError": true,
+        "grammarErrorNodes": 4
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 14,
+        "rels": 23,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 1,
+      "removedSymbols": 1,
+      "addedRels": 1,
+      "removedRels": 3,
+      "sampleAdded": [
+        "method method|anonymous_operation_926|57",
+        "field_selection uses|anonymous_operation_926|name"
+      ],
+      "sampleRemoved": [
+        "method method|UserFields|57",
+        "directive_application uses|User.fullName|@deprecated",
+        "fragment_type_condition uses|UserFields|User",
+        "field_selection uses|UserFields|User.name"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/vscode-graphql-syntax/tests/__fixtures__/kitchen-sink.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 6,
+        "rels": 27,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 6,
+        "rels": 27,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphiql/packages/vscode-graphql-syntax/tests/__fixtures__/query.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js/benchmark/github-schema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 3242,
+        "rels": 7082,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 3242,
+        "rels": 7074,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 8,
+      "sampleAdded": [],
+      "sampleRemoved": [
+        "directive_application uses|MarketplaceListing.hasApprovalBeenRequested|@deprecated",
+        "directive_application uses|MarketplaceListing.isApproved|@deprecated",
+        "directive_application uses|MarketplaceListing.isDelisted|@deprecated",
+        "directive_application uses|Organization.pinnedRepositories|@deprecated",
+        "directive_application uses|RepositoryOwner.pinnedRepositories|@deprecated",
+        "directive_application uses|ReviewDismissedEvent.message|@deprecated",
+        "directive_application uses|ReviewDismissedEvent.messageHtml|@deprecated",
+        "directive_application uses|User.pinnedRepositories|@deprecated"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js/benchmark/kitchen-sink.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 9,
+        "rels": 37,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 9,
+        "rels": 37,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 1,
+      "removedRels": 1,
+      "sampleAdded": [
+        "variable_type references|$input|onVariableDefinition"
+      ],
+      "sampleRemoved": [
+        "variable_type references|$input|StoryLikeSubscribeInput"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/apollo-federation-subgraph-compatibility/schema.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 40,
+        "rels": 90,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 36,
+        "rels": 77,
+        "grammarError": true,
+        "grammarErrorNodes": 2
+      },
+      "addedSymbols": 1,
+      "removedSymbols": 5,
+      "addedRels": 6,
+      "removedRels": 19,
+      "sampleAdded": [
+        "method method|anonymous_operation_1566|67",
+        "field_selection uses|anonymous_operation_1566|Int",
+        "directive_application uses|anonymous_operation_1566|@requires",
+        "field_selection uses|anonymous_operation_1566|ID",
+        "directive_application uses|anonymous_operation_1566|@external",
+        "field_selection uses|anonymous_operation_1566|String",
+        "directive_application uses|anonymous_operation_1566|@override"
+      ],
+      "sampleRemoved": [
+        "property property|averageProductsCreatedPerYear|68",
+        "property property|email|69",
+        "property property|name|70",
+        "property property|totalProductsCreated|71",
+        "property property|yearsOfEmployment|72",
+        "directive_application uses|Product.createdBy|@provides",
+        "directive_application uses|Product.notes|@tag",
+        "directive_application uses|ProductDimension.unit|@inaccessible",
+        "directive_application uses|Query.deprecatedProduct|@deprecated",
+        "contains contains|User|User.averageProductsCreatedPerYear",
+        "field_return_type references|User.averageProductsCreatedPerYear|Int",
+        "directive_application uses|User.averageProductsCreatedPerYear|@requires",
+        "contains contains|User|User.email",
+        "field_return_type references|User.email|ID",
+        "directive_application uses|User.email|@external",
+        "contains contains|User|User.name",
+        "field_return_type references|User.name|String"
+      ]
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/aggregations.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 7,
+        "rels": 37,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 7,
+        "rels": 37,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/connections.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 3,
+        "rels": 13,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 3,
+        "rels": 13,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/cypher-directive-mutation.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 2,
+        "rels": 7,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 2,
+        "rels": 7,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/cypher-directive.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 6,
+        "rels": 36,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 6,
+        "rels": 36,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/fulltext.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 3,
+        "rels": 20,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 3,
+        "rels": 20,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/issues/1262.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 2,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 2,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/issues/187.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 2,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 2,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/issues/2871.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 2,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 2,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/mutations/batch-create/batch-create-interface.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/mutations/batch-create/batch-create.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/mutations/connect.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 6,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 6,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/mutations/create.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/mutations/delete.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 2,
+        "rels": 5,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 2,
+        "rels": 5,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/mutations/update.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 3,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/query.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 10,
+        "rels": 32,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 10,
+        "rels": 32,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/sorting.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 5,
+        "rels": 33,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 5,
+        "rels": 33,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/graphql/unions.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 3,
+        "rels": 20,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 3,
+        "rels": 20,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    },
+    {
+      "file": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql/packages/graphql/tests/performance/translation/graphql/high-complexity.graphql",
+      "a": {
+        "label": "wired",
+        "symbols": 1,
+        "rels": 7,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "b": {
+        "label": "previous-wasm",
+        "symbols": 1,
+        "rels": 7,
+        "grammarError": false,
+        "grammarErrorNodes": 0
+      },
+      "addedSymbols": 0,
+      "removedSymbols": 0,
+      "addedRels": 0,
+      "removedRels": 0,
+      "sampleAdded": [],
+      "sampleRemoved": []
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  `overrides` — XSLT 1.0 §5.5 competing template rules. The lane RULED this type
+  inapplicable; the corpus overturned that ruling.
+
+  ## Why this type exists at all
+
+  XSLT 1.0 §5.5 Conflict Resolution: "It is an error if a stylesheet contains more
+  than one template with the same match and same import precedence." The spec then says
+  what a processor does with it: the LAST such template in the stylesheet is the one
+  that runs. So a second `<xsl:template match="*" mode="toc.for.section">` in one
+  stylesheet SILENTLY REPLACES the first — an override in the only sense this language
+  has one.
+
+  `script/m14/ontology-coverage-gate.ts` reported the lane's RULED verdict FALSIFIED
+  over the full 11,456-file admitted population: 3 sites in 3 files. The first
+  counter-example it named is `libxslt/tests/docbook/fo/toc.xsl`, which declares
+  `<xsl:template match="*" mode="toc.for.section">` at line 180 and again at line 190.
+  Row 1 below is that file's actual shape at fixture scale.
+
+  ## The five rows
+
+    1. `<xsl:template match="*" mode="dup">` declared TWICE -> `overrides` from the
+       LATER to the EARLIER. Both endpoints are DERIVED identities, because a
+       match-based template has no `name` and this analyzer would otherwise give both of
+       them the tag name `xsl:template` and collapse them into one symbol. The derived
+       name carries the triple §5.5 compares PLUS an occurrence index, because the
+       triple is by construction IDENTICAL for the two declarations — an identity built
+       from it alone would make both endpoints the same name and the edge a self-edge.
+
+    2. `<xsl:template match="node()" mode="uniq">` declared once -> NO edge. Without
+       this row a rule that emitted an `overrides` edge for every match-based template
+       would satisfy row 1 and pass.
+
+    3. TWO NAMED templates, distinct names, SAME match/mode/priority -> `overrides`
+       between the DECLARED names. When the members of a colliding group have distinct
+       names, those names are written in the document and are the better endpoints.
+
+    4. TWO templates sharing ONE name and one match -> `overrides` between DERIVED
+       identities, with `metadata.declaredName` carrying the name both of them were
+       written with. §5.5 makes this an error too — "more than one template with the
+       same name and same import precedence" — and here the declared name cannot
+       separate the two declarations, so an `overrides named -> named` self-edge is
+       avoided and the derived pair is published instead.
+
+    5. `<xsl:template name="dumptext">` declared TWICE, NEITHER with a `match` -> NO
+       edge. This is the row the lane's own census probe got WRONG: it keyed on
+       `match|mode|priority` and ignored `name`, so every name-only template reduced to
+       the key `||` and it reported 3 "collisions" across libxslt and powershell that
+       were 9 perfectly legal named templates. A named template is INVOKED by
+       `xsl:call-template`; it never competes for a node, so two of them cannot
+       override one another. See `validation/m14/fixtures/xml/overrides-probe.mts`.
+-->
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:template match="*" mode="dup">
+    <xsl:text>row 1 first</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="node()" mode="uniq">
+    <xsl:text>row 2 alone</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="winner" match="c">
+    <xsl:text>row 3 first</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="twin" match="d">
+    <xsl:text>row 4 first</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="dumptext">
+    <xsl:text>row 5, invoked not matched</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="*" mode="dup">
+    <xsl:text>row 1 second</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="loser" match="c">
+    <xsl:text>row 3 second</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="twin" match="d">
+    <xsl:text>row 4 second</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="dumptext">
+    <xsl:text>row 5, the other named template</xsl:text>
+  </xsl:template>
+
+  <!--
+    A named template exists to be CALLED, and this call is what makes row 5's two
+    declarations reachable as the same name rather than as two anonymous elements.
+    It is also how the regression mutant `xml/overrides-name-only-templates-counted`
+    finds the declared template names from the RESULT side: the pool pipeline strips
+    custom symbol metadata, so `calls` targets are the only place a declared template
+    name is recoverable after the fact. A mutant that had to guess would be a mutant
+    that tested nothing.
+  -->
+  <xsl:template name="caller" match="e">
+    <xsl:call-template name="dumptext"/>
+  </xsl:template>
+</xsl:stylesheet>

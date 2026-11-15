@@ -1,0 +1,13 @@
+{
+  "fixtureId": "javascript/default-export-expression",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J5 fix (TS parity): default-exported EXPRESSIONS record the module's main export under the 'default' sentinel instead of vanishing — only declarations were kept before.",
+  "expectSymbols": [
+    { "name": "named", "kind": "function" }
+  ],
+  "expectExports": [
+    { "name": "default", "isDefault": true },
+    { "name": "named" }
+  ]
+}

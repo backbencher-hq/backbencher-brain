@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.13",
+  "code": "E8",
+  "tool": "bb_edit",
+  "title": "bb_edit: integration tests (edit + index + freshness + reindex)",
+  "verifiedState": "verified",
+  "layers": [
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "TS: pre-edit file is fresh",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: post-edit file is fresh (reindexed)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: old symbol no longer resolves post-rename",
+      "pass": true,
+      "detail": "matches=0"
+    },
+    {
+      "name": "TS: new symbol resolves post-rename",
+      "pass": true,
+      "detail": "matches=1"
+    },
+    {
+      "name": "TS: on-disk content has the new name",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: post-edit file is fresh (reindexed)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: new symbol resolves post-rename",
+      "pass": true,
+      "detail": "matches=1"
+    },
+    {
+      "name": "Python: on-disk content has the new name",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Java: post-edit file is fresh (reindexed)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Java: new symbol resolves post-rename",
+      "pass": true,
+      "detail": "matches=1"
+    },
+    {
+      "name": "Java: on-disk content has the new name",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "failed edit: keyword rename aborts (no half-reindex) [negative: validation failed]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "failed edit: file content restored to pre-edit",
+      "pass": true,
+      "detail": "content mismatch"
+    },
+    {
+      "name": "failed edit: index still fresh to the unchanged file",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "failed edit: original symbol still resolves (no half-reindex)",
+      "pass": true,
+      "detail": "matches=1"
+    },
+    {
+      "name": "insert: post-edit file is fresh (reindexed)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "insert: on-disk content has the inserted line",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0
+  },
+  "decisions": {
+    "loop": "executeEdit writes -> validateFile -> reindexFilesParallel; a successful edit must leave the index fresh and reflecting the new name",
+    "failConsistency": "a failed edit (validation error) rolls back files; the index is not reindexed, so the pre-edit index stays consistent with the rolled-back files"
+  },
+  "limitations": [
+    "The loop is verified at the brain_file/brain_symbol freshness level; full embedding regeneration is async and verified separately in."
+  ],
+  "generatedAt": "2026-11-05T04:12:05.757Z"
+}

@@ -1,6 +1,6 @@
 {
   "analyzer": "perl",
-  "corpus": "$HOME/fixtures/repositories/mojo",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/mojo",
   "corpusRepo": "mojo",
   "revision": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
   "extensions": [

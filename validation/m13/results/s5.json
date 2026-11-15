@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.22",
+  "code": "S5",
+  "tool": "bb_search",
+  "title": "bb_search: docs + evidence + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "docs: bb_search.md exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: category matches registry",
+      "pass": true,
+      "detail": "registry=search"
+    },
+    {
+      "name": "docs: mutability matches registry",
+      "pass": true,
+      "detail": "registry=read"
+    },
+    {
+      "name": "docs: requiresIndex matches registry",
+      "pass": true,
+      "detail": "registry=true"
+    },
+    {
+      "name": "docs: modes line matches registry",
+      "pass": true,
+      "detail": "registry=`symbols`, `content`, `symbol`, `file`"
+    },
+    {
+      "name": "docs: defaults match registry",
+      "pass": true,
+      "detail": "registry={\"mode\":\"symbols\",\"limit\":15,\"includeContent\":false,\"exact\":false,\"caseSensitive\":false,\"regex\":false,\"offset\":0}"
+    },
+    {
+      "name": "docs: every input property is documented",
+      "pass": true,
+      "detail": "13 props"
+    },
+    {
+      "name": "docs: all four modes appear in the enum",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: retrieval-not-analysis positioning is documented",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: generator verify mode passes (bb_search.md byte-fresh)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "evidence: s1.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: s2.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: s3.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: s4.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: all 4 S-issues claim verified with negatives",
+      "pass": true,
+      "detail": "S1:9neg S2:13neg S3:4neg S4:4neg"
+    },
+    {
+      "name": "gate: verify-search-e2e.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-search-e2e.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-search-corpus.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-search-corpus.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-search-honesty.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-search-honesty.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: evidence validator (B3) is part of the gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: tampered doc (failed>0, no negatives) cannot claim verified [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary.failed 3 != actual 0; negativeCases 0 is less than 9 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
+    },
+    {
+      "name": "gate: removing any single S-verifier breaks the gate [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "all verifiers still present"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 24,
+    "passed": 24,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tool-registry.ts + script/verify-tool-docs.ts (curated doc) are the single source; docs/tools/bb_search.md is a generated artifact",
+    "releaseGate": "verify-quality-gate.ts (S2-S4 verifiers wired) + verify-evidence.ts B3 invariant (verified requires failed=0 AND negativeCases>=1); proven by tamper test",
+    "evidenceInputs": "validation/m13/results/s1..s4.json must all exist, validate, and claim verified for bb_search to be release-eligible"
+  },
+  "limitations": [
+    "Docs byte-freshness is proven by the generator's own verify mode, not by a duplicated render.",
+    "This gate covers bb_search only; other tools have their own issues in M13."
+  ],
+  "generatedAt": "2026-11-05T04:17:58.172Z"
+}

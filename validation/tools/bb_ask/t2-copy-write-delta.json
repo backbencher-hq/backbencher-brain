@@ -1,0 +1,30 @@
+{
+  "pid": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "ms": 9215,
+  "before": {
+    "db": {
+      "size": 3639963648,
+      "mtimeMs": 1793571614018
+    },
+    "wal": null,
+    "shm": null
+  },
+  "after": {
+    "db": {
+      "size": 3639963648,
+      "mtimeMs": 1793571614018
+    },
+    "wal": {
+      "size": 98912,
+      "mtimeMs": 1793571635194
+    },
+    "shm": {
+      "size": 32768,
+      "mtimeMs": 1793571630882
+    }
+  },
+  "dbMoved": false,
+  "walMoved": true,
+  "textChars": 3972,
+  "firstLine": "answer: Note: this ranking does not distinguish its top results — 1 other symbol(s) scored within the same margin of the"
+}

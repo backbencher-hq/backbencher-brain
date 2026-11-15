@@ -1,0 +1,17 @@
+{
+  "fixtureId": "java/records-and-sealed",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Records are classes with their components as symbols (record components live under formal_parameters - NOT the nonexistent record_parameters). Sealed interface permits = implements on the permitted records.",
+  "expectSymbols": [
+    { "name": "Shape", "kind": "interface" },
+    { "name": "Circle", "kind": "class" },
+    { "name": "Square", "kind": "class" },
+    { "name": "radius" },
+    { "name": "side" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Circle", "target": "Shape" },
+    { "type": "implements", "from": "Square", "target": "Shape" }
+  ]
+}

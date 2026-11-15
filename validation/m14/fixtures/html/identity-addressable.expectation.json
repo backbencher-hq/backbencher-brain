@@ -1,0 +1,170 @@
+{
+  "comment": "HTML-IDENTITY. The document is the module; an element is a symbol iff it is ADDRESSABLE (id, or name with no id). class is a shared styling hook and never an identity. Every edge carries the 1-based line it is written on (M59.O2 / R6).  DUPLICATE-SUFFIX WATERMARK: the interleaving pinned below is the regression test for a performance fix that had to stay invisible in the output. Suffix allocation used to re-probe from 2 for EVERY duplicate, so the k-th duplicate of an id cost k probes \u2014 O(n) each, O(n^2) over a page that reuses one id (measured 15,516 ms for 4,000 duplicates against 912 ms for 4,000 unique ids, a 17x gap). The fix advances a per-handle watermark, and the ONLY acceptable property of it is that naming is byte-identical. This fixture is what makes that checkable: a literal `d#2` and `d#3` are declared BETWEEN duplicates, so an optimisation that assumed suffixes are allocated monotonically would allocate d#4 where the original allocates d#3 \u2014 invisible in every other fixture, because every other fixture declares duplicates consecutively.  WHY THIS HAS NO MUTANT: the defect it guards is a suffix COLLISION \u2014 two symbols with one name in one file \u2014 and a mutation harness transforms analyzer OUTPUT, where the collision does not exist and so cannot be reproduced. Nor can one be approximated: from the output alone, a literal `id=\"dupA#2\"` and an ALLOCATED `dupA#2` are the same string, and telling them apart is the entire content of the defect. An unfaithful transform would be a mutant that passes for a reason unrelated to the bug, which is worse than none. The evidence here is a NEGATIVE CONTROL instead: the naive allocator (watermark trusted, occupancy probe removed) was actually applied to the analyzer, and this fixture failed on the missing `dupA#3` while the correct allocator passes. That is the same proof a mutant would give, obtained by running the real defect rather than imitating it.",
+  "expectSymbols": [
+    {
+      "name": "identity-addressable",
+      "kind": "module"
+    },
+    {
+      "name": "site-header",
+      "kind": "class"
+    },
+    {
+      "name": "app",
+      "kind": "class"
+    },
+    {
+      "name": "search-form",
+      "kind": "class"
+    },
+    {
+      "name": "orders",
+      "kind": "class"
+    },
+    {
+      "name": "query",
+      "kind": "class"
+    },
+    {
+      "name": "dup",
+      "kind": "class"
+    },
+    {
+      "name": "dup#2",
+      "kind": "class"
+    },
+    {
+      "name": "dupA",
+      "kind": "class",
+      "comment": "first declaration keeps the plain name"
+    },
+    {
+      "name": "dupA#2",
+      "kind": "class",
+      "comment": "second duplicate gets #2"
+    },
+    {
+      "name": "dupA#3",
+      "kind": "class",
+      "comment": "third duplicate of dupA: #2 is occupied by the literal, so #3 \u2014 NOT #4, which is what skipping the occupied suffix would produce"
+    },
+    {
+      "name": "dupB",
+      "kind": "class",
+      "comment": "a second handle interleaved, to prove the watermark is per-handle and not global"
+    },
+    {
+      "name": "dupB#2",
+      "kind": "class"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "card"
+    },
+    {
+      "name": "header bar"
+    },
+    {
+      "name": "nav"
+    },
+    {
+      "name": "searchForm"
+    },
+    {
+      "name": "q"
+    },
+    {
+      "name": "identity-addressable-header"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "dup",
+      "equals": 1
+    },
+    {
+      "name": "dup#2",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "identity-addressable",
+      "target": "site-header",
+      "line_number": 16,
+      "meta.isDocumentRoot": true
+    },
+    {
+      "type": "contains",
+      "from": "identity-addressable",
+      "target": "app",
+      "line_number": 29,
+      "meta.isDocumentRoot": true
+    },
+    {
+      "type": "contains",
+      "from": "app",
+      "target": "search-form",
+      "line_number": 30
+    },
+    {
+      "type": "contains",
+      "from": "app",
+      "target": "orders",
+      "line_number": 34
+    },
+    {
+      "type": "contains",
+      "from": "search-form",
+      "target": "query",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "orders",
+      "target": "dup",
+      "line_number": 39
+    },
+    {
+      "type": "contains",
+      "from": "orders",
+      "target": "dup#2",
+      "line_number": 40
+    },
+    {
+      "type": "uses",
+      "from": "search-form",
+      "target": "query",
+      "line_number": 31,
+      "meta.isLabelAssociation": true
+    },
+    {
+      "type": "uses",
+      "from": "site-header",
+      "target": "orders",
+      "line_number": 18,
+      "meta.isInternalAnchor": true
+    },
+    {
+      "type": "uses",
+      "from": "identity-addressable",
+      "target": "/assets/app.css",
+      "line_number": 5,
+      "meta.resourceType": "stylesheet"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "app",
+      "target": "query"
+    },
+    {
+      "type": "contains",
+      "from": "identity-addressable",
+      "target": "header bar"
+    }
+  ]
+}

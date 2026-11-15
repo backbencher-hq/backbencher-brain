@@ -30,7 +30,7 @@ import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/powershell-runtime-skew.json")
 const REPOS = ["powershell", "ansible"]
 const GRAMMAR = path.join(ROOT, "grammars", "tree-sitter-powershell")

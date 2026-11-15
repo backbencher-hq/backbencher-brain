@@ -1,0 +1,3079 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-21T22:39:11.527Z",
+  "atCommit": "e7697acdab5d639d5b2e715a6818f9f5adb67ca9",
+  "treeModifiedInputs": 39,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "go:terraform/checkpoint.go",
+    "token": "Printf",
+    "trueLine": 29,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "go": {
+      "files": 200,
+      "rels": 47831,
+      "withLine": 47831,
+      "noLine": 0,
+      "consistent": 46615,
+      "inconsistent": 0,
+      "notCheckable": 1216
+    }
+  },
+  "sampleHash": {
+    "go": "2831ea429265"
+  },
+  "samplePins": {
+    "go": [
+      {
+        "file": "terraform/checkpoint.go",
+        "contentSha": "8ec1760ecda0"
+      },
+      {
+        "file": "terraform/commands.go",
+        "contentSha": "592d7f6b20d0"
+      },
+      {
+        "file": "terraform/experiments.go",
+        "contentSha": "8352377de2af"
+      },
+      {
+        "file": "terraform/help.go",
+        "contentSha": "7d6cbfd3a7bf"
+      },
+      {
+        "file": "terraform/internal/terraform/action_trigger_instance_apply.go",
+        "contentSha": "4abecc865796"
+      },
+      {
+        "file": "terraform/internal/terraform/config_graph_build.go",
+        "contentSha": "d36a771318e4"
+      },
+      {
+        "file": "terraform/internal/terraform/config_graph_build_test.go",
+        "contentSha": "71fdb0ac8d65"
+      },
+      {
+        "file": "terraform/internal/terraform/config_snapshot_test.go",
+        "contentSha": "cd86ab7ae3f2"
+      },
+      {
+        "file": "terraform/internal/terraform/context.go",
+        "contentSha": "eb95872b2b10"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply.go",
+        "contentSha": "f6dbdea232cd"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply2_test.go",
+        "contentSha": "f49d11355b31"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_action_test.go",
+        "contentSha": "0b1942d8e20e"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_checks_test.go",
+        "contentSha": "4c0d7c7da44f"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_deferred_test.go",
+        "contentSha": "98768d27e10b"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_ephemeral_test.go",
+        "contentSha": "3fe4f2b8e6d9"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_identity_test.go",
+        "contentSha": "9ffa66a2482e"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_import_test.go",
+        "contentSha": "fad912a5ef82"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_overrides_test.go",
+        "contentSha": "dd79647bd875"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_policy_test.go",
+        "contentSha": "8fea1b08a885"
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_test.go",
+        "contentSha": "6765425c77e3"
+      },
+      {
+        "file": "terraform/internal/terraform/context_computed_blocks_test.go",
+        "contentSha": "0efdf211edf9"
+      },
+      {
+        "file": "terraform/internal/terraform/context_eval.go",
+        "contentSha": "8e4833efa67a"
+      },
+      {
+        "file": "terraform/internal/terraform/context_eval_test.go",
+        "contentSha": "bf81393a40cf"
+      },
+      {
+        "file": "terraform/internal/terraform/context_fixtures_test.go",
+        "contentSha": "de9ab263a643"
+      },
+      {
+        "file": "terraform/internal/terraform/context_functions_test.go",
+        "contentSha": "bc4ef0894e8a"
+      },
+      {
+        "file": "terraform/internal/terraform/context_import.go",
+        "contentSha": "d8aade98eae1"
+      },
+      {
+        "file": "terraform/internal/terraform/context_import_test.go",
+        "contentSha": "e8f5cd109ba7"
+      },
+      {
+        "file": "terraform/internal/terraform/context_init.go",
+        "contentSha": "d6f13375aa2c"
+      },
+      {
+        "file": "terraform/internal/terraform/context_init_test.go",
+        "contentSha": "c75b46f36c7d"
+      },
+      {
+        "file": "terraform/internal/terraform/context_input.go",
+        "contentSha": "a86b6e6215b9"
+      },
+      {
+        "file": "terraform/internal/terraform/context_input_test.go",
+        "contentSha": "85d766d91dff"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan.go",
+        "contentSha": "01165e2b5a55"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan2_test.go",
+        "contentSha": "b614a075e506"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_actions_test.go",
+        "contentSha": "6e1750b229f3"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_ephemeral_test.go",
+        "contentSha": "b979db712825"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_identity_test.go",
+        "contentSha": "937367cc90a3"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_import_test.go",
+        "contentSha": "62a8ceda2939"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_policy_test.go",
+        "contentSha": "6f0acac87bb6"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_query_test.go",
+        "contentSha": "c67224137f8c"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_test.go",
+        "contentSha": "b8f88c2336e2"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plugins.go",
+        "contentSha": "80b21d221014"
+      },
+      {
+        "file": "terraform/internal/terraform/context_plugins_test.go",
+        "contentSha": "b8ef006de525"
+      },
+      {
+        "file": "terraform/internal/terraform/context_refresh.go",
+        "contentSha": "afdc6a4524ea"
+      },
+      {
+        "file": "terraform/internal/terraform/context_refresh_test.go",
+        "contentSha": "00f154d9a636"
+      },
+      {
+        "file": "terraform/internal/terraform/context_test.go",
+        "contentSha": "16d2db89fa86"
+      },
+      {
+        "file": "terraform/internal/terraform/context_validate.go",
+        "contentSha": "e7edec9df863"
+      },
+      {
+        "file": "terraform/internal/terraform/context_validate_test.go",
+        "contentSha": "d1bb63939182"
+      },
+      {
+        "file": "terraform/internal/terraform/context_walk.go",
+        "contentSha": "d4a1541776c6"
+      },
+      {
+        "file": "terraform/internal/terraform/diagnostics.go",
+        "contentSha": "68e04dc15b43"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_conditions.go",
+        "contentSha": "908d424d7ae3"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context.go",
+        "contentSha": "42457a7ee154"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_builtin.go",
+        "contentSha": "36ca418df3bb"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_builtin_test.go",
+        "contentSha": "dae7dccf0476"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_mock.go",
+        "contentSha": "02f968d91773"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_scope.go",
+        "contentSha": "2000854d1b74"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_count.go",
+        "contentSha": "842fd86e4c12"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_count_test.go",
+        "contentSha": "5f351687e444"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_for_each.go",
+        "contentSha": "d061faaf656c"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_for_each_test.go",
+        "contentSha": "3f089066ce15"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_import.go",
+        "contentSha": "eb9199f7907d"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_provider.go",
+        "contentSha": "0f0fdd85554a"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_provider_test.go",
+        "contentSha": "3c77f0910b5f"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_query.go",
+        "contentSha": "10057c512b24"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_query_test.go",
+        "contentSha": "7f1fcc9c491e"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_variable.go",
+        "contentSha": "d7d811d9fe94"
+      },
+      {
+        "file": "terraform/internal/terraform/eval_variable_test.go",
+        "contentSha": "f40f6bcb56cc"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate.go",
+        "contentSha": "f31a9f804af3"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_action_expression.go",
+        "contentSha": "b245ea4a2d68"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_data.go",
+        "contentSha": "4b33f30d0d68"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_placeholder.go",
+        "contentSha": "6b767dd85274"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_test.go",
+        "contentSha": "f6b57ad13d73"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_triggers.go",
+        "contentSha": "bc537d0158ff"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_triggers_test.go",
+        "contentSha": "f7ad6be7c6dd"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_valid.go",
+        "contentSha": "668577afb1ec"
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_valid_test.go",
+        "contentSha": "899c46678b92"
+      },
+      {
+        "file": "terraform/internal/terraform/execute.go",
+        "contentSha": "5cdfcc67dd2c"
+      },
+      {
+        "file": "terraform/internal/terraform/expressions.go",
+        "contentSha": "b156979d8c05"
+      },
+      {
+        "file": "terraform/internal/terraform/features.go",
+        "contentSha": "2b42e13dc0bb"
+      },
+      {
+        "file": "terraform/internal/terraform/graph.go",
+        "contentSha": "74307fe4f4a7"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder.go",
+        "contentSha": "61f999e9ca94"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_apply.go",
+        "contentSha": "9eebef5dcbe8"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_apply_test.go",
+        "contentSha": "e7ec1ca01d7f"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_eval.go",
+        "contentSha": "ad698d1cf17d"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_init.go",
+        "contentSha": "832f12dc1f00"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_plan.go",
+        "contentSha": "5007c9598182"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_plan_test.go",
+        "contentSha": "b97bcfdab945"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_test.go",
+        "contentSha": "d8f9681f5b20"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_dot.go",
+        "contentSha": "0c2d5e88c0ba"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_dot_test.go",
+        "contentSha": "2435c1bbb3d9"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_interface_subgraph.go",
+        "contentSha": "a8c624a2c048"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_policy.go",
+        "contentSha": "5e3a0ece841d"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_test.go",
+        "contentSha": "1d76cd815f9a"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk.go",
+        "contentSha": "f6757253a09d"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk_context.go",
+        "contentSha": "083a5143f729"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk_operation.go",
+        "contentSha": "22728f069ea9"
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk_test.go",
+        "contentSha": "3aea2f9ec227"
+      },
+      {
+        "file": "terraform/internal/terraform/hook.go",
+        "contentSha": "f177e89e92e1"
+      },
+      {
+        "file": "terraform/internal/terraform/hook_mock.go",
+        "contentSha": "f82a29c847a8"
+      },
+      {
+        "file": "terraform/internal/terraform/hook_stop.go",
+        "contentSha": "13f612a61bad"
+      },
+      {
+        "file": "terraform/internal/terraform/hook_stop_test.go",
+        "contentSha": "af1105f58e79"
+      },
+      {
+        "file": "terraform/internal/terraform/hook_test.go",
+        "contentSha": "ebc5fb360bdf"
+      },
+      {
+        "file": "terraform/internal/terraform/instance_expanders.go",
+        "contentSha": "e9de275f06eb"
+      },
+      {
+        "file": "terraform/internal/terraform/marks.go",
+        "contentSha": "f9f7389bcfc8"
+      },
+      {
+        "file": "terraform/internal/terraform/node_action.go",
+        "contentSha": "cb1a9d2b8442"
+      },
+      {
+        "file": "terraform/internal/terraform/node_action_invoke.go",
+        "contentSha": "f0ee58f6fe62"
+      },
+      {
+        "file": "terraform/internal/terraform/node_action_validate.go",
+        "contentSha": "ececc91d7f19"
+      },
+      {
+        "file": "terraform/internal/terraform/node_check.go",
+        "contentSha": "8ba67a9fd24d"
+      },
+      {
+        "file": "terraform/internal/terraform/node_external_reference.go",
+        "contentSha": "f3bc4c307f28"
+      },
+      {
+        "file": "terraform/internal/terraform/node_local.go",
+        "contentSha": "7bef36540a26"
+      },
+      {
+        "file": "terraform/internal/terraform/node_local_test.go",
+        "contentSha": "a295d38a275d"
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_expand.go",
+        "contentSha": "324d3fd4f6dc"
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_expand_test.go",
+        "contentSha": "f0968e13b6c8"
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_install.go",
+        "contentSha": "ceef5f4fe812"
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_variable.go",
+        "contentSha": "cca0766e1a67"
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_variable_test.go",
+        "contentSha": "f9ccc96b5054"
+      },
+      {
+        "file": "terraform/internal/terraform/node_output.go",
+        "contentSha": "07bf45e8b425"
+      },
+      {
+        "file": "terraform/internal/terraform/node_output_test.go",
+        "contentSha": "3fbfc880acb8"
+      },
+      {
+        "file": "terraform/internal/terraform/node_overridable.go",
+        "contentSha": "88dedaeebc93"
+      },
+      {
+        "file": "terraform/internal/terraform/node_policy_eval.go",
+        "contentSha": "0f4203924adc"
+      },
+      {
+        "file": "terraform/internal/terraform/node_policy_eval_test.go",
+        "contentSha": "7cef0db91a43"
+      },
+      {
+        "file": "terraform/internal/terraform/node_policy_resource.go",
+        "contentSha": "6422119d4af8"
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider.go",
+        "contentSha": "7c9671a55448"
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider_abstract.go",
+        "contentSha": "b39f7762ae90"
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider_eval.go",
+        "contentSha": "e2259c1d4733"
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider_test.go",
+        "contentSha": "898b72e45d91"
+      },
+      {
+        "file": "terraform/internal/terraform/node_query_resource_policy.go",
+        "contentSha": "ef7e82cd3c51"
+      },
+      {
+        "file": "terraform/internal/terraform/node_query_resource_policy_test.go",
+        "contentSha": "a6336e2c580f"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract.go",
+        "contentSha": "37873a91ed6b"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract_instance.go",
+        "contentSha": "1e7df3c79e2f"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract_instance_test.go",
+        "contentSha": "a748bffd3f19"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract_test.go",
+        "contentSha": "0fb338910855"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply.go",
+        "contentSha": "ea9415a0e3d7"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply_deferred.go",
+        "contentSha": "8a1198053f8a"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply_instance.go",
+        "contentSha": "7274f8ffb77f"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply_test.go",
+        "contentSha": "7416b4524594"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_destroy.go",
+        "contentSha": "1db142de0c86"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_destroy_deposed.go",
+        "contentSha": "a4ae3bde0660"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_destroy_deposed_test.go",
+        "contentSha": "6dedc2c696b2"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_ephemeral.go",
+        "contentSha": "5f4ec5db3d6a"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_forget.go",
+        "contentSha": "656d75fa28a0"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_import.go",
+        "contentSha": "e2397ef98c90"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_list_policy.go",
+        "contentSha": "fc42fba32bbf"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_list_policy_test.go",
+        "contentSha": "a980c5f2e400"
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_partial_plan.go",
+        "contentSha": "5fc9c9664d78"
+      },
+      {
+        "file": "terraform/internal/tfdiags/compare.go",
+        "contentSha": "166768ed5291"
+      },
+      {
+        "file": "terraform/internal/tfdiags/compare_test.go",
+        "contentSha": "41482d20b265"
+      },
+      {
+        "file": "terraform/internal/tfdiags/config_traversals.go",
+        "contentSha": "fd029f452c94"
+      },
+      {
+        "file": "terraform/internal/tfdiags/consolidate_warnings.go",
+        "contentSha": "b4777d8bc58d"
+      },
+      {
+        "file": "terraform/internal/tfdiags/consolidate_warnings_test.go",
+        "contentSha": "7a4c2b006ca0"
+      },
+      {
+        "file": "terraform/internal/tfdiags/contextual.go",
+        "contentSha": "a45b3a63d268"
+      },
+      {
+        "file": "terraform/internal/tfdiags/contextual_test.go",
+        "contentSha": "7679c664dd53"
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic.go",
+        "contentSha": "74695e597011"
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic_base.go",
+        "contentSha": "358748dd6778"
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic_extra.go",
+        "contentSha": "0fd1c19c952f"
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic_extra_test.go",
+        "contentSha": "2f2454d6f580"
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostics.go",
+        "contentSha": "5bbafafbaf9d"
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostics_test.go",
+        "contentSha": "ed787157a377"
+      },
+      {
+        "file": "terraform/internal/tfdiags/doc.go",
+        "contentSha": "a55813444455"
+      },
+      {
+        "file": "terraform/internal/tfdiags/error.go",
+        "contentSha": "da25114ea845"
+      },
+      {
+        "file": "terraform/internal/tfdiags/format.go",
+        "contentSha": "198ca0b4c421"
+      },
+      {
+        "file": "terraform/internal/tfdiags/format_test.go",
+        "contentSha": "9fabc62127b1"
+      },
+      {
+        "file": "terraform/internal/tfdiags/hcl.go",
+        "contentSha": "27d40b3df03b"
+      },
+      {
+        "file": "terraform/internal/tfdiags/hcl_test.go",
+        "contentSha": "51a05cc95d9b"
+      },
+      {
+        "file": "terraform/internal/tfdiags/object.go",
+        "contentSha": "b305c069f1d2"
+      },
+      {
+        "file": "terraform/internal/tfdiags/object_test.go",
+        "contentSha": "952857abe451"
+      },
+      {
+        "file": "terraform/internal/tfdiags/override.go",
+        "contentSha": "ec3c957f39ff"
+      },
+      {
+        "file": "terraform/internal/tfdiags/override_test.go",
+        "contentSha": "ea9f0ebcffe6"
+      },
+      {
+        "file": "terraform/internal/tfdiags/rpc_friendly.go",
+        "contentSha": "2ea8a0f19ef1"
+      },
+      {
+        "file": "terraform/internal/tfdiags/rpc_friendly_test.go",
+        "contentSha": "298fbd1028d3"
+      },
+      {
+        "file": "terraform/internal/tfdiags/severity_string.go",
+        "contentSha": "2bea11507149"
+      },
+      {
+        "file": "terraform/internal/tfdiags/simple_warning.go",
+        "contentSha": "1610e885d8fa"
+      },
+      {
+        "file": "terraform/internal/tfdiags/source_range.go",
+        "contentSha": "0f8bffde19de"
+      },
+      {
+        "file": "terraform/internal/tfdiags/sourceless.go",
+        "contentSha": "6b1be10cc40c"
+      },
+      {
+        "file": "terraform/internal/tfdiags/testing.go",
+        "contentSha": "625bdfc33672"
+      },
+      {
+        "file": "terraform/internal/tfdiags/testing_test.go",
+        "contentSha": "ebfcb51024a4"
+      },
+      {
+        "file": "terraform/internal/tfplugin5/tfplugin5.pb.go",
+        "contentSha": "26acab7557ee"
+      },
+      {
+        "file": "terraform/internal/tfplugin5/tfplugin5_grpc.pb.go",
+        "contentSha": "6348575d5d86"
+      },
+      {
+        "file": "terraform/internal/tfplugin6/tfplugin6.pb.go",
+        "contentSha": "ed83eb8c012f"
+      },
+      {
+        "file": "terraform/internal/tfplugin6/tfplugin6_grpc.pb.go",
+        "contentSha": "531cb28bafcf"
+      },
+      {
+        "file": "terraform/main.go",
+        "contentSha": "44b677e5a60d"
+      },
+      {
+        "file": "terraform/main_test.go",
+        "contentSha": "8a559efb9ef2"
+      },
+      {
+        "file": "terraform/provider_source.go",
+        "contentSha": "0c0a5feb3439"
+      },
+      {
+        "file": "terraform/signal_unix.go",
+        "contentSha": "06a2e59bd3e2"
+      },
+      {
+        "file": "terraform/signal_windows.go",
+        "contentSha": "4fd865c660e8"
+      },
+      {
+        "file": "terraform/telemetry.go",
+        "contentSha": "f7b58dd7c246"
+      },
+      {
+        "file": "terraform/telemetry_test.go",
+        "contentSha": "196af084e5f0"
+      },
+      {
+        "file": "terraform/tools/defect-detector/analyzer.go",
+        "contentSha": "d8b6c3618547"
+      },
+      {
+        "file": "terraform/tools/defect-detector/analyzer_test.go",
+        "contentSha": "5f72b16f4aa3"
+      },
+      {
+        "file": "terraform/tools/defect-detector/main/main.go",
+        "contentSha": "e9dd6dab929b"
+      },
+      {
+        "file": "terraform/tools/defect-detector/testdata/src/github.com/hashicorp/terraform/internal/tfdiags/tfdiags.go",
+        "contentSha": "1d83b1fdd8ba"
+      },
+      {
+        "file": "terraform/tools/defect-detector/testdata/src/github.com/hashicorp/terraform/tools/tfdiagsappendcheck/testpkg/testpkg.go",
+        "contentSha": "6699ab82d43d"
+      },
+      {
+        "file": "terraform/tools/loggraphdiff/loggraphdiff.go",
+        "contentSha": "e3ebb02b8caa"
+      },
+      {
+        "file": "terraform/tools/protobuf-compile/protobuf-compile.go",
+        "contentSha": "4b8acb0b6a69"
+      },
+      {
+        "file": "terraform/tools/tools.go",
+        "contentSha": "2ede11202dcc"
+      },
+      {
+        "file": "terraform/version.go",
+        "contentSha": "2e0ea58b633d"
+      },
+      {
+        "file": "terraform/version/dependencies.go",
+        "contentSha": "5af6319be862"
+      },
+      {
+        "file": "terraform/version/version.go",
+        "contentSha": "e94df6805e4f"
+      },
+      {
+        "file": "terraform/version/version_test.go",
+        "contentSha": "b7a2ffd4c9af"
+      },
+      {
+        "file": "terraform/working_dir.go",
+        "contentSha": "a6cbb8215cbe"
+      },
+      {
+        "file": "tree-sitter-clean/bindings/go/binding.go",
+        "contentSha": "ed232ff1ded0"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "go": {
+      "prev": null,
+      "now": "2831ea429265",
+      "same": false
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "go": [
+      {
+        "file": "terraform/checkpoint.go",
+        "language": "go",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/commands.go",
+        "language": "go",
+        "rels": 104,
+        "withLine": 104,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 15,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/experiments.go",
+        "language": "go",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/help.go",
+        "language": "go",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/action_trigger_instance_apply.go",
+        "language": "go",
+        "rels": 92,
+        "withLine": 92,
+        "noLine": 0,
+        "consistent": 86,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/config_graph_build.go",
+        "language": "go",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/config_graph_build_test.go",
+        "language": "go",
+        "rels": 132,
+        "withLine": 132,
+        "noLine": 0,
+        "consistent": 124,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/config_snapshot_test.go",
+        "language": "go",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context.go",
+        "language": "go",
+        "rels": 198,
+        "withLine": 198,
+        "noLine": 0,
+        "consistent": 190,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply.go",
+        "language": "go",
+        "rels": 171,
+        "withLine": 171,
+        "noLine": 0,
+        "consistent": 160,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply2_test.go",
+        "language": "go",
+        "rels": 1513,
+        "withLine": 1513,
+        "noLine": 0,
+        "consistent": 1495,
+        "inconsistent": 0,
+        "notCheckable": 18,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_action_test.go",
+        "language": "go",
+        "rels": 329,
+        "withLine": 329,
+        "noLine": 0,
+        "consistent": 316,
+        "inconsistent": 0,
+        "notCheckable": 13,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_checks_test.go",
+        "language": "go",
+        "rels": 116,
+        "withLine": 116,
+        "noLine": 0,
+        "consistent": 107,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_deferred_test.go",
+        "language": "go",
+        "rels": 291,
+        "withLine": 291,
+        "noLine": 0,
+        "consistent": 280,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_ephemeral_test.go",
+        "language": "go",
+        "rels": 299,
+        "withLine": 299,
+        "noLine": 0,
+        "consistent": 291,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_identity_test.go",
+        "language": "go",
+        "rels": 78,
+        "withLine": 78,
+        "noLine": 0,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_import_test.go",
+        "language": "go",
+        "rels": 119,
+        "withLine": 119,
+        "noLine": 0,
+        "consistent": 111,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_overrides_test.go",
+        "language": "go",
+        "rels": 70,
+        "withLine": 70,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_policy_test.go",
+        "language": "go",
+        "rels": 810,
+        "withLine": 810,
+        "noLine": 0,
+        "consistent": 788,
+        "inconsistent": 0,
+        "notCheckable": 22,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_apply_test.go",
+        "language": "go",
+        "rels": 4634,
+        "withLine": 4634,
+        "noLine": 0,
+        "consistent": 4617,
+        "inconsistent": 0,
+        "notCheckable": 17,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_computed_blocks_test.go",
+        "language": "go",
+        "rels": 122,
+        "withLine": 122,
+        "noLine": 0,
+        "consistent": 113,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_eval.go",
+        "language": "go",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_eval_test.go",
+        "language": "go",
+        "rels": 130,
+        "withLine": 130,
+        "noLine": 0,
+        "consistent": 119,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_fixtures_test.go",
+        "language": "go",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_functions_test.go",
+        "language": "go",
+        "rels": 132,
+        "withLine": 132,
+        "noLine": 0,
+        "consistent": 122,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_import.go",
+        "language": "go",
+        "rels": 43,
+        "withLine": 43,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_import_test.go",
+        "language": "go",
+        "rels": 429,
+        "withLine": 429,
+        "noLine": 0,
+        "consistent": 423,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_init.go",
+        "language": "go",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_init_test.go",
+        "language": "go",
+        "rels": 97,
+        "withLine": 97,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_input.go",
+        "language": "go",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_input_test.go",
+        "language": "go",
+        "rels": 178,
+        "withLine": 178,
+        "noLine": 0,
+        "consistent": 171,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan.go",
+        "language": "go",
+        "rels": 539,
+        "withLine": 539,
+        "noLine": 0,
+        "consistent": 524,
+        "inconsistent": 0,
+        "notCheckable": 15,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan2_test.go",
+        "language": "go",
+        "rels": 2337,
+        "withLine": 2337,
+        "noLine": 0,
+        "consistent": 2322,
+        "inconsistent": 0,
+        "notCheckable": 15,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_actions_test.go",
+        "language": "go",
+        "rels": 285,
+        "withLine": 285,
+        "noLine": 0,
+        "consistent": 271,
+        "inconsistent": 0,
+        "notCheckable": 14,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_ephemeral_test.go",
+        "language": "go",
+        "rels": 119,
+        "withLine": 119,
+        "noLine": 0,
+        "consistent": 108,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_identity_test.go",
+        "language": "go",
+        "rels": 237,
+        "withLine": 237,
+        "noLine": 0,
+        "consistent": 227,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_import_test.go",
+        "language": "go",
+        "rels": 861,
+        "withLine": 861,
+        "noLine": 0,
+        "consistent": 852,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_policy_test.go",
+        "language": "go",
+        "rels": 787,
+        "withLine": 787,
+        "noLine": 0,
+        "consistent": 769,
+        "inconsistent": 0,
+        "notCheckable": 18,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_query_test.go",
+        "language": "go",
+        "rels": 247,
+        "withLine": 247,
+        "noLine": 0,
+        "consistent": 235,
+        "inconsistent": 0,
+        "notCheckable": 12,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plan_test.go",
+        "language": "go",
+        "rels": 3200,
+        "withLine": 3200,
+        "noLine": 0,
+        "consistent": 3186,
+        "inconsistent": 0,
+        "notCheckable": 14,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plugins.go",
+        "language": "go",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_plugins_test.go",
+        "language": "go",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_refresh.go",
+        "language": "go",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_refresh_test.go",
+        "language": "go",
+        "rels": 824,
+        "withLine": 824,
+        "noLine": 0,
+        "consistent": 814,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_test.go",
+        "language": "go",
+        "rels": 280,
+        "withLine": 280,
+        "noLine": 0,
+        "consistent": 261,
+        "inconsistent": 0,
+        "notCheckable": 19,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_validate.go",
+        "language": "go",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_validate_test.go",
+        "language": "go",
+        "rels": 1211,
+        "withLine": 1211,
+        "noLine": 0,
+        "consistent": 1199,
+        "inconsistent": 0,
+        "notCheckable": 12,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_walk.go",
+        "language": "go",
+        "rels": 106,
+        "withLine": 106,
+        "noLine": 0,
+        "consistent": 86,
+        "inconsistent": 0,
+        "notCheckable": 20,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/diagnostics.go",
+        "language": "go",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_conditions.go",
+        "language": "go",
+        "rels": 109,
+        "withLine": 109,
+        "noLine": 0,
+        "consistent": 99,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context.go",
+        "language": "go",
+        "rels": 90,
+        "withLine": 90,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 22,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_builtin.go",
+        "language": "go",
+        "rels": 442,
+        "withLine": 442,
+        "noLine": 0,
+        "consistent": 418,
+        "inconsistent": 0,
+        "notCheckable": 24,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_builtin_test.go",
+        "language": "go",
+        "rels": 62,
+        "withLine": 62,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_mock.go",
+        "language": "go",
+        "rels": 356,
+        "withLine": 356,
+        "noLine": 0,
+        "consistent": 332,
+        "inconsistent": 0,
+        "notCheckable": 24,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_context_scope.go",
+        "language": "go",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_count.go",
+        "language": "go",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_count_test.go",
+        "language": "go",
+        "rels": 59,
+        "withLine": 59,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_for_each.go",
+        "language": "go",
+        "rels": 183,
+        "withLine": 183,
+        "noLine": 0,
+        "consistent": 176,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_for_each_test.go",
+        "language": "go",
+        "rels": 118,
+        "withLine": 118,
+        "noLine": 0,
+        "consistent": 111,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_import.go",
+        "language": "go",
+        "rels": 125,
+        "withLine": 125,
+        "noLine": 0,
+        "consistent": 117,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_provider.go",
+        "language": "go",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_provider_test.go",
+        "language": "go",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_query.go",
+        "language": "go",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_query_test.go",
+        "language": "go",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_variable.go",
+        "language": "go",
+        "rels": 153,
+        "withLine": 153,
+        "noLine": 0,
+        "consistent": 142,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/eval_variable_test.go",
+        "language": "go",
+        "rels": 193,
+        "withLine": 193,
+        "noLine": 0,
+        "consistent": 183,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate.go",
+        "language": "go",
+        "rels": 458,
+        "withLine": 458,
+        "noLine": 0,
+        "consistent": 442,
+        "inconsistent": 0,
+        "notCheckable": 16,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_action_expression.go",
+        "language": "go",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_data.go",
+        "language": "go",
+        "rels": 92,
+        "withLine": 92,
+        "noLine": 0,
+        "consistent": 85,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_placeholder.go",
+        "language": "go",
+        "rels": 121,
+        "withLine": 121,
+        "noLine": 0,
+        "consistent": 116,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_test.go",
+        "language": "go",
+        "rels": 549,
+        "withLine": 549,
+        "noLine": 0,
+        "consistent": 534,
+        "inconsistent": 0,
+        "notCheckable": 15,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_triggers.go",
+        "language": "go",
+        "rels": 52,
+        "withLine": 52,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_triggers_test.go",
+        "language": "go",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_valid.go",
+        "language": "go",
+        "rels": 133,
+        "withLine": 133,
+        "noLine": 0,
+        "consistent": 127,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/evaluate_valid_test.go",
+        "language": "go",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/execute.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/expressions.go",
+        "language": "go",
+        "rels": 77,
+        "withLine": 77,
+        "noLine": 0,
+        "consistent": 72,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/features.go",
+        "language": "go",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph.go",
+        "language": "go",
+        "rels": 86,
+        "withLine": 86,
+        "noLine": 0,
+        "consistent": 82,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder.go",
+        "language": "go",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_apply.go",
+        "language": "go",
+        "rels": 106,
+        "withLine": 106,
+        "noLine": 0,
+        "consistent": 97,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_apply_test.go",
+        "language": "go",
+        "rels": 256,
+        "withLine": 256,
+        "noLine": 0,
+        "consistent": 248,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_eval.go",
+        "language": "go",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_init.go",
+        "language": "go",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_plan.go",
+        "language": "go",
+        "rels": 169,
+        "withLine": 169,
+        "noLine": 0,
+        "consistent": 161,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_plan_test.go",
+        "language": "go",
+        "rels": 138,
+        "withLine": 138,
+        "noLine": 0,
+        "consistent": 129,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_builder_test.go",
+        "language": "go",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_dot.go",
+        "language": "go",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_dot_test.go",
+        "language": "go",
+        "rels": 51,
+        "withLine": 51,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_interface_subgraph.go",
+        "language": "go",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_policy.go",
+        "language": "go",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_test.go",
+        "language": "go",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk.go",
+        "language": "go",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk_context.go",
+        "language": "go",
+        "rels": 158,
+        "withLine": 158,
+        "noLine": 0,
+        "consistent": 138,
+        "inconsistent": 0,
+        "notCheckable": 20,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk_operation.go",
+        "language": "go",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/graph_walk_test.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/hook.go",
+        "language": "go",
+        "rels": 222,
+        "withLine": 222,
+        "noLine": 0,
+        "consistent": 215,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/hook_mock.go",
+        "language": "go",
+        "rels": 404,
+        "withLine": 404,
+        "noLine": 0,
+        "consistent": 397,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/hook_stop.go",
+        "language": "go",
+        "rels": 184,
+        "withLine": 184,
+        "noLine": 0,
+        "consistent": 176,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/hook_stop_test.go",
+        "language": "go",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/hook_test.go",
+        "language": "go",
+        "rels": 329,
+        "withLine": 329,
+        "noLine": 0,
+        "consistent": 322,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/instance_expanders.go",
+        "language": "go",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/marks.go",
+        "language": "go",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_action.go",
+        "language": "go",
+        "rels": 267,
+        "withLine": 267,
+        "noLine": 0,
+        "consistent": 258,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_action_invoke.go",
+        "language": "go",
+        "rels": 184,
+        "withLine": 184,
+        "noLine": 0,
+        "consistent": 176,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_action_validate.go",
+        "language": "go",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_check.go",
+        "language": "go",
+        "rels": 120,
+        "withLine": 120,
+        "noLine": 0,
+        "consistent": 113,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_external_reference.go",
+        "language": "go",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_local.go",
+        "language": "go",
+        "rels": 153,
+        "withLine": 153,
+        "noLine": 0,
+        "consistent": 146,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_local_test.go",
+        "language": "go",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_expand.go",
+        "language": "go",
+        "rels": 160,
+        "withLine": 160,
+        "noLine": 0,
+        "consistent": 152,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_expand_test.go",
+        "language": "go",
+        "rels": 57,
+        "withLine": 57,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_install.go",
+        "language": "go",
+        "rels": 182,
+        "withLine": 182,
+        "noLine": 0,
+        "consistent": 173,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_variable.go",
+        "language": "go",
+        "rels": 217,
+        "withLine": 217,
+        "noLine": 0,
+        "consistent": 209,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_module_variable_test.go",
+        "language": "go",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_output.go",
+        "language": "go",
+        "rels": 388,
+        "withLine": 388,
+        "noLine": 0,
+        "consistent": 373,
+        "inconsistent": 0,
+        "notCheckable": 15,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_output_test.go",
+        "language": "go",
+        "rels": 147,
+        "withLine": 147,
+        "noLine": 0,
+        "consistent": 139,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_overridable.go",
+        "language": "go",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_policy_eval.go",
+        "language": "go",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_policy_eval_test.go",
+        "language": "go",
+        "rels": 91,
+        "withLine": 91,
+        "noLine": 0,
+        "consistent": 86,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_policy_resource.go",
+        "language": "go",
+        "rels": 75,
+        "withLine": 75,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider.go",
+        "language": "go",
+        "rels": 141,
+        "withLine": 141,
+        "noLine": 0,
+        "consistent": 134,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider_abstract.go",
+        "language": "go",
+        "rels": 51,
+        "withLine": 51,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider_eval.go",
+        "language": "go",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_provider_test.go",
+        "language": "go",
+        "rels": 269,
+        "withLine": 269,
+        "noLine": 0,
+        "consistent": 257,
+        "inconsistent": 0,
+        "notCheckable": 12,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_query_resource_policy.go",
+        "language": "go",
+        "rels": 72,
+        "withLine": 72,
+        "noLine": 0,
+        "consistent": 66,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_query_resource_policy_test.go",
+        "language": "go",
+        "rels": 602,
+        "withLine": 602,
+        "noLine": 0,
+        "consistent": 589,
+        "inconsistent": 0,
+        "notCheckable": 13,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract.go",
+        "language": "go",
+        "rels": 325,
+        "withLine": 325,
+        "noLine": 0,
+        "consistent": 315,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract_instance.go",
+        "language": "go",
+        "rels": 1409,
+        "withLine": 1409,
+        "noLine": 0,
+        "consistent": 1388,
+        "inconsistent": 0,
+        "notCheckable": 21,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract_instance_test.go",
+        "language": "go",
+        "rels": 127,
+        "withLine": 127,
+        "noLine": 0,
+        "consistent": 116,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_abstract_test.go",
+        "language": "go",
+        "rels": 129,
+        "withLine": 129,
+        "noLine": 0,
+        "consistent": 123,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply.go",
+        "language": "go",
+        "rels": 95,
+        "withLine": 95,
+        "noLine": 0,
+        "consistent": 92,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply_deferred.go",
+        "language": "go",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply_instance.go",
+        "language": "go",
+        "rels": 209,
+        "withLine": 209,
+        "noLine": 0,
+        "consistent": 199,
+        "inconsistent": 0,
+        "notCheckable": 10,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_apply_test.go",
+        "language": "go",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_destroy.go",
+        "language": "go",
+        "rels": 110,
+        "withLine": 110,
+        "noLine": 0,
+        "consistent": 104,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_destroy_deposed.go",
+        "language": "go",
+        "rels": 177,
+        "withLine": 177,
+        "noLine": 0,
+        "consistent": 169,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_destroy_deposed_test.go",
+        "language": "go",
+        "rels": 104,
+        "withLine": 104,
+        "noLine": 0,
+        "consistent": 97,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_ephemeral.go",
+        "language": "go",
+        "rels": 181,
+        "withLine": 181,
+        "noLine": 0,
+        "consistent": 172,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_forget.go",
+        "language": "go",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_import.go",
+        "language": "go",
+        "rels": 135,
+        "withLine": 135,
+        "noLine": 0,
+        "consistent": 129,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_list_policy.go",
+        "language": "go",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 51,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_list_policy_test.go",
+        "language": "go",
+        "rels": 168,
+        "withLine": 168,
+        "noLine": 0,
+        "consistent": 159,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/node_resource_partial_plan.go",
+        "language": "go",
+        "rels": 160,
+        "withLine": 160,
+        "noLine": 0,
+        "consistent": 157,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/compare.go",
+        "language": "go",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/compare_test.go",
+        "language": "go",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/config_traversals.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/consolidate_warnings.go",
+        "language": "go",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 45,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/consolidate_warnings_test.go",
+        "language": "go",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/contextual.go",
+        "language": "go",
+        "rels": 123,
+        "withLine": 123,
+        "noLine": 0,
+        "consistent": 120,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/contextual_test.go",
+        "language": "go",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic.go",
+        "language": "go",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic_base.go",
+        "language": "go",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic_extra.go",
+        "language": "go",
+        "rels": 92,
+        "withLine": 92,
+        "noLine": 0,
+        "consistent": 92,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostic_extra_test.go",
+        "language": "go",
+        "rels": 72,
+        "withLine": 72,
+        "noLine": 0,
+        "consistent": 72,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostics.go",
+        "language": "go",
+        "rels": 107,
+        "withLine": 107,
+        "noLine": 0,
+        "consistent": 105,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/diagnostics_test.go",
+        "language": "go",
+        "rels": 109,
+        "withLine": 109,
+        "noLine": 0,
+        "consistent": 107,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/doc.go",
+        "language": "go",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/error.go",
+        "language": "go",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/format.go",
+        "language": "go",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 51,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/format_test.go",
+        "language": "go",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/hcl.go",
+        "language": "go",
+        "rels": 90,
+        "withLine": 90,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/hcl_test.go",
+        "language": "go",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/object.go",
+        "language": "go",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/object_test.go",
+        "language": "go",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/override.go",
+        "language": "go",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/override_test.go",
+        "language": "go",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/rpc_friendly.go",
+        "language": "go",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/rpc_friendly_test.go",
+        "language": "go",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/severity_string.go",
+        "language": "go",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/simple_warning.go",
+        "language": "go",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/source_range.go",
+        "language": "go",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/sourceless.go",
+        "language": "go",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/testing.go",
+        "language": "go",
+        "rels": 66,
+        "withLine": 66,
+        "noLine": 0,
+        "consistent": 65,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfdiags/testing_test.go",
+        "language": "go",
+        "rels": 72,
+        "withLine": 72,
+        "noLine": 0,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfplugin5/tfplugin5.pb.go",
+        "language": "go",
+        "rels": 4452,
+        "withLine": 4452,
+        "noLine": 0,
+        "consistent": 4449,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfplugin5/tfplugin5_grpc.pb.go",
+        "language": "go",
+        "rels": 919,
+        "withLine": 919,
+        "noLine": 0,
+        "consistent": 916,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfplugin6/tfplugin6.pb.go",
+        "language": "go",
+        "rels": 5192,
+        "withLine": 5192,
+        "noLine": 0,
+        "consistent": 5189,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfplugin6/tfplugin6_grpc.pb.go",
+        "language": "go",
+        "rels": 1020,
+        "withLine": 1020,
+        "noLine": 0,
+        "consistent": 1017,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/main.go",
+        "language": "go",
+        "rels": 100,
+        "withLine": 100,
+        "noLine": 0,
+        "consistent": 82,
+        "inconsistent": 0,
+        "notCheckable": 18,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/main_test.go",
+        "language": "go",
+        "rels": 73,
+        "withLine": 73,
+        "noLine": 0,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/provider_source.go",
+        "language": "go",
+        "rels": 73,
+        "withLine": 73,
+        "noLine": 0,
+        "consistent": 65,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/signal_unix.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/signal_windows.go",
+        "language": "go",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/telemetry.go",
+        "language": "go",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/telemetry_test.go",
+        "language": "go",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/defect-detector/analyzer.go",
+        "language": "go",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/defect-detector/analyzer_test.go",
+        "language": "go",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/defect-detector/main/main.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/defect-detector/testdata/src/github.com/hashicorp/terraform/internal/tfdiags/tfdiags.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/defect-detector/testdata/src/github.com/hashicorp/terraform/tools/tfdiagsappendcheck/testpkg/testpkg.go",
+        "language": "go",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/loggraphdiff/loggraphdiff.go",
+        "language": "go",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/protobuf-compile/protobuf-compile.go",
+        "language": "go",
+        "rels": 64,
+        "withLine": 64,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/tools/tools.go",
+        "language": "go",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/version.go",
+        "language": "go",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/version/dependencies.go",
+        "language": "go",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/version/version.go",
+        "language": "go",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/version/version_test.go",
+        "language": "go",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/working_dir.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/go/binding.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

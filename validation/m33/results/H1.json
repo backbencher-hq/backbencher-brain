@@ -1,0 +1,40 @@
+{
+  "issue": "M33.H1",
+  "code": "H1",
+  "milestone": "M33",
+  "status": "verified",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 5,
+  "mutants": [
+    {
+      "name": "version row dropped from README",
+      "caught": true
+    },
+    {
+      "name": "man bb claim removed from README",
+      "caught": true
+    },
+    {
+      "name": "did-you-mean claim weakened in README",
+      "caught": true
+    },
+    {
+      "name": "fingerprint-only claim weakened in README row",
+      "caught": true
+    },
+    {
+      "name": "discovery section dropped from EMBEDDINGS",
+      "caught": true
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m33/verify-honesty-docs.ts",
+  "evidenceFile": "H1.json",
+  "generatedAt": "2026-11-15T04:15:32.950Z",
+  "limitations": [
+    "Doc mutants are string-level probes on the document text, not full re-runs of the docs gate; the verbatim pins double-check the same claims.",
+    "The built-binary cross-check proves the -v and did-you-mean claims at run time; the man bb claim is proven by the S3 gate (npm pack + rendering)."
+  ]
+}

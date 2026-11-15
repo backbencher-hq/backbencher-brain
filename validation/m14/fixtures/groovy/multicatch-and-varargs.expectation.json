@@ -1,0 +1,65 @@
+{
+  "fixtureId": "groovy/multicatch-and-varargs",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49.G1 wave (family parity with java's overload-arity-varargs-multicatch): (1) multi-catch `catch (IOException | SQLException e)` emits a declared_type References edge for EACH union member \u2014 the pre-fix walk had no catch_formal_parameter case at all so both types silently vanished from the type-usage graph; the `e` parameter is not a type and must never appear as a target. (2) Varargs `int... xs` overriding array `int[] xs` resolves exact-in-file (JLS 8.4.1 same-signature family contract).",
+  "expectSymbols": [
+    {
+      "name": "Catcher",
+      "kind": "class"
+    },
+    {
+      "name": "VarBase",
+      "kind": "class"
+    },
+    {
+      "name": "VarSub",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "IOException",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "SQLException",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Exception",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "overrides",
+      "from": "VarSub.bar",
+      "target": "bar",
+      "meta.overriddenOwner": "VarBase"
+    },
+    {
+      "type": "references",
+      "target": "java.io.IOException",
+      "line_number": 28,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "catch_formal_parameter",
+      "note": "CHANNEL pin for the multi-catch collector, on the QUALIFIED union the analyzer can actually report. The rows above name the bare IOException / SQLException / Exception and are unmet today, because the collector emits a declared_type reference only for a name containing a `.` - so no row in the lane observed the catch_formal_parameter case, and deleting that case outright changed no verdict. `declaredOn` is the load-bearing part: it is what distinguishes a catch union member from the same name appearing in a throws clause or a local. `from` is left unconstrained so the enclosing-type attribution stays a separate question."
+    },
+    {
+      "type": "references",
+      "target": "java.sql.SQLException",
+      "line_number": 28,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "catch_formal_parameter",
+      "note": "the SECOND union member: JLS 14.20 parity is a per-member contract, so one row per member keeps a regression that emits only the first type visible"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "e"
+    }
+  ]
+}

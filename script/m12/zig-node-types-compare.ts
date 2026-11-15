@@ -8,7 +8,7 @@ async function main() {
 
   const { loadWebTreeSitter } = await import("../../src/util/wasm")
   const mod = await loadWebTreeSitter()
-  const lang = await mod.Language.load("$HOME/mcp/backbencher-brain/wasm/tree-sitter-zig.wasm")
+  const lang = await mod.Language.load("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-zig.wasm")
   const types = new Set<string>()
   for (let i = 0; i < lang.nodeTypeCount; i++) {
     const t = lang.nodeTypeForId(i)

@@ -1,0 +1,7 @@
+{
+  "comment": "Support module holding the `macro` declaration contract.nim imports. A `macro` is a Macro symbol (compile-time code generation), distinct from a `template`.",
+  "expectSymbols": [
+    { "name": "retTrue", "kind": "macro", "meta.nimCallableKind": "macro" }
+  ],
+  "forbidErrors": [{}]
+}

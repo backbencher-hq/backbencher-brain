@@ -1,0 +1,11 @@
+{
+  "issue": "ELX-ADV X9",
+  "note": "`Kernel.`-qualified builtins are the same call-graph noise as bare ones (EX-D2): `Kernel.raise`/`Kernel.length` emit nothing; qualified user calls still emit.",
+  "expectRelationships": [
+    { "type": "calls", "from": "EK.run/1", "target": "MyApp.check", "line_number": 5 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "Kernel.raise" },
+    { "type": "calls", "target": "Kernel.length" }
+  ]
+}

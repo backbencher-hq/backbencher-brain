@@ -4,7 +4,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { measureOperation } from "../m11/differential-harness"
 
 const ROOT = process.cwd()
-const corpus = process.argv[2] || "$HOME/fixtures/repositories/fsharp"
+const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/fsharp"
 const revision = execFileSync("git", ["-C", corpus, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
 const allRelative = execFileSync("git", ["-C", corpus, "ls-files", "*.sh", "*.bash"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()

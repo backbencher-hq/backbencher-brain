@@ -1,0 +1,332 @@
+{
+  "fixtureId": "scala/incoming-scala-export-surface",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `exports` relationship type, which measured 0 edges on 400 production-path corpus files while `exports: ExportInfo[]` was being filled the whole time. Two rules, counted separately because they have different triggers.\n\n(a) THE UNIT'S PUBLIC TOP-LEVEL SURFACE. Scala has no `export` keyword in Scala 2, so its export surface is a VISIBILITY rule: a top-level declaration is part of the unit's API unless it carries private/protected. That is the rule the Java oracle derives from JLS 7.6, for the same reason \u2014 a JVM-family language with no module manifest expresses its export surface with access modifiers. Verified against 443 distinct corpus keys at 100% recall and 100% precision (script/m60/scala-imports-exports-oracle.ts, 300 files).\n\n(b) SCALA 3 RE-EXPORT CLAUSES. `export scala.util.Try`, `export a.b.{List, Map => M}` and `export a.b.*`. Measured 0 occurrences on the Scala 2.13 corpus \u2014 this corpus has no `export` clause \u2014 so the rule is proven here rather than on the corpus, and the three forms were each probed against the pinned grammar (zero ERROR nodes) before this fixture was written. `export a.b.*` publishes the PATH, not one edge per member: the member set is not written in this file, so edges per member would be fabrications.\n\nTHREE GAPS THIS FIXTURE PINS, each found by the oracle disagreeing with the analyzer:\n  - a public top-level TYPE ALIAS (`type Id = String`) is part of the surface; handleTypeAlias had no export path.\n  - a backticked name must reach the surface WITHOUT its quoting: `createSymbol` strips (M60 #924) and seven export pushes did not, so `implicit val \\`strip margin\\`` published `\\`strip margin\\`` \u2014 a spelling no reference can write. The target below is `strip margin`, and the forbid row pins the backticked spelling as absent.\n  - a `private[pkg]` declaration is NOT part of the surface outside its package, and neither is a private one, a member of a class/trait/object/enum, or an enum case.\n\nThe companion `object Point` is deliberately absent from the exports below: a companion shares its class's name, the class is the importable unit, and the F3 export-uniqueness gate rejects the duplicate.",
+  "expectSymbols": [
+    {
+      "name": "Id",
+      "kind": "type"
+    },
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "Point",
+      "kind": "class"
+    },
+    {
+      "name": "Color",
+      "kind": "enum"
+    },
+    {
+      "name": "Repo",
+      "kind": "interface"
+    },
+    {
+      "name": "Store",
+      "kind": "class"
+    },
+    {
+      "name": "strip margin",
+      "kind": "constant"
+    },
+    {
+      "name": "topLevel",
+      "kind": "function"
+    },
+    {
+      "name": "Reexports",
+      "kind": "module"
+    },
+    {
+      "name": "Nested",
+      "kind": "class"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Id"
+    },
+    {
+      "name": "Shape"
+    },
+    {
+      "name": "Point"
+    },
+    {
+      "name": "Color"
+    },
+    {
+      "name": "Repo"
+    },
+    {
+      "name": "Store"
+    },
+    {
+      "name": "strip margin"
+    },
+    {
+      "name": "topLevel"
+    },
+    {
+      "name": "Reexports"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "Reexports",
+      "target": "Try",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "Reexports",
+      "target": "List",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "Reexports",
+      "target": "M",
+      "meta.isExportClause": true,
+      "meta.exportKind": "renamed"
+    },
+    {
+      "type": "exports",
+      "from": "Reexports",
+      "target": "scala.concurrent.duration",
+      "confidenceMin": 0.65,
+      "meta.isExportClause": true,
+      "meta.reasonCode": "export-wildcard",
+      "meta.exportKind": "all_members"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Id",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "type"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Shape",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "interface"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Point",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "class"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Color",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "enum"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Repo",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "interface"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Store",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "class"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "strip margin",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "constant"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "topLevel",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "function"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Reexports",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "module"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "scala.concurrent.duration",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": true
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "scala.collection.immutable.List.Map",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "scala.util.Try",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Shape",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Point",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Color",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Repo",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Store",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "strip margin",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "topLevel",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Reexports",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "Try",
+      "meta.exportForm": "scala3-export-clause"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "List",
+      "meta.exportForm": "scala3-export-selector"
+    },
+    {
+      "type": "exports",
+      "from": "demo.exports",
+      "target": "M",
+      "meta.exportForm": "scala3-export-renamed-selector"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "`strip margin`"
+    },
+    {
+      "type": "exports",
+      "target": "Hidden"
+    },
+    {
+      "type": "exports",
+      "target": "PackageScoped"
+    },
+    {
+      "type": "exports",
+      "target": "secret"
+    },
+    {
+      "type": "exports",
+      "target": "hidden"
+    },
+    {
+      "type": "exports",
+      "target": "Nested"
+    },
+    {
+      "type": "exports",
+      "target": "nested"
+    },
+    {
+      "type": "exports",
+      "target": "head"
+    },
+    {
+      "type": "exports",
+      "target": "save"
+    },
+    {
+      "type": "exports",
+      "target": "origin"
+    },
+    {
+      "type": "exports",
+      "target": "Red"
+    },
+    {
+      "type": "exports",
+      "target": "Blue"
+    },
+    {
+      "type": "exports",
+      "target": "*"
+    },
+    {
+      "type": "exports",
+      "from": "(script)",
+      "note": "task-9: (script) is the statement-scope sentinel; a module/export surface sources at (file)"
+    },
+    {
+      "type": "imports",
+      "from": "root",
+      "note": "task-9: imports are (file)-sourced dependencies (the import-reference channel at root is the references label, not imports)"
+    },
+    {
+      "type": "exports",
+      "from": "(script)",
+      "note": "task-9 supersession: the module/export surface sources at (file); (script) never names a file"
+    }
+  ],
+  "authoredNote": " [TASK-9 STALE-PIN ADJUDICATION 2026-10-19: the exports/imports rows were re-pinned to the CURRENT adjudicated contract \u2014 module/export surfaces source at `(file)` (fleet sentinel ruling), imports are `(file)`-sourced module-path/selector dependencies, and the two export channels (convention array + surface/export-clause) are both pinned, including the wildcard scope row KEPT as an honest heuristic (confidence 0.7, reasonCode export-wildcard; Lead ruling). Coverage is STRENGTHENED (more rows pinned, stale `(script)`/`root` sources forbidden); behaviour was adjudicated correct, not weakened.]"
+}

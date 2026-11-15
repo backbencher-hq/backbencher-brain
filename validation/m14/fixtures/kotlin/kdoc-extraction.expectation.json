@@ -1,0 +1,18 @@
+{
+  "fixtureId": "kotlin/kdoc-extraction",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "KDoc is multiline_comment in tree-sitter-kotlin. The docstring must attach to add() - this pins the M14.1 KDoc fix (previously looked for nonexistent node type 'comment'). M37 KAD2 adds the adjacency pins: the second declaration carries its OWN doc, and the third (doc-less) carries none — the pre-KAD2 forward scan ran past the declaration (dead `===` identity) and leaked the first doc onto every sibling.",
+  "expectSymbols": [
+    { "name": "Calc", "kind": "class" },
+    { "name": "add" },
+    { "name": "sub" },
+    { "name": "mul" }
+  ],
+  "expectComments": [
+    { "symbol": "add", "minCount": 1 },
+    { "symbol": "sub", "contains": "Subtracts" },
+    { "symbol": "mul", "notContains": "Adds" },
+    { "symbol": "mul", "notContains": "Subtracts" }
+  ]
+}

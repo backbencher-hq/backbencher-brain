@@ -1,0 +1,16 @@
+{
+  "fixtureId": "scala/qualified-pascal-calls",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "MEASURED (scala3 corpus, 300-file sample): qualified PascalCase calls obj.Method() are enum-case/module member accesses (LoadDestination.Jump, tpd.This), NOT constructions - 1156 occurrences would all fabricate Instantiates edges. The companion-apply heuristic must apply to receiver-less calls only; qualified PascalCase emits Calls. Bare Type(...) constructions remain Instantiates. NOTE: the call must be a real call_expression (obj.Method(args)), not a bare field access chain (dest.Jump.check() only calls the LAST segment).",
+  "expectSymbols": [
+    { "name": "Router", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "fromEndsWith": "go", "targetEndsWith": "Jump" },
+    { "type": "calls", "fromEndsWith": "go", "targetEndsWith": "plainCall" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "targetEndsWith": "Jump" }
+  ]
+}

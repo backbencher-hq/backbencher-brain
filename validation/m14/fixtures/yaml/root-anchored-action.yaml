@@ -1,0 +1,20 @@
+name: Root-anchored local action
+# The `$/…` spelling is a ROOT-ANCHORED path, the way one repository in the corpus writes `./…`.
+# Two things are asserted and one is forbidden:
+#   * the edge exists, as an `imports` of the REWRITTEN `./…` path, with the written text kept in
+#     `metadata.actionSpelling` so the substitution is auditable from the edge alone;
+#   * the claim is the LOCAL one (`isExternal: false` with no project root known — the harness
+#     passes none, which is the pre-existing marker for a `./…` action), NOT `remoteRef`;
+#   * FORBIDDEN: an edge whose target is the raw `$/.github/…` text, which is what the analyzer
+#     emitted before the rewrite — `$/` read as a GitHub OWNER, on a target that is a path in the
+#     checked-out tree.
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: $/.github/actions/cache-restore
+      - uses: $/.github/actions/cache-save

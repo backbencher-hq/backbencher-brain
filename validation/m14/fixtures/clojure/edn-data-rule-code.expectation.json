@@ -1,0 +1,57 @@
+{
+  "issue": "CLJ-EX3",
+  "note": "The CODE twin of edn-data-rule.edn: the same three forms in a `.clj` file ARE code and keep their rows. Together the pair pins the DATA rule in both directions: the EDN file must emit nothing, the Clojure file must keep emitting — a fix that empties the analyzer satisfies neither.",
+  "expectSymbols": [
+    {
+      "name": "user",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "shell",
+      "line_number": 3,
+      "note": "a bare call in a .clj file is a code edge"
+    },
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "clojure.test/is",
+      "line_number": 4,
+      "meta.languageNamespace": [
+        "clojure",
+        "cljs",
+        "js",
+        "goog",
+        "java",
+        "javax"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "note": "qualified call whose ROOT is a language namespace: claimed, with strict-absent"
+    },
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "clojure.test/testing",
+      "line_number": 5,
+      "meta.languageNamespace": [
+        "clojure",
+        "cljs",
+        "js",
+        "goog",
+        "java",
+        "javax"
+      ]
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "user",
+      "target": "is",
+      "note": "clojure.core `is` stays suppressed inside the testing form (core suppression must not regress)"
+    }
+  ]
+}

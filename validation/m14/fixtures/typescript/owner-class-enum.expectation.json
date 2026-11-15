@@ -1,0 +1,35 @@
+{
+  "fixtureId": "typescript/owner-class-enum",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines read off the analyzer output for THIS fixture (`this.status.describe()` 12, `s.describe()` 14, `x.never()` 19). The two positive rows pin that the ENUM TYPE is the owner in both the field path and the local path.",
+  "rationale": "PINS THE ENUM-MEMBER CLASS. A field initialised `status: Status = Status.Active` and a local `const s = Status.Off` are both typed by the enum their initialiser names, so the member-call rows carry owner `Status` and evidence `enum` — the field's evidence is the initialiser's, not `this`, because the type was stated by the ENUM MEMBER (the `this` evidence class stays pinned for annotated fields in receiver-owner-from-new's `viaField` row, which expects owner Widget / evidence this). The member name is deliberately NOT a builtin: `toString`/`valueOf` are filtered Object leaf calls, so they emit no `calls` row and the class would be unobservable ('the fixture asserted nothing at all' shape). The negative row is an untyped receiver: it must carry NO owner.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "fire",
+      "target": "describe",
+      "line_number": 12,
+      "meta.owner": "Status",
+      "meta.ownerEvidence": "enum",
+      "note": "field path: `this.status.describe()` — the field's ENUM-MEMBER initialiser states Status"
+    },
+    {
+      "type": "calls",
+      "from": "fire",
+      "target": "describe",
+      "line_number": 14,
+      "meta.owner": "Status",
+      "meta.ownerEvidence": "enum",
+      "note": "local path: `const s = Status.Off; s.describe()`"
+    },
+    {
+      "type": "calls",
+      "from": "negativeEnum",
+      "target": "never",
+      "line_number": 19,
+      "meta.owner": null,
+      "note": "untyped receiver: the row exists and carries NO owner"
+    }
+  ]
+}

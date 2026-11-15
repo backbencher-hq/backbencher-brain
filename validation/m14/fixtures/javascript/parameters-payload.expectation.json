@@ -1,0 +1,14 @@
+{
+  "fixtureId": "javascript/parameters-payload",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the parameters payload matrix (section C): function and method symbols carry their formal parameters (name + optional default + rest). Pre-fix: no javascript fixture pinned parameters via the expectParameters key.",
+  "expectSymbols": [
+    { "name": "compute", "kind": "function" },
+    { "name": "handle", "kind": "method", "ownerName": "Svc" }
+  ],
+  "expectParameters": [
+    { "symbol": "compute", "parameters": [{ "name": "a" }, { "name": "b" }, { "name": "rest" }] },
+    { "symbol": "handle", "parameters": [{ "name": "id" }, { "name": "opts" }] }
+  ]
+}

@@ -1,0 +1,35 @@
+# GraphQL's specification has NO import syntax — `A:import_node: 0` across 882,672
+# nodes and 98 node types on 1,905 corpus files. The `#import "<file>"` line is a
+# COMMENT convention read by `graphql-import-node` and by `graphql-tools`, and the
+# grammar DOES produce `comment` nodes (4,510 across 269 files), so this family is
+# read off a named AST node's text rather than scanned for.
+#
+# Five shapes, each one a spelling the corpus actually uses.
+
+#import "./fragments/user.gql"
+
+# import UserFields from "./fragments/user-fields.gql"
+
+# import * from "./fragments/all.gql"
+
+# import First, Second from "./fragments/pair.gql"
+
+#import "./fragments/legacy.gql" as Legacy
+
+# ---------------------------------------------------------------------------
+# The negative cases, and they are most of this fixture's value. A classifier with
+# no way to say "no" counts its own input: the first measuring probe reported 4,510
+# for the corpus, which is every comment in it.
+# ---------------------------------------------------------------------------
+#   # this document imports nothing at all
+#   # the loader imports every fragment eagerly
+# important: read the schema before you query it
+#import
+#import "./fragments/unterminated.graphql
+#import ./fragments/no-quotes.gql
+# imported, # imports, # importer
+# import NoTargetFrom from
+
+type Query {
+  me: User
+}

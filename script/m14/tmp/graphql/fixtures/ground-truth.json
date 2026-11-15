@@ -1,0 +1,4057 @@
+{
+  "schemaVersion": 1,
+  "kind": "graphql_hand_derived_ground_truth",
+  "authored": "by hand from GraphQL specification October 2021 section by section, and from the source of each fixture line by line \u2014 NOT by recording the analyzer's output. A differential that is derived from the implementation measures nothing. Every symbol line is the line the definition's KEYWORD is written on, per the M59/#861 rule that a described declaration's line belongs to its name. APPENDED 2026-09-27 by the final master review, and the reason is the point: the review found TWO referenceable families the differential's hand-derived truth did not contain, so the truth was incomplete and the analyzer was RIGHT to disagree with it. (1) `variable_type` \u2014 a VariableDefinition's declared type had no `uses` edge, while a field return type, an argument type and an input field type all had one, so a variable was the only declared type in the language with no relationship to it. (2) `enum_value_reference` \u2014 an enum member named in a value position (an input field default, an argument default, a variable default, an executable field argument, a directive argument) was recorded only as an opaque string in `defaultValue`, so the enum member was a declared symbol that nothing ever referenced. Each row below was verified against the fixture SOURCE line by line, as the rest of this file was, and NOT by accepting analyzer output: a differential extended from the implementation measures nothing, which is the whole premise of this file. The `UserInput.role` row REPLACED an earlier `role` row added in this same review: the first version of the edge had a source that is not a symbol, and the correction is recorded here rather than quietly overwritten. | RETYPED 2026-10-03 under ledger rule R9: the five positions where a DECLARATION writes a type name (field return type, field argument type, input field type, variable type, directive argument type) are `references` carrying metadata.relationshipType='declared_type', not `uses`. java/kotlin/scala/csharp/go/typescript/rust all label the same position `references` and none of them emits `uses` for it, so publishing both labels for one fact is the divergence R10 exists to catch. Each retyped fact was matched by (source, target, line) against an independent re-derivation from the fixture SOURCE with the grammar, and every one of them is now ALSO a `mustNotEmit` row under its old label, so a reversion is caught instead of tolerated. The `exports` and `overrides` channels were derived the same way: `exports` from the document's own top-level declarations at their keyword line (a `Description` skipped, the M59/#861 rule), `overrides` from a member an object declares that a type it implements also declares.",
+  "conventions": {
+    "symbolIdentity": "(kind, name, startLine) \u2014 startLine is the keyword's line, never a Description's",
+    "relationshipIdentity": "(type, source, target, line_number) \u2014 line_number is the line of the AST node that NAMES the fact",
+    "extensions": "an `extend` contributes MEMBERS with ownerName = the extended type; it contributes a symbol for the type name only when this file does not declare the type",
+    "fieldSelection": "qualified `<Type>.<field>` when the document states the type (a fragment or inline-fragment type condition), bare otherwise because an executable document does not carry a field's return type",
+    "exportsRelationship": "An `exports` EDGE mirrors the `exports` channel one-for-one: source `(file)`, target the declaration's name, line the declaration's KEYWORD line with a leading Description skipped (M59/#861). The source is the file and carries metadata.fileLevel=true, which is the store's M60/#910 contract for a module-level edge whose source is the importing FILE rather than a symbol; the store rewrites source_external to the project-relative path on exactly that flag. A type declared only by `extend type X` is still exported, because the file contributes members to X, the analyzer publishes a `partial` symbol for it and the existing `exports` channel already listed it. A file that both declares and extends one name exports it once, from the declaration. `extend scalar S` exports NOTHING: a scalar extension declares nothing at all, so `mustNotEmit.symbols` already pins its name as a phantom.",
+    "relationshipMetadata": "Every relationship carries metadata.evidenceClass='structural', because every edge this analyzer emits is read off a NAMED AST NODE \u2014 an ImplementsInterfaces clause, a NamedType, a field's own Name, a Directives child \u2014 and none of them is derived from a name-shape guess. The `references` edges additionally carry metadata.relationshipType='declared_type', which is the marker ledger rule R9 names and the key script/m60/declared-type-refs-census.ts filters on. Both are asserted per relationship here because a correctly-LABELLED edge with its marker stripped reads as PRESENT to this lane while a consumer filtering on the marker sees nothing \u2014 a mutant that stripped it survived every other channel before this row existed."
+  },
+  "files": {
+    "01-sdl-core.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "namespace",
+          "schema",
+          4
+        ],
+        [
+          "property",
+          "query",
+          5
+        ],
+        [
+          "property",
+          "mutation",
+          6
+        ],
+        [
+          "class",
+          "Query",
+          10
+        ],
+        [
+          "property",
+          "user",
+          12
+        ],
+        [
+          "property",
+          "search",
+          13
+        ],
+        [
+          "property",
+          "node",
+          14
+        ],
+        [
+          "interface",
+          "Node",
+          17
+        ],
+        [
+          "property",
+          "id",
+          18
+        ],
+        [
+          "interface",
+          "Timestamped",
+          21
+        ],
+        [
+          "property",
+          "createdAt",
+          22
+        ],
+        [
+          "class",
+          "User",
+          25
+        ],
+        [
+          "property",
+          "id",
+          26
+        ],
+        [
+          "property",
+          "createdAt",
+          27
+        ],
+        [
+          "property",
+          "role",
+          28
+        ],
+        [
+          "property",
+          "status",
+          29
+        ],
+        [
+          "property",
+          "posts",
+          30
+        ],
+        [
+          "class",
+          "Post",
+          33
+        ],
+        [
+          "property",
+          "id",
+          34
+        ],
+        [
+          "property",
+          "title",
+          35
+        ],
+        [
+          "property",
+          "author",
+          36
+        ],
+        [
+          "type",
+          "SearchResult",
+          39
+        ],
+        [
+          "enum",
+          "Role",
+          41
+        ],
+        [
+          "enum_member",
+          "ADMIN",
+          43
+        ],
+        [
+          "enum_member",
+          "USER",
+          44
+        ],
+        [
+          "enum_member",
+          "GUEST",
+          45
+        ],
+        [
+          "enum",
+          "Status",
+          48
+        ],
+        [
+          "enum_member",
+          "ACTIVE",
+          49
+        ],
+        [
+          "enum_member",
+          "ARCHIVED",
+          50
+        ],
+        [
+          "type",
+          "DateTime",
+          53
+        ],
+        [
+          "class",
+          "UserFilter",
+          55
+        ],
+        [
+          "property",
+          "name",
+          57
+        ],
+        [
+          "property",
+          "nested",
+          58
+        ],
+        [
+          "property",
+          "limit",
+          59
+        ],
+        [
+          "property",
+          "required",
+          60
+        ],
+        [
+          "class",
+          "Mutation",
+          63
+        ],
+        [
+          "property",
+          "createUser",
+          64
+        ],
+        [
+          "class",
+          "UserInput",
+          67
+        ],
+        [
+          "property",
+          "name",
+          68
+        ],
+        [
+          "property",
+          "role",
+          69
+        ],
+        [
+          "function",
+          "@auth",
+          72
+        ],
+        [
+          "function",
+          "@tag",
+          73
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Mutation",
+          "Mutation.createUser",
+          64
+        ],
+        [
+          "contains",
+          "Node",
+          "Node.id",
+          18
+        ],
+        [
+          "contains",
+          "Post",
+          "Post.author",
+          36
+        ],
+        [
+          "contains",
+          "Post",
+          "Post.id",
+          34
+        ],
+        [
+          "contains",
+          "Post",
+          "Post.title",
+          35
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.node",
+          14
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.search",
+          13
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.user",
+          12
+        ],
+        [
+          "contains",
+          "Role",
+          "Role.ADMIN",
+          43
+        ],
+        [
+          "contains",
+          "Role",
+          "Role.GUEST",
+          45
+        ],
+        [
+          "contains",
+          "Role",
+          "Role.USER",
+          44
+        ],
+        [
+          "contains",
+          "schema",
+          "schema.mutation",
+          6
+        ],
+        [
+          "contains",
+          "schema",
+          "schema.query",
+          5
+        ],
+        [
+          "contains",
+          "Status",
+          "Status.ACTIVE",
+          49
+        ],
+        [
+          "contains",
+          "Status",
+          "Status.ARCHIVED",
+          50
+        ],
+        [
+          "contains",
+          "Timestamped",
+          "Timestamped.createdAt",
+          22
+        ],
+        [
+          "contains",
+          "User",
+          "User.createdAt",
+          27
+        ],
+        [
+          "contains",
+          "User",
+          "User.id",
+          26
+        ],
+        [
+          "contains",
+          "User",
+          "User.posts",
+          30
+        ],
+        [
+          "contains",
+          "User",
+          "User.role",
+          28
+        ],
+        [
+          "contains",
+          "User",
+          "User.status",
+          29
+        ],
+        [
+          "contains",
+          "UserFilter",
+          "UserFilter.limit",
+          59
+        ],
+        [
+          "contains",
+          "UserFilter",
+          "UserFilter.name",
+          57
+        ],
+        [
+          "contains",
+          "UserFilter",
+          "UserFilter.nested",
+          58
+        ],
+        [
+          "contains",
+          "UserFilter",
+          "UserFilter.required",
+          60
+        ],
+        [
+          "contains",
+          "UserInput",
+          "UserInput.name",
+          68
+        ],
+        [
+          "contains",
+          "UserInput",
+          "UserInput.role",
+          69
+        ],
+        [
+          "exports",
+          "(file)",
+          "@auth",
+          72
+        ],
+        [
+          "exports",
+          "(file)",
+          "@tag",
+          73
+        ],
+        [
+          "exports",
+          "(file)",
+          "DateTime",
+          53
+        ],
+        [
+          "exports",
+          "(file)",
+          "Mutation",
+          63
+        ],
+        [
+          "exports",
+          "(file)",
+          "Node",
+          17
+        ],
+        [
+          "exports",
+          "(file)",
+          "Post",
+          33
+        ],
+        [
+          "exports",
+          "(file)",
+          "Query",
+          10
+        ],
+        [
+          "exports",
+          "(file)",
+          "Role",
+          41
+        ],
+        [
+          "exports",
+          "(file)",
+          "schema",
+          4
+        ],
+        [
+          "exports",
+          "(file)",
+          "SearchResult",
+          39
+        ],
+        [
+          "exports",
+          "(file)",
+          "Status",
+          48
+        ],
+        [
+          "exports",
+          "(file)",
+          "Timestamped",
+          21
+        ],
+        [
+          "exports",
+          "(file)",
+          "User",
+          25
+        ],
+        [
+          "exports",
+          "(file)",
+          "UserFilter",
+          55
+        ],
+        [
+          "exports",
+          "(file)",
+          "UserInput",
+          67
+        ],
+        [
+          "implements",
+          "Post",
+          "Node",
+          33
+        ],
+        [
+          "implements",
+          "Query",
+          "Node",
+          10
+        ],
+        [
+          "implements",
+          "Query",
+          "Timestamped",
+          10
+        ],
+        [
+          "implements",
+          "User",
+          "Node",
+          25
+        ],
+        [
+          "implements",
+          "User",
+          "Timestamped",
+          25
+        ],
+        [
+          "overrides",
+          "Post.id",
+          "Node.id",
+          34
+        ],
+        [
+          "overrides",
+          "User.createdAt",
+          "Timestamped.createdAt",
+          27
+        ],
+        [
+          "overrides",
+          "User.id",
+          "Node.id",
+          26
+        ],
+        [
+          "references",
+          "@auth",
+          "Role",
+          72
+        ],
+        [
+          "references",
+          "@tag",
+          "String",
+          73
+        ],
+        [
+          "references",
+          "Mutation.createUser",
+          "User",
+          64
+        ],
+        [
+          "references",
+          "Mutation.createUser",
+          "UserInput",
+          64
+        ],
+        [
+          "references",
+          "Node.id",
+          "ID",
+          18
+        ],
+        [
+          "references",
+          "Post.author",
+          "User",
+          36
+        ],
+        [
+          "references",
+          "Post.id",
+          "ID",
+          34
+        ],
+        [
+          "references",
+          "Post.title",
+          "String",
+          35
+        ],
+        [
+          "references",
+          "Query.node",
+          "ID",
+          14
+        ],
+        [
+          "references",
+          "Query.node",
+          "Node",
+          14
+        ],
+        [
+          "references",
+          "Query.search",
+          "Int",
+          13
+        ],
+        [
+          "references",
+          "Query.search",
+          "SearchResult",
+          13
+        ],
+        [
+          "references",
+          "Query.search",
+          "String",
+          13
+        ],
+        [
+          "references",
+          "Query.user",
+          "Boolean",
+          12
+        ],
+        [
+          "references",
+          "Query.user",
+          "ID",
+          12
+        ],
+        [
+          "references",
+          "Query.user",
+          "User",
+          12
+        ],
+        [
+          "references",
+          "Timestamped.createdAt",
+          "String",
+          22
+        ],
+        [
+          "references",
+          "User.createdAt",
+          "String",
+          27
+        ],
+        [
+          "references",
+          "User.id",
+          "ID",
+          26
+        ],
+        [
+          "references",
+          "User.posts",
+          "Int",
+          30
+        ],
+        [
+          "references",
+          "User.posts",
+          "Post",
+          30
+        ],
+        [
+          "references",
+          "User.role",
+          "Role",
+          28
+        ],
+        [
+          "references",
+          "User.status",
+          "Status",
+          29
+        ],
+        [
+          "references",
+          "UserFilter.limit",
+          "Int",
+          59
+        ],
+        [
+          "references",
+          "UserFilter.name",
+          "String",
+          57
+        ],
+        [
+          "references",
+          "UserFilter.nested",
+          "UserFilter",
+          58
+        ],
+        [
+          "references",
+          "UserFilter.required",
+          "Boolean",
+          60
+        ],
+        [
+          "references",
+          "UserInput.name",
+          "String",
+          68
+        ],
+        [
+          "references",
+          "UserInput.role",
+          "Role",
+          69
+        ],
+        [
+          "uses",
+          "@auth",
+          "Role.ADMIN",
+          72
+        ],
+        [
+          "uses",
+          "Query",
+          "@key",
+          10
+        ],
+        [
+          "uses",
+          "Role.GUEST",
+          "@deprecated",
+          45
+        ],
+        [
+          "uses",
+          "schema.mutation",
+          "Mutation",
+          6
+        ],
+        [
+          "uses",
+          "schema.query",
+          "Query",
+          5
+        ],
+        [
+          "uses",
+          "SearchResult",
+          "Post",
+          39
+        ],
+        [
+          "uses",
+          "SearchResult",
+          "User",
+          39
+        ],
+        [
+          "uses",
+          "User",
+          "@key",
+          25
+        ],
+        [
+          "uses",
+          "UserInput.role",
+          "Role.USER",
+          69
+        ]
+      ],
+      "parameters": [
+        {
+          "kind": "property",
+          "name": "user",
+          "args": [
+            [
+              "id",
+              false,
+              ""
+            ],
+            [
+              "withPosts",
+              true,
+              "false"
+            ]
+          ]
+        },
+        {
+          "kind": "property",
+          "name": "search",
+          "args": [
+            [
+              "term",
+              false,
+              ""
+            ],
+            [
+              "limit",
+              true,
+              "10"
+            ]
+          ]
+        },
+        {
+          "kind": "property",
+          "name": "node",
+          "args": [
+            [
+              "id",
+              false,
+              ""
+            ]
+          ]
+        },
+        {
+          "kind": "property",
+          "name": "posts",
+          "args": [
+            [
+              "first",
+              false,
+              ""
+            ]
+          ]
+        },
+        {
+          "kind": "property",
+          "name": "createUser",
+          "args": [
+            [
+              "input",
+              false,
+              ""
+            ]
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "@auth",
+          "args": [
+            [
+              "requires",
+              true,
+              "ADMIN"
+            ]
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "@tag",
+          "args": [
+            [
+              "name",
+              false,
+              ""
+            ]
+          ]
+        }
+      ],
+      "docstrings": [
+        [
+          "namespace",
+          "schema",
+          "The root of the schema."
+        ],
+        [
+          "class",
+          "Query",
+          "An object type with heritage, arguments, list types and directives."
+        ],
+        [
+          "property",
+          "user",
+          "Fetch one user by id."
+        ],
+        [
+          "enum_member",
+          "ADMIN",
+          "Can do anything."
+        ],
+        [
+          "property",
+          "name",
+          "Match on the name."
+        ]
+      ],
+      "ranges": [
+        [
+          "namespace",
+          "schema",
+          "4:1"
+        ],
+        [
+          "class",
+          "Query",
+          "10:1"
+        ],
+        [
+          "property",
+          "user",
+          "12:3"
+        ],
+        [
+          "property",
+          "search",
+          "13:3"
+        ],
+        [
+          "interface",
+          "Node",
+          "17:1"
+        ],
+        [
+          "property",
+          "id",
+          "18:3"
+        ],
+        [
+          "class",
+          "User",
+          "25:1"
+        ],
+        [
+          "enum",
+          "Role",
+          "41:1"
+        ],
+        [
+          "enum_member",
+          "ADMIN",
+          "43:3"
+        ],
+        [
+          "class",
+          "UserFilter",
+          "55:1"
+        ],
+        [
+          "property",
+          "name",
+          "57:3"
+        ],
+        [
+          "function",
+          "@auth",
+          "72:1"
+        ]
+      ],
+      "metadata": [
+        {
+          "kind": "class",
+          "name": "Query",
+          "graphqlDirectives": [
+            {
+              "name": "key",
+              "arguments": {
+                "fields": "\"id\""
+              },
+              "line": 10
+            }
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "User",
+          "graphqlDirectives": [
+            {
+              "name": "key",
+              "arguments": {
+                "fields": "\"id\""
+              },
+              "line": 25
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "@auth",
+          "repeatable": false,
+          "locations": [
+            "OBJECT",
+            "FIELD_DEFINITION"
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "@tag",
+          "repeatable": true,
+          "locations": [
+            "FIELD_DEFINITION",
+            "OBJECT"
+          ]
+        },
+        {
+          "kind": "property",
+          "name": "user",
+          "rawType": "User",
+          "nullable": true
+        },
+        {
+          "kind": "property",
+          "name": "search",
+          "rawType": "[SearchResult!]!",
+          "nullable": false
+        }
+      ],
+      "exports": [
+        "schema",
+        "Query",
+        "Node",
+        "Timestamped",
+        "User",
+        "Post",
+        "SearchResult",
+        "Role",
+        "Status",
+        "DateTime",
+        "UserFilter",
+        "Mutation",
+        "UserInput",
+        "@auth",
+        "@tag"
+      ],
+      "mustNotEmit": {
+        "symbols": [
+          "deprecated",
+          "key",
+          "Anonymous_query_4",
+          "Anonymous_query_1"
+        ],
+        "relationships": [
+          [
+            "uses",
+            "@auth",
+            "Role",
+            72
+          ],
+          [
+            "uses",
+            "@tag",
+            "String",
+            73
+          ],
+          [
+            "uses",
+            "Anonymous_query_4",
+            "Mutation",
+            6
+          ],
+          [
+            "uses",
+            "Anonymous_query_4",
+            "Query",
+            5
+          ],
+          [
+            "uses",
+            "Mutation.createUser",
+            "User",
+            64
+          ],
+          [
+            "uses",
+            "Mutation.createUser",
+            "UserInput",
+            64
+          ],
+          [
+            "uses",
+            "Node.id",
+            "ID",
+            18
+          ],
+          [
+            "uses",
+            "Post.author",
+            "User",
+            36
+          ],
+          [
+            "uses",
+            "Post.id",
+            "ID",
+            34
+          ],
+          [
+            "uses",
+            "Post.title",
+            "String",
+            35
+          ],
+          [
+            "uses",
+            "Query.node",
+            "ID",
+            14
+          ],
+          [
+            "uses",
+            "Query.node",
+            "Node",
+            14
+          ],
+          [
+            "uses",
+            "Query.search",
+            "Int",
+            13
+          ],
+          [
+            "uses",
+            "Query.search",
+            "SearchResult",
+            13
+          ],
+          [
+            "uses",
+            "Query.search",
+            "String",
+            13
+          ],
+          [
+            "uses",
+            "Query.user",
+            "Boolean",
+            12
+          ],
+          [
+            "uses",
+            "Query.user",
+            "ID",
+            12
+          ],
+          [
+            "uses",
+            "Query.user",
+            "User",
+            12
+          ],
+          [
+            "uses",
+            "Timestamped.createdAt",
+            "String",
+            22
+          ],
+          [
+            "uses",
+            "User.createdAt",
+            "String",
+            27
+          ],
+          [
+            "uses",
+            "User.id",
+            "ID",
+            26
+          ],
+          [
+            "uses",
+            "User.posts",
+            "Int",
+            30
+          ],
+          [
+            "uses",
+            "User.posts",
+            "Post",
+            30
+          ],
+          [
+            "uses",
+            "User.role",
+            "Role",
+            28
+          ],
+          [
+            "uses",
+            "User.status",
+            "Status",
+            29
+          ],
+          [
+            "uses",
+            "UserFilter.limit",
+            "Int",
+            59
+          ],
+          [
+            "uses",
+            "UserFilter.name",
+            "String",
+            57
+          ],
+          [
+            "uses",
+            "UserFilter.nested",
+            "UserFilter",
+            58
+          ],
+          [
+            "uses",
+            "UserFilter.required",
+            "Boolean",
+            60
+          ],
+          [
+            "uses",
+            "UserInput.name",
+            "String",
+            68
+          ],
+          [
+            "uses",
+            "UserInput.role",
+            "Role",
+            69
+          ]
+        ]
+      },
+      "relationshipMetadata": {
+        "contains|Mutation|Mutation.createUser|64": {
+          "evidenceClass": "structural"
+        },
+        "contains|Node|Node.id|18": {
+          "evidenceClass": "structural"
+        },
+        "contains|Post|Post.author|36": {
+          "evidenceClass": "structural"
+        },
+        "contains|Post|Post.id|34": {
+          "evidenceClass": "structural"
+        },
+        "contains|Post|Post.title|35": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.node|14": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.search|13": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.user|12": {
+          "evidenceClass": "structural"
+        },
+        "contains|Role|Role.ADMIN|43": {
+          "evidenceClass": "structural"
+        },
+        "contains|Role|Role.GUEST|45": {
+          "evidenceClass": "structural"
+        },
+        "contains|Role|Role.USER|44": {
+          "evidenceClass": "structural"
+        },
+        "contains|schema|schema.mutation|6": {
+          "evidenceClass": "structural"
+        },
+        "contains|schema|schema.query|5": {
+          "evidenceClass": "structural"
+        },
+        "contains|Status|Status.ACTIVE|49": {
+          "evidenceClass": "structural"
+        },
+        "contains|Status|Status.ARCHIVED|50": {
+          "evidenceClass": "structural"
+        },
+        "contains|Timestamped|Timestamped.createdAt|22": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.createdAt|27": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.id|26": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.posts|30": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.role|28": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.status|29": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserFilter|UserFilter.limit|59": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserFilter|UserFilter.name|57": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserFilter|UserFilter.nested|58": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserFilter|UserFilter.required|60": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserInput|UserInput.name|68": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserInput|UserInput.role|69": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|@auth|72": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|@tag|73": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|DateTime|53": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Mutation|63": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Node|17": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Post|33": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Query|10": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Role|41": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|schema|4": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|SearchResult|39": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Status|48": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Timestamped|21": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|User|25": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|UserFilter|55": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|UserInput|67": {
+          "evidenceClass": "structural"
+        },
+        "implements|Post|Node|33": {
+          "evidenceClass": "structural"
+        },
+        "implements|Query|Node|10": {
+          "evidenceClass": "structural"
+        },
+        "implements|Query|Timestamped|10": {
+          "evidenceClass": "structural"
+        },
+        "implements|User|Node|25": {
+          "evidenceClass": "structural"
+        },
+        "implements|User|Timestamped|25": {
+          "evidenceClass": "structural"
+        },
+        "overrides|Post.id|Node.id|34": {
+          "evidenceClass": "structural"
+        },
+        "overrides|User.createdAt|Timestamped.createdAt|27": {
+          "evidenceClass": "structural"
+        },
+        "overrides|User.id|Node.id|26": {
+          "evidenceClass": "structural"
+        },
+        "references|@auth|Role|72": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|@tag|String|73": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Mutation.createUser|User|64": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Mutation.createUser|UserInput|64": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Node.id|ID|18": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Post.author|User|36": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Post.id|ID|34": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Post.title|String|35": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.node|ID|14": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.node|Node|14": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.search|Int|13": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.search|SearchResult|13": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.search|String|13": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.user|Boolean|12": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.user|ID|12": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.user|User|12": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Timestamped.createdAt|String|22": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.createdAt|String|27": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.id|ID|26": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.posts|Int|30": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.posts|Post|30": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.role|Role|28": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.status|Status|29": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserFilter.limit|Int|59": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserFilter.name|String|57": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserFilter.nested|UserFilter|58": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserFilter.required|Boolean|60": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserInput.name|String|68": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserInput.role|Role|69": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "uses|@auth|Role.ADMIN|72": {
+          "evidenceClass": "structural"
+        },
+        "uses|Query|@key|10": {
+          "evidenceClass": "structural"
+        },
+        "uses|Role.GUEST|@deprecated|45": {
+          "evidenceClass": "structural"
+        },
+        "uses|schema.mutation|Mutation|6": {
+          "evidenceClass": "structural"
+        },
+        "uses|schema.query|Query|5": {
+          "evidenceClass": "structural"
+        },
+        "uses|SearchResult|Post|39": {
+          "evidenceClass": "structural"
+        },
+        "uses|SearchResult|User|39": {
+          "evidenceClass": "structural"
+        },
+        "uses|User|@key|25": {
+          "evidenceClass": "structural"
+        },
+        "uses|UserInput.role|Role.USER|69": {
+          "evidenceClass": "structural"
+        }
+      }
+    },
+    "02-extensions.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "class",
+          "Query",
+          1
+        ],
+        [
+          "property",
+          "a",
+          2
+        ],
+        [
+          "property",
+          "b",
+          6
+        ],
+        [
+          "property",
+          "c",
+          7
+        ],
+        [
+          "interface",
+          "Node",
+          10
+        ],
+        [
+          "property",
+          "id",
+          11
+        ],
+        [
+          "property",
+          "legacyId",
+          15
+        ],
+        [
+          "enum",
+          "Status",
+          18
+        ],
+        [
+          "enum_member",
+          "ACTIVE",
+          19
+        ],
+        [
+          "enum_member",
+          "ARCHIVED",
+          23
+        ],
+        [
+          "type",
+          "SearchResult",
+          26
+        ],
+        [
+          "class",
+          "UserFilter",
+          30
+        ],
+        [
+          "property",
+          "name",
+          31
+        ],
+        [
+          "property",
+          "email",
+          35
+        ],
+        [
+          "type",
+          "DateTime",
+          38
+        ],
+        [
+          "namespace",
+          "schema",
+          42
+        ],
+        [
+          "property",
+          "query",
+          43
+        ],
+        [
+          "property",
+          "mutation",
+          47
+        ],
+        [
+          "class",
+          "Mutation",
+          50
+        ],
+        [
+          "property",
+          "ping",
+          51
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Mutation",
+          "Mutation.ping",
+          51
+        ],
+        [
+          "contains",
+          "Node",
+          "Node.id",
+          11
+        ],
+        [
+          "contains",
+          "Node",
+          "Node.legacyId",
+          15
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.a",
+          2
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.b",
+          6
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.c",
+          7
+        ],
+        [
+          "contains",
+          "schema",
+          "schema.mutation",
+          47
+        ],
+        [
+          "contains",
+          "schema",
+          "schema.query",
+          43
+        ],
+        [
+          "contains",
+          "Status",
+          "Status.ACTIVE",
+          19
+        ],
+        [
+          "contains",
+          "Status",
+          "Status.ARCHIVED",
+          23
+        ],
+        [
+          "contains",
+          "UserFilter",
+          "UserFilter.email",
+          35
+        ],
+        [
+          "contains",
+          "UserFilter",
+          "UserFilter.name",
+          31
+        ],
+        [
+          "exports",
+          "(file)",
+          "DateTime",
+          38
+        ],
+        [
+          "exports",
+          "(file)",
+          "Mutation",
+          50
+        ],
+        [
+          "exports",
+          "(file)",
+          "Node",
+          10
+        ],
+        [
+          "exports",
+          "(file)",
+          "Query",
+          1
+        ],
+        [
+          "exports",
+          "(file)",
+          "schema",
+          42
+        ],
+        [
+          "exports",
+          "(file)",
+          "SearchResult",
+          26
+        ],
+        [
+          "exports",
+          "(file)",
+          "Status",
+          18
+        ],
+        [
+          "exports",
+          "(file)",
+          "UserFilter",
+          30
+        ],
+        [
+          "references",
+          "Mutation.ping",
+          "String",
+          51
+        ],
+        [
+          "references",
+          "Node.id",
+          "ID",
+          11
+        ],
+        [
+          "references",
+          "Node.legacyId",
+          "String",
+          15
+        ],
+        [
+          "references",
+          "Query.a",
+          "Int",
+          2
+        ],
+        [
+          "references",
+          "Query.b",
+          "String",
+          6
+        ],
+        [
+          "references",
+          "Query.c",
+          "Int",
+          7
+        ],
+        [
+          "references",
+          "UserFilter.email",
+          "String",
+          35
+        ],
+        [
+          "references",
+          "UserFilter.name",
+          "String",
+          31
+        ],
+        [
+          "uses",
+          "schema.mutation",
+          "Mutation",
+          47
+        ],
+        [
+          "uses",
+          "schema.query",
+          "Query",
+          43
+        ],
+        [
+          "uses",
+          "SearchResult",
+          "Post",
+          28
+        ],
+        [
+          "uses",
+          "SearchResult",
+          "User",
+          26
+        ]
+      ],
+      "metadata": [
+        {
+          "kind": "property",
+          "name": "b",
+          "inExtension": true
+        },
+        {
+          "kind": "property",
+          "name": "c",
+          "inExtension": true
+        },
+        {
+          "kind": "enum_member",
+          "name": "ARCHIVED",
+          "inExtension": true
+        },
+        {
+          "kind": "property",
+          "name": "email",
+          "inExtension": true
+        },
+        {
+          "kind": "property",
+          "name": "legacyId",
+          "inExtension": true
+        }
+      ],
+      "exports": [
+        "Query",
+        "Node",
+        "Status",
+        "SearchResult",
+        "UserFilter",
+        "DateTime",
+        "schema",
+        "Mutation"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "uses",
+            "Mutation.ping",
+            "String",
+            51
+          ],
+          [
+            "uses",
+            "Node.id",
+            "ID",
+            11
+          ],
+          [
+            "uses",
+            "Node.legacyId",
+            "String",
+            15
+          ],
+          [
+            "uses",
+            "Query.a",
+            "Int",
+            2
+          ],
+          [
+            "uses",
+            "Query.b",
+            "String",
+            6
+          ],
+          [
+            "uses",
+            "Query.c",
+            "Int",
+            7
+          ],
+          [
+            "uses",
+            "UserFilter.email",
+            "String",
+            35
+          ],
+          [
+            "uses",
+            "UserFilter.name",
+            "String",
+            31
+          ]
+        ]
+      },
+      "relationshipMetadata": {
+        "contains|Mutation|Mutation.ping|51": {
+          "evidenceClass": "structural"
+        },
+        "contains|Node|Node.id|11": {
+          "evidenceClass": "structural"
+        },
+        "contains|Node|Node.legacyId|15": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.a|2": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.b|6": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.c|7": {
+          "evidenceClass": "structural"
+        },
+        "contains|schema|schema.mutation|47": {
+          "evidenceClass": "structural"
+        },
+        "contains|schema|schema.query|43": {
+          "evidenceClass": "structural"
+        },
+        "contains|Status|Status.ACTIVE|19": {
+          "evidenceClass": "structural"
+        },
+        "contains|Status|Status.ARCHIVED|23": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserFilter|UserFilter.email|35": {
+          "evidenceClass": "structural"
+        },
+        "contains|UserFilter|UserFilter.name|31": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|DateTime|38": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Mutation|50": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Node|10": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Query|1": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|schema|42": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|SearchResult|26": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Status|18": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|UserFilter|30": {
+          "evidenceClass": "structural"
+        },
+        "references|Mutation.ping|String|51": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Node.id|ID|11": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Node.legacyId|String|15": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.a|Int|2": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.b|String|6": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.c|Int|7": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserFilter.email|String|35": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|UserFilter.name|String|31": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "uses|schema.mutation|Mutation|47": {
+          "evidenceClass": "structural"
+        },
+        "uses|schema.query|Query|43": {
+          "evidenceClass": "structural"
+        },
+        "uses|SearchResult|Post|28": {
+          "evidenceClass": "structural"
+        },
+        "uses|SearchResult|User|26": {
+          "evidenceClass": "structural"
+        }
+      }
+    },
+    "03-executable.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "method",
+          "GetUser",
+          1
+        ],
+        [
+          "variable",
+          "$id",
+          1
+        ],
+        [
+          "variable",
+          "$withPosts",
+          1
+        ],
+        [
+          "method",
+          "CreateUser",
+          18
+        ],
+        [
+          "variable",
+          "$input",
+          18
+        ],
+        [
+          "method",
+          "OnUserChanged",
+          24
+        ],
+        [
+          "method",
+          "UserFields",
+          30
+        ],
+        [
+          "method",
+          "03-executable::operation_0",
+          36
+        ]
+      ],
+      "relationships": [
+        [
+          "references",
+          "$id",
+          "ID",
+          1
+        ],
+        [
+          "references",
+          "$input",
+          "UserInput",
+          18
+        ],
+        [
+          "references",
+          "$withPosts",
+          "Boolean",
+          1
+        ],
+        [
+          "uses",
+          "03-executable::operation_0",
+          "ping",
+          37
+        ],
+        [
+          "uses",
+          "CreateUser",
+          "$input",
+          19
+        ],
+        [
+          "uses",
+          "CreateUser",
+          "createUser",
+          19
+        ],
+        [
+          "uses",
+          "CreateUser",
+          "id",
+          20
+        ],
+        [
+          "uses",
+          "GetUser",
+          "@cached",
+          1
+        ],
+        [
+          "uses",
+          "GetUser",
+          "@include",
+          8
+        ],
+        [
+          "uses",
+          "GetUser",
+          "$id",
+          2
+        ],
+        [
+          "uses",
+          "GetUser",
+          "$withPosts",
+          8
+        ],
+        [
+          "uses",
+          "GetUser",
+          "Admin.level",
+          5
+        ],
+        [
+          "uses",
+          "GetUser",
+          "Admin",
+          4
+        ],
+        [
+          "uses",
+          "GetUser",
+          "edges",
+          9
+        ],
+        [
+          "uses",
+          "GetUser",
+          "id",
+          11
+        ],
+        [
+          "uses",
+          "GetUser",
+          "name",
+          7
+        ],
+        [
+          "uses",
+          "GetUser",
+          "node",
+          10
+        ],
+        [
+          "uses",
+          "GetUser",
+          "posts",
+          8
+        ],
+        [
+          "uses",
+          "GetUser",
+          "user",
+          2
+        ],
+        [
+          "uses",
+          "GetUser",
+          "UserFields",
+          3
+        ],
+        [
+          "uses",
+          "OnUserChanged",
+          "id",
+          26
+        ],
+        [
+          "uses",
+          "OnUserChanged",
+          "userChanged",
+          25
+        ],
+        [
+          "uses",
+          "UserFields",
+          "User.id",
+          31
+        ],
+        [
+          "uses",
+          "UserFields",
+          "User.name",
+          32
+        ],
+        [
+          "uses",
+          "UserFields",
+          "User.role",
+          33
+        ],
+        [
+          "uses",
+          "UserFields",
+          "User",
+          30
+        ]
+      ],
+      "expectNamePrefix": [
+        [
+          "method",
+          36,
+          "03-executable::operation_"
+        ]
+      ],
+      "metadata": [
+        {
+          "kind": "method",
+          "name": "GetUser"
+        },
+        {
+          "kind": "variable",
+          "name": "$withPosts"
+        }
+      ],
+      "exports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "nick",
+          "Admin",
+          "User"
+        ],
+        "relationships": [
+          [
+            "uses",
+            "$id",
+            "ID",
+            1
+          ],
+          [
+            "uses",
+            "$input",
+            "UserInput",
+            18
+          ],
+          [
+            "uses",
+            "$withPosts",
+            "Boolean",
+            1
+          ],
+          [
+            "uses",
+            "GetUser",
+            "level",
+            5
+          ],
+          [
+            "uses",
+            "GetUser",
+            "nick",
+            7
+          ]
+        ]
+      },
+      "relationshipMetadata": {
+        "references|$id|ID|1": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|$input|UserInput|18": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|$withPosts|Boolean|1": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "uses|03-executable::operation_0|ping|37": {
+          "evidenceClass": "structural"
+        },
+        "uses|CreateUser|$input|19": {
+          "evidenceClass": "structural"
+        },
+        "uses|CreateUser|createUser|19": {
+          "evidenceClass": "structural"
+        },
+        "uses|CreateUser|id|20": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|@cached|1": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|@include|8": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|$id|2": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|$withPosts|8": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|Admin.level|5": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|Admin|4": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|edges|9": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|id|11": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|name|7": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|node|10": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|posts|8": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|user|2": {
+          "evidenceClass": "structural"
+        },
+        "uses|GetUser|UserFields|3": {
+          "evidenceClass": "structural"
+        },
+        "uses|OnUserChanged|id|26": {
+          "evidenceClass": "structural"
+        },
+        "uses|OnUserChanged|userChanged|25": {
+          "evidenceClass": "structural"
+        },
+        "uses|UserFields|User.id|31": {
+          "evidenceClass": "structural"
+        },
+        "uses|UserFields|User.name|32": {
+          "evidenceClass": "structural"
+        },
+        "uses|UserFields|User.role|33": {
+          "evidenceClass": "structural"
+        },
+        "uses|UserFields|User|30": {
+          "evidenceClass": "structural"
+        }
+      }
+    },
+    "04-descriptions.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "class",
+          "A",
+          2
+        ],
+        [
+          "property",
+          "f",
+          4
+        ],
+        [
+          "property",
+          "g",
+          9
+        ],
+        [
+          "class",
+          "B",
+          18
+        ],
+        [
+          "property",
+          "h",
+          22
+        ],
+        [
+          "enum",
+          "E",
+          25
+        ],
+        [
+          "enum_member",
+          "X",
+          27
+        ],
+        [
+          "class",
+          "I",
+          30
+        ],
+        [
+          "property",
+          "y",
+          32
+        ],
+        [
+          "function",
+          "@d",
+          36
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "A",
+          "A.f",
+          4
+        ],
+        [
+          "contains",
+          "A",
+          "A.g",
+          9
+        ],
+        [
+          "contains",
+          "B",
+          "B.h",
+          22
+        ],
+        [
+          "contains",
+          "E",
+          "E.X",
+          27
+        ],
+        [
+          "contains",
+          "I",
+          "I.y",
+          32
+        ],
+        [
+          "exports",
+          "(file)",
+          "@d",
+          36
+        ],
+        [
+          "exports",
+          "(file)",
+          "A",
+          2
+        ],
+        [
+          "exports",
+          "(file)",
+          "B",
+          18
+        ],
+        [
+          "exports",
+          "(file)",
+          "E",
+          25
+        ],
+        [
+          "exports",
+          "(file)",
+          "I",
+          30
+        ],
+        [
+          "references",
+          "@d",
+          "String",
+          36
+        ],
+        [
+          "references",
+          "A.f",
+          "Int",
+          4
+        ],
+        [
+          "references",
+          "A.g",
+          "Int",
+          9
+        ],
+        [
+          "references",
+          "B.h",
+          "Int",
+          22
+        ],
+        [
+          "references",
+          "I.y",
+          "Int",
+          32
+        ]
+      ],
+      "docstrings": [
+        [
+          "class",
+          "A",
+          "A regular quoted description."
+        ],
+        [
+          "property",
+          "f",
+          "field with a \"quoted\" word and a \\ backslash"
+        ],
+        [
+          "property",
+          "g",
+          "a multi-line block description\n  with a deeper indent"
+        ],
+        [
+          "class",
+          "B",
+          "A block description.\n\n    indented block\n  back to two"
+        ],
+        [
+          "property",
+          "h",
+          "field block"
+        ],
+        [
+          "enum_member",
+          "X",
+          "an enum value"
+        ],
+        [
+          "property",
+          "y",
+          "an input field"
+        ],
+        [
+          "function",
+          "@d",
+          "a directive that takes a reason"
+        ]
+      ],
+      "ranges": [
+        [
+          "class",
+          "A",
+          "2:1"
+        ],
+        [
+          "property",
+          "f",
+          "4:3"
+        ],
+        [
+          "property",
+          "g",
+          "9:3"
+        ],
+        [
+          "class",
+          "B",
+          "18:1"
+        ],
+        [
+          "property",
+          "h",
+          "22:3"
+        ]
+      ],
+      "exports": [
+        "A",
+        "B",
+        "E",
+        "I",
+        "@d"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "uses",
+            "@d",
+            "String",
+            36
+          ],
+          [
+            "uses",
+            "A.f",
+            "Int",
+            4
+          ],
+          [
+            "uses",
+            "A.g",
+            "Int",
+            9
+          ],
+          [
+            "uses",
+            "B.h",
+            "Int",
+            22
+          ],
+          [
+            "uses",
+            "I.y",
+            "Int",
+            32
+          ]
+        ]
+      },
+      "relationshipMetadata": {
+        "contains|A|A.f|4": {
+          "evidenceClass": "structural"
+        },
+        "contains|A|A.g|9": {
+          "evidenceClass": "structural"
+        },
+        "contains|B|B.h|22": {
+          "evidenceClass": "structural"
+        },
+        "contains|E|E.X|27": {
+          "evidenceClass": "structural"
+        },
+        "contains|I|I.y|32": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|@d|36": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|A|2": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|B|18": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|E|25": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|I|30": {
+          "evidenceClass": "structural"
+        },
+        "references|@d|String|36": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|A.f|Int|4": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|A.g|Int|9": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|B.h|Int|22": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|I.y|Int|32": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        }
+      }
+    },
+    "05-collision.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "class",
+          "Same",
+          5
+        ],
+        [
+          "property",
+          "f",
+          6
+        ],
+        [
+          "property",
+          "g",
+          7
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Same",
+          "Same.f",
+          6
+        ],
+        [
+          "contains",
+          "Same",
+          "Same.g",
+          7
+        ],
+        [
+          "exports",
+          "(file)",
+          "Same",
+          5
+        ],
+        [
+          "references",
+          "Same.f",
+          "Int",
+          6
+        ],
+        [
+          "references",
+          "Same.f",
+          "Int",
+          6
+        ],
+        [
+          "references",
+          "Same.g",
+          "Int",
+          7
+        ],
+        [
+          "references",
+          "Same.g",
+          "Int",
+          7
+        ]
+      ],
+      "relationshipMultiplicity": {
+        "references|Same.f|Int|6": 2,
+        "references|Same.g|Int|7": 2
+      },
+      "parameters": [
+        {
+          "kind": "property",
+          "name": "f",
+          "args": [
+            [
+              "x",
+              false,
+              ""
+            ]
+          ]
+        },
+        {
+          "kind": "property",
+          "name": "g",
+          "args": [
+            [
+              "x",
+              false,
+              ""
+            ],
+            [
+              "y",
+              true,
+              "1"
+            ]
+          ]
+        }
+      ],
+      "exports": [
+        "Same"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "uses",
+            "Same.f",
+            "Int",
+            6
+          ],
+          [
+            "uses",
+            "Same.f",
+            "Int",
+            6
+          ],
+          [
+            "uses",
+            "Same.g",
+            "Int",
+            7
+          ],
+          [
+            "uses",
+            "Same.g",
+            "Int",
+            7
+          ]
+        ]
+      },
+      "relationshipMetadata": {
+        "contains|Same|Same.f|6": {
+          "evidenceClass": "structural"
+        },
+        "contains|Same|Same.g|7": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Same|5": {
+          "evidenceClass": "structural"
+        },
+        "references|Same.f|Int|6": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Same.g|Int|7": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        }
+      }
+    },
+    "06-identity.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "namespace",
+          "schema",
+          11
+        ],
+        [
+          "property",
+          "query",
+          12
+        ],
+        [
+          "property",
+          "mutation",
+          17
+        ],
+        [
+          "method",
+          "Query",
+          20
+        ],
+        [
+          "class",
+          "Query",
+          24
+        ],
+        [
+          "property",
+          "here",
+          25
+        ],
+        [
+          "class",
+          "Remote",
+          28
+        ],
+        [
+          "property",
+          "added",
+          29
+        ],
+        [
+          "property",
+          "more",
+          30
+        ],
+        [
+          "class",
+          "Args",
+          42
+        ],
+        [
+          "property",
+          "f",
+          43
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Args",
+          "Args.f",
+          43
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.here",
+          25
+        ],
+        [
+          "contains",
+          "Remote",
+          "Remote.added",
+          29
+        ],
+        [
+          "contains",
+          "Remote",
+          "Remote.more",
+          30
+        ],
+        [
+          "contains",
+          "schema",
+          "schema.mutation",
+          17
+        ],
+        [
+          "contains",
+          "schema",
+          "schema.query",
+          12
+        ],
+        [
+          "exports",
+          "(file)",
+          "Args",
+          42
+        ],
+        [
+          "exports",
+          "(file)",
+          "Query",
+          24
+        ],
+        [
+          "exports",
+          "(file)",
+          "Remote",
+          28
+        ],
+        [
+          "exports",
+          "(file)",
+          "schema",
+          11
+        ],
+        [
+          "references",
+          "Args.f",
+          "Int",
+          43
+        ],
+        [
+          "references",
+          "Query.here",
+          "Int",
+          25
+        ],
+        [
+          "references",
+          "Remote.added",
+          "String",
+          29
+        ],
+        [
+          "references",
+          "Remote.more",
+          "Int",
+          30
+        ],
+        [
+          "uses",
+          "schema.mutation",
+          "Mutation",
+          17
+        ],
+        [
+          "uses",
+          "schema.query",
+          "Query",
+          12
+        ],
+        [
+          "uses",
+          "URL",
+          "@specifiedBy",
+          38
+        ]
+      ],
+      "relationshipMultiplicity": {},
+      "metadata": [
+        {
+          "kind": "class",
+          "name": "Remote",
+          "partial": true,
+          "inExtension": true
+        },
+        {
+          "kind": "property",
+          "name": "added",
+          "inExtension": true
+        },
+        {
+          "kind": "class",
+          "name": "Query",
+          "partial": false
+        },
+        {
+          "kind": "property",
+          "name": "f",
+          "rawType": "Int",
+          "nullable": true
+        }
+      ],
+      "exports": [
+        "schema",
+        "Query",
+        "Remote",
+        "Args"
+      ],
+      "mustNotEmit": {
+        "symbols": [
+          "Timestamp",
+          "URL"
+        ],
+        "relationships": [
+          [
+            "uses",
+            "Args.f",
+            "Int",
+            43
+          ],
+          [
+            "uses",
+            "Query.here",
+            "Int",
+            25
+          ],
+          [
+            "uses",
+            "Query",
+            "Query",
+            21
+          ],
+          [
+            "uses",
+            "Remote.added",
+            "String",
+            29
+          ],
+          [
+            "uses",
+            "Remote.more",
+            "Int",
+            30
+          ]
+        ]
+      },
+      "parameters": [
+        {
+          "kind": "property",
+          "name": "f",
+          "args": [
+            [
+              "required",
+              false,
+              ""
+            ],
+            [
+              "withDefault",
+              true,
+              "1"
+            ],
+            [
+              "nonNullWithDefault",
+              false,
+              "3"
+            ],
+            [
+              "nullableRequired",
+              false,
+              ""
+            ]
+          ]
+        }
+      ],
+      "relationshipMetadata": {
+        "contains|Args|Args.f|43": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.here|25": {
+          "evidenceClass": "structural"
+        },
+        "contains|Remote|Remote.added|29": {
+          "evidenceClass": "structural"
+        },
+        "contains|Remote|Remote.more|30": {
+          "evidenceClass": "structural"
+        },
+        "contains|schema|schema.mutation|17": {
+          "evidenceClass": "structural"
+        },
+        "contains|schema|schema.query|12": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Args|42": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Query|24": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Remote|28": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|schema|11": {
+          "evidenceClass": "structural"
+        },
+        "references|Args.f|Int|43": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.here|Int|25": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Remote.added|String|29": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Remote.more|Int|30": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "uses|schema.mutation|Mutation|17": {
+          "evidenceClass": "structural"
+        },
+        "uses|schema.query|Query|12": {
+          "evidenceClass": "structural"
+        },
+        "uses|URL|@specifiedBy|38": {
+          "evidenceClass": "structural"
+        }
+      }
+    },
+    "07-damaged.graphql": {
+      "parseError": true,
+      "noParseError": false,
+      "symbols": [
+        [
+          "class",
+          "Product",
+          11
+        ],
+        [
+          "property",
+          "id",
+          12
+        ],
+        [
+          "property",
+          "title",
+          13
+        ],
+        [
+          "class",
+          "Query",
+          16
+        ],
+        [
+          "property",
+          "product",
+          17
+        ],
+        [
+          "class",
+          "Damaged",
+          22
+        ],
+        [
+          "property",
+          "good",
+          23
+        ],
+        [
+          "property",
+          "bad",
+          24
+        ],
+        [
+          "class",
+          "T",
+          34
+        ],
+        [
+          "property",
+          "unterminated",
+          35
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Damaged",
+          "Damaged.bad",
+          24
+        ],
+        [
+          "contains",
+          "Damaged",
+          "Damaged.good",
+          23
+        ],
+        [
+          "contains",
+          "Product",
+          "Product.id",
+          12
+        ],
+        [
+          "contains",
+          "Product",
+          "Product.title",
+          13
+        ],
+        [
+          "contains",
+          "Query",
+          "Query.product",
+          17
+        ],
+        [
+          "contains",
+          "T",
+          "T.unterminated",
+          35
+        ],
+        [
+          "exports",
+          "(file)",
+          "Damaged",
+          22
+        ],
+        [
+          "exports",
+          "(file)",
+          "Product",
+          11
+        ],
+        [
+          "exports",
+          "(file)",
+          "Query",
+          16
+        ],
+        [
+          "exports",
+          "(file)",
+          "T",
+          34
+        ],
+        [
+          "references",
+          "Damaged.good",
+          "String",
+          23
+        ],
+        [
+          "references",
+          "Product.id",
+          "ID",
+          12
+        ],
+        [
+          "references",
+          "Product.title",
+          "String",
+          13
+        ],
+        [
+          "references",
+          "Query.product",
+          "ID",
+          17
+        ],
+        [
+          "references",
+          "Query.product",
+          "Product",
+          17
+        ],
+        [
+          "references",
+          "T.unterminated",
+          "Int",
+          36
+        ]
+      ],
+      "noEmptyEndpoint": true,
+      "metadata": [
+        {
+          "kind": "property",
+          "name": "bad"
+        },
+        {
+          "kind": "property",
+          "name": "unterminated"
+        }
+      ],
+      "exports": [
+        "Product",
+        "Query",
+        "Damaged",
+        "T"
+      ],
+      "mustNotEmit": {
+        "symbols": [
+          "broken",
+          "alsoBroken",
+          "ok"
+        ],
+        "relationships": [
+          [
+            "uses",
+            "Damaged.bad",
+            "",
+            24
+          ],
+          [
+            "uses",
+            "Damaged.good",
+            "String",
+            23
+          ],
+          [
+            "uses",
+            "Product.id",
+            "ID",
+            12
+          ],
+          [
+            "uses",
+            "Product.title",
+            "String",
+            13
+          ],
+          [
+            "uses",
+            "Query.product",
+            "ID",
+            17
+          ],
+          [
+            "uses",
+            "Query.product",
+            "Product",
+            17
+          ],
+          [
+            "uses",
+            "T.unterminated",
+            "",
+            35
+          ],
+          [
+            "uses",
+            "T.unterminated",
+            "",
+            36
+          ],
+          [
+            "uses",
+            "T.unterminated",
+            "Int",
+            36
+          ]
+        ]
+      },
+      "rationale": "A file the grammar cannot parse cleanly, to pin what the analyzer does with the recovered tree, and specifically that NO relationship may name nothing. Five shapes, and the difference between them is the point: (1) `broken:` (18) and `alsoBroken(x: )` (19) \u2014 the grammar's recovery makes the region an ERROR, no `FieldDefinition` node exists, and nothing is published. The field is UNPARSEABLE, not silently typed as something, and `broken` is forbidden as a name so a future recovery that DOES produce a node has to be a deliberate decision. (2) `Damaged.bad` (24) \u2014 its `Name` survives, so it IS an input field and DOES get a `contains` edge, but it gets NO `uses` edge because the recovered `Type` node has a MISSING `Name`. THIS IS THE REACHABLE EMPTY-ENDPOINT PATH, and it is the input-field arm's guard: with the guard on the NODE rather than on the RESOLVED NAME it published `uses Damaged.bad -> \"\"`, a row the store would write with an empty `target_external`. (3) `T.unterminated: [Int` (35) \u2014 an unterminated list. A `FieldDefinition` survives, and the recovered `Type > ListType` borrows the `Int` from the NEXT line, so the field resolves to `Int`: the `contains` edge is at 35 (the field's own name) and the `uses` edge is at 36 (the line of the `NamedType` that names the fact). Two facts, two lines, each naming its own node \u2014 which is the M59 line contract applied to a recovered tree. (4) `ok: Int` (36) is absorbed into (3) and is therefore NOT a symbol; forbidden by name so the absorption cannot be mistaken for a silent drop. (5) `Product`, `Query.product` and `Damaged.good` are the controls: recovery must not damage the parts of a damaged file that are still readable. Found by script/m12/graphql-contract-probe.ts, whose check \"missing-type field emits no bogus type reference\" had been asserting this since 2026-09-14 and had been failing against this analyzer since the start of this review. That probe's own fixture (a bare `broken:`) can only observe shape (1) \u2014 it never reaches a guard that could publish an empty endpoint \u2014 so the probe alone does not pin (2), and this file exists for it.",
+      "relationshipMetadata": {
+        "contains|Damaged|Damaged.bad|24": {
+          "evidenceClass": "structural"
+        },
+        "contains|Damaged|Damaged.good|23": {
+          "evidenceClass": "structural"
+        },
+        "contains|Product|Product.id|12": {
+          "evidenceClass": "structural"
+        },
+        "contains|Product|Product.title|13": {
+          "evidenceClass": "structural"
+        },
+        "contains|Query|Query.product|17": {
+          "evidenceClass": "structural"
+        },
+        "contains|T|T.unterminated|35": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Damaged|22": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Product|11": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Query|16": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|T|34": {
+          "evidenceClass": "structural"
+        },
+        "references|Damaged.good|String|23": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Product.id|ID|12": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Product.title|String|13": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.product|ID|17": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Query.product|Product|17": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|T.unterminated|Int|36": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        }
+      }
+    },
+    "08-heritage-and-exports.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "interface",
+          "Node",
+          11
+        ],
+        [
+          "property",
+          "id",
+          12
+        ],
+        [
+          "class",
+          "User",
+          16
+        ],
+        [
+          "property",
+          "id",
+          17
+        ],
+        [
+          "property",
+          "name",
+          18
+        ],
+        [
+          "class",
+          "Base",
+          22
+        ],
+        [
+          "property",
+          "f",
+          23
+        ],
+        [
+          "class",
+          "Sub",
+          26
+        ],
+        [
+          "property",
+          "f",
+          27
+        ],
+        [
+          "class",
+          "Orphan",
+          31
+        ],
+        [
+          "property",
+          "g",
+          32
+        ],
+        [
+          "class",
+          "Remote",
+          35
+        ],
+        [
+          "property",
+          "added",
+          36
+        ],
+        [
+          "function",
+          "@auth",
+          39
+        ],
+        [
+          "enum",
+          "Role",
+          41
+        ],
+        [
+          "enum_member",
+          "ADMIN",
+          42
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Base",
+          "Base.f",
+          23
+        ],
+        [
+          "contains",
+          "Node",
+          "Node.id",
+          12
+        ],
+        [
+          "contains",
+          "Orphan",
+          "Orphan.g",
+          32
+        ],
+        [
+          "contains",
+          "Remote",
+          "Remote.added",
+          36
+        ],
+        [
+          "contains",
+          "Role",
+          "Role.ADMIN",
+          42
+        ],
+        [
+          "contains",
+          "Sub",
+          "Sub.f",
+          27
+        ],
+        [
+          "contains",
+          "User",
+          "User.id",
+          17
+        ],
+        [
+          "contains",
+          "User",
+          "User.name",
+          18
+        ],
+        [
+          "exports",
+          "(file)",
+          "@auth",
+          39
+        ],
+        [
+          "exports",
+          "(file)",
+          "Base",
+          22
+        ],
+        [
+          "exports",
+          "(file)",
+          "Node",
+          11
+        ],
+        [
+          "exports",
+          "(file)",
+          "Orphan",
+          31
+        ],
+        [
+          "exports",
+          "(file)",
+          "Remote",
+          35
+        ],
+        [
+          "exports",
+          "(file)",
+          "Role",
+          41
+        ],
+        [
+          "exports",
+          "(file)",
+          "Sub",
+          26
+        ],
+        [
+          "exports",
+          "(file)",
+          "User",
+          16
+        ],
+        [
+          "extends",
+          "Sub",
+          "Base",
+          26
+        ],
+        [
+          "implements",
+          "Orphan",
+          "Unknown",
+          31
+        ],
+        [
+          "implements",
+          "User",
+          "Node",
+          16
+        ],
+        [
+          "overrides",
+          "Sub.f",
+          "Base.f",
+          27
+        ],
+        [
+          "overrides",
+          "User.id",
+          "Node.id",
+          17
+        ],
+        [
+          "references",
+          "@auth",
+          "Role",
+          39
+        ],
+        [
+          "references",
+          "Base.f",
+          "Int",
+          23
+        ],
+        [
+          "references",
+          "Node.id",
+          "ID",
+          12
+        ],
+        [
+          "references",
+          "Orphan.g",
+          "Int",
+          32
+        ],
+        [
+          "references",
+          "Remote.added",
+          "String",
+          36
+        ],
+        [
+          "references",
+          "Sub.f",
+          "Int",
+          27
+        ],
+        [
+          "references",
+          "User.id",
+          "ID",
+          17
+        ],
+        [
+          "references",
+          "User.name",
+          "String",
+          18
+        ]
+      ],
+      "ranges": [
+        [
+          "interface",
+          "Node",
+          "11:1"
+        ],
+        [
+          "class",
+          "User",
+          "16:1"
+        ],
+        [
+          "property",
+          "name",
+          "18:3"
+        ],
+        [
+          "class",
+          "Base",
+          "22:1"
+        ],
+        [
+          "class",
+          "Sub",
+          "26:1"
+        ],
+        [
+          "class",
+          "Orphan",
+          "31:1"
+        ],
+        [
+          "property",
+          "g",
+          "32:3"
+        ],
+        [
+          "class",
+          "Remote",
+          "35:1"
+        ],
+        [
+          "property",
+          "added",
+          "36:3"
+        ],
+        [
+          "function",
+          "@auth",
+          "39:1"
+        ],
+        [
+          "enum",
+          "Role",
+          "41:1"
+        ],
+        [
+          "enum_member",
+          "ADMIN",
+          "42:3"
+        ]
+      ],
+      "exports": [
+        "Node",
+        "User",
+        "Base",
+        "Sub",
+        "Orphan",
+        "Remote",
+        "@auth",
+        "Role"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "extends",
+            "Orphan",
+            "Unknown"
+          ],
+          [
+            "implements",
+            "Sub",
+            "Base"
+          ],
+          [
+            "overrides",
+            "User.name",
+            "Node.id"
+          ],
+          [
+            "overrides",
+            "Base.f",
+            "Base.f"
+          ]
+        ]
+      },
+      "why": [
+        "AUTHORED 2026-10-03 from the FIXTURE SOURCE with an independent tree-sitter walker (script/m14/tmp/graphql/fixtures are read, never the analyzer's output), and every row printed beside the source line it was read from.",
+        "The file exists to audit the three families the ontology census measured as derivable and the analyzer did not read: extends (an implements clause whose supertype THIS DOCUMENT declares to be an object type), overrides (a member an object supplies that the interface it implements also declares), and exports (the schema's public surface).",
+        "Four rows are pinned in `mustNotEmit` because they are the fabrications: extends must NOT be invented for a supertype the document says nothing about (`Orphan implements Unknown` stays implements), implements must NOT be used for an object-typed supertype, and overrides must NOT be invented for a member the two types do not share.",
+        "`parameters`, `docstrings` and `metadata` are deliberately absent for this fixture: it is about relationship families, and the other seven fixtures carry those channels."
+      ],
+      "relationshipMetadata": {
+        "contains|Base|Base.f|23": {
+          "evidenceClass": "structural"
+        },
+        "contains|Node|Node.id|12": {
+          "evidenceClass": "structural"
+        },
+        "contains|Orphan|Orphan.g|32": {
+          "evidenceClass": "structural"
+        },
+        "contains|Remote|Remote.added|36": {
+          "evidenceClass": "structural"
+        },
+        "contains|Role|Role.ADMIN|42": {
+          "evidenceClass": "structural"
+        },
+        "contains|Sub|Sub.f|27": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.id|17": {
+          "evidenceClass": "structural"
+        },
+        "contains|User|User.name|18": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|@auth|39": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Base|22": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Node|11": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Orphan|31": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Remote|35": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Role|41": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Sub|26": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|User|16": {
+          "evidenceClass": "structural"
+        },
+        "extends|Sub|Base|26": {
+          "evidenceClass": "structural"
+        },
+        "implements|Orphan|Unknown|31": {
+          "evidenceClass": "structural"
+        },
+        "implements|User|Node|16": {
+          "evidenceClass": "structural"
+        },
+        "overrides|Sub.f|Base.f|27": {
+          "evidenceClass": "structural"
+        },
+        "overrides|User.id|Node.id|17": {
+          "evidenceClass": "structural"
+        },
+        "references|@auth|Role|39": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Base.f|Int|23": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Node.id|ID|12": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Orphan.g|Int|32": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Remote.added|String|36": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|Sub.f|Int|27": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.id|ID|17": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "references|User.name|String|18": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        }
+      }
+    },
+    "10-file-imports.graphql": {
+      "noParseError": true,
+      "symbols": [
+        [
+          "class",
+          "Query",
+          33
+        ],
+        [
+          "property",
+          "me",
+          34
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Query",
+          "Query.me",
+          34
+        ],
+        [
+          "exports",
+          "(file)",
+          "Query",
+          33
+        ],
+        [
+          "references",
+          "Query.me",
+          "User",
+          34
+        ],
+        [
+          "imports",
+          "10-file-imports.graphql",
+          "./fragments/user.gql",
+          9
+        ],
+        [
+          "imports",
+          "10-file-imports.graphql",
+          "./fragments/user-fields.gql",
+          11
+        ],
+        [
+          "imports",
+          "10-file-imports.graphql",
+          "./fragments/all.gql",
+          13
+        ],
+        [
+          "imports",
+          "10-file-imports.graphql",
+          "./fragments/pair.gql",
+          15
+        ],
+        [
+          "imports",
+          "10-file-imports.graphql",
+          "./fragments/legacy.gql",
+          17
+        ]
+      ],
+      "parameters": [],
+      "exports": [
+        "Query"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "imports",
+            "10-file-imports.graphql",
+            "nothing",
+            24
+          ],
+          [
+            "imports",
+            "10-file-imports.graphql",
+            "every",
+            25
+          ],
+          [
+            "imports",
+            "10-file-imports.graphql",
+            "import",
+            26
+          ],
+          [
+            "imports",
+            "10-file-imports.graphql",
+            "./fragments/unterminated.graphql",
+            28
+          ],
+          [
+            "imports",
+            "10-file-imports.graphql",
+            "./fragments/no-quotes.gql",
+            29
+          ],
+          [
+            "imports",
+            "10-file-imports.graphql",
+            "NoTargetFrom",
+            31
+          ]
+        ]
+      },
+      "relationshipMetadata": {
+        "contains|Query|Query.me|34": {
+          "evidenceClass": "structural"
+        },
+        "exports|(file)|Query|33": {
+          "evidenceClass": "structural"
+        },
+        "references|Query.me|User|34": {
+          "evidenceClass": "structural",
+          "relationshipType": "declared_type"
+        },
+        "imports|10-file-imports.graphql|./fragments/user.gql|9": {
+          "evidenceClass": "structural",
+          "importForm": "bare",
+          "importSource": "10-file-imports.graphql"
+        },
+        "imports|10-file-imports.graphql|./fragments/user-fields.gql|11": {
+          "evidenceClass": "structural",
+          "importForm": "from_binding",
+          "importBindings": [
+            "UserFields"
+          ]
+        },
+        "imports|10-file-imports.graphql|./fragments/all.gql|13": {
+          "evidenceClass": "structural",
+          "importForm": "from_binding",
+          "importBindings": [
+            "*"
+          ]
+        },
+        "imports|10-file-imports.graphql|./fragments/pair.gql|15": {
+          "evidenceClass": "structural",
+          "importForm": "from_binding",
+          "importBindings": [
+            "First",
+            "Second"
+          ]
+        },
+        "imports|10-file-imports.graphql|./fragments/legacy.gql|17": {
+          "evidenceClass": "structural",
+          "importForm": "bare",
+          "importBindings": [
+            "Legacy"
+          ]
+        }
+      }
+    }
+  },
+  "documentKind": {
+    "01-sdl-core.graphql": "type_system",
+    "02-extensions.graphql": "type_system",
+    "03-executable.graphql": "executable",
+    "04-descriptions.graphql": "type_system",
+    "05-collision.graphql": "type_system",
+    "06-identity.graphql": "mixed",
+    "07-damaged.graphql": "type_system",
+    "08-heritage-and-exports.graphql": "type_system"
+  },
+  "familiesAddedByMasterReview": {
+    "variable_type": "A VariableDefinition's declared type. Emitted from the grammar's `Type` node, alongside `returnType`/`rawType`, so the fact exists as a relationship and not only as a string. Every sibling type reference (field_return_type, field_argument_type, input_field_type) already emitted one.",
+    "enum_value_reference": "An `EnumValue` node whose PARENT is a `Value` node. The parent test is the whole point: `EnumValueDefinition > EnumValue` is a DECLARATION and already a symbol with a `contains` edge, while `Value > EnumValue` is a REFERENCE. Qualified `Enum.RED` only where the document itself states the type (an InputValueDefinition or VariableDefinition carries its own `Type` sibling); bare `RED` where it does not (an executable field argument, a directive argument), which is the same rule the analyzer already applies to a field selection.",
+    "rowsAdded": {
+      "01-sdl-core.graphql role->Role.USER": "input UserInput { role: Role = USER } (L69) and enum Role { ... USER ... } (L41-45): the input field states its own type, so the default value names Role.USER, a symbol in this same file.",
+      "03-executable.graphql $id->ID": "query GetUser($id: ID!, ...) (L1): a VariableDefinition's declared type is a type reference, the same class as a field return type. ID is a specification built-in.",
+      "03-executable.graphql $withPosts->Boolean": "query GetUser($withPosts: Boolean = false) (L1): same class; Boolean is a specification built-in.",
+      "03-executable.graphql $input->UserInput": "mutation CreateUser($input: UserInput!) (L18): same class; UserInput is declared in 01-sdl-core.graphql, so this is a real cross-file reference."
+    },
+    "directive_argument_type": "A directive DEFINITION's argument type. The DirectiveDefinition branch emitted the `@name` symbol with `parameters` and then NO relationships at all, while the FieldDefinition branch emits `field_argument_type` for the identical construct \u2014 so `directive @auth(requires: Role = ADMIN)` said nothing about `Role`, and a directive's argument type was the only declared type in the language with no edge to it. Its own role name, because reusing `field_argument_type` would be untrue and would hide the finding in the data.",
+    "sourceIdentity": "The first version of these new edges hung the enum reference off the BARE argument or field name (`role -> Role.USER`), which is not a symbol, so the edge had no source to resolve to. The corpus sweep only ever measured unresolved TARGETS, so a bad source was invisible to it. The source is now the owning symbol's qualified identity \u2014 `UserInput.role`, `Query.item`, `@auth` \u2014 with the argument named in metadata, exactly as `input_field_type` and `field_argument_type` already do. A source-resolvability check was added to the project-resolution gate because of this."
+  },
+  "familiesAddedByOntologyCensus": {
+    "declared_type_references": "The five positions where a DECLARATION writes a type name \u2014 a field's return type, a field argument's type, an input field's type, a variable's type and a directive argument's type \u2014 are `references` carrying metadata.relationshipType='declared_type'. Ledger rule R9 is the family contract and java/kotlin/scala/csharp/go/typescript/rust all label the same position `references` while emitting no `uses` for it, so the edge is REPLACED rather than duplicated. Each of the 59 retyped rows is also a mustNotEmit row under its old `uses` label, so a reversion is caught rather than tolerated.",
+    "exports_edges": "Every top-level type-system declaration is published as an `exports` EDGE from `(file)` with metadata.fileLevel=true, mirroring the `exports` ExportInfo channel one-for-one. `ParseResult.exports` alone reached no graph: parallel-indexer reads `result.imports` (line 3293, into brain_import) and reads nothing named `exports`, so the only `exports` it knows is a relationship.",
+    "interface_member_supplied": "A member an object declares that a type it implements also declares is an `overrides` edge from the object's member to the interface's. Spec 3.6 requires the object to supply every interface member, so the object's field is the one that implements it. Measured 1,054 occurrences across 4 corpus files, all same-document, which is the resolution this post-pass can do.",
+    "heritage_label": "`implements` and `extends` are written with ONE grammar rule, so the label is read off what the DOCUMENT declares the supertype to be. Measured on the corpus: 11 clauses name a supertype no file declares as an interface, 7 of them in documents with zero ERROR/MISSING nodes, and 0 of those 7 declare the supertype in the same document \u2014 so a per-file analyzer reaches none of them and the cross-file remainder is declared as a limitation with its count."
+  },
+  "familiesAddedByFileImportsFixture": {
+    "imports_edges": "APPENDED after the ontology census. `imports` was EMITTED on 170 corpus edges and covered by an m14 fixture expectation (validation/m14/fixtures/graphql/ontology-file-imports.expectation.json, 4 expect + 12 forbid rows) but by NO differential fixture and NO mutant \u2014 so the one family this lane added this wave had never been shown able to go red, and a suite printing '0 survived' while the newest family is unmutated proves nothing about it. These rows were derived from fixtures/10-file-imports.graphql line by line, BEFORE the analyzer was run on it, which is the only order that makes a differential worth reading. Five positive spellings (bare, one binding, `*`, a comma-separated list of two, and the `as` form) and six negative lines whose whole purpose is that a classifier with no way to say 'no' counts its own input."
+  }
+}

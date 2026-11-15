@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <main id="app">
+    <!-- SCOPE BARRIERS. `<template>` content is an inert fragment and `<slot>`
+         content is light-DOM fallback: neither is rendered where it is written,
+         so neither is a child of what encloses it in the source. The pre-fix
+         analyzer claimed `template contains inner` for markup that never enters
+         the document, and a `<template id="x">` collided with its live-DOM twin
+         as two identically-named symbols.
+
+         An ADDRESSABLE barrier (it has an id) owns its own fragment. A BARE one
+         does not: its named descendants belong to the nearest live ancestor, and
+         carry `inTemplateBarrier` so a reader can still tell a fragment from a
+         live subtree. -->
+    <template id="row-tpl">
+      <tr class="row"><td id="tplCell">fragment cell</td></tr>
+    </template>
+
+    <template>
+      <section id="orphan-fragment">belongs to app, flagged as a fragment</section>
+    </template>
+
+    <slot name="header" id="hdr-slot">
+      <h2 id="slot-fallback">shown only when nothing is slotted in</h2>
+    </slot>
+
+    <!-- A template id and its live-DOM twin are two DIFFERENT nodes in two
+         different trees. Both are addressable, so both are symbols, and they get
+         distinct names by the deterministic `#N` rule — never one name twice. -->
+    <section id="row-tpl">
+      <h3 id="tplTitle">live twin of the template's id</h3>
+    </section>
+
+    <!-- FORWARD REFERENCE. A `<label for>` naming a control declared LATER is
+         legal HTML and extremely common (a label above its field). The pre-fix
+         analyzer resolved labels through a map it had already finished building,
+         so it worked only when the target happened to come first — the
+         post-differential audit on a real corpus page found labels whose edge was
+         simply absent, with nothing to distinguish "unresolved" from "after". -->
+    <label id="lbl-later" for="declared-below">Query</label>
+    <input id="declared-below" name="q" type="search">
+
+    <!-- …and a BACKWARD reference, which must behave identically. -->
+    <input id="declared-above" name="r" type="text">
+    <label id="lbl-above" for="declared-above">Range</label>
+
+    <!-- An AMBIGUOUS target: two elements carry this id, which is invalid HTML.
+         getElementById returns the FIRST, so the reference resolves to the first
+         and says so — rather than resolving to whichever the map happened to
+         hold last. -->
+    <div id="twin">first</div>
+    <div id="twin">second</div>
+    <label id="lbl-twin" for="twin">Which one?</label>
+
+    <!-- A label pointing at an id that does not exist emits NOTHING. That is not
+         silence, it is the honest answer: there is no reference to make. -->
+    <label id="lbl-dangling" for="never-declared">Dangling</label>
+  </main>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "fixtureId": "kotlin/visibility-payload",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Matrix 1b visibility payload (section C). Kotlin visibility modifiers are explicit keywords: public (default), internal, protected, private — each member carries the modifier it declares.",
+  "expectSymbols": [
+    { "name": "Vis", "kind": "class" },
+    { "name": "pub", "kind": "property", "ownerName": "Vis" },
+    { "name": "int", "kind": "property", "ownerName": "Vis" },
+    { "name": "prot", "ownerName": "Vis" },
+    { "name": "priv", "ownerName": "Vis" }
+  ],
+  "expectVisibility": [
+    { "symbol": "pub", "visibility": "public" },
+    { "symbol": "int", "visibility": "internal" },
+    { "symbol": "prot", "visibility": "protected" },
+    { "symbol": "priv", "visibility": "private" }
+  ]
+}

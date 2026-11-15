@@ -1,0 +1,121 @@
+{
+  "fixtureId": "r/F06-s7",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "S7 method registration is a function call on the LEFT of an assignment: `S7::method(format, Temperature) <- function(object, ...)`. The bound \"name\" is a CALL, so the identifier rule that finds every other R declaration cannot see it at all -- S7 is the object system ggplot2 and dplyr write today and 31 method definitions appear in ggplot2 alone. The second and third registrations are the hard part: S7 dispatches on a SET of classes and the owner must come from the FIRST named class in `list(Reading, Writing)`. `Writing` is forbidden as an owner so an implementation that takes the last element, or joins the list into one name, is caught; `Reading` is pinned as the owner twice, once per registration, because the two `format` methods are different functions with the same name and only the owner distinguishes them. `object@celsius` is an S4-style slot read of an S7 object and is a `uses` edge to the bare member name, so it binds to the same `celsius` property symbol that `new_class(properties=)` published -- that join is the whole reason the `uses` type exists.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Temperature",
+      "kind": "class"
+    },
+    {
+      "name": "celsius",
+      "kind": "property",
+      "ownerName": "Temperature"
+    },
+    {
+      "name": "scale",
+      "kind": "property",
+      "ownerName": "Temperature"
+    },
+    {
+      "name": "format",
+      "kind": "method",
+      "ownerName": "Temperature"
+    },
+    {
+      "name": "format",
+      "kind": "method",
+      "ownerName": "Reading"
+    },
+    {
+      "name": "show",
+      "kind": "method",
+      "ownerName": "Reading"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Temperature",
+      "target": "Measurement",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Temperature",
+      "target": "celsius",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Temperature",
+      "target": "scale",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Temperature",
+      "target": "format",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Reading",
+      "target": "format",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Reading",
+      "target": "show",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "uses",
+      "from": "format",
+      "target": "celsius",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "format",
+      "target": "helper_format",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "format",
+      "target": "paste0",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Reading",
+      "kind": "class"
+    },
+    {
+      "name": "Writing",
+      "kind": "class"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Writing",
+      "target": "format"
+    },
+    {
+      "type": "contains",
+      "from": "Measurement",
+      "target": "format"
+    },
+    {
+      "type": "extends",
+      "from": "Temperature",
+      "target": "Reading"
+    }
+  ]
+}

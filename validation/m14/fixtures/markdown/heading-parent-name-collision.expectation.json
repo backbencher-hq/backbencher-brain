@@ -1,0 +1,137 @@
+{
+ "fixtureId": "markdown/heading-parent-name-collision",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A heading whose TEXT equals its parent's text published no `contains` edge at all, because both ends of the edge spell the same word and the analyzer's edge builder drops a self-edge. The two sites are genuinely distinct — a child's identity is qualified by its parent, so `## Changelog` under `# Changelog` is `Changelog.Changelog` — but the published contract spelling of a first occurrence is the bare display text, so the strings collided. The differential found it rather than the read, and found it quietly: the tree oracle derives the edge from the grammar, the analyzer did not have it, and the whole kubernetes draw missed by one edge in roughly one draw in nine (`vendor/github.com/google/uuid/CHANGELOG.md`, 1 MISSING out of ~5800 tree-truth edges). A one-in-nine rate with a gate that reports only a count is a rate at which a reader writes the number off as sampling noise, which is why the edge this pins is worth a fixture even though it is one relationship. The repeated-sibling half (`## Example` twice under one parent -> `Example#2`, both children of `Setup`) is in the same fixture because the two rules are easy to confuse: a repeat gets a site suffix, a same-text-as-parent does not, and getting them backwards would publish a hierarchy that looks plausible and is wrong. forbidSymbols pins the contract half — the qualified path is an INTERNAL id and must not surface as a published name, which is what keeps the collision possible in the first place and is why this class could not be fixed by publishing qualified names everywhere.",
+ "expectSymbols": [
+  {
+   "name": "Changelog",
+   "kind": "type",
+   "ownerName": "Changelog",
+   "meta.headingLevel": 2
+  },
+  {
+   "name": "Changelog",
+   "kind": "type",
+   "ownerName": "Changelog",
+   "meta.headingLevel": 3
+  },
+  {
+   "name": "Setup",
+   "kind": "type",
+   "meta.headingLevel": 1
+  },
+  {
+   "name": "Setup",
+   "kind": "type",
+   "ownerName": "Setup",
+   "meta.headingLevel": 2
+  },
+  {
+   "name": "Example",
+   "kind": "type",
+   "ownerName": "Setup",
+   "meta.headingLevel": 2
+  },
+  {
+   "name": "Example#2",
+   "kind": "type",
+   "ownerName": "Setup",
+   "meta.headingLevel": 2,
+   "meta.isRepeatedSite": true
+  },
+  {
+   "name": "Distinct",
+   "kind": "type",
+   "ownerName": "Setup",
+   "meta.headingLevel": 2
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "Changelog",
+   "equals": 3
+  },
+  {
+   "name": "Setup",
+   "equals": 2
+  },
+  {
+   "name": "Example",
+   "equals": 1
+  },
+  {
+   "name": "Example#2",
+   "equals": 1
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Changelog",
+   "target": "Changelog",
+   "meta.evidenceClass": "structural",
+   "line_number": 3
+  },
+  {
+   "type": "contains",
+   "from": "Changelog",
+   "target": "Changelog",
+   "meta.evidenceClass": "structural",
+   "line_number": 11
+  },
+  {
+   "type": "contains",
+   "from": "Setup",
+   "target": "Setup",
+   "meta.evidenceClass": "structural",
+   "line_number": 17
+  },
+  {
+   "type": "contains",
+   "from": "Setup",
+   "target": "Example",
+   "meta.evidenceClass": "structural",
+   "line_number": 23
+  },
+  {
+   "type": "contains",
+   "from": "Setup",
+   "target": "Example#2",
+   "meta.evidenceClass": "structural",
+   "line_number": 25
+  },
+  {
+   "type": "contains",
+   "from": "Setup",
+   "target": "Distinct",
+   "meta.evidenceClass": "structural",
+   "line_number": 34
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "Setup",
+   "target": "Example#3"
+  },
+  {
+   "from": "Example",
+   "target": "Example#2"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "Changelog.Changelog"
+  },
+  {
+   "name": "Setup.Setup"
+  },
+  {
+   "name": "Changelog.Changelog.Changelog"
+  }
+ ],
+ "_seamNote": {
+  "what": "The fix is one boolean at the heading-hierarchy call site, and it is a claim about identity rather than about strings: `ownerId !== id` cannot be false for a non-empty heading name, because a child's id is `${ownerId}.${name}` with an optional `#n` site suffix.",
+  "why": "Publishing qualified ids everywhere would remove the collision by removing the contract spelling, but the contract spelling is the reader-facing name and changing it would rename every section in every markdown document in the index. The distinction the guard was reaching for — does this edge point at the same node twice? — is a question about identity, and only identity can answer it. The self-edge filter stays for every other call site, where source and target genuinely are the same string because there is only one site involved."
+ }
+}

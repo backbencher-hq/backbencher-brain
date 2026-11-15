@@ -1,0 +1,70 @@
+{
+  "fixtureId": "xml/xsd-definition-composition",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "`mixes_in` at rung R3: XSD's definition composition is the one construct in this language that composes reusable definitions into a type WITHOUT declaring a supertype relation. `<xs:group ref=\"G\"/>` inside a complexType composes G's content model into the type (XSD 1.0 §3.8.2: the containing type's content model IS the referenced group's) and `<xs:attributeGroup ref=\"G\"/>` composes G's attribute declarations (§3.6.2). The composed definitions BECOME PART OF the type, and the type neither extends the group nor declares any conformance to it — the `mixes_in` contract in `src/ast/types.ts` (a mixin composed into a class's supertype chain: no single base, no inheritance clause, no conformance declared). MEASURED over the whole admitted population (11,593 files, 202 repos, root .corpus; validation/m14/fixtures/xml/mixin-discriminator.json): 518 sites — 296 group ref sites / 55 files (256 in-file, 17 cross-file, 23 absent) and 222 attributeGroup ref sites / 60 files (109 in-file, 110 cross-file, 3 absent). Both are STRUCTURAL, so the ladder stops at R3: `ref=` is an ordinary attribute the grammar already parses. THE DISCRIMINATOR IS THE CARRIER, NOT THE ATTRIBUTE NAME: only `xs:group` and `xs:attributeGroup` in the XSD namespace compose definitions. The `ref=` on an ELEMENT (line 14) is a reference to a declared element — an impostor class that stays in the generic QName path and is FORBIDDEN here as a mixes_in row. DIRECTION (types.ts MixesIn): source = the class composing the mixin, target = the mixin — here source is the nearest named declaration above the carrier (the complexType, because the carrier `xs:group` is a vocabulary tag no document declares; the same rule `extends` measured 438/438 fabricated sources to learn), target is the composed group's LOCAL name (a prefix never reaches the target). Collected and decided after the walk, because a group may be declared after the type that composes it. REFUSED when the name resolves nowhere (the M60.R10 rule): the `ipo:` prefix in this file is bound but declares nothing, so a hypothetical `ref=\"ipo:nothing\"` would emit no row. The three already-labelled neighbours are pinned beside it so one construct cannot carry two labels: `base=` on `xs:extension` (line 18) stays `extends` (XSD derivation, §3.4.2), `type=` (line 15/20) is a type USE that stays `references`, and neither may also appear as mixes_in. Lines are read off the file.",
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "formattedText",
+      "target": "markupElement",
+      "line_number": 10,
+      "meta.role": "xsd_definition_composition",
+      "meta.composedKind": "group",
+      "meta.attributeName": "ref",
+      "meta.qname": "markupElement",
+      "meta.resolvable": "in-document"
+    },
+    {
+      "type": "mixes_in",
+      "from": "formattedText",
+      "target": "sharedAttrs",
+      "line_number": 11,
+      "meta.role": "xsd_definition_composition",
+      "meta.composedKind": "attributeGroup",
+      "meta.attributeName": "ref",
+      "meta.resolvable": "in-document"
+    },
+    {
+      "type": "references",
+      "from": "plainText",
+      "target": "xs:choice.b",
+      "line_number": 14,
+      "meta.role": "attribute_qname_reference",
+      "note": "the ref= on an ELEMENT is a reference to a declared element, not a composition"
+    },
+    {
+      "type": "extends",
+      "from": "derivedText",
+      "target": "xs:schema.formattedText",
+      "line_number": 18,
+      "meta.role": "xsd_derivation_base",
+      "note": "base= is type DERIVATION (§3.4.2), the construct that stays extends"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "plainText",
+      "target": "b",
+      "note": "the impostor class: an element's ref= is a reference, not a composition — the discriminator is the carrier (xs:group/xs:attributeGroup), never the attribute name"
+    },
+    {
+      "type": "mixes_in",
+      "from": "out",
+      "target": "plainText",
+      "note": "type= is a type USE already carried by references; it composes nothing"
+    },
+    {
+      "type": "mixes_in",
+      "from": "derivedText",
+      "target": "formattedText",
+      "note": "base= is derivation and stays extends; a type may not carry both labels for one construct"
+    },
+    {
+      "type": "mixes_in",
+      "target": "string",
+      "note": "an XSD built-in type reference (type=\"xs:string\") composes nothing"
+    }
+  ]
+}

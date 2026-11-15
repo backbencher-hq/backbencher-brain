@@ -1,0 +1,152 @@
+{
+  "fixtureId": "cpp/macro-decorated-specifier",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#743 cpp port (the C wave's rule, narrowed for cpp). A BARE identifier macro in the declaration specifier was MEASURED, through the production entry, to cost the whole decorated declaration AND to mint a phantom symbol named after the macro: on fmt, `define FMT_EXPORT` + `FMT_EXPORT struct as_identifiers_t { ... };` parsed as a declaration whose type was `FMT_EXPORT` with a phantom `namespace_identifier \"struct\"` and a MISSING `::`, so no `as_identifiers_t` symbol and no members existed; `variable struct`, `variable enum`, `variable class` and `type typedef` were literal keyword-named symbols (8 of them across fmt under the old grammar, 2 under this one). Porting the C rule VERBATIM was refused on measurement: cpp's `_scope_resolution` has an OPTIONAL scope, so `A::B` is readable as the qualified type `A::B` or as macro `A` decorating the type `::B`; that new derivation needed a conflict declaration, and declaring it flipped runtime path selection in unrelated code — `fmt::format_to(std::back_inserter(buf), format_str, item1, item2);`, a statement in a file with zero ERRORs, parsed as a DECLARATION of a function named `::format_to`. The landed rule therefore restricts the decorated type to the KEYWORD-LED specifiers, which makes the bad derivation ungrammatical and needs no conflict at all. This fixture pins both halves: the recovery (classes + owned members) and the non-hijack (`ns::sink(1)` stays a call; a qualified type stays a type). REFINED 2026-09-30 (D9): `EXPORT_API` and `NLOHMANN_DECL` are `#define`d in this very file (lines 20-21), and the pins said no symbol of ANY kind may carry those names. The invariant this file documents is narrower and is stated in its own `forbidSymbols`: the defect is a PHANTOM symbol of kind `variable` minted from specifier recovery. D9 publishes the macro DECLARATION (kind `constant`, from the `preproc_def` node), so the name-scoped pin could not distinguish them. Pins are now kind-scoped to `variable` and a positive pin requires the declaration — stricter than before on both sides. The `struct`/`enum`/`class`/`typedef` counts stay at 0 unscoped: those are keyword fabrications with no legitimate declaration to collide with.",
+  "expectSymbols": [
+    {
+      "name": "exportedFn",
+      "kind": "function"
+    },
+    {
+      "name": "Decorated",
+      "kind": "class"
+    },
+    {
+      "name": "firstField",
+      "kind": "property"
+    },
+    {
+      "name": "secondField",
+      "kind": "property"
+    },
+    {
+      "name": "decoratedInt",
+      "kind": "variable"
+    },
+    {
+      "name": "staticExported",
+      "kind": "function"
+    },
+    {
+      "name": "Templated",
+      "kind": "class"
+    },
+    {
+      "name": "onlyField",
+      "kind": "property"
+    },
+    {
+      "name": "ns",
+      "kind": "namespace"
+    },
+    {
+      "name": "Type",
+      "kind": "class"
+    },
+    {
+      "name": "sink",
+      "kind": "function"
+    },
+    {
+      "name": "callSite",
+      "kind": "function"
+    },
+    {
+      "name": "EXPORT_API",
+      "kind": "constant"
+    },
+    {
+      "name": "NLOHMANN_DECL",
+      "kind": "constant"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "EXPORT_API",
+      "equals": 0,
+      "kind": "variable"
+    },
+    {
+      "name": "NLOHMANN_DECL",
+      "equals": 0,
+      "kind": "variable"
+    },
+    {
+      "name": "struct",
+      "equals": 0
+    },
+    {
+      "name": "enum",
+      "equals": 0
+    },
+    {
+      "name": "class",
+      "equals": 0
+    },
+    {
+      "name": "typedef",
+      "equals": 0
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Decorated",
+      "target": "firstField"
+    },
+    {
+      "type": "contains",
+      "from": "Decorated",
+      "target": "secondField"
+    },
+    {
+      "type": "contains",
+      "from": "Templated",
+      "target": "onlyField"
+    },
+    {
+      "type": "contains",
+      "from": "ns",
+      "target": "Type"
+    },
+    {
+      "type": "contains",
+      "from": "ns",
+      "target": "sink"
+    },
+    {
+      "type": "calls",
+      "from": "callSite",
+      "target": "sink"
+    },
+    {
+      "type": "uses",
+      "from": "callSite",
+      "target": "member",
+      "meta.relationshipType": "field_access"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "struct",
+      "kind": "variable"
+    },
+    {
+      "name": "enum",
+      "kind": "variable"
+    },
+    {
+      "name": "class",
+      "kind": "variable"
+    },
+    {
+      "name": "exportedFn",
+      "kind": "variable"
+    },
+    {
+      "name": "Decorated",
+      "kind": "variable"
+    }
+  ]
+}

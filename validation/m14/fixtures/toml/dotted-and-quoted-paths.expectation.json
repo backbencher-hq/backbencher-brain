@@ -1,0 +1,123 @@
+{
+  "comment": "THE ORACLE'S FIRST CORPUS RUN FOUND THREE DEFECTS HERE, AND EVERY OTHER GATE WAS BLIND TO ALL THREE. This fixture exists because of that, and it is the strongest argument in the lane for having written an independent derivation at all. (1) BARE-WRITABILITY, NOT PUNCTUATION. `[target.\"cfg(unix)\".dependencies]` is real cargo syntax; the segment `cfg(unix)` contains parentheses, and a test for `.`/`\"`/`\\` finds no punctuation in it at all, so the name was emitted UNQUOTED. An unquoted path is not a spelling TOML can parse back, so the name had lost the property that makes it faithful. The rule is now the spec's question — may this segment be written BARE? — and TOML's bare-key alphabet is exactly A-Za-z0-9_- with no empty key. (2) ONE FUNCTION OWNS A PATH'S SPELLING. `resolveOwner` built its ancestor prefixes from RAW segments while `declaredTables` was keyed by `joinPath`, which re-quotes — so a lookup for `target.cfg(unix).dependencies` could never match the stored `target.\"cfg(unix)\".dependencies`, and a declared ancestor was reported as IMPLIED. The symbol's NAME stayed right (the emit path does use `joinPath`), so only the CONTAINMENT was wrong: cargo's own Cargo.toml files `[target.'cfg(windows)'.dependencies.windows-sys]` under the MODULE instead of under the `[target.'cfg(windows)'.dependencies]` declared three lines earlier. Two paths through one file building one key differently is invisible to a fixture and obvious to a differential. (3) A SPACE is the second half of rule (1): legal in a quoted key, illegal in a bare one, and a punctuation test would not notice it either.",
+  "expectSymbols": [
+    {
+      "name": "dotted-and-quoted-paths",
+      "kind": "module"
+    },
+    {
+      "name": "target.\"cfg(unix)\".dependencies",
+      "kind": "namespace",
+      "comment": "QUOTED, because `cfg(unix)` has parentheses and cannot be written bare"
+    },
+    {
+      "name": "target.\"cfg(unix)\".dependencies.libc",
+      "kind": "property"
+    },
+    {
+      "name": "target.\"cfg(windows)\".dependencies",
+      "kind": "namespace"
+    },
+    {
+      "name": "target.\"cfg(windows)\".dependencies.other",
+      "kind": "property"
+    },
+    {
+      "name": "target.\"cfg(windows)\".dependencies.windows-sys",
+      "kind": "namespace",
+      "comment": "a FOUR-SEGMENT HEADER, not a `windows-sys` key under `dependencies` — and it is OWNED by the declared parent, not by the module"
+    },
+    {
+      "name": "target.\"cfg(windows)\".dependencies.windows-sys.version",
+      "kind": "property"
+    },
+    {
+      "name": "quoted.\"with space\"",
+      "kind": "namespace",
+      "comment": "a space is legal in a quoted key and illegal in a bare one, so the segment is quoted — the same rule as the parentheses case, from the same question"
+    },
+    {
+      "name": "quoted.\"with space\".k",
+      "kind": "property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "target.cfg(unix).dependencies",
+      "comment": "the UNQUOTED spelling. It contains no punctuation a character test would catch — the parentheses are invisible to it — and an unquoted path is not a spelling TOML can parse, so the name would no longer round-trip to the document it names."
+    },
+    {
+      "name": "quoted.with space",
+      "comment": "the UNQUOTED spelling of a key that needs quotes. A punctuation test passes this one too: a space is not punctuation."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths",
+      "target": "dotted-and-quoted-paths.target.\"cfg(unix)\".dependencies",
+      "line_number": 9,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths.target.\"cfg(unix)\".dependencies",
+      "target": "dotted-and-quoted-paths.target.\"cfg(unix)\".dependencies.libc",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths",
+      "target": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies",
+      "line_number": 15,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies",
+      "target": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies.other",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies",
+      "target": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies.windows-sys",
+      "line_number": 18,
+      "meta.isTableHeader": true,
+      "comment": "THE CONTAINMENT PIN. The SOURCE is the declared parent, not the module. When the two path-builders disagreed this edge read `from=dotted-and-quoted-paths`, the name stayed correct, and no symbol assertion could see it — only the edge's source could."
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies.windows-sys",
+      "target": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies.windows-sys.version",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths",
+      "target": "dotted-and-quoted-paths.quoted.\"with space\"",
+      "line_number": 24,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths.quoted.\"with space\"",
+      "target": "dotted-and-quoted-paths.quoted.\"with space\".k",
+      "line_number": 25
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths",
+      "target": "dotted-and-quoted-paths.target.\"cfg(windows)\".dependencies.windows-sys",
+      "comment": "the WRONG OWNER, stated as a forbidden edge. Filing this header under the module is what the split path-builder produced on cargo's own Cargo.toml."
+    },
+    {
+      "type": "contains",
+      "from": "dotted-and-quoted-paths",
+      "target": "target.cfg(unix).dependencies",
+      "comment": "the unquoted NAME as well as the wrong owner — a transcription of the defect in both of its halves."
+    }
+  ]
+}

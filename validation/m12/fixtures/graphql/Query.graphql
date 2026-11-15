@@ -1,0 +1,25 @@
+query GetUser($id: ID!) {
+  user(id: $id) {
+    id
+    name
+    ...UserFields
+    ... on Actor {
+      login
+    }
+  }
+}
+
+mutation CreateUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    id
+    name
+  }
+}
+
+fragment UserFields on User {
+  id
+  name
+  friends {
+    name
+  }
+}

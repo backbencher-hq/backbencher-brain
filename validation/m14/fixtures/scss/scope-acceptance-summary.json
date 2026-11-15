@@ -1,0 +1,137 @@
+{
+  "instrument": "THE ACCEPTANCE FOR 07aa75c80 \u2014 the SCSS file-scoped identity for this lane's added symbols",
+  "at": "2026-10-13T10:55:00-04:00",
+  "population": {
+    "repos": 25,
+    "files": 4433,
+    "scope": "COMPLETE (no stride), sharded per repository",
+    "sharding": "25 repositories walked separately and summed, because a sequential walk past ~9,000 files can be answered by extractFallback"
+  },
+  "partition": {
+    "calls": {
+      "before": {
+        "ambDeclOnly": 26,
+        "resolved": 278
+      },
+      "after": {
+        "resolved": 304
+      },
+      "totalBefore": 304,
+      "totalAfter": 304,
+      "partitionCloses": true
+    },
+    "contains": {
+      "before": {
+        "resolved": 13512
+      },
+      "after": {
+        "resolved": 13512
+      },
+      "totalBefore": 13512,
+      "totalAfter": 13512,
+      "partitionCloses": true
+    },
+    "exports": {
+      "before": {
+        "ambDeclOnly": 983,
+        "resolved": 3065
+      },
+      "after": {
+        "resolved": 4048
+      },
+      "totalBefore": 4048,
+      "totalAfter": 4048,
+      "partitionCloses": true
+    },
+    "extends": {
+      "before": {
+        "ambDeclOnly": 40,
+        "resolved": 231,
+        "unresolved": 155
+      },
+      "after": {
+        "ambDeclOnly": 40,
+        "resolved": 231,
+        "unresolved": 155
+      },
+      "totalBefore": 426,
+      "totalAfter": 426,
+      "partitionCloses": true
+    },
+    "imports": {
+      "before": {
+        "resolved": 231,
+        "unresolved": 3407
+      },
+      "after": {
+        "resolved": 231,
+        "unresolved": 3407
+      },
+      "totalBefore": 3638,
+      "totalAfter": 3638,
+      "partitionCloses": true
+    },
+    "overrides": {
+      "before": {
+        "ambDeclOnly": 16,
+        "resolved": 16
+      },
+      "after": {
+        "resolved": 32
+      },
+      "totalBefore": 32,
+      "totalAfter": 32,
+      "partitionCloses": true
+    },
+    "references": {
+      "before": {
+        "ambDeclOnly": 1501,
+        "resolved": 4124,
+        "unresolved": 3733
+      },
+      "after": {
+        "ambDeclOnly": 714,
+        "resolved": 4911,
+        "unresolved": 3733
+      },
+      "totalBefore": 9358,
+      "totalAfter": 9358,
+      "partitionCloses": true
+    },
+    "uses": {
+      "before": {
+        "resolved": 91
+      },
+      "after": {
+        "resolved": 91
+      },
+      "totalBefore": 91,
+      "totalAfter": 91,
+      "partitionCloses": true
+    }
+  },
+  "collisionClass": {
+    "definition": "a bare target whose name is declared by MORE THAN ONE FILE of the same project \u2014 the class the fix's comment names (`catppuccin/{_frappe,_macchiato,_mocha}.scss` each declaring `$catppuccin-rosewater`)",
+    "before": {
+      "ambDeclOnly": 2566
+    },
+    "after": {
+      "ambDeclOnly": 754
+    }
+  },
+  "falseBindings": {
+    "checked": 21362,
+    "raw": 274,
+    "byRepo": {
+      "Documenter.jl": 4,
+      "bootstrap": 16,
+      "consul": 96,
+      "nomad": 3,
+      "primer-css": 139,
+      "spectre": 5,
+      "vue-element-admin": 7,
+      "waypoint": 4
+    },
+    "diagnosis": "ALL 274 ARE `imports` EDGES, and they are CORRECT: an `imports` edge names ANOTHER file's module \u2014 `src/support/index::index.scss` declared in `src/support/index.scss`, imported by `src/autocomplete/index.scss` \u2014 which is exactly why the fix's own comment EXCLUDES `imports` from the rewrite set. Measured per repo: non-imports false bindings 0, and false bindings among the fix's own rewritable types 0, in all eight repos that had any."
+  }
+}

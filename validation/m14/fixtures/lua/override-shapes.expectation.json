@@ -1,0 +1,88 @@
+{
+  "fixtureId": "lua/override-shapes",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-44 (`overrides`), authored from the two shapes Lua writes, which is the whole reason the type could not be ruled: probe B1 counted 65 same-name redefinitions across 37 of 3,250 corpus files and probe B2 counted 1 inherited-member case — both non-zero, so the lua grammar's 100 node types (which carry no `override_specifier` and no `redefinition` node) could never have falsified a ruling, and instrument B was the only instrument that could. The two shapes are asserted separately because fusing them would state one of them falsely. `overridesLine` and `memberPath` are asserted because they are what make the edge usable: without the prior declaration's line a redefinition edge is indistinguishable from a first declaration, and without the member's name an `overrides` edge between two tables does not say WHAT is overridden. The confidence values are the family's, not invented here: 1.0 for the redefinition (both endpoints are nodes this parse saw — real-bash-analyzer.ts:343) and 0.95 for the verified-base inherited member (real-objective-c-analyzer.ts:1020, real-perl-analyzer.ts:1260).",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "Base",
+      "line_number": 38,
+      "meta.relationshipType": "lua_inherited_member",
+      "meta.member": "run",
+      "meta.evidenceClass": "usage_contextual",
+      "confidenceMin": 0.94,
+      "confidenceMax": 0.96,
+      "comment": "shape 2: `Derived.run` (L38) shadows `Base.run` (L31) through `mt.__index = Base` + `setmetatable(Derived, mt)`. The tier is asserted here and forbidden below because 0.95 and `structural` contradict each other: real-lua-analyzer.ts:1381 states the rule this analyzer set for ITSELF at LUA-51 — `evidenceClassFor` derives the tier from the TYPE alone, 'anything that is not imports/references/uses is structural', and 'a 0.95 edge must not claim structural'. `lua_inherited_member` is the other 0.95 edge in this analyzer and it was claiming `structural` on 2 of 67 `overrides` edges. The reason is the same one LUA-51 gives: the endpoints are written, but that the link is meant as INHERITANCE is a convention over `setmetatable`/`__index` and nothing in the tree says so."
+    },
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "run",
+      "line_number": 42,
+      "meta.relationshipType": "lua_redefinition",
+      "meta.qualifiedName": "Derived.run",
+      "comment": "shape 1 on a MEMBER: `Derived.run` is declared at L38 and again at L42, and the target is the member's OWN NAME so this pairs with the `contains` edge `Derived -> run` for the same declaration."
+    },
+    {
+      "type": "overrides",
+      "from": "global",
+      "target": "greet",
+      "line_number": 60,
+      "meta.relationshipType": "lua_redefinition",
+      "confidenceMin": 0.99,
+      "confidenceMax": 1.0,
+      "comment": "shape 1: the second `function greet` (L60) replaces the one at L56. `overridesLine` carries the FIRST declaration, 56."
+    }
+  ],
+  "expectOverrideOverridesLine": [
+    {
+      "from": "global",
+      "target": "greet",
+      "overridesLine": 56,
+      "comment": "the PRIOR declaration's line, which is the only thing distinguishing this edge from a first declaration"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "Base",
+      "meta.relationshipType": "lua_inherited_member",
+      "meta.evidenceClass": "structural",
+      "comment": "A 0.95 EDGE CLAIMING `structural`. The honesty contract §4 requires a machine-readable reason code beside every confidence below 1.0, and `structural` says 'both endpoints are nodes this parse saw' — which is true here and is not the claim being made. The claim is that a member SHADOWS another through an `__index` convention, which is what `usage_contextual` is for. This row is the load-bearing half of the pair above: an implementation that assigned the tier from the type alone (as `evidenceClassFor` does) satisfies every expect row and fails exactly this one, and the failure is invisible in the COUNT — 67 edges either way."
+    },
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "Base",
+      "meta.member": "stop",
+      "comment": "shape 2 must INTERSECT the member sets. `Derived.stop` (L46) exists only on Derived — `Base` never declares it — so there is no `stop` to override. An implementation that linked the two TABLES without comparing members would publish this edge, and it is the single most likely wrong answer here."
+    },
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "mt",
+      "comment": "`setmetatable(Derived, mt)` names a METATABLE. Resolving `mt` to its `__index` (which is `Base`) is the whole point of the two-hop read; taking the second argument literally would make every metatable in the corpus look like a base class, and `mt` declares no members so it could not override one."
+    },
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "Derived",
+      "comment": "SELF-LINK: probe B2 reported `_lmdb.get overrides _lmdb.get` on kong/spec/01-unit/01-db/11-declarative_lmdb_spec.lua, where `local _lmdb_mt = { __index = _lmdb }` + `setmetatable(_lmdb, _lmdb_mt)` resolves to `_lmdb -> _lmdb`. A derived table is never its own supertype, and that self-link is why B2's single hit was a false positive rather than evidence."
+    },
+    {
+      "type": "overrides",
+      "from": "Derived",
+      "target": "Derived.run",
+      "comment": "DOTTED PATH AS TARGET: the qualified path is metadata (`meta.qualifiedName`), never the target. The first version of this edge put the label `Derived.run` in the target, which mixed labelShape {bare 54, dotted 8, colon 4} across the corpus and made the edge unjoinable to the `contains` edge for the same member. LUA-15's member-identity contract says the identity is container + own name."
+    },
+    {
+      "type": "overrides",
+      "target": "Base",
+      "line_number": 31,
+      "comment": "`Base.run` is the BASE's declaration, not an override. The edge is anchored at the overriding side's line (L38) only."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "expectSymbols": [
+    {
+      "name": "multi",
+      "kind": "function",
+      "ownerName": "LitParams"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "multi",
+      "parameters": [
+        {
+          "name": "_"
+        }
+      ]
+    }
+  ]
+}

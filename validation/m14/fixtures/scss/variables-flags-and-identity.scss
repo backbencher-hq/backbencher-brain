@@ -1,0 +1,9 @@
+$brand: #f00;
+$brand: #00f;
+$pad: 4px !default;
+$scope: 8px !global;
+
+.a {
+  color: $brand;
+  margin: $pad;
+}

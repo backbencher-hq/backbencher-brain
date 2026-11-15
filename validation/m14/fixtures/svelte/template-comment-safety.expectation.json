@@ -1,0 +1,62 @@
+{
+  "fixtureId": "svelte/template-comment-safety",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Sv2 #736-D3: the template char-walk had no comment states, so `{f(a) /* b */}` read member b and `{url // pick}` read member pick. ADVERSARIAL: same-named members b/pick EXIST. Comment skipping runs in code context only, so '//' inside string literals stays literal (covered by template-string-safety's string pins). Vue's twin machine has the same hole — flagged as family follow-up, fixed here where probe-proven.",
+  "expectSymbols": [
+    {
+      "name": "f",
+      "kind": "function"
+    },
+    {
+      "name": "url",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "f",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "a",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "g",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "c",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "url",
+      "meta.isTemplateExpression": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "b",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-comment-safety",
+      "target": "pick",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

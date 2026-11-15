@@ -1,0 +1,31 @@
+{
+  "fixtureId": "kotlin/bare-member-read-uses",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49-CONV CONV-K-1 (#740). LIVE PROBE pre-fix: `class W { var x: Int = 0; fun get(): Int { return x }; fun dot(): Int { return this.x } }` produced relationships of type [references, contains] ONLY — zero uses edges for either the plain or the dotted read. Property reads are the most common read form in kotlin, so the use graph under-counted them to nothing. `collectExpressionUses` had grown claim-by-claim (K1 indexing 2026-08-27, K4 string templates same day) and the member-read form was never claimed. The fix adds the `simple_identifier` branch with the two gates that are the real work: GATE A — the name must resolve to a DECLARED MEMBER of the enclosing type (class_declaration / object_declaration); GATE B (CGD15) — a name the enclosing function or lambda binds as a parameter/local is not a member read, otherwise `val count = 5` inside a method fabricates uses(method -> count) against a property it only shadows. PARITY NOTE (the issue's own warning): the F5 kotlin oracle derives NO uses truth at all and kotlin's lane does not compare the `uses` label (documented alongside indexing-uses: 'oracle derives no kotlin uses truth, so F5 could not see it'), so parity cannot hide this defect either way — for kotlin the gate is this fixture plus the mutants, exactly as for java. Adding kotlin uses truth to the oracle is a separate, larger change that would put every kotlin uses edge under the corpus gate.",
+  "expectSymbols": [
+    { "name": "Store", "kind": "class" },
+    { "name": "count", "kind": "property", "ownerName": "Store" },
+    { "name": "total", "kind": "property", "ownerName": "Store" },
+    { "name": "bare", "kind": "method", "ownerName": "Store" },
+    { "name": "Chain", "kind": "class" },
+    { "name": "Registry", "kind": "class", "comment": "kotlin's symbol model reports an `object` declaration with kind class (pre-existing convention, not part of #740)" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "bare", "target": "count", "comment": "#740: bare member read now emits" },
+    { "type": "uses", "from": "dotted", "target": "count", "comment": "#740: `this.x` read now emits" },
+    { "type": "uses", "from": "plus", "target": "count", "comment": "#740: bare read inside an additive expression" },
+    { "type": "uses", "from": "plus", "target": "total", "comment": "#740: second bare read in the same expression" },
+    { "type": "uses", "from": "callee", "target": "count", "comment": "#740: a bare read in ARGUMENT position is a read" },
+    { "type": "uses", "from": "read", "target": "inner", "comment": "#740: chain BASE resolves to a declared member" },
+    { "type": "uses", "from": "bump", "target": "hits", "comment": "#740: enclosing type of an object declaration" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "write", "target": "count", "comment": "GATE: assignment LHS is a write, never a read" },
+    { "type": "uses", "from": "shadow", "target": "count", "comment": "GATE B (CGD15): a local the function binds is not a member read" },
+    { "type": "uses", "from": "nolocal", "target": "z", "comment": "GATE A: a local that is no member never emits" },
+    { "type": "uses", "from": "callee", "target": "go", "comment": "GATE: a bare CALLEE is owned by the call graph, not by uses" },
+    { "type": "uses", "from": "read", "target": "leaf", "comment": "GATE A: `leaf` belongs to Inner, not to the enclosing Chain" },
+    { "type": "uses", "from": "Store", "target": "count", "comment": "GATE A: the property DECLARATION is a bind, not a read" }
+  ]
+}

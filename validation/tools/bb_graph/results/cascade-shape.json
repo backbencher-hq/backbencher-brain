@@ -1,0 +1,115 @@
+{
+  "ownerRows": 226113,
+  "samples": [
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:stock:6",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:InventoryService:5",
+      "name": "stock",
+      "symbol_type": "property"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:inventory:21",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:OrderService:18",
+      "name": "inventory",
+      "symbol_type": "property"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:canFulfill:12",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:InventoryService:5",
+      "name": "canFulfill",
+      "symbol_type": "method"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:place:24",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:OrderService:18",
+      "name": "place",
+      "symbol_type": "method"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:quantity:15",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:CartLine:13",
+      "name": "quantity",
+      "symbol_type": "property"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:pricing:20",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:OrderService:18",
+      "name": "pricing",
+      "symbol_type": "property"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:reserve:16",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:InventoryService:5",
+      "name": "reserve",
+      "symbol_type": "method"
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/pricing-service.ts:orderTotal:18",
+      "owner_symbol_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/pricing-service.ts:PricingService:10",
+      "name": "orderTotal",
+      "symbol_type": "method"
+    }
+  ],
+  "ownerIsPrefixOfId": {
+    "prefixed": 8,
+    "total": 226113
+  },
+  "noColonOwner": {
+    "c": 0
+  },
+  "classRanges": [
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:OrderService:18",
+      "name": "OrderService",
+      "prefix": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:OrderService:",
+      "upper": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/order-service.ts:OrderService:;",
+      "membersByOwnerRange": 6,
+      "idsInSameLexicalRange": 0,
+      "membersByExactOwner": 6
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:InventoryService:5",
+      "name": "InventoryService",
+      "prefix": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:InventoryService:",
+      "upper": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/inventory-service.ts:InventoryService:;",
+      "membersByOwnerRange": 5,
+      "idsInSameLexicalRange": 0,
+      "membersByExactOwner": 5
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/pricing-service.ts:PricingService:10",
+      "name": "PricingService",
+      "prefix": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/pricing-service.ts:PricingService:",
+      "upper": "1d3d57103be91b8f9716d70199fe28a3f39245d9:test/fixtures/m45-studio/src/services/pricing-service.ts:PricingService:;",
+      "membersByOwnerRange": 2,
+      "idsInSameLexicalRange": 0,
+      "membersByExactOwner": 2
+    }
+  ],
+  "compare": [
+    {
+      "label": "engine-join",
+      "ms": 8526.88,
+      "rows": 37,
+      "plan": [
+        "CO-ROUTINE casc",
+        "COMPOUND QUERY",
+        "LEFT-MOST SUBQUERY",
+        "SCAN CONSTANT ROW",
+        "UNION ALL",
+        "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)",
+        "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)",
+        "BLOOM FILTER ON casc (id=?)",
+        "SEARCH casc USING AUTOMATIC COVERING INDEX (id=?)"
+      ]
+    },
+    {
+      "label": "target-range-predicate",
+      "ms": 1799.56,
+      "rows": 8,
+      "plan": [
+        "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)"
+      ]
+    }
+  ]
+}

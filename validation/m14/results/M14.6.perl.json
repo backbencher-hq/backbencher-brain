@@ -1,0 +1,291 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "899c6dee29641b0d33c37fb8a2caa14455856db61a4f6fc965742f64f975437b",
+    "sealedAt": "2026-10-12T18:39:55.000Z"
+  },
+  "checks": [
+    {
+      "description": "tsc --noEmit reports no diagnostic in the perl analyzer",
+      "detail": "perl diagnostics: 0; project-wide (other lanes' WIP, not perl's): 0",
+      "id": "typecheck",
+      "status": "pass"
+    },
+    {
+      "description": "M12's 32 pinned perl facts still hold, with zero line mismatches",
+      "detail": "32/32 pass, 0 fail, 0 line mismatches",
+      "id": "m12-pinned-truth",
+      "status": "pass"
+    },
+    {
+      "description": "all 22 perl fixtures pass",
+      "detail": "14 pass, 8 fail (22 expectation file(s) on disk)",
+      "id": "fixtures",
+      "status": "fail"
+    },
+    {
+      "description": "every perl mutant is caught, so the lane can fail",
+      "detail": "39 caught, 0 survived (39 perl mutant(s) registered)",
+      "id": "mutation",
+      "status": "pass"
+    },
+    {
+      "description": "zero-regex contract: perl-in-scan-set",
+      "detail": "48 analyzers scanned; real-perl-analyzer.ts is among them",
+      "id": "zero-regex-perl-in-scan-set",
+      "status": "pass"
+    },
+    {
+      "description": "zero-regex contract: working-tree-ast-scan",
+      "detail": "0 regex literal(s) / RegExp constructor(s) in real-perl-analyzer.ts",
+      "id": "zero-regex-working-tree-ast-scan",
+      "status": "pass"
+    },
+    {
+      "description": "zero-regex contract: debt-register-clean",
+      "detail": "0 row(s) for perl in validation/m49/regex-debt-register.json (register total 12, baseline 13)",
+      "id": "zero-regex-debt-register-clean",
+      "status": "pass"
+    },
+    {
+      "description": "zero-regex contract: committed-census-absent",
+      "detail": "committed census carries 0 usages over 48 analyzers; perl rows: 0",
+      "id": "zero-regex-committed-census-absent",
+      "status": "pass"
+    },
+    {
+      "description": "zero-regex contract: head-blob-matches-worktree",
+      "detail": "HEAD's blob and the working tree are byte-identical",
+      "id": "zero-regex-head-blob-matches-worktree",
+      "status": "pass"
+    },
+    {
+      "description": "the COMMITTED tree passes the lane's own gates, not just this worktree",
+      "detail": "the committed tree is UNHEALTHY: FAIL fixtures             every perl fixture expectation passes (rc=1); FAIL perl-ownership       every perl-owned invariant is present in HEAD's CONTENT, not just in its history (rc=1); FAIL has-evidence         the machine-evidence artifact is committed (rc=1)",
+      "id": "head-gate",
+      "status": "fail"
+    },
+    {
+      "description": "mojo: full-corpus-depth truth coverage, 0 missing, 0 unexplained",
+      "detail": "{\"files\":274,\"truth\":11137,\"covered\":11137,\"pct\":\"100\",\"missing\":0,\"analyzerEdges\":9434,\"unexplained\":0,\"unexplainedPct\":\"0\",\"hash\":\"5de0d06368bc8571\"}",
+      "id": "differential-mojo",
+      "status": "pass"
+    },
+    {
+      "description": "plack: full-corpus-depth truth coverage, 0 missing, 0 unexplained",
+      "detail": "{\"files\":225,\"truth\":2393,\"covered\":2393,\"pct\":\"100\",\"missing\":0,\"analyzerEdges\":2256,\"unexplained\":0,\"unexplainedPct\":\"0\",\"hash\":\"1d9cea09bbdb468c\"}",
+      "id": "differential-plack",
+      "status": "pass"
+    },
+    {
+      "description": "the floor registry carries a clean row for BOTH perl lanes, so #419 section E reads them",
+      "detail": "mojo:perl: missing=0 unexplained=0, plack:perl: missing=0 unexplained=0 (differential-baseline.json, pinned at samplePerLang=60)",
+      "id": "canonical-f5-row-present",
+      "status": "pass"
+    },
+    {
+      "description": "the floor registry records avgMsPerFile for both perl lanes, so #419 section F reads them",
+      "detail": "mojo:perl: 59.2 ms/file, plack:perl: 8.7 ms/file",
+      "id": "canonical-perf-row-present",
+      "status": "pass"
+    },
+    {
+      "description": "the floor registry's draw size is the canonical one, so the sweep's regression gate still compares",
+      "detail": "differential-baseline.json samplePerLang=60 (canonical draw is 60; a scoped pin at any other draw must not relabel the registry)",
+      "id": "floor-draw-is-canonical",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-a-structural for perl",
+      "detail": "170 types, 53 handled, 75 silent, 0 gaps, 14 decisions",
+      "id": "419-section-a-structural",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-a-classified-rows for perl",
+      "detail": "128 classified rows, all declared by the pinned grammar",
+      "id": "419-section-a-classified-rows",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-b-relationship-kinds for perl",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, require_file, require_module, use_module, uses; emitted: calls, contains, extends, implements, instantiates, overrides, references, uses",
+      "id": "419-section-b-relationship-kinds",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-c-payload-matrix for perl",
+      "detail": "complexity, parameters, decorators, imports, exports",
+      "id": "419-section-c-payload-matrix",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-d-evidence-tiers for perl",
+      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+      "id": "419-section-d-evidence-tiers",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-e-lane-registered for perl",
+      "detail": "mojo is the lane's declared PRIMARY corpus (LANG_REPOS)",
+      "id": "419-section-e-lane-registered",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-e-differential for perl",
+      "detail": "floor mojo:perl: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "419-section-e-differential",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-f-perf-budget for perl",
+      "detail": "mojo:perl 59.2 ms/file",
+      "id": "419-section-f-perf-budget",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-g-docs for perl",
+      "detail": "docs/analyzers/perl.md",
+      "id": "419-section-g-docs",
+      "status": "pass"
+    },
+    {
+      "description": "#419 section-h-cross-language for perl",
+      "detail": "12 checks pass",
+      "id": "419-section-h-cross-language",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "b5e853fc52190ddd08ec6d42712a65f7cfc1890c",
+  "committedAt": "2026-10-12T14:39:55-04:00",
+  "data": {
+    "baselineDraw": 60,
+    "baselineRows": {
+      "mojo:perl": {
+        "heuristic": 0,
+        "missing": 0,
+        "perf": {
+          "avgMsPerFile": 59.2
+        },
+        "sampleSetHash": "9b51006836efe023",
+        "unexplained": 0
+      },
+      "plack:perl": {
+        "heuristic": 0,
+        "missing": 0,
+        "perf": {
+          "avgMsPerFile": 8.7
+        },
+        "sampleSetHash": "2503e48eb336f10f",
+        "unexplained": 0
+      }
+    },
+    "completenessSections": {
+      "section-a-classified-rows": {
+        "detail": "128 classified rows, all declared by the pinned grammar",
+        "status": "pass"
+      },
+      "section-a-structural": {
+        "detail": "170 types, 53 handled, 75 silent, 0 gaps, 14 decisions",
+        "status": "pass"
+      },
+      "section-b-relationship-kinds": {
+        "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, require_file, require_module, use_module, uses; emitted: calls, contains, extends, implements, instantiates, overrides, references, uses",
+        "status": "pass"
+      },
+      "section-c-payload-matrix": {
+        "detail": "complexity, parameters, decorators, imports, exports",
+        "status": "pass"
+      },
+      "section-d-evidence-tiers": {
+        "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+        "status": "pass"
+      },
+      "section-e-differential": {
+        "detail": "floor mojo:perl: missing=0, unexplained=0 (differential-baseline.json)",
+        "status": "pass"
+      },
+      "section-e-lane-registered": {
+        "detail": "mojo is the lane's declared PRIMARY corpus (LANG_REPOS)",
+        "status": "pass"
+      },
+      "section-f-perf-budget": {
+        "detail": "mojo:perl 59.2 ms/file",
+        "status": "pass"
+      },
+      "section-g-docs": {
+        "detail": "docs/analyzers/perl.md",
+        "status": "pass"
+      },
+      "section-h-cross-language": {
+        "detail": "12 checks pass",
+        "status": "pass"
+      }
+    },
+    "differential": {
+      "mojo": {
+        "analyzerEdges": 9434,
+        "covered": 11137,
+        "files": 274,
+        "hash": "5de0d06368bc8571",
+        "missing": 0,
+        "pct": "100",
+        "truth": 11137,
+        "unexplained": 0,
+        "unexplainedPct": "0"
+      },
+      "plack": {
+        "analyzerEdges": 2256,
+        "covered": 2393,
+        "files": 225,
+        "hash": "1d9cea09bbdb468c",
+        "missing": 0,
+        "pct": "100",
+        "truth": 2393,
+        "unexplained": 0,
+        "unexplainedPct": "0"
+      }
+    },
+    "failedChecks": [
+      "fixtures",
+      "head-gate"
+    ],
+    "reproduce": [
+      "bun script/m14/verify-perl-wave.ts",
+      "bun script/m14/run-fixtures.ts --lang perl",
+      "BB_MUTANT_ONLY=perl/ bun script/m14/mutate-analyzer.ts",
+      "bun script/m14/completeness-inventory.ts --lang perl",
+      "bun script/m14/differential.ts --lang perl --sample 100000",
+      "bun script/m14/differential.ts --lang perl --pin-baseline   # writes ONLY the two perl rows into the floor registry, at the canonical 60-file draw",
+      "bun script/m14/tmp/perl-truth.mts",
+      "bun script/m14/tmp/perl-zero-regex.mts",
+      "bash script/m14/tmp/perl-head-gate.sh",
+      "bun script/m14/tmp/perl-census.mts && bun script/m14/tmp/perl-lineless.mts   # the seven-corpus totals, not carried here"
+    ]
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.6.perl",
+  "layers": [
+    "pinned grammar (wasm/tree-sitter-perl.wasm), one fresh module per run",
+    "M12 pinned ground truth (validation/m12/ground-truth/perl.json), facts checked for presence AND line",
+    "fixture pins (validation/m14/fixtures/perl), mutation registry (perl/ ids in mutate-analyzer.ts)",
+    "#419 spec completeness sections, as the inventory itself reports them",
+    "F5 differential over the two pinned perl lanes (mojo, plack)"
+  ],
+  "limitations": [
+    "#419 sections E and F are GREEN from a scoped `--pin-baseline` at the canonical 60-file draw (the 2026-10-12 restore), not from the milestone owner's 30-language sweep: the FLOOR REGISTRY (`differential-baseline.json`) is what those sections read, and a scoped pin writes the registry while still writing NO evidence artifact. `floor-draw-is-canonical` is the row that keeps the pin comparable — at any other `--sample` it would relabel the file's `samplePerLang` and make the next canonical sweep skip its regression gate entirely. The milestone-sized claim is therefore still the sweep's to make; what this artifact establishes is that perl's rows are present, 0/0, and measured at the same draw the sweep compares against.",
+    "PERL-MR15 (declared, NOT measured): HEAD's analyzer publishes `uses` (`\\&name` code references) and `references` (`->isa`/`->DOES`/`->can` literal queries) — rules that postdate the `bbb895867` commit from which the F5 oracle was recovered — and section B confirms both are emitted (13 pinned kinds, 8 emitted). `derivePerlEdges` derives NEITHER, and they are deliberately absent from the differential's compared-label allowlist: admitting a label with no truth would report every one of those edges as fabrication. So this lane's F5 covers calls/contains/extends/implements/instantiates/overrides and does NOT cover its two newest labels. Closing it means writing two independent oracles for those rules, not widening the allowlist.",
+    "`overrides` is the lane's only GUESSED relationship: first-parent chain, confidence 0.5, no source line. A perl class may inherit from several bases and only the first is consulted (PERLD13).",
+    "This producer re-measures the gate rows and deliberately does NOT re-derive the seven-corpus census totals the wave's record carried (files/symbols/relationships/imports/exports, symbol-free files, lined relations, unresolved targets). Those come from `script/m14/tmp/perl-census.mts` and `perl-lineless.mts`, which stay named in `reproduce`; a figure transcribed from an older run into a fresh artifact is the kind of number this project does not accept.",
+    "`overrides` is the lane's only GUESSED relationship: first-parent chain, confidence 0.5, no source line. A perl class may inherit from several bases and only the first is consulted (PERLD13).",
+    "Perl's dependency surface is the `imports` payload plus the Module Includes pattern, not a relationship `imports` edge (PERLD12). NOTE (2026-10-12): the pre-fix reading of this line said the lane emits no `uses` or `references` edge at all, which the analyzer stopped being true of in the PERL-MR15 wave — see the MR15 limitation above, which supersedes it.",
+    "`use base` / `use parent` inheritance is read from one file, so an `extends` target can be external to it.",
+    "The fixture and mutant populations are read from the tree (expectation files on disk, `perl/` ids in the mutation registry) rather than from a constant, so adding a fixture or a mutant moves this artifact's expectation too; a population that shrinks without the row going red is the failure mode that rule exists to prevent."
+  ],
+  "regeneratedAt": "2026-10-12T14:39:55-04:00",
+  "regeneratedAtCommit": "b5e853fc52190ddd08ec6d42712a65f7cfc1890c",
+  "runtime": "node v26.3.0",
+  "schemaVersion": 2,
+  "title": "M14.6 perl wave — fixture, mutation, spec-completeness and forward-compatibility evidence"
+}

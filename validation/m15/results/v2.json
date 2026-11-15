@@ -1,0 +1,12 @@
+{
+  "issue": "M15.V2",
+  "code": "V2",
+  "tool": "bb_visualize",
+  "title": "scopes + truncation honesty",
+  "verified": true,
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:27:14.267Z"
+}

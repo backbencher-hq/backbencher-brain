@@ -1,0 +1,164 @@
+{
+  "fixtureId": "php/recovery-swallowed-members",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE SHAPE `php/error-recovery` DOES NOT COVER, and the reason 19 of the lane's 24 `DECLARED_IN_TREE_NOT_PUBLISHED` edges existed. `error-recovery` pins the contract for a file where recovery MARKS a node ('(3) the declarations AROUND it still publish, INCLUDING THE ONES AFTER IT — degradation is PARTIAL, not total') and to do that it writes the broken statement INSIDE a method body, where recovery contains it. `FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php` is the other shape: recovery MIS-NESTS. Its line 910 writes PHP-8-REMOVED curly-brace offset syntax (`$level = $matches[2]{0} == '=' ? 1 : 2;`), the pinned grammar errors there, and the enclosing method's body is left OPEN — so the next twenty real class members become `function_definition` nodes nested inside that one method's `compound_statement`. Measured on the real file: class_declaration `Markdown_Parser` 191-1576 > declaration_list > method_declaration `_doHeaders_callback_setext` 905-1575 > its compound_statement holds the twenty. Bisected, not guessed: replacing that ONE expression with `$matches[2][0]` moves 11 of 12 members back to direct children of the declaration_list and drops the nested count 9 -> 0, while the file's other legacy offset (`switch ($token{0})` at 1560) does not — the two damage sites have different effects, and only the first swallows. THIS FILE IS THE MINIMUM REPRODUCTION, and the STATEMENT FORM had to be found by probing rather than assumed: a curly offset in a RETURN (`return $s{0};`) parses with an error and does NOT swallow, while the assignment-with-ternary form above does. A fixture built on the return form PASSED before the fix and proved nothing. MEASURED PRE-FIX STATE, recorded here because the fix must be judged against a number rather than a description: this file published 4 symbols (namespace, class `Swallower`, methods `intact` and `damaged`) and dropped all four member declarations written after the damaged statement, while emitting `calls damaged -> swallowedA` at line 63 and three more edges into the swallowed bodies — EDGES NAMING DECLARATIONS THE STORE NEVER RECEIVED. That is the defect's signature and the reason the lane's audit bucket is a store-vs-analyzer divergence rather than a missing edge: every gate that asks whether an emitted edge is RIGHT agreed with it. At corpus scale it is 19 `calls` edges in that one file (the whole residue of the bucket bar 4 classifier artifacts), and the file's own `detab` was published as a TOP-LEVEL function because the second damage site truncated the class body at 1571 while the source's class ends at EOF. WHAT THIS FIXTURE PINS: the declarations written below a damaged statement publish with their owner. WHAT IT DELIBERATELY DOES NOT PIN: the three edges whose real source is a swallowed member's body are attributed to `damaged` (line 73 belongs to `swallowedB`, line 80 to `callsSwallowed`), because a body swallowed by recovery is walked by the damaged method's own body walk. That attribution is a KNOWN, SEPARATE limitation — it is recorded in the lane's status with its count and is not pinned here, because a fixture row is a contract and pinning a known-wrong source would freeze it.",
+  "expectErrors": [
+    {
+      "startLine": 60,
+      "severity": "warning",
+      "comment": "the legacy `{0}` offset IS reported, at the line that carries it — the file is a damaged file by design, and this marker is the condition the escape below is allowed to fire on. The engine's own tree-level pre-pass reports the same position a second time; the position is the contract, the count is not (see php/error-recovery for the same decision)."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "Fixture\\RecoverySwallowed",
+      "kind": "namespace",
+      "comment": "the file's own namespace still publishes: degradation stays PARTIAL at the file level, exactly as php/error-recovery requires"
+    },
+    {
+      "name": "Swallower",
+      "kind": "class",
+      "comment": "and the class whose body the damage runs through"
+    },
+    {
+      "name": "intact",
+      "kind": "method",
+      "ownerName": "Swallower",
+      "comment": "the member BEFORE the damage — unchanged by the escape, and present so the file cannot pass by publishing nothing after it"
+    },
+    {
+      "name": "damaged",
+      "kind": "method",
+      "ownerName": "Swallower",
+      "comment": "the method whose body the parser could not close — it still publishes, like `Broken::m` in php/error-recovery"
+    },
+    {
+      "name": "swallowedA",
+      "kind": "method",
+      "ownerName": "Swallower",
+      "comment": "THE ROW THAT CARRIES THE WEIGHT, first of four: written after the damaged statement, published with its owner. `kind: method` and not `function` — see the forbidSymbols rows for why the alternative reading is rejected."
+    },
+    {
+      "name": "swallowedB",
+      "kind": "method",
+      "ownerName": "Swallower",
+      "comment": "and the second, whose body calls the first: pre-fix the call resolved against nothing"
+    },
+    {
+      "name": "SWALLOWED_CONST",
+      "kind": "constant",
+      "ownerName": "Swallower",
+      "comment": "a class constant written after the damage publishes too — the escape is about the class's member surface, not about methods alone"
+    },
+    {
+      "name": "callsSwallowed",
+      "kind": "method",
+      "ownerName": "Swallower",
+      "comment": "the LAST member, the one furthest below the damage: a walk that recovered one or two declarations and then stopped would pass every row above and fail this one"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "swallowedA",
+      "equals": 1,
+      "comment": "exactly one — the escape must not publish a declaration that the normal member walk already published, and a recovery that re-walked the tail would double it"
+    },
+    {
+      "name": "swallowedB",
+      "equals": 1,
+      "comment": "same, and it is the name most at risk: `swallowedA` calls it and it calls `swallowedA`, so a mistaken re-entry is easiest to trigger between these two"
+    },
+    {
+      "name": "SWALLOWED_CONST",
+      "equals": 1,
+      "comment": "the constant is published from a `const_declaration` whose position is inside a body — a second path to the same name would show up here"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Swallower",
+      "target": "swallowedA",
+      "comment": "containment for a member recovered from a damaged region: the symbol alone would put a name in the store with no edge connecting it to its class, which is the same divergence the other way round"
+    },
+    {
+      "type": "contains",
+      "source": "Swallower",
+      "target": "swallowedB",
+      "comment": "same"
+    },
+    {
+      "type": "contains",
+      "source": "Swallower",
+      "target": "SWALLOWED_CONST",
+      "comment": "same, constant form"
+    },
+    {
+      "type": "contains",
+      "source": "Swallower",
+      "target": "callsSwallowed",
+      "comment": "same, for the furthest member"
+    },
+    {
+      "type": "calls",
+      "source": "damaged",
+      "target": "Swallower.swallowedA",
+      "comment": "THE EDGE THAT NAMED NOTHING, and it is written inside the damaged method's own body on purpose: pre-fix it was emitted with `metadata.owner: Swallower` against a symbol the file declares and the store never received, so it resolved against nothing while every gate that asks whether an emitted edge is RIGHT agreed with it — the store-vs-analyzer divergence this fixture exists for. Post-fix it resolves by owner."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "Swallower",
+      "target": "swallowedA",
+      "equals": 1,
+      "comment": "exactly one containment edge: the pre-fix analyzer emitted the edge only for symbols it had, and a recovery that emitted it a second time (once from the escape, once from the ordinary owner pass) would double every row above without failing any of them"
+    },
+    {
+      "type": "contains",
+      "from": "Swallower",
+      "target": "callsSwallowed",
+      "equals": 1,
+      "comment": "same, furthest member"
+    },
+    {
+      "type": "calls",
+      "from": "swallowedB",
+      "target": "Swallower.swallowedA",
+      "equals": 1,
+      "comment": "THE DOUBLE-EMISSION PIN, and it is the reason the fix is TWO paired changes rather than one. Recovery nested `swallowedB` inside `damaged`'s body, so the damaged method's body walk already reached this call and attributed it to `damaged`; now that `swallowedB` is published and walks its own body, the SAME call is reachable twice — once by each walk. The fix therefore skips the subtree in `walkBody` wherever the escape publishes it (one predicate, asked by both halves). If that pairing is ever broken, this call is emitted TWICE, once under `swallowedB` and once under `damaged`, and this row is what fails; `expectRelationships` cannot see it because it matches at least one edge and there are two. Caught by `php/re-walk-recovered-subtrees`."
+    },
+    {
+      "type": "calls",
+      "from": "damaged",
+      "target": "Swallower.swallowedB",
+      "equals": 0,
+      "comment": "and the same defect from the other side: `damaged` must emit NO edge into a recovered member's body. Pre-fix it did (`calls damaged -> swallowedB@80`, `calls damaged -> swallowedA@73` under the damaged method's attribution) — the state this fix removes, because a call is sourced from the callable whose body contains it. `equals: 0` and not a `forbidRelationships` row: the forbid channel matches ANY edge with that (type, source, target) and cannot distinguish one copy from two, which is exactly the distinction a broken pairing makes. STALE-TARGET REPAIR 2026-10-23: this row spelled the target `swallowedB` until today, while the owner-qualification round (2026-10-11) had made the analyzer publish `Swallower.swallowedB` — so `php/re-walk-recovered-subtrees` had been SURVIVING against a pin whose target spelling no longer matched its own subject. MEASURED BEFORE THE REPAIR: the lane's own harness run read that mutant as the single survivor, its extra edges are owner-qualified, and after the repair the mutant is caught. A pin whose target spelling drifts reports PASS forever — the fleet's 'a claim that cannot distinguish itself from a broken one' form — and it was found by RUNNING the battery, not by reading it."
+    },
+    {
+      "type": "calls",
+      "from": "damaged",
+      "target": "Swallower.swallowedA",
+      "equals": 1,
+      "comment": "THE COUNT HALF OF THE SAME REPAIR: `damaged`'s OWN body calls `$this->swallowedA()` exactly ONCE (inside the damaged method itself, which the source writes). The mutant re-attributes `swallowedB`'s call of the same target to `damaged`, making this count 2 — so this row catches the double-attribution even though both copies carry the same (type, source, target), which a forbid row could not count."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "swallowedA",
+      "ownerName": null,
+      "comment": "THE REJECTED READING: publishing a declaration swallowed by recovery as a GLOBAL FUNCTION. A `function` written inside a body is legal PHP — it becomes a global when the enclosing code runs — and this lane already models exactly that for RESOLUTION (`collectPhpFileScope` registers nested named functions as file-scope function values). Publication is a different question, and the SOURCE answers it: these functions are written in the class body, between members, and the store must describe the source rather than the damaged tree. A bare `swallowedA` with no owner is that alternative. Caught by `php/publish-swallowed-as-global-functions`, which is what this row is for."
+    },
+    {
+      "name": "swallowedB",
+      "ownerName": null,
+      "comment": "same"
+    },
+    {
+      "name": "SWALLOWED_CONST",
+      "ownerName": null,
+      "comment": "same, and it is the row a global-reading escape is most likely to produce: a bare constant name is exactly what `define()` publishes from this lane, so an ownerless one is indistinguishable from a file-level `define`"
+    }
+  ]
+}

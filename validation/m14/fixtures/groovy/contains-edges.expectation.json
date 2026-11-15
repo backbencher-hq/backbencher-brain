@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/contains-edges",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the contains relationship kind (section B — previously zero contains pins in groovy fixtures; the 8 earlier 'contains' matches were decorator assertions) and the structural evidence tier (section D). Groovy semantics: a type contains its nested types, methods, and fields.",
+  "expectSymbols": [
+    { "name": "Outer", "kind": "class" },
+    { "name": "Inner", "kind": "class" },
+    { "name": "field", "kind": "property" },
+    { "name": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Outer", "target": "Inner", "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Outer", "target": "field", "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Outer", "target": "method", "meta.evidenceClass": "structural" }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "fixtureId": "javascript/receiver-owner-from-new",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE RECEIVER'S CONSTRUCTED TYPE ON A MEMBER CALL. JavaScript states a receiver's type in exactly one syntactic form — the initialiser `const c = new Widget()` — and the analyzer now records it as `metadata.owner` on the member call. That is a STORE channel, not a gate number: `src/ast/member-owner-resolution.ts:25` reads `metadata.owner` for unresolved member rows, and its rule requires the owner name to identify exactly ONE class-like symbol before it binds. MEASURED END-TO-END through the production index (`indexProjectParallel`, the probe at `.tmp-js-lane/receiver-e2e.ts`): with two classes Foo and Bar each declaring `run()`, `c.run()` bound to **Bar.run** (the lexicographically-first declaration, the wrong one) WITHOUT this metadata and to **Foo.run** (the intended declaration) WITH it — so the change converts a wrong resolution into the intended one, which is this lane's definition of done. AUTHORED AFTER THE RUN (this fixture records measured output): the two expect rows and the forbid row below were printed by `parseFile` on this file. The controls are the design: a receiver whose initialiser is not `new` (`const d = make()`) states no type and must carry no owner, and the forbid row asserts the call-result receiver does not inherit Widget's ownership.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "run",
+      "meta.owner": "Widget",
+      "line_number": 25,
+      "note": "THE PINNED ROW: `const c = new Widget(); c.run()` — the initialiser states the receiver's type, so the member call carries the owner the store's member-owner pass binds inside Widget. 2026-10-18: the same row now also carries metadata.ownerEvidence = \"new\" (the syntactic proof that produced the owner), per the receiver-type channel contract.",
+      "meta.ownerEvidence": "new"
+    },
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "other",
+      "line_number": 31,
+      "note": "CONTROL 1: `const d = make(); d.other()` — the initialiser is a CALL, not `new`, so the file states no receiver type and the row must carry no owner. A rule that read any initialiser as a type would put an owner here."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "other",
+      "meta.owner": "Widget",
+      "note": "CONTROL 2: the call-result receiver must not inherit Widget's ownership — the owner belongs to `c`, not to `d`."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "fixtureId": "scala/object-singleton",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "object = singleton: type-like symbol with members.",
+  "expectSymbols": [
+    { "name": "Registry" },
+    { "name": "register" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Registry", "targetEndsWith": "register" }
+  ]
+}

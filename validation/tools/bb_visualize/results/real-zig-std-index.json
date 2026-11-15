@@ -1,0 +1,37 @@
+{
+  "key": "zig-std",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/zig/lib/std",
+  "language": "Zig/C",
+  "projectId": "da4223144a25e2ee9b38acfcd4500124a836927a",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/da4223144a25e2ee9b38acfcd4500124a836927a/brain.db",
+  "db": {
+    "path": "brain.db",
+    "exists": true,
+    "size": 456257536,
+    "sha256": "20814be1373cc0e6257e087bafe9a27e1f0f1c9acb92cc2e60d5d3b279ebe02e"
+  },
+  "wal": {
+    "path": "brain.db-wal",
+    "exists": true,
+    "size": 130550472,
+    "sha256": "ea20d936279fb8a5f329a8d4883ee0959c0dddf6293597350f1f426e91a00e7b"
+  },
+  "files": 550,
+  "symbols": 61655,
+  "relationships": 178628,
+  "languages": [
+    {
+      "language": "zig",
+      "files": 550
+    }
+  ],
+  "indexMs": 12390,
+  "reused": false,
+  "targets": {
+    "file": "os/linux/syscalls.zig",
+    "module": "os/linux",
+    "symbol": "append",
+    "feature": "appe",
+    "fallbackModuleFile": "BitStack.zig"
+  }
+}

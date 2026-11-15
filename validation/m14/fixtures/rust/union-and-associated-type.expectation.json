@@ -1,0 +1,53 @@
+{
+  "fixtureId": "rust/union-and-associated-type",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the union_item and associated_type completeness gaps (2026-08-28): `pub union Pixel` must emit a struct symbol with its fields (the grammar node is union_item, not struct_item — previously emitted NOTHING), and the trait-level `type Item;` (associated_type node) must emit a Type symbol owned by the trait. Impl-level `type Item = u32` stays a type_item symbol owned by the impl type. A regression that drops either declaration site fails this fixture.",
+  "expectSymbols": [
+    {
+      "name": "Pixel",
+      "kind": "struct",
+      "visibility": "public"
+    },
+    {
+      "name": "value",
+      "kind": "property"
+    },
+    {
+      "name": "channels",
+      "kind": "property"
+    },
+    {
+      "name": "Container",
+      "kind": "trait"
+    },
+    {
+      "name": "Item",
+      "kind": "type",
+      "ownerName": "Container"
+    },
+    {
+      "name": "Item",
+      "kind": "type",
+      "ownerName": "Bag"
+    },
+    {
+      "name": "Bag",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "target": "Container"
+    },
+    {
+      "type": "contains",
+      "target": "value"
+    },
+    {
+      "type": "contains",
+      "target": "Item"
+    }
+  ]
+}

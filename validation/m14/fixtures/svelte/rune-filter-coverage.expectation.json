@@ -1,0 +1,68 @@
+{
+  "fixtureId": "svelte/rune-filter-coverage",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Pins the RUNE FILTER, found by the construct census (`script/m14/verify-svelte-census.ts`) rather than by any existing gate. Two Svelte 5 runes were missing from the analyzer's rune table: `$state.eager` (15 occurrences in the corpus) and `$effect.pending` (11). Because the filter is what stops framework primitives being published as component members, both LEAKED \u2014 `$state.eager(0)` published `calls -> eager` and `$effect.pending()` published `calls -> pending`, naming framework plumbing in the graph as though it were something the component calls. THE DIFFERENTIAL COULD NOT SEE IT. The F5 oracle missed the same two runes from the same spec, so the two agreed and the lane read 100%. That agreement is the whole argument for a census that consults neither side, and the fix's effect is visible on the primary gate: the corpus's `unexplained` count went from 2 to 0 at 1,000 files per corpus, which is what identifies those two rows as exactly this defect. THE INTERESTING HALF IS THE BOTTOM OF THIS FILE. The obvious repair \u2014 adding the bare leaves `eager` and `pending` to the segment set, which is how every other dotted rune is matched \u2014 would have suppressed `$my.eager` and `$my.pending`, which are ordinary user data that merely shares the shape. The corpus is full of such shapes: `$order.scoops` (6), `$value.foo` (6), `$a.foo` (5), `$formData.dob` (5), `$storeDeeper.items` (3), plus SvelteKit's `$lib` (3,549) and `$app` (25). So the fix adds the two as EXACT names, and this fixture asserts BOTH directions: no edge at the rune lines, and the edge still present at the user lines. THE LINE-SCOPED FORBIDS ARE THE POINT. `calls -> eager` is simultaneously the defect and a legitimate edge \u2014 the defect at L8, real user data at L14. A fixture could not express that with a bare target forbid, because forbidding `eager` outright would also forbid the line that must keep it. NO MUTANT FOR THIS, AND THE REASON IS THE POINT. A mutation harness transforms the analyzer's OUTPUT, and this defect is a missing SUPPRESSION: its entire signature is an edge the analyzer chose not to emit. A transform that reproduces the pre-fix state must therefore ADD `calls -> eager` at the rune's line \u2014 but the transform receives a ParseResult, not the source, so locating the rune call means reading source text, which is imitating the defect's CAUSE rather than producing its effect. The first attempt removed the edge instead, and it SURVIVED: removing a fabricated edge makes the output cleaner, so a fixture that forbids it passes more. A mutant that does not describe the real defect is worse than none, so it is deleted rather than kept \u2014 the same call made for toml's values-as-symbols mutant. What covers this class is the census's 20 positive suppression probes, which run the analyzer and assert the absence, which is the only direction able to see a missing suppression.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "probe",
+      "line_number": 12,
+      "comment": "$derived.by(probe) \u2014 the D7 rune-invocation edge, asserted here so this fixture also proves the filter did not swallow the runes' OWN invocations"
+    },
+    {
+      "type": "calls",
+      "target": "scoops",
+      "line_number": 13,
+      "comment": "$order.scoops(1) \u2014 user data with the rune's shape, kept"
+    },
+    {
+      "type": "calls",
+      "target": "eager",
+      "line_number": 14,
+      "comment": "$my.eager(1) \u2014 THE row a bare-leaf fix would have destroyed. Same target as the L8 forbid, one line away."
+    },
+    {
+      "type": "calls",
+      "target": "pending",
+      "line_number": 15,
+      "comment": "$my.pending(1) \u2014 likewise"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "eager",
+      "line_number": 8,
+      "comment": "$state.eager(0) is a rune. The filter exists so framework plumbing is never published as a component member."
+    },
+    {
+      "type": "calls",
+      "target": "pending",
+      "line_number": 9,
+      "comment": "$effect.pending() \u2014 the other rune the census found missing"
+    },
+    {
+      "type": "calls",
+      "target": "raw",
+      "line_number": 10,
+      "comment": "$state.raw \u2014 already correct before this fix, pinned so the table cannot regress while the two new names are added"
+    },
+    {
+      "type": "calls",
+      "target": "tracking",
+      "line_number": 11,
+      "comment": "$effect.tracking \u2014 likewise"
+    },
+    {
+      "type": "calls",
+      "target": "state",
+      "comment": "the rune itself is never a call target"
+    },
+    {
+      "type": "calls",
+      "target": "effect",
+      "comment": "same"
+    }
+  ]
+}

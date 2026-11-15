@@ -1,0 +1,1381 @@
+{
+  "analyzer": "yaml",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/grails-core",
+  "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+  "perFile": {
+    ".asf.yaml": {
+      "symbols": 89,
+      "relationships": 88,
+      "errors": 0
+    },
+    ".github/FUNDING.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/bug_report.yaml": {
+      "symbols": 57,
+      "relationships": 56,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/config.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/new_feature.yaml": {
+      "symbols": 15,
+      "relationships": 14,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/other.yaml": {
+      "symbols": 10,
+      "relationships": 9,
+      "errors": 0
+    },
+    ".github/dependabot.yml": {
+      "symbols": 32,
+      "relationships": 31,
+      "errors": 0
+    },
+    ".github/dependency-graph/external-references.yml": {
+      "symbols": 389,
+      "relationships": 388,
+      "errors": 0
+    },
+    ".github/release-drafter.yml": {
+      "symbols": 99,
+      "relationships": 98,
+      "errors": 0
+    },
+    ".github/workflows/codeanalysis.yml": {
+      "symbols": 84,
+      "relationships": 83,
+      "errors": 0
+    },
+    ".github/workflows/codeql.yml": {
+      "symbols": 41,
+      "relationships": 40,
+      "errors": 0
+    },
+    ".github/workflows/codestyle.yml": {
+      "symbols": 121,
+      "relationships": 120,
+      "errors": 0
+    },
+    ".github/workflows/coverage.yml": {
+      "symbols": 102,
+      "relationships": 101,
+      "errors": 0
+    },
+    ".github/workflows/end-to-end.yml": {
+      "symbols": 75,
+      "relationships": 74,
+      "errors": 0
+    },
+    ".github/workflows/forge-deploy-next.yml": {
+      "symbols": 99,
+      "relationships": 98,
+      "errors": 0
+    },
+    ".github/workflows/forge-deploy-prev-snapshot.yml": {
+      "symbols": 99,
+      "relationships": 98,
+      "errors": 0
+    },
+    ".github/workflows/forge-deploy-prev.yml": {
+      "symbols": 99,
+      "relationships": 98,
+      "errors": 0
+    },
+    ".github/workflows/forge-deploy-release.yml": {
+      "symbols": 111,
+      "relationships": 110,
+      "errors": 0
+    },
+    ".github/workflows/forge-deploy-snapshot.yml": {
+      "symbols": 99,
+      "relationships": 98,
+      "errors": 0
+    },
+    ".github/workflows/gradle.yml": {
+      "symbols": 1009,
+      "relationships": 1008,
+      "errors": 0
+    },
+    ".github/workflows/groovy-joint-workflow.yml": {
+      "symbols": 136,
+      "relationships": 135,
+      "errors": 0
+    },
+    ".github/workflows/rat.yml": {
+      "symbols": 47,
+      "relationships": 46,
+      "errors": 0
+    },
+    ".github/workflows/release-abort.yml": {
+      "symbols": 61,
+      "relationships": 60,
+      "errors": 0
+    },
+    ".github/workflows/release-close.yml": {
+      "symbols": 54,
+      "relationships": 53,
+      "errors": 0
+    },
+    ".github/workflows/release-drop-staging.yml": {
+      "symbols": 20,
+      "relationships": 19,
+      "errors": 0
+    },
+    ".github/workflows/release-notes.yml": {
+      "symbols": 47,
+      "relationships": 46,
+      "errors": 0
+    },
+    ".github/workflows/release-publish-docs.yml": {
+      "symbols": 64,
+      "relationships": 63,
+      "errors": 0
+    },
+    ".github/workflows/release-verify.yml": {
+      "symbols": 64,
+      "relationships": 63,
+      "errors": 0
+    },
+    ".github/workflows/release.yml": {
+      "symbols": 540,
+      "relationships": 539,
+      "errors": 0
+    },
+    ".github/workflows/sitemesh2.yml": {
+      "symbols": 87,
+      "relationships": 86,
+      "errors": 0
+    },
+    ".github/workflows/validate-actions.yml": {
+      "symbols": 41,
+      "relationships": 40,
+      "errors": 0
+    },
+    ".github/workflows/vulnerability-scan.yml": {
+      "symbols": 43,
+      "relationships": 42,
+      "errors": 0
+    },
+    "codecov.yml": {
+      "symbols": 21,
+      "relationships": 20,
+      "errors": 0
+    },
+    "end-to-end/legacy-commands/grails-app/conf/application.yml": {
+      "symbols": 23,
+      "relationships": 20,
+      "errors": 0
+    },
+    "end-to-end/spring-dependency-management/grails-app/conf/application.yml": {
+      "symbols": 55,
+      "relationships": 52,
+      "errors": 0
+    },
+    "grails-bootstrap/src/test/resources/grails/config/application.yml": {
+      "symbols": 25,
+      "relationships": 22,
+      "errors": 0
+    },
+    "grails-core/src/test/resources/application.yml": {
+      "symbols": 50,
+      "relationships": 43,
+      "errors": 0
+    },
+    "grails-core/src/test/resources/config/application.yml": {
+      "symbols": 23,
+      "relationships": 20,
+      "errors": 0
+    },
+    "grails-core/src/test/resources/foo-plugin-environments.yml": {
+      "symbols": 29,
+      "relationships": 26,
+      "errors": 0
+    },
+    "grails-core/src/test/resources/foo-plugin-multiple-environments.yml": {
+      "symbols": 29,
+      "relationships": 26,
+      "errors": 0
+    },
+    "grails-data-graphql/docs/src/main/docs/guide/toc.yml": {
+      "symbols": 28,
+      "relationships": 27,
+      "errors": 0
+    },
+    "grails-data-graphql/plugin/grails-app/conf/application.yml": {
+      "symbols": 68,
+      "relationships": 66,
+      "errors": 0
+    },
+    "grails-data-graphql/plugin/grails-app/conf/plugin.yml": {
+      "symbols": 7,
+      "relationships": 6,
+      "errors": 0
+    },
+    "grails-data-hibernate5/dbmigration/grails-app/conf/application.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    "grails-data-hibernate5/dbmigration/src/integration-test/resources/application-multiple-datasource.yml": {
+      "symbols": 30,
+      "relationships": 27,
+      "errors": 0
+    },
+    "grails-data-hibernate5/dbmigration/src/integration-test/resources/application-single-datasource.yml": {
+      "symbols": 18,
+      "relationships": 15,
+      "errors": 0
+    },
+    "grails-data-hibernate5/dbmigration/src/integration-test/resources/application-transaction-datasource.yml": {
+      "symbols": 30,
+      "relationships": 27,
+      "errors": 0
+    },
+    "grails-data-hibernate5/grails-plugin/src/test/resources/application.yml": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-data-hibernate7/dbmigration-core/src/test/resources/harness-config.yml": {
+      "symbols": 10,
+      "relationships": 9,
+      "errors": 0
+    },
+    "grails-data-hibernate7/dbmigration-core/src/test/resources/liquibase/harness/diff/diffDatabases.yml": {
+      "symbols": 64,
+      "relationships": 63,
+      "errors": 0
+    },
+    "grails-data-hibernate7/dbmigration/grails-app/conf/application.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    "grails-data-hibernate7/dbmigration/src/integration-test/resources/application-multiple-datasource.yml": {
+      "symbols": 31,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-data-hibernate7/dbmigration/src/integration-test/resources/application-single-datasource.yml": {
+      "symbols": 18,
+      "relationships": 15,
+      "errors": 0
+    },
+    "grails-data-hibernate7/dbmigration/src/integration-test/resources/application-transaction-datasource.yml": {
+      "symbols": 30,
+      "relationships": 27,
+      "errors": 0
+    },
+    "grails-data-hibernate7/grails-plugin/src/test/resources/application.yml": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-data-neo4j/examples/grails3-neo4j-hibernate/grails-app/conf/application.yml": {
+      "symbols": 111,
+      "relationships": 107,
+      "errors": 0
+    },
+    "grails-data-neo4j/examples/grails3-neo4j/grails-app/conf/application.yml": {
+      "symbols": 64,
+      "relationships": 61,
+      "errors": 0
+    },
+    "grails-data-neo4j/examples/neo4j-spring-boot/src/main/resources/application.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-data-neo4j/examples/test-data-service/grails-app/conf/application.yml": {
+      "symbols": 58,
+      "relationships": 55,
+      "errors": 0
+    },
+    "grails-doc/src/en/guide/links.yml": {
+      "symbols": 249,
+      "relationships": 248,
+      "errors": 0
+    },
+    "grails-doc/src/en/guide/toc.yml": {
+      "symbols": 382,
+      "relationships": 381,
+      "errors": 0
+    },
+    "grails-forge/grails-forge-analytics-postgres/src/main/resources/application-dev.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-forge/grails-forge-analytics-postgres/src/main/resources/application.yml": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "grails-forge/grails-forge-api/src/main/resources/application.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-forge/grails-forge-web-netty/src/main/resources/application-dev.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-forge/grails-forge-web-netty/src/main/resources/application.yml": {
+      "symbols": 33,
+      "relationships": 32,
+      "errors": 0
+    },
+    "grails-forge/sam-local.yml": {
+      "symbols": 29,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/auto-apply-bom-disabled/grails-app/conf/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/bom-platform-basic/grails-app/conf/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/bom-platform-manual/grails-app/conf/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/boot-run-pid-web/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/bootrun-console-ansi/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/fork-settings-custom/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/fork-settings-defaults/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/java-compat-no-toolchain/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/java-compat-toolchain-23/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/java-compat-toolchain-24/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/java-compat-toolchain-current/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/no-toolchain-javaexec/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/no-toolchain-web/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/plugin-script-commands/plugin-with-cli/src/main/resources/META-INF/commands/hand-authored.yml": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/plugin-script-commands/plugin-with-cli/src/main/scripts/example-multi-step.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/preserve-params-default/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/preserve-params-disabled/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/preserve-params-enabled/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/preserve-params-null/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/preserve-params-provider-null/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/toolchain-command/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/toolchain-javaexec/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/toolchain-override/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-gradle/plugins/src/test/resources/test-projects/toolchain-test/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-profiles/base/commands/clean.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/base/commands/compile.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/base/commands/create-command.yml": {
+      "symbols": 16,
+      "relationships": 15,
+      "errors": 0
+    },
+    "grails-profiles/base/commands/create-domain-class.yml": {
+      "symbols": 19,
+      "relationships": 18,
+      "errors": 0
+    },
+    "grails-profiles/base/commands/create-unit-test.yml": {
+      "symbols": 17,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-profiles/base/commands/package.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/base/features/asset-pipeline/feature.yml": {
+      "symbols": 11,
+      "relationships": 10,
+      "errors": 0
+    },
+    "grails-profiles/base/features/events/feature.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-profiles/base/features/geb2/feature.yml": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-profiles/base/features/gsp/feature.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/base/features/hibernate5/feature.yml": {
+      "symbols": 15,
+      "relationships": 14,
+      "errors": 0
+    },
+    "grails-profiles/base/features/hibernate5/skeleton/grails-app/conf/application.yml": {
+      "symbols": 43,
+      "relationships": 42,
+      "errors": 0
+    },
+    "grails-profiles/base/features/json-views/feature.yml": {
+      "symbols": 11,
+      "relationships": 10,
+      "errors": 0
+    },
+    "grails-profiles/base/features/less-asset-pipeline/feature.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    "grails-profiles/base/features/markup-views/feature.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/base/features/mongodb/feature.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-profiles/base/features/mongodb/skeleton/grails-app/conf/application.yml": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-profiles/base/features/neo4j/feature.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-profiles/base/features/neo4j/skeleton/grails-app/conf/application.yml": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-profiles/base/features/rx-mongodb/feature.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-profiles/base/features/rx-mongodb/skeleton/grails-app/conf/application.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/base/profile.yml": {
+      "symbols": 42,
+      "relationships": 41,
+      "errors": 0
+    },
+    "grails-profiles/plugin/commands/install.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/plugin/commands/package-plugin.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/plugin/commands/publish-plugin.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/plugin/features/asset-pipeline-plugin/feature.yml": {
+      "symbols": 11,
+      "relationships": 10,
+      "errors": 0
+    },
+    "grails-profiles/plugin/features/maven-publish/feature.yml": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-profiles/plugin/profile.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-profiles/profile/commands/install.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-profiles/profile/profile.yml": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-profiles/profile/skeleton/profile.yml": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "grails-profiles/profile/skeleton/skeleton/grails-app/conf/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-profiles/rest-api-plugin/profile.yml": {
+      "symbols": 53,
+      "relationships": 52,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-controller.yml": {
+      "symbols": 26,
+      "relationships": 25,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-domain-resource.yml": {
+      "symbols": 19,
+      "relationships": 18,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-functional-test.yml": {
+      "symbols": 17,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-integration-test.yml": {
+      "symbols": 17,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-interceptor.yml": {
+      "symbols": 23,
+      "relationships": 22,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-restful-controller.yml": {
+      "symbols": 18,
+      "relationships": 17,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/commands/create-service.yml": {
+      "symbols": 23,
+      "relationships": 22,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/features/security/feature.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/profile.yml": {
+      "symbols": 42,
+      "relationships": 41,
+      "errors": 0
+    },
+    "grails-profiles/rest-api/skeleton/grails-app/conf/application.yml": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "grails-profiles/web-plugin/profile.yml": {
+      "symbols": 12,
+      "relationships": 11,
+      "errors": 0
+    },
+    "grails-profiles/web/commands/create-controller.yml": {
+      "symbols": 26,
+      "relationships": 25,
+      "errors": 0
+    },
+    "grails-profiles/web/commands/create-integration-test.yml": {
+      "symbols": 17,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-profiles/web/commands/create-interceptor.yml": {
+      "symbols": 23,
+      "relationships": 22,
+      "errors": 0
+    },
+    "grails-profiles/web/commands/create-service.yml": {
+      "symbols": 23,
+      "relationships": 22,
+      "errors": 0
+    },
+    "grails-profiles/web/commands/create-taglib.yml": {
+      "symbols": 25,
+      "relationships": 24,
+      "errors": 0
+    },
+    "grails-profiles/web/profile.yml": {
+      "symbols": 57,
+      "relationships": 56,
+      "errors": 0
+    },
+    "grails-profiles/web/skeleton/grails-app/conf/application.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-redis/grails-app/conf/application.yml": {
+      "symbols": 23,
+      "relationships": 21,
+      "errors": 0
+    },
+    "grails-scaffolding/grails-app/conf/application.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    "grails-spring-security/acl/plugin/grails-app/conf/application.yml": {
+      "symbols": 69,
+      "relationships": 67,
+      "errors": 0
+    },
+    "grails-spring-security/cas/plugin/grails-app/conf/application.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-spring-security/ldap/plugin/grails-app/conf/application.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-spring-security/oauth2/plugin/grails-app/conf/application.yml": {
+      "symbols": 60,
+      "relationships": 58,
+      "errors": 0
+    },
+    "grails-spring-security/rest/core/grails-app/conf/application.yml": {
+      "symbols": 22,
+      "relationships": 21,
+      "errors": 0
+    },
+    "grails-spring-security/rest/docker-compose.yml": {
+      "symbols": 7,
+      "relationships": 6,
+      "errors": 0
+    },
+    "grails-spring-security/rest/testapp-profile/features/data1/skeleton/grails-app/conf/application.yml": {
+      "symbols": 43,
+      "relationships": 42,
+      "errors": 0
+    },
+    "grails-spring-security/rest/testapp-profile/features/data2/skeleton/grails-app/conf/application.yml": {
+      "symbols": 43,
+      "relationships": 42,
+      "errors": 0
+    },
+    "grails-spring-security/rest/testapp-profile/skeleton/grails-app/conf/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-spring-security/ui/plugin/grails-app/conf/application.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-test-examples/app1/grails-app/conf/application.yml": {
+      "symbols": 89,
+      "relationships": 84,
+      "errors": 0
+    },
+    "grails-test-examples/app2/grails-app/conf/application.yml": {
+      "symbols": 59,
+      "relationships": 56,
+      "errors": 0
+    },
+    "grails-test-examples/app3/grails-app/conf/application.yml": {
+      "symbols": 64,
+      "relationships": 61,
+      "errors": 0
+    },
+    "grails-test-examples/app4/grails-app/conf/application.yml": {
+      "symbols": 82,
+      "relationships": 79,
+      "errors": 0
+    },
+    "grails-test-examples/app5/grails-app/conf/application.yml": {
+      "symbols": 42,
+      "relationships": 40,
+      "errors": 0
+    },
+    "grails-test-examples/async-events-pubsub-demo/grails-app/conf/application.yml": {
+      "symbols": 32,
+      "relationships": 31,
+      "errors": 0
+    },
+    "grails-test-examples/cache/grails-app/conf/application.yml": {
+      "symbols": 29,
+      "relationships": 26,
+      "errors": 0
+    },
+    "grails-test-examples/config-report/grails-app/conf/application.yml": {
+      "symbols": 32,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-test-examples/database-cleanup/grails-app/conf/application.yml": {
+      "symbols": 19,
+      "relationships": 17,
+      "errors": 0
+    },
+    "grails-test-examples/datasources/grails-app/conf/application.yml": {
+      "symbols": 43,
+      "relationships": 40,
+      "errors": 0
+    },
+    "grails-test-examples/demo33/grails-app/conf/application.yml": {
+      "symbols": 78,
+      "relationships": 74,
+      "errors": 0
+    },
+    "grails-test-examples/enable-mvc-check/grails-app/conf/application.yml": {
+      "symbols": 30,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-test-examples/exploded/grails-app/conf/application.yml": {
+      "symbols": 59,
+      "relationships": 56,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/grails-app/conf/application.yml": {
+      "symbols": 93,
+      "relationships": 87,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/integration-test/resources/testResourceConfig.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/main/resources/resourceConfig.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/test/resources/externalConfig.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/test/resources/externalConfigEnvironments.yml": {
+      "symbols": 10,
+      "relationships": 9,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/test/resources/externalConfigMultipleDocs.yml": {
+      "symbols": 6,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/test/resources/externalConfigWithReferencedValue.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/external-configuration/src/test/resources/mergeExternalConfig.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/geb-context-path/grails-app/conf/application.yml": {
+      "symbols": 53,
+      "relationships": 52,
+      "errors": 0
+    },
+    "grails-test-examples/geb-context-path/grails-cli.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-test-examples/geb-gebconfig/grails-app/conf/application.yml": {
+      "symbols": 58,
+      "relationships": 57,
+      "errors": 0
+    },
+    "grails-test-examples/geb/grails-app/conf/application.yml": {
+      "symbols": 58,
+      "relationships": 57,
+      "errors": 0
+    },
+    "grails-test-examples/geb/grails-cli.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-test-examples/gorm/grails-app/conf/application.yml": {
+      "symbols": 66,
+      "relationships": 63,
+      "errors": 0
+    },
+    "grails-test-examples/graphql/grails-docs-app/grails-app/conf/application.yml": {
+      "symbols": 92,
+      "relationships": 89,
+      "errors": 0
+    },
+    "grails-test-examples/graphql/grails-multi-datastore-app/grails-app/conf/application.yml": {
+      "symbols": 99,
+      "relationships": 95,
+      "errors": 0
+    },
+    "grails-test-examples/graphql/grails-tenant-app/grails-app/conf/application.yml": {
+      "symbols": 97,
+      "relationships": 94,
+      "errors": 0
+    },
+    "grails-test-examples/graphql/grails-test-app/grails-app/conf/application.yml": {
+      "symbols": 102,
+      "relationships": 99,
+      "errors": 0
+    },
+    "grails-test-examples/graphql/spring-boot-app/src/main/resources/application.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/gsp-layout/grails-app/conf/application.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    "grails-test-examples/gsp-layout/grails-forge-cli.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-test-examples/gsp-sitemesh3/grails-app/conf/application.yml": {
+      "symbols": 14,
+      "relationships": 13,
+      "errors": 0
+    },
+    "grails-test-examples/gsp-sitemesh3/grails-forge-cli.yml": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/criteria-extension/grails-app/conf/application.yml": {
+      "symbols": 35,
+      "relationships": 32,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-data-service-multi-datasource/grails-app/conf/application.yml": {
+      "symbols": 30,
+      "relationships": 27,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-data-service/grails-app/conf/application.yml": {
+      "symbols": 47,
+      "relationships": 44,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-database-per-tenant/grails-app/conf/application.yml": {
+      "symbols": 37,
+      "relationships": 33,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-hibernate-groovy-proxy/grails-app/conf/application.yml": {
+      "symbols": 17,
+      "relationships": 14,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-hibernate/grails-app/conf/application.yml": {
+      "symbols": 46,
+      "relationships": 42,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-multiple-datasources/grails-app/conf/application.yml": {
+      "symbols": 37,
+      "relationships": 33,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-multitenant-multi-datasource/grails-app/conf/application.yml": {
+      "symbols": 34,
+      "relationships": 31,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-partitioned-multi-tenancy/grails-app/conf/application.yml": {
+      "symbols": 32,
+      "relationships": 29,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/grails-schema-per-tenant/grails-app/conf/application.yml": {
+      "symbols": 31,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/issue450/grails-app/conf/application.yml": {
+      "symbols": 46,
+      "relationships": 43,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate5/spring-boot-hibernate/src/main/resources/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/app1/grails-app/conf/application.yml": {
+      "symbols": 99,
+      "relationships": 94,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/async-events-pubsub-demo/grails-app/conf/application.yml": {
+      "symbols": 32,
+      "relationships": 31,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/criteria-extension/grails-app/conf/application.yml": {
+      "symbols": 35,
+      "relationships": 32,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/database-cleanup/grails-app/conf/application.yml": {
+      "symbols": 19,
+      "relationships": 17,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/datasources/grails-app/conf/application.yml": {
+      "symbols": 58,
+      "relationships": 55,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/demo33/grails-app/conf/application.yml": {
+      "symbols": 94,
+      "relationships": 90,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/gorm/grails-app/conf/application.yml": {
+      "symbols": 81,
+      "relationships": 78,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-data-service-multi-datasource/grails-app/conf/application.yml": {
+      "symbols": 30,
+      "relationships": 27,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-data-service/grails-app/conf/application.yml": {
+      "symbols": 47,
+      "relationships": 44,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-database-per-tenant/grails-app/conf/application.yml": {
+      "symbols": 37,
+      "relationships": 33,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-hibernate-groovy-proxy/grails-app/conf/application.yml": {
+      "symbols": 19,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-hibernate/grails-app/conf/application.yml": {
+      "symbols": 46,
+      "relationships": 42,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-multiple-datasources/grails-app/conf/application.yml": {
+      "symbols": 37,
+      "relationships": 33,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-multitenant-multi-datasource/grails-app/conf/application.yml": {
+      "symbols": 34,
+      "relationships": 31,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-partitioned-multi-tenancy/grails-app/conf/application.yml": {
+      "symbols": 32,
+      "relationships": 29,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/grails-schema-per-tenant/grails-app/conf/application.yml": {
+      "symbols": 31,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/issue-698-domain-save-npe/grails-app/conf/application.yml": {
+      "symbols": 79,
+      "relationships": 75,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/issue450/grails-app/conf/application.yml": {
+      "symbols": 46,
+      "relationships": 43,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/scaffolding-fields/grails-app/conf/application.yml": {
+      "symbols": 61,
+      "relationships": 57,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/spring-boot-hibernate/src/main/resources/application.yml": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "grails-test-examples/hibernate7/views-functional-tests/grails-app/conf/application.yml": {
+      "symbols": 83,
+      "relationships": 79,
+      "errors": 0
+    },
+    "grails-test-examples/hyphenated/grails-app/conf/application.yml": {
+      "symbols": 67,
+      "relationships": 64,
+      "errors": 0
+    },
+    "grails-test-examples/issue-10279/grails-app/conf/application.yml": {
+      "symbols": 23,
+      "relationships": 22,
+      "errors": 0
+    },
+    "grails-test-examples/issue-11102/grails-app/conf/application.yml": {
+      "symbols": 61,
+      "relationships": 58,
+      "errors": 0
+    },
+    "grails-test-examples/issue-11767/grails-app/conf/application.yml": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-test-examples/issue-15228/grails-app/conf/application.yml": {
+      "symbols": 10,
+      "relationships": 9,
+      "errors": 0
+    },
+    "grails-test-examples/issue-698-domain-save-npe/grails-app/conf/application.yml": {
+      "symbols": 64,
+      "relationships": 60,
+      "errors": 0
+    },
+    "grails-test-examples/issue-views-182/grails-app/conf/application.yml": {
+      "symbols": 67,
+      "relationships": 64,
+      "errors": 0
+    },
+    "grails-test-examples/jetty/grails-app/conf/application.yml": {
+      "symbols": 21,
+      "relationships": 19,
+      "errors": 0
+    },
+    "grails-test-examples/latency/grails-app/conf/application.yml": {
+      "symbols": 26,
+      "relationships": 25,
+      "errors": 0
+    },
+    "grails-test-examples/mail/grails-app/conf/application.yml": {
+      "symbols": 41,
+      "relationships": 40,
+      "errors": 0
+    },
+    "grails-test-examples/micronaut-groovy-only/grails-app/conf/application.yml": {
+      "symbols": 38,
+      "relationships": 35,
+      "errors": 0
+    },
+    "grails-test-examples/micronaut-hibernate5/grails-app/conf/application.yml": {
+      "symbols": 51,
+      "relationships": 48,
+      "errors": 0
+    },
+    "grails-test-examples/micronaut-hibernate7/grails-app/conf/application.yml": {
+      "symbols": 51,
+      "relationships": 48,
+      "errors": 0
+    },
+    "grails-test-examples/micronaut/grails-app/conf/application.yml": {
+      "symbols": 68,
+      "relationships": 65,
+      "errors": 0
+    },
+    "grails-test-examples/mongodb/base/grails-app/conf/application.yml": {
+      "symbols": 30,
+      "relationships": 26,
+      "errors": 0
+    },
+    "grails-test-examples/mongodb/database-per-tenant/grails-app/conf/application.yml": {
+      "symbols": 36,
+      "relationships": 33,
+      "errors": 0
+    },
+    "grails-test-examples/mongodb/gson-templates/grails-app/conf/application.yml": {
+      "symbols": 75,
+      "relationships": 72,
+      "errors": 0
+    },
+    "grails-test-examples/mongodb/hibernate5/grails-app/conf/application.yml": {
+      "symbols": 33,
+      "relationships": 30,
+      "errors": 0
+    },
+    "grails-test-examples/mongodb/test-data-service/grails-app/conf/application.yml": {
+      "symbols": 31,
+      "relationships": 28,
+      "errors": 0
+    },
+    "grails-test-examples/namespaces/grails-app/conf/application.yml": {
+      "symbols": 65,
+      "relationships": 62,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/exploded/grails-app/conf/application.yml": {
+      "symbols": 34,
+      "relationships": 32,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/issue-11767/grails-app/conf/plugin.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/issue11005/grails-app/conf/application.yml": {
+      "symbols": 18,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/loadafter/grails-app/conf/application.yml": {
+      "symbols": 18,
+      "relationships": 16,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/loadafter/grails-app/conf/plugin.yml": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/loadfirst/grails-app/conf/application.yml": {
+      "symbols": 59,
+      "relationships": 56,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/loadfirst/grails-app/conf/plugin.yml": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/loadsecond/grails-app/conf/application.yml": {
+      "symbols": 59,
+      "relationships": 56,
+      "errors": 0
+    },
+    "grails-test-examples/plugins/loadsecond/grails-app/conf/plugin.yml": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "grails-test-examples/redis/grails-app/conf/application.yml": {
+      "symbols": 89,
+      "relationships": 85,
+      "errors": 0
+    },
+    "grails-test-examples/scaffolding-fields/grails-app/conf/application.yml": {
+      "symbols": 46,
+      "relationships": 42,
+      "errors": 0
+    },
+    "grails-test-examples/scaffolding/grails-app/conf/application.yml": {
+      "symbols": 66,
+      "relationships": 62,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/acl/functional-test-app/grails-app/conf/application.yml": {
+      "symbols": 57,
+      "relationships": 55,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/acl/integration-test-app/grails-app/conf/application.yml": {
+      "symbols": 51,
+      "relationships": 50,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/cas/test1/grails-app/conf/application.yml": {
+      "symbols": 56,
+      "relationships": 54,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/core/functional-test-app/grails-app/conf/application.yml": {
+      "symbols": 60,
+      "relationships": 59,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/core/integration-test-app/grails-app/conf/application.yml": {
+      "symbols": 58,
+      "relationships": 57,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/core/misc-functional-test-app/group/grails-app/conf/application.yml": {
+      "symbols": 60,
+      "relationships": 59,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/core/misc-functional-test-app/roles/grails-app/conf/application.yml": {
+      "symbols": 60,
+      "relationships": 59,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/ldap/custom-user-details-context-mapper/grails-app/conf/application.yml": {
+      "symbols": 51,
+      "relationships": 50,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/ldap/functional-test-app/grails-app/conf/application.yml": {
+      "symbols": 127,
+      "relationships": 123,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/ldap/retrieve-db-roles/grails-app/conf/application.yml": {
+      "symbols": 51,
+      "relationships": 50,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/ldap/retrieve-group-roles/grails-app/conf/application.yml": {
+      "symbols": 51,
+      "relationships": 50,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/ui/extended/grails-app/conf/application.yml": {
+      "symbols": 112,
+      "relationships": 109,
+      "errors": 0
+    },
+    "grails-test-examples/spring-security/ui/simple/grails-app/conf/application.yml": {
+      "symbols": 107,
+      "relationships": 104,
+      "errors": 0
+    },
+    "grails-test-examples/test-phases/grails-app/conf/application.yml": {
+      "symbols": 19,
+      "relationships": 18,
+      "errors": 0
+    },
+    "grails-test-examples/undertow/grails-app/conf/application.yml": {
+      "symbols": 21,
+      "relationships": 19,
+      "errors": 0
+    },
+    "grails-test-examples/views-functional-tests-plugin/grails-app/conf/application.yml": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "grails-test-examples/views-functional-tests/grails-app/conf/application.yml": {
+      "symbols": 83,
+      "relationships": 79,
+      "errors": 0
+    },
+    "threat-model.yaml": {
+      "symbols": 467,
+      "relationships": 466,
+      "errors": 0
+    }
+  },
+  "excludedFiles": [
+    "grails-profiles/base/skeleton/grails-app/conf/application.yml"
+  ],
+  "crashes": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.119Z",
+    "contentSha256": "f9d78b79f0ed766e377bdf5fb83f13c2df1e04bd8cccacd123794db45c445763"
+  }
+}

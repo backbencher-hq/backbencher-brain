@@ -8,7 +8,7 @@
   "sha256": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
   "bytes": 12613928
  },
- "corpus": "$HOME/fixtures/repositories/fsharp",
+ "corpus": "/home/ishaq2321/bb_tests/repositories/fsharp",
  "sampleSize": 120,
  "files": [
   ".github/skills/fsharp-diagnostics/server/DesignTimeBuild.fs",

@@ -1,0 +1,36 @@
+{
+  "comment": "ELEMENT FORMS. Written because the F6 fixture-coverage gate reported `style_element` and `self_closing_tag` as two of twelve HANDLED node types that no fixture exercised — the gate catching a gap in the lane's OWN fixtures, which is what it is for. A handled type nothing pins is a type whose handling can rot silently. Both tag containers (`start_tag` and `self_closing_tag`) therefore need a pin, as does the void-element form the grammar shapes the other way.",
+  "expectSymbols": [
+    { "name": "element-forms", "kind": "module" },
+    { "name": "inline-style", "kind": "class", "meta.tagName": "style" },
+    { "name": "selfclosed-img", "kind": "class" },
+    { "name": "selfclosed-br", "kind": "class" },
+    { "name": "selfclosed-hr", "kind": "class" },
+    { "name": "selfclosed-svg", "kind": "class" },
+    { "name": "selfclosed-path", "kind": "class" },
+    { "name": "selfclosed-circle", "kind": "class" },
+    { "name": "void-img", "kind": "class" },
+    { "name": "void-input", "kind": "class" },
+    { "name": "void-meta", "kind": "class" },
+    { "name": "void-link", "kind": "class" },
+    { "name": "selfclosed-div", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "element-forms", "target": "inline-style", "line_number": 12 },
+    { "comment": "A self-closing tag goes through the OTHER container cursor, and the resource it declares must still be read — a self-closing carrier that produced nothing would be the same class of miss as the eight the rule table recovered.", "type": "uses", "from": "selfclosed-img", "target": "/assets/a.png", "line_number": 20, "meta.resourceType": "img" },
+    { "type": "contains", "from": "element-forms", "target": "selfclosed-br", "line_number": 21 },
+    { "type": "contains", "from": "element-forms", "target": "selfclosed-hr", "line_number": 22 },
+    { "comment": "An SVG self-closing element is the common real case, and the nearest addressable ancestor is the `<svg>`, not the document.", "type": "contains", "from": "selfclosed-svg", "target": "selfclosed-path", "line_number": 24 },
+    { "type": "contains", "from": "selfclosed-svg", "target": "selfclosed-circle", "line_number": 25 },
+    { "type": "contains", "from": "element-forms", "target": "void-img", "line_number": 31 },
+    { "type": "uses", "from": "void-img", "target": "/assets/b.png", "line_number": 31, "meta.resourceType": "img" },
+    { "type": "contains", "from": "element-forms", "target": "void-input", "line_number": 32 },
+    { "type": "contains", "from": "element-forms", "target": "void-meta", "line_number": 33 },
+    { "comment": "`rel=canonical` is in the fetchable-`rel` vocabulary, so the edge says WHICH kind of link it is rather than only that a link exists.", "type": "uses", "from": "void-link", "target": "/canonical", "line_number": 34, "meta.resourceType": "canonical" },
+    { "comment": "An XHTML-style self-closing NON-void element: the grammar must not require an end tag for it.", "type": "contains", "from": "element-forms", "target": "selfclosed-div", "line_number": 38 }
+  ],
+  "forbidRelationships": [
+    { "comment": "A viewport meta is a declaration, not a fetched resource — `content` is a value here, not a URL.", "from": "void-meta", "target": "width=device-width" },
+    { "comment": "The inline <style> BODY is the lane's one open completeness gap (HTML-G1, `raw_text`): the element is a node, but nothing descends into its CSS, so the rule it declares is not an edge. Pinned as an explicit absence so the gap cannot be closed silently — when HTML-G1 lands this row must be revisited, not deleted.", "from": "inline-style" }
+  ]
+}

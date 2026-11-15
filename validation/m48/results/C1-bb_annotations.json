@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_annotations.json",
+  "generatedAt": "2026-11-04T05:55:38.534Z",
+  "tools": [
+    "bb_annotations"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 4,
+      "args": "{\"symbol\":\"rake\"}",
+      "outHead": "{\"symbol\":\"rake\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-67d423c5472b"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 14,
+      "args": "{\"symbol\":\"parse_low_raw\"}",
+      "outHead": "{\"symbol\":\"parse_low_raw\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-a31"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 29,
+      "args": "{\"symbol\":\"expectJSON\"}",
+      "outHead": "{\"symbol\":\"expectJSON\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-db15b7"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 23,
+      "args": "{\"symbol\":\"layoutBlockMembers\"}",
+      "outHead": "{\"symbol\":\"layoutBlockMembers\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bban"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 7,
+      "args": "{\"symbol\":\"module\"}",
+      "outHead": "{\"symbol\":\"module\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-04a0c0d30b"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"rake\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"parse_low_raw\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\""
+    },
+    {
+      "repo": "graphql-js",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"expectJSON\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": f"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"layoutBlockMembers\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAb"
+    },
+    {
+      "repo": "lodash",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"module\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_annotations"
+    ]
+  }
+}

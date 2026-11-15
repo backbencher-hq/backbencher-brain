@@ -1,0 +1,181 @@
+{
+  "fixtureId": "protobuf/ancestor-scope-resolution",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the half of protobuf name resolution the other resolution fixture cannot see, and the guard that keeps it from asserting a wrong declaration. `protobuf/absolute-and-scope-resolution` declares no `import`, so in that file every dotted name falls back as written and the question of which DIRECTORY a candidate's package maps to never arises; an analyzer that deleted the ancestor scopes outright would still pass it. protobuf's rule is C++ name lookup over EVERY enclosing scope, so a relative name is also looked for in the package's own ancestors \u2014 and this file is built so that only an ancestor can reach the reference, which is the shape the corpus measured at 431 unresolved `uses` targets. The second half is the guard: docker vendors containerd, whose `api/types/platform.proto` declares `package containerd.types;` and is imported as `types/platform.proto`, so a directory name need not be the package it holds. The directory test alone was measured asserting a wrong declaration at 7 corpus edges, so the walk declines whenever the matched directory is a proper suffix of a more specific candidate's directory. Both the accept and the decline are asserted, because a rule stated only as 'walk the ancestors' fails the second row and a rule stated only as 'trust the import directory' fails the first.",
+  "expectSymbols": [
+    {
+      "name": "corp.api.resources.accounts.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Account",
+      "kind": "class",
+      "ownerName": "corp.api.resources.accounts.v1",
+      "meta.id": "corp.api.resources.accounts.v1.Account"
+    },
+    {
+      "name": "scope",
+      "kind": "property",
+      "ownerName": "corp.api.resources.accounts.v1.Account"
+    },
+    {
+      "name": "created",
+      "kind": "property",
+      "ownerName": "corp.api.resources.accounts.v1.Account"
+    },
+    {
+      "name": "Shifted",
+      "kind": "class",
+      "ownerName": "corp.api.resources.accounts.v1",
+      "meta.id": "corp.api.resources.accounts.v1.Shifted"
+    },
+    {
+      "name": "platform",
+      "kind": "property",
+      "ownerName": "corp.api.resources.accounts.v1.Shifted"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "corp.api.resources.accounts.v1.Account",
+      "line_number": 30
+    },
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1.Account",
+      "target": "corp.api.resources.accounts.v1.Account.scope",
+      "line_number": 33
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Account.scope",
+      "target": "corp.api.resources.scopes.v1.ScopeInfo",
+      "line_number": 33,
+      "confidenceMin": 0.9,
+      "note": "THE row this fixture exists for. `resources.scopes.v1.ScopeInfo` is relative and rooted BELOW the file's own package, so no scope inside the package subtree can reach it: the walk has to continue to the ancestor `corp.api`, where the package maps to `corp/api/resources/scopes/v1` \u2014 a directory this file imports. The pre-fix answer was `resources.scopes.v1.ScopeInfo`, an id published by no file in any repository. Boundary's real files carry this shape: `accounts/v1/account.proto` in package `controller.api.resources.accounts.v1` writes the field type `resources.scopes.v1.ScopeInfo` while importing `controller/api/resources/scopes/v1/scope.proto`, which declares exactly the id above."
+    },
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1.Account",
+      "target": "corp.api.resources.accounts.v1.Account.created",
+      "line_number": 41
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Account.created",
+      "target": "google.protobuf.Timestamp",
+      "line_number": 41,
+      "note": "the guard, on a reference where declining is FREE. `google/protobuf` is an imported directory, but it is also a proper suffix of the more specific candidate `corp/api/google/protobuf`, so the walk declines and the name falls back as written. The outcome is the correct id because the reference was already fully qualified \u2014 which is why this row and the `Shifted` row below fail independently and both are needed."
+    },
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "corp.api.resources.accounts.v1.Shifted",
+      "line_number": 44
+    },
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1.Shifted",
+      "target": "corp.api.resources.accounts.v1.Shifted.platform",
+      "line_number": 57
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Shifted.platform",
+      "target": "types.Platform",
+      "line_number": 57,
+      "note": "THE row that decides the guard. `types` IS an imported directory, so the directory test alone answers `types.Platform` and claims it \u2014 while `corp/types` and `corp/api/types` are more specific candidates whose directories have `types` as a proper suffix, which is what a `-I` root ABOVE the package looks like. Declining is the honest answer and it is the PRE-fix answer, so the row asserts that the guard declines rather than that the walk succeeds. Measured at 7 wrong corpus edges before the guard: docker's `api/types/platform.proto` declares `package containerd.types;` and is imported as `types/platform.proto`, so the walk would have named `types.Platform` where `protoc` names `containerd.types.Platform`."
+    },
+    {
+      "type": "imports",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "corp/api/resources/scopes/v1/scope.proto",
+      "line_number": 26,
+      "note": "the import that makes the first row decidable from this file alone. protoc searches the imported descriptors; this file knows which descriptors it imported. PASS 16: the SOURCE is the file's OWN `package` namespace \u2014 already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node \u2014 aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`.",
+      "meta.moduleOwner": "package"
+    },
+    {
+      "type": "imports",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "google/protobuf/timestamp.proto",
+      "line_number": 27,
+      "meta.moduleOwner": "package",
+      "note": "PASS 16: the SOURCE is the file's OWN `package` namespace \u2014 already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node \u2014 aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`."
+    },
+    {
+      "type": "imports",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "types/platform.proto",
+      "line_number": 28,
+      "note": "the import that makes the DECLINE row decidable: the directory `types` really is imported, so the guard is what stops the walk, not an absent import. PASS 16: the SOURCE is the file's OWN `package` namespace \u2014 already published by this analyzer, and already the source of this fixture's own `contains` rows. It was the file's BASENAME until pass 16, and two measurements killed that spelling: against published ids the basename source resolved 0 of 1,561 `imports` and 0 of 4 `exports` edges, so every one of those edges asserted a node the index does not hold; and 967 of 1,565 module edges (61.8%) hang off a basename another corpus file also uses, so two unrelated files named alike produced indistinguishable edges. Measured by `script/m14/protobuf-module-edge-sources.mts` over 821 files; with this source 1,560 of 1,565 (99.68%) resolve. Cost, counted not assumed: 66 packages are declared by more than one importing file, so 810 of those edges share a namespace node \u2014 aggregation, but replacing an aggregation that was already happening on an unresolvable name. The TARGET is unchanged and external by design (`protoc` resolves imports against `-I` roots this analyzer is never told); the basename remains in `metadata.filePath`.",
+      "meta.moduleOwner": "package"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Account.scope",
+      "target": "resources.scopes.v1.ScopeInfo",
+      "note": "THE pre-fix answer, and the exact shape of all 431 corpus edges this walk removes: a target that no file in any repository publishes, so the graph asserts a declaration that is not there. A resolver that walked only the package subtree emits exactly this and passes every other fixture in the lane."
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Account.scope",
+      "target": "corp.api.resources.accounts.v1.resources.scopes.v1.ScopeInfo",
+      "note": "the innermost candidate, and the shape a resolver that stops at the first chain entry produces. It concatenates the package with a name already rooted below it, which is a name in no file \u2014 the same class of defect as the row above, reached a different way."
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Account.created",
+      "target": "corp.api.google.protobuf.Timestamp",
+      "note": "the package's ancestors applied to an already fully qualified name. The guard declines this one rather than answering it; an analyzer that trusted the import directory without the suffix test lands here."
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Shifted.platform",
+      "target": "corp.types.Platform",
+      "note": "the shifted-include-root answer, and the trap. It is the id protoc would bind in a repository whose root sits above the package, and no corpus file publishes it here. An analyzer that walked the ancestors with no suffix guard would emit this rather than the name as written; both the positive and the forbid are needed, because a rule stated only as 'walk the ancestors' passes neither."
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Shifted.platform",
+      "target": "corp.api.resources.accounts.v1.types.Platform",
+      "note": "the innermost candidate of the same walk. Named here so the suite fails if the chain order is inverted."
+    },
+    {
+      "type": "uses",
+      "from": "corp.api.resources.accounts.v1.Account.scope",
+      "target": "corp.api.resources.scopes.v1.ScopeInfo",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "corp.api.resources.accounts.v1.Account.created",
+      "target": "google.protobuf.Timestamp",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "corp.api.resources.accounts.v1.Shifted.platform",
+      "target": "types.Platform",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ScopeInfo",
+      "note": "declared in the imported scope.proto, not here. Publishing it would duplicate a declaration that lives in another file."
+    },
+    {
+      "name": "Platform",
+      "note": "declared in the imported types/platform.proto, not here."
+    },
+    {
+      "name": "Timestamp",
+      "note": "a well-known type reached by import, not a symbol of this file."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "fixtureId": "kotlin/type-usage-graph",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph: constructor params, properties, function params, return types, as-casts and is-checks each emit References to every named type; generics expand; nullable wrappers descend. M37 KAD3 adds the extension-receiver pin (receiver_type wrapper node); M37 KAD6 pins the return-type SOURCE (the declaring function, never Global).",
+  "expectRelationships": [
+    { "type": "references", "target": "List", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "String", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Map", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Int", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "m", "target": "Set", "meta.relationshipType": "return_type", "comment": "KAD6: return-type edges source to the declaring function (pre-fix: top-level fns sourced to Global)" },
+    { "type": "references", "from": "shout", "target": "String", "meta.relationshipType": "declared_type", "comment": "KAD3: the extension RECEIVER type emits its reference (grammar wraps it in receiver_type — the user_type-only walk never matched, so no edge pre-fix; return_type pin below is separate)" },
+    { "type": "references", "target": "Collection", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Number", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "String", "meta.relationshipType": "as_expression" },
+    { "type": "references", "target": "Double", "meta.relationshipType": "check_expression" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "Global", "comment": "KAD6: no declaration-position reference may source to the Global placeholder" }
+  ]
+}

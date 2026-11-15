@@ -279,7 +279,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
         cleanup(rake, projectId)
       }
     } else {
-      sk("D5: real-repo e2e", `no rake corpus at ${rake} (set BB_CORPUS_ROOT to the fixtures repositories directory to run this lane)`)
+      sk("D5: real-repo e2e", `no rake corpus at ${rake} (set BB_CORPUS_ROOT to the bb_tests repositories directory to run this lane)`)
     }
   }
   await emit("D5", "M15.D5", "bb_doc", "real-repo e2e (rake/lib)", "d5.json")

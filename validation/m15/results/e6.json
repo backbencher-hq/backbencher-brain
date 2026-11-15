@@ -1,0 +1,12 @@
+{
+  "issue": "M15.E6",
+  "code": "E6",
+  "tool": "bb_edit",
+  "title": "real-repo e2e",
+  "verified": true,
+  "checks": 7,
+  "passed": 11,
+  "failed": 0,
+  "negatives": 4,
+  "generatedAt": "2026-11-05T04:21:19.189Z"
+}

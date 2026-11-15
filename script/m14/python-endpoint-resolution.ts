@@ -91,7 +91,7 @@ const DUMP_UNEXPLAINED = argOf("--dump-unexplained")
  * report a rate that means neither.
  */
 const DUMP_QUALIFIED = argOf("--dump-qualified")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO_FILTER = argOf("--repo")
 const LIMIT = Number(argOf("--limit") ?? "0")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(1024 * 1024))

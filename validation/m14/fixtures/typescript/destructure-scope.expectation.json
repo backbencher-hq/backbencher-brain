@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/destructure-scope",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that destructured locals colliding with property names do NOT produce cross-symbol references (gap T6). The local `name` bound by `const { name } = u` shadows — `return name` refers to the LOCAL, never to User.name. Pre-fix: the scope-blind usage pass emitted main --references--> name targeting the User.name property (a false edge).",
+  "expectSymbols": [
+    { "name": "User", "kind": "interface" },
+    { "name": "name", "ownerName": "User" },
+    { "name": "main", "kind": "function" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "main", "target": "name" }
+  ]
+}

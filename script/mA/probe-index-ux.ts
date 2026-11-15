@@ -12,7 +12,7 @@
 //   - WASM/grammar load failures observed during the run
 //
 // Repos: small (rake), mid (vue-core), larger (element-plus) from the pinned
-// fixtures corpus. Output is a JSON evidence file the milestone can build on.
+// bb_tests corpus. Output is a JSON evidence file the milestone can build on.
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync, statSync, readdirSync } from "node:fs"
 import path from "node:path"
@@ -26,7 +26,7 @@ const require = createRequire(import.meta.url)
 const ROOT = path.resolve(process.cwd())
 const RESULTS = path.join(ROOT, "validation/mA/results")
 const REPOS = ["rake", "vue-core", "element-plus"]
-const REPO_ROOT = "$HOME/fixtures/repositories"
+const REPO_ROOT = "/home/ishaq2321/bb_tests/repositories"
 
 mkdirSync(RESULTS, { recursive: true })
 

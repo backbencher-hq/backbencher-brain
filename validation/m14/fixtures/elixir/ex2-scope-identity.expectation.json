@@ -1,0 +1,50 @@
+{
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "ScopeA.run/0",
+      "target": "common"
+    },
+    {
+      "type": "calls",
+      "from": "ScopeB.run/0",
+      "target": "common"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "common"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "ScopeA",
+      "visibility": "public",
+      "scope": "ScopeA"
+    },
+    {
+      "name": "common",
+      "kind": "function",
+      "ownerName": "ScopeA",
+      "visibility": "private"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "ScopeB",
+      "visibility": "public",
+      "scope": "ScopeB"
+    },
+    {
+      "name": "common",
+      "kind": "function",
+      "ownerName": "ScopeB",
+      "visibility": "private"
+    }
+  ],
+  "note": " EX-PAYLOAD pin (2026-09-28): `defp` reads PRIVATE (mutant elixir/defp-visibility-public survived before this) and the symbol `scope` field is asserted on the qualified members (mutant elixir/symbol-scope-dropped). The scope field is what the store binds to brain_symbol.scope_kind (#837) and it is not derivable from ownerName for a file-level declaration."
+}

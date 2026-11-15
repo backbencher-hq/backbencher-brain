@@ -29,7 +29,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.env.OUT || "script/vue-merge/evidence"
 const { ASTEngine } = await import(`${REPO}/src/ast/engine.ts`)
 const TYPES = [...new Set(Object.values(ASTEngine.RelationshipType))].sort()

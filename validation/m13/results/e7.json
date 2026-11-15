@@ -1,0 +1,592 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.12",
+  "code": "E7",
+  "tool": "bb_edit",
+  "title": "bb_edit: adversarial unit tests",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "'..' in filePath is rejected (no project-root escape) [negative: escapes project root]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "absolute filePath outside root is rejected [negative: escapes project root]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "in-root filePath resolves",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a symlink pointing outside the project root is rejected [negative: escapes project root through symlink]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "write: creates a new file",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "write: reports a single change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "update: rewrites the symbol body",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "update: reports a single change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "update after an external body change writes the NEW content, not the indexed one",
+      "pass": true,
+      "detail": "export function target(): number {\\n  return 42\\n}\\n"
+    },
+    {
+      "name": "update after an external change DISCLOSES that it refreshed the index",
+      "pass": true,
+      "detail": "[\"refreshed stale index rows for mod.ts before editing (the file changed after it was indexed)\"]"
+    },
+    {
+      "name": "update after an external body change leaves the file syntactically whole",
+      "pass": true,
+      "detail": "\"export function target(): number {\\n  return 42\\n}\\n\""
+    },
+    {
+      "name": "update on a symbol renamed externally aborts (no silent wrong write) [negative: not found]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "update on a symbol renamed externally leaves the file untouched",
+      "pass": true,
+      "detail": "export function renamedElsewhere(): number { return 99 }\\n"
+    },
+    {
+      "name": "update on a symbol removed externally aborts (no silent wrong write) [negative: not found]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "update on a symbol removed externally leaves the file untouched",
+      "pass": true,
+      "detail": "export const somethingElse = 1\\n"
+    },
+    {
+      "name": "delete after the declaration MOVED completes on the current bounds",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "delete after the declaration MOVED removes the moved declaration",
+      "pass": true,
+      "detail": "export const inserted = 7\\n\\n"
+    },
+    {
+      "name": "delete after the declaration MOVED kept the line inserted before it",
+      "pass": true,
+      "detail": "export const inserted = 7\\n\\n"
+    },
+    {
+      "name": "delete after the declaration MOVED left no fragment of the spliced span",
+      "pass": true,
+      "detail": "remaining lines: [\"export const inserted = 7\"]"
+    },
+    {
+      "name": "delete: refuses a symbol with active callers (no force) [negative: surviving deletion]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "delete: removes a caller-less symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "delete: reports a single change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: declaration renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: call site renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: heredoc text NOT renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: block comment NOT renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: interpolation live code renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: ambiguous symbol name aborts (two matches) [negative: ambiguous]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor: lineStart disambiguates to one symbol",
+      "pass": true,
+      "detail": "matches=1"
+    },
+    {
+      "name": "format truth: no mapping → formatted:false (was true while nothing formatted it)",
+      "pass": true,
+      "detail": "formatted=false"
+    },
+    {
+      "name": "format truth: no mapping → the entry names the extension and the reason",
+      "pass": true,
+      "detail": "[{\"path\":\"a.rb\",\"formatter\":null,\"ran\":false,\"ok\":false,\"reason\":\"no formatter mapped for .rb\"}]"
+    },
+    {
+      "name": "format truth: no mapping → the bytes on disk are exactly the splice",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "format truth: a formatter that exits 0 → formatted:true",
+      "pass": true,
+      "detail": "formatted=true"
+    },
+    {
+      "name": "format truth: the formatter really ran (the file holds its output)",
+      "pass": true,
+      "detail": "\"FORMATTED\\n\""
+    },
+    {
+      "name": "format truth: success carries no format warning",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "format truth: a formatter that exits 3 → formatted:false (was true with warnings:[])",
+      "pass": true,
+      "detail": "formatted=false"
+    },
+    {
+      "name": "format truth: the failure is attributed with exit code and stderr",
+      "pass": true,
+      "detail": "[{\"path\":\"c.ts\",\"formatter\":\"prettier\",\"ran\":true,\"ok\":false,\"reason\":\"prettier exited 3: boom: refusing\"}]"
+    },
+    {
+      "name": "format truth: the failure is warned by file name",
+      "pass": true,
+      "detail": "[\"format: c.ts: prettier exited 3: boom: refusing\"]"
+    },
+    {
+      "name": "format truth: a failing formatter does not discard the edit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "format truth: a hanging formatter is killed and reported as a timeout",
+      "pass": true,
+      "detail": "{\"formatter\":\"prettier\",\"ran\":true,\"ok\":false,\"reason\":\"prettier timed out after 1500ms\"}"
+    },
+    {
+      "name": "format truth: the hang is bounded by the budget, not by the formatter [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "took 1503ms"
+    },
+    {
+      "name": "format truth: not installed → ran:false, tool named, reason names both search paths",
+      "pass": true,
+      "detail": "{\"formatter\":\"prettier\",\"ran\":false,\"ok\":false,\"reason\":\"no formatter found: tried prettier in node_modules/.bin (walking up from the file) and on PATH\"}"
+    },
+    {
+      "name": "format truth: engine — no formatter available → formatted:false with the reason",
+      "pass": true,
+      "detail": "[{\"path\":\"e.ts\",\"formatter\":\"prettier\",\"ran\":false,\"ok\":false,\"reason\":\"no formatter found: tried prettier in node_modules/.bin (walking up from the file) and on PATH\"}]"
+    },
+    {
+      "name": "format truth: format:false → formatted:false and no formatting report",
+      "pass": true,
+      "detail": "null"
+    },
+    {
+      "name": "format truth: format:false really does not run the present formatter",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "format truth: dry-run → formatted:false and no formatting report",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "format truth: a file name cannot execute (execFile argv, no shell) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "marker /tmp/bb-e7-format-truth-6LF8KX/pwned exists — a marker means the NAME was expanded"
+    },
+    {
+      "name": "format truth: the hostile-named file is still formatted through argv",
+      "pass": true,
+      "detail": "formatted=true"
+    },
+    {
+      "name": "format truth: the hostile-named file was edited at its real path",
+      "pass": true,
+      "detail": "\"export function inj(): number {\\n  return 77\\n}\\n\""
+    },
+    {
+      "name": "format truth: a CRLF file hands prettier an explicit crlf line ending",
+      "pass": true,
+      "detail": "[\"--write\",\"--end-of-line\",\"crlf\",\"/tmp/bb-e7-format-truth-6LF8KX/crlf.ts\"]"
+    },
+    {
+      "name": "format truth: an LF file is NOT passed a line-ending override [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"--write\",\"/tmp/bb-e7-format-truth-6LF8KX/lf.ts\"]"
+    },
+    {
+      "name": "format truth: multi-file refactor is formatted:false when ANY file's formatter failed",
+      "pass": true,
+      "detail": "formatted=false"
+    },
+    {
+      "name": "format truth: the aggregate reports one entry per changed file with both outcomes",
+      "pass": true,
+      "detail": "[{\"path\":\"p.ts\",\"formatter\":\"prettier\",\"ran\":true,\"ok\":true},{\"path\":\"q.ts\",\"formatter\":\"prettier\",\"ran\":true,\"ok\":false,\"reason\":\"prettier exited 4: boom: q.ts\"}]"
+    },
+    {
+      "name": "format truth: the failing file is the one warned about",
+      "pass": true,
+      "detail": "[\"refactor aggTarget → aggRenamed: 3 site(s) across 2 file(s)\",\"format: q.ts: prettier exited 4: boom: q.ts\"]"
+    },
+    {
+      "name": "format truth: multi-file refactor is formatted:true when every file succeeded",
+      "pass": true,
+      "detail": "[{\"path\":\"p.ts\",\"formatter\":\"prettier\",\"ran\":true,\"ok\":true},{\"path\":\"q.ts\",\"formatter\":\"prettier\",\"ran\":true,\"ok\":true}]"
+    },
+    {
+      "name": "no-index: the fixture starts with ZERO indexed files",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no-index: update names the missing INDEX instead of claiming the symbol is absent [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-yTcsZT\". bb_edit write mode does not need an index and w"
+    },
+    {
+      "name": "no-index: and the refusal says which mode still works",
+      "pass": true,
+      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-yTcsZT\". bb_edit write mode does not need an index and works now; update, in"
+    },
+    {
+      "name": "no-index: delete takes the same path (one shared resolver, not four messages) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-yTcsZT\". bb_edit"
+    },
+    {
+      "name": "no-index: write succeeds on a project the indexer has never run over",
+      "pass": true,
+      "detail": "[\"/tmp/bb-e7-noindex-yTcsZT/src/app.ts\"]"
+    },
+    {
+      "name": "no-index: and reports reindexed:true",
+      "pass": true,
+      "detail": "reindexed=true"
+    },
+    {
+      "name": "no-index: the write left indexed rows behind",
+      "pass": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "no-index: the mode that was refused now resolves — write is the bootstrap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no-index: control — after indexing there ARE rows",
+      "pass": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "no-index: control — an absent name in a real index still says 'not found or has no byte bounds' [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "symbol definitelyAbsent not found or has no byte bounds"
+    },
+    {
+      "name": "overwrite: write over an existing 41-line file with 1 line is refused by name [negative: write refused: it would replace src/big.ts (41 lines) with 1 line(s), removing 40 lines (98%)]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: the refused write left the file byte-identical",
+      "pass": true,
+      "detail": "870 bytes on disk"
+    },
+    {
+      "name": "overwrite: the refusal names the acknowledgement (`overwrite: true`)",
+      "pass": true,
+      "detail": "write refused: it would replace src/big.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least half of a file's lines (and at least 5) is treated as a probable mistake. Pass overwrite: true to replace it anyway, or use update/ins"
+    },
+    {
+      "name": "overwrite: and names the targeted modes (update/insert) as the other way",
+      "pass": true,
+      "detail": "write refused: it would replace src/big.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least half of a file's lines (and at least 5) is treated as a probable mistake. Pass overwrite: true to replace it anyway, or use update/insert to change part of the file."
+    },
+    {
+      "name": "overwrite: a dry run reports the same refusal (the guard is at plan time) [negative: write refused]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: overwrite:true replaces it, and the result carries the pre-image it replaced",
+      "pass": true,
+      "detail": "before=870B after=export const v0 = 0\n"
+    },
+    {
+      "name": "overwrite: overwrite:false refuses an EXISTING file (create-only) by name [negative: already exists and overwrite is false (create-only)]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: the create-only refusal left the file byte-identical",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: overwrite:false still CREATES when nothing is there",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: 10 lines → 5 is REFUSED",
+      "pass": true,
+      "detail": "write refused: it would replace src/cell-10-5.ts (10 lines) with 5 line(s), removing 5 lines (50%) — a write that removes at least half of a file's lines (and a"
+    },
+    {
+      "name": "overwrite: the refused 10→5 cell wrote nothing [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: 10 lines → 6 is allowed",
+      "pass": true,
+      "detail": "6 lines on disk"
+    },
+    {
+      "name": "overwrite: 41 lines → 20 is REFUSED",
+      "pass": true,
+      "detail": "write refused: it would replace src/cell-41-20.ts (41 lines) with 20 line(s), removing 21 lines (51%) — a write that removes at least half of a file's lines (an"
+    },
+    {
+      "name": "overwrite: the refused 41→20 cell wrote nothing [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: 41 lines → 21 is allowed",
+      "pass": true,
+      "detail": "21 lines on disk"
+    },
+    {
+      "name": "overwrite: 6 lines → 1 is REFUSED",
+      "pass": true,
+      "detail": "write refused: it would replace src/cell-6-1.ts (6 lines) with 1 line(s), removing 5 lines (83%) — a write that removes at least half of a file's lines (and at "
+    },
+    {
+      "name": "overwrite: the refused 6→1 cell wrote nothing [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: 4 lines → 1 is allowed",
+      "pass": true,
+      "detail": "1 lines on disk"
+    },
+    {
+      "name": "overwrite: 7 lines → 1 is REFUSED",
+      "pass": true,
+      "detail": "write refused: it would replace src/cell-7-1.ts (7 lines) with 1 line(s), removing 6 lines (86%) — a write that removes at least half of a file's lines (and at "
+    },
+    {
+      "name": "overwrite: the refused 7→1 cell wrote nothing [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: 12 lines → 12 is allowed",
+      "pass": true,
+      "detail": "12 lines on disk"
+    },
+    {
+      "name": "overwrite: 1 lines → 0 is allowed",
+      "pass": true,
+      "detail": "1 lines on disk"
+    },
+    {
+      "name": "overwrite: writing into an existing EMPTY file is allowed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: overwrite:false still treats an empty existing file as existing [negative: already exists and overwrite is false]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: the guard's thresholds are the documented ones (5 lines, half)",
+      "pass": true,
+      "detail": "{\"minRemovedLines\":5,\"maxRemainingRatio\":0.5}"
+    },
+    {
+      "name": "overwrite: rule cell 41→1 overwrite=undefined → refused",
+      "pass": true,
+      "detail": "write refused: it would replace a.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least "
+    },
+    {
+      "name": "overwrite: rule cell 41→1 overwrite=true → allowed",
+      "pass": true,
+      "detail": "null"
+    },
+    {
+      "name": "overwrite: rule cell 41→21 overwrite=undefined → allowed",
+      "pass": true,
+      "detail": "null"
+    },
+    {
+      "name": "overwrite: rule cell 4→1 overwrite=undefined → allowed",
+      "pass": true,
+      "detail": "null"
+    },
+    {
+      "name": "overwrite: rule cell 4→1 overwrite=false → refused",
+      "pass": true,
+      "detail": "write refused: a.ts already exists and overwrite is false (create-only) — pass overwrite: true to replace it, or use upd"
+    },
+    {
+      "name": "overwrite: the guard never fires for a path that did not exist [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "null"
+    },
+    {
+      "name": "overwrite: line counting matches the counts the refusal prints",
+      "pass": true,
+      "detail": "0,1,1,2"
+    },
+    {
+      "name": "pre-image: the interleave landed — the file on disk is the external writer's bytes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-image: the edit is refused, naming the file and both hashes",
+      "pass": true,
+      "detail": "bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — src/moving.ts (planned 80da1b53ff5f, now acadbf280f5a). The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit to re-plan against the current file."
+    },
+    {
+      "name": "pre-image: the refusal states that NOTHING was written [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — src/moving.ts (planned 80da1b5"
+    },
+    {
+      "name": "pre-image: nothing was written — the external bytes are intact",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-image: no .bb-edit-* temp file was left behind [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "moving.ts,mod.ts"
+    },
+    {
+      "name": "pre-image: control — the same edit commits when the file does not move",
+      "pass": true,
+      "detail": "export const committed = 3\n"
+    },
+    {
+      "name": "pre-image: a file that appears at a CREATE target is refused",
+      "pass": true,
+      "detail": "bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — src/appearing.ts (planned no file at that path, now b1e1c39c80b3). The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run"
+    },
+    {
+      "name": "pre-image: and the appeared file is left as it was found",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-image: a target that vanishes in the window is refused by name",
+      "pass": true,
+      "detail": "bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — src/vanishing.ts (planned b386e6e2f8fc, now gone). The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit to re-"
+    },
+    {
+      "name": "pre-image: and the vanished target is NOT recreated from the plan [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 25,
+  "summary": {
+    "total": 107,
+    "passed": 107,
+    "failed": 0
+  },
+  "decisions": {
+    "scope": "this verifier fills the per-mode + negative gaps the focused E2–E6 verifiers left; it does not duplicate their assertions",
+    "pathSafety": "resolveSafeEditPath rejects '..' and symlink escapes before any file is touched",
+    "renameSafety": "refactor skips heredoc, block comment, and interpolation text (never rewrites string/comment content)",
+    "formatterTruth": "D5: `formatted` is MEASURED per file (BrainSurgicalPatcher.tryAutoFormat reports which formatter ran and whether it exited 0); the formatter is resolved from node_modules/.bin/PATH and invoked with execFile, so nothing in a file NAME can be shell-expanded"
+  },
+  "limitations": [
+    "Comprehensive cross-language rename classification is proven in E2 (65 checks); E7 adds only the per-mode and adversarial-fixture gaps.",
+    "The formatter branches use a fake node_modules/.bin/prettier written by the gate, so they are deterministic whether or not a formatter is installed (and command resolution is PATH-scrubbed where it matters); the rewrite proof uses that fake's own output bytes."
+  ],
+  "generatedAt": "2026-11-05T04:12:44.041Z"
+}

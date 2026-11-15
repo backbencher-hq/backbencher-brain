@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P5",
+  "code": "P5",
+  "tool": "bb_patterns",
+  "title": "real-repo e2e (rake/lib + graphql-js/src)",
+  "verified": true,
+  "checks": 3,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-08-23T17:18:50.617Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.339Z",
+    "contentSha256": "b3509c14d9a86e1ff106ff9f0f3f08430c96995094864f23d90d619954579f32"
+  }
+}

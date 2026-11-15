@@ -1,0 +1,57 @@
+{
+  "fixtureId": "c/macro-type-member-985",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A macro in TYPE position must not be published as a member name. `c/macro-generated-field` (#928) already rules and pins the ADJACENT shape: when the macro OWNS the name (`BIT(closing);`) there is no declarator, `fieldDeclarationHasDeclarator` refuses, and silence is correct. This is the shape that test cannot see. `git_array_t(size_t) line_index;` parses as `macro_type_specifier` + a SIBLING `field_identifier`, so a declarator IS present and the #928 refusal does not fire -- but the extractor's per-child loop treats every child that is not a type node as a DECLARATOR, and a `macro_type_specifier` was in neither the type list nor the skip list, so it was descended for its identifier and published BESIDE the real member. Measured over the four declared corpora (3,997 files): 60 phantom `contains` edges, 48 of them beside the correct member, across 19 macro names -- git_array_t x13 (libgit2), ql_elm x11 / ql_head x5 / rb_node x5 (jemalloc), STACK_OF (curl), HRESULT and ULONG (libgit2's winhttp header), GIT_ALIGN, plus C++-header debris (noexcept, decltype, operator) that tree-sitter-c parses out of libstdc++/libc++. clang, a different parser, independently reports them as PHANTOM members. This is the #928 defect verbatim -- a member named after a name no C declaration in the file gives to any member -- and it is NOT C-D2: the real member is in the parse and was already published, so only the duplicate is removed. The forbid rows are the phantoms; the expect rows are the real members beside them, which is the control that this is a duplicate being dropped rather than a member being lost.",
+  "expectSymbols": [
+    { "name": "git_array_t", "kind": "macro" },
+    { "name": "MYINT", "kind": "constant", "note": "an object-like macro is a Constant; only function-like macros are Macro-kind" },
+    { "name": "BIT", "kind": "macro" },
+    { "name": "ALIGN8", "kind": "macro" },
+    { "name": "array_field", "kind": "struct" },
+    { "name": "head", "kind": "property", "ownerName": "array_field" },
+    { "name": "payload", "kind": "property", "ownerName": "array_field", "note": "THE REAL MEMBER. `git_array_t(int) payload;` -- the macro is the type, this is the name." },
+    { "name": "tail", "kind": "property", "ownerName": "array_field" },
+    { "name": "array_field_ptr", "kind": "struct" },
+    { "name": "entries", "kind": "property", "ownerName": "array_field_ptr", "note": "the macro-typed member behind a POINTER declarator -- the shape libgit2's `STACK_OF(X) *sk` takes" },
+    { "name": "other", "kind": "property", "ownerName": "array_field_ptr" },
+    { "name": "two_macros", "kind": "struct" },
+    { "name": "index", "kind": "property", "ownerName": "two_macros", "note": "libgit2 spellings: `git_array_t(size_t) line_index;` and `git_array_t(git_oid) parent_ids;`" },
+    { "name": "counts", "kind": "property", "ownerName": "two_macros" },
+    { "name": "both", "kind": "property", "ownerName": "two_macros" },
+    { "name": "controls", "kind": "struct" },
+    { "name": "plain", "kind": "property", "ownerName": "controls", "note": "CONTROL: an object-like macro used as a type parses as a plain `type_identifier`, never a macro node, so it was always correct and must stay correct" },
+    { "name": "ordinary", "kind": "property", "ownerName": "controls" },
+    { "name": "real_bit", "kind": "property", "ownerName": "controls", "note": "CONTROL: a real bitfield" },
+    { "name": "callback", "kind": "property", "ownerName": "controls", "note": "CONTROL: declarator inside the declarator" },
+    { "name": "aligned_field", "kind": "struct" },
+    { "name": "slot", "kind": "property", "ownerName": "aligned_field", "note": "the `macro_prefixed_type_specifier` spelling (libgit2's `GIT_ALIGN`), a DIFFERENT node type from `macro_type_specifier` and the reason the fix names both" },
+    { "name": "after", "kind": "property", "ownerName": "aligned_field" },
+    { "name": "use_macro", "kind": "function", "note": "CONTROL: the macro is also an ordinary file-scope macro that a BODY can call; the local `inside` is a function-local and names no member or symbol (C-D1)" }
+  ],
+  "forbidSymbols": [
+    { "name": "git_array_t", "kind": "property", "note": "THE DEFECT: the macro published as a member of array_field, array_field_ptr and two_macros" },
+    { "name": "ALIGN8", "kind": "property", "note": "THE DEFECT, macro_prefixed_type_specifier spelling (libgit2's GIT_ALIGN)" },
+    { "name": "BIT", "kind": "property", "note": "CONTROL: #928's shape must stay silent. Listed so a future change that widens the #985 rule cannot start publishing it." },
+    { "name": "closing", "kind": "property", "note": "CONTROL: the macro ARGUMENT is not the member name. Recovering it would be macro-replacement-list resolution, which is C-D2." },
+    { "name": "inside", "kind": "property", "note": "CONTROL: a function-local variable names no symbol (C-D1), so this macro-typed local does not become one either." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "array_field", "target": "payload", "note": "THE PINNED ROW. The real member, which the phantom sat next to." },
+    { "type": "contains", "from": "array_field", "target": "tail", "note": "CONTROL: an ordinary member after the macro-typed one is unaffected" },
+    { "type": "contains", "from": "array_field_ptr", "target": "entries" },
+    { "type": "contains", "from": "two_macros", "target": "index" },
+    { "type": "contains", "from": "two_macros", "target": "counts", "note": "two macro-typed members in one struct, which is what libgit2's git_patch and git_tree have" },
+    { "type": "contains", "from": "controls", "target": "plain" },
+    { "type": "contains", "from": "controls", "target": "real_bit" },
+    { "type": "contains", "from": "controls", "target": "callback" },
+    { "type": "contains", "from": "aligned_field", "target": "slot" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "git_array_t", "note": "THE DEFECT: a containment edge onto the macro's own name. `contains git_blame -> git_array_t` is what clang reports as a PHANTOM member." },
+    { "type": "contains", "target": "ALIGN8", "note": "THE DEFECT, macro_prefixed_type_specifier spelling" },
+    { "type": "contains", "target": "BIT", "note": "CONTROL for #928's shape, which was already silent" },
+    { "type": "contains", "target": "closing", "note": "CONTROL: the macro argument must never become a member name (C-D2)" },
+    { "type": "contains", "target": "inside", "note": "CONTROL: a function-local names no member" }
+  ]
+}

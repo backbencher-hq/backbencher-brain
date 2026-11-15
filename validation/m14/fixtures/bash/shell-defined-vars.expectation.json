@@ -1,0 +1,102 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/shell-defined-vars.sh",
+ "authoredFrom": "BD-shell-defined-vars (a read of a shell-defined name is labelled). Authored from a probe 2026-09-26. 23 edges to `BASH_SOURCE` on the pinned corpus looked like reads of undeclared project variables, which is what made the lane's target list unreadable. The edges are still emitted — the script does read them — but they carry `meta.isShellDefined: true`.",
+ "expectSymbols": [
+  {
+   "name": "shell-defined-vars.sh",
+   "kind": "module"
+  },
+  {
+   "name": "here",
+   "kind": "variable",
+   "ownerName": "shell-defined-vars.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "shell-defined-vars.sh",
+   "target": "dirname",
+   "line_number": 7
+  },
+  {
+   "type": "uses",
+   "from": "shell-defined-vars.sh",
+   "target": "BASH_SOURCE",
+   "line_number": 7,
+   "meta.isShellDefined": true,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "uses",
+   "from": "shell-defined-vars.sh",
+   "target": "shell-defined-vars.sh.here",
+   "line_number": 8,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "uses",
+   "from": "shell-defined-vars.sh",
+   "target": "UID",
+   "line_number": 9,
+   "meta.isShellDefined": true,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "uses",
+   "from": "shell-defined-vars.sh",
+   "target": "SHELL",
+   "line_number": 9,
+   "meta.isShellDefined": true,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "contains",
+   "from": "shell-defined-vars.sh",
+   "target": "here",
+   "line_number": 7
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "BASH_SOURCE",
+   "meta.isShellDefined": false
+  },
+  {
+   "type": "uses",
+   "target": "here",
+   "meta.isShellDefined": true
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

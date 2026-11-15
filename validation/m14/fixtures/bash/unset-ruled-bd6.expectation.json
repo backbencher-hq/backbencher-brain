@@ -1,0 +1,77 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/unset-ruled-bd6.sh",
+ "authoredFrom": "BD6 / BA-G1 (`unset` ruled unemittable). Authored from a probe 2026-09-26. No relationship type in the universal ontology expresses unbinding a binding: `uses` would assert a read that does not happen and `references` a dependency that does not exist. The three FORBIDDEN rows are at the unset line specifically, so an edge emitted anywhere else in the fixture still passes while one emitted BECAUSE of the unset fails.",
+ "expectSymbols": [
+  {
+   "name": "unset-ruled-bd6.sh",
+   "kind": "module"
+  },
+  {
+   "name": "TEMPORARY",
+   "kind": "variable",
+   "ownerName": "unset-ruled-bd6.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "unset-ruled-bd6.sh",
+   "target": "unset-ruled-bd6.sh.TEMPORARY",
+   "line_number": 8,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "contains",
+   "from": "unset-ruled-bd6.sh",
+   "target": "TEMPORARY",
+   "line_number": 7
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "TEMPORARY",
+   "line_number": 9
+  },
+  {
+   "type": "references",
+   "target": "TEMPORARY",
+   "line_number": 9
+  },
+  {
+   "type": "contains",
+   "target": "TEMPORARY",
+   "line_number": 9
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

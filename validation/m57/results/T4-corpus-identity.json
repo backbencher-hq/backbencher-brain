@@ -1,0 +1,13 @@
+{
+  "probe": "M57.T4-corpus-identity",
+  "issue": 792,
+  "milestone": "M57",
+  "at": "2026-11-04T01:19:29.425Z",
+  "commit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "classifierEpoch": "d1af1c1e4ba070dc",
+  "verifierCommand": "BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> bun run script/m57/verify-t4-corpus-identity.ts",
+  "status": "verified"
+}

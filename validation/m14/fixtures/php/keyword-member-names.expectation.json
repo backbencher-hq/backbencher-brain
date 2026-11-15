@@ -1,0 +1,115 @@
+{
+  "fixtureId": "php/keyword-member-names",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PHP 7.0 made `self` and `parent` SEMI-RESERVED: they may not name a top-level declaration, but they MAY name a method, a property or a class constant, because a member is reached through its owner and cannot be confused with the type position the keyword occupies. The production symbol filter refuses php symbols BY NAME (`src/ast/pool-worker.ts` keepSymbol, `RESERVED = { php: new Set([\"self\", \"parent\"]) }`) with no reference to kind or owner, so it deletes legal members while the analyzer still emits the `contains` edges that name them — an edge whose endpoint is not in the store. Measured over the whole admitted population (5,094 files, 350,342 edges): exactly ONE such edge exists, `contains Node -> parent` at `phpmyadmin/src/Navigation/Nodes/Node.php:54` (`public Node|null $parent = null;`), and it is the only edge in the lane naming a declaration the store does not hold. Authored and RUN BEFORE the fix: on the unfixed tree this file publishes 3 symbols (namespace, class, `probe`) and 0 of the 5 member declarations below, while emitting 2 `contains Holder -> parent` rows and 3 `contains Holder -> self` rows — the defect at fixture scale. The half of the rule that must SURVIVE (a php class/interface/trait/enum/namespace/top-level function named `parent`/`self`) cannot be written as valid php — `class parent {}` is a parse error — so it is pinned by the injectable mutant `php/drop-keyword-named-members`, which re-instates the name-only drop at the result level; these `expectSymbols` rows are what catch it. The owner rows are the resolution contract the receiver-owner round established: a member edge must carry `metadata.owner`, because the bare name `parent` is a keyword and a member name at once and only `(ownerName, name)` distinguishes the two.",
+  "expectSymbols": [
+    {
+      "name": "Fixture\\KeywordMembers",
+      "kind": "namespace"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "parent",
+      "kind": "property",
+      "ownerName": "Holder",
+      "comment": "THE FIX, property form: `public ?Holder $parent = null;` is legal php and must publish."
+    },
+    {
+      "name": "self",
+      "kind": "property",
+      "ownerName": "Holder",
+      "comment": "and the same for `$self`."
+    },
+    {
+      "name": "parent",
+      "kind": "constant",
+      "ownerName": "Holder",
+      "comment": "constant form: `public const parent = 'P';` — semi-reserved words are legal class-constant names (this file parses with 0 error nodes, probed against the pinned wasm)."
+    },
+    {
+      "name": "self",
+      "kind": "constant",
+      "ownerName": "Holder",
+      "comment": "and `public const self = 'S';`."
+    },
+    {
+      "name": "self",
+      "kind": "method",
+      "ownerName": "Holder",
+      "comment": "method form: `public function self(): string` — the form PHP's own documentation uses to illustrate semi-reserved names."
+    },
+    {
+      "name": "probe",
+      "kind": "method",
+      "ownerName": "Holder",
+      "comment": "the caller, published before and after; present so the file's fixture ids stay stable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Holder",
+      "target": "parent",
+      "comment": "THE DANGLING EDGE, now resolvable: the analyzer has always emitted this containment (twice, at the property and the constant), which is why a deleted symbol left an edge naming nothing."
+    },
+    {
+      "type": "contains",
+      "source": "Holder",
+      "target": "self",
+      "comment": "same shape, three times over (property, constant, method)"
+    },
+    {
+      "type": "uses",
+      "source": "probe",
+      "target": "Holder.parent",
+      "meta.owner": "Holder",
+      "comment": "`$this->parent` (property read) and `self::parent` (constant fetch) both target `parent` with the owner carried, so the (owner, name) key resolves to exactly one declaration instead of colliding with every other class that has a `parent`."
+    },
+    {
+      "type": "uses",
+      "source": "probe",
+      "target": "Holder.self",
+      "meta.owner": "Holder",
+      "comment": "`$this->self` and `static::self`"
+    },
+    {
+      "type": "calls",
+      "source": "probe",
+      "target": "Holder.self",
+      "meta.owner": "Holder",
+      "comment": "`$this->self()` — the call itself, labelled `calls`, distinct from the property read of the same name"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "parent",
+      "ownerName": null,
+      "comment": "THE OTHER HALF OF THE FIX, and the half that cannot be written as valid php: `class parent {}` is a parse error, so no fixture FILE can declare one and only an injectable mutant can produce it. A symbol named `parent` with NO owner must not be published, because the exemption the fix grants is exactly `(member kind, owner present)` — and a bare `parent` in the store is a resolution candidate for every `parent::` / `$this->parent` edge at once. Caught by `php/publish-ownerless-reserved-names`. `ownerName: null` is the top-level absent-or-null convention (`script/m14/run-fixtures.ts:375`), not an ignored field: this row must FAIL for an ownerless `parent` and PASS for the `Holder`-owned property and constant that expectSymbols above requires."
+    },
+    {
+      "name": "self",
+      "ownerName": null,
+      "comment": "same for `self` — the top-level-declaration form of the semi-reserved rule."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "probe",
+      "target": "Holder.parent",
+      "meta.owner": null,
+      "comment": "a member read of a keyword-named member with NO owner is the shape that makes `parent` ambiguous between the keyword and every class's `parent` member; the owner is what the resolution contract rests on"
+    },
+    {
+      "type": "calls",
+      "source": "probe",
+      "target": "Holder.self",
+      "meta.owner": null,
+      "comment": "same for the call site"
+    }
+  ]
+}

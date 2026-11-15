@@ -1,0 +1,46 @@
+{
+ "fixtureId": "python/lambda-body-has-no-call-source",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-31 — a lambda is a function scope in python and this analyzer publishes no symbol for one, so nothing inside it can be attributed. `uses` already declined every member read inside a lambda (a read needs a symbol to source from); `calls` did not, so a call inside a lambda sitting directly in a CLASS BODY or at MODULE scope was attributed to that class or that module. `ShareableList -> decode` is a false statement about a class: a class body does not call anything, and `ShareableList.decode` is not a thing a reader of the graph can go and look at. Same class as this lane's PY-4 (`\"global\"` as a scope) and PY-28 (a nested def as an edge source). Found by running the independent oracle over CPython's stdlib, which reported two UNEXPLAINED `calls` edges in `multiprocessing/shared_memory.py` — both lambda bodies in a class-level dict of lambdas. MEASURED over 678 real python files (python-codesql + CPython 3.10 stdlib): 113 call nodes and 98 attribute nodes sit inside a lambda body across 43 files. The `expect` rows are the other half of the rule and matter as much as the forbids: a lambda INSIDE a def is that def's business, and the calls contract has always attributed a nested body's calls to the enclosing function, so those edges must survive.",
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "source": "build",
+   "target": "render",
+   "note": "a lambda inside a METHOD. The attribution is `build`, the nearest named scope — dropping this row is how a fix for the class-body case becomes a fix for lambdas generally."
+  },
+  {
+   "type": "calls",
+   "source": "build",
+   "target": "lower",
+   "note": "`key=lambda item: item[0].lower()` — a leaf reduction of a subscript, the same allowlist every other call goes through"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "source": "Handlers",
+   "target": "decode",
+   "note": "THE defect. The call is in a lambda in the class body of `Handlers`; `Handlers` did not call `decode` and `Handlers.decode` does not exist. Measured: 2 unexplained edges of this shape in multiprocessing/shared_memory.py, 113 sites across 43 of 678 corpus files."
+  },
+  {
+   "type": "calls",
+   "source": "Handlers",
+   "target": "rstrip",
+   "note": "the sibling lambda on the next line — two lambdas, one class, two false claims about the class"
+  },
+  {
+   "type": "calls",
+   "source": "lambda_body_has_no_call_source",
+   "target": "upper",
+   "note": "the module-scope instance of the same shape: the module scope is a real navigable name, and naming it as the caller of a lambda's body call is still a false claim"
+  },
+  {
+   "type": "uses",
+   "source": "Handlers",
+   "target": "rstrip",
+   "note": "member reads inside a lambda were already declined before PY-31 — pinned so the calls fix cannot quietly widen the uses rule, which would be a different change with a different number behind it"
+  }
+ ]
+}

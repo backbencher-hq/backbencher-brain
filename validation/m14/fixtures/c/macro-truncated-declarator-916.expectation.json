@@ -1,0 +1,47 @@
+{
+  "fixtureId": "c/macro-truncated-declarator-916",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "#916: a BARE macro between a type and its declarator. The four shapes below are the measured sqlite sites, each with its own control (the same declaration with the macro removed) so a fix that dropped the enclosing construct fails here. The macros are deliberately NOT defined in the fixture, exactly as in the real files where they come from sqlite3.h. MEASURED THROUGH THE PRODUCTION ENTRY, pre-fix vs post-fix, only `src/ast/real-c-analyzer.ts` differing. PRE-FIX symbols: `variable SQLITE_WSD` @28, `variable SQLITE_NOINLINE` @32, `variable SQLITE_CDECL` @37, `variable JNICALL` @43 — the macro emitted as a symbol — and the four REAL symbols did not exist at all: `sqlite3SharedCacheList`, `btreeLockCarefully`, `sqlite3IoTrace`, `Java_entry`. POST-FIX the four real symbols exist and all four phantoms are gone. The four sub-classes are distinct mechanisms and each is pinned: A (object) `static BtShared *SQLITE_WSD x = 0;` truncates at the macro and the declarator is re-parsed as the sibling `expression_statement \"x = 0;\"`; B (prototype) the same, sibling `\"f(Btree *p);\"`; C `SQLITE_API void (SQLITE_CDECL *fp)(...) = 0;` is NOT truncated — the declaration has a real `;` — and the phantom took the real name's PLACE, because the declarator chain `init_declarator > function_declarator > parenthesized_declarator` holds an ERROR child (`SQLITE_CDECL`) beside the real `pointer_declarator`, and the descent took `namedChild(0)`: the ERROR. Case C also pinned as an EDGE removal (`forbidRelationships uses global -> SQLITE_CDECL`), which was a read of the macro that only existed because the macro was mistaken for the declarator; D `JNIEXPORT void JNICALL` followed by an UNNAMED-parameter definition — note the parameter must be UNNAMED to reproduce it, a named one parses ordinarily — arrives as a function_definition whose `type` field is the NAME and whose `declarator` is the PARAMETER LIST, so pre-fix there was no `Java_entry` symbol and the body's call was attributed to FILE SCOPE (`calls global -> helperTarget` @46 — forbidden below). Post-fix the call is `calls Java_entry -> helperTarget` and the return type is the honest `void`, with the `JNIEXPORT` decorator stripped from the specifier rather than reported as the type. The one row this fixture does NOT claim is `calls global -> btreeLockCarefully` @32 — a PRE-EXISTING fabrication (a prototype's sibling expression statement read as a call), measured IDENTICAL on both sides, registered in the wave's review rather than enshrined here or quietly fixed without its own A/B. Corpus measurement for the same change: sqlite 357 files — 6 phantoms removed, 6 real symbols added (a SEVENTH recovered function, `Java_org_sqlite_jni_capi_CApi_init`, was found on the corpus and is not in this fixture), and of 68 removed relationships 67 are RE-ATTRIBUTIONS from file scope to the function that makes the call (54 calls, 13 uses) with 1 a fabricated macro read; jq 77 files BYTE-IDENTICAL pre vs post, which is the evidence that the rule is inert where the shape does not occur.",
+  "expectSymbols": [
+    { "name": "sqlite3SharedCacheList", "kind": "variable", "visibility": "private" },
+    { "name": "plainControl", "kind": "variable", "visibility": "private" },
+    { "name": "btreeLockCarefully", "kind": "function", "visibility": "private" },
+    { "name": "plainProto", "kind": "function", "visibility": "private" },
+    { "name": "sqlite3IoTrace", "kind": "variable" },
+    { "name": "plainTrace", "kind": "variable" },
+    { "name": "Java_entry", "kind": "function", "returnType": "void" },
+    { "name": "plainEntry", "kind": "function" },
+    { "name": "helper_defined", "kind": "function" },
+    { "name": "helperTarget", "kind": "function" }
+  ],
+  "expectSymbolCount": [
+    { "name": "SQLITE_WSD", "equals": 0 },
+    { "name": "SQLITE_NOINLINE", "equals": 0 },
+    { "name": "SQLITE_CDECL", "equals": 0 },
+    { "name": "JNICALL", "equals": 0 },
+    { "name": "JNIEXPORT", "equals": 0 },
+    { "name": "SQLITE_API", "equals": 0 },
+    { "name": "sqlite3SharedCacheList", "equals": 1 },
+    { "name": "btreeLockCarefully", "equals": 1 },
+    { "name": "Java_entry", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Java_entry", "target": "helperTarget", "meta.relationshipType": "c_function_call", "note": "PRE-FIX this call was attributed to FILE SCOPE (`global`), because the function it belongs to did not exist — the containment half of the fix." },
+    { "type": "calls", "from": "plainEntry", "target": "helperTarget", "meta.relationshipType": "c_function_call", "note": "the control: an ordinary decorated definition was always attributed correctly." },
+    { "type": "calls", "from": "helper_defined", "target": "btreeLockCarefully", "note": "the recovered prototype's name resolves at the call site." },
+    { "type": "uses", "from": "helper_defined", "target": "plainTrace", "meta.relationshipType": "identifier_usage" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "global", "target": "SQLITE_CDECL", "note": "PRE-FIX: a read of the macro that existed only because the macro was mistaken for the declarator." },
+    { "type": "calls", "from": "global", "target": "helperTarget", "note": "PRE-FIX: the D body's call attributed to file scope instead of the function." }
+  ],
+  "forbidSymbols": [
+    { "name": "SQLITE_WSD" },
+    { "name": "SQLITE_NOINLINE" },
+    { "name": "SQLITE_CDECL" },
+    { "name": "JNICALL" },
+    { "name": "JNIEXPORT" },
+    { "name": "SQLITE_API" }
+  ]
+}

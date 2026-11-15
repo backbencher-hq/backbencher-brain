@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H2",
+  "code": "H2",
+  "tool": "bb_health",
+  "title": "regex census",
+  "verified": true,
+  "checks": 0,
+  "passed": 1,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-08-23T17:16:14.287Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.336Z",
+    "contentSha256": "76700416ae355d8faec559b3bad92c0cc57eb09ac29c071372fbc5f0875f191f"
+  }
+}

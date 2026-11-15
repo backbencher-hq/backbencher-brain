@@ -1,0 +1,12 @@
+{
+  "fixtureId": "scala/dotted-generic-supertype",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.1 dotted-generic-supertype fix: extends collection.mutable.ArrayBuffer[Int] previously produced NO relationship at all (generic branch only matched bare type_identifier). Full dotted name kept per convention.",
+  "expectSymbols": [
+    { "name": "Buf" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Buf", "targetEndsWith": "ArrayBuffer" }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "fixtureId": "typescript/callsite-lines-825",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M59 (#825). Every expected line below is read off the fixture's own text (not off the analyzer's output — the flag above says so rather than claiming an authorship order that did not happen; the values were then checked line by line against live emission before commit). typescript emitted NO line on any relationship before this round: the M59 oracle measured 0 of 2,074 relationships carrying a line on the pinned 40-file sample this round used. The constructs are split across lines so each expect/forbid pair is a DIFFERENT line, which is what makes the contract falsifiable: the `import {` keyword is on 16 while its specifiers are on 17/18; `export class Worker` is on 26 while its base name is on 27; the call chain opens on `helper` (31) but is called on `.doWork()` (33). The forbid entries are exactly the pre-fix answers: no line at all, or the construct's opening line. A WRAPPED `new` (`new\\n  Thing()`) is deliberately absent — the pinned grammar does not parse it as a new_expression, so it is a grammar finding (#858), not a line expectation, and pinning it here would encode a wrong answer as the expected one. Symbol lines are pinned through the `contains` edges rather than through `expectSymbols`, because expectation entries match on flat equality (a nested `range` object would never match).",
+  "expectSymbols": [
+    { "name": "Base", "kind": "interface" },
+    { "name": "Worker", "kind": "class" },
+    { "name": "store", "kind": "property" },
+    { "name": "Thing", "kind": "class" },
+    { "name": "size", "kind": "property" },
+    { "name": "helper", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "fs:readFile", "line_number": 17, "note": "the SPECIFIER's line; the `import {` keyword is on 16" },
+    { "type": "imports", "target": "fs:writeFile", "line_number": 18, "note": "the aliased specifier is written on its own line" },
+    { "type": "imports", "target": "callsite-lines-825\u0000path:*", "meta.localBinding": true, "line_number": 20, "note": "a namespace import binds `path` on the statement's own line" },
+    { "type": "extends", "from": "Worker", "target": "Base", "line_number": 27, "note": "the BASE NAME's line — the subclass declaration opens on 26" },
+    { "type": "contains", "from": "Base", "target": "run", "line_number": 23 },
+    { "type": "contains", "from": "Worker", "target": "store", "line_number": 28 },
+    { "type": "contains", "from": "Worker", "target": "run", "line_number": 30 },
+    { "type": "contains", "from": "Thing", "target": "size", "line_number": 41 },
+    { "type": "calls", "from": "run", "target": "doWork", "line_number": 33, "note": "the call's LEAF — the chain opens on `helper` at 31" },
+    { "type": "calls", "from": "run", "target": "join", "line_number": 34 },
+    { "type": "instantiates", "from": "run", "target": "Thing", "line_number": 35 },
+    { "type": "references", "from": "run", "target": "Thing", "line_number": 35 },
+    { "type": "references", "from": "run", "target": "helper", "line_number": 31 },
+    { "type": "uses", "from": "run", "target": "store", "line_number": 36 },
+    { "type": "exports", "target": "Worker", "line_number": 26 },
+    { "type": "exports", "target": "Thing", "line_number": 40 },
+    { "type": "exports", "target": "helper", "line_number": 44 }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "fs:readFile", "line_number": null, "note": "pre-fix: typescript emitted no line at all (0 of 2,074 on the round's pinned sample)" },
+    { "type": "calls", "from": "run", "target": "doWork", "line_number": null, "note": "pre-fix: the same silence on every `calls` edge" },
+    { "type": "instantiates", "from": "run", "target": "Thing", "line_number": null, "note": "pre-fix: and on `instantiates`" },
+    { "type": "imports", "target": "fs:readFile", "line_number": 16, "note": "the `import {` keyword's line; the name `readFile` is written on 17" },
+    { "type": "extends", "from": "Worker", "target": "Base", "line_number": 26, "note": "the subclass's declaration line; the base name is written on 27" },
+    { "type": "calls", "from": "run", "target": "doWork", "line_number": 31, "note": "the chain's opening line (`helper`); the CALLEE is on 33" }
+  ]
+}

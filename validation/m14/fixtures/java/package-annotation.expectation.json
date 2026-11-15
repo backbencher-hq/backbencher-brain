@@ -1,0 +1,13 @@
+{
+  "fixtureId": "java/package-annotation",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PACKAGE ANNOTATION (JLS 7.4.1: annotations on a package declaration, the package-info.java shape). An annotation is a type mention and must emit `references` from the annotated declaration. The package is the ONE annotated declaration that publishes no symbol, so the source is the package NAME (the identity its `exports` rows use) and `annotatedKind` is `package_declaration`. The source cannot come from `currentPackage`: the annotation is written BEFORE the package declaration and the single-pass walk visits it first, so pre-fix this file emitted ZERO relationships (probe: 0 symbols, 0 relationships). The file-level annotation fallback therefore finds the package name in the tree instead of from walk state. Authored from Java semantics before the fix; the forbid pins that no fabricated source (`global`/`root`) is used, because an edge whose source names nothing is worse than a missing one.",
+  "expectRelationships": [
+    { "type": "references", "source": "com.acme.pkg", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.isAnnotation": true, "meta.annotatedKind": "package_declaration", "line_number": 1, "confidenceMin": 0.95 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "source": "global", "target": "Deprecated", "meta.relationshipType": "annotation", "comment": "the package name is the annotated declaration's identity; `global` is the no-scope fallback and names nothing here" },
+    { "type": "references", "source": "root", "target": "Deprecated", "meta.relationshipType": "annotation", "comment": "same rule; `root` is the file-level import fallback, not a package" }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "fixtureId": "css/namespace-uri-is-not-an-import",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "This fixture exists to settle a LABEL dispute with the shared differential, not to cover an unread construct. `script/m14/differential.ts --lang css` reports 2 MISSING on the svelte sample, both of the form `imports expected.css -> http://www.w3.org/1999/xhtml`, derived from `@namespace url(...)` lines in `packages/svelte/tests/css/samples/supports-namespace/expected.css`. The analyzer does read the construct: on that exact corpus file production parseFile publishes 5 symbols and 1 relationship — two `module` symbols for the two `@namespace` declarations and a `references` edge `svg|a -> @namespace svg url(http://www.w3.org/2000/svg)` carrying `isNamespaceRef`. The disagreement is therefore about the TYPE, not about coverage. A namespace URI is a name used for equality comparison; the CSS syntax never fetches it, so an `imports` edge would assert that this stylesheet pulls in an external resource, which is false, and `imports` is the relation that drives module resolution and refactoring advice. The analyzer's own `references` edge carries strictly more information than the oracle's file->URI edge: it says WHICH selector depends on WHICH declaration. Forbidding the `imports` rows is the load-bearing assertion here — it is what stops a later reader from closing the differential's 2 MISSING by publishing the edge this fixture argues against. The `@import url(\"theme.css\")` line is in the file for the same reason: without it the two forbidden rows would be satisfied by a branch that never fires, which is not a statement about namespace URIs.",
+  "knownLimitation": "The unprefixed `@namespace url(http://www.w3.org/1999/xhtml)` declaration is published as a `module` symbol but has no incoming `references` edge, because the unprefixed selector `a` matches the default namespace implicitly rather than naming the declaration. A consumer that wants the default-namespace binding must read the symbol list rather than the edge list. `*|a` publishes no edge for the same reason `a` does not: it constrains namespace-ness without selecting one namespace, so attributing it to an arbitrary declaration would be a guess.",
+  "expectSymbols": [
+    {
+      "name": "@namespace url(http://www.w3.org/1999/xhtml)",
+      "kind": "module"
+    },
+    {
+      "name": "@namespace svg url(http://www.w3.org/2000/svg)",
+      "kind": "module"
+    },
+    {
+      "name": "a",
+      "kind": "type"
+    },
+    {
+      "name": "svg|a",
+      "kind": "type"
+    },
+    {
+      "name": "*|a",
+      "kind": "type"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "namespace-uri-is-not-an-import.css",
+      "target": "theme.css",
+      "meta.evidenceClass": "import_based",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "references",
+      "from": "svg|a",
+      "target": "fixtures/css/namespace-uri-is-not-an-import::@namespace svg url(http://www.w3.org/2000/svg)",
+      "meta.evidenceClass": "import_based",
+      "meta.isNamespaceRef": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "http://www.w3.org/1999/xhtml"
+    },
+    {
+      "type": "imports",
+      "target": "http://www.w3.org/2000/svg"
+    },
+    {
+      "type": "imports",
+      "target": "@namespace url(http://www.w3.org/1999/xhtml)"
+    },
+    {
+      "type": "imports",
+      "target": "@namespace svg url(http://www.w3.org/2000/svg)"
+    },
+    {
+      "type": "references",
+      "from": "*|a"
+    },
+    {
+      "type": "references",
+      "from": "a"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

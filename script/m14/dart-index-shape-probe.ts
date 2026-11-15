@@ -34,7 +34,7 @@ import { buildProjectIndexStreaming, DART_DECLARATION_SPEC } from "../../src/ast
 import type { DeclarationSpec } from "../../src/ast/project-index"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const arg = (name: string): string | undefined => {
   const a = process.argv.find((x) => x.startsWith(`--${name}=`))
   return a ? a.slice(name.length + 3) : undefined

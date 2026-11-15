@@ -1,0 +1,193 @@
+{
+  "analyzer": "svelte",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "corpusRepo": "svelte",
+  "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+  "extensions": [
+    "*.svelte"
+  ],
+  "mode": "recorded-m12-sample",
+  "sampleList": "validation/m12/results/svelte-corpus-sample.txt",
+  "trackedFilesInCorpus": 4462,
+  "measuredFiles": 396,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 12,
+  "cleanFiles": 384,
+  "missingNodeFiles": 0,
+  "errorNodeFiles": 12,
+  "errorRates": {
+    "any": 3,
+    "missing": 0,
+    "error": 3
+  },
+  "grammarErrorFiles": 12,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 1,
+  "pipelineMismatchFiles": [
+    {
+      "file": "packages/svelte/tests/preprocess/samples/attributes-with-closing-tag/input.svelte",
+      "treeNodes": false,
+      "pipelineErrors": 1
+    }
+  ],
+  "wallMs": 10563,
+  "missingTokens": {},
+  "errorLineSignatures": {
+    "<ID /* ID */ /* ID ID */ ID-ID=ID></ID>": 11,
+    "// ID ID ID ID ID": 10,
+    "ID": 10,
+    "<ID {@ID ID}>...</ID>": 6,
+    "<ID {@ID (ID) => {}} {@ID (ID) => {}}></ID>": 5,
+    "ID-ID=ID": 4,
+    "/* ID ID ID": 4,
+    "{#ID ID<ID ID { ID: ID } | ID | ID<ID>>(ID: ID)}": 3,
+    "<ID {@ID ID(ID)} />": 3,
+    "<ID {@ID ID(ID)}></ID>": 3,
+    "{#ID ID<ID ID ID>(ID: ID)}": 2,
+    "{ID ID = /[}]/}": 2,
+    "{#ID ID}": 1,
+    "<ID": 1,
+    "></ID>": 1,
+    "*/": 1,
+    "{#ID { ID: 1 }, ID}": 1,
+    "{#ID ID(10), ID}": 1,
+    "<ID ID-ID=ID/>": 1
+  },
+  "firstErrorLineSignatures": {
+    "<ID {@ID ID}>...</ID>": 2,
+    "{ID ID = /[}]/}": 2,
+    "<ID {@ID (ID) => {}} {@ID (ID) => {}}></ID>": 1,
+    "{#ID ID}": 1,
+    "<ID": 1,
+    "{#ID ID<ID ID { ID: ID } | ID | ID<ID>>(ID: ID)}": 1,
+    "{#ID { ID: 1 }, ID}": 1,
+    "{#ID ID(10), ID}": 1,
+    "<ID ID-ID=ID/>": 1,
+    "<ID {@ID ID(ID)} />": 1
+  },
+  "errorFileList": [
+    {
+      "file": "packages/svelte/tests/parser-modern/samples/attachments/input.svelte",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<div {@attach (node) => {}} {@attach (node) => {}}></div>",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "packages/svelte/tests/runtime-runes/samples/1000-reading-derived-effects/main.svelte",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 6,
+      "firstKind": "ERROR",
+      "firstLine": "{#each arr}",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "packages/svelte/tests/print/samples/attach-tag/input.svelte",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 13,
+      "firstKind": "ERROR",
+      "firstLine": "<div {@attach myAttachment}>...</div>",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "packages/svelte/tests/parser-modern/samples/comment-in-tag/input.svelte",
+      "nodes": 42,
+      "missingTokens": [],
+      "errorNodes": 42,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<div",
+      "pipelineErrors": 84
+    },
+    {
+      "file": "packages/svelte/tests/print/samples/attach-tag/output.svelte",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 13,
+      "firstKind": "ERROR",
+      "firstLine": "<div {@attach myAttachment}>...</div>",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "packages/svelte/tests/parser-modern/samples/generic-snippets/input.svelte",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 8,
+      "firstKind": "ERROR",
+      "firstLine": "{#snippet complex_generic<T extends { bracket: \"<\" } | \"<\" | Set<\"<>\">>(val: T)}",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "packages/svelte/tests/snapshot/samples/delegated-locally-declared-shadowed/index.svelte",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 3,
+      "firstKind": "ERROR",
+      "firstLine": "{#each { length: 1 }, index}",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "packages/svelte/tests/snapshot/samples/each-index-non-null/index.svelte",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "{#each Array(10), i}",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "packages/svelte/tests/preprocess/samples/script-self-closing/input.svelte",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "<script the-answer=\"42\"/>",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "packages/svelte/tests/print/samples/declaration-tag-division/input.svelte",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 18,
+      "firstKind": "ERROR",
+      "firstLine": "{const regex = /[}]/}",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "packages/svelte/tests/print/samples/declaration-tag-division/output.svelte",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 18,
+      "firstKind": "ERROR",
+      "firstLine": "{const regex = /[}]/}",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "packages/svelte/tests/runtime-runes/samples/async-attach-blockers/main.svelte",
+      "nodes": 6,
+      "missingTokens": [],
+      "errorNodes": 6,
+      "firstRow": 17,
+      "firstKind": "ERROR",
+      "firstLine": "<Child {@attach createAttachment(attachment)} />",
+      "pipelineErrors": 12
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "Every file in scope is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Failure classes are derived from the parse tree (the demanded token for each MISSING node, the source line for each ERROR node) rather than hard-coded, so nothing in this file can drift from the measurement. The tree walk runs only under the same rootNode.hasError gate the production pipeline uses (the #841 round-2 instrument fix), and the two signals are cross-checked per file; any disagreement is recorded in pipelineMismatchFiles. Clean acceptance files are those with zero parse errors."
+}

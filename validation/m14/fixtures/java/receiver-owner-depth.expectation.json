@@ -1,0 +1,207 @@
+{
+  "fixtureId": "java/receiver-owner-depth",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DEPTH CAMPAIGN (2026-10-19, task-17): the receiver-IDENTITY evidence classes beyond the 2026-10-18 contract's field/param/local/return. Each is evidence the FILE states itself, so each is red-able with a flat fixture (no project index): `this` = an implicit-`this` call (JLS 15.12.1) and an explicit `this.m()`, where the enclosing type is the instance receiver; `super` = the first IN-FILE base that declares the method; `enum` = an enum-constant receiver, whose static type IS the enum (JLS 8.9.1) \u2014 pinned on CALLS and on a READ of the constant; `initializer` = `var` whose initializer states the type (JLS 14.4), both `new` and a single-return-type in-file method. THE NEGATIVES PIN THE GUARD: an unqualified call to a STATICALLY IMPORTED method is NOT an implicit-this member (JLS 7.5.3/7.5.4 \u2014 the enclosing type would be the wrong owner), and a member of an ENCLOSING class is not the inner class's own member (the receiver resolver only walks the enclosing chain, never outwards). A class-qualified static call (`Helper.help()`) stays owner-less \u2014 that refusal is pinned by java/receiver-owner-type's forbid, untouched here. THE SECOND WAVE adds the receiver-IDENTITY classes whose type is WRITTEN in the receiver expression itself: `new` (`new Widget().paint()`), `cast` (`((Widget) unknown).paint()`), and `element` (`widgets[0].paint()` \u2014 the array binding's declared element type). The last negative pins the guard: a receiver created as a LIBRARY type (`new StringBuilder().append(...)`) gets NO owner, because the channel would decline an owner the project does not declare.",
+  "expectSymbols": [
+    {
+      "name": "ReceiverOwnerDepth",
+      "kind": "class"
+    },
+    {
+      "name": "Widget"
+    },
+    {
+      "name": "Mode",
+      "kind": "enum"
+    },
+    {
+      "name": "Base"
+    },
+    {
+      "name": "Child"
+    },
+    {
+      "name": "helper"
+    },
+    {
+      "name": "baseWork"
+    },
+    {
+      "name": "act"
+    },
+    {
+      "name": "makeBase"
+    },
+    {
+      "name": "readField"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "implicitThisCase",
+      "target": "helper",
+      "meta.owner": "Child",
+      "meta.ownerEvidence": "this",
+      "line_number": 57
+    },
+    {
+      "type": "calls",
+      "source": "explicitThisCase",
+      "target": "helper",
+      "meta.owner": "Child",
+      "meta.ownerEvidence": "this",
+      "line_number": 61
+    },
+    {
+      "type": "calls",
+      "source": "superCase",
+      "target": "baseWork",
+      "meta.owner": "Base",
+      "meta.ownerEvidence": "super",
+      "line_number": 65
+    },
+    {
+      "type": "calls",
+      "source": "enumCase",
+      "target": "act",
+      "meta.owner": "Mode",
+      "meta.ownerEvidence": "enum",
+      "line_number": 69
+    },
+    {
+      "type": "calls",
+      "source": "varCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "initializer",
+      "line_number": 75
+    },
+    {
+      "type": "calls",
+      "source": "varCase",
+      "target": "makeBase",
+      "meta.owner": "Child",
+      "meta.ownerEvidence": "this",
+      "line_number": 76
+    },
+    {
+      "type": "calls",
+      "source": "varCase",
+      "target": "baseWork",
+      "meta.owner": "Base",
+      "meta.ownerEvidence": "initializer",
+      "line_number": 77
+    },
+    {
+      "type": "calls",
+      "source": "implicitOuterCase",
+      "target": "helperOuter",
+      "meta.owner": "ReceiverOwnerDepth",
+      "meta.ownerEvidence": "this",
+      "line_number": 116
+    },
+    {
+      "type": "uses",
+      "source": "enumCase",
+      "target": "ONE",
+      "meta.owner": "Mode",
+      "meta.ownerEvidence": "enum",
+      "line_number": 69
+    },
+    {
+      "type": "uses",
+      "source": "enumCase",
+      "target": "TWO",
+      "meta.owner": "Mode",
+      "meta.ownerEvidence": "enum",
+      "line_number": 70
+    },
+    {
+      "type": "uses",
+      "source": "readCase",
+      "target": "readField",
+      "meta.owner": "ReceiverOwnerDepth",
+      "meta.ownerEvidence": "this",
+      "line_number": 120
+    },
+    {
+      "type": "uses",
+      "source": "readCase",
+      "target": "readField",
+      "meta.isBareRead": true,
+      "meta.owner": "ReceiverOwnerDepth",
+      "meta.ownerEvidence": "this",
+      "line_number": 121
+    },
+    {
+      "type": "calls",
+      "source": "newCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "new",
+      "line_number": 83
+    },
+    {
+      "type": "calls",
+      "source": "castCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "cast",
+      "line_number": 87
+    },
+    {
+      "type": "calls",
+      "source": "elementCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "element",
+      "line_number": 91
+    },
+    {
+      "type": "calls",
+      "source": "staticImportCase",
+      "target": "sort",
+      "meta.importedFrom": "java.util.Collections.sort",
+      "comment": "the D7 `staticImport` CLAIM seam: a static single-member import states where the unqualified member name came from (JLS 7.5.3); the row keeps NO owner (the forbid above) and publishes the import evidence instead"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "staticImportCase",
+      "target": "sort",
+      "meta.ownerEvidence": "this",
+      "comment": "a STATIC-IMPORTED method called unqualified is not an implicit-this member (JLS 7.5.3/7.5.4): the enclosing type would be the wrong owner"
+    },
+    {
+      "type": "calls",
+      "source": "staticImportCase",
+      "target": "sort",
+      "meta.owner": "Child",
+      "comment": "same rule from the owner side"
+    },
+    {
+      "type": "calls",
+      "source": "enclosingMemberCase",
+      "target": "widthFromOuter",
+      "meta.ownerEvidence": "this",
+      "comment": "widthFromOuter is declared by the ENCLOSING class, not by Child: the resolver's implicit-this chain never walks outwards, so no owner may be attached"
+    },
+    {
+      "type": "calls",
+      "source": "enclosingMemberCase",
+      "target": "widthFromOuter",
+      "meta.owner": "ReceiverOwnerDepth",
+      "comment": "same rule from the owner side"
+    },
+    {
+      "type": "calls",
+      "source": "externalClassCase",
+      "target": "append",
+      "meta.ownerEvidence": "new",
+      "comment": "the created type is a LIBRARY type (StringBuilder): an owner the channel cannot resolve must not be attached (it would withdraw the name binding)"
+    }
+  ]
+}

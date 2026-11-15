@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotate",
+  "generatedAt": "2026-11-03T05:22:29.136Z",
+  "tree": "working-tree",
+  "protocol": "annotate + read-back through the real MCP stdio door on an isolated BB_DATA_DIR, per corpus",
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+  "corpora": [
+    {
+      "corpus": "graphql-js",
+      "subject": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "index": {
+        "files": 564,
+        "symbols": 13620,
+        "relationships": 61917,
+        "annotations": 0,
+        "bytes": 155222016,
+        "mtime": "2026-11-03T05:14:42.940Z"
+      },
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/graphql-js",
+      "call": {
+        "tool": "bb_annotate",
+        "symbol": "parse",
+        "path": null
+      },
+      "coldMs": 1733.78,
+      "warm": {
+        "runs": 5,
+        "min": 32.35498400000506,
+        "p50": 44.2834589999984,
+        "p95": 51.79250099998899,
+        "max": 51.79250099998899,
+        "values": [
+          51.79250099998899,
+          32.35498400000506,
+          37.98341600000276,
+          44.2834589999984,
+          51.5428130000073
+        ]
+      },
+      "readBack": {
+        "tool": "bb_annotations",
+        "ms": 58.92,
+        "count": 1,
+        "declaredAbsent": false
+      },
+      "qualifiedName": {
+        "symbol": "GraphQLChannels.parse",
+        "coldMs": 2162.52,
+        "warm": {
+          "runs": 3,
+          "min": 13.883333999983734,
+          "p50": 15.952996999985771,
+          "p95": 18.581925000005867,
+          "max": 18.581925000005867,
+          "values": [
+            18.581925000005867,
+            13.883333999983734,
+            15.952996999985771
+          ]
+        },
+        "readBackCount": 1
+      }
+    },
+    {
+      "corpus": "rake",
+      "subject": "/home/ishaq2321/bb_tests/repositories/rake",
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "index": {
+        "files": 109,
+        "symbols": 1593,
+        "relationships": 9075,
+        "annotations": 0,
+        "bytes": 22708224,
+        "mtime": "2026-11-03T05:16:59.952Z"
+      },
+      "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/rake",
+      "call": {
+        "tool": "bb_annotate",
+        "symbol": "task",
+        "path": null
+      },
+      "coldMs": 173.43,
+      "warm": {
+        "runs": 5,
+        "min": 11.92808199999854,
+        "p50": 16.311166000028607,
+        "p95": 31.85406199999852,
+        "max": 31.85406199999852,
+        "values": [
+          13.481825999973807,
+          16.311166000028607,
+          11.92808199999854,
+          31.4179390000063,
+          31.85406199999852
+        ]
+      },
+      "readBack": {
+        "tool": "bb_annotations",
+        "ms": 24.66,
+        "count": 1,
+        "declaredAbsent": false
+      },
+      "qualifiedName": {
+        "symbol": "task",
+        "coldMs": 61.23,
+        "warm": {
+          "runs": 3,
+          "min": 6.022644000011496,
+          "p50": 7.121879999991506,
+          "p95": 7.388684000005014,
+          "max": 7.388684000005014,
+          "values": [
+            7.388684000005014,
+            7.121879999991506,
+            6.022644000011496
+          ]
+        },
+        "readBackCount": 1
+      }
+    }
+  ]
+}

@@ -58,7 +58,7 @@ import * as path from "node:path"
 import { spawnSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.env.BB_OUT ?? "/tmp/opencode/pb/classB-protoc.json"
 const PROTOC = process.env.BB_PROTOC ?? "/tmp/opencode/protoc-venv/bin/python"
 const PROTOC_ARGS = ["-m", "grpc_tools.protoc"]

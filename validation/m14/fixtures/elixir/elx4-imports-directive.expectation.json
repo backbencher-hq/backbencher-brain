@@ -1,0 +1,69 @@
+{
+  "issue": "ELX4 `imports`",
+  "note": "`import Mod` brings Mod's functions and macros into this module unprefixed \u2014 the same statement the erlang lane records for `-import(Mod, [f/a])` (ER-D41), and the relationship `dependencies.ts:27-28` reads. `alias`, `require` and `use` are NOT imports: `alias` renames, `require` needs a module's macros at compile time, `use` injects code. `import Enum, only: [map: 2]` makes `map` resolvable locally, so the pipeline in `run/1` emits `calls -> Enum.map` (ELXD17) \u2014 the imports edge and the call resolution are the same fact seen twice.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "ELX4.ImportsDirective",
+      "target": "Enum",
+      "line_number": 2
+    },
+    {
+      "type": "imports",
+      "from": "ELX4.ImportsDirective",
+      "target": "Enum",
+      "line_number": 3
+    },
+    {
+      "type": "imports",
+      "from": "ELX4.ImportsDirective",
+      "target": "String",
+      "line_number": 4
+    },
+    {
+      "type": "calls",
+      "from": "ELX4.ImportsDirective.run/1",
+      "target": "Enum.map"
+    },
+    {
+      "type": "mixes_in",
+      "from": "ELX4.ImportsDirective",
+      "target": "GenServer",
+      "line_number": 7,
+      "meta.isMixin": true
+    },
+    {
+      "type": "imports",
+      "from": "ELX4.ImportsDirective",
+      "target": "Enum",
+      "line_number": 3,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "mixes_in",
+      "from": "ELX4.ImportsDirective",
+      "target": "GenServer",
+      "line_number": 7,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "ELX4.Opts"
+    },
+    {
+      "type": "imports",
+      "target": "Logger"
+    },
+    {
+      "type": "imports",
+      "target": "GenServer"
+    },
+    {
+      "type": "imports",
+      "target": "Supervisor"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

@@ -1,0 +1,143 @@
+{
+ "fixtureId": "python/reference-binding-is-not-a-guess",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-D15, the reference/extends half of PY-D14. Round 7 taught `calls` to state, per edge, that its callee binds in an ENCLOSING FUNCTION's scope (`local-callee`), and that took the whole-population UNEXPLAINED incoming count from 6,283 to 755. The verdict's residual histogram then showed the SAME fact on two other axes and unlabelled: of 389 UNEXPLAINED `references` targets, 232 name a binding of an enclosing function, and of 15 UNEXPLAINED `extends` targets, 14 do. Classified independently with CPython's own `ast` over the dumped edge list (the interpreter's parser, not this analyzer's tree), so the population is a measurement rather than a reading of the residual names. The code the position used to supply is not WRONG — `isinstance(obj, type_or_tuple)` really is written at an isinstance position — but it is not the REASON: `type_or_tuple` comes from `self._allowed_unsafe_attributes.get(attr)`, so the type is decided by a dict lookup and a consumer reading `instanceof-check` cannot tell this edge from `isinstance(instance, SomeClass)`. `metadata.relationshipType` still carries the position, which is that field's whole job; `reasonCode` narrows to the binding whenever the binding is what makes the target unresolvable, exactly as M14 §4 asks. The BASE axis is the same fact on the class hierarchy: `class Row(dump_cls)` where `dump_cls = _py_row.BaseRow` or `_cy_row.BaseRow` depending on which branch ran — a real corpus shape (sqlalchemy/test/base/test_result.py), and confidence stays 1.0 there because the SOURCE fact is exact (the class body's base list is literally these names) while the TARGET is a value whose type nothing here knows. The CONTROL rows are as much the point of the file as the positives: a module-level name used at the same isinstance position keeps `instanceof-check`, an ordinary module-level class keeps NO code on its base, and `typed_local` pins BOTH readings of one local name at once — `kind: type` is an annotation of a local and keeps `annotation-type`, while `isinstance(obj, kind)` one line later is the same name and carries `local-binding-target`. That pair is why this is a per-EDGE statement about a binding rather than a rule about a name or a position.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "module_scoped",
+   "target": "ModuleFlag",
+   "line_number": 17,
+   "confidence": 0.95,
+   "meta.reasonCode": "instanceof-check",
+   "meta.relationshipType": "instanceof_check",
+   "note": "CONTROL, and the row that convicts the over-correction: `ModuleFlag` is a MODULE-level name, so the enclosing function binds nothing and the position stays the reason. A fix that labelled every isinstance second argument would fail here."
+  },
+  {
+   "type": "references",
+   "from": "walrus_check",
+   "target": "kind",
+   "line_number": 22,
+   "confidence": 0.95,
+   "meta.reasonCode": "local-binding-target",
+   "meta.relationshipType": "instanceof_check",
+   "note": "PY-D15, the shape that dominates the corpus (`type_or_tuple` in `_jinja_bits.py` is exactly this): the tested name is a WALRUS TARGET of the very condition it appears in, so its type comes from a registry lookup. Both fields are pinned at once because the change is precisely the difference between them."
+  },
+  {
+   "type": "references",
+   "from": "param_check",
+   "target": "plugin_class",
+   "line_number": 29,
+   "confidence": 0.95,
+   "meta.reasonCode": "local-binding-target",
+   "meta.relationshipType": "instanceof_check",
+   "note": "A PARAMETER — the CALLER decides the type. The pre-pass reads a parameter's `name` field only, so a parameter's own annotation does not make a local; the binding comes from the signature itself."
+  },
+  {
+   "type": "references",
+   "from": "typed_local",
+   "target": "kind",
+   "line_number": 35,
+   "confidence": 0.95,
+   "meta.reasonCode": "local-binding-target",
+   "note": "The second half of the pair below: same name, same function, one line later, now testing a locally assigned value."
+  },
+  {
+   "type": "references",
+   "from": "typed_local",
+   "target": "type",
+   "line_number": 34,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "The first half: `kind: type = type(obj)` annotates a LOCAL, and the annotation itself names a type at module scope, so it KEEPS the position code. Reading the pair together is the contract — the code describes where the target binds, not which position it was written in."
+  },
+  {
+   "type": "references",
+   "from": "dynamic_base",
+   "target": "base",
+   "line_number": 41,
+   "confidence": 0.95,
+   "meta.reasonCode": "local-binding-target",
+   "note": "The same fact on the annotation axis: `extra: base` names a local that holds a CLASS OBJECT (`dict` or `ModuleFlag`, chosen by the argument), so it is not a project type."
+  },
+  {
+   "type": "extends",
+   "from": "Row",
+   "target": "base",
+   "line_number": 43,
+   "confidence": 1.0,
+   "meta.reasonCode": "local-binding-target",
+   "note": "PY-D15 on the hierarchy axis, and the real corpus shape (sqlalchemy/test/base/test_result.py chose `dump_cls` between `_py_row.BaseRow` and `_cy_row.BaseRow` inside a test method). Before this round `extends` rows carried NO reason code at all, so this was unfilterable rather than merely imprecise."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "module_scoped",
+   "target": "ModuleFlag",
+   "meta.reasonCode": "local-binding-target",
+   "note": "the OVER-correction direction, its own row so that a fix which labels by position cannot satisfy the file by accident"
+  },
+  {
+   "type": "references",
+   "from": "walrus_check",
+   "target": "kind",
+   "meta.reasonCode": "instanceof-check",
+   "note": "and the UNDER-correction direction: the walrus target must not also be readable as an ordinary isinstance position"
+  },
+  {
+   "type": "references",
+   "from": "param_check",
+   "target": "plugin_class",
+   "meta.reasonCode": null,
+   "note": "the code is required, not optional — a parameter-typed isinstance target must not appear with no reason at all (§4: an edge below 1.0 must carry a readable reason)"
+  },
+  {
+   "type": "extends",
+   "from": "Child",
+   "target": "NormalBase",
+   "meta.reasonCode": "local-binding-target",
+   "note": "CONTROL, over-claim direction: an ordinary module-level base is a class, and stamping it as a dynamic binding would make the code useless on the axis it was added for"
+  },
+  {
+   "type": "extends",
+   "from": "Row",
+   "target": "base",
+   "meta.reasonCode": null,
+   "note": "and the dynamic base must not appear WITHOUT its code — the same second, independent assertion the reason-code fixture uses on a dropped edge"
+  },
+  {
+   "type": "references",
+   "from": "dynamic_base",
+   "target": "dict",
+   "note": "CONTROL, and the negative that keeps the annotation rule honest: `base = dict if use_py else ModuleFlag` only BINDS `dict`, it does not annotate it — but `dict` is never annotated in this file either, so no reference may name it. `dict` is a builtin the lane excludes by name at the scalar filter, and a fix that walked assignment right-hand sides as types would publish it."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "Row",
+   "equals": 1,
+   "note": "a class inside a function body IS still a symbol (published ownerless, the rule the nested-class fixture pins) — the class names a real declaration even though its BASE is a value"
+  },
+  {
+   "name": "base",
+   "equals": 0,
+   "note": "and the local holding its base is not a symbol, which is exactly why the edge cannot resolve and why DECLARING it beats pretending"
+  },
+  {
+   "name": "plugin_class",
+   "equals": 0,
+   "note": "a parameter is not a symbol — the same rule the local-callee fixture pins on the call axis"
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "extends",
+   "from": "Child",
+   "target": "NormalBase",
+   "equals": 1,
+   "note": "CONTROL, positive form: the ordinary base edge exists, at 1.0, with no reason code — which is what makes the `local-binding-target` rows a statement about THOSE bases rather than about extends in general"
+  }
+ ]
+}

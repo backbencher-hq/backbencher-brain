@@ -1,0 +1,1751 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "leg": "REAL CORPUS read-back through the real MCP stdio door (part 2 of 2)",
+  "measuredAt": "2026-11-03T16:33:33.970Z",
+  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
+  "environment": {
+    "node": "v22.22.1",
+    "cpus": 8,
+    "loadavg": "32.49 32.49 24.92 21/1834 830"
+  },
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "commands": {
+    "index": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/real-corpus-index.mts",
+    "door": "BB_NO_AUTO_REFRESH=1 node validation/tools/bb_annotations/work/real-corpus-door.mjs",
+    "doorChild": "npx tsx validation/tools/bb_annotations/work/mcp-server-child.mts <corpus>",
+    "env": {
+      "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real",
+      "BB_NO_AUTO_REFRESH": "1"
+    },
+    "rules": [
+      "isolated BB_DATA_DIR",
+      "real MCP stdio door (spawned startMcpServer child)",
+      "the shared store is never opened",
+      "absence asked before any write"
+    ]
+  },
+  "corpora": {
+    "graphql-js": {
+      "workspace": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real/projects/18b0d5567b84edcae6dec4bfcc1faf8ac965e01e/brain.db",
+        "bytes": 173420544,
+        "mtimeMs": 1793723490525.897
+      },
+      "indexCommand": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real npx tsx <real-corpus-index.mts> -> indexProjectParallel(\"/home/ishaq2321/bb_tests/repositories/graphql-js\")",
+      "indexMs": 211687,
+      "population": {
+        "files": 564,
+        "symbols": 13620,
+        "relationships": 61917,
+        "annotations": 0,
+        "languages": [
+          {
+            "l": "typescript",
+            "n": 413
+          },
+          {
+            "l": "javascript",
+            "n": 77
+          },
+          {
+            "l": "json",
+            "n": 42
+          },
+          {
+            "l": "markdown",
+            "n": 12
+          },
+          {
+            "l": "yaml",
+            "n": 7
+          },
+          {
+            "l": "xml",
+            "n": 6
+          },
+          {
+            "l": "tsx",
+            "n": 4
+          },
+          {
+            "l": "graphql",
+            "n": 2
+          },
+          {
+            "l": "css",
+            "n": 1
+          }
+        ]
+      },
+      "codeLanguage": "typescript",
+      "secondNameFormRows": 8225,
+      "subject": {
+        "name": "git",
+        "qualified": "utils.git",
+        "symbol_type": "function",
+        "line": 87,
+        "relative_path": "resources/utils.ts",
+        "language": "typescript"
+      },
+      "plain": {
+        "name": "result",
+        "n": 570
+      },
+      "subjectName": "git",
+      "subjectPath": "resources/utils.ts",
+      "plainFile": "integrationTests/ts-development-condition/index.cts",
+      "qualifiedNameLeg": {
+        "applicable": true,
+        "subjectName": "git",
+        "subjectQualified": "utils.git",
+        "secondNameFormRows": 8225
+      },
+      "writes": [
+        {
+          "id": "W-name-level",
+          "args": {
+            "symbol": "result",
+            "body": "audit note on result (name-level, graphql-js)"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-cb80a36348c97c62a426ae613a20e248b4ff485ad23cce205e0247093d2fed40",
+            "symbol_name": "result",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note on result (name-level, graphql-js)",
+            "time_created": 1793723622211,
+            "time_updated": 1793723622211
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": null,
+            "matchedAs": [
+              "name",
+              "qualifiedName"
+            ],
+            "matchedNames": [
+              "result"
+            ],
+            "statement": "'result' matches 1 indexed symbol name(s) and 1 qualified name(s), so this note renders in the editor hover section and graph badge.",
+            "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+          }
+        },
+        {
+          "id": "W-qualified",
+          "args": {
+            "symbol": "utils.git",
+            "body": "audit note under the qualified name utils.git"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650",
+            "symbol_name": "utils.git",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note under the qualified name utils.git",
+            "time_created": 1793723622716,
+            "time_updated": 1793723622716
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": null,
+            "matchedAs": [
+              "qualifiedName"
+            ],
+            "matchedNames": [
+              "utils.git"
+            ],
+            "statement": "'utils.git' matches 1 indexed qualified name(s) and no plain name, so this note renders for a symbol that carries it as a qualified name.",
+            "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+          }
+        },
+        {
+          "id": "W-file-scoped",
+          "args": {
+            "symbol": "git",
+            "path": "resources/utils.ts",
+            "body": "audit note on git scoped to resources/utils.ts"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497",
+            "symbol_name": "git",
+            "symbol_path": "resources/utils.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note on git scoped to resources/utils.ts",
+            "time_created": 1793723622745,
+            "time_updated": 1793723622745
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": true,
+            "matchedAs": [
+              "name"
+            ],
+            "matchedNames": [
+              "git"
+            ],
+            "statement": "'git' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+            "pathNote": "path resolved to the indexed spelling 'resources/utils.ts'"
+          }
+        }
+      ],
+      "reads": [
+        {
+          "id": "A-project-wide-absence",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for this project yet\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for this project yet",
+          "path": null,
+          "symbol": null,
+          "rows": []
+        },
+        {
+          "id": "A-symbol-absence",
+          "args": {
+            "symbol": "bb-audit-name-that-does-not-exist"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"bb-audit-name-that-does-not-exist\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": false,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'bb-audit-name-that-does-not-exist' — absence declared, never guessed\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for 'bb-audit-name-that-does-not-exist' — absence declared, never guessed",
+          "path": null,
+          "symbol": "bb-audit-name-that-does-not-exist",
+          "rows": []
+        },
+        {
+          "id": "A-path-absence",
+          "args": {
+            "path": "resources/utils.ts"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"resources/utils.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'resources/utils.ts' — absence declared, never guessed\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for 'resources/utils.ts' — absence declared, never guessed",
+          "path": "resources/utils.ts",
+          "symbol": null,
+          "rows": []
+        },
+        {
+          "id": "R-symbol-plain",
+          "args": {
+            "symbol": "result"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"result\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-cb80a36348c97c62a426ae613a20e248b4ff485ad23cce205e0247093d2fed40\",\n      \"symbol_name\": \"result\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on result (name-level, graphql-js)\",\n      \"time_created\": 1793723622211,\n      \"time_updated\": 1793723622211\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "result",
+          "rows": [
+            {
+              "symbol_name": "result",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on result (name-level, graphql-js)"
+            }
+          ]
+        },
+        {
+          "id": "R-symbol-subject-simple",
+          "args": {
+            "symbol": "git"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"git\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    },\n    {\n      \"id\": \"bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650\",\n      \"symbol_name\": \"utils.git\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name utils.git\",\n      \"time_created\": 1793723622716,\n      \"time_updated\": 1793723",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "git",
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            },
+            {
+              "symbol_name": "utils.git",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name utils.git"
+            }
+          ]
+        },
+        {
+          "id": "R-symbol-qualified",
+          "args": {
+            "symbol": "utils.git"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"utils.git\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    },\n    {\n      \"id\": \"bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650\",\n      \"symbol_name\": \"utils.git\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name utils.git\",\n      \"time_created\": 1793723622716,\n      \"time_updated\": 1",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "utils.git",
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            },
+            {
+              "symbol_name": "utils.git",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name utils.git"
+            }
+          ]
+        },
+        {
+          "id": "R-path",
+          "args": {
+            "path": "resources/utils.ts"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"resources/utils.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "resources/utils.ts",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            }
+          ]
+        },
+        {
+          "id": "R-path-name-level",
+          "args": {
+            "path": "resources/utils.ts",
+            "includeNameLevel": true
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"resources/utils.ts\",\n  \"includeNameLevel\": true,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    },\n    {\n      \"id\": \"bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650\",\n      \"symbol_name\": \"utils.git\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name utils.git\",\n      \"time_created\": 1793723622716,\n      \"time_upd",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "resources/utils.ts",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            },
+            {
+              "symbol_name": "utils.git",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name utils.git"
+            },
+            {
+              "symbol_name": "result",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on result (name-level, graphql-js)"
+            }
+          ]
+        },
+        {
+          "id": "R-path-dot-prefixed",
+          "args": {
+            "path": "./resources/utils.ts"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"resources/utils.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "resources/utils.ts",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            }
+          ]
+        },
+        {
+          "id": "R-all",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    },\n    {\n      \"id\": \"bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650\",\n      \"symbol_name\": \"utils.git\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name utils.git\",\n      \"time_created\": 1793723622716,\n      \"time_updated\": 1793723",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            },
+            {
+              "symbol_name": "utils.git",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name utils.git"
+            },
+            {
+              "symbol_name": "result",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on result (name-level, graphql-js)"
+            }
+          ]
+        },
+        {
+          "id": "R-limit-1",
+          "args": {
+            "limit": 1
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 3,\n  \"truncated\": true,\n  \"truncationReason\": \"limit 1 reached; 3 annotations match this query — raise limit (max 200) or narrow the filter.\",\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 3,
+          "truncated": true,
+          "truncationReason": "limit 1 reached; 3 annotations match this query — raise limit (max 200) or narrow the filter.",
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            }
+          ]
+        },
+        {
+          "id": "R-limit-200",
+          "args": {
+            "limit": 200
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    },\n    {\n      \"id\": \"bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650\",\n      \"symbol_name\": \"utils.git\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name utils.git\",\n      \"time_created\": 1793723622716,\n      \"time_updated\": 1793723",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            },
+            {
+              "symbol_name": "utils.git",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name utils.git"
+            },
+            {
+              "symbol_name": "result",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on result (name-level, graphql-js)"
+            }
+          ]
+        },
+        {
+          "id": "R-default-latency",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-149aab94a61eb4d660faee42076e3bdb0feb58c733402f8c3123871718b08497\",\n      \"symbol_name\": \"git\",\n      \"symbol_path\": \"resources/utils.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on git scoped to resources/utils.ts\",\n      \"time_created\": 1793723622745,\n      \"time_updated\": 1793723622745\n    },\n    {\n      \"id\": \"bbann-b10f039abec3fa2e57a0c2cded91ee608d48b039c918fbbe881f07777c822650\",\n      \"symbol_name\": \"utils.git\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name utils.git\",\n      \"time_created\": 1793723622716,\n      \"time_updated\": 1793723",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "git",
+              "symbol_path": "resources/utils.ts",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on git scoped to resources/utils.ts"
+            },
+            {
+              "symbol_name": "utils.git",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name utils.git"
+            },
+            {
+              "symbol_name": "result",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on result (name-level, graphql-js)"
+            }
+          ]
+        },
+        {
+          "id": "X-limit-500",
+          "args": {
+            "limit": 500
+          },
+          "isError": true,
+          "text": "bb_annotations: limit must be a number between 1 and 200",
+          "truncationReason": null,
+          "absenceNote": null,
+          "rows": []
+        },
+        {
+          "id": "X-alias-target",
+          "args": {
+            "target": "result"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"result\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-cb80a36348c97c62a426ae613a20e248b4ff485ad23cce205e0247093d2fed40\",\n      \"symbol_name\": \"result\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on result (name-level, graphql-js)\",\n      \"time_created\": 1793723622211,\n      \"time_updated\": 1793723622211\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "result",
+          "rows": [
+            {
+              "symbol_name": "result",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on result (name-level, graphql-js)"
+            }
+          ]
+        },
+        {
+          "id": "X-unknown-option",
+          "args": {
+            "symbol": "result",
+            "bogus": 1
+          },
+          "isError": true,
+          "text": "error: bb_annotations: unknown or irrelevant options: bogus — accepted options: symbol, path, limit, includeNameLevel (aliases accepted: target, query)",
+          "truncationReason": null,
+          "absenceNote": null,
+          "rows": []
+        }
+      ],
+      "defaultCallLatency": {
+        "runs": [
+          27.851,
+          25.455,
+          25.191,
+          24.862,
+          24.608
+        ],
+        "p50Ms": 25.191,
+        "p95Ms": 27.851,
+        "minMs": 24.608,
+        "maxMs": 27.851,
+        "bytes": 1200
+      },
+      "nonJsonStdout": [],
+      "stderrTail": ""
+    },
+    "rake": {
+      "workspace": "/home/ishaq2321/bb_tests/repositories/rake",
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real/projects/132aab0103080d56a8ce5ef28cf2034710b21a80/brain.db",
+        "bytes": 25718784,
+        "mtimeMs": 1793723532835.2812
+      },
+      "indexCommand": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real npx tsx <real-corpus-index.mts> -> indexProjectParallel(\"/home/ishaq2321/bb_tests/repositories/rake\")",
+      "indexMs": 37413,
+      "population": {
+        "files": 109,
+        "symbols": 1593,
+        "relationships": 9075,
+        "annotations": 0,
+        "languages": [
+          {
+            "l": "ruby",
+            "n": 97
+          },
+          {
+            "l": "yaml",
+            "n": 9
+          },
+          {
+            "l": "c",
+            "n": 3
+          }
+        ]
+      },
+      "codeLanguage": "ruby",
+      "secondNameFormRows": 2,
+      "subject": {
+        "name": "NameSpace",
+        "qualified": "Rake::NameSpace",
+        "symbol_type": "class",
+        "line": 6,
+        "relative_path": "lib/rake/name_space.rb",
+        "language": "ruby"
+      },
+      "plain": {
+        "name": "Rake",
+        "n": 39
+      },
+      "subjectName": "NameSpace",
+      "subjectPath": "lib/rake/name_space.rb",
+      "plainFile": "lib/rake.rb",
+      "qualifiedNameLeg": {
+        "applicable": true,
+        "subjectName": "NameSpace",
+        "subjectQualified": "Rake::NameSpace",
+        "secondNameFormRows": 2
+      },
+      "writes": [
+        {
+          "id": "W-name-level",
+          "args": {
+            "symbol": "Rake",
+            "body": "audit note on Rake (name-level, rake)"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-428c4021f7112dc75cd304d81a3648f9507f30875903b32fdefdf53af5184b11",
+            "symbol_name": "Rake",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note on Rake (name-level, rake)",
+            "time_created": 1793723627672,
+            "time_updated": 1793723627672
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": null,
+            "matchedAs": [
+              "name",
+              "qualifiedName"
+            ],
+            "matchedNames": [
+              "Rake"
+            ],
+            "statement": "'Rake' matches 1 indexed symbol name(s) and 1 qualified name(s), so this note renders in the editor hover section and graph badge.",
+            "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+          }
+        },
+        {
+          "id": "W-qualified",
+          "args": {
+            "symbol": "Rake::NameSpace",
+            "body": "audit note under the qualified name Rake::NameSpace"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf",
+            "symbol_name": "Rake::NameSpace",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note under the qualified name Rake::NameSpace",
+            "time_created": 1793723627802,
+            "time_updated": 1793723627802
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": null,
+            "matchedAs": [
+              "qualifiedName"
+            ],
+            "matchedNames": [
+              "Rake::NameSpace"
+            ],
+            "statement": "'Rake::NameSpace' matches 1 indexed qualified name(s) and no plain name, so this note renders for a symbol that carries it as a qualified name.",
+            "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+          }
+        },
+        {
+          "id": "W-file-scoped",
+          "args": {
+            "symbol": "NameSpace",
+            "path": "lib/rake/name_space.rb",
+            "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860",
+            "symbol_name": "NameSpace",
+            "symbol_path": "lib/rake/name_space.rb",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note on NameSpace scoped to lib/rake/name_space.rb",
+            "time_created": 1793723627826,
+            "time_updated": 1793723627826
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": true,
+            "matchedAs": [
+              "name"
+            ],
+            "matchedNames": [
+              "NameSpace"
+            ],
+            "statement": "'NameSpace' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+            "pathNote": "path resolved to the indexed spelling 'lib/rake/name_space.rb'"
+          }
+        }
+      ],
+      "reads": [
+        {
+          "id": "A-project-wide-absence",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for this project yet\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for this project yet",
+          "path": null,
+          "symbol": null,
+          "rows": []
+        },
+        {
+          "id": "A-symbol-absence",
+          "args": {
+            "symbol": "bb-audit-name-that-does-not-exist"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"bb-audit-name-that-does-not-exist\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": false,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'bb-audit-name-that-does-not-exist' — absence declared, never guessed\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for 'bb-audit-name-that-does-not-exist' — absence declared, never guessed",
+          "path": null,
+          "symbol": "bb-audit-name-that-does-not-exist",
+          "rows": []
+        },
+        {
+          "id": "A-path-absence",
+          "args": {
+            "path": "lib/rake/name_space.rb"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"lib/rake/name_space.rb\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'lib/rake/name_space.rb' — absence declared, never guessed\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for 'lib/rake/name_space.rb' — absence declared, never guessed",
+          "path": "lib/rake/name_space.rb",
+          "symbol": null,
+          "rows": []
+        },
+        {
+          "id": "R-symbol-plain",
+          "args": {
+            "symbol": "Rake"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"Rake\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-428c4021f7112dc75cd304d81a3648f9507f30875903b32fdefdf53af5184b11\",\n      \"symbol_name\": \"Rake\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on Rake (name-level, rake)\",\n      \"time_created\": 1793723627672,\n      \"time_updated\": 1793723627672\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "Rake",
+          "rows": [
+            {
+              "symbol_name": "Rake",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on Rake (name-level, rake)"
+            }
+          ]
+        },
+        {
+          "id": "R-symbol-subject-simple",
+          "args": {
+            "symbol": "NameSpace"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"NameSpace\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    },\n    {\n      \"id\": \"bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf\",\n      \"symbol_name\": \"Rake::NameSpace\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name Rake::NameSpace\",\n      \"time_created\": 179372",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "NameSpace",
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            },
+            {
+              "symbol_name": "Rake::NameSpace",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name Rake::NameSpace"
+            }
+          ]
+        },
+        {
+          "id": "R-symbol-qualified",
+          "args": {
+            "symbol": "Rake::NameSpace"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"Rake::NameSpace\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    },\n    {\n      \"id\": \"bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf\",\n      \"symbol_name\": \"Rake::NameSpace\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name Rake::NameSpace\",\n      \"time_created\": ",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "Rake::NameSpace",
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            },
+            {
+              "symbol_name": "Rake::NameSpace",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name Rake::NameSpace"
+            }
+          ]
+        },
+        {
+          "id": "R-path",
+          "args": {
+            "path": "lib/rake/name_space.rb"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"lib/rake/name_space.rb\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "lib/rake/name_space.rb",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            }
+          ]
+        },
+        {
+          "id": "R-path-name-level",
+          "args": {
+            "path": "lib/rake/name_space.rb",
+            "includeNameLevel": true
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"lib/rake/name_space.rb\",\n  \"includeNameLevel\": true,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    },\n    {\n      \"id\": \"bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf\",\n      \"symbol_name\": \"Rake::NameSpace\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name Rake::NameSpace\",\n      \"time_crea",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "lib/rake/name_space.rb",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            },
+            {
+              "symbol_name": "Rake::NameSpace",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name Rake::NameSpace"
+            },
+            {
+              "symbol_name": "Rake",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on Rake (name-level, rake)"
+            }
+          ]
+        },
+        {
+          "id": "R-path-dot-prefixed",
+          "args": {
+            "path": "./lib/rake/name_space.rb"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"lib/rake/name_space.rb\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "lib/rake/name_space.rb",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            }
+          ]
+        },
+        {
+          "id": "R-all",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    },\n    {\n      \"id\": \"bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf\",\n      \"symbol_name\": \"Rake::NameSpace\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name Rake::NameSpace\",\n      \"time_created\": 179372362780",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            },
+            {
+              "symbol_name": "Rake::NameSpace",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name Rake::NameSpace"
+            },
+            {
+              "symbol_name": "Rake",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on Rake (name-level, rake)"
+            }
+          ]
+        },
+        {
+          "id": "R-limit-1",
+          "args": {
+            "limit": 1
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 3,\n  \"truncated\": true,\n  \"truncationReason\": \"limit 1 reached; 3 annotations match this query — raise limit (max 200) or narrow the filter.\",\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 3,
+          "truncated": true,
+          "truncationReason": "limit 1 reached; 3 annotations match this query — raise limit (max 200) or narrow the filter.",
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            }
+          ]
+        },
+        {
+          "id": "R-limit-200",
+          "args": {
+            "limit": 200
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    },\n    {\n      \"id\": \"bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf\",\n      \"symbol_name\": \"Rake::NameSpace\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name Rake::NameSpace\",\n      \"time_created\": 179372362780",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            },
+            {
+              "symbol_name": "Rake::NameSpace",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name Rake::NameSpace"
+            },
+            {
+              "symbol_name": "Rake",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on Rake (name-level, rake)"
+            }
+          ]
+        },
+        {
+          "id": "R-default-latency",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-c80f5d56a8f18ca2ef12135ff31999dec7384d78076655acc4469a62fc8a3860\",\n      \"symbol_name\": \"NameSpace\",\n      \"symbol_path\": \"lib/rake/name_space.rb\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on NameSpace scoped to lib/rake/name_space.rb\",\n      \"time_created\": 1793723627826,\n      \"time_updated\": 1793723627826\n    },\n    {\n      \"id\": \"bbann-0da15a38e24ddfe4e5ada1dbe51c54c3b0eeb5f122d55aecaea5b52eb0b54bdf\",\n      \"symbol_name\": \"Rake::NameSpace\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note under the qualified name Rake::NameSpace\",\n      \"time_created\": 179372362780",
+          "count": 3,
+          "totalCountIfKnown": 3,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "NameSpace",
+              "symbol_path": "lib/rake/name_space.rb",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on NameSpace scoped to lib/rake/name_space.rb"
+            },
+            {
+              "symbol_name": "Rake::NameSpace",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note under the qualified name Rake::NameSpace"
+            },
+            {
+              "symbol_name": "Rake",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on Rake (name-level, rake)"
+            }
+          ]
+        },
+        {
+          "id": "X-limit-500",
+          "args": {
+            "limit": 500
+          },
+          "isError": true,
+          "text": "bb_annotations: limit must be a number between 1 and 200",
+          "truncationReason": null,
+          "absenceNote": null,
+          "rows": []
+        },
+        {
+          "id": "X-alias-target",
+          "args": {
+            "target": "Rake"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"Rake\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-428c4021f7112dc75cd304d81a3648f9507f30875903b32fdefdf53af5184b11\",\n      \"symbol_name\": \"Rake\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on Rake (name-level, rake)\",\n      \"time_created\": 1793723627672,\n      \"time_updated\": 1793723627672\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "Rake",
+          "rows": [
+            {
+              "symbol_name": "Rake",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on Rake (name-level, rake)"
+            }
+          ]
+        },
+        {
+          "id": "X-unknown-option",
+          "args": {
+            "symbol": "Rake",
+            "bogus": 1
+          },
+          "isError": true,
+          "text": "error: bb_annotations: unknown or irrelevant options: bogus — accepted options: symbol, path, limit, includeNameLevel (aliases accepted: target, query)",
+          "truncationReason": null,
+          "absenceNote": null,
+          "rows": []
+        }
+      ],
+      "defaultCallLatency": {
+        "runs": [
+          37.511,
+          26.032,
+          26.25,
+          26.279,
+          30.406
+        ],
+        "p50Ms": 26.279,
+        "p95Ms": 37.511,
+        "minMs": 26.032,
+        "maxMs": 37.511,
+        "bytes": 1200
+      },
+      "nonJsonStdout": [],
+      "stderrTail": ""
+    },
+    "rebar3": {
+      "workspace": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real/projects/f542cf36820e749046766ff9bede22e70d5990e7/brain.db",
+        "bytes": 121270272,
+        "mtimeMs": 1793723610669.988
+      },
+      "indexCommand": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real npx tsx <real-corpus-index.mts> -> indexProjectParallel(\"/home/ishaq2321/bb_tests/repositories/rebar3\")",
+      "indexMs": 79466,
+      "population": {
+        "files": 303,
+        "symbols": 7012,
+        "relationships": 38143,
+        "annotations": 0,
+        "languages": [
+          {
+            "l": "erlang",
+            "n": 266
+          },
+          {
+            "l": "markdown",
+            "n": 18
+          },
+          {
+            "l": "bash",
+            "n": 9
+          },
+          {
+            "l": "yaml",
+            "n": 6
+          },
+          {
+            "l": "make",
+            "n": 2
+          },
+          {
+            "l": "elixir",
+            "n": 1
+          },
+          {
+            "l": "powershell",
+            "n": 1
+          }
+        ]
+      },
+      "codeLanguage": "erlang",
+      "secondNameFormRows": 0,
+      "subject": null,
+      "plain": {
+        "name": "format_error",
+        "n": 75
+      },
+      "subjectName": "format_error",
+      "subjectPath": "apps/rebar/src/rebar_app_discover.erl",
+      "plainFile": "apps/rebar/src/rebar_app_discover.erl",
+      "qualifiedNameLeg": {
+        "applicable": false,
+        "reason": "the index publishes NO symbol whose qualified_name differs from its name in erlang (measured secondNameFormRows=0), so there is no natural qualified-name read-back on this corpus; the leg is declared not applicable rather than fabricated"
+      },
+      "writes": [
+        {
+          "id": "W-name-level",
+          "args": {
+            "symbol": "format_error",
+            "body": "audit note on format_error (name-level, rebar3)"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3",
+            "symbol_name": "format_error",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note on format_error (name-level, rebar3)",
+            "time_created": 1793723636017,
+            "time_updated": 1793723636017
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": null,
+            "matchedAs": [
+              "name",
+              "qualifiedName"
+            ],
+            "matchedNames": [
+              "format_error"
+            ],
+            "statement": "'format_error' matches 1 indexed symbol name(s) and 1 qualified name(s), so this note renders in the editor hover section and graph badge.",
+            "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+          }
+        },
+        {
+          "id": "W-file-scoped",
+          "args": {
+            "symbol": "format_error",
+            "path": "apps/rebar/src/rebar_app_discover.erl",
+            "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+          },
+          "isError": false,
+          "stored": true,
+          "annotation": {
+            "id": "bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4",
+            "symbol_name": "format_error",
+            "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl",
+            "time_created": 1793723636124,
+            "time_updated": 1793723636124
+          },
+          "surfacing": {
+            "editor": true,
+            "nameMatched": true,
+            "pathMatched": true,
+            "fileMatched": true,
+            "matchedAs": [
+              "name",
+              "qualifiedName"
+            ],
+            "matchedNames": [
+              "format_error"
+            ],
+            "statement": "'format_error' matches 1 indexed symbol name(s) and 1 qualified name(s), so this note renders in the editor hover section and graph badge.",
+            "pathNote": "path resolved to the indexed spelling 'apps/rebar/src/rebar_app_discover.erl'"
+          }
+        }
+      ],
+      "reads": [
+        {
+          "id": "A-project-wide-absence",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for this project yet\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for this project yet",
+          "path": null,
+          "symbol": null,
+          "rows": []
+        },
+        {
+          "id": "A-symbol-absence",
+          "args": {
+            "symbol": "bb-audit-name-that-does-not-exist"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"bb-audit-name-that-does-not-exist\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": false,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'bb-audit-name-that-does-not-exist' — absence declared, never guessed\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for 'bb-audit-name-that-does-not-exist' — absence declared, never guessed",
+          "path": null,
+          "symbol": "bb-audit-name-that-does-not-exist",
+          "rows": []
+        },
+        {
+          "id": "A-path-absence",
+          "args": {
+            "path": "apps/rebar/src/rebar_app_discover.erl"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"apps/rebar/src/rebar_app_discover.erl\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'apps/rebar/src/rebar_app_discover.erl' — absence declared, never guessed\"\n}",
+          "count": 0,
+          "totalCountIfKnown": 0,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": true,
+          "absenceNote": "no annotations stored for 'apps/rebar/src/rebar_app_discover.erl' — absence declared, never guessed",
+          "path": "apps/rebar/src/rebar_app_discover.erl",
+          "symbol": null,
+          "rows": []
+        },
+        {
+          "id": "R-symbol-plain",
+          "args": {
+            "symbol": "format_error"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"format_error\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error (name-level, rebar3",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "format_error",
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "R-symbol-subject-simple",
+          "args": {
+            "symbol": "format_error"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"format_error\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error (name-level, rebar3",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "format_error",
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "R-path",
+          "args": {
+            "path": "apps/rebar/src/rebar_app_discover.erl"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"apps/rebar/src/rebar_app_discover.erl\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "apps/rebar/src/rebar_app_discover.erl",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            }
+          ]
+        },
+        {
+          "id": "R-path-name-level",
+          "args": {
+            "path": "apps/rebar/src/rebar_app_discover.erl",
+            "includeNameLevel": true
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"apps/rebar/src/rebar_app_discover.erl\",\n  \"includeNameLevel\": true,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_e",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "apps/rebar/src/rebar_app_discover.erl",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "R-path-dot-prefixed",
+          "args": {
+            "path": "./apps/rebar/src/rebar_app_discover.erl"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"apps/rebar/src/rebar_app_discover.erl\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": "apps/rebar/src/rebar_app_discover.erl",
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            }
+          ]
+        },
+        {
+          "id": "R-all",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error (name-level, rebar3)\",\n     ",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "R-limit-1",
+          "args": {
+            "limit": 1
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 2,\n  \"truncated\": true,\n  \"truncationReason\": \"limit 1 reached; 2 annotations match this query — raise limit (max 200) or narrow the filter.\",\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+          "count": 1,
+          "totalCountIfKnown": 2,
+          "truncated": true,
+          "truncationReason": "limit 1 reached; 2 annotations match this query — raise limit (max 200) or narrow the filter.",
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            }
+          ]
+        },
+        {
+          "id": "R-limit-200",
+          "args": {
+            "limit": 200
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error (name-level, rebar3)\",\n     ",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "R-default-latency",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error (name-level, rebar3)\",\n     ",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": null,
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "X-limit-500",
+          "args": {
+            "limit": 500
+          },
+          "isError": true,
+          "text": "bb_annotations: limit must be a number between 1 and 200",
+          "truncationReason": null,
+          "absenceNote": null,
+          "rows": []
+        },
+        {
+          "id": "X-alias-target",
+          "args": {
+            "target": "format_error"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"format_error\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-0ae4c9b98bd80fe7f3f17a3091bf43adae78a28e9f71bb014836a3f3aa1430c4\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": \"apps/rebar/src/rebar_app_discover.erl\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl\",\n      \"time_created\": 1793723636124,\n      \"time_updated\": 1793723636124\n    },\n    {\n      \"id\": \"bbann-bfddc3849a50f6171b1c77bd45060503d117d49d5151f10eaf3f951e3c3852f3\",\n      \"symbol_name\": \"format_error\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"audit note on format_error (name-level, rebar3",
+          "count": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false,
+          "truncationReason": null,
+          "declaredAbsent": false,
+          "absenceNote": null,
+          "path": null,
+          "symbol": "format_error",
+          "rows": [
+            {
+              "symbol_name": "format_error",
+              "symbol_path": "apps/rebar/src/rebar_app_discover.erl",
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error scoped to apps/rebar/src/rebar_app_discover.erl"
+            },
+            {
+              "symbol_name": "format_error",
+              "symbol_path": null,
+              "author_class": "agent",
+              "tool_identity": "bb_annotate(mcp)",
+              "body": "audit note on format_error (name-level, rebar3)"
+            }
+          ]
+        },
+        {
+          "id": "X-unknown-option",
+          "args": {
+            "symbol": "format_error",
+            "bogus": 1
+          },
+          "isError": true,
+          "text": "error: bb_annotations: unknown or irrelevant options: bogus — accepted options: symbol, path, limit, includeNameLevel (aliases accepted: target, query)",
+          "truncationReason": null,
+          "absenceNote": null,
+          "rows": []
+        }
+      ],
+      "defaultCallLatency": {
+        "runs": [
+          25.285,
+          25.791,
+          26.16,
+          25.405,
+          26.866
+        ],
+        "p50Ms": 25.791,
+        "p95Ms": 26.866,
+        "minMs": 25.285,
+        "maxMs": 26.866,
+        "bytes": 1119
+      },
+      "nonJsonStdout": [],
+      "stderrTail": ""
+    }
+  }
+}

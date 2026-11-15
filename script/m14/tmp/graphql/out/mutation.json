@@ -1,0 +1,481 @@
+{
+  "mutants": 51,
+  "caught": 44,
+  "survived": 0,
+  "defeated": [
+    "empty-relationship-endpoint (by emitDirectiveApplications' emitter-level `if (!source || !target) return`)",
+    "empty-endpoint-not-refused-at-the-emitter (by the input-field arm's `if (fieldType)` guard)",
+    "unnamed-operation-ordinal-not-reset (by script/m14/tmp/graphql/probe/analyzer-reuse.mts (one instance, four documents, asserts the ordinal restarts))"
+  ],
+  "equivalent": [
+    "is-optional-by-text-scan",
+    "enum-value-declaration-confused-with-reference",
+    "find-descendant-children-order",
+    "enum-value-reference-descends-into-a-match"
+  ],
+  "staleEquivalences": 0,
+  "survivors": [],
+  "unapplied": [],
+  "results": [
+    {
+      "id": "range-includes-leading-description",
+      "defect": "C1: a definition's range started on its Description — 3,131 of 3,332 symbols on the GitHub public schema (94%) pointed at a docstring line (M59/#861 family rule)",
+      "caught": true,
+      "firstFailures": [
+        "threw: Transform failed with 1 error:\n/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-range-includes-leading-description.ts:1934:11: ERROR: Expected \";\" but found \"{\""
+      ]
+    },
+    {
+      "id": "no-line-on-relationships",
+      "defect": "C2: no relationship carried `line_number`, so the store's (source,target,type,line) identity collapsed two genuine facts of `f(x: Int): Int` into one row (M59 #825)",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative contains|Mutation|Mutation.createUser|64",
+        "01-sdl-core.graphql REL false-negative contains|Node|Node.id|18",
+        "01-sdl-core.graphql REL false-negative contains|Post|Post.author|36"
+      ]
+    },
+    {
+      "id": "no-type-extensions",
+      "defect": "C3: `extend type|interface|input|enum|union` members were dropped entirely — 0 of 7 members emitted on the corpus sample",
+      "caught": true,
+      "firstFailures": [
+        "02-extensions.graphql SYM false-negative property|b|6",
+        "02-extensions.graphql SYM false-negative property|c|7",
+        "02-extensions.graphql SYM false-negative property|legacyId|15"
+      ]
+    },
+    {
+      "id": "implements-direct-children-only",
+      "defect": "C4: `ImplementsInterfaces` is left-recursive, so reading only DIRECT children kept just the LAST implemented interface — 496 relationships lost across 47 corpus files under the patched grammar",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative implements|Query|Node|10",
+        "01-sdl-core.graphql REL false-negative implements|User|Node|25",
+        "01-sdl-core.graphql REL false-negative overrides|User.id|Node.id|26"
+      ]
+    },
+    {
+      "id": "union-members-direct-children-only",
+      "defect": "C5: same defect on the other left-recursive rule, `UnionMemberTypes`",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql: analyzer THREW this.directNamedTypes is not a function or its return value is not iterable",
+        "02-extensions.graphql: analyzer THREW this.directNamedTypes is not a function or its return value is not iterable"
+      ]
+    },
+    {
+      "id": "dedupe-drops-role",
+      "defect": "B1: the relationship dedupe key omitted the role, so a field whose argument type equals its return type lost one of the two facts",
+      "caught": true,
+      "firstFailures": [
+        "05-collision.graphql REL MULTIPLICITY references|Same.f|Int|6: got 1 want 2",
+        "05-collision.graphql REL MULTIPLICITY references|Same.g|Int|7: got 1 want 2"
+      ]
+    },
+    {
+      "id": "is-optional-is-only-non-null",
+      "defect": "C6: `isOptional` asked only `!NonNullType`, reporting BOTH nullable argument shapes as optional — the opposite of GraphQL's rule that a nullable argument is required unless it has a default",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql PARAM property|posts(first) isOptional=false default= — not produced",
+        "05-collision.graphql PARAM property|f(x) isOptional=false default= — not produced",
+        "05-collision.graphql PARAM property|g(x) isOptional=false default= — not produced"
+      ]
+    },
+    {
+      "id": "non-null-read-through-the-wrapper",
+      "defect": "C7: non-null-ness read one level too deep — a realistic mistake once the wrapper is not looked up by name",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql META property|search.nullable got true want false",
+        "06-identity.graphql PARAM property|f(nonNullWithDefault) isOptional=false default=3 — not produced"
+      ]
+    },
+    {
+      "id": "is-optional-by-text-scan",
+      "defect": "C7: the pre-fix read non-null-ness off `typeNode.text.includes(\"!\")` — a text scan where the grammar has a `NonNullType` node",
+      "caught": false,
+      "equivalentByConstruction": "a `Type` node's text contains `!` if and only if its first named child is a `NonNullType`, for every GraphQL this grammar accepts — `!` is not a legal character in a GraphQL name and the grammar has no other token that can carry it inside a `Type`. The two implementations are therefore extensionally equal on the whole input language, so no fixture can separate them. The defect is a readability/robustness one and is enforced by probe/no-text-scan.mts, not here."
+    },
+    {
+      "id": "no-directive-applications",
+      "defect": "C8: a directive applied to a declaration produced neither metadata nor a reference — Apollo Federation's `@key`/`@external`/`@requires` carry a subgraph's whole structure",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative uses|Query|@key|10",
+        "01-sdl-core.graphql REL false-negative uses|Role.GUEST|@deprecated|45",
+        "01-sdl-core.graphql REL false-negative uses|User|@key|25"
+      ]
+    },
+    {
+      "id": "no-variable-reference-sites",
+      "defect": "C9: a declared variable that was referenced recorded nothing, so every variable read as dead",
+      "caught": true,
+      "firstFailures": [
+        "03-executable.graphql REL false-negative uses|CreateUser|$input|19",
+        "03-executable.graphql REL false-negative uses|GetUser|$id|2",
+        "03-executable.graphql REL false-negative uses|GetUser|$withPosts|8"
+      ]
+    },
+    {
+      "id": "selections-never-qualified",
+      "defect": "G1: a selection inside a fragment or inline fragment targeted a BARE name, so `... on User { id }` pointed at an unqualified `id` that resolves to nothing",
+      "caught": true,
+      "firstFailures": [
+        "03-executable.graphql REL false-negative uses|GetUser|Admin.level|5",
+        "03-executable.graphql REL false-negative uses|UserFields|User.id|31",
+        "03-executable.graphql REL false-negative uses|UserFields|User.name|32"
+      ]
+    },
+    {
+      "id": "no-escape-resolution-in-docstrings",
+      "defect": "B2: `\"a \\\"quote\\\"\"` was published as `a \\\"quote\\\"` — the description VALUE was the raw inner text with its backslashes still in it",
+      "caught": true,
+      "firstFailures": [
+        "04-descriptions.graphql DOC property|f = \"field with a \\\\\\\"quoted\\\\\\\" word and a \\\\\\\\ backslash\" want \"field with a \\\"quoted\\\" word and a \\\\ backslash\""
+      ]
+    },
+    {
+      "id": "no-block-string-dedent",
+      "defect": "B3: a block description kept its common indent and its leading/trailing blank lines, so the published value was not the description's value",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql DOC namespace|schema = \"\\nThe root of the schema.\\n\" want \"The root of the schema.\"",
+        "04-descriptions.graphql DOC property|g = \"\\n  a multi-line block description\\n    with a deeper indent\\n  \" want \"a multi-line block description\\n  with a deeper indent\"",
+        "04-descriptions.graphql DOC class|B = \"\\nA block description.\\n\\n    indented block\\n  back to two\\n\" want \"A block description.\\n\\n    indented block\\n  back to two\""
+      ]
+    },
+    {
+      "id": "no-schema-docstring",
+      "defect": "C10: the `schema` namespace dropped its description",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql DOC namespace|schema = undefined want \"The root of the schema.\""
+      ]
+    },
+    {
+      "id": "repeatable-never-seen",
+      "defect": "A1: `repeatable` is an ANONYMOUS token, so a named-child scan never found it and every repeatable directive was published as non-repeatable",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql META function|@tag.repeatable got false want true"
+      ]
+    },
+    {
+      "id": "directive-locations-direct-children-only",
+      "defect": "C11: `DirectiveLocations` is left-recursive too, so `on A | B | C` published only the last location",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql META function|@auth.locations got [\"OBJECT\"] want [\"OBJECT\",\"FIELD_DEFINITION\"]",
+        "01-sdl-core.graphql META function|@tag.locations got [\"FIELD_DEFINITION\"] want [\"FIELD_DEFINITION\",\"OBJECT\"]"
+      ]
+    },
+    {
+      "id": "variable-type-edge-removed",
+      "defect": "D1: a VariableDefinition's declared type had NO relationship, while a field return type, an argument type and an input field type all had one — so `$c: Color` said nothing about `Color` and `returnType`/`rawType` carried the fact as a string where every sibling fact is an edge",
+      "caught": true,
+      "firstFailures": [
+        "03-executable.graphql REL false-negative references|$id|ID|1",
+        "03-executable.graphql REL false-negative references|$input|UserInput|18",
+        "03-executable.graphql REL false-negative references|$withPosts|Boolean|1"
+      ]
+    },
+    {
+      "id": "enum-value-reference-collector-disabled",
+      "defect": "D2: an enum member named in a VALUE position (an input field default, an argument default, a variable default, an executable field argument, a directive argument) was recorded only as an opaque string in `defaultValue`, so the enum member was a declared symbol that NOTHING ever referenced",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative uses|@auth|Role.ADMIN|72",
+        "01-sdl-core.graphql REL false-negative uses|UserInput.role|Role.USER|69",
+        "01-sdl-core.graphql RELMETA uses|@auth|Role.ADMIN|72: edge absent"
+      ]
+    },
+    {
+      "id": "directive-argument-type-edges-removed",
+      "defect": "D3: the DirectiveDefinition branch emitted the `@name` symbol with `parameters` and then NO relationships at all, so `directive @auth(requires: Role = ADMIN)` said nothing about `Role` — and a directive's argument type was the only declared type in the language with no edge to it",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative references|@auth|Role|72",
+        "01-sdl-core.graphql REL false-negative references|@tag|String|73",
+        "01-sdl-core.graphql RELMETA references|@auth|Role|72: edge absent"
+      ]
+    },
+    {
+      "id": "enum-value-qualification-dropped",
+      "defect": "D4: the enum-value edge is qualified `Enum.RED` only where the document itself states the type, and bare `RED` where it does not. Dropping the qualification collapses `Color.RED` to `RED` on every input field, argument and variable default — the two spellings are different facts and the store resolves them by different strategies",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative uses|@auth|Role.ADMIN|72",
+        "01-sdl-core.graphql REL false-negative uses|UserInput.role|Role.USER|69",
+        "01-sdl-core.graphql REL false-positive uses|UserInput.role|USER|69"
+      ]
+    },
+    {
+      "id": "enum-value-declaration-confused-with-reference",
+      "defect": "D5: the `EnumValue` node appears BOTH as a declaration (`EnumValueDefinition > EnumValue`, already a symbol with a `contains` edge) and as a reference (`Value > EnumValue`). Keying on the node type alone would publish a declaration as a reference to itself",
+      "caught": false,
+      "equivalentByConstruction": "NOT separable at the current call sites, and the reason is structural rather than convenient. All SIX call sites pass a `DefaultValue` or a `Value` node: four pass `DefaultValue` (whose only child is `Value`) and two pass `Value` directly. An `EnumValue` reached from either subtree therefore ALWAYS has a `Value` parent, so `n.parent?.type === \"Value\"` is true for every node the collector can reach, and dropping it changes no output on any input. The test is a CONTRACT on the helper — \"return references, not declarations\" — and it becomes load-bearing the moment a call site passes anything wider (a whole `Directive`, a `Definition`, a selection set). Declared equivalent rather than quietly deleted, because the guard is correct and a future call site is exactly when it would matter. What IS pinned at the call sites is D2 (the collector returning nothing) and D4 (the qualification), both caught."
+    },
+    {
+      "id": "find-descendant-children-order",
+      "defect": "E1: the iterative `findDescendant` pushed children FORWARD, so it popped the LAST child first and returned a different first match — a different NamedType, and therefore a different type reference. A right answer for the wrong reason, and invisible to any fixture that has one clause",
+      "caught": false,
+      "equivalentByConstruction": "DERIVABLE from the grammar, not merely unobserved by the fixtures. `findDescendant` is called on two shapes and both admit exactly one match. (1) A `Type` subtree: `Type: NamedType | ListType | NonNullType`, `ListType: '[' Type ']'`, `NonNullType: (NamedType | ListType) '!' | Type '!'` — by induction a Type subtree contains EXACTLY ONE NamedType, so the order in which children are examined cannot change the result. (2) A `DirectiveLocation`: `DirectiveLocation: ExecutableDirectiveLocation | TypeSystemDirectiveLocation`, a CHOICE with exactly one child. So pushing children forward instead of backward returns the same node on every input this grammar can produce. The reverse-order push is kept because it makes the helper correct for a predicate that CAN match more than once — `collectNamedTypes` is that predicate, and it is a different function — and because a grammar change adding a second NamedType to a Type would otherwise silently start returning the wrong one."
+    },
+    {
+      "id": "collect-named-types-first-clause-only",
+      "defect": "E2: `ImplementsInterfaces` and `UnionMemberTypes` are LEFT-recursive, so `A & B & C` nests; collecting only the first NamedType silently dropped every clause after the first, which is the defect the pre-pass exists to prevent",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative implements|Query|Timestamped|10",
+        "01-sdl-core.graphql REL false-negative implements|User|Timestamped|25",
+        "01-sdl-core.graphql REL false-negative overrides|User.createdAt|Timestamped.createdAt|27"
+      ]
+    },
+    {
+      "id": "enum-value-reference-descends-into-a-match",
+      "defect": "E3: an `EnumValue` in a value position is a leaf — there is nothing below it. Descending into it is harmless today, but the loop form uses `continue` where the recursion used `return`, and `continue` that descended would make the walk unbounded on a cyclic-looking shape",
+      "caught": false,
+      "equivalentByConstruction": "The grammar says `EnumValue: Name` — an EnumValue node's only content is a `Name`, and a `Name` is never an `EnumValue`. So descending into a matched EnumValue cannot find another EnumValue, and the collector returns the same list on every input this grammar can produce. Kept as `continue` (do not descend) anyway, because it states the intent — an enum value in a value position is a LEAF — and because the loop form needs an explicit decision there where the recursion got it from `return`."
+    },
+    {
+      "id": "extension-of-declared-type-publishes-a-second-symbol",
+      "defect": "B4: an `extend` of a type the same file also declares minted a SECOND symbol of the same identity — a duplicate row in the index (this is the bug the `topLevelDefinitions` descent fix closed)",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql META documentKind = empty, want type_system",
+        "02-extensions.graphql SYM false-positive class|Query|5",
+        "02-extensions.graphql SYM false-positive interface|Node|14"
+      ]
+    },
+    {
+      "id": "declared-type-relabelled-back-to-uses",
+      "defect": "R9 regression: the five positions where a DECLARATION writes a type name were re-published as `uses`. Every retyped fact is ALSO a `mustNotEmit` row under its old label, so this is caught by the pin set and not only by the diff",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-negative references|@auth|Role|72",
+        "01-sdl-core.graphql REL false-negative references|@tag|String|73",
+        "01-sdl-core.graphql REL false-negative references|Mutation.createUser|User|64"
+      ]
+    },
+    {
+      "id": "declared-type-marker-dropped",
+      "defect": "R9 regression, second half: the edge keeps the `references` label but loses `metadata.relationshipType='declared_type'`, so every consumer filtering on the family marker (script/m60/declared-type-refs-census.ts) silently misses the lane",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql RELMETA references|@auth|Role|72.relationshipType: got undefined want \"declared_type\"",
+        "01-sdl-core.graphql RELMETA references|@tag|String|73.relationshipType: got undefined want \"declared_type\"",
+        "01-sdl-core.graphql RELMETA references|Mutation.createUser|User|64.relationshipType: got undefined want \"declared_type\""
+      ]
+    },
+    {
+      "id": "exports-edge-removed",
+      "defect": "the `exports` EDGE reverted to ExportInfo only, which `parallel-indexer.ts` does not read — so the schema's public surface reached no graph and `exports` went back to being an un-emitted ontology type",
+      "caught": true,
+      "firstFailures": [
+        "threw: Transform failed with 1 error:\n/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-exports-edge-removed.ts:1296:8: ERROR: Unexpected \"...\""
+      ]
+    },
+    {
+      "id": "imports-family-removed",
+      "defect": "the `#import` convention stops being read, so `imports` returns to 0 edges — the state the lane was handed, and the state in which 170 real cross-file edges across 131 corpus files are invisible",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/user.gql|9",
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/user-fields.gql|11",
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/all.gql|13"
+      ]
+    },
+    {
+      "id": "import-source-becomes-the-file-sentinel",
+      "defect": "the imports SOURCE reverts to the `(\"(file)\")` literal this file's `exports` edges use. CSS moved off that literal for exactly this reason (real-css-analyzer.ts:2029-2038): a magic source names no symbol in any document, so every edge is unjoinable",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/user.gql|9",
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/user-fields.gql|11",
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/all.gql|13"
+      ]
+    },
+    {
+      "id": "import-bindings-first-only",
+      "defect": "the binding list stops at the first name. This is the defect the deep review actually found in the measuring probe: `# import First, Second from \"...\"` is 12 of the corpus's 170 directives, and a reader that stopped at the first name produced [\"First,\"] and then read `Second` where it expected `from` and returned null — so the one form it failed on was silently the form that could not be expressed at all",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/pair.gql|15",
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/pair.gql|15: edge absent"
+      ]
+    },
+    {
+      "id": "import-form-always-bare",
+      "defect": "`importForm` is flattened to `bare`, so a reader cannot tell a whole-document inclusion from a named binding — the distinction is what separates 117 of the corpus's 170 directives from 53",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/user-fields.gql|11.importForm: got \"bare\" want \"from_binding\"",
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/all.gql|13.importForm: got \"bare\" want \"from_binding\"",
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/pair.gql|15.importForm: got \"bare\" want \"from_binding\""
+      ]
+    },
+    {
+      "id": "import-bindings-key-dropped",
+      "defect": "`importBindings` is never published. This is the key that distinguishes the comma-separated form, and asserting it only became possible when score.mts stopped comparing metadata with `!==` — two arrays holding equal contents are never the same reference, so before that fix the key was UNASSERTABLE and omitting it left the fact unchecked",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/user-fields.gql|11.importBindings: got undefined want [\"UserFields\"]",
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/all.gql|13.importBindings: got undefined want [\"*\"]",
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/pair.gql|15.importBindings: got undefined want [\"First\",\"Second\"]"
+      ]
+    },
+    {
+      "id": "import-unterminated-quote-read-to-end-of-line",
+      "defect": "an unterminated quote is read to end-of-line instead of being refused, so `#import \"./unterminated.graphql` invents a target that was never written. Reading to the closing quote is what makes the malformed line a non-edge rather than a fabricated one",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql REL false-positive imports|10-file-imports.graphql|./fragments/unterminated.graphql|28",
+        "10-file-imports.graphql REL phantom imports|10-file-imports.graphql|./fragments/unterminated.graphql|28"
+      ]
+    },
+    {
+      "id": "import-as-form-rejected",
+      "defect": "`#import \"./x.gql\" as Name` is refused. It is a bare directive with a local name attached, it occurs in the corpus, and refusing it drops a real directive while looking like a stricter reader",
+      "caught": true,
+      "firstFailures": [
+        "10-file-imports.graphql REL false-negative imports|10-file-imports.graphql|./fragments/legacy.gql|17",
+        "10-file-imports.graphql RELMETA imports|10-file-imports.graphql|./fragments/legacy.gql|17: edge absent"
+      ]
+    },
+    {
+      "id": "overrides-edge-removed",
+      "defect": "the member-supplied-from-an-interface post-pass removed, so the one override-shaped construct GraphQL has (spec 3.6 requires the object to supply every interface member) emitted nothing — 1,054 occurrences over 4 corpus files",
+      "caught": true,
+      "firstFailures": [
+        "threw: Transform failed with 1 error:\n/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-overrides-edge-removed.ts:1230:19: ERROR: Expected \";\" but found \":\""
+      ]
+    },
+    {
+      "id": "extends-label-collapsed-to-implements",
+      "defect": "heritage label always `implements`, so an `implements` clause naming a supertype the document declares to be an OBJECT type is reported as interface conformance — the contract battery forbids exactly that pairing",
+      "caught": true,
+      "firstFailures": [
+        "08-heritage-and-exports.graphql REL false-negative extends|Sub|Base|26",
+        "08-heritage-and-exports.graphql REL false-positive implements|Sub|Base|26",
+        "08-heritage-and-exports.graphql RELMETA extends|Sub|Base|26: edge absent"
+      ]
+    },
+    {
+      "id": "extends-guessed-when-the-document-is-silent",
+      "defect": "heritage label `extends` whenever the document does not declare the supertype AS AN INTERFACE — the cross-file guess. 11 of the corpus's object-typed supertypes are declared by files other than the one carrying the clause, so this manufactures edges from silence",
+      "caught": true,
+      "firstFailures": [
+        "08-heritage-and-exports.graphql REL false-negative implements|Orphan|Unknown|31",
+        "08-heritage-and-exports.graphql REL false-positive extends|Orphan|Unknown|31",
+        "08-heritage-and-exports.graphql RELMETA implements|Orphan|Unknown|31: edge absent"
+      ]
+    },
+    {
+      "id": "evidence-class-dropped",
+      "defect": "`metadata.evidenceClass` removed from every relationship, so the honesty contract 4.3 ratio (structural vs heuristic) has no machine-readable key on this lane and 38 sibling lanes lose their only common filter",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql RELMETA contains|Mutation|Mutation.createUser|64.evidenceClass: got undefined want \"structural\"",
+        "01-sdl-core.graphql RELMETA contains|Node|Node.id|18.evidenceClass: got undefined want \"structural\"",
+        "01-sdl-core.graphql RELMETA contains|Post|Post.author|36.evidenceClass: got undefined want \"structural\""
+      ]
+    },
+    {
+      "id": "scalar-extension-emits-a-symbol",
+      "defect": "B5: `extend scalar S` minted a `type S` even though a scalar extension has no members — a duplicate identity beside the file's own `scalar S`",
+      "caught": true,
+      "firstFailures": [
+        "06-identity.graphql SYM false-positive type|Timestamp|37",
+        "06-identity.graphql SYM false-positive type|URL|38",
+        "06-identity.graphql SYM phantom \"Timestamp\""
+      ]
+    },
+    {
+      "id": "root-operation-duplicated-across-definition-and-extension",
+      "defect": "B6: a `schema` plus an `extend schema` that both declare `query` minted two `query` property symbols with the same identity",
+      "caught": true,
+      "firstFailures": [
+        "06-identity.graphql SYM false-positive property|query|16",
+        "06-identity.graphql REL false-positive contains|schema|schema.query|16",
+        "06-identity.graphql REL false-positive uses|schema.query|Query|16"
+      ]
+    },
+    {
+      "id": "exports-every-scope-empty-symbol",
+      "defect": "B7: `exports` published every scope-empty symbol, so a query document's operations and fragments were exported names of the file",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql REL false-positive exports|(file)|query|5",
+        "01-sdl-core.graphql REL false-positive exports|(file)|mutation|6",
+        "01-sdl-core.graphql REL false-positive exports|(file)|user|12"
+      ]
+    },
+    {
+      "id": "anonymous-identity-uses-a-line-number",
+      "defect": "C12, twice over and in both directions. The FIRST form was `Anonymous_<op>_<line>`; the second, which this analyzer shipped for a while, was `anonymous_operation_<startIndex>`. The first is a name that no longer matches the source after one line is inserted above it; the second matches /^(anonymous|anon|unnamed)[_-]/i and is therefore discarded at store time by isIndexArtifactName (src/ast/analysis-exclusions.ts:171) — 66 emitted, 0 stored, 836 relationships left with no source. The identity now published is the file that holds the operation plus its ordinal. This mutant reintroduces the line-derived half, so the differential must separate it from the ordinal.",
+      "caught": true,
+      "firstFailures": [
+        "03-executable.graphql SYM false-negative method|03-executable::operation_0|36",
+        "03-executable.graphql SYM false-positive method|Anonymous_query_36|36",
+        "03-executable.graphql REL false-negative uses|03-executable::operation_0|ping|37"
+      ]
+    },
+    {
+      "id": "field-selection-can-target-itself",
+      "defect": "B8: no self-edge guard, so a selection whose field is named after its operation published `uses|Op|Op`",
+      "caught": true,
+      "firstFailures": [
+        "06-identity.graphql REL false-positive uses|Query|Query|21",
+        "06-identity.graphql REL phantom uses|Query|Query|21"
+      ]
+    },
+    {
+      "id": "both-empty-endpoint-guards-removed",
+      "defect": "B9+B10 together: the caller's `if (returnType)` guard AND the emitter's `if (!source || !target)` refusal. Either alone is sufficient, so each single-removal mutant is defeated by the other — defence in depth, measured, and recorded as such — and only the pair produces the junk row. This is the mutant that pins the requirement.",
+      "caught": true,
+      "firstFailures": [
+        "07-damaged.graphql REL false-positive references|Damaged.bad||24",
+        "07-damaged.graphql REL references|\"Damaged.bad\"->\"\" names nothing"
+      ]
+    },
+    {
+      "id": "empty-relationship-endpoint",
+      "defect": "B9: the guard was `if (typeNode)` while the fact is the RESOLVED NAME, so a recovered `Type` node with a MISSING `Name` published `uses Damaged.bad -> \"\"` — a relationship whose target names nothing. Found by script/m12/graphql-contract-probe.ts, which had been failing this check since 2026-09-14. NOTE: this mutant removes ONE of two independent guards, and the emitter-level refusal defeats it — see `both-empty-endpoint-guards-removed`, which is the mutant that pins the requirement.",
+      "caught": false,
+      "firstFailures": []
+    },
+    {
+      "id": "empty-endpoint-not-refused-at-the-emitter",
+      "defect": "B10: the second half of B9 — nothing at the emitter refused an empty source or target, so any other route to one would publish a junk row. NOTE: likewise defeated by the caller's `if (returnType)` guard; the pair-removal mutant is the one that pins the requirement.",
+      "caught": false,
+      "firstFailures": []
+    },
+    {
+      "id": "unnamed-operation-ordinal-not-reset",
+      "defect": "The unnamed-operation identity numbers the operations of a DOCUMENT, and the counter lives on the analyzer instance. A pooled worker reuses one instance across files, so without the per-`analyze` reset the second file's only unnamed operation publishes as `<stem>::operation_2`. Not catchable by this harness or by run-fixtures.ts, because BOTH construct a fresh analyzer per file (score.mts:77 does `new Analyzer()` inside the loop, and a fixture is one file) and therefore start the counter at 0 regardless. Verified: this mutant SURVIVES the fixture suite 5/5 and is caught by probe/analyzer-reuse.mts, which reuses one instance and exits 1.",
+      "caught": false,
+      "firstFailures": []
+    },
+    {
+      "id": "complexity-ignores-relationships",
+      "defect": "D1: `complexity` counted symbols only, where every other data-language analyzer (lua, json) counts symbols + relationships",
+      "caught": true,
+      "firstFailures": [
+        "01-sdl-core.graphql META complexity = 42, want symbols+relationships = 130",
+        "02-extensions.graphql META complexity = 20, want symbols+relationships = 52",
+        "03-executable.graphql META complexity = 8, want symbols+relationships = 34"
+      ]
+    },
+    {
+      "id": "document-kind-always-empty",
+      "defect": "D2: `documentKind` read `Definition` off the root, so every file was classified `empty`",
+      "caught": true,
+      "firstFailures": [
+        "03-executable.graphql META documentKind = type_system, want executable",
+        "06-identity.graphql META documentKind = type_system, want mixed"
+      ]
+    }
+  ]
+}

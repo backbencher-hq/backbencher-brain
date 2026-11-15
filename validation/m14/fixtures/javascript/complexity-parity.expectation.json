@@ -1,0 +1,18 @@
+{
+  "fixtureId": "javascript/complexity-parity",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: cyclomatic complexity = 1 + decisions (branch constructs + short-circuit operators). Decisions here: if + for-in + while + && + do + ?? = 6 -> g must be exactly 7. The old counters missed do_statement, for_in_statement, and all short-circuit operators.",
+  "expectSymbols": [
+    {
+      "name": "g",
+      "kind": "function"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "g",
+      "equals": 7
+    }
+  ]
+}

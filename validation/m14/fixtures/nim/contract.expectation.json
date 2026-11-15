@@ -1,0 +1,557 @@
+{
+  "comment": "NIM CONTRACT fixture. Every construct the M12 symbol/relationship contract claims, in one compiler-validated file. The SOURCE is accepted by the real Nim 2.2.12 compiler (`nim check`, 0 errors — recorded at /home/ishaq2321/bb_tests/nim/fixture-src/contract.nim), so nothing pinned here is a construct the language rejects. Expectations are written from NIM SEMANTICS (what a declaration IS) and the kind-mapping table in docs/analyzers/nim.md, not copied from analyzer output: the point of a fixture is to fail when the analyzer drifts from the language.",
+  "expectSymbols": [
+    {
+      "name": "Color",
+      "kind": "enum",
+      "comment": "a `type X = enum` is an enum"
+    },
+    {
+      "name": "Red",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "Green",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "Blue",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "Shape",
+      "kind": "class",
+      "comment": "`ref object` has identity + inheritance + dynamic dispatch -> class (a plain `object` would be struct)"
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "ownerName": "Shape"
+    },
+    {
+      "name": "sides",
+      "kind": "property",
+      "ownerName": "Shape"
+    },
+    {
+      "name": "color",
+      "kind": "property",
+      "ownerName": "Shape"
+    },
+    {
+      "name": "Rect",
+      "kind": "class",
+      "comment": "`ref object of Shape` — a class"
+    },
+    {
+      "name": "w",
+      "kind": "property",
+      "ownerName": "Rect"
+    },
+    {
+      "name": "h",
+      "kind": "property",
+      "ownerName": "Rect"
+    },
+    {
+      "name": "Registry",
+      "kind": "struct",
+      "comment": "a plain `object` copies -> struct"
+    },
+    {
+      "name": "items",
+      "kind": "property",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "Pair",
+      "kind": "struct",
+      "comment": "`tuple[x, y: int]` is a struct: it has named fields, it is destructurable (`let (a, b) = pair`) and its fields are readable as `pair.x`. The kind was WRONG until the mutation run: the classifier never saw through the grammar's `type_expression` wrapper, so it fell through to a bare `type` and the documented rule had no test behind it"
+    },
+    {
+      "name": "Meters",
+      "kind": "type",
+      "comment": "`distinct float` is a type-level name"
+    },
+    {
+      "name": "Addable",
+      "kind": "interface",
+      "comment": "a `concept` is a compile-time structural interface"
+    },
+    {
+      "name": "MaxItems",
+      "kind": "constant",
+      "comment": "top-level `const`"
+    },
+    {
+      "name": "Names",
+      "kind": "constant"
+    },
+    {
+      "name": "Greeting",
+      "kind": "variable",
+      "comment": "top-level `let` is a value binding"
+    },
+    {
+      "name": "counter",
+      "kind": "variable"
+    },
+    {
+      "name": "area",
+      "kind": "function",
+      "meta.nimCallableKind": "proc",
+      "comment": "`proc` -> function"
+    },
+    {
+      "name": "double",
+      "kind": "function",
+      "meta.nimCallableKind": "func",
+      "comment": "`func` -> function (a side-effect-free proc)"
+    },
+    {
+      "name": "withDefaults",
+      "kind": "function"
+    },
+    {
+      "name": "describe",
+      "kind": "method",
+      "meta.nimCallableKind": "method",
+      "comment": "`method` -> method (dynamic dispatch on the first parameter's type)"
+    },
+    {
+      "name": "countUp",
+      "kind": "function",
+      "meta.nimCallableKind": "iterator"
+    },
+    {
+      "name": "toFloat",
+      "kind": "function",
+      "meta.nimCallableKind": "converter"
+    },
+    {
+      "name": "twice",
+      "kind": "macro",
+      "meta.nimCallableKind": "template",
+      "comment": "`template` expands at compile time -> macro"
+    },
+    {
+      "name": "Builder",
+      "kind": "struct"
+    },
+    {
+      "name": "parts",
+      "kind": "property",
+      "ownerName": "Builder"
+    },
+    {
+      "name": "add",
+      "kind": "function"
+    },
+    {
+      "name": "build",
+      "kind": "function"
+    },
+    {
+      "name": "makeRect",
+      "kind": "function"
+    },
+    {
+      "name": "exercise",
+      "kind": "function"
+    },
+    {
+      "name": "Anon",
+      "kind": "struct",
+      "comment": "the ORDINARY unnamed tuple spelling, `(int, string)`, which the grammar types as tuple_construction rather than tuple_type. The compiler accepts this with 0 errors and rejects `tuple[int, string]` with 3, so it is the form real code uses — and before the mutation run it published a bare `type` while the named spelling beside it published a struct"
+    },
+    {
+      "name": "area",
+      "kind": "function",
+      "docstringEndsWith": "Exercised as a doc comment through the real CLI.",
+      "comment": "Nim's `##` doc comment reaches the symbol. Losing it is invisible in a symbol count, which is exactly why it needed a pin"
+    },
+    {
+      "name": "fileStem",
+      "kind": "property",
+      "comment": "the field genuinely EXISTS — it is `FileInfo.fileStem` at line 74. Asserting it is what makes the shadow pin meaningful: the `uses stemOf -> fileStem` forbid is only a real assertion because there is a real field for the misattribution to have landed on, and without this pin a fix that deleted the field outright would satisfy the forbid vacuously"
+    },
+    {
+      "name": "describe",
+      "kind": "method",
+      "comment": "`overrides` endpoints are receiver-qualified (`Rect.describe`) because the bare name `describe` cannot address either end, so a consumer walking INBOUND has no way to reach that endpoint unless some symbol publishes the qualified spelling. Measured with script/m14/incoming-check.ts on nim/lib/pure (105 files, 6,638 symbols) before this field existed: 14 of 14 `overrides` edges reported UNRESOLVED. The worker's `scope`-derived fallback cannot recover it, because a method's owner is `ownerName`, not `scope`.",
+      "meta.fqn": "Shape.describe"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "s",
+      "kind": "variable",
+      "comment": "function-LOCAL `let s` is an execution artifact, never a symbol (LocalsAreNotSymbols)"
+    },
+    {
+      "name": "a",
+      "kind": "variable",
+      "comment": "function-local `let a`"
+    },
+    {
+      "name": "b",
+      "kind": "variable",
+      "comment": "function-local `var b`"
+    },
+    {
+      "name": "r",
+      "kind": "variable",
+      "comment": "function-local `let r`"
+    },
+    {
+      "name": "d",
+      "kind": "variable",
+      "comment": "function-local `let d`"
+    },
+    {
+      "name": "i",
+      "kind": "variable",
+      "comment": "for-loop variable"
+    },
+    {
+      "name": "x",
+      "kind": "variable",
+      "comment": "a macro/template parameter is not a symbol"
+    },
+    {
+      "name": "e",
+      "kind": "variable",
+      "comment": "`except … as e` binds a local, not a symbol"
+    },
+    {
+      "name": "retTrue",
+      "kind": "function",
+      "comment": "a macro imported from another file is not declared in THIS file"
+    },
+    {
+      "name": "Anon",
+      "kind": "type",
+      "comment": "the negative twin of the pin above: Anon must be a struct, never a bare type. Two spellings of the same language construct, pinned in both directions, so a half-fix that handles only tuple_type or only tuple_construction fails here"
+    },
+    {
+      "name": "T",
+      "kind": "type",
+      "comment": "a generic PARAMETER is bound by `type Registry*[T]`, not declared by it, so there is nothing for a reference to resolve to"
+    },
+    {
+      "name": "_",
+      "kind": "variable",
+      "comment": "the blank identifier appears in every destructuring pattern and every `proc f(_: int)` signature; it declares nothing"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Shape",
+      "target": "name",
+      "comment": "owner -> field",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Color",
+      "target": "Red",
+      "comment": "owner -> enum member",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Rect",
+      "target": "w",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "from": "Rect",
+      "target": "Shape",
+      "meta.relationshipType": "nim_object_inheritance",
+      "comment": "`ref object of Shape` is a real inheritance edge",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "Rect.describe",
+      "target": "Shape.describe",
+      "comment": "a method override is owner-qualified: `Receiver.method` (the name alone cannot address either end)",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "area",
+      "target": "Rect",
+      "comment": "a parameter's declared type is a dependency; the tier is `reference_qualified` because the type name is qualified by a declaration rather than by an import",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "instantiates",
+      "from": "makeRect",
+      "target": "Rect",
+      "comment": "`Rect(...)` is object construction",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "references",
+      "from": "exercise",
+      "target": "Builder",
+      "comment": "a `var b: Builder` annotation is a declared-type dependency"
+    },
+    {
+      "type": "references",
+      "from": "area",
+      "target": "Rect",
+      "comment": "a parameter's declared type is a dependency; the tier is `reference_qualified` because the type name is qualified by a declaration rather than by an import",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "os",
+      "meta.relationshipType": "nim_import",
+      "comment": "`import std/[os, strutils]` is a module LIST: one edge per element, and the kind is the FIRST-CLASS `imports` (the LSP usages file-level section reads relationship_type IN ('imports','exports'), so a `references` edge here would be invisible to it). The TARGET is the MODULE NAME `os`, which is what the module symbol is published as; the written path is kept on `meta.nimModulePath`",
+      "meta.evidenceClass": "import_based",
+      "meta.nimModulePath": "std/os"
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "helpers",
+      "meta.relationshipType": "nim_import",
+      "comment": "a single-segment RELATIVE import is one edge whose target is the module NAME. This row USED to pin the verbatim spelling `./helpers`; that contract is withdrawn because the graph published no module symbol, so a verbatim path target had no candidate to bind to and 8,404 of 13,364 corpus `imports` edges were permanently unresolved (census.ts, 6,063 files). `meta.nimModulePath` keeps the written path",
+      "meta.evidenceClass": "import_based",
+      "meta.nimModulePath": "./helpers"
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "shared",
+      "meta.relationshipType": "nim_import",
+      "comment": "a parent-relative import is one edge, not dropped for having no `/` segment, and it targets the module NAME `shared` for the same reason as `./helpers` above",
+      "meta.evidenceClass": "import_based",
+      "meta.nimModulePath": "../shared"
+    },
+    {
+      "type": "calls",
+      "from": "exercise",
+      "target": "makeRect",
+      "comment": "a plain call to a proc this file declares",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "exercise",
+      "target": "countUp",
+      "comment": "an iterator is callable and is a `function` symbol",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "build",
+      "target": "join",
+      "comment": "a UFCS call — `b.parts.join(\",\")` has no dot-call node, the member leaf is the callee",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "exercise",
+      "target": "Greeting",
+      "comment": "a bare read of a module-level `let` is a value dependency",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "build",
+      "target": "parts",
+      "comment": "the member leaf of a UFCS read (`b.parts.join`) is a `uses` edge, distinct from the `calls` edge to the same expression",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "references",
+      "from": "makeRect",
+      "target": "Rect",
+      "meta.evidenceClass": "import_based",
+      "comment": "the same declared-type reference class as `area -> Rect`, but a DIFFERENT evidence tier: `Rect` is resolved through the `./helpers`/`./mac` import graph, so the edge is marked import_based. Two tiers for one kind is the point of pinning evidenceClass at all"
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "globs",
+      "line_number": 7,
+      "comment": "the line of the MODULE TOKEN, not of the `import` keyword. A multi-line import puts the paths on later lines than the keyword (the corpus's own compiler/nimsets.nim has `import` on 12 and its paths on 13), so anchoring to the directive points a reader at the wrong line. Target is the module NAME `globs`",
+      "meta.nimModulePath": "std/private/globs"
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "mac",
+      "line_number": 67,
+      "comment": "a from-import's line is still the module token's, and a second line pin so the rule cannot be satisfied by anchoring every import to the file's first line. Target is the module NAME `mac`",
+      "meta.nimModulePath": "./mac"
+    },
+    {
+      "type": "contains",
+      "from": "Shape",
+      "target": "name",
+      "line_number": 16,
+      "comment": "a field's line is the field's own"
+    },
+    {
+      "type": "overrides",
+      "from": "Rect.describe",
+      "target": "Shape.describe",
+      "line_number": 51,
+      "comment": "an override's line is the DERIVED method's line, not the base's — 51 is Rect's describe, and pinning the base's line (50) would let a rule that reads the wrong node pass"
+    },
+    {
+      "type": "instantiates",
+      "from": "makeRect",
+      "target": "Rect",
+      "line_number": 91,
+      "comment": "a construction's line is the call's"
+    },
+    {
+      "type": "uses",
+      "from": "exercise",
+      "target": "Greeting",
+      "line_number": 108,
+      "comment": "a read's line is the identifier's"
+    },
+    {
+      "type": "references",
+      "from": "area",
+      "target": "Rect",
+      "line_number": 41,
+      "comment": "a parameter's type reference is anchored to the PARAMETER, not to the proc"
+    },
+    {
+      "type": "calls",
+      "from": "exercise",
+      "target": "build",
+      "comment": "`let s = b.build` is a PARENLESS UFCS CALL — `b.build` invokes `build(b)`, written with no parentheses and no call node, so it is invisible to a callee test. The analyzer used to publish nothing here at all; the differential oracle shared the omission, so the lane reported 0% unexplained on a shape both got wrong"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "echo",
+      "comment": "Nim's `echo` is a compiler builtin, never a call target (NIM_BUILTINS)"
+    },
+    {
+      "type": "calls",
+      "target": "discard",
+      "comment": "`discard` is a keyword"
+    },
+    {
+      "type": "calls",
+      "target": "float",
+      "comment": "a numeric conversion is a builtin, not a user call"
+    },
+    {
+      "type": "uses",
+      "from": "makeRect",
+      "target": "name",
+      "comment": "`Rect(name: \"r\", w: w, …)` NAMES the field `name`; it does not read it. Nim has no ternary, so `x: value` in an expression only ever names a field of a construction or a variant branch. Constrained by SOURCE because a legitimate read of the same field exists — `method describe(s: Shape) = s.name` — and a target-only pin would forbid both"
+    },
+    {
+      "type": "uses",
+      "from": "stemOf",
+      "target": "fileStem",
+      "comment": "`let (_, fileStem, _) = splitFile(path)` binds `fileStem` LOCALLY, so the read below it is a read of the local, not of `FileInfo.fileStem`. The pre-fix frame binder took only children typed symbol_declaration and skipped the wrapping tuple_deconstruct_declaration whole, so the binding was never in scope and this read was attributed to the struct property declared 60 lines earlier. Not a dangling edge — the target is a real symbol — so no dangling check could ever have caught it"
+    },
+    {
+      "type": "uses",
+      "from": "build",
+      "target": "written",
+      "comment": "`written = b.parts.len` is a WRITE. The right-hand side is the read; the left side is the target. Constrained by source because the read of `written` elsewhere in the file is legitimate"
+    },
+    {
+      "type": "uses",
+      "from": "exercise",
+      "target": "makeRect",
+      "comment": "the callee of a call is a `calls` edge and NOT also a `uses` read — one call site, one edge. The pre-fix read pass did not exclude the callee subtree, so every call site produced two edges to one target"
+    },
+    {
+      "type": "uses",
+      "from": "(global)",
+      "target": "x",
+      "comment": "the `x` of `type Addable = concept x` is a concept's formal PARAMETER and the reads in its body `(x + x) is SomeNumber` are reads of that binding, not of any value. A concept is the one formal parameter in Nim written with no symbol_declaration wrapper and no type annotation, so nothing else in the read pass recognised it"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ],
+  "note": "This fixture's value is the FORBID half as much as the expect half: it pins that locals/params/keywords/builtins stay OUT of the symbol and call graphs, which is the class of phantom every M12 defect has been.",
+  "expectComplexity": [
+    {
+      "symbol": "exercise",
+      "equals": 3,
+      "comment": "a decision count over the analyzer's own grammar-derived cyclomatic rule: the `for`, the `try`, and the `except` branch are the three decision points"
+    },
+    {
+      "symbol": "countUp",
+      "equals": 2,
+      "comment": "the `for` range is one decision point, so a bare loop is 2 and not 1 — a complexity measure that scored every file 1 would pass this suite vacuously"
+    },
+    {
+      "symbol": "area",
+      "equals": 1,
+      "comment": "a straight-line body is 1, which is what makes the two rows above discriminating"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "std/os",
+      "meta.nimModuleList": true,
+      "comment": "`import std/[os, strutils]` is a module LIST; the element carries the list marker and the path is `prefix/element`"
+    },
+    {
+      "module": "std/strutils",
+      "meta.nimModuleList": true
+    },
+    {
+      "module": "std/macros",
+      "comment": "a plain two-segment path"
+    },
+    {
+      "module": "std/private/globs",
+      "comment": "a THREE-segment path — the shape the pre-fix path reader dropped wholesale, because the grammar types the separator as a named `operator` node whose text is the whole token, so `op.type` is never `/`. 171 such imports across 141 corpus files published no edge at all"
+    },
+    {
+      "module": "./helpers",
+      "comment": "a single-segment relative import keeps the written spelling"
+    },
+    {
+      "module": "../shared",
+      "comment": "a parent-relative import is a path, not dropped for lacking a `/` segment"
+    },
+    {
+      "module": "./mac",
+      "meta.nimFromImport": true,
+      "comment": "the `from … import` form over a RELATIVE module. The pre-fix code had a second path reader here that recursed to identifier leaves, so this published `./mac`'s module as `mac` while the sibling `import ./configure` published `./configure`: two spellings for one module in one graph"
+    }
+  ],
+  "expectDecorators": [
+    {
+      "symbol": "area",
+      "contains": "inline",
+      "comment": "`{.inline.}` is a calling-convention contract on a proc"
+    },
+    {
+      "symbol": "describe",
+      "contains": "base",
+      "comment": "`{.base.}` marks the ROOT of the override chain — without it the overrides edge is unexplainable from the symbol alone, since two methods share the name `describe`"
+    }
+  ]
+}

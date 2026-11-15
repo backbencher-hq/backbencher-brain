@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_doc",
+  "generatedAt": "2026-11-01T18:46:26.103Z",
+  "env": {
+    "BB_DATA_DIR": "validation/tools/bb_doc/bbdata",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "fixture": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_doc/work/extra-xMNJKt",
+    "projectId": "3d92d674f75d1ce18baeb75db74dc1c3f2993b87"
+  },
+  "observations": [
+    {
+      "id": "E1.relationship-citation-shape",
+      "ok": true,
+      "detail": "[{\"id\":\"relationship:imports:1:app\",\"lineStart\":1,\"freshness\":\"unknown\",\"fileLines\":-1,\"lineText\":\"\"},{\"id\":\"relationship:exports:2:math\",\"lineStart\":2,\"freshness\":\"unknown\",\"fileLines\":-1,\"lineText\":\"\"},{\"id\":\"relationship:src/app.ts:calls:3:main\",\"path\":\"src/app.ts\",\"lineStart\":3,\"freshness\":\"unknown\",\"fileLines\":4,\"lineText\":\"export function main(): number { return add(1, 2) }\"}]"
+    },
+    {
+      "id": "E1.relationship-citation-file-is-callsite-file",
+      "ok": true,
+      "detail": "[\"undefined:1->\",\"undefined:2->\",\"src/app.ts:3->export function main(): number { return add(1, 2) }\"]"
+    },
+    {
+      "id": "E1.documented-symbol-definition",
+      "ok": true,
+      "detail": "function add(a: number, b: number): number is defined in src/lib/math.ts at lines 2-2. | add is declared public."
+    },
+    {
+      "id": "E1.relationship-facts",
+      "ok": true,
+      "detail": "[\"app imports app.\",\"math exports math.\",\"main calls main.\"]"
+    },
+    {
+      "id": "E2.file-mode-envelope",
+      "ok": true,
+      "detail": "{\"fresh\":1,\"stale\":1,\"missing\":0,\"staleRatio\":0.5,\"mode\":\"complete\",\"remediation\":\"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"}"
+    },
+    {
+      "id": "E2.file-mode-remediation-says-file-or-project",
+      "ok": true,
+      "detail": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incre"
+    },
+    {
+      "id": "E2.file-mode-markdown-footer",
+      "ok": true,
+      "detail": "1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with "
+    },
+    {
+      "id": "E3.coverage-cites-many-files",
+      "ok": false,
+      "detail": "fileCitations=7"
+    },
+    {
+      "id": "E3.auto-refresh-budget-decline",
+      "ok": true,
+      "detail": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+    },
+    {
+      "id": "E4.markdown-links",
+      "ok": true,
+      "detail": "[{\"n\":\"1\",\"href\":\"src/lib/math.ts#L2\"},{\"n\":\"2\",\"href\":\"src/app.ts#L3\"}]"
+    },
+    {
+      "id": "E4.markdown-citation-markers-present",
+      "ok": true,
+      "detail": "markers=10 links=2"
+    },
+    {
+      "id": "E4.link-1-resolves",
+      "ok": true,
+      "detail": "src/lib/math.ts#L2"
+    },
+    {
+      "id": "E4.link-2-resolves",
+      "ok": true,
+      "detail": "src/app.ts#L3"
+    },
+    {
+      "id": "E5.project-map-fact-count",
+      "ok": true,
+      "detail": "documentation-mapFacts=5 indexedSymbols=32 indexedFiles=32 scopeUnknowns=[\"The scope contains more indexed files than the evidence limit allows; 7 file(s) were not examined.\",\"The per-section evidence cap is 5 at detail \\\"standard\\\", so 40 of 45 inventory items were not selected. The output budget may have shortened \",\"The per-section evidence cap is 5 at detail \\\"standard\\\", so 5 of 10 documentation map items were not selected. The output budget may have sho\",\"The per-section evidence cap is 5 at detail \\\"standard\\\", so 5 of 10 dependencies items were not selected. The output budget may have shortene\"]"
+    },
+    {
+      "id": "E5.project-symbol-bound-declared",
+      "ok": false,
+      "detail": "mapFacts=5 indexed=32"
+    },
+    {
+      "id": "E6.t2-project-summary",
+      "ok": true,
+      "detail": "{\"ms\":77,\"indexSymbols\":0,\"indexFiles\":0,\"mapFacts\":0,\"bytes\":5317,\"estimate\":953,\"wireTokens\":1330,\"scopeUnknowns\":[]}"
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "failed": 2,
+    "failing": [
+      "E3.coverage-cites-many-files",
+      "E5.project-symbol-bound-declared"
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Lines.json",
+  "authoredFrom": "BD-lines: the state the lane shipped in. The string `line_number` occurred ZERO times in the analyzer, so every json edge in the index carried a NULL line while symbols carried `range` throughout - the position was known and simply not published. Every row pins `line_number` explicitly, so a mutant that strips the field cannot pass: the matcher requires the key present AND equal. Also pins that a nested key is owned by its parent SYMBOL (`nested`) and not by its qualified path (`Lines.nested`) - the same defect one level down, invisible at the top level. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "top",
+      "kind": "property",
+      "ownerName": "Lines"
+    },
+    {
+      "name": "nested",
+      "kind": "class",
+      "ownerName": "Lines"
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "ownerName": "nested"
+    },
+    {
+      "name": "arr",
+      "kind": "property",
+      "ownerName": "Lines"
+    },
+    {
+      "name": "Lines",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Lines",
+      "target": "Lines.top",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Lines",
+      "target": "Lines.nested",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Lines.nested",
+      "target": "Lines.nested.inner",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Lines",
+      "target": "Lines.arr",
+      "line_number": 4
+    }
+  ]
+}

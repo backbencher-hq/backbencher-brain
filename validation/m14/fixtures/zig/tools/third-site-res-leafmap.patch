@@ -1,0 +1,47 @@
+--- a/src/ast/parallel-indexer.ts
++++ b/src/ast/parallel-indexer.ts
+@@ -5271,8 +5271,24 @@
+       const insertLeaf = rawDb.prepare(`INSERT OR IGNORE INTO _res_leafmap (full, leaf) VALUES (?, ?)`)
+       for (const { t } of dottedStillNull) {
++        // A PATH IS NOT A MEMBER CHAIN — THE THIRD SITE of the leaf-reduction defect, and the one
++        // the first two fixes did not reach.
++        //
++        // `t.split(/[.:]/).pop()` reduces `sub/b.zig` to `zig`, and the join below is GLOBAL
++        // (`s.name = m.leaf`, project-scoped and nothing else), so a file reference binds to
++        // whatever symbol is named after its EXTENSION. Measured on ghostty: 4,490 of 4,579
++        // bound file-shaped edges (98.1%) bound that way, 2,320 of them PATH-SHAPED.
++        //
++        // WHY THE EARLIER FIXES DID NOT MOVE IT: `extractLeaf` (63a888b03) and the SQL rung at
++        // :4783 (47a45a72c) are both upstream of this statement; this rung ran afterwards over
++        // the rows they left NULL and re-bound them. Three sites, each found only after the
++        // previous one was closed.
++        //
++        // THE TEST IS THE SAME SEPARATOR TEST, and it is deliberately narrow: a target carrying
++        // a path separator is a PATH and gets NO leaf entry at all, so no global name can claim
++        // it. Everything else keeps the member behaviour that is correct for `a.b.c`, and
++        // `InitOpts.c` (a FIELD named `c`) still reduces to `c`.
++        if (t.includes("/") || t.includes("\\")) continue
+         const leaf = t.split(/[.:]/).pop()
+         if (leaf) insertLeaf.run(t, leaf)
+       }
+@@ -5293,10 +5309,14 @@
+-          JOIN _res_leafmap m ON m.full = r.target_external
+-          JOIN brain_symbol s ON s.project_id = ? AND s.name = m.leaf
++          JOIN _res_leafmap m ON m.full = r.target_external
++          -- FULL NAME FIRST, LEAF AS FALLBACK. `_res_leafmap` already carries both columns, so
++          -- this needs no schema change: a symbol named exactly like the target is preferred,
++          -- and the leaf rung stays for the member chains it was written for. This is the same
++          -- preference the eager resolve applies at :4451 (exact name before leaf).
++          JOIN brain_symbol s ON s.project_id = ? AND (s.name = m.full OR s.name = m.leaf)
+           LEFT JOIN brain_file f ON f.id = s.file_id
+           WHERE r.project_id = ? AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL
+         ) WHERE rn = 1
+@@ -5304,6 +5324,7 @@
+                  ROW_NUMBER() OVER (
+                    PARTITION BY r.target_external, r.source_symbol_id
+-                   ORDER BY COALESCE(s.is_declaration, 0) ASC,
++                   ORDER BY (s.name = m.full) DESC,
++                            COALESCE(s.is_declaration, 0) ASC,
+                             (s.file_id = (SELECT b.file_id FROM brain_symbol b WHERE b.id = r.source_symbol_id)) DESC,
+                             (f.language = (SELECT f2.language FROM brain_file f2
+                                             WHERE f2.id = (SELECT b2.file_id FROM brain_symbol b2 WHERE b2.id = r.source_symbol_id))) DESC,

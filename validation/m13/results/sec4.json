@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.43",
+  "code": "Sec4",
+  "tool": "bb_security",
+  "title": "bb_security: docs + evidence + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "docs: docs/tools/bb_security.md exists",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "docs: description matches registry",
+      "pass": true,
+      "detail": "\"Lexical security lead generator over the indexed source-to-sink token pairs: SQL injection, XSS, com\""
+    },
+    {
+      "name": "docs: modes = findings only",
+      "pass": true,
+      "detail": "mode line mismatch"
+    },
+    {
+      "name": "docs: planned modes labeled honestly",
+      "pass": true,
+      "detail": "planned modes mislabeled"
+    },
+    {
+      "name": "docs: defaults match registry",
+      "pass": true,
+      "detail": "defaults mismatch"
+    },
+    {
+      "name": "docs: category matches registry",
+      "pass": true,
+      "detail": "category mismatch"
+    },
+    {
+      "name": "docs: mutability = read",
+      "pass": true,
+      "detail": "mutability mismatch"
+    },
+    {
+      "name": "docs: every input property documented",
+      "pass": true,
+      "detail": "4 props"
+    },
+    {
+      "name": "docs: the page states the manual staleness truth",
+      "pass": true,
+      "detail": "staleness paragraph missing or wrong"
+    },
+    {
+      "name": "docs: generator verify mode passes for this tool (page byte-fresh)",
+      "pass": true,
+      "detail": "exit=0"
+    },
+    {
+      "name": "honesty: docs/BB_SECURITY.md documents the heuristic detector",
+      "pass": true,
+      "detail": "missing heuristic acknowledgment"
+    },
+    {
+      "name": "honesty: docs/BB_SECURITY.md says token matching is not a data-flow proof",
+      "pass": true,
+      "detail": "data-flow proof claim missing"
+    },
+    {
+      "name": "honesty: docs do not claim an AST taint proof [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "AST-proof claim found"
+    },
+    {
+      "name": "honesty: contracts file documents the planned-mode split",
+      "pass": true,
+      "detail": "missing contract note"
+    },
+    {
+      "name": "honesty: no stale executable claim for flow/summary/hotspots [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale claim found"
+    },
+    {
+      "name": "evidence: sec1.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: sec2.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: sec3.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: all three verifier records carry a negative case",
+      "pass": true,
+      "detail": "Sec1:9neg Sec2:13neg Sec3:25neg"
+    },
+    {
+      "name": "evidence: this gate has an emitted record (sec4.json)",
+      "pass": true,
+      "detail": "missing sec4.json"
+    },
+    {
+      "name": "gate: verify-security-contract.ts wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-security-handler.ts wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-security-adversarial.ts wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: evidence validator is wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: a tampered record (failures, no negative case) cannot claim verified [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary.failed 5 != actual 0; negativeCases 0 is less than 9 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 25,
+    "passed": 25,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tools/bb_security/descriptor.ts rendered by script/verify-tool-docs.ts",
+    "releaseGate": "this file's tamper leg plus script/m13/verify-evidence.ts",
+    "evidenceInputs": "validation/m13/results/sec1..sec4.json all verified",
+    "honesty": "token-based detection documented as heuristic; manual staleness only"
+  },
+  "limitations": [
+    "Docs freshness is proven for this tool only; the shared site data is regenerated centrally.",
+    "The tamper test proves the validator rejects a malformed claim; it does not re-run every verifier."
+  ],
+  "generatedAt": "2026-11-14T00:13:26.270Z"
+}

@@ -1,0 +1,330 @@
+{
+  "fixtureId": "ruby/payload-and-complexity",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the ruby analyzer's relationship + payload surface on real Ruby architecture (module namespace/class/mixin): module nesting (contains), class inheritance (extends via superclass), module mixins (mixes_in via include/extend/prepend after RUBY-D1; the pre-relabel spelling was implements/extends), attr_reader/attr_writer/attr_accessor properties, constants, instance-var member READS (uses via instance_variable \u2014 assignment-LHS writes excluded), calls (builtin-filtered: puts/raise filtered, user methods kept), instantiates via Class.new, per-symbol complexity (if/unless/while/until/case/rescue/elsif PLUS postfix *_modifier forms \u2014 RUBD6), and family evidence tiers (structural/usage_contextual). Authored as a .rb file BEFORE the analyzer's M14 wave run; expectations reflect the verified family contract, not the analyzer's current output. Complexity pins are honest branch counts: authorize = 4 (2 if_modifier + 1 while + base), charge = 2 (1 if_modifier + base) \u2014 postfix conditionals are genuine branches (RUBD6). SCD1 (M37 #599 pre-wave): compound-assignment LHS (@balance -= / +=) is a WRITE \u2014 gated out of uses per the java/kotlin/scala/groovy/swift family contract; the old RMW-emits pin was re-authored and refund's pure write is now forbidden. GAD2-twin addendum (groovy wave standing rule): the second top-level require pins that references edges share the calls/uses/instantiates sentinel 'Global' \u2014 the pre-fix analyzer emitted a hardcoded 'root' for requires, splitting one file's top-level context across two sentinels.",
+  "expectSymbols": [
+    {
+      "name": "Payments",
+      "kind": "module"
+    },
+    {
+      "name": "Gateway",
+      "kind": "class",
+      "ownerName": "Payments"
+    },
+    {
+      "name": "BaseService",
+      "kind": "class",
+      "ownerName": "Payments"
+    },
+    {
+      "name": "Service",
+      "kind": "class",
+      "ownerName": "Payments"
+    },
+    {
+      "name": "Loggable",
+      "kind": "module",
+      "ownerName": "Payments"
+    },
+    {
+      "name": "OrderService",
+      "kind": "class",
+      "ownerName": "Payments"
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "ownerName": "Gateway"
+    },
+    {
+      "name": "balance",
+      "kind": "property",
+      "ownerName": "Service"
+    },
+    {
+      "name": "MAX_RETRIES",
+      "kind": "constant",
+      "ownerName": "Service"
+    },
+    {
+      "name": "initialize",
+      "kind": "method",
+      "ownerName": "Gateway"
+    },
+    {
+      "name": "charge",
+      "kind": "method",
+      "ownerName": "Gateway"
+    },
+    {
+      "name": "health",
+      "kind": "method",
+      "ownerName": "BaseService"
+    },
+    {
+      "name": "initialize",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "authorize",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "refund",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "create",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "log",
+      "kind": "method",
+      "ownerName": "Loggable"
+    },
+    {
+      "name": "process",
+      "kind": "method",
+      "ownerName": "OrderService"
+    },
+    {
+      "name": "unpack",
+      "kind": "method",
+      "ownerName": "OrderService"
+    },
+    {
+      "name": "amount_of",
+      "kind": "method",
+      "ownerName": "OrderService"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Service",
+      "target": "BaseService",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "Global",
+      "target": "expand_path",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Service",
+      "target": "Loggable",
+      "meta.mixinType": "include",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "mixes_in",
+      "source": "OrderService",
+      "target": "Loggable",
+      "meta.mixinType": "include",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "source": "authorize",
+      "target": "@balance",
+      "meta.memberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "refund",
+      "target": "log",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "process",
+      "target": "log",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "process",
+      "target": "create",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "process",
+      "target": "authorize",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "amount_of",
+      "target": "log",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "instantiates",
+      "source": "create",
+      "target": "Service",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "create",
+      "target": "Gateway",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Payments",
+      "target": "BaseService",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Payments",
+      "target": "Gateway",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Payments",
+      "target": "Service",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Payments",
+      "target": "Loggable",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Payments",
+      "target": "OrderService",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Service",
+      "target": "authorize",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "OrderService",
+      "target": "unpack",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "OrderService",
+      "target": "amount_of",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "source": "Global",
+      "target": "rake/tasklib"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "authorize",
+      "target": "@balance",
+      "equals": 2
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "authorize",
+      "ownerName": "Service",
+      "equals": 4
+    },
+    {
+      "symbol": "refund",
+      "ownerName": "Service",
+      "equals": 1
+    },
+    {
+      "symbol": "charge",
+      "ownerName": "Gateway",
+      "equals": 2
+    },
+    {
+      "symbol": "process",
+      "ownerName": "OrderService",
+      "equals": 1
+    },
+    {
+      "symbol": "log",
+      "ownerName": "Loggable",
+      "equals": 1
+    },
+    {
+      "symbol": "create",
+      "ownerName": "Service",
+      "equals": 1
+    },
+    {
+      "symbol": "unpack",
+      "ownerName": "OrderService",
+      "equals": 1
+    },
+    {
+      "symbol": "amount_of",
+      "ownerName": "OrderService",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "puts"
+    },
+    {
+      "type": "calls",
+      "target": "raise"
+    },
+    {
+      "type": "uses",
+      "target": "@name"
+    },
+    {
+      "type": "uses",
+      "target": "@gateway"
+    },
+    {
+      "type": "calls",
+      "target": "a"
+    },
+    {
+      "type": "calls",
+      "target": "b"
+    },
+    {
+      "type": "calls",
+      "target": "amount"
+    },
+    {
+      "type": "calls",
+      "target": "code"
+    },
+    {
+      "type": "calls",
+      "target": "msg"
+    },
+    {
+      "type": "uses",
+      "from": "refund",
+      "target": "@balance"
+    }
+  ]
+}

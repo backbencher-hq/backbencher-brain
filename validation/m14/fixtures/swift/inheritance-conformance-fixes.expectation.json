@@ -1,0 +1,38 @@
+{
+  "fixtureId": "swift/inheritance-conformance-fixes",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.14 dual-lens pass (#607) gate fixture. Four defect classes probe-verified against swift-nio (554 files) + the pinned tree-sitter-swift grammar: SWIFTD13 — protocol inheritance was silently dropped (comment claimed ObjC precedent, but the family emits it: csharp `interface IX : IA` extends, java `interface IX extends IA` extends, objc `@protocol B <A>` extends); 46 corpus sites. AnyObject/Any class-constraint markers are NOT protocol parents (probe-verified `protocol P: AnyObject, B` parses AnyObject as an inheritance_specifier). SWIFTD14 — extension conformances (`extension Circle: Equatable`) emitted NOTHING because base extraction skipped Extension kind; Swift forbids redundant conformances so extension adoptions are always additional; 380 corpus sites (csharp partial-class conformance is the materialized analog). SWIFTD15 — enum conformances: `enum E: String, Codable` bases were skipped entirely AND the first base was always minted as rawType metadata, so `enum Result: Error` carried bogus rawType=Error payload; 181 corpus enums carry bases, ~93% first-slot are protocols (Sendable 76 / Error 46 / Hashable 22 / Equatable 17). Only a stdlib-named first base (String/Int/UInt8/...) is the raw value. SWIFTD16 — bare capitalized calls fabricate `instantiates` for non-types: XCTest assertion FUNCTIONS (XCTAssertEqual etc, 8,226 of 13,966 capitalized bare calls = 59% in swift-nio) and stdlib fixed-width numerics (UInt64/Int64/UInt8 — 1,105 stdlib constructions, while Int/Double/String were already filtered). Both sides shared every blind spot (differential-invisible).",
+  "expectSymbols": [
+    { "name": "Drawable", "kind": "interface" },
+    { "name": "Shape", "kind": "interface" },
+    { "name": "Resettable", "kind": "interface" },
+    { "name": "ClassConstrained", "kind": "interface" },
+    { "name": "Circle", "kind": "class" },
+    { "name": "Status", "kind": "enum" },
+    { "name": "ready", "kind": "enum_member", "ownerName": "Status" },
+    { "name": "Failure", "kind": "enum" },
+    { "name": "verify", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "source": "Shape", "target": "Drawable" },
+    { "type": "extends", "source": "ClassConstrained", "target": "Resettable" },
+    { "type": "implements", "source": "Circle", "target": "Shape", "meta.isImplements": true },
+    { "type": "implements", "source": "Circle", "target": "Resettable", "meta.isImplements": true },
+    { "type": "implements", "source": "Circle", "target": "Equatable", "meta.isImplements": true },
+    { "type": "implements", "source": "Status", "target": "Codable", "meta.isImplements": true },
+    { "type": "implements", "source": "Status", "target": "Sendable", "meta.isImplements": true },
+    { "type": "implements", "source": "Failure", "target": "Error", "meta.isImplements": true },
+    { "type": "instantiates", "source": "verify", "target": "DispatchQueue" },
+    { "type": "contains", "source": "Circle", "target": "draw" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "source": "Circle", "target": "Shape" },
+    { "type": "extends", "source": "ClassConstrained", "target": "AnyObject" },
+    { "type": "implements", "source": "ClassConstrained", "target": "AnyObject" },
+    { "type": "extends", "source": "Status", "target": "String" },
+    { "type": "implements", "source": "Status", "target": "String" },
+    { "type": "instantiates", "target": "XCTAssertEqual" },
+    { "type": "instantiates", "target": "UInt64" }
+  ]
+}

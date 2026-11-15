@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "status": "verified",
+  "currentCommit": "6425e19a473a6c330db914ca33709553246659f7",
+  "scannedFiles": 115,
+  "regexUses": 76,
+  "allowlisted": 14,
+  "baselinedDebt": 62,
+  "newUses": [],
+  "staleAllow": [],
+  "allowWithoutTest": [],
+  "staleBaseline": [
+    "src/intelligence/migration/migration-source.ts::literal::/[%_]/g",
+    "src/intelligence/migration/migration-source.ts::literal::/\\/+$/",
+    "src/intelligence/migration/migration-source.ts::literal::/\\\\/g",
+    "src/intelligence/migration/migration-source.ts::literal::/^\\.\\//",
+    "src/intelligence/search/quick-answer.ts::literal::/[.,;:!?]+$/",
+    "src/intelligence/search/quick-answer.ts::literal::/\\s/",
+    "src/intelligence/visualization/visualization-engine.ts::literal::/[\\\\%_]/g",
+    "src/intelligence/visualization/visualization-engine.ts::literal::/\\/$/",
+    "src/intelligence/visualization/visualization-engine.ts::literal::/\\/$/",
+    "src/mcp/tools/bb_annotate/handler.ts::literal::/[\\u0000-\\u001F\\u007F]/",
+    "src/mcp/tools/bb_migrate/handler.ts::literal::/\\\\/g",
+    "src/mcp/tools/bb_migrate/handler.ts::literal::/\\\\/g"
+  ],
+  "generatedAt": "2026-11-09T09:09:08.273Z"
+}

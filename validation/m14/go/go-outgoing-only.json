@@ -1,0 +1,42 @@
+{
+  "tool": "validation/m14/go/go-incoming-resolve.ts",
+  "phase": "outgoing-only",
+  "repoRoot": "/tmp/opencode/wt/INCOMING_RESOLVE_GO",
+  "analyzerFile": "src/ast/real-go-analyzer.ts",
+  "analyzerModuleSpecifiers": [
+    "web-tree-sitter",
+    "./engine"
+  ],
+  "filesystemModuleSpecifiers": [],
+  "parseResultFields": [
+    "language",
+    "symbols",
+    "relationships",
+    "imports",
+    "exports",
+    "errors",
+    "rawContent",
+    "metadata",
+    "[key"
+  ],
+  "parseResultInboundNamedFields": [],
+  "brainRelationshipColumns": [
+    "id",
+    "project_id",
+    "source_symbol_id",
+    "target_symbol_id",
+    "source_external",
+    "target_external",
+    "relationship_type",
+    "confidence",
+    "context",
+    "line_number",
+    "is_cross_language",
+    "bridge_mechanism",
+    "is_cross_file",
+    "metadata",
+    "time_created",
+    "time_updated"
+  ],
+  "conclusion": "The analyzer imports no filesystem module and ParseResult declares no inbound channel: an emitted edge can only name something in the file handed to analyze()."
+}

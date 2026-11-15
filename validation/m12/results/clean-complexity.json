@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:clean",
   "fixtureDir": "validation/m12/fixtures/clean",
-  "corpusDir": "$HOME/fixtures/repositories",
+  "corpusDir": "/home/ishaq2321/bb_tests/repositories",
   "corpusManifest": {
-    "corpusDir": "$HOME/fixtures/repositories",
+    "corpusDir": "/home/ishaq2321/bb_tests/repositories",
     "fileCount": 309,
     "extensions": [
       ".icl",

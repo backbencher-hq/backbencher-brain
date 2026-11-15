@@ -1,0 +1,87 @@
+{
+  "comment": "THE PREMISES OF THE B1 AMBIGUITY CEILING, NOT THE FIX. `field-type-ceiling.mts` measures 42 recoverable edges out of 8,175 ambiguous (0.51%) and the lane decided on that number not to build the rule. This file pins the two published facts the measurement reads, because a null ceiling and a worthless ceiling look identical in the artifact and only one of them is a statement about Nim. (1) A member-access edge carries its receiver in `meta.fieldAccessExpression`, and a UFCS call edge in `meta.callExpression`; without them the ceiling reads 0 because the receiver was never published, which is a regression, not a finding. (2) The source callable publishes its parameters WITH declared types; without the type there is no qualifier to apply and the ceiling falls to 0 by a mechanism nothing would notice. The collision the whole question rests on is asserted too: `id` is a field of BOTH `Character` and `Starship`, so bare `id` is ambiguous inside its own file, and `charToResp` reaches the `Character` one through a parameter declared `c: Character`. Nothing here asserts a qualified target or a new name surface \u2014 if it ever needed to, the ceiling decision would have to be reopened, because `parallel-indexer.ts:4142` excludes every dotted target from the I13 name-resolution pass and an object field publishes no qualified name (`pool-worker.ts:930` falls back to `${s.scope}.${s.name}` and `real-nim-analyzer.ts:589` sets `scope` to the enclosing CALLABLE, empty at field scope).",
+  "expectSymbols": [
+    {
+      "name": "Character",
+      "kind": "class"
+    },
+    {
+      "name": "Starship",
+      "kind": "class"
+    },
+    {
+      "name": "charToResp",
+      "kind": "function"
+    },
+    {
+      "name": "shipToResp",
+      "kind": "function"
+    },
+    {
+      "name": "charName",
+      "kind": "function"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "charToResp",
+      "parameters": [
+        {
+          "name": "c",
+          "type": "Character"
+        }
+      ],
+      "comment": "PREMISE 2. The declared type is the whole qualifier. `readParameters` (real-nim-analyzer.ts:1251-1276) copies `childForFieldName(\"type\")` verbatim, so `c: Character` must arrive as type `Character` \u2014 with the trailing `*` a receiver-type declaration would carry already stripped by the caller, which is asserted by the expectation being `Character` and not `Character*`."
+    },
+    {
+      "symbol": "shipToResp",
+      "parameters": [
+        {
+          "name": "s",
+          "type": "Starship"
+        }
+      ],
+      "comment": "The OTHER declaration of the same leaf name, reached through its own receiver. This row is what makes the ceiling's collision real inside one file: `uses shipToResp -> id` and `uses charToResp -> id` are the same bare target and two different intended declarations."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "charToResp",
+      "target": "id",
+      "comment": "PREMISE 1a, and the edge the ceiling rule would retarget. The receiver is published in full, so `Character.id` is derivable from the parse tree with no import graph and no invention. The target is still BARE, and it is deliberately left bare here: this fixture pins what the analyzer emits today, and the ceiling's 42-edge finding is a statement about retargeting, not a claim that the retarget has been made. A future change that qualifies this target must update this row, and the update is the record that the decision was reversed.",
+      "meta.relationshipType": "nim_member_access",
+      "meta.fieldAccessExpression": "c.id"
+    },
+    {
+      "type": "uses",
+      "from": "charName",
+      "target": "name",
+      "comment": "A second member on the same receiver, so the receiver premise is not pinned on a single field name \u2014 a fixture that passes on `id` alone would also pass on an implementation that special-cased `id`.",
+      "meta.relationshipType": "nim_member_access",
+      "meta.fieldAccessExpression": "c.name"
+    },
+    {
+      "type": "uses",
+      "from": "shipToResp",
+      "target": "id",
+      "comment": "The colliding edge. Same bare target as the first row, different intended declaration (`Starship.id`), same file. These two rows together are what `field-type-ceiling.mts` counts when it reports `decls(file)=2 ownedByType=1` \u2014 the qualifier separates what the bare name merges.",
+      "meta.relationshipType": "nim_member_access",
+      "meta.fieldAccessExpression": "s.id"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "charToResp",
+      "target": "Character.id",
+      "comment": "NEGATIVE PIN, and the one that keeps this fixture honest. If an implementation ever qualified this target, this row fails \u2014 which is the point: nothing in the committed analyzer qualifies it, `parallel-indexer.ts:4142` would not resolve a dotted target through I13, and no object field publishes a qualified name for one to bind to. A fixture that allowed both spellings could not tell a fix from a duplicate."
+    },
+    {
+      "type": "uses",
+      "from": "charToResp",
+      "target": "Starship.id",
+      "comment": "The WRONG qualifier for this receiver. `c` is declared `Character`, so `Starship.id` is the one spelling the rule must never produce, and the collision in this file is exactly what makes it expressible. Forbidding it is cheaper than asserting the right one is the only dotted target present."
+    }
+  ]
+}

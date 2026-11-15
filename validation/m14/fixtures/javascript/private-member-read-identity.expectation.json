@@ -1,0 +1,23 @@
+{
+  "fixtureId": "javascript/private-member-read-identity",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W13: the member-segment dedup key was `${source}.${seg}`, and a private segment's text is literally `#x` — so the key became `${source}.#` + `x`, byte-identical to the bare-read/chain-root key of the plain identifier `x` (`${source}.#` + `x`). Whichever node was walked first claimed it. Measured on the svelte corpus: `packages/svelte/src/reactivity/set.js` — the field initializer `#update_version = update_version || -1` (line 52) reads the IMPORTED binding `update_version` first, claiming key `SvelteSet.#update_version`, so the genuine read `this.#update_version` (line 88) was dropped as a duplicate: the first javascript-lane MISSING edge W12's 400-file measurement registered. `#version`/`#size` survived only because no plain binding of those names is read in the same container, which is why the defect hid from every fixture. Contract: a private member read emits the `#`-spelled target; a same-named bare read emits its own edge; neither suppresses the other.",
+  "expectSymbols": [
+    { "name": "update_version", "kind": "constant" },
+    { "name": "version", "kind": "constant" },
+    { "name": "Store", "kind": "class" },
+    { "name": "read", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "read", "target": "#update_version", "note": "pre-fix LOST — the field initializer's bare read of update_version claimed the key. RE-PINNED by the M49 W15 #814 ruling: the source is the enclosing METHOD (`read`), not the type" },
+    { "type": "uses", "from": "read", "target": "#version", "note": "the sibling private field read (source = the enclosing method, #814)" },
+    { "type": "uses", "from": "Store", "target": "update_version", "meta.bareRead": true, "note": "the field initializer's genuine bare read of the module binding" },
+    { "type": "uses", "from": "read", "target": "update_version", "meta.bareRead": true },
+    { "type": "uses", "from": "read", "target": "version", "meta.bareRead": true, "note": "the bare read in the ternary else — must not be swallowed by the #version key either" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "Store", "target": "#update_version", "note": "M49 W15 #814: the TYPE-sourced spelling is the DEFECT spelling now — this pair means the source rule reverted (mutant javascript/type-source-revert produces exactly it)" },
+    { "type": "uses", "from": "Store", "target": "#version" }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "fixtureId": "scala/m60-uses-extension-and-assign",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the SDJ-1 / S9 / S10 rulings; spellings and lines recorded from the post-fix run. Every one of the three defects SUPPRESSED an edge, so the positive rows are the assertions that can fail on them; the forbids below pin the comparison that must NOT be read as a write.",
+  "rationale": "Three `uses` rules, each wrong in a different direction, and each wrong on only ONE of the two corpora — which is why none of them showed up as a regression and all three survived to this round. SDJ-1: the extension receiver's gate `extensionReceiverType && !isMethod` published the edge only when the extension was nested inside a METHOD, dropping the far more common shape; 382 of the 648 defs in an extension block on a 400-file scala3 draw, and cats-effect has no extension block at all. The oracle carried the mirror image (`/^\\s*def\\s/.test(node.text)`, false for a def carrying modifiers), so the two sides were wrong on COMPLEMENTARY subsets and agreed only by accident. S9: `++` and `--` were in the oracle's compound-assign set, so `this.elems ++ that.elems` and `this.elems -- that.elems` lost their reads — 10 rows, all of them that. S10: the analyzer's list had REMOVED `++=` on the documented claim that no legal parse produces it; a grammar lexes an operator_identifier and has no table of legal Scala operators, and dotty declares `def ++=`.",
+  "expectSymbols": [
+    {
+      "name": "union",
+      "ownerName": "CaptureSet",
+      "comment": "SDJ-1: an extension block DIRECTLY in a class — the shape the analyzer's gate dropped"
+    },
+    {
+      "name": "same",
+      "ownerName": "CaptureSet",
+      "comment": "SDJ-1 second shape: a def carrying MODIFIERS inside an extension, which is the subset the ORACLE's inverted gate fired on"
+    },
+    {
+      "name": "toInt",
+      "ownerName": "inner",
+      "comment": "SDJ-1 third shape: an extension nested inside a METHOD, which the analyzer's gate published and the oracle's did not"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "union",
+      "target": "CaptureSet",
+      "line_number": 13,
+      "comment": "SDJ-1: the extension receiver is a use whatever encloses the extension. The LINE belongs to the receiver TYPE node, not the method (M59 #825) — here they coincide, which is why the fixture also needs a multiline form to be worth anything about lines"
+    },
+    {
+      "type": "uses",
+      "from": "same",
+      "target": "CaptureSet",
+      "line_number": 21
+    },
+    {
+      "type": "uses",
+      "from": "toInt",
+      "target": "Boolean",
+      "line_number": 28
+    },
+    {
+      "type": "uses",
+      "from": "concat",
+      "target": "elems",
+      "line_number": 35,
+      "comment": "S9: `++` is concatenation, a READ. With `++` in the compound-assign set this row was suppressed"
+    },
+    {
+      "type": "uses",
+      "from": "concat",
+      "target": "that",
+      "line_number": 35
+    },
+    {
+      "type": "uses",
+      "from": "subtract",
+      "target": "elems",
+      "line_number": 36,
+      "comment": "S9: `--` is subtraction, a READ. `val newElems = approx.elems -- elems` in CaptureSet.scala:997 is the corpus instance"
+    },
+    {
+      "type": "uses",
+      "from": "subtract",
+      "target": "that",
+      "line_number": 36
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "accumulate",
+      "target": "state",
+      "line_number": 49,
+      "comment": "S10, as a SUPPRESSION: `state.accumulated ++= xs` IS a write, so this read must NOT be published. The analyzer's list had removed `++=` as a dead entry ('no legal parse produces them'), so the row WAS published. dotty declares `def ++=` (MutableSet.scala:31) and uses it 105 times in 400 files. The receiver has to be a FIELD here: `accumulated ++= xs` parses with a bare identifier on the left, and the uses collector only reads a field_expression, so the bare form would assert nothing."
+    }
+  ]
+}

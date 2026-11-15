@@ -1,0 +1,53 @@
+{
+  "fixtureId": "cpp/package-scope/package_scope",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE C++ PACKAGE-SCOPE CLAIM, pinned in BOTH DIRECTIONS — and the direction the FIXTURE SUITE can see is the FLAG-OFF one, for the same reason the citation fixture is: the emission is flag-gated (BB_CPP_PACKAGE_SCOPE=1) so the accepted D1-D6 behaviour is byte-identical without it, and the fixture suite runs WITHOUT the flag. So this fixture pins the OFF state, which is a real contract: the flag must not leak, no row may carry a claim unasked, and the ROWS themselves (the calls edges, their targets, their lines, their qualified spellings) must be exactly these whether or not the claim is on. The ON state is pinned in the other direction by the dedicated red-capable control script/m14/cpp-package-scope-verify.ts (14/14 PASS, --prove-red exits 3), which sets the flag and asserts the claims, the negatives, the ambiguity rule and the flag-off row identity. THE RULE (the lane's ruling, CPP-PACKAGE-SCOPE-RULING.md): a C++ translation unit says which library a name comes from by the HEADER it includes, so the package-scope claim's membership half is the include-root test — and a QUALIFIED spelling (ns::name) names the same package in a second, independent way, which is the only sound case. THE BARE CALLS BELOW ARE THE NEGATIVE, and the reason is the point: a bare name names no package, and the include test is a UNIT-level fact that cannot say WHICH header a given name came from. The lane's own verifier produced the counterexample — a name that came from <vector> was claimed as a package member — so the bare spelling is withheld, and with it the whole of bucket D, which is bare by construction. That is the ruling's MEASURED ANSWER, not a defect of the emission, and the expectation pins it so a later change cannot quietly widen the claim. THE PACKAGE NAMES come from the governing manifest, supplied by the caller in context.cppPackageScopePackages (the gate's fact, because the gate is what has to read CMakeLists.txt to verify the claim) — so an emission with no manifest fact is INERT, and the fixture suite exercises that inertness on every row.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "make",
+      "line_number": 23,
+      "meta.qualified": "acme::make",
+      "meta.packageScope": null,
+      "note": "THE CLAIMED SHAPE. `acme::make()` — the spelling names the namespace `acme`, the unit includes <acme/widget.h> (the checkout's independent spelling of the same package), and the manifest declares `acme`, so with the flag ON this row carries packageScope {package: 'acme', name: 'make'} (the verifier asserts it). What the FIXTURE pins is the row and the ABSENCE of the claim in the flag-off state: a claim that leaked into the default behaviour would be a claim the accepted D1-D6 record does not contain."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "count",
+      "line_number": 24,
+      "meta.qualified": "acme::count",
+      "meta.packageScope": null,
+      "note": "the second claimed shape, so the rule is not pinned by one row."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "widget_count",
+      "line_number": 25,
+      "meta.qualified": "widget_count",
+      "meta.packageScope": null,
+      "note": "THE BARE NEGATIVE, and the row the whole ruling turns on. `widget_count(x)` is a bare name: it names no package, and the include test is a UNIT-level fact — the unit includes <acme/widget.h>, but that does not say this name came from THAT header. The lane's verifier caught the looser version claiming this row as acme's member, which is false for any name that came from another header. So the bare spelling is WITHHELD, and the expectation pins the absence so a later widening has to break this fixture."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "local_helper",
+      "line_number": 26,
+      "meta.qualified": "local_helper",
+      "meta.packageScope": null,
+      "note": "a bare name whose natural source is the PROJECT include (\"local_helper.h\") — the other half of the bare negative: a quoted include is not external provenance at all."
+    },
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "vector_size",
+      "line_number": 27,
+      "meta.qualified": "vector_size",
+      "meta.packageScope": null,
+      "note": "a bare name whose natural source is a SINGLE-ROOT system header (<vector>), which names no directory and therefore no package root. The counterexample the verifier produced, pinned here as the OFF state it must stay in."
+    }
+  ]
+}

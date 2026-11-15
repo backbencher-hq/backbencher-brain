@@ -1,0 +1,149 @@
+{
+  "fixtureId": "go/exports-spec",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Ontology workstream 2026-10-02, `exports` was a GAP for go. The construct is real \u2014 Go spec 'Exported identifiers', a capitalized first character \u2014 and it is a CONVENTION, so a grammar inventory cannot see it (the json lane's `exports` ruling was overturned for exactly that reason). MEASURED: script/m14/go-ontology-census.ts probe C1 over go-stdlib + cobra. Pins: package symbol -> each exported top-level unit (func/type/const), the structural evidence tier, the declaration line, and the NEGATIVE surface (unexported names, struct fields, interface methods, methods) so a widening of the predicate is a conscious act.",
+  "expectSymbols": [
+    {
+      "name": "exports",
+      "kind": "module"
+    },
+    {
+      "name": "Limit",
+      "kind": "constant"
+    },
+    {
+      "name": "Mode",
+      "kind": "type"
+    },
+    {
+      "name": "Handler",
+      "kind": "interface"
+    },
+    {
+      "name": "Engine",
+      "kind": "struct"
+    },
+    {
+      "name": "NewEngine",
+      "kind": "function"
+    },
+    {
+      "name": "Start",
+      "kind": "method"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "localUnit",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "exports",
+      "target": "Limit",
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "exports",
+      "target": "Mode",
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "exports",
+      "target": "Handler",
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "exports",
+      "target": "Engine",
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "exports",
+      "target": "NewEngine",
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Engine",
+      "target": "Name",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Handler",
+      "target": "Handle",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Engine",
+      "target": "Start",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "localUnit",
+      "target": "n",
+      "meta.evidenceClass": "structural",
+      "comment": "the symbol still EXISTS and is still a struct with a member: the fix removed an EDGE, not a symbol. GO38's contract (a local type is a symbol) is unchanged by this lane's ontology work."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "helper",
+      "comment": "unexported: first character is lower-case, so the Go spec does not export it"
+    },
+    {
+      "type": "exports",
+      "target": "modeTable",
+      "comment": "unexported package var"
+    },
+    {
+      "type": "exports",
+      "target": "Name",
+      "comment": "a struct FIELD is a member of Engine, not a package-scope unit (F3 export-uniqueness invariant; membership rides contains)"
+    },
+    {
+      "type": "exports",
+      "target": "Handle",
+      "comment": "an interface METHOD is a member, not a unit"
+    },
+    {
+      "type": "exports",
+      "target": "Start",
+      "comment": "a METHOD is a member of Engine, not a unit"
+    },
+    {
+      "type": "exports",
+      "target": "size",
+      "comment": "unexported struct field"
+    },
+    {
+      "type": "exports",
+      "target": "localUnit",
+      "comment": "capitalized and a SYMBOL (GO38 publishes a function-local type), but NOT at package scope: Go gives a name declared inside a function body no reach beyond that body, so the spec does not export it. The first version of this edge read the export ARRAY, whose predicate is `!ownerName`, and published this edge carrying `exportForm: capitalized_package_scope_name` \u2014 a claim the edge itself contradicted. Live on cobra/completions_test.go as two edges (UserCompletionTypeHelper, UserCompletionTypeAliasHelper) before the fix."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "unknown",
+      "comment": "R7: no placeholder literal may become a symbol"
+    }
+  ]
+}

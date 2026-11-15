@@ -1,0 +1,84 @@
+{
+  "fixtureId": "javascript/non-name-callee-refused",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "§2 — a `calls` TARGET must be a NAME, and this is the only fixture that pins it. The guard the fix replaced tested TOKEN MEMBERSHIP (`hasBraceEquals`, a newline, a backtick, `${`, 100 chars) as a proxy for error-recovery garbage, and a parenthesised or conditional callee contains none of those tokens, so the callee's SOURCE TEXT was published in `target` — the field the graph reads as a symbol name. Measured by script/m14/js-ontology/js-callee-shape-census.ts on the analyzer's own output: 31 of 31,973 svelte `calls` rows and 550 of 22,210 ts rows were source text, against ZERO coverage in this suite (75 fixtures passed with the defect live, which is why the class survived a lane that had already closed the neighbouring empty-endpoint class). The forbid rows name seven spellings, one per syntactic form. SIX are PRE-FIX ARMS: `(fn)`, `(0, helper.other)`, `(cond ? a : b)`, `define()`, the quoted string and `[]` were all PUBLISHED as targets before the fix. The seventh, the IIFE `(function () {})`, is a CONTRACT pin and NOT a pre-fix arm: reverting only this guard in a copy of the analyzer (script/m14/tmp/js-jsd2-falsify.ts, which reports 75 pass / 1 fail with this fixture as the single failure) produces six of the seven rows and not that one, because its braces trip the replaced guard's `hasBraceEquals` clause — which is also why no corpus row of that shape exists to cite. The row is kept because \"an IIFE callee has no name\" is the invariant whatever clause used to catch it, and it is labelled so no reader counts it as evidence. The expect rows are the positive controls, and they are the reason a fix written as 'drop the whole call' fails here instead of passing vacuously. `this.#tick()` is the control that makes the rule a SHAPE test: 123 svelte rows are private-method calls, so an alphanumeric filter would have deleted 123 real edges to remove the 31. NOT pinned here, deliberately: the `imports` row for ./helper.js (this fixture is about the calls label), and any expectation about the `uses` rows the dropped call sites may or may not contribute — the fix removes `calls` rows only.",
+  "expectSymbols": [
+    {
+      "name": "direct",
+      "kind": "function"
+    },
+    {
+      "name": "Counter",
+      "kind": "class"
+    },
+    {
+      "name": "#tick",
+      "kind": "method",
+      "visibility": "private"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "direct",
+      "target": "direct\u0000fn",
+      "note": "a bare identifier callee — the simplest real call, at the top of the file on purpose"
+    },
+    {
+      "type": "calls",
+      "from": "direct",
+      "target": "save",
+      "note": "a member callee publishes the PROPERTY LEAF, not the chain: the leaf is a name, the chain is a path"
+    },
+    {
+      "type": "calls",
+      "from": "direct",
+      "target": "define",
+      "note": "`define()()` — the INNER call survives. The outer callee is a call_expression (`define()`), which has no name, so it must not be published; the inner one names `define`"
+    },
+    {
+      "type": "calls",
+      "from": "bump",
+      "target": "#tick",
+      "note": "the `#` clause: `this.#tick()` names the private method `#tick`, which this lane publishes as a symbol (see javascript/private-methods). Without this row, an alphanumeric filter would pass the fixture"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "(fn)",
+      "note": "parenthesised callee — source text"
+    },
+    {
+      "type": "calls",
+      "target": "(0, helper.other)",
+      "note": "the TypeScript import-interop sequence callee, written by every tsc-compiled file — the shape that produced most of the ts corpus's 550 rows"
+    },
+    {
+      "type": "calls",
+      "target": "(cond ? a : b)",
+      "note": "conditional callee"
+    },
+    {
+      "type": "calls",
+      "target": "(function () {})",
+      "note": "IIFE callee — a CONTRACT pin, not a pre-fix arm: the replaced guard's `hasBraceEquals` clause already caught this shape, so reverting the guard reproduces none of it (see the rationale)"
+    },
+    {
+      "type": "calls",
+      "target": "define()",
+      "note": "call-expression callee — the same site as the `calls define` expect row, so this pair also pins that only the INNER call is published"
+    },
+    {
+      "type": "calls",
+      "target": "\"text\"",
+      "note": "string-literal callee, quotes included — a target that could never name a symbol"
+    },
+    {
+      "type": "calls",
+      "target": "[]",
+      "note": "array-literal callee"
+    }
+  ]
+}

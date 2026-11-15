@@ -1,0 +1,340 @@
+{
+  "_why_this_file": "The R lane's per-type verdicts, in machine-readable form. The ontology arbiter reads its rulings from `script/m14/spec/<lang>-completeness.json` and its instruments from `RULED_BY_LANG` in `script/m14/ontology-coverage-gate.ts`; BOTH are supervisor-owned (ONTOLOGY-WORKSTREAM.md \u00a78), and neither has an `r` entry, so `npx tsx script/m14/ontology-coverage-gate.ts r` exits 2 with `no RULING TABLE for r` before printing a row. The content the supervisor needs for those two files is reproduced in `_report_to_supervisor` at the bottom of this document, so applying it needs no re-derivation. Every number here is measured; the instrument that measured it and the file to run are named beside it.",
+  "language": "r",
+  "analyzer": "src/ast/real-r-analyzer.ts",
+  "grammar": "wasm/tree-sitter-r.wasm (a patched @eagleoutice/tree-sitter-r@1.1.2 build; see docs/analyzers/r.md)",
+  "productionEntryPoint": "parseFile from src/ast/pool-worker.ts \u2014 never analyze()",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "repos": [
+      "dplyr",
+      "ggplot2",
+      "nvim-treesitter",
+      "r-Rcpp",
+      "r-air",
+      "r-cli",
+      "r-pkgdown",
+      "r-rlang",
+      "r-scales",
+      "r-testthat",
+      "r-vctrs",
+      "r-withr",
+      "usethis"
+    ],
+    "reposClonedByThisLane": [
+      "r-Rcpp",
+      "r-air",
+      "r-cli",
+      "r-pkgdown",
+      "r-rlang",
+      "r-scales",
+      "r-testthat",
+      "r-vctrs",
+      "r-withr"
+    ],
+    "rFilesTracked": 2016,
+    "filesSampled": 1890,
+    "sampling": "every git-TRACKED file whose path+content the ROUTER (src/ast/language-detection.ts detectLanguageFromPath, the same call the indexer makes) maps to `r`, per repo, in `git ls-files` order, first 250 per repo. Deterministic prefix, not a random draw \u2014 the only bias is the truncation.",
+    "whyPerRepoCap": "the project's stated floor is 200+ files per family; 250 per repo clears it for every repo that reaches it, and the four repos below the cap are admitted whole (usethis 184, nvim-treesitter 8, r-withr 58).",
+    "duplicateRejected": "r-dplyr was cloned, found to be the same commit as the pre-existing `dplyr` (d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f), and deleted rather than counted twice."
+  },
+  "verdicts": [
+    {
+      "type": "calls",
+      "verdict": "EMITTED",
+      "edges": 41564,
+      "files": 1890,
+      "localResolvedBothPct": 10.7,
+      "corpusResolvedTargetPct": 55.4,
+      "confidence": {
+        "1.0": 40016,
+        "0.7": 1548
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts (production parseFile)",
+      "note": "The unresolved 44.6% is measured, not assumed: the top unresolved targets are return(1257), list(864), is.null(805), paste0(750), invisible(711), identical(297), is.na(293), sprintf(246), UseMethod(233), any(229) \u2014 base R, which is not one of the 13 sampled repos \u2014 plus qualified targets such as cli::cli_abort(235), which are written `pkg::name` and therefore resolve to no single symbol name."
+    },
+    {
+      "type": "uses",
+      "verdict": "GAP \u2014 closed in this change",
+      "edges": 3823,
+      "files": 1890,
+      "edgesBefore": 0,
+      "localResolvedBothPct": 8.5,
+      "corpusResolvedTargetPct": 55.7,
+      "confidence": {
+        "1.0": 3606,
+        "0.7": 217
+      },
+      "heuristicUnder07": 0,
+      "instrument": "probe-surfaces.ts (instrument B, parse-tree counts)",
+      "constructOccurrences": {
+        "extract_operator_not_the_callee_of_a_call": 14307,
+        "subset2_string_index_not_the_callee_of_a_call": 547
+      },
+      "rule": "a member read of a value \u2014 `obj$member`, `obj@slot`, `df[[\"col\"]]` \u2014 outside callee position and outside the target of an assignment. Target is the MEMBER NAME; the receiver rides in metadata. Same construct the Python lane publishes as `uses` (src/ast/real-python-analyzer.ts:1425, isMemberRead) and the Julia oracle as `uses` (script/m14/oracles/julia-refs.ts on `a.b`).",
+      "why_not_ruled": "the handover note and docs/analyzers/r.md ruled `uses` inapplicable on the prose argument that 'R has no import-binding indirection distinct from the dependency itself'. That argument is about IMPORTS, and it does not reach a member read: `self$value` inside an R6 method is neither a call nor a dependency, and 14,307 of them occur in the corpus with no edge of any kind. This is the RULED-UNJUSTIFIED shape the workstream describes, and the measurement overturned it."
+    },
+    {
+      "type": "contains",
+      "verdict": "EMITTED",
+      "edges": 13430,
+      "files": 1890,
+      "localResolvedBothPct": 99.6,
+      "corpusResolvedTargetPct": 99.9,
+      "confidence": {
+        "1.0": 13430
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts"
+    },
+    {
+      "type": "imports",
+      "verdict": "EMITTED",
+      "edges": 1925,
+      "files": 1890,
+      "localResolvedBothPct": 0.7,
+      "corpusResolvedTargetPct": 33.0,
+      "confidence": {
+        "1.0": 1726,
+        "0.8": 199
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts",
+      "note": "A 0.7% local resolution rate is the STRUCTURE of the type, not a defect: the target is a PACKAGE NAME and no R package source file declares its own package name as a symbol. The measurable question for `imports` is whether the named package exists, which is a question about CRAN rather than about syntax."
+    },
+    {
+      "type": "references",
+      "verdict": "EMITTED",
+      "edges": 280,
+      "files": 1890,
+      "localResolvedBothPct": 7.9,
+      "corpusResolvedTargetPct": 23.6,
+      "confidence": {
+        "1.0": 79,
+        "0.8": 201
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts",
+      "note": "Same structure as `imports`: 280 edges are library()/require() package names and source()/sourceCpp() paths. Declared ASYMMETRY, not fixed: 5,674 `namespace_operator` nodes occur in the corpus of which 5,260 are a call's callee and 414 are not; the callee ones already produce `calls` to the qualified target plus an `imports` edge to the package, and no `references` edge is added for them."
+    },
+    {
+      "type": "exports",
+      "verdict": "EMITTED",
+      "edges": 3491,
+      "files": 1890,
+      "localResolvedBothPct": 100.0,
+      "corpusResolvedTargetPct": 100.0,
+      "confidence": {
+        "1.0": 3491
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts",
+      "note": "100% local resolution except ONE edge: `global exports source_file`, an unresolvable target reported by the census and left as found."
+    },
+    {
+      "type": "extends",
+      "verdict": "EMITTED",
+      "edges": 58,
+      "files": 1890,
+      "localResolvedBothPct": 36.2,
+      "corpusResolvedTargetPct": 84.5,
+      "confidence": {
+        "1.0": 58
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts",
+      "note": "36.2% local is expected: the base is named in `inherit=`/`contains=`/`parent=` and 26 of the 58 name a class from ANOTHER package (r-Rcpp/R/Module.R: clname inherits C++Object). The corpus rate of 84.5% is high because dplyr/ggplot2 are mutually dependent in the sample."
+    },
+    {
+      "type": "implements",
+      "verdict": "EMITTED",
+      "edges": 1015,
+      "files": 1890,
+      "localResolvedBothPct": 36.0,
+      "corpusResolvedTargetPct": 84.9,
+      "confidence": {
+        "0.8": 1015
+      },
+      "heuristicUnder07": 0,
+      "instrument": "census.ts",
+      "note": "Every one of the 1,015 is at 0.8 with reasonCode `s3_dotted_name_convention`: R registers an S3 method by writing `generic.class`, and nothing in the FILE proves the generic exists. 100% of this label is a labelled heuristic, which is why it is the largest sub-1.0 population in the lane after `calls`' closure cases."
+    },
+    {
+      "type": "overrides",
+      "verdict": "EMITTED \u2014 believed missing at handover; it is not",
+      "edges": 13,
+      "files": 1890,
+      "filesWithEdges": [
+        "r-testthat/R/reporter-junit.R",
+        "r-testthat/R/reporter-progress.R"
+      ],
+      "localResolvedBothPct": 100.0,
+      "corpusResolvedTargetPct": 100.0,
+      "confidence": {
+        "0.95": 13
+      },
+      "heuristicUnder07": 0,
+      "instrument": "probe-classes.ts (instrument B, cross-node semantic count)",
+      "constructOccurrences": {
+        "same_file_member_shadow": 3,
+        "same_file_base_but_no_shared_member": 7,
+        "base_declared_in_another_package": 26
+      },
+      "overturnCondition": "a probe that finds a same-file base class whose derived class redeclares one of the base's members at a count above 3 would mean the 13 edges miss cases; the probe IS that probe.",
+      "note": "The construct occurs 3 times in the sampled corpus and the analyzer emits 13 edges over those 3 shadows plus the other members of the same two pairs of classes. The type was believed missing because the pre-widening corpus (4 repos, 637 files) contains none of them: all 3 are in r-testthat. DIRECTION: the edge is `Base -> member`, carrying `overriddenBy: Derived` in metadata \u2014 the member belongs to the base and the subclass shadows it. 26 further overrides exist in the corpus and are NOT emitted, because the base lives in another package and cannot be resolved from syntax; that is the declared scope of the rule."
+    },
+    {
+      "type": "instantiates",
+      "verdict": "EMITTED \u2014 believed missing at handover; it is not",
+      "edges": 1,
+      "files": 1890,
+      "filesWithEdges": [
+        "r-testthat/R/reporter-silent.R"
+      ],
+      "localResolvedBothPct": 100.0,
+      "corpusResolvedTargetPct": 100.0,
+      "confidence": {
+        "0.9": 1
+      },
+      "heuristicUnder07": 0,
+      "instrument": "probe-classes.ts (instrument B)",
+      "constructOccurrences": {
+        "dollar_new_total": 57,
+        "dollar_new_with_class_declared_in_same_file": 6,
+        "s4_new_total": 36,
+        "s4_new_with_class_declared_in_same_file": 17
+      },
+      "overturnCondition": "a probe finding `Declared$new()` or `new(\"Declared\")` with `Declared` declared in the same file at a count above 6 would mean the single edge misses cases.",
+      "note": "23 same-file constructions occur (6 `Cls$new()` and 17 `new(\"Declared\")`) and 1 edge is emitted. The gap is the ATTRIBUTION gate, not a labelling one: `instantiates` is emitted from the `calls` path, which requires an enclosing NAMED symbol, and 5 of the 6 constructions in r-Rcpp/inst/tinytest/*.R are at file scope. That is the same file-scope limitation `calls` declares, applied consistently."
+    }
+  ],
+  "grammarInventory": {
+    "instrument": "A:grammar-inventory, via probe-surfaces.ts",
+    "distinctNodeTypesProduced": 97,
+    "nodeTypesThatWouldExpressAnObjectSystemBaseClause": [],
+    "finding": "tree-sitter-r produces 97 distinct node types across the 1,890-file sample and NONE of them is a type declaration, a class declaration, a `new` expression, an interface list or an inheritance specifier. R's object systems are LIBRARY CALLS (`R6Class(inherit=)`, `setRefClass(contains=)`, `setClass(contains=)`, `S7::new_class(parent=)`), which is why extends/implements/overrides/instantiates are all reachable in R at all, and why instrument A is the wrong instrument for them and instrument B is used instead.",
+    "usesSurfaceConformance": {
+      "instrument": "probe-grammar.ts, reading the shipped wasm's own nodeTypeForId table (137 declared node types) and PARSING one occurrence of each construct to ask the node for each field",
+      "nodeTypesChecked": [
+        "extract_operator",
+        "subset2",
+        "subset",
+        "argument",
+        "binary_operator",
+        "identifier",
+        "string",
+        "call",
+        "function_definition"
+      ],
+      "unknownNodeTypes": 0,
+      "fieldsChecked": [
+        "lhs",
+        "operator",
+        "rhs",
+        "arguments",
+        "function",
+        "name",
+        "value"
+      ],
+      "fieldsNotDeclared": 0,
+      "verdict": "L2 precondition for the `uses` change MET against wasm/tree-sitter-r.wasm",
+      "note": "A field is DECLARED when at least one node of the type carries it. The first version of this probe required EVERY node to carry it and reported `argument`'s `name` as undeclared because `f(a = 1, 2)` writes the second argument bare. An unnamed argument has no `name` field; that is the grammar being right."
+    }
+  },
+  "knownParserDefect": {
+    "symptom": "[BB-PARSE-ERR] r | <file> | memory access out of bounds",
+    "observedIn": "every production census of this lane",
+    "whichFilesVariesBetweenRuns": true,
+    "measuredBy": "validation/m14/fixtures/r/probe-oom.ts",
+    "consequence": "two runs of the SAME analyzer over the SAME 13-repo corpus reported 22,449 and 22,464 symbols. Corpus totals for R are therefore not bit-reproducible under concurrency, and any single-run total must be quoted with this attached.",
+    "notClaimed": "that the per-file counts are unstable. probe-oom.ts over r-rlang (160 files, 3 passes each) found 0 files whose symbol or relationship count differed between passes, and 15 files that legitimately publish no symbols (roxygen topic files and testthat standalone files, which contain no top-level binding)."
+  },
+  "_report_to_supervisor": {
+    "note": "Four shared-file needs, stated so they can be applied without re-deriving. NONE was edited by this lane (ONTOLOGY-WORKSTREAM.md \u00a78).",
+    "needs": [
+      {
+        "file": "script/m14/ontology-coverage-gate.ts",
+        "what": "add `r` to the `RULED_BY_LANG` map, currently `{ bash: BASH_RULED, json: JSON_RULED }` (line 192).",
+        "value": "EMPTY. Every one of the 10 types is EMITTED on the 1,890-file corpus, so R needs no entry in the ruling table; an empty array is the correct value and it makes the gate print ten EMITTED rows instead of exiting 2 with `no RULING TABLE for r`.",
+        "why": "the gate refuses to report for any language absent from that map, which at handover means R's ten verdicts could not be printed by the repository's own arbiter at all."
+      },
+      {
+        "file": "script/m14/spec/r-completeness.json",
+        "what": "create it with a `design_decision.decisions` array. The gate's `rulingFor` reads it only for types that are NOT emitted, so for R today it is never consulted \u2014 but its absence is why a future type cannot be ruled with a written reason.",
+        "value": "one decision: `{\"id\":\"BD-ontology\",\"node_type\":\"(relationship ontology)\",\"status\":\"RULED\",\"question\":\"Which of the 10 relationship types does r emit?\",\"resolution\":\"EMITTED: all ten, measured through production parseFile over 1,890 R files in 13 repos ... `uses` was RULED inapplicable on a prose argument about imports and is EMITTED: 3,823 edges ...\"}`",
+        "why": "the gate classifies a non-emitted type with no spec entry as RULED-UNJUSTIFIED, and a lane that later loses a type on a thin corpus should fail that way rather than silently."
+      },
+      {
+        "file": "script/m14/run-fixtures.ts",
+        "what": "add to `LANGS`: `r: { wasm: \"tree-sitter-r.wasm\", analyzerFile: \"real-r-analyzer\", className: \"RealRAnalyzer\", ext: \"R,r\" }`",
+        "why": "the full-run fixture-lane gate computes `orphaned = dirs.filter(d => !(d in LANGS))` and calls `process.exit(6)`. `validation/m14/fixtures/r/` is such a directory, so `npm run audit:fixtures` FAILS today for a reason unrelated to any lane's behaviour.",
+        "blocker": "adding the entry alone turns 1 pass into 16 failures: this runner fails a fixture source with no expectation file, and the directory holds 16 pre-existing `.R` sources with 0 expectation files. Either port them (their ground truth is in validation/m12/results/r-fixture-set.json) or move them out of the fixture directory. This lane's own runner, validation/m14/fixtures/r/run-r-fixtures.ts, exists so that F17's expectation is a RESULT rather than a file nothing reads."
+      },
+      {
+        "file": "script/m14/differential.ts",
+        "what": "add to `LANGS`: `r: { wasm: \"tree-sitter-r.wasm\", analyzerFile: \"real-r-analyzer\", className: \"RealRAnalyzer\", ext: \"R,r\" }`, and register a `uses` oracle.",
+        "why": "there is no `LANGS.r` entry, so `bun script/m60/lane-surface-audit.ts --lang r` exits `2 \u2014 unknown language r` and no differential row for R has ever been computed by the repository's own harness. Registering the lane is the precondition for the DERIVATION debt below being paid down by anything but this lane."
+      }
+    ],
+    "derivationFindings": {
+      "count": 9,
+      "types": [
+        "calls",
+        "contains",
+        "imports",
+        "references",
+        "exports",
+        "extends",
+        "implements",
+        "overrides",
+        "instantiates"
+      ],
+      "meaning": "a type the analyzer emits that no differential compares against anything. R has no differential lane at all, so ALL NINE of its emitted types are DERIVATION findings at handover \u2014 the highest count of any lane named in the workstream header, whose zero list has 12 lanes.",
+      "note": "`uses` was not a DERIVATION finding at handover because it was not emitted. It is one now."
+    }
+  },
+  "sharedMachineryDefects": {
+    "note": "Found by this lane, NOT fixed by it: `src/ast/pool-worker.ts` is shared machinery (ONTOLOGY-WORKSTREAM.md \u00a78). Each entry is measured.",
+    "defects": [
+      {
+        "id": "keepSymbol-denylist-source_file",
+        "file": "src/ast/pool-worker.ts",
+        "function": "keepSymbol",
+        "line": 448,
+        "what": "the UNIVERSAL denylist contains the string `source_file`, beside `root`, `program`, `module_declaration` and `package_manifest`. Those are tree-sitter NODE-TYPE names; not one of the fifteen entries is an R keyword, and `source_file` is an ordinary R function name.",
+        "evidence": "r-testthat/R/source.R:18 declares `source_file <- function(path, env, chdir, desc, wrap, shuffle, error_call)` and roxygen `@export`s it at line 16. `analyze()` publishes the symbol, `ASTEngine.parseFile` publishes it, production `parseFile` does NOT \u2014 and the `exports` and `contains` edges naming it survive, because `filterNoiseRelationships` consults a different list (NOISE_TARGETS).",
+        "measuredCostToR": {
+          "symbolsDeleted": 12,
+          "files": 9,
+          "byName": {
+            "this": 5,
+            "me": 4,
+            "root": 2,
+            "source_file": 1
+          }
+        },
+        "instrument": "validation/m14/fixtures/r/probe-denylist.ts",
+        "why": "the sibling list `NOISE_TARGETS` already records this exact lesson \u2014 'a variable the file declares is a real node in the graph' \u2014 after it deleted 18 real bash edges over five corpora. `keepSymbol` has the same shape and was not given the same discriminator (declaration rather than name).",
+        "suggestedFix": "apply the same discriminator NOISE_TARGETS uses: keep a denied name when the file's own symbol list declares it. The function already receives the whole symbol; `filterNoiseRelationships` already receives `declaredNames`."
+      },
+      {
+        "id": "fixture-lane-gate-blocks-every-lane",
+        "file": "script/m14/run-fixtures.ts",
+        "function": "main / the fixture-lane gate",
+        "line": 1523,
+        "what": "`orphaned = dirs.filter(d => !(d in LANGS))` then `process.exit(6)`. `validation/m14/fixtures/r/` is a directory and `LANGS` has no `r`, so a FULL run of `npm run audit:fixtures` exits 6 today.",
+        "evidence": "`npx tsx script/m14/verify-honesty.ts` reports M14.0.F3 non-passing; the underlying condition is a two-line fact: the directory exists and `r` is not a LANGS key.",
+        "why": "one unregistered lane blocks the fixture gate for all 49 registered ones",
+        "suggestedFix": "add `r: { wasm: \"tree-sitter-r.wasm\", analyzerFile: \"real-r-analyzer\", className: \"RealRAnalyzer\", ext: \"R,r\" }` AND either port the 16 pre-existing `.R` fixtures to the expectation schema or move them out of the fixture directory \u2014 the runner fails a source with no expectation file, so the entry alone turns 1 pass into 16 failures."
+      },
+      {
+        "id": "hygiene-gate-has-no-r",
+        "file": "script/m14/verify-analyzer-hygiene.ts",
+        "function": "main",
+        "what": "`GATED_ANALYZERS` covers 24 analyzers and has no `r`, so `bun run script/m14/verify-analyzer-hygiene.ts --lang r` prints `unknown language: r` and exits.",
+        "suggestedFix": "add r to GATED_ANALYZERS with the rules the other 24 declare; the analyzer is regex-free today, which is the rule most of them exist to check."
+      }
+    ]
+  }
+}

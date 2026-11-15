@@ -1,0 +1,129 @@
+{
+  "fixtureId": "python/multi-target-assignment-binds-names",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PY-D21 (round 11). `extractAssignment` gated on `left.type === \"identifier\"` and returned for everything else, so EVERY multi-target assignment bound nothing: `a, b = f()`, `(a, (b, c)) = f()`, `[a, b] = f()`, `a, *rest = f()` and the chained `a = b = 1` all published no symbol in the scope they bind. The corpus name this was found on is measured, not hypothetical: `pb-grpc/examples/python/auth/async_customized_auth_client.py` binds `helloworld_pb2, helloworld_pb2_grpc = grpc.protos_and_services(\"helloworld.proto\")` at module scope, and 12 rows of the round-10 UNEXPLAINED dump are `references` to `helloworld_pb2`/`helloworld_pb2_grpc` in that repo's examples (`.tmp-py/price-tuple-targets.py`: 182 module-scope tuple-target names in 58 files; the blast is the 12, all annotation references). The shapes below are every spelling the grammar produces \u2014 MEASURED with `.tmp-py/round11-shapes.mts`, because the grammar names the three containers differently (`pattern_list` for the bare `a, b`, `tuple_pattern` for `(a, b)`, `list_pattern` for `[a, b]`) and puts a `*rest` element in a FOURTH node type, `list_splat_pattern`. That last one is the literal round 11 added to the shared pattern walker: `addPatternTargets` descended `pattern_list` but not the splat inside it, so `a, *rest = f()` bound `a` and silently dropped `rest` \u2014 the same defect class round 10 deleted a dead literal for, read the other way (a literal the grammar DOES produce and the reader did not handle). SCOPE is the other half: only the module and class bodies publish symbols. A tuple target inside a `def` binds LOCALS, which are not symbols on this family's contract, so `m`/`n`/`sb`/`tail` must count ZERO \u2014 a rule that published them would be a fabrication, and the zero rows are that falsifier. Every line number, confidence and reasonCode below is read from the analyzer's own output (`.tmp-py/measure-round11-fixtures.mts`), not remembered.",
+  "expectSymbols": [
+    {
+      "name": "FIRST",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.multiTargetForm": "pattern_list",
+      "note": "THE POSITIVE ROW. `FIRST, SECOND = make_pair()` at module scope binds both names in the module namespace \u2014 this file's own scope \u2014 so each is published as an ownerless module variable. `multiTargetForm` records WHICH spelling bound it: provenance rather than meaning, the same job `boundByGlobalWrite` does for PY-D18, and the field a mutant can revert on."
+    },
+    {
+      "name": "c",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.multiTargetForm": "tuple_pattern",
+      "note": "NESTED: `(a, (b, c)) = make_pair()` binds three names through a `tuple_pattern` inside a `pattern_list`. The walker descends containers, so the nesting costs nothing \u2014 and `c` is published at its OWN position inside the pattern rather than at the pattern's start."
+    },
+    {
+      "name": "d",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.multiTargetForm": "list_pattern",
+      "note": "`[d, e] = make_pair()` is the third spelling of the same declaration. The grammar has a separate node for it, so a rule keyed on `pattern_list` alone would leave it silent."
+    },
+    {
+      "name": "rest",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.multiTargetForm": "pattern_list",
+      "note": "THE ROUND-11 WALKER ROW. `f, *rest = make_pair()` spells the splat as a `list_splat_pattern` element holding one identifier; the walker did not descend it, so `rest` bound nothing. This is the row that fails if `list_splat_pattern` is removed from `patternTargetNodes`."
+    },
+    {
+      "name": "h",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "note": "`g = h = make_pair()` is two NESTED `assignment` nodes, so each name is published by its own node and NEITHER carries `multiTargetForm` \u2014 the field states the multi-target spelling and a chain is not one. Pinned because it is the shape a `left.type !== \"identifier\"` gate was least likely to break and the shape a naive rewrite to a single-walker would publish twice."
+    },
+    {
+      "name": "q",
+      "kind": "variable",
+      "meta.isModuleVariable": true,
+      "meta.multiTargetForm": "pattern_list",
+      "note": "`p, q: int = 1, 2` \u2014 an ANNOTATED multi-target. The annotation is a `type` child of the same `assignment`, so the target walker sees an ordinary `pattern_list`; a rule that read the annotation as a child of the target would be reading a shape that does not exist."
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Holder",
+      "meta.multiTargetForm": "pattern_list",
+      "note": "CLASS SCOPE: `x, y = 1, 2` in a class body binds two MEMBERS, so the class-body branch publishes a Property per name with the class as owner. The branch returned early for a non-identifier target exactly as the module branch did, so class-scope multi-targets were silent too."
+    },
+    {
+      "name": "y",
+      "kind": "property",
+      "ownerName": "Holder",
+      "meta.multiTargetForm": "pattern_list",
+      "note": "The second member of the same pair, published at its own position."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "calls_the_module_bindings",
+      "target": "FIRST",
+      "line_number": 38,
+      "confidence": 0.9,
+      "meta.reasonCode": "bare-name-callee",
+      "note": "THE ROW THE ROUND EXISTS FOR, in the corpus shape: the call sits 18 lines below the binding and the binding is a multi-target assignment. Before this round `FIRST` was a name bound by nothing anywhere in the file, which is what UNEXPLAINED means; now it binds to the symbol above. `bare-name-callee` is CORRECT here and is not a bug: the name IS a module-level value, and the reason code says the callee's route is a bare name rather than a local, a member or a dispatch. Resolution is what changed, not the route."
+    },
+    {
+      "type": "references",
+      "from": "Annotates",
+      "target": "FIRST",
+      "line_number": 42,
+      "confidence": 0.95,
+      "meta.reasonCode": "annotation-type",
+      "note": "11 of the 12 priced corpus rows were this shape (an annotation naming a multi-target module binding), so the reference emitter is pinned independently of the call emitter \u2014 the two could drift, and a fix that reached only `processCall` would leave the corpus blast at 11 rows."
+    },
+    {
+      "type": "calls",
+      "from": "calls_the_locals",
+      "target": "calls_the_locals\u0000m",
+      "line_number": 51,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "THE SCOPE ROW. `m, n = make_pair()` inside a `def` binds LOCALS, so the call of `m` is a local call and `m` is not a project-wide name. This row was already correct before round 11 \u2014 `collectFunctionLocals` reads its targets through the same shared walker \u2014 and it is pinned here because the round edited that walker: the reason code is the falsifier if the function-scope reading is widened into a symbol publication. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "FIRST",
+      "equals": 1,
+      "note": "ONE symbol per name. A target walker that published once per container element rather than once per identifier would report 2+ here."
+    },
+    {
+      "name": "rest",
+      "equals": 1,
+      "note": "One symbol for the splat target, which is the whole point of the walker row."
+    },
+    {
+      "name": "m",
+      "equals": 0,
+      "note": "FABRICATION GUARD. `m` is a function local (bound by `m, n = make_pair()`), and locals are not symbols on this family's contract. The correct reading is `local-callee`, not a fabricated declaration \u2014 a fix that pushed the pattern walker into the local case would publish this and be wrong."
+    },
+    {
+      "name": "n",
+      "equals": 0,
+      "note": "Same, the second name of the same local target."
+    },
+    {
+      "name": "sb",
+      "equals": 0,
+      "note": "Same, and this one is the SPLAT in a function body (`sb, *tail = make_pair()`) \u2014 the local half of the `list_splat_pattern` change, which must stay a local."
+    },
+    {
+      "name": "tail",
+      "equals": 0,
+      "note": "The splat's name in a function body: the new walker descends it, so this row states that descending it did NOT make it a symbol."
+    },
+    {
+      "name": "x",
+      "equals": 1,
+      "note": "The class member published exactly once, from the pair \u2014 and by the class-body branch, which is proven by the `kind: property` + `ownerName: Holder` row above rather than by this count."
+    }
+  ]
+}

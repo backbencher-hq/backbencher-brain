@@ -1,0 +1,79 @@
+{
+  "fixtureId": "lua/local-declarations",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-00, authored from the grammar's measured shape: a variable_declaration's names live in a variable_list reached by node TYPE, because this grammar has no `name_list` field. The source-level fact is pinned by script/m60/verify-lua-grasped-fields.ts, which reads the analyzer's own literals; this fixture pins the observable consequence instead, because that is what a behavioural fixture can honestly hold. Line numbers are MEASURED from this committed file. Lines are measured from CODE lines only: the first draft matched the header comment, which quotes the very declarations it is measuring, and so reported the comment's line numbers.",
+  "expectSymbols": [
+    {
+      "name": "solo",
+      "comment": "LUA-00: a bare `local x` with NO assignment \u2014 the shape whose first named child is the variable_list itself"
+    },
+    {
+      "name": "a"
+    },
+    {
+      "name": "b",
+      "comment": "a multi-name local declaration"
+    },
+    {
+      "name": "t",
+      "comment": "a local bound to a table constructor"
+    },
+    {
+      "name": "s"
+    },
+    {
+      "name": "d"
+    },
+    {
+      "name": "e",
+      "comment": "a GLOBAL assignment, which is a declaration at file scope"
+    }
+  ],
+  "forbidSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "solo",
+      "line_number": 14
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "a",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "b",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "t",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "s",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "d",
+      "line_number": 18
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "e",
+      "line_number": 18
+    }
+  ],
+  "forbidRelationships": []
+}

@@ -1,0 +1,99 @@
+{
+  "fixtureId": "protobuf/message-tree-contains",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the message-tree `contains` contract at R3: a message OWNS its fields and nested messages \u2014 a TREE fact on existing grammar nodes (`message` under `message_body`, target = the nested message's own symbol). The construct is already emitted (the analyzer's message case, member `nestedType`), and 13 fixtures fire it incidentally while resolving other questions; this fixture pins THE TREE FACT ITSELF with both negative controls, which none of them does: (1) `meta.member` is pinned as `nestedType` on the nested-message rows \u2014 no other fixture pins that metadata, so a relabel of the member key or an emission that swaps it with the field member would pass every other fixture and fail here; (2) ownership is exactly one level deep: the PACKAGE owns the top-level message and the MESSAGE owns its nested one, so a contains edge from the PACKAGE to a twice-nested type, or from a nested message to a SIBLING's member, would assert a chain as an edge \u2014 the reversed direction is forbidden because containment is the owning edge, not a transitive one; (3) a field inside the nested message is owned by ITS message, not by the outer one, so the outer message claiming the leaf field is forbidden \u2014 the exact shape an analyzer that pushed body children onto the wrong owner would produce. Expectations are hand-derived from the protobuf declaration forms, not from an analyzer run.",
+  "expectSymbols": [
+    {
+      "name": "tree.v1",
+      "kind": "namespace",
+      "note": "the package is a namespace and owns ONLY top-level declarations"
+    },
+    {
+      "name": "Root",
+      "kind": "class",
+      "note": "a message maps to `class`"
+    },
+    {
+      "name": "Branch",
+      "kind": "class",
+      "note": "a NESTED message is a class like any other, owned by its containing message"
+    },
+    {
+      "name": "Leaf",
+      "kind": "class",
+      "note": "twice-nested: owned by Branch, NOT by Root and NOT by the package"
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "note": "a field of Leaf, owned by Leaf alone"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "tree.v1",
+      "target": "tree.v1.Root",
+      "line_number": 8,
+      "meta.member": "nestedType",
+      "note": "the package owns the TOP-LEVEL message through the SAME message-case member tag (`nestedType`) — the root context's owner IS the package, so this edge is the message case firing at depth 0. Corrected from an authored `field` after the probe measured the actual member."
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1.Root",
+      "target": "tree.v1.Root.Branch",
+      "line_number": 9,
+      "meta.member": "nestedType",
+      "note": "THE TREE FACT: the containing message owns its nested message, target = the nested message's own symbol. This is the only row family that pins meta.member nestedType."
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1.Root.Branch",
+      "target": "tree.v1.Root.Branch.Leaf",
+      "line_number": 10,
+      "meta.member": "nestedType",
+      "note": "the tree is recursive: Branch owns Leaf exactly as Root owns Branch"
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1.Root.Branch.Leaf",
+      "target": "tree.v1.Root.Branch.Leaf.name",
+      "line_number": 11,
+      "meta.member": "field",
+      "note": "the field belongs to the innermost message that declares it"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "tree.v1",
+      "target": "tree.v1.Root.Branch",
+      "note": "the package does NOT own the nested message \u2014 ownership is exactly one level deep, and this row is the transitive-chain impostor: an analyzer that minted a package->deeply-nested edge would be asserting the CHAIN as an EDGE."
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1.Root",
+      "target": "tree.v1.Root.Branch.Leaf",
+      "note": "Root does NOT own its grandchild: the tree fact is parent-to-child, never grandparent-to-grandchild."
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1.Root",
+      "target": "tree.v1.Root.Branch.Leaf.name",
+      "note": "Root does NOT own Branch's field: pushing body children onto the wrong owner is the exact defect this forbids."
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1",
+      "target": "tree.v1.Root.Branch.Leaf.name",
+      "note": "the deepest impostor: package to a twice-removed field. Any of these four rows firing means the contains walk flattened the tree."
+    },
+    {
+      "type": "contains",
+      "from": "tree.v1.Root.Branch",
+      "target": "tree.v1.Root.Branch.Leaf.name#property",
+      "note": "Leaf has no group, so no #property twin exists; this row forbids a fabricated disambiguated id on a plain nested-message tree."
+    }
+  ]
+}

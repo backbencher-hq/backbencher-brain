@@ -1,0 +1,59 @@
+{
+ "projectId": "1dea81ec7f8bcf2f24d6edf335352688b00a4965",
+ "names": [
+  "total"
+ ],
+ "out": [
+  {
+   "id": "checkout-symbols-present",
+   "isError": false,
+   "ms": 154,
+   "plans": [
+    {
+     "name": "total",
+     "file": "ts-js/src/checkout.ts",
+     "stale": false
+    }
+   ],
+   "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+   }
+  },
+  {
+   "id": "after-delete-json",
+   "isError": false,
+   "ms": 22,
+   "plans": [
+    {
+     "name": "total",
+     "file": "ts-js/src/checkout.ts",
+     "stale": false
+    }
+   ],
+   "freshness": {
+    "fresh": 0,
+    "stale": 0,
+    "missing": 1,
+    "staleRatio": 1,
+    "mode": "complete",
+    "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+   }
+  },
+  {
+   "id": "after-delete-text",
+   "isError": false,
+   "ms": 36,
+   "textHead": [
+    "migration target: python",
+    "dependency order: total (partial)",
+    "methodology: base=4h relationships=4h missing-mappings=0h",
+    "  charged edges by kind (one flat 2h rate, uncalibrated): calls 2=4h (100%)"
+   ]
+  }
+ ]
+}

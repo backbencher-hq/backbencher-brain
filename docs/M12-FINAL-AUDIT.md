@@ -1,6 +1,6 @@
 # M12 Final Per-Analyzer Audit And Release-Readiness Decision
 
-Issue: [#182](https://github.com/backbencher-hq/backbencher-brain/issues/182)
+Issue: [#182](https://github.com/ishaq2321/backbencher-brain/issues/182)
 
 Date: 2026-08-21
 

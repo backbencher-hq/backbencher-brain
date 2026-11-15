@@ -1,0 +1,8 @@
+{
+  "fixtureId": "javascript/jsx-detection-depth",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J10 fix: JSX detection capped tree-walking at 500 node visits with order-dependent traversal, so early JSX in files past ~300 lines silently lost React detection. The walk is now unbounded like every other pass; JSX on line 1 of a 131-line file must still register.",
+  "expectSymbols": [],
+  "expectFrameworks": ["JavaScript", "React"]
+}

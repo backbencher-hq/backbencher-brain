@@ -1,0 +1,33 @@
+# `exports` — A PUBLISHED NAME, AND THE PATH CASE THAT IS NOT ONE (LEAD RULING 2026-10-13)
+#
+# `exports` means A NAME THE UNIT PUBLISHES FOR OTHERS TO IMPORT. A manifest key whose VALUE is a
+# path, a directory or a coordinate is a publish-surface fact about an ARTIFACT, and emitting one
+# under `exports` is a type error in emission: the edge dangles and a consumer that follows it gets
+# nothing back. The name list {module, publish, main, ...} generates CANDIDATES; the DECISION is
+# whether the value names a declaration THIS document makes — json's measured standard, where 29 of
+# 29 `exports` targets are declared in their own document.
+#
+# POSITIVE CONTROL: `module` names `helpers`, and `[helpers]` below declares `helpers` here, so
+# exactly ONE `exports` edge must be emitted, targeting the declaration rather than the string.
+module = "helpers"
+
+# THE RULED DEFECT, EACH PINNED NEGATIVE. These four are publish-SHAPED by key, and every value is a
+# path, a directory or a coordinate — none names a declaration of this document, so none may emit.
+# They sit at the ROOT (before any table header) so their symbols are `publish`, `main`,
+# `entrypoint` and `exposed`, not children of `helpers`.
+publish = "build-output"
+main = "src/main.rs"
+entrypoint = "./run.sh"
+exposed = "org.example:artifact"
+
+[helpers]
+kind = "table"
+
+# THE MEASURED CORPUS COINCIDENCE, PINNED. `docs/netlify.toml` declares `[build]` and then
+# `publish = "build"` — the OUTPUT DIRECTORY shares its own enclosing table's name. Under a test that
+# only asks "does the value name a declaration here?", that site emits `exports` and the edge dangles:
+# it publishes nothing a consumer can import, it names the section it configures. An export must not
+# name the site's own context.
+[build]
+base = "docs"
+publish = "build"

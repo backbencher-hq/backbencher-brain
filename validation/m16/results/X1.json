@@ -1,0 +1,12 @@
+{
+  "issue": "M16.X1 (security doc route + tool-layer fidelity)",
+  "code": "X1",
+  "tool": "bb_security",
+  "title": "X1",
+  "verified": true,
+  "checks": 3,
+  "passed": 3,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:28:15.404Z"
+}

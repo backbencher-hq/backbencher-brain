@@ -1,0 +1,762 @@
+{
+  "root": {
+    "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+    "name": "buildSchema",
+    "symbolType": "function",
+    "file": "graphql-js/utilities/buildASTSchema.ts",
+    "line": 150,
+    "lineEnd": 163,
+    "language": "typescript",
+    "complexity": 1,
+    "isExternal": false
+  },
+  "rootCandidates": 1,
+  "rootMatch": "exact",
+  "callers": [
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 38
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:buildSchema:calls:38",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 128
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:buildSchema:calls:128",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 319
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:buildSchema:calls:319",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 582
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:buildSchema:calls:582",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/buildASTSchema-test.ts",
+        "line": 53
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52:buildSchema:calls:53",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/buildClientSchema-test.ts",
+        "line": 38
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37:buildSchema:calls:38",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts",
+        "line": 12
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11:buildSchema:calls:12",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/printSchema-test.ts",
+        "line": 36
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33:buildSchema:calls:36",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+        "line": 10
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9:buildSchema:calls:10",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "exports",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/buildASTSchema.ts",
+        "line": 150
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63:buildSchema:exports:150",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "structural"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "relationshipType": "contains",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/buildASTSchema.ts",
+        "line": 150
+      },
+      "depth": 0,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63:buildSchema:contains:2",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {}
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 585
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:executeQuery:calls:585",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "executeQuery",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 587
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:executeQuery:calls:587",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "executeQuery",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 587
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:promisify:calls:587",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "promisify",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 592
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:executeQuery:calls:592",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "executeQuery",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 594
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:executeQuery:calls:594",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "executeQuery",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 594
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:promisify:calls:594",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "promisify",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "references",
+      "confidence": 0.8,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 585
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:executeQuery:references:585",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "executeQuery",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "reference_qualified"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "references",
+      "confidence": 0.8,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 587
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:promisify:references:587",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "promisify",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {
+        "evidenceClass": "reference_qualified"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "contains",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 600
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580:executeQuery:contains:1",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "executeQuery",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {}
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "relationshipType": "contains",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 604
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580:promisify:contains:2",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "promisify",
+        "file": "graphql-js/execution/__tests__/lists-test.ts"
+      },
+      "metadata": {}
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "relationshipType": "contains",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+        "line": 13
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9:expectErrors:contains:1",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "expectErrors",
+        "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts"
+      },
+      "metadata": {}
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "relationshipType": "contains",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+        "line": 21
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9:expectValid:contains:2",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "expectValid",
+        "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts"
+      },
+      "metadata": {}
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/buildASTSchema.ts",
+        "line": 159
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150:buildASTSchema:calls:159",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+      "to": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+      "relationshipType": "uses",
+      "confidence": 0.9,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/buildASTSchema.ts",
+        "line": 65
+      },
+      "depth": 1,
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63:BuildSchemaOptions:uses:65",
+      "targetMatch": "owner-cascade",
+      "targetBasis": "symbol",
+      "matchedMember": {
+        "name": "BuildSchemaOptions",
+        "file": "graphql-js/utilities/buildASTSchema.ts"
+      },
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    }
+  ],
+  "callees": [],
+  "nodes": {
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+      "name": "buildSchema",
+      "symbolType": "function",
+      "file": "graphql-js/utilities/buildASTSchema.ts",
+      "line": 150,
+      "lineEnd": 163,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "name": "complete",
+      "symbolType": "function",
+      "file": "graphql-js/execution/__tests__/lists-test.ts",
+      "line": 36,
+      "lineEnd": 42,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52",
+      "name": "cycleSDL",
+      "symbolType": "function",
+      "file": "graphql-js/utilities/__tests__/buildASTSchema-test.ts",
+      "line": 52,
+      "lineEnd": 54,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37",
+      "name": "cycleIntrospection",
+      "symbolType": "function",
+      "file": "graphql-js/utilities/__tests__/buildClientSchema-test.ts",
+      "line": 37,
+      "lineEnd": 49,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11",
+      "name": "sortSDL",
+      "symbolType": "function",
+      "file": "graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts",
+      "line": 11,
+      "lineEnd": 14,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33",
+      "name": "expectPrintedSchema",
+      "symbolType": "function",
+      "file": "graphql-js/utilities/__tests__/printSchema-test.ts",
+      "line": 33,
+      "lineEnd": 38,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "name": "buildAssertion",
+      "symbolType": "function",
+      "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+      "line": 9,
+      "lineEnd": 24,
+      "language": "typescript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+      "name": "buildASTSchema",
+      "symbolType": "function",
+      "file": "graphql-js/utilities/buildASTSchema.ts",
+      "line": 63,
+      "lineEnd": 114,
+      "language": "typescript",
+      "complexity": 8,
+      "isExternal": false,
+      "stale": false
+    },
+    "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580": {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580",
+      "name": "complete",
+      "symbolType": "function",
+      "file": "graphql-js/execution/__tests__/lists-test.ts",
+      "line": 580,
+      "lineEnd": 609,
+      "language": "typescript",
+      "complexity": 3,
+      "isExternal": false,
+      "stale": false
+    }
+  },
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [
+      "unattributed-source: 487 caller and 0 callee stored rows name this symbol (or a member of its owner cascade) but carry no source symbol, so no traversal can show them in either direction. They are counted, not listed — the rows exist and name this symbol; treating the edge sets above as the whole set would understate it. Depth-0 only: deeper symbols report their own edges, not their own unattributed rows. Remediation, if the count matters: a full re-index (the bb index command) is what re-attributes sources; a changed-only run does not re-parse the files those rows came from."
+    ],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "6623498ebe135a8cab4c46270ea6737f1d4526e3",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  },
+  "summary": {
+    "totalCallers": 30,
+    "totalCallees": 0,
+    "maxDepthReached": 1,
+    "maxDepth": 3,
+    "timeBudgetMs": 2000,
+    "timeBudgetExhausted": false,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 487,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageEdges": 0,
+    "truncated": false,
+    "truncationReasons": [],
+    "filterNarrowed": false,
+    "filterReason": null,
+    "edgeLimit": 200,
+    "maxEdges": 1000,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 11,
+    "cascadedCallers": 0,
+    "exactCallees": 0,
+    "cascadedCallees": 0,
+    "deeperCallers": 19,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesByType": {
+      "calls": 16,
+      "exports": 3,
+      "contains": 6,
+      "references": 3,
+      "uses": 2
+    },
+    "relationshipTypesUsed": [
+      "calls",
+      "extends",
+      "implements",
+      "uses",
+      "instantiates",
+      "overrides",
+      "contains",
+      "references",
+      "imports",
+      "exports",
+      "decorates",
+      "renders",
+      "mixes_in",
+      "part_of"
+    ],
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "edgesInBothDirections": 0,
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 21,
+      "spellingVariantsCollapsed": 0
+    },
+    "returnedCallers": 25,
+    "returnedCallees": 0,
+    "pageEdgeLimit": 25,
+    "pageTruncated": true
+  },
+  "mode": "callers",
+  "target": "buildSchema",
+  "found": true,
+  "freshness": {
+    "fresh": 7,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

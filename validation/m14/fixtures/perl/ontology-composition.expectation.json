@@ -1,0 +1,135 @@
+{
+ "fixtureId": "perl/ontology-composition",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "PERL-ONTOLOGY. Four composition shapes and two `has` shapes in fifteen lines, because each was a place where the lane read a SLOT NAME as a DECLARATION and the numbers were too small for any count to notice. Line numbers are read off the numbered source above.",
+ "rationale": "A role composition is a NAME LIST, and Moose/Moo write it in four shapes that look alike and are not. (1) `with 'R'` — one name. (2) `with qw(A B)` — ONE `quoted_word_list` node, so reading only its first word published A and dropped B: measured on moo, 6 of 94 `implements` rows and 5 of 109 `extends` rows on 142 files. (3) `with 'A', { -excludes => [...], -alias => {...} }, 'B'` — the MIXED form, where a bare `{ ... }` among the names is a MODIFIER specification and the modifier names live one level deeper inside it. Reading every word published them as roles: measured on Moose-2.4000/t/roles/role_conflict_detection.t:139 (`implements My::Test8 -> -alias`) and t/roles/more_alias_and_exclude.t:47. (4) `with 'A' => {...}, 'B' => {...}` — the fat-comma SPECIFICATION form, where the roles are the top-level KEYS. All three of 2-4 are PERL-MR4's rule — a fat-comma key is a SLOT name, not a declaration — stated for role composition, and all three were wrong on the analyzer AND on the independent oracle at the same time. The two `has` rows are the same class on the attribute side: a `has` specification's fat-comma keys are OPTION names (`clearer`, `predicate` on line 11), and the attribute name itself is ONE literal read verbatim (`has spaces` on line 12, which the word splitter truncated to `has`).",
+ "expectSymbols": [
+  {
+   "name": "Ontology::Roles",
+   "kind": "class"
+  },
+  {
+   "name": "name",
+   "kind": "property",
+   "ownerName": "Ontology::Roles"
+  },
+  {
+   "name": "has spaces",
+   "kind": "property",
+   "ownerName": "Ontology::Roles"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "Plain",
+   "line_number": 7,
+   "meta.reasonCode": "moo-role-composition",
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "One",
+   "line_number": 8,
+   "note": "the FIRST word of a `qw(...)` node. Only this one existed before the fix: the node is ONE `quoted_word_list` and `[0]` took one name from it."
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "Two",
+   "line_number": 8,
+   "note": "the SECOND word of the SAME node, on the same line. Reading only the first loses every role after the first in every `qw()` composition in a corpus."
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "Three",
+   "line_number": 9,
+   "note": "the MIXED form: a bare `{ ... }` among the names is a MODIFIER specification. The modifier names are one level deeper and are not roles."
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "Four",
+   "line_number": 9
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "Five",
+   "line_number": 10,
+   "note": "the fat-comma SPECIFICATION form: the roles are the top-level KEYS, so they are read with `fatCommaKeys` and never by descending into a value."
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Roles",
+   "target": "Six",
+   "line_number": 10
+  },
+  {
+   "type": "contains",
+   "from": "Ontology::Roles",
+   "target": "name",
+   "line_number": 11,
+   "note": "a `has` attribute name is ONE literal, read verbatim from the grammar's own `content`"
+  },
+  {
+   "type": "contains",
+   "from": "Ontology::Roles",
+   "target": "has spaces",
+   "line_number": 12,
+   "note": "a name containing a SPACE. The word splitter exists for `qw(a b)`, which IS a list; a quoted attribute name is one name whatever it contains, and the pre-fix behaviour truncated this to `has` — worse than publishing nothing, because `has` is a real perl function."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "implements",
+   "target": "-excludes",
+   "note": "line 9: a MODIFIER name, not a role"
+  },
+  {
+   "type": "implements",
+   "target": "excludes",
+   "note": "line 9 and 10: the same modifier with the sigil stripped"
+  },
+  {
+   "type": "implements",
+   "target": "-alias",
+   "note": "line 9 and 10: a modifier name"
+  },
+  {
+   "type": "implements",
+   "target": "alias",
+   "note": "line 10: a modifier name"
+  },
+  {
+   "type": "implements",
+   "target": "new",
+   "note": "line 9/10: the alias TARGET inside the modifier hash is the name the modifier creates, not a role"
+  },
+  {
+   "type": "implements",
+   "target": "gone",
+   "note": "line 9: a role the -excludes modifier removes. It is named, and it is not composed."
+  },
+  {
+   "type": "contains",
+   "target": "clearer",
+   "note": "line 11: a `has` OPTION name. The pre-fix shape published it as a property — measured on Moose-2.4000/t/accessor-pred-clear.t:13."
+  },
+  {
+   "type": "contains",
+   "target": "predicate",
+   "note": "line 11: a `has` OPTION name"
+  },
+  {
+   "type": "contains",
+   "target": "has",
+   "note": "line 12: the TRUNCATED form of `has spaces`, which is worse than nothing because `has` is a real perl function and a `bb_impact` on it would reach every Moose class"
+  }
+ ]
+}

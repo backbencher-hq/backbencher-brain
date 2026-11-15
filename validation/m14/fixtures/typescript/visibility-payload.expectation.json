@@ -1,0 +1,18 @@
+{
+  "fixtureId": "typescript/visibility-payload",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the visibility payload (section C, Matrix 1b). TS semantics: accessibility_modifier (public/private/protected) determines symbol visibility; absence means the default (public in TS).",
+  "expectSymbols": [
+    { "name": "Vis", "kind": "class" }
+  ],
+  "expectVisibility": [
+    { "symbol": "pub", "visibility": "public" },
+    { "symbol": "priv", "visibility": "private" },
+    { "symbol": "prot", "visibility": "protected" },
+    { "symbol": "plain", "visibility": "public" },
+    { "symbol": "getPub", "visibility": "public" },
+    { "symbol": "setPriv", "visibility": "private" },
+    { "symbol": "getProt", "visibility": "protected" }
+  ]
+}

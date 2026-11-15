@@ -1,0 +1,36 @@
+{
+  "structures": [
+    {
+      "name": "ImplementationParams",
+      "properties": [
+        { "name": "textDocument", "type": { "kind": "reference", "name": "TextDocumentIdentifier" } }
+      ],
+      "extends": [{ "kind": "reference", "name": "TextDocumentPositionParams" }],
+      "mixins": [
+        { "kind": "reference", "name": "WorkDoneProgressParams" },
+        { "kind": "reference", "name": "PartialResultParams" }
+      ]
+    },
+    {
+      "name": "TextDocumentPositionParams",
+      "properties": [
+        { "name": "position", "type": { "kind": "reference", "name": "Position" } }
+      ],
+      "mixins": [{ "kind": "reference", "name": "PartialResultParams" }]
+    },
+    { "name": "WorkDoneProgressParams", "properties": [] },
+    { "name": "PartialResultParams", "properties": [] },
+    { "name": "Position", "properties": [] },
+    { "name": "TextDocumentIdentifier", "properties": [] },
+    {
+      "name": "Orphan",
+      "properties": [],
+      "extends": [{ "kind": "reference", "name": "NotDeclaredAnywhere" }],
+      "mixins": [{ "kind": "reference", "name": "AlsoNotDeclared" }]
+    }
+  ],
+  "notAType": {
+    "name": "thisIsAFieldNotAType",
+    "kind": "reference"
+  }
+}

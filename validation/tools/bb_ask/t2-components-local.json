@@ -1,0 +1,110 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+  "fileCount": 6452,
+  "embedding": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 3530.27,
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "failed": false
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 2.6,
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "failed": false
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 2.29,
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "failed": false
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 3.71,
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "failed": false
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 3.36,
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "failed": false
+    }
+  ],
+  "indexStateMs": 3.05,
+  "coverageMs": 83.75,
+  "coverage": {
+    "symbols": 310423,
+    "embedded": 32837
+  },
+  "coverageRatio": 0.10578146593519165,
+  "scan": [
+    {
+      "query": "how does request handling work in this codebase",
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "rows": 1931,
+      "bytes": 386200,
+      "loadMs": 134.35,
+      "scoreMs": 6.79,
+      "kept": 52,
+      "top": 0.5257229181048537
+    },
+    {
+      "query": "where is the index lock acquired",
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "rows": 1931,
+      "bytes": 386200,
+      "loadMs": 15.7,
+      "scoreMs": 4.64,
+      "kept": 44,
+      "top": 0.48860162438571875
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "rows": 1931,
+      "bytes": 386200,
+      "loadMs": 15.12,
+      "scoreMs": 2.14,
+      "kept": 26,
+      "top": 0.5252307920430864
+    }
+  ],
+  "exactNameMs": 0.27,
+  "files": {
+    "before": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793571636749.845
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571722854.1218
+      }
+    },
+    "after": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793571636749.845
+      },
+      "wal": {
+        "size": 164832,
+        "mtimeMs": 1793571742032.4062
+      }
+    },
+    "dbUnchanged": false
+  },
+  "generatedAt": "2026-11-01T22:22:22.302Z"
+}

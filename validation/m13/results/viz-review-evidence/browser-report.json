@@ -1,0 +1,1490 @@
+[
+  {
+    "name": "01-raw-graph",
+    "what": "renderer Architecture Map, studio NOT involved",
+    "url": "raw-graph.html",
+    "shots": [
+      {
+        "file": "01-raw-graph-tearly.png",
+        "canvases": [
+          {
+            "id": "c",
+            "inkRatio": 0.0168,
+            "note": "painted"
+          }
+        ]
+      },
+      {
+        "file": "01-raw-graph-tsettled.png",
+        "canvases": [
+          {
+            "id": "c",
+            "inkRatio": 0.0168,
+            "note": "painted"
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "render": {
+        "canvases": [
+          {
+            "id": "c",
+            "size": [
+              1600,
+              1000
+            ],
+            "ink": 1678,
+            "sampled": 100000,
+            "inkRatio": 0.0168,
+            "inkCentroid": [
+              779,
+              513
+            ],
+            "inkSpan": [
+              152,
+              1444,
+              212,
+              632
+            ],
+            "note": "painted"
+          }
+        ],
+        "svgCount": 0,
+        "svgs": [],
+        "groupCounts": {
+          "panel": 4,
+          "sub": 7,
+          "warnrow": 1,
+          "note": 1,
+          "row": 10,
+          "swatch": 8,
+          "dot": 2,
+          "close": 1,
+          "savebtn": 1
+        }
+      },
+      "panels": {
+        "hud": {
+          "display": "block",
+          "box": [
+            16,
+            16,
+            327,
+            249
+          ],
+          "text": "Architecture Map bb_visualize · self-contained · no network 200 nodes 437 edges node types 4 languages 2362 (heaviest 75) stored edges behind them 73 "
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            35,
+            84,
+            289,
+            127
+          ],
+          "text": "200 nodes 437 edges node types 4 languages 2362 (heaviest 75) stored edges behind them 73 cross-language edges"
+        },
+        "legend": {
+          "display": "block",
+          "box": [
+            16,
+            686,
+            297,
+            298
+          ],
+          "text": "RELATIONSHIP TYPES instantiates 2 calls 382 uses 17 references 35 contains 1 ENCODING size = index gravity hollow ring = stale since index opacity = s"
+        },
+        "search": {
+          "display": "flex",
+          "box": [
+            1320,
+            16,
+            264,
+            64
+          ],
+          "text": ""
+        },
+        "detail": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "✕"
+        },
+        "shown": {
+          "display": "block",
+          "box": [
+            551,
+            52,
+            497,
+            29
+          ],
+          "text": "showing 140 of 200 nodes and 437 of 437 edges in view — zoom in, or click a node to focus"
+        },
+        "progress": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "laying out… 100%"
+        },
+        "side": "ABSENT",
+        "map": "ABSENT",
+        "path": "ABSENT",
+        "world": "ABSENT",
+        "rel-list": "ABSENT",
+        "rel-rows": "ABSENT",
+        "warn": "ABSENT",
+        "fitall": "ABSENT",
+        "zoomstate": "ABSENT",
+        "savebtn": {
+          "display": "block",
+          "box": [
+            1510,
+            16,
+            74,
+            31
+          ],
+          "text": "save as…"
+        },
+        "stage": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "c": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "edges": "ABSENT",
+        "ah": "ABSENT",
+        "ah-hollow": "ABSENT",
+        "hint": {
+          "display": "block",
+          "box": [
+            512,
+            953,
+            576,
+            31
+          ],
+          "text": "drag to pan · scroll to zoom · click a node to focus, click an edge to frame both ends, double-click a node to fill the view with its neighbours"
+        },
+        "group": "ABSENT",
+        "g-dir": "ABSENT",
+        "g-lang": "ABSENT",
+        "mapbtn": "ABSENT",
+        "kind-rows": "ABSENT",
+        "__title": "Backbencher Architecture Map",
+        "__bodyText": "Architecture Map bb_visualize · self-contained · no network 200 nodes 437 edges node types 4 languages 2362 (heaviest 75) stored edges behind them 73 cross-language edges nothing excluded — this map is the whole project RELATIONSHIP TYPES instantiates 2 calls 382 uses 17 references 35 contains 1 ENCODING size = index gravity hollow ring = stale since index opacity = stored confidence thickness = s"
+      }
+    }
+  },
+  {
+    "name": "02-raw-codemap",
+    "what": "renderer code map, studio NOT involved",
+    "url": "raw-codemap.html",
+    "shots": [
+      {
+        "file": "02-raw-codemap-tearly.png",
+        "canvases": []
+      },
+      {
+        "file": "02-raw-codemap-tsettled.png",
+        "canvases": []
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "render": {
+        "canvases": [],
+        "svgCount": 0,
+        "svgs": [],
+        "groupCounts": {
+          "fname": 10,
+          "on": 2,
+          "sub": 12,
+          "note": 1,
+          "panel": 3,
+          "row": 13,
+          "sw": 13,
+          "close": 1
+        }
+      },
+      "panels": {
+        "hud": {
+          "display": "block",
+          "box": [
+            16,
+            16,
+            290,
+            208
+          ],
+          "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 122 files 11 directories 171 symbols 21.6k lines spanned nothing excluded — this "
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            16,
+            85,
+            290,
+            84
+          ],
+          "text": "122 files 11 directories 171 symbols 21.6k lines spanned"
+        },
+        "legend": {
+          "display": "block",
+          "box": [
+            16,
+            377,
+            290,
+            346
+          ],
+          "text": "SYMBOL KINDS constant 63 property 61 function 46 method 14 variable 6 interface 5 enum_member 2 class 1 type 1 enum 1 READING IT gap = code between sy"
+        },
+        "search": {
+          "display": "flex",
+          "box": [
+            16,
+            305,
+            290,
+            60
+          ],
+          "text": ""
+        },
+        "detail": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "✕"
+        },
+        "shown": "ABSENT",
+        "progress": "ABSENT",
+        "side": {
+          "display": "flex",
+          "box": [
+            0,
+            0,
+            322,
+            1000
+          ],
+          "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 122 files 11 directories 171 symbols 21.6k lines spanned nothing excluded — this "
+        },
+        "map": {
+          "display": "block",
+          "box": [
+            322,
+            0,
+            1278,
+            1000
+          ],
+          "text": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26"
+        },
+        "path": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": ""
+        },
+        "world": {
+          "display": "block",
+          "box": [
+            334,
+            82,
+            815,
+            637
+          ],
+          "text": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26"
+        },
+        "rel-list": "ABSENT",
+        "rel-rows": "ABSENT",
+        "warn": "ABSENT",
+        "fitall": "ABSENT",
+        "zoomstate": {
+          "display": "block",
+          "box": [
+            1426,
+            955,
+            160,
+            31
+          ],
+          "text": "52% · scroll out to see all"
+        },
+        "savebtn": "ABSENT",
+        "stage": "ABSENT",
+        "c": "ABSENT",
+        "edges": "ABSENT",
+        "ah": "ABSENT",
+        "ah-hollow": "ABSENT",
+        "hint": "ABSENT",
+        "group": {
+          "display": "flex",
+          "box": [
+            16,
+            236,
+            290,
+            58
+          ],
+          "text": "group by directory language"
+        },
+        "g-dir": {
+          "display": "block",
+          "box": [
+            84,
+            247,
+            81,
+            36
+          ],
+          "text": "directory"
+        },
+        "g-lang": {
+          "display": "block",
+          "box": [
+            170,
+            247,
+            83,
+            36
+          ],
+          "text": "language"
+        },
+        "mapbtn": {
+          "display": "block",
+          "box": [
+            1512,
+            14,
+            74,
+            31
+          ],
+          "text": "save as…"
+        },
+        "kind-rows": {
+          "display": "block",
+          "box": [
+            16,
+            416,
+            290,
+            207
+          ],
+          "text": "constant 63 property 61 function 46 method 14 variable 6 interface 5 enum_member 2 class 1 type 1 enum 1"
+        },
+        "__title": "Backbencher Code Map",
+        "__bodyText": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26-bare-uses-truth.ts pe.mts scratch-shape.mts zig.md auto-index.ts save as… 52% · scroll out to see all scroll to zoom · drag to pan · click a file or symbol for its stored facts Code Map bb_visualize · one rectangle per SYMBOL, sized by"
+      }
+    }
+  },
+  {
+    "name": "03-raw-class",
+    "what": "renderer UML diagram, studio NOT involved",
+    "url": "raw-class.html",
+    "shots": [
+      {
+        "file": "03-raw-class-tearly.png",
+        "canvases": []
+      },
+      {
+        "file": "03-raw-class-tsettled.png",
+        "canvases": []
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "render": {
+        "canvases": [],
+        "svgCount": 1,
+        "svgs": [
+          {
+            "size": [
+              1600,
+              1000
+            ],
+            "paths": 23,
+            "pathsWithD": 23,
+            "lines": 0,
+            "rects": 0,
+            "texts": 0,
+            "foreignObjects": 0,
+            "gs": 1,
+            "allEls": 27
+          }
+        ],
+        "groupCounts": {
+          "cls": 23,
+          "hd": 23,
+          "sub2": 23,
+          "panel": 3,
+          "sub": 3,
+          "fitbtn": 2,
+          "row": 9,
+          "ln": 2,
+          "mg": 3,
+          "close": 1
+        }
+      },
+      "panels": {
+        "hud": {
+          "display": "block",
+          "box": [
+            16,
+            16,
+            360,
+            247
+          ],
+          "text": "Class Diagram bb_visualize · types and relationships the index actually stores 23 types drawn 21 relationships drawn 257991 symbols in scope 177 types"
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            35,
+            102,
+            322,
+            63
+          ],
+          "text": "23 types drawn 21 relationships drawn 257991 symbols in scope"
+        },
+        "legend": {
+          "display": "block",
+          "box": [
+            16,
+            484,
+            360,
+            500
+          ],
+          "text": "RELATIONSHIPS fit all implements 20 contains 1 IN EACH BOX () method :: field or property = enum member from the index's own containment links; at mos"
+        },
+        "search": "ABSENT",
+        "detail": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            13,
+            22
+          ],
+          "text": "✕"
+        },
+        "shown": "ABSENT",
+        "progress": "ABSENT",
+        "side": "ABSENT",
+        "map": "ABSENT",
+        "path": "ABSENT",
+        "world": "ABSENT",
+        "rel-list": {
+          "display": "block",
+          "box": [
+            35,
+            773,
+            322,
+            300
+          ],
+          "text": "contains: on -> push implements: RealRubyAnalyzer -> LanguageAnalyzer implements: RealHaskellAnalyzer -> LanguageAnalyzer implements: RealObjectiveCAn"
+        },
+        "rel-rows": {
+          "display": "block",
+          "box": [
+            35,
+            562,
+            322,
+            39
+          ],
+          "text": "implements 20 contains 1"
+        },
+        "warn": {
+          "display": "block",
+          "box": [
+            35,
+            174,
+            322,
+            72
+          ],
+          "text": "177 types in this scope have no stored relationship to any other type, so they are not drawn as boxes: a box with nothing attached to it is not part o"
+        },
+        "fitall": {
+          "display": "inline-block",
+          "box": [
+            35,
+            524,
+            48,
+            27
+          ],
+          "text": "fit all"
+        },
+        "zoomstate": "ABSENT",
+        "savebtn": {
+          "display": "block",
+          "box": [
+            1511,
+            14,
+            75,
+            21
+          ],
+          "text": "save as…"
+        },
+        "stage": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": "push class · ci.yml on class · ci.yml RealScalaAnalyzer class · real-scala-analyzer.ts RealJavaScriptAnalyzer class · real-javascript-analyzer.ts Real"
+        },
+        "c": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "edges": {
+          "display": "inline",
+          "box": [
+            93,
+            269,
+            1367,
+            526
+          ],
+          "text": ""
+        },
+        "ah": {
+          "display": "inline",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": ""
+        },
+        "ah-hollow": {
+          "display": "inline",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": ""
+        },
+        "hint": {
+          "display": "block",
+          "box": [
+            610,
+            953,
+            380,
+            31
+          ],
+          "text": "drag to pan · scroll to zoom · click a type to focus its relationships"
+        },
+        "group": "ABSENT",
+        "g-dir": "ABSENT",
+        "g-lang": "ABSENT",
+        "mapbtn": "ABSENT",
+        "kind-rows": "ABSENT",
+        "__title": "Backbencher Class Diagram",
+        "__bodyText": "push class · ci.yml on class · ci.yml RealScalaAnalyzer class · real-scala-analyzer.ts RealJavaScriptAnalyzer class · real-javascript-analyzer.ts RealRubyAnalyzer class · real-ruby-analyzer.ts LanguageAnalyzer interface · engine.ts RealCSharpAnalyzer class · real-csharp-analyzer.ts RealRustAnalyzer class · real-rust-analyzer.ts RealErlangAnalyzer class · real-erlang-analyzer.ts RealObjectiveCAnaly"
+      }
+    }
+  },
+  {
+    "name": "04-raw-graph-module",
+    "what": "scoped (src/mcp) Architecture Map",
+    "url": "raw-graph-module.html",
+    "shots": [
+      {
+        "file": "04-raw-graph-module-tearly.png",
+        "canvases": [
+          {
+            "id": "c",
+            "inkRatio": 0.0215,
+            "note": "painted"
+          }
+        ]
+      },
+      {
+        "file": "04-raw-graph-module-tsettled.png",
+        "canvases": [
+          {
+            "id": "c",
+            "inkRatio": 0.0215,
+            "note": "painted"
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "render": {
+        "canvases": [
+          {
+            "id": "c",
+            "size": [
+              1600,
+              1000
+            ],
+            "ink": 2145,
+            "sampled": 100000,
+            "inkRatio": 0.0215,
+            "inkCentroid": [
+              990,
+              223
+            ],
+            "inkSpan": [
+              844,
+              1128,
+              36,
+              516
+            ],
+            "note": "painted"
+          }
+        ],
+        "svgCount": 0,
+        "svgs": [],
+        "groupCounts": {
+          "panel": 4,
+          "sub": 6,
+          "note": 1,
+          "row": 9,
+          "swatch": 7,
+          "dot": 2,
+          "close": 1,
+          "savebtn": 1
+        }
+      },
+      "panels": {
+        "hud": {
+          "display": "block",
+          "box": [
+            16,
+            16,
+            312,
+            228
+          ],
+          "text": "Architecture Map bb_visualize · self-contained · no network 200 nodes 216 edges node types 1 languages 220 (heaviest 2) stored edges behind them nothi"
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            35,
+            84,
+            274,
+            106
+          ],
+          "text": "200 nodes 216 edges node types 1 languages 220 (heaviest 2) stored edges behind them"
+        },
+        "legend": {
+          "display": "block",
+          "box": [
+            16,
+            707,
+            297,
+            277
+          ],
+          "text": "RELATIONSHIP TYPES references 24 calls 9 contains 174 uses 9 ENCODING size = index gravity hollow ring = stale since index opacity = stored confidence"
+        },
+        "search": {
+          "display": "flex",
+          "box": [
+            1320,
+            16,
+            264,
+            64
+          ],
+          "text": ""
+        },
+        "detail": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "✕"
+        },
+        "shown": {
+          "display": "block",
+          "box": [
+            551,
+            52,
+            497,
+            29
+          ],
+          "text": "showing 182 of 200 nodes and 208 of 216 edges in view — zoom in, or click a node to focus"
+        },
+        "progress": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "laying out… 100%"
+        },
+        "side": "ABSENT",
+        "map": "ABSENT",
+        "path": "ABSENT",
+        "world": "ABSENT",
+        "rel-list": "ABSENT",
+        "rel-rows": "ABSENT",
+        "warn": "ABSENT",
+        "fitall": "ABSENT",
+        "zoomstate": "ABSENT",
+        "savebtn": {
+          "display": "block",
+          "box": [
+            1510,
+            16,
+            74,
+            31
+          ],
+          "text": "save as…"
+        },
+        "stage": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "c": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "edges": "ABSENT",
+        "ah": "ABSENT",
+        "ah-hollow": "ABSENT",
+        "hint": {
+          "display": "block",
+          "box": [
+            512,
+            953,
+            576,
+            31
+          ],
+          "text": "drag to pan · scroll to zoom · click a node to focus, click an edge to frame both ends, double-click a node to fill the view with its neighbours"
+        },
+        "group": "ABSENT",
+        "g-dir": "ABSENT",
+        "g-lang": "ABSENT",
+        "mapbtn": "ABSENT",
+        "kind-rows": "ABSENT",
+        "__title": "Backbencher Architecture Map",
+        "__bodyText": "Architecture Map bb_visualize · self-contained · no network 200 nodes 216 edges node types 1 languages 220 (heaviest 2) stored edges behind them nothing excluded — this map is the whole project RELATIONSHIP TYPES references 24 calls 9 contains 174 uses 9 ENCODING size = index gravity hollow ring = stale since index opacity = stored confidence thickness = stored rows behind the edge cross-language "
+      }
+    }
+  },
+  {
+    "name": "05-studio-default",
+    "what": "handler html, no view asked for",
+    "url": "studio-default.html",
+    "shots": [
+      {
+        "file": "05-studio-default-tearly.png",
+        "canvases": [
+          {
+            "id": "c",
+            "inkRatio": 0.0306,
+            "note": "painted"
+          }
+        ]
+      },
+      {
+        "file": "05-studio-default-tsettled.png",
+        "canvases": [
+          {
+            "id": "c",
+            "inkRatio": 0.0306,
+            "note": "painted"
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "studio": {
+        "mountedMode": "graph",
+        "status": "Graph view loaded",
+        "buttons": [
+          "graph[active]",
+          "codemap",
+          "class"
+        ],
+        "frameTitle": "Backbencher Architecture Map",
+        "framePanels": {
+          "hud": "none",
+          "legend": "none",
+          "search": "flex",
+          "side": "ABSENT",
+          "map": "ABSENT",
+          "stats": "grid"
+        }
+      },
+      "frameInk": {
+        "canvases": [
+          {
+            "id": "c",
+            "size": [
+              1600,
+              1000
+            ],
+            "ink": 3060,
+            "sampled": 100000,
+            "inkRatio": 0.0306,
+            "inkCentroid": [
+              745,
+              530
+            ],
+            "inkSpan": [
+              456,
+              944,
+              284,
+              732
+            ],
+            "note": "painted"
+          }
+        ],
+        "svgCount": 0,
+        "svgs": [],
+        "groupCounts": {
+          "panel": 4,
+          "sub": 7,
+          "warnrow": 2,
+          "note": 1,
+          "row": 10,
+          "swatch": 8,
+          "dot": 2,
+          "close": 1,
+          "savebtn": 1
+        }
+      },
+      "framePanels": {
+        "hud": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "Architecture Map bb_visualize · self-contained · no network 200nodes437edgesnode types4languages2362 (heaviest 75)stored edges behind them73cross-lang"
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "200nodes437edgesnode types4languages2362 (heaviest 75)stored edges behind them73cross-language edges20stale since index"
+        },
+        "legend": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "Relationship types instantiates 2calls 382uses 17references 35contains 1 Encoding size = index gravity hollow ring = stale since index opacity = store"
+        },
+        "search": {
+          "display": "flex",
+          "box": [
+            1320,
+            16,
+            264,
+            64
+          ],
+          "text": ""
+        },
+        "detail": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "✕"
+        },
+        "shown": {
+          "display": "block",
+          "box": [
+            551,
+            52,
+            497,
+            29
+          ],
+          "text": "showing 118 of 200 nodes and 431 of 437 edges in view — zoom in, or click a node to focus"
+        },
+        "progress": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "laying out… 100%"
+        },
+        "side": "ABSENT",
+        "map": "ABSENT",
+        "path": "ABSENT",
+        "world": "ABSENT",
+        "rel-list": "ABSENT",
+        "rel-rows": "ABSENT",
+        "warn": "ABSENT",
+        "fitall": "ABSENT",
+        "zoomstate": "ABSENT",
+        "savebtn": {
+          "display": "block",
+          "box": [
+            1510,
+            16,
+            74,
+            31
+          ],
+          "text": "save as…"
+        },
+        "stage": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "c": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "edges": "ABSENT",
+        "ah": "ABSENT",
+        "ah-hollow": "ABSENT",
+        "hint": {
+          "display": "block",
+          "box": [
+            512,
+            953,
+            576,
+            31
+          ],
+          "text": "drag to pan · scroll to zoom · click a node to focus, click an edge to frame both ends, double-click a node to fill the view with its neighbours"
+        },
+        "group": "ABSENT",
+        "g-dir": "ABSENT",
+        "g-lang": "ABSENT",
+        "mapbtn": "ABSENT",
+        "kind-rows": "ABSENT",
+        "__title": "Backbencher Architecture Map",
+        "__bodyText": "save as… showing 118 of 200 nodes and 431 of 437 edges in view — zoom in, or click a node to focus drag to pan · scroll to zoom · click a node to focus, click an edge to frame both ends, double-click a node to fill the view with its neighbours"
+      }
+    }
+  },
+  {
+    "name": "06-studio-codemap-requested",
+    "what": "handler html, view=codemap REQUESTED",
+    "url": "studio-codemap-requested.html",
+    "shots": [
+      {
+        "file": "06-studio-codemap-requested-tearly.png",
+        "canvases": []
+      },
+      {
+        "file": "06-studio-codemap-requested-tsettled.png",
+        "canvases": []
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "studio": {
+        "mountedMode": "graph",
+        "status": "Graph view loaded",
+        "buttons": [
+          "graph[active]",
+          "codemap",
+          "class"
+        ],
+        "frameTitle": "Backbencher Code Map",
+        "framePanels": {
+          "hud": "none",
+          "legend": "none",
+          "search": "flex",
+          "side": "flex",
+          "map": "block",
+          "stats": "grid"
+        }
+      },
+      "frameInk": {
+        "canvases": [],
+        "svgCount": 0,
+        "svgs": [],
+        "groupCounts": {
+          "fname": 10,
+          "on": 2,
+          "sub": 12,
+          "note": 1,
+          "panel": 3,
+          "row": 13,
+          "sw": 13,
+          "close": 1
+        }
+      },
+      "framePanels": {
+        "hud": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 122files11directories171symbols21.6klines spanned nothing excluded — this map cov"
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "122files11directories171symbols21.6klines spanned"
+        },
+        "legend": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "Symbol kinds constant 63property 61function 46method 14variable 6interface 5enum_member 2class 1type 1enum 1 Reading it gap = code between symbols, at"
+        },
+        "search": {
+          "display": "flex",
+          "box": [
+            16,
+            102,
+            290,
+            60
+          ],
+          "text": ""
+        },
+        "detail": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "✕"
+        },
+        "shown": "ABSENT",
+        "progress": "ABSENT",
+        "side": {
+          "display": "flex",
+          "box": [
+            0,
+            0,
+            322,
+            1000
+          ],
+          "text": "group by directory language"
+        },
+        "map": {
+          "display": "block",
+          "box": [
+            322,
+            0,
+            1278,
+            1000
+          ],
+          "text": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26"
+        },
+        "path": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": ""
+        },
+        "world": {
+          "display": "block",
+          "box": [
+            334,
+            82,
+            815,
+            637
+          ],
+          "text": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26"
+        },
+        "rel-list": "ABSENT",
+        "rel-rows": "ABSENT",
+        "warn": "ABSENT",
+        "fitall": "ABSENT",
+        "zoomstate": {
+          "display": "block",
+          "box": [
+            1426,
+            955,
+            160,
+            31
+          ],
+          "text": "52% · scroll out to see all"
+        },
+        "savebtn": "ABSENT",
+        "stage": "ABSENT",
+        "c": "ABSENT",
+        "edges": "ABSENT",
+        "ah": "ABSENT",
+        "ah-hollow": "ABSENT",
+        "hint": "ABSENT",
+        "group": {
+          "display": "flex",
+          "box": [
+            16,
+            16,
+            290,
+            58
+          ],
+          "text": "group by directory language"
+        },
+        "g-dir": {
+          "display": "block",
+          "box": [
+            84,
+            27,
+            81,
+            36
+          ],
+          "text": "directory"
+        },
+        "g-lang": {
+          "display": "block",
+          "box": [
+            170,
+            27,
+            83,
+            36
+          ],
+          "text": "language"
+        },
+        "mapbtn": {
+          "display": "block",
+          "box": [
+            1512,
+            14,
+            74,
+            31
+          ],
+          "text": "save as…"
+        },
+        "kind-rows": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "constant 63property 61function 46method 14variable 6interface 5enum_member 2class 1type 1enum 1"
+        },
+        "__title": "Backbencher Code Map",
+        "__bodyText": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26-bare-uses-truth.ts pe.mts scratch-shape.mts zig.md auto-index.ts save as… 52% · scroll out to see all scroll to zoom · drag to pan · click a file or symbol for its stored facts group by directory language"
+      }
+    }
+  },
+  {
+    "name": "07-studio-class-requested",
+    "what": "handler html, view=class REQUESTED",
+    "url": "studio-class-requested.html",
+    "shots": [
+      {
+        "file": "07-studio-class-requested-tearly.png",
+        "canvases": []
+      },
+      {
+        "file": "07-studio-class-requested-tsettled.png",
+        "canvases": []
+      }
+    ],
+    "errors": [],
+    "diagnostics": {
+      "studio": {
+        "mountedMode": "graph",
+        "status": "Graph view loaded",
+        "buttons": [
+          "graph[active]",
+          "codemap",
+          "class"
+        ],
+        "frameTitle": "Backbencher Class Diagram",
+        "framePanels": {
+          "hud": "none",
+          "legend": "none",
+          "search": "ABSENT",
+          "side": "ABSENT",
+          "map": "ABSENT",
+          "stats": "grid"
+        }
+      },
+      "frameInk": {
+        "canvases": [],
+        "svgCount": 1,
+        "svgs": [
+          {
+            "size": [
+              1600,
+              1000
+            ],
+            "paths": 23,
+            "pathsWithD": 23,
+            "lines": 0,
+            "rects": 0,
+            "texts": 0,
+            "foreignObjects": 0,
+            "gs": 1,
+            "allEls": 27
+          }
+        ],
+        "groupCounts": {
+          "cls": 23,
+          "hd": 23,
+          "sub2": 23,
+          "mem": 23,
+          "mrow": 140,
+          "mk": 121,
+          "mn": 121,
+          "panel": 3,
+          "sub": 3,
+          "fitbtn": 2,
+          "row": 9,
+          "ln": 2,
+          "mg": 3,
+          "close": 1
+        }
+      },
+      "framePanels": {
+        "hud": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "Class Diagram bb_visualize · types and relationships the index actually stores 23types drawn21relationships drawn257991symbols in scope 177 types in t"
+        },
+        "stats": {
+          "display": "grid",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "23types drawn21relationships drawn257991symbols in scope"
+        },
+        "legend": {
+          "display": "none",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "Relationships fit all implements 20contains 1 In each box ()method ::field or property =enum member from the index's own containment links; at most si"
+        },
+        "search": "ABSENT",
+        "detail": {
+          "display": "block",
+          "box": [
+            1499,
+            0,
+            13,
+            22
+          ],
+          "text": "✕"
+        },
+        "shown": "ABSENT",
+        "progress": "ABSENT",
+        "side": "ABSENT",
+        "map": "ABSENT",
+        "path": "ABSENT",
+        "world": "ABSENT",
+        "rel-list": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "contains: on -> push implements: RealRubyAnalyzer -> LanguageAnalyzer implements: RealHaskellAnalyzer -> LanguageAnalyzer implements: RealObjectiveCAn"
+        },
+        "rel-rows": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "implements 20contains 1"
+        },
+        "warn": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "177 types in this scope have no stored relationship to any other type, so they are not drawn as boxes: a box with nothing attached to it is not part o"
+        },
+        "fitall": {
+          "display": "inline-block",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": "fit all"
+        },
+        "zoomstate": "ABSENT",
+        "savebtn": {
+          "display": "block",
+          "box": [
+            1511,
+            14,
+            75,
+            21
+          ],
+          "text": "save as…"
+        },
+        "stage": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": "push class · ci.yml - branches on class · ci.yml - ci - pull_request RealScalaAnalyzer class · real-scala-analyzer.ts :: givenCounter :: anonNameUse ("
+        },
+        "c": {
+          "display": "block",
+          "box": [
+            0,
+            0,
+            1600,
+            1000
+          ],
+          "text": ""
+        },
+        "edges": {
+          "display": "inline",
+          "box": [
+            -586,
+            48,
+            2680,
+            1029
+          ],
+          "text": ""
+        },
+        "ah": {
+          "display": "inline",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": ""
+        },
+        "ah-hollow": {
+          "display": "inline",
+          "box": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "text": ""
+        },
+        "hint": {
+          "display": "block",
+          "box": [
+            610,
+            953,
+            380,
+            31
+          ],
+          "text": "drag to pan · scroll to zoom · click a type to focus its relationships"
+        },
+        "group": "ABSENT",
+        "g-dir": "ABSENT",
+        "g-lang": "ABSENT",
+        "mapbtn": "ABSENT",
+        "kind-rows": "ABSENT",
+        "__title": "Backbencher Class Diagram",
+        "__bodyText": "push class · ci.yml - branches on class · ci.yml - ci - pull_request RealScalaAnalyzer class · real-scala-analyzer.ts :: givenCounter :: anonNameUse () analyze :: FILE_MODULE () scalaModuleName () emitExportSurface +49 more stored RealJavaScriptAnalyzer class · real-javascript-analyzer.ts :: hasAnyDecoratorNode () analyze () addContainmentRelationships () extractOverrideRelationships () extractCal"
+      }
+    }
+  }
+]

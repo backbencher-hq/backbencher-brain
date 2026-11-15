@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE catalog [
+<!ELEMENT catalog (entry*)>
+<!ELEMENT entry EMPTY>
+<!ENTITY % with-ext "INCLUDE">
+<!ENTITY % without-ext "IGNORE">
+<![%with-ext;[
+  <!ATTLIST entry extId CDATA #IMPLIED>
+]]>
+<![%without-ext;[
+  <!ATTLIST entry legacyId CDATA #IMPLIED>
+]]>
+]>
+<catalog><entry/></catalog>

@@ -1,0 +1,133 @@
+{
+ "fixtureId": "vue/kebab-registry-name",
+ "language": "vue",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` \u2014 the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. F31 (2026-10-12) \\u2014 MEASURED on the 1,162-file vue draw, not argued from a convention, and the rule is TWO measurements, one for each half of the tag shape. The lane published 2,267 `instantiates` edges; 2,156 (95.1%) named a declaration no admitted file publishes, and 1,409 of those (62.2% of the whole payload) named a component the corpus DOES declare under a name the written tag does not equal: `<el-button>` against `ElButton`, `<svg-icon>` against `SvgIcon`. Vue's own rule is the fix: `resolveAsset` tries the written spelling, then camelize, then capitalize(camelize). Two of the project's instruments already state the rule and one of them rules on the defect class by name: script/m14/vue-instantiates-targets.mts classifies it `CASING` and says in its header \"the as-written target does not [match]. The graph cannot walk it and Vue resolves it. The analyzer owns this\"; script/m14/vue-six-questions.mts derives [tag, Pascal, camel] and reports the lane's `tgtVueRule` resolution separately from its raw `tgtCorpus` resolution. Pre-fix, so the two sides of the differential AGREED on a name no registry holds: the oracle published the tag as written and the lane matched it. Both now apply the framework rule, the same way the F9 dotted-tag rule publishes the registry root rather than `Form.Input`, and the same way the F30 builtin vocabulary moved both sides together. What must NOT change is also pinned here: a native tag is filtered on the AS-WRITTEN spelling, because the builtin set carries camelCase natives (`linearGradient`), and normalizing before that test would turn markup into a component. `<div>` and `<linearGradient>` are the controls for it, and `MyLibWidget` (already a registry name) is the control for the no-op branch. `<router-link/>` is the third control: the derived name is `RouterLink`, and no admitted corpus file declares it, so the edge stays unresolved \\u2014 a right NAME is not a fabricated DECLARATION. Dedupe is on the registry name, so the three spellings of `ElButton` written in this template are ONE edge carrying all three (metadata.tagSpellingsWritten), because `instantiates` asserts one fact about one component. THE EXACT ACCOUNTING, taken from the analyzer's own output over the same 1,162 files rather than from the F5 instrument's aggregate (whose RESOLVED row counts the exact AND the rule-aware answer together, and whose CASING branch is unreachable - see the lane doc): of the edges whose target the rule changed, **1,433 were GAINED** (the written spelling resolves nowhere and the normalized target is a corpus declaration: `el-button` -> `ElButton` 221 edges, `el-icon` -> `ElIcon` 101), **16 were LOST** (the written spelling IS a declaration and the normalized one is not), 2 resolved either way and 543 neither. The 16 are what makes this rule TWO measurements instead of one: every one of them is a component whose FILE is named the way the tag is written - `guide-svg.vue`, `vp-link.vue`, `sponsors-button.vue`, `upload-dragger.vue`, 15 distinct spellings - so the tag rule spells a kebab component the way Vue registers it (`GuideSvg`) while the file-stem fallback spells it the way the FILE is named (`guide-svg`), and those 16 edges sit exactly between the two. That residual seam is the next measurement, not a claim. The second measurement is the single all-lowercase word, which the rule leaves AS WRITTEN because capitalizing it is two-sided and net-negative on the draw: over the 53 such edges, 8 would gain and 20 would lose (20 resolve as written and 10 of those also resolve capitalized; 15 resolve neither way). The camel branch (a hyphenless tag with an inner capital) is rule-completeness with no live instance either way, stated as such: every camel-shaped tag spelling on the draw is an SVG native (`feGaussianBlur`, `linearGradient`) and is filtered as markup before the rule runs.",
+ "expectRelationships": [
+  {
+   "source": "KebabRegistry",
+   "target": "ElButton",
+   "type": "renders",
+   "meta.isComponentUsage": true,
+   "meta.resolution": "registry-name",
+   "meta.tagAsWritten": "el-button",
+   "meta.componentNameNormalized": true,
+   "meta.componentNameCandidates": [
+    "el-button",
+    "elButton",
+    "ElButton"
+   ],
+   "meta.tagSpellingsWritten": [
+    "ElButton",
+    "el-button",
+    "elButton"
+   ]
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "ElFormItem",
+   "type": "renders",
+   "meta.tagAsWritten": "el-form-item",
+   "meta.componentNameCandidates": [
+    "el-form-item",
+    "elFormItem",
+    "ElFormItem"
+   ]
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "SvgIcon",
+   "type": "renders",
+   "meta.tagAsWritten": "svg-icon"
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "CardWidget",
+   "type": "renders",
+   "meta.resolution": "registry-name",
+   "meta.tagAsWritten": "cardWidget",
+   "meta.componentNameCandidates": [
+    "cardWidget",
+    "CardWidget"
+   ]
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "loading",
+   "type": "renders",
+   "meta.componentNameNormalized": null
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "message",
+   "type": "renders",
+   "meta.componentNameNormalized": null
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "MyLibWidget",
+   "type": "renders",
+   "meta.componentNameNormalized": null
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "ElForm",
+   "type": "renders",
+   "meta.member": "Item",
+   "meta.tagAsWritten": "el-form",
+   "meta.componentPath": "el-form.Item"
+  },
+  {
+   "source": "KebabRegistry",
+   "target": "RouterLink",
+   "type": "renders",
+   "meta.tagAsWritten": "router-link"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "target": "el-button",
+   "note": "the written spelling is carried in metadata, not published as the target"
+  },
+  {
+   "target": "el-form-item"
+  },
+  {
+   "target": "svg-icon"
+  },
+  {
+   "target": "cardWidget"
+  },
+  {
+   "target": "Loading",
+   "note": "the single-lowercase-word deviation: capitalizing it is what the 36-edge LOST class measured, so the written spelling is kept"
+  },
+  {
+   "target": "Message"
+  },
+  {
+   "target": "el-form",
+   "note": "the dotted tag's root is normalized too"
+  },
+  {
+   "target": "router-link"
+  },
+  {
+   "target": "div",
+   "note": "native markup never instantiates"
+  },
+  {
+   "target": "linearGradient",
+   "note": "the builtin test reads the AS-WRITTEN spelling"
+  },
+  {
+   "target": "LinearGradient",
+   "note": "and normalizing must not turn a native SVG tag into a component"
+  },
+  {
+   "type": "renders",
+   "target": "search",
+   "comment": "a FILTERED kebab tag: it normalizes to no component in this fixture, so re-emitting it as a usage is the pre-fix false positive"
+  }
+ ]
+}

@@ -1,0 +1,56 @@
+{
+  "fixtureId": "cpp/declaration-vs-definition-612",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M37.19 (#612) store-phase. Name resolution had nothing but the symbol NAME to resolve a call with, so a declaration could beat the definition that implements it in another file. The M14.0.SC1 family gate is exactly that shape: `math.c` holds the caller AND a c prototype (`extern int run_engine(void);`), the definition lives in `engine.cpp`, and same-file preference picked the prototype — the c->cpp edge was stored `is_cross_file = 0`, `is_cross_language = 0` and the gate read `got 0` for a call that plainly exists. The fix reads an analyzer-published fact. c had published `metadata.isDeclaration` since the HC1 review; cpp/rust/zig did not, even though the grammar distinguishes the forms in the node type the walk already switches on (`function_definition` vs `declaration`/`field_declaration`). The fact then died at the WORKER SEAM (pool-worker.ts dropped the whole `metadata` object for symbols), which is the same seam that had silently killed docstring (M35) and scope_kind (#837). MEASURED ON THIS EXACT FILE by dumping the analyzer output through the fixture harness' own loader (web-tree-sitter + wasm/tree-sitter-cpp.wasm, RealCppAnalyzer): only_declared:17 isDeclaration=true, Engine::run:25 isDeclaration=true, only_defined:19-21 ABSENT, Engine::stop:26 ABSENT. The file is deliberately two-sided — a rule that marked every function (or none) fails one half or the other.",
+  "expectSymbols": [
+    {
+      "name": "only_declared",
+      "kind": "function",
+      "meta.isDeclaration": true,
+      "comment": "a file-scope prototype with no definition anywhere: a DECLARATION"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "Engine",
+      "meta.isDeclaration": true,
+      "comment": "an in-class declaration (`int run();`) is a `field_declaration` — a DECLARATION with no body"
+    },
+    {
+      "name": "only_defined",
+      "kind": "function",
+      "comment": "a definition with no prototype (`function_definition`)"
+    },
+    {
+      "name": "stop",
+      "kind": "method",
+      "ownerName": "Engine",
+      "comment": "an in-class definition with a body"
+    },
+    {
+      "name": "Engine",
+      "kind": "class"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "only_defined",
+      "meta.isDeclaration": true,
+      "comment": "NEGATIVE HALF: a `function_definition` must never be published as a declaration. Without this the fixture would pass on a rule that marked everything."
+    },
+    {
+      "name": "stop",
+      "meta.isDeclaration": true,
+      "comment": "NEGATIVE HALF: a body-bearing in-class member is a definition. Reverting the `type === \"function_definition\"` test to a constant `true` fails this entry."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "stop",
+      "target": "run",
+      "comment": "CONTROL: the declaration still exists as a symbol and is still a call target inside its own class — the flag narrows resolution, it does not delete the declaration"
+    }
+  ]
+}

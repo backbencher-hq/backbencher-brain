@@ -1,0 +1,12 @@
+{
+  "issue": "M15.N4",
+  "code": "N4",
+  "tool": "bb_analyze",
+  "title": "measured time complexity",
+  "verified": true,
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:20:23.803Z"
+}

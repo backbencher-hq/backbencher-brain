@@ -22,7 +22,7 @@ import { join } from "node:path"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 // Derived from this file's own location, NOT hardcoded. Six of this lane's scripts
-// pinned $HOME/backbencher-brain, so in a lane worktree they read a path
+// pinned /home/ishaq2321/backbencher-brain, so in a lane worktree they read a path
 // that does not exist and the gate died with ENOENT instead of reporting a verdict.
 // A gate that cannot execute is not a gate, and the mutant battery looked green
 // only because its failure was being read as a pass.
@@ -462,7 +462,7 @@ const sliceFiles: string[] = (() => {
   // PER-REPO clone directory, not the repositories/ parent — the parent is not a
   // git repository, which is what the first version of this helper discovered the
   // hard way.
-  const REPOS = "$HOME/fixtures/repositories/kong"
+  const REPOS = "/home/ishaq2321/bb_tests/repositories/kong"
   const out = execFileSync("bun", ["-e", `
     const { execFileSync } = require("node:child_process")
     const { readFileSync } = require("node:fs")

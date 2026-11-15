@@ -1,0 +1,28 @@
+{
+ "fixtureId": "swift/init-delegation",
+ "language": "swift",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Swift second review wave: SW-G super/self init delegation constructs (dart DT-D parity; never calls to init), SW-H implicit (.a(v)) and Self (Self.a(v)) enum-case construction resolves against the enclosing enum. Every pin probe-verified against both the analyzer and deriveSwiftEdges before pinning; lanes confirm the pair agrees on corpora.",
+ "expectSymbols": [
+  {"name": "Base", "kind": "class"},
+  {"name": "Child", "kind": "class"},
+  {"name": "Result", "kind": "enum"},
+  {"name": "success", "kind": "enum_member", "ownerName": "Result"},
+  {"name": "failure", "kind": "enum_member", "ownerName": "Result"},
+  {"name": "make", "kind": "method", "ownerName": "Result"},
+  {"name": "dup", "kind": "method", "ownerName": "Result"}
+ ],
+ "expectRelationships": [
+  {"type": "extends", "source": "Child", "target": "Base", "line_number": 7, "note": "M59.A7: the base SPECIFIER's own line in the inheritance clause, not the class declaration's"},
+  {"type": "instantiates", "source": "constructor", "target": "Base", "line_number": 9, "comment": "SW-G: super.init builds the superclass — line 9 is `super.init(x)`"},
+  {"type": "instantiates", "source": "constructor", "target": "Child", "line_number": 12, "comment": "SW-G: self.init builds the own class — line 12 is `self.init(0)`"},
+  {"type": "instantiates", "source": "make", "target": "Result", "line_number": 20, "comment": "SW-H: implicit .success(v) builds the enclosing enum; the site IS line 20"},
+  {"type": "instantiates", "source": "dup", "target": "Result", "line_number": 23, "comment": "SW-H: Self.failure builds the enclosing enum; the site IS line 23"},
+  {"type": "calls", "source": "dup", "target": "makeErr", "comment": "bare calls intact"}
+ ],
+ "forbidRelationships": [
+  {"type": "calls", "source": "constructor", "target": "init", "comment": "SW-G: init delegation never calls a method named init"},
+  {"type": "instantiates", "source": "constructor", "target": "Base", "line_number": 8, "comment": "M59.A7 line pin: the delegation's site is the CALL (line 9, `super.init(x)`), never the enclosing declaration's line (8, `override init(_ x: Int) {`) — an edge that borrows the declaration's line is not checkable against the source"},
+  {"type": "instantiates", "source": "make", "target": "Result", "line_number": 19, "comment": "M59.A7 line pin: the construction's site is the EXPRESSION (20), never its enclosing `static func make` declaration (19)"}
+ ]
+}

@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/AllOf.json",
+  "authoredFrom": "BD-allOf-extends: `allOf` means 'must satisfy ALL of these', a superset-of relationship, so it emits `extends`. `anyOf` and `oneOf` are ALTERNATIVES and have no ontology type, so the `anyOf` `$ref` in this file is asserted to produce `references` ONLY \u2014 a negative case, because a rule that cannot distinguish a composition from an alternative would pass a fixture that only contained the composition. Two ref forms are covered because the corpus has both: `#/\u2026` INSIDE the document, and a sibling file with a fragment (`other.json#`), which is simultaneously an `imports` (it names a file), a `references` (it is a `$ref`) and an `extends` (its role here is composition). The allOf SOURCE is the schema object that COMPOSES, not the `allOf` array that records the composition \u2014 pass 2 changed this and the change is a defect fix, not a preference. Every corpus example read `debugAdapterProtocol.definitions.Request.allOf -[extends]-> \u2026ProtocolMessage`, i.e. the edge claimed the ARRAY inherits, and `allOf` is a keyword shared by every schema in the file, so a consumer resolving by name binds it to an arbitrary one of them; measured on a 2,343-file stride sample, 114 of 114 `extends` edges had endpoints that bind by NEITHER bare name (the store resolves by name), against 100% for `contains`, `uses`, `calls`, `exports` and `overrides`. The array index is written with BRACKETS and is still stripped to find the keyword \u2014 three separate predicates got that path wrong before, each matching a subset and reporting success \u2014 and the stripped site is now published as `meta.compositionSite`, so the array's own path is still on the edge and a consumer that wants it has it. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge. The mechanical migration resolves a bare name against the fixture's own qualifiedName and could not choose between this file's THREE `$ref` symbols, so the 3 pins naming `$ref` as an endpoint were corrected BY HAND from the fixture source (line 8 is `allOf[1]`'s `$ref`, line 12 is `anyOf[0]`'s, and Imports line 4 is `N`'s). Their owner, child and line are unchanged. An intermediate version of the analyzer derived an array item's NAME from the array's PATH (`definitions.Extended.allOf[0]`) to fix a real NESTED-array collision; it was reverted in this worktree, so these 6 symbol pins name the array-derived form (`allOf[0]`, owner `allOf`) again. The nested-array collision is therefore OPEN and is reported rather than pinned \u2014 see the lane report.",
+  "expectSymbols": [
+    {
+      "name": "$schema",
+      "kind": "property",
+      "ownerName": "AllOf"
+    },
+    {
+      "name": "definitions",
+      "kind": "class",
+      "ownerName": "AllOf"
+    },
+    {
+      "name": "Node",
+      "kind": "class",
+      "ownerName": "definitions"
+    },
+    {
+      "name": "type",
+      "kind": "property",
+      "ownerName": "Node"
+    },
+    {
+      "name": "Extended",
+      "kind": "class",
+      "ownerName": "definitions"
+    },
+    {
+      "name": "allOf",
+      "kind": "property",
+      "ownerName": "Extended"
+    },
+    {
+      "name": "allOf[0]",
+      "kind": "class",
+      "ownerName": "allOf"
+    },
+    {
+      "name": "$ref",
+      "kind": "property",
+      "ownerName": "allOf[0]"
+    },
+    {
+      "name": "allOf[1]",
+      "kind": "class",
+      "ownerName": "allOf"
+    },
+    {
+      "name": "$ref",
+      "kind": "property",
+      "ownerName": "allOf[1]"
+    },
+    {
+      "name": "Alternative",
+      "kind": "class",
+      "ownerName": "definitions"
+    },
+    {
+      "name": "anyOf",
+      "kind": "property",
+      "ownerName": "Alternative"
+    },
+    {
+      "name": "anyOf[0]",
+      "kind": "class",
+      "ownerName": "anyOf"
+    },
+    {
+      "name": "$ref",
+      "kind": "property",
+      "ownerName": "anyOf[0]"
+    },
+    {
+      "name": "AllOf",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "AllOf",
+      "target": "AllOf.$schema",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "AllOf",
+      "target": "AllOf.definitions",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions",
+      "target": "AllOf.definitions.Node",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Node",
+      "target": "AllOf.definitions.Node.type",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions",
+      "target": "AllOf.definitions.Extended",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Extended",
+      "target": "AllOf.definitions.Extended.allOf",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Extended.allOf",
+      "target": "AllOf.definitions.Extended.allOf[0]",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Extended.allOf[0]",
+      "target": "AllOf.definitions.Extended.allOf[0].$ref",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Extended.allOf[1]",
+      "target": "AllOf.definitions.Extended.allOf[1].$ref",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Extended.allOf[1]",
+      "target": "AllOf.definitions.Extended.allOf[1].$ref",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions",
+      "target": "AllOf.definitions.Alternative",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Alternative.anyOf[0]",
+      "target": "AllOf.definitions.Alternative.anyOf[0].$ref",
+      "line_number": 12
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Alternative.anyOf[0]",
+      "target": "AllOf.definitions.Alternative.anyOf[0].$ref",
+      "line_number": 12
+    },
+    {
+      "type": "contains",
+      "from": "AllOf.definitions.Alternative.anyOf[0]",
+      "target": "AllOf.definitions.Alternative.anyOf[0].$ref",
+      "line_number": 12
+    },
+    {
+      "type": "references",
+      "from": "AllOf.definitions.Extended.allOf[0].$ref",
+      "target": "AllOf.definitions.Node",
+      "line_number": 7
+    },
+    {
+      "type": "imports",
+      "from": "AllOf.definitions.Extended.allOf[1].$ref",
+      "target": "other.json#",
+      "line_number": 8
+    },
+    {
+      "type": "references",
+      "from": "AllOf.definitions.Extended.allOf[1].$ref",
+      "target": "other.json#",
+      "line_number": 8
+    },
+    {
+      "type": "references",
+      "from": "AllOf.definitions.Alternative.anyOf[0].$ref",
+      "target": "AllOf.definitions.Node",
+      "line_number": 12
+    },
+    {
+      "type": "extends",
+      "from": "AllOf.definitions.Extended",
+      "target": "AllOf.definitions.Node",
+      "line_number": 7,
+      "meta.compositionSite": "AllOf.definitions.Extended.allOf",
+      "meta.composition": "allOf",
+      "meta.reasonCode": "json_schema_all_of"
+    },
+    {
+      "type": "extends",
+      "from": "AllOf.definitions.Extended",
+      "target": "other.json#",
+      "line_number": 8,
+      "meta.compositionSite": "AllOf.definitions.Extended.allOf"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "AllOf.definitions.Extended.allOf",
+      "target": "AllOf.definitions.Node"
+    },
+    {
+      "type": "extends",
+      "from": "AllOf.definitions.Extended.allOf",
+      "target": "other.json#"
+    }
+  ]
+}

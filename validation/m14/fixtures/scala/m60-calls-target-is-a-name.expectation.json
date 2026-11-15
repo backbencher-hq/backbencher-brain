@@ -1,0 +1,36 @@
+{
+  "fixtureId": "scala/m60-calls-target-is-a-name",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the M60/S11 ruling; spellings and lines recorded from the post-fix run. The defect PUBLISHED an edge whose target was an expression, so the forbids are the assertions that can fail on it.",
+  "rationale": "M60/S11 — a `calls` / `instantiates` target must be a NAME, so the callee must be a name-bearing shape; `calledName = fnNode.text` is a name only for those. This is the defect class the analyzer already documents and fixed for `throw` (SCD4: 'the raw node.text embedded the whole construction with its arguments ... became a single unmatchable References target') and had not fixed for `calls`. Three callee shapes were live on the corpora: a curried CONSTRUCTION (the callee is the instance_expression, so the target was `new LensRef(ref)`), dotty's right-associative INFIX `/:` (the callee is the infix_expression, so the target was the whole expression including newlines), and a PARENTHESIZED expression. The allowlist is a census, not a guess: script/m14/tmp/scala-callee-shape-census.ts over 400 files per corpus gives identifier / field_expression / call_expression / generic_function / operator_identifier / type_identifier / stable_type_identifier as the name-bearing shapes and instance_expression / infix_expression / parenthesized_expression / prefix_expression / wildcard as the rest. `wildcard` is refused because `_(x)` applies a PLACEHOLDER lambda and `_` is not a name in the graph. Before the fix: 8 analyzer rows on cats-effect and 34 on scala3 whose target contains a space or a parenthesis — and every one of them was ALSO in the oracle, so the differential reported 0 unexplained while both sides published the same garbage. A name cannot contain a space or a parenthesis, so that test is exact rather than a judgement call.",
+  "expectRelationships": [
+    { "type": "calls", "from": "infix", "target": "f", "line_number": 31, "comment": "the callee `(1 to 10) :/` is an infix EXPRESSION and is refused; the inner `f(x)` inside it is a real call and is kept. Before the fix this edge's target was the whole expression, newlines and all." },
+    { "type": "calls", "from": "ordinary", "target": "map", "line_number": 34, "comment": "control: an ordinary method call still names its callee" },
+    { "type": "instantiates", "from": "construct", "target": "LensRef", "line_number": 35, "comment": "control: an ordinary construction still names its type — handleInstantiation owns that edge, which is why refusing the curried form at the call site loses nothing" }
+  ],
+  "forbidSymbols": [
+    { "name": "new LensRef(ref)", "comment": "a construction is not a name" },
+    { "name": "(1 to 10) :/", "comment": "nor is an infix expression" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "lens",
+      "target": "new LensRef(ref)",
+      "comment": "THE DEFECT, shape 1: `new LensRef[F, A, B](ref)(get, set)` — a curried construction whose callee node is the instance_expression. The target carried the ARGUMENT and could not be spelled by any reference."
+    },
+    {
+      "type": "calls",
+      "from": "infix",
+      "target": "(1 to 10) :/ (x => f(x))",
+      "comment": "THE DEFECT, shape 2: dotty's right-associative infix operators make the infix expression the callee. The corpus instances were multi-line, e.g. `!inIntersection\\n || accountsFor(elem)\\n || TypeComparer.atomicOp`."
+    },
+    {
+      "type": "calls",
+      "from": "lens",
+      "target": "new LensRef[F, A, B](ref)(get, set)",
+      "comment": "the same defect before the bracket strip"
+    }
+  ]
+}

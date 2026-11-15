@@ -35,7 +35,7 @@ const overridesSamples: string[] = []
 const truthOnly: string[] = []
 
 for (const repo of CORPORA) {
-  const dir = path.join("$HOME/fixtures/repositories", repo)
+  const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
   const all = execSync(`git ls-files -z -- '*.php'`, { cwd: dir, maxBuffer: 1 << 28 }).toString().split("\0").filter(Boolean).sort()
   for (const f of all) {
     let src: string

@@ -1,0 +1,88 @@
+{
+ "fixtureId": "perl/import-argument-items",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PERL-MR4. Comparing this lane's emissions under tree-sitter-perl 1.2.1 and 2.0.0 over the whole seven-corpus sample (5,774 files, both grammars, 0 parse failures) found 23 files emitting different import records. All 23 were defects in THIS lane, and 2.0.0 was the correct side of every one of them, so a grammar bump would have HIDDEN all of them rather than fixed them. Four separate rules came out of that, and this fixture pins all four plus the boundary case that keeps two of them from over-reaching.\n\nThe shared question is what counts as an IMPORTED NAME. The wrong answers were all 'whatever word is somewhere under the `use`', and the right answer in every case below is narrower.\n\n1. A top-level `=>` makes the list a key/value SPECIFICATION, not a list of names. In `use overload (q{\"\"} => 'as_string', bool => sub () { 1 }, fallback => 1)` the pre-fix items were [\"\\\"\\\"\",\"as_string\",\"bool\",\"fallback\"]: a slot name, the HANDLER this file must define, another slot, and a number. The `=>` is an ANONYMOUS TOKEN between the list's children and not a `fat_comma` node, which is why guarding `fat_comma` first changed nothing -- that guard is kept for the grammars that do wrap.\n\n   The rule is SCOPED to import arguments, and that scoping is the point of case 7. Written into the shared `perlWordValues` it also silenced `our @EXPORT_OK = (gamma => 1, delta => 2)` and deleted four real exports -- which the fixture suite caught immediately at 8/9. One rule applied one level too high.\n\n2. CODE IS NOT NAMES, for a `?:` branch. In the `PluginList` call the ternary contributes a plugin name as a KEY and two hash VALUES, and which one the import gets is decided at runtime; only the two plugins written on top are arguments. This is a different defect from rule 1 -- the outer list has no top-level `=>`, so the specification rule correctly calls it a name list and the argument COUNT is right. Only the descent into the branch was wrong.\n\n3. A parenthesised argument list must stay reachable. 2.0.0 inserts `parenthesized_expression` between the statement and its `list_expression`, so a direct-child lookup finds no list and EVERY parenthesised `use` loses its arguments under a grammar bump -- real ones like Catalyst's two plugins and `use Encode ':all'`. The `Parenthesized::Args` and `Single` cases pin both the multi-argument and single-argument shapes.\n\n4. CODE IS NOT NAMES, for a call's arguments. `use feature (sprintf(\"::%vd\", $^V))` records [\"*\"]: the bundle name is computed at runtime, and `:%vd` is sprintf's FORMAT STRING whose `%v` is a version conversion. This one was a false positive that rule 3 introduced -- making the wrapper transparent is what let the walk reach into the sprintf at all, so the wrapper is transparent for FINDING arguments and not transparent for READING them. It was the last disagreement between the two grammars in the entire corpus.\n\nEvery case is emitted IDENTICALLY by both grammars, which is the property worth pinning: this lane's import items must not depend on which tree-sitter-perl generation parsed the file.\n\nThe `our @EXPORT_OK = (gamma => 1, delta => 2)` case is NOT in this fixture at all: this lane requires every export to resolve to a top-level symbol, and inside `package ImportItems` those subs are methods, so the file would fail an unrelated export invariant. `perl/imports-and-exports` already pins both exports, and it is the fixture that CAUGHT the over-reach in the first place -- when the specification rule was written into the shared `perlWordValues` it silenced exactly those two and the suite went to 8/9. That other fixture is also the one that CAUGHT the over-reach -- when the specification rule was first written into the shared `perlWordValues` it silenced exactly those two and the suite went to 8/9.",
+ "expectSymbols": [
+  {
+   "name": "ImportItems",
+   "kind": "class"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "overload",
+   "items": [
+    "*"
+   ],
+   "note": "rule 1: a top-level `=>` means specification. The pre-fix items were [\"\\\"\\\"\",\"as_string\",\"bool\",\"fallback\"] -- a slot name, the handler the file must define, another slot, and a number. Pinning the exact list means the harvest fails this fixture if it ever returns."
+  },
+  {
+   "module": "Parenthesized::Args",
+   "items": [
+    "Alpha",
+    "Beta"
+   ],
+   "note": "rule 1 does not fire here, and both arguments must survive: the discriminator is the `=>`, never the parentheses."
+  },
+  {
+   "module": "Single",
+   "items": [
+    "Only"
+   ],
+   "note": "rule 3, single-argument shape. This is the shape 2.0.0's `parenthesized_expression` hid from the argument lookup, losing the item under a grammar bump."
+  },
+  {
+   "module": "PluginList",
+   "items": [
+    "Plain::Plugin",
+    "+Prefixed::Plugin"
+   ],
+   "note": "rule 2: a `?:` branch is code, not a declaration. The conditional branch contributed a key plus two hash values before; and note the outer list has no top-level `=>`, so this is rule 2 alone, not rule 1."
+  },
+  {
+   "module": "feature",
+   "items": [
+    "*"
+   ],
+   "note": "rule 4: sprintf's format string `:%vd` is not an imported name. The `%v` in it is a version conversion. This was the single remaining disagreement across all 5,774 corpus files."
+  },
+  {
+   "module": "InlineModule",
+   "items": [
+    "*"
+   ],
+   "note": "rule 1 on a name => SOURCE pair list. The keys look like names but the values are whole package bodies; refusing the whole specification is more honest than half-reading it, and half-reading is what the pre-fix code did."
+  }
+ ],
+ "forbidImports": [
+  {
+   "module": "overload",
+   "items": [
+    "\"\"",
+    "as_string",
+    "bool",
+    "fallback"
+   ],
+   "note": "the harvest this fixture exists to prevent"
+  },
+  {
+   "module": "PluginList",
+   "items": [
+    "Plain::Plugin",
+    "+Prefixed::Plugin",
+    "Conditional::Plugin",
+    "affe",
+    "method_name"
+   ],
+   "note": "the conditional branch's key and hash values leaking into the item list"
+  },
+  {
+   "module": "feature",
+   "items": [
+    ":%vd"
+   ],
+   "note": "sprintf's format string recorded as an import"
+  }
+ ]
+}

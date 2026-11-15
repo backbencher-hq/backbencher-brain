@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-09-29T07:16:22.017Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories",
+    "1200"
+  ],
+  "files": 1200,
+  "declaredSymbols": 49779,
+  "emitted": 101017,
+  "visibleAtAll": 74439,
+  "visibleUnderDefault": 74439,
+  "defaultRelTypes": [
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "instantiates",
+    "overrides",
+    "contains",
+    "references",
+    "imports",
+    "exports"
+  ],
+  "byType": {
+    "calls": {
+      "total": 74372,
+      "resolvedTarget": 54087,
+      "resolvedSource": 74372,
+      "visible": 54087,
+      "visibleUnderDefault": 54087,
+      "unreachableUnderDefault": 20285
+    },
+    "extends": {
+      "total": 1096,
+      "resolvedTarget": 1063,
+      "resolvedSource": 1096,
+      "visible": 1063,
+      "visibleUnderDefault": 1063,
+      "unreachableUnderDefault": 33
+    },
+    "implements": {
+      "total": 579,
+      "resolvedTarget": 576,
+      "resolvedSource": 579,
+      "visible": 576,
+      "visibleUnderDefault": 576,
+      "unreachableUnderDefault": 3
+    },
+    "uses": {
+      "total": 5052,
+      "resolvedTarget": 254,
+      "resolvedSource": 5052,
+      "visible": 254,
+      "visibleUnderDefault": 254,
+      "unreachableUnderDefault": 4798
+    },
+    "instantiates": {
+      "total": 2471,
+      "resolvedTarget": 2236,
+      "resolvedSource": 2471,
+      "visible": 2236,
+      "visibleUnderDefault": 2236,
+      "unreachableUnderDefault": 235
+    },
+    "overrides": {
+      "total": 5483,
+      "resolvedTarget": 5483,
+      "resolvedSource": 5483,
+      "visible": 5483,
+      "visibleUnderDefault": 5483,
+      "unreachableUnderDefault": 0
+    },
+    "contains": {
+      "total": 10770,
+      "resolvedTarget": 10770,
+      "resolvedSource": 10669,
+      "visible": 10669,
+      "visibleUnderDefault": 10669,
+      "unreachableUnderDefault": 101
+    },
+    "references": {
+      "total": 1194,
+      "resolvedTarget": 71,
+      "resolvedSource": 1194,
+      "visible": 71,
+      "visibleUnderDefault": 71,
+      "unreachableUnderDefault": 1123
+    }
+  }
+}

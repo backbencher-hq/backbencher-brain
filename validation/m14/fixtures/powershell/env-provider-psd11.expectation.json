@@ -1,0 +1,116 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/env-provider-psd11.ps1",
+ "authoredFrom": "PSD11 — `$env:NAME` IS THE ENVIRONMENT PROVIDER'S NAMESPACE, SO THE CLAIM IS A LIST AND NOT AN OWNER. PowerShell's Environment provider is part of the engine: `$env:PSModulePath` reads a PROCESS environment variable, the prefix is case-insensitive, and no admitted file can declare a symbol spelled `env:Something` (a scope-qualified name is never a declaration — PS8's rule). The analyzer already REFUSED to call it a project name: `RUNTIME_TABLE_SCOPE_PREFIXES` keeps the qualified external reading on `env:`/`variable:`/`using:` because the runtime binds them from outside the parse.\n\nWHY IT NEEDED A SECOND MECHANISM, MEASURED. The generic externality reading fired on the `:` and the arbiter then refused to check it: `verifyExternalClaim` sees a colon in the owner and answers UNVERIFIABLE, because a colon is also a path/URI byte, so a lookup returning 0 proves nothing. Over the whole admitted population those rows sat in `ext?` — \"a claim no check can reach\", which is a clause-1 debt — on a fact that was never in doubt.\n\nTHE ROOT IS CARRIED AS WRITTEN, AND ROW 2 IS WHY. `namespaceMatchOf` compares the target's own first SEGMENT against the list byte for byte, so a claim folded to `\"env\"` REFUTES `$ENV:TEMP` — measured directly against the arbiter: `namespaceMatchOf(\"ENV:TEMP\", [\"env\"]) === null`, `namespaceMatchOf(\"ENV:TEMP\", [\"ENV\"]) === \"ENV\"`. This is the lane's standing convention for every list root (PS-B27 carries `System`/`Text` as spelled), and PowerShell's own case-insensitivity is what makes it a spelling choice rather than a fact claim. Row 3 is the fordbidden twin of that decision: the same target with the folded list is REFUTED, so a lane that folds every root would fail this fixture instead of quietly losing rows.\n\nTHE TWO NEGATIVE TWINS ARE THE POINT OF THE FILE. Row 3 is a variable whose name STARTS with the same three letters and has no colon — it is a declaration this file makes, and no namespace claim may attach. Row 4 is a scope prefix the project CAN declare into: `function global:Helper` is ordinary PowerShell (this analyzer publishes the declaration), so `global:Helper` is a NAME the file binds and not a namespace — which is why the env test is `env:` exactly rather than 'any `x:` prefix'.",
+ "expectSymbols": [
+  {
+   "name": "env-provider-psd11.ps1",
+   "kind": "module",
+   "comment": "The FILE IS THE MODULE (PS1), and it is the `from` of every row below."
+  },
+  {
+   "name": "modulePath",
+   "kind": "variable",
+   "ownerName": "env-provider-psd11.ps1",
+   "comment": "The left side of row 1 — present so the fixture's positive is a READ OF SOMETHING DECLARED, not a bare expression."
+  },
+  {
+   "name": "temp",
+   "kind": "variable",
+   "ownerName": "env-provider-psd11.ps1",
+   "comment": "The left side of row 2, the case-as-written positive."
+  },
+  {
+   "name": "envLocal",
+   "kind": "variable",
+   "ownerName": "env-provider-psd11.ps1",
+   "comment": "THE NEAR-MISS NAME — the negative twin's declaration. It exists so the fixture can assert that a name starting with the provider's letters, with no colon, is a project name."
+  },
+  {
+   "name": "global:Helper",
+   "kind": "function",
+   "ownerName": "env-provider-psd11.ps1",
+   "comment": "The scope-prefixed declaration, published under the spelling the source writes. It is what makes row 4 a NEGATIVE: `global:` is a scope a project declares into, unlike `env:`."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "env-provider-psd11.ps1",
+   "target": "env:PSModulePath",
+   "line_number": 17,
+   "meta.isScopedEnvironmentRead": true,
+   "meta.externalVia": "qualified",
+   "meta.languageNamespace": ["env"],
+   "comment": "THE POSITIVE. Before PSD11 this row carried only the generic externality marker, which the arbiter cannot check past the colon — it reported as a claim no check can reach. The namespace claim certifies the ROOT, and the list is the evidence."
+  },
+  {
+   "type": "uses",
+   "from": "env-provider-psd11.ps1",
+   "target": "ENV:TEMP",
+   "line_number": 21,
+   "meta.isScopedEnvironmentRead": true,
+   "meta.languageNamespace": ["ENV"],
+   "comment": "THE CASE ROW, and it is the one a folded list loses. The claim names the spelling the SOURCE uses; `namespaceMatchOf` is byte-exact on the root, so a list of `[\"env\"]` on this row is REFUTED (the forbid below pins exactly that). Writing `ENV` here is not cosmetics — it is the difference between a verified claim and a false one."
+  },
+  {
+   "type": "uses",
+   "from": "env-provider-psd11.ps1",
+   "target": "env-provider-psd11.ps1.envLocal",
+   "line_number": 26,
+   "meta.boundToVariable": true,
+   "meta.languageNamespace": null,
+   "comment": "NEGATIVE TWIN 1. Same three letters, no colon, and the file declares it — so it is a BINDING of a project name (the row carries `boundToVariable` and names the declaration), and no namespace claim may attach. A rule keyed on the letters instead of the byte would mark this one."
+  },
+  {
+   "type": "calls",
+   "from": "env-provider-psd11.ps1",
+   "target": "global:Helper",
+   "line_number": 31,
+   "meta.externalTarget": null,
+   "meta.languageNamespace": null,
+   "comment": "NEGATIVE TWIN 2. `global:` is a scope the project DECLARES INTO — `FILE_DEFINABLE_SCOPE_PREFIXES` — so this target is a name this file binds, not a runtime table. It is the row that keeps the env test at `env:` exactly rather than 'any prefix before a colon'."
+  },
+  {
+   "type": "calls",
+   "from": "env-provider-psd11.ps1",
+   "target": "Out-Null",
+   "line_number": 31,
+   "meta.externalVia": "cmdlet",
+   "meta.languageNamespace": null,
+   "comment": "A CMDLET on the pipeline of the same line. Its externality reading is the spelling channel (PSD10/`cmdlet`), and it must NOT acquire a namespace claim — the env pass may not widen into a general 'everything external is a namespace'."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "ENV:TEMP",
+   "meta.languageNamespace": ["env"],
+   "comment": "THE REFUTATION TWIN. A claim folded to lower case is a claim the arbiter REFUTES against this very target (`namespaceMatchOf(\"ENV:TEMP\", [\"env\"]) === null`). Pinning it forbidden means the fixture fails if anyone 'normalises' the root, which is exactly the mistake that would turn 855 unverifiable rows into 855 refuted ones."
+  },
+  {
+   "type": "uses",
+   "target": "env-provider-psd11.ps1.envLocal",
+   "meta.languageNamespace": ["env"],
+   "comment": "A project binding must never carry the provider claim."
+  },
+  {
+   "type": "calls",
+   "target": "global:Helper",
+   "meta.languageNamespace": ["global"],
+   "comment": "A project-declarable scope prefix must never become a namespace claim; if it did, `extFAIL` would rise the moment a project declares `global:Foo` — the exact collision the qualified reading's exclusion list documents."
+  },
+  {
+   "type": "calls",
+   "target": "Out-Null",
+   "meta.languageNamespace": ["Out-Null"],
+   "comment": "The claim is a NAMESPACE root. A cmdlet leaf is not a namespace, and a pass that certifies bare leaves would shelter every unresolved command."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "equals": 10,
+   "comment": "The whole file: 4 `contains` (modulePath, temp, envLocal, global:Helper), 2 `uses` of the provider (rows 1-2), 1 bound `uses` (row 3), 1 `uses` of the function's own parameter, and 2 `calls` (`global:Helper`, `Out-Null`). The count matters because PSD11 publishes a CLAIM on rows that STAY — a rule that dropped the row instead of claiming it would keep the claim count clean and empty this fixture."
+  }
+ ]
+}

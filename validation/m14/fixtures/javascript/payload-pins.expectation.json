@@ -1,0 +1,13 @@
+{
+  "fixtureId": "javascript/payload-pins",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b payloads: qualified_calls containment and JSDoc comments.",
+  "expectSymbols": [
+    { "name": "Svc" },
+    { "name": "work" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "work", "includes": ["getUserById"] }
+  ]
+}

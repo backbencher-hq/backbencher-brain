@@ -1,0 +1,132 @@
+{
+ "fixtureId": "perl/receiver-qualification",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Does a `calls` edge lose a receiver that the source states? `Mojo::IOLoop->start` names a CLASS, so the method's owner is derivable and the target is `IOLoop.start`. The lane emitted the bare leaf `start`, which is a precision loss and not a cosmetic one: `Mojo::IOLoop->remove`, `Mojo::IOLoop->stream` and `Mojo::IOLoop->server` all collapsed onto `remove`, `stream` and `server`, so two classes' same-named methods became one node in the graph and a caller of one looked like a caller of the other. Measured with script/m14/tmp/perl-receiver-scope.mts: 10,781 method-call SITES across the seven corpora had a provable package receiver, and 4,800 more had a bare bareword that is a VARIABLE and must keep the leaf. Neither the differential nor any other fixture could see this, because the oracle derived the target by leaf name exactly as the analyzer did — the third time this pair has agreed on a shared premise, after the `use constant { ... }` dead branch and the oracle's `!inSub` gap. So the number came from the AST.\n\nThere is deliberately NO forbid on the bare leaf `start`, even though that is the pre-fix shape for line 4, because line 6 legitimately emits that same leaf. The harness matches a relationship by type/from/target and cannot tell which line produced it, so forbidding it here would forbid the correct answer for the variable receiver. The pre-fix shape is covered instead by the expectation on `IOLoop.start` and by the perl/receiver-qualification-dropped mutant.\n\nThe rule is ONE rule with two labels, and every line pins a different part of it:\n\n  line 4   Mojo::IOLoop->start      class receiver  -> QUALIFIED  IOLoop.start\n  line 5   Mojo::Util->encode_json  class receiver  -> QUALIFIED  Util.encode_json\n  line 6   app->start               DIRECT bare bareword, no `::` -> leaf  start\n  line 7   $loop->remove           value receiver  -> leaf        remove\n  line 8   $self->helper           value receiver  -> leaf        helper\n  line 9   app->log->level         `app` is a LEXICAL holding a server -> leaf  level\n  line 10  Mojo::IOLoop->reset      `reset` is a PERL BUILTIN -> nothing at all\n  line 11  $self->${\\( ... )}      the METHOD is COMPUTED, not written -> no edge,\n                                   but the real call INSIDE it is still published\n\nLine 6 is the load-bearing one, and getting it right took a second attempt. The first draft pinned only `app->log->level` on the theory that it was the obvious shape — but the DIRECT invocant there is the CALL `app->log`, not the bareword, so `namesAClass` is false on it and even the naive over-correction would not have qualified it. That forbid pin was dead: it could never fire. The shape the corpora actually contain is a bare bareword as the DIRECT invocant — mojo's examples/chat.pl:22, hello.pl:8, hello-template.pl:8 and proxy.pl:20 are all `app->start`, and Mojo::Base.pm:101 is `feature->import(':5.16')`. Line 6 is that shape, and deleting the `::` proof from the analyzer turns its forbid red, which is how it was verified.\n\nLine 10 is the case that stops qualification from defeating the builtin set: `addCall` tests its argument against PERL_BUILTINS, and when the argument became the qualified `IOLoop.reset` the test missed `reset` — a builtin — so this line emitted an edge for a builtin. The builtin test is about the METHOD, and both reasons live in the code.\n\nLine 11 is the seventh shape, and the only one whose ABSENCE is the point. A symbolic deref — `$self->${\\( EXPR \\)}` — is perl's \"call the method this expression computes\", so the METHOD NAME IS NOT WRITTEN anywhere in the file. The grammar hands the whole expression to the `method` field, and the lane used to publish that text as a callee name: measured `calls -> DemolishAll->new` (Moo/Object.pm:56, a `function` field holding compound text) and `calls -> ${\\( $tc->can('coercion')||sub { ... } )}` (Moo/Role.pm:224). Those are not weaker claims, they are FABRICATED ones — a target that is not written cannot be verified against the source by the line oracle at all. So no edge is emitted for the deref, and the rule is a POSITIVE allowlist on the callee text rather than a \"does this look wrong\" test, because a negative test only ever enumerates the dynamic cases somebody already hit.\n\nThe control is the second half: the `Moo::IOLoop->next_tick` INSIDE the expression is a perfectly ordinary class call and is published as `IOLoop.next_tick`. Refusing the deref must not swallow the real code around it, and a fixture that only asserted the absence would pass against an analyzer that had simply stopped walking.",
+ "expectSymbols": [
+  {
+   "name": "RQ",
+   "kind": "class"
+  },
+  {
+   "name": "run",
+   "kind": "method",
+   "ownerName": "RQ"
+  }
+ ],
+ "expectSymbolRanges": [
+  {
+   "symbol": "RQ",
+   "startLine": 1,
+   "endLine": 1
+  },
+  {
+   "symbol": "run",
+   "startLine": 3,
+   "endLine": 12
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "IOLoop.start",
+   "line_number": 4,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "a receiver that is a `package`-bearing bareword is a PROVABLE class, so the owner is derivable and the target carries it"
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "Util.encode_json",
+   "line_number": 5,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "`Mojo::Util` leaf-qualifies to `Util`, the same convention the `instantiates` path already used for `Util.constructor`"
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "start",
+   "line_number": 6,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "`app` is a DIRECT bare bareword, and the shape the corpora really contain. A lexical holding a Mojo::Server, not a class, so the leaf is correct. This is the pin that stands between the narrow rule and the naive `namesAClass` one."
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "remove",
+   "line_number": 7,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "a VALUE receiver has no class to name, so the leaf is the honest target and this is the control for the two lines above"
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "helper",
+   "line_number": 8,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "level",
+   "line_number": 9,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "the CHAINED form of the same variable receiver. Kept because it is common, but it is a weaker pin than line 6: the direct invocant is the call, so this row would not catch the naive rule on its own."
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "IOLoop.next_tick",
+   "line_number": 11,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "the CONTROL for the line above: a real class call written inside a symbolic deref is still published. Refusing to name the computed method must not cost the code around it."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "app.start",
+   "note": "the over-correction: a bare bareword qualified as if it were a class, inventing a type named `app` for a lexical. Verified to fire — removing the `::` proof from the analyzer turns this row red."
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "app.log",
+   "note": "the same over-correction on the chained form. A second forbid, and a weaker one for the reason given on the line 9 expectation."
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "IOLoop.remove",
+   "note": "there is no `remove` on a class receiver here; `$loop->remove` is a value receiver and keeps the leaf"
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "target": "IOLoop.reset",
+   "note": "`reset` is a perl BUILTIN. The first version of the fix qualified the target BEFORE addCall's builtin test, so the test saw `IOLoop.reset` instead of `reset` and stopped suppressing it. The builtin test is about the method being invoked, never about the shape of the edge's target."
+  },
+  {
+   "type": "calls",
+   "from": "run",
+   "targetEndsWith": "->new",
+   "note": "perl/symbolic-deref-callee-published-as-a-name: a callee rebuilt from code text rather than written in the file. Named by SUFFIX because the fabricated target IS the code, so no exact name is stable to pin - which is the point."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "app",
+   "ownerName": "RQ",
+   "note": "`app` is a receiver in a method call, not a declaration in this file; a class symbol here would mean the analyzer had decided a lexical was a package"
+  }
+ ],
+ "expectUniqueIds": [
+  {
+   "name": "run",
+   "ownerName": "RQ",
+   "note": "the method `run` and the class `RQ` must not collapse onto one id, or the calls edges above would be emitted from the wrong node"
+  }
+ ]
+}

@@ -1,0 +1,91 @@
+{
+  "fixtureId": "java/type-usage-graph",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph (#419 section A/B): fields, params, locals, catch unions, and throws clauses each emit References to every named type; generics expand to base + arguments; scoped names stay dotted; primitives silent. M37.21 C9: method RETURN types now also emit declared_type references (TypeUsageGraph->R below via declaredOn=return_type), so the old forbid on R was lifted when returns joined the graph. JD-J12 (M60 java deep review, 2026-09-27): adds the two positions no java fixture pinned. array_creation (`new Gadget[3]`, JLS 15.10.1) was undetectable by the differential — measured 100% subsumed: every one of its 25 corpus edges names a target another rule also names in the same file, so set-based per-file matching cannot see it lost, and no fixture covered it either. The cast expectation plus its forbid pin the JD-J12 spelling fix: an array-wrapped generic cast published `Sprocket<?>` where every other position publishes `Sprocket`. JD-J15 (M60 java deep review, 2026-09-27): an interface CONSTANT is a `constant_declaration` in this grammar, and the branch that created the Constant symbol stored the type on it without emitting a References edge — so an interface's public constants contributed nothing to the type-usage graph while every neighbouring position did. Found by the differential, not by a fixture: it was the last two MISSING rows at 400 files, both ubiquitous types on interface constants.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "List",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "String",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Map",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Integer",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "CharSequence",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "java.io.IOException",
+      "meta.relationshipType": "throws_type"
+    },
+    {
+      "type": "references",
+      "target": "java.nio.file.FileSystemException",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "IllegalArgumentException",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "instantiates",
+      "target": "java.io.IOException"
+    },
+    {
+      "type": "references",
+      "target": "R",
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "return_type"
+    },
+    {
+      "type": "references",
+      "target": "Gadget",
+      "meta.relationshipType": "array_creation"
+    },
+    {
+      "type": "references",
+      "target": "Sprocket",
+      "meta.relationshipType": "cast_target"
+    },
+    {
+      "type": "references",
+      "target": "String",
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "constant_declaration"
+    },
+    {
+      "type": "references",
+      "target": "Widget",
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "constant_declaration"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "target": "Sprocket<?>",
+      "meta.relationshipType": "cast_target"
+    }
+  ]
+}

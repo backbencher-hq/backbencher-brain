@@ -1,0 +1,423 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_patterns",
+  "generatedAt": "2026-11-02T00:06:46.846921+00:00",
+  "unusedHandlerImports": {
+    "namedImports": 91,
+    "unused": 82,
+    "list": [
+      {
+        "symbol": "ToolContext",
+        "from": "../shared"
+      },
+      {
+        "symbol": "ToolResult",
+        "from": "../shared"
+      },
+      {
+        "symbol": "ToolArguments",
+        "from": "../shared"
+      },
+      {
+        "symbol": "SECURITY_FINDINGS_WINDOW",
+        "from": "../shared"
+      },
+      {
+        "symbol": "SECURITY_SUSPICIOUS_WINDOW",
+        "from": "../shared"
+      },
+      {
+        "symbol": "SECURITY_SCAN_CAP",
+        "from": "../shared"
+      },
+      {
+        "symbol": "SECURITY_RECORD_RUN_CENSUS_CAP",
+        "from": "../shared"
+      },
+      {
+        "symbol": "ANALYZE_GRAPH_WALK_CEILING_MS",
+        "from": "../shared"
+      },
+      {
+        "symbol": "autoRefreshFile",
+        "from": "../shared"
+      },
+      {
+        "symbol": "readSnippet",
+        "from": "../shared"
+      },
+      {
+        "symbol": "resolveProjectPath",
+        "from": "../shared"
+      },
+      {
+        "symbol": "ensureWithinProject",
+        "from": "../shared"
+      },
+      {
+        "symbol": "resolveSafeReadPath",
+        "from": "../shared"
+      },
+      {
+        "symbol": "readIndexedFile",
+        "from": "../shared"
+      },
+      {
+        "symbol": "describeUnknownFilters",
+        "from": "../shared"
+      },
+      {
+        "symbol": "canonicalImpactReport",
+        "from": "../shared"
+      },
+      {
+        "symbol": "existsSync",
+        "from": "node:fs"
+      },
+      {
+        "symbol": "readFileSync",
+        "from": "node:fs"
+      },
+      {
+        "symbol": "realpathSync",
+        "from": "node:fs"
+      },
+      {
+        "symbol": "statSync",
+        "from": "node:fs"
+      },
+      {
+        "symbol": "writeFileSync",
+        "from": "node:fs"
+      },
+      {
+        "symbol": "annotationId",
+        "from": "../../../brain/annotation-store"
+      },
+      {
+        "symbol": "annotationReachability",
+        "from": "../../../brain/annotation-store"
+      },
+      {
+        "symbol": "canonicalFilePath",
+        "from": "../../../brain/annotation-store"
+      },
+      {
+        "symbol": "BrainTools",
+        "from": "../../../ast/tools"
+      },
+      {
+        "symbol": "quickAnswer",
+        "from": "../../../intelligence/search/quick-answer"
+      },
+      {
+        "symbol": "ASTEngine",
+        "from": "../../../ast/engine"
+      },
+      {
+        "symbol": "checkResultsFreshness",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "fileUnchangedSince",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "resolveRowsFreshnessDetailed",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "buildStalenessEnvelope",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "FRESHNESS_REMEDIATION",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "FRESHNESS_REMEDIATION_MANUAL_ONLY",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "FreshnessSummary",
+        "from": "../../../brain/freshness"
+      },
+      {
+        "symbol": "CrossLanguageSecurityAnalysis",
+        "from": "../../../security/cross-language-security"
+      },
+      {
+        "symbol": "DependencyGraphVisualizer",
+        "from": "../../../ast/dependency-graph-visualizer"
+      },
+      {
+        "symbol": "CrossLanguageIntelligence",
+        "from": "../../../ast/cross-language-intelligence"
+      },
+      {
+        "symbol": "CrossLanguageMigrationAssistant",
+        "from": "../../../ast/cross-language-migration-assistant"
+      },
+      {
+        "symbol": "indexProjectParallel",
+        "from": "../../../ast/parallel-indexer"
+      },
+      {
+        "symbol": "reindexFilesParallel",
+        "from": "../../../ast/parallel-indexer"
+      },
+      {
+        "symbol": "wipeProjectData",
+        "from": "../../../ast/parallel-indexer"
+      },
+      {
+        "symbol": "collectStaleFiles",
+        "from": "../../../ast/auto-refresh"
+      },
+      {
+        "symbol": "maybeAutoRefresh",
+        "from": "../../../ast/auto-refresh"
+      },
+      {
+        "symbol": "autoRefreshLine",
+        "from": "../../../ast/auto-refresh"
+      },
+      {
+        "symbol": "TOOL_DESCRIPTORS",
+        "from": "../../tool-registry"
+      },
+      {
+        "symbol": "testQuality",
+        "from": "../../../intelligence/testing/quality"
+      },
+      {
+        "symbol": "executeEdit",
+        "from": "../../../intelligence/edit/edit-engine"
+      },
+      {
+        "symbol": "EditRequest",
+        "from": "../../../intelligence/edit/edit-engine"
+      },
+      {
+        "symbol": "getUnifiedHealth",
+        "from": "../../../intelligence/health/health-provider"
+      },
+      {
+        "symbol": "formatUnifiedHealth",
+        "from": "../../../intelligence/health/health-provider"
+      },
+      {
+        "symbol": "generateDocumentation",
+        "from": "../../../intelligence/documentation/doc-engine"
+      },
+      {
+        "symbol": "formatDocumentation",
+        "from": "../../../intelligence/documentation/doc-engine"
+      },
+      {
+        "symbol": "DocRequest",
+        "from": "../../../intelligence/documentation/doc-engine"
+      },
+      {
+        "symbol": "visualizeProject",
+        "from": "../../../intelligence/visualization/visualization-engine"
+      },
+      {
+        "symbol": "formatVisualization",
+        "from": "../../../intelligence/visualization/visualization-engine"
+      },
+      {
+        "symbol": "renderVisualizationStudio",
+        "from": "../../../intelligence/visualization/visualization-engine"
+      },
+      {
+        "symbol": "VisualizationRequest",
+        "from": "../../../intelligence/visualization/visualization-engine"
+      },
+      {
+        "symbol": "VisualizationScope",
+        "from": "../../../intelligence/visualization/visualization-engine"
+      },
+      {
+        "symbol": "VisualizationLayout",
+        "from": "../../../intelligence/visualization/visualization-engine"
+      },
+      {
+        "symbol": "generateMigrationPlans",
+        "from": "../../../intelligence/migration/migration-engine"
+      },
+      {
+        "symbol": "formatMigrationPlans",
+        "from": "../../../intelligence/migration/migration-engine"
+      },
+      {
+        "symbol": "graphTraversal",
+        "from": "../../../intelligence/graph/graph-engine"
+      },
+      {
+        "symbol": "computeImpact",
+        "from": "../../../lsp/impact"
+      },
+      {
+        "symbol": "IMPACT_BUDGET",
+        "from": "../../../lsp/impact"
+      },
+      {
+        "symbol": "classifyTier",
+        "from": "../../../lsp/evidence_tier"
+      },
+      {
+        "symbol": "tierForCrossLanguageEdge",
+        "from": "../../../lsp/cross_language_hover"
+      },
+      {
+        "symbol": "factsFromRows",
+        "from": "../../../lsp/cross_language_hover"
+      },
+      {
+        "symbol": "storedCrossLanguageRows",
+        "from": "../../../lsp/cross_language_hover"
+      },
+      {
+        "symbol": "storedCrossLanguageFactsByName",
+        "from": "../../../lsp/cross_language_hover"
+      },
+      {
+        "symbol": "CROSS_LANGUAGE_DEFAULT_LIMIT",
+        "from": "../../../lsp/cross_language_hover"
+      },
+      {
+        "symbol": "CROSS_LANGUAGE_MAX_LIMIT",
+        "from": "../../../lsp/cross_language_hover"
+      },
+      {
+        "symbol": "getProjectStats",
+        "from": "../../../intelligence/analysis/project-stats"
+      },
+      {
+        "symbol": "getFileDependencies",
+        "from": "../../../intelligence/analysis/dependencies"
+      },
+      {
+        "symbol": "dependencyProvenance",
+        "from": "../../../intelligence/analysis/dependencies"
+      },
+      {
+        "symbol": "dependencyPageProvenance",
+        "from": "../../../intelligence/analysis/dependencies"
+      },
+      {
+        "symbol": "normalizeScopePath",
+        "from": "../../../intelligence/analysis/dependencies"
+      },
+      {
+        "symbol": "scopeFileCount",
+        "from": "../../../intelligence/analysis/dependencies"
+      },
+      {
+        "symbol": "analyzeComplexity",
+        "from": "../../../intelligence/analysis/complexity"
+      },
+      {
+        "symbol": "testMapping",
+        "from": "../../../intelligence/testing/test-intel"
+      },
+      {
+        "symbol": "testGaps",
+        "from": "../../../intelligence/testing/test-intel"
+      },
+      {
+        "symbol": "testImpact",
+        "from": "../../../intelligence/testing/test-intel"
+      },
+      {
+        "symbol": "makeProvenance",
+        "from": "../../../intelligence/evidence"
+      }
+    ],
+    "method": "parse every `import { ... } from` in handler.ts, then word-search the handler body for each local name"
+  },
+  "patternEvidencePaths": {
+    "paths": [
+      "src/ast/tools.ts",
+      "src/intelligence/patterns/orphans.ts",
+      "src/intelligence/patterns/rules.ts",
+      "src/intelligence/contracts.ts",
+      "src/intelligence/evidence.ts",
+      "src/intelligence/analysis/run-history.ts",
+      "src/mcp/tool-handlers.ts",
+      "docs/BB_PATTERNS.md",
+      "docs/tools/bb_patterns.md",
+      "package.json"
+    ],
+    "existsInSplitTree": [
+      {
+        "path": "src/ast/tools.ts",
+        "exists": true
+      },
+      {
+        "path": "src/intelligence/patterns/orphans.ts",
+        "exists": true
+      },
+      {
+        "path": "src/intelligence/patterns/rules.ts",
+        "exists": true
+      },
+      {
+        "path": "src/intelligence/contracts.ts",
+        "exists": true
+      },
+      {
+        "path": "src/intelligence/evidence.ts",
+        "exists": true
+      },
+      {
+        "path": "src/intelligence/analysis/run-history.ts",
+        "exists": true
+      },
+      {
+        "path": "src/mcp/tool-handlers.ts",
+        "exists": true
+      },
+      {
+        "path": "docs/BB_PATTERNS.md",
+        "exists": true
+      },
+      {
+        "path": "docs/tools/bb_patterns.md",
+        "exists": true
+      },
+      {
+        "path": "package.json",
+        "exists": true
+      }
+    ],
+    "missingSplitFiles": [
+      "src/mcp/tools/bb_patterns/handler.ts",
+      "src/mcp/tools/bb_patterns/descriptor.ts"
+    ],
+    "patternRelevantWorkingTreeChangesNow": "[]",
+    "whyItMatters": "patternRelevantWorkingTreeChanges decides whether m20 P2/P3 evidence reports verified or known-gap; it only inspects the paths above, so a modified handler is invisible"
+  },
+  "regex": {
+    "toolSourceUses": 0,
+    "policyGate": "npx tsx script/tools/verify-regex-policy.ts -> PASS (87 uses repo-wide, 0 new, 2 allowlisted, 2 baseline rows paid by bb_ask)",
+    "evidence": "validation/tools/regex-policy.json",
+    "baselineRowsForPatternsFiles": 0
+  },
+  "descriptorSchema": {
+    "properties": 8,
+    "withDefault": 0,
+    "withMinimum": 0,
+    "withMaximum": 0,
+    "typesDocumentedInTypesTs": [
+      "default",
+      "minimum",
+      "maximum"
+    ]
+  },
+  "engineFacts": {
+    "orphanScanner": "orphans.ts loads all files+symbols once and reduces six relationship statements in SQL; gate SQL stated once; no regex",
+    "ruleScanner": "rules.ts four rules (complexity>=15 -> 0.5+complexity/100 capped 0.9; long params>7 -> 0.7; god class>10 members -> 0.5+members/40 capped 0.9; framework fixed 0.6); per-type budget"
+  }
+}

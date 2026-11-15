@@ -1,0 +1,177 @@
+{
+  "fixtureId": "javascript/callsite-lines-825",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M59 (#825). Every expected line below is read off the fixture's own text (the flag says the expectation was authored from the source, then checked against live emission — not that it was written blind before any run). javascript carried NO line on any of its 5,818 relationships on the round's pinned 40-file sample, and vue/svelte delegate to this analyzer, so this lane's silence blanked three. Discriminating shapes: `import {` is on 10 while its specifiers are on 11/12; the `helpers` chain opens on 28 but is CALLED on 30. The forbid entries are the pre-fix answers — no line at all, or the construct's opening line. `uses Worker -> Base` (20) is asserted because it is a genuine read of the base class in `extends Base`, and `uses run -> nested` (29) pins that a chain segment's line is its own segment, not the chain's opening line.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Worker",
+      "kind": "class"
+    },
+    {
+      "name": "Thing",
+      "kind": "class"
+    },
+    {
+      "name": "size",
+      "kind": "property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "readJson",
+      "line_number": 11,
+      "note": "the SPECIFIER's line; `import {` is on 10"
+    },
+    {
+      "type": "imports",
+      "target": "writeJson",
+      "line_number": 12,
+      "note": "aliased specifier, written on its own line — the DECLARED name (`writeJson`) is the target; `write` is the local binding, a name in THIS file, and spelling it here is how the store's name pass attaches an import to an unrelated same-named declaration"
+    },
+    {
+      "type": "imports",
+      "target": "./helpers.js:*",
+      "line_number": 14
+    },
+    {
+      "type": "extends",
+      "from": "Worker",
+      "target": "Base",
+      "line_number": 20
+    },
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "run",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "Worker",
+      "target": "constructor",
+      "line_number": 21
+    },
+    {
+      "type": "contains",
+      "from": "Worker",
+      "target": "run",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "Thing",
+      "target": "size",
+      "line_number": 36
+    },
+    {
+      "type": "overrides",
+      "from": "Worker.run",
+      "target": "run",
+      "line_number": 26,
+      "note": "the OVERRIDING member's line, not the class's (20)"
+    },
+    {
+      "type": "instantiates",
+      "from": "run",
+      "target": "Thing",
+      "line_number": 27
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "doWork",
+      "line_number": 30,
+      "note": "the call's LEAF — the chain opens on `helpers` at 28"
+    },
+    {
+      "type": "uses",
+      "from": "Worker",
+      "target": "Base",
+      "line_number": 20
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "helpers",
+      "line_number": 28,
+      "note": "the chain ROOT's own line"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "nested",
+      "line_number": 29,
+      "note": "a chain SEGMENT's own line"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000t",
+      "line_number": 31
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "size",
+      "line_number": 31
+    },
+    {
+      "type": "exports",
+      "target": "Worker",
+      "line_number": 20
+    },
+    {
+      "type": "exports",
+      "target": "Thing",
+      "line_number": 35
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "readJson",
+      "line_number": null,
+      "note": "pre-fix: javascript emitted no line on ANY relationship (0 of 5,818 on the round's pinned sample)"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "doWork",
+      "line_number": null,
+      "note": "pre-fix: the same silence on `calls`"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "nested",
+      "line_number": null,
+      "note": "pre-fix: and on `uses`"
+    },
+    {
+      "type": "imports",
+      "target": "readJson",
+      "line_number": 10,
+      "note": "the `import {` keyword's line; `readJson` is written on 11"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "doWork",
+      "line_number": 28,
+      "note": "the chain's opening line (`helpers`); the CALLEE is on 30"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "nested",
+      "line_number": 28,
+      "note": "the chain's opening line again; the segment `nested` is written on 29"
+    }
+  ]
+}

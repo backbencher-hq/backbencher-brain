@@ -1,0 +1,25 @@
+# The differential oracle's first corpus run found THREE defects here, and two of
+# them were invisible to every other gate. All three are pinned below.
+
+# A segment that cannot be written BARE must be quoted in the assembled name.
+# `[target.'cfg(unix)'.dependencies]` is real cargo syntax and the segment
+# `cfg(unix)` has parentheses — no punctuation the old character test looked for —
+# so a test for `.`/`"`/`\` alone emitted it UNQUOTED and the name stopped being a
+# spelling TOML can parse back.
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+# A table header whose path merely RESEMBLES a key inside its parent. This is a
+# four-segment header, not a `windows-sys` key under `dependencies`, and it must be
+# OWNED by the declared parent three sections above it rather than by the module.
+[target."cfg(windows)".dependencies]
+other = "1"
+
+[target."cfg(windows)".dependencies.windows-sys]
+version = "0.61"
+
+# A space is legal in a QUOTED key and illegal in a bare one, so it is the second
+# half of the same rule: ask whether the segment can be written bare, do not ask
+# whether it contains punctuation.
+[quoted."with space"]
+k = 1

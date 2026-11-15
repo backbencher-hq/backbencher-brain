@@ -1,0 +1,15 @@
+{
+  "fixtureId": "groovy/assert-comma-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS the #841 assert-message fix: the separator is `:` OR `,`. The comma form's legality was verified against a REAL Groovy 3.0.24 toolchain (script/m14/tmp/assert-comma-validity.groovy: both forms parse and run; the comma form raises AssertionError with the message), so this is a language form the grammar owed, not a tolerance granted to the corpus. The class-level pins carry the weight: before the fix, recovery did not stop at the assert, it swallowed the ENCLOSING CLASS, so AssertComma and its contains edge vanished from the output entirely. Corpus consequence at the rebuilt wasm (grails-core @ a83f8748, whole tracked corpus through the production parseFile pipeline): 322 -> 300 error files, 22 fixed, 0 regressed; 34 of the 322 carried the form. NOTE: this expectation was authored AFTER the analyzer run, from the dump script/m14/tmp/g841-fixture-dump.ts (authoredBeforeAnalyzerRun is therefore false, stated rather than claimed true); the load-bearing property is the parse-clean consequence plus the mutation pin groovy/assert-comma-calls-dropped, not the ordering of authorship.",
+  "expectSymbols": [
+    { "name": "AssertComma", "kind": "class" },
+    { "name": "check", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "AssertComma", "target": "check" },
+    { "type": "calls", "source": "check", "target": "size" },
+    { "type": "calls", "source": "check", "target": "isEmpty" }
+  ]
+}

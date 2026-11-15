@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/index-signature-lines",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Disastrous-review ruling: index-signature member named `[key]` in symbol and edge alike (no collision with a real `key` property); the writeline carries `key`. Locks the agreement; Tier A skips bracketed tokens by shape rule.",
+  "expectSymbols": [
+    { "name": "Dict", "kind": "class" },
+    { "name": "[key]", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Dict", "target": "[key]", "line_number": 9 }
+  ],
+  "forbidRelationships": []
+}

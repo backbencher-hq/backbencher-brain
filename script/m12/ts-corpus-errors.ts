@@ -3,12 +3,12 @@
 // single-long-lived-parser memory exhaustion that causes spurious Abort()s.
 // Usage: bun script/m12/ts-corpus-errors.ts
 // Reads:  validation/m12/results/typescript-corpus-sample.txt (relative paths
-//         into the pinned TypeScript repo at $HOME/TypeScript)
+//         into the pinned TypeScript repo at /home/ishaq2321/TypeScript)
 // Prints: per-file error stats + aggregate (errFiles / errNodes / crashes)
 import { readFileSync } from "fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO = "$HOME/TypeScript"
+const REPO = "/home/ishaq2321/TypeScript"
 const SAMPLE = "validation/m12/results/typescript-corpus-sample.txt"
 
 async function main() {

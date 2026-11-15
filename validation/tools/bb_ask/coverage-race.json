@@ -1,0 +1,36 @@
+{
+  "attempts": [
+    {
+      "attempt": 0,
+      "embeddedAtQueryStart": 1440,
+      "embeddedAfterQuery": 1440,
+      "reportedCoverageEmbedded": 1440,
+      "reportedCoverageSymbols": 1440,
+      "method": "vector",
+      "resultCount": 5,
+      "contradiction": false
+    },
+    {
+      "attempt": 1,
+      "embeddedAtQueryStart": 1440,
+      "embeddedAfterQuery": 1440,
+      "reportedCoverageEmbedded": 1440,
+      "reportedCoverageSymbols": 1440,
+      "method": "vector",
+      "resultCount": 5,
+      "contradiction": false
+    },
+    {
+      "attempt": 2,
+      "embeddedAtQueryStart": 1440,
+      "embeddedAfterQuery": 1440,
+      "reportedCoverageEmbedded": 1440,
+      "reportedCoverageSymbols": 1440,
+      "method": "vector",
+      "resultCount": 5,
+      "contradiction": false
+    }
+  ],
+  "anyContradiction": false,
+  "generatedAt": "2026-11-01T22:17:59.267Z"
+}

@@ -1,0 +1,23 @@
+{
+  "fixtureId": "javascript/sibling-object-member-identity",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W2 (#769): the JS method dedup key was `${owner ?? \"module\"}:${name}` and scopeOwnerName only reports CLASS scopes, so every object-literal member of a module shared one slot — the second `init()` of a SIBLING object literal replaced the first, dead-spanning its body and losing its calls (probe: cfg.alpha.init's `one()` call vanished; TypeScript kept both). Contract: identity is container-scoped — sibling containers never collide, while duplicates INSIDE one container still collapse last-wins (family ruling Option A). Verified lane-visible on the real corpus: vue-element-admin MarkdownEditor/index.vue had MISSING={toFixed,random} from its two prop-default factories before the fix, 0 after.",
+  "expectSymbolCount": [
+    { "name": "init", "equals": 2, "note": "sibling containers (alpha/beta) each keep their own init" },
+    { "name": "run", "equals": 1, "note": "true duplicate inside ONE object still collapses last-wins" }
+  ],
+  "expectSymbols": [
+    { "name": "one", "kind": "function" },
+    { "name": "two", "kind": "function" },
+    { "name": "run", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "init", "target": "one", "note": "pre-fix LOST: the replaced first body was dead-spanned" },
+    { "type": "calls", "from": "init", "target": "two", "note": "the surviving second body" },
+    { "type": "calls", "from": "run", "target": "four", "note": "last-wins inside one object" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "run", "target": "three", "note": "the dead duplicate body must not emit" }
+  ]
+}

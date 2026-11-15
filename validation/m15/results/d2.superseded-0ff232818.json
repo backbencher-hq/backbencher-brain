@@ -1,0 +1,12 @@
+{
+  "issue": "M15.D2",
+  "code": "D2",
+  "tool": "bb_doc",
+  "title": "regex census",
+  "verified": true,
+  "checks": 1,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-09-30T22:25:29.295Z"
+}

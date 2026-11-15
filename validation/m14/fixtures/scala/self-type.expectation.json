@@ -1,0 +1,11 @@
+{
+  "fixtureId": "scala/self-type",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Self-type 'this: Logging =>' must parse without corrupting symbols; Service and Logging exist as traits.",
+  "expectSymbols": [
+    { "name": "Service" },
+    { "name": "Logging" },
+    { "name": "go" }
+  ]
+}

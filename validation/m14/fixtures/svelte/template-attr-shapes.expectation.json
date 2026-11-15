@@ -1,0 +1,73 @@
+{
+ "fixtureId": "svelte/template-attr-shapes",
+ "language": "svelte",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Sv1 review wave H1/H2/H3: shorthand {value} and spread {...props} carry the expression in the attribute NAME (no expression child) and were never read; bare this={X} on svelte:component/svelte:element is a dynamic component reference. Import-bound DynComp resolves to instantiates (static-<Comp/> semantics); member-bound currentView resolves to a template uses via 3c with NO double instantiates.",
+ "expectSymbols": [
+  {
+   "name": "value",
+   "kind": "variable"
+  },
+  {
+   "name": "props",
+   "kind": "variable"
+  },
+  {
+   "name": "currentView",
+   "kind": "function"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "renders",
+   "from": "template-attr-shapes",
+   "target": "Comp",
+   "meta.isComponentUsage": true
+  },
+  {
+   "type": "uses",
+   "from": "template-attr-shapes",
+   "target": "value",
+   "meta.isTemplateExpression": true
+  },
+  {
+   "type": "uses",
+   "from": "template-attr-shapes",
+   "target": "props",
+   "meta.isTemplateExpression": true
+  },
+  {
+   "type": "renders",
+   "from": "template-attr-shapes",
+   "target": "DynComp",
+   "meta.isComponentUsage": true,
+   "meta.dynamicTargetLines": [
+    10
+   ],
+   "note": "the dynamic-site payload: a `{#if}`-guarded component has a known site line; dropping the key reproduces the pre-fix loss of target sites"
+  },
+  {
+   "type": "uses",
+   "from": "template-attr-shapes",
+   "target": "currentView",
+   "meta.isTemplateExpression": true
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "renders",
+   "from": "template-attr-shapes",
+   "target": "currentView"
+  },
+  {
+   "type": "uses",
+   "from": "template-attr-shapes",
+   "target": "Comp"
+  },
+  {
+   "type": "uses",
+   "from": "template-attr-shapes",
+   "target": "DynComp"
+  }
+ ]
+}

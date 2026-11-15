@@ -1,0 +1,25 @@
+{
+  "expectFrameworks": ["Plug", "Phoenix", "Ecto"],
+  "forbidFrameworks": ["Phoenix LiveView", "Phoenix Channels", "Broadway"],
+  "expectSymbols": [
+    { "name": "PlugUsage", "kind": "module" },
+    { "name": "call", "kind": "function", "ownerName": "PlugUsage" },
+    { "name": "PhoenixUsage", "kind": "module" },
+    { "name": "routes", "kind": "function", "ownerName": "PhoenixUsage" },
+    { "name": "EctoUsage", "kind": "module" },
+    { "name": "table", "kind": "function", "ownerName": "EctoUsage" }
+  ],
+  "expectExports": [
+    { "name": "PlugUsage", "kind": "module" },
+    { "name": "PhoenixUsage", "kind": "module" },
+    { "name": "EctoUsage", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "PlugUsage", "target": "Plug.Conn" },
+    { "type": "references", "from": "PhoenixUsage", "target": "Phoenix.Router" },
+    { "type": "references", "from": "EctoUsage", "target": "Ecto.Schema" },
+    { "type": "contains", "from": "PlugUsage", "target": "call" },
+    { "type": "contains", "from": "PhoenixUsage", "target": "routes" },
+    { "type": "contains", "from": "EctoUsage", "target": "table" }
+  ]
+}

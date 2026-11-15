@@ -5,7 +5,7 @@ import { readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const REPO = "$HOME/fixtures/repositories/swift-nio"
+const REPO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
 
 async function main() {
   // Tracked files (git ls-files), like the M11 corpus gate.

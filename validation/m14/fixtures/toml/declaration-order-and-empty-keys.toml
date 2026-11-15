@@ -1,0 +1,51 @@
+# TWO RULINGS THE CORPUS FOUND AND NO FIXTURE COVERED, authored from the TOML
+# v1.0.0 specification before observing the corrected output.
+#
+# 1. DECLARATION ORDER IS NOT SIGNIFICANT. The spec requires no super-table to be
+#    written first: `[a.b]` above `[a]` is valid, and `a.b` is inside `a`. A walk
+#    that resolves an owner from a document-order map files such a section under
+#    the FILE. `ansible/pyproject.toml` is the one corpus file with the shape:
+#    `[tool.setuptools.dynamic]` on line 45, `[tool.setuptools]` on line 49.
+#
+# 2. AN EMPTY KEY PRODUCES NOTHING, AT EVERY LEVEL. `"" = 1` names nothing because
+#    an identity needs a name — a decision this lane recorded and pinned at the
+#    DOCUMENT ROOT, where a guard existed. Inside a table there was no guard, and
+#    the path is built as `${table}.${key}`, so an empty segment became a TRAILING
+#    DOT: `pb-grpc/pyproject.toml:53` published `tool.setuptools.package-dir.`,
+#    a name TOML cannot parse back. The rule is now asked of every key at every
+#    level rather than at one of them.
+#
+# The two are in one file because they are the same defect: a walk that trusts
+# what it has seen SO FAR instead of what the document declares.
+
+# --- 1: an ancestor written AFTER the section it contains --------------------
+[late.child.grandchild]
+deep = 1
+
+[late]
+shallow = 2
+
+[late.child]
+middle = 3
+
+# --- 2: the SAME shape with only ONE level of ancestor to get wrong ---------
+[only.deep.section]
+x = 1
+
+[only]
+y = 2
+
+# --- 3: already in order, so the second pass must be a NO-OP here ------------
+[first]
+a = 1
+
+[first.second]
+b = 2
+
+# --- 4: the empty key, inside a table ----------------------------------------
+# Spelled `""`, it is a legal TOML key — and this lane's recorded decision is
+# that it publishes nothing. The point of the row is that the decision now holds
+# at this level too, and that no name ending in a bare `.` is produced.
+[table.with.empty.key]
+"" = "x"
+kept = 4

@@ -1,0 +1,124 @@
+{
+  "fixtureId": "hcl/instantiates-resource-type",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Authored BEFORE the `instantiates` reading landed, so the pre-change run is a FAILING run (5 expected `instantiates` edges, 0 actual) and a regression is visible. Line numbers are the BLOCK HEADER lines the TYPE label is written on (8, 13, 17, 22, 36), transcribed from the numbered source; every block's first label is the type, the second is the instance name, and only the TYPE is a target.",
+  "rationale": "`instantiates` is the construction relation: a `resource` / `data` block builds an instance of the PROVIDER TYPE its first label names. Terraform's type is declared by a provider BINARY, in no repository, so the whole admitted corpus (3,932 resource/data blocks over 444 distinct type labels) contains ZERO labels declared as an address anywhere — measured, and recorded as the corpus-unexercised fact under HCL-D13, not used as a reason to publish nothing. The edge's SOURCE is the declaring file's root-module symbol (the document owns the block) and its TARGET is the type label AS WRITTEN (`aws_instance`), which is symbol-shaped and deliberately NOT a declaration the analyzer invents: no symbol is created for a provider type, and the target resolves externally/unresolved exactly as the contract requires. `metadata.instanceType` carries the label, `metadata.instanceKind` says whether the block is a `resource` or a `data` source, and `metadata.instanceName` carries the block's second label so a consumer can tell which instance was constructed. The near misses are pinned as FORBIDS because each is a different fact: a nested block (`lifecycle`, `dynamic`/`content`) is a MEMBER of its enclosing declaration and names no type (already `contains`), a `module` block names a SOURCE (already `imports`, and a module is a separate unit, never an instantiation of one — HCL-D11), a `variable` declares a value, and a variable's `type = list(number)` constraint is a type EXPRESSION, not a construction of a declared type.",
+  "expectSymbols": [
+    { "name": "instantiates-resource-type", "kind": "module", "note": "the document root symbol; the SOURCE of every instantiates row" },
+    { "name": "aws_instance.web", "kind": "class", "note": "the block's own address — it instantiates `aws_instance`, it does not declare it" },
+    { "name": "aws_s3_bucket.logs", "kind": "class" },
+    { "name": "aws_ami.latest", "kind": "class", "note": "a `data` block: `data.DATA_TYPE.NAME` is the native address" },
+    { "name": "aws_db_instance.db", "kind": "class" },
+    { "name": "aws_security_group.sg", "kind": "class" },
+    { "name": "network", "kind": "module", "note": "a `module` block's symbol: inclusion by source, never an instantiation" },
+    { "name": "rules", "kind": "variable" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "instantiates-resource-type",
+      "target": "aws_instance",
+      "line_number": 8,
+      "meta.instanceType": "aws_instance",
+      "meta.instanceKind": "resource",
+      "meta.instanceName": "web",
+      "meta.hclSite": "provider-type",
+      "note": "the plain case: the source is the DOCUMENT (it owns the block), the target is the provider TYPE label as written"
+    },
+    {
+      "type": "instantiates",
+      "from": "instantiates-resource-type",
+      "target": "aws_s3_bucket",
+      "line_number": 13,
+      "meta.instanceType": "aws_s3_bucket",
+      "note": "a second resource kind: the target is the label, not the block address `aws_s3_bucket.logs`"
+    },
+    {
+      "type": "instantiates",
+      "from": "instantiates-resource-type",
+      "target": "aws_ami",
+      "line_number": 17,
+      "meta.instanceType": "aws_ami",
+      "meta.instanceKind": "data",
+      "meta.instanceName": "latest",
+      "note": "a DATA block instantiates the data source TYPE the provider declares; `instanceKind` records which half of the provider schema it is"
+    },
+    {
+      "type": "instantiates",
+      "from": "instantiates-resource-type",
+      "target": "aws_db_instance",
+      "line_number": 22,
+      "meta.instanceType": "aws_db_instance",
+      "note": "the resource whose body carries a `lifecycle` block — the nested block must not become the target"
+    },
+    {
+      "type": "instantiates",
+      "from": "instantiates-resource-type",
+      "target": "aws_security_group",
+      "line_number": 36,
+      "meta.instanceType": "aws_security_group",
+      "note": "the resource whose body carries a `dynamic` block — the generated member type must not become the target"
+    },
+    {
+      "type": "contains",
+      "from": "aws_db_instance.db",
+      "target": "aws_db_instance.db.lifecycle",
+      "line_number": 25,
+      "note": "the nested block is still CONTAINED: a containment edge and an instantiation edge are different facts and both are kept"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "aws_instance",
+      "note": "NO INVENTED DECLARATION. The provider type is declared by a provider binary, in no repository; a symbol here would fabricate the target the corpus does not have"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "target": "lifecycle",
+      "note": "a nested block is a MEMBER of its enclosing declaration, not an instantiation of a type"
+    },
+    {
+      "type": "instantiates",
+      "target": "ingress",
+      "note": "the `dynamic \"ingress\"` block generates members; it instantiates no type"
+    },
+    {
+      "type": "instantiates",
+      "target": "dynamic.ingress",
+      "note": "the generated block's symbol spelling is not a type either"
+    },
+    {
+      "type": "instantiates",
+      "from": "network",
+      "note": "a `module` block names a SOURCE and is a separate unit: it earns `imports`, never `instantiates`"
+    },
+    {
+      "type": "instantiates",
+      "target": "./modules/network",
+      "note": "a module source is a path, not a type — a target here would be an edge to nothing"
+    },
+    {
+      "type": "instantiates",
+      "from": "rules",
+      "note": "a `variable` declares a value; it constructs nothing"
+    },
+    {
+      "type": "instantiates",
+      "target": "list",
+      "note": "`type = list(number)` is a type EXPRESSION (a constraint), not a construction of a declared type"
+    },
+    {
+      "type": "instantiates",
+      "target": "aws_instance.web",
+      "note": "the target is the TYPE label; the block's full address is the SOURCE-side identity, never the target"
+    },
+    {
+      "type": "instantiates",
+      "target": "web",
+      "note": "the instance NAME label must not be published as a type"
+    }
+  ]
+}

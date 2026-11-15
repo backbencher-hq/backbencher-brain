@@ -6,12 +6,12 @@
  * evidence. Two exist (`grammars/tree-sitter-vbnet/PIN.md`, `reviews/vb/master-review.md`);
  * four do not:
  *
- *     fixtures/validation/grammar-floor.json      ABSENT
- *     fixtures/validation/history/                ABSENT
- *     fixtures/grammar-repro/cases/                ABSENT
- *     fixtures/probes/defect-census.ts             ABSENT
+ *     bb_tests/validation/grammar-floor.json      ABSENT
+ *     bb_tests/validation/history/                ABSENT
+ *     bb_tests/grammar-repro/cases/                ABSENT
+ *     bb_tests/probes/defect-census.ts             ABSENT
  *
- * `fixtures/` does not exist in this repository at all. So a record that says "measured,
+ * `bb_tests/` does not exist in this repository at all. So a record that says "measured,
  * here is the artifact" can be citing a path that was never committed, was deleted, or
  * was always aspirational — and the gate has no way to tell, because a prose string in a
  * JSON file is not checked by anything.
@@ -26,7 +26,7 @@
  * path is unambiguous and needs no judgement, whereas "is this artifact still current"
  * is a question about content that belongs with the artifact's own producer. It also
  * reports paths that merely LOOK like paths (`reviews/...`, `validation/...`,
- * `fixtures/...`, `script/...`, `src/...`, `grammars/...`, `docs/...`) and skips
+ * `bb_tests/...`, `script/...`, `src/...`, `grammars/...`, `docs/...`) and skips
  * everything else, so a sentence in prose is not reported as a missing file.
  */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
@@ -36,7 +36,7 @@ const ROOT = process.cwd()
 const PINS = path.join(ROOT, "validation/m14/grammar-pins.json")
 const OUT = path.join(ROOT, "validation/m60/results/evidence-citation-census.json")
 
-const PATH_LIKE = /^(fixtures|validation|script|src|grammars|docs|reviews|queries|node_modules)\//
+const PATH_LIKE = /^(bb_tests|validation|script|src|grammars|docs|reviews|queries|node_modules)\//
 
 type Row = {
   lane: string
@@ -66,7 +66,7 @@ for (const [lane, rec] of Object.entries(decisions).sort(([a], [b]) => a.localeC
 
   const cited = new Set<string>()
   for (const s of strings) {
-    for (const m of s.matchAll(/(?:^|[\s`"'(])((?:fixtures|validation|script|src|grammars|docs|reviews|queries)\/[A-Za-z0-9_./@-]+\.[A-Za-z0-9]+)/g)) {
+    for (const m of s.matchAll(/(?:^|[\s`"'(])((?:bb_tests|validation|script|src|grammars|docs|reviews|queries)\/[A-Za-z0-9_./@-]+\.[A-Za-z0-9]+)/g)) {
       cited.add(m[1].replace(/[.,;:)\]]+$/, ""))
     }
   }
@@ -125,17 +125,17 @@ const out = {
     const generated = /^src\/(parser\.c|grammar\.json|node-types\.json)$|^queries\//
     return {
       externalEvidenceTree: {
-        count: all.filter((x) => x.path.startsWith("fixtures/")).length,
-        note: "paths under fixtures/, which does not exist in this repository — the corpora live at an external $HOME/fixtures/repositories. A claim resting on one of these cannot be opened or re-run by a reader of this repo.",
-        sample: all.filter((x) => x.path.startsWith("fixtures/")).slice(0, 10),
+        count: all.filter((x) => x.path.startsWith("bb_tests/")).length,
+        note: "paths under bb_tests/, which does not exist in this repository — the corpora live at an external /home/ishaq2321/bb_tests/repositories. A claim resting on one of these cannot be opened or re-run by a reader of this repo.",
+        sample: all.filter((x) => x.path.startsWith("bb_tests/")).slice(0, 10),
       },
       generatedNotVendoredByDesign: {
         count: all.filter((x) => generated.test(x.path)).length,
         note: "generated grammar artifacts each record excludes from vendoring in its notVendored field. Citing them in prose while excluding them from the record is an inconsistency, not a dishonesty, so they are counted separately rather than as findings.",
       },
       other: {
-        count: all.filter((x) => !x.path.startsWith("fixtures/") && !generated.test(x.path)).length,
-        paths: all.filter((x) => !x.path.startsWith("fixtures/") && !generated.test(x.path)),
+        count: all.filter((x) => !x.path.startsWith("bb_tests/") && !generated.test(x.path)).length,
+        paths: all.filter((x) => !x.path.startsWith("bb_tests/") && !generated.test(x.path)),
       },
     }
   })(),

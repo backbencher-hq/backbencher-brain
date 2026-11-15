@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a6-health-refresh.ts",
+  "evidenceFile": "A6.json",
+  "generatedAt": "2026-09-05T01:55:43.417Z",
+  "passed": 17,
+  "failed": 0,
+  "negativeCases": 3,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.487Z",
+    "contentSha256": "a50f1fe27c71482f05fedac7a8f59ac1e4e279a10be86a767cd635cfb533e100"
+  }
+}

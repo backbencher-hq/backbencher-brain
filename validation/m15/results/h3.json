@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H3",
+  "code": "H3",
+  "tool": "bb_health",
+  "title": "cross-file per-language correctness",
+  "verified": true,
+  "checks": 4,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:21:23.030Z"
+}

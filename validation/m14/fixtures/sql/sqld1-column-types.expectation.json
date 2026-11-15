@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld1-column-types.sql",
+  "authoredFrom": "SQLD1 (M60 SQL wave, 2026-09-26). Hand-audited against the pinned grammar's `column_definition` fields, measured with bb_tests/sql/probe/micro-coltype.mts: `name`, `type` (builtin) and `custom_type` (user-defined) are the grammar's own three fields, and `type` is present on BOTH the type node and `array_size_definition` for an array. Expectations written from that probe, not from the analyzer's output.",
+  "comment": "The load-bearing rows are `b` (a custom type must produce NO foreign key — the analyzer fabricated `references t -> my_type` and the 'Foreign Key Constraints' pattern for it) and `c` (the array marker must survive). Every sqlType string below is the source's own spelling, read out of the node text, so `int[]` and not `int []`.",
+  "expectSymbols": [
+    {
+      "name": "d1_columns",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "a",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "integer"
+    },
+    {
+      "name": "b",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "my_schema.my_type"
+    },
+    {
+      "name": "c",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "int[]"
+    },
+    {
+      "name": "d",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "numeric(10,2)"
+    },
+    {
+      "name": "e",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "character varying(20)"
+    },
+    {
+      "name": "f",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "timestamp with time zone"
+    },
+    {
+      "name": "g",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.sqlType": "double precision"
+    },
+    {
+      "name": "h",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.isPrimaryKey": true
+    },
+    {
+      "name": "i",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.isUnique": true
+    },
+    {
+      "name": "j",
+      "kind": "property",
+      "ownerName": "d1_columns",
+      "meta.references": "o"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "d1_columns",
+      "target": "sqld1-column-types.sql::d1_columns.a"
+    },
+    {
+      "type": "contains",
+      "from": "d1_columns",
+      "target": "sqld1-column-types.sql::d1_columns.j"
+    },
+    {
+      "type": "references",
+      "from": "d1_columns",
+      "target": "o"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "d1_columns",
+      "target": "my_type"
+    },
+    {
+      "type": "references",
+      "from": "d1_columns",
+      "target": "my_schema"
+    },
+    {
+      "type": "uses",
+      "from": "d1_columns",
+      "target": "my_type"
+    }
+  ],
+  "expectUniqueIds": [
+    {
+      "name": "a"
+    },
+    {
+      "name": "b"
+    },
+    {
+      "name": "c"
+    },
+    {
+      "name": "d"
+    }
+  ],
+  "note": "forbidRelationships is the regression pin for the phantom-FK class: a custom-typed column produced a `references` edge to a type name on the corpus, and an expect-only fixture cannot see an edge that should not exist."
+}

@@ -59,7 +59,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { deriveCssOverridesTruth } from "../../../script/m14/oracles/css-overrides"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const fi = argv.indexOf("--files")
 const SAMPLE = fi >= 0 ? Number(argv[fi + 1]) || 0 : 0

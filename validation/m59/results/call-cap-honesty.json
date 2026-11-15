@@ -1,0 +1,131 @@
+{
+  "gate": "M59.A12 — the per-symbol site cap is declared, true-total-bearing, deterministic and falsifiable",
+  "issue": "#888",
+  "at": "2026-10-17T18:01:40.204Z",
+  "command": "npx tsx script/m59/verify-call-cap-honesty.ts",
+  "fixture": {
+    "hotRequested": 260,
+    "hotStored": 260,
+    "coldStored": 3,
+    "coldVisibleAllKinds": 4
+  },
+  "checks": [
+    {
+      "name": "fixture: hot has more stored sites than the default limit",
+      "ok": true,
+      "detail": "stored hot sites=260"
+    },
+    {
+      "name": "capped: tool answered",
+      "ok": true,
+      "detail": "edges=200 err=false"
+    },
+    {
+      "name": "capped: returned edges reach the declared limit",
+      "ok": true,
+      "detail": "edges=200 edgeLimit=200"
+    },
+    {
+      "name": "capped: truncated is TRUE",
+      "ok": true,
+      "detail": "truncated=true"
+    },
+    {
+      "name": "capped: truncationReason names the site limit",
+      "ok": true,
+      "detail": "reason=caller-site-limit+caller-budget-exhausted"
+    },
+    {
+      "name": "capped: the TRUE total is reported",
+      "ok": true,
+      "detail": "callersIfUncapped=260 stored=260"
+    },
+    {
+      "name": "capped: the total is not the returned count",
+      "ok": true,
+      "detail": "260 vs 200"
+    },
+    {
+      "name": "capped: returned count is labelled a floor",
+      "ok": true,
+      "detail": "totalsAreLowerBounds=false (declared, not silent)"
+    },
+    {
+      "name": "uncapped: answers all sites",
+      "ok": true,
+      "detail": "edges=3 stored=3"
+    },
+    {
+      "name": "uncapped: no total is invented",
+      "ok": true,
+      "detail": "callersIfUncapped=null"
+    },
+    {
+      "name": "uncapped: zero capped queries",
+      "ok": true,
+      "detail": "cappedQueries=0"
+    },
+    {
+      "name": "uncapped: the filter that scoped this answer is declared as a FILTER, not as truncation",
+      "ok": true,
+      "detail": "filterNarrowed=true filterReason=relationshipTypes:calls truncated=false reason=null"
+    },
+    {
+      "name": "fixture: the default-filter check is non-vacuous (a non-call row is stored against cold)",
+      "ok": true,
+      "detail": "stored kinds=[\"calls\",\"exports\"]"
+    },
+    {
+      "name": "default filter: the un-narrowed answer applies every stored kind and returns every visible row",
+      "ok": true,
+      "detail": "applied=[\"calls\",\"extends\",\"implements\",\"uses\",\"instantiates\",\"overrides\",\"contains\",\"references\",\"imports\",\"exports\"] storedKinds=[\"calls\",\"exports\"] edges=4 visible(all kinds)=4"
+    },
+    {
+      "name": "uncapped: truncated is FALSE (the flag can be false)",
+      "ok": true,
+      "detail": "truncated=false reason=null"
+    },
+    {
+      "name": "deterministic: same question, same site set (two calls, one process)",
+      "ok": true,
+      "detail": "equal=true"
+    },
+    {
+      "name": "mutation: with 100 rows deleted the capped expectation breaks",
+      "ok": true,
+      "detail": "edges=160 truncated=true total=null (stored now 160)"
+    },
+    {
+      "name": "mutation: below the cap, no total is invented and the cap reason is gone",
+      "ok": true,
+      "detail": "callersIfUncapped=null reason=caller-budget-exhausted"
+    },
+    {
+      "name": "mutation: the declared total tracks the data across the cap boundary",
+      "ok": true,
+      "detail": "callersIfUncapped=210 expected=210"
+    },
+    {
+      "name": "mutation: restoring the rows restores the declared answer",
+      "ok": true,
+      "detail": "edges=200 total=260"
+    },
+    {
+      "name": "raiseable: edgeLimit=1000 returns EVERY site, and the site cap no longer fires",
+      "ok": true,
+      "detail": "edges=260 edgeLimit=1000 reason=caller-budget-exhausted"
+    },
+    {
+      "name": "raiseable: the traversal budget is still declared as its own reason",
+      "ok": true,
+      "detail": "truncated=true reason=caller-budget-exhausted"
+    },
+    {
+      "name": "no bare truncation: every truncated answer names a bound",
+      "ok": true,
+      "detail": "checked 7 answers"
+    }
+  ],
+  "failures": [],
+  "status": "PASS"
+}

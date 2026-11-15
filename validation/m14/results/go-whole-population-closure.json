@@ -1,0 +1,493 @@
+{
+  "meta": {
+    "instrument": "merge-arm-slices.ts",
+    "population": {
+      "parsed": 50589,
+      "corpusTotal": 50589,
+      "admitted": 50589,
+      "string": "parsed=50589/50589 admitted=50589 exts=(slices' own) index=(slices' own)"
+    },
+    "slices": [
+      {
+        "file": "go-0-1000.txt",
+        "range": [
+          0,
+          1000
+        ],
+        "parsed": 1000,
+        "edges": 90892
+      },
+      {
+        "file": "go-1000-2000.txt",
+        "range": [
+          1000,
+          2000
+        ],
+        "parsed": 1000,
+        "edges": 147349
+      },
+      {
+        "file": "go-2000-3000.txt",
+        "range": [
+          2000,
+          3000
+        ],
+        "parsed": 1000,
+        "edges": 118221
+      },
+      {
+        "file": "go-3000-4000.txt",
+        "range": [
+          3000,
+          4000
+        ],
+        "parsed": 1000,
+        "edges": 139187
+      },
+      {
+        "file": "go-4000-5000.txt",
+        "range": [
+          4000,
+          5000
+        ],
+        "parsed": 1000,
+        "edges": 89841
+      },
+      {
+        "file": "go-5000-6000.txt",
+        "range": [
+          5000,
+          6000
+        ],
+        "parsed": 1000,
+        "edges": 66209
+      },
+      {
+        "file": "go-6000-7000.txt",
+        "range": [
+          6000,
+          7000
+        ],
+        "parsed": 1000,
+        "edges": 94172
+      },
+      {
+        "file": "go-7000-8000.txt",
+        "range": [
+          7000,
+          8000
+        ],
+        "parsed": 1000,
+        "edges": 80011
+      },
+      {
+        "file": "go-8000-9000.txt",
+        "range": [
+          8000,
+          9000
+        ],
+        "parsed": 1000,
+        "edges": 97190
+      },
+      {
+        "file": "go-9000-10000.txt",
+        "range": [
+          9000,
+          10000
+        ],
+        "parsed": 1000,
+        "edges": 99588
+      },
+      {
+        "file": "go-10000-11000.txt",
+        "range": [
+          10000,
+          11000
+        ],
+        "parsed": 1000,
+        "edges": 106471
+      },
+      {
+        "file": "go-11000-12000.txt",
+        "range": [
+          11000,
+          12000
+        ],
+        "parsed": 1000,
+        "edges": 100130
+      },
+      {
+        "file": "go-12000-13000.txt",
+        "range": [
+          12000,
+          13000
+        ],
+        "parsed": 1000,
+        "edges": 107474
+      },
+      {
+        "file": "go-13000-14000.txt",
+        "range": [
+          13000,
+          14000
+        ],
+        "parsed": 1000,
+        "edges": 79876
+      },
+      {
+        "file": "go-14000-15000.txt",
+        "range": [
+          14000,
+          15000
+        ],
+        "parsed": 1000,
+        "edges": 141153
+      },
+      {
+        "file": "go-15000-16000.txt",
+        "range": [
+          15000,
+          16000
+        ],
+        "parsed": 1000,
+        "edges": 170698
+      },
+      {
+        "file": "go-16000-17000.txt",
+        "range": [
+          16000,
+          17000
+        ],
+        "parsed": 1000,
+        "edges": 86738
+      },
+      {
+        "file": "go-17000-18000.txt",
+        "range": [
+          17000,
+          18000
+        ],
+        "parsed": 1000,
+        "edges": 67251
+      },
+      {
+        "file": "go-18000-19000.txt",
+        "range": [
+          18000,
+          19000
+        ],
+        "parsed": 1000,
+        "edges": 132907
+      },
+      {
+        "file": "go-19000-20000.txt",
+        "range": [
+          19000,
+          20000
+        ],
+        "parsed": 1000,
+        "edges": 148967
+      },
+      {
+        "file": "go-20000-21000.txt",
+        "range": [
+          20000,
+          21000
+        ],
+        "parsed": 1000,
+        "edges": 74567
+      },
+      {
+        "file": "go-21000-22000.txt",
+        "range": [
+          21000,
+          22000
+        ],
+        "parsed": 1000,
+        "edges": 116029
+      },
+      {
+        "file": "go-22000-23000.txt",
+        "range": [
+          22000,
+          23000
+        ],
+        "parsed": 1000,
+        "edges": 138620
+      },
+      {
+        "file": "go-23000-24000.txt",
+        "range": [
+          23000,
+          24000
+        ],
+        "parsed": 1000,
+        "edges": 133735
+      },
+      {
+        "file": "go-24000-25000.txt",
+        "range": [
+          24000,
+          25000
+        ],
+        "parsed": 1000,
+        "edges": 149470
+      },
+      {
+        "file": "go-25000-26000.txt",
+        "range": [
+          25000,
+          26000
+        ],
+        "parsed": 1000,
+        "edges": 91880
+      },
+      {
+        "file": "go-26000-27000.txt",
+        "range": [
+          26000,
+          27000
+        ],
+        "parsed": 1000,
+        "edges": 100248
+      },
+      {
+        "file": "go-27000-28000.txt",
+        "range": [
+          27000,
+          28000
+        ],
+        "parsed": 1000,
+        "edges": 51057
+      },
+      {
+        "file": "go-28000-29000.txt",
+        "range": [
+          28000,
+          29000
+        ],
+        "parsed": 1000,
+        "edges": 59352
+      },
+      {
+        "file": "go-29000-30000.txt",
+        "range": [
+          29000,
+          30000
+        ],
+        "parsed": 1000,
+        "edges": 69473
+      },
+      {
+        "file": "go-30000-31000.txt",
+        "range": [
+          30000,
+          31000
+        ],
+        "parsed": 1000,
+        "edges": 47921
+      },
+      {
+        "file": "go-31000-32000.txt",
+        "range": [
+          31000,
+          32000
+        ],
+        "parsed": 1000,
+        "edges": 107790
+      },
+      {
+        "file": "go-32000-33000.txt",
+        "range": [
+          32000,
+          33000
+        ],
+        "parsed": 1000,
+        "edges": 63913
+      },
+      {
+        "file": "go-33000-34000.txt",
+        "range": [
+          33000,
+          34000
+        ],
+        "parsed": 1000,
+        "edges": 126102
+      },
+      {
+        "file": "go-34000-35000.txt",
+        "range": [
+          34000,
+          35000
+        ],
+        "parsed": 1000,
+        "edges": 120267
+      },
+      {
+        "file": "go-35000-36000.txt",
+        "range": [
+          35000,
+          36000
+        ],
+        "parsed": 1000,
+        "edges": 100344
+      },
+      {
+        "file": "go-36000-37000.txt",
+        "range": [
+          36000,
+          37000
+        ],
+        "parsed": 1000,
+        "edges": 116790
+      },
+      {
+        "file": "go-37000-38000.txt",
+        "range": [
+          37000,
+          38000
+        ],
+        "parsed": 1000,
+        "edges": 224623
+      },
+      {
+        "file": "go-38000-39000.txt",
+        "range": [
+          38000,
+          39000
+        ],
+        "parsed": 1000,
+        "edges": 98275
+      },
+      {
+        "file": "go-39000-40000.txt",
+        "range": [
+          39000,
+          40000
+        ],
+        "parsed": 1000,
+        "edges": 88893
+      },
+      {
+        "file": "go-40000-41000.txt",
+        "range": [
+          40000,
+          41000
+        ],
+        "parsed": 1000,
+        "edges": 147068
+      },
+      {
+        "file": "go-41000-42000.txt",
+        "range": [
+          41000,
+          42000
+        ],
+        "parsed": 1000,
+        "edges": 172264
+      },
+      {
+        "file": "go-42000-43000.txt",
+        "range": [
+          42000,
+          43000
+        ],
+        "parsed": 1000,
+        "edges": 96581
+      },
+      {
+        "file": "go-43000-44000.txt",
+        "range": [
+          43000,
+          44000
+        ],
+        "parsed": 1000,
+        "edges": 143464
+      },
+      {
+        "file": "go-44000-45000.txt",
+        "range": [
+          44000,
+          45000
+        ],
+        "parsed": 1000,
+        "edges": 110304
+      },
+      {
+        "file": "go-45000-46000.txt",
+        "range": [
+          45000,
+          46000
+        ],
+        "parsed": 1000,
+        "edges": 90320
+      },
+      {
+        "file": "go-46000-47000.txt",
+        "range": [
+          46000,
+          47000
+        ],
+        "parsed": 1000,
+        "edges": 117612
+      },
+      {
+        "file": "go-47000-48000.txt",
+        "range": [
+          47000,
+          48000
+        ],
+        "parsed": 1000,
+        "edges": 94517
+      },
+      {
+        "file": "go-48000-49000.txt",
+        "range": [
+          48000,
+          49000
+        ],
+        "parsed": 1000,
+        "edges": 119256
+      },
+      {
+        "file": "go-49000-50000.txt",
+        "range": [
+          49000,
+          50000
+        ],
+        "parsed": 1000,
+        "edges": 75273
+      },
+      {
+        "file": "go-50000-50589.txt",
+        "range": [
+          50000,
+          50589
+        ],
+        "parsed": 589,
+        "edges": 47972
+      }
+    ],
+    "incompleteIgnored": [],
+    "tilingRule": "every slice's parsed equals its claimed width; the union is contiguous from 0 with no overlap and no shortfall; mixed widths are legitimate",
+    "closureRule": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges"
+  },
+  "closure": {
+    "edges": 5458305,
+    "resolved": 2889098,
+    "collRes": 463112,
+    "ambDecl": 1199366,
+    "ambKind": 694031,
+    "unresolved": 1012590,
+    "extOK": 357251,
+    "extPending": 0,
+    "extFAIL": 0,
+    "bindOK": 0,
+    "bindPending": 0,
+    "bindFAIL": 0,
+    "causeOK": 0,
+    "causeFAIL": 0,
+    "sum": 5458305,
+    "exact": true
+  }
+}

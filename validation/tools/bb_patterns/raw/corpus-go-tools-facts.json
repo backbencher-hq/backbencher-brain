@@ -1,0 +1,44 @@
+{
+  "tier": "CORPUS-go-tools",
+  "projectDir": "/home/ishaq2321/bb_tests/repositories/go-tools",
+  "projectId": "f58244847d810aee6ece4959e595d1c704e7f3ec",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/go-tools",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/go-tools/projects/f58244847d810aee6ece4959e595d1c704e7f3ec/brain.db",
+  "exists": true,
+  "index": {
+    "files": 2017,
+    "symbols": 32726,
+    "relationships": 147112,
+    "frameworkFiles": 114,
+    "analysisRuns": 0
+  },
+  "dbBefore": {
+    "db": {
+      "bytes": 581640192,
+      "mtime": "2026-11-02T04:32:36.581Z"
+    },
+    "wal": {
+      "bytes": 178334232,
+      "mtime": "2026-11-02T04:32:37.165Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-02T04:32:32.316Z"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "bytes": 581640192,
+      "mtime": "2026-11-02T04:32:36.581Z"
+    },
+    "wal": {
+      "bytes": 178334232,
+      "mtime": "2026-11-02T04:32:37.165Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-02T04:32:52.512Z"
+    }
+  },
+  "generatedAt": "2026-11-02T04:32:54.517Z"
+}

@@ -77,8 +77,9 @@ returns \`unknown tool\`.
   \`bb_index\` mode \`dir\`/\`file\` or CLI \`bb index --changed\`.
 - "Change this code" — \`bb_edit\`. "Leave a note for the team" —
   \`bb_annotate\` (write) / \`bb_annotations\` (read).
-- "Find dead code / patterns" — \`bb_patterns\`. "Find taint/security findings"
-  — \`bb_security\`.
+- "Find dead code / patterns" — \`bb_patterns\`. "Where are the lexical source/sink
+  leads?" — \`bb_security\` (a lead generator, not a vulnerability scanner; validate
+  every lead by hand).
 
 ## The sixteen tools
 

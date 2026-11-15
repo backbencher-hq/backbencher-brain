@@ -1,0 +1,122 @@
+{
+  "issue": "ELIXIR_FIX2-P6",
+  "note": "A `defmodule`/`defprotocol` whose name is not an `alias` node (`defmodule name do` names a module after a VARIABLE; `defmodule Module.concat(A, B) do` after a computed expression) has no name to own anything. `declarationName` already refused to invent one (P3), but the scope stack then kept the ENCLOSING module, so every declaration inside was attributed to it. Measured before the fix: 10 declarations in 5 corpus files and the wrong edges it published \u2014 `contains ExceptionTest -> foo`, `exports ExceptionTest -> foo`, `contains MapTest -> name/age/hello/world`, `contains ModuleTest -> hello`. The rule now pushes an UNNAMED scope: the member symbols are still published (a declaration is a declaration) but carry no owner, so `contains` and `exports` cannot name one. A `defstruct` inside an un-nameable module is NOT published either, because a struct's name IS its module's name. Falsifiers: mutants elixir/unnamed-module-scope-dropped, elixir/unnamed-module-scope-leaked, elixir/unnamed-module-struct-kept.",
+  "expectSymbols": [
+    {
+      "name": "Cc1.Host",
+      "kind": "module"
+    },
+    {
+      "name": "inside_variable_module",
+      "kind": "function"
+    },
+    {
+      "name": "inside_type",
+      "kind": "type"
+    },
+    {
+      "name": "after_unnamed_modules",
+      "kind": "function",
+      "ownerName": "Cc1.Host"
+    },
+    {
+      "name": "Cc1.Host.Named",
+      "kind": "module",
+      "ownerName": "Cc1.Host"
+    },
+    {
+      "name": "real_member",
+      "kind": "function",
+      "ownerName": "Cc1.Host.Named"
+    },
+    {
+      "name": "Cc1.Host.Named",
+      "kind": "struct",
+      "ownerName": "Cc1.Host.Named"
+    },
+    {
+      "name": "named_field",
+      "kind": "property",
+      "ownerName": "Cc1.Host.Named"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "target": "Cc1.Host.Named",
+      "from": "Cc1.Host",
+      "line_number": 57
+    },
+    {
+      "type": "contains",
+      "target": "real_member",
+      "from": "Cc1.Host.Named",
+      "line_number": 58
+    },
+    {
+      "type": "contains",
+      "target": "named_field",
+      "from": "Cc1.Host.Named",
+      "line_number": 59
+    },
+    {
+      "type": "exports",
+      "target": "Cc1.Host.Named",
+      "from": "Cc1.Host",
+      "line_number": 57
+    },
+    {
+      "type": "exports",
+      "target": "real_member",
+      "from": "Cc1.Host.Named",
+      "line_number": 58
+    },
+    {
+      "type": "contains",
+      "from": "Cc1.Host",
+      "target": "after_unnamed_modules",
+      "line_number": 51
+    },
+    {
+      "type": "exports",
+      "from": "Cc1.Host",
+      "target": "after_unnamed_modules",
+      "line_number": 51
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "field_one"
+    },
+    {
+      "name": "field_two"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "inside_variable_module",
+      "from": "Cc1.Host"
+    },
+    {
+      "type": "contains",
+      "target": "inside_type",
+      "from": "Cc1.Host"
+    },
+    {
+      "type": "exports",
+      "target": "inside_variable_module",
+      "from": "Cc1.Host"
+    },
+    {
+      "type": "exports",
+      "target": "inside_type",
+      "from": "Cc1.Host"
+    },
+    {
+      "type": "exports",
+      "target": "named_field",
+      "from": "Cc1.Host.Named"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "fixtureId": "java/overload-arity-varargs-multicatch",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 R3 (review claims 1-3). (1) Every method_invocation calls edge carries metadata.argumentCount (named children of argument_list) so overloads sharing the JD20 bare-leaf target (process(String) vs process(int)) stay distinguishable downstream without a resolution engine. (2) JLS 8.4.1: int... and int[] are the SAME override signature \u2014 both cross combinations (VarSub.foo overriding ArrBase.foo, ArrSub.bar overriding VarBase.bar) must resolve exact-in-file; this normalization existed in the spread path but had NO pinning test (worked by accident until now). (3) Multi-catch unions emit declared_type references for EVERY member (java.lang.IllegalArgumentException AND java.lang.IllegalStateException), not just the first.",
+  "expectSymbols": [
+    {
+      "name": "VarSub"
+    },
+    {
+      "name": "ArrSub"
+    },
+    {
+      "name": "OverloadUser"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "VarSub.foo",
+      "target": "foo"
+    },
+    {
+      "type": "overrides",
+      "from": "ArrSub.bar",
+      "target": "bar"
+    },
+    {
+      "type": "calls",
+      "target": "process",
+      "meta.argumentCount": 1
+    },
+    {
+      "type": "calls",
+      "target": "foo",
+      "meta.argumentCount": 1
+    },
+    {
+      "type": "references",
+      "target": "java.lang.IllegalArgumentException",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "java.lang.IllegalStateException",
+      "meta.relationshipType": "declared_type"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "issue": "M49 W24 CLJ-MR4",
+  "note": "Pins the defmethod multi-site model + the Clojure 1.12 docstring form: `(defmethod area \"doc\" :circle [s] …)` must extract name `area` (not the docstring text) and `[s]` params; the model emits one symbol per definition site (defmulti + one per defmethod — all named `area`), and the `contains` edge dedupes to one row. Pin BEFORE anyone \"fixes\" the model.",
+  "expectSymbols": [
+    { "name": "area", "kind": "function" },
+    { "name": "area", "kind": "function", "visibility": "public" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "target": "area" }
+  ],
+  "forbidSymbols": [
+    { "name": "Docstring for the circle impl." },
+    { "name": "docstring" },
+    { "name": "Docstring" }
+  ]
+}

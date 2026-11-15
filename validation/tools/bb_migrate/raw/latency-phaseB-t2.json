@@ -1,0 +1,180 @@
+{
+ "tier": "t2",
+ "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+ "dir": "/home/ishaq2321/mcp/backbencher-brain",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata",
+ "measuredAt": "2026-11-03T16:12:55.460Z",
+ "loadAverage": [
+  19.47,
+  13.12,
+  6.07
+ ],
+ "index": {
+  "counts": {
+   "files": 6452,
+   "symbols": 310423,
+   "relationships": 820040
+  },
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbMtimeMs": 1793578415998
+ },
+ "firstCall": {
+  "args": {
+   "symbolNames": [
+    "push"
+   ],
+   "targetLanguage": "python"
+  },
+  "ms": 2025.7,
+  "isError": false
+ },
+ "shapes": {
+  "singleText": {
+   "args": {
+    "symbolNames": [
+     "push"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    442.6,
+    364.1,
+    402.8,
+    477.1,
+    471.4
+   ],
+   "p50Ms": 442.6,
+   "p95Ms": 477.1,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: none (no-edges)"
+   ]
+  },
+  "singleJson": {
+   "args": {
+    "symbolNames": [
+     "push"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "samplesMs": [
+    572,
+    391.1,
+    442.8,
+    470.9,
+    618.2
+   ],
+   "p50Ms": 470.9,
+   "p95Ms": 618.2,
+   "lastIsError": false,
+   "lastPlans": 0,
+   "lastTextHead": [
+    "{",
+    "  \"targetLanguage\": \"python\","
+   ]
+  },
+  "twelveNames": {
+   "args": {
+    "symbolNames": [
+     "push",
+     "String",
+     "Q",
+     "has",
+     "get",
+     "add",
+     "Node",
+     "set",
+     "startsWith",
+     "find",
+     "trim",
+     "parse"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    431.7,
+    398.4,
+    833,
+    804.2,
+    421.1
+   ],
+   "p50Ms": 431.7,
+   "p95Ms": 833,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: none (no-edges)"
+   ]
+  },
+  "cohort": {
+   "args": {
+    "paths": [
+     "src/mcp/tools"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    311.1,
+    267.8,
+    315.7,
+    668.5,
+    263.4
+   ],
+   "p50Ms": 311.1,
+   "p95Ms": 668.5,
+   "lastIsError": true,
+   "lastPlans": null,
+   "lastTextHead": [
+    "bb_migrate: no indexed file matches \"src/mcp/tools\". Paths are project-relative; check the spelling against the project root."
+   ]
+  }
+ },
+ "dbState": {
+  "before": {
+   "db": {
+    "size": 3639963648,
+    "mtimeMs": 1793578415998
+   },
+   "-wal": {
+    "size": 0,
+    "mtimeMs": 1793578690116
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793722359619
+   }
+  },
+  "afterFirstCall": {
+   "db": {
+    "size": 3639963648,
+    "mtimeMs": 1793578415998
+   },
+   "-wal": {
+    "size": 0,
+    "mtimeMs": 1793578690116
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793722359619
+   }
+  },
+  "after": {
+   "db": {
+    "size": 3639963648,
+    "mtimeMs": 1793578415998
+   },
+   "-wal": {
+    "size": 0,
+    "mtimeMs": 1793578690116
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793722359619
+   }
+  }
+ }
+}

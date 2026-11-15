@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "note": "Regex accepted as unavoidable in tool code. Every row needs a written reason and an existing edge-case test file covering: empty input, no-match and boundary match, Unicode (multi-byte and astral), multiline, the anchors/quantifiers/lookarounds actually used, user-input escaping, a long input proving no catastrophic backtracking, and invalid caller-supplied patterns producing a named error. See docs/tools-campaign/CHARTER.md \u00a77. Rows are keyed by file + the exact regex source (or `RegExp(...)` argument) and are checked by script/tools/verify-regex-policy.ts.",
+  "entries": [
+    {
+      "file": "src/intelligence/search/regex-search.ts",
+      "match": "<dynamic>",
+      "reason": "User-supplied pattern is the documented feature, not source parsing (charter \u00a77.3): the caller's string is compiled as a RegExp source and matched against indexed symbol NAMES. It is validated before any index access (named InvalidRegexError), executed only inside the isolated scan worker, and bounded by REGEX_SCAN_CAP, PROJECTION_MAX and REGEX_TIME_BUDGET_MS, with every cut declared as truncated.",
+      "testFile": "validation/tools/bb_search/work/regex-edge-tests.ts"
+    },
+    {
+      "file": "src/intelligence/search/regex-scan-worker.ts",
+      "match": "<dynamic>",
+      "reason": "The worker compiles the SAME validated user pattern to run the bounded match loop; it is the isolation half of the regex-search feature (charter \u00a77.3), not a parser. The allowlist pairs it with the edge-case suite that covers empty/anchored/Unicode/astral/multiline/escaping/invalid/long-input/catastrophic-backtracking patterns.",
+      "testFile": "validation/tools/bb_search/work/regex-edge-tests.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\bassert(?:\\.[A-Za-z]+)?\\s*\\(/g",
+      "reason": "Framework-agnostic assertion-site probe for test-quality scoring; a framework's assert call has no AST node type this indexer exposes and includes() cannot express the optional `.word(` form.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\bexpect\\s*\\(/g",
+      "reason": "Detects expect( sites across Jest/Vitest/Mocha/Chai; statement-level source evidence, no AST equivalence exists.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\bshould\\./g",
+      "reason": "Chai should-style assertions are property accesses (should.equal) that only a pattern can recognise generically.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\.(?:toBe|toEqual|toStrictEqual|toThrow|toBeTruthy|toBeFalsy|toMatch|toContain|rejects|resolves)\\s*\\(/g",
+      "reason": "Matcher methods (toBe/toThrow/rejects...) appear after an arbitrary receiver expression, so the matcher method call itself is the only stable anchor.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\b(rejects|resolves)\\b/g",
+      "reason": "Promise settlement evidence in assertions; two words with word boundaries, matched across any framework.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\btry\\s*\\{/g",
+      "reason": "Error-path evidence: `try {` requires the brace as the next non-space token, which a plain includes('try') cannot enforce without false positives.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\btoThrow|throws\\b/g",
+      "reason": "toThrow/throws are matcher/property names whose position cannot be found by string operations without reimplementing word boundaries.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\bcatch\\s*\\(/g",
+      "reason": "Error-path evidence: `catch (` requires the call parenthesis, which includes('catch') cannot distinguish from the keyword followed by an identifier.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\b(?:it|test)\\.each\\b|\\b(?:describe|it|test)\\s*\\(\\s*`|%s|\\$[a-zA-Z]/g",
+      "reason": "Data-driven test detection spans it.each/test.each/describe template literals/%s/$var; five alternative shapes with no common prefix.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/(^|\\n)\\s*(\\/\\/|\\/\\*|#)/g",
+      "reason": "Counts comment lines, which requires an alternation for line start, blank-prefix and three comment styles; character scanning would reimplement the same state machine.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\b(?:it|test|describe)\\s*\\(\\s*['\"`][^'\"`]{24,}['\"`]/g",
+      "reason": "Descriptive test names: a minimum name length inside quoted/backticked first argument, which needs the quote alternation and repetition counts.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    },
+    {
+      "file": "src/intelligence/testing/quality.ts",
+      "match": "/\\b(jest|sinon)\\.(fn|spyOn|mock)\\b|vi\\.(fn|spyOn|mock)|\\.mockImplementation|nock\\(/g",
+      "reason": "Mock evidence: jest/sinon/vi fn/spyOn/mock plus mockImplementation and nock( across four frameworks; the alternatives share no prefix.",
+      "testFile": "validation/tools/bb_analyze/regex-edge-cases.ts"
+    }
+  ]
+}

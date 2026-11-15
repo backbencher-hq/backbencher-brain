@@ -1,0 +1,84 @@
+{
+  "fixtureId": "hcl/docker-bake-inherits",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "AUTHORED BEFORE the `inherits` reading landed, and the pre-change run is recorded as a FAILING run so a regression is visible: `npx tsx script/m14/run-fixtures.ts --lang hcl` reported `FAIL hcl/docker-bake-inherits` (3 expected `extends` edges, 0 actual) while the other 11 hcl fixtures passed. Line numbers are the `inherits` KEY's line — the same convention every other attribute-keyed edge in this analyzer uses — transcribed from the numbered source: 15 (`inherits = [\"_common\"]`), 20 (`inherits = [\"binary\", \"_platforms\"]`, two parents on one key), 33 (`inherits = [\"not_declared_here\"]`, which must publish NOTHING because the file declares no `target \"not_declared_here\"`).",
+  "rationale": "Docker Bake spells target inheritance as an ATTRIBUTE KEY: `target \"child\" { inherits = [\"parent\", …] }` merges each parent's attributes into the child. It is the ONE construct in the 9,329-file corpus that expresses `extends` — measured at 44 sites in 8 files naming 53 parents, 53/53 resolving to a `target` declared in the same file (validation/m14/fixtures/hcl/construct-census.current.json, extendsProbe) — and it is invisible to a node-type inventory, which is how the pre-census ruling called the type inapplicable. The edge is resolved AFTER the DFS and only against a declaration in THIS file, the same resolvability rule `calls` follows: `cross` inherits `_platforms`, which is declared BELOW it, and a consumer following `extends` must never be handed a target nothing declares. The label is `extends` by house precedent (the yaml lane labels `<<: *base` merge-key reuse `extends`), with the caveat stated rather than hidden: `inherits` MERGES definitions, it does not declare a subtype, so the edge asserts reuse-of-a-declaration and not a type hierarchy.",
+  "expectSymbols": [
+    {
+      "name": "target._common",
+      "kind": "class",
+      "note": "the abstract base: docker-bake's leading-underscore convention for a target that exists only to be inherited"
+    },
+    {
+      "name": "target.binary",
+      "kind": "class",
+      "note": "a functional target that is itself inherited by `cross` — the edge is not limited to abstract bases"
+    },
+    {
+      "name": "target.cross",
+      "kind": "class"
+    },
+    {
+      "name": "target._platforms",
+      "kind": "class",
+      "note": "declared on line 26, BELOW its child on line 19; a forward-only resolver would silently drop this inheritance"
+    },
+    {
+      "name": "target.external_parent",
+      "kind": "class",
+      "note": "declared, and its `inherits` names a target this file does NOT declare — the symbol stays and the edge must not"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "target.binary",
+      "target": "target._common",
+      "line_number": 15,
+      "meta.hclSite": "inherits",
+      "note": "the plain case: the edge's SOURCE is the child's declared address and its TARGET is the parent's declared address, because that is the string the index can bind"
+    },
+    {
+      "type": "extends",
+      "from": "target.cross",
+      "target": "target.binary",
+      "line_number": 20,
+      "meta.hclSite": "inherits",
+      "note": "one key, several parents: `inherits = [\"binary\", \"_platforms\"]` publishes one edge per parent, all on the KEY's line"
+    },
+    {
+      "type": "extends",
+      "from": "target.cross",
+      "target": "target._platforms",
+      "line_number": 20,
+      "meta.hclSite": "inherits",
+      "note": "the parent is declared BELOW the child, so this edge only exists if resolution runs after the walk — the docker-bake.hcl shape (`binary-cross` inherits `_platforms`)"
+    },
+    {
+      "type": "contains",
+      "from": "target.cross",
+      "target": "target.cross.inherits",
+      "line_number": 20,
+      "note": "the attribute is still contained by its block: an inheritance edge and a containment edge are different facts and both are kept"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "target": "target.not_declared_here",
+      "note": "THE DANGLING EDGE THIS FIXTURE EXISTS FOR. `target \"external_parent\"` inherits `not_declared_here` (line 33) and this file declares no such target, so nothing can bind it. A published edge would send a consumer following `extends` to a declaration that does not exist — the shape java and groovy suppress with builtin filters, and the shape the `calls` fixture refuses for `merge(`/`length(`."
+    },
+    {
+      "type": "extends",
+      "from": "target.external_parent",
+      "target": "not_declared_here",
+      "note": "the bare-spelling variant of the same fabrication, in case a future rule resolves by the raw string instead of the declared address"
+    },
+    {
+      "type": "references",
+      "target": "target._common",
+      "note": "`inherits` is not a READ of the parent. Publishing it as `references` would tell a consumer that the child reads the parent's values, when what it does is merge them into itself; the type exists and the label is the whole point of the edge."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "probe": "M50.A2-security-phases",
   "at": "2026-09-12T15:17:50.671Z",
   "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-  "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
   "phases": {
     "taintRowsMs": 6,
     "taintRows": 3931,

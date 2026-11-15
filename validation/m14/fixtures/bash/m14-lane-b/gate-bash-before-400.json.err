@@ -1,0 +1,3 @@
+[INFO] [20:56:18] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [20:56:18] [ast-engine] language grammar allocated {"language":"bash"}
+[INFO] [20:56:18] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_2xdhjdd"}

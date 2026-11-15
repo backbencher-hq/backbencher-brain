@@ -1,0 +1,27 @@
+{
+  "fixtureId": "svelte/user-dollar-functions",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A $-PREFIX is not proof of a rune: user-defined functions like $format() are legal JavaScript. The rune filter must drop only known runes (full dotted name, or $-prefixed with a rune LEAF segment) - otherwise calls to user $functions were silently swallowed.",
+  "expectSymbols": [
+    {
+      "name": "$format",
+      "kind": "function"
+    },
+    {
+      "name": "doubled"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "$format"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "by"
+    }
+  ]
+}

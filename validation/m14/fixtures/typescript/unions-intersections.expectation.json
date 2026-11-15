@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/unions-intersections",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Union/intersection type aliases are type-level only: they must not fabricate extends/implements edges between the member classes.",
+  "expectSymbols": [
+    { "name": "Success" },
+    { "name": "Failure" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "Success", "targetEndsWith": "Failure" },
+    { "type": "implements", "from": "Success" },
+    { "type": "extends", "targetEndsWith": "Serializable" }
+  ]
+}

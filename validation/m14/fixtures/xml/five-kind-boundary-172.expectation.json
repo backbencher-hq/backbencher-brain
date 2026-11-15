@@ -1,0 +1,51 @@
+{
+  "fixtureId": "xml/five-kind-boundary-172",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE FIVE-KIND BOUNDARY (task-172). This document exercises every ontology kind the xml analyzer publishes and FORBIDS `instantiates`, a kind the analyzer has no emission site for.\n\n  WHY IT EXISTS. `completeness-inventory.ts` section B reported `EMITTED but absent from requiredKinds: instantiates` for this lane. The claim was an INSTRUMENT artifact: section B parsed every non-.json file in this directory, including the 33 helper instruments (*.mts probes), so the TYPESCRIPT analyzer's `instantiates` edges were billed to xml. Two independent measurements settled it: (1) `grep -c \"RelationshipType.Instantiates\" src/ast/real-xml-analyzer.ts` is 0, and neither the string nor a table form exists; (2) the whole-population firing over 11,567/11,611 files reads `calls 438 · uses 21,414 · contains 189,310 · imports 473 · references 11,108 · extends 1,429 · overrides 3` with `exports`, `implements` and `INSTANTIATES` in the SILENT list. The inventory reader has since been fixed to parse only the sources an `.expectation.json` describes (proposal: `validation/m14/proposals/xml-section-b-language-filter.md`).\n\n  THIS FIXTURE IS THE DURABLE NEGATIVE. It is XSLT 1.0: a stylesheet with an in-document `xmlns:xsl` binding (prefix uses), two templates sharing `match=\"*\" mode=\"dup\"` (§5.5: the later one silently replaces the earlier = the only override this language has), and a named template invoked by name (§6 = calls, self-recursive and legal). A future change that starts emitting `instantiates` here — or a reader that bills another language's kinds to this one — fails the forbid below instead of passing quietly.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "xsl:stylesheet",
+      "target": "xsl:stylesheet.xsl",
+      "line_number": 15,
+      "meta.role": "xml_namespace_prefix_use",
+      "meta.resolvable": "in-document",
+      "note": "the root element carries the prefix and uses the binding its own `xmlns:xsl` declares. The target is the namespace-binding SYMBOL, owned by the declaring element."
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "xsl:stylesheet.xsl",
+      "line_number": 25,
+      "meta.role": "xml_namespace_prefix_use",
+      "note": "the source is the element's OWN symbol (`render`, the declared template name), not the instruction tag."
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "xsl:stylesheet.render",
+      "line_number": 26,
+      "meta.role": "xslt_named_template_call",
+      "note": "XSLT 1.0 §6: `xsl:call-template name=\"render\"` INVOKES a named template. The target is the DECLARATION's identity, and the callee is declared in this document, so the edge is in-document resolvable. Recursion is not a self-edge defect (§6 makes two templates of one name the error, not one template calling itself)."
+    },
+    {
+      "type": "overrides",
+      "from": "xsl:template[match=*|mode=dup|priority=]#1",
+      "target": "xsl:stylesheet.xsl:template[match=*|mode=dup|priority=]#0",
+      "line_number": 21,
+      "meta.role": "xslt_competing_template_rule",
+      "meta.templateMatch": "*",
+      "meta.templateMode": "dup",
+      "meta.derivation": "xslt-5.5-later-template-replaces-earlier",
+      "meta.resolvable": "in-document",
+      "note": "XSLT 1.0 §5.5 conflict resolution: two templates with the same match and import precedence are an error, and the processor runs the LAST one. The occurrence index in the derived identity is required — the triple is identical, so without it both declarations would collapse to one name."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "note": "THE NEGATIVE THIS FIXTURE EXISTS FOR. The xml analyzer has no `instantiates` emission site (0 occurrences of RelationshipType.Instantiates). The document exercises the constructs a by-product reader might mistake for one (XSD-style derivation is absent here by design; what IS here is template dispatch and namespace binding), so an edge of this type appearing would be a new fabrication, or a reader billing another language's kinds to this lane."
+    }
+  ]
+}

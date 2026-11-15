@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+<!NOTATION gif PUBLIC "GIF">
+<!NOTATION jpeg SYSTEM "image/jpeg">
+<!NOTATION pairs SYSTEM "-//IETF//NOTATION TIFF//EN">
+<!ENTITY graphic SYSTEM "graphic.gif" NDATA gif>
+<!ENTITY plain SYSTEM "notes.ent">
+]>
+<doc/>

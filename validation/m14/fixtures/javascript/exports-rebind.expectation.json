@@ -1,0 +1,11 @@
+{
+  "fixtureId": "javascript/exports-rebind",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave rebind fix: wholesale `exports = {...}` rebinds the module surface — the old member-only shape test missed the bare-identifier left side entirely, so script-style barrel assignments exported nothing.",
+  "expectSymbols": [],
+  "expectExports": [
+    { "name": "alpha" },
+    { "name": "beta" }
+  ]
+}

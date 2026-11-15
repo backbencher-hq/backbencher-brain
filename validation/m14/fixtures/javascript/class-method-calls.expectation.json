@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/class-method-calls",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "this.method() calls resolve from enclosing method; constructor extracted.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "render" },
+    { "name": "transform" },
+    { "name": "constructor" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "render", "targetEndsWith": "transform" }
+  ]
+}

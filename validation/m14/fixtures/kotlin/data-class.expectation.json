@@ -1,0 +1,11 @@
+{
+  "fixtureId": "kotlin/data-class",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "data class primary constructor params are properties.",
+  "expectSymbols": [
+    { "name": "Point", "kind": "class" },
+    { "name": "x" },
+    { "name": "y" }
+  ]
+}

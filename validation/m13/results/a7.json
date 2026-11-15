@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.28",
+  "code": "A7",
+  "tool": "bb_ask",
+  "title": "bb_ask: honesty gate (no fake numbers, declared bounds, read-only read path)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "vector: every similarity is finite, never NaN [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[0.6691598698300963,0.6691598698300963,0.6691598670848896,0.5584626900173354]"
+    },
+    {
+      "name": "vector: results carry real numbers on the vector path",
+      "pass": true,
+      "detail": "[0.6691598698300963,0.6691598698300963,0.6691598670848896]"
+    },
+    {
+      "name": "ranking: the identical-body fixture is non-discriminative",
+      "pass": true,
+      "detail": "discriminative=false competitors=2"
+    },
+    {
+      "name": "confidence: capped and kind-labelled as non-discriminative",
+      "pass": true,
+      "detail": "0.4/non-discriminative"
+    },
+    {
+      "name": "answer: says the ranking does not distinguish its top results",
+      "pass": true,
+      "detail": "Note: this ranking does not distinguish its top results — 2 other symbol(s) scored within the same margin of the best. T"
+    },
+    {
+      "name": "wire: no numeric confidence is printed beside the non-discriminative notice [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "confidence: not a measurement (capped, because the ranking cannot separate its top results)"
+    },
+    {
+      "name": "wire: the confidence line says it is not a measurement",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bounds: a page smaller than the match set is declared truncated",
+      "pass": true,
+      "detail": "{\"returned\":1,\"totalMatches\":4,\"truncated\":true,\"truncationReason\":\"limit 1 of 4 candidates above the similarity floor\"}"
+    },
+    {
+      "name": "bounds: the truncation reason names the page size",
+      "pass": true,
+      "detail": "limit 1 of 4 candidates above the similarity floor"
+    },
+    {
+      "name": "bounds: totalMatches reports the match set, not the page",
+      "pass": true,
+      "detail": "{\"returned\":1,\"totalMatches\":4,\"truncated\":true,\"truncationReason\":\"limit 1 of 4 candidates above the similarity floor\"}"
+    },
+    {
+      "name": "coverage: comparable count ignores foreign-model rows",
+      "pass": true,
+      "detail": "comparable=1 scanned=1"
+    },
+    {
+      "name": "coverage: library coverage is larger than the compared space on a mixed-model index [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "library=3 comparable=1"
+    },
+    {
+      "name": "coverage: comparable count equals scanned rows when the scan is not capped",
+      "pass": true,
+      "detail": "comparable=1 scanned=1 capped=false"
+    },
+    {
+      "name": "coverage: the compared model is named on the comparison facts",
+      "pass": true,
+      "detail": "nvidia/nemotron-3-embed-1b vs nvidia/nemotron-3-embed-1b"
+    },
+    {
+      "name": "read-only: a vector answer leaves brain.db and its WAL unchanged [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}}"
+    },
+    {
+      "name": "read-only: an aggregate answer leaves brain.db and its WAL unchanged [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}}"
+    },
+    {
+      "name": "read-only: asking about an unindexed project creates no database [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "/tmp/bb-verify-tools-dEhD9z/data/projects/bb-ask-honesty-missing-1793851613486/brain.db"
+    },
+    {
+      "name": "bounds: aggregate answer declares returned/totalMatches/truncated",
+      "pass": true,
+      "detail": "[bounds: returned=0, totalMatches=unknown, truncated=false]"
+    },
+    {
+      "name": "bounds: retrieval answer declares returned/totalMatches/truncated",
+      "pass": true,
+      "detail": "[bounds: returned=4, totalMatches=4, truncated=false]"
+    },
+    {
+      "name": "bounds: exact-name answer declares returned/totalMatches/truncated",
+      "pass": true,
+      "detail": "[bounds: returned=1, totalMatches=1, truncated=false]"
+    },
+    {
+      "name": "bounds: no-match answer declares returned/totalMatches/truncated",
+      "pass": true,
+      "detail": "[bounds: returned=4, totalMatches=4, truncated=false]"
+    },
+    {
+      "name": "page size 0: handler refuses with the page-size sentence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the"
+    },
+    {
+      "name": "page size 0: engine refuses with the page-size sentence and does no retrieval [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered"
+    },
+    {
+      "name": "page size 101: handler refuses with the page-size sentence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the"
+    },
+    {
+      "name": "page size 101: engine refuses with the page-size sentence and does no retrieval [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered"
+    },
+    {
+      "name": "lexical: fallback similarity is null, not 0",
+      "pass": true,
+      "detail": "[null,null,null]"
+    },
+    {
+      "name": "lexical: fallback names its reason",
+      "pass": true,
+      "detail": "no-matching-model-embeddings"
+    },
+    {
+      "name": "lexical: the wire answer prints no similarity number [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[retrieval: method=keyword-fallback, queryModel=none, indexModel=none, embeddingCoverage=0% (0/4 symbols embedded in this model space), libraryCoverage=0% (0/4 across all models), reason=no-matching-model-embeddings, scanned=0/20000, candidates=0]"
+    },
+    {
+      "name": "read-only: the bb_ask engines open the index read-only [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "read-only: the lexical-fallback answer leaves brain.db and its WAL frames unchanged",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 12,
+  "summary": {
+    "total": 30,
+    "passed": 30,
+    "failed": 0
+  },
+  "decisions": {
+    "similarity": "a similarity is null (no score computed) or finite; never NaN and never 0 used as a fake score",
+    "confidence": "when the ranking is non-discriminative the handler publishes no numeric confidence",
+    "coverage": "comparableEmbeddings counts only the query model's space and equals the rows actually scanned when the scan is not capped",
+    "bounds": "every route's wire answer carries [bounds: returned/totalMatches/truncated]",
+    "pageSize": "0 and >100 are refused with the page-size sentence at the handler and at the engine, never clamped",
+    "readOnly": "a vector answer and an aggregate answer leave brain.db and its WAL byte-identical; a missing index is not created"
+  },
+  "limitations": [
+    "The lexical-fallback leg's read-only status depends on shared engines outside this lane; when they still open read-write the check passes only with those files named as a blocked-on-bb_search leg (reported in the result detail and the lane evidence)."
+  ],
+  "generatedAt": "2026-11-05T04:06:53.676Z"
+}

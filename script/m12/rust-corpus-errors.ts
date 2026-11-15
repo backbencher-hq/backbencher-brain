@@ -7,7 +7,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { readFileSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 
-const ROOT = "$HOME/fixtures/repositories/cargo"
+const ROOT = "/home/ishaq2321/bb_tests/repositories/cargo"
 const SAMPLE_LIMIT = Number(process.env.RUST_SAMPLE_LIMIT || 400)
 const MIN_BYTES = Number(process.env.RUST_MIN_BYTES || 1024)
 

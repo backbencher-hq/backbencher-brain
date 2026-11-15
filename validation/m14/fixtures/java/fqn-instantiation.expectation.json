@@ -1,0 +1,13 @@
+{
+  "fixtureId": "java/fqn-instantiation",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CORRECTED after ground-truth verification: analyzer emits instantiates -> java.util.ArrayList @0.95. Edge must exist (target ends with ArrayList); confidence < 1.0 per contract section 4.",
+  "expectSymbols": [
+    { "name": "Factory", "kind": "class" },
+    { "name": "make" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "targetEndsWith": "ArrayList", "confidenceMax": 1 }
+  ]
+}

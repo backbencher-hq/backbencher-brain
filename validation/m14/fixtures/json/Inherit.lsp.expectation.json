@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Inherit.lsp.json",
+  "authoredFrom": "`implements` was RULED for this lane on instrument A — \"the grammar produced 20 distinct node types across the corpus and NONE expresses it\" — and `script/m14/ontology-coverage-gate.ts json` reported RULED-SOUND on that basis. A corpus probe re-tested it against the KEY ROLE rather than the grammar and found the construct: dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json is the Language Server Protocol's own serialisation of its type declarations, and 87 of its structures carry \"mixins\": [{\"kind\":\"reference\",\"name\":\"WorkDoneProgressParams\"}, …]. `mixins` names the TypeScript INTERFACES a class mixes in; in TypeScript an interface carries no implementation, so there is nothing else for the word to mean. Measured corpus-wide: 113 such statements in 1 file, every target declared in the same document, plus 97 `extends` statements in the same shape. A grammar has no node type for a KEYWORD, which is the same unsound question this lane has now had to retract six times (`imports`, `exports`, `extends`, `calls`, `overrides`, `implements`). The endpoints are QUALIFIED PATHS, which is the lane's established convention for a relation between two declarations rather than two keys — the same choice `references` makes. The `meta.reasonCode` pin is what makes the confidence auditable: `extends` is a parse fact at 1.0, while mapping LSP's word `mixins` onto the ontology's `implements` is a NAMING decision, so it is 0.9 and says so. The ORPHAN forbids are the class the workstream calls the most expensive mistake available: a reference to a type the document never declares must produce NO edge. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Inherit.lsp.structures[0]",
+      "target": "Inherit.lsp.structures[1]",
+      "line_number": 8,
+      "meta.declaredType": "TextDocumentPositionParams",
+      "meta.inheritanceForm": "lsp_reference_literal",
+      "meta.reasonCode": "declared_supertype",
+      "meta.endpoints": "qualified_path",
+      "confidenceMin": 1,
+      "confidenceMax": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "from": "Inherit.lsp.structures[0]",
+      "target": "Inherit.lsp.structures[2]",
+      "line_number": 10,
+      "meta.declaredType": "WorkDoneProgressParams",
+      "meta.reasonCode": "declared_interface_mixin",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.9
+    },
+    {
+      "type": "implements",
+      "from": "Inherit.lsp.structures[0]",
+      "target": "Inherit.lsp.structures[3]",
+      "line_number": 11,
+      "meta.declaredType": "PartialResultParams",
+      "meta.reasonCode": "declared_interface_mixin"
+    },
+    {
+      "type": "implements",
+      "from": "Inherit.lsp.structures[1]",
+      "target": "Inherit.lsp.structures[3]",
+      "line_number": 19,
+      "meta.declaredType": "PartialResultParams"
+    },
+    {
+      "type": "contains",
+      "from": "Inherit.lsp.structures[0]",
+      "target": "Inherit.lsp.structures[0].extends"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Inherit.lsp.structures[6]",
+      "target": "Inherit.lsp.structures[6].extends[0]"
+    },
+    {
+      "type": "implements",
+      "from": "Inherit.lsp.structures[6]",
+      "target": "Inherit.lsp.structures[6].mixins[0]"
+    },
+    {
+      "type": "extends",
+      "target": "NotDeclaredAnywhere"
+    },
+    {
+      "type": "implements",
+      "target": "AlsoNotDeclared"
+    },
+    {
+      "type": "extends",
+      "target": "thisIsAFieldNotAType"
+    }
+  ]
+}

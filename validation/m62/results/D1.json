@@ -1,0 +1,35 @@
+{
+  "issue": "M62.A3",
+  "code": "D1",
+  "milestone": "M62",
+  "status": "verified",
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 3,
+  "mutantsCaught": 0,
+  "mutantsTotal": 0,
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "sourceFingerprint": "d7a40adfdd76e6c95facb509395477f18449056ffd75ca2732876fa81f67310a",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m62/verify-docs.ts",
+    "docs/m62/LINE-ADDRESS.md",
+    "src/intelligence/graph/line-address.ts",
+    "script/m62/a2-fixture.ts"
+  ],
+  "verifierCommand": "npx tsx script/m62/verify-docs.ts",
+  "evidenceFile": "D1.json",
+  "generatedAt": "2026-11-09T10:22:58.552Z",
+  "schemaVersion": 1,
+  "doc": "docs/m62/LINE-ADDRESS.md",
+  "limitations": [
+    "The doc lists the ledger's issue states as of generation; a status change requires regeneration (the drift gate catches it)."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:22:58.553Z",
+    "contentSha256": "aeb6a97ce570ff0999e138be8abf4d1b60769691bda1cb582d934d7d1e216a30"
+  }
+}

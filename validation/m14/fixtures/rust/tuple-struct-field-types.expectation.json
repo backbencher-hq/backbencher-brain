@@ -1,0 +1,29 @@
+{
+  "fixtureId": "rust/tuple-struct-field-types",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R14 (rust review #798, ripgrep full extent): a TUPLE struct's field types emit `references`, exactly like a named field's. `struct Foo(Bar);` has no `field_declaration` child — its fields sit in an `ordered_field_declaration_list`, which only the ENUM branch walked, so every tuple-struct field type was invisible: measured 13 missing `references` edges over 10 ripgrep files, all of them tuple structs (StandardStream(StandardStreamKind), LiteralStrategy(fnv::HashMap<..>), IgnoreMatch(IgnoreMatchInner), Glob(GlobInner), Override(Gitignore), ...). The generic-parameter EXCLUSION still holds from the other side: `struct Generic<T>(T, Inner)` references Inner and never T (locally bound — the R8 rule).",
+  "expectSymbols": [
+    { "name": "Inner", "kind": "struct" },
+    { "name": "Wrapped", "kind": "struct" },
+    { "name": "Pair", "kind": "struct" },
+    { "name": "Scoped", "kind": "struct" },
+    { "name": "Generic", "kind": "struct" },
+    { "name": "Either", "kind": "struct", "comment": "union_item is structurally identical to struct_item and is emitted as SymbolKind.Struct (RUST gap closed 2026-08-28); the assertion that matters here is that its FIELDS reference their types" },
+    { "name": "Unit", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Wrapped", "target": "Inner", "meta.relationshipType": "declared_type", "comment": "the single-field tuple struct — the shape that was invisible" },
+    { "type": "references", "from": "Pair", "target": "Inner", "meta.relationshipType": "declared_type", "comment": "`pub Inner` — per-field visibility does not hide the type" },
+    { "type": "references", "from": "Pair", "target": "Vec", "meta.relationshipType": "declared_type", "comment": "generic outer leaf" },
+    { "type": "references", "from": "Scoped", "target": "Inner", "meta.relationshipType": "declared_type", "comment": "`modu::Inner` binds the LEAF" },
+    { "type": "references", "from": "Generic", "target": "Inner", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Either", "target": "Inner", "meta.relationshipType": "declared_type", "comment": "union named field (already handled — pins that the fix did not move it)" },
+    { "type": "references", "from": "get", "target": "Inner", "meta.relationshipType": "declared_type", "comment": "return type (already handled)" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "Generic", "target": "T", "comment": "generic parameter names are locally bound, never dependencies (R8)" },
+    { "type": "references", "from": "Pair", "target": "pub", "comment": "a visibility modifier is not a type" },
+    { "type": "references", "from": "Unit", "target": "Unit", "comment": "a unit struct declares no field and therefore references nothing" }
+  ]
+}

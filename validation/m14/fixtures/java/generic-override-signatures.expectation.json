@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/generic-override-signatures",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A same-arity overload does not override a generic member. Direct and inherited type arguments determine the signature, even when an unrelated type variable has the same spelling.",
+  "expectRelationships": [
+    { "type": "overrides", "from": "MatchingChild.save", "target": "save", "meta.declaringType": "Base", "meta.reasonCode": "generic-substitution" },
+    { "type": "overrides", "from": "IndirectChild.save", "target": "save", "meta.declaringType": "Base", "meta.reasonCode": "generic-substitution" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Child.save" },
+    { "type": "overrides", "from": "Shadowed.save" },
+    { "type": "overrides", "from": "SingleLetterChild.save" }
+  ]
+}

@@ -17,8 +17,8 @@ import * as path from "node:path"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..")
 const MODE = process.argv[2] ?? "run"
 const REPOS: Record<string, string> = {
-  elixir: "$HOME/fixtures/repositories/elixir",
-  phoenix: "$HOME/fixtures/repositories/phoenix",
+  elixir: "/home/ishaq2321/bb_tests/repositories/elixir",
+  phoenix: "/home/ishaq2321/bb_tests/repositories/phoenix",
 }
 const CAP = 250
 

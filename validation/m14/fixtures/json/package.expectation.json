@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/package.json",
+  "authoredFrom": "Section B (task: json completeness inventory): the two kinds the analyzer emits ONLY for a Node manifest, and which no json fixture exercised before this one — `exports` and `calls`. Both are CONVENTION constructs a grammar cannot see, which is why the lane's first ontology ruling (excluded on a grammar inventory) was wrong for both: a manifest's `exports`/`main` fields PUBLISH entry points, and a `scripts` value that runs another script (`npm run clean`) CALLS it. The analyzer gates the whole pass on the file being named `package.json` (real-json-analyzer.ts extractManifestExports: `if (!this.fileEndsWith(ctx.filePath, \"package.json\")) return`), so the fixture is named exactly that. Emitted shapes measured on this fixture at HEAD: exports from the document root to each published entry point (`main`, and each `exports` subpath key), calls from the invoking script symbol to the invoked script symbol.",
+  "expectSymbols": [
+    {
+      "name": "name",
+      "kind": "property"
+    },
+    {
+      "name": "exports",
+      "kind": "class"
+    },
+    {
+      "name": "main",
+      "kind": "property"
+    },
+    {
+      "name": "scripts",
+      "kind": "class"
+    },
+    {
+      "name": "build",
+      "kind": "property"
+    },
+    {
+      "name": "clean",
+      "kind": "property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "package",
+      "target": "package.name",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "package",
+      "target": "package.exports",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "package",
+      "target": "package.main",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "package",
+      "target": "package.scripts",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "package.scripts",
+      "target": "package.scripts.build",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "package.scripts",
+      "target": "package.scripts.clean",
+      "line_number": 5
+    },
+    {
+      "type": "exports",
+      "from": "package",
+      "target": "package.main",
+      "line_number": 4,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "from": "package.scripts.build",
+      "target": "package.scripts.clean",
+      "line_number": 5,
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "package.exports"
+    }
+  ]
+}

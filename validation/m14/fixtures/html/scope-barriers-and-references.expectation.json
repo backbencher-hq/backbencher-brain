@@ -1,0 +1,158 @@
+{
+  "comment": "SCOPE BARRIERS + REFERENCE RESOLUTION. `<template>` content is an inert fragment and `<slot>` content is light-DOM fallback; neither is rendered where it is written. An ADDRESSABLE barrier owns its own fragment; a BARE one does not, and its named descendants belong to the nearest live ancestor carrying `inTemplateBarrier`. A template id and its live-DOM twin are two nodes in two trees and must never share a name. A `<label for>` may name a control declared LATER \u2014 legal HTML, and the pre-fix map only resolved backward references, so a forward label silently emitted nothing.",
+  "expectSymbols": [
+    {
+      "name": "scope-barriers-and-references",
+      "kind": "module"
+    },
+    {
+      "name": "app",
+      "kind": "class"
+    },
+    {
+      "name": "row-tpl",
+      "kind": "class"
+    },
+    {
+      "name": "tplCell",
+      "kind": "class",
+      "meta.inTemplateBarrier": true
+    },
+    {
+      "name": "orphan-fragment",
+      "kind": "class",
+      "meta.inTemplateBarrier": true
+    },
+    {
+      "name": "hdr-slot",
+      "kind": "class"
+    },
+    {
+      "name": "slot-fallback",
+      "kind": "class",
+      "meta.inTemplateBarrier": true
+    },
+    {
+      "name": "row-tpl#2",
+      "kind": "class"
+    },
+    {
+      "name": "tplTitle",
+      "kind": "class"
+    },
+    {
+      "name": "twin",
+      "kind": "class"
+    },
+    {
+      "name": "twin#2",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "row-tpl",
+      "equals": 1
+    },
+    {
+      "name": "row-tpl#2",
+      "equals": 1
+    },
+    {
+      "name": "twin",
+      "equals": 1
+    },
+    {
+      "name": "twin#2",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "An addressable barrier owns its own fragment.",
+      "type": "contains",
+      "from": "row-tpl",
+      "target": "tplCell",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "hdr-slot",
+      "target": "slot-fallback",
+      "line_number": 25
+    },
+    {
+      "comment": "A BARE barrier is not a node: its fragment's element belongs to the nearest live ancestor, and the DOM tree the browser builds agrees.",
+      "type": "contains",
+      "from": "app",
+      "target": "orphan-fragment",
+      "line_number": 21
+    },
+    {
+      "comment": "Two trees, two nodes, two names.",
+      "type": "contains",
+      "from": "app",
+      "target": "row-tpl#2",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "row-tpl#2",
+      "target": "tplTitle",
+      "line_number": 32
+    },
+    {
+      "comment": "FORWARD reference: the label is on line 41 and its control on 42. SOURCE is the element that WRITES the reference (`lbl-later`, which carries an id), not the nearest named ancestor — this file pinned `from: app` until 2026-10-12, when the lane's own F5 oracle was measured on the same document: `deriveHtmlEdges` derives `uses lbl-later -> declared-below`, so the old pin ratified a divergence from the lane's own truth. Re-pinned FIRST, then the analyzer's label branch was fixed (it was the only one of the four in-document reference emitters sourcing `frame.nearestNamed`; the resource carriers, the IDREF class and the fragment href all source `currentId`).",
+      "type": "uses",
+      "from": "lbl-later",
+      "target": "declared-below",
+      "line_number": 41,
+      "meta.isLabelAssociation": true
+    },
+    {
+      "comment": "BACKWARD reference behaves identically — and names its own actor for the same reason.",
+      "type": "uses",
+      "from": "lbl-above",
+      "target": "declared-above",
+      "line_number": 46,
+      "meta.isLabelAssociation": true
+    },
+    {
+      "comment": "An ambiguous id resolves to the FIRST, as getElementById does, and says so. The oracle agrees on the actor here too (`uses lbl-twin -> twin`).",
+      "type": "uses",
+      "from": "lbl-twin",
+      "target": "twin",
+      "line_number": 54,
+      "meta.isLabelAssociation": true,
+      "meta.ambiguousTarget": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "A fragment's element is not a child of the element that encloses the barrier in the source.",
+      "type": "contains",
+      "from": "app",
+      "target": "tplCell"
+    },
+    {
+      "type": "contains",
+      "from": "app",
+      "target": "slot-fallback"
+    },
+    {
+      "comment": "The ambiguous id resolves to the FIRST for REFERENCES. (The second element is still contained by `app` \u2014 it is a real node in the live tree \u2014 so only the reference is forbidden, not the containment.)",
+      "type": "uses",
+      "target": "twin#2"
+    },
+    {
+      "comment": "A label pointing at an id that does not exist is not a reference. Silence here is the honest answer, not a gap.",
+      "type": "uses",
+      "target": "never-declared"
+    },
+    {
+      "type": "uses",
+      "target": "declared-below",
+      "line_number": 42
+    }
+  ]
+}

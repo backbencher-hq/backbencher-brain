@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:erlang",
+  "fixtureDir": "validation/m12/fixtures/erlang",
+  "corpusDir": "/tmp/erlang-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:erlang",
+        "wallTimeMs": 236.281652,
+        "userCpuMs": 220.013,
+        "systemCpuMs": 133.096,
+        "peakRssBytes": 204972032,
+        "rssDeltaBytes": 161738752,
+        "databaseBytes": null,
+        "files": 2,
+        "symbols": 29,
+        "relationships": 40,
+        "filesPerSecond": 8.464474423092318,
+        "symbolsPerSecond": 122.73487913483862,
+        "relationshipsPerSecond": 169.28948846184636
+      },
+      "symbols": 29,
+      "relationships": 40
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:erlang",
+        "wallTimeMs": 7342.659469,
+        "userCpuMs": 11272.162,
+        "systemCpuMs": 769.903,
+        "peakRssBytes": 333643776,
+        "rssDeltaBytes": 47923200,
+        "databaseBytes": null,
+        "files": 225,
+        "symbols": 5400,
+        "relationships": 19207,
+        "filesPerSecond": 30.64284826906767,
+        "symbolsPerSecond": 735.4283584576241,
+        "relationshipsPerSecond": 2615.809718684368
+      },
+      "symbols": 5400,
+      "relationships": 19207
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.858Z",
+    "contentSha256": "97d7577d2f98d25d825af839a5956303420b570961584eaed4376fce07fa44c2"
+  }
+}

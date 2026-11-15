@@ -1,0 +1,19 @@
+{
+  "fixtureId": "groovy/import-edges",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G8 gap: the imports relationship kind (isGroovyImport edges) — the edge exists but no fixture guarded it, so a regression deleting import edges would be silent. Groovy semantics: each import declaration produces a dependency on the imported module; single imports carry the full dotted target (java.util.List, never the truncated java.util), wildcard imports (java.util.Map.*) carry the parent module with isWildcard, static imports carry the full static member path. Evidence tier: import-derived edges are import_based.",
+  "expectSymbols": [
+    { "name": "Importer", "kind": "class" },
+    { "name": "run" },
+    { "name": "items" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "Importer", "target": "java.util.List", "meta.isGroovyImport": true, "meta.isWildcard": false, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 },
+    { "type": "references", "source": "Importer", "target": "java.util.Map", "meta.isGroovyImport": true, "meta.isWildcard": true, "meta.evidenceClass": "import_based" },
+    { "type": "references", "source": "Importer", "target": "java.util.Collections.sort", "meta.isGroovyImport": true, "meta.evidenceClass": "import_based" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "java.util", "meta.isGroovyImport": true }
+  ]
+}

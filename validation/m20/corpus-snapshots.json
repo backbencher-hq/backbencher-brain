@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M20",
+  "purpose": "immutable_corpus_snapshots_without_mutating_active_checkouts",
+  "root": "/home/ishaq2321/bb_tests/measure/m20-c2-snapshots",
+  "policy": "Snapshots are extracted from local Git objects at the M11-pinned commit. Active repositories are never reset, cleaned, or modified.",
+  "repositories": {
+    "vscode": {
+      "source": "/home/ishaq2321/vscode",
+      "revision": "46ed260be73b148447ea524cda10e61bebd6f3c7"
+    },
+    "flutter": {
+      "source": "/home/ishaq2321/flutter",
+      "revision": "68dc5cf4e76472eeb6162c33138550dc821fd5ae"
+    },
+    "proxicall": {
+      "source": "/home/ishaq2321/ProxiCall",
+      "revision": "383e603ee678aeaeb1edbc72d51b29108633bfc1"
+    },
+    "intellij_community": {
+      "source": "/home/ishaq2321/intellij-community",
+      "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2"
+    },
+    "graphql_js": {
+      "source": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+      "revision": "9c245018484668b7c35f3ed219092a98855bd51e"
+    },
+    "tree_sitter_clean": {
+      "source": "/home/ishaq2321/bb_tests/repositories/tree-sitter-clean",
+      "revision": "2b0fe499d4002ba6fb3b8beeb20feccf44f6b976"
+    }
+  }
+}

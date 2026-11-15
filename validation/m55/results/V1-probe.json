@@ -1,11 +1,11 @@
 {
   "status": "blocked",
-  "workspace": "$HOME/bb-demo-hub",
-  "serverPath": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+  "workspace": "/home/ishaq2321/bb-demo-hub",
+  "serverPath": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
   "blockedFlows": [],
   "flows": {},
   "generatedAt": "2026-11-05T05:08:27.392Z",
-  "reason": "declared fixture workspace is absent: $HOME/bb-demo-hub",
+  "reason": "declared fixture workspace is absent: /home/ishaq2321/bb-demo-hub",
   "bbSeal": {
     "alg": "sha256",
     "sealedAt": "2026-11-05T05:08:27.392Z",

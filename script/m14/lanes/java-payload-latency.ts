@@ -45,7 +45,7 @@ import { execFileSync } from "node:child_process"
 import { getParser } from "../../../src/ast/engine"
 import { RealJavaAnalyzer } from "../../../src/ast/real-java-analyzer"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO_DIR = process.env.BB_REPO ?? "java-lib"
 const WANT = Number(process.env.LANE_NFILES ?? 400)
 const BEFORE_REF = process.env.LANE_BEFORE_REF ?? "HEAD"

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "java/static-utility-call",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Contract section 4 heuristic honesty: PascalCase utility calls are idiomatic STATIC calls, not instantiations. If the analyzer emits Instantiates for them anyway, it MUST carry confidence < 1.0 and metadata.isPossibleConstructor so downstream never treats it as fact.",
+  "expectRelationships": [
+    { "type": "calls", "from": "validate" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "confidenceMin": 1 }
+  ]
+}

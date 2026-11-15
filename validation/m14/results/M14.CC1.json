@@ -1,0 +1,213 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "47008ef48d909b38e636aedcafca6c8390b25c0b1f1c577956a8eb3a6e705b50",
+    "sealedAt": "2026-11-13T02:09:25.000Z"
+  },
+  "checks": [
+    {
+      "description": "all symbol ranges use 1-based lines AND columns across java/groovy/kotlin/scala",
+      "id": "ranges-1based",
+      "status": "pass"
+    },
+    {
+      "description": "equivalent declarations map to consistent symbol kinds",
+      "id": "kind-consistency",
+      "status": "pass"
+    },
+    {
+      "description": "qualified_calls present in languages that emit it",
+      "id": "payload-presence",
+      "status": "pass"
+    },
+    {
+      "description": "1-based ranges across c/cpp/rust/go/zig",
+      "id": "systems-ranges-1based",
+      "status": "pass"
+    },
+    {
+      "description": "struct/method kinds consistent across c/cpp/rust/go/zig",
+      "id": "systems-kind-consistency",
+      "status": "pass"
+    },
+    {
+      "description": "per-symbol complexity present in all five systems analyzers",
+      "id": "systems-complexity",
+      "status": "pass"
+    },
+    {
+      "description": "1-based ranges across csharp/dart/swift/objc/php/ruby",
+      "id": "oo-ranges-1based",
+      "status": "pass"
+    },
+    {
+      "description": "class/method kinds consistent across csharp/dart/swift/objc/php/ruby",
+      "id": "oo-kind-consistency",
+      "status": "pass"
+    },
+    {
+      "description": "per-symbol complexity present in all six OO analyzers",
+      "id": "oo-complexity",
+      "status": "pass"
+    },
+    {
+      "description": "1-based ranges across typescript/javascript",
+      "id": "web-ranges-1based",
+      "status": "pass"
+    },
+    {
+      "description": "class/method kinds consistent across typescript/javascript",
+      "id": "web-kind-consistency",
+      "status": "pass"
+    },
+    {
+      "description": "HTML/SVG builtin tag sets identical across vue analyzer, svelte analyzer, and F5 oracle (the #611 search-drift class)",
+      "id": "web-builtin-set-parity",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "e83c1c5458bfaf4c729c206c973a8c28878fbdd7",
+  "committedAt": "2026-11-12T21:09:25-05:00",
+  "data": {
+    "failures": [],
+    "ooFailures": [],
+    "ooSummary": {
+      "csharp": {
+        "classKind": "class",
+        "classStartColumn": 1,
+        "complexity": 1,
+        "methodKind": "method"
+      },
+      "dart": {
+        "classKind": "class",
+        "classStartColumn": 1,
+        "complexity": 1,
+        "methodKind": "method"
+      },
+      "objc": {
+        "classKind": "class",
+        "classStartColumn": 1,
+        "complexity": 1,
+        "methodKind": "method"
+      },
+      "php": {
+        "classKind": "class",
+        "classStartColumn": 1,
+        "complexity": 1,
+        "methodKind": "method"
+      },
+      "python": {
+        "classKind": "class",
+        "classStartColumn": 1,
+        "complexity": 1,
+        "methodKind": "method"
+      },
+      "ruby": {
+        "classKind": "class",
+        "classStartColumn": 1,
+        "complexity": 1,
+        "methodKind": "method"
+      },
+      "swift": {
+        "classKind": "class",
+        "classStartColumn": 7,
+        "complexity": 1,
+        "methodKind": "method"
+      }
+    },
+    "summary": {
+      "groovy": {
+        "classKind": "class",
+        "methodKind": "method",
+        "note": "qualified_calls not emitted by this analyzer - PENDING #383",
+        "widgetRange": {
+          "sc": 7,
+          "sl": 1
+        }
+      },
+      "java": {
+        "classKind": "class",
+        "methodKind": "method",
+        "widgetRange": {
+          "sc": 14,
+          "sl": 1
+        }
+      },
+      "kotlin": {
+        "classKind": "class",
+        "methodKind": "method",
+        "widgetRange": {
+          "sc": 7,
+          "sl": 1
+        }
+      },
+      "scala": {
+        "classKind": "class",
+        "methodKind": "method",
+        "note": "qualified_calls not emitted by this analyzer - PENDING #383",
+        "widgetRange": {
+          "sc": 7,
+          "sl": 1
+        }
+      }
+    },
+    "systemsFailures": [],
+    "systemsSummary": {
+      "c": {
+        "complexity": 1,
+        "methodKind": "function",
+        "structKind": "struct"
+      },
+      "cpp": {
+        "complexity": 1,
+        "methodKind": "method",
+        "structKind": "class"
+      },
+      "go": {
+        "complexity": 1,
+        "methodKind": "method",
+        "structKind": "struct"
+      },
+      "rust": {
+        "complexity": 1,
+        "methodKind": "method",
+        "structKind": "struct"
+      },
+      "zig": {
+        "complexity": 1,
+        "methodKind": "method",
+        "structKind": "struct"
+      }
+    },
+    "webFailures": [],
+    "webSummary": {
+      "javascript": {
+        "classKind": "class",
+        "methodKind": "method"
+      },
+      "typescript": {
+        "classKind": "class",
+        "methodKind": "method"
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.CC1",
+  "layers": [
+    "consistency"
+  ],
+  "limitations": [
+    {
+      "description": "covers JVM-family + systems-family + managed-OO + web(ts/js structural, vue/svelte builtin-parity) equivalents"
+    },
+    {
+      "description": "scala qualified_calls absence declared pending under #383"
+    }
+  ],
+  "regeneratedAt": "2026-11-12T21:09:25-05:00",
+  "regeneratedAtCommit": "e83c1c5458bfaf4c729c206c973a8c28878fbdd7",
+  "runtime": "node v22.22.1",
+  "schemaVersion": 2,
+  "title": "Cross-language consistency gate"
+}

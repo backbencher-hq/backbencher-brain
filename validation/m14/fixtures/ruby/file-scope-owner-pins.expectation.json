@@ -1,0 +1,33 @@
+{
+  "fixtureId": "ruby/file-scope-owner-pins",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 (M60 standing rule: no analyzer may NAME something with a placeholder literal) plus one attribution defect the same sites exposed. Probed first with script/m14/tmp/rb-sentinel-probe.ts, which measured the pre-fix analyzer on thirteen shapes: the four `source: owner || \"unknown\"` sites fired for top-level `alias`, top-level `alias_method`, top-level `include`, top-level `extend` and top-level `has_many` (emitting calls/implements/extends/uses edges (the mixin ones are `mixes_in` after RUBY-D1) whose source was the literal \"unknown\" — a name on the indexer's SYMBOL_NAME_DENYLIST, so it could never resolve to a symbol while still reading as one in the analyzer's evidence), and once more inside a dynamic class factory. The file's own convention is already `Global` for the file-scope owner, documented at the instance-variable site ('attribute them to the file-level owner (owner || Global), the same fallback calls use') and PINNED by three committed fixtures (payload-and-complexity's top-level require; rack-wave-regressions RB-A/RB-C/RB-D; master-review-wave's Struct construction), so \"unknown\" was a SECOND spelling for one role in one file — the same divergence the GAD2 note records for \"root\" vs \"Global\". The fix makes that structurally impossible with a single FILE_SCOPE_OWNER constant. Separately, `Widget = Class.new do has_many :parts end` emitted `uses:<file scope>->parts` and `instantiates:<file scope>->Class` while the analyzer had already emitted the symbol `class:Widget` — the name was known and dropped, so the block's frames now inherit it and the factory matches the `class Acct` shape exactly.",
+  "expectSymbols": [
+    { "name": "parts", "kind": "property", "ownerName": "Widget" },
+    { "name": "ledger_entries", "kind": "property", "ownerName": "Acct" },
+    { "name": "widgets", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "Global", "target": "fresh_name" },
+    { "type": "uses", "source": "Global", "target": "widgets" },
+    { "type": "calls", "source": "Acct", "target": "class_alias" },
+    { "type": "mixes_in", "source": "Acct", "target": "Comparable", "meta.mixinType": "include" },
+    { "type": "uses", "source": "Acct", "target": "ledger_entries" },
+    { "type": "mixes_in", "source": "Box", "target": "Comparable", "meta.mixinType": "include" },
+    { "type": "uses", "source": "Widget", "target": "parts" },
+    { "type": "contains", "source": "Widget", "target": "parts" },
+    { "type": "instantiates", "source": "Widget", "target": "Class" }
+  ],
+  "forbidRelationships": [
+    { "type": "mixes_in", "source": "Global", "target": "Comparable", "meta.mixinType": "include", "note": "THE PRE-FIX SENTINEL PIN, AND IT WAS PINNING A DEFECT. This row pinned the SENTINEL — that a top-level `include` is attributed to `Global` and not to the denylisted literal `unknown` — and that remains a true statement about the sentinel's NAME. MEASURED against the whole admitted population on 2026-10-21, it is not the strongest true statement available: at the file's top level `self` is `main`, an Object instance, and only Module answers `include`, so the top-level `include Comparable` IS NOT a mixin composition at all — it is RSpec's example-group include in a spec file, the SAME NAME and a DIFFERENT CONSTRUCT. IT IS NOW A FORBID ROW. THE SENTINEL QUESTION FOR A MIXIN HAS A STRONGER ANSWER THAN A SENTINEL NAME: THE ANSWER IS THAT THERE IS NO ROW. The in-scope controls below (Acct and Box) are class bodies and keep their rows, so the fixture still pins the sentinel for the `calls`/`uses` shapes." },
+    { "type": "mixes_in", "source": "Global", "target": "Helpers", "meta.mixinType": "extend", "note": "THE SAME TOP-LEVEL REFUSAL FOR `extend`: `main.extend(Helpers)` extends the singleton class of `main`, which is not a class in the corpus and is not `Global`." },
+    { "type": "calls", "source": "unknown", "target": "fresh_name", "note": "pre-fix: top-level alias attributed to the literal \"unknown\"" },
+    { "type": "calls", "source": "unknown", "target": "a", "note": "pre-fix: top-level alias_method (the :a,:b spelling lives in the probe, kept for the mutant)" },
+    { "type": "mixes_in", "source": "unknown", "target": "Comparable", "note": "pre-fix: top-level include attributed to the literal \"unknown\"; the sentinel refusal is unchanged by RUBY-D1" },
+    { "type": "mixes_in", "source": "unknown", "target": "Helpers", "note": "pre-fix: top-level extend attributed to the literal \"unknown\"; RUBY-D1 relabels the value, the sentinel refusal is unchanged" },
+    { "type": "uses", "source": "unknown", "target": "widgets", "note": "pre-fix: top-level association attributed to the literal \"unknown\"" },
+    { "type": "uses", "source": "Global", "target": "parts", "note": "pre-fix: the factory's association fell through to the file scope although the class name was known" },
+    { "type": "instantiates", "source": "Global", "target": "Class", "note": "pre-fix: the factory's own construction fell through to the file scope" }
+  ]
+}

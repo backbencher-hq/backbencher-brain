@@ -1,0 +1,60 @@
+{
+  "probe": "M60 swift seam trace (SW-A/B/D/E/F payload)",
+  "at": "2026-09-14T19:48:42.921Z",
+  "wave": "M49.SW1 (in flight)",
+  "rowsByType": {
+    "calls": 4,
+    "contains": 25,
+    "implements": 5,
+    "instantiates": 5,
+    "references": 1,
+    "uses": 11
+  },
+  "lineNumber": {
+    "gt0": 0,
+    "eq0": 1,
+    "nul": 50
+  },
+  "analyzerFlagSurvival": {
+    "isMemberRead": 0,
+    "isKeyPath": 0,
+    "isEnumConstruction": 0,
+    "isBareRead": 0,
+    "isFieldAccess": 0,
+    "isInstantiation": 0,
+    "isImplements": 0,
+    "evidenceClass": 1
+  },
+  "confidences": {
+    "calls@0.95": 4,
+    "contains@1": 25,
+    "implements@1": 5,
+    "instantiates@0.95": 1,
+    "instantiates@1": 4,
+    "references@1": 1,
+    "uses@0.6": 2,
+    "uses@0.9": 8,
+    "uses@0.95": 1
+  },
+  "duplicateGroups": 0,
+  "duplicateGroupRows": [],
+  "symbols": {
+    "total": 37,
+    "withRange": 37
+  },
+  "secondReview": {
+    "at": "2026-09-14T20:23:57.046Z",
+    "newFlags": {
+      "isMemberRead": 0,
+      "isKeyPath": 0,
+      "isEnumConstruction": 0,
+      "isSuperInit": 0,
+      "isSelfInit": 0,
+      "isBareRead": 0,
+      "isFieldAccess": 0,
+      "isInstantiation": 0,
+      "evidenceClass": 1
+    },
+    "verdict": "SW-G/SW-H flags join F1 (enrichment overwrite, filed on P1 #829); enum/init instantiates land with type/target/confidence; line NULL (no edge lines emitted)"
+  }
+}

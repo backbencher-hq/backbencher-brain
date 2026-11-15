@@ -1,0 +1,117 @@
+{
+  "vb": [
+    "edge-endpoint-integrity",
+    "member-read-and-construction",
+    "ontology-exports-instantiates-uses"
+  ],
+  "clojure": [],
+  "javascript": [],
+  "vue": [
+    "heuristic-evidence-floor"
+  ],
+  "svelte": [],
+  "typescript": [
+    "calls-callee-shape-reduction",
+    "heritage-parameterized-leaves",
+    "re-export-empty-clause",
+    "re-export-module-dependency",
+    "type-predicate-and-constraint-refs",
+    "type-reference-uses-surfaces"
+  ],
+  "java": [],
+  "groovy": [],
+  "kotlin": [],
+  "scala": [],
+  "c": [
+    "export-linkage-marker-989",
+    "export-marker-class-965",
+    "exports-attribute-989",
+    "instantiates-allocator-register-989"
+  ],
+  "cpp": [],
+  "rust": [
+    "bare-tuple-constructor",
+    "trait-impl-overrides",
+    "use-import-edges"
+  ],
+  "python": [
+    "dispatch-reason-codes",
+    "interface-declaration-needs-abc-meta",
+    "interface-implements",
+    "interface-qualified-subscript-head",
+    "lambda-body-has-no-call-source",
+    "literal-versus-computed",
+    "nested-def-reference-source",
+    "object-base-guess-refused",
+    "qualified-endpoint-spellings",
+    "reference-source-scope-and-reason-codes"
+  ],
+  "go": [
+    "imports-empty-path",
+    "r7-empty-endpoints"
+  ],
+  "zig": [],
+  "csharp": [
+    "export-arity-collision",
+    "import-export-edges",
+    "override-member-kinds",
+    "using-tuple-alias"
+  ],
+  "dart": [],
+  "swift": [],
+  "objc": [
+    "field-invocation",
+    "generics-and-reason-codes",
+    "linkage-and-imports",
+    "module-imports",
+    "selector-attributes"
+  ],
+  "r": [],
+  "lua": [
+    "export-edges",
+    "export-shapes",
+    "stdlib-external"
+  ],
+  "julia": [],
+  "php": [],
+  "protobuf": [],
+  "ruby": [
+    "ontology-factory-and-names"
+  ],
+  "perl": [
+    "ontology-composition",
+    "ontology-exports",
+    "ontology-four-labels",
+    "ontology-imports",
+    "ontology-push-declarations",
+    "ontology-references",
+    "ontology-require-and-universal",
+    "ontology-uses"
+  ],
+  "haskell": [],
+  "elixir": [],
+  "yaml": [],
+  "xml": [],
+  "erlang": [],
+  "clean": [],
+  "sql": [],
+  "hcl": [],
+  "make": [
+    "recipe-eof-no-newline",
+    "recipeprefix"
+  ],
+  "fsharp": [],
+  "nim": [],
+  "graphql": [],
+  "html": [],
+  "toml": [],
+  "css": [],
+  "markdown": [],
+  "scss": [
+    "module-exports-and-global-overrides"
+  ],
+  "bash": [],
+  "json": [],
+  "powershell": [],
+  "solidity": []
+}

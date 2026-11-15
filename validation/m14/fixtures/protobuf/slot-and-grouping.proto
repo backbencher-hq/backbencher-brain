@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package amb.v1;
+
+message Envelope {
+  string id = 1;
+  oneof body {
+    string text = 2;
+    bytes blob = 3;
+  }
+}
+
+// A second message declaring a oneof of the SAME BARE NAME. `metadata.oneof` on
+// Envelope.body.text and on Audit.body.actor must be two different values, or a
+// consumer grouping fields by that string merges the two groups.
+message Audit {
+  oneof body {
+    string actor = 1;
+    string source = 2;
+  }
+}
+
+// Slot 7 declared twice under DIFFERENT names. The second declaration states what
+// slot 7 holds, which is the only sense of `overrides` protobuf can reach.
+message Slot {
+  string legacy = 7;
+  int64 modern = 7;
+}
+
+// Slot 3 claimed twice under the SAME name. `protoc` rejects this, so the file is
+// not a schema anything compiles — which is exactly why the corpus's only such site
+// lives in a syntax-highlighting test fixture. The analyzer still states the fact
+// about the text.
+message Alias {
+  string dup = 3;
+  bool dup = 3;
+}
+
+// The NEGATIVE control: same name, DIFFERENT slot. Two distinct members that
+// `protoc` rejects for the name collision, and the second replaces nothing — so no
+// `overrides` edge. This row is what stops the rule collapsing into "a repeated
+// name is an override".
+message Twin {
+  string tag = 1;
+  int64 tag = 2;
+}

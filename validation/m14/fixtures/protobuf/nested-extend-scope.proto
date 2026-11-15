@@ -1,0 +1,99 @@
+// A TYPE REFERENCE INSIDE AN `extend` BLOCK RESOLVES FROM WHERE THE BLOCK IS
+// WRITTEN, NOT FROM THE TYPE IT EXTENDS.
+//
+// This is the rule the resolution fixtures cannot see. `ancestor-scope-resolution`
+// and `absolute-and-scope-resolution` both put their `extend`-free references in
+// ordinary fields and in top-level `extend` blocks, where the extended type and
+// the lexical position are the same string and the two questions cannot be told
+// apart. A regression that kept passing the extended type as the resolution scope
+// would pass both of those files.
+//
+// protobuf's rule is C++ name lookup from the point of use, and an `extend` block
+// opens NO scope: the extended type is where the block's members GO, not a scope
+// their types are looked up in. The analyzer carried one value for both
+// questions — `Ctx.owner` — so a reference inside a NESTED `extend` was resolved
+// against a type the language never made a scope of, and the walk found nothing.
+//
+// The shape is the reference implementation's own. `unittest_custom_options.proto`
+// writes, in package `proto2_unittest`:
+//
+//   message ComplexOptionType2 {
+//     message ComplexOptionType4 {
+//       extend google.protobuf.MessageOptions {
+//         optional ComplexOptionType4 complex_opt4 = 7633546;
+//       }
+//     }
+//   }
+//
+// The pre-fix analyzer emitted `proto2_unittest.ComplexOptionType4` for that
+// field. `protoc` reports the field's type as
+// `proto2_unittest.ComplexOptionType2.ComplexOptionType4`. The emitted id was
+// published by no file in any repository in the corpus.
+syntax = "proto2";
+
+package nse.demo;
+
+// `protoc` requires the file declaring an extendee to be imported, exactly as
+// `unittest_custom_options.proto` imports `google/protobuf/descriptor.proto`
+// before extending `google.protobuf.MessageOptions`. The grammar does not require
+// it, so this line is here to let the fixture be adjudicated by the reference
+// compiler rather than only by this lane's own reading of the tree.
+import "google/protobuf/descriptor.proto";
+
+message Nest {
+  message Leaf {
+    optional string waldo = 1;
+
+    extensions 5000 to max;
+
+    // THE row this fixture exists for. The block is nested INSIDE `Leaf`, so the
+    // reference `Leaf` is written from the scope `nse.demo.Nest.Leaf`. The
+    // extendee is a different type entirely, and it is NOT a scope.
+    //
+    // Pre-fix answer: `nse.demo.Leaf` — the package plus the name as written,
+    // because the walk was handed `google.protobuf.FieldOptions`, every candidate
+    // derived from it fell outside the package subtree and was dropped, and
+    // nothing inside the subtree is named `Leaf`. That id is published by no file.
+    // protoc's answer, read back from its descriptor: `nse.demo.Nest.Leaf`.
+    extend google.protobuf.FieldOptions {
+      optional Leaf leaf_ref = 5001;
+    }
+  }
+}
+
+// The GUARD, and the reason this fixture is not satisfied by "prefer the
+// innermost declaration". Here the extend block is at FILE SCOPE and two types
+// share the name `Twin`, so the two candidate answers are genuinely different
+// strings and only one of them is right.
+message Dual {
+  message Twin {
+    optional int32 nested_value = 1;
+  }
+
+  optional Twin shadow = 1;
+
+  extensions 2000 to max;
+}
+
+// The file-scope declaration. `protoc` resolves the reference below to THIS one,
+// because C++ lookup from `nse.demo` finds `nse.demo.Twin` before it ever
+// considers `nse.demo.Dual`, which is not an enclosing scope of a file-scope
+// `extend` block at all.
+//
+// This is `unittest_delimited.proto`'s construction: it declares
+// `editions_unittest.LengthPrefixed` at file scope AND
+// `editions_unittest.TestDelimited.LengthPrefixed` nested, then writes
+// `LengthPrefixed lengthprefixed = 1004;` inside a file-scope
+// `extend TestDelimited`. protoc answers `editions_unittest.LengthPrefixed`.
+// The pre-fix analyzer answered `editions_unittest.TestDelimited.LengthPrefixed`.
+//
+// So a fix that simply preferred the innermost declaration would pass the first
+// half of this fixture and fail this half. The two rows are what make the rule
+// "resolve from where the block is written" rather than "prefer the closest one".
+message Twin {
+  optional int32 file_scope_value = 1;
+}
+
+extend Dual {
+  optional Twin which_twin = 2001;
+}

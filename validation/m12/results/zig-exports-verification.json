@@ -1,0 +1,12 @@
+{
+  "files": 400,
+  "totals": {
+    "agree": 1584,
+    "missing": 0,
+    "phantom": 0,
+    "noLine": 0,
+    "wrongSource": 0,
+    "containerMemberPubs": 1720
+  },
+  "verdict": "clean"
+}

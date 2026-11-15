@@ -1,0 +1,32 @@
+{
+  "fixtureId": "css/stylesheet-is-the-module-symbol",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "`imports` was the lane's only 0.0%-resolution row: 0 of 251 edges resolved at EITHER end over the 1,286-file corpus (validation/m14/measurements/css-parsefile-census-1286.json). The target half is correct and unfixable — an `@import` specifier names an external resource, and `target_external` is the honest record. The source half was a defect: the edge's source is the importing stylesheet, the analyzer wrote that basename into the edge, and nothing in the file carried that name, so the store's per-file name lookup missed and recorded `source_external` for an edge whose source was the file itself. The fix publishes the stylesheet as a `module` symbol under the same rule `real-scss-analyzer.ts:273` already uses for a Sass module and `real-bash-analyzer.ts:294` uses for a script: the basename WITH extension, deterministic, and uncollidable with anything else this analyzer names (a class is `.x`, an id is `#x`, a custom property is `--x`, a bare type selector cannot contain a dot). MEASURED over the 600-file window with `validation/m14/census/css-incoming-split.ts`: `imports` same-file-resolved edges go 0 of 58 to 58 of 58, and the shared `incoming-check` store-outcome row for `imports` reads sameFile 0 -> 58. The `forbidSymbols` entry is the second half of the contract and the reason it is a fixture rather than a one-line change: `analyze` falls back to the literal `stylesheet` when the file path yields no basename, and publishing THAT would put a placeholder literal in a name-bearing field, which is the M60 R7 rule this analyzer already states about the very edge being fixed. The guard is asserted here rather than left to a comment.",
+  "knownLimitation": "The module symbol carries NO `contains` edges to the file's own rules. That would be true and it would be expensive — the corpus publishes 178,084 `contains` edges and a per-top-level-rule edge is a large-graph regression bought for a node that the `imports` edges already point at. The cost of the narrower choice is that a stylesheet with no `@import`/`@use`/`@forward` publishes a module symbol nothing names, which the incoming instrument counts as an orphan declaration; that population is measured and reported in the six-questions table rather than hidden.",
+  "expectSymbols": [
+    {
+      "name": "stylesheet-is-the-module-symbol.css",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "stylesheet-is-the-module-symbol.css",
+      "target": "normalize.css",
+      "meta.isCssImport": true,
+      "meta.evidenceClass": "import_based"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "normalize.css"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "stylesheet"
+    }
+  ]
+}

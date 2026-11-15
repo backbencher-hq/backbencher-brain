@@ -1,0 +1,165 @@
+{
+  "instrument": "yaml store-side intent split — clause 4 read off brain_relationship.target_symbol_id",
+  "runLabel": "ONE RUN per repository; the store is order- and run-dependent, so no figure here may be compared across runs without re-running",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "repos": [
+      "boundary",
+      "consul"
+    ],
+    "reposIndexed": 2,
+    "filesIndexed": 105,
+    "indexMs": 42927,
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.tmp-yaml/bb-data"
+  },
+  "scoping": {
+    "oneProjectPerRepository": "the gate resolves per project (the repository a file belongs to), so each repo is its own root and its own project id",
+    "lineTestAppliesTo": [
+      "contains",
+      "exports"
+    ],
+    "collisionRule": "a row is a collision when the target is answered by >= 2 declarations: an EXACT qualified_name match if any exist, else bare-name matches — the resolver's own two-key rule"
+  },
+  "perType": {
+    "contains": {
+      "edges": 13162,
+      "bound": 13160,
+      "unbound": 2,
+      "sameFile": 13160,
+      "otherFile": 0,
+      "intended": 13160,
+      "sameFileOffLine": 0,
+      "arbitraryTwin": 0,
+      "collisions": 0,
+      "collIntended": 0,
+      "collSameFileOffLine": 0,
+      "collArbitraryTwin": 0,
+      "collUnbound": 0
+    },
+    "imports": {
+      "edges": 395,
+      "bound": 0,
+      "unbound": 395,
+      "sameFile": 0,
+      "otherFile": 0,
+      "intended": 0,
+      "sameFileOffLine": 0,
+      "arbitraryTwin": 0,
+      "collisions": 0,
+      "collIntended": 0,
+      "collSameFileOffLine": 0,
+      "collArbitraryTwin": 0,
+      "collUnbound": 0
+    },
+    "references": {
+      "edges": 247,
+      "bound": 247,
+      "unbound": 0,
+      "sameFile": 247,
+      "otherFile": 0,
+      "intended": 0,
+      "sameFileOffLine": 0,
+      "arbitraryTwin": 0,
+      "collisions": 0,
+      "collIntended": 0,
+      "collSameFileOffLine": 0,
+      "collArbitraryTwin": 0,
+      "collUnbound": 0
+    },
+    "calls": {
+      "edges": 40,
+      "bound": 0,
+      "unbound": 40,
+      "sameFile": 0,
+      "otherFile": 0,
+      "intended": 0,
+      "sameFileOffLine": 0,
+      "arbitraryTwin": 0,
+      "collisions": 0,
+      "collIntended": 0,
+      "collSameFileOffLine": 0,
+      "collArbitraryTwin": 0,
+      "collUnbound": 0
+    }
+  },
+  "total": {
+    "edges": 13844,
+    "bound": 13407,
+    "unbound": 437,
+    "sameFile": 13407,
+    "otherFile": 0,
+    "intended": 13160,
+    "sameFileOffLine": 0,
+    "arbitraryTwin": 0,
+    "collisions": 0,
+    "collIntended": 0,
+    "collSameFileOffLine": 0,
+    "collArbitraryTwin": 0,
+    "collUnbound": 0
+  },
+  "duplicateRowsByType": {
+    "contains": 5198,
+    "imports": 0,
+    "references": 0,
+    "calls": 0
+  },
+  "collisionSnapshots": [],
+  "modelEdges": {
+    "contains": 8188,
+    "imports": 395,
+    "calls": 40,
+    "references": 247
+  },
+  "modelDistinctPairs": {
+    "contains": 8031,
+    "imports": 393,
+    "calls": 40,
+    "references": 245
+  },
+  "refusedByDiscovery": {
+    "count": 10,
+    "files": [
+      {
+        "file": "boundary/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "boundary/buf.openapiv2.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "boundary/buf.testing.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "boundary/internal/bsr/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "consul/agent/grpc-middleware/testutil/testservice/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "consul/internal/protohcl/testproto/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "consul/internal/tools/protoc-gen-grpc-clone/e2e/proto/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "consul/proto-public/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "consul/proto/buf.gen.yaml",
+        "pattern": "/.*\\.(generated|Generated|gen|Gen)\\./i"
+      },
+      {
+        "file": "consul/ui/pnpm-lock.yaml",
+        "pattern": "/pnpm-lock\\.yaml$/"
+      }
+    ]
+  },
+  "repoFailures": []
+}

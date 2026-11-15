@@ -1,0 +1,53 @@
+{
+  "fixtureId": "vue/ts-default-export",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "F19 (vue ontology wave), the GAP the ontology census found by measuring the language rather than the code. Over 1,151 corpus `.vue` files, 144 declare a default export and 23 published NO `exports` relationship \u2014 every one of the 23 `<script lang=\"ts\">` + `export default defineComponent({...})`, and none of the 121 bare `export default {...}` files. Isolated on the same source, RealTypeScriptAnalyzer emits zero `exports` relationships for ANY default export and RealJavaScriptAnalyzer emits one, so the loss is the delegate dispatch and not this file: the same Vue component exported or not depending on the annotation on its script block. The TS delegate's stated reason (M4: `default` names no symbol) does not hold for a Vue SFC, whose default export is a named declaration \u2014 the component \u2014 which this file already publishes as a Class symbol. So the edge is a real fact about a real declaration and it is emitted at the seam, merged into the delegate's row when the delegate produced one and added only when it did not. The source is pinned as the DECLARED name because that is what the F8 identity sweep normalizes every other component-owned edge to, and a `name:` option is in the fixture precisely so that normalization is exercised rather than assumed. `meta.sfcDefaultExport` is pinned because a reader must be able to tell a seam row from a delegate row without reading source; the paired fixture vue/js-default-export-delegate-row pins the OTHER side of that switch.",
+  "expectSymbols": [
+    {
+      "name": "TypedPanel",
+      "kind": "class"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "ownerName": "TypedPanel"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "TypedPanel",
+      "target": "default",
+      "confidenceMin": 1.0,
+      "line_number": 18,
+      "meta.isDefault": true,
+      "meta.sfcDefaultExport": true
+    },
+    {
+      "type": "contains",
+      "from": "TypedPanel",
+      "target": "title"
+    },
+    {
+      "type": "imports",
+      "from": "TypedPanel",
+      "target": "vue:defineComponent"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "ts-default-export",
+      "target": "default",
+      "comment": "F8: the edge's source is the ONE component identity \u2014 the declared name from the `name:` option \u2014 never the file stem the seam happened to push it with"
+    },
+    {
+      "type": "exports",
+      "from": "TypedPanel",
+      "target": "defineComponent",
+      "comment": "the exported NAME is the module's own `default` binding; the callee is a call, not an export"
+    }
+  ],
+  "authoredNote": "Authored from the F19 contract; the line pin was then corrected against the FIXTURE'S OWN TEXT after the first run reported it unmatched \u2014 `export default defineComponent({` is written on line 18 of ts-default-export.vue, and the pin said 8. That correction is a fact about the fixture source, readable without the analyzer; no other value in this file was taken from a run."
+}

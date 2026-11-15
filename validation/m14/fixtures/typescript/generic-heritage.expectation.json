@@ -1,0 +1,18 @@
+{
+  "fixtureId": "typescript/generic-heritage",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Generic heritage `extends Base<string>` parses with the type_arguments as a SEPARATE named child of extends_clause. Pushing all children wholesale fabricated a phantom Extends edge to target '<string>'. The base must be exactly 'Base'; no edge may target '<string>'.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Child", "kind": "class" },
+    { "name": "IFoo", "kind": "interface" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Child", "target": "Base" },
+    { "type": "implements", "from": "Child", "target": "IFoo" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "target": "<string>" }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "fixtureId": "javascript/import-external-claim",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the FAIL-CLOSED half of the module-namespace import claim (2026-10-18). An `imports` row spells `<module>:<item>`, and the claim 'this module is outside the project' is a statement about the PROJECT's module space — which a per-file analyzer does not have. The claim therefore fires ONLY when the caller supplies a COMPLETE project index (`context.projectIndex.complete === true`); the fixture runner passes none, so the pinned answer here is NO claim on every import row, including the obviously-external ones (`fs`, `node:fs`, `path`, `qunit`, `@scope/pkg`). That is the same fail-closed rule the python twin uses (`applyProjectIndexFacts`): a sampled or absent index is a fragment, and a fragment that says 'no such file' says nothing. A relative specifier (`./local.js`) names this project BY THE GRAMMAR and is never claimed under any index — a file claim that misses is REFUTED against the lane. The claim's measurable arm is `incoming-gate javascript js,jsx,mjs,cjs 0 --index`; measured at cap 50 with the earlier unconditional version, 19 of 119 claims verified as 'no check can reach' (`ext?`) because the roots were project directory names created by Jest mocks (`__mocks__/fs-extra.js`), which is exactly the false-negative the complete-index gate removes by suppressing a project-owned root instead of claiming over it.",
+  "expectSymbols": [],
+  "expectRelationships": [],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "fs:fs",
+      "meta.isExternalTarget": true,
+      "comment": "no complete project index in a fixture run -> no module claim (fail-closed)"
+    },
+    {
+      "type": "imports",
+      "target": "node:fs:readFileSync",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "imports",
+      "target": "path:*",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "imports",
+      "target": "qunit:qunit",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "imports",
+      "target": "@scope/pkg:scoped",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "imports",
+      "target": "./local.js:local",
+      "meta.isExternalTarget": true,
+      "comment": "a relative specifier is never claimed under ANY index"
+    }
+  ]
+}

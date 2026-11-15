@@ -1,0 +1,68 @@
+{
+ "fixtureId": "objc/pointer-return-helpers",
+ "language": "objc",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M37.15 objc dual-lens (#608) gate fixture. OBJCD5 \u2014 pointer/object-return C helper functions parse their defining declarator NESTED (`static NSArray * fn(...)` is function_definition > pointer_declarator > function_declarator; `static NSDictionary<...> * fn` adds a generic_specifier sibling). The pre-fix direct-child lookup missed them: 46 of 110 C helpers across afnetworking (49 .m) + sdwebimage (104 .m) were dropped, and because the function was never symbolized activeScope stayed global so its ENTIRE body (calls/uses/instantiates) was suppressed \u2014 180 missing differential edges total (60 afnetworking + 120 sdwebimage), both corpora previously ~97% coverage. OBJCD6 \u2014 macro-invocation-as-declaration inside an @implementation ivar block (`LOCK_DECLARE(_lock);` expands to `os_unfair_lock _lock;`) parses as a call_expression at class scope; the pre-fix scope-only gate (activeScope != global) fabricated `calls Widget -> LOCK_DECLARE`. A real execution body (method/function/block) is now required for message/call/uses edges. Fixed + verified: both corpora back to 100%/0/0.",
+ "expectSymbols": [
+  {
+   "name": "HelperObjects",
+   "kind": "function"
+  },
+  {
+   "name": "MakeImage",
+   "kind": "function"
+  },
+  {
+   "name": "PlainHelper",
+   "kind": "function"
+  },
+  {
+   "name": "Widget",
+   "kind": "class"
+  },
+  {
+   "name": "work",
+   "kind": "method",
+   "ownerName": "Widget"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "source": "HelperObjects",
+   "target": "arrayWithObjects:"
+  },
+  {
+   "type": "calls",
+   "source": "MakeImage",
+   "target": "copy"
+  },
+  {
+   "type": "calls",
+   "source": "MakeImage",
+   "target": "imageWithData:"
+  },
+  {
+   "type": "calls",
+   "source": "PlainHelper",
+   "target": "printf"
+  },
+  {
+   "type": "calls",
+   "source": "work",
+   "target": "addObject:"
+  },
+  {
+   "type": "uses",
+   "source": "work",
+   "target": "count"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "source": "Widget",
+   "target": "LOCK_DECLARE"
+  }
+ ]
+}

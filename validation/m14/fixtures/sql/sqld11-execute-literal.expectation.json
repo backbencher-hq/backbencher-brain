@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld11-execute-literal.sql",
+  "authoredFrom": "M60 SQL wave, 2026-09-27. The shape is read off real PostgreSQL extension files at /usr/share/postgresql/14/extension, not off the analyzer: 122 EXECUTE literals in postgis_topology--2.0.0--3.2.0.sql alone, and the concatenated-fragment form `EXECUTE 'CREATE INDEX ' || quote_ident(x) || ' ON t (c)'` is the one that occurs 94% of the time. Ground truth for the pass is the extension-corpus delta: +156 symbols and +234 relationships over 387 files.",
+  "comment": "The forbid rows are the regression pins, and they matter more here than the expect rows. A pass that finds the right declarations is easy to write; the defect this fixture exists to catch is a pass that ALSO finds the commented-out ones, and an expect-only fixture would pass unchanged while a ghost table sat in the symbol list. The `quoted_name` row is the offset-fidelity pin: the literal's inner text is handed to the parser WITH its `''` escapes intact, so the recovered range must still point at the right bytes; unescaping first would shift every range after the first escaped quote and this row would stop matching.",
+  "expectSymbols": [
+    { "name": "touch_audit", "kind": "class", "meta.type": "table" },
+    { "name": "written_normally", "kind": "class", "meta.type": "table" },
+    { "name": "quoted_name", "kind": "class", "meta.type": "table" },
+    { "name": "id", "kind": "property", "ownerName": "touch_audit" },
+    { "name": "at", "kind": "property", "ownerName": "touch_audit" },
+    { "name": "id", "kind": "property", "ownerName": "written_normally" },
+    { "name": "label", "kind": "property", "ownerName": "written_normally" }
+  ],
+  "forbidSymbols": [
+    { "name": "ghost_line_comment" },
+    { "name": "ghost_block_comment" },
+    { "name": "ghost_second_line" }
+  ],
+  "expectSymbolCount": [
+    { "name": "touch_audit", "equals": 1 },
+    { "name": "ghost_line_comment", "equals": 0 },
+    { "name": "ghost_block_comment", "equals": 0 },
+    { "name": "ghost_second_line", "equals": 0 }
+  ]
+}

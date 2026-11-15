@@ -7,7 +7,7 @@
   "filesFound": 131,
   "filesParsed": 131,
   "filesFailed": 0,
-  "definition": "every .vue under $HOME/fixtures/repositories/vue-element-admin, readdir walk, node_modules/.git excluded, sorted"
+  "definition": "every .vue under /home/ishaq2321/bb_tests/repositories/vue-element-admin, readdir walk, node_modules/.git excluded, sorted"
  },
  "types": [
   "calls",

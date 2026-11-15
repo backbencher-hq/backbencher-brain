@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/store-refusal-sol14.sol",
+  "authoredFrom": "SOL-14 — the STORE refuses these symbol names, so this lane must not declare them. Authored 2026-09-30 from the analyzer's measured output. This fixture reproduces a shared-infrastructure defect the surface measure found: pool-worker.ts filters every analyzer's symbols through a `UNIVERSAL` denylist whose comment says those names are 'never legitimate declarations in any language', and for Solidity that is false for two of them.",
+  "note": "Both shapes are COPIED from the pinned corpus at rev 32b5b8c4, so this is a reproduction and not an invention: `root` from contracts/mocks/MerkleTreeMock.sol:15 (`bytes32 public root;`) and `self` from contracts/crosschain/CrosschainLinked.sol:59 (`Link storage self = _links[chain];`, a LOCAL). Before SOL-14 the store dropped both symbols while the analyzer's `contains` edge naming them survived, and the surface measure reported exactly 2 unknown `contains` targets. `root` exercises the state-variable path (where the refusal must also suppress the SOL-3 getter, `root()`) and `self` exercises the local path through `declareSymbol`, so the two refusal sites are each pinned. `root` is still READ at line 22 — a read of an undeclared name is honest, since the source reads it, and `uses` targets are outside the unknown-target metric for exactly that reason.",
+  "expectSymbols": [
+    { "name": "store-refusal-sol14.sol", "kind": "module" },
+    { "name": "StoreRefused", "kind": "class", "ownerName": "store-refusal-sol14.sol" },
+    { "name": "Link", "kind": "struct", "ownerName": "StoreRefused" },
+    { "name": "gateway", "kind": "property", "ownerName": "Link" },
+    { "name": "counterpart", "kind": "property", "ownerName": "Link" },
+    { "name": "_links", "kind": "property", "ownerName": "StoreRefused" },
+    { "name": "bind", "kind": "method", "ownerName": "StoreRefused" },
+    { "name": "keeper", "kind": "method", "ownerName": "StoreRefused" }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "root",
+      "comment": "A real Solidity identifier (MerkleTreeMock.sol:15) that pool-worker.ts's UNIVERSAL denylist refuses because its comment claims such names are 'never legitimate declarations in any language'. The correct fix belongs in pool-worker.ts, which this lane does not own — and which already fixed this exact class one block above its own list for JS globals ('A method named `process` (Scala/Python/Java) … is a legitimate declaration elsewhere — applying the JS global list cross-language silently dropped real symbols'). Until that fix lands the lane refuses the DECLARATION, so no `contains` edge can point at a symbol the store drops."
+    },
+    {
+      "name": "self",
+      "comment": "Also real (CrosschainLinked.sol:59). Refused through `declareSymbol`, the single point every declaration kind goes through — a different code path from `root`, which is why this fixture needs both."
+    },
+    {
+      "name": "root()",
+      "comment": "THE ROW THIS FIXTURE FOUND A REAL DEFECT WITH. `root()` contains `(`, so the store's denylist does NOT refuse it, and the first version of SOL-14 checked the name only inside `declareSymbol` — which the getter bypasses, because a getter is published by `pushSymbol`. Result: `root` refused, `root()` published, and `references root -> root()` emitted with a SOURCE that was not a symbol. That is the dangling shape SOL-14 exists to prevent, reached through the getter path. The state-variable case now checks the name BEFORE publishing the getter."
+    }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "store-refusal-sol14.sol", "target": "StoreRefused", "line_number": 13, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "StoreRefused", "target": "Link", "line_number": 14, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Link", "target": "gateway", "line_number": 14, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Link", "target": "counterpart", "line_number": 14, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "StoreRefused", "target": "_links", "line_number": 17, "comment": "A neighbouring state variable the store DOES accept, so the fixture distinguishes 'refuses these two names' from 'refuses state variables'. `_links` survives and `root` does not, on the same file, which is the whole claim.", "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "StoreRefused", "target": "bind", "line_number": 19, "meta.evidenceClass": "structural" },
+    { "type": "uses", "from": "bind", "target": "root", "line_number": 22, "comment": "A READ of a name this lane does not declare, and it is correct to emit: the source reads `root`, the reference is real, and suppressing it would lose a fact. `uses` targets are outside the unknown-target metric precisely because an external or unresolvable read target is normal — the metric is scoped to `contains`/`overrides`/`extends`/`implements`/`exports`, whose both ends are declared by definition.", "meta.isVariableReference": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "from": "bind", "target": "gateway", "line_number": 21, "comment": "`self.gateway = gateway` — the PROPERTY is a declared struct member and is read as a member reference; the OBJECT `self` is the refused name and appears only in the metadata, because a member read is named by its property.", "meta.isMemberReference": true, "meta.viaObject": "self", "meta.evidenceClass": "usage_contextual" },
+    { "type": "contains", "from": "StoreRefused", "target": "keeper", "line_number": 25, "meta.evidenceClass": "structural" },
+    { "type": "exports", "from": "store-refusal-sol14.sol", "target": "StoreRefused", "line_number": 13, "meta.isCompilationUnitSurface": true, "meta.evidenceClass": "structural" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "StoreRefused", "target": "root", "line_number": 17, "comment": "The dangling edge SOL-14 prevents: a containment edge whose target the store drops." },
+    { "type": "contains", "from": "StoreRefused", "target": "root()", "line_number": 17, "comment": "And the getter half of the same defect, pinned separately because it travelled through a different code path." },
+    { "type": "contains", "from": "bind", "target": "self", "line_number": 20, "comment": "The local's own containment edge, refused with the declaration. A `contains` edge pointing at a name no stored symbol has is the defect." },
+    { "type": "references", "from": "root", "target": "root()", "line_number": 17, "comment": "The getter link, refused WITH the getter — its SOURCE is not a symbol, so a relationship from it is a relationship from nothing." }
+  ]
+}

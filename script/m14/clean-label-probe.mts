@@ -2,8 +2,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const ROOT = "$HOME/mcp/bb-lanes/clean"
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const ROOT = "/home/ishaq2321/mcp/bb-lanes/clean"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 const files: string[] = []
 for (const e of fs.readdirSync(CR)) {

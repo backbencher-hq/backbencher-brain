@@ -1,0 +1,100 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "1da6ec2fcf3b1b86bb2faef9e34d147c4b792cd5953f7b12a451f1f5e61a84d7",
+    "sealedAt": "2026-11-05T16:51:20.000Z"
+  },
+  "checks": [
+    {
+      "description": "every $-form in the corpus whose BASE is a declared rune base is itself a declared rune — 0 unclassified of 78 dotted forms. This is the rule that found $state.eager and $effect.pending, which were publishing calls edges to framework plumbing.",
+      "id": "census-rune-completeness",
+      "status": "pass"
+    },
+    {
+      "description": "all 20 declared runes positively probed: each is built into a snippet and asserted to emit no call edge to its leaf",
+      "id": "census-runes-suppressed",
+      "status": "pass"
+    },
+    {
+      "description": "all 6 user-namespace shapes positively probed to STILL emit their edges — $order.scoops, $value.foo, $formData.dob, $storeDeeper.items, and the two adversarial $my.eager / $my.pending that a bare-leaf fix for the missing runes would have silently swallowed",
+      "id": "census-user-namespaces-preserved",
+      "status": "pass"
+    },
+    {
+      "description": "every directive prefix in the corpus (14 distinct) carries a declared obligation (10 families), with quoted values stripped so Tailwind tokens are never mistaken for directives. FOUND BY THIS CHECK: eight families were silent with no ruling anywhere — roughly 2,049 corpus occurrences including `bind:value` at 581. A node-type census could not have found it, because `attribute` was already marked handled and these families were hiding INSIDE that handled type. Probed in both directions: the read families must publish `uses`, the invoked families must publish `calls`, and `let:` must stay SILENT.",
+      "id": "census-carrier-space",
+      "status": "pass"
+    },
+    {
+      "description": "every `svelte:*` tag in the corpus is a declared builtin (10) or carries a REJECTED ruling (1); 0 undeclared of 11 tags. The prefix is reserved, so an undeclared member cannot name a component. FOUND BY THIS CHECK: the corpus's own compiler-errors sample `svelte:selfdestructive` was being published as `instantiates` AND derived identically by the F5 oracle, so both sides agreed and the differential reported it clean.",
+      "id": "census-reserved-namespace",
+      "status": "pass"
+    },
+    {
+      "description": "every block construct in the corpus carries a disposition (13 declared, 2 ruled rejected as invalid spellings in compiler-error samples); 0 undeclared of 15 constructs, so a block type Svelte adds later fails here rather than being silently unhandled on both sides.",
+      "id": "census-block-dispositions",
+      "status": "pass"
+    },
+    {
+      "description": "every REJECTED ruling still matches something in the corpus. A ruling that no longer describes a real occurrence is deleted rather than left to excuse a name that has since become legal — otherwise the rejection table becomes a place to hide a newly-valid construct.",
+      "id": "census-rejected-rulings-fresh",
+      "status": "pass"
+    },
+    {
+      "description": "all 5 declared non-runes ($lib, $app, $$props, $$restProps, $$slots) confirmed present in the corpus, so no disposition is stale and doing no work",
+      "id": "census-non-runes-fresh",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "committedAt": "2026-11-05T11:51:20-05:00",
+  "data": {
+    "bareDollarForms": 102,
+    "blockConstructs": 15,
+    "corpusFiles": 6143,
+    "corpusRoots": [
+      "/home/ishaq2321/bb_tests/repositories/svelte",
+      "/home/ishaq2321/bb_tests/repositories/shadcn-svelte"
+    ],
+    "declaredBlocks": 13,
+    "declaredNonRunes": 5,
+    "declaredRunes": 20,
+    "declaredSvelteBuiltins": 10,
+    "dottedDollarForms": 78,
+    "governance": {
+      "consultsNeitherAnalyzerNorOracle": true,
+      "negativeControls": [
+        "un-declaring $state.eager exits 1 naming it (completeness rule)",
+        "adding the bare leaf `eager`/`pending` to the segment set exits 1 naming $my.eager and $my.pending as SUPPRESSED",
+        "declaring a non-rune absent from the corpus exits 1 naming it stale",
+        "dropping the REJECTED ruling for svelte:selfdestructive exits 1 naming it an undeclared member of the reserved namespace",
+        "renaming a REJECTED ruling to a name the corpus lacks exits 1 naming the ruling stale",
+        "reverting the analyzer's reserved-namespace rule exits 1 reporting the undeclared member as PUBLISHED",
+        "a declared read family that stops publishing exits 1 naming the missing `uses` target",
+        "a declared invoked family that stops publishing exits 1 naming the missing `calls` target",
+        "a declared SILENT family that starts publishing exits 1 naming it"
+      ],
+      "why": "A differential compares two readings of the same spec by the same author. A construct BOTH forgot cannot appear as a disagreement, so the lane reads 100% while the construct leaks. That is not hypothetical: this gate was written because the differential could not see the two missing runes."
+    },
+    "rejectedRulings": 7,
+    "svelteTagForms": 11,
+    "unclassified": 0,
+    "userNamespaceProbes": 6
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.SVELTE-CENSUS",
+  "layers": [
+    "carrier-census"
+  ],
+  "limitations": [
+    "Discovery is lexical over the corpus, so a construct written in a form this scan does not match would not be seen. The scan is a $-prefix scan with an optional single dotted segment; a two-segment form ($a.b.c) is counted as $a.b.",
+    "The completeness rule binds only forms whose base is a declared rune base. A new rune FAMILY ($newthing.x) would need its base declared, and until then it is classified as user data rather than failing — declared as a known gap rather than papered over.",
+    "This gate reads the corpus, not the analyzer's tables, so a rune the analyzer has never heard of and the corpus never uses is invisible to it. That is the $effect.untracked / $props.is_safe / $render case: 3 declared runes are corpus-absent and are carried on the spec surface, reported as such on every run."
+  ],
+  "regeneratedAt": "2026-11-05T11:51:20-05:00",
+  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "svelte construct census — the check that consults neither the analyzer nor the oracle"
+}

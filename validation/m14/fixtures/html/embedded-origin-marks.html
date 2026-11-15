@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Embedded origin marks</title>
+  <!-- ORIGIN DISCLOSURE / 2026-10-05.
+
+       This fixture exists for ONE property, which no other html fixture pins:
+       that a row the SEAM created is distinguishable from a row html's own walk
+       created, on every channel the seam writes to.
+
+       The seam merges a JS/TS/CSS delegate's output into the document's arrays.
+       Before this fixture, three of those channels were inconsistently marked:
+
+         symbols        htmlEmbedded / embeddedLang / embeddedLineOffset   OK
+         relationships  htmlEmbedded / embeddedLang / embeddedLineOffset   OK
+         imports        htmlEmbedded / embeddedLang                        OK
+         contains       htmlEmbedded / embeddedLang / embeddedLineOffset   MISSING
+                        (created BY the seam, not by the delegate, and the only
+                         merged row class with no origin tag at all)
+         exports        nothing — no marker, no language, no offset
+
+       The consequence is measurable, not cosmetic. Over 921 delegate rows on
+       vuejs, 245 arrived untagged; over the full 1,652-document corpus, 8. An
+       auditor who uses `htmlEmbedded` as the origin test — which is what the
+       method's own header told them to do — reads those rows as html's OWN.
+       That is exactly the delegation question this lane exists to answer
+       honestly, and it answers it backwards for them.
+
+       script/m14/html-origin-census.ts answers the same question WITHOUT the
+       tag, by differencing the production path against the seam switched off,
+       and the two numbers have to agree. This fixture is what makes the tag
+       agree with the difference.
+
+       Also here: a custom element that is NOT registered anywhere, so the
+       fixture pins the measured refusal to claim Web Components from a tag. -->
+  <style id="sheet">
+    .lead { margin: 0; }
+  </style>
+</head>
+<body>
+  <main id="app">
+    <p class="lead">body</p>
+    <panel-widget id="widget"></panel-widget>
+    <panel-widget id="widget-again"></panel-widget>
+  </main>
+  <script type="module">
+    import { mount } from "/lib/mount.js";
+
+    export const MOUNTED = mount(document.getElementById("app"));
+
+    export function teardown(node) {
+      return mount(node);
+    }
+  </script>
+</body>
+</html>

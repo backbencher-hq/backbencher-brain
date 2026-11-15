@@ -1,0 +1,49 @@
+{
+  "fixtureId": "vue/payload-pins",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Section C (#419): payload matrix rows. complexity — script decisions flow through the sub-analyzer (fire: if + while = 1 + 2 = 3); visibility — component symbol is public; parameters — script function params flow through (fire has a, b). Pre-fix: no vue fixture pinned any payload row.",
+  "expectSymbols": [
+    {
+      "name": "payload-pins",
+      "kind": "class",
+      "meta.isVueComponent": true
+    },
+    {
+      "name": "fire",
+      "kind": "function"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "fire",
+      "equals": 3
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "payload-pins",
+      "visibility": "public"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "fire",
+      "parameters": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "payload-pins",
+      "target": "ref"
+    }
+  ]
+}

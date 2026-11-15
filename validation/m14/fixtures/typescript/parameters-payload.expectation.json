@@ -1,0 +1,27 @@
+{
+  "fixtureId": "typescript/parameters-payload",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the parameters payload (section C, Matrix 1b). TS semantics: method symbols carry a parameters list with name and declared type; optional params (x?: number) and defaults (y = 1) keep their declared form.",
+  "expectSymbols": [
+    { "name": "ParamSvc", "kind": "class" },
+    { "name": "apply", "ownerName": "ParamSvc" },
+    { "name": "join", "ownerName": "ParamSvc" }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "apply",
+      "parameters": [
+        { "name": "amount", "type": "number" },
+        { "name": "percent", "type": "number" }
+      ]
+    },
+    {
+      "symbol": "join",
+      "parameters": [
+        { "name": "parts", "type": "string[]" },
+        { "name": "sep", "type": "string" }
+      ]
+    }
+  ]
+}

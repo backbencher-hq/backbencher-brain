@@ -1,0 +1,94 @@
+{
+  "fixtureId": "php/cross-file-override",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "crossFileOverride": [
+    "cross-file-override-base"
+  ],
+  "rationale": "CROSS-FILE `overrides` \u2014 the half of the label that had no pin at all.\n\nWHY IT NEEDED A COMPANION. `resolveOverrides` verifies an override only when the base's declaration is VISIBLE: in this file, or through `AnalyzeContext.overrideCompanion`. Nothing on any test or gate path ever built that index, so the cross-file path could not fail \u2014 no fixture reached it, no mutant exercised it, and the differential could not have caught a wrong target either because its published match is `(label, target)` through `normTarget` (the LAST SEGMENT), so a truth row naming `TestCase.__construct` is satisfied by any other `__construct` override in the draw. Measured with a corpus companion built: phpunit emits 527 `overrides` edges and phpmyadmin 553, against 1 and 0 before, with 527/527 and 553/553 exact agreement against an independently written oracle. The label's audited sample size went from ONE \u2014 a single row in a vendored phpstan fixture, absent from both canonical draws \u2014 to 1,080.\n\nTHE FIXTURE THAT FOUND A REAL DEFECT, on its way in. It declares a `privateHelper` on both sides, and PHP does not inherit a private method, so `SubContract::privateHelper` is a DIFFERENT method. The analyzer published the edge anyway, at 0.95 and `evidenceClass: structural` \u2014 indistinguishable from a real override downstream. It was PRE-EXISTING: the same-file prescan collected every `method` symbol regardless of modifiers, so `class A { private function p(){} } class B extends A { private function p(){} }` published `B.p -> A.p`. phpunit ships a fixture testing exactly this rule (`tests/_files/CoveredClass.php`, whose `privateMethod` is not an override of `CoveredParentClass::privateMethod`) and the analyzer was getting it wrong.\n\nWHAT THE FIX DELIBERATELY DOES NOT DO, and this is the substantive finding of the round. The obvious next step is to carry visibility through the companion and filter cross-file too. That was built, measured, and REJECTED, because it is wrong in a way that is invisible: php keys every edge on the LEAF name, so a NAME-keyed index is ambiguous whenever two namespaces declare the same class name, and phpunit does that four times \u2014 three `TestSuite` classes (one `__construct` private, two public) and two `Assert` classes, one a VENDORED library at `tools/.phpstan/vendor/webmozart/assert/src/Assert.php` with a private `__construct` while phpunit's own `abstract class Assert` has none. Two ambiguity rules were tried and both produced wrong suppressions: the most-restrictive reading suppressed SEVEN correct overrides (verified by hand \u2014 `TestSuite::__construct` is `public` in the source), and requiring unanimity still suppressed one, because the two `Assert` classes do not disagree \u2014 there is a single observation of that key and it belongs to the wrong class. So a cross-file lookup is a GUESS, and the rule adopted is that a rule acting on a guess defaults to the PERMISSIVE reading, which never removes a true edge. Hence: the private filter applies to SAME-FILE bases, where the base's own symbols make the identity exact, and cross-file visibility is deliberately not acted upon. That is what the forbid row below pins \u2014 it is the limitation stated as an assertion rather than left in a comment.\n\nONCE MORE, THE POINT THAT BOTH SIDES GOT WRONG THE SAME WAY: the modifier is a NAMED `visibility_modifier` wrapping an anonymous token, so reading a method's children for an anonymous `private` never fires. With both sides unfiltered the differential reported **0 unexplained** \u2014 a shared mistake is invisible to a comparison, which is the whole argument for independent implementations. The corpus indexes 789 (phpunit) and 1,203 (phpmyadmin) private methods.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "SubContract",
+      "target": "BaseContract",
+      "comment": "the cross-file heritage edge, which is what makes an override resolvable at all"
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.execute",
+      "target": "BaseContract.execute",
+      "confidence": 0.65,
+      "meta.evidenceClass": "inferred",
+      "comment": "THE POSITION. `BaseContract` is declared in a different compilation unit and is only visible through the companion index, so without `crossFileOverride` this file emits NOTHING for it \u2014 which is the honest answer for an unverifiable base, and why the guess M12.PHP-OVERRIDE-AUDIT removed had to go."
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.describe",
+      "target": "BaseContract.describe",
+      "confidence": 0.65,
+      "comment": "overriding with a NARROWED return type is still an override"
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.make",
+      "target": "BaseContract.make",
+      "confidence": 0.65,
+      "comment": "a static method overriding a static method, which PHP permits"
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.protectedHelper",
+      "target": "BaseContract.protectedHelper",
+      "confidence": 0.65,
+      "comment": "protected overriding protected: a genuine override, and the CONTRAST case that proves the filter is on visibility rather than on presence. Without this row, a fixture that only asserted 'private is silent' would also pass a rule that filtered EVERYTHING."
+    },
+    {
+      "type": "overrides",
+      "source": "LocalSub.shared",
+      "target": "LocalBase.shared",
+      "confidence": 0.85,
+      "comment": "The local declaring ancestor is known; bounded compatibility is checked, with inferred evidence at 0.85.",
+      "meta.evidenceClass": "inferred",
+      "meta.signatureCompatibility": "checked"
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.privateHelper",
+      "target": "BaseContract.privateHelper",
+      "confidence": 0.65,
+      "comment": "THE LIMITATION, pinned as an assertion in the POSITIVE direction rather than left in a comment. The base is in another file, so the only visibility information available is a NAME-keyed index \u2014 and php keys edges on the LEAF name, so that index is ambiguous whenever two namespaces declare the same class name. phpunit does that four times (three `TestSuite`, two `Assert`, one of the latter a vendored library under `tools/.phpstan/vendor/`). Filtering on it was implemented and measured and SUPPRESSED CORRECT EDGES \u2014 seven under a most-restrictive reading, and still one under a unanimity reading, because the two `Assert` classes do not disagree: there is a single observation of that key and it belongs to the wrong class. So cross-file visibility is NOT acted upon and the edge IS published. That is the honest direction \u2014 publishing a possibly-redundant override never removes a true edge, whereas suppressing a real one fabricates a gap. The CONTRAST is the same-file row in `forbidRelationships`: where identity is exact, the rule applies and the edge does not exist. Anyone who later gives this analyzer QUALIFIED identity can act on `AnalyzeContext.overrideCompanionVisibility`, which is populated and correct; today's leaf-name model cannot."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "LocalSub.privateHelper",
+      "target": "LocalBase.privateHelper",
+      "comment": "THE ROW THAT FOUND THE DEFECT, and it is SAME-FILE because that is where the identity is exact. PHP does not inherit a private method, so `LocalSub::privateHelper` and `LocalBase::privateHelper` are two unrelated methods \u2014 and the analyzer published the edge at 0.95/structural, which is the worst way to be wrong. `php/override-fires-without-base-method` CANNOT catch this one: that mutant reads the analyzer's method symbols and a private base method is not among the methods it enumerates, so only a fixture declaring both halves can. phpunit's own `tests/_files/CoveredClass.php` is a live instance of the same rule, and the analyzer was getting it wrong there too."
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.brandNew",
+      "target": "BaseContract.brandNew",
+      "comment": "the base does not declare this, so an override edge naming it would assert a method that exists NOWHERE. This is the cross-file half of the 'the base must DECLARE it' rule that `php/override-fires-without-base-method` pins for the same-file half."
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.inheritedOnly",
+      "target": "BaseContract.inheritedOnly",
+      "comment": "the subclass does NOT redeclare it. INHERITING a method is not overriding it \u2014 the rule is about what the subclass DECLARES, and an edge here would claim a redefinition that never happens."
+    },
+    {
+      "type": "overrides",
+      "source": "SubContract.neverRedeclared",
+      "target": "BaseContract.neverRedeclared",
+      "comment": "no subclass declares this at all, so neither side of the relationship exists"
+    },
+    {
+      "type": "overrides",
+      "source": "LocalSub.inheritedOnly",
+      "target": "LocalBase.inheritedOnly",
+      "comment": "same-file negative: INHERITING is not overriding, and the companion did not introduce a cross-file-only looseness \u2014 the same-file path is held to the same rule in the same fixture"
+    }
+  ]
+}

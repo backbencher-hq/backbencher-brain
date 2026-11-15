@@ -1,0 +1,32 @@
+{
+  "probe": "M60 objc seam trace (OC-E/F/G/H payload)",
+  "at": "2026-09-15T22:40:38.834Z",
+  "wave": "M49.OC2 (in flight)",
+  "rowsByType": {
+    "calls": 75,
+    "contains": 96,
+    "instantiates": 7,
+    "references": 11,
+    "uses": 279
+  },
+  "lineNumber": {
+    "gt0": 57,
+    "eq0": 0,
+    "nul": 411
+  },
+  "analyzerFlagSurvival": {
+    "isBareRead": 0,
+    "isFieldRead": 0,
+    "isMessageExpression": 0,
+    "isCFunctionCall": 0,
+    "isObjCAlloc": 0,
+    "isOverride": 0,
+    "isCategoryProtocol": 0,
+    "evidenceClass": 11
+  },
+  "duplicateGroups": 0,
+  "symbols": {
+    "total": 115,
+    "withRange": 115
+  }
+}

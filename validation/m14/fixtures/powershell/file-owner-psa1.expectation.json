@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/file-owner-psa1.ps1",
+  "authoredFrom": "PSA1 — the file is the module (bash BD2 parity, extended to PowerShell's three extensions). Authored 2026-09-26 from the PowerShell language: a script's top-level statements are in the script's scope, and a script file is a module (`.psm1` is a module, `.psd1` its manifest), so the file is a real owner and its own basename is that owner's name. The pre-wave analyzer wrote the literal string `global` as the file-scope edge source, which `isIndexArtifactName` (src/ast/analysis-exclusions.ts:129) rejects as a symbol name — so every top-level PowerShell edge resolved to nothing. Reviewer observed the analyzer's output before authoring; the expectation is the language's answer, not the analyzer's, which is why the `global` half is FORBIDDEN rather than merely absent.",
+  "expectSymbols": [
+    { "name": "file-owner-psa1.ps1", "kind": "module" },
+    { "name": "Get-Config", "kind": "function", "ownerName": "file-owner-psa1.ps1" },
+    { "name": "cfg", "kind": "variable", "ownerName": "file-owner-psa1.ps1" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "file-owner-psa1.ps1", "target": "Get-Config" },
+    { "type": "contains", "from": "file-owner-psa1.ps1", "target": "cfg" },
+    { "type": "calls", "from": "file-owner-psa1.ps1", "target": "Get-Config" },
+    { "type": "calls", "from": "file-owner-psa1.ps1", "target": "Write-Host" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "imports", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "instantiates", "from": "global" },
+    { "type": "overrides", "from": "global" },
+    { "type": "calls", "target": "global" }
+  ],
+  "forbidSymbols": [
+    { "name": "global" },
+    { "name": "$cfg" }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "issue": "M34.S2",
+  "code": "S2",
+  "milestone": "M34",
+  "status": "verified",
+  "checks": 35,
+  "passed": 35,
+  "failed": 0,
+  "negativeCases": 7,
+  "mutants": [
+    {
+      "name": "planted Cyrillic string is caught",
+      "caught": true
+    },
+    {
+      "name": "planted Han (Chinese) string is caught",
+      "caught": true
+    },
+    {
+      "name": "planted Arabic string is caught",
+      "caught": true
+    },
+    {
+      "name": "Cyrillic homoglyph smuggled into Latin text is caught (ѕоundalike)",
+      "caught": true
+    },
+    {
+      "name": "planted file on disk is caught by the file-scan path (and cleaned up)",
+      "caught": true
+    },
+    {
+      "name": "allowlist is load-bearing: without it, the LÖVR line would fail the gate",
+      "caught": true
+    },
+    {
+      "name": "Latin text (symbols included) passes the gate — no false positives",
+      "caught": true
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m34/verify-script-gate.ts",
+  "evidenceFile": "S2.json",
+  "generatedAt": "2026-11-15T04:21:46.467Z",
+  "limitations": [
+    "Script detection covers 14 non-Latin scripts (Cyrillic, Han, Kana, Hangul, Arabic, Hebrew, Greek, Thai, Devanagari, Bengali, Tamil, Georgian, Armenian); an exotic script outside this set would not be caught.",
+    "Typographic symbols (— ✓ ✗ … ⚠ →) are script-neutral and allowed by design; M33.S4 remains the per-string English gate on help surfaces.",
+    "Gate C scans the enumerated CLI surfaces; a new command's help is covered only once added to the surface list (M33.S4 parity gate flags undeclared commands, which closes that gap)."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "fixtureId": "kotlin/qualified-call-path",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: qualified_calls entries are dotted call paths WITHOUT argument text (java convention; consumers exact-match dotted names). Chained calls previously embedded inner-call arguments (`db.list(user).map`), breaking path matching.",
+  "expectSymbols": [
+    {
+      "name": "h"
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "h",
+      "includes": [
+        "service.save",
+        "db.list.map"
+      ]
+    }
+  ]
+}

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:yaml",
   "fixtureDir": "validation/m12/fixtures/yaml",
-  "corpusDir": "$HOME/fixtures/repositories/kubernetes",
+  "corpusDir": "/home/ishaq2321/bb_tests/repositories/kubernetes",
   "corpusManifest": {
-    "corpusDir": "$HOME/fixtures/repositories/kubernetes",
+    "corpusDir": "/home/ishaq2321/bb_tests/repositories/kubernetes",
     "fileCount": 400,
     "extensions": [
       ".yaml",

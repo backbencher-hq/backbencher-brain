@@ -1,0 +1,142 @@
+{
+  "base": "a5693870adc07ce2cdca801a1f4e5894a6317bd3",
+  "control1": {
+    "purelyAdditive": true,
+    "addedLines": 221,
+    "removedLines": 0
+  },
+  "control2": {
+    "othersIdentical": true,
+    "clojureDiffers": true,
+    "lanes": [
+      {
+        "lang": "python",
+        "files": 40,
+        "new": "541eb6bc97c1c480",
+        "old": "541eb6bc97c1c480",
+        "identical": true,
+        "newNames": 546,
+        "oldNames": 546,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "typescript",
+        "files": 40,
+        "new": "e4cdaec5a4f54ceb",
+        "old": "e4cdaec5a4f54ceb",
+        "identical": true,
+        "newNames": 11,
+        "oldNames": 11,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "javascript",
+        "files": 40,
+        "new": "7e401e4c19db795a",
+        "old": "7e401e4c19db795a",
+        "identical": true,
+        "newNames": 157,
+        "oldNames": 157,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "ruby",
+        "files": 40,
+        "new": "64a80a3c16d2e1fa",
+        "old": "64a80a3c16d2e1fa",
+        "identical": true,
+        "newNames": 659,
+        "oldNames": 659,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "cpp",
+        "files": 40,
+        "new": "f8b18c9f552ae24e",
+        "old": "f8b18c9f552ae24e",
+        "identical": true,
+        "newNames": 4774,
+        "oldNames": 4774,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "dart",
+        "files": 40,
+        "new": "543df28beaa36e1a",
+        "old": "543df28beaa36e1a",
+        "identical": true,
+        "newNames": 233,
+        "oldNames": 233,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "solidity",
+        "files": 40,
+        "new": "b26723fe09fc3e05",
+        "old": "b26723fe09fc3e05",
+        "identical": true,
+        "newNames": 210,
+        "oldNames": 210,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "scss",
+        "files": 40,
+        "new": "2a2b32be2aa81ba2",
+        "old": "2a2b32be2aa81ba2",
+        "identical": true,
+        "newNames": 285,
+        "oldNames": 285,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "fsharp",
+        "files": 40,
+        "new": "968fefefa2433c5d",
+        "old": "968fefefa2433c5d",
+        "identical": true,
+        "newNames": 520,
+        "oldNames": 520,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "java",
+        "files": 40,
+        "new": "0008068ab0bb8089",
+        "old": "0008068ab0bb8089",
+        "identical": true,
+        "newNames": 899,
+        "oldNames": 899,
+        "addedNames": 0,
+        "addedSample": []
+      },
+      {
+        "lang": "clojure",
+        "files": 40,
+        "new": "f5bcf9a8c0905106",
+        "old": "49f016e80dae2725",
+        "identical": false,
+        "newNames": 1155,
+        "oldNames": 0,
+        "addedNames": 1155,
+        "addedSample": [
+          "CommentNode/length",
+          "CommentNode/printable-only?",
+          "CommentNode/sexpr",
+          "CommentNode/string",
+          "CommentNode/tag",
+          "CommentNode/toString"
+        ]
+      }
+    ]
+  }
+}

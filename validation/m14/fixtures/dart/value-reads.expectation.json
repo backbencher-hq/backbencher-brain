@@ -1,0 +1,253 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it — U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` — a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/value-reads",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "correction_2026_10_08": "Two member-read targets moved from the bare leaf to `Store.count` because the read is inside Store and Store declares `count`. Deliberately NOT qualified: reads through a receiver whose declared type this pass does not read (the interpreter does not invent a spelling it cannot check). Reads of names the enclosing function BINDS moved to `<callable>#<binding>` instead — helper#x, compute#k, sums#i, blocks#p, inits#b and the rest — because a binding is not a declaration and the store resolves a target by STRING: the bare form bound to any single declaration carrying that name in the project. That is a third spelling, not a variant of the other two, and the fixture states which rows get which.",
+  "rationale": "Dart second review (DT2): bound locals/params read as values (OC-E parity, exact scope resolution at 0.9), file-scope values read (globals + top-level functions), for-in/pattern/catch/lambda bindings, constructor-initializer params, cascade receivers. Labels, writes, declaration sites and type positions never read. Every pin probe-verified against both the analyzer and deriveDartBareUses before pinning; lanes confirm the pair agrees on corpora.",
+  "expectSymbols": [
+    {
+      "name": "gTotal",
+      "kind": "variable"
+    },
+    {
+      "name": "gLabel",
+      "kind": "variable"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "reset",
+      "kind": "function"
+    },
+    {
+      "name": "Store",
+      "kind": "class"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Store"
+    },
+    {
+      "name": "compute",
+      "kind": "method",
+      "ownerName": "Store"
+    },
+    {
+      "name": "sums",
+      "kind": "method",
+      "ownerName": "Store"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "get",
+      "kind": "function"
+    },
+    {
+      "name": "label",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "helper",
+      "target": "helper\u0000x",
+      "comment": "DT2: parameters read"
+    },
+    {
+      "type": "uses",
+      "source": "compute",
+      "target": "compute\u0000k",
+      "comment": "DT2: parameters read"
+    },
+    {
+      "type": "uses",
+      "source": "compute",
+      "target": "compute\u0000depth",
+      "comment": "DT2: body locals read"
+    },
+    {
+      "type": "uses",
+      "source": "compute",
+      "target": "compute\u0000limit",
+      "comment": "DT2: parameters read"
+    },
+    {
+      "type": "uses",
+      "source": "compute",
+      "target": "compute\u0000total",
+      "comment": "DT2: locals shadow members (single edge)"
+    },
+    {
+      "type": "uses",
+      "source": "compute",
+      "target": "Store.count",
+      "comment": "member reads intact alongside locals — qualified 2026-10-08: `count` is declared by Store and the read is inside Store's own method, so the target names the declaration"
+    },
+    {
+      "type": "uses",
+      "source": "shadowed",
+      "target": "shadowed\u0000count",
+      "comment": "DT2: shadowed member reads as the local"
+    },
+    {
+      "type": "uses",
+      "source": "sums",
+      "target": "sums\u0000i",
+      "comment": "DT2: classic-for loop variables read"
+    },
+    {
+      "type": "uses",
+      "source": "sums",
+      "target": "sums\u0000xs",
+      "comment": "DT2: parameters read"
+    },
+    {
+      "type": "uses",
+      "source": "sums",
+      "target": "List.length",
+      "meta.isMemberRead": true,
+      "meta.baseBeyondRunScope": "List",
+      "meta.owner": "List",
+      "meta.ownerEvidence": "param",
+      "comment": "member reads intact — QUALIFIED 2026-10-18: `xs.length` where `xs` is declared `List<int>`. The old analyzer stored no type for a generic parameter (the symbol's p.type is the base `List` but the local-type collector had no entry), so the target stayed the bare leaf `length`. The element-type work records the BASE type for a generic parameter, so the receiver is spelled and the owner channel states it; the bare leaf is now the fabricated shape this row must NOT be."
+    },
+    {
+      "type": "uses",
+      "source": "sums",
+      "target": "sums\u0000total",
+      "comment": "DT2: locals read"
+    },
+    {
+      "type": "uses",
+      "source": "sums",
+      "target": "sums\u0000x",
+      "comment": "DT2: for-in variables read"
+    },
+    {
+      "type": "uses",
+      "source": "takes",
+      "target": "takes\u0000h",
+      "comment": "DT2: argument values read"
+    },
+    {
+      "type": "uses",
+      "source": "guarded",
+      "target": "guarded\u0000e",
+      "comment": "DT2: catch params read"
+    },
+    {
+      "type": "uses",
+      "source": "blocks",
+      "target": "blocks\u0000xs",
+      "comment": "DT2: parameters read"
+    },
+    {
+      "type": "uses",
+      "source": "blocks",
+      "target": "blocks\u0000x",
+      "comment": "DT2: lambda params read"
+    },
+    {
+      "type": "uses",
+      "source": "blocks",
+      "target": "Store.count",
+      "comment": "member reads inside closures intact — qualified 2026-10-08, same rule; the SHADOWED reads (`uses shadowed -> count`, `uses inits -> count`) stay bare, which is the control that the shadowing check still runs before the qualifier does"
+    },
+    {
+      "type": "uses",
+      "source": "blocks",
+      "target": "blocks\u0000p",
+      "comment": "DT2: block-literal params read"
+    },
+    {
+      "type": "uses",
+      "source": "blocks",
+      "target": "blocks\u0000q",
+      "comment": "DT2: block-literal params read"
+    },
+    {
+      "type": "uses",
+      "source": "inits",
+      "target": "inits\u0000b",
+      "comment": "DT2: cascade receivers read"
+    },
+    {
+      "type": "uses",
+      "source": "inits",
+      "target": "inits\u0000p",
+      "meta.isInterpolationRead": true,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "DT2: interpolation reads params — AND `p` is a PARAMETER (`void inits(int p)`), so the row is the family's BINDING spelling. The bare `p` was the pre-fix shape: the interpolation arm was not consulting the enclosing function's bindings, so a parameter read inside `'$p'` was published as a DECLARATION's spelling — and the store's bare-name rule admits a bare name declared exactly once in the project, so a parameter named `p` could bind to an unrelated declaration named `p`. The same defect the `member-value-reads` fixture pins on the `var` arm; the bare row is forbidden below."
+    },
+    {
+      "type": "uses",
+      "source": "inits",
+      "target": "count",
+      "comment": "member reads inside interpolation intact"
+    },
+    {
+      "type": "uses",
+      "source": "constructor",
+      "target": "constructor\u0000p",
+      "comment": "DT2: initializer lists read constructor params"
+    },
+    {
+      "type": "uses",
+      "source": "get",
+      "target": "gTotal",
+      "comment": "DT2: file-scope globals read"
+    },
+    {
+      "type": "uses",
+      "source": "label",
+      "target": "gLabel",
+      "comment": "DT2: file-scope globals read"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "takes",
+      "target": "cb",
+      "comment": "DT2: named-argument labels never read"
+    },
+    {
+      "type": "uses",
+      "source": "takes",
+      "target": "count",
+      "comment": "DT2: named-argument labels never read"
+    },
+    {
+      "type": "uses",
+      "source": "reset",
+      "target": "gTotal",
+      "comment": "DT2: write-only globals never read (LHS writes stay silent)"
+    },
+    {
+      "type": "uses",
+      "source": "sums",
+      "target": "length",
+      "note": "THE SUPERSEDED SHAPE — a bare leaf for a receiver whose declared type is written in the signature (`List<int> xs`). The typed row above must be the only `length` read this function publishes."
+    },
+    {
+      "type": "uses",
+      "source": "inits",
+      "target": "p",
+      "note": "THE PRE-FIX INTERPOLATION SHAPE, forbidden: a PARAMETER read inside `'$p'` published as a bare name, beside the binding row that says the truth. A bare spelling is a declaration's spelling, and the store resolves it by name."
+    }
+  ]
+}

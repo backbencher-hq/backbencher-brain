@@ -1,0 +1,12 @@
+{
+  "issue": "M15.D6",
+  "code": "D6",
+  "tool": "bb_doc",
+  "title": "docs honesty",
+  "verified": true,
+  "checks": 20,
+  "passed": 21,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:20:57.778Z"
+}

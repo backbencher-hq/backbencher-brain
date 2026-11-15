@@ -1,0 +1,40 @@
+{
+  "before": {
+    "path": "validation/m14/fixtures/clojure/lane-logs/dump-BEFORE.txt",
+    "rows": 14413
+  },
+  "after": {
+    "path": "validation/m14/fixtures/clojure/lane-logs/dump-AFTER.txt",
+    "rows": 14413
+  },
+  "sharedOutcomeMovement": {
+    "externalVerified -> externalVerified": 6519,
+    "unresolved -> unresolved": 4245,
+    "ambDeclOnly -> ambDeclOnly": 1578,
+    "unresolved -> externalUnverified": 852,
+    "unresolved -> externalVerified": 658,
+    "ambBoth -> ambBoth": 561
+  },
+  "leftTheDump": {
+    "count": 0,
+    "byLabel": {},
+    "samples": []
+  },
+  "enteredTheDump": {
+    "count": 0,
+    "byLabel": {},
+    "samples": []
+  },
+  "identityRule": "(label, target, srcFile, line) + occurrence counter — the n-th row with one identity is #n",
+  "bound": {
+    "before": {
+      "state": "COMPLETE",
+      "value": "14413"
+    },
+    "after": {
+      "state": "COMPLETE",
+      "value": "14413"
+    },
+    "bothComplete": true
+  }
+}

@@ -54,7 +54,18 @@ const projectId = `toolhist:${project}`
 
 try {
   console.log("── A. bb_security classification + history cleanliness ──")
+  // M72: the default index path runs the spec engine and writes
+  // `brain_security_flow`; the retired token cross-product runs only under
+  // BB_SECURITY_LEGACY=1. Section A's state-matrix assertions classify the
+  // legacy adapter's rows (`analyzeTaintFlows` reads `brain_taint_flow`), so this
+  // section enables the legacy writer explicitly — the only mode where those
+  // rows exist to classify. The DEFAULT path's contract (no retired rows; leads
+  // in the new store) is asserted by script/m72/* and by A3 below.
+  const priorLegacyEnv = process.env.BB_SECURITY_LEGACY
+  process.env.BB_SECURITY_LEGACY = "1"
   await indexProjectParallel(projectId, project, {})
+  if (priorLegacyEnv === undefined) delete process.env.BB_SECURITY_LEGACY
+  else process.env.BB_SECURITY_LEGACY = priorLegacyEnv
 
   const raw = await BrainDatabase.getRawInstance(projectId)
   const rows = raw.prepare("SELECT vulnerability_type, severity, source_symbol_id, sink_symbol_id FROM brain_taint_flow WHERE project_id=?").all(projectId) as any[]

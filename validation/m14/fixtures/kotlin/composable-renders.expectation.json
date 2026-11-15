@@ -1,0 +1,27 @@
+{
+  "fixtureId": "kotlin/composable-renders",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE `renders` VALUE FOR KOTLIN (the remedy ladder's rung R3 - an EXISTING node type carries the construct, so NO grammar change is needed). The vocabulary contract (src/ast/types.ts:142-150) says a component RENDERS another component: source = the rendering symbol, target = the rendered component; it is NOT `instantiates` (the host renderer constructs the component; the source contains no allocation). In Kotlin the component-render construct is THE COMPOSE DSL: the rendering symbol is a `@Composable`-annotated function (the marker parses as modifiers > annotation > user_type on a function_declaration), and the rendered component is a SAME-FILE function declared with the same marker, named by a call_expression in the renderer's body. The corpus itself measures ZERO such sites - 0 @Composable-named annotation sites and 0 androidx.compose imports over the WHOLE admitted population (2,346 files, 8 repos) - so the value is published as CORPUS-UNEXERCISED and this fixture is its behavioural proof, exactly the csharp precedent. THE IMPOSTOR STOPS: a PLAIN function that calls a composable is NOT a rendering symbol (NotRendering); a PLAIN same-file function called from a composable body is NOT a rendered component (formatLabel); and a composable calling itself is recursion, not a render (Recursive).",
+  "expectSymbols": [
+    { "name": "Badge", "kind": "function" },
+    { "name": "Header", "kind": "function" },
+    { "name": "formatLabel", "kind": "function" },
+    { "name": "Screen", "kind": "function" },
+    { "name": "Recursive", "kind": "function" },
+    { "name": "NotRendering", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "renders", "from": "Screen", "target": "Header" },
+    { "type": "renders", "from": "Screen", "target": "Badge" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "renders", "from": "Screen", "target": "Header", "equals": 1 },
+    { "type": "renders", "from": "Screen", "target": "Badge", "equals": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "from": "NotRendering", "target": "Badge", "note": "a PLAIN function that calls a composable is not a rendering symbol: only a @Composable-declared function renders" },
+    { "type": "renders", "from": "Screen", "target": "formatLabel", "note": "a PLAIN same-file function called from a composable body is not a rendered component: the target must carry the Composable marker itself" },
+    { "type": "renders", "from": "Recursive", "target": "Recursive", "note": "a composable calling itself is recursion, not a render: no self edge" }
+  ]
+}

@@ -13,7 +13,7 @@
   "corpus": {
     "repo": "solidity",
     "rev": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
-    "dir": "$HOME/fixtures/repositories/solidity",
+    "dir": "/home/ishaq2321/bb_tests/repositories/solidity",
     "productionSolFiles": 389
   },
   "draw": {

@@ -1,0 +1,213 @@
+{
+  "fixtureId": "svelte/pattern-reads",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written AFTER the fix, and honestly labelled: the RULES below come from the Svelte 5 language (a destructuring pattern binds its value positions, reads its computed keys and its default values, and a property name is neither) and from the corpus files named in the fixture header — not from watching the analyzer. The line pins were read off the post-fix run and each was then checked against the fixture's own text: `count` is written on 65, `default_arg` on 69, `firstString` and `labelKey` on 73, `th` on 78 and 88, `defaultHeight` on 83, `pick` and `obj` on 102.",
+  "rationale": "JOB 2 of the svelte ontology pass, closing the last measured MISSING class on the `uses` label. A template BINDING PATTERN has read positions and binding positions; the flat word collector put every word in the SHADOW set, so it lost reads (`{#snippet counter(c = count)}` binds `c` and reads `count`) and fabricated shadows (`{#each xs as { a: b }}` binds `b` alone, so registering `a` silenced a member named `a` for the whole block). Measured before: the grammar-derived oracle named 35 unpublished template reads, 27 of them this class, over 81 corpus sites carrying a computed key or a default. The forbid rows below are the class's other half — the property names, the bindings, the type annotations and the literal defaults must NOT be published, because a reader that widens rather than splits converts 27 missing edges into fabricated ones.",
+  "expectSymbols": [
+    {
+      "name": "counter",
+      "kind": "method"
+    },
+    {
+      "name": "withDefault",
+      "kind": "method"
+    },
+    {
+      "name": "typed",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "count",
+      "line_number": 65,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "default_arg",
+      "line_number": 69,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "firstString",
+      "line_number": 73,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "labelKey",
+      "line_number": 102,
+      "meta.templateReadSites": [
+        73,
+        102
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "th",
+      "line_number": 88,
+      "meta.templateReadSites": [
+        78,
+        88
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "defaultHeight",
+      "line_number": 83,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "pick",
+      "line_number": 102
+    },
+    {
+      "type": "uses",
+      "target": "obj",
+      "line_number": 102
+    },
+    {
+      "type": "calls",
+      "target": "counter"
+    },
+    {
+      "type": "calls",
+      "target": "withDefault"
+    },
+    {
+      "type": "calls",
+      "target": "typed"
+    },
+    {
+      "type": "contains",
+      "target": "counter"
+    },
+    {
+      "type": "contains",
+      "target": "withDefault"
+    },
+    {
+      "type": "contains",
+      "target": "typed"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "idx",
+      "comment": "THE ORDERING RULE, and the one row a reader that collects all reads before all bindings fails. `{ idx, [idx - 1]: last }` binds the script member `idx` in the FIRST entry, so the computed key's `idx` reads a template-local and must publish nothing. `idx` is a declared script member precisely so this is observable in the payload: an unbound name would publish no edge either way and the row would assert nothing. No `line_number` is pinned, on purpose — a reader that un-shadows the name publishes the false read TWICE (once at the computed key, once at the `{idx}` in the body), and pinning one line would let the other through."
+    },
+    {
+      "type": "uses",
+      "target": "last",
+      "comment": "the value side of the computed-key entry binds"
+    },
+    {
+      "type": "uses",
+      "target": "firstProp",
+      "comment": "the VALUE side of `[firstString]: firstProp` binds; it is never a member read"
+    },
+    {
+      "type": "uses",
+      "target": "secondProp",
+      "comment": "same"
+    },
+    {
+      "type": "uses",
+      "target": "length2",
+      "comment": "`[`leng${th}`]: length2` — `length2` is the bound value, `th` is the read"
+    },
+    {
+      "type": "uses",
+      "target": "width",
+      "comment": "same"
+    },
+    {
+      "type": "uses",
+      "target": "last",
+      "comment": "the value side of the computed-key entry binds"
+    },
+    {
+      "type": "uses",
+      "target": "animal",
+      "comment": "a shorthand entry binds"
+    },
+    {
+      "type": "uses",
+      "target": "species",
+      "comment": "`species = 'unknown'` binds `species`; the default is a string literal and reads nothing"
+    },
+    {
+      "type": "uses",
+      "target": "weight",
+      "comment": "`kilogram: weight = 50` — `kilogram` is a PROPERTY NAME and `weight` is the bound value. Neither is a read. `weight` is also read by `pound`'s default in the corpus shape, which is why the corpus file `each-block-destructured-default` is the one that measures the whole rule; here it is pinned as forbidden so a rename key cannot be mistaken for a read."
+    },
+    {
+      "type": "uses",
+      "target": "kg",
+      "comment": "`kilogram` is a property name in a binding pattern, never a member read — the FALSE-SHADOW half of the defect, pinned so a future widening is caught"
+    },
+    {
+      "type": "uses",
+      "target": "props",
+      "comment": "`...props` is a REST binding, not a read. (The body writes `{props.kind}`, whose receiver `props` is template-local and whose leaf `kind` is never read either.)"
+    },
+    {
+      "type": "uses",
+      "target": "kind",
+      "comment": "a member LEAF is not a read — `{props.kind}` reads nothing, since `props` is local"
+    },
+    {
+      "type": "uses",
+      "target": "l",
+      "comment": "the await-then value side binds"
+    },
+    {
+      "type": "uses",
+      "target": "w",
+      "comment": "same"
+    },
+    {
+      "type": "uses",
+      "target": "h",
+      "comment": "`height: h` — the value side binds; `height` is a property name (see the `kg` row)"
+    },
+    {
+      "type": "uses",
+      "target": "bound",
+      "comment": "the declaration-tag head's value side binds"
+    },
+    {
+      "type": "uses",
+      "target": "value",
+      "comment": "`{ value = \"hello\" }` — a literal default reads nothing"
+    },
+    {
+      "type": "uses",
+      "target": "number",
+      "comment": "a TypeScript parameter ANNOTATION (`c: number = 4`) names a type. It is neither a binding nor a read — registering it as a shadow would be a false shadow of a member named `number`."
+    },
+    {
+      "type": "uses",
+      "target": "string",
+      "comment": "same, from `d?: string = 'x'`"
+    },
+    {
+      "type": "uses",
+      "target": "true",
+      "comment": "a keyword in a default value is not a member read. The character collector has no keyword table, so the pattern reader filters the names its own span introduced — and this row is what stops that filter from being widened into a name list that could delete a TRUE edge."
+    },
+    {
+      "type": "uses",
+      "target": "undefined",
+      "comment": "same class as `true`"
+    }
+  ]
+}

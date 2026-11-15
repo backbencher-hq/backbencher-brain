@@ -1,0 +1,42 @@
+{
+  "at": "2026-09-29T07:18:28.863Z",
+  "corpusTotal": 8528,
+  "filesParsed": 1200,
+  "corpusModules": 4613,
+  "corpusSymbolNames": 49779,
+  "emitted": 579,
+  "resolved": 576,
+  "classes": {
+    "bare constant, no `module X` in corpus — external gem mixin": 3
+  },
+  "topTargets": {
+    "IterableJob": 1,
+    "Comparable": 1,
+    "Sexp": 1
+  },
+  "samples": {
+    "bare constant, no `module X` in corpus — external gem mixin": [
+      {
+        "file": "mastodon/app/workers/update_link_card_attribution_worker.rb",
+        "line": 4,
+        "target": "IterableJob",
+        "source": "UpdateLinkCardAttributionWorker",
+        "body": "include Sidekiq::IterableJob"
+      },
+      {
+        "file": "rails/activemodel/test/cases/validations/comparison_validation_test.rb",
+        "line": 265,
+        "target": "Comparable",
+        "source": "ComparisonValidationTest",
+        "body": "include Comparable"
+      },
+      {
+        "file": "rubocop/spec/rubocop/cop/variable_force/variable_spec.rb",
+        "line": 6,
+        "target": "Sexp",
+        "source": "Global",
+        "body": "include RuboCop::AST::Sexp"
+      }
+    ]
+  }
+}

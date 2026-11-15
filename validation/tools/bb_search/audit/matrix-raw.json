@@ -1,0 +1,1615 @@
+{
+  "calls": [
+    {
+      "label": "__init__",
+      "projectId": "82a42b87206708afbb4230b4d2d784b2ff204c00",
+      "projectDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project"
+    },
+    {
+      "label": "symbols.default",
+      "args": {
+        "query": "handleRequest"
+      },
+      "isError": false,
+      "ms": 71.28,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.noquery",
+      "args": {},
+      "isError": true,
+      "ms": 7.04,
+      "text": "error: bb_search symbols mode requires a non-empty query",
+      "parsed": null
+    },
+    {
+      "label": "symbols.emptyquery",
+      "args": {
+        "query": ""
+      },
+      "isError": true,
+      "ms": 3.01,
+      "text": "error: bb_search symbols mode requires a non-empty query",
+      "parsed": null
+    },
+    {
+      "label": "symbols.nonstring",
+      "args": {
+        "query": 42
+      },
+      "isError": true,
+      "ms": 13.94,
+      "text": "error: bb_search: query must be string",
+      "parsed": null
+    },
+    {
+      "label": "symbols.trim",
+      "args": {
+        "query": "  handleRequest  "
+      },
+      "isError": false,
+      "ms": 32.67,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.prefix",
+      "args": {
+        "query": "handleReq"
+      },
+      "isError": false,
+      "ms": 17.33,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.substring",
+      "args": {
+        "query": "equest"
+      },
+      "isError": false,
+      "ms": 17.43,
+      "text": "RequestHandler [class] src/app.ts:17 (typescript)\nhandleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exact",
+      "args": {
+        "query": "handleRequest",
+        "exact": true
+      },
+      "isError": false,
+      "ms": 16.33,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exact.caseInsensitiveVariant",
+      "args": {
+        "query": "handlerequest",
+        "exact": true
+      },
+      "isError": false,
+      "ms": 16.45,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exact.caseSensitiveVariant",
+      "args": {
+        "query": "handlerequest",
+        "exact": true,
+        "caseSensitive": true
+      },
+      "isError": false,
+      "ms": 13.81,
+      "text": "no results for \"handlerequest\"",
+      "parsed": null
+    },
+    {
+      "label": "symbols.caseSensitive",
+      "args": {
+        "query": "handleRequest",
+        "caseSensitive": true
+      },
+      "isError": false,
+      "ms": 21.32,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.lang.upper",
+      "args": {
+        "query": "handleRequest",
+        "language": "TypeScript"
+      },
+      "isError": false,
+      "ms": 28.88,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.lang.lower",
+      "args": {
+        "query": "handleRequest",
+        "language": "typescript"
+      },
+      "isError": false,
+      "ms": 16.18,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.lang.unknown",
+      "args": {
+        "query": "handleRequest",
+        "language": "python"
+      },
+      "isError": true,
+      "ms": 10.21,
+      "text": "bb_search: language \"python\" is not in this project's index — indexed languages: go, typescript",
+      "parsed": null
+    },
+    {
+      "label": "symbols.kind.upper",
+      "args": {
+        "query": "handle",
+        "symbolKind": "Function"
+      },
+      "isError": false,
+      "ms": 17.95,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)\nhandleResponse [function] src/app.ts:9 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.kind.lower",
+      "args": {
+        "query": "handle",
+        "symbolKind": "function"
+      },
+      "isError": false,
+      "ms": 15.17,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)\nhandleResponse [function] src/app.ts:9 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.kind.unknown",
+      "args": {
+        "query": "handle",
+        "symbolKind": "bogus"
+      },
+      "isError": true,
+      "ms": 23.02,
+      "text": "bb_search: symbolKind \"bogus\" is not in this project's index — indexed kinds: class, constant, function, method, module",
+      "parsed": null
+    },
+    {
+      "label": "symbols.includeContent",
+      "args": {
+        "query": "handleRequest",
+        "includeContent": true
+      },
+      "isError": false,
+      "ms": 45.21,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)\n    export function handleRequest(): string {\n      return \"ok\"\n    }",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regex.valid",
+      "args": {
+        "query": "^handle.*",
+        "regex": true
+      },
+      "isError": false,
+      "ms": 110.47,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)\nhandleResponse [function] src/app.ts:9 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regex.invalid",
+      "args": {
+        "query": "([unclosed",
+        "regex": true
+      },
+      "isError": true,
+      "ms": 33.18,
+      "text": "error: invalid regex \"([unclosed\": Invalid regular expression: missing terminating ] for character class",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regex.invalid2",
+      "args": {
+        "query": "a{2,1}",
+        "regex": true
+      },
+      "isError": true,
+      "ms": 25.48,
+      "text": "error: invalid regex \"a{2,1}\": Invalid regular expression: numbers out of order in {} quantifier",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regex.exactBoth",
+      "args": {
+        "query": "^handleRequest$",
+        "regex": true,
+        "exact": true
+      },
+      "isError": false,
+      "ms": 53.51,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limit0",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 0
+      },
+      "isError": false,
+      "ms": 13.84,
+      "text": "no results for \"pagedSymbol\"\nshowing 0 of 25 matches",
+      "parsed": null
+    },
+    {
+      "label": "symbols.page2",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 5,
+        "offset": 5
+      },
+      "isError": false,
+      "ms": 11.3,
+      "text": "pagedSymbol06 [function] src/paged.ts:6 (typescript)\npagedSymbol07 [function] src/paged.ts:7 (typescript)\npagedSymbol08 [function] src/paged.ts:8 (typescript)\npagedSymbol09 [function] src/paged.ts:9 (typescript)\npagedSymbol10 [function] src/paged.ts:10 (typescript)\nshowing 5 of 25 matches",
+      "parsed": null
+    },
+    {
+      "label": "symbols.offset1000",
+      "args": {
+        "query": "pagedSymbol",
+        "offset": 1000
+      },
+      "isError": false,
+      "ms": 12.89,
+      "text": "no results for \"pagedSymbol\"\nshowing 0 of 25 matches",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limit1",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 1
+      },
+      "isError": false,
+      "ms": 21.1,
+      "text": "pagedSymbol01 [function] src/paged.ts:1 (typescript)\nshowing 1 of 25 matches",
+      "parsed": null
+    },
+    {
+      "label": "symbols.filePath",
+      "args": {
+        "query": "handleRequest",
+        "filePath": "src/app.ts"
+      },
+      "isError": true,
+      "ms": 5.8,
+      "text": "error: bb_search symbols mode does not accept: filePath — accepted for symbols: mode, query, limit, offset, language, symbolKind, includeContent, exact, caseSensitive, regex, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbols.percent",
+      "args": {
+        "query": "%"
+      },
+      "isError": false,
+      "ms": 13.89,
+      "text": "no results for \"%\"",
+      "parsed": null
+    },
+    {
+      "label": "symbols.underscore",
+      "args": {
+        "query": "get_user"
+      },
+      "isError": false,
+      "ms": 17.36,
+      "text": "get_user [constant] src/app.ts:26 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.unicode.lower",
+      "args": {
+        "query": "σίσυφος"
+      },
+      "isError": false,
+      "ms": 16.82,
+      "text": "UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.unicode.exactcase",
+      "args": {
+        "query": "ΣΊΣΥΦΟΣ",
+        "caseSensitive": true
+      },
+      "isError": false,
+      "ms": 18.38,
+      "text": "UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limitFractional",
+      "args": {
+        "query": "handleRequest",
+        "limit": 1.5
+      },
+      "isError": true,
+      "ms": 11.09,
+      "text": "error: bb_search: limit must be a whole number (got 1.5)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limitNegative",
+      "args": {
+        "query": "handleRequest",
+        "limit": -1
+      },
+      "isError": true,
+      "ms": 4.87,
+      "text": "error: bb_search: limit must be non-negative",
+      "parsed": null
+    },
+    {
+      "label": "symbols.refreshFalse",
+      "args": {
+        "query": "handleRequest",
+        "refresh": false
+      },
+      "isError": false,
+      "ms": 17.17,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.duplicate",
+      "args": {
+        "query": "duplicateName",
+        "exact": true
+      },
+      "isError": false,
+      "ms": 22.14,
+      "text": "duplicateName [function] src/app.ts:13 (typescript)\nduplicateName [function] src/b.ts:1 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.unknownOption",
+      "args": {
+        "query": "handleRequest",
+        "bogus": 1
+      },
+      "isError": true,
+      "ms": 5.92,
+      "text": "error: bb_search: unknown or irrelevant options: bogus — accepted options: mode, query, symbolName, filePath, limit, language, symbolKind, includeContent, exact, caseSensitive, regex, offset, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbols.modeSymbolArgs",
+      "args": {
+        "symbolName": "handleRequest"
+      },
+      "isError": true,
+      "ms": 2.49,
+      "text": "error: bb_search symbols mode does not accept: symbolName — accepted for symbols: mode, query, limit, offset, language, symbolKind, includeContent, exact, caseSensitive, regex, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbols.unknownMode",
+      "args": {
+        "mode": "regex",
+        "query": "handle"
+      },
+      "isError": true,
+      "ms": 4.98,
+      "text": "error: bb_search: mode must be one of: symbols, content, symbol, file",
+      "parsed": null
+    },
+    {
+      "label": "content.default",
+      "args": {
+        "mode": "content",
+        "query": "handleRequest"
+      },
+      "isError": false,
+      "ms": 43.1,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/app.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts\",\n      \"line\": 5,\n      \"column\": 0,\n      \"context\": \"function: handleRequest\",\n      \"symbolName\": \"handleRequest\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function handleRequest(): string {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "handleRequest",
+        "total": 1,
+        "returned": 1,
+        "staleCount": 0,
+        "freshCount": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "src/app.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+            "line": 5,
+            "column": 0,
+            "context": "function: handleRequest",
+            "symbolName": "handleRequest",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function handleRequest(): string {",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.docstringPhrase",
+      "args": {
+        "mode": "content",
+        "query": "end to end"
+      },
+      "isError": false,
+      "ms": 20.87,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"end to end\",\n  \"total\": 0,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "end to end",
+        "total": 0,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "content.bodyOnly",
+      "args": {
+        "mode": "content",
+        "query": "bodyOnlyNeedle"
+      },
+      "isError": false,
+      "ms": 18.53,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"bodyOnlyNeedle\",\n  \"total\": 0,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "bodyOnlyNeedle",
+        "total": 0,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "content.multiWordNoPhrase",
+      "args": {
+        "mode": "content",
+        "query": "how does handle request work"
+      },
+      "isError": false,
+      "ms": 20.4,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"how does handle request work\",\n  \"total\": 0,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "how does handle request work",
+        "total": 0,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "content.page",
+      "args": {
+        "mode": "content",
+        "query": "pagedSymbol",
+        "limit": 2,
+        "offset": 1
+      },
+      "isError": false,
+      "ms": 19.45,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"pagedSymbol\",\n  \"total\": 25,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"freshCount\": 2,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/paged.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts\",\n      \"line\": 2,\n      \"column\": 0,\n      \"context\": \"function: pagedSymbol02\",\n      \"symbolName\": \"pagedSymbol02\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function pagedSymbol02(): number { return 2 }\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    },\n    {\n      \"file\": \"src/paged.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts\",\n      \"line\": 3,\n      \"column\": 0,\n      \"context\": \"function: pagedSymbol03\",\n      \"symbolName\": \"pagedSymbol03\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function pagedSymbol03(): number { return 3 }\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "pagedSymbol",
+        "total": 25,
+        "returned": 2,
+        "staleCount": 0,
+        "freshCount": 2,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "src/paged.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+            "line": 2,
+            "column": 0,
+            "context": "function: pagedSymbol02",
+            "symbolName": "pagedSymbol02",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function pagedSymbol02(): number { return 2 }",
+            "complexity": 1,
+            "_relevance": 1
+          },
+          {
+            "file": "src/paged.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+            "line": 3,
+            "column": 0,
+            "context": "function: pagedSymbol03",
+            "symbolName": "pagedSymbol03",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function pagedSymbol03(): number { return 3 }",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.lang.upper",
+      "args": {
+        "mode": "content",
+        "query": "ProcessValue",
+        "language": "Go"
+      },
+      "isError": false,
+      "ms": 23.4,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"ProcessValue\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"freshCount\": 2,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"lib/util.go\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go\",\n      \"line\": 3,\n      \"column\": 0,\n      \"context\": \"function: ProcessValue\",\n      \"symbolName\": \"ProcessValue\",\n      \"symbolType\": \"function\",\n      \"language\": \"go\",\n      \"matchType\": \"content\",\n      \"snippet\": \"func ProcessValue(x int) int {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    },\n    {\n      \"file\": \"lib/util.go\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go\",\n      \"line\": 7,\n      \"column\": 0,\n      \"context\": \"function: processValueLower\",\n      \"symbolName\": \"processValueLower\",\n      \"symbolType\": \"function\",\n      \"language\": \"go\",\n      \"matchType\": \"content\",\n      \"snippet\": \"func processValueLower(x int) int {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "ProcessValue",
+        "total": 2,
+        "returned": 2,
+        "staleCount": 0,
+        "freshCount": 2,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "lib/util.go",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+            "line": 3,
+            "column": 0,
+            "context": "function: ProcessValue",
+            "symbolName": "ProcessValue",
+            "symbolType": "function",
+            "language": "go",
+            "matchType": "content",
+            "snippet": "func ProcessValue(x int) int {",
+            "complexity": 1,
+            "_relevance": 1
+          },
+          {
+            "file": "lib/util.go",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+            "line": 7,
+            "column": 0,
+            "context": "function: processValueLower",
+            "symbolName": "processValueLower",
+            "symbolType": "function",
+            "language": "go",
+            "matchType": "content",
+            "snippet": "func processValueLower(x int) int {",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.lang.lower",
+      "args": {
+        "mode": "content",
+        "query": "ProcessValue",
+        "language": "go"
+      },
+      "isError": false,
+      "ms": 27.8,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"ProcessValue\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"freshCount\": 2,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"lib/util.go\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go\",\n      \"line\": 3,\n      \"column\": 0,\n      \"context\": \"function: ProcessValue\",\n      \"symbolName\": \"ProcessValue\",\n      \"symbolType\": \"function\",\n      \"language\": \"go\",\n      \"matchType\": \"content\",\n      \"snippet\": \"func ProcessValue(x int) int {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    },\n    {\n      \"file\": \"lib/util.go\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go\",\n      \"line\": 7,\n      \"column\": 0,\n      \"context\": \"function: processValueLower\",\n      \"symbolName\": \"processValueLower\",\n      \"symbolType\": \"function\",\n      \"language\": \"go\",\n      \"matchType\": \"content\",\n      \"snippet\": \"func processValueLower(x int) int {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "ProcessValue",
+        "total": 2,
+        "returned": 2,
+        "staleCount": 0,
+        "freshCount": 2,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "lib/util.go",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+            "line": 3,
+            "column": 0,
+            "context": "function: ProcessValue",
+            "symbolName": "ProcessValue",
+            "symbolType": "function",
+            "language": "go",
+            "matchType": "content",
+            "snippet": "func ProcessValue(x int) int {",
+            "complexity": 1,
+            "_relevance": 1
+          },
+          {
+            "file": "lib/util.go",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+            "line": 7,
+            "column": 0,
+            "context": "function: processValueLower",
+            "symbolName": "processValueLower",
+            "symbolType": "function",
+            "language": "go",
+            "matchType": "content",
+            "snippet": "func processValueLower(x int) int {",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.kind.upper",
+      "args": {
+        "mode": "content",
+        "query": "ProcessValue",
+        "symbolKind": "Function"
+      },
+      "isError": false,
+      "ms": 15.32,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"ProcessValue\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"freshCount\": 2,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"lib/util.go\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go\",\n      \"line\": 3,\n      \"column\": 0,\n      \"context\": \"function: ProcessValue\",\n      \"symbolName\": \"ProcessValue\",\n      \"symbolType\": \"function\",\n      \"language\": \"go\",\n      \"matchType\": \"content\",\n      \"snippet\": \"func ProcessValue(x int) int {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    },\n    {\n      \"file\": \"lib/util.go\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go\",\n      \"line\": 7,\n      \"column\": 0,\n      \"context\": \"function: processValueLower\",\n      \"symbolName\": \"processValueLower\",\n      \"symbolType\": \"function\",\n      \"language\": \"go\",\n      \"matchType\": \"content\",\n      \"snippet\": \"func processValueLower(x int) int {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "ProcessValue",
+        "total": 2,
+        "returned": 2,
+        "staleCount": 0,
+        "freshCount": 2,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "lib/util.go",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+            "line": 3,
+            "column": 0,
+            "context": "function: ProcessValue",
+            "symbolName": "ProcessValue",
+            "symbolType": "function",
+            "language": "go",
+            "matchType": "content",
+            "snippet": "func ProcessValue(x int) int {",
+            "complexity": 1,
+            "_relevance": 1
+          },
+          {
+            "file": "lib/util.go",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+            "line": 7,
+            "column": 0,
+            "context": "function: processValueLower",
+            "symbolName": "processValueLower",
+            "symbolType": "function",
+            "language": "go",
+            "matchType": "content",
+            "snippet": "func processValueLower(x int) int {",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.lang.unknown",
+      "args": {
+        "mode": "content",
+        "query": "x",
+        "language": "cobol"
+      },
+      "isError": true,
+      "ms": 21.18,
+      "text": "bb_search: language \"cobol\" is not in this project's index — indexed languages: go, typescript",
+      "parsed": null
+    },
+    {
+      "label": "content.percent",
+      "args": {
+        "mode": "content",
+        "query": "%"
+      },
+      "isError": false,
+      "ms": 19.66,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"%\",\n  \"total\": 0,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "%",
+        "total": 0,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "content.underscore",
+      "args": {
+        "mode": "content",
+        "query": "get_user"
+      },
+      "isError": false,
+      "ms": 39.89,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"get_user\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/app.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts\",\n      \"line\": 26,\n      \"column\": 0,\n      \"context\": \"constant: get_user\",\n      \"symbolName\": \"get_user\",\n      \"symbolType\": \"constant\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"app.get_user\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "get_user",
+        "total": 1,
+        "returned": 1,
+        "staleCount": 0,
+        "freshCount": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "src/app.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+            "line": 26,
+            "column": 0,
+            "context": "constant: get_user",
+            "symbolName": "get_user",
+            "symbolType": "constant",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "app.get_user",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.regex",
+      "args": {
+        "mode": "content",
+        "query": "handle.*",
+        "regex": true
+      },
+      "isError": true,
+      "ms": 9.33,
+      "text": "error: bb_search content mode does not accept: regex — accepted for content: mode, query, limit, offset, language, symbolKind, refresh",
+      "parsed": null
+    },
+    {
+      "label": "content.exact",
+      "args": {
+        "mode": "content",
+        "query": "handleRequest",
+        "exact": true
+      },
+      "isError": true,
+      "ms": 3.19,
+      "text": "error: bb_search content mode does not accept: exact — accepted for content: mode, query, limit, offset, language, symbolKind, refresh",
+      "parsed": null
+    },
+    {
+      "label": "content.includeContent",
+      "args": {
+        "mode": "content",
+        "query": "handleRequest",
+        "includeContent": true
+      },
+      "isError": true,
+      "ms": 1.56,
+      "text": "error: bb_search content mode does not accept: includeContent — accepted for content: mode, query, limit, offset, language, symbolKind, refresh",
+      "parsed": null
+    },
+    {
+      "label": "content.caseSensitive",
+      "args": {
+        "mode": "content",
+        "query": "handlerequest",
+        "caseSensitive": true
+      },
+      "isError": true,
+      "ms": 10.05,
+      "text": "error: bb_search content mode does not accept: caseSensitive — accepted for content: mode, query, limit, offset, language, symbolKind, refresh",
+      "parsed": null
+    },
+    {
+      "label": "content.limit0",
+      "args": {
+        "mode": "content",
+        "query": "pagedSymbol",
+        "limit": 0
+      },
+      "isError": false,
+      "ms": 18.48,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"pagedSymbol\",\n  \"total\": 25,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "pagedSymbol",
+        "total": 25,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "content.refreshFalse",
+      "args": {
+        "mode": "content",
+        "query": "handleRequest",
+        "refresh": false
+      },
+      "isError": false,
+      "ms": 22.36,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/app.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts\",\n      \"line\": 5,\n      \"column\": 0,\n      \"context\": \"function: handleRequest\",\n      \"symbolName\": \"handleRequest\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function handleRequest(): string {\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "handleRequest",
+        "total": 1,
+        "returned": 1,
+        "staleCount": 0,
+        "freshCount": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "src/app.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+            "line": 5,
+            "column": 0,
+            "context": "function: handleRequest",
+            "symbolName": "handleRequest",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function handleRequest(): string {",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "content.emptyquery",
+      "args": {
+        "mode": "content",
+        "query": ""
+      },
+      "isError": true,
+      "ms": 2.75,
+      "text": "error: bb_search content mode requires a non-empty query",
+      "parsed": null
+    },
+    {
+      "label": "content.offset",
+      "args": {
+        "mode": "content",
+        "query": "pagedSymbol",
+        "limit": 5,
+        "offset": 100
+      },
+      "isError": false,
+      "ms": 12.79,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"pagedSymbol\",\n  \"total\": 25,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "pagedSymbol",
+        "total": 25,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "symbol.exact",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest"
+      },
+      "isError": false,
+      "ms": 51.43,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:handleRequest:5\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts\",\n      \"name\": \"handleRequest\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 5,\n      \"byteStart\": 99,\n      \"byteEnd\": 156,\n      \"language\": \"typescript\",\n      \"stale\": false\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:handleRequest:5",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts",
+            "name": "handleRequest",
+            "symbolType": "function",
+            "lineStart": 5,
+            "byteStart": 99,
+            "byteEnd": 156,
+            "language": "typescript",
+            "stale": false
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.queryAlias",
+      "args": {
+        "mode": "symbol",
+        "query": "handleRequest"
+      },
+      "isError": false,
+      "ms": 14.74,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:handleRequest:5\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts\",\n      \"name\": \"handleRequest\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 5,\n      \"byteStart\": 99,\n      \"byteEnd\": 156,\n      \"language\": \"typescript\",\n      \"stale\": false\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:handleRequest:5",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts",
+            "name": "handleRequest",
+            "symbolType": "function",
+            "lineStart": 5,
+            "byteStart": 99,
+            "byteEnd": 156,
+            "language": "typescript",
+            "stale": false
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.duplicate",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "duplicateName"
+      },
+      "isError": false,
+      "ms": 25.59,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:duplicateName:13\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts\",\n      \"name\": \"duplicateName\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 13,\n      \"byteStart\": 218,\n      \"byteEnd\": 272,\n      \"language\": \"typescript\",\n      \"stale\": false\n    },\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts:duplicateName:1\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/b.ts\",\n      \"name\": \"duplicateName\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 1,\n      \"byteStart\": 0,\n      \"byteEnd\": 54,\n      \"language\": \"typescript\",\n      \"stale\": false\n    }\n  ],\n  \"totalMatches\": 2,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 2,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:duplicateName:13",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts",
+            "name": "duplicateName",
+            "symbolType": "function",
+            "lineStart": 13,
+            "byteStart": 218,
+            "byteEnd": 272,
+            "language": "typescript",
+            "stale": false
+          },
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts:duplicateName:1",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/b.ts",
+            "name": "duplicateName",
+            "symbolType": "function",
+            "lineStart": 1,
+            "byteStart": 0,
+            "byteEnd": 54,
+            "language": "typescript",
+            "stale": false
+          }
+        ],
+        "totalMatches": 2,
+        "truncated": false,
+        "freshness": {
+          "fresh": 2,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.duplicate.filePath",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "duplicateName",
+        "filePath": "src/b.ts"
+      },
+      "isError": false,
+      "ms": 17.38,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts:duplicateName:1\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/b.ts\",\n      \"name\": \"duplicateName\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 1,\n      \"byteStart\": 0,\n      \"byteEnd\": 54,\n      \"stale\": false\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts:duplicateName:1",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/b.ts",
+            "name": "duplicateName",
+            "symbolType": "function",
+            "lineStart": 1,
+            "byteStart": 0,
+            "byteEnd": 54,
+            "stale": false
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.duplicate.baseName",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "duplicateName",
+        "filePath": "b.ts"
+      },
+      "isError": false,
+      "ms": 45.09,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts:duplicateName:1\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/b.ts\",\n      \"name\": \"duplicateName\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 1,\n      \"byteStart\": 0,\n      \"byteEnd\": 54,\n      \"language\": \"typescript\",\n      \"stale\": false\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts:duplicateName:1",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/b.ts",
+            "name": "duplicateName",
+            "symbolType": "function",
+            "lineStart": 1,
+            "byteStart": 0,
+            "byteEnd": 54,
+            "language": "typescript",
+            "stale": false
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.missing",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "noSuchSymbolAnywhere"
+      },
+      "isError": false,
+      "ms": 45.85,
+      "text": "{\n  \"matches\": [],\n  \"totalMatches\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [],
+        "totalMatches": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.blankNameWithQuery",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "",
+        "query": "handleRequest"
+      },
+      "isError": true,
+      "ms": 26.35,
+      "text": "error: bb_search: symbolName must not be blank when query is given — drop symbolName, or pass a non-empty one",
+      "parsed": null
+    },
+    {
+      "label": "symbol.disagree",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "query": "handleResponse"
+      },
+      "isError": true,
+      "ms": 23.97,
+      "text": "error: bb_search: symbolName (\"handleRequest\") and query (\"handleResponse\") disagree — pass one",
+      "parsed": null
+    },
+    {
+      "label": "symbol.limit",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "limit": 1
+      },
+      "isError": true,
+      "ms": 7.64,
+      "text": "error: bb_search symbol mode does not accept: limit — accepted for symbol: mode, query, symbolName, filePath, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbol.offset",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "offset": 1
+      },
+      "isError": true,
+      "ms": 1.76,
+      "text": "error: bb_search symbol mode does not accept: offset — accepted for symbol: mode, query, symbolName, filePath, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbol.language",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "language": "typescript"
+      },
+      "isError": true,
+      "ms": 1.8,
+      "text": "error: bb_search symbol mode does not accept: language — accepted for symbol: mode, query, symbolName, filePath, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbol.includeContent",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "includeContent": true
+      },
+      "isError": true,
+      "ms": 1.94,
+      "text": "error: bb_search symbol mode does not accept: includeContent — accepted for symbol: mode, query, symbolName, filePath, refresh",
+      "parsed": null
+    },
+    {
+      "label": "symbol.stale",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "staleHost"
+      },
+      "isError": false,
+      "ms": 36.25,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts:staleHost:1\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/stale.ts\",\n      \"name\": \"staleHost\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 1,\n      \"byteStart\": 0,\n      \"byteEnd\": 48,\n      \"language\": \"typescript\",\n      \"stale\": true\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 1,\n    \"missing\": 0,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"\n  },\n  \"autoRefresh\": \"auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)\"\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts:staleHost:1",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/stale.ts",
+            "name": "staleHost",
+            "symbolType": "function",
+            "lineStart": 1,
+            "byteStart": 0,
+            "byteEnd": 48,
+            "language": "typescript",
+            "stale": true
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+        },
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    },
+    {
+      "label": "symbol.deleted",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "deletedHost"
+      },
+      "isError": false,
+      "ms": 26.43,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/deleted.ts:deletedHost:1\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/deleted.ts\",\n      \"name\": \"deletedHost\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 1,\n      \"byteStart\": 0,\n      \"byteEnd\": 50,\n      \"language\": \"typescript\",\n      \"stale\": true\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 1,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"\n  },\n  \"autoRefresh\": \"auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)\"\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/deleted.ts:deletedHost:1",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/deleted.ts",
+            "name": "deletedHost",
+            "symbolType": "function",
+            "lineStart": 1,
+            "byteStart": 0,
+            "byteEnd": 50,
+            "language": "typescript",
+            "stale": true
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 1,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+        },
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    },
+    {
+      "label": "symbol.refreshFalse",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "refresh": false
+      },
+      "isError": false,
+      "ms": 21.9,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:handleRequest:5\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts\",\n      \"name\": \"handleRequest\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 5,\n      \"byteStart\": 99,\n      \"byteEnd\": 156,\n      \"language\": \"typescript\",\n      \"stale\": false\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts:handleRequest:5",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts",
+            "name": "handleRequest",
+            "symbolType": "function",
+            "lineStart": 5,
+            "byteStart": 99,
+            "byteEnd": 156,
+            "language": "typescript",
+            "stale": false
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "symbol.nofile",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "handleRequest",
+        "filePath": "nothere.ts"
+      },
+      "isError": false,
+      "ms": 29.69,
+      "text": "{\n  \"matches\": [],\n  \"totalMatches\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [],
+        "totalMatches": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "file.fresh",
+      "args": {
+        "mode": "file",
+        "filePath": "src/app.ts"
+      },
+      "isError": false,
+      "ms": 17.65,
+      "text": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"/**\\n * Handles a request end to end.\\n * Also mentions serialize helpers for docstring probing.\\n */\\nexport function handleRequest(): string {\\n  return \\\"ok\\\"\\n}\\n\\nexport function handleResponse(): string {\\n  return \\\"ok\\\"\\n}\\n\\nexport function duplicateName(): number {\\n  return 1\\n}\\n\\nexport class RequestHandler {\\n  run(): void {}\\n}\\n\\nexport function bodyOnlyHost(): number {\\n  const bodyOnlyNeedle = 42\\n  return bodyOnlyNeedle\\n}\\n\\nexport const get_user = 1\\nexport const getXuser = 2\\n\\nexport function UNICODE_ΣΊΣΥΦΟΣ(): string {\\n  return \\\"greek\\\"\\n}\\n\",\n  \"contentLength\": 536,\n  \"truncated\": false,\n  \"totalMatches\": 1,\n  \"stale\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "searchMode": "file",
+        "file": "src/app.ts",
+        "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+        "language": "typescript",
+        "content": "/**\n * Handles a request end to end.\n * Also mentions serialize helpers for docstring probing.\n */\nexport function handleRequest(): string {\n  return \"ok\"\n}\n\nexport function handleResponse(): string {\n  return \"ok\"\n}\n\nexport function duplicateName(): number {\n  return 1\n}\n\nexport class RequestHandler {\n  run(): void {}\n}\n\nexport function bodyOnlyHost(): number {\n  const bodyOnlyNeedle = 42\n  return bodyOnlyNeedle\n}\n\nexport const get_user = 1\nexport const getXuser = 2\n\nexport function UNICODE_ΣΊΣΥΦΟΣ(): string {\n  return \"greek\"\n}\n",
+        "contentLength": 536,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "file.stale",
+      "args": {
+        "mode": "file",
+        "filePath": "src/stale.ts"
+      },
+      "isError": false,
+      "ms": 29.14,
+      "text": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/stale.ts\",\n  \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"export function staleHost(): number { return 1 }\\n// modified after indexing\\nexport function staleHostTwo(): number { return 2 }\\n\",\n  \"contentLength\": 128,\n  \"truncated\": false,\n  \"totalMatches\": 1,\n  \"stale\": true,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 1,\n    \"missing\": 0,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale in this file — reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index \\\"src/stale.ts\\\" (or the bb_index tool with that file path)\"\n  }\n}",
+      "parsed": {
+        "searchMode": "file",
+        "file": "src/stale.ts",
+        "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts",
+        "language": "typescript",
+        "content": "export function staleHost(): number { return 1 }\n// modified after indexing\nexport function staleHostTwo(): number { return 2 }\n",
+        "contentLength": 128,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": true,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale in this file — reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index \"src/stale.ts\" (or the bb_index tool with that file path)"
+        }
+      }
+    },
+    {
+      "label": "file.notIndexed",
+      "args": {
+        "mode": "file",
+        "filePath": "src/notindexed.ts"
+      },
+      "isError": true,
+      "ms": 24.14,
+      "text": "bb_search mode=file: file is not indexed: src/notindexed.ts",
+      "parsed": null
+    },
+    {
+      "label": "file.missing",
+      "args": {
+        "mode": "file",
+        "filePath": "src/does-not-exist.ts"
+      },
+      "isError": true,
+      "ms": 15.75,
+      "text": "bb_search mode=file: not found: src/does-not-exist.ts",
+      "parsed": null
+    },
+    {
+      "label": "file.escape",
+      "args": {
+        "mode": "file",
+        "filePath": "../escape.ts"
+      },
+      "isError": true,
+      "ms": 17.98,
+      "text": "bb_search mode=file: path escapes project root: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/escape.ts",
+      "parsed": null
+    },
+    {
+      "label": "file.directory",
+      "args": {
+        "mode": "file",
+        "filePath": "src"
+      },
+      "isError": true,
+      "ms": 35.1,
+      "text": "bb_search mode=file: not a file: src",
+      "parsed": null
+    },
+    {
+      "label": "file.absolute",
+      "args": {
+        "mode": "file",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/app.ts"
+      },
+      "isError": false,
+      "ms": 31.25,
+      "text": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"/**\\n * Handles a request end to end.\\n * Also mentions serialize helpers for docstring probing.\\n */\\nexport function handleRequest(): string {\\n  return \\\"ok\\\"\\n}\\n\\nexport function handleResponse(): string {\\n  return \\\"ok\\\"\\n}\\n\\nexport function duplicateName(): number {\\n  return 1\\n}\\n\\nexport class RequestHandler {\\n  run(): void {}\\n}\\n\\nexport function bodyOnlyHost(): number {\\n  const bodyOnlyNeedle = 42\\n  return bodyOnlyNeedle\\n}\\n\\nexport const get_user = 1\\nexport const getXuser = 2\\n\\nexport function UNICODE_ΣΊΣΥΦΟΣ(): string {\\n  return \\\"greek\\\"\\n}\\n\",\n  \"contentLength\": 536,\n  \"truncated\": false,\n  \"totalMatches\": 1,\n  \"stale\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "searchMode": "file",
+        "file": "src/app.ts",
+        "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+        "language": "typescript",
+        "content": "/**\n * Handles a request end to end.\n * Also mentions serialize helpers for docstring probing.\n */\nexport function handleRequest(): string {\n  return \"ok\"\n}\n\nexport function handleResponse(): string {\n  return \"ok\"\n}\n\nexport function duplicateName(): number {\n  return 1\n}\n\nexport class RequestHandler {\n  run(): void {}\n}\n\nexport function bodyOnlyHost(): number {\n  const bodyOnlyNeedle = 42\n  return bodyOnlyNeedle\n}\n\nexport const get_user = 1\nexport const getXuser = 2\n\nexport function UNICODE_ΣΊΣΥΦΟΣ(): string {\n  return \"greek\"\n}\n",
+        "contentLength": 536,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    },
+    {
+      "label": "file.query",
+      "args": {
+        "mode": "file",
+        "filePath": "src/app.ts",
+        "query": "app"
+      },
+      "isError": true,
+      "ms": 8.11,
+      "text": "error: bb_search file mode does not accept: query — accepted for file: mode, filePath",
+      "parsed": null
+    },
+    {
+      "label": "file.refreshFalse",
+      "args": {
+        "mode": "file",
+        "filePath": "src/app.ts",
+        "refresh": false
+      },
+      "isError": true,
+      "ms": 4.8,
+      "text": "error: bb_search file mode does not accept: refresh — accepted for file: mode, filePath",
+      "parsed": null
+    },
+    {
+      "label": "file.limit",
+      "args": {
+        "mode": "file",
+        "filePath": "src/app.ts",
+        "limit": 5
+      },
+      "isError": true,
+      "ms": 1.8,
+      "text": "error: bb_search file mode does not accept: limit — accepted for file: mode, filePath",
+      "parsed": null
+    },
+    {
+      "label": "file.deleted",
+      "args": {
+        "mode": "file",
+        "filePath": "src/deleted.ts"
+      },
+      "isError": true,
+      "ms": 28,
+      "text": "bb_search mode=file: not found: src/deleted.ts",
+      "parsed": null
+    }
+  ],
+  "serverStderr": ""
+}

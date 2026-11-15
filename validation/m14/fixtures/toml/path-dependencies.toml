@@ -1,0 +1,60 @@
+# A PATH DEPENDENCY IS AN IMPORT — and two exclusions that keep it honest.
+#
+# `[sources] Documenter = { path = ".." }` says this manifest cannot be built
+# without another unit. Measured on the corpus: 331 such sites, 318 of which reach
+# a directory holding a real Cargo.toml / Project.toml, and 0 of which resolve to a
+# unique symbol — a document's module symbol is its FILE STEM, and the corpus holds
+# 744 files named Cargo.toml publishing the module `Cargo`. So the edge names the
+# path AS WRITTEN and the store keeps it as an external target.
+#
+# The analyzer's edge was being deleted on the way to the index by the universal
+# identifier sanitizer: `extractLeaf("..")` splits on `.` to `["", "", ""]` whose
+# last segment is empty, so `leaf.length < 1` fired. The `..` and `../..` forms are
+# most of a Julia `[sources]` section, so they were deleted silently while
+# `crates/build-rs` survived.
+#
+# NOTE WHAT THIS FIXTURE DOES NOT PROVE, since mutation showed it rather than
+# assumed it: removing the toml path-target exemption from pool-worker.ts leaves
+# every expectation below GREEN. The sanitizer lives in the pool worker, and
+# although toml is on this runner's `ASTEngine.parseFile` production-parity list,
+# engine.ts does not apply that filter. This is the same known-zeros gap bash
+# recorded for its own imports (M14 #277). The sanitizer fix is verified by
+# calling pool-worker's own `filterNoiseRelationships` over the analyzer's output
+# — 4/4 here, 1/1 on a Julia `[sources]` document, 13/13 on cargo's root.
+
+# 1. The construct itself. The target is the path, never a symbol name.
+[dependencies]
+core = { path = "../core" }
+impl = { version = "1.0", features = ["a"] }
+
+[dev-dependencies]
+harness = { path = "../harness" }
+
+# 2. A path that is MOSTLY dots. This is the form the sanitizer ate: its leaf is
+#    the empty string, so without the toml path-target exemption this edge is
+#    dropped between `analyze()` and the index — silently, and with the analyzer
+#    reporting that it emitted it.
+[sources]
+Up = { path = ".." }
+Higher = { path = "../.." }
+
+# 3. NOT an import. `bin` and `lib` name THIS crate's own source, so an edge to
+#    them would assert the manifest needs something it already is.
+[lib]
+path = "src/lib.rs"
+
+[bin]
+main = { path = "src/main.rs" }
+
+# 4. NOT an import, and the exclusion is by SHAPE not by name: a `path` key
+#    outside any dependency section is ordinary data.
+[lints.clippy]
+path = "not/a/dependency"
+
+# 5. NOT an import: an array of inline tables is a LIST, however its elements are
+#    spelled. `clippy.toml` writes exactly this shape, and counting its elements
+#    reported `path×15` redefinitions before the array was scoped.
+disallowed = [
+  { path = "a::b", reason = "no" },
+  { path = "c::d", reason = "no" },
+]

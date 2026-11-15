@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-13T02:49:14.470Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/lodash",
+  "tag": "lodash",
+  "admittedFiles": 51,
+  "sampledFiles": 51,
+  "parseCleanFiles": 51,
+  "totals": {
+    "files": 51,
+    "chains": 255,
+    "typedChains": 18,
+    "segments": 541,
+    "overAttributed": 25,
+    "resolvableWrong": 0,
+    "declaredElsewhere": 0
+  },
+  "note": "overAttributed = segments at index >= 1 of a chain whose ROOT identifier the file types with `new T()`. collectFieldAccessUses publishes owner=<root type> on EVERY segment of the chain (cur/head are taken from the root, outside the segment loop), but only index 0's receiver IS the typed root. resolvableWrong = those segments whose name the root's own type DECLARES in the same file, which is the exact condition under which the store's owner pass (resolveMemberTargetsByOwner) binds the edge to a declaration the receiver is not. declaredElsewhere = the name exists on a different class in the file, so the owner pass declines instead of binding.",
+  "examples": []
+}

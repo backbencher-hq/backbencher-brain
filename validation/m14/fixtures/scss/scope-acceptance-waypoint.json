@@ -1,0 +1,63 @@
+{
+  "repo": "waypoint",
+  "files": 54,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 313,
+        "total": 313
+      },
+      "exports": {
+        "resolved": 8,
+        "total": 8
+      },
+      "imports": {
+        "unresolved": 54,
+        "resolved": 1,
+        "total": 55
+      },
+      "references": {
+        "unresolved": 137,
+        "resolved": 3,
+        "total": 140
+      },
+      "extends": {
+        "resolved": 1,
+        "total": 1
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 313,
+        "total": 313
+      },
+      "exports": {
+        "resolved": 8,
+        "total": 8
+      },
+      "imports": {
+        "unresolved": 54,
+        "resolved": 1,
+        "total": 55
+      },
+      "references": {
+        "unresolved": 137,
+        "resolved": 3,
+        "total": 140
+      },
+      "extends": {
+        "resolved": 1,
+        "total": 1
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 7,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 328,
+    "falseBindings": 4
+  }
+}

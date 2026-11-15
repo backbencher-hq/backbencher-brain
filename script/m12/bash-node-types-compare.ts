@@ -105,7 +105,7 @@ const FIXTURE_DIR = path.join(ROOT, "validation/m12/fixtures/bash")
 const ANALYZER = path.join(ROOT, "src/ast/real-bash-analyzer.ts")
 const BASH_WASM = path.join(ROOT, "wasm/tree-sitter-bash.wasm")
 const TS_WASM = path.join(ROOT, "wasm/tree-sitter-typescript.wasm")
-const PINNED = "$HOME/fixtures/repositories/fsharp"
+const PINNED = "/home/ishaq2321/bb_tests/repositories/fsharp"
 const corpusDirs = argValues("--corpus").length > 0 ? argValues("--corpus") : [PINNED]
 
 // ---------------------------------------------------------------- A. grammar

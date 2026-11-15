@@ -1,0 +1,27 @@
+{
+  "issue": "CLJ-D59",
+  "note": "overrides, the one static override Clojure has: a second REAL definition of one namespace-level name replaces the first. Measured on the corpus: 84 redefinition sites in 82 of 695 admitted files (script/m14/tmp/clj4-ontology-census.ts, instrument B). The edge is ns->name with the PRIOR declaration's line in metadata, which is the bash lane's shape (BD8b) for the same reason: both endpoints of the fact carry the same NAME, and the line is what distinguishes them. Three things must NOT produce one: a reader-conditional twin (the reader evaluates one branch and never the other), declare+defn (a forward declaration defines nothing, CLJ-D23), and defmethod (a dispatch-table insertion, not a replacement — 233 corpus sites ruled). The forbids are the half that matters: an overrides edge here would be a fabrication, so each is pinned as absent.",
+  "expectSymbols": [
+    { "name": "compute-area", "kind": "function" },
+    { "name": "platform-pick", "kind": "function" },
+    { "name": "promised", "kind": "function" },
+    { "name": "state", "kind": "variable" },
+    { "name": "area", "kind": "function" },
+    { "name": "Sized", "kind": "interface" },
+    { "name": "Box", "kind": "class" },
+    { "name": "size-of", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "clj.fixture.redefinition", "target": "compute-area", "line_number": 14, "meta.overridesLine": 11 },
+    { "type": "contains", "from": "clj.fixture.redefinition", "target": "compute-area", "line_number": 11 },
+    { "type": "implements", "from": "Box", "target": "Sized" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "target": "platform-pick" },
+    { "type": "overrides", "target": "state" },
+    { "type": "overrides", "target": "promised" },
+    { "type": "overrides", "target": "area" },
+    { "type": "overrides", "target": "size-of" },
+    { "type": "overrides", "target": "Sized" }
+  ]
+}

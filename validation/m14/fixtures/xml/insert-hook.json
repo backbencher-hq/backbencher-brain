@@ -1,0 +1,49 @@
+{
+  "instrument": "xml insert hook — one file, the analyzer's edges beside every row the store was asked to write",
+  "file": "libxslt/tests/docbook/common/common.xsl",
+  "projectId": "b0bde09f0d2291269e8dbb60c8653e4227d8540c",
+  "indexMs": 4292,
+  "counts": {
+    "directBeforeTotal": 311,
+    "directAfterTotal": 311,
+    "directBeforeContains": 294,
+    "directAfterContains": 294,
+    "insertedTotal": 0,
+    "insertedContains": 0,
+    "storedByType": {
+      "calls": 11,
+      "contains": 511,
+      "references": 6
+    },
+    "brainFileInserts": 0,
+    "brainFileInsertsDistinct": 0,
+    "ownedSymbolPairs": 292,
+    "synthesizedPredicted": 217,
+    "colonNamedOwned": 217,
+    "storedContainsMinusAnalyzer": 217
+  },
+  "multiset": {
+    "directDistinctKeys": 311,
+    "insertedDistinctKeys": 0,
+    "onlyInserted": [],
+    "onlyDirect": [
+      "contains | xsl:stylesheet | xsl | 2 x1",
+      "contains | xsl:stylesheet | doc | 3 x1",
+      "contains | xsl:stylesheet | exclude-result-prefixes | 4 x1",
+      "contains | xsl:stylesheet | version | 5 x1",
+      "contains | xsl:stylesheet | doc:reference | 19 x1",
+      "contains | doc:reference | default | 19 x1",
+      "contains | doc:reference | referenceinfo | 20 x1",
+      "contains | referenceinfo | releaseinfo | 21 x1",
+      "contains | releaseinfo | role | 21 x1",
+      "contains | referenceinfo | author | 24 x1"
+    ],
+    "insertedMoreOftenThanAnalyzerEmitted": []
+  },
+  "reading": {
+    "(a)_insertedTwice": "insertedMoreOftenThanAnalyzerEmitted is non-empty: one analyzer edge is written more than once with different source bindings",
+    "(b)_poolEmitsMore": "onlyInserted is non-empty: the indexer received edges a direct parseFile does not produce — a fleet-level finding about the pool path",
+    "neither": "the multisets agree; then the 1.83x must come from a path this hook does not see (e.g. a second indexing pass) and brainFileInserts is the next thing to read"
+  },
+  "directAfterEqualsBefore": true
+}

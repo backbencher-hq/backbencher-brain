@@ -1,0 +1,48 @@
+{
+  "fences": 1,
+  "detail": [
+    {
+      "parses": true,
+      "entries": 9,
+      "allAccepted": true,
+      "results": [
+        {
+          "index": 0,
+          "accepted": true
+        },
+        {
+          "index": 1,
+          "accepted": true
+        },
+        {
+          "index": 2,
+          "accepted": true
+        },
+        {
+          "index": 3,
+          "accepted": true
+        },
+        {
+          "index": 4,
+          "accepted": true
+        },
+        {
+          "index": 5,
+          "accepted": true
+        },
+        {
+          "index": 6,
+          "accepted": true
+        },
+        {
+          "index": 7,
+          "accepted": true
+        },
+        {
+          "index": 8,
+          "accepted": true
+        }
+      ]
+    }
+  ]
+}

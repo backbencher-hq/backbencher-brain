@@ -30,7 +30,7 @@
     {
       "step": "L3: definition resolves",
       "status": "pass",
-      "detail": "{\"uri\":\"file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf\",\"range\":{\"start\":{\"line\":3,\"character\":0},\"end\":{\"lin"
+      "detail": "{\"uri\":\"file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf\",\"range\":{\"start\":{\"line\":3,\"character\":0},\"end\":{\"lin"
     },
     {
       "step": "L3: references non-empty",

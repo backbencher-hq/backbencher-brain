@@ -1,0 +1,30 @@
+{
+ "fixtureId": "scala/qmark-declared-is-a-name",
+ "language": "scala",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The DECLARED half of the `?` decision, and the reason the wildcard half lives in a separate fixture. `class ?` and `type ?[A]` are legal Scala 3 (test/files/neg/qmark-deprecated.scala:9,22 publish both as real symbols), so a blanket 'suppress a `?` type name' rule would delete true edges \u2014 measured: 16 `references -> ?` endpoints on the corpus come from files that DO declare `?`, against the 49 that do not. The guard is therefore per-file. Without this fixture the narrow guard is indistinguishable from the blanket one that loses the 16.",
+ "expectSymbols": [
+  {
+   "name": "QmarkDeclared",
+   "kind": "module"
+  },
+  {
+   "name": "?",
+   "kind": "type",
+   "ownerName": "QmarkDeclared"
+  },
+  {
+   "name": "useQmark",
+   "kind": "method",
+   "ownerName": "QmarkDeclared"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "target": "?",
+   "note": "`type `?`[A]` is declared in THIS file, so `def useQmark(x: ?[Int])` references a real type name and the edge must stay \u2014 the false-positive half of the per-file rule"
+  }
+ ],
+ "forbidRelationships": []
+}

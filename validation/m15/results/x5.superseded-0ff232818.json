@@ -1,0 +1,25 @@
+{
+  "issue": "M15.X5",
+  "code": "X5",
+  "tool": "bb_security",
+  "title": "real-repository scan (optional corpus)",
+  "verified": true,
+  "checks": 0,
+  "passed": 0,
+  "failed": 0,
+  "positives": 0,
+  "negatives": 0,
+  "negativePassed": 0,
+  "skipped": [
+    {
+      "code": "X5",
+      "reason": "no corpus found. Set BB_SECURITY_CORPUS_ROOT to a bb_tests/repositories directory. Searched: /home/ishaq2321/bb_tests/repositories, /Users/sano/bb_tests/repositories, /Users/sano/Documents/Default Project/ishaq/backbencher-brain/bb_tests/repositories. This is an environment gap, not a tool defect."
+    }
+  ],
+  "generatedAt": "2026-09-30T23:14:00.888Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T23:14:00.888Z",
+    "contentSha256": "98250fa04278a4597c3c24a4c7124fc579ac09c7ff75a07039a630d27b85803d"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "fixtureId": "make/vpath-assignment",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from the numbered source and then checked against a run: VPATH on 16, CFLAGS on 17, .DEFAULT_GOAL on 19, target `all` on 20. The `CFLAGS -> VPATH` reference and the two prerequisite edges are all on their own lines (17 and 20).",
+  "rationale": "MAKE-G1. `VPATH = src:include` is the ASSIGNMENT spelling of the search path, and the sibling `vpath %.c src` DIRECTIVE had been recorded all along — so the two spellings of one feature were deliberately asymmetric, pending corpus evidence that never came (0 occurrences in 100 pinned files). The asymmetry was not cosmetic. Because `VPATH` was never declared, a reference to it fell to `uses`, the class this lane reserves for names that NOTHING can declare — yet in a file that sets `VPATH`, this file is precisely the thing that declares it. CFLAGS on line 17 reads the search path and was published as a read of something undeclared. `VPATH` is a GNU Make builtin whose value a makefile may set, exactly like CURDIR or MAKEFILE_LIST, so it is now a `constant` and the reference is a `references` edge. The directories are kept as a LIST because the value is colon-separated on the page and a consumer asking where the makefile looks for a prerequisite wants the list, not the spelling.",
+  "expectSymbols": [
+    { "name": "vpath-assignment.mk", "kind": "module" },
+    { "name": "VPATH", "kind": "constant", "meta.isMakeSearchPath": true, "meta.nodeType": "VPATH_assignment" },
+    { "name": "CFLAGS", "kind": "constant" },
+    { "name": "all", "kind": "function" }
+  ],
+  "expectSymbolCount": [
+    { "name": "VPATH", "equals": 1, "note": "one declaration, however many directories the value names" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "vpath-assignment.mk", "target": "VPATH", "line_number": 16, "meta.evidenceClass": "declared_in_file" },
+    { "type": "contains", "from": "vpath-assignment.mk", "target": "CFLAGS", "line_number": 17 },
+    { "type": "contains", "from": "vpath-assignment.mk", "target": "all", "line_number": 20 },
+    { "type": "references", "from": "CFLAGS", "target": "VPATH", "line_number": 17, "meta.evidenceClass": "reference" },
+    { "type": "uses", "from": "all", "target": "foo.o", "line_number": 20, "meta.evidenceClass": "external_prerequisite" },
+    { "type": "uses", "from": "all", "target": "bar.o", "line_number": 20, "meta.evidenceClass": "external_prerequisite" },
+    { "type": "exports", "from": "vpath-assignment.mk", "target": "all", "line_number": 20 }
+  ],
+  "forbidSymbols": [
+    { "name": "src", "note": "a search directory is a PATH this file looks in, not a declaration it makes. `src` and `include` appear in 100 of the 100 pinned corpus files as bare words; declaring them would flood the graph with paths" },
+    { "name": "include", "note": "same: a search directory, not a symbol" },
+    { "name": "vendor", "note": "same: a search directory, not a symbol" },
+    { "name": "src:include:vendor", "note": "the colon-separated VALUE is metadata on VPATH, not a symbol name — the value is a list of three directories and the spelling is one of several" }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "CFLAGS",
+      "target": "VPATH",
+      "type": "uses",
+      "note": "THE DEFECT. `uses` is the class for a name nothing can declare; this file declares VPATH on line 16, so the read on line 17 is a `references` edge. Pre-fix the assignment was not modelled at all and this edge was published as `uses`, which is the lane's own definition of asserting a declaration that does not exist — stated backwards."
+    },
+    {
+      "from": "vpath-assignment.mk",
+      "target": "VPATH",
+      "type": "exports",
+      "note": "VPATH is a make variable, not a buildable TARGET. `exports` is the module's edge for what the file provides to be built or included, and a search path is neither."
+    },
+    {
+      "from": "VPATH",
+      "target": "src",
+      "note": "a search path does not reference its own directories. `VPATH = src` means \"look in src\", and publishing `VPATH -> src` would read as a dependency, which is the category error the dangle adjudication exists to prevent."
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "fixtureId": "php/header-reads",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "variableReadSpelling": "VARIABLE-READ SPELLING (php, 2026-10-11). The `uses` targets in this file that name a `$variable` are BINDINGS, not declaration names: the analyzer spells a variable read as `<read source>\\u0000<binding>` with `metadata.localBinding`, because a local/param/superglobal is never a published symbol and the BARE name let the store bind the read to an unrelated same-named declaration in another file. The defect and its counterfactual are in validation/m14/fixtures/php/local-read-phantom.mts; the whole-population effect is in docs/analyzers/history/php-lane-notes.md. What each row PINS (which read, from where, and how many) did not move.",
+  "rationale": "M60 php lane — reads in a callable's DECLARATION HEADER, plus a canonicalisation control added 2026-10-05 when PHP_BUILTINS became php-src-derived. Two defects the original round fixed, both found by measurement and not by reading code. (1) A fully-qualified call (`\\is_file(...)`, `\\spl_autoload_register(...)`) was taken from the callee's RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other relationship can spell. Measured on phpunit FULL EXTENT (2,907 files): 12 such edges, 10 of them builtins. (2) The oracle gates its read rules on `inBody`, whose boundary is the callable SUBTREE, so it reads a parameter DEFAULT and an attribute ARGUMENT as expressions (they are evaluated at call time); the analyzer's extracted walk visited those positions with a SUBSET of its read rules and emitted nothing for `= self::DEFAULT` / `#[Spec(self::NAME)]`. The corpus instance was phpunit's only non-`calls` MISSING edge: `Result::from(..., int $shellExitCode = self::SUCCESS)`. The fixture pins the boundary too: the SAME attribute on a CLASS is outside any callable, so no read is expected there and `forbidRelationships` names it. (3) 2026-10-05: the builtin filter grew from a hand-written 218-name set to php-src's own 2,389 functions, so `spl_autoload_register` is filtered in BARE form and the original `expectRelationships` row for it could not be kept. `\\App\\helper()` was added as the positive control that keeps the canonicalisation rule witnessed by a PRESENT edge rather than by an absence.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "helper",
+      "note": "CANONICALISATION CONTROL. `\\App\\helper()` is fully qualified and its RAW text is `\\App\\helper`; the target must be the BARE leaf. This row exists because PHP_BUILTINS stopped being a hand-written list on 2026-10-05: with the whole php-src internal surface in the filter, BARE `spl_autoload_register` is now suppressed too, so the canonicalisation property could only be pinned by an absence — and an analyzer that stopped canonicalising AND missed the table would satisfy that absence. A name php-src does NOT declare is the only witness that survives the table change."
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "DEFAULT"
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "NAME"
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "registry"
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "touched"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "__construct"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "DEFAULT"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "mode"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "specified"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "static"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "withClassConst"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "withFileConst"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "withNew"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "withSelfConst"
+    },
+    {
+      "type": "instantiates",
+      "from": "withNew",
+      "target": "stdClass"
+    },
+    {
+      "type": "references",
+      "from": "withNew",
+      "target": "stdClass",
+      "line_number": 112
+    },
+    {
+      "type": "uses",
+      "from": "__construct",
+      "target": "Service.DEFAULT",
+      "meta.isMemberRead": true,
+      "meta.isConstFetch": true
+    },
+    {
+      "type": "uses",
+      "from": "helper",
+      "target": "FILE_LIMIT",
+      "meta.isConstRead": true
+    },
+    {
+      "type": "uses",
+      "from": "specified",
+      "target": "Holder.DEFAULT",
+      "meta.isMemberRead": true,
+      "meta.isConstFetch": true
+    },
+    {
+      "type": "uses",
+      "from": "specified",
+      "target": "NAME",
+      "meta.isMemberRead": true,
+      "meta.isConstFetch": true
+    },
+    {
+      "type": "uses",
+      "from": "withClassConst",
+      "target": "withClassConst\u0000code",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "withClassConst",
+      "target": "Holder.DEFAULT",
+      "meta.isMemberRead": true,
+      "meta.isConstFetch": true
+    },
+    {
+      "type": "uses",
+      "from": "withFileConst",
+      "target": "FILE_LIMIT",
+      "meta.isConstRead": true
+    },
+    {
+      "type": "uses",
+      "from": "withFileConst",
+      "target": "withFileConst\u0000limit",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "withNew",
+      "target": "withNew\u0000value",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "withSelfConst",
+      "target": "withSelfConst\u0000code",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "withSelfConst",
+      "target": "Service.DEFAULT",
+      "meta.isMemberRead": true,
+      "meta.isConstFetch": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "\\is_file",
+      "note": "fully-qualified builtin: PHP_BUILTINS holds bare names, so the raw text escaped the filter and fabricated this edge (phpunit FULL EXTENT: 10 like it)"
+    },
+    {
+      "type": "calls",
+      "target": "\\spl_autoload_register",
+      "note": "the canonicalisation half: leaf-then-builtin, exactly as the oracle states it"
+    },
+    {
+      "type": "calls",
+      "target": "spl_autoload_register",
+      "note": "2026-10-05: BARE form of the same call. php-src declares `spl_autoload_register` (ext/spl/AutoLoader.stub.php), and PHP_BUILTINS is now derived from php-src rather than hand-written, so the builtin filter suppresses the bare spelling as well. This is the change that retired the expectation above; forbidding both spellings is what pins it now."
+    },
+    {
+      "type": "references",
+      "target": "\\stdClass",
+      "note": "targets are bare names everywhere else in the lane (leafName in processObjectCreation, the name field in the scoped/member calls)"
+    },
+    {
+      "type": "uses",
+      "target": "Attribute",
+      "note": "an attribute's own name is not a value read"
+    },
+    {
+      "type": "uses",
+      "target": "Spec",
+      "note": "same, for the attribute applied to a method and to a class"
+    },
+    {
+      "type": "uses",
+      "from": "Decorated",
+      "target": "DEFAULT",
+      "note": "class-level attribute argument: not inside any callable, so NOT a read"
+    },
+    {
+      "type": "uses",
+      "target": "int"
+    },
+    {
+      "type": "uses",
+      "target": "string"
+    },
+    {
+      "type": "references",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "target": "string"
+    },
+    {
+      "type": "uses",
+      "target": "void"
+    }
+  ]
+}

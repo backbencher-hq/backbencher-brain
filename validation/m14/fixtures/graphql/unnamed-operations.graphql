@@ -1,0 +1,23 @@
+{
+  hero {
+    name
+  }
+}
+
+query Named {
+  viewer {
+    login
+  }
+}
+
+mutation {
+  createReview(episode: JEDI) {
+    stars
+  }
+}
+
+{
+  droid(id: "2001") {
+    primaryFunction
+  }
+}

@@ -1,0 +1,30 @@
+{
+ "fixtureId": "markdown/template-include-imports",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": false,
+ "_authoringNote": "The three `expectRelationships` rows were written from the analyzer's output on 2026-10-03, AFTER the implementation, and that is recorded here rather than claimed away: the construct has no specification in CommonMark to author from, so the fixture is a REGRESSION pin over a measured corpus population (68 directives), not an independently authored contract. The `forbidRelationships` half IS independently authored — it is the population the implementation must NOT publish, 1,030+ macro calls that name no file — and that half is the one that can catch a fabrication, which is why the implementation's discriminator is a closed extension list rather than a shape test.",
+ "rationale": "MD-G3. `imports` was RULED by the pass-1 census and the ruling was measured to be wrong: it reasoned from the cross-file LINK population, where it was right, and never measured the construct `imports` names — a declaration that splices another file's CONTENT into this document. A Jekyll/Liquid `{% include %}` does exactly that, and to CommonMark it is an ordinary paragraph, so the grammar has no node for it and the only way to read it is the inline block's own text. Three rows pin the three forms the corpus uses: a QUOTED argument with a joined directive name (`include-markdown`, 53 of the 68), a BARE argument (`include`, 12), and a directive inside a HEADING (`include_relative`, 1), the last because the main walk `continue`s on a heading and never reaches its inline child, so it is the only thing separating the two call sites. Four forbids pin the population that must NOT be published: three macro calls naming no file and one near-miss spelling. The macro forbids are the load-bearing half — 317 corpus occurrences of `{% include type t=\"Number\" %}` mean an implementation that published every `{% include %}` would add roughly fifteen fabricated endpoints for every real one, and it would be invisible to the differential because the oracle would have to repeat the same mistake.",
+ "expectSymbolCount": [
+  {"name": "Quoted argument", "equals": 1},
+  {"name": "Bare argument, and the unquoted form", "equals": 1},
+  {"name": "Macro calls that name no file", "equals": 1}
+ ],
+ "expectRelationships": [
+  {"type": "imports", "from": "Quoted argument", "target": "includes/partials/release-notes.md", "meta.role": "markdown_template_include", "meta.directive": "include-markdown", "meta.quoted": true, "meta.evidenceClass": "import_based", "line_number": 24},
+  {"type": "imports", "from": "Bare argument, and the unquoted form", "target": "properties.md", "meta.role": "markdown_template_include", "meta.directive": "include", "meta.evidenceClass": "import_based", "line_number": 28},
+  {"type": "imports", "from": "A heading whose text carries a directive {% include_relative footer.md %}", "target": "footer.md", "meta.role": "markdown_template_include", "meta.directive": "include_relative", "meta.evidenceClass": "import_based", "line_number": 32}
+ ],
+ "forbidRelationships": [
+  {"type": "imports", "target": "Number", "comment": "`{% include type t=\"Number\" %}` — 317 occurrences on the pinned corpus. The argument is a TYPE NAME, not a path: there is no `.` in it and no extension, which is the whole discriminator. An implementation that published every `{% include %}` would emit this, and `Number` is not a file any build reads."},
+  {"type": "imports", "target": "5.0", "comment": "`{% include tag ver=\"5.0\" %}` — 60+ occurrences. The quoted argument is a VERSION, and this is the row that catches the specific wrong implementation: a reader who thinks \"quoted means include\" publishes this. It is quoted and it is still not a file."},
+  {"type": "imports", "target": "page.spec", "comment": "`{% include example spec=page.spec %}`. The token ends in `.spec`, which is not in the closed extension list. Extending that list carelessly is the way a macro family starts being reported as file dependencies."},
+  {"type": "imports", "target": "properties.md", "from": "A near miss", "comment": "the near-miss section writes `{% includes properties.md %}`, `{% inclusion properties.md %}` and `{% include propertys %}`. None is the directive, and this forbid is what makes the word-boundary rule load-bearing rather than incidental: the first two are `include` + a letter, which must not match."}
+ ],
+ "_measuredOnTheLaneCorpus": {
+  "admittedMarkdownFiles": 12729,
+  "fileNamingIncludeDirectives": 68,
+  "breakdown": {"include-markdown": 53, "include": 14, "include_relative": 1},
+  "macroCallsThatNameNoFile": "1030+ (317 `type t=`, 94 `example spec=`, 60+ `tag ver=`)",
+  "existenceChecked": "0 of 68 — a per-file analyzer has no project index for markdown in production (PROJECT_INDEX_EXTENSIONS carries .sol only), so `imports` publishes the path the author wrote and asserts nothing about whether the file is there. That limitation is declared, not resolved."
+ }
+}

@@ -1,0 +1,75 @@
+{
+  "fixtureId": "kotlin/override-declaring-ancestor-949",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#949: the analyzer's generic-substitution mirror (hasTypeVar) split a signature on `,` and required the whole token to be ONE capital letter, so the nullable form — which is how Kotlin writes every generic parameter — read as a CONCRETE type. `IColumnType.valueToDB sig=(T?)` was therefore rejected by the exact-signature test and then also by the documented fallback, so an override whose declaring ancestor is a GRANDPARENT interface (`ColumnWithTransform : ColumnType`, `ColumnType : IColumnType`) fell through to the first-supertype GUESS: the analyzer published `ColumnType.valueToDB` at 0.5 where the truth says `IColumnType.valueToDB`, and ColumnType declares no such member at all (four such rows on exposed-core ColumnType.kt were the sweep's first non-groovy HARD masks). The judge already reads `(T?)` as a type variable; the analyzer now reads the same signature the same way (kotlinSigHasTypeVar, a boundary-for-boundary mirror), which is the property that keeps the differential measuring one question. This fixture pins three things: (1) the GRANDPARENT declares the member, so the verified edge must name IRenderer, not the direct parent Base; (2) a child sig that is concrete-but-nullable — `(Byte?)`, the exact shape the Exposed defect published — must still verify, because the type variable that licenses the name-only pairing is the ANCESTOR's `(T?)`, not the child's; (3) the boundary is NOT widened: a concrete-vs-concrete mismatch (`(Int?)` vs `(String?)`) must keep the honest 0.5 first-supertype guess, so the fallback cannot swallow the overload guard.",
+  "expectSymbols": [
+    { "name": "IRenderer", "kind": "interface" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Impl", "kind": "class" },
+    { "name": "ByteImpl", "kind": "class" },
+    { "name": "IConverter", "kind": "interface" },
+    { "name": "StrictConverter", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "The #949 row: the declaring member lives on the GRANDPARENT. Pre-fix this edge was `Impl.render -> Base.render` @0.5/first-supertype-guess, and Base declares no render at all — a dangling join. Requires the ANNOTATED ancestor: verify at 0.65/inferred/generic-signature-guess with the payload naming IRenderer.",
+      "type": "overrides",
+      "from": "Impl.render",
+      "target": "IRenderer.render",
+      "line_number": 14,
+      "confidence": 0.65,
+      "meta.reasonCode": "generic-signature-guess",
+      "meta.evidenceClass": "inferred",
+      "meta.isOverride": true,
+      "meta.overrideParent": "IRenderer",
+      "meta.overrideSig": "(Int?)"
+    },
+    {
+      "comment": "The Exposed spelling exactly: the child's parameter type is CONCRETE-but-nullable (`Byte?`). The type variable that licenses name-only pairing is the ancestor's `(T?)`, so this row is inferred for the same reason the first one does — and it is the row a fix that widened the boundary (e.g. treating `Byte?` as a type variable) would still pass, which is why row 3 exists.",
+      "type": "overrides",
+      "from": "ByteImpl.render",
+      "target": "IRenderer.render",
+      "line_number": 20,
+      "confidence": 0.65,
+      "meta.reasonCode": "generic-signature-guess",
+      "meta.evidenceClass": "inferred",
+      "meta.overrideParent": "IRenderer",
+      "meta.overrideSig": "(Byte?)"
+    },
+    {
+      "comment": "The BOUNDARY row. `(Int?)` and `(String?)` are both concrete, so the exact-signature test must keep them apart and the edge must stay the honest guess: 0.5, inferred, first-supertype-guess, at the direct parent. A fallback that fires on any nullable type would verify this pair and fail here.",
+      "type": "overrides",
+      "from": "StrictConverter.convert",
+      "target": "IConverter.convert",
+      "line_number": 30,
+      "confidenceMax": 0.5,
+      "meta.reasonCode": "first-supertype-guess",
+      "meta.evidenceClass": "inferred",
+      "meta.isOverride": true,
+      "meta.overrideParent": "IConverter",
+      "meta.overrideSig": "(String?)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "The pre-fix published target for the first row: the DIRECT parent, which does not declare the member. This is the dangling join the sweep caught, and it is forbidden at BOTH tiers — the 0.9 form would be a fabricated verification and the 0.5 form the measured defect.",
+      "type": "overrides",
+      "from": "Impl.render",
+      "target": "Base.render"
+    },
+    {
+      "comment": "Same class for the nullable-concrete spelling.",
+      "type": "overrides",
+      "from": "ByteImpl.render",
+      "target": "Base.render"
+    },
+    {
+      "comment": "The boundary row must not be VERIFIED — only the guess tier is legal for a concrete-vs-concrete mismatch.",
+      "type": "overrides",
+      "from": "StrictConverter.convert",
+      "target": "IConverter.convert",
+      "meta.reasonCode": "in-file-verified"
+    }
+  ]
+}

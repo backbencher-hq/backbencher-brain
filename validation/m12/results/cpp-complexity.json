@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:cpp",
   "fixtureDir": "validation/m12/fixtures/cpp",
-  "corpusDir": "$HOME/fixtures/repositories/fmt",
+  "corpusDir": "/home/ishaq2321/bb_tests/repositories/fmt",
   "corpusManifest": {
-    "corpusDir": "$HOME/fixtures/repositories/fmt",
+    "corpusDir": "/home/ishaq2321/bb_tests/repositories/fmt",
     "fileCount": 58,
     "extensions": [
       ".cpp",

@@ -1,0 +1,13 @@
+{
+  "fixtureId": "kotlin/primary-constructor-properties",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Kotlin primary-constructor val/var parameters ARE properties (Kotlin docs: 'primary constructor ... declared in the class header'). They must surface as property symbols owned by the class, plus the method symbol.",
+  "expectSymbols": [
+    { "name": "User", "kind": "class" },
+    { "name": "greet" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "targetEndsWith": "greet" }
+  ]
+}

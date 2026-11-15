@@ -1,0 +1,24 @@
+{
+  "fixtureId": "javascript/accessor-name-collision",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "METHODS LITERALLY NAMED get/set/async were misclassified as accessor Properties with isAccessor:true / isAsync:true \u2014 hasToken matched child.TEXT against any child including the method own name identifier. Keywords are anonymous tokens; matching must be type-based on unnamed children. Real accessors stay Property.",
+  "expectSymbols": [
+    {
+      "name": "get",
+      "kind": "method"
+    },
+    {
+      "name": "set",
+      "kind": "method"
+    },
+    {
+      "name": "async",
+      "kind": "method"
+    },
+    {
+      "name": "real",
+      "kind": "property"
+    }
+  ]
+}

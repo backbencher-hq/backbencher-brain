@@ -1,0 +1,30 @@
+{
+  "fixtureId": "javascript/call-shaped-heritage-mixins",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M14 / R3 — a class's supertype may be a CALL, and the base's identifier is a GRANDCHILD of the call_expression, so findChildByType (DIRECT named children only) found nothing and every call-shaped heritage published NO edge at all: 76 clauses measured over the admitted population, 0 found. This pins the two shapes and the DISCRIMINATOR: (A) a member call `Base.extend(M)` puts the BASE in the receiver and the MIXINS in the arguments; (B) a plain call `MixinFn(Base)` puts the MIXIN in the callee and the BASE in the argument. The discriminator is the shape of the heritage's own expression, never a name. The negative half is the point: plain `extends` classes must publish extends and NOTHING else, so a rule that published the first identifier in any heritage would fail here; and a COMPUTED mixin (a call argument) must publish nothing, because it names nothing.",
+  "expectNoParseErrors": true,
+  "expectRelationships": [
+    { "type": "extends", "from": "ApplicationRoute", "target": "Route" },
+    { "type": "mixes_in", "from": "ApplicationRoute", "target": "WithBlockingActions" },
+    { "type": "extends", "from": "TokenSerializer", "target": "Route" },
+    { "type": "mixes_in", "from": "TokenSerializer", "target": "WithPolicies" },
+    { "type": "mixes_in", "from": "TokenSerializer", "target": "WithRoles" },
+    { "type": "mixes_in", "from": "RedwoodRecord", "target": "ValidationMixin" },
+    { "type": "extends", "from": "RedwoodRecord", "target": "Core" },
+    { "type": "extends", "from": "ClientsController", "target": "Route" },
+    { "type": "mixes_in", "from": "ClientsController", "target": "Searchable" },
+    { "type": "extends", "from": "PlainDerived", "target": "PlainBase" },
+    { "type": "extends", "from": "Qualified", "target": "Ns.Base", "note": "a qualified base keeps its dotted spelling (JSD19), inside a call-shaped heritage too" },
+    { "type": "mixes_in", "from": "Qualified", "target": "WithBlockingActions" }
+  ],
+  "forbidRelationships": [
+    { "type": "mixes_in", "from": "PlainDerived", "note": "the discriminator must not fire on a class that merely names a base" },
+    { "type": "mixes_in", "from": "PlainBase" },
+    { "type": "mixes_in", "from": "ClientsController", "target": "SortableFactory", "note": "a COMPUTED mixin names nothing, so it publishes no mixin row" },
+    { "type": "mixes_in", "from": "ApplicationRoute", "target": "Route", "note": "the receiver is the BASE, never a mixin" },
+    { "type": "extends", "from": "ApplicationRoute", "target": "WithBlockingActions", "note": "a mixin argument is never the base" },
+    { "type": "mixes_in", "from": "RedwoodRecord", "target": "Core", "note": "in the plain-call shape the argument is the BASE, never a mixin" },
+    { "type": "extends", "from": "RedwoodRecord", "target": "ValidationMixin", "note": "in the plain-call shape the callee is the MIXIN, never the base" }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "fixtureId": "xml/placeholder-literal-refused",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 rule R7, found by the ONTOLOGY CENSUS rather than by reading code, which is the point of running one. `unknown` is the project's placeholder for an endpoint that could not be determined, and R7 says no edge endpoint may equal it: a consumer reading the string cannot tell a placeholder from a name. The census resolved both ends of all 191,251 relationships the analyzer emitted across the 11,066-file corpus and found exactly 2 endpoints equal to that literal, both in `libxslt/tests/general/bug-166.xsl` — a Fedora comps-cleanup stylesheet whose two `xsl:variable` result-tree fragments each begin with a literal result element `<unknown/>`, which is a real component of that document sorting RPM component types. The analyzer was therefore asserting two truths that a consumer cannot tell apart: `contains type-sort-order -> unknown` meaning \"the variable admits an element the author named unknown\" and the same three words meaning \"this endpoint could not be determined\". This fixture reproduces the collision in 30 lines and pins the refusal. It is deliberately NOT a fixture that asserts the refusal alone: the two sibling elements `mandatory` and `optional` are asserted as ordinary published symbols with their `contains` edges, so a rule that refused every child of a variable, or that started refusing names by shape rather than by value, fails here. The `xsl:value-of` on line 16 selects `$sort-order/unknown` and produces no edge either — it is an XPath expression inside an attribute value, which no rule in this analyzer reads, and the fixture says so rather than leaving a reader to assume the reference was simply missed. The refusal is at ONE choke point rather than at each publish site, and that placement is the transferable lesson: the colliding name can arrive as an element tag, an attribute name, a DTD entity name, a notation name or a content-model member, so a guard added per publish site is a guard that will eventually be missed at one of them. Cost of the fix as measured: 2 symbols and 2 edges in 1 file of 11,066. Same ruling, same reason, as the refusal of a symbol named \"\" that `xmlns:` with an empty prefix would otherwise publish.",
+  "expectSymbols": [
+    {
+      "name": "sort-order",
+      "kind": "class",
+      "meta.isVocabDeclaration": true,
+      "meta.declaredByAttribute": "name",
+      "meta.tagName": "xsl:variable"
+    },
+    {
+      "name": "mandatory",
+      "kind": "class",
+      "note": "a sibling of the refused element and published normally. Without this row the fixture would pass against a rule that refused every child of a variable, which is a different defect with the same symptom."
+    },
+    {
+      "name": "optional",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "sort-order",
+      "target": "mandatory",
+      "line_number": 11,
+      "note": "the scoping control: the refusal is on the NAME, not on the construct, and containment of a sibling element is untouched."
+    },
+    {
+      "type": "contains",
+      "from": "sort-order",
+      "target": "optional",
+      "line_number": 12
+    },
+    {
+      "type": "contains",
+      "from": "render",
+      "target": "out",
+      "line_number": 15,
+      "note": "control beyond the variable entirely: nothing above line 14 is affected, so the refusal cannot be explained by a rule that stopped walking."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "unknown",
+      "note": "THE REFUSAL UNDER TEST. The document declares this element and the analyzer does not publish it, because a symbol named `unknown` is indistinguishable from the placeholder a consumer reads when an endpoint could not be determined (M60 rule R7). Publishing it is not a neutral act: it makes the placeholder mean two things in one graph."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "sort-order",
+      "target": "unknown",
+      "note": "the same refusal on the edge. Both endpoints of every emitted relationship are checked, so this row is the edge-side half of the symbol-side half and a guard on one without the other would leave the graph still asserting the ambiguous thing."
+    },
+    {
+      "type": "contains",
+      "from": "render",
+      "target": "unknown",
+      "note": "`$sort-order/unknown` inside the `select` attribute is an XPATH EXPRESSION, not a name the document declares. No rule here reads XPath, and publishing an edge from it would be inventing a reference the analyzer cannot read."
+    },
+    {
+      "type": "references",
+      "from": "sort-order",
+      "target": "unknown",
+      "note": "and not as a reference either: the two labels must both stay absent, because a single fact carrying one type is a graph and the same fact carrying two is a question."
+    }
+  ]
+}

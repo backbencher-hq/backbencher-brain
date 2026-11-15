@@ -1,0 +1,31 @@
+{
+  "issue": "M21.D1",
+  "code": "D1",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 10,
+  "passed": 10,
+  "failed": 0,
+  "negativeCases": 4,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-sqlite-locks.ts",
+  "evidenceFile": "D1.json",
+  "generatedAt": "2026-09-01T13:56:26.322Z",
+  "limitations": [
+    "This reproduces contention with Bun's bun:sqlite; Node better-sqlite3 parity is owned by D2.",
+    "The test classifies lock behavior but does not claim production-indexer correctness or prescribe a busy-timeout policy."
+  ],
+  "details": {
+    "databaseDriver": "bun:sqlite",
+    "journalMode": "WAL",
+    "holderHoldMs": 1200,
+    "holderTimeoutMs": 50,
+    "contenderTimeoutMs": 50
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.381Z",
+    "contentSha256": "4b4420586115e03eaef750c990a6a5e8288886a76176e322b6b99c92360696c1"
+  }
+}

@@ -1,0 +1,18 @@
+{
+ "fixtureId": "yaml/schema-publication-export-negative",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The negative half, and the fixture that makes the gate in schema-publication-export mean something. The SAME container name and the SAME depth — `definitions.<name>` directly at the document's top level — in a file that declares neither `openapi:` nor `swagger:`. A container name is a coincidence of spelling; a document has to CLAIM to be an API description before its definitions are published for other documents to `$ref`. Without that claim it is a bag of values, and an `exports` edge on a bag of values is a fabricated edge — it would put a name in `bb_graph` and `bb_impact` that nothing can consume. The gate is read from the shape index rather than from the file's text, so it cannot be satisfied by the word `openapi` appearing inside a string.",
+ "forbidRelationships": [
+  {
+   "type": "exports"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "schema-publication-export-negative",
+   "target": "schema-publication-export-negative.definitions"
+  }
+ ]
+}

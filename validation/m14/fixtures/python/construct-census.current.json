@@ -1,0 +1,401 @@
+{
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "populationPinned": 10839,
+ "perRepo": {
+  "Fabulous": 6,
+  "Flux.jl": 1,
+  "Grace": 649,
+  "ansible": 1693,
+  "bash-completion": 773,
+  "cabal": 3,
+  "cargo": 2,
+  "cython": 473,
+  "dark": 11,
+  "dart-sdk": 134,
+  "docker": 2,
+  "duckdb": 184,
+  "fmt": 4,
+  "fsharp": 1,
+  "ghostty": 8,
+  "gql-graphql-core": 354,
+  "gql-graphql-platform": 1,
+  "gql-saleor": 4036,
+  "hasura-engine": 79,
+  "hledger": 12,
+  "jq": 5,
+  "kong": 10,
+  "kotlinx-coroutines": 1,
+  "kubernetes": 7,
+  "libxslt": 10,
+  "nim": 5,
+  "nlohmann-json": 7,
+  "nomad": 2,
+  "nvim-treesitter": 35,
+  "ohmyzsh": 8,
+  "otp": 32,
+  "packer": 1,
+  "pb-grpc": 165,
+  "pb-reference": 2,
+  "phpmyadmin": 2,
+  "plenary.nvim": 1,
+  "postgrest": 21,
+  "proxicall": 155,
+  "pyyaml-include": 10,
+  "r-air": 1,
+  "redis": 48,
+  "requests": 36,
+  "sqlalchemy": 655,
+  "swift-nio": 1,
+  "terraform-aws-components": 1,
+  "tfsec": 1,
+  "tree-sitter-clean": 2,
+  "wagtail": 1184,
+  "zig": 5
+ },
+ "populationUnpinned": [],
+ "populationUnpinnedTotal": 0,
+ "parsed": 10839,
+ "failed": 0,
+ "selfTest": {
+  "ok": true,
+  "rows": [
+   [
+    "abcBase",
+    4,
+    1
+   ],
+   [
+    "abcBaseQualified",
+    1,
+    1
+   ],
+   [
+    "abcBaseImported",
+    4,
+    1
+   ],
+   [
+    "protocolBase",
+    3,
+    1
+   ],
+   [
+    "protocolBaseQualified",
+    1,
+    1
+   ],
+   [
+    "protocolBaseImported",
+    3,
+    1
+   ],
+   [
+    "abstractmethod",
+    3,
+    1
+   ],
+   [
+    "abstractmethodImported",
+    3,
+    1
+   ],
+   [
+    "registerCallLoose",
+    6,
+    1
+   ],
+   [
+    "virtualRegister",
+    3,
+    1
+   ],
+   [
+    "baseEntries",
+    8,
+    1
+   ],
+   [
+    "classDefs",
+    10,
+    1
+   ],
+   [
+    "classHeaderKeywordArguments",
+    2,
+    1
+   ],
+   [
+    "keywordArgumentNodes",
+    4,
+    1
+   ],
+   [
+    "metaclassArg",
+    1,
+    1
+   ],
+   [
+    "implementerDecorated(EXPECT 0)",
+    0,
+    0
+   ]
+  ]
+ },
+ "grammarNodeTypesObserved": 203,
+ "wouldMeanImplements": {
+  "candidates": [
+   "implements_clause",
+   "implements_list",
+   "implements_specifier",
+   "implements_declaration",
+   "interface_implementation",
+   "interface_specifier",
+   "interface_declaration",
+   "protocol_declaration",
+   "protocol_conformance",
+   "conformance_clause",
+   "super_interfaces",
+   "abstract_class_declaration",
+   "type_declaration_list",
+   "base_class_clause",
+   "type_inheritance_clause",
+   "mixin_clause",
+   "conform_clause"
+  ],
+  "present": [],
+  "absent": [
+   "implements_clause",
+   "implements_list",
+   "implements_specifier",
+   "implements_declaration",
+   "interface_implementation",
+   "interface_specifier",
+   "interface_declaration",
+   "protocol_declaration",
+   "protocol_conformance",
+   "conformance_clause",
+   "super_interfaces",
+   "abstract_class_declaration",
+   "type_declaration_list",
+   "base_class_clause",
+   "type_inheritance_clause",
+   "mixin_clause",
+   "conform_clause"
+  ]
+ },
+ "implementsConstructSites": 204,
+ "implementsConstructSitesDefinition": "abcBase + protocolBase + virtualRegister + metaclassArg — every site in the walked population where python DECLARES or SATISFIES an interface: a base-list entry naming an abc ABC/ABCMeta or a typing/typing_extensions Protocol, a proven ABC.register(X) virtual registration, and a class whose header declares an abc metaclass. The analyzer publishes each of the first three as an `implements` edge (PY-34: the most specific true label, one edge per base); the metaclass spelling declares the interface those edges point AT.",
+ "counters": {
+  "abcBase": {
+   "occurrences": 22,
+   "files": 19,
+   "samples": [
+    "ansible/lib/ansible/cli/__init__.py: ABC",
+    "ansible/lib/ansible/module_utils/_internal/_patches/__init__.py: ABC",
+    "ansible/lib/ansible/plugins/action/__init__.py: ABC",
+    "ansible/lib/ansible/plugins/terminal/__init__.py: ABC"
+   ]
+  },
+  "abcBaseQualified": {
+   "occurrences": 7,
+   "files": 6,
+   "samples": [
+    "ansible/lib/ansible/module_utils/_internal/_patches/__init__.py: abc.ABC",
+    "cython/Tools/dataclass_test_data/test_dataclasses.py: abc.ABC",
+    "cython/Tools/dataclass_test_data/test_dataclasses.py: abc.ABC",
+    "gql-saleor/saleor/graphql/attribute/utils/type_handlers.py: abc.ABC"
+   ]
+  },
+  "abcBaseImported": {
+   "occurrences": 15,
+   "files": 13,
+   "samples": [
+    "ansible/lib/ansible/cli/__init__.py: from abc import ABC",
+    "ansible/lib/ansible/plugins/action/__init__.py: from abc import ABC",
+    "ansible/lib/ansible/plugins/terminal/__init__.py: from abc import ABC",
+    "ansible/lib/ansible/utils/context_objects.py: from abc import ABCMeta"
+   ]
+  },
+  "protocolBase": {
+   "occurrences": 117,
+   "files": 54,
+   "samples": [
+    "ansible/lib/ansible/_internal/_json/__init__.py: Protocol",
+    "ansible/lib/ansible/_internal/_ssh/_ssh_agent.py: Protocol",
+    "ansible/lib/ansible/_internal/_ssh/_ssh_agent.py: Protocol",
+    "ansible/lib/ansible/config/manager.py: Protocol"
+   ]
+  },
+  "protocolBaseQualified": {
+   "occurrences": 0,
+   "files": 0,
+   "samples": []
+  },
+  "protocolBaseImported": {
+   "occurrences": 103,
+   "files": 42,
+   "samples": [
+    "cython/Tools/dataclass_test_data/test_dataclasses.py: from typing import Protocol",
+    "cython/tests/run/test_patma.py: from typing import Protocol",
+    "cython/tests/run/test_patma.py: from typing import Protocol",
+    "cython/tests/run/test_patma.py: from typing import Protocol"
+   ]
+  },
+  "abstractmethod": {
+   "occurrences": 155,
+   "files": 55,
+   "samples": [
+    "ansible/hacking/create-bulk-issues.py: @abstractmethod",
+    "ansible/hacking/create-bulk-issues.py: @abstractmethod",
+    "ansible/lib/ansible/_internal/_errors/_error_utils.py: @abstractmethod",
+    "ansible/lib/ansible/_internal/_templating/_access.py: @abstractmethod"
+   ]
+  },
+  "abstractmethodImported": {
+   "occurrences": 54,
+   "files": 18,
+   "samples": [
+    "ansible/lib/ansible/cli/__init__.py: from abc import abstractmethod",
+    "ansible/lib/ansible/cli/__init__.py: from abc import abstractmethod",
+    "ansible/lib/ansible/cli/__init__.py: from abc import abstractmethod",
+    "ansible/lib/ansible/module_utils/facts/packages.py: from abc import abstractmethod"
+   ]
+  },
+  "registerCallLoose": {
+   "occurrences": 314,
+   "files": 85,
+   "samples": [
+    "ansible/lib/ansible/_internal/_rpc_host.py: super().register",
+    "ansible/lib/ansible/_internal/_rpc_host.py: LocalManager.register",
+    "ansible/lib/ansible/_internal/_rpc_host.py: rpc_client.register",
+    "ansible/lib/ansible/_internal/_ssh/_agent_launch.py: atexit.register"
+   ]
+  },
+  "virtualRegister": {
+   "occurrences": 0,
+   "files": 0,
+   "samples": []
+  },
+  "implementerDecorated": {
+   "occurrences": 0,
+   "files": 0,
+   "samples": []
+  },
+  "baseEntries": {
+   "occurrences": 23010,
+   "files": 5485,
+   "samples": [
+    "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py: Module",
+    "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/api_response.py: BaseModel",
+    "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/api_response.py: Generic",
+    "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/configuration.py: TypedDict"
+   ]
+  },
+  "classDefs": {
+   "occurrences": 25773,
+   "files": 6802,
+   "samples": [
+    "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py: class",
+    "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/api/approvals_api.py: class",
+    "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/api/branches_api.py: class",
+    "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/api/cache_api.py: class"
+   ]
+  },
+  "classHeaderKeywordArguments": {
+   "occurrences": 185,
+   "files": 79,
+   "samples": [
+    "ansible/hacking/create-bulk-issues.py: metaclass=",
+    "ansible/lib/ansible/_internal/_errors/_error_utils.py: metaclass=",
+    "ansible/lib/ansible/_internal/_templating/_access.py: metaclass=",
+    "ansible/lib/ansible/_internal/_templating/_jinja_common.py: metaclass="
+   ]
+  },
+  "keywordArgumentNodes": {
+   "occurrences": 227330,
+   "files": 7913,
+   "samples": [
+    "Fabulous/eng/monorepo/changelog.py: keyword_argument",
+    "Fabulous/eng/monorepo/changelog.py: keyword_argument",
+    "Fabulous/eng/monorepo/changelog.py: keyword_argument",
+    "Fabulous/eng/monorepo/changelog.py: keyword_argument"
+   ]
+  },
+  "metaclassArg": {
+   "occurrences": 65,
+   "files": 35,
+   "samples": [
+    "ansible/hacking/create-bulk-issues.py: metaclass=ABCMeta",
+    "ansible/lib/ansible/_internal/_errors/_error_utils.py: metaclass=ABCMeta",
+    "ansible/lib/ansible/_internal/_templating/_access.py: metaclass=ABCMeta",
+    "ansible/lib/ansible/_internal/_templating/_jinja_common.py: metaclass=ABCMeta"
+   ]
+  }
+ },
+ "countersUnpinned": {
+  "abcBase": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "abcBaseQualified": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "abcBaseImported": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "protocolBase": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "protocolBaseQualified": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "protocolBaseImported": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "abstractmethod": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "abstractmethodImported": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "registerCallLoose": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "virtualRegister": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "implementerDecorated": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "baseEntries": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "classDefs": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "classHeaderKeywordArguments": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "keywordArgumentNodes": {
+   "occurrences": 0,
+   "files": 0
+  },
+  "metaclassArg": {
+   "occurrences": 0,
+   "files": 0
+  }
+ }
+}

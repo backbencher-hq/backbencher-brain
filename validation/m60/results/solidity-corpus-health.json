@@ -1,0 +1,69 @@
+{
+  "instrument": "m60-solidity-corpus-health",
+  "question": "Does the grammar parse a real Solidity corpus, what breaks if not, and which declared named types does the corpus never exercise?",
+  "corpus": {
+    "repo": "solidity",
+    "rev": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
+    "dir": "/home/ishaq2321/bb_tests/repositories/solidity",
+    "allSolFiles": 420,
+    "productionFiles": 389,
+    "testFiles": 31
+  },
+  "draw": {
+    "sample": 60,
+    "order": "hash of repo/relative-path ascending",
+    "digest": "9c519e0d",
+    "excluded": "test/ and *.t.sol"
+  },
+  "runtime": {
+    "wasm": "wasm/tree-sitter-solidity.wasm",
+    "abi": 15,
+    "nodeTypeCount": 531,
+    "fieldCount": 35
+  },
+  "totals": {
+    "files": 60,
+    "damaged": 0,
+    "damagedPct": 0,
+    "errorNodes": 0,
+    "missingNodes": 0,
+    "distinctClasses": 0
+  },
+  "typeCoverage": {
+    "declaredNamed": 124,
+    "exercised": 97,
+    "neverExercised": 27,
+    "neverExercisedList": [
+      "any_pragma_token",
+      "call_struct_argument",
+      "constant_variable_declaration",
+      "continue_statement",
+      "do_while_statement",
+      "hex_string_literal",
+      "inline_array_expression",
+      "layout_specifier",
+      "number_unit",
+      "pragma_value",
+      "state_location",
+      "struct_expression",
+      "struct_field_assignment",
+      "unicode_string_literal",
+      "user_definable_operator",
+      "user_defined_type_definition",
+      "using_alias",
+      "yul_boolean",
+      "yul_break",
+      "yul_continue",
+      "yul_for_statement",
+      "yul_function_definition",
+      "yul_hex_string_literal",
+      "yul_label",
+      "yul_leave",
+      "yul_string_literal",
+      "yul_switch_statement"
+    ]
+  },
+  "classes": [],
+  "worstFiles": [],
+  "howToRead": "damagedPct is the parser's, not the analyzer's. A MISSING node is a token the parser INSERTED to keep going, so it is a fabrication with no error attached and is the class worth reading first. A named type in neverExercised cannot be gated by this corpus and must be carried by a hand-written fixture or explicitly ruled out."
+}

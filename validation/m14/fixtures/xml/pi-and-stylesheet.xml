@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<?catalog-processing build="12"?>
+<?xml-stylesheet type="text/xsl" href="catalog.xsl" title="Catalog"?>
+<catalog>
+  <?render rows="all"?>
+  <entry/>
+</catalog>

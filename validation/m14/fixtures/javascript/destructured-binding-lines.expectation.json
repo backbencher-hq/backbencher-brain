@@ -1,0 +1,20 @@
+{
+  "fixtureId": "javascript/destructured-binding-lines",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up, measured on element-plus drawer.vue (SFC script via the vue seam): every destructured binding ranges at its own NAME line — the old nodeToRange(declarator) stamped `const {` for a wrapped list. Pinned via expectSymbolRanges (round-trip verified).",
+  "expectSymbols": [
+    { "name": "plain", "kind": "constant" },
+    { "name": "local", "kind": "constant" },
+    { "name": "withDefault", "kind": "constant" },
+    { "name": "rest", "kind": "constant" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "plain", "startLine": 6 },
+    { "symbol": "local", "startLine": 7 },
+    { "symbol": "withDefault", "startLine": 8 },
+    { "symbol": "rest", "startLine": 9 }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": []
+}

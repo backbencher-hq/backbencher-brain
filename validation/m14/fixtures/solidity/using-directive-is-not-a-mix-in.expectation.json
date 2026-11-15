@@ -1,0 +1,168 @@
+{
+  "fixtureId": "solidity/using-directive-is-not-a-mix-in",
+  "language": "solidity",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS THE REFUSAL, NOT AN EMISSION: `using L for T` must publish `references` to the library and must NEVER publish `mixes_in`, INCLUDING for the two declared-host forms a declared-host rule would have published (`using MathLib for Price`, `using MathLib for Amount`). THE REASON IS THE VOCABULARY'S OWN DEFINITION, not the absence of a source symbol: `mixes_in` (src/ast/types.ts) is a class composing a mixin INTO ITS SUPERTYPE CHAIN, and the mixin is a supertype MEMBER. PHP trait `use` flattens members into the class's method table and Go embedding promotes them into the struct's method set; Solidity adds NO member to the type \u2014 `Price` is still `uint128`, its ABI and chain are untouched, and `p.double()` binds as `MathLib.double(p)` only where the directive is in scope (`global` widens the SCOPE, not the type). The composing actor is the scope, not the type, so a `mixes_in` row would name the wrong actor as well as the wrong relation \u2014 and it would land in a bucket two consumers read as supertype composition (src/intelligence/graph/graph-engine.ts, src/intelligence/analysis/complexity.ts). THE DEPENDENCY IS NOT LOST: the `references` row for the same directive is asserted here, and it is the true relation (the file READ the name). THE CONSTRUCT POPULATION IS MEASURED: 124 `using_directive` sites in 76 files, 27 with a declared host and one library, 0 of which add a member to the type (validation/m14/measurements/solidity-extended-census.json). THE OTHER TWO RULED TYPES ARE PINNED BESIDE IT: `renders` (markup TEXT from a pure function is a value, and the vocabulary has 0 component symbol kinds) and `part_of` (a Solidity import is a MODULE load \u2014 each source unit is compiled in its own scope and the import brings symbols INTO it \u2014 while a part shares one scope and imports nothing). `new Market()` is the positive control a render rule must not steal: it is `instantiates`.",
+  "expectSymbols": [
+    {
+      "name": "using-directive-is-not-a-mix-in.sol",
+      "kind": "module",
+      "comment": "the compilation unit scope"
+    },
+    {
+      "name": "MathLib",
+      "kind": "class",
+      "comment": "the library the directives name \u2014 the member set that must NOT become a mixin target"
+    },
+    {
+      "name": "Price",
+      "kind": "type",
+      "comment": "the user-defined value type; FORBID (1)'s host, declared in this file so the refusal cannot rest on an unresolved host"
+    },
+    {
+      "name": "Amount",
+      "kind": "struct",
+      "comment": "the struct host; FORBID (2), declared in this file for the same reason"
+    },
+    {
+      "name": "Market",
+      "kind": "class",
+      "comment": "the contract carrying the directives and the conformance base list"
+    },
+    {
+      "name": "BaseMarket",
+      "kind": "class",
+      "comment": "the superclass"
+    },
+    {
+      "name": "IRenderer",
+      "kind": "interface",
+      "comment": "the interface \u2014 declared in-file, which is what makes the implements row settleable"
+    },
+    {
+      "name": "plus",
+      "kind": "function",
+      "comment": "the file-level function the BRACED form names; the point is that the braced SET is not one member set"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "Market",
+      "target": "MathLib",
+      "line_number": 84,
+      "comment": "THE TRUE RELATION, pinned as the positive half: the directive READS the library's name, and that row survives the refusal \u2014 so nothing is lost by not publishing `mixes_in`. The source is the enclosing contract, because that is the scope the directive is written in."
+    },
+    {
+      "type": "extends",
+      "source": "Market",
+      "target": "BaseMarket",
+      "line_number": 81,
+      "comment": "the CONFORMANCE construct, pinned beside the refused composition: a class header is extends/implements, so 'no conformance declared' can never be used to relabel it"
+    },
+    {
+      "type": "implements",
+      "source": "Market",
+      "target": "IRenderer",
+      "line_number": 81,
+      "comment": "SOL-5's discriminator: an in-file interface ancestor is implements"
+    },
+    {
+      "type": "instantiates",
+      "source": "make",
+      "target": "Market",
+      "line_number": 116,
+      "comment": "the render negative's positive CONTROL \u2014 `new Market()` is a construction; a render rule must not relabel it"
+    },
+    {
+      "type": "imports",
+      "source": "using-directive-is-not-a-mix-in.sol",
+      "target": "./Counterpart.sol",
+      "line_number": 53,
+      "comment": "the part_of negative read the RIGHT way \u2014 a module load is imports"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "mixes_in",
+      "equals": 0,
+      "comment": "THE REFUSAL, AS A COUNT. Five `using_directive` nodes exist in this file \u2014 two with a DECLARED host (Price, Amount), one primitive host, one braced set, one wildcard \u2014 and NONE may publish `mixes_in`. A rule keyed on the node type would publish 5; a rule that only required a declared host would publish 2; both are wrong for the same reason, which is why the two declared-host forms are forbidden explicitly rather than left to the count."
+    },
+    {
+      "type": "part_of",
+      "equals": 0,
+      "comment": "the RULING, pinned as a count: Solidity's import is a module load (its own scope, symbols brought in), not a part sharing one scope"
+    },
+    {
+      "type": "renders",
+      "equals": 0,
+      "comment": "the third ruling, pinned as a count, in a file that contains a markup-producing function AND a construction"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "source": "Price",
+      "comment": "FORBID (1) \u2014 THE FORM A DECLARED-HOST RULE PUBLISHED. `Price` is a declared user-defined value type and `MathLib` is a declared library, and the row is still false: no member of MathLib enters Price's declared surface. This is the one that must go red if the emission is ever restored."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Amount",
+      "comment": "FORBID (2) \u2014 the struct host: same refusal, and the host test reading the TYPE namespace rather than the inheritance namespace is what made this form reachable in the first place"
+    },
+    {
+      "type": "mixes_in",
+      "source": "uint256",
+      "comment": "FORBID (3) \u2014 a primitive host has no source symbol at all: a second, independent reason the row is impossible"
+    },
+    {
+      "type": "mixes_in",
+      "source": "*",
+      "comment": "FORBID (4) \u2014 the wildcard form names no host type"
+    },
+    {
+      "type": "mixes_in",
+      "target": "plus",
+      "comment": "FORBID (5) \u2014 the braced form's composed set is a LIST OF FUNCTIONS; naming the function as the mixin would assert a member set that is not one declaration"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Market",
+      "comment": "the wrong-source edge the enclosing contract invites: a rule reading 'the contract carrying the using' as the source would emit Market -> MathLib four times. Refused for the same reason the host-sourced reading is: the composing actor is neither the contract nor the host, it is the SCOPE."
+    },
+    {
+      "type": "renders",
+      "comment": "FORBID \u2014 no renders at all: markup TEXT from a pure function is a value, and the vocabulary has no component symbol kind"
+    },
+    {
+      "type": "renders",
+      "source": "html",
+      "target": "Market",
+      "comment": "the specific wrong edge a 'returns markup, names a contract' rule would emit"
+    },
+    {
+      "type": "part_of",
+      "comment": "FORBID \u2014 no part_of at all: a Solidity import creates its own module scope and imports symbols, which is the opposite of a shared single scope"
+    },
+    {
+      "type": "part_of",
+      "source": "using-directive-is-not-a-mix-in.sol",
+      "target": "Counterpart",
+      "comment": "the specific wrong edge a 'file includes a file' rule would emit for the import"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "uint256",
+      "comment": "a primitive type is not a declaration"
+    },
+    {
+      "name": "*",
+      "comment": "the wildcard is not a name"
+    },
+    {
+      "name": "Counterpart",
+      "comment": "an imported module's name is not a declaration of this file"
+    }
+  ]
+}

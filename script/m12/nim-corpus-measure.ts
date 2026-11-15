@@ -54,7 +54,7 @@ const CORPORA: { name: string; dir: string; revision: string }[] = [
   { name: "torrentinim", dir: "torrentinim", revision: "8a0f2294c7" },
   { name: "mosdepth", dir: "mosdepth", revision: "3211a79388" },
 ]
-const BASE = process.env.BB_NIM_CORPUS ?? "$HOME/fixtures/repositories"
+const BASE = process.env.BB_NIM_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
 
 // `--repos a,b` narrows the draw. The full 12-repo run needs the whole 41 MB
 // grammar resident plus a parsed tree per file, and on a contended machine that
@@ -199,7 +199,7 @@ const document = {
     maxAcrossFiles: sortedComplexity.length > 0 ? sortedComplexity[0].max : null,
     worstFiles: worst,
   },
-  note: "Tracked .nim/.nims files only, via the production pool-worker parseFile path; no generated or untracked files included. Revisions are the pinned checkouts under $HOME/fixtures/repositories.",
+  note: "Tracked .nim/.nims files only, via the production pool-worker parseFile path; no generated or untracked files included. Revisions are the pinned checkouts under /home/ishaq2321/bb_tests/repositories.",
 }
 writeFileSync("validation/m12/results/nim-corpus-complexity.json", JSON.stringify(document, null, 2) + "\n")
 console.log(

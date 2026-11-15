@@ -23,8 +23,8 @@ is re-checked on every run of the gate rather than asserted here.
 So the wired bytes ARE a build of this source, and the Groovy situation — a
 vendored wasm that had drifted from upstream and needed manual repair — does
 **not** apply to HCL. Full measurement:
-`fixtures/hcl/out/grammar-conformance.json`, produced by
-`fixtures/hcl/probes/grammar-conformance.mts`.
+`bb_tests/hcl/out/grammar-conformance.json`, produced by
+`bb_tests/hcl/probes/grammar-conformance.mts`.
 
 ## Verdict
 

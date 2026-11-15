@@ -5,7 +5,7 @@
   "purpose": "noise-proof A/B: speed change AND output equality, reported separately",
   "baseline": "HEAD",
   "live": "src/ast/real-php-analyzer.ts",
-  "corpus": "$HOME/fixtures/repositories/phpunit",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/phpunit",
   "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
   "generatedAt": "2026-09-30T07:52:51.779Z",
   "sample": "150 of 3231 tracked .php files (deterministic strided)",

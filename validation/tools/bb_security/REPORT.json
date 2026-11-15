@@ -1,0 +1,625 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "phase": "B++ (T2 re-open closed)",
+  "status": "complete-with-declared-legs",
+  "owner": "tool-security",
+  "generatedAt": "2026-11-03T16:13:30.266Z",
+  "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+  "currentCommitNote": "HEAD when the evidence chain ran (recorded per audit file); code and gates landed in 44dad52b9 and 4b648f6e1, this report in the evidence commit that follows",
+  "verifierCommand": "./validation/tools/bb_security/gates/run-all.sh",
+  "passed": 13,
+  "failed": 0,
+  "gateResults": [
+    {
+      "gate": "script/m13/verify-security-contract.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "1s",
+      "note": "one executable mode, planned modes honest, read-only opens asserted, page byte-fresh; 28 checks / 9 negatives"
+    },
+    {
+      "gate": "script/m13/verify-security-handler.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "5s",
+      "note": "adapter shape, bounds (>cap fixture + CAPPED live), history page cap, read-path byte-identity for findings and history, library-door refusal; 31 checks / 7 negatives"
+    },
+    {
+      "gate": "script/m13/verify-security-adversarial.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "37s",
+      "note": "SQLi/CMDi/XSS positives, clean + parameterized negatives, mitigated boundary, CLI false-clean guard, MCP stdio door, sampled corpora; 31 checks / 5 negatives"
+    },
+    {
+      "gate": "script/m13/verify-security-docs.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "1s",
+      "note": "docs accuracy vs live descriptor, evidence validity, release-gate tamper proof; 25 checks / 4 negatives"
+    },
+    {
+      "gate": "script/m15/verify-security-regressions.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "14s",
+      "note": "defect-class regressions; harness counts each assertion once"
+    },
+    {
+      "gate": "script/m15/verify-security-precision.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "16s",
+      "note": "fix-differential precision; the former h.nk(...,true) auto-pass is now a real fixture predicate"
+    },
+    {
+      "gate": "script/m15/verify-security-deep.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "101s",
+      "note": "X1-X8 deep audit; X6 reads the live descriptor object and the per-tool handler module"
+    },
+    {
+      "gate": "script/verify-security.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "1s",
+      "note": "engine end-to-end: dedup reduction, calibration on existing findings, four-state matrix, alias + determinism"
+    },
+    {
+      "gate": "script/m20/verify-security-flow-boundary.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "2s",
+      "note": "endpoint resolution outranks the mitigation flag, with mutation proof"
+    },
+    {
+      "gate": "script/m20/verify-security-adversarial.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "3s",
+      "note": "policy matrix, auto-pass audit over the in-scope suite (10 audited + 2 declared m17 not-audited = 13), sealed evidence"
+    },
+    {
+      "gate": "script/m20/verify-security-history.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "3s",
+      "note": "state-aware identity, evidence/confidence persisted, repeat parity, CLI parity over the source door"
+    },
+    {
+      "gate": "script/m17/verify-sec-corpus.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "70s",
+      "note": "real-corpus recordRun -> history invariants; the false severity=unknown invariant was corrected to the documented contract"
+    },
+    {
+      "gate": "script/m17/verify-sec-history.ts",
+      "exit": 0,
+      "state": "verified",
+      "duration": "29s",
+      "note": "shared history regression gate; same corrected invariant"
+    }
+  ],
+  "gateEnvironment": {
+    "suite": "13 verifier scripts under bun, BB_DATA_DIR pointed at the isolated lane index, BB_NO_AUTO_REFRESH=1",
+    "selfContained": "every in-scope gate falls back to validation/tools/bb_security/bbdata when BB_DATA_DIR is unset; the two m17 verifiers still require it (their compiled-door legs are the reason)",
+    "phaseASweep": "13/13 exit 1 on EROFS mkdir $HOME/.bb/projects before the fallback existed"
+  },
+  "falsifiability": {
+    "file": "validation/tools/bb_security/audit/mutants.json",
+    "mutants": 9,
+    "redThenGreen": 9,
+    "allRestored": true,
+    "detail": [
+      {
+        "id": "handler-read-not-readonly",
+        "gate": "script/m13/verify-security-contract.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "engine-read-not-readonly",
+        "gate": "script/m13/verify-security-contract.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "engine-resolve-project-filter",
+        "gate": "script/verify-security.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "live-cap-note-dropped",
+        "gate": "script/m13/verify-security-handler.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "history-page-cap-removed",
+        "gate": "script/m13/verify-security-handler.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "history-fingerprint-drops-state",
+        "gate": "script/m20/verify-security-history.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "library-door-creates-index",
+        "gate": "script/m13/verify-security-handler.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "descriptor-advertises-planned-mode",
+        "gate": "script/m13/verify-security-contract.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      },
+      {
+        "id": "docs-description-drift",
+        "gate": "script/m13/verify-security-docs.ts",
+        "red": 1,
+        "green": 0,
+        "restored": true
+      }
+    ]
+  },
+  "readPath": {
+    "files": [
+      "audit/readpath.json",
+      "audit/write-attribution.json"
+    ],
+    "findingsRead": "brain.db + -wal byte-identical before/after (MCP stdio, T0 and T2)",
+    "historyRead": "brain.db + -wal byte-identical before/after (MCP stdio)",
+    "recordRun": "declared write: WAL grows",
+    "shm": "-shm is shared-memory bookkeeping touched by any connection open, read-only included; excluded from the data comparison",
+    "unindexedDoors": "MCP refused; CLI exit 1; library isError; zero files created in all three",
+    "headerLevel": "no changeCounter/schemaVersion bump and no changed pages for the read and history calls; controlled read-write open no longer commits a write"
+  },
+  "latency": {
+    "file": "LATENCY.json",
+    "budgets": {
+      "T0_p95_ms": 250,
+      "T1_p95_ms": 1000,
+      "T2_p95_ms": 5000,
+      "clientTimeout_ms": 30000
+    },
+    "t2DefaultScan": {
+      "before": {
+        "p50Ms": 5515,
+        "p95Ms": 5546
+      },
+      "afterLeadProtocol": {
+        "p50Ms": 560,
+        "p95Ms": 648
+      },
+      "after8Run": {
+        "node": {
+          "p50Ms": 475,
+          "p95Ms": 504
+        },
+        "bun": {
+          "p50Ms": 297,
+          "p95Ms": 331
+        }
+      },
+      "evidence": "validation/tools/bb_security/audit/t2-default-budget.json"
+    },
+    "verdict": "all tiers inside budget; T2 default live scan 560/648 ms p50/p95 (was 5,515/5,546 ms) with the same truncation declared"
+  },
+  "realCorpus": {
+    "file": "REAL-CORPUS.json",
+    "codeState": "post-fix (read-only read path, declared bounds, state-aware history identity)",
+    "door": "MCP stdio over the SOURCE entry: tsx src/cli/index.ts mcp --dir <project>",
+    "corpora": [
+      {
+        "name": "graphql-js",
+        "family": "TypeScript",
+        "files": 375,
+        "symbols": 8057,
+        "relationships": 42667,
+        "taintFlows": 435,
+        "deduplicatedFindings": 434,
+        "resolved": 144,
+        "observations": 290,
+        "doorMs": 4384
+      },
+      {
+        "name": "rake",
+        "family": "Ruby",
+        "files": 44,
+        "symbols": 497,
+        "relationships": 2033,
+        "taintFlows": 52,
+        "deduplicatedFindings": 44,
+        "resolved": 20,
+        "observations": 24,
+        "doorMs": 4280
+      },
+      {
+        "name": "rebar3",
+        "family": "Erlang",
+        "files": 203,
+        "symbols": 4832,
+        "relationships": 28373,
+        "taintFlows": 191,
+        "deduplicatedFindings": 187,
+        "resolved": 25,
+        "observations": 162,
+        "doorMs": 3450
+      },
+      {
+        "name": "ansible",
+        "family": "Python",
+        "files": 777,
+        "symbols": 26681,
+        "relationships": 97335,
+        "taintFlows": 1561,
+        "deduplicatedFindings": 1258,
+        "resolved": 405,
+        "observations": 95,
+        "doorMs": 4777
+      },
+      {
+        "name": "sqlite",
+        "family": "C",
+        "files": 79,
+        "symbols": 5169,
+        "relationships": 36226,
+        "taintFlows": 290,
+        "deduplicatedFindings": 273,
+        "resolved": 31,
+        "observations": 242,
+        "doorMs": 4294
+      }
+    ],
+    "adversarial": [
+      {
+        "id": "clean-negative",
+        "pass": true
+      },
+      {
+        "id": "parameterized-sql-negative",
+        "pass": true
+      },
+      {
+        "id": "sqli-positive",
+        "pass": true
+      },
+      {
+        "id": "partial-mitigated-boundary",
+        "pass": true
+      },
+      {
+        "id": "unindexed-project-refusal",
+        "pass": true
+      },
+      {
+        "id": "staleness-marker",
+        "pass": true
+      }
+    ]
+  },
+  "regex": {
+    "toolSourceUses": 0,
+    "gateScripts": "assertion patterns only",
+    "policyGate": "PASS (script/tools/verify-regex-policy.ts)"
+  },
+  "blockedLegs": [
+    {
+      "leg": "compiled CLI door (bin/bb -> dist/)",
+      "reason": "an integration artifact rebuilt outside this lane; m17 compiled-door legs are green with the build produced for this tree and are re-run after each rebuild"
+    }
+  ],
+  "crossScopeNeeds": [
+    {
+      "item": "src/brain/schema-ddl.ts per-open trigger churn",
+      "status": "fixed by the Lead in 93bb7f826; verified behaviorally by write-attribution.json W (no write)"
+    },
+    {
+      "item": "CLI door unindexed-project creation",
+      "status": "handler preflight refuses at every door (readpath.json D); the Lead's CLI gate covers the door itself"
+    },
+    {
+      "item": "script/verify-tool-docs.ts per-tool staleness branch for bb_security",
+      "status": "landed as 83054f66a; page regenerated with --only bb_security --write"
+    },
+    {
+      "item": "optional platform rule rejecting limit without history",
+      "status": "implemented in the handler as a named refusal; a platform-wide rule would still be the right home"
+    }
+  ],
+  "defects": [
+    {
+      "id": "C1",
+      "severity": "critical",
+      "title": "Declared-read path opens read-write and commits writes (handler.ts:85, taint.ts:103); shared ensureAnnotationTable churn amplifies it (+4 schema_version per rw open)",
+      "evidence": [
+        "audit/readpath.json#A-t0-default-mcp",
+        "audit/write-attribution.json",
+        "audit/annotation-write.json",
+        "audit/schema-writer.json"
+      ],
+      "status": "closed",
+      "fixedBy": "handler.ts + taint.ts open { readonly: true }; mutant handler-read-not-readonly / engine-read-not-readonly turn m13 contract RED; readpath.json A/A2/C byte-identical; write-attribution.json no header/page change"
+    },
+    {
+      "id": "C2",
+      "severity": "critical",
+      "title": "CLI/library door on an unindexed project CREATES the index and answers a false clean (exit 0)",
+      "evidence": [
+        "audit/readpath.json#D-unindexed-project"
+      ],
+      "status": "closed",
+      "fixedBy": "read-only preflight refuses every door (readpath.json D: MCP/CLI/library, createdFiles []); handler gate library-door legs"
+    },
+    {
+      "id": "C3",
+      "severity": "critical",
+      "title": "History silently drops a distinct finding: fingerprint omits flow state, confirmed+mitigated at one sink collide; response says 4 recorded, 3 persisted",
+      "evidence": [
+        "audit/history-policy.json"
+      ],
+      "status": "closed",
+      "fixedBy": "recorded identity includes state; m20 history asserts two persisted findings at one sink; mutant history-fingerprint-drops-state RED"
+    },
+    {
+      "id": "H1",
+      "severity": "high",
+      "title": "Documented 'history never contains severity=unknown' is not enforced; injected resolved+mitigated unknown-grade row persists",
+      "evidence": [
+        "audit/history-policy.json"
+      ],
+      "status": "closed",
+      "fixedBy": "docs corrected (unknown grade possible for ungradeable resolved flow); m17 invariant now measures state, not the type string"
+    },
+    {
+      "id": "H2",
+      "severity": "high",
+      "title": "Generated page and response footer promise auto-refresh + refresh=false; the tool has neither; answer byte-identical with/without BB_NO_AUTO_REFRESH",
+      "evidence": [
+        "audit/matrix.json#staleness"
+      ],
+      "status": "closed",
+      "fixedBy": "manual remediation footer only when stale; generator branch 83054f66a; docs gate asserts the manual phrasing"
+    },
+    {
+      "id": "H3",
+      "severity": "high",
+      "title": "6 of 13 existing security gates red on the current tree (stale anchors after the per-tool split)",
+      "evidence": [
+        "gates/EXITS.tsv",
+        "gates/"
+      ],
+      "status": "closed",
+      "fixedBy": "all 13 gate scripts exit 0 (gates/EXITS.tsv)"
+    },
+    {
+      "id": "H4",
+      "severity": "high",
+      "title": "m13 adversarial MCP leg does not forward BB_DATA_DIR to the child server",
+      "evidence": [
+        "gates/script_m13_verify-security-adversarial.out"
+      ],
+      "status": "closed",
+      "fixedBy": "m13 adversarial forwards BB_DATA_DIR to the MCP child; MCP door leg green"
+    },
+    {
+      "id": "H5",
+      "severity": "high",
+      "title": "Cold T2 door call 32,876 ms (>30 s client timeout); cold in-process 22,380 ms; warm p95 1,512 ms",
+      "evidence": [
+        "audit/readpath.json#C-t2-shared-default-mcp",
+        "audit/latency-A.json"
+      ],
+      "status": "closed",
+      "fixedBy": "door p95 5.1-6.1 s post-fix (LATENCY.json); the source-door startup cost is documented, client timeout 30 s"
+    },
+    {
+      "id": "H6",
+      "severity": "high",
+      "title": "history response unbounded: 600 findings -> 590,549 bytes; limit does not bound findings",
+      "evidence": [
+        "audit/cap.json"
+      ],
+      "status": "closed",
+      "fixedBy": "history findings page capped at 200 with findingsTotal/findingsShown/findingsTruncated + census; mutant history-page-cap-removed RED"
+    },
+    {
+      "id": "M1",
+      "severity": "medium",
+      "title": "capNote computed and unused on the live scan path (only the short '(N beyond the cap)' survives)",
+      "evidence": [
+        "audit/cap.json",
+        "REAL-CORPUS.json#ansible"
+      ],
+      "status": "closed",
+      "fixedBy": "CAPPED sentence emitted on the live read; mutant live-cap-note-dropped RED"
+    },
+    {
+      "id": "M2",
+      "severity": "medium",
+      "title": "limit ignored without history; history silently beats recordRun",
+      "evidence": [
+        "audit/matrix.json"
+      ],
+      "status": "closed",
+      "fixedBy": "limit without history refused by name"
+    },
+    {
+      "id": "M3",
+      "severity": "medium",
+      "title": "Evidence fingerprint hashes old assembler paths, not the per-tool handler/descriptor",
+      "evidence": [
+        "src/intelligence/security/evidence.ts"
+      ],
+      "status": "closed",
+      "fixedBy": "evidence fingerprint covers src/mcp/tools/bb_security/{handler,descriptor}.ts"
+    },
+    {
+      "id": "M4",
+      "severity": "medium",
+      "title": "m20 S2 auto-pass audit claims EVERY verifier but covers 11 of 13",
+      "evidence": [
+        "script/m20/verify-security-adversarial.ts"
+      ],
+      "status": "closed",
+      "fixedBy": "audit denominator is explicit: 10 audited + 2 declared not-audited (m17) = 13; the precision auto-pass it found was fixed"
+    },
+    {
+      "id": "M5",
+      "severity": "medium",
+      "title": "m13 Sec1 description check is a substring trap on the word 'flow'",
+      "evidence": [
+        "gates/script_m13_verify-security-contract.out"
+      ],
+      "status": "closed",
+      "fixedBy": "description check is a mode-claim regex, not the bare word 'flow'"
+    },
+    {
+      "id": "M6",
+      "severity": "medium",
+      "title": "Curation promises calibrated confidence in the text response; text does not render it",
+      "evidence": [
+        "docs/tools/bb_security.md",
+        "audit/matrix.json"
+      ],
+      "status": "closed",
+      "fixedBy": "text renders label/severity/symbol/file/source->sink/mitigated/stale; confidence lives in the history JSON, documented"
+    },
+    {
+      "id": "M7",
+      "severity": "medium",
+      "title": "Curation safety claim 'Source is read-only; recordRun writes only history' false until C1 is fixed",
+      "evidence": [
+        "audit/readpath.json"
+      ],
+      "status": "closed",
+      "fixedBy": "read path is genuinely read-only (C1); curation safety text names the one write and its additive migrations"
+    },
+    {
+      "id": "M8",
+      "severity": "medium",
+      "title": "Docs claim every security verifier writes through writeSealed; m13 (4) and m17 (2) write bare writeFileSync, records unsealed",
+      "evidence": [
+        "validation/m13/results/sec1.json",
+        "validation/m17/results/S1.json"
+      ],
+      "status": "closed",
+      "fixedBy": "docs state which verifiers seal (m15/m20) and which write unsealed through their harnesses (m13/m17)"
+    },
+    {
+      "id": "M9",
+      "severity": "medium",
+      "title": "50 000-cap can still auto-resolve findings beyond the census cap (declared, not prevented; not reproduced)",
+      "evidence": [
+        "src/mcp/tools/bb_security/handler.ts:61-73"
+      ],
+      "status": "closed",
+      "fixedBy": "declared, not prevented: recordRun uses a 50,000 census cap and prints the CAPPED sentence if even that bites (documented)"
+    },
+    {
+      "id": "M10",
+      "severity": "medium",
+      "title": "Two gates crash under npx tsx because they use Bun-only import.meta.dir",
+      "evidence": [
+        "gates/script_m13_verify-security-contract.out#npx-tsx-invocation"
+      ],
+      "status": "closed",
+      "fixedBy": "root derived from fileURLToPath; gates run under both bun and tsx"
+    },
+    {
+      "id": "L1",
+      "severity": "low",
+      "title": "handler.ts carries ~40 unused imports from the pre-split monolith",
+      "status": "closed",
+      "fixedBy": "handler rewritten; imports used"
+    },
+    {
+      "id": "L2",
+      "severity": "low",
+      "title": "Missing WHY header line; engine files have no author header",
+      "status": "closed",
+      "fixedBy": "author headers added to handler/descriptor/taint/evidence/cross-language + docs"
+    },
+    {
+      "id": "L3",
+      "severity": "low",
+      "title": "Banned process-attribution comments (inventory in AUDIT-PHASE-A.md \u00a77)",
+      "status": "closed",
+      "fixedBy": "process-attribution comments removed from owned files (token scan in PHASE-B.md section 3)"
+    },
+    {
+      "id": "L4",
+      "severity": "low",
+      "title": "pii_leak alias exists in labels but is undocumented",
+      "status": "closed",
+      "fixedBy": "pii -> pii_leak documented in the normalization section"
+    },
+    {
+      "id": "L5",
+      "severity": "low",
+      "title": "m13 Sec1 asserts a legacy wiring sentence (milestone narrative)",
+      "status": "closed",
+      "fixedBy": "contract gate rewritten; no milestone/wiring narrative"
+    },
+    {
+      "id": "L6",
+      "severity": "low",
+      "title": "derivedStaleness footer says 'findings files' while including observations",
+      "status": "closed",
+      "fixedBy": "footer says 'referenced file(s)' because it covers findings and observations"
+    },
+    {
+      "id": "L7",
+      "severity": "low",
+      "title": "No LSP twin for bb_security (charter: none) \u2014 no m55 leg to run",
+      "status": "open-by-design",
+      "note": "no LSP twin exists for this tool (charter table '\u2014'); nothing to run"
+    },
+    {
+      "id": "T2",
+      "severity": "high",
+      "title": "DEFAULT live scan over the 5,000 ms T2 budget (5,515/5,546 ms measured by the release battery) because endpoint resolution filtered project_id inside the indexed predicate and planned a full-project index scan per 500-id chunk",
+      "evidence": [
+        "audit/t2-default-budget.json",
+        "runlogs2/t2-resolve-plan.log"
+      ],
+      "status": "closed",
+      "fixedBy": "resolution matches the brain_symbol PRIMARY KEY and enforces project scope on the selected row; engine gate asserts the keyed shape and mutant engine-resolve-project-filter turns it RED; semantics unchanged (per-corpus dedup/resolved/observation counts identical)"
+    }
+  ],
+  "filesWritten": [
+    "validation/tools/bb_security/README.md",
+    "validation/tools/bb_security/PHASE-B.md",
+    "validation/tools/bb_security/REPORT.json",
+    "validation/tools/bb_security/REAL-CORPUS.json",
+    "validation/tools/bb_security/LATENCY.json",
+    "validation/tools/bb_security/gates/**",
+    "validation/tools/bb_security/audit/**",
+    "validation/tools/bb_security/work/**"
+  ],
+  "commits": {
+    "codeAndDocs": "44dad52b9",
+    "gates": "4b648f6e1",
+    "gatesFollowUp": "e97fe9457",
+    "evidence": "recorded in this commit",
+    "t2FixCode": "a8a61fef6",
+    "t2FixEvidence": "recorded in this commit"
+  }
+}

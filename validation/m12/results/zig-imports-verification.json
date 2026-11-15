@@ -1,0 +1,23 @@
+{
+  "files": 400,
+  "derivedSites": 1918,
+  "totals": {
+    "agree": 1918,
+    "missing": 0,
+    "phantom": 0,
+    "noLine": 0,
+    "sameSiteBinding": 575,
+    "collidesWithOtherDeclaration": 3
+  },
+  "targetShapes": {
+    "bare": 1259,
+    "path": 602,
+    "builtin": 57
+  },
+  "reported": {
+    "sameSiteBinding": 575,
+    "collidesWithOtherDeclaration": 3,
+    "why": "the binding idiom is the same fact twice; a collision is a source-level name coincidence, and both twins carry isImport"
+  },
+  "verdict": "clean"
+}

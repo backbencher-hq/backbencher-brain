@@ -56,14 +56,14 @@ the hover a portal; M44 makes what the portal opens *understandable*.
 
 | Code | Issue | Deliverable |
 |------|-------|-------------|
-| G1 | [#687](https://github.com/backbencher-hq/backbencher-brain/issues/687) Governance + v6-bar check | M44 ledger; closure gate; M29+M42 bars re-audited on every run; Understanding Rules appended to the contract doc and machine-gated |
-| U1 | [#688](https://github.com/backbencher-hq/backbencher-brain/issues/688) Usages dedup & grouping (data shape) | `bb/graph` usages mode returns callers/callees grouped per symbol with declared per-group relationship-type and occurrence counts; file-level/external rows separated with declared labels; no data dropped; fixture + mutation proof |
-| U2 | [#689](https://github.com/backbencher-hq/backbencher-brain/issues/689) Hub list redesign | `renderHubList`: name-first, one row per symbol, relation chips + counts, click affordance (hover/chevron), group headers; DOM harness positive/negative |
-| U3 | [#690](https://github.com/backbencher-hq/backbencher-brain/issues/690) Call tree rework | `renderHubTree`: real expandable tree with per-node counts, labeled leaves, clickable nodes; same harness law |
-| U4 | [#691](https://github.com/backbencher-hq/backbencher-brain/issues/691) Header counts + staleness/legend clarity | panel header counts derived from the rendered groups (rule 4); tier/stale badges visually distinct and consistent with the hover legend |
-| U5 | [#692](https://github.com/backbencher-hq/backbencher-brain/issues/692) Impact resolution for member/keyword targets | constructors (and member-name targets) resolve through the owning declaration; `constructor` case fixed; declared errors only when the symbol is genuinely absent |
-| U6 | [#693](https://github.com/backbencher-hq/backbencher-brain/issues/693) References fallback surface | when the editor's native references surface is unavailable, `show all usages` opens our own usages list instead of a message-only dead end (rule 6) |
-| X1 | [#694](https://github.com/backbencher-hq/backbencher-brain/issues/694) Gate + launch bar | M44 closure gate (full-ladder audit at HEAD); in-editor visual leg through E5/E6; every known gap fixed or owner-waived |
+| G1 | [#687](https://github.com/ishaq2321/backbencher-brain/issues/687) Governance + v6-bar check | M44 ledger; closure gate; M29+M42 bars re-audited on every run; Understanding Rules appended to the contract doc and machine-gated |
+| U1 | [#688](https://github.com/ishaq2321/backbencher-brain/issues/688) Usages dedup & grouping (data shape) | `bb/graph` usages mode returns callers/callees grouped per symbol with declared per-group relationship-type and occurrence counts; file-level/external rows separated with declared labels; no data dropped; fixture + mutation proof |
+| U2 | [#689](https://github.com/ishaq2321/backbencher-brain/issues/689) Hub list redesign | `renderHubList`: name-first, one row per symbol, relation chips + counts, click affordance (hover/chevron), group headers; DOM harness positive/negative |
+| U3 | [#690](https://github.com/ishaq2321/backbencher-brain/issues/690) Call tree rework | `renderHubTree`: real expandable tree with per-node counts, labeled leaves, clickable nodes; same harness law |
+| U4 | [#691](https://github.com/ishaq2321/backbencher-brain/issues/691) Header counts + staleness/legend clarity | panel header counts derived from the rendered groups (rule 4); tier/stale badges visually distinct and consistent with the hover legend |
+| U5 | [#692](https://github.com/ishaq2321/backbencher-brain/issues/692) Impact resolution for member/keyword targets | constructors (and member-name targets) resolve through the owning declaration; `constructor` case fixed; declared errors only when the symbol is genuinely absent |
+| U6 | [#693](https://github.com/ishaq2321/backbencher-brain/issues/693) References fallback surface | when the editor's native references surface is unavailable, `show all usages` opens our own usages list instead of a message-only dead end (rule 6) |
+| X1 | [#694](https://github.com/ishaq2321/backbencher-brain/issues/694) Gate + launch bar | M44 closure gate (full-ladder audit at HEAD); in-editor visual leg through E5/E6; every known gap fixed or owner-waived |
 
 ### U4 decision (2026-09-07): header counts + the ONE legend
 

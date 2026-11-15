@@ -1,0 +1,29 @@
+{
+  "fixtureId": "vue/error-recovery",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The two error pins were measured before being written: with the vue grammar, `<div class= >` yields an ERROR node at 29:13 and `<p` yields a zero-width MISSING `>` at 30:5, and real-vue-analyzer.ts's `rootNode.hasError` walk reports each at its own range. The symbol pins are the fixture's real claim and were read off the run: the seam parses the SFC script block separately, so `BrokenSfc` (from `export default { name: … }`) and `shared` (a script declaration AFTER the broken template) must both survive a template that does not parse. Written as an authoredAfterRun fixture (authoredBeforeAnalyzerRun: false) because the file exists to make an already-HANDLED grammar node type EXERCISED, not to gate a behavior change — the true claim lives in validate-driven pins on script-error-offset and the completeness spec.",
+  "rationale": "F28 (2026-10-12). Section A of script/m14/completeness-inventory.ts reports every grammar node type the vue lane's spec does not classify, and the vue grammar's two error-recovery types — `ERROR` and the zero-width MISSING token — were in no bucket while the svelte lane, which shares this seam's script machinery, had classified both. They are HANDLED: real-vue-analyzer.ts turns every `n.type === \"ERROR\" || n.isMissing` node into a ParseResult.errors warning at that node's own range. Classifying them HANDLED then exposed the second half — verify-fixture-coverage.ts (F6, no dead analyzer literal) demanded a fixture that EXERCISES each handled type, and no vue fixture source contained a markup-level parse error. script-error-offset, the lane's other error fixture, pins a SCRIPT-side error produced by the JavaScript sub-parser and shifted to SFC coordinates, so it exercises neither vue-grammar node. This fixture supplies both shapes and also pins that the component's identity and declarations survive the damage, mirroring the svelte lane's error-recovery fixture.",
+  "expectSymbols": [
+    {
+      "name": "BrokenSfc"
+    },
+    {
+      "name": "shared"
+    }
+  ],
+  "expectErrors": [
+    {
+      "startLine": 29
+    },
+    {
+      "startLine": 30
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "class"
+    }
+  ]
+}

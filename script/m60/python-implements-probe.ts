@@ -40,11 +40,11 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const STDLIB = process.env.BB_PY_STDLIB ?? "/usr/lib/python3.10"
 const MAX_BYTES = 512 * 1024
 
-type Src = { corpus: "fixtures" | "stdlib"; repo: string; rel: string; text: string }
+type Src = { corpus: "bb_tests" | "stdlib"; repo: string; rel: string; text: string }
 function load(): Src[] {
   const out: Src[] = []
   for (const e of readdirSync(CR)) {
@@ -58,7 +58,7 @@ function load(): Src[] {
       let text: string
       try { if (statSync(abs).size > MAX_BYTES) continue; text = readFileSync(abs, "utf8") } catch { continue }
       if (detectLanguageFromPath(abs, text) !== "python") continue
-      out.push({ corpus: "fixtures", repo: e, rel, text })
+      out.push({ corpus: "bb_tests", repo: e, rel, text })
     }
   }
   const stack = [STDLIB]
@@ -94,8 +94,8 @@ const CONCRETE_BUILTIN = new Set(["int", "str", "float", "bool", "bytes", "bytea
 const INTERFACE_BASE = new Set(["ABC", "ABCMeta", "Protocol", "Generic", "object"])
 
 type Acc = Record<string, { sites: number; files: number; examples: string[] }>
-const acc: Record<"fixtures" | "stdlib", Acc> = { fixtures: {}, stdlib: {} }
-function hit(corpus: "fixtures" | "stdlib", key: string, label: string) {
+const acc: Record<"bb_tests" | "stdlib", Acc> = { bb_tests: {}, stdlib: {} }
+function hit(corpus: "bb_tests" | "stdlib", key: string, label: string) {
   const a = acc[corpus]
   const row = a[key] ?? { sites: 0, files: 0, examples: [] }
   row.sites++
@@ -172,8 +172,8 @@ for (const f of files) {
 }
 
 console.log("INCOMING_PY — implements decision instrument")
-console.log(`fixtures ${acc.fixtures.classes ? [...Object.values(acc.fixtures)].reduce((a, b) => a + b.sites, 0) : 0} node hits   stdlib likewise\n`)
-for (const corpus of ["fixtures", "stdlib"] as const) {
+console.log(`bb_tests ${acc.bb_tests.classes ? [...Object.values(acc.bb_tests)].reduce((a, b) => a + b.sites, 0) : 0} node hits   stdlib likewise\n`)
+for (const corpus of ["bb_tests", "stdlib"] as const) {
   console.log(`--- ${corpus} ---`)
   const keys = Object.keys(acc[corpus]).sort()
   for (const k of keys) {

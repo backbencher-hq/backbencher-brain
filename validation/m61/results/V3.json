@@ -1,0 +1,102 @@
+{
+  "issue": "M61.V3 reproducibility auditor (issue #844)",
+  "code": "V3",
+  "milestone": "M61",
+  "status": "verified",
+  "checks": 37,
+  "passed": 37,
+  "failed": 0,
+  "realFailed": 0,
+  "failures": [],
+  "checksList": [
+    "ok: R1: the sample parses and declares a minimum",
+    "ok: R1: the declared minimum is at least 5",
+    "ok: R1: the sample declares at least the minimum number of members",
+    "ok: R1: every required milestone has a sampled member",
+    "ok: R1: no record is sampled twice",
+    "ok: R1: every member's verifier script exists",
+    "ok: R1: every member's stored record exists",
+    "ok: R1: the auditor hardcodes no member record (sample file is the owner)",
+    "ok: R2: classifyRun — a timeout is a harness kill, not a drift",
+    "ok: R2: classifyRun — a signal is a harness kill",
+    "ok: R2: classifyRun — exit 0 is a clean run",
+    "ok: R2: classifyRun — a non-zero exit is a real failure",
+    "ok: R2: diffRecords — identical records do not diverge",
+    "ok: R2: diffRecords — a changed count diverges, with both values",
+    "ok: R2: diffRecords — a flipped check diverges, naming its index",
+    "ok: R2: diffRecords — a changed volatile field (generatedAt) does not diverge",
+    "ok: R2: sampleVerdict — all reproduced -> verified",
+    "ok: R2: sampleVerdict — a diverged member is a FAILURE naming the field",
+    "ok: R2: sampleVerdict — an UNDECLARED block is a failure (never silently aged out)",
+    "ok: R2: sampleVerdict — a DECLARED block is accepted",
+    "ok: R2: sampleVerdict — fewer than the declared minimum reproduced fails",
+    "ok: R2: sampleVerdict — a required milestone with no reproducing member fails",
+    "ok: R3: the doctored record is reported as diverged",
+    "ok: R3: the divergence names the altered field with both values",
+    "ok: R3: the doctored audit verdict is known-gap",
+    "ok: R4: the real stored evidence is byte-unchanged (independent hash)",
+    "ok: R4: every sampled member reproduces",
+    "ok: R4: at least the declared minimum reproduced",
+    "ok: R4: the audit verdict is verified",
+    "ok: R4: the real stored evidence is byte-unchanged by the audit",
+    "ok: R4: the audit reports its isolation mode",
+    "ok: M: diff-blind",
+    "ok: M: blocked-silent",
+    "ok: M: kill-as-drift",
+    "ok: M: minimum-ignored",
+    "ok: M: clobber-blind",
+    "ok: R: this verifier's own evidence is a sealed record"
+  ],
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "verifierCommand": "npx tsx script/m61/verify-reproducibility.ts",
+  "evidenceFile": "V3.json",
+  "generatedAt": "2026-11-09T10:34:45.222Z",
+  "sample": {
+    "file": "script/m61/reproducibility-sample.json",
+    "declaredMinimum": 5,
+    "requiredMilestones": [
+      "m24",
+      "m29",
+      "m42",
+      "m44",
+      "m55"
+    ],
+    "members": [
+      "m24:validation/m24/results/P1.json",
+      "m29:validation/m29/results/R4-verify.json",
+      "m42:validation/m42/results/H1.json",
+      "m42:validation/m42/results/H6.json",
+      "m44:validation/m44/results/U6.json",
+      "m44:validation/m44/results/U2.json",
+      "m55:validation/m55/results/P1.json",
+      "m61:validation/m61/results/V1.json"
+    ]
+  },
+  "audit": {
+    "isolation": "git-worktree-detached",
+    "reproduced": 6,
+    "diverged": 0,
+    "blocked": 2,
+    "storedUntouched": true,
+    "perMember": [
+      "m24:reproduced",
+      "m29:reproduced",
+      "m42:blocked",
+      "m42:reproduced",
+      "m44:blocked",
+      "m44:reproduced",
+      "m55:reproduced",
+      "m61:reproduced"
+    ]
+  },
+  "limitations": [
+    "The sample is runtime-light by design (component-level gates): the audit proves the recorded commands reproduce, not that every heavy editor/giant-repo leg does. Heavy legs are re-run by their own milestone closures; extending the sample is a one-line change to the sample file.",
+    "Isolation is a detached git worktree at HEAD with the repo's node_modules symlinked in; a member that needs an uncommitted build artifact (dist/) is not a sample member.",
+    "Divergence is detected on the declared stable fields plus the per-check verdict list; it does not compare free-text fields the gates may legitimately vary."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:34:45.222Z",
+    "contentSha256": "3f7e9e84350bf44df7fa0de3bc6a95e4c08e21ac2ae8ea64d5d99b0aea97515a"
+  }
+}

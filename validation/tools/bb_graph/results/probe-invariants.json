@@ -1,0 +1,760 @@
+{
+  "probe": "bb_graph door",
+  "section": "invariants",
+  "at": "2026-11-01T20:28:13.485Z",
+  "project": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbBefore": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564868048
+  },
+  "invariants": [
+    {
+      "symbol": "traverseGraph",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/graph/graph-engine.ts:traverseGraph:500",
+        "name": "traverseGraph",
+        "symbolType": "function",
+        "file": "src/intelligence/graph/graph-engine.ts",
+        "line": 500,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/intelligence/graph/graph-engine.ts",
+        "candidates": 2,
+        "match": "exact"
+      },
+      "callers": 2,
+      "callees": 169,
+      "bytes": 197820,
+      "ms": 54.9,
+      "tierCounts": {
+        "usage_contextual": 144,
+        "reference_qualified": 27
+      },
+      "unknownTiers": [],
+      "tierViolations": [],
+      "tierViolationCount": 0,
+      "missingRowIds": 0,
+      "missingEndpoints": 0,
+      "targetBasis": {
+        "callerNonNull": 0,
+        "callerNull": 2,
+        "calleeNonNull": 0,
+        "calleeNull": 169
+      },
+      "partition": {
+        "callersExpected": 2,
+        "callersSum": 2,
+        "calleesExpected": 169,
+        "calleesSum": 169
+      },
+      "truncation": {
+        "truncated": true,
+        "reasons": [
+          "caller-depth-cap-reached",
+          "callee-depth-cap-reached"
+        ],
+        "joinedMatches": true,
+        "filterNarrowed": false,
+        "filterReason": null,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "totalEdgeLimitReached": false,
+        "cappedQueries": 0,
+        "callersIfUncapped": null,
+        "calleesIfUncapped": null,
+        "totalsAreLowerBounds": false,
+        "timeBudgetMs": 0,
+        "timeBudgetExhausted": false
+      },
+      "filters": {
+        "noiseFiltered": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageExcluded": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageEdges": 0,
+        "unattributed": {
+          "callers": 0,
+          "callees": 0
+        }
+      },
+      "scope": {
+        "direction": "both",
+        "relationshipTypes": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "includeCrossLanguage": true
+      },
+      "deduped": {
+        "cascadeRepeatsCollapsed": 0,
+        "spellingVariantsCollapsed": 0
+      },
+      "edgesByType": {
+        "calls": 118,
+        "references": 27,
+        "uses": 26
+      },
+      "edgeKindPriority": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements",
+        "mixes_in",
+        "renders",
+        "overrides",
+        "decorates",
+        "uses",
+        "references",
+        "imports",
+        "exports",
+        "contains",
+        "part_of"
+      ],
+      "edgeFieldsObserved": [
+        "direction",
+        "from",
+        "to",
+        "relationshipType",
+        "confidence",
+        "tier",
+        "evidenceClass",
+        "isCrossLanguage",
+        "bridgeMechanism",
+        "depth",
+        "callSite",
+        "match",
+        "matchedMember",
+        "targetBasis",
+        "rowId"
+      ],
+      "summaryFieldsObserved": [
+        "totalCallers",
+        "totalCallees",
+        "maxDepthReached",
+        "maxDepth",
+        "crossLanguageEdges",
+        "noiseFiltered",
+        "unattributed",
+        "crossLanguageExcluded",
+        "truncated",
+        "truncationReason",
+        "truncationReasons",
+        "filterNarrowed",
+        "filterReason",
+        "edgeLimit",
+        "maxEdges",
+        "timeBudgetMs",
+        "timeBudgetExhausted",
+        "totalEdgeLimitReached",
+        "cappedQueries",
+        "callersIfUncapped",
+        "calleesIfUncapped",
+        "totalsAreLowerBounds",
+        "exactCallers",
+        "cascadedCallers",
+        "exactCallees",
+        "cascadedCallees",
+        "deeperCallers",
+        "deeperCallees",
+        "callerBudget",
+        "calleeBudget",
+        "callerBudgetExhausted",
+        "calleeBudgetExhausted",
+        "edgesInBothDirections",
+        "edgesByType",
+        "edgeKindPriority",
+        "dedupedAtToolLayer",
+        "scope"
+      ],
+      "rootFieldsObserved": [
+        "id",
+        "name",
+        "symbolType",
+        "file",
+        "line",
+        "filePath",
+        "candidates",
+        "match"
+      ]
+    },
+    {
+      "symbol": "likeContains",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/graph/graph-engine.ts:likeContains:1421",
+        "name": "likeContains",
+        "symbolType": "function",
+        "file": "src/intelligence/graph/graph-engine.ts",
+        "line": 1421,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/intelligence/graph/graph-engine.ts",
+        "candidates": 1,
+        "match": "exact"
+      },
+      "callers": 2,
+      "callees": 0,
+      "bytes": 6198,
+      "ms": 4.92,
+      "tierCounts": {
+        "usage_contextual": 1,
+        "reference_qualified": 1
+      },
+      "unknownTiers": [],
+      "tierViolations": [],
+      "tierViolationCount": 0,
+      "missingRowIds": 0,
+      "missingEndpoints": 0,
+      "targetBasis": {
+        "callerNonNull": 0,
+        "callerNull": 2,
+        "calleeNonNull": 0,
+        "calleeNull": 0
+      },
+      "partition": {
+        "callersExpected": 2,
+        "callersSum": 2,
+        "calleesExpected": 0,
+        "calleesSum": 0
+      },
+      "truncation": {
+        "truncated": true,
+        "reasons": [
+          "caller-depth-cap-reached"
+        ],
+        "joinedMatches": true,
+        "filterNarrowed": false,
+        "filterReason": null,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "totalEdgeLimitReached": false,
+        "cappedQueries": 0,
+        "callersIfUncapped": null,
+        "calleesIfUncapped": null,
+        "totalsAreLowerBounds": false,
+        "timeBudgetMs": 0,
+        "timeBudgetExhausted": false
+      },
+      "filters": {
+        "noiseFiltered": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageExcluded": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageEdges": 0,
+        "unattributed": {
+          "callers": 1,
+          "callees": 0
+        }
+      },
+      "scope": {
+        "direction": "both",
+        "relationshipTypes": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "includeCrossLanguage": true
+      },
+      "deduped": {
+        "cascadeRepeatsCollapsed": 0,
+        "spellingVariantsCollapsed": 0
+      },
+      "edgesByType": {
+        "calls": 1,
+        "references": 1
+      },
+      "edgeKindPriority": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements",
+        "mixes_in",
+        "renders",
+        "overrides",
+        "decorates",
+        "uses",
+        "references",
+        "imports",
+        "exports",
+        "contains",
+        "part_of"
+      ],
+      "edgeFieldsObserved": [
+        "direction",
+        "from",
+        "to",
+        "relationshipType",
+        "confidence",
+        "tier",
+        "evidenceClass",
+        "isCrossLanguage",
+        "bridgeMechanism",
+        "depth",
+        "callSite",
+        "match",
+        "matchedMember",
+        "targetBasis",
+        "rowId"
+      ],
+      "summaryFieldsObserved": [
+        "totalCallers",
+        "totalCallees",
+        "maxDepthReached",
+        "maxDepth",
+        "crossLanguageEdges",
+        "noiseFiltered",
+        "unattributed",
+        "crossLanguageExcluded",
+        "truncated",
+        "truncationReason",
+        "truncationReasons",
+        "filterNarrowed",
+        "filterReason",
+        "edgeLimit",
+        "maxEdges",
+        "timeBudgetMs",
+        "timeBudgetExhausted",
+        "totalEdgeLimitReached",
+        "cappedQueries",
+        "callersIfUncapped",
+        "calleesIfUncapped",
+        "totalsAreLowerBounds",
+        "exactCallers",
+        "cascadedCallers",
+        "exactCallees",
+        "cascadedCallees",
+        "deeperCallers",
+        "deeperCallees",
+        "callerBudget",
+        "calleeBudget",
+        "callerBudgetExhausted",
+        "calleeBudgetExhausted",
+        "edgesInBothDirections",
+        "edgesByType",
+        "edgeKindPriority",
+        "dedupedAtToolLayer",
+        "scope"
+      ],
+      "rootFieldsObserved": [
+        "id",
+        "name",
+        "symbolType",
+        "file",
+        "line",
+        "filePath",
+        "candidates",
+        "match"
+      ]
+    },
+    {
+      "symbol": "FreshnessResolver",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/documentation/doc-engine.ts:FreshnessResolver:311",
+        "name": "FreshnessResolver",
+        "symbolType": "class",
+        "file": "src/intelligence/documentation/doc-engine.ts",
+        "line": 311,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/intelligence/documentation/doc-engine.ts",
+        "candidates": 1,
+        "match": "exact"
+      },
+      "callers": 25,
+      "callees": 15,
+      "bytes": 52420,
+      "ms": 11.84,
+      "tierCounts": {
+        "usage_contextual": 29,
+        "structural": 7,
+        "reference_qualified": 4
+      },
+      "unknownTiers": [],
+      "tierViolations": [],
+      "tierViolationCount": 0,
+      "missingRowIds": 0,
+      "missingEndpoints": 0,
+      "targetBasis": {
+        "callerNonNull": 10,
+        "callerNull": 15,
+        "calleeNonNull": 4,
+        "calleeNull": 11
+      },
+      "partition": {
+        "callersExpected": 25,
+        "callersSum": 25,
+        "calleesExpected": 15,
+        "calleesSum": 15
+      },
+      "truncation": {
+        "truncated": true,
+        "reasons": [
+          "caller-depth-cap-reached",
+          "callee-depth-cap-reached"
+        ],
+        "joinedMatches": true,
+        "filterNarrowed": false,
+        "filterReason": null,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "totalEdgeLimitReached": false,
+        "cappedQueries": 0,
+        "callersIfUncapped": null,
+        "calleesIfUncapped": null,
+        "totalsAreLowerBounds": false,
+        "timeBudgetMs": 0,
+        "timeBudgetExhausted": false
+      },
+      "filters": {
+        "noiseFiltered": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageExcluded": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageEdges": 0,
+        "unattributed": {
+          "callers": 0,
+          "callees": 0
+        }
+      },
+      "scope": {
+        "direction": "both",
+        "relationshipTypes": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "includeCrossLanguage": true
+      },
+      "deduped": {
+        "cascadeRepeatsCollapsed": 0,
+        "spellingVariantsCollapsed": 0
+      },
+      "edgesByType": {
+        "calls": 10,
+        "instantiates": 1,
+        "uses": 19,
+        "references": 4,
+        "contains": 6
+      },
+      "edgeKindPriority": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements",
+        "mixes_in",
+        "renders",
+        "overrides",
+        "decorates",
+        "uses",
+        "references",
+        "imports",
+        "exports",
+        "contains",
+        "part_of"
+      ],
+      "edgeFieldsObserved": [
+        "direction",
+        "from",
+        "to",
+        "relationshipType",
+        "confidence",
+        "tier",
+        "evidenceClass",
+        "isCrossLanguage",
+        "bridgeMechanism",
+        "depth",
+        "callSite",
+        "match",
+        "matchedMember",
+        "targetBasis",
+        "rowId"
+      ],
+      "summaryFieldsObserved": [
+        "totalCallers",
+        "totalCallees",
+        "maxDepthReached",
+        "maxDepth",
+        "crossLanguageEdges",
+        "noiseFiltered",
+        "unattributed",
+        "crossLanguageExcluded",
+        "truncated",
+        "truncationReason",
+        "truncationReasons",
+        "filterNarrowed",
+        "filterReason",
+        "edgeLimit",
+        "maxEdges",
+        "timeBudgetMs",
+        "timeBudgetExhausted",
+        "totalEdgeLimitReached",
+        "cappedQueries",
+        "callersIfUncapped",
+        "calleesIfUncapped",
+        "totalsAreLowerBounds",
+        "exactCallers",
+        "cascadedCallers",
+        "exactCallees",
+        "cascadedCallees",
+        "deeperCallers",
+        "deeperCallees",
+        "callerBudget",
+        "calleeBudget",
+        "callerBudgetExhausted",
+        "calleeBudgetExhausted",
+        "edgesInBothDirections",
+        "edgesByType",
+        "edgeKindPriority",
+        "dedupedAtToolLayer",
+        "scope"
+      ],
+      "rootFieldsObserved": [
+        "id",
+        "name",
+        "symbolType",
+        "file",
+        "line",
+        "filePath",
+        "candidates",
+        "match"
+      ]
+    },
+    {
+      "symbol": "VisitContext",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/ast/real-yaml-analyzer.ts:VisitContext:300",
+        "name": "VisitContext",
+        "symbolType": "interface",
+        "file": "src/ast/real-yaml-analyzer.ts",
+        "line": 300,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/ast/real-yaml-analyzer.ts",
+        "candidates": 1,
+        "match": "exact"
+      },
+      "callers": 63,
+      "callees": 12,
+      "bytes": 91444,
+      "ms": 14.34,
+      "tierCounts": {
+        "usage_contextual": 53,
+        "structural": 20,
+        "reference_qualified": 2
+      },
+      "unknownTiers": [],
+      "tierViolations": [],
+      "tierViolationCount": 0,
+      "missingRowIds": 0,
+      "missingEndpoints": 0,
+      "targetBasis": {
+        "callerNonNull": 49,
+        "callerNull": 14,
+        "calleeNonNull": 0,
+        "calleeNull": 12
+      },
+      "partition": {
+        "callersExpected": 63,
+        "callersSum": 63,
+        "calleesExpected": 12,
+        "calleesSum": 12
+      },
+      "truncation": {
+        "truncated": true,
+        "reasons": [
+          "caller-depth-cap-reached",
+          "callee-depth-cap-reached"
+        ],
+        "joinedMatches": true,
+        "filterNarrowed": false,
+        "filterReason": null,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "totalEdgeLimitReached": false,
+        "cappedQueries": 0,
+        "callersIfUncapped": null,
+        "calleesIfUncapped": null,
+        "totalsAreLowerBounds": false,
+        "timeBudgetMs": 0,
+        "timeBudgetExhausted": false
+      },
+      "filters": {
+        "noiseFiltered": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageExcluded": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageEdges": 0,
+        "unattributed": {
+          "callers": 1,
+          "callees": 0
+        }
+      },
+      "scope": {
+        "direction": "both",
+        "relationshipTypes": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "includeCrossLanguage": true
+      },
+      "deduped": {
+        "cascadeRepeatsCollapsed": 0,
+        "spellingVariantsCollapsed": 0
+      },
+      "edgesByType": {
+        "uses": 53,
+        "contains": 20,
+        "references": 2
+      },
+      "edgeKindPriority": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements",
+        "mixes_in",
+        "renders",
+        "overrides",
+        "decorates",
+        "uses",
+        "references",
+        "imports",
+        "exports",
+        "contains",
+        "part_of"
+      ],
+      "edgeFieldsObserved": [
+        "direction",
+        "from",
+        "to",
+        "relationshipType",
+        "confidence",
+        "tier",
+        "evidenceClass",
+        "isCrossLanguage",
+        "bridgeMechanism",
+        "depth",
+        "callSite",
+        "match",
+        "matchedMember",
+        "targetBasis",
+        "rowId"
+      ],
+      "summaryFieldsObserved": [
+        "totalCallers",
+        "totalCallees",
+        "maxDepthReached",
+        "maxDepth",
+        "crossLanguageEdges",
+        "noiseFiltered",
+        "unattributed",
+        "crossLanguageExcluded",
+        "truncated",
+        "truncationReason",
+        "truncationReasons",
+        "filterNarrowed",
+        "filterReason",
+        "edgeLimit",
+        "maxEdges",
+        "timeBudgetMs",
+        "timeBudgetExhausted",
+        "totalEdgeLimitReached",
+        "cappedQueries",
+        "callersIfUncapped",
+        "calleesIfUncapped",
+        "totalsAreLowerBounds",
+        "exactCallers",
+        "cascadedCallers",
+        "exactCallees",
+        "cascadedCallees",
+        "deeperCallers",
+        "deeperCallees",
+        "callerBudget",
+        "calleeBudget",
+        "callerBudgetExhausted",
+        "calleeBudgetExhausted",
+        "edgesInBothDirections",
+        "edgesByType",
+        "edgeKindPriority",
+        "dedupedAtToolLayer",
+        "scope"
+      ],
+      "rootFieldsObserved": [
+        "id",
+        "name",
+        "symbolType",
+        "file",
+        "line",
+        "filePath",
+        "candidates",
+        "match"
+      ]
+    }
+  ],
+  "dbAfter": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564893499
+  },
+  "dbUnchanged": false
+}

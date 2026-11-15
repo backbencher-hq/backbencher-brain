@@ -1,0 +1,108 @@
+{
+  "scss": {
+    "files": 4433,
+    "above": {
+      "1000": 29,
+      "2000": 9,
+      "3000": 4,
+      "5000": 4,
+      "10000": 3,
+      "20000": 1
+    },
+    "top10": [
+      {
+        "file": "bulma/docs/vendor/fontawesome-free-6.5.2-web/scss/_variables.scss",
+        "widest": 43808
+      },
+      {
+        "file": "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/scss/_variables.scss",
+        "widest": 10906
+      },
+      {
+        "file": "bulma/docs/vendor/fontawesome-free-5.15.2-web/scss/_variables.scss",
+        "widest": 10906
+      },
+      {
+        "file": "bootstrap/scss/_variables.scss",
+        "widest": 6513
+      },
+      {
+        "file": "bootstrap/scss/_utilities.scss",
+        "widest": 2780
+      },
+      {
+        "file": "bulma/sass/components/navbar.scss",
+        "widest": 2692
+      },
+      {
+        "file": "bulma/docs/website.scss",
+        "widest": 2651
+      },
+      {
+        "file": "primer-css/src/layout/page-layout.scss",
+        "widest": 2190
+      },
+      {
+        "file": "bulma/sass/elements/button.scss",
+        "widest": 2150
+      },
+      {
+        "file": "phpmyadmin/public/themes/bootstrap/scss/_common.scss",
+        "widest": 1822
+      }
+    ]
+  },
+  "css": {
+    "files": 1174,
+    "above": {
+      "1000": 53,
+      "2000": 29,
+      "3000": 20,
+      "5000": 8,
+      "10000": 0,
+      "20000": 0
+    },
+    "top10": [
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-rhea.css",
+        "widest": 7745
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-mira.css",
+        "widest": 7719
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-luma.css",
+        "widest": 7664
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-vega.css",
+        "widest": 7620
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-nova.css",
+        "widest": 7619
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-maia.css",
+        "widest": 7525
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-sera.css",
+        "widest": 7456
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/styles/style-lyra.css",
+        "widest": 7416
+      },
+      {
+        "file": "hasura-engine/scripts/ekg/bootstrap-1.4.0.css",
+        "widest": 4457
+      },
+      {
+        "file": "hasura-engine/scripts/ekg/bootstrap-1.4.0.min.css",
+        "widest": 4442
+      }
+    ]
+  }
+}

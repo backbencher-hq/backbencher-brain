@@ -1,0 +1,101 @@
+{
+  "fixtureId": "dart/flutter-bloc-generic-target",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Flutter/bloc coverage for the dart lane, which had none. MEASURED 2026-10-07 with `bun validation/m14/fixtures/dart/dump-symbols.mts`: the first version of this expectation asserted `uses` for the two type-argument edges and a bare `build` for the override target, and it FAILED on all three. The dump shows the analyzer was already right and the EXPECTATION was wrong: a type mention is published as `references` at 0.95 (real-dart-analyzer.ts collectTypeMention), and an `overrides` target is owner-qualified (`StatelessWidget.build`). Recorded rather than quietly corrected, because a fixture whose expectations are written from assumption instead of measurement manufactures defects that do not exist - which is what happened here, for three cells, on the first run. The claims now pinned: the bloc/cubit dependency written inside angle brackets IS an edge whose target is the type argument, in both call shapes; the generic static `BlocBase.of<T>()` resolves the same way; `with X` is a mixin application and publishes `uses`; and an in-file framework base is a real target for `extends` and for `overrides`. The framework types are DECLARED IN THE FIXTURE on purpose so this measures the ANALYZER and not the corpus: a real Flutter corpus does not contain packages/flutter (0 files for lib/src/widgets), and that separate population gap is recorded in docs/analyzers/LAPTOP-B-STATUS.md.",
+  "expectSymbols": [
+    { "name": "CounterCubit", "kind": "class" },
+    { "name": "CounterBloc", "kind": "class" },
+    { "name": "CounterPage", "kind": "class" },
+    { "name": "CounterText", "kind": "class" },
+    { "name": "CounterState", "kind": "class" },
+    { "name": "SingleTickerProviderStateMixin" },
+    { "name": "BuildContext", "kind": "class" },
+    { "name": "increment", "kind": "method" },
+    { "name": "build", "kind": "method" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "build",
+      "target": "CounterCubit",
+      "confidenceMin": 0.95,
+      "comment": "THE CLAIM: `context.read<CounterCubit>()` names CounterCubit inside the angle brackets, and the edge target IS that type argument (not the method `read`). A type mention is `references`, not `uses`."
+    },
+    {
+      "type": "references",
+      "source": "build",
+      "target": "CounterBloc",
+      "confidenceMin": 0.95,
+      "comment": "THE CLAIM, second shape: `BlocBase.of<CounterBloc>(context)` - the BlocProvider.of<T>() pattern - resolves the same way."
+    },
+    {
+      "type": "calls",
+      "source": "build",
+      "target": "read",
+      "comment": "the call itself is labelled separately, so the type argument is not double-counted as a use of `read`"
+    },
+    {
+      "type": "references",
+      "source": "build",
+      "target": "Widget",
+      "comment": "the return type of build() is a type position"
+    },
+    {
+      "type": "references",
+      "source": "build",
+      "target": "BuildContext",
+      "comment": "the parameter type of build() is a type position"
+    },
+    {
+      "type": "extends",
+      "source": "CounterCubit",
+      "target": "Cubit",
+      "comment": "plain Dart: a bloc extends Cubit<T>"
+    },
+    {
+      "type": "extends",
+      "source": "CounterPage",
+      "target": "StatelessWidget",
+      "comment": "plain Dart: a widget extends its framework base"
+    },
+    {
+      "type": "mixes_in",
+      "source": "CounterPage",
+      "target": "SingleTickerProviderStateMixin",
+      "comment": "`with X` is a mixin application; 2026-10-18 it records `mixes_in`, not `uses`"
+    },
+    {
+      "type": "overrides",
+      "source": "CounterPage.build",
+      "target": "StatelessWidget.build",
+      "comment": "an override target is OWNER-QUALIFIED: the member it replaces, not the bare name"
+    },
+    {
+      "type": "overrides",
+      "source": "CounterBloc.state",
+      "target": "BlocBase.state",
+      "comment": "a getter override of an inherited framework member"
+    },
+    {
+      "type": "instantiates",
+      "source": "increment",
+      "target": "CounterState",
+      "comment": "the cubit's emit() payload"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "CounterPage",
+      "target": "X",
+      "comment": "the `on BuildContext` clause of an EXTENSION is not the widget's base"
+    },
+    {
+      "type": "uses",
+      "source": "build",
+      "target": "CounterCubit",
+      "comment": "the bloc dependency must be `references` (a type mention), not `uses` - pinning the label so it cannot drift to the weaker edge"
+    }
+  ]
+}

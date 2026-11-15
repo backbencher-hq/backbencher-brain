@@ -1,0 +1,1 @@
+{"gate":"m13-patterns-orphans","command":"bun run script/m13/verify-patterns-orphans.ts","exitCode":0,"durationMs":3974,"log":"validation/tools/bb_patterns/gates/logs/m13-patterns-orphans.log","recordedAt":"2026-11-03T17:16:58Z"}

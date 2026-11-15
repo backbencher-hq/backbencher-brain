@@ -1,0 +1,55 @@
+{
+  "fixtureId": "zig/variable-annotation-type-position",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Z68 (pass 27). A variable's TYPE ANNOTATION is a declared-type fact. Z16 reads `variable_declaration`'s grammar `type` field and publishes `references (declared_type)` for it, but `isTypePosition` lists `variable_declaration` in VALUE_BOUNDARY — necessarily, since an assignment LHS parses as one (ZGD1) — so the same text was ALSO published as a `uses` RUNTIME READ. The fact was carried twice, once on each label. Measured before the fix at 300 stride-sampled corpus files by `receiver-truth.mts`: 442 `uses` edges sit on a variable's type annotation. Every `forbidRelationships` row below is one of those duplicates; every `expectRelationships` row is the fact that must still be carried after the duplicate is suppressed. The two-sided structure matters: a rule that suppressed every field_expression under a declaration would pass the forbids and break the initializer. NOTE ON KEYS: the reason code cannot be asserted here — a relationship carries it in `metadata.relationshipType`, and this runner constrains the flattened row, so `metadata.relationshipType` is an inert key and is reported as one. The reason codes are asserted instead by `variable-annotation-mutants.mts`, which reads the metadata directly.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "Foo",
+      "source": "(declared-type)",
+      "note": "`var annotated: c.Foo = .{};` — the fact IS carried, on the declared-type label. `(declared-type)` is a source string only that pass publishes."
+    },
+    {
+      "type": "references",
+      "target": "Bar",
+      "source": "(declared-type)",
+      "note": "`?c.Bar` — the `type` field is the whole wrapped path, so the chain arrives from beneath the annotation node. An identity test instead of an ancestry test would miss this and leave `uses -> Bar` behind."
+    },
+    {
+      "type": "references",
+      "target": "Quux",
+      "source": "(declared-type)",
+      "note": "`[4]c.Quux` — same shape, array wrapper."
+    },
+    {
+      "type": "uses",
+      "target": "baz",
+      "source": "annotationIsNotARead",
+      "note": "NEGATIVE HALF, initializer: `var inferred = annotated.baz;` is a genuine runtime read and MUST survive. This row fails if the fix tests the DECLARATION rather than arriving-at-the-ANNOTATION."
+    },
+    {
+      "type": "uses",
+      "target": "qux",
+      "source": "annotationIsNotARead",
+      "note": "NEGATIVE HALF, dotted initializer: `var nested = inferred.qux;` is also a real read."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "Foo",
+      "note": "THE DEFECT: `var annotated: c.Foo` published a `uses` read of a type name, duplicating `references (declared_type) -> Foo`."
+    },
+    {
+      "type": "uses",
+      "target": "Bar",
+      "note": "THE DEFECT on the wrapped shape `?c.Bar`. Fails if the fix uses an IDENTITY test against the annotation node instead of an ancestry test, because the inner segment is a DESCENDANT of it."
+    },
+    {
+      "type": "uses",
+      "target": "Quux",
+      "note": "THE DEFECT on the array-wrapped shape `[4]c.Quux`."
+    }
+  ]
+}

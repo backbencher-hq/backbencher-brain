@@ -1,0 +1,38 @@
+// Streaming, and the forward reference that forces declarations to be
+// collected before facts are emitted.
+syntax = "proto3";
+
+package stream.v1;
+
+message Query {
+  string text = 1;
+}
+
+message Page {
+  string token = 1;
+}
+
+// FORWARD REFERENCE: `Results` is declared BELOW this message. protobuf permits
+// it, so a resolver that reads declarations in visit order drops this edge.
+message Search {
+  Results results = 1;
+  Query query = 2;
+}
+
+service Streamer {
+  // Unary: neither flag.
+  rpc Unary(Query) returns (Page);
+
+  // Client-streaming: the client sends a stream, the server sends one value.
+  rpc Upload(stream Query) returns (Page);
+
+  // Server-streaming: the mirror image.
+  rpc Watch(Query) returns (stream Page);
+
+  // Bidirectional: both.
+  rpc Chat(stream Query) returns (stream Page);
+}
+
+message Results {
+  repeated Page pages = 1;
+}

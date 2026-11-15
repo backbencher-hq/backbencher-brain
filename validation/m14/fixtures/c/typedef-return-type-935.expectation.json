@@ -1,0 +1,138 @@
+{
+  "fixtureId": "c/typedef-return-type-935",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A function's RETURN TYPE is a type reference, and CGD34's gate suppressed it. The rule was 'a bare identifier DIRECTLY under a function_definition is the NAME of a phantom function recovered from a macro-mangled declaration', but the predicate tested only the PARENT -- so it suppressed every direct child, and a function_definition's direct children include its return type. A return type spelled with a TYPEDEF name is a type_identifier in exactly that position, so every function declared with a typedef return type, which is the most common C declaration idiom there is, lost its references edge. Measured over 326 corpus files: 2,903 return types pass through the gate, 37 name a type the analyzer can resolve, so 37 real edges were missing (31 in redis, 4 in curl, 2 in libgit2). The pinned M12 ground truth expects exactly this edge -- rel:Negative.c:references:pick_color:Color, evidence 'bare return type -- in-file type usage' -- and the lane's truth-drift probe found it as the one genuinely-lost row among the six it could not produce. The controls are the two halves that make the narrowing sound rather than a deletion: the CGD34 SUBJECT (a macro-decorated struct definition whose bare identifier child is the struct's name, and whose type_identifier child is the MACRO -- neither may become a uses target, because the name is still suppressed and the macro is not a type declared in the file), and the return types and type positions that were ALWAYS right and must stay right (a struct TAG, an enum TAG, a pointer return type, a parameter type, a local declaration, a cast, and a sizeof).",
+  "expectSymbols": [
+    {
+      "name": "Color",
+      "kind": "enum",
+      "note": "an anonymous enum typedef'd under its own name is named by the typedef ALIAS and emitted as ONE Enum symbol -- the documented contract, so there is no separate Type row for Color"
+    },
+    {
+      "name": "counter_t",
+      "kind": "type"
+    },
+    {
+      "name": "RED",
+      "kind": "enum_member"
+    },
+    {
+      "name": "GREEN",
+      "kind": "enum_member"
+    },
+    {
+      "name": "BLUE",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Point",
+      "kind": "struct"
+    },
+    {
+      "name": "Shade",
+      "kind": "enum"
+    },
+    {
+      "name": "LIGHT",
+      "kind": "enum_member"
+    },
+    {
+      "name": "DARK",
+      "kind": "enum_member"
+    },
+    {
+      "name": "pick_color",
+      "kind": "function"
+    },
+    {
+      "name": "next_counter",
+      "kind": "function"
+    },
+    {
+      "name": "counter_slot",
+      "kind": "function"
+    },
+    {
+      "name": "origin",
+      "kind": "function"
+    },
+    {
+      "name": "pick_shade",
+      "kind": "function"
+    },
+    {
+      "name": "total",
+      "kind": "function"
+    },
+    {
+      "name": "the_mem3",
+      "kind": "variable"
+    },
+    {
+      "name": "Mem3Like",
+      "kind": "struct"
+    },
+    {
+      "name": "touch_mem3",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "pick_color",
+      "target": "Color",
+      "note": "THE DEFECT: a typedef name as a return type is a type reference, and the ground truth expects exactly this edge"
+    },
+    {
+      "type": "references",
+      "from": "next_counter",
+      "target": "counter_t",
+      "note": "THE DEFECT, the plain-typedef spelling"
+    },
+    {
+      "type": "references",
+      "from": "counter_slot",
+      "target": "counter_t",
+      "note": "CONTROL: a POINTER return type"
+    },
+    {
+      "type": "references",
+      "from": "origin",
+      "target": "Point",
+      "note": "CONTROL: a struct TAG return type, always right"
+    },
+    {
+      "type": "references",
+      "from": "pick_shade",
+      "target": "Shade",
+      "note": "CONTROL: an enum TAG return type, always right"
+    },
+    {
+      "type": "references",
+      "from": "total",
+      "target": "Color",
+      "note": "CONTROL: a parameter type"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "SQLITE_WSD",
+      "note": "CONTROL (CGD34's subject): the macro that decorates the struct definition is not a value read"
+    },
+    {
+      "type": "uses",
+      "from": "touch_mem3",
+      "target": "Mem3Like",
+      "note": "CONTROL (CGD34's subject): the struct tag must never gain a uses self-edge"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "SQLITE_WSD",
+      "note": "CONTROL: nor as a file-scope use"
+    }
+  ]
+}

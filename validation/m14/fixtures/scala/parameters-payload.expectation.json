@@ -1,0 +1,26 @@
+{
+  "fixtureId": "scala/parameters-payload",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Matrix 1b parameters payload (section C — cell PENDING -> #383). Scala semantics: method symbols carry a parameters list with name and declared type; the repeated parameter form (parts: String*) carries the declared type String* — the asterisk IS part of the grammar's repeated_parameter_type text (unlike kotlin's vararg modifier, which keeps the plain type).",
+  "expectSymbols": [
+    { "name": "ParamSvc", "kind": "class" },
+    { "name": "apply", "ownerName": "ParamSvc" },
+    { "name": "join", "ownerName": "ParamSvc" }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "apply",
+      "parameters": [
+        { "name": "amount", "type": "Double" },
+        { "name": "percent", "type": "Int" }
+      ]
+    },
+    {
+      "symbol": "join",
+      "parameters": [
+        { "name": "parts", "type": "String*" }
+      ]
+    }
+  ]
+}

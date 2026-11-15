@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?catalog-processing build="12" mode="strict"?>
+<?xml-stylesheet type="text/xsl" href="catalog.xsl" title="Catalog"?>
+<?xml-model href="catalog.rng" type="application/xml"?>
+<catalog>
+  <?render rows="all"?>
+  <entry id="e1"><?audit who="ci"?><name>first</name></entry>
+</catalog>

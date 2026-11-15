@@ -1,0 +1,147 @@
+[
+ {
+  "id": "sm-codemap",
+  "what": "view=codemap over src/ast/visualization (4 files)",
+  "errors": [],
+  "probe": {
+   "shell": {
+    "viewTitle": "Code Map",
+    "viewSub": "bb_visualize · one rectangle per SYMBOL, sized by the lines it spans · directories, langua",
+    "viewNote": "scroll to zoom · drag to pan · double-click a file to fill the frame with it · click a file or symbol for its stored fac",
+    "status": "Code map view loaded",
+    "sidebar": "BB / VISUALIZE Code Map bb_visualize · one rectangle per SYMBOL, sized by the lines it spans · directories, languages and symbol kinds from the index MODE ◎ Graph ▦ Code map ◇ UML LAYOUT Directories Languages group files into the directory they live in -- the nesting is the one thing a force graph cannot show ON SCREEN symbols 29 of 29·files 4 in 1 directory·zoom 80% DATA 4 files 29 symbols 2.7k lines spanned 1 directory nothing excluded — this map covers every indexed symbol in its scope FILTERS Symbol kinds all constant 15 function 14 Languages all typescript 29 ENCODING area = the lines a symbol spans fill = symbol kind — functions cyan, types violet, values amber (see Symbol kinds) gap ="
+   },
+   "map": {
+    "title": "Backbencher Code Map",
+    "dataView": "codemap",
+    "bbView": "undefined",
+    "bbViewKeys": null,
+    "worldBox": [
+     16,
+     12,
+     1233,
+     976
+    ],
+    "worldChildren": 5,
+    "worldTags": "DIV",
+    "zoomstate": "whole map · scroll to zoom in",
+    "zoomhint": "scroll to zoom · drag to pan · double-click a file to fill t",
+    "detailTitle": "nothing picked",
+    "detailBody": "",
+    "searchPlaceholder": "Find a file or symbol…",
+    "qstat": "",
+    "mapText": "(files at the scope root) 2.7k lines code-map-renderer.ts class-diagram-renderer.ts studio-renderer.ts map-renderer.ts"
+   }
+  }
+ },
+ {
+  "id": "src-codemap",
+  "what": "view=codemap over src/ (real tree)",
+  "errors": [],
+  "probe": {
+   "shell": {
+    "viewTitle": "Code Map",
+    "viewSub": "bb_visualize · one rectangle per SYMBOL, sized by the lines it spans · directories, langua",
+    "viewNote": "scroll to zoom · drag to pan · double-click a file to fill the frame with it · click a file or symbol for its stored fac",
+    "status": "Code map view loaded",
+    "sidebar": "BB / VISUALIZE Code Map bb_visualize · one rectangle per SYMBOL, sized by the lines it spans · directories, languages and symbol kinds from the index MODE ◎ Graph ▦ Code map ◇ UML LAYOUT Directories Languages group files into the directory they live in -- the nesting is the one thing a force graph cannot show ON SCREEN symbols 187 of 187·files 82 in 12 directories·zoom 80% DATA 82 files 187 symbols 62k lines spanned 12 directories 10970 cut by the node budget nothing excluded — this map covers every indexed symbol in its scope FILTERS Symbol kinds all method 94 function 42 interface 27 property 24 constant 4 enum_member 2 type 2 enum 2 namespace 2 class 1 Languages all typescript 200 ENCODIN"
+   },
+   "map": {
+    "title": "Backbencher Code Map",
+    "dataView": "codemap",
+    "bbView": "undefined",
+    "bbViewKeys": null,
+    "worldBox": [
+     16,
+     12,
+     1233,
+     976
+    ],
+    "worldChildren": 46,
+    "worldTags": "DIV",
+    "zoomstate": "whole map · scroll to zoom in",
+    "zoomhint": "scroll to zoom · drag to pan · double-click a file to fill t",
+    "detailTitle": "nothing picked",
+    "detailBody": "",
+    "searchPlaceholder": "Find a file or symbol…",
+    "qstat": "",
+    "mapText": "ast 58.1k lines intelligence 3.8k lines parallel-indexer.ts engine.ts real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts real-c-analyzer.ts real-csharp-analyzer.ts real-java-analyzer.ts real-dart-analyzer.ts real-xml-analyzer.ts real-javascript-analyzer.ts real-protobuf-analyzer.ts real-ruby-analyzer.ts real-perl-analyzer.ts "
+   }
+  }
+ },
+ {
+  "id": "src-codemap-raw",
+  "what": "bare code map, src/",
+  "errors": [],
+  "probe": {
+   "shell": {
+    "viewTitle": "ABSENT",
+    "viewSub": "ABSENT",
+    "viewNote": "ABSENT",
+    "status": "ABSENT",
+    "sidebar": "ABSENT"
+   },
+   "map": null
+  }
+ },
+ {
+  "id": "src-graph",
+  "what": "view=graph layout=regions over src/",
+  "errors": [],
+  "probe": {
+   "shell": {
+    "viewTitle": "Architecture Map",
+    "viewSub": "bb_visualize · self-contained · no network",
+    "viewNote": "drag to pan · scroll to zoom · click a node to focus, an edge to frame both ends, double-click a node to fill the view w",
+    "status": "Graph view loaded",
+    "sidebar": "BB / VISUALIZE Architecture Map bb_visualize · self-contained · no network MODE ◎ Graph ▦ Code map ◇ UML LAYOUT Regions Force group symbols into the directory they live in: named pods, and one dotted region link per region pair at the overview ON SCREEN nodes 200 of 200·edges 816 of 816·edges on screen 17 region links stand for 304 cross-region edges·layout regions DATA 200 nodes 816 edges 10 node types 1 languages 3942 (heaviest 84) stored edges behind them nothing excluded — this map is the whole project FILTERS Relationship types all uses 80 calls 508 references 205 contains 23 Languages all typescript 200 Symbol kinds all class 1 constant 4 enum 2 enum_member 2 function 42 interface 27 m"
+   },
+   "map": {
+    "title": "Backbencher Architecture Map",
+    "dataView": "graph",
+    "bbView": "undefined",
+    "bbViewKeys": null,
+    "worldBox": "ABSENT",
+    "worldChildren": "ABSENT",
+    "worldTags": "ABSENT",
+    "zoomstate": "ABSENT",
+    "zoomhint": "ABSENT",
+    "detailTitle": "nothing picked",
+    "detailBody": "",
+    "searchPlaceholder": "Find a node…",
+    "qstat": "",
+    "mapText": "ABSENT"
+   }
+  }
+ },
+ {
+  "id": "src-class",
+  "what": "view=class over src/",
+  "errors": [],
+  "probe": {
+   "shell": {
+    "viewTitle": "UML / Class diagram",
+    "viewSub": "bb_visualize · self-contained · no network",
+    "viewNote": "",
+    "status": "UML view loaded",
+    "sidebar": "BB / VISUALIZE UML / Class diagram bb_visualize · self-contained · no network MODE ◎ Graph ▦ Code map ◇ UML ON SCREEN — DATA UML does not publish a sidebar API yet, so the census, the filters, the encoding key and the data downloads below are disabled rather than filled with another view's numbers — they arrive in its own pass. The drawing and its own controls are in the frame. VIEW fit all show everything DOWNLOAD page · html the whole viewer, offline data · json everything behind this picture nodes · csv one row per node or symbol edges · csv one row per stored edge UML view loaded"
+   },
+   "map": {
+    "title": "Backbencher Class Diagram",
+    "dataView": "class",
+    "bbView": "undefined",
+    "bbViewKeys": null,
+    "worldBox": "ABSENT",
+    "worldChildren": "ABSENT",
+    "worldTags": "ABSENT",
+    "zoomstate": "ABSENT",
+    "zoomhint": "ABSENT",
+    "detailTitle": "ABSENT",
+    "detailBody": "",
+    "searchPlaceholder": "ABSENT",
+    "qstat": "ABSENT",
+    "mapText": "ABSENT"
+   }
+  }
+ }
+]

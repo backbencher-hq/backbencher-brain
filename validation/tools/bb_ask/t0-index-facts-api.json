@@ -1,0 +1,58 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+  "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+  "dbReadonlyHandle": true,
+  "counts": {
+    "files": 5,
+    "symbols": 13,
+    "relationships": 26,
+    "imports": 2,
+    "embeddingRows": 9,
+    "embeddedEntities": 9
+  },
+  "embeddingModels": [
+    {
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "rows": 9
+    }
+  ],
+  "files": {
+    "before": {
+      "db": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+        "size": 598016,
+        "mtimeMs": 1793571700241.7864,
+        "mtime": "2026-11-01T22:21:40.241Z"
+      },
+      "wal": null,
+      "shm": null
+    },
+    "after": {
+      "db": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+        "size": 598016,
+        "mtimeMs": 1793571700241.7864,
+        "mtime": "2026-11-01T22:21:40.241Z"
+      },
+      "wal": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db-wal",
+        "size": 0,
+        "mtimeMs": 1793571781356.9895,
+        "mtime": "2026-11-01T22:23:01.356Z"
+      },
+      "shm": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db-shm",
+        "size": 32768,
+        "mtimeMs": 1793571781358.2686,
+        "mtime": "2026-11-01T22:23:01.358Z"
+      }
+    },
+    "dbUnchanged": true,
+    "walContentChanged": false,
+    "dbUnchangedNote": "db bytes unchanged AND no WAL frames added; a newly present 0-byte -wal and a touched -shm are connection artifacts, not writes"
+  },
+  "generatedAt": "2026-11-01T22:23:01.362Z"
+}

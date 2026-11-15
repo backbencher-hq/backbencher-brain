@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/as-cast",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave G1 gap: `o as String` is the idiomatic Groovy cast but the patched grammar mis-parses it as local_variable_declaration(type_identifier('as'), variable_declarator) — no juxt_function_call exists. The analyzer must still emit a cast_type reference to String (and Set for `[] as Set`). The `as` keyword itself must never become an edge target. C-style `(String) o` stays pinned by cast-types.",
+  "expectSymbols": [
+    { "name": "CastSvc", "kind": "class" },
+    { "name": "run" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "run", "target": "String", "meta.relationshipType": "cast_type" },
+    { "type": "references", "from": "run", "target": "Set", "meta.relationshipType": "cast_type" }
+  ],
+  "forbidRelationships": [
+    { "target": "as" }
+  ]
+}

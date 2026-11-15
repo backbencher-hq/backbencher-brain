@@ -1,0 +1,18 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the F5 clojure lane on clojure/test/junit.clj (`(:ns (meta var))` inside a defmethod): declaration branches used to fire on KEYWORD-headed forms — the ns branch reset the alias table mid-file and corrupted currentNamespace for every following form (symbol owners became `m` / `(meta var)`, `t/inc-report-counter` stopped resolving). Declarations are sym-headed only now; clause dispatch reads kwd names through a separate helper. Pins: the alias survives the kwd-headed data form (still-resolves -> clojure.string/join) and no phantom module symbol was created.",
+  "expectSymbols": [
+    { "name": "clj.fixture.kwddata", "kind": "module" },
+    { "name": "use-alias", "kind": "function" },
+    { "name": "data-form", "kind": "function" },
+    { "name": "still-resolves", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "use-alias", "target": "clojure.string/join", "line_number": 4 },
+    { "type": "calls", "from": "still-resolves", "target": "clojure.string/join", "line_number": 8 }
+  ],
+  "forbidSymbols": [
+    { "name": "(meta var)" },
+    { "name": "var" }
+  ]
+}

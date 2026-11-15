@@ -1,0 +1,20 @@
+{
+  "issue": "M34.G1",
+  "code": "G1",
+  "milestone": "M34",
+  "status": "verified",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 8,
+  "trackedFilesScanned": 4602,
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m34/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-11-15T04:15:36.821Z",
+  "limitations": [
+    "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design.",
+    "Key patterns match OpenRouter and NVIDIA shapes; a new provider format must be added to KEY_PATTERNS.",
+    "GitHub issue numbers are enforced exactly (milestone 34, issues 575–578); refiling requires updating REAL_ISSUE_NUMBERS and the ledger together."
+  ]
+}

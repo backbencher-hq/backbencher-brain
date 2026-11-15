@@ -1,0 +1,130 @@
+{
+  "instrument": "scss cause ledger \u2014 the whole residual, by type and target shape, with a falsifier per cause",
+  "at": "2026-10-11T12:50:00-04:00",
+  "revision": "HEAD at measurement (this lane's analyzer carries the owner index; the cursor-walk swap was measured and REVERTED)",
+  "population": {
+    "admitted": 4433,
+    "parsed": 4433,
+    "failed": 0,
+    "repos": 25,
+    "admission": "git-tracked, .scss, <= 1 MiB, detectLanguageFromPath === 'scss', sorted"
+  },
+  "runLabel": "ONE RUN per instrument. The gate rows are whole-population (4,433 files, 25 repos); the gate's POPULATION block reports 1 file with content returning nothing (the HOLE below), so no residual from that run may be quoted without it.",
+  "howTheCausesWereNamed": "This walks the same admitted population and classifies every edge with the gate's OWN rule module (`classifyEdge`, the function `incoming-gate.ts:953` calls) and the gate's OWN claim extractor (`externalClaimOf`) \u2014 it reproduces the gate's per-type rows exactly (extends 427/235/37/155 \u00b7 calls 304/278/26 \u00b7 overrides 32/16/16 \u00b7 uses 91/91/0). It exists because the gate's printed worklists are CAPPED AT 25 NAMES PER TYPE (measured: imports 297 -> 25, references 1,501 -> 25, exports 983 -> 25), so the printed list cannot be read as the residual.",
+  "residualByType": {
+    "imports": {
+      "residual": 297,
+      "shapes": {
+        "MODULE-PATH": 272,
+        "URL": 10,
+        "BARE-IDENT": 15
+      },
+      "causes": {
+        "MODULE-PATH 272": "a Sass module specifier (@use/@forward/@import) that names no admitted file and no published symbol. FALSIFIER MEASURED: for each of the 272 the path's basename was looked up in the project's own declaration census \u2014 **10 could have resolved** by basename (3.7%), so 262 have no referent BY CONSTRUCTION; the 10 are the only lane-fixable slice and are named in the artifact. THE 10 CANDIDATES ARE RULED, NOT FIXED, and the ruling reaches the build system: they are all one file, `consul/ui/packages/consul-ui/app/styles/components.scss`, importing specifiers like `consul-ui/components/table`. The file they name DOES exist \u2014 at `ui/packages/consul-ui/app/components/table/index.scss` \u2014 but the specifier's own first segment `consul-ui/` names NO directory in the repository (not tracked: `git ls-files | grep -c '^consul-ui/'` = 0; not a directory; not in the build's `includePaths`). It is a directory the BUILD CREATES: `ember-cli-build.js:121` runs `new Funnel('app', { include: ['components/**/*.{scss,css}'], destDir: 'consul-ui' })`, so `consul-ui/components/table` means `app/components/table` only after the build has synthesized that name. A corpus-relative resolver cannot reach it, and the analyzer is right not to claim `importProjectFile` for a path it cannot name. FALSIFIER: if a tracked directory `consul-ui/` existed, or an `includePaths` entry named it, the specifier WOULD be corpus-resolvable and the claim would be required \u2014 measured: neither holds.",
+        "URL 10": "a remote stylesheet (`https://fonts.googleapis.com/css?family=...`). No admitted file can be named by a URL \u2014 ruled by construction, and the shape is a specifier, not a declaration.",
+        "BARE-IDENT 15": "a bare package name (`admonition`, `docstring` from a directory `@forward`). classifyEdge already asked the project census: 0 declarations of that name, so the referent is outside the population."
+      }
+    },
+    "extends": {
+      "residual": 192,
+      "shapes": {
+        "SELECTOR": 182,
+        "BARE-IDENT": 10
+      },
+      "causes": {
+        "SELECTOR 182": "`@extend .is-dark`, `%block`, `h1` \u2014 a selector the population does not declare: the class/placeholder lives in a dependency that is not in the corpus, or the extend targets a built-in element. classifyEdge found no declaration of the name in the project; the MODULE-PATH counterfactual on this type reads 0 could-have-resolved.",
+        "BARE-IDENT 10": "the same shape without a leading `.`/`%`."
+      }
+    },
+    "references": {
+      "residual": 787,
+      "shapes": {
+        "BARE-IDENT": 787
+      },
+      "causes": {
+        "BARE-IDENT 787": "name collisions/unresolved reads; 6,257 sibling edges on this type carry a VERIFIED claim (the gate's extOK 3,733 are the file claims). The S1/S2 split from `docs/analyzers/scss.md` applies: S1 = every declaration of the name is in the edge's OWN file (a scoping failure, repairable \u2014 3 in a 600-file window), S2 = >1 file, one kind (the published-name contract: `.btn` in two stylesheets is two rules that both call themselves `.btn`)."
+      }
+    },
+    "exports": {
+      "residual": 983,
+      "shapes": {
+        "BARE-IDENT": 983
+      },
+      "causes": {
+        "BARE-IDENT 983": "one `exports` edge per public module member (2,501 distinct variables on the widest file alone) whose name is not a unique identifier across the project \u2014 the same published-name contract as references S2, counted on the member side."
+      }
+    },
+    "calls": {
+      "residual": 26,
+      "shapes": {
+        "SELECTOR": 26
+      },
+      "causes": {
+        "SELECTOR 26": "an animation/`@keyframes` selector name declared in no admitted file."
+      }
+    },
+    "contains": {
+      "residual": 21,
+      "shapes": {
+        "SELECTOR": 18,
+        "FRAGMENT": 3
+      },
+      "causes": {
+        "SELECTOR 18 + FRAGMENT 3": "18 containment targets are selectors no file declares; the 3 FRAGMENT targets are IDREF-style `#id` selectors, which name a NODE and not a declaration of that name (the same shape ruled on the xml lane)."
+      }
+    },
+    "overrides": {
+      "residual": 16,
+      "shapes": {
+        "BARE-IDENT": 16
+      },
+      "causes": {
+        "BARE-IDENT 16": "a module-level `!default` override whose target name is declared in >1 file."
+      }
+    },
+    "uses": {
+      "residual": 0,
+      "causes": {
+        "\u2014": "91 edges, all resolved. \u00a76.11: the case that would make this non-zero is an `animation:` name matching no `@keyframes` declaration in the project; none exists on this population."
+      }
+    }
+  },
+  "totals": {
+    "byShape": {
+      "MODULE-PATH": 272,
+      "URL": 10,
+      "BARE-IDENT": 1811,
+      "SELECTOR": 226,
+      "FRAGMENT": 3
+    },
+    "sum": 2322
+  },
+  "instrumentObservation": {
+    "what": "the gate's printed residual (3,015 = 2,563 amb + 452 unresolved) is CLAIM-BLIND in its ambiguity column: this enumeration, using the gate's own classifier and claim extractor, finds 2,322 \u2014 693 fewer \u2014 because 693 edges carry a VERIFIED claim and are still counted as `amb(decl)` in the printed row (references: printed amb 1,499 against 787 claim-aware).",
+    "whyItMatters": "a lane reading its own row would size the work as 3,015 where 693 already carry verified external claims. The `unresolved` column IS claim-aware (imports 3,405 -> 297 is exactly the claim subtraction) \u2014 the two columns are not computed the same way.",
+    "reportedNotFixed": "script/m14/incoming-gate.ts is not this lane's file."
+  },
+  "hole": "the same run's POPULATION block reports 1 file with CONTENT that returned nothing \u2014 bulma/docs/vendor/fontawesome-free-6.5.2-web/scss/_variables.scss (the wide-ERROR-node timeout, see hole-finding.json). Every number above is a count over a population with that hole in it, and 1 file was degraded (regex fallback).",
+  "raw": [
+    "validation/m14/fixtures/scss/residual-causes.json",
+    "validation/m14/fixtures/scss/gate-before.txt",
+    "validation/m14/fixtures/scss/residual-shapes.json"
+  ],
+  "theTenCandidates": {
+    "ruling": "build-synthesized virtual directory (ember-cli Funnel destDir), not a corpus path",
+    "falsifier": "a tracked consul-ui/ directory or an includePaths entry naming it \u2014 neither exists",
+    "edges": 10,
+    "oneFile": "consul/ui/packages/consul-ui/app/styles/components.scss",
+    "evidence": "ember-cli-build.js:116-121 (`prefix them with consul-ui`, `new Funnel('app', { include: ['components/**/*.{scss,css}'], destDir: 'consul-ui' })`)"
+  },
+  "scopingSplit": {
+    "measuredOn": "the current revision, whole admitted population, ONE RUN",
+    "S1": 13,
+    "S2": 1838,
+    "S3": 8,
+    "NO_DECLARATION": 452,
+    "vocabulary": "the lane's own (docs/analyzers/scss.md): S1 = every declaration of the name is in the edge's OWN file; S2 = >1 file, one kind; S3 = >1 file, >1 kind",
+    "S1_verdict": "13, ALL `contains`, ALL with NO `line_number`, each target declared exactly twice in its own file. The analyzer's Rule 2b disambiguates same-named targets by the edge's line and DECLINES without one, so the bare name stands. The omission is deliberate (`real-css-analyzer.ts:2212-2217`: a COMPOSED name gets no line, 'never checkable rather than silently unaccused'), and the emission is in a shared file outside this lane, so it is HANDED OVER, not landed \u2014 see s1-finding.json for the patch shape and the falsifier.",
+    "S1_is_not_zero_and_that_is_the_measurement": "the Lead's ask was 'fixed or shown to be 0'. It is 13, one cause, with the owner named and a falsifier that predicts 0 after the emission carries the contained rule's own line."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "probe": "M57.T2-consumers",
+  "issue": 790,
+  "milestone": "M57",
+  "at": "2026-11-05T04:31:58.838Z",
+  "commit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "checks": 1,
+  "passed": 1,
+  "failed": 0,
+  "corpus": null,
+  "classifierEpoch": "d1af1c1e4ba070dc",
+  "verifierCommand": "BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> bun run script/m57/verify-t2-consumers.ts",
+  "status": "verified"
+}

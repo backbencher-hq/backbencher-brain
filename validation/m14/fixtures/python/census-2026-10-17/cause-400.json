@@ -1,0 +1,1359 @@
+{
+  "at": "2026-10-17T15:08:07.595Z",
+  "lang": "python",
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesAdmitted": 400,
+  "filesParsed": 400,
+  "filesFailed": 0,
+  "totalSymbols": 7629,
+  "totalRelationships": 42945,
+  "types": {
+    "calls": {
+      "count": 17592,
+      "files": 329,
+      "fileSample": [
+        "libxslt/doc/apibuild.py",
+        "libxslt/python/generator.py",
+        "libxslt/python/libxsl.py",
+        "libxslt/python/tests/basic.py",
+        "libxslt/python/tests/exslt.py",
+        "libxslt/python/tests/extelem.py",
+        "libxslt/python/tests/extfunc.py",
+        "libxslt/python/tests/pyxsltproc.py",
+        "libxslt/python/tests/setup_test.py",
+        "libxslt/win32/runtests.py",
+        "nim/lib/pure/unidecode/gen.py",
+        "nim/tests/untestable/gdb/gdb_pretty_printer_test.py"
+      ],
+      "fileScope": {
+        "source": {
+          "RESOLVED": 15725,
+          "AMBIGUOUS": 1224,
+          "MODULE": 643
+        },
+        "target": {
+          "UNRESOLVED": 11528,
+          "RESOLVED": 3211,
+          "AMBIGUOUS": 459,
+          "EXTERNAL": 2375,
+          "MODULE": 19
+        }
+      },
+      "projectScope": {
+        "source": {
+          "RESOLVED": 11409,
+          "AMBIGUOUS": 5540,
+          "MODULE": 643
+        },
+        "target": {
+          "RESOLVED": 7096,
+          "AMBIGUOUS": 4833,
+          "UNRESOLVED": 5092,
+          "EXTERNAL": 552,
+          "MODULE": 19
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 1240,
+        "3": 402,
+        "4": 463,
+        "5": 296,
+        "6": 702,
+        "7": 261,
+        "8": 21,
+        "9": 90,
+        "10": 34,
+        "12": 10,
+        "13": 18,
+        "14": 22,
+        "15": 758,
+        "16": 3,
+        "17": 5,
+        "18": 266,
+        "29": 43,
+        "30": 3,
+        "32": 2,
+        "37": 142,
+        "47": 48,
+        "67": 4
+      },
+      "confidence": {
+        "0.9": 17592
+      },
+      "evidenceClass": {
+        "usage_contextual": 17592
+      },
+      "reasonCode": {
+        "dispatch-on-receiver": 7240,
+        "dispatch-on-parameter": 2362,
+        "bare-name-callee": 3857,
+        "external-member-call": 3744,
+        "local-callee": 389
+      },
+      "targetBinsByReason": {
+        "dispatch-on-receiver": {
+          "RESOLVED": 2535,
+          "AMBIGUOUS": 2410,
+          "UNRESOLVED": 2290,
+          "MODULE": 3,
+          "EXTERNAL": 2
+        },
+        "dispatch-on-parameter": {
+          "RESOLVED": 1320,
+          "AMBIGUOUS": 818,
+          "UNRESOLVED": 219,
+          "MODULE": 5
+        },
+        "bare-name-callee": {
+          "RESOLVED": 2174,
+          "AMBIGUOUS": 885,
+          "UNRESOLVED": 338,
+          "EXTERNAL": 449,
+          "MODULE": 11
+        },
+        "external-member-call": {
+          "UNRESOLVED": 2048,
+          "EXTERNAL": 101,
+          "RESOLVED": 894,
+          "AMBIGUOUS": 701
+        },
+        "local-callee": {
+          "UNRESOLVED": 197,
+          "AMBIGUOUS": 19,
+          "RESOLVED": 173
+        }
+      },
+      "targetBinsByEvidence": {
+        "usage_contextual": {
+          "RESOLVED": 7096,
+          "AMBIGUOUS": 4833,
+          "UNRESOLVED": 5092,
+          "EXTERNAL": 552,
+          "MODULE": 19
+        }
+      },
+      "selfLoop": 312,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {
+        "get": 703,
+        "split": 702,
+        "append": 700,
+        "join": 539,
+        "strip": 428,
+        "startswith": 350,
+        "exists": 346,
+        "write": 273,
+        "group": 252,
+        "update": 241,
+        "splitlines": 214,
+        "lower": 196,
+        "match": 190,
+        "add_argument": 186,
+        "fail_json": 182,
+        "ValueError": 174,
+        "search": 172,
+        "run_command": 163,
+        "httpbin": 155,
+        "add": 153,
+        "TypeError": 150,
+        "items": 141,
+        "rstrip": 124,
+        "endswith": 116,
+        "isdir": 114,
+        "sub": 112,
+        "raises": 112,
+        "keys": 111,
+        "HandleCommand": 110,
+        "dumps": 108,
+        "dirname": 102,
+        "decode": 102,
+        "extend": 98,
+        "warning": 97,
+        "exit": 96,
+        "auto": 96,
+        "replace": 95,
+        "Exception": 92,
+        "get_bin_path": 90,
+        "pop": 84
+      },
+      "unresolvedClass": {
+        "declared-dynamic": 2509,
+        "declared-external": 2048,
+        "declared-local": 197,
+        "not-bound-in-file": 8,
+        "builtin": 330
+      },
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "escape -> replace",
+        "escape -> replace",
+        "escape -> replace",
+        "escape -> replace",
+        "escape -> replace",
+        "update -> set_header"
+      ],
+      "unresolvedProjectTargets": [
+        "libxslt/doc/apibuild.py getline -> readline",
+        "libxslt/doc/apibuild.py getline -> lstrip",
+        "libxslt/doc/apibuild.py getline -> rstrip",
+        "libxslt/doc/apibuild.py getline -> readline",
+        "libxslt/doc/apibuild.py getline -> lstrip",
+        "libxslt/doc/apibuild.py getline -> rstrip",
+        "libxslt/doc/apibuild.py push -> insert",
+        "libxslt/doc/apibuild.py token -> split",
+        "libxslt/doc/apibuild.py token -> find",
+        "libxslt/doc/apibuild.py token -> find"
+      ],
+      "ambiguousTargets": [
+        "libxslt/doc/apibuild.py add_ref -> update (18 declarations)",
+        "libxslt/doc/apibuild.py add -> update (18 declarations)",
+        "libxslt/doc/apibuild.py merge -> keys (4 declarations)",
+        "libxslt/doc/apibuild.py merge -> keys (4 declarations)",
+        "libxslt/doc/apibuild.py merge -> keys (4 declarations)",
+        "libxslt/doc/apibuild.py merge -> keys (4 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "uses": {
+      "count": 11391,
+      "files": 273,
+      "fileSample": [
+        "libxslt/doc/apibuild.py",
+        "libxslt/python/generator.py",
+        "libxslt/python/libxsl.py",
+        "libxslt/python/tests/extelem.py",
+        "libxslt/python/tests/extfunc.py",
+        "libxslt/python/tests/pyxsltproc.py",
+        "libxslt/win32/runtests.py",
+        "nim/tools/debug/nim-gdb.py",
+        "nim/tools/debug/nimlldb.py",
+        "requests/src/requests/_types.py",
+        "requests/src/requests/adapters.py",
+        "requests/src/requests/api.py"
+      ],
+      "fileScope": {
+        "source": {
+          "AMBIGUOUS": 1411,
+          "RESOLVED": 9869,
+          "MODULE": 111
+        },
+        "target": {
+          "AMBIGUOUS": 1077,
+          "RESOLVED": 3254,
+          "UNRESOLVED": 6902,
+          "EXTERNAL": 96,
+          "MODULE": 62
+        }
+      },
+      "projectScope": {
+        "source": {
+          "AMBIGUOUS": 4531,
+          "RESOLVED": 6749,
+          "MODULE": 111
+        },
+        "target": {
+          "AMBIGUOUS": 4953,
+          "RESOLVED": 3688,
+          "UNRESOLVED": 2614,
+          "EXTERNAL": 74,
+          "MODULE": 62
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 1312,
+        "3": 573,
+        "4": 298,
+        "5": 171,
+        "6": 167,
+        "7": 151,
+        "8": 14,
+        "9": 829,
+        "10": 227,
+        "11": 25,
+        "12": 81,
+        "13": 310,
+        "14": 284,
+        "15": 4,
+        "16": 1,
+        "17": 120,
+        "20": 11,
+        "29": 17,
+        "30": 1,
+        "31": 2,
+        "67": 354,
+        "263": 1
+      },
+      "confidence": {
+        "0.9": 11391
+      },
+      "evidenceClass": {
+        "usage_contextual": 11391
+      },
+      "reasonCode": {
+        "member-read": 11391
+      },
+      "targetBinsByReason": {
+        "member-read": {
+          "AMBIGUOUS": 4953,
+          "RESOLVED": 3688,
+          "UNRESOLVED": 2614,
+          "EXTERNAL": 74,
+          "MODULE": 62
+        }
+      },
+      "targetBinsByEvidence": {
+        "usage_contextual": {
+          "AMBIGUOUS": 4953,
+          "RESOLVED": 3688,
+          "UNRESOLVED": 2614,
+          "EXTERNAL": 74,
+          "MODULE": 62
+        }
+      },
+      "selfLoop": 23,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {
+        "path": 623,
+        "Any": 596,
+        "CLIARGS": 340,
+        "module": 192,
+        "params": 175,
+        "name": 154,
+        "SBValue": 144,
+        "exceptions": 110,
+        "Self": 110,
+        "type": 103,
+        "environ": 96,
+        "status_code": 93,
+        "Iterable": 90,
+        "parser": 90,
+        "fqcn": 80,
+        "st_mode": 80,
+        "headers": 78,
+        "Callable": 76,
+        "ver": 70,
+        "request": 67,
+        "stderr": 64,
+        "__name__": 62,
+        "url": 59,
+        "sep": 56,
+        "history": 55,
+        "check_mode": 51,
+        "stdout": 50,
+        "unsigned": 46,
+        "value": 43,
+        "PIPE": 42,
+        "src": 42,
+        "Error": 40,
+        "Dict": 38,
+        "Mapping": 37,
+        "argv": 36,
+        "stdin": 36,
+        "config": 34,
+        "NoReturn": 34,
+        "verbosity": 34,
+        "executable": 32
+      },
+      "unresolvedClass": {
+        "declared-dynamic": 2614
+      },
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "__init__ -> name",
+        "__repr__ -> type",
+        "__repr__ -> name",
+        "__repr__ -> static",
+        "__repr__ -> module",
+        "__repr__ -> module"
+      ],
+      "unresolvedProjectTargets": [
+        "libxslt/python/generator.py getparser -> sax",
+        "libxslt/python/tests/pyxsltproc.py main -> argv",
+        "libxslt/python/tests/pyxsltproc.py main -> argv",
+        "libxslt/python/tests/pyxsltproc.py main -> environ",
+        "libxslt/win32/runtests.py runtests -> stderr",
+        "nim/tools/debug/nim-gdb.py printErrorOnce -> STDERR",
+        "nim/tools/debug/nim-gdb.py debugPrint -> STDERR",
+        "nim/tools/debug/nim-gdb.py recognize -> TYPE_CODE_FUNC",
+        "nim/tools/debug/nim-gdb.py recognize -> TYPE_CODE_VOID",
+        "nim/tools/debug/nim-gdb.py recognize -> TYPE_CODE_PTR"
+      ],
+      "ambiguousTargets": [
+        "libxslt/doc/apibuild.py __init__ -> name (67 declarations)",
+        "libxslt/doc/apibuild.py __repr__ -> type (14 declarations)",
+        "libxslt/doc/apibuild.py __repr__ -> name (67 declarations)",
+        "libxslt/doc/apibuild.py __repr__ -> module (13 declarations)",
+        "libxslt/doc/apibuild.py __repr__ -> module (13 declarations)",
+        "libxslt/doc/apibuild.py __repr__ -> info (7 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "contains": {
+      "count": 4837,
+      "files": 227,
+      "fileSample": [
+        "libxslt/doc/apibuild.py",
+        "libxslt/python/generator.py",
+        "libxslt/python/libxsl.py",
+        "nim/tools/debug/nim-gdb.py",
+        "nim/tools/debug/nimlldb.py",
+        "requests/docs/_themes/flask_theme_support.py",
+        "requests/src/requests/_types.py",
+        "requests/src/requests/adapters.py",
+        "requests/src/requests/auth.py",
+        "requests/src/requests/cookies.py",
+        "requests/src/requests/exceptions.py",
+        "requests/src/requests/models.py"
+      ],
+      "fileScope": {
+        "source": {
+          "RESOLVED": 4786,
+          "AMBIGUOUS": 51
+        },
+        "target": {
+          "AMBIGUOUS": 1305,
+          "RESOLVED": 3500,
+          "MODULE": 32
+        }
+      },
+      "projectScope": {
+        "source": {
+          "RESOLVED": 4577,
+          "AMBIGUOUS": 260
+        },
+        "target": {
+          "AMBIGUOUS": 2603,
+          "RESOLVED": 2202,
+          "MODULE": 32
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 572,
+        "3": 289,
+        "4": 228,
+        "5": 125,
+        "6": 122,
+        "7": 109,
+        "8": 48,
+        "9": 72,
+        "10": 53,
+        "11": 44,
+        "12": 71,
+        "13": 33,
+        "14": 112,
+        "15": 44,
+        "16": 48,
+        "17": 17,
+        "18": 18,
+        "20": 20,
+        "24": 33,
+        "29": 83,
+        "30": 60,
+        "31": 31,
+        "32": 64,
+        "67": 66,
+        "263": 241
+      },
+      "confidence": {
+        "1": 4837
+      },
+      "evidenceClass": {
+        "structural": 4837
+      },
+      "reasonCode": {},
+      "targetBinsByReason": {
+        "none": {
+          "AMBIGUOUS": 2603,
+          "RESOLVED": 2202,
+          "MODULE": 32
+        }
+      },
+      "targetBinsByEvidence": {
+        "structural": {
+          "AMBIGUOUS": 2603,
+          "RESOLVED": 2202,
+          "MODULE": 32
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {},
+      "unresolvedClass": {},
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "identifier -> __init__",
+        "identifier -> name",
+        "identifier -> header",
+        "identifier -> module",
+        "identifier -> type",
+        "identifier -> info"
+      ],
+      "unresolvedProjectTargets": [],
+      "ambiguousTargets": [
+        "libxslt/doc/apibuild.py identifier -> __init__ (263 declarations)",
+        "libxslt/doc/apibuild.py identifier -> name (67 declarations)",
+        "libxslt/doc/apibuild.py identifier -> module (13 declarations)",
+        "libxslt/doc/apibuild.py identifier -> type (14 declarations)",
+        "libxslt/doc/apibuild.py identifier -> info (7 declarations)",
+        "libxslt/doc/apibuild.py identifier -> lineno (3 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "imports": {
+      "count": 3874,
+      "files": 363,
+      "fileSample": [
+        "libxslt/doc/apibuild.py",
+        "libxslt/python/generator.py",
+        "libxslt/python/libxsl.py",
+        "libxslt/python/tests/basic.py",
+        "libxslt/python/tests/exslt.py",
+        "libxslt/python/tests/extelem.py",
+        "libxslt/python/tests/extfunc.py",
+        "libxslt/python/tests/pyxsltproc.py",
+        "libxslt/python/tests/setup_test.py",
+        "libxslt/win32/runtests.py",
+        "nim/lib/pure/unidecode/gen.py",
+        "nim/tests/untestable/gdb/gdb_pretty_printer_test.py"
+      ],
+      "fileScope": {
+        "source": {
+          "MODULE": 3874
+        },
+        "target": {
+          "MODULE_ITEM": 1267,
+          "EXTERNAL": 2603,
+          "RESOLVED": 3,
+          "AMBIGUOUS": 1
+        }
+      },
+      "projectScope": {
+        "source": {
+          "MODULE": 3874
+        },
+        "target": {
+          "MODULE_ITEM": 1267,
+          "EXTERNAL": 2304,
+          "RESOLVED": 261,
+          "AMBIGUOUS": 42
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 14,
+        "3": 14,
+        "4": 4,
+        "5": 5,
+        "6": 3,
+        "7": 1,
+        "15": 1
+      },
+      "confidence": {
+        "1": 3874
+      },
+      "evidenceClass": {
+        "import_based": 3874
+      },
+      "reasonCode": {},
+      "targetBinsByReason": {
+        "none": {
+          "MODULE_ITEM": 1267,
+          "EXTERNAL": 2304,
+          "RESOLVED": 261,
+          "AMBIGUOUS": 42
+        }
+      },
+      "targetBinsByEvidence": {
+        "import_based": {
+          "MODULE_ITEM": 1267,
+          "EXTERNAL": 2304,
+          "RESOLVED": 261,
+          "AMBIGUOUS": 42
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {},
+      "unresolvedClass": {},
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "apibuild -> os:*",
+        "apibuild -> sys:*",
+        "apibuild -> string:*",
+        "apibuild -> glob:*",
+        "generator -> string:*",
+        "generator -> os:*"
+      ],
+      "unresolvedProjectTargets": [],
+      "ambiguousTargets": [
+        "requests/src/requests/__init__.py __init__ -> __author__ (3 declarations)",
+        "requests/src/requests/__init__.py __init__ -> __version__ (5 declarations)",
+        "requests/src/requests/__init__.py __init__ -> delete (4 declarations)",
+        "requests/src/requests/__init__.py __init__ -> get (15 declarations)",
+        "requests/src/requests/__init__.py __init__ -> head (3 declarations)",
+        "requests/src/requests/__init__.py __init__ -> options (4 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "references": {
+      "count": 3442,
+      "files": 177,
+      "fileSample": [
+        "nim/tools/debug/nimlldb.py",
+        "requests/src/requests/_internal_utils.py",
+        "requests/src/requests/_types.py",
+        "requests/src/requests/adapters.py",
+        "requests/src/requests/api.py",
+        "requests/src/requests/auth.py",
+        "requests/src/requests/compat.py",
+        "requests/src/requests/cookies.py",
+        "requests/src/requests/exceptions.py",
+        "requests/src/requests/help.py",
+        "requests/src/requests/hooks.py",
+        "requests/src/requests/models.py"
+      ],
+      "fileScope": {
+        "source": {
+          "RESOLVED": 2911,
+          "AMBIGUOUS": 418,
+          "MODULE": 113
+        },
+        "target": {
+          "EXTERNAL": 1468,
+          "UNRESOLVED": 1519,
+          "RESOLVED": 437,
+          "AMBIGUOUS": 14,
+          "MODULE": 4
+        }
+      },
+      "projectScope": {
+        "source": {
+          "RESOLVED": 2128,
+          "AMBIGUOUS": 1201,
+          "MODULE": 113
+        },
+        "target": {
+          "EXTERNAL": 1106,
+          "UNRESOLVED": 884,
+          "AMBIGUOUS": 443,
+          "RESOLVED": 1005,
+          "MODULE": 4
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 279,
+        "3": 43,
+        "5": 50,
+        "9": 2,
+        "10": 1,
+        "14": 68
+      },
+      "confidence": {
+        "0.95": 3442
+      },
+      "evidenceClass": {
+        "reference_qualified": 3442
+      },
+      "reasonCode": {
+        "return-annotation": 1032,
+        "annotation-type": 1994,
+        "instanceof-check": 381,
+        "local-binding-target": 13,
+        "inline-type-parameter": 16,
+        "member-read": 6
+      },
+      "targetBinsByReason": {
+        "return-annotation": {
+          "EXTERNAL": 385,
+          "UNRESOLVED": 284,
+          "AMBIGUOUS": 141,
+          "RESOLVED": 222
+        },
+        "annotation-type": {
+          "EXTERNAL": 638,
+          "UNRESOLVED": 502,
+          "AMBIGUOUS": 219,
+          "RESOLVED": 634,
+          "MODULE": 1
+        },
+        "instanceof-check": {
+          "RESOLVED": 145,
+          "UNRESOLVED": 72,
+          "EXTERNAL": 83,
+          "AMBIGUOUS": 78,
+          "MODULE": 3
+        },
+        "local-binding-target": {
+          "AMBIGUOUS": 3,
+          "RESOLVED": 1,
+          "UNRESOLVED": 9
+        },
+        "inline-type-parameter": {
+          "UNRESOLVED": 16
+        },
+        "member-read": {
+          "AMBIGUOUS": 2,
+          "RESOLVED": 3,
+          "UNRESOLVED": 1
+        }
+      },
+      "targetBinsByEvidence": {
+        "reference_qualified": {
+          "EXTERNAL": 1106,
+          "UNRESOLVED": 884,
+          "AMBIGUOUS": 443,
+          "RESOLVED": 1005,
+          "MODULE": 4
+        }
+      },
+      "selfLoop": 6,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {
+        "dict": 548,
+        "tuple": 206,
+        "list": 189,
+        "Self": 98,
+        "Callable": 92,
+        "Iterable": 76,
+        "SBValue": 72,
+        "BaseException": 72,
+        "type": 63,
+        "Path": 36,
+        "Mapping": 36,
+        "frozenset": 34,
+        "T": 32,
+        "NoReturn": 32,
+        "Optional": 28,
+        "Generator": 26,
+        "Exception": 26,
+        "UriType": 22,
+        "Final": 22,
+        "set": 20,
+        "Iterator": 20,
+        "ClassVar": 20,
+        "Sequence": 19,
+        "SBType": 18,
+        "Type": 18,
+        "Dict": 18,
+        "ModuleType": 18,
+        "memoryview": 16,
+        "DeprecationSummary": 15,
+        "PluginInfo": 14,
+        "Literal": 14,
+        "WarningSummary": 13,
+        "Event": 12,
+        "DataType": 11,
+        "List": 10,
+        "UnifiedTaskResult": 10,
+        "Union": 10,
+        "SBFunction": 8,
+        "SBTypeList": 8,
+        "VerifyType": 8
+      },
+      "unresolvedClass": {
+        "qualified-external": 395,
+        "builtin": 461,
+        "declared-local": 25,
+        "declared-dynamic": 1,
+        "not-bound-in-file": 2
+      },
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "sbvaluegetitem -> lldb",
+        "sbvaluegetitem -> SBValue",
+        "sbvaluegetitem -> lldb",
+        "sbvaluegetitem -> SBValue",
+        "sbvaluegetitem -> Union",
+        "get_nti -> lldb"
+      ],
+      "unresolvedProjectTargets": [
+        "nim/tools/debug/nimlldb.py sbvaluegetitem -> SBValue",
+        "nim/tools/debug/nimlldb.py sbvaluegetitem -> SBValue",
+        "nim/tools/debug/nimlldb.py get_nti -> SBValue",
+        "nim/tools/debug/nimlldb.py enum_to_string -> SBValue",
+        "nim/tools/debug/nimlldb.py enum_to_string -> SBSymbolContext",
+        "nim/tools/debug/nimlldb.py enum_to_string -> SBFunction",
+        "nim/tools/debug/nimlldb.py enum_to_string -> SBType",
+        "nim/tools/debug/nimlldb.py enum_to_string -> SBTypeList",
+        "nim/tools/debug/nimlldb.py to_string -> SBValue",
+        "nim/tools/debug/nimlldb.py to_stringV2 -> SBValue"
+      ],
+      "ambiguousTargets": [
+        "nim/tools/debug/nimlldb.py __init__ -> list (2 declarations)",
+        "nim/tools/debug/nimlldb.py create_set_children -> list (2 declarations)",
+        "nim/tools/debug/nimlldb.py create_set_children -> list (2 declarations)",
+        "requests/src/requests/adapters.py HTTPAdapter -> list (2 declarations)",
+        "requests/src/requests/cookies.py remove_cookie_by_name -> list (2 declarations)",
+        "requests/src/requests/cookies.py iterkeys -> Iterator (2 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "exports": {
+      "count": 37,
+      "files": 9,
+      "fileSample": [
+        "requests/src/requests/__init__.py",
+        "ansible/lib/ansible/_internal/_encryption/_crypt.py",
+        "ansible/lib/ansible/context.py",
+        "ansible/lib/ansible/executor/play_iterator.py",
+        "ansible/lib/ansible/executor/process/worker.py",
+        "ansible/lib/ansible/executor/task_executor.py",
+        "ansible/lib/ansible/executor/task_queue_manager.py",
+        "ansible/lib/ansible/inventory/host.py",
+        "ansible/lib/ansible/module_utils/common/sys_info.py"
+      ],
+      "fileScope": {
+        "source": {
+          "MODULE": 37
+        },
+        "target": {
+          "EXTERNAL": 25,
+          "RESOLVED": 12
+        }
+      },
+      "projectScope": {
+        "source": {
+          "MODULE": 37
+        },
+        "target": {
+          "AMBIGUOUS": 10,
+          "RESOLVED": 25,
+          "EXTERNAL": 2
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 1,
+        "3": 3,
+        "4": 4,
+        "7": 1,
+        "15": 1
+      },
+      "confidence": {
+        "1": 37
+      },
+      "evidenceClass": {
+        "structural": 37
+      },
+      "reasonCode": {},
+      "targetBinsByReason": {
+        "none": {
+          "AMBIGUOUS": 10,
+          "RESOLVED": 25,
+          "EXTERNAL": 2
+        }
+      },
+      "targetBinsByEvidence": {
+        "structural": {
+          "AMBIGUOUS": 10,
+          "RESOLVED": 25,
+          "EXTERNAL": 2
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {},
+      "unresolvedClass": {},
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "__init__ -> ConnectionError",
+        "__init__ -> ConnectTimeout",
+        "__init__ -> HTTPError",
+        "__init__ -> JSONDecodeError",
+        "__init__ -> PreparedRequest",
+        "__init__ -> ReadTimeout"
+      ],
+      "unresolvedProjectTargets": [],
+      "ambiguousTargets": [
+        "requests/src/requests/__init__.py __init__ -> ConnectionError (3 declarations)",
+        "requests/src/requests/__init__.py __init__ -> Request (2 declarations)",
+        "requests/src/requests/__init__.py __init__ -> delete (4 declarations)",
+        "requests/src/requests/__init__.py __init__ -> get (15 declarations)",
+        "requests/src/requests/__init__.py __init__ -> head (3 declarations)",
+        "requests/src/requests/__init__.py __init__ -> options (4 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "extends": {
+      "count": 572,
+      "files": 188,
+      "fileSample": [
+        "libxslt/python/generator.py",
+        "nim/tools/debug/nim-gdb.py",
+        "requests/docs/_themes/flask_theme_support.py",
+        "requests/src/requests/_types.py",
+        "requests/src/requests/adapters.py",
+        "requests/src/requests/auth.py",
+        "requests/src/requests/cookies.py",
+        "requests/src/requests/exceptions.py",
+        "requests/src/requests/models.py",
+        "requests/src/requests/sessions.py",
+        "requests/src/requests/structures.py",
+        "requests/tests/test_requests.py"
+      ],
+      "fileScope": {
+        "source": {
+          "RESOLVED": 562,
+          "AMBIGUOUS": 10
+        },
+        "target": {
+          "UNRESOLVED": 210,
+          "EXTERNAL": 169,
+          "RESOLVED": 191,
+          "AMBIGUOUS": 2
+        }
+      },
+      "projectScope": {
+        "source": {
+          "RESOLVED": 523,
+          "AMBIGUOUS": 49
+        },
+        "target": {
+          "UNRESOLVED": 124,
+          "EXTERNAL": 28,
+          "RESOLVED": 392,
+          "AMBIGUOUS": 28
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 16,
+        "3": 7,
+        "9": 2,
+        "14": 3
+      },
+      "confidence": {
+        "1": 572
+      },
+      "evidenceClass": {
+        "structural": 572
+      },
+      "reasonCode": {
+        "local-binding-target": 1
+      },
+      "targetBinsByReason": {
+        "none": {
+          "UNRESOLVED": 123,
+          "EXTERNAL": 28,
+          "RESOLVED": 392,
+          "AMBIGUOUS": 28
+        },
+        "local-binding-target": {
+          "UNRESOLVED": 1
+        }
+      },
+      "targetBinsByEvidence": {
+        "structural": {
+          "UNRESOLVED": 124,
+          "EXTERNAL": 28,
+          "RESOLVED": 392,
+          "AMBIGUOUS": 28
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {
+        "object": 48,
+        "Exception": 46,
+        "Protocol": 20,
+        "ValueError": 10,
+        "dict": 10,
+        "Enum": 10,
+        "Command": 8,
+        "_JSONSerializationProfile": 8,
+        "AnsibleProfileJSONEncoder": 8,
+        "AnsibleProfileJSONDecoder": 8,
+        "int": 8,
+        "Generic": 8,
+        "RuntimeError": 6,
+        "TypeError": 6,
+        "IntEnum": 6,
+        "Action": 6,
+        "AmbientContextBase": 5,
+        "Function": 4,
+        "str": 4,
+        "bytes": 4,
+        "BaseException": 4,
+        "TypedDict": 4,
+        "KeyError": 4,
+        "JSONEncoder": 4,
+        "AnsibleSerializableDataclass": 4,
+        "ModuleType": 4,
+        "ContributesToTaskResult": 3,
+        "type": 3,
+        "ContentHandler": 2,
+        "IOError": 2,
+        "Warning": 2,
+        "DeprecationWarning": 2,
+        "DefaultCookiePolicy": 2,
+        "Structure": 2,
+        "Encoder": 2,
+        "StrEnum": 2,
+        "HelpFormatter": 2,
+        "action_type": 2,
+        "Cmd": 2,
+        "AssertionError": 2
+      },
+      "unresolvedClass": {
+        "qualified-external": 46,
+        "builtin": 77,
+        "declared-local": 1
+      },
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "docParser -> ContentHandler",
+        "K -> object",
+        "DollarPrintFunction -> Function",
+        "NimStringEqFunction -> Function",
+        "DollarPrintCmd -> Command",
+        "KochCmd -> Command"
+      ],
+      "unresolvedProjectTargets": [
+        "libxslt/python/generator.py docParser -> ContentHandler",
+        "libxslt/python/generator.py K -> object",
+        "nim/tools/debug/nim-gdb.py DollarPrintFunction -> Function",
+        "nim/tools/debug/nim-gdb.py NimStringEqFunction -> Function",
+        "nim/tools/debug/nim-gdb.py DollarPrintCmd -> Command",
+        "nim/tools/debug/nim-gdb.py KochCmd -> Command",
+        "nim/tools/debug/nim-gdb.py NimCmd -> Command",
+        "nim/tools/debug/nim-gdb.py NimbleCmd -> Command",
+        "requests/src/requests/cookies.py CookieConflictError -> RuntimeError",
+        "requests/src/requests/exceptions.py RequestException -> IOError"
+      ],
+      "ambiguousTargets": [
+        "requests/src/requests/exceptions.py ProxyError -> ConnectionError (3 declarations)",
+        "requests/src/requests/exceptions.py SSLError -> ConnectionError (3 declarations)",
+        "requests/src/requests/exceptions.py ConnectTimeout -> ConnectionError (3 declarations)",
+        "ansible/hacking/create-bulk-issues.py DeprecationArgs -> Args (2 declarations)",
+        "ansible/hacking/create-bulk-issues.py FeatureArgs -> Args (2 declarations)",
+        "ansible/lib/ansible/_internal/_collection_proxy.py SequenceProxy -> Sequence (2 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "implements": {
+      "count": 23,
+      "files": 11,
+      "fileSample": [
+        "requests/src/requests/_types.py",
+        "requests/src/requests/cookies.py",
+        "ansible/hacking/create-bulk-issues.py",
+        "ansible/lib/ansible/_internal/_templating/_jinja_common.py",
+        "ansible/lib/ansible/_internal/_templating/_marker_behaviors.py",
+        "ansible/lib/ansible/_internal/_yaml/_constructor.py",
+        "ansible/lib/ansible/_internal/_yaml/_dumper.py",
+        "ansible/lib/ansible/cli/__init__.py",
+        "ansible/lib/ansible/module_utils/_internal/_datatag/__init__.py",
+        "ansible/lib/ansible/module_utils/_internal/_patches/__init__.py",
+        "ansible/lib/ansible/module_utils/facts/packages.py"
+      ],
+      "fileScope": {
+        "source": {
+          "RESOLVED": 23
+        },
+        "target": {
+          "EXTERNAL": 4,
+          "RESOLVED": 18,
+          "UNRESOLVED": 1
+        }
+      },
+      "projectScope": {
+        "source": {
+          "RESOLVED": 22,
+          "AMBIGUOUS": 1
+        },
+        "target": {
+          "EXTERNAL": 3,
+          "RESOLVED": 19,
+          "UNRESOLVED": 1
+        }
+      },
+      "ambiguousMultiplicity": {},
+      "confidence": {
+        "1": 23
+      },
+      "evidenceClass": {
+        "structural": 23
+      },
+      "reasonCode": {
+        "stdlib-interface-marker": 5,
+        "in-file-interface-base": 18
+      },
+      "targetBinsByReason": {
+        "stdlib-interface-marker": {
+          "EXTERNAL": 3,
+          "RESOLVED": 1,
+          "UNRESOLVED": 1
+        },
+        "in-file-interface-base": {
+          "RESOLVED": 18
+        }
+      },
+      "targetBinsByEvidence": {
+        "structural": {
+          "EXTERNAL": 3,
+          "RESOLVED": 19,
+          "UNRESOLVED": 1
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {
+        "ABC": 2
+      },
+      "unresolvedClass": {
+        "qualified-external": 1
+      },
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "SupportsRead -> Protocol",
+        "SupportsItems -> Protocol",
+        "RequestsCookieJar -> MutableMapping",
+        "DeprecatedConfig -> Deprecation",
+        "UpdateBundled -> Deprecation",
+        "CapturedExceptionMarker -> ExceptionMarker"
+      ],
+      "unresolvedProjectTargets": [
+        "ansible/lib/ansible/module_utils/_internal/_patches/__init__.py CallablePatch -> ABC"
+      ],
+      "ambiguousTargets": [],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "overrides": {
+      "count": 798,
+      "files": 132,
+      "fileSample": [
+        "libxslt/python/generator.py",
+        "requests/src/requests/_types.py",
+        "requests/src/requests/adapters.py",
+        "requests/src/requests/auth.py",
+        "requests/src/requests/cookies.py",
+        "requests/src/requests/exceptions.py",
+        "requests/src/requests/sessions.py",
+        "requests/src/requests/structures.py",
+        "requests/tests/test_requests.py",
+        "requests/tests/testserver/server.py",
+        "ansible/hacking/create-bulk-issues.py",
+        "ansible/lib/ansible/_internal/_datatag/_tags.py"
+      ],
+      "fileScope": {
+        "source": {
+          "RESOLVED": 798
+        },
+        "target": {
+          "AMBIGUOUS": 204,
+          "RESOLVED": 581,
+          "MODULE": 13
+        }
+      },
+      "projectScope": {
+        "source": {
+          "RESOLVED": 798
+        },
+        "target": {
+          "AMBIGUOUS": 494,
+          "RESOLVED": 291,
+          "MODULE": 13
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 51,
+        "3": 37,
+        "4": 44,
+        "5": 26,
+        "6": 32,
+        "7": 37,
+        "8": 20,
+        "9": 10,
+        "10": 23,
+        "11": 3,
+        "13": 1,
+        "14": 15,
+        "15": 20,
+        "16": 23,
+        "18": 2,
+        "24": 12,
+        "29": 24,
+        "32": 29,
+        "263": 85
+      },
+      "confidence": {
+        "0.95": 111,
+        "0.5": 687
+      },
+      "evidenceClass": {
+        "structural": 111,
+        "inferred": 687
+      },
+      "reasonCode": {
+        "object-init-universal": 16,
+        "first-parent-guess": 687,
+        "mro-base-declares-method": 95
+      },
+      "targetBinsByReason": {
+        "object-init-universal": {
+          "AMBIGUOUS": 12,
+          "MODULE": 4
+        },
+        "first-parent-guess": {
+          "AMBIGUOUS": 390,
+          "RESOLVED": 291,
+          "MODULE": 6
+        },
+        "mro-base-declares-method": {
+          "AMBIGUOUS": 92,
+          "MODULE": 3
+        }
+      },
+      "targetBinsByEvidence": {
+        "structural": {
+          "AMBIGUOUS": 104,
+          "MODULE": 7
+        },
+        "inferred": {
+          "AMBIGUOUS": 390,
+          "RESOLVED": 291,
+          "MODULE": 6
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {},
+      "unresolvedClass": {},
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "K.__init__ -> __init__",
+        "K.__lt__ -> __lt__",
+        "K.__gt__ -> __gt__",
+        "K.__eq__ -> __eq__",
+        "K.__le__ -> __le__",
+        "K.__ge__ -> __ge__"
+      ],
+      "unresolvedProjectTargets": [],
+      "ambiguousTargets": [
+        "libxslt/python/generator.py K.__init__ -> __init__ (263 declarations)",
+        "libxslt/python/generator.py K.__lt__ -> __lt__ (5 declarations)",
+        "libxslt/python/generator.py K.__gt__ -> __gt__ (4 declarations)",
+        "libxslt/python/generator.py K.__eq__ -> __eq__ (16 declarations)",
+        "libxslt/python/generator.py K.__le__ -> __le__ (4 declarations)",
+        "libxslt/python/generator.py K.__ge__ -> __ge__ (4 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    },
+    "instantiates": {
+      "count": 379,
+      "files": 62,
+      "fileSample": [
+        "libxslt/doc/apibuild.py",
+        "nim/tools/debug/nim-gdb.py",
+        "nim/tools/debug/nimlldb.py",
+        "requests/src/requests/cookies.py",
+        "requests/src/requests/models.py",
+        "requests/src/requests/sessions.py",
+        "requests/src/requests/structures.py",
+        "requests/tests/test_help.py",
+        "requests/tests/test_requests.py",
+        "requests/tests/test_utils.py",
+        "requests/tests/testserver/server.py",
+        "ansible/.azure-pipelines/scripts/publish-codecov.py"
+      ],
+      "fileScope": {
+        "source": {
+          "AMBIGUOUS": 48,
+          "RESOLVED": 167,
+          "MODULE": 164
+        },
+        "target": {
+          "RESOLVED": 370,
+          "AMBIGUOUS": 9
+        }
+      },
+      "projectScope": {
+        "source": {
+          "AMBIGUOUS": 96,
+          "RESOLVED": 119,
+          "MODULE": 164
+        },
+        "target": {
+          "RESOLVED": 354,
+          "AMBIGUOUS": 25
+        }
+      },
+      "ambiguousMultiplicity": {
+        "2": 7,
+        "3": 18
+      },
+      "confidence": {
+        "0.9": 379
+      },
+      "evidenceClass": {
+        "usage_contextual": 379
+      },
+      "reasonCode": {
+        "in-file-class-constructor": 379
+      },
+      "targetBinsByReason": {
+        "in-file-class-constructor": {
+          "RESOLVED": 354,
+          "AMBIGUOUS": 25
+        }
+      },
+      "targetBinsByEvidence": {
+        "usage_contextual": {
+          "RESOLVED": 354,
+          "AMBIGUOUS": 25
+        }
+      },
+      "selfLoop": 0,
+      "emptyEndpoints": 0,
+      "unresolvedTargetNames": {},
+      "unresolvedClass": {},
+      "unexplained": 0,
+      "unexplainedTargetNames": {},
+      "unexplainedExamples": [],
+      "examples": [
+        "__init__ -> CLexer",
+        "scanHeaders -> CParser",
+        "scanModules -> CParser",
+        "parse -> CParser",
+        "instantiate -> NimTypeRecognizer",
+        "nim_gdb -> DollarPrintFunction"
+      ],
+      "unresolvedProjectTargets": [],
+      "ambiguousTargets": [
+        "requests/tests/test_requests.py test_rewind_body_no_seek -> BadFileObj (3 declarations)",
+        "requests/tests/test_requests.py test_rewind_body_failed_seek -> BadFileObj (3 declarations)",
+        "requests/tests/test_requests.py test_rewind_body_failed_tell -> BadFileObj (3 declarations)",
+        "requests/tests/test_utils.py test_should_bypass_proxies_win_registry -> RegHandle (3 declarations)",
+        "requests/tests/test_utils.py test_should_bypass_proxies_win_registry_bad_values -> RegHandle (3 declarations)",
+        "requests/tests/test_utils.py test_should_bypass_proxies_win_registry_ProxyOverride_value -> RegHandle (3 declarations)"
+      ],
+      "r7": [],
+      "placeholderInSource": []
+    }
+  },
+  "untyped": 0
+}

@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url"
 
 const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SHIPPED = `${REPO}/wasm/tree-sitter-groovy.wasm`
-const CORPUS = process.env.GROOVY_CORPUS ?? "$HOME/fixtures/xml/repos/grails-core"
+const CORPUS = process.env.GROOVY_CORPUS ?? "/home/ishaq2321/bb_tests/xml/repos/grails-core"
 
 async function main(): Promise<void> {
   const positional = process.argv.slice(2).filter(a => !a.startsWith("--"))

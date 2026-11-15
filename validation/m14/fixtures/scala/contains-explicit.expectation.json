@@ -1,0 +1,9 @@
+{
+  "fixtureId": "scala/contains-explicit",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPLICIT contains pin: Host contains member.",
+  "expectRelationships": [
+    { "type": "contains", "from": "Host", "targetEndsWith": "member" }
+  ]
+}

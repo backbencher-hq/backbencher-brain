@@ -1,0 +1,12 @@
+# A `$ref` is a JSON pointer INTO THIS FILE, and it resolves. The previous detector
+# treated any string beginning `#/` as a reference with no target, so 9,542 corpus
+# edges pointed at nothing; the pointer index turns them into real graph edges.
+definitions:
+  Thing:
+    type: object
+  Other:
+    type: string
+use:
+  $ref: "#/definitions/Thing"
+alsoUse:
+  $ref: "#/definitions/Missing"

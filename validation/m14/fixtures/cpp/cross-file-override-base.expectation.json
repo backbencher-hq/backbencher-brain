@@ -1,0 +1,67 @@
+{
+  "fixtureId": "cpp/cross-file-override-base",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE BASE HALF of the cpp cross-file `overrides` pin, and it is pinned for its own sake rather than as an accessory — the pattern php/cross-file-override-base established. `cross-file-override.cpp`'s forbid rows are only meaningful against a KNOWN declaration set: `inheritedOnly`, `neverRedeclared` and `NonVirtualBase` are here precisely so that 'the base does not declare it' and 'the base declares it non-virtually' are checkable rather than assumed.\n\nFour distinct things have to be told apart, and this is the fixture for telling them apart:\n  - `step` is pure virtual, so a subclass declaring `void step(int) override` genuinely overrides it. Provable cross-file from the KEYWORD plus THIS declaration.\n  - `tune` is virtual WITH A BODY and is redeclared with a different parameter type. That is C++ NAME HIDING, not an override — the exact confusion the M37.9 differential round recorded when it excluded cpp overrides from the oracle ('same-name across a base chain conflates C++ NAME-HIDING with virtual override ... different arity hides, it does not override').\n  - `probe` is virtual with a body and is redeclared WITHOUT the keyword. On a name-only cross-file companion it is INDISTINGUISHABLE from `tune`, which is why the resolver refuses a companion-only match (see the subclass fixture).\n  - `step` also exists on `ExternalSidecar` and on `NonVirtualBase`. Two of those three are the leaf-name collision a cross-file lookup has to survive, and the third is the non-virtual case where no `overrides` edge may be published at all however it is spelled.",
+  "expectSymbols": [
+    {
+      "name": "ExternalInterface",
+      "kind": "class"
+    },
+    {
+      "name": "step",
+      "kind": "method",
+      "ownerName": "ExternalInterface"
+    },
+    {
+      "name": "tune",
+      "kind": "method",
+      "ownerName": "ExternalInterface"
+    },
+    {
+      "name": "probe",
+      "kind": "method",
+      "ownerName": "ExternalInterface"
+    },
+    {
+      "name": "inheritedOnly",
+      "kind": "method",
+      "ownerName": "ExternalInterface",
+      "note": "NOT redeclared by the subclass. Inheriting is not overriding."
+    },
+    {
+      "name": "ExternalSidecar",
+      "kind": "class"
+    },
+    {
+      "name": "step",
+      "kind": "method",
+      "ownerName": "ExternalSidecar",
+      "note": "the same leaf name as ExternalInterface::step, in a different class — the collision a cross-file lookup must survive."
+    },
+    {
+      "name": "NonVirtualBase",
+      "kind": "class"
+    },
+    {
+      "name": "step",
+      "kind": "method",
+      "ownerName": "NonVirtualBase",
+      "note": "NON-VIRTUAL: a same-name method here is plain hiding and no `overrides` edge may name it."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "ExternalSidecar",
+      "target": "ExternalInterface",
+      "note": "`ExternalSidecar` declares no base-class clause at all, so there is no `implements` edge for it in either direction — asserted here rather than left to the reader, because the whole point of `ExternalSidecar::step` is to share a LEAF NAME with `ExternalInterface::step`, and a resolver that matched on the leaf could invent this edge."
+    },
+    {
+      "type": "extends",
+      "from": "ExternalSidecar",
+      "target": "ExternalInterface",
+      "note": "and no `extends` edge either — the leaf-name collision must not become an inheritance claim."
+    }
+  ]
+}

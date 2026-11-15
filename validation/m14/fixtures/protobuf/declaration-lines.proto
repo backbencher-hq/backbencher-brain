@@ -1,0 +1,15 @@
+syntax = "proto3";
+package lines;
+
+// A user record.
+message User {
+  // The display name.
+  string name = 1;
+}
+
+// What a user may be.
+enum Role {
+  // The default, and the value proto3 requires first.
+  USER = 0;
+  ADMIN = 1;
+}

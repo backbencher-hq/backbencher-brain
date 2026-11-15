@@ -1,0 +1,26 @@
+  ok: docs: docs/tools/bb_security.md exists missing
+  ok: docs: description matches registry "Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injectio"
+  ok: docs: modes = findings only mode line mismatch
+  ok: docs: planned modes labeled honestly planned modes mislabeled
+  ok: docs: defaults match registry defaults mismatch
+  ok: docs: category matches registry category mismatch
+  ok: docs: mutability = read mutability mismatch
+  ok: docs: every input property documented 3 props
+  ok: docs: the page states the manual staleness truth staleness paragraph missing or wrong
+  ok: docs: generator verify mode passes for this tool (page byte-fresh) exit=0
+  ok: honesty: docs/BB_SECURITY.md documents the heuristic detector missing heuristic acknowledgment
+  ok: honesty: docs/BB_SECURITY.md says token matching is not a data-flow proof data-flow proof claim missing
+  ok: honesty: docs do not claim an AST taint proof [negative] AST-proof claim found
+  ok: honesty: contracts file documents the planned-mode split missing contract note
+  ok: honesty: no stale executable claim for flow/summary/hotspots [negative] stale claim found
+  ok: evidence: sec1.json exists, validates, verified verified
+  ok: evidence: sec2.json exists, validates, verified verified
+  ok: evidence: sec3.json exists, validates, verified verified
+  ok: evidence: all three verifier records carry a negative case Sec1:9neg Sec2:7neg Sec3:5neg
+  ok: evidence: this gate has an emitted record (sec4.json) missing sec4.json
+  ok: gate: verify-security-contract.ts wired
+  ok: gate: verify-security-handler.ts wired
+  ok: gate: verify-security-adversarial.ts wired
+  ok: gate: evidence validator is wired
+  ok: gate: a tampered record (failures, no negative case) cannot claim verified [negative] summary.failed 5 != actual 0; negativeCases 0 is less than 9 checks marked negative; verified claim has failed>0; verified claim has zero negative cases
+Sec4: VERIFIED (25/25 passed, 3 negatives)

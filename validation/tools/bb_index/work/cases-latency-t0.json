@@ -1,0 +1,12 @@
+[
+  {"label":"cold: file mode (first call in a warm server)","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file mode run 1","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file mode run 2","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file mode run 3","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file mode run 4","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file mode run 5","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"dir mode unchanged (run 1)","arguments":{"path":"src","mode":"dir"}},
+  {"label":"dir mode unchanged (run 2)","arguments":{"path":"src","mode":"dir"}},
+  {"label":"post mode (run 1)","arguments":{"path":".","mode":"post"}},
+  {"label":"post mode (run 2)","arguments":{"path":".","mode":"post"}}
+]

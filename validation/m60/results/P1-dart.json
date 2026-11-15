@@ -1,0 +1,69 @@
+{
+  "probe": "M60 dart retrofit (DT wave seam trace)",
+  "at": "2026-09-14T15:07:16.798Z",
+  "wave": "M49.DT1 @8a9b36d9",
+  "repo": "/tmp/dt-seam",
+  "method": "real pipeline (indexProjectParallel) into throwaway BB_DATA_DIR; rows read back with raw SQL; analyzer emission cross-checked via ASTEngine output",
+  "indexStats": {
+    "files": 2,
+    "errors": 0
+  },
+  "rowsByType": {
+    "calls": 18,
+    "contains": 41,
+    "extends": 5,
+    "implements": 1,
+    "imports": 1,
+    "instantiates": 9,
+    "overrides": 1,
+    "uses": 18
+  },
+  "lineNumber": {
+    "gt0": 0,
+    "eq0": 0,
+    "nul": 94,
+    "verdict": "analyzer never emits line_number on dart edges (all 21 analyzers except scala/xml); store writes NULL per M59.O2; no fabricated zeros"
+  },
+  "analyzerFlagSurvival": {
+    "isMemberRead": 0,
+    "isSubscriptBase": 0,
+    "isInterpolationRead": 0,
+    "isNamedConstructor": 0,
+    "isPrefixQualified": 0,
+    "isTearOff": 0,
+    "isSuperConstructor": 0,
+    "isRedirectingConstructor": 0,
+    "isMixin": 0,
+    "isFieldRead": 0,
+    "isPart": 0,
+    "evidenceClass": 1
+  },
+  "analyzerFlagVerdict": "all analyzer-origin metadata flags are 0: enrichRelationships() builds a fresh metadata object and UPDATE-overwrites the analyzer JSON (src/brain/brain-relationship-enrichment.ts). Surviving: type, source, target, confidence. Starved readers: lsp/hover evidence tiers (falls back to derivation), lsp/graph_usages evidence.",
+  "symbols": {
+    "total": 57,
+    "withRange": 57,
+    "withParams": 11,
+    "withDocstring": 0,
+    "commentsVerdict": "dart analyzer emits comments[] but the store binds only symbol.docstring (4 analyzers set it; dart is not one) — dart comments land nowhere"
+  },
+  "queryFallbacks": {
+    "calleesView": "row.lineNumber || node.line (graph-engine.ts) — NULL edges locate via the caller symbol line",
+    "callersView": "row.lineNumber || 0 — NULL edges report line 0 at the tool",
+    "verdict": "M59-known behavior; recorded, not re-filed"
+  },
+  "secondReview": {
+    "at": "2026-09-16T00:24:36.743Z",
+    "newFlags": {
+      "isLocalRead": 0,
+      "isGlobalRead": 0,
+      "isMemberRead": 0,
+      "isBareRead": 0,
+      "isNamedConstructor": 0,
+      "evidenceClass": 1
+    },
+    "usesRows": 74,
+    "lineNull": 178,
+    "lineZero": 0,
+    "verdict": "DT2 local/global uses land with type/target/confidence; flags join F1 (enrichment overwrite, filed on P1 #829); line NULL (no edge lines emitted)"
+  }
+}

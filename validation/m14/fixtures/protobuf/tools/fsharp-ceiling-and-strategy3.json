@@ -1,0 +1,150 @@
+{
+  "_what": "TWO MEASUREMENTS FROM ONE TURN: (1) FSHARP'S NAME-CLAIM CEILING ON THE HONEST UNIT — the branch decision the Lead's five-project run made possible; (2) STRATEGY 3'S BLAST RADIUS, CORPUS-SIDE, per language — the per-lane share r-lane said needed a store run per language.",
+  "_instruments": [
+    "npx tsx validation/m14/fixtures/protobuf/tools/fsharp-ceiling-honest-unit.mts",
+    "npx tsx validation/m14/fixtures/protobuf/tools/strategy3-corpus-side.mts --files=50"
+  ],
+  "FSHARP_CEILING_ON_THE_HONEST_UNIT": {
+    "_populationLabel": "THE SAME FIVE WHOLE PROJECTS the Lead's honest-unit row used — fantomas, FSharpPlus, FsToolkit.ErrorHandling, FSharp.Data, Paket — with ALL their fsharp files parsed (1,108). The two numbers therefore share one population.",
+    "imports": 5214,
+    "nameShaped": 5018,
+    "dotted": 3425,
+    "CEILING_projectPublishesTheName": 2352,
+    "ceilingShare": "46.9%",
+    "notPublished": 2666,
+    "notPublishedShare": "53.1%",
+    "ofTheDottedPublished": "1436 of 3425",
+    "topNotPublishedPrefixes": "System 1092 · NUnit 401 · FsUnit 328 · FSharp 149 · Microsoft 121 · Fantomas 83 · Fake 53 · TestHelpers 46 · Fable 35",
+    "publishedExamples": "`Fantomas.Analyzers.AnnotationAnalyzer` (declared in the project), `Fantomas.Analyzers.Tests.TestHelpers`",
+    "THE_GAP_AND_THE_BRANCH": {
+      "gateRowOnTheSameUnit": "imports 5,214 · resolved 973 (18.7%) · amb 1,379 · unresolved 2,862 · extOK 0 · ext? 0 · extFAIL 0",
+      "room": "2,352 names are PUBLISHED and 973 resolve — of order 1,300 edges name something the project carries and do not reach it",
+      "BRANCH_TAKEN": "NONE — see DECOMPOSITION_REFUTES_THE_FIX: branch 1 is refuted (no routing gap), branch 2 holds for the external half only (2,666) and the other half (1,379) is AMBIGUITY, a different cause.",
+      "whatTheBuildStillOwes": "the before/after on THIS population with `unresolved` and `noDecl` separated from `resolved`; `bindFAIL` 0; and the 11 `_lib/Fornax.Core.dll` refutes still unadmitted — which the honest-unit row already shows did NOT reproduce (extFAIL 0), a clean negative on a named risk."
+    },
+    "DECOMPOSITION_REFUTES_THE_FIX": {
+      "measured": {
+        "nameShaped": 5018,
+        "exactlyOneDeclaration_theGatesRESOLVED": 973,
+        "moreThanOne_theGatesAMBIGUOUS": 1379,
+        "none_theGatesUNRESOLVED": 2666
+      },
+      "theGatesRowOnTheSameUnit": "imports 5,214 · resolved 973 · amb(decl) 1,379 · unresolved 2,862",
+      "THE_MATCH_IS_EXACT": "973 / 1,379 / 2,666(+196 non-name-shaped = 2,862). The model and the gate agree on every column, which is the strongest confirmation available that the key space here IS the gate's.",
+      "WHAT_IT_MEANS": "**THE 2,352 'PUBLISHED' NAMES ARE 973 RESOLVED + 1,379 AMBIGUOUS — THERE IS NO ROUTING GAP.** My sentence 'of order 1,300 edges name something the project carries and do not reach it' was WRONG: those edges DO reach a declaration; they reach MORE THAN ONE, which is the ambiguity column and a different cause (collision), not a routing defect a name fix could touch.",
+      "THE_FIX_WOULD_BE_INERT": "unresolved 2,666 is ENTIRELY 'not published' — System 1092 · NUnit 401 · FsUnit 328 · FSharp 149 · Microsoft 121 — external names a name claim cannot reach and must not pretend to. A fix that emits the published spelling has nothing to emit: every target it could touch already resolves or is ambiguous.",
+      "BRANCH": "**NEITHER PRE-COMMITTED BRANCH IS TAKEN AS WRITTEN: branch 1 (BUILD) is REFUTED by the decomposition, and branch 2 (boundary) is HALF right — the residual splits into an EXTERNAL boundary (2,666) and AMBIGUITY (1,379), which is a different cause.**",
+      "WHY_THIS_WAS_CAUGHT_BEFORE_BUILDING": "The lead's condition asked what would make me abandon the fix. The answer was found by applying the GATE'S OWN PREDICATE (declCount) instead of membership: a name being PUBLISHED is not the same as it being REACHED UNIQUELY, and the decision depended on the second.",
+      "THE_RULE": "A ceiling measured with a MEMBERSHIP predicate is about reachability-in-principle; the gate resolves by DECLARATION COUNT. **A fix's ceiling must be measured with the predicate the fix will be judged by**, or it prices edges that were never lost."
+    }
+  },
+  "STRATEGY3_BLAST_RADIUS_CORPUS_SIDE": {
+    "_what": "r-lane's signature is STORE-side (bound name == SUBSTR(target, after the first dot)) and its own artifact says the per-language number needs a store run per language. This measures the same population from the CORPUS side: a row can carry the signature only if the project PUBLISHES a declaration named that substring. It is an UPPER BOUND on the re-pointable population — the same KIND of number as r-lane's 'population the fix COULD re-point' — and it says WHICH LANES a store run is worth spending on.",
+    "_populationLabel": "BOUNDED STRIDE SAMPLE of 50 files per repo per lane; extensions from the gate's LANES_B; every edge through `parseFile`.",
+    "_reference": "r-lane on ONE store (hcl's banked 13 repos): uses 501 signature rows, 471 other-file; references 8,572, 2,883 other-file.",
+    "table": [
+      {
+        "lane": "hcl",
+        "usesPlusReferences": 3949,
+        "dotted": 3949,
+        "candidate": 1850,
+        "candidateShare": "46.85%",
+        "otherFile": 1288,
+        "sameFile": 562
+      },
+      {
+        "lane": "protobuf",
+        "usesPlusReferences": 8203,
+        "dotted": 8116,
+        "candidate": 1677,
+        "candidateShare": "20.44%",
+        "otherFile": 874,
+        "sameFile": 803
+      },
+      {
+        "lane": "php",
+        "usesPlusReferences": 10150,
+        "dotted": 909,
+        "candidate": 909,
+        "candidateShare": "8.96%",
+        "otherFile": 424,
+        "sameFile": 485
+      },
+      {
+        "lane": "fsharp",
+        "usesPlusReferences": 32737,
+        "dotted": 9120,
+        "candidate": 2820,
+        "candidateShare": "8.61%",
+        "otherFile": 1256,
+        "sameFile": 1564
+      },
+      {
+        "lane": "graphql",
+        "usesPlusReferences": 53342,
+        "dotted": 6672,
+        "candidate": 1410,
+        "candidateShare": "2.64%",
+        "otherFile": 1089,
+        "sameFile": 321
+      },
+      {
+        "lane": "clean",
+        "usesPlusReferences": 6319,
+        "dotted": 588,
+        "candidate": 129,
+        "candidateShare": "2.04%",
+        "otherFile": 129,
+        "sameFile": 0
+      },
+      {
+        "lane": "r",
+        "usesPlusReferences": 2200,
+        "dotted": 80,
+        "candidate": 4,
+        "candidateShare": "0.18%",
+        "otherFile": 4,
+        "sameFile": 0
+      },
+      {
+        "lane": "lua",
+        "usesPlusReferences": 26499,
+        "dotted": 43,
+        "candidate": 6,
+        "candidateShare": "0.02%",
+        "otherFile": 5,
+        "sameFile": 1
+      },
+      {
+        "lane": "scss",
+        "usesPlusReferences": 2865,
+        "dotted": 0,
+        "candidate": 0,
+        "candidateShare": "0.00%",
+        "otherFile": 0,
+        "sameFile": 0
+      },
+      {
+        "lane": "toml",
+        "usesPlusReferences": 167,
+        "dotted": 167,
+        "candidate": 0,
+        "candidateShare": "0.00%",
+        "otherFile": 0,
+        "sameFile": 0
+      }
+    ],
+    "THE_FINDING": "The re-pointable population is CONCENTRATED, not fleet-wide: **hcl 1,288 other-file** and **graphql 1,089** and **fsharp 1,256** carry most of it, with protobuf 874 and php 424 behind them; r, lua, scss and toml are ~0. r-lane's ONE-store number (471 uses other-file) is the hcl corpus' share of a population that is dominated by hcl and graphql on the corpus side.",
+    "theShapes": "hcl `var.repository` -> `repository` declared in another `.tf`; protobuf `testservice.Req` -> `Req` declared in another `.proto`; graphql `__Type.name` -> `name` declared in another `.graphql`; php `SchemaGenerator.config` -> `config` in another `.php`. Some are CORRECT bindings (a dotted target whose leaf genuinely is the declaration); the signature only makes a binding POSSIBLE, which is why this is an upper bound and the store column is still owed.",
+    "EARNED": [
+      "The per-language SHARE of Strategy 3's signature population, bounded, with the lanes ranked and the shapes named.",
+      "The lanes a store run is worth spending on: hcl, graphql, fsharp, protobuf, php — in that order by other-file candidates.",
+      "The fsharp ceiling on the honest unit: 2,352 of 5,018 (46.9%), against 973 resolved on the same population."
+    ],
+    "NOT_EARNED": [
+      "Whether any of these candidates was ACTUALLY bound by Strategy 3 — that needs the store column per language, and r-lane's 45-defect/3,354-attribution split is not reproducible from the corpus side.",
+      "The sample is 50 files per repo, not the populations; the ranking is a rate, and hcl's rate is measured on the lane whose corpus r-lane used, so it is the most comparable row and the others are less so.",
+      "No store run of any kind was taken here."
+    ]
+  }
+}

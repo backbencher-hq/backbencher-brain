@@ -1,0 +1,54 @@
+{
+  "issue": "M62.A3",
+  "code": "A3",
+  "milestone": "M62",
+  "status": "verified",
+  "checks": 26,
+  "passed": 26,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 2,
+  "mutantsCaught": 2,
+  "mutantsTotal": 2,
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "sourceFingerprint": "cee8a578cd622457b4ea2399049b0e2427bb8eeabc7b60670514194d2208bfba",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m62/verify-arrival.ts",
+    "docs/m62/LINE-ADDRESS.md",
+    "src/brain/database.ts",
+    "src/intelligence/graph/graph-engine.ts",
+    "src/lsp/graph_usages.ts",
+    "src/mcp/tool-handlers.ts",
+    "src/util/project-id.ts",
+    "script/m62/a1-fixture.ts"
+  ],
+  "verifierCommand": "npx tsx script/m62/verify-arrival.ts",
+  "evidenceFile": "A3.json",
+  "generatedAt": "2026-11-09T10:22:56.495Z",
+  "schemaVersion": 1,
+  "arrival": {
+    "forMilestone": "M59 (Call-Site Truth)",
+    "states": [
+      "real (> 0)",
+      "legacy-placeholder (0)",
+      "not-stored (NULL/absent)",
+      "unusable (negative/fractional/NaN/Infinity)"
+    ],
+    "seededRows": 10,
+    "upgradeRows": 6,
+    "languages": [
+      "typescript (fixture vocabulary; the fixture language of the seeded index)"
+    ],
+    "coveragePolicy": "Per-language real-line coverage is measured and published by M59.A7's lane, not here; this hook declares only the store states it seeds."
+  },
+  "limitations": [
+    "The fixture seeds stored rows directly (analyzer storage vocabulary); real per-language emission is measured in M59's lane.",
+    "M59.A4/A8 change what a stored row IS (multiplicity, identity): R3 pins the shape the hub already declares, so their arrival needs no consumer change here."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:22:56.495Z",
+    "contentSha256": "1bcde463016c53a71fdc43616f670461650cf2e5d2b4ea0a59094e5af7f5611b"
+  }
+}

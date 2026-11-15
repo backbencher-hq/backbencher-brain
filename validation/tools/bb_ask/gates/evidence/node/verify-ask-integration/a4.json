@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.26",
+  "code": "A4",
+  "tool": "bb_ask",
+  "title": "bb_ask: integration (index + embeddings + freshness + read-only)",
+  "verifiedState": "known-gap",
+  "layers": [
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "integration: every answer source resolves to an indexed brain_file row",
+      "pass": true,
+      "detail": "[{\"file\":\"src/alpha.ts\",\"line\":1,\"context\":\"requestHandler\"},{\"file\":\"src/beta.ts\",\"line\":1,\"context\":\"requestHandler\"}]"
+    },
+    {
+      "name": "integration: answer is non-empty with provenance and bounds",
+      "pass": true,
+      "detail": "semantic_candidate"
+    },
+    {
+      "name": "integration: vector path resolves entities to indexed files",
+      "pass": true,
+      "detail": "results=2"
+    },
+    {
+      "name": "integration: comparison count equals scanned rows when the scan is not capped",
+      "pass": true,
+      "detail": "comparable=2 scanned=2"
+    },
+    {
+      "name": "integration: vector results carry no NaN similarity [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "integration: a semantic answer leaves brain.db and its WAL unchanged [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793733168659},\"wal\":{\"size\":1590352,\"mtimeMs\":1793733170684}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793733168659},\"wal\":{\"size\":1590352,\"mtimeMs\":1793733170684}}"
+    },
+    {
+      "name": "integration: an aggregate answer leaves brain.db and its WAL unchanged [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793733168659},\"wal\":{\"size\":1590352,\"mtimeMs\":1793733170684}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793733168659},\"wal\":{\"size\":1590352,\"mtimeMs\":1793733170684}}"
+    },
+    {
+      "name": "integration: a changed file is marked STALE [negative]",
+      "pass": false,
+      "negative": true,
+      "detail": "--- File: src/beta.ts (Line 1) [MISSING — file no longer on disk] --- | [function] requestHandler — similarity 0.691 [MISSING — file no longer on disk]"
+    },
+    {
+      "name": "integration: a deleted file is marked MISSING, not 'changed' [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "--- File: src/beta.ts (Line 1) [MISSING — file no longer on disk] --- | [function] requestHandler — similarity 0.691 [MISSING — file no longer on disk]"
+    },
+    {
+      "name": "integration: the changed file's result carries stale=true and is not marked missing",
+      "pass": false,
+      "detail": "{}"
+    },
+    {
+      "name": "integration: the deleted file's result carries missing=true",
+      "pass": true,
+      "detail": "{\"betaMissing\":true}"
+    },
+    {
+      "name": "integration: after refresh the changed file is no longer stale",
+      "pass": true,
+      "detail": "stale=undefined"
+    },
+    {
+      "name": "integration: keyword-fallback path engages with an explicit reason",
+      "pass": true,
+      "detail": "{\"method\":\"keyword-fallback\",\"reason\":\"no-matching-model-embeddings\"}"
+    },
+    {
+      "name": "integration: fallback results resolve to indexed files",
+      "pass": true,
+      "detail": "results=1"
+    },
+    {
+      "name": "integration: fallback results carry no NaN similarity [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 6,
+  "summary": {
+    "total": 15,
+    "passed": 13,
+    "failed": 2
+  },
+  "decisions": {
+    "resolution": "every cited source resolves to an indexed brain_file row",
+    "freshness": "a file changed after indexing is marked STALE; a file deleted after indexing is marked MISSING; the two markers are distinct",
+    "readonly": "a semantic answer and an aggregate answer leave brain.db and its WAL byte-identical (0-byte WAL and touched -shm are connection artifacts, not writes)",
+    "refresh": "reindexing clears the stale marker — the loop closes"
+  },
+  "limitations": [
+    "The lexical-fallback leg's read-only status depends on the shared content-search/symbol-search engines and is asserted in the honesty gate, which names that dependency."
+  ],
+  "generatedAt": "2026-11-03T19:12:52.531Z"
+}

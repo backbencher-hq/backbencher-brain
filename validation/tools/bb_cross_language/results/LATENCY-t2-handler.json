@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "tier": "T2 reference large index — HANDLER level",
+  "measuredAt": "2026-11-01T23:06:43.555Z",
+  "currentCommit": "unknown",
+  "copy": {
+    "destination": "validation/tools/bb_cross_language/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "bytes": 3639963648,
+    "sourceCounts": {
+      "files": 6452,
+      "symbols": 310423,
+      "relationships": 820040,
+      "crossLanguageRows": 0
+    },
+    "equal": true,
+    "note": "the handler runs against this copy with a private BB_DATA_DIR; the shared store is untouched"
+  },
+  "environment": {
+    "node": "v22.22.1",
+    "cpus": 8,
+    "load": "33.23 29.38 19.22 19/2360 57"
+  },
+  "rules": [
+    "BB_NO_AUTO_REFRESH=1",
+    "warm (one discarded call per subject)",
+    "5 measured runs",
+    "p50/p95 from the measured runs"
+  ],
+  "budget": {
+    "p95Ms": 5000,
+    "verdict": "within budget"
+  },
+  "subjects": {
+    "Command": {
+      "copies": 34,
+      "defaultCall": {
+        "args": {
+          "symbol": "Command"
+        },
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 96.149,
+        "p95Ms": 122.255,
+        "minMs": 60.687,
+        "maxMs": 122.255,
+        "bytes": 10497
+      },
+      "limit1Call": {
+        "args": {
+          "symbol": "Command",
+          "limit": 1
+        },
+        "runs": 5,
+        "p50Ms": 101.184,
+        "p95Ms": 135.992,
+        "minMs": 75.979,
+        "maxMs": 135.992
+      },
+      "answerShape": {
+        "declaredAbsent": true,
+        "factCount": 0,
+        "storedRowCount": 0,
+        "deeperDescendantRowCount": 0,
+        "copyCount": 34,
+        "copiesTruncated": false
+      },
+      "componentOneShot": {
+        "ms": 113.925,
+        "facts": 0,
+        "storedRowCount": 0
+      },
+      "handlerMatchesComponent": true
+    },
+    "type": {
+      "copies": 5392,
+      "defaultCall": {
+        "args": {
+          "symbol": "type"
+        },
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 549.316,
+        "p95Ms": 1608.775,
+        "minMs": 370.24,
+        "maxMs": 1608.775,
+        "bytes": 56550
+      },
+      "limit1Call": {
+        "args": {
+          "symbol": "type",
+          "limit": 1
+        },
+        "runs": 5,
+        "p50Ms": 337.756,
+        "p95Ms": 574.22,
+        "minMs": 305.53,
+        "maxMs": 574.22
+      },
+      "answerShape": {
+        "declaredAbsent": true,
+        "factCount": 0,
+        "storedRowCount": 0,
+        "deeperDescendantRowCount": 0,
+        "copyCount": 5392,
+        "copiesTruncated": true
+      },
+      "componentOneShot": {
+        "ms": 572.469,
+        "facts": 0,
+        "storedRowCount": 0
+      },
+      "handlerMatchesComponent": true
+    },
+    "file": {
+      "copies": 3457,
+      "defaultCall": {
+        "args": {
+          "symbol": "file"
+        },
+        "warmup": 1,
+        "runs": 5,
+        "p50Ms": 143.261,
+        "p95Ms": 318.271,
+        "minMs": 120.192,
+        "maxMs": 318.271,
+        "bytes": 58156
+      },
+      "limit1Call": {
+        "args": {
+          "symbol": "file",
+          "limit": 1
+        },
+        "runs": 5,
+        "p50Ms": 153.992,
+        "p95Ms": 255.256,
+        "minMs": 125.094,
+        "maxMs": 255.256
+      },
+      "answerShape": {
+        "declaredAbsent": true,
+        "factCount": 0,
+        "storedRowCount": 0,
+        "deeperDescendantRowCount": 0,
+        "copyCount": 3457,
+        "copiesTruncated": true
+      },
+      "componentOneShot": {
+        "ms": 114.55,
+        "facts": 0,
+        "storedRowCount": 0
+      },
+      "handlerMatchesComponent": true
+    }
+  },
+  "limitations": [
+    "The reference index carries ZERO stored cross-language rows, so T2 exercises the absence path only; the facts path on a large row population is measured by the CL1 corpus lane (692-file elixir index, 714 rows).",
+    "Wall-clock figures belong to this machine and were taken while a fleet process shares the checkout; the load average is recorded."
+  ]
+}

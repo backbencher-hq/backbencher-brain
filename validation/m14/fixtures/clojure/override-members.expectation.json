@@ -1,0 +1,22 @@
+{
+  "issue": "M60 relationship-ontology wave — CLJ-D53 (`overrides`)",
+  "note": "A protocol method IMPLEMENTATION overrides the method the same file DECLARES on that protocol. The old ruling — `defmethod` shares the multimethod's var identity, so source and target would be identical — is true of `defmethod` and was generalised to the language; the construct was measured (922 implementations, 239 published, over 633 corpus files) and the ruling does not survive it. Here the two endpoints are distinct var identities (`Sealed.close` the declaration, `Box.close` the implementation), so this is not the self-loop the old ruling was about. The join gate is the strict one: a method the protocol does not declare is NOT an override (Mismatch.toString against OnlyClose), and a `reify` implementation has no NAMED TYPE so no source identity can be published at all (the `f` in Holder.close).",
+  "expectRelationships": [
+    { "type": "overrides", "from": "Box.close", "target": "Sealed.close" },
+    { "type": "overrides", "from": "Box.describe", "target": "Sealed.describe" },
+    { "type": "overrides", "from": "Widget.close", "target": "Sealed.close" },
+    { "type": "overrides", "from": "Widget.describe", "target": "Sealed.describe" },
+    { "type": "overrides", "from": "String.close", "target": "Sealed.close" },
+    { "type": "overrides", "from": "String.describe", "target": "Sealed.describe" },
+    { "type": "overrides", "from": "Long.close", "target": "Sealed.close" },
+    { "type": "overrides", "from": "Long.describe", "target": "Sealed.describe" },
+    { "type": "overrides", "from": "Mismatch.close", "target": "OnlyClose.close" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Mismatch.toString", "target": "OnlyClose.toString" },
+    { "type": "overrides", "from": "Mismatch.toString", "target": "Sealed.toString" },
+    { "type": "overrides", "from": "close", "target": "Sealed.close" },
+    { "type": "overrides", "from": "Box.close", "target": "Box.close" },
+    { "type": "overrides", "from": "Box", "target": "Sealed" }
+  ]
+}

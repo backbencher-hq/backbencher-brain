@@ -1,0 +1,46 @@
+{
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/boundaries",
+  "missingIndex": {
+    "projectId": "no-index-project-1793571869426",
+    "before": {
+      "db": false,
+      "dir": false
+    },
+    "after": {
+      "db": true,
+      "dir": true,
+      "entries": [
+        "brain.db",
+        "brain.db-shm",
+        "brain.db-wal"
+      ]
+    },
+    "answer": "I can't answer this: no index exists for this project. Index it first (bb_health refresh or full reindex), then ask again.",
+    "route": "no-index",
+    "createdDatabase": true,
+    "ms": 29
+  },
+  "stallingProvider": {
+    "projectId": "13544da46f50c452ef998d76bc1194b7bdd31d18",
+    "probeTimeoutMs": 3000,
+    "shippedDefaultTimeoutMs": 30000,
+    "ms": 3024,
+    "method": "keyword-fallback",
+    "reason": "no-vector-above-threshold",
+    "answerFirstChars": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confident",
+    "exceedsToolBudget": false
+  },
+  "unreachableProvider": {
+    "projectId": "13544da46f50c452ef998d76bc1194b7bdd31d18",
+    "ms": 354,
+    "method": "keyword-fallback",
+    "reason": "no-matching-model-embeddings",
+    "answerFirstChars": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confident",
+    "configuredTimeoutMs": 30000,
+    "declaredBudgetMs": {
+      "toolT2": 5000,
+      "clientTimeout": 30000
+    }
+  },
+  "generatedAt": "2026-11-01T22:24:36.128Z"
+}

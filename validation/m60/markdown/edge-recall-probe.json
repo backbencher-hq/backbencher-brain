@@ -1,7 +1,7 @@
 {
   "instrument": "markdown edge-recall probe (validation/m14/fixtures/markdown/edge-recall-probe.ts)",
   "entryPoint": "parseFile (src/ast/pool-worker.ts), compared against node counts on the pinned trees",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "seed": "markdown-edge-recall-v1",
   "admittedMarkdownFiles": 12729,
   "drawn": 200,

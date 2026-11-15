@@ -1,0 +1,18 @@
+{
+  "fixtureId": "dart/library-source-pins",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS M60 D1. Before this, the analyzer emitted `imports`/`exports` edges FROM the file's library and published NO node for it, so at 600 files 1,755 of 1,815 `imports` sources and 10 of 10 `exports` sources resolved to nothing; a library graph had no library in it. This fixture pins three facts: (1) a Module node exists for the file, (2) its name is the DECLARED dotted name `_pins.explicit_library` and NOT the stem `library-source-pins`, so a regress-to-stem name function fails here, (3) the imports/exports edges are sourced from that same name, so edge and node cannot drift apart. The stem is deliberately different from the declared name precisely so that (2) is falsifiable.",
+  "expectSymbols": [
+    { "name": "_pins.explicit_library", "kind": "module" },
+    { "name": "Consumer", "kind": "class" },
+    { "name": "path", "kind": "property" }
+  ],
+  "forbidSymbols": [
+    { "name": "library-source-pins", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "_pins.explicit_library", "target": "package:path/path.dart:*", "meta.evidenceClass": "import_based" },
+    { "type": "exports", "from": "_pins.explicit_library", "target": "package:path/path.dart", "meta.evidenceClass": "import_based" }
+  ]
+}

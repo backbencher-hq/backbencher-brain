@@ -1,0 +1,119 @@
+{
+  "fixtureId": "fsharp/one-char-calls",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 ontology lane, fsharp pass 2 (2026-10-03) \u2014 the second `calls` defect, and the larger of the two. TWO GATES on the label were removed, and each was measured before it was touched. (1) THE CALLEE-LENGTH GATE. `calls` was gated on `fnName.length > 1`, which is not a rule about the program: by the time the branch runs the grammar has already said the callee is a NAME. Instrument B counts 5,313 one-character applications over the 6,619-file corpus in 735 files (2.2% of the label's 246,327 full-extent edges), and the dropped population is BETTER connected than the emitted one \u2014 on a 120-file draw of the census's own sample, 32.4% of one-character callees name a symbol the same file publishes, against 22.2% for emitted `calls` in-file (validation/m14/fixtures/fsharp/one-char-calls.ts). `let f x = \u2026` composed into `f 41` is idiomatic F# and the gate dropped every one. (2) THE BARE PIPELINE. The lane's own doc claimed pipe `a |> List.map` reads as a call, and it did only when the pipeline sat in CALLEE position (`f (x |> g)`); the shape F# is actually written in \u2014 a `let` whose BODY is the pipeline \u2014 was dropped whole. Measured on a 300-file corpus draw: 1,043 bare `|>` infix nodes of which 1,037 carry a NAME on the right, against 580 read in callee position, i.e. the label was missing ~11% of the calls the corpus writes. WHY NO ORACLE CAUGHT EITHER, which is why both are in one fixture: `script/m14/fsharp-truth-oracle.ts` reads `application_expression` and `prefixed_expression` and has no `infix_expression` branch, and its `name.length > 1` test is the analyzer's old gate verbatim. Both sides said nothing and nothing disagreed \u2014 the workstream's central failure mode reproduced INSIDE one label. The three forbid rows are the refusals the new rule must make and a naive implementation would break: a COMPOSITION operator (`double >> triple`) builds a function and calls neither, a lambda on the right of a pipe names no callee, and `x = y` is an infix like any other. Trees were read off the wired grammar before the analyzer was run on this file: a bare pipeline is an `infix_expression` carrying an `infix_op` TOKEN and name-node siblings, which is what lets the rule read the operator off the tree and pick the side that carries the callee (`|>` applies the right operand, `<|` the left).",
+  "expectSymbols": [
+    {
+      "name": "Fixture.OneCharCalls",
+      "kind": "module"
+    },
+    {
+      "name": "double",
+      "kind": "function"
+    },
+    {
+      "name": "triple",
+      "kind": "function"
+    },
+    {
+      "name": "applyBoth",
+      "kind": "function"
+    },
+    {
+      "name": "Choice",
+      "kind": "enum"
+    },
+    {
+      "name": "A",
+      "kind": "enum_member"
+    },
+    {
+      "name": "main",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Fixture.OneCharCalls.composed",
+      "target": "Fixture.OneCharCalls.composed\u0000f",
+      "line_number": 11,
+      "meta.nodeType": "application_expression",
+      "meta.targetResolution": "local-binding",
+      "meta.localBinding": true,
+      "note": "the one-character callee: `f 41` inside `let composed = let f x = \u2026 in f 41`. Pre-fix this edge did not exist \u2014 the callee is one letter long and the rule refused it. The TARGET is the BINDING SPELLING `<callable>\u0000<binding>`: `f` is a local, this lane publishes no symbol for one, and the separator says so (BINDING_SEP, src/ast/types.ts) while `meta.localBinding` carries the claim the incoming rule verifies. CORRECTED 2026-10-14 (task-99): this row pinned `<callable>#<binding>` while its own note cited BINDING_SEP, which is `\u0000` \u2014 the analyzer spelled a literal `#`, so `verifyBindingClaim` found no separator and REFUTED all 24,448 of this lane's local-binding edges (`bindFAIL`, the fleet's only non-zero must-be-zero column). The analyzer now uses BINDING_SEP and this row pins the real spelling."
+    },
+    {
+      "type": "calls",
+      "from": "Fixture.OneCharCalls.applyBoth",
+      "target": "Fixture.OneCharCalls.triple",
+      "line_number": 6,
+      "meta.nodeType": "infix_expression",
+      "meta.isPipelineCall": true,
+      "meta.pipelineOperator": "|>",
+      "meta.evidenceClass": "usage_contextual",
+      "note": "A CALL \u2014 tier usage_contextual: the callee is read from how the source USES the name (an application_expression / pipeline), which is the fleet's tier for call edges. Pinned 2026-10-17 with the #419-D tier pass."
+    },
+    {
+      "type": "calls",
+      "from": "Fixture.OneCharCalls.applyBoth",
+      "target": "Fixture.OneCharCalls.double",
+      "line_number": 6,
+      "meta.nodeType": "application_expression"
+    },
+    {
+      "type": "calls",
+      "from": "Fixture.OneCharCalls.applyOne",
+      "target": "Fixture.OneCharCalls.double",
+      "line_number": 7,
+      "meta.nodeType": "application_expression"
+    },
+    {
+      "type": "calls",
+      "from": "Fixture.OneCharCalls.main",
+      "target": "Fixture.OneCharCalls.applyOne",
+      "line_number": 24,
+      "meta.nodeType": "application_expression"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.OneCharCalls",
+      "target": "Fixture.OneCharCalls.triple"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.OneCharCalls.Choice",
+      "target": "Choice.A"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "composedOp",
+      "target": "double",
+      "note": "`let composedOp = double >> triple` on line 28: `>>` is an infix_op token like `|>` is, and it COMPOSES two functions \u2014 it calls neither. An edge here would be a fabrication, which is why `>>` `>>>` `>=>` `<<<` are absent from the operator map (measured: 13 bare `>>` in a 300-file corpus draw, excluded on this ground)"
+    },
+    {
+      "type": "calls",
+      "from": "composedOp",
+      "target": "triple",
+      "note": "the same line, other side: neither operand of a composition is the callee, so neither may appear"
+    },
+    {
+      "type": "calls",
+      "from": "lambdaPipe",
+      "note": "`let lambdaPipe x = x |> (fun y -> y + 1)` on line 29: the pipe's right operand is a `fun_expression`, which names no callee. The rule asks for NAME siblings rather than for the last child, which is the difference between reading the pipeline and reading its argument"
+    },
+    {
+      "type": "calls",
+      "from": "equal",
+      "note": "`let equal x y = x = y` on line 30 is an `infix_expression` with an `infix_op` token `=`. If the rule tested the NODE TYPE instead of the operator it would publish `calls equal -> y` for every comparison in the corpus; the 300-file draw counted 991 bare `=` infix nodes for exactly this reason"
+    },
+    {
+      "type": "calls",
+      "target": "unknown",
+      "note": "ledger R7: no relationship endpoint may be the literal `unknown`"
+    }
+  ]
+}

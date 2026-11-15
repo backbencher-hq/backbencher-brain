@@ -1,0 +1,85 @@
+{
+  "fixtureId": "go/callee-ownership",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE OWNERSHIP BOUNDARY between the `calls` pass and the `uses` pass in `analyzeGoBareIdentifierUses`, in both directions. A call's callee is owned by the CALLS pass and must not also publish a `uses` row — the rule is stated at the selector pass's own doc comment (\"are handled by the calls analysis and skipped here — one edge per pair\") and enforced by `!isCallCallee(node)` in the identifier gate at real-go-analyzer.ts:4443. WHY THIS FIXTURE EXISTS. The boundary is invisible from outside: a call callee that is ALSO a package-level function name produces a `calls` row and NO `uses` row, which reads EXACTLY like a dropped read. That is not hypothetical — while auditing this pass a `pv := pv()` site in kubernetes (pkg/controller/util/protectionutil/utils_test.go:82, where `func pv()` is declared at :49) was reported as a dropped `uses` read because `uses -> pv` returned nothing while `calls -> pv` existed at 8 sites. The reading was wrong and the code was right. The Go toolchain settles the semantics (`helper := helper()` prints 42, so the RHS is the package function and the LHS is a new local), but the graph is CORRECT to carry the edge once, as `calls`. A pin is the only way to keep that from being 'fixed' into a duplicate. THE FIVE EXPECTED ROWS ARE THE ASSERTION. (1) `CallCallee -> Target @34` is a CALLS row for a call whose callee is a package-level function — the pass that owns it. (2) `BareRead -> Global @28` is the `uses` pass's own surface: a plain value read of a package var, which must keep emitting. (3) `SelectorReceiverRead -> GlobalStruct @43` pins that a selector RECEIVER is a genuine read and must emit even though a selector is involved — only a selector that is itself a call CALLEE is skipped. (4) `SelectorReceiverRead -> Field @43` pins the field half of the same expression: both rows come from one line and both are correct. (5) `WriteGate -> Global @50` pins the write-gate: the assignment at line 49 emits NOTHING and the read at line 50 emits. THE FORBIDDEN ROWS ARE THE OTHER HALF. (a) `CallCallee -> Target` as a USES row is forbidden — that is the duplicate the boundary exists to prevent. (b) A `uses` row for `Global` at line 49 is forbidden — an assignment LHS is a WRITE, never a read. (c) `BareRead -> Target` is forbidden because `Target` is not referenced by `BareRead` at all, so a resolver that bound call targets to the wrong function fails here. NOT PINNED: confidence and tier (every row here is the same 1.0/usage_contextual or 0.9/structural as any other row of its type, so pinning them asserts nothing about the boundary), and the `references GlobalStruct -> Config @16` row (owned by the declared-type pass, not by either pass under test).",
+  "expectSymbols": [
+    { "name": "Global", "kind": "variable" },
+    { "name": "GlobalStruct", "kind": "variable" },
+    { "name": "Config", "kind": "struct" },
+    { "name": "Target", "kind": "function" },
+    { "name": "BareRead", "kind": "function" },
+    { "name": "CallCallee", "kind": "function" },
+    { "name": "SelectorReceiverRead", "kind": "function" },
+    { "name": "WriteGate", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "CALLS pass owns the callee of a call whose target is a package-level function.",
+      "type": "calls",
+      "from": "CallCallee",
+      "target": "Target",
+      "line_number": 34
+    },
+    {
+      "comment": "USES pass owns a plain value read of a package var.",
+      "type": "uses",
+      "from": "BareRead",
+      "target": "Global",
+      "line_number": 28,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "A selector RECEIVER is a genuine read and must emit even though a selector is involved.",
+      "type": "uses",
+      "from": "SelectorReceiverRead",
+      "target": "GlobalStruct",
+      "line_number": 43,
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "comment": "The FIELD half of the same selector expression. Both rows come from line 43 and both are correct.",
+      "type": "uses",
+      "from": "SelectorReceiverRead",
+      "target": "Field",
+      "line_number": 43
+    },
+    {
+      "comment": "WRITE-GATE: the assignment at line 49 emits nothing; the read at line 50 emits.",
+      "type": "uses",
+      "from": "WriteGate",
+      "target": "Global",
+      "line_number": 50,
+      "meta.relationshipType": "identifier_usage"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "THE BOUNDARY: a call callee is owned by the calls pass. A uses row for it is a duplicate edge, which is what `!isCallCallee` exists to prevent. This is the row that a well-meaning 'fix' for a 'dropped read' would add.",
+      "type": "uses",
+      "from": "CallCallee",
+      "target": "Target",
+      "line_number": 34
+    },
+    {
+      "comment": "WRITE-GATE: `Global = 1` is a write, never a read. No uses row may be published from line 49.",
+      "type": "uses",
+      "from": "WriteGate",
+      "target": "Global",
+      "line_number": 49
+    },
+    {
+      "comment": "BareRead does not reference Target. A resolver that bound call targets to the wrong function would publish this.",
+      "type": "uses",
+      "from": "BareRead",
+      "target": "Target"
+    },
+    {
+      "comment": "Target is a function, not a package var: it is never in fileValues, so it can never be a bare-value uses target.",
+      "type": "uses",
+      "from": "CallCallee",
+      "target": "Global",
+      "line_number": 34
+    }
+  ]
+}

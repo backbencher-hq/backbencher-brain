@@ -1,0 +1,38 @@
+{
+  "fixtureId": "typescript/loop-and-catch-shadow-file-symbol",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a for-of/for-in LOOP VARIABLE and a CATCH BINDING shadow a same-named file-level symbol, and that neither silences a genuine reference. This is the same principle R12 established for parameters, and the same reason it did not fall to one fix. Neither binding is reachable through the `variable_declarator` handler that covers `const x = …` inside a function: tree-sitter places a for-of/for-in loop variable in as a DIRECT child of `for_in_statement` (a for-of head contains no `variable_declarator` node at all), and a catch binding hangs off `catch_clause`. So the loop shape that pattern-handled correctly and the one that did not sat a single node type apart, which is why `for (const { a } of xs)` was already right while `for (const file of xs)` was not. Measured before the fix: 81 `references` edges over 1200 tracked files, every one of a function referencing a file-level symbol whose name its own loop variable or catch binding had just bound, with 0 added and `uses`/`calls`/`contains`/`imports`/`exports` all at delta 0. THE POSITIVES CARRY THE WEIGHT HERE, because the obvious fix is wrong: seeding `locals` with these names also gates the `uses` edge and deletes 891 `uses` edges over the same 1200 files, since a use of a loop variable or a catch binding is a real use — a template interpolation of a catch binding is a `uses` edge to that binding, exactly as R12 keeps `greet -> name` for a parameter. The suppression must live in the `references` guard alone, and the `usesCatchBindingInTemplate -> e` pin is what holds that line.",
+  "expectSymbols": [
+    { "name": "file", "kind": "function" },
+    { "name": "repo", "kind": "function" },
+    { "name": "e", "kind": "function" },
+    { "name": "names", "kind": "function" },
+    { "name": "forOfBare", "kind": "function" },
+    { "name": "forInBare", "kind": "function" },
+    { "name": "catchBare", "kind": "function" },
+    { "name": "forInNoKeyword", "kind": "function" },
+    { "name": "forOfPattern", "kind": "function" },
+    { "name": "catchWithoutBinding", "kind": "function" },
+    { "name": "afterLoopStillShadowed", "kind": "function" },
+    { "name": "callsFile", "kind": "function" },
+    { "name": "usesCatchBindingInTemplate", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "usesCatchBindingInTemplate", "target": "e", "note": "THE CRITICAL PIN, and the one that separates the correct fix from the tempting one. The `${e}` interpolation reads the catch binding, and that use is real and wanted. A fix that seeded `locals` with catch bindings — the obvious move, the same one that was wrong in R12 — deletes this edge, along with 891 like it across 1200 files. The suppression belongs in the `references` guard, which asks a different question: does this name resolve to a declaration in this scope." },
+    { "type": "references", "from": "catchWithoutBinding", "target": "e", "note": "GENUINE: a bare `catch { … }` binds nothing, so the read reaches the module-level `e`. A fix that assumed every catch clause binds its first named child — which is the statement_block, not an identifier — would delete this edge." },
+    { "type": "references", "from": "callsFile", "target": "file", "note": "GENUINE: a real call to the module function, with no loop or catch binding of that name in scope." },
+    { "type": "references", "from": "forOfBare", "target": "names", "note": "GENUINE: the iterated expression is a real reference to the declared `names` function. The loop variable is not." },
+    { "type": "references", "from": "catchBare", "target": "names" },
+    { "type": "references", "from": "forOfPattern", "target": "names" },
+    { "type": "calls", "from": "afterLoopStillShadowed", "target": "file", "note": "A `calls` edge to a shadowed name is still a call — only the `references` edge was ever wrong, exactly as with the R12 parameter case." }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "forOfBare", "target": "file", "note": "THE PIN. `file` here is the for-of loop variable. Pre-fix this edge existed because a module-level `function file()` is declared in the file, so name-based resolution published it and the graph claimed the function references a symbol it never mentions." },
+    { "type": "references", "from": "forInBare", "target": "repo", "note": "The for-in form binds the same way." },
+    { "type": "references", "from": "forInNoKeyword", "target": "repo", "note": "`for (repo in names())` with no `const`/`let` keyword still binds `repo` as the loop variable. Pinned because the no-keyword head is a second shape for the same binding." },
+    { "type": "references", "from": "catchBare", "target": "e", "note": "A catch binding shadows the module function. This is the shape R12's parameter fix did not reach, because a catch binding is not a `variable_declarator`." },
+    { "type": "references", "from": "afterLoopStillShadowed", "target": "file", "note": "A read AFTER the loop is still the loop variable, because the loop head binds for the whole enclosing block, not just the loop body. A fix scoped to the loop body would publish this edge." },
+    { "type": "references", "from": "usesCatchBindingInTemplate", "target": "e", "note": "The catch binding shadows the module function here too, so the `uses -> e` pin above is not a licence to also publish a `references -> e`. The two edges answer different questions and the binding defeats both." }
+  ]
+}

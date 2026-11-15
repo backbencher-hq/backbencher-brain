@@ -1,0 +1,13 @@
+project: /home/ishaq2321/mcp/backbencher-brain/validation/release/workspace
+projectId: 6623498ebe135a8cab4c46270ea6737f1d4526e3
+files=622 symbols=13386 relationships=73073 imports=4595 syntaxErrors=15
+freshness: 200 fresh / 0 of 200 sampled stale (~0 of 622 estimated) / 0 missing (200/622 checked, sampled — SAMPLE, not a census)
+freshness why: 200 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh) — over the 200-file SAMPLE, not the project
+embeddings: 2020 rows / 2020 entities / 15.1% of symbols
+models: nvidia/nemotron-3-embed-1b:1920[2048] local-word-vectors-v3:100[50]
+schema: 1 (m13-universal-brain), 14 tables
+index: version=v1.0.0 indexedFiles=622/622 status=complete errors=0
+index run: schemaVersion=1 runs=2 latestWallMs=172198 (the last INDEX RUN, not this call)
+this call: total=30ms (freshness=9ms aggregates=3ms)
+runtime: node v22.22.1 / sqlite
+warning: [SYNTAX_ERRORS] 15 indexed files have syntax errors

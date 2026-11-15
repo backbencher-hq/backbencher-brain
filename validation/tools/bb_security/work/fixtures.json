@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-01T23:38:06.658Z",
+  "currentCommit": "ad5713a0206cc634eb1add7ca4a39af24a5cb294",
+  "command": "BB_DATA_DIR=… npx tsx validation/tools/bb_security/work/probe-index-fixtures.ts",
+  "fixtures": [
+    {
+      "tier": "T0",
+      "label": "polyglot",
+      "dir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+      "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/t0",
+      "counts": {
+        "files": 5,
+        "symbols": 13,
+        "relationships": 26,
+        "taintFlows": 0
+      },
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/t0/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+      "dbBytes": 4096,
+      "indexedInMs": 11308
+    },
+    {
+      "tier": "T1",
+      "label": "n100",
+      "dir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/t1",
+      "counts": {
+        "files": 97,
+        "symbols": 3512,
+        "relationships": 17068,
+        "taintFlows": 353
+      },
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/t1/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+      "dbBytes": 44433408,
+      "indexedInMs": 53506
+    },
+    {
+      "tier": "T0-security",
+      "label": "security-shaped",
+      "dir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/security-shaped",
+      "projectId": "123a8e8e4b8b59031f1e526bf1bdfa2e293b60ec",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/sec",
+      "counts": {
+        "files": 2,
+        "symbols": 5,
+        "relationships": 12,
+        "taintFlows": 4
+      },
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/sec/projects/123a8e8e4b8b59031f1e526bf1bdfa2e293b60ec/brain.db",
+      "dbBytes": 4096,
+      "indexedInMs": 7784
+    }
+  ]
+}

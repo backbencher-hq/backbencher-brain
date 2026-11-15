@@ -1,0 +1,51 @@
+{
+  "repo": "elmish",
+  "files": 2,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 7,
+        "total": 7
+      },
+      "references": {
+        "resolved": 4,
+        "total": 4
+      },
+      "exports": {
+        "resolved": 14,
+        "total": 14
+      },
+      "imports": {
+        "unresolved": 2,
+        "total": 2
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 7,
+        "total": 7
+      },
+      "references": {
+        "resolved": 4,
+        "total": 4
+      },
+      "exports": {
+        "resolved": 14,
+        "total": 14
+      },
+      "imports": {
+        "unresolved": 2,
+        "total": 2
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 0,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 25,
+    "falseBindings": 0
+  }
+}

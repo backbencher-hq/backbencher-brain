@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "kind": "harness_self_validation",
+  "truthSource": "validation/m11/fixtures/harness-expected.json",
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 7,
+      "observedResolved": 6,
+      "truePositive": 6,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 1,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 1,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0.14285714285714285
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "base",
+      "calls",
+      "extends",
+      "file",
+      "instantiates",
+      "user"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [
+      "dynamic-call"
+    ],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": {
+    "schemaVersion": 1,
+    "passed": false,
+    "metrics": {
+      "expected": 7,
+      "observedResolved": 5,
+      "truePositive": 3,
+      "falsePositive": 2,
+      "falseNegative": 3,
+      "unknown": 1,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 0.6,
+      "recall": 0.5,
+      "falsePositiveRate": 0.4,
+      "falseNegativeRate": 0.5,
+      "unknownRate": 0.14285714285714285
+    },
+    "earliestFailingLayer": "ast_extraction",
+    "truePositiveIds": [
+      "extends",
+      "file",
+      "user"
+    ],
+    "falsePositiveIds": [
+      "dynamic-call",
+      "phantom"
+    ],
+    "falseNegativeIds": [
+      "base",
+      "calls",
+      "instantiates"
+    ],
+    "unknownIds": [
+      "instantiates"
+    ],
+    "unsupportedIds": [],
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "base",
+          "layer": "ast_extraction",
+          "kind": "class",
+          "file": "validation/m11/fixtures/harness-source.ts",
+          "line": 1,
+          "attributes": {
+            "name": "BaseService"
+          },
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "line 1 class declaration"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "phantom",
+          "layer": "ast_extraction",
+          "kind": "class",
+          "file": "validation/m11/fixtures/harness-source.ts",
+          "line": 99,
+          "attributes": {
+            "name": "Phantom"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
+  },
+  "measurements": [
+    {
+      "name": "cold_index",
+      "wallTimeMs": 0.040174,
+      "userCpuMs": 0.057,
+      "systemCpuMs": 0.013,
+      "peakRssBytes": 44892160,
+      "rssDeltaBytes": 0,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 24891.72101359088,
+      "symbolsPerSecond": 99566.88405436352,
+      "relationshipsPerSecond": 74675.16304077265
+    },
+    {
+      "name": "warm_index",
+      "wallTimeMs": 0.005502,
+      "userCpuMs": 0.009,
+      "systemCpuMs": 0.002,
+      "peakRssBytes": 44892160,
+      "rssDeltaBytes": 0,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 181752.09014903673,
+      "symbolsPerSecond": 727008.3605961469,
+      "relationshipsPerSecond": 545256.2704471102
+    },
+    {
+      "name": "incremental",
+      "wallTimeMs": 0.003657,
+      "userCpuMs": 0.006,
+      "systemCpuMs": 0.001,
+      "peakRssBytes": 44892160,
+      "rssDeltaBytes": 0,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 273448.18156959256,
+      "symbolsPerSecond": 1093792.7262783702,
+      "relationshipsPerSecond": 820344.5447087777
+    },
+    {
+      "name": "deletion",
+      "wallTimeMs": 0.002436,
+      "userCpuMs": 0.005,
+      "systemCpuMs": 0.001,
+      "peakRssBytes": 44892160,
+      "rssDeltaBytes": 0,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 410509.03119868645,
+      "symbolsPerSecond": 1642036.1247947458,
+      "relationshipsPerSecond": 1231527.0935960594
+    },
+    {
+      "name": "rename",
+      "wallTimeMs": 0.001976,
+      "userCpuMs": 0.005,
+      "systemCpuMs": 0.001,
+      "peakRssBytes": 44892160,
+      "rssDeltaBytes": 0,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 506072.8744939272,
+      "symbolsPerSecond": 2024291.4979757087,
+      "relationshipsPerSecond": 1518218.6234817815
+    },
+    {
+      "name": "restart",
+      "wallTimeMs": 0.00188,
+      "userCpuMs": 0.004,
+      "systemCpuMs": 0.001,
+      "peakRssBytes": 45023232,
+      "rssDeltaBytes": 131072,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 531914.8936170213,
+      "symbolsPerSecond": 2127659.574468085,
+      "relationshipsPerSecond": 1595744.680851064
+    },
+    {
+      "name": "query",
+      "wallTimeMs": 0.001815,
+      "userCpuMs": 0.004,
+      "systemCpuMs": 0.001,
+      "peakRssBytes": 45023232,
+      "rssDeltaBytes": 0,
+      "databaseBytes": 16,
+      "files": 1,
+      "symbols": 4,
+      "relationships": 3,
+      "filesPerSecond": 550964.1873278237,
+      "symbolsPerSecond": 2203856.749311295,
+      "relationshipsPerSecond": 1652892.561983471
+    }
+  ],
+  "note": "These measurements validate harness fields and lifecycle labels; they are not product performance baselines.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.807Z",
+    "contentSha256": "7fcb0cd99127ea5a989e222ea4075d428d79d4c1d145b498964bc2d64c25aa44"
+  }
+}

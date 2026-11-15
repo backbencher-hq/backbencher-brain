@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "action": "store predicate audit on the isolated probe fixture",
+  "measuredAt": "2026-11-03T16:39:27.733Z",
+  "currentCommit": "2d075c0997cfa91bef5d7b944d2a43644d3d7019",
+  "database": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db",
+    "projectId": "e6ed52d398a5575a083816f5b4097ad5e013df2e"
+  },
+  "s1_writtenStore": {
+    "rowCount": 10,
+    "rows": [
+      {
+        "symbol_name": "Gadget",
+        "symbol_path": "src/beta.ts",
+        "body": "absolute-path write"
+      },
+      {
+        "symbol_name": "layout",
+        "symbol_path": "src/alpha.ts",
+        "body": "dot-prefixed path write"
+      },
+      {
+        "symbol_name": "ghostSymbol",
+        "symbol_path": null,
+        "body": "note on a name the index never publishes"
+      },
+      {
+        "symbol_name": "Widget.render",
+        "symbol_path": null,
+        "body": "qualified-name note about Widget.render"
+      },
+      {
+        "symbol_name": "duplicate",
+        "symbol_path": "src/beta.ts",
+        "body": "duplicate note in beta"
+      },
+      {
+        "symbol_name": "duplicate",
+        "symbol_path": "src/alpha.ts",
+        "body": "duplicate note in alpha"
+      },
+      {
+        "symbol_name": "buildThing",
+        "symbol_path": "src/gamma.ts",
+        "body": "buildThing note in gamma"
+      },
+      {
+        "symbol_name": "buildThing",
+        "symbol_path": "src/alpha.ts",
+        "body": "buildThing note in alpha"
+      },
+      {
+        "symbol_name": "Widget",
+        "symbol_path": "src/alpha.ts",
+        "body": "alpha copy of Widget"
+      },
+      {
+        "symbol_name": "Widget",
+        "symbol_path": null,
+        "body": "name-level note about Widget"
+      }
+    ]
+  },
+  "s2_hoverTwinPredicate": {
+    "predicate": "(symbol_name = name OR symbol_name = qualified_name) AND (symbol_path IS NULL OR symbol_path = <relative> OR symbol_path = <absolute>)",
+    "symbols": [
+      {
+        "name": "render",
+        "qualified_name": "Widget.render"
+      },
+      {
+        "name": "render",
+        "qualified_name": "Gadget.render"
+      }
+    ],
+    "hoverForRenderInAlpha": [
+      {
+        "name": "render",
+        "qualified": "Widget.render",
+        "matches": [
+          {
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "body": "qualified-name note about Widget.render"
+          }
+        ]
+      },
+      {
+        "name": "render",
+        "qualified": "Gadget.render",
+        "matches": []
+      }
+    ]
+  },
+  "s3_handlerPredicate": {
+    "bySimpleName": {
+      "requested": "render",
+      "resolvedNames": [
+        "Gadget.render",
+        "Widget.render",
+        "render"
+      ],
+      "indexed": true,
+      "matches": [
+        {
+          "symbol_name": "Widget.render",
+          "symbol_path": null,
+          "body": "qualified-name note about Widget.render"
+        }
+      ]
+    },
+    "byQualifiedName": {
+      "requested": "Widget.render",
+      "resolvedNames": [
+        "Widget.render",
+        "render"
+      ],
+      "indexed": true,
+      "matches": [
+        {
+          "symbol_name": "Widget.render",
+          "symbol_path": null,
+          "body": "qualified-name note about Widget.render"
+        }
+      ]
+    }
+  },
+  "s4_nameSetTheCommentClaims": {
+    "originalHandlerComment": "the requested name is resolved to the set of stored names of every symbol it names (its simple name AND its qualified name), and a note matches when its symbol_name is in that set",
+    "bySimpleName": {
+      "requested": "render",
+      "intendedNames": [
+        "render",
+        "Widget.render",
+        "Gadget.render"
+      ],
+      "matches": [
+        {
+          "symbol_name": "Widget.render",
+          "symbol_path": null,
+          "body": "qualified-name note about Widget.render"
+        }
+      ]
+    },
+    "byQualifiedName": {
+      "requested": "Widget.render",
+      "intendedNames": [
+        "render",
+        "Widget.render"
+      ],
+      "matches": [
+        {
+          "symbol_name": "Widget.render",
+          "symbol_path": null,
+          "body": "qualified-name note about Widget.render"
+        }
+      ]
+    }
+  },
+  "s5_orderingTiebreak": {
+    "ids": [
+      {
+        "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+        "symbol_name": "layout"
+      },
+      {
+        "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+        "symbol_name": "buildThing"
+      }
+    ],
+    "orderedWithIdTiebreak": [
+      {
+        "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+        "symbol_name": "layout"
+      },
+      {
+        "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+        "symbol_name": "buildThing"
+      }
+    ],
+    "orderMatchesAscendingId": true,
+    "rawUnordered": [
+      {
+        "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29"
+      },
+      {
+        "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210"
+      }
+    ]
+  },
+  "verdicts": {
+    "hoverFindsQualifiedNameNote": true,
+    "doorFindsQualifiedNameNoteByQualifiedName": true,
+    "doorFindsQualifiedNameNoteBySimpleName": true,
+    "intendedSetFindsQualifiedNameNote": true,
+    "doorAgreesWithHover": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "expectSymbols": [
+    { "name": "ControlFlow", "kind": "module" },
+    { "name": "classify", "kind": "function", "ownerName": "ControlFlow" },
+    { "name": "guarded", "kind": "function", "ownerName": "ControlFlow" },
+    { "name": "rescued", "kind": "function", "ownerName": "ControlFlow" }
+  ],
+  "expectComplexity": [
+    { "symbol": "ControlFlow", "equals": 4 },
+    { "symbol": "classify", "ownerName": "ControlFlow", "equals": 7 },
+    { "symbol": "guarded", "ownerName": "ControlFlow", "equals": 2 },
+    { "symbol": "rescued", "ownerName": "ControlFlow", "equals": 2 }
+  ],
+  "expectPatterns": ["Pattern Matching", "Closures"],
+  "expectExports": [
+    { "name": "ControlFlow", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "ControlFlow", "target": "classify" },
+    { "type": "contains", "from": "ControlFlow", "target": "guarded" },
+    { "type": "contains", "from": "ControlFlow", "target": "rescued" }
+  ]
+}

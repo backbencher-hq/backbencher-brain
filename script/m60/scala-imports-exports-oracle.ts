@@ -75,7 +75,7 @@ import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { getParser } from "../../src/ast/engine"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.env.BB_SCALA_REPO ?? "scala"
 const ROOT = join(CR, REPO)
 

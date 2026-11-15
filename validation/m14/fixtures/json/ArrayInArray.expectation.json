@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/ArrayInArray.json",
+  "authoredFrom": "An array INSIDE an array — the one nesting shape whose element identity had no fixture, and the defect the differential recorded as 183 UNEXPLAINED `contains` edges that the lane declared 'not adjudicated'. Two implementations agreed on it, which is the case the honesty contract calls out: agreement is evidence that two walkers agree, not that either is right about the language. Naming an element from the array's own NAME is correct while every array is written under a key, because a key's qualified path minus the module prefix IS its name. It stops being correct the moment an array can be an ELEMENT of another array, because then the inner array's name is the OUTER array's name: the two elements of `rows[0]` came out as `rows[0]` and `rows[1]`, colliding with the outer array's own element namespace. `contains` is emitted from the OWNER symbol and the owner came from the truncated name, so the document asserted `rows[0] contains rows[0][1]` between two objects that are not nested at all. The fix names an ELEMENT array's children from its qualified path and gives the element a symbol of its own, because it owns children; `objs` is the control that proves a keyed array keeps its short name.",
+  "expectSymbols": [
+    { "name": "rows", "kind": "property", "ownerName": "ArrayInArray" },
+    { "name": "rows[0]", "kind": "class", "ownerName": "rows" },
+    { "name": "rows[0][0]", "kind": "class", "ownerName": "rows[0]" },
+    { "name": "cell", "kind": "property", "ownerName": "rows[0][0]" },
+    { "name": "rows[0][1]", "kind": "class", "ownerName": "rows[0]" },
+    { "name": "objs", "kind": "property", "ownerName": "ArrayInArray" },
+    { "name": "objs[0]", "kind": "class", "ownerName": "objs" },
+    { "name": "objs[1]", "kind": "class", "ownerName": "objs" },
+    { "name": "ArrayInArray", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "ArrayInArray.rows", "target": "ArrayInArray.rows[0]" },
+    { "type": "contains", "from": "ArrayInArray.rows[0]", "target": "ArrayInArray.rows[0][0]" },
+    { "type": "contains", "from": "ArrayInArray.rows[0][0]", "target": "ArrayInArray.rows[0][0].cell" },
+    { "type": "contains", "from": "ArrayInArray.rows[0]", "target": "ArrayInArray.rows[0][1]" },
+    { "type": "contains", "from": "ArrayInArray.objs", "target": "ArrayInArray.objs[0]" },
+    { "type": "contains", "from": "ArrayInArray.objs[1]", "target": "ArrayInArray.objs[1].a" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "ArrayInArray.rows[0]", "target": "ArrayInArray.rows[0][0].cell" },
+    { "type": "contains", "target": "ArrayInArray.rows[1]" }
+  ]
+}

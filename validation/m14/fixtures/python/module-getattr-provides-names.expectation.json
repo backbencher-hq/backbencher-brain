@@ -1,0 +1,152 @@
+{
+ "fixtureId": "python/module-getattr-provides-names",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "PY-D28 (round 14). A module-level `def __getattr__(name)` (PEP 562) PROVIDES names: `hasattr(module, 'X')` is TRUE for every returned name and `from module import X` succeeds, so the name is part of the module's public surface whether or not anything binds it. The analyzer published no declaration for any of them, so a module's OWN export edge could not resolve against its own file. The verdict's last 7 unexplained rows were all `exports` and two of them are `tree_sitter_clean/__init__.py -> HIGHLIGHTS_QUERY` and `-> TAGS_QUERY`, whose file states both provisions in its own source: `def __getattr__(name)` with `if name == \"HIGHLIGHTS_QUERY\": return _get_query(...)`, plus the same for `TAGS_QUERY`, and BOTH are in `__all__`. PRICED with CPython's own `ast` over the corpus, in two passes, BEFORE this rule existed: the first (`.tmp-py/price-module-getattr-exports.py`) classified the 7 rows and its literal-name shape hardcoded the parameter spelling to the word `name`; the second (`.tmp-py/price-module-getattr-round14.py` -> `module-getattr-round14-price.json`) measures THIS rule's shape and is the authority — 26 of 11,245 files define a module-level `__getattr__`, 6 of them spell literal names (20 spell none), and those 6 hold 14 literal names. 1 is already statically bound in its own file (cython's `gs`, published at L706) and 2 are already in their file's import channel (`_text.py`'s `codecs`, `Build/__init__.py`'s `build_ext`), so the rule publishes 11 symbols. That arithmetic is CHECKED on the shipped analyzer rather than asserted: `.tmp-py/census-getattr-provisions.mts` walks exactly the 6 files the price names and prints 11 published, 0 unexplained misses, and `14 - 1 - 2 = 11` as its own last line. `authoredBeforeAnalyzerRun` is FALSE, and consistently with rounds 11-13 that is a statement about the ORDER (the price and the probe came first; this file was written off a measurement of the shipped analyzer, not off a guess). The shapes here are every spelling the rule reads, and the negatives are the four ways it must refuse. TWO OF THE SEVEN CORPUS ROWS ARE DELIBERATELY ABSENT FROM THIS FILE and the reason is the harness's own export invariant, which fired the first time this fixture was written: an `exports` edge whose target is no top-level symbol of the file is a VIOLATION, so the fixture may not put an unresolvable `__all__` entry in and call it expected. Those 2 mechanisms — a name the package ships as a SUBMODULE (4 of the 7: `sqlalchemy/dialects/__init__.py -> mssql/mysql/oracle/postgresql`) and a STALE `__all__` entry nothing supplies (1: `declarative/__init__.py -> instrument_declarative`) — are therefore recorded as declared residuals with their prices (PY-D29, PY-D30) instead of being pinned here as correct. ROUND 15 NARROWED THE GUARD THIS FILE WAS BUILT TO PIN: the provision guard now reads MODULE-scope imports only, so both spellings of the local-import case are published and only the module-scope row stays excluded — each of the three pinned by its own count, and the old behaviour pinned as a mutant that must be CAUGHT.",
+ "expectSymbols": [
+  {
+   "name": "SPELLED",
+   "kind": "variable",
+   "meta.isModuleVariable": true,
+   "meta.boundByBinder": "getattr",
+   "note": "THE POSITIVE ROW: `if attr == \"SPELLED\": return ...` inside a module-level `__getattr__` publishes a module Variable carrying `metadata.boundByBinder: \"getattr\"` — the same key round 12 introduced for `for`/`with`/`except` binders, with a value naming THIS mechanism, so a reader triaging the symbol does not have to go find the statement and no new metadata key enters the worker seam."
+  },
+  {
+   "name": "TUPLE_A",
+   "kind": "variable",
+   "meta.isModuleVariable": true,
+   "meta.boundByBinder": "getattr",
+   "note": "The COLLECTION spelling, `attr in (\"TUPLE_A\", \"TUPLE_B\")`: every identifier in the tuple is a provision. `TUPLE_B` is pinned below by the same row."
+  },
+  {
+   "name": "C_EARLY",
+   "kind": "variable",
+   "meta.isModuleVariable": true,
+   "meta.boundByBinder": "getattr",
+   "note": "The SET spelling, `attr in {\"C_EARLY\", \"C_LATE\"}` — `ansible/module_utils/_text.py` writes exactly this (`elif importable_name in {\"to_bytes\", \"to_native\", \"to_text\"}`), and the first version of the rule accepted only tuple/list, so it published 3 fewer names than the price said, all in that one `elif`."
+  },
+  {
+   "name": "ALIASED_LOCAL_IMPORT",
+   "kind": "variable",
+   "meta.boundByBinder": "getattr",
+   "note": "THE DECLARED ASYMMETRY, published half (PY-D31). The branch provides this name and imports it locally as `from os import sep as ALIASED_LOCAL_IMPORT`; because the imported ITEM name (`sep`) differs from the provided name, the shared publication guard does not see it and the provision is published. The unprefixed twin below is the same situation spelled without `as`, and it is NOT published. Both rows are here because the asymmetry is a measured fact this round declares rather than fixes: 2 of the 14 priced corpus names, 0 verdict rows, and narrowing the guard to module-scope imports would also move round 12's binder-row symbol count, whose blast radius is not yet measured."
+  },
+  {
+   "name": "STATIC_TOO",
+   "kind": "variable",
+   "note": "DEDUPE, and the symbol is published WITHOUT `boundByBinder`: the file declares this name with `STATIC_TOO = 1` as well as providing it here, and the module half of the walk publishes per NAME against everything the file declared — so there is exactly ONE symbol, at the declaration's line. `expectSymbolCount` below pins the count of 1; the `meta.boundByBinder: null` convention is what says this one is not the provision."
+  },
+  {
+   "name": "__getattr__",
+   "kind": "method",
+   "ownerName": "Holder",
+   "note": "THE NAME GATE, class half: `Holder.__getattr__` is an INSTANCE protocol (`def __getattr__(self, item)`), not a module provision. It stays an ordinary method with `Holder` as owner, and nothing is published from its body — the walk calls the provision reader only when no class is open (`currentClass === null`)."
+  },
+  {
+   "name": "SHADOWED_BY_LOCAL_IMPORT",
+   "kind": "variable",
+   "meta.isModuleVariable": true,
+   "meta.boundByBinder": "getattr",
+   "note": "THE ROW ROUND 15 CHANGED. In round 14 this provision was NOT published: a function-local `from .impl import SHADOWED_BY_LOCAL_IMPORT` binds the same spelling and the guard read the import channel FILE-WIDE, so the name was dropped — the corpus shape (`cython/Cython/Build/__init__.py`'s `build_ext`, 1 of 2 such names corpus-wide). The guard's own sentence is 'a module-scope declaration (or an import-bound name)', and a local import is neither, so round 15 priced the narrowing (`.tmp-py/price-guard-narrowing.py`: exactly 2 candidates and ZERO binder rows, which retires round 14's worry that narrowing would move a round-12 number) and narrowed it to MODULE-scope imports. The fixture keeps the row because it is what makes the narrowing falsifiable: the `round15/guard-reads-file-wide-import-channel` mutant restores the old read and this row's count of 1 goes back to 0."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "module_getattr_provides_names",
+   "target": "SPELLED",
+   "line_number": 63,
+   "meta.dunderAllForm": "list",
+   "note": "The edge the round exists for. It was ALWAYS emitted — `exports` is the file's own `__all__` statement — and it had no declaration to resolve against, which is what the verdict reported as UNEXPLAINED. The fix is the declaration above, not a new edge: the edge count is unchanged, and what moves is the resolution of `HIGHLIGHTS_QUERY`/`TAGS_QUERY` in the corpus."
+  },
+  {
+   "type": "calls",
+   "from": "reads_the_provisions",
+   "target": "SPELLED",
+   "line_number": 129,
+   "confidence": 0.9,
+   "meta.reasonCode": "bare-name-callee",
+   "note": "The read half, 52 lines below the provision. `bare-name-callee` is correct and unchanged: the route is a bare name. What changed is that the name now RESOLVES, because the declaration exists."
+  },
+  {
+   "type": "calls",
+   "from": "reads_the_provisions",
+   "target": "C_EARLY",
+   "line_number": 129,
+   "confidence": 0.9,
+   "meta.reasonCode": "bare-name-callee",
+   "note": "The same read for a SET-spelled provision, so a rule that read only `==` and tuple literals fails here as well as on the symbol row."
+  },
+  {
+   "type": "contains",
+   "from": "Holder",
+   "target": "__getattr__",
+   "line_number": 122,
+   "note": "The negative half is a first-class member: the class-body `__getattr__` keeps its ordinary containment and is NOT promoted to a module provision — the difference between `currentClass === null` gating the provision reader and the reader running on every body in the file. The method is written WITHOUT `self` on purpose (see the fixture), so this row tests the CLASS GATE and not the first-parameter rule."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "SPELLED",
+   "equals": 1,
+   "note": "One provision, one symbol — and the file provides this name TWICE (a second `if attr == \"SPELLED\"` branch). The module half publishes per NAME, so the count is 1 and not 2; the class half's per-SITE rule (round 13) is the other half of that measured asymmetry."
+  },
+  {
+   "name": "STATIC_TOO",
+   "equals": 1,
+   "note": "THE DEDUPE COUNT. Both the assignment and the provision name this one, and two symbols would mean the guard against the file's own declarations stopped applying — the same defect the class half had in the opposite direction in round 13."
+  },
+  {
+   "name": "TUPLE_B",
+   "equals": 1,
+   "note": "The second name of the tuple spelling, published once."
+  },
+  {
+   "name": "C_LATE",
+   "equals": 1,
+   "note": "The second name of the set spelling, published once."
+  },
+  {
+   "name": "SHADOWED_BY_LOCAL_IMPORT",
+   "equals": 1,
+   "note": "THE NARROWED GUARD, counted. Round 14 pinned this at 0 (the declared asymmetry); the narrowing publishes it, and the count is 1 rather than 2 even though the file provides it at two comparison sites — the module half is per NAME."
+  },
+  {
+   "name": "__getattr__",
+   "ownerName": "Holder",
+   "kind": "method",
+   "equals": 1,
+   "note": "The method exists exactly once and unpromoted — a reader that published provisions out of class bodies would make it two symbols by adding a module Variable of the same name."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "NOT_PROVIDED",
+   "note": "THE INVERTED GUARD. `if attr in (\"NOT_PROVIDED\",): raise AttributeError` states what the module does NOT provide; publishing it would declare a name this module refuses. MEASURED over the 26 corpus files: 0 such rows exist today, so this row pins a guard that has no corpus instance — deliberately, because the guard's cost is zero and the cost of its absence is a fabricated export. (The first version of the price's own detector reported 3 inverted rows by counting the `else: raise` arm of the ordinary provide-or-die guard; the corrected detector and the shipped analyzer agree on 0.) This name is NOT in the fixture's `__all__`: an `exports` edge to a name no symbol resolves would violate the runner's export invariant, which is the assertion that caught it. The corpus instance of that shape is a declared residual, PY-D30."
+  },
+  {
+   "name": "not-a-name",
+   "note": "A literal that is not an identifier is not a name this store can hold — no symbol, at any line. The rule reads a NAME the file spells, and `\"not-a-name\"` is a string the file spells that no reader can resolve against."
+  },
+  {
+   "name": "READ_BY_THE_WRONG_FUNCTION",
+   "note": "THE NAME GATE, module half: `__getattr__unrelated` — a different function — provides this name and publishes nothing. Its body is otherwise shaped exactly like a provision, so a rule that keyed on the SHAPE without checking the function's name would publish it. It also carries an ANNOTATED parameter named `this_name`, which is the second half of the same gate: the parameter's name is the function's OWN first parameter, not the literal word `name`."
+  },
+  {
+   "name": "CLASS_BODY_PROVISION",
+   "note": "The instance-protocol spelling (`Holder.__getattr__`'s `if item == \"CLASS_BODY_PROVISION\"`) is not a module provision."
+  },
+  {
+   "name": "path",
+   "note": "THE GUARD'S OWN CASE, and the direction a narrowing must NOT break. The file imports this name at MODULE scope (`from os import path as MODULE_SCOPED_IMPORT` puts the ITEM name `path` in the channel), so the channel already routes it and a second declaration of the same spelling in the same scope is exactly the ambiguity the guard exists to prevent. Pinned as a forbid so an over-correction — dropping the channel check entirely instead of scoping it — fails here; the mutant that does that (`round15/guard-ignores-import-channel-entirely`) is CAUGHT by this row."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "reads_the_provisions",
+   "target": "STATIC_TOO",
+   "note": "THE OVER-FIRING CONTROL. `reads_the_provisions` returns `STATIC_TOO` as a VALUE (`return SPELLED(), TUPLE_A(), C_EARLY(), STATIC_TOO`), never calls it — so there must be NO call edge to it. A rule that published a provision and then made every mention of the name a call would fabricate this edge; the three real call edges above are the names that ARE called."
+  }
+ ]
+}

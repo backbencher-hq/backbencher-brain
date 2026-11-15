@@ -1,0 +1,556 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.04",
+  "code": "B4",
+  "tool": "baseline",
+  "title": "Shared safety primitives: AST reference identity, per-language masking, freshness",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "javascript: language detected as javascript",
+      "pass": true,
+      "detail": "got javascript"
+    },
+    {
+      "name": "javascript: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "javascript: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "javascript: \"zzzGhostBlock\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "javascript: \"zzzGhostBlock\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "javascript: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "javascript: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "javascript: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "javascript: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@45:code, identifier@99:code"
+    },
+    {
+      "name": "typescript: language detected as typescript",
+      "pass": true,
+      "detail": "got typescript"
+    },
+    {
+      "name": "typescript: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "typescript: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "typescript: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "typescript: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "typescript: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "typescript: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@25:code, identifier@87:code"
+    },
+    {
+      "name": "python: language detected as python",
+      "pass": true,
+      "detail": "got python"
+    },
+    {
+      "name": "python: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "python: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "python: \"zzzGhostDocstring\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "python: \"zzzGhostDocstring\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "python: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "python: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "python: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "python: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@22:code, identifier@99:code"
+    },
+    {
+      "name": "ruby: language detected as ruby",
+      "pass": true,
+      "detail": "got ruby"
+    },
+    {
+      "name": "ruby: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "ruby: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "ruby: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "ruby: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "ruby: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "ruby: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@22:code, identifier@64:code"
+    },
+    {
+      "name": "bash: language detected as bash",
+      "pass": true,
+      "detail": "got bash"
+    },
+    {
+      "name": "bash: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "bash: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "bash: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "bash: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "bash: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "bash: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "variable_name@18:code, variable_name@53:code"
+    },
+    {
+      "name": "haskell: language detected as haskell",
+      "pass": true,
+      "detail": "got haskell"
+    },
+    {
+      "name": "haskell: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "haskell: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "haskell: \"zzzGhostBlock\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "haskell: \"zzzGhostBlock\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "haskell: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "haskell: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "haskell: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "haskell: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "variable@39:code"
+    },
+    {
+      "name": "lua: language detected as lua",
+      "pass": true,
+      "detail": "got lua"
+    },
+    {
+      "name": "lua: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "lua: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "lua: \"zzzGhostBlock\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "lua: \"zzzGhostBlock\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "lua: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "lua: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "lua: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "lua: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@47:code"
+    },
+    {
+      "name": "c: language detected as c",
+      "pass": true,
+      "detail": "got c"
+    },
+    {
+      "name": "c: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "c: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "c: \"zzzGhostBlock\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "c: \"zzzGhostBlock\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "c: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "c: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "c: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "c: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@43:code, identifier@116:code"
+    },
+    {
+      "name": "sql: language detected as sql",
+      "pass": true,
+      "detail": "got sql"
+    },
+    {
+      "name": "sql: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "sql: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "sql: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "sql: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "sql: \"realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "sql: every \"realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "identifier@31:code"
+    },
+    {
+      "name": "powershell: language detected as powershell",
+      "pass": true,
+      "detail": "got powershell"
+    },
+    {
+      "name": "powershell: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "powershell: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "powershell: \"zzzGhostBlock\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "powershell: \"zzzGhostBlock\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "powershell: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "powershell: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "powershell: \"$realToken\" has at least one AST reference site",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "powershell: every \"$realToken\" occurrence is live code (interpolation re-exposed)",
+      "pass": true,
+      "detail": "variable@38:code"
+    },
+    {
+      "name": "yaml: language detected as yaml",
+      "pass": true,
+      "detail": "got yaml"
+    },
+    {
+      "name": "yaml: \"zzzGhostComment\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "yaml: \"zzzGhostComment\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "yaml: \"zzzGhostString\" is not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got 0 occurrence(s)"
+    },
+    {
+      "name": "yaml: \"zzzGhostString\" is masked (comment/string)",
+      "pass": true,
+      "detail": "byte marked as code"
+    },
+    {
+      "name": "JS: template-substitution identifier is a live reference site",
+      "pass": true,
+      "detail": "identifier@6:code, identifier@38:code"
+    },
+    {
+      "name": "Python: f-string interpolation identifier is a live reference site",
+      "pass": true,
+      "detail": "identifier@0:code, identifier@26:code"
+    },
+    {
+      "name": "extractIdentifierOccurrences returns identity-tagged sites (nodeType+parentType+range)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "occurrences exclude comment text entirely",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "occurrences include the function identifier with exact range",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "assertFreshFiles passes when all files are fresh",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "collectStaleFiles returns empty when fresh",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "assertFreshFiles throws when a file is stale [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "assertFreshSymbols throws when its backing file is stale [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "assertFreshFiles throws when a file is missing [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "parseForSafety rejects an unsupported file type [negative: Unsupported file type]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 32,
+  "summary": {
+    "total": 98,
+    "passed": 98,
+    "failed": 0
+  },
+  "decisions": {
+    "maskingSource": "tree-sitter grammar comment/string nodes (no character scanning, no JS/C-only mask)",
+    "interpolationReexposed": "template_substitution, interpolation, interpolation_expression, string_interpolation, expansion, simple_expansion, command_substitution, arithmetic_expansion, process_substitution, subshell, variable_name, interpolated_expression",
+    "referenceIdentity": "leaf identifier nodes tagged with nodeType + parentType + exact byte range (never a raw-text substring match)",
+    "freshness": "reuses brain/freshness.ts checkFileFreshness/checkSymbolFreshness; assertFresh* throws on any stale/missing"
+  },
+  "limitations": [
+    "Dynamic-language reference node types beyond identifier/variable/variable_name/simple_variable/constant (e.g. PHP 'name', Clojure 'sym_lit', SQL object/column reference identification) are mapped in E2/E3 when bb_edit consumes these primitives.",
+    "SQL string/numeric literals share the grammar node type 'literal' (both masked as non-reference bytes); PowerShell `$var` occurrences include the `$` sigil in their text; PowerShell expandable-string variable re-exposure is an E3 refinement.",
+    "Regex literals are left as code; their pattern text is not an identifier node so extraction is unaffected (brace-body scanning for insert is E4).",
+    "C/C++ compiler-extension normalization and the 1MB parse cap are shared with parseFile via ASTEngine.parseTree so byte offsets agree with the index."
+  ],
+  "generatedAt": "2026-11-05T04:16:04.540Z"
+}

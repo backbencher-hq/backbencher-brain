@@ -1539,13 +1539,14 @@ empty limitations list would be a claim about the world rather than about a pars
   the type. **41 corpus edges are in this state**, all `New-Object` with a variable
   argument. The alternative — publishing the edge and marking it low-confidence — would
   put a name in the graph that no symbol can have, which is the fabrication rule.
-- **`New-Object '$literalType'` publishes a target carrying a `$` sigil.**
-  `unquoteTarget` strips quotes but not a sigil, so a single-quoted argument that is not
-  a variable reaches `instantiates -> $literalType`, which names nothing. It is pinned as
-  an `instantiates` row in `new-object-variable-psb14` with the residue named in its
-  comment, and it is **0 on the admitted corpus** (P14 measures
-  `targetsBeginningWithADollarSigil: 0` over 1,227 edges). The reader that should strip
-  the sigil is the invocation-operator one, which this fix does not touch.
+- **`New-Object '$literalType'` is a literal string, not a variable read.** A
+  single-quoted argument carries no interpolation, so it reaches `instantiates` with the
+  text `$literalType`; `unquoteTarget` strips quotes but not the sigil, and a target with
+  a `$` names nothing. This was previously recorded as an accepted residue; the type
+  reader now routes on the **argument node** rather than on the text, so a
+  `verbatim_string_characters` argument is treated as the literal type name it is and the
+  `$` residue no longer reaches `instantiates`. It is **0 on the admitted corpus** (P14
+  measures `targetsBeginningWithADollarSigil: 0` over 1,227 edges).
 - **`overrides`' hop-2+ chain branch has never run on real code.** The resolution loop
   walks up to 8 hops and breaks at the first match, which is right, but the corpus has
   **0 classes at depth 3 or more and 0 transitive pairs** (26 classes resolve in-file, 22

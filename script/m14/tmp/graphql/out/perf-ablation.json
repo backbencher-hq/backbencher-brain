@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-09-27T07:18:50.805Z",
+  "files": [
+    "/home/ishaq2321/bb_tests/graphql/repos/graphql-js/benchmark/github-schema.graphql"
+  ],
+  "baselineMs": null,
+  "results": [
+    {
+      "id": "no-top-level-declaration-filter",
+      "removes": "the final per-symbol `isTopLevelDeclaration` pass that builds `exports`",
+      "applied": false,
+      "ms": null,
+      "facts": 0,
+      "lines": 20368
+    }
+  ]
+}

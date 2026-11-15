@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <main id="app">
+    <!-- IDREF CARRIERS. An IDREF attribute names an element IN THIS DOCUMENT by
+         its id. Nothing fetches it and nothing navigates to it: it is a reference
+         in the document's own address space, which is exactly the same kind of
+         fact as `<label for>` and `<a href="#id">`, and both of those were already
+         read.
+
+         `<label for>` was a SPECIAL CASE in the walk, so every other IDREF carrier
+         the HTML Standard defines was invisible. Measured over 1,180 corpus
+         documents across 25 repositories, from a carrier list written from the
+         Standard rather than from the analyzer's table or the differential's
+         oracle: 41 IDREF occurrences, 39 of them resolving to an id the same
+         document declares, and 19 on carriers nothing read — 16 of those
+         resolving. They are concentrated in one real page
+         (`csharp-sample/scripts/mock-policy-server/public/index.html`).
+
+         The label is `references`, confidence 1.0, `evidenceClass: "structural"`,
+         with `isIdref`/`idrefKind` — the IDREF class is this lane's own relationship
+         type, and `references` is the address-space naming class, never `uses`,
+         which means a FETCH or a NAVIGATION. This file's ORIGINAL `uses`+`idrefCarrier`
+         spelling is ADJUDICATED (2026-10-12) in the expectation file beside it. -->
+
+    <!-- ACCESSIBILITY IDREFs: role-independent, so valid on any element. -->
+    <h2 id="title">Section title</h2>
+    <section id="panel" aria-labelledby="title" aria-describedby="hint">body</section>
+    <p id="hint">A hint the section is described by.</p>
+
+    <button id="open" aria-controls="dialog-one" aria-expanded="false">Open</button>
+    <dialog id="dialog-one" aria-labelledby="open-title">…</dialog>
+    <h3 id="open-title">Dialog title</h3>
+
+    <!-- FORWARD. Every one of these names an id declared BELOW it, which the HTML
+         Standard allows and which real pages rely on. The resolver runs after the
+         walk precisely so a forward reference resolves as well as a backward one;
+         the `<label for>` case proved that a single-pass resolver loses half of
+         them silently. -->
+    <aside id="warn" aria-labelledby="warn-title">warning</aside>
+    <h4 id="warn-title">Warning</h4>
+
+    <!-- A LIST carrier: `aria-labelledby` is an IDREF LIST per the Standard, so
+         one row per token — the same one-row-per-candidate rule `srcset` follows.
+         `td@headers` is the other list carrier in wide use. -->
+    <table>
+      <tr>
+        <th id="h-qty">Qty</th>
+        <th id="h-price">Price</th>
+      </tr>
+      <tr>
+        <td headers="h-qty h-price" id="cell-a">2 × 3</td>
+      </tr>
+    </table>
+
+    <!-- FORM IDREFs: a control that belongs to a form declared elsewhere in the
+         document, and a control whose value comes from a `<datalist>` element. -->
+    <form id="outer"></form>
+    <input id="outside-field" form="outer" type="text">
+    <datalist id="browsers"><option value="Firefox"></option></datalist>
+    <input id="browser-field" list="browsers" type="text">
+
+    <!-- `<label for>` STILL WORKS and still carries the flag its own fixture pins
+         (`isLabelAssociation`); its SOURCE is `lbl`, which WRITES the reference. -->
+    <label id="lbl" for="named-target">Name</label>
+    <input id="named-target" name="nm" type="text">
+
+    <!-- TWO labels that name nothing, and both must still count as
+         `labelWithoutForCount`. `<label>` with no `for` is the accessibility defect
+         the metric was written for; `for=""` names nothing either, and an attribute
+         that is present but empty is the case a naive `attrs[attr] === undefined`
+         test silently loses. The `expectMetadata` pin below carries
+         `labelWithoutForCount: 2` precisely so that distinction is falsifiable. -->
+    <label id="bare-label">No `for` at all</label>
+    <label id="empty-for" for="">An empty `for` names nothing</label>
+
+    <!-- NOT IDREFs. `aria-label`, `aria-expanded`, `aria-hidden`, `aria-live`,
+         `aria-haspopup`, `aria-keyshortcuts`, `aria-atomic` and `aria-value*` are
+         tokens, booleans or prose. An earlier sweep that treated every `aria-*` as
+         an IDREF reported 788 "IDREFs" on one repository of which 23 were; treating
+         these as references would publish edges to the words "true", "polite" and
+         "dialog", which is the unresolvable-identity class in another costume.
+
+         The three ids below DECLARE those words on purpose. Without them the ruling
+         would be unfalsifiable from this file: an unresolved IDREF emits nothing, so
+         a mutant that swept every `aria-*` in would be invisible here — it was, and
+         that is recorded. With `id="true"` and friends present, the same mutant
+         produces `decorative -> true` and `atom -> polite` and the forbids below
+         kill it. The ruling is about what the ATTRIBUTE means, not about whether a
+         target happens to exist. -->
+    <span id="decorative" aria-hidden="true">x</span>
+    <div id="atom" aria-atomic="true" aria-live="polite">y</div>
+    <input id="slider" aria-valuemin="0" aria-valuemax="10" aria-valuenow="5">
+    <p id="true">an element whose id happens to be the word `true`</p>
+    <p id="polite">an element whose id happens to be the word `polite`</p>
+    <p id="dialog">an element whose id happens to be the word `dialog`</p>
+
+    <!-- A reference to an id the document does not declare emits NOTHING, exactly
+         as an unresolvable `<label for>` already did. There is no reference to
+         make, and an edge to the string "never-declared" resolves to no symbol and
+         to no file. -->
+    <button id="dangling" aria-controls="never-declared">Dangling</button>
+  </main>
+</body>
+</html>

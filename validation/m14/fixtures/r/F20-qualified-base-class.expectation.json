@@ -1,0 +1,44 @@
+{
+  "_notes": [
+    "A base class may be NAMED WITH ITS PACKAGE: `inherit = pkg::Parent`. R6 documents it and",
+    "R6's own suite uses it (R6/tests/manual/test-inheritance.R:126).",
+    "extractNamedArguments read only `identifier` and `string`, so a `namespace_operator` value",
+    "produced NO edge at all. Census: 738 class-constructor calls across 2,342 admitted R files,",
+    "exactly 1 qualified base class — a one-edge gap, pinned as one.",
+    "All four carriers are asserted because one helper (extractNamedArguments) sits behind all of",
+    "them; a fixture that tested only R6 would pass with S4/R5/S7 still broken.",
+    "forbidRelationships pins that the PACKAGE is not published as an endpoint: a symbol named",
+    "`pkgA::AC` binds to nothing in any file, and the class identity is the bare `AC`.",
+    "THE LABEL OF THE R5 ROW MOVED, THE EDGE DID NOT: `RC`'s `contains = c(\"VIRTUAL\", pkgB::BaseRC)`",
+    "is a LIST-shaped composition clause, so it publishes `mixes_in` (one per composed class) and the",
+    "extends rows for it are now forbidden — the same targets, the split label. The single-base",
+    "carriers (BC, SC, CD, class_sd) stay `extends` because R's `is()`/`extends()` answer TRUE for",
+    "one named supertype; the fixture pins both halves so a widened or narrowed split goes red."
+  ],
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "BC", "kind": "class" },
+    { "name": "RC", "kind": "class" },
+    { "name": "SC", "kind": "class" },
+    { "name": "class_sd", "kind": "class" },
+    { "name": "CD", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "BC", "target": "AC", "confidence": 1 },
+    { "type": "mixes_in", "from": "RC", "target": "BaseRC", "confidence": 1 },
+    { "type": "extends", "from": "SC", "target": "BaseSC", "confidence": 1 },
+    { "type": "extends", "from": "class_sd", "target": "BaseSD", "confidence": 1 },
+    { "type": "extends", "from": "CD", "target": "AC", "confidence": 1 },
+    { "type": "mixes_in", "from": "RC", "target": "VIRTUAL", "confidence": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "BC", "target": "pkgA::AC" },
+    { "type": "extends", "from": "BC", "target": "pkgA" },
+    { "type": "extends", "from": "RC", "target": "pkgB::BaseRC" },
+    { "type": "mixes_in", "from": "RC", "target": "pkgB::BaseRC" },
+    { "type": "extends", "from": "RC", "target": "BaseRC" },
+    { "type": "extends", "from": "RC", "target": "VIRTUAL" },
+    { "type": "extends", "from": "SC", "target": "pkgC::BaseSC" },
+    { "type": "extends", "from": "class_sd", "target": "pkgD::BaseSD" }
+  ]
+}

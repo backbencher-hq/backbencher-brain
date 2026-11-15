@@ -1,0 +1,73 @@
+{
+  "fixtureId": "python/ruled-out-extended-values",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE CLASSIFICATION FIXTURE for the four EXTENDED relationship values, in ONE file, asserting BOTH directions. The lane's bar is the all-out-of-all rule: `n/n` where `n` is the language's OWN expressible set, and every value outside `n` must be RULED with a citation rather than left unclassified. For python the four extended values are `decorates` (IMPLEMENTED), `renders` (RULED grammar-absence — the pinned grammar has no `jsx_*`/element/component node), `mixes_in` (RULED grammar-absence — no `mixin*` node and no mixin field) and `part_of` (RULED grammar-absence — no `part_*` node). A ruling that is only PROSE is not a ruling: a reader cannot tell a language that CANNOT express a construct from a lane that merely did not implement it, and the fleet's own rule is that an UNCLASSIFIED value STAYS IN THE DENOMINATOR. So this file puts the three ruled-out values NEXT TO the python constructs that are their nearest neighbours — multiple inheritance, a context-manager `with`, a template string, a module import — and pins two things. POSITIVE: the nearest python construct IS published, with the RIGHT label (two `extends` rows for the two bases of python's ONE superclass clause, an `imports` row for the module, a `decorates` row for the decorator). NEGATIVE: the ruled-out value is NOT emitted EVEN WHERE THE NEAREST CONSTRUCT IS PRESENT. The negative half is the half a prose ruling cannot fake: an implementation that quietly began emitting `mixes_in` for a second base, or `renders` for a template, or `part_of` for an import, would pass every positive row in this file and fail these. The three DECOYS are named here and are the reason the ruling is checkable rather than merely asserted: python's `with` statement is a CONTEXT MANAGER (`with open(path) as handle:`) and shares nothing with Dart's `class C with M` but the keyword — a prefix test on `with` would have 'found' a mixin clause there; and a python template is a STRING LITERAL, so the rendered tree is not in the AST at all. The grammar half of each ruling is the pinned node-type inventory measured by `script/m14/python-type-census.ts --grammar` (wasm/tree-sitter-python.wasm, sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47, 274 node-type ids, 123 unique named node types, 32 fields) and the corpus half is the same instrument's `--corpus` run over the whole admitted population; the artifact is `validation/m14/measurements/python-type-census-2026-10-21.json`.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Mixin", "kind": "class" },
+    { "name": "Combined", "kind": "class" },
+    { "name": "read", "kind": "function" },
+    { "name": "logged", "kind": "function" },
+    { "name": "write_row", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Combined",
+      "target": "Base",
+      "note": "THE FIRST BASE, python's ONE superclass clause: `class Combined(Base, Mixin)` publishes the first base as `extends`. The clause is a single `argument_list` — python's grammar has no separate mixin clause, so the second base is the SAME relation, not a different one."
+    },
+    {
+      "type": "extends",
+      "from": "Combined",
+      "target": "Mixin",
+      "note": "THE SECOND BASE — the NEAREST python construct to a mixin composition, and the reason the `mixes_in` ruling is a real ruling and not an oversight. python's source cannot say which base is the mixin: there is no mixin clause and no mixin field in the grammar, so both bases are the same relation, `extends`."
+    },
+    {
+      "type": "imports",
+      "from": "ruled_out_extended_values",
+      "target": "os:*",
+      "note": "THE `part_of` RULING'S NEAREST CONSTRUCT: python's unit of inclusion is an IMPORT, which names a module and creates binding scope. A `part` shares the library's single scope and imports nothing, so the import is published as `imports` and never as `part_of`."
+    },
+    {
+      "type": "decorates",
+      "from": "write_row",
+      "target": "logged",
+      "note": "THE ONE EXTENDED VALUE python EMITS: a decorator is APPLIED TO a declaration, and the row's source is the decorated declaration. This is the positive control that the three forbid rows below are a real absence and not a switched-off emitter."
+    },
+    {
+      "type": "calls",
+      "from": "read",
+      "target": "helper",
+      "note": "THE `renders` RULING'S NEAREST CONSTRUCT: python's template is a STRING LITERAL, so the rendered tree is not in the AST at all; the nearest construct that produces an object from a name is a CALL, and it is published as `calls`."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "extends",
+      "from": "Combined",
+      "equals": 2,
+      "note": "TWO bases, TWO `extends` rows — an exact count, so a DROPPED base and a DUPLICATED base both fail here. This row is also the positive half of the `mixes_in` ruling: python's clause yields `extends` rows and nothing else."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "note": "THE `mixes_in` RULING, NEGATIVE DIRECTION: the pinned python grammar has no `mixin*` node type and no mixin field, and the file carries python's NEAREST construct — a class with TWO bases — so a lane that started emitting `mixes_in` for the second base would fail this row. The grammar-absence citation is `script/m14/python-type-census.ts --grammar` against wasm/tree-sitter-python.wasm (sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47): the 11 candidate mixin spellings are absent, the `mixin`/`trait` name markers hit 0 node types and 0 of the 32 fields, and the three NEAR-MISS DECOYS the prefix test would have fired on — `with_statement`, `with_clause`, `with_item`, python's context-manager statement — are named and disambiguated in the instrument's own output."
+    },
+    {
+      "type": "renders",
+      "note": "THE `renders` RULING, NEGATIVE DIRECTION: the pinned python grammar has no `jsx_*`/element/component node type, and the file carries a TEMPLATE STRING and a call, so a lane that started emitting `renders` for a template would fail this row."
+    },
+    {
+      "type": "part_of",
+      "note": "THE `part_of` RULING, NEGATIVE DIRECTION: the pinned python grammar has no `part_*` node type, and the file carries a module IMPORT — python's nearest unit-of-inclusion construct — so a lane that started emitting `part_of` for an import would fail this row."
+    },
+    {
+      "type": "mixes_in",
+      "from": "read",
+      "note": "THE CONTEXT-MANAGER DECOY, pinned as its own row so the ruling is checkable: python's `with open(path) as handle:` shares the keyword `with` with Dart's `class C with M` and nothing else. A prefix test on `with` would have 'found' a mixin clause here, so the decoy gets its own forbid row instead of being left to the blanket one above."
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "issue": "M61.A1 evidence seal audit (repo-wide)",
+  "code": "A1",
+  "milestone": "M61",
+  "title": "The seal audit — every seal that exists in validation/ verifies",
+  "status": "verified",
+  "checks": 15,
+  "passed": 15,
+  "failed": 0,
+  "realFailed": 0,
+  "negatives": 1,
+  "failures": [],
+  "checksList": [
+    "ok: A1: the namespace scan visited records",
+    "ok: A1: the scan found sealed records to verify (a walker that reads nothing cannot pass)",
+    "ok: A2: every sealed record's bbSeal verifies (no stale seal anywhere in validation/)",
+    "ok: A2: no sealed record carries a malformed bbSeal envelope",
+    "ok: A2: no record claiming a seal is unparseable (an unverifiable seal is a refusal, not a pass)",
+    "ok: A3: every seal verdict agrees with the library's trusted read",
+    "ok: A3: the agreement check compared every sealed record",
+    "ok: A4: every register row names a file whose seal still equals the refreshed digest",
+    "ok: A4: every register row carries a written reason",
+    "ok: A5: the scan found a valid sealed record to use as the proof's baseline",
+    "ok: A5: a sealed record's untouched copy reads valid",
+    "ok: A5: the same record with content added after sealing reads STALE",
+    "ok: A5: the audit's stale verdict is not a constant (the untouched copy passed the same run above) [negative]",
+    "ok: A5: a record with its seal stripped reads unsealed (not valid, not stale)",
+    "ok: A5: a malformed envelope reads bad-envelope"
+  ],
+  "currentCommit": "94493a5fd06a6347974de521918ac8ed35b65bdb",
+  "verifierCommand": "npx tsx script/m61/verify-seal-audit.ts",
+  "evidenceFile": "A1.json",
+  "generatedAt": "2026-10-17T16:30:21.870Z",
+  "data": {
+    "namespace": "validation",
+    "scanned": 4311,
+    "sealed": 623,
+    "valid": 623,
+    "staleCount": 0,
+    "badEnvelopeCount": 0,
+    "unsealed": 3644,
+    "unparseable": 3,
+    "unparseablePaths": [
+      "m12/fixtures/json/Invalid.json",
+      "m14/fixtures/json/Invalid.json",
+      "m14/fixtures/json/TopLevelSiblings.json"
+    ],
+    "registerRows": 24
+  },
+  "limitations": [
+    "The audit covers the `validation/` evidence namespace (where milestone records live) and says nothing about sealed records stored elsewhere; no other directory was measured.",
+    "Its claim is that every seal that EXISTS verifies — not that every record is sealed. The unsealed population is measured and recorded in `data` (with the unparseable records, which are the JSON analyzer's deliberately-invalid fixtures), and sealing the rest is the M61 D-1 migration's own unfinished work, not this gate's.",
+    "A seal verifies INTEGRITY (the record is exactly what its writer sealed), not freshness or truth: a stale-DATA record with a valid seal passes here by design.",
+    "A5's can-fail proof uses copies of a real sealed record in a temp dir; the classification of the real namespace is the same code path run once, read-only, so no real artifact is written by the audit."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T16:30:21.908Z",
+    "contentSha256": "abe8611a8d5b754b84280f6534f9fcc18bc126962e058d7f2c9d7f1eea69d8a2"
+  }
+}

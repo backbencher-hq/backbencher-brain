@@ -1,0 +1,100 @@
+[
+ {
+  "id": "src-codemap",
+  "what": "composed studio shell, view=codemap, target=src/",
+  "errors": [],
+  "shots": [
+   "src-codemap.png"
+  ],
+  "probe": {
+   "docTitle": "Backbencher Code Map",
+   "dataView": "codemap",
+   "hasView": false,
+   "census": "ABSENT",
+   "shown": "ABSENT",
+   "zoomstate": "whole map · scroll to zoom in",
+   "svgGroups": 0,
+   "worldBox": [
+    1233,
+    976
+   ],
+   "worldText": "ast 58.1k linesintelligence 3.8k linesparallel-indexer.tsengine.tsreal-cpp-analyzer.tsreal-clojure-analyzer.tsreal-fsharp-analyzer.tsreal-solidity-analyzer.tsreal-powershell-analyzer.tsreal-c-analyzer.tsreal-csharp-analy",
+   "counts": {
+    "candidateCells": 0,
+    "bandNodes": 0
+   }
+  }
+ },
+ {
+  "id": "src-codemap-raw",
+  "what": "bare code map document, target=src/",
+  "errors": [],
+  "shots": [
+   "src-codemap-raw.png"
+  ],
+  "probe": {
+   "docTitle": "Backbencher Code Map",
+   "dataView": "codemap",
+   "hasView": false,
+   "census": "ABSENT",
+   "shown": "ABSENT",
+   "zoomstate": "whole map · scroll to zoom in",
+   "svgGroups": 0,
+   "worldBox": [
+    1561,
+    976
+   ],
+   "worldText": "ast 58.1k linesintelligence 3.8k linesparallel-indexer.tsengine.tsreal-cpp-analyzer.tsreal-clojure-analyzer.tsreal-fsharp-analyzer.tsreal-solidity-analyzer.tsreal-powershell-analyzer.tsreal-c-analyzer.tsreal-csharp-analy",
+   "counts": {
+    "candidateCells": 0,
+    "bandNodes": 0
+   }
+  }
+ },
+ {
+  "id": "src-graph",
+  "what": "composed studio shell, view=graph layout=regions, target=src/",
+  "errors": [],
+  "shots": [
+   "src-graph.png"
+  ],
+  "probe": {
+   "docTitle": "Backbencher Architecture Map",
+   "dataView": "graph",
+   "hasView": false,
+   "census": "ABSENT",
+   "shown": "showing 200 of 200 nodes and 420 of 816 edges — 304 cross-re",
+   "zoomstate": "ABSENT",
+   "svgGroups": 0,
+   "worldBox": "ABSENT",
+   "worldText": "ABSENT",
+   "counts": {
+    "candidateCells": 0,
+    "bandNodes": 0
+   }
+  }
+ },
+ {
+  "id": "src-class",
+  "what": "composed studio shell, view=class, target=src/",
+  "errors": [],
+  "shots": [
+   "src-class.png"
+  ],
+  "probe": {
+   "docTitle": "Backbencher Class Diagram",
+   "dataView": "class",
+   "hasView": false,
+   "census": "10 types drawn 8 relationships drawn 11170 symbols in scope",
+   "shown": "ABSENT",
+   "zoomstate": "ABSENT",
+   "svgGroups": 1,
+   "worldBox": "ABSENT",
+   "worldText": "ABSENT",
+   "counts": {
+    "candidateCells": 0,
+    "bandNodes": 0
+   }
+  }
+ }
+]

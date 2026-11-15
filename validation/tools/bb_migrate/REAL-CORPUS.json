@@ -2,21 +2,21 @@
  "tool": "bb_migrate",
  "measuredAt": "2026-11-03T16:13:13.772Z",
  "gitHead": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
- "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/realdata",
- "corpusRoot": "$HOME/fixtures/repositories",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/realdata",
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
  "door": {
   "command": "npx tsx src/mcp/server.ts --dir <repo>",
   "env": {
-   "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/realdata",
+   "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/realdata",
    "BB_NO_AUTO_REFRESH": "1"
   },
   "protocol": "JSON-RPC over stdio (initialize, notifications/initialized, tools/list, tools/call)"
  },
- "selectionCommand": "npx tsx validation/tools/bb_migrate/index-real-corpus.ts (BB_DATA_DIR=$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/realdata)",
+ "selectionCommand": "npx tsx validation/tools/bb_migrate/index-real-corpus.ts (BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/realdata)",
  "repos": [
   {
    "id": "elixir",
-   "dir": "$HOME/fixtures/repositories/elixir",
+   "dir": "/home/ishaq2321/bb_tests/repositories/elixir",
    "projectId": "a0e74040fb5c01a56dabd69d78711044402b104e",
    "languages": [
     {
@@ -14753,7 +14753,7 @@
   },
   {
    "id": "rebar3",
-   "dir": "$HOME/fixtures/repositories/rebar3",
+   "dir": "/home/ishaq2321/bb_tests/repositories/rebar3",
    "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
    "languages": [
     {
@@ -21583,7 +21583,7 @@
   },
   {
    "id": "clojure",
-   "dir": "$HOME/fixtures/repositories/clojure",
+   "dir": "/home/ishaq2321/bb_tests/repositories/clojure",
    "projectId": "e7061750d7a40bd40cedb55a73ad049dd9f40a37",
    "languages": [
     {
@@ -26550,7 +26550,7 @@
   },
   {
    "id": "graphql-js",
-   "dir": "$HOME/fixtures/repositories/graphql-js",
+   "dir": "/home/ishaq2321/bb_tests/repositories/graphql-js",
    "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
    "languages": [
     {

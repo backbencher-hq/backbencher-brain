@@ -1,0 +1,256 @@
+{
+  "repo": "rake",
+  "indexSeconds": 8.738,
+  "fileCount": 109,
+  "negatives": 1,
+  "perTool": {
+    "bb_search": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"mode\":\"file\",\"filePath\":\"lib/rake/thread_pool.rb\",\"query\":\"lib/rake/thread_pool.rb\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"lib/rake/thread_pool.rb\",\"fileId\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb\",\"language\":\"ruby\",\"content\":\"#"
+    },
+    "bb_health": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 10,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/rake\\nprojectId: 132aab0103080d56a8ce5ef28cf2034710b21a80\\nfiles=109 symbols=1593 relationships=9075 imports=123"
+    },
+    "bb_ask": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 252,
+      "args": "{\"query\":\"what does join do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 22 other symbol(s) scored within the same margin of the best. The similarity numbers below se"
+    },
+    "bb_patterns": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 108,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (102 found):\\n  orphaned_class EarlyTime — lib/rake/early_time.rb:5 (70%)\\n  orphaned_class LateTime — lib/rake/late_time.rb:4 (70%)\\n  orphaned_"
+    },
+    "bb_security": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 11,
+      "args": "{}",
+      "outHead": "\"security: 38 critical / 30 high / 0 medium / 0 low / 22 unknown (30 resolved flows, 60 unvalidated sources, 0 mitigated)\\n  [critical] SQL injection (Applicati"
+    },
+    "bb_visualize": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 9,
+      "args": "{\"scope\":\"symbol\",\"target\":\"join\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"join\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_poo"
+    },
+    "bb_migrate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 27,
+      "args": "{\"symbolName\":\"join\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"join\",\"symbolId\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"sourceFile\":\"lib/"
+    },
+    "bb_analyze": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 10,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":109,\"linesOfCode\":13176,\"avgFileSize\":3116.798165137615,\"avgFileSizeUnit\":\"bytes\",\"symbols\":1593,\"symbolsWithComplexity\":1593,\"avgComplexity\":1.2680477"
+    },
+    "bb_doc": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 23,
+      "args": "{\"mode\":\"symbol\",\"target\":\"join\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: join\\n\\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 36 source(s).\\n\\n## API\\n\\n1 claim, 1 read directly from the i"
+    },
+    "bb_edit": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 40,
+      "args": "{\"mode\":\"update\",\"filePath\":\"lib/rake/thread_pool.rb\",\"symbolName\":\"join\",\"newContent\":\"export function join(): void { /* m48 c1 dry-run */ }\",\"dryRun\":true,\"format\":false}",
+      "outHead": "{\"mode\":\"update\",\"dryRun\":true,\"changes\":[{\"path\":\"/home/ishaq2321/bb_tests/repositories/rake/lib/rake/thread_pool.rb\",\"before\":\"# frozen_string_literal: true\\n"
+    },
+    "bb_index": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 38,
+      "args": "{\"path\":\"lib/rake/thread_pool.rb\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"lib/rake/thread_pool.rb\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothing ch"
+    },
+    "bb_graph": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 207,
+      "args": "{\"symbol\":\"join\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"join\",\"root\":{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"name\":\"join\",\"symbolType\":\"method\",\"file\":\"lib/rake/th"
+    },
+    "bb_impact": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 67,
+      "args": "{\"symbol\":\"join\"}",
+      "outHead": "{\"symbol\":\"join\",\"root\":{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"name\":\"join\",\"file\":\"lib/rake/thread_pool.rb\",\"filePat"
+    },
+    "bb_cross_language": {
+      "ok": true,
+      "declaredAbsent": true,
+      "ms": 4,
+      "args": "{\"symbol\":\"join\"}",
+      "outHead": "{\"symbol\":\"join\",\"language\":\"ruby\",\"languages\":[\"ruby\"],\"copies\":[{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"symbol\":\"joi"
+    },
+    "bb_annotate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"rake\",\"body\":\"m48 c1 corpus note (rake)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-67d423c5472b1156183c20e0d325e5a8eab7dee31c4a1a2638b60fde0a9141e4\",\"symbol_name\":\"rake\",\"symbol_path\":null,\"author_class"
+    },
+    "bb_annotations": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 4,
+      "args": "{\"symbol\":\"rake\"}",
+      "outHead": "{\"symbol\":\"rake\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-67d423c5472b"
+    }
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_search",
+      "repo": "rake",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "join [method] lib/rake/thread_pool.rb:44 (ruby)\ntest_pool_join_empties_queue [method] test/test_rake rows=0"
+    },
+    {
+      "tool": "bb_search",
+      "repo": "rake",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"lib/rake/thread_pool.rb\",\n  \"fileId\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib"
+    },
+    {
+      "tool": "bb_health",
+      "repo": "rake",
+      "label": "health.files == SQL count (109)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/rake\nprojectId: 132aab0103080d56a8ce5ef28cf2034710b21a80\nfiles=109 symbol"
+    },
+    {
+      "tool": "bb_ask",
+      "repo": "rake",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 22 other symbol(s) scored within t"
+    },
+    {
+      "tool": "bb_patterns",
+      "repo": "rake",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (102 found):\n  orphaned_class EarlyTime — lib/rake/early_time.rb:5 (70%)\n  orphaned_cl"
+    },
+    {
+      "tool": "bb_security",
+      "repo": "rake",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 38 critical / 30 high / 0 medium / 0 low / 22 unknown (30 resolved flows, 60 unvalidated s"
+    },
+    {
+      "tool": "bb_visualize",
+      "repo": "rake",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"join\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n  "
+    },
+    {
+      "tool": "bb_migrate",
+      "repo": "rake",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"join\",\n      \"symbolId\": \"132"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "rake",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\n"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "rake",
+      "label": "analyze stats.files == SQL count (109)",
+      "pass": true,
+      "detail": "out files=109 sql=109"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "rake",
+      "label": "analyze stats.symbols == SQL count (1593)",
+      "pass": true,
+      "detail": "out symbols=1593 sql=1593"
+    },
+    {
+      "tool": "bb_doc",
+      "repo": "rake",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: join\n\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 36 so"
+    },
+    {
+      "tool": "bb_edit",
+      "repo": "rake",
+      "label": "dry-run leaves file untouched",
+      "pass": true,
+      "detail": "before=a5737112 after=a5737112"
+    },
+    {
+      "tool": "bb_index",
+      "repo": "rake",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"lib/rake/thread_pool.rb\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1"
+    },
+    {
+      "tool": "bb_graph",
+      "repo": "rake",
+      "label": "graph root == join",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"join\",\n  \"root\": {\n    \"id\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\n"
+    },
+    {
+      "tool": "bb_impact",
+      "repo": "rake",
+      "label": "impact root == join",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"join\",\n  \"root\": {\n    \"id\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\n"
+    },
+    {
+      "tool": "bb_cross_language",
+      "repo": "rake",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"join\",\n  \"language\": \"ruby\",\n  \"languages\": [\n    \"ruby\"\n  ],\n  \"copies\": [\n    {\n   "
+    },
+    {
+      "tool": "bb_annotate",
+      "repo": "rake",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-03c57ba71f67b19c29f98fdc353c5ca893e1d3d0260d6"
+    },
+    {
+      "tool": "bb_annotations",
+      "repo": "rake",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"rake\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n"
+    }
+  ],
+  "failures": []
+}

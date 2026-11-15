@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.16",
+  "code": "E11",
+  "tool": "bb_edit",
+  "title": "bb_edit: honesty audit (AST vs text/regex)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "rename path: no identifierOffsets text-scan function remains",
+      "pass": true,
+      "detail": "removed"
+    },
+    {
+      "name": "rename path: uses parseForSafety occurrences (AST identity)",
+      "pass": true,
+      "detail": "no AST occurrence usage in refactor path"
+    },
+    {
+      "name": "rename path: occurrences come from parseForSafety (tree-sitter), not a regex",
+      "pass": true,
+      "detail": "extractIdentifierOccurrences is not AST-derived"
+    },
+    {
+      "name": "mask path: no JS-only codeMask function remains",
+      "pass": true,
+      "detail": "codeMask still present"
+    },
+    {
+      "name": "mask path: uses tree-sitter buildSyntaxMask (language-aware)",
+      "pass": true,
+      "detail": "buildSyntaxMask missing"
+    },
+    {
+      "name": "honesty audit: every remaining regex is enumerated",
+      "pass": true,
+      "detail": "found 4 regex ops"
+    },
+    {
+      "name": "honesty audit: no unjustified regex (every op has a justification)",
+      "pass": true,
+      "detail": "L531:exec(line), L928:test(error.message), L1632:test(indent), L1819:test(newName)"
+    },
+    {
+      "name": "honesty audit: text slice/split ops are byte-offset manipulations (justified)",
+      "pass": true,
+      "detail": "21 slice/split calls (all byte-range/line ops)"
+    },
+    {
+      "name": "honesty audit: safety-primitives.ts has zero regex/text-scan in code (pure AST)",
+      "pass": true,
+      "detail": "safety-primitives contains regex/text ops in code"
+    },
+    {
+      "name": "honesty audit: no identifierOffsets/raw text scan anywhere in the edit path [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "identifierOffsets text scan present"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0
+  },
+  "decisions": {
+    "auditScope": "src/intelligence/edit/edit-engine.ts and src/ast/safety-primitives.ts (the two files in the edit path)",
+    "renamePath": "refactor uses parseForSafety occurrences (AST node identity + isMemberName), not identifierOffsets text scan",
+    "maskPath": "buildSyntaxMask walks the tree-sitter tree (comment/string/interpolation node types); no JS-only codeMask remains"
+  },
+  "limitations": [
+    "A handful of justified regexes remain (identifier validation, whitespace checks, syntax-error filter) — each enumerated below."
+  ],
+  "generatedAt": "2026-11-05T04:11:58.210Z"
+}

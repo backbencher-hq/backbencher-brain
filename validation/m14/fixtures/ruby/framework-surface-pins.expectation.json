@@ -1,0 +1,32 @@
+{
+  "fixtureId": "ruby/framework-surface-pins",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (#749), the C7 framework trigger surface — the R8 census's ruby member. FOUR defects are pinned at once, and each one has a pre-fix observable this file would have produced: (1) DUPLICATION — the accumulator was a bare `metadata.detectedFrameworks!.push(\"Ruby on Rails\")` called once per class and once per call, so this file published five identical entries; measured at five on a five-model file and three on rack/test.rb. (2) TWO NAMES FOR ONE FRAMEWORK — `detectedFrameworks` said \"Ruby on Rails\" while the pattern said \"Rails\", so the two published arrays could not be joined by name. (3) NO PRIMARY PICK — `metadata.framework`, the contract's deterministic pick, was published for nothing at all, so every file that DID detect Rails read as framework-less downstream. (4) AN UNREACHABLE TRIGGER — `before_action`/`after_action` are members of RAILS_MACRO_METHODS, whose branch RETURNS before the framework block, so the Callbacks pattern was unreachable in every execution: a file containing `before_action` published `frameworkPatterns: []` and this fixture is the only place that observable is holdable, since the metadata pins below compare the whole array. The pre-fix state fails all four pins at once; a mutant that reverts any single one of them fails the corresponding pin.",
+  "expectSymbols": [
+    { "name": "User", "kind": "class" },
+    { "name": "Admin", "kind": "class" },
+    { "name": "ReportsController", "kind": "class" },
+    { "name": "index", "kind": "method", "ownerName": "ReportsController" },
+    { "name": "show", "kind": "method", "ownerName": "ReportsController" }
+  ],
+  "expectPrimaryFramework": ["Ruby on Rails"],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": ["Ruby on Rails"],
+      "comment": "EXACTLY one entry. Pre-fix this was five."
+    },
+    {
+      "frameworkPatterns": [{ "framework": "Ruby on Rails", "patterns": ["Callbacks"] }],
+      "comment": "the pattern carries the SAME name as the detection (it used to say \"Rails\"), and it exists at all only because the callback trigger is now reachable."
+    }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "User", "target": "posts", "comment": "the association still emits its member and edge — the framework fix must not disturb the walk" },
+    { "type": "uses", "from": "User", "target": "posts" },
+    { "type": "contains", "from": "ReportsController", "target": "index" },
+    { "type": "contains", "from": "ReportsController", "target": "show" },
+    { "type": "extends", "from": "ReportsController", "target": "ApplicationController" },
+    { "type": "extends", "from": "User", "target": "ApplicationRecord" }
+  ]
+}

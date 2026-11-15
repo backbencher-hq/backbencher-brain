@@ -1,0 +1,293 @@
+{
+  "generatedAt": "2026-11-01T19:11:19.256Z",
+  "loadAverage": [
+    25.9,
+    24.23,
+    24.23
+  ],
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-query-cost.ts",
+  "rows": [
+    {
+      "label": "A-flat-in-list",
+      "ms": 12.5,
+      "value": 36
+    },
+    {
+      "label": "B-cascade-join",
+      "ms": 10351.5,
+      "value": 36
+    },
+    {
+      "label": "C-flat-no-order",
+      "ms": 30.9,
+      "value": {
+        "error": "near \"brain_relationship\": syntax error"
+      }
+    },
+    {
+      "label": "D-count-flat",
+      "ms": 2.1,
+      "value": {
+        "n": 36
+      }
+    },
+    {
+      "label": "plan-flat",
+      "ms": 16,
+      "value": [
+        {
+          "id": 11,
+          "parent": 0,
+          "notused": 62,
+          "detail": "SEARCH r USING INDEX brain_rel_proj_type_target_idx (project_id=? AND relationship_type=? AND target_symbol_id=?)"
+        },
+        {
+          "id": 38,
+          "parent": 0,
+          "notused": 0,
+          "detail": "LIST SUBQUERY 1"
+        },
+        {
+          "id": 41,
+          "parent": 38,
+          "notused": 39,
+          "detail": "SEARCH brain_symbol USING COVERING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 51,
+          "parent": 38,
+          "notused": 0,
+          "detail": "CREATE BLOOM FILTER"
+        },
+        {
+          "id": 63,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 73,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)"
+        },
+        {
+          "id": 113,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    {
+      "label": "plan-cascade",
+      "ms": 0.9,
+      "value": [
+        {
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "CO-ROUTINE casc"
+        },
+        {
+          "id": 3,
+          "parent": 2,
+          "notused": 0,
+          "detail": "COMPOUND QUERY"
+        },
+        {
+          "id": 4,
+          "parent": 3,
+          "notused": 0,
+          "detail": "LEFT-MOST SUBQUERY"
+        },
+        {
+          "id": 5,
+          "parent": 4,
+          "notused": 0,
+          "detail": "SCAN CONSTANT ROW"
+        },
+        {
+          "id": 8,
+          "parent": 3,
+          "notused": 0,
+          "detail": "UNION ALL"
+        },
+        {
+          "id": 11,
+          "parent": 8,
+          "notused": 61,
+          "detail": "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)"
+        },
+        {
+          "id": 36,
+          "parent": 0,
+          "notused": 62,
+          "detail": "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)"
+        },
+        {
+          "id": 65,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 75,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)"
+        },
+        {
+          "id": 82,
+          "parent": 0,
+          "notused": 0,
+          "detail": "BLOOM FILTER ON casc (id=?)"
+        },
+        {
+          "id": 93,
+          "parent": 0,
+          "notused": 45,
+          "detail": "SEARCH casc USING AUTOMATIC COVERING INDEX (id=?)"
+        },
+        {
+          "id": 133,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    {
+      "label": "indexes-brain-symbol",
+      "ms": 0.3,
+      "value": [
+        {
+          "name": "sqlite_autoindex_brain_symbol_1",
+          "sql": null
+        },
+        {
+          "name": "brain_symbol_project_idx",
+          "sql": "CREATE INDEX brain_symbol_project_idx ON brain_symbol(project_id)"
+        },
+        {
+          "name": "brain_symbol_file_idx",
+          "sql": "CREATE INDEX brain_symbol_file_idx ON brain_symbol(file_id)"
+        },
+        {
+          "name": "brain_symbol_name_idx",
+          "sql": "CREATE INDEX brain_symbol_name_idx ON brain_symbol(name)"
+        },
+        {
+          "name": "brain_symbol_type_idx",
+          "sql": "CREATE INDEX brain_symbol_type_idx ON brain_symbol(symbol_type)"
+        },
+        {
+          "name": "brain_symbol_qualified_idx",
+          "sql": "CREATE INDEX brain_symbol_qualified_idx ON brain_symbol(qualified_name)"
+        },
+        {
+          "name": "brain_symbol_owner_idx",
+          "sql": "CREATE INDEX brain_symbol_owner_idx ON brain_symbol(owner_symbol_id)"
+        },
+        {
+          "name": "brain_sym_proj_file_idx",
+          "sql": "CREATE INDEX brain_sym_proj_file_idx ON brain_symbol(project_id, file_id)"
+        },
+        {
+          "name": "brain_sym_proj_name_idx",
+          "sql": "CREATE INDEX brain_sym_proj_name_idx ON brain_symbol(project_id, name)"
+        },
+        {
+          "name": "brain_sym_proj_name_nocase_idx",
+          "sql": "CREATE INDEX brain_sym_proj_name_nocase_idx ON brain_symbol(project_id, name COLLATE NOCASE)"
+        },
+        {
+          "name": "brain_sym_proj_type_idx",
+          "sql": "CREATE INDEX brain_sym_proj_type_idx ON brain_symbol(project_id, symbol_type)"
+        },
+        {
+          "name": "brain_sym_proj_name_type_idx",
+          "sql": "CREATE INDEX brain_sym_proj_name_type_idx ON brain_symbol(project_id, name, symbol_type)"
+        },
+        {
+          "name": "brain_symbol_gravity_idx",
+          "sql": "CREATE INDEX brain_symbol_gravity_idx ON brain_symbol(project_id, gravity_score DESC, line_start)"
+        }
+      ]
+    },
+    {
+      "label": "indexes-brain-relationship",
+      "ms": 0.2,
+      "value": [
+        {
+          "name": "sqlite_autoindex_brain_relationship_1",
+          "sql": null
+        },
+        {
+          "name": "brain_rel_project_idx",
+          "sql": "CREATE INDEX brain_rel_project_idx ON brain_relationship(project_id)"
+        },
+        {
+          "name": "brain_rel_source_idx",
+          "sql": "CREATE INDEX brain_rel_source_idx ON brain_relationship(source_symbol_id)"
+        },
+        {
+          "name": "brain_rel_target_idx",
+          "sql": "CREATE INDEX brain_rel_target_idx ON brain_relationship(target_symbol_id)"
+        },
+        {
+          "name": "brain_rel_type_idx",
+          "sql": "CREATE INDEX brain_rel_type_idx ON brain_relationship(relationship_type)"
+        },
+        {
+          "name": "brain_rel_source_type_idx",
+          "sql": "CREATE INDEX brain_rel_source_type_idx ON brain_relationship(source_symbol_id, relationship_type)"
+        },
+        {
+          "name": "brain_rel_proj_type_target_idx",
+          "sql": "CREATE INDEX brain_rel_proj_type_target_idx ON brain_relationship(project_id, relationship_type, target_symbol_id)"
+        },
+        {
+          "name": "brain_rel_confidence_idx",
+          "sql": "CREATE INDEX brain_rel_confidence_idx ON brain_relationship(confidence)"
+        },
+        {
+          "name": "brain_rel_cross_file_idx",
+          "sql": "CREATE INDEX brain_rel_cross_file_idx ON brain_relationship(is_cross_file)"
+        },
+        {
+          "name": "brain_rel_target_ext_idx",
+          "sql": "CREATE INDEX brain_rel_target_ext_idx ON brain_relationship(target_external)"
+        },
+        {
+          "name": "brain_rel_proj_target_idx",
+          "sql": "CREATE INDEX brain_rel_proj_target_idx ON brain_relationship(project_id, target_symbol_id)"
+        },
+        {
+          "name": "brain_rel_proj_source_idx",
+          "sql": "CREATE INDEX brain_rel_proj_source_idx ON brain_relationship(project_id, source_symbol_id)"
+        },
+        {
+          "name": "brain_rel_proj_type_idx",
+          "sql": "CREATE INDEX brain_rel_proj_type_idx ON brain_relationship(project_id, relationship_type)"
+        },
+        {
+          "name": "brain_rel_target_type_idx",
+          "sql": "CREATE INDEX brain_rel_target_type_idx ON brain_relationship(target_symbol_id, relationship_type)"
+        },
+        {
+          "name": "brain_rel_cross_lang_idx",
+          "sql": "CREATE INDEX brain_rel_cross_lang_idx ON brain_relationship(is_cross_language)"
+        },
+        {
+          "name": "brain_rel_target_cross_idx",
+          "sql": "CREATE INDEX brain_rel_target_cross_idx ON brain_relationship(target_symbol_id, is_cross_language)"
+        },
+        {
+          "name": "brain_rel_source_cross_idx",
+          "sql": "CREATE INDEX brain_rel_source_cross_idx ON brain_relationship(source_symbol_id, is_cross_language)"
+        }
+      ]
+    }
+  ]
+}

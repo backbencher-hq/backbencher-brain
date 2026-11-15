@@ -1,0 +1,275 @@
+{
+  "fixtureId": "csharp/declared-type-graph",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R9 (#804) — the declared-type reference graph, a family standard the csharp lane was missing entirely (rust's R13 header: \"family standard, mirrors go/c/zig\"; ten lanes implement it, measured by script/m60/declared-type-refs-census.ts). This fixture pins every position that WRITES a type name (field / variable declaration, parameter, return type, property, indexer, event, delegate), every shape a written type can take (bare, array, nullable, qualified, generic base AND argument, tuple, pointer, ref), the source-attribution contract measured off java/kotlin/python (a member's dependency belongs to the enclosing TYPE, a parameter's / return's / local's to the enclosing CALLABLE), the two markers (declared_type, and return_type for returns — java/kotlin/python/typescript all use return_type), and the four ways this walk can publish a NAME that is not a type: a tuple element's name, a bound type parameter, a predefined type, and `var`. Measured 2026-09-22 before the pins were written; the tuple-element and bound-parameter defects below were FOUND BY THIS FIXTURE'S OWN FIRST MEASUREMENT.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "Node",
+      "target": "Node",
+      "line_number": 23,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 29,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 30,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 31,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "StringBuilder",
+      "line_number": 32,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 33,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "List",
+      "line_number": 33,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 34,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dictionary",
+      "line_number": 34,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 35,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 36,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 37,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "List",
+      "line_number": 46,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 49,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Other",
+      "line_number": 50,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "indexer_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Action",
+      "line_number": 53,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "event_field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 53,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "event_field_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Factory",
+      "target": "Dep",
+      "line_number": 56,
+      "meta.relationshipType": "return_type",
+      "meta.declaredOn": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "Dep",
+      "line_number": 59,
+      "meta.relationshipType": "return_type",
+      "meta.declaredOn": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "List",
+      "line_number": 59,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "Other",
+      "line_number": 59,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "Dep",
+      "line_number": 61,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "local_declaration_statement"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "List",
+      "line_number": 63,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "local_declaration_statement"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "Other",
+      "line_number": 63,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "local_declaration_statement"
+    },
+    {
+      "type": "references",
+      "from": "Build",
+      "target": "List",
+      "line_number": 64,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "local_declaration_statement"
+    },
+    {
+      "type": "references",
+      "from": "Generic",
+      "target": "Other",
+      "line_number": 70,
+      "meta.relationshipType": "return_type",
+      "meta.declaredOn": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "Generic",
+      "target": "List",
+      "line_number": 72,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "local_declaration_statement"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "target": "string"
+    },
+    {
+      "type": "references",
+      "target": "void"
+    },
+    {
+      "type": "references",
+      "target": "var"
+    },
+    {
+      "type": "references",
+      "target": "T"
+    },
+    {
+      "type": "references",
+      "target": "U"
+    },
+    {
+      "type": "references",
+      "target": "First"
+    },
+    {
+      "type": "references",
+      "target": "Count"
+    },
+    {
+      "type": "references",
+      "target": "System.Text.StringBuilder"
+    },
+    {
+      "type": "references",
+      "target": "System"
+    },
+    {
+      "type": "references",
+      "target": "Text"
+    },
+    {
+      "type": "references",
+      "target": "String"
+    }
+  ],
+  "comment": "The delegate line (Factory) carries the return reference and its parameter reference on ONE line, so the (source, target, line) dedupe key collapses them to a single edge; that is the documented consequence of keying on the line rather than the pair (M59.A7: a collapsed pair would lose a line)."
+}

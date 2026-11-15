@@ -1,0 +1,65 @@
+{
+  "fixtureId": "julia/extended-values",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE CLASSIFICATION FIXTURE FOR THE TWO RULED EXTENDED VALUES, BESIDE THE IMPLEMENTED ONE. `renders` and `mixes_in` are ruled because Julia has no member-set composition and no component/element syntax, and a ruling that is only prose cannot be checked. This file puts each ruled value's NEAREST JULIA CONSTRUCT in one module and pins two things. POSITIVE: the nearest construct IS published, under the right label — `struct Circle <: Shape` is a single-supertype declaration and is `extends`, `render(...)` is an ordinary function and is `calls`, `Circle(1.0)` is a construction and is `instantiates`, and `@inline function area` is a macro applied to a declaration and is `decorates` (the implemented side). NEGATIVE: none of those sites produces `renders` or `mixes_in`. An implementation that quietly began publishing a `renders` edge for every function named `render`, or a `mixes_in` edge for the second name in a subtype clause, would pass every positive row here and fail the forbid rows. THE DECOYS ARE NAMED: `render` returns a STRING, not a component element; `Circle <: Shape` names ONE supertype, not a `with` list; and `area` is decorated, which is the relation Julia DOES have. The grammar half of the ruling is 0 candidate names of 224 and 0 produced node types of 149 (validation/m14/measurements/julia-extended-census.json); this file is the behavioural half.",
+  "expectSymbols": [
+    { "name": "ExtendedValues", "kind": "module" },
+    { "name": "Shape", "kind": "interface", "ownerName": "ExtendedValues" },
+    { "name": "Circle", "kind": "class", "ownerName": "ExtendedValues" },
+    { "name": "radius", "kind": "property", "ownerName": "Circle" },
+    { "name": "area", "kind": "function", "ownerName": "ExtendedValues" },
+    { "name": "render", "kind": "function", "ownerName": "ExtendedValues" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Circle",
+      "target": "Shape",
+      "line_number": 7,
+      "meta.isSubtype": true,
+      "comment": "POSITIVE for the nearest `mixes_in` construct — a declared type names its ONE supertype, and that is `extends`."
+    },
+    {
+      "type": "decorates",
+      "source": "area",
+      "target": "inline",
+      "line_number": 11,
+      "meta.decoratorName": "inline",
+      "meta.isMacroDecorator": true,
+      "comment": "POSITIVE for the implemented extended value — a macro applied to a declaration."
+    },
+    {
+      "type": "calls",
+      "source": "ExtendedValues",
+      "target": "render",
+      "line_number": 19,
+      "comment": "POSITIVE for the nearest `renders` construct — `render(...)` is an ordinary call to a function, not a component element."
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "string",
+      "line_number": 16,
+      "comment": "The render function builds a STRING. There is no component value in the source and none is invented."
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "area",
+      "line_number": 16,
+      "comment": "The render function calls another function; the call is the relation, not a render."
+    },
+    {
+      "type": "instantiates",
+      "source": "ExtendedValues",
+      "target": "Circle",
+      "line_number": 19,
+      "comment": "The nearest thing to a component construction is an ordinary type construction, and it stays `instantiates`."
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "comment": "no component element exists in this file; a function named render is not a rendering relation" },
+    { "type": "mixes_in", "comment": "no member-set composition exists in Julia; Circle names one supertype and that is extends" }
+  ]
+}

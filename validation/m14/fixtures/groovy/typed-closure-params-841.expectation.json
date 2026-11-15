@@ -1,0 +1,22 @@
+{
+  "fixtureId": "groovy/typed-closure-params-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS the #841 round-14 suppression in a HEALTHY class (the recovery fixture pins the degraded case). `{ Test left, Test right -> }` parses as juxt_function_call(name: Test, args: left, Test) plus a lambda_expression, and before round 14 the juxt branch emitted a fabricated `calls` edge whose target is the parameter TYPE — here measured on the baseline analyzer as `calls -> Test @16`, absent after. The two positive edges are load-bearing in the other direction: `sortByName -> sort` proves the juxt's own method call survives the suppression, and `inspectEach -> register` proves the closure BODY still walks. Corpus-wide evidence for the rule: 962 such juxt sites across grails-core and geb, 613 fabricated edges removed (589 while the site fired, 24 re-parented), 0 unexplained, 0 sites where the guard's evidence failed (reviews/m59-841-assert-comma-separator.md §7r).",
+  "expectSymbols": [
+    { "name": "TypedClosureParams841", "kind": "class" },
+    { "name": "sortByName", "kind": "method", "ownerName": "TypedClosureParams841" },
+    { "name": "inspectEach", "kind": "method", "ownerName": "TypedClosureParams841" },
+    { "name": "register", "kind": "method", "ownerName": "TypedClosureParams841" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "TypedClosureParams841", "target": "sortByName" },
+    { "type": "contains", "source": "TypedClosureParams841", "target": "inspectEach" },
+    { "type": "contains", "source": "TypedClosureParams841", "target": "register" },
+    { "type": "calls", "source": "sortByName", "target": "sort" },
+    { "type": "calls", "source": "inspectEach", "target": "register", "comment": "the closure body's call must survive the suppression" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "Test", "comment": "the fabricated edge named the closure parameter's TYPE as the callee" }
+  ]
+}

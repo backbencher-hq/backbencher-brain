@@ -1,0 +1,130 @@
+{
+  "fixtureId": "objc/field-invocation",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A callee reached through a FIELD — `self.downloadProgressBlock(object)` is `call_expression > field_expression` — has no direct `identifier` child, so the lane's `calls` producer for C callees never fired on it and the shape published NO calls edge at all, while the same field_expression still published a `uses` row from the member-read branch. Measured on the router's own 322 admitted files through production parseFile before the branch was written (script/m60/objc-call-shape-probe.ts): field_expression 823 sites / 27 files / 44 distinct callee names -> 0 edges, against identifier 3615 sites -> 2277 edges after per-file dedup. 715 of the 823 are Expecta matcher invocations reached through dot syntax; the rest are block properties invoked for effect. This is a missing producer of an edge the lane already makes (the C branch publishes `dispatch_once(...)` at the same 0.95), not a new kind of claim. What the row does NOT determine is which kind of callable the field holds — block, function pointer, or (in a .mm file) C++ member — which is what the reason code names. The `uses` row for the same node is deliberately KEPT rather than suppressed the way a bare-identifier callee is: `foo(x)` reads nothing, whereas `self.blockProp(x)` loads a real declared property AND invokes it, and deleting existing `uses` rows is a consumer-visible change this lane should not make unilaterally.",
+  "expectSymbols": [
+    {
+      "name": "FieldCallSink",
+      "kind": "class"
+    },
+    {
+      "name": "FieldCallDemo",
+      "kind": "class"
+    },
+    {
+      "name": "onTap",
+      "kind": "property",
+      "ownerName": "FieldCallSink"
+    },
+    {
+      "name": "progressHandler",
+      "kind": "property",
+      "ownerName": "FieldCallDemo"
+    },
+    {
+      "name": "start",
+      "kind": "method",
+      "ownerName": "FieldCallDemo"
+    },
+    {
+      "name": "peek",
+      "kind": "method",
+      "ownerName": "FieldCallDemo"
+    },
+    {
+      "name": "chain",
+      "kind": "method",
+      "ownerName": "FieldCallDemo"
+    },
+    {
+      "name": "others",
+      "kind": "method",
+      "ownerName": "FieldCallDemo"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "onTap",
+      "kind": "class",
+      "comment": "a block PARAMETER is not a method: the property's declared name is onTap and no message selector is minted for a block-typed property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "start",
+      "target": "progressHandler",
+      "meta.isFieldInvocation": true,
+      "meta.reasonCode": "field-callee-kind-not-determined",
+      "line_number": 62,
+      "comment": "`self.progressHandler(3)` — a block property invoked for effect. The field name is read off the field_identifier, never off the receiver's text, so the target is a name the file declares"
+    },
+    {
+      "type": "uses",
+      "source": "start",
+      "target": "progressHandler",
+      "meta.isFieldRead": true,
+      "comment": "the SAME node also reads the property, and that row survives: loading `self.progressHandler` and invoking it are two facts. The bare-identifier callee rule (a callee is never also a read) does not transfer to a field, because a field expression genuinely is both"
+    },
+    {
+      "type": "calls",
+      "source": "chain",
+      "target": "onTap",
+      "meta.isFieldInvocation": true,
+      "meta.reasonCode": "field-callee-kind-not-determined",
+      "line_number": 73,
+      "comment": "a field CHAIN: `self.sink.onTap(1)` names the INNERMOST field, the same name the `uses` row for the same expression carries. Naming `sink` instead would name the receiver, and the receiver is a value, not a symbol"
+    },
+    {
+      "type": "calls",
+      "source": "others",
+      "target": "dispatch_async",
+      "meta.isCFunctionCall": true,
+      "meta.reasonCode": "callee-not-resolved-in-unit",
+      "comment": "the pre-existing producer keeps its own flag and its own reason code; the field branch must not re-tag it"
+    },
+    {
+      "type": "calls",
+      "source": "others",
+      "target": "dispatch_get_main_queue",
+      "meta.isCFunctionCall": true,
+      "line_number": 78
+    },
+    {
+      "type": "calls",
+      "source": "others",
+      "target": "peek",
+      "meta.isMessageExpression": true,
+      "meta.reasonCode": "dynamic-dispatch-selector",
+      "comment": "a message send keeps the selector branch and its code; three producers, three codes"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "start",
+      "target": "progressHandler",
+      "meta.reasonCode": "callee-not-resolved-in-unit",
+      "comment": "the field branch's code is its own: collapsing it onto the C branch's code would publish a word about an unresolved translation-unit binding for a row whose uncertainty is the callable's KIND"
+    },
+    {
+      "type": "calls",
+      "source": "peek",
+      "target": "loopCount",
+      "comment": "a field access with NO argument list is a read, not a call: `NSUInteger seen = self.loopCount;` publishes `uses` and nothing else"
+    },
+    {
+      "type": "calls",
+      "source": "start",
+      "target": "sink",
+      "comment": "a nested callee names the INNERMOST field (`onTap`), never the receiver (`sink`), which is a value and not a symbol"
+    },
+    {
+      "type": "uses",
+      "source": "others",
+      "target": "dispatch_async",
+      "comment": "a bare-identifier CALLEE is not also a read — the pre-existing rule, kept"
+    }
+  ]
+}

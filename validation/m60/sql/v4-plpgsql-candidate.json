@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-v4-plpgsql-candidate",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "OBSERVATION + DECISION. A real grammar candidate, built and measured at tree and product level, NOT shipped because it regresses a pinned contract case for zero product gain. The wired grammar is unchanged.",
+  "date": "2026-09-27",
+  "motivation": {
+    "gap": "function_body_statement was, in full, choice($.statement, $._function_return): a body was only parseable if every statement in it was ordinary SQL. Real PostgreSQL DDL is not shaped like that.",
+    "evidence": "validation/m60/sql/second-corpus-recall.json \u2014 89,332 ERROR nodes across 383 of 696 PostgreSQL extension files; 17.6% function / 8.0% table / 6.0% index recall; 73 of 417 files yield zero symbols.",
+    "keyMeasurementThatScopedTheWork": "The EXPRESSION grammar was never the problem. SELECT a || b, SELECT (a||b)::text, SELECT a::text || b, CREATE OR REPLACE FUNCTION s.f(...) RETURNS SETOF s.r and a qualified parameter type ALL parse cleanly at top level under the shipped grammar. The 32,047 '||' error nodes and 3,276 'REPLACE FUNCTION' error nodes are not missing operators and not missing qualified names \u2014 those statements are nested inside plpgsql bodies. So the candidate adds procedural STATEMENT SCAFFOLDING and reuses $._expression and $.statement unchanged, rather than reimplementing plpgsql expressions."
+  },
+  "candidate": {
+    "label": "V4",
+    "wasm": "bb_tests/sql/grammar/patched-sql-v4.wasm",
+    "bytes": 12110527,
+    "sha256prefix": "10d96f225e75",
+    "source": "bb_tests/sql/grammar/src \u2014 new grammar/statements/plpgsql.js (17 rules), 16 new keywords, grammar.js conflict entry, function_body routed through _plpgsql_body_item, do_statement given a structured body with the opaque token as fallback"
+  },
+  "grammarWork": {
+    "rulesAdded": [
+      "plpgsql_declarations (reuses the existing function_declaration)",
+      "plpgsql_assignment",
+      "_plpgsql_target",
+      "plpgsql_return",
+      "plpgsql_exit (EXIT / CONTINUE [WHEN cond])",
+      "plpgsql_raise (with 6 levels, format args, USING)",
+      "plpgsql_execute (query, INTO [STRICT], USING)",
+      "plpgsql_perform",
+      "plpgsql_assert",
+      "_plpgsql_using",
+      "plpgsql_if (IF / ELSIF / ELSE / END IF)",
+      "plpgsql_loop",
+      "plpgsql_while",
+      "plpgsql_for (range, REVERSE, EXECUTE, SELECT)",
+      "plpgsql_block (BEGIN / EXCEPTION WHEN / END)",
+      "_plpgsql_body_item",
+      "_plpgsql_statement"
+    ],
+    "conflictsResolvedByMeasurement": [
+      "plpgsql_exit: optional(';') terminator is ambiguous with the following item \u2014 every body item now consumes exactly one required ';'.",
+      "plpgsql_block vs the CALLER's optional(';') \u2014 the unresolved conflict `keyword_do \u2026 keyword_begin keyword_end \u2022 ';'`; the caller's optional was removed, leaving the block's.",
+      "plpgsql_block vs _plpgsql_body_item \u2014 declared in grammar.js conflicts as [$.plpgsql_block, $._plpgsql_body_item].",
+      "function_declaration vs a new plpgsql_declaration \u2014 the duplicate declaration rule was DELETED and the existing function_declaration reused; two rules of the same shape (identifier, type, optional := value, ';') are unresolvable.",
+      "function_body vs plpgsql_declarations \u2014 resolved by removing the DECLARE section from plpgsql_block, which is what caused the shipping regression below."
+    ],
+    "keywordsAdded": [
+      "elsif",
+      "loop",
+      "reverse",
+      "exception",
+      "perform",
+      "raise",
+      "exit",
+      "continue",
+      "assert",
+      "diagnostics",
+      "notice",
+      "warning",
+      "debug",
+      "info",
+      "log"
+    ]
+  },
+  "measurements": {
+    "L1_tree": {
+      "instrument": "raw parser over both corpora, files <= 400 KB",
+      "ProxiCall": {
+        "errorNodes": {
+          "V2": 5170,
+          "V4": 3305,
+          "delta": "-36.0%"
+        },
+        "errorFiles": {
+          "V2": 255,
+          "V4": 244
+        },
+        "namedNodes": {
+          "V2": 245847,
+          "V4": 268968,
+          "delta": "+9.4%"
+        }
+      },
+      "PG-extensions": {
+        "errorNodes": {
+          "V2": 93944,
+          "V4": 82087,
+          "delta": "-12.6%"
+        },
+        "errorFiles": {
+          "V2": 383,
+          "V4": 383,
+          "delta": "unchanged"
+        },
+        "namedNodes": {
+          "V2": 1281768,
+          "V4": 1389322,
+          "delta": "+8.4%"
+        }
+      }
+    },
+    "L1_constructBattery": {
+      "V2": "2 of 8 pass",
+      "V4": "6 of 8 pass \u2014 DO-wrapped DDL, IF/RAISE, WHILE/EXIT and both regression sentinels all pass; declare+assign, loop+exception and a bare CREATE TABLE inside a DO block still fail",
+      "regressions": "none in this battery"
+    },
+    "L2_product": {
+      "instrument": "ASTEngine.parseFile per file, ONE PROCESS PER GRAMMAR",
+      "whyOneProcess": "The engine caches parsers by language key AND resolves the wasm through an in-memory registry, so swapping the wasm file inside a running process silently measures the FIRST grammar twice. An earlier mid-process A/B produced a false 'byte-identical' result for exactly this reason and was discarded.",
+      "ProxiCall": {
+        "V2": "files=440 symbols=5891 relationships=8133 analyzerErrors=7406 errorFiles=257",
+        "V4": "files=440 symbols=5891 relationships=8133 analyzerErrors=7406 errorFiles=257"
+      },
+      "PG-extensions": {
+        "V2": "files=387 symbols=2172 relationships=3050 analyzerErrors=19574 errorFiles=383 zeroSymbolFiles=55",
+        "V4": "files=387 symbols=2172 relationships=3050 analyzerErrors=19574 errorFiles=383 zeroSymbolFiles=55"
+      },
+      "verdict": "IDENTICAL on both corpora. The 36% error reduction and the 9% structure gain do not reach the product."
+    }
+  },
+  "whyProductIsUnchanged": {
+    "measurement": "Where 11,962 CREATE declarations actually live, across all three corpora at files <= 400 KB: inside an EXECUTE '...' string literal 1,358 (11.4%); inside a dollar-quoted body otherwise 4,892 (40.9%); at top level 5,712 (47.8%). 81 files contain a CREATE inside an EXECUTE.",
+    "explanation": "Much of the wrapped DDL is passed to EXECUTE as a STRING LITERAL, not written as a statement. A tree-sitter grammar parses one language and cannot turn SQL embedded in a string into statement nodes without an external scanner that re-enters SQL mode. So those declarations are unreachable by grammar work at any depth, and the ones that are genuine statements inside bodies still sit in bodies that fail on constructs outside this scaffolding (triggers, cursors, FOREACH, CASE ... END CASE, GET DIAGNOSTICS) \u2014 errorFiles on the extension corpus is 383 under both grammars."
+  },
+  "decision": {
+    "verdict": "NOT SHIPPED. The wired grammar stays V2 (sha256 63d46ade20c611a685ffb85924f7c9b81419a4a3d635cd62481e261b6a60a289).",
+    "blockingReason": "V4 regresses a PINNED contract case: `block-declarations` in probe/contract-battery.mts goes from pass to 1 error node, taking the battery from 54/54 to 53/54. That regression is the direct cost of resolving the function_body/plpgsql_declarations conflict by deleting the DECLARE section from plpgsql_block.",
+    "reasoning": "Zero product gain on both corpora, measured with a corrected instrument, against a real regression in a gate that exists to catch exactly this. Shipping a 44 MB parse table that changes nothing the product emits, while failing a pinned case, is not defensible. This is the same standard that rejected V3, and the comparison is the useful part: V3 collapsed 49 files' structure by up to -95.8%, V4 ADDS ~9% structure and cuts error nodes 36% with no other regression. V4 is the better grammar; it simply is not a better PRODUCT yet."
+  },
+  "nextStepIfRevisited": {
+    "cheap": "Recover `block-declarations` by re-adding the DECLARE section to plpgsql_block and declaring the conflict explicitly \u2014 [$.function_body, $.plpgsql_declarations] in grammar.js conflicts \u2014 instead of deleting the section. The conflict is already known and named; only the resolution changes. One build cycle (~5 min to fail, ~15-25 min to succeed).",
+    "stillRequiredForProductGain": "An ANALYZER feature, not a grammar feature: read DDL out of plpgsql_execute's `query` literal and analyze it. V4 is the enabling change for exactly that, because `plpgsql_execute` carries field(\"query\", $._expression) \u2014 the first structured place the analyzer can find embedded DDL. Under V2 that literal is buried inside an ERROR span with no node to attach to. This is the only identified path to the 1,358 EXECUTE-wrapped declarations.",
+    "notWorthDoing": "Extending the scaffolding further (triggers, cursors, FOREACH, CASE ... END CASE) while product output is unchanged. The marginal file is real but the product does not consume it."
+  },
+  "evidence": [
+    "bb_tests/sql/grammar/src/grammar/statements/plpgsql.js",
+    "bb_tests/sql/grammar/patched-sql-v4.wasm",
+    "bb_tests/sql/probe/contract-battery.mts",
+    "validation/m60/sql/second-corpus-recall.json",
+    "bb_tests/sql/REVIEW.md"
+  ],
+  "executeLiteralOpportunityCorrection": {
+    "date": "2026-09-27",
+    "whatWasWrong": "This file, and validation/m60/sql/v4-plpgsql-candidate.json, both reported ~1,326-1,358 declarations 'inside EXECUTE literals' as the recoverable prize. That number counted every CREATE keyword appearing anywhere inside an EXECUTE string. It is an UPPER BOUND and it is wrong by about 17x as a target.",
+    "measuredCorrection": "1,248 of the 1,326 (94%) are CONCATENATED FRAGMENTS, not statements: `EXECUTE 'CREATE SEQUENCE ' || quote_ident(toponame) || ' MINVALUE 1'`. The literal is the three words `CREATE SEQUENCE ` and the declaration's NAME is a runtime value. Only 78 of the literals contain a standalone, complete statement.",
+    "implication": "The honest ceiling for any EXECUTE-side work was ~78 declarations, not 1,326. The shipped pass (runExecuteScan) delivers +156 symbols and +234 relationships on the extension corpus, which is ABOVE the corrected standalone ceiling because a fragment still yields a kind-bearing symbol even when the name is unrecoverable. The kind is knowable; the name never is, and that bounds every future extension of this path \u2014 no amount of string-literal work can recover a name that is computed at run time.",
+    "whatStillHolds": "The structural claim is unchanged and is the important one: a tree-sitter grammar parses one language and cannot produce `statement` nodes for SQL that is text inside a string literal, which is why the V4 plpgsql grammar left product output byte-identical."
+  }
+}

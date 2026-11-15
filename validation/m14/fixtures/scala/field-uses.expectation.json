@@ -1,0 +1,20 @@
+{
+  "fixtureId": "scala/field-uses",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G8 gap + the SCD1 write gate (M37 #598): field READS (h.value, both in inc's RHS and read's body) USE the receiver h; assignment LHS (h.value = ..., h.value += ...) is a WRITE and must NOT emit. The original pin predated the JAD1/KAD1 family contract and pinned the write-as-read defect ('reads AND writes') — re-authored to the corrected contract like groovy's array-access-uses and kotlin's indexing-uses. The += compound-assign form parses as infix_expression (unlike =, which is assignment_expression) and is gated only for compound-assign ops so binary + is untouched. Repeated reads in one function dedupe to one edge.",
+  "expectSymbols": [
+    { "name": "Holder", "kind": "class" },
+    { "name": "R", "kind": "module" },
+    { "name": "inc", "ownerName": "R" },
+    { "name": "bump", "ownerName": "R" },
+    { "name": "read", "ownerName": "R" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "inc", "target": "h", "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "from": "read", "target": "h", "meta.evidenceClass": "usage_contextual" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "bump", "target": "h" }
+  ]
+}

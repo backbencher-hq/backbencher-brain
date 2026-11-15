@@ -1,0 +1,14 @@
+{
+  "fixtureId": "groovy/annotation-type",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G7 gap: annotation type declarations (@interface Marker) emit a symbol with kind class (matching java's annotation_type_declaration handling and CC1 kind consistency). Previously annotation_type_declaration produced no symbol.",
+  "expectSymbols": [
+    { "name": "Marker", "kind": "class" },
+    { "name": "Use", "kind": "class" },
+    { "name": "run" }
+  ],
+  "expectDecorators": [
+    { "symbol": "Use", "contains": "Marker" }
+  ]
+}

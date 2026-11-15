@@ -1,0 +1,9 @@
+{
+  "fixtureId": "scala/top-level-calls",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Top-level (script-style) call expressions have no enclosing symbol. handleInstantiation already attributes those to a '(script)' sentinel; handleCall required a parent and silently dropped every top-level call edge. Both must behave the same.",
+  "expectRelationships": [
+    { "type": "calls", "from": "(script)", "targetEndsWith": "topLevelHelper" }
+  ]
+}

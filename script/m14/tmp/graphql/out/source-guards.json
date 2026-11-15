@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-10-05T09:48:31.177Z",
+  "file": "/home/ishaq2321/mcp/bb-lanes/graphql/src/ast/real-graphql-analyzer.ts",
+  "lines": 2029,
+  "zeroRegex": true,
+  "readableAst": true,
+  "findings": [],
+  "blockingCount": 0,
+  "permittedStringOps": [
+    "line 1266: linesOfCode: content.split(\"\\n\").length,",
+    "line 1787: const lines = inner.split(\"\\n\")",
+    "line 1801: return lines.join(\"\\n\").replaceAll('\\\\\"\"\"', '\"\"\"')"
+  ],
+  "byRule": {}
+}

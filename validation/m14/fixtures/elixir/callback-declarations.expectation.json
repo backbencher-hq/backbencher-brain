@@ -1,0 +1,168 @@
+{
+  "issue": "EX-A14",
+  "note": "The output-coverage census (`script/m14/tmp/elixir-declaration-census.ts` \u2014 per DECLARATION FORM, does a symbol or edge get published?) found the last real gap: `@callback` / `@macrocallback` emitted a file-level `Behaviours` pattern flag and NOTHING else. Measured 165 sites in a 100-file sample of elixir+phoenix+ash and 98 in a 171-file ecto_sql+ecto+wallaby sample, 0 covered. A module may declare a behaviour surface with no `def` at all (`Callback.Probe` below), so the callback existed NOWHERE in the index. Three sub-decisions, each pinned here: (1) a callback is a DECLARATION \u2014 `isDeclaration: true` at the top level (the field the indexer binds to brain_symbol.is_declaration, #612, and the one the C and Clean lanes set for their prototypes), because a `def \u2026, do: body` sibling makes the merged symbol a DEFINITION and the flag is then removed; (2) a bodiless `def` head is a declaration for the same reason, detected structurally (no `do_block` and no `do:` pair inside the def's `arguments` \u2014 the pair is NESTED there, not a sibling, which is what the first version of this check got wrong and how every `def f(x), do: y` briefly read as a head); (3) identity is shared with the function merge key, so `@callback load(t)` + `def load(x)` is ONE `load` symbol carrying the spec, not two symbols for one function. `@optional_callbacks` annotates instead of declaring: the names ride the protocol/module metadata and stamp the matching members. Extent follows EX-D16 (first..last of everything the symbol is: the spec is part of the surface, `clauseRanges` is not, because a callback is not a clause). The NEGATIVE half is pinned through forbidSymbols, because matchConstraints compares by value and an expectation cannot say \"this field is absent\" \u2014 a symbol that wrongly carried isDeclaration (or a head wrongly counted as a second clause) would match the forbid entry and fail the fixture. EX-A16 (the store seam, found by `script/m14/tmp/elixir-store-roundtrip.ts` \u2014 a real index through the REAL parallel indexer, read back in SQL): the declaration fact has to ride BOTH the top-level field and `metadata.isDeclaration`, because that is the single key the pool worker carries to the store phase (pool-worker.ts, the #612 seam comment) and the C analyzer publishes it that way. With only the top-level field the worker's symbol reconstruction dropped it and `brain_symbol.is_declaration` came out NULL for every elixir declaration \u2014 0 rows on a real index, invisible to every fixture, because fixtures never pass through the worker. The `meta.isDeclaration` pins below are the analyzer half; the SQL round-trip is the seam half.",
+  "expectSymbols": [
+    {
+      "name": "load",
+      "kind": "function",
+      "ownerName": "Callback.Probe",
+      "meta.isCallback": true,
+      "meta.hasCallbackSpec": true,
+      "meta.heads": 1,
+      "meta.callbackSpec": "load(term) :: {:ok, map} | {:error, term}"
+    },
+    {
+      "name": "build",
+      "kind": "function",
+      "ownerName": "Callback.Probe",
+      "meta.isCallback": true,
+      "meta.isMacroCallback": true,
+      "meta.hasCallbackSpec": true,
+      "isDeclaration": true,
+      "meta.heads": 0,
+      "meta.isDeclaration": true
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Callback.Sized",
+      "meta.isCallbackDeclaration": true,
+      "meta.isBodylessDeclaration": true,
+      "isDeclaration": true,
+      "meta.callbackSpec": "size(item) :: non_neg_integer()",
+      "meta.heads": 1,
+      "meta.isDeclaration": true
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Tuple",
+      "meta.heads": 1
+    },
+    {
+      "name": "twice",
+      "kind": "function",
+      "ownerName": "Callback.HeadThen",
+      "meta.heads": 2
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "load",
+      "kind": "function",
+      "ownerName": "Callback.Probe",
+      "equals": 1,
+      "note": "@callback + def are ONE function"
+    },
+    {
+      "name": "build",
+      "kind": "function",
+      "ownerName": "Callback.Probe",
+      "equals": 1,
+      "note": "a callback with no def is still exactly one symbol"
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Callback.Sized",
+      "equals": 1,
+      "note": "the protocol head and its @callback are one method"
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Tuple",
+      "equals": 1
+    },
+    {
+      "name": "twice",
+      "kind": "function",
+      "ownerName": "Callback.HeadThen",
+      "equals": 1
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "load",
+      "ownerName": "Callback.Probe",
+      "startLine": 8,
+      "endLine": 13,
+      "startIndex": 264,
+      "endIndex": 522
+    },
+    {
+      "symbol": "size",
+      "ownerName": "Callback.Sized",
+      "startLine": 18,
+      "endLine": 21,
+      "startIndex": 579,
+      "endIndex": 765
+    },
+    {
+      "symbol": "twice",
+      "ownerName": "Callback.HeadThen",
+      "startLine": 31,
+      "endLine": 32,
+      "startIndex": 978,
+      "endIndex": 1016
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "size",
+      "contains": "Measures."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Tuple",
+      "target": "Callback.Sized",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "Callback.Probe",
+      "target": "load",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "Callback.Probe",
+      "target": "build",
+      "line_number": 9
+    },
+    {
+      "type": "contains",
+      "from": "Callback.Sized",
+      "target": "size",
+      "line_number": 18
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "load",
+      "ownerName": "Callback.Probe",
+      "isDeclaration": true,
+      "note": "a clause with a body makes the merged symbol a DEFINITION"
+    },
+    {
+      "name": "twice",
+      "ownerName": "Callback.HeadThen",
+      "isDeclaration": true,
+      "note": "the second clause has a body"
+    },
+    {
+      "name": "size",
+      "ownerName": "Tuple",
+      "isDeclaration": true,
+      "note": "an implementation is not a declaration"
+    },
+    {
+      "name": "size",
+      "ownerName": "Callback.Sized",
+      "meta.heads": 2,
+      "note": "a bodiless head is not a CLAUSE: heads counts clauses"
+    }
+  ]
+}

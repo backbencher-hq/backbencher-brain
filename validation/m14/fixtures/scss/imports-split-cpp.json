@@ -1,0 +1,49 @@
+{
+  "instrument": "CAUSE 1 — the `imports` split (LOCAL vs EXTERNAL) with the ceiling in the gate's own columns",
+  "lane": "cpp",
+  "population": {
+    "admitted": 497,
+    "parsed": 497,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "nlohmann-json"
+    ]
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default",
+  "importsEdges": 1918,
+  "shapes": {
+    "colon": 1918
+  },
+  "theSplit": {
+    "LOCAL": 0,
+    "EXTERNAL": 1918
+  },
+  "asEmitted": {
+    "LOCAL": {},
+    "EXTERNAL": {
+      "unresolved": 1828,
+      "resolved": 12,
+      "ambBoth": 51,
+      "ambDeclOnly": 27
+    }
+  },
+  "ceiling_onTheLeaf": {
+    "LOCAL": {},
+    "EXTERNAL": {
+      "unresolved": 1828,
+      "resolved": 12,
+      "ambBoth": 51,
+      "ambDeclOnly": 27
+    }
+  },
+  "samples": {
+    "LOCAL": [],
+    "EXTERNAL": [
+      "cstdio",
+      "version",
+      "ciso646",
+      "iostream"
+    ]
+  }
+}

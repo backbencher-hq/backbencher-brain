@@ -1,0 +1,46 @@
+{
+ "fixtureId": "python/nameless-assignment-target-is-no-symbol",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "INCOMING_PY (ontology workstream), completion condition 'no empty names'. Two distinct shapes of the same accident, and they needed two fixes: an empty-NAMED SYMBOL and an empty relationship ENDPOINT. The file is ASN.1 notation under a `.py` extension — the `otp` corpus carries 29 such files, and `lib/asn1/examples/Int.py` is one — so tree-sitter's error tolerance hands the analyzer `small SmallInt ::= 17` as an assignment whose left-hand side is a zero-width EMPTY identifier, and ALSO as a `type` clause holding one. The first published `{ name: \"\", kind: \"variable\" }`; the second published a real relationship row with an empty TARGET, which `pushRel`'s `if (!source || !target) return` cannot catch because `extractDeclaredTypeRefs` builds its rows directly. Measured over the 679-file INCOMING_PY corpus: before, 2 empty-named symbols and 2 empty-target `references` rows, all in `otp/lib/asn1/examples/Int.py`; after, 0 and 0. The fix is ABSENCE (standing rule R7) rather than a placeholder string, because the tree carries no other name for these nodes. The expect rows are the half that matters more: a rule that dropped every symbol out of a damaged file would satisfy every forbid here, so `Placeholder`, `DECLARED`, `SmallInt` and `OrInt` are pinned as SURVIVORS with their real kinds. Reporting a damaged file faithfully and inventing a graph node in it are different acts, and only the second is a defect.",
+ "expectSymbolCount": [
+  {
+   "name": "Placeholder",
+   "equals": 1,
+   "note": "SURVIVOR. Real python before the damage; a blanket 'discard damaged files' rule would fail this row"
+  },
+  {
+   "name": "DECLARED",
+   "equals": 1,
+   "note": "SURVIVOR — a real module-level assignment, with its range intact"
+  },
+  {
+   "name": "SmallInt",
+   "equals": 1,
+   "note": "SURVIVOR. `SmallInt` IS written in the source, so publishing it is reporting the file rather than inventing it — the difference from the empty name next to it is exactly that"
+  },
+  {
+   "name": "OrInt",
+   "equals": 1,
+   "note": "SURVIVOR"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "",
+   "note": "R7 / the workstream's completion condition. The zero-width identifier the grammar recovered on `small SmallInt ::= 17` names nothing, so it is not a symbol. Publishing it would give every consumer a node it can count and never resolve."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "nameless_assignment_target_is_no_symbol",
+   "target": "",
+   "note": "the WORSE of the two shapes and the one a `!target` guard misses. The same damaged line is read as a `type` clause, and an empty-string target is a row that joins to nothing while looking like a relationship. There is no type name in the source, so there is no reference to publish."
+  }
+ ],
+ "_seamNote": {
+  "what": "two guards, both `length === 0` on a name read off the tree: one in `extractAssignment` before a Variable/Property is pushed, one in `extractDeclaredTypeRefs`'s `collectTypeNodes` before a reference target is collected.",
+  "why": "R7's rule is that when a fallback has nothing truthful to say the honest state is ABSENCE, not a placeholder string — and the runtime half of it, which this lane had already paid once for the unreachable `module || \"<unknown>\"` marker, is 'no emitted row carries a placeholder as a name'. An empty string is the limit case of a placeholder: it is the absence of a name, published as a name.",
+  "whyNotAnErrorRow": "The parse DOES have errors here — 62 ERROR nodes in the real `Int.py` — and they are already reported through `result.errors`. The defects were not that the file is damaged but that the damaged file produced graph nodes with no name in it, which is a separate question with a separate answer."
+ }
+}

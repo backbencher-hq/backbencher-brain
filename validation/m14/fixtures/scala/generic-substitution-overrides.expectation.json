@@ -1,0 +1,24 @@
+{
+  "fixtureId": "scala/generic-substitution-overrides",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.21 #610 scala ScalaD-E (oracle) + ScalaD-H (analyzer): trait methods declared under generic type variables (def to(t: T)) pair with substituted implementations (def to(t: AABB)) via name-only fallback — textual sig equality rejects genuine generic-substitution overrides (scala3 byname-implicits-13, spec-example1 @specialized). Concrete-vs-concrete same-name-different-sig pairs (Overloads.f) must still never pair.",
+  "expectSymbols": [
+    { "name": "Codec" },
+    { "name": "PayloadCodec" },
+    { "name": "StringCodec" },
+    { "name": "Overloads" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "PayloadCodec", "target": "Codec" },
+    { "type": "extends", "from": "StringCodec", "target": "Codec" },
+    { "type": "overrides", "from": "PayloadCodec.encode", "target": "Codec.encode" },
+    { "type": "overrides", "from": "PayloadCodec.decode", "target": "Codec.decode" },
+    { "type": "overrides", "from": "StringCodec.encode", "target": "Codec.encode" },
+    { "type": "overrides", "from": "StringCodec.decode", "target": "Codec.decode" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Overloads.f", "target": "Overloads.f" }
+  ],
+  "notes": "Generic-substitution fallback fires only when a sig carries a type-variable token; the concrete Overloads.f pair keeps the strict overload guard. Oracle mirror: hasTypeVar in deriveTreeEdges sigCompatible."
+}

@@ -3,7 +3,7 @@
   "kind": "lua_external_marking",
   "commit": "a28f280c930dd85ee98a2d6623e69c6b679ccfbe",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "method": "git ls-files '*.lua' per repo, sorted, first 5000 per repo (deterministic, not random)",
     "filesDrawn": 3252,
     "repos": {

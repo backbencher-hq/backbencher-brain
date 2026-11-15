@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "currentCommit": "806d23fb34709b899897d4657d9758a12d1b1a22",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-a3-flag-semantics.ts",
+  "evidenceFile": "A3.json",
+  "generatedAt": "2026-11-11T04:06:27.158Z",
+  "passed": 32,
+  "failed": 0,
+  "negativeCases": 2,
+  "negativesDescription": "no-test-hook-among-public, no-auto-refresh-0-not-disable, quarantine-needs-hooks, guide-omits-rejected-form"
+}

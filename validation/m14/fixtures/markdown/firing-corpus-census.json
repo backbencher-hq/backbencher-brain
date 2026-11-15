@@ -1,0 +1,128 @@
+{
+  "instrument": "markdown firing-corpus census + instrument A re-run (validation/m14/fixtures/markdown/firing-corpus-census.ts)",
+  "whatThisIs": "production `parseFile` over the WHOLE redwood markdown population (firing-check's own corpus and admission), plus the pinned grammars' node-type union re-tested against each A-row vocabulary with a planted positive control",
+  "whatThisIsNot": "script/m14/firing-check.mjs's output — that instrument strides 120 files, this one measures every admitted file, and the two are reported together, never merged",
+  "command": "bun validation/m14/fixtures/markdown/firing-corpus-census.ts --shards 6",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpusDirs": [
+    "redwood"
+  ],
+  "admission": ".md, < 400000 bytes, no .git/node_modules",
+  "analyzerSha256": "5817913f9ab76ff2268ee35ac7e81cbd9f189f3d2f4b3030c12e7d9f855be273",
+  "population": 2105,
+  "shards": 6,
+  "lostShards": [],
+  "parsed": 2105,
+  "degraded": {
+    "count": 0,
+    "files": []
+  },
+  "types": {
+    "contains": 58921,
+    "uses": 23081,
+    "references": 1497
+  },
+  "importSites": [],
+  "errors": [],
+  "instrumentA": {
+    "unionDistinct": 108,
+    "parsedFiles": 17456,
+    "shards": 24,
+    "populationHashes": [
+      "1d079c4fff2092ce0e11b8090c69d8e86d6e4fba4569b6886653170f6c020781"
+    ],
+    "rows": [
+      {
+        "type": "extends",
+        "vocabularySize": 10,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 11,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "implements",
+        "vocabularySize": 8,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 9,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "instantiates",
+        "vocabularySize": 8,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 9,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "exports",
+        "vocabularySize": 8,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 9,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "overrides",
+        "vocabularySize": 6,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 7,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      },
+      {
+        "type": "calls",
+        "vocabularySize": 9,
+        "presentInUnion": [],
+        "control": {
+          "planted": "document",
+          "vocabularySize": 10,
+          "presentAfterPlanting": [
+            "document"
+          ],
+          "fires": true
+        }
+      }
+    ],
+    "controlsFired": 6
+  },
+  "wasmPins": {
+    "block": {
+      "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+      "pinnedSha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+      "matches": true
+    },
+    "inline": {
+      "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+      "pinnedSha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+      "matches": true
+    }
+  }
+}

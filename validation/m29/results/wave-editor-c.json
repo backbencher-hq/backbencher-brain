@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -31,7 +31,7 @@
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 1,\n      line = 13\n    },\n    start = {\n      character = 0,\n      line = 11\n    }\n  },\n  uri = \"file://$HOME",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 1,\n      line = 13\n    },\n    start = {\n      character = 0,\n      line = 11\n    }\n  },\n  uri = \"file:///home/is",
       "name": "S6: definition resolves",
       "ok": true
     },
@@ -65,7 +65,7 @@
           "line": 11
         }
       },
-      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
+      "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
     },
     "documentSymbol": [
       {
@@ -228,7 +228,7 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\ntype: void _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**greeter_greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual, reference_qualified\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_; uses [prefix](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A4%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_; references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.c:20](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D))_"
+        "value": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\ntype: void _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**greeter_greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual, reference_qualified\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_; uses [prefix](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A4%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_; references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.c:20](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D))_"
       },
       "data": {
         "provenance": {
@@ -255,7 +255,7 @@
             "usage_contextual",
             "reference_qualified"
           ],
-          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c",
           "freshnessStatus": "fresh",
           "indexedFileCount": 2,
           "lineEnd": 14,
@@ -334,7 +334,7 @@
             "line": 19
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
       },
       {
         "range": {
@@ -347,7 +347,7 @@
             "line": 11
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
       }
     ],
     "workspaceAbsence": []

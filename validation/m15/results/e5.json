@@ -1,0 +1,12 @@
+{
+  "issue": "M15.E5",
+  "code": "E5",
+  "tool": "bb_edit",
+  "title": "time complexity",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:21:18.248Z"
+}

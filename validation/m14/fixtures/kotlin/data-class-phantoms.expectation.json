@@ -1,0 +1,121 @@
+{
+  "fixtureId": "kotlin/data-class-phantoms",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Data classes generate componentN(n) per property plus copy()/equals()/hashCode()/toString(). The phantom-injection routine exists in the analyzer but is never invoked AND reads modifiers from the wrong place (top-level instead of metadata). Wired and fixed, it must emit component1/component2 Method symbols scoped to the class (isPhantom), matching how Java's lombok phantoms work. M59 (#825) adds the two contract halves this fixture was missing: (a) EVERY synthesized member is contained by its class — the injector set ownerName for componentN but not for copy/equals/hashCode/toString, so on a real corpus file (JsonTestsData.kt) 7 componentN edges existed and 0 for the other four; (b) a synthesized name has NO navigable line, because its symbol range is the ENCLOSING CLASS's (3 here — `component1` is written nowhere in the 3-line file). The line is omitted, never guessed: unknown is a state, not a placeholder (#820/#821/#823). K1 (M60 kotlin deep review, 2026-09-27): these rows already pinned the LINE as null — the fixture knew the name was written nowhere — but not the CONFIDENCE, which stayed 1.0 on every one of them. So the certainty violation was unprotected: an edge naming a synthesised method at maximum confidence, indistinguishable from a declared member's edge except by knowing the isPhantom convention. The same defect java closed as JD-J13, in a branch that already computed isSynthetic and used it correctly for the line. Now pinned on `meta.inferred`, so the marker and the demotion cannot be removed independently. The declared member's edge is asserted WITHOUT the marker so the fix cannot be made by marking everything.",
+  "expectSymbols": [
+    {
+      "name": "Money",
+      "kind": "class"
+    },
+    {
+      "name": "component1",
+      "kind": "method"
+    },
+    {
+      "name": "component2",
+      "kind": "method"
+    },
+    {
+      "name": "copy",
+      "kind": "method"
+    },
+    {
+      "name": "amount",
+      "kind": "property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "component1",
+      "line_number": null,
+      "note": "synthesised: written nowhere, so it names no line",
+      "meta.inferred": true
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "component2",
+      "line_number": null,
+      "note": "synthesised: same",
+      "meta.inferred": true
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "copy",
+      "line_number": null,
+      "note": "synthesised AND previously uncontained (missing ownerName)",
+      "meta.inferred": true
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "equals",
+      "line_number": null,
+      "note": "synthesised AND previously uncontained",
+      "meta.inferred": true
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "hashCode",
+      "line_number": null,
+      "note": "synthesised AND previously uncontained",
+      "meta.inferred": true
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "toString",
+      "line_number": null,
+      "note": "synthesised AND previously uncontained",
+      "meta.inferred": true
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "amount",
+      "line_number": 3,
+      "note": "a DECLARED property still carries its real line"
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "amount",
+      "line_number": 3,
+      "note": "the DECLARED member: it names the line where it is actually written (line 3, not 1 — line 1 is the package header), and it is NOT marked inferred. Asserted so the six synthesised rows above cannot be made to pass by marking every containment row."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "component1",
+      "line_number": 3,
+      "note": "pre-fix (#825): the class's line for a name written nowhere — a tool navigating to Money.component1 opened the class declaration"
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "copy",
+      "line_number": 3,
+      "note": "pre-fix (#825): the same enclosing-declaration range for the other synthesized members"
+    },
+    {
+      "type": "contains",
+      "from": "Money",
+      "target": "toString",
+      "line_number": 3,
+      "note": "pre-fix (#825): same"
+    },
+    {
+      "type": "contains",
+      "target": "amount",
+      "meta.inferred": true,
+      "note": "a DECLARED member must not be marked inferred — the fix distinguishes them, it does not mark everything"
+    }
+  ]
+}

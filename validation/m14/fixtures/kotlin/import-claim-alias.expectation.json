@@ -1,0 +1,13 @@
+{
+  "fixtureId": "kotlin/import-claim-alias",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "IMPORTED-BINDING CLAIM (task-40) \u2014 flag-gated `BB_KOTLIN_IMPORT_CLAIM=1`, DEFAULT OFF (off arm byte-identical: no claim metadata is added). cut-1 claim fixture: aliased external import binds the ALIAS (`makeList`); the bare call is the imported binding. The on-state assertions live in the lane-owned probe `script/m14/kotlin-import-claim-probe.ts` (the shared fixture runner cannot set the flag); this expectation pins the DEFAULT-OFF edge surface.",
+  "expectSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "kotlin.collections.mutableListOf"
+    }
+  ]
+}

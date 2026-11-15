@@ -1,0 +1,143 @@
+{
+  "comment": "HTML-G1 / #288 \u2014 the inline <script>/<style> seam. Before it, NOTHING descended into an inline block's `raw_text` body: 5,389 of 6,094 corpus files (88.4%) carried one, and on the 51-document hand-written sample they were 74,637 characters of JS and 17,266 of CSS producing zero symbols, calls and imports. The LINES are the load-bearing half of this file \u2014 a delegate's ranges and `line_number` are BLOCK-relative, so the merge shifts every one back to file coordinates and records the applied offset on each row (`htmlEmbedded` / `embeddedLang` / `embeddedLineOffset`), the `sfcDelegated`/`sfcLineOffset` discipline the svelte seam established. A regression that drops the shift fails these pins rather than silently shipping off-by-N lines. The delegate is handed the DOCUMENT's module name, so a document-scope edge sources from a node that exists rather than from a synthetic `embedded` that joins to nothing.",
+  "expectSymbols": [
+    {
+      "name": "inline-embedded-code",
+      "kind": "module"
+    },
+    {
+      "name": "page-style",
+      "kind": "class",
+      "meta.tagName": "style"
+    },
+    {
+      "name": "site-header",
+      "kind": "class"
+    },
+    {
+      "name": "renderBanner",
+      "kind": "function",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "name": "SHIPPED",
+      "kind": "constant",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "name": ".header",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "css"
+    },
+    {
+      "name": "#site-header",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "css"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "ORIGIN DISCLOSURE, measured 2026-10-05. These four `contains` rows are created by the SEAM itself (they join a delegate symbol to its owner), not by the delegate \u2014 and they were the one merged row class that carried `isEmbeddedCode` + `embeddedLang` but NO `htmlEmbedded` and NO `embeddedLineOffset`. Measured through the production path on vuejs: of 921 delegate rows, 676 carried htmlEmbedded === true and 245 did not, and the 245 is this class. An auditor using htmlEmbedded as the origin test therefore misattributes a quarter of the merged graph to html's own code. The pins below are what makes that regression catchable.",
+      "type": "contains",
+      "from": "inline-embedded-code",
+      "target": "renderBanner",
+      "line_number": 34,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 30
+    },
+    {
+      "type": "contains",
+      "from": "inline-embedded-code",
+      "target": "SHIPPED",
+      "line_number": 40,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true
+    },
+    {
+      "type": "contains",
+      "from": "inline-embedded-code",
+      "target": ".header",
+      "line_number": 25,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "css"
+    },
+    {
+      "type": "contains",
+      "from": "inline-embedded-code",
+      "target": "#site-header",
+      "line_number": 26,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "css"
+    },
+    {
+      "comment": "The import is written on line 32; block-relative it is line 2, so the shift is what makes this pin true.",
+      "type": "imports",
+      "from": "inline-embedded-code",
+      "target": "/lib/helper.js:helper",
+      "line_number": 32,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 30
+    },
+    {
+      "type": "calls",
+      "from": "inline-embedded-code",
+      "target": "renderBanner",
+      "line_number": 40,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "type": "calls",
+      "from": "renderBanner",
+      "target": "getElementById",
+      "line_number": 35,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "type": "calls",
+      "from": "renderBanner",
+      "target": "helper",
+      "line_number": 37,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "type": "uses",
+      "from": "renderBanner",
+      "target": "renderBanner\u0000text",
+      "line_number": 36,
+      "meta.embeddedLang": "js",
+      "meta.localBinding": true,
+      "comment": "re-pinned 2026-10-19 (task-9): the embedded-JS seam inherits the JS lane's LOCAL-BINDING spelling (BINDING_SEP \\u0000, \u00a718.6/\u00a718.17 final arm of record) \u2014 a parameter read is a binding, not a bare name; the pre-binding expectation `text` is superseded."
+    },
+    {
+      "comment": "The SECOND block, with its own offset (41) \u2014 a per-block shift, not one document-wide constant.",
+      "type": "uses",
+      "from": "inline-embedded-code",
+      "target": "SHIPPED",
+      "line_number": 44,
+      "meta.embeddedLineOffset": 41
+    },
+    {
+      "comment": "CROSS-LANE: the inline <style> block IS handed to the CSS analyzer and its selectors arrive as symbols with correct file-coordinate lines (the two `contains` rows above pin that). This fixture deliberately does NOT assert the CSS delegate's internal relationship set \u2014 the rewritten CSS analyzer publishes selector symbols but no declaration-level `uses selector -> property` edges. That is the CSS lane's contract and it is under active parallel development; pinning its edge set here made an HTML fixture fail on someone else's redesign. The HTML seam's obligation is extraction, naming, line-shifting, and merging, and all four are pinned here."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "The synthetic module name the first cut of the merge passed as the delegate's file path. Every document-scope edge in the block sourced from a node that does not exist \u2014 the unresolvable-identity class.",
+      "from": "embedded"
+    },
+    {
+      "comment": "A whitespace-only or absent block is handed to no sub-parser, so it manufactures no symbols. The `console.log` STRING is a literal, never a target.",
+      "target": "booted"
+    },
+    {
+      "comment": "The block's own text is not a target: the seam reads AST nodes, never source text.",
+      "target": "renderBanner(\"hello\")"
+    }
+  ]
+}

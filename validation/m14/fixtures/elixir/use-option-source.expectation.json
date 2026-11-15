@@ -1,0 +1,12 @@
+{
+  "issue": "M49 CC1",
+  "note": "CC1-d pin: a call inside a `use` option is compile-time directive context — the edge is sourced at the MODULE that executes the directive (Cc1.UseOpts), not attributed to the callee's owner or a function scope. Frozen so consumers can rely on the source. Falsifier: mutant elixir/use-option-call-dropped.",
+  "expectSymbols": [
+    { "name": "Cc1.UseOpts", "kind": "module" },
+    { "name": "helper_fn", "kind": "function", "ownerName": "Cc1.UseOpts" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Cc1.UseOpts", "target": "helper_fn", "line_number": 4 },
+    { "type": "references", "from": "Cc1.UseOpts", "target": "Cc1.Injectable", "line_number": 4 }
+  ]
+}

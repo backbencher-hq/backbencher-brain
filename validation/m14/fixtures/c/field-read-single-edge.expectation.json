@@ -1,0 +1,138 @@
+{
+  "fixtureId": "c/field-read-single-edge",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "One field NAME OCCURRENCE must publish ONE `uses` edge. The pre-fix analyzer published two for every field read -- the field_expression's `field_access`@0.9 and the same node's own field_identifier leaf re-read as `identifier_usage`@1.0 -- because the two branches keyed the shared dedup set differently (`::uses::` vs `::use::`). Measured before authoring: 2,369 provable cross-branch duplicates over 80 redis files (35200 edges, 6.7%), 274 over the C fixtures plus a 25-file curl/lib slice, and one single class (duplicate-classes.ts: `field_access/-@0.9 + identifier_usage/field_identifier@1`). The surviving edge is stated here rather than left to walk order: `field_access`, because it carries the receiver in `accessedFrom`. The forbid rows are the duplicate itself -- a forbid keyed on (type, from, target, meta.relationshipType) addresses exactly one of the two edges, because they differ only in that field. The controls pin the shapes that must keep their current behaviour: a member call is a `calls` edge with a silent field leaf (CGD31), and a plain read of a global keeps its `identifier_usage` edge. The THIRD control changed in #960: this fixture asserted that an assignment LHS 'is a write and emits nothing', and that assertion was withdrawn -- see the RULING below and the note on the fixture's write-target rows. The count moves 5 -> 7 because the two write-target shapes in this fixture now publish one `uses` each, exactly as a read does; the DUPLICATE-free property this fixture exists to protect is unchanged, which is why the forbid rows on the duplicate are untouched and only the total moved.",
+  "expectSymbols": [
+    {
+      "name": "point",
+      "kind": "struct"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "point"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "point"
+    },
+    {
+      "name": "hook",
+      "kind": "property",
+      "ownerName": "point"
+    },
+    {
+      "name": "global_value",
+      "kind": "variable"
+    },
+    {
+      "name": "read_field",
+      "kind": "function"
+    },
+    {
+      "name": "read_dot",
+      "kind": "function"
+    },
+    {
+      "name": "write_field",
+      "kind": "function"
+    },
+    {
+      "name": "hook_impl",
+      "kind": "function"
+    },
+    {
+      "name": "call_hook",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "read_field",
+      "target": "value",
+      "meta.relationshipType": "field_access",
+      "note": "the surviving edge: the field_expression's own reading, which carries accessedFrom"
+    },
+    {
+      "type": "uses",
+      "from": "read_field",
+      "target": "count",
+      "meta.relationshipType": "field_access"
+    },
+    {
+      "type": "uses",
+      "from": "read_field",
+      "target": "global_value",
+      "meta.relationshipType": "identifier_usage",
+      "note": "CONTROL: a plain read of a global keeps the identifier_usage edge -- the forbid below is scoped to field names, not to the class"
+    },
+    {
+      "type": "uses",
+      "from": "read_dot",
+      "target": "value",
+      "meta.relationshipType": "field_access",
+      "note": "the `.` spelling of the same read"
+    },
+    {
+      "type": "uses",
+      "from": "hook_impl",
+      "target": "value",
+      "meta.relationshipType": "field_access"
+    },
+    {
+      "type": "calls",
+      "from": "call_hook",
+      "target": "hook",
+      "note": "CONTROL: a member call is a calls edge"
+    },
+    {
+      "type": "uses",
+      "from": "write_field",
+      "target": "count",
+      "note": "#960: A WRITE IS A `uses`. Withdrawn in #960. SCD1/CGD1 held that an assignment LHS is 'a WRITE, never a read'; the analyzer was already inconsistent with itself (`p->f++` published, the identical `p->f += 1` did not, because the grammar folds compound-assign into `assignment_expression` and `++` is an `update_expression`), and the pinned M12 truth requires the edge. This row was a `forbidRelationships` control holding the door open while the question was open; the question is now settled and the row moves to `expectRelationships`. (field: count)"
+    },
+    {
+      "type": "uses",
+      "from": "write_field",
+      "target": "value",
+      "note": "#960: A WRITE IS A `uses`. Withdrawn in #960. SCD1/CGD1 held that an assignment LHS is 'a WRITE, never a read'; the analyzer was already inconsistent with itself (`p->f++` published, the identical `p->f += 1` did not, because the grammar folds compound-assign into `assignment_expression` and `++` is an `update_expression`), and the pinned M12 truth requires the edge. This row was a `forbidRelationships` control holding the door open while the question was open; the question is now settled and the row moves to `expectRelationships`. (field: value)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "read_field",
+      "target": "value",
+      "meta.relationshipType": "identifier_usage",
+      "note": "THE DEFECT: the field_identifier leaf re-read of the occurrence its parent already reported"
+    },
+    {
+      "type": "uses",
+      "from": "read_field",
+      "target": "count",
+      "meta.relationshipType": "identifier_usage",
+      "note": "THE DEFECT, second occurrence"
+    },
+    {
+      "type": "uses",
+      "from": "read_dot",
+      "target": "value",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "from": "call_hook",
+      "target": "hook",
+      "note": "CONTROL (CGD31): the callee-position field leaf stays silent; the calls edge above is the fact"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "equals": 7
+    }
+  ]
+}

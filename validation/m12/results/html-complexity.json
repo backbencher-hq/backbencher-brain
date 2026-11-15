@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:html",
+  "fixtureDir": "validation/m12/fixtures/html",
+  "corpusDir": "/tmp/html-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:html",
+        "wallTimeMs": 173.972824,
+        "userCpuMs": 163.208,
+        "systemCpuMs": 93.608,
+        "peakRssBytes": 200060928,
+        "rssDeltaBytes": 163336192,
+        "databaseBytes": null,
+        "files": 2,
+        "symbols": 11,
+        "relationships": 23,
+        "filesPerSecond": 11.496048371324937,
+        "symbolsPerSecond": 63.22826604228716,
+        "relationshipsPerSecond": 132.2045562702368
+      },
+      "symbols": 11,
+      "relationships": 23
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:html",
+        "wallTimeMs": 344.934957,
+        "userCpuMs": 795.479,
+        "systemCpuMs": 92.257,
+        "peakRssBytes": 245964800,
+        "rssDeltaBytes": 45248512,
+        "databaseBytes": null,
+        "files": 230,
+        "symbols": 251,
+        "relationships": 41,
+        "filesPerSecond": 666.7923773234733,
+        "symbolsPerSecond": 727.673420470399,
+        "relationshipsPerSecond": 118.86298900114087
+      },
+      "symbols": 251,
+      "relationships": 41
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.906Z",
+    "contentSha256": "dd75f4606c534792b0ee93b6c073d0208d4efef84ee456f305bcf9952b0233de"
+  }
+}

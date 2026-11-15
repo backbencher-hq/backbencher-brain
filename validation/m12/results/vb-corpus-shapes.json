@@ -1,7 +1,7 @@
 {
   "analyzer": "vb",
   "repo": "p3d",
-  "corpus": "$HOME/fixtures/vb-corpus/p3d",
+  "corpus": "/home/ishaq2321/bb_tests/vb-corpus/p3d",
   "revision": "9cf333e6f19018ccf3ab571e67db916134b7ab1e",
   "perFile": {
     "P3D/Battle/BattleAnimations/BABackground.vb": {

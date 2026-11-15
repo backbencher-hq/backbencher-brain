@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/recovery-regions-sol6.sol",
+  "authoredFrom": "SOL-6 — nothing is emitted from a recovery region, and a recovery region is a RANGE OF SOURCE LINES, not an ERROR node's subtree. Authored 2026-09-30 from the analyzer's measured output, and this fixture exists because writing it FOUND the rule too narrow.",
+  "note": "The pinned corpus is 0% damaged over all 389 production files, so a corpus run cannot exercise this rule at all. That is exactly why the rule needs a fixture that forces an ERROR on purpose: the first version of SOL-6 skipped an ERROR node's DESCENDANTS, and on this file the parser emits `ERROR` covering only `is not ) valid solidity ( at` with a MISSING `;` — so the tokens `this` and `all` are SIBLINGS of the ERROR node, outside its subtree, and the subtree rule published a symbol named `all` and a type reference `this`. What the parser cannot recover is the LINE, so the rule is now a pre-pass over ERROR/MISSING line spans consulted by both emit helpers.",
+  "expectSymbols": [
+    { "name": "recovery-regions-sol6.sol", "kind": "module" },
+    { "name": "Recover", "kind": "class", "ownerName": "recovery-regions-sol6.sol" },
+    { "name": "kept", "kind": "property", "ownerName": "Recover" },
+    { "name": "good", "kind": "method", "ownerName": "Recover" },
+    { "name": "alsoGood", "kind": "method", "ownerName": "Recover" }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "all",
+      "comment": "THE ROW THIS FIXTURE EXISTS FOR. `all` is the last token of the unparseable line. It is a SIBLING of the ERROR node, not a descendant, so a subtree-skipping rule let it through and published a symbol for a token the parser invented. A graph is not the place to store a guess."
+    }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "recovery-regions-sol6.sol", "target": "Recover", "line_number": 4, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Recover", "target": "kept", "line_number": 5, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Recover", "target": "good", "line_number": 6, "comment": "A clean declaration on line 6 SURVIVES even though line 7 is a recovery line. The rule is per-LINE, not per-FILE: refusing the whole file because one line is broken would throw away real facts, which is the opposite error.", "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Recover", "target": "alsoGood", "line_number": 8, "comment": "Line 8 is AFTER the recovery line and is emitted normally.", "meta.evidenceClass": "structural" },
+    { "type": "exports", "from": "recovery-regions-sol6.sol", "target": "Recover", "line_number": 4, "meta.isCompilationUnitSurface": true, "meta.evidenceClass": "structural" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Recover", "target": "all", "line_number": 7, "comment": "The same fact as forbidSymbols, pinned as an EDGE: the parser's guess must not become a containment edge either. Symbols and relationships are refused by two different helpers, so both need their own row — a rule that suppressed one and not the other would pass half this fixture." },
+    { "type": "uses", "from": "Recover", "target": "this", "line_number": 7, "comment": "MEASURED on the pre-fix analyzer: `uses -> this` with `isTypeReference: true` on the recovery line, from a recovery fragment that parsed as a type mention. Two independent defects met on one line — the recovery rule was too narrow, AND the user_defined_type branch did not exclude the EVM globals the way the read branch does. Both are fixed and both are pinned." },
+    { "type": "contains", "from": "recovery-regions-sol6.sol", "target": "this", "line_number": 7, "comment": "Same recovery line, seen as a declaration." }
+  ]
+}

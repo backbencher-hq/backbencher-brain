@@ -1,0 +1,55 @@
+{
+  "issue": "M56.X1",
+  "code": "X1",
+  "milestone": "M56",
+  "status": "verified",
+  "checks": 50,
+  "passed": 50,
+  "failed": 0,
+  "negativeCases": 17,
+  "failures": [],
+  "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+  "batchCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+  "foldIn": {
+    "milestone": "M41",
+    "siteGatesAtBatchCommit": [
+      "T2",
+      "T3",
+      "S1",
+      "D1"
+    ],
+    "deployGated": {
+      "code": "S2",
+      "commit": "fedeb9424d69ecc6050a93eced105fb6f9c5d0ec",
+      "reason": "probes the live deployment; re-pinned by the owner after the Vercel deploy"
+    }
+  },
+  "liveReruns": {
+    "truthPipeline": 0,
+    "m56Governance": 0,
+    "m41Governance": 0
+  },
+  "wiring": {
+    "ciSiteJob": true,
+    "verifyChain": true,
+    "verifyFast": true
+  },
+  "verifierCommand": "npx tsx script/m56/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-11-08T01:16:30.796Z",
+  "ownerStepsPending": [
+    "Push the branch to origin/main (the agent never pushes).",
+    "Confirm CI is green on the pushed commit (gh run list --workflow ci.yml).",
+    "Confirm Vercel wait-for-checks is enabled and the deploy succeeded.",
+    "Re-run npx tsx script/m41/verify-seo-onboarding.ts against the deployment: it moves S2 onto the batch commit and closes the lag it records.",
+    "Submit the updated sitemap in Google Search Console / Bing Webmaster Tools and re-fetch in Brave.",
+    "Close the M41 (#640-#647) and M56 (#779-#787) issues and milestones with the evidence comments.",
+    "Owner visual approval of /editors, /support, the homepage tools section and the language cells (M56.D2's closure condition)."
+  ],
+  "limitations": [
+    "X1 proves the batch was produced at one commit and that the wiring, deploy contract and honesty records hold. It does not re-run the eight site gates itself; their evidence is what the batch is made of, and running them again would move the batch past the commit it pins.",
+    "M41.S2 is deploy-gated by construction: it probes the live deployment, so it is accepted PASS-with-negatives at an ancestor commit and re-pinned by the owner after the deploy.",
+    "CI green, the Vercel deploy and the GitHub closures are owner-side actions recorded above; this gate cannot observe them from the repository.",
+    "D2's acceptance is owner visual approval; the ledger records that caveat and this gate fails if it is ever silently upgraded."
+  ]
+}

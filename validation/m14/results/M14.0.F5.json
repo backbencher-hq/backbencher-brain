@@ -240,7 +240,7 @@
       "status": "pass"
     },
     {
-      "description": "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab: tree-truth vs analyzer diff @06fddf5228",
+      "description": "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab: tree-truth vs analyzer diff @06fddf5228",
       "detail": "60 files, coverage 94%, unexplained 3.5%",
       "id": "differential-matlab",
       "status": "pass"
@@ -252,7 +252,7 @@
       "status": "pass"
     },
     {
-      "description": "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web: tree-truth vs analyzer diff @9dbcc751d1",
+      "description": "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web: tree-truth vs analyzer diff @9dbcc751d1",
       "detail": "44 files, coverage 100%, unexplained 18.5%",
       "id": "differential-vba",
       "status": "pass"
@@ -622,8 +622,8 @@
       "head": "53432b48a82e1829994862d85b5d630c8d4ebc68"
     },
     "corpusPins": {
-      "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web": "9dbcc751d177099f20c96c5ee332ec10ef47423c",
-      "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab": "06fddf5228cbfa1132fa63b8e336b43c5ed04899",
+      "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web": "9dbcc751d177099f20c96c5ee332ec10ef47423c",
+      "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab": "06fddf5228cbfa1132fa63b8e336b43c5ed04899",
       "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
       "DISMTools": "dc802e665c964bbc86dc800775e7d0826cd82d58",
       "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e",

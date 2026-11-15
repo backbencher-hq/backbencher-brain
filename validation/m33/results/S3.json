@@ -1,0 +1,37 @@
+{
+  "issue": "M33.S3",
+  "code": "S3",
+  "milestone": "M33",
+  "status": "verified",
+  "checks": 41,
+  "passed": 41,
+  "failed": 0,
+  "negativeCases": 4,
+  "mutants": [
+    {
+      "name": "EXIT STATUS section removed",
+      "caught": true
+    },
+    {
+      "name": "broken roff (unknown macro)",
+      "caught": true
+    },
+    {
+      "name": "version command undocumented",
+      "caught": true
+    },
+    {
+      "name": "npm man wiring removed",
+      "caught": true
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m33/verify-man-page.ts",
+  "evidenceFile": "S3.json",
+  "generatedAt": "2026-11-15T04:14:07.930Z",
+  "limitations": [
+    "Rendering is checked with groff -man -Tascii -ww and man -l (both present in this environment); a CI host without groff would surface the B checks as failures, not silent passes.",
+    "The command list pinned here is duplicated from src/cli/index.ts by hand; S4's parity gate derives the list from the built binary, so drift between page, help, and code fails at least one gate.",
+    "npm-installed man availability depends on the user's MANPATH; the gate proves the page ships in the tarball and is wired via the man field."
+  ]
+}

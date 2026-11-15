@@ -234,7 +234,7 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
  * `metadata.reasonCode`, which the cause channel does not read and which a bare leaf target cannot
  * reach anyway (bucket 3 requires the claim's base to BE the target's owner).
  *
- * WHY NOT THE FILE'S OWN `isGoStandardLibrary` (`:4407`): its last clause is
+ * WHY NOT THE FILE'S OWN `isGoStandardLibrary` (`:5194`): its last clause is
  * `|| !stringIncludes(importPath, ".")` — a SWEEP that answers "the path carries no dot", which is
  * true of a project-local `internal/util` too. Publishing THAT flag as an external claim would
  * have fabricated externality for project-local imports; a closed list claims exactly its members.
@@ -1147,6 +1147,77 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       let p: Node | null = start.type === "field_declaration" ? start : start.parent
       let sawTypeSpec = false
       while (p) {
+        // A NAMED package-scope var/const that owns this node through a
+        // FUNCTION LITERAL. The `var_spec`/`const_spec` branch below stops the
+        // walk only at the var_spec ITSELF; a declaration inside a func literal
+        // in a package var's INITIALIZER walks straight past the literal, past
+        // the var_spec (which is not a `type_spec` and not a function), and lands
+        // on `global`:
+        //
+        //   var Registry = map[string]func() *Thing{
+        //       "a": func() *Thing {
+        //           var local Thing      ->  global->Thing   (defect)
+        //       },
+        //   }
+        //
+        // The named declaration that owns that func literal is `Registry`, and it
+        // is exactly what `resolveGoWorkSource` answers for the same node — the
+        // `uses`/`calls` passes already attribute to it. Same class as GOD11 and
+        // the package-scope `instantiates` site: one pass resolved the named
+        // ancestor and another fell through to the pseudo-source.
+        if (p.type === "func_literal") {
+          let q: Node | null = p.parent
+          while (q) {
+            if (q.type === "var_spec" || q.type === "const_spec") {
+              for (let i = 0; i < q.namedChildCount; i++) {
+                const c = q.namedChild(i)
+                if (c && c.type === "identifier" && String(c.text ?? "") !== "_") return String(c.text ?? "")
+              }
+              break
+            }
+            if (q.type === "var_declaration" || q.type === "const_declaration" || q.type === "source_file") break
+            q = q.parent
+          }
+        }
+        // GO40 — A PACKAGE-SCOPE var/const REACHED WITHOUT A func_literal.
+        //
+        // The block above handles a type node that sits inside a func literal
+        // owned by a named var (`var R = map[string]func(){ ... }`). It reaches
+        // the var_spec only by climbing THROUGH that literal, so a declaration
+        // whose type expression contains the node DIRECTLY had no branch at all
+        // and fell through to `global`:
+        //
+        //   var sysStat func(fi FileInfo, h *Header) error
+        //
+        // The func TYPE's parameter declarations walk up parameter_list →
+        // function_type → var_spec, and the walk then continued past the
+        // var_spec to `global`. Measured on this exact declaration: FOUR rows
+        // where the language has TWO facts — the var_spec branch publishes the
+        // correct `sysStat -> FileInfo` / `sysStat -> Header`, and the
+        // parameter pass publishes `global -> FileInfo` / `global -> Header`
+        // beside them. A duplicate edge whose source names nothing is worse than
+        // the missing edge GO39 fixed: a consumer that groups by source sees the
+        // SAME fact twice, once unattributable, and cannot tell which to keep.
+        //
+        // Scope matters and is the reason this is not simply "return the spec's
+        // name": LocalsAreNotSymbols makes a FUNCTION-LOCAL var/const not a
+        // symbol, so attributing to it would trade a dangling source for an
+        // unresolvable one. Package scope is the only place the name IS a
+        // graph node, so the branch tests for it and otherwise keeps walking to
+        // the enclosing function — which is what the `function_declaration`
+        // branch below then answers.
+        if (p.type === "var_spec" || p.type === "const_spec") {
+          let inFn = false
+          for (let q: Node | null = p.parent; q; q = q.parent) {
+            if (q.type === "function_declaration" || q.type === "method_declaration" || q.type === "func_literal") { inFn = true; break }
+          }
+          if (!inFn) {
+            for (let i = 0; i < p.namedChildCount; i++) {
+              const c = p.namedChild(i)
+              if (c && c.type === "identifier" && String(c.text ?? "") !== "_") return String(c.text ?? "")
+            }
+          }
+        }
         // Struct fields attribute to the enclosing named struct/interface —
         // and `type_alias` counts, because `type Alias = struct{ Q Inner }` is
         // a type declaration that declares `Alias` (GO36). The pre-fix test read
@@ -1184,7 +1255,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       return "global"
     }
 
-    const emit = (source: string, roots: (Node | null)[], relType: string): void => {
+    const emit = (source: string, roots: (Node | null)[], relType: string, lineNode?: Node | null): void => {
       for (const r of roots) {
         if (!r) continue
         const names: Node[] = []
@@ -1214,12 +1285,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           const stdlibModule = qualified !== undefined
             ? this.goStdlibTypeClaim(qualified, target, symbols, stdlibQualifiers, ownPackageName)
             : null
+          // The line is the DECLARATION's line, not the type node's. They differ
+          // exactly when the type is INHERITED: `formatV7` has no type child, so
+          // the root it borrows belongs to an EARLIER spec, and publishing that
+          // spec's line would point the row at a declaration that is not the one
+          // it describes. `lineNode` lets the caller name the declaring spec; the
+          // default keeps every other call site byte-identical.
+          const at = lineNode ?? t
           relationships.push({
             source,
             target,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
-            ...(this.nodeLine(t) ? { line_number: this.nodeLine(t)! } : {}),
+            ...(this.nodeLine(at) ? { line_number: this.nodeLine(at)! } : {}),
             metadata: {
               relationshipType: relType,
               ...(qualified ? { qualifiedType: qualified } : {}),
@@ -1354,8 +1432,65 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               // at least honest about not knowing.
               if (c && c.type === "identifier" && String(c.text ?? "") !== "_") declared.push(String(c.text ?? ""))
             }
-            if (declared.length === 0) emit(resolveSource(n), [n], "declared_type")
-            else for (const name of declared) emit(name, [n], "declared_type")
+            // THE INHERITED TYPE OF A CONST SPEC (GO39). Go's const grammar makes
+            // the empty expression list a MACRO over the previous spec: "Within a
+            // parenthesized const declaration list the empty expression list is
+            // equivalent to the textual substitution of the first preceding
+            // non-empty expression list and its type if present". So in
+            //
+            //     const (
+            //         FormatUnknown Format = iota
+            //         formatV7                 // type Format, by inheritance
+            //         FormatUSTAR              // type Format, by inheritance
+            //     )
+            //
+            // all three constants have type Format, and the latter two carry a
+            // real type reference the graph was MISSING. `collectTypeNameNodes`
+            // collects only `type_identifier`/`qualified_type`, so a spec whose
+            // type child is absent produced no row at all — not a mis-sourced row
+            // but an ABSENT one. Measured on the Go corpus: 2,305 of 2,450 const
+            // groups use this form, so the gap was not an edge case but the
+            // common case.
+            //
+            // The fix walks back to the nearest preceding sibling spec that HAS a
+            // type child and takes THAT node as the type root. The emitter is
+            // unchanged, so the qualified-type and dedupe rules apply identically
+            // to an inherited type and a stated one. Two properties are
+            // deliberate:
+            //   (a) the walk is bounded by the enclosing group — a spec at the top
+            //       of a new `const (...)` inherits nothing from the group above,
+            //       and the byte-span scan stops at the parent's first child;
+            //   (b) a spec with an EXPRESSION but no type (`x = 1`) is not a type
+            //       source, and the walk skips it for the next one back that is —
+            //       the macro substitutes the first preceding list "and its type
+            //       if present", so a typeless list does not supply one.
+            //
+            // `prevSibling` does not exist on this binding and the wrapper objects
+            // are not identity-stable across `children` reads, so the sibling is
+            // located by byte span (startIndex/endIndex are unique per node) —
+            // the same technique real-protobuf-analyzer's `prevSiblingOf` uses.
+            let typeRoots: (Node | null)[] = [n]
+            if (!n.childForFieldName("type")) {
+              const parent = n.parent
+              let inherited: Node | null = null
+              if (parent) {
+                const all = parent.children
+                let idx = -1
+                for (let i = 0; i < all.length; i++) {
+                  const c = all[i]
+                  if (c && c.startIndex === n.startIndex && c.endIndex === n.endIndex) { idx = i; break }
+                }
+                for (let i = idx - 1; i >= 0 && inherited === null; i--) {
+                  const c = all[i]
+                  if (!c || c.type !== "const_spec") continue
+                  const ty = c.childForFieldName("type")
+                  if (ty) inherited = ty
+                }
+              }
+              typeRoots = [inherited ?? n]
+            }
+            if (declared.length === 0) emit(resolveSource(n), typeRoots, "declared_type", n)
+            else for (const name of declared) emit(name, typeRoots, "declared_type", n)
           } else {
             emit(resolveSource(n), [n], "declared_type")
           }
@@ -1898,6 +2033,37 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         if (nameNodes.length > 0) {
           const isConst = spec.type === "const_spec"
+          // A PACKAGE-SCOPE variable whose declared type is a function is
+          // CALLABLE, and its calls were dropped. `isGoPackageCallable` below
+          // accepts only Function/Method kinds, so a hook/override injection
+          // var — `var testChecksumHook func()` then `testChecksumHook()` —
+          // resolved to nothing and published no `calls` edge, while the same
+          // call to a `func` DECLARATION did. Measured ~85 files across seven
+          // repos using the pattern (terraform, boundary, docker, kubernetes,
+          // consul, vault, go-tools); the `uses` pass still saw the name (the
+          // nil check), so the graph carried the reference but not the call.
+          //
+          // The test is on the GRAMMAR's own shape, never on the name:
+          //   var A = func() int { ... }   -> expression_list[ func_literal ]
+          //   var B func() int             -> function_type
+          //   var C = someOtherFunc        -> identifier (NOT claimed here; it
+          //                                   needs a symbol resolution, and a
+          //                                   shape guess would claim any var
+          //                                   initialized from a function-valued
+          //                                   field or call result)
+          // The blank name is excluded by the same rule as everywhere else.
+          let isFuncTyped = false
+          for (let j = 0; j < spec.namedChildCount && !isFuncTyped; j++) {
+            const c = spec.namedChild(j)
+            if (!c) continue
+            if (c.type === "function_type") isFuncTyped = true
+            else if (c.type === "expression_list") {
+              for (let k = 0; k < c.namedChildCount; k++) {
+                const e = c.namedChild(k)
+                if (e && e.type === "func_literal") { isFuncTyped = true; break }
+              }
+            }
+          }
           for (const nameNode of nameNodes) {
             if (!nameNode) continue
             symbols.push({
@@ -1916,6 +2082,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                 nodeType: spec.type,
                 isConst,
                 isExported: this.isGoExported(nameNode.text),
+                // PACKAGE-SCOPE ONLY, and only when the shape proves it: a
+                // function-local `var h func()` is not a package callable and
+                // must not become one. The enclosing-function test is the same
+                // one the rest of this analyzer uses for scope.
+                ...(isFuncTyped && !this.hasFunctionAncestor(spec) ? { isGoFuncTypedVar: true } : {}),
               },
             })
           }
@@ -1925,6 +2096,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // HELPER METHODS
+
+  /** Is this node inside a function/method/func-literal body? The scope test the
+   *  rest of this analyzer uses for "package scope vs local". Used to keep the
+   *  func-typed-var callable marker PACKAGE-SCOPE only: a function-local
+   *  `var h func()` is not a package callable and must not become one. */
+  private hasFunctionAncestor(node: Node): boolean {
+    for (let q: Node | null = node.parent; q; q = q.parent) {
+      if (q.type === "function_declaration" || q.type === "method_declaration" || q.type === "func_literal") return true
+    }
+    return false
+  }
 
   /** GO3: file has a dot-import (`import . "fmt"`) — bare identifiers may
    *  name dot-imported package members, which no local symbol can resolve.
@@ -2370,6 +2552,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the resolver and the two go/defer handlers cannot drift apart again.
    */
   private isGoPackageCallable(s: ASTEngine.UniversalSymbol): boolean {
+    // A package-scope VARIABLE whose declared type is a function is callable —
+    // `var testChecksumHook func()` then `testChecksumHook()`. The marker is set
+    // in extractGoVariables ONLY when the grammar proves the func type (a
+    // `function_type` child, or a `func_literal` initializer) AND the spec is at
+    // package scope, so this is not a name-based guess and cannot claim a var
+    // initialized from a call result or a struct field.
+    if (s.kind === ASTEngine.SymbolKind.Variable && s.metadata?.isGoFuncTypedVar === true) return true
     if (s.kind !== ASTEngine.SymbolKind.Function && s.kind !== ASTEngine.SymbolKind.Method) return false
     if (s.metadata?.isInterfaceMethod) return false
     return true
@@ -3127,7 +3316,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Analyzes implicit interface implementation (Go's duck typing)
    */
   private analyzeGoInterfaceImplementation(
-    rootNode: Node,
+    _rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ) {
@@ -3780,16 +3969,27 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           //
           // Same callee-shape guard as the other 0.6 site, for the same reason:
           // `ctorFns.has(leaf)` is a NAME test, so a receiver selector whose
-          // field happens to share a top-level function's name passed it. The
-          // source stays the `global` pseudo-source, which is the pre-existing
-          // behaviour of this site and is not widened here — a package-scope
-          // `var x = NewThing()` has no enclosing declaration that could own
-          // the call, and the `calls` edge above already carries the
-          // attributable one via resolveGoWorkSource.
-          if (isCtor && ctorFns.has(leaf) && this.isGoTopLevelFunctionCallee(fn, ownPackageName) && !emitted.has("inst:" + leaf)) {
-            emitted.add("inst:" + leaf)
+          // field happens to share a top-level function's name passed it.
+          //
+          // THE SOURCE IS THE DECLARATION, SAME AS THE `calls` ROW BESIDE IT
+          // (GOD12, carried to this site). The comment that used to stand here
+          // claimed "a package-scope `var x = NewThing()` has no enclosing
+          // declaration that could own the call" — that is FALSE, and the proof
+          // is nine lines up: `resolveGoWorkSource(node)` answers `x` for that
+          // very node and the `calls` row already uses it. The result was one
+          // expression publishing two different sources — `calls Default ->
+          // NewThing` and `instantiates global -> NewThing` at the same line —
+          // and a consumer keying on source saw the declaration own the call and
+          // a pseudo-source own the construction. The dedupe key gains the
+          // source for the same reason the `calls` key did: keyed on the leaf
+          // alone, two declarations constructing the same type collapsed into one
+          // row and one of them vanished.
+          const instSrc = callSrc
+          const instKey = `inst:${instSrc}:${leaf}`
+          if (isCtor && ctorFns.has(leaf) && this.isGoTopLevelFunctionCallee(fn, ownPackageName) && !emitted.has(instKey)) {
+            emitted.add(instKey)
             relationships.push({
-              source: "global",
+              source: instSrc,
               target: leaf,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.6,
@@ -4017,8 +4217,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // 1621), where `c` is a package var and the read is unambiguous. The
         // fix is the `global` fallback the read passes already use, not a new
         // naming scheme: `findContainingGoFunction` returns undefined only when
-        // the read is at file scope, and file scope is what the read passes
-        // call `global`.
+        // the read has no named owner at all — file scope, a blank-identifier
+        // var (`var _ = func(){ ... }`), or a func literal that is a call
+        // argument or a return value. A func literal that initializes a NAMED
+        // PACKAGE-SCOPE var answers the var's name, so a read inside one is no
+        // longer a pseudo-source (go/closure-package-scope pins it).
         const containingFunction = this.findContainingGoFunction(node) ?? "global"
         if (channelVar && (channelVar.member || this.isGoDeclaredPackageVar(channelVar.name, symbols))) {
           const isSend = node.type === "send_statement"
@@ -4358,7 +4561,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // already covers every parameter_list, receiver included.
         scopeStack.push(frame)
         pushedScope = true
-      } else if (t === "block") {
+      } else if (t === "block" || t === "for_statement") {
+        // `for_statement` gets its OWN frame: a range target (`for N := range
+        // xs`) is scoped to the loop (Go spec, For statements: "The scope of
+        // a variable declared in a for statement is the for statement itself"),
+        // and the init/cond/post variables of a 3-clause loop are scoped there
+        // too. Without this frame the range target binds into the ENCLOSING
+        // block and shadows the rest of it — the loop's `block` child pops its
+        // own frame, so the leak survives the loop and every later read of that
+        // name in the enclosing block is dropped (probe: `for N := range xs {}`
+        // then `_ = N` emits nothing, while an identical trailing read of a
+        // non-colliding name still emits).
         scopeStack.push({ names: new Set<string>() })
         pushedScope = true
       } else if (
@@ -4404,8 +4617,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `case r := <-ch`: expression_list DIRECT children bind (assigned
         // targets); the `<-` operand reads (channel pass owns it — skipped
         // at emission, never bound here).
+        //
+        // WRITE-GATE (family parity with the selector pass's S1 gate above):
+        // tree-sitter-go gives `receive_statement` an `=` token child for an
+        // ASSIGNMENT (`case N = <-ch`) and a `:=` token for a DECLARATION
+        // (`case N := <-ch`) — the same shape as an assignment_statement, and
+        // the same distinction the rest of the pass already enforces. Binding
+        // the expression_list unconditionally treated an assignment as a
+        // declaration, so the target was pushed into the enclosing frame and
+        // shadowed the rest of the block: `select { case N = <-ch: ... }` then
+        // `_ = N` emitted nothing, while the identical select with no receive
+        // emitted it. Only `:=` declares; `=` writes and binds nothing.
+        const isDecl = node.children.some((c) => c?.type === ":=")
         const top = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
-        if (top) {
+        if (top && isDecl) {
           for (let i = 0; i < node.namedChildCount; i++) {
             const c = node.namedChild(i)
             if (c && c.type === "expression_list") bindNamesUnder(c, top)
@@ -5681,6 +5906,59 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = current.childForFieldName("name")
         return nameNode?.text
       }
+      // A FUNC LITERAL that is the initializer of a NAMED package-scope var has
+      // an owner, and it is the var. Without this the walk ran past the literal
+      // and past the var_spec to the file, so the callers' `?? "global"` fallback
+      // answered a pseudo-source for work a named declaration owns:
+      //
+      //   var Handler = func() int { <-Ch; return 0 }
+      //
+      // published `uses global -> Ch` (the channel pass), when the read is work
+      // the binding `Handler` exists to hold. Same class as GOD11 / the
+      // package-scope `instantiates` site / the declared-type `resolveSource`
+      // gap: one pass resolved the named ancestor and another fell through.
+      //
+      // The blank name is excluded by the same rule as everywhere else: `_` can
+      // never be resolved, so `global` is the honest answer for
+      // `var _ = func(){ ... }`. And a func literal with NO enclosing named
+      // var_spec (a call argument, a return value, a nested literal) keeps
+      // returning undefined — there is no named declaration to attribute to.
+      //
+      // PACKAGE-SCOPE ONLY, and the first cut of this got that wrong: a
+      // function-LOCAL `inner := func(){ <-c }` was attributed to `inner`,
+      // which LocalsAreNotSymbols makes an invalid source — the same error in a
+      // different direction. `closureInsideFunction` in
+      // go/closure-channel-read pins it, and it failed here until the
+      // PACKAGE-SCOPE ONLY, and this needed two cuts to get right. A
+      // function-LOCAL `inner := func(){ <-c }` must NOT be attributed to
+      // `inner` — LocalsAreNotSymbols makes a local an invalid source — but it
+      // must still reach the ENCLOSING function, which is what
+      // go/closure-channel-read pins (`closureInsideFunction -> c`). The rule is
+      // therefore: a func literal does not STOP the walk, it only stops it when
+      // the literal is the initializer of a NAMED PACKAGE-SCOPE var. A literal
+      // inside a function keeps climbing to its function; a literal inside a
+      // package var stops there with the var's name; a literal with neither
+      // (a call argument, a return value) climbs to the file and answers
+      // undefined, so the callers' own fallback applies.
+      if (current.type === "func_literal") {
+        if (this.hasFunctionAncestor(current)) {
+          current = current.parent
+          continue
+        }
+        let q: Node | null = current.parent
+        while (q) {
+          if (q.type === "var_spec" || q.type === "const_spec") {
+            for (let i = 0; i < q.namedChildCount; i++) {
+              const c = q.namedChild(i)
+              if (c && c.type === "identifier" && String(c.text ?? "") !== "_") return String(c.text ?? "")
+            }
+            return undefined
+          }
+          if (q.type === "var_declaration" || q.type === "const_declaration" || q.type === "source_file") return undefined
+          q = q.parent
+        }
+        return undefined
+      }
       current = current.parent
     }
     return undefined
@@ -5700,8 +5978,24 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * where the call, the construction and the selector read are all work the
    * DECLARATION is doing, for a binding the analyzer has already published as a
-   * symbol. At full extent that was 6,723 edges whose source named nothing:
-   * 3,396 `uses`, 1,391 `calls`, 985 `instantiates`, 947 `references`.
+   * symbol. At full extent that was 6,719 edges whose source named nothing:
+   * 3,396 `uses`, 1,391 `calls`, 985 `instantiates` (the three kinds this
+   * function feeds) plus 947 `references`, which belong to the DECLARED-TYPE
+   * pass and its own resolver (`resolveSource`, GO36/GO38), not to this one.
+   *
+   * THOSE ARE TWO RESOLVERS, NOT ONE MEASUREMENT, and the figure was stated
+   * as one. The four terms were reported together under a `6,723` total while
+   * they sum to 6,719; the 4-edge gap is the arithmetic, and the reason it
+   * was never caught is that the list mixes callers. `resolveGoWorkSource`
+   * answers `calls`, `instantiates` and `uses` (see its four call sites); the
+   * `references` count comes from `resolveSource`, a different function with a
+   * different rule and a different history (GO36 for `type_alias`, GO38 for a
+   * local type's symbol). The per-resolver split is stated here so neither is
+   * read as the other's number. The original instrument
+   * (`go-round7-dangling-sources.ts`) is deleted and no artifact for it
+   * survives in `validation/`, so this table is transcribed rather than
+   * re-derived; the split is a claim about which function produced each term,
+   * which the call sites above settle directly.
    *
    * The rule is the one the declared-type pass already follows: a declaration
    * attributes to what it declares. `global` remains the answer for work that is

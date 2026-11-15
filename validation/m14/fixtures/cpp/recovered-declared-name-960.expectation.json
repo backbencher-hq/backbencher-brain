@@ -1,0 +1,40 @@
+{
+  "fixtureId": "cpp/recovered-declared-name-960",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D4 (#960): a symbol was published under the source's TYPE. A macro access-specifier label (`JSON_PRIVATE_UNLESS_TESTED:`) is legal C++ with no node type, so the grammar reads the label as a `type`, the `declarator` field lands on the real TYPE, and the real name is pushed into an adjacent ERROR. The analyzer read the field faithfully and published `property difference_type` — a name that is a type, colliding with the real `using difference_type = …;` alias in the same class, which is what produced a duplicate `contains` edge (D3) — while the declaration that actually exists (`m_it`) was ABSENT from the graph. The two defects hid each other: fabricated and real were indistinguishable in the graph. 10 sites over 1,722 real C++ files, 5 of them this exact shape. The rule is that the recovery record is EVIDENCE: `recoveredDeclaredName` reads the declarator field, then that node's next sibling, and takes the ERROR's single bare `identifier`. Two narrownesses keep it a read rather than a guess — the ERROR must hold EXACTLY one named child and it must be a bare identifier (an expression is soup, and a name is not read out of soup), and the text must still be a name C++ can spell (D1), which disposes of the `>::value, int >::type = 0 >` sites. THIS FIXTURE PINS THE ORDERING, which the first cut got wrong: the ordinary declarator-chain read is NOT null in this shape (a type name is a legal identifier spelling), so the recovery must be consulted FIRST, not as a `??` fallback — the first cut used `??` and fixed nothing. The `Plain` class is the control for the opposite error: WITHOUT a comment between the label and the declaration the grammar recovers correctly, so `plain_` must be published under its own name too. A blanket 'never trust a declarator after a macro label' rule would lose that, and the comment being load-bearing is exactly why this class went unnoticed for as long as it did.  M14 ONTOLOGY (2026-10-04): `#include` is C++'s FILE INCLUSION and is now a first-class `imports` edge \u2014 the same kind, with the same metadata, the C lane already emits for the identical construct (pinned there by c/macro-composed-include, reverted there by the `c/include-kind-downgraded` mutant). The measured reason: the one consumer that answers \"what does this module depend on\" is the LSP usages file-level section, which filters on `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts, src/lsp/graph_usages.ts), so a C++ include was invisible to it no matter what its metadata said. A LABEL move, not an edge move \u2014 5,404 include sites in 905 corpus files, 5,118 distinct module names, and the include-dependency row count is identical before and after. Every row is still asserted with its line, its metadata and (where pinned) its exact count, and the `references` label is FORBIDDEN so a downgrade fails the fixture rather than only moving a number in a census. A `using`-dependency row stays `references`: an include dependency and a using-dependency are two facts, and only the first is file inclusion.",
+  "expectSymbols": [
+    { "name": "Counted", "kind": "class" },
+    { "name": "distance_type", "kind": "type", "note": "the REAL alias, and it must keep its own name — the D4 fabrication collided with precisely this symbol." },
+    { "name": "begin_value", "kind": "constant" },
+    { "name": "count_", "kind": "property", "note": "D4a: the recovered name. The declarator field held `distance_type`; the ERROR beside it held `count_`." },
+    { "name": "value", "kind": "method" },
+    { "name": "set", "kind": "method" },
+    { "name": "Plain", "kind": "class" },
+    { "name": "plain_", "kind": "property", "note": "D4b, the CONTROL: no comment between the label and the declaration, so the grammar recovers correctly and the ordinary chain read is right. A rule that refused every declarator after a macro label would lose this." },
+    { "name": "Wrapped", "kind": "class" },
+    { "name": "wrapped_", "kind": "property", "note": "D4c: a macro between the declaration-specifier and the name (the CPPD17/CPPD18 shape) plus a macro access label — the name is still read." },
+    { "name": "use_all", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Counted", "target": "count_", "line_number": 43, "note": "the contains edge takes the CHILD's naming line (M59.A7 + #921), which is 43 — the line the recovered name is written on, two lines below the declaration's start at 41. This is the edge that used to be duplicated under the wrong name." },
+    { "type": "contains", "from": "Counted", "target": "distance_type", "line_number": 38, "note": "the alias keeps its own edge, so both real facts are in the graph under their own names." },
+    { "type": "contains", "from": "Plain", "target": "plain_" },
+    { "type": "contains", "from": "Wrapped", "target": "wrapped_", "line_number": 74 },
+    { "type": "uses", "from": "value", "target": "plain_", "line_number": 63, "note": "the recovered name RESOLVES: a read of `plain_` inside the class finds it, which is the whole point of recovering rather than publishing the type." },
+    { "type": "imports", "from": "global", "target": "limits" }
+  ],
+  "forbidSymbols": [
+    { "name": "distance_type", "kind": "property", "note": "D4, the fabrication: a name that is a TYPE published as a data member. 3 sites corpus-wide (`difference_type`), each in a class that also declares that name as a real alias." },
+    { "name": "difference_type", "kind": "property", "note": "the same class of fabrication, under the nlohmann spelling." },
+    { "name": "COUNTED_PRIVATE_LABEL", "kind": "property", "note": "the macro label itself must never be published as a name — it is neither a type nor a declarator." },
+    { "name": "PLAIN_PRIVATE_LABEL", "kind": "property" },
+    { "name": "WRAPPED_ACCESS", "kind": "property" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Counted", "target": "distance_type", "line_number": 43, "note": "D3 + D4 together: a second `Counted -> distance_type` row is what the duplicate looked like while the fabricated property shared the alias's name. One fact, one edge, at line 38." },
+    { "type": "references", "target": "limits", "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses, and the reason a silent relabel cannot pass." },
+    {"type": "contains", "from": "Counted", "target": "Counted::distance_type", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "contains", "from": "Counted", "target": "Plain::distance_type", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

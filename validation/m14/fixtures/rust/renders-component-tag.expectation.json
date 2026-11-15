@@ -1,0 +1,31 @@
+{
+  "fixtureId": "rust/renders-component-tag",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS rust's renders R3 emission from the UI-framework macros (2026-10-23), CORPUS-UNEXERCISED class: the shape survives the grammar as real nodes (probe-measured hasError:false — the tag identifiers are structural children of the macro's token_tree), the corpus measured 0 of 2,532 files exercising it, so this is csharp's class — implemented AND corpus-unexercised, counted once inside implemented, never an exclusion. THE THREE MUST-NOTS ARE PINNED AT equals:0: a plain println! with a `<` in a string is not a render host (macro must be in the declared view/html/rsx/render/maud/markup list); a BARE HTML TAG (div) renders a value, not a component; a tag with NO SAME-FILE SYMBOL (Other, undeclared) is refused and counted — clojure's impostor-stopping test.",
+  "expectSymbols": [
+    { "name": "MyButton", "kind": "struct" },
+    { "name": "App", "kind": "function" },
+    { "name": "not_a_render", "kind": "function" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "renders", "equals": 1 },
+    { "type": "renders", "from": "App", "target": "MyButton", "equals": 1 },
+    { "type": "renders", "meta.renderMacro": "view", "equals": 1 },
+    { "type": "renders", "meta.corpusUnexercised": true, "equals": 1 },
+    { "type": "renders", "target": "div", "equals": 0 },
+    { "type": "renders", "target": "Other", "equals": 0 },
+    { "type": "renders", "from": "not_a_render", "equals": 0 },
+    { "type": "mixes_in", "from": "MyButton", "equals": 0 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "MyButton",
+      "meta.renderMacro": "view",
+      "meta.isComponentTag": true,
+      "meta.corpusUnexercised": true
+    }
+  ]
+}

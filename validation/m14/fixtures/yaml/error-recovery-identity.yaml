@@ -1,0 +1,15 @@
+# An unterminated flow sequence makes the whole file one ERROR node and destroys the
+# `steps:` mapping pair. Before the fix, every surviving sequence item was assigned the
+# SAME index by a sibling-identity scan that could never match (web-tree-sitter returns
+# a fresh wrapper per call), so eleven distinct steps collapsed onto one id `[13]` and
+# every `contains` edge into it addressed all eleven at once. The recovery is now an
+# explicit, named scope and the damage is DECLARED rather than silent.
+steps:
+- name: alpha
+  image: one
+- name: beta
+  image: two
+- name: gamma
+  image: three
+args: [
+  'unterminated

@@ -1,0 +1,77 @@
+{
+  "comment": "ERROR AND MISSING are the two RECOVERY node types, and they were the last two html types in no classification bucket \u2014 which is why SPEC section A was red. They are read together on one line (`n.type === \"ERROR\" || n.isMissing`) because they are one event seen two ways: a region the parser could not read, and a token it inserted to keep going. MISSING is matched by the `isMissing` PROPERTY, not the type string, which is why a census looking only for type names did not find it. This fixture makes the classification load-bearing by pinning the three-part contract it claims: REPORT the broken node with its own line, BYPASS it (no symbol of its own), and KEEP PUBLISHING everything around it. A classification that said 'silent' would have been the convenient answer and would have been wrong \u2014 silence means 'correctly emits nothing', and this emits a diagnostic.  ON THE ERROR PIN: `expectErrors` compares EVERY key of an entry against the error, with no key filtering, so a `comment` inside one is compared as though it were an error field and the assertion can never match. The prose therefore lives in this top-level comment and the entries carry fields only. The pin is on STRUCTURE \u2014 the ERROR node's own span, line 7 columns 20-25, severity warning \u2014 rather than on a message phrase, which is what makes it survive a reworded message and fail on a moved span. An error reported at the document root, or at line 1, or at the enclosing element's start, is a diagnostic nobody can act on, and this is the assertion that would notice.",
+  "expectSymbols": [
+    {
+      "name": "error-recovery",
+      "kind": "module",
+      "comment": "the document module still publishes: a recovery region does not void the file"
+    },
+    {
+      "name": "around",
+      "kind": "class",
+      "comment": "the element CONTAINING the ERROR node is not itself an error \u2014 tree-sitter's ERROR wraps the unreadable text, not the enclosing element, and the analyzer reads the element normally"
+    },
+    {
+      "name": "after",
+      "kind": "class",
+      "comment": "elements AFTER the broken region are unaffected \u2014 the walk does not stop at the first error"
+    },
+    {
+      "name": "unterminated",
+      "kind": "class",
+      "comment": "an unterminated element still yields a symbol bounded by the recovery"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "error-recovery",
+      "target": "around",
+      "line_number": 7,
+      "meta.isDocumentRoot": true,
+      "comment": "containment survives the error: the broken node is bypassed, not propagated"
+    },
+    {
+      "type": "contains",
+      "from": "error-recovery",
+      "target": "after",
+      "line_number": 8,
+      "meta.isDocumentRoot": true
+    },
+    {
+      "type": "contains",
+      "from": "error-recovery",
+      "target": "unterminated",
+      "line_number": 9,
+      "meta.isDocumentRoot": true
+    },
+    {
+      "type": "uses",
+      "from": "unterminated",
+      "target": "/orders",
+      "line_number": 9,
+      "meta.resourceType": "navigation",
+      "comment": "a RESOURCE on an element the parser had to repair is still a real dependency. Suppressing it would make a malformed document look like a document with no dependencies, which is a data-loss failure wearing a syntax-error costume"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "the ERROR node is BYPASSED, so it must not become a symbol and must not be named. An edge to the raw broken text (`<<<>>`) is the seam's own documented anti-pattern \u2014 the block's text is never a target, because the analyzer reads AST nodes and never source text.",
+      "target": "<<<>>"
+    }
+  ],
+  "expectErrors": [
+    {
+      "startLine": 7,
+      "startColumn": 20,
+      "endColumn": 25,
+      "severity": "warning"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 2,
+      "comment": "exactly two: the ERROR node itself, and the syntax error the engine reports for the same region. A >=1 assertion would be satisfied by either alone, and the PAIR is the contract \u2014 the analyzer's own report plus the engine's, for one broken region and not two."
+    }
+  ]
+}

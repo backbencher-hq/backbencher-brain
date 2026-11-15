@@ -1,0 +1,101 @@
+{
+  "fixtureId": "kotlin/exports-no-module-identity",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the withheld branch of the `exports` relationship (DERIV_EXPORTS_KOT3): a compilation unit that declares NO top-level type has no module identity, so it publishes no `exports` RELATIONSHIP and says so in metadata. The ExportInfo array is untouched \u2014 pool-worker.ts:1196 forwards it and import-resolution.ts:314 GATES symbol joins on it \u2014 so the file's public surface reaches consumers through the channel that has no module identity to resolve. The forbidden relationship below is the measured pre-fix behaviour: the analyzer fell back to the FILE PATH, putting a 90-character absolute path in the source of every edge. 24 of 26 analyzer-only `exports` edges over a 120-file draw were exactly that. parallel-indexer.ts:3451 drops an export edge whose source cannot resolve to a symbol, so the rows were unreadable in a graph as well as unmatchable by the oracle. Measured on the corpus: 52 names withheld over a 200-file draw (validation/m14/results/kotlin-exports-oracle.txt).",
+  "expectSymbols": [
+    {
+      "name": "noTypeFunction",
+      "kind": "function"
+    },
+    {
+      "name": "noTypeProperty",
+      "kind": "property"
+    },
+    {
+      "name": "internalWithoutType",
+      "kind": "function"
+    },
+    {
+      "name": "publicWithoutType",
+      "kind": "function"
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "noTypeFunction",
+      "visibility": "public"
+    },
+    {
+      "symbol": "noTypeProperty",
+      "visibility": "public"
+    },
+    {
+      "symbol": "internalWithoutType",
+      "visibility": "internal"
+    },
+    {
+      "symbol": "publicWithoutType",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "exports-no-module-identity",
+      "target": "noTypeFunction",
+      "line_number": 26,
+      "meta.via": "default-public",
+      "meta.fileLevel": true,
+      "meta.visibility": "public"
+    },
+    {
+      "type": "exports",
+      "from": "exports-no-module-identity",
+      "target": "noTypeProperty",
+      "line_number": 28,
+      "meta.via": "default-public",
+      "meta.fileLevel": true,
+      "meta.visibility": "public"
+    },
+    {
+      "type": "exports",
+      "from": "exports-no-module-identity",
+      "target": "publicWithoutType",
+      "line_number": 32,
+      "meta.via": "explicit-public",
+      "meta.fileLevel": true,
+      "meta.visibility": "public"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "(file)",
+      "note": "task-9 KOTLIN4: a file with NO primary top-level type sources its exports at the compilation-unit identity, NOT the (file) sentinel"
+    }
+  ],
+  "expectNoExportsRelationshipCount": {
+    "value": 0,
+    "comment": "stated as a COUNT, not as an absence of a forbid, so a regression that publishes edges under any source is caught even when the source is something this file's text does not suggest"
+  },
+  "expectMetadata": [
+    {
+      "exportsWithheldNoModuleIdentity": 3,
+      "comment": "the three PUBLIC top-level names \u2014 noTypeFunction, noTypeProperty and publicWithoutType. internalWithoutType is withheld by VISIBILITY and is not counted here, because the counter records what the module identity withheld, not what visibility withheld; counting both would make the field answer a question nobody asks. The pin makes both rules falsifiable at once: a count of 4 means the internal declaration leaked into the published set, and a count of 2 means a public one was dropped."
+    }
+  ],
+  "expectExportInfoArray": {
+    "names": [
+      "noTypeFunction",
+      "noTypeProperty",
+      "publicWithoutType"
+    ],
+    "comment": "the array is the surface that survives: import-resolution.ts:314 refuses to join an imported name to a symbol unless the target file's exportsByFile set contains it, so dropping these from the array would break cross-file import resolution for this file even though the relationship channel correctly published nothing"
+  },
+  "evidence": {
+    "oracle": "validation/m14/results/kotlin-exports-oracle.txt",
+    "withheldTotalAtN200": 52
+  },
+  "authoredNote": " [TASK-9 KOTLIN4 SUPERSESSION 2026-10-19: the imports/exports SOURCE contract is the file identity \u2014 primary top-level type when the file declares one, else the compilation-unit base name (fleet defect fix: the package-identity export channel is REMOVED because the store's defensive filter drops package-named export sources, and package-sourced imports are replaced by identity-sourced rows). Targets/metadata/coverage are preserved; the superseded package/root source spellings are now FORBIDDEN, so the re-pin strengthens rather than weakens the pins.]"
+}

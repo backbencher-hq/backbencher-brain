@@ -1,0 +1,55 @@
+{
+  "fixtureId": "typescript/qualified-calls-nested-scope",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS qualified_calls OWNERSHIP across nested scopes (M3). The payload walk used to stop at every nested function, so a callback's call was absent from the payload while the graph carried the edge, and the javascript twin disagreed. The rule pinned here: a call belongs to the symbol that lexically owns it — the nearest enclosing SYMBOL, not the symbol the walk started from. (1) a callback with no symbol keeps the enclosing symbol's payload; (2) a nested `function inner(){}` IS a symbol, so its call must NOT appear on the enclosing symbol — the anti-pollution direction, which an includes-only check cannot catch; (3) an object-literal method is its own symbol too (TSD7), so the call inside it belongs to the method, and the payload pin and the calls-edge pin must agree on that; (4) the payload is a SET of paths, not a multiset; (5) two same-named methods on different classes must not share a payload. The calls EDGES are pinned alongside so the payload can never be read as 'the graph', only as its per-symbol projection.",
+  "expectSymbols": [
+    { "name": "helper", "kind": "function" },
+    { "name": "outer", "kind": "function" },
+    { "name": "enclosing", "kind": "function" },
+    { "name": "mixed", "kind": "function" },
+    { "name": "Alpha", "kind": "class" },
+    { "name": "Beta", "kind": "class" }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "outer",
+      "includes": ["items.map", "helper"],
+      "note": "the callback's call belongs to `outer`: the arrow has no symbol of its own"
+    },
+    {
+      "symbol": "enclosing",
+      "includes": ["inner"],
+      "notIncludes": ["helper"],
+      "note": "THE ANTI-POLLUTION PIN: `inner` is a symbol and owns `helper`. Pre-fix the payload listed only `inner` (the boundary hid the nested call); deleting the boundary without rebinding would have listed `helper` here too, and this entry is what distinguishes the two wrong answers from the right one."
+    },
+    {
+      "symbol": "mixed",
+      "includes": ["rows.map", "save"],
+      "notIncludes": ["persist"],
+      "note": "the object-literal method is its OWN symbol (TSD7), so `persist` is charged to `save`, not to the enclosing function — the payload and the calls edges below agree on that"
+    },
+    {
+      "symbol": "save",
+      "ownerName": "helper2",
+      "includes": ["persist"]
+    },
+    {
+      "symbol": "alphaOnly",
+      "ownerName": "Alpha",
+      "includes": ["helper"]
+    },
+    {
+      "symbol": "betaOnly",
+      "ownerName": "Beta",
+      "includes": ["helper"]
+    }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "outer", "target": "helper", "note": "the graph edge the payload was silently missing" },
+    { "type": "calls", "from": "inner", "target": "helper", "note": "and it is `inner`'s, matching the payload pin above" },
+    { "type": "calls", "from": "enclosing", "target": "inner" },
+    { "type": "calls", "from": "save", "target": "persist", "note": "the object-literal method owns the edge, exactly as its payload says" },
+    { "type": "calls", "from": "mixed", "target": "save" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "fixtureId": "groovy/safe-nav-chain",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANTI-SKIP GUARANTEE (corrected): every safe-nav link (account, owner, label) must appear as an edge target. Chain-fidelity is a declared design limitation for wave M14.1.",
+  "expectSymbols": [
+    {
+      "name": "Guard",
+      "kind": "class"
+    },
+    {
+      "name": "probe"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "targetEndsWith": "account",
+      "confidenceMax": 0.99
+    },
+    {
+      "type": "uses",
+      "targetEndsWith": "owner",
+      "confidenceMax": 0.99
+    },
+    {
+      "type": "uses",
+      "targetEndsWith": "label",
+      "confidenceMax": 0.99
+    }
+  ]
+}

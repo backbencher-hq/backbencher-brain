@@ -1,0 +1,118 @@
+{
+  "fixtureId": "vue/v-for-directive-shapes",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CHARACTERIZATION fixture, deliberately GREEN on arrival: it pins behaviour that already worked, because the change it guards is a REFACTOR, not a fix. `parseVForDirective` replaced `/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/` and its tail-less sibling so the Vue analyzer could reach ZERO regex literals, and three of the old pattern's behaviours are subtle enough to regress silently: (1) the alias head is the SHORTEST run without a `)`, so a greedy parser binds `row, i in grid` as one name; (2) the `)` belongs to the keyword match, not the head, so `(row, i) in grid` must bind TWO names; (3) `.` does not match a newline, so `v-for=\"multiline in\\n spread\"` fails the collection form and the caller falls back to the whole directive \u2014 visible here because `spread` is still found while the shadowing of `multiline` is unaffected. `of` is pinned alongside `in` because they are alternatives in the same group, and the destructuring slot prop `{ scoped, other: renamed }` pins the shared identifier tokenizer (F14-era) rather than a second one. Equivalence with the removed patterns is proved separately over 799 generated shapes (script/m60/verify-vue-no-regex.ts) and end-to-end over all 1,139 corpus files, both byte-for-byte; this fixture is what keeps the property true as the code is edited from here on.",
+  "expectSymbols": [
+    {
+      "name": "VForDirectiveShapes",
+      "kind": "class"
+    },
+    {
+      "name": "items",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "shadowed",
+      "kind": "method",
+      "ownerName": "VForDirectiveShapes"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "source": "VForDirectiveShapes",
+      "target": "items",
+      "type": "uses"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "grid",
+      "type": "uses"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "map",
+      "type": "uses"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "records",
+      "type": "uses"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "source": "VForDirectiveShapes",
+      "target": "shadowed",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "row",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "i",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "v",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "k",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "alias",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "x",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "multiline",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "nested",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "sibling",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "scoped",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    },
+    {
+      "source": "VForDirectiveShapes",
+      "target": "renamed",
+      "type": "uses",
+      "note": "a v-for alias and a slot prop SHADOW the member of the same name, so the template read must not become a use of the member"
+    }
+  ]
+}

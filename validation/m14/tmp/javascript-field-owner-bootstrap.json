@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-13T02:56:09.730Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/bootstrap",
+  "tag": "bootstrap",
+  "admittedFiles": 125,
+  "sampledFiles": 125,
+  "parseCleanFiles": 124,
+  "totals": {
+    "files": 124,
+    "fieldsWritten": 880,
+    "fieldsWithTwoClasses": 54,
+    "fieldsWithTwoTypes": 0,
+    "crossClassReads": 0,
+    "readsWithNoWriter": 0
+  },
+  "note": "A tree-only census: it never asks the analyzer for the field->type map, so it cannot inherit the defect it is measuring. crossClassReads = `this.<f>` member reads sitting in a class that never writes `<f>`, while another class in the same file does. collectLocalReceiverTypes keys fieldTypes by FIELD NAME alone, so every such read is published with the WRITING class's type as metadata.owner. If that type declares the member, the store binds the edge to it.",
+  "examples": []
+}

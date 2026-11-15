@@ -1,0 +1,40 @@
+{
+  "fixtureId": "vue/template-object-key",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F10 (master review 2026-09-30): an UNQUOTED object-literal key in a template expression reads as a member of the component \u2014 `{{ { count: 1 } }}` emitted Uses(count) when nothing in that expression reads the member. Measured at 432 of the 1,150 restored corpus files (37.6%). The QUOTED form is already correct because the stack tokenizer skips string CONTENTS; it never modelled the key POSITION \u2014 the in-file comment acknowledged the gap as a pre-existing acceptance rather than solving it. CRITICAL DESIGN POINT, learned from a mutant that SURVIVED the first version of this fixture: `count` and `label` must be REAL members of this component. The defect only manifests when a member of that name exists, so a fixture that omits them can never fail \u2014 it forbids an edge that the pre-fix analyzer would not have emitted either. They appear in this template ONLY as object keys, so any Uses(count) or Uses(label) is the defect and nothing else. The require rows pin the values that ARE genuinely read alongside a key, because a rule that suppressed every identifier followed by a colon would delete those too and a forbid-only fixture would score that as a pass. The computed key `[count]` is covered as well: its content is a real read, and a rule that skipped the whole bracket would lose it. The ternary trap \u2014 where an identifier followed by a colon is a VALUE \u2014 is pinned separately in vue/template-ternary-value, since it cannot be expressed here without making count legitimately readable and the forbids ambiguous. NOTE on the `from` name: this component declares `name: 'W'`, so after F8 the ONE Class symbol is named `W` and every component-owned edge sources `W`. A forbid row written against the FILE STEM never matches a renamed component \u2014 it read as green for the wrong reason while the defect was present, which the mutant exposed. Both halves now name `W`.",
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "count"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "label"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "total"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "go"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "render"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "other"
+    }
+  ]
+}

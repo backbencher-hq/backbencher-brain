@@ -1,0 +1,36 @@
+{
+  "fixtureId": "xml/imports-target-class",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Every `imports` target now carries a `resolvable` class, and before this none of the 263 emitted on the census draw did. `imports` is the only relationship type this analyzer emits whose target is not a symbol, so the type reported 0 % resolution and the store could not tell a target naming a file this corpus holds from a 404 — the round brief's cause C, measured in `validation/m14/fixtures/xml/imports-target-class.mts` (same draw `3bd539410d1a9189`: 0 of 263 marked before, 263 of 263 after, and the analyzer's class agrees with an independent filesystem walk on 263 of 263 — `external` 107, `file` 153, `in-document` 3, zero disagreements). The fixture pins all three classes on all THREE emitters, because each emitter is a separate `addRelationship` call and a marker added to two of them is a marker on two thirds of the type. `#local-style` is the `in-document` control and the only shape whose target could resolve to a symbol in the file it names; `/absolute/rooted.xsd` and `../shared/remote-style.xsl` are `file` controls at the two path extremes, and an absolute path being `file` rather than `external` is the assertion most likely to catch a scheme test that trips on the leading `/`. `https://example.invalid/remote.xsd` on `xs:import` is a FORBID row and not an oversight: `schemaLocation` already filters remote URIs before emitting (`isRemoteUri` at the call site), so `external` is unreachable from that emitter, and a fixture that asserted one would be asserting an edge the analyzer is right not to publish. `forbidRelationships` also pins that no edge from this document claims a class other than the three — the defect this feature could introduce is a fourth value, not a wrong one of three.",
+  "expectRelationships": [
+    { "type": "imports", "from": "local", "target": "local-entities.ent", "line_number": 2, "meta.resolvable": "file", "note": "DOCTYPE SYSTEM, relative path. The `file` class and NOT a claim that the file exists — the analyzer is a per-file unit and does no filesystem access." },
+    { "type": "imports", "from": "xml-stylesheet", "target": "#local-style", "line_number": 3, "meta.resolvable": "in-document", "note": "A PI href naming a location in THIS file. The only `imports` shape whose target could bind to a symbol here." },
+    { "type": "imports", "from": "xml-stylesheet", "target": "../shared/remote-style.xsl", "line_number": 4, "meta.resolvable": "file", "note": "Relative path with `..` in it. The class must be decided on the whole string, not on the first segment." },
+    { "type": "imports", "from": "xml-stylesheet", "target": "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd", "line_number": 5, "meta.resolvable": "external", "note": "A PI href with a scheme. Same emitter as the two rows above, and a different class — the emitter is not what decides the class." },
+    { "type": "imports", "from": "xs:import", "target": "schemas/local.xsd", "line_number": 7, "meta.resolvable": "file", "note": "schemaLocation, relative. Third emitter." },
+    { "type": "imports", "from": "xs:include", "target": "/absolute/rooted.xsd", "line_number": 8, "meta.resolvable": "file", "note": "schemaLocation, ABSOLUTE. The leading `/` is what a naive scheme test reads as remote, so this row is the control on the control." }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "https://example.invalid/remote.xsd",
+      "note": "schemaLocation already drops remote URIs before emitting, so `external` is unreachable from that emitter. Asserting it here would demand an edge the analyzer is right not to publish — the same shape as a ruling whose overturn condition no correct implementation can meet."
+    },
+    {
+      "type": "imports",
+      "target": "urn:local",
+      "note": "The `namespace` half of a schemaLocation NAMESPACE/URI PAIR is a namespace name, not a path. Emitting it as an import target is the one shape this emitter could plausibly grow, and the first version of this fixture asserted it by forbidding every edge from `xs:import` — which the LOCAL `xs:import` legitimately produces, so the row could not be satisfied by a correct analyzer and was cut rather than weakened."
+    }
+  ],
+  "expectSymbols": [
+    { "name": "xs:import", "kind": "class", "ownerName": "xs:schema", "note": "the REMOTE `xs:import`. Its element and its `schemaLocation` attribute are still published even though no import edge comes of them — a fixture that only checked edges would pass on an analyzer that stopped publishing the element, which is a different and worse defect." },
+    { "name": "schemaLocation", "kind": "property", "ownerName": "xs:import" }
+  ],
+  "expectImports": [
+    { "path": "local-entities.ent", "importType": "xml-doctype" },
+    { "path": "#local-style", "importType": "xml-stylesheet" },
+    { "path": "../shared/remote-style.xsl", "importType": "xml-stylesheet" },
+    { "path": "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd", "importType": "xml-stylesheet" }
+  ]
+}

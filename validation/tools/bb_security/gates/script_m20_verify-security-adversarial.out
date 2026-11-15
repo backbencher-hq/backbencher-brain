@@ -1,0 +1,44 @@
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:25:54] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:25:54] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:25:54] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 11ms [plan=linear largest-intermediate=5]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:25:54] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"ecf87bc4","danglingSources":5,"totalRelationships":9}
+  enriching done 100%
+  ✅ Enriched 4 relationships (0 patterns) in 6ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:25:54] [project-health] project health computed {"projectId":"ecf87bc4dbeb880be961f853c90313d01be85961","complexityScore":95,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(7ms)
+  ✓ health check in 4ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:25:55] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:25:55] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:25:55] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 7ms [plan=linear largest-intermediate=1]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:25:55] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"bf2242ab","danglingSources":1,"totalRelationships":1}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 2ms
+  Computing gravity scores...
+  ✓ gravity in 1ms
+  Analyzing taint flows & security...
+[INFO] [12:25:55] [project-health] project health computed {"projectId":"bf2242ab10527119744fb9c9202ef61fbff5f25f","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(2ms)
+  ✓ health check in 2ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 0ms
+
+SECURITY S2: PASS (58/58, 15/15 negatives)

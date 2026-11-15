@@ -1,0 +1,334 @@
+{
+  "instrument": "markdown store round-trip (validation/m14/fixtures/markdown/store-roundtrip.ts)",
+  "whatThisIs": "the production storeResults over N real corpus markdown files, read back with SQL: how many stored edges carry a resolved target_symbol_id, and how many targets extractLeaf rewrites before the name match",
+  "whatThisIsNot": "a whole-project number. One temp project root, so the store's unique-name stage (_res_name.cnt, parallel-indexer.ts:4008-4020) sees project-wide uniqueness over these N files only. Resolution here is an UPPER bound: a name unique in this project can be published many times in the corpus.",
+  "analyzerSha256": "f12248fcbe1375c64347ba85cebc9e6bc30d3ca368a73777bea2fe903b6115b7",
+  "sample": {
+    "files": 120,
+    "admittedPopulation": 17456,
+    "order": "repo ascending then rel ascending — the same ordering as validation/m14/fixtures/markdown/whole-corpus-census.ts, so this is a PREFIX of that population, not an independent draw",
+    "sampleSha256": "3da65821eef0f45a7e865892946bef765ec2812d8a480d3901ff8feee6a6dc5d",
+    "admissionTest": "detectLanguageFromPath(abs, text) === 'markdown', size <= 512 KB, git ls-files"
+  },
+  "parse": {
+    "degraded": 0,
+    "parseFailures": 0,
+    "symbols": 2185
+  },
+  "disclosedStoreDefect": {
+    "file": "src/ast/parallel-indexer.ts",
+    "lines": "2164-2165",
+    "what": "two VALUES clauses in one prepared statement — 31 placeholders then 30 — so storeResults throws `SqliteError: near \"VALUES\": syntax error` on the first symbol for every language",
+    "reach": "the only `INSERT INTO brain_symbol` in src/ (:2154); storeResults is what :1126, :1144 and :1262 call",
+    "introducedBy": {
+      "duplicate30": "39a29b845 (2026-09-30)",
+      "thirtyOne": "687999ba5 (2026-10-02) 'merge: reconcile the local line with the consolidated origin/main' — kept the superseded clause instead of dropping it"
+    },
+    "presentOn": [
+      "origin/main",
+      "origin/analyzers/ontology-laptop-b",
+      "HEAD"
+    ],
+    "repairAppliedHere": "in-memory deletion of the duplicate VALUES clause, this process only, for statements matching INSERT OR REPLACE INTO brain_symbol",
+    "statementsRepaired": 1,
+    "notEdited": "src/ast/parallel-indexer.ts is shared machinery (workstream §8); the fix is to delete line 2165"
+  },
+  "analyzerEdgeTypes": {
+    "contains": 1975,
+    "uses": 2020,
+    "references": 3
+  },
+  "edgeLoss": {
+    "filterSource": "src/ast/parallel-indexer.ts:3518-3527 (constants) and :3639-3645 (the `continue`)",
+    "pkFormula": "src/ast/parallel-indexer.ts:3657 — ${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? \"?\"}",
+    "pkAndVerb": "brain_relationship.id is TEXT PRIMARY KEY; INSERT OR IGNORE (src/ast/parallel-indexer.ts:2174-2178), so a duplicate id is dropped with no error",
+    "emitted": 3998,
+    "hardFilteredByTheStore": 0,
+    "hardFilteredExamples": [],
+    "survivedTheFilter": 3998,
+    "sameFileDuplicateTripleGroups": 1,
+    "rowsLostToPkByConstruction": 1,
+    "sameFileDuplicateTripleExamples": [
+      "[\"/home/ishaq2321/bb_tests/repositories/Aporia/readme.markdown\",\"references\",\"Dependencies\",99] emitted 2x"
+    ],
+    "projectWideDeficit": 57,
+    "projectWideDeficitPairs": 6,
+    "projectWideDeficitExamples": [
+      "[\"uses\",\"@ref\"]  emitted 204, stored 176, deficit 28",
+      "[\"contains\",\"code_block.@meta\"]  emitted 28, stored 6, deficit 22",
+      "[\"contains\",\"code_block.jldoctest\"]  emitted 66, stored 62, deficit 4",
+      "[\"references\",\"Dependencies\"]  emitted 2, stored 1, deficit 1",
+      "[\"contains\",\"code_block.@docs\"]  emitted 43, stored 42, deficit 1",
+      "[\"contains\",\"code_block.@autodocs\"]  emitted 19, stored 18, deficit 1"
+    ],
+    "projectWideSurplus": 20,
+    "projectWideSurplusPairs": 20,
+    "projectWideSurplusExamples": [
+      "[\"contains\",\"Propagation of `:note`-style metadata\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Operations that preserve `:note`-style metadata\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 1: Issue Labelling\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 2: Issue Investigation then Resolve, Fix, Seek Clarification or Comment\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 3: Issue Investigation and Fix\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 4: Engineering Investments\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 5: Coding Improvements\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 6: Maintain Repo Assist PRs\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 7: Documentation Improvements, Ad Hoc QA, and Project Basics\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 8: Performance Improvements\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 9: Testing Improvements\"]  emitted 1, stored 2, surplus 1",
+      "[\"contains\",\"Task 10: Take the Repository Forward\"]  emitted 1, stored 2, surplus 1"
+    ],
+    "unattributableRows": 1830,
+    "unattributableNote": "brain_relationship has no file column; a row whose source AND target both failed to resolve cannot be attributed by joining either endpoint. The project-wide (type, target) reconciliation is used precisely because it needs no attribution."
+  },
+  "exactReconciliation": {
+    "method": "keyed on the store's own primary-key value (src/ast/parallel-indexer.ts:3657) at the (relationship_type, target_external, line_number) grain, read back with SQL; the remaining half of the key is sourceId, so a deficit at one key is a fold in sourceId",
+    "population": "the 3998 emitted edges that survived the store's hard filter, against 3961 stored rows",
+    "keysConsidered": 3896,
+    "survivingEdges": 3998,
+    "storedRows": 3961,
+    "deficitKeys": 30,
+    "deficitRows": 57,
+    "deficitRowsSameSource": 27,
+    "deficitRowsCrossSource": 30,
+    "surplusKeys": 20,
+    "surplusRows": 20,
+    "surplusRowsWithForeignSource": 20,
+    "storeOnlyKeys": 0,
+    "storeOnlyRows": 0,
+    "deficitRowsEqualsEmittedMinusStored": true,
+    "deficitExamples": [
+      "[\"references\",\"Dependencies\",99]\n        kept source(s) [\"Dependencies\"] from 2 emitted over 2 distinct source(s) [\"Windows\",\"Linux/BSD\"]\n        lost: [\"Windows@99\",\"Linux/BSD@99\"]",
+      "[\"contains\",\"code_block.@meta\",1]\n        kept source(s) [\"document\"] from 21 emitted over 1 distinct source(s) [\"document\"]\n        lost: []",
+      "[\"contains\",\"code_block.@meta\",2]\n        kept source(s) [\"document\"] from 2 emitted over 1 distinct source(s) [\"document\"]\n        lost: []",
+      "[\"uses\",\"@ref\",8]\n        kept source(s) [\"Design of metadata support\"] from 3 emitted over 3 distinct source(s) [\"Design of metadata support\",\"SSH Deploy Keys Walkthrough\",\"Table of contents\"]\n        lost: [\"SSH Deploy Keys Walkthrough@8\",\"Table of contents@8\"]",
+      "[\"uses\",\"@ref\",9]\n        kept source(s) [\"Design of metadata support\"] from 3 emitted over 3 distinct source(s) [\"Design of metadata support\",\"SSH Deploy Keys Walkthrough\",\"Second page\"]\n        lost: [\"SSH Deploy Keys Walkthrough@9\",\"Second page@9\"]",
+      "[\"uses\",\"@ref\",10]\n        kept source(s) [\"Design of metadata support\"] from 3 emitted over 3 distinct source(s) [\"Design of metadata support\",\"DocsXRefTests\",\"Duplicate header tests\"]\n        lost: [\"DocsXRefTests@10\",\"Duplicate header tests@10\"]",
+      "[\"uses\",\"@ref\",11]\n        kept source(s) [\"Design of metadata support\"] from 3 emitted over 3 distinct source(s) [\"Design of metadata support\",\"[PDF Output via LaTeX](@id pdf-output)\",\"DocsXRefTests\"]\n        lost: [\"[PDF Output via LaTeX](@id pdf-output)@11\",\"DocsXRefTests@11\"]",
+      "[\"uses\",\"@ref\",276]\n        kept source(s) [\"Operations that preserve `:note`-style metadata\"] from 2 emitted over 2 distinct source(s) [\"Operations that preserve `:note`-style metadata\",\"Module-level metadata\"]\n        lost: [\"Module-level metadata@276\"]",
+      "[\"uses\",\"@ref\",299]\n        kept source(s) [\"Operations that preserve `:note`-style metadata\"] from 2 emitted over 2 distinct source(s) [\"Operations that preserve `:note`-style metadata\",\"`@id` anchors\"]\n        lost: [\"`@id` anchors@299\"]",
+      "[\"uses\",\"@ref\",71]\n        kept source(s) [\"[The design of handling of columns of a `DataFrame`](@id man-columnhandling)\"] from 3 emitted over 3 distinct source(s) [\"[The design of handling of columns of a `DataFrame`](@id man-columnhandling)\",\"Constructors\",\"[`repo` & `remotes` interaction](@id repo-remote-interaction)\"]\n        lost: [\"Constructors@71\",\"[`repo` & `remotes` interaction](@id repo-remote-interaction)@71\"]",
+      "[\"uses\",\"@ref\",369]\n        kept source(s) [\"Constructing Row by Row\"] from 2 emitted over 2 distinct source(s) [\"Constructing Row by Row\",\"`@meta` block\"]\n        lost: [\"`@meta` block@369\"]",
+      "[\"uses\",\"@ref\",408]\n        kept source(s) [\"Constructing Row by Row\"] from 2 emitted over 2 distinct source(s) [\"Constructing Row by Row\",\"Doctesting as Part of Testing\"]\n        lost: [\"Doctesting as Part of Testing@408\"]"
+    ],
+    "surplusExamples": [
+      "[\"contains\",\"Propagation of `:note`-style metadata\",186]  emitted 1 source(s) [\"Metadata\"], stored 2 source(s) [\"Metadata\",\"Propagation of `:note`-style metadata\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Operations that preserve `:note`-style metadata\",244]  emitted 1 source(s) [\"Propagation of `:note`-style metadata\"], stored 2 source(s) [\"Propagation of `:note`-style metadata\",\"Operations that preserve `:note`-style metadata\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 1: Issue Labelling\",392]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 1: Issue Labelling\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 2: Issue Investigation then Resolve, Fix, Seek Clarification or Comment\",400]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 2: Issue Investigation then Resolve, Fix, Seek Clarification or Comment\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 3: Issue Investigation and Fix\",413]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 3: Issue Investigation and Fix\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 4: Engineering Investments\",428]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 4: Engineering Investments\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 5: Coding Improvements\",439]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 5: Coding Improvements\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 6: Maintain Repo Assist PRs\",447]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 6: Maintain Repo Assist PRs\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 7: Documentation Improvements, Ad Hoc QA, and Project Basics\",454]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 7: Documentation Improvements, Ad Hoc QA, and Project Basics\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 8: Performance Improvements\",462]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 8: Performance Improvements\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 9: Testing Improvements\",466]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 9: Testing Improvements\"]  <- store wrote rows the analyzer did not emit",
+      "[\"contains\",\"Task 10: Take the Repository Forward\",470]  emitted 1 source(s) [\"Workflow\"], stored 2 source(s) [\"Workflow\",\"Task 10: Take the Repository Forward\"]  <- store wrote rows the analyzer did not emit"
+    ],
+    "foldMechanisms": [
+      "src/ast/parallel-indexer.ts:3628-3636 — `if (!sameFileIdOk(sourceId))` -> `enclosingStoreableId(relLine)`; an unstoreable synthetic source becomes the innermost enclosing span, so two sources can land on one id",
+      "src/ast/parallel-indexer.ts:3531-3541 — this/self/me rewritten to the enclosing container",
+      "src/ast/parallel-indexer.ts:3420-3423 — a `contains` edge's source re-anchored by `enclosingStoreableIdByName` at the edge's own line",
+      "src/ast/parallel-indexer.ts:2174-2178 — `INSERT OR IGNORE` into a TEXT PRIMARY KEY drops the loser with no error"
+    ],
+    "grainWarning": "an earlier per-EDGE version of this block reported 1,810 rows 'lost to the source fold'. That was the probe's own artifact: :3420-3423 and :3531-3541 legitimately re-anchor a source, so the row exists. Only n-m at a key is a loss, and only that is claimed here."
+  },
+  "perType": {
+    "contains": {
+      "stored": 1967,
+      "targetBound": 1650,
+      "targetUnbound": 317,
+      "sourceUnbound": 50,
+      "rewrittenByLeaf": 1045,
+      "rewrittenAndUnbound": 317,
+      "rewrittenAndBound": 728,
+      "boundToTheNamedSymbol": 1650,
+      "boundToSomethingElse": 0,
+      "misboundExamples": []
+    },
+    "uses": {
+      "stored": 1992,
+      "targetBound": 2,
+      "targetUnbound": 1990,
+      "sourceUnbound": 1832,
+      "rewrittenByLeaf": 1816,
+      "rewrittenAndUnbound": 1814,
+      "rewrittenAndBound": 2,
+      "boundToTheNamedSymbol": 2,
+      "boundToSomethingElse": 0,
+      "misboundExamples": []
+    },
+    "references": {
+      "stored": 2,
+      "targetBound": 2,
+      "targetUnbound": 0,
+      "sourceUnbound": 0,
+      "rewrittenByLeaf": 0,
+      "rewrittenAndUnbound": 0,
+      "rewrittenAndBound": 0,
+      "boundToTheNamedSymbol": 2,
+      "boundToSomethingElse": 0,
+      "misboundExamples": []
+    }
+  },
+  "totals": {
+    "stored": 3961,
+    "targetBound": 1654,
+    "targetUnbound": 2307,
+    "sourceUnbound": 1882,
+    "rewrittenByLeaf": 2861,
+    "rewrittenAndUnbound": 2131,
+    "rewrittenAndBound": 730,
+    "boundToTheNamedSymbol": 1654,
+    "boundToSomethingElse": 0,
+    "misboundExamples": []
+  },
+  "dottedCodeBlock": {
+    "edges": 707,
+    "unbound": 301,
+    "unboundExamples": [
+      " -> code_block.bash :: store searched bash",
+      " -> code_block.bash :: store searched bash",
+      " -> code_block.markdown :: store searched markdown",
+      " -> code_block.@repl :: store searched @repl",
+      " -> code_block.julia :: store searched julia",
+      " -> code_block.julia :: store searched julia",
+      " -> code_block.julia :: store searched julia",
+      " -> code_block.julia#2 :: store searched julia#2",
+      " -> code_block.markdown :: store searched markdown",
+      " -> code_block.julia :: store searched julia",
+      " -> code_block.julia#2 :: store searched julia#2",
+      " -> code_block.julia :: store searched julia"
+    ],
+    "filesDeclaringBareCodeBlock": 30,
+    "note": "the store searches the LAST dot segment, so `code_block.fsharp` is searched as `fsharp`"
+  },
+  "misboundExamples": [],
+  "unboundTargets": [
+    [
+      "@ref",
+      176
+    ],
+    [
+      "code_block.julia",
+      43
+    ],
+    [
+      "code_block.markdown",
+      42
+    ],
+    [
+      "code_block.csharp",
+      40
+    ],
+    [
+      "code_block.markdown#2",
+      20
+    ],
+    [
+      "code_block.julia-repl",
+      16
+    ],
+    [
+      "https://github.com/dimension-zero",
+      13
+    ],
+    [
+      "code_block.julia#2",
+      10
+    ],
+    [
+      "code_block.yaml",
+      10
+    ],
+    [
+      "code_block.bash",
+      9
+    ],
+    [
+      "code_block.fsharp",
+      9
+    ],
+    [
+      "https://github.com/JuliaDocs/Documenter.jl/issues/1590",
+      8
+    ],
+    [
+      "code_block.markdown#3",
+      8
+    ],
+    [
+      "code_block.@repl",
+      7
+    ],
+    [
+      "code_block.@contents",
+      7
+    ],
+    [
+      "code_block.@index",
+      7
+    ],
+    [
+      "code_block.@example",
+      7
+    ],
+    [
+      "Operation/pandas/DataFrames.jl",
+      6
+    ],
+    [
+      "https://github.com/JuliaDocs/DocumenterMarkdown.jl",
+      6
+    ],
+    [
+      "code_block.julia-repl#2",
+      5
+    ]
+  ],
+  "facts": [
+    {
+      "ok": true,
+      "what": "every sampled file parsed",
+      "detail": "120/120"
+    },
+    {
+      "ok": true,
+      "what": "the loss is resolved to a mechanism rather than left as a residual: at the (type, target, line) grain the deficit minus the surplus equals emitted minus stored, and no stored row exists at a key the analyzer did not emit",
+      "detail": "deficitRows-surplusRows=37 emitted-stored=37 storeOnlyRows=0"
+    },
+    {
+      "ok": true,
+      "what": "the store writes no row at a (type, target, line) the analyzer did not emit, so the coarse tally's 20-row surplus is a grain artifact and not rows the store invented",
+      "detail": "storeOnlyRows=0 over 0 keys"
+    },
+    {
+      "ok": true,
+      "what": "symbol count survives the store",
+      "detail": ""
+    },
+    {
+      "ok": true,
+      "what": "the rewritten/unbound split sums to the rewritten total",
+      "detail": ""
+    },
+    {
+      "ok": true,
+      "what": "the duplicate VALUES clause was present and was repaired in memory",
+      "detail": "statements repaired=1"
+    }
+  ],
+  "sources": {
+    "extractLeaf": "src/ast/parallel-indexer.ts:3377-3391",
+    "insertTimeResolution": "src/ast/parallel-indexer.ts:3498-3501",
+    "resolveTargetStmt": "src/ast/parallel-indexer.ts:2239-2245",
+    "resolveContainsTargetStmt": "src/ast/parallel-indexer.ts:2354-2360",
+    "postStrategy1QualifiedName": "src/ast/parallel-indexer.ts:3976-4005",
+    "postStrategy2UniqueName": "src/ast/parallel-indexer.ts:4008-4020",
+    "reverseWalkJoins": [
+      "src/lsp/impact.ts:529-539",
+      "src/lsp/relations.ts:130-134",
+      "src/lsp/navigation.ts:440-453"
+    ],
+    "codeBlockNamePublished": "src/ast/real-markdown-analyzer.ts:445"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "fixtureId": "css/custom-media-in-every-query-shape",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The `references <- isCustomMediaRef` branch had ZERO corpus occurrences, and a branch with zero occurrences is covered by nothing but a fixture: `css-ontology-probe.ts` measures 0 `@custom-media` declarations and 0 `@media (--x)` uses over the whole admitted corpus, so a corpus number cannot tell a working branch from a broken one. This pins the branch the tree walk widened. It is also the regression pin for two anchored string patterns that were deleted from the analyzer: the previous implementation took the query's whole text and peeled one leading `(` and one trailing `)` off it, which answers `@media (--narrow)` and nothing else — `@media screen and (--wide)` starts with `s`, so nothing was peeled, the leading-`--` test failed and the edge was LOST. Shapes 2 and 4 below are therefore the two rows that fail against the old code, and they are the reason this file exists rather than a comment. The two negatives matter as much: `--plain`-shaped media TYPES are also `keyword_query` nodes, so an implementation matching the node type alone would emit an edge for `@media print`, and a feature query has no `keyword_query` child at all.\n\nM60 pass 13: shape 3's expectation was CORRECTED rather than preserved. It asserted the symbol `@media (--a)` for the block `@media (--a), (--b)` and exactly one `references` edge, while this fixture's own comment above states the intent as \"a comma list, so the scope depends on TWO\". The expectation had encoded the defect it was written to detect: `processMedia` took the first query child for both the scope NAME and the reference walk, so the second term was dropped from the name and could not be walked for references. Both halves now name the whole list and both edges are asserted, so the fixture is strictly STRONGER than before — it fails against the old analyzer on the name, on the edge count and on the second endpoint. Measured over 400 corpus files / 2,827 `media_statement` nodes: 102 comma lists exist and 0 `@custom-media` declarations exist in the admitted corpus, so this shape is pinned ONLY here; the corpus cannot check it.",
+  "knownLimitation": "The comma-list shape resolves only its FIRST query. `@media (--a), (--b)` publishes ONE scope, named after the first query, so the `--b` dependency is dropped rather than attributed to a scope whose name does not mention it. Pinning the first-query behaviour is deliberate: the scope-naming convention is that a scope is named by the query the analyzer reads, and widening it is a separate change with its own measurement. This row is a LIMITATION of the branch, not evidence that the branch handles the list.",
+  "expectSymbols": [
+    {
+      "name": "--narrow",
+      "kind": "variable"
+    },
+    {
+      "name": "--wide",
+      "kind": "variable"
+    },
+    {
+      "name": "--a",
+      "kind": "variable"
+    },
+    {
+      "name": "--b",
+      "kind": "variable"
+    },
+    {
+      "name": "--c",
+      "kind": "variable"
+    },
+    {
+      "name": "@media (--narrow)",
+      "kind": "module"
+    },
+    {
+      "name": "@media screen and (--wide)",
+      "kind": "module"
+    },
+    {
+      "name": "@media (--a), (--b)",
+      "kind": "module"
+    },
+    {
+      "name": "@media not (--c)",
+      "kind": "module"
+    },
+    {
+      "name": "@media print",
+      "kind": "module"
+    },
+    {
+      "name": "@media screen and (min-width: 400px)",
+      "kind": "module"
+    },
+    {
+      "name": ".bare",
+      "kind": "class"
+    },
+    {
+      "name": ".composed",
+      "kind": "class"
+    },
+    {
+      "name": ".listed",
+      "kind": "class"
+    },
+    {
+      "name": ".negated",
+      "kind": "class"
+    },
+    {
+      "name": ".plain",
+      "kind": "class"
+    },
+    {
+      "name": ".feature",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "@media (--narrow)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::--narrow",
+      "meta.evidenceClass": "import_based",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "from": "@media screen and (--wide)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::--wide",
+      "meta.evidenceClass": "import_based",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "from": "@media (--a), (--b)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::--a",
+      "meta.evidenceClass": "import_based",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "from": "@media (--a), (--b)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::--b",
+      "meta.evidenceClass": "import_based",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "from": "@media not (--c)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::--c",
+      "meta.evidenceClass": "import_based",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "contains",
+      "from": "@media (--narrow)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::.bare",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "from": "@media screen and (--wide)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::.composed",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "from": "@media not (--c)",
+      "target": "fixtures/css/custom-media-in-every-query-shape::.negated",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "print",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "target": "min-width",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "target": "screen",
+      "meta.isCustomMediaRef": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

@@ -1,0 +1,117 @@
+{
+ "fixtureId": "markdown/indented-code-block",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "An INDENTED (four-space) code block published nothing at all, while the FENCED form beside it published a per-site `function` — and a reader of the graph could not distinguish 'this document has no code' from 'this document has code the lane dropped'. That is MD-G1, and the count is not the interesting part: measured with the block grammar over 1,138 pinned corpus files there are 217 `indented_code_block` nodes, 100x the 2 the gap originally recorded by a text heuristic. Three properties are pinned. (1) An indented block publishes `code_block` with NO `language` key at all — the construct has nowhere to declare a language, and the fence's `text` default means 'a fence that declared none', which is a different fact. Publishing `language: \"text\"` here would assert a language nobody wrote, and `nodeType` already carries the distinction. (2) The two forms SHARE a site base, which is the part that would otherwise be a collision: a fence with no info string and an indented block both publish `code_block` under one heading, so the second is `code_block#2`. They are the same construct written two ways, and two symbols with one name is the identity defect the fence's own ordinal exists to prevent. (3) A block that is merely INDENTED is not a code block — the bullet at the end is a nested list item and publishes nothing, so this fixture cannot be satisfied by a lane that treats any indented line as code. forbidSymbols pins that `code_block.scala#2` never appears: a block with a language has it in its NAME and therefore its own base, so the ordinal belongs to the no-language site alone.",
+ "expectSymbolCount": [
+  {
+   "name": "code_block",
+   "equals": 3
+  },
+  {
+   "name": "code_block#2",
+   "equals": 1
+  },
+  {
+   "name": "code_block.scala",
+   "equals": 2
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "code_block",
+   "kind": "function",
+   "ownerName": "An indented block on its own",
+   "meta.nodeType": "indented_code_block",
+   "meta.isMarkdownCodeBlock": true
+  },
+  {
+   "name": "code_block",
+   "kind": "function",
+   "ownerName": "Sharing a site identity with the fenced form",
+   "meta.nodeType": "fenced_code_block"
+  },
+  {
+   "name": "code_block#2",
+   "kind": "function",
+   "ownerName": "Sharing a site identity with the fenced form",
+   "meta.nodeType": "indented_code_block",
+   "meta.isRepeatedSite": true
+  },
+  {
+   "name": "code_block",
+   "kind": "function",
+   "ownerName": "The reverse order",
+   "meta.nodeType": "indented_code_block"
+  },
+  {
+   "name": "code_block.scala",
+   "kind": "function",
+   "ownerName": "The reverse order",
+   "meta.nodeType": "fenced_code_block",
+   "meta.language": "scala"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "An indented block on its own",
+   "target": "code_block",
+   "meta.role": "code_block_under_heading",
+   "line_number": 11
+  },
+  {
+   "type": "contains",
+   "from": "Sharing a site identity with the fenced form",
+   "target": "code_block",
+   "meta.role": "code_block_under_heading",
+   "line_number": 19
+  },
+  {
+   "type": "contains",
+   "from": "Sharing a site identity with the fenced form",
+   "target": "code_block#2",
+   "meta.role": "code_block_under_heading",
+   "line_number": 23
+  },
+  {
+   "type": "contains",
+   "from": "The reverse order",
+   "target": "code_block",
+   "meta.role": "code_block_under_heading",
+   "line_number": 35
+  },
+  {
+   "type": "contains",
+   "from": "The reverse order",
+   "target": "code_block.scala",
+   "meta.role": "code_block_under_heading",
+   "line_number": 37
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "code_block.scala#2"
+  },
+  {
+   "name": "code_block#3"
+  },
+  {
+   "name": "a nested list item, not a code block"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "Not a code block",
+   "target": "code_block"
+  },
+  {
+   "from": "Not a code block",
+   "target": "code_block#2"
+  }
+ ],
+ "_seamNote": {
+  "what": "One more node type on the block DFS, sharing the fenced path's site identity, and the oracle derives it from the same node so the differential stays at 0/0 rather than reading the new edges as fabrication.",
+  "why": "The oracle had to move too, and that is the substantive part. A differential that derives fenced blocks and stops at indented ones is asserting that a document with an indented code block and one without it have the same truth, which is false — and leaving the oracle alone turned the fix into 5 unexplained edges on the kubernetes draw, which is the harness correctly reporting that the analyzer had started publishing facts the truth set did not contain. What the corpus shows is worth recording rather than hiding: most of the 217 are not authored code at all but the wrapped continuation lines of deeply-nested list items, which CommonMark genuinely reads as indented code. The grammar is right and the author did not mean a code block. They are published anyway, because the alternative is the asymmetry this fixture exists to close, and a consumer that cares can read `nodeType` and the range."
+ }
+}

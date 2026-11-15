@@ -1,0 +1,10 @@
+{
+  "fixtureId": "javascript/type-usage-graph",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS instanceof type references: JS's only unambiguous named-type usage. Both method-level (this.method) and static-method (check) enclosing scopes resolve.",
+  "expectRelationships": [
+    { "type": "references", "target": "Qux", "meta.relationshipType": "instanceof_check" },
+    { "type": "references", "target": "Date", "meta.relationshipType": "instanceof_check" }
+  ]
+}

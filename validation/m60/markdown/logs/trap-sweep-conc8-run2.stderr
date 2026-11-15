@@ -1,0 +1,1224 @@
+[INFO] [00:41:54] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [00:41:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:55] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:41:55] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:14] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:14] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:14] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:23] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:23] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:23] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:23] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:39] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:42:39] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:00] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:00] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:00] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:00] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:15] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:15] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:15] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:15] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:15] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:52] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:43:57] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:44:10] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:44:10] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:44:38] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:44:38] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ohmyzsh/plugins/nats/README.md | memory access out of bounds
+[INFO] [00:44:48] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:45:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:45:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:45:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/.changesets/11946.md | memory access out of bounds
+[INFO] [00:45:16] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:45:33] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:45:33] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+[INFO] [00:45:33] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm"}
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/tutorial/chapter4/deployment.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/tutorial/chapter5/first-test.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/tutorial/chapter5/testing.md | Aborted(). Build with -sASSERTIONS for more info.
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/tutorial/chapter6/comments-schema.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/tutorial/chapter6/the-redwood-way.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/uploads.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/typescript/introduction.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.6/webhooks.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/auth/dbauth.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/auth/netlify.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/background-jobs.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/cells.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/contributing-walkthrough.md | Aborted(). Build with -sASSERTIONS for more info.
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/create-redwood-app.md | Aborted(). Build with -sASSERTIONS for more info.
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/database-seeds.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/directives.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/environment-variables.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/graphql.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/custom-function.md | Aborted(). Build with -sASSERTIONS for more info.
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/disable-api-database.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/gotrue-auth.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/oauth.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/role-based-access-control.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/test-in-github-actions.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/sending-emails.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/using-gitpod.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/how-to/using-yarn.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/intro-to-servers.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/local-postgres-setup.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/mailer.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/prerender.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/router.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/realtime.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/security.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/services.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/server-file.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/studio.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/toast-notifications.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter1/first-page.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter0/what-is-redwood.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter1/layouts.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter1/second-page.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter2/getting-dynamic.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter2/side-quest.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter3/saving-data.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter4/deployment.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter5/testing.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter5/first-test.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter6/comments-schema.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter7/rbac.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/chapter6/the-redwood-way.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/tutorial/intermission.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/typescript/introduction.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/typescript/utility-types.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/uploads.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.7/webhooks.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/app-configuration-redwood-toml.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/auth/clerk.md | Aborted(). Build with -sASSERTIONS for more info.
+Aborted()
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/auth/auth0.md | Aborted(). Build with -sASSERTIONS for more info.
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/auth/dbauth.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/auth/netlify.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/auth/supertokens.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/background-jobs.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/cells.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/connection-pooling.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/contributing-walkthrough.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/create-redwood-app.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/database-seeds.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/deploy/flightcontrol.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/deploy/coherence.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/deploy/netlify.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/deploy/serverless.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/environment-variables.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/directives.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/graphql.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/graphql/fragments.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/graphql/realtime.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/background-worker.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/disable-api-database.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/custom-function.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/gotrue-auth.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/oauth.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/role-based-access-control.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/sending-emails.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/test-in-github-actions.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/using-gitpod.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/intro-to-servers.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/how-to/using-yarn.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/local-postgres-setup.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/mailer.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/realtime.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/prerender.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/router.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/security.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/server-file.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/studio.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/services.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/toast-notifications.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter0/what-is-redwood.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter1/first-page.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter1/layouts.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter1/second-page.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter2/side-quest.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter2/getting-dynamic.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter3/saving-data.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter4/deployment.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter5/first-test.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter5/testing.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter6/comments-schema.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/intermission.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter7/rbac.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/tutorial/chapter6/the-redwood-way.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/typescript/introduction.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/typescript/utility-types.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/uploads.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-8.8/webhooks.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/api-server/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/api-server/src/logFormatter/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/api/src/logger/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/azureActiveDirectory/api/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/auth0/setup/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/azureActiveDirectory/web/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/clerk/setup/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/custom/setup/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/dbAuth/middleware/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/dbAuth/web/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/firebase/setup/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/netlify/web/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/netlify/api/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/supabase/middleware/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/supabase/web/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth-providers/supertokens/setup/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/auth/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/cli-helpers/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/cli-packages/storybook-vite/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/cli/src/lib/merge/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v2.3.x/tsconfigForRouteHooks/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v2.x.x/updateResolverTypes/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v5.x.x/cellQueryResult/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v5.x.x/updateNodeEngineTo18/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v6.x.x/changeGlobalToGlobalThis/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v6.x.x/replaceComponentSvgs/README.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v6.x.x/entryClientNullCheck/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/codemods/src/codemods/v6.x.x/updateThemeConfig/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/context/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/core/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/create-redwood-app/templates/js/.redwood/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/create-redwood-app/templates/js/web/public/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/create-redwood-rsc-app/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/create-redwood-app/templates/ts/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/eslint-plugin/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/framework-tools/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/internal/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/mailer/core/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/mailer/handlers/nodemailer/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/mailer/renderers/react-email/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/mailer/handlers/studio/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/project-config/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/server-store/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/record/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/structure/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/storybook/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/tui/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/telemetry/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/packages/web/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/tasks/all-contributors/archive/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/tasks/changesets/placeholder.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/tasks/k6-test/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/AI_POLICY.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/ISSUE_TEMPLATE/Feature_request.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/ISSUE_TEMPLATE/Bug_report.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/HISTORY.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/tasks/server-tests/fixtures/redwood-app/web/dist/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/tests/certs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/tests/certs/mtls/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/GUIDE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/AI_POLICY.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/benchsuite/runs/2022-12-16-archlinux-duff/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/RELEASE-CHECKLIST.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/crates/core/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/crates/grep/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/crates/index/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/crates/regex/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/crates/pcre2/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ripgrep/fuzz/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/.github/ISSUE_TEMPLATE/bug_report.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/.github/ISSUE_TEMPLATE/feature_request.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/.tasks.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/benchmarks/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/examples/pub/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/examples/stackoverflow/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/examples/first_app/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/other_projects/devtool_debug_app/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/flutter_riverpod/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/flutter_riverpod/dartdoc/notifiers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/hooks_riverpod/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/hooks_riverpod/dartdoc/core.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/hooks_riverpod/dartdoc/providers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod/dartdoc/core.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_analyzer_utils/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod/dartdoc/providers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_analyzer_utils_tests/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_annotation/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_lint/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_generator/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_devtool_generator/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_lint_flutter_test/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/packages/riverpod_sqflite/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/riverpod/website/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/rocks.nvim/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/rocks.nvim/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/STYLE_GUIDE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/color/hsl/three_args/w3c/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/color/lch/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/color/oklch/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/selector/extend/simple/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/meta/load_css/with/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/css/plain/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/selector/is_superselector/simple/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/core_functions/selector/unify/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/non_conformant/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sass-spec/spec/values/calculation/round/strategy/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/.github/ISSUE_TEMPLATE/bug.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/.github/ISSUE_TEMPLATE/feature.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/.github/ISSUE_TEMPLATE/other-issue.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/.github/pull_request_template.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/LLM_POLICY.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/AGENTS.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/bench/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.2.1-RC2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.2.1-RC4.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.2.2-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.2.2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.0-RC6.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.0-RC2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.0-RC4.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.1-RC3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.1-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.1-RC5.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.3.1-RC7.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.4.0-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.4.0-RC3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.4.0.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.4.1-RC2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.5.0-RC3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.5.0-RC7.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.6.3-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.5.0-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.4.2-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.6.3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.5.0-RC5.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.6.4-RC2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.7.0-RC1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/community-build/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.7.1-RC2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.7.0-RC3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/changelogs/3.7.0.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/.ai/INDEX.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2015-10-23-dotty-compiler-bootstraps.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2016-02-03-essence-of-scala.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2016-05-05-multiversal-equality.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2017-05-31-first-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2017-09-07-third-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2018-04-27-eighth-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2017-12-01-fifth-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2019-01-21-12th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2018-10-10-10th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2019-04-15-14th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2019-11-04-20th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2020-02-05-22nd-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2019-08-30-18th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2020-04-29-24th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2020-07-27-26th-dotty-milestone-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2020-09-21-naming-schema-change.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/architecture/context.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2020-12-18-scala3-m3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2021-03-31-scala3-rc2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_blog/_posts/2021-06-07-scala3.0.1-rc1-release.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/architecture/lifecycle.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/architecture/symbols.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/architecture/types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/community-build.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/debugging/ide-debugging.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/debugging/other-debugging.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/issues/cause.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/issues/reproduce.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/procedures/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/procedures/vulpix.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/sending-in-a-pr.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/backend.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/contributing/testing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/cc/alternatives-to-sealed.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/cc/use-design.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/contexts.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/debug-macros.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/dotty-internals-1-notes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/explicit-nulls.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/higher-kinded-v2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/overall-structure.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/syntax-3.1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/internals/type-system.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/compiler-plugins.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/implicit-conversions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/eta-expansion.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/imports.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/lazy-vals-init.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/match-syntax.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/pattern-bindings.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/operators.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/structural-types-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/type-inference.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/changed-features/wildcards.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/context-bounds.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/context-functions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/conversions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/derivation-macro.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/extension-methods.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/givens.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/multiversal-equality.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/relationship-implicits.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/contextual/type-classes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/auto-apply.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/class-shadowing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/do-while.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/early-initializers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/limit22.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/nonlocal-returns.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/procedure-syntax.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/weak-conformance-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/wildcard-init.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/dropped-features/this-qualifier.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/enums/adts.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/enums/enums-index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E001.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E003.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E007.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E005.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E009.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E013.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E011.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E015.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E017.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E021.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E019.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E025.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E023.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E027.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E029.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E031.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E033.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E035.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E037.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E041.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E039.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E043.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E045.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E053.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E051.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E047.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E049.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E057.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E055.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E059.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E061.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E065.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E063.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E067.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E069.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E071.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E073.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E075.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E081.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E079.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E077.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E083.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E087.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E085.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E089.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E091.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E093.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E097.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E099.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E095.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E101.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E103.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E105.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E107.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E109.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E111.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E113.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E115.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E117.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E121.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E119.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E123.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E125.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E129.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E131.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E135.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E127.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E137.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E133.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E139.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E141.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E143.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E145.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E147.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E149.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E151.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E153.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E157.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E155.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E161.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E159.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E163.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E165.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E167.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E169.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E171.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E173.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E175.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E177.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E179.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E181.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E183.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E185.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E189.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E187.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E191.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E193.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E195.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E197.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E199.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E201.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E205.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E203.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E207.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E209.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E211.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E213.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E215.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E219.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E221.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E223.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E217.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E225.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E227.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/error-codes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E229.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E231.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/canthrow.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/basics.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/checked-exceptions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/classifiers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/overview.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/internals.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/safe.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/capture-checking/separation-checking.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/erased-defs-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/explicit-nulls.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/generalized-method-syntax.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/modularity.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/named-typeargs-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/quoted-patterns-with-polymorphic-functions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/numeric-literals.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/runtimeChecked.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/package-object-values.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/typeclasses.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/experimental/sub-cases.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/language-versions/binary-compatibility.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/language-versions/source-compatibility.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/metaprogramming/inline.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/metaprogramming/macros.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/metaprogramming/staging.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/metaprogramming/reflection.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/new-types/dependent-function-types-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/new-types/match-types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/new-types/intersection-types-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/new-types/type-lambdas.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/new-types/union-types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/new-types/polymorphic-function-types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/creator-applications.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/binary-literals.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/export.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/kind-polymorphism.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/indentation.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/opaques.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/named-tuples.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/other-new-features.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/targetName.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/parameter-untupling.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/toplevel-definitions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/runtimeChecked.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/other-new-features/transparent-traits.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/overview.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/preview/unrolled-defs.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/release-notes/syntax-changes-0.22.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/syntax.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/02-identifiers-names-and-scopes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/04-basic-definitions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/06-expressions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/10-xml-expressions-and-patterns.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/12-the-scala-standard-library.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/08-pattern-matching.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/A1-deprecated.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/A3-to-be-deprecated.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/changed-features/interpolation-escapes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/changed-features/operators.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/contextual/given-imports.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/early-initializers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/class-shadowing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/do-while.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/limit22.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/nonlocal-returns.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/symlits.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/dropped-features/weak-conformance.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/enums/adts.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/new-types/type-lambdas.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/enums/enums.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/other-new-features/control-syntax.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/APPLIEDreference/other-new-features/opaques.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/compiler-plugins.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/implicit-conversions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/lazy-vals-init.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/eta-expansion.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/numeric-literals.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/pattern-bindings.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/type-checking.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/structural-types-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/context-bounds.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/context-functions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/changed-features/vararg-splices.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/conversions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/relationship-implicits.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/derivation.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/givens.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/contextual/type-classes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/dropped-features/package-objects.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/dropped-features/xml.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/experimental/erased-defs.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/experimental/cc.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/experimental/fewer-braces.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/experimental/named-typeargs-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/experimental/numeric-literals.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/experimental/tupled-function.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/language-versions/binary-compatibility.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/language-versions/source-compatibility.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/metaprogramming/inline.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/metaprogramming/macros.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/metaprogramming/reflection.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/metaprogramming/staging.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/new-types/match-types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/new-types/dependent-function-types-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/experimental-defs.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/new-types/polymorphic-function-types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/indentation.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/open-classes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/parameter-untupling-spec.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/safe-initialization.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/threadUnsafe-annotation.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/TODOreference/other-new-features/type-test.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/pkgs/chocolatey/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_spec/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/project/RELEASES.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/repl/src/pprint/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc-testcases/docs/_docs/docs/f1.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc-testcases/docs/_docs/docs/f3.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc-testcases/docs/_docs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/documentation/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/documentation/docs/design.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/basic/_docs/Adoc.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/noDocsIndex/_docs/dir/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/conflicts-pages/_docs/tests/Adoc.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/basic/_docs/dir/nested.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/noConfigEnd/_docs/hello.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/noDocsIndex/_docs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/noGlobalIndex/_docs/dir/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/noGlobalIndex/_docs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/noIndexes/_docs/dir/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/sidebar/_docs/directory/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/static-links/_docs/Adoc.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/static-links/_docs/dir/name.with.md.and.html.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/static-links/_docs/dir/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/scaladoc/test-documentations/static-links/_docs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/tests/neg-custom-args/i20491/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/tests/cmdTest-sbt-tests/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/tests/old-tasty-interpreter-prototype/notes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sdwebimage/.github/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sdwebimage/.github/PULL_REQUEST_TEMPLATE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sdwebimage/Docs/HowToUse.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sdwebimage/Docs/SDWebImage-4.0-Migration-guide.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sdwebimage/Examples/Packages/RealityKitContent/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/.changeset/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/.github/reproduire/needs-reproduction.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/LICENSE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog/2023-11-toggle-group.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog/2024-01-new-components.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog/2024-03-blocks.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog/2025-06-calendar.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog/2026-03-luma.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components-json.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/changelog/2026-05-rhea.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/alert-dialog.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/aspect-ratio.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/badge.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/button-group.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/carousel.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/calendar.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/combobox.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/context-menu.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/checkbox.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/date-picker.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/drawer.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/empty.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/input-group.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/hover-card.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/input.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/kbd.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/menubar.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/navigation-menu.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/popover.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/radio-group.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/resizable.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/tabs.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/select.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/skeleton.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/sheet.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/sonner.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/switch.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/toggle-group.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/components/tooltip.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/dark-mode/astro.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/installation/astro.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/forms/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/dark-mode/svelte.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/installation/manual.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/installation/vite.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/legacy.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/migration/svelte-5.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/skills.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/registry/examples.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/registry/getting-started.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/content/registry/registry-item-json.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/docs/src/lib/registry/styles/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/skills/shadcn-svelte/SKILL.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/packages/cli/LICENSE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/packages/cli/test/fixtures/legacy/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/skills/shadcn-svelte/customization.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/skills/shadcn-svelte/rules/forms.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/skills/shadcn-svelte/rules/styling.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/sv-addons/registry/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shellcheck/builders/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shellcheck/.github/ISSUE_TEMPLATE/bug_report.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shadcn-svelte/sv-addons/sv/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shellcheck/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/.changeset/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/.github/ISSUE_TEMPLATE/BUG_REPORT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/.github/ISSUE_TEMPLATE/FEATURE_REQUEST.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/.github/api_update_reminder.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/CODE_OF_CONDUCT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/LICENSE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/admin-api-client/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/RELEASING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/api-codegen-preset/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/graphql-client/CODE_OF_CONDUCT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/graphql-client/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/guides/billing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/guides/graphql-types.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/guides/oauth.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/guides/runtimes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/guides/webhooks.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/migrating-to-v9.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/migrating-to-v7.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/auth/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/auth/buildEmbeddedAppUrl.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/auth/getEmbeddedAppUrl.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/auth/safeCompare.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/billing/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/billing/check.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/clients/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/billing/subscriptions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/clients/Storefront.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/fulfillment-service/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/flow/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/session/decodeSessionToken.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/session/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/session/getJwtSessionId.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/shopifyApi.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/utils/sanitizeHost.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/utils/validateHmac.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/utils/versionPriorTo.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/webhooks/register.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/webhooks/addHandlers.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/shopify-api/docs/reference/webhooks/getTopicsAdded.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/storefront-api-client/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/shopify-api-js/packages/storefront-api-client/LICENSE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/slim/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/slim/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/slim/MAINTAINERS.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/slim/SECURITY.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/.github/PULL_REQUEST_TEMPLATE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/bigfile.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/dashboard.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/dim.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/gh.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/gitbrowse.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/image.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/init.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/keymap.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/lazygit.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/notifier.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/picker.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/quickfile.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/scope.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/scroll.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/styles.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/win.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/toggle.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/docs/zen.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/tests/image/math.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/snacks.nvim/tests/image/test.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/arrays-sort-address-dirty-bits.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/crosschain-remote-executor-public-initializer.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/eip712-drop-string-fallback.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/enumerable-set-remove-at.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/erc7739-malformed-contents-descr.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/governor-prevent-late-quorum-max-deadline.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/lazy-hooks-return.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/thick-mails-shave.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/olive-tigers-repeat.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/twenty-states-taste.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.changeset/paymaster-signer-eip7702-delegate-binding.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.claude/skills/library-api-design/SKILL.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.github/ISSUE_TEMPLATE/feature_request.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/.claude/skills/testing/SKILL.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/CODE_OF_CONDUCT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/RELEASING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/GUIDELINES.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/audits/2017-03.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/spectre/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/scripts/upgradeable/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/solidity/docs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlalchemy/.github/CODE_OF_CONDUCT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlalchemy/.github/SECURITY.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/doc/json-enhancements.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/AGENTS.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/doc/tcl-extension-testing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/doc/compile-for-unix.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/doc/trusted-schema.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/doc/wal-lock.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/ext/expert/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/org/sqlite/jni/test-script-interpreter.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/jaccwabyt/jaccwabyt.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/ext/qrf/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/test/json/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/sqlite/tool/dbtotxt.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/suave/BENCHMARKS_GUIDE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/suave/benchmarks/InlineBenchmark/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/suave/examples/Http2Demo/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/suave/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/suave/examples/SecurityHeadersExample/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/.changeset/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/AGENTS.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/.github/ISSUE_TEMPLATE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/01-introduction/04-svelte-js-files.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/01-introduction/02-getting-started.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/02-runes/05-$props.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/02-runes/01-what-are-runes.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/02-runes/03-$derived.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/02-runes/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/02-runes/07-$inspect.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/04-key.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/06-snippet.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/02-if.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/11-declaration-tags.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/13-use.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/08-@html.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/10-@const.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/15-in-and-out.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/17-style.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/03-template-syntax/19-await-expressions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/04-styling/01-scoped-styles.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/04-styling/03-custom-properties.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/05-special-elements/04-svelte-body.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/04-styling/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/05-special-elements/02-svelte-window.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/05-special-elements/06-svelte-element.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/06-runtime/02-context.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/05-special-elements/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/06-runtime/04-imperative-component-api.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/06-runtime/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/07-misc/.generated/browser-support.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/07-misc/02-testing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/07-misc/04-custom-elements.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/07-misc/06-v4-migration-guide.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/07-misc/99-faq.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/.generated/client-errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/.generated/compile-errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/.generated/server-errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/.generated/shared-errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/20-svelte.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/21-svelte-animate.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/21-svelte-events.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/21-svelte-compiler.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/21-svelte-motion.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/21-svelte-reactivity.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/21-svelte-store.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/30-compiler-errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/98-reference/30-runtime-errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/99-legacy/01-legacy-let.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/99-legacy/03-legacy-export-let.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/99-legacy/10-legacy-on.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/99-legacy/21-legacy-$$slots.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/99-legacy/40-legacy-component-api.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/99-legacy/30-legacy-svelte-component.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/documentation/docs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/client-errors/errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/compile-errors/style.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/compile-errors/options.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/compile-warnings/a11y.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/compile-warnings/options.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/compile-warnings/style.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/server-errors/errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/messages/shared-errors/errors.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/.github/PULL_REQUEST_TEMPLATE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIO/Docs.docc/Articles/Debugging Allocation Regressions.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIO/Docs.docc/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOChatServer/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOCore/Docs.docc/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOCore/Docs.docc/swift-concurrency.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOEchoServer/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOHTTP1Client/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOPosix/Docs.docc/GSO-GRO-Linux.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOTCPEchoClient/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOUDPEchoClient/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOWebSocketClient/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/_NIOFileSystem/Docs.docc/Extensions/FileSystemProtocol.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/_NIOFileSystem/Docs.docc/Extensions/DirectoryFileHandleProtocol.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Sources/_NIOFileSystem/Docs.docc/Extensions/WritableFileHandleProtocol.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/Tests/NIOFSIntegrationTests/Test Data/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/docs/migration-guide-NIO1-to-NIO2.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/docs/debugging-allocations.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/docs/workarounds.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/swift-nio/docs/public-api.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/.changes/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/.changes/footer.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/.github/CODE_OF_CONDUCT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/.github/SUPPORT.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/BUGPROCESS.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/docs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/docs/debugging.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/docs/destroying.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/docs/plugin-protocol/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/docs/plugin-protocol/releasing-new-version.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/docs/unicode.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/backend/remote-state/kubernetes/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/cloud/e2e/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/command/testdata/plan-out-backend-workspace/.terraform/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/ipaddr/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/rpcapi/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/promising/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/stacks/stackruntime/internal/stackeval/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/internal/stacks/stackruntime/testdata/mainbundle/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/website/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/testing/equivalence-tests/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/.github/ISSUE_TEMPLATE/feature_request.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/.github/PULL_REQUEST_TEMPLATE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/account-map/modules/iam-assume-role-policy/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/account-map/modules/roles-to-principals/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/backing-services/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/ecs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/keycloak-backing-services/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/kops/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/opsgenie/detailed-usage.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/eks/ebs-controller/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/tfstate-backend/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/eks/efs-controller/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/eks/karpenter-provisioner/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/eks/karpenter/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/github-actions-runner/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/guardduty/common/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/iam-delegated-roles/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/spacelift-policy/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/securityhub/securityhub/common/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/spacelift/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/spacelift/docs/spacelift-overview.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/tgw/cross-region-hub-connector/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/tgw/hub/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/docs/targets.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/account-map/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/mixins/github-actions-iam-role/README-github-action-iam-role.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/account-map/modules/roles-to-principals/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/account/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/account-quotas/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/alb/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/api-gateway-account-settings/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/argocd-repo/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/argocd-repo/templates/PULL_REQUEST_TEMPLATE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aurora-mysql-resources/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/auth0/app/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aurora-postgres-resources/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aws-inspector/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/auth0/tenant/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aws-config/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aws-ssosync/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aws-sso/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aws-saml/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/aws-team-roles/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/cloudtrail/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/bastion/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/cognito/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-configuration/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-integration/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-synthetics/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-synthetics-private-location/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-monitor/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/dms/endpoint/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-logs-archive/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/datadog-lambda-forwarder/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/dms/replication-instance/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/dns-delegated/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/documentdb/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/ec2-client-vpn/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/ecr/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/ecs-service/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/actions-runner-controller/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/alb-controller-ingress-group/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/efs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/alb-controller/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/argocd/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/cert-manager/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/cluster/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/datadog-agent/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/external-secrets-operator/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/echo-server/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/karpenter/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/metrics-server/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/github-actions-runner/CHANGELOG.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/idp-roles/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/karpenter-node-pool/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/keda/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/redis/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/promtail/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/spacelift-worker-pool-controller/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eks/storage-class/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/elasticache-redis/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/eventbridge/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/github-oidc-provider/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/github-runners/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/glue/catalog-database/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/global-accelerator-endpoint-group/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/glue/connection/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/glue/iam/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/glue/registry/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/glue/trigger/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/guardduty/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/ipam/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/iam-service-linked-roles/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/kms/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/lambda/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/managed-grafana/api-key/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/managed-grafana/data-source/loki/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/managed-grafana/workspace/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/network-firewall/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/memorydb/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/msk/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/opsgenie-team/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/opsgenie-team/modules/integration/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/philips-labs-github-runners/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/redshift-serverless/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/redshift/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/runs-on/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/security-hub/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/sftp/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/snowflake-account/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/sns-topic/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/spa-s3-cloudfront/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/spacelift/admin-stack/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/sqs-queue/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/sso-saml-provider/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/spacelift/worker-pool/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/tfstate-backend/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/tgw/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/tgw/hub/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/vpc-flow-logs-bucket/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/vpc/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/zscaler/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/.github/ISSUE_TEMPLATE/02-bad_error_message.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/.github/pull_request_template.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/02-guides/01-terralith-to-terragrunt/01-introduction.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/0100-run.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/03-features/01-units/11-terragrunt-cache.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/0450-login.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/0800-list.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/0600-scaffold.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/1100-render.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/stack/0400-generate.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/hcl/0900-fmt.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/info/1200-print.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/backend/0300-bootstrap.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/backend/0302-delete.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/02-cli/02-commands/stack/0402-output.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/03-strict-controls.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/04-reference/07-logging/01-overview.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/08-migrate/07-queue-to-filter.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/08-migrate/01-migrating-from-root-terragrunt-hcl.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/05-community/02-support.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/docs/src/content/docs/08-migrate/03-cli-redesign.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/internal/services/catalog/module/testdata/find_modules/modules/eks-alb-ingress-controller/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/internal/tflint/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/internal/vendored/opentofu/patch/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/test/fixtures/catalog/local-catalog/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/test/fixtures/catalog/local-catalog/modules/with-variables/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/test/fixtures/catalog/terraform-aws-eks/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/test/fixtures/docs/01-quick-start/step-05/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/ARCHITECTURE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terragrunt/test/flake/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/developer-guide/api_compatibility.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/developer-guide/releasing.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/developer-guide/building.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/user-guide/annotations.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/user-guide/calling-modules.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/user-guide/config.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/user-guide/environment_variables.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/docs/user-guide/working-directory.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/terraform/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/.github/ISSUE_TEMPLATE/new-check-request.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/ARCHITECTURE.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tflint/terraform/tfhcl/README.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/.github/ISSUE_TEMPLATE/bug_report.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/CONTRIBUTING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/SIGNING.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/api-gateway/enable-cache-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/api-gateway/use-secure-tls-policy/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/athena/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/autoscaling/enable-at-rest-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/api-gateway/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/autoscaling/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudfront/enable-logging/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudfront/enforce-https/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/autoscaling/no-secrets-in-user-data/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudfront/use-secure-tls-policy/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudtrail/enable-at-rest-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudtrail/ensure-cloudwatch-integration/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudwatch/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/config/aggregate-all-regions/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/codebuild/enable-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/cloudtrail/no-public-log-access/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/documentdb/enable-log-export/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/documentdb/encryption-customer-key/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/dynamodb/enable-at-rest-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ebs/enable-volume-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/dynamodb/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/enable-launch-config-at-rest-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/enforce-http-token-imds/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/add-description-to-security-group/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ebs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/no-public-ip-subnet/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/no-public-ingress-acl/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/no-secrets-in-launch-template-user-data/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/no-sensitive-info/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ec2/no-excessive-port-access/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ecr/enable-image-scans/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ecr/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ecr/repository-customer-key/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/eks/no-public-cluster-access-to-cidr/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/eks/encrypt-secrets/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ecs/enable-in-transit-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elastic-search/enable-in-transit-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elastic-search/enable-domain-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/ecs/no-plaintext-secrets/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/efs/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elastic-search/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elasticache/add-description-for-security-group/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elasticache/enable-backup-retention/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elasticache/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/emr/enable-at-rest-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elb/drop-invalid-headers/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/elb/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/emr/enable-local-disk-encryption/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/iam/enforce-group-mfa/index.md | table index is out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/tfsec/docs/checks/aws/iam/index.md | table index is out of bounds

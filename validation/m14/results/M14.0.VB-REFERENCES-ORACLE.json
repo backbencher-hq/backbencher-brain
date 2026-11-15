@@ -1,0 +1,93 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "08325f7b8f8228cc514f306e46cb3c6814d7169af9d88c74e2699f28923716aa",
+    "sealedAt": "2026-11-04T23:46:59.000Z"
+  },
+  "checks": [
+    {
+      "description": "no published references target is absent from the file that publishes it",
+      "detail": "drawn=2378 edges=21019 NOT-IN-FILE=0 WRONG-LINE=0 SUPPORTED=21019",
+      "id": "vb-references-targets-are-in-file",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "0ece21ae7e1581f70bf013d38efb69c478d60294",
+  "committedAt": "2026-11-04T18:46:59-05:00",
+  "data": {
+    "byRole": {
+      "enumUnderlyingType": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 62,
+        "WRONG-LINE": 0
+      },
+      "eventType": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 1,
+        "WRONG-LINE": 0
+      },
+      "fieldType": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 9208,
+        "WRONG-LINE": 0
+      },
+      "operatorReturnType": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 7,
+        "WRONG-LINE": 0
+      },
+      "parameter": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 7975,
+        "WRONG-LINE": 0
+      },
+      "propertyType": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 2626,
+        "WRONG-LINE": 0
+      },
+      "returnType": {
+        "BRACKETED": 0,
+        "NOT-IN-FILE": 0,
+        "SUPPORTED": 1140,
+        "WRONG-LINE": 0
+      }
+    },
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "drawn": 2378,
+    "notInFileTargets": {},
+    "samples": [],
+    "tally": {
+      "BRACKETED": 0,
+      "NOT-IN-FILE": 0,
+      "SUPPORTED": 21019,
+      "WRONG-LINE": 0
+    },
+    "total": 21019
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.VB-REFERENCES-ORACLE",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "a text oracle: a string literal or comment can supply a token (overcounts SUPPORTED) and a name split across a line continuation is missed (overcounts WRONG-LINE); both directions push toward the analyzer looking worse, which is the safe direction for a gate"
+    },
+    {
+      "description": "the sample is drawn from the checkouts under the configured corpus root; the population is stated in `data.drawn`, not assumed"
+    }
+  ],
+  "regeneratedAt": "2026-11-04T18:46:59-05:00",
+  "regeneratedAtCommit": "0ece21ae7e1581f70bf013d38efb69c478d60294",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "VB references oracle over the derived VB corpus (2378 files, 21019 edges)"
+}

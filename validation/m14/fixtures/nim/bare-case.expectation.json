@@ -1,0 +1,89 @@
+{
+  "comment": "The bare-`case` discriminator fabrication, pinned in BOTH directions. POSITIVE: a genuine `case kind: Kind` discriminator is a real field of its object, so `kind` is published as a property with its `contains` edge — a one-sided pin could be satisfied by dropping every discriminator in the language, and this half is what forbids that. NEGATIVE: on the bare `case` form, tree-sitter-nim's error recovery attaches the following `of A, B:` line to the discriminator slot, and the analyzer must not publish the borrowed names. Four distinct borrowed spellings are pinned, chosen because each defeats a different cheap guard: `AddOpr` and `SubOpr` are legal identifiers, not keywords, so a reserved-word list misses them; `None` is the single-branch shape from nimony/lib/std/opt.nim:34; `float` is a field's TYPE name, recovered from further away in nimony/tests/nimony/object/tsumtype_shared.nim:9, and defeats both a keyword list and a 'is it a constructor of this variant' test. The `contains` forbids are the half that catches a fix which routes the borrowed name through a different owner field.",
+  "expectSymbols": [
+    {
+      "name": "Tagged",
+      "kind": "struct"
+    },
+    {
+      "name": "kind",
+      "kind": "property",
+      "ownerName": "Tagged",
+      "comment": "POSITIVE. A genuine discriminator is written adjacent to `case`, so this IS a field of Tagged. The guard is scoped to the bare form and must not cost this row."
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "ownerName": "Tagged"
+    },
+    {
+      "name": "Node",
+      "kind": "class",
+      "comment": "published, but with NO fields: on the bare form every branch name is a constructor"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Tagged",
+      "target": "kind",
+      "comment": "POSITIVE, and the specific row a blanket suppression of `variant_discriminator_declaration` would delete"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "AddOpr",
+      "comment": "the first constructor of the absorbed `of AddOpr, SubOpr:` line. Not a Nim reserved word, so a keyword-list guard misses it. Published as `property AddOpr` on Node with a `contains` edge before the guard — 2 edges at nimony/tests/nimony/object/deps/msumtype.nim:4"
+    },
+    {
+      "name": "SubOpr",
+      "comment": "the second constructor of the same absorbed line — pinned separately because the guard reads the slot's FIRST declaration, so a bug that reads only the first name could still leak the rest"
+    },
+    {
+      "name": "None",
+      "comment": "the single-branch bare form, from nimony/lib/std/opt.nim:34. 6 edges pointed at it there, the largest single payload of this defect in that repo"
+    },
+    {
+      "name": "Some",
+      "comment": "the second branch of the same single-branch variant"
+    },
+    {
+      "name": "float",
+      "comment": "THE HARD ONE. Recovered from further away — a field's TYPE name, not a branch name (nimony/tests/nimony/object/tsumtype_shared.nim:9 published `property float` on Shape). Defeats a reserved-word guard AND a 'name is one of this variant's constructors' guard, which is why the shipped rule tests the `case`-row adjacency instead. This forbid is what stops a future 'cheap' rewrite of the guard."
+    },
+    {
+      "name": "Circle",
+      "comment": "the branch name of the bare `case` inside Shape. The case with ONE branch, where recovery lands on the constructor"
+    },
+    {
+      "name": "Value",
+      "comment": "the `of Value:` branch of Node"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Node",
+      "target": "AddOpr",
+      "comment": "the fabricated edge itself. The object Node has no field AddOpr; the graph must not assert one"
+    },
+    {
+      "type": "contains",
+      "from": "Node",
+      "target": "SubOpr",
+      "comment": "same, second constructor"
+    },
+    {
+      "type": "contains",
+      "from": "Shape",
+      "target": "float",
+      "comment": "the shape that defeats a keyword guard, asserted as an edge as well as a symbol so a fix that routes the name through a different owner is caught"
+    },
+    {
+      "type": "contains",
+      "from": "Opt",
+      "target": "None",
+      "comment": "the opt.nim:34 payload. `Opt` is deliberately not in expectSymbols — the point of this forbid is that the edge may not exist whether or not the owner was published"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "fixtureId": "scala/m60-given-body-name",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the M60/S6 ruling; spellings and lines recorded from the post-fix run. The defect PUBLISHED edges — three of them, all named after the same value — so the negative half carries the assertion. A symbol constraint is matched field-for-field against the published symbol object, which carries `range` and not `line`, so no expectSymbols row may use `line` — the line is pinned on the RELATIONSHIP instead, where line_number is a real constraint. Relationship rows do carry line_number.",
+  "rationale": "M60/S6 — a given's name is its `name:` field. An anonymous given has none, and the old read scanned direct children for the first `identifier`, which is the given's BODY whenever the body is a bare identifier. Two failures in one: a name is invented where the source declares none, and every such given in one owner then publishes the SAME name, colliding with whatever member really holds it. Measured on 400 files: scala3 has 85 anonymous givens, 40 carry a bare-identifier child, and 28 of the 40 publish a name another symbol under the same owner already holds (24 `given Show[X] = ShowAny` lines in Formatting.scala all landed on `ShowAny`, which is also a real `object ShowAny`). cats-effect: 0 givens at all, so the split is 40/0.",
+  "expectSymbols": [
+    {
+      "name": "Shown",
+      "kind": "class"
+    },
+    {
+      "name": "ShowAny",
+      "kind": "method",
+      "ownerName": "Shown",
+      "comment": "the REAL member the defect collided with"
+    },
+    {
+      "name": "given_1",
+      "ownerName": "Shown",
+      "comment": "THE DEFECT SHAPE: `given Show[String] = ShowAny` — published as `ShowAny` before the fix"
+    },
+    {
+      "name": "given_2",
+      "ownerName": "Shown"
+    },
+    {
+      "name": "given_3",
+      "ownerName": "Shown"
+    },
+    {
+      "name": "given_4",
+      "ownerName": "Shown",
+      "comment": "CONTROL: a non-identifier body was always `given_<n>`; the defect only fired on the identifier-body shape"
+    },
+    {
+      "name": "namedOrd",
+      "ownerName": "Shown",
+      "comment": "CONTROL: a NAMED given reads the same field"
+    },
+    {
+      "name": "+",
+      "ownerName": "Shown",
+      "comment": "CONTROL: the field's node type varies with the name — `given + : Ord[Double]` is an operator_identifier, and the field read keeps it"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "given_1",
+      "line_number": 14
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "given_2",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "given_3",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "given_4",
+      "line_number": 20
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "namedOrd",
+      "line_number": 24
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "+",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "ShowAny",
+      "target": "anonymous_Ord",
+      "line_number": 9
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ShowAny",
+      "kind": "constant",
+      "comment": "the given published under the def's name and kind"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "ShowAny",
+      "line_number": 14,
+      "comment": "THE DEFECT, one row per affected given: three givens published `Shown -> ShowAny` at lines 14/15/16, indistinguishable from the real `def ShowAny` at line 9"
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "ShowAny",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "Shown",
+      "target": "ShowAny",
+      "line_number": 16
+    }
+  ]
+}

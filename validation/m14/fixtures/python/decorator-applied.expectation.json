@@ -1,0 +1,165 @@
+{
+  "fixtureId": "python/decorator-applied",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DECORATORS PRODUCED ZERO RELATIONSHIP ROWS: python kept the decorator's name on the wrapped symbol's `decorators` payload and emitted nothing to the graph, so no consumer could see that `one` depends on `single` or that `Decorated` depends on `first`. The owner admitted `decorates` to the stored vocabulary (commit df5a03eb2) and this is its first emitter. The fixture pins the Lead's contract field-for-field: ONE row per decorator per decorated symbol (multiple decorators = multiple rows, `two` has two and the count rows make a duplicate or a dropped row fail), target = the decorator expression's NAME AS WRITTEN (`@app.route(\"/x\")` -> `app.route`; a call's ARGUMENTS are not part of the name and are not rows), line = the decorator's OWN line (never the def line), and the class + method positions. A `decorates` row is NOT accompanied by a second `references`/`calls` row for the same decorator at that site: the forbid rows state that directly, because before this label those rows did not exist and an implementation that keeps emitting the old `references` placeholder would double the graph. The decorated declarations must all be PUBLISHED symbols — this fixture uses only module/class-body declarations, which is the Lead's rule; a decorator on a local def emits no row and `python/decorators-nested-local-emits-nothing` pins that direction. ROUND 2 (2026-10-18, after the whole-population indexed arm): the DOTTED decorator must carry NO external claim — the whole-pop arm measured `decorates` extFAIL 4,370 (the lane's only refuted claims) because a dotted target's OWNER is its module root (`t`, `patch`, `cython`, `timeout`), and a project publishing any symbol of that spelling refutes an owner claim that was never about the owner. The forbid row states it; the BARE imported decorator keeps its target-bound claim, and the `@dataclass` row is the positive control that the certifier was not simply switched off.",
+  "expectSymbols": [
+    {
+      "name": "one",
+      "kind": "function"
+    },
+    {
+      "name": "two",
+      "kind": "function"
+    },
+    {
+      "name": "three",
+      "kind": "function"
+    },
+    {
+      "name": "four",
+      "kind": "function"
+    },
+    {
+      "name": "Decorated",
+      "kind": "class"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Decorated"
+    },
+    {
+      "name": "Model",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "one",
+      "target": "single",
+      "line_number": 30,
+      "note": "SINGLE bare-name decorator on a function. Line 30 is the `@single` line; the def is on 31 and that line must NOT appear (forbid below)."
+    },
+    {
+      "type": "decorates",
+      "from": "two",
+      "target": "first",
+      "line_number": 35,
+      "note": "MULTIPLE decorators: the first of two rows on one symbol."
+    },
+    {
+      "type": "decorates",
+      "from": "two",
+      "target": "second",
+      "line_number": 36,
+      "note": "MULTIPLE decorators: the second row keeps its OWN line; a single-row implementation cannot pass both this row and the one above."
+    },
+    {
+      "type": "decorates",
+      "from": "three",
+      "target": "app.route",
+      "line_number": 41,
+      "note": "CALLED + DOTTED decorator: target is the written chain `app.route`, the argument `\"/x\"` is not part of the name. This is the spelling the Lead's contract states (`@lib.inject(\"db\")` -> `lib.inject`)."
+    },
+    {
+      "type": "decorates",
+      "from": "four",
+      "target": "functools.wraps",
+      "line_number": 46,
+      "note": "CALLED DOTTED decorator whose argument is an identifier: `single` must NOT become a second row (forbidden below). The chain is kept whole; a leaf-only implementation would publish `wraps` and fail this row."
+    },
+    {
+      "type": "decorates",
+      "from": "Decorated",
+      "target": "first",
+      "line_number": 51,
+      "note": "CLASS decorator: the same emission on a class_definition."
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "second",
+      "line_number": 53,
+      "note": "METHOD decorator: a class-body def is a published member symbol, so its decorator is a row too."
+    },
+    {
+      "type": "decorates",
+      "from": "Model",
+      "target": "dataclass",
+      "line_number": 61,
+      "meta.isDecorator": true,
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "imported-name",
+      "note": "BARE IMPORTED DECORATOR — the positive control: `@dataclass` names a BARE name bound by this file's import, so the target-bound external claim is verified-safe and must stay. A fix that dropped claims for decorates entirely would fail this row."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "decorates",
+      "from": "two",
+      "equals": 2,
+      "note": "TWO decorators, TWO rows — a dropped row and a duplicated row both fail here (equals is an exact count, not >=1)."
+    },
+    {
+      "type": "decorates",
+      "from": "one",
+      "target": "single",
+      "equals": 1,
+      "note": "ONE decorator, ONE row: the duplicate-row direction."
+    },
+    {
+      "type": "decorates",
+      "from": "three",
+      "target": "app.route",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "from": "four",
+      "target": "single",
+      "note": "DECORATOR ARGUMENT IS NOT A ROW: `@functools.wraps(single)` depends on `functools.wraps`; `single` is an argument of that call, not a second dependency of `four`."
+    },
+    {
+      "type": "decorates",
+      "from": "three",
+      "target": "route",
+      "note": "LEAF-ONLY target shape: the written chain is `app.route`; publishing the leaf alone loses the module half for a vocabulary that has no legacy leaf+qualified consumer to preserve."
+    },
+    {
+      "type": "decorates",
+      "from": "one",
+      "target": "single",
+      "line_number": 31,
+      "note": "THE DEF LINE: the decorator is written on 30. An edge pointed at the declaration line hides where the dependency is spelled."
+    },
+    {
+      "type": "references",
+      "from": "one",
+      "target": "single",
+      "note": "DUPLICATE ROW: the old placeholder emission must not survive beside the new label. One row per decorator, one label."
+    },
+    {
+      "type": "references",
+      "from": "three",
+      "target": "app.route",
+      "note": "DUPLICATE ROW, dotted shape — same rule as above."
+    },
+    {
+      "type": "calls",
+      "from": "one",
+      "target": "single",
+      "note": "NOT A CALL: a decorator application is a declaration-header fact; a calls row for it would claim a runtime dispatch this edge is not."
+    },
+    {
+      "type": "decorates",
+      "from": "four",
+      "target": "functools.wraps",
+      "meta.isExternalTarget": true,
+      "note": "THE 4,370-extFAIL FIX: a DOTTED decorator target must carry NO external claim. The arbiter verifies an owner claim through the target's owner — for a chain target that is the MODULE ROOT (`functools`), and any project symbol of that spelling refutes it. The dependency is real; the MARKER was wrong for the shape. `expectRelationships` still pins the row itself (target/line)."
+    }
+  ]
+}

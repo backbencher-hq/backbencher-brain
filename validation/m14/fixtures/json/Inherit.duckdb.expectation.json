@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Inherit.duckdb.json",
+  "authoredFrom": "The second shape the pass-2 corpus probe found: duckdb/src/include/duckdb/storage/serialization/*.json are serialisation schemas for C++ classes. `{ \"class\": \"NotNullConstraint\", \"base\": \"Constraint\", \"constructor\": [\"index\"] }` — `class` DECLARES the type, `base` names its superclass, and every superclass named is declared in the same file. Measured corpus-wide: 21 documents carry a `class` string, all duckdb. The two forbids that matter are the ones a shape-matching probe would have got wrong. (1) A MEMBER DESCRIPTOR: duckdb writes `{ \"id\": 200, \"name\": \"info\", \"type\": \"AlterInfo*\", \"base\": \"ParseInfo\" }` for a FIELD whose C++ class derives from ParseInfo — 16 such statements corpus-wide, and 13 of them name a type the document does not declare. An object with no `class` marker is not a type declaration, and the rule says so structurally rather than by a name list. (2) A reference to a type this document never declares (`Dangling` -> `ParseInfo`) produces NO edge, because an edge to a symbol the file does not contain is the fabrication the ontology workstream calls the most expensive mistake available. The `constructor` array is present deliberately and produces nothing: a constructor DECLARATION is the opposite of a construction, which is why `instantiates` stays ruled on evidence rather than on a grammar inventory.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Inherit.duckdb[1]",
+      "target": "Inherit.duckdb[0]",
+      "line_number": 3,
+      "meta.declaredType": "Constraint",
+      "meta.inheritanceForm": "duckdb_base_class_name",
+      "meta.declarationKey": "base",
+      "meta.reasonCode": "declared_supertype",
+      "confidenceMin": 1,
+      "confidenceMax": 1
+    },
+    {
+      "type": "extends",
+      "from": "Inherit.duckdb[2]",
+      "target": "Inherit.duckdb[0]",
+      "line_number": 4,
+      "meta.declaredType": "Constraint"
+    },
+    {
+      "type": "extends",
+      "from": "Inherit.duckdb[3]",
+      "target": "Inherit.duckdb[0]",
+      "line_number": 5,
+      "meta.declaredType": "Constraint"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Inherit.duckdb[4]",
+      "target": "Inherit.duckdb[4].members[0]"
+    },
+    {
+      "type": "extends",
+      "from": "Inherit.duckdb[4].members[0]",
+      "target": "Inherit.duckdb[0]"
+    },
+    {
+      "type": "extends",
+      "from": "Inherit.duckdb[5]",
+      "target": "Inherit.duckdb[0]"
+    },
+    {
+      "type": "extends",
+      "target": "ParseInfo"
+    },
+    {
+      "type": "instantiates",
+      "target": "Constraint"
+    }
+  ]
+}

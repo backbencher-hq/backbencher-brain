@@ -1,0 +1,10 @@
+# Per-lane index working state. The isolated stores are rebuildable with
+# work/index-fixtures.mts and work/real-corpus-index.mts and duplicate
+# repository content, so they are never committed.
+bbdata/
+bbdata-real/
+bbdata-immut-i1/
+bbdata-immut-i2/
+bbdata-immut-i3/
+t2-copy/
+gate-bbdata/

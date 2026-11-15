@@ -1,0 +1,18 @@
+{
+  "status": "verified",
+  "milestone": "M32",
+  "issue": "SM1",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m32/verify-smoke.ts",
+  "evidenceFile": "SM1.json",
+  "generatedAt": "2026-11-15T04:10:53.869Z",
+  "passed": 14,
+  "failed": 0,
+  "negativeCases": 2,
+  "binary": "bin/bb",
+  "limitations": [
+    "Pty flows rely on util-linux `script`; on systems without it the gate reports blocked rather than silently skipped.",
+    "Journey D uses a loopback mock /embeddings server, not a real provider — live provider validation remains M30.S3's territory.",
+    "The gate rebuilds dist but does not publish or pack; an npm-install context (postinstall) is outside its scope."
+  ]
+}

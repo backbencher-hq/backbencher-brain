@@ -1,0 +1,42 @@
+{
+  "instrument": "xml clause 3 — the references-12 refusal, measured against the corpus instead of asserted from a label",
+  "at": "2026-10-10T21:40:00-04:00",
+  "question": "The bar accepts a refused claim only if the refusal is itself evidenced. The 12 edges the gate counts `unresolved` on `references` are class `unresolved` (X13) in the analyzer. Do their targets name anything the corpus holds — and if they do, is the refusal wrong?",
+  "population": { "files": 11552, "admittedExtensions": "xml,xsd,svg,xsl,xslt,dtd,rng", "parsed": 11552, "failed": 0, "degraded": 0, "artifact": "validation/m14/fixtures/xml/clause3-audit.json" },
+  "method": {
+    "audit": "the whole-population census classifies every edge against its OWN PROJECT's key space and then re-checks every `unresolved` name against a POOLED key space built from all 126 repositories, so 'held nowhere' means every repository, not one.",
+    "scopeNote": "the audit is CLAIM-BLIND and therefore wider than the gate's 277 residual: it lists every edge naming nothing published in its project (2,995), of which the gate counts 277 because the rest now carry verified/unverifiable external claims."
+  },
+  "theTwelve": {
+    "allTwelveAre": "`entity_reference` edges — `&rcaron;` `&iacute;` `&ndash;` `&ldquo;` `&rdquo;` `&deg;` `&qandasetbody;` `&stress;` `&woohoo;` `&mindefault;` `&maxdefault;` — in libxslt's and otp's deliberately-malformed test documents",
+    "publishedSymbolsHeldNowhere": "12 of 12 — no repository PUBLISHES a symbol of any of these names",
+    "sourceDeclarationsExistInTheCorpus": "11 of 12 — measured by searching the corpus source for `<!ENTITY <name>`:",
+    "declaredIn": {
+      "rcaron": "libxslt/tests/docbook/dtd/*/ent/iso-lat2.ent",
+      "iacute": "libxslt/tests/docbook/dtd/*/ent/iso-lat1.ent",
+      "ndash": "libxslt/tests/docbook/dtd/*/ent/iso-pub.ent",
+      "ldquo": "libxslt/tests/docbook/dtd/*/ent/iso-num.ent + tests/xmlspec/xmlspec-v21.dtd",
+      "rdquo": "libxslt/tests/docbook/dtd/*/ent/iso-num.ent + tests/xmlspec/xmlspec-v21.dtd",
+      "deg": "libxslt/tests/docbook/dtd/*/ent/iso-num.ent",
+      "stress": "libxslt/tests/multiple/dict.dtd",
+      "mindefault": "otp/lib/xmerl/test/xmerl_sax_SUITE_data/entity_test.dtd",
+      "maxdefault": "otp/lib/xmerl/test/xmerl_sax_SUITE_data/entity_test.dtd",
+      "qandasetbody": "libxslt/tests/docbook/test/qa.xml ITSELF, in its internal DTD subset (line 4)"
+    },
+    "declaredNowhere": { "woohoo": "no `<!ENTITY woohoo` anywhere in the corpus — genuinely unresolvable" }
+  },
+  "ruling": {
+    "theRefusalIsCorrectAndNowEvidenceBacked": "For 11 of the 12 the declaration EXISTS in the corpus — in the same repository, in the DTD/entity file the document's DOCTYPE points at. An `isExternalTarget` claim says 'the declaration this target names is not in the population', which would be FALSE for those 11. AND THE GATE WOULD STILL VERIFY IT, because `verifyExternalClaim` looks the name up in the PUBLISHED SYMBOL key space and a DTD entity declaration is not published as a symbol. Claiming these edges would therefore not merely be unmeasured — it would be a false statement the gate certifies. That is the strongest form the refusal could take, and it is the opposite of the laundering the bar warns about.",
+    "forWoohoo": "1 of 12 is declared nowhere in the corpus, so a claim on it alone would be true; it is refused for uniformity with the other 11 (same role, same class) and its cost is one edge.",
+    "clause3": "CLOSES: the refusal is evidenced by a measurement — 11/12 have source declarations in the corpus, 1/12 does not."
+  },
+  "defectFoundOnTheWay": {
+    "edge": "`qandasetbody` — 1 edge (4 uses collapse into it), file libxslt/tests/docbook/test/qa.xml line 44",
+    "whatTheAnalyzerSays": "`resolvable: \"unresolved\"` with `danglingEntityReference: true` — the label calls the document's own entity dangling",
+    "whyATreeDump": "the pinned grammar parses this file's `doctypedecl` as `<! DOCTYPE Name ExternalID ERROR >`: the entire internal subset — which holds `<!ENTITY qandasetbody \"<qandadiv>…\">`, a multi-line value containing markup — is an ERROR node. The analyzer never sees a declaration node, so the use is unresolvable TO THE ANALYZER even though the document declares it.",
+    "controlsRun": "internal subsets parse with 0 ERROR and a `GEDecl` child in the simple shapes (SYSTEM+subset, PUBLIC+subset, bare subset, plain multi-line value); a markup-valued entity triggered ERROR in the synthetic shapes too, so the trigger involves the value's content rather than the DOCTYPE form alone. NOT isolated further — recorded as the grammar limitation it is, with the tree dump as evidence.",
+    "classification": "grammar limitation, NOT an analyzer defect and NOT a dangling reference. Overturn: a grammar that parses this internal subset would make the declaration readable and the edge `in-document`.",
+    "cost": "1 edge of 11,108 references on this population (4 source sites)"
+  },
+  "raw": ["validation/m14/fixtures/xml/clause3-audit.json"]
+}

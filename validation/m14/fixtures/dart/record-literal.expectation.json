@@ -1,0 +1,28 @@
+{
+  "fixtureId": "dart/record-literal",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DARTGAP4 RULED BY IMPLEMENTATION + MEASUREMENT. A record literal declares nothing: Dart records are structural, fields are positions (`$1`) or names (`count`), and neither is a declaration a store key space can hold. So the owed surface is not a symbol and not `contains` — it is the READS of the fields, which the member-read arm already publishes. The `receiverTypeUnknown` cut on those rows is CORRECT (a record literal has no owner TYPE NAME written at the site), and this fixture pins that it is the cut that fires rather than a fabricated owner. The decision is stated over the spec's measured population (249 record_literal nodes in 54 files of ProxiCall/lib), not over this fixture's shapes. Destructuring bindings are ordinary bindings and read through the family spelling.",
+  "expectSymbols": [
+    { "name": "recordReads", "kind": "function" },
+    { "name": "recordDestructuring", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "$1" },
+    { "name": "$2" },
+    { "name": "record" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "recordReads", "target": "$1", "meta.isMemberRead": true, "meta.receiverCause": "receiverTypeUnknown", "meta.owner": null, "note": "POSITIONAL FIELD READ — `rec.$1` is already published. `$1` is the grammar's positional spelling (identifier_dollar_escaped), not a fabricated name. The cut fires correctly: no owner type is written at the site, so no owner may be invented." },
+    { "type": "uses", "source": "recordReads", "target": "$2", "meta.isMemberRead": true, "meta.receiverCause": "receiverTypeUnknown", "meta.owner": null, "note": "the second positional field read." },
+    { "type": "uses", "source": "recordReads", "target": "count", "meta.isMemberRead": true, "meta.receiverCause": "receiverTypeUnknown", "meta.owner": null, "note": "a NAMED record field read: `named.count` is a member read whose receiver's type is structural — the same cut, and the same refusal to fabricate an owner name." },
+    { "type": "uses", "source": "recordDestructuring", "target": "recordDestructuring\u0000a", "meta.isLocalRead": true, "meta.localBinding": true, "note": "a destructuring binding's read — `final (int a, String b) = rec` binds through variable_pattern, and the read takes the family binding spelling like every other binding." },
+    { "type": "uses", "source": "recordDestructuring", "target": "recordDestructuring\u0000b", "meta.isLocalRead": true, "meta.localBinding": true, "note": "the second binding of the same destructuring." }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "recordReads", "target": "$1", "meta.owner": "Record", "note": "NO FABRICATED OWNER — a record literal has no type declaration to name; an `owner` here would make the store withdraw a binding for a type that does not exist." },
+    { "type": "contains", "target": "$1", "note": "NO CONTAINMENT — a record literal's fields are not declarations, so there is nothing to contain. This is the DARTGAP4 half that could only be ruled (not implemented): treating a literal as a container would invent a declaration kind the language does not have." },
+    { "type": "contains", "target": "count", "note": "the same for a named field." },
+    { "type": "uses", "source": "recordReads", "target": "record", "note": "the literal itself is not a read of a name called `record`." }
+  ]
+}

@@ -31,7 +31,7 @@ import { createRequire } from "node:module"
 
 const require = createRequire(import.meta.url)
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CORPUS = process.env.SOL_REPO ?? "$HOME/fixtures/repositories/solidity"
+const CORPUS = process.env.SOL_REPO ?? "/home/ishaq2321/bb_tests/repositories/solidity"
 
 /** The file under analysis, and the two files its bases live in. */
 const TARGET = path.join(CORPUS, "contracts/token/common/ERC2981.sol")

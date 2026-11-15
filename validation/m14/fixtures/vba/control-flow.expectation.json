@@ -1,0 +1,16 @@
+{
+  "fixtureId": "vba/control-flow",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "worker", "kind": "variable" },
+    { "name": "Process", "kind": "method" },
+    { "name": "item", "kind": "variable", "ownerName": "Process" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "root", "target": "Worker" },
+    { "type": "uses", "from": "Process", "target": "Application", "meta.construct": "with_receiver" },
+    { "type": "calls", "from": "Process", "target": "Run", "meta.implicitMember": true },
+    { "type": "uses", "from": "Process", "target": "items", "meta.construct": "redim" }
+  ]
+}

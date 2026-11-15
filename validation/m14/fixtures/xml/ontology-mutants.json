@@ -1,0 +1,73 @@
+{
+  "base": {
+    "pass": 21,
+    "fail": 0
+  },
+  "mutants": [
+    {
+      "mutant": "xml/ontology-call-edge-relabelled-as-reference",
+      "defectClass": "neighbouring-type",
+      "description": "The M60 XML ontology GAP for `calls`, reverted. XSLT 1.0 §6 says \"An xsl:call-template element invokes a template by name\"; the pre-gap lane emitted the edge as `references` on the reasoning that a call-template \"names a template DECLARATION\". This mutant relabels every `calls` edge back to `references`, which is exactly the state the lane was in for three waves and the state the census measured at 0 calls edges. It must fail xml/xslt-named-template-calls on two independent rows: the two `expectRelationships` rows that name the type `calls`, and the `forbidRelationships` row forbidding `references outer -> inner`.",
+      "caught": true,
+      "detail": "0 -> 1",
+      "caughtBy": "xml/xslt-named-template-calls"
+    },
+    {
+      "mutant": "xml/ontology-call-source-is-the-call-site",
+      "defectClass": "wrong-endpoint",
+      "description": "The second defect this lane's fixture work found, and the one a type-only assertion cannot catch: a `calls` edge whose SOURCE is the `xsl:call-template` instruction rather than the enclosing template that makes the call. It was the first implementation's actual output — `calls xsl:call-template -> inner` — and a consumer asking \"what does this template call\" gets nothing from it, because one source name carries every call site in the stylesheet. Reverted generically: every `calls` edge is retargeted to `xsl:call-template`. Pinned by the `forbidRelationships` row `calls xsl:call-template -> inner` in xml/xslt-named-template-calls, which is the only assertion in the lane that can tell a caller from a call site.",
+      "caught": true,
+      "detail": "0 -> 1",
+      "caughtBy": "xml/xslt-named-template-calls"
+    },
+    {
+      "mutant": "xml/ontology-recursive-call-dropped",
+      "defectClass": "reference-suppression",
+      "description": "A guard copied from the reference pass, which refuses a construct that references itself. Applied to `calls` it drops RECURSION, because a template invoking itself is ordinary XSLT: `libxslt/tests/XSLTMark/bottles.xsl` calls `bottles` from inside template `bottles` three times. XSLT 1.0 §6 makes two TEMPLATES of one name and import precedence the error (\"It is an error if a stylesheet contains more than one template with the same name and same import precedence\"), not a template calling one of them. This mutant deletes every self-directed call edge, and xml/xslt-named-template-calls must fail on `calls inner -> outer` — mutual recursion with `calls outer -> inner`, both true. A suite that pins only a non-recursive call cannot catch this, which is why the fixture's two calls form a cycle.",
+      "caught": true,
+      "detail": "0 -> 1",
+      "caughtBy": "xml/xslt-named-template-calls"
+    },
+    {
+      "mutant": "xml/ontology-derivation-relabelled-as-reference",
+      "defectClass": "neighbouring-type",
+      "description": "The M60 XML ontology GAP for `extends`, reverted. XSD 1.0 Part 1 §3.4.2 defines `<extension base = xs:QName>` and `<restriction base = xs:QName>` as the qualified name of the BASE TYPE and calls the mechanism type derivation; the pre-gap lane emitted every `base=` value as `references`. This mutant relabels every `extends` edge back to `references`. It must fail THREE fixtures independently: xml/xsd-type-derivation's two `expectRelationships` rows and its two forbid rows, xml/declared-name-xsd's relabelled `<xs:restriction base=\"xs:int\"/>` row and the forbid row added beside it, and nothing else — so a lane that had relabelled only the analyzer and not the fixture would go red here.",
+      "caught": true,
+      "detail": "0 -> 2",
+      "caughtBy": "xml/declared-name-xsd, xml/xsd-type-derivation"
+    },
+    {
+      "mutant": "xml/ontology-derivation-includes-forgotten",
+      "defectClass": "partial-implementation",
+      "description": "A rule that diverts `xs:extension` and forgets `xs:restriction`. Both elements carry `base` and both are type derivation (§3.4.2), and `xs:restriction` is the far more common of the two in the corpus — so a rule written from the shape in the first file found and relabelled nothing else leaves every restriction edge as a `references` edge and looks finished. This mutant relabels only `derivation === \"extension\"` edges back. xml/xsd-type-derivation pins one of each for exactly this reason, and must fail on the `Code -> token` row alone while the `Base` row still passes.",
+      "caught": true,
+      "detail": "0 -> 1",
+      "caughtBy": "xml/xsd-type-derivation"
+    },
+    {
+      "mutant": "xml/ontology-unresolvable-call-published",
+      "defectClass": "phantom-symbol",
+      "description": "The refusal under test, reverted. A `calls` edge whose target this stylesheet does not declare points at a name that lives in an included or imported stylesheet — 724 of libxslt's 1,446 call sites. From inside one file those names cannot be resolved, and publishing the edge puts a name in the graph that no file supports: the M60.R10 class. This mutant adds a `calls` edge for every unresolved call name, which is what emitting all of them would look like. xml/xslt-named-template-calls must fail on `forbidRelationships` `calls outer -> elsewhere` and on `forbidSymbols` `elsewhere`.",
+      "caught": true,
+      "detail": "0 -> 1",
+      "caughtBy": "xml/xslt-named-template-calls"
+    },
+    {
+      "mutant": "xml/placeholder-literal-published",
+      "defectClass": "placeholder-collision",
+      "description": "M60 rule R7, reverted. `unknown` is the placeholder for an endpoint that could not be determined, and no edge endpoint may equal it — a consumer reading the string cannot tell a placeholder from a name. The ontology census resolved both ends of all 191,251 relationships across the 11,066-file corpus and found exactly 2 endpoints equal to it, both in `libxslt/tests/general/bug-166.xsl`, where two `xsl:variable` result-tree fragments each begin with a literal result element `<unknown/>`. This mutant reinstates them. xml/placeholder-literal-refused must fail on all three of its refusal rows — the symbol and the two edge labels — while its two sibling-element rows stay green, which is what distinguishes a value-based refusal from a rule that stopped walking.",
+      "caught": true,
+      "detail": "0 -> 1",
+      "caughtBy": "xml/placeholder-literal-refused"
+    },
+    {
+      "mutant": "xml/ontology-derivation-confidence-downgraded",
+      "defectClass": "confidence-honesty",
+      "description": "Every `calls` and `extends` edge demoted below the 0.7 heuristic threshold with no reason code. The honesty contract §4 requires a sub-1.0 edge to be countable AS a heuristic, which means the tier has to be right as well as the number: both new types are read off the tree and off the vocabulary's own declaration, so neither is a guess and neither may be filed as one. This mutant cannot be caught by a type or line assertion, only by the `meta.evidenceClass` rows the two new fixtures carry — which is why those rows are in the fixtures rather than only in this file's description.",
+      "caught": true,
+      "detail": "0 -> 2",
+      "caughtBy": "xml/xsd-type-derivation, xml/xslt-named-template-calls"
+    }
+  ],
+  "survivors": 0
+}

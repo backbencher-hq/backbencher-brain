@@ -1,0 +1,323 @@
+{
+  "meta": {
+    "lang": "yaml",
+    "instrument": "script/m14/yaml-emission-census.ts (single measurement; no second instrument)",
+    "generator": "script/m14/yaml-declaration.ts — transcribes the arm's own census and REFUSES a sample, a parse-only run, or a bucket closure that does not sum",
+    "sample": 18997,
+    "corpusTotal": 18997,
+    "corpusRepos": 192,
+    "parsed": 18997,
+    "population": "parsed=18997/18997 admitted=18997 exts=yaml,yml index=no",
+    "metric": "edges counted once per (source, type, target) by the analyzer; buckets counted on the SAME edge in the SAME loop",
+    "analyzer": "src/ast/real-yaml-analyzer.ts",
+    "analyzerDigest": "sha256:c515fc8efdbc4640",
+    "generated": "2026-10-23",
+    "measurementForm": "one arm run over the whole admitted population, in ten DISJOINT 2,000-file chunks each taking the arm token with its own declared population, merged by script/m14/yaml-census-merge.ts — chunked because a tree-sitter WASM module's memory grows with every parse and never shrinks, so a single-process walk that LOOKS complete measures a fraction of the population while printing a whole-population header",
+    "census": "validation/m14/measurements/yaml-emission-census-full.json",
+    "paths": 18997,
+    "distinctFiles": 18970,
+    "symlinkedRepoDirsFollowed": 199,
+    "countersDeclared": 53,
+    "countersObserved": 53
+  },
+  "rules": {
+    "measurement": "one arm run over the whole admitted population, transcribed from its own census",
+    "population": "the whole admitted set; no stride and no subsample",
+    "direction": "resolved and external are FLOORS (they may not decrease); ambiguous, otherUnresolved and unclassed are CEILINGS (they may not increase).",
+    "elevenTerms": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges. THIS LANE'S COUNTED FORM IS THE FIVE-BUCKET COARSENING of those eleven, each bucket summing to the type's edges with `unclassed` at 0, and the census FAILS ITS OWN RUN (exit 10) if the buckets do not sum.",
+    "fourExtendedValues": "`decorates`, `renders`, `mixes_in` and `part_of` are RULED as zero-emission facts, each on ONE DECISIVE COUNTER over the whole admitted population with its near miss measured beside it, and each row carries the declared-zero reconciliation (53 counters declared, 53 observed, difference zero both ways). Their absence is the GRAMMAR'S, not the analyzer's: 161 named node types in the served build's own inventory, and none of them is an expression, a call, a supertype clause or a shared-scope include.",
+    "bucketRule": "external = metadata.isExternal === true; resolved = confidence >= 1 and not external; ambiguous = 0 STRUCTURALLY (yaml has no symbol index, so the analyzer never chooses between two same-named declarations); otherUnresolved = confidence < 1 and not external; unclassed = 0 BY CONSTRUCTION and CHECKED, not asserted."
+  },
+  "causeRulingsNote": "Every wall this lane dispositioned, with the population it was measured over and a falsifier that names a RUN and what would FAIL it. The four extended types are here because their ruling IS a wall: the language does not express the relation, and the falsifier says what measurement would overturn that.",
+  "causeRulings": {
+    "contract-not-expressed:decorates": {
+      "population": "parsed=18997/18997 admitted=18997 exts=yaml,yml index=no",
+      "what": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.tag_with_a_call_shaped_argument sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 167 yaml.tag_with_a_constructor_argument sites",
+      "falsifier": {
+        "run": "npx tsx script/m14/yaml-emission-census.ts --parse-only --chunk-idx=<N> --chunk-size=2000 then node script/m14/yaml-census-merge.ts — the chunked whole-population construct census, which counts `yaml.tag_with_a_call_shaped_argument` for every admitted file",
+        "wouldFail": "a NON-ZERO count of `yaml.tag_with_a_call_shaped_argument` falsifies the ruling: the construct the ruling says the language does not express would exist, and decorates would have to be IMPLEMENTED, not ruled. The declaration generator that reads this census REFUSES to write the spec on a non-zero reading (exit 4), so the falsifier is an exit code and not a sentence."
+      }
+    },
+    "contract-not-expressed:renders": {
+      "population": "parsed=18997/18997 admitted=18997 exts=yaml,yml index=no",
+      "what": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.template_component_named_in_a_scalar sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 245 yaml.template_component_named_in_the_file_text sites",
+      "falsifier": {
+        "run": "npx tsx script/m14/yaml-emission-census.ts --parse-only --chunk-idx=<N> --chunk-size=2000 then node script/m14/yaml-census-merge.ts — the chunked whole-population construct census, which counts `yaml.template_component_named_in_a_scalar` for every admitted file",
+        "wouldFail": "a NON-ZERO count of `yaml.template_component_named_in_a_scalar` falsifies the ruling: the construct the ruling says the language does not express would exist, and renders would have to be IMPLEMENTED, not ruled. The declaration generator that reads this census REFUSES to write the spec on a non-zero reading (exit 4), so the falsifier is an exit code and not a sentence."
+      }
+    },
+    "contract-not-expressed:mixes_in": {
+      "population": "parsed=18997/18997 admitted=18997 exts=yaml,yml index=no",
+      "what": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.merge_list_with_a_separate_base_clause sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 1 yaml.merge_sequence_with_more_than_one_alias sites",
+      "falsifier": {
+        "run": "npx tsx script/m14/yaml-emission-census.ts --parse-only --chunk-idx=<N> --chunk-size=2000 then node script/m14/yaml-census-merge.ts — the chunked whole-population construct census, which counts `yaml.merge_list_with_a_separate_base_clause` for every admitted file",
+        "wouldFail": "a NON-ZERO count of `yaml.merge_list_with_a_separate_base_clause` falsifies the ruling: the construct the ruling says the language does not express would exist, and mixes_in would have to be IMPLEMENTED, not ruled. The declaration generator that reads this census REFUSES to write the spec on a non-zero reading (exit 4), so the falsifier is an exit code and not a sentence."
+      }
+    },
+    "contract-not-expressed:part_of": {
+      "population": "parsed=18997/18997 admitted=18997 exts=yaml,yml index=no",
+      "what": "validation/m14/measurements/yaml-emission-census-parse-only.json validation/m14/measurements/yaml-grammar-nodes.json — 161 named node types (of 301 ids) in the grammar's own inventory, served build sha256 e752dc21c359; 0 yaml.include_family_tag_at_the_document_root sites over the whole admitted population (18997 admitted files in 192 repositories); the near miss 55 yaml.include_family_tag_at_a_key_position sites",
+      "falsifier": {
+        "run": "npx tsx script/m14/yaml-emission-census.ts --parse-only --chunk-idx=<N> --chunk-size=2000 then node script/m14/yaml-census-merge.ts — the chunked whole-population construct census, which counts `yaml.include_family_tag_at_the_document_root` for every admitted file",
+        "wouldFail": "a NON-ZERO count of `yaml.include_family_tag_at_the_document_root` falsifies the ruling: the construct the ruling says the language does not express would exist, and part_of would have to be IMPLEMENTED, not ruled. The declaration generator that reads this census REFUSES to write the spec on a non-zero reading (exit 4), so the falsifier is an exit code and not a sentence."
+      }
+    }
+  },
+  "types": {
+    "calls": {
+      "edges": 343,
+      "resolved": 343,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 165,
+      "repos": 54
+    },
+    "contains": {
+      "edges": 1413388,
+      "resolved": 1413388,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 18509,
+      "repos": 192
+    },
+    "decorates": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "ruled": "ontological",
+      "construct": "yaml.tag_with_a_call_shaped_argument",
+      "nearMiss": {
+        "construct": "yaml.tag_with_a_constructor_argument",
+        "count": 167,
+        "files": 77,
+        "repos": 9
+      },
+      "reconciliation": {
+        "countersDeclared": 53,
+        "countersObserved": 53,
+        "declaredNotObserved": 0,
+        "decisiveCounterPresentInArtifact": true,
+        "decisiveCounterRow": {
+          "edges": 0,
+          "files": 0,
+          "repos": 0
+        }
+      },
+      "falsifier": "A YAML tag whose CONSTRUCTOR ARGUMENT IS A CALL — a tag whose suffix carries a call's parenthesis. THE CONSTRUCT IS COUNTED: `yaml.tag_with_a_call_shaped_argument`, over the whole admitted population (and `yaml.tag_with_a_constructor_argument` counts the tags that DO carry an argument, so the pointer shape is measured beside it). If that count is NON-ZERO the application shape IS in the language and `decorates` must be implemented instead of ruled."
+    },
+    "exports": {
+      "edges": 4080,
+      "resolved": 4080,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 68,
+      "repos": 7
+    },
+    "extends": {
+      "edges": 1125,
+      "resolved": 1045,
+      "ambiguous": 0,
+      "otherUnresolved": 64,
+      "external": 16,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 120,
+      "repos": 18
+    },
+    "implements": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "imports": {
+      "edges": 8632,
+      "resolved": 8437,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 195,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 1696,
+      "repos": 171
+    },
+    "instantiates": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "ruled": "ontological",
+      "construct": "yaml.merge_list_with_a_separate_base_clause",
+      "nearMiss": {
+        "construct": "yaml.merge_sequence_with_more_than_one_alias",
+        "count": 1,
+        "files": 1,
+        "repos": 1
+      },
+      "reconciliation": {
+        "countersDeclared": 53,
+        "countersObserved": 53,
+        "declaredNotObserved": 0,
+        "decisiveCounterPresentInArtifact": true,
+        "decisiveCounterRow": {
+          "edges": 0,
+          "files": 0,
+          "repos": 0
+        }
+      },
+      "falsifier": "A mapping that carries a merge LIST (`<<: [*a, *b]`) and names its base SEPARATELY (`extends:` or `allOf:`) — the construct counted by `yaml.merge_list_with_a_separate_base_clause`, with `yaml.merge_sequence_with_more_than_one_alias` counting the common merge list beside it so the difference between the two shapes is measured. If that count is NON-ZERO then YAML DOES have the mixin shape and `mixes_in` must be implemented instead of ruled."
+    },
+    "overrides": {
+      "edges": 32,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 32,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 24,
+      "repos": 12
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "ruled": "ontological",
+      "construct": "yaml.include_family_tag_at_the_document_root",
+      "nearMiss": {
+        "construct": "yaml.include_family_tag_at_a_key_position",
+        "count": 55,
+        "files": 25,
+        "repos": 2
+      },
+      "reconciliation": {
+        "countersDeclared": 53,
+        "countersObserved": 53,
+        "declaredNotObserved": 0,
+        "decisiveCounterPresentInArtifact": true,
+        "decisiveCounterRow": {
+          "edges": 0,
+          "files": 0,
+          "repos": 0
+        }
+      },
+      "falsifier": "An include-family tag whose parent is the DOCUMENT (or the stream) rather than a mapping pair — the construct counted by `yaml.include_family_tag_at_the_document_root`, measured against `yaml.include_family_tag_at_a_key_position` over the whole admitted population. If the root-position count is NON-ZERO then an included fragment reaches the including document's top-level scope and `part_of` must be implemented instead of ruled."
+    },
+    "references": {
+      "edges": 21807,
+      "resolved": 19856,
+      "ambiguous": 0,
+      "otherUnresolved": 1809,
+      "external": 142,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 950,
+      "repos": 104
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "ruled": "grammar-absence",
+      "construct": "yaml.template_component_named_in_a_scalar",
+      "nearMiss": {
+        "construct": "yaml.template_component_named_in_the_file_text",
+        "count": 245,
+        "files": 69,
+        "repos": 3
+      },
+      "reconciliation": {
+        "countersDeclared": 53,
+        "countersObserved": 53,
+        "declaredNotObserved": 0,
+        "decisiveCounterPresentInArtifact": true,
+        "decisiveCounterRow": {
+          "edges": 0,
+          "files": 0,
+          "repos": 0
+        }
+      },
+      "falsifier": "A template expression that NAMES A COMPONENT and IS A YAML SCALAR — the construct counted by `yaml.template_component_named_in_a_scalar`, measured against the text-level `yaml.template_component_named_in_the_file_text` over the whole admitted population. If the scalar count is NON-ZERO then the interpolation IS a YAML value and `renders` must be implemented instead of ruled."
+    },
+    "uses": {
+      "edges": 168,
+      "resolved": 168,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 46,
+      "repos": 8
+    }
+  },
+  "resolution_caveats": [
+    "YAML HAS NO SYMBOL INDEX (`index=no`): there is no INDEX_SPECS entry for this language, so no edge in this lane is resolved against a project symbol table. `resolved` therefore means THE ANALYZER'S OWN SCOPE — a key this lane found in the document or in a file it read — and NOT what a symbol-indexed lane means by the word.",
+    "`ambiguous` IS 0 FOR A STRUCTURAL REASON AND NOT BECAUSE THE POPULATION IS QUIET: with no symbol index there is nothing to be ambiguous between. A reader comparing this lane's `ambiguous` against an indexed lane's is comparing two different questions.",
+    "THE BUCKETS ARE DERIVED FROM THE ANALYZER'S OWN CONFIDENCE AND `isExternal` FLAG, and the rule is stated in `rules.bucketRule` and enforced by the census (exit 10 if the four buckets do not sum to the type's edges). `unclassed` is 0 by construction and CHECKED, not asserted.",
+    "THE FOUR EXTENDED TYPES APPEAR AS ZERO ROWS AND NOT AS ABSENT ONES, and the difference is the point: the census declares all 53 counters it maintains and emits a declared zero for each, so a zero here is a MEASUREMENT THAT FOUND NOTHING rather than a counter that never ran. Before that rule the construct map carried 42 keys and NONE of the four decisive counters.",
+    "`contains` IS LARGE AND THAT IS CORRECT FOR THIS FORMAT: 1,413,388 edges over 18,509 files is what a nested data language looks like — every mapping pair and sequence item is a containment of its parent. It is not a duplication defect."
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "issue": "M56.L1 — Language surface (#787)",
+  "code": "L1",
+  "milestone": "m56",
+  "status": "verified",
+  "checks": 44,
+  "passed": 44,
+  "failed": 0,
+  "negativeCases": 9,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts",
+  "evidenceFile": "L1.json",
+  "generatedAt": "2026-11-09T14:43:43.097Z",
+  "contract": {
+    "snapshot": {
+      "languages": 53,
+      "dedicatedParsers": 53,
+      "families": 50,
+      "analyzers": 50,
+      "relationshipTypes": 14
+    },
+    "registryLanguages": 53,
+    "dedicatedGrammars": 53,
+    "genericRegistryEntries": [],
+    "analyzerModules": 50,
+    "families": 50,
+    "relationshipEnum": [
+      "calls",
+      "extends",
+      "implements",
+      "uses",
+      "imports",
+      "exports",
+      "contains",
+      "references",
+      "overrides",
+      "instantiates",
+      "decorates",
+      "renders",
+      "mixes_in",
+      "part_of"
+    ]
+  },
+  "summary": [
+    "the registry declares 53 languages, 53 with a dedicated grammar",
+    "50 families, one per analyzer module; all 50 modules claimed exactly once",
+    "each family's registry ids are exactly the languages its analyzer module routes",
+    "each family's relationship vocabulary equals what its analyzer source can construct, checked in both directions",
+    "graph.ts's EMITTED/DERIVED split agrees with the authoritative types.ts enum",
+    "the full/structural/generic depth tier has been removed: it had no definition in src/ and was anti-correlated with measured coverage",
+    "no depth record claims a missing analyzer or a missing call graph",
+    "the homepage register points at every family, and /languages publishes each family's extensions, recorded symbols and relationship vocabulary",
+    "the language ledger's other half is generated: an absent type is ruled absent only where the family's analyzer page records the ruling, and unrecorded otherwise"
+  ],
+  "limitations": [
+    "`emits` is derived from the analyzer source by regex over RelationshipType sites and literal type strings, the same over-reporting derivation script/m60/rel-type-coverage-gate.ts uses. A relationship built through an indirection neither regex can see would be missed; the derivation errs toward over-reporting so a family's claim is checked against a superset. The independent audit of that derivation is script/m60/rel-type-coverage-gate.ts (differential-audited labels), not this gate.",
+    "The rendered-surface checks read website/.next, so they are skipped when the site has not been built. The dataset, routing, analyzer and capability checks above always run.",
+    "The ledger's ruled/non-constructed split is generated from the canonical analyzer pages in docs/analyzers: a page with no complete, source-consistent relationship table leaves its family's absences marked unrecorded rather than filling them in. The table is byte-checked against a fresh derivation on every run.",
+    "The homepage pin requires a `data-analyzer=\"<name>\"` point with the generated emits count for every family, and `data-analyzers` = the family total; a missing family cannot pass."
+  ],
+  "failures": []
+}

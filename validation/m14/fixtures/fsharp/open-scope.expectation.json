@@ -1,0 +1,60 @@
+{
+  "fixtureId": "fsharp/open-scope",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-D17, half one (fsharp lane, 2026-09-28) \u2014 WHICH SCOPE an `open` belongs to, for a file with ONE top-level module and its imports written ABOVE the module keyword. In this grammar an `import_decl` is a SIBLING of the file's `module` declaration, not a child of it, so a scope stack maintained by walking down the tree is empty when the walk reaches one, and the answer the analyzer used was wherever the walk happened to be. That is position, and position is not a property of the program: `AssemblyCheck.fs` (open line 3, module line 10) was sourced to the module because the walk had entered it, and `docs/fcs/project.fsx` \u2014 the same shape \u2014 was sourced to `Global` because the walk had not. One rule, two answers, and the two files disagreed with each other rather than with the truth. This file and its sibling `open-scope-script.fsx` are that pair, reduced to the minimum difference between them. Here the imports belong to the file's scope, which is `Fixture.OpenScope`, because a file with one top-level module is in that module wherever the `open` is written. FORMATTING, which cost a run: a `module X` keyword with no `=` must not be followed by a blank\n line before its first declaration. With one, this grammar enters parse recovery, takes the module's name from\n the following `let`, and the fixture quietly becomes about something else \u2014 the first run failed with 'expected\n symbol not found' for the very module the file exists to pin. The symptom pointed at the analyzer and the cause\n was whitespace, which is the shape of bug that is cheapest to fix by reading the failing run and most expensive to\n misattribute.",
+  "expectSymbols": [
+    {
+      "name": "OpenScope",
+      "kind": "module"
+    },
+    {
+      "name": "exists",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "OpenScope",
+      "target": "System",
+      "line_number": 21,
+      "meta.isImport": true,
+      "meta.evidenceClass": "import_based",
+      "note": "THE OPEN DIRECTIVE'S MODULE REFERENCE \u2014 tier import_based: the source writes the dependency (`open System`), so the target spelling is a path the compiler resolves, not a name inference. Pinned 2026-10-17 with the #419-D tier pass."
+    },
+    {
+      "type": "references",
+      "from": "OpenScope",
+      "target": "System.IO",
+      "line_number": 22,
+      "meta.isImport": true
+    },
+    {
+      "type": "contains",
+      "from": "OpenScope",
+      "target": "OpenScope.exists",
+      "line_number": 25
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "Global",
+      "target": "System",
+      "note": "FS-D17: the pre-fix answer for this file. `Global` is FSD10's fallback for a file with no module at all, and this file has one \u2014 the fallback is for a different situation and reaching for it here loses the only scope that exists."
+    },
+    {
+      "type": "references",
+      "from": "Global",
+      "target": "System.IO",
+      "note": "FS-D17, same rule, second import. Two forbids because the rule is per-edge: a mutant that reverted only the first import would be caught by the first row alone and would look covered."
+    },
+    {
+      "type": "references",
+      "from": "exists",
+      "target": "System",
+      "note": "FSD10 restated: an import is never sourced from the name it opens. Self-sourcing makes the edge unfalsifiable \u2014 every target would then reference itself \u2014 so the owner is the enclosing scope, never the module being opened."
+    }
+  ]
+}

@@ -49,7 +49,7 @@ import { readFileSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : undefined
 const MAX = Number((argv.includes("--max") ? argv[argv.indexOf("--max") + 1] : "0")) || 0

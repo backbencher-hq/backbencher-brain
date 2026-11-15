@@ -1,0 +1,32 @@
+{
+  "fixtureId": "java/exports-top-level-types-only",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPORTS_JAVA2 (M14 ontology). Pins the export set's TWO HALVES, because dropping either is a measured corpus defect rather than a hypothetical one. JLS 7.6 makes importability a property of a top-level TYPE: `import com.acme.exports.Api;` compiles, `import com.acme.exports.Api.Nested;` compiles too but the importable unit is `Api`, and there is no `import` that binds a bare method name at all. The guard was `!s.ownerName` alone for this lane's earlier commit and that publishes members: measured over java-lib's 3,275 files through the production path, 60 symbols carry no ownerName while not being a top-level type declaration — every one a method_declaration, in 2 files — which the name dedupe collapses to 14 distinct names, so 14 METHODS were published as importable units (`com.google.common.base -> checkNotNull`, `-> checkElementIndex`, `-> badPositionIndex` and 11 more), caught by the lane oracle at 14 FP / 0 FN. Replacing the guard with the grammar's node type ALONE is equally wrong and was measured too: a nested type's node type is the same `class_declaration`, so 300 corpus files produced 479 exports edges against the oracle's 294 — +185 nested types. The export set is therefore `!ownerName AND nodeType in {class,interface,enum,record,annotation_type}_declaration`, and both directions are pinned here: the `forbid` rows cover nested types, which the nodeType-only guard lets through, and the fact that no method appears in `expect` covers the ownerName-only guard. `record` and `@interface` map to SymbolKind Class in this lane (mapTypeToSymbolKind), so the pins say class and the node type is recorded on metadata.nodeType instead.",
+  "expectSymbols": [
+    { "name": "Api", "kind": "class" },
+    { "name": "Holder", "kind": "class" },
+    { "name": "Color", "kind": "enum" },
+    { "name": "Marker", "kind": "class" },
+    { "name": "Nested", "kind": "class", "ownerName": "Api" },
+    { "name": "Deep", "kind": "interface", "ownerName": "Api" },
+    { "name": "inner", "kind": "class", "ownerName": "Holder" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "source": "com.acme.exports", "target": "Api", "meta.relationshipType": "java_exportable_unit", "meta.exportForm": "public_top_level_type", "confidence": 1.0 },
+    { "type": "exports", "source": "com.acme.exports", "target": "Holder", "meta.relationshipType": "java_exportable_unit", "confidence": 1.0 },
+    { "type": "exports", "source": "com.acme.exports", "target": "Color", "meta.relationshipType": "java_exportable_unit", "confidence": 1.0 },
+    { "type": "exports", "source": "com.acme.exports", "target": "Marker", "meta.relationshipType": "java_exportable_unit", "confidence": 1.0 },
+
+    { "type": "contains", "source": "Api", "target": "Nested", "comment": "the membership the export edge refuses to express" },
+    { "type": "contains", "source": "Api", "target": "aMethod", "comment": "a member method is contained, never exported — JLS 7.6" },
+    { "type": "contains", "source": "Holder", "target": "inner", "comment": "a nested record is contained" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "Nested", "comment": "NESTED TYPE: its metadata.nodeType is `class_declaration`, the same as a top-level class, so a guard that tests node type without `!ownerName` publishes it. This row is the only thing that kills that mutant." },
+    { "type": "exports", "target": "Deep", "comment": "same for an interface nested in a class" },
+    { "type": "exports", "target": "inner", "comment": "same for a nested record — the node type is `record_declaration`, so it also passes a naive 'is it a type' test" },
+    { "type": "exports", "target": "aMethod", "comment": "MEMBER METHOD: no `import` in java binds a bare member name, so an exports edge for one is a fabricated importability claim. This is the 14-false-positive corpus defect, pinned on the smallest input that reproduces it." },
+    { "type": "exports", "target": "help", "comment": "same rule for a method whose enclosing type the scope stack lost — the fixture cannot manufacture that second bug, so this row documents the shape the corpus measurement caught" }
+  ]
+}

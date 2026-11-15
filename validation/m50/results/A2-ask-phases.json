@@ -2,7 +2,7 @@
   "probe": "M50.A2-ask-phases",
   "at": "2026-09-12T04:14:11.714Z",
   "query": "where are foreign keys enforced?",
-  "resolvedDbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "resolvedDbPath": "/home/ishaq2321/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
   "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
   "queryModel": "nvidia/nemotron-3-embed-1b",
   "queryDim": 2048,

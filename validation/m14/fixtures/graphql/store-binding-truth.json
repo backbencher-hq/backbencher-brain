@@ -1,0 +1,550 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-graphql-store-binding-truth",
+  "generatedAt": "2026-10-12T18:41:17.507Z",
+  "producedBy": "validation/m14/fixtures/graphql/store-binding-truth.mts",
+  "population": {
+    "repos": "(all)",
+    "filesCopiedForIndexing": 2008,
+    "filesInTheStore": 1909,
+    "filesTheIndexerDidNotAdmit": 99,
+    "filesTheIndexerDidNotAdmitByExtension": {
+      ".graphqls": 97,
+      ".graphql": 2
+    },
+    "filesTheIndexerDidNotAdmitExamples": [
+      "gql-gqlgen/_examples/embedding/parent.graphqls",
+      "gql-gqlgen/_examples/embedding/subdir/schemadir/root.graphqls",
+      "gql-gqlgen/_examples/embedding/subdir/subdir.graphqls",
+      "gql-gqlgen/_examples/enum/enum.graphqls",
+      "gql-gqlgen/_examples/federation/accounts/graph/schema.graphqls",
+      "gql-gqlgen/_examples/federation/products/graph/schema.graphqls",
+      "gql-gqlgen/_examples/federation/reviews/graph/schema.graphqls",
+      "gql-gqlgen/_examples/large-project-structure/integration/schema.graphqls"
+    ],
+    "filesTheIndexerDidNotAdmitByRule": {
+      "extension not routed anywhere by language-detection.ts": 97,
+      "ParallelIndexerConfig.skipPatterns": 1,
+      "built-in ignore glob (e.g. **/testData/**) in discoverAndFilterFiles": 1
+    },
+    "filesTheIndexerDidNotAdmitByRuleExamples": {
+      "extension not routed anywhere by language-detection.ts": [
+        "gql-gqlgen/_examples/embedding/parent.graphqls",
+        "gql-gqlgen/_examples/embedding/subdir/schemadir/root.graphqls",
+        "gql-gqlgen/_examples/embedding/subdir/subdir.graphqls",
+        "gql-gqlgen/_examples/enum/enum.graphqls"
+      ],
+      "ParallelIndexerConfig.skipPatterns": [
+        "gql-gqlgen/integration/src/generated/schema-expected.graphql"
+      ],
+      "built-in ignore glob (e.g. **/testData/**) in discoverAndFilterFiles": [
+        "hasura-engine/cli/internal/metadataobject/actions/testdata/build/t1/metadata/actions.graphql"
+      ]
+    },
+    "indexMs": 573160,
+    "runNote": "ONE run, ONE index — the store is order-dependent and every number here is a single run"
+  },
+  "predicate": {
+    "own-once": "the edge's own file declares the target name exactly once — the model claims production binds THAT declaration; anything else is a violation",
+    "own-many": "the own file declares it more than once — the store's write order decides; reported, not scored",
+    "own-none": "only foreign declarations answer — `s.id` decides between them; reported, not scored",
+    "no-source": "the edge carries no source symbol, so 'its own file' does not exist"
+  },
+  "perType": {
+    "contains": {
+      "edges": 120433,
+      "bound": 120375,
+      "unbound": 58,
+      "boundToOwnFile": 120374,
+      "boundToTheOwnOnceDecl": 15253,
+      "boundElsewhere": 1,
+      "byClass": {
+        "own-once": {
+          "edges": 15253,
+          "bound": 15253,
+          "unbound": 0,
+          "boundToOwnFile": 15253,
+          "boundToTheOwnOnceDecl": 15253,
+          "boundElsewhere": 0
+        },
+        "own-none": {
+          "edges": 60077,
+          "bound": 60019,
+          "unbound": 58,
+          "boundToOwnFile": 60018,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 1
+        },
+        "own-many": {
+          "edges": 45103,
+          "bound": 45103,
+          "unbound": 0,
+          "boundToOwnFile": 45103,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 0
+        }
+      },
+      "byAnalyzerClass": {
+        "(none)": {
+          "edges": 60356,
+          "bound": 60356,
+          "unbound": 0,
+          "boundToOwnFile": 60356,
+          "boundToTheOwnOnceDecl": 15253,
+          "boundElsewhere": 0
+        },
+        "contains": {
+          "edges": 60077,
+          "bound": 60019,
+          "unbound": 58,
+          "boundToOwnFile": 60018,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 1
+        }
+      },
+      "examples": []
+    },
+    "references": {
+      "edges": 67172,
+      "bound": 67033,
+      "unbound": 139,
+      "boundToOwnFile": 34784,
+      "boundToTheOwnOnceDecl": 34276,
+      "boundElsewhere": 32249,
+      "byClass": {
+        "own-none": {
+          "edges": 32388,
+          "bound": 32249,
+          "unbound": 139,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 32249
+        },
+        "own-once": {
+          "edges": 34276,
+          "bound": 34276,
+          "unbound": 0,
+          "boundToOwnFile": 34276,
+          "boundToTheOwnOnceDecl": 34276,
+          "boundElsewhere": 0
+        },
+        "own-many": {
+          "edges": 508,
+          "bound": 508,
+          "unbound": 0,
+          "boundToOwnFile": 508,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 0
+        }
+      },
+      "byAnalyzerClass": {
+        "variable_type": {
+          "edges": 340,
+          "bound": 300,
+          "unbound": 40,
+          "boundToOwnFile": 1,
+          "boundToTheOwnOnceDecl": 1,
+          "boundElsewhere": 299
+        },
+        "directive_argument_type": {
+          "edges": 902,
+          "bound": 901,
+          "unbound": 1,
+          "boundToOwnFile": 253,
+          "boundToTheOwnOnceDecl": 253,
+          "boundElsewhere": 648
+        },
+        "field_return_type": {
+          "edges": 37365,
+          "bound": 37276,
+          "unbound": 89,
+          "boundToOwnFile": 22163,
+          "boundToTheOwnOnceDecl": 21664,
+          "boundElsewhere": 15113
+        },
+        "field_argument_type": {
+          "edges": 11682,
+          "bound": 11682,
+          "unbound": 0,
+          "boundToOwnFile": 4921,
+          "boundToTheOwnOnceDecl": 4914,
+          "boundElsewhere": 6761
+        },
+        "input_field_type": {
+          "edges": 16883,
+          "bound": 16874,
+          "unbound": 9,
+          "boundToOwnFile": 7446,
+          "boundToTheOwnOnceDecl": 7444,
+          "boundElsewhere": 9428
+        }
+      },
+      "examples": []
+    },
+    "uses": {
+      "edges": 50754,
+      "bound": 33650,
+      "unbound": 17104,
+      "boundToOwnFile": 9363,
+      "boundToTheOwnOnceDecl": 8686,
+      "boundElsewhere": 24287,
+      "byClass": {
+        "own-none": {
+          "edges": 42007,
+          "bound": 24903,
+          "unbound": 17104,
+          "boundToOwnFile": 618,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 24285
+        },
+        "own-once": {
+          "edges": 8686,
+          "bound": 8686,
+          "unbound": 0,
+          "boundToOwnFile": 8686,
+          "boundToTheOwnOnceDecl": 8686,
+          "boundElsewhere": 0
+        },
+        "no-source": {
+          "edges": 2,
+          "bound": 2,
+          "unbound": 0,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 2
+        },
+        "own-many": {
+          "edges": 59,
+          "bound": 59,
+          "unbound": 0,
+          "boundToOwnFile": 59,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 0
+        }
+      },
+      "byAnalyzerClass": {
+        "enum_value_reference": {
+          "edges": 1835,
+          "bound": 1751,
+          "unbound": 84,
+          "boundToOwnFile": 1674,
+          "boundToTheOwnOnceDecl": 1056,
+          "boundElsewhere": 77
+        },
+        "directive_application": {
+          "edges": 3546,
+          "bound": 3386,
+          "unbound": 160,
+          "boundToOwnFile": 2081,
+          "boundToTheOwnOnceDecl": 2037,
+          "boundElsewhere": 1305
+        },
+        "field_selection": {
+          "edges": 36756,
+          "bound": 21815,
+          "unbound": 14941,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 21815
+        },
+        "inline_fragment_type_condition": {
+          "edges": 1314,
+          "bound": 219,
+          "unbound": 1095,
+          "boundToOwnFile": 3,
+          "boundToTheOwnOnceDecl": 3,
+          "boundElsewhere": 216
+        },
+        "variable_reference": {
+          "edges": 761,
+          "bound": 644,
+          "unbound": 117,
+          "boundToOwnFile": 620,
+          "boundToTheOwnOnceDecl": 610,
+          "boundElsewhere": 24
+        },
+        "fragment_spread": {
+          "edges": 2432,
+          "bound": 2426,
+          "unbound": 6,
+          "boundToOwnFile": 2106,
+          "boundToTheOwnOnceDecl": 2106,
+          "boundElsewhere": 320
+        },
+        "fragment_type_condition": {
+          "edges": 1162,
+          "bound": 529,
+          "unbound": 633,
+          "boundToOwnFile": 145,
+          "boundToTheOwnOnceDecl": 145,
+          "boundElsewhere": 384
+        },
+        "union_member": {
+          "edges": 2504,
+          "bound": 2456,
+          "unbound": 48,
+          "boundToOwnFile": 2322,
+          "boundToTheOwnOnceDecl": 2317,
+          "boundElsewhere": 134
+        },
+        "root_operation_type": {
+          "edges": 444,
+          "bound": 424,
+          "unbound": 20,
+          "boundToOwnFile": 412,
+          "boundToTheOwnOnceDecl": 412,
+          "boundElsewhere": 12
+        }
+      },
+      "examples": []
+    },
+    "exports": {
+      "edges": 10333,
+      "bound": 10333,
+      "unbound": 0,
+      "boundToOwnFile": 0,
+      "boundToTheOwnOnceDecl": 0,
+      "boundElsewhere": 10333,
+      "byClass": {
+        "no-source": {
+          "edges": 10333,
+          "bound": 10333,
+          "unbound": 0,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 10333
+        }
+      },
+      "byAnalyzerClass": {
+        "exports": {
+          "edges": 10333,
+          "bound": 10333,
+          "unbound": 0,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 10333
+        }
+      },
+      "examples": []
+    },
+    "implements": {
+      "edges": 3177,
+      "bound": 3165,
+      "unbound": 12,
+      "boundToOwnFile": 3121,
+      "boundToTheOwnOnceDecl": 3119,
+      "boundElsewhere": 44,
+      "byClass": {
+        "own-once": {
+          "edges": 3119,
+          "bound": 3119,
+          "unbound": 0,
+          "boundToOwnFile": 3119,
+          "boundToTheOwnOnceDecl": 3119,
+          "boundElsewhere": 0
+        },
+        "own-none": {
+          "edges": 56,
+          "bound": 44,
+          "unbound": 12,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 44
+        },
+        "own-many": {
+          "edges": 2,
+          "bound": 2,
+          "unbound": 0,
+          "boundToOwnFile": 2,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 0
+        }
+      },
+      "byAnalyzerClass": {
+        "implements": {
+          "edges": 3177,
+          "bound": 3165,
+          "unbound": 12,
+          "boundToOwnFile": 3121,
+          "boundToTheOwnOnceDecl": 3119,
+          "boundElsewhere": 44
+        }
+      },
+      "examples": []
+    },
+    "overrides": {
+      "edges": 9790,
+      "bound": 9788,
+      "unbound": 2,
+      "boundToOwnFile": 9788,
+      "boundToTheOwnOnceDecl": 0,
+      "boundElsewhere": 0,
+      "byClass": {
+        "own-none": {
+          "edges": 9790,
+          "bound": 9788,
+          "unbound": 2,
+          "boundToOwnFile": 9788,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 0
+        }
+      },
+      "byAnalyzerClass": {
+        "interface_member_supplied": {
+          "edges": 9790,
+          "bound": 9788,
+          "unbound": 2,
+          "boundToOwnFile": 9788,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 0
+        }
+      },
+      "examples": []
+    },
+    "imports": {
+      "edges": 86,
+      "bound": 80,
+      "unbound": 6,
+      "boundToOwnFile": 0,
+      "boundToTheOwnOnceDecl": 0,
+      "boundElsewhere": 80,
+      "byClass": {
+        "no-source": {
+          "edges": 86,
+          "bound": 80,
+          "unbound": 6,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 80
+        }
+      },
+      "byAnalyzerClass": {
+        "imports": {
+          "edges": 86,
+          "bound": 80,
+          "unbound": 6,
+          "boundToOwnFile": 0,
+          "boundToTheOwnOnceDecl": 0,
+          "boundElsewhere": 80
+        }
+      },
+      "examples": []
+    }
+  },
+  "byResolverKey": {
+    "note": "the same edges under the three spellings a declaration can be found by — (a) the symbol's name (the published classes above), (b) its qualified_name ALIAS (the key the lane's own probe adds), (c) extractLeaf(target) matched to name (the key resolveTargetStmt is queried with). The first version of this probe used (a) alone and called the rows it could not see an analyzer anomaly.",
+    "correction": "The first version of this probe matched the edge's target against the symbol's `name` alone. The qualified_name ALIAS (axis b) alone finds 69907 more own-file-determinate edges, 9784 of them `overrides` — the class the first version reported as an unexplained analyzer/store disagreement. The leaf key (axis c) adds 273 beyond both. Every edge in all three classes bound exactly the declaration its own file carries; the analyzer was never wrong and this instrument's key was.",
+    "leafReducedTargets": 79692,
+    "leafReducedShare": 0.3045,
+    "relationshipRows": 261745,
+    "ownFileDeterminateEdges": 131514,
+    "ownFileDeterminateBoundToTheDeclaration": 131514,
+    "ownFileDeterminateUnaccounted": 0,
+    "classes": {
+      "own-once by (a) NAME": {
+        "edges": 61334,
+        "bound": 61334,
+        "unbound": 0,
+        "boundToTheOwnDecl": 61334,
+        "boundToAnOwnDecl": 61334,
+        "boundElsewhere": 0,
+        "byType": {
+          "contains": 15253,
+          "uses": 8686,
+          "references": 34276,
+          "implements": 3119
+        }
+      },
+      "declared NOWHERE in the own file under any of the three keys": {
+        "edges": 73893,
+        "bound": 56578,
+        "unbound": 17315,
+        "boundToTheOwnDecl": 0,
+        "boundToAnOwnDecl": 0,
+        "boundElsewhere": 56578,
+        "byType": {
+          "references": 32388,
+          "uses": 41389,
+          "implements": 56,
+          "contains": 58,
+          "overrides": 2
+        }
+      },
+      "own-once by (b) QUALIFIED-NAME alias": {
+        "edges": 69907,
+        "bound": 69907,
+        "unbound": 0,
+        "boundToTheOwnDecl": 69907,
+        "boundToAnOwnDecl": 69907,
+        "boundElsewhere": 0,
+        "byType": {
+          "contains": 59975,
+          "overrides": 9784,
+          "uses": 148
+        }
+      },
+      "no-source": {
+        "edges": 10421,
+        "bound": 10415,
+        "unbound": 6,
+        "boundToTheOwnDecl": 0,
+        "boundToAnOwnDecl": 0,
+        "boundElsewhere": 0,
+        "byType": {
+          "exports": 10333,
+          "uses": 2,
+          "imports": 86
+        }
+      },
+      "own-many by (a) NAME": {
+        "edges": 45672,
+        "bound": 45672,
+        "unbound": 0,
+        "boundToTheOwnDecl": 0,
+        "boundToAnOwnDecl": 45672,
+        "boundElsewhere": 0,
+        "byType": {
+          "contains": 45103,
+          "references": 508,
+          "uses": 59,
+          "implements": 2
+        }
+      },
+      "own-many by (b) QUALIFIED-NAME alias": {
+        "edges": 47,
+        "bound": 47,
+        "unbound": 0,
+        "boundToTheOwnDecl": 0,
+        "boundToAnOwnDecl": 47,
+        "boundElsewhere": 0,
+        "byType": {
+          "contains": 43,
+          "overrides": 4
+        }
+      },
+      "own-once by (c) LEAF only — invisible to (a) and (b)": {
+        "edges": 273,
+        "bound": 273,
+        "unbound": 0,
+        "boundToTheOwnDecl": 273,
+        "boundToAnOwnDecl": 273,
+        "boundElsewhere": 0,
+        "byType": {
+          "uses": 273
+        }
+      },
+      "own-many by (c) LEAF": {
+        "edges": 198,
+        "bound": 198,
+        "unbound": 0,
+        "boundToTheOwnDecl": 0,
+        "boundToAnOwnDecl": 197,
+        "boundElsewhere": 1,
+        "byType": {
+          "uses": 197,
+          "contains": 1
+        }
+      }
+    }
+  }
+}

@@ -948,7 +948,7 @@ class-body decorator stays a call by the enclosing class. The suppression is onl
 after the member-scoped reference exists, so doing it here would have fixed one contract
 by breaking another.
 
-**[#868](https://github.com/backbencher-hq/backbencher-brain/issues/868) — javascript decorator
+**[#868](https://github.com/ishaq2321/backbencher-brain/issues/868) — javascript decorator
 metadata, CLOSED.** The layer #861 named and could not land: a decorator is metadata on the
 symbol it decorates, its name is a `references` edge from that symbol at the DECORATOR's own
 line, and it is neither a call nor a read of whoever encloses it. Four gaps measured against
@@ -977,7 +977,7 @@ fixture missed it; the two new SFC fixtures put the script lower and pin `meta.d
 (also `meta.decoratorLines` on symbols — the harness compared arrays with `!==`, so those lists
 had been UNPINNABLE; arrays now compare by sorted JSON as imports already did).
 
-**Measured and NOT folded in (filed as [#873](https://github.com/backbencher-hq/backbencher-brain/issues/873)):**
+**Measured and NOT folded in (filed as [#873](https://github.com/ishaq2321/backbencher-brain/issues/873)):**
 the payload carries TWO line bases on one row — `line_number` and `decoratorLine` are 1-based,
 `metadata.line` is `startPosition.row` (0-based), uniformly across eight analyzers in four
 families and read by nothing yet. That is M60.P1's subject (the payload-seam matrix) and it

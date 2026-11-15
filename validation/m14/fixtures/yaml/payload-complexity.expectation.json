@@ -1,0 +1,46 @@
+{
+ "fixtureId": "yaml/payload-complexity",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A symbol carries its own complexity -- how many keys or items it DIRECTLY holds -- so a wide configuration node scores above a leaf. The pre-fix lane had a file-level `configurationComplexity = visitedNodes`, which says nothing about any individual node, and no symbol carried a complexity at all. Pinned: a four-key object, a one-key leaf, a three-item sequence, and a nested object that scores 1 for holding one key rather than 3 for everything beneath it.",
+ "expectComplexity": [
+  {
+   "symbol": "wide",
+   "equals": 4
+  },
+  {
+   "symbol": "leaf",
+   "equals": 1
+  },
+  {
+   "symbol": "list",
+   "equals": 3
+  },
+  {
+   "symbol": "nested",
+   "equals": 1
+  },
+  {
+   "symbol": "inner",
+   "equals": 1
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   14,
+   15,
+   16
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

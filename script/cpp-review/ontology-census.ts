@@ -24,7 +24,7 @@
 // USES THE PRODUCTION PATH: getParser -> parser.parse -> RealCppAnalyzer.
 // Not `analyze()` in isolation, not the fixture harness.
 //
-//   BB_CORPUS_ROOT  corpus root (default $HOME/fixtures/repositories)
+//   BB_CORPUS_ROOT  corpus root (default /home/ishaq2321/bb_tests/repositories)
 //   CPP_REPOS       comma-separated repo dirs (default cpp-example,cpp-sample,kotlin,objc,okio)
 //   CPP_LIMIT       cap the file count (default 0 = no cap)
 //   CPP_SECTION     run only sections whose name contains this (default all)
@@ -33,7 +33,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const ROOT = process.env.BB_ROOT || "/tmp/opencode/wt/DERIV_EXPORTS_CPP3"
-const CORPUS = process.env.BB_CORPUS_ROOT || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT || "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (process.env.CPP_REPOS || "cpp-example,cpp-sample,kotlin,objc,okio").split(",").filter(Boolean)
 const LIMIT = Number(process.env.CPP_LIMIT || 0)
 const SECTION = process.env.CPP_SECTION || ""

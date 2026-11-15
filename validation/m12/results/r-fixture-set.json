@@ -74,7 +74,7 @@
   ],
   "setSha256": "f112088ca3c83d1490d8284f6dca17318c2a24840f8bf0999a6b72d19b9ca769",
   "truthSource": "hand-derived, and every expectation confirmed against R 4.4.3 rather than against the analyzer",
-  "reRun": "bun run fixtures/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
+  "reRun": "bun run bb_tests/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
   "spotCheck": "bun run script/m14/owner-spot-check.ts --lang r --sample 4",
   "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
   "bbSeal": {

@@ -1,0 +1,115 @@
+{
+  "fixtureId": "java/import-dependency-edges",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPORTS_JAVA2 (M14 ontology). Pins the `imports` DEPENDENCY edge, which java did not emit at all before this change \u2014 measured: 0 `imports` relationships against 38,923 `import_declaration` nodes read, on java-lib's 3,275 files. Two consumers decide the label rather than taste. (1) bb_graph's `dependencies` section runs, verbatim in shape (src/lsp/graph_request.ts:291-297): SELECT ... FROM brain_relationship WHERE relationship_type='imports' AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = <the file's project-relative path>; and classifyFileLevel (src/lsp/graph_usages.ts:103-107) throws on any relationship_type outside {imports, exports}, so no other kind can ever answer it. Measured end to end through storeResults before the change: 30 java files carrying 360 imports, 0 rows returned; after, 40 files, 341 rows over 37 files. (2) `metadata.fileLevel: true` is the ONE flag that produces the required storage shape (parallel-indexer.ts:3481-3487 writes source_external = the file's repo-relative path and leaves source_symbol_id NULL when the source resolves to no symbol in this file). The SOURCE is therefore the PACKAGE, a name no declaration in this file carries, so the non-resolution is the intended path rather than a fallback. BOTH LABELS ARE KEPT and both are pinned here: `imports` is the dependency (a module the file needs at compile time, JLS 7.5) and `references` is the MENTION (the dotted path a reference-resolution surface joins against). Erlang states the same pairing for its `-import`. Dropping either loses a question, and a fixture that pins only one of them cannot catch a regression that deletes the other. Confidence is pinned EXACTLY: 1.0 on `imports` because the import declaration NAMES its module in the grammar, so the dependency is written in the source rather than inferred from a use site \u2014 and 0.9 on `references`, the pre-existing value, which must not drift to 1.0 in the same edit. The three import FORMS are each present because each maps to a different JLS section and a different metadata.relationshipType: single-type (7.5.1), type-on-demand (7.5.2, the `asterisk` named child), static member (7.5.3, the `static` unnamed child). Those two flags were previously read by searching the declaration's TEXT (`node.text.indexOf(\"static \")`), which a string literal or a renamed keyword could satisfy; they are now read as node types, so a mutant restoring the text search has to change a tree walk to pass, and a mutant that drops either flag changes a pinned meta.relationshipType. The `references` rows are sourced at the FILE'S PRIMARY TYPE (ImportDependency), not the package: the analyzer's post-pass re-sources import-derived edges because an import precedes the type declaration in the file, so the type name is not known when the import is read. The `imports` rows keep the package, because that consumer keys on the FILE (source_external = the file's project-relative path) and a symbol id would defeat the query. The two labels therefore differ in source as well as in kind, and both spellings are pinned so a re-sourcing regression in either direction is caught. The `imports` rows pin `meta.isWildcard` and `meta.isStatic` INDIVIDUALLY as well as through `meta.relationshipType`, because the two flags are read by two separate node-type tests and a mutant that drops one of them still produces a plausible-looking edge: dropping the `asterisk` test labels a type-on-demand import as single_type (caught by the relationshipType pin) but also loses the flag any downstream consumer reads (caught only by the flag pin). Both are asserted so neither defect can hide behind the other. The `imports` rows also pin `meta.evidenceClass: import_based`, which mutant I9 exists for: with the tier left to fall through to the classifier catch-all, all 38,935 imports edges were labelled `usage_contextual`, which is the tier for a call INFERRED FROM A USE SITE. A written import declaration is not inferred from anything, and `evidence_tier.ts` IMPORT_KINDS and `brain-relationship-enrichment` both already expect `import_based` for this class of edge.",
+  "expectSymbols": [
+    {
+      "name": "ImportDependency",
+      "kind": "class"
+    },
+    {
+      "name": "run"
+    },
+    {
+      "name": "items"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "com.acme.app",
+      "target": "java.util.List",
+      "meta.relationshipType": "single_type_import",
+      "meta.fileLevel": true,
+      "meta.isWildcard": false,
+      "meta.isStatic": false,
+      "confidence": 1.0,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.app",
+      "target": "java.util.Map",
+      "meta.relationshipType": "single_type_import",
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.app",
+      "target": "java.util.Map.Entry",
+      "meta.relationshipType": "single_type_import",
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.app",
+      "target": "java.util.Set",
+      "meta.relationshipType": "type_on_demand_import",
+      "meta.isWildcard": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.app",
+      "target": "java.util.Collections.sort",
+      "meta.relationshipType": "static_member_import",
+      "meta.isStatic": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "references",
+      "source": "ImportDependency",
+      "target": "java.util.List",
+      "meta.isJavaImport": true,
+      "meta.evidenceClass": "import_based",
+      "confidence": 0.9
+    },
+    {
+      "type": "references",
+      "source": "ImportDependency",
+      "target": "java.util.Set",
+      "meta.isJavaImport": true,
+      "meta.isWildcard": true
+    },
+    {
+      "type": "references",
+      "source": "ImportDependency",
+      "target": "java.util.Collections.sort",
+      "meta.isJavaImport": true,
+      "meta.isStatic": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "java.util.Set.*",
+      "comment": "the wildcard is a SEPARATE `asterisk` child of import_declaration, not part of the name. `import java.util.Set.*;` depends on the package java.util.Set, never on a target carrying a star."
+    },
+    {
+      "type": "imports",
+      "target": "java.util.Collections",
+      "comment": "a static import of a MEMBER depends on the member path as written (java.util.Collections.sort), not on the truncated container. JLS 7.5.3 names the member."
+    },
+    {
+      "type": "imports",
+      "target": "static",
+      "comment": "`static` is an unnamed child of import_declaration, a modifier, never a dependency target \u2014 the same rule the module-info-directives fixture pins for `transitive`"
+    },
+    {
+      "type": "imports",
+      "target": "*",
+      "comment": "R7 in the strongest form: the wildcard is not a name, and an edge endpoint equal to it would be a placeholder literal standing in for the absence of one"
+    },
+    {
+      "type": "imports",
+      "target": "java.util.Set",
+      "meta.relationshipType": "single_type_import",
+      "comment": "a type-on-demand import is JLS 7.5.2 and is labelled as such; labelling it single_type would make the two forms indistinguishable downstream, which is the mislabelling this pin exists to catch"
+    }
+  ]
+}

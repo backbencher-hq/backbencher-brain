@@ -1,0 +1,51 @@
+{
+  "generated": "2026-10-20",
+  "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+  "log": "validation/m14/fixtures/perl/arm-whole-2026-10-26.log",
+  "population": {
+    "parsed": 656,
+    "admitted": 656,
+    "repos": 9
+  },
+  "causeEdges": 33,
+  "namedCauses": 6,
+  "q1_projectScope": {
+    "question": "is the base declared as a class in the edge's OWN repository?",
+    "refutedCauses": 2,
+    "refutedEdges": 4,
+    "detail": {
+      "Mojolicious": {
+        "edges": 3,
+        "declaration": "class 'Mojolicious' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:0"
+      },
+      "MojoliciousTest": {
+        "edges": 1,
+        "declaration": "class 'MojoliciousTest' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/lib/MojoliciousTest.pm:0"
+      }
+    }
+  },
+  "q2_analyzerScope": {
+    "question": "does the source write a QUALIFIED name with that leaf within 15 lines of the edge?",
+    "refutedCauses": 0,
+    "refutedEdges": 0,
+    "window": 15,
+    "detail": {}
+  },
+  "surviving": {
+    "causes": [
+      "CalledClose",
+      "DirHandle",
+      "Exporter",
+      "URI"
+    ],
+    "edges": 29
+  },
+  "before": {
+    "file": "validation/m14/fixtures/perl/cause-falsification-BEFORE-fix-2026-10-20.json",
+    "causeEdges": 2251,
+    "namedCauses": 182,
+    "refutedCauses": 178,
+    "survivingCauses": 4,
+    "survivingEdges": 29
+  }
+}

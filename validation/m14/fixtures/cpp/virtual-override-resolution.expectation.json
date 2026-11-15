@@ -1,0 +1,38 @@
+{
+  "fixtureId": "cpp/virtual-override-resolution",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "VIRTUAL OVERRIDES WERE DEAD: registries on `this` were only initialized inside the base_class_clause branch of DERIVED classes, so base-class virtuals (walked earlier, top-down) were never registered and no Overrides edge could ever emit. Registration is unconditional now; resolution is post-loop and transitive. M14 ONTOLOGY (2026-10-04), the `override` KEYWORD: `Derived::run` is written `void run() override;`, which is not a shape to be matched \u2014 it is the author asserting that `run` overrides a base virtual. The resolver read the keyword only for the `decorators` payload, so the edge it produced carried `reasonCode: signature-match` at 0.9 and the strongest evidence C++ offers went unused. Measured over the corpus: 735 `override`-keyword sites against 185 `overrides` edges emitted. With the keyword wired in, this row is a FACT (confidence 1.0, reasonCode `override-keyword+signature-match`, and `overrideSpecifier` recorded so a reader can tell an asserted override from an inferred one without re-parsing). The signature-match path is unchanged for a method with NO keyword \u2014 `cpp/override-signature-aware` is the control that proves it, because a control that only runs in the upgraded direction proves nothing about the direction that costs confidence.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Derived",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "fromEndsWith": "Derived::run",
+      "target": "run",
+      "confidence": 1,
+      "meta.reasonCode": "override-keyword+signature-match",
+      "meta.overrideSpecifier": "override",
+      "note": "M14-HONESTY-CONTRACT \u00a74: an edge at 1.0 needs no reason code for the confidence itself, but the reason code records HOW it was established, and `overrideSpecifier` records that the author wrote the keyword. Both are the difference between this edge and the 0.9 inference its predecessor was.",
+      "meta.overriddenOwner": "Base"
+    }
+  ]
+}

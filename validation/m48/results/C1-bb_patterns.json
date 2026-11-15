@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_patterns.json",
+  "generatedAt": "2026-11-04T05:55:38.530Z",
+  "tools": [
+    "bb_patterns"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 108,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (102 found):\\n  orphaned_class EarlyTime — lib/rake/early_time.rb:5 (70%)\\n  orphaned_class LateTime — lib/rake/late_time.rb:4 (70%)\\n  orphaned_"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 417,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (1847 found):\\n  orphaned_function _rg_color_specs — crates/core/flags/complete/rg.zsh:373 (70%)\\n  orphaned_class RipgrepBin — pkg/brew/ripgrep-"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 554,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (385 found):\\n  orphaned_function Footer — website/theme.config.tsx:46 (70%)\\n  orphaned_function requirePublicApiExports — resources/eslint-inte"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 77,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (49 found):\\n  orphaned_function _array__splice — src/tree_sitter/array.h:220 (70%)\\n  orphaned_function tree_sitter_clean_external_scanner_deser"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 333,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (358 found):\\n  orphaned_function minify — lib/common/minify.js:24 (70%)\\n  orphaned_function pitch — lib/common/util.js:31 (70%)\\n  orphaned_fun"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (102 found):\n  orphaned_class EarlyTime — lib/rake/early_time.rb:5 (70%)\n  orphaned_cl"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (1847 found):\n  orphaned_function _rg_color_specs — crates/core/flags/complete/rg.zsh:"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (385 found):\n  orphaned_function Footer — website/theme.config.tsx:46 (70%)\n  orphaned"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (49 found):\n  orphaned_function _array__splice — src/tree_sitter/array.h:220 (70%)\n  o"
+    },
+    {
+      "repo": "lodash",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (358 found):\n  orphaned_function minify — lib/common/minify.js:24 (70%)\n  orphaned_fun"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_patterns"
+    ]
+  }
+}

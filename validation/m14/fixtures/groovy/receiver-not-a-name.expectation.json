@@ -1,0 +1,105 @@
+{
+  "fixtureId": "groovy/receiver-not-a-name",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 / question 5 for the `uses` label. `collectFieldAccessUses` took the receiver from `node.text.split(\".\")[0]`, which is right only while the receiver is a bare identifier. Three ordinary Groovy shapes are not: `new File(dir).canonicalFile` (receiver is an `object_creation_expression`), `verdicts[0].rev` (an `array_access`) and `(m).label` (a `parenthesized_expression`). Measured on the pinned corpus with script/m60/groovy-r7-census.ts over all 2,825 `.groovy`/`.gradle` files, the split produced relationship SOURCES that are not names at all — `new File(args`, `verdicts[0]`, `(m)` — reported in that artifact as `malformedNameEndpoints`, counted apart from the documented `(script)` sentinel so the two populations are never added into one reassuring total. A source like that names no symbol, resolves at no end, and is indistinguishable to a consumer from a legitimately dotted call path: exactly the ambiguity the CALL walk already removed (`buildGroovyQualifiedCall`'s comment records `db.list(user).collect` being stored whole). The rule is the one the walk already applied to a receiver it could not resolve (GAD1/JAD2): the read belongs to the enclosing method. `this.x` is untouched and keeps the TYPE owner. The fix has two halves, both the same defect: a NAME was being recovered from raw SOURCE TEXT instead of from the node that carries it. The receiver is the `object` field; the member is the `field` field. A `field` can be a `character_literal` (`xml.properties.'maven.compiler.release'` is the Gradle DSL spelling of a dotted property key, and it occurs in this corpus), and `node.text.split(\".\")`'s last segment of that is `release'` — an endpoint carrying a quote. The `calls` half of the same family — a quoted CALLEE (`'Foo.groovy'(...)`, `'*'(to: ...)`, `\"$name\"(value)`) — is measured, reported and deliberately NOT changed, because two committed pins state the written form on purpose; see the comment at handleMethodInvocation's `methodName`.",
+  "expectSymbols": [
+    {
+      "name": "Reader",
+      "kind": "class"
+    },
+    {
+      "name": "read",
+      "kind": "method",
+      "ownerName": "Reader"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "read",
+      "target": "canonicalFile",
+      "line_number": 43,
+      "note": "`new File(dir).canonicalFile`: the receiver is an object_creation_expression. Pre-fix the source was the text fragment `new File(dir)`."
+    },
+    {
+      "type": "uses",
+      "source": "read",
+      "target": "rev",
+      "line_number": 45,
+      "note": "`verdicts[0].rev`: the receiver is an array_access. Pre-fix the source was the text `verdicts[0]`."
+    },
+    {
+      "type": "uses",
+      "source": "read",
+      "target": "label",
+      "line_number": 47,
+      "note": "`(m).label`: the receiver is a parenthesized_expression. Pre-fix the source was the text `(m)`."
+    },
+    {
+      "type": "uses",
+      "source": "read",
+      "target": "verdicts",
+      "line_number": 45,
+      "note": "CONTROL-adjacent: the array_access READ itself (`verdicts[0]`) is a separate, already-correct use of the array's own identifier."
+    },
+    {
+      "type": "uses",
+      "source": "read",
+      "target": "controlName",
+      "line_number": 49,
+      "note": "CONTROL 1: a plain identifier receiver. Non-`this` reads attribute to the enclosing METHOD (GAD1/JAD2), before and after the change alike — which is what makes this row a control rather than a coincidence."
+    },
+    {
+      "type": "uses",
+      "source": "Reader",
+      "target": "label",
+      "line_number": 51,
+      "note": "CONTROL 2: `this.label` keeps the TYPE owner, the java/scala family contract. The change must not move it to the method."
+    },
+    {
+      "type": "calls",
+      "source": "read",
+      "target": "method",
+      "line_number": 53,
+      "note": "CONTROL 3: `plain.method()` is a call, and a callee is never a read."
+    },
+    {
+      "type": "uses",
+      "source": "read",
+      "target": "maven.compiler.release",
+      "line_number": 58,
+      "note": "`buildModel.properties.'maven.compiler.release'`: a MEMBER written as a string literal, the Gradle DSL spelling of a dotted property key. The `field` child of that access is a `character_literal` whose value is `maven.compiler.release`; pre-fix the leaf came from `node.text.split('.')`'s last segment, which is `release'` — an endpoint carrying a quote."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "canonicalFile",
+      "source": "new File(dir)",
+      "note": "the pre-fix source, named exactly: `node.text.split('.')[0]` on `new File(dir).canonicalFile` is `new File(dir)`. R7 counts an endpoint that is not a name as unreadable, and a consumer cannot tell this apart from a legitimately dotted call path."
+    },
+    {
+      "type": "uses",
+      "target": "rev",
+      "source": "verdicts[0]",
+      "note": "the pre-fix source: an index expression, not a name."
+    },
+    {
+      "type": "uses",
+      "target": "label",
+      "source": "(m)",
+      "note": "the pre-fix source: a parenthesised expression, not a name. The CONTROLLING METHOD is also `read -> label` at line 45, so this row names the same read with the receiver it must not have."
+    },
+    {
+      "type": "uses",
+      "target": "method",
+      "note": "CONTROL 3, the other half: `plain.method()` is a call, so the callee must not also appear as a read."
+    },
+    {
+      "type": "uses",
+      "target": "release'",
+      "note": "the pre-fix leaf: a trailing quote no name in this lane or the language contains."
+    }
+  ]
+}

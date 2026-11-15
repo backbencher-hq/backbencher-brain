@@ -1,0 +1,162 @@
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+  Resolving cross-file relationships...
+  ✓ resolved in 28ms [plan=linear largest-intermediate=13]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 19 relationships (0 patterns) in 229ms
+  Computing gravity scores...
+  ✓ gravity in 30ms
+  Analyzing taint flows & security...
+  ✓ taint(40ms) + health(179ms)
+  ✓ health check in 160ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Byte Bounds Coverage: 1 of 13 symbols have NULL byte bounds. Without byte bounds, bb_edit cannot safely mutate these symbols.
+  ✓ vector blobs: 0/0 promoted in 52ms
+  ✓ planner stats (ANALYZE) in 43ms
+T0: p50=53ms p95=58ms walls=[57,53,50,58,49]
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+  Resolving cross-file relationships...
+  ✓ resolved in 3736ms [plan=linear largest-intermediate=9421]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 14,566 relationships (77 patterns) in 1512ms
+  Computing gravity scores...
+  ✓ gravity in 352ms
+  Analyzing taint flows & security...
+  ✓ taint(39ms) + health(12ms)
+  ✓ health check in 119ms
+  · index health: 92% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 6ms
+  ✓ planner stats (ANALYZE) in 180ms
+T1: p50=35ms p95=65ms walls=[28,52,35,65,28]
+T2: p50=14ms p95=16ms walls=[16,11,14,14,12]
+{
+  "schemaVersion": 1,
+  "tool": "bb_health",
+  "measuredAt": "2026-11-01T18:34:09.382Z",
+  "runs": 5,
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_health/bbdata",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_NO_AUTO_REFRESH_MEANING": "measurement reads; health never auto-refreshes"
+  },
+  "tiers": {
+    "T0": {
+      "label": "test/fixtures/polyglot (5 files, ts-js + java-scala)",
+      "projectPath": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+      "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+      "counts": {
+        "files": 5,
+        "symbols": 13,
+        "relationships": 26,
+        "imports": 2,
+        "syntaxErrors": 0
+      },
+      "freshness": {
+        "mode": "complete",
+        "checked": 5,
+        "total": 5
+      },
+      "wallMs": [
+        57,
+        53,
+        50,
+        58,
+        49
+      ],
+      "p50Ms": 53,
+      "p95Ms": 58,
+      "minMs": 49,
+      "maxMs": 58,
+      "reportTimingMedian": {
+        "totalMs": 36,
+        "aggregatesMs": 2,
+        "freshnessMs": 14
+      },
+      "thisCallLine": "this call: total=36ms (freshness=14ms aggregates=2ms)",
+      "textBytes": 743,
+      "warnings": []
+    },
+    "T1": {
+      "label": ".perf-fixtures/bb-scale/n100 (100 files)",
+      "projectPath": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+      "counts": {
+        "files": 97,
+        "symbols": 3512,
+        "relationships": 17068,
+        "imports": 633,
+        "syntaxErrors": 2
+      },
+      "freshness": {
+        "mode": "complete",
+        "checked": 97,
+        "total": 97
+      },
+      "wallMs": [
+        28,
+        52,
+        35,
+        65,
+        28
+      ],
+      "p50Ms": 35,
+      "p95Ms": 65,
+      "minMs": 28,
+      "maxMs": 65,
+      "reportTimingMedian": {
+        "totalMs": 22,
+        "aggregatesMs": 13,
+        "freshnessMs": 2
+      },
+      "thisCallLine": "this call: total=22ms (freshness=2ms aggregates=13ms)",
+      "textBytes": 830,
+      "warnings": [
+        "warning:SYNTAX_ERRORS"
+      ]
+    },
+    "T2": {
+      "label": "workspace .bb-data index",
+      "projectPath": "/home/ishaq2321/mcp/backbencher-brain",
+      "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "counts": {
+        "files": 0,
+        "symbols": 0,
+        "relationships": 0,
+        "imports": 0,
+        "syntaxErrors": 0
+      },
+      "freshness": {
+        "mode": "complete",
+        "checked": 0,
+        "total": 0
+      },
+      "wallMs": [
+        16,
+        11,
+        14,
+        14,
+        12
+      ],
+      "p50Ms": 14,
+      "p95Ms": 16,
+      "minMs": 11,
+      "maxMs": 16,
+      "reportTimingMedian": {
+        "totalMs": 12,
+        "aggregatesMs": 4,
+        "freshnessMs": 0
+      },
+      "thisCallLine": "this call: total=12ms (aggregates=4ms)",
+      "textBytes": 1124,
+      "warnings": [
+        "error:EMPTY_INDEX",
+        "warning:NO_INDEX_STATUS"
+      ]
+    }
+  }
+}

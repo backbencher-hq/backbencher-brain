@@ -1,0 +1,121 @@
+{
+  "fixtureId": "r/F12-edges",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The three edge surfaces that interact, in one file, because none of them can be pinned properly alone. (1) EXPORTS: `#' @export` above a function and above an ALL-CAPS constant are two different declarations and both are pinned; `private_fn` has no tag and is forbidden, because an exports edge for it would put a name in the package's public surface that no `@export` and no NAMESPACE entry supports. (2) EXTENDS: only `Child2` inherits, so exactly one extends edge exists. `Other2` declares the same member as `Base2` and INHERITS NOTHING -- a rule that treats a shared member name as an override, or that treats a same-file class as a base, produces `overrides Other2 -> render` and `extends Other2 -> Base2`, and both are forbidden here. That second one is the specific fabrication this file exists to catch: co-existence in a file is not inheritance. (3) OVERRIDES: three classes declare a method called `render`, so the TARGET `render` resolves to three published symbols and cannot distinguish them on its own -- which is why the pin carries `overridingMember` and `overriddenMember` in metadata, and why the edge's SOURCE is the derived class. F18 pins the same fact with a three-level chain; here it is pinned alongside the case where no chain exists, so a direction fix that simply always emits an edge would be caught.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "public_fn",
+      "kind": "function"
+    },
+    {
+      "name": "PUBLIC_CONST",
+      "kind": "constant"
+    },
+    {
+      "name": "private_fn",
+      "kind": "function"
+    },
+    {
+      "name": "Base2",
+      "kind": "class"
+    },
+    {
+      "name": "Child2",
+      "kind": "class"
+    },
+    {
+      "name": "Other2",
+      "kind": "class"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Base2"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Child2"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Other2"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "public_fn",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "PUBLIC_CONST",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "extends",
+      "from": "Child2",
+      "target": "Base2",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "overrides",
+      "from": "Child2",
+      "target": "render",
+      "confidenceMin": 0.95,
+      "confidenceMax": 0.95,
+      "meta.overridingMember": "Child2$render", "meta.overriddenMember": "Base2$render", "meta.overriddenClass": "Base2"
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "base_impl",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "child_impl",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "other_impl",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "private_fn"
+    },
+    {
+      "type": "overrides",
+      "from": "Base2",
+      "target": "render"
+    },
+    {
+      "type": "overrides",
+      "from": "Other2",
+      "target": "render"
+    },
+    {
+      "type": "extends",
+      "from": "Other2",
+      "target": "Base2"
+    },
+    {
+      "type": "extends",
+      "from": "Base2",
+      "target": "Child2"
+    }
+  ]
+}

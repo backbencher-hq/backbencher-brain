@@ -1,0 +1,2 @@
+[INFO] [00:44:35] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [00:44:35] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3575006_5xf87rmzwp"}

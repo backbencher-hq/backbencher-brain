@@ -1,0 +1,78 @@
+{
+ "fixtureId": "javascript/field-owner-class-scope",
+ "language": "javascript",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PINS the class scoping of `this.<field>` receiver types, the half receiver-binding-scope.js does not cover (it covers a LEXICAL receiver shadowed by a local; this covers a FIELD written by a different class). collectLocalReceiverTypes keys fieldTypes by FIELD NAME alone (real-javascript-analyzer.ts:2308), so a field written in one class is visible to a read of the same name in another. Three shapes, each with its OWN method names because the matcher compares type/from/target/owner and a shared name would let one shape's correct owner satisfy another shape's forbid row: (1) one writer + a reader that never writes -> the reader's call must carry NO owner; (2) two writers of the SAME type -> both keep the owner; (3) two writers of DIFFERENT types -> each keeps ITS OWN type, where the current key withdraws both. The forbid rows pin the WRONG owner rather than a missing one, so a fix that deletes every field owner fails this suite instead of passing it. EXPECTED TO FAIL AT HEAD and PASS once fieldTypes is keyed by class (validated in .tmp-lead/fixed/real-javascript-analyzer.ts; see validation/m14/verification/JAVASCRIPT-OWNER-CHANNEL-AUDIT.md).",
+ "expectSymbols": [
+  {
+   "name": "SvcA",
+   "kind": "class"
+  },
+  {
+   "name": "SvcB",
+   "kind": "class"
+  },
+  {
+   "name": "HolderA",
+   "kind": "class"
+  },
+  {
+   "name": "HolderB",
+   "kind": "class"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "oneA",
+   "target": "run",
+   "meta.owner": "SvcA",
+   "meta.ownerEvidence": "assignment",
+   "comment": "HolderA writes this.svc = new SvcA(): correct owner, must survive the fix"
+  },
+  {
+   "type": "calls",
+   "from": "twoA",
+   "target": "run",
+   "meta.owner": "SvcA",
+   "comment": "SameA writes this.dep = new SvcA(): a same-type sibling keeps its own (and the same) owner"
+  },
+  {
+   "type": "calls",
+   "from": "twoB",
+   "target": "run",
+   "meta.owner": "SvcA",
+   "comment": "SameB writes this.dep = new SvcA(): the same-type pair must keep BOTH owners, which a class-blind key cannot distinguish from case 1"
+  },
+  {
+   "type": "calls",
+   "from": "threeA",
+   "target": "run",
+   "meta.owner": "SvcA",
+   "comment": "DiffA writes this.other = new SvcA(): its own type, where the current key withdraws both"
+  },
+  {
+   "type": "calls",
+   "from": "threeB",
+   "target": "run",
+   "meta.owner": "SvcB",
+   "comment": "DiffB writes this.other = new SvcB(): the other half of the different-type pair"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "oneB",
+   "target": "run",
+   "meta.owner": "SvcA",
+   "comment": "NEGATIVE (the defect): HolderB never writes this.svc and has no relationship to SvcA. A class-blind field map gives it owner SvcA and the store then binds the call to SvcA.run - measured end-to-end in a real index."
+  },
+  {
+   "type": "calls",
+   "from": "oneB",
+   "target": "run",
+   "meta.owner": "SvcB",
+   "comment": "NEGATIVE: no class in this fixture writes this.svc with SvcB, so an owner of SvcB here would be a fabricated type, not a scoped one."
+  }
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "fixtureId": "xml/uses-namespace-prefix",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "THE xml LANE'S SEVENTH TYPE. The coverage gate read xml as `6 implemented / 7 applicable` and `uses` was in NEITHER list — not implemented, not corpusUnexercised, not excluded — so the derived-complement rule absorbed it into `gaps` and printed `problems 0`. The gate's silence was real: `grep -c 'RelationshipType.Uses' src/ast/real-xml-analyzer.ts` was 0, so the type could never fire at any population. THE CONSTRUCT, AND WHY THIS ONE: two candidates were named and the choice is a doability decision, not a preference. (1) XPath built-in function use (`count()`, `substring()`, `position()`) — every such target names a function that is declared NOWHERE: not in the file, not in the project, not in any corpus repository. An edge to it is dangling by construction, and this lane already REFUSES rather than publishes that class — 724 of libxslt's 1,446 `xsl:call-template` sites name a template in an included/imported stylesheet and are refused, not emitted. (2) THE NAMESPACE-PREFIX USE: an element or attribute written with a prefix DEPENDS ON the binding that prefix names, and the binding is declared IN THE DOCUMENT by `xmlns:xsl=\"…\"` — which this analyzer already publishes as a `namespace` symbol whose name IS the prefix, owned by the element carrying the declaration. So the use has a real in-document declaration to resolve to, and any XSLT or XSD corpus is dense with it. (2) is implemented; (1) is refused on the same rule the lane already applies. WHAT IS ASSERTED: `<xsl:stylesheet>`, `<xsl:template>`/`sheet` and `<xsl:value-of>` each carry the `xsl` prefix, so each USES the binding — three edges, one per element, at lines 2, 3 and 4. The target is the namespace symbol's QUALIFIED name (`xsl:stylesheet.xsl`), because the (source, type, target) identity resolves to the declaration this analyzer published, which is what makes the edge checkable rather than a bare token. TWO CONTROLS, EACH ONE A CASE THAT MUST NOT FIRE. (a) `<undeclared:thing/>` at line 6: the prefix `undeclared` is bound by NO `xmlns:` in the document, so there is no declaration for the edge to name — refused, and the forbid row pins the refusal so a later change cannot turn a missing binding into a dangling edge. (b) `xml:lang=\"en\"` on line 4: the `xml` prefix is bound by the Namespaces specification ITSELF, is absent from `namespaceBindings` by construction (`rememberNamespaces` records only what the file writes, and `xmlns:xml` is forbidden), and the lane handles it for the REFERENCE pass through `IMPLICIT_PREFIX_BINDINGS` — but a `uses` edge needs a DECLARATION, and the document declares none. So it is refused too, and the forbid row says so. THE DEFAULT NAMESPACE IS OUT OF SCOPE FOR THIS EDGE, stated rather than silently missing: `xmlns=\"…\"` has no written prefix, so its declaration is published with the empty name and its own `contains` edge is skipped by `addRelationship`'s `if (!source || !target) return` guard. A `uses` edge needs a name to point at. Lines read off the file: stylesheet 2, template/sheet 3, value-of 4, undeclared/thing 6.",
+ "expectSymbols": [
+  { "name": "xsl", "kind": "namespace", "ownerName": "xsl:stylesheet", "meta.isXmlNamespace": true, "meta.namespaceUri": "http://www.w3.org/1999/XSL/Transform" },
+  { "name": "sheet", "kind": "class", "meta.isVocabDeclaration": true, "meta.declaredByAttribute": "name" },
+  { "name": "undeclared:thing", "kind": "class", "meta.isXmlElement": true }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "xsl:stylesheet",
+   "target": "xsl:stylesheet.xsl",
+   "line_number": 2,
+   "meta.role": "xml_namespace_prefix_use",
+   "meta.namespaceUri": "http://www.w3.org/1999/XSL/Transform",
+   "meta.resolvable": "in-document",
+   "note": "the root element carries the prefix, so it uses the binding its own `xmlns:xsl` declares. This is the row that would not exist at all before the emission site was added."
+  },
+  {
+   "type": "uses",
+   "from": "sheet",
+   "target": "xsl:stylesheet.xsl",
+   "line_number": 3,
+   "meta.role": "xml_namespace_prefix_use",
+   "note": "the source is the element's OWN symbol — `sheet`, the declared template name — not the instruction tag, matching the convention the `calls` fixture records for the same element."
+  },
+  {
+   "type": "uses",
+   "from": "xsl:value-of",
+   "target": "xsl:stylesheet.xsl",
+   "line_number": 4,
+   "meta.role": "xml_namespace_prefix_use",
+   "note": "an element with no declared name falls back to its tag text, and it still uses the namespace it is written in."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "undeclared:thing",
+   "note": "CONTROL (a) — the refusal. `undeclared` is bound by no `xmlns:` in this document, so no declaration exists for the edge to name. Publishing it would put a name in the graph that nothing supports, which is the class this lane refuses everywhere else. The row is here so a later change cannot quietly start emitting it."
+  },
+  {
+   "type": "uses",
+   "target": "xml",
+   "note": "CONTROL (b) — the spec-bound prefix. `xml:lang=\"en\"` is written on line 4, and the `xml` prefix is bound by the Namespaces specification rather than by this document (`xmlns:xml` is forbidden and no file writes it). A `uses` edge must name a DECLARATION; the document declares none for `xml`, so none is published. The reference pass consults `IMPLICIT_PREFIX_BINDINGS` for this prefix — this edge must NOT."
+  }
+ ]
+}

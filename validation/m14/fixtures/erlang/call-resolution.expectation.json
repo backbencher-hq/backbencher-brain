@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/call-resolution.erl",
+  "authoredFrom": "Erlang semantics (docs/analyzers/erlang.md calls contract + #880): local calls resolve to functions declared in the same module INCLUDING forward references (run/0 calls step_one/1's sibling step_one/0 declared later); sources are the enclosing function; X + 1 is a binary op, never a calls edge.",
+  "expectSymbols": [
+    { "name": "call_resolution", "kind": "module" },
+    { "name": "run", "kind": "function", "ownerName": "call_resolution", "meta.arity": 0 },
+    { "name": "step_one", "kind": "function", "ownerName": "call_resolution", "meta.arity": 0 },
+    { "name": "step_two", "kind": "function", "ownerName": "call_resolution", "meta.arity": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "run", "target": "step_one", "meta.context": "local function call" },
+    { "type": "calls", "from": "step_one", "target": "step_two", "meta.context": "local function call" },
+    { "type": "contains", "from": "call_resolution", "target": "run" },
+    { "type": "contains", "from": "call_resolution", "target": "step_two" }
+  ],
+  "forbidSymbols": [
+    { "name": "X" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "step_two", "target": "step_two" }
+  ]
+}

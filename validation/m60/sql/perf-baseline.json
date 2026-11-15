@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-perf",
+  "milestone": "M60",
+  "role": "GATE. A regression detector with absolute wall-clock bars, not a benchmark. The machine-dependence of absolute bars is a known weakness and is why P4 pins SCALING as well as throughput.",
+  "sizeCapBytes": 400000,
+  "bars": {
+    "primary": {
+      "minBytesPerSec": 60000,
+      "p95MsMax": 400,
+      "singleFileMsMax": 5000
+    },
+    "heavy": {
+      "minBytesPerSec": 20000,
+      "p95MsMax": 12000,
+      "singleFileMsMax": 30000,
+      "minFiles": 100
+    }
+  },
+  "measured": {
+    "primary": {
+      "name": "primary (ProxiCall, app migrations)",
+      "files": 438,
+      "bytes": 2847745,
+      "wallMs": 7701.136446000002,
+      "bytesPerSec": 369782.4366531162,
+      "p50": 7.616431999998895,
+      "p95": 63.220634000001155,
+      "max": 175.1287599999996,
+      "slowest": [
+        {
+          "file": "/home/ishaq2321/ProxiCall/database/archive/2025/003_connection_management_system.sql",
+          "ms": 175.1287599999996
+        },
+        {
+          "file": "/home/ishaq2321/ProxiCall/_dev/m17b_2980_gallery_limit_proof.sql",
+          "ms": 165.31953900000008
+        },
+        {
+          "file": "/home/ishaq2321/ProxiCall/database/archive/2026/20260130_pms_c1_4_secure_rpc_functions.sql",
+          "ms": 158.71678099999917
+        }
+      ]
+    },
+    "heavy": null
+  },
+  "checks": [
+    {
+      "id": "P1-primary-throughput",
+      "description": "primary corpus throughput >= 60000 B/s",
+      "status": "pass",
+      "detail": "369,782 B/s over 438 files (2.7 MB), wall 7.7s"
+    },
+    {
+      "id": "P2-primary-p95",
+      "description": "primary corpus per-file p95 <= 400ms",
+      "status": "pass",
+      "detail": "p50 7.6ms  p95 63.2ms  max 175.1ms"
+    },
+    {
+      "id": "P3-heavy-p95",
+      "description": "heavy corpus present with >= 100 files, per-file p95 <= 12000ms",
+      "status": "skip",
+      "detail": "/usr/share/postgresql/14/extension absent"
+    },
+    {
+      "id": "P5-single-file-ceiling",
+      "description": "no single file exceeds 30000ms",
+      "status": "pass",
+      "detail": "worst 175ms in 003_connection_management_system.sql"
+    }
+  ]
+}

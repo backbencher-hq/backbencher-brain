@@ -1,0 +1,14 @@
+{
+  "fixtureId": "vba/conditional",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "Sleep", "kind": "method" },
+    { "name": "ModernOnly", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "root", "target": "Sleep" },
+    { "type": "exports", "from": "root", "target": "ModernOnly" },
+    { "type": "decorates", "from": "root", "target": "VB_Name" }
+  ]
+}

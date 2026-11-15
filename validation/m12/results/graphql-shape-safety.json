@@ -3,7 +3,7 @@
   "analyzerSource": "src/ast/real-graphql-analyzer.ts",
   "grammar": "wired wasm/tree-sitter-graphql.wasm (source: grammars/tree-sitter-graphql, pinned by script/m14/verify-grammar-pins.ts)",
   "referencedNodeTypesSource": "DERIVED: every string literal in the analyzer's source intersected with the grammar's declared type table. Not transcribed, so it cannot drift from the code it audits.",
-  "corpus": "$HOME/fixtures/graphql/repos/graphql-js",
+  "corpus": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js",
   "revision": "ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea",
   "corpusLabel": "graphql-js@ee5ce41",
   "corpusFiles": 2,

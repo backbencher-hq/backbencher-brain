@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pinned GraphQL corpora for the GRAPHQL analyzer lane. Every record names an exact revision so a measurement can be re-run and get the same bytes. A corpus without a revision is an anecdote — this file exists because the m12 GraphQL corpus layer was unreproducible when this work started: validation/m12/results/graphql-*.json pinned /home/ishaq2321/bb_tests/repositories/graphql-js, which no longer existed, so every script under script/m12/graphql-*.ts CRASHED on `git rev-parse` while their artifacts sat on disk claiming `passed: true`.",
+  "establishedAt": "2026-09-27",
+  "reestablished": {
+    "what": "the m12 corpus layer",
+    "how": "the corpus is re-established here with revisions, and the m12 scripts now read a path that exists; script/m12/graphql-node-types-compare.ts and the two corpus scripts take the corpus as an ARGUMENT rather than a hard-coded default, so a corpus is a choice of the invocation instead of a constant that can rot silently",
+    "evidenceAffected": [
+      "validation/m12/results/graphql-corpus-errors.json",
+      "validation/m12/results/graphql-corpus-complexity.json",
+      "validation/m12/results/graphql-shape-safety.json",
+      "validation/m12/results/graphql-corpus-shapes.json"
+    ]
+  },
+  "corpora": [
+    {
+      "name": "graphql-js",
+      "path": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js",
+      "url": "https://github.com/graphql/graphql-js",
+      "revision": "ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea",
+      "cloneDepth": 1,
+      "trackedGraphqlFiles": 2,
+      "sizeOnDisk": "13M",
+      "whyThisOne": "The GraphQL specification's own reference implementation, and the only repository in this set that ships the REAL GitHub public schema (benchmark/github-schema.graphql, 20,367 lines, 3,242 symbols) — the single largest real-world GraphQL SDL document bb can be measured against. It also ships benchmark/kitchen-sink.graphql, the specification's own torture test, which is deliberately invalid in places and therefore doubles as the lane's negative control.",
+      "knownNegativeFixture": {
+        "path": "benchmark/kitchen-sink.graphql",
+        "measured": "0 grammar error nodes under the wired grammar, because the two constructs it used to break — a directive on a variable definition and an escaped triple-quote inside a block string — are fixed in the vendored grammar",
+        "verdict": "NO LONGER A NEGATIVE CONTROL, and the artifact no longer claims it is. It was listed as a grammar limitation until this work; keeping a fixed defect in a table of known limitations is worse than an empty table, because the artifact would claim a limitation a reader can no longer reproduce. The 113-construct battery is what guards grammar regressions now."
+      }
+    },
+    {
+      "name": "graphiql",
+      "path": "/home/ishaq2321/bb_tests/graphql/repos/graphiql",
+      "url": "https://github.com/graphql/graphiql",
+      "revision": "9d9790decc93744f6e5c1237a2046fa8f9638d6d",
+      "cloneDepth": 1,
+      "trackedGraphqlFiles": 26,
+      "sizeOnDisk": "1.1G",
+      "whyThisOne": "The reference IMPLEMENTATION's test corpus, and the densest source of the constructs a production GraphQL tool meets: `... on X` inline fragments, fragment spreads, aliases, nested selection sets, multi-interface objects, block descriptions, described arguments, described enum values, `extend type`, and — in `graphql-toolkit/.../sorareSchema.graphql` (1,809 symbols) and `graphql-language-service/benchmark/fixtures/github.graphql` (3,228 symbols) — two more very large real schemas. Two files here are the lane's `interface X implements Y` and `repeatable` regression controls.",
+      "whyItMatteredMost": "it is where the previous grammar's phantoms were measured: `packages/vscode-graphql-syntax/tests/__fixtures__/descriptions-and-values.graphql` lost a whole fragment definition to an ERROR region and published a phantom anonymous operation in its place"
+    },
+    {
+      "name": "neo4j-graphql",
+      "path": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql",
+      "url": "https://github.com/neo4j/graphql",
+      "revision": "ff0637bda0f44c740c8b7f042b98dd8c7ba61e33",
+      "cloneDepth": 1,
+      "trackedGraphqlFiles": 19,
+      "sizeOnDisk": "33M",
+      "whyThisOne": "An Apollo FEDERATION subgraph, which is the dialect where a schema's meaning lives in its directive APPLICATIONS: @key, @external, @requires, @override, @link. Its `packages/apollo-federation-subgraph-compatibility/schema.graphql` is the single most productive file in the corpus for the previous-grammar phantom measurement — a described `extend type User` became an ERROR and the analyzer published four invented references (`anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires`) while losing five real field symbols."
+    }
+  ],
+  "repositoriesExaminedAndNotCloned": {
+    "note": "recorded so the choice is auditable. Each was checked for tracked .graphql/.graphqls/.gql paths with `git clone --filter=blob:none --no-checkout` and `git ls-tree -r HEAD --name-only`, which downloads no blobs. graphql-js ships exactly 2 such files, which is why this set is three repositories and not one.",
+    "noGraphqlFiles": [
+      "medusajs/medusa@62a5200",
+      "redhat-developer/backstage@1109abc",
+      "directus/directus@1694b19",
+      "strapi/strapi@f10112c"
+    ],
+    "unreachable": [
+      "github/graphql-schema",
+      "apollographql/apollographql",
+      "wpengine/fagraphql"
+    ]
+  },
+  "previousGrammar": {
+    "path": "/home/ishaq2321/bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
+    "sha256": "9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27",
+    "bytes": 41223,
+    "why": "the bytes this lane replaced, kept so the extraction A/B (12 -> 4 error files, 20 -> 7 error nodes, +4 symbols, +76 relationships) is reproducible forever rather than being a one-time observation. The upstream SOURCE it was built from is not recoverable — it predates optional($.description) on schema_definition and optional($.directives) on variable_definition, and the GitHub API surfaces no tag for that commit — which is recorded as a rejected alternative in the grammar pin's decision."
+  }
+}

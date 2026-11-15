@@ -1,0 +1,342 @@
+{
+ "fixtureId": "perl/ontology-four-labels",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "SUPERSEDED 2026-10-26: the metadata-regime rows and the code-slot label were corrected against the tree; the byte-identical predecessor is `ontology-four-labels.expectation.superseded-2026-10-26.json`.",
+ "rationale": "SUPERSESSION RECORD (2026-10-26), measured against the analyzer's own output (script/m14/perl-fixture-divergence.mts).\nCHANGED ROWS, old -> live.\n  · exports alpha/beta/gamma/delta: reasonCode `exporter-surface` -> `exporter-array-declaration` (the construct is an Exporter ARRAY declaration; `exporter-surface` is kept for the %EXPORT_TAGS KEY, which is a tag name, not an exported sub) and evidenceClass `structural` -> `import_based` (the analyzer's tier pass now agrees with src/lsp/evidence_tier.ts, whose rule 2 puts the import surface at import_based).\n  · imports strict/warnings/feature/Runtime::Only: reasonCode `module-load-site` -> `use-module-load`; Lazy::Load: `module-load-site` -> `runtime-require` (a `require` is a RUNTIME load and is emitted at 0.9, not 1.0 — the confidenceMax row pins that); all five evidenceClass `structural` -> `import_based`.\n  · uses Config::Limits::MAX: reasonCode `qualified-name-access` -> `qualified-variable-read` (the name is a SIGIL'D package variable read; `qualified-name-access` is kept for the BAREWORD shape, which the next two rows pin).\n  · references takes_code_slots beta/alpha/gamma -> `uses` with the same lines and the LEAF target: RULED 2026-10-26 that a code slot is a NAME READ AS A VALUE (`uses`), while `references` is for a name a QUERY tests. The losing label is pinned at ZERO by expectRelationshipCount.references, so a revert to `references` goes red.\n  · the bareword rows `Ontology::VERSION` and `Config::Limits` are IMPLEMENTED here (they were absent before): a package-qualified bareword in value position is a read of that name.\n  · the `Config::Limits::->new` row is IMPLEMENTED: the trailing-`::` leaf used to be the EMPTY string, so the edge published `.constructor` — an endpoint with no owner.\nUNCHANGED: every symbol, every import/export list row, and all eight forbid rows (the hash-key control included: `Config::Only::Key` is still not a read).\n\nFive gaps, five shapes, and each one has a near-miss that a count-only assertion could not see. (1) `exports` — the Exporter surface (`@EXPORT`, `@EXPORT_OK`, `%EXPORT_TAGS`) was payload only, so `bb_graph` could show who CONSUMES a name and never who PUBLISHES one; the names are written (L5, L7, L8, L10) and `gamma`/`delta` sit on their OWN lines inside a wrapped list, which is why the pin is a line and not the assignment's. (2) `imports` — `use strict` / `use warnings` / `use feature` (L1-3), `use Runtime::Only` (L12) and `require Lazy::Load` (L13) all load a module and produced no edge; the last is a RUNTIME load, which is why the row is `isDefault: false` in `expectImports` and a 1.0 edge in `expectRelationships`. (3) `uses` — `$Config::Limits::MAX` (L25), `Ontology::VERSION` (L26) and `Config::Limits` (L27) name another package's entity without calling it. Three near-misses are pinned as forbids because all three would have produced an edge that names no symbol at all: `Config::Limits::helper(1)` (L28) is a CALL and belongs to `calls`; `Config::Limits::MAX => 1` (L29) and `$only{Config::Only::Key}` (L31-32) are HASH KEYS. (4) `references` — `\\&beta` (L37), `\\&Ontology::alpha` (L38) and `\\&gamma` (L40) are code-slot references, the mirror image of a call; `\\&{ 'Ontology::beta' }` (L39) is a symbolic deref whose text is SOURCE CODE, and publishing it would be the same fabricated-claim defect PERL-MR12 removed from the callee side. (5) `implements` needs no row: it is emitted and pinned by `imports-and-exports`, and on this corpus it cannot fire because nothing here composes a role. (6) Two shapes the corpus census found AFTER this fixture was first written, both of which had produced an edge naming nothing: a package name spelled with a trailing `::` (`Config::Limits::->new`, L34) made the `instantiates` owner the EMPTY string and published the target `.constructor`, and `${'Ontology::hidden'}{name}` (L33) is a symbolic deref whose `varname` is a `block` node whose text carries braces and quotes. Both are pinned here because the census that found them is not a fixture and does not fail.",
+ "expectSymbols": [
+  {
+   "name": "EXPORT",
+   "kind": "constant"
+  },
+  {
+   "name": "EXPORT_OK",
+   "kind": "constant"
+  },
+  {
+   "name": "EXPORT_TAGS",
+   "kind": "constant"
+  },
+  {
+   "name": "alpha",
+   "kind": "function"
+  },
+  {
+   "name": "beta",
+   "kind": "function"
+  },
+  {
+   "name": "gamma",
+   "kind": "function"
+  },
+  {
+   "name": "delta",
+   "kind": "function"
+  },
+  {
+   "name": "all",
+   "kind": "function"
+  },
+  {
+   "name": "Ontology",
+   "kind": "class"
+  },
+  {
+   "name": "VERSION",
+   "kind": "constant",
+   "ownerName": "Ontology"
+  },
+  {
+   "name": "reads_packages",
+   "kind": "method",
+   "ownerName": "Ontology"
+  },
+  {
+   "name": "takes_code_slots",
+   "kind": "method",
+   "ownerName": "Ontology"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "strict",
+   "items": [
+    "*"
+   ]
+  },
+  {
+   "module": "warnings",
+   "items": [
+    "*"
+   ]
+  },
+  {
+   "module": "feature",
+   "items": [
+    "class"
+   ]
+  },
+  {
+   "module": "Runtime::Only",
+   "items": [
+    "*"
+   ]
+  },
+  {
+   "module": "Lazy::Load",
+   "isDefault": false,
+   "note": "a RUNTIME load: `require Some::Module` is a dependency the file cannot run without"
+  }
+ ],
+ "expectExports": [
+  {
+   "name": "alpha"
+  },
+  {
+   "name": "beta"
+  },
+  {
+   "name": "gamma"
+  },
+  {
+   "name": "delta"
+  },
+  {
+   "name": "all"
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "exports",
+   "equals": 5,
+   "note": "two from @EXPORT, two from @EXPORT_OK, one %EXPORT_TAGS key. A widening of the word harvester that started harvesting the @EXPORT_OK VALUES would land here as 7."
+  },
+  {
+   "type": "imports",
+   "equals": 5,
+   "note": "three `use` + one `use` + one `require`. `use feature 'class'` counts once: the feature BUNDLE is an argument of the load, not a second module."
+  },
+  {
+   "type": "uses",
+   "equals": 6,
+   "note": "three qualified reads (Config::Limits::MAX, Ontology::VERSION, Config::Limits) + three code slots (beta, alpha, gamma)."
+  },
+  {
+   "type": "references",
+   "equals": 0,
+   "note": "ZERO by ruling: the three code slots moved to `uses`, and a revert to `references` lands here."
+  },
+  {
+   "type": "calls",
+   "equals": 1,
+   "note": "`Config::Limits::helper(1)` and nothing else. Three `$code->()` invocations of a slot are NOT calls of a name — publishing them is how a code slot turns into a fake callee."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "alpha",
+   "line_number": 5,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "exporter-array-declaration",
+   "confidenceMin": 1
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "beta",
+   "line_number": 5,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "exporter-array-declaration",
+   "confidenceMin": 1
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "gamma",
+   "line_number": 7,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "exporter-array-declaration",
+   "note": "own line inside a WRAPPED @EXPORT_OK list: the assignment starts on 6, the name is written on 7",
+   "confidenceMin": 1
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "delta",
+   "line_number": 8,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "exporter-array-declaration",
+   "confidenceMin": 1
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "all",
+   "line_number": 10,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "exporter-surface",
+   "note": "a %EXPORT_TAGS KEY, not a sub: the fat-comma keys are the tag names callers pass to `-tag => 1`",
+   "confidenceMin": 1
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "strict",
+   "line_number": 1,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "use-module-load",
+   "confidenceMin": 1
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "warnings",
+   "line_number": 2,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "use-module-load",
+   "confidenceMin": 1
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "feature",
+   "line_number": 3,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "use-module-load",
+   "confidenceMin": 1
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "Runtime::Only",
+   "line_number": 12,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "use-module-load",
+   "confidenceMin": 1
+  },
+  {
+   "type": "imports",
+   "from": "global",
+   "target": "Lazy::Load",
+   "line_number": 13,
+   "meta.evidenceClass": "import_based",
+   "meta.reasonCode": "runtime-require",
+   "note": "a `require` is a RUNTIME load, so it is emitted at 0.9 (confidenceMax pins the uncertainty) while a `use` is a compile-time certainty at 1.0.",
+   "confidenceMax": 0.9
+  },
+  {
+   "type": "uses",
+   "from": "reads_packages",
+   "target": "Config::Limits::MAX",
+   "line_number": 25,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.reasonCode": "qualified-variable-read",
+   "note": "the SIGIL'D shape: a fully-qualified package variable read",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9
+  },
+  {
+   "type": "uses",
+   "from": "reads_packages",
+   "target": "Ontology::VERSION",
+   "line_number": 26,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.reasonCode": "qualified-name-access",
+   "note": "the BAREWORD shape: a package-qualified name in value position. Its own package's variable, which is why the self-reference guard on `extends` does not apply here",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9
+  },
+  {
+   "type": "uses",
+   "from": "reads_packages",
+   "target": "Config::Limits",
+   "line_number": 27,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.reasonCode": "qualified-name-access",
+   "note": "a bareword CLASS NAME as a value (`my $name = Config::Limits;`) — a package read that is not a receiver and not a callee",
+   "confidenceMin": 0.9,
+   "confidenceMax": 0.9
+  },
+  {
+   "type": "uses",
+   "from": "takes_code_slots",
+   "target": "beta",
+   "line_number": 39,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.reasonCode": "code-reference",
+   "note": "RULED 2026-10-26: a code slot is a name READ as a value (`uses`), not a name a query tests (`references`). Same line and leaf target as the authored-ahead row; the label is the ruling."
+  },
+  {
+   "type": "uses",
+   "from": "takes_code_slots",
+   "target": "alpha",
+   "line_number": 40,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.reasonCode": "code-reference",
+   "note": "RULED 2026-10-26: a code slot is a name READ as a value (`uses`), not a name a query tests (`references`). Same line and leaf target as the authored-ahead row; the label is the ruling.",
+   "meta.qualifiedAs": "Ontology::alpha"
+  },
+  {
+   "type": "uses",
+   "from": "takes_code_slots",
+   "target": "gamma",
+   "line_number": 42,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.reasonCode": "code-reference",
+   "note": "RULED 2026-10-26: a code slot is a name READ as a value (`uses`), not a name a query tests (`references`). Same line and leaf target as the authored-ahead row; the label is the ruling."
+  },
+  {
+   "type": "instantiates",
+   "from": "reads_packages",
+   "target": "Limits.constructor",
+   "line_number": 34,
+   "meta.evidenceClass": "structural",
+   "meta.reasonCode": "concrete-invocant",
+   "note": "`Config::Limits::->new($limit)`. The `::` suffix is stripped by `constructorLeaf`; before that the target was `.constructor` and resolved at neither end. Measured on perl5: version::->new (cpan/version/t/02derived.t:71), IO::File::->new (dist/IO/lib/IO/Handle.pm:329), Bar::->new (dist/base/t/fields-5_6_0.t:223)."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "Config::Only::Key",
+   "note": "HASH KEY, twice: `(Config::Only::Key => 1)` on L31 and `$only{Config::Only::Key}` on L32. Both carry `::`, neither names a package entity. This row is the only thing in the fixture that can catch the position-vs-node-type defect in the guard — the first version asked whether the key was `namedChild(0)` and let both through."
+  },
+  {
+   "type": "uses",
+   "target": "helper",
+   "note": "`Config::Limits::helper(1)` is a CALL and already has a `calls` row; a second label on one construct is not corroboration, it is a double count"
+  },
+  {
+   "type": "uses",
+   "target": "Ontology::alpha",
+   "note": "`\\&Ontology::alpha` (L38) is a code-slot REFERENCE and has its own row under `references`. One label per fact is what keeps the two partitions checkable."
+  },
+  {
+   "type": "uses",
+   "target": "Ontology::beta",
+   "note": "`\\&{ 'Ontology::beta' }` (L39) is a SYMBOLIC DEREF: the grammar puts the whole expression in the slot's `function` field, so its text is source code. PERL-MR12's rule applies to a reference exactly as it does to a callee — a name has to be WRITTEN."
+  },
+  {
+   "type": "references",
+   "target": "{ 'Ontology::beta' }",
+   "note": "the same symbolic deref, read at the label it must not be published under"
+  },
+  {
+   "type": "imports",
+   "target": "Ontology",
+   "note": "`package Ontology;` is a DECLARATION. A `uses`-shaped edge from the file to the class it defines would point the graph at itself, and the same reasoning retires the `uses` on a declared name."
+  },
+  {
+   "type": "instantiates",
+   "target": ".constructor",
+   "note": "the pre-fix shape: `leafName(\"Config::Limits::\")` is the empty string, so the edge published an EMPTY owner. This is rule R7's fabricated endpoint in its purest form — it is the one forbid in the file that can be satisfied by a target nobody could name."
+  },
+  {
+   "type": "uses",
+   "target": "Ontology::hidden",
+   "note": "`${'Ontology::hidden'}{name}` on L33: the grammar types this `varname` as a `block` whose TEXT is `{ 'Ontology::hidden' }`, so the name carries braces and quotes. Over mojo+plack+Moose+Moo this shape produced 9 edges (moose/t/cmop/meta_package.t, moo/lib/Moo.pm:275-278) and the production noise filter deleted all 9 on its brace rule — defence in depth, but the analyzer is the thing under test, so it refuses the shape itself."
+  }
+ ]
+}

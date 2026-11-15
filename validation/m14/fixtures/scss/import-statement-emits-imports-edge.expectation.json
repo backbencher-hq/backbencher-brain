@@ -1,0 +1,40 @@
+{
+  "fixtureId": "scss/import-statement-emits-imports-edge",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE `imports`/`part_of` SPLIT, PINNED BOTH WAYS. Until 2026-10-23 this fixture pinned `imports <file> -> theme` for `@import \"theme\"`, because the CSS delegate parses the statement and publishes an `imports` row. The 14-value campaign's `part_of` contract is the truthful type for that form: a Sass `@import` evaluates the imported file IN PLACE and shares the importing file's single scope, which is 'a part shares the library's single scope, imports nothing'. So the Sass-form row MOVES to `part_of` (source/target/line and the delegate's file claim unchanged; a label moved, no edge gained or lost) while a stylesheet-loading form — `@import url(...)`, a `.css` specifier, a protocol/`//` URL, a media query, `sass:` — stays `imports`. THIS FIXTURE PINS BOTH SIDES SO A RELABEL BACK CANNOT PASS: the `part_of` row for `theme`, the `imports` row for `reset.css`, and forbid rows that name the neighbour label for each. The split is a TREE fact (exactly one `string_value` named child for the Sass form; a `call_expression` or media child otherwise), not a string guess, and `script/m14/scss-extended-census.ts` counts the same shapes over the whole population. It still does NOT claim the `@use`/`@forward` relationship edge, which remains a MEASURED GAP with its own proposal (validation/m14/proposals/scss-imports-use-forward.md).",
+  "expectSymbols": [
+    { "name": "import-statement-emits-imports-edge.scss", "kind": "module" },
+    { "name": ".card", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "theme" },
+    { "module": "reset.css" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "import-statement-emits-imports-edge.scss",
+      "target": "theme",
+      "line_number": 11,
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural",
+      "meta.partRole": "library",
+      "meta.isSassPartImport": true,
+      "note": "THE SASS FORM: `@import \"theme\"` includes the part `theme` into this stylesheet, which is the library. `partRole` is MANDATORY on every part_of row and says which end this file is."
+    },
+    {
+      "type": "imports",
+      "from": "import-statement-emits-imports-edge.scss",
+      "target": "reset.css",
+      "line_number": 12,
+      "confidenceMin": 1,
+      "meta.evidenceClass": "import_based",
+      "note": "THE CSS FORM: `@import url(\"reset.css\")` loads a stylesheet as a module. It is NOT part_of and must stay imports."
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "import-statement-emits-imports-edge.scss", "target": "theme" },
+    { "type": "part_of", "from": "import-statement-emits-imports-edge.scss", "target": "reset.css" }
+  ]
+}

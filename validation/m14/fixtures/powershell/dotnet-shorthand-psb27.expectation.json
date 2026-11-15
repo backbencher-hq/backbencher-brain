@@ -1,0 +1,116 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/dotnet-shorthand-psb27.ps1",
+ "authoredFrom": "PS-B27 — A BRACKETED TYPE LITERAL'S ROOT IS A NAMESPACE, NOT AN OWNER, AND A TARGET WITH NO LETTER IS NOT A NAME. Both halves were found by the incoming gate's refuted-claim list over the WHOLE admitted population (1,181 files / 30 repos, 197,028 edges): 113 refuted claims, ONE shape dominant — `instantiates Text.UTF8Encoding` from `[Text.UTF8Encoding]::new($false)`. The analyzer published `externalTarget: true`, which the arbiter checks by looking up the target's OWNER — everything before the LAST dot, so `Text` — and the project publishes a VARIABLE named `Text`, which refuted a claim about a .NET type. No file declares a TYPE named `Text`, and PowerShell classes cannot nest, so no project type can be spelled `Text.UTF8Encoding` at all: the refutation was a name collision, not a fact about the dependency.\n\nTHE FIX IS THE CLAIM, NOT THE READING. A type literal's root is resolved by the ENGINE — `[Text.UTF8Encoding]` is `System.Text.UTF8Encoding` under PowerShell's documented implicit-`System.` rule — so the row claims the LIST (`languageNamespace`), whose evidence a reviewer diffs entry by entry and whose verification never asks about a name the edge does not carry. The table it is checked against (`DOTNET_SYSTEM_NAMESPACES`) is the framework's own direct children of `System`, so a root it does not carry keeps the old reading. Separately, `#Requires -Version 5.1` publishes `references -> 5.1` with `requiresVersion: true` — a real constraint that STAYS — and that row must carry no externality reading: a version has no ASCII letter, so it is not a name in any language this fleet reads, and the arbiter's owner question about `5` (the MAJOR VERSION) refuted 13 such rows on whatever symbol happened to be called that.\n\nMEASURED: refuted claims 113 -> 60 over the same population, at the same edge count (197,028) and the same resolved count (101,352). The 53 that left are the 40 rows whose root the table carries plus the 13 version literals; none of them moved a resolution, because a claim can never raise `resolved`.\n\nWHY EVERY ROW HAS A TWIN. Row 2 is the same .NET channel with a QUALIFIED owner: a rule that published the list only on the shorthand rows would fail it, and a rule that published no list would fail row 1. Row 3 is the same shape with a root the table does not carry (`Foo` is created at runtime by `Add-Type`): a rule that claimed every dotted type-literal root would claim it and fail. Row 4 is the twin for the no-letter rule: a command-position target WITH letters keeps the reading it had at HEAD, so the rule is a fact about the spelling and not a blanket withholding.",
+ "expectSymbols": [
+  {
+   "name": "dotnet-shorthand-psb27.ps1",
+   "kind": "module",
+   "comment": "The FILE IS THE MODULE (PS1), and it is the source of every `from` below."
+  },
+  {
+   "name": "utf8",
+   "kind": "variable",
+   "ownerName": "dotnet-shorthand-psb27.ps1",
+   "comment": "Row 1's binding — the shorthand construction whose row carries the list."
+  },
+  {
+   "name": "utf32",
+   "kind": "variable",
+   "ownerName": "dotnet-shorthand-psb27.ps1",
+   "comment": "Row 2's binding — the qualified spelling of the same channel."
+  },
+  {
+   "name": "bar",
+   "kind": "variable",
+   "ownerName": "dotnet-shorthand-psb27.ps1",
+   "comment": "Row 3's binding — the type `Add-Type` creates, whose root the table does not carry."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "instantiates",
+   "from": "dotnet-shorthand-psb27.ps1",
+   "target": "Text.UTF8Encoding",
+   "line_number": 33,
+   "meta.languageNamespace": ["Text"],
+   "meta.dotNetNew": true,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "meta.isExternalTarget": null,
+   "comment": "THE ROW THE FIX EXISTS FOR. `Text` is carried by the documented table as `System.Text`, so the claim is the LIST. `isExternalTarget` is deliberately ABSENT: the arbiter would answer it by looking up `Text`, which the project carries as a variable, and a claim refuted by a value is a false statement in the opposite direction. Before this change this row carried ONLY the generic reading, and the arbiter refuted it."
+  },
+  {
+   "type": "instantiates",
+   "from": "dotnet-shorthand-psb27.ps1",
+   "target": "System.Text.UTF32Encoding",
+   "line_number": 39,
+   "meta.languageNamespace": ["System"],
+   "meta.dotNetNew": true,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "meta.isExternalTarget": true,
+   "comment": "THE POSITIVE THE SHORTHAND RULE ALONE WOULD MISS. The root is `System` and the owner `System.Text` is itself qualified, so both keys publish. The pair with row 1 is the check: a list published only on shorthand rows fails here, and a list never published fails row 1."
+  },
+  {
+   "type": "instantiates",
+   "from": "dotnet-shorthand-psb27.ps1",
+   "target": "Foo.Bar",
+   "line_number": 45,
+   "meta.languageNamespace": null,
+   "meta.dotNetNew": true,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "meta.isExternalTarget": null,
+   "comment": "THE NEGATIVE TWIN. `Foo` is not a `System.*` namespace — the type is compiled at runtime by the `Add-Type` on line 44 — so the table does not carry it and NO list is claimed. A rule that claimed every dotted type-literal root would claim `Foo` and fail here; this is the row that makes the table load-bearing rather than decorative."
+  },
+  {
+   "type": "references",
+   "from": "dotnet-shorthand-psb27.ps1",
+   "target": "5.1",
+   "line_number": 1,
+   "meta.requiresVersion": true,
+   "meta.fileLevel": true,
+   "meta.externalTarget": null,
+   "meta.externalVia": null,
+   "meta.isExternalTarget": null,
+   "comment": "THE SECOND HALF, and the edge is NOT withdrawn: `#Requires -Version 5.1` is a real engine constraint and stays published with `requiresVersion`. What it must not carry is an externality reading — `5.1` has no ASCII letter, so it is not a name, and the arbiter's owner question about `5` refuted 13 such rows across the population."
+  },
+  {
+   "type": "calls",
+   "from": "dotnet-shorthand-psb27.ps1",
+   "target": "Get-ChildItem",
+   "line_number": 50,
+   "meta.externalTarget": true,
+   "meta.externalVia": "cmdlet",
+   "meta.isExternalTarget": true,
+   "comment": "THE TWIN FOR THE NO-LETTER RULE. A command-position target with letters keeps exactly the reading it had at HEAD — both keys — so the withholding above is a fact about the SPELLING and not a blanket rule that would silence every claim in the lane."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "instantiates",
+   "target": "Foo.Bar",
+   "meta.languageNamespace": ["Foo"],
+   "comment": "The shorthand claim must never be fabricated for a root the documented table does not carry."
+  },
+  {
+   "type": "references",
+   "target": "5.1",
+   "meta.externalTarget": true,
+   "comment": "A version literal must never carry an externality reading: no letter, no name."
+  },
+  {
+   "type": "instantiates",
+   "target": "Text.UTF8Encoding",
+   "meta.isExternalTarget": true,
+   "comment": "The arbiter-readable owner claim must stay withheld on a BARE owner: `Text` is a variable the project publishes, and the owner question cannot be answered honestly from the edge's own spelling."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "equals": 10,
+   "comment": "Every row the file emits: 3 `calls` (Add-Type, Get-ChildItem, Out-Null), 3 `contains` (utf8, utf32, bar), 3 `instantiates` (Text.UTF8Encoding, System.Text.UTF32Encoding, Foo.Bar) and 1 `references` (5.1). The count is not decoration: the defect class either half of PS-B27 repairs is a row that should not carry a key, and a rule that dropped the reading by dropping the ROW would keep this count while emptying the fixture."
+  }
+ ]
+}

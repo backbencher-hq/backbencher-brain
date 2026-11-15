@@ -1,0 +1,19 @@
+{
+  "fixtureId": "ruby/external-override",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.10 (overrideCompanion dead-machinery sweep): the pre-fix analyzer dropped EVERY override whose base was declared in another file — the companion index it falls back to is never populated in production. Pins: in-file verified override @0.95/structural, external-base Pass-3 first-parent guess @0.5/inferred with reasonCode, and the extends edges that drive resolution.",
+  "expectRelationships": [
+    { "type": "extends", "source": "InFileService", "target": "LocalBase" },
+    { "type": "extends", "source": "AuditService", "target": "ExternalBase" },
+    { "type": "overrides", "source": "InFileService.handle", "target": "LocalBase.handle", "confidenceMin": 0.9 },
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "confidenceMax": 0.5 },
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "meta.reasonCode": "first-parent-guess" },
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "meta.evidenceClass": "inferred" },
+    { "type": "contains", "source": "LocalBase", "target": "handle" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "confidenceMin": 0.9 },
+    { "type": "overrides", "source": "InFileService.handle", "target": "LocalBase.handle", "confidenceMax": 0.5 }
+  ]
+}

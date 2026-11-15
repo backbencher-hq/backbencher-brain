@@ -1,0 +1,160 @@
+{
+  "fixtureId": "groovy/lines-825",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off lines-825.groovy. Before this round the groovy analyzer emitted NO line at all on any relationship (measured: 0 of 761 on a 40-file sample) and every symbol range started at the declaration's leading ANNOTATION \u2014 the pinned grammar gives `@Deprecated\\nclass Wrapped` children `[modifiers@18, identifier@19, class_body@19]`, so a tool navigating to Wrapped opened `@Deprecated`. Pins: the class at 19 and its members at 23/26 (annotations on 22/25 skipped, including their `contains` and `overrides` edges); each heritage parent on its OWN line (`extends Plain` 19, `implements Marker, Second` both 20); a same-line member read at 27; the type in a declared-type reference at 23; and both continuation calls of a chain at the CALLEE's own line (29, 30) rather than the receiver's 28 \u2014 the scala defect, re-checked on groovy's own node shape. The forbid entries are the positions a naive implementation produces: the annotation line, the class header line for a second parent, and the chain-opening line. Deliberately NOT pinned HERE: a newline-continued PROPERTY read (`this\\n  .label`), which the pinned grammar shapes as `leading_dot_call` and which used to fabricate a `calls` edge to the property. That defect (and its dotted-juxt sibling) is fixed and has its own fixture with its own one-line controls \u2014 `groovy/continuation-shapes-851` (M49 W20, issues #851/#852) \u2014 so this file keeps pinning only the line contract, deliberately not duplicating the edge-set contract.",
+  "expectSymbols": [
+    {
+      "name": "Marker",
+      "kind": "interface"
+    },
+    {
+      "name": "Second",
+      "kind": "interface"
+    },
+    {
+      "name": "Plain",
+      "kind": "class"
+    },
+    {
+      "name": "Wrapped",
+      "kind": "class"
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "ownerName": "Wrapped"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Wrapped",
+      "startLine": 19
+    },
+    {
+      "symbol": "label",
+      "ownerName": "Wrapped",
+      "startLine": 23
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Wrapped",
+      "targetEndsWith": "Plain",
+      "line_number": 19
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "targetEndsWith": "Marker",
+      "line_number": 20
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "targetEndsWith": "Second",
+      "line_number": 20
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "label",
+      "line_number": 23
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "use",
+      "line_number": 26
+    },
+    {
+      "type": "overrides",
+      "from": "Wrapped.use",
+      "target": "use",
+      "line_number": 26,
+      "meta.overriddenOwner": "Plain"
+    },
+    {
+      "type": "uses",
+      "from": "Wrapped",
+      "target": "label",
+      "line_number": 27
+    },
+    {
+      "type": "calls",
+      "from": "use",
+      "target": "build",
+      "line_number": 29
+    },
+    {
+      "type": "calls",
+      "from": "use",
+      "target": "configure",
+      "line_number": 30
+    },
+    {
+      "type": "references",
+      "from": "Wrapped",
+      "target": "String",
+      "line_number": 23
+    },
+    {
+      "type": "references",
+      "target": "com.acme.lines.Marker",
+      "line_number": 3
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "label",
+      "line_number": 22,
+      "note": "pre-fix: the `@Deprecated` line; `String label` is written on 23"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "use",
+      "line_number": 25,
+      "note": "pre-fix: the `@Deprecated` line; the method is written on 26"
+    },
+    {
+      "type": "overrides",
+      "from": "Wrapped.use",
+      "target": "use",
+      "line_number": 25,
+      "note": "pre-fix: the override attributed to its `@Deprecated` annotation",
+      "meta.overriddenOwner": "Plain"
+    },
+    {
+      "type": "extends",
+      "from": "Wrapped",
+      "targetEndsWith": "Plain",
+      "line_number": 18,
+      "note": "pre-fix: the class node starts at `@Deprecated`, but `extends Plain` is written on 19"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "targetEndsWith": "Second",
+      "line_number": 19,
+      "note": "pre-fix shape a naive port produces: the class header's line collapses both parents, but `Second` is written on 20"
+    },
+    {
+      "type": "calls",
+      "from": "use",
+      "target": "configure",
+      "line_number": 29,
+      "note": "the scala defect on groovy's shape: the chain opens at 28 (receiver) and its first call is on 29, so a chain-opening line stamps `.configure(m)` \u2014 written on 30 \u2014 with 29"
+    },
+    {
+      "type": "calls",
+      "from": "use",
+      "target": "build",
+      "line_number": 28,
+      "note": "pre-fix: the RECEIVER's line; `.build(m)` is written on 29"
+    }
+  ]
+}

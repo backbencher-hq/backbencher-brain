@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "m11-ground-truth.schema.json",
+  "title": "M11 independent ground truth",
+  "type": "object",
+  "required": ["schemaVersion", "truthSource", "source", "facts"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "truthSource": {"enum": ["source", "compiler", "language_service", "ide_index", "manual_audit"]},
+    "source": {"type": "string", "minLength": 1},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "layer", "kind", "evidence"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "layer": {"enum": ["source_discovery", "parser_wasm", "ast_extraction", "persistence", "relationships", "intelligence", "interface", "lifecycle"]},
+          "kind": {"type": "string", "minLength": 1},
+          "file": {"type": "string"},
+          "line": {"type": "integer", "minimum": 1},
+          "sourceId": {"type": "string"},
+          "targetId": {"type": "string"},
+          "expectedState": {"enum": ["resolved", "unknown", "unsupported"]},
+          "attributes": {"type": "object"},
+          "evidence": {
+            "type": "object",
+            "required": ["authority", "reference"],
+            "properties": {
+              "authority": {"enum": ["source", "compiler", "language_service", "ide_index", "manual_audit"]},
+              "reference": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

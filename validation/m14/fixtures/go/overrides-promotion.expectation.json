@@ -1,0 +1,89 @@
+{
+  "fixtureId": "go/overrides-promotion",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `overrides` RELATIONSHIP for the go lane, which the lane never emitted even though it already computed the fact and discarded it: `collectGoPromotedMethods` drops a promoted method displaced by an outer declaration without recording the displacement. Go has no override KEYWORD, so the rule pinned here is the Go SPECIFICATION's selector rule ('For a value x of type T ... x.f denotes the field or method at the shallowest depth in T where there is such an f') rather than the family's usual 'same name AND same signature' rule — a signature-compatible shadow is the only shape most languages accept, but `x.M` selects the outer declaration even when the signatures differ, so a signature-matching subset would under-report the language. Both halves are pinned with `meta.sameSignature`: true for Sub.Read (substitutable), false for Sub.Close, whose result list is empty where the promoted `Base.Close` returns `error` — a legal Go HIDE. `line_number` is the SHADOWING declaration's own line, not the promoted one's, and `promotedAtDepth` records how deep the displaced method sat. ENDPOINT SPELLING after the #924 name-surface round: the SOURCE is `Receiver.Method` because a Go method has no package-scope name of its own, and the TARGET is the member NAME alone with `meta.targetQualified`/`meta.embedder` carrying the pair it displaced (`Base.Read`) — a name-bearing target is a name, not a selector chain. The three `target`-only forbid rows that forbade a bare method name were removed with this rule: that spelling is now REQUIRED, and a forbid of it would fail every run. THREE rows of this file were WRONG on the first authoring pass and the analyzer was right, which is the reason the forbid half is written the way it is: (1) the diamond was expected to shadow `Left.Read` and `Right.Read` — but `Left` and `Right` declare no `Read`, so `Base.Read` at depth 2 by both paths is ONE method at the shallowest depth, legal and unambiguous, and `Left.Read` would name a method that exists nowhere; (2) `Sub.Close` was written with the same signature as `Base.Close`, so the pin claimed a hide where the source had an override; (3) an `implements` control in the sibling fixture assumed an unexported interface method is optional, and it is not. The `mixes_in` rows are controls that the new pass did not disturb the embedding pass.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Sub.Read",
+      "target": "Read",
+      "line_number": 51,
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.sameSignature": true,
+      "meta.isOverride": true,
+      "meta.promotedAtDepth": 1,
+      "meta.targetQualified": "Base.Read",
+      "meta.embedder": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Sub.Close",
+      "target": "Close",
+      "line_number": 56,
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.sameSignature": false,
+      "meta.reasonCode": "promoted-method-shadowed-by-outer-declaration",
+      "meta.targetQualified": "Base.Close",
+      "meta.embedder": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Mid.Read",
+      "target": "Read",
+      "line_number": 63,
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.promotedAtDepth": 1,
+      "meta.targetQualified": "Sub.Read",
+      "meta.embedder": "Sub"
+    },
+    {
+      "type": "overrides",
+      "from": "Mid.Read",
+      "target": "Read",
+      "line_number": 63,
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.sameSignature": true,
+      "meta.promotedAtDepth": 2,
+      "meta.targetQualified": "Base.Read",
+      "meta.embedder": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Diamond.Read",
+      "target": "Read",
+      "line_number": 77,
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.sameSignature": true,
+      "meta.promotedAtDepth": 2,
+      "meta.targetQualified": "Base.Read",
+      "meta.embedder": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Sub",
+      "target": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Mid",
+      "target": "Sub"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Diamond",
+      "target": "Left"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Diamond",
+      "target": "Right"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Embeds",
+      "target": "Left"
+    }
+  ],
+  "forbidRelationships": []
+}

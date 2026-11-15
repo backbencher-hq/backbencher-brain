@@ -1,0 +1,41 @@
+{
+  "fixtureId": "dart/mixes-in",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CANONICAL `mixes_in` (Lead commit df5a03eb2, vocabulary landed 2026-10-18). Before this change a with-clause published `uses` + ad-hoc `metadata.isMixin:true` — one label for two different facts, with the distinction living only in metadata that the store's resolver never reads. The relabel is a strict replacement: same source, same target, same line, one row per applied mixin. This fixture pins the POSITIVE emission in all three grammar shapes (direct mixins on the class, mixins under a superclass, and `= Base with M1, M2` whose clauses live inside a `mixin_application` node with no `superclass` child at all), and it pins the THREE BOUNDARIES that must never be relabelled: the `extends` base, the `implements` list, and a mixin's `on` constraint (which is a `references` row with `isMixinOn`, not an application of Base). Every forbidden row is a wrong-shaped label a plausible implementation would produce: a fix that relabelled every heritage clause to mixes_in would pass the positive rows and fail the extends/implements forbids; a fix that walked the class's own type_identifiers instead of the `mixins` child would pass `Single` and fail `Heritage` (whose extends base comes first); and a fix that forgot the `mixin_application` branch would silently emit nothing for `Applied`.",
+  "expectSymbols": [
+    { "name": "M1", "kind": "mixin" },
+    { "name": "M2", "kind": "mixin" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Marker", "kind": "class" },
+    { "name": "Constrained", "kind": "mixin" },
+    { "name": "Single", "kind": "class" },
+    { "name": "Multi", "kind": "class" },
+    { "name": "Applied", "kind": "class" },
+    { "name": "Heritage", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "mixes_in", "source": "Single", "target": "M1", "confidenceMin": 1.0, "meta.isMixin": true, "meta.evidenceClass": "structural", "note": "POSITIVE 1 — the minimal shape: one mixin, direct child of the class." },
+    { "type": "mixes_in", "source": "Multi", "target": "M1", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "POSITIVE 2 — multiple mixins: the FIRST of `with M1, M2`." },
+    { "type": "mixes_in", "source": "Multi", "target": "M2", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "POSITIVE 3 — the SECOND of `with M1, M2`; one row per applied mixin, not one row for the clause." },
+    { "type": "mixes_in", "source": "Applied", "target": "M1", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "POSITIVE 4 — MIXIN APPLICATION CLASS `= Base with M1, M2`. The grammar puts base AND mixins inside `mixin_application` with no `superclass` node, so this is the row a reader that only looks at the class's own children misses entirely." },
+    { "type": "mixes_in", "source": "Applied", "target": "M2", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "POSITIVE 5 — the second application-class mixin." },
+    { "type": "mixes_in", "source": "Heritage", "target": "M1", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "POSITIVE 6 — mixins under a superclass node (`extends Base with M1`). The `mixins` node is a CHILD of `superclass` here, not of the class, so a reader that only scans direct children misses this row while passing `Single`." },
+    { "type": "extends", "source": "Applied", "target": "Base", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "BOUNDARY 1, positive side — the application class's BASE is still `extends`. A relabel that swept the whole mixin_application node would turn this into mixes_in and lose the inheritance edge." },
+    { "type": "extends", "source": "Heritage", "target": "Base", "confidenceMin": 1.0, "meta.evidenceClass": "structural", "note": "BOUNDARY 1, positive side (superclass form)." },
+    { "type": "implements", "source": "Heritage", "target": "Marker", "confidenceMin": 1.0, "meta.isImplements": true, "meta.evidenceClass": "structural", "note": "BOUNDARY 2, positive side — the implements list stays `implements` while the with-clause on the same declaration becomes mixes_in." },
+    { "type": "implements", "source": "Constrained", "target": "Marker", "confidenceMin": 1.0, "meta.isImplements": true, "meta.evidenceClass": "structural", "note": "BOUNDARY 2 on the mixin declaration. The ON-base must not take the implements list with it." },
+    { "type": "references", "source": "Constrained", "target": "Base", "confidenceMin": 1.0, "meta.isMixinOn": true, "meta.typePosition": "mixin_on_clause", "note": "BOUNDARY 3, positive side — `mixin Constrained on Base` publishes `references` (the mixin's declaration MENTIONS the constraining type) and keeps `isMixinOn` so a reader can still pick the clause out. It is not `extends` (nothing is inherited) and not `mixes_in` (nothing is applied: `Base` is a CONSTRAINT on the host)." }
+  ],
+  "forbidRelationships": [
+    { "type": "mixes_in", "source": "Heritage", "target": "Base", "note": "BOUNDARY 1, negative side — the extends base must never be mixes_in." },
+    { "type": "mixes_in", "source": "Heritage", "target": "Marker", "note": "BOUNDARY 2, negative side — an implemented interface is not an applied mixin." },
+    { "type": "mixes_in", "source": "Constrained", "target": "Base", "note": "BOUNDARY 3, negative side — the `on` constraint is not an application. A reader that treated every type_identifier under a mixin_declaration as a mixin would publish this row." },
+    { "type": "mixes_in", "source": "Constrained", "target": "Marker", "note": "BOUNDARY 2+3 — the implements name on a mixin declaration must not be swept in either." },
+    { "type": "uses", "source": "Single", "target": "M1", "note": "THE OLD LABEL, forbidden: a with-clause is no longer a `uses` row. A partial relabel that adds mixes_in WITHOUT removing the uses row would pass every positive pin and fail this one." },
+    { "type": "uses", "source": "Multi", "target": "M2", "note": "The old label for the second mixin — forbidding the same superseded shape at a second site, so a fix that special-cased only single-mixin clauses is caught." },
+    { "type": "extends", "source": "Single", "target": "M1", "note": "THE PRE-EXISTING MISFILE this vocabulary exists to end: a with-clause must never be inheritance, which is what every other language's heritage question would otherwise read it as." },
+    { "type": "extends", "source": "Constrained", "target": "Base", "note": "DARTD14's old shape, forbidden at HEAD: the on-constraint used to be published as `extends{isMixinOn}`. It is a `references` row now; this pin makes the old spelling unreachable by construction." },
+    { "type": "mixes_in", "source": "Applied", "target": "Base", "note": "The application class's BASE, forbidden as mixes_in — the exact row a whole-node sweep would fabricate." }
+  ]
+}

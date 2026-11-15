@@ -1,0 +1,16 @@
+{
+  "issue": "CLJ-ADV F12",
+  "note": "cljc alias forms: ns-level `#?(:clj (:require …))`, clause-level `(:require #?(:clj … :cljs …))` (both platforms unioned), `(:require-macros …)`, and `:as-alias` (alias without a load dependency) all resolve their calls.",
+  "expectRelationships": [
+    { "type": "calls", "from": "f", "target": "clojure.string/join", "line_number": 7, "meta.callArity": 2 },
+    { "type": "calls", "from": "g", "target": "clj.fixture.macros/go", "line_number": 9 },
+    { "type": "calls", "from": "h", "target": "clj.fixture.dual/x", "line_number": 11 },
+    { "type": "calls", "from": "i", "target": "clj.fixture.alias/x", "line_number": 13 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "s/join" },
+    { "type": "calls", "target": "m/go" },
+    { "type": "calls", "target": "d/x" },
+    { "type": "calls", "target": "aa/x" }
+  ]
+}

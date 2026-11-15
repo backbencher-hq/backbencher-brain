@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/template-uses",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the K4 gap: string templates (\"hi $name\") USE the interpolated identifier. Kotlin's grammar produces a real interpolated_identifier node (unlike groovy's opaque GStrings — the S1 ruling), so the read is visible to the parser and must emit a Uses edge from greet() to name.",
+  "expectSymbols": [
+    { "name": "Greeter", "kind": "class" },
+    { "name": "name", "kind": "property", "ownerName": "Greeter" },
+    { "name": "greet", "ownerName": "Greeter" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "greet", "target": "name", "meta.evidenceClass": "usage_contextual" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+ "fixtureId": "scala/anonymous-body-scope",
+ "language": "scala",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M37.21 #610 scala ScalaD-D (JD18 family lesson from java, probe-verified in scala): an anonymous class body (new Runnable { ... }) declares a Class symbol anonymous_Runnable owned by the enclosing type, and its methods attribute to the ANONYMOUS type (contains anonymous_Runnable->run), never to the enclosing class (the pre-fix bug leaked contains Service->run and fabricated no anonymous symbol).",
+ "expectSymbols": [
+  { "name": "anonymous_Runnable" }
+ ],
+ "expectRelationships": [
+  { "type": "contains", "from": "Service", "target": "anonymous_Runnable" },
+  { "type": "contains", "from": "anonymous_Runnable", "target": "run" },
+  { "type": "instantiates", "from": "Service", "target": "Runnable" }
+ ],
+ "forbidRelationships": [
+  { "type": "contains", "from": "Service", "target": "run" }
+ ]
+}

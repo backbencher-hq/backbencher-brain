@@ -1,0 +1,12 @@
+{
+  "issue": "M15.D1",
+  "code": "D1",
+  "tool": "bb_doc",
+  "title": "classification — symbol/file/module/coverage modes",
+  "verified": true,
+  "checks": 11,
+  "passed": 12,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-09-30T22:25:29.267Z"
+}

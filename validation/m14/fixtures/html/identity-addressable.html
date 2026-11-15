@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Identity fixture</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <!-- HTML-IDENTITY. An element becomes a symbol BECAUSE something can
+       address it. `id` is the document's unique handle (getElementById);
+       `name` is the form/anchor handle (getElementsByName). Both are real
+       in-document references, which is why they — and not `class` — are the
+       identity attributes. vue and svelte already publish the family rule
+       "Template elements/attributes/directives are NEVER symbols"; html is a
+       template language, so it inherits that rule and adds the one construct
+       an SFC template does not have: a document-level address space. -->
+  <header id="site-header" class="header bar">
+    <nav aria-label="Main">
+      <a href="#orders">Orders</a>
+    </nav>
+  </header>
+
+  <!-- A class is a SHARED styling hook, not an identity: three elements carry
+       it below and NONE of them becomes a symbol. Measured over the corpus,
+       class-derived names were 59.9% non-unique within their own file and
+       28.8% carried whitespace because the name was the whole multi-token
+       class value. The class stays readable in metadata.attributes. -->
+  <div class="card"><span class="card">no id</span><b class="card">still none</b></div>
+
+  <main id="app">
+    <form id="search-form" name="searchForm" action="/search">
+      <label for="query">Query</label>
+      <input id="query" name="q">
+    </form>
+    <section id="orders">
+      <!-- A duplicate `id` is invalid HTML. The FIRST in document order keeps
+           the plain name (getElementById returns the first); later ones take a
+           deterministic #N suffix so no two symbols share a name, and carry
+           metadata.duplicateId so the defect stays visible. -->
+      <div id="dup">first wins</div>
+      <div id="dup">duplicate id</div>
+    </section>
+  </main>
+
+  <!-- The suffix WATERMARK regression, and the ORDERING is the whole test. A literal
+       `id="dupA#2"` is declared BEFORE the second `id="dupA"`, so at the moment the
+       duplicate is allocated the literal has already taken suffix #2 while the
+       watermark still points at 1. An implementation that trusted its watermark and
+       stopped probing for occupancy would emit `dupA#2` a SECOND time — two symbols
+       with one name in one file, the exact unresolvable-identity shape this lane
+       exists to prevent, and invisible to every fixture that declares its duplicates
+       consecutively. Correct allocation reaches #3 by probing. Performance work on an
+       output format is only legitimate while it stays invisible here. -->
+  <div id="dupA">1</div>
+  <div id="dupA#2">literal arrives BEFORE the duplicate that would claim it</div>
+  <div id="dupA">2</div>
+  <div id="dupB">other handle, to prove the watermark is per-handle</div>
+  <div id="dupB">other handle, duplicate</div>
+</body>
+</html>

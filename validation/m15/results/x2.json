@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X2",
+  "code": "X2",
+  "tool": "bb_security",
+  "title": "classification-construct census",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "positives": 4,
+  "negatives": 0,
+  "negativePassed": 0,
+  "skipped": [],
+  "generatedAt": "2026-11-14T21:08:34.840Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:08:34.840Z",
+    "contentSha256": "669051131f3889de4bd5f418f47d9b947ce0129a5021bb210765cbcf3c7e44dd"
+  }
+}

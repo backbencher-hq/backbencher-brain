@@ -1,0 +1,27 @@
+{
+  "issue": "#881",
+  "expectSymbols": [{ "name": "caller", "kind": "function" }],
+  "expectRelationships": [
+    { "type": "calls", "from": "caller", "target": "live" },
+    { "type": "calls", "from": "templates", "target": "live-unquote" },
+    { "type": "calls", "from": "templates", "target": "live-splice" },
+    { "type": "calls", "from": "templates", "target": "live-comment-unquote" },
+    { "type": "calls", "from": "templates", "target": "live-quote-unquote" },
+    { "type": "calls", "from": "templates", "target": "after-template" }
+  ],
+  "forbidSymbols": [
+    { "name": "quoted-definition" },
+    { "name": "discarded-definition" },
+    { "name": "commented-definition" }
+  ],
+  "forbidRelationships": [
+    { "target": "quoted-ghost" },
+    { "target": "explicit-ghost" },
+    { "target": "discarded-ghost" },
+    { "target": "commented-ghost" },
+    { "target": "hidden" },
+    { "target": "qualified-ghost" },
+    { "target": "trivia-ghost" },
+    { "target": "template-ghost" }
+  ]
+}

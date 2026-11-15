@@ -1,0 +1,1232 @@
+{
+  "schemaVersion": 1,
+  "instrument": "c-imports-audit",
+  "claim": "every `imports` target names a header that exists — verified against the filesystem, which is the only input the analyzer cannot dictate. This is a RESOLVABILITY claim, not a directness claim: the analyzer reads directness off the #include line, so testing it would be near-tautological.",
+  "knownLimitation": "system headers absent from both the checkout and this machine's include directories are counted as systemUnverified, NOT as resolved and NOT as failures — the audit cannot distinguish 'present but not indexed here' from 'genuinely absent'.",
+  "generatedAt": "2026-10-02T01:14:43.458Z",
+  "repos": [
+    "curl",
+    "libgit2",
+    "redis"
+  ],
+  "limit": 900,
+  "totals": {
+    "edges": 10941,
+    "resolved": 8244,
+    "systemUnverified": 2291,
+    "externalDeps": 109,
+    "projectUnresolved": 297,
+    "extensionless": 4
+  },
+  "perRepo": [
+    {
+      "repo": "curl",
+      "files": 900,
+      "edges": 3849,
+      "resolved": 2862,
+      "quoted": 2705,
+      "angled": 1144,
+      "systemUnverified": 852,
+      "externalDeps": 108,
+      "projectUnresolved": 27
+    },
+    {
+      "repo": "libgit2",
+      "files": 900,
+      "edges": 3884,
+      "resolved": 3475,
+      "quoted": 3374,
+      "angled": 510,
+      "systemUnverified": 386,
+      "externalDeps": 1,
+      "projectUnresolved": 22
+    },
+    {
+      "repo": "redis",
+      "files": 788,
+      "edges": 3208,
+      "resolved": 1907,
+      "quoted": 1854,
+      "angled": 1354,
+      "systemUnverified": 1053,
+      "externalDeps": 0,
+      "projectUnresolved": 248
+    }
+  ],
+  "externalDepSample": [
+    {
+      "repo": "curl",
+      "target": "proto/bsdsocket.h"
+    },
+    {
+      "repo": "curl",
+      "target": "proto/bsdsocket.h"
+    },
+    {
+      "repo": "curl",
+      "target": "tidy/tidy.h"
+    },
+    {
+      "repo": "curl",
+      "target": "tidy/tidybuffio.h"
+    },
+    {
+      "repo": "curl",
+      "target": "gnutls/gnutls.h"
+    },
+    {
+      "repo": "curl",
+      "target": "gnutls/x509.h"
+    },
+    {
+      "repo": "curl",
+      "target": "bsdsocket/socketbasetags.h"
+    },
+    {
+      "repo": "curl",
+      "target": "proto/bsdsocket.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nghttp2/nghttp2.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/wolfcrypt/settings.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/wolfcrypt/ed25519.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/wolfcrypt/error-crypt.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/wolfcrypt/random.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/eddsa.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/wolfcrypt/des3.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/des.h"
+    },
+    {
+      "repo": "curl",
+      "target": "mbedtls/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "mbedtls/des.h"
+    },
+    {
+      "repo": "curl",
+      "target": "extra/stricmp.h"
+    },
+    {
+      "repo": "curl",
+      "target": "extra/strdup.h"
+    },
+    {
+      "repo": "curl",
+      "target": "exec/types.h"
+    },
+    {
+      "repo": "curl",
+      "target": "exec/execbase.h"
+    },
+    {
+      "repo": "curl",
+      "target": "proto/exec.h"
+    },
+    {
+      "repo": "curl",
+      "target": "proto/dos.h"
+    },
+    {
+      "repo": "curl",
+      "target": "proto/bsdsocket.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "mach/mach_time.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nghttp2/nghttp2.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nghttp2/nghttp2.h"
+    },
+    {
+      "repo": "curl",
+      "target": "SystemConfiguration/SCDynamicStoreCopySpecific.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "mbedtls/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "mbedtls/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nettle/version.h"
+    },
+    {
+      "repo": "curl",
+      "target": "GSS/gssapi_oid.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nghttp2/nghttp2.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_boringssl.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_ossl.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_quictls.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_gnutls.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_wolfssl.h"
+    },
+    {
+      "repo": "curl",
+      "target": "nghttp3/nghttp3.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_boringssl.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_ossl.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_quictls.h"
+    },
+    {
+      "repo": "curl",
+      "target": "ngtcp2/ngtcp2_crypto_gnutls.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/options.h"
+    },
+    {
+      "repo": "curl",
+      "target": "wolfssl/ssl.h"
+    }
+  ],
+  "unresolvedProject": [
+    {
+      "repo": "curl",
+      "file": "docs/examples/crawler.c",
+      "line_number": 33,
+      "target": "libxml/HTMLparser.h",
+      "lineText": "#include <libxml/HTMLparser.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/crawler.c",
+      "line_number": 34,
+      "target": "libxml/xpath.h",
+      "lineText": "#include <libxml/xpath.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/crawler.c",
+      "line_number": 35,
+      "target": "libxml/uri.h",
+      "lineText": "#include <libxml/uri.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/hiperfifo.c",
+      "line_number": 73,
+      "target": "event2/event.h",
+      "lineText": "#include <event2/event.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/hiperfifo.c",
+      "line_number": 74,
+      "target": "event2/event_struct.h",
+      "lineText": "#include <event2/event_struct.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/multi-event.c",
+      "line_number": 31,
+      "target": "event2/event.h",
+      "lineText": "#include <event2/event.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/smooth-gtk-thread.c",
+      "line_number": 38,
+      "target": "gtk/gtk.h",
+      "lineText": "#include <gtk/gtk.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "include/curl/system.h",
+      "line_number": 104,
+      "target": "ConditionalMacros.h",
+      "lineText": "#  include <ConditionalMacros.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/amigaos.c",
+      "line_number": 36,
+      "target": "amitcp/socketbasetags.h",
+      "lineText": "#    include <amitcp/socketbasetags.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/config-mac.h",
+      "line_number": 37,
+      "target": "ConditionalMacros.h",
+      "lineText": "#include <ConditionalMacros.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_ntlm_core.c",
+      "line_number": 84,
+      "target": "cipher.mih",
+      "lineText": "#  include \"cipher.mih\"  /* mih/cipher */"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_setup.h",
+      "line_number": 58,
+      "target": "TargetConditionals.h",
+      "lineText": "#include <TargetConditionals.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_setup.h",
+      "line_number": 367,
+      "target": "lwip/init.h",
+      "lineText": "#  include <lwip/init.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_setup.h",
+      "line_number": 368,
+      "target": "lwip/sockets.h",
+      "lineText": "#  include <lwip/sockets.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curlx/timeval.c",
+      "line_number": 243,
+      "target": "sec_api/time_s.h",
+      "lineText": "#include <sec_api/time_s.h>  /* for _gmtime32_s(), _gmtime64_s() */"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/md4.c",
+      "line_number": 110,
+      "target": "CommonCrypto/CommonDigest.h",
+      "lineText": "#include <CommonCrypto/CommonDigest.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/md5.c",
+      "line_number": 45,
+      "target": "psa/crypto_config.h",
+      "lineText": "#include <psa/crypto_config.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/md5.c",
+      "line_number": 135,
+      "target": "psa/crypto.h",
+      "lineText": "#include <psa/crypto.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/md5.c",
+      "line_number": 168,
+      "target": "CommonCrypto/CommonDigest.h",
+      "lineText": "#include <CommonCrypto/CommonDigest.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/peer.c",
+      "line_number": 42,
+      "target": "Iphlpapi.h",
+      "lineText": "#include <Iphlpapi.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/sha256.c",
+      "line_number": 37,
+      "target": "psa/crypto_config.h",
+      "lineText": "#include <psa/crypto_config.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/sha256.c",
+      "line_number": 145,
+      "target": "psa/crypto.h",
+      "lineText": "#include <psa/crypto.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/sha256.c",
+      "line_number": 176,
+      "target": "CommonCrypto/CommonDigest.h",
+      "lineText": "#include <CommonCrypto/CommonDigest.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/url.c",
+      "line_number": 39,
+      "target": "Iphlpapi.h",
+      "lineText": "#include <Iphlpapi.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/vtls/mbedtls.c",
+      "line_number": 41,
+      "target": "psa/crypto_config.h",
+      "lineText": "#include <psa/crypto_config.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "projects/OS400/curlcl.c",
+      "line_number": 33,
+      "target": "mih/callpgmv.h",
+      "lineText": "#include <mih/callpgmv.h>"
+    },
+    {
+      "repo": "curl",
+      "file": "src/toolx/tool_time.c",
+      "line_number": 27,
+      "target": "sec_api/time_s.h",
+      "lineText": "#include <sec_api/time_s.h>  /* for _localtime32_s(), _localtime64_s() */"
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/clar/clar.c",
+      "line_number": 247,
+      "target": "clar.suite",
+      "lineText": "#include \"clar.suite\""
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/clar/clar/counter.h",
+      "line_number": 33,
+      "target": "mach/mach_time.h",
+      "lineText": "#include <mach/mach_time.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/clar/clar/counter.h",
+      "line_number": 84,
+      "target": "proto/timer.h",
+      "lineText": "#include <proto/timer.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/ntlmclient/crypt_commoncrypto.c",
+      "line_number": 16,
+      "target": "CommonCrypto/CommonCrypto.h",
+      "lineText": "#include <CommonCrypto/CommonCrypto.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/ntlmclient/crypt_commoncrypto.h",
+      "line_number": 12,
+      "target": "CommonCrypto/CommonCrypto.h",
+      "lineText": "#include <CommonCrypto/CommonCrypto.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/ntlmclient/crypt_mbedtls.c",
+      "line_number": 12,
+      "target": "mbedtls/ctr_drbg.h",
+      "lineText": "#include \"mbedtls/ctr_drbg.h\""
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/ntlmclient/crypt_mbedtls.c",
+      "line_number": 13,
+      "target": "mbedtls/des.h",
+      "lineText": "#include \"mbedtls/des.h\""
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/ntlmclient/crypt_mbedtls.c",
+      "line_number": 14,
+      "target": "mbedtls/entropy.h",
+      "lineText": "#include \"mbedtls/entropy.h\""
+    },
+    {
+      "repo": "libgit2",
+      "file": "deps/ntlmclient/crypt_mbedtls.h",
+      "line_number": 12,
+      "target": "mbedtls/md.h",
+      "lineText": "#include \"mbedtls/md.h\""
+    },
+    {
+      "repo": "libgit2",
+      "file": "examples/common.h",
+      "line_number": 28,
+      "target": "Windows.h",
+      "lineText": "# include <Windows.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/libgit2/streams/mbedtls.c",
+      "line_number": 35,
+      "target": "mbedtls/ssl.h",
+      "lineText": "#include <mbedtls/ssl.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/libgit2/streams/mbedtls.c",
+      "line_number": 37,
+      "target": "mbedtls/entropy.h",
+      "lineText": "#include <mbedtls/entropy.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/libgit2/streams/mbedtls.c",
+      "line_number": 38,
+      "target": "mbedtls/ctr_drbg.h",
+      "lineText": "#include <mbedtls/ctr_drbg.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/libgit2/streams/stransport.c",
+      "line_number": 12,
+      "target": "CoreFoundation/CoreFoundation.h",
+      "lineText": "#include <CoreFoundation/CoreFoundation.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/libgit2/streams/stransport.c",
+      "line_number": 13,
+      "target": "Security/SecureTransport.h",
+      "lineText": "#include <Security/SecureTransport.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/libgit2/streams/stransport.c",
+      "line_number": 14,
+      "target": "Security/SecCertificate.h",
+      "lineText": "#include <Security/SecCertificate.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/util/hash/common_crypto.h",
+      "line_number": 13,
+      "target": "CommonCrypto/CommonDigest.h",
+      "lineText": "#include <CommonCrypto/CommonDigest.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/util/util.c",
+      "line_number": 27,
+      "target": "Shlwapi.h",
+      "lineText": "# include <Shlwapi.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/util/util.h",
+      "line_number": 298,
+      "target": "mach/mach_time.h",
+      "lineText": "#include <mach/mach_time.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/util/util.h",
+      "line_number": 324,
+      "target": "proto/timer.h",
+      "lineText": "#include <proto/timer.h>"
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/util/win32/w32_leakcheck.c",
+      "line_number": 12,
+      "target": "Windows.h",
+      "lineText": "#include \"Windows.h\""
+    },
+    {
+      "repo": "libgit2",
+      "file": "src/util/win32/w32_leakcheck.c",
+      "line_number": 13,
+      "target": "Dbghelp.h",
+      "lineText": "#include \"Dbghelp.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/adapters/libevent.h",
+      "line_number": 33,
+      "target": "event2/event.h",
+      "lineText": "#include <event2/event.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/adapters/libhv.h",
+      "line_number": 4,
+      "target": "hv/hloop.h",
+      "lineText": "#include <hv/hloop.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/adapters/libsdevent.h",
+      "line_number": 3,
+      "target": "systemd/sd-event.h",
+      "lineText": "#include <systemd/sd-event.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/adapters/macosx.h",
+      "line_number": 9,
+      "target": "CoreFoundation/CoreFoundation.h",
+      "lineText": "#include <CoreFoundation/CoreFoundation.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/adapters/qt.h",
+      "line_number": 28,
+      "target": "QSocketNotifier",
+      "lineText": "#include <QSocketNotifier>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/test.c",
+      "line_number": 24,
+      "target": "event2/event.h",
+      "lineText": "#include <event2/event.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/include/jemalloc/internal/jemalloc_internal_decls.h",
+      "line_number": 44,
+      "target": "os/lock.h",
+      "lineText": "#    include <os/lock.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/include/jemalloc/internal/jemalloc_internal_decls.h",
+      "line_number": 53,
+      "target": "mach/mach_time.h",
+      "lineText": "#    include <mach/mach_time.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/arena.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/background_thread.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/base.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/bin.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/bin_info.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/bitmap.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/buf_writer.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/cache_bin.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/ckh.c",
+      "line_number": 37,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/counter.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/ctl.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/decay.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/div.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/ecache.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/edata.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/edata_cache.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/ehooks.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/emap.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/eset.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/exp_grow.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/extent.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/extent_dss.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/extent_mmap.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/fxp.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/hook.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/hpa.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/hpa_hooks.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/hpdata.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/inspect.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/jemalloc.c",
+      "line_number": 2,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/large.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/log.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/malloc_io.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/mutex.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/nstime.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/pa.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/pa_extra.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/pac.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/pages.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/pages.c",
+      "line_number": 13,
+      "target": "vm/vm_param.h",
+      "lineText": "#include <vm/vm_param.h>"
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/pai.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/peak_event.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    },
+    {
+      "repo": "redis",
+      "file": "deps/jemalloc/src/prof.c",
+      "line_number": 1,
+      "target": "jemalloc/internal/jemalloc_preamble.h",
+      "lineText": "#include \"jemalloc/internal/jemalloc_preamble.h\""
+    }
+  ],
+  "unresolvedSystemSample": [
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "stdbool.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "winsock2.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "winsock2.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "stropts.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "stropts.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "winsock2.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "stdatomic.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "windows.h"
+    },
+    {
+      "repo": "curl",
+      "file": "CMake/CurlTests.c",
+      "target": "_mingw.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/block_ip.c",
+      "target": "winsock2.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/block_ip.c",
+      "target": "ws2tcpip.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/block_ip.c",
+      "target": "windows.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/evhiperfifo.c",
+      "target": "ev.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/ftpupload.c",
+      "target": "io.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/ghiper.c",
+      "target": "glib.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/log_failed_transfers.c",
+      "target": "windows.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/smooth-gtk-thread.c",
+      "target": "glib.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/synctime.c",
+      "target": "winapifamily.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/synctime.c",
+      "target": "windows.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/websocket.c",
+      "target": "winsock2.h"
+    },
+    {
+      "repo": "curl",
+      "file": "docs/examples/websocket.c",
+      "target": "windows.h"
+    },
+    {
+      "repo": "curl",
+      "file": "include/curl/curl.h",
+      "target": "winsock2.h"
+    },
+    {
+      "repo": "curl",
+      "file": "include/curl/curl.h",
+      "target": "ws2tcpip.h"
+    },
+    {
+      "repo": "curl",
+      "file": "include/curl/mprintf.h",
+      "target": "stdarg.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/amigaos.c",
+      "target": "stabs.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/cf-ip-happy.c",
+      "target": "in.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/cf-ip-happy.c",
+      "target": "inet.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/cf-socket.c",
+      "target": "in.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/cf-socket.c",
+      "target": "inet.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/cf-socket.c",
+      "target": "mstcpip.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/content_encoding.c",
+      "target": "zstd.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/creds.c",
+      "target": "stddef.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_addrinfo.c",
+      "target": "netinet/in6.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_addrinfo.c",
+      "target": "in.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_addrinfo.c",
+      "target": "inet.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_addrinfo.c",
+      "target": "stddef.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_addrinfo.h",
+      "target": "in.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_addrinfo.h",
+      "target": "inet.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_ntlm_core.c",
+      "target": "wincrypt.h"
+    },
+    {
+      "repo": "curl",
+      "file": "lib/curl_setup.h",
+      "target": "_mingw.h"
+    }
+  ],
+  "extensionlessSample": [
+    {
+      "repo": "redis",
+      "file": "deps/hiredis/adapters/qt.h",
+      "line_number": 28,
+      "target": "QSocketNotifier",
+      "lineText": "#include <QSocketNotifier>"
+    },
+    {
+      "repo": "redis",
+      "file": "src/lzfP.h",
+      "line_number": 140,
+      "target": "cstring",
+      "lineText": "# include <cstring>"
+    },
+    {
+      "repo": "redis",
+      "file": "src/lzfP.h",
+      "line_number": 141,
+      "target": "climits",
+      "lineText": "# include <climits>"
+    },
+    {
+      "repo": "redis",
+      "file": "src/lzfP.h",
+      "line_number": 153,
+      "target": "cstdint",
+      "lineText": "#   include <cstdint>"
+    }
+  ]
+}

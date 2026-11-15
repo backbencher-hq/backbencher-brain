@@ -1,0 +1,468 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-04T01:22:49.197Z",
+  "fixtureLanguages": [
+    "typescript",
+    "python",
+    "java"
+  ],
+  "summary": {
+    "pristine:search.symbol": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:search.content": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:search.file.fresh": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:search.file.edited": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:search.symbol.deleted": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:ask.stale-signal": {
+      "staleFiles": []
+    },
+    "pristine:ask.fresh-signal": {
+      "staleFiles": []
+    },
+    "pristine:analyze.callers": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.callees": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.trace": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.dependencies": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.stats": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 5,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.complexity": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 5,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.impact": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.test_mapping": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 5,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:analyze.test_quality": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 0,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:visualize.project": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 5,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "linkComposition": []
+    },
+    "pristine:migrate.plan": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "pristine:patterns.all": {
+      "staleFiles": []
+    },
+    "pristine:security.live": {
+      "staleFiles": []
+    },
+    "pristine:doc.file": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "mutated:search.symbol": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:search.content": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:search.file.fresh": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "mutated:search.file.edited": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale in this file — run: bb index \"src/user-service.ts\"  (or the bb_index tool with that file path)"
+      }
+    },
+    "mutated:search.symbol.deleted": {
+      "staleFiles": [
+        "src/extra.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 0,
+        "missing": 1,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:ask.stale-signal": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ]
+    },
+    "mutated:ask.fresh-signal": {
+      "staleFiles": []
+    },
+    "mutated:analyze.callers": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.callees": {
+      "staleFiles": [
+        "src/user-service.ts",
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 1,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 0.5,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.trace": {
+      "staleFiles": [
+        "src/user-service.ts",
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 1,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 0.5,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.dependencies": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 1,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 0.5,
+        "mode": "complete",
+        "remediation": "1 stale in this file — run: bb index \"src/user-service.ts\"  (or the bb_index tool with that file path)"
+      }
+    },
+    "mutated:analyze.stats": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 3,
+        "stale": 1,
+        "missing": 1,
+        "staleRatio": 0.4,
+        "mode": "complete",
+        "remediation": "2 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.complexity": {
+      "staleFiles": [
+        "src/extra.ts",
+        "src/user-service.ts",
+        "src/user-service.ts",
+        "src/user-service.ts",
+        "src/user-service.ts",
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 3,
+        "stale": 1,
+        "missing": 1,
+        "staleRatio": 0.4,
+        "mode": "complete",
+        "remediation": "2 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.impact": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.test_mapping": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 3,
+        "stale": 1,
+        "missing": 1,
+        "staleRatio": 0.4,
+        "mode": "complete",
+        "remediation": "2 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:analyze.test_quality": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 0,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "mutated:visualize.project": {
+      "staleFiles": [
+        "src/user-service.ts",
+        "src/user-service.ts",
+        "src/user-service.ts",
+        "src/user-service.ts",
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 3,
+        "stale": 1,
+        "missing": 1,
+        "staleRatio": 0.4,
+        "mode": "complete",
+        "remediation": "2 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      },
+      "linkComposition": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "mutated:migrate.plan": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — run: bb index --changed  (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "mutated:patterns.all": {
+      "staleFiles": [
+        "src/user-service.ts"
+      ],
+      "envelope": {
+        "stale": 1,
+        "missing": 1
+      }
+    },
+    "mutated:security.live": {
+      "staleFiles": []
+    },
+    "mutated:doc.file": {
+      "staleFiles": [],
+      "envelope": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    }
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.482Z",
+    "contentSha256": "3892dad9846cd167183425bfb3d9b3bc1640e40236849920a539fb5102d33f8a"
+  }
+}

@@ -3,7 +3,7 @@
   "lane": "INCOMING_JAVA",
   "repoHead": "27ff8449e63625cde22b7f02695f3b7b88376541",
   "corpus": {
-    "dir": "$HOME/fixtures/repositories/java-sample",
+    "dir": "/home/ishaq2321/bb_tests/repositories/java-sample",
     "rev": "500158f732419217507c7656904b8e6aa1bcc0d6",
     "filesEnumerated": 50,
     "analyzed": 50,

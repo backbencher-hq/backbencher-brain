@@ -201,70 +201,6 @@
         "reason": "GNU coreutils CPU counter; absent on macOS, which also has no /proc/cpuinfo."
       },
       {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/lua/incoming-split.mts",
-        "line": 637,
-        "kind": "non-portable-binary",
-        "matched": "sha256sum",
-        "api": "execFileSync",
-        "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/claim-refutation-census.mts",
-        "line": 77,
-        "kind": "gnu-only-command-form",
-        "matched": "stat -c",
-        "api": "execFileSync",
-        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/incoming-split.mts",
-        "line": 780,
-        "kind": "non-portable-binary",
-        "matched": "sha256sum",
-        "api": "execFileSync",
-        "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/refutation-row-probe.mts",
-        "line": 55,
-        "kind": "gnu-only-command-form",
-        "matched": "stat -c",
-        "api": "execFileSync",
-        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/runtime-variable-disposition.mts",
-        "line": 77,
-        "kind": "gnu-only-command-form",
-        "matched": "stat -c",
-        "api": "execFileSync",
-        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/sql/hang-isolate.mts",
-        "line": 80,
-        "kind": "non-portable-binary",
-        "matched": "md5sum",
-        "api": "execFileSync",
-        "reason": "GNU coreutils checksum tool; absent on macOS (`md5`)."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/zig/large-file-route.ts",
-        "line": 64,
-        "kind": "gnu-only-command-form",
-        "matched": "find -printf",
-        "api": "execFileSync",
-        "reason": "GNU find's -printf; BSD find has no such primary (measured: `find: -printf: unknown primary or operator`)."
-      },
-      {
-        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/zig/parse-robustness.ts",
-        "line": 75,
-        "kind": "gnu-only-command-form",
-        "matched": "find -printf",
-        "api": "execFileSync",
-        "reason": "GNU find's -printf; BSD find has no such primary (measured: `find: -printf: unknown primary or operator`)."
-      },
-      {
         "file": "script/m14/tmp/vue-mr/loadavg.ts",
         "line": 4,
         "kind": "platform-only-path",
@@ -274,7 +210,7 @@
       },
       {
         "file": "script/m30/verify-first-run-hook.ts",
-        "line": 448,
+        "line": 453,
         "kind": "non-portable-binary",
         "matched": "sha256sum",
         "api": "execFileSync",
@@ -315,7 +251,7 @@
     ],
     "ok": true
   },
-  "currentCommit": "24c04ace9902052b381338a63375e5ddb0b89684",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
   "sourceFingerprint": "3ffbd5c625e16383dc9eddca674a9ed6ddf2492212fa2247ec92474330743d25",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -326,7 +262,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-11-09T11:54:38.553Z",
+  "generatedAt": "2026-11-15T04:25:07.144Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -340,7 +276,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T11:54:38.553Z",
-    "contentSha256": "7267ed31d2ac661f6f19519123bf7005ecbb83960fc9cf522663eae2b40d9f3c"
+    "sealedAt": "2026-11-15T04:25:07.145Z",
+    "contentSha256": "4bc09f1f9a7f7377cf005673cae1704c44628466c5eaf2728c63cf0154e357ba"
   }
 }

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-01T09:50:12.233Z",
-  "wasm": "$HOME/backbencher-brain/wasm/tree-sitter-xml.wasm",
+  "wasm": "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-xml.wasm",
   "samples": {
     "REL_SPURIOUS": [
       "docx4j/docs/developer/math-corpus-tools/corpus/omml/mover1.omml.xml references m:t->amp resolvable=builtin",

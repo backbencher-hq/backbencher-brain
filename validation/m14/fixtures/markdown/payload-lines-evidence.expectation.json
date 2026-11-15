@@ -1,0 +1,128 @@
+{
+ "fixtureId": "markdown/payload-lines-evidence",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Two payload fields this lane published nothing for, and one of them was actively misleading. `line_number` was absent on ALL 9,132 relationships the analyzer emitted over its own pinned corpus, while 35 of 41 analyzers publish it and `context.mdInlineLines` -- which the engine computes for precisely this purpose and handed over on the analyze context -- was read by nobody. Its absence had three measured consequences: bb_graph's line-guarded caller/callee dedup (graph-engine.ts) skips every markdown edge, bb_doc renders markdown citations with no `#L` anchor (85% NULL, the worst language in the index), and the store's relationship primary key `(source, type, target, line)` could not tell two call sites of one target apart, which is what made the code-block identity defect unrecoverable. `evidenceClass` was absent too, and the read-time derivation in graph-core.ts does not list `contains` among its structural types, so the heading hierarchy -- a direct AST parent/child relation, the one edge class in this lane that cannot be a guess -- was rendered to readers as `inferred`: 'a guess, treat as a hint, never as fact'. Both are now assigned centrally, so an emission site cannot skip them. The line conversion for an inline edge is the one non-obvious part and it is pinned here: the engine sub-parses each `inline` node as a SUBSTRING, so a node row inside that tree is relative to the substring and the file line is `mdInlineLines[i] + row`. The reference link at L28 is the assertion for that arithmetic, because its destination comes from a block-level definition rather than from the node it is attributed to.",
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Every edge carries a 1-based line and an evidence class",
+   "target": "Structural edges carry structural",
+   "meta.evidenceClass": "structural",
+   "line_number": 12
+  },
+  {
+   "type": "uses",
+   "from": "Structural edges carry structural",
+   "target": "https://example.com/payload",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 16
+  },
+  {
+   "type": "contains",
+   "from": "Structural edges carry structural",
+   "target": "code_block.python",
+   "meta.evidenceClass": "structural",
+   "line_number": 18
+  },
+  {
+   "type": "contains",
+   "from": "Every edge carries a 1-based line and an evidence class",
+   "target": "Both classes, on named edges",
+   "meta.evidenceClass": "structural",
+   "line_number": 22
+  },
+  {
+   "type": "contains",
+   "from": "Both classes, on named edges",
+   "target": "Column/Value",
+   "meta.evidenceClass": "structural",
+   "line_number": 24
+  },
+  {
+   "type": "contains",
+   "from": "Column/Value",
+   "target": "Column",
+   "meta.evidenceClass": "structural",
+   "line_number": 24
+  },
+  {
+   "type": "uses",
+   "from": "Both classes, on named edges",
+   "target": "https://example.com/pl",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 28
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "code_block.python",
+   "kind": "function",
+   "ownerName": "Structural edges carry structural"
+  },
+  {
+   "name": "Column/Value",
+   "kind": "class",
+   "ownerName": "Both classes, on named edges"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over its pinned corpus (scala3@18df09c0, 738 tracked .md files): 11,401/11,401 relationships carry a 1-based line_number and an evidenceClass from the closed vocabulary. Before this round it was 0/9,132.",
+  "line_number": [
+   12,
+   16,
+   18,
+   22,
+   24,
+   24,
+   28
+  ],
+  "evidenceClasses": [
+   "structural",
+   "reference_qualified"
+  ]
+ },
+ "_seamNote": {
+  "what": "`expectUniqueIds` is NOT used by this lane and cannot be.",
+  "why": "The runner reads `symbol.id`, but markdown's symbols reach it through pool-worker's BasicSymbol projection, which does not carry `id` -- every symbol arrives with `id === undefined`, so a uniqueness check over two sites would fail for a reason that has nothing to do with identity. Site uniqueness is instead carried by the store's own `(file_id, name, start_line)` key, which the site-keyed analyzer now feeds distinct start lines for."
+ },
+ "expectVisibility": [
+  {
+   "symbol": "code_block.python",
+   "visibility": "public"
+  },
+  {
+   "symbol": "Column/Value",
+   "visibility": "public"
+  }
+ ],
+ "_payloadNote": {
+  "range": "pinned by the `expectSymbolRanges` channel above (the runner's real one — this entry first named a singular `expectSymbolRange` that does not exist, and section C reads a named key, so an invented key is indistinguishable from an unpinned one). The lines are 1-BASED per M59 #825, and the store's `(file_id, name, line_start)` key is what makes two sites of one construct distinct rows — the mechanism the code-block identity fix depends on, so the range is pinned rather than assumed.",
+  "visibility": "every markdown symbol is `public`: a document has no private or package scope, so the field is CONSTANT rather than absent, and a constant is pinned like any other value because a regression that dropped it would be invisible.",
+  "ownerName": "pinned on the expectSymbols entries above, and the case that broke it — a repeated heading's children attaching to the wrong occurrence — is pinned by heading-identity's forbid half instead."
+ },
+ "expectSymbolRanges": [
+  {
+   "symbol": "code_block.python",
+   "ownerName": "Structural edges carry structural",
+   "startLine": 18,
+   "endLine": 21
+  },
+  {
+   "symbol": "Column/Value",
+   "ownerName": "Both classes, on named edges",
+   "startLine": 24,
+   "endLine": 27
+  },
+  {
+   "symbol": "Every edge carries a 1-based line and an evidence class",
+   "startLine": 1,
+   "endLine": 2
+  },
+  {
+   "symbol": "Both classes, on named edges",
+   "startLine": 22,
+   "endLine": 23
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+# Three holes this fixture exists to close, each one a mutant that SURVIVED the
+# differential before it:
+#   1. a `schema` and an `extend schema` that both declare `query` — the
+#      specification allows one root operation type per operation kind across the
+#      WHOLE schema, so the second is a duplicate identity, not a new symbol;
+#   2. a field selection whose name equals the operation's name — a self-edge is
+#      not a reference;
+#   3. an `extend type` of a type this file never declares — the extension is the
+#      file's only word about that type, so it must publish a `partial` symbol or
+#      the `contains` edge has no source.
+schema {
+  query: Query
+}
+
+extend schema {
+  query: Query
+  mutation: Mutation
+}
+
+query Query {
+  Query
+}
+
+type Query {
+  here: Int
+}
+
+extend type Remote {
+  added: String
+  more: [Int!]!
+}
+
+# A federation subgraph extends scalars that live in ANOTHER file. That is the
+# only place an `extend scalar` ever appears without the file also declaring the
+# scalar, and it is where a naive extension handler publishes a `partial` symbol
+# for a construct that has no members at all.
+extend scalar Timestamp
+extend scalar URL @specifiedBy(url: "https://scalars.graphql.org/URL")
+
+# A NON-NULL argument that also has a default: legal, and the one shape where
+# "is this argument optional?" cannot be answered from non-null-ness alone.
+type Args {
+  f(required: Int!, withDefault: Int = 1, nonNullWithDefault: Int! = 3, nullableRequired: Int): Int
+}

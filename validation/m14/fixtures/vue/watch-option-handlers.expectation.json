@@ -1,0 +1,21 @@
+{
+  "fixtureId": "vue/watch-option-handlers",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "watch was misclassified as a LIFECYCLE HOOK (isLifecycleHook metadata) and its handler members were not extracted. watch is an option whose keys are the watched reactive sources - each becomes a Method symbol owned by the component.",
+  "expectSymbols": [
+    {
+      "name": "keyword",
+      "kind": "method"
+    },
+    {
+      "name": "deepFlag",
+      "kind": "method"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "watch"
+    }
+  ]
+}

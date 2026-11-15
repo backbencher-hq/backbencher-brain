@@ -44,7 +44,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const ORACLE = process.env.BB_ORACLE_MODULE ?? join(import.meta.dir, "differential.ts")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/sano/ishaq/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 const asJson = argv.includes("--json")

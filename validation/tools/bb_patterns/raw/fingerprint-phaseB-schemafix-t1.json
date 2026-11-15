@@ -1,0 +1,56 @@
+{
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+  "fingerprints": {
+    "orphans": "235cf6b94e33ff33470a2ae9f1c0655fba246c4cb48f028b4c57866bf1e7b04a",
+    "orphansSummary": "ba91e1cc33358d6fa6b3785095df284fc386b53b77a0e949e6eeb4437611a48e",
+    "rules": "c9babc520a73e098d1da871a1897239581e51c458caf45b98a2e4e479f37ea17",
+    "scopeAllPatterns": "8d70beb16312f32651fc16daa6d80395aa3307b8ffb9ef7b75de3db28da8841c",
+    "whole": "a5e1dd6065eac68a1ad10acff7458fa7969644a883efd0566451f34d472bae56"
+  },
+  "counts": {
+    "findings": 100,
+    "candidatesTotal": 222,
+    "candidatesByRule": {
+      "orphaned_class": 5,
+      "orphaned_function": 176,
+      "orphaned_file": 41
+    },
+    "suppressed": {
+      "testPath": 0,
+      "hardNoise": 0,
+      "noiseSymbolName": 0,
+      "entryPointName": 9,
+      "nonCodeFile": 0,
+      "manifestFile": 0,
+      "ruleNotRequested": 0,
+      "belowMinConfidence": 0
+    },
+    "unverifiedUsageEdges": {
+      "total": 12,
+      "byReason": {
+        "selfLoop": 12,
+        "inferred": 0,
+        "lowConfidence": 0
+      },
+      "byRelationshipType": {
+        "calls": {
+          "selfLoop": 10
+        },
+        "references": {
+          "selfLoop": 2
+        }
+      },
+      "minimumConfidence": 0.7
+    },
+    "importResolution": {
+      "rowsSeen": 631,
+      "attributedToASourceFile": 0,
+      "unattributed": 631,
+      "resolvedToAFile": 0,
+      "filesClearedByImport": 0
+    }
+  },
+  "ruleCount": 166,
+  "generatedAt": "2026-11-03T16:37:46.403Z"
+}

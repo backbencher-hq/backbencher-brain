@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-13T18:49:09.437Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/lodash",
+  "admittedFiles": 51,
+  "sampledFiles": 51,
+  "parseCleanFiles": 51,
+  "counts": {
+    "files": 51,
+    "rows": 24274,
+    "emptyEndpoints": 0,
+    "nonNameTarget": 0,
+    "nonNameSource": 0,
+    "pathShaped": 0,
+    "importSpelling": 78,
+    "dotted": 3,
+    "keywordTarget": 0,
+    "longTarget": 0,
+    "withBindingSep": 12164
+  },
+  "note": "Emitted-endpoint validity, measured from the analyzer's own output. The terminal guard drops only EMPTY endpoints; this census asks whether a NON-EMPTY target is still a name. A dotted target is counted separately because `Lib.Base` is the legal qualified spelling the extends edge publishes — it is a naming question, not a defect.",
+  "examples": []
+}

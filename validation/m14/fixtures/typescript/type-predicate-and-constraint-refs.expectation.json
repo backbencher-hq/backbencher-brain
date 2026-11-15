@@ -1,0 +1,273 @@
+{
+  "fixtureId": "typescript/type-predicate-and-constraint-refs",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M14 IMPORTS_ENUM gaps 3 and 4. Two type POSITIONS that name a type and published nothing. (3) A type PREDICATE: measured on the pinned wasm, the return type of `f(): x is Foo` is NOT a type_annotation \u2014 it is `(return_type (type_predicate_annotation (type_predicate name: (identifier) type: (type_identifier))))` \u2014 so extractDeclaredTypeRefs' type_annotation case never fired for that shape and `function g(x: unknown): x is Foo` published NO relationship at all. `asserts x is Foo` is the same idea two hops down (asserts_annotation > asserts > type_predicate). (4) A type-parameter CONSTRAINT: `<T extends C>` cannot be checked without C, and the declaration is the only place C is named; `(type_parameter name: (type_identifier) constraint: (constraint (type_identifier)))` had no case, so `function f<T extends C>()` published `references f -> T` \u2014 the BINDING \u2014 and never C. Corpus draw over tracked .ts files of bb_tests/repositories/typescript: 53 constraint sites in the first 40 files, 13 of 24 distinct names reached by an edge; after the fix 24 of 24. THE FORBIDS CARRY THE RULE: the predicate's `name` (`x`) is a parameter binding and the type parameter's own `name` (`T`) is a binding, and the java oracle states it in its own words \u2014 'a TYPE PARAMETER DECLARATION is not a type usage: <T>, <A extends B>, <K, V> declare variables, they do not name a type in the file'. An intersection constraint contributes BOTH names (onlyNamed), which is pinned because a collector that took only the first named child would drop one silently. An interface owner gets a reference row and NO uses row \u2014 the reference pass's owner list does not include interfaces \u2014 and that asymmetry is pinned so it is visible rather than mistaken for a missing edge.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "Named",
+      "kind": "interface"
+    },
+    {
+      "name": "isShape",
+      "kind": "function"
+    },
+    {
+      "name": "Guard",
+      "kind": "class"
+    },
+    {
+      "name": "isNamed",
+      "kind": "method"
+    },
+    {
+      "name": "assertShape",
+      "kind": "function"
+    },
+    {
+      "name": "assertSomething",
+      "kind": "function"
+    },
+    {
+      "name": "onlyShapes",
+      "kind": "function"
+    },
+    {
+      "name": "onlyNamed",
+      "kind": "function"
+    },
+    {
+      "name": "Registry",
+      "kind": "class"
+    },
+    {
+      "name": "store",
+      "kind": "method"
+    },
+    {
+      "name": "ShapeMap",
+      "kind": "interface"
+    },
+    {
+      "name": "widen",
+      "kind": "function"
+    },
+    {
+      "name": "takesShape",
+      "kind": "function"
+    },
+    {
+      "name": "boundOnly",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "isShape",
+      "target": "Shape",
+      "line_number": 43,
+      "note": "THE GAIN (uses surface): the type predicate's TYPE, reduced to the leaf"
+    },
+    {
+      "type": "references",
+      "from": "isShape",
+      "target": "Shape",
+      "line_number": 43,
+      "note": "THE GAIN (reference surface), position recorded as type_predicate_target so a consumer can tell a predicate from an annotation. Pre-fix this function published nothing",
+      "meta.relationshipType": "type_predicate_target"
+    },
+    {
+      "type": "uses",
+      "from": "isNamed",
+      "target": "Named",
+      "line_number": 49,
+      "note": "a METHOD predicate is owned by the method, not by its class"
+    },
+    {
+      "type": "references",
+      "from": "isNamed",
+      "target": "Named",
+      "line_number": 49
+    },
+    {
+      "type": "uses",
+      "from": "assertShape",
+      "target": "Shape",
+      "line_number": 55,
+      "note": "`asserts x is Foo` \u2014 the same idea two hops down a different wrapper (asserts_annotation > asserts > type_predicate)"
+    },
+    {
+      "type": "references",
+      "from": "assertShape",
+      "target": "Shape",
+      "line_number": 55,
+      "meta.relationshipType": "type_predicate_target"
+    },
+    {
+      "type": "uses",
+      "from": "onlyShapes",
+      "target": "Shape",
+      "line_number": 65,
+      "note": "THE GAIN: the CONSTRAINT, which is the only place Shape is named in this declaration",
+      "meta.relationshipType": null
+    },
+    {
+      "type": "references",
+      "from": "onlyShapes",
+      "target": "Shape",
+      "line_number": 65,
+      "meta.relationshipType": "type_parameter_constraint"
+    },
+    {
+      "type": "uses",
+      "from": "onlyNamed",
+      "target": "Shape",
+      "line_number": 74,
+      "note": "an INTERSECTION constraint contributes BOTH names. A collector that took only the first named child would drop one silently, which is why both rows are pinned"
+    },
+    {
+      "type": "uses",
+      "from": "onlyNamed",
+      "target": "Named",
+      "line_number": 74
+    },
+    {
+      "type": "references",
+      "from": "onlyNamed",
+      "target": "Shape",
+      "line_number": 74
+    },
+    {
+      "type": "references",
+      "from": "onlyNamed",
+      "target": "Named",
+      "line_number": 74
+    },
+    {
+      "type": "uses",
+      "from": "Registry",
+      "target": "Shape",
+      "line_number": 79,
+      "note": "a CLASS type-parameter constraint: the owner is the class"
+    },
+    {
+      "type": "references",
+      "from": "Registry",
+      "target": "Shape",
+      "line_number": 79
+    },
+    {
+      "type": "references",
+      "from": "ShapeMap",
+      "target": "Shape",
+      "line_number": 89,
+      "note": "an INTERFACE constraint gets the reference row and NO uses row \u2014 the reference pass's owner list does not include interfaces. Pinned so that asymmetry is visible rather than read as a missing edge"
+    },
+    {
+      "type": "uses",
+      "from": "takesShape",
+      "target": "Shape",
+      "line_number": 100,
+      "note": "the CONTROL: a type MENTION the pass already read, so the gains above cannot be attributed to this fixture merely containing the type's name"
+    },
+    {
+      "type": "references",
+      "from": "boundOnly",
+      "target": "Shape",
+      "line_number": 110,
+      "meta.relationshipType": "type_parameter_constraint",
+      "note": "shape 11: the CONSTRAINT is emitted, and `Q` \u2014 the type parameter's own name, mentioned nowhere else in this file \u2014 is not. This row exists so the fabrication in the opposite direction is attributable to a name nothing else could explain."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "isShape",
+      "target": "x",
+      "note": "the predicate's `name` is a PARAMETER binding, already bound by formal_parameters. Emitting it would publish the value the guard tests as if it were a type"
+    },
+    {
+      "type": "uses",
+      "from": "isShape",
+      "target": "x",
+      "note": "same, on the uses surface"
+    },
+    {
+      "type": "references",
+      "from": "assertShape",
+      "target": "x",
+      "note": "`asserts x` names a binding too"
+    },
+    {
+      "type": "references",
+      "from": "widen",
+      "target": "string",
+      "note": "a PREDEFINED constraint names no project symbol \u2014 the same PRIMITIVES exclusion the declared-type pass already applies to `const x: string`"
+    },
+    {
+      "type": "uses",
+      "from": "widen",
+      "target": "string",
+      "note": "same, on the uses surface"
+    },
+    {
+      "type": "references",
+      "from": "assertSomething",
+      "target": "Shape",
+      "note": "`asserts x` with no type names nothing; the collector must not borrow the neighbouring declaration's type"
+    },
+    {
+      "type": "references",
+      "from": "isShape",
+      "target": "Shape",
+      "meta.relationshipType": "declared_type",
+      "note": "THE POSITION PIN, in the negative. A type predicate is not an ordinary annotation: if the gain above were really the pre-existing declared_type surface firing on some other node, this row would match and the fixture would fail. `meta.relationshipType: null` is the runner's ABSENT convention, so a row that pinned the wrong position could not pass either."
+    },
+    {
+      "type": "references",
+      "from": "boundOnly",
+      "target": "Q",
+      "meta.relationshipType": "type_parameter_constraint",
+      "note": "THE FABRICATION THIS FIXTURE EXISTS TO CATCH, pinned by POSITION as well as by endpoint. A collector that passed the whole `type_parameter` node to emit() would publish `Q` here \u2014 a binding reported as a type reference. The java oracle states the rule in its own words: 'a TYPE PARAMETER DECLARATION is not a type usage: <T>, <A extends B>, <K, V> declare variables, they do not name a type in the file'. Pinning the position as well as the endpoint is what makes this row catch the collector that leaks the binding at the DECLARATION while a legitimate `Q` usage elsewhere would still pass."
+    },
+    {
+      "type": "uses",
+      "from": "boundOnly",
+      "target": "Q",
+      "note": "same fabrication on the uses surface"
+    },
+    {
+      "type": "references",
+      "from": "onlyShapes",
+      "target": "T",
+      "meta.relationshipType": "type_parameter_constraint",
+      "note": "THE BINDING IS NOT A TYPE REFERENCE. the binding IS published from the parameter annotation (`references onlyShapes -> T`, position declared_type) and that row is correct; what is forbidden is the SAME name at the CONSTRAINT position, which is where a collector that passed the whole type_parameter node would put it"
+    },
+    {
+      "type": "references",
+      "from": "onlyNamed",
+      "target": "T",
+      "meta.relationshipType": "type_parameter_constraint",
+      "note": "THE BINDING IS NOT A TYPE REFERENCE. same, through an intersection constraint: both constraint names are published and neither binding is"
+    },
+    {
+      "type": "references",
+      "from": "Registry",
+      "target": "T",
+      "meta.relationshipType": "type_parameter_constraint",
+      "note": "THE BINDING IS NOT A TYPE REFERENCE. same, for a CLASS type parameter. `T` is mentioned nowhere else in this declaration, so this row is attributable on its own"
+    },
+    {
+      "type": "references",
+      "from": "ShapeMap",
+      "target": "V",
+      "meta.relationshipType": "type_parameter_constraint",
+      "note": "THE BINDING IS NOT A TYPE REFERENCE. same, for an INTERFACE type parameter: `V` appears only in the property's type annotation"
+    }
+  ]
+}

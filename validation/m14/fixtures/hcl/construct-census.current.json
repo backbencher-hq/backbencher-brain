@@ -1,0 +1,3068 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/construct-census.mts",
+  "generatedAt": "2026-10-10T00:52:33.672Z",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admissionRule": "git-tracked, extension .tf/.tfvars/.hcl/.tofu, size <= 1 MiB (the engine's own cap)",
+  "population": {
+    "filesDiscovered": 9329,
+    "filesMeasured": 9329,
+    "filesTreeCensused": 9329,
+    "filesParsedForEdges": null,
+    "edgesPass": false,
+    "filesFailed": 0,
+    "repos": 16,
+    "skippedLarge": 0,
+    "limit": null
+  },
+  "grammarInventory": {
+    "source": "grammars/tree-sitter-hcl/src/node-types.json",
+    "namedTypes": 64,
+    "namedTypeNames": [
+      "attr_splat",
+      "attribute",
+      "binary_operation",
+      "block",
+      "block_end",
+      "block_start",
+      "body",
+      "bool_lit",
+      "collection_value",
+      "comment",
+      "conditional",
+      "config_file",
+      "ellipsis",
+      "expression",
+      "for_cond",
+      "for_expr",
+      "for_intro",
+      "for_object_expr",
+      "for_tuple_expr",
+      "full_splat",
+      "function_arguments",
+      "function_call",
+      "get_attr",
+      "heredoc_identifier",
+      "heredoc_start",
+      "heredoc_template",
+      "identifier",
+      "index",
+      "legacy_index",
+      "literal_value",
+      "new_index",
+      "null_lit",
+      "numeric_lit",
+      "object",
+      "object_elem",
+      "object_end",
+      "object_start",
+      "operation",
+      "quoted_template",
+      "quoted_template_end",
+      "quoted_template_start",
+      "splat",
+      "string_lit",
+      "strip_marker",
+      "template_directive",
+      "template_directive_end",
+      "template_directive_start",
+      "template_else_intro",
+      "template_expr",
+      "template_for",
+      "template_for_end",
+      "template_for_start",
+      "template_if",
+      "template_if_end",
+      "template_if_intro",
+      "template_interpolation",
+      "template_interpolation_end",
+      "template_interpolation_start",
+      "template_literal",
+      "tuple",
+      "tuple_end",
+      "tuple_start",
+      "unary_operation",
+      "variable_expr"
+    ],
+    "allTypes": 102,
+    "fieldNames": [
+      "key",
+      "val"
+    ],
+    "literalTokens": 38
+  },
+  "treeCensus": {
+    "namedNodes": 1645992,
+    "namedNodeNote": "NAMED nodes only (the walk uses namedChild); anonymous tokens are excluded, so this is NOT comparable with a count that includes them",
+    "blocks": 40655,
+    "distinctBlockTypes": 455,
+    "distinctAttributeKeys": 5311,
+    "functionCalls": 12988,
+    "distinctCallees": 148,
+    "topCallees": {
+      "list": 1401,
+      "contains": 1041,
+      "lookup": 968,
+      "optional": 867,
+      "map": 855,
+      "object": 670,
+      "try": 645,
+      "length": 537,
+      "format": 466,
+      "abspath": 437,
+      "join": 423,
+      "find_in_parent_folders": 342,
+      "coalesce": 283,
+      "set": 280,
+      "compact": 279,
+      "concat": 263,
+      "merge": 246,
+      "one": 228,
+      "toset": 157,
+      "flatten": 143,
+      "get_terragrunt_dir": 140,
+      "joinpath": 133,
+      "jsonencode": 127,
+      "split": 109,
+      "file": 101
+    },
+    "functionDeclarationBlocks": 1,
+    "functionDeclarationSites": [
+      "docker/docker-bake.hcl:function \"bindir\""
+    ],
+    "functionDeclarationFiles": [
+      "docker/docker-bake.hcl"
+    ],
+    "overrideBlocks": 72,
+    "overrideBlockFiles": 34,
+    "overrideFileSamples": [
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/mock-sources-inline/testing/base/.ignored.tfmock.hcl",
+      "terraform/internal/command/testdata/test/mocking-error/tests/plan_mocked_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking-invalid-outputs/tests/module_mocked_invalid_type.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking-invalid/tests/module_mocked_invalid_type.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking-invalid/tests/override_computed_invalid_boolean.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/module_empty_outputs.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/module_mocked.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/module_mocked_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/module_mocked_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/primary_mocked_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/mocking/tests/primary_mocked_overridden.tftest.hcl",
+      "terraform/internal/command/testdata/test/simple_pass_function/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/write-only-attributes-overridden/main.tftest.hcl",
+      "terraform/internal/command/testdata/test/write-only-attributes-overridden/main.tftest.hcl",
+      "terraform/internal/command/testdata/tfmock-fmt/data_in.tfmock.hcl",
+      "terraform/internal/command/testdata/tfmock-fmt/data_out.tfmock.hcl",
+      "terraform/internal/command/testdata/tfmock-fmt/resource_in.tfmock.hcl",
+      "terraform/internal/command/testdata/tfmock-fmt/resource_out.tfmock.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override_target.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override_target.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override_target.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override_target.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override_target.tftest.hcl",
+      "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override_target.tftest.hcl",
+      "terraform/internal/configs/testdata/valid-modules/with-mock-sources-inline/testing/aws/.ignored.tfmock.hcl"
+    ],
+    "overrideBlocksWithTarget": 68,
+    "overrideKinds": {
+      "override_resource": 38,
+      "override_module": 17,
+      "override_data": 16,
+      "overrides": 1
+    },
+    "resourceOrDataBlocks": 3932,
+    "distinctResourceTypeLabels": 444,
+    "resourceTypeLabelsDeclaredAsAddresses": null,
+    "blocksInExpressionPosition": 0,
+    "objectLiterals": 9338,
+    "tupleLiterals": 10063,
+    "topBlockTypes": {
+      "variable": 11865,
+      "output": 3652,
+      "resource": 3166,
+      "module": 2045,
+      "terraform": 1751,
+      "provider": 1317,
+      "validation": 1228,
+      "required_providers": 1110,
+      "locals": 918,
+      "variables": 843,
+      "data": 766,
+      "step": 694,
+      "parameter": 457,
+      "run": 392,
+      "dynamic": 374,
+      "content": 374,
+      "dependency": 312,
+      "config": 306,
+      "provisioner": 294,
+      "include": 287,
+      "assert": 268,
+      "backend": 259,
+      "unit": 249,
+      "component": 234,
+      "lifecycle": 227,
+      "build": 203,
+      "source": 201,
+      "group": 187,
+      "statement": 181,
+      "listener": 153
+    },
+    "observedNodeTypes": [
+      "ERROR",
+      "attr_splat",
+      "attribute",
+      "binary_operation",
+      "block",
+      "block_end",
+      "block_start",
+      "body",
+      "bool_lit",
+      "collection_value",
+      "comment",
+      "conditional",
+      "config_file",
+      "ellipsis",
+      "expression",
+      "for_cond",
+      "for_expr",
+      "for_intro",
+      "for_object_expr",
+      "for_tuple_expr",
+      "full_splat",
+      "function_arguments",
+      "function_call",
+      "get_attr",
+      "heredoc_identifier",
+      "heredoc_start",
+      "heredoc_template",
+      "identifier",
+      "index",
+      "legacy_index",
+      "literal_value",
+      "new_index",
+      "null_lit",
+      "numeric_lit",
+      "object",
+      "object_elem",
+      "object_end",
+      "object_start",
+      "operation",
+      "quoted_template",
+      "quoted_template_end",
+      "quoted_template_start",
+      "splat",
+      "string_lit",
+      "strip_marker",
+      "template_directive",
+      "template_directive_end",
+      "template_directive_start",
+      "template_expr",
+      "template_for",
+      "template_for_end",
+      "template_for_start",
+      "template_if",
+      "template_if_end",
+      "template_if_intro",
+      "template_interpolation",
+      "template_interpolation_end",
+      "template_interpolation_start",
+      "template_literal",
+      "tuple",
+      "tuple_end",
+      "tuple_start",
+      "unary_operation",
+      "variable_expr"
+    ],
+    "candidateSites": [
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 35,
+        "text": "source = \"../../modules/aws_ssh_keypair\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 70,
+        "text": "source = \"../../modules/aws_az_finder\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 79,
+        "text": "source = \"../../modules/read_license\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 85,
+        "text": "source = \"../../modules/aws_iam_setup\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 92,
+        "text": "source = \"../../modules/aws_vpc\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 100,
+        "text": "source     = \"../../modules/aws_boundary\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 126,
+        "text": "source     = \"../../modules/aws_bucket\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 134,
+        "text": "source = \"../../modules/generate_aws_host_tag_vars\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/ci/hcp-resources/main.tf",
+        "line": 141,
+        "text": "source = \"../../modules/aws_target\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 5,
+        "text": "source = \"./modules/aws_az_finder\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 9,
+        "text": "source = \"./modules/bats_deps\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 13,
+        "text": "source = \"./modules/aws_boundary\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 29,
+        "text": "source = \"./modules/aws_worker\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 40,
+        "text": "source = \"./modules/aws_bucket\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 44,
+        "text": "source = \"./modules/aws_rdp_domain_controller\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 48,
+        "text": "source = \"./modules/aws_rdp_member_server\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 52,
+        "text": "source = \"./modules/build_crt\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 56,
+        "text": "source = \"./modules/build_local\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 63,
+        "text": "source = \"./modules/build_boundary_docker_crt\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 67,
+        "text": "source = \"./modules/build_boundary_docker_local\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 71,
+        "text": "source = \"./modules/generate_aws_host_tag_vars\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 75,
+        "text": "source = \"./modules/generate_docker_image_name\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 79,
+        "text": "source = \"./modules/aws_iam_setup\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 83,
+        "text": "source = \"./modules/aws_vpc\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 95,
+        "text": "source = \"./modules/aws_vpc_ipv6\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 107,
+        "text": "source = \"./modules/read_license\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 111,
+        "text": "source = \"./modules/random_stringifier\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 115,
+        "text": "source = \"./modules/map2list\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 119,
+        "text": "source = \"./modules/aws_ssh_keypair\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 123,
+        "text": "source = \"./modules/ssh_keypair\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 127,
+        "text": "source       = \"./modules/aws_target\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 136,
+        "text": "source = \"./modules/aws_windows_client\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 140,
+        "text": "source = \"./modules/aws_rdp_member_server_with_worker\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 144,
+        "text": "source = \"./modules/aws_vault\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 157,
+        "text": "source       = \"./modules/test_e2e\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 162,
+        "text": "source = \"./modules/test_e2e_ui\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 166,
+        "text": "source = \"./modules/test_e2e_docker\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 170,
+        "text": "source = \"./modules/test_smoke\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 174,
+        "text": "source = \"./modules/docker_postgres\""
+      },
+      {
+        "word": "source",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-modules.hcl",
+        "line": 178,
+        "text": "source = \"./modules/docker_vault\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-scenario-e2e-ui-aws.hcl",
+        "line": 13,
+        "text": "protocol = [\"http\", \"https\"]"
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/enos-scenario-e2e-ui-aws.hcl",
+        "line": 120,
+        "text": "protocol                 = matrix.protocol"
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/alb.tf",
+        "line": 67,
+        "text": "protocol        = \"HTTP\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/alb.tf",
+        "line": 98,
+        "text": "protocol          = var.protocol == \"https\" ? \"HTTPS\" : \"HTTP\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 27,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 42,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 51,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 99,
+        "text": "protocol        = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 108,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 134,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_boundary/security-groups.tf",
+        "line": 142,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 65,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 76,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 90,
+        "text": "protocol  = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 105,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 119,
+        "text": "protocol  = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 134,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 148,
+        "text": "protocol  = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 163,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 177,
+        "text": "protocol  = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 192,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 207,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 221,
+        "text": "protocol  = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 236,
+        "text": "protocol  = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 249,
+        "text": "protocol  = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 268,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+        "line": 277,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_target/main.tf",
+        "line": 97,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_target/main.tf",
+        "line": 105,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vault/security-groups.tf",
+        "line": 14,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vault/security-groups.tf",
+        "line": 23,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vault/security-groups.tf",
+        "line": 32,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vault/security-groups.tf",
+        "line": 40,
+        "text": "protocol         = \"udp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vault/security-groups.tf",
+        "line": 49,
+        "text": "protocol    = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vault/security-groups.tf",
+        "line": 57,
+        "text": "protocol         = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vpc/main.tf",
+        "line": 190,
+        "text": "protocol    = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vpc/main.tf",
+        "line": 198,
+        "text": "protocol    = \"-1\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vpc_ipv6/main.tf",
+        "line": 236,
+        "text": "protocol         = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vpc_ipv6/main.tf",
+        "line": 244,
+        "text": "protocol    = \"tcp\""
+      },
+      {
+        "word": "protocol",
+        "kind": "attribute-key",
+        "file": "boundary/enos/modules/aws_vpc_ipv6/main.tf",
+        "line": 256,
+        "text": "protocol    = \"tcp\""
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 99,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 105,
+        "text": "inherits = [\"binary\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 113,
+        "text": "inherits = [\"binary\", \"_platforms\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 117,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 135,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 141,
+        "text": "inherits = [\"all\", \"_platforms\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 146,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 159,
+        "text": "inherits = [\"all\", \"docker-metadata-action\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 164,
+        "text": "inherits = [\"bin-image\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 182,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 201,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/docker-bake.hcl",
+        "line": 220,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/docker/distribution/docker-bake.hcl",
+        "line": 21,
+        "text": "inherits = [\"artifact\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/docker/distribution/docker-bake.hcl",
+        "line": 38,
+        "text": "inherits = [\"docker-metadata-action\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/docker/distribution/docker-bake.hcl",
+        "line": 42,
+        "text": "inherits = [\"image\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/docker/distribution/docker-bake.hcl",
+        "line": 47,
+        "text": "inherits = [\"image\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+        "line": 59,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "call",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+        "line": 75,
+        "text": "call = \"check\""
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+        "line": 79,
+        "text": "inherits = [ \"lint\" ]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+        "line": 84,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+        "line": 91,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+        "line": 123,
+        "text": "inherits = [ \"binary\", \"_all_platforms\" ]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/dchapes-mode/docker-bake.hcl",
+        "line": 17,
+        "text": "inherits = [\"build\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/dchapes-mode/docker-bake.hcl",
+        "line": 22,
+        "text": "inherits = [\"build\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 48,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 59,
+        "text": "inherits = [\"build\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 65,
+        "text": "inherits = [\"build\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 71,
+        "text": "inherits = [\"build\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 80,
+        "text": "inherits = [\"build\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 97,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 106,
+        "text": "inherits = [\"lint-golangci\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 111,
+        "text": "inherits = [\"lint-golangci\", \"_platforms\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 115,
+        "text": "inherits = [\"lint-gopls\", \"_platforms\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 119,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 129,
+        "text": "inherits = [\"validate-generated-files\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 135,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 148,
+        "text": "inherits = [\"validate-gomod\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 154,
+        "text": "inherits = [\"_common\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 161,
+        "text": "inherits = [\"validate-shfmt\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+        "line": 167,
+        "text": "inherits = [\"build\", \"_platforms\"]"
+      },
+      {
+        "word": "inherits",
+        "kind": "attribute-key",
+        "file": "docker/vendor/github.com/tonistiigi/go-actions-cache/docker-bake.hcl",
+        "line": 61,
+        "text": "inherits = [\"validate-gomod\"]"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "nomad/command/agent/testdata/basic.hcl",
+        "line": 317,
+        "text": "import \"foo\" {\n    path = \"foo\"\n    args = [\"a\", \"b\", \"c\"]\n  }"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "nomad/command/agent/testdata/basic.hcl",
+        "line": 322,
+        "text": "import \"bar\" {\n    path = \"bar\"\n    args = [\"x\", \"y\", \"z\"]\n  }"
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "packer/command/test-fixtures/hcl/provisioner-override.pkr.hcl",
+        "line": 13,
+        "text": "override = {\n      example1 = {\n        inline = [\"echo yes overridden\"]\n      }\n    }"
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "packer/hcl2template/fixtures/malformed_override.pkr.hcl",
+        "line": 3,
+        "text": "override = \"hello\""
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "packer/hcl2template/fixtures/malformed_override_innards.pkr.hcl",
+        "line": 3,
+        "text": "override = {\n    test = \"hello\"\n  }"
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "packer/hcl2template/fixtures/well_formed_provisioner.pkr.hcl",
+        "line": 3,
+        "text": "override = {\n    test = {\n      \"hello\" = \"new value\"\n    }\n  }"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform-aws-components/modules/auth0/tenant/main.tf",
+        "line": 21,
+        "text": "import {\n  to = auth0_tenant.this[0]\n  id = \"f6615002-81ff-49f7-afd3-8814d07af4fa\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/cloud/testdata/plan-import-config-gen-exists/main.tf",
+        "line": 1,
+        "text": "import {\n  id = \"bar\"\n  to = terraform_data.foo\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/cloud/testdata/plan-import-config-gen-validation-error/main.tf",
+        "line": 1,
+        "text": "import {\n  id = \"bar\"\n  to = terraform_data.foo\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/cloud/testdata/plan-import-config-gen/main.tf",
+        "line": 1,
+        "text": "import {\n  id = \"bar\"\n  to = terraform_data.foo\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/plan-import-config-gen/main.tf",
+        "line": 1,
+        "text": "import {\n  id = \"bar\"\n  to = test_instance.foo\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 3,
+        "text": "override_resource {\n    target = test_resource.absent_one\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 8,
+        "text": "override_resource {\n  target = test_resource.absent_two\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 12,
+        "text": "override_resource {\n  target = module.setup.test_resource.absent_three\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 16,
+        "text": "override_module {\n  target = module.absent_four\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 20,
+        "text": "override_resource {\n  // This one only exists in the main configuration, but not the setup\n  // configuration. We should"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 26,
+        "text": "override_resource {\n  // This is the reverse, only exists if you load the setup module directly.\n  // We shouldn't see a"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 38,
+        "text": "override_resource {\n    target = test_resource.absent_five\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+        "line": 44,
+        "text": "override_resource {\n    target = module.setup.test_resource.absent_six\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mock-sources-inline/testing/base/.ignored.tfmock.hcl",
+        "line": 7,
+        "text": "override_resource {\n  target = test_resource.foo\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking-error/tests/plan_mocked_overridden.tftest.hcl",
+        "line": 10,
+        "text": "override_resource {\n    target = test_resource.primary\n    values = {\n      id = \"bbbb\"\n    }\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking-invalid-outputs/tests/module_mocked_invalid_type.tftest.hcl",
+        "line": 1,
+        "text": "override_resource {\n  target  = test_resource.primary\n  values = \"should be an object\" // invalid\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking-invalid/tests/module_mocked_invalid_type.tftest.hcl",
+        "line": 1,
+        "text": "override_module {\n  target  = module.child[1]\n  outputs = \"should be an object\"\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking-invalid/tests/override_computed_invalid_boolean.tftest.hcl",
+        "line": 11,
+        "text": "override_resource {\n    target = test_resource.primary\n    values = {\n      id = \"bbbb\"\n    }\n  }"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/module_empty_outputs.tftest.hcl",
+        "line": 1,
+        "text": "override_module {\n  target = module.child[1]\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/module_mocked.tftest.hcl",
+        "line": 1,
+        "text": "override_module {\n  target = module.child[1]\n  outputs = {\n    primary = [\n      {\n        id = \"bbbb\"\n      }\n    ]\n   "
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/module_mocked_overridden.tftest.hcl",
+        "line": 1,
+        "text": "override_module {\n  target = module.child\n  outputs = {\n    primary = [\n      {\n        id = \"bbbb\"\n      }\n    ]\n    se"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/module_mocked_overridden.tftest.hcl",
+        "line": 24,
+        "text": "override_module {\n    target = module.child[1]\n    outputs = {\n      primary = [\n        {\n          id = \"aaaa\"\n       "
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_overridden.tftest.hcl",
+        "line": 10,
+        "text": "override_resource {\n    target = test_resource.primary\n    override_during = plan\n    values = {\n      id = \"bbbb\"\n    }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+        "line": 11,
+        "text": "override_resource {\n    target = test_resource.primary\n    values = {\n      id = \"bbbb\"\n    }\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+        "line": 18,
+        "text": "override_resource {\n    target = test_resource.primary[1]\n    override_during = apply // this should take precedence ove"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+        "line": 28,
+        "text": "override_resource {\n  target = test_resource.secondary[0]\n  override_during = plan\n  values = {\n    id = \"ssss\"\n  }\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/primary_mocked_overridden.tftest.hcl",
+        "line": 10,
+        "text": "override_resource {\n    target = test_resource.primary\n    values = {\n      id = \"bbbb\"\n    }\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/mocking/tests/primary_mocked_overridden.tftest.hcl",
+        "line": 25,
+        "text": "override_resource {\n    target = test_resource.primary[1]\n    values = {\n      id = \"cccc\"\n    }\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/simple_pass_function/main.tftest.hcl",
+        "line": 9,
+        "text": "override_resource {\n  target = test_resource.bar\n  values = {\n    id = format(\"%s-%s\", uuid(), \"bar\")\n  }\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/write-only-attributes-overridden/main.tftest.hcl",
+        "line": 4,
+        "text": "override_resource {\n  target = test_resource.resource\n  values = {\n    id = \"resource\"\n  }\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/test/write-only-attributes-overridden/main.tftest.hcl",
+        "line": 11,
+        "text": "override_data {\n  target = data.test_data_source.datasource\n  values = {\n    value = \"hello\"\n  }\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/tfmock-fmt/data_in.tfmock.hcl",
+        "line": 14,
+        "text": "override_data {\ntarget = data.aws_subnets.private_subnets\n  values = {\n    ids = [\"subnet-a\",\n      \"subnet-b\",\n      \"s"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/tfmock-fmt/data_out.tfmock.hcl",
+        "line": 14,
+        "text": "override_data {\n  target = data.aws_subnets.private_subnets\n  values = {\n    ids = [\"subnet-a\",\n      \"subnet-b\",\n      "
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/tfmock-fmt/resource_in.tfmock.hcl",
+        "line": 6,
+        "text": "override_resource {\n  target = aws_launch_template.vm\n  values = {id = \"lt-xyz\"}\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/tfmock-fmt/resource_out.tfmock.hcl",
+        "line": 6,
+        "text": "override_resource {\n  target = aws_launch_template.vm\n  values = { id = \"lt-xyz\" }\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/valid-child-modules/with-import/child/main.tf",
+        "line": 3,
+        "text": "import {\n  to = test_instance.b\n  id = \"test-b\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/valid-child-modules/with-import/main.tf",
+        "line": 7,
+        "text": "import {\n  to = test_instance.a\n  id = \"test-a\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/validate-invalid/duplicate_import_targets/main.tf",
+        "line": 4,
+        "text": "import {\n  to = aws_instance.web\n  id = \"test\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/command/testdata/validate-invalid/duplicate_import_targets/main.tf",
+        "line": 9,
+        "text": "import {\n  to = aws_instance.web\n  id = \"test2\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/config-diagnostics/list-in-child-module/root.tf",
+        "line": 3,
+        "text": "import {\n  to = aws_instance.web\n  id = \"test\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-files/import-for-each.tf",
+        "line": 1,
+        "text": "import {\n  for_each = [\"a\", \"b\"]\n  to = invalid[each.value]\n  id = each.value\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-import-files/import-and-module-clash.tf",
+        "line": 8,
+        "text": "import {\n  provider = local\n  id = \"foo/bar\"\n  to = module.importable_resource.local_file.foo\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-import-files/import-and-no-resource.tf",
+        "line": 4,
+        "text": "import {\n  provider = local\n  id = \"foo/bar\"\n  to = local_file.foo_bar\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-import-files/import-and-resource-clash.tf",
+        "line": 8,
+        "text": "import {\n  provider = local\n  id = \"foo/bar\"\n  to = local_file.foo_bar\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+        "line": 2,
+        "text": "override_data {\n    target = data.aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+        "line": 7,
+        "text": "override_data {\n    target = data.aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+        "line": 13,
+        "text": "override_data {\n  target = data.aws_instance.test\n  values = {}\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+        "line": 18,
+        "text": "override_data {\n  target = data.aws_instance.test\n  values = {}\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+        "line": 24,
+        "text": "override_data {\n    target = data.aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+        "line": 29,
+        "text": "override_data {\n    target = data.aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+        "line": 2,
+        "text": "override_module {\n  target = module.child\n  outputs = {}\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+        "line": 7,
+        "text": "override_module {\n  target = module.child\n  outputs = {}\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+        "line": 13,
+        "text": "override_module {\n    target = module.child\n    outputs = {}\n  }"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+        "line": 18,
+        "text": "override_module {\n    target = module.child\n    outputs = {}\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+        "line": 2,
+        "text": "override_resource {\n    target = aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+        "line": 7,
+        "text": "override_resource {\n    target = aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+        "line": 13,
+        "text": "override_resource {\n  target = aws_instance.test\n  values = {}\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+        "line": 18,
+        "text": "override_resource {\n  target = aws_instance.test\n  values = {}\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+        "line": 24,
+        "text": "override_resource {\n    target = aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/duplicate_resource_overrides.tftest.hcl",
+        "line": 29,
+        "text": "override_resource {\n    target = aws_instance.test\n    values = {}\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override.tftest.hcl",
+        "line": 2,
+        "text": "override_data {\n  target = data.aws_instance.target\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override.tftest.hcl",
+        "line": 6,
+        "text": "override_data {\n  values = {}\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override_target.tftest.hcl",
+        "line": 2,
+        "text": "override_data {\n  target = aws_instance.target\n  values = {}\n}"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override_target.tftest.hcl",
+        "line": 7,
+        "text": "override_data {\n  target = module.child\n  values = {}\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+        "line": 1,
+        "text": "override_module {\n  target = module.child\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+        "line": 5,
+        "text": "override_module {\n  outputs = {}\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+        "line": 9,
+        "text": "override_module {\n  target = module.other\n  values = {}\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override_target.tftest.hcl",
+        "line": 2,
+        "text": "override_module {\n  target = aws_instance.target\n  outputs = {}\n}"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override_target.tftest.hcl",
+        "line": 7,
+        "text": "override_module {\n  target = data.aws_instance.target\n  outputs = {}\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override.tftest.hcl",
+        "line": 2,
+        "text": "override_resource {\n  target = aws_instance.target\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override.tftest.hcl",
+        "line": 6,
+        "text": "override_resource {\n  values = {}\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override_target.tftest.hcl",
+        "line": 2,
+        "text": "override_resource {\n  target = data.aws_instance.target\n  values = {}\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/invalid-test-files/invalid_resource_override_target.tftest.hcl",
+        "line": 7,
+        "text": "override_resource {\n  target = module.child\n  values = {}\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-files/import-for-each.tf",
+        "line": 1,
+        "text": "import {\n  for_each = [\"a\", \"b\"]\n  to = test_resource.test[each.value]\n  id = each.value\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-files/providers-explicit-implied.tf",
+        "line": 20,
+        "text": "import {\n  id = \"directory/filename\"\n  to = local_file.foo\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-files/providers-explicit-implied.tf",
+        "line": 25,
+        "text": "import {\n  provider = template.foo\n  id       = \"directory/foo_filename\"\n  to       = local_file.bar\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/import-blocks-in-module/child/main.tf",
+        "line": 5,
+        "text": "import {\n    to = random_string.test1\n    provider = localname\n    id = \"importlocalname\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/import-blocks-in-module/child/main.tf",
+        "line": 11,
+        "text": "import {\n    to = random_string.test2\n    provider = random.thisone\n    id = \"importaliased\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/import-blocks/main.tf",
+        "line": 16,
+        "text": "import {\n    to = random_string.test1\n    provider = localname\n    id = \"importlocalname\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/import-blocks/main.tf",
+        "line": 22,
+        "text": "import {\n    to = random_string.test2\n    provider = random.thisone\n    id = \"importaliased\"\n}"
+      },
+      {
+        "word": "new",
+        "kind": "attribute-key",
+        "file": "terraform/internal/configs/testdata/valid-modules/override-module/a_override.tf",
+        "line": 6,
+        "text": "new = \"a_override new\""
+      },
+      {
+        "word": "new",
+        "kind": "attribute-key",
+        "file": "terraform/internal/configs/testdata/valid-modules/override-module/b_override.tf",
+        "line": 3,
+        "text": "new   = \"b_override new\""
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mock-sources-inline/testing/aws/.ignored.tfmock.hcl",
+        "line": 7,
+        "text": "override_resource {\n  target = aws_s3_bucket.my_bucket\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mock-sources-inline/testing/aws/resource.tfmock.hcl",
+        "line": 3,
+        "text": "override_resource {\n  target = aws_s3_bucket.my_bucket\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mock-sources/testing/aws/.ignored.tfmock.hcl",
+        "line": 7,
+        "text": "override_resource {\n  target = aws_s3_bucket.my_bucket\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mock-sources/testing/aws/resource.tfmock.hcl",
+        "line": 3,
+        "text": "override_resource {\n  target = aws_s3_bucket.my_bucket\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl",
+        "line": 12,
+        "text": "override_resource {\n    target = aws_instance.second\n    values = {}\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl",
+        "line": 17,
+        "text": "override_data {\n    target = data.aws_secretsmanager_secret.creds\n    values = {\n      arn = \"aws:secretsmanager\"\n    }\n"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl",
+        "line": 25,
+        "text": "override_module {\n  target = module.child\n  outputs = {\n    string = \"testfile\"\n    number = -1\n  }\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl",
+        "line": 34,
+        "text": "override_resource {\n    target = aws_instance.first\n    values = {\n      arn = \"aws:instance:first\"\n    }\n  }"
+      },
+      {
+        "word": "override_module",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl",
+        "line": 41,
+        "text": "override_module {\n    target = module.child\n    outputs = {\n      string = \"testrun\"\n      number = -1\n    }\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_two.tftest.hcl",
+        "line": 4,
+        "text": "override_data {\n  target = data.aws_secretsmanager_secret.creds\n  values = {\n    arn = \"aws:secretsmanager\"\n  }\n}"
+      },
+      {
+        "word": "override_resource",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_two.tftest.hcl",
+        "line": 12,
+        "text": "override_resource {\n    target = aws_instance.first\n    values = {\n      arn = \"aws:instance:first\"\n    }\n  }"
+      },
+      {
+        "word": "override_data",
+        "kind": "block-type",
+        "file": "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_two.tftest.hcl",
+        "line": 19,
+        "text": "override_data {\n    target = data.aws_secretsmanager_secret.creds\n    values = {\n      arn = \"aws:secretsmanager\"\n    }\n"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/rpcapi/testdata/sourcebundle/import/import.tf",
+        "line": 14,
+        "text": "import {\n  id = var.id\n  to = testing_resource.resource\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/stacks/stackruntime/testdata/mainbundle/test/state-manipulation/import-failed-dep/import.tf",
+        "line": 18,
+        "text": "import {\n  to = testing_resource.data\n  id = var.id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/stacks/stackruntime/testdata/mainbundle/test/state-manipulation/import/import.tf",
+        "line": 14,
+        "text": "import {\n  to = testing_resource.data\n  id = var.id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-block-duplication/main.tf",
+        "line": 5,
+        "text": "import {\n    to = module.child.test_object.foo\n    id = \"rootimport\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-block-duplication/mod/main.tf",
+        "line": 3,
+        "text": "import {\n    to = test_object.foo\n    id = \"modimport\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-block-in-module-with-expansion/child/main.tf",
+        "line": 3,
+        "text": "import {\n    to = test_object.foo\n    id = \"import\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-block-in-module/child/main.tf",
+        "line": 12,
+        "text": "import {\n  for_each = local.ids\n  to = test_object.bar[each.key]\n  id = each.value\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-block-in-nested-module/child/kinder/main.tf",
+        "line": 1,
+        "text": "import {\n  to = test_object.bar\n  id = \"importable\"\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-data-source/main.tf",
+        "line": 6,
+        "text": "import {\n  to = aws_subnet.bar\n  id = data.aws_subnet.bar.id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-func/main.tf",
+        "line": 1,
+        "text": "import {\n  to = aws_instance.foo\n  id = substr(\"hmm123\", \"2\", \"3\")\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-invalid-null/main.tf",
+        "line": 5,
+        "text": "import {\n  to = test_resource.foo\n  id = var.the_id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-invalid-unknown/main.tf",
+        "line": 5,
+        "text": "import {\n  to = test_resource.bar\n  id = test_resource.foo.id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-module/main.tf",
+        "line": 5,
+        "text": "import {\n  to = aws_lb.foo\n  id = module.child.lb_id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-variable/main.tf",
+        "line": 5,
+        "text": "import {\n  to = aws_instance.foo\n  id = var.the_id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-id-variable/main.tf",
+        "line": 17,
+        "text": "import {\n  to = module.test.aws_instance.foo\n  id = var.the_id\n}"
+      },
+      {
+        "word": "import",
+        "kind": "block-type",
+        "file": "terraform/internal/terraform/testdata/import-identity-module/main.tf",
+        "line": 5,
+        "text": "import {\n  to = aws_lb.foo\n  identity = {\n    name = \"bar\"\n  }\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/dev/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/prod/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/ddb/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/iam/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/lambda/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/s3/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/ddb/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/iam/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/lambda/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/s3/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-7-taking-advantage-of-terragrunt-stacks/catalog/units/ddb/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-7-taking-advantage-of-terragrunt-stacks/catalog/units/iam/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-7-taking-advantage-of-terragrunt-stacks/catalog/units/lambda/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-7-taking-advantage-of-terragrunt-stacks/catalog/units/s3/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-8-refactoring-state-with-terragrunt-stacks/catalog/units/ddb/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-8-refactoring-state-with-terragrunt-stacks/catalog/units/iam/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-8-refactoring-state-with-terragrunt-stacks/catalog/units/lambda/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-8-refactoring-state-with-terragrunt-stacks/catalog/units/s3/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/internal/util/testdata/fixture-glob-canonical/module-b/module-b-child/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/auth-provider-cmd/multiple-apps/app1/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/auth-provider-cmd/multiple-apps/app2/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/auth-provider-cmd/multiple-apps/app3/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/auth-provider-cmd/run-all-call-count/dep/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/auth-provider-cmd/run-all-call-count/dependent/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/azure-backend/unit1/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"common\" {\n  path = find_in_parent_folders(\"common.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/azure-backend/unit2/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"common\" {\n  path = find_in_parent_folders(\"common.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/complex-legacy-root/dev/us-west-1/terragrunt.hcl",
+        "line": 16,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/complex-legacy-root/prod/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/complex-legacy-root/stage/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/complex/dev/us-west-1/terragrunt.hcl",
+        "line": 16,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/complex/prod/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/complex/stage/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/catalog/local-template/.boilerplate/terragrunt.hcl",
+        "line": 6,
+        "text": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/codegen/generate-block/nested/child_inherit/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = \"${get_terragrunt_dir()}/../root.hcl\"\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/codegen/generate-block/nested/child_overwrite/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = \"${get_terragrunt_dir()}/../root.hcl\"\n  merge_strategy = \"deep\"\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/codegen/generate-block/same_name_includes_error/terragrunt.hcl",
+        "line": 1,
+        "text": "include \"app1\" {\n  path = \"app1.hcl\"\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/codegen/generate-block/same_name_includes_error/terragrunt.hcl",
+        "line": 5,
+        "text": "include \"app2\" {\n  path = \"app2.hcl\"\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/config-files/ignore-terraform-data-dir/subdir/terragrunt.hcl",
+        "line": 1,
+        "text": "include {\n  path = find_in_parent_folders(\"root.hcl\")\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/config-files/with-non-default-names/app/main.hcl",
+        "line": 1,
+        "text": "include \"parent\" {\n  path = \"../parent.hcl\"\n}"
+      },
+      {
+        "word": "include",
+        "kind": "block-type",
+        "file": "terragrunt/test/fixtures/config-files/with-non-default-names/dependency/another-name.hcl",
+        "line": 5,
+        "text": "include \"common\" {\n  path = \"../common.hcl\"\n}"
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "tflint/tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+        "line": 10,
+        "text": "override = \"${var.override}\""
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "tflint/tflint/test-fixtures/nested_modules/module.tf",
+        "line": 4,
+        "text": "override = \"foo\""
+      },
+      {
+        "word": "override",
+        "kind": "attribute-key",
+        "file": "tflint/tflint/test-fixtures/nested_modules/module/module.tf",
+        "line": 10,
+        "text": "override = \"${var.override}\""
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 141,
+        "text": "contains = [\"hcp\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 206,
+        "text": "contains = [\"CHANGELOG\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 231,
+        "text": "contains = [\n        \"_oss.go\",\n        \"_ce.go\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 247,
+        "text": "contains = [\n        \"-ce\",\n        \"_ce\",\n        \"-oss\",\n        \"_oss\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 305,
+        "text": "contains = [\n        \"-ce\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 362,
+        "text": "contains = [\n        \"_ent.go\",\n        \"_ent_test.go\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 370,
+        "text": "contains = [\n        \"_ent\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 384,
+        "text": "contains = [\n        \"-ent\",\n        \"_ent\",\n        \"hsm\",\n        \"merkle-tree\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 408,
+        "text": "contains  = [\"_test.go\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 449,
+        "text": "contains  = [\"_test.go\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 605,
+        "text": "contains = [\n        \"security-scan-zap\",\n        \"zap_scan\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 628,
+        "text": "contains  = [\"raft_autopilot\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/.release/pipeline.hcl",
+        "line": 680,
+        "text": "contains = [\"hcp\"]"
+      },
+      {
+        "word": "overrides",
+        "kind": "block-type",
+        "file": "vault/enos/modules/target_ec2_spot_fleet/main.tf",
+        "line": 427,
+        "text": "overrides {\n      subnet_id = random_shuffle.subnets.result[0]\n    }"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 27,
+        "text": "contains  = [\"raft_autopilot\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 37,
+        "text": "contains = [\"CHANGELOG\"]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 44,
+        "text": "contains = [\n        \"_oss.go\",\n        \"_ce.go\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 58,
+        "text": "contains = [\n        \"-ce\",\n        \"_ce\",\n        \"-oss\",\n        \"_oss\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 109,
+        "text": "contains = [\n        \"-ce\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 136,
+        "text": "contains = [\n        \"_ent.go\",\n        \"_ent_test.go\",\n        \"_ent\",\n        \"_ent.pb.go\",\n      ]"
+      },
+      {
+        "word": "contains",
+        "kind": "attribute-key",
+        "file": "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl",
+        "line": 153,
+        "text": "contains = [\n        \"-ent\",\n        \"_ent\",\n        \"hsm\",\n        \"merkle-tree\",\n      ]"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/ci/sinatra/waypoint.hcl",
+        "line": 5,
+        "text": "use \"pack\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/ci/sinatra/waypoint.hcl",
+        "line": 8,
+        "text": "use \"docker\" {\n        image = \"registry.localhost:5000/sinatra\"\n        tag   = \"latest\"\n      }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/ci/sinatra/waypoint.hcl",
+        "line": 16,
+        "text": "use \"kubernetes\" {\n      probe_path = \"/\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/ci/sinatra/waypoint.hcl",
+        "line": 22,
+        "text": "use \"kubernetes\" {\n      load_balancer = false\n      node_port     = 30000 // can only be 30000-32767 in k8s\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/cli/data/init.tpl.hcl",
+        "line": 17,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/cli/data/init.tpl.hcl",
+        "line": 32,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/cli/testdata/invalid.hcl",
+        "line": 4,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/cli/testdata/invalid.hcl",
+        "line": 9,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/cli/testdata/valid.hcl",
+        "line": 4,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/cli/testdata/valid.hcl",
+        "line": 9,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_registry.hcl",
+        "line": 10,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_registry_scoped.hcl",
+        "line": 9,
+        "text": "use \"docker\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_registry_scoped.hcl",
+        "line": 12,
+        "text": "use \"A\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_registry_scoped.hcl",
+        "line": 15,
+        "text": "use \"B\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_scoped.hcl",
+        "line": 9,
+        "text": "use \"A\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_scoped.hcl",
+        "line": 12,
+        "text": "use \"B\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_scoped.hcl",
+        "line": 16,
+        "text": "use \"C\" {}"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/compare/build_use.hcl",
+        "line": 5,
+        "text": "use \"test\" {\n            foo = path.app\n        }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_dupe_name.hcl",
+        "line": 7,
+        "text": "use \"test\" {\n      foo = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_dupe_name.hcl",
+        "line": 17,
+        "text": "use \"different_test\" {\n      foo = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_exec_step.hcl",
+        "line": 7,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_exec_step_many.hcl",
+        "line": 7,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_exec_step_many.hcl",
+        "line": 18,
+        "text": "use \"exec\" {\n      command = \"bar\"\n      args = [\"foo\", \"fighters\"]\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_input_var.hcl",
+        "line": 7,
+        "text": "use \"test\" {\n      foo = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_invalid_step.hcl",
+        "line": 7,
+        "text": "use \"invalid\" {\n      test = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_multi_step.hcl",
+        "line": 7,
+        "text": "use \"test\" {\n      foo = \"qubit\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_multi_step.hcl",
+        "line": 15,
+        "text": "use \"test/exec\" {\n      foo = \"few\"\n      bar = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_multi_step.hcl",
+        "line": 25,
+        "text": "use \"hunger\" {\n      foo = \"food\"\n      bar = \"drink\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested.hcl",
+        "line": 7,
+        "text": "use \"test\" {\n      foo = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested.hcl",
+        "line": 17,
+        "text": "use \"test\" {\n          foo = \"nested\"\n        }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested_pipes.hcl",
+        "line": 7,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested_pipes.hcl",
+        "line": 17,
+        "text": "use \"exec\" {\n          command = \"nested\"\n        }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested_refs.hcl",
+        "line": 7,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested_refs.hcl",
+        "line": 13,
+        "text": "use \"pipeline\" {\n      project = \"foo\"\n      name = \"pipe2\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_nested_refs.hcl",
+        "line": 24,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_step.hcl",
+        "line": 7,
+        "text": "use \"test\" {\n      foo = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_step_double.hcl",
+        "line": 7,
+        "text": "use \"bad\" {\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_step_workspace.hcl",
+        "line": 7,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_step_workspace.hcl",
+        "line": 15,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      },
+      {
+        "word": "use",
+        "kind": "block-type",
+        "file": "waypoint/internal/config/testdata/pipelines/pipeline_step_workspace.hcl",
+        "line": 23,
+        "text": "use \"exec\" {\n      command = \"bar\"\n    }"
+      }
+    ],
+    "candidateWordPopulations": {
+      "call": {
+        "sites": 1,
+        "files": 1,
+        "fileSamples": [
+          "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl"
+        ]
+      },
+      "contains": {
+        "sites": 20,
+        "files": 2,
+        "fileSamples": [
+          "vault/.release/pipeline.hcl",
+          "vault/tools/pipeline/internal/pkg/config/fixtures/pipeline.hcl"
+        ]
+      },
+      "import": {
+        "sites": 39,
+        "files": 33,
+        "fileSamples": [
+          "nomad/command/agent/testdata/basic.hcl",
+          "terraform-aws-components/modules/auth0/tenant/main.tf",
+          "terraform/internal/cloud/testdata/plan-import-config-gen-exists/main.tf",
+          "terraform/internal/cloud/testdata/plan-import-config-gen-validation-error/main.tf",
+          "terraform/internal/cloud/testdata/plan-import-config-gen/main.tf",
+          "terraform/internal/command/testdata/plan-import-config-gen/main.tf",
+          "terraform/internal/command/testdata/valid-child-modules/with-import/child/main.tf",
+          "terraform/internal/command/testdata/valid-child-modules/with-import/main.tf"
+        ]
+      },
+      "include": {
+        "sites": 287,
+        "files": 258,
+        "fileSamples": [
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/dev/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/prod/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/ddb/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/iam/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/lambda/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/dev/s3/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/ddb/terragrunt.hcl",
+          "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/iam/terragrunt.hcl"
+        ]
+      },
+      "inherits": {
+        "sites": 44,
+        "files": 8,
+        "fileSamples": [
+          "docker/docker-bake.hcl",
+          "docker/vendor/github.com/docker/distribution/docker-bake.hcl",
+          "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+          "docker/vendor/github.com/tonistiigi/dchapes-mode/docker-bake.hcl",
+          "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+          "docker/vendor/github.com/tonistiigi/go-actions-cache/docker-bake.hcl",
+          "docker/vendor/github.com/tonistiigi/go-archvariant/docker-bake.hcl",
+          "docker/vendor/github.com/tonistiigi/go-csvvalue/docker-bake.hcl"
+        ]
+      },
+      "new": {
+        "sites": 2,
+        "files": 2,
+        "fileSamples": [
+          "terraform/internal/configs/testdata/valid-modules/override-module/a_override.tf",
+          "terraform/internal/configs/testdata/valid-modules/override-module/b_override.tf"
+        ]
+      },
+      "override": {
+        "sites": 7,
+        "files": 7,
+        "fileSamples": [
+          "packer/command/test-fixtures/hcl/provisioner-override.pkr.hcl",
+          "packer/hcl2template/fixtures/malformed_override.pkr.hcl",
+          "packer/hcl2template/fixtures/malformed_override_innards.pkr.hcl",
+          "packer/hcl2template/fixtures/well_formed_provisioner.pkr.hcl",
+          "tflint/tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+          "tflint/tflint/test-fixtures/nested_modules/module.tf",
+          "tflint/tflint/test-fixtures/nested_modules/module/module.tf"
+        ]
+      },
+      "override_data": {
+        "sites": 16,
+        "files": 8,
+        "fileSamples": [
+          "terraform/internal/command/testdata/test/write-only-attributes-overridden/main.tftest.hcl",
+          "terraform/internal/command/testdata/tfmock-fmt/data_in.tfmock.hcl",
+          "terraform/internal/command/testdata/tfmock-fmt/data_out.tfmock.hcl",
+          "terraform/internal/configs/testdata/invalid-test-files/duplicate_data_overrides.tftest.hcl",
+          "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override.tftest.hcl",
+          "terraform/internal/configs/testdata/invalid-test-files/invalid_data_override_target.tftest.hcl",
+          "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl",
+          "terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_two.tftest.hcl"
+        ]
+      },
+      "override_module": {
+        "sites": 17,
+        "files": 9,
+        "fileSamples": [
+          "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking-invalid/tests/module_mocked_invalid_type.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking/tests/module_empty_outputs.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking/tests/module_mocked.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking/tests/module_mocked_overridden.tftest.hcl",
+          "terraform/internal/configs/testdata/invalid-test-files/duplicate_module_overrides.tftest.hcl",
+          "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override.tftest.hcl",
+          "terraform/internal/configs/testdata/invalid-test-files/invalid_module_override_target.tftest.hcl"
+        ]
+      },
+      "override_resource": {
+        "sites": 38,
+        "files": 21,
+        "fileSamples": [
+          "terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl",
+          "terraform/internal/command/testdata/test/mock-sources-inline/testing/base/.ignored.tfmock.hcl",
+          "terraform/internal/command/testdata/test/mocking-error/tests/plan_mocked_overridden.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking-invalid-outputs/tests/module_mocked_invalid_type.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking-invalid/tests/override_computed_invalid_boolean.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_overridden.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking/tests/plan_mocked_provider_overridden.tftest.hcl",
+          "terraform/internal/command/testdata/test/mocking/tests/primary_mocked_overridden.tftest.hcl"
+        ]
+      },
+      "overrides": {
+        "sites": 1,
+        "files": 1,
+        "fileSamples": [
+          "vault/enos/modules/target_ec2_spot_fleet/main.tf"
+        ]
+      },
+      "protocol": {
+        "sites": 162,
+        "files": 50,
+        "fileSamples": [
+          "boundary/enos/enos-scenario-e2e-ui-aws.hcl",
+          "boundary/enos/modules/aws_boundary/alb.tf",
+          "boundary/enos/modules/aws_boundary/security-groups.tf",
+          "boundary/enos/modules/aws_rdp_domain_controller/main.tf",
+          "boundary/enos/modules/aws_target/main.tf",
+          "boundary/enos/modules/aws_vault/security-groups.tf",
+          "boundary/enos/modules/aws_vpc/main.tf",
+          "boundary/enos/modules/aws_vpc_ipv6/main.tf"
+        ]
+      },
+      "source": {
+        "sites": 3403,
+        "files": 2437,
+        "fileSamples": [
+          "boundary/enos/ci/hcp-resources/main.tf",
+          "boundary/enos/enos-modules.hcl",
+          "boundary/enos/modules/docker_vault/main.tf",
+          "consul/test/load/packer/consul-ami/consul.pkr.hcl",
+          "consul/test/load/packer/loadtest-ami/loadtest.pkr.hcl",
+          "consul/test/load/terraform/consul.tf",
+          "consul/test/load/terraform/main.tf",
+          "kong/spec/fixtures/perf/terraform/bring-your-own/ssh.tf"
+        ]
+      },
+      "use": {
+        "sites": 70,
+        "files": 28,
+        "fileSamples": [
+          "waypoint/ci/sinatra/waypoint.hcl",
+          "waypoint/internal/cli/data/init.tpl.hcl",
+          "waypoint/internal/cli/testdata/invalid.hcl",
+          "waypoint/internal/cli/testdata/valid.hcl",
+          "waypoint/internal/config/testdata/compare/build_registry.hcl",
+          "waypoint/internal/config/testdata/compare/build_registry_scoped.hcl",
+          "waypoint/internal/config/testdata/compare/build_scoped.hcl",
+          "waypoint/internal/config/testdata/compare/build_use.hcl"
+        ]
+      }
+    }
+  },
+  "extendsProbe": {
+    "files": 8,
+    "fileSamples": [
+      "docker/docker-bake.hcl",
+      "docker/vendor/github.com/docker/distribution/docker-bake.hcl",
+      "docker/vendor/github.com/moby/policy-helpers/docker-bake.hcl",
+      "docker/vendor/github.com/tonistiigi/dchapes-mode/docker-bake.hcl",
+      "docker/vendor/github.com/tonistiigi/fsutil/docker-bake.hcl",
+      "docker/vendor/github.com/tonistiigi/go-actions-cache/docker-bake.hcl",
+      "docker/vendor/github.com/tonistiigi/go-archvariant/docker-bake.hcl",
+      "docker/vendor/github.com/tonistiigi/go-csvvalue/docker-bake.hcl"
+    ],
+    "filesWithATargetDecl": 8,
+    "sites": 44,
+    "namesTotal": 53,
+    "namesResolved": 53,
+    "namesUnresolved": 0,
+    "unresolvedSamples": [],
+    "samples": [
+      "docker/docker-bake.hcl:99 inherits = [\"_common\"]",
+      "docker/docker-bake.hcl:105 inherits = [\"binary\"]",
+      "docker/docker-bake.hcl:113 inherits = [\"binary\", \"_platforms\"]",
+      "docker/docker-bake.hcl:117 inherits = [\"_common\"]",
+      "docker/docker-bake.hcl:135 inherits = [\"_common\"]",
+      "docker/docker-bake.hcl:141 inherits = [\"all\", \"_platforms\"]",
+      "docker/docker-bake.hcl:146 inherits = [\"_common\"]",
+      "docker/docker-bake.hcl:159 inherits = [\"all\", \"docker-metadata-action\"]"
+    ]
+  },
+  "edgesByType": null,
+  "degraded": {
+    "files": 0,
+    "samples": []
+  },
+  "byType": {
+    "calls": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [
+        "function_call"
+      ],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {
+        "call": 1
+      },
+      "note": "HCL's call syntax is `function_call` (the analyzer's own gate for `calls`).",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "extends": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {
+        "inherits": 44
+      },
+      "note": "a supertype clause: one declaration naming another as its base.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "implements": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {
+        "protocol": 162
+      },
+      "note": "interface satisfaction: a declaration naming a contract it fulfils.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "uses": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [
+        "identifier",
+        "get_attr"
+      ],
+      "corpusKeywordHits": {
+        "use": 70
+      },
+      "corpusAttributeKeyHits": {},
+      "note": "a builtin-rooted read (count/each/self/path/terraform); emitted.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "imports": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [],
+      "corpusKeywordHits": {
+        "import": 39,
+        "include": 287,
+        "source": 201
+      },
+      "corpusAttributeKeyHits": {
+        "source": 3202
+      },
+      "note": "terragrunt `include` / module `source`: present, and emitted.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "exports": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {},
+      "note": "the public surface of a module; emitted from top-level blocks.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "contains": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [
+        "block",
+        "body",
+        "attribute",
+        "object_elem"
+      ],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {
+        "contains": 20
+      },
+      "note": "the container relation: present, and emitted.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "references": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [
+        "variable_expr",
+        "get_attr",
+        "index",
+        "identifier"
+      ],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {},
+      "note": "a project address read from an expression; emitted.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "overrides": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [],
+      "corpusKeywordHits": {
+        "overrides": 1,
+        "override_resource": 38,
+        "override_data": 16,
+        "override_module": 17
+      },
+      "corpusAttributeKeyHits": {
+        "override": 7
+      },
+      "note": "Terraform's test framework spells it `override_resource`/`override_data`/`override_module`.",
+      "evidenceClass": "not-measured(edges pass off)"
+    },
+    "instantiates": {
+      "edges": null,
+      "files": null,
+      "grammarVocabularyHits": [],
+      "corpusKeywordHits": {},
+      "corpusAttributeKeyHits": {
+        "new": 2
+      },
+      "note": "object construction of a declared type; a `resource` block is a declaration, not an expression.",
+      "evidenceClass": "not-measured(edges pass off)"
+    }
+  },
+  "control": {
+    "plantedKeywords": 49,
+    "plantedGrammarWords": 59,
+    "keywordsSeenAsBlockType": 49,
+    "keywordsSeenAsAttributeKey": 49,
+    "functionDeclarations": 1,
+    "functionCalls": 2,
+    "overrideBlocks": 6,
+    "overrideBlocksWithTarget": 1,
+    "resourceBlocks": 1,
+    "blocksInExpressionPosition": 0,
+    "productionPathEdges": {
+      "contains": 160,
+      "overrides": 1,
+      "calls": 1,
+      "exports": 102
+    },
+    "matcherControl": {
+      "calls": true,
+      "extends": true,
+      "implements": true,
+      "overrides": true,
+      "instantiates": true,
+      "contains": true,
+      "imports": true,
+      "exports": true,
+      "references": true,
+      "uses": true
+    },
+    "failures": []
+  }
+}

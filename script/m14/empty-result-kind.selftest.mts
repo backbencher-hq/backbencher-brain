@@ -73,9 +73,9 @@ try {
   // arm ever fails, either the files changed on disk or the classifier inverted — and a classifier
   // that reads a 0-byte file as a hole reproduces the exact defect this module exists to stop.
   const PINNED = [
-    "$HOME/fixtures/repositories/clean-stdlib/_library.dcl",
-    "$HOME/fixtures/repositories/clean-stdlib/_startup.dcl",
-    "$HOME/fixtures/repositories/clean-stdlib/_system.dcl",
+    "/home/ishaq2321/bb_tests/repositories/clean-stdlib/_library.dcl",
+    "/home/ishaq2321/bb_tests/repositories/clean-stdlib/_startup.dcl",
+    "/home/ishaq2321/bb_tests/repositories/clean-stdlib/_system.dcl",
   ]
   const absent = PINNED.filter((p) => !existsSync(p))
   if (absent.length) {

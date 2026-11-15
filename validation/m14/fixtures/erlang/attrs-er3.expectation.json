@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/attrs-er3.erl",
+  "authoredFrom": "Erlang attribute semantics + the pinned grammar's attribute shapes, before this fixture's F3 run. `-nifs`/`-on_load` name functions that are ALREADY declared in the file, so they ANNOTATE and never mint a second symbol \u2014 the pre-ER3 branch was dead twice over: `attr_name.text` is `-nifs` (the dash is inside the node, so `=== \"nifs\"` never matched) and the entries are `binary_op_expr` (`native/1`), not the `fa` the branch then looked for. `-optional_callbacks` records on the module and emits no edge. `-import` names an OTP module, which cannot be declared in this file, so it is an EXTERNAL dependency (M60/#910's is_external contract); `-include` is this project's and `-include_lib` resolves through the code path. `-compile` is a directive, not a declaration: silent. ER-D46 (2026-10-23): the two include forms are FILE INCLUSION and are published as ONE `part_of` row each (partRole library, import_based), NOT as `references`; the negative half below forbids the old `references` rows and forbids `imports` for an include.",
+  "expectSymbols": [
+    {
+      "name": "attrs_er3",
+      "kind": "module"
+    },
+    {
+      "name": "state",
+      "kind": "struct",
+      "ownerName": "attrs_er3"
+    },
+    {
+      "name": "a",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "handle_info",
+      "kind": "method",
+      "ownerName": "attrs_er3",
+      "meta.isCallback": true,
+      "meta.arity": 2
+    },
+    {
+      "name": "t",
+      "kind": "type",
+      "ownerName": "attrs_er3"
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "ownerName": "attrs_er3",
+      "meta.arity": 1
+    },
+    {
+      "name": "native",
+      "kind": "function",
+      "ownerName": "attrs_er3",
+      "meta.arity": 1,
+      "meta.isNif": true
+    },
+    {
+      "name": "native2",
+      "kind": "function",
+      "ownerName": "attrs_er3",
+      "meta.arity": 2,
+      "meta.isNif": true
+    },
+    {
+      "name": "boot",
+      "kind": "function",
+      "ownerName": "attrs_er3",
+      "meta.arity": 0,
+      "meta.isOnLoad": true
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "attrs_er3",
+      "meta.arity": 0
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "native",
+      "kind": "function",
+      "equals": 1,
+      "note": "the -nifs entry annotates the declared function; a second symbol would be a duplicate identity"
+    },
+    {
+      "name": "native2",
+      "kind": "function",
+      "equals": 1
+    },
+    {
+      "name": "boot",
+      "kind": "function",
+      "equals": 1,
+      "note": "ditto for -on_load"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "lists",
+      "isExternal": true,
+      "importType": "named",
+      "line": 12
+    },
+    {
+      "module": "local.hrl",
+      "isExternal": false,
+      "importType": "include",
+      "line": 13
+    },
+    {
+      "module": "kernel/include/file.hrl",
+      "isExternal": true,
+      "importType": "include_lib",
+      "line": 14
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "run",
+      "arity": 0
+    },
+    {
+      "name": "native",
+      "arity": 1
+    },
+    {
+      "name": "t",
+      "arity": 0,
+      "kind": "type"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "attrs_er3",
+      "target": "lists",
+      "line_number": 12,
+      "meta.evidenceClass": "import_based",
+      "note": "SECTION D PIN: `-import(lists, [seq/1])` is the module dependency, and its tier is import_based (the fall-through-bug class every lane has paid for: an import that reads usage_contextual). Emitted by the imports pass; the same statement also emits the `references attrs_er3 -> lists` row at the same line, which is reference_qualified \u2014 two different claims from one construct, kept countable apart."
+    },
+    {
+      "type": "references",
+      "from": "attrs_er3",
+      "target": "lists",
+      "meta.isModuleImport": true,
+      "line_number": 12,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "part_of",
+      "from": "attrs_er3",
+      "target": "local.hrl",
+      "meta.isInclude": true,
+      "meta.partRole": "library",
+      "meta.isFileInclusion": true,
+      "line_number": 13,
+      "meta.evidenceClass": "import_based",
+      "note": "ER-D46: an include is FILE INCLUSION and this file is the library side of the pair. The target is a PATH, not a symbol."
+    },
+    {
+      "type": "part_of",
+      "from": "attrs_er3",
+      "target": "kernel/include/file.hrl",
+      "meta.isLibInclude": true,
+      "meta.partRole": "library",
+      "meta.isFileInclusion": true,
+      "line_number": 14,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "references",
+      "from": "handle_info",
+      "target": "term",
+      "meta.context": "type reference",
+      "line_number": 19
+    },
+    {
+      "type": "references",
+      "from": "t",
+      "target": "integer",
+      "meta.context": "type reference",
+      "line_number": 20
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "helper",
+      "meta.callArity": 1,
+      "line_number": 35,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "lists:seq",
+      "meta.callArity": 2,
+      "line_number": 35,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "native",
+      "meta.callArity": 1,
+      "line_number": 36,
+      "note": "a NIF is an ordinary local call from Erlang's side"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "native2",
+      "meta.callArity": 2,
+      "line_number": 37
+    },
+    {
+      "type": "contains",
+      "from": "attrs_er3",
+      "target": "native",
+      "line_number": 25,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "attrs_er3",
+      "target": "local.hrl",
+      "note": "ER-D46 negative half: an include is no longer a `references` row; a mention reading of a file inclusion is the label the relabel replaces"
+    },
+    {
+      "type": "references",
+      "from": "attrs_er3",
+      "target": "kernel/include/file.hrl",
+      "note": "ER-D46 negative half, include_lib form"
+    },
+    {
+      "type": "imports",
+      "from": "attrs_er3",
+      "target": "local.hrl",
+      "note": "ER-D46: an include is NOT an import — `-import(Mod,[f/a])` keeps imports+references (ER-D41); an include splices text"
+    },
+    {
+      "type": "references",
+      "from": "attrs_er3",
+      "target": "inline",
+      "note": "-compile is a directive, not a declaration: silent"
+    },
+    {
+      "type": "references",
+      "from": "attrs_er3",
+      "target": "export_all"
+    },
+    {
+      "type": "references",
+      "from": "attrs_er3",
+      "target": "handle_info",
+      "note": "-optional_callbacks declares nothing; the name is recorded on the module symbol"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "self",
+      "note": "self/0 is a BIF, not a symbol in this file"
+    },
+    {
+      "type": "instantiates"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "gate": "lua-symbol-integrity",
+  "corpus": "kong",
+  "filesChecked": 1311,
+  "parseErrorFiles": 1,
+  "symbolsTotal": 51984,
+  "relsTotal": 107780,
+  "contains": {
+    "total": 29489,
+    "resolved": 29489
+  },
+  "invariants": [
+    "every symbol has a non-empty name",
+    "every owner is global or another symbol in the same file",
+    "every contains edge names a symbol in the same file",
+    "no symbol name contains '.' or ':'",
+    "no symbol is a member of itself"
+  ],
+  "violationsByShape": {},
+  "disclosures": {
+    "selfOwned": 5
+  },
+  "disclosureSample": {
+    "selfOwned": "kong/db/iteration.lua :: failed is owned by itself (a method sharing its container's name)"
+  },
+  "containsUnresolvedSource": 0,
+  "symbolsWithNoOwner": 39447,
+  "examples": {},
+  "violationSample": [],
+  "passed": true
+}

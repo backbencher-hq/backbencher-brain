@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-13T04:21:21.326Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/consul",
+  "tag": "consul",
+  "admittedFiles": 1277,
+  "sampledFiles": 150,
+  "parseCleanFiles": 149,
+  "kept": 0,
+  "dropped": 0,
+  "noWriter": 197,
+  "ratio": null,
+  "note": "kept = a `this.<f>.<m>()` call inside a class that WRITES this.<f> (the owner is correct and survives the fix). dropped = the same call inside a class that never writes it (the owner is another class's type — the wrong owner the fix removes). noWriter = no class in the file writes the field, so no owner was ever published.",
+  "dropExamples": []
+}

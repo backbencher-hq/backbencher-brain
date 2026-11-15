@@ -1,0 +1,46 @@
+{
+  "fixtureId": "typescript/local-binding-claim",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines read off `nl -ba` of this file: cb() 16, publishedNested() 17, assign(1) 18. The spelled target contains U+0000; JSON spells it `\\u0000`.",
+  "rationale": "PINS THE LOCAL-BINDING CLAIM (D7) IN BOTH DIRECTIONS. Positive: a call to a PARAMETER (`cb()`) is re-spelled `outer\\u0000cb` with `meta.localBinding: true` — the family publishes no parameter as a symbol, so the spelled target can never be refuted by the declaration key space, and the arbiter verifies it from its own spelling. A call to a locally-declared lambda (`assign(1)`) is the same class (`outer\\u0000assign`), and its argument text keeps the row's line. NEGATIVE: a nested FUNCTION DECLARATION can be published as a symbol by this analyzer, so its call stays the bare name (`publishedNested`) — re-spelling it would withdraw a binding that may legitimately resolve; the fixture's forbid row makes that over-claim red. This is the difference between the local-binding class and the imported-binding class: the former is verified by spelling, the latter by the file's import evidence.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000cb",
+      "line_number": 17,
+      "meta.localBinding": true,
+      "meta.bindingKind": "parameter"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000assign",
+      "line_number": 19,
+      "meta.localBinding": true
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "publishedNested",
+      "line_number": 18,
+      "meta.localBinding": null,
+      "note": "published nested symbol stays bare"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000publishedNested",
+      "note": "a PUBLISHED nested declaration must not be re-spelled — its edge may resolve"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "cb",
+      "note": "the bare spelling must not survive: one row, re-spelled in place (never two rows for one edge)"
+    }
+  ]
+}

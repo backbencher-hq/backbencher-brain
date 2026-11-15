@@ -1,0 +1,87 @@
+{
+ "fixtureId": "markdown/reference-links",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A reference link's destination lives in a `link_reference_definition` at BLOCK level, so the companion inline grammar gives only the LABEL. Before this fixture the whole form produced no `uses` edge at all -- 671 sites (44 uses + 627 definitions) across 66 of the lane's 738 corpus files -- while the lane doc claimed 'Links (inline and reference destinations)'. Four shapes are pinned: the three reference forms resolve to the DESTINATION the document declares; an inline link and both autolink forms still resolve; a link inside a code span or a closed fence is NOT published, and that exclusion is structural rather than filtered (the inline grammar gives `code_span` only ANONYMOUS children, so a `link_destination` is unreachable beneath one); and an UNDEFINED reference is deliberately not published, because CommonMark renders it as literal text. The last one is a decision with a measurement behind it: publishing the undefined case produced 171 edges in 34 corpus files, sampled and found to be dominated by bare bracketed citation markers (`NOTICE.md: document -> 1`, six times), so those edges were fabricated endpoints and R10 target-spelling violations.",
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "Full reference form",
+   "target": "../install.md",
+   "meta.linkForm": "full_reference_link",
+   "meta.resolvedVia": "link_reference_definition"
+  },
+  {
+   "type": "uses",
+   "from": "Full reference form",
+   "target": "https://example.com/api",
+   "meta.linkForm": "full_reference_link"
+  },
+  {
+   "type": "uses",
+   "from": "Collapsed and shortcut forms",
+   "target": "https://example.com/c",
+   "meta.linkForm": "collapsed_reference_link"
+  },
+  {
+   "type": "uses",
+   "from": "Inline form and autolinks",
+   "target": "https://example.com/inline"
+  },
+  {
+   "type": "uses",
+   "from": "Inline form and autolinks",
+   "target": "https://example.com/auto",
+   "meta.role": "markdown_autolink"
+  },
+  {
+   "type": "uses",
+   "from": "Inline form and autolinks",
+   "target": "dev@example.com",
+   "meta.role": "markdown_autolink"
+  },
+  {
+   "type": "uses",
+   "from": "An image in reference form",
+   "target": "./assets/logo.png",
+   "meta.linkForm": "image"
+  },
+  {
+   "type": "uses",
+   "from": "A code span, and a closed code fence, are not links",
+   "target": "https://good.example"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "target": "https://bad.example/code-span",
+   "comment": "a link inside a code span is not a link. Target-only, no `from`: the defect is that this DESTINATION is published at all, and pinning the owner would make the assertion depend on the walk's attribution instead of on the exclusion. `expectRelationships` treats unspecified fields as wildcards."
+  },
+  {
+   "target": "https://bad.example/fence",
+   "comment": "same, inside a closed fence"
+  },
+  {
+   "target": "nowhere",
+   "comment": "an UNDEFINED reference is literal text per CommonMark, not a link"
+  },
+  {
+   "target": "bare-citation",
+   "comment": "a bare bracketed citation marker is not a reference link; measured at 171 such edges over 34 corpus files when this was published"
+  }
+ ],
+ "_measuredOnTheLaneCorpus": {
+  "note": "the numbers the fix is accountable for, re-derivable against the same pin",
+  "corpus": "scala3@18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+  "referenceLinkEdgesBefore": 0,
+  "referenceLinkEdgesAfter": 213,
+  "referenceLinkEdgesUnresolvedPublished": 0,
+  "undefinedCaseSuppressed": 171,
+  "filesWithSuppressedUndefined": 34
+ },
+ "_declaredLimitation": {
+  "what": "An undefined reference link is INVISIBLE, not flagged. A reader cannot distinguish 'this document has a broken reference' from 'this document never had one'.",
+  "why": "The alternative measured as 171 fabricated endpoints over 34 corpus files, dominated by bare bracketed citation markers. Publishing them would make the graph lie; the honest options were to publish nothing or to invent a suppression heuristic, and a heuristic with no evidence behind it is the thing this repository forbids most loudly.",
+  "wouldBeWrongTo": "restore the undefined case without a corpus measurement showing the citation-marker class is gone"
+ }
+}

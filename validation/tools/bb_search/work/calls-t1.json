@@ -1,0 +1,7 @@
+[
+ {"label":"symbols.default","args":{"query":"ABSENCE"}},
+ {"label":"content.default","args":{"mode":"content","query":"ABSENCE_LOG_TYPE"}},
+ {"label":"symbol.default","args":{"mode":"symbol","symbolName":"ABSENCE_LOG_TYPE"}},
+ {"label":"file.default","args":{"mode":"file","filePath":"t0000_document_highlight.ts"}},
+ {"label":"regex.option","args":{"query":"^ABSENCE_","regex":true}}
+]

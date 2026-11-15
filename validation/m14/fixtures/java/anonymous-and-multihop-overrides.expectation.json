@@ -1,0 +1,76 @@
+{
+  "fixtureId": "java/anonymous-and-multihop-overrides",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.21 #610 master review (user-suspect wave). Pins TWO contracts: (1) JD18 - an anonymous class body (new Comparator<String>() {...}) declares a Class symbol anonymous_<Super> owned by the enclosing type, and its methods attribute to the ANONYMOUS type (contains anonymous_Comparator->compare), never to the enclosing class (the pre-fix bug leaked contains:Service->compare and fabricated no anonymous symbol). (2) JD19 - override resolution walks MULTI-HOP nested-class chains through non-declaring ancestors (BlackVal extends Black extends Node: BlackVal.val overrides Node.val even though Black declares no val), via suffix-resolved hierarchy lookup with symbolMap disambiguation. M37.21 C30: the anonymous type registers its SUPERTYPE in classHierarchy, so an @Override method inside the anon body resolves exact-in-file (anonymous_Handler.handle -> Handler.handle) instead of falling out with no edge. External-supertype anon bodies (Comparator/Runnable) stay override-free \u2014 truth is in-file.",
+  "expectSymbols": [
+    {
+      "name": "anonymous_Comparator"
+    },
+    {
+      "name": "anonymous_Runnable"
+    },
+    {
+      "name": "BlackVal"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "anonymous_Comparator"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Comparator",
+      "target": "compare"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "run"
+    },
+    {
+      "type": "instantiates",
+      "from": "Service",
+      "target": "Comparator"
+    },
+    {
+      "type": "overrides",
+      "from": "BlackVal.val",
+      "target": "val"
+    },
+    {
+      "type": "overrides",
+      "from": "BlackBranch.left",
+      "target": "left"
+    },
+    {
+      "type": "overrides",
+      "from": "anonymous_Handler.handle",
+      "target": "handle"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "compare"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "run"
+    },
+    {
+      "type": "overrides",
+      "from": "anonymous_Comparator.compare",
+      "target": "compare"
+    },
+    {
+      "type": "overrides",
+      "from": "anonymous_Runnable.run",
+      "target": "run"
+    }
+  ]
+}

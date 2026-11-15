@@ -1,0 +1,10 @@
+[INFO] [21:15:25] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [21:15:25] [ast-engine] language grammar allocated {"language":"bash"}
+[INFO] [21:15:25] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_27g847u"}
+[INFO] [21:15:34] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_6nr0fv2"}
+[INFO] [21:15:55] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_g2ldmyz"}
+[INFO] [21:16:03] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_jvx72wv"}
+  … 2000/3351 parsed (0 failed, 0 degraded) 56s — run-e2e-tests.sh
+[INFO] [21:16:20] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_rif4plh"}
+[INFO] [21:16:35] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_ygsa5qz"}
+[INFO] [21:16:51] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_3_15mjen9h"}

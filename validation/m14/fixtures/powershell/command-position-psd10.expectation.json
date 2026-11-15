@@ -1,0 +1,112 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/command-position-psd10.ps1",
+ "authoredFrom": "PSD10 — THE COMMAND-POSITION READING, AND WHY IT IS THE CHANNEL RATHER THAN THE SPELLING. The externality reading was shape-based: a Verb-Noun spelling encodes `Get-ChildItem`, a qualifier byte encodes `System.IO.Path` and `./build.psm1`. Both are correct tests for 'this name cannot be a local declaration', and both are silent on a bare command name: `git`, `mkdir`, `dotnet`, `cd`. MEASURED over the whole admitted population before this change: 34,158 bare command-position rows named NOTHING in their own project and carried no claim, so at the arbiter they were indistinguishable from broken edges — the failure the gate exists to name ('an unmarked external is indistinguishable from a broken one').\n\nWHY THE WIDENING IS SAFE, MEASURED RATHER THAN ARGUED. `externalTarget` is published only where THIS FILE declares no symbol of that spelling — the guard this pass has always had — and the arbiter consults a claim only where the project's name model has nothing (`classifyEdge` reaches `verifyExternalClaim` inside `decls === 0`). Where the project DOES declare the name the row keeps its declaration answer: resolved, or ambiguous with disposition `ownFileSilent`, which the arbiter reports and does not count as a refutation. The split measured before wiring: of 36,916 bare command-position rows, 34,158 name nothing project-wide and 2,758 (1,899 declared once + 859 many) are rows the claim never reaches. AFTER: extOK 25,285 -> 53,882, unresolved 48,585 -> 19,988, ambiguous UNCHANGED at 17,030, resolved UNCHANGED at 98,975, extFAIL UNCHANGED at 60. The widening bought 28,597 rows of named wall and cost zero refutations and zero resolutions.\n\nTHE THREE REFUSALS ARE RE-STATED IN `commandReadingOf` BECAUSE A `??` FALLBACK CANNOT TELL 'no shape fired' FROM 'this shape is deliberately refused' — the first run of the change proved it by giving `& .\\lib\\Helper.psm1` (PS-B18's withheld class) an `externalVia: \"command\"`, and this fixture's row 6 is that regression, kept as a pin. Row 4 is the same bare spelling DECLARED here, row 5 is a member call's leaf (`Add`), and row 3 is the invocation operator with a bare name — a command by construction.",
+ "expectSymbols": [
+  {
+   "name": "command-position-psd10.ps1",
+   "kind": "module",
+   "comment": "The FILE IS THE MODULE (PS1), and it is the source of every `from` below."
+  },
+  {
+   "name": "helper",
+   "kind": "function",
+   "ownerName": "command-position-psd10.ps1",
+   "comment": "The declaration that makes row 4 a NEGATIVE: identical spelling to the bare command names above it, and the declaration table is the only thing that separates them."
+  },
+  {
+   "name": "list",
+   "kind": "variable",
+   "ownerName": "command-position-psd10.ps1",
+   "comment": "The receiver of the member call in row 5. The member's LEAF is what row 5 pins, not this name."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "command-position-psd10.ps1",
+   "target": "git",
+   "line_number": 19,
+   "meta.externalTarget": true,
+   "meta.externalVia": "command",
+   "meta.isExternalTarget": true,
+   "comment": "THE ROW THE CHANGE EXISTS FOR: a native program with no shape cue at all. Before this, `git` carried nothing but `powershellSpecific`, and nothing in the graph said the project does not declare it."
+  },
+  {
+   "type": "calls",
+   "from": "command-position-psd10.ps1",
+   "target": "cd",
+   "line_number": 22,
+   "meta.externalTarget": true,
+   "meta.externalVia": "command",
+   "meta.isExternalTarget": true,
+   "comment": "An ALIAS: a command the engine supplies. It has the same bare spelling as any local function name, which is why the reading cannot be shape-based."
+  },
+  {
+   "type": "calls",
+   "from": "command-position-psd10.ps1",
+   "target": "whoami",
+   "line_number": 25,
+   "meta.externalTarget": true,
+   "meta.externalVia": "command",
+   "meta.isExternalTarget": true,
+   "meta.invokationOperator": "&",
+   "comment": "THE INVOCATION OPERATOR WITH A BARE NAME. `& name` is a command by construction, so the operator half of the channel reading must reach it — a rule that keyed only on the plain `command` node would miss this one."
+  },
+  {
+   "type": "calls",
+   "from": "command-position-psd10.ps1",
+   "target": "helper",
+   "line_number": 30,
+   "meta.externalTarget": null,
+   "meta.externalVia": null,
+   "comment": "THE NEGATIVE TWIN, and the row that keeps the widening honest: the SAME bare spelling as rows 1-3, declared ten lines above. A shape rule marks it; the declaration guard is what stops it. Measured on the admitted corpus: 2,758 bare command-position rows name something the project declares, which is the price the guard already pays."
+  },
+  {
+   "type": "calls",
+   "from": "command-position-psd10.ps1",
+   "target": "Add",
+   "line_number": 35,
+   "meta.methodCall": true,
+   "meta.externalTarget": null,
+   "meta.externalVia": null,
+   "comment": "THE MEMBER-CALL TWIN. `$list.Add(1)` publishes `calls -> Add` with `methodCall: true`, and a MEMBER name is not a command name: no command reading may attach. Without this row a rule that marked every `calls` row would pass the fixture."
+  },
+  {
+   "type": "calls",
+   "from": "command-position-psd10.ps1",
+   "target": ".\\lib\\Helper.psm1",
+   "line_number": 39,
+   "meta.externalTarget": null,
+   "meta.externalVia": null,
+   "meta.noDeclarationInFile": true,
+   "comment": "THE RELATIVE-PATH TWIN (PS-B18). This shape's reading was withheld on purpose — a relative path the project may own must be answered by the admitted file list, not by an externality claim. The first run of PSD10 gave it `externalVia: \"command\"` through a `??` fallback that could not see the refusal, and this row is what caught it."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "Add",
+   "meta.externalVia": "command",
+   "comment": "A member leaf must never carry the command reading."
+  },
+  {
+   "type": "calls",
+   "target": "helper",
+   "meta.externalTarget": true,
+   "comment": "A name this file declares must never carry the externality reading — the guard, not the shape, decides."
+  },
+  {
+   "type": "calls",
+   "target": ".\\lib\\Helper.psm1",
+   "meta.externalTarget": true,
+   "comment": "PS-B18's withheld class must stay withheld: the command reading may not resurrect a claim the path rule removed."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "equals": 11,
+   "comment": "The whole file: 6 `calls` (git, cd, whoami, helper, Add, the relative path), 2 `contains` (helper, list), 1 `instantiates` (the generic List), 1 `uses` (the bound receiver read), and 1 more `calls` (`Out-Null` from the pipeline on row 19). The count matters because the reading is published on rows that STAY: a rule that dropped the row instead of the claim would keep the claim count clean and empty the fixture."
+  }
+ ]
+}

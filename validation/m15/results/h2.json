@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H2",
+  "code": "H2",
+  "tool": "bb_health",
+  "title": "regex census",
+  "verified": true,
+  "checks": 0,
+  "passed": 1,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:21:22.108Z"
+}

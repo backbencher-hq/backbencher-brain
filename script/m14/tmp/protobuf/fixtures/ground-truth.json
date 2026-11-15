@@ -1,0 +1,706 @@
+{
+  "_note": "HAND-DERIVED differential truth for the protobuf contract battery. Written from the protobuf specification and proto2/proto3/editions semantics by reading the fixture source, NOT captured from the analyzer — a truth file produced by running the analyzer agrees with every bug in it, which is why this is checked in as an input and the battery mutates it to prove it can tell the truth wrong. `owner` is the dotted package-qualified owner; a top-level declaration's owner is the package. Relationship `role` is the metadata.role the analyzer stamps. See probe/contract-battery.mts.",
+  "cases": [
+    {
+      "id": "core3",
+      "note": "proto3 core: package, import, message, scalar + message-typed fields, enum, service, one rpc. The baseline every other case departs from.",
+      "src": "syntax = \"proto3\";\npackage demo.v1;\nimport \"google/protobuf/timestamp.proto\";\nmessage User {\n  string name = 1;\n  Role role = 2;\n  int64 updated = 3;\n}\nenum Role { USER = 0; ADMIN = 1; }\nservice Auth {\n  rpc Login(User) returns (User);\n}\n",
+      "expect": {
+        "symbols": [
+          {
+            "kind": "namespace",
+            "name": "demo.v1",
+            "line": 2
+          },
+          {
+            "kind": "class",
+            "name": "User",
+            "owner": "demo.v1",
+            "line": 4
+          },
+          {
+            "kind": "property",
+            "name": "name",
+            "owner": "demo.v1.User",
+            "line": 5
+          },
+          {
+            "kind": "property",
+            "name": "role",
+            "owner": "demo.v1.User",
+            "line": 6
+          },
+          {
+            "kind": "property",
+            "name": "updated",
+            "owner": "demo.v1.User",
+            "line": 7
+          },
+          {
+            "kind": "enum",
+            "name": "Role",
+            "owner": "demo.v1",
+            "line": 9
+          },
+          {
+            "kind": "enum_member",
+            "name": "USER",
+            "owner": "demo.v1.Role",
+            "line": 9
+          },
+          {
+            "kind": "enum_member",
+            "name": "ADMIN",
+            "owner": "demo.v1.Role",
+            "line": 9
+          },
+          {
+            "kind": "interface",
+            "name": "Auth",
+            "owner": "demo.v1",
+            "line": 10
+          },
+          {
+            "kind": "method",
+            "name": "Login",
+            "owner": "demo.v1.Auth",
+            "line": 11
+          }
+        ],
+        "relationships": [
+          {
+            "source": "demo.v1",
+            "type": "contains",
+            "target": "demo.v1.User",
+            "meta": "nestedType"
+          },
+          {
+            "source": "demo.v1.User",
+            "type": "contains",
+            "target": "demo.v1.User.name",
+            "meta": "field"
+          },
+          {
+            "source": "demo.v1.User",
+            "type": "contains",
+            "target": "demo.v1.User.role",
+            "meta": "field"
+          },
+          {
+            "source": "demo.v1.User",
+            "type": "contains",
+            "target": "demo.v1.User.updated",
+            "meta": "field"
+          },
+          {
+            "source": "demo.v1.User.role",
+            "type": "uses",
+            "target": "demo.v1.Role",
+            "meta": "fieldType"
+          },
+          {
+            "source": "demo.v1",
+            "type": "contains",
+            "target": "demo.v1.Role",
+            "meta": "nestedType"
+          },
+          {
+            "source": "demo.v1.Role",
+            "type": "contains",
+            "target": "demo.v1.Role.USER",
+            "meta": "enumValue"
+          },
+          {
+            "source": "demo.v1.Role",
+            "type": "contains",
+            "target": "demo.v1.Role.ADMIN",
+            "meta": "enumValue"
+          },
+          {
+            "source": "demo.v1",
+            "type": "contains",
+            "target": "demo.v1.Auth",
+            "meta": "nestedType"
+          },
+          {
+            "source": "demo.v1.Auth",
+            "type": "contains",
+            "target": "demo.v1.Auth.Login",
+            "meta": "rpc"
+          },
+          {
+            "source": "demo.v1.Auth.Login",
+            "type": "uses",
+            "target": "demo.v1.User",
+            "meta": "rpcRequest"
+          },
+          {
+            "source": "demo.v1.Auth.Login",
+            "type": "uses",
+            "target": "demo.v1.User",
+            "meta": "rpcResponse"
+          }
+        ],
+        "imports": [
+          "google/protobuf/timestamp.proto"
+        ]
+      }
+    },
+    {
+      "id": "editions",
+      "note": "A 2023 editions file: `edition` instead of `syntax`, an `import option` feature import, and a `local` declaration. All three are patches 1, 3 and 8, so this case fails on the pre-patch grammar entirely.",
+      "src": "edition = \"2023\";\npackage p;\nimport option \"features.proto\";\nlocal message M {\n  int32 a = 1;\n}\n",
+      "expect": {
+        "symbols": [
+          {
+            "kind": "namespace",
+            "name": "p",
+            "line": 2
+          },
+          {
+            "kind": "class",
+            "name": "M",
+            "owner": "p",
+            "line": 4
+          },
+          {
+            "kind": "property",
+            "name": "a",
+            "owner": "p.M",
+            "line": 5
+          }
+        ],
+        "relationships": [
+          {
+            "source": "p",
+            "type": "contains",
+            "target": "p.M",
+            "meta": "nestedType"
+          },
+          {
+            "source": "p.M",
+            "type": "contains",
+            "target": "p.M.a",
+            "meta": "field"
+          }
+        ],
+        "imports": [
+          "features.proto"
+        ]
+      }
+    },
+    {
+      "id": "proto2-group-oneof-extend",
+      "note": "proto2: a `group` (which declares BOTH a nested type and a field of the same name, so the two ids are disambiguated with `#property`), a oneof (whose fields stay members of the message while carrying metadata.oneof), reserved NUMBERS and reserved NAMES, an extensions range, and an `extend` block whose field is a member of the EXTENDED type across message boundaries. This is the case the `#property` disambiguator exists for.",
+      "src": "syntax = \"proto2\";\npackage q;\nmessage M {\n  optional int32 a = 1;\n  oneof pick {\n    string b = 2;\n  }\n  reserved 5, 7 to 9;\n  reserved \"gone\";\n  extensions 100 to 199;\n  optional group G = 4 {\n    optional int32 x = 2;\n  }\n}\nmessage E {\n  extend M {\n    optional int32 ext = 150;\n  }\n}\n",
+      "expect": {
+        "symbols": [
+          {
+            "kind": "namespace",
+            "name": "q",
+            "line": 2
+          },
+          {
+            "kind": "class",
+            "name": "M",
+            "owner": "q",
+            "line": 3
+          },
+          {
+            "kind": "property",
+            "name": "a",
+            "owner": "q.M",
+            "line": 4
+          },
+          {
+            "kind": "union",
+            "name": "pick",
+            "owner": "q.M",
+            "line": 5
+          },
+          {
+            "kind": "property",
+            "name": "b",
+            "owner": "q.M",
+            "line": 6
+          },
+          {
+            "kind": "class",
+            "name": "G",
+            "owner": "q.M",
+            "line": 11
+          },
+          {
+            "kind": "property",
+            "name": "G",
+            "owner": "q.M",
+            "line": 11
+          },
+          {
+            "kind": "property",
+            "name": "x",
+            "owner": "q.M.G",
+            "line": 12
+          },
+          {
+            "kind": "class",
+            "name": "E",
+            "owner": "q",
+            "line": 15
+          },
+          {
+            "kind": "property",
+            "name": "ext",
+            "owner": "q.M",
+            "line": 17
+          }
+        ],
+        "relationships": [
+          {
+            "source": "q",
+            "type": "contains",
+            "target": "q.M",
+            "meta": "nestedType"
+          },
+          {
+            "source": "q.M",
+            "type": "contains",
+            "target": "q.M.a",
+            "meta": "field"
+          },
+          {
+            "source": "q.M",
+            "type": "contains",
+            "target": "q.M.pick",
+            "meta": "oneof"
+          },
+          {
+            "source": "q.M",
+            "type": "contains",
+            "target": "q.M.b",
+            "meta": "field"
+          },
+          {
+            "source": "q.M",
+            "type": "contains",
+            "target": "q.M.G",
+            "meta": "groupType"
+          },
+          {
+            "source": "q.M",
+            "type": "contains",
+            "target": "q.M.G#property",
+            "meta": "field"
+          },
+          {
+            "source": "q.M.G#property",
+            "type": "uses",
+            "target": "q.M.G",
+            "meta": "groupType"
+          },
+          {
+            "source": "q.M.G",
+            "type": "contains",
+            "target": "q.M.G.x",
+            "meta": "field"
+          },
+          {
+            "source": "q",
+            "type": "contains",
+            "target": "q.E",
+            "meta": "nestedType"
+          },
+          {
+            "source": "q.M",
+            "type": "contains",
+            "target": "q.M.ext",
+            "meta": "field"
+          }
+        ],
+        "imports": []
+      }
+    },
+    {
+      "id": "map-and-streaming",
+      "note": "map fields with both a message value and a scalar value (only the message value produces a `uses` edge — a scalar is a keyword, not a reference), and all four rpc streaming combinations. The grammar gives an rpc's request and response the same node type with no field name, so this case is what proves they are told apart by position and that `stream` is read off the tree.",
+      "src": "syntax = \"proto3\";\npackage r;\nimport weak \"w.proto\";\nimport public \"p.proto\";\nmessage M {\n  map<string, M> children = 1;\n  map<string, int32> counts = 2;\n}\nservice S {\n  rpc Unary(M) returns (M);\n  rpc Down(stream M) returns (M);\n  rpc Up(M) returns (stream M);\n  rpc Both(stream M) returns (stream M);\n}\n",
+      "expect": {
+        "symbols": [
+          {
+            "kind": "namespace",
+            "name": "r",
+            "line": 2
+          },
+          {
+            "kind": "class",
+            "name": "M",
+            "owner": "r",
+            "line": 5
+          },
+          {
+            "kind": "property",
+            "name": "children",
+            "owner": "r.M",
+            "line": 6
+          },
+          {
+            "kind": "property",
+            "name": "counts",
+            "owner": "r.M",
+            "line": 7
+          },
+          {
+            "kind": "interface",
+            "name": "S",
+            "owner": "r",
+            "line": 9
+          },
+          {
+            "kind": "method",
+            "name": "Unary",
+            "owner": "r.S",
+            "line": 10
+          },
+          {
+            "kind": "method",
+            "name": "Down",
+            "owner": "r.S",
+            "line": 11
+          },
+          {
+            "kind": "method",
+            "name": "Up",
+            "owner": "r.S",
+            "line": 12
+          },
+          {
+            "kind": "method",
+            "name": "Both",
+            "owner": "r.S",
+            "line": 13
+          }
+        ],
+        "relationships": [
+          {
+            "source": "r",
+            "type": "contains",
+            "target": "r.M",
+            "meta": "nestedType"
+          },
+          {
+            "source": "r.M",
+            "type": "contains",
+            "target": "r.M.children",
+            "meta": "field"
+          },
+          {
+            "source": "r.M.children",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "mapValueType"
+          },
+          {
+            "source": "r.M",
+            "type": "contains",
+            "target": "r.M.counts",
+            "meta": "field"
+          },
+          {
+            "source": "r",
+            "type": "contains",
+            "target": "r.S",
+            "meta": "nestedType"
+          },
+          {
+            "source": "r.S",
+            "type": "contains",
+            "target": "r.S.Unary",
+            "meta": "rpc"
+          },
+          {
+            "source": "r.S.Unary",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcRequest"
+          },
+          {
+            "source": "r.S.Unary",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcResponse"
+          },
+          {
+            "source": "r.S",
+            "type": "contains",
+            "target": "r.S.Down",
+            "meta": "rpc"
+          },
+          {
+            "source": "r.S.Down",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcRequest"
+          },
+          {
+            "source": "r.S.Down",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcResponse"
+          },
+          {
+            "source": "r.S",
+            "type": "contains",
+            "target": "r.S.Up",
+            "meta": "rpc"
+          },
+          {
+            "source": "r.S.Up",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcRequest"
+          },
+          {
+            "source": "r.S.Up",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcResponse"
+          },
+          {
+            "source": "r.S",
+            "type": "contains",
+            "target": "r.S.Both",
+            "meta": "rpc"
+          },
+          {
+            "source": "r.S.Both",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcRequest"
+          },
+          {
+            "source": "r.S.Both",
+            "type": "uses",
+            "target": "r.M",
+            "meta": "rpcResponse"
+          }
+        ],
+        "imports": [
+          "w.proto",
+          "p.proto"
+        ]
+      }
+    },
+    {
+      "id": "no-package-absolute-and-relative-refs",
+      "note": "No package at all, so top-level ids are bare. Covers both reference forms: a leading dot is absolute, and a bare name resolves within the file. The `uses` edge to `Ext` must land on the REAL declared id, not on a package-prefixed guess.",
+      "src": "syntax = \"proto3\";\nmessage A { B b = 1; .A other = 2; }\nmessage B {}\nmessage C { extend .A { int32 z = 100; } }\n",
+      "expect": {
+        "symbols": [
+          {
+            "kind": "class",
+            "name": "A",
+            "line": 2
+          },
+          {
+            "kind": "property",
+            "name": "b",
+            "owner": "A",
+            "line": 2
+          },
+          {
+            "kind": "property",
+            "name": "other",
+            "owner": "A",
+            "line": 2
+          },
+          {
+            "kind": "class",
+            "name": "B",
+            "line": 3
+          },
+          {
+            "kind": "class",
+            "name": "C",
+            "line": 4
+          },
+          {
+            "kind": "property",
+            "name": "z",
+            "owner": "A",
+            "line": 4
+          }
+        ],
+        "relationships": [
+          {
+            "source": "A",
+            "type": "contains",
+            "target": "A.b",
+            "meta": "field"
+          },
+          {
+            "source": "A.b",
+            "type": "uses",
+            "target": "B",
+            "meta": "fieldType"
+          },
+          {
+            "source": "A",
+            "type": "contains",
+            "target": "A.other",
+            "meta": "field"
+          },
+          {
+            "source": "A.other",
+            "type": "uses",
+            "target": "A",
+            "meta": "fieldType"
+          },
+          {
+            "source": "A",
+            "type": "contains",
+            "target": "A.z",
+            "meta": "field"
+          }
+        ],
+        "imports": []
+      }
+    },
+    {
+      "id": "nested-types-and-scoping",
+      "note": "Nesting with an inner reference that must resolve to the INNER type rather than the outer one of the same name — the scope walk is the whole point of this case, and a resolver that skipped it would emit `Outer.Inner` for a reference to `Inner` from inside `Inner`.",
+      "src": "syntax = \"proto3\";\npackage n;\nmessage Outer {\n  message Inner { Inner self = 1; Outer back = 2; }\n  Inner i = 3;\n  enum E { Z = 0; }\n  E e = 4;\n}\n",
+      "expect": {
+        "symbols": [
+          {
+            "kind": "namespace",
+            "name": "n",
+            "line": 2
+          },
+          {
+            "kind": "class",
+            "name": "Outer",
+            "owner": "n",
+            "line": 3
+          },
+          {
+            "kind": "class",
+            "name": "Inner",
+            "owner": "n.Outer",
+            "line": 4
+          },
+          {
+            "kind": "property",
+            "name": "self",
+            "owner": "n.Outer.Inner",
+            "line": 4
+          },
+          {
+            "kind": "property",
+            "name": "back",
+            "owner": "n.Outer.Inner",
+            "line": 4
+          },
+          {
+            "kind": "property",
+            "name": "i",
+            "owner": "n.Outer",
+            "line": 5
+          },
+          {
+            "kind": "enum",
+            "name": "E",
+            "owner": "n.Outer",
+            "line": 6
+          },
+          {
+            "kind": "enum_member",
+            "name": "Z",
+            "owner": "n.Outer.E",
+            "line": 6
+          },
+          {
+            "kind": "property",
+            "name": "e",
+            "owner": "n.Outer",
+            "line": 7
+          }
+        ],
+        "relationships": [
+          {
+            "source": "n",
+            "type": "contains",
+            "target": "n.Outer",
+            "meta": "nestedType"
+          },
+          {
+            "source": "n.Outer",
+            "type": "contains",
+            "target": "n.Outer.Inner",
+            "meta": "nestedType"
+          },
+          {
+            "source": "n.Outer.Inner",
+            "type": "contains",
+            "target": "n.Outer.Inner.self",
+            "meta": "field"
+          },
+          {
+            "source": "n.Outer.Inner.self",
+            "type": "uses",
+            "target": "n.Outer.Inner",
+            "meta": "fieldType"
+          },
+          {
+            "source": "n.Outer.Inner",
+            "type": "contains",
+            "target": "n.Outer.Inner.back",
+            "meta": "field"
+          },
+          {
+            "source": "n.Outer.Inner.back",
+            "type": "uses",
+            "target": "n.Outer",
+            "meta": "fieldType"
+          },
+          {
+            "source": "n.Outer",
+            "type": "contains",
+            "target": "n.Outer.i",
+            "meta": "field"
+          },
+          {
+            "source": "n.Outer.i",
+            "type": "uses",
+            "target": "n.Outer.Inner",
+            "meta": "fieldType"
+          },
+          {
+            "source": "n.Outer",
+            "type": "contains",
+            "target": "n.Outer.E",
+            "meta": "nestedType"
+          },
+          {
+            "source": "n.Outer.E",
+            "type": "contains",
+            "target": "n.Outer.E.Z",
+            "meta": "enumValue"
+          },
+          {
+            "source": "n.Outer",
+            "type": "contains",
+            "target": "n.Outer.e",
+            "meta": "field"
+          },
+          {
+            "source": "n.Outer.e",
+            "type": "uses",
+            "target": "n.Outer.E",
+            "meta": "fieldType"
+          }
+        ],
+        "imports": []
+      }
+    }
+  ]
+}

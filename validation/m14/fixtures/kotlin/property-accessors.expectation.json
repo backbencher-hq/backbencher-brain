@@ -1,0 +1,16 @@
+{
+  "fixtureId": "kotlin/property-accessors",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37 KAD4: property metadata must be AST-derived. The pinned grammar emits accessors as SIBLINGS of property_declaration (class_body > [property_declaration, getter, setter] — probe-verified) and delegation as a property_delegate CHILD. Text matching fabricated: a custom getter for `val t = m.get()` (call named get), a custom setter for `val u = s.set(1, value)`, and delegation for `\"powered by Acme\"` (\" by \").",
+  "expectSymbols": [
+    { "name": "PropMeta", "kind": "class" },
+    { "name": "x", "kind": "property", "meta.hasCustomGetter": true, "meta.hasCustomSetter": true },
+    { "name": "lazyv", "kind": "property", "meta.hasDelegate": true },
+    { "name": "plain", "kind": "property", "meta.hasDelegate": false, "meta.hasCustomGetter": false, "meta.hasCustomSetter": false },
+    { "name": "slogan", "kind": "property", "meta.hasDelegate": false, "meta.isVal": true, "meta.isVar": false },
+    { "name": "counter", "kind": "property", "meta.isVar": true, "meta.isVal": false }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": []
+}

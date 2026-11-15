@@ -1,0 +1,133 @@
+{
+  "fixtureId": "hcl/dynamic-sibling-scope",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run through the production entry (ASTEngine.parseFile) and checked line by line against the fixture source. First transcription guessed the line numbers and put `vpc.value.id` in the expected set; re-read against the numbered source, `vpc.value.id` is the block's OWN loop local and belongs in the FORBID set, which is the point of the fixture. `dynamic.vpc#2` was a bad guess on the first pass: the two `dynamic \"vpc\"` blocks are in different resources, so per-parent disambiguation correctly leaves both named `dynamic.vpc`.",
+  "rationale": "H7b (reviews/hcl/master-review.md) \u2014 the sibling-scoping half of the dynamic-iterator defect, and the one the first fix got wrong in the OTHER direction. Terraform binds a dynamic block's loop local to that block; it is not a property of the enclosing resource. Binding the name for the whole enclosing subtree leaks sideways, which the corpus measured as 247 lost references over 9,079 files, 165 of them `assume_role.value` in tf-aws-components' provider files: a resource carrying `dynamic \"assume_role\"` and, later, `dynamic \"vpc\"` had its `vpc.*` reads silenced by the unrelated first block. The fix counts how many ENCLOSING dynamic blocks bind each name, so a name is suppressed only while such a block is still open \u2014 which still lets a local reach its own nested `content`, and still lets a nested dynamic shadow an outer one. This is the exact shape that regressed, so it is pinned rather than described. The last block added to the fixture is the regression case in its purest form: a `dynamic \"vpc\"` block and, in the SAME resource but OUTSIDE that block, a read of `vpc.main` \u2014 a real resource whose type happens to be `vpc`. Scoping the local to the block's own body is what keeps that read; the subtree-wide binding of the first fix is what lost it. Without this block the fixture passed under BOTH scopings, which is exactly why it is here: the hcl/dynamic-local-escapes-to-sibling mutant survived until this line existed.",
+  "expectSymbols": [
+    {
+      "name": "aws_iam_role.web",
+      "kind": "class"
+    },
+    {
+      "name": "dynamic.assume_role",
+      "kind": "class"
+    },
+    {
+      "name": "dynamic.vpc",
+      "kind": "class"
+    },
+    {
+      "name": "dynamic.outer",
+      "kind": "class"
+    },
+    {
+      "name": "dynamic.deeper",
+      "kind": "class"
+    },
+    {
+      "name": "vpc.main",
+      "kind": "class"
+    },
+    {
+      "name": "vpc.main",
+      "kind": "class"
+    },
+    {
+      "name": "content",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "aws_iam_role.web.dynamic.vpc.content",
+      "target": "data.aws_subnet.by_id",
+      "line_number": 22,
+      "note": "the OUTER path of the indexed read; its own operand `vpc.value.subnet` is this block's own loop local and stays silent"
+    },
+    {
+      "type": "references",
+      "from": "aws_iam_role.web",
+      "target": "aws_s3_bucket.vpc.id",
+      "line_number": 28,
+      "note": "a real resource read whose TYPE is a word a dynamic label could use \u2014 nothing binds `vpc` here, so it is a reference"
+    },
+    {
+      "type": "references",
+      "from": "aws_iam_role.web.dynamic.vpc",
+      "target": "var.vpcs",
+      "line_number": 19
+    },
+    {
+      "type": "references",
+      "from": "aws_iam_role.web.dynamic.assume_role",
+      "target": "module.iam_roles.terraform_role_arn",
+      "line_number": 10
+    },
+    {
+      "type": "references",
+      "from": "aws_iam_role.web.dynamic.outer",
+      "target": "var.outer",
+      "line_number": 33
+    },
+    {
+      "type": "references",
+      "from": "vpc.main",
+      "target": "vpc.main.cidr_block",
+      "line_number": 62,
+      "note": "THE REGRESSION CASE: a real read of a resource whose TYPE is `vpc`, sitting outside the `dynamic \"vpc\"` block that binds the local `vpc`. A subtree-wide binding silences it (247 lost references corpus-wide, 165 of them assume_role.value in tf-aws-components); a per-block binding does not."
+    },
+    {
+      "type": "references",
+      "from": "vpc.main",
+      "target": "var.peers",
+      "line_number": 63
+    },
+    {
+      "type": "references",
+      "from": "vpc.main.dynamic.vpc",
+      "target": "var.peers",
+      "line_number": 56
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "assume_role.value",
+      "note": "the FIRST dynamic's own local \u2014 bound by that block, so silent"
+    },
+    {
+      "type": "references",
+      "target": "inner.value",
+      "note": "`iterator = inner` on the `outer` block; the nested `deeper` block re-binds the same name and both are local to their own subtree"
+    },
+    {
+      "type": "references",
+      "target": "vpc.value",
+      "note": "THE REGRESSION: this is the second dynamic's own loop local, and the first block (label `assume_role`) must not silence it. Pre-fix this whole subtree published nothing."
+    },
+    {
+      "type": "references",
+      "target": "vpc.value.subnet",
+      "note": "the same local, in index position"
+    },
+    {
+      "type": "references",
+      "target": "vpc.value.id",
+      "note": "this dynamic's OWN local, read inside its own content \u2014 bound by that block, so silent"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "assume_role.value"
+    },
+    {
+      "name": "inner.value"
+    },
+    {
+      "name": "dynamic.vpc#2",
+      "note": "first transcription guessed a disambiguated sibling here; the two `dynamic \"vpc\"` blocks live in DIFFERENT resources, so they are siblings at different levels and correctly share the bare name. Sibling disambiguation is per-parent, which is what makes `locals`/`locals#2` (same parent) work without renaming unrelated blocks."
+    }
+  ]
+}

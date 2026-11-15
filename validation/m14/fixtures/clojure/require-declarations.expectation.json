@@ -1,0 +1,24 @@
+{
+  "issue": "M60 relationship-ontology wave — CLJ-D53 (`imports`)",
+  "note": "`require` / `use` / `import` / `require-macros` / `refer-clojure` are the only dependency declarations this language has. The `imports` relationship is emitted from the same libspec sites as the `references` edge and over the same endpoint set, so the two labels cannot drift — the defect CLJ-D49/50 record, where one shared alias table leaked the resolution from the qualified-head derivation into the require-clause derivation. A self-require is skipped on both labels (ELXD8), so the pair stays symmetric. `refer-clojure` is included: it names clojure.core's own surface, which is a statement about another namespace.",
+  "expectRelationships": [
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.string" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.set" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.walk" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.core.match" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.zip" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "java.util" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "java.io" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.java.io" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.edn" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clojure.lang.ExceptionInfo" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "java.util.concurrent" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "clj.fixture.imports", "target": "clj.fixture.imports" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "union" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "zipfile" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "Date" },
+    { "type": "imports", "from": "clj.fixture.imports", "target": "read-it" }
+  ]
+}

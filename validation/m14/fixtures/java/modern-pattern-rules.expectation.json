@@ -1,0 +1,16 @@
+{
+  "fixtureId": "java/modern-pattern-rules",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the three `references` rules the corpus never exercises. `permits` and `record_pattern` were already pinned; `switch_pattern` was pinned by NOTHING — it fires on neither grails-core nor clojure (both predate pattern matching), so it had no differential coverage and no fixture, i.e. no coverage at all. A rule that cannot fire on the corpus and is not pinned is a rule whose behaviour is whatever it currently happens to be. All three were probed working on the pinned grammar before being pinned: sealed/permits yields the permitted subtypes, a record deconstruction pattern yields the record type, and a type pattern yields the bound type, with and without a `when` guard.",
+  "expectRelationships": [
+    { "type": "references", "target": "Circle", "meta.relationshipType": "permits" },
+    { "type": "references", "target": "Square", "meta.relationshipType": "permits" },
+    { "type": "references", "target": "Point", "meta.relationshipType": "record_pattern" },
+    { "type": "references", "target": "String", "meta.relationshipType": "switch_pattern" },
+    { "type": "references", "target": "Integer", "meta.relationshipType": "switch_pattern" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "Shape", "meta.relationshipType": "permits" }
+  ]
+}

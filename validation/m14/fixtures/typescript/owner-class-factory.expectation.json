@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/owner-class-factory",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE FACTORY-RETURN CLASS: a same-file callable with an ANNOTATED return type states the local's type, evidence `factory`. The negative is the un-annotated twin (`function makeUnannotated() { return new Widget() }`): its call must carry NO owner — inference from a body is not this class's evidence, and a row that claimed Widget there would be a guess. Both halves are one edit apart, so a rule that over-reaches fails.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useFactory",
+      "target": "run",
+      "line_number": 9,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "factory"
+    },
+    {
+      "type": "calls",
+      "from": "useUnannotatedFactory",
+      "target": "never",
+      "line_number": 13,
+      "meta.owner": null
+    }
+  ]
+}

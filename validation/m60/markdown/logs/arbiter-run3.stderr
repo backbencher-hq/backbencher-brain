@@ -1,0 +1,92 @@
+[INFO] [04:15:36] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsqdkc8p"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsr60s3r"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsrjftqt"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsscanx1"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsqv53d7"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsry3mro"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wsspf80z"}
+[INFO] [04:15:37] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61wst6fckt"}
+[INFO] [04:16:10] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61x820z0xu"}
+[INFO] [04:16:10] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61x82fhch5"}
+[INFO] [04:16:10] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61x82te8li"}
+[INFO] [04:16:31] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61xhqz30rb"}
+[INFO] [04:16:31] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61xhr6nhgc"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/gql-graphql-mesh/examples/v1-next/openapi-petstore/README.md | memory access out of bounds
+[INFO] [04:16:50] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61xqpyrcc4"}
+[INFO] [04:16:50] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61xqq5cqho"}
+[INFO] [04:16:50] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61xqpphqhh"}
+[INFO] [04:17:45] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61yfz8olza"}
+[INFO] [04:17:45] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61yfziug7s"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Data/test/Data.Tests/__snapshots__/ProjectableDataLoaderTests.Brand_Only_TypeName.md | memory access out of bounds
+[INFO] [04:17:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61yk3a0hmd"}
+[INFO] [04:17:54] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61yk3kj0jq"}
+[INFO] [04:18:14] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61ytaal75t"}
+[INFO] [04:18:42] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4025337_61z5zzkmnl"}
+[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/gql-graphql-mesh/examples/v1-next/openapi-petstore/README.md — exiting
+[INFO] [04:22:18] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621x9cgvxd"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621x84t1dc"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621xarwvn0"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621xbzjvzk"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621xg8lxx7"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621xczerx7"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621xe6mg56"}
+[INFO] [04:22:19] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_621xf8o3j5"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/kubernetes/pkg/kubelet/certificate/bootstrap/testdata/README.md | memory access out of bounds
+[INFO] [04:23:33] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_622vqtdaqi"}
+[INFO] [04:23:33] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_622vqz5ehl"}
+[INFO] [04:23:44] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_6230qi2ajz"}
+[INFO] [04:23:44] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_6230r2ly2v"}
+[INFO] [04:24:04] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_6239pv69w6"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ohmyzsh/plugins/zsh-autosuggestions/MANUAL.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/ohmyzsh/plugins/zsh-interactive-cd/README.md | memory access out of bounds
+[INFO] [04:24:11] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_623czvhl8f"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/pb-googleapis/CONTRIBUTING.md | memory access out of bounds
+[INFO] [04:24:47] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_623tsxpjqr"}
+[INFO] [04:24:47] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_623tt7p8eh"}
+[INFO] [04:25:08] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4041915_6243fcfvzp"}
+[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/kubernetes/pkg/kubelet/certificate/bootstrap/testdata/README.md — exiting
+[INFO] [04:29:04] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [04:29:04] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273s786qd"}
+[INFO] [04:29:04] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273sdwo10"}
+[INFO] [04:29:04] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273sj6xy7"}
+[INFO] [04:29:04] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273sqw3ve"}
+[INFO] [04:29:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273t13zff"}
+[INFO] [04:29:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273t50t6x"}
+[INFO] [04:29:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273tbru2b"}
+[INFO] [04:29:05] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6273rupcsx"}
+[INFO] [04:29:32] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_627geu4eik"}
+[INFO] [04:29:32] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_627gg0bf03"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-5.x/custom-web-index.md | memory access out of bounds
+[INFO] [04:30:06] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_627w9v4r1j"}
+[INFO] [04:30:38] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_628arzt52g"}
+[INFO] [04:31:11] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_628pxw5ja8"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/ISSUE_TEMPLATE.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/ISSUE_TEMPLATE/Custom.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/.github/CONTRIBUTING.md | memory access out of bounds
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/requests/HISTORY.md | memory access out of bounds
+[INFO] [04:31:38] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6292h7rqjh"}
+[INFO] [04:31:38] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_6292hbz75p"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/scala3/docs/_docs/reference/error-codes/E163.md | memory access out of bounds
+[INFO] [04:31:52] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4053091_62990201ut"}
+[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/redwood/docs/versioned_docs/version-5.x/custom-web-index.md — exiting
+[INFO] [04:36:07] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chvaqxr2"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chv3f8vn"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chvvw9e9"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chvg0a2v"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chw5kyu9"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chwcnddz"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chvnwzpq"}
+[INFO] [04:36:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62chwls547"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/terraform/CHANGELOG.md | memory access out of bounds
+[INFO] [04:36:30] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62csm128eq"}
+[INFO] [04:36:45] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62czg4wco7"}
+[INFO] [04:36:45] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62czgjzqda"}
+[INFO] [04:36:45] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62czgbrx9e"}
+[BB-PARSE-ERR] markdown | /home/ishaq2321/bb_tests/repositories/usethis/tests/testthat/_snaps/tibble.md | memory access out of bounds
+[INFO] [04:36:56] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62d4i3bgj4"}
+[INFO] [04:37:21] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62dg6ip9ob"}
+[INFO] [04:37:21] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4064301_62dg6pnwce"}
+[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/terraform/CHANGELOG.md — exiting

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/otp28-er3.erl",
+  "authoredFrom": "OTP 28 language reference + the pinned grammar's `maybe_expr`/`cond_match_expr` shapes (measured on real sites: otp/lib/stdlib/src/asn1ct.erl, otp/lib/stdlib/src/init.erl), before this fixture's F3 run. `maybe Exprs else Clauses end` is a fourth multi-way construct beside case/if/try; its `else` arms are `cr_clause` nodes and count as branches (base 1 + 2 = 3), and the construct itself adds none - the same rule case and try follow. `Pattern ?= Expr` is a match, so its left side is a PATTERN.",
+  "expectSymbols": [
+    { "name": "otp28_er3", "kind": "module" },
+    { "name": "box", "kind": "struct", "ownerName": "otp28_er3" },
+    { "name": "v", "kind": "property", "ownerName": "box" },
+    { "name": "pick", "kind": "function", "ownerName": "otp28_er3", "meta.arity": 1 },
+    { "name": "walk", "kind": "function", "ownerName": "otp28_er3", "meta.arity": 1 }
+  ],
+  "expectComplexity": [
+    { "symbol": "pick", "equals": 3, "note": "base 1 + the two `else` arms; the maybe construct itself adds no point, exactly as case/try do" },
+    { "symbol": "walk", "equals": 2, "note": "base 1 + one list comprehension" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "pick", "target": "erlang:is_integer", "meta.callArity": 1, "line_number": 13, "note": "a call inside a maybe body attributes to the enclosing function" },
+    { "type": "references", "from": "box", "target": "integer", "meta.context": "type reference", "line_number": 8, "note": "a record field's type belongs to the record" },
+    { "type": "contains", "from": "otp28_er3", "target": "pick", "line_number": 10 }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "pick", "target": "box", "note": "a `?=` left side is a match" },
+    { "type": "instantiates", "from": "walk", "target": "box", "note": "a generator's left side binds" },
+    { "type": "uses", "from": "walk", "target": "box" }
+  ],
+  "expectPatterns": ["Pattern Matching", "Comprehensions"]
+}

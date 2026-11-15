@@ -1,0 +1,69 @@
+{
+  "fixtureId": "dart/local-read-same-declaration/local_read_same_declaration",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE SAME LOCAL, READ TWICE \u2014 the 'no silent loss' invariant from the OTHER side, and the pin that keeps the shadow-scope fix from OVER-CORRECTING. The shadow-scope fixture pins that two reads of two DIFFERENT declarations that share a name are two facts; this one pins that two reads of the SAME declaration are ONE relationship \u2014 because they bind the same declaration, and the family's dedup exists exactly to collapse the multiplicity of one declaration's reads (the 192,761-row payload-pollution dedup: N sites of the same callee push N identical rows, and the oracle and the fixtures are PRESENCE-based). THE LINE ALONE WOULD HAVE OVER-CORRECTED: it would split the two reads of one declaration into two rows. THE SCOPE DOES NOT: both reads carry the same `localBindingScope` \u2014 the innermost enclosing scope that declares the name, plus that declaration's own line \u2014 so they collapse, while a read of a DIFFERENT declaration carries a different scope and does not. AND THE ARBITER IS SAFE: both rows carry the SAME target string, so the binding verification reads the same name and reaches the same binding for both. THE LINE IS THE READ SITE, NOT PART OF THE BINDING'S IDENTITY \u2014 which is why it belongs in the DEDUP KEY and NOT in the TARGET. A fix that had put the line INTO THE TARGET would pass the shadow-scope fixture (two different names, two different targets) and fail THIS one (the same name, two different targets), and the arbiter would then be asked to verify two different bindings for one local. THE TWO FIXTURES TOGETHER PIN THE CUT FROM BOTH SIDES.",
+  "expectSymbols": [
+    {
+      "name": "local_read_same_declaration",
+      "kind": "module"
+    },
+    {
+      "name": "SameLocal",
+      "kind": "class"
+    },
+    {
+      "name": "f",
+      "kind": "method",
+      "ownerName": "SameLocal"
+    },
+    {
+      "name": "g",
+      "kind": "method",
+      "ownerName": "SameLocal"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "f",
+      "target": "f\u0000x",
+      "line_number": 28,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE FIRST READ of the same local. The family's binding spelling \u2014 the marker is metadata and the store resolves by string, so a bare `x` would bind to any single `x` declaration in the project. The `localBindingScope` metadata carries the DECLARATION's identity, so the second read at line 29 \u2014 the SAME declaration \u2014 carries the SAME scope and collapses into this row."
+    },
+    {
+      "type": "uses",
+      "source": "g",
+      "target": "g\u0000x",
+      "line_number": 36,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE CONTROL \u2014 the same name `x` in a DIFFERENT method. The callable differs, so the binding spelling already separates it, and it is unaffected by the dedup key. A change that broke the callable half of the spelling would fail here."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "f",
+      "target": "f\u0000x@29",
+      "note": "THE LINE MUST NOT BE PART OF THE TARGET. If the read site were spelled into the target, the two reads of one local would be two DIFFERENT targets and the arbiter would be asked to verify two different bindings for one local \u2014 a loss moved rather than removed. The scope belongs in the dedup key, where it separates DECLARATIONS without changing what each row BINDS."
+    },
+    {
+      "type": "uses",
+      "source": "f",
+      "target": "x",
+      "note": "the bare spelling \u2014 a local read is a binding, and a bare name is a declaration's spelling, which the store resolves against whatever single declaration happens to carry it."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "f",
+      "target": "f\u0000x",
+      "equals": 1,
+      "note": "TWO reads of the SAME declaration, at lines 28 and 29, and ONE row \u2014 because they bind the SAME declaration and share its scope. THE DIRECTIONS: 0 means the local reads were suppressed (the inverted collectDartLocals guard); 1 is correct \u2014 the two reads share the declaration's scope and collapse; 2 means the key grew the LINE, which would split one declaration's reads into two rows and over-correct the shadow-scope fix; 3 means a read was attributed to the wrong declaration. THIS FIXTURE AND `local-shadow-scope` PIN THE CUT FROM BOTH SIDES: same declaration -> one row, different declarations -> two rows."
+    }
+  ]
+}

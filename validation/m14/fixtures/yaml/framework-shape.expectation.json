@@ -1,0 +1,91 @@
+{
+ "fixtureId": "yaml/framework-shape",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Framework detection is a SET OF EXACT PATHS WITH SHAPES, not a set of names anywhere in the file. The pre-fix whole-file name set reported three frameworks for a seven-line file carrying `version`, `services`, `jobs`, `on` and `stages`. This fixture is a real workflow, so it pins the POSITIVE: the signature matches, the R8 contract keys are all present, and each step's `uses:` is an import -- external for a published action, internal for a local one -- with an apiContractPath naming the job and step.",
+ "expectFrameworks": [
+  "GitHub Actions"
+ ],
+ "expectPrimaryFramework": [
+  "GitHub Actions"
+ ],
+ "forbidFrameworks": [
+  "Docker Compose",
+  "GitLab CI",
+  "Kubernetes",
+  "Ansible"
+ ],
+ "expectMetadata": [
+  {
+   "framework": "GitHub Actions"
+  },
+  {
+   "hasFrameworkIntelligence": true
+  },
+  {
+   "frameworkPatterns": [
+    "framework-shape.jobs",
+    "framework-shape.on"
+   ]
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "actions/checkout@v4",
+   "importType": "yaml_action_use",
+   "isExternal": true
+  },
+  {
+   "module": "./local-action",
+   "importType": "yaml_action_use",
+   "isExternal": false
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "framework-shape.jobs.build.steps[0].uses",
+   "target": "actions/checkout@v4",
+   "meta.relationshipType": "yaml_action_use",
+   "meta.evidenceClass": "import_based",
+   "line_number": 12
+  },
+  {
+   "type": "imports",
+   "from": "framework-shape.jobs.build.steps[1].uses",
+   "target": "./local-action",
+   "line_number": 13
+  }
+ ],
+ "expectApiContractPaths": [
+  {
+   "symbol": "item_1",
+   "ownerName": "framework-shape.jobs.build.steps",
+   "equals": "github-actions:build#1"
+  },
+  {
+   "symbol": "item_0",
+   "ownerName": "framework-shape.jobs.build.steps",
+   "equals": "github-actions:build#0"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13
+  ],
+  "evidenceClasses": [
+   "import_based",
+   "structural"
+  ]
+ }
+}

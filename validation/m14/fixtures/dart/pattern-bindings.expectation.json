@@ -1,0 +1,24 @@
+{
+  "fixtureId": "dart/pattern-bindings",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DARTGAP1's real missing edge. The pattern-binding QUESTION was already settled by measurement (a pattern-bound name is a binding, not a symbol: reads publish `uses` with the family's `<callable>\\u0000<binding>` spelling and `localBinding`, exactly like a parameter), so that half needs no new emission. What was genuinely missing is `rest_pattern`: the grammar spells `...rest` as `(rest_pattern (constant_pattern (identifier)))` (probed in pattern-forms-probe.ts) and `collectDartLocals` never collected it, so `rest` was not in `locals` and every later read of it fell through every read arm and published NOTHING. The fix collects the rest name; the read then takes the ordinary binding arm. The record-pattern and object-pattern cases pin the convention the fix must not disturb, and the forbids pin the other direction: a pattern identifier is a BINDING, never a constant test, so no bare `uses` row for any of these names may appear.",
+  "expectSymbols": [
+    { "name": "listRestBinding", "kind": "function" },
+    { "name": "forInRecordPattern", "kind": "function" },
+    { "name": "objectPatternBinding", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "listRestBinding", "target": "listRestBinding\u0000first", "meta.isLocalRead": true, "meta.localBinding": true, "note": "CONVENTION REGRESSION — a destructuring binding's read: `first` comes from `variable_pattern`, which was already collected. Kept here so the rest fix cannot narrow the existing binding surface." },
+    { "type": "uses", "source": "listRestBinding", "target": "listRestBinding\u0000rest", "meta.isLocalRead": true, "meta.localBinding": true, "note": "THE NEW EDGE — `...rest`'s read. Before the fix this row did not exist at all: `rest` was absent from `locals`, so `print(rest.length)` published only the member read of `length` and nothing for the binding itself." },
+    { "type": "uses", "source": "forInRecordPattern", "target": "forInRecordPattern\u0000p", "meta.isLocalRead": true, "note": "CONVENTION REGRESSION — a for-in record-pattern binding's read (`(int p, int q)`), already covered by variable_pattern." },
+    { "type": "uses", "source": "forInRecordPattern", "target": "forInRecordPattern\u0000q", "meta.isLocalRead": true, "note": "the second binding of the same for-in." },
+    { "type": "uses", "source": "objectPatternBinding", "target": "objectPatternBinding\u0000len", "meta.isLocalRead": true, "note": "CONVENTION REGRESSION — an object-pattern binding's read (`String(length: final len)`), already covered by variable_pattern." }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "listRestBinding", "target": "first", "note": "A PATTERN BINDING IS NEVER A BARE READ — the binding spelling is what keeps the store from binding it to an unrelated declaration (validation/m14/fixtures/dart/local-read-phantom.ts is the counterfactual for the whole convention)." },
+    { "type": "uses", "source": "listRestBinding", "target": "rest", "note": "the same rule for the rest element, in the direction the fix could have broken: treating `...rest` as a constant TEST would publish a bare read of the name being bound." },
+    { "type": "uses", "source": "forInRecordPattern", "target": "p", "note": "the same for a record-pattern binding." },
+    { "type": "uses", "source": "objectPatternBinding", "target": "len", "note": "the same for an object-pattern binding." }
+  ]
+}

@@ -51,7 +51,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
 type Grain = "pairwise" | "count-only" | "not-comparable"
 /** Why a type is not compared pairwise, printed next to the verdict. */

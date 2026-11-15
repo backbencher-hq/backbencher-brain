@@ -1,0 +1,66 @@
+{
+  "issueId": "m60-julia-import-export-differential",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": 1985,
+  "analysed": 1985,
+  "sampled": false,
+  "width": 4,
+  "analyzerEntry": "parseFile (src/ast/pool-worker.ts)",
+  "threw": 0,
+  "degraded": 0,
+  "workerFailures": 0,
+  "keyIsDirectionless": true,
+  "setIsPerFile": true,
+  "rows": [
+    {
+      "label": "imports",
+      "covered": 3374,
+      "missing": 8,
+      "unexplained": 12,
+      "coveredPct": 99.76345357776464,
+      "unexplainedPct": 0.3544004725339634,
+      "missingExamples": [
+        "imports|Documenter.jl/test/doctests/fix/tests.jl|DocTestFixTest|.Foo",
+        "imports|julia/JuliaLowering/test/import.jl|root|.Exporter",
+        "imports|julia/JuliaLowering/test/import.jl|root|.OnlyInDefs",
+        "imports|julia/base/client.jl|root|Base.MainInclude.Distributed",
+        "imports|julia/base/client.jl|root|Base.MainInclude.InteractiveUtils",
+        "imports|julia/base/docs/Docs.jl|root|Base",
+        "imports|julia/base/loading.jl|root|Core",
+        "imports|julia/doc/make.jl|root|Revise"
+      ],
+      "unexplainedExamples": [
+        "imports|Documenter.jl/test/doctests/fix/tests.jl|test_doctest_fix|.Foo",
+        "imports|julia/JuliaLowering/test/import.jl|old_use|.Exporter",
+        "imports|julia/JuliaLowering/test/import.jl|old_imp|.Exporter",
+        "imports|julia/JuliaLowering/test/import.jl|old_priv|.OnlyInDefs",
+        "imports|julia/JuliaLowering/test/import_ir.jl|f|A",
+        "imports|julia/base/client.jl|exec_options|Base.MainInclude.Distributed",
+        "imports|julia/base/client.jl|load_InteractiveUtils|Base.MainInclude.InteractiveUtils",
+        "imports|julia/base/docs/Docs.jl|moduledoc|Base",
+        "imports|julia/base/loading.jl|ExtensionId|Core",
+        "imports|julia/doc/make.jl|maybe_revise|Revise",
+        "imports|julia/test/testdefs.jl|runtests|Test",
+        "imports|julia/test/testdefs.jl|runtests|Random"
+      ]
+    },
+    {
+      "label": "exports",
+      "covered": 2793,
+      "missing": 4,
+      "unexplained": 2,
+      "coveredPct": 99.8569896317483,
+      "unexplainedPct": 0.07155635062611806,
+      "missingExamples": [
+        "exports|julia/base/boot.jl|root|<:",
+        "exports|julia/base/exports.jl|root|<:",
+        "exports|julia/base/loading.jl|root|include_mapexprs",
+        "exports|julia/stdlib/REPL/src/REPL.jl|Numbered|Out"
+      ],
+      "unexplainedExamples": [
+        "exports|julia/base/loading.jl|ExtensionId|include_mapexprs",
+        "exports|julia/stdlib/REPL/src/REPL.jl|create_global_out!|Out"
+      ]
+    }
+  ]
+}

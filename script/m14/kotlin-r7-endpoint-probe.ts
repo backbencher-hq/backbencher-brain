@@ -48,7 +48,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const SAMPLE = parseInt(process.env.BB_PROBE_SAMPLE ?? "1200")
 const FALLBACKS = new Set(["Global", "global", "GLOBAL"])
 
@@ -225,7 +225,7 @@ const show = (title: string, m: Record<string, Cell>) => {
 }
 
 console.log(`kotlin R7 endpoint probe — ${parsed}/${admitted.length} files parsed (${threw} threw)`)
-console.log(`draw: every ${step}th tracked file of fixtures/repositories/kotlin (${files.length} tracked)`)
+console.log(`draw: every ${step}th tracked file of bb_tests/repositories/kotlin (${files.length} tracked)`)
 console.log(`damaged files (analyzer reported >=1 parse error): ${damagedFiles}`)
 console.log(`clean files: ${cleanFiles}`)
 

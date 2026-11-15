@@ -1,0 +1,340 @@
+{
+  "key": "zig-std",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/zig/lib/std",
+  "language": "Zig/C",
+  "projectId": "da4223144a25e2ee9b38acfcd4500124a836927a",
+  "connectMs": 3739,
+  "index": {
+    "files": 550,
+    "symbols": 61655,
+    "relationships": 178628,
+    "languages": [
+      {
+        "language": "zig",
+        "files": 550
+      }
+    ]
+  },
+  "targets": {
+    "file": "os/linux/syscalls.zig",
+    "module": "os/linux",
+    "symbol": "append",
+    "feature": "appe",
+    "fallbackModuleFile": "BitStack.zig"
+  },
+  "dbBefore": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 456257536,
+      "sha256": "20814be1373cc0e6257e087bafe9a27e1f0f1c9acb92cc2e60d5d3b279ebe02e"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 130550472,
+      "sha256": "ea20d936279fb8a5f329a8d4883ee0959c0dddf6293597350f1f426e91a00e7b"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 456257536,
+      "sha256": "20814be1373cc0e6257e087bafe9a27e1f0f1c9acb92cc2e60d5d3b279ebe02e"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 130550472,
+      "sha256": "ea20d936279fb8a5f329a8d4883ee0959c0dddf6293597350f1f426e91a00e7b"
+    }
+  },
+  "dbUnchanged": true,
+  "stderrTail": [
+    "[INFO] [11:17:25] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:17:25] [dependency-graph-visualizer] ✅ Graph Data Generated: 119 nodes, 75 links",
+    "[INFO] [11:17:25] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:17:25] [dependency-graph-visualizer] ✅ Graph Data Generated: 329 nodes, 507 links"
+  ],
+  "cases": [
+    {
+      "name": "project text (default)",
+      "args": {},
+      "isError": false,
+      "ms": 1240,
+      "bytes": 1609,
+      "nodes": 200,
+      "links": 189,
+      "truncated": true,
+      "totalNodesAvailable": 61655,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json",
+      "args": {
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 313,
+      "bytes": 217617,
+      "nodes": 200,
+      "links": 189,
+      "truncated": true,
+      "totalNodesAvailable": 61655,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project html regions",
+      "args": {
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 311,
+      "bytes": 314957,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project html force",
+      "args": {
+        "format": "html",
+        "layout": "force"
+      },
+      "isError": false,
+      "ms": 394,
+      "bytes": 314953,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "force",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project json large budget",
+      "args": {
+        "format": "json",
+        "maxNodes": 1000,
+        "maxLinks": 20000
+      },
+      "isError": false,
+      "ms": 1287,
+      "bytes": 2143835,
+      "nodes": 1000,
+      "links": 2366,
+      "truncated": true,
+      "totalNodesAvailable": 61655,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json calls only",
+      "args": {
+        "format": "json",
+        "relationshipTypes": [
+          "calls"
+        ],
+        "maxNodes": 200
+      },
+      "isError": false,
+      "ms": 256,
+      "bytes": 143653,
+      "nodes": 200,
+      "links": 99,
+      "truncated": true,
+      "totalNodesAvailable": 61655,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file text",
+      "args": {
+        "scope": "file",
+        "target": "os/linux/syscalls.zig",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 569,
+      "bytes": 1423,
+      "nodes": 200,
+      "links": 199,
+      "truncated": true,
+      "totalNodesAvailable": 8423,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file json",
+      "args": {
+        "scope": "file",
+        "target": "os/linux/syscalls.zig",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 264,
+      "bytes": 252959,
+      "nodes": 200,
+      "links": 199,
+      "truncated": true,
+      "totalNodesAvailable": 8423,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "module json",
+      "args": {
+        "scope": "module",
+        "target": "os/linux",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 424,
+      "bytes": 381047,
+      "nodes": 200,
+      "links": 388,
+      "truncated": true,
+      "totalNodesAvailable": 10657,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol text",
+      "args": {
+        "scope": "symbol",
+        "target": "append",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 283,
+      "bytes": 1235,
+      "nodes": 1,
+      "links": 0,
+      "truncated": false,
+      "totalNodesAvailable": 1,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol html",
+      "args": {
+        "scope": "symbol",
+        "target": "append",
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 285,
+      "bytes": 131733,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "feature json",
+      "args": {
+        "scope": "feature",
+        "target": "appe",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 553,
+      "bytes": 119041,
+      "nodes": 147,
+      "links": 70,
+      "truncated": false,
+      "totalNodesAvailable": 102,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json offset page 2",
+      "args": {
+        "format": "json",
+        "maxNodes": 50,
+        "offset": 50
+      },
+      "isError": false,
+      "ms": 208,
+      "bytes": 36638,
+      "nodes": 50,
+      "links": 13,
+      "truncated": true,
+      "totalNodesAvailable": 61655,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project text includeTests false",
+      "args": {
+        "format": "text",
+        "includeTests": false
+      },
+      "isError": false,
+      "ms": 274,
+      "bytes": 1633,
+      "nodes": 200,
+      "links": 197,
+      "truncated": true,
+      "totalNodesAvailable": 61655,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "unknown scope refused",
+      "args": {
+        "scope": "galaxy"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 81,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "missing target refused",
+      "args": {
+        "scope": "symbol"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 60,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "maxNodes 0 refused",
+      "args": {
+        "maxNodes": 0
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 222,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    }
+  ]
+}

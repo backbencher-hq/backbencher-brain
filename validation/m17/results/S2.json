@@ -9,11 +9,11 @@
   "failed": 0,
   "negatives": 5,
   "negativePassed": 5,
-  "generatedAt": "2026-11-03T17:27:06.577Z",
+  "generatedAt": "2026-11-14T00:18:04.198Z",
   "perCorpus": {
     "rake (Ruby)": {
       "live": 30,
-      "unresolved": 60,
+      "unresolved": 61,
       "hist": 30,
       "bad": 0
     },

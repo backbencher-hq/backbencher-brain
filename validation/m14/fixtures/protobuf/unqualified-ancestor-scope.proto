@@ -1,0 +1,55 @@
+// An UNQUALIFIED type reference resolves in an ANCESTOR package the file imports.
+//
+// `plugin.proto` in protobuf's own reference corpus is the shape, and this file
+// reproduces it exactly: a package that is a DESCENDANT of another package's,
+// an import of the file holding the ancestor's declarations, and field types
+// written BARE.
+//
+//   plugin.proto declares  package google.protobuf.compiler
+//   descriptor.proto declares  package google.protobuf
+//   and plugin.proto writes  repeated FileDescriptorProto proto_file = 15;
+//
+// protoc resolves that bare `FileDescriptorProto` to `google.protobuf.…` by C++
+// scope lookup — the innermost enclosing scope that HOLDS a declaration wins.
+// Prefixing the file's own package instead yields
+// `google.protobuf.compiler.FileDescriptorProto`, which no file publishes, so
+// the graph asserts a declaration that is not there.
+//
+// The negative controls below are the other half of the claim, and the reason
+// this is a resolution rule and not a "strip the last package segment" one:
+//
+//   * `own/inner.proto` declares the SAME name in its OWN package, so the
+//     nearest scope wins and the edge stays local. A rule that always climbed
+//     to the ancestor package would point this at the wrong declaration.
+//   * `imported/child.proto` is imported but does NOT declare the name, so
+//     nothing in it can satisfy the reference and the walk declines rather
+//     than guessing.
+//   * a dotted name already fully qualified is untouched by this rule.
+//
+// Package layout mirrors the ancestor relationship: `ancestor/v1` holds the
+// declaration, and this file's package is `ancestor.v1.compiler`.
+
+syntax = "proto3";
+
+package ancestor.v1.compiler;
+
+import "ancestor/v1/base.proto";
+import "other/v1/unrelated.proto";
+import "ancestor/v1/child.proto";
+
+message Descendant {
+  // Resolves UP to ancestor.v1.Base — the ancestor package this file imports.
+  Base base = 1;
+
+  // Resolves to the LOCAL Shadow, not ancestor.v1.Base: the nearest scope
+  // holding a declaration wins, and this package holds one.
+  Shadow shadow = 2;
+
+  // The imported child.proto does NOT declare this, so no scope can satisfy
+  // it and the name is left exactly as written.
+  Unknown unknown_ref = 3;
+
+  // Already fully qualified with a leading dot — absolute, and unchanged by
+  // any scope walk.
+  .ancestor.v1.Base absolute = 4;
+}

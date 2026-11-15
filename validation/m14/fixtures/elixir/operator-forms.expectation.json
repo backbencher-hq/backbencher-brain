@@ -1,0 +1,21 @@
+{
+  "expectSymbols": [
+    { "name": "Operators", "kind": "module" },
+    { "name": "+++", "kind": "function", "ownerName": "Operators" },
+    { "name": "+", "kind": "function", "ownerName": "Operators" }
+  ],
+  "expectSymbolCount": [
+    { "name": "+++", "kind": "function", "ownerName": "Operators", "equals": 1 },
+    { "name": "+", "kind": "function", "ownerName": "Operators", "equals": 1 }
+  ],
+  "forbidSymbols": [
+    { "name": "Unknown" }
+  ],
+  "expectExports": [
+    { "name": "Operators", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Operators", "target": "+++" },
+    { "type": "contains", "from": "Operators", "target": "+" }
+  ]
+}

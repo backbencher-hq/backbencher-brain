@@ -1,0 +1,1 @@
+{"gate":"m16-docs-truth","command":"bun run script/m16/verify-docs-truth.ts","exitCode":1,"durationMs":179,"logSha256":"1711947a48ab7769c85ef724a1fd980b86f15d5725a7e756470104d4861428c6","log":"validation/tools/bb_patterns/gates/logs/m16-docs-truth.log","recordedAt":"2026-11-03T04:20:38Z"}

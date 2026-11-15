@@ -1,0 +1,22 @@
+{
+  "fixtureId": "vue/ts-class-heritage",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "VERIFY_VUE8: the `implements` RULING for this lane is a CORPUS fact, not a language fact, and this fixture is the half that says so. Instrument A — a grammar inventory over every script block of 1,151 admitted .vue files (element-plus 1009, vue-element-admin 131, vuejs 11) read through the production wasm — counted 174 distinct script node types and found implements_clause 0, class_declaration 0, extends_clause 0, interface_declaration 0. So no corpus file can produce the row. Asserting `implements` from a corpus silence would be the wrong reason for a true observation: a lang=\"ts\" block is ordinary TypeScript and CAN say it, and this fixture proves the seam carries the saying. So the verdict is RULED FOR THE CORPUS with this as the falsifier — a probe finding a class in a Vue script block overturns the ruling immediately. A `lang=\"ts\"` block is dispatched to the TypeScript analyzer (engine.ts:1587-1619 builds the SFC seam; real-vue-analyzer.ts's `isTs` reads the block's own lang attribute), and the TS analyzer owns both labels — so this lane needs no branch of its own, and adding one would duplicate a producer that already exists. `hasTypeInference: true` is asserted because it is the lane's own statement that a TypeScript grammar was applied, and it is what makes the implements row legible as dispatched rather than lucky. The `overrides` row here comes from the DELEGATE (metadata.extendedClass), not from this lane's Options-API merge branch: two producers, one label, and the fixture names them apart so a later reader cannot credit the wrong one.",
+  "expectMetadata": [
+    { "hasTypeInference": true }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "ProbeCard", "target": "Store", "confidenceMin": 1 },
+    { "type": "extends", "from": "ProbeCard", "target": "Base", "meta.sourceKind": "class" },
+    { "type": "overrides", "from": "ProbeCard.open", "target": "Base.open", "meta.extendedClass": "Base" },
+    { "type": "contains", "from": "ProbeCard", "target": "open" }
+  ],
+  "expectSymbols": [
+    { "name": "Store", "kind": "interface" },
+    { "name": "Base", "kind": "class" },
+    { "name": "ProbeCard", "kind": "class" },
+    { "name": "open", "kind": "method" },
+    { "name": "upper", "kind": "property" }
+  ]
+}

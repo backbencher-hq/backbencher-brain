@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_index.json",
+  "generatedAt": "2026-11-04T05:55:38.533Z",
+  "tools": [
+    "bb_index"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 38,
+      "args": "{\"path\":\"lib/rake/thread_pool.rb\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"lib/rake/thread_pool.rb\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothing ch"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 13,
+      "args": "{\"path\":\"crates/index/src/literal.rs\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"crates/index/src/literal.rs\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothin"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 10,
+      "args": "{\"path\":\"src/__testUtils__/expectJSON.ts\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"src/__testUtils__/expectJSON.ts\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"no"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 56,
+      "args": "{\"path\":\"src/scanner.c\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"src/scanner.c\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothing changed: 1 f"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 52,
+      "args": "{\"path\":\"lodash.js\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"lodash.js\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothing changed: 1 file("
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"lib/rake/thread_pool.rb\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"crates/index/src/literal.rs\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"src/__testUtils__/expectJSON.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"uncha"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"src/scanner.c\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"decli"
+    },
+    {
+      "repo": "lodash",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"lodash.js\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\""
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_index"
+    ]
+  }
+}

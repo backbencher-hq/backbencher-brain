@@ -1,0 +1,4529 @@
+{
+  "instrument": "xml `calls` 138 \u2014 the violation worklist for the shared-resolver fix",
+  "at": "2026-10-10T23:35:00-04:00",
+  "runLabel": "ONE RUN, ONE INDEX. Population: 2,000 files drawn / 1,995 indexed from libxslt, dbeaver, phpunit, Fabulous. Bounded draw, not the 11,562-file population (the full attempt was KILLED on event-loop stalls \u2014 see store-intent-split-full-attempt-KILLED.txt).",
+  "whyTheseAreViolations": "Every one is class `in-document` \u2014 the analyzer STATES the callee is declared in the edge's own document \u2014 and the store bound it to a declaration in ANOTHER file. Not an ambiguity and not an unresolved edge: a wrong binding.",
+  "counts": {
+    "totalViolations": 147,
+    "byType": {
+      "references": 5,
+      "imports": 3,
+      "calls": 138,
+      "overrides": 1
+    },
+    "calls_boundToAnotherFile": 138,
+    "calls_unbound": 0,
+    "calls_withOwnFileDeclaration": 138,
+    "distinctSourceFiles": 11,
+    "distinctCallees": 124,
+    "distinctBoundToFiles": 12
+  },
+  "shape": "Every calls violation is a CALLER in one directory bound to a same-named TEMPLATE declared in the PARALLEL directory \u2014 libxslt/tests/docbook/html/*.xsl against libxslt/tests/docbook/fo/*.xsl \u2014 plus a few bound into test data files. The own-file declaration exists in every case and is listed per edge.",
+  "sourceToBoundFilePairs": {
+    "libxslt/tests/docbook/html/pi.xsl -> libxslt/tests/docbook/fo/pi.xsl": 2,
+    "libxslt/tests/docbook/fo/table.xsl -> libxslt/tests/docbook/test/article2.xml": 3,
+    "libxslt/tests/docbook/html/formal.xsl -> libxslt/tests/docbook/fo/formal.xsl": 3,
+    "libxslt/tests/docbook/html/lists.xsl -> libxslt/tests/docbook/fo/lists.xsl": 7,
+    "libxslt/tests/docbook/html/lists.xsl -> libxslt/doc/tutorial/libxslttutorial.xml": 1,
+    "libxslt/tests/docbook/html/inline.xsl -> libxslt/tests/docbook/fo/inline.xsl": 3,
+    "libxslt/tests/docbook/fo/lists.xsl -> libxslt/doc/tutorial/libxslttutorial.xml": 1,
+    "libxslt/tests/docbook/html/chunk-common.xsl -> libxslt/tests/docbook/html/ebnf.xsl": 3,
+    "libxslt/tests/docbook/html/chunk-common.xsl -> libxslt/doc/EXSLT/devhelp/devhelp2.xsl": 1,
+    "libxslt/tests/docbook/html/sections.xsl -> libxslt/tests/docbook/fo/sections.xsl": 1,
+    "libxslt/tests/docbook/html/table.xsl -> libxslt/tests/docbook/fo/table.xsl": 5,
+    "libxslt/tests/docbook/html/table.xsl -> libxslt/tests/docbook/test/article2.xml": 6,
+    "libxslt/tests/docbook/html/admon.xsl -> libxslt/tests/docbook/fo/admon.xsl": 2,
+    "libxslt/tests/docbook/html/titlepage.templates.xsl -> libxslt/tests/docbook/fo/titlepage.templates.xsl": 100
+  },
+  "worklist": [
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/pi.xsl:process.cmdsynopsis.list:77:process.cmdsynopsis.list:calls:109",
+      "sourceFile": "libxslt/tests/docbook/html/pi.xsl",
+      "source": "process.cmdsynopsis.list",
+      "target": "process.cmdsynopsis.list",
+      "edgeLine": 109,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/pi.xsl",
+        "name": "process.cmdsynopsis.list",
+        "qname": "xsl:stylesheet.process.cmdsynopsis.list",
+        "line": 69
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/pi.xsl",
+          "line": 77,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/pi.xsl",
+          "line": 69,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/pi.xsl:process.funcsynopsis.list:134:process.funcsynopsis.list:calls:166",
+      "sourceFile": "libxslt/tests/docbook/html/pi.xsl",
+      "source": "process.funcsynopsis.list",
+      "target": "process.funcsynopsis.list",
+      "edgeLine": 166,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/pi.xsl",
+        "name": "process.funcsynopsis.list",
+        "qname": "xsl:stylesheet.process.funcsynopsis.list",
+        "line": 126
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/pi.xsl",
+          "line": 134,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/pi.xsl",
+          "line": 126,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/fo/table.xsl:colspec.colnum:385:colspec.colnum:calls:676",
+      "sourceFile": "libxslt/tests/docbook/fo/table.xsl",
+      "source": "colspec.colnum",
+      "target": "colspec.colnum",
+      "edgeLine": 676,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/fo/table.xsl:scol:698:colspec.colnum:calls:699",
+      "sourceFile": "libxslt/tests/docbook/fo/table.xsl",
+      "source": "scol",
+      "target": "colspec.colnum",
+      "edgeLine": 699,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/fo/table.xsl:ecol:703:colspec.colnum:calls:704",
+      "sourceFile": "libxslt/tests/docbook/fo/table.xsl",
+      "source": "ecol",
+      "target": "colspec.colnum",
+      "edgeLine": 704,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/formal.xsl:formal.object:15:formal.object.heading:calls:17",
+      "sourceFile": "libxslt/tests/docbook/html/formal.xsl",
+      "source": "formal.object",
+      "target": "formal.object.heading",
+      "edgeLine": 17,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/formal.xsl",
+        "name": "formal.object.heading",
+        "qname": "xsl:stylesheet.formal.object.heading",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/formal.xsl",
+          "line": 26,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/formal.xsl",
+          "line": 38,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/formal.xsl:semiformal.object:48:formal.object:calls:51",
+      "sourceFile": "libxslt/tests/docbook/html/formal.xsl",
+      "source": "semiformal.object",
+      "target": "formal.object",
+      "edgeLine": 51,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/formal.xsl",
+        "name": "formal.object",
+        "qname": "xsl:stylesheet.formal.object",
+        "line": 16
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/formal.xsl",
+          "line": 15,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/formal.xsl",
+          "line": 16,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/formal.xsl:semiformal.object:48:informal.object:calls:54",
+      "sourceFile": "libxslt/tests/docbook/html/formal.xsl",
+      "source": "semiformal.object",
+      "target": "informal.object",
+      "edgeLine": 54,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/formal.xsl",
+        "name": "informal.object",
+        "qname": "xsl:stylesheet.informal.object",
+        "line": 45
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/formal.xsl",
+          "line": 37,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/formal.xsl",
+          "line": 45,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:simplelist.horiz:276:simplelist.horiz.row:calls:283",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "simplelist.horiz",
+      "target": "simplelist.horiz.row",
+      "edgeLine": 283,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "simplelist.horiz.row",
+        "qname": "xsl:stylesheet.simplelist.horiz.row",
+        "line": 234
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 297,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 234,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:simplelist.horiz:276:simplelist.horiz:calls:289",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "simplelist.horiz",
+      "target": "simplelist.horiz",
+      "edgeLine": 289,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "simplelist.horiz",
+        "qname": "xsl:stylesheet.simplelist.horiz",
+        "line": 213
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 276,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 213,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:simplelist.horiz.row:297:simplelist.horiz.row:calls:321",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "simplelist.horiz.row",
+      "target": "simplelist.horiz.row",
+      "edgeLine": 321,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "simplelist.horiz.row",
+        "qname": "xsl:stylesheet.simplelist.horiz.row",
+        "line": 234
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 297,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 234,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:simplelist.vert:330:simplelist.vert.row:calls:339",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "simplelist.vert",
+      "target": "simplelist.vert.row",
+      "edgeLine": 339,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "simplelist.vert.row",
+        "qname": "xsl:stylesheet.simplelist.vert.row",
+        "line": 282
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 355,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 282,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:simplelist.vert:330:simplelist.vert:calls:346",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "simplelist.vert",
+      "target": "simplelist.vert",
+      "edgeLine": 346,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "simplelist.vert",
+        "qname": "xsl:stylesheet.simplelist.vert",
+        "line": 257
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 330,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 257,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:simplelist.vert.row:355:simplelist.vert.row:calls:380",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "simplelist.vert.row",
+      "target": "simplelist.vert.row",
+      "edgeLine": 380,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "simplelist.vert.row",
+        "qname": "xsl:stylesheet.simplelist.vert.row",
+        "line": 282
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 355,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 282,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:callout.arearefs:571:callout.arearef:calls:576",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "callout.arearefs",
+      "target": "callout.arearef",
+      "edgeLine": 576,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/lists.xsl",
+        "name": "callout.arearef",
+        "qname": "xsl:stylesheet.callout.arearef",
+        "line": 510
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 594,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 510,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/lists.xsl:callout.arearefs:571:callout.arearefs:calls:587",
+      "sourceFile": "libxslt/tests/docbook/html/lists.xsl",
+      "source": "callout.arearefs",
+      "target": "callout.arearefs",
+      "edgeLine": 587,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/doc/tutorial/libxslttutorial.xml",
+        "name": "arearefs",
+        "qname": "callout.arearefs",
+        "line": 256
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 571,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 487,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/inline.xsl:format.sgmltag:517:inline.monoseq:calls:529",
+      "sourceFile": "libxslt/tests/docbook/html/inline.xsl",
+      "source": "format.sgmltag",
+      "target": "inline.monoseq",
+      "edgeLine": 529,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/inline.xsl",
+        "name": "inline.monoseq",
+        "qname": "xsl:stylesheet.inline.monoseq",
+        "line": 23
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/inline.xsl",
+          "line": 25,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/inline.xsl",
+          "line": 23,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/inline.xsl:format.sgmltag:517:inline.charseq:calls:619",
+      "sourceFile": "libxslt/tests/docbook/html/inline.xsl",
+      "source": "format.sgmltag",
+      "target": "inline.charseq",
+      "edgeLine": 619,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/inline.xsl",
+        "name": "inline.charseq",
+        "qname": "xsl:stylesheet.inline.charseq",
+        "line": 16
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/inline.xsl",
+          "line": 15,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/inline.xsl",
+          "line": 16,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/inline.xsl:process.menuchoice:668:process.menuchoice:calls:676",
+      "sourceFile": "libxslt/tests/docbook/html/inline.xsl",
+      "source": "process.menuchoice",
+      "target": "process.menuchoice",
+      "edgeLine": 676,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/inline.xsl",
+        "name": "process.menuchoice",
+        "qname": "xsl:stylesheet.process.menuchoice",
+        "line": 509
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/inline.xsl",
+          "line": 668,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/inline.xsl",
+          "line": 509,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/fo/lists.xsl:callout.arearefs:487:callout.arearefs:calls:503",
+      "sourceFile": "libxslt/tests/docbook/fo/lists.xsl",
+      "source": "callout.arearefs",
+      "target": "callout.arearefs",
+      "edgeLine": 503,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/doc/tutorial/libxslttutorial.xml",
+        "name": "arearefs",
+        "qname": "callout.arearefs",
+        "line": 256
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/fo/lists.xsl",
+          "line": 487,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/lists.xsl",
+          "line": 571,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/chunk-common.xsl:html.head:429:href.target:calls:442",
+      "sourceFile": "libxslt/tests/docbook/html/chunk-common.xsl",
+      "source": "html.head",
+      "target": "href.target",
+      "edgeLine": 442,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/html/ebnf.xsl",
+        "name": "target",
+        "qname": "href.target",
+        "line": 304
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/chunk-common.xsl",
+          "line": 409,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/autotoc.xsl",
+          "line": 17,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/chunk-common.xsl:header.navigation:496:href.target:calls:515",
+      "sourceFile": "libxslt/tests/docbook/html/chunk-common.xsl",
+      "source": "header.navigation",
+      "target": "href.target",
+      "edgeLine": 515,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/html/ebnf.xsl",
+        "name": "target",
+        "qname": "href.target",
+        "line": 304
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/chunk-common.xsl",
+          "line": 409,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/autotoc.xsl",
+          "line": 17,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/chunk-common.xsl:footer.navigation:558:href.target:calls:573",
+      "sourceFile": "libxslt/tests/docbook/html/chunk-common.xsl",
+      "source": "footer.navigation",
+      "target": "href.target",
+      "edgeLine": 573,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/html/ebnf.xsl",
+        "name": "target",
+        "qname": "href.target",
+        "line": 304
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/chunk-common.xsl",
+          "line": 409,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/html/autotoc.xsl",
+          "line": 17,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/chunk-common.xsl:chunk-element-content:901:html.head:calls:906",
+      "sourceFile": "libxslt/tests/docbook/html/chunk-common.xsl",
+      "source": "chunk-element-content",
+      "target": "html.head",
+      "edgeLine": 906,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/doc/EXSLT/devhelp/devhelp2.xsl",
+        "name": "head",
+        "qname": "html.head",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/chunk-common.xsl",
+          "line": 429,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": []
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/sections.xsl:section.title:34:section.heading:calls:50",
+      "sourceFile": "libxslt/tests/docbook/html/sections.xsl",
+      "source": "section.title",
+      "target": "section.heading",
+      "edgeLine": 50,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/sections.xsl",
+        "name": "section.heading",
+        "qname": "xsl:stylesheet.section.heading",
+        "line": 256
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/sections.xsl",
+          "line": 245,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/sections.xsl",
+          "line": 256,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:colgroup:76:generate.colgroup:calls:78",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "colgroup",
+      "target": "generate.colgroup",
+      "edgeLine": 78,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/table.xsl",
+        "name": "generate.colgroup",
+        "qname": "xsl:stylesheet.generate.colgroup",
+        "line": 353
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 491,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 353,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:process.cell:302:calculate.colspan:calls:336",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "process.cell",
+      "target": "calculate.colspan",
+      "edgeLine": 336,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/table.xsl",
+        "name": "calculate.colspan",
+        "qname": "xsl:stylesheet.calculate.colspan",
+        "line": 697
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 617,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 697,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:entry.colnum:306:colspec.colnum:calls:388",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "entry.colnum",
+      "target": "colspec.colnum",
+      "edgeLine": 388,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:entry.ending.colnum:438:colspec.colnum:calls:446",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "entry.ending.colnum",
+      "target": "colspec.colnum",
+      "edgeLine": 446,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:prec.colspec.colnum:479:colspec.colnum:calls:480",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "prec.colspec.colnum",
+      "target": "colspec.colnum",
+      "edgeLine": 480,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:generate.colgroup:491:generate.col:calls:497",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "generate.colgroup",
+      "target": "generate.col",
+      "edgeLine": 497,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/table.xsl",
+        "name": "generate.col",
+        "qname": "xsl:stylesheet.generate.col",
+        "line": 435
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 508,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 435,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:generate.colgroup:491:generate.colgroup:calls:500",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "generate.colgroup",
+      "target": "generate.colgroup",
+      "edgeLine": 500,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/table.xsl",
+        "name": "generate.colgroup",
+        "qname": "xsl:stylesheet.generate.colgroup",
+        "line": 353
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 491,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 353,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:generate.col:508:generate.col:calls:569",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "generate.col",
+      "target": "generate.col",
+      "edgeLine": 569,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/table.xsl",
+        "name": "generate.col",
+        "qname": "xsl:stylesheet.generate.col",
+        "line": 435
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 508,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 435,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:colspec.colwidth:591:colspec.colwidth:calls:606",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "colspec.colwidth",
+      "target": "colspec.colwidth",
+      "edgeLine": 606,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colwidth",
+        "qname": "colspec.colwidth",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 591,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 396,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 469,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:scol:622:colspec.colnum:calls:623",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "scol",
+      "target": "colspec.colnum",
+      "edgeLine": 623,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/table.xsl:ecol:628:colspec.colnum:calls:629",
+      "sourceFile": "libxslt/tests/docbook/html/table.xsl",
+      "source": "ecol",
+      "target": "colspec.colnum",
+      "edgeLine": 629,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/test/article2.xml",
+        "name": "colnum",
+        "qname": "colspec.colnum",
+        "line": 38
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 472,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/html/table.xsl",
+          "line": 520,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 385,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 458,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/docbook/fo/table.xsl",
+          "line": 648,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/admon.xsl:graphical.admonition:45:admon.graphic.width:calls:56",
+      "sourceFile": "libxslt/tests/docbook/html/admon.xsl",
+      "source": "graphical.admonition",
+      "target": "admon.graphic.width",
+      "edgeLine": 56,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/admon.xsl",
+        "name": "admon.graphic.width",
+        "qname": "xsl:stylesheet.admon.graphic.width",
+        "line": 27
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/admon.xsl",
+          "line": 15,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/admon.xsl",
+          "line": 27,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/admon.xsl:graphical.admonition:45:admon.graphic:calls:60",
+      "sourceFile": "libxslt/tests/docbook/html/admon.xsl",
+      "source": "graphical.admonition",
+      "target": "admon.graphic",
+      "edgeLine": 60,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/admon.xsl",
+        "name": "admon.graphic",
+        "qname": "xsl:stylesheet.admon.graphic",
+        "line": 32
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/admon.xsl",
+          "line": 31,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/admon.xsl",
+          "line": 32,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:article.titlepage:64:article.titlepage.before.recto:calls:66",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "article.titlepage",
+      "target": "article.titlepage.before.recto",
+      "edgeLine": 66,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "article.titlepage.before.recto",
+        "qname": "xsl:stylesheet.article.titlepage.before.recto",
+        "line": 58
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 58,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 58,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:article.titlepage:64:article.titlepage.recto:calls:67",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "article.titlepage",
+      "target": "article.titlepage.recto",
+      "edgeLine": 67,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "article.titlepage.recto",
+        "qname": "xsl:stylesheet.article.titlepage.recto",
+        "line": 5
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 5,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 5,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:article.titlepage:64:article.titlepage.before.verso:calls:68",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "article.titlepage",
+      "target": "article.titlepage.before.verso",
+      "edgeLine": 68,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "article.titlepage.before.verso",
+        "qname": "xsl:stylesheet.article.titlepage.before.verso",
+        "line": 61
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 61,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 61,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:article.titlepage:64:article.titlepage.verso:calls:69",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "article.titlepage",
+      "target": "article.titlepage.verso",
+      "edgeLine": 69,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "article.titlepage.verso",
+        "qname": "xsl:stylesheet.article.titlepage.verso",
+        "line": 52
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 52,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 52,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:article.titlepage:64:article.titlepage.separator:calls:70",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "article.titlepage",
+      "target": "article.titlepage.separator",
+      "edgeLine": 70,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "article.titlepage.separator",
+        "qname": "xsl:stylesheet.article.titlepage.separator",
+        "line": 55
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 55,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 55,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:set.titlepage:201:set.titlepage.before.recto:calls:203",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "set.titlepage",
+      "target": "set.titlepage.before.recto",
+      "edgeLine": 203,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "set.titlepage.before.recto",
+        "qname": "xsl:stylesheet.set.titlepage.before.recto",
+        "line": 197
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 195,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 197,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:set.titlepage:201:set.titlepage.recto:calls:204",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "set.titlepage",
+      "target": "set.titlepage.recto",
+      "edgeLine": 204,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "set.titlepage.recto",
+        "qname": "xsl:stylesheet.set.titlepage.recto",
+        "line": 160
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 158,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 160,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:set.titlepage:201:set.titlepage.before.verso:calls:205",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "set.titlepage",
+      "target": "set.titlepage.before.verso",
+      "edgeLine": 205,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "set.titlepage.before.verso",
+        "qname": "xsl:stylesheet.set.titlepage.before.verso",
+        "line": 200
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 198,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 200,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:set.titlepage:201:set.titlepage.verso:calls:206",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "set.titlepage",
+      "target": "set.titlepage.verso",
+      "edgeLine": 206,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "set.titlepage.verso",
+        "qname": "xsl:stylesheet.set.titlepage.verso",
+        "line": 191
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 189,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 191,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:set.titlepage:201:set.titlepage.separator:calls:207",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "set.titlepage",
+      "target": "set.titlepage.separator",
+      "edgeLine": 207,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "set.titlepage.separator",
+        "qname": "xsl:stylesheet.set.titlepage.separator",
+        "line": 194
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 192,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 194,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:book.titlepage:338:book.titlepage.before.recto:calls:340",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "book.titlepage",
+      "target": "book.titlepage.before.recto",
+      "edgeLine": 340,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "book.titlepage.before.recto",
+        "qname": "xsl:stylesheet.book.titlepage.before.recto",
+        "line": 345
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 332,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 345,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:book.titlepage:338:book.titlepage.recto:calls:341",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "book.titlepage",
+      "target": "book.titlepage.recto",
+      "edgeLine": 341,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "book.titlepage.recto",
+        "qname": "xsl:stylesheet.book.titlepage.recto",
+        "line": 299
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 295,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 299,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:book.titlepage:338:book.titlepage.before.verso:calls:342",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "book.titlepage",
+      "target": "book.titlepage.before.verso",
+      "edgeLine": 342,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "book.titlepage.before.verso",
+        "qname": "xsl:stylesheet.book.titlepage.before.verso",
+        "line": 348
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 335,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 348,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:book.titlepage:338:book.titlepage.verso:calls:343",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "book.titlepage",
+      "target": "book.titlepage.verso",
+      "edgeLine": 343,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "book.titlepage.verso",
+        "qname": "xsl:stylesheet.book.titlepage.verso",
+        "line": 323
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 326,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 323,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:book.titlepage:338:book.titlepage.separator:calls:344",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "book.titlepage",
+      "target": "book.titlepage.separator",
+      "edgeLine": 344,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "book.titlepage.separator",
+        "qname": "xsl:stylesheet.book.titlepage.separator",
+        "line": 342
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 329,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 342,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:part.titlepage:491:part.titlepage.before.recto:calls:493",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "part.titlepage",
+      "target": "part.titlepage.before.recto",
+      "edgeLine": 493,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "part.titlepage.before.recto",
+        "qname": "xsl:stylesheet.part.titlepage.before.recto",
+        "line": 486
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 485,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 486,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:part.titlepage:491:part.titlepage.recto:calls:494",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "part.titlepage",
+      "target": "part.titlepage.recto",
+      "edgeLine": 494,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "part.titlepage.recto",
+        "qname": "xsl:stylesheet.part.titlepage.recto",
+        "line": 453
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 432,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 453,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:part.titlepage:491:part.titlepage.before.verso:calls:495",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "part.titlepage",
+      "target": "part.titlepage.before.verso",
+      "edgeLine": 495,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "part.titlepage.before.verso",
+        "qname": "xsl:stylesheet.part.titlepage.before.verso",
+        "line": 489
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 488,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 489,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:part.titlepage:491:part.titlepage.verso:calls:496",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "part.titlepage",
+      "target": "part.titlepage.verso",
+      "edgeLine": 496,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "part.titlepage.verso",
+        "qname": "xsl:stylesheet.part.titlepage.verso",
+        "line": 480
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 479,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 480,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:part.titlepage:491:part.titlepage.separator:calls:497",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "part.titlepage",
+      "target": "part.titlepage.separator",
+      "edgeLine": 497,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "part.titlepage.separator",
+        "qname": "xsl:stylesheet.part.titlepage.separator",
+        "line": 483
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 482,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 483,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:partintro.titlepage:644:partintro.titlepage.before.recto:calls:646",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "partintro.titlepage",
+      "target": "partintro.titlepage.before.recto",
+      "edgeLine": 646,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "partintro.titlepage.before.recto",
+        "qname": "xsl:stylesheet.partintro.titlepage.before.recto",
+        "line": 581
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 638,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 581,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:partintro.titlepage:644:partintro.titlepage.recto:calls:647",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "partintro.titlepage",
+      "target": "partintro.titlepage.recto",
+      "edgeLine": 647,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "partintro.titlepage.recto",
+        "qname": "xsl:stylesheet.partintro.titlepage.recto",
+        "line": 528
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 585,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 528,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:partintro.titlepage:644:partintro.titlepage.before.verso:calls:648",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "partintro.titlepage",
+      "target": "partintro.titlepage.before.verso",
+      "edgeLine": 648,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "partintro.titlepage.before.verso",
+        "qname": "xsl:stylesheet.partintro.titlepage.before.verso",
+        "line": 584
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 641,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 584,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:partintro.titlepage:644:partintro.titlepage.verso:calls:649",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "partintro.titlepage",
+      "target": "partintro.titlepage.verso",
+      "edgeLine": 649,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "partintro.titlepage.verso",
+        "qname": "xsl:stylesheet.partintro.titlepage.verso",
+        "line": 575
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 632,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 575,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:partintro.titlepage:644:partintro.titlepage.separator:calls:650",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "partintro.titlepage",
+      "target": "partintro.titlepage.separator",
+      "edgeLine": 650,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "partintro.titlepage.separator",
+        "qname": "xsl:stylesheet.partintro.titlepage.separator",
+        "line": 578
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 635,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 578,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:reference.titlepage:797:reference.titlepage.before.recto:calls:799",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "reference.titlepage",
+      "target": "reference.titlepage.before.recto",
+      "edgeLine": 799,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "reference.titlepage.before.recto",
+        "qname": "xsl:stylesheet.reference.titlepage.before.recto",
+        "line": 734
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 791,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 734,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:reference.titlepage:797:reference.titlepage.recto:calls:800",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "reference.titlepage",
+      "target": "reference.titlepage.recto",
+      "edgeLine": 800,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "reference.titlepage.recto",
+        "qname": "xsl:stylesheet.reference.titlepage.recto",
+        "line": 681
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 738,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 681,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:reference.titlepage:797:reference.titlepage.before.verso:calls:801",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "reference.titlepage",
+      "target": "reference.titlepage.before.verso",
+      "edgeLine": 801,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "reference.titlepage.before.verso",
+        "qname": "xsl:stylesheet.reference.titlepage.before.verso",
+        "line": 737
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 794,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 737,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:reference.titlepage:797:reference.titlepage.verso:calls:802",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "reference.titlepage",
+      "target": "reference.titlepage.verso",
+      "edgeLine": 802,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "reference.titlepage.verso",
+        "qname": "xsl:stylesheet.reference.titlepage.verso",
+        "line": 728
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 785,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 728,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:reference.titlepage:797:reference.titlepage.separator:calls:803",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "reference.titlepage",
+      "target": "reference.titlepage.separator",
+      "edgeLine": 803,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "reference.titlepage.separator",
+        "qname": "xsl:stylesheet.reference.titlepage.separator",
+        "line": 731
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 788,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 731,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:dedication.titlepage:922:dedication.titlepage.before.recto:calls:924",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "dedication.titlepage",
+      "target": "dedication.titlepage.before.recto",
+      "edgeLine": 924,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "dedication.titlepage.before.recto",
+        "qname": "xsl:stylesheet.dedication.titlepage.before.recto",
+        "line": 861
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 916,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 861,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:dedication.titlepage:922:dedication.titlepage.recto:calls:925",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "dedication.titlepage",
+      "target": "dedication.titlepage.recto",
+      "edgeLine": 925,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "dedication.titlepage.recto",
+        "qname": "xsl:stylesheet.dedication.titlepage.recto",
+        "line": 836
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 891,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 836,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:dedication.titlepage:922:dedication.titlepage.before.verso:calls:926",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "dedication.titlepage",
+      "target": "dedication.titlepage.before.verso",
+      "edgeLine": 926,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "dedication.titlepage.before.verso",
+        "qname": "xsl:stylesheet.dedication.titlepage.before.verso",
+        "line": 864
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 919,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 864,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:dedication.titlepage:922:dedication.titlepage.verso:calls:927",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "dedication.titlepage",
+      "target": "dedication.titlepage.verso",
+      "edgeLine": 927,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "dedication.titlepage.verso",
+        "qname": "xsl:stylesheet.dedication.titlepage.verso",
+        "line": 855
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 910,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 855,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:dedication.titlepage:922:dedication.titlepage.separator:calls:928",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "dedication.titlepage",
+      "target": "dedication.titlepage.separator",
+      "edgeLine": 928,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "dedication.titlepage.separator",
+        "qname": "xsl:stylesheet.dedication.titlepage.separator",
+        "line": 858
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 913,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 858,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:preface.titlepage:1009:preface.titlepage.before.recto:calls:1011",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "preface.titlepage",
+      "target": "preface.titlepage.before.recto",
+      "edgeLine": 1011,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "preface.titlepage.before.recto",
+        "qname": "xsl:stylesheet.preface.titlepage.before.recto",
+        "line": 940
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1003,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 940,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:preface.titlepage:1009:preface.titlepage.recto:calls:1012",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "preface.titlepage",
+      "target": "preface.titlepage.recto",
+      "edgeLine": 1012,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "preface.titlepage.recto",
+        "qname": "xsl:stylesheet.preface.titlepage.recto",
+        "line": 895
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 950,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 895,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:preface.titlepage:1009:preface.titlepage.before.verso:calls:1013",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "preface.titlepage",
+      "target": "preface.titlepage.before.verso",
+      "edgeLine": 1013,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "preface.titlepage.before.verso",
+        "qname": "xsl:stylesheet.preface.titlepage.before.verso",
+        "line": 943
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1006,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 943,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:preface.titlepage:1009:preface.titlepage.verso:calls:1014",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "preface.titlepage",
+      "target": "preface.titlepage.verso",
+      "edgeLine": 1014,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "preface.titlepage.verso",
+        "qname": "xsl:stylesheet.preface.titlepage.verso",
+        "line": 934
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 997,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 934,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:preface.titlepage:1009:preface.titlepage.separator:calls:1015",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "preface.titlepage",
+      "target": "preface.titlepage.separator",
+      "edgeLine": 1015,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "preface.titlepage.separator",
+        "qname": "xsl:stylesheet.preface.titlepage.separator",
+        "line": 937
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1000,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 937,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:chapter.titlepage:1162:chapter.titlepage.before.recto:calls:1164",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "chapter.titlepage",
+      "target": "chapter.titlepage.before.recto",
+      "edgeLine": 1164,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "chapter.titlepage.before.recto",
+        "qname": "xsl:stylesheet.chapter.titlepage.before.recto",
+        "line": 1087
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1156,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1087,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:chapter.titlepage:1162:chapter.titlepage.recto:calls:1165",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "chapter.titlepage",
+      "target": "chapter.titlepage.recto",
+      "edgeLine": 1165,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "chapter.titlepage.recto",
+        "qname": "xsl:stylesheet.chapter.titlepage.recto",
+        "line": 1034
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1103,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1034,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:chapter.titlepage:1162:chapter.titlepage.before.verso:calls:1166",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "chapter.titlepage",
+      "target": "chapter.titlepage.before.verso",
+      "edgeLine": 1166,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "chapter.titlepage.before.verso",
+        "qname": "xsl:stylesheet.chapter.titlepage.before.verso",
+        "line": 1090
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1159,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1090,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:chapter.titlepage:1162:chapter.titlepage.verso:calls:1167",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "chapter.titlepage",
+      "target": "chapter.titlepage.verso",
+      "edgeLine": 1167,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "chapter.titlepage.verso",
+        "qname": "xsl:stylesheet.chapter.titlepage.verso",
+        "line": 1081
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1150,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1081,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:chapter.titlepage:1162:chapter.titlepage.separator:calls:1168",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "chapter.titlepage",
+      "target": "chapter.titlepage.separator",
+      "edgeLine": 1168,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "chapter.titlepage.separator",
+        "qname": "xsl:stylesheet.chapter.titlepage.separator",
+        "line": 1084
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1153,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1084,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:appendix.titlepage:1315:appendix.titlepage.before.recto:calls:1317",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "appendix.titlepage",
+      "target": "appendix.titlepage.before.recto",
+      "edgeLine": 1317,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "appendix.titlepage.before.recto",
+        "qname": "xsl:stylesheet.appendix.titlepage.before.recto",
+        "line": 1242
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1309,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1242,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:appendix.titlepage:1315:appendix.titlepage.recto:calls:1318",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "appendix.titlepage",
+      "target": "appendix.titlepage.recto",
+      "edgeLine": 1318,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "appendix.titlepage.recto",
+        "qname": "xsl:stylesheet.appendix.titlepage.recto",
+        "line": 1189
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1256,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1189,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:appendix.titlepage:1315:appendix.titlepage.before.verso:calls:1319",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "appendix.titlepage",
+      "target": "appendix.titlepage.before.verso",
+      "edgeLine": 1319,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "appendix.titlepage.before.verso",
+        "qname": "xsl:stylesheet.appendix.titlepage.before.verso",
+        "line": 1245
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1312,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1245,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:appendix.titlepage:1315:appendix.titlepage.verso:calls:1320",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "appendix.titlepage",
+      "target": "appendix.titlepage.verso",
+      "edgeLine": 1320,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "appendix.titlepage.verso",
+        "qname": "xsl:stylesheet.appendix.titlepage.verso",
+        "line": 1236
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1303,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1236,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:appendix.titlepage:1315:appendix.titlepage.separator:calls:1321",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "appendix.titlepage",
+      "target": "appendix.titlepage.separator",
+      "edgeLine": 1321,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "appendix.titlepage.separator",
+        "qname": "xsl:stylesheet.appendix.titlepage.separator",
+        "line": 1239
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1306,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1239,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:section.titlepage:1452:section.titlepage.before.recto:calls:1454",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "section.titlepage",
+      "target": "section.titlepage.before.recto",
+      "edgeLine": 1454,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "section.titlepage.before.recto",
+        "qname": "xsl:stylesheet.section.titlepage.before.recto",
+        "line": 1381
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1446,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1381,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:section.titlepage:1452:section.titlepage.recto:calls:1455",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "section.titlepage",
+      "target": "section.titlepage.recto",
+      "edgeLine": 1455,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "section.titlepage.recto",
+        "qname": "xsl:stylesheet.section.titlepage.recto",
+        "line": 1344
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1409,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1344,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:section.titlepage:1452:section.titlepage.before.verso:calls:1456",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "section.titlepage",
+      "target": "section.titlepage.before.verso",
+      "edgeLine": 1456,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "section.titlepage.before.verso",
+        "qname": "xsl:stylesheet.section.titlepage.before.verso",
+        "line": 1384
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1449,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1384,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:section.titlepage:1452:section.titlepage.verso:calls:1457",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "section.titlepage",
+      "target": "section.titlepage.verso",
+      "edgeLine": 1457,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "section.titlepage.verso",
+        "qname": "xsl:stylesheet.section.titlepage.verso",
+        "line": 1375
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1440,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1375,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:section.titlepage:1452:section.titlepage.separator:calls:1458",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "section.titlepage",
+      "target": "section.titlepage.separator",
+      "edgeLine": 1458,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "section.titlepage.separator",
+        "qname": "xsl:stylesheet.section.titlepage.separator",
+        "line": 1378
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1443,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1378,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect1.titlepage:1589:sect1.titlepage.before.recto:calls:1591",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect1.titlepage",
+      "target": "sect1.titlepage.before.recto",
+      "edgeLine": 1591,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect1.titlepage.before.recto",
+        "qname": "xsl:stylesheet.sect1.titlepage.before.recto",
+        "line": 1518
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1583,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1518,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect1.titlepage:1589:sect1.titlepage.recto:calls:1592",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect1.titlepage",
+      "target": "sect1.titlepage.recto",
+      "edgeLine": 1592,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect1.titlepage.recto",
+        "qname": "xsl:stylesheet.sect1.titlepage.recto",
+        "line": 1481
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1546,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1481,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect1.titlepage:1589:sect1.titlepage.before.verso:calls:1593",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect1.titlepage",
+      "target": "sect1.titlepage.before.verso",
+      "edgeLine": 1593,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect1.titlepage.before.verso",
+        "qname": "xsl:stylesheet.sect1.titlepage.before.verso",
+        "line": 1521
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1586,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1521,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect1.titlepage:1589:sect1.titlepage.verso:calls:1594",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect1.titlepage",
+      "target": "sect1.titlepage.verso",
+      "edgeLine": 1594,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect1.titlepage.verso",
+        "qname": "xsl:stylesheet.sect1.titlepage.verso",
+        "line": 1512
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1577,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1512,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect1.titlepage:1589:sect1.titlepage.separator:calls:1595",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect1.titlepage",
+      "target": "sect1.titlepage.separator",
+      "edgeLine": 1595,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect1.titlepage.separator",
+        "qname": "xsl:stylesheet.sect1.titlepage.separator",
+        "line": 1515
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1580,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1515,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect2.titlepage:1726:sect2.titlepage.before.recto:calls:1728",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect2.titlepage",
+      "target": "sect2.titlepage.before.recto",
+      "edgeLine": 1728,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect2.titlepage.before.recto",
+        "qname": "xsl:stylesheet.sect2.titlepage.before.recto",
+        "line": 1655
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1720,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1655,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect2.titlepage:1726:sect2.titlepage.recto:calls:1729",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect2.titlepage",
+      "target": "sect2.titlepage.recto",
+      "edgeLine": 1729,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect2.titlepage.recto",
+        "qname": "xsl:stylesheet.sect2.titlepage.recto",
+        "line": 1618
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1683,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1618,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect2.titlepage:1726:sect2.titlepage.before.verso:calls:1730",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect2.titlepage",
+      "target": "sect2.titlepage.before.verso",
+      "edgeLine": 1730,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect2.titlepage.before.verso",
+        "qname": "xsl:stylesheet.sect2.titlepage.before.verso",
+        "line": 1658
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1723,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1658,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect2.titlepage:1726:sect2.titlepage.verso:calls:1731",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect2.titlepage",
+      "target": "sect2.titlepage.verso",
+      "edgeLine": 1731,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect2.titlepage.verso",
+        "qname": "xsl:stylesheet.sect2.titlepage.verso",
+        "line": 1649
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1714,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1649,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect2.titlepage:1726:sect2.titlepage.separator:calls:1732",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect2.titlepage",
+      "target": "sect2.titlepage.separator",
+      "edgeLine": 1732,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect2.titlepage.separator",
+        "qname": "xsl:stylesheet.sect2.titlepage.separator",
+        "line": 1652
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1717,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1652,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect3.titlepage:1863:sect3.titlepage.before.recto:calls:1865",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect3.titlepage",
+      "target": "sect3.titlepage.before.recto",
+      "edgeLine": 1865,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect3.titlepage.before.recto",
+        "qname": "xsl:stylesheet.sect3.titlepage.before.recto",
+        "line": 1792
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1857,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1792,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect3.titlepage:1863:sect3.titlepage.recto:calls:1866",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect3.titlepage",
+      "target": "sect3.titlepage.recto",
+      "edgeLine": 1866,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect3.titlepage.recto",
+        "qname": "xsl:stylesheet.sect3.titlepage.recto",
+        "line": 1755
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1820,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1755,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect3.titlepage:1863:sect3.titlepage.before.verso:calls:1867",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect3.titlepage",
+      "target": "sect3.titlepage.before.verso",
+      "edgeLine": 1867,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect3.titlepage.before.verso",
+        "qname": "xsl:stylesheet.sect3.titlepage.before.verso",
+        "line": 1795
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1860,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1795,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect3.titlepage:1863:sect3.titlepage.verso:calls:1868",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect3.titlepage",
+      "target": "sect3.titlepage.verso",
+      "edgeLine": 1868,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect3.titlepage.verso",
+        "qname": "xsl:stylesheet.sect3.titlepage.verso",
+        "line": 1786
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1851,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1786,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect3.titlepage:1863:sect3.titlepage.separator:calls:1869",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect3.titlepage",
+      "target": "sect3.titlepage.separator",
+      "edgeLine": 1869,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect3.titlepage.separator",
+        "qname": "xsl:stylesheet.sect3.titlepage.separator",
+        "line": 1789
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1854,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1789,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect4.titlepage:2000:sect4.titlepage.before.recto:calls:2002",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect4.titlepage",
+      "target": "sect4.titlepage.before.recto",
+      "edgeLine": 2002,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect4.titlepage.before.recto",
+        "qname": "xsl:stylesheet.sect4.titlepage.before.recto",
+        "line": 1929
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1994,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1929,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect4.titlepage:2000:sect4.titlepage.recto:calls:2003",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect4.titlepage",
+      "target": "sect4.titlepage.recto",
+      "edgeLine": 2003,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect4.titlepage.recto",
+        "qname": "xsl:stylesheet.sect4.titlepage.recto",
+        "line": 1892
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1957,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1892,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect4.titlepage:2000:sect4.titlepage.before.verso:calls:2004",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect4.titlepage",
+      "target": "sect4.titlepage.before.verso",
+      "edgeLine": 2004,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect4.titlepage.before.verso",
+        "qname": "xsl:stylesheet.sect4.titlepage.before.verso",
+        "line": 1932
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1997,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1932,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect4.titlepage:2000:sect4.titlepage.verso:calls:2005",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect4.titlepage",
+      "target": "sect4.titlepage.verso",
+      "edgeLine": 2005,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect4.titlepage.verso",
+        "qname": "xsl:stylesheet.sect4.titlepage.verso",
+        "line": 1923
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1988,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1923,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect4.titlepage:2000:sect4.titlepage.separator:calls:2006",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect4.titlepage",
+      "target": "sect4.titlepage.separator",
+      "edgeLine": 2006,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect4.titlepage.separator",
+        "qname": "xsl:stylesheet.sect4.titlepage.separator",
+        "line": 1926
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 1991,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 1926,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect5.titlepage:2137:sect5.titlepage.before.recto:calls:2139",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect5.titlepage",
+      "target": "sect5.titlepage.before.recto",
+      "edgeLine": 2139,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect5.titlepage.before.recto",
+        "qname": "xsl:stylesheet.sect5.titlepage.before.recto",
+        "line": 2066
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2131,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2066,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect5.titlepage:2137:sect5.titlepage.recto:calls:2140",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect5.titlepage",
+      "target": "sect5.titlepage.recto",
+      "edgeLine": 2140,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect5.titlepage.recto",
+        "qname": "xsl:stylesheet.sect5.titlepage.recto",
+        "line": 2029
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2094,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2029,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect5.titlepage:2137:sect5.titlepage.before.verso:calls:2141",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect5.titlepage",
+      "target": "sect5.titlepage.before.verso",
+      "edgeLine": 2141,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect5.titlepage.before.verso",
+        "qname": "xsl:stylesheet.sect5.titlepage.before.verso",
+        "line": 2069
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2134,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2069,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect5.titlepage:2137:sect5.titlepage.verso:calls:2142",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect5.titlepage",
+      "target": "sect5.titlepage.verso",
+      "edgeLine": 2142,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect5.titlepage.verso",
+        "qname": "xsl:stylesheet.sect5.titlepage.verso",
+        "line": 2060
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2125,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2060,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:sect5.titlepage:2137:sect5.titlepage.separator:calls:2143",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "sect5.titlepage",
+      "target": "sect5.titlepage.separator",
+      "edgeLine": 2143,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "sect5.titlepage.separator",
+        "qname": "xsl:stylesheet.sect5.titlepage.separator",
+        "line": 2063
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2128,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2063,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:simplesect.titlepage:2290:simplesect.titlepage.before.recto:calls:2292",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "simplesect.titlepage",
+      "target": "simplesect.titlepage.before.recto",
+      "edgeLine": 2292,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "simplesect.titlepage.before.recto",
+        "qname": "xsl:stylesheet.simplesect.titlepage.before.recto",
+        "line": 2219
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2284,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2219,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:simplesect.titlepage:2290:simplesect.titlepage.recto:calls:2293",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "simplesect.titlepage",
+      "target": "simplesect.titlepage.recto",
+      "edgeLine": 2293,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "simplesect.titlepage.recto",
+        "qname": "xsl:stylesheet.simplesect.titlepage.recto",
+        "line": 2166
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2231,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2166,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:simplesect.titlepage:2290:simplesect.titlepage.before.verso:calls:2294",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "simplesect.titlepage",
+      "target": "simplesect.titlepage.before.verso",
+      "edgeLine": 2294,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "simplesect.titlepage.before.verso",
+        "qname": "xsl:stylesheet.simplesect.titlepage.before.verso",
+        "line": 2222
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2287,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2222,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:simplesect.titlepage:2290:simplesect.titlepage.verso:calls:2295",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "simplesect.titlepage",
+      "target": "simplesect.titlepage.verso",
+      "edgeLine": 2295,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "simplesect.titlepage.verso",
+        "qname": "xsl:stylesheet.simplesect.titlepage.verso",
+        "line": 2213
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2278,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2213,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:simplesect.titlepage:2290:simplesect.titlepage.separator:calls:2296",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "simplesect.titlepage",
+      "target": "simplesect.titlepage.separator",
+      "edgeLine": 2296,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "simplesect.titlepage.separator",
+        "qname": "xsl:stylesheet.simplesect.titlepage.separator",
+        "line": 2216
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2281,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2216,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:bibliography.titlepage:2415:bibliography.titlepage.before.recto:calls:2417",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "bibliography.titlepage",
+      "target": "bibliography.titlepage.before.recto",
+      "edgeLine": 2417,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "bibliography.titlepage.before.recto",
+        "qname": "xsl:stylesheet.bibliography.titlepage.before.recto",
+        "line": 2344
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2409,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2344,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:bibliography.titlepage:2415:bibliography.titlepage.recto:calls:2418",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "bibliography.titlepage",
+      "target": "bibliography.titlepage.recto",
+      "edgeLine": 2418,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "bibliography.titlepage.recto",
+        "qname": "xsl:stylesheet.bibliography.titlepage.recto",
+        "line": 2319
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2384,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2319,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:bibliography.titlepage:2415:bibliography.titlepage.before.verso:calls:2419",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "bibliography.titlepage",
+      "target": "bibliography.titlepage.before.verso",
+      "edgeLine": 2419,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "bibliography.titlepage.before.verso",
+        "qname": "xsl:stylesheet.bibliography.titlepage.before.verso",
+        "line": 2347
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2412,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2347,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:bibliography.titlepage:2415:bibliography.titlepage.verso:calls:2420",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "bibliography.titlepage",
+      "target": "bibliography.titlepage.verso",
+      "edgeLine": 2420,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "bibliography.titlepage.verso",
+        "qname": "xsl:stylesheet.bibliography.titlepage.verso",
+        "line": 2338
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2403,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2338,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:bibliography.titlepage:2415:bibliography.titlepage.separator:calls:2421",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "bibliography.titlepage",
+      "target": "bibliography.titlepage.separator",
+      "edgeLine": 2421,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "bibliography.titlepage.separator",
+        "qname": "xsl:stylesheet.bibliography.titlepage.separator",
+        "line": 2341
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2406,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2341,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:glossary.titlepage:2474:glossary.titlepage.before.recto:calls:2476",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "glossary.titlepage",
+      "target": "glossary.titlepage.before.recto",
+      "edgeLine": 2476,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "glossary.titlepage.before.recto",
+        "qname": "xsl:stylesheet.glossary.titlepage.before.recto",
+        "line": 2403
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2468,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2403,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:glossary.titlepage:2474:glossary.titlepage.recto:calls:2477",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "glossary.titlepage",
+      "target": "glossary.titlepage.recto",
+      "edgeLine": 2477,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "glossary.titlepage.recto",
+        "qname": "xsl:stylesheet.glossary.titlepage.recto",
+        "line": 2378
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2443,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2378,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:glossary.titlepage:2474:glossary.titlepage.before.verso:calls:2478",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "glossary.titlepage",
+      "target": "glossary.titlepage.before.verso",
+      "edgeLine": 2478,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "glossary.titlepage.before.verso",
+        "qname": "xsl:stylesheet.glossary.titlepage.before.verso",
+        "line": 2406
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2471,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2406,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:glossary.titlepage:2474:glossary.titlepage.verso:calls:2479",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "glossary.titlepage",
+      "target": "glossary.titlepage.verso",
+      "edgeLine": 2479,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "glossary.titlepage.verso",
+        "qname": "xsl:stylesheet.glossary.titlepage.verso",
+        "line": 2397
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2462,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2397,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:glossary.titlepage:2474:glossary.titlepage.separator:calls:2480",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "glossary.titlepage",
+      "target": "glossary.titlepage.separator",
+      "edgeLine": 2480,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "glossary.titlepage.separator",
+        "qname": "xsl:stylesheet.glossary.titlepage.separator",
+        "line": 2400
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2465,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2400,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:index.titlepage:2533:index.titlepage.before.recto:calls:2535",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "index.titlepage",
+      "target": "index.titlepage.before.recto",
+      "edgeLine": 2535,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "index.titlepage.before.recto",
+        "qname": "xsl:stylesheet.index.titlepage.before.recto",
+        "line": 2462
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2527,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2462,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:index.titlepage:2533:index.titlepage.recto:calls:2536",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "index.titlepage",
+      "target": "index.titlepage.recto",
+      "edgeLine": 2536,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "index.titlepage.recto",
+        "qname": "xsl:stylesheet.index.titlepage.recto",
+        "line": 2437
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2502,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2437,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:index.titlepage:2533:index.titlepage.before.verso:calls:2537",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "index.titlepage",
+      "target": "index.titlepage.before.verso",
+      "edgeLine": 2537,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "index.titlepage.before.verso",
+        "qname": "xsl:stylesheet.index.titlepage.before.verso",
+        "line": 2465
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2530,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2465,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:index.titlepage:2533:index.titlepage.verso:calls:2538",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "index.titlepage",
+      "target": "index.titlepage.verso",
+      "edgeLine": 2538,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "index.titlepage.verso",
+        "qname": "xsl:stylesheet.index.titlepage.verso",
+        "line": 2456
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2521,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2456,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "calls",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/titlepage.templates.xsl:index.titlepage:2533:index.titlepage.separator:calls:2539",
+      "sourceFile": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+      "source": "index.titlepage",
+      "target": "index.titlepage.separator",
+      "edgeLine": 2539,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+        "name": "index.titlepage.separator",
+        "qname": "xsl:stylesheet.index.titlepage.separator",
+        "line": 2459
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/titlepage.templates.xsl",
+          "line": 2524,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/titlepage.templates.xsl",
+          "line": 2459,
+          "kind": "class"
+        }
+      ]
+    }
+  ],
+  "otherViolations": [
+    {
+      "type": "references",
+      "edge": "rel:null:target:references:7",
+      "sourceFile": "",
+      "source": "",
+      "target": "target",
+      "edgeLine": 7,
+      "analyzerClass": "in-document",
+      "role": "entity_reference",
+      "boundTo": {
+        "file": "dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/plugin.xml",
+        "name": "target",
+        "qname": "extension.target",
+        "line": 41
+      },
+      "declaredInSourceFile": [],
+      "declaredElsewhere": [
+        {
+          "file": "dbeaver/pom.xml",
+          "line": 92,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/general/bug-110.xml",
+          "line": 3,
+          "kind": "type"
+        },
+        {
+          "file": "libxslt/tests/XSLTMark/tower.xsl",
+          "line": 12,
+          "kind": "class"
+        },
+        {
+          "file": "libxslt/tests/XSLTMark/tower.xsl",
+          "line": 24,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "imports",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/REC/stand-2.7-1.xml:xml-stylesheet:1:#style1:imports:1",
+      "sourceFile": "libxslt/tests/REC/stand-2.7-1.xml",
+      "source": "xml-stylesheet",
+      "target": "#style1",
+      "edgeLine": 1,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": null,
+      "declaredInSourceFile": [],
+      "declaredElsewhere": []
+    },
+    {
+      "type": "imports",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/REC/stand-2.7-2.xml:xml-stylesheet:2:#transform:imports:2",
+      "sourceFile": "libxslt/tests/REC/stand-2.7-2.xml",
+      "source": "xml-stylesheet",
+      "target": "#transform",
+      "edgeLine": 2,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": null,
+      "declaredInSourceFile": [],
+      "declaredElsewhere": []
+    },
+    {
+      "type": "imports",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/REC/stand-2.7-3.xml:xml-stylesheet:2:#transform:imports:2",
+      "sourceFile": "libxslt/tests/REC/stand-2.7-3.xml",
+      "source": "xml-stylesheet",
+      "target": "#transform",
+      "edgeLine": 2,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": null,
+      "declaredInSourceFile": [],
+      "declaredElsewhere": []
+    },
+    {
+      "type": "overrides",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/toc.xsl:xsl:template[match=*|mode=toc.for.section|priority=]#1:156:xsl:template[match=*|mode=toc.for.section|priority=]#0:overrides:156",
+      "sourceFile": "libxslt/tests/docbook/html/toc.xsl",
+      "source": "xsl:template[match=*|mode=toc.for.section|priority=]#1",
+      "target": "xsl:template[match=*|mode=toc.for.section|priority=]#0",
+      "edgeLine": 156,
+      "analyzerClass": "in-document",
+      "role": "inheritor",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/toc.xsl",
+        "name": "xsl:template[match=*|mode=toc.for.section|priority=]#0",
+        "qname": "xsl:stylesheet.xsl:template[match=*|mode=toc.for.section|priority=]#0",
+        "line": 180
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/toc.xsl",
+          "line": 148,
+          "kind": "class"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/toc.xsl",
+          "line": 180,
+          "kind": "class"
+        }
+      ]
+    },
+    {
+      "type": "references",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/autoidx.xsl:primary-section:62:section.id:references:64",
+      "sourceFile": "libxslt/tests/docbook/html/autoidx.xsl",
+      "source": "primary-section",
+      "target": "section.id",
+      "edgeLine": 64,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+        "name": "section.id",
+        "qname": "section.id",
+        "line": 33
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ]
+    },
+    {
+      "type": "references",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/autoidx.xsl:secondary-section:66:section.id:references:68",
+      "sourceFile": "libxslt/tests/docbook/html/autoidx.xsl",
+      "source": "secondary-section",
+      "target": "section.id",
+      "edgeLine": 68,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+        "name": "section.id",
+        "qname": "section.id",
+        "line": 33
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ]
+    },
+    {
+      "type": "references",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/autoidx.xsl:tertiary-section:70:section.id:references:72",
+      "sourceFile": "libxslt/tests/docbook/html/autoidx.xsl",
+      "source": "tertiary-section",
+      "target": "section.id",
+      "edgeLine": 72,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+        "name": "section.id",
+        "qname": "section.id",
+        "line": 33
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ]
+    },
+    {
+      "type": "references",
+      "edge": "rel:4c0423a902a0ac31be1a2311ad511eee9791b5f1:libxslt/tests/docbook/html/autoidx.xsl:xsl:for-each:139:section.id:references:139",
+      "sourceFile": "libxslt/tests/docbook/html/autoidx.xsl",
+      "source": "xsl:for-each",
+      "target": "section.id",
+      "edgeLine": 139,
+      "analyzerClass": "in-document",
+      "role": "consumer",
+      "boundTo": {
+        "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+        "name": "section.id",
+        "qname": "section.id",
+        "line": 33
+      },
+      "declaredInSourceFile": [
+        {
+          "file": "libxslt/tests/docbook/html/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ],
+      "declaredElsewhere": [
+        {
+          "file": "libxslt/tests/docbook/fo/autoidx.xsl",
+          "line": 33,
+          "kind": "type"
+        }
+      ]
+    }
+  ]
+}

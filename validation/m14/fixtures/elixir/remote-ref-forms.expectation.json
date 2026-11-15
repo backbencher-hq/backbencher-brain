@@ -1,0 +1,63 @@
+{
+  "expectSymbols": [
+    {
+      "name": "RefForms",
+      "kind": "module"
+    },
+    {
+      "name": "read",
+      "kind": "function",
+      "ownerName": "RefForms"
+    },
+    {
+      "name": "mapper",
+      "kind": "function",
+      "ownerName": "RefForms"
+    },
+    {
+      "name": "bare",
+      "kind": "function",
+      "ownerName": "RefForms"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "RefForms",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "RefForms.mapper/0",
+      "target": "Enum.map"
+    },
+    {
+      "type": "calls",
+      "from": "RefForms.bare/0",
+      "target": "Enum.reverse"
+    },
+    {
+      "type": "contains",
+      "from": "RefForms",
+      "target": "read"
+    },
+    {
+      "type": "contains",
+      "from": "RefForms",
+      "target": "mapper"
+    },
+    {
+      "type": "contains",
+      "from": "RefForms",
+      "target": "bare"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "RefForms.read",
+      "target": "order.side"
+    }
+  ]
+}

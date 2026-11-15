@@ -1,0 +1,366 @@
+{
+  "fixtureId": "zig/owner-path-nested",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Z-p22 (2026-10-04). A container member's `scope`/`ownerName` was the container's BARE name, while the shared projection spells a symbol `scope ? scope + '.' + name : name` (pool-worker.ts:930) — so a container published its ABSOLUTE name and its members published a RELATIVE one. Measured on ghostty/pkg/macos/iosurface/iosurface.zig:10: container `IOSurface.Error`, member published as `Error.InvalidOperation`, and the `contains` edge's source `Error` is not a published qualified name anywhere in the file. Over the published 3,834-file draw `sha256:2f3545f9` that was 15,686 of 80,876 `contains` edges (19.4%) in 421 files; after the change 99.99% are composition-resolvable and 8 are not (a shared-file `keepSymbol` denylist, not this analyzer). The rows are grouped by what each one can catch. DEPTH-2 rows catch a mutant that reverts to `container.name`. DEPTH-3 (`Registry.Entry.Slot.value`) catches a mutant that qualifies by exactly ONE level, which passes every depth-2 row. `Chdr`/`Elf64.Chdr` catches a mutant that picks a wrong-but-existing container: zig/lib/std/elf.zig declares `Elf32.Chdr`, `Elf64.Chdr` and a file-scope alias `Chdr`, so the bare name names three real declarations. The file-scope rows (`Point`, `Shape`, `Color`) are the negative half — a top-level container's path EQUALS its bare name, so these are byte-identical to the pre-fix output, and a mutant that prefixes or over-qualifies cannot produce them. `locals()` pins Z22's refusal, which a mutant widening the path logic to every enclosing node would break. The quoted row pins the join: `canonicalizePublishedNames` strips quoting from `ownerName` but not from `scope`, so the path is built from stripped components — building it from raw lexer text would spell the container `my type` and the member `@\"my type\".field`, the exact split this change removes.",
+  "expectSymbols": [
+    {
+      "name": "Elf64",
+      "kind": "struct"
+    },
+    {
+      "name": "Chdr",
+      "kind": "struct",
+      "ownerName": "Elf64"
+    },
+    {
+      "name": "reserved",
+      "kind": "property",
+      "ownerName": "Elf64.Chdr"
+    },
+    {
+      "name": "size",
+      "kind": "property",
+      "ownerName": "Elf64.Chdr"
+    },
+    {
+      "name": "Shdr",
+      "kind": "struct",
+      "ownerName": "Elf64"
+    },
+    {
+      "name": "sh_name",
+      "kind": "property",
+      "ownerName": "Elf64.Shdr"
+    },
+    {
+      "name": "init",
+      "kind": "method",
+      "ownerName": "Elf64"
+    },
+    {
+      "name": "Registry",
+      "kind": "struct"
+    },
+    {
+      "name": "Entry",
+      "kind": "struct",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "Slot",
+      "kind": "struct",
+      "ownerName": "Registry.Entry"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Registry.Entry.Slot"
+    },
+    {
+      "name": "tag",
+      "kind": "property",
+      "ownerName": "Registry.Entry.Slot"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Registry.Entry"
+    },
+    {
+      "name": "entries",
+      "kind": "property",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "IOSurface",
+      "kind": "struct"
+    },
+    {
+      "name": "Error",
+      "kind": "enum",
+      "ownerName": "IOSurface"
+    },
+    {
+      "name": "InvalidOperation",
+      "kind": "enum_member",
+      "ownerName": "IOSurface.Error"
+    },
+    {
+      "name": "OutOfMemory",
+      "kind": "enum_member",
+      "ownerName": "IOSurface.Error"
+    },
+    {
+      "name": "handle",
+      "kind": "property",
+      "ownerName": "IOSurface"
+    },
+    {
+      "name": "Point",
+      "kind": "struct"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "y",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "Shape",
+      "kind": "union"
+    },
+    {
+      "name": "Color",
+      "kind": "enum"
+    },
+    {
+      "name": "red",
+      "kind": "enum_member",
+      "ownerName": "Color"
+    },
+    {
+      "name": "my type",
+      "kind": "struct"
+    },
+    {
+      "name": "field",
+      "kind": "property",
+      "ownerName": "my type"
+    },
+    {
+      "name": "outer",
+      "kind": "struct"
+    },
+    {
+      "name": "inner name",
+      "kind": "property",
+      "ownerName": "outer"
+    },
+    {
+      "name": "plain",
+      "kind": "property",
+      "ownerName": "outer"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Slot",
+      "kind": "struct",
+      "ownerName": "Entry"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Slot"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Registry.Slot"
+    },
+    {
+      "name": "reserved",
+      "kind": "property",
+      "ownerName": "Chdr"
+    },
+    {
+      "name": "reserved",
+      "kind": "property",
+      "ownerName": "Elf64.reserved"
+    },
+    {
+      "name": "InvalidOperation",
+      "kind": "enum_member",
+      "ownerName": "Error"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "owner-path-nested.x"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Point.x"
+    },
+    {
+      "name": "field",
+      "kind": "property",
+      "ownerName": "@\"my type\""
+    },
+    {
+      "name": "layout",
+      "kind": "property",
+      "ownerName": "Case"
+    },
+    {
+      "name": "click_y",
+      "kind": "property",
+      "ownerName": "locals.Case"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Elf64.Chdr",
+      "target": "Elf64.Chdr.reserved",
+      "note": "Z-p22: the member's owner is the container's ABSOLUTE path, and `Elf64.Chdr` is the qualified name the container itself publishes. Pre-fix this edge's source was `Chdr`, a name three declarations in this file hold (Elf32.Chdr, Elf64.Chdr, and a file-scope alias).",
+      "meta.relationshipType": "zig_ownership"
+    },
+    {
+      "type": "contains",
+      "source": "Elf64.Chdr",
+      "target": "Elf64.Chdr.size"
+    },
+    {
+      "type": "contains",
+      "source": "Elf64.Shdr",
+      "target": "Elf64.Shdr.sh_name"
+    },
+    {
+      "type": "contains",
+      "source": "Elf64",
+      "target": "Elf64.Chdr"
+    },
+    {
+      "type": "contains",
+      "source": "Elf64",
+      "target": "Elf64.Shdr"
+    },
+    {
+      "type": "contains",
+      "source": "Elf64",
+      "target": "Elf64.init",
+      "note": "a METHOD is a container member too, so the function branch reads the same path"
+    },
+    {
+      "type": "contains",
+      "source": "Registry.Entry.Slot",
+      "target": "Registry.Entry.Slot.value",
+      "note": "depth 3: a mutant that qualifies by exactly one level fails here and passes every depth-2 row"
+    },
+    {
+      "type": "contains",
+      "source": "Registry.Entry.Slot",
+      "target": "Registry.Entry.Slot.tag"
+    },
+    {
+      "type": "contains",
+      "source": "Registry.Entry",
+      "target": "Registry.Entry.Slot"
+    },
+    {
+      "type": "contains",
+      "source": "Registry.Entry",
+      "target": "Registry.Entry.count"
+    },
+    {
+      "type": "contains",
+      "source": "Registry",
+      "target": "Registry.Entry"
+    },
+    {
+      "type": "contains",
+      "source": "Registry",
+      "target": "Registry.entries"
+    },
+    {
+      "type": "contains",
+      "source": "IOSurface.Error",
+      "target": "IOSurface.Error.InvalidOperation",
+      "note": "the error-set member branch reads the container's name directly, so it is a second site the fix had to reach; this is the measured corpus site"
+    },
+    {
+      "type": "contains",
+      "source": "IOSurface.Error",
+      "target": "IOSurface.Error.OutOfMemory"
+    },
+    {
+      "type": "contains",
+      "source": "IOSurface",
+      "target": "IOSurface.Error"
+    },
+    {
+      "type": "contains",
+      "source": "IOSurface",
+      "target": "IOSurface.handle"
+    },
+    {
+      "type": "contains",
+      "source": "Point",
+      "target": "Point.x",
+      "note": "a FILE-SCOPE container's path equals its bare name: this edge is byte-identical before and after the fix, which is what keeps the change off the top-level majority"
+    },
+    {
+      "type": "contains",
+      "source": "Point",
+      "target": "Point.y"
+    },
+    {
+      "type": "contains",
+      "source": "Color",
+      "target": "Color.red"
+    },
+    {
+      "type": "contains",
+      "source": "my type",
+      "target": "my type.field",
+      "note": "the path is built from STRIPPED components: `canonicalizePublishedNames` strips quoting from ownerName but not from scope, so a raw `@\"my type\"` component would spell the member `@\"my type\".field` while the container spells `my type`"
+    },
+    {
+      "type": "contains",
+      "source": "outer",
+      "target": "outer.inner name",
+      "note": "a quoted FIELD name is stripped on both halves, so the edge target and the member's qualified name agree"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "Chdr",
+      "target": "reserved",
+      "note": "Z-p22: the pre-fix spelling. `Chdr` names three real declarations in this file, so an edge to it binds by a rule nobody chose"
+    },
+    {
+      "type": "contains",
+      "source": "Error",
+      "target": "InvalidOperation",
+      "note": "and this source is not a published qualified name AT ALL — the failure the fix removes"
+    },
+    {
+      "type": "contains",
+      "source": "Entry.Slot",
+      "target": "value",
+      "note": "a one-level qualification of a depth-3 path"
+    },
+    {
+      "type": "contains",
+      "source": "Slot",
+      "target": "value",
+      "note": "the bare innermost name"
+    },
+    {
+      "type": "contains",
+      "source": "Elf64.reserved",
+      "target": "reserved",
+      "note": "the target is the member's BARE name; a dotted target would not compose with the source"
+    },
+    {
+      "type": "contains",
+      "source": "Case",
+      "target": "layout",
+      "note": "Z22: a container declared inside a FUNCTION body has no stable identity, so none of its declarations is a symbol and no contains edge is emitted for it"
+    },
+    {
+      "type": "contains",
+      "source": "locals.Case",
+      "target": "layout",
+      "note": "and the path fix does not widen that refusal — the container is not published, so nothing can own its members"
+    }
+  ]
+}

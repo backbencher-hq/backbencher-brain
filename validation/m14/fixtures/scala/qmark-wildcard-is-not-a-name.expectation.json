@@ -1,0 +1,36 @@
+{
+ "fixtureId": "scala/qmark-wildcard-is-not-a-name",
+ "language": "scala",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "R7, the `?` class: 49 `references X -> ?` endpoints over the 9,353-file corpus whose emitting file declares no `?`, measured by script/m14/tmp/scala-ontology-census.ts (the R7 undeclared column: references 65 shaped / 49 undeclared, all of them `?`). `Map[? <: AnyRef, ? >: Null]` (test/files/neg/wildcards-future.scala:6) is Scala 3's inferred-type wildcard; the grammar spells it as a bare `type_identifier \"?\"`, indistinguishable from the legal type name `?` at the node level, so the FILE's declared-name set decides. The declared half is a separate fixture on purpose: the rule is per-file, and one file cannot assert both verdicts.",
+ "expectSymbols": [
+  {
+   "name": "QmarkWildcard",
+   "kind": "module"
+  },
+  {
+   "name": "qmarkBounds",
+   "kind": "constant",
+   "ownerName": "QmarkWildcard"
+  },
+  {
+   "name": "qmarkParameter",
+   "kind": "method",
+   "ownerName": "QmarkWildcard"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "target": "Map",
+   "note": "the CONTAINING type of the wildcard is a name and must survive \u2014 the guard is stated over the wildcard character, not over type arguments"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "target": "?",
+   "note": "`?` is an inferred-type wildcard in this file, which declares no `?`; publishing `references QmarkWildcard -> ?` names a type no file in the graph contains (R7)"
+  }
+ ]
+}

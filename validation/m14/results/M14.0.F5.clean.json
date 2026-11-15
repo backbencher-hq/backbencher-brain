@@ -1,0 +1,164 @@
+{
+  "checks": [
+    {
+      "description": "THIS lane's own analyzer and spec are this commit's",
+      "detail": "src/ast/real-clean-analyzer.ts, script/m14/spec/clean-completeness.json clean at head dea4738741",
+      "id": "differential-lane-code-inputs",
+      "status": "pass"
+    },
+    {
+      "description": "the SHARED oracle/harness that produced these rows is this commit's",
+      "detail": "1 shared harness file(s) differ from head dea4738741: script/m14/differential.ts — the harness is shared by every lane, so this can be another lane's uncommitted work and is NOT evidence about this lane's rows",
+      "id": "differential-harness-code-inputs",
+      "status": "fail"
+    },
+    {
+      "description": "clean: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=668 covered=668 (100%) MISSING=0 | analyzer-edges=510 unexplained=0 (0%) heuristic=0 hash=f3888b1b2d280afc",
+      "id": "differential-clean",
+      "status": "pass"
+    },
+    {
+      "description": "clean-stdlib:clean: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=744 covered=744 (100%) MISSING=0 | analyzer-edges=536 unexplained=0 (0%) heuristic=0 hash=45fb6cc02ee76193",
+      "id": "differential-clean-stdlib:clean",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "dea4738741c67426e3415105acfe7656aec71f1d",
+  "committedAt": "2026-09-25T15:35:41-04:00",
+  "corpusPins": {
+    "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+    "clean-stdlib": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff"
+  },
+  "data": {
+    "codeInputs": {
+      "clean": false,
+      "dirty": [
+        "package.json",
+        "script/m14/differential.ts",
+        "src/ast/parallel-indexer.ts"
+      ],
+      "head": "dea4738741c67426e3415105acfe7656aec71f1d",
+      "laneDirt": [],
+      "otherDirt": [
+        "package.json",
+        "src/ast/parallel-indexer.ts"
+      ],
+      "ownInputs": [
+        "src/ast/real-clean-analyzer.ts",
+        "script/m14/spec/clean-completeness.json"
+      ],
+      "sharedDirt": [
+        "script/m14/differential.ts"
+      ],
+      "sharedInputs": [
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts"
+      ]
+    },
+    "report": {
+      "clean": {
+        "analyzerEdges": 510,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 668,
+        "explainableByTree": 510,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 1.8,
+          "loadAvg1": 12.91,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 59.8,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "f3888b1b2d280afc",
+        "samples": [],
+        "treeTruthEdges": 668,
+        "unexplainedInAnalyzer": 0
+      }
+    },
+    "samplingRule": "seeded 60 files/language, scoped to clean",
+    "scope": "clean",
+    "scoped": true,
+    "secondCorpus": {
+      "mapping": {
+        "c": "jq",
+        "clean": "clean-stdlib",
+        "clojure": "clj-kondo",
+        "cpp": "nlohmann-json",
+        "csharp": "fsharp",
+        "dart": "dart-http",
+        "elixir": "phoenix",
+        "erlang": "otp",
+        "go": "terraform",
+        "groovy": "geb",
+        "haskell": "hledger",
+        "java": "clojure",
+        "javascript": "lodash",
+        "kotlin": "kotlinx-coroutines",
+        "objc": "afnetworking",
+        "php": "phpmyadmin",
+        "python": "requests",
+        "ruby": "rack",
+        "rust": "cargo",
+        "scala": "cats-effect",
+        "svelte": "shadcn-svelte",
+        "swift": "alamofire",
+        "typescript": "element-plus",
+        "vue": "vue-element-admin",
+        "zig": "zls"
+      },
+      "report": {
+        "clean-stdlib:clean": {
+          "analyzerEdges": 536,
+          "coveragePct": 100,
+          "coveredByAnalyzer": 744,
+          "explainableByTree": 536,
+          "fabricationPct": 0,
+          "filesSampled": 60,
+          "heuristicUnexplained": 0,
+          "missingInAnalyzer": 0,
+          "perf": {
+            "avgMsPerFile": 2,
+            "loadAvg1": 11.35,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 125.8,
+            "samplesTimed": 60
+          },
+          "sampleSetHash": "45fb6cc02ee76193",
+          "samples": [],
+          "treeTruthEdges": 744,
+          "unexplainedInAnalyzer": 0
+        }
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5.clean",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "LANE-SCOPED artifact: this run measured 2 lane(s) (clean, clean-stdlib:clean), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane."
+    },
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "the code-input check is scoped to this lane's producers (src/ast/real-clean-analyzer.ts, script/m14/spec/clean-completeness.json, script/m14/differential.ts, script/m14/evidence-harness.ts); 2 OTHER measured input(s) are dirty in this checkout from other lanes (package.json, src/ast/parallel-indexer.ts) and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts"
+    }
+  ],
+  "regeneratedAt": "2026-09-25T19:36:38.602Z",
+  "regeneratedAtCommit": "dea4738741c67426e3415105acfe7656aec71f1d",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness, LANE-SCOPED (clean: clean, clean-stdlib:clean) — NOT the canonical 25-language claim"
+}

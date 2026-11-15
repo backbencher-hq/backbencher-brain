@@ -1,0 +1,13 @@
+{
+  "fixtureId": "matlab/ambiguity",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the grammar's intentional function-call versus matrix-index ambiguity without claiming semantic resolution.",
+  "expectSymbols": [
+    { "name": "ambiguity", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "ambiguity", "target": "input", "meta.evidenceClass": "inferred" },
+    { "type": "calls", "from": "ambiguity", "target": "helper", "meta.evidenceClass": "inferred" }
+  ]
+}

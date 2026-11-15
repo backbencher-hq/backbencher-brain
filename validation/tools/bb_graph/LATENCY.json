@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_graph",
+  "tier": "phase-a",
+  "status": "measured-with-blocked-legs",
+  "currentCommit": "c43282e92",
+  "measuredAt": "2026-11-01",
+  "environment": {
+    "engine": "backbencher-brain 0.3.0",
+    "runtime": "node v22.22.1 (npx tsx) \u2014 gates that need bun:sqlite use bun 1.3.14",
+    "host": "shared checkout, fleet process active",
+    "loadAverageAtMeasurement": [
+      24.95,
+      24.43,
+      28.73
+    ],
+    "memory": "15 GB total, 13 GB used, ~1 GB available",
+    "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for every read; no indexer; no write tool; no index run against .bb-data",
+    "dataDir": "BB_DATA_DIR=.bb-data (T2 reference), BB_DATA_DIR=validation/tools/bb_graph/bbdata (T0/T1 fixtures)"
+  },
+  "referenceIndex": {
+    "path": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "size": "3.4 GB",
+    "files": 11440,
+    "symbols": 310423,
+    "relationships": 820040,
+    "symbolsWithOwner": 226113,
+    "source": "SELECT COUNT(*) on brain_symbol / brain_relationship (validation/tools/bb_graph/recon.ts \u2192 results/recon.json)",
+    "note": "The campaign baseline describes 1,283,638 symbols / 4,418,260 relationships. The reference index present in this checkout answers 310,423 / 820,040. The measurements below are against what is on disk; the difference is recorded rather than reconciled."
+  },
+  "budgets": {
+    "t0DefaultP95Ms": 250,
+    "t1DefaultP95Ms": 1000,
+    "t2DefaultP95Ms": 5000,
+    "clientTimeoutMs": 30000,
+    "source": "docs/tools-campaign/CHARTER.md \u00a76"
+  },
+  "tiers": {
+    "T0": {
+      "subject": "test/fixtures/polyglot",
+      "indexCommand": "BB_DATA_DIR=validation/tools/bb_graph/bbdata npx tsx validation/tools/bb_graph/index-fixtures.ts",
+      "indexMs": 971,
+      "command": "BB_DATA_DIR=validation/tools/bb_graph/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/probe.ts latency-t0t1",
+      "case": {
+        "args": {
+          "symbol": "basePrice"
+        },
+        "runs": 5,
+        "warm": true
+      },
+      "samplesMs": [
+        107.48,
+        70.3,
+        73.59,
+        72.84,
+        68.8
+      ],
+      "p50Ms": 72.84,
+      "p95Ms": 107.48,
+      "edges": 3,
+      "bytes": 6441,
+      "withinBudget": true,
+      "evidence": "validation/tools/bb_graph/results/probe-latency-t0t1.json"
+    },
+    "T1": {
+      "subject": ".perf-fixtures/bb-scale/n100",
+      "indexCommand": "BB_DATA_DIR=validation/tools/bb_graph/bbdata npx tsx validation/tools/bb_graph/index-fixtures.ts",
+      "indexMs": 1919,
+      "command": "BB_DATA_DIR=validation/tools/bb_graph/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/probe.ts latency-t0t1",
+      "case": {
+        "args": {
+          "symbol": "prepare"
+        },
+        "runs": 5,
+        "warm": true
+      },
+      "samplesMs": [
+        530,
+        342.73,
+        280.47,
+        358.22,
+        379.39
+      ],
+      "p50Ms": 358.22,
+      "p95Ms": 530,
+      "edges": 333,
+      "bytes": 330323,
+      "withinBudget": true,
+      "evidence": "validation/tools/bb_graph/results/probe-latency-t0t1.json"
+    },
+    "T2": {
+      "subject": "this workspace's index (.bb-data)",
+      "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/latency-t2.ts '[{\"id\":\"leaf-default\",\"args\":{\"symbol\":\"likeContains\"},\"runs\":5}]'",
+      "case": {
+        "symbol": "likeContains",
+        "whyThisSymbol": "degree-measured leaf: 2 stored incoming rows, 0 outgoing (results/recon.json). The cheapest non-trivial target the index holds \u2014 a lower bound on what a default call costs.",
+        "args": {
+          "symbol": "likeContains"
+        },
+        "defaultsApplied": {
+          "maxDepth": 3,
+          "direction": "both",
+          "edgeLimit": 200,
+          "maxEdges": 1000,
+          "timeBudgetMs": 0
+        },
+        "runs": 5,
+        "warm": true,
+        "warmupCallMs": 153261
+      },
+      "samplesMs": [
+        114580,
+        110552,
+        131230,
+        168335,
+        153606
+      ],
+      "p50Ms": 131230,
+      "p95Ms": 168335,
+      "edges": 12,
+      "bytes": 7067,
+      "withinBudget": false,
+      "budgetMultiple": {
+        "p50Versus5s": 26.2,
+        "p95Versus5s": 33.7,
+        "p50Versus30sTimeout": 4.4,
+        "p95Versus30sTimeout": 5.6
+      },
+      "evidence": "validation/tools/bb_graph/results/latency-t2.json"
+    },
+    "T2-blocked": {
+      "leg": "default-depth matrices on mid and hub symbols (invariants / bounds / cascade / twin probe sections)",
+      "command": "BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/probe.ts invariants",
+      "outcome": "killed after 10 minutes with no result; a single default call on a mid symbol did not return. The same sections complete in seconds on T0/T1 (same handler code path).",
+      "reason": "one statement per node costs 5-19 s on this index; a depth-3 walk expands up to 50 symbols per direction"
+    }
+  },
+  "statementProfileT2": {
+    "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/plans-live.ts",
+    "evidence": "validation/tools/bb_graph/results/plans-live.json",
+    "handle": "BrainDatabase.getRawInstance \u2014 the same open path the handler uses (additive migrations + planner-stat healer), so these are the plans a caller pays for",
+    "dbOpenMs": 18714,
+    "statements": {
+      "cascadeOnly": {
+        "rows": 1,
+        "ms": 976.5,
+        "plan": [
+          "COMPOUND QUERY",
+          "LEFT-MOST SUBQUERY",
+          "SCAN CONSTANT ROW",
+          "UNION ALL",
+          "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)"
+        ]
+      },
+      "callerArm": {
+        "rows": 2,
+        "ms": 4984.88,
+        "plan": [
+          "CO-ROUTINE casc",
+          "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)",
+          "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)",
+          "USE TEMP B-TREE FOR LAST 3 TERMS OF ORDER BY"
+        ]
+      },
+      "unattributedCallers": {
+        "rows": 1,
+        "ms": 10697.82,
+        "plan": [
+          "CO-ROUTINE casc",
+          "SEARCH m USING INDEX brain_symbol_gravity_idx (project_id=?)",
+          "SEARCH r USING INDEX brain_rel_proj_type_idx (project_id=? AND relationship_type=?)",
+          "BLOOM FILTER ON casc (id=?)"
+        ]
+      },
+      "rootExact": {
+        "rows": 1,
+        "ms": 944.59,
+        "plan": [
+          "SEARCH s USING INDEX brain_symbol_gravity_idx (project_id=?)",
+          "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)",
+          "USE TEMP B-TREE FOR LAST TERM OF ORDER BY"
+        ]
+      }
+    },
+    "plannerStats": "sqlite_stat1 holds rows for exactly two indexes on brain_relationship (brain_rel_source_cross_idx, brain_rel_target_idx) and none for brain_symbol; ensurePlannerStats analyzes only when the table is entirely absent",
+    "interpretation": "the cascade's owner range is not seeked (gravity index scan of the project's 310,423 symbols), the arms scan per-kind rows instead of seeking (project_id, relationship_type, target_symbol_id) which exists, and the unattributed counts scan for a NULL source. This is D-06, routed from bb_analyze and confirmed independently here."
+  },
+  "refusalLatencyT2": {
+    "command": "BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/probe.ts refusals",
+    "evidence": "validation/tools/bb_graph/results/probe-refusals.json",
+    "note": "measured while the fleet load rose (24-29); single runs, not repeated",
+    "cases": {
+      "missingSymbol": 0.65,
+      "blankSymbol": 10050.93,
+      "unknownSymbol": 5334.77,
+      "schemaAndRangeRefusals": "0.05-0.38 ms each (validation rejects before the database is touched)",
+      "acceptedCallsOnALeaf": {
+        "targetAlias": 87137.68,
+        "queryAlias": 52465.95,
+        "maxDepth2_5FlooredTo2": 47912.55,
+        "maxEdges2_5FlooredTo2": 29961.3
+      }
+    }
+  },
+  "gateRuns": {
+    "commandPrefix": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=$PWD/validation/tools/bb_graph/bbdata",
+    "runner": "bun for bun:sqlite gates, npx tsx for the rest (see AUDIT.md \u00a79)",
+    "green": [
+      "bun run script/verify-graph.ts",
+      "bun run script/m65/verify-graph-blindspots.ts",
+      "bun run script/m48/verify-p4-param-matrix.ts",
+      "npx tsx script/m28/verify-union.ts",
+      "npx tsx script/m28/verify-mcp-tools.ts",
+      "npx tsx script/m28/verify-mcp-surface.ts",
+      "npx tsx script/m28/verify-surface-parity.ts",
+      "npx tsx script/m20/verify-cross-tool-parity.ts",
+      "npx tsx script/m55/verify-tiers.ts",
+      "npx tsx script/m55/verify-identity.ts",
+      "bun run script/verify-tool-page-claims.ts",
+      "bun run script/verify-tool-docs.ts",
+      "bun run script/verify-tool-registry.ts",
+      "npx tsx script/verify-mcp.ts"
+    ],
+    "red": [
+      "bun run script/m65/verify-edge-kind-scoping.ts (S2: documented default is not the engine's list)",
+      "bun run script/m65/verify-refresh-resolution.ts (5 fleet-census checks; not graph)",
+      "npx tsx script/verify-mcp-e2e.ts (environment: read-only home needs HOME override; see AUDIT.md \u00a79)"
+    ]
+  },
+  "docsClaimsForComparison": {
+    "curationPerformanceClaim": "2,854-4,755 ms for a default call on a 5,651-file / 631,139-relationship index (a different corpus and a different engine state)",
+    "descriptorDefaultBudgetClaim": "timeBudgetMs default 0 \u2014 no clock bound (true, and it is why a caller cannot get a 2 s answer on this index)",
+    "measuredOnThisIndex": "131,230 ms p50 on a leaf"
+  },
+  "next": "Phase B: engine query-plan rewrite (D-06), then re-measure T0/T1/T2 with the same commands and record before/after in this file.",
+  "phase": "phase-b D-06 rewrite measured",
+  "afterRewrite": {
+    "measuredAt": "2026-11-01",
+    "openPath": "BrainDatabase.getRawInstance(projectId, { readonly: true }) \u2014 driver read-only, no migrations/healers, no WAL movement",
+    "readonlyOpenMs": 19.57,
+    "rwOpenMsBefore": 18714,
+    "index": "brain_symbol_project_owner_idx (project_id, owner_symbol_id) present on the reference index; owner-only index retained as fallback",
+    "command": "BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/latency-t2.ts '<cases>'",
+    "evidence": [
+      "validation/tools/bb_graph/results/latency-t2.json",
+      "validation/tools/bb_graph/results/plans-after.json"
+    ],
+    "cases": {
+      "leaf-default": {
+        "symbol": "likeContains",
+        "runs": 5,
+        "samplesMs": [
+          16,
+          19,
+          17,
+          8,
+          9
+        ],
+        "p50Ms": 16,
+        "p95Ms": 19,
+        "edges": 19,
+        "before": {
+          "p50Ms": 131230,
+          "p95Ms": 168335
+        }
+      },
+      "mid-default": {
+        "symbol": "traverseGraph",
+        "runs": 5,
+        "samplesMs": [
+          186,
+          162,
+          246,
+          95,
+          118
+        ],
+        "p50Ms": 162,
+        "p95Ms": 246,
+        "edges": 264,
+        "before": "did not return in a 10-minute window"
+      },
+      "hub-default": {
+        "symbol": "getProjectId",
+        "runs": 5,
+        "samplesMs": [
+          57,
+          50,
+          57,
+          62,
+          145
+        ],
+        "p50Ms": 57,
+        "p95Ms": 145,
+        "edges": 108,
+        "before": "did not return in a 10-minute window"
+      },
+      "filtered-calls": {
+        "symbol": "traverseGraph",
+        "relationshipTypes": [
+          "calls"
+        ],
+        "runs": 5,
+        "samplesMs": [
+          58,
+          81,
+          76,
+          59,
+          109
+        ],
+        "p50Ms": 76,
+        "p95Ms": 109
+      },
+      "edgeLimit-1": {
+        "symbol": "getProjectId",
+        "edgeLimit": 1,
+        "runs": 3,
+        "samplesMs": [
+          7,
+          6,
+          6
+        ],
+        "p50Ms": 6,
+        "p95Ms": 7,
+        "edges": 1
+      }
+    },
+    "budgetVerdict": "all T2 default calls are now inside the 5 s p95 budget with 20-263x margin; the slowest measured p95 is 246 ms (mid symbol, 264 edges)",
+    "statementAfter": {
+      "cascadeIds": {
+        "ms": 0.83,
+        "plan": [
+          "SEARCH m USING INDEX brain_symbol_project_owner_idx (project_id=? AND owner_symbol_id>? AND owner_symbol_id<?)"
+        ]
+      },
+      "callerArm": {
+        "ms": 9.02,
+        "plan": [
+          "SEARCH r USING INDEX brain_rel_proj_type_target_idx (project_id=? AND relationship_type=? AND target_symbol_id=?)"
+        ]
+      },
+      "unattributedCallers": {
+        "ms": 0.49,
+        "plan": [
+          "SEARCH r USING INDEX brain_rel_proj_type_target_idx (project_id=? AND relationship_type=? AND target_symbol_id=?)"
+        ]
+      },
+      "rootExactNameIndexed": {
+        "ms": 1.23,
+        "plan": [
+          "SEARCH s USING INDEX brain_sym_proj_name_idx (project_id=? AND name=?)"
+        ]
+      }
+    },
+    "semanticsProof": {
+      "file": "validation/tools/bb_graph/results/semantics-equivalence.json",
+      "command": "BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/semantics-equivalence.ts",
+      "result": "allEqual: true over 6 real symbols (leaf, 3 classes with 3-6 members, 143-callee mid, 672-caller hub): cascade id sets, caller rows, callee rows, unresolved rows and both unattributed counts identical between the pre-fix range form and the post-fix id-list form"
+    },
+    "defaults": {
+      "maxDepth": 5,
+      "direction": "both",
+      "edgeLimit": 200,
+      "maxEdges": 1000,
+      "timeBudgetMs": 0
+    },
+    "mutants": {
+      "file": "validation/tools/bb_graph/results/mutants.json",
+      "command": "./validation/tools/bb_graph/mutants.sh",
+      "result": "5/5 mutants CAUGHT (tier rule ignores stored class, cascade plan regression, maxEdges not honored, kind-set narrowed, blind spot uncounted), files restored byte-identically, green control PASS"
+    }
+  },
+  "readOnlyProtocol": {
+    "before": "the tool chain opened the shared index read-write on every call; the open ran migrations/healers, moved the WAL and cost 18.7 s",
+    "after": "the engine opens read-only via BrainDatabase.getRawInstance(projectId, { readonly: true }): no migrations, no WAL movement, open 19.6 ms (was 18,714 ms on the read-write path)",
+    "note": "the reference index was already read-only-safe at measurement time; only the open path changed"
+  },
+  "tiersPostRewrite": {
+    "measuredAt": "2026-11-01",
+    "loadAverage": [
+      27.31,
+      22.44,
+      19.62
+    ],
+    "commands": {
+      "index": "BB_DATA_DIR=validation/tools/bb_graph/bbdata npx tsx validation/tools/bb_graph/index-fixtures.ts",
+      "measure": "BB_DATA_DIR=validation/tools/bb_graph/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_graph/probe.ts latency-t0t1"
+    },
+    "evidence": "validation/tools/bb_graph/results/probe-latency-t0t1.json",
+    "T0": {
+      "subject": "test/fixtures/polyglot",
+      "symbol": "basePrice",
+      "indexMs": 1029,
+      "samplesMs": [
+        57.52,
+        14.9,
+        11.68,
+        25.23,
+        24.24
+      ],
+      "p50Ms": 24.24,
+      "p95Ms": 57.52,
+      "edges": 3,
+      "bytes": 6671,
+      "budgetMs": 250,
+      "withinBudget": true
+    },
+    "T1": {
+      "subject": ".perf-fixtures/bb-scale/n100",
+      "symbol": "prepare",
+      "indexMs": 2787,
+      "samplesMs": [
+        372.86,
+        313.44,
+        284.81,
+        244.5,
+        234.1
+      ],
+      "p50Ms": 284.81,
+      "p95Ms": 372.86,
+      "edges": 331,
+      "bytes": 353197,
+      "budgetMs": 1000,
+      "withinBudget": true
+    },
+    "note": "This pair is POST-rewrite (read-only engine open, cascade-id-list arms). The earlier T0/T1 block above is the pre-rewrite pass and is kept: both are evidence, and the difference is the rewrite's effect on the small tiers."
+  }
+}

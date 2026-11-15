@@ -24,7 +24,7 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 LANG_NAME="${1:?usage: diagnose-incoming.sh <lang> <ext> [files]}"
 EXT="${2:?need a file extension}"
 N="${3:-80}"
-CR="${BB_CORPUS_ROOT:-$HOME/fixtures/repositories}"
+CR="${BB_CORPUS_ROOT:-/home/ishaq2321/bb_tests/repositories}"
 
 echo "### diagnose-incoming — $LANG_NAME (.${EXT}, ${N} files)"
 echo "# population: first ${N} of $(find "$CR" -name "*.$EXT" -type f | wc -l) .${EXT} files, sorted by path."

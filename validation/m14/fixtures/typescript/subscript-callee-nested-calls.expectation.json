@@ -1,0 +1,20 @@
+{
+  "fixtureId": "typescript/subscript-callee-nested-calls",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W4 (T3, rotated-sample finding). The subscript-callee branch (and the dynamic-import branch) skipped the call EDGE with an early `return`, which also aborted processNode's child recursion — so real calls nested in the arguments were dropped: probe `console[method](message.text())` emitted NOTHING while the oracle derived calls->text (svelte repo runtime-browser/test.ts:203, MISSING under the rotated sample). The computed-callee edge itself must stay suppressed (no nodeTransforms[i] fabrication), while the arguments are still walked. Mutant: typescript/subscript-callee-nested-call-drop.",
+  "expectSymbols": [
+    { "name": "report", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "report", "target": "text" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "[method]" },
+    { "type": "calls", "target": "console[method]" },
+    { "type": "calls", "target": "handlers[i]" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "target": "text", "equals": 2 }
+  ]
+}

@@ -39,6 +39,42 @@ const debug = false
 
 function log(..._args: unknown[]) {}
 
+/**
+ * M72: upper bound on the symbol BODY handed to the security engine, per symbol.
+ *
+ * The engine is a pure regex/flow pass over the body, so its cost is linear in
+ * the input; this bounds the worst case (a generated 10 MB function) without
+ * silently truncating the ordinary case. Measured symbol bodies on this repo's
+ * own index: median 28 tokens, p90 69 lines — 64 KiB is far above the tail that
+ * matters, and a body that large is declared by being skipped, not half-read.
+ */
+const SECURITY_ENGINE_BODY_LIMIT = 64 * 1024
+
+/**
+ * M72: container symbol kinds are NOT analysed by the security engine.
+ *
+ * A class/struct body contains its methods' statements too, so analysing the
+ * container AND each method emits the same danger twice (specs-a measured
+ * class-holding-method duplicates for java/kotlin/groovy/csharp/elixir/fsharp).
+ * Methods/functions are the executable units; the pipeline dedupes by
+ * (ruleId, absolute sink line, vulnerability) as a second guard. Field
+ * initializers that appear ONLY at container level are therefore not scanned —
+ * declared in docs/BB_SECURITY.md limits rather than silently double-reported.
+ */
+const SECURITY_CONTAINER_KINDS = new Set([
+  "class",
+  "interface",
+  "struct",
+  "trait",
+  "enum",
+  "impl",
+  "object",
+  "actor",
+  "module",
+  "namespace",
+])
+
+
 // ── worker startup diagnostics ───────────────────────────────────────────────
 //
 // THE CONTRACT THIS FILE NOW HONOURS: a worker that cannot do its job says so
@@ -1410,47 +1446,92 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       } catch {}
     }
 
-    // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
+    // Stage 5 — SECURITY EXTRACTION (M72 pipeline seam)
     //
-    // GATED on the language. `TaintAnalyzer` matches SOURCE and SINK TOKENS
-    // over a symbol's text, so it will happily "find" a taint flow in prose:
-    // measured on this repository's own index, 326 of bb_security's 3,190
-    // findings (10.2%) were in Markdown, JSON, YAML, HTML and CSS, including
-    // `docs/m15/M15-MASTER-PLAN.md:214` reported as a `sql_injection` with the
-    // symbol name parsed out of a markdown table pipe. No amount of token
-    // matching can make those valid; they are an artefact of running a text
-    // matcher over a text format.
+    // TWO PATHS, ONE DEFAULT:
+    //   • DEFAULT (`BB_SECURITY_LEGACY` unset): the per-language spec engine
+    //     (`src/intelligence/security/rebuild/engine.ts`) runs PER SYMBOL over the
+    //     symbol BODY and attaches `securityFlows` to the symbol payload. The
+    //     parallel indexer persists those leads into `brain_security_flow` and
+    //     nothing into the legacy `brain_taint_flow`.
+    //   • ROLLBACK (`BB_SECURITY_LEGACY=1`): the old `TaintAnalyzer` token
+    //     enrichment runs for the languages its rules were written for. This is
+    //     the retired detector, kept for one release so an operator can compare
+    //     results; it is not a supported mode and the new table/answer ignore it.
     //
-    // The gate is a NAME list, not a heuristic, because the taint rules are
-    // written against programming-language APIs (`db.query`, `child_process`,
-    // `PreparedStatement`). A configuration or prose format has no such API, so
-    // there is nothing for the rules to legitimately match. It lives here rather
-    // than inside `taint-analyzer.ts` so the analyzer stays a pure rule set and
-    // the eligibility decision stays visible at the call site.
+    // WHY THE LANGUAGE LIST STILL EXISTS: it is the legacy gate only. The spec
+    // engine is spec-driven — `analyzeSymbol` returns `[]` for a language with no
+    // spec, so no second hardcoded language list has to drift from the spec
+    // registry. What the old comment below measures (326 of 3,190 findings in
+    // prose/data formats) is the reason the legacy path is opt-in rather than a
+    // default anyone forgets to disable.
     const TAINT_ELIGIBLE_LANGUAGES = new Set([
-      // The languages the engine dispatches to a REAL analyzer AND for which
-      // the taint rules are written against a language API (`db.query`,
-      // `child_process`, `PreparedStatement`, `cursor.execute`, …).
+      // The languages the legacy rules are written against a language API
+      // (`db.query`, `child_process`, `PreparedStatement`, `cursor.execute`, …).
       "typescript", "tsx", "javascript", "java", "kotlin", "scala", "groovy",
       "python", "ruby", "php", "go", "rust", "swift", "dart", "c", "cpp",
       "csharp", "perl", "lua", "r", "elixir", "erlang", "clojure", "haskell",
       "zig", "nim", "fsharp", "vb", "powershell", "bash", "objective-c",
-      // Explicitly EXCLUDED, and each exclusion is load-bearing:
-      //   markdown json yaml toml xml html css sass scss graphql protobuf
-      //   make clean hcl terraform svelte vue sql
-      // Markdown/JSON/YAML/TOML/XML/HTML/CSS carry prose and data, not code —
-      // measured at 326 of 3,190 bb_security findings (10.2%). The rest are
-      // schema, query, build and markup formats whose tokens ("select", "exec",
-      // "query") collide with the sink rules without ever being a sink.
     ])
-    const taintEligible = TAINT_ELIGIBLE_LANGUAGES.has((language || "").toLowerCase())
     try {
-      if (taintEligible) {
-        const { TaintAnalyzer } = await import("./taint-analyzer")
-        TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
+      const { securityLegacyEnabled } = await import("../intelligence/security/rebuild/store")
+      if (securityLegacyEnabled()) {
+        const taintEligible = TAINT_ELIGIBLE_LANGUAGES.has((language || "").toLowerCase())
+        if (taintEligible) {
+          const { TaintAnalyzer } = await import("./taint-analyzer")
+          TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
+        }
+      } else {
+        // LITERAL import specifier: esbuild/tsup bundles it into the worker
+        // chunk, so the compiled `dist/pool-worker.js` loads the engine too (a
+        // non-literal dynamic import would be emitted unresolved and silently
+        // disable the engine in the shipped build).
+        const { analyzeSymbol } = await import("../intelligence/security/rebuild/engine")
+        // Per-symbol body extraction. The leads ride the SAME payload the
+        // analyzer produced (attached to the symbol object), so the store can
+        // map them onto the stored symbol id it computes — the worker does not
+        // know that id.
+        const engineLanguage = parsed.language || language
+        for (const symbol of parsed.symbols as any[]) {
+          // Containers duplicate their members' statements; methods/functions
+          // are the executable units (see SECURITY_CONTAINER_KINDS above).
+          const securitySymbolKind = String(symbol?.kind ?? symbol?.type ?? "").toLowerCase()
+          if (SECURITY_CONTAINER_KINDS.has(securitySymbolKind)) continue
+          // BOTH shapes are real. The engine's `UniversalSymbol` carries a
+          // `range` object, but the flattened worker payload (and some analyzers)
+          // put `startIndex`/`endIndex` at the TOP level — measured by
+          // verifier-legacy on `parseFile`: 4/4 symbols with top-level indices
+          // and `range: undefined`, which made a range-only guard skip EVERY
+          // symbol and attach zero leads. Read range first (the richer shape),
+          // then fall back to the flattened one.
+          const start = symbol?.range?.startIndex ?? symbol?.startIndex
+          const end = symbol?.range?.endIndex ?? symbol?.endIndex
+          if (typeof start !== "number" || typeof end !== "number" || end <= start) continue
+          if (end - start > SECURITY_ENGINE_BODY_LIMIT) continue
+          const body = content.slice(start, end)
+          if (!body) continue
+          try {
+            const leads = analyzeSymbol({
+              language: engineLanguage,
+              source: body,
+              file: filePath,
+              // The worker does NOT know the stored symbol id
+              // (`<fileId>:<name>:<line>`, with a PHP-specific special case);
+              // the indexer maps the leads onto the symbol it stores.
+              symbolId: "",
+              symbolLine: symbol?.range?.startLine ?? symbol?.startLine ?? 0,
+            })
+            if (Array.isArray(leads) && leads.length > 0) symbol.securityFlows = leads
+          } catch (e) {
+            // One symbol's failure must not lose the file. The engine is
+            // documented as never throwing; this is the seam guard, not a
+            // control-flow path.
+            log("security engine failed on a symbol:", e)
+          }
+        }
       }
     } catch (e) {
-      log("Taint extraction failed:", e)
+      log("Security extraction failed:", e)
     }
 
     // ONE split of the file for the whole symbol list, not one per symbol.
@@ -1567,6 +1648,11 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           scope: s.scope,
           taintSources: s.taintSources,
           taintSinks: s.taintSinks,
+          // M72: the spec engine's leads for this symbol (default path). The
+          // indexer persists these into brain_security_flow; the fields above
+          // are the retired token path (only populated under
+          // BB_SECURITY_LEGACY=1).
+          securityFlows: (s as any).securityFlows,
           decorators: s.decorators,
           genericParameters: s.genericParameters,
           isStatic: s.isStatic,

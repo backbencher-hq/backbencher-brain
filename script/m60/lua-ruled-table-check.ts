@@ -38,7 +38,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { LUA_RULED, REJECTED_IMPLEMENTS_TREE_PROBE } from "../m14/lua-ruled"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const LANG = "lua"
 const OUT = path.join(ROOT, "validation/m60/lua/ruled-table-check.json")
 

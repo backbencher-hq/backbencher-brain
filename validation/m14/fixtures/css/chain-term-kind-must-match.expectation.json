@@ -1,0 +1,59 @@
+{
+  "fixtureId": "css/chain-term-kind-must-match",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A selector-chain term is resolved by a published name of the SAME selector kind. `real-css-analyzer.ts`'s `resolves()` had four sub-tests — exact name, dotted LEAF, any `:`/`.` boundary TAIL — and the last two did not compare kinds, so the TYPE-selector rule `button` satisfied the CLASS term `.button`. Measured on the corpus (single-file-dump.ts): geb/doc/site/public/css/semantic.min.css emits `contains \".button\" -> \".button\"` with names.has(\".button\") = false and names.has(\"button\") = true. The forbids below are that defect at fixture scale; the one expect row is the control that proves chains are still emitted when both terms ARE published.",
+  "expectSymbols": [
+    {
+      "name": "button",
+      "kind": "type"
+    },
+    {
+      "name": ".icon",
+      "kind": "class"
+    },
+    {
+      "name": ".button .icon",
+      "kind": "class"
+    },
+    {
+      "name": "button.button .icon",
+      "kind": "class"
+    },
+    {
+      "name": ".card .title",
+      "kind": "class"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    },
+    {
+      "name": ".title",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": ".card",
+      "target": "fixtures/css/chain-term-kind-must-match::.title",
+      "meta.isSelectorChain": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": ".button",
+      "target": "fixtures/css/chain-term-kind-must-match::.icon",
+      "comment": "the class term `.button` is satisfied only by the TYPE rule `button`"
+    },
+    {
+      "type": "contains",
+      "from": "button",
+      "target": ".button",
+      "comment": "the same defect on a mixed-kind compound: `button.button` is not a declared selector"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

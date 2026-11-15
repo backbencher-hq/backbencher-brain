@@ -46,10 +46,10 @@ gate that can fail.
 
 | Issue | What it proves | Evidence |
 |---|---|---|
-| [#731](https://github.com/backbencher-hq/backbencher-brain/issues/731) R1 | Full m24→m44 gate ladder passes at the co-agent HEAD | `validation/m53/results/R1.json` |
-| [#732](https://github.com/backbencher-hq/backbencher-brain/issues/732) R2 | Fresh co-agent index → LSP surfaces return declared-shape, non-regressed data | `validation/m53/results/R2.json` |
-| [#733](https://github.com/backbencher-hq/backbencher-brain/issues/733) R3 | Branch audit: zero-touch + merge-required, machine-pinned, can-fail | `validation/m53/results/R3.json` |
-| [#734](https://github.com/backbencher-hq/backbencher-brain/issues/734) X1 | Closure gate + INTEGRATION-RECEIPT + verdict posted to co-agent/engineer | `validation/m53/results/X1.json`, `docs/m53/INTEGRATION-RECEIPT.md` |
+| [#731](https://github.com/ishaq2321/backbencher-brain/issues/731) R1 | Full m24→m44 gate ladder passes at the co-agent HEAD | `validation/m53/results/R1.json` |
+| [#732](https://github.com/ishaq2321/backbencher-brain/issues/732) R2 | Fresh co-agent index → LSP surfaces return declared-shape, non-regressed data | `validation/m53/results/R2.json` |
+| [#733](https://github.com/ishaq2321/backbencher-brain/issues/733) R3 | Branch audit: zero-touch + merge-required, machine-pinned, can-fail | `validation/m53/results/R3.json` |
+| [#734](https://github.com/ishaq2321/backbencher-brain/issues/734) X1 | Closure gate + INTEGRATION-RECEIPT + verdict posted to co-agent/engineer | `validation/m53/results/X1.json`, `docs/m53/INTEGRATION-RECEIPT.md` |
 
 ## Rules
 

@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld18-inherit-constructs.sql",
+  "authoredFrom": "SQL-D17, 2026-10-21. The `extends` emission and the FOUR fabricated edges the pre-fix code published. The tree shapes were PROBED against the pinned wasm (`wasm/tree-sitter-sql.wasm`, sha256 in the spec's `grammar_provenance.pin`), not assumed: `ALTER TABLE child INHERIT parent;` parses to (alter_table (keyword_alter) (keyword_table) (object_reference name:(identifier)) (add_column (column_definition name:(identifier \"INHERIT\") custom_type:(object_reference name:(identifier \"parent\"))))); `ALTER TABLE c ADD COLUMN inherit int;` parses to the IDENTICAL shape with (keyword_add) (keyword_column) in front of the column_definition; `ALTER TABLE child NO INHERIT parent;` parses to (alter_table … (ERROR (keyword_no)) (add_column (column_definition name:(identifier \"INHERIT\") custom_type:(object_reference name:(identifier \"parent\"))))). The corpus contributes NOTHING to this fixture: measured over the whole admitted population (2,125 .sql files, 202 repositories, 199 symlinked directories followed, 0 parse failures), every textual `inherit`/`inherits` occurrence is inside a COMMENT or a psql `\\echo` string — 19 occurrences in 17 lines across 10 files, 0 statements, 0 `keyword_inherits` nodes, 0 `ALTER TABLE … INHERIT` triggers. So the type is ZERO-SITES on the corpus and this fixture is the only place the construct exists.",
+  "comment": "THE FORBID ROWS ARE THE SUBSTANCE. Before 2026-10-21 the `extends` rule keyed on the mis-parsed column's NAME and took the mis-parse's `custom_type` as the parent table, so FOUR legal SQL statements published a fabricated edge: a column literally named `inherit` (legal — `inherit` is NON-RESERVED in PostgreSQL, Table C.1 of the keyword appendix), the same column with a custom type, `ADD` without `COLUMN`, and `NO INHERIT` — the clause that REMOVES the relation, which the old rule asserted as if it created it. Measured before/after on the same probes: before = 4 fabricated edges, after = 0, with the one positive control unchanged. The `inherit` symbol rows are the other half: the old reserved-name guard DELETED a legal column, and the fix publishes it back with its real type. The `INHERITS`-on-CREATE-TABLE row is a pin on a LIMIT — that clause error-recovers to a top-level (ERROR) whose only children are \"INHERITS\" \"(\" \")\", the parent name does not survive, and no edge may name it.",
+  "expectSymbols": [
+    {
+      "name": "d18_parent",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_child",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_col_named",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_col_custom",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_add_bare",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_no_inherit",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_like_source",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_like_target",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_inherits_parent",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d18_inherits_child",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "inherit",
+      "kind": "property",
+      "ownerName": "d18_col_named",
+      "meta.sqlType": "int"
+    },
+    {
+      "name": "inherit",
+      "kind": "property",
+      "ownerName": "d18_col_custom",
+      "meta.sqlType": "d18_some_type"
+    },
+    {
+      "name": "inherit",
+      "kind": "property",
+      "ownerName": "d18_add_bare",
+      "meta.sqlType": "int"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "INHERIT"
+    },
+    {
+      "name": "LIKE"
+    },
+    {
+      "name": "d18_some_type"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "inherit",
+      "equals": 3
+    },
+    {
+      "name": "INHERIT",
+      "equals": 0
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "d18_child",
+      "target": "d18_parent",
+      "meta.clause": "inherit",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "d18_col_named",
+      "target": "sqld18-inherit-constructs.sql::d18_col_named.inherit"
+    },
+    {
+      "type": "contains",
+      "from": "d18_col_custom",
+      "target": "sqld18-inherit-constructs.sql::d18_col_custom.inherit"
+    },
+    {
+      "type": "contains",
+      "from": "d18_add_bare",
+      "target": "sqld18-inherit-constructs.sql::d18_add_bare.inherit"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "d18_col_named",
+      "target": "int"
+    },
+    {
+      "type": "extends",
+      "from": "d18_col_custom",
+      "target": "d18_some_type"
+    },
+    {
+      "type": "extends",
+      "from": "d18_add_bare",
+      "target": "int"
+    },
+    {
+      "type": "extends",
+      "from": "d18_no_inherit",
+      "target": "d18_no_inherit_parent"
+    },
+    {
+      "type": "extends",
+      "from": "d18_like_target",
+      "target": "d18_like_source"
+    },
+    {
+      "type": "extends",
+      "from": "d18_inherits_child",
+      "target": "d18_inherits_parent"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "extends",
+      "equals": 1
+    }
+  ]
+}

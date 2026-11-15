@@ -1,0 +1,93 @@
+{
+  "fixtureId": "scss/extend-target-recovered-from-broken-node",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins two defects that made this lane publish an `extends` target which is not the name the statement writes. `extends` is read as INHERITANCE by bb_impact, so a wrong target is wrong refactoring advice, and both defects are invisible in an edge count: `extends` is 293 edges on the 600-file corpus sample before, between and after.\n\n(1) THE DELIMITER RECOVERY. On a broken `@extend` the grammar builds a `class_selector` spanning the rest of the rule body — `%reset; background-color: cv.getVar` — and `findDescendant` is breadth-first, so it returns that node rather than the `placeholder` nested inside it. A guard keyed on `sel.type === \"placeholder\"` cannot fire. Measured: 7 such targets / 7 edges per 600 files (bulma options.scss:114, skeleton.scss:106, breadcrumb.scss:30, card.scss:77, box.scss:41, notification.scss:28, tag.scss:20). Row 1 is the recovered name.\n\n(2) THE BYTE BOUND. `findDescendant` searched the whole `extend_statement` subtree, and that subtree includes the DECLARATIONS THAT FOLLOW. On a degenerate `@extend %;` the grammar produces no `placeholder` at all — the `%` survives only as an anonymous token — so the walk fell through to the next declaration's own selector node and published `extends .bd-quote button -> .getVar`: an inheritance edge pointing at a property value. Pre-existing, and it reproduces identically on the analyzer before change (1). A class selector IS a legal `@extend .btn` target, so no string-shape test separates the two cases; the byte offset of the statement's first `;` does. Rows 2 and 3 are the forbids.\n\nTHE CONTROL IS THE POINT OF THE FIXTURE. Row 4 is the same `@extend %reset` with the same broken-looking neighbourhood one construct away, differing only in that the following declaration's value is an UNQUALIFIED call: the grammar then produces a clean `placeholder` and the broken shape never arises. Without it a regression could satisfy rows 1-3 by never emitting an `extends` edge at all — and \"emit nothing\" is a shape both defects can hide behind, which is why the third rule's forbids are joined by a row that REQUIRES the control's edge to exist with the exact target.\n\nThe oracle for both defects is `validation/m14/fixtures/scss/scss-extends-resolution.ts`, a text reader over the `@extend` argument on each edge's own source line. Measured on the 600-file sample it scores this lane's `extends` targets at 265/276 (96.0%) before the recovery, 272/276 (98.6%) after it, and 276/276 (100.0%) after the byte bound. Its stated limitation: it audits LABELLING, not recall, because an `@extend` the analyzer never emits is absent from both sides of its comparison.",
+  "expectSymbols": [
+    {
+      "name": "%reset",
+      "kind": "class"
+    },
+    {
+      "name": ".bd-tabs-nav",
+      "kind": "class"
+    },
+    {
+      "name": ".bd-tabs-nav button",
+      "kind": "type"
+    },
+    {
+      "name": ".bd-tabs-list",
+      "kind": "class"
+    },
+    {
+      "name": ".bd-tabs-list button",
+      "kind": "type"
+    },
+    {
+      "name": ".bd-quote",
+      "kind": "class"
+    },
+    {
+      "name": ".bd-quote button",
+      "kind": "type"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": ".bd-tabs-nav button",
+      "target": "%reset",
+      "line_number": 27,
+      "meta.isScssExtend": true,
+      "meta.scssExtendTargetRecoveredFromBrokenNode": true
+    },
+    {
+      "type": "extends",
+      "source": ".bd-tabs-list button",
+      "target": "%reset",
+      "line_number": 45,
+      "meta.isScssExtend": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "target": "%reset; background-color: cv.getVar"
+    },
+    {
+      "type": "extends",
+      "target": ".getVar"
+    },
+    {
+      "type": "extends",
+      "target": "%"
+    },
+    {
+      "type": "extends",
+      "target": "% "
+    },
+    {
+      "type": "extends",
+      "target": "ov"
+    },
+    {
+      "type": "contains",
+      "target": ".getVar"
+    },
+    {
+      "type": "uses",
+      "target": ".getVar"
+    },
+    {
+      "type": "references",
+      "target": ".getVar"
+    },
+    {
+      "type": "extends",
+      "source": ".bd-tabs-list button",
+      "target": "%reset",
+      "meta.scssExtendTargetRecoveredFromBrokenNode": true
+    }
+  ]
+}

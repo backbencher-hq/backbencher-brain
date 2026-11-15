@@ -1,0 +1,20 @@
+{
+  "fixtureId": "typescript/instantiation-refs",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS generic call type-argument references (gap T9) + the TSD4 module-leaf source (JAD2 class). TS semantics: wrap<Baz>(qux) at top level attributes its calls edge to the FILE MODULE LEAF (instantiation-refs, matching imports/exports and the JS analyzer) — pre-TSD4 the fallback source was a '(script)' placeholder no consumer could resolve. The type argument Baz is a type reference from w.",
+  "expectSymbols": [
+    { "name": "Box", "kind": "interface" },
+    { "name": "wrap", "kind": "function" },
+    { "name": "w", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "instantiation-refs", "target": "wrap" },
+    { "type": "references", "from": "w", "target": "Baz", "meta.relationshipType": "type_argument" },
+    { "type": "instantiates", "from": "make", "target": "Thing" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "(script)", "target": "wrap" },
+    { "type": "instantiates", "from": "make", "target": "ns.Thing" }
+  ]
+}

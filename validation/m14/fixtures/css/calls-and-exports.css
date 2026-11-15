@@ -1,0 +1,27 @@
+/* The two types CSS could express only through newer/optional constructs: `calls` (a
+   user-defined CSS function, Functions & Mixins Level 1) and `exports` (the CSS Modules
+   `:export` block). BOTH are real shapes in this language family and neither occurs in this
+   lane's .css population, so both are emitted and counted once as corpus-unexercised.
+
+   This file pins the emission AND its refusals:
+   · `--add` is declared, so calling it is a `calls` edge whose target is the DECLARATION.
+   · `var`, `rgba`, `calc` and `url` are BUILT-INS — they name no declaration anywhere, and a
+     `calls` edge to one would be an edge to a thing the language never declares.
+   · the `:export` block publishes `primary` and `accent`; a declaration in an ORDINARY rule
+     (`color: red`) is not an export, which is the whole distinction. */
+
+@function --add(a, b) {
+  result: calc(a + b);
+}
+
+.card {
+  padding: --add(1px, 2px);
+  color: rgba(0, 0, 0, 0.5);
+  width: calc(100% - var(--gap));
+  background: url("bg.png");
+}
+
+:export {
+  primary: #0af;
+  accent: #fa0;
+}

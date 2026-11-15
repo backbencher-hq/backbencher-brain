@@ -1,0 +1,64 @@
+{
+  "repo": "pico",
+  "files": 54,
+  "partition": {
+    "before": {
+      "exports": {
+        "resolved": 441,
+        "ambDeclOnly": 9,
+        "total": 450
+      },
+      "references": {
+        "resolved": 415,
+        "ambDeclOnly": 20,
+        "total": 435
+      },
+      "calls": {
+        "resolved": 12,
+        "ambDeclOnly": 1,
+        "total": 13
+      },
+      "contains": {
+        "resolved": 164,
+        "total": 164
+      },
+      "uses": {
+        "resolved": 8,
+        "total": 8
+      }
+    },
+    "after": {
+      "exports": {
+        "resolved": 450,
+        "total": 450
+      },
+      "references": {
+        "resolved": 435,
+        "total": 435
+      },
+      "calls": {
+        "resolved": 13,
+        "total": 13
+      },
+      "contains": {
+        "resolved": 164,
+        "total": 164
+      },
+      "uses": {
+        "resolved": 8,
+        "total": 8
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 57,
+    "before": {
+      "ambDeclOnly": 30
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 1070,
+    "falseBindings": 0
+  }
+}

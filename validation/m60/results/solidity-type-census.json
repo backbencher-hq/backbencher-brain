@@ -1,0 +1,326 @@
+{
+  "instrument": "m60-solidity-type-census",
+  "question": "Which of the grammar's declared NAMED node types does the real corpus exercise, which does it never produce, and is each never-produced type reachable at all?",
+  "corpus": {
+    "repo": "solidity",
+    "rev": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
+    "dir": "/home/ishaq2321/bb_tests/repositories/solidity",
+    "allSolFiles": 420,
+    "productionFiles": 389
+  },
+  "draw": {
+    "sample": 389,
+    "order": "hash of repo/relative-path ascending",
+    "digest": "c1531019",
+    "excluded": "test/ and *.t.sol"
+  },
+  "runtime": {
+    "wasm": "wasm/tree-sitter-solidity.wasm",
+    "abi": 15,
+    "nodeTypeCount": 531,
+    "fieldCount": 35
+  },
+  "totals": {
+    "files": 389,
+    "damaged": 0,
+    "errorNodes": 0,
+    "missingNodes": 0,
+    "damageClasses": 0
+  },
+  "typeCoverage": {
+    "declaredNamed": 124,
+    "exercised": 112,
+    "neverExercised": 12,
+    "neverExercisedList": [
+      "any_pragma_token",
+      "do_while_statement",
+      "inline_array_expression",
+      "layout_specifier",
+      "pragma_value",
+      "state_location",
+      "unicode_string_literal",
+      "yul_boolean",
+      "yul_continue",
+      "yul_function_definition",
+      "yul_label",
+      "yul_leave"
+    ]
+  },
+  "reachability": {
+    "note": "A named type the corpus never emits cannot be gated by that corpus. Each one below is probed with a minimal source, and the probe doubles as a fixture.",
+    "probes": [
+      {
+        "id": "any-pragma-token",
+        "type": "any_pragma_token",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:97 `any_pragma_token: seq(identifier, $.pragma_value)` — a pragma whose name is not `solidity`."
+      },
+      {
+        "id": "do-while-statement",
+        "type": "do_while_statement",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:645 — `do BLOCK while (expr);`. OpenZeppelin writes `while` loops, not `do`."
+      },
+      {
+        "id": "inline-array-expression",
+        "type": "inline_array_expression",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:868 — a fixed-size array literal in a primary-expression position. OpenZeppelin never writes one."
+      },
+      {
+        "id": "layout-specifier",
+        "type": "layout_specifier",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:193 — a member of `contract_declaration`'s `repeat(choice($._class_heritage, $.layout_specifier))`, so it belongs on the contract HEADER (Solidity 0.8.29 storage layout for errors). NOT on an error, which is where the first attempt put it."
+      },
+      {
+        "id": "pragma-value",
+        "type": "pragma_value",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:103 — `pragma_value` is the `/[^;]+/` tail of any_pragma_token; `pragma abicoder v2;` is the commonest form."
+      },
+      {
+        "id": "state-location",
+        "type": "state_location",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:682 — `state_location: choice('transient')`, reached only through `state_variable_declaration`'s `location` field. Solidity 0.8.28 transient storage; OpenZeppelin at this rev does not use it."
+      },
+      {
+        "id": "unicode-string-literal",
+        "type": "unicode_string_literal",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js — the `unicode` string prefix. OpenZeppelin's literals are all ASCII or `hex\"…\"` (10 of those)."
+      },
+      {
+        "id": "yul-boolean",
+        "type": "yul_boolean",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:416 — `yul_boolean: choice('true','false')`, a member of `_yul_literal`. OpenZeppelin's assembly is arithmetic, never boolean-valued."
+      },
+      {
+        "id": "yul-continue",
+        "type": "yul_continue",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:395 — a `_yul_statement`. OpenZeppelin's 15 `yul_for_statement` loops all run to completion."
+      },
+      {
+        "id": "yul-function-definition",
+        "type": "yul_function_definition",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:459 — `function id ( params ) -> results BLOCK`. OpenZeppelin inlines its assembly rather than defining Yul functions."
+      },
+      {
+        "id": "yul-label",
+        "type": "yul_label",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:396 — `yul_label: seq($.identifier, \":\")`, a `_yul_statement`. A labelled block is the only construct that makes one."
+      },
+      {
+        "id": "yul-leave",
+        "type": "yul_leave",
+        "reached": true,
+        "parsesClean": true,
+        "why": "grammar.js:394 — `yul_leave: 'leave'`, a bare `_yul_statement`. OpenZeppelin's 5 `yul_switch_statement`s always take a case branch."
+      }
+    ],
+    "probesReached": 12,
+    "probesFailed": 0,
+    "negativeControls": [
+      {
+        "id": "neg-state-location-in-contract-body",
+        "type": "state_location",
+        "correctlyAbsent": true,
+        "why": "`constant_variable_declaration` is a `_declaration` member, i.e. FILE scope (grammar.js:155-166); inside a contract the same text is a `state_variable_declaration`. The positive probe only worked once this was read off the rule's parent."
+      },
+      {
+        "id": "neg-do-while-is-while",
+        "type": "do_while_statement",
+        "correctlyAbsent": true,
+        "why": "a plain `while` is not a `do_while_statement`."
+      },
+      {
+        "id": "neg-pragma-value-on-solidity",
+        "type": "pragma_value",
+        "correctlyAbsent": true,
+        "why": "`pragma_value` is the tail of `any_pragma_token` only; the `solidity` form produces `solidity_version`."
+      },
+      {
+        "id": "neg-yul-boolean-outside-assembly",
+        "type": "yul_boolean",
+        "correctlyAbsent": true,
+        "why": "a Solidity `true` is a `boolean_literal > true`, not a `yul_boolean`."
+      },
+      {
+        "id": "neg-struct-expression-with-parens",
+        "type": "struct_expression",
+        "correctlyAbsent": true,
+        "why": "the MODERN spelling `S({a: 1})` is a `call_expression` with `call_struct_argument` children; only the pre-0.8.8 `S { a: 1 }` is a `struct_expression`. Both spellings exist in the corpus (13 and 33) and they are different node types."
+      },
+      {
+        "id": "neg-layout-specifier-on-struct",
+        "type": "layout_specifier",
+        "correctlyAbsent": true,
+        "why": "`layout_specifier` belongs to a contract header, not to any declaration."
+      },
+      {
+        "id": "neg-user-defined-type-without-is",
+        "type": "user_defined_type_definition",
+        "correctlyAbsent": true,
+        "why": "grammar.js:171 — `type name is primitive_type;`. Without `is` the source does not parse at all, so this negative also confirms the type is not produced by a broken parse."
+      },
+      {
+        "id": "neg-yul-in-plain-solidity",
+        "type": "yul_boolean",
+        "correctlyAbsent": true,
+        "why": "Yul syntax outside an `assembly_statement` is a parse error, not a silently-accepted Yul node."
+      }
+    ],
+    "negativeControlsHolding": 8,
+    "negativeControlsBroken": 0,
+    "negativeControlNote": "The probes are only worth reading if they can fail. Each is paired with a negative control that must NOT produce the type; a control that reports the type present means the probe reports presence for the wrong reason."
+  },
+  "corpusCounts": {
+    "identifier": 37467,
+    "expression": 28466,
+    "type_name": 11539,
+    "primitive_type": 10957,
+    "call_argument": 7993,
+    "statement": 7824,
+    "parameter": 7810,
+    "comment": 5254,
+    "call_expression": 3820,
+    "member_expression": 3428,
+    "visibility": 3227,
+    "function_definition": 2879,
+    "yul_identifier": 2819,
+    "yul_function_call": 2800,
+    "yul_evm_builtin": 2800,
+    "function_body": 2751,
+    "yul_path": 2640,
+    "binary_expression": 2331,
+    "return_type_definition": 2161,
+    "number_literal": 1936,
+    "state_mutability": 1932,
+    "user_defined_type": 1788,
+    "expression_statement": 1773,
+    "return_statement": 1713,
+    "string": 1470,
+    "variable_declaration": 1466,
+    "variable_declaration_statement": 1271,
+    "block_statement": 1101,
+    "type_cast_expression": 1101,
+    "yul_decimal_number": 1017,
+    "if_statement": 949,
+    "virtual": 845,
+    "import_directive": 826,
+    "yul_assignment": 700,
+    "assignment_expression": 683,
+    "yul_hex_number": 633,
+    "array_access": 629,
+    "inheritance_specifier": 544,
+    "revert_statement": 470,
+    "contract_body": 465,
+    "revert_arguments": 461,
+    "assembly_statement": 447,
+    "event_parameter": 446,
+    "assembly_flags": 419,
+    "override_specifier": 394,
+    "source_file": 389,
+    "pragma_directive": 389,
+    "solidity_pragma_token": 389,
+    "solidity_version": 389,
+    "solidity_version_comparison_operator": 389,
+    "state_variable_declaration": 352,
+    "contract_declaration": 325,
+    "tuple_expression": 268,
+    "error_parameter": 262,
+    "boolean_literal": 236,
+    "error_declaration": 221,
+    "string_literal": 212,
+    "parenthesized_expression": 208,
+    "modifier_invocation": 204,
+    "variable_declaration_tuple": 179,
+    "struct_member": 172,
+    "emit_statement": 168,
+    "event_definition": 166,
+    "unary_expression": 155,
+    "update_expression": 128,
+    "augmented_assignment_expression": 126,
+    "false": 121,
+    "constructor_definition": 120,
+    "ternary_expression": 117,
+    "true": 115,
+    "yul_variable_declaration": 112,
+    "using_directive": 102,
+    "enum_value": 101,
+    "type_alias": 98,
+    "unchecked": 94,
+    "for_statement": 88,
+    "yul_block": 88,
+    "meta_type_expression": 86,
+    "slice_access": 79,
+    "interface_declaration": 75,
+    "struct_declaration": 70,
+    "struct_body": 70,
+    "library_declaration": 65,
+    "immutable": 42,
+    "new_expression": 41,
+    "any_source_type": 41,
+    "call_struct_argument": 33,
+    "yul_if_statement": 31,
+    "return_parameter": 28,
+    "modifier_definition": 23,
+    "while_statement": 19,
+    "enum_declaration": 18,
+    "enum_body": 18,
+    "yul_for_statement": 15,
+    "user_defined_type_definition": 14,
+    "struct_expression": 13,
+    "struct_field_assignment": 13,
+    "yul_string_literal": 13,
+    "fallback_receive_definition": 11,
+    "hex_string_literal": 10,
+    "try_statement": 10,
+    "catch_clause": 10,
+    "number_unit": 8,
+    "break_statement": 8,
+    "constant_variable_declaration": 6,
+    "yul_switch_statement": 5,
+    "using_alias": 4,
+    "user_definable_operator": 4,
+    "yul_hex_string_literal": 2,
+    "payable_conversion_expression": 2,
+    "yul_break": 1,
+    "continue_statement": 1
+  },
+  "yulIsNotUnderRepresented": {
+    "claim": "the corpus under-represents Solidity inline assembly",
+    "verdict": "REFUTED — the opposite is true, and the lane is built accordingly",
+    "measured": {
+      "yul_function_call": 2800,
+      "yul_identifier": 2819,
+      "yul_path": 2640,
+      "yul_evm_builtin": 2800,
+      "yul_variable_declaration": 112,
+      "yul_assignment": 700,
+      "assembly_statement": 447
+    },
+    "consequence": "Yul is analysed as a first-class sub-language: its own functions, variables, calls, paths and loops each get a case. Ruling Yul out would have removed more edges than the entire contract layer's call graph."
+  },
+  "howToRead": [
+    "damaged/errorNodes/missingNodes are the PARSER's, not the analyzer's: a MISSING node is a token the parser INSERTED to keep going, so it is a fabrication with no error attached and is the class worth reading first.",
+    "declaredNamed is read from the vendored src/node-types.json (124 named). runtime.nodeTypeCount is 531 because the wasm's own type array also holds supertypes and inlined tokens; the two numbers are different questions and are not comparable.",
+    "neverExercisedList is a property of THIS DRAW, not of the language. The same instrument at --sample 60 reported 27; at the full production count it is the list above. Never quote the draw's number as the corpus's."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "kind": "graphql-declared-type-roundtrip",
+  "lane": "graphql",
+  "generatedAt": "2026-10-05T20:27:53.780Z",
+  "producedBy": "script/m14/tmp/graphql/probe/declared-type-roundtrip.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "entryPoint": "src/ast/pool-worker.ts::parseFile",
+  "what": "SET A = every (file, source, target, line) the parse tree says a declaration writes; SET B = every such triple production parseFile emits as `references`. B\\A is a fabricated edge; A\\B is a lost edge. Deduped as the store dedups, on (source, target, type, line).",
+  "setAFromTree": 47667,
+  "setBFromProduction": 47667,
+  "fabricatedEdges": 0,
+  "fabricatedExamples": [],
+  "lostEdges": 0,
+  "lostExamples": [],
+  "treeNodesWithNoResolvableName": {
+    "no-source:InputValueDefinition": 5,
+    "no-resolvable-name:InputValueDefinition": 11,
+    "no-resolvable-name:FieldDefinition": 2,
+    "no-source:FieldDefinition": 1
+  },
+  "filesWalked": 1905,
+  "filesExcludedProductionUnfinished": 0,
+  "excludedExamples": [],
+  "filesWithNoReferencesFromProduction": 1,
+  "declarationsUnderParseError": 6,
+  "emptyFromProductionExamples": [
+    "gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__resources__/kitchen-sink-nullability.graphql"
+  ],
+  "verdict": "0/0 — no fabricated and no lost declared-type edge",
+  "spellingConventions": [
+    "a FIELD ARGUMENT's declared type is attributed to the FIELD symbol (Actor.avatarUrl -> Int); arguments are published as the field's `parameters` metadata and no argument symbol exists to own it",
+    "a DIRECTIVE ARGUMENT's declared type is attributed to the DIRECTIVE symbol (@example -> Boolean); the argument name survives in metadata.argument",
+    "a member declared in an `extend type X { … }` block is published exactly as a member of a definition"
+  ]
+}

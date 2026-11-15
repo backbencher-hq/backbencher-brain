@@ -1,0 +1,45 @@
+{
+ "fixtureId": "xml/dtd-ndata-notation-is-not-nesting",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 containment ledger, residual finding. `<!ENTITY logo SYSTEM \"l.png\" NDATA png>` names a notation the DTD declares elsewhere and necessarily earlier, so the notation's declaration is never nested inside the entity's. The edge `logo -contains-> png` is a containment the document STATES through the NDATA clause, and it carried `evidenceClass: structural` — a claim that nesting was observed. Measured over the full 11,464-file admitted population: exactly 2 such edges, libxslt/tests/general/bug-21-.xml and libxslt/tests/general/bug-52.xml, with the target's span lying entirely before the source's in both. The tier is the fix and not the label, because `usage_contextual` already defines this shape — \"a containment the document states through an attribute rather than through nesting\" — and its listed precedents are the DTD content model and the NOTATION attribute type, so the second expectation row pins the precedent alongside the case. The third row is the regression pin: `structural` on this role is the pre-fix state and must not come back.",
+ "expectSymbols": [
+  {
+   "name": "logo",
+   "kind": "type"
+  },
+  {
+   "name": "png",
+   "kind": "type"
+  },
+  {
+   "name": "caption",
+   "kind": "type"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "logo",
+   "target": "png",
+   "meta.role": "dtd_ndata_notation",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "contains",
+   "from": "photo",
+   "target": "caption",
+   "meta.role": "dtd_content_model",
+   "meta.evidenceClass": "usage_contextual"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "logo",
+   "target": "png",
+   "meta.evidenceClass": "structural"
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

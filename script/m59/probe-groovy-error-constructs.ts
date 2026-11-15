@@ -16,7 +16,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const CENSUS = "validation/m12/results/groovy-corpus-errors.json"
-const REPO = "$HOME/fixtures/repositories/grails-core"
+const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
 
 function argNum(flag: string, dflt: number): number {
   const hit = process.argv.find((a) => a.startsWith(flag))

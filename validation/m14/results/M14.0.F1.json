@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "04744a34c647190a98161de7b616f0ee066e48de60461ebeeb19b96184ec48fc",
-    "sealedAt": "2026-11-06T05:17:39.000Z"
+    "contentSha256": "10207b4ec6fa4c0c3d396a85cea97815cf86ea034bd0ccb1bf5ab3f2eff0509e",
+    "sealedAt": "2026-11-15T00:19:30.000Z"
   },
   "checks": [
     {
@@ -30,8 +30,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
-  "committedAt": "2026-11-06T00:17:39-05:00",
+  "commit": "2a8e7930ddb6079971be15e253c3f37975084e16",
+  "committedAt": "2026-11-14T19:19:30-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -360,7 +360,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 213,
         "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 57,
+        "referencedTypeLiterals": 60,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -502,7 +502,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
         "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 103,
+        "referencedTypeLiterals": 104,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1199,20 +1199,20 @@
         "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
-        "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 84,
+        "referencedFieldLiterals": 7,
+        "referencedTypeLiterals": 87,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
-            "line": 3877,
+            "line": 4010,
             "literal": "part_of"
           },
           {
             "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
-            "line": 3886,
+            "line": 4019,
             "literal": "mixes_in"
           }
         ],
@@ -1237,1002 +1237,1002 @@
         "waivedFindings": [
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "adsi"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.DirectoryServices.DirectoryEntry"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "adsisearcher"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.DirectoryServices.DirectorySearcher"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "alias"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.AliasAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "allowemptycollection"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.AllowEmptyCollectionAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "allowemptystring"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.AllowEmptyStringAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "allow_null"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.AllowNullAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "array"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Array"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "bigint"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Numerics.BigInteger"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "bool"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Boolean"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "byte"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Byte"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "char"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Char"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "cimclass"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "Microsoft.Management.Infrastructure.CimClass"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "cimconverter"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "Microsoft.Management.Infrastructure.CimConverter"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ciminstance"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "Microsoft.Management.Infrastructure.CimInstance"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "cimtype"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "Microsoft.Management.Infrastructure.CimType"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "cmdletbinding"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.CmdletBindingAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "cultureinfo"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Globalization.CultureInfo"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "datetime"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.DateTime"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "decimal"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Decimal"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "double"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Double"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "dsclocalconfigurationmanager"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "Microsoft.PowerShell.DesiredStateConfiguration.LocalConfigurationManager"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "dscproperty"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.DscPropertyAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "dscresource"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.DscResourceAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "float"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Single"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "guid"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Guid"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "hashtable"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Collections.Hashtable"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "initialsessionstate"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.Runspaces.InitialSessionState"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "int"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Int32"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "int16"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Int16"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "int32"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "int64"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Int64"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ipaddress"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Net.IPAddress"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ipendpoint"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Net.IPEndPoint"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "long"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "mailaddress"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Net.Mail.MailAddress"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "moduleinfo"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSModuleInfo"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "nullable"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Nullable"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "object"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Object"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "objectsecurity"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Security.AccessControl.ObjectSecurity"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ordered"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Collections.Specialized.OrderedDictionary"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "outputtype"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.OutputTypeAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "parameter"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ParameterAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "physicaladdress"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Net.NetworkInformation.PhysicalAddress"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "psobject"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSObject"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "pscredential"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSCredential"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "pscustomobject"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSCustomObject"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "pslistmodifier"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSListModifier"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "psprimitivedictionary"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSPrimitiveDictionary"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "pstypenameattribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSTypeNameAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "psvariable"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSVariable"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ref"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSReference"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "regex"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Text.RegularExpressions.Regex"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "runspace"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.Runspaces.Runspace"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "runspacefactory"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.Runspaces.RunspaceFactory"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "sbyte"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.SByte"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "scriptblock"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ScriptBlock"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "securestring"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Security.SecureString"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "semver"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.SemanticVersion"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "short"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "single"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "string"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.String"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.SwitchParameter"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "timespan"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.TimeSpan"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "type"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Type"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "uint"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.UInt32"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "uint16"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.UInt16"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "uint32"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "uint64"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.UInt64"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ulong"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "uri"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Uri"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "ushort"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatecount"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateCountAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatedrive"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateDriveAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatelength"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateLengthAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatenotnull"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateNotNullAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatenotnullorempty"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateNotNullOrEmptyAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatepattern"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidatePatternAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validaterange"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateRangeAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validatescript"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateScriptAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "validateset"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ValidateSetAttribute"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "version"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Version"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "void"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Void"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "wildcardpattern"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.WildcardPattern"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "wmi"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.ManagementObject"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "wmiclass"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.ManagementClass"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "wmisearcher"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.ManagementObjectSearcher"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "xml"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Xml.XmlDocument"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "bitconverter"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.BitConverter"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "console"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Console"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "convert"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Convert"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "datetimeoffset"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.DateTimeOffset"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "enum"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Enum"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "environment"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Environment"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "experimentalfeature"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ExperimentalFeature"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "gc"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.GC"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "linebreakpoint"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.LineBreakpoint"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "math"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Math"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "powershell"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PowerShell"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "proxycommand"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.ProxyCommand"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "psserializer"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Management.Automation.PSSerializer"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "securityprotocoltype"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Net.SecurityProtocolType"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "servicepointmanager"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Net.ServicePointManager"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "tuple"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Tuple"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "waithandle"
           },
           {
             "justification": "real-powershell-analyzer.ts const RESOLVED_FRAMEWORK_TYPES (line 1069): a table of .NET TYPE NAMES and PowerShell cmdlet/alias names used to recognise a type or command from the text a script writes (e.g. System.DirectoryServices.DirectoryEntry, adsi, waithandle). These are semantic vocabulary, never read from a parse tree and never compared against a node type; the auditor's const-initializer heuristic treats *_TYPES string arrays as node-type sets, which is why they surface. Same class as the swift \"String\" type-name entry.",
-            "line": 1069,
+            "line": 1078,
             "literal": "System.Threading.WaitHandle"
           }
         ],
@@ -2322,15 +2322,15 @@
         "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 286,
-        "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 64,
+        "referencedFieldLiterals": 7,
+        "referencedTypeLiterals": 66,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
-            "line": 3227,
+            "line": 3281,
             "literal": "mixes_in"
           }
         ],
@@ -2486,8 +2486,8 @@
         "oracleFieldCount": 45,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 113,
+        "referencedFieldLiterals": 2,
+        "referencedTypeLiterals": 115,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -2605,15 +2605,15 @@
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 394,
-        "referencedFieldLiterals": 25,
-        "referencedTypeLiterals": 115,
+        "referencedFieldLiterals": 27,
+        "referencedTypeLiterals": 124,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 8108,
+            "line": 8699,
             "literal": "default_export_expression"
           }
         ],
@@ -2779,8 +2779,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-11-06T00:17:39-05:00",
-  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "regeneratedAt": "2026-11-14T19:19:30-05:00",
+  "regeneratedAtCommit": "2a8e7930ddb6079971be15e253c3f37975084e16",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

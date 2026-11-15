@@ -1,0 +1,16 @@
+{
+ "what": "One read-only open of the live shared index, via the tool's own open path",
+ "command": "BB_DATA_DIR=.bb-data bun -e \"BrainDatabase.getRawInstance(getProjectId(cwd), { readonly: true }); SELECT COUNT(*) FROM brain_symbol WHERE project_id=?\"",
+ "result": "SQLiteError: unable to open database file (repeated twice, seconds apart)",
+ "control": "The same file copied byte-for-byte (cp --reflink=auto) to validation/tools/bb_patterns/bbdata/t2b opened read-only and answered 310,423 symbols",
+ "sourceStatBefore": {
+  "bytes": 3639963648,
+  "mtime": "2026-11-01T23:29Z"
+ },
+ "sourceStatAfterCopy": {
+  "bytes": 3639963648,
+  "mtime": "2026-11-01T23:29Z"
+ },
+ "conclusion": "Not a handler defect: the live index was in a state where a byte-read-only open was refused while the identical bytes are readable. Recorded as a blocked live leg; the lane copy carries the dbUnchanged:true latency measurement.",
+ "generatedAt": "2026-11-03T16:20:00Z"
+}

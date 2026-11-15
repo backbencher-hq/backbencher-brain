@@ -1,0 +1,32 @@
+{
+  "_purpose": "The graphql lane's SPACE ATTESTATION for script/m14/ontology-coverage-gate.ts. A ruling that certifies ABSENCE must say WHICH SPACES its probe enumerated, and this file is where this lane says it — because graphql is a key-bearing language in the gate's own structural sense: the wired grammar's entire field surface is a BINDING (`name`, `:`, `Type` — three children whose middle one is the anonymous `:` token). That is exactly the blind spot HCL's `inherits = [\"_common\"]` hid 44 sites behind, so a vocabulary-only ruling cannot settle `calls` or `instantiates` here. Every pointer below is read by the gate against `artefact`; a pointer that does not resolve, or a declared number the artefact contradicts, turns the ruling RULED-UNJUSTIFIED instead of RULED-SOUND. Before this file existed the gate read, for these two types, `the probe does not cover the space this language USES: the corpus writes N key/value bindings … so a construct spelled as an attribute key cannot appear in a node-type inventory`.",
+  "lane": "graphql",
+  "instrument": "validation/m14/fixtures/graphql/rulebook-space-probe.mts",
+  "artefact": "validation/m14/fixtures/graphql/rulebook-space-probe.json",
+  "spacesProbed": ["node-types", "attribute-keys"],
+  "spaceEvidence": {
+    "nodeTypes": { "pointer": ["grammarInventory", "namedTypes"], "observed": 75 },
+    "attributeKeys": { "pointer": ["keySpace", "bindings"], "observed": 50284 }
+  },
+  "rulings": {
+    "calls": {
+      "spaces": ["node-types", "attribute-keys"],
+      "constructSites": 0,
+      "pointer": ["constructSites", "calls"],
+      "note": "0 of the 10 call-shaped node types sought (`CallExpression`, `Invocation`, `MacroInvocation`, `FunctionCall`, `MethodInvocation`, `Call`, `FunctionDeclaration`, `FunctionDefinition`, `MethodDefinition`, `CallableReference`) is in the wired grammar's 75 named types over 2,338,690 nodes on 1,911 admitted files — instrument A, on the vocabulary the arbiter itself now resolves. The key space was probed SECOND and is the half that matters here: 50,284 bindings over 7 key-bearing node types and 5,502 distinct keys, and the site rule is BOTH halves — the key must name a callee AND the value must APPLY it (`Arguments`). The raw keyword calibration fires, which is what makes the 0 a measurement rather than an inert counter: 22 keyword-shaped keys exist (21 `apply:`, 1 `execute:`), and every one is an ordinary field or argument NAME whose value is a type or an enum (`execute: BooleanOrString`, `apply: AFTER_RESOLVER`), so 0 of them applies anything. A regex would also have convicted the descriptions this corpus writes in prose; the shape test cannot. The nearest real form is measured and is NOT labelled `calls`: 1,150 `Field` nodes and 2,962 `Directive` nodes carry an `Arguments` child, and all of them are `uses` with role `field_selection` / `directive_application` — a family labelling decision (ledger R10, one fact one label), which is the OVERTURN CONDITION: an R-number assigning them to `calls` voids this row by relabelling, with no grammar or corpus change.",
+      "declined": "A `Field` carrying `Arguments` is the site a keyword scan would count. It is not a call: the callee — the resolver — is server-side and appears nowhere in the document, which is what the ruled table's counter-argument section states rather than buries."
+    },
+    "instantiates": {
+      "spaces": ["node-types", "attribute-keys"],
+      "constructSites": 0,
+      "pointer": ["constructSites", "instantiates"],
+      "note": "0 of the 8 construction-shaped node types sought (`NewExpression`, `ObjectCreationExpression`, `ConstructorInvocation`, `ObjectInstantiation`, `Instantiation`, `InstanceCreation`, `NewObject`, `Allocate`) is in the wired grammar's 75 named types. Measured from the key space as well: 340 keyword-shaped keys fired (`create` 337, `new` 3) and NONE is a construction site, because a construction site constructs an instance of a type the DOCUMENT DECLARES and the value-shape test alone was not enough to say so — `create: [{ node: { … } }]` inside an argument's object literal is an input VALUE whose key is a data key naming no declared type, and it fired 304 times under the value-shape test alone. Requiring the key to name a declared type is the second half of the rule, and it is applied over the WHOLE population rather than per file, so a document that declares the type after the binding is not missed. The excluded population is named rather than left implicit: 3,715 `ObjectValue` nodes are argument values, not instances of declared types.",
+      "declined": "The 304 `create:` bindings are the strongest argument against this row and are recorded as such: they are object VALUES in executable documents, and a per-file analyzer cannot turn a data key into a declared type. Overturn condition: the grammar producing any listed node, or a construction convention written outside the grammar the way `#import` is — which is precisely the measurement that moved `imports` from ruled to EMITTED."
+    }
+  },
+  "_measurement": {
+    "population": "1,911 admitted files — the arbiter's own discovery rule (git-tracked, detectLanguageFromPath === graphql, at or under the 1 MB FULL_AST_LIMIT cap), so the two instruments count the same files",
+    "grammar": "wasm/tree-sitter-graphql.wasm, now resolved for this lane at script/m14/differential.ts LANGS.graphql. Before that entry existed the arbiter fell through to `tree-sitter-bash.wasm` (`(LANGS as any)[LANG]?.wasm ?? \"tree-sitter-bash.wasm\"`), so both instruments walked a bash tree and reported 57 node types — a statement about bash, not about GraphQL, and the vacuous pass this whole block exists to prevent. Independent confirmation that the resolution is now right: this probe reads 75 named + 53 anonymous = 128 distinct types, the same inventory the lane's own census published from a separately written probe.",
+    "reRun": "npx tsx validation/m14/fixtures/graphql/rulebook-space-probe.mts ; then npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh"
+  }
+}

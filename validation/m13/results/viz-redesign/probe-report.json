@@ -1,0 +1,917 @@
+{
+  "cases": [
+    {
+      "name": "studio-default",
+      "side": {
+        "x": 0,
+        "y": 0,
+        "w": 336,
+        "h": 1000
+      },
+      "content": {
+        "x": 336,
+        "y": 0,
+        "w": 1264,
+        "h": 1000
+      },
+      "title": "Architecture Map",
+      "live": "nodes 200 of 200·edges 437 of 437",
+      "census": [
+        {
+          "k": "nodes",
+          "v": "200",
+          "warn": false
+        },
+        {
+          "k": "edges",
+          "v": "437",
+          "warn": false
+        },
+        {
+          "k": "node types",
+          "v": "10",
+          "warn": false
+        },
+        {
+          "k": "languages",
+          "v": "4",
+          "warn": false
+        },
+        {
+          "k": "stored edges behind them",
+          "v": "2365 (heaviest 75)",
+          "warn": false
+        },
+        {
+          "k": "cross-language edges",
+          "v": "73",
+          "warn": true
+        },
+        {
+          "k": "stale since index",
+          "v": "23",
+          "warn": true
+        }
+      ],
+      "filterGroups": [
+        {
+          "label": "Relationship types",
+          "options": [
+            {
+              "v": "instantiates",
+              "off": false
+            },
+            {
+              "v": "calls",
+              "off": false
+            },
+            {
+              "v": "uses",
+              "off": false
+            },
+            {
+              "v": "references",
+              "off": false
+            },
+            {
+              "v": "contains",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Languages",
+          "options": [
+            {
+              "v": "json",
+              "off": false
+            },
+            {
+              "v": "markdown",
+              "off": false
+            },
+            {
+              "v": "typescript",
+              "off": false
+            },
+            {
+              "v": "yaml",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Symbol kinds",
+          "options": [
+            {
+              "v": "class",
+              "off": false
+            },
+            {
+              "v": "constant",
+              "off": false
+            },
+            {
+              "v": "enum",
+              "off": false
+            },
+            {
+              "v": "enum_member",
+              "off": false
+            },
+            {
+              "v": "function",
+              "off": false
+            },
+            {
+              "v": "interface",
+              "off": false
+            },
+            {
+              "v": "method",
+              "off": false
+            },
+            {
+              "v": "property",
+              "off": false
+            },
+            {
+              "v": "type",
+              "off": false
+            },
+            {
+              "v": "variable",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Modules",
+          "options": [
+            {
+              "v": "script/m14",
+              "off": false
+            },
+            {
+              "v": "validation/m14",
+              "off": false
+            },
+            {
+              "v": "script/cpp-review",
+              "off": false
+            },
+            {
+              "v": "(root)",
+              "off": false
+            },
+            {
+              "v": "script",
+              "off": false
+            },
+            {
+              "v": "src/ast",
+              "off": false
+            },
+            {
+              "v": "script/m12",
+              "off": false
+            },
+            {
+              "v": "docs/analyzers",
+              "off": false
+            },
+            {
+              "v": "script/a3-relationship-enrichment",
+              "off": false
+            },
+            {
+              "v": "src",
+              "off": false
+            },
+            {
+              "v": "ide/vscode",
+              "off": false
+            },
+            {
+              "v": "docs",
+              "off": false
+            },
+            {
+              "v": "script/lanes",
+              "off": false
+            },
+            {
+              "v": "script/incoming-java",
+              "off": false
+            },
+            {
+              "v": "reviews/cpp",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Connectivity",
+          "options": [
+            {
+              "v": "isolated",
+              "off": false
+            }
+          ]
+        }
+      ],
+      "encodingRows": 7,
+      "fallback": null,
+      "downloads": [
+        {
+          "kind": "page",
+          "disabled": false
+        },
+        {
+          "kind": "json",
+          "disabled": false
+        },
+        {
+          "kind": "nodes",
+          "disabled": false
+        },
+        {
+          "kind": "edges",
+          "disabled": false
+        }
+      ],
+      "actions": {
+        "fit": false,
+        "clear": false
+      },
+      "activeMode": "graph",
+      "viewApi": "graph",
+      "viewState": {
+        "visibleNodes": 200,
+        "totalNodes": 200,
+        "visibleEdges": 437,
+        "totalEdges": 437,
+        "zoom": 0.8300249313682948,
+        "selected": null
+      },
+      "ink": {
+        "size": [
+          1264,
+          1000
+        ],
+        "ratio": 0.2874
+      },
+      "status": "Graph view loaded",
+      "errors": []
+    },
+    {
+      "name": "studio-default-filtered",
+      "hid": "instantiates",
+      "side": {
+        "x": 0,
+        "y": 0,
+        "w": 336,
+        "h": 1000
+      },
+      "content": {
+        "x": 336,
+        "y": 0,
+        "w": 1264,
+        "h": 1000
+      },
+      "title": "Architecture Map",
+      "live": "nodes 200 of 200·edges 435 of 437·2 hidden by filters",
+      "census": [
+        {
+          "k": "nodes",
+          "v": "200",
+          "warn": false
+        },
+        {
+          "k": "edges",
+          "v": "437",
+          "warn": false
+        },
+        {
+          "k": "node types",
+          "v": "10",
+          "warn": false
+        },
+        {
+          "k": "languages",
+          "v": "4",
+          "warn": false
+        },
+        {
+          "k": "stored edges behind them",
+          "v": "2365 (heaviest 75)",
+          "warn": false
+        },
+        {
+          "k": "cross-language edges",
+          "v": "73",
+          "warn": true
+        },
+        {
+          "k": "stale since index",
+          "v": "23",
+          "warn": true
+        }
+      ],
+      "filterGroups": [
+        {
+          "label": "Relationship types",
+          "options": [
+            {
+              "v": "instantiates",
+              "off": true
+            },
+            {
+              "v": "calls",
+              "off": false
+            },
+            {
+              "v": "uses",
+              "off": false
+            },
+            {
+              "v": "references",
+              "off": false
+            },
+            {
+              "v": "contains",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Languages",
+          "options": [
+            {
+              "v": "json",
+              "off": false
+            },
+            {
+              "v": "markdown",
+              "off": false
+            },
+            {
+              "v": "typescript",
+              "off": false
+            },
+            {
+              "v": "yaml",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Symbol kinds",
+          "options": [
+            {
+              "v": "class",
+              "off": false
+            },
+            {
+              "v": "constant",
+              "off": false
+            },
+            {
+              "v": "enum",
+              "off": false
+            },
+            {
+              "v": "enum_member",
+              "off": false
+            },
+            {
+              "v": "function",
+              "off": false
+            },
+            {
+              "v": "interface",
+              "off": false
+            },
+            {
+              "v": "method",
+              "off": false
+            },
+            {
+              "v": "property",
+              "off": false
+            },
+            {
+              "v": "type",
+              "off": false
+            },
+            {
+              "v": "variable",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Modules",
+          "options": [
+            {
+              "v": "script/m14",
+              "off": false
+            },
+            {
+              "v": "validation/m14",
+              "off": false
+            },
+            {
+              "v": "script/cpp-review",
+              "off": false
+            },
+            {
+              "v": "(root)",
+              "off": false
+            },
+            {
+              "v": "script",
+              "off": false
+            },
+            {
+              "v": "src/ast",
+              "off": false
+            },
+            {
+              "v": "script/m12",
+              "off": false
+            },
+            {
+              "v": "docs/analyzers",
+              "off": false
+            },
+            {
+              "v": "script/a3-relationship-enrichment",
+              "off": false
+            },
+            {
+              "v": "src",
+              "off": false
+            },
+            {
+              "v": "ide/vscode",
+              "off": false
+            },
+            {
+              "v": "docs",
+              "off": false
+            },
+            {
+              "v": "script/lanes",
+              "off": false
+            },
+            {
+              "v": "script/incoming-java",
+              "off": false
+            },
+            {
+              "v": "reviews/cpp",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Connectivity",
+          "options": [
+            {
+              "v": "isolated",
+              "off": false
+            }
+          ]
+        }
+      ],
+      "encodingRows": 7,
+      "fallback": null,
+      "downloads": [
+        {
+          "kind": "page",
+          "disabled": false
+        },
+        {
+          "kind": "json",
+          "disabled": false
+        },
+        {
+          "kind": "nodes",
+          "disabled": false
+        },
+        {
+          "kind": "edges",
+          "disabled": false
+        }
+      ],
+      "actions": {
+        "fit": false,
+        "clear": false
+      },
+      "activeMode": "graph",
+      "viewApi": "graph",
+      "viewState": {
+        "visibleNodes": 200,
+        "totalNodes": 200,
+        "visibleEdges": 435,
+        "totalEdges": 437,
+        "zoom": 0.8300249313682948,
+        "selected": null
+      },
+      "ink": {
+        "size": [
+          1264,
+          1000
+        ],
+        "ratio": 0.2872
+      },
+      "status": "Graph view loaded",
+      "errors": []
+    },
+    {
+      "name": "studio-default-downloads",
+      "saved": [
+        {
+          "size": 2110156,
+          "type": "text/html"
+        },
+        {
+          "size": 786459,
+          "type": "application/json"
+        },
+        {
+          "size": 42391,
+          "type": "text/csv"
+        },
+        {
+          "size": 157108,
+          "type": "text/csv"
+        }
+      ]
+    },
+    {
+      "name": "studio-codemap-requested.html",
+      "side": {
+        "x": 0,
+        "y": 0,
+        "w": 336,
+        "h": 1000
+      },
+      "content": {
+        "x": 336,
+        "y": 0,
+        "w": 1264,
+        "h": 1000
+      },
+      "title": "Code map",
+      "live": "—",
+      "census": [],
+      "filterGroups": [],
+      "encodingRows": 0,
+      "fallback": "This view still paints its own panels. Its data, filters and downloads move into this sidebar in its own pass — the graph went first.",
+      "downloads": [
+        {
+          "kind": "page",
+          "disabled": false
+        },
+        {
+          "kind": "json",
+          "disabled": true
+        },
+        {
+          "kind": "nodes",
+          "disabled": true
+        },
+        {
+          "kind": "edges",
+          "disabled": true
+        }
+      ],
+      "actions": {
+        "fit": true,
+        "clear": true
+      },
+      "activeMode": "codemap",
+      "viewApi": null,
+      "viewState": null,
+      "ink": null,
+      "status": "Code map view loaded",
+      "errors": []
+    },
+    {
+      "name": "studio-class-requested.html",
+      "side": {
+        "x": 0,
+        "y": 0,
+        "w": 336,
+        "h": 1000
+      },
+      "content": {
+        "x": 336,
+        "y": 0,
+        "w": 1264,
+        "h": 1000
+      },
+      "title": "UML / Class diagram",
+      "live": "—",
+      "census": [],
+      "filterGroups": [],
+      "encodingRows": 0,
+      "fallback": "This view still paints its own panels. Its data, filters and downloads move into this sidebar in its own pass — the graph went first.",
+      "downloads": [
+        {
+          "kind": "page",
+          "disabled": false
+        },
+        {
+          "kind": "json",
+          "disabled": true
+        },
+        {
+          "kind": "nodes",
+          "disabled": true
+        },
+        {
+          "kind": "edges",
+          "disabled": true
+        }
+      ],
+      "actions": {
+        "fit": true,
+        "clear": true
+      },
+      "activeMode": "class",
+      "viewApi": null,
+      "viewState": null,
+      "ink": null,
+      "status": "UML view loaded",
+      "errors": []
+    },
+    {
+      "name": "studio-default-1280",
+      "side": {
+        "x": 0,
+        "y": 0,
+        "w": 336,
+        "h": 800
+      },
+      "content": {
+        "x": 336,
+        "y": 0,
+        "w": 944,
+        "h": 800
+      },
+      "title": "Architecture Map",
+      "live": "nodes 200 of 200·edges 437 of 437",
+      "census": [
+        {
+          "k": "nodes",
+          "v": "200",
+          "warn": false
+        },
+        {
+          "k": "edges",
+          "v": "437",
+          "warn": false
+        },
+        {
+          "k": "node types",
+          "v": "10",
+          "warn": false
+        },
+        {
+          "k": "languages",
+          "v": "4",
+          "warn": false
+        },
+        {
+          "k": "stored edges behind them",
+          "v": "2365 (heaviest 75)",
+          "warn": false
+        },
+        {
+          "k": "cross-language edges",
+          "v": "73",
+          "warn": true
+        },
+        {
+          "k": "stale since index",
+          "v": "23",
+          "warn": true
+        }
+      ],
+      "filterGroups": [
+        {
+          "label": "Relationship types",
+          "options": [
+            {
+              "v": "instantiates",
+              "off": false
+            },
+            {
+              "v": "calls",
+              "off": false
+            },
+            {
+              "v": "uses",
+              "off": false
+            },
+            {
+              "v": "references",
+              "off": false
+            },
+            {
+              "v": "contains",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Languages",
+          "options": [
+            {
+              "v": "json",
+              "off": false
+            },
+            {
+              "v": "markdown",
+              "off": false
+            },
+            {
+              "v": "typescript",
+              "off": false
+            },
+            {
+              "v": "yaml",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Symbol kinds",
+          "options": [
+            {
+              "v": "class",
+              "off": false
+            },
+            {
+              "v": "constant",
+              "off": false
+            },
+            {
+              "v": "enum",
+              "off": false
+            },
+            {
+              "v": "enum_member",
+              "off": false
+            },
+            {
+              "v": "function",
+              "off": false
+            },
+            {
+              "v": "interface",
+              "off": false
+            },
+            {
+              "v": "method",
+              "off": false
+            },
+            {
+              "v": "property",
+              "off": false
+            },
+            {
+              "v": "type",
+              "off": false
+            },
+            {
+              "v": "variable",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Modules",
+          "options": [
+            {
+              "v": "script/m14",
+              "off": false
+            },
+            {
+              "v": "validation/m14",
+              "off": false
+            },
+            {
+              "v": "script/cpp-review",
+              "off": false
+            },
+            {
+              "v": "(root)",
+              "off": false
+            },
+            {
+              "v": "script",
+              "off": false
+            },
+            {
+              "v": "src/ast",
+              "off": false
+            },
+            {
+              "v": "script/m12",
+              "off": false
+            },
+            {
+              "v": "docs/analyzers",
+              "off": false
+            },
+            {
+              "v": "script/a3-relationship-enrichment",
+              "off": false
+            },
+            {
+              "v": "src",
+              "off": false
+            },
+            {
+              "v": "ide/vscode",
+              "off": false
+            },
+            {
+              "v": "docs",
+              "off": false
+            },
+            {
+              "v": "script/lanes",
+              "off": false
+            },
+            {
+              "v": "script/incoming-java",
+              "off": false
+            },
+            {
+              "v": "reviews/cpp",
+              "off": false
+            }
+          ]
+        },
+        {
+          "label": "Connectivity",
+          "options": [
+            {
+              "v": "isolated",
+              "off": false
+            }
+          ]
+        }
+      ],
+      "encodingRows": 7,
+      "fallback": null,
+      "downloads": [
+        {
+          "kind": "page",
+          "disabled": false
+        },
+        {
+          "kind": "json",
+          "disabled": false
+        },
+        {
+          "kind": "nodes",
+          "disabled": false
+        },
+        {
+          "kind": "edges",
+          "disabled": false
+        }
+      ],
+      "actions": {
+        "fit": false,
+        "clear": false
+      },
+      "activeMode": "graph",
+      "viewApi": "graph",
+      "viewState": {
+        "visibleNodes": 200,
+        "totalNodes": 200,
+        "visibleEdges": 437,
+        "totalEdges": 437,
+        "zoom": 0.5937189010855063,
+        "selected": null
+      },
+      "ink": {
+        "size": [
+          944,
+          800
+        ],
+        "ratio": 0.304
+      },
+      "status": "Graph view loaded",
+      "errors": []
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,381 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project",
+  "projectId": "82a42b87206708afbb4230b4d2d784b2ff204c00",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/bbdata/projects/82a42b87206708afbb4230b4d2d784b2ff204c00/brain.db",
+  "files": [
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:__tests__/app.test.ts",
+      "relative_path": "__tests__/app.test.ts",
+      "language": "typescript",
+      "file_hash": "b863a39b0ecf70ae"
+    },
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+      "relative_path": "lib/util.go",
+      "language": "go",
+      "file_hash": "3faec06f5fa2b695"
+    },
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "relative_path": "src/app.ts",
+      "language": "typescript",
+      "file_hash": "6520eb3b6101a03d"
+    },
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts",
+      "relative_path": "src/b.ts",
+      "language": "typescript",
+      "file_hash": "697511177b9f9bcb"
+    },
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/deleted.ts",
+      "relative_path": "src/deleted.ts",
+      "language": "typescript",
+      "file_hash": "d9bcb5c062a2c9ba"
+    },
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "relative_path": "src/paged.ts",
+      "language": "typescript",
+      "file_hash": "41038bfecbdc74bc"
+    },
+    {
+      "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts",
+      "relative_path": "src/stale.ts",
+      "language": "typescript",
+      "file_hash": "997a68ec5a625068"
+    }
+  ],
+  "symbols": [
+    {
+      "name": "ProcessValue",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+      "line": 3,
+      "source_text_len": 46,
+      "docstring_len": null
+    },
+    {
+      "name": "RequestHandler",
+      "symbol_type": "class",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 17,
+      "source_text_len": 48,
+      "docstring_len": null
+    },
+    {
+      "name": "UNICODE_ΣΊΣΥΦΟΣ",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 29,
+      "source_text_len": 62,
+      "docstring_len": null
+    },
+    {
+      "name": "bodyOnlyHost",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 21,
+      "source_text_len": 94,
+      "docstring_len": null
+    },
+    {
+      "name": "deletedHost",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/deleted.ts",
+      "line": 1,
+      "source_text_len": 50,
+      "docstring_len": null
+    },
+    {
+      "name": "duplicateName",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 13,
+      "source_text_len": 54,
+      "docstring_len": null
+    },
+    {
+      "name": "duplicateName",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/b.ts",
+      "line": 1,
+      "source_text_len": 54,
+      "docstring_len": null
+    },
+    {
+      "name": "getXuser",
+      "symbol_type": "constant",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 27,
+      "source_text_len": null,
+      "docstring_len": null
+    },
+    {
+      "name": "get_user",
+      "symbol_type": "constant",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 26,
+      "source_text_len": null,
+      "docstring_len": null
+    },
+    {
+      "name": "handleRequest",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 5,
+      "source_text_len": 57,
+      "docstring_len": null
+    },
+    {
+      "name": "handleResponse",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 9,
+      "source_text_len": 58,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol01",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 1,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol02",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 2,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol03",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 3,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol04",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 4,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol05",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 5,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol06",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 6,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol07",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 7,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol08",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 8,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol09",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 9,
+      "source_text_len": 52,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol10",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 10,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol11",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 11,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol12",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 12,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol13",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 13,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol14",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 14,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol15",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 15,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol16",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 16,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol17",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 17,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol18",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 18,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol19",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 19,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol20",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 20,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol21",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 21,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol22",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 22,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol23",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 23,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol24",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 24,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "pagedSymbol25",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/paged.ts",
+      "line": 25,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "processValueLower",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+      "line": 7,
+      "source_text_len": 51,
+      "docstring_len": null
+    },
+    {
+      "name": "run",
+      "symbol_type": "method",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/app.ts",
+      "line": 18,
+      "source_text_len": 16,
+      "docstring_len": null
+    },
+    {
+      "name": "staleHost",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts",
+      "line": 1,
+      "source_text_len": 48,
+      "docstring_len": null
+    },
+    {
+      "name": "testOnlyHelper",
+      "symbol_type": "function",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:__tests__/app.test.ts",
+      "line": 1,
+      "source_text_len": 53,
+      "docstring_len": null
+    },
+    {
+      "name": "util",
+      "symbol_type": "module",
+      "file_id": "82a42b87206708afbb4230b4d2d784b2ff204c00:lib/util.go",
+      "line": 1,
+      "source_text_len": null,
+      "docstring_len": null
+    }
+  ],
+  "withBody": 38,
+  "withDocstring": 0
+}

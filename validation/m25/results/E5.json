@@ -25,7 +25,7 @@
     "withinBudget": true,
     "launch": {
       "kind": "dist-bundled",
-      "entryPath": "$HOME/mcp/backbencher-brain/ide/vscode/dist/server/lsp/server.js",
+      "entryPath": "/home/ishaq2321/mcp/backbencher-brain/ide/vscode/dist/server/lsp/server.js",
       "runtime": "node",
       "runtimeArgs": [],
       "isFallback": false
@@ -432,7 +432,7 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":68,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/mcp/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\","
+      "detail": "{\"activationMs\":68,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"/home/ishaq2321/mcp/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\","
     },
     {
       "name": "E5: activation within declared budget",

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld17-unnamed-index.sql",
+  "authoredFrom": "M60 SQL pass 15, 2026-10-05. Every shape is transcribed from real corpus text. The unnamed index is hasura-engine/server/src-rsr/init_pg_source.sql line 51: `CREATE INDEX ON hdb_catalog.event_log (trigger_name)`, verbatim except that the schema is renamed to `ignored_schema` so the assertion reads as the class it is. The named index beside it is that same file's `CREATE INDEX event_log_fetch_events ON hdb_catalog.event_log (\u2026)` at line 53. Counts come from validation/m14/fixtures/sql/measurements/pass15-contains-oracle.txt over the 1,962-file corpus: 1,486 create_index nodes, 8 unnamed (0.54%), of which 6 were published as a member named `hdb_catalog`.",
+  "comment": "This fixture pins a NEGATIVE that an oracle found, not one a reading of the code suggested. sql-contains-oracle.mts derives `contains` a second time from the grammar's own structure and reported 19 corpus edges as analyzer-only whose member name was a schema qualifier. A fixture written from the same reading of the code would have passed against the bug, because it would assert what the code does. The two halves below fail independently and neither is sufficient: expectMetadata pins that the omission is COUNTED, so a version that dropped the counter fails here while every relationship assertion still passes; the symbol and relationship negatives pin that nothing was published, so a version that counted the skip and then emitted anyway fails here while the counter matches.",
+  "expectSymbols": [
+    {
+      "name": "event_log"
+    },
+    {
+      "name": "event_log_fetch_events"
+    },
+    {
+      "name": "dup_name"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ignored_schema"
+    },
+    {
+      "name": "ignored_schema.dup_name"
+    },
+    {
+      "name": "dup_name.dup_name"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "event_log_fetch_events",
+      "target": "event_log",
+      "meta.indexOn": "event_log"
+    },
+    {
+      "type": "contains",
+      "from": "event_log",
+      "target": "sqld17-unnamed-index.sql::event_log.trigger_name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "event_log",
+      "target": "ignored_schema",
+      "note": "The edge the defect produced: a table containing a schema."
+    },
+    {
+      "type": "contains",
+      "from": "event_log",
+      "target": "sqld17-unnamed-index.sql::event_log.ignored_schema"
+    },
+    {
+      "type": "references",
+      "from": "ignored_schema",
+      "target": "event_log",
+      "note": "The index-to-table dependency, emitted under the fabricated name."
+    },
+    {
+      "type": "contains",
+      "from": "dup_name",
+      "target": "dup_name",
+      "note": "Self-containment from case 3. The index is named `dup_name` and its table is also `dup_name`, so a text-based check would read this as the fabricated form and forbid a real declaration."
+    }
+  ],
+  "note": "Case 3 is the trap this fixture sets for its own successor. A prohibition written as `contains dup_name -> *` would fail against a correct analyzer, because the index really is a member of the table it indexes and the two share a name. The prohibition is therefore scoped to the SELF edge, which is the only shape that is actually wrong.",
+  "expectSymbolCount": [
+    {
+      "name": "ignored_schema",
+      "equals": 0
+    },
+    {
+      "name": "event_log",
+      "equals": 1
+    },
+    {
+      "name": "event_log_fetch_events",
+      "equals": 1
+    },
+    {
+      "name": "dup_name",
+      "equals": 1
+    }
+  ]
+}

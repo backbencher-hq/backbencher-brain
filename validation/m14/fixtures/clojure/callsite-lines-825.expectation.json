@@ -1,0 +1,23 @@
+{
+  "issue": "CLJ1",
+  "note": "M59 (#825) row identity for clojure: every call edge carries the callee's 1-based line, so two call SITES of one callee are two rows (pre-fix: 0/8381 corpus edges lined, all sites of a callee collapsed into one). The null-line forbid pins the collapse defect: a regression that drops the line emits an unlined pick edge, which no expect entry can express absent. Arity rides the identity too (ER-D2 parity): `(pick)` vs `(pick 1)` are distinct edges, meta.callArity states each.",
+  "expectSymbols": [
+    { "name": "pick", "kind": "function" },
+    { "name": "sites", "kind": "function" },
+    { "name": "qualified-sites", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "sites", "target": "pick", "line_number": 8, "meta.callArity": 0 },
+    { "type": "calls", "from": "sites", "target": "pick", "line_number": 9, "meta.callArity": 1 },
+    { "type": "calls", "from": "sites", "target": "pick", "line_number": 10, "meta.callArity": 1 },
+    { "type": "calls", "from": "qualified-sites", "target": "clojure.string/join", "line_number": 13, "meta.callArity": 2 },
+    { "type": "calls", "from": "qualified-sites", "target": "clojure.string/join", "line_number": 14, "meta.callArity": 2 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "sites", "target": "pick", "line_number": null },
+    { "type": "calls", "from": "qualified-sites", "target": "clojure.string/join", "line_number": null }
+  ],
+  "expectMetadata": [
+    { "cyclomaticComplexity": 3 }
+  ]
+}

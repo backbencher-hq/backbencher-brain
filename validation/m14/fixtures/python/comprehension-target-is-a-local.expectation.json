@@ -1,0 +1,98 @@
+{
+  "fixtureId": "python/comprehension-target-is-a-local",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PY-D22 (round 11). `collectFunctionLocals` SKIPS comprehension and lambda nodes on purpose \u2014 the comment says so: \"a lambda's or a comprehension's own parameters are not collected, so a call inside one stays `bare-name-callee` and is counted, never mislabelled\". The skip is right about SCOPE (a comprehension's bindings are not its enclosing function's) and wrong about the CONSEQUENCE: `isLocalCalleeName` and `dynamicTypeBindingReason` then find no enclosing scope that binds the name, so they publish `bare-name-callee` / `annotation-type` \u2014 a claim that the name is a project-wide name \u2014 for a name the source binds four characters to the left. The corpus rows are all this shape and were all in the round-10 residual: `[comp(page) for comp in comparison]` (wagtail, `comp`), `any(is_excluded(testname) for is_excluded in self._excluders)` (cython, `is_excluded`), `[handler_type(...) for handler_type in handler_types]` (ansible), `comb_fn(getter(arg)) for getter, comb_fn in fns` (sqlalchemy) \u2014 11 dump lines, priced with CPython in `.tmp-py/price-comprehension-targets.py` over 13,247 comprehensions and 3,348 lambda scopes (24,578 such reads project-wide, which is why the population matters more than the residual). The fix is the SAME ancestor walk the function check uses \u2014 ask each enclosing scope for its OWN bindings \u2014 so it needs no scope bookkeeping; the ONE reader is `scopeOwnBindings`, and a comprehension's clauses are direct children (measured with three chained `for`s, and with a `pattern_list` target in `.tmp-py/round11-shapes.mts`) while a lambda's parameters live under `lambda_parameters`, not `parameters`. THE PRECISION ROWS ARE THE FIXTURE'S OTHER HALF, because a name-keyed rule would pass every positive row and be wrong: `call_outside_the_comprehension` reads `comp` AFTER the comprehension, where python 3 binds nothing, and it must stay `bare-name-callee`; `not_bound_by_the_scope` calls a name the comprehension never binds, and it must stay `bare-name-callee` too. A mutant that adds comprehension targets to the enclosing function's local set fails both.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "call_inside_a_comprehension",
+      "target": "call_inside_a_comprehension\u0000comp",
+      "line_number": 16,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "THE POSITIVE ROW. `comp` is the `for` target of the comprehension the call sits in, so python resolves it to that binding. `local-callee` can only be produced when a scope node's own bindings contain the name, so this row IS the fix \u2014 before it, the same edge read `bare-name-callee`. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "nested_clauses",
+      "target": "nested_clauses\u0000v2",
+      "line_number": 29,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "The SECOND `for` clause of one comprehension (`for k, v in ... for v2 in (k, v)`), and a `pattern_list` target in the first clause. All the clauses of one comprehension are direct children of it, so a reader that looked at only the first clause would fail here \u2014 and `k`/`v` prove the pattern target is read through the shared walker rather than as a single identifier. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "uses_a_lambda",
+      "target": "uses_a_lambda\u0000q_",
+      "line_number": 33,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "The LAMBDA half. A lambda is a scope too, its parameters are its own bindings, and the node is `lambda_parameters` \u2014 a different spelling from a `def`'s `parameters`, which is why the reader is shared (`addParameterNames`) rather than copied. The analyzer's `processCall` guard for a lambda with no enclosing def is a different rule and deliberately untouched: this row has an enclosing def, so the call has a source. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "comprehension_target_is_a_local",
+      "target": "comprehension_target_is_a_local\u0000module_target",
+      "line_number": 40,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "A MODULE-SCOPE comprehension: `[module_target(NAME_OF_NOTHING) for module_target in HANDLERS_SET]`. This is the row that fails if the helper keeps an early exit on `locals.size === 0` \u2014 the old `isLocalCalleeName` returned `false` immediately when the file had no enclosing-function bindings at all, which is exactly this file's module-level case. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "references",
+      "from": "check_inside_a_comprehension",
+      "target": "comp",
+      "line_number": 25,
+      "confidence": 0.95,
+      "meta.reasonCode": "local-binding-target",
+      "note": "The REFERENCE emitter reads the same scopes (`dynamicTypeBindingReason`), so the fix has to reach both readers \u2014 this is the saleor corpus row: `references format_error -> allowed_err` read `instanceof-check` while `allowed_err` was the comprehension's own target. A fix that reached only the call emitter would leave the reference half of the corpus blast standing."
+    },
+    {
+      "type": "calls",
+      "from": "call_outside_the_comprehension",
+      "target": "comp",
+      "line_number": 21,
+      "confidence": 0.9,
+      "meta.reasonCode": "bare-name-callee",
+      "note": "THE PRECISION ROW, and it is the SAME NAME as the positive row one function above. Python 3 gives a comprehension its own scope, so `comp` is NOT bound after it; a rule that collected comprehension targets into the enclosing function's locals (the cheap wrong fix) would read `local-callee` here. The lexical walk is what keeps the two rows apart."
+    },
+    {
+      "type": "calls",
+      "from": "not_bound_by_the_scope",
+      "target": "other",
+      "line_number": 37,
+      "confidence": 0.9,
+      "meta.reasonCode": "bare-name-callee",
+      "note": "The negative control: the comprehension binds `_comp` and the call names `other`, so nothing in the file binds it and the honest answer is still `bare-name-callee`. Without this row a rule that answered `local-callee` for every call inside any comprehension would pass."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "comp",
+      "equals": 0,
+      "note": "A comprehension target is a scope binding, not a declaration: the correct answer is the reason code, not a symbol. Publishing one would be the fabrication this lane has already removed twice."
+    },
+    {
+      "name": "q_",
+      "equals": 0,
+      "note": "A lambda parameter is not a symbol either \u2014 the same contract as a `def` parameter."
+    },
+    {
+      "name": "v2",
+      "equals": 0,
+      "note": "Same for a second clause's target."
+    },
+    {
+      "name": "module_target",
+      "equals": 0,
+      "note": "Pinned at MODULE scope too, so the fix cannot be read as 'module-scope comprehension targets are module bindings' \u2014 they are the comprehension's own bindings at any nesting level, and python deletes them after the comprehension runs."
+    },
+    {
+      "name": "other",
+      "equals": 0,
+      "note": "The negative control's name binds nothing, so it must not appear as a symbol."
+    }
+  ]
+}

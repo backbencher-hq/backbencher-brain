@@ -1,0 +1,760 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C corpus census over the ROUTER's universe",
+  "generatedAt": "2026-09-29T07:37:06.271Z",
+  "method": "every file src/ast/language-detection.ts admits (ext .m, .mm, plus .h content-sniffed for @interface|@protocol|@implementation) in 3 pinned repos, NO sampling. Relationship types and metadata.relationshipType families are DISCOVERED from the output, not hardcoded, then reconciled against the types named in the analyzer source.",
+  "why": "the lane's 322-file grammar A/B is prose and its corpus artifact is 7 files; only one of those re-runs, and the closure record fixed the EXTENSION universe while leaving the CORPUS universe at 2% of the language",
+  "repos": [
+    "sdwebimage",
+    "afnetworking",
+    "Clyde"
+  ],
+  "universe": [
+    {
+      "repo": "sdwebimage",
+      "m": 104,
+      "mm": 0,
+      "hTotal": 159,
+      "hAdmitted": 143,
+      "routed": 247
+    },
+    {
+      "repo": "afnetworking",
+      "m": 49,
+      "mm": 0,
+      "hTotal": 31,
+      "hAdmitted": 26,
+      "routed": 75
+    },
+    {
+      "repo": "Clyde",
+      "m": 4,
+      "mm": 0,
+      "hTotal": 3,
+      "hAdmitted": 3,
+      "routed": 7
+    }
+  ],
+  "totalRouted": 329,
+  "baselineInstrument": {
+    "script": "script/m12/objc-corpus-errors.ts",
+    "repo": "Clyde",
+    "files": 7,
+    "coverageOfRoutedUniverse": 0.0213
+  },
+  "scanned": 329,
+  "skippedSmall": 0,
+  "parseFailed": 0,
+  "symbols": 5095,
+  "relationships": 24114,
+  "imports": 918,
+  "filesWithErrors": 36,
+  "errorFilesReportedOnly": 21,
+  "errorFilesWithErrorNodes": 15,
+  "totalErrorNodes": 158,
+  "totalMissingNodes": 0,
+  "symbolsLostToErrors": 1043,
+  "relationshipsLostToErrors": 3073,
+  "errorFileList": [
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "repo": "sdwebimage",
+      "reportedErrors": 8,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 8,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m:11",
+      "symbols": 61,
+      "relationships": 212
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDGraphicsImageRenderer.m",
+      "repo": "sdwebimage",
+      "reportedErrors": 3,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 18,
+      "relationships": 72
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.m",
+      "repo": "sdwebimage",
+      "reportedErrors": 3,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.m:64",
+      "symbols": 42,
+      "relationships": 486
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.m",
+      "repo": "sdwebimage",
+      "reportedErrors": 4,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 3,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.m:40",
+      "symbols": 67,
+      "relationships": 560
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "repo": "sdwebimage",
+      "reportedErrors": 8,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 8,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/UIView+WebCache.m:308",
+      "symbols": 20,
+      "relationships": 204
+    },
+    {
+      "file": "sdwebimage/Tests/Tests/SDUtilsTests.m",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 12,
+      "relationships": 192
+    },
+    {
+      "file": "sdwebimage/Examples/SDWebImage OSX Demo/WindowController.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 1,
+      "relationships": 2
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/NSData+ImageContentType.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 17,
+      "relationships": 5
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCache.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/SDImageCache.h:43",
+      "symbols": 55,
+      "relationships": 62
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoder.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 39,
+      "relationships": 24
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloader.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/SDWebImageDownloader.h:80",
+      "symbols": 44,
+      "relationships": 47
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageTransition.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/Core/SDWebImageTransition.h:59",
+      "symbols": 38,
+      "relationships": 37
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Private/SDImageFramePool.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 11,
+      "relationships": 14
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/NSData+ImageContentType.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 17,
+      "relationships": 5
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCache.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCache.h:43",
+      "symbols": 55,
+      "relationships": 62
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCoder.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 39,
+      "relationships": 24
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloader.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloader.h:80",
+      "symbols": 44,
+      "relationships": 47
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageTransition.h",
+      "repo": "sdwebimage",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageTransition.h:59",
+      "symbols": 38,
+      "relationships": 37
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.m",
+      "repo": "afnetworking",
+      "reportedErrors": 4,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 3,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "afnetworking/AFNetworking/AFNetworkReachabilityManager.m:63",
+      "symbols": 30,
+      "relationships": 114
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "repo": "afnetworking",
+      "reportedErrors": 50,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 119,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "afnetworking/AFNetworking/AFURLSessionManager.m:62",
+      "symbols": 133,
+      "relationships": 546
+    },
+    {
+      "file": "afnetworking/Example/Classes/Models/User.m",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 12,
+      "relationships": 26
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFHTTPSessionManager.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 16,
+      "relationships": 33
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 24,
+      "relationships": 22
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFSecurityPolicy.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 14,
+      "relationships": 17
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLRequestSerialization.h",
+      "repo": "afnetworking",
+      "reportedErrors": 2,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 44,
+      "relationships": 44
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLResponseSerialization.h",
+      "repo": "afnetworking",
+      "reportedErrors": 2,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 1,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "afnetworking/AFNetworking/AFURLResponseSerialization.h:30",
+      "symbols": 32,
+      "relationships": 37
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 50,
+      "relationships": 54
+    },
+    {
+      "file": "afnetworking/Example/Classes/Models/User.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 7,
+      "relationships": 7
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFAutoPurgingImageCache.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 16,
+      "relationships": 20
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFImageDownloader.h",
+      "repo": "afnetworking",
+      "reportedErrors": 3,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 3,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "afnetworking/UIKit+AFNetworking/AFImageDownloader.h:24",
+      "symbols": 16,
+      "relationships": 20
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/AFNetworkActivityIndicatorManager.h",
+      "repo": "afnetworking",
+      "reportedErrors": 11,
+      "firstReported": "Syntax error (unexpected node)",
+      "errorNodes": 6,
+      "missingNodes": 0,
+      "firstErrorNodeAt": "afnetworking/UIKit+AFNetworking/AFNetworkActivityIndicatorManager.h:45",
+      "symbols": 4,
+      "relationships": 3
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIButton+AFNetworking.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 11,
+      "relationships": 13
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIImageView+AFNetworking.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 7,
+      "relationships": 9
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIProgressView+AFNetworking.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 3,
+      "relationships": 5
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/UIRefreshControl+AFNetworking.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 2,
+      "relationships": 4
+    },
+    {
+      "file": "afnetworking/UIKit+AFNetworking/WKWebView+AFNetworking.h",
+      "repo": "afnetworking",
+      "reportedErrors": 1,
+      "firstReported": "Syntax error (missing node)",
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "firstErrorNodeAt": null,
+      "symbols": 4,
+      "relationships": 7
+    }
+  ],
+  "unknownSymbolNames": [],
+  "topLevelTypes": [
+    {
+      "name": "uses",
+      "count": 9473,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:23",
+      "corpusBacked": true,
+      "withLine": 9473,
+      "lineCoverage": 1
+    },
+    {
+      "name": "calls",
+      "count": 8309,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:23",
+      "corpusBacked": true,
+      "withLine": 8309,
+      "lineCoverage": 1
+    },
+    {
+      "name": "contains",
+      "count": 3895,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:20",
+      "corpusBacked": true,
+      "withLine": 3895,
+      "lineCoverage": 1
+    },
+    {
+      "name": "references",
+      "count": 916,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:9",
+      "corpusBacked": true,
+      "withLine": 916,
+      "lineCoverage": 1
+    },
+    {
+      "name": "overrides",
+      "count": 621,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m:22",
+      "corpusBacked": true,
+      "withLine": 621,
+      "lineCoverage": 1
+    },
+    {
+      "name": "instantiates",
+      "count": 519,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:41",
+      "corpusBacked": true,
+      "withLine": 519,
+      "lineCoverage": 1
+    },
+    {
+      "name": "extends",
+      "count": 255,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m:13",
+      "corpusBacked": true,
+      "withLine": 255,
+      "lineCoverage": 1
+    },
+    {
+      "name": "implements",
+      "count": 126,
+      "repos": [
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m:19",
+      "corpusBacked": true,
+      "withLine": 126,
+      "lineCoverage": 1
+    }
+  ],
+  "metadataFamilies": [
+    {
+      "name": "field_access",
+      "count": 3195,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:23",
+      "corpusBacked": true,
+      "withLine": 3195,
+      "lineCoverage": 1
+    }
+  ],
+  "evidenceClasses": [
+    {
+      "name": "usage_contextual",
+      "count": 17782,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:23",
+      "corpusBacked": true,
+      "withLine": 17782,
+      "lineCoverage": 1
+    },
+    {
+      "name": "structural",
+      "count": 4798,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:41",
+      "corpusBacked": true,
+      "withLine": 4798,
+      "lineCoverage": 1
+    },
+    {
+      "name": "import_based",
+      "count": 916,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:9",
+      "corpusBacked": true,
+      "withLine": 916,
+      "lineCoverage": 1
+    },
+    {
+      "name": "inferred",
+      "count": 618,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m:22",
+      "corpusBacked": true,
+      "withLine": 618,
+      "lineCoverage": 1
+    }
+  ],
+  "reconciliation": {
+    "declaredInSource": [
+      "calls",
+      "contains",
+      "extends",
+      "implements",
+      "instantiates",
+      "overrides",
+      "references",
+      "uses"
+    ],
+    "declaredNotEmitted": [],
+    "emittedNotDeclared": [],
+    "metadataFamiliesDeclared": [
+      "field_access"
+    ],
+    "metadataFamiliesDeclaredNotEmitted": [],
+    "metadataFamiliesEmittedNotDeclared": []
+  },
+  "findings": [
+    "CORPUS INSTRUMENT NERVES 2.1% OF THE LANE: script/m12/objc-corpus-errors.ts measures Clyde alone (7 files). The two production corpora the lane itself pins in script/m14/differential.ts (objc: \"sdwebimage\", objc: \"afnetworking\") add 322 more. The manifest publishes Clyde's 7-file numbers as the lane's corpus claim."
+  ],
+  "verdict": "1 finding(s) — see findings[]",
+  "rows": [
+    {
+      "name": "uses",
+      "count": 9473,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:23",
+      "corpusBacked": true,
+      "withLine": 9473,
+      "lineCoverage": 1
+    },
+    {
+      "name": "calls",
+      "count": 8309,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:23",
+      "corpusBacked": true,
+      "withLine": 8309,
+      "lineCoverage": 1
+    },
+    {
+      "name": "contains",
+      "count": 3895,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:20",
+      "corpusBacked": true,
+      "withLine": 3895,
+      "lineCoverage": 1
+    },
+    {
+      "name": "references",
+      "count": 916,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:9",
+      "corpusBacked": true,
+      "withLine": 916,
+      "lineCoverage": 1
+    },
+    {
+      "name": "overrides",
+      "count": 621,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m:22",
+      "corpusBacked": true,
+      "withLine": 621,
+      "lineCoverage": 1
+    },
+    {
+      "name": "instantiates",
+      "count": 519,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m:41",
+      "corpusBacked": true,
+      "withLine": 519,
+      "lineCoverage": 1
+    },
+    {
+      "name": "extends",
+      "count": 255,
+      "repos": [
+        "Clyde",
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m:13",
+      "corpusBacked": true,
+      "withLine": 255,
+      "lineCoverage": 1
+    },
+    {
+      "name": "implements",
+      "count": 126,
+      "repos": [
+        "afnetworking",
+        "sdwebimage"
+      ],
+      "firstSeenAt": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m:19",
+      "corpusBacked": true,
+      "withLine": 126,
+      "lineCoverage": 1
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "fixtureId": "kotlin/api-contract-routes",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.1 route-detection fix: pinned kotlin wasm exposes ZERO named fields, so annotation arguments required positional + leaf-modifier-text fallbacks. CONTRACT CHANGE (cross-language unification decision): api_contract_path now stores the bare PATH ('/users'), matching the Java analyzer and doc-engine's exact-match queries; the HTTP method moved to symbol.metadata.apiMethod. Previous expectations 'GET /users'/'POST /items' reflected the deprecated method-prefixed format.",
+  "expectSymbols": [
+    { "name": "UserController", "kind": "class" },
+    { "name": "list" },
+    { "name": "items" }
+  ],
+  "expectQualifiedCallsNote": "route paths live in apiContractPath field",
+  "expectApiContractPaths": [
+    { "symbol": "list", "equals": "/users" },
+    { "symbol": "items", "equals": "/items" }
+  ]
+}

@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.28",
+  "code": "A6",
+  "tool": "bb_ask",
+  "title": "bb_ask: documentation truth, lane gate evidence and release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "docs: docs/tools/bb_ask.md exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: category matches registry",
+      "pass": true,
+      "detail": "registry=search"
+    },
+    {
+      "name": "docs: mutability matches registry",
+      "pass": true,
+      "detail": "registry=read"
+    },
+    {
+      "name": "docs: requiresIndex matches registry",
+      "pass": true,
+      "detail": "registry=true"
+    },
+    {
+      "name": "docs: modes line matches registry (answer only)",
+      "pass": true,
+      "detail": "registry=`answer`"
+    },
+    {
+      "name": "docs: plannedModes line matches registry",
+      "pass": true,
+      "detail": "registry=`explain`, `feature`"
+    },
+    {
+      "name": "docs: defaults match registry",
+      "pass": true,
+      "detail": "registry={\"limit\":5}"
+    },
+    {
+      "name": "docs: every input property is documented",
+      "pass": true,
+      "detail": "2 props"
+    },
+    {
+      "name": "docs: limit's machine-readable range is rendered",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page: declares the page-size contract (1..100, default 5, refused not clamped)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page: states that a non-discriminative ranking publishes no numeric confidence",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page: states both freshness markers (STALE and MISSING)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page: states the declared bounds (returned/totalMatches/truncated)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page: states the ask-time provider transmission",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page: does not quote the retired 0.15 local similarity floor [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: docs/BB_ASK.md exists with the author header",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states page size 1..100 with default 5",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states local similarity floor 0.50 and model floor 0.35",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states local vocabulary is 205 words at 50 dimensions",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states per-model coverage versus library coverage",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states scan cap 20,000 and its declared truncation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states provider wait ceiling min(2 s, BB_EMBEDDING_TIMEOUT_MS)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states STALE and MISSING are distinct markers",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: states the question is sent to the configured provider at ask time",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: no milestone narrative (M##.# codes, 'shipped in M', 'regression' framing) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: every verification command names a file that exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: generator verify mode passes for bb_ask (page byte-fresh)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "evidence: lane gate summary exists",
+      "pass": true,
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/gates/summary.json"
+    },
+    {
+      "name": "evidence: verify-ask-contract recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-provenance recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-adversarial recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-integration recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-honesty recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-semantic recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-stats recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-deep recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: verify-ask-e2e-corpus recorded verified in the lane summary",
+      "pass": true,
+      "detail": "verified=true failed=0"
+    },
+    {
+      "name": "evidence: lane summary carries at least one observed negative case",
+      "pass": true,
+      "detail": "negatives=75"
+    },
+    {
+      "name": "release gate: a well-formed verified document validates",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "release gate: a tampered document cannot claim verified [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary.failed 3 != actual 0; verified claim has failed>0; verified claim has zero negative cases"
+    },
+    {
+      "name": "wiring: verify-ask-contract.ts is in the quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-contract.ts is in npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-provenance.ts is in the quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-provenance.ts is in npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-adversarial.ts is in the quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-adversarial.ts is in npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-integration.ts is in the quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-integration.ts is in npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-e2e-corpus.ts is in the quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: verify-ask-e2e-corpus.ts is in npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: the evidence validator is part of the gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wiring: removing any single A-verifier breaks the gate text (the gate cannot silently forget one) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "all verifier references intact"
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 52,
+    "passed": 52,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tools/bb_ask/descriptor.ts + script/tool-docs/curation/bb_ask.ts are the source; docs/tools/bb_ask.md is generated",
+    "guideTruth": "every measured rule the guide states is one a behavioural gate asserts (page size 1..100/default 5, similarity floors, per-space coverage, scan cap 20,000, provider wait ceiling 2 s, STALE vs MISSING)",
+    "laneEvidence": "validation/tools/bb_ask/gates/summary.json must show the other ask gates verified",
+    "releaseGate": "the release validator blocks a tampered verified claim — proven against the real validator"
+  },
+  "limitations": [
+    "Page byte-freshness is proven by the generator's own verify mode for this tool only (the campaign regenerates shared artifacts centrally).",
+    "Lane evidence is produced by validation/tools/bb_ask/work/run-gates.mjs; this gate reads it rather than trusting the tree."
+  ],
+  "generatedAt": "2026-11-03T20:23:24.920Z"
+}

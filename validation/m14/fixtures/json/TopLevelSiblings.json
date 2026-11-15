@@ -1,0 +1,2 @@
+{ "message": "mismatched types", "code": { "code": "E0308", "level": "error" } }
+{ "message": "expected slice, found str", "code": { "code": "E0308", "level": "note" } }

@@ -1,0 +1,32 @@
+{
+  "fixtureId": "scala/implements-edges",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the fleet MIXIN RULING (2026-10-19): a class extends ONE superclass (Base) and mixes traits in via `with` (Contract) \u2014 Scala's with-clause composition publishes `extends` for position 0 and `mixes_in` for every further supertype, exactly like Dart `with` and Ruby include/extend/prepend. `implements` is RULED NOT-APPLICABLE for scala.",
+  "expectSymbols": [
+    {
+      "name": "Contract",
+      "kind": "interface"
+    },
+    {
+      "name": "Worker",
+      "kind": "class"
+    },
+    {
+      "name": "Base",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Worker",
+      "target": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Worker",
+      "target": "Contract"
+    }
+  ]
+}

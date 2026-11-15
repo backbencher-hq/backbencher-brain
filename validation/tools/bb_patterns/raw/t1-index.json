@@ -1,0 +1,8 @@
+{
+  "fixtureDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+  "indexMs": 37721,
+  "generatedAt": "2026-11-01T23:24:27.438Z"
+}

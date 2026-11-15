@@ -1,0 +1,38 @@
+{
+ "fixtureId": "r/F21-namespace-depends-on",
+ "language": "r",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "`::` and `:::` are R's other two ways of naming a dependency, and this fixture pins the label they carry. src/ast/types.ts:72 declares `DependsOn = \"references\"`, so `references` IS this ontology's dependsOn type, and `base::det` is a dependsOn exactly as `library(base)` is — R must load the namespace to evaluate it. The analyzer already published BOTH labels for library()/require() (real-r-analyzer.ts:2108) and for source()/sourceCpp() (:2141); namespace access published `imports` alone, which held `references` at 387 edges on this fixture's oracle sample where the lane's independent oracle derives 2,171 — recall 16.9%, the lowest of the ten types by a factor of four, and the largest single gap the oracle found in this lane. Measured size of the asymmetry: namespace access is 1,751 of the 2,095 `imports` edges in the admitted corpus. Everything below is pinned as a PAIR under one `namespace_access` subtype, deliberately: `rcpp_source` and `r_source` are already carried by both types under one name, so a consumer keying on the subtype sees the pair rather than an unexplained extra edge. The four things a presence-only check would miss are pinned explicitly — the PACKAGE is the target and never the exported name (`dplyr::filter` must not become `references -> filter`), `:::` is the same construct and the same package shape as `::`, a quoted lhs is UNQUOTED rather than published as the literal backticked string, and a namespace access inside a function body keeps the source endpoint `global` because `::` resolves at parse time wherever it is written.",
+ "expectNoParseErrors": true,
+ "expectSymbols": [
+  { "name": "compute", "kind": "function" }
+ ],
+ "expectRelationships": [
+  { "type": "references", "from": "global", "target": "dplyr", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+  { "type": "imports", "from": "global", "target": "dplyr", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+
+  { "type": "references", "from": "global", "target": "stats", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+
+  { "type": "references", "from": "global", "target": "internal", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": ":::" },
+  { "type": "imports", "from": "global", "target": "internal", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": ":::" },
+
+  { "type": "references", "from": "global", "target": "utils", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+
+  { "type": "references", "from": "global", "target": "tibble", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+  { "type": "references", "from": "global", "target": "purrr", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+
+  { "type": "references", "from": "global", "target": "glue", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" },
+  { "type": "imports", "from": "global", "target": "glue", "confidenceMin": 1, "meta.relationshipSubType": "namespace_access", "meta.accessOperator": "::" }
+ ],
+ "forbidRelationships": [
+  { "type": "references", "from": "global", "target": "filter" },
+  { "type": "references", "from": "global", "target": "median" },
+  { "type": "references", "from": "global", "target": "head" },
+  { "type": "references", "from": "global", "target": "tibble::tibble" },
+  { "type": "references", "from": "global", "target": "`glue`" },
+  { "type": "references", "from": "compute", "target": "tibble" },
+  { "type": "references", "from": "compute", "target": "purrr" },
+  { "type": "references", "from": "global", "target": "" },
+  { "type": "imports", "from": "global", "target": "NotAPackage" }
+ ]
+}

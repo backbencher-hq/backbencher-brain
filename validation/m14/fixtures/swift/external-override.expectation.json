@@ -1,0 +1,19 @@
+{
+  "fixtureId": "swift/external-override",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.10 (overrideCompanion dead-machinery sweep, swift side): swift always had the Pass-3 fallback but emitted the GUESS at 1.0/structural — indistinguishable from a verified override in thresholded analysis (the anti-pattern java's Pass-3 comment documents). Pins: verified in-file override @1.0, external-base guess @0.5/inferred with reasonCode.",
+  "expectRelationships": [
+    { "type": "extends", "source": "InFileService", "target": "LocalBase" },
+    { "type": "extends", "source": "AuditService", "target": "ExternalBase" },
+    { "type": "overrides", "source": "InFileService.handle", "target": "LocalBase.handle", "confidenceMin": 0.9 },
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "confidenceMax": 0.5 },
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "meta.reasonCode": "first-parent-guess" },
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "meta.evidenceClass": "inferred" },
+    { "type": "contains", "source": "LocalBase", "target": "handle" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "source": "AuditService.handle", "target": "ExternalBase.handle", "confidenceMin": 0.9 },
+    { "type": "overrides", "source": "InFileService.handle", "target": "LocalBase.handle", "confidenceMax": 0.5 }
+  ]
+}

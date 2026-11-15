@@ -1,0 +1,58 @@
+{
+  "fixtureId": "javascript/private-name-cannot-override",
+  "rationale": "J9 (2026-09-30). Pins BOTH directions of the private-name rule, because the cheap fix is to delete the whole pass-3 guess branch and that would remove 44 rows of honest 0.5 suspicion. A `#name` is class-scoped in JavaScript \u2014 installed on each instance at construction, never on the prototype \u2014 so it can neither be declared by a base nor shadowed by a subclass. The lane emitted six such rows across the full corpus (URLSearchParams.#update_url, Map.#read_all, Map.#source, Set.#init, Set.#source, Date.#init); Date's only override edge was a private field, so the rule removes that base entirely. The forbid rows are what make this load-bearing: the edge COUNT is unchanged if the guard is replaced by a blanket suppression of the branch, and only naming the bad rows catches that.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Widget",
+      "target": "Map"
+    },
+    {
+      "type": "overrides",
+      "from": "Widget.get",
+      "target": "get",
+      "note": "a PUBLIC method against a base not declared in this file stays, at the 0.5 first-parent-guess tier \u2014 Map really does have `get`, so this is honest suspicion rather than a fabrication"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Widget.#source",
+      "target": "#source",
+      "note": "a private FIELD: class-scoped, never a prototype member"
+    },
+    {
+      "type": "overrides",
+      "from": "Widget.#read_all",
+      "target": "#read_all",
+      "note": "a private METHOD, so the rule is not merely about the field shape"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Widget",
+      "kind": "class",
+      "equals": 1
+    },
+    {
+      "name": "#source",
+      "kind": "property",
+      "equals": 1
+    },
+    {
+      "name": "#read_all",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "get",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "connectedCallback",
+      "kind": "method",
+      "equals": 1
+    }
+  ]
+}

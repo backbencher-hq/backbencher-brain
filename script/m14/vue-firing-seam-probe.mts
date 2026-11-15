@@ -59,7 +59,7 @@ const MAX_BYTES = 512 * 1024
 // hand-written file list rots silently and keeps reporting a stale N.
 const files: Array<{ repo: string; dir: string; rel: string; abs: string; text: string }> = []
 for (const e of REPOS) {
-  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories", e)
+  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e)
   let tracked: string[]
   try { if (!statSync(dir).isDirectory()) continue } catch { continue }
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }

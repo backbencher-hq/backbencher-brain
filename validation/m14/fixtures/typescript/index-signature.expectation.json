@@ -1,0 +1,11 @@
+{
+  "fixtureId": "typescript/index-signature",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.2 index_signature fix: real node children are identifier (key) + type_annotation (value); old branches referenced nonexistent index_signature_parameter/formal_parameter so valueType captured the key name and prefix colon leaked.",
+  "expectSymbols": [
+    { "name": "[key]" }
+  ],
+  "expectRelationships": [],
+  "notes": "returnType asserted as 'any' via symbol payload check in runner extension if needed; primary regression = symbol exists with isIndexSignature true"
+}

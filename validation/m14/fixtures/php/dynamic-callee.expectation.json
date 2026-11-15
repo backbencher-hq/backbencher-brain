@@ -1,0 +1,62 @@
+{
+  "fixtureId": "php/dynamic-callee",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "variableReadSpelling": "VARIABLE-READ SPELLING (php, 2026-10-11). The `uses` targets in this file that name a `$variable` are BINDINGS, not declaration names: the analyzer spells a variable read as `<read source>\\u0000<binding>` with `metadata.localBinding`, because a local/param/superglobal is never a published symbol and the BARE name let the store bind the read to an unrelated same-named declaration in another file. The defect and its counterfactual are in validation/m14/fixtures/php/local-read-phantom.mts; the whole-population effect is in docs/analyzers/history/php-lane-notes.md. What each row PINS (which read, from where, and how many) did not move.",
+  "rationale": "R10 (#835) — the dynamic-callee spelling contract. A `calls` target is the name of a CALLEE; `$callable()` names nothing, because the callee is a runtime VALUE. The pre-R10 rule took the callee node's raw text, so the lane published `calls -> $callable` (measured in phpmyadmin's tests: `calls -> $controller` in LicenseControllerTest.php:23) — again IDENTICALLY on both sides, because the oracle's truth came from the same shape. A probe over 400 real php files (phpunit/src, phpmyadmin/src + tests) found 1,047 `name` callees and `variable_name` the ONLY non-name shape reaching the rule (1 site), so this narrows a fabrication rather than a capability. What the call EVALUATES is still read, and that read is the variable pass's `uses` edge — the fix adds the honest edge's owner and removes the fabricated name in the same move, which is why the fixture requires both halves: `uses -> handler` MUST be present and `calls -> handler` MUST be absent, while a named callee in the same method (`$this->run(...)`) still emits its `calls` edge.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "dispatch",
+      "target": "dispatch\u0000handler",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "dispatch",
+      "target": "dispatch\u0000handler",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "calls",
+      "from": "dispatch",
+      "target": "Dispatcher.run"
+    },
+    {
+      "type": "uses",
+      "from": "dispatch",
+      "target": "dispatch\u0000name",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000name",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "contains",
+      "from": "Dispatcher",
+      "target": "dispatch",
+      "meta.isContained": true
+    },
+    {
+      "type": "contains",
+      "from": "Dispatcher",
+      "target": "run",
+      "meta.isContained": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "handler",
+      "note": "the fabricated callee name (pre-fix: raw callee text, from \"$handler\")"
+    },
+    {
+      "type": "calls",
+      "target": "$handler",
+      "note": "and not the sigil spelling either"
+    }
+  ]
+}

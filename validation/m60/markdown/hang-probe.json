@@ -1,0 +1,508 @@
+{
+  "generatedBy": "validation/m14/fixtures/markdown/hang-probe.ts",
+  "deadlineMs": 150000,
+  "engineWatchdogMs": 120000,
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "namedBy": "the [BB-HANG] lines of arbiter-run1.log, arbiter-run2.log and the run-3 commit message",
+  "rows": [
+    {
+      "run": "run1",
+      "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md",
+      "abs": "/home/ishaq2321/bb_tests/repositories/Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md",
+      "bytes": 883,
+      "mode": "block",
+      "outcome": "ok",
+      "ms": 11271,
+      "detail": {
+        "wallMs": 11271,
+        "bytes": 883,
+        "repsDone": 10,
+        "perRep": [
+          {
+            "rep": 1,
+            "ms": 23,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 2,
+            "ms": 5,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 3,
+            "ms": 6,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 4,
+            "ms": 3,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 5,
+            "ms": 4,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 6,
+            "ms": 3,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 7,
+            "ms": 5,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 8,
+            "ms": 2,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 9,
+            "ms": 2,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 10,
+            "ms": 2,
+            "rootType": "document",
+            "childCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "run": "run1",
+      "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md",
+      "abs": "/home/ishaq2321/bb_tests/repositories/Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md",
+      "bytes": 883,
+      "mode": "inline",
+      "outcome": "ok",
+      "ms": 12805,
+      "detail": {
+        "wallMs": 12805,
+        "bytes": 883,
+        "repsDone": 10,
+        "perRep": [
+          {
+            "rep": 1,
+            "ms": 51,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 2,
+            "ms": 15,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 3,
+            "ms": 13,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 4,
+            "ms": 11,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 5,
+            "ms": 7,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 6,
+            "ms": 5,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 7,
+            "ms": 5,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 8,
+            "ms": 5,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 9,
+            "ms": 4,
+            "rootType": "inline",
+            "childCount": 158
+          },
+          {
+            "rep": 10,
+            "ms": 4,
+            "rootType": "inline",
+            "childCount": 158
+          }
+        ]
+      }
+    },
+    {
+      "run": "run1",
+      "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md",
+      "abs": "/home/ishaq2321/bb_tests/repositories/Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md",
+      "bytes": 883,
+      "mode": "prod",
+      "outcome": "ok",
+      "ms": 27844,
+      "detail": {
+        "wallMs": 27844,
+        "bytes": 883,
+        "repsDone": 10,
+        "perRep": [
+          {
+            "rep": 1,
+            "ms": 998,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 2,
+            "ms": 40,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 3,
+            "ms": 15,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 4,
+            "ms": 18,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 5,
+            "ms": 13,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 6,
+            "ms": 20,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 7,
+            "ms": 14,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 8,
+            "ms": 21,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 9,
+            "ms": 24,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          },
+          {
+            "rep": 10,
+            "ms": 21,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 7,
+            "relationships": 6
+          }
+        ]
+      }
+    },
+    {
+      "run": "run2",
+      "rel": "FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md",
+      "abs": "/home/ishaq2321/bb_tests/repositories/FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md",
+      "bytes": 416,
+      "mode": "block",
+      "outcome": "ok",
+      "ms": 17747,
+      "detail": {
+        "wallMs": 17747,
+        "bytes": 416,
+        "repsDone": 10,
+        "perRep": [
+          {
+            "rep": 1,
+            "ms": 24,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 2,
+            "ms": 4,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 3,
+            "ms": 2,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 4,
+            "ms": 4,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 5,
+            "ms": 4,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 6,
+            "ms": 1,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 7,
+            "ms": 4,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 8,
+            "ms": 1,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 9,
+            "ms": 4,
+            "rootType": "document",
+            "childCount": 1
+          },
+          {
+            "rep": 10,
+            "ms": 1,
+            "rootType": "document",
+            "childCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "run": "run2",
+      "rel": "FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md",
+      "abs": "/home/ishaq2321/bb_tests/repositories/FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md",
+      "bytes": 416,
+      "mode": "inline",
+      "outcome": "ok",
+      "ms": 18581,
+      "detail": {
+        "wallMs": 18581,
+        "bytes": 416,
+        "repsDone": 10,
+        "perRep": [
+          {
+            "rep": 1,
+            "ms": 52,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 2,
+            "ms": 2,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 3,
+            "ms": 7,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 4,
+            "ms": 5,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 5,
+            "ms": 1,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 6,
+            "ms": 8,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 7,
+            "ms": 1,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 8,
+            "ms": 4,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 9,
+            "ms": 5,
+            "rootType": "inline",
+            "childCount": 19
+          },
+          {
+            "rep": 10,
+            "ms": 2,
+            "rootType": "inline",
+            "childCount": 19
+          }
+        ]
+      }
+    },
+    {
+      "run": "run2",
+      "rel": "FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md",
+      "abs": "/home/ishaq2321/bb_tests/repositories/FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md",
+      "bytes": 416,
+      "mode": "prod",
+      "outcome": "ok",
+      "ms": 29658,
+      "detail": {
+        "wallMs": 29658,
+        "bytes": 416,
+        "repsDone": 10,
+        "perRep": [
+          {
+            "rep": 1,
+            "ms": 1657,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 2,
+            "ms": 55,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 3,
+            "ms": 33,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 4,
+            "ms": 39,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 5,
+            "ms": 70,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 6,
+            "ms": 26,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 7,
+            "ms": 17,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 8,
+            "ms": 18,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 9,
+            "ms": 13,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          },
+          {
+            "rep": 10,
+            "ms": 15,
+            "rootType": null,
+            "childCount": null,
+            "symbols": 8,
+            "relationships": 7
+          }
+        ]
+      }
+    }
+  ],
+  "hangs": 0,
+  "errors": 0,
+  "ok": 6
+}

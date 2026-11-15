@@ -1,0 +1,55 @@
+{
+  "fixtureId": "svelte/renders-component-tags",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written with the analyzer change (2026-10-23): the three SFC template emission sites move from `instantiates` to `renders`, and the delegate's script `new` rows stay `instantiates`. Every assertion here is structural: the TYPE separates the render construct from the construction construct, and the metadata separates the SFC rows (isComponentUsage / resolution) from the delegate rows (sfcDelegated). No line pins — the migration is about which RELATION a construct names, and the existing fixtures already pin the tag lines (template-lines-825, dynamic-target-sites).",
+  "rationale": "The extended vocabulary's `renders` is the honest name for a component tag: the source contains no `new`, so an `instantiates` edge claimed an allocation site the file does not have (types.ts' Renders contract: NOT `instantiates`). This fixture is the both-directions pin: template tags render (plain, dotted-namespace, dynamic this=) and MUST NOT instantiate; the script `new` instantiates and MUST NOT render. The forbids are what make the two relations distinct rather than one relation wearing two names.",
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "renders-component-tags",
+      "target": "Card",
+      "meta.isComponentUsage": true
+    },
+    {
+      "type": "renders",
+      "from": "renders-component-tags",
+      "target": "Widget",
+      "meta.isComponentUsage": true
+    },
+    {
+      "type": "renders",
+      "from": "renders-component-tags",
+      "target": "Panel.Root",
+      "meta.resolution": "namespace-member",
+      "meta.namespaceBinding": "Panel"
+    },
+    {
+      "type": "instantiates",
+      "from": "renders-component-tags",
+      "target": "Model"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "target": "Card"
+    },
+    {
+      "type": "instantiates",
+      "target": "Widget"
+    },
+    {
+      "type": "instantiates",
+      "target": "Panel.Root"
+    },
+    {
+      "type": "renders",
+      "target": "Model"
+    },
+    {
+      "type": "renders",
+      "target": "div"
+    }
+  ]
+}

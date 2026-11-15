@@ -70,7 +70,7 @@ import { join, relative } from "node:path"
 import * as path from "node:path"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const KOTLIN_DIR = process.env.BB_KOTLIN_DIR ?? join(CORPUS, "kotlin")
 const N = Number(process.env.KOT_ORACLE_N ?? 0)
 

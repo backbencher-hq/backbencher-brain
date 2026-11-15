@@ -1,0 +1,1021 @@
+{
+  "wasm": "/home/ishaq2321/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
+  "pass": 59,
+  "fail": 0,
+  "total": 59,
+  "failures": [],
+  "perCase": [
+    {
+      "id": "object-simple",
+      "why": "the baseline: one object type, one field",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Query|1",
+        "property|hello|2"
+      ],
+      "relationships": [
+        "contains|Query|Query.hello",
+        "exports|(file)|Query",
+        "references|Query.hello|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "line-numbers-multiline",
+      "why": "1-based lines; a definition on line 3 reports 3, and its field on line 6 reports 6",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "interface|I|3",
+        "property|z|3",
+        "class|A|5",
+        "property|x|8"
+      ],
+      "relationships": [
+        "contains|A|A.x",
+        "contains|I|I.z",
+        "exports|(file)|A",
+        "exports|(file)|I",
+        "implements|A|I",
+        "references|A.x|Int",
+        "references|I.z|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "described-definition-line-is-the-keyword",
+      "why": "M59/#861: a definition's line is the line its KEYWORD is on, not the line its Description starts on. Measured on the GitHub public schema, the naive range pointed at the docstring for 3,131 of 3,332 symbols.",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|2",
+        "property|f|4"
+      ],
+      "relationships": [
+        "contains|A|A.f",
+        "exports|(file)|A",
+        "references|A.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "described-argument-line",
+      "why": "an argument's own line, with its own description above it",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|1",
+        "property|f|2"
+      ],
+      "relationships": [
+        "contains|A|A.f",
+        "exports|(file)|A",
+        "references|A.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "every-relationship-carries-a-real-line",
+      "why": "M59 #825: the store keys a relationship on (source, target, type, line), so a line-less edge silently collapses a second genuine fact. `f(x: Int): Int` has a return type AND an argument type of Int, on different lines — both must survive.",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|1",
+        "property|f|2"
+      ],
+      "relationships": [
+        "contains|A|A.f",
+        "exports|(file)|A",
+        "references|A.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "implements-three-nested",
+      "why": "ImplementsInterfaces is left-recursive, so a nested tree must still yield all three interfaces, not just the last",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|T|1",
+        "property|x|1"
+      ],
+      "relationships": [
+        "contains|T|T.x",
+        "exports|(file)|T",
+        "implements|T|A",
+        "implements|T|B",
+        "implements|T|C",
+        "references|T.x|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "union-three-nested",
+      "why": "UnionMemberTypes is left-recursive too",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "type|U|1"
+      ],
+      "relationships": [
+        "exports|(file)|U",
+        "uses|U|A",
+        "uses|U|B",
+        "uses|U|C"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-of-undeclared-type",
+      "why": "`extend type X` in a file that never declares X is that file's only word about X, so it must emit a `partial` symbol for X or the `contains` edge has no source",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Elsewhere|1",
+        "property|added|2"
+      ],
+      "relationships": [
+        "contains|Elsewhere|Elsewhere.added",
+        "exports|(file)|Elsewhere",
+        "references|Elsewhere.added|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-of-declared-type-no-duplicate",
+      "why": "when the file DOES declare X, the extension contributes members only — a second `class X` would be a duplicate identity in the index",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|X|1",
+        "property|a|1",
+        "property|b|2"
+      ],
+      "relationships": [
+        "contains|X|X.a",
+        "contains|X|X.b",
+        "exports|(file)|X",
+        "references|X.a|Int",
+        "references|X.b|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-scalar-no-directive",
+      "why": "spec 3.17: a bare `extend scalar S` is VALID (upstream's rule made the directive mandatory) — and it must publish NOTHING, because the rule is `extend scalar Name Directives?` and a scalar has no members. The old analyzer minted a `type S` for every `extend scalar`, a duplicate identity whenever the file also declared S.",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [],
+      "relationships": [],
+      "ok": true
+    },
+    {
+      "id": "extend-scalar-alongside-its-declaration",
+      "why": "the file declares S and also extends it: ONE `type S` symbol, carrying the fact that an extension exists, and the application is a real reference",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "type|S|1"
+      ],
+      "relationships": [
+        "exports|(file)|S",
+        "uses|S|@specifiedBy"
+      ],
+      "ok": true
+    },
+    {
+      "id": "schema-extension-multi-root",
+      "why": "spec 3.18: a schema extension may add SEVERAL root operation types, and Apollo Federation's `extend schema @link(...)` has no body at all",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "namespace|schema|1",
+        "property|query|2",
+        "property|mutation|3"
+      ],
+      "relationships": [
+        "contains|schema|schema.mutation",
+        "contains|schema|schema.query",
+        "exports|(file)|schema",
+        "uses|schema.mutation|Mutation",
+        "uses|schema.query|Query"
+      ],
+      "ok": true
+    },
+    {
+      "id": "apollo-federation-link",
+      "why": "Apollo Federation v2 emits `extend schema @link(url: ..., import: [...])` with no braces — the vendored grammar rejected it",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "namespace|schema|1"
+      ],
+      "relationships": [
+        "exports|(file)|schema",
+        "uses|schema|@link"
+      ],
+      "ok": true
+    },
+    {
+      "id": "directive-application-is-a-reference",
+      "why": "a directive applied to a type is a real reference to the `@directive` function symbol — federation schemas carry their structure in these",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "function|@key|1",
+        "class|T|2",
+        "property|id|2"
+      ],
+      "relationships": [
+        "contains|T|T.id",
+        "exports|(file)|@key",
+        "exports|(file)|T",
+        "references|@key|String",
+        "references|T.id|ID",
+        "uses|T|@key"
+      ],
+      "ok": true
+    },
+    {
+      "id": "variable-reference-site",
+      "why": "a declared variable that is never referenced reads as dead; `f(id: $id)` is a real reference from the selection to the variable",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|Q|1",
+        "variable|$id|1"
+      ],
+      "relationships": [
+        "references|$id|ID",
+        "uses|Q|$id",
+        "uses|Q|f"
+      ],
+      "ok": true
+    },
+    {
+      "id": "argument-is-optional-only-with-a-default",
+      "why": "GraphQL's own rule: NON-NULL is required; NULLABLE is optional only when it has a default. `x: Int` is required, `x: Int = 1` is not.",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|1",
+        "property|f|2"
+      ],
+      "relationships": [
+        "contains|A|A.f",
+        "exports|(file)|A",
+        "references|A.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "two-directives-on-a-field-selection",
+      "why": "a regression guard: upstream's Field rule said `optional($.directive)` (singular), so `{ f @a @b }` was rejected. The vendored grammar accepted it and the patched grammar must keep accepting it.",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|Q|1"
+      ],
+      "relationships": [
+        "uses|Q|@a",
+        "uses|Q|@b",
+        "uses|Q|f"
+      ],
+      "ok": true
+    },
+    {
+      "id": "no-implements",
+      "why": "the type has no `implements` clause: zero implements edges",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|1",
+        "property|x|1"
+      ],
+      "relationships": [
+        "contains|A|A.x",
+        "exports|(file)|A",
+        "references|A.x|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "interface-multiple",
+      "why": "`implements A & B & C` yields three edges",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|T|1",
+        "property|x|1"
+      ],
+      "relationships": [
+        "contains|T|T.x",
+        "exports|(file)|T",
+        "implements|T|A",
+        "implements|T|B",
+        "implements|T|C",
+        "references|T.x|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "interface-implements-interface",
+      "why": "an interface may itself declare `implements`",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "interface|Node|1",
+        "property|id|1",
+        "interface|Resource|2",
+        "property|id|2",
+        "property|url|2"
+      ],
+      "relationships": [
+        "contains|Node|Node.id",
+        "contains|Resource|Resource.id",
+        "contains|Resource|Resource.url",
+        "exports|(file)|Node",
+        "exports|(file)|Resource",
+        "implements|Resource|Node",
+        "overrides|Resource.id|Node.id",
+        "references|Node.id|ID",
+        "references|Resource.id|ID",
+        "references|Resource.url|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "union",
+      "why": "union members are `uses` edges from the union",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "type|U|1"
+      ],
+      "relationships": [
+        "exports|(file)|U",
+        "uses|U|A",
+        "uses|U|B",
+        "uses|U|C"
+      ],
+      "ok": true
+    },
+    {
+      "id": "enum",
+      "why": "enum values are enum_member symbols owned by the enum, with contains edges",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "enum|Color|1",
+        "enum_member|RED|2",
+        "enum_member|GREEN|3",
+        "enum_member|BLUE|4"
+      ],
+      "relationships": [
+        "contains|Color|Color.BLUE",
+        "contains|Color|Color.GREEN",
+        "contains|Color|Color.RED",
+        "exports|(file)|Color"
+      ],
+      "ok": true
+    },
+    {
+      "id": "enum-value-with-directive",
+      "why": "a directive on an enum value must not hide the value",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "enum|Color|1",
+        "enum_member|RED|1"
+      ],
+      "relationships": [
+        "contains|Color|Color.RED",
+        "exports|(file)|Color",
+        "uses|Color.RED|@deprecated"
+      ],
+      "ok": true
+    },
+    {
+      "id": "scalar",
+      "why": "a scalar is a `type` symbol",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "type|DateTime|1",
+        "type|JSON|2"
+      ],
+      "relationships": [
+        "exports|(file)|DateTime",
+        "exports|(file)|JSON",
+        "uses|JSON|@specifiedBy"
+      ],
+      "ok": true
+    },
+    {
+      "id": "input-object",
+      "why": "input fields are properties owned by the input, and use their type",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Filter|1",
+        "property|name|2",
+        "property|limit|3",
+        "property|nested|4"
+      ],
+      "relationships": [
+        "contains|Filter|Filter.limit",
+        "contains|Filter|Filter.name",
+        "contains|Filter|Filter.nested",
+        "exports|(file)|Filter",
+        "references|Filter.limit|Int",
+        "references|Filter.name|String",
+        "references|Filter.nested|Filter"
+      ],
+      "ok": true
+    },
+    {
+      "id": "schema-definition",
+      "why": "root operation types are properties of the `schema` namespace",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "namespace|schema|1",
+        "property|query|2",
+        "property|mutation|3"
+      ],
+      "relationships": [
+        "contains|schema|schema.mutation",
+        "contains|schema|schema.query",
+        "exports|(file)|schema",
+        "uses|schema.mutation|Mutation",
+        "uses|schema.query|Query"
+      ],
+      "ok": true
+    },
+    {
+      "id": "schema-implicit",
+      "why": "a schema with no explicit block declares implicit root operations",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Query|1",
+        "property|a|1"
+      ],
+      "relationships": [
+        "contains|Query|Query.a",
+        "exports|(file)|Query",
+        "references|Query.a|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "field-arguments",
+      "why": "field arguments are parameters AND declared-type `references` edges",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Q|1",
+        "property|search|2"
+      ],
+      "relationships": [
+        "contains|Q|Q.search",
+        "exports|(file)|Q",
+        "references|Q.search|Int",
+        "references|Q.search|Result",
+        "references|Q.search|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "type-wrappers",
+      "why": "NonNullType / ListType must resolve to the base NamedType",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Q|1",
+        "property|a|2",
+        "property|b|3",
+        "property|c|4",
+        "property|d|5"
+      ],
+      "relationships": [
+        "contains|Q|Q.a",
+        "contains|Q|Q.b",
+        "contains|Q|Q.c",
+        "contains|Q|Q.d",
+        "exports|(file)|Q",
+        "references|Q.a|Int",
+        "references|Q.b|String",
+        "references|Q.c|Int",
+        "references|Q.d|Boolean"
+      ],
+      "ok": true
+    },
+    {
+      "id": "directive-definition",
+      "why": "a directive definition is a `function` named `@name`",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "function|@auth|1"
+      ],
+      "relationships": [
+        "exports|(file)|@auth",
+        "references|@auth|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "operation-named",
+      "why": "a named operation is a method with operation-type metadata",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|GetUser|1",
+        "variable|$id|1"
+      ],
+      "relationships": [
+        "references|$id|ID",
+        "uses|GetUser|$id",
+        "uses|GetUser|id",
+        "uses|GetUser|user"
+      ],
+      "ok": true
+    },
+    {
+      "id": "operation-mutation-subscription",
+      "why": "mutation and subscription operations are methods with their own type",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|M|1",
+        "method|S|2"
+      ],
+      "relationships": [
+        "uses|M|Int",
+        "uses|M|create",
+        "uses|M|id",
+        "uses|S|id",
+        "uses|S|updated"
+      ],
+      "ok": true
+    },
+    {
+      "id": "operation-anonymous",
+      "why": "a shorthand `{ a }` is an anonymous query; it must get a stable synthetic identity",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|anonymous_operation_0|1"
+      ],
+      "relationships": [
+        "uses|anonymous_operation_0|a"
+      ],
+      "ok": true
+    },
+    {
+      "id": "fragment",
+      "why": "a fragment is a method; its type condition is a uses edge; its spread site is a uses edge",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|UserFields|1",
+        "method|Q|5"
+      ],
+      "relationships": [
+        "uses|Q|UserFields",
+        "uses|Q|user",
+        "uses|UserFields|User",
+        "uses|UserFields|User.id",
+        "uses|UserFields|User.name"
+      ],
+      "ok": true
+    },
+    {
+      "id": "inline-fragment",
+      "why": "an inline fragment's type condition is a uses edge, and its selections QUALIFY by that type — `... on User { id }` is `User.id`, which the store resolves to the SDL property",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|Q|1"
+      ],
+      "relationships": [
+        "uses|Q|User",
+        "uses|Q|User.id",
+        "uses|Q|node"
+      ],
+      "ok": true
+    },
+    {
+      "id": "fragment-selections-qualify",
+      "why": "a fragment's selections are written against its type condition, so they qualify too",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|F|1"
+      ],
+      "relationships": [
+        "uses|F|User",
+        "uses|F|User.id",
+        "uses|F|User.name"
+      ],
+      "ok": true
+    },
+    {
+      "id": "declared-type-is-references-not-uses",
+      "why": "ledger rule R9: the position that WRITES a type name is `references` with metadata.relationshipType='declared_type', and the OLD label is forbidden so a reversion cannot pass quietly",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Query|1",
+        "property|hello|2"
+      ],
+      "relationships": [
+        "contains|Query|Query.hello",
+        "exports|(file)|Query",
+        "references|Query.hello|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "exports-the-public-surface",
+      "why": "a schema's public surface is every top-level declaration, published as `exports` EDGES as well as ExportInfo — `ParseResult.exports` alone reaches no graph (parallel-indexer reads `result.imports` and nothing named `exports`)",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Query|1",
+        "property|a|2",
+        "function|@auth|5"
+      ],
+      "relationships": [
+        "contains|Query|Query.a",
+        "exports|(file)|@auth",
+        "exports|(file)|Query",
+        "references|Query.a|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extends-scalar-exports-nothing",
+      "why": "an `extend scalar S` declares nothing — the rule is extend/scalar/Name/Directives and a scalar has no members — so it must not mint a symbol and must not be published as an export",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [],
+      "relationships": [],
+      "ok": true
+    },
+    {
+      "id": "overrides-interface-member-supplied",
+      "why": "spec 3.6 requires the object to supply every member the interface declares, so `User.id` overrides `Node.id` — the ONE override-shaped construct GraphQL has, and it is derivable from one document",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "interface|Node|1",
+        "property|id|2",
+        "class|User|5",
+        "property|id|6"
+      ],
+      "relationships": [
+        "contains|Node|Node.id",
+        "contains|User|User.id",
+        "exports|(file)|Node",
+        "exports|(file)|User",
+        "implements|User|Node",
+        "overrides|User.id|Node.id",
+        "references|Node.id|ID",
+        "references|User.id|ID"
+      ],
+      "ok": true
+    },
+    {
+      "id": "overrides-needs-a-shared-member",
+      "why": "an object that implements an interface WITHOUT re-declaring one of its members overrides nothing; the edge is not invented to fill the family",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "interface|Node|1",
+        "property|id|2",
+        "class|User|5",
+        "property|name|6"
+      ],
+      "relationships": [
+        "contains|Node|Node.id",
+        "contains|User|User.name",
+        "exports|(file)|Node",
+        "exports|(file)|User",
+        "implements|User|Node",
+        "references|Node.id|ID",
+        "references|User.name|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extends-object-supertype",
+      "why": "GraphQL writes inheritance and interface conformance with ONE rule, so the label is read off what the DOCUMENT declares the supertype to be: `Sub implements Base` where `Base` is an object type is `extends`, and the `implements` label is forbidden for it",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Base|1",
+        "property|f|2",
+        "class|Sub|5",
+        "property|f|6"
+      ],
+      "relationships": [
+        "contains|Base|Base.f",
+        "contains|Sub|Sub.f",
+        "exports|(file)|Base",
+        "exports|(file)|Sub",
+        "extends|Sub|Base",
+        "overrides|Sub.f|Base.f",
+        "references|Base.f|Int",
+        "references|Sub.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extends-needs-the-document-to-say-so",
+      "why": "a supertype the document says NOTHING about stays `implements`: a per-file analyzer cannot know a name declared in another file is an object rather than an interface, and guessing is the fabrication the workstream's rule exists to prevent",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Sub|1",
+        "property|f|2"
+      ],
+      "relationships": [
+        "contains|Sub|Sub.f",
+        "exports|(file)|Sub",
+        "implements|Sub|Remote",
+        "references|Sub.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "field-alias",
+      "why": "an alias must not become the relationship target; the schema field name is the fact",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|Q|1"
+      ],
+      "relationships": [
+        "uses|Q|name"
+      ],
+      "ok": true
+    },
+    {
+      "id": "directive-usage-not-a-symbol",
+      "why": "a directive USE is neither a symbol nor a relationship (documented boundary)",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Q|1",
+        "property|a|1"
+      ],
+      "relationships": [
+        "contains|Q|Q.a",
+        "exports|(file)|Q",
+        "references|Q.a|Int",
+        "uses|Q.a|@deprecated"
+      ],
+      "ok": true
+    },
+    {
+      "id": "descriptions",
+      "why": "quoted and block descriptions unquote by slicing, never by regex",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|2",
+        "property|f|4",
+        "class|B|10",
+        "property|g|10"
+      ],
+      "relationships": [
+        "contains|A|A.f",
+        "contains|B|B.g",
+        "exports|(file)|A",
+        "exports|(file)|B",
+        "references|A.f|Int",
+        "references|B.g|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-object",
+      "why": "`extend type X { f }` extends an existing type: its fields belong to X",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|X|1",
+        "property|a|1",
+        "property|b|2"
+      ],
+      "relationships": [
+        "contains|X|X.a",
+        "contains|X|X.b",
+        "exports|(file)|X",
+        "references|X.a|Int",
+        "references|X.b|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-enum",
+      "why": "`extend enum E { V }` adds an enum member",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "enum|E|1",
+        "enum_member|A|1",
+        "enum_member|B|2"
+      ],
+      "relationships": [
+        "contains|E|E.A",
+        "contains|E|E.B",
+        "exports|(file)|E"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-union",
+      "why": "`extend union U = A` adds a member edge",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "type|U|1"
+      ],
+      "relationships": [
+        "exports|(file)|U",
+        "uses|U|A",
+        "uses|U|B"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-interface",
+      "why": "`extend interface I { f }` extends an existing interface",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "interface|I|1",
+        "property|a|1",
+        "property|b|2"
+      ],
+      "relationships": [
+        "contains|I|I.a",
+        "contains|I|I.b",
+        "exports|(file)|I",
+        "references|I.a|Int",
+        "references|I.b|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-input",
+      "why": "`extend input I { f }` extends an existing input",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|I|1",
+        "property|a|1",
+        "property|b|2"
+      ],
+      "relationships": [
+        "contains|I|I.a",
+        "contains|I|I.b",
+        "exports|(file)|I",
+        "references|I.a|Int",
+        "references|I.b|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-schema",
+      "why": "`extend schema { query: Q }` adds a root operation type",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "namespace|schema|1",
+        "property|query|1",
+        "property|mutation|2"
+      ],
+      "relationships": [
+        "contains|schema|schema.mutation",
+        "contains|schema|schema.query",
+        "exports|(file)|schema",
+        "uses|schema.mutation|Mutation",
+        "uses|schema.query|Query"
+      ],
+      "ok": true
+    },
+    {
+      "id": "extension-scalar",
+      "why": "`extend scalar S @directive` is valid GraphQL (spec 3.10) and must not be an ERROR",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "type|Date|1"
+      ],
+      "relationships": [
+        "exports|(file)|Date",
+        "uses|Date|@specifiedBy"
+      ],
+      "ok": true
+    },
+    {
+      "id": "directive-repeatable",
+      "why": "`repeatable` is spec-mandated since June 2018 and must not be an ERROR",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "function|@tag|1"
+      ],
+      "relationships": [
+        "exports|(file)|@tag",
+        "references|@tag|String"
+      ],
+      "ok": true
+    },
+    {
+      "id": "empty-args",
+      "why": "a field with no arguments has no parameters and no argument-type edges",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Q|1",
+        "property|a|1"
+      ],
+      "relationships": [
+        "contains|Q|Q.a",
+        "exports|(file)|Q",
+        "references|Q.a|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "variable-defaults",
+      "why": "several variables on one operation, with and without defaults",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "method|Q|1",
+        "variable|$a|1",
+        "variable|$b|1",
+        "variable|$c|1"
+      ],
+      "relationships": [
+        "references|$a|Int",
+        "references|$b|Int",
+        "references|$c|String",
+        "uses|Q|f"
+      ],
+      "ok": true
+    },
+    {
+      "id": "comments",
+      "why": "comments are extras and must not break a definition",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|Q|2",
+        "property|a|3"
+      ],
+      "relationships": [
+        "contains|Q|Q.a",
+        "exports|(file)|Q",
+        "references|Q.a|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "block-string-escape",
+      "why": "spec 2.9.4: a BlockStringCharacter is any SourceCharacter but not `\"\"\"` and not `\\\"\"\"`. BOTH the vendored and the upstream grammar rejected this whole file.",
+      "hasError": false,
+      "errors": 0,
+      "symbols": [
+        "class|A|1",
+        "property|f|3"
+      ],
+      "relationships": [
+        "contains|A|A.f",
+        "exports|(file)|A",
+        "references|A.f|Int"
+      ],
+      "ok": true
+    },
+    {
+      "id": "negative-broken-type",
+      "why": "a malformed body must still surface an error, not a clean empty result",
+      "hasError": true,
+      "errors": 0,
+      "symbols": [
+        "class|A|1"
+      ],
+      "relationships": [
+        "exports|(file)|A"
+      ],
+      "ok": true
+    }
+  ]
+}

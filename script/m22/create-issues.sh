@@ -2,7 +2,7 @@
 # script/m22/create-issues.sh — create M22 issues (verifier-sized, data-grounded).
 # Run: bash script/m22/create-issues.sh   (idempotent-ish: skips if title exists)
 set -euo pipefail
-REPO=backbencher-hq/backbencher-brain
+REPO=ishaq2321/backbencher-brain
 MILESTONE="M22: Indexer UX, Observability & Incremental Truth"
 
 mkissue() {

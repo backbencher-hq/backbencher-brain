@@ -1,0 +1,29 @@
+{
+  "expectSymbols": [
+    { "name": "QuotedData", "kind": "module" },
+    { "name": "wrapper", "kind": "macro", "ownerName": "QuotedData" },
+    { "name": "real", "kind": "function", "ownerName": "QuotedData" }
+  ],
+  "expectSymbolCount": [
+    { "name": "wrapper", "kind": "macro", "ownerName": "QuotedData", "equals": 1 }
+  ],
+  "forbidSymbols": [
+    { "name": "injected" },
+    { "name": "block" }
+  ],
+  "expectComplexity": [
+    { "symbol": "QuotedData", "equals": 3 },
+    { "symbol": "wrapper", "ownerName": "QuotedData", "equals": 1 },
+    { "symbol": "real", "ownerName": "QuotedData", "equals": 1 }
+  ],
+  "expectExports": [
+    { "name": "QuotedData", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "QuotedData", "target": "wrapper" },
+    { "type": "contains", "from": "QuotedData", "target": "real" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "injected" }
+  ]
+}

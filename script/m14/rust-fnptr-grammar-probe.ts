@@ -14,7 +14,7 @@ import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 
 const ROOT = "/tmp/opencode/wt/RUST"
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 async function main(): Promise<void> {
   const wts: any = await import("web-tree-sitter")

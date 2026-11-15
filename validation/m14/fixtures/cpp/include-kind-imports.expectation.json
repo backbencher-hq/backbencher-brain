@@ -1,0 +1,158 @@
+{
+  "fixtureId": "cpp/include-kind-imports",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M14 ONTOLOGY (2026-10-04), the `imports` type, and a KIND that was wrong rather than missing. The edge existed and the metadata was right; `type` read `references`. The measured cost: the one consumer that answers 'what does this module depend on' is the LSP usages file-level section, which filters on `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts, src/lsp/graph_usages.ts) \u2014 so a C++ include was invisible to it no matter what its metadata said. The C lane reached the same verdict for the identical construct and pins it there with c/macro-composed-include and the `c/include-kind-downgraded` mutant; `cpp/include-kind-downgraded` is this lane's counterpart, and BOTH the new kind and the absence of the old one are asserted here so a silent relabel cannot pass.\n\nFour negative arms, and the second is the one that keeps this from being a label swap over everything:\n  - a MACRO-COMPOSED include argument publishes no module and no edge of either kind (C-D2: the preprocessor is textual, so the path is not statically resolvable).\n  - a `using` declaration at file scope is a NAMESPACE import, not file inclusion, and stays `references` + `using_dependency`. The two name different targets (`vector` vs `std::vector`) \u2014 so treating a using-directive as an include would make 'which headers does this file need' answerable with a using-declaration, which is a different question.\n  - a class-body `using B::f;` is a member RE-EXPORT and publishes neither.\n  - a function-local `using` is an execution artifact (the C lane's CGD20 rule, which this lane shares for typedefs).\n\nThe D3 arm is the EXACT COUNT, because it is the only assertion form that can fail on a duplicate: THREE `#include <vector>` directives produce THREE entries in the `imports` array ('how many times was it included' is a count the array keeps) and ONE `imports` edge ('what does this file depend on' is an edge). Both are asserted, so the count/edge split cannot be collapsed in either direction.\n\n`fileLevel: true` and `module` are asserted because they are load-bearing rather than cosmetic: `parallel-indexer.ts` reads `metadata.fileLevel === true` to name the IMPORTING FILE on a row whose `source` is the file-scope sentinel `global`, which is the only way a `#include` edge can be attributed to a file in the store.",
+  "expectImports": [
+    {
+      "module": "vector",
+      "meta.isSystemInclude": true,
+      "comment": "line 13. `<...>` makes it a system include; the name is the path node's text (M60/#924), never a slice of the whole directive."
+    },
+    {
+      "module": "local_header.h",
+      "meta.isSystemInclude": false,
+      "comment": "line 14. A quoted include is not a system one."
+    },
+    {
+      "module": "vector",
+      "meta.isSystemInclude": true,
+      "comment": "line 15, the REPEAT. The array keeps every occurrence \u2014 the count \u2014 while the edge is deduplicated by D3."
+    },
+    {
+      "module": "std",
+      "meta.isUsingDeclaration": true,
+      "meta.isNamespaceImport": true,
+      "comment": "line 27. `using namespace std;` \u2014 the namespace form carries the wildcard item."
+    },
+    {
+      "module": "std::pair",
+      "meta.isUsingDeclaration": true,
+      "meta.isNamespaceImport": false,
+      "comment": "line 28. `using std::pair;` carries the imported NAME, not the wildcard."
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "MACRO_COMPOSED_HEADER",
+      "note": "C-D2, literal-only: a macro-composed include argument is not a statically resolvable header name."
+    },
+    {
+      "module": "std::swap",
+      "note": "a class-body `using B::f;` is a member re-export, not a module dependency."
+    },
+    {
+      "module": "vector (function-local)",
+      "note": "a function-local `using` is an execution artifact, not a declaration site \u2014 the CGD20 rule this lane shares for typedefs."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "vector",
+      "line_number": 13,
+      "confidence": 1,
+      "meta.relationshipType": "include_dependency",
+      "meta.isSystem": true,
+      "meta.evidenceClass": "import_based",
+      "meta.module": "vector",
+      "meta.fileLevel": true,
+      "note": "M59.A7 (#825): the row's line is the PATH node's, not the directive's. `fileLevel` and `module` are what let the store attribute the edge to the importing FILE, because `source` is the file-scope sentinel."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "line_number": 14,
+      "meta.isSystem": false,
+      "meta.fileLevel": true,
+      "meta.relationshipType": "part_of_directive",
+      "meta.partRole": "part",
+      "note": "THE TARGET IS NOW PINNED, BECAUSE IT IS NOW STABLE. It was left unconstrained while it was a PATH - a path varies with the checkout, and pinning one would have made the fixture a test of the machine. It is now the part's MODULE SYMBOL (its file stem), the same on every machine and the only form the arbiter can bind: MEASURED path => 0 resolved of 4,612 and symbol => 383 resolved of 4,612, same population, same 2,000-file stride sample, the target's FORM the only variable. A CONSTRAINT THAT CAN NOW BE PINNED IS A CHECK THAT SHOULD NOW BE OWNED, so this fixture asserts the stem itself rather than merely that some part_of row exists.",
+      "target": "local_header",
+      "meta.partSymbol": "local_header"
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "std",
+      "line_number": 27,
+      "confidence": 0.9,
+      "meta.relationshipType": "using_dependency",
+      "note": "NEGATIVE ARM, the one that keeps this from being a label swap over everything: a `using` at file scope is a NAMESPACE import, so it stays `references`. Its target (`std`) is deliberately a DIFFERENT edge from the `#include <vector>` one (`vector`)."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "std::pair",
+      "line_number": 28,
+      "meta.relationshipType": "using_dependency"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "vector",
+      "equals": 1,
+      "note": "D3, as an EXACT count: THREE `#include <vector>` directives, THREE array entries, ONE edge. `expectRelationships` means '>= 1 match', so only `equals` can fail on a duplicate \u2014 which is how the first version of the D3 fixture passed against the pre-fix analyzer and the mutation harness had to say so."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "equals": 1,
+      "note": "D3 AS AN EXACT COUNT, ON THE PART KIND (R3, 2026-10-22): the quoted include is the unit's own fragment (src/ast/types.ts:148-160), so the dependency is ONE `part_of` edge with `metadata.partRole` = \"part\". `expectRelationships` means '>= 1 match', so only `equals` can fail on a duplicate \u2014 and the duplicate is exactly what a second push into the same `referencesSeen` key would produce. The TARGET is left unconstrained ON PURPOSE: a `part_of` target is a PATH built from the including file's directory, so it varies with the checkout, and pinning it would make this fixture a test of the machine. `equals: 1` is the fact (D3: one edge per dependency), and the PATH FORM is pinned on cpp/part-of-quoted-include. THE TARGET IS NOW PINNED, BECAUSE IT IS NOW STABLE. It was left unconstrained while it was a PATH - a path varies with the checkout, and pinning one would have made the fixture a test of the machine. It is now the part's MODULE SYMBOL (its file stem), the same on every machine and the only form the arbiter can bind: MEASURED path => 0 resolved of 4,612 and symbol => 383 resolved of 4,612, same population, same 2,000-file stride sample, the target's FORM the only variable. A CONSTRAINT THAT CAN NOW BE PINNED IS A CHECK THAT SHOULD NOW BE OWNED, so this fixture asserts the stem itself rather than merely that some part_of row exists.",
+      "target": "local_header"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "global",
+      "target": "vector",
+      "note": "THE DOWNGRADE ARM. A revert to `references` + metadata.isImport would leave every other assertion in this file passing and only this one failing, which is what makes it a regression gate for the relabel rather than a description of it."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "local_header.h",
+      "note": "the same downgrade on the quoted form."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "MACRO_COMPOSED_HEADER",
+      "note": "a macro-composed argument must not fabricate an include edge of EITHER kind \u2014 mirrors c/macro-composed-include, which forbids both labels for this shape."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "std",
+      "note": "NEGATIVE ARM, asserted from the other direction: if a `using` were relabelled as `imports`, the two forbid rows and the two `references` rows above are what would catch it. One direction of a two-sided contract is not a contract."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "std::pair",
+      "note": "the same, for the qualified using."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "std::swap",
+      "note": "a class-body member re-export is not a module import."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "import",
+      "note": "C++20 `import` is ungrammatical on this parser (0 `import_declaration` nodes across 182 node types; the syntax ERROR-recovers into `declaration[type=import, declarator=std]`), so it must publish no import edge and the recovery artifact must not become a name."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "local_header.h",
+      "note": "A QUOTED include is not `imports` \u2014 it is `part_of` (src/ast/types.ts:148-160). The #910 concern is preserved, not retired: src/lsp/graph_request.ts and src/lsp/graph_usages.ts now read `part_of` as a FILE-LEVEL DEPENDENCY, so the row stays visible to the one surface that answers what a translation unit depends on."
+    }
+  ]
+}

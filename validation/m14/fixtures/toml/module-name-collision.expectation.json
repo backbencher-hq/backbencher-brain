@@ -1,0 +1,63 @@
+{
+  "comment": "THE MODULE OWNS ITS NAME IN ITS OWN FILE. This file is `module-name-collision.toml`, so the module is `module-name-collision`, and it declares a table of exactly that name. Relationships address nodes by NAME, so without a rule every `contains` edge naming it resolves to TWO nodes — the unresolvable-identity class reached through a name collision rather than a missing edge. The module's name is derived from the file's PATH and is not negotiable, so the TABLE takes the suffix. This is the same precedence html uses, where `usedNames` starts `{ [moduleName]: 1 }` so a document node that collides with the file yields rather than the file yielding to a node. The corpus contains two real files of exactly this shape — `doc/book/book.toml` and `doc/contrib/book.toml`, both declaring `[book]` — which is how the rule was found: a hand-written fixture would not have contained it.",
+  "expectSymbols": [
+    {
+      "name": "module-name-collision",
+      "kind": "module",
+      "comment": "the file keeps its own name"
+    },
+    {
+      "name": "module-name-collision#2",
+      "kind": "namespace",
+      "comment": "the TABLE yields, because the file's identity comes from its path"
+    },
+    {
+      "name": "module-name-collision#2.k",
+      "kind": "property",
+      "comment": "and the key is prefixed with the ALLOCATED table name, so its edge resolves"
+    },
+    {
+      "name": "other",
+      "kind": "namespace"
+    },
+    {
+      "name": "other.k",
+      "kind": "property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "module-name-collision#3",
+      "comment": "nothing beyond the two is allocated — the suffix appears exactly once, because there is exactly one colliding table."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "module-name-collision",
+      "target": "module-name-collision.module-name-collision#2",
+      "line_number": 6,
+      "meta.isTableHeader": true,
+      "comment": "the source is the module and the target is the TABLE, and the two names differ — which is the whole point: an edge whose source and target share a name cannot say which node it means"
+    },
+    {
+      "type": "contains",
+      "from": "module-name-collision.module-name-collision#2",
+      "target": "module-name-collision.module-name-collision#2.k",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "module-name-collision",
+      "target": "module-name-collision.other",
+      "line_number": 9,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "module-name-collision.other",
+      "target": "module-name-collision.other.k",
+      "line_number": 10
+    }
+  ]
+}

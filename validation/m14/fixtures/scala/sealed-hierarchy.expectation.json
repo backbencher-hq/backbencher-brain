@@ -1,0 +1,15 @@
+{
+  "fixtureId": "scala/sealed-hierarchy",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "sealed trait hierarchy: Success/Failure extend Result (extends-of-trait).",
+  "expectSymbols": [
+    { "name": "Result" },
+    { "name": "Success" },
+    { "name": "Failure" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Success", "targetEndsWith": "Result" },
+    { "type": "extends", "from": "Failure", "targetEndsWith": "Result" }
+  ]
+}

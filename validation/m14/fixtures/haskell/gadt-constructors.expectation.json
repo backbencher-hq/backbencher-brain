@@ -1,0 +1,71 @@
+{
+  "fixtureId": "haskell/gadt-constructors",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M14.0.F6 haskell coverage (2026-10-08). The lane's completeness spec lists 53 handled_verified node types and F6 requires every one of them to OCCUR in a fixture's parse, so 'the analyzer can handle it' cannot be evidenced by the analyzer's own output. `gadt_constructor` was the last one reached by no fixture: the four existing fixtures cover exports/FFI, operator application, payload/complexity and instance targets, and none declares a data type in the `where`-headed GADT form, so the type could not occur however the analyzer behaved. The fixture parses clean (measured: hasError=false against the pinned tree-sitter-haskell wasm) and gadt_constructor occurs three times, once per constructor. THE POINT OF THE ROWS BELOW is that a GADT constructor is a CONSTRUCTOR of its type and not a function: `Circle :: Double -> Shape Double` is written with a signature-like arrow, and an analyzer that read it as a function declaration, or a call site, would publish the same three names under the wrong kind. The rows are read from the analyzer's output for these bytes — 8 symbols and 10 relationships — not from what the syntax is expected to mean.",
+  "expectSymbols": [
+    { "name": "GadtConstructors", "kind": "module" },
+    { "name": "Shape", "kind": "type" },
+    {
+      "name": "Circle", "kind": "constructor", "ownerName": "Shape",
+      "comment": "GADT constructor #1. `ownerName` is Shape because a GADT constructor belongs to the type whose `where` block declares it; there is no other container in the source."
+    },
+    { "name": "Square", "kind": "constructor", "ownerName": "Shape", "comment": "GADT constructor #2." },
+    {
+      "name": "Named", "kind": "constructor", "ownerName": "Shape",
+      "comment": "GADT constructor #3, and the one whose result type is `Shape String` rather than `Shape Double` — a GADT's constructors may constrain the type parameter differently, which is the reason the form exists."
+    },
+    { "name": "Describable", "kind": "interface", "comment": "the class, published under the family's class->Interface mapping." },
+    { "name": "describe", "kind": "method", "ownerName": "Describable" },
+    { "name": "Shape", "kind": "instance", "comment": "the orphan-free instance head; the SAME type name as the data declaration, under kind instance." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "GadtConstructors", "target": "Shape", "comment": "the module owns the data type." },
+    {
+      "type": "contains", "source": "Shape", "target": "Circle", "line_number": 15,
+      "comment": "THE ROW THIS FIXTURE EXISTS FOR, part 1: the GADT constructor is contained by its type like any other constructor. Its line is the constructor's own line inside the `where` block (15), not the data declaration's (14)."
+    },
+    { "type": "contains", "source": "Shape", "target": "Square", "line_number": 16, "comment": "part 2 of the same row, one line lower." },
+    { "type": "contains", "source": "Shape", "target": "Named", "line_number": 17, "comment": "part 3, the differently-parameterised constructor." },
+    { "type": "exports", "source": "GadtConstructors", "target": "Shape", "comment": "`Shape (..)` in the export list exports the type." },
+    { "type": "exports", "source": "GadtConstructors", "target": "Describable", "comment": "and `Describable (..)` exports the class." },
+    { "type": "contains", "source": "Describable", "target": "describe", "comment": "the class owns its method." },
+    {
+      "type": "implements", "source": "Shape", "target": "Describable", "meta.isInstance": true,
+      "comment": "the instance is an `implements` edge on the instance head's type. Pinned because the fixture's case expression below it is where a wrong reading would surface."
+    },
+    {
+      "type": "overrides", "source": "Shape.describe", "target": "Describable.describe", "meta.isInstanceMethod": true,
+      "comment": "the instance's method against the class's — qualified on both ends so the edge names which `describe` overrides which."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates", "source": "describe", "target": "Circle",
+      "comment": "NEGATIVE: `Circle _ -> \"circle\"` MATCHES a GADT constructor. Matching constructs nothing, and the arrow in the constructor's own declaration is a type arrow (a value of type Double yields a Shape Double), not a construction site."
+    },
+    {
+      "type": "instantiates", "source": "describe", "target": "Square",
+      "comment": "NEGATIVE, same shape: the second case alternative."
+    },
+    {
+      "type": "calls", "source": "describe", "target": "Circle",
+      "comment": "NEGATIVE, the other label: a matched constructor is not a call either."
+    },
+    {
+      "type": "instantiates",
+      "comment": "NEGATIVE, stated whole because the file contains no construction at all: nothing here applies a constructor to an argument. A GADT constructor's DECLARATION (`Circle :: Double -> Shape Double`) is the trap this catches — read as an application it would invent a construction per constructor, three in one file."
+    }
+  ],
+  "knownResidual": "An export list that names the class METHOD (`module M (..., describe) where`) publishes `exports M -> describe`, and this lane's exports-family invariant refuses that shape: it requires every exported name to resolve to a top-level symbol and treats a type-owned member as one whose membership rides `contains`. Measured, not inferred: changing only that one entry in this fixture's header produces that edge, and the fixture then fails the invariant with `export(s) [\"describe\"] do not resolve to a top-level symbol`. Whether the edge or the invariant is the right reading is left to adjudication rather than decided here — in Haskell a class method exported by name is importable from the module, which is not the case for the JVM/C++ member shapes the invariant was written for, and the invariant's own comment scopes it to those. The fixture exports the CLASS instead (`Describable (..)`), so it pins the GADT constructors — the reason it exists — without asserting either side of that question.",
+  "forbidSymbols": [
+    {
+      "name": "Circle", "kind": "function",
+      "comment": "a GADT constructor must not be published as a function, which is what the signature-shaped declaration invites."
+    },
+    {
+      "name": "Circle", "kind": "method",
+      "comment": "nor as a class method: the class in this file is Describable and Circle is a Shape constructor."
+    }
+  ]
+}

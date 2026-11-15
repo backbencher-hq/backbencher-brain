@@ -1,0 +1,12 @@
+{
+  "issue": "M15.E7",
+  "code": "E7",
+  "tool": "bb_edit",
+  "title": "docs honesty",
+  "verified": true,
+  "checks": 11,
+  "passed": 11,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:21:19.189Z"
+}

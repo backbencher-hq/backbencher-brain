@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.57",
+  "code": "D3",
+  "tool": "bb_doc",
+  "title": "bb_doc: e2e (CLI + MCP) + real-repo corpus",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "MCP project: returns output",
+      "pass": true,
+      "detail": "# project documentation\n\n1 file(s) and 1 symbol(s) in scope, 6 cited claim(s) across 5 section(s) from 5 source(s). No indexed evidence was found for: Risks.\n\n## Architecture\n\n2 claims, 2 read directl"
+    },
+    {
+      "name": "MCP: symbol without target rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "corpus rake project: has output",
+      "pass": true,
+      "detail": "len=11216"
+    },
+    {
+      "name": "corpus rebar3 project: has output",
+      "pass": true,
+      "detail": "len=11729"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "decisions": {
+    "transports": "CLI + MCP",
+    "corpus": "rake (Ruby), rebar3 (Erlang)"
+  },
+  "limitations": [
+    "Small sub-directory per repo."
+  ],
+  "generatedAt": "2026-11-05T04:07:30.832Z"
+}

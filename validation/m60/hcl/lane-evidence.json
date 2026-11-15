@@ -1,0 +1,258 @@
+{
+  "lane": "hcl",
+  "title": "HCL / Terraform analyzer — lane evidence",
+  "milestone": "M60 data/config wave (2026-09-26/27), work applicable to M12.37 (#176), M13, M14, M37, M49, M60",
+  "analyzer": "src/ast/real-hcl-analyzer.ts",
+  "verdict": "CLOSED at measured state, with two sections blocked by an environment gap that is recorded rather than scored around",
+  "headline": "Fully adjudicated: 10/10 relationship kinds ruled on measurement (5 emitted, 5 ruled N/A), 64/64 grammar types classified, 0 unknown / 0 regex through the production entry, linear time, and completeness sections A-H 8/8.",
+  "corpus": {
+    "files": 9079,
+    "nodes": 1623844,
+    "repos": 9,
+    "independentUpstreams": true,
+    "pins": {
+      "terraform": "db4eef4",
+      "terragrunt": "1766711",
+      "tf-aws-components": "1f74a96",
+      "vault": "ae26954",
+      "consul": "668c758",
+      "nomad": "3f30476",
+      "packer": "4bb4b91",
+      "boundary": "edfad89",
+      "waypoint": "b81cf84"
+    },
+    "filesPerRepo": {
+      "terraform": 2363,
+      "terragrunt": 3404,
+      "tf-aws-components": 1809,
+      "vault": 327,
+      "consul": 264,
+      "nomad": 323,
+      "packer": 244,
+      "boundary": 163,
+      "waypoint": 182
+    },
+    "grammarErrorFiles": 244,
+    "grammarMissingNodes": 6
+  },
+  "differential": {
+    "method": "the real analyzer against an INDEPENDENT flat-sweep grammar oracle: flat maximal-consecutive-run scan with byte-range suppression, versus the analyzer's recursive descent with threaded lexical scope. Two implementations, deliberately different, so agreement is evidence rather than a restatement.",
+    "grand": {
+      "files": 9079,
+      "symbols": 145645,
+      "relationships": 213487,
+      "contains": 136566,
+      "references": 43911,
+      "oracleRefs": 28975,
+      "missed": 2,
+      "spurious": 0,
+      "filesWithMiss": 1,
+      "filesWithSpurious": 0,
+      "lineBearing": 213487,
+      "relTotal": 213487,
+      "emptyName": 0,
+      "memberWithoutOwner": 0,
+      "duplicateIdentities": 21,
+      "symbolFreeFiles": 972,
+      "symbolFreeNonTrivial": 14
+    },
+    "recall": 0.999931,
+    "precision": 1.0,
+    "residual": "2 occurrences, 1 file: terragrunt/test/fixtures/catalog/local-template/.boilerplate/terragrunt.hcl is a Go text/template named .hcl; `{{- range .requiredVariables }}` parses as a binary operation and reads as a two-segment path. Ruled (HCL-D3): the emission is faithful to the bytes, and suppressing it would mean keying on the template words if/range/with, which are also legal HCL identifier bases.",
+    "f5BothCorpora": {
+      "terraform:hcl": {
+        "files": 60,
+        "treeTruth": 40,
+        "covered": "100%",
+        "missing": 0,
+        "unexplained": 0,
+        "heuristic": 0
+      },
+      "tf-aws-components:hcl": {
+        "files": 60,
+        "treeTruth": 352,
+        "covered": "100%",
+        "missing": 0,
+        "unexplained": 0,
+        "heuristic": 0
+      }
+    },
+    "parseSuccess": {
+      "terraform:hcl": "400 files, 0.0% failure (ERROR 0.0%, MISSING 0.0%)",
+      "tf-aws-components:hcl": "400 files, 0.0% failure (ERROR 0.0%, MISSING 0.0%)"
+    },
+    "usesClassSplit": "2029 builtin-rooted references relabelled `uses` (path.module, each.key, count.index, terraform.workspace ...); project-rooted ones stay `references`. mislabelled: 0",
+    "samplesDrawn": 12
+  },
+  "grammarPin": {
+    "instrument": "script/m14/verify-grammar-pins.ts",
+    "registry": "validation/m14/grammar-pins.json",
+    "vendoredSource": "grammars/tree-sitter-hcl/ (+ PIN.md)",
+    "upstream": "tree-sitter-grammars/tree-sitter-hcl",
+    "rev": "64ad62785d442eb4d45df3a1764962dafd5bc98b",
+    "package": "@tree-sitter-grammars/tree-sitter-hcl@1.2.0",
+    "licence": "Apache-2.0",
+    "wiredSha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+    "wiredBytes": 92478,
+    "surface": {
+      "ids": 121,
+      "namedUnique": 64,
+      "anonUnique": 57,
+      "fieldCount": 2,
+      "fields": [
+        "key",
+        "val"
+      ]
+    },
+    "sourceVsWasm": "all 64 declared names present (0 supertypes hidden by design), 64 wasm-named types all declared, 0 built-in extras",
+    "verdict": "PIN AS-IS. The wired bytes ARE a build of the vendored source, so the Groovy situation — a vendored wasm drifted from upstream and repaired by hand — does NOT apply to HCL. 1.2.0 is the only release of the only published HCL grammar package and the repository is not archived, so there is nothing better to move to; the pin's value is provenance and drift detection.",
+    "rebuildable": "src/parser.c is vendored (600 KB), so `tree-sitter build --wasm` in grammars/tree-sitter-hcl reproduces the wired bytes without a network fetch.",
+    "failures": 0,
+    "note": "the gate currently reports 3 failures, ALL in the nim lane (another agent's live edits to grammars/tree-sitter-nim/grammar.js). HCL: 0. The gate catching that drift is the instrument working."
+  },
+  "defects": {
+    "total": 17,
+    "fixedInAnalyzer": 15,
+    "filedCrossLanguage": 1,
+    "fixedInSharedHarness": 2,
+    "sharedHarnessDetail": [
+      "16: `--lang a,b` could not reach the baseline pin — the pin sits past the scoped guard's process.exit, so a lane whose corpora are the only ones present could measure 100% and still register as n/a in sections E/F. Added an explicit `--pin-baseline`; same single pin implementation, same clean-lanes-only rule, same merge, still no evidence artifact written.",
+      "17: #871's load context was measured then discarded — the reducer rebuilt `perf` as {avgMsPerFile} only, dropping the `loadAvg1` the lane had just recorded, so the scorer's refusal fired for EVERY lane forever (0 of 178 rows had load context). Carrying `perf: {...r.perf}` makes F's number actually scorable."
+    ]
+  },
+  "rejectedAfterProbing": [
+    {
+      "claim": "the analyzer drops `var.cond` in a conditional",
+      "finding": "REJECTED — a truth defect in my own expectation. `conditional`'s children ARE `expression` nodes, so the condition is a genuine reference. The analyzer is right."
+    },
+    {
+      "claim": "heredoc references are lost",
+      "finding": "REJECTED — `heredoc_template` holds `template_interpolation -> expression`, so the walk reaches them. Verified end-to-end and now pinned by fixture so a regression cannot pass."
+    },
+    {
+      "claim": "splat/index truncation is extraction loss",
+      "finding": "REJECTED — `aws_instance.web[*].id` publishes `aws_instance.web` and `var.list[0]` publishes `var.list`, which is the address Terraform itself resolves them against. The old doc's 'best-effort' hedge was describing correct behaviour vaguely."
+    },
+    {
+      "claim": "4 more symbols are unnamed",
+      "finding": "REJECTED — 4 of the 5 are `variable \"unknown\"` and `unknown = ...`, legal Terraform spellings. The analyzer emits them correctly; what they expose is H10, in the pool-worker."
+    }
+  ],
+  "instrumentDefectsFoundInMyOwnOracle": [
+    "suppressed the whole for_intro subtree, losing 29 real references — `[for d in data.x.y : ...]` puts a genuine reference INSIDE for_intro, beside the loop-variable declaration",
+    "suppressed for_cond, losing 29 more — the `if ...` tail of a for-expression is an ordinary expression over ordinary references",
+    "read runs from namedChild, welding var.a.var.b — the same bug as H1b, which made the analyzer's CORRECT split read as 476 spurious edges",
+    "iters.find returned one dynamic-block scope when a file binds the same name in several, leaking the local — 10 of 12 residual misses"
+  ],
+  "instrumentDefectsNote": "every one of these made the ANALYZER look worse than it is, and one made a correct fix look like a 476-edge regression. They are recorded because the final 0.999931/1.000000 is only as good as the instrument that produced it.",
+  "spec": {
+    "file": "script/m14/spec/hcl-completeness.json",
+    "grammarNamedTypes": 64,
+    "handledVerified": 57,
+    "internalSilent": 7,
+    "runtimeTypeOutsideBuckets": [
+      "ERROR"
+    ],
+    "designDecisions": 7,
+    "gaps": 0,
+    "decisionIds": [
+      "HCL-D1 no inheritance",
+      "HCL-D2 441 block types",
+      "HCL-D3 Go-template residual",
+      "HCL-D4 swallow class",
+      "HCL-D5 duplicate attribute keys",
+      "HCL-D6 quoted attribute key",
+      "HCL-D7 where ERROR belongs"
+    ]
+  },
+  "complexity": {
+    "policy": "NO ms-per-file budget is published. Measured under nine concurrent analyzer agents (load average 35-51), the same analyzer over the same 600 files measured 1.451 / 2.097 / 3.885 ms per file on three consecutive rounds — a 2.7x spread on identical work. A single number here measures the neighbours.",
+    "whatIsPublishedInstead": "the machine-independent SHAPE of the cost",
+    "files": 4172,
+    "nodes": 915635,
+    "facts": 210706,
+    "msPer1kNodesByQuartile": [
+      50.211,
+      47.454,
+      49.635,
+      48.825
+    ],
+    "msPer1kNodesSpreadRatio": 1.06,
+    "msPerKiBByQuartile": [
+      20.5825,
+      14.8448,
+      12.5651,
+      7.2911
+    ],
+    "ruling": "flat ms-per-1k-nodes across size quartiles IS the linearity evidence and the O(n^2) signature is absent. ms-per-byte FALLS with size because fixed per-file overhead amortises — the opposite of a super-linear term. Facts-per-1k-nodes falls 312 -> 219 for the same reason, not because the Set-backed dedupe degrades (a degrading Set would rise)."
+  },
+  "gates": {
+    "M14.0.F3 fixtures": "9/9 pass",
+    "M14.0.F4 mutants": "12/12 caught (0 survivors)",
+    "M14.0.F1 grammar conformance": "hcl PASS, 10 dispatched literals, 0 unknown node types, 0 unknown fields",
+    "M14 grammar pin": "hcl 0 drift, source<->wasm exact",
+    "M12 contract probe": "38/38",
+    "M60.R8 framework surface": "hcl 0 violations (was 2)",
+    "M60.R7 symbol sentinels": "hcl 0 occurrences (the row is gone entirely)",
+    "M14 hygiene": "all 24 analyzers clean",
+    "M14 parse success": "0.0% / 0.0% on 400-file draws, both corpora",
+    "M14 probe battery": "37/37",
+    "M12 node-types compare": "passed",
+    "M14.0.F5 differential": "both corpora 100% covered, MISSING 0, unexplained 0, heuristic 0 across 12 independent cold-pool rotations",
+    "M14.0 completeness A-H": "8/8 pass (E and F closed)",
+    "zero-unknown census": "145,645 symbols via production ASTEngine.parseFile: 0 unknown kinds, 0 empty names, 0 ownerless, 0 missing/out-of-file ranges; all 972 symbol-free files attributed to 7 named classes, no catch-all",
+    "doc-truth audit": "44 claims, 0 stale, self-test green (gate can fail)",
+    "typecheck": "src/ clean under the repo tsconfig; NOTE script/** is NOT in the typecheck program (tsconfig include is src/**/*.ts only), which is how a latent ReferenceError survived in the shared harness"
+  },
+  "notClosed": {
+    "sections": [],
+    "reason": "None. Sections E and F are closed: both hcl rows are pinned in validation/m14/differential-baseline.json with sampleSetHash, loadContext and full perf context, and the other 176 lanes' floors were preserved by the merge.",
+    "stillTrue": "The canonical evidence artifact M14.0.F5.json belongs to the full 30-language sweep whose other corpora are absent, so it was NOT regenerated and NOT hand-edited. Every count here came from the harness's own measurement path."
+  },
+  "artifacts": {
+    "review": "reviews/hcl/master-review.md",
+    "analyzerDoc": "docs/analyzers/hcl.md",
+    "grammarPinDoc": "grammars/tree-sitter-hcl/PIN.md",
+    "spec": "script/m14/spec/hcl-completeness.json",
+    "fixtures": "validation/m14/fixtures/hcl/ (8 fixtures + 8 expectations)",
+    "probes": "bb_tests/hcl/probes/ (11 re-runnable probes)",
+    "measurements": [
+      "bb_tests/hcl/out/grammar-conformance.json",
+      "bb_tests/hcl/out/corpus-census.json",
+      "bb_tests/hcl/out/corpus-differential.json",
+      "bb_tests/hcl/out/residual-adjudication.txt",
+      "bb_tests/hcl/out/open-questions.txt",
+      "bb_tests/hcl/out/complexity.json",
+      "bb_tests/hcl/out/tree-shapes.txt",
+      "bb_tests/hcl/out/fixture-dump.txt",
+      "bb_tests/hcl/out/defect-diagnosis.txt",
+      "bb_tests/hcl/out/measure-residuals.txt"
+    ],
+    "m12EvidenceReEmitted": [
+      "validation/m12/results/hcl-contract.json",
+      "validation/m12/results/hcl-shape-safety.json",
+      "validation/m12/results/hcl-corpus-complexity.json",
+      "validation/m12/results/hcl-corpus-errors.json"
+    ],
+    "harnessFlag": "bun run script/m14/differential.ts --lang hcl --pin-baseline"
+  },
+  "issue": "M12.37 / GitHub issue #176, plus the HCL row of M14.7 and the data/config lane of M60",
+  "perfRows": {
+    "gateFormula": "max(3 x baseline, baseline + 50ms)",
+    "terraform:hcl": {
+      "avgMsPerFile": 2.1,
+      "maxMsPerFile": 26.8,
+      "samplesTimed": 60,
+      "loadAvgRetried": true,
+      "loadAvg1": 42.51
+    },
+    "tf-aws-components:hcl": {
+      "avgMsPerFile": 6.2,
+      "maxMsPerFile": 182.8,
+      "samplesTimed": 60,
+      "loadAvgRetried": true,
+      "loadAvg1": 44.07
+    },
+    "disclosure": "measured at load 35-44 with the harness's min-over-3 re-timing active. terraform:hcl converged (1.8/2.1/2.1 over three pins); tf-aws-components:hcl did NOT (3.5/6.2/7.8, a 2.2x spread). Disclosed, not averaged away, and immaterial to the gate: 3.5 and 7.8 both give a ~52-57ms ceiling. A canonical sweep at load<4 re-pins tighter."
+  }
+}

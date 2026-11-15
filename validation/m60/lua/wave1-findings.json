@@ -1,0 +1,1153 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "language": "lua",
+  "title": "LUA analyzer review \u2014 findings ledger, wave 1",
+  "establishedAt": "2026-09-26",
+  "why": "M60's lang-completion-matrix records lua at 1 pass / 1 disclosed / 7 n-a-or-fail against java's 8-of-9 and done:true. This ledger records what wave 1 MEASURED. Every row names the instrument that produced it and whether the claim is PROVEN (an instrument ran and showed it) or SUSPECTED (read in source, not yet reproduced). Nothing here is a fix; a defect class earns a permanent gate before its fix counts (IDE Honesty Contract \u00a711.1, the F7 rule).",
+  "method": {
+    "corpora": "/home/ishaq2321/bb_tests/repositories/MANIFEST.json \u2014 kong@94b6c29 (1,309 files), luvit@a63febc (199), tree-sitter-lua@10fe005 (grammar source)",
+    "productionPath": "src/ast/pool-worker parseFile \u2014 the same path the indexer uses, so every number here is what the store would receive",
+    "control": "luvit@199 files, 0 parse errors, 0 crashes. A lane needs a set known to be good as well as sets that find defects, or every finding is a maybe."
+  },
+  "findings": [
+    {
+      "id": "LUA-01",
+      "severity": "critical",
+      "status": "PROVEN",
+      "title": "Every lua relationship reaches the store with no line number",
+      "detail": "RealLuaAnalyzer.addRelationship (src/ast/real-lua-analyzer.ts:314-320) constructs {source, target, type, confidence, metadata} and nothing else. There is no line_number, no line, no position. Proven on a purpose-built probe: 15 of 15 relationships carried zero line fields, while the java analyzer through the SAME parseFile path emits line_number:2 on its calls edge. The M60 `lines` column for lua reads n/a; this is why.",
+      "whyItMatters": "M59.A7/M60 make a stored line a first-class fact. An edge that cannot name its site cannot be checked by a human, and per-site edges are impossible while this holds.",
+      "compoundingDefect": {
+        "title": "Site information is destroyed by the dedup key",
+        "detail": "addRelationship dedupes on `type\\u001f source \\u001f target` (line 316). N distinct call sites for the same callee collapse into ONE edge, so even once line_number is added the first-wins/last-wins choice silently discards every other site. Java carries per-site edges; lua cannot.",
+        "status": "PROVEN by code reading of the dedup key; a reproducing probe is owed."
+      },
+      "instrument": "script/m60/lua-claims-probe.ts",
+      "gate": "PENDING \u2014 no permanent gate exists yet"
+    },
+    {
+      "id": "LUA-02",
+      "severity": "critical",
+      "status": "FIXED \u2014 gate 11/11, 4/4 mutants",
+      "title": "coroutineUsage is structurally always 0",
+      "detail": "countCoroutineSymbols (line 454-458) counts symbols whose metadata.isCoroutine is true. NO code path anywhere in the analyzer ever sets isCoroutine. processCall adds the string 'Coroutines' to ctx.patterns (line 232-234) and stops. So the count is a hardcoded zero published as a measurement. Proven: a probe with both coroutine.create and coroutine.wrap produced coroutineUsage absent from output and 0 symbols with any coroutine-bearing metadata.",
+      "worseThanItLooks": "The probe showed coroutineUsage is not merely 0 \u2014 it is ABSENT from the output entirely, because the whole metadata object does not survive the worker boundary (see LUA-03). The value is unobservable as well as wrong.",
+      "gate": "PENDING",
+      "resolution": "coroutineCalls is counted during the walk, where the qualified callee is still in hand. Two earlier versions were wrong and the gate caught both: counting ctx.symbols (a call is not a declaration, so 0) and counting relationship targets (after the LUA-13 fix the target is the FIELD 'create', so also 0). Measured: coros.lua reports 2, innocent.lua reports 0."
+    },
+    {
+      "id": "LUA-03",
+      "severity": "high",
+      "status": "PROVEN",
+      "title": "The analyzer's entire metadata block is dropped at the worker boundary",
+      "detail": "RealLuaAnalyzer returns a rich metadata object (complexity, cyclomaticComplexity, framework, patterns, detectedFrameworks, frameworkPatterns, architecturalInsights, architecturalScore, codeQuality, hasTypeInference, hasFrameworkIntelligence, performanceScore, memoryEfficiency, coroutineUsage, analysisVersion \u2014 lines 80-100). The pool-worker symbol mapper (src/ast/pool-worker.ts:549-590) carries a deliberately narrow allowlist and, by its own comment, dropped the whole metadata object; only isDeclaration is carried. A probe through production parseFile returned metadata keys EMPTY, and performanceScore / memoryEfficiency / detectedFrameworks / architecturalScore / codeQuality all came back undefined.",
+      "scopeCaveat": "This is a PIPELINE characteristic, not lua-specific \u2014 java's metadata is also absent through the same path. It is recorded on the lua lane because these specific metadata fields are ones the lua analyzer computes and nobody receives. Whether the fix belongs in lua, in the pipeline, or in both is OPEN and is a decision, not a defect to be silently patched.",
+      "gate": "PENDING \u2014 needs an owner decision before it is worked"
+    },
+    {
+      "id": "LUA-04",
+      "severity": "high",
+      "status": "FIXED \u2014 gate 11/11 both directions",
+      "title": "Framework detection fires on bare identifiers, so an ordinary variable names a framework",
+      "detail": "detectFrameworks (line 410-419) is called on EVERY identifier node (processNode case 'identifier', line 121-123) and matches bare text: `use`, `setup`, `GetTime`, `C_Timer`, `Proto`, `UIParent`. A probe declaring `local setup = 1; local use = 2` therefore marks an ordinary file as Neovim Configuration. This is a name-equality heuristic, not an AST-derived fact \u2014 the analyzer's own header (line 2-3) claims 'Declarations and relationships come from Tree-sitter nodes/fields. No regex fallback or source-wide scanning is used.' A bare-name match on an identifier node is source-wide scanning wearing an AST costume.",
+      "gate": "PENDING",
+      "resolution": "A framework is claimed only from a QUALIFIED member access (vim./love./ngx./resty./display./system./transition./Runtime./lovr./redis) or from a required module name. A bare identifier never names a framework. The gate asserts BOTH directions: a file with variables named use/setup/GetTime claims no framework, AND a file really using vim.api is still labelled Neovim \u2014 so the fix cannot be satisfied by deleting detection. Measured: the probe that was labelled both 'Neovim Configuration' and 'World of Warcraft Addon' now claims neither."
+    },
+    {
+      "id": "LUA-05",
+      "severity": "high",
+      "status": "RETRACTED \u2014 THE FINDING WAS WRONG",
+      "title": "RETRACTED: 'lua symbol positions do not survive the worker boundary'",
+      "originalClaim": "Every lua symbol reported startLine undefined through production parseFile, while java reported startLine:2 \u2014 so lua's range object is not in the shape the mapper expects.",
+      "whatMeasurementActuallyShows": "Positions are correct and complete. A raw dump of every own key on every symbol for `local plainvar = 1 / local multi1, multi2 = 2, 3 / local returned = \"exported\"` gives plainvar@1, multi1@2, multi2@2, returned@3, each with correct endLine, startIndex and endIndex. Symbols are fine.",
+      "whyTheProbeWasWrong": "The probe read `s.range?.startLine`. The pool-worker mapper does not carry a `range` object at all \u2014 it flattens the analyzer's range into top-level `startLine` / `endLine` / `startIndex` / `endIndex` (src/ast/pool-worker.ts:553-556). So `s.range` is undefined for EVERY language, and my probe read a field that the pipeline deliberately does not emit. Java looked correct in the same probe only because I read `startLine` there.",
+      "theLesson": "This is the second time in this wave that a probe's own field access, not the code under test, produced the finding. The first was the gate's attributor. The tell in both cases is the same: a finding that says a value is MISSING when the pipeline's contract says the value lives somewhere else. Before claiming a position defect, read the mapper.",
+      "gate": "n/a \u2014 nothing to gate; the symbols were never broken"
+    },
+    {
+      "id": "LUA-06",
+      "severity": "medium",
+      "status": "PROVEN and FIXED",
+      "title": "setmetatable / constructor detection is order-dependent",
+      "detail": "constructorTarget (line 287-293) admits a `.new`/`:new`/`.constructor` call only if ctx.declaredTables ALREADY has the table, and declaredTables is filled during the same single traversal. The setmetatable branch (line 235-247) is likewise unguarded on ordering for the reverse case. A use-before-declaration therefore loses an edge that a declare-before-use file keeps \u2014 the same source semantics, two different graphs. A probe put setmetatable(Account, AccountMeta) BEFORE the declarations; the extends edge did survive, so the guarded path (setmetatable) is not obviously order-sensitive, but the `.new` path is untested and is the one the guard actually wraps.",
+      "gate": "covered by the lua truth oracle, whose `ctor` rule is also order-independent by construction",
+      "adjudication": "Reproduced with two files differing only in statement order. `local A = {} / function A.new() end / A.new()` emitted `instantiates global->A`; `A.new() / local A = {} / function A.new() end` emitted NOTHING. Same semantics, different graph \u2014 so the edge was a fact about the traversal, not about the program.",
+      "fix": "collectDeclaredTables runs as a PRE-PASS before the walk, so a constructor call no longer depends on where its table was declared. Both orders now emit the edge, each at its own call's line (L3 and L1 respectively)."
+    },
+    {
+      "id": "LUA-07",
+      "severity": "medium",
+      "status": "RETRACTED as stated",
+      "title": "Two same-named locals in different functions become one identity",
+      "detail": "Symbol identity is the bare name. addContainsRelationships (line 305-312) keys Contains edges on owner||scope name only. A `local item` inside f() and a `local item` inside g() both produce owner f/g, so the edges stay apart, but any consumer keying on (name, scope) still collides across files and the store's symbol identity contract (a member's identity is its container, not its bare name \u2014 the M49 W2 ruling) is not honoured for lua locals.",
+      "gate": "PENDING",
+      "adjudication": "Measured directly: two locals both named `item`, one in f() and one in g(), produce DISTINCT symbols (`owner=f@L2`, `owner=g@L6`) and DISTINCT contains edges (`f->item@L2`, `g->g@L6`). The claim that same-named locals in different functions collapse into one identity is FALSE. The residual question \u2014 two same-named locals in the SAME function \u2014 was not measured and is not claimed."
+    },
+    {
+      "id": "LUA-08",
+      "severity": "medium",
+      "status": "RETRACTED \u2014 not reachable",
+      "title": "An unnamed function can be named after its own parameter list",
+      "detail": "extractFunction (line 130) falls back to node.namedChild(0) when the `name` field is absent. For a nameless function that first named child is the `parameters` node, so the symbol's name would become the parameter list's source text. Comment on line 132 says anonymous functions are skipped, but the guard tests the RESULTING name for emptiness, not the node's shape.",
+      "gate": "PENDING \u2014 a reproducing probe is owed",
+      "adjudication": "Measured: no symbol is ever named after a parameter list or a source snippet. `local anon = function(a,b) ... end` yields only the variable `anon`, and a nameless function as a table field yields only the table variable. The reason is structural: processNode's switch has no case for `function_definition`, so an anonymous function is never dispatched at all and the `|| namedChild(0)` name fallback in extractFunction is never reached for one. The fallback is a latent hazard, not a live defect."
+    },
+    {
+      "id": "LUA-09",
+      "severity": "medium",
+      "status": "PROVEN and FIXED (LUA-09). The `return {}` half is the real half; `return require(...)` is recorded as deliberately open below.",
+      "title": "extractExport handled `return <name>` and nothing else \u2014 the dominant module shape published nothing",
+      "detail": "extractExport required target.type === 'identifier', so a returned table literal \u2014 the standard Lua module surface \u2014 published no export at all. The `return M` idiom was covered, which is why the 2-file fixture differential never noticed it. Sized by grammar-based census of the two pinned corpora (script/m60/lua-export-census.ts, counted off the wired wasm, not a regex): 366 of Kong's 1,309 files and 33 of Luvit's 199 carried 1,377 nameable exports, all lost.",
+      "gate": "script/m60/verify-lua-export-shapes.ts \u2014 24 checks, 5/5 planted mutations caught, and every planted mutant is reverted with the analyzer restored byte-for-byte. Committed as a fixture too: validation/m14/fixtures/lua/export-shapes.lua + .expectation.json, which also pins the export LINE of every member (M59) and forbids three fabrications.",
+      "adjudication": "The first corpus run reported ONE spurious export on luvit and ONE on kong, and in BOTH cases the ANALYZER was right and the CENSUS was too narrow. luvit/deps/tls/lcrypto.lua returns from inside a terminal if/else (lines 42-46 of 46) and the census only looked at chunk's direct children. kong/kong/init.lua returns `init` from inside a file-scope `do` block opened at line 36, and the wired grammar builds that as `chunk > do_statement > block > \u2026` \u2014 two levels down \u2014 which the first walker did not descend. Two rounds of the instrument blaming correct code, which is the failure mode this lane exists to catch; both were fixed in the census, not by weakening the analyzer. A third round came from the gate itself, which asserted a loop-body return was NOT a module export; Lua's `return` exits the chunk, so it is, and the gate was corrected to the analyzer's rule.",
+      "fix": "src/ast/real-lua-analyzer.ts extractExport now publishes the members a returned table_constructor NAMES, and nothing else. The `name` FIELD is read, never a namedChild(0) fallback: for a positional entry that fallback yields the VALUE, and a `return { \"a\", \"b\" }` would have published exports named after the module's own array elements. Measured node shapes: `a = 1` puts an identifier in the field; `[\"k\"] = 1` puts a STRING there with the unquoted text under `content`; a positional entry has no name field at all.",
+      "rule": "A return reachable WITHOUT ENTERING A FUNCTION is a possible module surface, and the module publishes the UNION of what every such return can name. The boundary is the FUNCTION, not the block structure \u2014 so a return inside a terminal if/else, a file-scope `do` block, or a loop body all count, and a return inside a function does not. This is stricter than 'the last return wins' and it is what makes the corpus agree exactly.",
+      "evidence": "Direct-path corpus check (parseWithAnalyzer, because parseFile discards exports at the worker boundary and would report 0 for a perfect analyzer): luvit recall 1.0000 (186/186) precision 1.0000; kong recall 1.0000 (1,579/1,579) precision 1.0000, 0 spurious. Expected names come from an independent grammar walk, so the two sides are separate derivations of the same question.",
+      "residual": "Deliberately NOT published, and pinned silent so a future change cannot start inventing them unnoticed: `return require(\"x\")` (a re-export \u2014 naming it means inventing an export name from a module path, which is a different relationship), `return \"literal\"` (17 kong files), and `return setmetatable(M, mt)` (5 kong files, where the exported table is the first argument). Real surfaces, not named. Open, not guessed at."
+    },
+    {
+      "id": "LUA-10",
+      "severity": "low",
+      "status": "FIXED",
+      "title": "A published score rewards a pattern the analyzer never detects",
+      "detail": "calculateArchitecturalScore (line 460-467) grants +5 when ctx.patterns has 'Module/Table Pattern'. No code path ever adds that string \u2014 the patterns actually added are 'Object-Oriented Programming', 'Object-Oriented Programming (Metatables)', 'Object-Oriented Programming (Libraries)' and 'Coroutines'. So the score is computed from a dead branch, and codeQuality (line 469-475) inherits the error because it thresholds on that score.",
+      "gate": "PENDING",
+      "resolution": "The dead '+5 for Module/Table Pattern' branch is removed rather than wired up: a module table IS this language's module idiom, so rewarding it would reward most Lua files and measure nothing. The reward moves to 'Object-Oriented Programming (Libraries)', which processCall actually adds."
+    },
+    {
+      "id": "LUA-11",
+      "severity": "low",
+      "status": "FIXED",
+      "title": "performanceScore and memoryEfficiency are constants published as measurements",
+      "detail": "Lines 96-97 return the literals 85 and 85. No measurement produces them. Per Truth Rule 1 a fact a reader cannot check is not a fact; these are the two most checkable-looking numbers in the block and they are the two that are invented.",
+      "gate": "PENDING",
+      "resolution": "performanceScore and memoryEfficiency are gone under those NAMES as well as those values, because a DERIVED number published as 'performanceScore' is still a lie \u2014 it claims to measure performance and this analyzer measures no time. Replaced by relationshipDensity and retainedRowKb, each derived from the analysed file or ABSENT. The gate tests derived-vs-constant by VARIATION: two structurally different files must not publish the same figure."
+    },
+    {
+      "id": "LUA-13",
+      "severity": "critical",
+      "status": "PROVEN - found while fixing LUA-01",
+      "title": "A call split across two lines is deleted from the graph entirely",
+      "detail": "processCall took the callee's name from node.text. For a call written as `obj\\n  .method()` that text is a multi-line SOURCE SNIPPET, not a name. The pool-worker's garbage-target filter (src/ast/pool-worker.ts:391) rejects any relationship target containing a newline, so the edge was dropped. Measured: `obj.method()` on one line produced the edge `caller2 -> obj.method`; the byte-identical call split across two lines produced NO EDGE AT ALL. Line breaks are ordinary in real Lua, so this silently deletes calls from the graph.",
+      "whyItMatters": "Not merely an ugly name: a missing edge is a missing relationship a user cannot see is missing.",
+      "fix": "The callee's name and the node carrying its line are now read together from structure (callee()): for `table . field` / `table : field` the callee is `field`, the LAST named child, and its own start position is the line the method name is written on. Name and line cannot drift apart because they are the same node.",
+      "gate": "script/m60/verify-lua-edge-lines.ts - the multi-line fixture is the falsifier; a whole-line implementation passes every other row and fails it"
+    },
+    {
+      "id": "LUA-20",
+      "severity": "high",
+      "status": "PROVEN and FIXED",
+      "title": "An anonymous function established no scope, so a closure's internal `return` was published as the FILE's export",
+      "detail": "The walk created a frame only for `function_declaration`. A `function_definition` \u2014 an anonymous function, a closure \u2014 shared its enclosing frame entirely. Two measured symptoms: (1) extractExport's guard was `if (frame.callable) return`, so a closure at FILE scope had no callable and its internal `return x` was published as the file's export \u2014 reproduced: `local t = { cb = function(x) return x end }` plus `return { a = 1 }` published an export named \"x\" from inside the closure while the file's real return published nothing; (2) a closure's own locals were attributed to the enclosing named function \u2014 `local captured` inside a closure nested in `outer` came out with ownerName \"outer\".",
+      "whyItMattered": "Closures are ubiquitous in Lua \u2014 every callback is one. A file whose only `return` was inside a callback published that callback's return as the module's public API.",
+      "fix": "LuaFrame carries `inFunction`, set on entering ANY function body including a nameless closure, and extractExport's guard tests that. The guard could not be fixed by giving a nameless closure a synthetic callable: that would fabricate a symbol to solve a scoping problem, and a synthetic identity is worse than the bug. A nameless closure keeps the enclosing callable as its label and gets its own localNames.",
+      "gate": "script/m60/verify-lua-member-identity.ts \u2014 17/17 checks, 6/6 mutants, including an ANTI-VACUITY leg: the fixture ends with a real `return use` and the gate asserts it IS published, so \"no closure return leaked\" cannot pass on an empty set"
+    },
+    {
+      "id": "LUA-21",
+      "severity": "medium",
+      "status": "PROVEN and FIXED",
+      "title": "A closure's frame did not inherit the enclosing scope's locals, so an UPVALUE assignment was published as a new declaration",
+      "detail": "The frame created on entering a function body held only that function's parameters. A closure can SEE the enclosing scope's locals \u2014 that is what a closure is \u2014 so an assignment to a captured variable looked like a fresh declaration. Measured at luvit/deps/utils.lua:99: inside `function (e, ...)` nested in `local function adapt(c, fn, ...)`, the statement `c = nil` emitted `contains adapt -> c` \u2014 a containment edge naming `c`, which HAS NO SYMBOL, because `c` is a parameter of adapt and parameters are not emitted as symbols. The result was an edge pointing at nothing.",
+      "fix": "The frame created on entering a function now starts from a COPY of the enclosing frame's localNames and adds its own parameters. Inheriting is also simply what the language says: the assignment mutates adapt's parameter, it does not declare anything.",
+      "gate": "covered by the lua truth oracle plus verify-lua-member-identity; the observable was a containment edge naming a symbol that does not exist"
+    },
+    {
+      "id": "LUA-22",
+      "severity": "medium",
+      "status": "PROVEN and FIXED",
+      "title": "A call through a computed index published its EXPRESSION as the relationship target",
+      "detail": "callee() fell through to `functionNode.text` for any callee that was not a plain identifier or a dot/method index. `dao[method or context .. \"_by_\" .. endpoint_key](dao, ...)` \u2014 kong/api/endpoints.lua:260 \u2014 therefore produced a `calls` edge whose target was the whole 48-character expression. That is a payload masquerading as a name: unmatchable to any declaration, unreferenceable, and unbounded in shape. It is the defect class M60 records for other lanes ('publishes the target \"ns.Iface<number>\", a payload rather than a name').",
+      "fix": "A bracket_index_expression callee is skipped. A LITERAL index (`dao[\"rows\"]`) is a name and still handled. Skipped rather than guessed: a computed callee is not a fact about the call graph, and inventing a name for it is the same fabrication under another spelling.",
+      "the_gate_caught_my_own_repeat_of_LUA_00": "The first version of the fix tested for `table_index_expression`, which is what the 0.5.0 grammar repo's node-types.json calls it. The WIRED grammar emits `bracket_index_expression` \u2014 measured by parsing `dao[expr](x)`. So the branch was unreachable and the fix would have done nothing, silently. verify-lua-grasped-fields reported `node type \"table_index_expression\" is never emitted by the grammar` and the gate built for exactly that defect class caught it, in the same lane, on the same mistake. That is the third time this instrument has caught a real gap in itself (the other two were anonymous functions and the same computed index), and the second time it caught ME.",
+      "note_on_the_oracle": "The truth oracle had the SAME defect \u2014 it emitted a truth edge for a computed-index callee \u2014 so the two sides agreed on a wrong answer and the differential could not see it. An oracle that shares a defect is worse than no oracle, because it launders the defect into agreement. Both sides now skip it, and that is the point of recording it."
+    },
+    {
+      "id": "LUA-23",
+      "severity": "high",
+      "status": "PROVEN and FIXED \u2014 found by the lane's own new fixture lane, on its first run",
+      "title": "A bare `local x` with NO assignment produced no symbol and no containment edge",
+      "detail": "A variable_declaration has TWO shapes, measured: `local a, b = 1, 2` is variable_declaration > assignment_statement > variable_list + expression_list, while `local solo` is variable_declaration > variable_list with NO assignment_statement at all. The LUA-00 fix read namedChild(0) as the assignment and then looked for a variable_list INSIDE it, so the second shape returned nothing. The declaration was silently dropped.",
+      "whyItSurvivedLUA00": "It was ALREADY broken before LUA-00 \u2014 the pre-fix `childForFieldName('name_list') || namedChild(0)` landed on the identifier, whose namedChildCount is 0, so the loop never ran. It survived that fix because the corpus measurement was byte-identical across the change (3,610 symbols before and after), so the fix was invisible to the only instrument being run, and nothing asserted the SHAPE. A 1,510-file corpus cannot see a shape that no corpus file happens to exercise in a way that changes a count.",
+      "howItWasFound": "The committed M14.0.F3 fixture lane, on its first run, in a fixture written to pin LUA-00's OBSERVABLE consequence. A fixture asserting 'the plainest declarations in the language are extracted' failed on the plainest declaration there is.",
+      "fix": "The lookup distinguishes the two shapes: namedChild(0) is the assignment only when it IS an assignment_statement, and the variable_list is taken directly otherwise. The value is likewise absent for the bare form, so the isTable test has nothing to test."
+    },
+    {
+      "id": "LUA-24",
+      "severity": "medium",
+      "status": "PROVEN and FIXED \u2014 and the ORACLE was wrong, not the census",
+      "title": "The oracle derived 218 export edges the census did not, because it never framed an ANONYMOUS function",
+      "detail": "After LUA-09 the oracle's truth side read 1,797 export edges against the census's 1,579 on the same kong corpus. The oracle's count was the LARGER of the two, which is the wrong way round \u2014 the oracle dedupes (label, from, target) globally while the census sums a per-file set, so the oracle's distinct count should be the smaller. That arithmetic alone says the oracle over-derives. script/m60/lua-export-truth-diff.ts settled it: census-only names were ZERO, so the census is a strict subset and every one of the 218 came from the oracle.",
+      "likelyCause": "The oracle's walk carries a `scope` string and pushes/pops a frame on function boundaries; the census's walk skips `function_definition` and `function_declaration` node types outright. If the oracle does not frame some function FORM \u2014 a function assigned in a table field, or a `function M:f()` method \u2014 then a return inside it is attributed to global scope and becomes a spurious `exports global -> \u2026` truth edge. That is a hypothesis from the shape of the two implementations, NOT a measurement: it has not been tested.",
+      "whyItMatters": "The oracle's observed side for exports is 0 (LUA-14, exports are discarded at the worker boundary), so the export comparison is currently VACUOUS on the observed side and this disagreement is invisible in it. When LUA-14 is fixed, a truth set that is 218 edges too large would surface as 218 unexplained edges and be indistinguishable from a real analyzer defect.",
+      "whatWouldSettleIt": "Extract the two name sets and diff them. Any name the oracle derives and the census does not names a file, and that file's return is the one to read. This is a few lines against the two artifacts and was not run because the LUA-09 fix and its gate came first.",
+      "notClaimed": "The analyzer-side result never depended on either walker: the census and the analyzer are independent derivations and agreed exactly (recall 1.0000, precision 1.0000, 0 spurious on both corpora). This finding was about the two TRUTH walkers, and it is now closed by fixing the oracle.",
+      "gate": "script/m60/lua-export-truth-diff.ts \u2014 compares the two walkers' name sets per file, exits non-zero on any disagreement, and carries a selftest that re-runs the oracle's export rule with the fnDepth guard REMOVED: 820 identifier returns reappear from inside anonymous functions on a 400-file slice. A diff that cannot fail is a diff that cannot have been what found this.",
+      "rootCause": "lua-truth-oracle.ts walk(): `const childScope = node.type === 'function_declaration' || node.type === 'function_definition' ? (functionNameOf(node)?.label ?? scope) : scope`. functionNameOf returns null when the node has no `name` field \u2014 which is EXACTLY the anonymous `function_definition` \u2014 so the `?? scope` fallback means an anonymous function opens NO scope, and its body is walked as if it were file scope. Every `return` inside one therefore satisfied the export rule. Read on kong/kong/pdk/service/response.lua: L69 `return response_headers, err` sits 4 spaces deep inside `attach_resp_headers_mt = function(response_headers, err)` (a table FIELD holding an anonymous function, L61) and L113 `return v` sits inside `__index = function(_, name)` (L84). The oracle derived `exports global -> response_headers` and `exports global -> v`; the analyzer published neither, correctly.",
+      "classOfDefect": "This is LUA-20 in the INSTRUMENT. LUA-20 was an anonymous function sharing its enclosing frame so that its internal return was published as the FILE's export; it was found and fixed in the analyzer, and the same shape was never fixed in the oracle that checks the analyzer. It stayed invisible until LUA-09 made exports measurable at all \u2014 before that the oracle's export rule only fired on `return <ident>`, and no corpus file combined an anonymous function with a file-scope-looking return often enough to surface it. A defect can be absent from the evidence because the evidence never asked.",
+      "fix": "The walk now carries `fnDepth`, incremented on entering ANY function_declaration or function_definition, and the export rule requires `fnDepth === 0` in addition to `scope === 'global'`. Depth, deliberately, not a synthetic scope name: naming an anonymous function `<anon@L113>` would fix exports AND silently change every contains/calls edge inside it, because those carry the scope as their source. Depth answers only the question the export rule asks. Verified: calls, contains, extends, instantiates and imports are byte-identical before and after (26,408 / 29,726 / 103 / 10 / 3,523), and export truth moved 1,797 -> 1,579.",
+      "result": "kong: 0 files disagree, 1,579 = 1,579, 813 global distinct on both sides. luvit: 0 files disagree, 186 = 186, 138 distinct on both sides."
+    },
+    {
+      "id": "LUA-25",
+      "severity": "high",
+      "status": "PROVEN and FIXED \u2014 the ORACLE was wrong, not the analyzer",
+      "title": "The oracle never registered file-scope locals, so every upvalue write looked like a new declaration",
+      "detail": "lua-truth-oracle.ts walked `if (scope !== 'global')` before writing to `localsIn`, while pushing the `contains` edge unconditionally. So `local prev_min_at` at kong/cluster_events/init.lua:272 produced a contains edge but left `localsIn.get('global')` empty. `visibleInChain` then walked `poll` -> `global`, found nothing, returned false, and the oracle demanded `contains poll -> prev_min_at` for the upvalue WRITE at :286. The analyzer does not emit it and is right: prev_min_at is a file-scope local that poll closes over, not a local of poll.",
+      "classOfDefect": "LUA-21's shape again, in the instrument. LUA-21 was an upvalue assignment emitting a containment edge naming a symbol that does not exist; it was fixed in the analyzer, and the oracle's ORA-4 guard for the same case was blind to file scope the whole time.",
+      "fix": "Removed the `scope !== 'global'` guard so file-scope locals are registered like every other. 242 of kong's 290 analyzer-attributable missing edges were this one missing line; contains recall 0.9872 -> 0.9952.",
+      "gate": "The residue is visible in every oracle run's three-way split, which is now reported as analyzer / noise-filter / pipeline-discarded rather than lumped together.",
+      "notClaimed": "The ~80 analyzer-attributable figure this lane carried was wrong. With a three-way split the true figure was 290, and 289 of those were oracle over-derivation."
+    },
+    {
+      "id": "LUA-26",
+      "severity": "medium",
+      "status": "OPEN \u2014 and now MEASURED, so the decision needs no further argument. Owner call.",
+      "title": "Should a for-loop's control variable be a symbol? The oracle said yes for 2,921 edges, then the answer was withdrawn",
+      "detail": "An earlier version of this oracle DID derive `contains scope -> <loop var>` for for_numeric_clause and for_generic_clause. That produced 2,921 extra missing edges on kong and read as 2,921 analyzer defects. It was not: a two-function probe shows the analyzer emits `sel2 -> listener` and NOT `sel -> listener` for two loops that differ only in whether the body ASSIGNS the variable. The analyzer has no for-clause declaration rule at all \u2014 for_statement appears in it once, as a complexity counter \u2014 so that symbol is manufactured by the assignment, not the loop.",
+      "bothPositions": "FOR: a for-loop variable is a local binding in Lua, so `contains sel -> listener` is a true statement. AGAINST: its scope is the LOOP, not the function, so filing it under the function is imprecise, and a binding that lives one iteration is rarely a navigation target.",
+      "whyNotDecided": "This is a question about what the symbol table MEANS, and the oracle is not entitled to answer it by deriving edges the analyzer never claimed. Deriving them converted an open design question into 2,921 apparent defects, which is the worst possible failure mode for an instrument.",
+      "alsoExplains": "The run's single UNEXPLAINED edge, `contains Schema:errors_to_string -> err` at kong/db/schema/init.lua. `err` is bound by no local \u2014 it is bound by `for _, err in pairs(...)` at :2307 and ASSIGNED at :2320. The assignment is what makes the analyzer emit the edge. The oracle is silent on the loop, so the two agree by coincidence rather than by derivation, which is why the edge surfaced as unexplained. Two routes to one true edge.",
+      "ownerDecision": "Whether loop variables belong in the symbol graph. Until then the oracle derives neither, and the coincidence above is documented so it is not read as a defect.",
+      "blastRadius": {
+        "corpus": "400 of kong's 1,309 files, measured through the direct analyzer path",
+        "filesContainingALoop": "169 (42.3%)",
+        "forBindingsTotal": 1351,
+        "distinctNamesEnteringTheSymbolTable": 240,
+        "symbolTableGrowth": "12,297 -> ~12,537, +2.0%",
+        "containsEdgeGrowth": "11,171 -> ~12,522, +12.1% (one edge per binding)",
+        "throwawayUnderscore": "359 of 1,351 bindings, 27%",
+        "topNames": "_ 359, v 142, k 102, i 96, name 38, field 33, key 29, plugin 25, err 24 \u2014 the top four are 52% of all bindings"
+      },
+      "theDecidingFacts": [
+        "The cost is asymmetric: +2.0% symbols but +12.1% contains edges, because each binding is an edge and most names are reused.",
+        "More than half the bindings are four single characters. `contains global -> v` is a true statement and it is navigation noise; the two are not the same thing.",
+        "A quarter of all bindings are `_`, which by Lua convention means discard \u2014 a real binding, and the least useful symbol in any language that has one.",
+        "The scope is wrong by construction. A loop variable is live in the LOOP BODY, not in the function, so `contains fn -> v` asserts a membership that outlives the binding. The honest model is a scope this analyzer does not have, because a `for` clause opens none."
+      ],
+      "recommendation": "Keep the current answer \u2014 loop variables are NOT symbols \u2014 on the evidence rather than on principle, and record it as a DECISION rather than a gap. The +12.1% edge growth buys 240 names of which the top four are single letters, and it files a loop-body binding as a member of the enclosing function, which is a false membership claim. The single edge that depends on the opposite answer is the LUA-26 coincidence, exempted structurally in the oracle rather than resolved by deriving an edge the oracle deliberately refuses to derive.",
+      "whatWouldChangeThis": "A consumer that navigates by containment and would benefit, or a decision to model the `for` clause as opening a scope \u2014 which is the real fix and a larger change. If loop variables are wanted they should be symbols in a LOOP scope, not members of the function; the frame model has no such scope, so the cheap version of this is the wrong shape."
+    },
+    {
+      "id": "LUA-27",
+      "severity": "high",
+      "status": "PROVEN and FIXED \u2014 a guard copied from another file, never re-measured, dead for LUA-22's whole life",
+      "title": "The oracle's computed-index guard tested for a node type the grammar never emits",
+      "detail": "calleeOf tested `n.type === 'table_index_expression'`. The wired grammar emits `bracket_index_expression` \u2014 the ANALYZER's own LUA-22 fix had already corrected the name, with a comment recording that `table_index_expression` was what the 0.5.0 grammar repo's node-types.json calls it. The oracle's copy kept the wrong name, so the guard never fired and every computed-index call fell through to `return { name: n.text }`. 46 truth targets on kong were whole programs: `dao[method or context .. \"_by_\" .. endpoint_key]`.",
+      "fix": "Corrected to `bracket_index_expression`, and the whole no-name class is now a WHITELIST (identifier / dot / method / bracket) rather than a growing blacklist \u2014 because two blacklists in a row is how this happened: each named a type somebody had to measure, and the type nobody re-measured stayed wrong forever.",
+      "lesson": "A guard copied into a second file and never re-measured against the grammar is how a fixed defect stays fixed on one side and live on the other."
+    },
+    {
+      "id": "LUA-28",
+      "severity": "medium",
+      "status": "PROVEN and FIXED \u2014 the ORACLE was deriving incoherent edges",
+      "title": "The oracle demanded `contains new_router -> new_router`: a scope as a member of itself",
+      "detail": "Five such edges on kong (new_router L426, initialize L36, sleep_once_for_balancer_init L802 and two more), each filed as an analyzer miss. `contains X -> X` is incoherent on any reading \u2014 the scope IS the name \u2014 and the analyzer's member-identity gate has a standing check that no symbol duplicates its own owner. The oracle derived them; the analyzer correctly omitted every one.",
+      "fix": "Skipped at both contains derivations (`local-decl` and `assign-decl`) and COUNTED, reported in the run as `selfContainmentSkipped`, so the skip is visible rather than silent.",
+      "why": "A skip that is not reported is indistinguishable from a bug in the skip. Five edges that vanished without a number would have looked like the oracle quietly losing coverage."
+    },
+    {
+      "id": "LUA-29",
+      "severity": "high",
+      "status": "PROVEN and FIXED \u2014 a REAL ANALYZER DEFECT, exposed only after the oracle stopped sharing it",
+      "title": "A call on a call published the whole inner call as the relationship target",
+      "detail": "callee() fell through to `functionNode.text` for any callee it had no branch for, so `require(\"some.module\")()` produced the target `require(\"some.module\")` \u2014 a payload, not a name, the same defect class LUA-22 fixed for computed indexes two lines above. Measured on kong: 51 edges, e.g. `require(\"kong.tools.dns\")`, `ws_migration_teardown(operations.postgres.teardown)`, `sandbox(expression)`. Unmatchable, unreferenceable, unbounded in shape \u2014 every property M60 records for a fabricated target.",
+      "whyItSurvivedSoLong": "The ORACLE shared it. calleeOf had no guard here either, so both sides emitted the payload and the differential read the agreement as confirmation. This is the argument the LUA-22 comment makes about an oracle that shares a defect \u2014 demonstrated rather than asserted. Fixing the oracle's side first is what exposed it.",
+      "fix": "A WHITELIST of the four name-bearing callee forms, for LUA-27's reason.",
+      "gate": "script/m60/verify-lua-call-targets.ts \u2014 25 checks, including an F7 mutation leg that deletes the whitelist from callee() and requires the gate to go RED, with the analyzer restored byte-for-byte. The gate also caught two of MY OWN wrong expectations while being written: that a call-on-call should publish no target (the inner call's name is legitimate) and that `require(\"m\")()` yields a calls edge (it yields imports)."
+    },
+    {
+      "id": "LUA-30",
+      "severity": "high",
+      "status": "PROVEN and FIXED \u2014 found by the LUA-29 gate, and documented in a comment that was lying",
+      "title": "A literal string index is a name, and LUA-22's fix threw it away with the computed ones",
+      "detail": "`dao[\"rows\"]()` names exactly the field `dao.rows()` names, but the measured tree builds both as `bracket_index_expression` \u2014 the literal one as {table, field=string}, the computed one as {table, field=<expr>} \u2014 so LUA-22's type-level branch could not tell them apart and dropped the whole class. Measured on a probe: `dao[\"rows\"]()` produced NO EDGE while `dao.rows()` produced calls:rows.",
+      "theLieInTheComment": "The LUA-22 comment stated \"a literal index (`dao[\\\"rows\\\"]`) IS a name and is handled by the dot/method branch above\". That was false: a literal index is a bracket_index_expression, never a dot or method one, so the intent was documented and never implemented. A comment asserting a behaviour is not evidence that the behaviour exists \u2014 and this lane has now been bitten by a comment twice (here, and by the reachability gate attributing a field literal to the wrong node).",
+      "fix": "Only a literal STRING names a field, on both sides, from the measured `field` child: string -> the unquoted content; number -> an array index, not a name; identifier -> a VARIABLE holding the key, not statically knowable.",
+      "independentlyReached": "The analyzer and the oracle were changed from the grammar measurement, separately, and reached the same rule. That is the only kind of agreement worth having \u2014 not one side copied from the other."
+    },
+    {
+      "id": "LUA-31",
+      "severity": "critical",
+      "status": "PROVEN and FIXED \u2014 the classifier was EXCUSING edges by inferring, and a collapsed analyzer passed clean",
+      "title": "A label the pipeline emitted zero times was called 'structurally undeliverable' \u2014 so a broken analyzer read as a perfect one",
+      "detail": "The three-way split added for LUA-14 excused a missing edge whenever its label had not been seen anywhere in the pipeline output. That inference fails in the one direction that matters most: if the analyzer emits NOTHING for a label, the pipeline also emits nothing, the label looks discarded, and every truth edge for it is excused. A collapsed analyzer and a dropped field become indistinguishable.",
+      "caughtBy": "Mutation, not reading. Neutering addContainsRelationships \u2014 dropping EVERY synthesized contains edge \u2014 moved kong's missing from 3 to 47 on a 5-file slice and STILL reported `analyzer=0`, with all 47 filed as pipeline-discarded. The differential passed a totally broken analyzer. That is the exact failure this lane exists to prevent, committed by the very fix that was meant to improve the split, and it was only visible because the corpus mutation harness was built.",
+      "fix": "The verdict must be evidence. The oracle now parses the same file through BOTH paths (parseFile and parseWithAnalyzer, capped at 150 files and the cap reported) and calls a label discarded only where the direct path supplied it and the pipeline did not, on that same file. Absence on both sides proves nothing. After the fix, M8 moves the reading from `analyzer=0` to `analyzer=648`.",
+      "secondBlindSpotFound": "Exports were compared only through parseFile, which discards the field (LUA-14) \u2014 so the export comparison was a comparison against an empty set. Not a weak signal but NO signal: a mutation deleting the entire returned-table export branch (LUA-09) or republishing every in-function return (LUA-20) left the pipeline output byte-identical, and BOTH SURVIVED. The oracle now compares exports on the direct path against the same tree-derived truth, and both are caught (missed 0->14, spurious 0->42).",
+      "duplicationRemoved": "That direct-path export measurement already existed as script/m60/lua-export-census.ts. Having it in two places is what let them drift into the 218-edge phantom disagreement of LUA-24. One instrument, two paths, one truth."
+    },
+    {
+      "id": "LUA-32",
+      "severity": "high",
+      "status": "PROVEN and FIXED \u2014 a REAL ANALYZER DEFECT, invisible through the pipeline and found by a seam probe",
+      "title": "`setmetatable(X, { ... })` published the whole table constructor as the extends TARGET",
+      "detail": "The setmetatable branch guarded only its FIRST argument with `!isTableNode(target)` and then used `metatable.text` as the relationship target. So `setmetatable(self, { __index = super })` published `extends self -> { __index = super }` \u2014 a payload, not a name. Two measured losses on kong: `self -> { __index = super }` at kong/db/dao/init.lua:990 and `_M -> { __call = ..., __index = ... }` at kong/cmd/utils/log.lua:88, the latter spanning five lines.",
+      "whyItWasInvisible": "That target contains NEWLINES, and pool-worker rejects any relationship target containing one \u2014 so the edge never reached the store. Through the pipeline the defect was not measurable: the edge was simply ABSENT, indistinguishable from an edge that was never derived, and the oracle's byLabel figures showed extends at 103/103 with zero missing and zero unexplained. LUA-29's whitelist fixed the same defect class on the `callee()` path and never touched this one.",
+      "howItSurfaced": "The direct-vs-pipeline seam probe added for LUA-31 compares the two paths per file and reports labels the pipeline drops. It flagged `extends` alongside `exports` as proven-discarded, which is what pointed at the two files. A defect the pipeline filters out can only be found by a path the pipeline does not filter.",
+      "fix": "A single shared `nameBearing()` rule \u2014 identifier, dot_index, method_index \u2014 used by BOTH the callee whitelist and the setmetatable path, so the two cannot drift apart the way `table_index_expression` did (LUA-27). `setmetatable(A, M)` still yields `A->M`; an inline or computed metatable yields nothing, because there is no name for it.",
+      "gate": "script/m60/verify-lua-call-targets.ts, extended to 29 checks, with the LUA-32 cases proven red by reverting the fix (4 failures, each showing the exact payload target) and the source restored byte-for-byte."
+    },
+    {
+      "id": "LUA-33",
+      "severity": "medium",
+      "status": "PROVEN and FIXED \u2014 the ORACLE, again, and again as the mirror of the fix that corrected it",
+      "title": "The oracle's setmetatable rule relaxed a type requirement into no requirement at all",
+      "detail": "LUA-18 retracted an `extends` over-fabrication claim: the oracle required `meta.type === 'identifier'`, called 3 genuine edges fabrications, and recorded analyzer precision as 0.7. The correction was right about member expressions (`Emitter.meta`) and wrong about everything else \u2014 dropping the type requirement entirely let `setmetatable(_G, nil)` derive `extends _G -> nil` (5 kong sites), `setmetatable(opts or {}, defaults)` derive a SOURCE that is a binary expression, and `setmetatable(env.ngx, getmetatable(ngx))` derive a call as a target. 16 edges, all the oracle's, all correctly refused by the analyzer after LUA-32.",
+      "fix": "The LUA-32 rule, which the analyzer adopted in the same pass and this rule missed: an endpoint must be a NAME. identifier / dot_index_expression / method_index_expression carry one; nil, a call, a binary expression and a table constructor do not. `nil` is not a superclass and `getmetatable(ngx)` is not a name. Both sides now share one `nameBearing()` rule, so they cannot drift the way `table_index_expression` did (LUA-27).",
+      "classOfDefect": "A correction applied by REMOVING a constraint rather than by replacing it with the right one. The retraction was correct; the replacement rule was not stated, so the space it left was filled by whatever the code did next \u2014 which was nothing."
+    },
+    {
+      "id": "LUA-34",
+      "severity": "critical",
+      "status": "PROVEN and FIXED \u2014 the LAST structural blind spot in the differential, found by mutation",
+      "title": "The differential could not see a relationship whose target contained a newline",
+      "detail": "pool-worker rejects any relationship target containing a NEWLINE. The differential reads relationships through the pipeline, so an edge whose target is a multi-line payload is deleted on the way to the store and is simply ABSENT \u2014 indistinguishable from one that was never derived. Measured, not argued: reintroducing the LUA-32 defect (setmetatable publishing a table constructor as the extends target) moved NO number the instrument reported. Missing, unexplained, line accuracy and direct-path exports were all byte-identical, while the mutation provably changed the analyzer's output on 15 of 260 corpus files.",
+      "whyItMatters": "This is not a hypothetical filter. It is the mechanism by which LUA-32 survived an entire lane of review reading `extends 103/103, zero missing, zero unexplained`, and by which any future payload-target defect will survive the same way. The export half of the same blindness was already found and fixed in LUA-31 \u2014 a missing FIELD. This is a missing CONTENT RULE, and it is strictly harder to see because the field is present and populated.",
+      "fix": "Relationships now get the same two-path treatment exports got: the analyzer's own output against the same tree-derived truth, read through parseWithAnalyzer, with no pipeline filter in between. `spurious` is the leg that matters \u2014 a payload target the tree never derived is exactly what a fabricated target is. On kong: 8,346 truth, 8,346 hit, 0 missed, 0 spurious, recall 1.0, precision 1.0 over the 150 probed files.",
+      "secondDefectFoundWhileBuildingIt": "The leg first reported 317 missed on kong \u2014 exactly the export truth count \u2014 because exports are a separate array on the direct result and the relationship loop demanded an `exports global -> x` key that the direct relationship list can never contain. The leg was measuring its own blind spot and calling it a recall gap. Fixed by folding the direct exports into the key set, so the relationship leg is complete and the export leg remains a subset view of it.",
+      "theOneExemption": "LUA-26's coincidence is exempted STRUCTURALLY, not by name: an observed `contains S -> T` is exempt when T is bound by a for-clause in that file, which is how the oracle knows the case exists. A name-based exemption would be a hole shaped exactly like the next bug. Exemptions are counted and reported (`loopCoincidenceExempted`), not silently dropped \u2014 a skip with no number looks like lost coverage."
+    },
+    {
+      "id": "LUA-35",
+      "severity": "medium",
+      "status": "PROVEN and FIXED",
+      "title": "The last silent export shape that carries a NAME, and a disclosure for the ones that do not",
+      "detail": "LUA-09 left `return require(\"x\")`, `return \"literal\"` and `return setmetatable(M, mt)` silent. Measured off the wired grammar by script/m60/lua-silent-export-census.ts, at a file's ACTUAL module return: of kong's 1,309 files, 3 carry a setmetatable with a NAME (fixable), 2 a setmetatable with an expression, 3 a re-export, 17 a string literal and 21 another call. luvit: 7 silent files, 0 fixable. A correction to the closure record: it quoted '17 kong files / 5 files' for these shapes, which counted only files where the shape IS the module's primary return; a plain grep at any indent gives 76 and 87, because it also catches returns nested inside functions. Both numbers are right for different questions and the smaller one was quoted without its question.",
+      "fix": "`return setmetatable(<name>, mt)` publishes the name \u2014 the module's surface IS M, exactly as in `return M`, which the analyzer already handled. The metatable is an attribute OF M, not a second export. On kong that is 3 files and +3 exports (1,579 -> 1,582), with recall and precision both 1.0000 on both corpora.",
+      "theDisclosure": "The other shapes carry NO name and are recorded as `metadata.unpublishedSurface` instead, each entry derived: `shape` from the node type, `detail` from the node's own text, `line` from its start position, `why` a fixed reason per shape. The point is that 'no exports' currently means two indistinguishable things \u2014 this module defines nothing, and this module's surface exists but cannot be named \u2014 and a disclosure separates them while publishing no name at all. An export called 'kong.tools.dns' for a re-export of kong.tools.dns would be a fabricated name, the same fabrication LUA-22, LUA-29 and LUA-32 refused for relationship targets. The field is ABSENT whenever the surface is nameable, which is the LUA-11 rule: nothing constant-shaped is ever published.",
+      "aCallOnACallIsNotAReExport": "While wiring this, `return require(\"x\")(-1000)` \u2014 20 kong files \u2014 was found to disclose as `call-result` with a null detail, and the analyzer is RIGHT. The outer call's callee is the inner call, which is LUA-29's case: there is no name. An earlier attempt to build the re-export slice by pattern matched those 20 and not the 3 genuine ones, because the pattern cannot see which node the `name` FIELD points at. Found by reading the files, which is the only thing that settles it.",
+      "gate": "verify-lua-export-shapes, 24 -> 42 checks, F7-proven: removing the block turns it red at 30/6 with the exact missing names printed, and the source is restored byte-for-byte.",
+      "thirdDuplication": "lua-export-truth-diff.ts had its OWN copy of the census walk. Adding the setmetatable rule to the real census and not the copy produced 3 phantom disagreements \u2014 the gate correctly flagging a disagreement that did not exist, and the third time in this lane that one piece of logic in two files has cost real time (LUA-24 was the first, 218 edges). The copy is DELETED: the diff now imports `expectedExportNames` from the census. A differential that re-implements one of its own participants is not a differential, and its disagreement cannot say which side is wrong.",
+      "mutation": "M14 (the setmetatable arm deleted) and M15 (the disclosure deleted) both caught on real code: exports missed 0 -> 2, disclosures 29 -> 26. The harness is now 14 mutants, all caught, with the no-op control surviving."
+    }
+  ],
+  "rootCause": {
+    "id": "LUA-00",
+    "severity": "critical",
+    "status": "PROVEN",
+    "title": "The analyzer asks for five grammar fields that DO NOT EXIST, so five extraction paths never fire",
+    "thisIsTheHeadline": "Every other finding in this ledger is downstream of this one. M14.0.F1 already reports lua's `grammar` cell as status fail for exactly this reason (5 unknown field literals, zero waived), and the LCM matrix carries that fail. It was not acted on because the corpus evidence said 0 parse errors \u2014 which is true, and is not the same question.",
+    "detail": "The analyzer requests childForFieldName('name_list') at lines 158 and 183, childForFieldName('function') at line 208, childForFieldName('expression_list') at line 297, and childForFieldName('key') at line 393. The pinned grammar resolves NONE of them on any node. Measured on a probe through the production path, resolving each literal against every named child in the tree: name_list ABSENT, function ABSENT, expression_list ABSENT, key ABSENT, parameters ABSENT, table ABSENT, method ABSENT, field ABSENT. Only name, value and arguments resolve.",
+    "whatTheGrammarActuallyHas": "A `local a, b = 1, 2` is variable_declaration > [anon `local`] > assignment_statement > variable_list [fields: name=identifier, name=identifier] + [anon `=`] > expression_list [fields: value=number, value=number]. The name list is a `variable_list` whose children carry the `name` field. There is no `name_list` node type in this grammar at all.",
+    "consequencePerPath": {
+      "line 158 (extractLocalDeclaration)": "asks variable_declaration for 'name_list', gets null, falls back to namedChild(0). For `local c = 3` namedChild(0) is the anon `local` token, not a variable_list \u2014 so plainVariableName sees a non-identifier and returns undefined, and the declaration is SKIPPED. The `||` fallback makes this silent.",
+      "line 183 (extractAssignment)": "same defect on the assignment_statement path, masked there because namedChild(0) of an assignment_statement IS the variable_list.",
+      "line 208 (processCall)": "asks function_call for 'function', gets null, falls back to namedChild(0) which is the identifier \u2014 accidentally correct, so calls are extracted.",
+      "line 297 (extractExport)": "asks return_statement for 'expression_list', gets null, falls back to namedChild(0) \u2014 for `return a` that is the anon `return` token, so the export is SKIPPED.",
+      "line 393 (tableFieldNames)": "asks a `field` node for 'key', gets null, falls back to namedChild(0). In this grammar a table field is `field > [anon name=identifier] + [anon =] + value`, so the fallback can land on the anon name token; table field extraction is unreliable at best."
+    },
+    "whyItSurvived": "Every one of these paths is written as `childForFieldName(X) || namedChild(0)`. The `||` is what converts 'this field does not exist' into 'quietly use whatever happens to be first', so a grammar mismatch cannot raise, cannot be logged, and cannot fail a gate. Five of the five paths still produced output, which is why a 1.000 differential on 2 hand-written fixtures did not catch it: the fixtures were authored against the same wrong expectations.",
+    "fixShape": "Replace the invented field literals with the grammar's real vocabulary (variable_list + name; the assignment_statement's own first named child; expression_list reached as a child TYPE not a field name), and make every fallback OBSERVABLE \u2014 a field literal the grammar cannot resolve must be a measured fact recorded by a gate, never a silent ||.",
+    "gate": "script/m60/verify-lua-grasped-fields.ts \u2014 7/7 checks, 3/3 mutants planted and caught, GREEN after the fix and RED before it",
+    "CORRECTION_2026-09-26": {
+      "whatIInitiallyClaimed": "That the five invented fields meant five extraction paths never fired, and that fixing them would recover silently-lost declarations and exports.",
+      "whatMeasurementShows": "The claim about the FIELDS is true and proven: name_list, function, expression_list and key resolve on no node in the pinned grammar, and each sat behind a `|| namedChild(0)`. The claim about the CONSEQUENCES was wrong, and I asserted it before measuring it.",
+      "measuredEvidence": "Full-corpus measurement on luvit@199 files, before vs after the fix: symbols 3610 -> 3610, relationships 7257 -> 7257. BYTE-IDENTICAL. Purpose-built probes on `local solo`, `local a, b = 1, 2`, `local t = { x = 1 }` and `return name` also produced identical symbol sets before and after.",
+      "whyTheFallbackHappenedToWork": "In this grammar a variable_declaration's first named child is EITHER a variable_list directly (`local solo` -> variable_list) OR an assignment_statement whose first named child is that variable_list (`local a, b = 1, 2` -> assignment_statement -> variable_list). The old code then iterated namedChildCount over that node, so in the second case it walked the assignment_statement's children (variable_list, expression_list) and plainVariableName rejected both \u2014 yet the symbols still came out, because a variable_list child of an assignment_statement is itself iterable by the same loop's shape on the next visit. The net effect is that the sloppy lookup and the correct one coincide on every shape in this corpus.",
+      "whatTheFixActuallyBought": "Not one recovered symbol. It bought THREE things that are real but are not 'more output': (1) the analyzer no longer depends on a coincidence of child ordering, so a grammar revision that reorders those children cannot silently drop every local declaration in the language; (2) the `||` fallbacks that made the mismatch invisible are gone from four of the five sites, so the next grammar drift is a gate failure instead of a quiet wrong answer; (3) the gate that proves both of those now exists and can fail.",
+      "theLesson": "I read five unreachable fields, formed a mechanism ('therefore these paths never fire'), and reported the consequence as PROVEN before running anything that would have falsified it. The honest status was SUSPECTED, the same label I correctly used for four other findings in this same ledger. A field that does not exist is a defect; a field that does not exist AND is covered by a working fallback is a latent defect, and the difference is only ever settled by a measurement."
+    }
+  },
+  "grammarAssessment": {
+    "id": "LUA-G1",
+    "status": "MEASURED \u2014 and it is NOT the defect",
+    "finding": "The pinned tree-sitter-lua.wasm (dated 2026-08-29, sha256 9ebb71c0\u2026) parses 1,308 of Kong's 1,309 tracked .lua files CLEAN under its own rootNode.hasError. The single failure, spec/fixtures/invalid-module.lua, is DELIBERATELY INVALID \u2014 its own first line reads 'Invalid module (syntax error) for utils.load_module_if_exists unit tests.' and its body is `local a = \"hello\",`, a trailing comma with no value. The grammar is right; the analyzer is right; the corpus selector was wrong.",
+    "consequence": "The groovy-class defect (an outdated grammar silently mis-parsing a real corpus) is NOT present in lua. Recording this matters as much as recording a defect would: it redirects the wave at the analyzer, which is where the evidence actually points.",
+    "instrument": "script/m60/lua-sharpen-probe.ts (probe removed after use; the reproducible form is script/m12/lua-corpus-errors.ts)",
+    "grammarDrift": {
+      "status": "STILL OPEN \u2014 the instrument is built, the A/B is not yet run at full scale",
+      "detail": "wasm/tree-sitter-lua.wasm is in the stale 2026-08-29 batch; only clean, cpp, c, groovy and objc have been re-pinned since. Its version is UNKNOWN: it matches neither the upstream repo's node-types.json (0.5.0, 51 named types) nor the npm build (0.4.1, 50 named types, differing by implicit_variable_declaration). script/m12/lua-wasm-compare.ts now exists and is lua's first grammar-drift instrument \u2014 14 peer languages had one and lua was the only one with a node-types-compare and no wasm-compare.",
+      "instrumentSelfTest": "PASS on a 2-file subset: fixed=0 regressed=0 stillFailing=1 cleanBoth=1, and the report carries instrumentCanSeeADifference=false so an all-clean run cannot be mistaken for a proof of equality.",
+      "blocker": "Building tree-sitter-lua 0.5.0 from source needs cargo/rustc or emscripten. NEITHER IS INSTALLED on this machine. A prebuilt 0.4.1 npm wasm was obtained for the A/B; obtaining a 0.5.0 prebuilt is the open task."
+    }
+  },
+  "instrumentationGapsClosed": [
+    {
+      "gap": "lua had no grammar-drift instrument",
+      "closed": "script/m12/lua-wasm-compare.ts \u2014 set-wise by FILE (fixed/regressed/stillFailing/cleanBoth), never by a headline total, because a total can hide a fix and a regression that cancel. Carries instrumentCanSeeADifference so 'no difference found' is distinguishable from 'instrument is blind'. Uses the tree's own rootNode.hasError and keeps the web-tree-sitter zero-width EOF phantom tally visible rather than correcting it away."
+    },
+    {
+      "gap": "the pinned corpus directory did not exist",
+      "closed": "/home/ishaq2321/bb_tests/repositories/MANIFEST.json \u2014 3 repos at pinned revisions, 1,508 corpus .lua files against the vanished corpus's 162, with the deliberately-invalid fixture named as a known negative control so it is never re-reported as a defect."
+    },
+    {
+      "gap": "raw Language.load throws unless the engine has initialised the core",
+      "closed": "measured, not guessed: the same call that throws in a fresh process succeeds after one production parseFile. Every raw-load instrument must pay that first parse. Recorded in lua-wasm-compare.ts so the next author does not lose an hour to it."
+    }
+  ],
+  "baselineHonesty": {
+    "theGreenThatIsNot": "script/m12/verify-analyzer.ts lua reports 41/41, precision 1.000, recall 1.000, 0 FP, 0 FN. Those 41 facts come from 2 hand-written fixtures authored against this analyzer, so the 1.000 measures self-consistency, not correctness. It is the ONLY differential lua has, and the M60 matrix correctly records the diff column as n/a.",
+    "regenerationDropsTheSeal": "Re-running the gate rewrites validation/m12/results/lua-differential.json with an added unpinned `inputs` key and REMOVES the record's bbSeal. The verdict is byte-identical, so this is not a correctness change, but an evidence record that loses its integrity envelope on regeneration cannot be trusted to be the record that was reviewed. Working tree was restored; this is recorded, not fixed."
+  },
+  "wave2": {
+    "title": "M60 line-number wave for lua",
+    "status": "LUA-01 landed and measured; LUA-13 found and landed inside it",
+    "gate": "script/m60/verify-lua-edge-lines.ts - 7/7 checks, 5/5 mutants, PASS",
+    "gateWasRedFirst": true,
+    "corpusEvidence": {
+      "method": "script/m60/lua-line-coverage.ts - what fraction of REAL relationships carry a line, because a gate green on one fixture can be green over a corpus it never saw",
+      "luvit": {
+        "files": 199,
+        "relationships": 7102,
+        "withLine": 7102,
+        "percent": 100
+      },
+      "kong": {
+        "files": 1309,
+        "relationships": 58870,
+        "withLine": 58870,
+        "percent": 100
+      },
+      "before": "0 of 15 on a purpose-built probe; LUA-01 established the analyzer emitted no line field at all"
+    },
+    "perKindLineContract": {
+      "calls": "the function_call's `name` field; for an index callee, the index expression's LAST named child (the method), not the expression (which opens at the receiver)",
+      "contains": "the SYMBOL's declaration line - a symbol and the edge naming it must never disagree. Synthesized, so it takes the symbol's range rather than an invented node",
+      "extends": "the metatable name's own node (the setmetatable argument)",
+      "instantiates": "the callee node, same node as calls",
+      "imports": "the require/module call node"
+    },
+    "absentNotZero": "A relationship with no name-bearing node carries NO line_number rather than 0 or -1. A legacy '0 means no line stored' is exactly the ambiguity M62's address owner exists to remove; inventing a line would re-create it.",
+    "instrumentLesson": "The first mutant suite planted regressions in the analyzer SOURCE and re-parsed in the same process: 4/4 planted, 0/4 caught, because the engine caches analyzer modules and every mutant re-measured the unmutated code. Mutants now corrupt the analyzer's OUTPUT, which is also the more honest test - the legs are about what the pipeline emits, not how the source is spelled. A source-level mutation test (fresh process per mutant) is still owed and is recorded as a limitation."
+  },
+  "wave3": {
+    "title": "Update to the new grammar regime (upstream 9cc08afd..8e3b12ff, 9 commits)",
+    "why": "Upstream landed a new way of treating tree-sitter/wasm/pinned grammars. The lua lane has to be brought under it, and doing so changed what this lane can honestly claim.",
+    "newRegime": {
+      "principle": "one fact, one owner",
+      "pinContract": {
+        "file": "validation/m14/grammar-pins.json",
+        "gate": "script/m14/verify-grammar-pins.ts",
+        "lanes": 6,
+        "role": "CONTRACT - gated for truth"
+      },
+      "upstreamSurvey": {
+        "file": "validation/m60/grammar-survey.json",
+        "gate": "script/m60/build-grammar-survey.ts",
+        "lanes": 49,
+        "role": "OBSERVATION - gated for freshness and completeness"
+      },
+      "consistencyGate": {
+        "file": "script/m60/verify-grammar-consistency.ts",
+        "artifact": "validation/m60/results/G1-grammar-consistency.json",
+        "role": "owns NO fact; proves the two above agree and that the prose sites agree with whichever owns the lane",
+        "status": "PASS at 8e3b12ff"
+      },
+      "pinRule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift. Regenerating is an explicit act (--write), never implicit.",
+      "registeredLanes": [
+        "clean",
+        "clojure",
+        "elixir",
+        "erlang",
+        "fsharp",
+        "haskell"
+      ],
+      "luaStatus": "NOT REGISTERED in either the pin contract or the survey"
+    },
+    "LUA_G2_PROVENANCE": {
+      "status": "PROVEN - the wired lua wasm matches no known upstream build",
+      "wiredSha256": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a",
+      "candidatesCompared": [
+        {
+          "label": "@tree-sitter-grammars/tree-sitter-lua@0.4.1 (npm tarball)",
+          "sha256": "6d95607fc7d78964cfdf065ccb1ba76be5ed217c5ec0d0a3cace13c59fa1ae43",
+          "result": "differs"
+        },
+        {
+          "label": "tree-sitter-wasms@0.1.13 out/ (npm tarball)",
+          "sha256": "75ef809136d610068c5b2135741d89f5df62690a3d55169203351cb7cc85727d",
+          "result": "differs"
+        }
+      ],
+      "conclusion": "An UNIDENTIFIED binary. Under the new regime that is a blocker, not a footnote: the pin contract's first requirement is an authored provenance record, and there is none to author because the origin of these bytes is unknown.",
+      "whyItMatters": "The new regime's whole point is that a wired grammar is a pinned, attributable artifact. lua's is not attributable. Every lua measurement is still reproducible \u2014 the bytes are in git and hashed \u2014 but they are reproducible against an unknown, so a future reader cannot tell whether an upstream lua fix has already been incorporated.",
+      "nextStep": "Identify the build. No cargo/rustc/emcc is installed here, so building 0.5.0 locally is blocked; the candidates are (a) find which registry published these exact bytes, (b) install a toolchain and build upstream 0.5.0 from the vendored source, or (c) run the set-wise A/B (script/m12/lua-wasm-compare.ts, already built) against a known build and swap if it is not worse. (c) is available today and is the honest interim step.",
+      "instrument": "script/m60/lua-provenance-probe.ts"
+    },
+    "updateMechanics": {
+      "commitsRebased": 4,
+      "conflict": "validation/m14/results/M14.0.F1.json - upstream regenerated it at 6b63e4a7, a co-agent had edited it. Both versions were valid JSON; upstream's is newer and self-consistent, so it was taken. The co-agent's version is preserved at /home/ishaq2321/bb_tests/f1-coagent-preserved.json.",
+      "coAgentWork": "2,415 lines across .gitignore, real-hcl-analyzer.ts, real-perl-analyzer.ts, real-r-analyzer.ts, lua-corpus-complexity.json, M14.0.F1.json and tree-sitter-r.wasm were uncommitted in the shared tree. Stashed with a named entry, rebased, and restored. A full backup (git bundle of all refs + working-tree patch + untracked tarball) was taken BEFORE any ref was touched, at /home/ishaq2321/bb_tests/backup-20260926-212148/.",
+      "hazardFound": "Three wave-1 probe scripts (lua-claims-probe, lua-fields-probe, lua-fixcheck) had been deleted from disk in 61c4b36f but the deletion was never staged, so they were still TRACKED in HEAD while absent from disk. Rebasing onto a tree that has never seen them would have resurrected all three as phantom conflicts. Caught and fixed in 5da872ce before the rebase.",
+      "gatesReverified": "Both lua gates re-run on the rebased tree: verify-lua-grasped-fields 7/7 PASS with 3/3 mutants, verify-lua-edge-lines 7/7 PASS with 5/5 mutants. An initial FAIL was a transient module-resolution race (a co-agent reinstalled node_modules mid-run) and cleared on retry; recorded because a gate that fails for an environmental reason and is simply re-run teaches people to re-run gates.",
+      "tsc": "0 errors in any file this lane touches"
+    }
+  },
+  "wave4": {
+    "title": "LUA-G2 resolved: the wired grammar is functionally identical to a build with named provenance, and LUA-00's cause is now known",
+    "LUA_G2_RESOLVED": {
+      "status": "PROVEN by set-wise structural A/B, with the instrument falsified first",
+      "wiredSha256": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a",
+      "candidate": {
+        "label": "@tree-sitter-grammars/tree-sitter-lua@0.4.1 (npm tarball)",
+        "sha256": "6d95607fc7d78964cfdf065ccb1ba76be5ed217c5ec0d0a3cace13c59fa1ae43"
+      },
+      "declaredIdentity": "IDENTICAL - both name=lua, abiVersion=15, declaredFieldCount=22, stateCount=262",
+      "surfaceOver1510Files": {
+        "typeSetDigest": "IDENTICAL",
+        "fieldSetDigest": "IDENTICAL",
+        "anonymousVocabularyDigest": "IDENTICAL",
+        "perFileTreeDigest": "IDENTICAL on every one of 1,510 files (kong 1,309 + luvit 199 + tree-sitter-lua 2)"
+      },
+      "setWiseAbKong": {
+        "files": 1309,
+        "fixed": 0,
+        "regressed": 0,
+        "stillFailing": 1,
+        "cleanBothIdenticalTree": 1308,
+        "structDiffers": 0,
+        "note": "the one stillFailing file is spec/fixtures/invalid-module.lua, which declares itself invalid in its own first line"
+      },
+      "conclusion": "The two builds are interchangeable on every corpus file measured. They differ in BYTES, which is consistent with the same grammar compiled by a different toolchain, not with a different grammar. So the wired build's behaviour is fully characterised even though its publisher is still unknown, and the decision is no longer blocked on provenance: swapping to 0.4.1 costs nothing measurable and buys a named release plus vendorable source."
+    },
+    "LUA_00_CAUSAL_EXPLANATION": {
+      "status": "PROVEN - LUA-00 is a grammar-upgrade regression, not a coding error",
+      "finding": "The analyzer asks childForFieldName('function') and childForFieldName('key'). BOTH ARE REAL FIELDS in tree-sitter-wasms@0.1.13's lua (ABI 13) and NEITHER EXISTS in the wired build (ABI 15). Measured field sets over 1,510 files: ABI-13 build has {argument, function, key} that the wired build lacks; the wired build has {clause, content, local_declaration, operand} that the ABI-13 build lacks. The per-file tree digest differs on 1,510 of 1,510 files between them.",
+      "implication": "The analyzer was written against an ABI-13-era lua grammar. The wired grammar was later upgraded across an ABI generation that removed `function` and `key`, and two of the five dead lookups were live code when they were written. That is why the M14.0.F1 oracle reports 5 unknown field literals with zero waivers, and it means this defect CLASS is family-wide, not a lua quirk: any analyzer holding a field vocabulary is one grammar generation away from the same silent breakage.",
+      "theOtherTwo": {
+        "name_list": "present in NEITHER build examined - never a real field, so that lookup was wrong from the start",
+        "expression_list": "present in NEITHER build examined - likewise never real; the node type exists but is reached as a child TYPE, not a field"
+      },
+      "whyTheEvidenceNeverCaughtIt": "The corpus error metric measures hasError, and a missing field changes no verdict. Only a field-set or tree-level comparison sees this, which is exactly what the new M60 pin contract's field-set digest is for. The lua lane is the first case here where the new instrument would have caught a historical defect, and it is the argument for registering lua in it."
+    },
+    "INSTRUMENT_CORRECTIONS_THIS_WAVE": [
+      {
+        "id": "A/B-1",
+        "defect": "The set-wise A/B compared only rootNode.hasError, a BOOLEAN, so two grammars building different trees while agreeing on error were indistinguishable. Falsification proved it: wired (ABI 15) vs tree-sitter-wasms@0.1.13 (ABI 13) reported fixed=0 regressed=0 cleanBoth=3 on a subset deliberately containing a failing file - it 'confirmed' equivalence between two builds that are not equivalent.",
+        "fix": "Each file now also carries a canonical tree digest (node type + field name, pre-order) and a new `structDiffers` category reports files whose verdict matches but whose tree differs. After the fix the same falsification reports structDiffers=4 of 4."
+      },
+      {
+        "id": "A/B-2",
+        "defect": "The instrument would happily compare a build with itself and report perfect agreement, which is indistinguishable from a real equivalence result.",
+        "fix": "It now refuses to run when the two wasm sha256 values are equal, exiting 2."
+      },
+      {
+        "id": "A/B-3",
+        "defect": "cleanBothIdenticalTree printed -1. structDiffers is defined on MATCHING verdicts so it spans cleanBoth AND stillFailing; subtracting all of it from cleanBoth undercounts.",
+        "fix": "Only the clean subset of structDiffers is subtracted. A negative count in a summary line is the kind of thing nobody reads closely enough to catch."
+      },
+      {
+        "id": "A/B-4",
+        "defect": "The surface probe reported `idOrderDigest DIFFERS` between two builds that build identical trees, and that difference was pure noise.",
+        "fix": "Measured the cause: three parses of ONE build over one file give three different node-id digests, because web-tree-sitter allocates node ids from a bump allocator that does not reset between trees. A node-id digest is a parse artifact, not a build property. The field is kept in the artifact renamed `idOrderDigest_NOT_EVIDENCE` and the real comparison is a per-file tree digest, which now reports IDENTICAL on 1,510 of 1,510 files."
+      }
+    ],
+    "instruments": [
+      "script/m12/lua-wasm-compare.ts - set-wise, structural, self-compare-guarded",
+      "script/m60/lua-surface-digest.ts - the surface the pin contract asks for (type-set, field-set, anonymous vocabularies, per-file tree digests)",
+      "script/m60/lua-wasm-identity.ts - what each build DECLARES about itself (name, ABI, field count, state count)",
+      "script/m60/lua-id-digest-repro.ts - proves a node-id digest is not reproducible, so the claim above is not an assertion",
+      "script/m60/lua-provenance-probe.ts - sha256 provenance comparison against candidate builds"
+    ]
+  },
+  "wave5": {
+    "title": "Wave 5 \u2014 an INDEPENDENT tree-derived truth for every lua relationship, with lines, over two real corpora",
+    "instrument": {
+      "file": "script/m60/lua-truth-oracle.ts",
+      "why_standalone": "The family harness script/m14/differential.ts is where M60's `diff: n/a` for lua comes from \u2014 deriveTreeEdges covers 30 languages and lua is not one. Adding the case there is the goal, but that file was observed MODIFIED IN THE WORKING TREE by a co-agent on another lane while this was written, and editing a shared file another agent is mid-edit is how lines are lost. Wiring is left as a separate small commit on a quiet tree.",
+      "independence": "Truth is derived from the wasm parse tree. The analyzer's output is never an input to the truth side, so a dropped edge cannot drop out of both sides and read as agreement.",
+      "deliberate_non_import": "The line rule is computed here from the tree rather than imported from the analyzer, so an error in the analyzer's line helper shows up as a LINE DISAGREEMENT. The family harness imports shape rules from the analyzer on purpose (#917/#919); for the line rule this instrument declines to, so the two sides can disagree about it.",
+      "oracle_bugs_found_in_itself": "Two, both fixed and both recorded because the first version of this oracle reported an ANALYZER defect that was its own: (1) it attributed `function Editor:onKey` to `global` instead of to its receiver, inventing `contains global -> onKey`; (2) it used a method's FIELD name as the body scope where the tree says the FULL text, which collapsed `Editor:onKey` and a local `function onKey` into one scope and deduped two unrelated functions' calls into one edge. A declaration's name has THREE parts \u2014 label (full text, the scope), name (the field), owner (the receiver) \u2014 and conflating them is what produced both bugs.",
+      "selftest": {
+        "status": "RUN and PASSING on all three legs",
+        "command": "npx tsx script/m60/lua-truth-oracle.ts --repo luvit --selftest",
+        "result": {
+          "dropObservedShowsMissing": true,
+          "dropTruthShowsUnexplained": true,
+          "corruptLineIsCaught": true
+        },
+        "meaning": "The comparison can fail in every direction it reports: deleting one observed edge surfaces as MISSING, deleting one truth edge surfaces as UNEXPLAINED, and corrupting one line surfaces as a LINE mismatch. Without this, a differential that reported zero differences would be indistinguishable from one that could not detect any. That distinction is the whole reason the falsification legs were added after the lua grammar A/B 'confirmed' equivalence between two builds that were not equivalent.",
+        "note": "This replaced an earlier note saying the selftest 'has not been run'. A claim that an instrument can fail is worth nothing until it is run."
+      }
+    },
+    "HEADLINE_RESULT_lines": {
+      "verdict": "PERFECT on both corpora",
+      "luvit": {
+        "edgesChecked": 6635,
+        "exact": 6635,
+        "wrong": 0,
+        "accuracy": 1
+      },
+      "kong_400_draw": {
+        "edgesChecked": 19015,
+        "exact": 19015,
+        "wrong": 0,
+        "accuracy": 1
+      },
+      "total": "25,650 edges, 25,650 exact, 0 wrong",
+      "meaning": "M60's `lines` requirement is MET for lua and MEASURED, not asserted. This is the lane's strongest result and it is independent: the oracle computes the expected line from the tree by its own rule, and the two agree on every single edge across 599 files of two unrelated codebases. The LUA-13 fix (callee name and line from the same node) is what made this exact rather than approximate."
+    },
+    "coverage_by_label": {
+      "note": "per-label truth/observed/missing/unexplained from the oracle; see validation/m60/results/lua-truth-oracle-{luvit,kong-400}.json",
+      "calls": {
+        "luvit": "truth 3506 obs 3383 recall 0.9649 precision 1.0",
+        "kong400": "truth 7900 obs 7487 recall 0.9477 precision 1.0",
+        "reading": "The analyzer never FABRICATES a call edge (precision 1.000 on both) but drops about 5%. Precision 1.0 with recall 0.95 is the shape of a conservative extractor, which is the right direction to be wrong in."
+      },
+      "imports": {
+        "luvit": "truth 554 obs 553 recall 0.9982 precision 1.0",
+        "kong400": "truth 1204 obs 1204 recall 1.0 precision 1.0",
+        "reading": "Effectively solved on real corpora."
+      },
+      "instantiates": {
+        "luvit": "truth 7 obs 35 precision 0.2",
+        "kong400": "truth 8 obs 8 recall 1.0 precision 1.0",
+        "reading": "The luvit 0.2 is a seven-edge sample, not a defect signal; on kong the label is exact. Recorded so the 0.2 is not later quoted as a finding."
+      },
+      "contains": {
+        "luvit": "truth 3123 obs 3121 recall 0.8598 precision 0.8775",
+        "kong400": "truth 11203 obs 11112 recall 0.9162 precision 0.9296",
+        "reading": "Both directions imperfect \u2014 the analyzer and the oracle disagree about IDENTITY, not about presence. Cause is LUA-15."
+      },
+      "extends": {
+        "luvit": "truth 7 obs 10 precision 0.7",
+        "kong400": "truth 52 obs 76 precision 0.6842",
+        "reading": "Consistent ~0.68 on both, so it is a rule disagreement and not noise. Cause is LUA-18."
+      },
+      "exports": {
+        "luvit": "truth 31 obs 0 recall 0.0",
+        "kong400": "truth 215 obs 0 recall 0.0",
+        "reading": "TOTAL LOSS. Cause is LUA-14."
+      }
+    },
+    "findings": [
+      {
+        "id": "LUA-14",
+        "severity": "critical",
+        "status": "PROVEN by oracle on two corpora",
+        "title": "Exports are computed by every analyzer and discarded by the worker \u2014 246 edges unreachable",
+        "detail": "`exports?: ExportInfo[]` is part of the analyzer contract (src/ast/engine.ts:337) and RealLuaAnalyzer fills it. pool-worker's return object maps success, language, framework, fileHash, sizeBytes, lastModified, symbols, imports, relationships, errors \u2014 and never `exports`. The only occurrences of the string in pool-worker.ts are two comments and the JS_GLOBALS denylist. So the array is built and thrown away.",
+        "impact": "lua recall 0.000 for exports on both corpora: 31 of 31 edges on luvit, 215 of 215 on a 400-file kong draw. A Lua module's `return M` is how a module publishes its API, so this is the single relationship kind a Lua user is most likely to navigate by.",
+        "scope": "NOT lua-specific \u2014 this drops exports for every language that emits them. Fixing it is a shared-file change (src/ast/pool-worker.ts) and needs the owner's decision, not a lane's unilateral patch."
+      },
+      {
+        "id": "LUA-15",
+        "severity": "critical",
+        "status": "PROVEN by oracle on two corpora",
+        "title": "A method symbol is named by its FULL qualified text while its owner is also recorded, so the two identities disagree",
+        "detail": "extractFunction takes the symbol name from `nameNode.text`. For `function Buffer:initialize(length)` that text is `Buffer:initialize`, so the symbol is named `Buffer:initialize` AND ownerName `Buffer` AND ownerKind Class. The name already contains the owner, and the owner is recorded again. The oracle's UNEXPLAINED set is dominated by exactly this shape: `contains Buffer -> Buffer:initialize` where the tree says the member's own name is `initialize` and its owner is `Buffer`.",
+        "whyItMatters": "M49 W2's ruling is that a member's identity is its container, not its bare name \u2014 and this satisfies neither: it is the FULL path as the name with the container duplicated alongside. A call edge targeting `initialize` can never be joined to a declaration named `Buffer:initialize`, so call-to-declaration resolution silently fails for every method in the language.",
+        "evidence": "validation/m60/results/lua-truth-oracle-luvit.json unexplainedSample \u2014 the buffer.lua rows are one instance; contains precision 0.8775 (luvit) and 0.9296 (kong)."
+      },
+      {
+        "id": "LUA-16",
+        "severity": "high",
+        "status": "PROVEN by oracle on two corpora",
+        "title": "The pipeline's AST-noise denylist deletes real Lua relationships \u2014 626 edges across 599 files",
+        "detail": "pool-worker.ts:341 defines NOISE_TARGETS to catch tree-sitter internals leaking as names, and line 418 drops ANY relationship whose target leaf is in that set \u2014 for every relationship type, not just calls. The set contains `type`, `text` and `parent`. `type` is a Lua BUILTIN; `text` is an extremely common identifier. So every `type(x)` call, every call to a function named `text`, and every `contains` edge for a variable named `type`/`text`/`parent` is deleted before the store sees it.",
+        "measured": "luvit 127 edges; kong 400-file draw 499 edges; targets hit: parent, text, type.",
+        "whyItIsNotALuaBug": "The denylist is doing what it was written to do \u2014 `type` IS a tree-sitter Node property. The defect is that the filter cannot tell a property name from a language identifier, and it applies to all languages. Fixing it means scoping the denylist (per-language, or excluding names the grammar defines), which is a shared-file decision."
+      },
+      {
+        "id": "LUA-18",
+        "severity": "medium",
+        "status": "PROVEN by oracle on two corpora",
+        "title": "`extends` is over-emitted at a consistent ~0.68 precision",
+        "detail": "luvit precision 0.7 (10 emitted, 7 structural), kong 0.6842 (76 emitted, 52 structural). Consistent across two unrelated codebases, so it is a rule disagreement rather than noise. The oracle admits an extends edge only for `setmetatable(tbl, Meta)` where the first argument is not a table_constructor and the second is an identifier; the analyzer adds the edge on the same shape, so the excess is in the cases where one side treats a non-identifier second argument as a metatable name. Not yet adjudicated \u2014 recorded as an open rule disagreement, deliberately not called a defect until the exact excess cases are enumerated."
+      }
+    ],
+    "not_yet_done": [
+      "script/m14/differential.ts is NOT edited. The lua case still has to be added there; that is a shared-file change and it should be its own small commit on a quiet tree.",
+      "No fix has been applied for LUA-14, LUA-15, LUA-16 or LUA-18. Each needs its own gate first (IDE Honesty Contract \u00a711.1 / F7), and LUA-14 and LUA-16 are shared-file changes that are the owner's call.",
+      "The oracle covers 6 labels. A label the analyzer starts emitting that the oracle does not model would show as unexplained on every file, which is the correct failure direction but has not been exercised deliberately."
+    ]
+  },
+  "wave6": {
+    "title": "Wave 6 \u2014 LUA-15 fixed: a member's identity is its container plus its own name, recorded once",
+    "gate": {
+      "file": "script/m60/verify-lua-member-identity.ts",
+      "wasRedFirst": true,
+      "before": "3/9 checks, FAIL \u2014 methods emitted as Buffer:initialize / Buffer.readUInt8 / M.new, each carrying ownerName as well",
+      "after": "10/10 checks PASS, 4/4 mutants caught",
+      "mutantDiscipline": "The first fourth mutant set a plain function's ownerName to 'global' and LEAKED. The honest reading is that the mutant was INVALID, not that the gate needed loosening: pool-worker maps `ownerName: s.ownerName || s.scope`, so a plain function's ownerName is already the string 'global' whether or not the analyzer set one \u2014 the mutant planted a state the pipeline produces on its own. The check was NOT weakened. A real assertion was added instead (a member is a Method, a plain function is a Function), which gives the regression a visible form. A gate loosened until a mutant passes is not a gate."
+    },
+    "fix": {
+      "what": "extractFunction now splits a declaration's name into NAME (the field) and OWNER (the receiver) instead of storing the full path as the name. The path is kept as qualifiedName, which is what qualifiedName is for.",
+      "grammar": "`function Buffer:initialize()` puts a method_index_expression in the name field with the RECEIVER first and the FIELD last, so name = last named child and owner = first named child. Taking the first yields the table, not the method.",
+      "threeReadings": "A declaration's name has three readings and conflating them is what produced both the original defect and two bugs in the first version of the lua truth oracle: LABEL (full text, the scope a body belongs to), NAME (the field, the identity), OWNER (the receiver)."
+    },
+    "MEASURED_DELTA": {
+      "method": "script/m60/lua-truth-oracle.ts, before vs after, same corpora, same draws",
+      "luvit_199_files": {
+        "contains_recall": "0.8598 -> 0.9817",
+        "contains_precision": "0.8775 -> 0.9852",
+        "contains_missing": "438 -> 57",
+        "contains_unexplained": "436 -> 47",
+        "total_missing": "593 -> 212 (analyzer 466 -> 85; pipeline noise filter 127 -> 127, unchanged as expected)",
+        "total_unexplained": "467 -> 76",
+        "lines": "6635/6635 -> 7016/7016, accuracy 1.000 both before and after"
+      },
+      "kong_400_files": {
+        "contains_recall": "0.9162 -> 0.9917",
+        "contains_precision": "0.9296 -> 0.9999",
+        "contains_missing": "939 -> 93",
+        "contains_unexplained": "848 -> 1",
+        "total_missing": "1567 -> 721 (analyzer 1068 -> 222; pipeline noise filter 499 -> 499)",
+        "total_unexplained": "872 -> 25",
+        "lines": "19015/19015 -> 19861/19861, accuracy 1.000 both before and after"
+      },
+      "reading": "LUA-15 was the largest single defect in the lane. On kong, `contains` unexplained fell from 848 to 1 \u2014 a 99.9% reduction \u2014 because the analyzer and the truth no longer disagree about what a member is called. What remains is NOT identity: 499 of kong's 721 remaining missing edges are the pipeline noise filter (LUA-16) and 215 are the discarded exports (LUA-14), neither of which the analyzer can fix. The analyzer-attributable missing count fell 1068 -> 222, an 79% reduction.",
+      "unchanged_on_purpose": [
+        "calls recall 0.9477 on kong, 0.9649 on luvit \u2014 untouched by this fix and still open",
+        "extends precision 0.6842 \u2014 LUA-18, a separate rule disagreement",
+        "exports recall 0.0000 \u2014 LUA-14, pipeline",
+        "the noise filter \u2014 LUA-16, pipeline"
+      ]
+    },
+    "still_open_after_this_fix": {
+      "analyzer_local": [
+        "LUA-02 coroutineUsage counts a flag nothing sets",
+        "LUA-04 framework detection matches bare names `setup`/`use`/`GetTime` on every identifier",
+        "LUA-10 the architectural score grants +5 for a pattern never added",
+        "LUA-11 performanceScore and memoryEfficiency are the literals 85 and 85",
+        "LUA-18 extends over-emits at ~0.68",
+        "calls recall ~0.95 \u2014 123 missing on luvit, 413 on kong, cause not yet enumerated"
+      ],
+      "pipeline_shared_file": [
+        "LUA-14 exports computed then discarded (all languages)",
+        "LUA-16 NOISE_TARGETS drops type/text/parent (all languages)"
+      ],
+      "suspected_needing_probes": [
+        "LUA-06 order-dependent constructor gating",
+        "LUA-07 bare-name local identity",
+        "LUA-08 anonymous function named after its parameters",
+        "LUA-09 extractExport handles only `return <identifier>`"
+      ]
+    }
+  },
+  "wave7": {
+    "title": "Wave 7 \u2014 the four published lies (LUA-02/04/10/11) fixed behind one gate",
+    "gate": {
+      "file": "script/m60/verify-lua-published-claims.ts",
+      "wasRedFirst": true,
+      "before": "5/10 FAIL",
+      "after": "11/11 PASS, 4/4 mutants"
+    },
+    "direct_probe_instrument": {
+      "file": "script/m60/lua-analyzer-direct.ts",
+      "why": "The analyzer's metadata block does not survive the worker boundary (LUA-03), so a gate reading these fields through parseFile sees every one of them MISSING and passes VACUOUSLY. A gate that cannot fail is not a gate, so this runs the real analyzer class and inspects its ParseResult before the mapper. Recorded so the next reader does not 'simplify' the gate into using parseFile and silently make it meaningless."
+    },
+    "regression_found_by_the_gate": {
+      "what": "The LUA-13 fix in wave 2 made a call's identity the callee FIELD, so every check comparing callName against a DOTTED library name stopped matching \u2014 including `callName === 'coroutine.create'`. The Coroutines pattern had been dead since wave 2, and `Object:extend` / `Object.extend` were dead for the same reason. Nothing failed: the pattern simply stopped being added, and no gate covered it.",
+      "fix": "IDENTITY is the field; a NAME MATCH is the qualified path. processCall now holds both (`callName` and `qualified = functionNode.text`) and uses each for what it is. This is the same conflation that produced LUA-00, LUA-13, LUA-15 and two oracle bugs \u2014 it is the dominant failure mode in this lane.",
+      "lesson": "A fix that makes a name narrower can silently disable a check that depended on the wider form. The gate that caught it was asserting the CONVERSE (a real coroutine file must report non-zero), not the absence of the bug."
+    },
+    "gate_evolution": [
+      "The LUA-11 check first asked only 'is a number present', which cannot tell a DERIVED figure from an invented one \u2014 and a derived figure is exactly what Truth Rule 1 asks for, so that check would have rejected the correct fix. Replaced with a VARIATION test: two structurally different files must not publish the same figure.",
+      "The gate briefly listed the new derived field relationshipDensity among the forbidden judgement names \u2014 a patch error, corrected. Recorded because a gate edited to match the implementation instead of the contract is the failure mode this whole lane keeps meeting."
+    ],
+    "no_regression": {
+      "gates": "verify-lua-grasped-fields PASS, verify-lua-edge-lines PASS, verify-lua-member-identity PASS",
+      "oracle": "luvit 199 files identical to the post-LUA-15 measurement: missing 212 (analyzer 85, noise filter 127), unexplained 76, lines 7016/7016 accuracy 1.000",
+      "tsc": "clean in every file this lane touches"
+    }
+  },
+  "wave8": {
+    "title": "Wave 8 \u2014 LUA-19 found and fixed; the oracle corrected twice; unexplained driven to zero on both corpora",
+    "LUA_19": {
+      "status": "PROVEN by the truth oracle, fixed behind a permanent gate",
+      "title": "A function nested inside another function was scoped to `global`, because `isLocal` tested for the `local` KEYWORD rather than lexical nesting",
+      "detail": "`local function spawn(...)` at luvit/deps/childprocess.lua:72 contains `local onExit` (L74) and then `function onExit(code, signal)` (L125). The second carries no `local` keyword, so the keyword test said 'not local' and the symbol was filed with scope `global` and a `contains global -> onExit` edge. A function declared without `local` inside another function is still lexically local to it.",
+      "measured": "47 unexplained `contains` edges on luvit, every one a nested function. After the fix, UNEXPLAINED is 0 on luvit AND on the 400-file kong draw.",
+      "whyItMattered": "`scope` is what a consumer reads to decide where a symbol belongs. A closure declared inside `spawn` does not belong to the file's global scope, so any consumer grouping by scope misfiled every nested function in the language.",
+      "whyItShowedUpOnlyInContains": "Calls INSIDE a nested function were already correct, because the walk sets childFrame.callable on the way in. Only the symbol's own scope and the edge naming it used the keyword test \u2014 which is why the differential reported 47 unexplained edges and ZERO unexplained calls, a signature that pointed at identity rather than at traversal.",
+      "gate": "script/m60/verify-lua-member-identity.ts \u2014 14/14 checks, 5/5 mutants, including a converse leg asserting a TOP-LEVEL function is still global, so the fix cannot be satisfied by scoping everything to its parent"
+    },
+    "ORACLE_CORRECTIONS_THIS_WAVE": [
+      {
+        "id": "ORA-1",
+        "defect": "The extends rule required the setmetatable's second argument to be a bare `identifier`.",
+        "correction": "Any non-table-constructor expression. `setmetatable(e, Emitter.meta)` is a real inheritance edge.",
+        "effect": "extends precision 0.7 -> 1.0 on luvit, 0.6842 -> 1.0 on kong"
+      },
+      {
+        "id": "ORA-2",
+        "defect": "The instantiates rule required the receiver to be bound to a `table_constructor`, and the table set was built DURING the walk that read it \u2014 so the oracle was order-dependent in the same way the analyzer is and could not see LUA-06, it shared it.",
+        "correction": "A pre-pass computes table-ness order-independently: a name is a table if it is bound to a table constructor OR is the receiver of a method declaration OR is the first argument of setmetatable/extend.",
+        "effect": "instantiates precision 0.2121 -> 1.0 on luvit; 26 'fabrications' were all genuine edges"
+      },
+      {
+        "id": "ORA-3",
+        "defect": "Recall numbers were reported without shape attribution, so 0.95 was not actionable.",
+        "correction": "Every missing and unexplained edge is reduced to a signature, and the report separates analyzer-attributable misses from the ones the pipeline structurally cannot deliver."
+      }
+    ],
+    "FINAL_STATE": {
+      "gates": {
+        "verify-lua-grasped-fields": "7/7, 3/3 mutants",
+        "verify-lua-edge-lines": "7/7, 5/5 mutants",
+        "verify-lua-member-identity": "14/14, 5/5 mutants",
+        "verify-lua-published-claims": "11/11, 4/4 mutants",
+        "lua-truth-oracle selftest": "3/3 legs"
+      },
+      "luvit_199_files": {
+        "unexplained": 0,
+        "lines": "7092/7092 exact, accuracy 1.000",
+        "calls": "recall 0.9649 precision 1.0 (118 of 123 misses are the pipeline noise filter)",
+        "contains": "recall 0.9968 precision 1.0",
+        "extends": "recall 1.0 precision 1.0",
+        "instantiates": "recall 1.0 precision 1.0",
+        "imports": "recall 0.9982 precision 1.0",
+        "exports": "recall 0.0 \u2014 LUA-14, pipeline"
+      },
+      "kong_400_files": {
+        "unexplained": 0,
+        "lines": "19886/19886 exact, accuracy 1.000",
+        "calls": "recall 0.9477 precision 1.0",
+        "contains": "recall 0.9918 precision 1.0",
+        "extends": "recall 1.0 precision 1.0",
+        "instantiates": "recall 1.0 precision 1.0",
+        "imports": "recall 1.0 precision 1.0",
+        "exports": "recall 0.0 \u2014 LUA-14, pipeline"
+      },
+      "reading": "NO relationship the analyzer emits is unsupported by the tree, on either corpus, for any label. What remains missing is not the analyzer's: 499 of kong's 720 missing edges are the pipeline noise filter (LUA-16) and 215 are the discarded exports (LUA-14). The analyzer-attributable residue is 5 calls, 1 contains and 0 imports on kong \u2014 6 edges in 400 files."
+    }
+  },
+  "wave9": {
+    "title": "Wave 9 \u2014 the four SUSPECTED findings adjudicated by measurement: 1 fixed, 1 proven, 2 retracted; plus LUA-20 found and fixed",
+    "discipline": "Every finding the ledger carried as SUSPECTED is now PROVEN or RETRACTED, in both directions. Two were retracted, and both retractions were of claims I had made from reading the source. A finding that cannot be killed by a measurement is not a finding.",
+    "adjudications": {
+      "LUA-06": {
+        "status": "PROVEN and FIXED",
+        "adjudication": "Reproduced with two files differing only in statement order. `local A = {} / function A.new() end / A.new()` emitted `instantiates global->A`; `A.new() / local A = {} / function A.new() end` emitted NOTHING. Same semantics, different graph \u2014 so the edge was a fact about the traversal, not about the program.",
+        "fix": "collectDeclaredTables runs as a PRE-PASS before the walk, so a constructor call no longer depends on where its table was declared. Both orders now emit the edge, each at its own call's line (L3 and L1 respectively).",
+        "gate": "covered by the lua truth oracle, whose `ctor` rule is also order-independent by construction"
+      },
+      "LUA-07": {
+        "status": "RETRACTED as stated",
+        "adjudication": "Measured directly: two locals both named `item`, one in f() and one in g(), produce DISTINCT symbols (`owner=f@L2`, `owner=g@L6`) and DISTINCT contains edges (`f->item@L2`, `g->g@L6`). The claim that same-named locals in different functions collapse into one identity is FALSE. The residual question \u2014 two same-named locals in the SAME function \u2014 was not measured and is not claimed."
+      },
+      "LUA-08": {
+        "status": "RETRACTED \u2014 not reachable",
+        "adjudication": "Measured: no symbol is ever named after a parameter list or a source snippet. `local anon = function(a,b) ... end` yields only the variable `anon`, and a nameless function as a table field yields only the table variable. The reason is structural: processNode's switch has no case for `function_definition`, so an anonymous function is never dispatched at all and the `|| namedChild(0)` name fallback in extractFunction is never reached for one. The fallback is a latent hazard, not a live defect."
+      },
+      "LUA-09": {
+        "status": "PROVEN, and the real defect is LUA-20",
+        "adjudication": "`return <identifier>` works (exports M). `return { a = 1 }` and `return require(...)` publish nothing, as suspected. BUT the probe surfaced something worse and unexpected: a file whose top-level closure contained `return x` published an export named `x` FROM INSIDE THE CLOSURE, with a byte range inside that file. That is not this finding \u2014 it is LUA-20, and it is fixed. The export-shape gap itself remains open and is now the smaller half of the finding."
+      }
+    },
+    "new_finding": "LUA-20 (above), found by the LUA-09 probe and fixed behind the same permanent gate.",
+    "instrument_caught_my_own_change": "verify-lua-grasped-fields FAILED after the LUA-20 fix, reporting `node type \"function_definition\" is never emitted by the grammar`. That was the instrument working: the new reference was real and the probe fixture simply had never contained an anonymous function, so the node-type leg could not see it. The probe was widened with both anonymous-function spellings (`local cb = function(z)` and a table field), and the leg is now meaningful. A gate that flags the author's own new code is a gate doing its job.",
+    "FINAL": {
+      "gates": {
+        "verify-lua-grasped-fields": "7/7, 3/3 mutants",
+        "verify-lua-edge-lines": "7/7, 5/5 mutants",
+        "verify-lua-member-identity": "17/17, 6/6 mutants",
+        "verify-lua-published-claims": "11/11, 4/4 mutants",
+        "lua-truth-oracle selftest": "3/3 legs"
+      },
+      "luvit_199": {
+        "unexplained": 1,
+        "lines": "7090/7090 exact, accuracy 1.000",
+        "calls": "0.9649 / 1.0",
+        "contains": "0.9962 / 0.9997",
+        "extends": "1.0 / 1.0",
+        "instantiates": "1.0 / 1.0",
+        "imports": "0.9982 / 1.0",
+        "exports": "0.0 (pipeline)"
+      },
+      "kong_400": {
+        "unexplained": 1,
+        "lines": "19881/19881 exact, accuracy 1.000",
+        "calls": "0.9477 / 1.0",
+        "contains": "see artifact",
+        "extends": "1.0 / 1.0",
+        "instantiates": "1.0 / 1.0",
+        "imports": "1.0 / 1.0",
+        "exports": "0.0 (pipeline)"
+      },
+      "residue": "ONE unexplained edge remains on each corpus, and ONE contains regression against the previous wave (unexplained 0 -> 1, contains missing 10 -> 12). Both were introduced by the LUA-06 pre-pass and are NOT yet explained. Recorded as open rather than smoothed over: an unexplained edge is a fact about the code and the next step is to look at it, not to re-run until it agrees."
+    }
+  },
+  "wave10": {
+    "title": "Wave 10 \u2014 the open regression from wave 9 resolved: LUA-21 found and fixed, and the oracle corrected AGAIN (it was wrong twice more)",
+    "howItStarted": "Wave 9 left one unexplained edge and a contains regression open rather than re-running until the numbers agreed. Both were looked at.",
+    "resolved": [
+      {
+        "edge": "contains adapt -> c @L99 (UNEXPLAINED)",
+        "adjudication": "The ANALYZER was wrong. `c = nil` sits inside a closure nested in `local function adapt(c, fn, ...)` and assigns adapt's PARAMETER. The analyzer's closure frame held only the closure's own parameters, so `c` was invisible and the assignment read as a declaration \u2014 emitting a containment edge for a name with no symbol. This is LUA-21, now fixed."
+      },
+      {
+        "edge": "contains _query -> srv (MISSING)",
+        "adjudication": "The ORACLE was wrong. The oracle did not bind an anonymous function's parameters in the enclosing scope, so `srv = server()` inside a closure looked like a declaration and a genuine skip was reported as missing."
+      }
+    ],
+    "ORACLE_CORRECTIONS": [
+      {
+        "id": "ORA-4",
+        "defect": "A name assigned in a NESTED function was treated as a declaration when it was an UPVALUE declared in an enclosing block. The oracle resolved names against the innermost scope only.",
+        "correction": "Names resolve up the whole SCOPE CHAIN, and a `do ... end` block does not open a scope (Lua has no block-scoped locals) \u2014 so `local paused` inside `do ... end` IS visible inside a method declared in that block.",
+        "evidence": "luvit/deps/codec.lua L40 declares `local paused = false` inside `do ... end`; L44 assigns it inside `function emitter:pause()`. That is an upvalue assignment, the analyzer skips it, and the analyzer is right.",
+        "effect": "contains missing 48 -> 26 on luvit, recall 0.9846 -> 0.9916, with UNEXPLAINED staying at 0"
+      },
+      {
+        "id": "ORA-5",
+        "defect": "An anonymous function's parameters were not bound in the enclosing scope.",
+        "correction": "Bound there, because a nameless closure has no scope of its own to bind them in and it can see the enclosing one."
+      }
+    ],
+    "the_pattern_one_more_time": "This is now the fourth time the truth oracle and the analyzer disagreed and the ORACLE was the one that was wrong (ORA-1, ORA-2, ORA-4, ORA-5). Each time, checking two lines of real source settled it in under a minute, and each time the disagreement had been recorded as an analyzer defect first. The standing rule this lane has earned: a differential disagreement is a QUESTION about which side is wrong, and it is answered by reading the source, never by recording an accusation.",
+    "FINAL": {
+      "gates": {
+        "verify-lua-grasped-fields": "7/7, 3/3 mutants",
+        "verify-lua-edge-lines": "7/7, 5/5 mutants",
+        "verify-lua-member-identity": "17/17, 6/6 mutants",
+        "verify-lua-published-claims": "11/11, 4/4 mutants",
+        "lua-truth-oracle selftest": "3/3 legs"
+      },
+      "luvit_199_files": {
+        "truth": 7233,
+        "observed": 7052,
+        "unexplained": 0,
+        "lines": "7052/7052 exact, accuracy 1.000",
+        "calls": "recall 0.9649 precision 1.0 (118 of 123 misses are the pipeline noise filter)",
+        "contains": "recall 0.9916 precision 1.0",
+        "extends": "1.0 / 1.0",
+        "instantiates": "1.0 / 1.0",
+        "imports": "0.9982 / 1.0",
+        "exports": "0.0 (LUA-14, pipeline)"
+      },
+      "kong_400_files": {
+        "truth": 20599,
+        "observed": 19863,
+        "unexplained": 0,
+        "lines": "19863/19863 exact, accuracy 1.000",
+        "calls": "recall 0.9477 precision 1.0",
+        "contains": "recall 0.9904 precision 1.0",
+        "extends": "1.0 / 1.0",
+        "instantiates": "1.0 / 1.0",
+        "imports": "1.0 / 1.0",
+        "exports": "0.0 (LUA-14, pipeline)"
+      },
+      "headline": "PRECISION IS 1.000 ON EVERY RELATIONSHIP LABEL, ON BOTH CORPORA. Not one relationship the analyzer emits is unsupported by the parse tree. Lines are exact on 26,915 edges across 599 files. What remains missing is not the analyzer's: of kong's 736 missing edges, 499 are the pipeline noise filter (LUA-16) and 215 are the discarded exports (LUA-14). The analyzer-attributable residue is 22 edges in 400 files \u2014 17 contains and 5 calls.",
+      "still_open": [
+        "LUA-14 exports discarded at the worker boundary \u2014 shared file, owner's call",
+        "LUA-16 NOISE_TARGETS drops type/text/parent \u2014 shared file, owner's call",
+        "22 analyzer-attributable missing edges on kong: 17 contains, 5 calls",
+        "LUA-09's export-shape gap: `return {}` and `return require(...)` publish nothing",
+        "script/m14/differential.ts still has no lua case \u2014 the shared file was mid-edit by a co-agent throughout"
+      ]
+    }
+  },
+  "wave11": {
+    "title": "Wave 11 \u2014 the last residue characterised, and the gate caught a repeat of the lane's own first defect",
+    "LUA_22": "Computed-index callees no longer publish their expression as a target. Found in the last analyzer-attributable residue and fixed; see the finding entry.",
+    "RESIDUE_FINAL": {
+      "kong_400": {
+        "truth": 20599,
+        "observed": 19843,
+        "unexplained": 0,
+        "lines": "19843/19843 exact, accuracy 1.000",
+        "perLabel": "calls 0.9452/1.0 \u00b7 contains 0.9904/1.0 \u00b7 extends 1.0/1.0 \u00b7 instantiates 1.0/1.0 \u00b7 imports 1.0/1.0 \u00b7 exports 0.0",
+        "missingTotal": 756,
+        "ofWhichPipeline": 714,
+        "ofWhichAnalyzer": 42,
+        "analyzerResidue": "215 of the 257 analyzer-attributable misses are EXPORTS \u2014 the pipeline's discarded array (LUA-14), which no analyzer change can affect. The true analyzer-attributable residue is 42 edges in 400 files, 0.20% of the truth set, and 25 of them are calls whose target the pool-worker's own punctuation/length rules reject."
+      },
+      "luvit_199": {
+        "truth": 7233,
+        "observed": 7048,
+        "unexplained": 0,
+        "lines": "7048/7048 exact, accuracy 1.000",
+        "missingTotal": 185,
+        "ofWhichPipeline": 158,
+        "ofWhichAnalyzer": 58
+      },
+      "headline": "PRECISION 1.000 ON EVERY LABEL, BOTH CORPORA, UNEXPLAINED 0. Lines exact on 27,891 edges across 599 files. Of kong's 756 missing edges, 714 are the pipeline's (499 noise filter + 215 discarded exports) and 42 are analyzer-attributable \u2014 and 215 of THOSE 42's 257 sibling exports are the same pipeline array. The analyzer emits nothing the tree does not support, anywhere."
+    },
+    "SHARED_PIPELINE_FINDINGS_WRITTEN_UP": {
+      "file": "validation/m60/lua/shared-pipeline-findings.json",
+      "findings": [
+        "LUA-14 exports computed then discarded \u2014 ALL languages",
+        "LUA-16 NOISE_TARGETS drops type/text/parent \u2014 ALL languages"
+      ],
+      "status": "AWAITING OWNER DECISION \u2014 deliberately not patched",
+      "why": "Both live in src/ast/pool-worker.ts, shared by every language lane and observed modified in the working tree by a co-agent throughout. Each entry carries a measured impact, a proposed fix, the blast radius, a falsifier, and \u2014 for LUA-16 \u2014 three options with a recommendation. LUA-16's verification is stated as an arithmetic check: after any fix the analyzer-miss count must RISE by exactly the number the noise filter was dropping, and if it does not, the edges were not restored."
+    },
+    "differential_ts_wiring": {
+      "status": "STILL DEFERRED",
+      "reason": "script/m14/differential.ts was observed modified in the working tree throughout this work and still carried 511 uncommitted insertions from a co-agent at the end. Adding a 15,000-line shared file's `lang === \"lua\"` case while another agent is mid-edit is how lines are lost. The standalone oracle is the measurement; the wiring is one small commit on a quiet tree."
+    }
+  },
+  "wave12": {
+    "title": "Wave 12 \u2014 the committed fixture lane, and the defect it found on its first run",
+    "FIXTURE_LANE": {
+      "where": "validation/m14/fixtures/lua/ \u2014 5 fixtures, each with an .expectation.json",
+      "why": "The lane's first four gates read and wrote their fixtures from /home/ishaq2321/bb_tests/probe, a machine-local directory that is NOT in the repository. A gate whose fixtures are untracked is not durable evidence, and it is exactly what M14.0.F3's 'committed-fixture fail=0' and #899 ('untracked failures excluded') exist to prevent. If that directory had vanished, three of four gates would have broken.",
+      "fixtures": [
+        {
+          "name": "member-identity",
+          "gates": "LUA-15",
+          "checks": 12,
+          "comment": "a method's name is the field, its owner the receiver, recorded once; the path-as-name is forbidden"
+        },
+        {
+          "name": "edge-lines",
+          "gates": "LUA-01 / LUA-13 / LUA-22",
+          "checks": 9,
+          "comment": "the multi-line call is the falsifier for any whole-line implementation, and a computed index must publish no target"
+        },
+        {
+          "name": "closure-scope",
+          "gates": "LUA-19 / LUA-20 / LUA-21",
+          "checks": 12,
+          "comment": "nested function scoped to its parent, closure establishes a scope, upvalue is not a declaration"
+        },
+        {
+          "name": "order-independent-ctor",
+          "gates": "LUA-06",
+          "checks": 6,
+          "comment": "BOTH declaration orders in one file; each must produce the edge at its own call's line"
+        },
+        {
+          "name": "local-declarations",
+          "gates": "LUA-00 / LUA-23",
+          "checks": 14,
+          "comment": "the plainest declarations in the language, in every shape the grammar produces"
+        }
+      ],
+      "runner": "script/m60/verify-lua-fixtures.ts \u2014 PASS, 5 fixtures, 53 checks, 0 failures",
+      "whyNotTheFamilyRunner": "script/m14/run-fixtures.ts is the right home and has no `lua` entry in its LANGS table, so a committed fixture directory alone would NOT register the lane \u2014 the one line that would is a shared-file edit, and that file was under active co-agent edit throughout. The interim runner enforces the SAME expect/forbid contract against the SAME committed files, so the evidence is real before the wiring lands.",
+      "exportsContract": "Exports are not relationships, so the family shape has no bucket for them. LUA-20's regression was exactly a closure's return becoming a file export, so the runner adds expectExports/forbidExports.",
+      "measurementDiscipline": "Every line number in every expectation is MEASURED from the committed file. The first draft of member-identity carried 14/18/22/26 against a real 18/22/26/30, and the first pass at local-declarations matched the HEADER COMMENT \u2014 which quotes the very declarations it measures. Both are the same unmeasured-assertion error this lane has made repeatedly, and both are recorded at the point of the mistake."
+    },
+    "LUA_23": "See the finding entry. Found by the fixture lane on its first run, in the fixture written to pin LUA-00's observable consequence.",
+    "ORA_6": {
+      "status": "the oracle was wrong AGAIN \u2014 the sixth time",
+      "defect": "The oracle handled only the assignment_statement shape of a variable_declaration, so a bare `local x` was invisible to it TWICE: no declaration edge, and never registered as a scope-local \u2014 which made a LATER `x = something` read as a fresh declaration. The analyzer skips that assignment because `x` is already declared, and the analyzer is right.",
+      "symptom": "After the LUA-23 fix the differential reported 30 unexplained edges and line accuracy 0.940 against code that was correct. Isolating the change (stash the analyzer, re-run) proved the fix was not the regression \u2014 the oracle was.",
+      "correction": "The oracle distinguishes both shapes, exactly as the analyzer does, and registers a bare local in the scope chain.",
+      "the_pattern": "ORA-1, ORA-2, ORA-4, ORA-5, ORA-6. Five of six differential disagreements in this lane have been the ORACLE being wrong, because the oracle is the thing written to fit a hypothesis while the analyzer is the thing reading a grammar. The rule stands: a disagreement is a question about which side is wrong, and the answer is a fact about the source."
+    },
+    "STATE": {
+      "gates": {
+        "verify-lua-fixtures": "PASS 5 fixtures / 53 checks",
+        "verify-lua-grasped-fields": "7/7, 3/3 mutants",
+        "verify-lua-edge-lines": "7/7, 5/5 mutants",
+        "verify-lua-member-identity": "17/17, 6/6 mutants",
+        "verify-lua-published-claims": "11/11, 4/4 mutants",
+        "lua-truth-oracle selftest": "3/3 legs"
+      },
+      "luvit_199": {
+        "truth": 7235,
+        "observed": 7025,
+        "unexplained": 0,
+        "lines": "7025/7025 exact, accuracy 1.000",
+        "contains": "0.9836 / 1.0",
+        "calls": "0.9638 / 1.0",
+        "extends": "1.0/1.0",
+        "instantiates": "1.0/1.0",
+        "imports": "0.9982/1.0",
+        "exports": "0.0 (pipeline)"
+      },
+      "kong_400": {
+        "truth": 20629,
+        "observed": 19835,
+        "unexplained": 0,
+        "lines": "19835/19835 exact, accuracy 1.000",
+        "contains": "0.9870 / 1.0",
+        "calls": "0.9452 / 1.0",
+        "extends": "1.0/1.0",
+        "instantiates": "1.0/1.0",
+        "imports": "1.0/1.0",
+        "exports": "0.0 (pipeline)"
+      },
+      "note": "`contains` recall reads slightly lower than the previous wave (luvit 0.9916 -> 0.9836, kong 0.9904 -> 0.9870) and that is the CORRECT direction: the truth side grew by handling the bare-`local` shape, so there are more truth edges to cover, and unexplained stayed at 0. A recall number that falls because the measurement got stricter is not a regression, and the artifact records both sides so the distinction is checkable."
+    }
+  },
+  "wave13": {
+    "title": "Wave 13 \u2014 reviews/lua closure record, and two matrix cells moved with NO shared-code change",
+    "THE_MOSTLY_UNEXPLAINED_MOVEMENT": {
+      "what": "Committing validation/m14/fixtures/lua/ made lua discoverable to instruments that enumerate lanes by DIRECTORY NAME. script/m60/payload-matrix.ts's onboardedLanguages() is `readdirSync(validation/m14/fixtures)` \u2014 nothing more. So the fixtures flipped two cells without a line of shared code being touched.",
+      "lines_n_a_to_pass": "payload-matrix.ts measures, per language, whether each declared emit field is actually alive. lua was ABSENT from P1.json entirely (832 cells, 28 languages), which is why the cell read n/a. With the fixture directory present the matrix enumerates 29 languages and 928 cells, and `line_number` is alive for lua. The other two languages where it is not alive are erlang, haskell and sql.",
+      "toolchain": "payload-matrix.ts and verify-family-closure-truth.ts are guarded by `if (import.meta.main) main()` \u2014 a BUN idiom \u2014 so under `npx tsx` they silently do nothing and exit 0. That is why the first run produced no output and no change. Bun 1.4.2 is present at ~/.local/bin/bun but is not on a non-login shell's PATH, which is why an earlier availability check reported it missing. Most of this repository's gates are `bun run` and could not be executed on this machine until that was found.",
+      "grammar_fail_to_pass": "lang-completion-matrix re-derives the M14.0.F1 grammar audit. lua's status went fail -> pass with unknownFields 5 -> 0, which is LUA-00 measured by the same audit that first reported it."
+    },
+    "OTHER_LANES_MOVED_BY_THE_SHARED_RE_MEASURE": {
+      "disclosure": "Re-running the shared gates moved cells for lanes this lane does not own. Recorded rather than left for someone to find, because a cell moving is a claim about another language's state.",
+      "clean_lines_fail_to_pass": "NOT caused by this lane. real-clean-analyzer.ts emits line_number and was fixed by dea47387 ('feat(clean): every edge names its site line') on 2026-09-25, while the committed P1.json predates or missed it. The re-measure corrected STALE evidence \u2014 the same pattern this lane found in M14.0.F1 at the start of the work.",
+      "r_grammar_fail_to_pass": "The co-agent's own fix, landing in the same re-measure.",
+      "hcl_folder_n_a_to_fail": "The co-agent created reviews/hcl/, and the cell moved n/a -> fail because folderClosed() requires a RESOLVED/RESOLUTION/CLOSED marker in the folder's files. NOT a regression in their work \u2014 a closure record that does not yet claim a resolution. Flagged so it is not mistaken for one.",
+      "sql_lines_n_a_to_fail": "sql's M59.A7 handoff is open; the cell now says so rather than reading n/a."
+    },
+    "CLOSURE_RECORD": {
+      "file": "reviews/lua/m60-closure.md",
+      "markerSatisfied": "CLOSURE_MARKER is /\\b(?:RESOLVED|RESOLUTION|CLOSED)\\b/ and the record contains all three, so the `folder` cell reads pass.",
+      "statesThatTheLaneDoesNotTick": "Six of nine cells green; diff/fixtures/depth n/a and tracker red. Written in the shape of reviews/groovy/m60-closure.md, which likewise records a lane that does not tick. A marker claiming a tick with two open issues and three unmeasured cells would be a claim the tracker itself contradicts."
+    }
+  },
+  "wave14": {
+    "title": "Wave 14 \u2014 the corpus cell was a VACUOUS pass; the grammar was never unattributable; `fresh` is a family device",
+    "THE_VACUOUS_CORPUS_PASS": {
+      "finding": "The M60 `corpus` cell read `pass` for lua on a comparison against nothing. script/m12/verify-corpus-claims.ts takes the manifest's claim for one side and `validation/m12/results/<lang>-corpus-errors.json` for the other \u2014 and script/m12/lua-corpus-errors.ts WROTE NO FILE AT ALL. It printed to stdout and set an exit code. So the artifact side was structurally null and the gate recorded `agreement: true` with `artifactSymbols: null`.",
+      "howItRead": "`agreement: true`, `manifest: 0`, `artifact: 0`, `volume.artifactSymbols: null`, `volume.source: null` \u2014 every field of the comparison that could have failed was empty. The committed lua-corpus-errors.json was an ORPHAN: nothing in script/ wrote it and nothing in script/ read it.",
+      "fix": "lua-corpus-errors.ts now writes the artifact, counting symbols and relationships as it sweeps, and records the corpus DERIVED from the path plus its revision and the repository's currentCommit. Its default argument also pointed at the vanished luarocks directory, so running it with no argument failed on a path that no longer existed; the default is now the manifest's control corpus.",
+      "consequence": "With the artifact real, the SAME gate immediately hard-failed lua (H5: manifest claims corpusSymbols=6746 but the artifact measures 3724) \u2014 which is the behaviour a claim-checker exists for. The vacuous pass became a real check, and it exposed a genuinely stale manifest.",
+      "whyThisMatters": "A gate that reports agreement without comparing anything is worse than a gate that fails, because it is counted as evidence. This is the same class as the `performanceScore: 85` finding, one level up: a published claim shaped like a measurement with nothing behind it."
+    },
+    "LUA_G2_PROVENANCE_CORRECTION": {
+      "status": "RETRACTED \u2014 the wired grammar was never unattributable, and I declared it unattributable",
+      "whatIClaimed": "The wired tree-sitter-lua.wasm matches no known build: its sha256 differs from @tree-sitter-grammars/tree-sitter-lua@0.4.1 AND from tree-sitter-wasms@0.1.13, so it is an unidentified binary and a blocker for the pin contract.",
+      "whatWasAlreadyRecorded": "validation/m12/corpus-manifest.json's lua entry has said, since 2026-08-20: 'grammar upgraded to @tree-sitter-grammars/tree-sitter-lua 0.4.1 (WASM rebuilt from published source)'. It is a documented LOCAL REBUILD of the published 0.4.1 source.",
+      "whyEveryMeasurementITookIsConsistentWithThat": "sha256 differs from the tarball BECAUSE it was rebuilt rather than copied. Declared identity is IDENTICAL to 0.4.1 (name=lua, abiVersion=15, 22 fields, 262 states). Surface digests are identical. Per-file trees are identical on 1,510 of 1,510 files. The same entry records the old grammar at 136/162 error files against 0/162 after \u2014 which is precisely the ABI-13 to ABI-15 transition the lane measured independently as the removal of the `function` and `key` fields (LUA-00).",
+      "theError": "I compared the wired bytes against two npm REGISTRIES and concluded the bytes were unattributable. The provenance was recorded in the repository the whole time, in the lane's own manifest. I did not search it. The pin contract already has the kind for this \u2014 `local-rebuild-from-vendored-source` \u2014 and fsharp already uses it.",
+      "CONSEQUENCE_THE_SWAP_IS_UNNECESSARY_AND_WOULD_BE_HARMFUL": "The wave-4 recommendation was to swap wasm/tree-sitter-lua.wasm for the 0.4.1 tarball. Swapping a documented local REBUILD for the published TARBALL changes nothing semantically \u2014 the trees are identical on 1,510 of 1,510 files \u2014 and would DISCARD the rebuild provenance the manifest records, replacing a declared fact with a different declared fact. The correct action is not a swap; it is to register lua in the pin contract with `kind: local-rebuild-from-vendored-source`, base `@tree-sitter-grammars/tree-sitter-lua@0.4.1`, patches: none, which is a registration and not a replacement.",
+      "lesson": "A provenance question is a question about the REPOSITORY FIRST and about the registries second. The registry sweep was real work and it did establish that the bytes are a rebuild rather than a copy \u2014 but it answered a question nobody had asked, because the answer was already written down."
+    },
+    "MANIFEST_REPIN": {
+      "what": "validation/m12/corpus-manifest.json's lua entry moved from luarocks@665f160b (a directory that no longer exists) to luvit@a63febc with kong@94b6c29 as the depth corpus, with corpusSymbols 6,746 -> 3,724 and corpusRelationships 12,032 -> 7,025 so the manifest states exactly what the instrument MEASURES.",
+      "result": "lua now has ZERO hard failures in the corpus-claims gate, and its H5 mismatches are gone. The gate's own summary of unregistered pins names 62 candidate repos not cloned on this box, and `make:luarocks` is among them \u2014 the vanished corpus is referenced by make's entry too, which is out of this lane's scope and recorded rather than touched.",
+      "scopeNote": "Only the lua entry was edited. The file holds 41 lanes."
+    },
+    "WHY_FRESH_CANNOT_MOVE_FROM_THIS_LANE": {
+      "finding": "The `fresh` cell reads validation/m12/results/m12-freshness-at-head.json -> freshPinned[]. THAT FILE DOES NOT EXIST. FRESH is null, freshPinned is empty, and every lane's cell is therefore `disclosed` \u2014 this is not a lua gap.",
+      "theNoteInTheMatrixAgrees": "M60.R8/R10 record the fix as 'a freshness pin every lane's census/register pair needs (family sweep)'.",
+      "whyNotJustWriteIt": "The artifact would have to carry a freshness verdict for all 41 lanes. Writing it from this lane would mean publishing verdicts about 40 languages this lane has not measured, which is exactly the fabrication the M60 contract forbids. Declared as a family deliverable and left there."
+    }
+  },
+  "wave15": {
+    "title": "Wave 15 \u2014 the grammar SOURCE vendored, and a near-miss caught by the check the pin contract exists to perform",
+    "VENDORED": {
+      "where": "grammars/tree-sitter-lua/ \u2014 10 files, grammar.js + src/ (scanner.c, grammar.json, node-types.json, tree_sitter/ alloc.h, array.h, parser.h) + package.json + README.md + LICENSE.md, from the @tree-sitter-grammars/tree-sitter-lua@0.4.1 tarball",
+      "parserCExcluded": "Yes, and deliberately: `tree-sitter generate` rebuilds it from grammar.js, and the pin contract's source-to-wasm check runs on the generated JSONs. Same reason as haskell's and elixir's.",
+      "reconciliation": "Every node type the WIRED wasm emits is declared by the vendored source \u2014 zero unaccounted. The 5 declared-but-unobserved types are supertypes/aliases the 1,510-file corpus does not exercise.",
+      "sha256s": {
+        "grammar.js": "33ff71b891a9de3e",
+        "LICENSE.md": "9a32b02e4c917b1c",
+        "package.json": "6ebfdb46ed8c3a0d",
+        "README.md": "f581b680a5846527",
+        "src/grammar.json": "3560bbacef7fcfc2",
+        "src/node-types.json": "be4ebbb4a86d4437",
+        "src/scanner.c": "35bbd630b5a7421d",
+        "src/tree_sitter/alloc.h": "b29c1c9fb7cc82f5",
+        "src/tree_sitter/array.h": "5bdf6ed1a78e3409",
+        "src/tree_sitter/parser.h": "180b893c8734778f"
+      }
+    },
+    "THE_NEAR_MISS": {
+      "what": "The first vendoring pass copied from a working directory into which TWO npm tarballs had been unpacked under the same `package/` prefix, so it vendored tree-sitter-lua@2.1.3 \u2014 a DIFFERENT grammar with a different vocabulary (prefix_expression, function_definition_statement, local_variable_declaration) \u2014 instead of @tree-sitter-grammars@0.4.1.",
+      "howItWasCaught": "By checking the vendored source's node-types.json against what the wired wasm actually emits. 21 of the wired grammar's types were unaccounted for by the vendored source, which is impossible for a correct vendoring. The corrected vendoring accounts for every one.",
+      "whyItMatters": "This is the check the pin contract's source-to-wasm leg exists to perform, run by hand BEFORE registering \u2014 which is far cheaper than registering the wrong grammar and having the gate fail later, or worse, pass on a mismatched pair. It is also the second contamination-class error in this lane's instruments (the first was unpacking tarballs over an existing tree); both were caught by a check that compared an artifact against its declared source rather than against itself.",
+      "notAffected": "The wave-4 wasm findings are unaffected. npm-0.4.1.wasm was copied out BEFORE the second tarball was unpacked, and the tree-sitter-wasms wasm was extracted to package/out/ which the other tarball does not use. Every sha256, A/B and surface digest in waves 2 and 4 was taken from the correct files."
+    },
+    "REGISTRATION": {
+      "status": "PREPARED, NOT PASTED",
+      "file": "script/m14/lua-lane-registration.ts",
+      "kind": "local-rebuild-from-vendored-source (the kind fsharp already uses)",
+      "whyNotPasted": "script/m14/verify-grammar-pins.ts was under active co-agent edit for the whole lane (+538 uncommitted lines at the last check) and it is the family's pin CONTRACT. The entry is written out in full with its measurements, alternatives and evidence list, so the paste is mechanical when the file is quiet.",
+      "alternativesRecorded": [
+        {
+          "option": "replace the rebuild with the 0.4.1 npm tarball wasm",
+          "verdict": "REJECTED \u2014 byte-different, semantically identical (declared identity, type-set digest, field-set digest all equal; per-file trees identical 1,510/1,510). A swap with no measurable gain and a provenance loss is not an improvement. Recorded as a measured alternative rather than omitted, because 'we looked and it changes nothing' is a result."
+        },
+        {
+          "option": "upstream 0.5.0",
+          "verdict": "NOT MEASURED, NOT RULED OUT \u2014 blocked on a toolchain, not on judgement. No cargo/rustc/emcc on this machine. Its node-types adds implicit_variable_declaration relative to 0.4.1, so it is a real candidate and the one alternative that could still improve the lane."
+        }
+      ],
+      "noChangeToWasm": "wasm/tree-sitter-lua.wasm is untouched. The earlier swap recommendation is retracted."
+    }
+  }
+}

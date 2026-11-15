@@ -1,0 +1,7 @@
+[
+ {"label":"symbols.default","args":{"query":"applyDiscount"}},
+ {"label":"content.default","args":{"mode":"content","query":"applyDiscount"}},
+ {"label":"symbol.default","args":{"mode":"symbol","symbolName":"applyDiscount"}},
+ {"label":"file.default","args":{"mode":"file","filePath":"ts-js/src/checkout.ts"}},
+ {"label":"regex.option","args":{"query":"^apply.*","regex":true}}
+]

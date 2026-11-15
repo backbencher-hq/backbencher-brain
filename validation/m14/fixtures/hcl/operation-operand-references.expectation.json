@@ -1,0 +1,303 @@
+{
+  "fixtureId": "hcl/operation-operand-references",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Every line_number below was TRANSCRIBED from a measured run through ASTEngine.getParser + RealHclAnalyzer.analyze (the same entry run-fixtures.ts uses) and then checked line by line against the fixture source. What makes them constraints rather than a snapshot is the forbid set: each entry is an independently-argued position the HCL grammar permits writing, so the fixture fails if the analyzer's line moves to any of them.",
+  "rationale": "H1 (reviews/hcl/master-review.md). The grammar wraps arithmetic and comparison operands in `expression -> operation -> binary_operation`, whose children are the SAME variable_expr + get_attr sibling run an `expression` carries. The pre-fix path reader was gated on `node.type === \"expression\"`, so every reference inside an operation was dropped: `is_restored = var.db_snapshot_identifier != null` published nothing. Measured over 9,079 corpus files: 758 attributes with an operation-rooted expression, 1,670 missed references overall, recall 0.942414. The fix reads maximal CONSECUTIVE runs of path tokens from any node over ALL children, which is also what keeps `var.a + var.b` from welding into `var.a.var.b` \u2014 a defect the first version of the fix introduced and this fixture caught. HONESTY TIERS: every relationship carries metadata.evidenceClass on the M14 taxonomy \u2014 `structural` (containment and the public surface, read straight off the tree), `reference_qualified` (a fully-qualified Terraform address, never a bare-name guess), and `import_based` (a module's `source =`). HCL emits NO `usage_contextual` or `inferred` edge at all: every fact is read off the AST at confidence 1.0, so those tiers do not apply and their absence is the honest record rather than an omission. The module's `source` is published twice on purpose \u2014 as an ImportInfo the indexer persists as a dependency row, and as an `imports` edge the graph draws \u2014 which is the same pairing C uses for its include edges.",
+  "expectSymbols": [
+    {
+      "name": "operation-operand-references",
+      "kind": "module"
+    },
+    {
+      "name": "aws_instance.web",
+      "kind": "class"
+    },
+    {
+      "name": "db_snapshot_identifier",
+      "kind": "variable"
+    },
+    {
+      "name": "aws_subnet.default",
+      "kind": "class"
+    },
+    {
+      "name": "aws_vpc.main",
+      "kind": "class"
+    },
+    {
+      "name": "networking",
+      "kind": "module"
+    },
+    {
+      "name": "locals",
+      "kind": "module"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "operation-operand-references",
+      "startLine": 1,
+      "startColumn": 1
+    },
+    {
+      "symbol": "aws_instance.web",
+      "startLine": 1,
+      "startColumn": 1
+    },
+    {
+      "symbol": "networking",
+      "startLine": 89,
+      "startColumn": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.db_snapshot_identifier",
+      "line_number": 9
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.db_max_open_connections",
+      "line_number": 10
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.extra_users",
+      "line_number": 11
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.enabled",
+      "line_number": 12
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.prefix",
+      "line_number": 14
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.a",
+      "line_number": 15
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.b",
+      "line_number": 15
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.common_tags",
+      "line_number": 17
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.project",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.environment",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "data.aws_subnet.default",
+      "line_number": 21
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "local.allowed",
+      "line_number": 21
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "aws_s3_bucket.logs",
+      "line_number": 23
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "module.networking",
+      "line_number": 23
+    },
+    {
+      "type": "references",
+      "from": "aws_subnet.default.filter",
+      "target": "data.aws_vpc.main.id",
+      "line_number": 77
+    },
+    {
+      "type": "references",
+      "from": "networking",
+      "target": "data.aws_vpc.main.id",
+      "line_number": 91
+    },
+    {
+      "type": "contains",
+      "from": "operation-operand-references",
+      "target": "aws_instance.web",
+      "line_number": 1
+    },
+    {
+      "type": "contains",
+      "from": "aws_instance.web",
+      "target": "aws_instance.web.sum",
+      "line_number": 15
+    },
+    {
+      "type": "imports",
+      "from": "networking",
+      "target": "terraform-aws-modules/vpc/aws",
+      "line_number": 90,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "exports",
+      "from": "operation-operand-references",
+      "target": "aws_instance.web",
+      "line_number": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "operation-operand-references",
+      "target": "networking",
+      "line_number": 89,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "data.aws_subnet.default",
+      "line_number": 21,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "contains",
+      "from": "operation-operand-references",
+      "target": "locals",
+      "line_number": 70,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.a.var.b",
+      "note": "pre-fix shape of the FIRST fix attempt: the run was read over NAMED children, which skips the `+`, welding both operands into one path. var.a and var.b are two references."
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.db_snapshot_identifier",
+      "line_number": 1,
+      "note": "pre-fix shape: the enclosing block's start line instead of the line the name is written on (the name is on 9)."
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.project",
+      "line_number": 17,
+      "note": "the `tags = merge(` line; `var.project` is written inside the interpolation on 18."
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "s.id",
+      "note": "for-expression loop variable, not a project symbol"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "string",
+      "note": "`type = string` is a type-constraint keyword; a bare single-identifier path is never a reference"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "map",
+      "note": "`type = map(string)` \u2014 the function name is not a project symbol"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "merge",
+      "note": "function name, not a project symbol"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "networking",
+      "path": "terraform-aws-modules/vpc/aws"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "var.a.var.b"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "operation-operand-references",
+      "kind": "module"
+    },
+    {
+      "name": "aws_instance.web",
+      "kind": "class"
+    },
+    {
+      "name": "db_snapshot_identifier",
+      "kind": "variable"
+    },
+    {
+      "name": "common_tags",
+      "kind": "variable"
+    },
+    {
+      "name": "locals",
+      "kind": "module"
+    },
+    {
+      "name": "networking",
+      "kind": "module"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "aws_instance.web",
+      "min": 200,
+      "note": "the fixture's largest declaration: 215 nodes in its own subtree, nested blocks included"
+    },
+    {
+      "symbol": "subnet_ids",
+      "min": 30
+    },
+    {
+      "symbol": "tags",
+      "min": 40,
+      "note": "a merge() call carrying a nested object with two interpolations"
+    }
+  ],
+  "evidenceTiers": [
+    {
+      "note": "three distinct honesty tiers are pinned below on expectRelationships meta.evidenceClass, which is what completeness section D reads"
+    }
+  ]
+}

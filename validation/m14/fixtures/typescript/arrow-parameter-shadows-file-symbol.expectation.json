@@ -1,0 +1,150 @@
+{
+  "fixtureId": "typescript/arrow-parameter-shadows-file-symbol",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that an ARROW FUNCTION's or FUNCTION EXPRESSION's parameters shadow a same-named file-level symbol, and that the shadowing is scoped to the arrow's own extent. This is the third form of one defect. R12 covered a named function's parameters, via the symbol's own parameter list; R13 covered a loop variable and a catch binding; an arrow fell through both for a structural reason — an arrow is not a named declaration, so the reference pass never rebinds its current symbol on it and the enclosing function stays current, whose parameter list is a DIFFERENT one. So `function f(bbEntry: string) { return (root) => root() }` published `f->root` against a module-level `function root()`: the arrow binds `root`, and the shadow set was built from `f`'s parameters, which are `bbEntry`. Measured before the fix: 227 false `references` over 1000 tracked files in 66 of them, the largest of the three shadowing defects, led by the names that collide most (`root`, `env`, `c`, `e`, `name`, `file`, `kind`). The bindings go into the reference-only set rather than `locals`, because `locals` also gates the `uses` edge and a use of an arrow's parameter is a real use — the over-suppression R12 made once and R13 measured at 891 lost `uses` edges. The function-type case pins the other direction of the same distinction: the parameter names a TYPE spells in its signature (`Pair`'s `a` and `b`) are bindings, not mentions, and must produce no edge at all.",
+  "expectSymbols": [
+    {
+      "name": "root",
+      "kind": "function"
+    },
+    {
+      "name": "env",
+      "kind": "function"
+    },
+    {
+      "name": "file",
+      "kind": "function"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "Pair",
+      "kind": "type"
+    },
+    {
+      "name": "arrowShadowsFn",
+      "kind": "function"
+    },
+    {
+      "name": "fnExprShadowsFn",
+      "kind": "function"
+    },
+    {
+      "name": "enclosingHasOtherParams",
+      "kind": "function"
+    },
+    {
+      "name": "arrowTypedParam",
+      "kind": "function"
+    },
+    {
+      "name": "arrowNoShadow",
+      "kind": "function"
+    },
+    {
+      "name": "shadowDoesNotLeak",
+      "kind": "function"
+    },
+    {
+      "name": "callsHelper",
+      "kind": "function"
+    },
+    {
+      "name": "nestedNamed",
+      "kind": "function"
+    },
+    {
+      "name": "nestedNamedParam",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "arrowNoShadow",
+      "target": "root",
+      "note": "TRUE POSITIVE, and the pin that stops the fix from being a blanket suppression of arrows. This arrow binds nothing, so the read genuinely reaches the module-level `root`. The fix shadows the names an arrow BINDS, and no others."
+    },
+    {
+      "type": "references",
+      "from": "shadowDoesNotLeak",
+      "target": "file",
+      "note": "THE SCOPING PIN. The arrow above binds `file`, but that binding is scoped to the arrow's own extent; a read of `file()` in the ENCLOSING function after it still resolves to the module declaration. A fix that added the arrow's bindings to the enclosing set would delete this edge. This is also why the bindings cannot simply go into `locals`, which is accumulated and never popped."
+    },
+    {
+      "type": "references",
+      "from": "callsHelper",
+      "target": "helper",
+      "note": "TRUE POSITIVE: a plain call to a module function."
+    },
+    {
+      "type": "references",
+      "from": "nestedNamedParam",
+      "target": "root",
+      "note": "TRUE POSITIVE: the call `nestedNamed(root())` really does reference the module function. The nested NAMED function's own `root` parameter already shadowed correctly, because a named function rebinds the current symbol — which is exactly the structural difference from the arrow, and the reason the two paths are pinned separately. The corresponding shadow is pinned as a forbid below, against the NESTED function as source."
+    },
+    {
+      "type": "references",
+      "from": "nestedNamedParam",
+      "target": "nestedNamed",
+      "note": "A nested named declaration referenced from the enclosing function."
+    },
+    {
+      "type": "references",
+      "from": "pair",
+      "target": "Pair",
+      "note": "The annotation on the module const, which is a mention the const makes."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "arrowShadowsFn",
+      "target": "root",
+      "note": "THE PIN. `root` here is the arrow's own parameter. Pre-fix this edge existed because a module-level `function root()` is declared in the file and name-based resolution published it. Same for `fnExprShadowsFn->env` below."
+    },
+    {
+      "type": "references",
+      "from": "fnExprShadowsFn",
+      "target": "env",
+      "note": "A function EXPRESSION is a separate node type from an arrow and needs its own case."
+    },
+    {
+      "type": "references",
+      "from": "enclosingHasOtherParams",
+      "target": "root",
+      "note": "The shape that made the defect structural rather than incidental: the enclosing function HAS parameters, and they are the wrong ones (`bbEntry`), so the shadow set was well-formed and simply did not contain the name the arrow binds."
+    },
+    {
+      "type": "references",
+      "from": "arrowTypedParam",
+      "target": "root",
+      "note": "An arrow parameter with a type annotation — the annotation does not change the binding."
+    },
+    {
+      "type": "references",
+      "from": "arrowTypedParam",
+      "target": "env"
+    },
+    {
+      "type": "references",
+      "from": "nestedNamed",
+      "target": "root",
+      "note": "Already correct before this fix, and pinned so the arrow fix cannot regress the named-function path: the source is the NESTED function `nestedNamed`, whose own `root` parameter shadows its body. Note the source is deliberately the nested function and not the enclosing one — the enclosing function's `nestedNamedParam->root` is a GENUINE edge and is pinned as an expectation above, because it is the call `nestedNamed(root())`."
+    },
+    {
+      "type": "references",
+      "from": "pair",
+      "target": "a",
+      "note": "A function TYPE's signature parameters are bindings the type spells, not mentions of anything. `Pair` writes `a` and `b` in its parameter list; neither resolves to a declaration in this file and neither may produce an edge."
+    },
+    {
+      "type": "references",
+      "from": "pair",
+      "target": "b"
+    }
+  ]
+}

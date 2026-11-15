@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld12-external-targets.sql",
+  "authoredFrom": "M60 SQL wave, 2026-09-27. The shapes are read off real ProxiCall files: `GRANT ... ON SCHEMA public` in database/verify_m95_2988_conversation_core.sql and three siblings produced `references global->public` with `metadata.operation=grant`; `pg_policies` appears in 15 edges and `pg_class` in 12 across the corpus; `vault.decrypted_secrets` is a real Supabase reference in database/migrations/20260131_pms_c7_1_bank_accounts.sql, where the edge TARGET is the bare tail and the qualified name is only in the metadata.",
+  "comment": "The `meta.external` rows are the pin. An expect-only fixture would pass unchanged with the classification removed, because the edges themselves are correct either way — the edges were never wrong, they were LABEL-LESS, and a label-less unresolved edge is indistinguishable from a hallucinated one to whatever reads the graph. So the assertions are on metadata, and the mutant that strips it is caught here.",
+  "expectSymbols": [
+    {
+      "name": "app_orders",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "app_orders"
+    },
+    {
+      "name": "ref",
+      "kind": "property",
+      "ownerName": "app_orders"
+    },
+    {
+      "name": "idx_app_orders_ref",
+      "kind": "constant"
+    },
+    {
+      "name": "account_number",
+      "kind": "function"
+    },
+    {
+      "name": "v_pg_digit",
+      "kind": "class"
+    },
+    {
+      "name": "v_pg_mixed",
+      "kind": "class"
+    },
+    {
+      "name": "v_pg_nounder",
+      "kind": "class"
+    },
+    {
+      "name": "v_pg_noletter",
+      "kind": "class"
+    },
+    {
+      "name": "v_pg_qualified",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "sqld12-external-targets.sql",
+      "target": "public",
+      "meta.external": "implicitSchema"
+    },
+    {
+      "type": "uses",
+      "from": "sqld12-external-targets.sql",
+      "target": "pg_policies",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "order_counts",
+      "target": "tables",
+      "meta.external": "informationSchema"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_qualified",
+      "target": "pg_class",
+      "meta.external": "postgresCatalog"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "sqld12-external-targets.sql",
+      "target": "app_orders",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "references",
+      "from": "sqld12-external-targets.sql",
+      "target": "app_orders",
+      "meta.external": "implicitSchema"
+    },
+    {
+      "type": "references",
+      "from": "sqld12-external-targets.sql",
+      "target": "public",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "contains",
+      "from": "app_orders",
+      "target": "sqld12-external-targets.sql::app_orders.ref",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_digit",
+      "target": "pg_1",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_mixed",
+      "target": "pg_a1",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_nounder",
+      "target": "pga",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_noletter",
+      "target": "pgx",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_digit",
+      "target": "pg_1",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_mixed",
+      "target": "pg_a1",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_nounder",
+      "target": "pga",
+      "meta.external": "postgresCatalog"
+    },
+    {
+      "type": "uses",
+      "from": "v_pg_noletter",
+      "target": "pgx",
+      "meta.external": "postgresCatalog"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "app_orders",
+      "equals": 1
+    }
+  ],
+  "expectRelationshipsComment": "The pg_policies row is `uses`, not `references`: a table read is `uses` with metadata.tableReference, while `references` is the analyzer's verb for foreign-key, index, trigger and policy targets. Verified on the no-WHERE, with-WHERE and top-level forms of the statement.",
+  "expectationsComment6": "Added at pass 8 with the regex removal. `/^pg_[a-z_]+$/` became `isPostgresCatalogName`, and these five rows are what makes the substitution auditable rather than merely different: `pg_1` and `pg_a1` pin the `[a-z]` half (a digit anywhere after `pg_` is not a catalog), `pga` and `pgx` pin the `^pg_` half, and `pg_catalog.pg_class` pins the positive case. A reading of `[a-z_]+` as a PREFIX test would pass the positive row and fail `pg_1`; dropping the `+` would fail nothing here, which is why the bare `pg_` case is covered by the equivalence sweep (22,634 strings, 0 mismatches) rather than by this fixture — `pg_` is not a parseable table reference, so no fixture can reach it."
+}

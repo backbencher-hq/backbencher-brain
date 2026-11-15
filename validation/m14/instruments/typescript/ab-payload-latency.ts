@@ -61,7 +61,7 @@ if (!BEFORE_PATH) {
   console.error("usage: ab-payload-latency.ts <beforeModulePath> [nfiles] [rounds]")
   process.exit(2)
 }
-const CORPUS_ROOT = process.env.BB_TS_CORPUS ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_TS_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
 const CORPUS_DIR = process.env.BB_TS_REPO ?? "element-plus"
 const NFILES = Number(process.argv[3] ?? 200)
 const ROUNDS = Number(process.argv[4] ?? 5)

@@ -1,0 +1,90 @@
+{
+  "issue": "ELX4 `uses`",
+  "note": "`use Mod` is Elixir's MIXIN APPLICATION (Mod.__using__ injects code here) and is what the family records as `uses` \u2014 dart `with M1, M2` (real-dart-analyzer.ts, metadata isMixin), css `@include` of a `@mixin` (real-css-analyzer.ts:2479). It is NOT relabelled from `references`: the module-dependency edge is a separate true statement, and 512 measured `use` sites would have lost it. ELX4 measurement for the refused alternative is in docs/analyzers/elixir.md: the member-read reading of `uses` would be 36,309 edges in 523 of 605 files with a target that resolves by coincidence, because Elixir has no static type on the receiver.",
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "ELX4.UsesMixin",
+      "target": "GenServer",
+      "line_number": 2,
+      "meta.isMixin": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "mixes_in",
+      "from": "ELX4.UsesMulti",
+      "target": "Supervisor",
+      "line_number": 9,
+      "meta.isMixin": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "mixes_in",
+      "from": "ELX4.UsesSelf",
+      "target": "ELX4.UsesMixin",
+      "line_number": 17,
+      "meta.isMixin": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "ELX4.UsesMixin",
+      "target": "GenServer",
+      "line_number": 2,
+      "meta.evidenceClass": "reference_qualified"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "ELX4.Opts"
+    },
+    {
+      "type": "uses",
+      "target": "Enum"
+    },
+    {
+      "type": "uses",
+      "target": "Logger"
+    },
+    {
+      "type": "uses",
+      "target": "ELX4.UsesMulti"
+    },
+    {
+      "type": "uses",
+      "from": "ELX4.UsesMixin",
+      "target": "GenServer",
+      "line_number": 2
+    },
+    {
+      "type": "uses",
+      "from": "ELX4.UsesMulti",
+      "target": "Supervisor",
+      "line_number": 9
+    },
+    {
+      "type": "uses",
+      "from": "ELX4.UsesSelf",
+      "target": "ELX4.UsesMixin",
+      "line_number": 17
+    },
+    {
+      "type": "mixes_in",
+      "target": "ELX4.Opts"
+    },
+    {
+      "type": "mixes_in",
+      "target": "Enum"
+    },
+    {
+      "type": "mixes_in",
+      "target": "Logger"
+    },
+    {
+      "type": "mixes_in",
+      "target": "ELX4.UsesMulti"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

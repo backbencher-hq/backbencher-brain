@@ -1,0 +1,153 @@
+{
+  "fixtureId": "hcl/sibling-identity",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Names and lines transcribed from a measured run and checked against the fixture source. The identity contract is the whole subject of this fixture. The two `lifecycle` blocks are INDENTED, so their startColumn is 3, not 1 \u2014 transcribed wrong on the first pass and corrected against the source.",
+  "rationale": "H3, H4 and H11 (reviews/hcl/master-review.md), three distinct defects with one root. (a) Terraform and the HashiCorp DSLs REPEAT blocks by design \u2014 `locals` may appear many times per file, `moved`/`removed`/`import` are one-per-move, nested `lifecycle` repeats \u2014 and the leaf name was derived from block type + labels with no sibling disambiguation, so identity collided: 6,897 duplicate pairs over 1,323 distinct keys across 9,079 files, worst `parameter` at 420 (waypoint's label-less repeats). Because `contains` edges dedupe on source|type|target, two sibling blocks produced ONE edge for TWO symbols. (b) A label-less `data {}` produced an EMPTY name, `labels.join(\".\")` over zero labels being `\"\"`, which also left its child attribute ownerless. (c) Introducing the document root created a further collision the other way: `moved.tf` holding `moved {}` gave the file and the block one identity, at 308 corpus sites. The unsuffixed Terraform address is preserved in `hclAddress`, so nothing about the address is lost.",
+  "expectSymbols": [
+    {
+      "name": "sibling-identity",
+      "kind": "module"
+    },
+    {
+      "name": "locals",
+      "kind": "module"
+    },
+    {
+      "name": "locals#2",
+      "kind": "module"
+    },
+    {
+      "name": "locals#3",
+      "kind": "module"
+    },
+    {
+      "name": "data",
+      "kind": "class"
+    },
+    {
+      "name": "aws_s3_bucket",
+      "kind": "class"
+    },
+    {
+      "name": "aws_instance.web",
+      "kind": "class"
+    },
+    {
+      "name": "lifecycle",
+      "kind": "class"
+    },
+    {
+      "name": "lifecycle#2",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "locals",
+      "startLine": 9,
+      "startColumn": 1
+    },
+    {
+      "symbol": "locals#2",
+      "startLine": 13,
+      "startColumn": 1
+    },
+    {
+      "symbol": "locals#3",
+      "startLine": 17,
+      "startColumn": 1
+    },
+    {
+      "symbol": "data",
+      "startLine": 22,
+      "startColumn": 1
+    },
+    {
+      "symbol": "aws_s3_bucket",
+      "startLine": 27,
+      "startColumn": 1
+    },
+    {
+      "symbol": "lifecycle",
+      "startLine": 33,
+      "startColumn": 3
+    },
+    {
+      "symbol": "lifecycle#2",
+      "startLine": 37,
+      "startColumn": 3
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "locals",
+      "line_number": 9
+    },
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "locals#2",
+      "line_number": 13
+    },
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "locals#3",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "data",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "aws_s3_bucket",
+      "line_number": 27
+    },
+    {
+      "type": "contains",
+      "from": "aws_instance.web",
+      "target": "aws_instance.web.lifecycle",
+      "line_number": 33
+    },
+    {
+      "type": "contains",
+      "from": "aws_instance.web",
+      "target": "aws_instance.web.lifecycle#2",
+      "line_number": 37
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": ""
+    },
+    {
+      "name": "locals#4"
+    },
+    {
+      "name": "lifecycle#3"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "locals",
+      "line_number": 13,
+      "note": "pre-fix shape: the second `locals` block reused the first's identity, so this edge collapsed onto the 9-line one and the 13-line block was unreachable."
+    },
+    {
+      "type": "contains",
+      "from": "sibling-identity",
+      "target": "locals",
+      "line_number": 17,
+      "note": "same collapse, third block"
+    }
+  ]
+}

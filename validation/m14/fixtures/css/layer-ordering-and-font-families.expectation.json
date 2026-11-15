@@ -1,0 +1,70 @@
+{
+  "fixtureId": "css/layer-ordering-and-font-families",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A layer is ONE symbol however many times it is mentioned. The ordering statement declares the CASCADE POSITION of each layer, and that position rides the symbol as `layerIndex` rather than as file metadata — because `parseFile` rebuilds file metadata as a fresh literal of specific keys (engine.ts:1572, whose own comment records that an omitted key is computed and DISCARDED silently), so a file-level key added at the analyzer would never reach a consumer. The block form, when it comes second, corrects the range to the block so the symbol is located where its rules are. The ordering statement precedes the blocks in the normal order, which is what makes the dedup necessary rather than incidental.",
+  "expectSymbols": [
+    {
+      "name": "@layer reset",
+      "kind": "module"
+    },
+    {
+      "name": "@layer base",
+      "kind": "module"
+    },
+    {
+      "name": "@layer components",
+      "kind": "module"
+    },
+    {
+      "name": ".btn",
+      "kind": "class"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "@layer reset",
+      "equals": 1,
+      "kind": "module"
+    },
+    {
+      "name": "@layer base",
+      "equals": 1,
+      "kind": "module"
+    },
+    {
+      "name": "@layer components",
+      "equals": 1,
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "target": "fixtures/css/layer-ordering-and-font-families::.btn",
+      "meta.evidenceClass": "structural",
+      "meta.isLayerScope": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/layer-ordering-and-font-families::.card",
+      "meta.evidenceClass": "structural",
+      "meta.isLayerScope": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "@layer reset, base, components"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

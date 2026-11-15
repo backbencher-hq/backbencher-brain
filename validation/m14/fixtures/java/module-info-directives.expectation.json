@@ -1,0 +1,191 @@
+{
+  "fixtureId": "java/module-info-directives",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SUPERSEDED BEHAVIOUR UPDATED 2026-10-18 (Lead ruling task-9, per-fixture adjudication): the analyzer is ADJUDICATED CORRECT \u2014 pinned by the PASSING siblings java/module-info and java/jpms-module-exports and by the analyzer's emitJavaModuleDeclaration header \u2014 so the expectation is updated instead of the analyzer reverted. WHAT WAS SUPERSEDED AND WHY: (1) the `imports` dependency row is labelled `module_requires` (not `module_requires_dependency`) and carries isModuleRequires/isTransitive/isStatic + fileLevel + reasonCode, the spellings the sibling `module-info` pins; (2) the mandatory `references` MENTION beside every directive is labelled `module_requires_mention` / `module_exports_mention` \u2014 the same two-label-per-directive rule the siblings pin for imports and exports: `imports`/`exports` is the DEPENDENCY, `references` is the MENTION; (3) an `exports P` directive now ALSO emits the `exports` edge `module -> P` (module_exports) \u2014 the fixture's stale FORBID of that row asserted it could not exist, which is the opposite of the measured contract that sibling java/jpms-module-exports pins. COVERAGE IS NOT WEAKENED: every directive shape is still pinned, the two stale import/reference expectations are replaced by the full mention+exports expectation set, symbols are now asserted (module + its exported-package namespaces), and the two `to`-clause forbids that keep an export from being read as a dependency REMAIN. The old rationale's claim that an exports-labelled JPMS edge would be 'dropped by parallel-indexer' is superseded by measurement: the module exports edges are emitted and resolve.",
+  "expectSymbols": [
+    {
+      "name": "com.example.app",
+      "kind": "module"
+    },
+    {
+      "name": "com.example.api",
+      "kind": "namespace"
+    },
+    {
+      "name": "com.example.internal.spi",
+      "kind": "namespace"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "com.example.app",
+      "target": "java.logging",
+      "meta.relationshipType": "module_requires",
+      "meta.fileLevel": true,
+      "meta.isModuleRequires": true,
+      "meta.isTransitive": false,
+      "meta.reasonCode": "module_directive",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "source": "com.example.app",
+      "target": "com.example.core",
+      "meta.relationshipType": "module_requires",
+      "meta.fileLevel": true,
+      "meta.isModuleRequires": true,
+      "meta.isTransitive": true,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "source": "com.example.app",
+      "target": "jdk.unsupported",
+      "meta.relationshipType": "module_requires",
+      "meta.fileLevel": true,
+      "meta.isModuleRequires": true,
+      "meta.isStatic": true,
+      "meta.reasonCode": "optional-module-dependency",
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9
+    },
+    {
+      "type": "exports",
+      "source": "com.example.app",
+      "target": "com.example.api",
+      "meta.relationshipType": "module_exports",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.example.app",
+      "target": "com.example.internal.spi",
+      "meta.relationshipType": "module_exports",
+      "meta.qualifiedTo": [
+        "com.example.core",
+        "com.example.tools"
+      ],
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "source": "com.example.app",
+      "target": "com.example.api",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "source": "com.example.app",
+      "target": "com.example.internal.spi",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "java.logging",
+      "meta.relationshipType": "module_requires_mention",
+      "meta.reasonCode": "module_directive"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.core",
+      "meta.relationshipType": "module_requires_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "jdk.unsupported",
+      "meta.relationshipType": "module_requires_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.api",
+      "meta.relationshipType": "module_exports_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.internal.spi",
+      "meta.relationshipType": "module_exports_mention"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.core",
+      "meta.relationshipType": "module_exports_package_to"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.tools",
+      "meta.relationshipType": "module_exports_package_to"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.model",
+      "meta.relationshipType": "module_opens_package"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.tools",
+      "meta.relationshipType": "module_opens_package_to"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.spi.Service",
+      "meta.relationshipType": "module_uses_provided_type"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.spi.Service",
+      "meta.relationshipType": "module_provides_service"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.impl.ServiceImpl",
+      "meta.relationshipType": "module_provides_service_with"
+    },
+    {
+      "type": "references",
+      "source": "com.example.app",
+      "target": "com.example.impl.AltImpl",
+      "meta.relationshipType": "module_provides_service_with"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "transitive",
+      "comment": "a `requires_modifier` is not a dependency target: the directive's target is its `module` FIELD \u2014 unchanged by this update"
+    },
+    {
+      "type": "references",
+      "target": "static",
+      "comment": "same: `requires static` is a modifier, not a module \u2014 unchanged"
+    },
+    {
+      "type": "imports",
+      "target": "com.example.api",
+      "comment": "`exports P` (JLS 7.7.2) publishes this module's API OUTWARD; it is not a dependency on P \u2014 unchanged, and the reason the export rides `exports` and the dependency rides `imports`"
+    },
+    {
+      "type": "imports",
+      "target": "com.example.tools",
+      "comment": "a `to`-clause names a module that may READ this one, not one this module reads \u2014 unchanged"
+    },
+    {
+      "type": "references",
+      "target": "com.example.app",
+      "comment": "the module's own name is not a mention target of its directives \u2014 unchanged"
+    }
+  ]
+}

@@ -5,7 +5,7 @@
   "question": "markdown emits imports and references and the allowlist compares neither: do those two types agree with deriveMarkdownEdges when they ARE compared?",
   "analyzerEntryPoint": "parseFile (src/ast/pool-worker.ts)",
   "truthEntryPoint": "deriveMarkdownEdges (script/m14/markdown-oracle.ts:280)",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "corpora": [
     "scala3",
     "kubernetes"

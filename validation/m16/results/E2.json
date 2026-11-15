@@ -1,0 +1,13 @@
+{
+  "issue": "(fail-loud guards)",
+  "code": "E2",
+  "tool": "bb_edit",
+  "title": "E2",
+  "verified": true,
+  "checks": 1,
+  "passed": 1,
+  "failed": 0,
+  "negatives": 0,
+  "runLog": null,
+  "generatedAt": "2026-11-05T04:27:46.483Z"
+}

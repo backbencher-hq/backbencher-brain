@@ -1,0 +1,541 @@
+[
+  {
+    "probe": "page-bounds",
+    "callersHubDefault": {
+      "returned": 25,
+      "total": 95,
+      "pageEdgeLimit": 25,
+      "pageTruncated": true,
+      "callersIfUncapped": null,
+      "edgeLimit": 200,
+      "cappedQueries": 0
+    },
+    "callersHubFull": {
+      "returned": 95,
+      "total": 95,
+      "pageTruncated": false
+    },
+    "callersPopular": {
+      "returned": 25,
+      "total": 250,
+      "pageEdgeLimit": 25,
+      "pageTruncated": true,
+      "callersIfUncapped": 301,
+      "truncated": true,
+      "truncationReason": "caller-site-limit+caller-budget-exhausted",
+      "timeBudgetMs": 2000,
+      "timeBudgetExhausted": false
+    },
+    "popularRowCaps": [
+      {
+        "file": "src/many/popular.ts",
+        "dependentsTotal": 150,
+        "dependentsReturned": 100,
+        "dependentsTruncated": true,
+        "dependenciesTotal": 0,
+        "dependenciesTruncated": false
+      }
+    ],
+    "dependenciesSummary": {
+      "returned": 1,
+      "totalFiles": 1,
+      "scope": "src/many/popular.ts",
+      "truncated": false,
+      "returnedInternalDependencies": 0,
+      "returnedInternalDependents": 100,
+      "pageLimit": 20
+    }
+  },
+  {
+    "probe": "stale-vs-missing",
+    "note": "w4.ts and format.test.ts deleted from disk (status=missing); w5.ts modified (status=stale); index untouched",
+    "stats": {
+      "freshness": {
+        "fresh": 49,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 0.02,
+        "mode": "sampled",
+        "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "complexityW5": {
+      "row": {
+        "name": "wide5",
+        "type": "function",
+        "complexity": 1,
+        "file": "src/wide/w5.ts",
+        "line": 2,
+        "stale": true
+      },
+      "rowStale": [
+        true
+      ],
+      "freshness": {
+        "fresh": 0,
+        "stale": 1,
+        "missing": 0,
+        "staleRatio": 1,
+        "mode": "complete",
+        "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "graphNodesStale": [
+      {
+        "file": "src/core/engine.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h1.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h10.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h11.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h12.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h13.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h14.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h15.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h16.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h17.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h18.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h19.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h2.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h20.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h21.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h22.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h23.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h24.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h25.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h26.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h27.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h28.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h29.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h3.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h30.ts",
+        "stale": false
+      },
+      {
+        "file": "src/callers/h4.ts",
+        "stale": false
+      }
+    ],
+    "deps": {
+      "rows": [
+        {
+          "file": "src/wide/w0.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w1.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w2.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w3.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w4.ts",
+          "stale": true
+        },
+        {
+          "file": "src/wide/w5.ts",
+          "stale": true
+        }
+      ],
+      "freshness": {
+        "fresh": 5,
+        "stale": 1,
+        "missing": 1,
+        "staleRatio": 0.2857142857142857,
+        "mode": "complete",
+        "remediation": "2 stale in this file — reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index \"src/wide/w0.ts\" (or the bb_index tool with that file path)"
+      }
+    },
+    "testGaps": {
+      "sample": [
+        {
+          "file": "src/many/popular.ts",
+          "stale": false
+        },
+        {
+          "file": "src/core/engine.ts",
+          "stale": false
+        },
+        {
+          "file": "src/core/engine.ts",
+          "stale": false
+        }
+      ],
+      "anyStale": false,
+      "anyWideStale": [],
+      "freshness": {
+        "fresh": 48,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    },
+    "testMapping": {
+      "entriesForWide": [
+        {
+          "file": "src/wide/w0.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w1.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w2.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w3.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w4.ts",
+          "stale": false
+        },
+        {
+          "file": "src/wide/w5.ts",
+          "stale": true
+        }
+      ],
+      "anyStale": true
+    },
+    "testQuality": {
+      "files": [
+        {
+          "file": "spec/pipeline.spec.ts",
+          "stale": false
+        },
+        {
+          "file": "test/unit/engine.test.ts",
+          "stale": false
+        },
+        {
+          "file": "tests/format.test.ts",
+          "stale": false
+        }
+      ],
+      "freshness": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 1,
+        "staleRatio": 0.3333333333333333,
+        "mode": "complete",
+        "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+      }
+    },
+    "impactHub": {
+      "affected": [
+        {
+          "file": "src/callers/h1.ts",
+          "via": "h1",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h10.ts",
+          "via": "h10",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h11.ts",
+          "via": "h11",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h12.ts",
+          "via": "h12",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h13.ts",
+          "via": "h13",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h14.ts",
+          "via": "h14",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h15.ts",
+          "via": "h15",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h16.ts",
+          "via": "h16",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h17.ts",
+          "via": "h17",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h18.ts",
+          "via": "h18",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h19.ts",
+          "via": "h19",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h2.ts",
+          "via": "h2",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h20.ts",
+          "via": "h20",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h21.ts",
+          "via": "h21",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h22.ts",
+          "via": "h22",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h23.ts",
+          "via": "h23",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h24.ts",
+          "via": "h24",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h25.ts",
+          "via": "h25",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h26.ts",
+          "via": "h26",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h27.ts",
+          "via": "h27",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h28.ts",
+          "via": "h28",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h29.ts",
+          "via": "h29",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h3.ts",
+          "via": "h3",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h30.ts",
+          "via": "h30",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h4.ts",
+          "via": "h4",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h5.ts",
+          "via": "h5",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h6.ts",
+          "via": "h6",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h7.ts",
+          "via": "h7",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h8.ts",
+          "via": "h8",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/callers/h9.ts",
+          "via": "h9",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/core/pipeline.ts",
+          "via": "execute",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        },
+        {
+          "file": "src/util/local.ts",
+          "via": "local",
+          "depth": 0,
+          "crossLanguage": false,
+          "stale": false
+        }
+      ],
+      "freshness": {
+        "fresh": 32,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      }
+    }
+  }
+]

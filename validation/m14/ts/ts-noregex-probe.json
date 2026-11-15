@@ -1,0 +1,303 @@
+{
+  "at": "2026-10-06T03:03:15.018Z",
+  "shapes": [
+    "regex-literal",
+    "new-RegExp",
+    "regex-argument-to:<method>"
+  ],
+  "laneFiles": [
+    "src/ast/real-typescript-analyzer.ts",
+    "script/m14/ts-ontology-census.ts",
+    "script/m14/ts-construct-probe.ts",
+    "script/m14/ts-construct-census-fleet.ts",
+    "script/m14/ts-deriv-oracle-audit.ts",
+    "script/m14/ts-deriv-mutants.ts",
+    "script/m14/ts-deriv-mutant-run.ts",
+    "script/m14/ts-r7-endpoint-probe.ts",
+    "script/m14/ts-type-mention-label-probe.ts",
+    "script/m14/derivation-findings.ts",
+    "validation/m14/ts/ts-incoming-resolve.ts",
+    "validation/m14/ts/ts-noregex-probe.ts"
+  ],
+  "laneFilesOnDisk": [
+    "script/m14/ts-construct-census-fleet.ts",
+    "script/m14/ts-construct-probe.ts",
+    "script/m14/ts-deriv-mutant-run.ts",
+    "script/m14/ts-deriv-mutants.ts",
+    "script/m14/ts-deriv-oracle-audit.ts",
+    "script/m14/ts-ontology-census.ts",
+    "script/m14/ts-r7-endpoint-probe.ts",
+    "script/m14/ts-type-mention-label-probe.ts",
+    "src/ast/real-typescript-analyzer.ts",
+    "validation/m14/ts/ts-incoming-resolve.ts",
+    "validation/m14/ts/ts-noregex-probe.ts"
+  ],
+  "laneFilesMissingFromDeclaredList": [],
+  "laneLines": 9890,
+  "laneFindings": 0,
+  "laneFindingsByFile": [],
+  "control": [
+    {
+      "label": "shared differential (known regex user)",
+      "rel": "script/m14/differential.ts",
+      "count": 147,
+      "findings": [
+        {
+          "file": "script/m14/differential.ts",
+          "line": 327,
+          "shape": "regex-literal",
+          "detail": "/^\"|\"$/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 953,
+          "shape": "regex-literal",
+          "detail": "/::|\\./"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 1041,
+          "shape": "regex-literal",
+          "detail": "/[[<]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 1058,
+          "shape": "regex-literal",
+          "detail": "/<.*$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 1058,
+          "shape": "regex-literal",
+          "detail": "/\\[.*$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 1150,
+          "shape": "regex-literal",
+          "detail": "/[A-Za-z0-9_$]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 1207,
+          "shape": "regex-literal",
+          "detail": "/^[A-Za-z_$][A-Za-z0-9_$]*$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 2582,
+          "shape": "regex-literal",
+          "detail": "/^@/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 2584,
+          "shape": "regex-literal",
+          "detail": "/`/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 3066,
+          "shape": "regex-literal",
+          "detail": "/\\[[^\\[\\]]*\\]/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 3066,
+          "shape": "regex-literal",
+          "detail": "/<[^<>]*>/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 4344,
+          "shape": "regex-literal",
+          "detail": "/\\[[^\\[\\]]*\\]/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 4366,
+          "shape": "regex-literal",
+          "detail": "/\\[[^\\[\\]]*\\]/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 4366,
+          "shape": "regex-literal",
+          "detail": "/<[^<>]*>/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 4643,
+          "shape": "regex-literal",
+          "detail": "/^[\"'`]|[\"'`]$/g"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 5558,
+          "shape": "regex-literal",
+          "detail": "/^[A-Z][A-Za-z0-9_]*(\\.[A-Z][A-Za-z0-9_]*)*$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 5561,
+          "shape": "regex-literal",
+          "detail": "/^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*(\\s*,\\s*["
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 5567,
+          "shape": "regex-literal",
+          "detail": "/^[\\s,.<>\\[\\]A-Za-z0-9_]*$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 6705,
+          "shape": "regex-literal",
+          "detail": "/statement|declaration|declarator|specifier|enumerator|compo"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 6740,
+          "shape": "regex-literal",
+          "detail": "/declarator$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 6886,
+          "shape": "regex-literal",
+          "detail": "/^(pointer|parenthesized|attributed)_declarator$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 6890,
+          "shape": "regex-literal",
+          "detail": "/^(pointer|parenthesized|attributed)_declarator$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 6922,
+          "shape": "regex-literal",
+          "detail": "/\\s/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 6931,
+          "shape": "regex-literal",
+          "detail": "/\\s/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7031,
+          "shape": "regex-literal",
+          "detail": "/statement|declaration|definition|declarator|specifier|enume"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7152,
+          "shape": "regex-literal",
+          "detail": "/[A-Z]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7152,
+          "shape": "regex-literal",
+          "detail": "/[a-z]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7159,
+          "shape": "regex-literal",
+          "detail": "/^([A-Za-z_][A-Za-z0-9_]*)\\s*(=|\\()/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7233,
+          "shape": "regex-literal",
+          "detail": "/^(identifier|field_identifier|type_identifier)$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7248,
+          "shape": "regex-literal",
+          "detail": "/^(identifier|field_identifier|type_identifier)$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7502,
+          "shape": "regex-literal",
+          "detail": "/^[\"<]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7502,
+          "shape": "regex-literal",
+          "detail": "/[\">]$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7738,
+          "shape": "regex-literal",
+          "detail": "/^[A-Z]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 7855,
+          "shape": "regex-literal",
+          "detail": "/^[A-Za-z_][A-Za-z0-9_]*$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 8328,
+          "shape": "regex-literal",
+          "detail": "/^(class|interface|struct|record)_declaration$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 8652,
+          "shape": "regex-literal",
+          "detail": "/_(declaration|declarations)$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 9128,
+          "shape": "regex-literal",
+          "detail": "/^(class|interface|struct|record|enum)_declaration$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 9151,
+          "shape": "regex-literal",
+          "detail": "/^(class|interface|struct|record)_declaration$/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 9383,
+          "shape": "regex-literal",
+          "detail": "/^[I][A-Z]/"
+        },
+        {
+          "file": "script/m14/differential.ts",
+          "line": 9418,
+          "shape": "regex-literal",
+          "detail": "/:\\s*base\\s*\\(/"
+        }
+      ]
+    },
+    {
+      "label": "typescript imports/exports oracle (known regex user)",
+      "rel": "script/m14/oracles/typescript-imports-exports.ts",
+      "count": 1,
+      "findings": [
+        {
+          "file": "script/m14/oracles/typescript-imports-exports.ts",
+          "line": 63,
+          "shape": "regex-literal",
+          "detail": "/\\\\(.)/g"
+        }
+      ]
+    }
+  ],
+  "controlFindings": 148,
+  "verdict": "PASS — 0 findings over the listed lane files, control non-zero"
+}

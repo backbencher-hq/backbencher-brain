@@ -1,0 +1,155 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_analyze.json",
+  "generatedAt": "2026-11-04T05:55:38.532Z",
+  "tools": [
+    "bb_analyze"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 10,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":109,\"linesOfCode\":13176,\"avgFileSize\":3116.798165137615,\"avgFileSizeUnit\":\"bytes\",\"symbols\":1593,\"symbolsWithComplexity\":1593,\"avgComplexity\":1.2680477"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 25,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":161,\"linesOfCode\":59884,\"avgFileSize\":13658.72049689441,\"avgFileSizeUnit\":\"bytes\",\"symbols\":6476,\"symbolsWithComplexity\":6476,\"avgComplexity\":1.5542001"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 40,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":564,\"linesOfCode\":147306,\"avgFileSize\":7545.63475177305,\"avgFileSizeUnit\":\"bytes\",\"symbols\":13620,\"symbolsWithComplexity\":13620,\"avgComplexity\":1.35389"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 25,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":33,\"linesOfCode\":17382,\"avgFileSize\":16960.030303030304,\"avgFileSizeUnit\":\"bytes\",\"symbols\":10617,\"symbolsWithComplexity\":10617,\"avgComplexity\":1.02288"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 22,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":76,\"linesOfCode\":102036,\"avgFileSize\":45994.40789473684,\"avgFileSizeUnit\":\"bytes\",\"symbols\":3606,\"symbolsWithComplexity\":3606,\"avgComplexity\":1.7748197"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\n"
+    },
+    {
+      "repo": "rake",
+      "label": "analyze stats.files == SQL count (109)",
+      "pass": true,
+      "detail": "out files=109 sql=109"
+    },
+    {
+      "repo": "rake",
+      "label": "analyze stats.symbols == SQL count (1593)",
+      "pass": true,
+      "detail": "out symbols=1593 sql=1593"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "analyze stats.files == SQL count (161)",
+      "pass": true,
+      "detail": "out files=161 sql=161"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "analyze stats.symbols == SQL count (6476)",
+      "pass": true,
+      "detail": "out symbols=6476 sql=6476"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:to"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "analyze stats.files == SQL count (564)",
+      "pass": true,
+      "detail": "out files=564 sql=564"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "analyze stats.symbols == SQL count (13620)",
+      "pass": true,
+      "detail": "out symbols=13620 sql=13620"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\n   "
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "analyze stats.files == SQL count (33)",
+      "pass": true,
+      "detail": "out files=33 sql=33"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "analyze stats.symbols == SQL count (10617)",
+      "pass": true,
+      "detail": "out symbols=10617 sql=10617"
+    },
+    {
+      "repo": "lodash",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\n    \"name\": \""
+    },
+    {
+      "repo": "lodash",
+      "label": "analyze stats.files == SQL count (76)",
+      "pass": true,
+      "detail": "out files=76 sql=76"
+    },
+    {
+      "repo": "lodash",
+      "label": "analyze stats.symbols == SQL count (3606)",
+      "pass": true,
+      "detail": "out symbols=3606 sql=3606"
+    }
+  ],
+  "passed": 15,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_analyze"
+    ]
+  }
+}

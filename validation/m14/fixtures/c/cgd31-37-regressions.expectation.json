@@ -1,0 +1,146 @@
+{
+  "fixtureId": "c/cgd31-37-regressions",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the CGD31-38 defect classes from the M37 #601 Holy C wave (measured sqlite/jq): CGD35 typedef-alias-over-builtin type_identifier reads must emit references (i64/u8); CGD36 a function used as a value BEFORE its definition and inside a function-pointer table must resolve order-independently (uses later_defined); CGD31 method-table member calls emit calls ONLY (no redundant uses of the callee field leaf); CGD37 designated-initializer field designators are writes (uses kvrecordRead from the VALUE side is real, uses read_impl/write_impl are forbidden); CGD33/34/38 the macro-qualified `static WSD_MACRO struct Mem3Like { int nPool; } the_mem3;` declaration must not fabricate a uses-Mem3Like self-edge, a phantom Function symbol, or reads of its bare name child. RE-PINNED by the #743 grammar wave (commit lands the c grammar fix): this block used to recover as a phantom function_definition because the published grammar had no rule for a BARE macro identifier in the declaration-specifier sequence. The grammar now parses it as a real struct, so the fixture pins the real truth instead of the recovery: Mem3Like is a `struct`, the_mem3 is a `variable`, nPool is a `property`, and the field read `the_mem3.nPool` carries its own `field_access` tag. The nPool expectation now names that tag because the clean tree also emits a second, untagged `identifier_usage` edge for the same read \u2014 without the tag the `c/drop-field-access-uses` mutant was masked by the duplicate, which is how the re-pin was caught (the mutant surviving is what surfaced the duplicate).",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "i64"
+    },
+    {
+      "type": "references",
+      "target": "u8"
+    },
+    {
+      "type": "uses",
+      "from": "use_later",
+      "target": "later_defined"
+    },
+    {
+      "type": "uses",
+      "target": "later_defined"
+    },
+    {
+      "type": "uses",
+      "from": "read_defined_later",
+      "target": "defined_far_below",
+      "meta.relationshipType": "identifier_usage",
+      "note": "CGD36 order-INDEPENDENT half: the read sits ABOVE the definition, so the edge resolves only through the declaredNames pre-pass. The existing `later_defined` rows read AFTER the definition and exercise the ordinary symbol walk instead -- the fixture previously claimed this order and did not have it."
+    },
+    {
+      "type": "calls",
+      "from": "read_kv",
+      "target": "read_impl"
+    },
+    {
+      "type": "calls",
+      "from": "write_kv",
+      "target": "write_impl"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "kvrecordRead"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "kvrecordWrite"
+    },
+    {
+      "type": "uses",
+      "from": "touch_mem3",
+      "target": "nPool",
+      "meta.relationshipType": "field_access"
+    },
+    {
+      "type": "uses",
+      "from": "touch_mem3",
+      "target": "the_mem3"
+    },
+    {
+      "type": "calls",
+      "from": "call_exported",
+      "target": "exported_fn"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "read_kv",
+      "target": "read_impl"
+    },
+    {
+      "type": "uses",
+      "from": "write_kv",
+      "target": "write_impl"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "read_impl"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "write_impl"
+    },
+    {
+      "type": "uses",
+      "from": "touch_mem3",
+      "target": "Mem3Like"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "Mem3Like"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "widen",
+      "kind": "function"
+    },
+    {
+      "name": "later_defined",
+      "kind": "function"
+    },
+    {
+      "name": "read_kv",
+      "kind": "function"
+    },
+    {
+      "name": "kv_methods",
+      "kind": "struct"
+    },
+    {
+      "name": "Mem3Like",
+      "kind": "struct"
+    },
+    {
+      "name": "the_mem3",
+      "kind": "variable"
+    },
+    {
+      "name": "nPool",
+      "kind": "property"
+    },
+    {
+      "name": "read_defined_later",
+      "kind": "function",
+      "note": "reads a function defined below it"
+    },
+    {
+      "name": "defined_far_below",
+      "kind": "function",
+      "note": "the definition, below its read"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Mem3Like",
+      "kind": "function"
+    }
+  ]
+}

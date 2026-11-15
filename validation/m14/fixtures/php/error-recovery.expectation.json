@@ -1,0 +1,114 @@
+{
+  "fixtureId": "php/error-recovery",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE DOCUMENT-LEVEL CONTRACT for a file the parser cannot fully read, and the fixture that php's `ERROR` claim was MISSING. php's node inventory classifies `ERROR` as `handled_verified` — the analyzer really does handle it (the error-collection walk pushes ParseError rows from a rootNode.hasError walk reading ERROR and isMissing nodes, and the corpus exercises it: two phpunit files are genuine parse errors) — yet not ONE of php's fixture sources produced a tree-sitter ERROR node, so `script/m14/verify-fixture-coverage.ts` read `uncovered: ERROR` and FAILED with 'release blocked'. A handled_verified assertion nobody had ever executed: the same class the grammar-driven construct census was built to find. The sibling lanes that claim ERROR handled WITHOUT a ruling all ship an error fixture — html/error-recovery.html, html/error-budget-broken.html, toml/malformed-and-rejected.toml, svelte/error-recovery.svelte — and php was the only one of the four that did not. THE OBLIGATION is their three-part contract: (1) the broken region is REPORTED as a diagnostic; (2) it is NOT turned into a symbol or an edge, because an ERROR node names nothing a consumer can navigate to; (3) the declarations AROUND it still publish, INCLUDING THE ONES AFTER IT — degradation is PARTIAL, not total. Part (3) is the row that carries the weight, and it is why `After` and `survivesAfter` are written BELOW the broken statement on purpose: a walk that stopped at the recovery node would publish `Before` and nothing else, and the file would still LOOK analysed because `Before` is right there. The broken shape `$b = ;` is not invented — it is verbatim the pinned corpus's own tests/end-to-end/code-coverage/_files/parse-error/src/CannotBeParsed.php, so the fixture exercises a shape a real php file contains. `Broken::m` additionally pins that a method whose BODY fails to parse still publishes as a symbol and as a `contains` edge: the declaration itself is well-formed even when its body is not. ON THE ERROR COUNT: the position and severity are pinned exactly, but the COUNT deliberately is not. One ERROR node yields TWO diagnostics at the same position with the same severity — one from the engine's tree-level pre-pass ('Syntax error (unexpected node)') and one from the analyzer's own walk ('Syntax ERROR detected.'). That is faithful, not duplicated: two independent readers report the same broken region. Pinning a count would freeze an accident of how the engine and the analyzer each phrase a diagnostic, which is not a contract anything should depend on — the contract is that the region is reported AT THAT POSITION.",
+  "expectErrors": [
+    {
+      "startLine": 66,
+      "startColumn": 12,
+      "severity": "warning",
+      "comment": "The broken region IS reported. `$b = ;` at line 66 col 12 — the `=` with no right-hand side. Two independent readers report it (the engine's tree pre-pass and the analyzer's own ERROR walk) at the same position with the same severity, which is faithful rather than duplicated; the fixture pins the position, not the count."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "Fixture\\ErrorRecovery",
+      "kind": "namespace",
+      "comment": "a file with a parse error still has a namespace — degradation is PARTIAL, not total"
+    },
+    {
+      "name": "Before",
+      "kind": "class",
+      "comment": "the declaration BEFORE the broken region still publishes"
+    },
+    {
+      "name": "survivesBefore",
+      "kind": "method",
+      "ownerName": "Before",
+      "comment": "so does its member, with its containment line"
+    },
+    {
+      "name": "Broken",
+      "kind": "class",
+      "comment": "the class whose BODY contains the broken statement still publishes: its declaration itself is well-formed even when its body is not"
+    },
+    {
+      "name": "m",
+      "kind": "method",
+      "ownerName": "Broken",
+      "comment": "and so does the method with the broken body — the analyzer does not drop a declaration because its body failed to parse"
+    },
+    {
+      "name": "After",
+      "kind": "class",
+      "comment": "THE ROW THAT CARRIES THE WEIGHT. Written BELOW the broken region on purpose. A walk that stopped at the recovery node would publish `Before` and nothing else, and this file would still look analysed because `Before` is right there — which is exactly how a partial parse passes as a clean one."
+    },
+    {
+      "name": "survivesAfter",
+      "kind": "method",
+      "ownerName": "After",
+      "comment": "recovery continued past the ERROR, so this member publishes too"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "After",
+      "equals": 1,
+      "comment": "exactly one — recovery past an ERROR must not duplicate the declarations after it"
+    },
+    {
+      "name": "survivesAfter",
+      "equals": 1,
+      "comment": "same, for the member: a recovery that re-walked the tail would double it"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ERROR",
+      "comment": "the recovery node is a DIAGNOSTIC, not a php declaration. Publishing it as a symbol would put an unresolvable identity in the graph — the phantom-symbol class reached through a malformed file, which is the same class php's symbol audit exists to keep at zero."
+    },
+    {
+      "name": "MISSING",
+      "comment": "same, for a token the parser expected and did not find: it is a position in a diagnostic, never a name"
+    },
+    {
+      "name": ";",
+      "comment": "punctuation is not a name; if any anonymous token ever reached the symbol table, this row catches it"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Before",
+      "target": "survivesBefore",
+      "comment": "containment survives on both sides of the broken region, and carries its line (the member's own declaration line) — the M60 line contract is asserted here too, on a file that is not well-formed, because a recovery path is exactly where a line gets dropped"
+    },
+    {
+      "type": "contains",
+      "source": "Broken",
+      "target": "m",
+      "comment": "the class whose body failed to parse still contains its method"
+    },
+    {
+      "type": "contains",
+      "source": "After",
+      "target": "survivesAfter",
+      "comment": "and containment is emitted for the declarations AFTER the recovery, with a line"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "ERROR",
+      "target": "m",
+      "comment": "if the recovery node were ever treated as an owner, this row fails — the unresolvable-owner class"
+    },
+    {
+      "type": "calls",
+      "source": "m",
+      "target": "b",
+      "comment": "the broken statement `$b = ;` assigns to a name with no right-hand side: there is no callee to call, so no `calls` edge may be invented for it. This is the R10 target-spelling rule holding on a malformed file, where a naive reader would publish the assignment target as a call."
+    }
+  ]
+}

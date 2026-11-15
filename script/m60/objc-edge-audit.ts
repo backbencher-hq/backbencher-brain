@@ -31,7 +31,7 @@ import { execSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/objc-edge-audit.json")
 const REPOS = ["sdwebimage", "afnetworking", "Clyde"]
 const argNum = (f: string, d: number) => { const a = process.argv.find((x) => x.startsWith(`--${f}=`)); return a ? Number(a.slice(f.length + 3)) : d }

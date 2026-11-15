@@ -1,0 +1,44 @@
+# M12 hand-audit fixture. Every fact in validation/m12/ground-truth/toml.json was
+# decided by reading THIS file against the TOML v1.0.0 specification BEFORE the
+# analyzer was run, and each carries a reference quoting the line it was read from.
+# Regenerating the truth from analyzer output would destroy its only function.
+
+# Keys before any header are in the IMPLICIT ROOT table.
+title = "TOML audit"
+enabled = true
+ratio = 1.5
+count = 42
+
+[package]
+name = "audit"
+version = "0.1.0"
+
+# A quoted key is ONE segment even when it contains a dot, and the dot does not
+# nest it — so this is a key of `package` named `dotted.literal`, NOT two keys.
+"dotted.literal" = 1
+
+# A bare dotted key really does nest three deep, and it is ONE symbol.
+plain.dotted = 2
+
+# Two tables at root, and a name that repeats across them on purpose: `name` under
+# `[package]` and `name` under each `[[bin]]` is the collision that forces a
+# symbol's name to be its full path rather than its leaf.
+[dependencies]
+serde = "1"
+
+[[bin]]
+name = "first"
+path = "src/first.rs"
+
+[[bin]]
+name = "second"
+
+# A header four segments deep, where `target` and `cfg(unix)` are IMPLIED — the
+# file never declares them, so they are recorded and not invented.
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+# A value is DATA. The string "audit" is what `package.name` holds and is not a
+# node; the inline table's keys ride on the key rather than becoming symbols.
+[inline]
+table = { a = 1, b = "two" }

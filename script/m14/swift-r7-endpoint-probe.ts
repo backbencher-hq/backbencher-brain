@@ -39,7 +39,7 @@ import { readFileSync, writeFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = "validation/m14/tmp/swift-r7-endpoints.json"
 const REPOS = [
   { repo: "swift-nio", cap: Number.POSITIVE_INFINITY },

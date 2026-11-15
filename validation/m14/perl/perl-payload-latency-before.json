@@ -1,0 +1,157 @@
+{
+  "label": "before",
+  "generatedAt": "2026-10-05T06:11:58.544Z",
+  "head": "45690abc598ad7a2809a353601ab6bf6aec7815a",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "admittedFiles": 5127,
+    "derivation": "git ls-files per repo, <=512KiB, detectLanguageFromPath === 'perl'",
+    "sampled": 400,
+    "stride": 12,
+    "reposInSample": [
+      [
+        "perl-moose",
+        80
+      ],
+      [
+        "perl5-core",
+        68
+      ],
+      [
+        "haskell",
+        59
+      ],
+      [
+        "perl-catalyst-runtime",
+        39
+      ],
+      [
+        "perl-mojolicious",
+        23
+      ],
+      [
+        "perl-plack",
+        19
+      ],
+      [
+        "perl-template-toolkit",
+        15
+      ],
+      [
+        "perl-pdf-api2",
+        13
+      ],
+      [
+        "perl-moo",
+        12
+      ],
+      [
+        "perl-xml-libxml",
+        10
+      ],
+      [
+        "perl-dbi",
+        9
+      ],
+      [
+        "perl-module-build",
+        7
+      ],
+      [
+        "perl-devel-cover",
+        6
+      ],
+      [
+        "perl-json-pp",
+        6
+      ],
+      [
+        "perl-net-ssleay",
+        6
+      ],
+      [
+        "perl-locale-codes",
+        5
+      ],
+      [
+        "perl-gd",
+        4
+      ],
+      [
+        "perl-path-tiny",
+        4
+      ],
+      [
+        "perl-software-license",
+        4
+      ],
+      [
+        "perl-text-csv_xs",
+        4
+      ],
+      [
+        "perl-class-accessor-lite",
+        2
+      ],
+      [
+        "perl-data-dumper",
+        2
+      ],
+      [
+        "perl-try-tiny",
+        2
+      ],
+      [
+        "go-stdlib",
+        1
+      ]
+    ]
+  },
+  "relationships": 8499,
+  "unfilteredBytes": 1635810,
+  "largestType": "calls",
+  "largestTypeBytes": 1072832,
+  "largestTypeEdges": 5533,
+  "ratioOverLargest": 1.525,
+  "smallestType": "implements",
+  "smallestTypeBytes": 11793,
+  "ratioOverSmallest": 138.71,
+  "shapes": [
+    {
+      "type": "calls",
+      "count": 5533,
+      "bytes": 1072832
+    },
+    {
+      "type": "contains",
+      "count": 1950,
+      "bytes": 324288
+    },
+    {
+      "type": "overrides",
+      "count": 573,
+      "bytes": 137553
+    },
+    {
+      "type": "instantiates",
+      "count": 266,
+      "bytes": 60212
+    },
+    {
+      "type": "extends",
+      "count": 127,
+      "bytes": 29137
+    },
+    {
+      "type": "implements",
+      "count": 50,
+      "bytes": 11793
+    }
+  ],
+  "parseWallMs": 25760,
+  "analyzeOnlyMs": 2661,
+  "avgMsPerFileParse": 64.4,
+  "avgMsPerFileAnalyze": 6.65,
+  "failed": 0,
+  "offEnumTypes": []
+}

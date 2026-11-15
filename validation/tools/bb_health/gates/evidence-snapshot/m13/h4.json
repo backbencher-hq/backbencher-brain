@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.32",
+  "code": "H4",
+  "tool": "bb_health",
+  "title": "bb_health: refresh/force failure injection",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "force: pre-force snapshot does NOT include the new file (honest)",
+      "pass": true,
+      "detail": "snapshot=1 before=1"
+    },
+    {
+      "name": "force: reindex completed",
+      "pass": true,
+      "detail": "completed=true"
+    },
+    {
+      "name": "force: new file is indexed before reporting",
+      "pass": true,
+      "detail": "forced=2 expected=2"
+    },
+    {
+      "name": "wait=false: snapshot is returned immediately (completed=false)",
+      "pass": true,
+      "detail": "completed=false"
+    },
+    {
+      "name": "wait=false: REFRESH_STARTED warning is present",
+      "pass": true,
+      "detail": "[\"REFRESH_STARTED\"]"
+    },
+    {
+      "name": "wait=false: formatted report never claims completed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /tmp/bb-health-refresh-IUf1cs\nprojectId: 70df4e66fa5c8f23403f3ad4551c0c1cecbe8bd8\nfiles=2 symbols=2 relationships=2 imports=0 synta"
+    },
+    {
+      "name": "wait=false: formatted report does not mislabel it failed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /tmp/bb-health-refresh-IUf1cs\nprojectId: 70df4e66fa5c8f23403f3ad4551c0c1cecbe8bd8\nfiles=2 symbols=2 relationships=2 imports=0 synta"
+    },
+    {
+      "name": "wait=false: formatted report labels it started (pending)",
+      "pass": true,
+      "detail": "project: /tmp/bb-health-refresh-IUf1cs\nprojectId: 70df4e66fa5c8f23403f3ad4551c0c1cecbe8bd8\nfiles=2 symbols=2 relationships=2 imports=0 synta"
+    },
+    {
+      "name": "failure: injected refresh failure surfaces as REFRESH_FAILED [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "attempt to write a readonly database"
+    },
+    {
+      "name": "failure: refresh is NOT reported complete [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "completed=false"
+    },
+    {
+      "name": "failure: formatted report never claims completed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /tmp/bb-health-refresh-fail-hfjDFg\nprojectId: 9040a71d145eaed2987c458cc59ea54ca40b4d31\nfiles=1 symbols=1 relationships=1 imports=0 "
+    },
+    {
+      "name": "failure: formatted report labels the refresh failed",
+      "pass": true,
+      "detail": "project: /tmp/bb-health-refresh-fail-hfjDFg\nprojectId: 9040a71d145eaed2987c458cc59ea54ca40b4d31\nfiles=1 symbols=1 relationships=1 imports=0 "
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "decisions": {
+    "failureInjection": "deleting the project DB directory makes the refresh worker fail deterministically — REFRESH_FAILED + completed=false must surface, never a passing report",
+    "force": "force=true wipes and fully reindexes BEFORE reporting; a file created after the initial index must appear in the force-refreshed counts",
+    "waitFalse": "wait=false returns the pre-refresh snapshot marked started (pending); the formatter must never label it completed (or misleadingly failed)"
+  },
+  "limitations": [
+    "Failure injection relies on the filesystem (deleting the DB dir); it is deterministic in this harness."
+  ],
+  "generatedAt": "2026-08-22T22:42:27.112Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.287Z",
+    "contentSha256": "b7627dffe861bfa2681fb1f44ebc8dd14b2bda8cf66ff0ebd4bf91e2c3553af0"
+  }
+}

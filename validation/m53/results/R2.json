@@ -3,7 +3,7 @@
   "evidenceFile": "R2.json",
   "status": "verified",
   "head": "4dfd8c4148d043ff3d1aa720a3b89474f9d677b3",
-  "repo": "$HOME/bb-demo-hub",
+  "repo": "/home/ishaq2321/bb-demo-hub",
   "index": {
     "files": 8,
     "symbols": 30,

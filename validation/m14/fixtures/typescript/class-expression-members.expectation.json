@@ -1,0 +1,190 @@
+{
+  "fixtureId": "typescript/class-expression-members",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS class-EXPRESSION members and the single owner rule (R1). Pre-fix `const A = class Inner { m() {} }` produced NO member at all — the variable path's only descent trigger tested for `object`, so a class value never descended and the whole body was lost: no member symbol, no `contains` edge, and the calls inside `m` attributed to the enclosing function. The javascript twin emitted `method:m` all along and the oracle derives nothing for the shape, so no differential could ever have flagged it: the twin was the only available reference. The owner rule is the twin's, ported: a class expression's own declared name wins, else the binding it initialises or assigns to; an object literal is owned by its binding; a function boundary ends the search; a value with no binding to name stays OWNERLESS, which is correct silence rather than a gap — so the call-argument and returned forms are pinned as ownerless precisely so a future 'fix' cannot attach them to whatever encloses them. THE SECOND HALF: the same rule now names the relationship SOURCE as well as the symbol. The resolver used to walk up to the nearest variable_declarator with no function-boundary check, so a method inside a RETURNED object literal matched nothing and every call in it was charged to the enclosing method too — the same call sitting in two payloads and the edge naming the wrong source (`prepare->get`). The `inner` notIncludes pin is the only shape that can tell 'omitted' from 'double-counted'. KNOWN DIVERGENCE, recorded not adopted: for the NAMED class expression the twin emits a `contains` edge `Inner->usesHelper` whose SOURCE has no symbol in either analyzer, because a class expression creates no symbol. This analyzer requires the owner to exist, so it emits no such edge. Making the twins agree needs a ruling on whether a class expression should be a symbol; until then the payload and the calls edge are pinned and the dangling edge is deliberately absent. R9 UPDATE: the named-class-expression divergence recorded below is now RESOLVED. The ruling is that `class Inner {...}` is a class declaration wherever it appears, so the class becomes a symbol and its members' containment edge becomes joinable in both twins. The anonymous form is unchanged by design: with no name of its own, its members belong to the binding that holds the value.",
+  "expectSymbols": [
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "Named",
+      "kind": "constant"
+    },
+    {
+      "name": "usesHelper",
+      "kind": "method",
+      "ownerName": "Inner"
+    },
+    {
+      "name": "Anon",
+      "kind": "constant"
+    },
+    {
+      "name": "m",
+      "kind": "method",
+      "ownerName": "Anon"
+    },
+    {
+      "name": "Assigned"
+    },
+    {
+      "name": "m",
+      "kind": "method",
+      "ownerName": "Assigned"
+    },
+    {
+      "name": "orphan",
+      "kind": "method"
+    },
+    {
+      "name": "returned",
+      "kind": "method"
+    },
+    {
+      "name": "inner",
+      "kind": "method"
+    },
+    {
+      "name": "obj",
+      "kind": "constant"
+    },
+    {
+      "name": "deep",
+      "kind": "method",
+      "ownerName": "obj"
+    },
+    {
+      "name": "deep",
+      "kind": "method",
+      "ownerName": "objAssigned"
+    },
+    {
+      "name": "Outer",
+      "kind": "constant"
+    },
+    {
+      "name": "q",
+      "kind": "method"
+    },
+    {
+      "name": "Decl",
+      "kind": "class"
+    },
+    {
+      "name": "m",
+      "kind": "method",
+      "ownerName": "Decl"
+    },
+    {
+      "name": "Inner",
+      "kind": "class",
+      "note": "R9: a NAMED class expression is a class declaration, so it is a Class symbol. Its absence was the root cause of the forbidden edge above: the member's owner (`Inner`) resolved to nothing, so addContainmentRelationships dropped the edge and the class was invisible as a type. The ANONYMOUS class expression below deliberately stays a bag of members owned by the binding \\u2014 it has no name of its own."
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "usesHelper",
+      "ownerName": "Inner",
+      "includes": [
+        "helper"
+      ],
+      "note": "THE GAIN: this payload did not exist pre-fix — the member itself did not exist"
+    },
+    {
+      "symbol": "m",
+      "ownerName": "Anon",
+      "includes": [
+        "helper"
+      ],
+      "note": "anonymous class expression: owned by the binding"
+    },
+    {
+      "symbol": "m",
+      "ownerName": "Assigned",
+      "includes": [
+        "helper"
+      ],
+      "note": "the assignment form (how a svelte custom-element base is written) — ownerless pre-fix"
+    },
+    {
+      "symbol": "orphan",
+      "includes": [
+        "helper"
+      ],
+      "note": "a call argument: correctly OWNERLESS, and still carrying its own payload"
+    },
+    {
+      "symbol": "returned",
+      "includes": [
+        "helper"
+      ]
+    },
+    {
+      "symbol": "deep",
+      "ownerName": "objAssigned",
+      "includes": [
+        "helper"
+      ],
+      "note": "object-literal assignment, newly owned via the same rule"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Inner",
+      "target": "usesHelper",
+      "note": "RESOLVED DIVERGENCE, and this pin used to be a FORBID. When R1 landed it recorded the javascript twin's `contains Inner->usesHelper` as a KNOWN DIVERGENCE and deliberately did not adopt it, because adopting it required a ruling this fixture did not have: whether a named class expression should be a SYMBOL at all. Without one, `Inner` named no symbol, so the edge had a target no index could join and typescript dropped it. R9 is that ruling \\u2014 a class expression carrying a name is a class DECLARATION (the name is written in the file and is in scope inside its own body, where `new Inner()` already resolved to it). So `Inner` is now a Class symbol, the owner resolves, and the edge is real in both twins. Pinned as a positive now, and `Inner` is asserted as a class symbol below."
+    },
+    {
+      "type": "calls",
+      "from": "usesHelper",
+      "target": "helper",
+      "note": "pre-fix this call was emitted against the MODULE leaf, because the resolver's owner walk did not know a class expression from a class declaration"
+    },
+    {
+      "type": "calls",
+      "from": "m",
+      "target": "helper"
+    },
+    {
+      "type": "calls",
+      "from": "orphan",
+      "target": "helper"
+    },
+    {
+      "type": "calls",
+      "from": "inner",
+      "target": "helper",
+      "note": "THE SECOND HALF: pre-fix this edge read `outerMethod->helper` AND the same call sat in outerMethod's payload too"
+    },
+    {
+      "type": "calls",
+      "from": "q",
+      "target": "helper"
+    },
+    {
+      "type": "contains",
+      "from": "Anon",
+      "target": "m"
+    },
+    {
+      "type": "contains",
+      "from": "Assigned",
+      "target": "m"
+    },
+    {
+      "type": "contains",
+      "from": "objAssigned",
+      "target": "deep"
+    },
+    {
+      "type": "contains",
+      "from": "Decl",
+      "target": "m",
+      "note": "CONTROL: a class declaration is untouched"
+    }
+  ],
+  "forbidRelationships": []
+}

@@ -1,6 +1,6 @@
 {
   "analyzer": "markdown",
-  "corpus": "$HOME/fixtures/repositories/scala3",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/scala3",
   "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
   "extensions": [
     "*.md"

@@ -1,0 +1,14 @@
+{
+  "rationale": "PINS the anonymous default form: form `anonymous` and NO localName (a fabricated local name here would be a false evidence claim; `meta.defaultExportLocalName: null` is the absent-case pin).",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "default",
+      "meta.defaultExportForm": "anonymous",
+      "meta.defaultExportLocalName": null
+    }
+  ],
+  "fixtureId": "javascript/export-claim-default-anonymous",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true
+}

@@ -70,7 +70,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 // ------------------------------------------------------------------------ corpus
 // The admission rule is `ontology-coverage-gate.ts`'s, COPIED for the reason the census

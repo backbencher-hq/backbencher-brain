@@ -1,0 +1,17 @@
+{
+  "expectSymbols": [
+    { "name": "Guarded", "kind": "module" },
+    { "name": "is_even", "kind": "macro", "ownerName": "Guarded" },
+    { "name": "helper", "kind": "macro", "ownerName": "Guarded" }
+  ],
+  "expectExports": [
+    { "name": "Guarded", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Global", "target": "ExUnit.start" },
+    { "type": "calls", "from": "Global", "target": "test" },
+    { "type": "calls", "from": "Global", "target": "assert" },
+    { "type": "contains", "from": "Guarded", "target": "is_even" },
+    { "type": "contains", "from": "Guarded", "target": "helper" }
+  ]
+}

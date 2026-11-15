@@ -1,0 +1,12 @@
+{
+  "fixtureId": "kotlin/complexity-parity",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: cyclomatic complexity = 1 + decisions; decisions = if + for + if-expression + && = 4, so f must be exactly 5. The old symbol calculator missed conjunction/disjunction entirely (&& never counted); the file-level counter double-counted else_clause on every if/else.",
+  "expectSymbols": [
+    { "name": "f", "kind": "function" }
+  ],
+  "expectComplexity": [
+    { "symbol": "f", "equals": 5 }
+  ]
+}

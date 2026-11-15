@@ -1,0 +1,679 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-20T09:42:54.368Z",
+  "atCommit": "23e07de86037511365b8141c3d03b9ee1369262f",
+  "treeModifiedInputs": 42,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 40,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "erlang:rebar3/apps/rebar/test/mock_git_resource.erl",
+    "token": "mock",
+    "trueLine": 11,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "erlang": {
+      "files": 40,
+      "rels": 7042,
+      "withLine": 7042,
+      "noLine": 0,
+      "consistent": 7042,
+      "inconsistent": 0,
+      "notCheckable": 0
+    }
+  },
+  "sampleHash": {
+    "erlang": "3bc792be8200"
+  },
+  "samplePins": {
+    "erlang": [
+      {
+        "file": "rebar3/apps/rebar/test/mock_git_resource.erl",
+        "contentSha": "0d6ed6ac4a81"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/mock_git_subdir_resource.erl",
+        "contentSha": "d4bb33afc5a4"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/mock_pkg_resource.erl",
+        "contentSha": "3beece23b349"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_alias_SUITE.erl",
+        "contentSha": "935f9cbd6d27"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_as_SUITE.erl",
+        "contentSha": "32577f1c9948"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compile_SUITE.erl",
+        "contentSha": "3f1ed7c784e0"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compiler_dag_SUITE.erl",
+        "contentSha": "423331ac19fe"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compiler_epp_SUITE.erl",
+        "contentSha": "7b0bc0806f04"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compiler_format_SUITE.erl",
+        "contentSha": "ce92321090bd"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_completion_SUITE.erl",
+        "contentSha": "176fcc219811"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_cover_SUITE.erl",
+        "contentSha": "6f0c662eb064"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_ct_SUITE.erl",
+        "contentSha": "13ff676a3401"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_deps_SUITE.erl",
+        "contentSha": "20e9b6dd2e5d"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_dialyzer_SUITE.erl",
+        "contentSha": "308a665b9655"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_dir_SUITE.erl",
+        "contentSha": "7e2fe7773ab5"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_disable_app_SUITE.erl",
+        "contentSha": "bdd043ad08d2"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_discover_SUITE.erl",
+        "contentSha": "6f84d70057ec"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_dist_utils_SUITE.erl",
+        "contentSha": "01bbb0b3086c"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_edoc_SUITE.erl",
+        "contentSha": "a92dd4915eb9"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_escriptize_SUITE.erl",
+        "contentSha": "7cbc612e130d"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_eunit_SUITE.erl",
+        "contentSha": "1b5629db8198"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_file_utils_SUITE.erl",
+        "contentSha": "c622e664fe38"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_hooks_SUITE.erl",
+        "contentSha": "50d191893268"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_install_deps_SUITE.erl",
+        "contentSha": "07fa9e4dbd9e"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_localfs_resource.erl",
+        "contentSha": "407de760c378"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_localfs_resource_v2.erl",
+        "contentSha": "23a1535cb8ee"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_lock_SUITE.erl",
+        "contentSha": "107c7c7d80a1"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_manifest_SUITE.erl",
+        "contentSha": "7da1118979a6"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_namespace_SUITE.erl",
+        "contentSha": "56cdf6bbe177"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_new_SUITE.erl",
+        "contentSha": "06dab9b45db8"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_opts_parser_SUITE.erl",
+        "contentSha": "2d9998fcdfb1"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_parallel_SUITE.erl",
+        "contentSha": "30e0198e84fb"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_paths_SUITE.erl",
+        "contentSha": "fee804cba5d3"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_pkg_SUITE.erl",
+        "contentSha": "d51286f081f6"
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_pkg_alias_SUITE.erl",
+        "contentSha": "0f4058f3b868"
+      },
+      {
+        "file": "rebar3/systest/all_SUITE.erl",
+        "contentSha": "9bce4bde8770"
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/alias_clash/src/alias_clash.erl",
+        "contentSha": "cee62bc99a24"
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/compile_deps/vendored/fake_dep/src/fake_dep.erl",
+        "contentSha": "3952de2d9a4f"
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/grisp_explode/src/mygrispproject.erl",
+        "contentSha": "9298f94981ba"
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/grisp_explode/src/mygrispproject_sup.erl",
+        "contentSha": "7befe3066282"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "erlang": {
+      "prev": "3bc792be8200",
+      "now": "3bc792be8200",
+      "same": true
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "erlang": [
+      {
+        "file": "rebar3/apps/rebar/test/mock_git_resource.erl",
+        "language": "erlang",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/mock_git_subdir_resource.erl",
+        "language": "erlang",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/mock_pkg_resource.erl",
+        "language": "erlang",
+        "rels": 102,
+        "withLine": 102,
+        "noLine": 0,
+        "consistent": 102,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_alias_SUITE.erl",
+        "language": "erlang",
+        "rels": 101,
+        "withLine": 101,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_as_SUITE.erl",
+        "language": "erlang",
+        "rels": 89,
+        "withLine": 89,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compile_SUITE.erl",
+        "language": "erlang",
+        "rels": 1554,
+        "withLine": 1554,
+        "noLine": 0,
+        "consistent": 1554,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compiler_dag_SUITE.erl",
+        "language": "erlang",
+        "rels": 256,
+        "withLine": 256,
+        "noLine": 0,
+        "consistent": 256,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compiler_epp_SUITE.erl",
+        "language": "erlang",
+        "rels": 86,
+        "withLine": 86,
+        "noLine": 0,
+        "consistent": 86,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_compiler_format_SUITE.erl",
+        "language": "erlang",
+        "rels": 92,
+        "withLine": 92,
+        "noLine": 0,
+        "consistent": 92,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_completion_SUITE.erl",
+        "language": "erlang",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 60,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_cover_SUITE.erl",
+        "language": "erlang",
+        "rels": 201,
+        "withLine": 201,
+        "noLine": 0,
+        "consistent": 201,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_ct_SUITE.erl",
+        "language": "erlang",
+        "rels": 1011,
+        "withLine": 1011,
+        "noLine": 0,
+        "consistent": 1011,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_deps_SUITE.erl",
+        "language": "erlang",
+        "rels": 323,
+        "withLine": 323,
+        "noLine": 0,
+        "consistent": 323,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_dialyzer_SUITE.erl",
+        "language": "erlang",
+        "rels": 395,
+        "withLine": 395,
+        "noLine": 0,
+        "consistent": 395,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_dir_SUITE.erl",
+        "language": "erlang",
+        "rels": 282,
+        "withLine": 282,
+        "noLine": 0,
+        "consistent": 282,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_disable_app_SUITE.erl",
+        "language": "erlang",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_discover_SUITE.erl",
+        "language": "erlang",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_dist_utils_SUITE.erl",
+        "language": "erlang",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_edoc_SUITE.erl",
+        "language": "erlang",
+        "rels": 89,
+        "withLine": 89,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_escriptize_SUITE.erl",
+        "language": "erlang",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_eunit_SUITE.erl",
+        "language": "erlang",
+        "rels": 371,
+        "withLine": 371,
+        "noLine": 0,
+        "consistent": 371,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_file_utils_SUITE.erl",
+        "language": "erlang",
+        "rels": 414,
+        "withLine": 414,
+        "noLine": 0,
+        "consistent": 414,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_hooks_SUITE.erl",
+        "language": "erlang",
+        "rels": 129,
+        "withLine": 129,
+        "noLine": 0,
+        "consistent": 129,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_install_deps_SUITE.erl",
+        "language": "erlang",
+        "rels": 213,
+        "withLine": 213,
+        "noLine": 0,
+        "consistent": 213,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_localfs_resource.erl",
+        "language": "erlang",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_localfs_resource_v2.erl",
+        "language": "erlang",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_lock_SUITE.erl",
+        "language": "erlang",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_manifest_SUITE.erl",
+        "language": "erlang",
+        "rels": 51,
+        "withLine": 51,
+        "noLine": 0,
+        "consistent": 51,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_namespace_SUITE.erl",
+        "language": "erlang",
+        "rels": 64,
+        "withLine": 64,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_new_SUITE.erl",
+        "language": "erlang",
+        "rels": 85,
+        "withLine": 85,
+        "noLine": 0,
+        "consistent": 85,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_opts_parser_SUITE.erl",
+        "language": "erlang",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_parallel_SUITE.erl",
+        "language": "erlang",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_paths_SUITE.erl",
+        "language": "erlang",
+        "rels": 179,
+        "withLine": 179,
+        "noLine": 0,
+        "consistent": 179,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_pkg_SUITE.erl",
+        "language": "erlang",
+        "rels": 259,
+        "withLine": 259,
+        "noLine": 0,
+        "consistent": 259,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/apps/rebar/test/rebar_pkg_alias_SUITE.erl",
+        "language": "erlang",
+        "rels": 162,
+        "withLine": 162,
+        "noLine": 0,
+        "consistent": 162,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/systest/all_SUITE.erl",
+        "language": "erlang",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/alias_clash/src/alias_clash.erl",
+        "language": "erlang",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/compile_deps/vendored/fake_dep/src/fake_dep.erl",
+        "language": "erlang",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/grisp_explode/src/mygrispproject.erl",
+        "language": "erlang",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rebar3/systest/all_SUITE_data/grisp_explode/src/mygrispproject_sup.erl",
+        "language": "erlang",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

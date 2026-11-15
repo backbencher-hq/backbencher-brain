@@ -1,0 +1,52 @@
+{
+  "issue": "M21.R3",
+  "code": "R3",
+  "milestone": "M21",
+  "title": "index interruption, checkpoint honesty, and resume completeness",
+  "status": "verified",
+  "contract": {
+    "cancellationInput": true,
+    "checkpoint": true,
+    "resumeState": true,
+    "interruptedRunVerified": true
+  },
+  "checks": 14,
+  "passed": 14,
+  "failed": 0,
+  "measured": {
+    "fixtureIndexableFiles": 81,
+    "interrupt": {
+      "abortedAt": 9,
+      "processedFiles": 70,
+      "totalFiles": 81,
+      "storedFiles": 70,
+      "cancelled": true
+    },
+    "resume": {
+      "successFiles": 11,
+      "skippedFiles": 70,
+      "errorFiles": 0,
+      "totalFiles": 81,
+      "wallMs": 3118,
+      "failed": 0
+    },
+    "final": {
+      "dbFiles": 81,
+      "missingFiles": 0,
+      "duplicateRows": 0,
+      "status": "complete",
+      "indexedFiles": 81
+    }
+  },
+  "limitations": [
+    "The interrupt is COOPERATIVE (AbortSignal — exactly the path Ctrl+C drives: the CLI aborts this signal on SIGINT), not SIGKILL. Atomic status-file durability across a hard kill is the separate contract of index-status.ts (temp file + rename), not re-proven here.",
+    "The resume used the same incremental semantics the CLI's --resume sets (isIncremental). It does not replay a checkpoint cursor; stored files are skipped by the mtime/size check, which is what --resume documents."
+  ],
+  "negatives": [
+    "An interrupted run is not reported as a completed index.",
+    "A resume that loses a file or duplicates a row fails this gate.",
+    "A resume that parses every file again (skippedFiles < storedBeforeInterrupt) fails the 'continued' check."
+  ],
+  "verifierCommand": "npx tsx script/m21/verify-index-resume.ts",
+  "generatedAt": "2026-11-01T20:52:18.355Z"
+}

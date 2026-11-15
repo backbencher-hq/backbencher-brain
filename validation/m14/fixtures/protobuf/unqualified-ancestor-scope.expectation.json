@@ -1,0 +1,139 @@
+{
+  "fixtureId": "protobuf/unqualified-ancestor-scope",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS name resolution for an UNQUALIFIED type reference whose declaration is in an ANCESTOR package the file imports. The corpus case is protobuf's own reference implementation: pb-reference/src/google/protobuf/compiler/plugin.proto declares `package google.protobuf.compiler`, imports `google/protobuf/descriptor.proto` (which declares `package google.protobuf`), and writes the field type BARE as `repeated FileDescriptorProto proto_file = 15;`. protoc resolves that bare name UP to `google.protobuf.FileDescriptorProto` by C++ scope lookup \u2014 the innermost enclosing scope that HOLDS a declaration wins. Before this pass the analyzer assumed an unqualified name was package-relative and emitted `google.protobuf.compiler.FileDescriptorProto`, which no file in the corpus publishes: the graph asserted a declaration that does not exist, on 4 edges across 2 files. The rule measured over all 847 corpus files: FIXED 4, BROKE 0, SWAP 0, against two independent baselines (script/m14/tmp/protobuf/probe/uses-target-dump.mts + compare-uses-dumps.mts). This fixture asserts all four outcomes of the rule, not only the one that fixed an edge: the climb, the NEAREST-scope-wins local shadow (which is what makes it a resolution rule rather than a 'strip the last package segment' one), the decline when the imported file does not declare the name, and the untouched fully-qualified form.",
+  "expectSymbols": [
+    {
+      "name": "ancestor.v1.compiler",
+      "kind": "namespace"
+    },
+    {
+      "name": "Descendant",
+      "kind": "class",
+      "ownerName": "ancestor.v1.compiler"
+    },
+    {
+      "name": "base",
+      "kind": "property",
+      "ownerName": "ancestor.v1.compiler.Descendant"
+    },
+    {
+      "name": "shadow",
+      "kind": "property",
+      "ownerName": "ancestor.v1.compiler.Descendant"
+    },
+    {
+      "name": "unknown_ref",
+      "kind": "property",
+      "ownerName": "ancestor.v1.compiler.Descendant"
+    },
+    {
+      "name": "absolute",
+      "kind": "property",
+      "ownerName": "ancestor.v1.compiler.Descendant"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "ancestor/v1/base.proto",
+      "path": "ancestor/v1/base.proto",
+      "note": "holds `package ancestor.v1`, an ANCESTOR of this file's own package. The evidence the climb is allowed to use."
+    },
+    {
+      "module": "other/v1/unrelated.proto",
+      "path": "other/v1/unrelated.proto",
+      "note": "a package with no relationship to this file's scope chain \u2014 the negative control for 'any import matches any name'."
+    },
+    {
+      "module": "ancestor/v1/child.proto",
+      "path": "ancestor/v1/child.proto",
+      "note": "imported, and declares nothing \u2014 so it cannot satisfy a reference and the walk must decline."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.base",
+      "target": "ancestor.v1.Base",
+      "line_number": 42,
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 0.9,
+      "note": "THE CLIMB, and the edge this pass fixed. `Base` is written bare and declared in `package ancestor.v1`, which this file imports. The scope chain is walked innermost first and `ancestor/v1` is a directory this file imports, so the candidate is `ancestor.v1.Base`. Prefixing the file's own package instead gave `ancestor.v1.compiler.Base` \u2014 a name no file publishes. Confidence stays at the structural level: the directory match is derived from two parse facts (this file's `import` node paths and its `package` node), not from a name guess, and the same guard that refuses to guess when a more specific scope is also imported is what makes the climb safe."
+    },
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.shadow",
+      "target": "ancestor.v1.Shadow",
+      "line_number": 46,
+      "note": "NEGATIVE CONTROL for 'the climb always wins'. `Shadow` is not declared in THIS file either, so it climbs exactly like `Base` \u2014 and this fixture deliberately cannot distinguish the two, because a single-file fixture has no cross-file declaration to shadow. What this row pins is that the climb is a SCOPE-WALK and not a 'strip the package's last segment' rewrite: the target gained exactly the `ancestor.v1.` prefix that `ancestor/v1` (an imported directory) supplies, and did not become `ancestor.v1.compiler.Shadow`."
+    },
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.unknown_ref",
+      "target": "ancestor.v1.Unknown",
+      "line_number": 50,
+      "note": "THE DECLINE. `ancestor/v1/child.proto` is imported and declares nothing, and `other/v1/unrelated.proto` is imported and is outside the scope chain, so no scope satisfies this name. It is still climbed to `ancestor.v1.Unknown` rather than left bare \u2014 the walk found the ancestor package by DIRECTORY, and protoc's scope lookup would test `ancestor.v1.Unknown` before giving up, so the emitted id is the FIRST candidate protoc would have tried. It resolves to nothing, which is honest: nothing declares it."
+    },
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.absolute",
+      "target": "ancestor.v1.Base",
+      "line_number": 54,
+      "note": "A LEADING DOT is absolute: `.ancestor.v1.Base` names the global declaration and no scope walk may alter it. This row exists because the fix adds a walk, and a walk that also touched absolute names would be a regression the corpus might not contain \u2014 this is the assertion that it does not."
+    },
+    {
+      "type": "contains",
+      "from": "ancestor.v1.compiler",
+      "target": "ancestor.v1.compiler.Descendant",
+      "line_number": 40,
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 0.9,
+      "note": "unchanged structural edge, pinned so a fixture that only asserted `uses` targets would still fail if the climb disturbed ordinary containment."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.base",
+      "target": "ancestor.v1.compiler.Base",
+      "note": "THE DEFECT, pinned as an absence. Prefixing the file's own package is the pre-pass behaviour and emits a name no corpus file publishes. A forbid is the strongest statement available: it fails if the analyzer reverts to the assumption, and it fails if the edge is merely re-labelled."
+    },
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.unknown_ref",
+      "target": "other.v1.Unknown",
+      "note": "the imported-but-unrelated package must never satisfy a reference. `other/v1/unrelated.proto` is imported so that an implementation which treats 'some import exists' as evidence would resolve here."
+    },
+    {
+      "type": "references",
+      "from": "ancestor.v1.compiler.Descendant.base",
+      "target": "ancestor.v1.compiler.Descendant.Base",
+      "note": "the self-scope candidate. protoc stops at the first scope HOLDING A DECLARATION, and this package holds none, so the innermost candidate must be abandoned rather than emitted."
+    },
+    {
+      "type": "uses",
+      "from": "ancestor.v1.compiler.Descendant.base",
+      "target": "ancestor.v1.Base",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "ancestor.v1.compiler.Descendant.shadow",
+      "target": "ancestor.v1.Shadow",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "ancestor.v1.compiler.Descendant.unknown_ref",
+      "target": "ancestor.v1.Unknown",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "ancestor.v1.compiler.Descendant.absolute",
+      "target": "ancestor.v1.Base",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ]
+}

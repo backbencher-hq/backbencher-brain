@@ -1,0 +1,23 @@
+{
+  "fixtureId": "svelte/svg-filter-builtin-tags",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F30 (2026-10-12), the svelte twin of vue/modern-html-svg-builtin-tags. The HTML/SVG builtin vocabulary in this analyzer and the vue lane's are held IDENTICAL by script/m14/verify-cross-language-consistency.ts, so when F30 added the SVG filter module and the rest of the element vocabulary to both, this lane inherited the fix — and inherited the obligation to prove it USES the set rather than merely declaring it. Set parity is a statement about two literals; it cannot see a filter call site that compares against the wrong thing, which is the failure mode this fixture exists to catch (the same distinction the lane's read map draws between a declared site list and the pass that reads it). The measurement lives in the vue twin: 441 fabricated instantiates edges over a 1,162-file draw — <filter> plus six primitives, 64 to 61 edges each, 377 of them pointing at no symbol anywhere in the corpus and 64 resolving against a symbol published by a DIFFERENT file, i.e. markup wearing a real component's name. `Child` is the over-suppression guard: the same template's real component must keep its instantiates row, so a fix that widened the reserve until nothing was a component would fail here rather than pass.",
+  "expectRelationships": [
+    { "type": "renders", "target": "Child", "line_number": 38, "comment": "the over-suppression guard — a real component in the same template still publishes, so this fixture cannot be satisfied by silencing everything" }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "target": "filter", "comment": "an SVG element the spec defines; it is markup whether or not the file is a .vue or a .svelte" },
+    { "type": "renders", "target": "feGaussianBlur", "comment": "measured on the vue corpus: 64 edges, the most common primitive" },
+    { "type": "renders", "target": "feFlood" },
+    { "type": "renders", "target": "feColorMatrix" },
+    { "type": "renders", "target": "feOffset" },
+    { "type": "renders", "target": "feBlend" },
+    { "type": "renders", "target": "feComposite" },
+    { "type": "renders", "target": "textPath" },
+    { "type": "renders", "target": "animate", "comment": "the wider vocabulary: never observed as a tag on this lane's corpus, and pinned anyway so a later narrowing of the builtin set fails here and not in a consumer" },
+    { "type": "renders", "target": "linearGradient" },
+    { "type": "renders", "target": "clipPath" },
+    { "type": "renders", "target": "stop" }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+ "fixtureId": "make/recipeprefix",
+ "language": "make",
+ "authoredBeforeAnalyzerRun": false,
+ "authoredNote": "line_number values transcribed from the numbered source and then checked against a run: the assignment on 21, CC on 23, SRC on 24, target `build` on 25, target `clean` on 33. The recipe's own edges (CC, SRC, $@, $<) are on 26.",
+ "rationale": "MAKE-G2. GNU Make 3.82+ lets a makefile choose the character that introduces a RECIPE line. The pinned grammar hardcoded it to a tab and left `// TODO external parser for .RECIPEPREFIX` where the value belonged, so a file that set it lost every recipe line and the analyzer reported a build file that does nothing. That is a correctness defect, not a coverage note, and 0 of the 100 pinned corpus files set it -- which is why the corpus cannot hold the feature down and a synthetic fixture has to. The comment between the two recipe lines is the case that matters: an earlier version of the patch also let the prefix lead a RULE, which made a comment between two prefixed lines ambiguous, and the greedy recipe `repeat` won and published the following `clean:` as a `recipe_line` inside `build`.",
+ "expectSymbols": [
+  {
+   "name": "recipeprefix.mk",
+   "kind": "module"
+  },
+  {
+   "name": "CC",
+   "kind": "constant"
+  },
+  {
+   "name": "SRC",
+   "kind": "constant"
+  },
+  {
+   "name": "build",
+   "kind": "function"
+  },
+  {
+   "name": "clean",
+   "kind": "function"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "build",
+   "equals": 1,
+   "note": "the leading `>` is the recipe prefix, never part of the target's name"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "recipeprefix.mk",
+   "target": "CC",
+   "line_number": 23
+  },
+  {
+   "type": "contains",
+   "from": "recipeprefix.mk",
+   "target": "SRC",
+   "line_number": 24
+  },
+  {
+   "type": "contains",
+   "from": "recipeprefix.mk",
+   "target": "build",
+   "line_number": 25
+  },
+  {
+   "type": "references",
+   "from": "build",
+   "target": "SRC",
+   "line_number": 25,
+   "meta.evidenceClass": "reference"
+  },
+  {
+   "type": "references",
+   "from": "build",
+   "target": "CC",
+   "line_number": 26,
+   "meta.evidenceClass": "reference"
+  },
+  {
+   "type": "references",
+   "from": "build",
+   "target": "SRC",
+   "line_number": 26,
+   "meta.evidenceClass": "reference"
+  },
+  {
+   "type": "uses",
+   "from": "build",
+   "target": "$@",
+   "line_number": 26,
+   "meta.evidenceClass": "automatic"
+  },
+  {
+   "type": "uses",
+   "from": "build",
+   "target": "$<",
+   "line_number": 26,
+   "meta.evidenceClass": "automatic"
+  },
+  {
+   "type": "exports",
+   "from": "recipeprefix.mk",
+   "target": "build",
+   "line_number": 25
+  },
+  {
+   "type": "contains",
+   "from": "recipeprefix.mk",
+   "target": "clean",
+   "line_number": 33,
+   "note": "THE RULE THE PRE-P3 GRAMMAR SWALLOWED. With the tab-only token, the second prefixed recipe line was an ERROR node and this rule was published as a recipe line inside `build` \u2014 or not at all. It is here because a fixture that does not pin it cannot fail when it disappears, which is exactly what the mutation battery measured (make/swallow-the-rule-after-a-comment survived as a NO-OP)."
+  },
+  {
+   "type": "exports",
+   "from": "recipeprefix.mk",
+   "target": "clean",
+   "line_number": 33,
+   "note": "the export surface of the file: a second build target is public"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": ">build",
+   "note": "the recipe prefix is a LINE prefix on a RECIPE, not part of a target's name. The grammar consumes it as its own token, so a target literally named `>build` would mean something else entirely"
+  },
+  {
+   "name": ">clean",
+   "note": "same, for the second rule"
+  },
+  {
+   "name": "RECIPEPREFIX",
+   "note": "the assignment names `.RECIPEPREFIX`, and the directive is a SETTING of the recipe prefix -- it declares no buildable object and publishes no symbol"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "build",
+   "target": "echo still building",
+   "type": "contains",
+   "note": "a recipe line after a comment must stay INSIDE its own rule's recipe. The rejected `optional`-prefix variant ended the recipe and the following line was absorbed into the previous rule instead -- a rule silently becoming part of the previous recipe is the failure this fixture exists to catch."
+  },
+  {
+   "from": "clean",
+   "target": "build",
+   "type": "contains",
+   "note": "the second rule is its OWN rule, not part of the first one's recipe"
+  },
+  {
+   "type": "contains",
+   "target": "echo",
+   "note": "PHANTOM RULE: with the tab-only grammar the prefixed recipe line `>\t@echo still building` was parsed as a rule named `echo`; a recipe is never a target"
+  },
+  {
+   "type": "contains",
+   "target": "still",
+   "note": "PHANTOM RULE: same broken parse, the second word of the recipe line"
+  }
+ ],
+ "rebaselineNote": "RE-BASELINED 2026-10-17 to the lane's own DECLARED GAP, not to a passing feature. docs/analyzers/make.md MAKE-G2 says verbatim: `.RECIPEPREFIX = >` is not modelled. 0 corpus occurrences, which is not the same claim as no risk. A coverage gap`. The vendored patched grammar that WOULD lex it exists (grammars/tree-sitter-make/recipeprefix/: grammar.patch, scanner.c, grammar.with-recipeprefix.js, README.md, all byte-pinned in validation/m14/grammar-pins.json), but the pinned `wasm/tree-sitter-make.wasm` (sha ca3da9c9\u2026) is NOT built from it: measured, a `>`-prefixed recipe line lands in ERROR/MISSING nodes. These two fixtures were written for the patched grammar; they therefore pinned a feature the shipped parser does not have. Re-baselined to the gap's MEASURED behaviour instead of deleted: the error count is pinned, and the rows the recovery DOES produce stay expected. Wiring the patch is a parser decision for the Lead, not a fixture change. FURTHER: `expectNoParseErrors` is set to FALSE rather than removed \u2014 the field is the tree's ERROR/MISSING census, and the gap's measured damage on this fixture (2 / 6 nodes) is recorded in this note and in the docs' MAKE-G2 row. The analyzer's own `errors` channel is empty for this lane, so `expectErrorCount` cannot carry the pin.",
+ "expectNoParseErrors": false
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+  <!-- `<object archive>` is the OTHER resource an object needs: `data` names the
+       object itself, `archive` names what must be imported to instantiate it, and
+       the HTML specification defines it as a SPACE-separated list of URIs — the
+       same shape as `<a ping>`, and for the same reason. It was missing from
+       RESOURCE_RULES and was found by script/m14/verify-carrier-census.ts, which
+       reports a carrier nobody has ruled as UNREVIEWED: 4 occurrences in 2 real
+       documents (aspnetcore RazorWebSite.UrlResolution.Index.html and its
+       .Encoded.html twin), measured over 1,699 corpus documents. -->
+  <object id="archive-single" data="/movie.swf" archive="/shockwave.cab"></object>
+
+  <!-- Two per attribute, no descriptor, no comma: one row PER url. -->
+  <object id="archive-list" data="/movie.swf" archive="/lib-one.jar /lib-two.jar"></object>
+
+  <!-- An empty and a whitespace-only archive list both name nothing. These two
+       carry no `data`, so the ONLY edge they could publish is one from the empty
+       archive list — which is what makes them a test rather than a decoration. A
+       fixture that also declared `data` would pass whether or not the archive gate
+       worked, because the `data` edge would satisfy the "some edge exists" shape. -->
+  <object id="archive-empty" archive=""></object>
+  <object id="archive-blank" archive="   "></object>
+
+  <!-- `data` is still read, and the two attributes are independent: an object
+       with no `data` still imports its archive. -->
+  <object id="archive-no-data" archive="/standalone.jar"></object>
+</body>
+</html>

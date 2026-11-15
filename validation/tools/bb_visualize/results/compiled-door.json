@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "door": "compiled (node bin/bb -> dist/)",
+  "generatedAt": "2026-11-03T16:38:31.012Z",
+  "verifierCommand": "BB_DATA_DIR=validation/tools/bb_visualize/bbdata npx tsx validation/tools/bb_visualize/compiled-door.ts",
+  "repo": "/home/ishaq2321/bb_tests/repositories/rake",
+  "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+  "passed": 7,
+  "failed": 0,
+  "status": "verified",
+  "checks": [
+    {
+      "name": "compiled: bb_visualize is registered",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "compiled: default text answers",
+      "pass": true,
+      "detail": "graph: 200 nodes, 465 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by"
+    },
+    {
+      "name": "compiled: JSON declares bounds, page, provenance and freshness",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "compiled: provenance names the stored rows",
+      "pass": true,
+      "detail": "stored-symbol-and-relationship-rows"
+    },
+    {
+      "name": "compiled: HTML is self-contained",
+      "pass": true,
+      "detail": "531901 bytes"
+    },
+    {
+      "name": "compiled: an out-of-range bound is an error envelope",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was "
+    },
+    {
+      "name": "compiled: index bytes unchanged by the session",
+      "pass": true,
+      "detail": "{\"before\":{\"db\":{\"exists\":true,\"size\":33218560,\"sha256\":\"46ee83717c84dbfa1b03fa394b5e19a1d72fbe884316b1ef1df9025ebe9b1861\"},\"wal\":{\"exists\":true,\"size\":8928072,\"sha256\":\"aa66dd0be140a494dbad8bc7f1620b06dc32b9fb309fa7e113f47a9d063257b6\"}},\"after\":{\"db\":{\"exists\":true,\"size\":33218560,\"sha256\":\"46ee83717c84dbfa1b03fa394b5e19a1d72fbe884316b1ef1df9025ebe9b1861\"},\"wal\":{\"exists\":true,\"size\":8928072,\"sha256\":\"aa66dd0be140a494dbad8bc7f1620b06dc32b9fb309fa7e113f47a9d063257b6\"}}}"
+    }
+  ],
+  "dbUnchanged": true,
+  "stderrTail": [
+    "[INFO] [11:38:30] [dependency-graph-visualizer] ✅ Graph Data Generated: 399 nodes, 896 links",
+    "[INFO] [11:38:30] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:38:30] [dependency-graph-visualizer] ✅ Graph Data Generated: 399 nodes, 896 links"
+  ]
+}

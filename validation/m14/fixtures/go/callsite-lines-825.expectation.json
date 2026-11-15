@@ -1,0 +1,48 @@
+{
+  "fixtureId": "go/callsite-lines-825",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The expected lines below were TRANSCRIBED from a measured run of this fixture through the production entry and then checked line by line against the source (`cat -n`) — so they record what the analyzer does, not what it ought to. What makes them constraints rather than a snapshot is the forbid set: every entry there is an independently-argued construct-start position that the Go grammar permits writing (receiver-continued selectors, `defer`/`go` with the callee on the next line, grouped imports, wrapped parameter lists), so the fixture fails if the analyzer moves to any of them.",
+  "rationale": "M59.A7 (#825). Go emitted NO line_number on any relationship before this pin — measured through the production entry (ASTEngine.parseFile) on a 200-file draw of go-tools: 0 of 11,893 edges lined, now 11,893/11,893 lined with 0 fabricated zeros and 0 lines outside their file, and a token check finding no edge whose target leaf is absent from its claimed line. The pre-fix state is therefore 'unlined', and the traps below are the ways a go line can be PRESENT and still wrong, each one valid Go and each measured on this fixture before being written down: (1) a GROUPED import — the import_declaration starts on 21 while the spec path is written on 22, so a construct-start line stamps the edge one line early; (2) a RECEIVER-CONTINUED selector call — '.' does not insert a semicolon so 's.' + newline + 'Reset()' parses, and a selector_expression starts at its RECEIVER (67) rather than at the leaf that names the target (68); (3) defer/go with the callee on the next line — neither keyword inserts a semicolon, so the statement starts on 63/65 while the target is named on 64/66; (4) a WRAPPED parameter list — 'func wrapped(' is on 52 while the parameter type Store is written on 53; (5) embedding and interface implementation — the edge belongs to the embedded type (32) and to the interface declaration (25), not to the enclosing struct. Every forbidRelationships entry is exactly one of those pre-fix shapes, so re-introducing any of them fails the gate instead of passing silently.",
+  "expectSymbols": [
+    { "name": "main", "kind": "module" },
+    { "name": "Reader", "kind": "interface" },
+    { "name": "Read", "kind": "method" },
+    { "name": "Base", "kind": "struct" },
+    { "name": "Store", "kind": "struct" },
+    { "name": "items", "kind": "property" },
+    { "name": "Reset", "kind": "method" },
+    { "name": "cleanup", "kind": "function" },
+    { "name": "worker", "kind": "function" },
+    { "name": "seed", "kind": "function" },
+    { "name": "wrapped", "kind": "function" },
+    { "name": "NewStore", "kind": "function" },
+    { "name": "run", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "main", "target": "fmt", "line_number": 22, "meta.isGoImportDep": true },
+    { "type": "mixes_in", "from": "Store", "target": "Base", "line_number": 32 },
+    { "type": "implements", "from": "Store", "target": "Reader", "line_number": 25 },
+    { "type": "contains", "from": "Store", "target": "items", "line_number": 33 },
+    { "type": "contains", "from": "Store", "target": "Read", "line_number": 36 },
+    { "type": "contains", "from": "Store", "target": "Reset", "line_number": 40 },
+    { "type": "contains", "from": "Reader", "target": "Read", "line_number": 26 },
+    { "type": "calls", "from": "run", "target": "cleanup", "line_number": 64 },
+    { "type": "calls", "from": "run", "target": "worker", "line_number": 66 },
+    { "type": "calls", "from": "run", "target": "Reset", "line_number": 68 },
+    { "type": "calls", "from": "run", "target": "NewStore", "line_number": 69 },
+    { "type": "instantiates", "from": "run", "target": "NewStore", "line_number": 69 },
+    { "type": "instantiates", "from": "NewStore", "target": "Store", "line_number": 59 },
+    { "type": "uses", "from": "Reset", "target": "items", "line_number": 41 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "main", "target": "fmt", "line_number": 21, "note": "pre-fix shape: the `import (` declaration line; the spec path is written on 22" },
+    { "type": "calls", "from": "run", "target": "Reset", "line_number": 67, "note": "pre-fix shape: the selector_expression's RECEIVER line (`s.` is written on 67); the called leaf `Reset` is written on 68" },
+    { "type": "calls", "from": "run", "target": "cleanup", "line_number": 63, "note": "pre-fix shape: the `defer` keyword line; the deferred callee is written on 64" },
+    { "type": "calls", "from": "run", "target": "worker", "line_number": 65, "note": "pre-fix shape: the `go` keyword line; the goroutine's callee is written on 66" },
+    { "type": "contains", "from": "Store", "target": "items", "line_number": 31, "note": "pre-fix shape: the container's own start line; `items` is declared on 33 (and `Base` on 32 is a different edge)" },
+    { "type": "mixes_in", "from": "Store", "target": "Base", "line_number": 31, "note": "pre-fix shape: the enclosing struct's start line; the embedded type is written on 32" },
+    { "type": "implements", "from": "Store", "target": "Reader", "line_number": 31, "note": "pre-fix shape: the implementing struct's line; the edge NAMES the interface, declared on 25" },
+    { "type": "references", "from": "wrapped", "target": "Store", "line_number": 52, "note": "pre-fix shape: the `func wrapped(` keyword line; the parameter's type is written on 53" }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "timestamp": "2026-08-12T18:37:27.432Z",
+  "repositories": [
+    {
+      "id": "roslyn",
+      "path": "/home/ishaq2321/roslyn",
+      "discoveryMs": 272.656968,
+      "candidateFiles": 17137,
+      "projectId": "908c673b0c18e16861152e61a206f5f91b438b41",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/908c673b0c18e16861152e61a206f5f91b438b41/brain.db",
+      "before": {
+        "files": 661,
+        "symbols": 22402
+      },
+      "index": {
+        "wallMs": 6209782,
+        "userCpuMs": 3329742,
+        "systemCpuMs": 2490489,
+        "peakRssMB": 556,
+        "stats": {
+          "totalFiles": 17137,
+          "processedFiles": 17137,
+          "successFiles": 17137,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 600869,
+          "relationshipsFound": 3166002,
+          "importsFound": 96210
+        }
+      },
+      "after": {
+        "files": 17137,
+        "symbols": 600869,
+        "relationships": 3166002,
+        "imports": 96210
+      },
+      "dbSizeBytes": 9825726464,
+      "throughput": {
+        "filesPerSec": 2.8,
+        "symbolsPerSec": 96.8,
+        "relationshipsPerSec": 509.8
+      }
+    },
+    {
+      "id": "fsharp",
+      "path": "/home/ishaq2321/bb_tests/repositories/fsharp",
+      "discoveryMs": 109.51290900000001,
+      "candidateFiles": 6627,
+      "projectId": "2023746f1b72c9ba72549323caadd16a57adf7c4",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/2023746f1b72c9ba72549323caadd16a57adf7c4/brain.db",
+      "before": {
+        "files": 6627,
+        "symbols": 146925
+      },
+      "index": {
+        "wallMs": 172937,
+        "userCpuMs": 64616,
+        "systemCpuMs": 40638,
+        "peakRssMB": 231,
+        "stats": {
+          "totalFiles": 6627,
+          "processedFiles": 6627,
+          "successFiles": 6617,
+          "errorFiles": 0,
+          "timeoutFiles": 10,
+          "skippedFiles": 0,
+          "symbolsExtracted": 146925,
+          "relationshipsFound": 115453,
+          "importsFound": 11088
+        }
+      },
+      "after": {
+        "files": 6627,
+        "symbols": 146925,
+        "relationships": 115453,
+        "imports": 11094
+      },
+      "dbSizeBytes": 592465920,
+      "throughput": {
+        "filesPerSec": 38.3,
+        "symbolsPerSec": 849.6,
+        "relationshipsPerSec": 667.6
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.802Z",
+    "contentSha256": "737839f82b1cedcd4ca78ff0020f6538b51c19ac9a8ae686b57f2a7b1660d3f6"
+  }
+}

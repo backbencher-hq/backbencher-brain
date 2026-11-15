@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/overrides-prior-line.sh",
+  "authoredFrom": "Round 17. `redefinition-overrides.sh` declares its name TWICE, and for two declarations the first and the immediately-prior are the same row, so that fixture cannot tell the two readings of `overridesLine` apart — which is why a first-declaration implementation passed it. This file declares `f` FOUR times and `g` TWICE, so the two readings diverge on the third declaration and the two `g` rows hold the control. Measured on the 600-file corpus sample with the first-declaration behaviour: 30 ambiguous `overrides` edges, all 30 resolving `overridesLine` to a real declaration of the name, only 9 the immediately-prior one and 21 an earlier one. Every wrong row names a line that IS a declaration of the name, which is what makes the defect silent — nothing about the edge looks malformed. Instrument: `probe-bash-contains-overrides-ceiling.mts`.",
+  "expectSymbols": [
+    {
+      "name": "overrides-prior-line.sh",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 27,
+      "meta.overridesLine": 23,
+      "meta.redefinition": true,
+      "note": "The second `f`. For TWO declarations the first and the immediately-prior coincide, so this row passes under either implementation — it is here to keep the chain anchored, not to discriminate. The discriminating rows are 33 and 40."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 33,
+      "meta.overridesLine": 27,
+      "meta.redefinition": true,
+      "note": "THE DISCRIMINATING ROW, the third `f`. The declaration it displaces is the SECOND one at 27, because that is the definition a call after this line would have reached. A first-declaration implementation publishes 23 here — a real declaration of `f`, and not the one this definition replaces. This is the load-bearing assertion of the file."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 40,
+      "meta.overridesLine": 33,
+      "meta.redefinition": true,
+      "note": "The fourth `f`, and the row a two-row fixture cannot reach. Under the defect the third and fourth declarations BOTH published 23, so a chain that stopped at three would still see two wrong rows but a reader comparing them could not tell the mistake from a deliberate 'always the root' rule. Here the correct answer differs from 33's, and each wrong reading is a distinct row."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 52,
+      "meta.overridesLine": 48,
+      "meta.redefinition": true,
+      "note": "THE CONTROL, `g` declared exactly twice. Its correct answer IS the first declaration, so this row fails the OPPOSITE mistake — an implementation that took the latest declaration overall, or one that never advanced its map, would publish 52 and draw `g` overriding itself. A chain-only fixture cannot catch that, so the control is stated explicitly rather than assumed."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 62,
+      "meta.overridesLine": 58,
+      "meta.redefinition": true,
+      "note": "`h` across the two spellings: declared `h() {` at 58 and `function h() {` at 62. Both are the same name and the same binding in bash — the `function` keyword is a declaration spelling, not a distinct kind of thing — so the edge must exist and must name 58. If the two spellings were tracked separately there would be no edge here at all, and the forbid row below catches that."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 33,
+      "meta.overridesLine": 23,
+      "note": "THE NEGATIVE HALF, and the reason this file can catch the defect at all. An `expectRelationships` row is a positive existential: it passes if ANY edge matches, so under a first-declaration implementation the correct row at 33 fails while this forbidden row is what proves the WRONG answer is actually present. Asserting only the positive would leave the failure ambiguous between 'the analyzer published the first declaration' and 'the analyzer published nothing here', and those are different bugs with different fixes. `meta.overridesLine: 23` on the third declaration is precisely the defect, stated as an assertion the runner's own forbid mechanism can fail."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 40,
+      "meta.overridesLine": 23,
+      "note": "The same wrong answer on the fourth declaration. Under the defect BOTH rows 33 and 40 published 23, so one forbid row would be satisfied by an implementation that published the root exactly once and got lucky on the other — this pins the shape precisely as it was measured, with two identical wrong values on two different edge lines."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 52,
+      "meta.overridesLine": 52,
+      "note": "The control's opposite mistake. `g`'s second declaration must not name ITSELF, which is what an implementation that read the map after writing the current line would publish. Without this row a rule that always names the latest declaration would pass every positive row on `f` as well — the chain and the control fail in opposite directions, and both halves are needed for the pair to discriminate."
+    },
+    {
+      "type": "overrides",
+      "from": "overrides-prior-line.sh",
+      "line_number": 33,
+      "meta.overridesLine": 33,
+      "note": "A declaration must never be published as overriding itself, on the discriminating row as well as the control. This is the invariant behind both `g` rows, stated where the chain is longest, since that is where a self-reference would be most visible."
+    }
+  ]
+}

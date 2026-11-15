@@ -1,0 +1,93 @@
+{
+  "fixtureId": "lua/export-shapes",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-09, authored from the module-surface contract: a return reachable without entering a function is a possible module surface, and the module publishes the union of what every such return can name. The function is the boundary, not the block structure. Pre-fix, only `return <ident>` published at all, so 366 of Kong's 1,309 files and 33 of Luvit's 199 published nothing (script/m60/lua-export-census.ts, counted off the wired grammar). The forbidExports rows are the fabrication cases \u2014 a positional entry, a nested table's inner member, and a function's return \u2014 which a fixture asserting only positive rows could not catch. Line numbers are the line of each member's OWN name-bearing node, per M59, and were re-derived from this committed file rather than copied from the analyzer's output.",
+  "expectExports": [
+    {
+      "name": "alpha"
+    },
+    {
+      "name": "beta"
+    },
+    {
+      "name": "gamma"
+    },
+    {
+      "name": "fromDoBlock"
+    },
+    {
+      "name": "fromLoop"
+    },
+    {
+      "name": "nested"
+    },
+    {
+      "name": "handler"
+    },
+    {
+      "name": "positional"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "hidden",
+      "comment": "LUA-20: a return inside a function is that function's value, not the file's export"
+    },
+    {
+      "name": "deep",
+      "comment": "fabrication: flattening a nested table's member into a top-level export"
+    },
+    {
+      "name": "4",
+      "comment": "fabrication: a positional entry has no name, so publishing one would invent it"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "handler",
+      "kind": "function"
+    },
+    {
+      "name": "positional",
+      "comment": "a positional-only literal is a table, not a surface"
+    }
+  ],
+  "forbidSymbols": [],
+  "knownResidual": "Deliberately NOT published, and pinned silent in script/m60/verify-lua-export-shapes.ts so a future change cannot start inventing them unnoticed: `return require(\"x\")` (a re-export \u2014 naming it would mean inventing an export name from a module path, which is a different relationship), `return \"literal\"` (17 Kong files), and `return setmetatable(M, mt)` (5 Kong files, where the exported table is the first argument). These are real module surfaces the analyzer does not name. They are recorded as an open gap rather than guessed at.",
+  "expectExportRanges": [
+    {
+      "export": "alpha",
+      "startLine": 49
+    },
+    {
+      "export": "beta",
+      "startLine": 50
+    },
+    {
+      "export": "gamma",
+      "startLine": 52
+    },
+    {
+      "export": "fromDoBlock",
+      "startLine": 36
+    },
+    {
+      "export": "fromLoop",
+      "startLine": 43
+    },
+    {
+      "export": "nested",
+      "startLine": 58
+    },
+    {
+      "export": "handler",
+      "startLine": 59
+    },
+    {
+      "export": "positional",
+      "startLine": 60
+    }
+  ],
+  "_channelNote": "The line assertions moved from `expectExports` to `expectExportRanges` when this fixture first EXECUTED. It had never run \u2014 the lane was not registered \u2014 so nothing had ever checked the shape. `matchConstraints` compares keys literally, and an export row is {name, isDefault, range:{startLine..}} with no top-level `line`, so every `line` here made the expectation unmatchable rather than strict. The VALUES were right all along: 36/43/49/50/52/58/59/60 are the exact lines of the name-bearing nodes."
+}

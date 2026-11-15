@@ -1,0 +1,62 @@
+{
+  "issue": "M21.R1",
+  "code": "R1",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 10,
+  "passed": 10,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-enrichment-scaling.ts",
+  "evidenceFile": "R1.json",
+  "generatedAt": "2026-09-01T13:56:36.309Z",
+  "corpus": {
+    "kind": "isolated-temporary-database",
+    "revision": null,
+    "relationshipSizes": [
+      100,
+      1000,
+      5000
+    ]
+  },
+  "timings": [
+    {
+      "relationships": 100,
+      "queryMs": 1.4247979999999814,
+      "updateMs": 1.2517119999999977
+    },
+    {
+      "relationships": 1000,
+      "queryMs": 11.157455999999996,
+      "updateMs": 13.53421800000001
+    },
+    {
+      "relationships": 5000,
+      "queryMs": 54.800456,
+      "updateMs": 66.80796099999998
+    }
+  ],
+  "counts": {
+    "returned": [
+      100,
+      1000,
+      5000
+    ],
+    "metadataWritten": [
+      100,
+      1000,
+      5000
+    ]
+  },
+  "limitations": [
+    "This reproduces the enrichment join/update shape in an isolated database; it is not a real project index.",
+    "The benchmark includes OFFSET 0 only; R2 owns pagination/OFFSET growth analysis and real-index evidence."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.384Z",
+    "contentSha256": "605af0cdb1eca53d315c13cded678848e35d4e82b11d7d10128fec22163c896a"
+  }
+}

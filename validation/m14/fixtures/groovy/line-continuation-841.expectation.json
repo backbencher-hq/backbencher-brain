@@ -1,0 +1,16 @@
+{
+  "fixtureId": "groovy/line-continuation-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS #841 round 11: Groovy's BACKSLASH LINE CONTINUATION, added as an `extras` token so the lexer skips `\\` + newline between tokens exactly like whitespace — hence no production changed and no rule needed to know about it. forbidErrors is the load-bearing assertion, as with every #841 grammar pin: before the fix the backslash was an ERROR and recovery swallowed the enclosing class. Two forms are pinned: a trailing `\\` before a newline, and the LONE backslash on its own line between two statements that MongoClientOptionsBuilder.groovy:89 carries — the real compiler accepts both (verified via script/m14/tmp/groovy-parse-oracle.groovy). Because an `extras` token is visible to the lexer everywhere, the risk is backslashes INSIDE literals; that was checked explicitly rather than assumed (script/m14/tmp/g841-r11-backslash.ts): escaped double quote, escaped backslash, a backslash-newline inside a string, slashy regex, triple-quoted, single-quoted and GString escapes all still parse. A probe shape that DID reject was checked against the compiler too — `$/a\\d+$/` is rejected by real Groovy as well (unterminated: the closing delimiter is `/$`), so that rejection is correct and is NOT a gap. Corpus consequence at the rebuilt wasm (grails-core @ a83f8748, whole tracked corpus, production parseFile pipeline), run corpus-A/B-FIRST per reviews/m59-841-assert-comma-separator.md 7h: 261 -> 260, 1 fixed, 0 regressed, crashes 0, pipeline mismatches 0. NOTE: authoredBeforeAnalyzerRun is false — the expectation was authored from live emission via script/m14/tmp/g841-fixture-dump.ts.",
+  "forbidErrors": [{}],
+  "expectSymbols": [
+    { "name": "LineContinuation841", "kind": "class" },
+    { "name": "continued", "kind": "method" },
+    { "name": "loneBackslash", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "LineContinuation841", "target": "continued" },
+    { "type": "contains", "source": "LineContinuation841", "target": "loneBackslash" }
+  ]
+}

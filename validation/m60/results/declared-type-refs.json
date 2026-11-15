@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R9",
+  "purpose": "A declaration's written type is a dependency: the family emits a `references` edge to it, marked metadata.relationshipType === 'declared_type' (rust R13's header names it a family standard, mirrors go/c/zig). This census measures, per lane at runtime, whether the lane emits it at all — the one class of defect a per-edge oracle cannot see, because an absent capability emits NOTHING to adjudicate.",
+  "generatedAt": "2026-09-29",
+  "boundary": "One minimal snippet per lane: measures the CAPABILITY, not its per-position coverage (which is the lane's own construct sweep). `not-exercised` means the snippet did not reach the holder symbol and convicts no one. `present-other-marker` means the reference exists under a non-family label — a labelling divergence, not a missing capability.",
+  "lanes": 20,
+  "presentDeclaredType": 12,
+  "presentOtherMarker": [
+    "c"
+  ],
+  "absent": [
+    "cpp",
+    "dart",
+    "swift",
+    "objc",
+    "fsharp",
+    "powershell",
+    "ruby"
+  ],
+  "notExercised": [],
+  "errored": [],
+  "rows": [
+    {
+      "lang": "rust",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 2,
+      "typeRefs": 2,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 3,
+      "symbols": 4
+    },
+    {
+      "lang": "go",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 1,
+      "typeRefs": 1,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 2,
+      "symbols": 4
+    },
+    {
+      "lang": "c",
+      "verdict": "present-other-marker",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 1,
+      "markers": [],
+      "otherMarkers": [
+        "type_reference"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 4,
+      "symbols": 4
+    },
+    {
+      "lang": "cpp",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 3,
+      "symbols": 5
+    },
+    {
+      "lang": "zig",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 1,
+      "typeRefs": 1,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 2,
+      "symbols": 3
+    },
+    {
+      "lang": "python",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 1,
+      "typeRefs": 2,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 3,
+      "symbols": 3
+    },
+    {
+      "lang": "typescript",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 2,
+      "typeRefs": 3,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 7,
+      "symbols": 4
+    },
+    {
+      "lang": "java",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 3,
+      "typeRefs": 3,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 5,
+      "symbols": 4
+    },
+    {
+      "lang": "kotlin",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 2,
+      "typeRefs": 3,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 5,
+      "symbols": 4
+    },
+    {
+      "lang": "scala",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 2,
+      "typeRefs": 3,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 5,
+      "symbols": 4
+    },
+    {
+      "lang": "groovy",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 2,
+      "typeRefs": 3,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 5,
+      "symbols": 4
+    },
+    {
+      "lang": "csharp",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 1,
+      "typeRefs": 2,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 4,
+      "symbols": 4
+    },
+    {
+      "lang": "dart",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 3,
+      "symbols": 4
+    },
+    {
+      "lang": "php",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 1,
+      "typeRefs": 2,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [
+        "return_type"
+      ],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 5,
+      "symbols": 4
+    },
+    {
+      "lang": "swift",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 2,
+      "symbols": 4
+    },
+    {
+      "lang": "objc",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 3,
+      "symbols": 3
+    },
+    {
+      "lang": "fsharp",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 1,
+      "symbols": 3
+    },
+    {
+      "lang": "powershell",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 4,
+      "symbols": 4
+    },
+    {
+      "lang": "ruby",
+      "verdict": "absent",
+      "control": true,
+      "declaredEdges": 0,
+      "typeRefs": 0,
+      "markers": [],
+      "otherMarkers": [],
+      "targets": [],
+      "relationships": 2,
+      "symbols": 3
+    },
+    {
+      "lang": "yaml",
+      "verdict": "present-declared_type",
+      "control": true,
+      "declaredEdges": 2,
+      "typeRefs": 2,
+      "markers": [
+        "declared_type"
+      ],
+      "otherMarkers": [],
+      "targets": [
+        "Dep"
+      ],
+      "relationships": 6,
+      "symbols": 5
+    }
+  ]
+}

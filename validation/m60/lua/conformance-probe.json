@@ -4,7 +4,7 @@
   "at": "2026-10-03T18:32:49.569Z",
   "commit": "210504a128e60bdade1c334fad02c0cf7b27e84e",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "filesParsed": 3250,
     "sampling": "every tracked *.lua, sorted, no cap"
   },

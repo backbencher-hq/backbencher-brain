@@ -1,0 +1,80 @@
+[
+  {
+    "code": "D4",
+    "githubIssue": 663,
+    "tool": "docs/tools",
+    "status": "planned",
+    "scope": "Per-tool docs for the 5 post-merge tools (bb_graph, bb_impact, bb_cross_language, bb_annotate, bb_annotations) at the same bar as the existing 11",
+    "acceptanceCriteria": [
+      "16/16 docs exist and pass the extended doc-truth gate",
+      "each doc description and examples byte-match the registry metadata",
+      "bb_annotate and bb_annotations docs cross-reference M28 and state what is stable today"
+    ],
+    "closureRequirements": [
+      "evidence file + wave-2 ledger sync + evidence comment"
+    ]
+  },
+  {
+    "code": "G2",
+    "githubIssue": 664,
+    "tool": "doc-truth-gates",
+    "status": "planned",
+    "scope": "Doc-truth gates extended to the 16-tool surface: every registered tool must have a per-tool doc; CLI drift check",
+    "acceptanceCriteria": [
+      "gate green at 16/16; mutation proof: removing one doc file fails the gate",
+      "negative cases: a doc whose examples diverge from the registry schema fails",
+      "wired into npm run verify (docs:verify chain)"
+    ],
+    "closureRequirements": [
+      "evidence file + wave-2 ledger sync + evidence comment"
+    ]
+  },
+  {
+    "code": "F1",
+    "githubIssue": 665,
+    "tool": "truth-feed",
+    "status": "planned",
+    "scope": "Truth feed for M41: registry, per-tool docs, and docs/data/public-tools.json agree byte-wise on shared fields",
+    "acceptanceCriteria": [
+      "three-way consistency gate green (registry, docs, site data)",
+      "mutation: registering a hypothetical tool without docs/data breaks the gate",
+      "no website/ changes in this milestone (feed only, coordinated with the M41 owner)"
+    ],
+    "closureRequirements": [
+      "evidence file + wave-2 ledger sync + evidence comment"
+    ]
+  },
+  {
+    "code": "D5",
+    "githubIssue": 666,
+    "tool": "docs/tools",
+    "status": "planned",
+    "scope": "Document the M43 freshness automation (auto-refresh, budgets, opt-outs, honest decline, lock refusal) once M43 semantics land",
+    "acceptanceCriteria": [
+      "doc-truth gates green against the landed M43 behavior",
+      "every auto-refresh flag/env documented with default and opt-out",
+      "negative case: doc claiming auto-refresh when disabled fails the gate"
+    ],
+    "closureRequirements": [
+      "evidence file + wave-2 ledger sync + evidence comment",
+      "may close after M43.A3 regardless of M43.X1"
+    ]
+  },
+  {
+    "code": "G3",
+    "githubIssue": 667,
+    "tool": "governance",
+    "status": "planned",
+    "scope": "Wave-2 governance + closure: ledger, gates registry, auto-pass audit, wave-1 survival check, mutation selftest as gates land",
+    "acceptanceCriteria": [
+      "wave-2 governance green on the scaffolded world (all planned, no evidence claimed)",
+      "wave-1 gates byte-untouched and still green (docs:verify behavior unchanged)",
+      "wired into npm run verify via docs:verify",
+      "as each wave-2 gate lands it joins the chain (enforced by wiring checks)"
+    ],
+    "closureRequirements": [
+      "evidence file + wave-2 ledger sync + evidence comment",
+      "milestone 31 closes only when both waves are verified"
+    ]
+  }
+]

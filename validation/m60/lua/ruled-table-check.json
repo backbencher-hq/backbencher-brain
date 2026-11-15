@@ -1,0 +1,445 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_ruled_table_check",
+  "at": "2026-10-03T19:32:11.812Z",
+  "commit": "210504a128e60bdade1c334fad02c0cf7b27e84e",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "filesAdmitted": 3250,
+    "admission": "the gate's own rule: tracked file, <=512KB, detectLanguageFromPath === lua"
+  },
+  "tableUnderTest": "script/m14/lua-ruled.ts",
+  "rows": [
+    {
+      "type": "implements",
+      "instrument": "A:grammar-inventory",
+      "nodeTypesThatWouldMeanIt": [
+        "implements_clause",
+        "extends_clause",
+        "superclass",
+        "interface_implementation",
+        "interface_declaration",
+        "trait_declaration"
+      ],
+      "presentInCorpus": [],
+      "writtenRuling": "script/m14/spec/lua-completeness.json#BD-ontology",
+      "status": "RULED-SOUND"
+    }
+  ],
+  "instrumentA": {
+    "distinctNodeTypesProduced": 100,
+    "walk": "n.child(i) over all children, as the gate does — includes anonymous nodes. A namedChild walk yields 46 and would understate the grammar by 54 types."
+  },
+  "rejectedInstrumentB": {
+    "probe": "REJECTED_IMPLEMENTS_TREE_PROBE",
+    "occurrences": 3913,
+    "files": 212,
+    "breakdownByTreeRole": {
+      "table field value of method - an option, format, phase or attribute": {
+        "occurrences": 2151,
+        "examples": [
+          "kong/scripts/changelog-helper.lua:63 (assert) -> \"GET\"",
+          "kong/spec/02-integration/01-helpers/01-helpers_spec.lua:230 (assert) -> \"GET\"",
+          "kong/spec/02-integration/01-helpers/01-helpers_spec.lua:240 (assert) -> \"GET\""
+        ]
+      },
+      "table field value of Host - an option, format, phase or attribute": {
+        "occurrences": 773,
+        "examples": [
+          "kong/spec/02-integration/04-admin_api/05-cache_routes_spec.lua:71 (assert) -> \"Host\"",
+          "kong/spec/02-integration/04-admin_api/05-cache_routes_spec.lua:100 (assert) -> \"Host\"",
+          "kong/spec/02-integration/04-admin_api/05-cache_routes_spec.lua:134 (assert) -> \"Host\""
+        ]
+      },
+      "argument 0 to is_nil": {
+        "occurrences": 280,
+        "examples": [
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:223 (assert) -> \"KONG_PREREAD_ENDED_AT\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:224 (assert) -> \"KONG_PREREAD_TIME\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:225 (assert) -> \"KONG_REWRITE_START\""
+        ]
+      },
+      "argument 0 to is_greater_or_equal_to_ctx_value": {
+        "occurrences": 174,
+        "examples": [
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:222 (assert) -> \"KONG_PROCESSING_START\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:222 (assert) -> \"KONG_PREREAD_START\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:261 (assert) -> \"KONG_PROCESSING_START\""
+        ]
+      },
+      "table field value of Authorization - an option, format, phase or attribute": {
+        "occurrences": 91,
+        "examples": [
+          "kong/scripts/changelog-helper.lua:63 (assert) -> \"Authorization\"",
+          "kong/spec/03-plugins/09-key-auth/02-access_spec.lua:911 (assert) -> \"Authorization\"",
+          "kong/spec/03-plugins/09-key-auth/02-access_spec.lua:941 (assert) -> \"Authorization\""
+        ]
+      },
+      "table field value of HOST - an option, format, phase or attribute": {
+        "occurrences": 77,
+        "examples": [
+          "kong/spec/03-plugins/19-hmac-auth/03-access_spec.lua:183 (assert) -> \"HOST\"",
+          "kong/spec/03-plugins/19-hmac-auth/03-access_spec.lua:201 (assert) -> \"HOST\"",
+          "kong/spec/03-plugins/19-hmac-auth/03-access_spec.lua:227 (assert) -> \"HOST\""
+        ]
+      },
+      "table field value - an option, format, phase or attribute": {
+        "occurrences": 59,
+        "examples": [
+          "kong/spec/01-unit/21-dns-client/02-client_spec.lua:543 (assert) -> \"LAST\"",
+          "kong/spec/01-unit/21-dns-client/02-client_spec.lua:543 (assert) -> \"SRV\"",
+          "kong/spec/01-unit/21-dns-client/02-client_spec.lua:543 (assert) -> \"A\""
+        ]
+      },
+      "compared for equality - an enum or sentinel value": {
+        "occurrences": 41,
+        "examples": [
+          "kong/kong/plugins/zipkin/span.lua:34 (assert) -> \"SERVER\"",
+          "kong/kong/plugins/zipkin/span.lua:34 (assert) -> \"CLIENT\"",
+          "luvit/tests/test-dgram-multicast.lua:31 (assert) -> \"HELLO\""
+        ]
+      },
+      "argument 0 to is_non_negative_integer": {
+        "occurrences": 34,
+        "examples": [
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:308 (assert) -> \"KONG_REWRITE_TIME\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:349 (assert) -> \"KONG_REWRITE_TIME\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:352 (assert) -> \"KONG_ACCESS_TIME\""
+        ]
+      },
+      "argument 0 to ?": {
+        "occurrences": 33,
+        "examples": [
+          "kong/kong/cmd/hybrid.lua:41 (assert) -> \"CN\"",
+          "kong/kong/cmd/utils/prefix_handler.lua:151 (assert) -> \"C\"",
+          "kong/kong/cmd/utils/prefix_handler.lua:151 (assert) -> \"US\""
+        ]
+      },
+      "table field value of Origin - an option, format, phase or attribute": {
+        "occurrences": 29,
+        "examples": [
+          "kong/spec/03-plugins/13-cors/01-access_spec.lua:591 (assert) -> \"Origin\"",
+          "kong/spec/03-plugins/13-cors/01-access_spec.lua:618 (assert) -> \"Origin\"",
+          "kong/spec/03-plugins/13-cors/01-access_spec.lua:644 (assert) -> \"Origin\""
+        ]
+      },
+      "table field value of apikey - an option, format, phase or attribute": {
+        "occurrences": 25,
+        "examples": [
+          "kong/spec/03-plugins/09-key-auth/02-access_spec.lua:911 (assert) -> \"Mouse\"",
+          "kong/spec/03-plugins/09-key-auth/02-access_spec.lua:928 (assert) -> \"Mouse\"",
+          "kong/spec/03-plugins/09-key-auth/02-access_spec.lua:968 (assert) -> \"Mouse\""
+        ]
+      },
+      "argument 0 to is_equal_to_start_time": {
+        "occurrences": 13,
+        "examples": [
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:221 (assert) -> \"KONG_PROCESSING_START\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:260 (assert) -> \"KONG_PROCESSING_START\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:304 (assert) -> \"KONG_PROCESSING_START\""
+        ]
+      },
+      "argument 0 to call_admin_api": {
+        "occurrences": 12,
+        "examples": [
+          "kong/spec/internal/wait.lua:364 (assert) -> \"POST\"",
+          "kong/spec/internal/wait.lua:371 (assert) -> \"POST\"",
+          "kong/spec/internal/wait.lua:378 (assert) -> \"POST\""
+        ]
+      },
+      "argument 0 to is_greater_or_equal_to_start_time": {
+        "occurrences": 11,
+        "examples": [
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:262 (assert) -> \"KONG_REWRITE_START\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:262 (assert) -> \"KONG_REWRITE_ENDED_AT\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:306 (assert) -> \"KONG_REWRITE_START\""
+        ]
+      },
+      "conformance API instanceof type argument is a NAME": {
+        "occurrences": 11,
+        "examples": [
+          "luvit/deps/buffer.lua:251 -> \"Buffer\"",
+          "luvit/tests/test-instanceof.lua:29 -> \"Object\"",
+          "luvit/tests/test-instanceof.lua:30 -> \"Emitter\""
+        ]
+      },
+      "table field value of Access-Control-Request-Method - an option, format, phase or attribute": {
+        "occurrences": 8,
+        "examples": [
+          "kong/spec/03-plugins/13-cors/01-access_spec.lua:591 (assert) -> \"GET\"",
+          "kong/spec/03-plugins/13-cors/01-access_spec.lua:618 (assert) -> \"GET\"",
+          "kong/spec/03-plugins/13-cors/01-access_spec.lua:644 (assert) -> \"GET\""
+        ]
+      },
+      "table field value of name - an option, format, phase or attribute": {
+        "occurrences": 7,
+        "examples": [
+          "kong/spec/01-unit/01-db/01-schema/01-schema_spec.lua:1648 (assert) -> \"Test\"",
+          "kong/spec/01-unit/01-db/01-schema/01-schema_spec.lua:1670 (assert) -> \"Test\"",
+          "kong/spec/01-unit/01-db/01-schema/01-schema_spec.lua:1694 (assert) -> \"Test\""
+        ]
+      },
+      "table field value of new_field - an option, format, phase or attribute": {
+        "occurrences": 7,
+        "examples": [
+          "kong/spec/02-integration/03-db/23-shorthand_fields_translate_backwards_spec.lua:45 (assert) -> \"ABC\"",
+          "kong/spec/02-integration/03-db/23-shorthand_fields_translate_backwards_spec.lua:66 (assert) -> \"XYZ\"",
+          "kong/spec/02-integration/03-db/23-shorthand_fields_translate_backwards_spec.lua:150 (assert) -> \"ABC\""
+        ]
+      },
+      "table field value of old_field - an option, format, phase or attribute": {
+        "occurrences": 7,
+        "examples": [
+          "kong/spec/02-integration/03-db/23-shorthand_fields_translate_backwards_spec.lua:97 (assert) -> \"ABC\"",
+          "kong/spec/02-integration/03-db/23-shorthand_fields_translate_backwards_spec.lua:118 (assert) -> \"XYZ\"",
+          "kong/spec/02-integration/03-db/23-shorthand_fields_translate_backwards_spec.lua:150 (assert) -> \"ABC\""
+        ]
+      },
+      "argument 0 to is_true": {
+        "occurrences": 7,
+        "examples": [
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:362 (assert) -> \"KONG_PROXIED\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:399 (assert) -> \"KONG_PROXIED\"",
+          "kong/spec/fixtures/custom_plugins/kong/plugins/ctx-tests-response/handler.lua:458 (assert) -> \"KONG_PROXIED\""
+        ]
+      },
+      "table field value of Expect - an option, format, phase or attribute": {
+        "occurrences": 6,
+        "examples": [
+          "kong/spec/03-plugins/12-request-size-limiting/01-access_spec.lua:99 (assert) -> \"Expect\"",
+          "kong/spec/03-plugins/12-request-size-limiting/01-access_spec.lua:131 (assert) -> \"Expect\"",
+          "kong/spec/03-plugins/12-request-size-limiting/01-access_spec.lua:203 (assert) -> \"Expect\""
+        ]
+      },
+      "table field value of algorithm - an option, format, phase or attribute": {
+        "occurrences": 5,
+        "examples": [
+          "kong/spec/03-plugins/16-jwt/02-api_spec.lua:146 (assert) -> \"RS256\"",
+          "kong/spec/03-plugins/16-jwt/02-api_spec.lua:165 (assert) -> \"RS256\"",
+          "kong/spec/03-plugins/16-jwt/02-api_spec.lua:182 (assert) -> \"RS256\""
+        ]
+      },
+      "table field value of Connection - an option, format, phase or attribute": {
+        "occurrences": 4,
+        "examples": [
+          "kong/spec/02-integration/05-proxy/03-upstream_headers_spec.lua:210 (assert) -> \"Connection\"",
+          "kong/spec/02-integration/05-proxy/03-upstream_headers_spec.lua:246 (assert) -> \"Connection\"",
+          "kong/spec/02-integration/05-proxy/03-upstream_headers_spec.lua:261 (assert) -> \"Connection\""
+        ]
+      },
+      "table field value of Cookie - an option, format, phase or attribute": {
+        "occurrences": 4,
+        "examples": [
+          "kong/spec/03-plugins/16-jwt/03-access_spec.lua:574 (assert) -> \"Cookie\"",
+          "kong/spec/03-plugins/16-jwt/03-access_spec.lua:587 (assert) -> \"Cookie\"",
+          "kong/spec/03-plugins/16-jwt/03-access_spec.lua:600 (assert) -> \"Cookie\""
+        ]
+      },
+      "table field value of reference - an option, format, phase or attribute": {
+        "occurrences": 3,
+        "examples": [
+          "kong/spec/01-unit/01-db/04-dao_spec.lua:515 (assert) -> \"Foo\"",
+          "kong/spec/01-unit/01-db/04-dao_spec.lua:540 (assert) -> \"Bar\"",
+          "kong/spec/01-unit/01-db/04-dao_spec.lua:565 (assert) -> \"Dar\""
+        ]
+      },
+      "table field value of hash_fallback_header - an option, format, phase or attribute": {
+        "occurrences": 3,
+        "examples": [
+          "kong/spec/02-integration/04-admin_api/07-upstreams_routes_spec.lua:63 (assert) -> \"HeaderFallback\"",
+          "kong/spec/02-integration/04-admin_api/07-upstreams_routes_spec.lua:113 (assert) -> \"HeaderName2\"",
+          "kong/spec/02-integration/04-admin_api/07-upstreams_routes_spec.lua:357 (assert) -> \"HeaderName\""
+        ]
+      },
+      "table field value of request_method - an option, format, phase or attribute": {
+        "occurrences": 3,
+        "examples": [
+          "kong/spec/03-plugins/31-proxy-cache/03-api_spec.lua:126 (assert) -> \"GET\"",
+          "kong/spec/03-plugins/31-proxy-cache/03-api_spec.lua:151 (assert) -> \"GET\"",
+          "kong/spec/03-plugins/31-proxy-cache/03-api_spec.lua:177 (assert) -> \"GET\""
+        ]
+      },
+      "argument 0 to st_pack": {
+        "occurrences": 2,
+        "examples": [
+          "kong/kong/runloop/plugin_servers/rpc/pb_rpc.lua:264 (assert) -> \"I\"",
+          "kong/kong/runloop/plugin_servers/rpc/pb_rpc.lua:284 (assert) -> \"I\""
+        ]
+      },
+      "argument 0 to error - a message or format label": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/01-unit/30-new-dns-client/02-old_client_spec.lua:486 (error) -> \"CALLBACK\"",
+          "plenary.nvim/lua/plenary/path.lua:511 (error) -> \"FileNotFoundError\""
+        ]
+      },
+      "table field value of hash_on_header - an option, format, phase or attribute": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/02-integration/04-admin_api/07-upstreams_routes_spec.lua:63 (assert) -> \"HeaderName\"",
+          "kong/spec/02-integration/04-admin_api/07-upstreams_routes_spec.lua:113 (assert) -> \"HeaderName1\""
+        ]
+      },
+      "table field value of :method - an option, format, phase or attribute": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/02-integration/05-proxy/35-via_spec.lua:161 (assert) -> \"GET\"",
+          "kong/spec/02-integration/08-status_api/01-core_routes_spec.lua:308 (assert) -> \"GET\""
+        ]
+      },
+      "table field value of CustomAuthorization - an option, format, phase or attribute": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/03-plugins/16-jwt/03-access_spec.lua:655 (assert) -> \"CustomAuthorization\"",
+          "kong/spec/03-plugins/16-jwt/03-access_spec.lua:668 (assert) -> \"CustomAuthorization\""
+        ]
+      },
+      "table field value of mehod - an option, format, phase or attribute": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/03-plugins/21-bot-detection/02-invalidations_spec.lua:76 (assert) -> \"GET\"",
+          "kong/spec/03-plugins/21-bot-detection/02-invalidations_spec.lua:115 (assert) -> \"GET\""
+        ]
+      },
+      "table field value of code_challenge_method - an option, format, phase or attribute": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/03-plugins/25-oauth2/03-access_spec.lua:1082 (assert) -> \"H256\"",
+          "kong/spec/03-plugins/25-oauth2/03-access_spec.lua:1199 (assert) -> \"S256\""
+        ]
+      },
+      "argument 0 to getenv": {
+        "occurrences": 2,
+        "examples": [
+          "kong/spec/fixtures/custom_vaults/kong/vaults/mock/init.lua:13 (assert) -> \"KONG_PROCESS_SECRETS\"",
+          "kong/spec/fixtures/custom_vaults/kong/vaults/mocksocket/init.lua:13 (assert) -> \"KONG_PROCESS_SECRETS\""
+        ]
+      },
+      "table field value of reason - an option, format, phase or attribute": {
+        "occurrences": 2,
+        "examples": [
+          "luvit/tests/test-http-decoder.lua:69 (assert) -> \"OK\"",
+          "luvit/tests/test-http-decoder.lua:84 (assert) -> \"OK\""
+        ]
+      },
+      "table field value of type - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/kong/cmd/hybrid.lua:27 (assert) -> \"EC\""
+        ]
+      },
+      "table field value of Accept - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/scripts/changelog-helper.lua:63 (assert) -> \"Accept\""
+        ]
+      },
+      "table field value of nginx_upstream_keepalive - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/01-unit/04-prefix_handler_spec.lua:798 (assert) -> \"NONE\""
+        ]
+      },
+      "table field value of nginx_main_worker_rlimit_nofile - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/01-unit/04-prefix_handler_spec.lua:863 (assert) -> \"NONE\""
+        ]
+      },
+      "table field value of nginx_events_worker_connections - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/01-unit/04-prefix_handler_spec.lua:863 (assert) -> \"NONE\""
+        ]
+      },
+      "table field value of nginx_events_multi_accept - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/01-unit/04-prefix_handler_spec.lua:863 (assert) -> \"NONE\""
+        ]
+      },
+      "table field value of case - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/02-integration/03-db/11-db_transformations_spec.lua:70 (assert) -> \"AbC\""
+        ]
+      },
+      "table field value of hash_on_cookie - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/02-integration/04-admin_api/07-upstreams_routes_spec.lua:90 (assert) -> \"CookieName1\""
+        ]
+      },
+      "table field value of Version - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/02-integration/05-proxy/02-router_spec.lua:1698 (assert) -> \"Version\""
+        ]
+      },
+      "table field value of TE - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/02-integration/05-proxy/03-upstream_headers_spec.lua:193 (assert) -> \"TE\""
+        ]
+      },
+      "table field value of Upgrade - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/02-integration/05-proxy/03-upstream_headers_spec.lua:210 (assert) -> \"Upgrade\""
+        ]
+      },
+      "table field value of Via - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/02-integration/05-proxy/35-via_spec.lua:138 (assert) -> \"Via\""
+        ]
+      },
+      "table field value of x-ssl-client-verify - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/03-plugins/01-tcp-log/01-tcp-log_spec.lua:491 (assert) -> \"SUCCESS\""
+        ]
+      },
+      "table field value of message - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/03-plugins/17-ip-restriction/01-schema_spec.lua:10 (assert) -> \"Forbidden\""
+        ]
+      },
+      "table field value of cookie_same_site - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/03-plugins/30-session/01-access_spec.lua:54 (assert) -> \"Lax\""
+        ]
+      },
+      "table field value of h1 - an option, format, phase or attribute": {
+        "occurrences": 1,
+        "examples": [
+          "kong/spec/03-plugins/36-request-transformer/02-access_spec.lua:988 (assert) -> \"V\""
+        ]
+      },
+      "argument 0 to incl": {
+        "occurrences": 1,
+        "examples": [
+          "plenary.nvim/tests/plenary/curl_spec.lua:121 (assert) -> \"John\""
+        ]
+      }
+    },
+    "hitsCarryingATypePositionRole": 11,
+    "typePositionExamples": [
+      "luvit/deps/buffer.lua:251 | conformance API instanceof type argument is a NAME | Buffer",
+      "luvit/tests/test-instanceof.lua:29 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:30 | conformance API instanceof type argument is a NAME | Emitter",
+      "luvit/tests/test-instanceof.lua:32 | conformance API instanceof type argument is a NAME | Emitter",
+      "luvit/tests/test-instanceof.lua:33 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:35 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:36 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:37 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:38 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:41 | conformance API instanceof type argument is a NAME | Object",
+      "luvit/tests/test-instanceof.lua:42 | conformance API instanceof type argument is a NAME | Object"
+    ],
+    "verdict": "Refused. The role is read off node types and fields, so the breakdown is a fact about the tree and not a word list. No hit carries a type-position role (see hitsCarryingATypePositionRole): every string the probe caught is a label - an enum compared for equality, a format argument, a table field value, a record name, or an assertion message - and the one conformance-shaped call in the corpus names a PLUGIN PHASE, not a type. Excluding those vocabularies would require hardcoding project-specific word lists, so the probe cannot be made role-resolved and instrument B is not available for `implements`."
+  },
+  "wiring": "the gate needs `import { LUA_RULED } from \"./lua-ruled\"` and `lua: LUA_RULED` in RULED_BY_LANG. Both are edits to script/m14/ontology-coverage-gate.ts, which this lane does not own — reported, not applied."
+}

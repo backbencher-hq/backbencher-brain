@@ -1,0 +1,22 @@
+{
+  "fixtureId": "cpp/metadata-line-base-873",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60.P1 (#873) — a relationship row must carry ONE line base. When this fixture was written the cpp analyzer was the case where the mirror was the ONLY line: its Calls and Instantiates rows carried no `line_number` field at all, so `metadata.line` was the row's entire line and a wrong base there was not a mirror defect — it was the line. It was stamped with `startPosition.row` (0-based) while every line in the payload is 1-based, so the row named the line ABOVE its site. MEASURED through the production pipeline before that fix (script/m59/probe-metadata-line-base.ts, three real corpus files per language): cpp 708 and hpp 1,327 rows carrying metadata.line with no line_number, against 1,069 and 1,852 such rows total. AFTER the fix the same instrument reported those rows at the 1-based site. **UPDATED 2026-09-21 (cpp M59.A7 handoff round):** these rows now carry `line_number` as well — the analyzer's nine emit sites were given the #825 contract — so the pins below assert BOTH fields and the one-field shape no longer exists in cpp (0 of 10,157 rows measured across nlohmann-json, fmt and sqlite). The mirror is now required to repeat the row's own line, which is the stronger statement; the one-field mutant that used to cover this class was retired as vacuous and replaced by `cpp/metadata-line-second-base` plus `cpp/lines-dropped`, and the node-choice traps are pinned in cpp/callsite-lines-825. The two sites here are one-line each, so the old and new node choices agree on them; they remain the pins for the BASE.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "size", "kind": "method" },
+    { "name": "use", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "use", "target": "Widget", "line_number": 18, "meta.line": 18, "note": "`new Widget()` is written on source line 18; both fields now name it (before the cpp #825 round only the mirror existed). PRE-FIX this mirror said 17." },
+    { "type": "calls", "from": "use", "target": "size", "line_number": 19, "meta.line": 19, "note": "`w->size()` is written on source line 19; the qualified path `w.size` is carried in metadata.qualified. PRE-FIX this mirror said 18." }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "use", "target": "Widget", "meta.line": 17, "note": "PRE-FIX: the 0-based mirror, one above the site it names." },
+    { "type": "instantiates", "from": "use", "target": "Widget", "line_number": 17, "note": "PRE-FIX: the row's own line, one above the site." },
+    { "type": "calls", "from": "use", "target": "size", "meta.line": 18, "note": "PRE-FIX: same, on the call row." },
+    { "type": "calls", "from": "use", "target": "size", "line_number": 18, "note": "PRE-FIX: the row's own line, one above the call site." },
+    {"type": "calls", "from": "use", "target": "Widget::size", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

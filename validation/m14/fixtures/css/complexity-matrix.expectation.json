@@ -1,0 +1,84 @@
+{
+  "fixtureId": "css/complexity-matrix",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The metric is only useful if it can tell these apart, and it could not while it was a literal 1. Each rule is one term further than the last, and the last two are the ones a reviewer actually pays for: a functional pseudo-class is counted FROM its `pseudo_class_arguments` node (so `:where(.wide)` costs a step for the selector inside it, not for the word `where`), and a comma group is no dearer than its worst member.",
+  "expectSymbols": [
+    {
+      "name": ".plain",
+      "kind": "class"
+    },
+    {
+      "name": ".one-class",
+      "kind": "class"
+    },
+    {
+      "name": "div > p",
+      "kind": "type"
+    },
+    {
+      "name": "a:hover",
+      "kind": "class"
+    },
+    {
+      "name": "a[href]",
+      "kind": "class"
+    },
+    {
+      "name": "li:not(.skip)",
+      "kind": "class"
+    },
+    {
+      "name": ".a, .b",
+      "kind": "class"
+    },
+    {
+      "name": "main > section:where(.wide) ul li",
+      "kind": "class"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "comment": "a single compound selector: the base and nothing else",
+      "symbol": ".plain",
+      "equals": 1
+    },
+    {
+      "symbol": ".one-class",
+      "equals": 1
+    },
+    {
+      "comment": "one child combinator",
+      "symbol": "div > p",
+      "equals": 2
+    },
+    {
+      "comment": "one pseudo-class",
+      "symbol": "a:hover",
+      "equals": 2
+    },
+    {
+      "comment": "one attribute selector",
+      "symbol": "a[href]",
+      "equals": 2
+    },
+    {
+      "symbol": "li:not(.skip)",
+      "equals": 3
+    },
+    {
+      "comment": "a comma group is no dearer than its worst member",
+      "symbol": ".a, .b",
+      "equals": 1
+    },
+    {
+      "symbol": "main > section:where(.wide) ul li",
+      "equals": 6
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ]
+}

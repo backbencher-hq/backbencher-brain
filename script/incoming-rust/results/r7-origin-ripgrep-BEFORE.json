@@ -1,6 +1,6 @@
 {
  "population": {
-  "root": "$HOME/fixtures/repositories",
+  "root": "/home/ishaq2321/bb_tests/repositories",
   "repos": [
    "ripgrep"
   ],

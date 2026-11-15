@@ -1,0 +1,12 @@
+{
+  "fixtureId": "kotlin/extension-property",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.1 extension-property fix: extension properties previously produced no isExtension marker and no relationship at all.",
+  "expectSymbols": [
+    { "name": "lastChar", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "lastChar", "targetEndsWith": "String", "meta.isExtension": true }
+  ]
+}

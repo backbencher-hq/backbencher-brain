@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/macro-module-er3.erl",
+  "authoredFrom": "ER-D35, the distinction the FULL 4,326-file corpus draw forced and the 4,000-file stride sample could not see (that sample reported 0 missing and looked finished). A macro in REMOTE-MODULE position is not automatically `?MODULE`. Only `?MODULE:f(X)` is this file's module — the idiomatic self-dispatch, pinned on the positive side by dispatch-er3. Any other macro there is an ordinary preprocessor constant whose value the analyzer does not expand, so no callee is derivable. The pre-fix branch substituted this file's module for EVERY macro in that position, reporting `?FILE_MODULE:acceptor(A,B,C,D)` inside httpd_acceptor.erl as `httpd_acceptor:acceptor` — a self-call that appears nowhere in the source. Measured: 922 fabricated edges over the corpus, every one of them wrong. Lines read off this file.",
+  "expectSymbols": [
+    { "name": "macro_module_er3", "kind": "module" },
+    { "name": "OTHER_MODULE", "kind": "constant", "meta.isMacro": true, "ownerName": "macro_module_er3" },
+    { "name": "self_dispatch", "kind": "function", "ownerName": "macro_module_er3", "meta.arity": 0 },
+    { "name": "foreign_dispatch", "kind": "function", "ownerName": "macro_module_er3", "meta.arity": 1 },
+    { "name": "fun_value", "kind": "function", "ownerName": "macro_module_er3", "meta.arity": 0 },
+    { "name": "helper", "kind": "function", "ownerName": "macro_module_er3", "meta.arity": 0 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "self_dispatch", "target": "macro_module_er3:helper", "line_number": 20, "meta.macroModule": true, "note": "ER-D25: `?MODULE` IS this file's module, so this resolves exactly like a module-qualified call" },
+    { "type": "references", "from": "self_dispatch", "target": "MODULE", "line_number": 20, "note": "the ?MODULE use still emits its macro reference" },
+    { "type": "references", "from": "foreign_dispatch", "target": "OTHER_MODULE", "line_number": 23, "note": "the macro USE is real and is recorded; only the callee is underivable" },
+    { "type": "references", "from": "foreign_dispatch", "target": "MODULE", "line_number": 23 },
+    { "type": "references", "from": "fun_value", "target": "OTHER_MODULE", "line_number": 26 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "foreign_dispatch", "target": "macro_module_er3:start_link", "note": "THE FABRICATION: ?OTHER_MODULE is not this module, so no self-call may be invented" },
+    { "type": "calls", "from": "foreign_dispatch", "target": "start_link", "note": "nor the bare leaf — that conflates every module's start_link" },
+    { "type": "references", "from": "fun_value", "target": "macro_module_er3:handle_info", "note": "a fun value through a foreign macro module is underivable on the same grounds" },
+    { "type": "references", "from": "fun_value", "target": "handle_info", "note": "ditto, the bare leaf" }
+  ]
+}

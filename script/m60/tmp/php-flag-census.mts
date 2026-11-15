@@ -14,7 +14,7 @@ const walk = (d: string) => {
     else if (n.endsWith(".php")) files.push(p)
   }
 }
-for (const repo of ["phpunit", "phpmyadmin"]) walk(path.join("$HOME/fixtures/repositories", repo))
+for (const repo of ["phpunit", "phpmyadmin"]) walk(path.join("/home/ishaq2321/bb_tests/repositories", repo))
 const flagsPerLabel = new Map<string, Map<string, number>>()
 let n = 0
 for (const f of files.slice(0, 1200)) {

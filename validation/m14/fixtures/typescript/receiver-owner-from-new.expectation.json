@@ -1,0 +1,106 @@
+{
+  "fixtureId": "typescript/receiver-owner-from-new",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines re-read off the analyzer output for THIS fixture (31, 37, 45, 52, 69, 74, 78, 94, 104). The `factory` row at 45 is the 2026-10-18 addition; the absent-owner control moved to `viaUntypedFactory` so both directions stay pinned without line scoping.",
+  "rationale": "THE RECEIVER'S TYPE ON A MEMBER CALL, now covering SIX syntactic forms with an evidence class per form: `const c = new Widget()` (assignment) · `const d: Widget = make()` (annotation — an EXPLICIT annotation beats the factory's inferred return, and this row is the precedence pin) · `private inner: Widget` + `this.inner.m()` (this) · `function f(w: Widget)` + `w.m()` (param) · `const e = make()` with `make(): Widget` in the same file (factory) · one-hop member of a typed parameter and of a destructured parameter (param). THE CONTROLS: an unannotated factory (`untypedMake()`), an unannotated parameter and a member-of-typed-parameter negative shape must carry NO owner — pinned by positive rows with no owner and by field-scoped FORBIDS asserting the `meta.owner` value is absent (a forbid on the bare row would fire on the legitimate unowned row; a forbid carrying `meta.owner: Widget` only fails if the rule over-claims). STALE-CONTROL UPDATE (task-9 ruling, 2026-10-18): CONTROL 2 used to assert `const e = make()` states no type. That premise was TRUE before the factory-return class and is FALSE after (`make()` IS annotated `: Widget`). Coverage was not weakened: that line is now an EXPECTED factory row, and the absent-owner control is a genuinely unannotated factory (`untypedMake`).",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "run",
+      "line_number": 31,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "assignment"
+    },
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "other",
+      "line_number": 37,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "PRECEDENCE PIN: annotated declarator + factory-return initialiser => annotation wins"
+    },
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "other",
+      "line_number": 45,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "factory",
+      "note": "`const e = make()` where make(): Widget"
+    },
+    {
+      "type": "calls",
+      "from": "viaUntypedFactory",
+      "target": "other",
+      "line_number": 52,
+      "meta.owner": null,
+      "note": "unannotated factory: no owner"
+    },
+    {
+      "type": "calls",
+      "from": "viaField",
+      "target": "other",
+      "line_number": 69,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "this"
+    },
+    {
+      "type": "calls",
+      "from": "viaParam",
+      "target": "run",
+      "line_number": 74,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "param"
+    },
+    {
+      "type": "calls",
+      "from": "viaUntypedParam",
+      "target": "other",
+      "line_number": 78,
+      "meta.owner": null
+    },
+    {
+      "type": "calls",
+      "from": "viaMemberOfParam",
+      "target": "other",
+      "line_number": 94,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "param"
+    },
+    {
+      "type": "calls",
+      "from": "viaDestructuredParam",
+      "target": "other",
+      "line_number": 104,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "param"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "viaUntypedFactory",
+      "target": "other",
+      "meta.owner": "Widget",
+      "note": "the unannotated factory must never be given Widget ownership"
+    },
+    {
+      "type": "calls",
+      "from": "viaUntypedParam",
+      "target": "other",
+      "meta.owner": "Widget",
+      "note": "`u: any` must never be given Widget ownership"
+    },
+    {
+      "type": "calls",
+      "from": "receiver-owner-from-new",
+      "target": "other",
+      "meta.ownerEvidence": "factory",
+      "line_number": 37,
+      "note": "the ANNOTATED declarator must not be reclassified as factory — the line/evidence pair pins the precedence rule"
+    }
+  ]
+}

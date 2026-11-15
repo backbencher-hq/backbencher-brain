@@ -1,0 +1,746 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-fsharp-corpus-census",
+  "generatedAt": "2026-09-26T02:25:12.412Z",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories/fsharp",
+    "roots": [
+      "/tmp/fsharp-census/shard-1.txt"
+    ],
+    "files": 1326,
+    "discovered": 1326,
+    "repoRevision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "dirty": false
+  },
+  "note": "First honest corpus measurement of the fsharp lane (no differential lane exists: fsharp is in neither LANGS nor the oracle table of script/m14/differential.ts). Measures exit distribution, symbol kinds, relationship types, dangling endpoints (edge endpoint naming no symbol of the file) and path-valued endpoints. Not an oracle comparison — a census.",
+  "totals": {
+    "symbols": 11084,
+    "relationships": 16950,
+    "danglingSource": 553,
+    "danglingTarget": 8850,
+    "qualifiedSourceMismatches": 89,
+    "pathEndpoints": 0,
+    "parseErrorsOrHasError": 76,
+    "analyzerThrew": 0
+  },
+  "symbolKinds": {
+    "namespace": 181,
+    "module": 586,
+    "function": 3275,
+    "variable": 2431,
+    "class": 1196,
+    "method": 780,
+    "type": 75,
+    "interface": 119,
+    "property": 1444,
+    "constructor": 33,
+    "enum": 334,
+    "enum_member": 630
+  },
+  "relationshipTypes": {
+    "references": 952,
+    "calls": 8546,
+    "contains": 7122,
+    "extends": 97,
+    "overrides": 99,
+    "implements": 129,
+    "instantiates": 5
+  },
+  "topDanglingNames": [
+    {
+      "name": "Line",
+      "count": 1682
+    },
+    {
+      "name": "Col",
+      "count": 1682
+    },
+    {
+      "name": "Error",
+      "count": 606
+    },
+    {
+      "name": "withOptions",
+      "count": 535
+    },
+    {
+      "name": "withDiagnostics",
+      "count": 303
+    },
+    {
+      "name": "withErrorCode",
+      "count": 279
+    },
+    {
+      "name": "Warning",
+      "count": 250
+    },
+    {
+      "name": "Fsx",
+      "count": 231
+    },
+    {
+      "name": "FSharp",
+      "count": 223
+    },
+    {
+      "name": "Prelude",
+      "count": 168
+    },
+    {
+      "name": "Microsoft.FSharp.Quotations",
+      "count": 162
+    },
+    {
+      "name": "verifyTypeForwarding",
+      "count": 161
+    },
+    {
+      "name": "exit",
+      "count": 155
+    },
+    {
+      "name": "System",
+      "count": 142
+    },
+    {
+      "name": "FSharp.Test.Compiler",
+      "count": 138
+    },
+    {
+      "name": "Xunit",
+      "count": 137
+    },
+    {
+      "name": "FSharp.Test",
+      "count": 123
+    },
+    {
+      "name": "QuoteUtils",
+      "count": 115
+    },
+    {
+      "name": "withDiagnosticMessageMatches",
+      "count": 107
+    },
+    {
+      "name": "Microsoft.FSharp.Quotations.Patterns",
+      "count": 97
+    },
+    {
+      "name": "withReferences",
+      "count": 93
+    },
+    {
+      "name": "check2",
+      "count": 82
+    },
+    {
+      "name": "withName",
+      "count": 74
+    },
+    {
+      "name": "Microsoft.FSharp.Quotations.DerivedPatterns",
+      "count": 69
+    },
+    {
+      "name": "failwith",
+      "count": 68
+    },
+    {
+      "name": "FsFromPath",
+      "count": 60
+    },
+    {
+      "name": "withSingleDiagnostic",
+      "count": 58
+    },
+    {
+      "name": "CSharp",
+      "count": 56
+    },
+    {
+      "name": "Combine",
+      "count": 55
+    },
+    {
+      "name": "System.Collections.Generic",
+      "count": 54
+    },
+    {
+      "name": "withRealInternalSignature",
+      "count": 50
+    },
+    {
+      "name": "AppendLine",
+      "count": 46
+    },
+    {
+      "name": "withAdditionalSourceFile",
+      "count": 45
+    },
+    {
+      "name": "SourceFromPath",
+      "count": 40
+    },
+    {
+      "name": "select",
+      "count": 38
+    },
+    {
+      "name": "System.Reflection",
+      "count": 35
+    },
+    {
+      "name": "withNoWarn",
+      "count": 32
+    },
+    {
+      "name": "System.Linq",
+      "count": 28
+    },
+    {
+      "name": "check",
+      "count": 28
+    },
+    {
+      "name": "Fs",
+      "count": 27
+    }
+  ],
+  "qualifiedSourceNames": [
+    {
+      "name": "Foo.ToString",
+      "count": 4
+    },
+    {
+      "name": "T1.M",
+      "count": 4
+    },
+    {
+      "name": "T2.M",
+      "count": 4
+    },
+    {
+      "name": "Decrementor.Increment",
+      "count": 3
+    },
+    {
+      "name": "T3.M",
+      "count": 3
+    },
+    {
+      "name": "T4.M",
+      "count": 3
+    },
+    {
+      "name": "BaseClass.ToString",
+      "count": 3
+    },
+    {
+      "name": "SealedClass.ToString",
+      "count": 3
+    },
+    {
+      "name": "IntTests.ToString",
+      "count": 2
+    },
+    {
+      "name": "DU.CompareTo",
+      "count": 2
+    },
+    {
+      "name": "MyType.Equals",
+      "count": 2
+    },
+    {
+      "name": "R.Equals",
+      "count": 2
+    },
+    {
+      "name": "R.GetHashCode",
+      "count": 2
+    },
+    {
+      "name": "U.Equals",
+      "count": 2
+    },
+    {
+      "name": "U.GetHashCode",
+      "count": 2
+    },
+    {
+      "name": "S.Equals",
+      "count": 2
+    },
+    {
+      "name": "S.GetHashCode",
+      "count": 2
+    },
+    {
+      "name": "Circle.inline",
+      "count": 2
+    },
+    {
+      "name": "DecoratorTest.VisualChildrenCount",
+      "count": 2
+    },
+    {
+      "name": "DecoratorTest.GetVisualChild",
+      "count": 2
+    },
+    {
+      "name": "DecoratorTest.LogicalChildren",
+      "count": 2
+    },
+    {
+      "name": "T4.N",
+      "count": 2
+    },
+    {
+      "name": "InheritFromStruct.ToString",
+      "count": 2
+    },
+    {
+      "name": "TK_C_013.ToString",
+      "count": 2
+    },
+    {
+      "name": "MyTraceListener.Write",
+      "count": 1
+    },
+    {
+      "name": "MyTraceListener.WriteLine",
+      "count": 1
+    },
+    {
+      "name": "MyTraceListener.Fail",
+      "count": 1
+    },
+    {
+      "name": "Class2.CompareTo",
+      "count": 1
+    },
+    {
+      "name": "Customer.Equals",
+      "count": 1
+    },
+    {
+      "name": "Customer.CompareTo",
+      "count": 1
+    }
+  ],
+  "pathEndpointNames": [],
+  "buckets": {
+    "tests": {
+      "files": 1326,
+      "errorFiles": 76,
+      "symbols": 11084,
+      "relationships": 16950
+    }
+  },
+  "worstFiles": [
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/InferenceProcedures/ByrefSafetyAnalysis/ByrefSafetyAnalysis.fs",
+      "dangling": 694,
+      "total": 820
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/TypeConstraints/IWSAMsAndSRTPs/IWSAMsAndSRTPsTests.fs",
+      "dangling": 499,
+      "total": 506
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/PatternMatching/Named/Named.fs",
+      "dangling": 460,
+      "total": 505
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/RecordTypes/AnonymousRecords.fs",
+      "dangling": 433,
+      "total": 488
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/PatternMatching/Union/Union.fs",
+      "dangling": 404,
+      "total": 427
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/ObjectExpressions/ObjectExpressions.fs",
+      "dangling": 335,
+      "total": 384
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/GeneratedEqualityHashingComparison/Attributes/Legacy/Attributes_Legacy.fs",
+      "dangling": 307,
+      "total": 336
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/RecordTypes/RecordTypes.fs",
+      "dangling": 307,
+      "total": 386
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/GeneratedEqualityHashingComparison/Attributes/New/Attributes_New.fs",
+      "dangling": 259,
+      "total": 288
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/BindingExpressions/BindingExpressions.fs",
+      "dangling": 200,
+      "total": 218
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "dangling": 167,
+      "total": 192
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/PatternMatching/Simple/Simple.fs",
+      "dangling": 156,
+      "total": 191
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/PatternMatching/SimpleConstant/SimpleConstant.fs",
+      "dangling": 130,
+      "total": 160
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/PatternMatching/Expression/Expression.fs",
+      "dangling": 125,
+      "total": 140
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/GeneratedEqualityHashingComparison/Basic/Basic.fs",
+      "dangling": 100,
+      "total": 124
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/ImplementationFilesAndSignatureFiles/NamespacesFragmentsAndImplementationFiles.fs",
+      "dangling": 99,
+      "total": 132
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/ByteStrings.fs",
+      "dangling": 89,
+      "total": 113
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/InferenceProcedures/RecursiveSafetyAnalysis/RecursiveSafetyAnalysis.fs",
+      "dangling": 85,
+      "total": 106
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/PatternMatching/DynamicTypeTest/DynamicTypeTest.fs",
+      "dangling": 84,
+      "total": 102
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/TypeForwarding/NegativeCases.fs",
+      "dangling": 80,
+      "total": 108
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/ControlFlowExpressions/Type-relatedExpressions/Type-relatedExpressions.fs",
+      "dangling": 79,
+      "total": 86
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalAnalysis/CharByteLiterals.fs",
+      "dangling": 76,
+      "total": 83
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/DataExpressions/QueryExpressions/OperatorsOverTuples01.fs",
+      "dangling": 73,
+      "total": 71
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/DataExpressions/QueryExpressions/OperatorsOverClass01.fs",
+      "dangling": 72,
+      "total": 72
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/DataExpressions/QueryExpressions/OperatorsOverRecords01.fs",
+      "dangling": 72,
+      "total": 72
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Stress/StressTests.fs",
+      "dangling": 69,
+      "total": 87
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/ComputationExpressions/ComputationExpressions.fs",
+      "dangling": 64,
+      "total": 88
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/ImplementationFilesAndSignatureFiles/CheckingOfImplementationFiles.fs",
+      "dangling": 64,
+      "total": 80
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/TypeForwarding/TypeForwardingHelpers.fs",
+      "dangling": 60,
+      "total": 81
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/ObjectOrientedTypeDefinitions/AbstractMembers/AbstractMembers.fs",
+      "dangling": 57,
+      "total": 82
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Signatures/Signatures.fs",
+      "dangling": 53,
+      "total": 66
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/LexicalFiltering/OffsideExceptions/OffsideExceptions.fs",
+      "dangling": 52,
+      "total": 75
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/ObjectOrientedTypeDefinitions/InterfaceTypes/InterfaceTypes.fs",
+      "dangling": 52,
+      "total": 85
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Signatures/SignatureEnforcedAttributes.fs",
+      "dangling": 51,
+      "total": 112
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/TypeForwarding/ClassTests.fs",
+      "dangling": 51,
+      "total": 93
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/ObjectOrientedTypeDefinitions/ClassTypes/MemberDeclarations/MemberDeclarations.fs",
+      "dangling": 50,
+      "total": 84
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/TypeForwarding/StructTests.fs",
+      "dangling": 50,
+      "total": 89
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/ObjectOrientedTypeDefinitions/ClassTypes/InheritsDeclarations/InheritsDeclarations.fs",
+      "dangling": 46,
+      "total": 57
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/StructTypes/StructTypes.fs",
+      "dangling": 46,
+      "total": 55
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/TypeForwarding/TypeForwardingTests.fs",
+      "dangling": 43,
+      "total": 63
+    }
+  ],
+  "samples": [
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "references",
+      "source": "Conformance.Constraints",
+      "target": "Xunit",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "references",
+      "source": "Conformance.Constraints",
+      "target": "FSharp.Test.Compiler",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "references",
+      "source": "Conformance.Constraints",
+      "target": "FSharp.Test",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voidptr is unmanaged``",
+      "target": "withNoWarn",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voidptr is unmanaged``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``nativeptr of voidptr works``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private field can be unmanaged``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "withDiagnostics",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Error",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Error",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``Struct with private managed field cannot be unmanaged``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voption considered unmanaged when inner type is unmanaged``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voption not considered unmanaged when inner type is reference type``",
+      "target": "withDiagnostics",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voption not considered unmanaged when inner type is reference type``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voption not considered unmanaged when inner type is reference type``",
+      "target": "Error",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voption not considered unmanaged when inner type is reference type``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Constraints/Unmanaged.fs",
+      "type": "calls",
+      "source": "``voption not considered unmanaged when inner type is reference type``",
+      "target": "Col",
+      "line": null
+    }
+  ]
+}

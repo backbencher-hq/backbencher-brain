@@ -1,0 +1,5 @@
+export * as ns from "./m"
+export { default as D } from "./m"
+export { readFile as read } from "fs"
+export {} from "./m"
+export { "a-b" as c } from "./m"

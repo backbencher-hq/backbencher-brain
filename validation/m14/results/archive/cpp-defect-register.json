@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-09-28T21:58:34.278Z",
-  "corpusRoot": "$HOME/ishaq/fixtures/repositories",
+  "corpusRoot": "/home/sano/ishaq/bb_tests/repositories",
   "corpora": [
     "fmt",
     "nlohmann-json",

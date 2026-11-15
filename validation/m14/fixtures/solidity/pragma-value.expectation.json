@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "pragma-value",
+  "why": "grammar.js:103 — `pragma_value` is the `/[^;]+/` tail of any_pragma_token; `pragma abicoder v2;` is the commonest form.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "pragma_value",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

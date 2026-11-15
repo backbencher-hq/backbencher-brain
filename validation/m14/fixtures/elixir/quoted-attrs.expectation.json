@@ -1,0 +1,11 @@
+{
+  "issue": "ELX-ADV X1",
+  "note": "Quoted attributes are data (EX-D1): `@behaviour`/`@type` inside a `quote` block emit no implements edge and mint no Type symbol; the unquoted control @behaviour emits.",
+  "forbidSymbols": [{ "name": "t" }],
+  "expectRelationships": [
+    { "type": "implements", "from": "EQ", "target": "RealB", "line_number": 2 }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "target": "SomeB" }
+  ]
+}

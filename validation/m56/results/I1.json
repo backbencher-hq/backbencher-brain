@@ -1,0 +1,42 @@
+{
+  "issue": "M56.I1 — Information Architecture (#785)",
+  "code": "I1",
+  "milestone": "m56",
+  "status": "verified",
+  "checks": 32,
+  "passed": 32,
+  "failed": 0,
+  "negativeCases": 7,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m56/verify-ia.ts",
+  "evidenceFile": "I1.json",
+  "generatedAt": "2026-11-09T14:45:24.575Z",
+  "contract": {
+    "nav": [
+      "install",
+      "docs",
+      "tools",
+      "languages",
+      "editors",
+      "support"
+    ],
+    "redirects": {
+      "/faq": "/support",
+      "/contact": "/support",
+      "/troubleshooting": "/docs#troubleshooting",
+      "/demos": "/editors"
+    }
+  },
+  "summary": [
+    "nav is exactly six surfaces in contract order: install · docs · tools · languages · editors · support",
+    "footer links every live surface; shared footer renders on every live surface",
+    "retired paths redirect through one declaration: /faq, /contact, /troubleshooting, /demos",
+    "built sitemap.xml lists 59 indexable routes and no retired path",
+    "docs carries every remediation command; the retired troubleshooting page carries none",
+    "/demos has no film markup and its media is absent from the published bundle"
+  ],
+  "limitations": [
+    "Rendered-HTML link scanning covers the surfaces that can link a retired path (support, nav, footer, docs, install); a retired link inside a long-form legal page would not be seen here."
+  ],
+  "failures": []
+}

@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-11-03T17:15:37.125Z",
+  "symbol": "getRawInstance",
+  "level0Rows": 326,
+  "batch": 200,
+  "prefixes": 200,
+  "members": 21,
+  "targets": 217,
+  "rows": [
+    {
+      "label": "current-subquery-form",
+      "ms": 4349.5,
+      "value": 137
+    },
+    {
+      "label": "range-member-lookup",
+      "ms": 33.3,
+      "value": 21
+    },
+    {
+      "label": "flat-in-form",
+      "ms": 4.1,
+      "value": 137
+    },
+    {
+      "label": "flat-in-form-repeat",
+      "ms": 3.5,
+      "value": 137
+    }
+  ]
+}

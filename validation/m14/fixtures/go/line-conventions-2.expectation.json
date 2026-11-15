@@ -1,0 +1,116 @@
+{
+  "fixtureId": "go/line-conventions-2",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The second half of the M60 line round. `callsite-lines-825` already pins the conventions for calls, mixes_in, implements, contains, instantiates, imports, declared_type references and selector uses, each with a named pre-fix shape to forbid — but four constructs have NO line pin anywhere, and each has at least one plausible alternative site a counting gate cannot tell apart from the right one. (1) `return_type`: the result TYPE's line, two below the `func produce() (` line, on a different list from a parameter's. (2) `instantiates`: a generic CALL instantiates the FUNCTION at the callee line while a composite literal instantiates the TYPE at the literal's line — two targets and two sites in one body, which is why one case cannot pin the label. (3) `identifier_usage`: the identifier's OWN line, here the first line of a wrapped return expression. (4) `go_channel_operation`: the send/receive STATEMENT's line, with send and receive as SEPARATE rows sharing a target, and a receive inside a package-scope literal sourced at `global` — the GOD9 site, reachable only because the literal is at file scope. The FORBID rows are the alternative sites: the `func produce() (` line, the wrapped argument list's opening line, the last line of the return expression, the `select` keyword, and the enclosing function for the file-scope receive. Without them a regression to the naive site would pass. Every line and value was read back from live emission with script/m14/tmp/god9-dump.ts, and the same constructs are asserted with source-embedded markers in script/m14/tmp/go-round7-line-conventions.ts, which needs no hand-counted line at all. A `references` row carrying the `go_instantiation` marker was in the first draft of this file and was REMOVED after F3 rejected it: a generic CALL emits an `instantiates` edge, not a `references` one, and the row had been written from the convention rather than from live emission. Every other row here was read back with script/m14/tmp/god9-dump.ts. A hand-written line expectation is worth exactly as much as the emission it was transcribed from, which is the reason the same constructs are also asserted by source-embedded markers in script/m14/tmp/go-round7-line-conventions.ts.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "produce",
+      "target": "Out",
+      "meta.relationshipType": "return_type",
+      "line_number": 29
+    },
+    {
+      "type": "instantiates",
+      "from": "generic",
+      "target": "NewBox",
+      "meta.relationshipType": "go_instantiation",
+      "line_number": 40
+    },
+    {
+      "type": "instantiates",
+      "from": "generic",
+      "target": "Box",
+      "meta.relationshipType": "go_composite_literal_construction",
+      "line_number": 44
+    },
+    {
+      "type": "uses",
+      "from": "reads",
+      "target": "total",
+      "meta.relationshipType": "identifier_usage",
+      "line_number": 52
+    },
+    {
+      "type": "uses",
+      "from": "pump",
+      "target": "ch",
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "receive",
+      "line_number": 61
+    },
+    {
+      "type": "uses",
+      "from": "pump",
+      "target": "ch",
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "send",
+      "line_number": 62
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "ch",
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "receive",
+      "line_number": 70
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "produce",
+      "target": "Out",
+      "meta.relationshipType": "return_type",
+      "line_number": 28,
+      "note": "the `func produce() (` keyword line; the result type is written on 29"
+    },
+    {
+      "type": "instantiates",
+      "from": "generic",
+      "target": "NewBox",
+      "line_number": 39,
+      "note": "the statement line; the callee leaf is written on 40"
+    },
+    {
+      "type": "instantiates",
+      "from": "generic",
+      "target": "Box",
+      "line_number": 39,
+      "note": "the statement line; the constructed type is written on 44"
+    },
+    {
+      "type": "uses",
+      "from": "reads",
+      "target": "total",
+      "meta.relationshipType": "identifier_usage",
+      "line_number": 53,
+      "note": "the last line of the wrapped expression; the identifier is written on 52"
+    },
+    {
+      "type": "uses",
+      "from": "pump",
+      "target": "ch",
+      "meta.operationType": "receive",
+      "line_number": 60,
+      "note": "the `select` keyword line; the receive statement is written on 61"
+    },
+    {
+      "type": "uses",
+      "from": "pump",
+      "target": "ch",
+      "meta.operationType": "send",
+      "line_number": 60,
+      "note": "the `select` keyword line; the send statement is written on 62"
+    },
+    {
+      "type": "uses",
+      "from": "pump",
+      "target": "ch",
+      "meta.operationType": "receive",
+      "line_number": 70,
+      "note": "the file-scope receive belongs to `global`, not to `pump`"
+    }
+  ]
+}

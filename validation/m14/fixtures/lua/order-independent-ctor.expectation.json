@@ -1,0 +1,40 @@
+{
+  "fixtureId": "lua/order-independent-ctor",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-06, authored from the principle that a relationship is a fact about the PROGRAM, not about the traversal. Both declaration orders appear in this file and BOTH must produce the edge, each at its own call's line. Before the fix the first produced an edge and the second produced nothing, with identical semantics \u2014 which is why one file carrying both is the whole test.",
+  "expectSymbols": [
+    {
+      "name": "Widget"
+    },
+    {
+      "name": "Gadget"
+    },
+    {
+      "name": "new",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "new",
+      "ownerName": "Gadget"
+    }
+  ],
+  "forbidSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "global",
+      "target": "Widget",
+      "line_number": 13,
+      "comment": "CALL BEFORE DECLARATION \u2014 the order that used to produce no edge at all"
+    },
+    {
+      "type": "instantiates",
+      "from": "global",
+      "target": "Gadget",
+      "line_number": 19,
+      "comment": "CALL AFTER DECLARATION \u2014 the order that used to work, kept as the control"
+    }
+  ],
+  "forbidRelationships": []
+}

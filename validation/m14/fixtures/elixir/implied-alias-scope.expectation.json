@@ -1,0 +1,32 @@
+{
+  "issue": "F5-CERT",
+  "note": "EX-L5 corrected by the F5 elixir lane (MISSING edge `Registry.Supervisor -> Supervisor` on the stdlib corpus): the defmodule-implied last-segment alias registers when the definition CLOSES, in the ENCLOSING scope — never inside the defining body (Kernel.defmodule docs: \"in the same lexical scope where it's defined (the Foo module)\"; stdlib proof: Task.Supervisor/Registry.Supervisor `use Supervisor` resolves the external Supervisor). Three halves pinned: (a) inside-body `use Supervisor` emits references Collide.Supervisor -> Supervisor and is NOT swallowed by the self-directive guard; (b) after the definition closes, `%Thing{}` resolves through the implied alias (UsesAfter.make -> Collide.Thing); (c) inside its own body, `%Inner{}` does NOT self-resolve (raw Inner). Mutant elixir/implied-alias-entry-time reverts all three to entry-time behavior. W23-E1 (review wave): alias scoping is LEXICAL — an explicit `alias Deep.Bar` lives in its module's frame (Leak.Source.make -> Deep.Bar resolves inside; Leak.After's `%Bar{}` must stay raw Bar — the alias must NOT leak to a later sibling), and a nested module's implied alias lives in its ENCLOSING frame (Nest.Outer.Nest.Next.make -> Nest.Outer.Sup resolves inside Nest.Outer; Nest.After's `%Sup{}` must stay raw Sup — the implied alias must NOT escape to the file root). Mutant elixir/alias-scope-flat-registry reverts the scoping to a flat file-global registry and leaks both.",
+  "expectSymbols": [
+    { "name": "Collide.Supervisor", "kind": "module" },
+    { "name": "Collide.Thing", "kind": "module" },
+    { "name": "UsesAfter", "kind": "module" },
+    { "name": "Collide.Inner", "kind": "module" },
+    { "name": "Leak.Source", "kind": "module" },
+    { "name": "Leak.After", "kind": "module" },
+    { "name": "Nest.Outer", "kind": "module" },
+    { "name": "Nest.Outer.Sup", "kind": "module" },
+    { "name": "Nest.Outer.Nest.Next", "kind": "module" },
+    { "name": "Nest.After", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Collide.Supervisor", "target": "Supervisor", "line_number": 2 },
+    { "type": "instantiates", "from": "UsesAfter.make/0", "target": "Collide.Thing", "line_number": 10 },
+    { "type": "instantiates", "from": "Collide.Inner.make/0", "target": "Inner", "line_number": 16 },
+    { "type": "instantiates", "from": "Leak.Source.make/0", "target": "Deep.Bar", "line_number": 28 },
+    { "type": "instantiates", "from": "Leak.After.make/0", "target": "Bar", "line_number": 34 },
+    { "type": "instantiates", "from": "Nest.Outer.Nest.Next.make/0", "target": "Nest.Outer.Sup", "line_number": 44 },
+    { "type": "instantiates", "from": "Nest.After.make/0", "target": "Sup", "line_number": 51 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "Collide.Supervisor", "target": "Collide.Supervisor" },
+    { "type": "instantiates", "from": "Collide.Inner.make/0", "target": "Collide.Inner" },
+    { "type": "instantiates", "from": "UsesAfter.make/0", "target": "Thing" },
+    { "type": "instantiates", "from": "Leak.After.make/0", "target": "Deep.Bar" },
+    { "type": "instantiates", "from": "Nest.After.make/0", "target": "Nest.Outer.Sup" }
+  ]
+}

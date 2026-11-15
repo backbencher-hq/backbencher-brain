@@ -1,0 +1,57 @@
+# JSON SCHEMA COMPOSITION, as `extends`.
+#
+# `allOf` means "must satisfy ALL of these" — a superset-of relationship, and the only schema
+# keyword that means one. `anyOf` and `oneOf` are ALTERNATIVES, which have no ontology type, so
+# their `$ref`s correctly contribute only the `references` they already produce.
+#
+# THIS IS THE JSON LANE'S OWN SETTLED RULING, applied to the same construct in the YAML spelling:
+# `script/m14/spec/json-completeness.json` records `BD-allof-extends`, and the JSON analyzer emits
+# it over 1,432 edges. A JSON Schema or an OpenAPI document is routinely written as YAML, and
+# this lane already reads those documents (it publishes their schema definitions as `exports` and
+# their `$ref`s as `references`).
+#
+# MEASURED over the admitted population: `allOf` appears 974 times, against `anyOf` 446 and
+# `oneOf` 154 — the shape the reading predicts, composition common and alternatives rare.
+#
+# THE SOURCE IS THE SCHEMA THAT COMPOSES, not the `allOf` array that records the composition.
+# `allOf` is a keyword shared by every schema in the file, so an edge whose source were the array
+# would bind a consumer resolving by name to an arbitrary one of them. The thing that inherits is
+# `Request`, not `Request.allOf`.
+#
+# THE RULE IS THE PATH'S TAIL, and it is exact on purpose: the `$ref` must be a DIRECT member of
+# an `allOf` item. A `$ref` DEEPER inside an item is a property reference, not a composition —
+# `CreateApprovalPolicyParameters.allOf[1].properties.OnTimeout.$ref` — and the corpus has both.
+#
+# TWO CASES ARE PINNED HERE, because the two spellings are two rules:
+#   1. a LOCAL pointer (`#/…`), which resolves to a symbol in this file, confidence 1
+#   2. a SIBLING-FILE pointer (`other.yaml#/…`), whose target is a file this document composes
+#      with; the file claim is the one the project can check
+# and ONE case is FORBIDDEN, because it is the one that looks like a composition and is not: a
+# `$ref` under `properties:` INSIDE an `allOf` member is a property reference, and it must
+# produce no `extends` edge at all.
+openapi: 3.0.3
+info:
+  title: Composition fixture
+  version: "1.0"
+components:
+  schemas:
+    Base:
+      type: object
+      properties:
+        id:
+          type: string
+    Shared:
+      $ref: "../shared.yaml#/components/schemas/Common"
+    Request:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            name:
+              type: string
+            owner:
+              $ref: "#/components/schemas/Base"
+    Other:
+      allOf:
+        - $ref: "../shared.yaml#/components/schemas/Common"

@@ -1,0 +1,28 @@
+{
+  "_purpose": "The python lane's SPACE ATTESTATION for script/m14/ontology-coverage-gate.ts. A ruling that certifies a construct ABSENT is only as strong as the SPACES its probe enumerated, and this file is where the python lane says which ones it enumerated and hands the gate an artefact whose pointers it can check. Every pointer below is resolved by the gate against `artefact`; a pointer that does not resolve, or a declared number the artefact contradicts, turns the ruling RULED-UNJUSTIFIED instead of RULED-SOUND. Python is a language that writes key/value bindings, so the gate refuses a node-type-only ruling here unless the `attribute-keys` space is declared — that is why `spacesProbed` names it rather than leaving it to the prose.",
+
+  "lane": "python",
+  "instrument": "validation/m14/fixtures/python/implements-probe.ts",
+  "artefact": "validation/m14/fixtures/python/construct-census.current.json",
+  "spacesProbed": ["node-types", "attribute-keys"],
+
+  "spaceEvidence": {
+    "nodeTypes": {
+      "pointer": ["grammarNodeTypesObserved"],
+      "observed": 203
+    },
+    "attributeKeys": {
+      "pointer": ["counters", "keywordArgumentNodes", "occurrences"],
+      "observed": 227330
+    }
+  },
+
+  "rulings": {
+    "implements": {
+      "spaces": ["node-types", "attribute-keys"],
+      "constructSites": 204,
+      "pointer": ["implementsConstructSites"],
+      "note": "WHY the attribute-keys number is 227,330 and not a token. Python spells a construct in this space as a `keyword_argument` (`class C(metaclass=ABCMeta)`, `total=False`), and the artefact counts EVERY such node in the walked population, not only the 185 that sit in a class header (`counters.classHeaderKeywordArguments`) — a class-header-only number would verify without saying anything about the space. Cross-check, two independent instruments: the gate's own walk reads 227,905 `keyword_argument` nodes over the 11,488 files IT admits on this box, and this probe reads 227,330 over its own 10,839 tracked files at or under 512 KiB — a 0.25% spread explained by the different admission rules (untracked files and files above the cap), which is the agreement you want between an instrument the lane owns and one it does not. REGRESSION TRAP, not a live verdict: `implements` IS emitted (PY-34), so the gate reads EMITTED from observation and never reaches this row. It is kept because the row is what makes a REGRESSION loud. The count it attests is 204 construct sites, so if a change ever stops the emission the gate reads FALSIFIED — present in the corpus, derivable, not emitted — rather than RULED-SOUND, which is the flattering direction the gate's own §attribute-keys block was written to refuse. The 204 is the artefact's `implementsConstructSites` (abcBase 22 + protocolBase 117 + virtualRegister 0 + metaclassArg 65); the four components stay published separately in the same artefact so the sum is checkable and a zero here cannot hide a non-zero component. POPULATION, DECLARED: this artefact was measured on the FLAT corpus of the box it was produced on — 10,839 tracked `.py`/`.pyi` files at or under 512 KiB across 49 top-level checkouts under `/home/ishaq2321/bb_tests/repositories` (the corpus root the gate itself walks on that box), NOT the aggregated `python-corpus/` the PY-34 ruling's 71-base-entry figure came from. The two populations are named here so the numbers are not conflated: 204 is a count of interface-declaring sites over the whole box, 71 was a count of interface base entries over five pinned checkouts."
+    }
+  }
+}

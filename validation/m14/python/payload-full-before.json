@@ -1,0 +1,62 @@
+{
+  "label": "full-before",
+  "population": 5364,
+  "sample": 5364,
+  "failed": 0,
+  "symbols": 139118,
+  "imports": 30057,
+  "relationships": 697895,
+  "unfilteredBytes": 193852947,
+  "filteredBytes": 88460341,
+  "filterType": "calls",
+  "ratio": 2.1914108040799887,
+  "parseWallMs": 37384,
+  "analyzeOnlyMs": 162501,
+  "shape": [
+    {
+      "type": "calls",
+      "count": 298993,
+      "bytes": 88460341
+    },
+    {
+      "type": "uses",
+      "count": 177283,
+      "bytes": 48676726
+    },
+    {
+      "type": "contains",
+      "count": 92071,
+      "bytes": 21438246
+    },
+    {
+      "type": "imports",
+      "count": 43905,
+      "bytes": 11711558
+    },
+    {
+      "type": "overrides",
+      "count": 30162,
+      "bytes": 10543609
+    },
+    {
+      "type": "references",
+      "count": 23001,
+      "bytes": 4395322
+    },
+    {
+      "type": "extends",
+      "count": 18022,
+      "bytes": 4416142
+    },
+    {
+      "type": "instantiates",
+      "count": 10796,
+      "bytes": 3264255
+    },
+    {
+      "type": "exports",
+      "count": 3662,
+      "bytes": 946756
+    }
+  ]
+}

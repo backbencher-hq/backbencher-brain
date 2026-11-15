@@ -1,0 +1,42 @@
+{
+  "fixtureId": "groovy/fqn-implements",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FQN interfaces must yield implements edges to the TYPE segment only. Package segments (java, io, groovy, lang) are NOT types and must not become edge targets. CONVENTION DECIDED (M14.1): full dotted names as targets, matching Java; package segments never emitted as separate edges.",
+  "expectSymbols": [
+    {
+      "name": "AuditListener",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "AuditListener",
+      "targetEndsWith": "Serializable"
+    },
+    {
+      "type": "implements",
+      "from": "AuditListener",
+      "targetEndsWith": "Closeable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "target": "java"
+    },
+    {
+      "type": "implements",
+      "target": "io"
+    },
+    {
+      "type": "implements",
+      "target": "groovy"
+    },
+    {
+      "type": "implements",
+      "target": "lang"
+    }
+  ]
+}

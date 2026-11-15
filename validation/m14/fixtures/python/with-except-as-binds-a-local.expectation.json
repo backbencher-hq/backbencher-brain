@@ -1,0 +1,52 @@
+{
+  "fixtureId": "python/with-except-as-binds-a-local",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The `as`-binding fix, and a fixture whose ONLY job is to fail if it is reverted. `collectFunctionLocals` has carried `case \"with_item\"` and `case \"except_clause\"` since round 7, documented as collecting the alias \u2014 and both read field names this grammar does not have (`childForFieldName(\"alias\")` on `with_item`, `childForFieldName(\"name\")` on `except_clause`). MEASURED on this grammar (`.tmp-py/global-shape-probe.mts`): the alias lives inside an `as_pattern` \u2014 `with_item value -> as_pattern -> as_pattern_target`, `except_clause value -> as_pattern -> as_pattern_target` \u2014 so both fields are null on every real node and neither case ever fired. That is a claim with no falsifier, which is the same failure mode round 9 removed a fabrication with, and the fix is the shape read (`asBindingTarget`) plus this fixture. The rows are SELF-DISCRIMINATING: the endpoints are the same before and after the fix, and only the reasonCode differs (`bare-name-callee`/`annotation-type` \u2192 `local-callee`/`local-binding-target`), so a revert cannot pass by coincidence. `meta.reasonCode` is what makes that so, and the zero symbol counts are the second half of the claim: a local is not a project-wide declaration, which is why the correct answer is 'bound in an enclosing function' rather than 'declared somewhere'.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "with_target",
+      "target": "with_target\u0000handle",
+      "line_number": 11,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "`handle` is bound by `with open(\"x\") as handle`. This reason code can only be produced when the name is in the enclosing function's local set, so this row IS the fix. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "references",
+      "from": "with_target",
+      "target": "handle",
+      "line_number": 12,
+      "confidence": 0.95,
+      "meta.reasonCode": "local-binding-target",
+      "note": "The reference reader asks the SAME local set (PY-D15's mechanism), so the fix has to reach both emitters \u2014 a `with` target that is a local for calls and a project name for annotations would be one fact read two ways."
+    },
+    {
+      "type": "calls",
+      "from": "except_target",
+      "target": "except_target\u0000failure",
+      "line_number": 19,
+      "confidence": 0.9,
+      "meta.reasonCode": "local-callee",
+      "note": "The `except_clause` half of the same bug, spelled independently: `except Exception as failure` and a bare call of it. Round 7's `except_clause` case read `name`, which is the except clause's nothing-field, so it was dead in exactly the same way. TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "handle",
+      "equals": 0,
+      "note": "A `with` target is a local of its function, and locals are not symbols (universal scripting-family contract). The correct reading of this name is `declared-local`, not a fabricated project declaration."
+    },
+    {
+      "name": "failure",
+      "equals": 0,
+      "note": "Same for the `except` target."
+    },
+    {
+      "name": "typed",
+      "equals": 0,
+      "note": "The annotated assignment's own target is a local too \u2014 pinned so the fix cannot be extended by accident into publishing `with`-adjacent names."
+    }
+  ]
+}

@@ -758,7 +758,7 @@ async function main() {
       },
       {
         description:
-          "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES",
+          "the corpus is the pinned bb_tests repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES",
       },
     ],
     data: {

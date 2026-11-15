@@ -1,0 +1,107 @@
+{
+  "fixtureId": "javascript/receiver-position-claims",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the receiver-position claim evidence: a MEMBER call whose receiver chain is PURE (object-of-member only) and rooted at a file IMPORT binding gets metadata.receiverImport = {specifier, binding} plus flat mirrors receiverImportSpecifier/receiverImportBinding. The target stays the member leaf; evidence comes from the file's own imports rows (same evidence the importedBinding claim uses). POSITIVES: default import receiver (path.join), namespace receiver (fs.readFileSync), named import receiver (Route.push), a PURE member chain two levels deep (config.config.rules), require binding receiver (req.join). NEGATIVES must carry NO receiverImport marker: a local class-instance receiver (svc.run), a parameter receiver (thing.run), a CALL-RESULT receiver (path.resolve().customThing() -- receiver is the call result), and a dynamic-specifier require binding (dyn.go -- no literal evidence, never claimable). EXTERNAL-ONLY (Lead decision): relative/absolute/workspace receivers are project-internal and must stay UNMARKED (a claim would launder a resolvable edge); the relative-receiver negative pins that.",
+  "expectSymbols": [
+    {
+      "name": "defaultImportReceiver",
+      "kind": "function"
+    },
+    {
+      "name": "LocalService",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "defaultImportReceiver",
+      "target": "join",
+      "meta.receiverImportSpecifier": "path",
+      "meta.receiverImportBinding": "path"
+    },
+    {
+      "type": "calls",
+      "from": "namespaceReceiver",
+      "target": "readFileSync",
+      "meta.receiverImportSpecifier": "fs",
+      "meta.receiverImportBinding": "fs"
+    },
+    {
+      "type": "calls",
+      "from": "namedImportReceiver",
+      "target": "push",
+      "meta.receiverImportSpecifier": "react-router",
+      "meta.receiverImportBinding": "Route"
+    },
+    {
+      "type": "calls",
+      "from": "pureMemberChain",
+      "target": "rules",
+      "meta.receiverImportSpecifier": "tseslint",
+      "meta.receiverImportBinding": "config"
+    },
+    {
+      "type": "calls",
+      "from": "requireReceiver",
+      "target": "join",
+      "meta.receiverImportSpecifier": "pathlib",
+      "meta.receiverImportBinding": "req"
+    },
+    {
+      "type": "calls",
+      "from": "localReceiver",
+      "target": "run",
+      "meta.receiverImportSpecifier": null,
+      "comment": "LOCAL receiver: no import evidence"
+    },
+    {
+      "type": "calls",
+      "from": "paramReceiver",
+      "target": "run",
+      "meta.receiverImportSpecifier": null
+    },
+    {
+      "type": "calls",
+      "from": "callResultReceiver",
+      "target": "customThing",
+      "meta.receiverImportSpecifier": null,
+      "comment": "call-result receiver, not the namespace"
+    },
+    {
+      "type": "calls",
+      "from": "dynamicRequireReceiver",
+      "target": "go",
+      "meta.receiverImportSpecifier": null,
+      "comment": "dynamic specifier: no evidence entry, never claimable"
+    },
+    {
+      "type": "calls",
+      "from": "relativeReceiver",
+      "target": "load",
+      "meta.receiverImportSpecifier": null,
+      "comment": "RELATIVE specifier: external-only restriction -> unmarked"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "localReceiver",
+      "target": "run",
+      "meta.receiverImportSpecifier": "anything"
+    },
+    {
+      "type": "calls",
+      "from": "callResultReceiver",
+      "target": "customThing",
+      "meta.receiverImportSpecifier": "path"
+    },
+    {
+      "type": "calls",
+      "from": "relativeReceiver",
+      "target": "load",
+      "meta.receiverImportSpecifier": "./rel-config.js"
+    }
+  ]
+}

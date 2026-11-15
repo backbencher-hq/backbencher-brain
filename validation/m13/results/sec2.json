@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.41",
+  "code": "Sec2",
+  "tool": "bb_security",
+  "title": "bb_security: M72 lead-contract answer, declared bounds, and read-only reads",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "lead-contract: the default pipeline persisted the tainted symbol's lead",
+      "pass": true,
+      "detail": "stored=1 [{\"id\":\"sec:f762f86b0315f5a99db8686b57a2a5d2dbadebd1:f762f86b0315f5a99db8686b57a2a5d2dbadebd1:src/app.ts:typescript.sql.query:157:170\",\"vulnerability_type\":\"sql_injection\",\"severity\":\"high\",\"state\":\"lead\",\"tier\":\"leads\",\"rule_id\":\"typescript.sql.query\",\"sink_line\":6}]"
+    },
+    {
+      "name": "lead-contract: the stored lead is the SQLi rule at the concatenated sink",
+      "pass": true,
+      "detail": "type=sql_injection rule=typescript.sql.query"
+    },
+    {
+      "name": "lead-contract: the stored row is tier=leads / state=lead (never a finding claim)",
+      "pass": true,
+      "detail": "tier=leads state=lead"
+    },
+    {
+      "name": "lead-contract: the parameterized sibling produced no second lead [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stored=1 — a parameterized sink must not become a lead"
+    },
+    {
+      "name": "lead-contract: line 1 is the honesty banner",
+      "pass": true,
+      "detail": "\"⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\""
+    },
+    {
+      "name": "lead-contract: line 2 is the registry's tier declaration (printed, not hand-typed)",
+      "pass": true,
+      "detail": "\"tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\""
+    },
+    {
+      "name": "lead-contract: the project's leads-tier declaration is present",
+      "pass": true,
+      "detail": "\"leads tier: 1 language(s) present; lexical output only\""
+    },
+    {
+      "name": "lead-contract: no unsupported-language line is printed for a TypeScript-only project [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING"
+    },
+    {
+      "name": "lead-contract: the head reports the stored-lead census",
+      "pass": true,
+      "detail": "security leads: 1 stored lead(s)"
+    },
+    {
+      "name": "lead-contract: a lead renders with a demoted grade and the lead label",
+      "pass": true,
+      "detail": "\"  [high] lead: sql injection @ src/app.ts:6 <- source:4; rule=typescript.sql.query; symbol=handleRequest [reach: typescript.request -> sql = 'SELECT * FROM users WHERE name = ' + userInput -> userInput = req.query.name]\""
+    },
+    {
+      "name": "lead-contract: the lead line carries its rule id (traceable to a spec rule)",
+      "pass": true,
+      "detail": "\"  [high] lead: sql injection @ src/app.ts:6 <- source:4; rule=typescript.sql.query; symbol=handleRequest [reach: typescript.request -> sql = 'SELECT * FROM users WHERE name = ' + userInput -> userInput = req.query.name]\""
+    },
+    {
+      "name": "lead-contract: the lead line carries the reach path evidence",
+      "pass": true,
+      "detail": "\"  [high] lead: sql injection @ src/app.ts:6 <- source:4; rule=typescript.sql.query; symbol=handleRequest [reach: typescript.request -> sql = 'SELECT * FROM users WHERE name = ' + userInput -> userInput = req.query.name]\""
+    },
+    {
+      "name": "lead-contract: the answer satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "lead-contract: the page is declared (showing/of/offset/page size/tier)",
+      "pass": true,
+      "detail": "[leads: showing 1 of 1; offset 0; page size 50; tier=leads]"
+    },
+    {
+      "name": "lead-contract: a complete page does not advertise more [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[leads: showing 1 of 1; offset 0; page size 50; tier=leads]"
+    },
+    {
+      "name": "lead-contract: two identical calls render identical text",
+      "pass": true,
+      "detail": "handler output is not deterministic"
+    },
+    {
+      "name": "lead-contract: limit 0 is refused (positive integer)",
+      "pass": true,
+      "detail": "bb_security: limit must be a positive integer (live lead page size, or history run limit)"
+    },
+    {
+      "name": "lead-contract: a fractional limit is refused",
+      "pass": true,
+      "detail": "bb_security: limit must be a positive integer (live lead page size, or history run limit)"
+    },
+    {
+      "name": "lead-contract: a negative offset is refused",
+      "pass": true,
+      "detail": "bb_security: offset must be a non-negative integer (live lead pagination only)"
+    },
+    {
+      "name": "lead-contract: offset does not apply to the history page",
+      "pass": true,
+      "detail": "bb_security: offset does not apply to the history page — omit offset when history: true"
+    },
+    {
+      "name": "lead-contract: history and recordRun are different answers",
+      "pass": true,
+      "detail": "bb_security: history and recordRun are different answers — pass at most one (history reads the persisted runs; recordRun scans and persists a new one)"
+    },
+    {
+      "name": "declaration: the unsupported languages are named as not scanned, with a registry reason",
+      "pass": true,
+      "detail": "not scanned by bb_security (no executable source model): json, markdown — data format; no executable source/sink surface"
+    },
+    {
+      "name": "declaration: the leads-tier languages are still counted separately",
+      "pass": true,
+      "detail": "leads tier: 1 language(s) present; lexical output only"
+    },
+    {
+      "name": "declaration: the multi-language project satisfies the canonical project-wide contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "declaration: an indexed project with no leads declares the store empty",
+      "pass": true,
+      "detail": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)"
+    },
+    {
+      "name": "declaration: an empty store is NOT presented as a clean result",
+      "pass": true,
+      "detail": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)"
+    },
+    {
+      "name": "declaration: no stale 'taint flow(s) indexed' legacy census is printed on the default path [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    },
+    {
+      "name": "honesty: the retired token detector is pattern matching (fact)",
+      "pass": true,
+      "detail": "pattern matches detected"
+    },
+    {
+      "name": "honesty: docs/BB_SECURITY.md acknowledges indexer heuristics",
+      "pass": true,
+      "detail": "missing heuristic acknowledgment"
+    },
+    {
+      "name": "honesty: docs/BB_SECURITY.md does not claim AST data-flow proof",
+      "pass": true,
+      "detail": "claims AST where it should not"
+    },
+    {
+      "name": "honesty: no doc claims taint detection is a pure-AST proof [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "pure-AST claim found"
+    },
+    {
+      "name": "honesty: docs/BB_SECURITY.md states the Phase-0 answer contract (banner + tiers)",
+      "pass": true,
+      "detail": "answer contract missing from the reference doc"
+    },
+    {
+      "name": "read-path: the CLI findings read succeeds",
+      "pass": true,
+      "detail": "exit=0 first=\"⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\" stderr="
+    },
+    {
+      "name": "read-path: the CLI read renders the live phase-1 leads",
+      "pass": true,
+      "detail": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation | leads tier: 1 language(s) present; lexical output only"
+    },
+    {
+      "name": "read-path: the CLI answer satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "read-path: the CLI history read succeeds",
+      "pass": true,
+      "detail": "exit=0 stderr="
+    },
+    {
+      "name": "read-path: the database file is byte-identical after a read [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before=14948fa5e2d8 after=14948fa5e2d8"
+    },
+    {
+      "name": "read-path: the database file is byte-identical after a history read [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before=14948fa5e2d8 after=14948fa5e2d8"
+    },
+    {
+      "name": "read-path: the dropped healing index is STILL missing after a read [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before=undefined after=undefined"
+    },
+    {
+      "name": "bounds: the live page satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "bounds: the live read renders exactly the default page (50)",
+      "pass": true,
+      "detail": "lines=50"
+    },
+    {
+      "name": "bounds: the head reports the full stored census, not the page",
+      "pass": true,
+      "detail": "security leads: 510 stored lead(s)"
+    },
+    {
+      "name": "bounds: the page line declares shown/total/offset/page-size/tier",
+      "pass": true,
+      "detail": "[leads: showing 50 of 510; offset 0; page size 50; tier=leads; more available — pass offset to page]"
+    },
+    {
+      "name": "bounds: a limit above the maximum is clamped to 200 and declared",
+      "pass": true,
+      "detail": "[leads: showing 200 of 510; offset 0; page size 200; tier=leads; more available — pass offset to page]"
+    },
+    {
+      "name": "bounds: the clamped page renders 200 lead lines",
+      "pass": true,
+      "detail": "lines=200"
+    },
+    {
+      "name": "bounds: a request inside the last page is honoured exactly",
+      "pass": true,
+      "detail": "[leads: showing 5 of 510; offset 505; page size 10; tier=leads]"
+    },
+    {
+      "name": "bounds: the last page does not advertise more [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[leads: showing 5 of 510; offset 505; page size 10; tier=leads]"
+    },
+    {
+      "name": "bounds: an offset past the end declares the empty page",
+      "pass": true,
+      "detail": "[leads: showing 0 of 510; offset 600; page size 10; tier=leads]"
+    },
+    {
+      "name": "bounds: the empty page still reports the project census",
+      "pass": true,
+      "detail": "security leads: 510 stored lead(s)"
+    },
+    {
+      "name": "bounds: the empty page is not presented as an empty project [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING"
+    },
+    {
+      "name": "bounds: recordRun states the whole store census was recorded",
+      "pass": true,
+      "detail": "510 leads recorded"
+    },
+    {
+      "name": "bounds: recordRun declares the persisted count and the preview window",
+      "pass": true,
+      "detail": "[recordRun: 510 lead(s) persisted; preview shows 20]"
+    },
+    {
+      "name": "bounds: recordRun reports a recorded run id",
+      "pass": true,
+      "detail": "recorded run: 6ab696f5-cc85-41f7-9582-f2b38110f8cb"
+    },
+    {
+      "name": "bounds: the recordRun answer satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "bounds: history declares its rendered page and true total",
+      "pass": true,
+      "detail": "{\"shown\":200,\"total\":510,\"truncated\":310}"
+    },
+    {
+      "name": "bounds: the history census names the page",
+      "pass": true,
+      "detail": "{\"runsTotal\":1,\"runLimit\":20,\"findingsTotal\":510,\"findingsShown\":200,\"findingsBeyondCap\":310}"
+    },
+    {
+      "name": "bounds: the history page is a page of the same persisted set",
+      "pass": true,
+      "detail": "{\"findings\":200,\"runs\":[510]}"
+    },
+    {
+      "name": "bounds: persisted rows name the M72 engine (not the retired taint engine)",
+      "pass": true,
+      "detail": "engine=m72-security-spec"
+    },
+    {
+      "name": "bounds: persisted rows carry lead evidence, not a taint_flow claim",
+      "pass": true,
+      "detail": "[{\"kind\":\"security_lead\",\"description\":\"probe.rule sql_injection src/base.ts:1\"}]"
+    },
+    {
+      "name": "bounds: persisted rows carry the lead limitation",
+      "pass": true,
+      "detail": "[\"Lexical lead: not a dataflow proof; validate manually.\"]"
+    },
+    {
+      "name": "history: the read-only page lists the same runs as the shared reader",
+      "pass": true,
+      "detail": "handler=1 oracle=1"
+    },
+    {
+      "name": "history: the read-only page is the shared reader's ordered prefix",
+      "pass": true,
+      "detail": "handler=200 oraclePrefix=200"
+    },
+    {
+      "name": "bounds: no observation state is persisted (leads only) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"open\"]"
+    },
+    {
+      "name": "bounds: a lead whose file changed after indexing carries [stale]",
+      "pass": true,
+      "detail": "  [high] lead: sql injection @ src/base.ts:1 <- source:1; rule=probe.rule; symbol=base [reach: probe.source -> probe.assign] [stale]"
+    },
+    {
+      "name": "bounds: the staleness footer names the manual repair",
+      "pass": true,
+      "detail": "1 stale, 0 missing of 1 referenced file(s) — manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+    },
+    {
+      "name": "bounds: staleness is not claimed as auto-repaired [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    },
+    {
+      "name": "library-door: an unindexed project is refused by name",
+      "pass": true,
+      "detail": "bb_security: no index found for project 5fba484e2cd03a8da7c557a82428adb234be16b4: /tmp/m72-fin/projects/5fba484e2cd03a8da7c557a82428adb234be16b4/brain.db — run: bb index <project>"
+    },
+    {
+      "name": "library-door: the refused call did not create an index [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "created /tmp/m72-fin/projects/5fba484e2cd03a8da7c557a82428adb234be16b4/brain.db"
+    }
+  ],
+  "negativeCases": 13,
+  "summary": {
+    "total": 68,
+    "passed": 68,
+    "failed": 0
+  },
+  "decisions": {
+    "leadContract": "answer = banner + registry tier line + per-project declaration + `[grade] lead:` lines + declared pagination",
+    "truthfulness": "unsupported languages say 'not scanned'; an indexed project with no leads says 'declared empty, not a clean result'",
+    "boundsExercised": "live page (limit/offset), past-end empty page, census-sized recordRun, declared history page cap",
+    "readOnlyRead": "a CLI read must not heal the database or move its bytes",
+    "retiredPath": "the old token engine's answer is exercised only under BB_SECURITY_LEGACY=1 by the m15 regression suite"
+  },
+  "limitations": [
+    "The Phase-1 engine is INTRA-SYMBOL: a source/sink pair inside an anonymous callback (a symbol the indexer does not store) is not attributed. Fixtures therefore put the pair in a named function body, which is the shape the engine claims.",
+    "Real-repository precision/recall is not measured here; the m15 deep suite sizes the corpus and script/m72 owns the per-language engine gates."
+  ],
+  "generatedAt": "2026-11-14T04:35:09.179Z"
+}

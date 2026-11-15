@@ -1,0 +1,55 @@
+{
+  "issue": "EX-EX5",
+  "note": "`overrides` had no source in Elixir in this lane, and Elixir has TWO constructs that produce it. `@impl` is Elixir's `@Override`: it asserts the next definition IS the implementation of a contract callback, and the compiler warns when the claim is false \u2014 so `overrides <Module.fn/arity> -> <Contract>.fn` is a member-level statement, the shape csharp and java publish for the same annotation. The CONTRACT is resolved in a fixed order and anything unresolvable stays SILENT: `@impl SomeProtocol` names it, an enclosing `defimpl` names it, exactly one `@behaviour` target names it, and several targets are narrowed by a `@callback` this module declares. Three silences are pinned because each is a place a coin toss could have been published as a fact: `@impl false` denies the implementation, `@impl true` with no nameable contract publishes nothing (`OntoUnnamed`), and a behaviour member with no `@impl` is not an override. `defoverridable` is the second construct: it publishes a function as replaceable and a later same-module definition of the same name AND arity replaces it, with the prior line on the edge (bash's `overridesLine` shape). A name the `defoverridable` did not list is not an override, and a `defp` is never one.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "OntoImpl.fetch/1",
+      "target": "OntoBehaviour.fetch"
+    },
+    {
+      "type": "overrides",
+      "from": "OntoExplicit.push/1",
+      "target": "OntoBehaviour.push",
+      "meta.overrideForm": "explicit_protocol"
+    },
+    {
+      "type": "overrides",
+      "from": "OntoDefer.over/1",
+      "target": "over",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "OntoImpl.not_a_callback/1",
+      "target": "OntoBehaviour.not_a_callback",
+      "note": "@impl false denies the implementation"
+    },
+    {
+      "type": "overrides",
+      "target": "OntoUnnamed.size",
+      "note": "@impl true with no nameable contract must stay SILENT, not pick a contract"
+    },
+    {
+      "type": "overrides",
+      "from": "OntoImpl.push/1",
+      "target": "OntoBehaviour.push",
+      "note": "a behaviour member with no @impl is not an override"
+    },
+    {
+      "type": "overrides",
+      "from": "OntoImpl.secret_helper/1",
+      "target": "OntoBehaviour.secret_helper",
+      "note": "a defp is never an override"
+    },
+    {
+      "type": "overrides",
+      "from": "OntoDefer.unrelated/1",
+      "target": "OntoDefer.unrelated",
+      "note": "defoverridable listed `over: 1`, not `unrelated`"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_impact",
+  "tier": "T2-hub",
+  "symbol": "getRawInstance",
+  "what": "the Lead's T2 hub case: default bb_impact call for a real hub symbol on the shared 3.6 GB reference index, after the indexed counting walk and the declared wall deadlines",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-hub-final.ts",
+  "protocol": {
+    "warmupRuns": 1,
+    "measuredRuns": 8,
+    "inProcess": true,
+    "env": "BB_DATA_DIR=<repo>/.bb-data, BB_NO_AUTO_REFRESH=1",
+    "openMode": "byte-read-only (handler opens the same way)"
+  },
+  "generatedAt": "2026-11-03T17:28:35.947Z",
+  "loadAverage": [
+    7.63,
+    8.29,
+    7.72
+  ],
+  "indexCounts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040
+  },
+  "before": {
+    "brain.db": {
+      "bytes": 3885883392,
+      "mtimeMs": 1793725551029.1978,
+      "sha256": "3925a6aeb03fb7831d2c8c77735d126b1daaf692a06739b852036f98d25163f6"
+    },
+    "brain.db-wal": {
+      "bytes": 0,
+      "mtimeMs": 1793725885737.7935,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "brain.db-shm": {
+      "bytes": 32768,
+      "mtimeMs": 1793726774283.3567,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    }
+  },
+  "after": {
+    "brain.db": {
+      "bytes": 3885883392,
+      "mtimeMs": 1793725551029.1978,
+      "sha256": "3925a6aeb03fb7831d2c8c77735d126b1daaf692a06739b852036f98d25163f6"
+    },
+    "brain.db-wal": {
+      "bytes": 0,
+      "mtimeMs": 1793725885737.7935,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "brain.db-shm": {
+      "bytes": 32768,
+      "mtimeMs": 1793726870221.3738,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    }
+  },
+  "dbUnchanged": true,
+  "changedFiles": [],
+  "runs": [
+    {
+      "ms": 2409.9,
+      "outputBytes": 164670,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 1349,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 2945.4,
+      "outputBytes": 164669,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 810,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 2677.1,
+      "outputBytes": 164670,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 1176,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 2922.8,
+      "outputBytes": 164669,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 865,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 2924.6,
+      "outputBytes": 164669,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 842,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 3028.7,
+      "outputBytes": 164669,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 785,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 2289.5,
+      "outputBytes": 164670,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 1481,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    },
+    {
+      "ms": 2968.6,
+      "outputBytes": 164669,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "directCount": 272,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "engineTruncated": true,
+      "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+      "walkTimeExhausted": true,
+      "walkTimeBudgetMs": 1500,
+      "returnedCallers": 201,
+      "callersIfUncapped": 326,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 827,
+        "walkTimeCeilingMs": 1500,
+        "callDeadlineMs": 3000
+      },
+      "depthReached": 1
+    }
+  ],
+  "p50Ms": 2922.8,
+  "p95Ms": 3028.7,
+  "budgetMs": 5000,
+  "withinBudget": true
+}

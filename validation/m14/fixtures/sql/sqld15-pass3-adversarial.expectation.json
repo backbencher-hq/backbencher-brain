@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld15-pass3-adversarial.sql",
+  "authoredFrom": "M60 ONTOLOGY PASS 3, 2026-10-03. Both shapes were found by MEASURING production parseFile over the corpus, not by reading the analyzer. Instruments committed beside this file. (1) The phantom-constraint probe is validation/m14/fixtures/sql/pass3-phantom-constraint.mts, and it decides with a PARSE-TREE ORACLE rather than a heuristic, because the heuristic cannot: phpMyAdmin's resources/sql/create_tables.sql line 68 writes UNIQUE KEY `db_name` (`db_name`,`table_name`) — a real index named after one of its own columns — so 'a constant whose name equals a column name' flags a true declaration. Oracle-validated before the fix: 53 phantom declarations in 22 files, after: 0, with the same oracle clearing 4 legitimate same-name indexes on both runs. The exemplars are boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql, where two constant:scope_id were published under auth_account at lines 90 and 94 — one per foreign key, both named after auth_method's first referenced column — against the real property:scope_id at line 72. (2) The disambiguator measurement is validation/m14/fixtures/sql/pass3-incoming.mts over 1,955 corpus files: a `contains` edge names its member by BARE NAME, and SQL makes bare-name collisions ordinary, so the reverse walk in src/lsp/impact.ts matches on name alone and picks a winner by a rule nobody chose. Before the phantom fix, bare-name resolution was unique for 9,374 of 11,305 contains edges (82.9%) and (name, ownerName) within the file for 11,204 (99.1%), leaving 100 that no per-edge rule could separate. After both fixes: 11,444 of 11,492 (99.59%), with 0 edges lacking the key.",
+  "comment": "Three sections, and the section order is the argument. Section 1 forbids the phantom: a `constant` named after a column of ANOTHER table, which is a declaration the file does not contain. Section 2 REQUIRES the shapes that a too-eager fix would delete — MySQL's UNIQUE KEY <name> (cols), whose index name IS a direct identifier, and a genuine index named after its own column. Without section 2 the fixture would pass for an analyzer that simply stopped emitting constraint symbols, which is the failure mode of every forbid-only fixture. Section 3 pins metadata.memberKind on both ends of the same-name collision, from BOTH emission sites: the ordinary table-then-index order (createSymbol) and the index-before-table order (the explicit call, which exists because createSymbol emits nothing when the owner is not declared yet). Four of the expectRelationships rows are forbid-side in spirit — they require memberKind to be present AND different, which a payload-only key could not do, because the dedup key would have collapsed the pair to one edge.",
+  "expectPatterns": [
+    "Anonymous Procedural Block",
+    "Schema Evolution (ALTER)",
+    "Custom Indexes",
+    "Unique Constraint",
+    "Tables"
+  ],
+  "expectSymbols": [
+    {
+      "name": "d15_fk_src",
+      "kind": "class"
+    },
+    {
+      "name": "d15_fk_ref",
+      "kind": "class"
+    },
+    {
+      "name": "d15_fk_col",
+      "kind": "property",
+      "ownerName": "d15_fk_src"
+    },
+    {
+      "name": "d15_fk_ref",
+      "kind": "property",
+      "ownerName": "d15_fk_ref"
+    },
+    {
+      "name": "d15_mysql",
+      "kind": "class"
+    },
+    {
+      "name": "d15_my_idx",
+      "kind": "constant",
+      "ownerName": "d15_mysql"
+    },
+    {
+      "name": "d15_samename",
+      "kind": "class"
+    },
+    {
+      "name": "d15_same_col",
+      "kind": "property",
+      "ownerName": "d15_samename"
+    },
+    {
+      "name": "d15_same_col",
+      "kind": "constant",
+      "ownerName": "d15_samename"
+    },
+    {
+      "name": "d15_named_src",
+      "kind": "class"
+    },
+    {
+      "name": "d15_named_ref",
+      "kind": "class"
+    },
+    {
+      "name": "d15_named_col",
+      "kind": "property",
+      "ownerName": "d15_named_src"
+    },
+    {
+      "name": "d15_collide",
+      "kind": "class"
+    },
+    {
+      "name": "d15_collide_id",
+      "kind": "property",
+      "ownerName": "d15_collide"
+    },
+    {
+      "name": "d15_collide_id",
+      "kind": "constant",
+      "ownerName": "d15_collide"
+    },
+    {
+      "name": "d15_plain",
+      "kind": "class"
+    },
+    {
+      "name": "d15_late",
+      "kind": "class"
+    },
+    {
+      "name": "d15_late_id",
+      "kind": "property",
+      "ownerName": "d15_late"
+    },
+    {
+      "name": "d15_late_id",
+      "kind": "constant",
+      "ownerName": "d15_late"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "d15_fk_ref",
+      "kind": "constant",
+      "ownerName": "d15_fk_src",
+      "note": "phantom: d15_fk_ref is a COLUMN of the referenced table d15_fk_ref, taken by the unnamed FOREIGN KEY's fallback"
+    },
+    {
+      "name": "d15_fk_ref2",
+      "kind": "constant",
+      "ownerName": "d15_fk_src",
+      "note": "phantom: second unnamed FOREIGN KEY, whose first referenced column is d15_fk_ref2"
+    },
+    {
+      "name": "d15_fk_col",
+      "kind": "constant",
+      "ownerName": "d15_fk_src",
+      "note": "phantom: the unnamed UNIQUE and ADD PRIMARY KEY shapes reduce without a direct identifier, so no phantom — pinned so a change to the discriminator cannot start inventing one"
+    },
+    {
+      "name": "d15_my_idx",
+      "kind": "property",
+      "note": "the MySQL index name must not become a column"
+    },
+    {
+      "name": "d15_do_helper",
+      "note": "a DO block declares nothing; the callee is a reference, not a declaration"
+    },
+    {
+      "name": "d15_alter_default",
+      "note": "same: SET DEFAULT names a function to call, it does not declare one"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "sqld15-pass3-adversarial.sql",
+      "target": "d15_fk_src",
+      "meta.operation": "alter"
+    },
+    {
+      "type": "uses",
+      "from": "sqld15-pass3-adversarial.sql",
+      "target": "d15_named_src",
+      "meta.operation": "alter"
+    },
+    {
+      "type": "references",
+      "from": "d15_collide_id",
+      "target": "d15_collide",
+      "meta.indexOn": "d15_collide"
+    },
+    {
+      "type": "references",
+      "from": "d15_late_id",
+      "target": "d15_late",
+      "meta.indexOn": "d15_late"
+    },
+    {
+      "type": "contains",
+      "from": "d15_fk_src",
+      "target": "sqld15-pass3-adversarial.sql::d15_fk_src.d15_fk_col",
+      "meta.memberKind": "property"
+    },
+    {
+      "type": "contains",
+      "from": "d15_mysql",
+      "target": "sqld15-pass3-adversarial.sql::d15_mysql.d15_my_idx",
+      "meta.memberKind": "constant"
+    },
+    {
+      "type": "contains",
+      "from": "d15_samename",
+      "target": "sqld15-pass3-adversarial.sql::d15_samename.d15_same_col",
+      "meta.memberKind": "property"
+    },
+    {
+      "type": "contains",
+      "from": "d15_samename",
+      "target": "sqld15-pass3-adversarial.sql::d15_samename.d15_same_col",
+      "meta.memberKind": "constant"
+    },
+    {
+      "type": "contains",
+      "from": "d15_plain",
+      "target": "sqld15-pass3-adversarial.sql::d15_plain.d15_plain_id",
+      "meta.memberKind": "property"
+    },
+    {
+      "type": "contains",
+      "from": "d15_late",
+      "target": "sqld15-pass3-adversarial.sql::d15_late.d15_late_id",
+      "meta.memberKind": "constant"
+    },
+    {
+      "type": "contains",
+      "from": "d15_late",
+      "target": "sqld15-pass3-adversarial.sql::d15_late.d15_late_id",
+      "meta.memberKind": "property"
+    },
+    {
+      "type": "calls",
+      "from": "sqld15-pass3-adversarial.sql",
+      "target": "d15_do_helper",
+      "meta.evidenceClass": "usage_contextual",
+      "note": "section 4: a DO block is not a declaration, so processDo was unreachable. This row is the pin — it fails on the pre-fix analyzer, which emitted nothing here"
+    },
+    {
+      "type": "calls",
+      "from": "sqld15-pass3-adversarial.sql",
+      "target": "d15_do_recorder",
+      "note": "section 4: the SELECT inside a PERFORM ARGUMENT, which is a `select` expression rather than a `statement` and so was out of reach of the declaration sweep's nested-statement re-entry as well"
+    },
+    {
+      "type": "calls",
+      "from": "sqld15-pass3-adversarial.sql",
+      "target": "d15_do_anon",
+      "note": "section 4: a DO block that declares nothing publishes no symbol and is owned by `global`, the same owner its uses edges carry"
+    },
+    {
+      "type": "calls",
+      "from": "d15_alter_target",
+      "target": "d15_alter_default",
+      "note": "section 5: sourced to the ALTERED TABLE, which is a published symbol, so the reverse walk can arrive at this edge. `global` would have been the other choice and a worse one"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "d15_fk_src",
+      "target": "sqld15-pass3-adversarial.sql::d15_fk_src.d15_fk_ref",
+      "note": "the phantom's containment edge — the forbidden symbol above must leave no edge behind either"
+    },
+    {
+      "type": "contains",
+      "from": "d15_fk_src",
+      "target": "sqld15-pass3-adversarial.sql::d15_fk_src.d15_fk_ref2"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "d15_samename",
+      "target": "sqld15-pass3-adversarial.sql::d15_samename.d15_same_col",
+      "equals": 2,
+      "note": "one edge per member kind: the column and the index that shares its name are TWO facts, and a (type,source,target) key silently dropped one"
+    },
+    {
+      "type": "contains",
+      "from": "d15_late",
+      "target": "sqld15-pass3-adversarial.sql::d15_late.d15_late_id",
+      "equals": 2,
+      "note": "the same pair from the OTHER emission site — the index declared before its table, where createSymbol emits nothing and the explicit call does"
+    },
+    {
+      "type": "contains",
+      "from": "d15_plain",
+      "target": "sqld15-pass3-adversarial.sql::d15_plain.d15_plain_id",
+      "equals": 1,
+      "note": "exactly once. The first version of the fix added memberKind to createSymbol but not to the explicit call sites, so every ordinary containment edge was stored TWICE; this row is what catches that class"
+    },
+    {
+      "type": "contains",
+      "from": "d15_collide",
+      "target": "sqld15-pass3-adversarial.sql::d15_collide.d15_collide_id",
+      "equals": 2
+    },
+    {
+      "type": "contains",
+      "from": "d15_fk_src",
+      "target": "sqld15-pass3-adversarial.sql::d15_fk_src.d15_fk_col",
+      "equals": 1
+    },
+    {
+      "type": "references",
+      "equals": 2
+    },
+    {
+      "type": "calls",
+      "equals": 4,
+      "note": "exactly four. The negative in section 5 — an ALTER that calls nothing — is what stops a fix that routed every statement through processCalls from passing by emitting everywhere"
+    },
+    {
+      "type": "uses",
+      "equals": 3
+    }
+  ]
+}

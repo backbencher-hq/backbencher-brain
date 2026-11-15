@@ -47,7 +47,7 @@ import * as path from "node:path"
 const REPO_ROOT = path.resolve(path.join(import.meta.dir, "..", "..", ".."))
 const ANALYZER = path.join(REPO_ROOT, "src", "ast", "real-rust-analyzer.ts")
 const SELF = path.join(REPO_ROOT, "script", "lanes", "incoming-rust", "perf.ts")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 const isArm = process.argv.includes("--arm")
 const arm = process.argv.includes("--arm-without") ? "without" : "with"

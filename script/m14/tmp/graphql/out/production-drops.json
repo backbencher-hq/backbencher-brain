@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "graphql-production-drops",
+  "generatedAt": "2026-10-03T10:32:17.983Z",
+  "producedBy": "script/m14/tmp/graphql/probe/production-drops.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "files": 426,
+  "direct": {
+    "symbols": 8796,
+    "relationships": 34023
+  },
+  "production": {
+    "symbols": 8795,
+    "relationships": 34023
+  },
+  "droppedSymbols": [
+    {
+      "file": "hasura-engine/v3/crates/graphql/lang-graphql/tests/schema_testdata/ok/0032_supergraph.graphql",
+      "kind": "property",
+      "name": "me",
+      "qualified": "Query.me",
+      "line": 175
+    }
+  ],
+  "droppedSymbolCount": 1,
+  "droppedByName": {
+    "me": 1
+  },
+  "relationshipsLeftWithoutASource": [],
+  "finding": "pool-worker.ts `keepSymbol` carries a UNIVERSAL denylist of names it calls keywords or tree-sitter artifacts: this, super, self, Self, me, My, destructor, root, program, source_file, module_declaration, package_manifest, GlobalScope, SCSS_FILE_SCOPE, unknown. GraphQL has NO keyword named `me` — it is an ordinary field name in most public APIs — so a correct analyzer symbol is deleted on the way to the store, and every relationship sourced on it is stored naming nothing. `pool-worker.ts` is shared machinery (all 46 lanes), so this probe measures and names it rather than editing it."
+}

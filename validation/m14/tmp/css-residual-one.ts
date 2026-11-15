@@ -22,7 +22,7 @@ const WSL = wts.Language ?? wts.default?.Language
 await WSP.init({ locateFile: () => path.join(process.cwd(), "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
 const p = new WSP()
 p.setLanguage(await WSL.load(readFileSync(path.join(process.cwd(), "wasm", "tree-sitter-css.wasm"))))
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const F = `${CR}/pico/css/pico.classless.indigo.min.css`
 const text = readFileSync(F, "utf8")
 const r: any = await parseFile(F, "css")

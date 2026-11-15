@@ -1,0 +1,13 @@
+{
+  "fixtureId": "scala/self-type-ref",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G9 gap: the self type (self: Service =>) references Service — a real dependency of the trait on the self type. Previously the self_type node only set a pattern flag. The type is the last named child of self_type.",
+  "expectSymbols": [
+    { "name": "Logging", "kind": "interface" },
+    { "name": "Service", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Logging", "target": "Service", "meta.relationshipType": "self_type" }
+  ]
+}

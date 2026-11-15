@@ -1,0 +1,93 @@
+{
+ "runtime": "0.25.9",
+ "entryPoint": "./tree-sitter.js",
+ "runtimeWasm": "tree-sitter.wasm",
+ "grammars": 62,
+ "loaded": 60,
+ "failed": [
+  {
+   "grammar": "tree-sitter-elm.wasm",
+   "error": "Out of bounds memory access (evaluating 'C._ts_language_field_name_for_id(this[0], i2)')"
+  },
+  {
+   "grammar": "tree-sitter-ql.wasm",
+   "error": "Out of bounds memory access (evaluating 'C._ts_language_field_name_for_id(this[0], i2)')"
+  }
+ ],
+ "abiByGrammar": {
+  "dart.wasm": 15,
+  "tree-sitter-bash.wasm": 15,
+  "tree-sitter-c.wasm": 15,
+  "tree-sitter-c_sharp.wasm": 15,
+  "tree-sitter-clean.wasm": 15,
+  "tree-sitter-clojure.wasm": 15,
+  "tree-sitter-core_schema.wasm": 14,
+  "tree-sitter-cpp.wasm": 15,
+  "tree-sitter-css.wasm": 15,
+  "tree-sitter-dart.wasm": 15,
+  "tree-sitter-elisp.wasm": 14,
+  "tree-sitter-elixir.wasm": 14,
+  "tree-sitter-embedded_template.wasm": 14,
+  "tree-sitter-erlang.wasm": 14,
+  "tree-sitter-fsharp.wasm": 15,
+  "tree-sitter-fsharp_signature.wasm": 14,
+  "tree-sitter-go.wasm": 14,
+  "tree-sitter-graphql.wasm": 14,
+  "tree-sitter-groovy.wasm": 15,
+  "tree-sitter-haskell.wasm": 14,
+  "tree-sitter-hcl.wasm": 14,
+  "tree-sitter-html.wasm": 14,
+  "tree-sitter-java.wasm": 14,
+  "tree-sitter-javascript.wasm": 14,
+  "tree-sitter-json.wasm": 14,
+  "tree-sitter-json_schema.wasm": 14,
+  "tree-sitter-kotlin.wasm": 15,
+  "tree-sitter-lua.wasm": 15,
+  "tree-sitter-make.wasm": 15,
+  "tree-sitter-markdown.wasm": 15,
+  "tree-sitter-markdown_inline.wasm": 15,
+  "tree-sitter-objc.wasm": 15,
+  "tree-sitter-ocaml.wasm": 14,
+  "tree-sitter-perl.wasm": 15,
+  "tree-sitter-php.wasm": 15,
+  "tree-sitter-php_only.wasm": 15,
+  "tree-sitter-powershell.wasm": 15,
+  "tree-sitter-python.wasm": 15,
+  "tree-sitter-r.wasm": 14,
+  "tree-sitter-rescript.wasm": 14,
+  "tree-sitter-ruby.wasm": 14,
+  "tree-sitter-rust.wasm": 14,
+  "tree-sitter-scala.wasm": 15,
+  "tree-sitter-scss.wasm": 15,
+  "tree-sitter-solidity.wasm": 14,
+  "tree-sitter-sql.wasm": 14,
+  "tree-sitter-svelte.wasm": 14,
+  "tree-sitter-swift.wasm": 13,
+  "tree-sitter-systemrdl.wasm": 13,
+  "tree-sitter-terraform.wasm": 14,
+  "tree-sitter-tlaplus.wasm": 14,
+  "tree-sitter-toml.wasm": 13,
+  "tree-sitter-tsx.wasm": 14,
+  "tree-sitter-typescript.wasm": 14,
+  "tree-sitter-vue.wasm": 14,
+  "tree-sitter-xml.wasm": 14,
+  "tree-sitter-yaml.wasm": 14,
+  "tree-sitter-zig.wasm": 14,
+  "tsx.wasm": 14,
+  "typescript.wasm": 14
+ },
+ "abiHistogram": [
+  {
+   "abi": 13,
+   "count": 3
+  },
+  {
+   "abi": 14,
+   "count": 33
+  },
+  {
+   "abi": 15,
+   "count": 24
+  }
+ ]
+}

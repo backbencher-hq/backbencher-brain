@@ -1,0 +1,31 @@
+{
+  "fixtureId": "cpp/callsite-lines-825",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59.A7 (#825) cpp line-attribution round. Before it the analyzer emitted NO `line_number` on any row: the Calls and Instantiates rows carried only a `metadata.line` mirror and everything else carried nothing, so a member read reached the graph at line 0 (#870, the fmt lane) and 'jump to the call site' had no line. The contract that was landed (mirroring the C lane's #825 round) is one line per row, naming the node that NAMES the relationship, 1-based (R6), with the #873 mirror repeating that same value. The fixture pins the four shapes where the obvious node is the wrong one, all read off this file's own text: (1) a call takes the CALLEE LEAF — `callMultiLine`'s receiver ends on L33 while `size` is written on L34, so a row stamped with the call node would name L33; (2) `new` takes the CONSTRUCTED TYPE — the keyword is on L38 and `Widget()` on L39; (3) a member read takes the FIELD LEAF (L44) — the row that carried no line at all before this round, pinned by forbidding the `line_number: null` state rather than only asserting a number; (4) a `contains` takes the CHILD's own line (L25) so it can never disagree with the symbol range it mirrors, and an include takes its WRITTEN PATH (L22). Each forbid entry states a pre-fix value, so a revert of the node choice or of the base is a fixture failure rather than a silent drift.  M14 ONTOLOGY (2026-10-04): `#include` is C++'s FILE INCLUSION and is now a first-class `imports` edge \u2014 the same kind, with the same metadata, the C lane already emits for the identical construct (pinned there by c/macro-composed-include, reverted there by the `c/include-kind-downgraded` mutant). The measured reason: the one consumer that answers \"what does this module depend on\" is the LSP usages file-level section, which filters on `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts, src/lsp/graph_usages.ts), so a C++ include was invisible to it no matter what its metadata said. A LABEL move, not an edge move \u2014 5,404 include sites in 905 corpus files, 5,118 distinct module names, and the include-dependency row count is identical before and after. Every row is still asserted with its line, its metadata and (where pinned) its exact count, and the `references` label is FORBIDDEN so a downgrade fails the fixture rather than only moving a number in a census. A `using`-dependency row stays `references`: an include dependency and a using-dependency are two facts, and only the first is file inclusion.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "size", "kind": "method" },
+    { "name": "callOneLine", "kind": "function" },
+    { "name": "callMultiLine", "kind": "function" },
+    { "name": "makeIt", "kind": "function" },
+    { "name": "readField", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "global", "target": "vector", "line_number": 22, "note": "the include's path token is written on L22." },
+    { "type": "calls", "from": "callOneLine", "target": "size", "line_number": 29, "meta.line": 29, "note": "single-line call: call node and callee leaf are both L29." },
+    { "type": "calls", "from": "callMultiLine", "target": "size", "line_number": 34, "meta.line": 34, "note": "the RECEIVER ends on L33; the callee leaf `size` is written on L34 — the row names L34." },
+    { "type": "instantiates", "from": "makeIt", "target": "Widget", "line_number": 39, "meta.line": 39, "note": "`new` is on L38, the constructed type on L39." },
+    { "type": "uses", "from": "readField", "target": "value", "line_number": 44, "note": "#870: the member read names the field leaf's line." },
+    { "type": "contains", "from": "Widget", "target": "size", "line_number": 25, "note": "the child symbol's own line." }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "callMultiLine", "target": "size", "line_number": 33, "note": "PRE-FIX: the call node's line (the receiver's last line), one above the callee." },
+    { "type": "instantiates", "from": "makeIt", "target": "Widget", "line_number": 38, "note": "PRE-FIX: the `new_expression`'s line, one above the constructed type." },
+    { "type": "uses", "from": "readField", "target": "value", "line_number": null, "note": "PRE-FIX: the row carried no line at all — the #870 state." },
+    { "type": "calls", "from": "callOneLine", "target": "size", "line_number": 28, "note": "PRE-FIX: the enclosing declaration's line, the \"caller symbol's line\" substitution (#822 class)." },
+    { "type": "references", "target": "vector", "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses, and the reason a silent relabel cannot pass." },
+    {"type": "calls", "from": "callMultiLine", "target": "Widget::size", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "calls", "from": "callOneLine", "target": "Widget::size", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

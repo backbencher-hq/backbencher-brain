@@ -1,0 +1,35 @@
+{
+  "fixtureId": "swift/framework-surface-pins",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (#838/#836), the swift member of the C7 framework surface. Before this round the lane published `detectedFrameworks` and nothing else, and it built that array by iterating its observation map (`for (const f in frameworksObj) metadata.detectedFrameworks!.push(f)`), so the ORDER was whatever order the walk happened to visit triggers in. This file imports Foundation and UIKit FIRST and SwiftUI/Combine last, so walk order and contract order disagree on purpose: the pre-fix analyzer emitted [Foundation, UIKit, SwiftUI, Combine], while the contract's declared order (application frameworks most-specific first, the base library last) emits [SwiftUI, Combine, UIKit, Foundation] and picks SwiftUI. The whole-array comparison is what makes this holdable — a contains-check could not see an order regression, and the primary pick is the one key where an order regression is most damaging because Foundation is imported by nearly every Swift file. The fixture also reaches SwiftUI and Combine through the property-wrapper path (@State, @Published) as well as through imports, so neither trigger route can regress unnoticed. frameworkPatterns is pinned too, because a lane that publishes an array of detection facts and no patterns has published half a contract.",
+  "expectSymbols": [
+    { "name": "CounterModel", "kind": "struct" },
+    { "name": "total", "kind": "property", "ownerName": "CounterModel" },
+    { "name": "CounterView", "kind": "struct" },
+    { "name": "model", "kind": "property", "ownerName": "CounterView" },
+    { "name": "stamp", "kind": "function" }
+  ],
+  "expectPrimaryFramework": ["SwiftUI"],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": ["SwiftUI", "Combine", "UIKit", "Foundation"],
+      "comment": "declared table order, not walk order: Foundation and UIKit are imported first in the file and listed last"
+    },
+    {
+      "frameworkPatterns": [
+        { "framework": "SwiftUI", "patterns": ["declarative_ui"] },
+        { "framework": "Combine", "patterns": ["reactive_streams"] },
+        { "framework": "UIKit", "patterns": ["ui_framework"] },
+        { "framework": "Foundation", "patterns": ["base_library"] }
+      ],
+      "comment": "one entry per detected framework, in the same order, naming only frameworks detection lists"
+    }
+  ],
+  "expectImports": [
+    { "module": "Foundation" },
+    { "module": "UIKit" },
+    { "module": "SwiftUI" },
+    { "module": "Combine" }
+  ]
+}

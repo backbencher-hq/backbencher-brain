@@ -1,0 +1,439 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "action": "read-path immutability probes",
+  "measuredAt": "2026-11-03T16:39:11.622Z",
+  "currentCommit": "2d075c0997cfa91bef5d7b944d2a43644d3d7019",
+  "rules": [
+    "fresh child process per probe",
+    "BB_NO_AUTO_REFRESH=1",
+    "only this lane's BB_DATA_DIR is used",
+    "hash every db file before and after"
+  ],
+  "probes": {
+    "I1": {
+      "question": "does a read move the store?",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-immut-i1",
+      "before": {
+        "exists": true,
+        "files": {
+          "brain.db": {
+            "bytes": 557056,
+            "sha256": "c55a8df466f4eda80384088f1d727a77e6fe489bb06fedc465e61d11c37790f0",
+            "mtimeMs": 1793723951638.668
+          },
+          "brain.db-shm": {
+            "bytes": 32768,
+            "sha256": "50e0fadf680d1a7be43aa33c50c71a2966d576bb94785bc6467f74a5e75f3e57",
+            "mtimeMs": 1793723951640.5554
+          },
+          "brain.db-wal": {
+            "bytes": 206032,
+            "sha256": "13785520c3e4ebb64657c3c5a95317b649674e106d53f8e4bc2231fbc50f8887",
+            "mtimeMs": 1793723951639.5828
+          }
+        }
+      },
+      "after": {
+        "exists": true,
+        "files": {
+          "brain.db": {
+            "bytes": 557056,
+            "sha256": "c55a8df466f4eda80384088f1d727a77e6fe489bb06fedc465e61d11c37790f0",
+            "mtimeMs": 1793723951638.668
+          },
+          "brain.db-shm": {
+            "bytes": 32768,
+            "sha256": "595d1acf03654b5c89ec3670e6c96d754238e2d5166448f2736343e34bd1a22b",
+            "mtimeMs": 1793723956234.1765
+          },
+          "brain.db-wal": {
+            "bytes": 206032,
+            "sha256": "13785520c3e4ebb64657c3c5a95317b649674e106d53f8e4bc2231fbc50f8887",
+            "mtimeMs": 1793723951639.5828
+          }
+        }
+      },
+      "treeBefore": [
+        "projects/",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db-shm",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db-wal"
+      ],
+      "treeAfter": [
+        "projects/",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db-shm",
+        "projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db-wal"
+      ],
+      "calls": [
+        {
+          "tool": "bb_annotations",
+          "args": {
+            "symbol": "Widget"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_",
+          "parsed": {
+            "symbol": "Widget",
+            "path": null,
+            "includeNameLevel": false,
+            "nameLevelIncluded": true,
+            "storeAbsent": false,
+            "symbolIndexed": true,
+            "annotations": [
+              {
+                "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+                "symbol_name": "Widget",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "alpha copy of Widget",
+                "time_created": 1793723949774,
+                "time_updated": 1793723949774
+              },
+              {
+                "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+                "symbol_name": "Widget",
+                "symbol_path": null,
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "name-level note about Widget",
+                "time_created": 1793723949712,
+                "time_updated": 1793723949712
+              }
+            ],
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "truncationReason": null,
+            "declaredAbsent": false,
+            "absenceNote": null
+          },
+          "elapsedMs": 62.444
+        },
+        {
+          "tool": "bb_annotations",
+          "args": {
+            "path": "src/alpha.ts"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in al",
+          "parsed": {
+            "symbol": null,
+            "path": "src/alpha.ts",
+            "includeNameLevel": false,
+            "nameLevelIncluded": false,
+            "storeAbsent": false,
+            "symbolIndexed": null,
+            "annotations": [
+              {
+                "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+                "symbol_name": "layout",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "dot-prefixed path write",
+                "time_created": 1793723950067,
+                "time_updated": 1793723950067
+              },
+              {
+                "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+                "symbol_name": "duplicate",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "duplicate note in alpha",
+                "time_created": 1793723949901,
+                "time_updated": 1793723949901
+              },
+              {
+                "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+                "symbol_name": "buildThing",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "buildThing note in alpha",
+                "time_created": 1793723949818,
+                "time_updated": 1793723949818
+              },
+              {
+                "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+                "symbol_name": "Widget",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "alpha copy of Widget",
+                "time_created": 1793723949774,
+                "time_updated": 1793723949774
+              }
+            ],
+            "count": 4,
+            "totalCountIfKnown": 4,
+            "truncated": false,
+            "truncationReason": null,
+            "declaredAbsent": false,
+            "absenceNote": null
+          },
+          "elapsedMs": 40.522
+        },
+        {
+          "tool": "bb_annotations",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    },\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_",
+          "parsed": {
+            "symbol": null,
+            "path": null,
+            "includeNameLevel": false,
+            "nameLevelIncluded": false,
+            "storeAbsent": false,
+            "symbolIndexed": null,
+            "annotations": [
+              {
+                "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+                "symbol_name": "Gadget",
+                "symbol_path": "src/beta.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "absolute-path write",
+                "time_created": 1793723950114,
+                "time_updated": 1793723950114
+              },
+              {
+                "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+                "symbol_name": "layout",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "dot-prefixed path write",
+                "time_created": 1793723950067,
+                "time_updated": 1793723950067
+              },
+              {
+                "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+                "symbol_name": "ghostSymbol",
+                "symbol_path": null,
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "note on a name the index never publishes",
+                "time_created": 1793723950028,
+                "time_updated": 1793723950028
+              },
+              {
+                "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+                "symbol_name": "Widget.render",
+                "symbol_path": null,
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "qualified-name note about Widget.render",
+                "time_created": 1793723949984,
+                "time_updated": 1793723949984
+              },
+              {
+                "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+                "symbol_name": "duplicate",
+                "symbol_path": "src/beta.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "duplicate note in beta",
+                "time_created": 1793723949941,
+                "time_updated": 1793723949941
+              },
+              {
+                "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+                "symbol_name": "duplicate",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "duplicate note in alpha",
+                "time_created": 1793723949901,
+                "time_updated": 1793723949901
+              },
+              {
+                "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+                "symbol_name": "buildThing",
+                "symbol_path": "src/gamma.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "buildThing note in gamma",
+                "time_created": 1793723949858,
+                "time_updated": 1793723949858
+              },
+              {
+                "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+                "symbol_name": "buildThing",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "buildThing note in alpha",
+                "time_created": 1793723949818,
+                "time_updated": 1793723949818
+              },
+              {
+                "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+                "symbol_name": "Widget",
+                "symbol_path": "src/alpha.ts",
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "alpha copy of Widget",
+                "time_created": 1793723949774,
+                "time_updated": 1793723949774
+              },
+              {
+                "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+                "symbol_name": "Widget",
+                "symbol_path": null,
+                "author_class": "agent",
+                "tool_identity": "bb_annotate(mcp)",
+                "body": "name-level note about Widget",
+                "time_created": 1793723949712,
+                "time_updated": 1793723949712
+              }
+            ],
+            "count": 10,
+            "totalCountIfKnown": 10,
+            "truncated": false,
+            "truncationReason": null,
+            "declaredAbsent": false,
+            "absenceNote": null
+          },
+          "elapsedMs": 40.579
+        }
+      ],
+      "nonJsonStdout": [],
+      "changedFiles": [
+        "brain.db-shm"
+      ]
+    },
+    "I2": {
+      "question": "does asking an unindexed project for annotations CREATE a store for it?",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-immut-i2",
+      "workspace": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/unindexed-project",
+      "before": {
+        "dataDirExists": false,
+        "entries": []
+      },
+      "after": {
+        "dataDirExists": false,
+        "entries": []
+      },
+      "createdEntries": [],
+      "calls": [
+        {
+          "tool": "bb_annotations",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": true,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotation store exists for this project yet — nothing has been written, and this read created nothing\"\n}",
+          "parsed": {
+            "symbol": null,
+            "path": null,
+            "includeNameLevel": false,
+            "nameLevelIncluded": false,
+            "storeAbsent": true,
+            "symbolIndexed": null,
+            "annotations": [],
+            "count": 0,
+            "totalCountIfKnown": 0,
+            "truncated": false,
+            "truncationReason": null,
+            "declaredAbsent": true,
+            "absenceNote": "no annotation store exists for this project yet — nothing has been written, and this read created nothing"
+          },
+          "elapsedMs": 41.083
+        },
+        {
+          "tool": "bb_annotations",
+          "args": {
+            "symbol": "lonely"
+          },
+          "isError": false,
+          "text": "{\n  \"symbol\": \"lonely\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": true,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotation store exists for this project yet, so no annotations are stored for 'lonely' — absence declared; nothing was created by this read\"\n}",
+          "parsed": {
+            "symbol": "lonely",
+            "path": null,
+            "includeNameLevel": false,
+            "nameLevelIncluded": true,
+            "storeAbsent": true,
+            "symbolIndexed": null,
+            "annotations": [],
+            "count": 0,
+            "totalCountIfKnown": 0,
+            "truncated": false,
+            "truncationReason": null,
+            "declaredAbsent": true,
+            "absenceNote": "no annotation store exists for this project yet, so no annotations are stored for 'lonely' — absence declared; nothing was created by this read"
+          },
+          "elapsedMs": 41.189
+        }
+      ],
+      "nonJsonStdout": []
+    },
+    "I3": {
+      "question": "does a read recreate a dropped annotation table (run DDL) on a legacy database?",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-immut-i3",
+      "before": {
+        "exists": true,
+        "files": {
+          "brain.db": {
+            "bytes": 557056,
+            "sha256": "ce6c22d1e5594e30734700600be3480043bd69421c70929da33d36e79fc12d97",
+            "mtimeMs": 1793723960809.1677
+          }
+        }
+      },
+      "after": {
+        "exists": true,
+        "files": {
+          "brain.db": {
+            "bytes": 557056,
+            "sha256": "ce6c22d1e5594e30734700600be3480043bd69421c70929da33d36e79fc12d97",
+            "mtimeMs": 1793723960809.1677
+          },
+          "brain.db-shm": {
+            "bytes": 32768,
+            "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb",
+            "mtimeMs": 1793723964732.9827
+          },
+          "brain.db-wal": {
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mtimeMs": 1793723964731.2034
+          }
+        }
+      },
+      "annotationTableRecreatedByTheRead": false,
+      "changedFiles": [
+        "brain.db-shm",
+        "brain.db-wal"
+      ],
+      "calls": [
+        {
+          "tool": "bb_annotations",
+          "args": {},
+          "isError": false,
+          "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": true,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"this project's store has no annotation table yet — nothing has been written, and this read created no schema\"\n}",
+          "parsed": {
+            "symbol": null,
+            "path": null,
+            "includeNameLevel": false,
+            "nameLevelIncluded": false,
+            "storeAbsent": true,
+            "symbolIndexed": null,
+            "annotations": [],
+            "count": 0,
+            "totalCountIfKnown": 0,
+            "truncated": false,
+            "truncationReason": null,
+            "declaredAbsent": true,
+            "absenceNote": "this project's store has no annotation table yet — nothing has been written, and this read created no schema"
+          },
+          "elapsedMs": 40.292
+        }
+      ],
+      "nonJsonStdout": []
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/export-edges-bd7.sh",
+ "authoredFrom": "BD7 (`exports` is emitted). Authored from a probe 2026-09-26. Pre-wave the analyzer parsed `export`, set `isExported` in metadata and emitted NO edge — and `export NAME` with no value, which is one of the most common statements in a shell script, produced no symbol either, because the grammar hands it to the extractor as a bare `variable_name` child that the pre-wave branch did not handle. `readonly` is pinned as a symbol WITHOUT an exports edge.",
+ "expectSymbols": [
+  {
+   "name": "export-edges-bd7.sh",
+   "kind": "module"
+  },
+  {
+   "name": "EXPORTED_PLAIN",
+   "kind": "constant",
+   "ownerName": "export-edges-bd7.sh"
+  },
+  {
+   "name": "EXPORTED_WITH_VALUE",
+   "kind": "constant",
+   "ownerName": "export-edges-bd7.sh"
+  },
+  {
+   "name": "READONLY_VALUE",
+   "kind": "constant",
+   "ownerName": "export-edges-bd7.sh"
+  },
+  {
+   "name": "exported_function",
+   "kind": "function",
+   "ownerName": "export-edges-bd7.sh"
+  },
+  {
+   "name": "other_function",
+   "kind": "function",
+   "ownerName": "export-edges-bd7.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "export-edges-bd7.sh",
+   "target": "export-edges-bd7.sh.EXPORTED_PLAIN",
+   "line_number": 6,
+   "meta.exportForm": "variable"
+  },
+  {
+   "type": "exports",
+   "from": "export-edges-bd7.sh",
+   "target": "export-edges-bd7.sh.EXPORTED_WITH_VALUE",
+   "line_number": 7,
+   "meta.exportForm": "variable"
+  },
+  {
+   "type": "exports",
+   "from": "export-edges-bd7.sh",
+   "target": "exported_function",
+   "line_number": 10,
+   "meta.exportForm": "function"
+  },
+  {
+   "type": "exports",
+   "from": "export-edges-bd7.sh",
+   "target": "other_function",
+   "line_number": 16,
+   "meta.exportForm": "function"
+  },
+  {
+   "type": "contains",
+   "from": "export-edges-bd7.sh",
+   "target": "EXPORTED_PLAIN",
+   "line_number": 6
+  },
+  {
+   "type": "contains",
+   "from": "export-edges-bd7.sh",
+   "target": "EXPORTED_WITH_VALUE",
+   "line_number": 7
+  },
+  {
+   "type": "contains",
+   "from": "export-edges-bd7.sh",
+   "target": "READONLY_VALUE",
+   "line_number": 8
+  },
+  {
+   "type": "contains",
+   "from": "export-edges-bd7.sh",
+   "target": "exported_function",
+   "line_number": 12
+  },
+  {
+   "type": "contains",
+   "from": "export-edges-bd7.sh",
+   "target": "other_function",
+   "line_number": 17
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "READONLY_VALUE"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "exports",
+   "equals": 4
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

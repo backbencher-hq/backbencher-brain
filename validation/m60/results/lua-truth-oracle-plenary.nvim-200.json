@@ -1,0 +1,621 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "plenary.nvim",
+  "sample": 200,
+  "filesDrawn": 113,
+  "parseErrorFiles": 1,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 4775,
+    "observedEdges": 8243,
+    "missing": 0,
+    "missingFromAnalyzer": [],
+    "exportsDirectPath": {
+      "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+      "filesProbed": 112,
+      "truth": 94,
+      "hit": 94,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 112,
+        "checks": 224
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 112,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 112,
+        "distinctValues": 5,
+        "values": [
+          70,
+          80,
+          85,
+          90,
+          95
+        ],
+        "mean": 85.446,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 112,
+      "totalDisclosures": 5
+    },
+    "relationshipsDirectPath": {
+      "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+      "filesProbed": 112,
+      "truth": 4775,
+      "hit": 4775,
+      "missed": 0,
+      "spurious": 3468,
+      "loopCoincidenceExempted": 0,
+      "loopCoincidenceSample": [],
+      "recall": 1,
+      "precision": 0.579279,
+      "missedSample": [],
+      "spuriousSample": [
+        "uses global -> \"shebang_prefixes\"  data/plenary/filetypes/builtin.lua",
+        "uses global -> \"shebang_fts\"  data/plenary/filetypes/builtin.lua",
+        "uses global -> \"prefix\"  data/plenary/filetypes/builtin.lua",
+        "uses global -> \"k\"  data/plenary/filetypes/builtin.lua",
+        "uses global -> \"v\"  data/plenary/filetypes/builtin.lua",
+        "uses global -> \"shebang\"  data/plenary/filetypes/builtin.lua",
+        "references array -> \"n\"  lua/luassert/array.lua",
+        "uses array -> \"state\"  lua/luassert/array.lua",
+        "uses array -> \"ARRAY_STATE_KEY\"  lua/luassert/array.lua",
+        "uses holes -> \"state\"  lua/luassert/array.lua",
+        "uses holes -> \"ARRAY_STATE_KEY\"  lua/luassert/array.lua",
+        "uses holes -> \"arr\"  lua/luassert/array.lua",
+        "uses holes -> \"length\"  lua/luassert/array.lua",
+        "uses holes -> \"i\"  lua/luassert/array.lua",
+        "uses holes -> \"missing\"  lua/luassert/array.lua",
+        "uses global -> \"holes\"  lua/luassert/array.lua",
+        "uses global -> \"array\"  lua/luassert/array.lua",
+        "references global -> \"unpack\"  lua/luassert/assert.lua",
+        "uses geterror -> \"failure_message\"  lua/luassert/assert.lua",
+        "uses geterror -> \"assertion_message\"  lua/luassert/assert.lua",
+        "uses geterror -> \"args\"  lua/luassert/assert.lua",
+        "uses geterror -> \"message\"  lua/luassert/assert.lua",
+        "references global -> \"tokens\"  lua/luassert/assert.lua",
+        "uses global -> \"keys\"  lua/luassert/assert.lua",
+        "references global -> \"assertion\"  lua/luassert/assert.lua"
+      ]
+    },
+    "pipelineDiscardEvidence": {
+      "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+      "filesProbed": 112,
+      "cap": 150,
+      "provenDiscarded": [],
+      "observedOnBothSides": [
+        "calls",
+        "contains",
+        "exports",
+        "extends",
+        "imports",
+        "instantiates",
+        "overrides",
+        "references",
+        "uses"
+      ]
+    },
+    "missingByPipelineDiscard": {
+      "total": 0,
+      "byLabel": [],
+      "labelsAbsentFromPipeline": []
+    },
+    "missingByPipelineNoiseFilter": 0,
+    "noiseTargetsHit": [],
+    "unexplained": 3468,
+    "lineChecked": 4775,
+    "lineExact": 4775,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 2282,
+      "observed": 2282,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "contains": {
+      "truth": 2202,
+      "observed": 2202,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "extends": {
+      "truth": 11,
+      "observed": 11,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "instantiates": {
+      "truth": 19,
+      "observed": 19,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 167,
+      "observed": 167,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "exports": {
+      "truth": 94,
+      "observed": 94,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "missingByShape": [],
+  "unexplainedByShape": [
+    {
+      "shape": "uses other",
+      "n": 2524
+    },
+    {
+      "shape": "references other",
+      "n": 943
+    },
+    {
+      "shape": "overrides other",
+      "n": 1
+    }
+  ],
+  "analyzerAttributableSample": [],
+  "analyzerAttributableUnexplainedSample": [
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "shebang_prefixes",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "shebang_fts",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "prefix",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "k",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "v",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "shebang",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "references",
+      "from": "array",
+      "target": "n",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "array",
+      "target": "state",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "array",
+      "target": "ARRAY_STATE_KEY",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "state",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "ARRAY_STATE_KEY",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "arr",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "length",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "i",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "missing",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "holes",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "array",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "unpack",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "failure_message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "assertion_message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "args",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "tokens",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "keys",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "assertion",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "key",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "assertion",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "modifier",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "self",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "arguments",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "val",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "mod",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "positive_message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "negative_message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "err",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "retargs",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "token",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "__state_meta",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "nspace",
+      "rel": "lua/luassert/assert.lua"
+    }
+  ],
+  "missingSample": [],
+  "unexplainedSample": [
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "shebang_prefixes",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "shebang_fts",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "prefix",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "k",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "v",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "shebang",
+      "rel": "data/plenary/filetypes/builtin.lua"
+    },
+    {
+      "label": "references",
+      "from": "array",
+      "target": "n",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "array",
+      "target": "state",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "array",
+      "target": "ARRAY_STATE_KEY",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "state",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "ARRAY_STATE_KEY",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "arr",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "length",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "i",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "holes",
+      "target": "missing",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "holes",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "array",
+      "rel": "lua/luassert/array.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "unpack",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "failure_message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "assertion_message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "args",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "geterror",
+      "target": "message",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "tokens",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "keys",
+      "rel": "lua/luassert/assert.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "assertion",
+      "rel": "lua/luassert/assert.lua"
+    }
+  ],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": false
+  },
+  "hardFailures": true,
+  "status": "fail"
+}

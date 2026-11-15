@@ -1,0 +1,27 @@
+{
+  "fixtureId": "svelte/heritage-implements-overrides",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Shape written first (a TS class hierarchy in a <script lang=\"ts\"> block, the only way an SFC carries classes); the edge NAMES were then read off the run and each was checked against the fixture text line by line — `implements Base -> Shape` is line 16's clause, `overrides Child.area -> Base.area` is line 21's method overriding line 12's, `extends Third -> Child` is line 28.",
+  "rationale": "The ontology pass RULED `implements` and `overrides` silent on both corpora, and a ruling without a positive probe is a ruling that cannot be falsified: if the JS/TS delegate ever stopped publishing these two edges inside an SFC, every gate would still pass and the ruling would have become a gap. Measured capability on an SFC (production parseFile): extends 2 edges (Child->Base, Third->Child), implements 1 (Base->Shape), overrides 4 (Child.area->Base.area, Base.area->Shape.area, Child.render->Base.render, Child.area->Shape.area). Corpus absence is separate and measured in script/m14/tmp/svfix-full.mts: 1,893 <script> blocks in shadcn-svelte, 0 class declarations.",
+  "expectSymbols": [
+    { "name": "Shape", "kind": "interface" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Child", "kind": "class" },
+    { "name": "Third", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Child", "target": "Base" },
+    { "type": "extends", "from": "Third", "target": "Child" },
+    { "type": "implements", "from": "Base", "target": "Shape" },
+    { "type": "overrides", "from": "Child.area", "target": "Base.area" },
+    { "type": "overrides", "from": "Child.render", "target": "Base.render" },
+    { "type": "renders", "from": "heritage-implements-overrides", "target": "Child" },
+    { "type": "renders", "from": "heritage-implements-overrides", "target": "Third" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "Base", "target": "Shape", "comment": "an `implements` clause is not inheritance: it is published as `implements`" },
+    { "type": "overrides", "from": "Child.area", "target": "Child.area", "comment": "a method never overrides itself" },
+    { "type": "renders", "from": "heritage-implements-overrides", "target": "Base", "comment": "Base is declared in the script, never used as a tag" }
+  ]
+}

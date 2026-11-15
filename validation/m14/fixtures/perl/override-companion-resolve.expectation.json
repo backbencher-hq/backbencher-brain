@@ -1,0 +1,79 @@
+{
+  "fixtureId": "perl/override-companion-resolve",
+  "language": "perl",
+  "authoredBeforeAnalyzerRun": true,
+  "crossFileOverride": [
+    "override-companion-base",
+    "override-companion-silent"
+  ],
+  "rationale": "PERL-MR15. The cross-file override companion had a builder (`buildOverrideCompanion`, override-context.ts:75), a context channel (`AnalyzeContext.overrideCompanion`, engine.ts), a forwarding `parseFile`, and a correct perl resolver (PERL-MR14) -- and NO CALLER. The rule was written, wired, shipped, and had never run.\n\nMeasured over all 5,774 corpus files with a companion built from one pass, of 8,085 `overrides` edges: 1,627 confirmed (20.1%), 6,111 WITHDRAWN (75.6%), 347 still guessed (4.3%). Three quarters of the label did not exist, and no gate could see it: the differential asks whether every emitted edge is EXPLAINABLE from the tree, not whether it is TRUE, and a first-parent guess is perfectly explainable -- the subclass declares a method and `use parent` names a base. A fabricated-but-explainable edge is the one falsehood a coverage gate is structurally blind to.\n\nThis fixture pins the three outcomes, because a companion that is absent, wrong, or partially covering produces three DIFFERENT wrong answers and only the third is subtle.\n\n  run       CONFIRMED  0.95  the base declares the method, and the companion says so\n  vanished  WITHDRAWN  none  the base is PRESENT and declares nothing. The edge must\n                            not exist. This is the 75.6% case, and it is the one a\n                            broken guard deletes or keeps wrongly\n  stranded  GUESS      0.5   the base is outside the project. Absence of knowledge is\n                            not knowledge of absence, so the deterministic first-parent\n                            default stands below the 0.7 patterns threshold\n\n`override-companion-silent.pm` is the load-bearing sibling. A base that is merely ABSENT would also remove the guess (the companion has no entry either way), so a fixture with only the confirming base cannot tell WITHDRAWN from UNKNOWN. The silent base makes the companion have an opinion, which is the only condition under which withdrawal is decidable.\n\n`crossFileOverride` names both siblings explicitly rather than using `true`. \"Every other source in the directory\" would hand the fixture methods from all its neighbours, which can mint override edges nobody wrote -- and the whole point here is to know WHICH file declares the base.\n\n### Two limits this fixture had to be written around, both found by writing it\n\n**A base that declares NO method never enters the companion.** `mergeSymbolsIntoOverrideCompanion` creates an entry only for a symbol with `ownerName` and `kind == \"method\"`, so `package Remote::Silent; 1;` contributes nothing and `companion.has(\"Remote::Silent\")` is false. A base with an empty body is then indistinguishable from a base outside the project, and the WITHDRAWN case is not decidable for it. So `override-companion-silent.pm` declares an unrelated method. That is why all 6,111 withdrawals in the corpus are against bases that declare something -- the corpus number is unaffected, but a zero-method base is a real hole and `OverrideCompanion` is shared by ten analyzers, so changing its semantics is not this lane's call.\n\n**Only the first declared base is consulted.** The resolver reads `packageBases.get(ownerName)?.[0]`, so three `use parent` lines in one package resolve against the first base alone. The first draft of this fixture used one package with three `use parent` statements and all three methods collapsed onto `Remote::Base`: two of them were silently withdrawn for the wrong reason. Hence three owner classes, one base each.",
+  "expectSymbols": [
+    {
+      "name": "MR15::Confirmed",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "MR15::Confirmed"
+    },
+    {
+      "name": "MR15::Withdrawn",
+      "kind": "class"
+    },
+    {
+      "name": "gone",
+      "kind": "method",
+      "ownerName": "MR15::Withdrawn"
+    },
+    {
+      "name": "MR15::Unknown",
+      "kind": "class"
+    },
+    {
+      "name": "stranded",
+      "kind": "method",
+      "ownerName": "MR15::Unknown"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "MR15::Confirmed.run",
+      "target": "run",
+      "confidenceMin": 0.95,
+      "line_number": 4,
+      "note": "CONFIRMED. `Remote::Base` declares `run`, so the 0.5 first-parent guess becomes a stated fact at 0.95 with reasonCode base-declares-method. Without a companion this edge is a guess.",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "MR15::Unknown.stranded",
+      "target": "Base.stranded",
+      "confidenceMin": 0.1,
+      "confidenceMax": 0.69,
+      "line_number": 16,
+      "note": "STILL A GUESS, and correctly. `Some::Absent::Base` is outside the project so no index can settle it. Absence of knowledge is not knowledge of absence -- conflating the two is PERL-MR14's original defect, and this row is what a re-broken guard trips on."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "MR15::Withdrawn.gone",
+      "note": "THE CASE THIS FIXTURE EXISTS FOR. `Remote::Silent` is in the companion and declares `unrelated`, not `gone`, so the guess must be WITHDRAWN -- no edge at all. Keeping it is 75.6% of the corpus's overrides edges; deleting it for the wrong reason (a companion that merely EXISTS) is PERL-MR14. Only a companion with an opinion about this specific base separates the two."
+    },
+    {
+      "type": "overrides",
+      "from": "MR15::Confirmed.run",
+      "target": "Base.run",
+      "confidenceMax": 0.69,
+      "note": "the confirmed edge must not ALSO appear as a guess: one method, one edge, at the confidence the companion justifies."
+    },
+    {
+      "type": "overrides",
+      "from": "MR15::Unknown.stranded",
+      "confidenceMin": 0.7,
+      "note": "an unresolvable base must NOT be published above the 0.7 patterns threshold. The guess is honest precisely because it is cheap."
+    }
+  ]
+}

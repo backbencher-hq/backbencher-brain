@@ -1,0 +1,159 @@
+{
+  "fixtureId": "make/computed-target-prereqs",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the numbered source: BIN on 12, OBJS on 13, all on 16, the computed-target rule on 18, builddir declared on 20. The two prerequisite edges sit on 18, the rule's own line, because that is where the `|`-separated groups are written.",
+  "rationale": "A rule whose target is an EXPRESSION still has prerequisites. `$(BIN): $(OBJS) | builddir` declares no literal target name, so the pre-fix code iterated an EMPTY list of literal targets and the entire rule published no prerequisite edges — neither group, order-only included. The owner falls back to the module: dropping the dependency loses real information, and attributing it to the file that declares the rule is not a claim the tree contradicts. The label is asserted separately because it is the OTHER half of the same fixture: OBJS and builddir are both declared in this file, so both edges are `references` and a `uses` edge would re-encode the conflation the lane removed. Found by script/m12/make-contract-probe.ts, which had existed for this lane and had never been run — the same lesson as the two surviving mutants.",
+  "expectSymbols": [
+    {
+      "name": "computed-target-prereqs.mk",
+      "kind": "module"
+    },
+    {
+      "name": "BIN",
+      "kind": "constant"
+    },
+    {
+      "name": "OBJS",
+      "kind": "constant"
+    },
+    {
+      "name": "all",
+      "kind": "function"
+    },
+    {
+      "name": "builddir",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "computed-target-prereqs.mk",
+      "target": "BIN",
+      "line_number": 18,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "computed-target-prereqs.mk",
+      "target": "OBJS",
+      "line_number": 19,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "computed-target-prereqs.mk",
+      "target": "all",
+      "line_number": 22,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "computed-target-prereqs.mk",
+      "target": "builddir",
+      "line_number": 27,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "references",
+      "from": "computed-target-prereqs.mk",
+      "target": "all",
+      "line_number": 21,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "all",
+      "target": "BIN",
+      "line_number": 22,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "computed-target-prereqs.mk",
+      "target": "BIN",
+      "line_number": 24,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "computed-target-prereqs.mk",
+      "target": "OBJS",
+      "line_number": 24,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "computed-target-prereqs.mk",
+      "target": "builddir",
+      "line_number": 24,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "computed-target-prereqs.mk",
+      "target": "CC",
+      "line_number": 25,
+      "meta.evidenceClass": "builtin"
+    },
+    {
+      "type": "uses",
+      "from": "computed-target-prereqs.mk",
+      "target": "$@",
+      "line_number": 25,
+      "meta.evidenceClass": "automatic"
+    },
+    {
+      "type": "references",
+      "from": "computed-target-prereqs.mk",
+      "target": "OBJS",
+      "line_number": 25,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "builddir",
+      "target": "$(@D)",
+      "line_number": 28,
+      "meta.evidenceClass": "automatic"
+    },
+    {
+      "type": "exports",
+      "from": "computed-target-prereqs.mk",
+      "target": "all",
+      "line_number": 22,
+      "meta.evidenceClass": "export_target"
+    },
+    {
+      "type": "exports",
+      "from": "computed-target-prereqs.mk",
+      "target": "builddir",
+      "line_number": 27,
+      "meta.evidenceClass": "export_target"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "$(BIN)",
+      "note": "a computed target declares NOTHING. A `function` symbol literally named `$(BIN)` is a buildable nobody can invoke — the pre-fix shape"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "OBJS",
+      "note": "OBJS is declared in this fixture, so the edge is `references`; `uses` would demote a real declaration out of the reference graph"
+    },
+    {
+      "type": "uses",
+      "target": "builddir",
+      "note": "same — builddir is a target three lines below"
+    },
+    {
+      "type": "references",
+      "target": "$(BIN)",
+      "note": "the raw wrapper as an edge target: the expansion names the VARIABLE, and `references … -> BIN` is the row that should exist instead"
+    }
+  ]
+}

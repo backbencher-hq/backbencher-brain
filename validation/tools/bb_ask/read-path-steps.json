@@ -1,0 +1,94 @@
+{
+  "fixture": "(temp dir)",
+  "projectId": "b40e05203d0ca8d41e9157bcbbfb2ad14ad8ba2f",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata-rw2",
+  "steps": [
+    {
+      "step": "0. after indexer close (nothing open)",
+      "files": {
+        "db": {
+          "size": 454656,
+          "mtimeMs": 1793571181127
+        },
+        "wal": null,
+        "shm": null
+      }
+    },
+    {
+      "step": "1. getRawInstance(projectId) — rw open, no statement",
+      "files": {
+        "db": {
+          "size": 454656,
+          "mtimeMs": 1793571181127
+        },
+        "wal": {
+          "size": 32992,
+          "mtimeMs": 1793571181645
+        },
+        "shm": {
+          "size": 32768,
+          "mtimeMs": 1793571181645
+        }
+      },
+      "extra": {
+        "readonly": false
+      }
+    },
+    {
+      "step": "2. SELECT COUNT(*) FROM brain_file (indexState)",
+      "files": {
+        "db": {
+          "size": 454656,
+          "mtimeMs": 1793571181127
+        },
+        "wal": {
+          "size": 32992,
+          "mtimeMs": 1793571181645
+        },
+        "shm": {
+          "size": 32768,
+          "mtimeMs": 1793571181645
+        }
+      },
+      "extra": {
+        "files": 6
+      }
+    },
+    {
+      "step": "3. coverage aggregate (measureCoverage)",
+      "files": {
+        "db": {
+          "size": 454656,
+          "mtimeMs": 1793571181127
+        },
+        "wal": {
+          "size": 32992,
+          "mtimeMs": 1793571181645
+        },
+        "shm": {
+          "size": 32768,
+          "mtimeMs": 1793571181645
+        }
+      },
+      "extra": {
+        "symbols": 6,
+        "embedded": 6
+      }
+    },
+    {
+      "step": "4. close()",
+      "files": {
+        "db": {
+          "size": 454656,
+          "mtimeMs": 1793571181647
+        },
+        "wal": null,
+        "shm": null
+      }
+    }
+  ],
+  "walCreatedByRwOpen": true,
+  "walMovedByReadOpen": true,
+  "dbChangedByReadOpen": false,
+  "generatedAt": "2026-11-01T22:13:02.150Z"
+}

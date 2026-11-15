@@ -1,0 +1,47 @@
+{
+  "fixtureId": "c/layout-bitfields-unions-945",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The second half of the layout work begun in c/layout-widths-from-ast-936, covering the three defect classes that survived it. All three were found by script/m14/tmp/c-audit/layout-vs-clang.ts and none of them can be expressed in the first fixture. #945 BITFIELD PACKING: a bitfield is not a member of its declared type's width but a packing result, so #944's 'charge it the declared type and mark the type unmeasured' left three of redis's five still-wrong types wrong -- raxNode's four uint32_t bitfields (three 1-bit flags and a 29-bit counter) pack into ONE 4-byte unit where the model published 16, and quicklist published 56 against clang's 48. The rule that matters is the STRADDLE test, a field that would cross a boundary of its declared type is moved up to the next such boundary, which is why the model keeps a cursor in BITS rather than reinterpreting the byte offset. Straddle (a:1, b:31, c:1 -> 8 bytes, because b:31 exactly fills the unit so c:1 must start a second) and StraddleTight (b:30 -> 4 bytes, because 32 bits fit) pin that rule from both sides, so an implementation that merely summed the bits and let the alignment padding hide the error would pass the first and fail the second. #946 A UNION PUBLISHED NO LAYOUT AT ALL: '{ isUnion, cSpecific, isConditional }' was the entire metadata object, so every fix from #936 to #945 landed on the struct path only, and the clang probe filters on 'typeof memorySize === number' so it silently skipped every union in the corpus -- an unmeasured payload is not a payload. #947 A MEMBER NAMED AFTER A MACRO: libgit2's 'int GIT_CALLBACK(read)(...)' resolves to a single field_identifier reading GIT_CALLBACK, because the real name is consumed by the macro and is not a node in the parse, so four such members were published in git_odb_stream where the real ones are read, write, finalize_write and free. Two controls make the refusal sound rather than a deletion: a real function-pointer member 'int (*plain)(int)' in the same struct must still be published, and the macro itself must still mint its macro symbol. The test is per-file and syntactic, and C is what makes it sound -- a function-pointer declarator must be parenthesised and dereferenced, so a chain holding a function_declarator and no pointer_declarator cannot be a function pointer written in C, and clang rejects the un-expanded spelling (comment at the foot of the fixture). Two cases are carried as MARKED lower bounds rather than numbers, and that is the point of the fixture: ZeroWidth has an unnamed 'unsigned int :0' whose boundary effect the member extractor cannot place, and UnresolvedWidth's EXTERNAL_BITS is a macro this file cannot see -- clang REJECTS that declaration, which is itself the finding, since it means the only reachable input for an unresolvable bitfield width is a cross-file macro (C-D2) and so can never be verified against clang. Every expected size is clang's, from clang -std=c11 on x86-64 SysV.",
+  "expectSymbols": [
+    { "name": "Flags", "kind": "struct", "note": "#945: clang 4/4. Four uint32_t bitfields packing into ONE 32-bit unit; the model computed 16 before this wave." },
+    { "name": "Straddle", "kind": "struct", "note": "#945: clang 8/4. a:1 then b:31 exactly fills the unit, so c:1 cannot straddle and starts a second." },
+    { "name": "StraddleTight", "kind": "struct", "note": "#945 CONTROL: clang 4/4. b:30 leaves the total at exactly 32 bits, so it fits one unit -- the pair pins the straddle rule rather than relying on the padded case to conceal a bit-sum." },
+    { "name": "FLAG_BITS", "kind": "constant", "note": "#945: a macro used as a bitfield WIDTH. The `uses` edge for it must survive -- resolving a macro's value must not silence the reference to it, the same requirement #939 placed on array dimensions." },
+    { "name": "MacroWidth", "kind": "struct", "note": "#945: clang 4/4. The common spelling, a width written as a macro." },
+    { "name": "ZeroWidth", "kind": "struct", "note": "#948: clang 8/4, published 4/4 with layoutUnknownMembers 1. A zero-width bitfield is a BOUNDARY, not storage, and forces the next field to a new unit; an unnamed one has no declarator so the member extractor correctly declines it and the layout never learns it exists. Not guessed, because packing it needs to know WHERE it sits in the bit cursor." },
+    { "name": "BitThenByte", "kind": "struct", "note": "#945 CONTROL: clang 4/4. An ordinary member after a bitfield run must start at the next BYTE." },
+    { "name": "UnresolvedWidth", "kind": "struct", "note": "#945/#948: clang REJECTS this file's declaration, because EXTERNAL_BITS is a cross-file macro (C-D2). Published 8/4 with layoutUnknownMembers 1, a marked lower bound. It is in the fixture because the refusal needs a reachable input, and a header-provided macro is one real code produces every day." },
+    { "name": "UniU32", "kind": "type", "note": "#946: clang 8/8, and the union is published as kind `type` -- the documented contract, matching how the clang probe reaches unions. A union's members OVERLAP, so the size is the largest member rounded up, never their sum; the first version of this fix summed them and reported 16." },
+    { "name": "UniArr", "kind": "type", "note": "#946: clang 7/1 -- a 7-element array member, so the union inherits the array-dimension fix from #939 as well." },
+    { "name": "UniMix", "kind": "type", "note": "#946: clang 8/8. Three members of three different widths; the max rule is what makes this 8 and not 24." },
+    { "name": "StructMix", "kind": "struct", "note": "#946 CONTROL: clang 16/8, the struct path that already worked. Same members as UniMix, so the pair shows the difference is the overlap rule and not the members." },
+    { "name": "CALLBACK", "kind": "macro", "note": "#947 CONTROL: the macro is a real entity and must still mint its macro symbol. What is refused is a MEMBER named after it, not the macro." },
+    { "name": "MacroFunctionPointer", "kind": "struct", "note": "#947: clang 16/8, published 8/8 with layoutUnknownMembers 1. `int CALLBACK(real_name)(int a)` is declined because its only name in the parse is the macro's, so the struct is one member short and the size is a marked lower bound rather than a wrong number." },
+    { "name": "plain", "kind": "property", "note": "#947 CONTROL: a real function-pointer member in the SAME struct must still be published. The refusal is scoped to macro-mediated declarators and must not become a blanket refusal of function pointers." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Flags", "target": "iskey" },
+    { "type": "contains", "from": "Straddle", "target": "c" },
+    { "type": "contains", "from": "StraddleTight", "target": "c" },
+    { "type": "contains", "from": "MacroWidth", "target": "rest" },
+    { "type": "contains", "from": "ZeroWidth", "target": "after", "note": "the member AFTER a zero-width marker is still a member; declining the unnamed marker must not disturb it" },
+    { "type": "contains", "from": "BitThenByte", "target": "byte" },
+    { "type": "contains", "from": "UnresolvedWidth", "target": "b" },
+    { "type": "contains", "from": "UniU32", "target": "u" },
+    { "type": "contains", "from": "UniArr", "target": "b" },
+    { "type": "contains", "from": "UniMix", "target": "c" },
+    { "type": "contains", "from": "StructMix", "target": "d" },
+    { "type": "contains", "from": "MacroFunctionPointer", "target": "plain", "note": "#947 CONTROL: the real function-pointer member survives the refusal" },
+    { "type": "uses", "from": "global", "target": "FLAG_BITS", "note": "#945: a macro read as a bitfield width is still a macro USE" },
+    { "type": "references", "from": "global", "target": "Flags" },
+    { "type": "references", "from": "global", "target": "UniU32" },
+    { "type": "references", "from": "global", "target": "MacroFunctionPointer" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "MacroFunctionPointer", "target": "CALLBACK", "note": "#947, the defect: a member named after a macro is a symbol that does not exist in the program. Four of these were published in libgit2's git_odb_stream." },
+    { "type": "contains", "from": "MacroFunctionPointer", "target": "real_name", "note": "#947: and equally, the real name must NOT be invented -- it is consumed by the macro and is not a node in the parse, so recovering it would be a guess. Silence over invention, the #928 answer." },
+    { "type": "contains", "from": "ZeroWidth", "target": "anonymous", "note": "#948: an unnamed bitfield names no member, so no member may be published for it" },
+    { "type": "uses", "from": "global", "target": "EXTERNAL_BITS", "note": "#948: a cross-file macro has no symbol in this file, so it cannot be a `uses` target here -- and its absence is exactly why the width is unresolvable" }
+  ]
+}

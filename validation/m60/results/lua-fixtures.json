@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-fixtures",
+  "title": "M60 lua — the committed M14.0.F3 fixture lane, run against the real analyzer",
+  "at": "2026-09-28T23:18:38.086Z",
+  "fixturesDir": "validation/m14/fixtures/lua",
+  "interim": "script/m14/run-fixtures.ts has no lua entry in its LANGS table and was under active co-agent edit, so registering the lane there is deferred to a quiet tree. This script enforces the same expect/forbid contract against the same COMMITTED files, so the evidence is real before the wiring lands.",
+  "contract": "expect* must each match at least one actual item; forbid* must match none. Exports get their own expectExports/forbidExports lists because they are not relationships and LUA-20's regression was exactly a closure's return becoming a file export.",
+  "fixtures": [
+    {
+      "fixture": "lua/closure-scope",
+      "checks": 12,
+      "failures": []
+    },
+    {
+      "fixture": "lua/edge-lines",
+      "checks": 9,
+      "failures": []
+    },
+    {
+      "fixture": "lua/export-shapes",
+      "checks": 13,
+      "failures": []
+    },
+    {
+      "fixture": "lua/local-declarations",
+      "checks": 14,
+      "failures": []
+    },
+    {
+      "fixture": "lua/member-identity",
+      "checks": 12,
+      "failures": []
+    },
+    {
+      "fixture": "lua/order-independent-ctor",
+      "checks": 6,
+      "failures": []
+    }
+  ],
+  "totals": {
+    "fixtures": 6,
+    "checks": 66,
+    "failures": 0
+  },
+  "selftest": {
+    "ran": true,
+    "injectedFailureVisible": true,
+    "baselineFailures": 0
+  },
+  "knownResiduals": {
+    "closure-scope": "A local inside a NAMELESS closure is attributed to the enclosing callable, which at file scope is `global`. Deliberate: a nameless closure has no identity, and a synthetic label would fabricate a symbol. The cost is that such a local appears global when it is not.",
+    "member-identity / edge-lines": "A call edge carries the callee NAME, not receiver+name, so `Widget.new()` and `Gadget.new()` both produce a target of `new`. Identity is the field (LUA-13/LUA-15); carrying the receiver as well is a separate change with its own trade-off, recorded in verify-lua-member-identity's limitations."
+  },
+  "passed": true,
+  "status": "pass"
+}

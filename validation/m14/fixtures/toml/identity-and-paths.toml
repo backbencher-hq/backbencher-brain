@@ -1,0 +1,24 @@
+# Every symbol's NAME is its full dotted path from the document root.
+# Written from the TOML v1.0.0 spec's key/table grammar, before observing output.
+
+# A key before any header belongs to the implicit root table.
+root_key = 1
+
+[package]
+name = "demo"
+version = "0.1.0"
+
+# A quoted key is ONE segment even when it contains a dot — the spec's own
+# disambiguation. `a.b` and `"a.b"` are different keys, and a name that cannot be
+# read back is not an identity.
+"dotted.literal" = 2
+plain.dotted = 3
+"dotted.literal".child = 4
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+# `[implied.a.b]` implies `implied` and `implied.a`, which this file never declares.
+# They are recorded, not invented.
+[implied.a.b]
+x = 1

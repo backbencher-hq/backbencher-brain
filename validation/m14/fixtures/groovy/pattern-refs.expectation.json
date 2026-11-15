@@ -1,0 +1,21 @@
+{
+  "fixtureId": "groovy/pattern-refs",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G3 gap: pattern type references — instanceof Point(int x, int y) (record pattern), instanceof String s (type pattern), and switch case Point(int x, int y) must each emit a reference to the pattern type. Previously the pattern type was silent (only the declared parameter type surfaced).",
+  "expectSymbols": [
+    { "name": "Point", "kind": "class" },
+    { "name": "ShapeSvc", "kind": "class" },
+    { "name": "describe" },
+    { "name": "pick" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "describe", "target": "Point", "meta.relationshipType": "instanceof_expression" },
+    { "type": "references", "from": "describe", "target": "String", "meta.relationshipType": "instanceof_expression" },
+    { "type": "references", "from": "pick", "target": "Point", "meta.relationshipType": "case_pattern" },
+    { "type": "references", "target": "acme.shapes.Circle", "line_number": 33, "meta.relationshipType": "instanceof_expression", "meta.declaredOn": "instanceof_expression", "note": "CHANNEL pin for the pattern-type collector, on the QUALIFIED shape the analyzer can actually report. The rows above name the bare patterns (Point, String) and are unmet today, because the collector only emits a name containing a `.` - so nothing in the corpus observed the instanceof_expression / case_pattern channels at all, and dropping every one of them changed no verdict. `from` is left unconstrained on purpose: the collector sources a declared type at the enclosing class, which is exactly what the rows above dispute. This row asserts the edge exists, carries instanceof_expression, and names the line it is written on." },
+    { "type": "references", "target": "acme.shapes.Rect", "line_number": 36, "meta.relationshipType": "instanceof_expression", "meta.declaredOn": "instanceof_expression", "note": "the SECOND qualified type pattern: one row per pattern, so losing the collector loses a row rather than hiding behind a surviving twin" },
+    { "type": "references", "target": "acme.shapes.Square", "line_number": 44, "meta.relationshipType": "case_pattern", "meta.declaredOn": "switch_label", "note": "the qualified SWITCH-case half. instanceof and case are separate walk cases in the analyzer, so they get separate rows: a regression that keeps one and drops the other cannot hide behind the survivor" }
+
+  ]
+}

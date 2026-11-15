@@ -1,0 +1,26 @@
+{
+  "issue": "M41.T1",
+  "code": "T1",
+  "milestone": "M41",
+  "status": "verified",
+  "checks": 21,
+  "passed": 21,
+  "failed": 0,
+  "negativeCases": 4,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-11-09T14:39:58.356Z",
+  "truthSummary": {
+    "version": "0.1.0",
+    "tools": 16,
+    "tables": 16,
+    "languages": 53,
+    "cliCommands": 14
+  },
+  "limitations": [
+    "Inventory 'Site claims' column is a T1-baseline snapshot (pre-T2); truth-side verdicts are verified live, claim-side columns are historical by design.",
+    "Generator parses SUPPORTED_LANGUAGES structurally; a refactor that renames the map must update generate-site-truth.ts in the same commit (the --check gate will catch divergence immediately).",
+    "N3 is a source-level negative (the spawn-based variant would move tracked files); N1/N2 are fully spawned end-to-end."
+  ]
+}

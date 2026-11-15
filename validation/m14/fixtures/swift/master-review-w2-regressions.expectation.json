@@ -1,0 +1,47 @@
+{
+  "fixtureId": "swift/master-review-w2-regressions",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.14-w2 master-review gate fixture. Three defect classes probe-verified on real parses 2026-09: SWIFTD17 — self-container subscript READS and WRITES (`self.storage[k]`, `self.storage[k] = v`) emitted NO uses because the write/call gates treated the subscript base as an assignment LHS / method-call callee; a subscript access is a property READ of the container. Family precedent probe-verified on the same shapes: php emits `uses read->items` AND `uses write->items`, objc emits both too. 62 subscript self-container accesses in the 200-file swift-nio census (49 reads, 13 writes). A pure field write (`self.count = 0`) must STAY gated. SWIFTD18 — multi-binding declarations (`var a = 1, b = 2`, `let g1 = 1, g2 = 2`) carry one sibling `pattern` per binding (probe-verified parse shape) but only the FIRST binding was symbolized; the rest were silently dropped (0 corpus sites in swift-nio but a real completeness hole). SWIFTD19 — dotted qualified names were resolved to the FIRST segment: `extension Outer2.Inner2` minted an extension symbol 'Outer2' that collided with the container type's symbol id and mis-attributed every member; `class Sub: Outer.Inner` emitted implements Sub->Outer and `class Sub2: Foundation.URLSession` emitted extends Sub2->Foundation. user_type holds sibling type_identifiers in source order, so the leaf is the LAST one. 97 dotted extension targets + 6 dotted inheritance bases in the 200-file swift-nio census (mostly nested-type extensions like WebSocketFrame._Storage, NIOBSDSocket.AddressFamily).",
+  "expectSymbols": [
+    { "name": "Cache", "kind": "class" },
+    { "name": "storage", "kind": "property", "ownerName": "Cache", "visibility": "private" },
+    { "name": "history", "kind": "property", "ownerName": "Cache", "visibility": "private" },
+    { "name": "count", "kind": "property", "ownerName": "Cache", "visibility": "private" },
+    { "name": "subRead", "kind": "method", "ownerName": "Cache" },
+    { "name": "subWrite", "kind": "method", "ownerName": "Cache" },
+    { "name": "keyed", "kind": "method", "ownerName": "Cache" },
+    { "name": "plainWrite", "kind": "method", "ownerName": "Cache" },
+    { "name": "methodCall", "kind": "method", "ownerName": "Cache" },
+    { "name": "Pair", "kind": "struct" },
+    { "name": "first", "kind": "property", "ownerName": "Pair" },
+    { "name": "second", "kind": "property", "ownerName": "Pair" },
+    { "name": "gTop1", "kind": "variable" },
+    { "name": "gTop2", "kind": "variable" },
+    { "name": "Outer2", "kind": "struct" },
+    { "name": "Inner2", "kind": "struct", "ownerName": "Outer2" },
+    { "name": "Inner2", "kind": "extension" },
+    { "name": "operator ==", "kind": "method", "ownerName": "Inner2" },
+    { "name": "M2", "kind": "struct" },
+    { "name": "NetSession", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "subRead", "target": "storage" },
+    { "type": "uses", "source": "keyed", "target": "key" },
+    { "type": "uses", "source": "methodCall", "target": "history" },
+    { "type": "calls", "source": "methodCall", "target": "append" },
+    { "type": "implements", "source": "Inner2", "target": "Equatable" },
+    { "type": "implements", "source": "M2", "target": "Proto" },
+    { "type": "extends", "source": "NetSession", "target": "URLSession" },
+    { "type": "contains", "source": "Pair", "target": "second" },
+    { "type": "contains", "source": "Outer2", "target": "Inner2" },
+    { "type": "contains", "source": "Inner2", "target": "operator ==" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "Cache", "target": "count" },
+    { "type": "contains", "source": "Outer2", "target": "operator ==" },
+    { "type": "extends", "source": "NetSession", "target": "Foundation" },
+    { "type": "implements", "source": "M2", "target": "SharedMod" },
+    { "type": "implements", "source": "Inner2", "target": "Outer2" }
+  ]
+}

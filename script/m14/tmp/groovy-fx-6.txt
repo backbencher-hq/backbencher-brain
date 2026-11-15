@@ -1,0 +1,101 @@
+
+SCOPED run (groovy of 48 lanes): results are printed here and NO evidence is written — the canonical validation/m14/results/M14.0.F3.json is NOT touched, and --update-baseline is refused, because either would shrink the milestone's claim to the lanes this run covered.
+PASS  groovy/annotation-type
+PASS  groovy/anon-exports
+PASS  groovy/anonymous-body-overrides
+PASS  groovy/anonymous-field-member
+PASS  groovy/anonymous-type-owner
+PASS  groovy/array-access-uses
+PASS  groovy/as-cast
+PASS  groovy/assert-comma-841
+PASS  groovy/attribution-visibility
+PASS  groovy/cast-types
+PASS  groovy/chained-field-access
+PASS  groovy/class-body-dot-continuation-841
+PASS  groovy/class-decorators
+PASS  groovy/closure-and-typedef
+PASS  groovy/complexity-parity
+PASS  groovy/contains-edges
+PASS  groovy/continuation-shapes-851
+PASS  groovy/ctor-delegation
+PASS  groovy/ctor-field-split-lines
+PASS  groovy/ctor-identity
+PASS  groovy/default-package-unit
+PASS  groovy/degraded-class-recovery-841
+PASS  groovy/duplicate-parse-field
+PASS  groovy/empty-name-refusal
+PASS  groovy/enum-constants
+PASS  groovy/exports-no-package
+FAIL  groovy/exports-publication-edge
+      - forbidden export present: {"name":"topLevelHelper"}
+      - forbidden relationship present: {"type":"exports","target":"topLevelHelper","note":"a top-level def method is a method of the SCRIPT CLASS, not an importable unit"} (found exports[com.acme.exp->topLevelHelper]@1)
+FAIL  groovy/exports-publication
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"Publisher","meta.relationshipType":"exported_type","meta.kind":"class","meta.evidenceClass":"structural","confidenceMin":1}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"Greeter","meta.relationshipType":"exported_type","meta.kind":"interface"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"Shade","meta.relationshipType":"exported_type","meta.kind":"enum"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"scriptHelper","meta.relationshipType":"exported_function","meta.dottedName":"com.acme.pub.scriptHelper"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"otherHelper","meta.relationshipType":"exported_function"}
+PASS  groovy/field-decorators
+FAIL  groovy/fq-annotations
+      - expected relationship not found: {"type":"overrides","from":"FqService.render","targetEndsWith":"Base.render"}
+PASS  groovy/fqn-extends
+PASS  groovy/fqn-implements
+PASS  groovy/fqn-instantiation
+PASS  groovy/framework-annotations-only
+PASS  groovy/framework-imports
+PASS  groovy/generic-visibility-payload
+PASS  groovy/grammar-rebuild-constructs
+PASS  groovy/grammar-residuals-841
+PASS  groovy/grammar-round3-841
+PASS  groovy/groovydoc-payload
+PASS  groovy/gstring-interpolation
+PASS  groovy/heritage-typeargs-strip
+PASS  groovy/identity-operators-841
+PASS  groovy/implicit-override
+PASS  groovy/import-edges
+PASS  groovy/imports-dependency-edge
+PASS  groovy/imports-dependency
+PASS  groovy/indexing-write-gate
+PASS  groovy/interface-multi-extends
+PASS  groovy/interpolation-reads-g7
+PASS  groovy/keyword-named-args-841
+PASS  groovy/lambda-expression
+PASS  groovy/line-continuation-841
+PASS  groovy/lines-825
+PASS  groovy/method-refs
+PASS  groovy/multicatch-and-varargs
+PASS  groovy/multihop-override-resolution
+PASS  groovy/multiple-assignment-841
+PASS  groovy/numeric-suffixes-841
+PASS  groovy/override-fallback-confidence
+PASS  groovy/override-key-parameter-lists
+PASS  groovy/overrides
+PASS  groovy/parameters-payload
+PASS  groovy/pattern-refs
+PASS  groovy/pure-field-chain
+PASS  groovy/qualified-call-path
+PASS  groovy/qualified-calls-payload
+PASS  groovy/quoted-callee-paren-call-841
+PASS  groovy/receiver-not-a-name
+PASS  groovy/record-symbol
+PASS  groovy/reserved-key-map-items-850
+PASS  groovy/safe-nav-chain
+PASS  groovy/scoped-type-recovery-refusal
+PASS  groovy/scoped-type-references
+PASS  groovy/script-methods
+PASS  groovy/static-import-flag
+PASS  groovy/trait-exports
+PASS  groovy/trait-implements
+PASS  groovy/type-usage-graph
+PASS  groovy/typed-closure-params-841
+PASS  groovy/value-position-types-841
+
+summary: {"groovy":{"pass":78,"fail":3}}
+(baseline gate covers only the 1 lane(s) this scoped run selected; a full run is the milestone's gate)
+
+fixture allowance STALE-HIGH — 1 lane(s) record more failing fixtures than this run measures (18 failure(s)' worth of allowance the code no longer needs):
+  groovy: recorded 21, measured 3 — 18 retirable
+  Not a regression, and not a pass either: each retirable slot is a free pass for one NEW failure in that lane, which is the direction this gate cannot otherwise see. Retire it with a FULL run carrying --update-baseline (a scoped run refuses, because the write would drop every lane it did not measure), or fail on it explicitly with --strict-allowance.
+fixture baseline gate: no regressions
+
+3 fixture(s) FAIL — these are honest defect findings, not harness errors

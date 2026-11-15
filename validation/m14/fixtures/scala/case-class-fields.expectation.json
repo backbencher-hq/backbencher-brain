@@ -1,0 +1,11 @@
+{
+  "fixtureId": "scala/case-class-fields",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "case class constructor vals are public members.",
+  "expectSymbols": [
+    { "name": "Point" },
+    { "name": "x" },
+    { "name": "y" }
+  ]
+}

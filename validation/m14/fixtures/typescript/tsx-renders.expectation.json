@@ -1,0 +1,104 @@
+{
+  "fixtureId": "typescript/tsx-renders",
+  "language": "tsx",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the owner's fixed direction (source = enclosing declaration, target = component name, one row per element, intrinsic/lowercase/fragment forbidden, createElement stays a call). Line numbers are read off the fixture's own text: 14 `<Panel>`, 15 `<Widget />`, 16 `<Ns.Chart />`, 19 the nested `<Widget />`. `expectExactly` is an extension consumed by script/m14/ts-renders-probe.ts (the shared fixture runner ignores an unknown key), because 'ONE row for the paired element' is an exact-count claim that `expectRelationships` (>=1) structurally cannot make.",
+  "rationale": "PINS the `renders` relabel (vocabulary extension, 2026-10-18). The expected rows were `uses{jsxElement}` before it — a label claiming the app's source MENTIONS the component rather than that it RENDERS it. Forbid rows guard the three shapes the rule is easy to over-apply to: a lowercase intrinsic tag (`<div>`, `<section>`) is not a component, a fragment is not a component, and `React.createElement(Widget, null)` is a call of `createElement` whose first ARGUMENT is a component — if that ever fires as `renders`, the CSS/test corpus would gain a fabricated rendering edge for every imperative createElement. `expectExactly` pins the one-row-per-element rule, which is the difference between reading the element and reading its opening tag. MEASURED BOUND OF THE NAME RULE, recorded rather than expanded (the relabel is 1:1 by the owner's direction): a QUALIFIED component `<Ns.Chart />` writes a `member_expression` tag in tree-sitter-tsx (measured on this grammar: jsx_self_closing_element > member_expression), while the current branch matches `identifier` and `nested_identifier`; so a qualified component emits NO renders row today. That is the pre-existing name rule, not a regression of the relabel, and widening it would change the emitted-count 1:1 property, so it is left as a measured gap with its own decision rather than folded in here. `Ns.Chart` stays in the fixture source for that reason, with no expected row.",
+  "expectSymbols": [
+    {
+      "name": "App",
+      "kind": "function"
+    },
+    {
+      "name": "Widget",
+      "kind": "function"
+    },
+    {
+      "name": "Panel",
+      "kind": "function"
+    },
+    {
+      "name": "created",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Panel",
+      "line_number": 26,
+      "note": "the PAIRED element: exactly one row comes from this opening tag (not two)"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Widget",
+      "line_number": 27,
+      "note": "self-closing component"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Widget",
+      "line_number": 31,
+      "note": "the nested self-closing component, inside a fragment"
+    },
+    {
+      "type": "calls",
+      "from": "tsx-renders",
+      "target": "createElement",
+      "line_number": 37,
+      "note": "React.createElement stays a CALL; its source is the module leaf because a module-level const's initializer has no enclosing declaration"
+    }
+  ],
+  "expectExactly": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Panel",
+      "count": 1,
+      "note": "ONE row for the paired element — reading the opening tag AND the element would make this 2 and is the defect this count exists to catch"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Widget",
+      "count": 2,
+      "note": "two separate elements, one row each"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "meta.jsxElement": "Widget",
+      "note": "the pre-relabel spelling: no JSX row may remain under `uses` with the old marker"
+    },
+    {
+      "type": "uses",
+      "meta.jsxElement": "Panel",
+      "note": "the pre-relabel spelling, paired element"
+    },
+    {
+      "type": "renders",
+      "target": "div",
+      "note": "lowercase intrinsic tag — not a component"
+    },
+    {
+      "type": "renders",
+      "target": "section",
+      "note": "lowercase intrinsic tag — not a component"
+    },
+    {
+      "type": "renders",
+      "target": "React",
+      "note": "the module the call is made through is not a rendered element"
+    },
+    {
+      "type": "calls",
+      "from": "tsx-renders",
+      "target": "Widget",
+      "note": "createElement's ARGUMENT is not called by the module that evaluates the constant"
+    }
+  ]
+}

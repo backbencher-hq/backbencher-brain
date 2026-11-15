@@ -1,0 +1,1 @@
+{"gate":"m15-registry-handlers","command":"bun run script/m15/verify-registry-handlers.ts","exitCode":0,"durationMs":984,"logSha256":"d37307eb577628c766113bb92894e330758e706583ab4721737e68fd8f04cefe","log":"validation/tools/bb_patterns/gates/logs/m15-registry-handlers.log","recordedAt":"2026-11-03T04:20:39Z"}

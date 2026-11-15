@@ -1,0 +1,16 @@
+{
+  "fixtureId": "java/record-varargs-compact-ctor",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Compact record constructors (Point { ... }) are a distinct grammar node (compact_constructor_declaration) and must surface as constructor symbols with the record's components as their implicit parameter list. Varargs record components (String... tags) must appear both as a record component Property typed String[] and as a compact-constructor parameter.",
+  "expectSymbols": [
+    { "name": "Point", "kind": "class" },
+    { "name": "Point", "kind": "constructor" },
+    { "name": "x", "kind": "property" },
+    { "name": "y", "kind": "property" },
+    { "name": "tags", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "fromEndsWith": "Point", "target": "Point" }
+  ]
+}

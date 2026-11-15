@@ -1,0 +1,227 @@
+{
+  "fixtureId": "protobuf/group-in-extend-scope",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the rule that a proto2 `group` declared inside an `extend` block belongs to the BLOCK'S OWN SCOPE, while only its FIELD belongs to the extendee \u2014 and pins it in THREE directions, because any two of them can be satisfied by a rule that is wrong in the third. `extend-and-group.proto` puts every group inside an ordinary message body, where the block's position and the extendee are the same question, so a regression that attributed a group's TYPE to the extendee passes that file. This fixture was written after `protoc`'s descriptor was read as an oracle for `contains` (script/m14/tmp/protobuf/probe/protoc-descriptor-oracle.py), which reported 7 corpus edges naming a declaration no compiler defines; the 7 are the corpus form of ROW 1 and ROW 2 below. EVERY ROW IS ADJUDICATED BY THE REFERENCE COMPILER, not only by this lane's own reading of the tree: `protoc` 36.2 on this exact file reports a top-level message `gie.demo.Hoisted`, a nested message `gie.demo.Outer.Inner`, a nested message `gie.demo.Plain.Innermost`, and extensions `hoisted` (extendee `.gie.demo.Target`, type_name `.gie.demo.Hoisted`), `inner` (extendee `.gie.demo.Outer.Holder`, type_name `.gie.demo.Outer.Inner`) and `innermost` (extendee `.gie.demo.Plain`, type_name `.gie.demo.Plain.Innermost`). ROW 1 is the corpus defect: pre-fix the analyzer published a nested type `gie.demo.Target.Hoisted`, which is `gie.demo.Target`'s member per protoc's own descriptor and therefore a declaration that exists \u2014 but the group's MEMBERS were published under it and the extension field named it, so three edges walked into the wrong type. ROW 2 is a file-scope `extend` nested inside a MESSAGE, where protoc hoists the group's type to that message's scope (`gie.demo.Outer.Inner`) and not to the package; a fix that hoisted every group's type to file scope passes ROW 1 and fails this one. ROW 3 is the CONTROL in the other direction: a group whose block is already inside its owner, where `owner` and `scope` are the same string and the type must stay nested \u2014 a fix that hoisted on every `group` node regardless of `viaExtension` passes ROWS 1 and 2 and fails this one. MEASURED on the pre-fix analyzer, this file's 19 edges differ from the post-fix analyzer's on exactly 7, all in ROWS 1 and 2, and ROW 3's 4 edges are byte-identical in both arms.",
+  "expectSymbols": [
+    {
+      "name": "gie.demo",
+      "kind": "namespace"
+    },
+    {
+      "name": "Target",
+      "kind": "class",
+      "ownerName": "gie.demo"
+    },
+    {
+      "name": "Hoisted",
+      "kind": "class",
+      "ownerName": "gie.demo",
+      "note": "ROW 1's group's TYPE. protoc reports it as a TOP-LEVEL message in package gie.demo. Pre-fix this symbol was owned by gie.demo.Target."
+    },
+    {
+      "name": "Hoisted",
+      "kind": "property",
+      "ownerName": "gie.demo.Target",
+      "note": "ROW 1's group's FIELD, which DOES belong to the extendee. Same declared name as the type and a different owner, which is what makes the two distinguishable."
+    },
+    {
+      "name": "inner_a",
+      "kind": "property",
+      "ownerName": "gie.demo.Hoisted"
+    },
+    {
+      "name": "inner_b",
+      "kind": "property",
+      "ownerName": "gie.demo.Hoisted"
+    },
+    {
+      "name": "Outer",
+      "kind": "class",
+      "ownerName": "gie.demo"
+    },
+    {
+      "name": "Holder",
+      "kind": "class",
+      "ownerName": "gie.demo.Outer"
+    },
+    {
+      "name": "Inner",
+      "kind": "class",
+      "ownerName": "gie.demo.Outer",
+      "note": "ROW 2's group's TYPE, hoisted to the enclosing MESSAGE's scope. Pre-fix this symbol was owned by gie.demo.Outer.Holder."
+    },
+    {
+      "name": "Inner",
+      "kind": "property",
+      "ownerName": "gie.demo.Outer.Holder"
+    },
+    {
+      "name": "deep",
+      "kind": "property",
+      "ownerName": "gie.demo.Outer.Inner"
+    },
+    {
+      "name": "Plain",
+      "kind": "class",
+      "ownerName": "gie.demo"
+    },
+    {
+      "name": "Innermost",
+      "kind": "class",
+      "ownerName": "gie.demo.Plain",
+      "note": "ROW 3, the control. Unchanged by the fix because owner and scope are the same string here."
+    },
+    {
+      "name": "Innermost",
+      "kind": "property",
+      "ownerName": "gie.demo.Plain"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "gie.demo.Plain.Innermost"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "gie.demo",
+      "target": "gie.demo.Hoisted",
+      "line_number": 49,
+      "meta.member": "groupType",
+      "note": "THE row this fixture exists for. protoc reports `gie.demo.Hoisted` as a top-level message of this file, so the group's TYPE is contained by the package. Pre-fix the target was `gie.demo.Target.Hoisted`, a nested type protoc's descriptor does not contain \u2014 the pre-fix answer is forbidden below."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Target",
+      "target": "gie.demo.Hoisted#property",
+      "line_number": 49,
+      "meta.member": "field",
+      "meta.viaExtension": true,
+      "note": "The other half of ROW 1. The group's FIELD is the EXTENSION, so the edge runs from the extendee \u2014 that is what `protoc`'s `extendee = .gie.demo.Target` states \u2014 but the extension's NAME is the block's own scope plus the member name, and the block is at file scope, so the name is `gie.demo.hoisted`, not `gie.demo.Target.Hoisted`. The `#property` suffix is this lane's disambiguator for a group, which declares a type and a field under one name; `protoc` lowercases the extension name and keeps the type's capitalisation, and the analyzer keeps one spelling with a disambiguator so the two cannot collide."
+    },
+    {
+      "type": "references",
+      "from": "gie.demo.Hoisted#property",
+      "target": "gie.demo.Hoisted",
+      "line_number": 49,
+      "confidenceMin": 0.9,
+      "note": "The group's field points at its type. `protoc` reports `type_name = .gie.demo.Hoisted` for that extension, which is the target here. Two pre-fix answers are now both forbidden below: `gie.demo.Target.Hoisted` (a type nested in the extendee, which `protoc` does not define) and, before that, the same id on both ends."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Hoisted",
+      "target": "gie.demo.Hoisted.inner_a",
+      "line_number": 50
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Hoisted",
+      "target": "gie.demo.Hoisted.inner_b",
+      "line_number": 51,
+      "note": "The group's own members follow the group's TYPE, wherever that type is declared. Pre-fix both were `gie.demo.Target.Hoisted.inner_a` / `.inner_b`, i.e. members of the wrong type."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Outer",
+      "target": "gie.demo.Outer.Inner",
+      "line_number": 72,
+      "meta.member": "groupType",
+      "note": "ROW 2. The block sits inside `Outer`, so the type is hoisted to `Outer` and NOT to the package \u2014 protoc reports the nested message `gie.demo.Outer.Inner`. This row is what separates 'the block's own scope' from 'always the package'."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Outer.Holder",
+      "target": "gie.demo.Outer.Inner#property",
+      "line_number": 72,
+      "meta.member": "field",
+      "meta.viaExtension": true,
+      "note": "ROW 2's field. Same rule one scope in: the `extend Holder` block is written INSIDE `Outer`, so the extension's name is `Outer.inner` and the field id is `gie.demo.Outer.Inner#property`. `Holder` is the extendee and names the edge's source, never the member. This row is what makes the rule 'the scope the block is WRITTEN in' rather than 'always the package'."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Outer.Inner",
+      "target": "gie.demo.Outer.Inner.deep",
+      "line_number": 73
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Plain",
+      "target": "gie.demo.Plain.Innermost",
+      "line_number": 84,
+      "meta.member": "groupType",
+      "note": "ROW 3, the control in the other direction. No `extend` anywhere near this group, `owner` and `scope` are the same string, and the type stays nested in `Plain`. A fix that hoisted on every `group` node rather than only under `viaExtension` passes ROWS 1 and 2 and fails here."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Plain",
+      "target": "gie.demo.Plain.Innermost#property",
+      "line_number": 84,
+      "meta.member": "field",
+      "note": "The `#property` suffix is still REQUIRED here and only here: the group's field and its type share the name `Innermost` in the same owner `gie.demo.Plain`. ROWS 1 and 2 lost the suffix because hoisting the type separated the two ids. 28 corpus rows still carry the suffix after the fix, down from 30."
+    },
+    {
+      "type": "references",
+      "from": "gie.demo.Plain.Innermost#property",
+      "target": "gie.demo.Plain.Innermost",
+      "line_number": 84,
+      "confidenceMin": 0.9
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "gie.demo.Target",
+      "target": "gie.demo.Target.Hoisted",
+      "meta.member": "groupType",
+      "note": "THE pre-fix answer for ROW 1, forbidden explicitly. A forbidden row rather than only an absent requirement, so a regression that emitted BOTH the right and the wrong target fails instead of passing on the right one alone. This is the shape of the corpus defect: `test_messages_proto2.proto` and `unittest_custom_options.proto` each published a nested type under the extendee that protoc's descriptor does not contain."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Outer.Holder",
+      "target": "gie.demo.Outer.Holder.Inner",
+      "meta.member": "groupType",
+      "note": "THE pre-fix answer for ROW 2, forbidden so the rule cannot be satisfied by 'always hoist to the package'."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo",
+      "target": "gie.demo.Outer.Inner",
+      "meta.member": "groupType",
+      "note": "The answer 'always hoist to the package' gives for ROW 2, forbidden for the same reason. protoc reports `gie.demo.Outer.Inner` as NESTED in `Outer`, not top-level."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Target.Hoisted",
+      "target": "gie.demo.Target.Hoisted.inner_a",
+      "note": "A group member published under the pre-fix phantom type. Forbidden because an edge into a type that does not exist is the expensive failure, not the missing one."
+    },
+    {
+      "type": "references",
+      "from": "gie.demo.Target.Hoisted#property",
+      "target": "gie.demo.Target.Hoisted",
+      "note": "The pre-fix field->type edge, which pointed the graph at the phantom type."
+    },
+    {
+      "type": "contains",
+      "from": "gie.demo.Target",
+      "target": "gie.demo.Target.Hoisted#property",
+      "meta.member": "field",
+      "meta.viaExtension": true,
+      "note": "THE pass-21 pre-fix field id, forbidden explicitly. Distinct from the pre-pass-20 row above: that one forbids the phantom TYPE at `meta.member: groupType`, this one forbids the field carrying the extendee in its name. An analyzer that hoists only the type and leaves the field under the extendee passes the groupType forbid row and fails this one."
+    },
+    {
+      "type": "uses",
+      "from": "gie.demo.Hoisted#property",
+      "target": "gie.demo.Hoisted",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "gie.demo.Plain.Innermost#property",
+      "target": "gie.demo.Plain.Innermost",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ]
+}

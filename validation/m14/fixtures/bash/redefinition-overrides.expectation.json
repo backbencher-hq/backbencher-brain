@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/redefinition-overrides.sh",
+  "authoredFrom": "BD8b (a function redefinition is an `overrides` edge). Authored 2026-09-27 after script/m14/ontology-coverage-gate.ts falsified the lane's own ruling that `overrides` is inapplicable to bash. Bash has no classes, no interfaces and no inheritance, which is how the type came to be ruled inapplicable alongside `extends`, `implements` and `instantiates` — but a second declaration of a function REPLACES the first, which is an override in the only sense the language has one. The differential reported 99.9% coverage and 0 UNEXPLAINED for the entire wave and could not see this, because the oracle omitted `overrides` as well: two independent implementations that both say nothing agree perfectly. The gate found it by measuring the LANGUAGE (57 redefinitions across 38 of 2,747 admitted files) instead of diffing the CODE. `extends`, `implements` and `instantiates` remain ruled, now on grammar-inventory evidence: the bash grammar yields 164 distinct node types across the corpus and none expresses a type declaration or a constructor.",
+  "expectSymbols": [
+    {
+      "name": "redefinition-overrides.sh",
+      "kind": "module"
+    },
+    {
+      "name": "greet",
+      "kind": "function",
+      "ownerName": "redefinition-overrides.sh"
+    },
+    {
+      "name": "only_once",
+      "kind": "function",
+      "ownerName": "redefinition-overrides.sh"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "redefinition-overrides.sh",
+      "target": "greet",
+      "line_number": 26,
+      "meta.overridesLine": 14,
+      "meta.redefinition": true,
+      "note": "The load-bearing row. The edge runs from the LATER declaration to the EARLIER one, so both endpoints carry the same name and `overridesLine` names the prior declaration explicitly — otherwise a consumer sees `greet -> greet` and cannot tell which is which without re-reading the file. The line is the 2nd `greet`, and it overrides the 1st at line 14."
+    },
+    {
+      "type": "contains",
+      "from": "redefinition-overrides.sh",
+      "target": "greet",
+      "line_number": 14,
+      "note": "The prior declaration. Both `contains` rows exist, so the override's two endpoints are resolvable by name and line."
+    },
+    {
+      "type": "contains",
+      "from": "redefinition-overrides.sh",
+      "target": "greet",
+      "line_number": 26,
+      "note": "The declaration that overrides. The analyzer already emitted both as separate symbols before BD8b existed; the type is what names the relationship between them."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "only_once",
+      "note": "THE CONTROL, and the negative half asserted with the runner's own forbid mechanism rather than a vacuous metadata key. `only_once` is declared once, so no `overrides` edge may exist for it. An earlier draft of this fixture asserted the absence by checking a metadata key that never exists — a constraint that can never fail, which is the same defect this whole gate exists to catch. `forbidRelationships` states it properly: if the analyzer ever emits `overrides` unconditionally, this row fires."
+    }
+  ]
+}

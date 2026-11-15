@@ -1,0 +1,217 @@
+{
+  "fixtureId": "julia/dispatch-and-hierarchy",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Julia facts a managed-OO analyzer gets wrong. (1) MULTIPLE DISPATCH, not overriding: `Area(::Circle)` and `Area(::Square)` are both live, so they are ONE function symbol and there is NO `overrides` edge — the relation is declined, not faked. (2) `abstract type` is a TYPE HIERARCHY via `<:`, published as `extends` only; `implements` is declined because Julia has no protocol-conformance relation distinct from subtyping. (3) BOTH function forms: long (`function … end`), short (`f(x) = …`), short with a `where` bound, and short with a RETURN TYPE — the last puts a `typed_expression` on the left, a different tree shape from the plain short form. (4) A parametric struct's field type (`radius::T`) is a reference bound to the STRUCT's own type parameter, not to the enclosing module. (5) No self-call: a short-form definition DEFINES its function and does not invoke it. MUTATION TESTING ADDED NINE OF THESE CONSTRAINTS. Three mutants SURVIVED against this fixture while it was green, which is not evidence the fixture was right — it is evidence the fixture was silent. `expectSymbols` matches by name AND kind, so an EXTRA wrongly-kinded symbol beside a correct one passes unnoticed: `export Circle` fabricating a `function` named Circle sat next to the real `class:Circle` and no assertion objected. Forbidding a name alone cannot catch that; the pair (name, kind) can. Likewise a fabricated `extends` edge is invisible to assertions that only check that the RIGHT edges exist, so `Circle <: Real` — a type PARAMETER's bound published as Circle's supertype — needed an explicit forbid. And a type that references ITSELF now has one, in two forms: the type head (`Circle -> Circle`) and a GENERIC function's signature (`scaled -> scaled`, which the type-head guard did not cover and which was found by reading this fixture's output while checking a mutant, not by the mutant) MUTATION TESTING ADDED THE LAST TWO DECLARATIONS AND THEIR TWO EDGES. Three mutants survived against a green fixture, and the reason was not that the suite was weak — it was that the fixture's own `where {T<:Real}` bound was INVISIBLE TO THE ANALYZER. The braced spelling puts the bound inside a `curly_expression` and the scan read only direct children, so `scaled` published no bound and the mutant that removes bounds had nothing to remove. A fixture and an analyzer can agree on nothing and still both be wrong, and only a third party notices. `capped{T>:Int` covers the other operator: the test said `>` where it must say `>:`. The `extends -> Real` forbid was SCOPED DOWN rather than removed. It existed to catch the mutant that reads a type PARAMETER's bound as a supertype (`Circle <: Real`, false), and it was written as a bare target forbid — which also rejects `T extends Real`, which is a REAL bound once this fixture declares one. A forbid by target alone cannot say WHICH source it is about, and the harness matched it exactly as written. The fix is the pair (source, target), the same lesson the self-call forbid taught earlier in this file. The last addition pins ORDER INDEPENDENCE: `early = Deferred(1)` appears ABOVE `struct Deferred`, and must still be `instantiates`. The set of declared types used to be filled during the walk and consulted during it, so a construction that preceded its declaration was a plain `calls` — and the comment on that variable already claimed the opposite, which is how it survived review. Found by the F5 `instantiates` oracle on `Compiler/test/EAUtils.jl`, where `GetEscapeCache()` is called on line 52 and declared on line 90. TARGET KEY SHAPE, 2026-10-09: a `contains` target is now the OWNER-QUALIFIED key the member symbol publishes as its `qualifiedName` (`Counter.value`), not the bare `value`. The ownership FACT each row asserts is unchanged and every row's SOURCE is unchanged; what changed is that the target key can name exactly one declaration. The bare name could not: `contains` read 7,162 of 14,329 edges ambiguous at PROJECT scope, and the gate indexed 0 qualified aliases for this lane, because the analyzer knew the owner (it is the edge's own source) and published no key that used it. This is a measured key-shape change, not an expectation relaxed to match output: no row's source moved and no row was added or removed. The F5 differential matches on the target's LAST SEGMENT (`normTarget`), so `script/m14/oracles/julia-contains.ts`, which derives bare member names from the tree, still matches every row. F1 GRAMMAR-AUDIT ANCHORS: two assertions pin the two dead literals F1 found in this analyzer. (a) `Area(c::Circle; f=identity) = f(c.radius^2)` pins the KEYWORD-PARAMETER fix: the grammar has no `parameters` node; a keyword parameter is a `named_argument`, its binding must be collected, and the call through it publishes `calls Area -> Area\\u0000f` with `meta.localBinding: true`. The pre-fix analyzer published a bare `Area -> f`, which the new forbid row rejects in the other direction. (b) `scaled` carries a `&&` guard and `expectComplexity` pins the symbol at 3: `binary_expression`'s operator is a named child at index 1 (`alias(op, $.operator)`), not a field, so before the fix `childForFieldName(\"operator\")` returned null and the `&&` added nothing (2). Both assertions were verified to FAIL against the pre-fix analyzer and to pass after it, so each is the anchor a mutation revert of its fix trips.",
+  "expectSymbols": [
+    {
+      "name": "Geom",
+      "kind": "module"
+    },
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "Circle",
+      "kind": "class"
+    },
+    {
+      "name": "Square",
+      "kind": "class"
+    },
+    {
+      "name": "radius",
+      "kind": "property",
+      "ownerName": "Circle"
+    },
+    {
+      "name": "side",
+      "kind": "property",
+      "ownerName": "Square"
+    },
+    {
+      "name": "Area",
+      "kind": "function",
+      "ownerName": "Geom"
+    },
+    {
+      "name": "scaled",
+      "kind": "function",
+      "ownerName": "Geom"
+    },
+    {
+      "name": "perimeter",
+      "kind": "function",
+      "ownerName": "Geom"
+    },
+    {
+      "name": "bounded",
+      "kind": "function",
+      "ownerName": "Geom"
+    },
+    {
+      "name": "capped",
+      "kind": "function",
+      "ownerName": "Geom"
+    },
+    {
+      "name": "Deferred",
+      "kind": "class",
+      "ownerName": "Geom"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Geom",
+      "target": "Geom.Shape"
+    },
+    {
+      "type": "contains",
+      "source": "Geom",
+      "target": "Geom.Circle"
+    },
+    {
+      "type": "contains",
+      "source": "Geom",
+      "target": "Geom.Square"
+    },
+    {
+      "type": "contains",
+      "source": "Geom",
+      "target": "Geom.Area"
+    },
+    {
+      "type": "contains",
+      "source": "Geom",
+      "target": "Geom.scaled"
+    },
+    {
+      "type": "contains",
+      "source": "Geom",
+      "target": "Geom.perimeter"
+    },
+    {
+      "type": "extends",
+      "source": "Circle",
+      "target": "Shape"
+    },
+    {
+      "type": "extends",
+      "source": "Square",
+      "target": "Shape"
+    },
+    {
+      "type": "contains",
+      "source": "Circle",
+      "target": "Circle.radius"
+    },
+    {
+      "type": "contains",
+      "source": "Square",
+      "target": "Square.side"
+    },
+    {
+      "type": "extends",
+      "source": "T",
+      "target": "Real",
+      "meta.isWhereBound": true
+    },
+    {
+      "type": "extends",
+      "source": "T",
+      "target": "Int",
+      "meta.isWhereBound": true
+    },
+    {
+      "type": "instantiates",
+      "target": "Deferred"
+    },
+    {
+      "type": "calls",
+      "source": "Area",
+      "target": "Area\u0000f",
+      "meta.localBinding": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides"
+    },
+    {
+      "type": "implements"
+    },
+    {
+      "type": "calls",
+      "target": "Area"
+    },
+    {
+      "type": "calls",
+      "target": "scaled"
+    },
+    {
+      "type": "calls",
+      "target": "perimeter"
+    },
+    {
+      "type": "references",
+      "source": "Circle",
+      "target": "Circle"
+    },
+    {
+      "type": "references",
+      "source": "Square",
+      "target": "Square"
+    },
+    {
+      "type": "references",
+      "source": "scaled",
+      "target": "scaled"
+    },
+    {
+      "type": "extends",
+      "target": "T"
+    },
+    {
+      "type": "extends",
+      "source": "Circle",
+      "target": "Real"
+    },
+    {
+      "type": "extends",
+      "source": "Square",
+      "target": "Real"
+    },
+    {
+      "type": "calls",
+      "source": "Area",
+      "target": "f"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Circle",
+      "kind": "function"
+    },
+    {
+      "name": "Square",
+      "kind": "function"
+    },
+    {
+      "name": "Shape",
+      "kind": "class"
+    },
+    {
+      "name": "Float64",
+      "kind": "function"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "scaled",
+      "ownerName": "Geom",
+      "equals": 3
+    }
+  ]
+}

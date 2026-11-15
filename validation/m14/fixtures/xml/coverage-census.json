@@ -1,0 +1,1534 @@
+{
+  "instrument": "xml coverage-census — emitted-type counts through parseFile, plus element-name and attribute-name key spaces",
+  "question": "which of the ten ontology relationship types does the production path emit over the whole admitted xml population, and which of them can this language express at all — measured in BOTH spaces a markup document writes a relation in, an ELEMENT local name and an ATTRIBUTE name?",
+  "generatedBy": "validation/m14/fixtures/xml/coverage-census.mts",
+  "at": "2026-10-10T02:23:51.775Z",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "admission": "every git repository under the root, `git ls-files` tracked only, <= 512 KiB, read as utf8, detectLanguageFromPath(abs, text) === 'xml' — the same admission as script/m14/ontology-coverage-gate.ts:201-213, validation/m14/fixtures/xml/use-construct-census.mts and validation/m14/fixtures/xml/derivation-accounting.mts",
+    "discovered": 11552,
+    "walked": 11552,
+    "sampling": "every admitted file"
+  },
+  "tree": {
+    "filesWalked": 11552,
+    "filesFailed": 0,
+    "filesCarryingAnErrorNode": 57,
+    "nodesSeen": 3349291,
+    "distinctNodeTypes": 46,
+    "nodeTypes": [
+      [
+        "Name",
+        989892
+      ],
+      [
+        "AttValue",
+        521864
+      ],
+      [
+        "Attribute",
+        521863
+      ],
+      [
+        "CharData",
+        371323
+      ],
+      [
+        "element",
+        278270
+      ],
+      [
+        "STag",
+        158935
+      ],
+      [
+        "ETag",
+        154733
+      ],
+      [
+        "content",
+        151037
+      ],
+      [
+        "EmptyElemTag",
+        123537
+      ],
+      [
+        "CharRef",
+        14791
+      ],
+      [
+        "Comment",
+        12756
+      ],
+      [
+        "document",
+        11510
+      ],
+      [
+        "EntityRef",
+        7138
+      ],
+      [
+        "ERROR",
+        6975
+      ],
+      [
+        "CDSect",
+        3472
+      ],
+      [
+        "CDStart",
+        3472
+      ],
+      [
+        "CData",
+        3472
+      ],
+      [
+        "prolog",
+        2960
+      ],
+      [
+        "VersionNum",
+        2876
+      ],
+      [
+        "XMLDecl",
+        2876
+      ],
+      [
+        "EncName",
+        2318
+      ],
+      [
+        "Nmtoken",
+        534
+      ],
+      [
+        "TokenizedType",
+        452
+      ],
+      [
+        "ExternalID",
+        298
+      ],
+      [
+        "SystemLiteral",
+        298
+      ],
+      [
+        "URI",
+        298
+      ],
+      [
+        "doctypedecl",
+        275
+      ],
+      [
+        "PubidLiteral",
+        234
+      ],
+      [
+        "PI",
+        189
+      ],
+      [
+        "PITarget",
+        189
+      ],
+      [
+        "GEDecl",
+        181
+      ],
+      [
+        "EntityValue",
+        132
+      ],
+      [
+        "PseudoAtt",
+        28
+      ],
+      [
+        "PseudoAttValue",
+        28
+      ],
+      [
+        "StyleSheetPI",
+        14
+      ],
+      [
+        "contentspec",
+        12
+      ],
+      [
+        "elementdecl",
+        12
+      ],
+      [
+        "AttDef",
+        10
+      ],
+      [
+        "AttlistDecl",
+        10
+      ],
+      [
+        "DefaultDecl",
+        10
+      ],
+      [
+        "Mixed",
+        6
+      ],
+      [
+        "NDataDecl",
+        4
+      ],
+      [
+        "children",
+        3
+      ],
+      [
+        "NotationDecl",
+        2
+      ],
+      [
+        "Enumeration",
+        1
+      ],
+      [
+        "PublicID",
+        1
+      ]
+    ],
+    "distinctElementLocalNames": 2373,
+    "distinctAttributeNames": 1590
+  },
+  "production": {
+    "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+    "filesParsed": 11552,
+    "filesFailed": 0,
+    "degraded": 0,
+    "failedExamples": [],
+    "totalSymbols": 800196,
+    "totalRelationships": 201634
+  },
+  "emitted": [
+    {
+      "type": "contains",
+      "edges": 188224,
+      "files": 11335,
+      "roles": {
+        "xml_attribute": 111060,
+        "xml_element": 64173,
+        "xml_namespace": 12743,
+        "dtd_entity_declaration": 181,
+        "processing_instruction": 25,
+        "pseudo_attribute": 14,
+        "dtd_element_declaration": 12,
+        "dtd_attribute_declaration": 10,
+        "dtd_ndata_notation": 4,
+        "dtd_notation_declaration": 2
+      }
+    },
+    {
+      "type": "references",
+      "edges": 11108,
+      "files": 406,
+      "roles": {
+        "attribute_qname_reference": 10238,
+        "entity_reference": 801,
+        "xslt_named_template_reference": 69
+      }
+    },
+    {
+      "type": "extends",
+      "edges": 1429,
+      "files": 108,
+      "roles": {
+        "xsd_derivation_base": 1429
+      }
+    },
+    {
+      "type": "imports",
+      "edges": 468,
+      "files": 332,
+      "roles": {
+        "doctype_external_id": 248,
+        "schema_location": 156,
+        "entity_external_id": 49,
+        "processing_instruction_href": 14,
+        "notation_external_id": 1
+      }
+    },
+    {
+      "type": "calls",
+      "edges": 402,
+      "files": 43,
+      "roles": {
+        "xslt_named_template_call": 402
+      }
+    },
+    {
+      "type": "overrides",
+      "edges": 3,
+      "files": 3,
+      "roles": {
+        "xslt_competing_template_rule": 3
+      }
+    }
+  ],
+  "keySpaces": {
+    "note": "a family is a lower-cased substring test on a LOCAL name; attributeHits counts a NAME, so every occurrence of e.g. `use=\"required\"` is one hit; valueTokenHits counts whitespace-separated tokens in those attributes' values",
+    "elementLocalNamesDistinct": 2373,
+    "attributeNamesDistinct": 1590,
+    "topElementLocalNames": [
+      [
+        "path",
+        30642
+      ],
+      [
+        "text",
+        13205
+      ],
+      [
+        "tspan",
+        12210
+      ],
+      [
+        "svg",
+        10252
+      ],
+      [
+        "g",
+        9704
+      ],
+      [
+        "circle",
+        9634
+      ],
+      [
+        "element",
+        9536
+      ],
+      [
+        "template",
+        7823
+      ],
+      [
+        "attribute",
+        6966
+      ],
+      [
+        "rect",
+        6301
+      ],
+      [
+        "polyline",
+        6066
+      ],
+      [
+        "glyph",
+        4552
+      ],
+      [
+        "title",
+        4389
+      ],
+      [
+        "gentext",
+        4186
+      ],
+      [
+        "apply-templates",
+        4169
+      ],
+      [
+        "file",
+        4103
+      ],
+      [
+        "use",
+        4061
+      ],
+      [
+        "member",
+        3687
+      ],
+      [
+        "complexType",
+        3424
+      ],
+      [
+        "enumeration",
+        3242
+      ],
+      [
+        "entry",
+        3162
+      ],
+      [
+        "summary",
+        2737
+      ],
+      [
+        "p",
+        2511
+      ],
+      [
+        "stop",
+        2339
+      ],
+      [
+        "sequence",
+        2261
+      ],
+      [
+        "style",
+        2221
+      ],
+      [
+        "LINE",
+        2159
+      ],
+      [
+        "para",
+        2139
+      ],
+      [
+        "symbol",
+        2132
+      ],
+      [
+        "defs",
+        2101
+      ],
+      [
+        "extension",
+        1899
+      ],
+      [
+        "value-of",
+        1846
+      ],
+      [
+        "documentation",
+        1762
+      ],
+      [
+        "polygon",
+        1723
+      ],
+      [
+        "annotation",
+        1692
+      ],
+      [
+        "clipPath",
+        1675
+      ],
+      [
+        "call-template",
+        1528
+      ],
+      [
+        "item",
+        1322
+      ],
+      [
+        "tree",
+        1226
+      ],
+      [
+        "i",
+        1204
+      ]
+    ],
+    "topAttributeNames": [
+      [
+        "name",
+        41959
+      ],
+      [
+        "d",
+        34870
+      ],
+      [
+        "style",
+        25445
+      ],
+      [
+        "fill",
+        24541
+      ],
+      [
+        "x",
+        21699
+      ],
+      [
+        "y",
+        21543
+      ],
+      [
+        "id",
+        18641
+      ],
+      [
+        "class",
+        15753
+      ],
+      [
+        "type",
+        15221
+      ],
+      [
+        "cy",
+        10312
+      ],
+      [
+        "cx",
+        10311
+      ],
+      [
+        "viewBox",
+        9946
+      ],
+      [
+        "r",
+        9925
+      ],
+      [
+        "width",
+        9890
+      ],
+      [
+        "height",
+        9773
+      ],
+      [
+        "text",
+        8501
+      ],
+      [
+        "stroke",
+        8477
+      ],
+      [
+        "transform",
+        8386
+      ],
+      [
+        "points",
+        7789
+      ],
+      [
+        "select",
+        7255
+      ],
+      [
+        "value",
+        6554
+      ],
+      [
+        "textLength",
+        6030
+      ],
+      [
+        "minOccurs",
+        5776
+      ],
+      [
+        "lengthAdjust",
+        5665
+      ],
+      [
+        "text-anchor",
+        5419
+      ],
+      [
+        "font-size",
+        5252
+      ],
+      [
+        "stroke-width",
+        5105
+      ],
+      [
+        "xlink:href",
+        4605
+      ],
+      [
+        "unicode",
+        4512
+      ],
+      [
+        "key",
+        4343
+      ],
+      [
+        "role",
+        3932
+      ],
+      [
+        "mode",
+        3709
+      ],
+      [
+        "baseinstalldir",
+        3536
+      ],
+      [
+        "horiz-adv-x",
+        3302
+      ],
+      [
+        "match",
+        3146
+      ],
+      [
+        "clip-path",
+        2820
+      ],
+      [
+        "maxOccurs",
+        2727
+      ],
+      [
+        "label",
+        2603
+      ],
+      [
+        "glyph-name",
+        2602
+      ],
+      [
+        "Name",
+        2527
+      ]
+    ],
+    "families": [
+      {
+        "id": "use",
+        "why": "`uses` — XSLT 1.0 §7.1.4 use-attribute-sets (ATTRIBUTE), XSLT 2.0 §10.6 use-attribute-sets / §12.1 use-package (ELEMENT), SVG <use>",
+        "needles": [
+          "use"
+        ],
+        "elementHits": 4397,
+        "elementFiles": 326,
+        "elementNames": {
+          "use": 4061,
+          "uses-permission": 177,
+          "PossiblyUnusedReturnValue": 36,
+          "userDefs": 35,
+          "userinput": 28,
+          "PossiblyUnusedMethod": 20,
+          "ReportAbuseUrl": 10,
+          "uses-feature": 4,
+          "UnusedClass": 2,
+          "UnusedVariable": 2,
+          "databaseUser": 2,
+          "mousebutton": 2,
+          "useUpperCaseDescription": 2,
+          "uservisible": 2,
+          "warehouse": 2,
+          "ReferenceReusedFromConfusingScope": 1,
+          "UnusedProperty": 1,
+          "UseBuildConfiguration": 1,
+          "useProjectSettings": 1,
+          "useUIHarness": 1,
+          "useUIThread": 1,
+          "usedfiles": 1,
+          "user": 1,
+          "userView": 1,
+          "uses": 1,
+          "uses-library": 1,
+          "uses-sdk": 1
+        },
+        "elementNamespaces": {
+          "http://www.w3.org/2000/svg": 4061,
+          "(no-namespace)": 283,
+          "http://schemas.microsoft.com/visio/2003/SVGExtensions/": 35,
+          "http://schemas.microsoft.com/ado/2007/08/dataservices": 10,
+          "http://maven.apache.org/POM/4.0.0": 7,
+          "http://pear.php.net/dtd/package-2.0": 1
+        },
+        "attributeHits": 3124,
+        "attributeFiles": 176,
+        "attributeNames": {
+          "use": 2502,
+          "use-attribute-sets": 485,
+          "use-style": 46,
+          "useURL": 33,
+          "defaultUser": 32,
+          "onmouseout": 5,
+          "onmouseover": 5,
+          "usesCleartextTraffic": 4,
+          "UseSSL": 2,
+          "findUnusedBaselineEntry": 2,
+          "findUnusedCode": 2,
+          "use-optimal-row-height": 2,
+          "use-regular-expressions": 1,
+          "useMap": 1,
+          "user": 1,
+          "userLabel": 1
+        },
+        "attributeNamespaces": {
+          "http://www.w3.org/2001/XMLSchema": 2446,
+          "(no-namespace)": 339,
+          "http://www.w3.org/1999/XSL/Format": 237,
+          "http://www.w3.org/1999/XSL/Transform": 94,
+          "https://getpsalm.org/schema/config": 4,
+          "urn:oasis:names:tc:opendocument:xmlns:style:1.0": 2,
+          "http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec": 1,
+          "urn:oasis:names:tc:opendocument:xmlns:table:1.0": 1
+        },
+        "valueTokenHits": 3193,
+        "examples": [
+          "Aporia/share/gtksourceview-2.0/styles/classic.xml:80 ATTRIBUTE use-style=\"def:preprocessor\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/classic.xml:81 ATTRIBUTE use-style=\"def:constant\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/classic.xml:82 ATTRIBUTE use-style=\"def:statement\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/classic.xml:83 ATTRIBUTE use-style=\"def:type\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/classic.xml:94 ATTRIBUTE use-style=\"def:preprocessor\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/cobalt.xml:88 ATTRIBUTE use-style=\"def:identifier\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/darknim.xml:100 ATTRIBUTE use-style=\"def:string\" on <style> ns=(none)",
+          "Aporia/share/gtksourceview-2.0/styles/darknim.xml:101 ATTRIBUTE use-style=\"def:keyword\" on <style> ns=(none)"
+        ]
+      },
+      {
+        "id": "export",
+        "why": "`exports`",
+        "needles": [
+          "export"
+        ],
+        "elementHits": 620,
+        "elementFiles": 8,
+        "elementNames": {
+          "exports": 610,
+          "exportFormat": 5,
+          "pma_xml_export": 4,
+          "exportedmodules": 1
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 620
+        },
+        "attributeHits": 132,
+        "attributeFiles": 77,
+        "attributeNames": {
+          "exported": 56,
+          "export-filename": 22,
+          "export-xdpi": 22,
+          "export-ydpi": 22,
+          "exportCode": 3,
+          "requiresExportPrivileges": 3,
+          "export-bgcolor": 2,
+          "shortenArraysForExportThreshold": 2
+        },
+        "attributeNamespaces": {
+          "http://www.w3.org/2000/svg": 66,
+          "(no-namespace)": 64,
+          "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd": 2
+        },
+        "valueTokenHits": 132,
+        "examples": [
+          "Falco/assets/logo.svg:2 ATTRIBUTE inkscape:export-filename=\"logo.png\" on <svg> ns=http://www.w3.org/2000/svg",
+          "Falco/assets/logo.svg:2 ATTRIBUTE inkscape:export-xdpi=\"27.75\" on <svg> ns=http://www.w3.org/2000/svg",
+          "Falco/assets/logo.svg:2 ATTRIBUTE inkscape:export-ydpi=\"27.75\" on <svg> ns=http://www.w3.org/2000/svg",
+          "Falco/assets/social-banner.svg:2 ATTRIBUTE inkscape:export-filename=\"social-banner.png\" on <svg> ns=http://www.w3.org/2000/svg",
+          "Falco/assets/social-banner.svg:2 ATTRIBUTE inkscape:export-xdpi=\"96\" on <svg> ns=http://www.w3.org/2000/svg",
+          "Falco/assets/social-banner.svg:2 ATTRIBUTE inkscape:export-ydpi=\"96\" on <svg> ns=http://www.w3.org/2000/svg",
+          "Falco/assets/social-banner.svg:349 ATTRIBUTE inkscape:export-bgcolor=\"#ffffffff\" on <namedview> ns=http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
+          "Falco/assets/symbol.svg:2 ATTRIBUTE inkscape:export-filename=\"logo.png\" on <svg> ns=http://www.w3.org/2000/svg"
+        ]
+      },
+      {
+        "id": "implement",
+        "why": "`implements` — a conformance clause, incl. the Wayland <interface> ELEMENT spelling",
+        "needles": [
+          "implement",
+          "interface",
+          "conform",
+          "satisf"
+        ],
+        "elementHits": 275,
+        "elementFiles": 11,
+        "elementNames": {
+          "interface": 261,
+          "implementation": 4,
+          "interfaces": 4,
+          "interfacedefinition": 2,
+          "interfacename": 2,
+          "oointerface": 2
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 275
+        },
+        "attributeHits": 5,
+        "attributeFiles": 4,
+        "attributeNames": {
+          "interface": 4,
+          "implementation": 1
+        },
+        "attributeNamespaces": {
+          "(no-namespace)": 4,
+          "http://maven.apache.org/POM/4.0.0": 1
+        },
+        "valueTokenHits": 5,
+        "examples": [
+          "clojure/pom.xml:354 ATTRIBUTE implementation=\"org.apache.maven.plugins.shade.resource.ManifestResourceTran\" on <transformer> ns=http://maven.apache.org/POM/4.0.0",
+          "dbeaver/plugins/org.jkiss.dbeaver.model.sql/META-INF/component-sql-dialect-registry.xml:4 ATTRIBUTE interface=\"org.jkiss.dbeaver.model.sql.SQLDialectMetadataRegistry\" on <provide> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.model.sql/META-INF/component-sql-dialect-registry.xml:6 ELEMENT <implementation> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.model/META-INF/component-db-workbench.xml:4 ATTRIBUTE interface=\"org.jkiss.dbeaver.model.app.DBPApplicationWorkbench\" on <provide> ns=(none)",
+          "ghostty/src/apprt/gtk/winproto/wayland/protocols/vicinae-hotkey-v1.xml:154 ATTRIBUTE interface=\"vicinae_hotkey_v1\" on <arg> ns=(none)",
+          "ghostty/src/apprt/gtk/winproto/wayland/protocols/vicinae-hotkey-v1.xml:159 ATTRIBUTE interface=\"wl_seat\" on <arg> ns=(none)"
+        ]
+      },
+      {
+        "id": "instantiat",
+        "why": "`instantiates` — a construction form",
+        "needles": [
+          "instantiat",
+          "new",
+          "create",
+          "construct",
+          "clone"
+        ],
+        "elementHits": 44,
+        "elementFiles": 26,
+        "elementNames": {
+          "systemCreated": 17,
+          "Created": 10,
+          "newWizardShortcut": 4,
+          "newlineChar": 3,
+          "createArtifactRepository": 2,
+          "Created-By": 1,
+          "constructor-arg": 1,
+          "constructors": 1,
+          "constructorsynopsis": 1,
+          "createDependencyReducedPom": 1,
+          "exciting-new-1.8-feature": 1,
+          "new-fruit1": 1,
+          "new-fruit2": 1
+        },
+        "elementNamespaces": {
+          "http://www.ericsson.com/is/isco/mim/2.0": 17,
+          "http://schemas.microsoft.com/ado/2007/08/dataservices": 10,
+          "(no-namespace)": 8,
+          "http://maven.apache.org/POM/4.0.0": 4,
+          "http://schemas.microsoft.com/visio/2003/SVGExtensions/": 3,
+          "http://www.springframework.org/schema/beans": 1,
+          "http://www.w3.org/1999/XSL/Transform": 1
+        },
+        "attributeHits": 46,
+        "attributeFiles": 2,
+        "attributeNames": {
+          "tiled-clone-of": 46
+        },
+        "attributeNamespaces": {
+          "http://www.w3.org/2000/svg": 46
+        },
+        "valueTokenHits": 46,
+        "examples": [
+          "Paket/tests/Paket.Tests/NuGetOData/BenchmarkDotNet-UnknownFramework.xml:24 ELEMENT <Created> ns=http://schemas.microsoft.com/ado/2007/08/dataservices",
+          "Paket/tests/Paket.Tests/NuGetOData/EasyNetQ.xml:23 ELEMENT <Created> ns=http://schemas.microsoft.com/ado/2007/08/dataservices",
+          "Paket/tests/Paket.Tests/NuGetOData/Fantomas.xml:18 ELEMENT <Created> ns=http://schemas.microsoft.com/ado/2007/08/dataservices",
+          "Paket/tests/Paket.Tests/NuGetOData/Fleece.xml:18 ELEMENT <Created> ns=http://schemas.microsoft.com/ado/2007/08/dataservices",
+          "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203 ATTRIBUTE inkscape:tiled-clone-of=\"#path3006\" on <use> ns=http://www.w3.org/2000/svg",
+          "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213 ATTRIBUTE inkscape:tiled-clone-of=\"#path3006\" on <use> ns=http://www.w3.org/2000/svg",
+          "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:222 ATTRIBUTE inkscape:tiled-clone-of=\"#path3006\" on <use> ns=http://www.w3.org/2000/svg",
+          "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:231 ATTRIBUTE inkscape:tiled-clone-of=\"#path3006\" on <use> ns=http://www.w3.org/2000/svg"
+        ]
+      },
+      {
+        "id": "inherit",
+        "why": "`extends`/`overrides` — the HCL spelling this probe exists to catch",
+        "needles": [
+          "inherit"
+        ],
+        "elementHits": 7,
+        "elementFiles": 2,
+        "elementNames": {
+          "inheritdoc": 6,
+          "inheritancegraph": 1
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 7
+        },
+        "attributeHits": 10,
+        "attributeFiles": 5,
+        "attributeNames": {
+          "inheritClients": 5,
+          "inheritProviderProperties": 5
+        },
+        "attributeNamespaces": {
+          "(no-namespace)": 10
+        },
+        "valueTokenHits": 10,
+        "examples": [
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.duckdb/plugin.xml:14 ATTRIBUTE inheritProviderProperties=\"true\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.gaussdb/plugin.xml:30 ATTRIBUTE inheritClients=\"false\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.greenplum/plugin.xml:55 ATTRIBUTE inheritClients=\"true\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.greenplum/plugin.xml:55 ATTRIBUTE inheritProviderProperties=\"true\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.greenplum/plugin.xml:117 ATTRIBUTE inheritClients=\"true\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.greenplum/plugin.xml:117 ATTRIBUTE inheritProviderProperties=\"true\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.greenplum/plugin.xml:161 ATTRIBUTE inheritClients=\"true\" on <datasource> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ext.greenplum/plugin.xml:161 ATTRIBUTE inheritProviderProperties=\"true\" on <datasource> ns=(none)"
+        ]
+      },
+      {
+        "id": "extends",
+        "why": "`extends` — XSD <xs:extension> ELEMENT and any attribute spelling",
+        "needles": [
+          "extend"
+        ],
+        "elementHits": 1,
+        "elementFiles": 1,
+        "elementNames": {
+          "extender": 1
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 1
+        },
+        "attributeHits": 0,
+        "attributeFiles": 0,
+        "attributeNames": {},
+        "attributeNamespaces": {},
+        "valueTokenHits": 0,
+        "examples": [
+          "dbeaver/plugins/org.jkiss.dbeaver.model.rcp/plugin.xml:8 ELEMENT <extender> ns=(none)"
+        ]
+      },
+      {
+        "id": "override",
+        "why": "`overrides`",
+        "needles": [
+          "override"
+        ],
+        "elementHits": 0,
+        "elementFiles": 0,
+        "elementNames": {},
+        "elementNamespaces": {},
+        "attributeHits": 317,
+        "attributeFiles": 6,
+        "attributeNames": {
+          "Override": 306,
+          "override": 9,
+          "ensureOverrideAttribute": 1,
+          "overrideLibrary": 1
+        },
+        "attributeNamespaces": {
+          "(no-namespace)": 316,
+          "https://getpsalm.org/schema/config": 1
+        },
+        "valueTokenHits": 317,
+        "examples": [
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:31 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:72 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:1221 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:1247 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:1300 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:1301 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:1311 ATTRIBUTE Override=\"true\" on <Field> ns=(none)",
+          "core/src/compiler/WebSharper.Compiler.CSharp/Syntax.xml:1395 ATTRIBUTE Override=\"true\" on <Field> ns=(none)"
+        ]
+      },
+      {
+        "id": "call",
+        "why": "`calls`",
+        "needles": [
+          "call"
+        ],
+        "elementHits": 1576,
+        "elementFiles": 121,
+        "elementNames": {
+          "call-template": 1528,
+          "callout": 27,
+          "includeCallerData": 10,
+          "calloutlist": 6,
+          "antcall": 3,
+          "MixedMethodCall": 1,
+          "callpoint": 1
+        },
+        "elementNamespaces": {
+          "http://www.w3.org/1999/XSL/Transform": 1528,
+          "(no-namespace)": 47,
+          "http://www.ericsson.com/is/isco/mim/2.0": 1
+        },
+        "attributeHits": 1,
+        "attributeFiles": 1,
+        "attributeNames": {
+          "enableOnBackInvokedCallback": 1
+        },
+        "attributeNamespaces": {
+          "(no-namespace)": 1
+        },
+        "valueTokenHits": 1,
+        "examples": [
+          "Exposed/exposed-crypt/src/test/resources/logback-test.xml:10 ELEMENT <includeCallerData> ns=(none)",
+          "Exposed/exposed-gradle-plugin/src/test/resources/logback-test.xml:10 ELEMENT <includeCallerData> ns=(none)",
+          "Exposed/exposed-jdbc-r2dbc-tests/src/test/resources/logback-test.xml:10 ELEMENT <includeCallerData> ns=(none)",
+          "Exposed/exposed-maven-plugin/src/test/resources/logback-test.xml:10 ELEMENT <includeCallerData> ns=(none)",
+          "proxicall/android/app/src/main/AndroidManifest.xml:18 ATTRIBUTE android:enableOnBackInvokedCallback=\"true\" on <application> ns=(none)"
+        ]
+      },
+      {
+        "id": "import",
+        "why": "`imports`",
+        "needles": [
+          "import"
+        ],
+        "elementHits": 171,
+        "elementFiles": 89,
+        "elementNames": {
+          "import": 143,
+          "apply-imports": 22,
+          "important": 3,
+          "FunctionImport": 2,
+          "ActionImport": 1
+        },
+        "elementNamespaces": {
+          "http://www.w3.org/2001/XMLSchema": 75,
+          "http://www.w3.org/1999/XSL/Transform": 65,
+          "(no-namespace)": 28,
+          "http://docs.oasis-open.org/odata/ns/edm": 3
+        },
+        "attributeHits": 0,
+        "attributeFiles": 0,
+        "attributeNames": {},
+        "attributeNamespaces": {},
+        "valueTokenHits": 0,
+        "examples": [
+          "bash-completion/test/fixtures/ant/build-with-import.xml:3 ELEMENT <import> ns=(none)",
+          "dbeaver/features/org.jkiss.dbeaver.debug.feature/feature.xml:11 ELEMENT <import> ns=(none)",
+          "dbeaver/features/org.jkiss.dbeaver.debug.feature/feature.xml:12 ELEMENT <import> ns=(none)",
+          "dbeaver/features/org.jkiss.dbeaver.debug.feature/feature.xml:13 ELEMENT <import> ns=(none)"
+        ]
+      },
+      {
+        "id": "referenc",
+        "why": "`references`",
+        "needles": [
+          "referenc"
+        ],
+        "elementHits": 448,
+        "elementFiles": 41,
+        "elementNames": {
+          "reference": 235,
+          "keywordReference": 171,
+          "Reference": 22,
+          "conditional-page-master-reference": 10,
+          "referenceinfo": 7,
+          "ApplicationReferenceId": 1,
+          "CopyReferencedAssembliesToWorkspace": 1,
+          "PossiblyNullReference": 1
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 408,
+          "http://schemas.microsoft.com/developer/msbuild/2003": 22,
+          "http://www.w3.org/1999/XSL/Format": 10,
+          "http://nwalsh.com/xsl/documentation/1.0": 7,
+          "http://arbetsformedlingen.se/LedigtArbete": 1
+        },
+        "attributeHits": 25,
+        "attributeFiles": 2,
+        "attributeNames": {
+          "colorPreferenceKey": 2,
+          "colorPreferenceValue": 2,
+          "highlightPreferenceKey": 2,
+          "highlightPreferenceValue": 2,
+          "overviewRulerPreferenceKey": 2,
+          "overviewRulerPreferenceValue": 2,
+          "textPreferenceKey": 2,
+          "textPreferenceValue": 2,
+          "textStylePreferenceKey": 2,
+          "textStylePreferenceValue": 2,
+          "verticalRulerPreferenceKey": 2,
+          "verticalRulerPreferenceValue": 2,
+          "preferenceKey": 1
+        },
+        "attributeNamespaces": {
+          "(no-namespace)": 25
+        },
+        "valueTokenHits": 25,
+        "examples": [
+          "FSharpx.Extras/tests/FSharpx.CSharpTests/FSharpx.CSharpTests.crunchproject.local.xml:2 ELEMENT <CopyReferencedAssembliesToWorkspace> ns=(none)",
+          "Paket/tests/Paket.Tests/InstallModel/Xml/RxXaml.fs.actual.xml:5 ELEMENT <Reference> ns=http://schemas.microsoft.com/developer/msbuild/2003",
+          "Paket/tests/Paket.Tests/InstallModel/Xml/RxXaml.fs.actual.xml:8 ELEMENT <Reference> ns=http://schemas.microsoft.com/developer/msbuild/2003",
+          "Paket/tests/Paket.Tests/InstallModel/Xml/RxXaml.fs.actual.xml:17 ELEMENT <Reference> ns=http://schemas.microsoft.com/developer/msbuild/2003",
+          "dbeaver/plugins/org.jkiss.dbeaver.ui.editors.data/plugin.xml:185 ATTRIBUTE preferenceKey=\"resultset.grouping.showPercentOfTotal\" on <action> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/plugin.xml:102 ATTRIBUTE textPreferenceKey=\"occurrenceIndication\" on <specification> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/plugin.xml:102 ATTRIBUTE textPreferenceValue=\"false\" on <specification> ns=(none)",
+          "dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/plugin.xml:102 ATTRIBUTE highlightPreferenceKey=\"occurrenceHighlighting\" on <specification> ns=(none)"
+        ]
+      },
+      {
+        "id": "name",
+        "why": "CONTROL — must be non-empty or the probe is blind",
+        "needles": [
+          "name"
+        ],
+        "elementHits": 959,
+        "elementFiles": 201,
+        "elementNames": {
+          "name": 310,
+          "filename": 123,
+          "firstname": 98,
+          "surname": 98,
+          "varname": 35,
+          "classname": 34,
+          "namedview": 29,
+          "productName": 25,
+          "publishername": 25,
+          "orgname": 13,
+          "UICultureName": 12,
+          "LicenseNames": 10,
+          "namespace": 10,
+          "Name": 9,
+          "refname": 9,
+          "corpname": 8,
+          "productname": 7,
+          "refnamediv": 7,
+          "exceptionname": 6,
+          "methodname": 6,
+          "structname": 6,
+          "font-face-name": 5,
+          "servlet-name": 5,
+          "collabname": 4,
+          "given-name": 4,
+          "named-expression": 4,
+          "othername": 4,
+          "DisplayName": 3,
+          "archiveFileName": 3,
+          "named-expressions": 3,
+          "namespace-alias": 3,
+          "param-name": 3,
+          "FamilyName": 2,
+          "FirstName": 2,
+          "FormattedName": 2,
+          "GivenName": 2,
+          "PersonName": 2,
+          "brandName": 2,
+          "errorname": 2,
+          "family-name": 2,
+          "filter-name": 2,
+          "moAttributeNamed": 2,
+          "namespaces": 2,
+          "property-name": 2,
+          "AppStoreName": 1,
+          "BranchName": 1,
+          "ClusterName": 1,
+          "HiringOrgName": 1,
+          "MachineName": 1,
+          "PublisherDisplayName": 1,
+          "ServerName": 1,
+          "StreetName": 1,
+          "additionalName": 1,
+          "fullFileName": 1,
+          "namelist": 1,
+          "nestednamespaces": 1,
+          "prosa-name": 1,
+          "testContainersImageName": 1
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 805,
+          "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd": 29,
+          "http://www.w3.org/2005/Atom": 27,
+          "http://maven.apache.org/POM/4.0.0": 21,
+          "http://schemas.microsoft.com/powershell/help/2010/05": 12,
+          "http://arbetsformedlingen.se/LedigtArbete": 10,
+          "http://java.sun.com/xml/ns/j2ee": 10,
+          "http://schemas.microsoft.com/ado/2007/08/dataservices": 10,
+          "urn:oasis:names:tc:opendocument:xmlns:table:1.0": 7,
+          "http://schemas.microsoft.com/maml/dev/command/2004/10": 6,
+          "http://www.w3.org/2000/svg": 5,
+          "http://schemas.microsoft.com/windowsazure": 4,
+          "http://www.example.com/PO1": 4,
+          "http://www.w3.org/1999/XSL/Transform": 3,
+          "http://pear.php.net/dtd/package-2.0": 2,
+          "http://schemas.microsoft.com/appx/manifest/foundation/windows10": 2,
+          "http://my/namespace": 1,
+          "http://schemas.microsoft.com/appx/2012/ProductDescription": 1
+        },
+        "attributeHits": 50366,
+        "attributeFiles": 1632,
+        "attributeNames": {
+          "name": 42540,
+          "glyph-name": 2602,
+          "Name": 2527,
+          "data-name": 828,
+          "nameU": 380,
+          "style-name": 227,
+          "noNamespaceSchemaLocation": 211,
+          "namespace": 156,
+          "targetNamespace": 108,
+          "font-familyName": 90,
+          "data-qualified-name": 72,
+          "fullname": 64,
+          "colname": 59,
+          "master-name": 49,
+          "name.ref": 46,
+          "FriendlyName": 38,
+          "flow-name": 36,
+          "docname": 30,
+          "_name": 26,
+          "className": 23,
+          "default-cell-style-name": 22,
+          "named-template": 22,
+          "provider-name": 19,
+          "taskname": 19,
+          "namest": 17,
+          "NameField": 16,
+          "nameend": 14,
+          "region-name": 14,
+          "parent-style-name": 13,
+          "classname": 11,
+          "font-name": 11,
+          "typeName": 11,
+          "attributeName": 8,
+          "codeName": 8,
+          "data-style-name": 8,
+          "FieldName": 6,
+          "ref-name": 5,
+          "Namespace": 3,
+          "appName": 2,
+          "dirname": 2,
+          "family-name": 2,
+          "given-name": 2,
+          "master-page-name": 2,
+          "spanname": 2,
+          "surname": 2,
+          "varSetName": 2,
+          "COL_NAME": 1,
+          "DisplayName": 1,
+          "IgnorableNamespaces": 1,
+          "NAME": 1,
+          "PROPNAME_": 1,
+          "codename": 1,
+          "delegateName": 1,
+          "firstname": 1,
+          "lastname": 1,
+          "nodeDisplayName": 1,
+          "vendorName": 1
+        },
+        "attributeNamespaces": {
+          "(no-namespace)": 20923,
+          "http://www.w3.org/2001/XMLSchema": 16692,
+          "http://www.w3.org/1999/XSL/Transform": 5562,
+          "http://pear.php.net/dtd/package-2.0": 3537,
+          "http://www.w3.org/2000/svg": 1514,
+          "http://www.ericsson.com/is/isco/mim/2.0": 520,
+          "http://schemas.microsoft.com/visio/2003/SVGExtensions/": 382,
+          "http://relaxng.org/ns/structure/1.0": 324,
+          "urn:oasis:names:tc:opendocument:xmlns:table:1.0": 238,
+          "http://nwalsh.com/xsl/documentation/1.0": 176,
+          "http://docs.oasis-open.org/odata/ns/edm": 137,
+          "http://www.w3.org/1999/XSL/Format": 99,
+          "urn:oasis:names:tc:opendocument:xmlns:style:1.0": 75,
+          "http://exslt.org/functions": 35,
+          "http://www.devhelp.net/book": 20,
+          "http://tizen.org/ns/packages": 16,
+          "urn:oasis:names:tc:opendocument:xmlns:text:1.0": 15,
+          "http://www.w3.org/1999/xhtml": 13,
+          "https://getpsalm.org/schema/config": 13,
+          "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0": 12,
+          "http://java.sun.com/xml/ns/persistence": 9,
+          "https://www.phpmyadmin.net/some_doc_url/": 8,
+          "&xsltns;": 6,
+          "http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities": 5,
+          "http://schemas.microsoft.com/appx/manifest/foundation/windows10": 4,
+          "http://www.example.com/xmlns/car": 3,
+          "http://www.example.com/xmlns/manufacturer": 3,
+          "http://www.springframework.org/schema/beans": 3,
+          "https://phar.io/phive": 3,
+          "&fns;": 2,
+          "&ns_vars;": 2,
+          "http://maven.apache.org/POM/4.0.0": 2,
+          "http://nwalsh.com/docbook/xsl/template/1.0": 2,
+          "http://www.osgi.org/xmlns/scr/v1.3.0": 2,
+          "https://phar.io/xml/manifest/1.0": 2,
+          "urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0": 2,
+          "http://arbetsformedlingen.se/LedigtArbete": 1,
+          "http://pmd.sourceforge.net/ruleset/2.0.0": 1,
+          "http://schemas.microsoft.com/appx/manifest/uap/windows10": 1,
+          "http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec": 1,
+          "urn:schemas-microsoft-com:asm.v1": 1
+        },
+        "valueTokenHits": 50299,
+        "examples": [
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:55 ATTRIBUTE name=\"boolean\" on <define> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:92 ATTRIBUTE name=\"tagattrs\" on <define> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:94 ATTRIBUTE name=\"_name\" on <attribute> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:97 ATTRIBUTE name=\"name\" on <attribute> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:101 ATTRIBUTE name=\"style\" on <attribute> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:129 ATTRIBUTE name=\"language\" on <define> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:130 ATTRIBUTE name=\"language\" on <element> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:131 ATTRIBUTE name=\"attlist.language\" on <ref> ns=http://relaxng.org/ns/structure/1.0"
+        ]
+      },
+      {
+        "id": "type",
+        "why": "CONTROL — XSD `type=`/`base=` are attribute spellings of a name",
+        "needles": [
+          "type"
+        ],
+        "elementHits": 5301,
+        "elementFiles": 290,
+        "elementNames": {
+          "complexType": 3424,
+          "simpleType": 557,
+          "objectType": 272,
+          "dataType": 266,
+          "type": 264,
+          "TypeComment": 140,
+          "dataSourceType": 102,
+          "typedef": 75,
+          "returnType": 27,
+          "functype": 17,
+          "serverType": 16,
+          "result_type": 15,
+          "EntityType": 13,
+          "measType": 12,
+          "content-type": 10,
+          "contentTypeBinding": 9,
+          "MixedArgumentTypeCoercion": 8,
+          "funcprototype": 8,
+          "typedefs": 8,
+          "ReturnType": 7,
+          "types": 7,
+          "LineType": 5,
+          "ComplexType": 4,
+          "ArgumentTypeCoercion": 3,
+          "Type": 3,
+          "EnumType": 2,
+          "MixedPropertyTypeCoercion": 2,
+          "MixedReturnTypeCoercion": 2,
+          "errortype": 2,
+          "expected-type": 2,
+          "sourceType": 2,
+          "BuildType": 1,
+          "ConditionTypeCNF": 1,
+          "MoreSpecificReturnType": 1,
+          "PropertyTypeCoercion": 1,
+          "TypeDoesNotContainType": 1,
+          "configurationType": 1,
+          "itemType": 1,
+          "launchConfigurationType": 1,
+          "launchConfigurationTypeImage": 1,
+          "packagetypes": 1,
+          "privatetypes": 1,
+          "protectedtypes": 1,
+          "publictypes": 1,
+          "resourceTypeBinding": 1,
+          "sourceContainerType": 1,
+          "typeparam": 1,
+          "w3c-doctype": 1
+        },
+        "elementNamespaces": {
+          "http://www.w3.org/2001/XMLSchema": 3976,
+          "(no-namespace)": 941,
+          "http://www.ericsson.com/is/isco/mim/2.0": 293,
+          "http://purl.org/dc/elements/1.1/": 32,
+          "http://docs.oasis-open.org/odata/ns/edm": 26,
+          "http://api.twitter.com/": 15,
+          "http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec": 12,
+          "http://maven.apache.org/POM/4.0.0": 4,
+          "http://www.springframework.org/schema/tool": 2
+        },
+        "attributeHits": 17842,
+        "attributeFiles": 826,
+        "attributeNames": {
+          "type": 15733,
+          "Type": 1120,
+          "objectType": 212,
+          "dataSourceType": 168,
+          "value-type": 117,
+          "supportedConfigurationTypes": 99,
+          "basicInfo-basicType": 90,
+          "data-link-type": 48,
+          "nodetypes": 38,
+          "changeFolderType": 33,
+          "adaptableType": 24,
+          "data-type": 20,
+          "mimeType": 14,
+          "doctype-public": 12,
+          "contentType": 11,
+          "contentTypeId": 10,
+          "doctype-system": 9,
+          "contentStyleType": 8,
+          "BaseType": 7,
+          "base-type": 7,
+          "EntityType": 6,
+          "memberTypes": 6,
+          "itemType": 5,
+          "arrowType": 4,
+          "contentScriptType": 4,
+          "data-diagram-type": 4,
+          "datatypeLibrary": 4,
+          "ColumnType": 3,
+          "content-type": 3,
+          "media-type": 3,
+          "ServiceType": 2,
+          "annotationType": 2,
+          "dataType": 2,
+          "dataTypes": 2,
+          "configTypeID": 1,
+          "containerType": 1,
+          "elementType": 1,
+          "inputType": 1,
+          "markerType": 1,
+          "mask-type": 1,
+          "mime-type": 1,
+          "mimetype": 1,
+          "nodeType": 1,
+          "resourceType": 1,
+          "transaction-type": 1,
+          "w3c-doctype": 1
+        },
+        "attributeNamespaces": {
+          "http://www.w3.org/2001/XMLSchema": 10432,
+          "(no-namespace)": 5692,
+          "http://www.w3.org/2000/svg": 852,
+          "http://schemas.microsoft.com/visio/2003/SVGExtensions/": 231,
+          "http://www.w3.org/1999/XSL/Transform": 151,
+          "urn:oasis:names:tc:opendocument:xmlns:table:1.0": 117,
+          "http://schemas.microsoft.com/ado/2007/08/dataservices": 100,
+          "http://docs.oasis-open.org/odata/ns/edm": 98,
+          "http://www.w3.org/2005/Atom": 86,
+          "http://relaxng.org/ns/structure/1.0": 22,
+          "http://tizen.org/ns/packages": 16,
+          "http://www.devhelp.net/book": 14,
+          "http://www.inkscape.org/namespaces/inkscape": 12,
+          "http://www.springframework.org/schema/tool": 4,
+          "http://www.w3.org/1999/xhtml": 4,
+          "http://arbetsformedlingen.se/LedigtArbete": 2,
+          "http://icl.com/saxon": 2,
+          "https://phar.io/xml/manifest/1.0": 2,
+          "&svgns;": 1,
+          "http://java.sun.com/xml/ns/persistence": 1,
+          "http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec": 1,
+          "http://www.ericsson.com/is/isco/mim/2.0": 1,
+          "urn:schemas-microsoft-com:asm.v1": 1
+        },
+        "valueTokenHits": 18556,
+        "examples": [
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:52 ATTRIBUTE datatypeLibrary=\"http://www.w3.org/2001/XMLSchema-datatypes\" on <grammar> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:95 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:98 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:102 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:151 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:154 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:159 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng:162 ATTRIBUTE type=\"string\" on <data> ns=http://relaxng.org/ns/structure/1.0"
+        ]
+      },
+      {
+        "id": "base",
+        "why": "CONTROL — the XSD derivation operand",
+        "needles": [
+          "base"
+        ],
+        "elementHits": 41,
+        "elementFiles": 23,
+        "elementNames": {
+          "PayloadBased": 16,
+          "database": 9,
+          "base-config": 7,
+          "databasePassword": 2,
+          "databaseUrl": 2,
+          "OSBaseLanguage": 1,
+          "base": 1,
+          "basearch": 1,
+          "basedOn": 1,
+          "includeBaseDirectory": 1
+        },
+        "elementNamespaces": {
+          "(no-namespace)": 33,
+          "http://maven.apache.org/POM/4.0.0": 4,
+          "https://www.phpmyadmin.net/some_doc_url/": 4
+        },
+        "attributeHits": 5650,
+        "attributeFiles": 178,
+        "attributeNames": {
+          "baseinstalldir": 3536,
+          "base": 1691,
+          "Base": 291,
+          "databaseDocumentationSuffixURL": 34,
+          "defaultDatabase": 26,
+          "dominant-baseline": 23,
+          "noIndentationBasedFolding": 16,
+          "baseline": 10,
+          "databases": 5,
+          "base-cell-address": 4,
+          "basedir": 3,
+          "baseline-shift": 2,
+          "databaseHandler": 2,
+          "defaultDataBase": 2,
+          "docbase": 2,
+          "base-stylesheet": 1,
+          "databaseRequired": 1,
+          "errorBaseline": 1
+        },
+        "attributeNamespaces": {
+          "http://pear.php.net/dtd/package-2.0": 3536,
+          "http://www.w3.org/2001/XMLSchema": 1652,
+          "(no-namespace)": 418,
+          "http://www.w3.org/2000/svg": 25,
+          "http://www.w3.org/2005/Atom": 11,
+          "urn:oasis:names:tc:opendocument:xmlns:table:1.0": 4,
+          "http://www.w3.org/1999/XSL/Format": 2,
+          "http://nwalsh.com/docbook/xsl/template/1.0": 1,
+          "https://getpsalm.org/schema/config": 1
+        },
+        "valueTokenHits": 5651,
+        "examples": [
+          "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml:76 ELEMENT <databaseUrl> ns=http://maven.apache.org/POM/4.0.0",
+          "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml:78 ELEMENT <databasePassword> ns=http://maven.apache.org/POM/4.0.0",
+          "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml:111 ELEMENT <databaseUrl> ns=http://maven.apache.org/POM/4.0.0",
+          "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml:119 ELEMENT <databasePassword> ns=http://maven.apache.org/POM/4.0.0",
+          "FSharp.Data/docs/data/po.xsd:54 ATTRIBUTE base=\"xs:positiveInteger\" on <restriction> ns=http://www.w3.org/2001/XMLSchema",
+          "FSharp.Data/docs/data/po.xsd:71 ATTRIBUTE base=\"xs:string\" on <restriction> ns=http://www.w3.org/2001/XMLSchema",
+          "FSharp.Data/tests/FSharp.Data.Tests/Data/po.xsd:54 ATTRIBUTE base=\"xs:positiveInteger\" on <restriction> ns=http://www.w3.org/2001/XMLSchema",
+          "FSharp.Data/tests/FSharp.Data.Tests/Data/po.xsd:71 ATTRIBUTE base=\"xs:string\" on <restriction> ns=http://www.w3.org/2001/XMLSchema"
+        ]
+      },
+      {
+        "id": "template",
+        "why": "CONTROL — XSLT's declared reusable unit",
+        "needles": [
+          "template"
+        ],
+        "elementHits": 12000,
+        "elementFiles": 612,
+        "elementNames": {
+          "template": 7823,
+          "apply-templates": 4169,
+          "templates": 8
+        },
+        "elementNamespaces": {
+          "http://www.w3.org/1999/XSL/Transform": 7769,
+          "(no-namespace)": 4193,
+          "http://nwalsh.com/xsl/documentation/1.0": 31,
+          "http://nwalsh.com/docbook/xsl/template/1.0": 3,
+          "&xsltns;": 2,
+          "http://www.w3.org/1999/XSL/TransformAlias": 2
+        },
+        "attributeHits": 0,
+        "attributeFiles": 0,
+        "attributeNames": {},
+        "attributeNamespaces": {},
+        "valueTokenHits": 0,
+        "examples": [
+          "Fake/src/legacy/Test.FAKECore/ConfigFiles/ConfigTransforms.xslt:5 ELEMENT <template> ns=http://www.w3.org/1999/XSL/Transform",
+          "Fake/src/legacy/Test.FAKECore/ConfigFiles/ConfigTransforms.xslt:9 ELEMENT <template> ns=http://www.w3.org/1999/XSL/Transform",
+          "Fake/src/legacy/Test.FAKECore/ConfigFiles/ConfigTransforms.xslt:13 ELEMENT <template> ns=http://www.w3.org/1999/XSL/Transform",
+          "Fake/src/legacy/Test.FAKECore/ConfigFiles/ConfigTransforms.xslt:15 ELEMENT <apply-templates> ns=http://www.w3.org/1999/XSL/Transform"
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "counts are a single sequential run; the lane measured that CONCURRENT parseFile calls lose whole FILES to WASM memory pressure (validation/m14/fixtures/xml/shared-parser-probe.mts), which is why this pass is single-threaded — a rerun must keep it single-threaded to be comparable",
+    "a family hit is a NAME, not a resolved relation: `use=\"required\"` in XSD and `<use xlink:href=\"#id\">` in SVG both land in the `use` family and mean different things. Resolution is the separate job of validation/m14/fixtures/xml/use-construct-census.mts",
+    "the attribute-name space is measured as SPELLED (raw name, including any prefix) and as LOCAL name; a vocabulary that encodes a relation in a prefixed name a reader would not guess is only found by the raw-name map, which is why both are reported"
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -31,7 +31,7 @@
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 0,\n      line = 8\n    },\n    start = {\n      character = 0,\n      line = 4\n    }\n  },\n  uri = \"file://$HOMEha",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 0,\n      line = 8\n    },\n    start = {\n      character = 0,\n      line = 4\n    }\n  },\n  uri = \"file:///home/isha",
       "name": "S6: definition resolves",
       "ok": true
     },
@@ -65,7 +65,7 @@
           "line": 4
         }
       },
-      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
+      "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
     },
     "documentSymbol": [
       {
@@ -197,7 +197,7 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\nglobal function greet(…)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type coverage for make; it returned nothing rather than a type)_\n\n**greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [all](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [all — main.mk:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [main.mk](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk:5](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D))_"
+        "value": "```\nglobal function greet(…)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type coverage for make; it returned nothing rather than a type)_\n\n**greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [all](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [all — main.mk:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [main.mk](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk:5](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D))_"
       },
       "data": {
         "provenance": {
@@ -223,7 +223,7 @@
           "evidenceTiers": [
             "structural"
           ],
-          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk",
           "freshnessStatus": "fresh",
           "indexedFileCount": 2,
           "lineEnd": 9,
@@ -277,7 +277,7 @@
             "line": 11
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
       },
       {
         "range": {
@@ -290,7 +290,7 @@
             "line": 4
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
       }
     ],
     "workspaceAbsence": []

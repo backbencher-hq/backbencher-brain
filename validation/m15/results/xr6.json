@@ -1,0 +1,20 @@
+{
+  "issue": "M15.XR",
+  "code": "xr6",
+  "tool": "bb_security",
+  "verified": true,
+  "checks": 125,
+  "passed": 125,
+  "failed": 0,
+  "positives": 105,
+  "negatives": 20,
+  "negativePassed": 20,
+  "defect": "A4/D",
+  "skipped": [],
+  "generatedAt": "2026-11-14T21:07:18.742Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:07:18.742Z",
+    "contentSha256": "4eb467e4b8c33597fa6e94c75bb3acf0d5c78059f8372d9e130b8ad1e3dcbd65"
+  }
+}

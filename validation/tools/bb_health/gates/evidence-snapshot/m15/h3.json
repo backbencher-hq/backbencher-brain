@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H3",
+  "code": "H3",
+  "tool": "bb_health",
+  "title": "cross-file per-language correctness",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-09-30T07:40:11.900Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T07:46:56.689Z",
+    "contentSha256": "f1f79eeef03b6256b11dc2698098e84b129b13b25e6f3df630c3581e9b74ba65"
+  }
+}

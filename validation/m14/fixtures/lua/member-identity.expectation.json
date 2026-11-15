@@ -1,0 +1,79 @@
+{
+  "fixtureId": "lua/member-identity",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-15, authored from the member-identity contract and from M49 W2's ruling ('a member's identity is its container, not its bare name'), not from the analyzer's output. A method's name is the FIELD and its owner is the RECEIVER, recorded once each; the full path is not the identity. The forbidden entries are the pre-fix behaviour, where the name was the path AND the owner was stored beside it, which made a call edge targeting `initialize` unjoinable to a declaration filed as `Buffer:initialize`. Line numbers are measured from the committed file, not asserted: the first version of this expectation carried 14/18/22/26 against a real 18/22/26/30, which is the same class of error as every other unmeasured claim in this lane's history.",
+  "expectSymbols": [
+    {
+      "name": "initialize",
+      "kind": "method",
+      "ownerName": "Buffer",
+      "comment": "LUA-15 contract 1: a colon method's name is the FIELD"
+    },
+    {
+      "name": "readUInt8",
+      "kind": "method",
+      "ownerName": "Buffer",
+      "comment": "LUA-15 contract 1 again, for the dot form"
+    },
+    {
+      "name": "new",
+      "kind": "method",
+      "ownerName": "M",
+      "comment": "a constructor-looking method is a member like any other"
+    },
+    {
+      "name": "plain",
+      "kind": "function",
+      "comment": "a function with no receiver has no owner"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Buffer:initialize",
+      "comment": "LUA-15 pre-fix: the PATH was filed as the name"
+    },
+    {
+      "name": "Buffer.readUInt8",
+      "comment": "LUA-15 pre-fix"
+    },
+    {
+      "name": "M.new",
+      "comment": "LUA-15 pre-fix"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Buffer",
+      "target": "initialize",
+      "line_number": 18
+    },
+    {
+      "type": "contains",
+      "from": "Buffer",
+      "target": "readUInt8",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "M",
+      "target": "new",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "plain",
+      "line_number": 30
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Buffer",
+      "target": "Buffer:initialize",
+      "comment": "LUA-15 pre-fix: owner AND path-as-name, so the container is stored twice"
+    }
+  ]
+}

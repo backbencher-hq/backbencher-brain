@@ -1,0 +1,18 @@
+@if $dark {
+  .dark { color: #fff; }
+} @else {
+  .light { color: #000; }
+}
+
+@each $key, $value in $palette {
+  .text-#{$key} { color: $value; }
+}
+
+@for $i from 1 through 3 {
+  .m-#{$i} { margin: 4px; }
+}
+
+.card {
+  @extend .btn;
+}
+.btn { color: red; }

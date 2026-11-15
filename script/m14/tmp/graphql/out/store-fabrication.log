@@ -1,0 +1,17 @@
+audited 18390 target-unresolved edges whose SOURCE FILE was readable
+skipped: 0 edges whose source file was not found in the corpus, 0 with no source symbol
+
+contains
+  dotted  both segments in file 36   owner missing 0   field missing 0
+  bare    present 0   MISSING 0
+  other   0
+references
+  dotted  both segments in file 0   owner missing 0   field missing 0
+  bare    present 13048   MISSING 0
+  other   0
+uses
+  dotted  both segments in file 1819   owner missing 0   field missing 0
+  bare    present 3487   MISSING 0
+  other   0
+
+samples of a target absent from its own source file:

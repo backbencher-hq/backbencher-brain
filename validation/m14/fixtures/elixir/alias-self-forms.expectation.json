@@ -1,0 +1,78 @@
+{
+  "expectSymbols": [
+    {
+      "name": "SelfAliasMod",
+      "kind": "module"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "SelfAliasMod"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "SelfAliasMod",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "SelfAliasMod",
+      "target": "SelfAliasMod.Sub"
+    },
+    {
+      "type": "references",
+      "from": "SelfAliasMod",
+      "target": "SelfAliasMod.Alpha"
+    },
+    {
+      "type": "references",
+      "from": "SelfAliasMod",
+      "target": "SelfAliasMod.Beta"
+    },
+    {
+      "type": "calls",
+      "from": "SelfAliasMod.run/0",
+      "target": "SelfAliasMod.Sub.go"
+    },
+    {
+      "type": "calls",
+      "from": "SelfAliasMod.run/0",
+      "target": "SelfAliasMod.Alpha.go"
+    },
+    {
+      "type": "contains",
+      "from": "SelfAliasMod",
+      "target": "run"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "SelfAliasMod",
+      "target": "__MODULE__.Sub"
+    },
+    {
+      "type": "references",
+      "from": "SelfAliasMod",
+      "target": "Sub"
+    },
+    {
+      "type": "references",
+      "from": "SelfAliasMod",
+      "target": "Alpha"
+    },
+    {
+      "type": "calls",
+      "from": "SelfAliasMod.run/0",
+      "target": "__MODULE__.Sub.go"
+    },
+    {
+      "type": "calls",
+      "from": "SelfAliasMod.run/0",
+      "target": "Sub.go"
+    }
+  ]
+}

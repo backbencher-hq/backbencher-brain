@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/module-surface-psb9.ps1",
+  "authoredFrom": "PS7/PS20/PS21/PS22 — the module surface: imports in, exports out. Authored 2026-09-26. PS7: the pre-wave import reader took the token after ANY `command_parameter` as the module's name, so `Import-Module Az.Accounts -ErrorAction Stop` stored TWO external module imports — `Az.Accounts` and `Stop`. PS20: `exports: []` was hard-coded, so a module's public API was invisible. PS21: `using` was listed in `FLOW_KEYWORDS`, which is where the pre-wave lane filtered it, so `using namespace System.IO` published nothing at all. PS22: only `#requires -Module` was read, so `#requires -Version 7.0` — the commonest form — published nothing. THE STRUCTURAL FINDING underneath all four: this grammar puts `command_argument_sep` BETWEEN a parameter and its value, so `command_elements` for `Import-Module -Name SqlServer -ErrorAction SilentlyContinue` is `[sep, command_parameter(-Name), sep, generic_token(SqlServer), sep, …]` and the value sits at i+3. Every `namedChild(i + 1)` read found a separator, so NO two-token parameter value was read anywhere in the language. A second gate was over-strict in the other direction: requiring a module argument to look like a PATH dropped every installed module, which is named bare (`Import-Module PoshRSJob`), while `Az.Accounts` survived only because a dot happens to match the extension regex.",
+  "expectSymbols": [
+    { "name": "module-surface-psb9.ps1", "kind": "module" },
+    { "name": "Get-Setting", "kind": "function", "ownerName": "module-surface-psb9.ps1" },
+    { "name": "Get-Internal", "kind": "function", "ownerName": "module-surface-psb9.ps1", "comment": "declared but NOT exported — the private half of the surface, and the row a reader needs to tell 'private' from 'absent'" }
+  ],
+  "expectImports": [
+    { "module": "Pester", "comment": "PS22: `#requires -Module Pester`" },
+    { "module": "System.IO", "comment": "PS21: `using namespace System.IO`" },
+    { "module": "./helpers.psm1", "comment": "PS21: `using module ./helpers.psm1`" },
+    { "module": "Az.Accounts", "comment": "PS7: the positional module name" },
+    { "module": "./relative.psm1", "comment": "a relative module path" },
+    { "module": "SqlServer", "comment": "PS7: the `-Name` TWO-TOKEN form. This is the row the i+1 read lost." },
+    { "module": "PoshRSJob", "comment": "PS7: an installed module, named BARE. A path-shape requirement dropped every one of these while letting `Az.Accounts` through on its dot." }
+  ],
+  "forbidImports": [
+    { "module": "Stop", "comment": "PRE-FIX SHAPE, PS7: `-ErrorAction Stop` — the switch argument's VALUE, published as an external module import. Measured on the pinned corpus at tools/packaging/packaging.psm1." },
+    { "module": "SilentlyContinue", "comment": "PRE-FIX SHAPE, PS7: the same class on the `-ErrorAction SilentlyContinue` line" },
+    { "module": "namespace" },
+    { "module": "module" },
+    { "module": "7.0", "comment": "a version requirement is a `references` row, not an import" }
+  ],
+  "expectExports": [
+    { "name": "Get-Setting" }
+  ],
+  "forbidExports": [
+    { "name": "Get-Internal", "comment": "PRE-FIX SHAPE: the module declared NO exports at all (`exports: []` was hard-coded), so a reader could not tell which of the two functions was public. FORBIDDING the private one is what makes the export surface a SURFACE — an export list naming everything would say nothing. (Two authoring errors here, both caught by the lane rather than by me: this entry was ALSO in `expectExports`, and both entries used the key `export`. The convention on these two channels is `name` — only `expectExportRanges` takes `export` — so a pin written the other way can never match. That second failure is what exposed a real harness defect alongside it: the two export matchers were hand-rolled every-field loops that did not skip the documentation fields, so a `comment` on a pin became a failing assertion. They now route through `matchConstraints` like every other channel.)" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "7.0", "line_number": 21, "meta.requiresVersion": true, "comment": "PS22: the declared minimum runtime" },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "Pester", "line_number": 22, "meta.import": true },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "System.IO", "line_number": 24, "meta.import": true },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "./helpers.psm1", "line_number": 25, "meta.import": true },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "Az.Accounts", "line_number": 27, "meta.import": true },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "./relative.psm1", "line_number": 28, "meta.import": true },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "SqlServer", "line_number": 29, "meta.import": true },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "PoshRSJob", "line_number": 30, "meta.import": true },
+    { "type": "contains", "from": "module-surface-psb9.ps1", "target": "Get-Setting", "line_number": 32 },
+    { "type": "contains", "from": "module-surface-psb9.ps1", "target": "Get-Internal", "line_number": 37 },
+    { "type": "exports", "from": "module-surface-psb9.ps1", "target": "Get-Setting", "line_number": 41, "meta.viaExportModuleMember": true, "comment": "PS20: the module's public surface. The `exports` edge satisfies the fixture runner's export invariant — every exported name must resolve to a top-level symbol — so a fabricated export fails the lane rather than passing quietly." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "references", "equals": 8, "comment": "seven module dependencies plus the version requirement. The pre-wave lane published 2 of the 7 dependencies (the two whose names happened to look like paths) and 0 exports." }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "using", "comment": "PRE-FIX SHAPE, PS21: `using` filtered as a flow keyword, so the directive produced nothing; before that it produced a call edge naming a keyword" },
+    { "type": "calls", "target": "namespace" },
+    { "type": "calls", "target": "module" },
+    { "type": "references", "from": "module-surface-psb9.ps1", "target": "Stop" },
+    { "type": "exports", "from": "module-surface-psb9.ps1", "target": "Get-Internal", "comment": "the private half of the surface" },
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "calls", "target": "global" }
+  ]
+}

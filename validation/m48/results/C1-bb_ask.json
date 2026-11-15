@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_ask.json",
+  "generatedAt": "2026-11-04T05:55:38.530Z",
+  "tools": [
+    "bb_ask"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 252,
+      "args": "{\"query\":\"what does join do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 22 other symbol(s) scored within the same margin of the best. The similarity numbers below se"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 222,
+      "args": "{\"query\":\"what does unwrap do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within the same margin of the best. The similarity numbers below se"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 158,
+      "args": "{\"query\":\"what does toDeepEqual do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 20 other symbol(s) scored within the same margin of the best. The similarity numbers below se"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 219,
+      "args": "{\"query\":\"what does is_newline do?\"}",
+      "outHead": "\"answer: Note: only 193 of 10,617 indexed symbols (2%) have embeddings in the space this query was compared in, so a symbol matching your question may be absent"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 236,
+      "args": "{\"query\":\"what does map do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 8 other symbol(s) scored within the same margin of the best. The similarity numbers below sep"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 22 other symbol(s) scored within t"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within t"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 20 other symbol(s) scored within t"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: only 193 of 10,617 indexed symbols (2%) have embeddings in the space this query was co"
+    },
+    {
+      "repo": "lodash",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 8 other symbol(s) scored within th"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_ask"
+    ]
+  }
+}

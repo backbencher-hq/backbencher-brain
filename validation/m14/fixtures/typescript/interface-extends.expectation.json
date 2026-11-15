@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/interface-extends",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Interface heritage parses as extends_type_clause (NOT extends_clause, which is the CLASS heritage node, and there is no 'extends' FIELD on interface_declaration). The old lookup missed both and returned undefined - every interface-inheritance edge silently vanished.",
+  "expectSymbols": [
+    { "name": "A", "kind": "interface" },
+    { "name": "B", "kind": "interface" },
+    { "name": "C", "kind": "interface" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "A", "target": "B" },
+    { "type": "extends", "from": "A", "target": "C" }
+  ]
+}

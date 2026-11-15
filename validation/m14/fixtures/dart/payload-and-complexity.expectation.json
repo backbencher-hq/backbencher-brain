@@ -1,0 +1,83 @@
+{
+  "fixtureId": "dart/payload-and-complexity",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "correction_2026_10_08_targets": "The `order_repository.dart` import target moved from the specifier to the FILE it names (`fixtures/dart/order_repository.dart`): a specifier is a path and no resolver can bind it to a symbol, while the named file now publishes that same string as its library identity, so the edge resolves by exact match. The `fixtures/dart/` prefix is the synthetic path the harness hands `analyze()` (it does not pass the real on-disk path); the corpus run passes real paths and the rule is the same. No such file exists in this fixture directory — the expectation is a ProxiCall-style SNIPPET and the pin is about the rule. The two `package:` imports above are deliberately NOT path-shaped: this checkout declares neither package, so the analyzer refuses and keeps the specifier, which is what keeps a dependency distinguishable from a broken edge.",
+  "correction_2026_10_08": "Two `calls` targets moved from the bare leaf to the published qualified name, because the receiver's type is a declaration this file makes: `_repository.getUserOrders()` (the field `_repository` is declared `OrderRepository`) is now `OrderRepository.getUserOrders`, and the bare `loadOrders()` inside `retry` is now `OrderCubit.loadOrders` (a call to the enclosing type's own member). Written only where the declaration is verifiable, so an unknown receiver keeps the bare leaf.",
+  "correction_2026_10_10": "THE RECEIVER-TYPE SPELLING here touches exactly the rows whose receiver's type is NAMED but not visible, and each keeps a claim. `apiClient.post(...)` becomes `ApiClient.post` (`ApiClient` is declared in another file, so no member table in this run can confirm it) and `apiClient.get(...)` likewise; `raw.fromJson(...)` becomes `Order.fromJson`; and `xs.length` becomes `List.length` for the SDK's own `List`. Every one carries `baseBeyondRunScope: <type>` — the declared cause, read by the gate only where the target names nothing, so none of them can buy a resolution. The superseded leaf shapes are forbidden below so the two conventions cannot both be live. This is NOT the 2026-10-08 rule (which spells only what this FILE declares); it is the census-priced spelling for names the run can point at but cannot verify, adopted 2026-10-10 with the DT-A consequence recorded in `dart/member-value-reads`.",
+  "rationale": "PINS the dart analyzer's relationship + payload surface on real ProxiCall-style architecture (cubit/bloc/repository): abstract repository contracts, concrete impls with implements, sealed cubit state hierarchies with extends chains, framework Cubit/Equatable heritage, mixin usage, extension members, constructor instantiates, calls from method bodies (leaf targets), override edges, imports (incl. package: and relative), per-symbol complexity (incl. try/catch), named/optional parameter flags, and private visibility. Authored as a .dart file BEFORE the analyzer's M14 wave run; expectations reflect the verified analyzer contract, not the analyzer's current output.",
+  "expectSymbols": [
+    { "name": "OrderRepository", "kind": "class", "isAbstract": true, "visibility": "public" },
+    { "name": "OrderRepositoryImpl", "kind": "class", "visibility": "public" },
+    { "name": "apiClient", "kind": "property", "ownerName": "OrderRepositoryImpl", "visibility": "public" },
+    { "name": "_repository", "kind": "property", "ownerName": "OrderCubit", "visibility": "private" },
+    { "name": "OrderState", "kind": "class", "visibility": "public", "isAbstract": true, "meta.isSealed": true },
+    { "name": "OrderInitial", "kind": "class", "visibility": "public" },
+    { "name": "OrderLoading", "kind": "class", "visibility": "public" },
+    { "name": "OrderLoaded", "kind": "class", "visibility": "public" },
+    { "name": "OrderError", "kind": "class", "visibility": "public" },
+    { "name": "OrderCubit", "kind": "class", "visibility": "public" },
+    { "name": "RepositoryLogger", "kind": "mixin", "visibility": "public" },
+    { "name": "OrderStateX", "kind": "extension", "visibility": "public" },
+    { "name": "loadOrders", "kind": "method", "ownerName": "OrderCubit" },
+    { "name": "describe", "kind": "method", "ownerName": "OrderState" },
+    { "name": "logCall", "kind": "method", "ownerName": "RepositoryLogger" },
+    { "name": "isLoaded", "kind": "property", "ownerName": "OrderStateX" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "OrderCubit" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "package:equatable/equatable.dart:*", "meta.evidenceClass": "import_based" },
+    { "type": "imports", "target": "package:flutter_bloc/flutter_bloc.dart:*", "meta.evidenceClass": "import_based" },
+    { "type": "imports", "target": "fixtures/dart/order_repository.dart", "meta.evidenceClass": "import_based" },
+    { "type": "implements", "source": "OrderRepositoryImpl", "target": "OrderRepository", "meta.isImplements": true, "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "OrderState", "target": "Equatable", "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "OrderInitial", "target": "OrderState", "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "OrderLoaded", "target": "OrderState", "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "OrderCubit", "target": "Cubit", "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "F6MockClient", "target": "FakeBase", "meta.evidenceClass": "structural" },
+    { "type": "implements", "source": "F6MockClient", "target": "Client", "meta.isImplements": true, "meta.evidenceClass": "structural" },
+    { "type": "implements", "source": "F6MockClient", "target": "Future", "meta.isImplements": true, "meta.evidenceClass": "structural" },
+    { "type": "mixes_in", "source": "OrderRepositoryImpl", "target": "RepositoryLogger", "meta.isMixin": true, "meta.evidenceClass": "structural", "comment": "2026-10-18 — canonical `mixes_in` replacing `uses{isMixin:true}`: a with-clause is a heritage clause and its evidence tier is structural." },
+    { "type": "contains", "source": "OrderCubit", "target": "OrderCubit._repository", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderRepository", "target": "OrderRepository.createOrder", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderState", "target": "OrderState.describe", "meta.evidenceClass": "structural" },
+    { "type": "overrides", "source": "OrderLoaded.props", "target": "OrderState.props", "meta.isOverride": true, "meta.evidenceClass": "structural" },
+    { "type": "calls", "source": "createOrder", "target": "ApiClient.post", "meta.qualifier": "chain", "meta.baseBeyondRunScope": "ApiClient", "meta.evidenceClass": "usage_contextual", "comment": "SPELLED 2026-10-10 — the receiver's declared type is named and lives in another file, so the target carries it and the claim records that this run could not look it up. Was `target: post`." },
+    { "type": "calls", "source": "getUserOrders", "target": "ApiClient.get", "meta.qualifier": "chain", "meta.baseBeyondRunScope": "ApiClient", "meta.evidenceClass": "usage_contextual", "comment": "SPELLED 2026-10-10, same shape — pinned from the run rather than assumed" },
+    { "type": "uses", "source": "getUserOrders", "target": "Order.fromJson", "meta.isMemberRead": true, "meta.qualifier": "head", "meta.baseBeyondRunScope": "Order", "meta.evidenceClass": "usage_contextual", "comment": "SPELLED 2026-10-10 — a MEMBER READ whose receiver type is named; the `uses` half of the same rule" },
+    { "type": "uses", "source": "run", "target": "List.length", "meta.isMemberRead": true, "meta.qualifier": "head", "meta.baseBeyondRunScope": "List", "meta.evidenceClass": "usage_contextual", "comment": "SPELLED 2026-10-10 — the SDK's own `List`, the class of receiver no index of THIS project can ever confirm" },
+    { "type": "uses", "source": "run", "target": "length", "meta.isMemberRead": true, "meta.receiverCause": "receiverTypeUnknown", "meta.baseBeyondRunScope": null, "meta.evidenceClass": "usage_contextual", "comment": "THE SAME MEMBER NAME, THE OTHER RECEIVER — added 2026-10-10 by the run's own dump, and it is the pin that keeps the two rows apart: `run` reads `length` on a receiver whose type the pass does not know (bare leaf, cut cause) AND on one it knows to be `List` (spelled, claim). A spelling that claimed every `length` read would make this row impossible, and the first version of this fixture FORBADE it — the runner refused, which is how the second receiver was found." },
+    { "type": "calls", "source": "loadOrders", "target": "emit", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "loadOrders", "target": "OrderRepository.getUserOrders", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "retry", "target": "OrderCubit.loadOrders", "meta.evidenceClass": "usage_contextual" },
+    { "type": "instantiates", "source": "loadOrders", "target": "OrderLoading", "meta.evidenceClass": "structural" },
+    { "type": "instantiates", "source": "loadOrders", "target": "OrderLoaded", "meta.evidenceClass": "structural" },
+    { "type": "instantiates", "source": "loadOrders", "target": "OrderError", "meta.evidenceClass": "structural" },
+    { "type": "instantiates", "source": "constructor", "target": "OrderInitial", "meta.evidenceClass": "structural" }
+  ],
+  "expectComplexity": [
+    { "symbol": "loadOrders", "min": 2, "max": 3 },
+    { "symbol": "createOrder", "equals": 1 },
+    { "symbol": "retry", "equals": 1 },
+    { "symbol": "describe", "equals": 4 }
+  ],
+  "expectParameters": [
+    { "symbol": "createOrder", "parameters": [{ "name": "businessId" }, { "name": "total", "type": "double", "isNamed": true }] },
+    { "symbol": "loadOrders", "parameters": [{ "name": "userId" }] },
+    { "symbol": "constructor", "ownerName": "OrderCubit", "parameters": [{ "name": "_repository" }] }
+  ],
+  "expectVisibility": [
+    { "symbol": "OrderRepositoryImpl", "visibility": "public" },
+    { "symbol": "_repository", "visibility": "private" },
+    { "symbol": "apiClient", "visibility": "public" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "print" },
+    { "type": "calls", "target": "assert" },
+    { "type": "calls", "source": "createOrder", "target": "post", "comment": "2026-10-10 — the superseded leaf shape for a named receiver type" },
+    { "type": "calls", "source": "getUserOrders", "target": "get", "comment": "2026-10-10 — same, so the two conventions cannot both be live" },
+    { "type": "extends", "target": "_iDart" },
+    { "type": "implements", "target": "_iIo" },
+    { "type": "implements", "target": "_iAsync" }
+  ]
+}

@@ -1,0 +1,2059 @@
+{
+  "instrument": "script/m14/tmp/make/render-census.mts",
+  "whatThisIs": "Render census for the renders ruling: a static whole-word probe of the pinned grammar's inventory with the renders vocabulary, plus a corpus count of the render-ISH shapes a make file carries (shell-spawned render tools, render-ish target names, render-ish variable names), over the whole gate-admitted make population.",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "membership": "gate's own admission (exts=[mk,mak,makefile,gnumakefile] + basename + router verdict), git ls-files, 1 MiB cap",
+    "admitted": 755,
+    "absent": 66,
+    "overCap": 0,
+    "walkFailed": 0,
+    "repos": 67
+  },
+  "grammarProbe": {
+    "source": "grammars/tree-sitter-make/src/node-types.json",
+    "declaredNamedTypes": 44,
+    "declaredAnonymousTokens": 91,
+    "declaredFieldNames": 24,
+    "vocabulary": [
+      "renders",
+      "render",
+      "renderer",
+      "template",
+      "templating",
+      "view",
+      "emit",
+      "emits",
+      "markup",
+      "html",
+      "jinja",
+      "mustache",
+      "placeholder",
+      "presentation"
+    ],
+    "predicate": "WHOLE-WORD equality; substring hits are candidates, never verdicts",
+    "namedTypes": {
+      "whole": [],
+      "sub": []
+    },
+    "anonymousTokens": {
+      "whole": [],
+      "sub": []
+    },
+    "fieldNames": {
+      "whole": [],
+      "sub": []
+    }
+  },
+  "renderIshShapes": {
+    "shellSpawnedRenderToolSites": 0,
+    "renderishTargetNames": 251,
+    "renderishVariableNames": 253
+  },
+  "perShellRenderSite": [],
+  "perRenderishTarget": [
+    {
+      "file": "Aqua.jl/Makefile",
+      "line": 28,
+      "name": "help"
+    },
+    {
+      "file": "Aqua.jl/Makefile",
+      "line": 13,
+      "name": "docs"
+    },
+    {
+      "file": "Aqua.jl/Makefile",
+      "line": 10,
+      "name": "changelog"
+    },
+    {
+      "file": "Aqua.jl/Makefile",
+      "line": 7,
+      "name": "docs-instantiate"
+    },
+    {
+      "file": "Documenter.jl/Makefile",
+      "line": 72,
+      "name": "help"
+    },
+    {
+      "file": "Documenter.jl/Makefile",
+      "line": 21,
+      "name": "changelog"
+    },
+    {
+      "file": "Documenter.jl/Makefile",
+      "line": 18,
+      "name": "docs-warn-only"
+    },
+    {
+      "file": "Documenter.jl/Makefile",
+      "line": 13,
+      "name": "docs"
+    },
+    {
+      "file": "Documenter.jl/Makefile",
+      "line": 10,
+      "name": "docs-instantiate"
+    },
+    {
+      "file": "cabal/Makefile",
+      "line": 348,
+      "name": "help-banner"
+    },
+    {
+      "file": "cabal/Makefile",
+      "line": 343,
+      "name": "help"
+    },
+    {
+      "file": "cloogle.org/backend/Makefile",
+      "line": 21,
+      "name": "man"
+    },
+    {
+      "file": "consul/Makefile",
+      "line": 639,
+      "name": "help"
+    },
+    {
+      "file": "consul/Makefile",
+      "line": 622,
+      "name": "gen-changelog"
+    },
+    {
+      "file": "consul/test-integ/Makefile",
+      "line": 41,
+      "name": "help"
+    },
+    {
+      "file": "cython/docs/Makefile",
+      "line": 14,
+      "name": "help"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 267,
+      "name": "swagger-docs"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 188,
+      "name": "help"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 63,
+      "name": "help"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 45,
+      "name": "swagger-docs"
+    },
+    {
+      "file": "docker/vendor/github.com/aws/smithy-go/Makefile",
+      "line": 129,
+      "name": "install-changelog"
+    },
+    {
+      "file": "docker/vendor/github.com/aws/smithy-go/Makefile",
+      "line": 122,
+      "name": "external-changelog"
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/go-cni/Makefile",
+      "line": 28,
+      "name": "help"
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/otelttrpc/Makefile",
+      "line": 121,
+      "name": "help"
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 162,
+      "name": "help"
+    },
+    {
+      "file": "docker/vendor/github.com/distribution/reference/Makefile",
+      "line": 24,
+      "name": "help"
+    },
+    {
+      "file": "docker/vendor/github.com/hashicorp/go-sockaddr/GNUmakefile",
+      "line": 52,
+      "name": "doc"
+    },
+    {
+      "file": "docker/vendor/github.com/hiddeco/sshsig/Makefile",
+      "line": 4,
+      "name": "help"
+    },
+    {
+      "file": "docker/vendor/github.com/mistifyio/go-zfs/v4/Makefile",
+      "line": 1,
+      "name": "help"
+    },
+    {
+      "file": "docker/vendor/github.com/munnerz/goautoneg/Makefile",
+      "line": 11,
+      "name": "docs"
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 659,
+      "name": "docs"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 227,
+      "name": "docs_logger"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 221,
+      "name": "docs_ex_unit"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 215,
+      "name": "docs_iex"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 209,
+      "name": "docs_mix"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 203,
+      "name": "docs_eex"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 197,
+      "name": "docs_elixir"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 195,
+      "name": "docs"
+    },
+    {
+      "file": "gh-cli/Makefile",
+      "line": 65,
+      "name": "site-docs"
+    },
+    {
+      "file": "gql-graphql-core/docs/Makefile",
+      "line": 12,
+      "name": "help"
+    },
+    {
+      "file": "gql-graphql-php/Makefile",
+      "line": 53,
+      "name": "docs"
+    },
+    {
+      "file": "gql-graphql-php/Makefile",
+      "line": 5,
+      "name": "help"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 6,
+      "name": "help"
+    },
+    {
+      "file": "hasura-engine/cli-ext/Makefile",
+      "line": 63,
+      "name": "help"
+    },
+    {
+      "file": "hasura-engine/dc-agents/Makefile",
+      "line": 6,
+      "name": "help"
+    },
+    {
+      "file": "hasura-engine/metadata-api-types/Makefile",
+      "line": 29,
+      "name": "help"
+    },
+    {
+      "file": "hasura-engine/server/Makefile",
+      "line": 13,
+      "name": "ci-docs"
+    },
+    {
+      "file": "hledger/examples/invoicing/pandoc-make-invoice/Makefile",
+      "line": 4,
+      "name": "help"
+    },
+    {
+      "file": "hledger/examples/reports/Makefile",
+      "line": 58,
+      "name": "html"
+    },
+    {
+      "file": "hledger/hledger/test/errors/Makefile",
+      "line": 30,
+      "name": "readme"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 514,
+      "name": "help"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 511,
+      "name": "help"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 514,
+      "name": "help"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 511,
+      "name": "help"
+    },
+    {
+      "file": "kubernetes/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 162,
+      "name": "help"
+    },
+    {
+      "file": "kubernetes/vendor/github.com/distribution/reference/Makefile",
+      "line": 24,
+      "name": "help"
+    },
+    {
+      "file": "kubernetes/vendor/github.com/munnerz/goautoneg/Makefile",
+      "line": 11,
+      "name": "docs"
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 478,
+      "name": "help"
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 247,
+      "name": "changelog"
+    },
+    {
+      "file": "nomad/terraform/gcp/Makefile",
+      "line": 3,
+      "name": "help"
+    },
+    {
+      "file": "nomad/terraform/gcp/Makefile",
+      "line": 2,
+      "name": "help"
+    },
+    {
+      "file": "nvim-treesitter/Makefile",
+      "line": 126,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/Makefile",
+      "line": 42,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/emulator/test/Makefile",
+      "line": 234,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/epmd/test/Makefile",
+      "line": 67,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/etc/unix/Makefile",
+      "line": 41,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/etc/win32/Makefile",
+      "line": 73,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/etc/win32/nsis/Makefile",
+      "line": 123,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/lib_src/yielding_c_fun/test/examples/sha256_erlang_nif/Makefile",
+      "line": 25,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/start_scripts/Makefile",
+      "line": 193,
+      "name": "docs"
+    },
+    {
+      "file": "otp/erts/test/Makefile",
+      "line": 79,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/asn1/c_src/Makefile",
+      "line": 114,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/asn1/src/Makefile",
+      "line": 126,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/asn1/test/Makefile",
+      "line": 160,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/common_test/proper_ext/Makefile",
+      "line": 70,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/common_test/test/Makefile",
+      "line": 127,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/compiler/src/Makefile",
+      "line": 158,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/compiler/test/Makefile",
+      "line": 264,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/crypto/src/Makefile",
+      "line": 78,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/crypto/test/Makefile",
+      "line": 46,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/debugger/priv/Makefile",
+      "line": 47,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/debugger/src/Makefile",
+      "line": 109,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/debugger/test/Makefile",
+      "line": 102,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/dialyzer/src/Makefile",
+      "line": 108,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/asn1/Makefile",
+      "line": 108,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/inets/Makefile",
+      "line": 151,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/mnesia/Makefile",
+      "line": 113,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 195,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 106,
+      "name": "help"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 90,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/edoc/bin/Makefile",
+      "line": 65,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/edoc/include/Makefile",
+      "line": 57,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/edoc/priv/Makefile",
+      "line": 56,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/edoc/src/Makefile",
+      "line": 80,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/edoc/test/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/eldap/src/Makefile",
+      "line": 86,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/eldap/test/Makefile",
+      "line": 75,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/erl_interface/src/Makefile",
+      "line": 36,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/erl_interface/test/Makefile",
+      "line": 67,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/et/examples/Makefile",
+      "line": 71,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/et/src/Makefile",
+      "line": 94,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/et/test/Makefile",
+      "line": 67,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/eunit/examples/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/eunit/src/Makefile",
+      "line": 108,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/eunit/test/Makefile",
+      "line": 72,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ftp/src/Makefile",
+      "line": 101,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ftp/test/Makefile",
+      "line": 185,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/examples/server_root/Makefile",
+      "line": 171,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/src/http_client/Makefile",
+      "line": 102,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/src/http_lib/Makefile",
+      "line": 98,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/src/http_server/Makefile",
+      "line": 142,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/src/inets_app/Makefile",
+      "line": 111,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/test/Makefile",
+      "line": 233,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/inets/test/httpd_test_data/server_root/Makefile",
+      "line": 168,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/jinterface/java_src/com/ericsson/otp/erlang/Makefile",
+      "line": 127,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/jinterface/test/Makefile",
+      "line": 69,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/kernel/examples/Makefile",
+      "line": 40,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/kernel/src/Makefile",
+      "line": 210,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/kernel/test/Makefile",
+      "line": 228,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/examples/simple/Makefile",
+      "line": 135,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 88,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 136,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 88,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 82,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 95,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 81,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 170,
+      "name": "help"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 152,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/mnesia/include/Makefile",
+      "line": 51,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/mnesia/src/Makefile",
+      "line": 118,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/mnesia/test/Makefile",
+      "line": 120,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/observer/src/Makefile",
+      "line": 149,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/observer/test/Makefile",
+      "line": 94,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/odbc/src/Makefile",
+      "line": 106,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/odbc/test/Makefile",
+      "line": 99,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/os_mon/src/Makefile",
+      "line": 76,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/os_mon/test/Makefile",
+      "line": 78,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/parsetools/src/Makefile",
+      "line": 77,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/parsetools/test/Makefile",
+      "line": 68,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/public_key/asn1/Makefile",
+      "line": 123,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/public_key/c_src/Makefile",
+      "line": 114,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/public_key/src/Makefile",
+      "line": 106,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/public_key/test/Makefile",
+      "line": 79,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/reltool/examples/Makefile",
+      "line": 70,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/reltool/src/Makefile",
+      "line": 80,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/reltool/test/Makefile",
+      "line": 70,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/runtime_tools/src/Makefile",
+      "line": 98,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/runtime_tools/test/Makefile",
+      "line": 76,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/sasl/examples/src/Makefile",
+      "line": 61,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/sasl/src/Makefile",
+      "line": 80,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/sasl/test/Makefile",
+      "line": 85,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/examples/ex1/Makefile",
+      "line": 80,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/examples/ex2/Makefile",
+      "line": 96,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/agent/Makefile",
+      "line": 53,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/manager/Makefile",
+      "line": 53,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 124,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 108,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 122,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 121,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/test/Makefile",
+      "line": 220,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 129,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssh/examples/Makefile",
+      "line": 68,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssh/src/Makefile",
+      "line": 159,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssh/test/Makefile",
+      "line": 132,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssl/examples/certs/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssl/examples/src/Makefile",
+      "line": 61,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssl/src/Makefile",
+      "line": 191,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/ssl/test/Makefile",
+      "line": 164,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/stdlib/examples/Makefile",
+      "line": 44,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/stdlib/src/Makefile",
+      "line": 202,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/stdlib/test/Makefile",
+      "line": 193,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/syntax_tools/examples/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/syntax_tools/src/Makefile",
+      "line": 90,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/syntax_tools/test/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/tftp/src/Makefile",
+      "line": 97,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/tftp/test/Makefile",
+      "line": 185,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/tools/emacs/Makefile",
+      "line": 65,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/tools/examples/Makefile",
+      "line": 54,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/tools/src/Makefile",
+      "line": 100,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/tools/test/Makefile",
+      "line": 82,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/examples/demo/Makefile",
+      "line": 83,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/examples/demo/Makefile",
+      "line": 75,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/examples/simple/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/examples/simple/Makefile",
+      "line": 44,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/examples/sudoku/Makefile",
+      "line": 52,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/examples/sudoku/Makefile",
+      "line": 44,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/wx/test/Makefile",
+      "line": 54,
+      "name": "docs"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 153,
+      "name": "docs"
+    },
+    {
+      "file": "otp/make/app_targets.mk",
+      "line": 33,
+      "name": "docs"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 142,
+      "name": "man"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 140,
+      "name": "html"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 118,
+      "name": "docs"
+    },
+    {
+      "file": "otp/make/otp_subdir.mk",
+      "line": 30,
+      "name": "docs"
+    },
+    {
+      "file": "otp/make/run_make.mk",
+      "line": 42,
+      "name": "docs"
+    },
+    {
+      "file": "otp/system/doc/top/Makefile",
+      "line": 79,
+      "name": "man_index.md"
+    },
+    {
+      "file": "packer/Makefile",
+      "line": 161,
+      "name": "help"
+    },
+    {
+      "file": "phpmyadmin/docs/Makefile",
+      "line": 150,
+      "name": "man"
+    },
+    {
+      "file": "phpmyadmin/docs/Makefile",
+      "line": 72,
+      "name": "html"
+    },
+    {
+      "file": "phpmyadmin/docs/Makefile",
+      "line": 24,
+      "name": "help"
+    },
+    {
+      "file": "pixie/Makefile",
+      "line": 107,
+      "name": "help"
+    }
+  ],
+  "perRenderishVar": [
+    {
+      "file": "boundary/Makefile",
+      "line": 397,
+      "name": "DEV_DOCKER_GOARCH"
+    },
+    {
+      "file": "boundary/Makefile",
+      "line": 396,
+      "name": "DEV_DOCKER_GOOS"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 62,
+      "name": "dockerized_tests"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 49,
+      "name": "PG_TAP_DOCKER_IMAGE"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 48,
+      "name": "PG_TAP_DOCKER_IMAGE_BASE"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 46,
+      "name": "POSTGRES_DOCKER_IMAGE"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 44,
+      "name": "POSTGRES_DOCKER_IMAGE_BASE"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 10,
+      "name": "DOCKER_ARGS"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 8,
+      "name": "PG_TAP_DOCKER_TAG"
+    },
+    {
+      "file": "boundary/internal/db/sqltest/Makefile",
+      "line": 6,
+      "name": "PG_DOCKER_TAG"
+    },
+    {
+      "file": "boundary/testing/dbtest/docker/Makefile",
+      "line": 17,
+      "name": "docker-load-buildxs"
+    },
+    {
+      "file": "boundary/testing/dbtest/docker/Makefile",
+      "line": 16,
+      "name": "docker-buildxs"
+    },
+    {
+      "file": "boundary/testing/dbtest/docker/Makefile",
+      "line": 15,
+      "name": "dockerfiles"
+    },
+    {
+      "file": "boundary/testing/dbtest/docker/Makefile",
+      "line": 6,
+      "name": "DOCKER_MIRROR?"
+    },
+    {
+      "file": "boundary/testing/dbtest/docker/Makefile",
+      "line": 4,
+      "name": "DOCKER_ARGS"
+    },
+    {
+      "file": "cabal/Cabal/Makefile",
+      "line": 22,
+      "name": "HADDOCK_STAMP"
+    },
+    {
+      "file": "cabal/Makefile",
+      "line": 249,
+      "name": "DOCKERARGS"
+    },
+    {
+      "file": "cabal/Makefile",
+      "line": 8,
+      "name": "DOCTEST"
+    },
+    {
+      "file": "cabal/doc/Makefile",
+      "line": 19,
+      "name": "SPHINX_HTML_OUTDIR"
+    },
+    {
+      "file": "cloogle.org/backend/Makefile",
+      "line": 4,
+      "name": "MAN"
+    },
+    {
+      "file": "consul/Makefile",
+      "line": 89,
+      "name": "TEST_DOCKER_RESOURCE_CONSTRAINTS"
+    },
+    {
+      "file": "consul/Makefile",
+      "line": 86,
+      "name": "TEST_DOCKER_RESOURCE_CONSTRAINTS"
+    },
+    {
+      "file": "consul/Makefile",
+      "line": 53,
+      "name": "DOCKER_BUILD_QUIET?"
+    },
+    {
+      "file": "cython/Demos/freeze/Makefile",
+      "line": 5,
+      "name": "RST2HTML"
+    },
+    {
+      "file": "cython/Makefile",
+      "line": 10,
+      "name": "MANYLINUX_IMAGES"
+    },
+    {
+      "file": "cython/Makefile",
+      "line": 9,
+      "name": "MANYLINUX_LDFLAGS"
+    },
+    {
+      "file": "cython/Makefile",
+      "line": 8,
+      "name": "MANYLINUX_CFLAGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 152,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 149,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 147,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 146,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 145,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 144,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 143,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 141,
+      "name": "DOCKER_RUN_DOCKER"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 119,
+      "name": "DOCKER_FLAGS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 116,
+      "name": "DOCKER_PORT_FORWARD"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 115,
+      "name": "DOCKER_IMAGE"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 113,
+      "name": "DOCKER_CONTAINER_NAME"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 109,
+      "name": "DOCKER_MOUNT"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 101,
+      "name": "DOCKER_MOUNT_CLI"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 100,
+      "name": "DOCKER_MOUNT_CACHE"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 98,
+      "name": "DOCKER_MOUNT"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 93,
+      "name": "DOCKER_MOUNT"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 92,
+      "name": "DOCKER_MOUNT"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 26,
+      "name": "DOCKER_ENVS"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 4,
+      "name": "DOCKER_GITCOMMIT"
+    },
+    {
+      "file": "docker/Makefile",
+      "line": 1,
+      "name": "DOCKER"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 27,
+      "name": "SWAGGER_DOCS_PORT"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 23,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 22,
+      "name": "DOCKER_BUILD_ARGS"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 20,
+      "name": "DOCKER_CONTAINER_NAME"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 18,
+      "name": "DOCKER_RUN"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 17,
+      "name": "DOCKER_FLAGS"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 15,
+      "name": "DOCKER_WORKDIR"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 13,
+      "name": "DOCKER_IMAGE"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 11,
+      "name": "DOCKER_MOUNT"
+    },
+    {
+      "file": "docker/api/Makefile",
+      "line": 5,
+      "name": "DOCKER"
+    },
+    {
+      "file": "docker/man/Makefile",
+      "line": 17,
+      "name": "man_section"
+    },
+    {
+      "file": "docker/man/Makefile",
+      "line": 10,
+      "name": "GO_MD2MAN"
+    },
+    {
+      "file": "docker/man/Makefile",
+      "line": 2,
+      "name": "mandir"
+    },
+    {
+      "file": "docker/vendor/github.com/aws/smithy-go/Makefile",
+      "line": 13,
+      "name": "REPOTOOLS_CMD_CHANGELOG"
+    },
+    {
+      "file": "docker/vendor/github.com/aws/smithy-go/Makefile",
+      "line": 12,
+      "name": "REPOTOOLS_CMD_GENERATE_CHANGELOG"
+    },
+    {
+      "file": "docker/vendor/github.com/aws/smithy-go/Makefile",
+      "line": 3,
+      "name": "RELEASE_MANIFEST_FILE"
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 27,
+      "name": "COMMANDS"
+    },
+    {
+      "file": "docker/vendor/github.com/docker/distribution/Makefile",
+      "line": 18,
+      "name": "COMMANDS"
+    },
+    {
+      "file": "docker/vendor/github.com/hashicorp/go-sockaddr/GNUmakefile",
+      "line": 4,
+      "name": "GOCOVERHTML?"
+    },
+    {
+      "file": "docker/vendor/github.com/moby/extensions/Makefile",
+      "line": 2,
+      "name": "DOCKER"
+    },
+    {
+      "file": "docker/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 98,
+      "name": "DOCKERPY"
+    },
+    {
+      "file": "docker/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 47,
+      "name": "VERIFYREADMES_FILES"
+    },
+    {
+      "file": "docker/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 46,
+      "name": "VERIFYREADMES"
+    },
+    {
+      "file": "docker/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 17,
+      "name": "DEPENDENCIES_DOCKERFILE"
+    },
+    {
+      "file": "docker/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 16,
+      "name": "DOCKER_USER"
+    },
+    {
+      "file": "docker/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 6,
+      "name": "ALL_DOCS"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 193,
+      "name": "DOCS_CONFIG"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 192,
+      "name": "DOCS_COMPILE"
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 8,
+      "name": "MAN_PREFIX"
+    },
+    {
+      "file": "gh-cli/Makefile",
+      "line": 88,
+      "name": "mandir"
+    },
+    {
+      "file": "hasura-engine/scripts/make/test-infrastructure.mk",
+      "line": 3,
+      "name": "PYTHON_TESTS_DOCKER_COMPOSE"
+    },
+    {
+      "file": "hasura-engine/scripts/make/test-infrastructure.mk",
+      "line": 2,
+      "name": "API_TESTS_PRO_DOCKER_COMPOSE"
+    },
+    {
+      "file": "hasura-engine/scripts/make/test-infrastructure.mk",
+      "line": 1,
+      "name": "API_TESTS_DOCKER_COMPOSE"
+    },
+    {
+      "file": "hasura-engine/server/Makefile",
+      "line": 10,
+      "name": "docs_output"
+    },
+    {
+      "file": "hasura-engine/server/lib/pg-client/Makefile",
+      "line": 6,
+      "name": "DOCKER_POSTGRES_DATABASE_URL"
+    },
+    {
+      "file": "hledger/examples/reports/Makefile",
+      "line": 36,
+      "name": "HTMLREPORTS"
+    },
+    {
+      "file": "hledger/hledger/shell-completion/Makefile",
+      "line": 32,
+      "name": "COMMANDS"
+    },
+    {
+      "file": "hledger/hledger/shell-completion/Makefile",
+      "line": 26,
+      "name": "PARSE_COMMANDS"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 473,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 453,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 383,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 360,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 38,
+      "name": "PRINT_HELP"
+    },
+    {
+      "file": "kubernetes/build/pause/Makefile",
+      "line": 68,
+      "name": "DOCKER_CLI_EXPERIMENTAL"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 473,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 453,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 383,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 360,
+      "name": "KUBE_BUILD_CONFORMANCE"
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 38,
+      "name": "PRINT_HELP"
+    },
+    {
+      "file": "kubernetes/staging/src/k8s.io/pod-security-admission/webhook/Makefile",
+      "line": 23,
+      "name": "IMAGE_DOCKERFILE"
+    },
+    {
+      "file": "kubernetes/test/conformance/image/Makefile",
+      "line": 25,
+      "name": "DOCKERIZED_OUTPUT_PATH"
+    },
+    {
+      "file": "kubernetes/test/images/Makefile",
+      "line": 17,
+      "name": "DOCKER_CERT_BASE_PATH"
+    },
+    {
+      "file": "kubernetes/test/images/windows/Makefile",
+      "line": 17,
+      "name": "DOCKER_CERT_PATH"
+    },
+    {
+      "file": "kubernetes/test/images/windows/Makefile",
+      "line": 16,
+      "name": "REMOTE_DOCKER_URL"
+    },
+    {
+      "file": "kubernetes/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 27,
+      "name": "COMMANDS"
+    },
+    {
+      "file": "kubernetes/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 98,
+      "name": "DOCKERPY"
+    },
+    {
+      "file": "kubernetes/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 47,
+      "name": "VERIFYREADMES_FILES"
+    },
+    {
+      "file": "kubernetes/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 46,
+      "name": "VERIFYREADMES"
+    },
+    {
+      "file": "kubernetes/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 17,
+      "name": "DEPENDENCIES_DOCKERFILE"
+    },
+    {
+      "file": "kubernetes/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 16,
+      "name": "DOCKER_USER"
+    },
+    {
+      "file": "kubernetes/vendor/go.opentelemetry.io/otel/Makefile",
+      "line": 6,
+      "name": "ALL_DOCS"
+    },
+    {
+      "file": "nlohmann-json/docs/docset/Makefile",
+      "line": 4,
+      "name": "MKDOCS_PAGES"
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 476,
+      "name": "HELP_FORMAT"
+    },
+    {
+      "file": "ohmyzsh/plugins/zsh-navigation-tools/Makefile",
+      "line": 6,
+      "name": "DOC_DIR?"
+    },
+    {
+      "file": "otp/lib/asn1/doc/users_guide/Makefile",
+      "line": 47,
+      "name": "HTML_FILES"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 120,
+      "name": "MISSING_SPEC_DOCUMENTED"
+    },
+    {
+      "file": "otp/lib/edoc/Makefile",
+      "line": 95,
+      "name": "DOC_OPTS"
+    },
+    {
+      "file": "otp/lib/edoc/Makefile",
+      "line": 94,
+      "name": "DOCDIR"
+    },
+    {
+      "file": "otp/lib/edoc/Makefile",
+      "line": 66,
+      "name": "HTML_FILES"
+    },
+    {
+      "file": "otp/lib/edoc/Makefile",
+      "line": 62,
+      "name": "EXTRA_HTML_FILES"
+    },
+    {
+      "file": "otp/lib/edoc/vsn.mk",
+      "line": 9,
+      "name": "EDOC_VSN"
+    },
+    {
+      "file": "otp/lib/eunit/Makefile",
+      "line": 56,
+      "name": "DOC_OPTS"
+    },
+    {
+      "file": "otp/lib/inets/examples/server_root/Makefile",
+      "line": 55,
+      "name": "HTDOCS_FILES"
+    },
+    {
+      "file": "otp/lib/inets/test/httpd_test_data/server_root/Makefile",
+      "line": 52,
+      "name": "HTDOCS_FILES"
+    },
+    {
+      "file": "otp/lib/jinterface/doc/Makefile",
+      "line": 37,
+      "name": "JAVADOC_DEST"
+    },
+    {
+      "file": "otp/lib/jinterface/doc/Makefile",
+      "line": 36,
+      "name": "JAVADOC_TITLE"
+    },
+    {
+      "file": "otp/lib/jinterface/doc/Makefile",
+      "line": 34,
+      "name": "JAVADOC_PKGS"
+    },
+    {
+      "file": "otp/lib/jinterface/doc/Makefile",
+      "line": 33,
+      "name": "JAVADOC"
+    },
+    {
+      "file": "otp/lib/jinterface/java_src/com/ericsson/otp/erlang/Makefile",
+      "line": 80,
+      "name": "JAVADOCFLAGS"
+    },
+    {
+      "file": "otp/lib/megaco/examples/meas/modules.mk",
+      "line": 38,
+      "name": "README"
+    },
+    {
+      "file": "otp/lib/mnesia/doc/misc/Makefile",
+      "line": 39,
+      "name": "HTML_FILES"
+    },
+    {
+      "file": "otp/lib/mnesia/test/Makefile",
+      "line": 70,
+      "name": "DocExamplesHrl"
+    },
+    {
+      "file": "otp/lib/mnesia/test/Makefile",
+      "line": 65,
+      "name": "DocExampleModules"
+    },
+    {
+      "file": "otp/lib/mnesia/test/Makefile",
+      "line": 63,
+      "name": "DocExamplesDir"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 113,
+      "name": "MANAGER_USM_ENGINE_ID"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 109,
+      "name": "MANAGER_ENGINE_ID"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 50,
+      "name": "MANAGER_CONFIG_SRCS"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/modules.mk",
+      "line": 39,
+      "name": "MANAGER_CONFIG_FILES"
+    },
+    {
+      "file": "otp/lib/stdlib/test/Makefile",
+      "line": 147,
+      "name": "DOCTEST_NATIVE_RECORDS_MARKDOWN"
+    },
+    {
+      "file": "otp/lib/stdlib/test/Makefile",
+      "line": 146,
+      "name": "DOCTEST_MARKDOWN"
+    },
+    {
+      "file": "otp/lib/syntax_tools/Makefile",
+      "line": 56,
+      "name": "DOC_OPTS"
+    },
+    {
+      "file": "otp/lib/tools/emacs/Makefile",
+      "line": 49,
+      "name": "README_FILES"
+    },
+    {
+      "file": "otp/lib/xmerl/doc/examples/Makefile",
+      "line": 24,
+      "name": "DOC_FILES"
+    },
+    {
+      "file": "otp/lib/xmerl/doc/examples/Makefile",
+      "line": 4,
+      "name": "HTML"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 183,
+      "name": "EDOC_PATHS"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 122,
+      "name": "DOC_TARGET_FILES"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 57,
+      "name": "EDOC_MODULES"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 47,
+      "name": "EDOC_APP"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 41,
+      "name": "DOCDIR"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 144,
+      "name": "MARKDOWN_TO_MAN"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 134,
+      "name": "HTML_DEPS?"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 131,
+      "name": "DOC_VSN"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 129,
+      "name": "DOC_VSN"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 112,
+      "name": "EX_DOC_WARNINGS_AS_ERRORS?"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 110,
+      "name": "DOC_TARGETS?"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 107,
+      "name": "DEFAULT_DOC_TARGETS+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 104,
+      "name": "DEFAULT_DOC_TARGETS+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 101,
+      "name": "DEFAULT_DOC_TARGETS+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 98,
+      "name": "DEFAULT_DOC_TARGETS+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 95,
+      "name": "DEFAULT_DOC_TARGETS+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 92,
+      "name": "DEFAULT_DOC_TARGETS+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 90,
+      "name": "DEFAULT_DOC_TARGETS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 76,
+      "name": "MAN7_PAGES"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 75,
+      "name": "MAN6_PAGES"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 74,
+      "name": "MAN4_PAGES"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 73,
+      "name": "MAN3_PAGES+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 72,
+      "name": "MAN3_PAGES+"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 71,
+      "name": "MAN3_PAGES"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 70,
+      "name": "MAN1_PAGES"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 69,
+      "name": "MAN7_DEPS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 68,
+      "name": "MAN6_DEPS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 67,
+      "name": "MAN3_DEPS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 65,
+      "name": "MAN4_DEPS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 62,
+      "name": "MAN3_DEPS_UNFILTERED?"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 61,
+      "name": "MAN1_DEPS?"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 58,
+      "name": "ERL_FILES_WITH_DOC"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 56,
+      "name": "ERL_FILES_WITH_DOC"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 47,
+      "name": "EX_DOC_FORMATS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 45,
+      "name": "EX_DOC_FORMATS"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 31,
+      "name": "RELSYS_MANDIR"
+    },
+    {
+      "file": "otp/make/doc.mk",
+      "line": 29,
+      "name": "RELSYS_HTMLDIR"
+    },
+    {
+      "file": "otp/system/doc/Makefile",
+      "line": 41,
+      "name": "HTML_DEPS"
+    },
+    {
+      "file": "otp/system/doc/Makefile",
+      "line": 32,
+      "name": "RELSYS_HTMLDIR"
+    },
+    {
+      "file": "otp/system/doc/Makefile",
+      "line": 28,
+      "name": "EX_DOC_VSN"
+    },
+    {
+      "file": "otp/system/doc/top/Makefile",
+      "line": 90,
+      "name": "HTML_DEPS"
+    },
+    {
+      "file": "otp/system/doc/top/Makefile",
+      "line": 43,
+      "name": "DOCUMENTATION"
+    },
+    {
+      "file": "otp/system/doc/top/Makefile",
+      "line": 34,
+      "name": "RELSYS_HTMLDIR"
+    },
+    {
+      "file": "otp/system/doc/top/Makefile",
+      "line": 33,
+      "name": "HTMLDIR"
+    },
+    {
+      "file": "pixie/tools/chef/Makefile",
+      "line": 21,
+      "name": "DOCKER"
+    },
+    {
+      "file": "pixie/tools/chef/Makefile",
+      "line": 18,
+      "name": "DOCKER_PROPERTIES_FILE"
+    },
+    {
+      "file": "pixie/tools/docker/Makefile",
+      "line": 23,
+      "name": "DOCKER_PROPERTIES_FILE"
+    },
+    {
+      "file": "pixie/tools/docker/Makefile",
+      "line": 18,
+      "name": "DOCKER"
+    },
+    {
+      "file": "redis/deps/lua/Makefile",
+      "line": 47,
+      "name": "TO_MAN"
+    },
+    {
+      "file": "redis/deps/lua/Makefile",
+      "line": 16,
+      "name": "INSTALL_MAN"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 566,
+      "name": "MANDIR"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 564,
+      "name": "MANDIR"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 555,
+      "name": "man1dir"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 554,
+      "name": "mandir"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 440,
+      "name": "MAN"
+    },
+    {
+      "file": "redis/modules/manifest.mk",
+      "line": 75,
+      "name": "manifest-ref-kind"
+    },
+    {
+      "file": "redis/modules/manifest.mk",
+      "line": 74,
+      "name": "manifest-ref"
+    },
+    {
+      "file": "redis/modules/manifest.mk",
+      "line": 73,
+      "name": "manifest-field"
+    }
+  ],
+  "walkFailedFiles": []
+}

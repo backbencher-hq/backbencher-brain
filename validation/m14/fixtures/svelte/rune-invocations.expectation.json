@@ -1,0 +1,110 @@
+{
+  "fixtureId": "svelte/rune-invocations",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Pins spec decisions D7 and D8, the two rulings this lane's template/script boundary was still waiting on. D8 (RULED): a template event handler and a render tag ARE call sites \u2014 `on:click={f}`, `on:submit={() => save()}`, `on:click={box.open}` and `{@render row(it)}` all emit `calls`, with a dotted target resolved to its LAST segment. That was already the behaviour; the ruling ratifies it and this row is the anchor. It also records the cross-family disagreement it creates, because the sibling vue lane emits NO calls for its equivalents (`@click=\"inc\"` and `@submit=\"save()\"` both produce nothing), so the two SFC siblings now differ on this and only on this. D7 (RULED, NEW BEHAVIOUR): a named function handed to a rune that INVOKES its argument is a call site. Before the ruling `$effect(fn)`, `$effect.pre(fn)`, `$effect.root(fn)`, `$effect.untracked(fn)` and `$derived.by(fn)` all emitted nothing, so a component's own graph could not show that it runs `fn` on every effect tick \u2014 the delegate sees the rune and correctly suppresses it, but the argument is an ordinary identifier and no edge was made for it. THE SET IS THE INVOKING HALF of the rune surface, and that split is the ruling rather than an implementation detail. `$derived(count)`, `$state(0)`, `$state.raw(v)`, `$bindable(v)`, `$props()` and `$inspect(v)` take a VALUE and never call it, so an edge there would point a call at an expression; `$effect.tracking()` takes no argument. Both halves are pinned below, because a rule stated only by its positives is a rule that grows. TWO SHAPES DELIBERATELY STAY SILENT. An arrow argument (`$effect(() => {...})`) is not a name and its body is already walked, so there is nothing to point at. A member argument (`$effect(memberFn.m)`) names a method the analyzer does not resolve here. `$myHelper(onEffect)` is a user-defined `$`-prefixed function, not a rune, and stays out \u2014 the same reason `isRuneCallee` refuses a bare `$` prefix, since a `$` prefix alone would swallow user functions. TWO ROWS BELOW COME FROM THE JS SUB-ANALYZER, not from this ruling, and are pinned because they are easy to misattribute: `calls inlineCall` at L17 is the INNER call of `$effect(inlineCall())` \u2014 which really is invoked, just not by the rune \u2014 and `calls $myHelper` at L22 is an ordinary call to a user function. The rune pass contributes neither. ONE CALLEE PER CALL SITE, deliberately: a downstream dedupe collapses repeated (source, target, type) pairs to a single edge, so two runes invoking the SAME function leave one row and the other call site becomes invisible. That is pre-existing shared behaviour and is recorded in the D7 decision rather than fixed here \u2014 but it would have made this fixture measure the dedupe instead of the ruling.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "basicEffect",
+      "line_number": 10,
+      "comment": "$effect(basicEffect) \u2014 the plain invoking rune"
+    },
+    {
+      "type": "calls",
+      "target": "preEffect",
+      "line_number": 11,
+      "comment": "$effect.pre(preEffect, preTeardown) \u2014 BOTH arguments are invoked, so both are call sites"
+    },
+    {
+      "type": "calls",
+      "target": "preTeardown",
+      "line_number": 11,
+      "comment": "the second argument of the two-arg form; a teardown is as much a call as the effect"
+    },
+    {
+      "type": "calls",
+      "target": "onRoot",
+      "line_number": 12,
+      "comment": "$effect.root(...)"
+    },
+    {
+      "type": "calls",
+      "target": "onUntracked",
+      "line_number": 13,
+      "comment": "$effect.untracked(...) \u2014 also in the invoking set, easy to forget"
+    },
+    {
+      "type": "calls",
+      "target": "byFn",
+      "line_number": 14,
+      "comment": "$derived.by(byFn) \u2014 a dotted rune, and the one that takes a function where plain $derived takes a value"
+    },
+    {
+      "type": "calls",
+      "target": "hostFn",
+      "line_number": 15,
+      "comment": "$host(hostFn)"
+    },
+    {
+      "type": "calls",
+      "target": "inlineCall",
+      "line_number": 17,
+      "comment": "from the js sub-analyzer, NOT the rune pass: the inner call of $effect(inlineCall())"
+    },
+    {
+      "type": "calls",
+      "target": "$myHelper",
+      "line_number": 22,
+      "comment": "from the js sub-analyzer: an ordinary call to a user $-prefixed function, which is not a rune"
+    },
+    {
+      "type": "calls",
+      "target": "onEffect",
+      "line_number": 25,
+      "comment": "D8: the template event handler, resolved from the template rather than the script"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "count",
+      "comment": "$derived(count) is a VALUE rune \u2014 count is read, never called. The read itself is already a `uses` edge, so the data flow is not lost by refusing the call."
+    },
+    {
+      "type": "calls",
+      "target": "open",
+      "comment": "$bindable(open) is a value rune"
+    },
+    {
+      "type": "calls",
+      "target": "doubled",
+      "comment": "$derived(count) assigned to a variable; the variable is read in the template, not called"
+    },
+    {
+      "type": "calls",
+      "target": "memberFn",
+      "comment": "$effect(memberFn.m) \u2014 a member argument is a method this lane does not resolve; naming the receiver would fabricate a call to a method that may not exist"
+    },
+    {
+      "type": "calls",
+      "target": "m",
+      "comment": "the member's own leaf, for the same reason"
+    },
+    {
+      "type": "calls",
+      "target": "obj",
+      "comment": "the receiver of the member argument"
+    },
+    {
+      "type": "calls",
+      "target": "$state",
+      "comment": "the rune itself is never a call target \u2014 it is framework plumbing, which is what the rune filter exists for"
+    },
+    {
+      "type": "calls",
+      "target": "$effect",
+      "comment": "same"
+    }
+  ]
+}

@@ -1,0 +1,3287 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-23T00:02:14.424Z",
+  "atCommit": "52cc5b09a48ed498871c0575a856bfb91a6e8d09",
+  "treeModifiedInputs": 43,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    },
+    "resolutionSelfTest": {
+      "selfNewIsUncheckable": true,
+      "selfClassNewIsUncheckable": true,
+      "bareNewIsUncheckable": true,
+      "wrongLineStillFails": true,
+      "unmarkedClaimIsNotExcused": true,
+      "writtenReceiverIsNotExcused": true
+    }
+  },
+  "mutation": {
+    "file": "csharp:powershell/src/System.Management.Automation/AssemblyInfo.cs",
+    "token": "Reflection",
+    "trueLine": 4,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "csharp": {
+      "files": 200,
+      "rels": 23924,
+      "withLine": 23558,
+      "noLine": 366,
+      "consistent": 23558,
+      "inconsistent": 0,
+      "notCheckable": 0
+    }
+  },
+  "sampleHash": {
+    "csharp": "e3b7d53f036e"
+  },
+  "samplePins": {
+    "csharp": [
+      {
+        "file": "powershell/src/System.Management.Automation/AssemblyInfo.cs",
+        "contentSha": "6c87b20a44ff"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/GlobalSuppressions.cs",
+        "contentSha": "9a56e0d244dc"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/logging/LogContext.cs",
+        "contentSha": "6f1fbfd1cd4b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/logging/LogProvider.cs",
+        "contentSha": "4c27624789fb"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/AliasProvider.cs",
+        "contentSha": "61bce5307a31"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ContainerProviderBase.cs",
+        "contentSha": "58cc17ee0510"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/CoreCommandContext.cs",
+        "contentSha": "0ddc1c6b052b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/DriveProviderBase.cs",
+        "contentSha": "6a0d3a662ac0"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/EnvironmentProvider.cs",
+        "contentSha": "4a98bd0484b5"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FileSystemContentStream.cs",
+        "contentSha": "bd44121ef7e4"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FileSystemProvider.cs",
+        "contentSha": "a536ca289c4f"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FileSystemSecurity.cs",
+        "contentSha": "974722a14914"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FunctionProvider.cs",
+        "contentSha": "15ecefc5f373"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IContentProvider.cs",
+        "contentSha": "71d8dcad5dd6"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IContentReader.cs",
+        "contentSha": "cb106a84b6d4"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IContentWriter.cs",
+        "contentSha": "195515779f80"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IDynamicPropertyProvider.cs",
+        "contentSha": "530eef766586"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IPermissionProvider.cs",
+        "contentSha": "b056df65a5f3"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IPropertiesProvider.cs",
+        "contentSha": "d94c59248427"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ItemProviderBase.cs",
+        "contentSha": "8bfe9500c191"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/LocationGlobber.cs",
+        "contentSha": "0f89b1612f94"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/NavigationProviderBase.cs",
+        "contentSha": "a87fd1122f8a"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/PathInfo.cs",
+        "contentSha": "9ab9615cc1c1"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ProviderBase.cs",
+        "contentSha": "9be4c9a1753b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ProviderBaseSecurity.cs",
+        "contentSha": "3371affc4d89"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ProviderDeclarationAttribute.cs",
+        "contentSha": "719be98b8701"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/RegistryProvider.cs",
+        "contentSha": "0d20cf69c5ba"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/RegistrySecurity.cs",
+        "contentSha": "9ba78ea0f3ff"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/RegistryWrapper.cs",
+        "contentSha": "cd6a8c62a78c"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/SessionStateProviderBase.cs",
+        "contentSha": "08acc4f664d6"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/StackInfo.cs",
+        "contentSha": "58a90f800936"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/VariableProvider.cs",
+        "contentSha": "c3311cc739b0"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/Win32Native.cs",
+        "contentSha": "d248abdc377f"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/Authenticode.cs",
+        "contentSha": "b34013a76831"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/CatalogHelper.cs",
+        "contentSha": "8447aa99c89e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/CredentialParameter.cs",
+        "contentSha": "8938fec3702e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/MshSignature.cs",
+        "contentSha": "371c569f63a9"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/SecureStringHelper.cs",
+        "contentSha": "e65136a65eda"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/SecurityManager.cs",
+        "contentSha": "f76f9a3e66d2"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/SecuritySupport.cs",
+        "contentSha": "4bbc123815cc"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/Win32Native/WinTrust.cs",
+        "contentSha": "40792ec76d8d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/nativeMethods.cs",
+        "contentSha": "09496748578d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/wldpNativeMethods.cs",
+        "contentSha": "8c75800940d0"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/singleshell/config/MshConsoleLoadException.cs",
+        "contentSha": "9ee7b1aae0e7"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/singleshell/config/MshSnapinInfo.cs",
+        "contentSha": "ceebafc1e5e4"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/singleshell/config/MshSnapinLoadException.cs",
+        "contentSha": "9f42a20d1d3e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ClrFacade.cs",
+        "contentSha": "0b3b83372598"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CommandDiscoveryExceptions.cs",
+        "contentSha": "8c0aa3fc6100"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CommandProcessorExceptions.cs",
+        "contentSha": "dcda8f23199b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CoreProviderCmdlets.cs",
+        "contentSha": "1e27b66f3cd0"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CryptoUtils.cs",
+        "contentSha": "d96bbb06b9f0"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/EncodingUtils.cs",
+        "contentSha": "4e1d3a11036d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ExecutionExceptions.cs",
+        "contentSha": "1af2f2ce4537"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ExtensionMethods.cs",
+        "contentSha": "f8ae7df2496b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/FormatAndTypeDataHelper.cs",
+        "contentSha": "e7a435a52a2e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/FuzzyMatch.cs",
+        "contentSha": "3b5349bd2d6d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/GraphicalHostReflectionWrapper.cs",
+        "contentSha": "6306a54a8936"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/HostInterfacesExceptions.cs",
+        "contentSha": "a02eeb112763"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/IObjectReader.cs",
+        "contentSha": "ca37106a731b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/IObjectWriter.cs",
+        "contentSha": "42bb62e7649f"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MetadataExceptions.cs",
+        "contentSha": "b00f0e52baa9"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshArgumentException.cs",
+        "contentSha": "db3d728739d8"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshArgumentNullException.cs",
+        "contentSha": "29f50e944d4a"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshArgumentOutOfRangeException.cs",
+        "contentSha": "5b50f7ac4069"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshInvalidOperationException.cs",
+        "contentSha": "4474e2505b9e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshNotImplementedException.cs",
+        "contentSha": "0d9783a94fe6"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshNotSupportedException.cs",
+        "contentSha": "34823b15ff58"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshObjectDisposedException.cs",
+        "contentSha": "3bc6bcb0cde2"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshTraceSource.cs",
+        "contentSha": "5fadab8603cc"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ObjectReader.cs",
+        "contentSha": "fc301f2b0590"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ObjectStream.cs",
+        "contentSha": "310961bf13f1"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ObjectWriter.cs",
+        "contentSha": "ea9b7782c029"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PInvokeDllNames.cs",
+        "contentSha": "b41189c3b1b0"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PSTelemetryMethods.cs",
+        "contentSha": "3cc7c9a508ac"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PSTelemetryWrapper.cs",
+        "contentSha": "04e729dcaee3"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ParameterBinderExceptions.cs",
+        "contentSha": "b6e6f3e68e6d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ParserException.cs",
+        "contentSha": "1a447732fc7d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PathUtils.cs",
+        "contentSha": "f7d206dff87d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PlatformInvokes.cs",
+        "contentSha": "352baeedc94b"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PowerShellETWTracer.cs",
+        "contentSha": "864501ef6432"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PowerShellExecutionHelper.cs",
+        "contentSha": "51fc3a646d10"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PsUtils.cs",
+        "contentSha": "ab860100b824"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ResourceManagerCache.cs",
+        "contentSha": "30a974c0ddc7"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/RuntimeException.cs",
+        "contentSha": "37582ca48cc4"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/SessionStateExceptions.cs",
+        "contentSha": "c31905a572b2"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/StringUtil.cs",
+        "contentSha": "2f92eaae6a9e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/StructuredTraceSource.cs",
+        "contentSha": "504b6a0763c9"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/Telemetry.cs",
+        "contentSha": "9c3f18d01766"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/VTUtils.cs",
+        "contentSha": "01f3988c39dc"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/Verbs.cs",
+        "contentSha": "bc01c2272427"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/WindowsDataCollectionSetting.cs",
+        "contentSha": "a65fa750417c"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/assert.cs",
+        "contentSha": "dbab9edccbbb"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwActivity.cs",
+        "contentSha": "812bee84eaa4"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwActivityReverter.cs",
+        "contentSha": "2bc7208d7cc5"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwActivityReverterMethodInvoker.cs",
+        "contentSha": "6dcb2af219fb"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwEventCorrelator.cs",
+        "contentSha": "b6788497370d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/IMethodInvoker.cs",
+        "contentSha": "55a00c1e8177"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/PSEtwLog.cs",
+        "contentSha": "85e260e7fb7e"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/PSEtwLogProvider.cs",
+        "contentSha": "816bec9a38c4"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/PSSysLogProvider.cs",
+        "contentSha": "5fbcc642823d"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/SysLogProvider.cs",
+        "contentSha": "c4747cf743d3"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/Tracing.cs",
+        "contentSha": "317f873c20d2"
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/TracingGen.cs",
+        "contentSha": "fffa2dd604fe"
+      },
+      {
+        "file": "powershell/src/TypeCatalogGen/TypeCatalogGen.cs",
+        "contentSha": "7261eb72e425"
+      },
+      {
+        "file": "powershell/src/powershell/Program.cs",
+        "contentSha": "28f5f433f042"
+      },
+      {
+        "file": "powershell/test/fuzzing/FuzzingApp/Program.cs",
+        "contentSha": "08c3ed45d021"
+      },
+      {
+        "file": "powershell/test/fuzzing/FuzzingApp/Target.cs",
+        "contentSha": "b385c4c99898"
+      },
+      {
+        "file": "powershell/test/hosting/test_HostingBasic.cs",
+        "contentSha": "d6690ab63a08"
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Categories.cs",
+        "contentSha": "70aa71508099"
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Engine.Compiler.cs",
+        "contentSha": "7a2c336fc6e3"
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Engine.Parser.cs",
+        "contentSha": "42d6a9368c8a"
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Engine.ScriptBlock.cs",
+        "contentSha": "5d4c41cb18b2"
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Program.cs",
+        "contentSha": "688a93fdcb1a"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/CommandLineOptions.cs",
+        "contentSha": "c82d34b69c93"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/DiffableDisassemblyExporter.cs",
+        "contentSha": "032f865889e8"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/ExclusionFilter.cs",
+        "contentSha": "74a75ae944b7"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/Extensions.cs",
+        "contentSha": "b64071913eb3"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/MandatoryCategoryValidator.cs",
+        "contentSha": "23f134ed5cea"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/PartitionFilter.cs",
+        "contentSha": "04dc818faf1b"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/PerfLabExporter.cs",
+        "contentSha": "bd07e5dac399"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/RecommendedConfig.cs",
+        "contentSha": "cc757b8e65eb"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/TooManyTestCasesValidator.cs",
+        "contentSha": "a67660f21069"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/UniqueArgumentsValidator.cs",
+        "contentSha": "894cbd33bf68"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/ValuesGenerator.cs",
+        "contentSha": "98899a4958d6"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Build.cs",
+        "contentSha": "68f10abfccac"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Counter.cs",
+        "contentSha": "16efa8eadfed"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/EnvironmentProvider.cs",
+        "contentSha": "3a124c335f0c"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/IEnvironment.cs",
+        "contentSha": "72e15599ac14"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Os.cs",
+        "contentSha": "f0fff102d55f"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Reporter.cs",
+        "contentSha": "fc92a44ec939"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Run.cs",
+        "contentSha": "475f13e76223"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Test.cs",
+        "contentSha": "d17be811eec1"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/ResultsComparer/CommandLineOptions.cs",
+        "contentSha": "e96557ef20ac"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/ResultsComparer/DataTransferContracts.cs",
+        "contentSha": "02f8ab3dcddf"
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/ResultsComparer/Program.cs",
+        "contentSha": "f35e375f27f8"
+      },
+      {
+        "file": "powershell/test/powershell/engine/ExperimentalFeature/assets/ExpTest/ExpTest.cs",
+        "contentSha": "4cbbb1f87a4e"
+      },
+      {
+        "file": "powershell/test/tools/NamedPipeConnection/src/code/NamedPipeConnection.cs",
+        "contentSha": "eb6cd8928f09"
+      },
+      {
+        "file": "powershell/test/tools/TestAlc/init/Init.cs",
+        "contentSha": "f2f903f42e0c"
+      },
+      {
+        "file": "powershell/test/tools/TestAlc/nested/NestedCommand.cs",
+        "contentSha": "8057799de19c"
+      },
+      {
+        "file": "powershell/test/tools/TestAlc/root/RootCommand.cs",
+        "contentSha": "0c8b5418f27a"
+      },
+      {
+        "file": "powershell/test/tools/TestExe/TestExe.cs",
+        "contentSha": "4f65c16d03a6"
+      },
+      {
+        "file": "powershell/test/tools/TestService/Program.cs",
+        "contentSha": "ee5d866c94ac"
+      },
+      {
+        "file": "powershell/test/tools/TestService/Service1.Designer.cs",
+        "contentSha": "4ca0efc5ad93"
+      },
+      {
+        "file": "powershell/test/tools/TestService/Service1.cs",
+        "contentSha": "44d608bd488f"
+      },
+      {
+        "file": "powershell/test/tools/UnixSocket/UnixSocket.cs",
+        "contentSha": "2f63717e0cb4"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/BrotliFilter.cs",
+        "contentSha": "c4fb55d3d5c8"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Constants.cs",
+        "contentSha": "69465d612d0e"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/AuthController.cs",
+        "contentSha": "a714c80e49a7"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/CertController.cs",
+        "contentSha": "340b0e79be40"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/CompressionController.cs",
+        "contentSha": "b3a237457dcd"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/DelayController.cs",
+        "contentSha": "04b9ef73a7f2"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/DosController.cs",
+        "contentSha": "e9c852e91d0f"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/EncodingController.cs",
+        "contentSha": "706e4b9c6e03"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/GetController.cs",
+        "contentSha": "f550ee5beb4f"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/HomeController.cs",
+        "contentSha": "f7d259ded7bd"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/LinkController.cs",
+        "contentSha": "905e8cb137f0"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/MultipartController.cs",
+        "contentSha": "d396a66ea22b"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/RedirectController.cs",
+        "contentSha": "af3393ec3010"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/ResponseController.cs",
+        "contentSha": "34815eb02fe9"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/ResponseHeadersController.cs",
+        "contentSha": "6760cf0e32fd"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/ResumeController.cs",
+        "contentSha": "fcfbd20017f4"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/RetryController.cs",
+        "contentSha": "273a82f8ff6a"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/DeflateFilter.cs",
+        "contentSha": "4ed15fc2ced9"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/GzipFilter.cs",
+        "contentSha": "dadcd6d03936"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Models/ErrorViewModel.cs",
+        "contentSha": "8afe2236528e"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Program.cs",
+        "contentSha": "4f2160325f9e"
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Startup.cs",
+        "contentSha": "228abb57e82d"
+      },
+      {
+        "file": "powershell/test/xUnit/AssemblyInfo.cs",
+        "contentSha": "1faf7b789ae4"
+      },
+      {
+        "file": "powershell/test/xUnit/Asserts/PriorityAttribute.cs",
+        "contentSha": "5cb3cde36f19"
+      },
+      {
+        "file": "powershell/test/xUnit/Asserts/PriorityOrderer.cs",
+        "contentSha": "8eaf101fece3"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/TestProgressRawUI.cs",
+        "contentSha": "2b0304b80add"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_ArgumentToVersionTransformationAttribute.cs",
+        "contentSha": "5714fb2cda72"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_AstDefaultVisit.cs",
+        "contentSha": "315fccae2256"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Binders.cs",
+        "contentSha": "4533723f8f1d"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CommandLineParser.cs",
+        "contentSha": "b71dc46bacee"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CompletionHelpers.cs",
+        "contentSha": "5ca1a11856dc"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CorePsPlatform.cs",
+        "contentSha": "5d4432dfc24c"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CryptoUtils.cs",
+        "contentSha": "52d870a15739"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_ExtensionMethods.cs",
+        "contentSha": "30616b480f3e"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Feedback.cs",
+        "contentSha": "6cf4defa998c"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_FileSystemProvider.cs",
+        "contentSha": "d5f3198469a9"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_MshSnapinInfo.cs",
+        "contentSha": "4300a12ba30f"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_NamedPipe.cs",
+        "contentSha": "50887b93fc4b"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_NativeInterop.cs",
+        "contentSha": "20656750febb"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PSConfiguration.cs",
+        "contentSha": "a15b99be243c"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PSObject.cs",
+        "contentSha": "098022794ecd"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PSVersionInfo.cs",
+        "contentSha": "bc8860233c9b"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PowerShellAPI.cs",
+        "contentSha": "181a6168e287"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Prediction.cs",
+        "contentSha": "2523b4dae749"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_ProgressNode.cs",
+        "contentSha": "7b2a5639a05e"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_RemoteHyperV.cs",
+        "contentSha": "5c0cab8d85fb"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Runspace.cs",
+        "contentSha": "824f290126b2"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_SecuritySupport.cs",
+        "contentSha": "3b321f57b8c1"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Serialization.cs",
+        "contentSha": "bb4403431044"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_SessionState.cs",
+        "contentSha": "da3616ccf583"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Subsystem.cs",
+        "contentSha": "f1cb55c80e17"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Utils.cs",
+        "contentSha": "b8804201c715"
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_WildcardPattern.cs",
+        "contentSha": "9615e58350af"
+      },
+      {
+        "file": "sqlite/tool/GetFile.cs",
+        "contentSha": "b5bce458cfd6"
+      },
+      {
+        "file": "sqlite/tool/Replace.cs",
+        "contentSha": "74ba0687a84c"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "csharp": {
+      "prev": "e3b7d53f036e",
+      "now": "e3b7d53f036e",
+      "same": true
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "csharp": [
+      {
+        "file": "powershell/src/System.Management.Automation/AssemblyInfo.cs",
+        "language": "csharp",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/GlobalSuppressions.cs",
+        "language": "csharp",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/logging/LogContext.cs",
+        "language": "csharp",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/logging/LogProvider.cs",
+        "language": "csharp",
+        "rels": 173,
+        "withLine": 171,
+        "noLine": 2,
+        "consistent": 171,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/AliasProvider.cs",
+        "language": "csharp",
+        "rels": 94,
+        "withLine": 93,
+        "noLine": 1,
+        "consistent": 93,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ContainerProviderBase.cs",
+        "language": "csharp",
+        "rels": 80,
+        "withLine": 80,
+        "noLine": 0,
+        "consistent": 80,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/CoreCommandContext.cs",
+        "language": "csharp",
+        "rels": 210,
+        "withLine": 204,
+        "noLine": 6,
+        "consistent": 204,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/DriveProviderBase.cs",
+        "language": "csharp",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/EnvironmentProvider.cs",
+        "language": "csharp",
+        "rels": 57,
+        "withLine": 56,
+        "noLine": 1,
+        "consistent": 56,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FileSystemContentStream.cs",
+        "language": "csharp",
+        "rels": 442,
+        "withLine": 435,
+        "noLine": 7,
+        "consistent": 435,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FileSystemProvider.cs",
+        "language": "csharp",
+        "rels": 2150,
+        "withLine": 2145,
+        "noLine": 5,
+        "consistent": 2145,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FileSystemSecurity.cs",
+        "language": "csharp",
+        "rels": 93,
+        "withLine": 93,
+        "noLine": 0,
+        "consistent": 93,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/FunctionProvider.cs",
+        "language": "csharp",
+        "rels": 98,
+        "withLine": 97,
+        "noLine": 1,
+        "consistent": 97,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IContentProvider.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IContentReader.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IContentWriter.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IDynamicPropertyProvider.cs",
+        "language": "csharp",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IPermissionProvider.cs",
+        "language": "csharp",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/IPropertiesProvider.cs",
+        "language": "csharp",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ItemProviderBase.cs",
+        "language": "csharp",
+        "rels": 63,
+        "withLine": 63,
+        "noLine": 0,
+        "consistent": 63,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/LocationGlobber.cs",
+        "language": "csharp",
+        "rels": 888,
+        "withLine": 887,
+        "noLine": 1,
+        "consistent": 887,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/NavigationProviderBase.cs",
+        "language": "csharp",
+        "rels": 179,
+        "withLine": 179,
+        "noLine": 0,
+        "consistent": 179,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/PathInfo.cs",
+        "language": "csharp",
+        "rels": 36,
+        "withLine": 35,
+        "noLine": 1,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ProviderBase.cs",
+        "language": "csharp",
+        "rels": 378,
+        "withLine": 378,
+        "noLine": 0,
+        "consistent": 378,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ProviderBaseSecurity.cs",
+        "language": "csharp",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/ProviderDeclarationAttribute.cs",
+        "language": "csharp",
+        "rels": 26,
+        "withLine": 25,
+        "noLine": 1,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/RegistryProvider.cs",
+        "language": "csharp",
+        "rels": 992,
+        "withLine": 992,
+        "noLine": 0,
+        "consistent": 992,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/RegistrySecurity.cs",
+        "language": "csharp",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/RegistryWrapper.cs",
+        "language": "csharp",
+        "rels": 196,
+        "withLine": 194,
+        "noLine": 2,
+        "consistent": 194,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/SessionStateProviderBase.cs",
+        "language": "csharp",
+        "rels": 292,
+        "withLine": 291,
+        "noLine": 1,
+        "consistent": 291,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/StackInfo.cs",
+        "language": "csharp",
+        "rels": 13,
+        "withLine": 12,
+        "noLine": 1,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/VariableProvider.cs",
+        "language": "csharp",
+        "rels": 77,
+        "withLine": 76,
+        "noLine": 1,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/namespaces/Win32Native.cs",
+        "language": "csharp",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/Authenticode.cs",
+        "language": "csharp",
+        "rels": 166,
+        "withLine": 166,
+        "noLine": 0,
+        "consistent": 166,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/CatalogHelper.cs",
+        "language": "csharp",
+        "rels": 318,
+        "withLine": 318,
+        "noLine": 0,
+        "consistent": 318,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/CredentialParameter.cs",
+        "language": "csharp",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/MshSignature.cs",
+        "language": "csharp",
+        "rels": 125,
+        "withLine": 121,
+        "noLine": 4,
+        "consistent": 121,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/SecureStringHelper.cs",
+        "language": "csharp",
+        "rels": 196,
+        "withLine": 195,
+        "noLine": 1,
+        "consistent": 195,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/SecurityManager.cs",
+        "language": "csharp",
+        "rels": 274,
+        "withLine": 273,
+        "noLine": 1,
+        "consistent": 273,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/SecuritySupport.cs",
+        "language": "csharp",
+        "rels": 530,
+        "withLine": 525,
+        "noLine": 5,
+        "consistent": 525,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/Win32Native/WinTrust.cs",
+        "language": "csharp",
+        "rels": 225,
+        "withLine": 222,
+        "noLine": 3,
+        "consistent": 222,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/nativeMethods.cs",
+        "language": "csharp",
+        "rels": 586,
+        "withLine": 586,
+        "noLine": 0,
+        "consistent": 586,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/security/wldpNativeMethods.cs",
+        "language": "csharp",
+        "rels": 283,
+        "withLine": 282,
+        "noLine": 1,
+        "consistent": 282,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/singleshell/config/MshConsoleLoadException.cs",
+        "language": "csharp",
+        "rels": 35,
+        "withLine": 32,
+        "noLine": 3,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/singleshell/config/MshSnapinInfo.cs",
+        "language": "csharp",
+        "rels": 414,
+        "withLine": 410,
+        "noLine": 4,
+        "consistent": 410,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/singleshell/config/MshSnapinLoadException.cs",
+        "language": "csharp",
+        "rels": 59,
+        "withLine": 52,
+        "noLine": 7,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ClrFacade.cs",
+        "language": "csharp",
+        "rels": 127,
+        "withLine": 126,
+        "noLine": 1,
+        "consistent": 126,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CommandDiscoveryExceptions.cs",
+        "language": "csharp",
+        "rels": 134,
+        "withLine": 120,
+        "noLine": 14,
+        "consistent": 120,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CommandProcessorExceptions.cs",
+        "language": "csharp",
+        "rels": 28,
+        "withLine": 22,
+        "noLine": 6,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CoreProviderCmdlets.cs",
+        "language": "csharp",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/CryptoUtils.cs",
+        "language": "csharp",
+        "rels": 330,
+        "withLine": 322,
+        "noLine": 8,
+        "consistent": 322,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/EncodingUtils.cs",
+        "language": "csharp",
+        "rels": 96,
+        "withLine": 95,
+        "noLine": 1,
+        "consistent": 95,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ExecutionExceptions.cs",
+        "language": "csharp",
+        "rels": 200,
+        "withLine": 153,
+        "noLine": 47,
+        "consistent": 153,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ExtensionMethods.cs",
+        "language": "csharp",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 45,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/FormatAndTypeDataHelper.cs",
+        "language": "csharp",
+        "rels": 86,
+        "withLine": 82,
+        "noLine": 4,
+        "consistent": 82,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/FuzzyMatch.cs",
+        "language": "csharp",
+        "rels": 20,
+        "withLine": 19,
+        "noLine": 1,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/GraphicalHostReflectionWrapper.cs",
+        "language": "csharp",
+        "rels": 93,
+        "withLine": 92,
+        "noLine": 1,
+        "consistent": 92,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/HostInterfacesExceptions.cs",
+        "language": "csharp",
+        "rels": 46,
+        "withLine": 36,
+        "noLine": 10,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/IObjectReader.cs",
+        "language": "csharp",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/IObjectWriter.cs",
+        "language": "csharp",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MetadataExceptions.cs",
+        "language": "csharp",
+        "rels": 92,
+        "withLine": 71,
+        "noLine": 21,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshArgumentException.cs",
+        "language": "csharp",
+        "rels": 29,
+        "withLine": 24,
+        "noLine": 5,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshArgumentNullException.cs",
+        "language": "csharp",
+        "rels": 29,
+        "withLine": 24,
+        "noLine": 5,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshArgumentOutOfRangeException.cs",
+        "language": "csharp",
+        "rels": 24,
+        "withLine": 19,
+        "noLine": 5,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshInvalidOperationException.cs",
+        "language": "csharp",
+        "rels": 29,
+        "withLine": 24,
+        "noLine": 5,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshNotImplementedException.cs",
+        "language": "csharp",
+        "rels": 22,
+        "withLine": 18,
+        "noLine": 4,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshNotSupportedException.cs",
+        "language": "csharp",
+        "rels": 22,
+        "withLine": 18,
+        "noLine": 4,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshObjectDisposedException.cs",
+        "language": "csharp",
+        "rels": 23,
+        "withLine": 19,
+        "noLine": 4,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/MshTraceSource.cs",
+        "language": "csharp",
+        "rels": 110,
+        "withLine": 110,
+        "noLine": 0,
+        "consistent": 110,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ObjectReader.cs",
+        "language": "csharp",
+        "rels": 200,
+        "withLine": 195,
+        "noLine": 5,
+        "consistent": 195,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ObjectStream.cs",
+        "language": "csharp",
+        "rels": 337,
+        "withLine": 334,
+        "noLine": 3,
+        "consistent": 334,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ObjectWriter.cs",
+        "language": "csharp",
+        "rels": 45,
+        "withLine": 43,
+        "noLine": 2,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PInvokeDllNames.cs",
+        "language": "csharp",
+        "rels": 126,
+        "withLine": 126,
+        "noLine": 0,
+        "consistent": 126,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PSTelemetryMethods.cs",
+        "language": "csharp",
+        "rels": 253,
+        "withLine": 252,
+        "noLine": 1,
+        "consistent": 252,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PSTelemetryWrapper.cs",
+        "language": "csharp",
+        "rels": 25,
+        "withLine": 24,
+        "noLine": 1,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ParameterBinderExceptions.cs",
+        "language": "csharp",
+        "rels": 129,
+        "withLine": 113,
+        "noLine": 16,
+        "consistent": 113,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ParserException.cs",
+        "language": "csharp",
+        "rels": 74,
+        "withLine": 61,
+        "noLine": 13,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PathUtils.cs",
+        "language": "csharp",
+        "rels": 278,
+        "withLine": 278,
+        "noLine": 0,
+        "consistent": 278,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PlatformInvokes.cs",
+        "language": "csharp",
+        "rels": 246,
+        "withLine": 238,
+        "noLine": 8,
+        "consistent": 238,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PowerShellETWTracer.cs",
+        "language": "csharp",
+        "rels": 469,
+        "withLine": 466,
+        "noLine": 3,
+        "consistent": 466,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PowerShellExecutionHelper.cs",
+        "language": "csharp",
+        "rels": 60,
+        "withLine": 59,
+        "noLine": 1,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/PsUtils.cs",
+        "language": "csharp",
+        "rels": 171,
+        "withLine": 170,
+        "noLine": 1,
+        "consistent": 170,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/ResourceManagerCache.cs",
+        "language": "csharp",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/RuntimeException.cs",
+        "language": "csharp",
+        "rels": 77,
+        "withLine": 71,
+        "noLine": 6,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/SessionStateExceptions.cs",
+        "language": "csharp",
+        "rels": 190,
+        "withLine": 153,
+        "noLine": 37,
+        "consistent": 153,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/StringUtil.cs",
+        "language": "csharp",
+        "rels": 73,
+        "withLine": 73,
+        "noLine": 0,
+        "consistent": 73,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/StructuredTraceSource.cs",
+        "language": "csharp",
+        "rels": 353,
+        "withLine": 348,
+        "noLine": 5,
+        "consistent": 348,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/Telemetry.cs",
+        "language": "csharp",
+        "rels": 204,
+        "withLine": 203,
+        "noLine": 1,
+        "consistent": 203,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/VTUtils.cs",
+        "language": "csharp",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/Verbs.cs",
+        "language": "csharp",
+        "rels": 436,
+        "withLine": 435,
+        "noLine": 1,
+        "consistent": 435,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/WindowsDataCollectionSetting.cs",
+        "language": "csharp",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 56,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/assert.cs",
+        "language": "csharp",
+        "rels": 43,
+        "withLine": 41,
+        "noLine": 2,
+        "consistent": 41,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwActivity.cs",
+        "language": "csharp",
+        "rels": 136,
+        "withLine": 129,
+        "noLine": 7,
+        "consistent": 129,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwActivityReverter.cs",
+        "language": "csharp",
+        "rels": 16,
+        "withLine": 15,
+        "noLine": 1,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwActivityReverterMethodInvoker.cs",
+        "language": "csharp",
+        "rels": 17,
+        "withLine": 16,
+        "noLine": 1,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/EtwEventCorrelator.cs",
+        "language": "csharp",
+        "rels": 26,
+        "withLine": 25,
+        "noLine": 1,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/IMethodInvoker.cs",
+        "language": "csharp",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/PSEtwLog.cs",
+        "language": "csharp",
+        "rels": 123,
+        "withLine": 122,
+        "noLine": 1,
+        "consistent": 122,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/PSEtwLogProvider.cs",
+        "language": "csharp",
+        "rels": 190,
+        "withLine": 189,
+        "noLine": 1,
+        "consistent": 189,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/PSSysLogProvider.cs",
+        "language": "csharp",
+        "rels": 201,
+        "withLine": 200,
+        "noLine": 1,
+        "consistent": 200,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/SysLogProvider.cs",
+        "language": "csharp",
+        "rels": 156,
+        "withLine": 155,
+        "noLine": 1,
+        "consistent": 155,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/Tracing.cs",
+        "language": "csharp",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/System.Management.Automation/utils/tracing/TracingGen.cs",
+        "language": "csharp",
+        "rels": 426,
+        "withLine": 424,
+        "noLine": 2,
+        "consistent": 424,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/TypeCatalogGen/TypeCatalogGen.cs",
+        "language": "csharp",
+        "rels": 194,
+        "withLine": 193,
+        "noLine": 1,
+        "consistent": 193,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/src/powershell/Program.cs",
+        "language": "csharp",
+        "rels": 106,
+        "withLine": 105,
+        "noLine": 1,
+        "consistent": 105,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/fuzzing/FuzzingApp/Program.cs",
+        "language": "csharp",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/fuzzing/FuzzingApp/Target.cs",
+        "language": "csharp",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/hosting/test_HostingBasic.cs",
+        "language": "csharp",
+        "rels": 143,
+        "withLine": 143,
+        "noLine": 0,
+        "consistent": 143,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Categories.cs",
+        "language": "csharp",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Engine.Compiler.cs",
+        "language": "csharp",
+        "rels": 44,
+        "withLine": 43,
+        "noLine": 1,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Engine.Parser.cs",
+        "language": "csharp",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Engine.ScriptBlock.cs",
+        "language": "csharp",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/benchmarks/Program.cs",
+        "language": "csharp",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/CommandLineOptions.cs",
+        "language": "csharp",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/DiffableDisassemblyExporter.cs",
+        "language": "csharp",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 60,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/ExclusionFilter.cs",
+        "language": "csharp",
+        "rels": 24,
+        "withLine": 22,
+        "noLine": 2,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/Extensions.cs",
+        "language": "csharp",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/MandatoryCategoryValidator.cs",
+        "language": "csharp",
+        "rels": 24,
+        "withLine": 23,
+        "noLine": 1,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/PartitionFilter.cs",
+        "language": "csharp",
+        "rels": 16,
+        "withLine": 15,
+        "noLine": 1,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/PerfLabExporter.cs",
+        "language": "csharp",
+        "rels": 64,
+        "withLine": 63,
+        "noLine": 1,
+        "consistent": 63,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/RecommendedConfig.cs",
+        "language": "csharp",
+        "rels": 71,
+        "withLine": 71,
+        "noLine": 0,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/TooManyTestCasesValidator.cs",
+        "language": "csharp",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/UniqueArgumentsValidator.cs",
+        "language": "csharp",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 41,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/BenchmarkDotNet.Extensions/ValuesGenerator.cs",
+        "language": "csharp",
+        "rels": 68,
+        "withLine": 68,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Build.cs",
+        "language": "csharp",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Counter.cs",
+        "language": "csharp",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/EnvironmentProvider.cs",
+        "language": "csharp",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/IEnvironment.cs",
+        "language": "csharp",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Os.cs",
+        "language": "csharp",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Reporter.cs",
+        "language": "csharp",
+        "rels": 122,
+        "withLine": 121,
+        "noLine": 1,
+        "consistent": 121,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Run.cs",
+        "language": "csharp",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/Reporting/Test.cs",
+        "language": "csharp",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/ResultsComparer/CommandLineOptions.cs",
+        "language": "csharp",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/ResultsComparer/DataTransferContracts.cs",
+        "language": "csharp",
+        "rels": 101,
+        "withLine": 101,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/perf/dotnet-tools/ResultsComparer/Program.cs",
+        "language": "csharp",
+        "rels": 228,
+        "withLine": 228,
+        "noLine": 0,
+        "consistent": 228,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/powershell/engine/ExperimentalFeature/assets/ExpTest/ExpTest.cs",
+        "language": "csharp",
+        "rels": 102,
+        "withLine": 102,
+        "noLine": 0,
+        "consistent": 102,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/NamedPipeConnection/src/code/NamedPipeConnection.cs",
+        "language": "csharp",
+        "rels": 202,
+        "withLine": 197,
+        "noLine": 5,
+        "consistent": 197,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestAlc/init/Init.cs",
+        "language": "csharp",
+        "rels": 39,
+        "withLine": 37,
+        "noLine": 2,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestAlc/nested/NestedCommand.cs",
+        "language": "csharp",
+        "rels": 21,
+        "withLine": 19,
+        "noLine": 2,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestAlc/root/RootCommand.cs",
+        "language": "csharp",
+        "rels": 16,
+        "withLine": 14,
+        "noLine": 2,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestExe/TestExe.cs",
+        "language": "csharp",
+        "rels": 81,
+        "withLine": 81,
+        "noLine": 0,
+        "consistent": 81,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestService/Program.cs",
+        "language": "csharp",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestService/Service1.Designer.cs",
+        "language": "csharp",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/TestService/Service1.cs",
+        "language": "csharp",
+        "rels": 9,
+        "withLine": 8,
+        "noLine": 1,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/UnixSocket/UnixSocket.cs",
+        "language": "csharp",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/BrotliFilter.cs",
+        "language": "csharp",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Constants.cs",
+        "language": "csharp",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/AuthController.cs",
+        "language": "csharp",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/CertController.cs",
+        "language": "csharp",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/CompressionController.cs",
+        "language": "csharp",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/DelayController.cs",
+        "language": "csharp",
+        "rels": 64,
+        "withLine": 64,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/DosController.cs",
+        "language": "csharp",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/EncodingController.cs",
+        "language": "csharp",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/GetController.cs",
+        "language": "csharp",
+        "rels": 43,
+        "withLine": 43,
+        "noLine": 0,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/HomeController.cs",
+        "language": "csharp",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/LinkController.cs",
+        "language": "csharp",
+        "rels": 67,
+        "withLine": 67,
+        "noLine": 0,
+        "consistent": 67,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/MultipartController.cs",
+        "language": "csharp",
+        "rels": 55,
+        "withLine": 54,
+        "noLine": 1,
+        "consistent": 54,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/RedirectController.cs",
+        "language": "csharp",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/ResponseController.cs",
+        "language": "csharp",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/ResponseHeadersController.cs",
+        "language": "csharp",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/ResumeController.cs",
+        "language": "csharp",
+        "rels": 69,
+        "withLine": 69,
+        "noLine": 0,
+        "consistent": 69,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Controllers/RetryController.cs",
+        "language": "csharp",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/DeflateFilter.cs",
+        "language": "csharp",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/GzipFilter.cs",
+        "language": "csharp",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Models/ErrorViewModel.cs",
+        "language": "csharp",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Program.cs",
+        "language": "csharp",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/tools/WebListener/Startup.cs",
+        "language": "csharp",
+        "rels": 45,
+        "withLine": 44,
+        "noLine": 1,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/AssemblyInfo.cs",
+        "language": "csharp",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/Asserts/PriorityAttribute.cs",
+        "language": "csharp",
+        "rels": 6,
+        "withLine": 5,
+        "noLine": 1,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/Asserts/PriorityOrderer.cs",
+        "language": "csharp",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/TestProgressRawUI.cs",
+        "language": "csharp",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_ArgumentToVersionTransformationAttribute.cs",
+        "language": "csharp",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_AstDefaultVisit.cs",
+        "language": "csharp",
+        "rels": 43,
+        "withLine": 42,
+        "noLine": 1,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Binders.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CommandLineParser.cs",
+        "language": "csharp",
+        "rels": 1235,
+        "withLine": 1235,
+        "noLine": 0,
+        "consistent": 1235,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CompletionHelpers.cs",
+        "language": "csharp",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CorePsPlatform.cs",
+        "language": "csharp",
+        "rels": 107,
+        "withLine": 107,
+        "noLine": 0,
+        "consistent": 107,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_CryptoUtils.cs",
+        "language": "csharp",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_ExtensionMethods.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Feedback.cs",
+        "language": "csharp",
+        "rels": 72,
+        "withLine": 70,
+        "noLine": 2,
+        "consistent": 70,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_FileSystemProvider.cs",
+        "language": "csharp",
+        "rels": 173,
+        "withLine": 172,
+        "noLine": 1,
+        "consistent": 172,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_MshSnapinInfo.cs",
+        "language": "csharp",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_NamedPipe.cs",
+        "language": "csharp",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_NativeInterop.cs",
+        "language": "csharp",
+        "rels": 75,
+        "withLine": 75,
+        "noLine": 0,
+        "consistent": 75,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PSConfiguration.cs",
+        "language": "csharp",
+        "rels": 626,
+        "withLine": 624,
+        "noLine": 2,
+        "consistent": 624,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PSObject.cs",
+        "language": "csharp",
+        "rels": 104,
+        "withLine": 104,
+        "noLine": 0,
+        "consistent": 104,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PSVersionInfo.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_PowerShellAPI.cs",
+        "language": "csharp",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Prediction.cs",
+        "language": "csharp",
+        "rels": 164,
+        "withLine": 162,
+        "noLine": 2,
+        "consistent": 162,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_ProgressNode.cs",
+        "language": "csharp",
+        "rels": 107,
+        "withLine": 107,
+        "noLine": 0,
+        "consistent": 107,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_RemoteHyperV.cs",
+        "language": "csharp",
+        "rels": 519,
+        "withLine": 518,
+        "noLine": 1,
+        "consistent": 518,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Runspace.cs",
+        "language": "csharp",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_SecuritySupport.cs",
+        "language": "csharp",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Serialization.cs",
+        "language": "csharp",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_SessionState.cs",
+        "language": "csharp",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Subsystem.cs",
+        "language": "csharp",
+        "rels": 258,
+        "withLine": 253,
+        "noLine": 5,
+        "consistent": 253,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_Utils.cs",
+        "language": "csharp",
+        "rels": 105,
+        "withLine": 105,
+        "noLine": 0,
+        "consistent": 105,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/test_WildcardPattern.cs",
+        "language": "csharp",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "sqlite/tool/GetFile.cs",
+        "language": "csharp",
+        "rels": 84,
+        "withLine": 84,
+        "noLine": 0,
+        "consistent": 84,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "sqlite/tool/Replace.cs",
+        "language": "csharp",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

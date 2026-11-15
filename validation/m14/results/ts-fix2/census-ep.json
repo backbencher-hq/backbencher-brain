@@ -1,0 +1,407 @@
+{
+  "at": "2026-10-05T12:25:38.286Z",
+  "lang": "typescript",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "filesAdmitted": 1210,
+  "filesParsed": 1210,
+  "filesFailed": 0,
+  "filesWithRelationships": 1115,
+  "totalSymbols": 14176,
+  "totalRelationships": 69801,
+  "population": {
+    "reposScanned": [
+      {
+        "repo": "element-plus",
+        "tracked": 2705,
+        "admitted": 1210,
+        "declaration": 8
+      }
+    ],
+    "trackedPathsSeen": 2705,
+    "droppedOverSizeCap": 0,
+    "droppedNotThisLanguage": 1495,
+    "admittedFiles": 1210,
+    "admittedAmbientDeclarationFiles": 8,
+    "admittedImplementationFiles": 1202,
+    "admittedTsxFiles": 141,
+    "admittedPlainTypescriptFiles": 1069,
+    "servedLanguageKeys": [
+      "typescript",
+      "tsx"
+    ],
+    "sizeCapBytes": 524288,
+    "filter": "element-plus"
+  },
+  "parseErrorFiles": [],
+  "fallbackFiles": [],
+  "types": {
+    "calls": {
+      "count": 47089,
+      "files": 779,
+      "fileListSample": [
+        "element-plus/docs/.vitepress/build/crowdin-generate.ts",
+        "element-plus/docs/.vitepress/build/generate-llms.ts",
+        "element-plus/docs/.vitepress/config/nav.ts",
+        "element-plus/docs/.vitepress/config/plugins.ts",
+        "element-plus/docs/.vitepress/config/analytics.ts",
+        "element-plus/docs/.vitepress/build/crowdin-credentials.ts",
+        "element-plus/docs/.vitepress/config/vite.ts",
+        "element-plus/docs/.vitepress/config/sidebars.ts",
+        "element-plus/docs/.vitepress/plugins/api-table.ts",
+        "element-plus/docs/.vitepress/plugins/external-link-icon.ts",
+        "element-plus/docs/.vitepress/plugins/demo.ts",
+        "element-plus/docs/.vitepress/plugins/component-changelog.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 8477,
+      "targetResolves": 2850,
+      "bothResolve": 732,
+      "emptyEndpoints": 0,
+      "selfLoops": 71,
+      "placeholderSourceEndpoints": 5,
+      "placeholderTargetEndpoints": 615,
+      "confidenceHistogram": {
+        "0.9": 47089
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 47089
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "crowdin-generate -> resolve",
+        "main -> resolve",
+        "main -> existsSync",
+        "main -> trace",
+        "main -> styleText"
+      ]
+    },
+    "uses": {
+      "count": 2533,
+      "files": 240,
+      "fileListSample": [
+        "element-plus/docs/.vitepress/config/sidebars.ts",
+        "element-plus/docs/.vitepress/plugins/demo.ts",
+        "element-plus/docs/.vitepress/plugins/component-changelog.ts",
+        "element-plus/docs/.vitepress/plugins/markdown-transform.ts",
+        "element-plus/docs/.vitepress/utils/changelog-parser.ts",
+        "element-plus/docs/.vitepress/utils/lang.ts",
+        "element-plus/docs/.vitepress/vitepress/components/demo/code-fold.ts",
+        "element-plus/docs/.vitepress/vitepress/composables/sidebar.ts",
+        "element-plus/docs/.vitepress/vitepress/composables/use-issue-count.ts",
+        "element-plus/docs/.vitepress/vitepress/composables/use-toc.ts",
+        "element-plus/docs/.vitepress/vitepress/composables/useDynamicClass.ts",
+        "element-plus/docs/.vitepress/vitepress/utils/colors.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 740,
+      "targetResolves": 469,
+      "bothResolve": 445,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 33,
+      "confidenceHistogram": {
+        "0.85": 567,
+        "0.9": 1966
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 2533
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "mapPrefix -> children",
+        "mapPrefix -> lang",
+        "mapPrefix -> prefix",
+        "mapPrefix -> item",
+        "mapPrefix -> link"
+      ]
+    },
+    "contains": {
+      "count": 2981,
+      "files": 279,
+      "fileListSample": [
+        "element-plus/docs/.vitepress/config/sponsors.ts",
+        "element-plus/docs/.vitepress/env.d.ts",
+        "element-plus/docs/.vitepress/config/sidebars.ts",
+        "element-plus/docs/.vitepress/plugins/demo.ts",
+        "element-plus/docs/.vitepress/utils/changelog-parser.ts",
+        "element-plus/docs/.vitepress/vitepress/components/demo/code-fold.ts",
+        "element-plus/docs/.vitepress/vitepress/composables/sidebar.ts",
+        "element-plus/docs/.vitepress/vitepress/composables/useDynamicClass.ts",
+        "element-plus/docs/.vitepress/vitepress/types.ts",
+        "element-plus/docs/components.d.ts",
+        "element-plus/internal/build/src/build-info.ts",
+        "element-plus/internal/metadata/src/contributor.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 2981,
+      "targetResolves": 2978,
+      "bothResolve": 2978,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 61,
+      "confidenceHistogram": {
+        "1": 2981
+      },
+      "evidenceClassHistogram": {
+        "structural": 2981
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "Sponsor -> url",
+        "Sponsor -> name_cn",
+        "Sponsor -> name",
+        "Sponsor -> slogan_cn",
+        "Sponsor -> slogan"
+      ]
+    },
+    "imports": {
+      "count": 8338,
+      "files": 1071,
+      "fileListSample": [
+        "element-plus/docs/.vitepress/build/crowdin-generate.ts",
+        "element-plus/docs/.vitepress/build/generate-llms.ts",
+        "element-plus/docs/.vitepress/config/nav.ts",
+        "element-plus/docs/.vitepress/config/plugins.ts",
+        "element-plus/docs/.vitepress/config/head.ts",
+        "element-plus/docs/.vitepress/build/crowdin-credentials.ts",
+        "element-plus/docs/.vitepress/config/vite.ts",
+        "element-plus/docs/.vitepress/env.d.ts",
+        "element-plus/docs/.vitepress/config/sidebars.ts",
+        "element-plus/docs/.vitepress/plugins/api-table.ts",
+        "element-plus/docs/.vitepress/plugins/external-link-icon.ts",
+        "element-plus/docs/.vitepress/plugins/demo.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 298,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 3,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 8338
+      },
+      "evidenceClassHistogram": {
+        "import_based": 8338
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "crowdin-generate -> fs:fs",
+        "crowdin-generate -> path:path",
+        "crowdin-generate -> util:styleText",
+        "crowdin-generate -> consola:consola",
+        "crowdin-generate -> @element-plus/build-utils:docRoot"
+      ]
+    },
+    "references": {
+      "count": 6208,
+      "files": 734,
+      "fileListSample": [
+        "element-plus/docs/.vitepress/build/crowdin-generate.ts",
+        "element-plus/docs/.vitepress/build/generate-llms.ts",
+        "element-plus/docs/.vitepress/config/plugins.ts",
+        "element-plus/docs/.vitepress/config/head.ts",
+        "element-plus/docs/.vitepress/config/sponsors.ts",
+        "element-plus/docs/.vitepress/config/vite.ts",
+        "element-plus/docs/.vitepress/config/sidebars.ts",
+        "element-plus/docs/.vitepress/plugins/api-table.ts",
+        "element-plus/docs/.vitepress/plugins/external-link-icon.ts",
+        "element-plus/docs/.vitepress/plugins/demo.ts",
+        "element-plus/docs/.vitepress/plugins/component-changelog.ts",
+        "element-plus/docs/.vitepress/plugins/markdown-transform.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 5101,
+      "targetResolves": 1663,
+      "bothResolve": 1601,
+      "emptyEndpoints": 0,
+      "selfLoops": 15,
+      "placeholderSourceEndpoints": 21,
+      "placeholderTargetEndpoints": 13,
+      "confidenceHistogram": {
+        "0.8": 806,
+        "0.95": 5402
+      },
+      "evidenceClassHistogram": {
+        "reference_qualified": 6208
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "main -> exists",
+        "main -> componentLocaleRoot",
+        "main -> traverseDir",
+        "docsIndex -> Array",
+        "mdPlugin -> MarkdownRenderer"
+      ]
+    },
+    "exports": {
+      "count": 2572,
+      "files": 677,
+      "fileListSample": [
+        "element-plus/docs/.vitepress/config/nav.ts",
+        "element-plus/docs/.vitepress/config/plugins.ts",
+        "element-plus/docs/.vitepress/config/analytics.ts",
+        "element-plus/docs/.vitepress/config/head.ts",
+        "element-plus/docs/.vitepress/config/features.ts",
+        "element-plus/docs/.vitepress/config/sponsors.ts",
+        "element-plus/docs/.vitepress/config/vite.ts",
+        "element-plus/docs/.vitepress/env.d.ts",
+        "element-plus/docs/.vitepress/config/sidebars.ts",
+        "element-plus/docs/.vitepress/plugins/api-table.ts",
+        "element-plus/docs/.vitepress/plugins/demo.ts",
+        "element-plus/docs/.vitepress/plugins/component-changelog.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 73,
+      "targetResolves": 2349,
+      "bothResolve": 73,
+      "emptyEndpoints": 0,
+      "selfLoops": 27,
+      "placeholderSourceEndpoints": 4,
+      "placeholderTargetEndpoints": 1,
+      "confidenceHistogram": {
+        "1": 2572
+      },
+      "evidenceClassHistogram": {
+        "structural": 2572
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "nav -> nav",
+        "plugins -> mdPlugin",
+        "analytics -> sendEvent",
+        "head -> head",
+        "features -> features"
+      ]
+    },
+    "extends": {
+      "count": 52,
+      "files": 41,
+      "fileListSample": [
+        "element-plus/packages/components/autocomplete/src/autocomplete.ts",
+        "element-plus/packages/components/cascader-panel/src/config.ts",
+        "element-plus/packages/components/cascader-panel/src/types.ts",
+        "element-plus/packages/components/cascader/src/cascader.ts",
+        "element-plus/packages/components/checkbox/src/checkbox-group.ts",
+        "element-plus/packages/components/checkbox/src/checkbox.ts",
+        "element-plus/packages/components/color-picker-panel/src/props/slider.ts",
+        "element-plus/packages/components/color-picker-panel/src/composables/use-slider.ts",
+        "element-plus/packages/components/color-picker/src/color-picker.ts",
+        "element-plus/packages/components/dialog/src/dialog.ts",
+        "element-plus/packages/components/drawer/src/drawer.ts",
+        "element-plus/packages/components/form/src/form.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 52,
+      "targetResolves": 7,
+      "bothResolve": 7,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 52
+      },
+      "evidenceClassHistogram": {
+        "structural": 52
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "AutocompleteProps -> InputProps",
+        "CascaderPanelProps -> CascaderCommonProps",
+        "CascaderOption -> Record",
+        "CascaderComponentProps -> CascaderCommonProps",
+        "CascaderComponentProps -> UseEmptyValuesProps"
+      ]
+    },
+    "implements": {
+      "count": 1,
+      "files": 1,
+      "fileListSample": [
+        "element-plus/packages/components/text/__tests__/text.test.tsx"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 1,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 1
+      },
+      "evidenceClassHistogram": {
+        "structural": 1
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "MockResizeObserver -> ResizeObserver"
+      ]
+    },
+    "overrides": {
+      "count": 0,
+      "files": 0,
+      "fileListSample": [],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 0,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {},
+      "evidenceClassHistogram": {},
+      "confidenceReasonHistogram": {},
+      "examples": []
+    },
+    "instantiates": {
+      "count": 27,
+      "files": 18,
+      "fileListSample": [
+        "element-plus/internal/build/src/plugins/supply-validator.ts",
+        "element-plus/internal/metadata/src/contributor.ts",
+        "element-plus/packages/components/button/src/button-custom.ts",
+        "element-plus/packages/components/cascader-panel/src/store.ts",
+        "element-plus/packages/components/cascader-panel/src/node.ts",
+        "element-plus/packages/components/color-picker-panel/src/composables/use-common-color.ts",
+        "element-plus/packages/components/color-picker-panel/src/composables/use-predefine.ts",
+        "element-plus/packages/components/color-picker-panel/src/utils/color.ts",
+        "element-plus/packages/components/config-provider/__tests__/config-provider.test.tsx",
+        "element-plus/packages/components/menu/src/use-menu-color.ts",
+        "element-plus/packages/components/menu/src/menu.ts",
+        "element-plus/packages/components/menu/src/utils/menu-bar.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 26,
+      "targetResolves": 8,
+      "bothResolve": 8,
+      "emptyEndpoints": 0,
+      "selfLoops": 1,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 25,
+        "0.95": 2
+      },
+      "evidenceClassHistogram": {
+        "structural": 27
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "extractPropsIndexesAndMergeProp -> Visitor",
+        "extractImportPropsStatements -> Visitor",
+        "handler -> MagicString",
+        "contributor -> Octokit",
+        "useButtonCustomStyle -> TinyColor"
+      ]
+    }
+  },
+  "notEmitted": [
+    "overrides"
+  ]
+}

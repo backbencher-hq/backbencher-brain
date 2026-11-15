@@ -1,0 +1,41 @@
+{
+  "fixtureId": "scala/mixin-trait-extends-trait",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A trait's own supertype list is the same composition construct: position 0 (Base) extends, further trait (Mixed) mixes_in.",
+  "expectSymbols": [
+    {
+      "name": "Derived"
+    },
+    {
+      "name": "Base"
+    },
+    {
+      "name": "Mixed"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Derived",
+      "target": "Mixed"
+    },
+    {
+      "type": "extends",
+      "from": "Impl",
+      "target": "Derived"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "Derived",
+      "target": "Mixed"
+    }
+  ]
+}

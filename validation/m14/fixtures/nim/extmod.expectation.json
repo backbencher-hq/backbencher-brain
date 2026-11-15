@@ -1,0 +1,7 @@
+{
+  "comment": "Support module for negative.nim's cross-file `calls` case: `externalHelper` must be a real declaration here AND a call target in negative.nim. Pinning the callee is what makes the caller's edge resolvable rather than dangling.",
+  "expectSymbols": [
+    { "name": "externalHelper", "kind": "function" }
+  ],
+  "forbidErrors": [{}]
+}

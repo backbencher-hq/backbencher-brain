@@ -1,0 +1,97 @@
+{
+  "fixtureId": "typescript/imports-computed-specifier",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "VERIFY_TS / M14. `stringContent` returns the first `string_fragment` of a template_string, which for a template with a substitution is the text BEFORE the first ${. Right answer to 'what is the literal part of this template', fabricated answer to 'what module does this file depend on'. Found by the lane's own independent oracle (script/lanes/typescript/ts-deriv-audit.ts over script/m14/oracles/typescript-imports-exports.ts, 198 git-tracked corpus files) as ANALYZER-ONLY imports rows: tools/scripts/tsc/generate-enums.ts -> `data:text/javascript;charset=utf-8,:*` and tsc/internal/stringutil/_scripts/generate-unicode-data.mts -> `/:*`. Both name no module in any resolution model. The NEGATIVE half matters as much as the positive: the guard is 'carries a substitution', NOT 'is a template', so a literal template and an ordinary string specifier are still published. Mutants: typescript/imports-computed-specifier-accepted, typescript/imports-template-rejected. The literal-TEMPLATE half is pinned with real backticks and no substitution, because the first version of this fixture used a plain string there and MUTANT B (reject EVERY template, an over-correction) SURVIVED against it. The guard is 'carries a substitution', and only a backtick literal can pin that.",
+  "expectSymbols": [
+    {
+      "name": "lazyComputed",
+      "kind": "function"
+    },
+    {
+      "name": "requireComputed",
+      "kind": "function"
+    },
+    {
+      "name": "importComputed",
+      "kind": "function"
+    },
+    {
+      "name": "lazyLiteral",
+      "kind": "function"
+    },
+    {
+      "name": "usesNamed",
+      "kind": "function"
+    },
+    {
+      "name": "lazyLiteralTemplate",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "imports-computed-specifier\u0000./literal-template.ts:*", "meta.localBinding": true
+    },
+    {
+      "type": "imports",
+      "target": "imports-computed-specifier\u0000./literal.ts:*", "meta.localBinding": true
+    },
+    {
+      "type": "imports",
+      "target": "helper"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "/:*"
+    },
+    {
+      "type": "imports",
+      "target": "data:text/javascript;charset=utf-8,:*"
+    },
+    {
+      "type": "imports",
+      "target": "${dir}/thing.ts:*"
+    },
+    {
+      "type": "imports",
+      "target": "${dir}/${entry}.js:*"
+    },
+    {
+      "type": "imports",
+      "target": "${dir}/side-effect.css:*"
+    },
+    {
+      "type": "imports",
+      "target": "thing.ts:*"
+    },
+    {
+      "type": "imports",
+      "target": "side-effect.css:*"
+    },
+    {
+      "type": "imports",
+      "target": "./literal-template.ts"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "imports",
+      "target": "imports-computed-specifier\u0000./literal-template.ts:*", "meta.localBinding": true,
+      "equals": 1
+    },
+    {
+      "type": "imports",
+      "target": "imports-computed-specifier\u0000./literal.ts:*", "meta.localBinding": true,
+      "equals": 1
+    },
+    {
+      "type": "imports",
+      "target": "helper",
+      "equals": 1
+    }
+  ]
+}

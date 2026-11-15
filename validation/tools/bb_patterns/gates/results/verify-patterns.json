@@ -1,0 +1,1 @@
+{"gate":"verify-patterns","command":"bun run script/verify-patterns.ts","exitCode":0,"durationMs":6900,"logSha256":"f922bf34fd4f594cb2bd78f7a4539be99a815523860427ddfb20358cce210ccc","log":"validation/tools/bb_patterns/gates/logs/verify-patterns.log","recordedAt":"2026-11-03T04:18:12Z"}

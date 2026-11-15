@@ -1,0 +1,64 @@
+{
+  "fixtureId": "svelte/reserved-svelte-namespace",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Pins the RESERVED-NAMESPACE ruling: the `svelte:` prefix names Svelte's own elements, only the eleven declared builtins exist, and an undeclared `svelte:*` is a compile error that cannot name a component. FOUND BY THE CONSTRUCT CENSUS'S TEMPLATE DIMENSION, and the finding is about the FINDING, not the fix. The corpus carries `<svelte:selfdestructive x=\"{x - 1}\"/>` in its own `compiler-errors/samples/svelte-selfdestructive/` \u2014 a deliberate near-miss of `svelte:self`, in a file the Svelte compiler REJECTS. The analyzer published `instantiates -> svelte:selfdestructive` and reported zero errors, because the grammar parses an unknown element name perfectly well. NO GATE COULD SEE IT. The F5 oracle's emit condition is `!ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name)`, and that name is in neither set either \u2014 so the oracle derived the SAME edge. Both sides agreed, the differential reported 0 missing and 0 unexplained, and the lane read clean. A shared-premise defect is strictly worse than an ordinary one precisely because the only gate that compares the two sides is blind to it by construction; that is the entire argument for a census that consults neither. Recorded as gap X4, owner the oracle. THE THREE ROWS THAT MATTER MOST ARE THE NEGATIVE ONES. `svelte:selfdestructive` is the corpus's own shape, so pinning it means the ruling cannot quietly narrow to a shape invented here. `svelte:bogus` is invented, so the rule is not fitted to one example. And every real component in the file is asserted PRESENT, because a rule that suppressed the whole `svelte:`-and-still-emitted-components neighbourhood would pass the forbids while destroying the lane \u2014 the same failure mode as the bare-leaf rune fix, which the census caught by probing in both directions.",
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "target": "Child",
+      "comment": "an ordinary component is still published \u2014 the ruling is about the RESERVED prefix, not about suppressing usage"
+    },
+    {
+      "type": "renders",
+      "target": "Panel"
+    },
+    {
+      "type": "renders",
+      "target": "Custom",
+      "comment": "never imported and never declared anywhere, and still a component: an unimported name is how a project references a global or a test double"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "target": "svelte:selfdestructive",
+      "comment": "the corpus's own near-miss of svelte:self, in a file the compiler rejects. Before the ruling this was published and reported zero errors, because the grammar parses an unknown element name fine."
+    },
+    {
+      "type": "renders",
+      "target": "svelte:bogus",
+      "comment": "an invented undeclared member of the reserved namespace \u2014 the rule cannot be fitted to one corpus example"
+    },
+    {
+      "type": "renders",
+      "target": "svelte:self",
+      "comment": "a DECLARED builtin: reserved AND handled, so still not a component"
+    },
+    {
+      "type": "renders",
+      "target": "svelte:component",
+      "comment": "declared builtin"
+    },
+    {
+      "type": "renders",
+      "target": "svelte:element",
+      "comment": "declared builtin"
+    },
+    {
+      "type": "renders",
+      "target": "svelte:head",
+      "comment": "declared builtin"
+    },
+    {
+      "type": "renders",
+      "target": "svelte:boundary",
+      "comment": "declared builtin, and the corpus's 6th most common construct at 187 occurrences"
+    },
+    {
+      "type": "renders",
+      "target": "div",
+      "comment": "an intrinsic HTML tag is never a component"
+    }
+  ]
+}

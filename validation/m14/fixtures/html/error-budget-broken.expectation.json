@@ -1,0 +1,33 @@
+{
+  "comment": "ERROR BUDGET, broken half, measured on the PRODUCTION path. One genuine ERROR node produces TWO rows here \u2014 the analyzer's own walk and the engine's, which both fire on `rootNode.hasError` and are merged at `engine.ts`. That duplication is pre-existing and belongs to the engine, not to this lane; the pin states the real production number rather than the analyzer-only one, because a fixture that pins a number the product never publishes is a fixture that cannot fail on a real regression. What this file exists to hold is the CAP: the pre-fix analyzer's walk was UNBOUNDED while the engine's is capped at 50, so a file with N broken constructs published up to 2N rows for N lines, and the two walks used different child sets so the duplication was not even reliably 2x. `expectErrorCount` exists because `expectErrors` is a >=1 match and cannot see two copies of one error at all.",
+  "expectErrorCount": [
+    {
+      "equals": 2,
+      "atMost": 2
+    }
+  ],
+  "expectErrors": [
+    {
+      "message": "Syntax ERROR detected. The Brain Engine is bypassing this broken node.",
+      "startLine": 8
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "error-budget-broken",
+      "kind": "module"
+    },
+    {
+      "name": "broken",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "error-budget-broken",
+      "target": "broken",
+      "line_number": 7
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t1-scale",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "startedAt": "2026-11-03T16:12:47.207Z",
+  "cases": [
+    {
+      "label": "T1 file mode: cold process, unchanged file (no-op)",
+      "arguments": {
+        "path": "t0000_document_highlight.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"t0000_document_highlight.ts\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 0,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"indexed\",\n  \"walCheckpointed\": true,\n  \"derived\": {\n    \"pass\": \"bounded\",\n    \"phases\": [\n      {\n        \"name\": \"relationships\",\n        \"ms\": 0,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 3,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 42,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"enrichment\",\n        \"ms\": 78,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"gravity\",\n        \"ms\": 17,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"taint\",\n        \"ms\": 19,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"health\",\n        \"ms\": 90,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"integrity\",\n        \"ms\": 15,\n        \"outcome\": \"ok\"\n      }\n    ],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 25,\n    \"resolvedStoredEdges\": 97,\n    \"stillUnresolvedInEdges\": 0,\n    \"healedZeroLines\": 0,\n    \"importResolvedInEdges\": 0\n  }\n}",
+      "ms": 10437
+    },
+    {
+      "label": "T1 file mode: unchanged run 2",
+      "arguments": {
+        "path": "t0000_document_highlight.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"t0000_document_highlight.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 19
+    },
+    {
+      "label": "T1 file mode: unchanged run 3",
+      "arguments": {
+        "path": "t0000_document_highlight.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"t0000_document_highlight.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 16
+    },
+    {
+      "label": "T1 file mode: unchanged run 4",
+      "arguments": {
+        "path": "t0000_document_highlight.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"t0000_document_highlight.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 15
+    },
+    {
+      "label": "T1 file mode: unchanged run 5",
+      "arguments": {
+        "path": "t0000_document_highlight.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"t0000_document_highlight.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 17
+    },
+    {
+      "label": "T1 dir mode: settled tree run 1",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 96,\n  \"processed\": 96,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 0,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"indexed\",\n  \"walCheckpointed\": true\n}",
+      "ms": 42184
+    },
+    {
+      "label": "T1 dir mode: settled tree run 2",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true,\n  \"outcome\": \"no-op\",\n  \"reason\": \"no change detected under the requested directory (mtime+size comparison; the walk applies the indexer's own skip rules)\"\n}",
+      "ms": 210
+    },
+    {
+      "label": "T1 post mode run 1",
+      "arguments": {
+        "path": ".",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \".\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 4692,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 3485,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 471,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 59,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 31,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 267,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 8,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 549,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 9700,\n  \"integrityHealth\": 92\n}",
+      "ms": 9743
+    },
+    {
+      "label": "T1 post mode run 2",
+      "arguments": {
+        "path": ".",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \".\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 1820,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 1300,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 231,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 89,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 25,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 160,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 5,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 244,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 3886,\n  \"integrityHealth\": 92\n}",
+      "ms": 3923
+    }
+  ],
+  "stderr": "[INFO] [11:13:02] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [11:13:08] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [11:13:10] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"e14418bd\",\"danglingSources\":27,\"totalRelationships\":99}\n[INFO] [11:13:10] [project-health] project health computed {\"projectId\":\"e14418bd4ed8a28eff5228810205aa7174425377\",\"complexityScore\":0,\"maintainabilityScore\":76,\"techDebtScore\":95,\"codeQualityScore\":57,\"languages\":1,\"bottlenecks\":1}\n[INFO] [11:13:13] [parallel-indexer] worker pool fork test passed — using parallel workers\n[WARN] [11:13:25] [parallel-indexer] parent event loop was blocked {\"ms\":1890,\"stalledTotalMs\":1890}\n[WARN] [11:13:29] [parallel-indexer] parent event loop was blocked {\"ms\":1128,\"stalledTotalMs\":3018}\n[INFO] [11:13:43] [parallel-indexer] worker pool complete {\"files\":96,\"workers\":7,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":3018}\n[WARN] [11:13:48] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"e14418bd\",\"danglingSources\":2502,\"totalRelationships\":17068}\n[INFO] [11:13:52] [project-health] project health computed {\"projectId\":\"e14418bd4ed8a28eff5228810205aa7174425377\",\"complexityScore\":59,\"maintainabilityScore\":0,\"techDebtScore\":0,\"codeQualityScore\":20,\"languages\":1,\"bottlenecks\":20}\n[WARN] [11:13:57] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"e14418bd\",\"danglingSources\":2502,\"totalRelationships\":17068}\n[INFO] [11:14:01] [project-health] project health computed {\"projectId\":\"e14418bd4ed8a28eff5228810205aa7174425377\",\"complexityScore\":59,\"maintainabilityScore\":0,\"techDebtScore\":0,\"codeQualityScore\":20,\"languages\":1,\"bottlenecks\":20}\n[WARN] [11:14:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"e14418bd\",\"danglingSources\":2502,\"totalRelationships\":17068}\n[INFO] [11:14:06] [project-health] project health computed {\"projectId\":\"e14418bd4ed8a28eff5228810205aa7174425377\",\"complexityScore\":59,\"maintainabilityScore\":0,\"techDebtScore\":0,\"codeQualityScore\":20,\"languages\":1,\"bottlenecks\":20}\n",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1654,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project root or a directory inside it whose derived phases should be re-run (a file path is refused). REQUIRED in every mode and checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T16:14:10.442Z"
+}

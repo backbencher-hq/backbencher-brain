@@ -30,7 +30,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
     },
     "file": {
       "type": "string",
-      "description": "exact indexed project-relative or absolute path of the root symbol. When set, the resolver requires an exact symbol name in that file."
+      "description": "Exact indexed project-relative or absolute file path for disambiguating the root symbol. With this option, the symbol must match by name within that file."
     },
     "maxDepth": {
       "type": "number",

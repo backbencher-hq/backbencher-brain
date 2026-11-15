@@ -8,18 +8,18 @@
 process.env.BB_EMBEDDING_BATCH_LIMIT = "0"
 
 const repos = {
-  mojo: "$HOME/fixtures/repositories/mojo",
-  powershell: "$HOME/fixtures/repositories/powershell",
-  phpunit: "$HOME/fixtures/repositories/phpunit",
-  luarocks: "$HOME/fixtures/repositories/luarocks",
-  dplyr: "$HOME/fixtures/repositories/dplyr",
-  terraform: "$HOME/fixtures/repositories/terraform",
-  graphql_js: "$HOME/fixtures/repositories/graphql-js",
-  vue_core: "$HOME/fixtures/repositories/vue-core",
+  mojo: "/home/ishaq2321/bb_tests/repositories/mojo",
+  powershell: "/home/ishaq2321/bb_tests/repositories/powershell",
+  phpunit: "/home/ishaq2321/bb_tests/repositories/phpunit",
+  luarocks: "/home/ishaq2321/bb_tests/repositories/luarocks",
+  dplyr: "/home/ishaq2321/bb_tests/repositories/dplyr",
+  terraform: "/home/ishaq2321/bb_tests/repositories/terraform",
+  graphql_js: "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  vue_core: "/home/ishaq2321/bb_tests/repositories/vue-core",
   // SQL corpus: ProxiCall is the only real SQL corpus on disk (185 committed
   // .sql files: production PostgreSQL schema + migrations). The M11 plan
-  // explicitly lists $HOME/ProxiCall as an allowed external corpus.
-  proxicall: "$HOME/ProxiCall",
+  // explicitly lists /home/ishaq2321/ProxiCall as an allowed external corpus.
+  proxicall: "/home/ishaq2321/ProxiCall",
 }
 
 const repositories = [

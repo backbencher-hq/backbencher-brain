@@ -1,0 +1,35 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "e6afd7a1f9751e1fe1d0d16f0eeee925ba1fa9eb5df71383aea95c8e8c2e06d3",
+    "sealedAt": "2026-11-05T16:51:20.000Z"
+  },
+  "checks": [
+    {
+      "description": "polyglot systems project (c/cpp/rust/go/zig) indexed via real CLI: symbols/imports/relationships per language, cross-language edges (c->cpp run_engine), two same-named members of one file resolving to distinct `contains` targets on the edge's own line, AND two same-named containers resolving to the container whose extent encloses the child (#612 follow-up, both halves of the containment rule)",
+      "id": "systems-cluster-e2e",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "committedAt": "2026-11-05T11:51:20-05:00",
+  "data": {
+    "failures": []
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.SC1",
+  "layers": [
+    "cluster-e2e"
+  ],
+  "limitations": [
+    {
+      "description": "covers systems cluster (c, cpp, rust, go, zig); managed-OO/functional clusters still pending their gates"
+    }
+  ],
+  "regeneratedAt": "2026-11-05T11:51:20-05:00",
+  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "runtime": "node v22.22.1",
+  "schemaVersion": 2,
+  "title": "Systems-cluster e2e gate"
+}

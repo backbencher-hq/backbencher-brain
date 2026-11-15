@@ -1,0 +1,28 @@
+ontology coverage gate — markdown
+corpus: 17456 admitted files
+
+ontology coverage gate — markdown
+corpus: 17456 admitted files
+
+ontology coverage gate — markdown
+corpus: 17456 admitted files
+
+ontology coverage gate — markdown
+corpus: 17456 admitted files
+
+walk: 17456/17456 files (100.0%)  newly walked 2440, resumed 15016
+
+type          status            detail
+------------------------------------------------------------------------------------------------------------------------
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+uses          EMITTED           30,696 edges in 4+ files, e.g. shadcn-svelte/docs/content/components/data-table.md, shadcn-svelte/docs/content/components/command.md
+contains      EMITTED           32,034 edges in 4+ files, e.g. shadcn-svelte/docs/content/components/data-table.md, shadcn-svelte/docs/content/components/command.md
+imports       EMITTED           69 edges in 4+ files, e.g. traefik/docs/content/getting-started/configuration-overview.md, traefik/docs/content/getting-started/docker.md
+references    EMITTED           342 edges in 4+ files, e.g. shadcn-svelte/docs/content/components/data-table.md, shellcheck/README.md
+exports       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+overrides     RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+------------------------------------------------------------------------------------------------------------------------
+emitted 4/10   ruled-sound 6   FALSIFIED 0   ruled-without-justification 0

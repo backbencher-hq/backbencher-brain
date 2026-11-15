@@ -1,0 +1,119 @@
+{
+  "fixtureId": "javascript/binding-sites-are-not-reads",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W1 (#768): the #744 bare-read walk treated every identifier that was not a declaration NAME as a read, so all remaining binding positions fabricated `uses @0.6` edges — import bindings (Default/named/alias/ns), parameters (alpha/beta), arrow-pattern targets (first/renamed/third), catch params (err), array-pattern targets (one/two) and export aliases (reexported, which is not a symbol at all). The JS F5 oracle carried the identical gate list, so the lane's uses audit agreed with the fabrication and stayed 100/0/0 (collusion, not verification); svelte/template-attr-shapes was the only fixture that saw it and its failure was misattributed to another agent's in-flight work. Contract: binding positions emit NO read edge; the RIGHT side of a pattern default is still a read; member-chain roots and bare expression reads keep emitting.",
+  "expectSymbols": [
+    {
+      "name": "reader",
+      "kind": "function"
+    },
+    {
+      "name": "binder",
+      "kind": "function"
+    },
+    {
+      "name": "catcher",
+      "kind": "function"
+    },
+    {
+      "name": "destructured",
+      "kind": "function"
+    },
+    {
+      "name": "defaults",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "base",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "count",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "reader\u0000flag",
+      "meta.bareRead": true
+    },
+    {
+      "type": "calls",
+      "from": "catcher",
+      "target": "reader"
+    },
+    {
+      "type": "uses",
+      "from": "defaults",
+      "target": "defaults\u0000seed"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "Default"
+    },
+    {
+      "type": "uses",
+      "target": "named"
+    },
+    {
+      "type": "uses",
+      "target": "alias"
+    },
+    {
+      "type": "uses",
+      "target": "ns"
+    },
+    {
+      "type": "uses",
+      "from": "binder",
+      "target": "alpha"
+    },
+    {
+      "type": "uses",
+      "from": "binder",
+      "target": "beta"
+    },
+    {
+      "type": "uses",
+      "target": "err"
+    },
+    {
+      "type": "uses",
+      "target": "first"
+    },
+    {
+      "type": "uses",
+      "target": "renamed"
+    },
+    {
+      "type": "uses",
+      "target": "third"
+    },
+    {
+      "type": "uses",
+      "target": "one"
+    },
+    {
+      "type": "uses",
+      "target": "two"
+    },
+    {
+      "type": "uses",
+      "target": "reexported"
+    },
+    {
+      "type": "uses",
+      "from": "defaults",
+      "target": "value"
+    }
+  ]
+}

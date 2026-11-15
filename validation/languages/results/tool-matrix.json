@@ -1,21 +1,55 @@
 {
   "probe": "language-tool-matrix",
   "what": "one real fixture per derived language, indexed for real, then every public tool's language-neutral path exercised over it",
-  "generatedAt": "2026-11-05T04:37:43.535Z",
-  "head": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "generatedAt": "2026-11-14T08:34:06.553Z",
+  "head": "8e34cbb7c40619cea26de44976194ed4c0ff2e38",
   "derivedFrom": "src/ast/engine.ts SUPPORTED_LANGUAGES via ASTEngine.supportedLanguageNames(); extensions via languageExtensionEntries()",
   "languages": 53,
   "fixtures": 53,
-  "indexMs": 4660,
+  "indexMs": 12692,
   "indexStats": {
     "totalFiles": 53,
     "symbolsExtracted": 881,
-    "relationshipsFound": 1983
+    "relationshipsFound": 1985
   },
-  "checks": 548,
-  "passed": 548,
+  "checks": 611,
+  "passed": 611,
   "failed": 0,
-  "negativeCases": 5,
+  "negativeCases": 12,
+  "securityTiers": {
+    "scan": 0,
+    "leads": 39,
+    "unsupported": 14
+  },
+  "securityTierBaseline": {
+    "scan": 0,
+    "leads": 39,
+    "unsupported": 14,
+    "total": 53
+  },
+  "securityComposition": {
+    "leadLanguages": 39,
+    "unsupportedLanguages": [
+      "css",
+      "graphql",
+      "hcl",
+      "html",
+      "json",
+      "markdown",
+      "protobuf",
+      "sass",
+      "scss",
+      "sql",
+      "terraform",
+      "toml",
+      "xml",
+      "yaml"
+    ]
+  },
+  "securityProjectWide": {
+    "ok": true,
+    "failures": []
+  },
   "editSupport": {
     "dry-run-planned": 15,
     "refused": 38
@@ -54,6 +88,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "shell command/source rules; no shell data-flow proof",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -94,7 +146,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/bash/Common.sh\",\n      \"be",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/bash/Common.sh\",\n      \"be",
           "strict": true
         },
         {
@@ -107,6 +159,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -124,6 +182,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "C source/sink rules; no pointer/alias data flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -164,7 +240,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/c/Module.c\",\n      \"before",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/c/Module.c\",\n      \"before",
           "strict": true
         },
         {
@@ -177,6 +253,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -194,6 +276,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Clean source/sink rules; no evaluated data flow yet",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -248,6 +348,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -264,6 +370,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Clojure source/sink rules; no macro-aware flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -318,6 +442,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -334,6 +464,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "C++ source/sink rules; no template/alias flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -388,6 +536,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -404,6 +558,24 @@
       "probeKind": "method",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": ".NET source/sink rules; no interprocedural flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -444,7 +616,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/csharp/Features.cs\",\n     ",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/csharp/Features.cs\",\n     ",
           "strict": true
         },
         {
@@ -457,6 +629,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -474,6 +652,26 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "stylesheet text; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "css"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -514,7 +712,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/css/Theme.css\",\n      \"bef",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/css/Theme.css\",\n      \"bef",
           "strict": true
         },
         {
@@ -527,6 +725,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
           "strict": true
         }
       ]
@@ -544,6 +748,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Dart source/sink rules; Process APIs covered by spec",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -598,6 +820,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -614,6 +842,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Elixir source/sink rules; no BEAM data-flow proof",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -668,6 +914,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -684,6 +936,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Erlang source/sink rules; os:cmd/file rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -738,6 +1008,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -754,6 +1030,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": ".NET F# source/sink rules; no interprocedural flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -808,6 +1102,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -824,6 +1124,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Go source/sink rules; no SSA/alias data flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -864,7 +1182,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/go/service.go\",\n      \"bef",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/go/service.go\",\n      \"bef",
           "strict": true
         },
         {
@@ -877,6 +1195,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -894,6 +1218,26 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "schema/query text; not an execution context for taint",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "graphql"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -948,6 +1292,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -964,6 +1314,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Groovy source/sink rules; no dynamic-dispatch flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1018,6 +1386,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1034,6 +1408,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Haskell source/sink rules; no laziness-aware flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1088,6 +1480,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1104,6 +1502,26 @@
       "probeKind": "class",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "configuration language; no tainted execution model",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "hcl"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1158,6 +1576,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -1174,6 +1598,26 @@
       "probeKind": "class",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "markup; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "html"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1228,6 +1672,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -1244,6 +1694,24 @@
       "probeKind": "method",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Java source/sink rules; no interprocedural flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1284,7 +1752,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/java/AdvancedFeatures.java",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/java/AdvancedFeatures.java",
           "strict": true
         },
         {
@@ -1297,6 +1765,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -1314,6 +1788,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "JS source/sink rules; no data-flow proof",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1368,6 +1860,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1384,6 +1882,26 @@
       "probeKind": "class",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "data format; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "json"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1438,6 +1956,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -1454,6 +1978,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Julia source/sink rules; run/ccall rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1508,6 +2050,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1524,6 +2072,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Kotlin source/sink rules; no interprocedural flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1564,7 +2130,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/kotlin/Extensions.kt\",\n   ",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/kotlin/Extensions.kt\",\n   ",
           "strict": true
         },
         {
@@ -1577,6 +2143,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -1594,6 +2166,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Lua source/sink rules; os.execute/io.popen rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1648,6 +2238,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1664,6 +2260,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "make recipes are real shell; the parser extracts a function symbol per recipe and the make spec scans its body (variable -> shell/eval)",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1718,6 +2332,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1734,6 +2354,26 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "prose; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "markdown"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1788,6 +2428,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -1804,6 +2450,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "MATLAB source/sink rules; system/eval rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1858,6 +2522,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1874,6 +2544,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Nim source/sink rules; execProcess rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1928,6 +2616,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -1944,6 +2638,24 @@
       "probeKind": "method",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Obj-C source/sink rules; no message-flow proof",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -1984,7 +2696,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/objective-c/UserService.m\"",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/objective-c/UserService.m\"",
           "strict": true
         },
         {
@@ -1997,6 +2709,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -2014,6 +2732,24 @@
       "probeKind": "method",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Perl source/sink rules; ARGV/system rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2054,7 +2790,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/perl/Service.pm\",\n      \"b",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/perl/Service.pm\",\n      \"b",
           "strict": true
         },
         {
@@ -2067,6 +2803,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -2084,6 +2826,24 @@
       "probeKind": "method",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "PHP source/sink rules; superglobal/shell rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2124,7 +2884,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/php/BaseService.php\",\n    ",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/php/BaseService.php\",\n    ",
           "strict": true
         },
         {
@@ -2137,6 +2897,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -2154,6 +2920,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "PowerShell source/sink rules; Invoke-Expression rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2208,6 +2992,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2224,6 +3014,26 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "schema language; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "protobuf"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2278,6 +3088,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -2294,6 +3110,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Python source/sink rules; no interprocedural flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2348,6 +3182,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2364,6 +3204,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "R source/sink rules; commandArgs/system rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2418,6 +3276,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2434,6 +3298,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Ruby source/sink rules; exec/backtick rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2488,6 +3370,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2504,6 +3392,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Rust source/sink rules; Command/std::fs rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2544,7 +3450,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/rust/service.rs\",\n      \"b",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/rust/service.rs\",\n      \"b",
           "strict": true
         },
         {
@@ -2557,6 +3463,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -2574,6 +3486,26 @@
       "probeKind": "module",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "stylesheet text; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "sass"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2628,6 +3560,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -2644,6 +3582,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Scala source/sink rules; no interprocedural flow",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2698,6 +3654,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2714,6 +3676,26 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "stylesheet text; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "scss"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2754,7 +3736,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/scss/Theme.scss\",\n      \"b",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/scss/Theme.scss\",\n      \"b",
           "strict": true
         },
         {
@@ -2767,6 +3749,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
           "strict": true
         }
       ]
@@ -2784,6 +3772,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Solidity source/sink rules; call/delegatecall rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2838,6 +3844,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2854,6 +3866,26 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "SQL text is the sink language, not an execution context with tainted inputs",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "sql"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2908,6 +3940,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -2924,6 +3962,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "component format; pool-worker extracts <script> blocks as JS-family symbols and the svelte spec scans them (template markup excluded)",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -2978,6 +4034,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -2989,11 +4051,29 @@
       "routed": "swift",
       "indexedLanguage": "swift",
       "symbols": 28,
-      "relationships": 35,
+      "relationships": 36,
       "probeSymbol": "find",
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "Swift source/sink rules; Process/URLSession rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3048,6 +4128,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -3064,6 +4150,26 @@
       "probeKind": "class",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "configuration language; no tainted execution model",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "terraform"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3118,6 +4224,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -3134,6 +4246,26 @@
       "probeKind": "module",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "data format; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "toml"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3188,6 +4320,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -3204,6 +4342,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "TypeScript source/sink rules; AST source/sink then reachability",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3244,7 +4400,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/tsx/view.tsx\",\n      \"befo",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/tsx/view.tsx\",\n      \"befo",
           "strict": true
         },
         {
@@ -3257,6 +4413,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -3274,6 +4436,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "TypeScript source/sink rules; AST source/sink then reachability",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3314,7 +4494,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/typescript/Features.ts\",\n ",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/typescript/Features.ts\",\n ",
           "strict": true
         },
         {
@@ -3327,6 +4507,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]
@@ -3344,6 +4530,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "VB source/sink rules; Process/File rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3398,6 +4602,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -3414,6 +4624,24 @@
       "probeKind": "function",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "VBA source/sink rules; Shell/CreateObject rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3468,6 +4696,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -3484,6 +4718,24 @@
       "probeKind": "method",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "leads",
+      "securityTierReason": "component format; pool-worker extracts <script> blocks as JS-family symbols and the vue spec scans them (v-html/template markup excluded)",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3538,6 +4790,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
+          "strict": true
         }
       ]
     },
@@ -3554,6 +4812,26 @@
       "probeKind": "class",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "markup/data; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "xml"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3608,6 +4886,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -3624,6 +4908,26 @@
       "probeKind": "class",
       "editSupport": "refused",
       "migrateShape": "plans=0 unsupported=1",
+      "securityTier": "unsupported",
+      "securityTierReason": "data format; no executable source/sink surface",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": null,
+          "unsupportedDeclared": [
+            "yaml"
+          ],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3678,6 +4982,12 @@
           "ok": true,
           "detail": "response is not JSON",
           "strict": true
+        },
+        {
+          "name": "security(unsupported): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + unsupported declaration",
+          "strict": true
         }
       ]
     },
@@ -3694,6 +5004,24 @@
       "probeKind": "function",
       "editSupport": "dry-run-planned",
       "migrateShape": "plans=1 unsupported=0",
+      "securityTier": "leads",
+      "securityTierReason": "Zig source/sink rules; std.process.Child rules",
+      "securityAnswer": {
+        "ok": true,
+        "failures": [],
+        "observed": {
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "tierLine": "tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "leadLanguagesDeclared": 1,
+          "unsupportedDeclared": [],
+          "leadLines": 0,
+          "criticalLabels": 0,
+          "confirmedWords": 0,
+          "confirmedClaims": 0,
+          "findingLines": 0,
+          "tierLineMatchesRegistry": true
+        }
+      },
       "checks": [
         {
           "name": "indexed: file row exists with this language and symbols",
@@ -3734,7 +5062,7 @@
         {
           "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
           "ok": true,
-          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/zig/storage.zig\",\n      \"b",
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/.langmatrix/project/zig/storage.zig\",\n      \"b",
           "strict": true
         },
         {
@@ -3747,6 +5075,12 @@
           "name": "cross_language: bb_cross_language answers the stored-fact shape",
           "ok": true,
           "detail": "response is not JSON",
+          "strict": true
+        },
+        {
+          "name": "security(leads): per-language answer carries the tier contract",
+          "ok": true,
+          "detail": "banner + registry tier line + leads declaration",
           "strict": true
         }
       ]

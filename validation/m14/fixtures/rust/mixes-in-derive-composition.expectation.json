@@ -1,0 +1,35 @@
+{
+  "fixtureId": "rust/mixes-in-derive-composition",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS rust's mixes_in R3 emission from #[derive(...)] (2026-10-23). The contract's discriminator: a mixin composes behaviour into a type's supertype chain WITHOUT declaring conformance — #[derive(Serialize)] composes trait implementations the source never declares (no impl Serialize for Config exists in the fixture). THE QUALIFIED-PATH CASE IS WHY THIS FIXTURE EXISTS: serde::Serialize flattens to TWO sibling identifier nodes in this grammar's token_tree, and the emitter's first version produced Config->serde AND Config->Serialize for one derive argument — the equals pins below fix the RIGHTMOST-segment rule (one row, Serialize) and pin serde at equals:0 as the path segment, not a trait. The measured alternative is refused at equals:0: `use std::fmt::Debug as _` mixes a NAME into a SCOPE (67 use_as_clause, 21 `as _` in the stride sample) and is not this relation. Both reads are from the TREE — the derive args are structural children of the attribute node, so recovery text emits nothing.",
+  "expectSymbols": [
+    { "name": "Config", "kind": "struct" },
+    { "name": "Mode", "kind": "enum" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "mixes_in", "equals": 4 },
+    { "type": "mixes_in", "from": "Config", "target": "Debug", "equals": 1 },
+    { "type": "mixes_in", "from": "Config", "target": "Clone", "equals": 1 },
+    { "type": "mixes_in", "from": "Config", "target": "Serialize", "equals": 1 },
+    { "type": "mixes_in", "from": "Mode", "target": "Default", "equals": 1 },
+    { "type": "mixes_in", "target": "serde", "equals": 0 },
+    { "type": "mixes_in", "target": "Debug", "meta.deriveComposition": true, "equals": 1 },
+    { "type": "decorates", "from": "Config", "target": "derive", "equals": 1 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "Config",
+      "target": "Serialize",
+      "meta.isMixin": true,
+      "meta.deriveComposition": true
+    },
+    {
+      "type": "mixes_in",
+      "from": "Mode",
+      "target": "Default",
+      "meta.isMixin": true
+    }
+  ]
+}

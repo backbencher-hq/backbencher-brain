@@ -1,0 +1,128 @@
+{
+ "fixtureId": "perl/signatures-and-attributes",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "M14 line-contract pins on `contains`, added 2026-10-02. Every `line_number` below was transcribed from the NUMBERED source .pm file and then confirmed against one analyzer run, so the analyzer agrees with the source rather than defining it. This lane previously asserted `contains` MEMBERSHIP ONLY -- no row anywhere named a line -- which is why the two mutants `perl/contains-line-is-absent` (strips the field) and `perl/contains-line-at-declaration-start` (shifts it by +1) both SURVIVED at (0 -> 0): the transform touched a channel no fixture read. `core-oo-class-role` already said so in prose -- its `Point->sum` row carried the note that the old `line_number: null` sentinel \"asserted ignorance about a line written in the file\", and the numeric replacement it asked for was never written. Dropping the pin is not dropping the contract: the M60 line contract applies to `contains` as it does to every other label. Each row resolved to exactly ONE actual edge, so each value below is the only line that edge has and no value was inferred.",
+ "rationale": "M14 #863, repaid. The pre-review analyzer read `childForFieldName(\"parameters\")`, a FIELD THE PINNED GRAMMAR DOES NOT DECLARE, so the lookup returned undefined for every sub in every file and the lane shipped 0 parameters across 29,640 symbols on 5,866 files. A signature is the `signature` FIELD, whose children are mandatory_parameter / optional_parameter / slurpy_parameter. `optional` on line 4 pins the default-value branch: `$y = 10` is an optional_parameter and must be published as such, and the default value itself is not a parameter. `slurpy` on line 5 pins the slurpy branch. Attributes are the second half of the fixture: the grammar's `attributes` field is unread before this wave, so `decorators` was never emitted at all, and the AST contract's carrier is forwarded by the production pool worker to brain_symbol.",
+ "expectSymbols": [
+  {
+   "name": "Pins",
+   "kind": "class"
+  },
+  {
+   "name": "plain",
+   "kind": "method",
+   "ownerName": "Pins"
+  },
+  {
+   "name": "mandatory",
+   "kind": "method",
+   "ownerName": "Pins"
+  },
+  {
+   "name": "optional",
+   "kind": "method",
+   "ownerName": "Pins"
+  },
+  {
+   "name": "slurpy",
+   "kind": "method",
+   "ownerName": "Pins"
+  },
+  {
+   "name": "lvalue_attr",
+   "kind": "method",
+   "ownerName": "Pins"
+  },
+  {
+   "name": "prototyped",
+   "kind": "method",
+   "ownerName": "Pins"
+  }
+ ],
+ "expectParameters": [
+  {
+   "symbol": "mandatory",
+   "ownerName": "Pins",
+   "parameters": [
+    {
+     "name": "self"
+    },
+    {
+     "name": "id"
+    }
+   ]
+  },
+  {
+   "symbol": "optional",
+   "ownerName": "Pins",
+   "parameters": [
+    {
+     "name": "self"
+    },
+    {
+     "name": "id",
+     "isOptional": true
+    },
+    {
+     "name": "rest"
+    }
+   ]
+  },
+  {
+   "symbol": "slurpy",
+   "ownerName": "Pins",
+   "parameters": [
+    {
+     "name": "class"
+    },
+    {
+     "name": "args"
+    }
+   ]
+  }
+ ],
+ "forbidParameters": [
+  {
+   "symbol": "plain",
+   "parameters": [
+    {
+     "name": "class"
+    }
+   ],
+   "note": "pre-fix shape: the dead `parameters` field lookup and the private-only reader meant a no-signature sub could still be handed a parameter list; `plain` has no signature and must have none"
+  }
+ ],
+ "expectDecorators": [
+  {
+   "symbol": "lvalue_attr",
+   "contains": "lvalue"
+  },
+  {
+   "symbol": "lvalue_attr",
+   "contains": "method"
+  },
+  {
+   "symbol": "prototyped",
+   "contains": "prototype"
+  }
+ ],
+ "forbidDecorators": [
+  {
+   "symbol": "plain",
+   "contains": "prototype",
+   "note": "`plain` carries no attributes; an attribute list on one sub must not leak to the next"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "type": "contains",
+   "from": "Pins",
+   "target": "prototyped",
+   "line_number": 7,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  }
+ ]
+}

@@ -7,8 +7,8 @@
 process.env.BB_EMBEDDING_BATCH_LIMIT = "0"
 
 const repositories = [
-  { id: "roslyn", path: "$HOME/roslyn", extensions: [".cs"] },
-  { id: "fsharp", path: "$HOME/fixtures/repositories/fsharp", extensions: [".fs", ".fsi", ".fsx"] },
+  { id: "roslyn", path: "/home/ishaq2321/roslyn", extensions: [".cs"] },
+  { id: "fsharp", path: "/home/ishaq2321/bb_tests/repositories/fsharp", extensions: [".fs", ".fsi", ".fsx"] },
 ]
 
 // Optional CLI arg: `bun script/m11-dotnet-corpus.ts fsharp` runs one repo,

@@ -1,0 +1,20 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-p2-honesty-fields.ts",
+  "evidenceFile": "P2.json",
+  "generatedAt": "2026-11-05T04:31:55.551Z",
+  "passed": 21,
+  "failed": 0,
+  "negativeCases": 7,
+  "failures": [],
+  "buildersAudited": 35,
+  "discoveredHandlers": 16,
+  "watchlistAssignments": 73,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-05T04:31:55.551Z",
+    "contentSha256": "3ef2c4307a57ed774ddbcc17a46301461ff567c6bc9207ea331bc242ad14c147"
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "at": "2026-11-01T20:35:34.723Z",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "cases": [
+    {
+      "id": "leaf-default",
+      "args": {
+        "symbol": "likeContains"
+      },
+      "runs": 5,
+      "ok": true,
+      "samplesMs": [
+        16,
+        19,
+        17,
+        8,
+        9
+      ],
+      "p50": 16,
+      "p95": 19,
+      "edges": 19,
+      "bytes": 25802,
+      "truncated": false,
+      "reasons": [],
+      "cappedQueries": 0,
+      "maxDepthReached": 3,
+      "timeBudgetMs": 0
+    },
+    {
+      "id": "mid-default",
+      "args": {
+        "symbol": "traverseGraph"
+      },
+      "runs": 5,
+      "ok": true,
+      "samplesMs": [
+        186,
+        162,
+        246,
+        95,
+        118
+      ],
+      "p50": 162,
+      "p95": 246,
+      "edges": 264,
+      "bytes": 300557,
+      "truncated": true,
+      "reasons": [
+        "callee-depth-cap-reached",
+        "callee-budget-exhausted"
+      ],
+      "cappedQueries": 0,
+      "maxDepthReached": 4,
+      "timeBudgetMs": 0
+    },
+    {
+      "id": "hub-default",
+      "args": {
+        "symbol": "getProjectId"
+      },
+      "runs": 5,
+      "ok": true,
+      "samplesMs": [
+        57,
+        50,
+        57,
+        62,
+        145
+      ],
+      "p50": 57,
+      "p95": 145,
+      "edges": 108,
+      "bytes": 118151,
+      "truncated": true,
+      "reasons": [
+        "callee-depth-cap-reached",
+        "callee-budget-exhausted"
+      ],
+      "cappedQueries": 0,
+      "maxDepthReached": 4,
+      "timeBudgetMs": 0
+    },
+    {
+      "id": "filtered-calls",
+      "args": {
+        "symbol": "traverseGraph",
+        "relationshipTypes": [
+          "calls"
+        ]
+      },
+      "runs": 5,
+      "ok": true,
+      "samplesMs": [
+        58,
+        81,
+        76,
+        59,
+        109
+      ],
+      "p50": 76,
+      "p95": 109,
+      "edges": 241,
+      "bytes": 274254,
+      "truncated": true,
+      "reasons": [
+        "callee-depth-cap-reached",
+        "callee-budget-exhausted"
+      ],
+      "cappedQueries": 0,
+      "maxDepthReached": 4,
+      "timeBudgetMs": 0
+    },
+    {
+      "id": "edgeLimit-1",
+      "args": {
+        "symbol": "getProjectId",
+        "edgeLimit": 1
+      },
+      "runs": 3,
+      "ok": true,
+      "samplesMs": [
+        7,
+        6,
+        6
+      ],
+      "p50": 6,
+      "p95": 7,
+      "edges": 1,
+      "bytes": 4146,
+      "truncated": true,
+      "reasons": [
+        "callee-site-limit"
+      ],
+      "cappedQueries": 1,
+      "maxDepthReached": 0,
+      "timeBudgetMs": 0
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "fixtureId": "javascript/private-methods",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Private # methods were marked public and had to be pinned. The pre-ruling contract had them 'strip to clean names (field_definition already did)'. SUPERSEDED by the M49 W15 #813 ruling (owner: 'the symbol keeps the declared name'): the method is named `#secret` and carries visibility private. The forbidSymbols entry is inverted accordingly — `secret` (stripped) is now the WRONG name, because a reading edge that targets `#secret` could not resolve to a symbol named `secret`, and a class may legitimately declare both `x` and `#x` as distinct members.",
+  "expectSymbols": [
+    {
+      "name": "#secret",
+      "kind": "method",
+      "visibility": "private"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "secret"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+ "tier": "T1",
+ "target": "-t1 (97 files / 3,512 symbols / 17,068 relationships)",
+ "dataDir": "validation/tools/bb_patterns/bbdata/t1",
+ "method": "warm in-process: one excluded warmup per shape, then 5 runs per shape; wall + process CPU time; db/WAL snapshotted before and after each call",
+ "budgetMs": 1000,
+ "loadavgDuringRuns": [
+  18.0,
+  25.0
+ ],
+ "shapes": [
+  {
+   "shape": "default-all",
+   "p50Ms": 911.36,
+   "p95Ms": 1782.81,
+   "runsMs": [
+    911.36,
+    1782.81,
+    557.12,
+    702.85,
+    1274.72
+   ],
+   "cpuMs": [
+    623,
+    557,
+    549,
+    575,
+    666
+   ],
+   "census": "388",
+   "rows": 20
+  },
+  {
+   "shape": "orphaned",
+   "p50Ms": 1592.29,
+   "p95Ms": 3541.43,
+   "runsMs": [
+    1592.29,
+    3541.43,
+    2920.79,
+    763.84,
+    743.77
+   ],
+   "cpuMs": [
+    643,
+    550,
+    799,
+    740,
+    732
+   ],
+   "census": "222",
+   "rows": 20
+  }
+ ],
+ "readMovedIndex": false,
+ "shmMoved": true,
+ "verdict": "T1 p50/p95 wall FAIL under the declared contention (load 18-25); process CPU time is 549-799 ms per call, i.e. the engine work fits the 1,000 ms budget. A quiet-load rerun is required to convert CPU to wall verdict."
+}

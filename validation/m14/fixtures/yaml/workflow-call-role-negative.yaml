@@ -1,0 +1,14 @@
+# The negative half of the role rule, and the case that decides whether the rule is a
+# rule or a coincidence. `jobs` at the top level with a job-level `uses:` is EXACTLY
+# the shape a GitHub Actions workflow has — but this file never claims to be one, and
+# `jobs.<id>.uses` means nothing outside GitHub Actions. Promoting it to a `calls` edge
+# on the strength of the key names alone would be the fabricated edge: a caller that
+# does not exist. The withheld edge says so, and says why.
+build:
+  image: acme/builder:3
+services:
+  api:
+    image: acme/api:1
+jobs:
+  release:
+    uses: acme/infra/.github/workflows/deploy.yml@v3

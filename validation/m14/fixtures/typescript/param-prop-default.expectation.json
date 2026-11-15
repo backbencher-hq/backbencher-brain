@@ -1,0 +1,13 @@
+{
+  "fixtureId": "typescript/param-prop-default",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Parameter-property detection matched modifier words via substring on the DEFAULT VALUE text: a string default containing 'private' fabricated a phantom private property symbol. Modifier words must come from the parameter's actual modifier keywords, never from value text. A plain parameter with a string default is NOT a parameter property.",
+  "expectSymbols": [
+    { "name": "A", "kind": "class" },
+    { "name": "constructor", "kind": "constructor" }
+  ],
+  "forbidSymbols": [
+    { "name": "t", "kind": "property" }
+  ]
+}

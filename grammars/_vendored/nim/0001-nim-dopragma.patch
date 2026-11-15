@@ -1,4 +1,4 @@
---- $HOME/fixtures/nim/grammars/tree-sitter-nim-alaviss/grammar.js	2026-09-26 20:17:07.699291630 -0400
+--- /home/ishaq2321/bb_tests/nim/grammars/tree-sitter-nim-alaviss/grammar.js	2026-09-26 20:17:07.699291630 -0400
 +++ grammars/tree-sitter-nim/grammar.js	2026-09-27 01:49:48.382924948 -0400
 @@ -844,6 +844,7 @@
          $.curly_expression,

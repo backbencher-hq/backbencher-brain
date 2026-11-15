@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X5",
+  "code": "X5",
+  "tool": "bb_security",
+  "title": "real-repository scan (optional corpus)",
+  "verified": true,
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "positives": 7,
+  "negatives": 0,
+  "negativePassed": 0,
+  "skipped": [],
+  "generatedAt": "2026-11-14T21:10:16.632Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:10:16.632Z",
+    "contentSha256": "e3c07a03574650a4bd4e5a4e6ccb41d94a45973654d3eca7a9a5ba13fe3fc9b4"
+  }
+}

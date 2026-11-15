@@ -1,0 +1,163 @@
+{
+  "tool": "validation/m14/elixir/elixir-contains-audit.ts",
+  "lane": "ELIXIR_FIX2",
+  "subject": "src/ast/real-elixir-analyzer.ts",
+  "oracle": "script/m14/oracles/elixir-contains.ts",
+  "derivationFindingRepaid": {
+    "finding": "rel-type-coverage-gate --langs=elixir reported `1 un-audited: [\"contains\"]` on 2026-10-05; deriveElixirEdges in script/m14/differential.ts pushes only calls/implements/instantiates/references.",
+    "whatThisIs": "an INDEPENDENT oracle for contains plus a per-file comparison over the whole derived population.",
+    "declaredLimit": "the oracle is a separate walker over the SAME grammar, so a disagreement is a finding and an agreement is not proof of correctness. A shape both walkers misread is invisible to both.",
+    "population": {
+      "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+      "corpusDirs": [
+        "elixir",
+        "otp"
+      ],
+      "extensions": [
+        ".ex",
+        ".exs"
+      ],
+      "derived": true,
+      "allFilesFound": 601,
+      "filesRun": 601
+    }
+  },
+  "result": {
+    "filesParsed": 601,
+    "filesCrashed": 0,
+    "crashSamples": [],
+    "wallMs": 123932,
+    "analyzerEdges": 17042,
+    "oracleEdges": 14709,
+    "matched": 14705,
+    "missing": 4,
+    "unexplained": 35,
+    "missingByShape": {
+      "contains/qualified-name": 2,
+      "exports/qualified-name": 2
+    },
+    "unexplainedByShape": {
+      "contains/bare-name": 16,
+      "exports/bare-name": 15,
+      "contains/qualified-name": 2,
+      "exports/qualified-name": 2
+    },
+    "perLabel": {
+      "contains": {
+        "analyzer": 9849,
+        "oracle": 9063,
+        "matched": 9061,
+        "missing": 2,
+        "unexplained": 18,
+        "missingSamples": [
+          "lib/elixir/lib/kernel.ex Kernel -> \"Macro.t\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.RemoteUsage -> \"Remote.call\""
+        ],
+        "unexplainedSamples": [
+          "lib/elixir/lib/base.ex Base -> \"Unknown\"",
+          "lib/elixir/lib/bitwise.ex Bitwise -> \"Unknown\"",
+          "lib/elixir/lib/io/ansi.ex IO.ANSI -> \"Unknown\"",
+          "lib/elixir/lib/kernel/special_forms.ex Kernel.SpecialForms -> \"Unknown\"",
+          "lib/elixir/test/elixir/inspect_test.exs Inspect.OthersTest -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.UnquotedInGuardCall -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.LiteralUsage -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.RemoteUsage -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/quote_test.exs Kernel.QuoteTest.Dyn -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel_test.exs KernelTest -> \"Unknown\"",
+          "lib/elixir/test/elixir/module_test.exs ModuleTest -> \"ModuleTest.__MODULE__.NonAtomAlias\"",
+          "lib/elixir/test/elixir/module_test.exs ModuleTest.__MODULE__.NonAtomAlias -> \"hello\"",
+          "lib/elixir/test/elixir/module_test.exs ModuleTest -> \"ModuleTest.__MODULE__.NoVarWarning\"",
+          "lib/elixir/test/elixir/protocol_test.exs ProtocolTest -> \"Integer\"",
+          "lib/ex_unit/test/ex_unit/register_test.exs ExUnit.RegisterTest.SingularTestTypeCase -> \"Unknown\"",
+          "lib/ex_unit/test/ex_unit/register_test.exs ExUnit.RegisterTest.PluralTestTypeCase -> \"Unknown\"",
+          "lib/logger/lib/logger.ex Logger -> \"Unknown\"",
+          "lib/logger/test/logger/translator_test.exs Logger.TranslatorTest.WeirdFunctionNamesGenServer -> \"Unknown\""
+        ]
+      },
+      "uses": {
+        "analyzer": 2117,
+        "oracle": 1026,
+        "matched": 1026,
+        "missing": 0,
+        "unexplained": 0,
+        "missingSamples": [],
+        "unexplainedSamples": []
+      },
+      "exports": {
+        "analyzer": 5076,
+        "oracle": 4620,
+        "matched": 4618,
+        "missing": 2,
+        "unexplained": 17,
+        "missingSamples": [
+          "lib/elixir/lib/kernel.ex Kernel -> \"Macro.t\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.RemoteUsage -> \"Remote.call\""
+        ],
+        "unexplainedSamples": [
+          "lib/elixir/lib/bitwise.ex Bitwise -> \"Unknown\"",
+          "lib/elixir/lib/io/ansi.ex IO.ANSI -> \"Unknown\"",
+          "lib/elixir/lib/kernel/special_forms.ex Kernel.SpecialForms -> \"Unknown\"",
+          "lib/elixir/test/elixir/inspect_test.exs Inspect.OthersTest -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.UnquotedInGuardCall -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.LiteralUsage -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/guard_test.exs Kernel.GuardTest.RemoteUsage -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel/quote_test.exs Kernel.QuoteTest.Dyn -> \"Unknown\"",
+          "lib/elixir/test/elixir/kernel_test.exs KernelTest -> \"Unknown\"",
+          "lib/elixir/test/elixir/module_test.exs ModuleTest -> \"ModuleTest.__MODULE__.NonAtomAlias\"",
+          "lib/elixir/test/elixir/module_test.exs ModuleTest.__MODULE__.NonAtomAlias -> \"hello\"",
+          "lib/elixir/test/elixir/module_test.exs ModuleTest -> \"ModuleTest.__MODULE__.NoVarWarning\"",
+          "lib/elixir/test/elixir/protocol_test.exs ProtocolTest -> \"Integer\"",
+          "lib/ex_unit/test/ex_unit/register_test.exs ExUnit.RegisterTest.SingularTestTypeCase -> \"Unknown\"",
+          "lib/ex_unit/test/ex_unit/register_test.exs ExUnit.RegisterTest.PluralTestTypeCase -> \"Unknown\"",
+          "lib/logger/lib/logger.ex Logger -> \"Unknown\"",
+          "lib/logger/test/logger/translator_test.exs Logger.TranslatorTest.WeirdFunctionNamesGenServer -> \"Unknown\""
+        ]
+      }
+    },
+    "filesWithMissing": 2,
+    "filesWithUnexplained": 13,
+    "missingSamples": [
+      "lib/elixir/lib/kernel.ex  contains Kernel -> \"Macro.t\"",
+      "lib/elixir/lib/kernel.ex  exports Kernel -> \"Macro.t\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  contains Kernel.GuardTest.RemoteUsage -> \"Remote.call\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  exports Kernel.GuardTest.RemoteUsage -> \"Remote.call\""
+    ],
+    "unexplainedSamples": [
+      "lib/elixir/lib/base.ex  contains Base -> \"Unknown\"",
+      "lib/elixir/lib/bitwise.ex  contains Bitwise -> \"Unknown\"",
+      "lib/elixir/lib/bitwise.ex  exports Bitwise -> \"Unknown\"",
+      "lib/elixir/lib/io/ansi.ex  contains IO.ANSI -> \"Unknown\"",
+      "lib/elixir/lib/io/ansi.ex  exports IO.ANSI -> \"Unknown\"",
+      "lib/elixir/lib/kernel/special_forms.ex  contains Kernel.SpecialForms -> \"Unknown\"",
+      "lib/elixir/lib/kernel/special_forms.ex  exports Kernel.SpecialForms -> \"Unknown\"",
+      "lib/elixir/test/elixir/inspect_test.exs  contains Inspect.OthersTest -> \"Unknown\"",
+      "lib/elixir/test/elixir/inspect_test.exs  exports Inspect.OthersTest -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  contains Kernel.GuardTest.UnquotedInGuardCall -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  contains Kernel.GuardTest.LiteralUsage -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  contains Kernel.GuardTest.RemoteUsage -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  exports Kernel.GuardTest.UnquotedInGuardCall -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  exports Kernel.GuardTest.LiteralUsage -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/guard_test.exs  exports Kernel.GuardTest.RemoteUsage -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/quote_test.exs  contains Kernel.QuoteTest.Dyn -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel/quote_test.exs  exports Kernel.QuoteTest.Dyn -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel_test.exs  contains KernelTest -> \"Unknown\"",
+      "lib/elixir/test/elixir/kernel_test.exs  exports KernelTest -> \"Unknown\"",
+      "lib/elixir/test/elixir/module_test.exs  contains ModuleTest -> \"ModuleTest.__MODULE__.NonAtomAlias\"",
+      "lib/elixir/test/elixir/module_test.exs  contains ModuleTest.__MODULE__.NonAtomAlias -> \"hello\"",
+      "lib/elixir/test/elixir/module_test.exs  contains ModuleTest -> \"ModuleTest.__MODULE__.NoVarWarning\"",
+      "lib/elixir/test/elixir/module_test.exs  exports ModuleTest -> \"ModuleTest.__MODULE__.NonAtomAlias\"",
+      "lib/elixir/test/elixir/module_test.exs  exports ModuleTest.__MODULE__.NonAtomAlias -> \"hello\"",
+      "lib/elixir/test/elixir/module_test.exs  exports ModuleTest -> \"ModuleTest.__MODULE__.NoVarWarning\"",
+      "lib/elixir/test/elixir/protocol_test.exs  contains ProtocolTest -> \"Integer\"",
+      "lib/elixir/test/elixir/protocol_test.exs  exports ProtocolTest -> \"Integer\"",
+      "lib/ex_unit/test/ex_unit/register_test.exs  contains ExUnit.RegisterTest.SingularTestTypeCase -> \"Unknown\"",
+      "lib/ex_unit/test/ex_unit/register_test.exs  contains ExUnit.RegisterTest.PluralTestTypeCase -> \"Unknown\"",
+      "lib/ex_unit/test/ex_unit/register_test.exs  exports ExUnit.RegisterTest.SingularTestTypeCase -> \"Unknown\"",
+      "lib/ex_unit/test/ex_unit/register_test.exs  exports ExUnit.RegisterTest.PluralTestTypeCase -> \"Unknown\"",
+      "lib/logger/lib/logger.ex  contains Logger -> \"Unknown\"",
+      "lib/logger/lib/logger.ex  exports Logger -> \"Unknown\"",
+      "lib/logger/test/logger/translator_test.exs  contains Logger.TranslatorTest.WeirdFunctionNamesGenServer -> \"Unknown\"",
+      "lib/logger/test/logger/translator_test.exs  exports Logger.TranslatorTest.WeirdFunctionNamesGenServer -> \"Unknown\""
+    ]
+  }
+}

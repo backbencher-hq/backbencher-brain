@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-09-29T01:21:32.389Z",
+  "files": 2000,
+  "total": 158012,
+  "defaultRelTypes": [
+    "calls",
+    "instantiates",
+    "extends",
+    "implements"
+  ],
+  "servedByDefault": 122990,
+  "excludedByDefault": 35022,
+  "byType": {
+    "extends": 1829,
+    "implements": 880,
+    "calls": 116297,
+    "overrides": 7860,
+    "contains": 17208,
+    "uses": 8109,
+    "instantiates": 3984,
+    "references": 1845
+  }
+}

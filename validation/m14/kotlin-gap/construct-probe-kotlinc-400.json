@@ -1,0 +1,113 @@
+{
+ "at": "2026-10-05T01:03:43.304Z",
+ "corpus": {
+  "root": "/home/ishaq2321/bb_tests/repositories",
+  "repo": "kotlin",
+  "filesParsed": 400,
+  "filesAdmitted": 400
+ },
+ "instrumentA": {
+  "distinctNodeTypes": 140,
+  "exportNodeTypesProbed": [
+   "export_statement",
+   "export_declaration",
+   "export_list",
+   "export_specifier",
+   "module_export",
+   "public_declaration"
+  ],
+  "exportNodeTypesPresent": [],
+  "visibilityNodeTypesPresent": [
+   "modifiers",
+   "visibility_modifier"
+  ]
+ },
+ "instrumentB": {
+  "imports:B:import_header": {
+   "occurrences": 856,
+   "files": 144,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: import com.intellij.psi.PsiElement",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: import org.jetbrains.kotlin.*",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: import org.jetbrains.kotlin.analysis.api.fir.KaFirSession"
+   ]
+  },
+  "exports:A:export_node_type": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "exports:B:public_top_level_declaration": {
+   "occurrences": 1568,
+   "files": 384,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: class_declaration",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: property_declaration",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: property_declaration"
+   ]
+  },
+  "implements:B:bare_delegation_specifier": {
+   "occurrences": 133,
+   "files": 78,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: KaSymbol",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: KaLifetimeOwner",
+    "analysis/analysis-api-impl-base/src/org/jetbrains/kotlin/analysis/api/impl/base/resolution/KaBaseApplicableCallCandidateInfo.kt:analysis/analysis-api-impl-base/src/org/jetbrains/kotlin/analysis/api/impl/base/resolution/KaBaseApplicableCallCandidateInfo.kt: KaApplicableCallCandidateInfo"
+   ]
+  },
+  "overrides:B:override_modifier": {
+   "occurrences": 423,
+   "files": 89,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: override",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: override",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt:analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/symbols/KaFirSymbol.kt: override"
+   ]
+  },
+  "instantiates:B:pascal_case_call": {
+   "occurrences": 1575,
+   "files": 173,
+   "examples": [
+    "analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt:analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt: KaBaseSimpleNameReference",
+    "analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt:analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt: KaBaseSimpleNameReference",
+    "analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt:analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt: KaBaseSimpleNameReference"
+   ]
+  },
+  "extends:B:ctor_delegation_specifier": {
+   "occurrences": 116,
+   "files": 72,
+   "examples": [
+    "analysis/analysis-api-impl-base/testFixtures/org/jetbrains/kotlin/analysis/api/impl/base/test/cases/restrictedAnalysis/AbstractRestrictedAnalysisRejectionTest.kt:analysis/analysis-api-impl-base/testFixtures/org/jetbrains/kotlin/analysis/api/impl/base/test/cases/restrictedAnalysis/AbstractRestrictedAnalysisRejectionTest.kt: AbstractRestrictedAnalysisTest()",
+    "analysis/analysis-api-impl-base/testFixtures/org/jetbrains/kotlin/analysis/api/impl/base/test/cases/restrictedAnalysis/AbstractRestrictedAnalysisRejectionTest.kt:analysis/analysis-api-impl-base/testFixtures/org/jetbrains/kotlin/analysis/api/impl/base/test/cases/restrictedAnalysis/AbstractRestrictedAnalysisRejectionTest.kt: SimpleDirectivesContainer()",
+    "analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt:analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt: KaSimpleNameReferenceBase(expression)"
+   ]
+  },
+  "calls:B:call_expression_named": {
+   "occurrences": 5582,
+   "files": 287,
+   "examples": [
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts: plugins",
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts: id",
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts: id"
+   ]
+  },
+  "uses:B:navigation_expression": {
+   "occurrences": 4517,
+   "files": 235,
+   "examples": [
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts: libs.guava",
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts: mainClass.set",
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts: compilerOptions.optIn.addAll"
+   ]
+  }
+ },
+ "topLevelDeclarations": 1568,
+ "modifierInventory": {
+  "internal": 81,
+  "override": 423,
+  "private": 237,
+  "public": 143,
+  "lateinit": 13,
+  "protected": 22
+ }
+}

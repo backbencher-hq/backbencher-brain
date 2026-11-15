@@ -1,0 +1,8 @@
+# Anchors are document-scoped in YAML. An alias in document 2 must NOT bind document 1's
+# same-named anchor; it is reported unresolved WITH A REASON, because "declared in
+# another document" and "never declared" are different findings.
+--- &shared
+  x: 1
+--- &other
+  <<: *shared
+  y: 2

@@ -1,0 +1,37 @@
+{
+  "fixtureId": "xml/attribute-local-name",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": false,
+  "provenance": "Written from the store's own resolution code (`parallel-indexer.ts:3375-3390` `extractLeaf` and `:2354-2360` `resolveContainsTargetStmt`) and from the corpus measurement in `validation/m14/fixtures/xml/store-binding-truth.mts`, then executed against the real analyzer through `parseFile`. Every `line_number` below was read off that run, not predicted.",
+  "rationale": "An attribute's identity in XML Namespaces is (namespace URI, local name), and the store can only match the local part: it reduces a target to its last `:`/`.` segment before any lookup. Publishing `xml:space` under a prefixed name therefore hid its own declaration — 179 unbound and 35 foreign-bound `contains` rows on the named draw, 178 of them recoverable by spelling. This fixture pins the published name, the edge target, and the written spelling in metadata, and forbids the prefixed name as a symbol so an implementation cannot pass by publishing both.\n\nThe written spelling is asserted as `meta.attributeName` on the RELATIONSHIP rather than on the symbol, because `pool-worker.ts:1020-1072`'s allowlist drops symbol metadata at the worker boundary and `run-fixtures.ts` reads the analyzer's return value, not the store. The symbol row is therefore pinned on `name`/`kind`/`ownerName`/`meta.isXmlAttribute`, all of which survive; `meta.attributeName` on the edge is the strongest available assertion that the prefix was not merely deleted. What this fixture cannot assert is the qualified name (`owner.local`), for the reason `attribute-qualified-name.expectation.json` records: `qualifiedName` is not in the runner's allowlist, so that property is asserted by the lane-owned checks in `ontology-mutants.mts` instead.\n\n`id` and `fill` are the control against a fix that strips the wrong segment, and `xlink` is the control against a fix applied twice — the namespace declaration already published its local part, so a change there would be a regression this fixture would catch.\n\nWHAT THIS FIXTURE DOES NOT SETTLE: two attributes that share a local name and differ only by prefix (`xlink:href` and `inkscape:href` on the same element) now share a published name. That collision is real, it is declared in the analyzer comment at the call site rather than resolved here, and separating them needs the prefix in the published identity, which the store's own leaf reduction would then discard.",
+  "expectSymbols": [
+    { "name": "svg", "kind": "class" },
+    { "name": "g", "kind": "class" },
+    { "name": "path", "kind": "class" },
+    { "name": "use", "kind": "class" },
+    { "name": "xlink", "kind": "namespace", "ownerName": "svg", "meta.isXmlNamespace": true },
+    { "name": "space", "kind": "property", "ownerName": "g", "meta.isXmlAttribute": true },
+    { "name": "id", "kind": "property", "ownerName": "g", "meta.isXmlAttribute": true },
+    { "name": "d", "kind": "property", "ownerName": "path", "meta.isXmlAttribute": true },
+    { "name": "fill", "kind": "property", "ownerName": "path", "meta.isXmlAttribute": true },
+    { "name": "href", "kind": "property", "ownerName": "use", "meta.isXmlAttribute": true },
+    { "name": "x", "kind": "property", "ownerName": "use", "meta.isXmlAttribute": true }
+  ],
+  "forbidSymbols": [
+    { "name": "xml:space", "note": "the PREFIXED spelling must not be published as a name: the store reduces a target to its last segment, so a declaration under this name can never be found by the edge that names it." },
+    { "name": "xlink:href", "note": "same, for the second prefixed attribute in the file. Publishing both spellings would double every attribute and leave the prefixed row unreachable." },
+    { "name": "xml", "note": "the namespace URI's conventional prefix is not a declaration; the `xml` prefix is bound by the specification and can never be declared in a well-formed document (`xml/xsd-implicit-xml-prefix` pins that on the reference side)." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "svg", "target": "xlink", "line_number": 32, "meta.role": "xml_namespace" },
+    { "type": "contains", "from": "g", "target": "space", "line_number": 33, "meta.role": "xml_attribute", "meta.attributeName": "xml:space" },
+    { "type": "contains", "from": "g", "target": "id", "line_number": 33, "meta.role": "xml_attribute", "meta.attributeName": "id" },
+    { "type": "contains", "from": "path", "target": "fill", "line_number": 34, "meta.role": "xml_attribute", "meta.attributeName": "fill" },
+    { "type": "contains", "from": "use", "target": "href", "line_number": 36, "meta.role": "xml_attribute", "meta.attributeName": "xlink:href" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "g", "target": "xml:space", "comment": "the exact defect: an edge whose target the store will reduce to `space` while its declaration is published under `xml:space`." },
+    { "type": "contains", "from": "use", "target": "xlink:href", "comment": "same shape, second occurrence, so a fix applied to only the first prefixed attribute in a document fails here." }
+  ],
+  "expectNoParseErrors": true
+}

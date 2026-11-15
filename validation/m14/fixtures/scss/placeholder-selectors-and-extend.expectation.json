@@ -1,0 +1,99 @@
+{
+  "fixtureId": "scss/placeholder-selectors-and-extend",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The largest blind spot the ontology measurement found in this lane, and it is a grammar fact rather than a walk bug: 125 `@extend` tokens across 4,394 admitted corpus files and only 36 `extend_statement` nodes, so 71% of them are in the recovered shape `block > ERROR > \"@extend\", placeholder, \";\"`. A `.card { @extend %badge; }` — which is where a BEM codebase puts nearly every `@extend` — produced NO edge at all, because the statement's own node type never appears and the keyword survives only as an anonymous token the named-children walk skips. 63 of the 99 real `@extend`s were invisible before this. Three separate things are pinned here because they fail independently. (1) The recovered `@extend` INSIDE A RULE BODY emits an edge from the rule to the placeholder it names, marked `scssRecoveredFromError`, because a claim read out of a broken region is real and a consumer deserves to know it was recovered. (2) `%placeholder` is an endpoint that RESOLVES — it is a selector the CSS lane already publishes, so `@extend %badge` and the `%badge` rule join. (3) The INTERPOLATED form `@extend %responsive-#{$bp}` emits NOTHING: the grammar cuts the placeholder at the interpolation, so its text is the prefix `%responsive-`, which names no selector and resolves to no symbol. A forbidden row pins that, because an edge to a prefix is the phantom-endpoint defect this lane has removed twice and it would look like progress. `%row`/`%col` are extended from two different rules so the two rules cannot be collapsed into one row that passes when only the first works.",
+  "expectSymbols": [
+    {
+      "name": "%badge",
+      "kind": "class"
+    },
+    {
+      "name": "%row",
+      "kind": "class"
+    },
+    {
+      "name": "%col",
+      "kind": "class"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    },
+    {
+      "name": ".grid",
+      "kind": "class"
+    },
+    {
+      "name": ".grid-cell",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "%badge",
+      "equals": 1
+    },
+    {
+      "name": "%row",
+      "equals": 1
+    },
+    {
+      "name": "%col",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": ".card",
+      "target": "%badge",
+      "meta.isScssExtend": true,
+      "meta.scssExtendShape": "recovered",
+      "meta.scssRecoveredFromError": true,
+      "line_number": 10
+    },
+    {
+      "type": "extends",
+      "from": ".grid",
+      "target": "%row",
+      "meta.isScssExtend": true,
+      "meta.scssExtendShape": "recovered",
+      "line_number": 25
+    },
+    {
+      "type": "extends",
+      "from": ".grid-cell",
+      "target": "%col",
+      "meta.isScssExtend": true,
+      "meta.scssExtendShape": "recovered",
+      "line_number": 29
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "%responsive-"
+    },
+    {
+      "type": "extends",
+      "target": "%responsive-"
+    },
+    {
+      "type": "uses",
+      "target": "%"
+    },
+    {
+      "type": "extends",
+      "target": "%"
+    },
+    {
+      "type": "uses",
+      "target": "responsive-"
+    },
+    {
+      "type": "extends",
+      "target": "responsive-"
+    }
+  ]
+}

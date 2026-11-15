@@ -1,0 +1,88 @@
+{
+  "repo": "bulma",
+  "files": 179,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 845,
+        "total": 845
+      },
+      "references": {
+        "resolved": 354,
+        "unresolved": 167,
+        "ambDeclOnly": 76,
+        "total": 597
+      },
+      "extends": {
+        "resolved": 31,
+        "ambDeclOnly": 3,
+        "unresolved": 7,
+        "total": 41
+      },
+      "exports": {
+        "resolved": 735,
+        "ambDeclOnly": 130,
+        "total": 865
+      },
+      "imports": {
+        "unresolved": 69,
+        "total": 69
+      },
+      "uses": {
+        "resolved": 4,
+        "total": 4
+      },
+      "calls": {
+        "resolved": 101,
+        "total": 101
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 845,
+        "total": 845
+      },
+      "references": {
+        "resolved": 428,
+        "unresolved": 167,
+        "ambDeclOnly": 2,
+        "total": 597
+      },
+      "extends": {
+        "resolved": 31,
+        "ambDeclOnly": 3,
+        "unresolved": 7,
+        "total": 41
+      },
+      "exports": {
+        "resolved": 865,
+        "total": 865
+      },
+      "imports": {
+        "unresolved": 69,
+        "total": 69
+      },
+      "uses": {
+        "resolved": 4,
+        "total": 4
+      },
+      "calls": {
+        "resolved": 101,
+        "total": 101
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 2228,
+    "before": {
+      "ambDeclOnly": 209
+    },
+    "after": {
+      "ambDeclOnly": 5
+    }
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 2237,
+    "falseBindings": 0
+  }
+}

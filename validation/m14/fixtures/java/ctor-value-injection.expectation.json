@@ -1,0 +1,13 @@
+{
+  "fixtureId": "java/ctor-value-injection",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Constructor parameter @Value injection is the canonical Spring config pattern. The config key must be read from the PARAMETER's own annotation, not searched on the method node (where it never exists). The ':default' fallback suffix is stripped from the key. M37.21 C3: ctor symbol keeps the class name (PriceConfig), not the old colliding literal 'constructor'.",
+  "expectSymbols": [
+    { "name": "PriceConfig", "kind": "class" },
+    { "name": "PriceConfig", "kind": "constructor" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "target": "app.name", "meta.isConfiguration": true, "meta.relationshipType": "config_property" }
+  ]
+}

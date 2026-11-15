@@ -1,0 +1,42 @@
+{
+  "tsv": "validation/m14/fixtures/sql/residual-cause-full-AFTER.tsv",
+  "unresolvedTotal": 962,
+  "closes": true,
+  "causes": {
+    "relation-read-that-no-file-declares": 646,
+    "call-to-a-name-no-file-declares-and-no-provider-owns": 126,
+    "analyzer-labelled-external-the-gate-cannot-read": 109,
+    "query-local-binding-read-as-a-database-object": 55,
+    "grammar-artifact-published-as-a-call": 20,
+    "psql-include-or-module-path-not-in-the-population": 6
+  },
+  "causeByType": {
+    "uses": {
+      "relation-read-that-no-file-declares": 579,
+      "analyzer-labelled-external-the-gate-cannot-read": 102,
+      "query-local-binding-read-as-a-database-object": 53
+    },
+    "references": {
+      "relation-read-that-no-file-declares": 65,
+      "analyzer-labelled-external-the-gate-cannot-read": 6
+    },
+    "calls": {
+      "call-to-a-name-no-file-declares-and-no-provider-owns": 126,
+      "grammar-artifact-published-as-a-call": 20,
+      "query-local-binding-read-as-a-database-object": 2,
+      "analyzer-labelled-external-the-gate-cannot-read": 1
+    },
+    "imports": {
+      "psql-include-or-module-path-not-in-the-population": 6
+    },
+    "instantiates": {
+      "relation-read-that-no-file-declares": 2
+    }
+  },
+  "providedFunctionEdges": {
+    "total": 0,
+    "byProvider": {}
+  },
+  "providedFunctionNames": {},
+  "vocabularySize": 102
+}

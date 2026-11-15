@@ -1,0 +1,24 @@
+{
+  "source": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "destination": "validation/tools/bb_cross_language/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "bytes": 3639963648,
+  "pages": {
+    "totalPages": 888663,
+    "remainingPages": 0
+  },
+  "copyMs": 141007,
+  "sourceCounts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "crossLanguageRows": 0
+  },
+  "copyCounts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "crossLanguageRows": 0
+  },
+  "equal": true,
+  "note": "read-only source, SQLite backup API; the handler measures against this copy with a private BB_DATA_DIR"
+}

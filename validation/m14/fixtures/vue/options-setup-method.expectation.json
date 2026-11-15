@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/options-setup-method",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F5 (master review 2026-09-30): every function-valued Options option became a Method — `data` (isOptionsData), the lifecycle hooks (isLifecycleHook), `methods`, `computed`, `watch` — and `setup` was in none of them, although it is the function an Options component is built around. Measured: 20 element-plus files plus 1 vue-element-admin file write the Options `setup(props) { return { … } }` form and every one of them produced no symbol, so a graph of such a component had no entry point. `setup` is deliberately NOT added to `isLifecycleHook` — it is not a lifecycle hook, it is the composition entry point, and folding it into that predicate would make the predicate's name lie and blur `isLifecycleHook` for every other consumer — so it gets its own branch and its own `isSetup` marker. `mounted` is the CONTROL proving the neighbouring lifecycle branch still fires.",
+  "expectSymbols": [
+    { "name": "OptionsSetup", "kind": "class" },
+    { "name": "setup", "kind": "method", "ownerName": "OptionsSetup", "meta.isSetup": true },
+    { "name": "modelValue", "kind": "property", "meta.isProp": true },
+    { "name": "mounted", "kind": "method", "meta.isLifecycleHook": true }
+  ]
+}

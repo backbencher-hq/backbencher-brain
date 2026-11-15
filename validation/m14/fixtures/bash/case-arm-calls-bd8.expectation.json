@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/case-arm-calls-bd8.sh",
+  "authoredFrom": "BD8 (a case arm's commands are ordinary calls). Authored from a probe 2026-09-26. The pre-wave analyzer suppressed every command at case depth > 0 as 'dispatch noise'; an arm's PATTERN is a `word`/`string` node, never a `command`, so the filter never suppressed a pattern — it suppressed real work. Two `apt-get` sites are pinned at their own lines.",
+  "expectSymbols": [
+    {
+      "name": "case-arm-calls-bd8.sh",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "case-arm-calls-bd8.sh",
+      "target": "apt-get",
+      "line_number": 8,
+      "meta.isExternalCommand": true
+    },
+    {
+      "type": "calls",
+      "from": "case-arm-calls-bd8.sh",
+      "target": "apt-get",
+      "line_number": 9,
+      "meta.isExternalCommand": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "apt-get"
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "imports",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "target": "apt-get",
+      "equals": 2
+    }
+  ]
+}

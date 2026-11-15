@@ -1,0 +1,11 @@
+{
+  "issue": "ELX-ADV X6",
+  "note": "Pipe steps carry THREAD-ADJUSTED arity: `x |> f(1)` is f/2, a bare `x |> g` is g/1; the written-arity edge must not also exist.",
+  "expectRelationships": [
+    { "type": "calls", "from": "EPipe.run/1", "target": "f", "line_number": 3, "meta.callArity": 2 },
+    { "type": "calls", "from": "EPipe.run2/1", "target": "g", "line_number": 7, "meta.callArity": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "EPipe.run/1", "target": "f", "meta.callArity": 1 }
+  ]
+}

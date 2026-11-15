@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  M18, PEReference round. A parameter entity reference is a USE, and the 24 corpus
+  sites were producing no edge at all.
+
+  `<!DOCTYPE root [ <!ENTITY % defroot '…'> %defroot; ]>` is how a DTD pulls in
+  another one: `%defroot;` expands and the expansion's markup becomes part of this
+  DTD. That is the same fact `entity_external_id` already records for
+  `<!ENTITY % pe SYSTEM "common.dtd">`, reached by reference instead of by
+  ExternalID — and it was recorded only for the ExternalID form. The owner is the
+  DOCTYPE'S OWN NAME: a parameter reference in the internal subset has no element
+  above it, which is the X7 shape — a claim the document makes, dropped because
+  there was nothing obvious to attach it to.
+
+  The replacement-text case is written the way libxml2's `result/valid/index.xml`
+  writes it — a bare `%name;` on its own line inside a MULTI-LINE replacement text
+  — because that is the shape the grammar accepts and the shape the corpus
+  contains. A first draft wrote `%inner;<!ELEMENT outer (#PCDATA)>` with the
+  reference butted straight against markup, which the grammar parses under an
+  ERROR, and a fixture asserting an owner for a node the parser could not read
+  would be pinning a fiction.
+
+  THREE SHAPES, and the third is here because its discriminator from the second is
+  a single character:
+
+    1. a parameter reference in the internal subset  -> published, owned by the
+       DOCTYPE
+    2. `%name;` inside an entity's replacement text  -> published, owned by the
+       DECLARING ENTITY, because a parameter entity invoking another is a
+       dependency that entity has
+    3. `% name 'replacement'` — the parameter-entity VALUE form, which names
+       nothing and must produce NO edge. libxml2's corpus contains both `%xx;` and
+       `% zz '&#60;`, and a rule that accepted either would invent names out of
+       literal percent signs
+-->
+<!DOCTYPE root [
+  <!ELEMENT root (#PCDATA)>
+  <!ENTITY % inner "
+		inner-content
+		#IMPLIED
+		">
+  <!ENTITY % outer "
+		%inner;
+		outer-content
+		#IMPLIED
+		">
+  <!ENTITY % literal "% zz '&#60;'">
+  %outer;
+  %neverDeclared;
+]>
+<root>text</root>

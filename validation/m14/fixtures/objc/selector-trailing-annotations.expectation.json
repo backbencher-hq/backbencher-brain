@@ -1,0 +1,43 @@
+{
+ "fixtureId": "objc/selector-trailing-annotations",
+ "language": "objc",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "DERIV_EXPORTS_OBJC: a method's trailing annotation macros arrive at the method node's TOP LEVEL as bare identifiers with no method_parameter after them, and the pre-fix fullMethodSelector concatenated every one of them, publishing a selector that exists in no class and an overrides TARGET that resolves to nothing. Measured before the fix by script/m60/objc-selector-integrity.ts over the 322-file admitted universe: 79 method nodes in 29 files (NS_REFINED_FOR_SWIFT 62, NS_DESIGNATED_INITIALIZER 15, NS_SWIFT_NOTHROW 2), and 109 fabricated overrides targets in the corpus census. The pins below are the three corpus shapes the same probe counted (keywordChain 1595, singleBare 1217, bareAfterKeyword 79): the correct selector is a symbol, the absorbed spelling is forbidden as a symbol AND as an overrides target, and an annotated method still participates in the in-file verified-override test.",
+ "expectSymbols": [
+  { "name": "initWithBaseURL:sessionConfiguration:", "kind": "method", "ownerName": "AnnotatedCache" },
+  { "name": "objectForKey:", "kind": "method", "ownerName": "AnnotatedCache" },
+  { "name": "sd_setImageWithURL:placeholderImage:options:", "kind": "method", "ownerName": "AnnotatedCache" },
+  { "name": "plain", "kind": "method", "ownerName": "AnnotatedCache" },
+  { "name": "dropFirst:", "kind": "method", "ownerName": "AnnotatedSubclass" },
+  { "name": "drive", "kind": "method", "ownerName": "AnnotatedCaller" },
+  { "name": "AnnotatedCache", "kind": "class" },
+  { "name": "AnnotatedSubclass", "kind": "class" },
+  { "name": "AnnotatedCaller", "kind": "class" }
+ ],
+ "forbidSymbols": [
+  { "name": "initWithBaseURL:sessionConfiguration:NS_DESIGNATED_INITIALIZER", "kind": "method" },
+  { "name": "objectForKey:NS_SWIFT_NOTHROW", "kind": "method" },
+  { "name": "sd_setImageWithURL:placeholderImage:options:NS_REFINED_FOR_SWIFT", "kind": "method" },
+  { "name": "dropFirst:NS_SWIFT_NOTHROW", "kind": "method" },
+  { "name": "initWithBaseURL:sessionConfiguration:NS_DESIGNATED_INITIALIZER", "kind": "method", "ownerName": "AnnotatedCache" },
+  { "name": "dropFirst:NS_SWIFT_NOTHROW", "kind": "method", "ownerName": "AnnotatedSubclass" },
+  { "name": "NS_DESIGNATED_INITIALIZER", "kind": "method" },
+  { "name": "NS_SWIFT_NOTHROW", "kind": "method" },
+  { "name": "NS_REFINED_FOR_SWIFT", "kind": "method" }
+ ],
+ "expectRelationships": [
+  { "type": "contains", "source": "AnnotatedCache", "target": "initWithBaseURL:sessionConfiguration:" },
+  { "type": "contains", "source": "AnnotatedCache", "target": "objectForKey:" },
+  { "type": "contains", "source": "AnnotatedCache", "target": "sd_setImageWithURL:placeholderImage:options:" },
+  { "type": "contains", "source": "AnnotatedSubclass", "target": "dropFirst:" },
+  { "type": "calls", "source": "drive", "target": "dropFirst:", "comment": "the message send names the declared selector, never the annotated spelling" },
+  { "type": "overrides", "source": "AnnotatedSubclass.plain", "target": "AnnotatedCache.plain", "comment": "the in-file superclass declares the same full selector, so this is a verified override @0.95 — the annotation on dropFirst: must not make it disappear" }
+ ],
+ "forbidRelationships": [
+  { "type": "calls", "source": "drive", "target": "dropFirst:NS_SWIFT_NOTHROW" },
+  { "type": "overrides", "source": "AnnotatedSubclass.dropFirst:NS_SWIFT_NOTHROW", "target": "AnnotatedCache.dropFirst:NS_SWIFT_NOTHROW" },
+  { "type": "overrides", "source": "AnnotatedSubclass.initWithBaseURL:sessionConfiguration:NS_DESIGNATED_INITIALIZER", "target": "AnnotatedCache.initWithBaseURL:sessionConfiguration:NS_DESIGNATED_INITIALIZER" },
+  { "type": "contains", "source": "AnnotatedCache", "target": "sd_setImageWithURL:placeholderImage:options:NS_REFINED_FOR_SWIFT" },
+  { "type": "overrides", "source": "AnnotatedSubclass.sd_setImageWithURL:placeholderImage:options:NS_REFINED_FOR_SWIFT", "target": "AnnotatedCache.sd_setImageWithURL:placeholderImage:options:NS_REFINED_FOR_SWIFT" }
+ ]
+}

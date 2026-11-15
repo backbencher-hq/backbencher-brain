@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H1",
+  "code": "H1",
+  "tool": "bb_health",
+  "title": "classification — real counts/freshness/warnings",
+  "verified": true,
+  "checks": 7,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:21:22.104Z"
+}

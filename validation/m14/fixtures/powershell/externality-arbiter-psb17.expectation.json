@@ -1,0 +1,227 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/externality-arbiter-psb17.ps1",
+ "authoredFrom": "PS38 \u2014 the ARBITER'S spelling of the externality claim. `incoming-gate.ts` reads a claim from an EXPLICIT key list (`EXTERNAL_KEYS`, script/m14/incoming-rule.ts) and `externalTarget` \u2014 the key this analyzer has published its externality reading under since PS-B16 \u2014 is NOT in it. So every marked edge arrived at the arbiter UNMARKED, and an unmarked external is indistinguishable there from a broken one. Measured before the change at `npx tsx script/m14/incoming-gate.ts --json powershell ps1 60`: FAIL \u2014 1192 ambiguous + 5877 unresolved of 9911 edges, markedExternal 0. 1,938 of those 5,877 already carried this analyzer's own externality reading.\n\nWHAT PS38 DOES, AND WHAT IT DOES NOT. `isExternalTarget` is in the list and states the same claim word for word, so the key is RE-SPELLED onto edges the existing reading already marks \u2014 `declaredInFile(target)` guard and `externalReadingOf` unchanged, `externalVia` still saying which reading fired, and not one edge added. It is NOT published on every marked edge, and that restriction is the second half of the change: `verifyExternalClaim` verifies a claim by asking about the TARGET ITSELF when the target has no dotted owner, and about the OWNER \u2014 a name the edge does not carry \u2014 when it has one. The second question can be answered by an unrelated declaration.\n\nMEASURED, `powershell ps1 60` (census `validation/m14/fixtures/powershell/incoming-split.mts --nf 60 --all`, the gate's own imported rule, 978-file corpus for the declaration truth): FAIL \u2014 1192 ambiguous + 3987 unresolved of 9911 edges, with 1890 edges marked external = 179 verified + 1711 unverifiable + 0 REFUTED. The 48 withheld edges (47 that WOULD have verified, 1 that would have been refuted) keep `externalTarget`/`externalVia` and are left unmarked for the arbiter, because no per-file rule can separate `System.Version` (owner `System`) from `[Text.UTF8Encoding]::new()` (owner `Text`). Corpus-wide (`--all`, 978 files): 27,694 marked edges \u2192 27,612 published, and 82 REFUTED \u2192 0. Every one of the 82 has a BARE owner \u2014 `Text` (Grace/scripts/capture-artifact-size.ps1:115), `powershell` (from `powershell.exe`), `3` (from `#requires -Version 3.0`), and `Test` (ConsoleHost.Tests.ps1:1075, `[Test.User32]::GetPlacement`, a type the run creates with `Add-Type -Name User32 -Namespace Test` at :1012 while an unrelated Pester file declares `class Test` at Scripting.Classes.BasicParsing.Tests.ps1:508); ZERO has a qualified owner.\n\nWHY TWO KEYS AND NOT A RENAME: `script/m60/powershell-mutants.ts` writes four `powershell/externality-*` mutants against `metadata.externalTarget`, and that suite is NOT in this lane's write scope \u2014 dropping the old spelling would silently disarm four mutants whose whole job is to kill the shape-only rule this pass exists to avoid. The cost is one 24-byte `,\"isExternalTarget\":true` per published edge.\n\nWHY EVERY POSITIVE ROW HAS A NEGATIVE TWIN. A rule that marked on SHAPE alone would pass every positive row in this file and fail the twins: `Get-Thing` is the Verb-Noun spelling this file DECLARES (row 6), `Local` is the type this file declares (row 7), `global:Helper` is the scope prefix this file can declare into (row 8), `'application/json'` is a quoted hashtable key carrying a qualifier byte (row 9), and `System.Version` is the broad-owner twin row 4 needs \u2014 same .NET channel, bare owner, withheld. Measured on the admitted corpus: the unguarded Verb-Noun reading marks 32,368 live edges of which 7,040 (21.75%) point at a name the EMITTING FILE declares.",
+ "expectSymbols": [
+  {
+   "name": "externality-arbiter-psb17.ps1",
+   "kind": "module"
+  },
+  {
+   "name": "Get-Thing",
+   "kind": "function",
+   "ownerName": "externality-arbiter-psb17.ps1",
+   "comment": "The Verb-Noun LOCAL that makes the guard load-bearing. Its call at line 51 carries NEITHER key, and the cmdlet at line 26 carries both \u2014 identical spelling shape, opposite marking, and that difference is one boolean wide."
+  },
+  {
+   "name": "Local",
+   "kind": "class",
+   "ownerName": "externality-arbiter-psb17.ps1",
+   "comment": "The declared type whose construction at line 60 must NOT be marked. No spelling distinguishes `[Local]::new()` from `[System.Version]::new()`; only the declaration table does."
+  },
+  {
+   "name": "global:Helper",
+   "kind": "function",
+   "ownerName": "externality-arbiter-psb17.ps1",
+   "comment": "Published WITH its scope prefix, which is why the scope-prefix exclusion is stated on the target rather than applied by stripping: the name this file publishes is the name the edge carries."
+  },
+  {
+   "name": "'application/json'",
+   "kind": "property",
+   "ownerName": "externality-arbiter-psb17.ps1",
+   "comment": "A QUOTED hashtable key carrying a `/`, published verbatim with its quotes attached. It is the reason the qualified reading excludes a leading quote: without the exclusion the key would satisfy the qualifier-byte test."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "Get-ChildItem",
+   "line_number": 26,
+   "meta.isExternalTarget": true,
+   "meta.externalVia": "cmdlet",
+   "comment": "THE POSITIVE ROW the whole fixture exists for: a cmdlet-shaped command the project declares nowhere, now readable by the arbiter. `verifyExternalClaim` answers a bare identifier against the key space directly, so this edge is VERIFIED \u2014 verified 226 of the after-run are edges the project itself confirms it does not declare."
+  },
+  {
+   "type": "instantiates",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "System.Version",
+   "line_number": 30,
+   "meta.isExternalTarget": null,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "comment": "THE WITHHELD CLASS, and the row that pins the SECOND half of PS38. The reading fires (`externalTarget`/`externalVia` are set) but the arbiter-readable key is NOT published, because the arbiter's owner is `System` \u2014 a BARE name it will LOOK UP \u2014 and no per-file rule can tell `System.Version` (owner `System`, names nothing the corpus declares) from `[Text.UTF8Encoding]::new()` (owner `Text`, refuted by an unrelated declaration in Grace/scripts). Measured: 82 corpus-wide refutations, ALL on a bare owner, ZERO on a qualified one. `System.IO.Path::Combine` on line 38 is the SAME channel WITH a qualified owner and IS published, so the pair is the check: a rule that marked every .NET type fails this row, and a rule that marked none fails that one."
+  },
+  {
+   "type": "uses",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "env:TEMP",
+   "line_number": 34,
+   "meta.isExternalTarget": true,
+   "meta.externalVia": "qualified",
+   "comment": "A RUNTIME TABLE. `env:` deliberately KEEPS the qualified reading where `global:`/`script:`/`local:`/`private:`/`function:` are excluded: no declaration in this file or any other can bind the process environment."
+  },
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "System.IO.Path.Combine",
+   "line_number": 38,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "meta.isExternalTarget": true,
+   "meta.ownerMemberAbsent": null,
+   "comment": "A BCL STATIC MEMBER CALL \u2014 AND THE CLAIM IS NOW THE GENERIC ONE, DELIBERATELY, SUPERSEDING THE PS-B22 EXPECTATION. PS-B22 routed every static call on a type this file does not declare to `ownerMemberAbsent` because the generic reading had cost 559 refutations; the measurement behind that number was about ONE-SEGMENT owners (`Path.Combine` -> owner `Path`), which a project variable of that spelling really can refute. THIS row's owner is `System.IO.Path` \u2014 a DOTTED name, and no published symbol can be keyed by one: PowerShell class names cannot contain a dot and every variable, function and parameter is stored as its bare identifier. So the generic claim here asks a question the project can answer, and it answers by finding nothing: MEASURED over the whole population, the dotted-owner split moved 1,038 rows from UNVERIFIABLE to VERIFIED with `extFAIL` unchanged at 60. Keeping `ownerMemberAbsent` would have been a claim the arbiter cannot check, on a fact it can \u2014 which is the clause-1 debt PSD12 exists to remove. The forbid row below pins the absence so a revert to PS-B22's treatment is caught rather than silently accepted."
+  },
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "Get-Thing",
+   "line_number": 51,
+   "meta.isExternalTarget": null,
+   "meta.externalTarget": null,
+   "comment": "THE TWIN, and the row that keeps the mark a check. Byte-for-byte the same Verb-Noun shape as line 26's `Get-ChildItem`, declared 7 lines above, so the declaration guard refuses the mark. `meta.externalTarget: null` is asserted beside it because the OLD spelling must stay absent for the same reason: PS38 adds a key and changes no reading."
+  },
+  {
+   "type": "instantiates",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "Local",
+   "line_number": 60,
+   "meta.isExternalTarget": null,
+   "comment": "THE TWIN through the qualified channel: `[Local]::new()` is the same syntax as `[System.Version]::new()` and names a type this file declares. Its arbiter owner would be `Local` \u2014 which the key space DOES publish \u2014 so marking it would have been a REFUTED claim, not merely a wrong one."
+  },
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "global:Helper",
+   "line_number": 76,
+   "meta.isExternalTarget": null,
+   "comment": "THE SCOPE-PREFIX TWIN. `function global:Helper` is ordinary PowerShell that THIS FILE declares, so the exclusion is a claim the file can falsify \u2014 and does, on this row."
+  },
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "Out-Null",
+   "line_number": 76,
+   "meta.isExternalTarget": true,
+   "comment": "THE CONTROL BESIDE THE EXCLUSION, on the SAME LINE: `global:Helper -X 1 | Out-Null` publishes two calls, and the scope-prefix exclusion must suppress one and not the other. Without this row a rule that skipped every edge on a line carrying a scope prefix would pass row 7."
+  },
+  {
+   "type": "contains",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "'application/json'",
+   "line_number": 64,
+   "meta.isExternalTarget": null,
+   "comment": "THE QUOTE EXCLUSION, negative half. The published name carries a `/` and would satisfy the qualified reading, but a quoted literal is not an identifier: this analyzer publishes hashtable keys and command arguments verbatim, so `'Content-Type'` (43 corpus edges), `\"Authorization\"` (18) and `\"it:skip\"` (7) all arrive as names."
+  },
+  {
+   "type": "contains",
+   "from": "Get-Thing",
+   "target": "Name",
+   "line_number": 45,
+   "comment": "PS-B21 \u2014 `param($Name)`: the parameter is a declaration IN Get-Thing, so the containment is function -> parameter. Before PS-B21 the parameter existed only as metadata on the function symbol, which is why every parameter in the corpus was an F5 MISSING row."
+  },
+  {
+   "type": "contains",
+   "from": "global:Helper",
+   "target": "X",
+   "line_number": 70,
+   "comment": "PS-B21 \u2014 the same rule through a SCOPE-PREFIXED function name: the owner is `global:Helper`, the target `X`, and neither is a file-scope variable."
+  },
+  {
+   "type": "uses",
+   "from": "Get-Thing",
+   "target": "Get-Thing.Name",
+   "line_number": 46,
+   "meta.externalTarget": null,
+   "meta.noDeclarationInFile": null,
+   "comment": "The parameter read in the function body, the same PS38 rule as the contains row at line 45, now on the read side. A parameter is a declaration in its own function, so no externality key may fire."
+  },
+  {
+   "type": "uses",
+   "from": "global:Helper",
+   "target": "global:Helper.X",
+   "line_number": 71,
+   "meta.externalTarget": null,
+   "meta.noDeclarationInFile": null,
+   "comment": "The `global:Helper` parameter read. This is the pair that keeps the qualified reading honest: `global:` marks a CALL external-looking, and a READ inside the declaring function is neither."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "instantiates",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "System.Version",
+   "line_number": 30,
+   "meta.isExternalTarget": true,
+   "comment": "THE BROAD-OWNER PRE-FIX SHAPE. A rule that published the readable key wherever the reading fired \u2014 the first half of PS38 alone, before the 82 refutations were measured \u2014 marks this edge, whose arbiter owner is the bare name `System`. It is the same shape as `[Text.UTF8Encoding]::new()`, which an unrelated `Text` declaration refutes, and no per-file rule separates them, so the whole class is withheld. `meta.externalTarget: true` is asserted on the same edge by the positive row above the forbids, so the fixture pins BOTH halves: the claim stays, the uncheckable spelling does not."
+  },
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "Get-Thing",
+   "line_number": 51,
+   "meta.isExternalTarget": true,
+   "comment": "THE PRE-FIX SHAPE, stated as a forbid because a forbid is the only vocabulary that can say a KEY carries a value it must not. This is what a spelling-only implementation emits for line 51 \u2014 7,040 corpus edges' worth of the same mistake \u2014 and it is caught by `powershell/externality-guard-removed`."
+  },
+  {
+   "type": "instantiates",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "Local",
+   "line_number": 60,
+   "meta.isExternalTarget": true,
+   "comment": "A mark on a type THIS FILE declares. Not a mislabel but a REFUTED claim: the arbiter would find `Local` in the key space and count the claim false against the lane."
+  },
+  {
+   "type": "calls",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "global:Helper",
+   "line_number": 76,
+   "meta.isExternalTarget": true,
+   "comment": "The scope-prefix exclusion, negative half \u2014 caught by `powershell/externality-scope-exclusion-removed`."
+  },
+  {
+   "type": "contains",
+   "from": "externality-arbiter-psb17.ps1",
+   "target": "'application/json'",
+   "line_number": 64,
+   "meta.isExternalTarget": true,
+   "comment": "The quote exclusion, negative half \u2014 caught by `powershell/externality-quote-exclusion-removed`."
+  },
+  {
+   "type": "calls",
+   "target": "System.IO.Path.Combine",
+   "meta.ownerMemberAbsent": {
+    "owner": "System.IO.Path",
+    "member": "Combine"
+   },
+   "comment": "PSD12 \u2014 the REVERT pin: a dotted owner is a name the project can answer, so the unverifiable claim must not come back. This rarely fires as a 'wrong value' and usually as the pre-fix shape returning wholesale, which is why it names the target rather than the class."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "calls",
+   "equals": 7,
+   "comment": "Get-ChildItem + Out-Null (line 26), Get-Thing + Out-Null (line 51), System.IO.Path::Combine (line 38), global:Helper + Out-Null (line 76). The count is what makes the population independent of the metadata: a change that marked more or fewer edges would leave these seven in place, which is why this fixture's verification is metadata rows and mutants rather than a count alone."
+  },
+  {
+   "type": "contains",
+   "equals": 13,
+   "comment": "One per declaration plus the class member, AND two PARAMETER declarations: the module contains v, here, p, Get-Thing, Local, l, headers, 'application/json', headers2, global:Helper, and Local contains Render \u2014 plus `Get-Thing -> Name` (line 45) and `global:Helper -> X` (line 70), because a parameter is a declaration in its own function's scope (PS-B21). The two parameter rows are pinned individually below rather than left inside this count."
+  },
+  {
+   "type": "instantiates",
+   "equals": 2,
+   "comment": "`System.Version` (external, verified) and `Local` (declared in this file, no key). Same brackets, same `::`, same call \u2014 the pair is what stops a fix that marks every type reference."
+  },
+  {
+   "type": "uses",
+   "equals": 4,
+   "comment": "`env:TEMP` (marked, verified) and `headers` at line 65 (a read of a hashtable this file declares, neither key). The pair is the control for the qualified channel. Raised 2 -> 4 by PS38 (pipeline-head reads)."
+  },
+  {
+   "type": "references",
+   "equals": 1,
+   "comment": "The `#requires -Version 7.0` directive, which the qualified reading marks (a dotted version string). Recorded rather than suppressed: it is a real dependency on a runtime version, and it is one of the 1,711 unverifiable claims because `7.0` carries no identifier-shaped owner."
+  }
+ ]
+}

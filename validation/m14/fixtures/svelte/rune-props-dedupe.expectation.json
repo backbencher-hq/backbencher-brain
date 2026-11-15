@@ -1,0 +1,58 @@
+{
+  "fixtureId": "svelte/rune-props-dedupe",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "S2 (#419): let { a, b, c = 5 } = $props() must declare each prop EXACTLY once as a component-owned Property. Pre-fix: extractSvelteDeclarations emitted Property symbols AND the JS sub-analyzer's destructured Variables both survived, doubling a/b/c (c=5 is an object_assignment_pattern default). Pin exact counts via expectSymbolCount.",
+  "expectSymbols": [
+    {
+      "name": "a",
+      "kind": "property",
+      "meta.isSvelteProp": true,
+      "ownerName": "rune-props-dedupe"
+    },
+    {
+      "name": "b",
+      "kind": "property",
+      "meta.isSvelteProp": true,
+      "ownerName": "rune-props-dedupe"
+    },
+    {
+      "name": "c",
+      "kind": "property",
+      "meta.isSvelteProp": true,
+      "ownerName": "rune-props-dedupe"
+    },
+    {
+      "name": "extra",
+      "kind": "variable"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "a",
+      "equals": 1
+    },
+    {
+      "name": "b",
+      "equals": 1
+    },
+    {
+      "name": "c",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "rune-props-dedupe",
+      "target": "a",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "rune-props-dedupe",
+      "target": "c",
+      "meta.evidenceClass": "structural"
+    }
+  ]
+}

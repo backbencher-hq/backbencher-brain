@@ -1,0 +1,82 @@
+{
+  "gate": "scaling-linear",
+  "claim": "cross-file relationship resolution cost per stored relationship does not grow superlinearly in file count",
+  "arm": "before",
+  "generatedAt": "2026-10-06T21:18:02.903Z",
+  "currentCommit": "b6c37538a2c79f1412511aaf700f973beed34cd9",
+  "sourceFingerprint": "clean",
+  "verifierCommand": "npx tsx script/perf/verify-scaling-linear.ts --tiers 50,200 --repeat 2 --label before",
+  "evidenceFile": "validation/m60/results/scaling-linear.json",
+  "machine": {
+    "platform": "darwin",
+    "arch": "x64",
+    "cpus": "12",
+    "model": "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "node": "v22.14.0"
+  },
+  "bounds": {
+    "maxFanoutGrowth": 1.5,
+    "maxResolveMsPerRelGrowth": 2
+  },
+  "tiers": [
+    50,
+    200
+  ],
+  "repeats": 2,
+  "arms": [
+    {
+      "tier": 50,
+      "files": 47,
+      "rels": 7920,
+      "syms": 1754,
+      "joinRows": 8598,
+      "fanout": 1.0856060606060607,
+      "resolveMs": 358,
+      "resolveMsPerRel": 0.0452020202020202,
+      "wallSecs": 10.662264479,
+      "load1": 30.87
+    },
+    {
+      "tier": 200,
+      "files": 196,
+      "rels": 61333,
+      "syms": 10170,
+      "joinRows": 175869,
+      "fanout": 2.8674449317659336,
+      "resolveMs": 7081,
+      "resolveMsPerRel": 0.11545171441149137,
+      "wallSecs": 65.375271415,
+      "load1": 16.7
+    }
+  ],
+  "passed": 0,
+  "failed": 2,
+  "checks": [
+    {
+      "name": "resolution candidate fan-out stays bounded as files grow",
+      "ok": false,
+      "measured": 2.6413309908799945,
+      "bound": 1.5,
+      "detail": "candidates consulted per relationship: 1.09 at 47 files → 2.87 at 196 files (2.64× over 4× the files; bound 1.5×). Counted from the written index, so no machine load enters this number."
+    },
+    {
+      "name": "resolution cost per stored relationship stays bounded as files grow",
+      "ok": false,
+      "measured": 2.5541273132374624,
+      "bound": 2,
+      "detail": "resolve ms per relationship: 0.0452 at 47 files → 0.1155 at 196 files (2.55×; bound 2×). Minimum over interleaved repeats; load1 was 30.87 (small tier) / 16.7 (large tier)."
+    }
+  ],
+  "negativeCases": [
+    "selftest: a linear arm is ACCEPTED by both checks (a bound so tight it rejects correct code would be unusable)",
+    "selftest: the PLANTED REGRESSION arm (fan-out 1.09→2.87, the measured shape of the unfixed name-resolution pass) is REJECTED by both checks",
+    "selftest: a fixture-density change (97 files/16,522 rels → 796 files/121,782 rels, a 7.4× change in relationships-per-file) is NOT rejected — proving the gate measures the indexer and not the pool's file density"
+  ],
+  "limitations": [
+    "Bounds ONE stage: cross-file relationship resolution. Parse, the store phase, enrichment, gravity and taint are measured in the record but not gated.",
+    "The checks are ratios between the smallest and largest tier; a regression that costs a constant factor at every size passes.",
+    "Check 2 reads milliseconds, so it is load-sensitive by construction; the minimum over interleaved repeats bounds that sensitivity but does not remove it. Check 1 uses no clock.",
+    "Tier pools are copies of this repository's own source files, so the numbers describe TypeScript-in-TS. Other languages have different relationship densities.",
+    "This gate cannot see whether resolution attached the same target to the same edge. The relationship-multiset digests in script/perf/rel-digest.mjs carry that claim."
+  ]
+}

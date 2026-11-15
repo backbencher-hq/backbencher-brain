@@ -1,6 +1,6 @@
 # M59: Call-Site Truth — no relationship without a real line
 
-> GitHub milestone [#59](https://github.com/backbencher-hq/backbencher-brain/milestone/59) (not `M58` — that slot is
+> GitHub milestone [#59](https://github.com/ishaq2321/backbencher-brain/milestone/59) (not `M58` — that slot is
 > the analyzer-lane review reservation at milestone #58, and reusing the name would collide the moment its
 > docs land).
 > Issues: #819 (A1), #820 (A2), #821 (A3), #822 (A4), #823 (A5), #824 (A6), #825 (A7), #826 (X1).
@@ -617,7 +617,7 @@ pattern the acceptance harness set, because an instrument that accuses correct c
 
 Three product findings, all filed, none papered over:
 
-- **[#888](https://github.com/backbencher-hq/backbencher-brain/issues/888) — `bb_graph` silently returns ≤200 callers.**
+- **[#888](https://github.com/ishaq2321/backbencher-brain/issues/888) — `bb_graph` silently returns ≤200 callers.**
   `graph-engine.ts:160` carries a hard `LIMIT 200`; `truncated` is set only on budget exhaustion, so a symbol
   with **3,437** real call sites answers with 200 and `truncated: false`. 7 of 8 java cells sat exactly at the
   cap. The 200 it does return are correct (`200/200` consistent, 0 fabricated) — that is the point: the tool
@@ -630,7 +630,7 @@ Three product findings, all filed, none papered over:
   Consequence measured across four builds of one slice: `map` sites = 199 / 161 / 160 / 144. The tool is exactly
   reproducible *on one index* (3 rounds × 2 processes, identical hashes) and different *between indexes of
   identical input*. Write-up: `reviews/m59-index-binding-nondeterminism.md`.
-- **[#887](https://github.com/backbencher-hq/backbencher-brain/issues/887) — tool calls block for minutes when
+- **[#887](https://github.com/ishaq2321/backbencher-brain/issues/887) — tool calls block for minutes when
   queried in the process that just finished indexing.** The kotlin sweep indexed 150 files in 7 s, printed 2 of
   8 cells, then made no progress: `real 8m20s, user 1.0s` — blocked, not computing. The *same* calls on the
   *same* index in a fresh process answer in **≤67 ms** (`probe-name-latency.ts`). This is why the sweep is
@@ -739,7 +739,7 @@ The harness check `nested-site-source-reaches-the-caller` had been pinned **RED 
 | regression | `m51/verify-a1-owner-integrity` **10/10** (zero orphan owners, mutation proven), m59 legacy-zero-heal · rel-multiplicity · line-key-idempotency · honest-callsite all PASS, store-line-landing **0 INCONSISTENT of 31,730**, M44 U3 hub tree **27/27** + 5/5 mutants, U1 18/20 (the pre-existing #891 gap), `bun run script/verify-graph.ts` **PASS**, typecheck clean |
 | tool layer unchanged — measured, not assumed | the kotlin lane re-run gives the same stable cells to the digit (`assertEquals` 40, `current` 68, `forEach` 43, `execute` 32, `getString` 29, `connection` 8) across four builds including a pre-fix one. The lane total moves (270 → 264/267/269) because the **top-8 callee names differ between builds** and `copy` itself varies 30 → 33 between two runs of *identical* code — the #885 binding non-determinism, not this change. The fix alters answer *readability*, not site counts, and that is what the numbers say |
 
-**Filed from it, not swept up: [#894](https://github.com/backbencher-hq/backbencher-brain/issues/894).** The new gate's "no invention" control caught a **pre-existing** defect: `topLevel` (a single-line top-level function at line 11) is owned by `Local`, a class at lines 4–6 inside a method body, which does **not** enclose it — produced by the pre-existing "nearest preceding container" step, whose own comment reserves it for the regex fallback. Scale on the fresh cats-effect index: **1,221 of 6,009 owned symbols (20%)** carry an owner whose span does not enclose them (`method<-class` 271, `method<-interface` 262, `function<-type` 147). That number **mixes two causes this measurement cannot separate** — an invented owner, and an analyzer emitting a too-short `end` line — so it is filed with the split as its first task rather than "fixed" here. The gate records it as a declared observation tied to #894, not as a pass.
+**Filed from it, not swept up: [#894](https://github.com/ishaq2321/backbencher-brain/issues/894).** The new gate's "no invention" control caught a **pre-existing** defect: `topLevel` (a single-line top-level function at line 11) is owned by `Local`, a class at lines 4–6 inside a method body, which does **not** enclose it — produced by the pre-existing "nearest preceding container" step, whose own comment reserves it for the regex fallback. Scale on the fresh cats-effect index: **1,221 of 6,009 owned symbols (20%)** carry an owner whose span does not enclose them (`method<-class` 271, `method<-interface` 262, `function<-type` 147). That number **mixes two causes this measurement cannot separate** — an invented owner, and an analyzer emitting a too-short `end` line — so it is filed with the split as its first task rather than "fixed" here. The gate records it as a declared observation tied to #894, not as a pass.
 
 ### 3q. Capability, stated as measured: 9 lanes carry a call-site line, 13 do not (2026-09-19, #819)
 

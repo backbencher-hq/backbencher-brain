@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a6-health-refresh.ts",
+  "evidenceFile": "A6.json",
+  "generatedAt": "2026-11-05T04:30:10.407Z",
+  "passed": 17,
+  "failed": 0,
+  "negativeCases": 3
+}

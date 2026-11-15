@@ -2,7 +2,7 @@
 
 ## Milestone
 
-- **GitHub:** https://github.com/backbencher-hq/backbencher-brain/milestone/16
+- **GitHub:** https://github.com/ishaq2321/backbencher-brain/milestone/16
 - **ID:** #16
 - **Issues:** 16 tracked issues — #386-#401 (15 scoped work issues plus the milestone-resolution test issue #386)
 

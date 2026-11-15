@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
-const f = "$HOME/ishaq/fixtures/repositories/fmt/test/enum-test.cc"
+const f = "/home/sano/ishaq/bb_tests/repositories/fmt/test/enum-test.cc"
 const { tree } = await ASTEngine.parseTree(f, readFileSync(f, "utf8"))
 const visit = (n: any) => {
   if (n.type === "enum_specifier" && n.startPosition.row === 23) {

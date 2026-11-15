@@ -1,0 +1,642 @@
+{
+  "schemaVersion": 2,
+  "truthSource": "manual_audit",
+  "source": "HAND-AUDITED for M14 (#289). Every fact was decided by reading validation/m12/fixtures/toml/Page.toml against the TOML v1.0.0 specification BEFORE the analyzer was run, and each carries a `reference` quoting the line it was read from. This is NOT a transcription of analyzer output: each row was decided from the markup first, and the comparison afterwards is the whole point. The audit confirmed five rulings and, importantly, found NO disagreement with the analyzer \u2014 which is a weaker result than the html audit produced and is recorded as such. html's hand audit found two places where the ANALYZER was wrong; this one found none, because the analyzer's three real defects were already found and fixed by the differential oracle. The honest reading is that the two checks are complementary rather than redundant: the oracle catches implementation divergence between two implementations, this catches a divergence between the code and a human's reading of the spec, and after the oracle's fixes there was less for it to find. Audit scope: the whole fixture, every symbol and every relationship. The vocabulary is `contains` ALONE, and the audit checked that too: `path = \"src/first.rs\"` is a STRING and produces no `uses` edge, because TOML defines no include, import, alias or reference mechanism. `extends`/`implements`/`instantiates`/`overrides`/`exports` are absent for the same reason they are absent from html \u2014 no TOML construct produces them. Regenerating this file from analyzer output would destroy its only function.",
+  "facts": [
+    {
+      "id": "symbol:Page.toml:1:module:Page",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 1,
+      "attributes": {
+        "name": "Page",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "<!DOCTYPE-equivalent: the FILE is the module, named from the stem `Page`. A TOML document is one root table and without a module every top-level key is parentless and the file has no identity in the graph."
+      }
+    },
+    {
+      "id": "symbol:Page.toml:7:property:title",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 7,
+      "attributes": {
+        "name": "title",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`title = \"TOML audit\"` \u2014 before any header, so it is in the IMPLICIT ROOT table and its owner is the document module"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:8:property:enabled",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 8,
+      "attributes": {
+        "name": "enabled",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`enabled = true` \u2014 same implicit root; a boolean VALUE is data, so the symbol is the key and not `true`"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:9:property:ratio",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 9,
+      "attributes": {
+        "name": "ratio",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`ratio = 1.5` \u2014 same implicit root"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:10:property:count",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 10,
+      "attributes": {
+        "name": "count",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`count = 42` \u2014 same implicit root"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:12:namespace:package",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 12,
+      "attributes": {
+        "name": "package",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[package]` \u2014 a table header, and a `namespace` because it contains keys"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:13:property:package.name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 13,
+      "attributes": {
+        "name": "package.name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`name = \"audit\"` inside `[package]` \u2014 the full dotted path is the name, because `name` also appears under both `[[bin]]` elements and a leaf-only name would collide in this very file"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:14:property:package.version",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 14,
+      "attributes": {
+        "name": "package.version",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`version = \"0.1.0\"` inside `[package]`"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:18:property:package.\"dotted.literal\"",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 18,
+      "attributes": {
+        "name": "package.\"dotted.literal\"",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`\"dotted.literal\" = 1` \u2014 a QUOTED key is ONE segment even though it contains a dot, so this is a single key of `package` named `dotted.literal` and NOT two nested keys. The quotes are what make the name readable back."
+      }
+    },
+    {
+      "id": "symbol:Page.toml:21:property:package.plain.dotted",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 21,
+      "attributes": {
+        "name": "package.plain.dotted",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`plain.dotted = 2` \u2014 a BARE dotted key really does nest three deep, yet it is ONE symbol whose name is the full path"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:26:namespace:dependencies",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 26,
+      "attributes": {
+        "name": "dependencies",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[dependencies]` \u2014 a table at the document root, so the module owns it"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:27:property:dependencies.serde",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 27,
+      "attributes": {
+        "name": "dependencies.serde",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`serde = \"1\"` \u2014 a key of `[dependencies]`; the string is data"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:29:namespace:bin",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 29,
+      "attributes": {
+        "name": "bin",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[[bin]]` \u2014 an ARRAY-OF-TABLES element, which is a table like any other and is owned by the module"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:30:property:bin.name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 30,
+      "attributes": {
+        "name": "bin.name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`name = \"first\"` \u2014 the first element keeps the plain path"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:31:property:bin.path",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 31,
+      "attributes": {
+        "name": "bin.path",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`path = \"src/first.rs\"` \u2014 a VALUE, and specifically NOT a `uses` edge: TOML defines no include/import/reference mechanism, so a path-shaped string is a string. Reading it as a dependency would import ecosystem knowledge into a format that has none."
+      }
+    },
+    {
+      "id": "symbol:Page.toml:33:namespace:bin#2",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 33,
+      "attributes": {
+        "name": "bin#2",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "the SECOND `[[bin]]` element is a DISTINCT table, so it cannot reuse the name and takes `#2`"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:34:property:bin#2.name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 34,
+      "attributes": {
+        "name": "bin#2.name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`name = \"second\"` \u2014 prefixed with the ALLOCATED table name, which is what keeps it distinct from `bin.name`"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:38:namespace:target.\"cfg(unix)\".dependencies",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 38,
+      "attributes": {
+        "name": "target.\"cfg(unix)\".dependencies",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[target.\"cfg(unix)\".dependencies]` \u2014 ONE symbol named by the full dotted path. The segment `cfg(unix)` has parentheses, which are NOT in TOML's bare-key alphabet (A-Za-z0-9_-), so the name KEEPS ITS QUOTES: an unquoted path is not a spelling TOML can parse back, and it would read as three nested tables when the document declares two. `target` and `target.\"cfg(unix)\"` are IMPLIED \u2014 the file never declares them \u2014 so they are recorded in metadata and are NOT symbols."
+      }
+    },
+    {
+      "id": "symbol:Page.toml:39:property:target.\"cfg(unix)\".dependencies.libc",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 39,
+      "attributes": {
+        "name": "target.\"cfg(unix)\".dependencies.libc",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`libc = \"0.2\"` \u2014 a key of that table"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:43:namespace:inline",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 43,
+      "attributes": {
+        "name": "inline",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[inline]` \u2014 a table at the document root"
+      }
+    },
+    {
+      "id": "symbol:Page.toml:44:property:inline.table",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Page.toml",
+      "line": 44,
+      "attributes": {
+        "name": "inline.table",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`table = { a = 1, b = \"two\" }` \u2014 an inline table is ONE value expression, so `a` and `b` are NOT symbols of the file; they ride on this key in metadata.inlineKeys. A manifest with 200 dependencies written as `{ version = ..., features = [...] }` would otherwise publish 600+ symbols naming nothing a consumer can navigate to on its own."
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:title",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "title",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "a key before any header is contained by the document root"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:enabled",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "enabled",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:ratio",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "ratio",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:count",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "count",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:package",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "package",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[package]` is contained by the document root"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:package:package.name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "package",
+      "targetId": "package.name",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "a key is contained by the table that declares it"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:package:package.version",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "package",
+      "targetId": "package.version",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:package:package.\"dotted.literal\"",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "package",
+      "targetId": "package.\"dotted.literal\"",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:package:package.plain.dotted",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "package",
+      "targetId": "package.plain.dotted",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:dependencies",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "dependencies",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[dependencies]` is contained by the document root"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:dependencies:dependencies.serde",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "dependencies",
+      "targetId": "dependencies.serde",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:bin",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "bin",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "the first `[[bin]]` element is contained by the document root"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:bin:bin.name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "bin",
+      "targetId": "bin.name",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:bin:bin.path",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "bin",
+      "targetId": "bin.path",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:bin#2",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "bin#2",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "the second `[[bin]]` element is ALSO contained by the document root, not by the first element \u2014 they are siblings"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:bin#2:bin#2.name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "bin#2",
+      "targetId": "bin#2.name",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:target.\"cfg(unix)\".dependencies",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "target.\"cfg(unix)\".dependencies",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "the four-segment header is contained by the document root, because the two prefixes it implies are recorded rather than invented"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:target.\"cfg(unix)\".dependencies:target.\"cfg(unix)\".dependencies.libc",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "target.\"cfg(unix)\".dependencies",
+      "targetId": "target.\"cfg(unix)\".dependencies.libc",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:Page:inline",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "Page",
+      "targetId": "inline",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "`[inline]` is contained by the document root"
+      }
+    },
+    {
+      "id": "rel:Page.toml:contains:inline:inline.table",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.toml",
+      "sourceId": "inline",
+      "targetId": "inline.table",
+      "attributes": {
+        "type": "contains"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same"
+      }
+    }
+  ]
+}

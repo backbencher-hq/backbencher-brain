@@ -1,0 +1,128 @@
+{
+  "fixtureId": "zig/callsite-lines-825",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59.A7 (#825). Zig emitted NO line_number on any relationship before this pin — measured through the production entry on a 200-file draw of the zig corpus: 0 of 20,789 edges lined (validation/m59/results/oracle-callsite-scoped-zig-f200.json now reads 20,789/20,789 lined, INCONSISTENT 0). The pre-fix state is therefore 'unlined', and the three traps below are the ways a zig line can be PRESENT and still wrong, each measured in the source before being written here: (1) a wrapped @import — the `const std =` declaration starts on 18 while the module path literal is written on 19, so a construct-start line stamps the import one line early; (2) a wrapped field access — a `field_expression` starts at its RECEIVER, so `counters` on 39 and `.misses` on 40 report 39 unless the LEAF node is used (the same class the c lane measured on a newline-continued function-pointer call); (3) a wrapped parameter type — the `pub fn seed(` keyword is on 30 while `Counters` is written on 31. The forbidRelationships entries are exactly those pre-fix positions, so re-introducing any of them fails the gate instead of passing silently.",
+  "expectSymbols": [
+    {
+      "name": "Counters",
+      "kind": "struct"
+    },
+    {
+      "name": "hits",
+      "kind": "property"
+    },
+    {
+      "name": "misses",
+      "kind": "property"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "seed",
+      "kind": "function"
+    },
+    {
+      "name": "run",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "(global)",
+      "target": "std",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "Counters.hits",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "Counters.misses",
+      "line_number": 23
+    },
+    {
+      "type": "references",
+      "from": "(declared-type)",
+      "target": "Counters",
+      "line_number": 31
+    },
+    {
+      "type": "calls",
+      "from": "seed",
+      "target": "helper",
+      "line_number": 34,
+      "confidenceMin": 0.85
+    },
+    {
+      "type": "uses",
+      "from": "seed",
+      "target": "hits",
+      "line_number": 35,
+      "confidenceMin": 0.75
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "misses",
+      "line_number": 40,
+      "confidenceMin": 0.75
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "seed",
+      "line_number": 42
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "helper",
+      "line_number": 42
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "(global)",
+      "target": "std",
+      "line_number": 18,
+      "note": "pre-fix shape: the `const std =` declaration line; the @import path is written on 19"
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "hits",
+      "line_number": 21,
+      "note": "pre-fix shape: the container's own start line; `hits` is declared on 22"
+    },
+    {
+      "type": "references",
+      "from": "(declared-type)",
+      "target": "Counters",
+      "line_number": 30,
+      "note": "pre-fix shape: the `pub fn seed(` keyword line; the type is written on 31"
+    },
+    {
+      "type": "uses",
+      "from": "seed",
+      "target": "hits",
+      "line_number": 34,
+      "note": "pre-fix shape / fabricated-substitute class: the enclosing assignment's line; the read is written on 35 (the line-34 mention is a WRITE, correctly emitted as no edge at all)"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "misses",
+      "line_number": 39,
+      "note": "pre-fix shape: the field_expression's RECEIVER line; the leaf `.misses` is written on 40"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{"id":"m13-accuracy","command":"npx tsx script/m13/verify-migrate-accuracy.ts","exitCode":0,"summary":"M1: VERIFIED (49/49 passed, 9 negatives)"}
+{"id":"m13-docs","command":"bun run script/m13/verify-migrate-docs.ts","exitCode":0,"summary":"M3: VERIFIED (12/12 passed, 1 negative)"}
+{"id":"m13-e2e","command":"bun run script/m13/verify-migrate-e2e-corpus.ts","exitCode":0,"summary":"M2: VERIFIED (7/7 passed, 1 negative)"}
+{"id":"m20-order","command":"bun run script/m20/verify-migration-order.ts","exitCode":0,"summary":"M1: VERIFIED (13/13 passed, 3 negative)"}
+{"id":"m20-methodology","command":"bun run script/m20/verify-migration-methodology.ts","exitCode":0,"summary":"M2: VERIFIED (17/17 passed, 3 negative)"}
+{"id":"m20-mappings","command":"bun run script/m20/verify-migration-mappings.ts","exitCode":0,"summary":"M3: VERIFIED (15/15 passed, 5 negative)"}
+{"id":"m20-dictionary","command":"bun run script/m20/verify-migration-dictionary.ts","exitCode":0,"summary":"M4: VERIFIED (31/31 passed, 3 negative) — 486 dictionary rows audited"}
+{"id":"m35-s3","command":"bun run script/m35/verify-s3-graph-migrate.ts","exitCode":0,"summary":"M35 S3 GRAPH+MIGRATE: PASS (23/23, negatives=4)"}
+{"id":"m48-c2","command":"bun run script/m48/verify-c2-edge-mutations.ts","exitCode":0,"summary":"M48 C2 EDGE+MUTATIONS: PASS (73 passed, 0 failed, 3 negatives)"}
+{"id":"m48-p4","command":"bun run script/m48/verify-p4-param-matrix.ts","exitCode":0,"summary":"M48 P4 PARAM MATRIX: PASS (10 passed, 0 failed, 2 negatives)"}
+{"id":"m65-latency","command":"bun run script/m65/verify-migrate-latency.ts","exitCode":0,"summary":"  PASS  migrate latency: the cap predicate detects an over-cap answer [negative control]  100 plans are within the cap; 101 are not"}
+{"id":"m65-selectors","command":"bun run script/m65/verify-migrate-selectors.ts","exitCode":0,"summary":"  PASS  migrate selectors: the de-duplication predicate detects a doubled plan [negative control]  one plan passes; two plans and zero plans fail"}
+{"id":"m15-deep","command":"bun run script/m15/verify-visualize-migrate-deep.ts","exitCode":0,"summary":"M4: VERIFIED (5/3 passed, 2 negatives)"}
+{"id":"visualize-migrate","command":"bun run script/verify-visualize-migrate.ts","exitCode":1,"summary":"VISUALIZE/MIGRATE: 1 FAILURES"}
+{"id":"docs-only","command":"npx tsx script/verify-tool-docs.ts --only bb_migrate","exitCode":0,"summary":"TOOL DOCS: PASS (16 public tools, 1 artifacts)"}
+{"id":"regex-policy","command":"npx tsx script/tools/verify-regex-policy.ts","exitCode":0,"summary":"REGEX POLICY: PASS — 14 allowlisted, 62 frozen debt, 0 new, 12 baseline rows now paid"}
+{"id":"typecheck","command":"npx tsc --noEmit","exitCode":0,"summary":""}
+{"id":"m31-mode-corpus","command":"bun run script/m31/tool-mode-corpus.ts --check","exitCode":1,"summary":"CORPUS CHECK: FAIL — behavior drifted from committed baseline. Drifting invocations: bb_ask.answer"}

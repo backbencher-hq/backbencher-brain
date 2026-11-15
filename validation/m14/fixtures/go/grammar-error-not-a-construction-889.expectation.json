@@ -1,0 +1,22 @@
+{
+  "fixtureId": "go/grammar-error-not-a-construction-889",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The grammar-gap pin. The pinned tree-sitter-go errors on two LEGAL constructs — a package-scope generic function VALUE (`var _ = Backward[[]int]`, Go 1.21+) and a method on an instantiated generic receiver (`func (Either[A, B]) A() A`, Go 1.18+) — and its error RECOVERY re-reads the following declaration's text as a composite literal, from which the lane published `instantiates -> s`: a construction edge to a name the source never constructs (it is a PARAMETER of the declaration the recovery mangled). Measured blast radius, from the tree's own ERROR regions over go-tools 1,931 + terraform 1,993 files: 20 files parse with an error, 3 of them swallow declarations (92 in total), 1 of those 3 carries this generic-value shape (script/m14/tmp/go-799-grammar-gap.ts). The expectations below assert ONLY the honest part — no construction may be derived from an error region, and the declarations the grammar CAN see are published normally. They deliberately do NOT assert the swallowed `caller` symbol: losing it is the grammar gap, registered in script/m14/spec/go-completeness.json and in the M60 ledger, and writing the loss into an expectation would turn a defect into a contract.",
+  "expectSymbols": [
+    { "name": "grammarerror", "kind": "module" },
+    { "name": "Backward", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Backward", "target": "Slice" },
+    { "type": "references", "from": "Backward", "target": "E" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "global", "target": "s" },
+    { "type": "instantiates", "from": "(expr)", "target": "s" },
+    { "type": "contains", "from": "grammarerror", "target": "s" }
+  ],
+  "forbidSymbols": [
+    { "name": "s", "kind": "property" }
+  ]
+}

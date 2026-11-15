@@ -1,0 +1,35 @@
+# The STORE seam fixture. The pipeline e2e gate indexes a polyglot project through
+# the REAL CLI and then queries brain.db, which is the only place that proves a
+# lane's payload survives emit -> worker -> store. html got seven assertions there
+# because an html page's symbols and relationships were verified only against the
+# analyzer's return value for months — and brain_import was empty for every
+# language, because nothing queried the database after indexing.
+#
+# Every payload class TOML produces is here: the module, a table, a quoted table
+# segment that cannot be written bare, an array-of-tables element (so the `#2`
+# naming is visible in the store), a root key, a key with a dotted path, and a
+# value — because a value is DATA and must NOT appear as a node.
+
+# These two come BEFORE any header, which is what "the implicit root table" means:
+# a key written after a `[table]` belongs to THAT table, so putting them at the
+# bottom of the file would make them `dotted.root_level` and `dotted.inline` — a
+# fixture that asserted the right rule at the wrong place, which is how a spec
+# error survives review.
+root_level = true
+inline = { x = 1, y = "two" }
+
+[package]
+name = "store-seam"
+version = "0.1.0"
+
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+[[bin]]
+name = "first"
+
+[[bin]]
+name = "second"
+
+[dotted]
+a.b = 1

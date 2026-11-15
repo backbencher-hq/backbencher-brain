@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  M18, ATTLIST-default round. An ATTRIBUTE'S DEFAULT IS A USE OF WHATEVER IT IS
+  BUILT FROM.
+
+  `<!ATTLIST foo bar CDATA "&lt;&gt;&quot;">` says `bar`'s default value is
+  assembled from `lt`, `gt` and `quot`, and an attribute cannot be given its
+  default without expanding them. That claim was dropped: an EntityRef was only
+  collected under an OWNING ELEMENT, and a DTD declaration has no element above it.
+  This is the third instance of that same structural reason — after entity
+  replacement text and parameter references — and the third time the answer has been
+  "work out what the declaration is about, because nothing in the tree owns it".
+
+  THE OWNER IS THE ATTRIBUTE, not the element the ATTLIST is about, and that is what
+  makes the ruling derivable rather than a preference. The default is a property of
+  `bar`, so `bar` is what depends on `lt`; and it is consistent with the
+  `contains foo -> bar` edge the analyzer already publishes for the declaration
+  itself. Attaching it to `foo` would claim `foo` has a dependency its own
+  declaration does not mention.
+
+  NINE of the ten corpus sites are the PREDEFINED entities, so they resolve as
+  `builtin` — the same `&lt; &gt; &quot;` M18 settled — and the fixture has to
+  assert that rather than assume it, because "an entity reference in a DTD is
+  unresolved" is exactly the assumption being corrected.
+
+  The last two cases are the ones that must NOT produce an edge:
+
+    - `&ns;` inside a NAMESPACE URI. A URI is taken as a literal string; no
+      processor expands entity references in it, which is the entire point of
+      comparing an entity-expanded name against one. Publishing it would assert a
+      dependency the language says does not exist — libxml2's
+      `test/entity-in-ns-uri.xml` is a conformance probe for exactly this.
+    - `%zz;` in a parameter-entity VALUE form, which names nothing.
+-->
+<!DOCTYPE root [
+  <!ELEMENT root (#PCDATA)>
+  <!ATTLIST root id ID #IMPLIED>
+  <!ATTLIST root styled CDATA "&lt;b&gt; &quot;quoted&quot; &apos;q&apos;">
+  <!ATTLIST root declared CDATA "&known;">
+  <!ATTLIST root dangling CDATA "&neverDeclared;">
+  <!ENTITY % zz '&#60;'>
+  <!ENTITY known "a real declared entity">
+  <!ENTITY ns "urn:x&#38;y">
+]>
+<root xmlns:one="urn:literal" xmlns:two="&ns;" id="a">text</root>

@@ -1,0 +1,181 @@
+{
+ "tool": "bb_patterns",
+ "phase": "B",
+ "schema": "extended pattern coverage indexes in place",
+ "generatedAt": "2026-11-03T17:25:00Z",
+ "green": [
+  {
+   "gate": "m13-handler-contract-selftest",
+   "command": "bun run script/m13/verify-patterns-handler-contract.ts --self-test",
+   "exitCode": 0,
+   "durationMs": null,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-handler-contract-selftest.log"
+  },
+  {
+   "gate": "m13-handler-contract",
+   "command": "bun run script/m13/verify-patterns-handler-contract.ts",
+   "exitCode": 0,
+   "durationMs": 13372,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-handler-contract.log"
+  },
+  {
+   "gate": "m13-patterns-contract",
+   "command": "bun run script/m13/verify-patterns-contract.ts",
+   "exitCode": 0,
+   "durationMs": 3604,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-contract.log"
+  },
+  {
+   "gate": "m13-patterns-docs",
+   "command": "bun run script/m13/verify-patterns-docs.ts",
+   "exitCode": 0,
+   "durationMs": 410,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-docs.log"
+  },
+  {
+   "gate": "m13-patterns-e2e-corpus",
+   "command": "bun run script/m13/verify-patterns-e2e-corpus.ts",
+   "exitCode": 0,
+   "durationMs": 123263,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-e2e-corpus.log"
+  },
+  {
+   "gate": "m13-patterns-orphans",
+   "command": "bun run script/m13/verify-patterns-orphans.ts",
+   "exitCode": 0,
+   "durationMs": 3974,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-orphans.log"
+  },
+  {
+   "gate": "m13-patterns-rules",
+   "command": "bun run script/m13/verify-patterns-rules.ts",
+   "exitCode": 0,
+   "durationMs": 1266,
+   "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-rules.log"
+  },
+  {
+   "gate": "m15-patterns-deep",
+   "command": "bun run script/m15/verify-patterns-deep.ts",
+   "exitCode": 0,
+   "durationMs": 246559,
+   "log": "validation/tools/bb_patterns/gates/logs/m15-patterns-deep.log"
+  },
+  {
+   "gate": "m15-registry-handlers",
+   "command": "bun run script/m15/verify-registry-handlers.ts",
+   "exitCode": 0,
+   "durationMs": 984,
+   "log": "validation/tools/bb_patterns/gates/logs/m15-registry-handlers.log"
+  },
+  {
+   "gate": "m20-orphan-semantics",
+   "command": "bun run script/m20/verify-patterns-orphan-semantics.ts",
+   "exitCode": 0,
+   "durationMs": 4616,
+   "log": "validation/tools/bb_patterns/gates/logs/m20-orphan-semantics.log"
+  },
+  {
+   "gate": "m20-pagination-history",
+   "command": "bun run script/m20/verify-patterns-pagination-history.ts",
+   "exitCode": 0,
+   "durationMs": 14859,
+   "log": "validation/tools/bb_patterns/gates/logs/m20-pagination-history.log"
+  },
+  {
+   "gate": "m20-parameter-scan",
+   "command": "bun run script/m20/verify-patterns-parameter-scan.ts",
+   "exitCode": 0,
+   "durationMs": 4803,
+   "log": "validation/tools/bb_patterns/gates/logs/m20-parameter-scan.log"
+  },
+  {
+   "gate": "m64-patterns-evidence-gate",
+   "command": "bun run script/m64/verify-patterns-evidence-gate.ts",
+   "exitCode": 0,
+   "durationMs": 5416,
+   "log": "validation/tools/bb_patterns/gates/logs/m64-patterns-evidence-gate.log"
+  },
+  {
+   "gate": "m65-rules-budget-and-gates",
+   "command": "bun run script/m65/verify-rules-budget-and-gates.ts",
+   "exitCode": 0,
+   "durationMs": 1324,
+   "log": "validation/tools/bb_patterns/gates/logs/m65-rules-budget-and-gates.log"
+  },
+  {
+   "gate": "m69-page-classes",
+   "command": "bun run script/m69/verify-patterns-page-class-representation.ts",
+   "exitCode": 0,
+   "durationMs": 10015,
+   "log": "validation/tools/bb_patterns/gates/logs/m69-page-classes.log"
+  },
+  {
+   "gate": "verify-patterns",
+   "command": "bun run script/verify-patterns.ts",
+   "exitCode": 0,
+   "durationMs": 6900,
+   "log": "validation/tools/bb_patterns/gates/logs/verify-patterns.log"
+  }
+ ],
+ "red": [
+  {
+   "gate": "m16-docs-truth",
+   "command": "bun run script/m16/verify-docs-truth.ts",
+   "exitCode": 1,
+   "durationMs": 179,
+   "log": "validation/tools/bb_patterns/gates/logs/m16-docs-truth.log"
+  },
+  {
+   "gate": "m57-t3-scope-all",
+   "command": "bun run script/m57/verify-t3-scope-all.ts",
+   "exitCode": 1,
+   "durationMs": 6671,
+   "log": "validation/tools/bb_patterns/gates/logs/m57-t3-scope-all.log"
+  }
+ ],
+ "blocked": [
+  {
+   "gate": "m57-t3-scope-all",
+   "exitCode": 1,
+   "note": "K6b only: dist/ older than the edited rules.ts; integration rebuild owns it (cross-scope)."
+  },
+  {
+   "gate": "m16-docs-truth",
+   "exitCode": 1,
+   "note": "No bb_patterns row remains; failing rows are bb_ask/bb_security/bb_edit (other lanes)."
+  },
+  {
+   "gate": "m64/m65 gate selftests",
+   "note": "Spawn bun inside the sandbox; declared blocked legs. The evidence gates themselves pass."
+  },
+  {
+   "gate": "zig real corpus",
+   "note": "Index interrupted twice by session ends; recorded blocked in REAL-CORPUS.json, never measured."
+  }
+ ],
+ "mutantSelftest": {
+  "gate": "m13-handler-contract-selftest",
+  "mutantsCaught": 6,
+  "mutantsPlanted": 6,
+  "baselineGreen": true
+ },
+ "latency": {
+  "leadBaseline": {
+   "source": "validation/release/T2-BASELINE.json",
+   "p50Ms": 3504,
+   "p95Ms": 3506,
+   "withinBudget": true
+  },
+  "confirmation": {
+   "p50Ms": 4534.87,
+   "p95Ms": 5385,
+   "readMovedIndex": false
+  }
+ },
+ "summary": {
+  "green": 16,
+  "red": 2,
+  "blocked": 4,
+  "mutant_selftest": "6/6 caught"
+ }
+}

@@ -1,0 +1,43 @@
+{
+  "fixtureId": "scala/mixin-object-enum",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Object and enum extends clauses use the SAME shape (the Lead's ruling named class/trait; object/enum are the identical construct and are relabelled the same way): position 0 extends, further supertypes mixes_in.",
+  "expectSymbols": [
+    {
+      "name": "App"
+    },
+    {
+      "name": "Color"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "App",
+      "target": "Service"
+    },
+    {
+      "type": "mixes_in",
+      "from": "App",
+      "target": "Logging"
+    },
+    {
+      "type": "extends",
+      "from": "Color",
+      "target": "Service"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Color",
+      "target": "Logging"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "App",
+      "target": "Logging"
+    }
+  ]
+}

@@ -35,7 +35,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 
 const ROOT = process.env.BB_M14_ROOT ?? process.cwd()
 const BASELINE_REF = process.argv[2] ?? "63a48923e"
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const CORPUS_DIRS = (process.env.ELIXIR_CORPUS_DIRS ?? "elixir,otp").split(",")
 const EXTS = [".ex", ".exs"]
 

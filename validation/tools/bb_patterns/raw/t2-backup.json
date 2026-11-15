@@ -1,0 +1,40 @@
+{
+  "sourceDb": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "destDb": "validation/tools/bb_patterns/bbdata-t2/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "sourceProjectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "backupMs": 33491,
+  "copiedBytes": 3639963648,
+  "sourceBefore": {
+    "db": {
+      "bytes": 3639963648,
+      "mtime": "2026-11-01T22:37:46.803Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-01T22:38:55.311Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-01T23:18:09.043Z"
+    }
+  },
+  "sourceAfter": {
+    "db": {
+      "bytes": 3639963648,
+      "mtime": "2026-11-01T22:37:46.803Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-01T22:38:55.311Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-01T23:21:22.129Z"
+    }
+  },
+  "sourceUnchanged": false,
+  "runWith": {
+    "BB_DATA_DIR": "validation/tools/bb_patterns/bbdata-t2"
+  },
+  "generatedAt": "2026-11-01T23:21:55.599Z"
+}

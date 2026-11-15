@@ -395,7 +395,7 @@ function generatePack(ownerVerdict: string | null): string {
   for (const issue of manifest.issues) {
     const e = issue.evidence
     lines.push(
-      `| ${issue.code} | [#${issue.githubIssue}](https://github.com/backbencher-hq/backbencher-brain/issues/${issue.githubIssue}) | \`${e.evidenceFile}\` | ${e.status} | ${e.passed ?? "—"} | ${e.mutantsCaught === undefined ? "—" : `${e.mutantsCaught}/${e.mutantsTotal}`} |`,
+      `| ${issue.code} | [#${issue.githubIssue}](https://github.com/ishaq2321/backbencher-brain/issues/${issue.githubIssue}) | \`${e.evidenceFile}\` | ${e.status} | ${e.passed ?? "—"} | ${e.mutantsCaught === undefined ? "—" : `${e.mutantsCaught}/${e.mutantsTotal}`} |`,
     )
   }
   lines.push("")

@@ -1,0 +1,89 @@
+{
+  "fixtureId": "svelte/bare-module-block",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Svelte spells a module script block two ways: context=\"module\" and the bare `module` attribute. The corpus writes the bare form (shadcn-svelte sv-addons/registry/template/src/lib/registry/ui/button/button.svelte opens `<script lang=\"ts\" module>`; 21 shadcn-svelte files carry a module block). isModuleContextBlock compared the start-tag TEXT for the literal context=\"module\", so every bare-`module` block was read as an INSTANCE block: its exports were reclassified as component props (ownerName set, isSvelteProp on a constant) and exports[] stayed empty. This fixture pins the module API for the bare spelling: the module block's exports reach exports[] with SFC-coherent ranges, carry no component ownership, and are not contains members; the instance block's `export let` is still the prop.",
+  "expectSymbols": [
+    {
+      "name": "PALETTE",
+      "kind": "constant"
+    },
+    {
+      "name": "tint",
+      "kind": "function"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "meta.isSvelteProp": true,
+      "ownerName": "bare-module-block"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "PALETTE",
+      "ownerName": "bare-module-block"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "bare-module-block",
+      "target": "PALETTE"
+    },
+    {
+      "type": "exports",
+      "from": "bare-module-block",
+      "target": "tint"
+    },
+    {
+      "type": "contains",
+      "from": "bare-module-block",
+      "target": "title"
+    },
+    {
+      "type": "imports",
+      "from": "bare-module-block",
+      "target": "./palette.js:PALETTE"
+    },
+    {
+      "type": "uses",
+      "from": "bare-module-block",
+      "target": "PALETTE"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "PALETTE"
+    },
+    {
+      "type": "contains",
+      "target": "tint"
+    }
+  ],
+  "expectExportRanges": [
+    {
+      "export": "PALETTE",
+      "startLine": 6,
+      "startColumn": 2,
+      "endLine": 6,
+      "endColumn": 33
+    },
+    {
+      "export": "tint",
+      "startLine": 7,
+      "startColumn": 2,
+      "endLine": 9,
+      "endColumn": 3
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "./palette.js",
+      "items": [
+        "PALETTE"
+      ]
+    }
+  ]
+}

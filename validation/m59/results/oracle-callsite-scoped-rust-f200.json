@@ -1,0 +1,5746 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-30T00:54:13.954Z",
+  "atCommit": "649f17eb4f922ff7c73b21d5251e8c934a480492",
+  "treeModifiedInputs": 12,
+  "corpus": "/home/sano/ishaq/bb_rust_corpora",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true,
+      "cssNamespaceRefTakesTheSelectorLeaf": true,
+      "cssNamespaceTokenNeedsTheMarker": true,
+      "cssFontFaceUsesTakesTheFamily": true,
+      "cssFontFaceTokenNeedsTheMarker": true,
+      "cssSelectorStripsSigil": true,
+      "cssIdSelectorStripsSigil": true,
+      "cssCommaGroupTakesFirstPart": true,
+      "cssGroupFirstPartIsBare": true,
+      "cssDescendantChainTakesFirstLeaf": true,
+      "cssCombinatorChainTakesFirstLeaf": true,
+      "cssStructuralTokenIsRejected": true,
+      "cssSingleCharSelectorIsCheckable": true,
+      "cssAtKeywordTargetIsRejected": true,
+      "cssSynthesizedNameIsUncheckable": true,
+      "cssScopeEdgeUsesTheRule": true,
+      "cssNonScopeEdgeIsNotAScopeEdge": true,
+      "cssPlainEdgeIsNotAScopeEdge": true,
+      "cssLaneIsCssNamed": true,
+      "scssLaneIsCssNamed": true,
+      "svelteLaneIsNotCssNamed": true,
+      "scssCommaGroupYieldsTheFirstPart": true
+    },
+    "resolutionSelfTest": {
+      "selfNewIsUncheckable": true,
+      "selfClassNewIsUncheckable": true,
+      "bareNewIsUncheckable": true,
+      "wrongLineStillFails": true,
+      "unmarkedClaimIsNotExcused": true,
+      "writtenReceiverIsNotExcused": true
+    }
+  },
+  "mutation": {
+    "file": "rust:tokio/tokio-macros/src/entry.rs",
+    "token": "Token",
+    "trueLine": 7,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "rust": {
+      "files": 200,
+      "rels": 17783,
+      "withLine": 17783,
+      "noLine": 0,
+      "consistent": 17329,
+      "inconsistent": 0,
+      "notCheckable": 454
+    }
+  },
+  "sampleHash": {
+    "rust": "6b6a2f6540b7"
+  },
+  "samplePins": {
+    "rust": [
+      {
+        "file": "tokio/tokio-macros/src/entry.rs",
+        "contentSha": "84cb4e937438"
+      },
+      {
+        "file": "tokio/tokio-macros/src/lib.rs",
+        "contentSha": "304421e2b501"
+      },
+      {
+        "file": "tokio/tokio-macros/src/select.rs",
+        "contentSha": "a8af3f0dbc3a"
+      },
+      {
+        "file": "tokio/tokio-stream/fuzz/fuzz_targets/fuzz_stream_map.rs",
+        "contentSha": "44c57c06fec6"
+      },
+      {
+        "file": "tokio/tokio-stream/src/empty.rs",
+        "contentSha": "ab34ee4707b5"
+      },
+      {
+        "file": "tokio/tokio-stream/src/iter.rs",
+        "contentSha": "0b774ccda2a7"
+      },
+      {
+        "file": "tokio/tokio-stream/src/lib.rs",
+        "contentSha": "2fc5c7e1a4e4"
+      },
+      {
+        "file": "tokio/tokio-stream/src/macros.rs",
+        "contentSha": "5d1241485e40"
+      },
+      {
+        "file": "tokio/tokio-stream/src/once.rs",
+        "contentSha": "fbbb82151adf"
+      },
+      {
+        "file": "tokio/tokio-stream/src/pending.rs",
+        "contentSha": "be3ecb012207"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_close.rs",
+        "contentSha": "d12142d79182"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext.rs",
+        "contentSha": "462617fa2e14"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/all.rs",
+        "contentSha": "cedede999910"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/any.rs",
+        "contentSha": "b65bf5a191f0"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/chain.rs",
+        "contentSha": "933522543e43"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/chunks_timeout.rs",
+        "contentSha": "e9fbf42f0c41"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/collect.rs",
+        "contentSha": "0e548c4c9af0"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/filter.rs",
+        "contentSha": "d751eb042937"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/filter_map.rs",
+        "contentSha": "95eb9f6089eb"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/fold.rs",
+        "contentSha": "700dbb166c2f"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/fuse.rs",
+        "contentSha": "70e832f4a041"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/map.rs",
+        "contentSha": "45d011b9820c"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/map_while.rs",
+        "contentSha": "bb3b4fa23ef1"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/merge.rs",
+        "contentSha": "95b325edb970"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/next.rs",
+        "contentSha": "0cf1be873729"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/peekable.rs",
+        "contentSha": "4da2ce591307"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/skip.rs",
+        "contentSha": "05a8712a7ede"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/skip_while.rs",
+        "contentSha": "1447441af49d"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/take.rs",
+        "contentSha": "7b0dbac6e051"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/take_while.rs",
+        "contentSha": "143dc69a567f"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/then.rs",
+        "contentSha": "4cfff6b5b31d"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/throttle.rs",
+        "contentSha": "385a5d24691d"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/timeout.rs",
+        "contentSha": "5fad7b26be6d"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/timeout_repeating.rs",
+        "contentSha": "4e84848c3bfd"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/try_next.rs",
+        "contentSha": "3258a10910e8"
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_map.rs",
+        "contentSha": "ed969945c9b6"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers.rs",
+        "contentSha": "d4cebbd99731"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/broadcast.rs",
+        "contentSha": "872bbd8849a8"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/interval.rs",
+        "contentSha": "63f15ade0249"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/lines.rs",
+        "contentSha": "8f07250471be"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/mpsc_bounded.rs",
+        "contentSha": "19b1ddb0ac3b"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/mpsc_unbounded.rs",
+        "contentSha": "c07ff2712538"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/read_dir.rs",
+        "contentSha": "314ab639b60f"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/signal_unix.rs",
+        "contentSha": "db125bb95128"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/signal_windows.rs",
+        "contentSha": "30dd752d9a6f"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/split.rs",
+        "contentSha": "10443ffa03be"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/task.rs",
+        "contentSha": "316ee8ab7a83"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/tcp_listener.rs",
+        "contentSha": "47aa2fc5f584"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/unix_listener.rs",
+        "contentSha": "958bec49afcf"
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/watch.rs",
+        "contentSha": "a6ab75748324"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/async_send_sync.rs",
+        "contentSha": "2fde5007212a"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/chunks_timeout.rs",
+        "contentSha": "455b441751aa"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/join_set_stream.rs",
+        "contentSha": "1ae4c2b1c6e8"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/mpsc_bounded_stream.rs",
+        "contentSha": "34721f19374f"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/mpsc_unbounded_stream.rs",
+        "contentSha": "333da223a467"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_accessors.rs",
+        "contentSha": "698d5fd14f53"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_chain.rs",
+        "contentSha": "8e86e1b99811"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_chunks_timeout.rs",
+        "contentSha": "942d1f115be2"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_close.rs",
+        "contentSha": "23cee6d56795"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_collect.rs",
+        "contentSha": "6a8cc3fd7079"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_empty.rs",
+        "contentSha": "4a79c50ccf8c"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_fuse.rs",
+        "contentSha": "4956ad724ceb"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_fused.rs",
+        "contentSha": "699823d65832"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_iter.rs",
+        "contentSha": "cf3e0d5282f2"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_map_while.rs",
+        "contentSha": "e7c912f9643b"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_merge.rs",
+        "contentSha": "e7ba9ac03fec"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_once.rs",
+        "contentSha": "4ece414df7a3"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_panic.rs",
+        "contentSha": "6bc0c3950ca6"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_peekable.rs",
+        "contentSha": "79592acdbc65"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_pending.rs",
+        "contentSha": "9b664aabeb79"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_stream_map.rs",
+        "contentSha": "e8b3ec414ba5"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_timeout.rs",
+        "contentSha": "caf9303a0767"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/support/mpsc.rs",
+        "contentSha": "2ac4d35619b5"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/time_throttle.rs",
+        "contentSha": "3b6f18f2bb24"
+      },
+      {
+        "file": "tokio/tokio-stream/tests/watch.rs",
+        "contentSha": "0e4e64f986f7"
+      },
+      {
+        "file": "tokio/tokio-test/src/io.rs",
+        "contentSha": "7d12ca484f0b"
+      },
+      {
+        "file": "tokio/tokio-test/src/lib.rs",
+        "contentSha": "95abea225ebc"
+      },
+      {
+        "file": "tokio/tokio-test/src/macros.rs",
+        "contentSha": "56436d335793"
+      },
+      {
+        "file": "tokio/tokio-test/src/stream_mock.rs",
+        "contentSha": "ddf13e92698c"
+      },
+      {
+        "file": "tokio/tokio-test/src/task.rs",
+        "contentSha": "211e83eba6d9"
+      },
+      {
+        "file": "tokio/tokio-test/tests/block_on.rs",
+        "contentSha": "ebddb8661e68"
+      },
+      {
+        "file": "tokio/tokio-test/tests/io.rs",
+        "contentSha": "d802c383f641"
+      },
+      {
+        "file": "tokio/tokio-test/tests/macros.rs",
+        "contentSha": "ad759fd87d2a"
+      },
+      {
+        "file": "tokio/tokio-test/tests/stream_mock.rs",
+        "contentSha": "669f8b1e115b"
+      },
+      {
+        "file": "tokio/tokio-test/tests/task.rs",
+        "contentSha": "2adac35477f5"
+      },
+      {
+        "file": "tokio/tokio-util/src/cfg.rs",
+        "contentSha": "3be7063d3989"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/any_delimiter_codec.rs",
+        "contentSha": "90d2639c4433"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/bytes_codec.rs",
+        "contentSha": "e8f14a934157"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/decoder.rs",
+        "contentSha": "af3fbf7230b0"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/encoder.rs",
+        "contentSha": "abbec8a3360b"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed.rs",
+        "contentSha": "d60be330ca26"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed_impl.rs",
+        "contentSha": "273c51dae597"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed_read.rs",
+        "contentSha": "558def7e7644"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed_write.rs",
+        "contentSha": "e46cc56009af"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/length_delimited.rs",
+        "contentSha": "4b43ffdd58f3"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/lines_codec.rs",
+        "contentSha": "13550c7abe63"
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/mod.rs",
+        "contentSha": "d40925e3803c"
+      },
+      {
+        "file": "tokio/tokio-util/src/compat.rs",
+        "contentSha": "be8e3c3d5300"
+      },
+      {
+        "file": "tokio/tokio-util/src/context.rs",
+        "contentSha": "1b5e952ec0bb"
+      },
+      {
+        "file": "tokio/tokio-util/src/either.rs",
+        "contentSha": "b5bfc1d3d1a7"
+      },
+      {
+        "file": "tokio/tokio-util/src/future.rs",
+        "contentSha": "024fa4cfd08d"
+      },
+      {
+        "file": "tokio/tokio-util/src/future/with_cancellation_token.rs",
+        "contentSha": "a2a683b427b7"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/copy_to_bytes.rs",
+        "contentSha": "6fc04baff3c8"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/inspect.rs",
+        "contentSha": "0ac19896529a"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/mod.rs",
+        "contentSha": "4b456f805521"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/read_arc.rs",
+        "contentSha": "feb26049baa2"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/read_buf.rs",
+        "contentSha": "192d676f74e1"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/reader_stream.rs",
+        "contentSha": "ad76ecfb290d"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/simplex.rs",
+        "contentSha": "9555fce37458"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/sink_writer.rs",
+        "contentSha": "4cba10005f6a"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/stream_reader.rs",
+        "contentSha": "92789246589a"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/sync_bridge.rs",
+        "contentSha": "a755a3b441c4"
+      },
+      {
+        "file": "tokio/tokio-util/src/io/write_all_vectored.rs",
+        "contentSha": "1665381c603d"
+      },
+      {
+        "file": "tokio/tokio-util/src/lib.rs",
+        "contentSha": "293963cf0b93"
+      },
+      {
+        "file": "tokio/tokio-util/src/loom.rs",
+        "contentSha": "16d5754c1ecb"
+      },
+      {
+        "file": "tokio/tokio-util/src/net/mod.rs",
+        "contentSha": "ef623ccdc611"
+      },
+      {
+        "file": "tokio/tokio-util/src/net/unix/mod.rs",
+        "contentSha": "82dc9f4677f2"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token.rs",
+        "contentSha": "e1e8131516de"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token/guard.rs",
+        "contentSha": "89419faf3dec"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token/guard_ref.rs",
+        "contentSha": "245ba9b4888d"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token/tree_node.rs",
+        "contentSha": "3c38cc521d24"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/mod.rs",
+        "contentSha": "c1c830118786"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/mpsc.rs",
+        "contentSha": "5e8124295e8a"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/poll_semaphore.rs",
+        "contentSha": "97b635299703"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/reusable_box.rs",
+        "contentSha": "491fced798b9"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/tests/loom_cancellation_token.rs",
+        "contentSha": "c3e112d48013"
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/tests/mod.rs",
+        "contentSha": "d85f61d32f38"
+      },
+      {
+        "file": "tokio/tokio-util/src/task/abort_on_drop.rs",
+        "contentSha": "7bc6d4c10803"
+      },
+      {
+        "file": "tokio/tokio-util/src/task/join_map.rs",
+        "contentSha": "6009b2fd594a"
+      },
+      {
+        "file": "tokio/tokio-util/src/task/join_queue.rs",
+        "contentSha": "d9da54a04a73"
+      },
+      {
+        "file": "tokio/tokio-util/src/task/mod.rs",
+        "contentSha": "11ca01e085ea"
+      },
+      {
+        "file": "tokio/tokio-util/src/task/spawn_pinned.rs",
+        "contentSha": "e51f8d3e7ff2"
+      },
+      {
+        "file": "tokio/tokio-util/src/task/task_tracker.rs",
+        "contentSha": "1333377da37b"
+      },
+      {
+        "file": "tokio/tokio-util/src/time/delay_queue.rs",
+        "contentSha": "d521221e8bd0"
+      },
+      {
+        "file": "tokio/tokio-util/src/time/mod.rs",
+        "contentSha": "a5c2fb836f44"
+      },
+      {
+        "file": "tokio/tokio-util/src/time/wheel/level.rs",
+        "contentSha": "7f8e223f3cc6"
+      },
+      {
+        "file": "tokio/tokio-util/src/time/wheel/mod.rs",
+        "contentSha": "81b13e7660dd"
+      },
+      {
+        "file": "tokio/tokio-util/src/time/wheel/stack.rs",
+        "contentSha": "726929dc0d31"
+      },
+      {
+        "file": "tokio/tokio-util/src/tracing.rs",
+        "contentSha": "f7d6932c1b6f"
+      },
+      {
+        "file": "tokio/tokio-util/src/udp/frame.rs",
+        "contentSha": "3f88f2bece8b"
+      },
+      {
+        "file": "tokio/tokio-util/src/udp/mod.rs",
+        "contentSha": "f5eb9b279b09"
+      },
+      {
+        "file": "tokio/tokio-util/src/util/maybe_dangling.rs",
+        "contentSha": "3ded8c0dd40d"
+      },
+      {
+        "file": "tokio/tokio-util/src/util/memchr.rs",
+        "contentSha": "c9d7b9f5b9d0"
+      },
+      {
+        "file": "tokio/tokio-util/src/util/mod.rs",
+        "contentSha": "355746e27602"
+      },
+      {
+        "file": "tokio/tokio-util/src/util/poll_buf.rs",
+        "contentSha": "54736dde13f4"
+      },
+      {
+        "file": "tokio/tokio-util/tests/_require_full.rs",
+        "contentSha": "f8dedb6ad888"
+      },
+      {
+        "file": "tokio/tokio-util/tests/abort_on_drop.rs",
+        "contentSha": "183b4ed2ebc8"
+      },
+      {
+        "file": "tokio/tokio-util/tests/codecs.rs",
+        "contentSha": "5a61bd9d5f95"
+      },
+      {
+        "file": "tokio/tokio-util/tests/compat.rs",
+        "contentSha": "caba7ad4156c"
+      },
+      {
+        "file": "tokio/tokio-util/tests/context.rs",
+        "contentSha": "12780d99f343"
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed.rs",
+        "contentSha": "a9d78bb60f37"
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed_read.rs",
+        "contentSha": "8061cf55b111"
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed_stream.rs",
+        "contentSha": "e4dfeb8aa777"
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed_write.rs",
+        "contentSha": "843276123c53"
+      },
+      {
+        "file": "tokio/tokio-util/tests/future.rs",
+        "contentSha": "46a5d09e7324"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_inspect.rs",
+        "contentSha": "c60326ec754f"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_read_arc.rs",
+        "contentSha": "1ff50075ce80"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_reader_stream.rs",
+        "contentSha": "2698fa3aca06"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_simplex.rs",
+        "contentSha": "b99c77f2c633"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_sink_writer.rs",
+        "contentSha": "797657df0470"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_stream_reader.rs",
+        "contentSha": "ec3fa040328c"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_sync_bridge.rs",
+        "contentSha": "33ad93b28d2b"
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_write_all_vectored.rs",
+        "contentSha": "e95770e84321"
+      },
+      {
+        "file": "tokio/tokio-util/tests/length_delimited.rs",
+        "contentSha": "b225d1472b86"
+      },
+      {
+        "file": "tokio/tokio-util/tests/mpsc.rs",
+        "contentSha": "486d39e53643"
+      },
+      {
+        "file": "tokio/tokio-util/tests/panic.rs",
+        "contentSha": "b5b9239906b6"
+      },
+      {
+        "file": "tokio/tokio-util/tests/poll_semaphore.rs",
+        "contentSha": "9bd9fdcd8548"
+      },
+      {
+        "file": "tokio/tokio-util/tests/reusable_box.rs",
+        "contentSha": "e37643b1bfa2"
+      },
+      {
+        "file": "tokio/tokio-util/tests/spawn_pinned.rs",
+        "contentSha": "cc4e3a42fff7"
+      },
+      {
+        "file": "tokio/tokio-util/tests/sync_cancellation_token.rs",
+        "contentSha": "f81d04719f83"
+      },
+      {
+        "file": "tokio/tokio-util/tests/task_join_map.rs",
+        "contentSha": "5437f83da400"
+      },
+      {
+        "file": "tokio/tokio-util/tests/task_join_queue.rs",
+        "contentSha": "e8ea1fec5667"
+      },
+      {
+        "file": "tokio/tokio-util/tests/task_tracker.rs",
+        "contentSha": "661f2b2d7331"
+      },
+      {
+        "file": "tokio/tokio-util/tests/time_delay_queue.rs",
+        "contentSha": "7ca922cef2f0"
+      },
+      {
+        "file": "tokio/tokio-util/tests/udp.rs",
+        "contentSha": "a8b6ac72180d"
+      },
+      {
+        "file": "tokio/tokio/tests/_require_full.rs",
+        "contentSha": "1f58c8125018"
+      },
+      {
+        "file": "tokio/tokio/tests/async_send_sync.rs",
+        "contentSha": "84d83a41bad6"
+      },
+      {
+        "file": "tokio/tokio/tests/buffered.rs",
+        "contentSha": "67d457bebbe3"
+      },
+      {
+        "file": "tokio/tokio/tests/coop_budget.rs",
+        "contentSha": "941352b3456e"
+      },
+      {
+        "file": "tokio/tokio/tests/dump.rs",
+        "contentSha": "bf31cc29501c"
+      },
+      {
+        "file": "tokio/tokio/tests/duplex_stream.rs",
+        "contentSha": "680a6052e9a7"
+      },
+      {
+        "file": "tokio/tokio/tests/fs.rs",
+        "contentSha": "472b9f0ed707"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_canonicalize_dir.rs",
+        "contentSha": "25d62ba773ce"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_copy.rs",
+        "contentSha": "2dbff9e3b2db"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_dir.rs",
+        "contentSha": "7fa5af3e2966"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_file.rs",
+        "contentSha": "d8c5ab85bf1b"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_file_join_error.rs",
+        "contentSha": "bc46726592ec"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_link.rs",
+        "contentSha": "2af084299fe8"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_open_options.rs",
+        "contentSha": "9380f5a96b47"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_open_options_windows.rs",
+        "contentSha": "eae02a644078"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_remove_dir_all.rs",
+        "contentSha": "b0252f2958c5"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_remove_file.rs",
+        "contentSha": "99e055c214fe"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_rename.rs",
+        "contentSha": "476147413492"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_symlink_dir_windows.rs",
+        "contentSha": "42c22a00b01b"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_symlink_file_windows.rs",
+        "contentSha": "02ba203872a6"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_try_exists.rs",
+        "contentSha": "a8122eeda8ba"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring.rs",
+        "contentSha": "9f86ae832241"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring_cancel_open.rs",
+        "contentSha": "11e01b75f58d"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring_completed_then_dropped_before_repoll.rs",
+        "contentSha": "3c544a46bb1e"
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring_file_read.rs",
+        "contentSha": "7bd4c880372b"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "rust": {
+      "prev": "a14dd4bf9ff9",
+      "now": "6b6a2f6540b7",
+      "same": false
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "rust": [
+      {
+        "file": "tokio/tokio-macros/src/entry.rs",
+        "language": "rust",
+        "rels": 522,
+        "withLine": 522,
+        "noLine": 0,
+        "consistent": 519,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "ItemFn",
+            "claimedLine": 756,
+            "sourceLine": "Ok(Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Configuration",
+            "claimedLine": 87,
+            "sourceLine": "fn new(is_test: bool, rt_multi_thread: bool) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ItemFn",
+            "claimedLine": 720,
+            "sourceLine": "fn parse(input: ParseStream<'_>) -> syn::Result<Self> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-macros/src/lib.rs",
+        "language": "rust",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-macros/src/select.rs",
+        "language": "rust",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/fuzz/fuzz_targets/fuzz_stream_map.rs",
+        "language": "rust",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/src/empty.rs",
+        "language": "rust",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Empty",
+            "claimedLine": 44,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<T>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/iter.rs",
+        "language": "rust",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Iter",
+            "claimedLine": 51,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<I::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/lib.rs",
+        "language": "rust",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/src/macros.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/src/once.rs",
+        "language": "rust",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Once",
+            "claimedLine": 44,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<T>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/pending.rs",
+        "language": "rust",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Pending",
+            "claimedLine": 47,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Option<T>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_close.rs",
+        "language": "rust",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "StreamNotifyClose",
+            "claimedLine": 46,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamNotifyClose",
+            "claimedLine": 45,
+            "sourceLine": "pub fn new(stream: S) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamNotifyClose",
+            "claimedLine": 65,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext.rs",
+        "language": "rust",
+        "rels": 104,
+        "withLine": 104,
+        "noLine": 0,
+        "consistent": 104,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/all.rs",
+        "language": "rust",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "AllFuture",
+            "claimedLine": 24,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AllFuture",
+            "claimedLine": 23,
+            "sourceLine": "pub(super) fn new(stream: &'a mut St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AllFuture",
+            "claimedLine": 39,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/any.rs",
+        "language": "rust",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "AnyFuture",
+            "claimedLine": 24,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AnyFuture",
+            "claimedLine": 23,
+            "sourceLine": "pub(super) fn new(stream: &'a mut St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AnyFuture",
+            "claimedLine": 39,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/chain.rs",
+        "language": "rust",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Chain",
+            "claimedLine": 36,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/chunks_timeout.rs",
+        "language": "rust",
+        "rels": 71,
+        "withLine": 71,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "ChunksTimeout",
+            "claimedLine": 27,
+            "sourceLine": "pub(super) fn new(stream: S, max_size: usize, duration: Duration) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ChunksTimeout",
+            "claimedLine": 38,
+            "sourceLine": "pub fn into_remainder(mut self: Pin<&mut Self>) -> Vec<S::Item> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ChunksTimeout",
+            "claimedLine": 47,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/collect.rs",
+        "language": "rust",
+        "rels": 230,
+        "withLine": 230,
+        "noLine": 0,
+        "consistent": 229,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Collect",
+            "claimedLine": 66,
+            "sourceLine": "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<U> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/filter.rs",
+        "language": "rust",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "Filter",
+            "claimedLine": 32,
+            "sourceLine": "Self { stream, f }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Filter",
+            "claimedLine": 31,
+            "sourceLine": "pub(super) fn new(stream: St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Filter",
+            "claimedLine": 50,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Filter",
+            "claimedLine": 69,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<St::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/filter_map.rs",
+        "language": "rust",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "FilterMap",
+            "claimedLine": 32,
+            "sourceLine": "Self { stream, f }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FilterMap",
+            "claimedLine": 31,
+            "sourceLine": "pub(super) fn new(stream: St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FilterMap",
+            "claimedLine": 50,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FilterMap",
+            "claimedLine": 69,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/fold.rs",
+        "language": "rust",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "FoldFuture",
+            "claimedLine": 26,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FoldFuture",
+            "claimedLine": 25,
+            "sourceLine": "pub(super) fn new(stream: St, init: B, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FoldFuture",
+            "claimedLine": 42,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/fuse.rs",
+        "language": "rust",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Fuse",
+            "claimedLine": 34,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/map.rs",
+        "language": "rust",
+        "rels": 58,
+        "withLine": 58,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Map",
+            "claimedLine": 29,
+            "sourceLine": "pub(super) fn new(stream: St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Map",
+            "claimedLine": 48,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Map",
+            "claimedLine": 67,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/map_while.rs",
+        "language": "rust",
+        "rels": 62,
+        "withLine": 62,
+        "noLine": 0,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "MapWhile",
+            "claimedLine": 33,
+            "sourceLine": "pub(super) fn new(stream: St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "MapWhile",
+            "claimedLine": 56,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "MapWhile",
+            "claimedLine": 75,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/merge.rs",
+        "language": "rust",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Merge",
+            "claimedLine": 42,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/next.rs",
+        "language": "rust",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Next",
+            "claimedLine": 29,
+            "sourceLine": "pub(super) fn new(stream: &'a mut St) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Next",
+            "claimedLine": 40,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/peekable.rs",
+        "language": "rust",
+        "rels": 63,
+        "withLine": 63,
+        "noLine": 0,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "Peekable",
+            "claimedLine": 22,
+            "sourceLine": "Self { peek: None, stream }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Peekable",
+            "claimedLine": 20,
+            "sourceLine": "pub(crate) fn new(stream: T) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Peekable",
+            "claimedLine": 52,
+            "sourceLine": "pub fn poll_peek(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<&mut T::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Peekable",
+            "claimedLine": 69,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/skip.rs",
+        "language": "rust",
+        "rels": 59,
+        "withLine": 59,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "Skip",
+            "claimedLine": 32,
+            "sourceLine": "Self { stream, remaining }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Skip",
+            "claimedLine": 31,
+            "sourceLine": "pub(super) fn new(stream: St, remaining: usize) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Skip",
+            "claimedLine": 50,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Skip",
+            "claimedLine": 68,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/skip_while.rs",
+        "language": "rust",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 56,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "SkipWhile",
+            "claimedLine": 32,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SkipWhile",
+            "claimedLine": 31,
+            "sourceLine": "pub(super) fn new(stream: St, predicate: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SkipWhile",
+            "claimedLine": 53,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SkipWhile",
+            "claimedLine": 72,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/take.rs",
+        "language": "rust",
+        "rels": 65,
+        "withLine": 65,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "Take",
+            "claimedLine": 33,
+            "sourceLine": "Self { stream, remaining }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Take",
+            "claimedLine": 32,
+            "sourceLine": "pub(super) fn new(stream: St, remaining: usize) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Take",
+            "claimedLine": 51,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Take",
+            "claimedLine": 69,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/take_while.rs",
+        "language": "rust",
+        "rels": 68,
+        "withLine": 68,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "TakeWhile",
+            "claimedLine": 34,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TakeWhile",
+            "claimedLine": 33,
+            "sourceLine": "pub(super) fn new(stream: St, predicate: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TakeWhile",
+            "claimedLine": 56,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TakeWhile",
+            "claimedLine": 75,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/then.rs",
+        "language": "rust",
+        "rels": 72,
+        "withLine": 72,
+        "noLine": 0,
+        "consistent": 69,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Then",
+            "claimedLine": 34,
+            "sourceLine": "pub(super) fn new(stream: St, f: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Then",
+            "claimedLine": 57,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut St> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Then",
+            "claimedLine": 77,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Fut::Output>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/throttle.rs",
+        "language": "rust",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Throttle",
+            "claimedLine": 72,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/timeout.rs",
+        "language": "rust",
+        "rels": 65,
+        "withLine": 65,
+        "noLine": 0,
+        "consistent": 62,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Timeout",
+            "claimedLine": 31,
+            "sourceLine": "pub(super) fn new(stream: S, duration: Duration) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Timeout",
+            "claimedLine": 46,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Elapsed",
+            "claimedLine": 88,
+            "sourceLine": "pub(crate) fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/timeout_repeating.rs",
+        "language": "rust",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "TimeoutRepeating",
+            "claimedLine": 22,
+            "sourceLine": "pub(super) fn new(stream: S, interval: Interval) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TimeoutRepeating",
+            "claimedLine": 33,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_ext/try_next.rs",
+        "language": "rust",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "TryNext",
+            "claimedLine": 31,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TryNext",
+            "claimedLine": 30,
+            "sourceLine": "pub(super) fn new(stream: &'a mut St) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TryNext",
+            "claimedLine": 41,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/stream_map.rs",
+        "language": "rust",
+        "rels": 214,
+        "withLine": 214,
+        "noLine": 0,
+        "consistent": 209,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 554,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "StreamMap",
+            "claimedLine": 555,
+            "sourceLine": "Self::new()",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamMap",
+            "claimedLine": 554,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamMap",
+            "claimedLine": 676,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamMap",
+            "claimedLine": 708,
+            "sourceLine": "fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers.rs",
+        "language": "rust",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/broadcast.rs",
+        "language": "rust",
+        "rels": 63,
+        "withLine": 63,
+        "noLine": 0,
+        "consistent": 58,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "BroadcastStream",
+            "claimedLine": 71,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "BroadcastStream",
+            "claimedLine": 100,
+            "sourceLine": "Self::new(recv)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "BroadcastStream",
+            "claimedLine": 70,
+            "sourceLine": "pub fn new(rx: Receiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "BroadcastStream",
+            "claimedLine": 79,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "BroadcastStream",
+            "claimedLine": 99,
+            "sourceLine": "fn from(recv: Receiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/interval.rs",
+        "language": "rust",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "IntervalStream",
+            "claimedLine": 40,
+            "sourceLine": "Self { inner: interval }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "IntervalStream",
+            "claimedLine": 39,
+            "sourceLine": "pub fn new(interval: Interval) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "IntervalStream",
+            "claimedLine": 52,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Instant>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/lines.rs",
+        "language": "rust",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "LinesStream",
+            "claimedLine": 42,
+            "sourceLine": "Self { inner: lines }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "LinesStream",
+            "claimedLine": 41,
+            "sourceLine": "pub fn new(lines: Lines<R>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "LinesStream",
+            "claimedLine": 51,
+            "sourceLine": "pub fn as_pin_mut(self: Pin<&mut Self>) -> Pin<&mut Lines<R>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "LinesStream",
+            "claimedLine": 59,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/mpsc_bounded.rs",
+        "language": "rust",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 51,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "ReceiverStream",
+            "claimedLine": 42,
+            "sourceLine": "Self { inner: recv }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "ReceiverStream",
+            "claimedLine": 112,
+            "sourceLine": "Self::new(recv)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReceiverStream",
+            "claimedLine": 41,
+            "sourceLine": "pub fn new(recv: Receiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReceiverStream",
+            "claimedLine": 68,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReceiverStream",
+            "claimedLine": 111,
+            "sourceLine": "fn from(recv: Receiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/mpsc_unbounded.rs",
+        "language": "rust",
+        "rels": 54,
+        "withLine": 54,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "UnboundedReceiverStream",
+            "claimedLine": 42,
+            "sourceLine": "Self { inner: recv }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "UnboundedReceiverStream",
+            "claimedLine": 101,
+            "sourceLine": "Self::new(recv)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UnboundedReceiverStream",
+            "claimedLine": 41,
+            "sourceLine": "pub fn new(recv: UnboundedReceiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UnboundedReceiverStream",
+            "claimedLine": 62,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UnboundedReceiverStream",
+            "claimedLine": 100,
+            "sourceLine": "fn from(recv: UnboundedReceiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/read_dir.rs",
+        "language": "rust",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "ReadDirStream",
+            "claimedLine": 38,
+            "sourceLine": "Self { inner: read_dir }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReadDirStream",
+            "claimedLine": 37,
+            "sourceLine": "pub fn new(read_dir: ReadDir) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReadDirStream",
+            "claimedLine": 50,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/signal_unix.rs",
+        "language": "rust",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "SignalStream",
+            "claimedLine": 35,
+            "sourceLine": "Self { inner: signal }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SignalStream",
+            "claimedLine": 34,
+            "sourceLine": "pub fn new(signal: Signal) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SignalStream",
+            "claimedLine": 47,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/signal_windows.rs",
+        "language": "rust",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "CtrlCStream",
+            "claimedLine": 36,
+            "sourceLine": "Self { inner: interval }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "CtrlBreakStream",
+            "claimedLine": 95,
+            "sourceLine": "Self { inner: interval }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CtrlCStream",
+            "claimedLine": 35,
+            "sourceLine": "pub fn new(interval: CtrlC) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CtrlCStream",
+            "claimedLine": 48,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CtrlBreakStream",
+            "claimedLine": 94,
+            "sourceLine": "pub fn new(interval: CtrlBreak) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/split.rs",
+        "language": "rust",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "SplitStream",
+            "claimedLine": 42,
+            "sourceLine": "Self { inner: split }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SplitStream",
+            "claimedLine": 41,
+            "sourceLine": "pub fn new(split: Split<R>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SplitStream",
+            "claimedLine": 51,
+            "sourceLine": "pub fn as_pin_mut(self: Pin<&mut Self>) -> Pin<&mut Split<R>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SplitStream",
+            "claimedLine": 59,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/task.rs",
+        "language": "rust",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "JoinSetStream",
+            "claimedLine": 37,
+            "sourceLine": "Self { inner: join_set }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "JoinSetStream",
+            "claimedLine": 76,
+            "sourceLine": "Self::new(join_set)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "JoinSetStream",
+            "claimedLine": 36,
+            "sourceLine": "pub fn new(join_set: JoinSet<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "JoinSetStream",
+            "claimedLine": 49,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "JoinSetStream",
+            "claimedLine": 75,
+            "sourceLine": "fn from(join_set: JoinSet<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/tcp_listener.rs",
+        "language": "rust",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "TcpListenerStream",
+            "claimedLine": 50,
+            "sourceLine": "Self { inner: listener }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TcpListenerStream",
+            "claimedLine": 49,
+            "sourceLine": "pub fn new(listener: TcpListener) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TcpListenerStream",
+            "claimedLine": 63,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/unix_listener.rs",
+        "language": "rust",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "UnixListenerStream",
+            "claimedLine": 39,
+            "sourceLine": "Self { inner: listener }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UnixListenerStream",
+            "claimedLine": 38,
+            "sourceLine": "pub fn new(listener: UnixListener) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UnixListenerStream",
+            "claimedLine": 52,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/src/wrappers/watch.rs",
+        "language": "rust",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "WatchStream",
+            "claimedLine": 88,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "WatchStream",
+            "claimedLine": 95,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "WatchStream",
+            "claimedLine": 130,
+            "sourceLine": "Self::new(recv)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WatchStream",
+            "claimedLine": 87,
+            "sourceLine": "pub fn new(rx: Receiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WatchStream",
+            "claimedLine": 94,
+            "sourceLine": "pub fn from_changes(rx: Receiver<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/async_send_sync.rs",
+        "language": "rust",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/chunks_timeout.rs",
+        "language": "rust",
+        "rels": 69,
+        "withLine": 69,
+        "noLine": 0,
+        "consistent": 69,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/join_set_stream.rs",
+        "language": "rust",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/mpsc_bounded_stream.rs",
+        "language": "rust",
+        "rels": 98,
+        "withLine": 98,
+        "noLine": 0,
+        "consistent": 98,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/mpsc_unbounded_stream.rs",
+        "language": "rust",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_accessors.rs",
+        "language": "rust",
+        "rels": 96,
+        "withLine": 96,
+        "noLine": 0,
+        "consistent": 96,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_chain.rs",
+        "language": "rust",
+        "rels": 65,
+        "withLine": 65,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Monster",
+            "claimedLine": 95,
+            "sourceLine": "self: std::pin::Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_chunks_timeout.rs",
+        "language": "rust",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_close.rs",
+        "language": "rust",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_collect.rs",
+        "language": "rust",
+        "rels": 225,
+        "withLine": 225,
+        "noLine": 0,
+        "consistent": 225,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_empty.rs",
+        "language": "rust",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_fuse.rs",
+        "language": "rust",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Alternate",
+            "claimedLine": 15,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<i32>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_fused.rs",
+        "language": "rust",
+        "rels": 194,
+        "withLine": 194,
+        "noLine": 0,
+        "consistent": 193,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "EndOnce",
+            "claimedLine": 14,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_iter.rs",
+        "language": "rust",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_map_while.rs",
+        "language": "rust",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_merge.rs",
+        "language": "rust",
+        "rels": 54,
+        "withLine": 54,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Monster",
+            "claimedLine": 68,
+            "sourceLine": "self: std::pin::Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_once.rs",
+        "language": "rust",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_panic.rs",
+        "language": "rust",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_peekable.rs",
+        "language": "rust",
+        "rels": 148,
+        "withLine": 148,
+        "noLine": 0,
+        "consistent": 145,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "MaxHint",
+            "claimedLine": 78,
+            "sourceLine": "mut self: std::pin::Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Unbounded",
+            "claimedLine": 112,
+            "sourceLine": "self: std::pin::Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "PendingOnce",
+            "claimedLine": 198,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<i32>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_pending.rs",
+        "language": "rust",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_stream_map.rs",
+        "language": "rust",
+        "rels": 489,
+        "withLine": 489,
+        "noLine": 0,
+        "consistent": 488,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Monster",
+            "claimedLine": 235,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> Poll<Option<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-stream/tests/stream_timeout.rs",
+        "language": "rust",
+        "rels": 70,
+        "withLine": 70,
+        "noLine": 0,
+        "consistent": 70,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/support/mpsc.rs",
+        "language": "rust",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/time_throttle.rs",
+        "language": "rust",
+        "rels": 69,
+        "withLine": 69,
+        "noLine": 0,
+        "consistent": 69,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-stream/tests/watch.rs",
+        "language": "rust",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/src/io.rs",
+        "language": "rust",
+        "rels": 344,
+        "withLine": 344,
+        "noLine": 0,
+        "consistent": 328,
+        "inconsistent": 0,
+        "notCheckable": 16,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 81,
+            "sourceLine": "Self::default()",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "Builder",
+            "claimedLine": 80,
+            "sourceLine": "pub fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Builder",
+            "claimedLine": 88,
+            "sourceLine": "pub fn read(&mut self, buf: &[u8]) -> &mut Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Builder",
+            "claimedLine": 97,
+            "sourceLine": "pub fn read_error(&mut self, error: io::Error) -> &mut Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Builder",
+            "claimedLine": 107,
+            "sourceLine": "pub fn write(&mut self, buf: &[u8]) -> &mut Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-test/src/lib.rs",
+        "language": "rust",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/src/macros.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/src/stream_mock.rs",
+        "language": "rust",
+        "rels": 83,
+        "withLine": 83,
+        "noLine": 0,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 61,
+            "sourceLine": "StreamMockBuilder::default()",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 94,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "StreamMockBuilder",
+            "claimedLine": 60,
+            "sourceLine": "pub fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamMockBuilder",
+            "claimedLine": 65,
+            "sourceLine": "pub fn next(mut self, value: T) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamMockBuilder",
+            "claimedLine": 79,
+            "sourceLine": "pub fn wait(mut self, duration: Duration) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-test/src/task.rs",
+        "language": "rust",
+        "rels": 175,
+        "withLine": 175,
+        "noLine": 0,
+        "consistent": 168,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 242,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "MockTask",
+            "claimedLine": 243,
+            "sourceLine": "Self::new()",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Spawn",
+            "claimedLine": 180,
+            "sourceLine": "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Spawn",
+            "claimedLine": 188,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "MockTask",
+            "claimedLine": 199,
+            "sourceLine": "fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-test/tests/block_on.rs",
+        "language": "rust",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/tests/io.rs",
+        "language": "rust",
+        "rels": 111,
+        "withLine": 111,
+        "noLine": 0,
+        "consistent": 111,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/tests/macros.rs",
+        "language": "rust",
+        "rels": 57,
+        "withLine": 57,
+        "noLine": 0,
+        "consistent": 57,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/tests/stream_mock.rs",
+        "language": "rust",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-test/tests/task.rs",
+        "language": "rust",
+        "rels": 58,
+        "withLine": 58,
+        "noLine": 0,
+        "consistent": 54,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "SizedStream",
+            "claimedLine": 13,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WakeThenReady",
+            "claimedLine": 47,
+            "sourceLine": "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WakeNTimes",
+            "claimedLine": 72,
+            "sourceLine": "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<u8> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WakeForever",
+            "claimedLine": 93,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/cfg.rs",
+        "language": "rust",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/any_delimiter_codec.rs",
+        "language": "rust",
+        "rels": 115,
+        "withLine": 115,
+        "noLine": 0,
+        "consistent": 111,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 226,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "AnyDelimiterCodec",
+            "claimedLine": 227,
+            "sourceLine": "Self::new(",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AnyDelimiterCodec",
+            "claimedLine": 107,
+            "sourceLine": ") -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AnyDelimiterCodec",
+            "claimedLine": 226,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/bytes_codec.rs",
+        "language": "rust",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 41,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/decoder.rs",
+        "language": "rust",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/encoder.rs",
+        "language": "rust",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed.rs",
+        "language": "rust",
+        "rels": 203,
+        "withLine": 203,
+        "noLine": 0,
+        "consistent": 195,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 78,
+            "sourceLine": "state: Default::default(),",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "Framed",
+            "claimedLine": 194,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut T> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Framed",
+            "claimedLine": 241,
+            "sourceLine": "pub fn codec_pin_mut(self: Pin<&mut Self>) -> &mut U {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Framed",
+            "claimedLine": 309,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Framed",
+            "claimedLine": 323,
+            "sourceLine": "fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed_impl.rs",
+        "language": "rust",
+        "rels": 169,
+        "withLine": 169,
+        "noLine": 0,
+        "consistent": 154,
+        "inconsistent": 0,
+        "notCheckable": 15,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "ReadFrame",
+            "claimedLine": 48,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "WriteFrame",
+            "claimedLine": 59,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "ReadFrame",
+            "claimedLine": 74,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "WriteFrame",
+            "claimedLine": 90,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 47,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed_read.rs",
+        "language": "rust",
+        "rels": 158,
+        "withLine": 158,
+        "noLine": 0,
+        "consistent": 150,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 46,
+            "sourceLine": "state: Default::default(),",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "FramedRead",
+            "claimedLine": 94,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut T> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FramedRead",
+            "claimedLine": 139,
+            "sourceLine": "pub fn decoder_pin_mut(self: Pin<&mut Self>) -> &mut D {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FramedRead",
+            "claimedLine": 174,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FramedRead",
+            "claimedLine": 186,
+            "sourceLine": "fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/framed_write.rs",
+        "language": "rust",
+        "rels": 157,
+        "withLine": 157,
+        "noLine": 0,
+        "consistent": 149,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 45,
+            "sourceLine": "state: WriteFrame::default(),",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "FramedWrite",
+            "claimedLine": 91,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut T> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FramedWrite",
+            "claimedLine": 136,
+            "sourceLine": "pub fn encoder_pin_mut(self: Pin<&mut Self>) -> &mut E {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FramedWrite",
+            "claimedLine": 182,
+            "sourceLine": "fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "FramedWrite",
+            "claimedLine": 186,
+            "sourceLine": "fn start_send(self: Pin<&mut Self>, item: I) -> Result<(), Self::Error> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/length_delimited.rs",
+        "language": "rust",
+        "rels": 231,
+        "withLine": 231,
+        "noLine": 0,
+        "consistent": 214,
+        "inconsistent": 0,
+        "notCheckable": 17,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "LengthDelimitedCodec",
+            "claimedLine": 470,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 659,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 1100,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "LengthDelimitedCodec",
+            "claimedLine": 660,
+            "sourceLine": "Self::new()",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "Builder",
+            "claimedLine": 1101,
+            "sourceLine": "Self::new()",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/lines_codec.rs",
+        "language": "rust",
+        "rels": 112,
+        "withLine": 112,
+        "noLine": 0,
+        "consistent": 108,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 200,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "LinesCodec",
+            "claimedLine": 201,
+            "sourceLine": "Self::new()",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "LinesCodec",
+            "claimedLine": 68,
+            "sourceLine": "pub fn new_with_max_length(max_length: usize) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "LinesCodec",
+            "claimedLine": 200,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/codec/mod.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/compat.rs",
+        "language": "rust",
+        "rels": 201,
+        "withLine": 201,
+        "noLine": 0,
+        "consistent": 189,
+        "inconsistent": 0,
+        "notCheckable": 12,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "Compat",
+            "claimedLine": 194,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Compat",
+            "claimedLine": 193,
+            "sourceLine": "fn new(inner: T) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Compat",
+            "claimedLine": 223,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Compat",
+            "claimedLine": 264,
+            "sourceLine": "self: Pin<&'a mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Compat",
+            "claimedLine": 270,
+            "sourceLine": "fn consume(self: Pin<&mut Self>, amt: usize) {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/context.rs",
+        "language": "rust",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "TokioContext",
+            "claimedLine": 140,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/either.rs",
+        "language": "rust",
+        "rels": 135,
+        "withLine": 135,
+        "noLine": 0,
+        "consistent": 121,
+        "inconsistent": 0,
+        "notCheckable": 14,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Either",
+            "claimedLine": 90,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Either",
+            "claimedLine": 101,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Either",
+            "claimedLine": 114,
+            "sourceLine": "fn poll_fill_buf(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<&[u8]>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Either",
+            "claimedLine": 118,
+            "sourceLine": "fn consume(self: Pin<&mut Self>, amt: usize) {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Either",
+            "claimedLine": 128,
+            "sourceLine": "fn start_seek(self: Pin<&mut Self>, position: SeekFrom) -> Result<()> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/future.rs",
+        "language": "rust",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/future/with_cancellation_token.rs",
+        "language": "rust",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "WithCancellationTokenFuture",
+            "claimedLine": 27,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "WithCancellationTokenFutureOwned",
+            "claimedLine": 62,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WithCancellationTokenFuture",
+            "claimedLine": 26,
+            "sourceLine": "pub(crate) fn new(cancellation_token: &'a CancellationToken, future: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WithCancellationTokenFuture",
+            "claimedLine": 37,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WithCancellationTokenFutureOwned",
+            "claimedLine": 61,
+            "sourceLine": "pub(crate) fn new(cancellation_token: CancellationToken, future: F) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/copy_to_bytes.rs",
+        "language": "rust",
+        "rels": 69,
+        "withLine": 69,
+        "noLine": 0,
+        "consistent": 62,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "CopyToBytes",
+            "claimedLine": 27,
+            "sourceLine": "Self { inner }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CopyToBytes",
+            "claimedLine": 26,
+            "sourceLine": "pub fn new(inner: S) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CopyToBytes",
+            "claimedLine": 52,
+            "sourceLine": "fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CopyToBytes",
+            "claimedLine": 56,
+            "sourceLine": "fn start_send(self: Pin<&mut Self>, item: &'a [u8]) -> Result<(), Self::Error> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "CopyToBytes",
+            "claimedLine": 62,
+            "sourceLine": "fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/inspect.rs",
+        "language": "rust",
+        "rels": 134,
+        "withLine": 134,
+        "noLine": 0,
+        "consistent": 122,
+        "inconsistent": 0,
+        "notCheckable": 12,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "InspectReader",
+            "claimedLine": 49,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut R> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "InspectReader",
+            "claimedLine": 61,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "InspectReader",
+            "claimedLine": 75,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "InspectReader",
+            "claimedLine": 83,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "InspectReader",
+            "claimedLine": 90,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/mod.rs",
+        "language": "rust",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/io/read_arc.rs",
+        "language": "rust",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/io/read_buf.rs",
+        "language": "rust",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/io/reader_stream.rs",
+        "language": "rust",
+        "rels": 49,
+        "withLine": 49,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "ReaderStream",
+            "claimedLine": 68,
+            "sourceLine": "pub fn new(reader: R) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReaderStream",
+            "claimedLine": 82,
+            "sourceLine": "pub fn with_capacity(reader: R, capacity: usize) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReaderStream",
+            "claimedLine": 93,
+            "sourceLine": "fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/simplex.rs",
+        "language": "rust",
+        "rels": 234,
+        "withLine": 234,
+        "noLine": 0,
+        "consistent": 227,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "Inner",
+            "claimedLine": 40,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Inner",
+            "claimedLine": 39,
+            "sourceLine": "fn with_capacity(capacity: usize) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Receiver",
+            "claimedLine": 121,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Sender",
+            "claimedLine": 200,
+            "sourceLine": "fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<IoResult<usize>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Sender",
+            "claimedLine": 250,
+            "sourceLine": "fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<IoResult<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/sink_writer.rs",
+        "language": "rust",
+        "rels": 83,
+        "withLine": 83,
+        "noLine": 0,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "SinkWriter",
+            "claimedLine": 73,
+            "sourceLine": "Self { inner: sink }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SinkWriter",
+            "claimedLine": 72,
+            "sourceLine": "pub fn new(sink: S) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SinkWriter",
+            "claimedLine": 97,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SinkWriter",
+            "claimedLine": 110,
+            "sourceLine": "fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SinkWriter",
+            "claimedLine": 114,
+            "sourceLine": "fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/stream_reader.rs",
+        "language": "rust",
+        "rels": 160,
+        "withLine": 160,
+        "noLine": 0,
+        "consistent": 149,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "StreamReader",
+            "claimedLine": 180,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamReader",
+            "claimedLine": 179,
+            "sourceLine": "pub fn new(stream: S) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamReader",
+            "claimedLine": 226,
+            "sourceLine": "pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut S> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamReader",
+            "claimedLine": 249,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "StreamReader",
+            "claimedLine": 276,
+            "sourceLine": "fn poll_fill_buf(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<&[u8]>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/sync_bridge.rs",
+        "language": "rust",
+        "rels": 119,
+        "withLine": 119,
+        "noLine": 0,
+        "consistent": 116,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "SyncIoBridge",
+            "claimedLine": 403,
+            "sourceLine": "Self { src, rt }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SyncIoBridge",
+            "claimedLine": 393,
+            "sourceLine": "pub fn new(src: T) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SyncIoBridge",
+            "claimedLine": 402,
+            "sourceLine": "pub fn new_with_handle(src: T, rt: tokio::runtime::Handle) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/io/write_all_vectored.rs",
+        "language": "rust",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 45,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "WriteAllVectored",
+            "claimedLine": 112,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/lib.rs",
+        "language": "rust",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/loom.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/net/mod.rs",
+        "language": "rust",
+        "rels": 59,
+        "withLine": 59,
+        "noLine": 0,
+        "consistent": 58,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "ListenerAcceptFut",
+            "claimedLine": 62,
+            "sourceLine": "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/net/unix/mod.rs",
+        "language": "rust",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token.rs",
+        "language": "rust",
+        "rels": 175,
+        "withLine": 175,
+        "noLine": 0,
+        "consistent": 164,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "RunUntilCancelledFuture",
+            "claimedLine": 450,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "RunUntilCancelledFutureOwned",
+            "claimedLine": 502,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 152,
+            "sourceLine": "fn default() -> CancellationToken {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "CancellationToken",
+            "claimedLine": 117,
+            "sourceLine": "fn clone(&self) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "WaitForCancellationFuture",
+            "claimedLine": 349,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token/guard.rs",
+        "language": "rust",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token/guard_ref.rs",
+        "language": "rust",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/cancellation_token/tree_node.rs",
+        "language": "rust",
+        "rels": 155,
+        "withLine": 155,
+        "noLine": 0,
+        "consistent": 153,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "TreeNode",
+            "claimedLine": 52,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "TreeNode",
+            "claimedLine": 51,
+            "sourceLine": "pub(crate) fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/mod.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/mpsc.rs",
+        "language": "rust",
+        "rels": 222,
+        "withLine": 222,
+        "noLine": 0,
+        "consistent": 209,
+        "inconsistent": 0,
+        "notCheckable": 13,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "PollSenderFuture",
+            "claimedLine": 78,
+            "sourceLine": "Self(ReusableBoxFuture::new(async { unreachable!() }))",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "calls",
+            "callee": "PollSenderFuture",
+            "claimedLine": 87,
+            "sourceLine": "Self(unsafe { mem::transmute::<InnerFuture<'_, T>, InnerFuture<'static, T>>(v) })",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "PollSender",
+            "claimedLine": 113,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "PollSender",
+            "claimedLine": 298,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "PollSenderFuture",
+            "claimedLine": 78,
+            "sourceLine": "Self(ReusableBoxFuture::new(async { unreachable!() }))",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/poll_semaphore.rs",
+        "language": "rust",
+        "rels": 97,
+        "withLine": 97,
+        "noLine": 0,
+        "consistent": 94,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "PollSemaphore",
+            "claimedLine": 24,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "PollSemaphore",
+            "claimedLine": 23,
+            "sourceLine": "pub fn new(semaphore: Arc<Semaphore>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "PollSemaphore",
+            "claimedLine": 148,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<OwnedSemaphorePermit>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/reusable_box.rs",
+        "language": "rust",
+        "rels": 95,
+        "withLine": 95,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "ReusableBoxFuture",
+            "claimedLine": 23,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "CallOnDrop",
+            "claimedLine": 143,
+            "sourceLine": "Self { f }",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "ReusableBoxFuture",
+            "claimedLine": 37,
+            "sourceLine": "*self = Self::new(future);",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReusableBoxFuture",
+            "claimedLine": 19,
+            "sourceLine": "pub fn new<F>(future: F) -> Self",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "ReusableBoxFuture",
+            "claimedLine": 85,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/tests/loom_cancellation_token.rs",
+        "language": "rust",
+        "rels": 88,
+        "withLine": 88,
+        "noLine": 0,
+        "consistent": 88,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/sync/tests/mod.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/task/abort_on_drop.rs",
+        "language": "rust",
+        "rels": 75,
+        "withLine": 75,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "AbortOnDropHandle",
+            "claimedLine": 32,
+            "sourceLine": "Self(handle)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "calls",
+            "callee": "AbortOnDrop",
+            "claimedLine": 108,
+            "sourceLine": "Self(handle)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "AbortOnDropHandle",
+            "claimedLine": 32,
+            "sourceLine": "Self(handle)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "AbortOnDrop",
+            "claimedLine": 108,
+            "sourceLine": "Self(handle)",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "AbortOnDropHandle",
+            "claimedLine": 31,
+            "sourceLine": "pub fn new(handle: JoinHandle<T>) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/task/join_map.rs",
+        "language": "rust",
+        "rels": 253,
+        "withLine": 253,
+        "noLine": 0,
+        "consistent": 244,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 149,
+            "sourceLine": "JoinMap::with_capacity_and_hasher(capacity, Default::default())",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "JoinMap",
+            "claimedLine": 202,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 872,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "JoinMap",
+            "claimedLine": 873,
+            "sourceLine": "Self::new()",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "JoinMap",
+            "claimedLine": 131,
+            "sourceLine": "pub fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/task/join_queue.rs",
+        "language": "rust",
+        "rels": 188,
+        "withLine": 188,
+        "noLine": 0,
+        "consistent": 177,
+        "inconsistent": 0,
+        "notCheckable": 11,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "JoinQueue",
+            "claimedLine": 29,
+            "sourceLine": "Self(VecDeque::new())",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "calls",
+            "callee": "JoinQueue",
+            "claimedLine": 34,
+            "sourceLine": "Self(VecDeque::with_capacity(capacity))",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 394,
+            "sourceLine": "fn default() -> Self {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "instantiates",
+            "callee": "JoinQueue",
+            "claimedLine": 29,
+            "sourceLine": "Self(VecDeque::new())",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "JoinQueue",
+            "claimedLine": 34,
+            "sourceLine": "Self(VecDeque::with_capacity(capacity))",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/task/mod.rs",
+        "language": "rust",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/task/spawn_pinned.rs",
+        "language": "rust",
+        "rels": 164,
+        "withLine": 164,
+        "noLine": 0,
+        "consistent": 164,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/task/task_tracker.rs",
+        "language": "rust",
+        "rels": 218,
+        "withLine": 218,
+        "noLine": 0,
+        "consistent": 210,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "TaskTrackerInner",
+            "claimedLine": 209,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "TaskTracker",
+            "claimedLine": 294,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "TaskTracker",
+            "claimedLine": 624,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 582,
+            "sourceLine": "fn default() -> TaskTracker {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "TaskTrackerInner",
+            "claimedLine": 208,
+            "sourceLine": "fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/time/delay_queue.rs",
+        "language": "rust",
+        "rels": 519,
+        "withLine": 519,
+        "noLine": 0,
+        "consistent": 513,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 481,
+            "sourceLine": "expired: Stack::default(),",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 1037,
+            "sourceLine": "self.expired = Stack::default();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 1202,
+            "sourceLine": "fn default() -> DelayQueue<T> {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 1329,
+            "sourceLine": "fn default() -> Stack<T> {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "DelayQueue",
+            "claimedLine": 1212,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/time/mod.rs",
+        "language": "rust",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/time/wheel/level.rs",
+        "language": "rust",
+        "rels": 87,
+        "withLine": 87,
+        "noLine": 0,
+        "consistent": 86,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 45,
+            "sourceLine": "slot: std::array::from_fn(|_| T::default()),",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/time/wheel/mod.rs",
+        "language": "rust",
+        "rels": 123,
+        "withLine": 123,
+        "noLine": 0,
+        "consistent": 123,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/time/wheel/stack.rs",
+        "language": "rust",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/tracing.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/udp/frame.rs",
+        "language": "rust",
+        "rels": 137,
+        "withLine": 137,
+        "noLine": 0,
+        "consistent": 131,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "UdpFramed",
+            "claimedLine": 185,
+            "sourceLine": "Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UdpFramed",
+            "claimedLine": 67,
+            "sourceLine": "fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UdpFramed",
+            "claimedLine": 121,
+            "sourceLine": "fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UdpFramed",
+            "claimedLine": 132,
+            "sourceLine": "fn start_send(self: Pin<&mut Self>, item: (I, SocketAddr)) -> Result<(), Self::Error> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "UdpFramed",
+            "claimedLine": 144,
+            "sourceLine": "fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/udp/mod.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/util/maybe_dangling.rs",
+        "language": "rust",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "MaybeDangling",
+            "claimedLine": 39,
+            "sourceLine": "Self(MaybeUninit::new(inner))",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "instantiates",
+            "callee": "MaybeDangling",
+            "claimedLine": 39,
+            "sourceLine": "Self(MaybeUninit::new(inner))",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "MaybeDangling",
+            "claimedLine": 38,
+            "sourceLine": "pub(crate) fn new(inner: T) -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "MaybeDangling",
+            "claimedLine": 46,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/src/util/memchr.rs",
+        "language": "rust",
+        "rels": 52,
+        "withLine": 52,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/util/mod.rs",
+        "language": "rust",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/src/util/poll_buf.rs",
+        "language": "rust",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/_require_full.rs",
+        "language": "rust",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/abort_on_drop.rs",
+        "language": "rust",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 41,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/codecs.rs",
+        "language": "rust",
+        "rels": 283,
+        "withLine": 283,
+        "noLine": 0,
+        "consistent": 283,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/compat.rs",
+        "language": "rust",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/context.rs",
+        "language": "rust",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed.rs",
+        "language": "rust",
+        "rels": 121,
+        "withLine": 121,
+        "noLine": 0,
+        "consistent": 116,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 101,
+            "sourceLine": "let mut parts = FramedParts::new(DontReadIntoThis, U32Codec::default());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 113,
+            "sourceLine": "let mut parts = FramedParts::new(DontReadIntoThis, U32Codec::default());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 133,
+            "sourceLine": "let mut parts = FramedParts::new(DontReadIntoThis, U32Codec::default());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 197,
+            "sourceLine": "let mut parts = FramedParts::new(DontReadIntoThis, U32Codec::default());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "DontReadIntoThis",
+            "claimedLine": 91,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed_read.rs",
+        "language": "rust",
+        "rels": 206,
+        "withLine": 206,
+        "noLine": 0,
+        "consistent": 205,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 322,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed_stream.rs",
+        "language": "rust",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/framed_write.rs",
+        "language": "rust",
+        "rels": 122,
+        "withLine": 122,
+        "noLine": 0,
+        "consistent": 119,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 194,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 203,
+            "sourceLine": "fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 209,
+            "sourceLine": "fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/future.rs",
+        "language": "rust",
+        "rels": 152,
+        "withLine": 152,
+        "noLine": 0,
+        "consistent": 149,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 132,
+            "sourceLine": "let fut = ReadyOnTheSecondPollFuture::default().with_cancellation_token(&token);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 253,
+            "sourceLine": "let fut = ReadyOnTheSecondPollFuture::default().with_cancellation_token_owned(token.clone());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "ReadyOnTheSecondPollFuture",
+            "claimedLine": 19,
+            "sourceLine": "fn poll(mut self: std::pin::Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_inspect.rs",
+        "language": "rust",
+        "rels": 144,
+        "withLine": 144,
+        "noLine": 0,
+        "consistent": 139,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "SmallReader",
+            "claimedLine": 20,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SmallWriter",
+            "claimedLine": 73,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SmallWriter",
+            "claimedLine": 85,
+            "sourceLine": "fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SmallWriter",
+            "claimedLine": 90,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SmallWriter",
+            "claimedLine": 97,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_read_arc.rs",
+        "language": "rust",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_reader_stream.rs",
+        "language": "rust",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Reader",
+            "claimedLine": 16,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_simplex.rs",
+        "language": "rust",
+        "rels": 208,
+        "withLine": 208,
+        "noLine": 0,
+        "consistent": 208,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_sink_writer.rs",
+        "language": "rust",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "instantiates",
+            "callee": "SliceEncoder",
+            "claimedLine": 38,
+            "sourceLine": "Self {}",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "SliceEncoder",
+            "claimedLine": 37,
+            "sourceLine": "fn new() -> Self {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_stream_reader.rs",
+        "language": "rust",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_sync_bridge.rs",
+        "language": "rust",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 60,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/io_write_all_vectored.rs",
+        "language": "rust",
+        "rels": 145,
+        "withLine": 145,
+        "noLine": 0,
+        "consistent": 137,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "PartialVectoredWriter",
+            "claimedLine": 20,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "PartialVectoredWriter",
+            "claimedLine": 27,
+            "sourceLine": "fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "PartialVectoredWriter",
+            "claimedLine": 31,
+            "sourceLine": "fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "PartialVectoredWriter",
+            "claimedLine": 36,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Wr",
+            "claimedLine": 69,
+            "sourceLine": "self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/length_delimited.rs",
+        "language": "rust",
+        "rels": 585,
+        "withLine": 585,
+        "noLine": 0,
+        "consistent": 581,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 834,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 854,
+            "sourceLine": "mut self: Pin<&mut Self>,",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 872,
+            "sourceLine": "fn poll_flush(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          },
+          {
+            "type": "references",
+            "callee": "Mock",
+            "claimedLine": 882,
+            "sourceLine": "fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/mpsc.rs",
+        "language": "rust",
+        "rels": 285,
+        "withLine": 285,
+        "noLine": 0,
+        "consistent": 285,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/panic.rs",
+        "language": "rust",
+        "rels": 157,
+        "withLine": 157,
+        "noLine": 0,
+        "consistent": 157,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/poll_semaphore.rs",
+        "language": "rust",
+        "rels": 68,
+        "withLine": 68,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/reusable_box.rs",
+        "language": "rust",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 45,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "ZeroSizedFuture",
+            "claimedLine": 64,
+            "sourceLine": "fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<u32> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/spawn_pinned.rs",
+        "language": "rust",
+        "rels": 103,
+        "withLine": 103,
+        "noLine": 0,
+        "consistent": 103,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/sync_cancellation_token.rs",
+        "language": "rust",
+        "rels": 284,
+        "withLine": 284,
+        "noLine": 0,
+        "consistent": 280,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 598,
+            "sourceLine": "let mut state1 = DefaultHasher::default();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 600,
+            "sourceLine": "let mut state2 = DefaultHasher::default();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 610,
+            "sourceLine": "let mut state1 = DefaultHasher::default();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 612,
+            "sourceLine": "let mut state2 = DefaultHasher::default();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio-util/tests/task_join_map.rs",
+        "language": "rust",
+        "rels": 366,
+        "withLine": 366,
+        "noLine": 0,
+        "consistent": 366,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/task_join_queue.rs",
+        "language": "rust",
+        "rels": 210,
+        "withLine": 210,
+        "noLine": 0,
+        "consistent": 210,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/task_tracker.rs",
+        "language": "rust",
+        "rels": 178,
+        "withLine": 178,
+        "noLine": 0,
+        "consistent": 178,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/time_delay_queue.rs",
+        "language": "rust",
+        "rels": 651,
+        "withLine": 651,
+        "noLine": 0,
+        "consistent": 651,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio-util/tests/udp.rs",
+        "language": "rust",
+        "rels": 97,
+        "withLine": 97,
+        "noLine": 0,
+        "consistent": 97,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/_require_full.rs",
+        "language": "rust",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/async_send_sync.rs",
+        "language": "rust",
+        "rels": 501,
+        "withLine": 501,
+        "noLine": 0,
+        "consistent": 501,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/buffered.rs",
+        "language": "rust",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/coop_budget.rs",
+        "language": "rust",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 48,
+            "sourceLine": "let tracker = Arc::new(AtomicUsize::default());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio/tests/dump.rs",
+        "language": "rust",
+        "rels": 159,
+        "withLine": 159,
+        "noLine": 0,
+        "consistent": 157,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "default",
+            "claimedLine": 250,
+            "sourceLine": "let park_state = Arc::new(ParkState::default());",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "references",
+            "callee": "ParkState",
+            "claimedLine": 233,
+            "sourceLine": "fn wait_until(&self, mut condition: impl FnMut(&Self) -> bool, message: &str) {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio/tests/duplex_stream.rs",
+        "language": "rust",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs.rs",
+        "language": "rust",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_canonicalize_dir.rs",
+        "language": "rust",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_copy.rs",
+        "language": "rust",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_dir.rs",
+        "language": "rust",
+        "rels": 96,
+        "withLine": 96,
+        "noLine": 0,
+        "consistent": 96,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_file.rs",
+        "language": "rust",
+        "rels": 220,
+        "withLine": 220,
+        "noLine": 0,
+        "consistent": 220,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_file_join_error.rs",
+        "language": "rust",
+        "rels": 49,
+        "withLine": 49,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_link.rs",
+        "language": "rust",
+        "rels": 84,
+        "withLine": 84,
+        "noLine": 0,
+        "consistent": 84,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_open_options.rs",
+        "language": "rust",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_open_options_windows.rs",
+        "language": "rust",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_remove_dir_all.rs",
+        "language": "rust",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_remove_file.rs",
+        "language": "rust",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_rename.rs",
+        "language": "rust",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_symlink_dir_windows.rs",
+        "language": "rust",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_symlink_file_windows.rs",
+        "language": "rust",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_try_exists.rs",
+        "language": "rust",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring.rs",
+        "language": "rust",
+        "rels": 98,
+        "withLine": 98,
+        "noLine": 0,
+        "consistent": 98,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring_cancel_open.rs",
+        "language": "rust",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring_completed_then_dropped_before_repoll.rs",
+        "language": "rust",
+        "rels": 68,
+        "withLine": 68,
+        "noLine": 0,
+        "consistent": 67,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "PollOpenOnceThenNeverRepoll",
+            "claimedLine": 59,
+            "sourceLine": "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {",
+            "reason": "target resolved from the `Self` keyword — written as `Self` on the claimed line"
+          }
+        ]
+      },
+      {
+        "file": "tokio/tokio/tests/fs_uring_file_read.rs",
+        "language": "rust",
+        "rels": 348,
+        "withLine": 348,
+        "noLine": 0,
+        "consistent": 348,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

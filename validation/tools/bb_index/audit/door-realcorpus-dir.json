@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/realcorpus/bbdata",
+  "startedAt": "2026-11-03T16:12:17.921Z",
+  "cases": [
+    {
+      "label": "real corpus: dir mode on a settled corpus (eligibility-filtered walk)",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true,\n  \"outcome\": \"no-op\",\n  \"reason\": \"no change detected under the requested directory (mtime+size comparison; the walk applies the indexer's own skip rules)\"\n}",
+      "ms": 367
+    },
+    {
+      "label": "real corpus: file mode on an unchanged source file (no-op)",
+      "arguments": {
+        "path": "src/language/parser.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/language/parser.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 14
+    }
+  ],
+  "stderr": "",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1654,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project root or a directory inside it whose derived phases should be re-run (a file path is refused). REQUIRED in every mode and checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T16:12:23.663Z"
+}

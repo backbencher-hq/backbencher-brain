@@ -1,0 +1,64 @@
+{
+  "_what": "THE FSHARP NAME CEILING IS SHAPE-DEPENDENT — THE FIX IS NOT BUILT, and this is condition 5 firing rather than a refusal to work.",
+  "_instrument": ".tmp-fsharp-gateshape.mts (the GATE'S OWN SHAPE: a global stride of 150 of 11,807 files, key space built from those files) against fsharp-name-ceiling.mts (a DIFFERENT shape: 30 files per repo in 8 repos, per-repo key space)",
+  "threeMeasurementsOfTheSameQuestion": [
+    {
+      "predicate": "index (FSHARP_DECLARATION_SPEC), 8-repo sample",
+      "carried": 316,
+      "of": 1106,
+      "share": "28.6%"
+    },
+    {
+      "predicate": "project's published key space, 8-repo sample",
+      "carried": 307,
+      "of": 1106,
+      "share": "27.8%"
+    },
+    {
+      "predicate": "filename-STEM proxy, no key space at all",
+      "carried": 226,
+      "of": 1090,
+      "share": "20.7%"
+    },
+    {
+      "predicate": "THE GATE'S OWN SHAPE — global stride 150, key space 8,494 names",
+      "carried": 42,
+      "of": 553,
+      "share": "7.6%"
+    }
+  ],
+  "theReading": "THE READINGS RANGE FROM 7.6% TO 28.6% FOR THE SAME QUESTION, and the variable is the SHAPE, not the corpus: the gate's global stride leaves ~6 files per repository, so a project publishes few names and few targets can resolve; a per-repo sample of 30 files leaves five times more. **Neither is the population.** The 40.4% ceiling I reported is a per-repo-sample number and does NOT hold on the gate's own shape — which is why the fix is not built on it.",
+  "whatWouldSettleIt": {
+    "theRun": "the WHOLE-POPULATION fsharp row (`incoming-gate.ts fsharp fs,fsi,fsx 0`), ~11,807 files, ~40 minutes — the same population as the before-arm it must be paired with",
+    "whyNotRunHere": "the machine is at 0-1 GB available with load 24 and seven lanes working; a 40-minute run risks being KILLED at its bound, and TWO of this lane's runs already were. The Lead offered to hold the lease for long runs, and this is one.",
+    "theDecisionItFeeds": "if the population ceiling is a few hundred edges or more, the fix is worth building and the shape is already named (emit the spelling the project publishes, or do not fire); if it is tens, the lane's residual is a BOUNDARY like r's packages and the cause closes as ruled."
+  },
+  "THE_R_RULING": {
+    "ruled": "r's imports residue is a PACKAGE cause and it is a BOUNDARY, not a gap",
+    "count": "760 of 787 residue (96.6%); `cli` 89 · `withr` 81 · `utils` 56 · `rlang` 41 · `Rcpp` 36 · `stats` 28",
+    "mechanism": "`library()`/`require()` name CRAN packages; packages are not in the corpus, so there is no declaration to reach and a file claim reaches 3 edges (+24 `.cpp` refutes that must NOT be admitted: files on disk, extensions this lane cannot hold)",
+    "falsifier": "a corpus that CONTAINS those packages moves the count; until then the file route must not be widened to reach them, and the 24 refutes are the evidence"
+  },
+  "EARNED": [
+    "The ceiling question was measured FOUR ways, with three predicates agreeing in a 20.7-28.6% band on a per-repo shape and a fourth giving 7.6% on the gate's shape — and the disagreement is the finding, not a nuisance.",
+    "The shape-dependence was caught BEFORE a fix was built on it: the sample ceiling (40.4%) does not hold on the gate's own shape, so condition 5 applies and the build stops here.",
+    "The instrument error that produced the widest reading was identified: my union key space over an 8,494-name set counts a target published in repo A as resolvable for an edge in repo B, while the gate resolves PER PROJECT.",
+    "r is RULED as a boundary with its count, mechanism and falsifier — a complete result on a lane nobody owns."
+  ],
+  "NOT_EARNED": [
+    "THE FIX IS NOT BUILT and NO before/after exists: `unresolved` vs `noDecl` separated, `bindFAIL` 0, and the 11 `_lib/Fornax.Core.dll` refutes still unadmitted are all UNMEASURED for this change.",
+    "THE POPULATION CEILING IS UNMEASURED on fsharp (and on the other HIGH-ceiling lanes) — the 40.4% and the 7.6% are both samples and neither is a lane's number.",
+    "No store run for any of this lane's work."
+  ],
+  "IT_IS_THE_GATES_OWN_DOCUMENTED_LIMITATION_MEASURED_ON_ONE_LANE": {
+    "authority": "src/ast/incoming-gate.ts (in `discoverFiles`)",
+    "theNote": "\"a stride sample cannot measure a FILE-SCOPED target: an import that names a path in the same project resolves only if that project's other files are in the key space, so a sampled run understates import resolution by construction (measured: 0.4 % sampled vs 46.8 % whole-corpus on the same revision). A whole single project is the honest unit for any question about file-scoped targets.\"",
+    "andItsRule": "\"THE UNSAMPLED ADMITTED POPULATION — `files` before the stride. A project fact (is this path in the population at all?) must be answered from THIS, not from the sample, or a claim would be verified against the run's budget instead of against the project.\"",
+    "whatThatMakesOfTheFourWaySpread": "NOT a new defect: it is the documented limitation measured on this lane, with numbers the note did not have. The 7.6% is a statement about THE SHAPE, and now also about the gate, not about fsharp's fixability.",
+    "theFleetConsequence": "ANY lane that quoted a stride reading for a file-scoped target understated it by construction — the note's own pair is 0.4% sampled against 46.8% whole-corpus, a factor of 117. Several lanes have stride rows; this is the first to price the gap.",
+    "WHICH_OF_THIS_LANES_NUMBERS_THE_STRIDE_DOES_AND_DOES_NOT_TOUCH": {
+      "NOT_AFFECTED": "Every FILE CLAIM figure — protobuf's 304 then 993 of 1,061, scss 3,108, clean 429, lua's ceiling — because each was resolved against the UNSAMPLED admitted list (`git ls-files` per lane, then only the PARSING was sampled), which is the rule the gate states at the `admitted` field. Verified by reading the probes: the admitted set is built from all tracked files before any stride is applied.",
+      "AFFECTED": "Every KEY-SPACE figure — the 7.6% stride ceiling, and the gate's own `resolved`/`unresolved` columns on any stride run. That is why the population row and the stride row must be recorded SIDE BY SIDE: a reader with only the population number does not know a 150-file stride reads 7.6% on this lane, and a reader with only 7.6% would conclude the cause is unfixable when it may be entirely fixable."
+    }
+  }
+}

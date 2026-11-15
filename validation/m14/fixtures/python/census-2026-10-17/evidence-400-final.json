@@ -1,0 +1,384 @@
+{
+  "population": {
+    "files": 400,
+    "total": 11466,
+    "repos": 49,
+    "ext": "py",
+    "max": 400
+  },
+  "parsed": 400,
+  "failed": 0,
+  "overall": {
+    "edges": 44440,
+    "resolved": 11191,
+    "ambiguous": 5339,
+    "externalVerified": 0,
+    "unresolved": 27910,
+    "claimed": 7738,
+    "unresolvedByEvidence": {
+      "imports-module-item": {
+        "edges": 3037,
+        "claimed": 0
+      },
+      "dynamic-reason": {
+        "edges": 13693,
+        "claimed": 0
+      },
+      "builtin-leaf": {
+        "edges": 366,
+        "claimed": 254
+      },
+      "import-bound-route": {
+        "edges": 3379,
+        "claimed": 3287
+      },
+      "import-bound-target": {
+        "edges": 4254,
+        "claimed": 4197
+      },
+      "other": {
+        "edges": 3181,
+        "claimed": 0
+      }
+    }
+  },
+  "perType": {
+    "calls": {
+      "edges": 19512,
+      "resolved": 2775,
+      "ambiguous": 1288,
+      "externalVerified": 0,
+      "unresolved": 15449,
+      "claimed": 5224,
+      "unresolvedByEvidence": {
+        "dynamic-reason": {
+          "edges": 7476,
+          "claimed": 0
+        },
+        "builtin-leaf": {
+          "edges": 112,
+          "claimed": 0
+        },
+        "import-bound-route": {
+          "edges": 2004,
+          "claimed": 1929
+        },
+        "import-bound-target": {
+          "edges": 3329,
+          "claimed": 3295
+        },
+        "other": {
+          "edges": 2528,
+          "claimed": 0
+        }
+      },
+      "samples": {
+        "dynamic-reason": [
+          "Fabulous/eng/monorepo/changelog.py\tfinditer\tdispatch-on-receiver\tHEADING.finditer\t",
+          "Fabulous/eng/monorepo/changelog.py\tgroup\tdispatch-on-receiver\tmatch.group\t",
+          "Fabulous/eng/monorepo/changelog.py\tfinditer\tdispatch-on-receiver\tHEADING.finditer\t",
+          "Fabulous/eng/monorepo/changelog.py\tgroup\tdispatch-on-receiver\tmatch.group\t",
+          "Fabulous/eng/monorepo/changelog.py\tgroup\tdispatch-on-receiver\tmatches[0].group\t",
+          "Fabulous/eng/monorepo/changelog.py\tgroup\tdispatch-on-receiver\tmatches[0].group\t"
+        ],
+        "builtin-leaf": [
+          "Fabulous/eng/monorepo/changelog.py\tSystemExit\tbare-name-callee\tSystemExit\t",
+          "Fabulous/eng/monorepo/changelog.py\tSystemExit\tbare-name-callee\tSystemExit\t",
+          "Fabulous/eng/monorepo/changelog.py\tSystemExit\tbare-name-callee\tSystemExit\t",
+          "Fabulous/eng/monorepo/changelog.py\tSystemExit\tbare-name-callee\tSystemExit\t",
+          "Fabulous/eng/monorepo/changelog.py\tSystemExit\tbare-name-callee\tSystemExit\t",
+          "Fabulous/eng/monorepo/changelog.py\tSystemExit\tbare-name-callee\tSystemExit\t"
+        ],
+        "import-bound-route": [
+          "Fabulous/eng/monorepo/changelog.py\tArgumentParser\texternal-member-call\targparse.ArgumentParser\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tpformat\texternal-member-call\tpprint.pformat\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tdumps\texternal-member-call\tjson.dumps\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tloads\texternal-member-call\tjson.loads\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/branch_query_parameters.py\tmatch\texternal-member-call\tre.match\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/branch_query_parameters.py\tpformat\texternal-member-call\tpprint.pformat\tCLAIMED"
+        ],
+        "import-bound-target": [
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tField\tbare-name-callee\tField\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tField\tbare-name-callee\tField\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tField\tbare-name-callee\tField\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tField\tbare-name-callee\tField\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tConfigDict\tbare-name-callee\tConfigDict\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tto_jsonable_python\tbare-name-callee\tto_jsonable_python\tCLAIMED"
+        ],
+        "other": [
+          "ansible/lib/ansible/utils/collection_loader/_collection_config.py\th\tlocal-callee\th\t",
+          "ansible/lib/ansible/utils/collection_loader/_collection_config.py\t_to_text\tbare-name-callee\t_to_text\t",
+          "ansible/lib/ansible/utils/collection_loader/_collection_config.py\t_to_text\tbare-name-callee\t_to_text\t",
+          "ansible/lib/ansible/vars/manager.py\t_combine_and_track\tlocal-callee\t_combine_and_track\t",
+          "ansible/lib/ansible/vars/manager.py\t_combine_and_track\tlocal-callee\t_combine_and_track\t",
+          "ansible/lib/ansible/vars/manager.py\t_combine_and_track\tlocal-callee\t_combine_and_track\t"
+        ]
+      }
+    },
+    "uses": {
+      "edges": 13299,
+      "resolved": 2618,
+      "ambiguous": 3220,
+      "externalVerified": 0,
+      "unresolved": 7461,
+      "claimed": 1206,
+      "unresolvedByEvidence": {
+        "dynamic-reason": {
+          "edges": 6217,
+          "claimed": 0
+        },
+        "import-bound-route": {
+          "edges": 1185,
+          "claimed": 1168
+        },
+        "import-bound-target": {
+          "edges": 59,
+          "claimed": 38
+        }
+      },
+      "samples": {
+        "dynamic-reason": [
+          "Fabulous/eng/monorepo/changelog.py\tchangelog\tmember-read\targs.changelog\t",
+          "Fabulous/eng/monorepo/changelog.py\tcommand\tmember-read\targs.command\t",
+          "Fabulous/eng/monorepo/changelog.py\tcommand\tmember-read\targs.command\t",
+          "Fabulous/eng/monorepo/changelog.py\tversion\tmember-read\targs.version\t",
+          "Fabulous/eng/monorepo/changelog.py\tversion\tmember-read\targs.version\t",
+          "Fabulous/eng/monorepo/changelog.py\tversion\tmember-read\targs.version\t"
+        ],
+        "import-bound-route": [
+          "ansible/hacking/update-sanity-requirements.py\trequirements\tmember-read\tpackaging.requirements\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tPath\tmember-read\tpathlib.Path\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tspecifiers\tmember-read\tpackaging.specifiers\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tList\tmember-read\tt.List\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tList\tmember-read\tt.List\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tPath\tmember-read\tpathlib.Path\tCLAIMED"
+        ],
+        "import-bound-target": [
+          "ansible/lib/ansible/executor/process/worker.py\terrno\tmember-read\te.errno\t",
+          "ansible/test/lib/ansible_test/_util/controller/sanity/code-smell/runtime-metadata.py\tdatetime\tmember-read\tdatetime.datetime\tCLAIMED",
+          "gql-saleor/saleor/giftcard/utils.py\tdatetime\tmember-read\tdatetime.datetime\tCLAIMED",
+          "gql-saleor/saleor/graphql/account/tests/mutations/authentication/test_token_refresh.py\tdatetime\tmember-read\tdatetime.datetime\tCLAIMED",
+          "gql-saleor/saleor/graphql/account/tests/mutations/authentication/test_token_refresh.py\tdatetime\tmember-read\tdatetime.datetime\tCLAIMED",
+          "gql-saleor/saleor/graphql/account/tests/mutations/authentication/test_token_refresh.py\tdatetime\tmember-read\tdatetime.datetime\tCLAIMED"
+        ]
+      }
+    },
+    "contains": {
+      "edges": 4264,
+      "resolved": 4263,
+      "ambiguous": 0,
+      "externalVerified": 0,
+      "unresolved": 1,
+      "claimed": 0,
+      "unresolvedByEvidence": {
+        "other": {
+          "edges": 1,
+          "claimed": 0
+        }
+      },
+      "samples": {
+        "other": [
+          "wagtail/wagtail/search/apps.py\tWagtailSearchAppConfig.default\tnone\t\t"
+        ]
+      }
+    },
+    "imports": {
+      "edges": 3083,
+      "resolved": 37,
+      "ambiguous": 9,
+      "externalVerified": 0,
+      "unresolved": 3037,
+      "claimed": 0,
+      "unresolvedByEvidence": {
+        "imports-module-item": {
+          "edges": 3037,
+          "claimed": 0
+        }
+      },
+      "samples": {
+        "imports-module-item": [
+          "Fabulous/eng/monorepo/changelog.py\targparse:*\tnone\t\t",
+          "Fabulous/eng/monorepo/changelog.py\tre:*\tnone\t\t",
+          "Fabulous/eng/monorepo/changelog.py\tpathlib:Path\tnone\t\t",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\t__future__:annotations\tnone\t\t",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tpprint:*\tnone\t\t",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tre:*\tnone\t\t"
+        ]
+      }
+    },
+    "references": {
+      "edges": 1949,
+      "resolved": 546,
+      "ambiguous": 27,
+      "externalVerified": 0,
+      "unresolved": 1376,
+      "claimed": 959,
+      "unresolvedByEvidence": {
+        "import-bound-target": {
+          "edges": 676,
+          "claimed": 675
+        },
+        "builtin-leaf": {
+          "edges": 224,
+          "claimed": 224
+        },
+        "import-bound-route": {
+          "edges": 60,
+          "claimed": 60
+        },
+        "other": {
+          "edges": 416,
+          "claimed": 0
+        }
+      },
+      "samples": {
+        "import-bound-target": [
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tStrictStr\tannotation-type\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tAnnotationLineRange\tannotation-type\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tList\tannotation-type\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tClassVar\tannotation-type\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tOptional\treturn-annotation\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tSelf\treturn-annotation\t\tCLAIMED"
+        ],
+        "builtin-leaf": [
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tdict\tinstanceof-check\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/branch_query_parameters.py\tdict\tinstanceof-check\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/delete_branch_parameters.py\tdict\tinstanceof-check\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/enable_promotion_type_parameters.py\tdict\tinstanceof-check\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/get_library_changes_parameters.py\tdict\tinstanceof-check\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/inline_object9.py\tdict\tinstanceof-check\t\tCLAIMED"
+        ],
+        "import-bound-route": [
+          "ansible/hacking/update-sanity-requirements.py\tPath\tannotation-type\tpathlib.Path\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tPath\tannotation-type\tpathlib.Path\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tList\treturn-annotation\tt.List\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tList\tannotation-type\tt.List\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tList\treturn-annotation\tt.List\tCLAIMED",
+          "ansible/hacking/update-sanity-requirements.py\tPath\tannotation-type\tpathlib.Path\tCLAIMED"
+        ],
+        "other": [
+          "ansible/lib/ansible/_internal/_templating/_utils.py\tTemplateEngine\tannotation-type\t\t",
+          "ansible/lib/ansible/_internal/_templating/_utils.py\tTemplateOptions\tannotation-type\t\t",
+          "ansible/lib/ansible/_internal/_templating/_utils.py\tTemplateEngine\treturn-annotation\t\t",
+          "ansible/lib/ansible/_internal/_templating/_utils.py\tTemplateOptions\treturn-annotation\t\t",
+          "ansible/test/lib/ansible_test/_internal/cache.py\tCommonConfig\tannotation-type\t\t",
+          "ansible/test/lib/ansible_test/_internal/cache.py\tTValue\tinline-type-parameter\t\t"
+        ]
+      }
+    },
+    "exports": {
+      "edges": 112,
+      "resolved": 15,
+      "ambiguous": 1,
+      "externalVerified": 0,
+      "unresolved": 96,
+      "claimed": 0,
+      "unresolvedByEvidence": {
+        "other": {
+          "edges": 96,
+          "claimed": 0
+        }
+      },
+      "samples": {
+        "other": [
+          "gql-graphql-core/src/graphql/error/__init__.py\tGraphQLError\tnone\t\t",
+          "gql-graphql-core/src/graphql/error/__init__.py\tGraphQLErrorExtensions\tnone\t\t",
+          "gql-graphql-core/src/graphql/error/__init__.py\tGraphQLFormattedError\tnone\t\t",
+          "gql-graphql-core/src/graphql/error/__init__.py\tGraphQLFormattedErrorExtensions\tnone\t\t",
+          "gql-graphql-core/src/graphql/error/__init__.py\tGraphQLSyntaxError\tnone\t\t",
+          "gql-graphql-core/src/graphql/error/__init__.py\tlocated_error\tnone\t\t"
+        ]
+      }
+    },
+    "extends": {
+      "edges": 595,
+      "resolved": 72,
+      "ambiguous": 33,
+      "externalVerified": 0,
+      "unresolved": 490,
+      "claimed": 349,
+      "unresolvedByEvidence": {
+        "import-bound-target": {
+          "edges": 190,
+          "claimed": 189
+        },
+        "import-bound-route": {
+          "edges": 130,
+          "claimed": 130
+        },
+        "other": {
+          "edges": 140,
+          "claimed": 0
+        },
+        "builtin-leaf": {
+          "edges": 30,
+          "claimed": 30
+        }
+      },
+      "samples": {
+        "import-bound-target": [
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/annotation_boundary.py\tBaseModel\tnone\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/branch_query_parameters.py\tBaseModel\tnone\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/delete_branch_parameters.py\tBaseModel\tnone\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/enable_promotion_type_parameters.py\tBaseModel\tnone\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/get_library_changes_parameters.py\tBaseModel\tnone\t\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/models/inline_object9.py\tBaseModel\tnone\t\tCLAIMED"
+        ],
+        "import-bound-route": [
+          "Grace/sdk/generated/matrix/openapi-generator/python/test/test_annotation_boundary.py\tTestCase\tnone\tunittest.TestCase\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/test/test_branch_parameters.py\tTestCase\tnone\tunittest.TestCase\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/test/test_create_webhook_rule_parameters.py\tTestCase\tnone\tunittest.TestCase\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/test/test_directory_version_zip_fill_source.py\tTestCase\tnone\tunittest.TestCase\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/test/test_get_diff_by_sha256_hash_parameters.py\tTestCase\tnone\tunittest.TestCase\tCLAIMED",
+          "Grace/sdk/generated/matrix/openapi-generator/python/test/test_inline_object3.py\tTestCase\tnone\tunittest.TestCase\tCLAIMED"
+        ],
+        "other": [
+          "ansible/lib/ansible/module_utils/_internal/_json/_profiles/_module_legacy_c2m.py\t_JSONSerializationProfile\tnone\t_profiles._JSONSerializationProfile\t",
+          "ansible/lib/ansible/module_utils/_internal/_json/_profiles/_module_legacy_c2m.py\tAnsibleProfileJSONEncoder\tnone\t_profiles.AnsibleProfileJSONEncoder\t",
+          "ansible/lib/ansible/module_utils/_internal/_json/_profiles/_module_legacy_c2m.py\tAnsibleProfileJSONDecoder\tnone\t_profiles.AnsibleProfileJSONDecoder\t",
+          "ansible/test/lib/ansible_test/_internal/commands/coverage/analyze/targets/filter.py\tCoverageAnalyzeTargetsConfig\tnone\t\t",
+          "ansible/test/lib/ansible_test/_internal/core_ci.py\tHttpError\tnone\t\t",
+          "ansible/test/lib/ansible_test/_internal/provider/source/__init__.py\tPathProvider\tnone\t\t"
+        ],
+        "builtin-leaf": [
+          "ansible/lib/ansible/plugins/doc_fragments/connection_pipelining.py\tobject\tnone\t\tCLAIMED",
+          "ansible/lib/ansible/utils/collection_loader/_collection_config.py\ttype\tnone\t\tCLAIMED",
+          "ansible/lib/ansible/utils/collection_loader/_collection_config.py\tobject\tnone\t\tCLAIMED",
+          "ansible/test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/doc_fragments/frag.py\tobject\tnone\t\tCLAIMED",
+          "ansible/test/units/mock/yaml_helper.py\tobject\tnone\t\tCLAIMED",
+          "cython/tests/run/dict_setdefault.py\tobject\tnone\t\tCLAIMED"
+        ]
+      }
+    },
+    "implements": {
+      "edges": 13,
+      "resolved": 13,
+      "ambiguous": 0,
+      "externalVerified": 0,
+      "unresolved": 0,
+      "claimed": 0,
+      "unresolvedByEvidence": {},
+      "samples": {}
+    },
+    "overrides": {
+      "edges": 917,
+      "resolved": 497,
+      "ambiguous": 420,
+      "externalVerified": 0,
+      "unresolved": 0,
+      "claimed": 0,
+      "unresolvedByEvidence": {},
+      "samples": {}
+    },
+    "instantiates": {
+      "edges": 696,
+      "resolved": 355,
+      "ambiguous": 341,
+      "externalVerified": 0,
+      "unresolved": 0,
+      "claimed": 0,
+      "unresolvedByEvidence": {},
+      "samples": {}
+    }
+  }
+}

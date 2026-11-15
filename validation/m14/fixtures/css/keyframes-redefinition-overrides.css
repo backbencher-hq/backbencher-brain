@@ -1,0 +1,52 @@
+/* M14 ONTOLOGY `overrides` — the three cases the aggregate count merged, separated.
+
+   1. A GENUINE redefinition. CSS Animations L1 §3: the last `@keyframes` of a name
+      wins, so the first block is dead. Emitted as `overrides spin -> spin` with
+      `supersedesLine` naming the block it kills.
+
+   2. A VENDOR-PREFIXED PAIR. `@-webkit-keyframes fade` beside `@keyframes fade` is
+      NOT a redefinition — two animations, selected by support. Measured: 145 of the
+      146 same-name second declarations in the whole corpus are this shape, so an
+      `overrides` edge here would be a fabrication over 99.3% of the type.
+
+   3. A `@property` RE-REGISTRATION. Same last-wins rule from a different spec. 0
+      occurrences over 1,114 corpus files, which is a fact about the corpus and not
+      about the construct, so this is the fixture that carries the evidence for it.
+*/
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade {
+  from { opacity: 0.1; }
+  to { opacity: 0.9; }
+}
+
+@-webkit-keyframes slide {
+  from { left: 0; }
+  to { left: 100px; }
+}
+
+@keyframes slide {
+  from { left: 0; }
+  to { left: 200px; }
+}
+
+@property --brand {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #06c;
+}
+
+@property --brand {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #c06;
+}
+
+.spinner {
+  animation: fade 1s linear infinite;
+  color: var(--brand);
+}

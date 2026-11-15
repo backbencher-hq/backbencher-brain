@@ -1,0 +1,8 @@
+{
+  "issue": "ELX-ADV X13",
+  "note": "Arity joins the same-line dedupe key: `{f(1), f(2, 3)}` keeps BOTH edges (f/1 and f/2 are distinct callees — the name+arity contract).",
+  "expectRelationships": [
+    { "type": "calls", "from": "ES.run/0", "target": "f", "line_number": 3, "meta.callArity": 1 },
+    { "type": "calls", "from": "ES.run/0", "target": "f", "line_number": 3, "meta.callArity": 2 }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/modifiers-sol17.sol",
+  "authoredFrom": "SOL-17 — applied modifiers as `decorators`. Authored 2026-09-30 from the analyzer's measured output. 188 of 5,976 corpus symbols carry applied modifiers across 40 distinct names (`onlyOwner`, `initializer`, `whenNotPaused`).",
+  "note": "Published on the `decorators` FIELD, not as a relationship — the family contract. C#, Java and F# all treat decorators as metadata on the thing they decorate, and the `modifier_invocation` case already emits the one edge that does carry meaning: a `calls` edge, because invoking a modifier IS calling it. Pinned separately here: `declaredOnly` is a DECLARED modifier with nothing applying it, so it must carry no decorators — a rule that treated any modifier name in scope as applied would attach all three to every function. `untouched` is the bare case. `withOverride` carries BOTH an applied modifier and an `override_specifier`, which are different node types and must not be conflated. The ABSENT case for `decorators` is pinned by `solidity/modifiers-every-scope` rather than by a fixture row: a rule that attached every modifier in the enclosing contract instead of the ones on THIS function would turn `single`'s list into `[\"onlyOwner\",\"nonReentrant\"]`, which `expectSymbols` states exactly. A `\"decorators\": \"not null\"` row was written first and removed — the harness has no such spelling, and inventing one inside a fixture would have made the row read as coverage while asserting nothing.",
+  "expectSymbols": [
+    {
+      "name": "single",
+      "kind": "method",
+      "ownerName": "Vault",
+      "decorators": [
+        "onlyOwner"
+      ]
+    },
+    {
+      "name": "paired",
+      "kind": "method",
+      "ownerName": "Vault",
+      "decorators": [
+        "onlyOwner",
+        "nonReentrant"
+      ]
+    },
+    {
+      "name": "withOverride",
+      "kind": "method",
+      "ownerName": "Vault",
+      "decorators": [
+        "onlyOwner"
+      ]
+    },
+    {
+      "name": "declaredOnly",
+      "kind": "method",
+      "ownerName": "Guarded",
+      "decorators": null
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "source": "single",
+      "target": "onlyOwner",
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file",
+      "comment": "Relabelled from the pre-relabel `calls` pin: an applied modifier is `decorates` (one site, one label). `onlyOwner` resolves to the `modifier_definition` in `Guarded`, so the application decorates `single`."
+    },
+    {
+      "type": "decorates",
+      "source": "paired",
+      "target": "onlyOwner",
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file"
+    },
+    {
+      "type": "decorates",
+      "source": "paired",
+      "target": "nonReentrant",
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file"
+    },
+    {
+      "type": "decorates",
+      "source": "withOverride",
+      "target": "onlyOwner",
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file",
+      "comment": "Applied modifiers AND an `override_specifier` are different node types and must not be conflated; the override pin lives in external-override-sol11."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "untouched",
+      "target": "declaredOnly",
+      "comment": "A DECLARED modifier is not an APPLYING one. Nothing in this file invokes `declaredOnly`, so no edge may exist — the failure mode of a rule that treated every modifier name in the file as applied everywhere."
+    },
+    {
+      "type": "calls",
+      "source": "single",
+      "target": "nonReentrant",
+      "comment": "`single` applies only `onlyOwner`. A rule that collected all modifiers in the enclosing contract rather than the ones on THIS function would add this edge."
+    },
+    {
+      "type": "calls",
+      "source": "single",
+      "target": "onlyOwner",
+      "comment": "THE RELABEL'S OWN FORBID ROW. A modifier application that resolves to a `modifier_definition` is `decorates`, never `calls`. This is what makes a revert of the label move go red — and a widening that emits BOTH edges red too."
+    },
+    {
+      "type": "calls",
+      "source": "paired",
+      "target": "nonReentrant",
+      "comment": "Same relabel forbid, second application site, so the second application cannot silently revert independently of the first."
+    },
+    {
+      "type": "decorates",
+      "source": "untouched",
+      "target": "declaredOnly",
+      "comment": "A DECLARED modifier with nothing applying it decorates nothing. The failure mode of a rule that treated every modifier name in scope as applied everywhere."
+    },
+    {
+      "type": "decorates",
+      "source": "single",
+      "target": "nonReentrant",
+      "comment": "`single` applies only `onlyOwner`. A rule that collected all modifiers of the enclosing contract rather than the ones on THIS function would add this edge."
+    }
+  ]
+}

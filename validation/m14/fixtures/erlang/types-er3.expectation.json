@@ -1,0 +1,313 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/types-er3.erl",
+  "authoredFrom": "Erlang type semantics + the pinned grammar's type shapes, before this fixture's F3 run. -type, -opaque and OTP 28's -nominal all declare a Type; a -callback is a Method owned by the module; every one of those bodies, plus a -spec signature and a record field type, contributes TYPE references. Two facts that only the span filter keeps apart: a declaration's OWN name is not a self-reference (so `handle` never references `handle`), while a RECURSIVE type's self-reference is legal Erlang and IS emitted (`tree :: {tree(), leaf()}` depends on itself). A record named in a type is a type REFERENCE, never a construction. UPDATED for ER-D36: a type dependency is an APPLIED name, and only an applied name. The M12 differential went 1.000 -> 0.784 with 19 false positives, two of them bare atoms in type syntax resolving to same-named types elsewhere. So `| error`, `| undefined` are atom LITERALS and declare no dependency, while `binary()`, `request()`, `reply()` are applied and stay. The three bare-atom edges this file used to REQUIRE are now FORBIDDEN with the reason attached, because a pin that can be silently deleted teaches nothing.",
+  "expectSymbols": [
+    {
+      "name": "types_er3",
+      "kind": "module"
+    },
+    {
+      "name": "handle",
+      "kind": "method",
+      "ownerName": "types_er3",
+      "meta.isCallback": true,
+      "meta.arity": 1
+    },
+    {
+      "name": "init",
+      "kind": "method",
+      "ownerName": "types_er3",
+      "meta.isCallback": true,
+      "meta.arity": 1
+    },
+    {
+      "name": "request",
+      "kind": "type",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "payload",
+      "kind": "type",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "token",
+      "kind": "type",
+      "ownerName": "types_er3",
+      "meta.isOpaque": true,
+      "note": "-opaque is the same declaration surface as -type"
+    },
+    {
+      "name": "ident",
+      "kind": "type",
+      "ownerName": "types_er3",
+      "meta.isNominal": true,
+      "note": "OTP 28 -nominal"
+    },
+    {
+      "name": "tree",
+      "kind": "type",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "leaf",
+      "kind": "type",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "recursive",
+      "kind": "type",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "wrapped",
+      "kind": "type",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "state",
+      "kind": "struct",
+      "ownerName": "types_er3"
+    },
+    {
+      "name": "tok",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "r",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "types_er3",
+      "meta.arity": 1,
+      "meta.hasSpec": true
+    },
+    {
+      "name": "reply",
+      "kind": "function",
+      "ownerName": "types_er3",
+      "meta.arity": 0
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "run",
+      "arity": 1
+    },
+    {
+      "name": "reply",
+      "arity": 0
+    },
+    {
+      "name": "handle",
+      "arity": 0,
+      "kind": "type"
+    },
+    {
+      "name": "tree",
+      "arity": 0,
+      "kind": "type"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "handle",
+      "target": "request",
+      "meta.context": "type reference",
+      "line_number": 10,
+      "note": "a behaviour's callback signature is its contract, and the contract names types"
+    },
+    {
+      "type": "references",
+      "from": "handle",
+      "target": "reply",
+      "meta.context": "type reference",
+      "line_number": 10
+    },
+    {
+      "type": "references",
+      "from": "init",
+      "target": "term",
+      "meta.context": "type reference",
+      "line_number": 11
+    },
+    {
+      "type": "references",
+      "from": "request",
+      "target": "atom",
+      "meta.context": "type reference",
+      "line_number": 13
+    },
+    {
+      "type": "references",
+      "from": "request",
+      "target": "payload",
+      "meta.context": "type reference",
+      "line_number": 13
+    },
+    {
+      "type": "references",
+      "from": "payload",
+      "target": "binary",
+      "meta.context": "type reference",
+      "line_number": 14
+    },
+    {
+      "type": "references",
+      "from": "token",
+      "target": "binary",
+      "meta.context": "type reference",
+      "line_number": 15
+    },
+    {
+      "type": "references",
+      "from": "ident",
+      "target": "atom",
+      "meta.context": "type reference",
+      "line_number": 16
+    },
+    {
+      "type": "references",
+      "from": "tree",
+      "target": "tree",
+      "meta.context": "type reference",
+      "line_number": 17,
+      "note": "a RECURSIVE type's self-reference is legal Erlang and IS emitted - the span filter removes the declaration's name, not a genuine recursive dependency"
+    },
+    {
+      "type": "references",
+      "from": "tree",
+      "target": "leaf",
+      "meta.context": "type reference",
+      "line_number": 17
+    },
+    {
+      "type": "references",
+      "from": "leaf",
+      "target": "integer",
+      "meta.context": "type reference",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "recursive",
+      "target": "recursive",
+      "meta.context": "type reference",
+      "line_number": 19
+    },
+    {
+      "type": "references",
+      "from": "wrapped",
+      "target": "state",
+      "meta.context": "type reference",
+      "line_number": 20,
+      "note": "#state{} inside a -type is a type dependency, not a construction. The context is the generic type-dependency label and the record-ness is an explicit flag (ER-D36): a consumer asking 'is this a dependency on a record?' has a boolean to read instead of a string to match.",
+      "meta.isRecordType": true
+    },
+    {
+      "type": "references",
+      "from": "state",
+      "target": "token",
+      "meta.context": "type reference",
+      "line_number": 21,
+      "note": "a record field's type belongs to the RECORD"
+    },
+    {
+      "type": "references",
+      "from": "state",
+      "target": "request",
+      "meta.context": "type reference",
+      "line_number": 21
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "request",
+      "meta.context": "type reference",
+      "line_number": 22,
+      "note": "a -spec names the types the function's contract depends on"
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "reply",
+      "meta.context": "type reference",
+      "line_number": 22
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "handle",
+      "target": "handle",
+      "note": "a declaration never references its own NAME"
+    },
+    {
+      "type": "references",
+      "from": "request",
+      "target": "request",
+      "note": "ditto - the name sits in a type_name span"
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "run",
+      "note": "a -spec's name atom is its skip span"
+    },
+    {
+      "type": "instantiates",
+      "from": "wrapped",
+      "target": "state",
+      "note": "a record in a type is a reference, never a construction"
+    },
+    {
+      "type": "calls",
+      "from": "handle",
+      "note": "term()/reply() in a signature are TYPE names, not calls"
+    },
+    {
+      "type": "calls",
+      "from": "request"
+    },
+    {
+      "type": "calls",
+      "from": "state",
+      "note": "a field TYPE is not a call site"
+    },
+    {
+      "type": "references",
+      "from": "handle",
+      "target": "ok",
+      "line_number": 10,
+      "note": "ER-D36: a bare unquoted atom in type syntax is the ATOM LITERAL `ok`, not a type named ok — the same name as a type would be a fabrication"
+    },
+    {
+      "type": "references",
+      "from": "handle",
+      "target": "error",
+      "line_number": 10,
+      "note": "ditto for `| error`"
+    },
+    {
+      "type": "references",
+      "from": "payload",
+      "target": "undefined",
+      "line_number": 14,
+      "note": "ditto for `binary() | undefined` — binary() IS an applied name and stays"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Req"
+    },
+    {
+      "name": "payload_thing"
+    }
+  ]
+}

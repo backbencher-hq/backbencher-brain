@@ -1,0 +1,65 @@
+{
+  "instrument": "CAUSE 1 — the `imports` split (LOCAL vs EXTERNAL) with the ceiling in the gate's own columns",
+  "lane": "java",
+  "population": {
+    "admitted": 1942,
+    "parsed": 1942,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "grails-core"
+    ]
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default",
+  "importsEdges": 33734,
+  "shapes": {
+    "moduleName": 33734
+  },
+  "theSplit": {
+    "LOCAL": 8730,
+    "EXTERNAL": 25004
+  },
+  "asEmitted": {
+    "LOCAL": {
+      "unresolved": 8730
+    },
+    "EXTERNAL": {
+      "unresolved": 25004
+    }
+  },
+  "ceiling_onTheLeaf": {
+    "LOCAL": {
+      "resolved": 7594,
+      "ambBoth": 324,
+      "ambDeclOnly": 812
+    },
+    "EXTERNAL": {
+      "resolved": 1968,
+      "unresolved": 22556,
+      "ambDeclOnly": 426,
+      "ambBoth": 54
+    }
+  },
+  "packagePrefixHeuristic": {
+    "trueLocal": 7210,
+    "falseLocal": 1378,
+    "missedLocal": 1520,
+    "trueExternal": 23626,
+    "precision": 0.8395,
+    "recall": 0.8259
+  },
+  "samples": {
+    "LOCAL": [
+      "org.grails.build.logging.GrailsConsoleErrorPrintStream -> leaf GrailsConsoleErrorPrintStream",
+      "org.grails.build.logging.GrailsConsoleErrorPrintStream -> leaf GrailsConsoleErrorPrintStream",
+      "org.grails.build.logging.GrailsConsolePrintStream -> leaf GrailsConsolePrintStream",
+      "org.grails.build.logging.GrailsConsolePrintStream -> leaf GrailsConsolePrintStream"
+    ],
+    "EXTERNAL": [
+      "java.net.URI",
+      "java.net.URI",
+      "java.net.URISyntaxException",
+      "java.net.URISyntaxException"
+    ]
+  }
+}

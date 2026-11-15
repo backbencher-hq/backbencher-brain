@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/TopLevelArray.json",
+  "authoredFrom": "A document whose TOP LEVEL is an array — the third shape of array naming, and the one neither of the two existing array fixtures covers. `Arrays.json` and `ArrayInArray.json` both put every array under a KEY, where the name is the key plus the index. When the top level is an array the array has no key at all, so the MODULE is the only thing that can name it, and the character at `rootName.length` in the qualified path is `[` where it is `.` in the keyed case. The module-prefix strip was `slice(rootName.length + 1)`, which assumes the dot and therefore ate the bracket: `TopLevelArray[0].tags[0]` published the name `0].tags[0]`. Measured over a 514-file stride sample of the 2,569 corpus documents whose top level is an array: 17,803 such names, in 215 files, and after the fix 0 — the 17,803 reappear as the bracket form `[0].tags[0]`, with the OTHER three spelling buckets and the total symbol count unchanged to the digit, which is what makes it a rename and not an edit. The forbid entries below are the regression guard and name the OLD spellings, so reverting `afterModuleImpl` fails this fixture instead of passing quietly. KNOWN DEFECT, asserted here rather than hidden: `[0].tags` is an ownerName that the file never publishes — the keyed array `tags` is published under its qualified path but under the bare name `tags`, so the element's declared owner does not bind to any symbol. Measured corpus-wide over the same sample: 2,666 `contains` children name an absent owner against 32,128 whose owner name collides and 85,670 whose owner name is unique (of which 85,670 of 85,670 agree with the edge's source, 100%). The `contains` EDGE still resolves, because it is emitted against the qualified path, so the graph walks correctly while this metadata does not bind. Pre-existing and not introduced by the bracket-form fix: identical on both sides of it.",
+  "expectSymbols": [
+    { "name": "TopLevelArray", "kind": "module" },
+    { "name": "TopLevelArray[0]", "kind": "class", "ownerName": "TopLevelArray" },
+    { "name": "kind", "kind": "property", "ownerName": "TopLevelArray[0]" },
+    { "name": "tags", "kind": "property", "ownerName": "TopLevelArray[0]" },
+    { "name": "[0].tags[0]", "kind": "class", "ownerName": "[0].tags" },
+    { "name": "[0].tags[1]", "kind": "class", "ownerName": "[0].tags" },
+    { "name": "TopLevelArray[1]", "kind": "class", "ownerName": "TopLevelArray" },
+    { "name": "n", "kind": "property", "ownerName": "TopLevelArray[1]" }
+  ],
+  "forbidSymbols": [
+    { "name": "0].tags[0]" },
+    { "name": "0].tags[1]" },
+    { "name": "0].tags" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "TopLevelArray", "target": "TopLevelArray[0]" },
+    { "type": "contains", "from": "TopLevelArray[0]", "target": "TopLevelArray[0].kind" },
+    { "type": "contains", "from": "TopLevelArray[0]", "target": "TopLevelArray[0].tags" },
+    { "type": "contains", "from": "TopLevelArray[0].tags", "target": "TopLevelArray[0].tags[0]" },
+    { "type": "contains", "from": "TopLevelArray[0].tags", "target": "TopLevelArray[0].tags[1]" },
+    { "type": "contains", "from": "TopLevelArray", "target": "TopLevelArray[1]" },
+    { "type": "contains", "from": "TopLevelArray[1]", "target": "TopLevelArray[1].n" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "TopLevelArray[0]", "target": "TopLevelArray[0].tags[1]" },
+    { "type": "contains", "from": "TopLevelArray[1]", "target": "TopLevelArray[1].tags" }
+  ]
+}

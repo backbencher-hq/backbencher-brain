@@ -1,0 +1,16 @@
+  [cold-pool] grails-core:groovy: 120/120 fresh (rot 1, corpus 4014)
+  [grails-core] groovy: COMPARED WITH NO TRUTH: overrides (117 comparable, 0 truth)
+[grails-core] groovy: files=120 tree-truth=2037 covered=2037 (100%) MISSING=0 | analyzer-edges=2173 unexplained=21 (1%) heuristic=117 hash=4b0095dce040b7e4 | unexplained-by-label: uses=21
+  [cold-pool] geb:groovy: 120/120 fresh (rot 1, corpus 668)
+  [geb] groovy: COMPARED WITH NO TRUTH: overrides (35 comparable, 0 truth)
+[geb] groovy: files=120 tree-truth=1317 covered=1315 (99.8%) MISSING=2 | analyzer-edges=1362 unexplained=27 (2%) heuristic=35 hash=168742462ab1a4ff | unexplained-by-label: uses=27
+
+  2 lane(s) COMPARED A LABEL WITH NO TRUTH — the published coverage for those labels is not coverage:
+    grails-core:groovy  overrides (117 comparable, 0 truth)
+    geb:groovy  overrides (35 comparable, 0 truth)
+  Each of those labels is in the comparison set with no oracle behind it, so every one of its edges
+  lands in unexplained (a confident fabrication) or heuristic (declared suspicion). Neither is coverage.
+  [geb:groovy] 2 MISSING / undefined truth — samples:
+    uses (expr) -> &get   (integration/geb-gradle/src/main/groovy/geb/gradle/cloud/CloudBrowsersExtension.groovy)
+    uses (expr) -> @href   (doc/manual-snippets/src/test/resources/gebScript.groovy)
+probe run (--lang groovy): measured 2 lane(s) — M14.0.F5 NOT written. The artifact belongs to the canonical 120-file, 47-language sweep; a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.

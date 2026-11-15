@@ -1,0 +1,72 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-gate-selftest.ts",
+  "generatedAt": "2026-09-05T02:50:12.705Z",
+  "passed": 9,
+  "failed": 0,
+  "negativeCases": 9,
+  "gates": [
+    {
+      "code": "A1",
+      "script": "verify-a1-post-entry.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A2",
+      "script": "verify-a2-bounded-post.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A3",
+      "script": "verify-a3-write-parity.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A4",
+      "script": "lifecycle-corpus.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A5",
+      "script": "verify-a5-flag-semantics.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A6",
+      "script": "verify-a6-health-refresh.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A7",
+      "script": "verify-a7-cli-parity.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A8",
+      "script": "verify-a8-config.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    },
+    {
+      "code": "A9",
+      "script": "verify-a9-purge.ts",
+      "controlPassed": true,
+      "mutationBit": true
+    }
+  ],
+  "residueClean": true,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.488Z",
+    "contentSha256": "2891a7842e076d25b06dd9eb9f4fa5a0ebe379f1a62c4407ef01a42498ffec7b"
+  }
+}

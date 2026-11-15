@@ -1,0 +1,189 @@
+{
+  "tool": "validation/m14/elixir/elixir-mutants.ts",
+  "lane": "ELIXIR_FIX2",
+  "subject": "src/ast/real-elixir-analyzer.ts",
+  "subjectSha256": "53f7825c5119fec0efa344a4a82631e4ea7dbd42641cda1582363351eb563963",
+  "mechanism": "SOURCE-level injection into the analyzer file, then the real script/m14/run-fixtures.ts against the edited analyzer; the subject is restored in a finally and verified by hash",
+  "whyNotTheSharedHarness": "script/m14/mutate-analyzer.ts wraps analyzer OUTPUT and lives in script/m14/**, which the workstream ownership table gives to the supervisor. These mutants edit the SOURCE. Registering them in the shared list is reported as a need, not made here.",
+  "claimLevel": "L4-scope: the mutants below are the ones this lane added; the lane's PRE-EXISTING mutant set (87 mutants, script/m14/mutate-analyzer.ts ids prefixed elixir/) was NOT re-run here and is out of this file's scope.",
+  "mutantsRun": 17,
+  "caught": 16,
+  "declaredEquivalent": 1,
+  "survived": 0,
+  "log": [
+    {
+      "id": "elixir/member-read-dropped",
+      "defectClass": "relationship-loss",
+      "description": "The `uses` emission for a member field read is deleted — the field read goes silent again, which is the pre-ELIXIR_FIX2 state. Caught by member-read-uses.",
+      "fixture": "member-read-uses",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: member-read-uses"
+    },
+    {
+      "id": "elixir/member-read-as-call",
+      "defectClass": "relationship-mislabelling",
+      "description": "The member field read is relabelled `calls` instead of `uses` — the edge exists but carries the wrong type, which is the Q4 failure the ontology asks about. Caught by member-read-uses.",
+      "fixture": "member-read-uses",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: member-read-uses"
+    },
+    {
+      "id": "elixir/member-read-callee-included",
+      "defectClass": "relationship-fabrication",
+      "description": "The receiver's first character is no longer checked, so a CAPITALIZED remote callee is double-labelled `uses` on top of its `calls` edge — every remote call published twice under two labels. Caught by member-read-uses.",
+      "fixture": "member-read-uses",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 63 / fail 2; failing fixtures: member-read-uses, remote-ref-forms"
+    },
+    {
+      "id": "elixir/member-read-pattern-included",
+      "defectClass": "relationship-fabrication",
+      "description": "The `->` pattern-position guard is removed, so binding a field in a clause head publishes a `uses` edge — a pattern is not an evaluation (ER-D7). Caught by member-read-uses.",
+      "fixture": "member-read-uses",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: member-read-uses"
+    },
+    {
+      "id": "elixir/export-surface-dropped",
+      "defectClass": "relationship-loss",
+      "description": "The `exports` pass is deleted — the module's published surface disappears from the graph. Caught by export-surface.",
+      "fixture": "export-surface",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 63 / fail 2; failing fixtures: export-surface, unnamed-module-owner"
+    },
+    {
+      "id": "elixir/export-surface-private",
+      "defectClass": "relationship-fabrication",
+      "description": "The visibility test is dropped, so defp/defmacrop/defguardp/@typep are published as exports — on this corpus 7,959 names no importer can bind, and no oracle can catch it because both sides would be written from the same wrong rule. Caught by export-surface.",
+      "fixture": "export-surface",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: export-surface"
+    },
+    {
+      "id": "elixir/export-surface-field",
+      "defectClass": "relationship-fabrication",
+      "description": "Struct fields (Property) join the exported kinds, so each field is published as an importable unit — membership already rides `contains`, per the exports-family ruling. Caught by export-surface.",
+      "fixture": "export-surface",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 63 / fail 2; failing fixtures: export-surface, unnamed-module-owner"
+    },
+    {
+      "id": "elixir/export-surface-selfloop",
+      "defectClass": "relationship-fabrication",
+      "description": "The `owner === name` guard is dropped, so a defstruct's own symbol publishes `exports M -> M` — the same self-loop the contains pass suppresses (EX-L3). Caught by export-surface.",
+      "fixture": "export-surface",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: export-surface"
+    },
+    {
+      "id": "elixir/overrides-dropped",
+      "defectClass": "relationship-loss",
+      "description": "The `overrides` pass is deleted — the language's override construct is read but not published, which is the pre-ELIXIR_FIX2 state. Caught by use-defoverridable.",
+      "fixture": "use-defoverridable",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: use-defoverridable"
+    },
+    {
+      "id": "elixir/overrides-fabricated",
+      "defectClass": "relationship-fabrication",
+      "description": "The overridable-SET lookup is dropped, so EVERY definition in a `use N` module is published as overriding N — the fabrication the whole ruling turns on, since most definitions in a `use N` module are new functions. Caught by use-defoverridable.",
+      "fixture": "use-defoverridable",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: use-defoverridable"
+    },
+    {
+      "id": "elixir/overrides-whole-module",
+      "defectClass": "relationship-fabrication",
+      "description": "The `defoverridable SomeModule` arm stops requiring that SomeModule be DECLARED in this file, so the arm names a function of a module whose function list was never read — the exact fabrication the arm's comment warns about, and the shape that would make `use GenServer` + `def child_spec` fire for every `use` target. Caught by use-defoverridable.",
+      "fixture": "use-defoverridable",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: use-defoverridable"
+    },
+    {
+      "id": "elixir/overrides-quoted-leak",
+      "defectClass": "relationship-fabrication",
+      "description": "The LIVE quote gate is defeated: `defoverridable` is recorded even when the walk is inside quoted code, so a `defoverridable` inside a `__using__` TEMPLATE could be credited to the module that only DEFINES the template. NOT CAUGHT, and the survival is adjudicated EQUIVALENT with a measurement rather than waved through — see `equivalence` below. The first version of this mutant deleted a SECOND, redundant guard inside recordOverridable and also survived, byte-identical, because the walk already routes every quoted call away from the branch chain; a guard that cannot fire is dead code wearing a safety net's name, so the redundant one was deleted and the mutant now attacks the gate that is live.",
+      "fixture": "use-defoverridable",
+      "caught": false,
+      "suiteWentRed": false,
+      "caughtByItsOwnFixture": false,
+      "detail": "pass 65 / fail 0; failing fixtures: (none reported)",
+      "declaredEquivalent": {
+        "claim": "Removing the walk's quote gate for `defoverridable` cannot change any output on this corpus, so no fixture can catch it and its survival is not a hole in the suite.",
+        "measurement": "Probe F3 in validation/m14/elixir/elixir-construct-census.ts counts `defoverridable` sites that are BOTH inside a quote AND credited to a module scope — the only shape the gate can change, because a mark inside a quoted `__using__` body is credited to the MACRO's function scope, and a function scope is never the target of a `use`. Measured over 601 derived .ex/.exs files: E1 26 sites / 14 files, of which F1 (no enclosing def body) 10 / 3, F2 (credited to a module) 10 / 3, and **F3 (inside a quote AND credited to a module) 0 / 0**. The counts decompose exactly: 26 = 16 enclosed in a def body + 10 module-credited, and none of the 10 is quoted. Corroborated by applying the mutant and diffing the analyzer's own output on the fixture: identical relationships, symbols and metadata."
+      }
+    },
+    {
+      "id": "elixir/reason-code-stripped",
+      "defectClass": "evidence-integrity",
+      "description": "The §4 default is removed from pushRel, so an edge whose SITE carries no code loses its machine-readable reason code — measured before the fix at 49,007/49,007 calls, 930/930 references, 1,187/1,187 instantiates and 73/73 implements. Caught by struct-update, whose instantiates row pins meta.reasonCode and meta.reasonCodeSource (the marker that the edge RELIES on the default rather than a site code — which is what keeps the guarantee a live branch instead of dead code).",
+      "fixture": "struct-update",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: struct-update"
+    },
+    {
+      "id": "elixir/paren-operator-name-clobbered",
+      "defectClass": "symbol-integrity",
+      "description": "The EX-A15 regression this branch inherited: the unconditional binary_operator read is restored, so `defmacro (..)` publishes a macro named \"(\" with arity 3. Caught by paren-operator-forms, which has been failing on the inherited baseline.",
+      "fixture": "paren-operator-forms",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: paren-operator-forms"
+    },
+    {
+      "id": "elixir/unnamed-module-scope-dropped",
+      "defectClass": "relationship-fabrication",
+      "description": "The P6 fix is reverted: an un-nameable `defmodule` pushes no scope, so the ENCLOSING module keeps ownership and contains/exports name the members of a module the corpus never names. This is the pre-fix state and it published `contains ExceptionTest -> foo`. Caught by unnamed-module-owner, whose forbids name exactly those edges.",
+      "fixture": "unnamed-module-owner",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: unnamed-module-owner"
+    },
+    {
+      "id": "elixir/unnamed-module-scope-leaked",
+      "defectClass": "scope-leak",
+      "description": "The unnamed scope is pushed but never popped, so every later declaration in the FILE loses its owner. The fixture's POSITIVE CONTROL (`defmodule Named` and its members) is the edge set that disappears, which is why the fixture pins the named case as well as forbidding the unnamed one.",
+      "fixture": "unnamed-module-owner",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: unnamed-module-owner"
+    },
+    {
+      "id": "elixir/unnamed-module-struct-kept",
+      "defectClass": "symbol-integrity",
+      "description": "The struct half of P6 is reverted: a `defstruct` inside an un-nameable module is named after the ENCLOSING module, forging a struct that module does not define. Caught by unnamed-module-owner's forbidSymbols on the two fields.",
+      "fixture": "unnamed-module-owner",
+      "caught": true,
+      "suiteWentRed": true,
+      "caughtByItsOwnFixture": true,
+      "detail": "pass 64 / fail 1; failing fixtures: unnamed-module-owner"
+    }
+  ]
+}

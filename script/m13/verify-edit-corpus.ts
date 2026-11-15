@@ -64,11 +64,11 @@ const harness = new Harness({
 // The corpus root was HARD-CODED to another developer's home directory, so this
 // gate could never pass anywhere but their machine — it failed with
 // corpus rake/lib/rake (Ruby): present
-// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 // each repo path below resolved to a filesystem that does not exist here and the leg
 // measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 // candidates in order and names them all when none exists.
-// $HOME/fixtures/repositories/rake/lib/rake missing
+// /home/ishaq2321/bb_tests/repositories/rake/lib/rake missing
 // which reads as "bb_edit broke on real repositories" and is in fact "this file
 // names a path that does not exist here".
 //
@@ -78,8 +78,8 @@ const harness = new Harness({
 // how to enable the optional corpus. This gate does the same, so an absent corpus is a
 // recorded skip rather than a red gate that looks like a product failure — and a
 // corpus that IS present still runs for real.
-// This resolved the corpus as `$HOME/fixtures/repositories`, which does not exist on
-// this machine — the corpus is a SIBLING of the repo, at ../fixtures/repositories.
+// This resolved the corpus as `$HOME/bb_tests/repositories`, which does not exist on
+// this machine — the corpus is a SIBLING of the repo, at ../bb_tests/repositories.
 // The gate therefore reported "corpus directory exists … missing" and measured nothing.
 // Routed through script/lib/corpus-root.ts, which searches the declared candidates in
 // order and names them all when none exists.

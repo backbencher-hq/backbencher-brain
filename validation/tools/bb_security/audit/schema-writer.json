@@ -1,0 +1,87 @@
+{
+  "schemaVersionDb": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-02T04:23:21.450Z",
+  "currentCommit": "3cd2fb7d0eea372b02d2e6adadfaf63d15be693c",
+  "command": "BB_DATA_DIR=… npx tsx validation/tools/bb_security/work/probe-schema-writer.ts",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/schema-writer",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/schema-writer",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/schema-writer/projects/b0480df1552526866f8048fdc21488fdc1da4b5d/brain.db",
+  "steps": [
+    {
+      "step": "baseline (after index + checkpoint)",
+      "schemaVersion": 157,
+      "delta": 0
+    },
+    {
+      "step": "openDatabase(dbPath) [rw driver pragmas]",
+      "schemaVersion": 157,
+      "delta": 0
+    },
+    {
+      "step": "migrateSchemaColumns",
+      "schemaVersion": 157,
+      "delta": 0
+    },
+    {
+      "step": "ensureHealthIndexes",
+      "schemaVersion": 157,
+      "delta": 0
+    },
+    {
+      "step": "ensurePlannerStats",
+      "schemaVersion": 157,
+      "delta": 0
+    },
+    {
+      "step": "cleanupOrphanedFkRows",
+      "schemaVersion": 157,
+      "delta": 0
+    },
+    {
+      "step": "ensureAnnotationTable",
+      "schemaVersion": 161,
+      "delta": 4
+    },
+    {
+      "step": "ensureEmbeddingBlobColumn",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "ensureSymbolDeclarationColumn",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "ensureSymbolSupertypesColumn",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "ensureFileMetadataColumn",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "ensureSymbolSourceTextColumn",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "ensureRelationshipTargetBasisColumn",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "ensureQueryShapeIndexes",
+      "schemaVersion": 161,
+      "delta": 0
+    },
+    {
+      "step": "close (checkpoint)",
+      "schemaVersion": 161,
+      "delta": 0
+    }
+  ]
+}

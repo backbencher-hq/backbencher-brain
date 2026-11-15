@@ -1,0 +1,27 @@
+{
+  "issue": "M60 clojure deep round — CLJ-D24 (positional refer) + CLJ-D26 (::kw spec)",
+  "note": "D7 is a file with TWO `(ns …)` forms — 45 sites (clj-kondo's corpus/ dialect files, test files that switch namespace mid-file) — so the refer table must be POSITIONAL. Both failure modes are pinned by the same referred name called from two places: keeping one table resolves the post-second-`ns` call against the FIRST namespace's clause (`after-second-ns -> clj.fixture.legacy/format-node`, forbidden below), and resetting the table at the second `ns` empties it for the post-walk pass, which would leave even the first-namespace call bare (also forbidden). The call inside the first namespace must carry the first lib; the call after the second `ns` must stay BARE, because `format-node` is not referred in the second namespace. D9: `(s/def ::kw …)` published the spec under the literal `::kw`; the reader qualifies `::` against the enclosing namespace, so the real name is `:clj.fixture.twons.second/width` — without it the spec had an identity no other file could reference.",
+  "expectSymbols": [
+    { "name": ":clj.fixture.twons.second/width", "kind": "interface" },
+    { "name": ":clj.fixture.twons.second/height", "kind": "interface" },
+    { "name": "uses-first-refer" },
+    { "name": "uses-second" },
+    { "name": "after-second-ns" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "clj.fixture.twons.first", "target": "clj.fixture.legacy" },
+    { "type": "references", "from": "clj.fixture.twons.second", "target": "clj.fixture.other" },
+    { "type": "calls", "from": "uses-first-refer", "target": "clj.fixture.legacy/format-node", "line_number": 19 },
+    { "type": "calls", "from": "uses-second", "target": "clj.fixture.other/render", "line_number": 24 },
+    { "type": "calls", "from": "after-second-ns", "target": "format-node", "line_number": 28 },
+    { "type": "contains", "from": "clj.fixture.twons.second", "target": ":clj.fixture.twons.second/width" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "uses-first-refer", "target": "format-node" },
+    { "type": "calls", "from": "after-second-ns", "target": "clj.fixture.legacy/format-node" }
+  ],
+  "forbidSymbols": [
+    { "name": "::width" },
+    { "name": "::height" }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "issue": "M60 clojure deep round \u2014 CLJ-D17/D2",
+  "note": "THE CORE-CALL SUPPRESSION GATE. `CLOJURE_CORE_BUILTINS` was a 437-name hand transcription and the F5 oracle IMPORTED it by reference, so every name missing from the list was a MIRRORED fabrication no gate could see \u2014 measured 2,525 such `calls` edges in the clojure corpus (30% of all 8,391 call edges), 999 in clj-kondo, 151 in core.async. The list is now the surface DERIVED from clojure/clojure's own core.clj (723 entries, derivation printed by script/m14/tmp/clj-core-derive.ts), and `isCoreCallSuppressed` is the one gate every suppression site uses, with three exemptions this fixture pins. All the heads below are real clojure.core vars: `mapcat`, `ex-info`, `with-meta`, `transduce`, `dedupe`, `run!`, `identity`, `comp`, `max`, `count`, `re-find`.",
+  "expectSymbols": [
+    {
+      "name": "max",
+      "visibility": "private"
+    },
+    {
+      "name": "below-the-def"
+    },
+    {
+      "name": "region-bound"
+    },
+    {
+      "name": "referred"
+    },
+    {
+      "name": "suppressed-heads"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "clj.fixture.coregate",
+      "target": "clj.fixture.util"
+    },
+    {
+      "type": "calls",
+      "from": "below-the-def",
+      "target": "max",
+      "line_number": 33
+    },
+    {
+      "type": "calls",
+      "from": "region-bound",
+      "target": "map",
+      "line_number": 37
+    },
+    {
+      "type": "calls",
+      "from": "lambda_36_7",
+      "target": "max",
+      "line_number": 37
+    },
+    {
+      "type": "calls",
+      "from": "referred",
+      "target": "clj.fixture.util/re-find",
+      "line_number": 43
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "mapcat"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "ex-info"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "with-meta"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "transduce"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "dedupe"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "run!"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "max"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "count"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed-heads",
+      "target": "re-find"
+    },
+    {
+      "type": "calls",
+      "from": "referred",
+      "target": "re-find"
+    }
+  ]
+}

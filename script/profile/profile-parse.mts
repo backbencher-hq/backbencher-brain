@@ -30,7 +30,7 @@ const argOf = (k: string, d: string) => {
 }
 
 const SRC_PID = "818db37d8f54173ad1357ab24627373da2e9418c"
-const REPO = "$HOME/Documents/Default Project/ishaq/backbencher-brain"
+const REPO = "/Users/sano/Documents/Default Project/ishaq/backbencher-brain"
 
 async function main() {
   const dataDir = mkdtempSync(path.join(tmpdir(), "bb-profile-parse-"))

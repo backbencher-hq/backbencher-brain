@@ -1,0 +1,25 @@
+{
+  "fixtureId": "svelte/snippet-definitions",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419-A gap: {#snippet} definitions are reusable template functions - the name was never a symbol, and {@render name(...)} produced no call. Snippets are component-owned Methods; render tags are Calls.",
+  "expectSymbols": [
+    {
+      "name": "row",
+      "kind": "method",
+      "meta.isSnippet": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "snippet-definitions",
+      "target": "row"
+    },
+    {
+      "type": "calls",
+      "target": "row",
+      "meta.context": "Svelte {@render} tag"
+    }
+  ]
+}

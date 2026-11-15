@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/data-factory-keys",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the H1 factory half: data() { return {...} } return-object keys become Property symbols (first return wins, documented approximation) so {{ title }} resolves — same gap as the object form, same helper.",
+  "expectSymbols": [
+    { "name": "title", "kind": "property", "ownerName": "data-factory-keys" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "data-factory-keys", "target": "title" }
+  ]
+}

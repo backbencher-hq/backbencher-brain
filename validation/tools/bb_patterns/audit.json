@@ -1,0 +1,680 @@
+{
+ "schemaVersion": 1,
+ "tool": "bb_patterns",
+ "phase": "A (audit)",
+ "status": "partial",
+ "currentCommit": "f1141f464643e81e67835e8c1f81cff51f2e26e1",
+ "generatedAt": "2026-11-02T00:04:39.077265+00:00",
+ "scope": {
+  "owned": [
+   "src/mcp/tools/bb_patterns/handler.ts",
+   "src/mcp/tools/bb_patterns/descriptor.ts",
+   "src/intelligence/patterns/orphans.ts",
+   "src/intelligence/patterns/rules.ts",
+   "src/intelligence/patterns/evidence.ts",
+   "script/tool-docs/curation/bb_patterns.ts",
+   "docs/tools/bb_patterns.md",
+   "docs/BB_PATTERNS.md",
+   "script/m13/verify-patterns-*.ts",
+   "script/m15/verify-patterns-deep.ts",
+   "script/verify-patterns.ts",
+   "script/m20/verify-patterns-*.ts",
+   "validation/tools/bb_patterns/**"
+  ],
+  "notOwnedButRead": [
+   "src/ast/tools.ts (PatternBrainTools.detectPatterns aggregator)",
+   "src/mcp/tool-handlers.ts (assembler)",
+   "src/mcp/tool-validation.ts (argument boundary)",
+   "src/mcp/server.ts (index gate)",
+   "src/brain/database.ts (read-only opener)",
+   "src/brain/freshness.ts (staleness helpers)",
+   "src/intelligence/analysis/run-history.ts (history storage)",
+   "src/cli/index.ts (cmdTool door)",
+   "script/verify-tool-docs.ts (generator)"
+  ]
+ },
+ "gateTable": {
+  "source": "validation/tools/bb_patterns/gates/GATE-TABLE.json",
+  "runAtCommit": "6cecd6ec81fa9788b57e433cbf4378c2b40939e7",
+  "passed": 10,
+  "failed": 8,
+  "environment": "run 1 without BB_DATA_DIR failed on the read-only sandbox HOME (~/.bb EROFS): 8/18 environmental; run 2 with BB_DATA_DIR=validation/tools/bb_patterns/bbdata is the table above",
+  "gates": [
+   {
+    "gate": "verify-patterns",
+    "command": "bun run script/verify-patterns.ts",
+    "exitCode": 0,
+    "durationMs": 2938,
+    "logSha256": "00b28b2a9783eba1096c0ea995ab555bf22c252c84cdb7b6a2a6693872528fc6",
+    "log": "validation/tools/bb_patterns/gates/logs/verify-patterns.log"
+   },
+   {
+    "gate": "m13-patterns-orphans",
+    "command": "bun run script/m13/verify-patterns-orphans.ts",
+    "exitCode": 0,
+    "durationMs": 7726,
+    "logSha256": "6e6200376398e80744cb1a4ab9a4bef6f780683a6c78305c9a130d1fe2a38ad6",
+    "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-orphans.log"
+   },
+   {
+    "gate": "m13-patterns-rules",
+    "command": "bun run script/m13/verify-patterns-rules.ts",
+    "exitCode": 0,
+    "durationMs": 4603,
+    "logSha256": "ea3f90e09b0d1700f27d3095304f7c70ea7b43eadbdb381d2c5eead4cffd9e37",
+    "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-rules.log"
+   },
+   {
+    "gate": "m13-patterns-contract",
+    "command": "bun run script/m13/verify-patterns-contract.ts",
+    "exitCode": 1,
+    "durationMs": 18111,
+    "logSha256": "4429d604ab7ea456bf3e0bb68ebdc2276f8efde3c244503783dbf833a8baa702",
+    "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-contract.log"
+   },
+   {
+    "gate": "m13-patterns-docs",
+    "command": "bun run script/m13/verify-patterns-docs.ts",
+    "exitCode": 1,
+    "durationMs": 1523,
+    "logSha256": "395df772045b13a7f985c963f4ffc9655d688c14d10b5d34fcb226d2ddc4b21f",
+    "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-docs.log"
+   },
+   {
+    "gate": "m13-patterns-e2e-corpus",
+    "command": "bun run script/m13/verify-patterns-e2e-corpus.ts",
+    "exitCode": 1,
+    "durationMs": 431100,
+    "logSha256": "64ee87607e6536f17cb6440f2efbedc1a8ec54986c0ee79fc49419caa62374f7",
+    "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-e2e-corpus.log"
+   },
+   {
+    "gate": "m15-patterns-deep",
+    "command": "bun run script/m15/verify-patterns-deep.ts",
+    "exitCode": 2,
+    "durationMs": 202575,
+    "logSha256": "c08c4a8c02f0926e15e7ab51be45fef5e373b6c530d9292e47c7aae976335dd3",
+    "log": "validation/tools/bb_patterns/gates/logs/m15-patterns-deep.log"
+   },
+   {
+    "gate": "m20-patterns-parameter-scan",
+    "command": "bun run script/m20/verify-patterns-parameter-scan.ts",
+    "exitCode": 0,
+    "durationMs": 6842,
+    "logSha256": "cbb6ae7f95b276e9a8da88c433e4decb1317e15e94793a2ad0fe6c6ac971827c",
+    "log": "validation/tools/bb_patterns/gates/logs/m20-patterns-parameter-scan.log"
+   },
+   {
+    "gate": "m20-patterns-orphan-semantics",
+    "command": "bun run script/m20/verify-patterns-orphan-semantics.ts",
+    "exitCode": 1,
+    "durationMs": 1233,
+    "logSha256": "d48fa8c09bdaddc32181fea85ccd34eb7c069d007ecb056f77acadab0aba2ed7",
+    "log": "validation/tools/bb_patterns/gates/logs/m20-patterns-orphan-semantics.log"
+   },
+   {
+    "gate": "m20-patterns-pagination-history",
+    "command": "bun run script/m20/verify-patterns-pagination-history.ts",
+    "exitCode": 0,
+    "durationMs": 2077,
+    "logSha256": "710caeecbdb4c65460f1b88c869299e2a298907bac820b0206b29ae1bcb37254",
+    "log": "validation/tools/bb_patterns/gates/logs/m20-patterns-pagination-history.log"
+   },
+   {
+    "gate": "m57-t3-scope-all",
+    "command": "bun run script/m57/verify-t3-scope-all.ts",
+    "exitCode": 0,
+    "durationMs": 2602,
+    "logSha256": "162a9d11868d7ae500869afc6ff557f527223441c8382b159a949dd948902e3e",
+    "log": "validation/tools/bb_patterns/gates/logs/m57-t3-scope-all.log"
+   },
+   {
+    "gate": "m64-patterns-evidence-gate",
+    "command": "bun run script/m64/verify-patterns-evidence-gate.ts",
+    "exitCode": 0,
+    "durationMs": 4325,
+    "logSha256": "302d21cb4ad5bfd9a5ccd2fdedda2bf360d8e8797d4dc3a121bf99aed91ebcec",
+    "log": "validation/tools/bb_patterns/gates/logs/m64-patterns-evidence-gate.log"
+   },
+   {
+    "gate": "m64-gate-selftest",
+    "command": "bun run script/m64/verify-gate-selftest.ts",
+    "exitCode": 1,
+    "durationMs": 6707,
+    "logSha256": "20ad7f0a3249d44f19f372baa1273b65a43cb58877650efb2b52b21f7d1e4c7a",
+    "log": "validation/tools/bb_patterns/gates/logs/m64-gate-selftest.log"
+   },
+   {
+    "gate": "m65-rules-budget-and-gates",
+    "command": "bun run script/m65/verify-rules-budget-and-gates.ts",
+    "exitCode": 0,
+    "durationMs": 2151,
+    "logSha256": "730a0479b603417f1c195aa78188242c2c4cdf1cbe70f467114a812ea637cc4b",
+    "log": "validation/tools/bb_patterns/gates/logs/m65-rules-budget-and-gates.log"
+   },
+   {
+    "gate": "m65-rules-gate-selftest",
+    "command": "bun run script/m65/verify-rules-gate-selftest.ts",
+    "exitCode": 1,
+    "durationMs": 4728,
+    "logSha256": "d77e7ed22647d76a29b289125f5a1c6910d6fc032569cc7770ce5f9879a9b004",
+    "log": "validation/tools/bb_patterns/gates/logs/m65-rules-gate-selftest.log"
+   },
+   {
+    "gate": "m69-page-class-representation",
+    "command": "bun run script/m69/verify-patterns-page-class-representation.ts",
+    "exitCode": 0,
+    "durationMs": 5184,
+    "logSha256": "bd987088062061398477aa37a6fc7739325b496a1c97b5aa399abcef8f34a689",
+    "log": "validation/tools/bb_patterns/gates/logs/m69-page-class-representation.log"
+   },
+   {
+    "gate": "m16-docs-truth",
+    "command": "bun run script/m16/verify-docs-truth.ts",
+    "exitCode": 1,
+    "durationMs": 122,
+    "logSha256": "e6f940df82732f12986db6c6d27d7710a6f97576bfb96035c7a2786ac7127922",
+    "log": "validation/tools/bb_patterns/gates/logs/m16-docs-truth.log"
+   },
+   {
+    "gate": "m15-registry-handlers",
+    "command": "bun run script/m15/verify-registry-handlers.ts",
+    "exitCode": 0,
+    "durationMs": 1003,
+    "logSha256": "d37307eb577628c766113bb92894e330758e706583ab4721737e68fd8f04cefe",
+    "log": "validation/tools/bb_patterns/gates/logs/m15-registry-handlers.log"
+   }
+  ]
+ },
+ "latency": {
+  "source": "validation/tools/bb_patterns/LATENCY.json",
+  "verdicts": [
+   {
+    "tier": "T0",
+    "shape": "default-all",
+    "p50Ms": 69.59,
+    "p95Ms": 112.76,
+    "budgetMs": 250,
+    "pass": true
+   },
+   {
+    "tier": "T1",
+    "shape": "default-all",
+    "p50Ms": 1293.74,
+    "p95Ms": 1748.91,
+    "budgetMs": 1000,
+    "pass": false
+   },
+   {
+    "tier": "T2",
+    "shape": "default-all",
+    "p50Ms": 19839.45,
+    "p95Ms": 93078.29,
+    "budgetMs": 5000,
+    "pass": false
+   }
+  ],
+  "openCostT2": {
+   "readonlyOpenMs": 19.31,
+   "readWriteOpenMs": 12234.02,
+   "deltaOpenMs": 12214.71,
+   "readWriteOpenWroteIndex": true
+  },
+  "engineDecompositionT2File": "raw/t2-calls.jsonl",
+  "T2cold_engine": "detectOrphans 133,519.79ms; detectIndexRules 1,977.81ms (raw/t2-calls.jsonl)",
+  "T1": "default-all p50 1293.74ms / orphaned p50 778.29ms (raw/t1-latency.json)",
+  "T0": "default-all p50 69.59ms p95 112.76ms; orphaned p50 23.41ms p95 49.68ms (raw/t0-latency.json)"
+ },
+ "defects": [
+  {
+   "id": "P-01",
+   "severity": "high",
+   "title": "Every read path opens the database READ-WRITE and writes the index",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:71",
+    "src/intelligence/patterns/orphans.ts:255",
+    "src/intelligence/patterns/rules.ts:54"
+   ],
+   "evidence": [
+    "raw/read-path-writes.json",
+    "raw/t2-open-cost.json"
+   ],
+   "observed": "scope=orphaned created a 65,952-byte WAL; scope=all 98,912 bytes; history 107,152 bytes; the fixture db grew 643,072 \u2192 704,512 bytes across the reads. On the T2 copy the default read-write open took 12,234.02ms against 19.31ms for a byte-read-only open, and the open moved the WAL 494,432 \u2192 527,392 bytes (indexWriteFromReadWriteOpen=true).",
+   "impact": "A read tool mutates the index (Lead ruling B6) and pays 12.2s of migration/healer work on T2 before its first query. Fixing this also removes most of the T2 open latency.",
+   "fixPlan": "handler/engines open BrainDatabase.getRawInstance(projectId,{readonly:true}); history storage stays a separate concern (P-12)."
+  },
+  {
+   "id": "P-02",
+   "severity": "high",
+   "title": "An unindexed project answers a clean-looking zero instead of refusing (library/CLI door) and a database is created",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:71",
+    "src/cli/index.ts:971 (cmdTool, not owned)"
+   ],
+   "evidence": [
+    "raw/unindexed-read.json"
+   ],
+   "observed": "Against a directory the indexer never ran over, the source handler returned isError:false, 'patterns (0 found):\\n  none\\n[scan: 0 finding(s) ...]' \u2014 and created brain.db (4,096 bytes, schema later). The MCP stdio door refuses the same project ('No index found ... Run: bb index', isError true) because the server gate runs first; the CLI door and library callers have no gate.",
+   "impact": "A caller cannot distinguish 'nothing is dead' from 'there is no index'. The engine's own comment names this class: 'A crash and a clean result are indistinguishable if the corpus is not asserted real first.'",
+   "fixPlan": "the read-only open (P-01) throws the loud missing-index error; the handler returns it as isError text; CLI inherits the refusal."
+  },
+  {
+   "id": "P-03",
+   "severity": "high",
+   "title": "Default-call latency exceeds the campaign budget on T1 and T2, and a cold T2 scan is 133s",
+   "where": [
+    "src/intelligence/patterns/orphans.ts",
+    "src/intelligence/patterns/rules.ts",
+    "src/mcp/tools/bb_patterns/handler.ts"
+   ],
+   "evidence": [
+    "LATENCY.json",
+    "raw/t2-calls.jsonl",
+    "raw/t1-latency.json"
+   ],
+   "observed": "T2 default-all p50 19,839ms / p95 93,078ms (budget 5,000ms p95); T2 orphaned p50 20,424ms; T1 default-all p50 1,294ms / p95 1,749ms (budget 1000ms); cold detectOrphans on T2 133,520ms; warm-in-process handler 26,430ms. Load average 21-28 on 8 cores (declared; p50 cited).",
+   "impact": "At 4x the budget and within a bad-contention outlier of the 30s MCP client timeout; a cold first call can exceed it outright.",
+   "fixPlan": "read-only open removes 12.2s; then profile the six relationship statements on T2 (json_extract the suspect) and reduce warm-path work to the census aggregates the page needs."
+  },
+  {
+   "id": "P-04",
+   "severity": "high",
+   "title": "The handler's displayed page violates the requested-class representation contract the engine implements",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:108-111"
+   ],
+   "evidence": [
+    "raw/behavior.json"
+   ],
+   "observed": "On a fixture with 130 orphan candidates, 60 god classes and one framework row, the documented default {} returned 20 god-class rows and ZERO orphan rows and ZERO framework rows, while its own census line reported orphaned_function=855 orphaned_file=135 framework-detected=1. The engine's display page at maxResults=100 DID contain 38 orphan rows and the framework row; the handler asks the engine for max(limit,100) and then slices the top `limit`, so the promotion the engine applies to its page is discarded. limit=100 shows all three classes.",
+   "impact": "includeOrphaned/includeFramework default to true but a default call can return none of them on a real repository; an agent cannot distinguish 'no orphans' from 'page full of anti-patterns'.",
+   "fixPlan": "pass the caller's page size to the engine (or re-apply the one-slot-per-requested-class rule on the handler's slice) and keep the census unchanged; add a handler-level gate case that asserts representation at limit=20."
+  },
+  {
+   "id": "P-05",
+   "severity": "high",
+   "title": "history returns an unbounded findings payload in one answer",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:57-60"
+   ],
+   "evidence": [
+    "raw/history-payload.json"
+   ],
+   "observed": "After one recorded run over 1,113 findings, {history:true,limit:2} returned 1,787,433 characters (1.79MB). `limit` bounds RUNS only; the findings array is loaded whole by the shared history reader; the answer is JSON with no truncation declaration. On T2's census (13,237 findings per run) one run alone is ~21MB, multiplied by recorded runs.",
+   "impact": "An MCP host receives a multi-megabyte tool answer; a 30s/timeout-bounded client can be starved by a history query that is not bounded at all.",
+   "fixPlan": "declare and enforce a findings window (or omit findings unless requested), name the bound and the total, and test a >window history."
+  },
+  {
+   "id": "P-06",
+   "severity": "medium",
+   "title": "recordRun is silently ignored in scope=orphaned",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:72-101",
+    "handler.ts:125"
+   ],
+   "evidence": [
+    "raw/behavior.json"
+   ],
+   "observed": "{scope:'orphaned',recordRun:true} wrote no analysis run (runs 0 \u2192 0, no error, no notice); the descriptor documents recordRun without a scope caveat.",
+   "impact": "A caller that asks to persist an orphan scan gets an unpersisted answer that reads as recorded.",
+   "fixPlan": "either record in both scopes or refuse scope=orphaned+recordRun by name and document it."
+  },
+  {
+   "id": "P-07",
+   "severity": "medium",
+   "title": "limit has no upper bound and no declared maximum",
+   "where": [
+    "src/mcp/tools/bb_patterns/descriptor.ts:17",
+    "src/mcp/tools/bb_patterns/handler.ts:67-68"
+   ],
+   "evidence": [
+    "raw/behavior.json"
+   ],
+   "observed": "limit=1,000,000,000 passed the boundary and returned all 1,113 rows / 55,402 characters on the fixture. The schema states no maximum and the descriptor's prose states a default only. The staleness resolver builds a `relative_path IN (?,?,..)` list from the page, so a page above SQLite's variable cap fails rather than truncating.",
+   "impact": "A caller can turn a bounded page into a multi-MB answer (T2 census 13,237) and, at a large enough limit, into an SQLite 'too many SQL variables' error instead of a declared bound.",
+   "fixPlan": "declare minimum/maximum in the schema, enforce a named refusal above the maximum in the handler, and state the census/raise-limit path in the error."
+  },
+  {
+   "id": "P-08",
+   "severity": "medium",
+   "title": "Staleness remediation text promises auto-refresh and a refresh=false option the tool does not have",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:100 (derived.footer)",
+    "docs/tools/bb_patterns.md:118 (generated)",
+    "script/verify-tool-docs.ts:77+ (FRESHNESS_TOOLS default branch, not owned)"
+   ],
+   "evidence": [
+    "raw/behavior.json (limit-huge footer)",
+    "docs/tools/bb_patterns.md:116-118"
+   ],
+   "observed": "The live answer footer says 'reads auto-refresh stale files within budget when enabled \u2014 disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed'. The handler never calls maybeAutoRefresh and the schema has no `refresh` option; the generated page repeats the same sentence. The handler imports maybeAutoRefresh/autoRefreshLine/FRESHNESS_REMEDIATION_MANUAL_ONLY but uses none of them.",
+   "impact": "A caller told to disable a non-existent option, and told the tool repairs what it only reports.",
+   "fixPlan": "handler renders the manual-only remediation from the summary it already computes; generator needs a bb_patterns branch (like bb_visualize's) that states 'does not auto-refresh, no refresh option' \u2014 Lead-owned file, requested."
+  },
+  {
+   "id": "P-09",
+   "severity": "medium",
+   "title": "Docs/curation describe engine-report fields the wire never carries",
+   "where": [
+    "script/tool-docs/curation/bb_patterns.ts:41 (evidence)",
+    "docs/BB_PATTERNS.md:18-33,103-106"
+   ],
+   "evidence": [
+    "raw/behavior.json",
+    "raw/t2-calls.jsonl"
+   ],
+   "observed": "Curation: 'Every finding is confidence-qualified, carries an evidence array naming what was checked, and carries a limitations array ... summary.suppressedByReason ... summary.importResolution'. The tool answer is text: no per-finding evidence or limitations arrays, and neither unverifiedUsageEdges nor importResolution is rendered. What IS rendered: location, rule, confidence, [stale], census/per-rule counts, suppression counts (orphaned scope), provenance counts. The engine report carries the rest; the tool surface does not.",
+   "impact": "A reader of the tool page expects disclosures the tool call cannot show. Honest docs must separate engine-report semantics from the answer, or the text answer must render the missing summary lines.",
+   "fixPlan": "render the two aggregate disclosure lines the engine already computed (refused usage evidence; import resolution) in scope=orphaned, and rewrite the evidence-semantics text to say exactly where each field appears (text summary vs engine report)."
+  },
+  {
+   "id": "P-10",
+   "severity": "medium",
+   "title": "Per-tool gates have stale split assumptions and cannot fail/blend refusal text into a pass",
+   "where": [
+    "script/m15/verify-patterns-deep.ts:230-244",
+    "script/m13/verify-patterns-docs.ts:80-123",
+    "script/m13/verify-patterns-contract.ts:66-95",
+    "script/m13/verify-patterns-e2e-corpus.ts:100-150"
+   ],
+   "evidence": [
+    "gates/logs/m15-patterns-deep.log",
+    "gates/logs/m13-patterns-contract.log",
+    "gates/logs/m13-patterns-e2e-corpus.log",
+    "gates/logs/m13-patterns-docs.log"
+   ],
+   "observed": "m15-deep exits 2: it reads src/mcp/tool-registry.ts and splits on 'name: \"bb_patterns\"', which the split registry no longer contains. m13-docs fails 5: the description is read from doc line 3 (now the author header), the handler body is read from the 39-line assembler src/mcp/tool-handlers.ts, and freshness is checked by running the FULL generator (expected red mid-flight on shared artifacts). m13-contract/e2e MCP legs spawn StdioClientTransport without env, so BB_DATA_DIR never reaches the child: 4 failures read 'No index found'. Worse, three e2e MCP checks PASS on that refusal text ('output contains patterns' matches the temp path 'bb-patterns-mcp-...'; 'called function NOT flagged' passes because an error names no function) \u2014 a gate passing on its own refusal.",
+   "impact": "The three red gates cannot go green on the split tree, and the e2e gate can go green while measuring nothing.",
+   "fixPlan": "resolve code through script/lib/tool-sources.ts, parse the header-aware page, use --only bb_patterns for freshness, forward env to the stdio child, and make every transport check first assert isError:false before reading text."
+  },
+  {
+   "id": "P-11",
+   "severity": "medium",
+   "title": "Source-fingerprint evidence list is stale after the split, so 'known-gap' integrity checks watch the wrong file",
+   "where": [
+    "src/intelligence/patterns/evidence.ts:6-17"
+   ],
+   "evidence": [
+    "raw/audit-checks.json",
+    "src/intelligence/patterns/evidence.ts"
+   ],
+   "observed": "PATTERN_EVIDENCE_PATHS lists src/mcp/tool-handlers.ts (now a 39-line assembler) and omits src/mcp/tools/bb_patterns/handler.ts / descriptor.ts. patternSourceFingerprint therefore cannot change when the tool code changes, and patternRelevantWorkingTreeChanges (used for the m20 P2/P3 status field) reports [] while the handler is modified.",
+   "impact": "A committed 'verified' m20 receipt can be produced over changed tool code \u2014 the exact defect class the Lead's ruling 5 names.",
+   "fixPlan": "point the list at the split files; add a gate assertion that every path exists and that the list covers the handler/descriptor (red on a planted stale entry)."
+  },
+  {
+   "id": "P-12",
+   "severity": "medium",
+   "title": "The history read creates analysis-history schema through a shared read-write open",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:58",
+    "src/intelligence/analysis/run-history.ts:238 (not owned)"
+   ],
+   "evidence": [
+    "raw/read-path-writes.json"
+   ],
+   "observed": "{history:true} on a fresh data dir moved the WAL by 107,152 bytes; ensureHistorySchema runs CREATE TABLE on the read path. Using the shared engine, the handler cannot avoid it by choosing a read-only handle.",
+   "impact": "Read path writes schema (Lead ruling B6) on a call the caller did not ask to persist anything.",
+   "fixPlan": "cross-scope request: run-history must open byte-read-only for reads and surface a loud 'no analysis history yet' answer instead of creating the table; handler then returns that answer."
+  },
+  {
+   "id": "P-13",
+   "severity": "medium",
+   "title": "Curated guide is not owner-authored reference for this checkout: no \u00a78 header, external corpus suite absent, a non-existent option, milestone/lane narrative, and one docs-truth claim is red",
+   "where": [
+    "docs/BB_PATTERNS.md"
+   ],
+   "evidence": [
+    "docs/BB_PATTERNS.md",
+    "validation/tools/bb_patterns/gates/logs/m16-docs-truth.log"
+   ],
+   "observed": "No author header. Lines 8-16 claim the harness and raw outputs are in bb_tests/bb_patterns/, which does not exist in this checkout (~/bb_tests has no bb_patterns directory) \u2014 every number in the page is therefore unreproducible here. Line 258-259 documents `includeTests: true`, which bb_patterns does not accept (engine-only option). Line 231 is milestone narrative (M57.T3); line 252 is 'the analyzer lane's work'; line 3 says 'bb_patterns reports code-pattern findings' without the text-surface limits. m16 D1 requires the lifecycle-method nuance (initialize/constructor can look unreferenced) that the page lost in an earlier rewrite; that leg is red and this page owns it.",
+   "impact": "The hand page is the tool's reference and it claims evidence not present, an option not offered, and process history instead of timeless facts.",
+   "fixPlan": "rewrite with the \u00a78 header; move engine/report facts under a clear 'engine report vs tool answer' split; restore the lifecycle-method limitation as a plain fact; state that the corpus numbers were measured outside this checkout; delete includeTests as a tool option; remove milestone/lane narrative; keep verified gate counts (22/22, 29/29) and the known upstream failure."
+  },
+  {
+   "id": "P-14",
+   "severity": "low",
+   "title": "Descriptor has no machine-readable defaults or numeric bounds, and its one-line description overclaims 'evidence-derived' ranking for fixed-confidence classes",
+   "where": [
+    "src/mcp/tools/bb_patterns/descriptor.ts:17,24"
+   ],
+   "evidence": [
+    "raw/behavior.json",
+    "docs/data/public-tools.json"
+   ],
+   "observed": "No property carries default/minimum/maximum even though src/mcp/tools/types.ts documents them for exactly this purpose; limit's maximum is stated nowhere. 'ranked by evidence-derived confidence' is true of orphans and the anti-pattern formulas but framework findings are a fixed 0.6.",
+   "impact": "A client cannot read the contract without prose; the description is slightly stronger than the engine.",
+   "fixPlan": "add default/minimum/maximum to schema properties; state 'framework findings are a fixed 0.6' in the description or scope the claim."
+  },
+  {
+   "id": "P-15",
+   "severity": "low",
+   "title": "Monolith import residue in the split handler: 82 of 91 named imports unused",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:12-54"
+   ],
+   "evidence": [
+    "raw/audit-checks.json"
+   ],
+   "observed": "82/91 named imports are unused; they load the graph/impact/edit/visualize/migration/analysis engines at handler import time. The residue is also what makes the m13-docs 'handler only routes orphaned + all' check red: the import block contains the strings 'quality' (testQuality) and 'architecture' in banned-adjacent comments.",
+   "impact": "Unnecessary startup work on every tool load; a doc gate reads the residue as a routing claim.",
+   "fixPlan": "trim to the eight used symbols; the banned process comments in the same block go with it (P-18)."
+  },
+  {
+   "id": "P-16",
+   "severity": "low",
+   "title": "Text-format surface omits the engine's own truncation marker and a grammar edge",
+   "where": [
+    "src/mcp/tools/bb_patterns/handler.ts:113,124"
+   ],
+   "evidence": [
+    "raw/behavior.json"
+   ],
+   "observed": "The engine marks rule findings past the display budget truncatedByDisplayLimit and BB_PATTERNS documents that flag, but the text answer renders those rows identically to in-budget rows. The all-scope header reads 'across no rule(s)' when every class is switched off.",
+   "impact": "A caller cannot tell an overflow row from a page row in the text surface; cosmetic wording defect on the zero case.",
+   "fixPlan": "mark overflow rows in the text, or scope the docs claim to the engine report; fix the empty-case wording."
+  },
+  {
+   "id": "P-17",
+   "severity": "low",
+   "title": "The tool page's Staleness gallery has no per-mode registration because the tool emits no JSON envelope \u2014 the generated sentence is accurate for the surface but the remediation is not (see P-08)",
+   "where": [
+    "docs/tools/bb_patterns.md:116-118"
+   ],
+   "evidence": [
+    "docs/tools/bb_patterns.md"
+   ],
+   "observed": "Page says 'Freshness applies to the tool's read output (no registered per-mode split)' \u2014 true. The remediation sentence is the false part (P-08).",
+   "impact": "Folded into P-08.",
+   "fixPlan": "regenerated with the Lead's generator branch."
+  }
+ ],
+ "blockedLegs": [
+  {
+   "leg": "m20 verify-patterns-orphan-semantics (2 of 6 checks)",
+   "status": "blocked",
+   "reason": "upstream indexer: one call is resolved to BOTH same-named declarations, so the ambiguity guard cannot fire (shared findings=0); the fixture's dynamic `registry[name]` access produces no relationship row at all in this indexer version, so the 'no fabricated static target' precondition is absent. Both fail identically on the unmodified engine; the curated guide already names it as a known pre-existing failure. Not fixable inside src/intelligence/patterns/.",
+   "evidence": "gates/logs/m20-patterns-orphan-semantics.log",
+   "followUp": "indexer-owner fix or an engine-level invariant gate; request Lead ruling."
+  },
+  {
+   "leg": "m64/verify-gate-selftest and m65/verify-rules-gate-selftest",
+   "status": "blocked",
+   "reason": "both selftests spawn process.execPath with the node-only '--import tsx' flag. Under the canonical bun runner the baseline is red before any mutation; under node the same files PASS (m64 verified 8/8, all mutations caught). The scripts are not in this task's write scope.",
+   "evidence": "gates/logs/m64-gate-selftest.log, gates/logs/m65-rules-gate-selftest.log; node run output recorded in audit report",
+   "followUp": "runtime-agnostic spawn (bun vs node argv) \u2014 assign to the lane that owns script/m64 and script/m65."
+  },
+  {
+   "leg": "compiled CLI/MCP transport on the split tree",
+   "status": "time-dependent",
+   "reason": "dist/ is rebuilt by other writers during the campaign (observed rebuilt 18:29 today); compiled-door evidence is owned by the Lead's integration rebuild. Source door was verified end-to-end (raw/mcp-door.json) and the CLI door was additionally probed for the unindexed case (raw/unindexed-read.json).",
+   "evidence": "raw/mcp-door.json, gates/logs/m13-patterns-*.log",
+   "followUp": "Lead integration re-run after dist rebuild."
+  },
+  {
+   "leg": "T2 measured on the live .bb-data index",
+   "status": "blocked-by-defect-P-01",
+   "reason": "the current read path opens read-write and writes; a live measurement would mutate the shared index. Measured on a byte-identical SQLite backup copy instead; source db/wal stat'ed before/after the backup (raw/t2-backup.json). Phase B re-measures live after the read-only fix with dbUnchanged true.",
+   "evidence": "raw/t2-backup.json, LATENCY.json",
+   "followUp": "Phase B."
+  }
+ ],
+ "regex": {
+  "toolSourcesScanned": [
+   "src/mcp/tools/bb_patterns/handler.ts",
+   "src/mcp/tools/bb_patterns/descriptor.ts",
+   "src/intelligence/patterns/orphans.ts",
+   "src/intelligence/patterns/rules.ts",
+   "src/intelligence/patterns/evidence.ts",
+   "script/tool-docs/curation/bb_patterns.ts"
+  ],
+  "regexUses": 0,
+  "policyGate": "npx tsx script/tools/verify-regex-policy.ts \u2192 PASS (87 uses repo-wide, 0 new, 2 allowlisted)",
+  "note": "orphans.ts line 190 says 'No regex' and the baseline table has no row under src/intelligence/patterns/"
+ },
+ "processAttribution": {
+  "bannedHits": 19,
+  "byFile": {
+   "src/mcp/tools/bb_patterns/handler.ts": [
+    38,
+    39,
+    40,
+    43,
+    44,
+    61,
+    68,
+    127
+   ],
+   "src/intelligence/patterns/orphans.ts": [
+    16,
+    252,
+    292,
+    293
+   ],
+   "src/intelligence/patterns/rules.ts": [
+    2,
+    79,
+    113,
+    186
+   ],
+   "script/tool-docs/curation/bb_patterns.ts": [
+    39
+   ],
+   "docs/BB_PATTERNS.md": [
+    231,
+    252
+   ],
+   "docs/tools/bb_patterns.md": [
+    102
+   ]
+  },
+  "classes": [
+   "milestone IDs (M28.T1/M48.P1/M55.T5/M48.C2/M35.S2/M57.T3/M20.P1/M13.36)",
+   "issue numbers (#624/#696/#700/#791)",
+   "'the agent door', 'lane'",
+   "process dates (EXTENDED 2026-10-18)",
+   "'shipped' used as process history"
+  ],
+  "keep": [
+   "every measured number and measured fact (rewritten as plain facts, not history)",
+   "technical 'owner' meanings (owner_symbol_id etc.)"
+  ]
+ },
+ "docsTruth": {
+  "generatedPage": [
+   "docs/tools/bb_patterns.md"
+  ],
+  "handPage": [
+   "docs/BB_PATTERNS.md"
+  ],
+  "curation": [
+   "script/tool-docs/curation/bb_patterns.ts"
+  ],
+  "claimsChecked": {
+   "modes/plannedModes": "true",
+   "defaults": "true",
+   "scope enum/refusals": "true (MCP door captured)",
+   "threshold range": "true (boundary refuses -1/2 with named error)",
+   "error list": "true (scope/threshold/unavailable index/unknown option all observed)"
+  },
+  "falseOrUnsupported": [
+   "generated page staleness remediation (P-08)",
+   "per-finding evidence/limitations arrays and unverifiedUsageEdges/importResolution as wire output (P-09)",
+   "BB_PATTERNS external corpus path/bb_tests (P-13)",
+   "BB_PATTERNS includeTests option (P-13)"
+  ]
+ },
+ "filesWritten": [
+  "validation/tools/bb_patterns/AUDIT-PHASE-A.md",
+  "validation/tools/bb_patterns/audit.json",
+  "validation/tools/bb_patterns/LATENCY.json",
+  "validation/tools/bb_patterns/gates/GATE-TABLE.json",
+  "validation/tools/bb_patterns/gates/exit-codes.txt",
+  "validation/tools/bb_patterns/gates/run-gates.sh",
+  "validation/tools/bb_patterns/gates/logs/*.log",
+  "validation/tools/bb_patterns/raw/*.json",
+  "validation/tools/bb_patterns/raw/*.jsonl",
+  "validation/tools/bb_patterns/work/*.mts",
+  "validation/tools/bb_patterns/work/node-server-entry.ts"
+ ],
+ "notCommitted": "evidence is working state under validation/tools/bb_patterns/ (bbdata/ and copies are gitignored); no src/ or docs/ change was made in Phase A.",
+ "phaseB": {
+  "record": "validation/tools/bb_patterns/PHASE-B.md",
+  "commits": [
+   "61ab93067",
+   "752cbb69e",
+   "824d49ab2"
+  ],
+  "fixes": {
+   "P-01": "read-only opens in handler/orphans/rules; contract gate + M1 mutant",
+   "P-02": "unindexed refusal, no db creation",
+   "P-03": "consolidated relationship scans; T1 inside CPU budget; T2 measured 33.7s CPU vs 5s -> OPEN (needs index/schema covering index; measured, not declared)",
+   "P-04": "page fetched at caller limit; promotion reaches displayed page (door fixture: 1102 census, 20 rows, orphan+framework+god present)",
+   "P-05": "history window 200 with declared totals/truncation",
+   "P-06": "recordRun both scopes records full census, count printed",
+   "P-07": "limit 0..500, above refused by name, schema defaults/min/max",
+   "P-08": "manual-only staleness footer (no auto-refresh/refresh=false claim)",
+   "P-09": "orphaned answer renders usage-evidence/suppression/provenance lines",
+   "P-10": "gate repairs: split-aware reads, env-forwarded MCP children, isError-first checks, --only freshness, --self-test mutants",
+   "P-11": "PATTERN_EVIDENCE_PATHS names per-tool handler+descriptor",
+   "P-12": "fixed upstream (2be07ae49)",
+   "P-13": "BB_PATTERNS rewritten with author header, no external-suite claim, lifecycle limitation restored",
+   "P-14": "descriptor publishes defaults/bounds",
+   "P-15": "handler imports 91 -> 10",
+   "P-16": "census says 'no rules'; overflow stays engine-report field and the page says so"
+  },
+  "gates": {
+   "table": "validation/tools/bb_patterns/gates/GATE-TABLE-phaseB.json",
+   "green": 15,
+   "red": 3,
+   "redCrossScope": [
+    "m57 K6b dist freshness",
+    "m65 R8 gate patches its own handle",
+    "m16 other lanes' pages"
+   ],
+   "mutantSelftest": "6/6 caught, baseline green"
+  },
+  "latency": {
+   "evidence": "validation/tools/bb_patterns/LATENCY.json",
+   "T0": "PASS",
+   "T1": "PASS on process CPU 404-607ms and p50 632/773ms; p95 wall contention-inflated (declared load 18-25)",
+   "T2": "FAIL: 85.2s wall / 33.7s CPU vs 5000ms budget, measured on byte-identical copy, reads left db+WAL unchanged; live fleet index refused byte-read-only open (blocked leg recorded)"
+  },
+  "realCorpus": {
+   "evidence": "validation/tools/bb_patterns/REAL-CORPUS.json",
+   "measured": [
+    "graphql-js",
+    "rake",
+    "rebar3",
+    "go-tools"
+   ],
+   "blocked": [
+    "zig (index interrupted)"
+   ],
+   "readsMovedDbOrWal": false,
+   "refusals": 5,
+   "promotionFixture": "pass"
+  }
+ }
+}

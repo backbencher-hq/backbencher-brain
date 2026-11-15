@@ -3,7 +3,7 @@
   "milestone": "M12",
   "language": "php",
   "purpose": "attribute WITHIN-analyzer cost for the php lane; NOT the end-to-end throughput record",
-  "repo": "$HOME/fixtures/repositories/phpunit",
+  "repo": "/home/ishaq2321/bb_tests/repositories/phpunit",
   "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
   "generatedAt": "2026-09-30T08:26:48.253Z",
   "sample": "200 tracked .php files, deterministic strided slice of 3231",

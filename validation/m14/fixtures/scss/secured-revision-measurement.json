@@ -1,0 +1,66 @@
+{
+  "instrument": "the SECURED revision, measured \u2014 whole-population scss row, css re-check, and whether the new mechanism is reachable at all",
+  "at": "2026-10-11T22:15:00-04:00",
+  "revision": "HEAD after the secured commits (scss analyzer +86, the DeclarationKind member, .scss added to PROJECT_INDEX_EXTENSIONS)",
+  "gates": [
+    {
+      "command": "npx tsx script/m14/residual-gate.ts --lane scss",
+      "exit": "0 (the gate parses incoming-gate's non-zero exit by design)",
+      "role": "scss row, standard arm"
+    },
+    {
+      "command": "npx tsx script/m14/incoming-gate.ts scss scss 0 --index",
+      "exit": "1 (the gate's own FAIL exit)",
+      "role": "the index-ASSISTED arm"
+    },
+    {
+      "command": "npx tsx script/m14/residual-gate.ts --lane css",
+      "exit": "0",
+      "role": "css re-check"
+    }
+  ],
+  "scssStandardArm": {
+    "verdict": "IDENTICAL to the pre-secured row \u2014 every column (exports, references, imports, extends, calls, overrides, uses, contains, TOTAL) is UNCHANGED.",
+    "whyItMeansLittle": "AND IT EXERCISES NONE OF THE NEW CODE, which the Lead asked me to say if it were true: `residual-gate --lane scss` invokes `incoming-gate.ts scss scss 0` WITH NO `--index` FLAG, so `useIndex` is false and `parseFile` is called without a `projectIndex`. The new `resolveModuleImports` gates on `ctx.projectIndex`, so it never runs in this row."
+  },
+  "scssIndexedArm": {
+    "whatItActuallyIs": "AN EMPTY-INDEX ARM, NOT PRODUCTION'S. The gate printed `project index: USED \u2014 0 repo index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s)`. So it hands the analyzer a `projectIndex` KEY with nothing in it.",
+    "columnsThatMove": {
+      "exports": {
+        "standard": "4,048 edges \u00b7 resolved 3,065 \u00b7 amb 983",
+        "indexed": "4,048 edges \u00b7 resolved 2,455 \u00b7 amb 1,593"
+      },
+      "references": {
+        "standard": "9,358 \u00b7 resolved 4,124 \u00b7 amb 1,501 \u00b7 extOK 3,733",
+        "indexed": "9,358 \u00b7 resolved 3,819 \u00b7 amb 2,212 \u00b7 extOK 0"
+      },
+      "imports": {
+        "standard": "3,636 \u00b7 resolved 231 \u00b7 unresolved 297 \u00b7 extOK 3,108",
+        "indexed": "3,636 \u00b7 resolved 240 \u00b7 amb 7 \u00b7 unresolved 296 \u00b7 extOK 0"
+      },
+      "TOTAL": {
+        "standard": "30,426 \u00b7 resolved 20,567 \u00b7 amb 2,566 \u00b7 unresolved 452 \u00b7 extOK 6,841",
+        "indexed": "30,426 \u00b7 resolved 19,637 \u00b7 amb 3,933 \u00b7 unresolved 436 \u00b7 extOK 0"
+      }
+    },
+    "reading": "resolved -930 \u00b7 ambiguity +1,367 \u00b7 extOK 6,841 -> 0. The mere PRESENCE of a `projectIndex` key changes the lane materially even when the index is empty \u2014 which is exactly the state a broken build path would produce."
+  },
+  "cssRow": {
+    "verdict": "0 of 6 columns differ from the pre-secured row \u2014 references, imports, uses, contains, overrides, TOTAL all identical. The verified neighbour is unmoved."
+  },
+  "isTheMechanismReachable": {
+    "answer": "NO \u2014 not with the spec it needs, in three places, and this is the finding that matters more than the row:",
+    "1_specUnexported": "`src/ast/project-index.ts:470` declares `const SCSS_DECLARATION_SPEC: DeclarationSpec = {\u2026}` WITHOUT `export`, while `SOLIDITY_`, `PYTHON_`, `DART_` and `FSHARP_DECLARATION_SPEC` are all exported.",
+    "2_runFixturesReadsItAnyway": "`script/m14/run-fixtures.ts:648` reads `mod.SCSS_DECLARATION_SPEC` (via an `any` module handle), which is therefore **undefined**, and `buildProjectIndexFromDisk(..., spec: DeclarationSpec = SOLIDITY_DECLARATION_SPEC)` falls back to **SOLIDITY'S spec** for SCSS files. So `run-fixtures` passing does not validate the new mechanism.",
+    "3_productionUsesTheWrongSpecToo": "`src/ast/parallel-indexer.ts` maps wasm per language INCLUDING `scss: tree-sitter-scss.wasm` (so it will try), but `specByLang` carries only `solidity`, `fsharp`, `protobuf` \u2192 `specByLang[\"scss\"] ?? mod.SOLIDITY_DECLARATION_SPEC` indexes SCSS declarations with the SOLIDITY spec. `.scss` was added to `PROJECT_INDEX_EXTENSIONS` without its spec being reachable.",
+    "4_gateCannotBuildOne": "the gate's own builder reports 0 indexes built for scss, so the arm that would measure the mechanism cannot be produced by the gate as it stands."
+  },
+  "consequenceForTheVerdicts": "scss's row is unchanged on the arm anyone can reproduce, and css's row is unmoved \u2014 so both verdicts stand on the secured revision as far as those rows go. But the new mechanism is NOT proven by them: it is unreachable with the right spec (unexported, unmapped, and built with Solidity's spec in both callers), and the only arm that hands the analyzer an index (empty) moves three columns DOWN.",
+  "raw": [
+    "scss-gate-secured.txt",
+    "scss-gate-secured-indexed.txt",
+    "css-gate-secured.txt",
+    "scss-gate-bound.txt (the pre-secured row)",
+    "css-gate-bound.txt (the pre-secured css row)"
+  ]
+}

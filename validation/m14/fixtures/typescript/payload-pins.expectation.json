@@ -1,0 +1,17 @@
+{
+  "fixtureId": "typescript/payload-pins",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS symbol-level payloads per Matrix 1b: qualified_calls containment (getUserById) and JSDoc comments attached to BOTH class and method symbols.",
+  "expectSymbols": [
+    { "name": "Svc" },
+    { "name": "work" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "work", "includes": ["getUserById"] }
+  ],
+  "expectComments": [
+    { "symbol": "Svc", "minCount": 1 },
+    { "symbol": "work", "minCount": 1 }
+  ]
+}

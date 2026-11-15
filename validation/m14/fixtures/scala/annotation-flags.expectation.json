@@ -1,0 +1,16 @@
+{
+  "fixtureId": "scala/annotation-flags",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCD5 contract (M37 #598): pattern flags come from ANNOTATION NAMES only (collectAnnotations short names), never from text.includes substrings of the whole file. The old heuristic fabricated \"Annotations\" from the string literal \"Test\" (s.contains(\"Test\")) and from a method named mymain, and never fired on real annotations it should have matched exactly. Decorators on symbols are the companion pin (collectAnnotations).",
+  "expectSymbols": [
+    { "name": "Annotated", "kind": "class" },
+    { "name": "loop", "ownerName": "Annotated" },
+    { "name": "oldApi", "ownerName": "Annotated" }
+  ],
+  "expectPatterns": ["Tail Recursion"],
+  "forbidPatterns": ["Annotations"],
+  "expectRelationships": [
+    { "type": "contains", "from": "Annotated", "target": "loop" }
+  ]
+}

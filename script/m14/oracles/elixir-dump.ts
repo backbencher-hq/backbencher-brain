@@ -3,7 +3,7 @@
  *
  * Same shape as the lane's older `script/m14/tmp/elixir-dump.ts`, re-homed here
  * because that copy hardcodes a ROOT that no longer exists on this machine
- * (`$HOME/ishaq/...`) and is excluded from git, so it cannot be re-run by
+ * (`/home/sano/ishaq/...`) and is excluded from git, so it cannot be re-run by
  * anyone else. ROOT comes from BB_LANE_ROOT (default: the cwd).
  *
  * Usage: npx tsx script/m14/oracles/elixir-dump.ts --file=<abs path> [--filter=substr]

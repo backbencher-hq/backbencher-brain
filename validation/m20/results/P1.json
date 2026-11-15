@@ -1,0 +1,20 @@
+{
+  "issue": "M20.P1",
+  "code": "P1",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "negativeCases": 1,
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "e848a4a098f19fd67617f7715e526e49917c691484b508c33eb34592f4cf618b",
+  "verifierCommand": "bun run script/m20/verify-patterns-parameter-scan.ts",
+  "evidenceFile": "P1.json",
+  "generatedAt": "2026-11-05T04:28:33.995Z",
+  "workingTreeRelevantChanges": [],
+  "limitations": [
+    "Fixture-level parameter-scan coverage; real-repository corpus coverage is owned by M20.X2.",
+    "Embedding coverage is not required for this structural pattern contract."
+  ]
+}

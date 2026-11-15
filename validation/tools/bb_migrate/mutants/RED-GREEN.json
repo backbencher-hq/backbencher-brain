@@ -1,0 +1,92 @@
+{
+ "schemaVersion": 1,
+ "tool": "bb_migrate",
+ "generatedAt": "2026-11-03T16:21:58.246Z",
+ "mutants": [
+  {
+   "id": "readonly",
+   "file": "src/mcp/tools/bb_migrate/handler.ts",
+   "gate": "m13/verify-migrate-accuracy.ts",
+   "label": "python3 - <<'PY'\np='src/mcp/tools/bb_migrate/handler.ts'\ns=open(p).read()\ns=s.replace('BrainDatabase.getRawInstance(projectId as any, { readonly: true })','BrainDatabase.getRawInstance(projectId as any)',1)\nopen(p,'w').write(s)\nPY",
+   "shaBefore": "a342eaa8eb831fedaf739de76acb3854232de5e0e12103dc73cc40e3d93ce640",
+   "shaMutant": "b0add5f25d9db5355088e9e3a8bcc0ddb6cd5dacf911414d9cbb62422e981b30",
+   "shaRestored": "a342eaa8eb831fedaf739de76acb3854232de5e0e12103dc73cc40e3d93ce640",
+   "restoredExactly": true,
+   "exitRed": 1,
+   "exitGreen": 0,
+   "redIsFailure": true,
+   "greenIsPass": true
+  },
+  {
+   "id": "order",
+   "file": "src/intelligence/migration/migration-engine.ts",
+   "gate": "m13/verify-migrate-accuracy.ts",
+   "label": "python3 - <<'PY'\np='src/intelligence/migration/migration-engine.ts'\ns=open(p).read()\ns=s.replace('    order.push(current)','    order.unshift(current)',1)\nopen(p,'w').write(s)\nPY",
+   "shaBefore": "55ec7def9c2ff686f582732916958811d4754f4aec79c7799d53981af1aff801",
+   "shaMutant": "06a30d173cb1b0004d75e65599da5cfe590262a41b17563cb00baf6fa3665be2",
+   "shaRestored": "55ec7def9c2ff686f582732916958811d4754f4aec79c7799d53981af1aff801",
+   "restoredExactly": true,
+   "exitRed": 1,
+   "exitGreen": 0,
+   "redIsFailure": true,
+   "greenIsPass": true
+  },
+  {
+   "id": "dictionary-stale",
+   "file": "script/m20/verify-migration-dictionary.ts",
+   "gate": "m20/verify-migration-dictionary.ts",
+   "label": "python3 - <<'PY'\np='script/m20/verify-migration-dictionary.ts'\ns=open(p).read()\ns=s.replace('const DECLARED_UNREACHABLE_ROWS: Readonly<Record<string, string>> = {','const DECLARED_UNREACHABLE_ROWS: Readonly<Record<string, string>> = {\\n  axios: \"planted stale declaration: axios is a reachable npm package name.\",',1)\nopen(p,'w').write(s)\nPY",
+   "shaBefore": "0896ecce7f8bca8b653e34b35a607f3d36e7042a0dcc21096fc73db0f7c669f1",
+   "shaMutant": "42628648e3c5cea4537b1a653eac3b5357296389d27fe3f2767962fff26a898e",
+   "shaRestored": "0896ecce7f8bca8b653e34b35a607f3d36e7042a0dcc21096fc73db0f7c669f1",
+   "restoredExactly": true,
+   "exitRed": 1,
+   "exitGreen": 0,
+   "redIsFailure": true,
+   "greenIsPass": true
+  },
+  {
+   "id": "e2e-env",
+   "file": "script/m13/verify-migrate-e2e-corpus.ts",
+   "gate": "m13/verify-migrate-e2e-corpus.ts",
+   "label": "python3 - <<'PY'\nimport re\np='script/m13/verify-migrate-e2e-corpus.ts'\ns=open(p).read()\ns=re.sub(r\"\\n      env: \\{ \\.\\.\\.process\\.env, BB_DATA_DIR: process\\.env\\.BB_DATA_DIR!, BB_NO_AUTO_REFRESH: \\\"1\\\" \\} as Record<string, string>,\", \"\", s)\nopen(p,'w').write(s)\nPY",
+   "shaBefore": "c789ab43daecea46a258fe3b137af8cf70bc4dcc36e690ed5794b700a2df73eb",
+   "shaMutant": "9e64338d6f083d987a9db85417b351c795760a86cfe503cba91bd5a28ff27019",
+   "shaRestored": "c789ab43daecea46a258fe3b137af8cf70bc4dcc36e690ed5794b700a2df73eb",
+   "restoredExactly": true,
+   "exitRed": 1,
+   "exitGreen": 0,
+   "redIsFailure": true,
+   "greenIsPass": true
+  },
+  {
+   "id": "dedupe",
+   "file": "src/intelligence/migration/migration-engine.ts",
+   "gate": "m65/verify-migrate-selectors.ts",
+   "label": "python3 - <<'PY'\np='src/intelligence/migration/migration-engine.ts'\ns=open(p).read()\ns=s.replace('    if (seenPlanned.has(selection.symbolId)) { deduplicated++; continue }','',1)\nopen(p,'w').write(s)\nPY",
+   "shaBefore": "55ec7def9c2ff686f582732916958811d4754f4aec79c7799d53981af1aff801",
+   "shaMutant": "ec0286bcf53c832c5552156ed17c1ab3e36d2d0dc920a40f3351dfe15d4ca31f",
+   "shaRestored": "55ec7def9c2ff686f582732916958811d4754f4aec79c7799d53981af1aff801",
+   "restoredExactly": true,
+   "exitRed": 1,
+   "exitGreen": 0,
+   "redIsFailure": true,
+   "greenIsPass": true
+  },
+  {
+   "id": "bounded-load",
+   "file": "src/intelligence/migration/migration-engine.ts",
+   "gate": "m65/verify-migrate-latency.ts",
+   "label": "python3 - <<'PY'\np='src/intelligence/migration/migration-engine.ts'\ns=open(p).read()\ns=s.replace('  const loadedSymbols = resolved.symbols.filter((symbol) => selectedSymbolIds.has(symbol.id))','  const loadedSymbols = resolved.symbols',1)\nopen(p,'w').write(s)\nPY",
+   "shaBefore": "55ec7def9c2ff686f582732916958811d4754f4aec79c7799d53981af1aff801",
+   "shaMutant": "dbe8b09dcca78e6bdfcaae2edc1d8260df514d8d7305b9c8c25f8ada22d5e189",
+   "shaRestored": "55ec7def9c2ff686f582732916958811d4754f4aec79c7799d53981af1aff801",
+   "restoredExactly": true,
+   "exitRed": 1,
+   "exitGreen": 0,
+   "redIsFailure": true,
+   "greenIsPass": true
+  }
+ ],
+ "allKilled": true
+}

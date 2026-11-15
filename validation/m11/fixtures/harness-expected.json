@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m11/fixtures/harness-source.ts",
+  "facts": [
+    {"id":"file","layer":"source_discovery","kind":"file","file":"validation/m11/fixtures/harness-source.ts","evidence":{"authority":"source","reference":"tracked fixture file"}},
+    {"id":"base","layer":"ast_extraction","kind":"class","file":"validation/m11/fixtures/harness-source.ts","line":1,"attributes":{"name":"BaseService"},"evidence":{"authority":"manual_audit","reference":"line 1 class declaration"}},
+    {"id":"user","layer":"ast_extraction","kind":"class","file":"validation/m11/fixtures/harness-source.ts","line":5,"attributes":{"name":"UserService"},"evidence":{"authority":"manual_audit","reference":"line 5 class declaration"}},
+    {"id":"extends","layer":"relationships","kind":"extends","file":"validation/m11/fixtures/harness-source.ts","line":5,"sourceId":"UserService","targetId":"BaseService","evidence":{"authority":"source","reference":"line 5 extends clause"}},
+    {"id":"instantiates","layer":"relationships","kind":"instantiates","file":"validation/m11/fixtures/harness-source.ts","line":12,"sourceId":"run","targetId":"UserService","evidence":{"authority":"source","reference":"line 12 new expression"}},
+    {"id":"calls","layer":"relationships","kind":"calls","file":"validation/m11/fixtures/harness-source.ts","line":13,"sourceId":"run","targetId":"UserService.save","evidence":{"authority":"source","reference":"line 13 method call"}},
+    {"id":"dynamic-call","layer":"relationships","kind":"calls","file":"validation/m11/fixtures/harness-source.ts","line":17,"sourceId":"invokeDynamic","targetId":"dynamic-key","expectedState":"unknown","evidence":{"authority":"manual_audit","reference":"computed property call target depends on runtime key"}}
+  ]
+}

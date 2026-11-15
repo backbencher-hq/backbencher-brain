@@ -1,0 +1,358 @@
+{
+  "fixtureId": "dart/annotation-references",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANNOTATION TYPE REFERENCES (owner ruling 2026-10-18: annotations are owed relationships, not payload). An annotation names a DECLARED TYPE, so it owes a `references` row under the label this lane already uses for every type mention. The pinned tree-sitter-dart grammar gives exactly ONE node type for the construct (`annotation`; there is no Java-style `marker_annotation`), but the annotation's POSITION changes with the declaration kind — a CHILD of class_definition / enum_declaration / enum_constant / formal_parameter / local_variable_declaration, a SIBLING of the declaration inside class_body and program (probed: annotation-shapes-probe.ts, clean parse, raw trees printed there). A rule written for one position misses the others, which is why this fixture pins every position Dart permits. Pre-fix the relationship channel carried 0 rows with isAnnotation. Two spelling rules are pinned as forbids: the `@` sigil and the argument list are not part of the name; and a qualified annotation publishes the LEAF (this lane strips import aliases everywhere — DT-B/DAD1/DAD2 — unlike Java, whose qualifier is a package). The top-level `const int deprecated = 1` makes the annotation-name-is-not-a-read forbid falsifiable: without the gate, the identifier inside `@deprecated` resolves against this file's top-level values and publishes a `uses` row for the annotation's own name.",
+  "expectSymbols": [
+    {
+      "name": "deprecated",
+      "kind": "constant"
+    },
+    {
+      "name": "Annotated",
+      "kind": "class"
+    },
+    {
+      "name": "Multi",
+      "kind": "class"
+    },
+    {
+      "name": "Prefixed",
+      "kind": "class"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "field",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "first",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "second",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "toString",
+      "kind": "method",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "Kind",
+      "kind": "enum"
+    },
+    {
+      "name": "old",
+      "kind": "enum_member",
+      "ownerName": "Kind"
+    },
+    {
+      "name": "topVar",
+      "kind": "constant"
+    },
+    {
+      "name": "topFn",
+      "kind": "function"
+    },
+    {
+      "name": "inferredTop",
+      "kind": "constant"
+    },
+    {
+      "name": "typedTop",
+      "kind": "constant"
+    },
+    {
+      "name": "inferredField",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "AnnotatedAlias",
+      "kind": "type"
+    },
+    {
+      "name": "UsesScopedAnnotation",
+      "kind": "class"
+    },
+    {
+      "name": "AliasedAnnotation",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "Annotated",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.relationshipType": "annotation",
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "class_definition",
+      "meta.evidenceClass": "usage_contextual",
+      "note": "POSITIVE 1 — a CLASS annotation. The annotation is a CHILD of class_definition (probed), not a sibling, so this row is the one a sibling-only rule misses."
+    },
+    {
+      "type": "references",
+      "source": "Multi",
+      "target": "immutable",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "class_definition",
+      "note": "POSITIVE 2 — the FIRST of two annotations on one declaration. Both must publish; a rule that unshifted and overwrote would keep only one."
+    },
+    {
+      "type": "references",
+      "source": "Multi",
+      "target": "pragma",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 3 — the SECOND annotation on the same declaration, with arguments. The argument list is not part of the target name."
+    },
+    {
+      "type": "references",
+      "source": "Prefixed",
+      "target": "Qualified",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 4 — QUALIFIED annotation (`@prefix.Qualified()`). The target is the LEAF the grammar's `name` field names (a `scoped_identifier`'s name child) — the alias-prefixed spelling `prefix.Qualified` is forbidden below, and the `@`/`()` are never in the target."
+    },
+    {
+      "type": "references",
+      "source": "field",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "declaration",
+      "note": "POSITIVE 5 — a FIELD annotation, sibling form inside class_body (`class_body (annotation) (declaration ...)` — probed)."
+    },
+    {
+      "type": "references",
+      "source": "first",
+      "target": "JsonKey",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 6 — a MULTI-DECLARATOR field: one annotation decorates both variables, and the symbol model makes each declarator its own property, so each declarator gets a row (same rule as the Java lane, JLS 8.3's annotation applying to both)."
+    },
+    {
+      "type": "references",
+      "source": "second",
+      "target": "JsonKey",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 7 — the second declarator of the same annotated field. A rule that attributed the annotation to the declaration's FIRST name only passes POSITIVE 6 and fails this row."
+    },
+    {
+      "type": "references",
+      "source": "toString",
+      "target": "override",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "function_signature",
+      "note": "POSITIVE 8 — a METHOD annotation (sibling form: `class_body (annotation) (method_signature (function_signature ...))`). The carrier is the method NAME, because the annotation decorates the declaration that publishes it."
+    },
+    {
+      "type": "references",
+      "source": "method",
+      "target": "Deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 9 — an annotation WITH an argument on a method; the carrier is still the method."
+    },
+    {
+      "type": "references",
+      "source": "method",
+      "target": "required",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "parameter_annotation",
+      "note": "POSITIVE 10 — a PARAMETER annotation. The annotation is a CHILD of `formal_parameter` (probed); a parameter publishes no symbol of its own (DARTD8), so the annotation is attributed to the callable that declares it — the same attribution rule the Java lane uses for carrier positions."
+    },
+    {
+      "type": "references",
+      "source": "value",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 11 — a GETTER annotation, carrier = the getter's published property name."
+    },
+    {
+      "type": "references",
+      "source": "constructor",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 12 — a CONSTRUCTOR annotation. A constructor symbol is always named `constructor` (DARTD3), so its annotation edge is sourced to the same name every other constructor row uses."
+    },
+    {
+      "type": "references",
+      "source": "old",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "enum_constant",
+      "note": "POSITIVE 13 — an ENUM CONSTANT annotation: annotation is a CHILD of `enum_constant` (probed), carrier = the constant's own symbol name."
+    },
+    {
+      "type": "references",
+      "source": "topVar",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 14 — a TOP-LEVEL VARIABLE annotation (program-level sibling form) attributed to the declared value, not to the module."
+    },
+    {
+      "type": "references",
+      "source": "topFn",
+      "target": "pragma",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "POSITIVE 15 — a TOP-LEVEL FUNCTION annotation. The annotation is a program sibling of `function_signature` (probed)."
+    },
+    {
+      "type": "references",
+      "source": "locals",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "local_variable_declaration",
+      "note": "POSITIVE 16 — a LOCAL VARIABLE annotation. A local publishes no symbol (DARTD8), so the annotation is attributed to the enclosing function — the carrier-position rule again."
+    },
+    {
+      "type": "references",
+      "source": "inferredTop",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "static_final_declaration_list",
+      "note": "INFERRED TOP-LEVEL VARIABLE — `@deprecated final inferredTop = 6;` parses the modifier keyword as its OWN sibling between the annotation and the declarator list, so a carrier walk that took the immediate next sibling found `final_builtin` and published NOTHING. The walk now steps over the grammar's `*_builtin` modifier nodes."
+    },
+    {
+      "type": "references",
+      "source": "typedTop",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "TYPED const TOP-LEVEL VARIABLE (`const String typedTop`): the annotation's next siblings are `const_builtin`, `type_identifier`, `static_final_declaration_list` — the modifier-skip lands on the type node, whose declarator-list step names the variable."
+    },
+    {
+      "type": "references",
+      "source": "inferredField",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "declaration",
+      "note": "INFERRED CLASS FIELD (`final inferredField = 7;`): the class-body sibling form already carried the `declaration` wrapper, so this row pins that the modifier-skip did not break the wrapping form while fixing the program-level one."
+    },
+    {
+      "type": "references",
+      "source": "AnnotatedAlias",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "meta.annotatedKind": "type_alias",
+      "note": "ANNOTATED TYPEDEF — the annotation is a CHILD of the `type_alias` wrapper (probed), a position the child-carrier reader did not cover; the truth oracle derived the row and the corpus gate reported the analyzer as MISSING on generic_metadata_test.dart."
+    },
+    {
+      "type": "references",
+      "source": "UsesScopedAnnotation",
+      "target": "ScopedCarrier",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "TYPE-QUALIFIED annotation — `@ScopedCarrier.variant()`: the qualifier is the TYPE (the member selects a named constructor), so the target is `ScopedCarrier`, not the constructor segment. The alias table is what distinguishes this from the aliased case below; both are `scoped_identifier`."
+    },
+    {
+      "type": "references",
+      "source": "AliasedAnnotation",
+      "target": "deprecated",
+      "confidenceMin": 0.95,
+      "meta.isAnnotation": true,
+      "note": "ALIAS-QUALIFIED annotation — `@core.deprecated` where `core` is an import alias: the type is the LEAF, because the qualifier is an alias no declaration carries."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "@deprecated",
+      "note": "THE SIGIL IS NOT THE NAME: `@deprecated` parses as the annotation node's TEXT; the target must be the name node's text."
+    },
+    {
+      "type": "references",
+      "target": "deprecated()",
+      "note": "THE ARGUMENT LIST IS NOT THE NAME. `@JsonKey(name: 'renamed')` must not publish a target carrying its arguments; the same rule kills any `Name(args)` spelling."
+    },
+    {
+      "type": "references",
+      "source": "Prefixed",
+      "target": "prefix.Qualified",
+      "note": "THE ALIAS-QUALIFIED SPELLING, forbidden: this lane's types are spelled alias-free (DT-B/DAD1/DAD2). The positive row pins the leaf."
+    },
+    {
+      "type": "uses",
+      "target": "deprecated",
+      "note": "ANNOTATION NAMES ARE NOT VALUE READS, and this forbid is FALSIFIABLE: the file declares `const int deprecated = 1;`, so a missing annotation-name gate would let the identifier inside `@deprecated` resolve against the file's top-level values and publish this `uses` row."
+    },
+    {
+      "type": "uses",
+      "target": "override",
+      "note": "the same rule for the method annotation name — an annotation is not a read of its own type in value position."
+    },
+    {
+      "type": "imports",
+      "target": "deprecated",
+      "note": "an annotation is a TYPE MENTION, not an import: the label must be `references`."
+    },
+    {
+      "type": "references",
+      "target": "deprecated",
+      "meta.isAnnotation": null,
+      "note": "THE LABEL IS NOT ENOUGH — every annotation row carries `isAnnotation: true`; a `references` row to an annotation's target without the flag would be indistinguishable from an ordinary type mention and is forbidden so the distinction cannot be dropped silently."
+    },
+    {
+      "type": "references",
+      "source": "arg",
+      "target": "required",
+      "note": "A PARAMETER NAME PUBLISHES NO SYMBOL (DARTD8), so a parameter annotation must not be sourced to the parameter's spelling — it is attributed to the callable (`method`), pinned in the positive row."
+    },
+    {
+      "type": "references",
+      "source": "annotation-references",
+      "target": "deprecated",
+      "note": "NO MODULE-SOURCED ANNOTATION ROW: the module symbol publishes only for genuinely library-level facts in this lane; a class annotation must attribute to the class, not the file."
+    },
+    {
+      "type": "references",
+      "source": "UsesScopedAnnotation",
+      "target": "variant",
+      "note": "THE CONSTRUCTOR SEGMENT IS NOT THE TYPE — the leaf-taker this fix removes published `variant`, which answers no declared type. Together with the aliased positive row this pins the alias-table rule in both directions."
+    },
+    {
+      "type": "references",
+      "source": "AliasedAnnotation",
+      "target": "core.deprecated",
+      "note": "THE ALIAS-QUALIFIED SPELLING, forbidden — `core` is an import alias, so the target must be the leaf."
+    }
+  ]
+}

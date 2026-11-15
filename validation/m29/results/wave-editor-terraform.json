@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -31,7 +31,7 @@
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 1,\n      line = 7\n    },\n    start = {\n      character = 0,\n      line = 3\n    }\n  },\n  uri = \"file://$HOMEha",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 1,\n      line = 7\n    },\n    start = {\n      character = 0,\n      line = 3\n    }\n  },\n  uri = \"file:///home/isha",
       "name": "S6: definition resolves",
       "ok": true
     },
@@ -65,7 +65,7 @@
           "line": 3
         }
       },
-      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+      "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
     },
     "documentSymbol": [
       {
@@ -386,7 +386,7 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\npublic variable app_name\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**app_name** — variable, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified\n\n**connected**: referenced by [greeting](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), [null_resource.greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [greeting — main.tf:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n2. [null_resource.greeter — main.tf:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [default](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D), [description](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A5%2C%22character%22%3A2%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A4%2C%22character%22%3A2%7D%5D)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n_(also declared by contains, exports)_\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf:4](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D))_"
+        "value": "```\npublic variable app_name\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**app_name** — variable, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified\n\n**connected**: referenced by [greeting](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), [null_resource.greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [greeting — main.tf:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n2. [null_resource.greeter — main.tf:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [default](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D), [description](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A5%2C%22character%22%3A2%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A4%2C%22character%22%3A2%7D%5D)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n_(also declared by contains, exports)_\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf:4](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D))_"
       },
       "data": {
         "provenance": {
@@ -413,7 +413,7 @@
             "structural",
             "reference_qualified"
           ],
-          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf",
           "freshnessStatus": "fresh",
           "indexedFileCount": 2,
           "lineEnd": 8,
@@ -467,7 +467,7 @@
             "line": 17
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
       },
       {
         "range": {
@@ -480,7 +480,7 @@
             "line": 11
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
       },
       {
         "range": {
@@ -493,7 +493,7 @@
             "line": 3
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
       }
     ],
     "workspaceAbsence": []

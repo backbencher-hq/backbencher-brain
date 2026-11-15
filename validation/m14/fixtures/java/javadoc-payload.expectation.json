@@ -1,0 +1,43 @@
+{
+  "fixtureId": "java/javadoc-payload",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b docstring payloads: Javadoc (block_comment /**) lands on BOTH class and method symbols. Previously java symbols carried no comments. M37 #597 KAD2-sweep adds the ADJACENCY pins: the doc-less helper() must carry NO doc — the dead `sibling === node` forward scan leaked the first javadoc in the file onto every subsequent declaration.",
+  "expectSymbols": [
+    {
+      "name": "Svc"
+    },
+    {
+      "name": "work"
+    },
+    {
+      "name": "port"
+    },
+    {
+      "name": "helper"
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "Svc",
+      "minCount": 1
+    },
+    {
+      "symbol": "work",
+      "minCount": 1
+    },
+    {
+      "symbol": "port",
+      "minCount": 1
+    },
+    {
+      "symbol": "helper",
+      "notContains": "Service docs",
+      "comment": "KAD2: the doc-less declaration must not inherit another symbol's javadoc (dead === stop leaked it)"
+    },
+    {
+      "symbol": "helper",
+      "notContains": "Works hard"
+    }
+  ]
+}

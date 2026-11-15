@@ -1,0 +1,17 @@
+{
+  "fixtureId": "scala/import-edges",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G1 gap (confirmed finding from java's pass): scala import edges carry isImportDep=true but the tier classifier hardcoded reference_qualified for references, so every import edge was mislabeled. They must be import_based. Single imports carry the full dotted target (java.util.List); wildcard imports the module (java.util.concurrent, never '.*'). SOURCE CORRECTION 2026-10-02: the edge source is `root`, not the file's primary type (`Importer`). The G1 source rewrite this fixture originally pinned was REMOVED from the analyzer during branch consolidation, and the hand-audited truth decides it: validation/m12/ground-truth/scala.json (truthSource=manual_audit) records exactly 6 `references` relationship rows and every one of them has `sourceId: \"root\"` — verified by direct query of that file, not by reading the analyzer's own comment. So `root` is the contracted spelling and the primary-type spelling was a pin that could never match, which is why this fixture was RED. The tier half (`isImportDep` + `evidenceClass: import_based` + confidence) is unchanged and is what mutant scala/reclassify-import-tier reverts.",
+  "expectSymbols": [
+    { "name": "Importer", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "java.util.List" },
+    { "module": "java.util.concurrent" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "root", "target": "java.util.List", "meta.isImportDep": true, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 },
+    { "type": "references", "from": "root", "target": "java.util.concurrent", "meta.isImportDep": true, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 }
+  ]
+}

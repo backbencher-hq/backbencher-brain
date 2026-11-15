@@ -9,7 +9,7 @@ import { execSync } from "node:child_process"
 import { ASTEngine } from "../../src/ast/engine"
 
 const ANALYZER = "src/ast/real-swift-analyzer.ts"
-const REPO = "$HOME/fixtures/repositories/swift-nio"
+const REPO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
 const TYPES_CACHE = "/tmp/tree-sitter-swift-emitted-types.json"
 
 function collectRefs(src: string): Set<string> {

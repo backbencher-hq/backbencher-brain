@@ -1,0 +1,146 @@
+{
+  "fixtureId": "c/export-marker-class-965",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "C3. `exports` was a FIVE-NAME LIST (`EXPORT_SYMBOL`, `EXPORT_SYMBOL_GPL`, `CURL_EXTERN`, `REDISMODULE_API`, `GIT_EXTERN`) in the PREFIX branch, widened twice by reading one corpus. Measured on sqlite (359 C/H files, production parseFile): with the list the relation fired 0 times while the construct occurred 340 times in the node the prefix branch reads. The class rule replaces the list in the PREFIX position only; the CALL position keeps list membership, because a callee's name proves nothing about a macro's signature and only `EXPORT_SYMBOL(name, licence)` puts the exported name in argument 1. Four things are pinned, each a way the rule can be wrong. (1) SUPERSET: rows A and B together require that every name the old list carried still fires, so a rule narrower than the list fails rather than silently shrinking the graph. (2) NEGATIVES: `SQLITE_NOINLINE`, `CSV_NOINLINE`, `SQLITE_INLINE`, `ALIGN128`, `FMT_CONSTEXPR`, `CMPP_PRIVATE`, `PRIVATE` and `SQLITE_WSD` sit in the SAME `macro_specifier` position as the accepted markers, so a rule that tests only position publishes all of them \u2014 `CMPP_PRIVATE` 53 and `PRIVATE` 22 corpus-wide is why PRIVATE is absent from the word list, being the same convention with the opposite meaning. (3) DEBRIS: `c3_virtual` and the recovery artefacts the C++ corpora produce land in that position too (`std` 322, `virtual` 125, `typename` 54, `return` 22, `else` 2), so the rule also requires the token to carry no lower-case letter. (4) THE FABRICATED SOURCES, verbatim from the corpus: widening the marker set published 3 `exports` edges on sqlite whose SOURCE names something no C declaration gives to anything \u2014 `exports void -> CMPP__EXPORT` (libcmpp.c:7043, a TYPE), `exports SQLITE_CDECL -> SQLITE_API` (main.c:138, a MARKER) and `exports JNICALL -> JNIEXPORT` (sqlite3-jni.c:6244, a MARKER). Two are removed at the source by an ERROR-node refusal in `exportedDeclarationName`; the third by a post-pass refusing an ALL-CAPS source, which is C's own convention plus the preprocessor's token substitution. **A BROADER GATE WAS WRITTEN, MEASURED AND REJECTED**: refusing every `exports` edge whose source was not a symbol in the payload removed those 3 AND seven REAL exported prototypes (`cmpp_sqlite3_str_finish`, `cmpp_tizer_init`, `cmpp_tizer_errpos`, `cmpp_arg_cstr`, `cmpp_arg_cstr2`, `cmpp_arg_strdup`, `cmpp_outfv`), because the function-prototype extractor mints no symbol for a declaration carrying a marker prefix \u2014 a defect in a DIFFERENT branch, measured and filed rather than hidden behind a broader refusal. Section E' pins those seven as POSITIVE so the narrow gate's cost stays at zero. And **the E texts are copied from the corpus, not re-typed**: the hand-written versions parsed cleanly enough to publish nothing either way, the gate reported 38/38, and both mutants SURVIVED \u2014 a tidy fixture passes the fix without testing it. widening the marker set published 10 of 309 sqlite `exports` sources naming something no symbol in the file carries \u2014 a TYPE (`void`), a MARKER (`SQLITE_CDECL`, `JNICALL`), or a recovery FRAGMENT (`cmpp_tizer_init` for `cmpp_tokenizer_init`, a name written in no source file, rule R7). The TYPE and MARKER cases are removed at the source by an ERROR-node refusal in `exportedDeclarationName`; the FRAGMENTS survive every shape rule, because their shape is a well-formed `function_declarator` whose NAME is a fragment, and only resolvability convicts them. The gate is therefore a post-pass over the published symbols, not a shape test. Section E's three shapes are the real sqlite/libcmpp spellings, and each is a forbid rather than an expectation \u2014 the honest outcome for a name the parse destroyed is no edge. One row here was authored as a forbid, failed, and turned out to be a POSITIVE: the same sqlite3-jni spelling recovers the real name on the fixture and does not on sqlite, which is why both directions are pinned rather than one guess.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "c3_jim_strdup",
+      "target": "JIM_EXPORT",
+      "comment": "sqlite/autosetup/jimsh0.c carries 113 of these. With the five-name list this emitted nothing."
+    },
+    {
+      "type": "exports",
+      "from": "c3_sqlite_api",
+      "target": "SQLITE_API",
+      "comment": "17 corpus occurrences across 6 sqlite files. `#define SQLITE_API` is EMPTY, so there is no expansion to read \u2014 only the token's own name says what it marks."
+    },
+    {
+      "type": "exports",
+      "from": "c3_jni_entry",
+      "target": "JNIEXPORT",
+      "comment": "31 corpus occurrences. The one marker whose boundary word is a SUFFIX with no underscore in front of it, so a part-only rule misses it."
+    },
+    {
+      "type": "exports",
+      "from": "c3_benchmark_entry",
+      "target": "BENCHMARK_EXPORT",
+      "comment": "37 occurrences on the google-benchmark corpus, which the lane's historical three corpora do not include."
+    },
+    {
+      "type": "exports",
+      "from": "c3_foo_entry",
+      "target": "FOO_LIB_API",
+      "comment": "The synthetic spelling: a project-defined marker no list could have anticipated. This is the row that would fail with any enumeration-based rule, which is why it is in the fixture rather than only in the doc."
+    },
+    {
+      "type": "exports",
+      "from": "c3_curl_strequal",
+      "target": "CURL_EXTERN",
+      "comment": "SUPERSET control 1 of 3: a name the old list carried. A rule narrower than the list fails this row. (`EXPORT_SYMBOL` and `EXPORT_SYMBOL_GPL` are exercised by c/exports-marker-conventions-963, which pins the CALL form where list membership still applies.)"
+    },
+    {
+      "type": "exports",
+      "from": "c3_git_version",
+      "target": "GIT_EXTERN",
+      "comment": "SUPERSET control 2 of 3: the paren form, where the macro's ARGUMENT IS THE RETURN TYPE. The published name is still the declarator's."
+    },
+    {
+      "type": "exports",
+      "from": "c3_redis_alloc",
+      "target": "REDISMODULE_API",
+      "comment": "SUPERSET control 3 of 3: `REDISMODULE_API` ends with `API` and has no underscore before it, so it exercises the suffix branch of the class rule."
+    },
+    {
+      "type": "exports",
+      "from": "cmpp_sqlite3_str_finish",
+      "target": "CMPP_EXPORT",
+      "comment": "E'. MUST SURVIVE. The first version of the fix refused every `exports` edge whose source was not a symbol in the payload, and this row was one of seven real exported prototypes it removed \u2014 because the function-prototype extractor mints no symbol for a declaration carrying a marker prefix. Dropping a TRUE edge to hide a MISSING symbol is the fabrication class wearing the other hat, so the narrow gate must cost nothing here."
+    },
+    {
+      "type": "exports",
+      "from": "cmpp_tizer_errpos",
+      "target": "CMPP_EXPORT",
+      "comment": "E'. Second of the seven. libcmpp.c:2307, a single-line prototype, parse clean, name real, symbol absent from the payload."
+    },
+    {
+      "type": "exports",
+      "from": "cmpp_outfv",
+      "target": "CMPP_EXPORT",
+      "comment": "E'. Third of the seven. libcmpp.c:4063."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "SQLITE_NOINLINE",
+      "comment": "87 corpus occurrences, in the SAME macro_specifier position as every accepted marker. An attribute, not a visibility boundary."
+    },
+    {
+      "type": "exports",
+      "target": "CSV_NOINLINE",
+      "comment": "Same shape as SQLITE_NOINLINE, from a different extension, so a rule keyed on one project prefix fails."
+    },
+    {
+      "type": "exports",
+      "target": "SQLITE_INLINE",
+      "comment": "Contains the word INLINE and no boundary word. A rule testing for `inline`/`noinline` prefixes instead of the word class fails here."
+    },
+    {
+      "type": "exports",
+      "target": "ALIGN128",
+      "comment": "A layout attribute in prefix position (`GIT_ALIGN`-shaped). The whole reason the call-shaped macro_type_specifier arm of the prefix branch needs the class test and not position alone."
+    },
+    {
+      "type": "exports",
+      "target": "FMT_CONSTEXPR",
+      "comment": "A compile-time-attribute marker in prefix position, 145 corpus occurrences on fmt. Not a visibility boundary."
+    },
+    {
+      "type": "exports",
+      "target": "CMPP_PRIVATE",
+      "comment": "THE row that decides the word list. 53 corpus occurrences, the same convention shape as CMPP_EXPORT (161, accepted), and the OPPOSITE meaning. Any word list containing PRIVATE publishes an `exports` edge for every private marker in the corpus."
+    },
+    {
+      "type": "exports",
+      "target": "PRIVATE",
+      "comment": "Same reason, second spelling: 22 corpus occurrences in tool/lemon.c."
+    },
+    {
+      "type": "exports",
+      "target": "SQLITE_WSD",
+      "comment": "12 corpus occurrences. `#define SQLITE_WSD const` / empty \u2014 a weak-symbol declaration attribute. Arguably an outward visibility marker, and DELIBERATELY not published: the replacement list has no `extern` and the name carries no boundary word, so the honest verdict is silence, recorded rather than guessed."
+    },
+    {
+      "type": "exports",
+      "target": "c3_virtual",
+      "comment": "DEBRIS control: a lower-case identifier in the marker position. The C++ corpora put `virtual` (125), `typename` (54), `template` (53) and `std` (322) there under recovery, and sqlite's own puts `return` (22) and `db` (2). Without the no-lower-case test the rule publishes exports on all of them."
+    },
+    {
+      "type": "exports",
+      "from": "void",
+      "comment": "E1. THE #963 trap reached again through a different door: a TYPE as the exported name. libcmpp.c:7043 `CMPP__EXPORT(void *, cmpp_mrealloc)(void * p, size_t n){` puts the identifier `void` inside the declarator chain, under an ERROR node. Fixed by refusing to descend into an ERROR, which is parse damage rather than structure."
+    },
+    {
+      "type": "exports",
+      "from": "C3_CALLX",
+      "comment": "E2, the pointer member itself: `C3_CALL *c3_io_trace` names a function-pointer member, not an exported symbol. Published before the ERROR-node refusal it reached the marker beside it."
+    },
+    {
+      "type": "exports",
+      "from": "void",
+      "comment": "E1, VERBATIM from libcmpp.c:7043. A TYPE as the exported name \u2014 the defect #963's fixture forbids for `exports int -> GIT_EXTERN`. `CMPP__EXPORT(void *, cmpp_mrealloc)(void * p, size_t n){` puts the identifier `void` inside the declarator chain under an ERROR node; the walk descended into the ERROR and landed on it."
+    },
+    {
+      "type": "exports",
+      "from": "SQLITE_CDECL",
+      "comment": "E2, VERBATIM from main.c:138 `SQLITE_API void (SQLITE_CDECL *sqlite3IoTrace)(const char*, ...) = 0;`. A MARKER as the exported name. The declaration's real declarator is a function POINTER (`*sqlite3IoTrace`), not an exported symbol, and the walk reached the marker beside it through the same ERROR node."
+    },
+    {
+      "type": "exports",
+      "from": "JNICALL",
+      "comment": "E3, VERBATIM from sqlite3-jni.c:6244-6246. The declaration is cut at the line break, so the declarator IS the bare marker `JNICALL` \u2014 an ALL-CAPS token the preprocessor substitutes before the compiler sees it \u2014 while the real name `Java_org_sqlite_jni_capi_SQLTester_installCustomExtensions` lives on the next line in a different node. A marker as the exported name is the fabrication class #963 already pinned as `exports CURL_EXTERN -> CURL_EXTERN`."
+    }
+  ]
+}

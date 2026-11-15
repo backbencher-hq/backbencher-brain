@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/method-scope-psb3.ps1",
+  "authoredFrom": "PS3 (a METHOD is a scope) + PS4 (a CONSTRUCTOR is named `constructor` and owned by its class). Authored 2026-09-26. Both were measured at the SURFACE, not reasoned in the analyzer: indexed as a project, `bb_graph Start` on a method that IS called returned `callers: []` AND `callees: []` — a dead end in both directions — because the pre-wave lane pushed no owner for `class_method_definition`, so every call inside a method was attributed to the CLASS; and every PowerShell class constructor stored with `owner_symbol_id = NULL` because PowerShell writes a constructor with the class's own name, making the containment edge a self-edge the store's M51.A1 guard then refused. Rulings adopted: M59 #879 and web-family #814 (METHOD source), and csharp's synthesised-member contract for a name the source never writes.",
+  "expectSymbols": [
+    {
+      "name": "method-scope-psb3.ps1",
+      "kind": "module"
+    },
+    {
+      "name": "Deployment",
+      "kind": "class",
+      "ownerName": "method-scope-psb3.ps1"
+    },
+    {
+      "name": "Name",
+      "kind": "property",
+      "ownerName": "Deployment"
+    },
+    {
+      "name": "Retries",
+      "kind": "property",
+      "ownerName": "Deployment"
+    },
+    {
+      "name": "Kind",
+      "kind": "property",
+      "ownerName": "Deployment"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Deployment",
+      "comment": "PS4: the source writes `Deployment(...)`, never `constructor`, so the symbol name is synthesised. Naming it after the class made it a self-edge that the store's self-ownership guard refused, which is why every PowerShell constructor was an orphan in the graph."
+    },
+    {
+      "name": "Start",
+      "kind": "method",
+      "ownerName": "Deployment"
+    },
+    {
+      "name": "Describe",
+      "kind": "method",
+      "ownerName": "Deployment"
+    },
+    {
+      "name": "TurboDeployment",
+      "kind": "class",
+      "ownerName": "method-scope-psb3.ps1"
+    },
+    {
+      "name": "Start",
+      "kind": "method",
+      "ownerName": "TurboDeployment"
+    },
+    {
+      "name": "FoldedRead",
+      "kind": "method",
+      "ownerName": "Deployment"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "method-scope-psb3.ps1",
+      "target": "Deployment",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "method-scope-psb3.ps1",
+      "target": "TurboDeployment",
+      "line_number": 53
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "Name",
+      "line_number": 27
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "Retries",
+      "line_number": 28
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "Kind",
+      "line_number": 29
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "constructor",
+      "line_number": 31,
+      "comment": "PS4: the containment edge the store resolves the owner FROM. Without it the constructor stored ownerless."
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "Start",
+      "line_number": 36
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "Describe",
+      "line_number": 41
+    },
+    {
+      "type": "contains",
+      "from": "TurboDeployment",
+      "target": "Start",
+      "line_number": 54
+    },
+    {
+      "type": "extends",
+      "from": "TurboDeployment",
+      "target": "Deployment",
+      "line_number": 53
+    },
+    {
+      "type": "overrides",
+      "from": "TurboDeployment",
+      "target": "Deployment",
+      "line_number": 54,
+      "meta.overridesMember": "Start",
+      "comment": "PowerShell class methods are virtual by default, so a same-named subclass member IS an override. The pre-wave lane emitted ZERO `overrides` edges in the language."
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "Write-Verbose",
+      "line_number": 33,
+      "comment": "PS3: attributed to the CONSTRUCTOR, not to Deployment. Pre-wave this read `calls Deployment -> Write-Verbose`."
+    },
+    {
+      "type": "calls",
+      "from": "Start",
+      "target": "Write-Host",
+      "line_number": 37,
+      "comment": "PS3: `Deployment::Start`'s own call, on the METHOD. Pre-wave this read `calls Deployment -> Write-Host`."
+    },
+    {
+      "type": "calls",
+      "from": "Start",
+      "target": "Write-Host",
+      "line_number": 55,
+      "comment": "PS3: `TurboDeployment::Start`'s own call. The two Start methods are distinct scopes, so the same callee at the same name yields two rows from two owners."
+    },
+    {
+      "type": "uses",
+      "from": "constructor",
+      "target": "Name",
+      "line_number": 32,
+      "meta.isMemberWrite": true,
+      "comment": "PS9: `$this.Name = $name` is a WRITE of the member. PSD16 measured a `Class.Name` retarget here and REJECTED it: the corpus declares the same class in many files, so 151 such rows were ambiguous and none resolved."
+    },
+    {
+      "type": "uses",
+      "from": "Start",
+      "target": "Retries",
+      "line_number": 38,
+      "meta.isMemberWrite": true
+    },
+    {
+      "type": "uses",
+      "from": "Describe",
+      "target": "Name",
+      "line_number": 42,
+      "meta.isMemberReference": true
+    },
+    {
+      "type": "instantiates",
+      "from": "method-scope-psb3.ps1",
+      "target": "Deployment",
+      "line_number": 59
+    },
+    {
+      "type": "instantiates",
+      "from": "method-scope-psb3.ps1",
+      "target": "TurboDeployment",
+      "line_number": 62
+    },
+    {
+      "type": "calls",
+      "from": "method-scope-psb3.ps1",
+      "target": "Start",
+      "line_number": 60,
+      "meta.methodCall": true,
+      "meta.on": "d"
+    },
+    {
+      "type": "uses",
+      "from": "method-scope-psb3.ps1",
+      "target": "method-scope-psb3.ps1.d",
+      "line_number": 60,
+      "meta.isReceiverReference": true
+    },
+    {
+      "type": "calls",
+      "from": "method-scope-psb3.ps1",
+      "target": "Describe",
+      "line_number": 61,
+      "meta.methodCall": true,
+      "meta.on": "d"
+    },
+    {
+      "type": "calls",
+      "from": "method-scope-psb3.ps1",
+      "target": "Start",
+      "line_number": 63,
+      "meta.methodCall": true,
+      "meta.on": "t"
+    },
+    {
+      "type": "uses",
+      "from": "method-scope-psb3.ps1",
+      "target": "method-scope-psb3.ps1.t",
+      "line_number": 63,
+      "meta.isReceiverReference": true
+    },
+    {
+      "type": "uses",
+      "from": "FoldedRead",
+      "target": "Name",
+      "line_number": 49,
+      "meta.isMemberReference": true,
+      "meta.caseFoldedTo": "Name",
+      "comment": "PSD20 — the read is spelled `$this.name` and the property is declared `[string]$Name`; PowerShell is case-INSENSITIVE and the store's key space is not, so the row is published under the DECLARED spelling and it resolves. The marker is the evidence for the rewrite."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "Deployment",
+      "target": "Write-Host",
+      "comment": "PRE-FIX SHAPE, PS3: a call written inside `Deployment::Start` attributed to the CLASS. This is the row that made `bb_graph Start` answer `callees: []`."
+    },
+    {
+      "type": "calls",
+      "from": "TurboDeployment",
+      "target": "Write-Host",
+      "comment": "PRE-FIX SHAPE, PS3: the same, for the subclass."
+    },
+    {
+      "type": "calls",
+      "from": "Deployment",
+      "target": "Write-Verbose",
+      "comment": "PRE-FIX SHAPE, PS3: the constructor's own call on the class."
+    },
+    {
+      "type": "contains",
+      "from": "Deployment",
+      "target": "Deployment",
+      "comment": "PRE-FIX SHAPE, PS4: the constructor named after its class, so `contains` was a self-edge. Suppressed pre-wave, and the store then refused the owner — which is the orphan."
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    },
+    {
+      "type": "uses",
+      "source": "FoldedRead",
+      "target": "name",
+      "comment": "THE UNFOLDED NEGATIVE: the source spelling stays unresolvable, so publishing it is the defect this rule removes."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Deployment",
+      "kind": "constructor",
+      "comment": "PRE-FIX SHAPE, PS4: a constructor symbol named after its class. Two rows then share a name with the class, and neither the store's owner resolution nor a reader can tell them apart."
+    }
+  ]
+}

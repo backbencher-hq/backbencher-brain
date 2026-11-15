@@ -2,7 +2,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = "$HOME/fixtures/repositories"
+const CR = "/home/ishaq2321/bb_tests/repositories"
 const WIDE = path.join(process.cwd(), "script", "m14", "clean-wide-manifest.txt")
 const files: string[] = []
 const seen = new Set<string>()

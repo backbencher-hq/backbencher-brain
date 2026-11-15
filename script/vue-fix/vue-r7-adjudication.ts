@@ -20,7 +20,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const REPOS = (process.env.BB_REPOS ?? "vue-element-admin,element-plus").split(",")
-const CR = "$HOME/fixtures/repositories"
+const CR = "/home/ishaq2321/bb_tests/repositories"
 
 // The candidate words. Kept explicit and separate from the HARD/GENERIC split
 // used by vue-ontology-census.ts; this probe's whole job is to adjudicate hits.

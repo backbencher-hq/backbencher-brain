@@ -1,0 +1,91 @@
+{
+  "analyzer": "make",
+  "revisions": {
+    "terraform": "db4eef44f5bbd39a115f939304279caee7cf9b12",
+    "tf-aws-components": "1f74a966a0b40ce7e5cae5baec690e5356cf46b8",
+    "consul": "668c7586de219f9f05510cc5734dc1861f0f68cb",
+    "boundary": "edfad8971a5488a82805e62dc939b771a778eb00",
+    "luvit": "a63febcb9108ed8b49c5bf7ea316a808441d6740",
+    "kong": "94b6c29509f6ff8f4f5326a8c86bc9345cc7248b",
+    "vault": "ae269540b773f0f81fc8c34c36c75d15515e4ec4",
+    "nomad": "3f304768e47bbbd905c5cb0e609dd8f09bac767f",
+    "waypoint": "b81cf848b44f57b95cb2e9766839582cc625d9c2",
+    "packer": "4bb4b91351b5a62ed4c1df26ff230aecda5bfbe6",
+    "terragrunt": "17667115bb37a5c72a44962b418eba4471f625b0",
+    "Matrix": "d598862375829cc1d81aebccfe2e3acb0e1a9f92",
+    "torrentinim": "8a0f2294c7e11f71540d6e2bbbc48fa25748494e"
+  },
+  "perFile": {
+    "terraform/Makefile": {
+      "symbols": 12,
+      "relationships": 37,
+      "errors": 0
+    },
+    "tf-aws-components/Makefile": {
+      "symbols": 17,
+      "relationships": 48,
+      "errors": 0
+    },
+    "consul/Makefile": {
+      "symbols": 120,
+      "relationships": 488,
+      "errors": 0
+    },
+    "boundary/Makefile": {
+      "symbols": 76,
+      "relationships": 261,
+      "errors": 0
+    },
+    "luvit/Makefile": {
+      "symbols": 24,
+      "relationships": 66,
+      "errors": 0
+    },
+    "kong/Makefile": {
+      "symbols": 55,
+      "relationships": 217,
+      "errors": 0
+    },
+    "vault/Makefile": {
+      "symbols": 102,
+      "relationships": 416,
+      "errors": 0
+    },
+    "nomad/GNUmakefile": {
+      "symbols": 83,
+      "relationships": 363,
+      "errors": 0
+    },
+    "waypoint/Makefile": {
+      "symbols": 44,
+      "relationships": 152,
+      "errors": 0
+    },
+    "packer/Makefile": {
+      "symbols": 46,
+      "relationships": 155,
+      "errors": 0
+    },
+    "terragrunt/Makefile": {
+      "symbols": 20,
+      "relationships": 63,
+      "errors": 0
+    },
+    "Matrix/inst/scripts/rules.mk": {
+      "symbols": 24,
+      "relationships": 215,
+      "errors": 0
+    },
+    "Matrix/inst/scripts/sources.mk": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "torrentinim/Makefile": {
+      "symbols": 5,
+      "relationships": 8,
+      "errors": 0
+    }
+  },
+  "crashes": []
+}

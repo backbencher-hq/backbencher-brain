@@ -1,0 +1,45 @@
+{
+ "fixtureId": "yaml/materialized-action",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A local `uses:` target that no committed directory answers is not an external path — it is a path a PRIOR STEP OF THE SAME JOB materializes. The HashiCorp CI idiom this corpus carries 10 sites of: `actions/checkout@<sha>` with `with: {repository: hashicorp/security-scanner, path: security-scanner, ref: main}` in an earlier step, then `uses: ./security-scanner`. The runner puts that repository's content at that path, so the supportable claim is the repository at its ref — a remoteRef the arbiter VERIFIES — while `isExternal: true` on a path-shaped target is a claim the arbiter can only call externalUnverified. MEASURED from the text over the whole admitted corpus before the analyzer was touched (`materialized-action-price.ts`): 523 local `uses: ./…` sites, 10 matched to a prior same-job checkout, 9 of them convertible (7 `./security-scanner`, 2 `./ci-actions/.github/actions/setup`), 1 honestly left unverifiable because its checkout pins no `ref:` and `verifyRemoteRefClaim` refuses a ref-less remoteRef. The two halves that matter are the REFUSALS, because the rule is about STEP ORDER and JOB SCOPE and both are visible in this file: `audit` has the same `uses:` and no checkout in its own job, and `late` checks the same repository out AFTER the use — neither may be re-routed, or a directory the runner never creates would be claimed. `materializedAtLine` names the checkout that authorizes the claim, so a reader can audit the re-route from the edge alone.",
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "materialized-action.jobs.scan.steps[1].uses",
+   "target": "hashicorp/security-scanner@main",
+   "meta.relationshipType": "yaml_action_use",
+   "meta.remoteRef": true,
+   "meta.materializedPath": "./security-scanner",
+   "meta.materializedAtLine": 15
+  },
+  {
+   "type": "imports",
+   "from": "materialized-action.jobs.audit.steps[0].uses",
+   "target": "./security-scanner",
+   "meta.relationshipType": "yaml_action_use"
+  },
+  {
+   "type": "imports",
+   "from": "materialized-action.jobs.late.steps[0].uses",
+   "target": "./late-action",
+   "meta.relationshipType": "yaml_action_use"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "from": "materialized-action.jobs.scan.steps[1].uses",
+   "target": "./security-scanner"
+  },
+  {
+   "type": "imports",
+   "from": "materialized-action.jobs.audit.steps[0].uses",
+   "target": "hashicorp/security-scanner@main"
+  },
+  {
+   "type": "imports",
+   "target": "hashicorp/late-action"
+  }
+ ]
+}

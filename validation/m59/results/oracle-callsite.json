@@ -3,7 +3,7 @@
   "at": "2026-09-29T01:40:24.254Z",
   "atCommit": "5285d2eb5acfd53ef352e213bc2dc426958b3296",
   "treeModifiedInputs": 20,
-  "corpus": "$HOME/fixtures/repositories",
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
   "filesPerLang": 40,
   "oracleIndependence": {
     "importsAnalyzerCode": false,

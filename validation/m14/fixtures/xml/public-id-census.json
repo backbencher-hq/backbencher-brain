@@ -1,0 +1,38 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/public-id-census.mts",
+  "question": "how many `imports` edges name a PUBLIC IDENTIFIER instead of a file",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "admittedTotal": 11552,
+    "admitted": 11552,
+    "workers": 1,
+    "method": "git-tracked files only, 512 KiB cap, detectLanguageFromPath(abs, text) — the arbiter's own rule",
+    "parseFailures": 0
+  },
+  "treeSide": {
+    "externalIdNodes": 299,
+    "withSystemLiteral": 298,
+    "pubidOnly": 1,
+    "pubidOnlyByParentType": {
+      "NotationDecl": 1
+    },
+    "pubidOnlyExamples": [
+      "libxslt/tests/general/bug-52.xml:2 under <NotationDecl> pubid=\"\\\"GIF\\\"\""
+    ],
+    "note": "instrument A, grammar inventory: counted from the parse tree with no reference to the analyzer, so it is the number a correct implementation would have to match"
+  },
+  "edgeSide": {
+    "importsEdges": 468,
+    "publicKind": 0,
+    "systemKind": 298,
+    "publicEdges": [],
+    "publicEdgesWhereTargetEqualsSource": [],
+    "note": "instrument B, from production parseFile; externalIdKind is the analyzer's own record of which literal it read"
+  },
+  "disagreement": {
+    "pubidOnlyNodesOnTree": 1,
+    "importsEdgesWithKindPublic": 0,
+    "edgesWithNoSystemLiteralOnTree": 1,
+    "reading": "A tree node with no SystemLiteral and an emitted edge carrying externalIdKind=public is the fabrication. If the two agree there is no bug and the rule is redundant; if the edge count exceeds the node count the analyzer is inventing edges the tree does not carry."
+  }
+}

@@ -51,6 +51,8 @@ import { CrossLanguageSecurityAnalysis } from "../../../security/cross-language-
 import { executeAnalysis } from "../../../intelligence/analysis/run-history"
 import { resolveRowsFreshnessDetailed, type FreshnessSummary } from "../../../brain/freshness"
 import type { AnalysisFindingInput } from "../../../intelligence/contracts"
+import { formatSecurityTierDeclaration, securityEntryFor } from "../../../intelligence/security/rebuild/registry"
+import { readSecurityFlows } from "../../../intelligence/security/rebuild/store"
 
 /** History is a page: at most this many persisted findings are rendered. */
 const SECURITY_HISTORY_FINDINGS_CAP = 200
@@ -189,12 +191,53 @@ function observedPaths(findings: any[], suspicious: any[]): Array<string | null 
   return [...findings, ...suspicious].map((finding) => (typeof finding?.file === "string" ? finding.file : null))
 }
 
+/**
+ * Per-project language declaration. The matrix and any agent must be able to
+ * tell "this project was not scanned" from "no leads were found": an
+ * unsupported language (JSON, YAML, SQL, Vue, ...) has no executable source
+ * model, so a clean-looking zero would be a lie. The tier registry is the source
+ * of truth; this function only reads the project's file languages.
+ */
+function projectLanguageDeclaration(raw: any, projectId: string): string {
+  let languages: string[] = []
+  try {
+    const rows = raw.prepare("SELECT DISTINCT language FROM brain_file WHERE project_id = ?").all(projectId) as Array<{ language: string | null }>
+    languages = [...new Set(rows.map((r) => (r.language ?? "").trim().toLowerCase()).filter(Boolean))]
+  } catch {
+    return ""
+  }
+  const unsupported: Array<{ language: string; reason: string }> = []
+  let leads = 0
+  for (const language of languages.sort()) {
+    const entry = securityEntryFor(language)
+    if (entry.tier === "unsupported") unsupported.push({ language, reason: entry.reason })
+    else if (entry.tier === "leads") leads++
+  }
+  const parts: string[] = []
+  if (unsupported.length > 0) {
+    parts.push(
+      `not scanned by bb_security (no executable source model): ${unsupported.map((u) => u.language).join(", ")} — ${unsupported[0]!.reason}`,
+    )
+  }
+  if (leads > 0) parts.push(`leads tier: ${leads} language(s) present; lexical output only`)
+  if (languages.length === 0) parts.push("no indexed files — nothing was scanned by bb_security")
+  return parts.length > 0 ? `\n${parts.join("\n")}` : ""
+}
+
 export const handler: ToolHandler = async (args, { projectId }) => {
   // ── Argument contract this handler owns (the schema alone cannot) ────────
-  if (args.limit !== undefined && args.history !== true) {
-    throw new Error(
-      "bb_security: limit only applies to the history page — pass history: true with limit, or omit limit (accepted options: history, recordRun, limit)",
-    )
+  // `limit` is a live lead page size AND the history run limit; `offset` pages
+  // live leads only (the history page has its own bounded shape).
+  if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1)) {
+    throw new Error("bb_security: limit must be a positive integer (live lead page size, or history run limit)")
+  }
+  if (args.offset !== undefined) {
+    if (!Number.isInteger(args.offset) || args.offset < 0) {
+      throw new Error("bb_security: offset must be a non-negative integer (live lead pagination only)")
+    }
+    if (args.history === true) {
+      throw new Error("bb_security: offset does not apply to the history page — omit offset when history: true")
+    }
   }
   if (args.history === true && args.recordRun === true) {
     throw new Error(
@@ -241,7 +284,115 @@ export const handler: ToolHandler = async (args, { projectId }) => {
     )
   }
 
-  // ── Live scan (read), optionally the recorded run ────────────────────────
+  // ── Phase-1 live read: the spec-engine store (default path) ──────────────
+  // The M72 engine writes `brain_security_flow`; the old token co-occurrence
+  // engine is retired and only readable under BB_SECURITY_LEGACY=1 for one
+  // release. This path never reads the legacy table, so a pre-M72 row cannot be
+  // re-presented as a lead.
+  const legacyRead = process.env.BB_SECURITY_LEGACY === "1"
+  if (args.recordRun !== true && !legacyRead) {
+    const limit = Math.max(1, Math.min(200, Number.isFinite(Number(args.limit)) ? Math.floor(Number(args.limit)) : 50))
+    const offset = Math.max(0, Number.isFinite(Number(args.offset)) ? Math.floor(Number(args.offset)) : 0)
+    const page = readSecurityFlows(raw, projectId, { limit, offset, tier: "leads" })
+    const banner = "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\n"
+    const tierNote = formatSecurityTierDeclaration() + projectLanguageDeclaration(raw, projectId)
+    const gradeLabel = (severity: string): string =>
+      severity === "critical" ? "exec" : severity === "high" ? "high" : severity === "medium" ? "medium" : severity === "low" ? "low" : "unknown"
+    const leadLabel = (type: string): string => String(type ?? "unknown").replace(/_/g, " ")
+
+    if (!page.initialized) {
+      return textResult(banner + tierNote + `\nsecurity leads: engine not initialized — ${page.message ?? "run bb index --post"}`)
+    }
+
+    const derived = securityStaleness(raw, projectId, page.rows.map((row) => row.file))
+    const lines = page.rows.map((row) => {
+      const evidence: any = row.evidence ?? {}
+      const sourceLine = row.sourceLine ?? evidence?.store?.sourceLine ?? evidence?.source?.line ?? null
+      const sinkLine = row.sinkLine ?? evidence?.store?.sinkLine ?? evidence?.sink?.line ?? null
+      const reach = Array.isArray(evidence?.reachPath) && evidence.reachPath.length > 0 ? ` [reach: ${evidence.reachPath.join(" -> ")}]` : ""
+      const where = row.file ? `${row.file}:${sinkLine ?? "?"}` : "<unknown file>"
+      return (
+        `  [${gradeLabel(row.severity)}] lead: ${leadLabel(String(row.vulnerabilityType))} @ ${where}` +
+        ` <- source:${sourceLine ?? "?"}; rule=${row.ruleId}; symbol=${row.symbolName ?? "?"}${reach}` +
+        `${row.file && derived.isStale(row.file) ? " [stale]" : ""}`
+      )
+    })
+    const head =
+      `security leads: ${page.total} stored lead(s)` +
+      (page.total === 0 ? " (none stored for this project — declared empty, not a clean result)" : "")
+    const countLine =
+      `\n[leads: showing ${page.rows.length} of ${page.total}; offset ${offset}; page size ${page.limit}; tier=leads` +
+      `${page.truncated ? "; more available — pass offset to page" : ""}]`
+    const footer = derived.footer ? `\n\n${derived.footer}` : ""
+    return textResult(
+      banner +
+        tierNote +
+        "\n" +
+        head +
+        "\n" +
+        (lines.length > 0 ? lines.join("\n") : "  no stored leads on this page") +
+        countLine +
+        footer,
+    )
+  }
+
+  // ── M72 recordRun: persist the spec-engine leads ─────────────────────────
+  // recordRun is the one write. It persists the M72 store's census (not a
+  // display window) so completeAnalysisRun cannot auto-resolve a lead it never
+  // looked at. The fingerprint is the stored lead id, which is line-number-free:
+  // moving a function does not create a new history finding.
+  if (args.recordRun === true && !legacyRead) {
+    const banner = "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\n"
+    const tierNote = formatSecurityTierDeclaration() + projectLanguageDeclaration(raw, projectId)
+    const page = readSecurityFlows(raw, projectId, { limit: 50_000, offset: 0, tier: "leads" })
+    if (!page.initialized) {
+      return textResult(banner + tierNote + `\nrecordRun: engine not initialized — ${page.message ?? "run bb index --post"}`)
+    }
+    const gradeLabel = (severity: string): string =>
+      severity === "critical" ? "exec" : severity === "high" ? "high" : severity === "medium" ? "medium" : severity === "low" ? "low" : "unknown"
+    const leadLabel = (type: string): string => String(type ?? "unknown").replace(/_/g, " ")
+    const rows = page.rows
+    const recorded = await executeAnalysis({
+      projectId,
+      kind: "security",
+      input: { options: args },
+      persist: () =>
+        rows.map(
+          (row): AnalysisFindingInput => ({
+            fingerprint: `m72:${row.id}`,
+            rule: row.ruleId,
+            title: `lead: ${leadLabel(String(row.vulnerabilityType))}`,
+            severity: row.severity,
+            confidence: null,
+            evidence: [
+              {
+                kind: "security_lead",
+                description: `${row.ruleId} ${row.vulnerabilityType} ${row.file ?? "?"}:${row.sinkLine ?? "?"}`,
+              },
+            ],
+            limitations: ["Lexical lead: not a dataflow proof; validate manually."],
+            evidenceClass: "static_finding",
+            engine: "m72-security-spec",
+            location: row.file ? `${row.file}:${row.sinkLine ?? "?"}` : null,
+            state: undefined,
+          }),
+        ),
+    })
+    const preview = rows.slice(0, SECURITY_FINDINGS_WINDOW).map((row) => {
+      const where = row.file ? `${row.file}:${row.sinkLine ?? "?"}` : "<unknown file>"
+      return `  [${gradeLabel(row.severity)}] lead: ${leadLabel(String(row.vulnerabilityType))} @ ${where} <- source:${row.sourceLine ?? "?"}; rule=${row.ruleId}`
+    })
+    return textResult(
+      banner +
+        tierNote +
+        `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` +
+        `\n${rows.length} leads recorded` +
+        (preview.length > 0 ? "\n" + preview.join("\n") : "\n  no stored leads to record") +
+        `\n[recordRun: ${rows.length} lead(s) persisted; preview shows ${Math.min(rows.length, SECURITY_FINDINGS_WINDOW)}]`,
+    )
+  }
+
+  // ── Legacy live scan (BB_SECURITY_LEGACY=1), optionally the recorded run ─
   const recordRun = args.recordRun === true
   const scanCap = recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP
   const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId, { maxResults: scanCap })
@@ -250,34 +401,44 @@ export const handler: ToolHandler = async (args, { projectId }) => {
   const summary = result?.summary
   const derived = securityStaleness(raw, projectId, observedPaths(findings, suspicious))
 
+  // Phase 0: honesty banner and tier declaration — this tool is a lead generator, not a vulnerability scanner
+  const banner = "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\n"
+  const tierNote = formatSecurityTierDeclaration() + projectLanguageDeclaration(raw, projectId)
+
+  // Stored grades are lexical classes, not risk. The lead answer must not print
+  // the word "critical" over a co-occurrence pair; it maps the class to an
+  // execution-grade label and keeps the real state in the evidence.
+  const gradeLabel = (severity: string): string =>
+    severity === "critical" ? "exec" : severity === "high" ? "high" : severity === "medium" ? "medium" : severity === "low" ? "low" : "unknown"
+
   // The engine's own census versus what is on screen. The short
   // "(N beyond the cap)" is not enough on its own: the ordinary read — the
   // answer an agent actually calls — must also carry the explicit CAPPED
   // sentence, not reserve it for the recordRun branch.
   const capNote =
     result?.truncatedFindings > 0
-      ? ` — CAPPED at ${scanCap.toLocaleString("en-US")}; ${result.deduplicatedFlows} finding(s) exist and ${result.truncatedFindings} were not examined`
+      ? ` — CAPPED at ${scanCap.toLocaleString("en-US")}; ${result.deduplicatedFlows} lead(s) exist and ${result.truncatedFindings} were not examined`
       : ""
   const countLine =
-    `\n[scan: ${result?.scannedFlows ?? 0} taint flow(s) indexed → ${result?.deduplicatedFlows ?? 0} finding(s)` +
+    `\n[scan: ${result?.scannedFlows ?? 0} taint flow(s) indexed → ${result?.deduplicatedFlows ?? 0} lead(s)` +
     `${result?.truncatedFindings ? ` (${result.truncatedFindings} beyond the cap)` : ""};` +
-    ` showing ${Math.min(findings.length, SECURITY_FINDINGS_WINDOW)} finding(s)` +
+    ` showing ${Math.min(findings.length, SECURITY_FINDINGS_WINDOW)} lead(s)` +
     `${suspicious.length ? ` and ${Math.min(suspicious.length, SECURITY_SUSPICIOUS_WINDOW)} of ${suspicious.length} unvalidated observation(s)` : ""}]` +
     capNote
   const head = summary
-    ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low${summary.unknown ? ` / ${summary.unknown} unknown` : ""} (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
-    : `security findings (${findings.length})`
+    ? `security leads: ${summary.resolved} resolved pair(s) / ${summary.unresolvedSources} unvalidated; lexical grades (not risk): ${summary.critical} exec / ${summary.high} high / ${summary.medium} medium / ${summary.low} low${summary.unknown ? ` / ${summary.unknown} unknown` : ""} / ${summary.mitigated} mitigated`
+    : `security leads (${findings.length})`
   const where = (finding: any) => (finding.file ? `${finding.file}:${finding.line ?? "?"}` : "<unresolved location>")
   const lines = findings.slice(0, SECURITY_FINDINGS_WINDOW).map(
     (finding: any) =>
-      `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${where(finding)}` +
+      `  [${gradeLabel(finding.severity)}] lead: ${finding.label ?? finding.type} token pair${finding.symbol ? ` (${finding.symbol})` : ""} @ ${where(finding)}` +
       `${finding.sourceType ? ` <- ${finding.sourceType}` : ""}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}` +
       `${finding.mitigated ? " [mitigated]" : ""}${finding.file && derived.isStale(finding.file) ? " [stale]" : ""}`,
   )
   const sourceLines = suspicious.slice(0, SECURITY_SUSPICIOUS_WINDOW).map((source: any) => {
     const isSourceOnly = source.state === "source_only"
     return (
-      `  [${source.severity}] unvalidated ${isSourceOnly ? "input source" : "sink"}: ${source.label ?? source.type}` +
+      `  [${gradeLabel(source.severity)}] unvalidated ${isSourceOnly ? "input source" : "sink"}: ${source.label ?? source.type}` +
       `${source.symbol ? ` ${source.symbol}` : ""} @ ${where(source)}` +
       ` (${isSourceOnly ? "no sink reached" : "sink found; source endpoint not resolved to an indexed symbol"})` +
       `${source.file && derived.isStale(source.file) ? " [stale]" : ""}`
@@ -287,9 +448,10 @@ export const handler: ToolHandler = async (args, { projectId }) => {
 
   if (!recordRun) {
     return textResult(
+      banner + tierNote + "\n" +
       head +
         "\n" +
-        (lines.length ? lines.join("\n") : "  no findings with both endpoints resolved") +
+        (lines.length ? lines.join("\n") : "  no leads with both endpoints resolved") +
         countLine +
         (sourceLines.length ? `\n\nunvalidated observations (leads, not confirmed exploitable paths):\n${sourceLines.join("\n")}` : "") +
         footer,
@@ -325,10 +487,11 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       ),
   })
   return textResult(
+    banner + tierNote + "\n" +
     head +
       `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` +
       "\n" +
-      `${findings.length} findings recorded` +
+      `${findings.length} leads recorded` +
       capNote +
       (lines.length ? "\n" + lines.join("\n") : "") +
       countLine +

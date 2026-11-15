@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "gate": "lua-symbol-integrity",
+  "corpus": "luvit",
+  "filesChecked": 199,
+  "parseErrorFiles": 0,
+  "symbolsTotal": 3733,
+  "relsTotal": 7049,
+  "contains": {
+    "total": 3055,
+    "resolved": 3055
+  },
+  "invariants": [
+    "every symbol has a non-empty name",
+    "every owner is global or another symbol in the same file",
+    "every contains edge names a symbol in the same file",
+    "no symbol name contains '.' or ':'",
+    "no symbol is a member of itself"
+  ],
+  "violationsByShape": {},
+  "disclosures": {
+    "ownerFromParameter": 7,
+    "selfOwned": 1
+  },
+  "disclosureSample": {
+    "ownerFromParameter": "deps/codec.lua :: pause claims owner \"emitter\", which is not declared in this file",
+    "containsSourceFromParameter": "deps/codec.lua :: contains emitter -> pause where emitter is not declared in this file",
+    "selfOwned": "examples/app/libs/stack.lua :: stack is owned by itself (a method sharing its container's name)"
+  },
+  "containsUnresolvedSource": 7,
+  "symbolsWithNoOwner": 2271,
+  "examples": {},
+  "violationSample": [],
+  "passed": true
+}

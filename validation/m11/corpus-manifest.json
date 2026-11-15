@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M11",
   "purpose": "real_repository_analyzer_correctness",
-  "externalCloneRoot": "$HOME/fixtures/repositories",
+  "externalCloneRoot": "/home/ishaq2321/bb_tests/repositories",
   "evidenceRoot": "validation/m11",
   "externalDirectoryPolicy": "cloned_repositories_only",
   "evidencePolicy": "manifests_expected_facts_fixtures_measurements_results_audits_and_harnesses_are_versioned_here",
@@ -15,7 +15,7 @@
   "repositories": [
     {
       "id": "typescript",
-      "path": "$HOME/TypeScript",
+      "path": "/home/ishaq2321/TypeScript",
       "remote": "https://github.com/microsoft/TypeScript",
       "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
       "trackedFiles": 81368,
@@ -30,7 +30,7 @@
     },
     {
       "id": "vscode",
-      "path": "$HOME/vscode",
+      "path": "/home/ishaq2321/vscode",
       "remote": "https://github.com/ishaq2321/vscode.git",
       "revision": "46ed260be73b148447ea524cda10e61bebd6f3c7",
       "trackedFiles": 15542,
@@ -48,7 +48,7 @@
     },
     {
       "id": "flutter",
-      "path": "$HOME/flutter",
+      "path": "/home/ishaq2321/flutter",
       "remote": "https://github.com/ishaq2321/flutter.git",
       "revision": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
       "trackedFiles": 16106,
@@ -68,7 +68,7 @@
     },
     {
       "id": "proxicall",
-      "path": "$HOME/ProxiCall",
+      "path": "/home/ishaq2321/ProxiCall",
       "remote": "https://github.com/ishaq2321/ProxiCall.git",
       "revision": "383e603ee678aeaeb1edbc72d51b29108633bfc1",
       "trackedFiles": 4246,
@@ -100,7 +100,7 @@
     },
     {
       "id": "roslyn",
-      "path": "$HOME/roslyn",
+      "path": "/home/ishaq2321/roslyn",
       "remote": "https://github.com/dotnet/roslyn",
       "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
       "trackedFiles": 32089,
@@ -118,7 +118,7 @@
     },
     {
       "id": "intellij_community",
-      "path": "$HOME/intellij-community",
+      "path": "/home/ishaq2321/intellij-community",
       "remote": "https://github.com/JetBrains/intellij-community",
       "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
       "trackedFiles": 273600,
@@ -138,7 +138,7 @@
     },
     {
       "id": "elixir",
-      "path": "$HOME/fixtures/repositories/elixir",
+      "path": "/home/ishaq2321/bb_tests/repositories/elixir",
       "remote": "https://github.com/elixir-lang/elixir.git",
       "revision": "024beb1bfcca0a24e859b2586059dd803a086615",
       "trackedFiles": 780,
@@ -153,7 +153,7 @@
     },
     {
       "id": "clojure",
-      "path": "$HOME/fixtures/repositories/clojure",
+      "path": "/home/ishaq2321/bb_tests/repositories/clojure",
       "remote": "https://github.com/clojure/clojure.git",
       "revision": "2cea69253b9ed27436e93632b9a27c2f99088a49",
       "trackedFiles": 352,
@@ -168,7 +168,7 @@
     },
     {
       "id": "go_tools",
-      "path": "$HOME/fixtures/repositories/go-tools",
+      "path": "/home/ishaq2321/bb_tests/repositories/go-tools",
       "remote": "https://github.com/golang/tools.git",
       "revision": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
       "trackedFiles": 2841,
@@ -182,7 +182,7 @@
     },
     {
       "id": "cargo",
-      "path": "$HOME/fixtures/repositories/cargo",
+      "path": "/home/ishaq2321/bb_tests/repositories/cargo",
       "remote": "https://github.com/rust-lang/cargo.git",
       "revision": "94faf9175f010e171466841c77e38b47d9503ac8",
       "trackedFiles": 3071,
@@ -196,7 +196,7 @@
     },
     {
       "id": "rake",
-      "path": "$HOME/fixtures/repositories/rake",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake",
       "remote": "https://github.com/ruby/rake.git",
       "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
       "trackedFiles": 127,
@@ -210,7 +210,7 @@
     },
     {
       "id": "cabal",
-      "path": "$HOME/fixtures/repositories/cabal",
+      "path": "/home/ishaq2321/bb_tests/repositories/cabal",
       "remote": "https://github.com/haskell/cabal.git",
       "revision": "670955a4fb518bea5edab97e7bc33ecc694e3499",
       "trackedFiles": 5265,
@@ -224,7 +224,7 @@
     },
     {
       "id": "swift_nio",
-      "path": "$HOME/fixtures/repositories/swift-nio",
+      "path": "/home/ishaq2321/bb_tests/repositories/swift-nio",
       "remote": "https://github.com/apple/swift-nio.git",
       "revision": "ec51fff05fe1f0a55efa78fdbc6a0f380c3e841a",
       "trackedFiles": 766,
@@ -239,7 +239,7 @@
     },
     {
       "id": "rebar3",
-      "path": "$HOME/fixtures/repositories/rebar3",
+      "path": "/home/ishaq2321/bb_tests/repositories/rebar3",
       "remote": "https://github.com/erlang/rebar3.git",
       "revision": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
       "trackedFiles": 456,
@@ -253,7 +253,7 @@
     },
     {
       "id": "fsharp",
-      "path": "$HOME/fixtures/repositories/fsharp",
+      "path": "/home/ishaq2321/bb_tests/repositories/fsharp",
       "remote": "https://github.com/dotnet/fsharp.git",
       "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
       "trackedFiles": 10652,
@@ -268,7 +268,7 @@
     },
     {
       "id": "scala3",
-      "path": "$HOME/fixtures/repositories/scala3",
+      "path": "/home/ishaq2321/bb_tests/repositories/scala3",
       "remote": "https://github.com/scala/scala3.git",
       "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
       "trackedFiles": 25945,
@@ -283,7 +283,7 @@
     },
     {
       "id": "terraform",
-      "path": "$HOME/fixtures/repositories/terraform",
+      "path": "/home/ishaq2321/bb_tests/repositories/terraform",
       "remote": "https://github.com/hashicorp/terraform.git",
       "revision": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
       "trackedFiles": 5445,
@@ -298,7 +298,7 @@
     },
     {
       "id": "zig",
-      "path": "$HOME/fixtures/repositories/zig",
+      "path": "/home/ishaq2321/bb_tests/repositories/zig",
       "remote": "https://github.com/ziglang/zig.git",
       "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
       "trackedFiles": 20545,
@@ -314,7 +314,7 @@
     },
     {
       "id": "phpunit",
-      "path": "$HOME/fixtures/repositories/phpunit",
+      "path": "/home/ishaq2321/bb_tests/repositories/phpunit",
       "remote": "https://github.com/sebastianbergmann/phpunit.git",
       "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
       "trackedFiles": 5198,
@@ -329,7 +329,7 @@
     },
     {
       "id": "mojo",
-      "path": "$HOME/fixtures/repositories/mojo",
+      "path": "/home/ishaq2321/bb_tests/repositories/mojo",
       "remote": "https://github.com/mojolicious/mojo.git",
       "revision": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
       "trackedFiles": 407,
@@ -344,7 +344,7 @@
     },
     {
       "id": "dplyr",
-      "path": "$HOME/fixtures/repositories/dplyr",
+      "path": "/home/ishaq2321/bb_tests/repositories/dplyr",
       "remote": "https://github.com/tidyverse/dplyr.git",
       "revision": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
       "trackedFiles": 469,
@@ -359,7 +359,7 @@
     },
     {
       "id": "luarocks",
-      "path": "$HOME/fixtures/repositories/luarocks",
+      "path": "/home/ishaq2321/bb_tests/repositories/luarocks",
       "remote": "https://github.com/luarocks/luarocks.git",
       "revision": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
       "trackedFiles": 509,
@@ -373,7 +373,7 @@
     },
     {
       "id": "powershell",
-      "path": "$HOME/fixtures/repositories/powershell",
+      "path": "/home/ishaq2321/bb_tests/repositories/powershell",
       "remote": "https://github.com/PowerShell/PowerShell.git",
       "revision": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
       "trackedFiles": 4539,
@@ -389,7 +389,7 @@
     },
     {
       "id": "grails_core",
-      "path": "$HOME/fixtures/repositories/grails-core",
+      "path": "/home/ishaq2321/bb_tests/repositories/grails-core",
       "remote": "https://github.com/grails/grails-core.git",
       "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
       "trackedFiles": 14026,
@@ -403,7 +403,7 @@
     },
     {
       "id": "graphql_js",
-      "path": "$HOME/fixtures/repositories/graphql-js",
+      "path": "/home/ishaq2321/bb_tests/repositories/graphql-js",
       "remote": "https://github.com/graphql/graphql-js.git",
       "revision": "9c245018484668b7c35f3ed219092a98855bd51e",
       "trackedFiles": 644,
@@ -420,7 +420,7 @@
     },
     {
       "id": "vue_core",
-      "path": "$HOME/fixtures/repositories/vue-core",
+      "path": "/home/ishaq2321/bb_tests/repositories/vue-core",
       "remote": "https://github.com/vuejs/core.git",
       "revision": "f8975657d7451d8e4291406427e6a8ae5e50c8d5",
       "trackedFiles": 705,
@@ -437,7 +437,7 @@
     },
     {
       "id": "svelte",
-      "path": "$HOME/fixtures/repositories/svelte",
+      "path": "/home/ishaq2321/bb_tests/repositories/svelte",
       "remote": "https://github.com/sveltejs/svelte.git",
       "revision": "26786e92985842a6d563c67049a43bc5857bf792",
       "trackedFiles": 8981,
@@ -455,7 +455,7 @@
     },
     {
       "id": "cython",
-      "path": "$HOME/fixtures/repositories/cython",
+      "path": "/home/ishaq2321/bb_tests/repositories/cython",
       "remote": "https://github.com/cython/cython.git",
       "revision": "51a460b7d704eb11b6f47abe7983c816d0b77129",
       "trackedFiles": 2734,
@@ -471,7 +471,7 @@
     },
     {
       "id": "clyde",
-      "path": "$HOME/fixtures/repositories/Clyde",
+      "path": "/home/ishaq2321/bb_tests/repositories/Clyde",
       "remote": "https://github.com/dvanarkel/Clyde.git",
       "revision": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
       "trackedFiles": 135,
@@ -486,7 +486,7 @@
     },
     {
       "id": "tree_sitter_clean",
-      "path": "$HOME/fixtures/repositories/tree-sitter-clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/tree-sitter-clean",
       "remote": "https://github.com/ishaq2321/tree-sitter-clean.git",
       "revision": "2b0fe499d4002ba6fb3b8beeb20feccf44f6b976",
       "trackedFiles": 43,
@@ -501,7 +501,7 @@
     },
     {
       "id": "julia",
-      "path": "$HOME/fixtures/repositories/julia",
+      "path": "/home/ishaq2321/bb_tests/repositories/julia",
       "remote": "https://github.com/JuliaLang/julia",
       "revision": "63912639992190c6f56ad13286f292186513ab19",
       "trackedFiles": 941,
@@ -541,22 +541,22 @@
     {
       "language": "clean",
       "purpose": "substantial application corpus",
-      "destination": "$HOME/fixtures/repositories"
+      "destination": "/home/ishaq2321/bb_tests/repositories"
     },
     {
       "language": "graphql",
       "purpose": "application/schema corpus",
-      "destination": "$HOME/fixtures/repositories"
+      "destination": "/home/ishaq2321/bb_tests/repositories"
     },
     {
       "language": "xml",
       "purpose": "standalone XML/configuration corpus",
-      "destination": "$HOME/fixtures/repositories"
+      "destination": "/home/ishaq2321/bb_tests/repositories"
     },
     {
       "language": "sql",
       "purpose": "standalone schema/query corpus",
-      "destination": "$HOME/fixtures/repositories"
+      "destination": "/home/ishaq2321/bb_tests/repositories"
     }
   ],
   "coverageAliases": {

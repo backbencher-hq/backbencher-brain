@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M21",
+  "generatedAt": "2026-08-28T00:00:00.000Z",
+  "policy": {
+    "activeCheckoutsAreReadOnly": true,
+    "dirtyRepositoriesAreEvidenceEligible": false,
+    "missingRepositoriesAreEvidenceEligible": false,
+    "revisionIdentity": "git HEAD plus tracked-file count",
+    "selection": "representative clean small/medium/large repositories plus explicit dirty and missing negatives"
+  },
+  "repositories": [
+    {
+      "id": "rake",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake",
+      "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+      "trackedFiles": 127,
+      "dirtyEntries": 0,
+      "sizeClass": "small",
+      "state": "clean"
+    },
+    {
+      "id": "rebar3",
+      "path": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "revision": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
+      "trackedFiles": 456,
+      "dirtyEntries": 0,
+      "sizeClass": "small",
+      "state": "clean"
+    },
+    {
+      "id": "element-plus",
+      "path": "/home/ishaq2321/bb_tests/repositories/element-plus",
+      "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+      "trackedFiles": 2704,
+      "dirtyEntries": 0,
+      "sizeClass": "medium",
+      "state": "clean"
+    },
+    {
+      "id": "svelte",
+      "path": "/home/ishaq2321/bb_tests/repositories/svelte",
+      "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+      "trackedFiles": 8981,
+      "dirtyEntries": 0,
+      "sizeClass": "medium",
+      "state": "clean"
+    },
+    {
+      "id": "scala3",
+      "path": "/home/ishaq2321/bb_tests/repositories/scala3",
+      "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+      "trackedFiles": 25945,
+      "dirtyEntries": 0,
+      "sizeClass": "large",
+      "state": "clean"
+    },
+    {
+      "id": "zig",
+      "path": "/home/ishaq2321/bb_tests/repositories/zig",
+      "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "trackedFiles": 20545,
+      "dirtyEntries": 0,
+      "sizeClass": "large",
+      "state": "clean"
+    },
+    {
+      "id": "typescript",
+      "path": "/home/ishaq2321/TypeScript",
+      "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+      "trackedFiles": 81368,
+      "dirtyEntries": 0,
+      "sizeClass": "large",
+      "state": "clean"
+    },
+    {
+      "id": "intellij-community",
+      "path": "/home/ishaq2321/intellij-community",
+      "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+      "trackedFiles": 273600,
+      "dirtyEntries": 24,
+      "sizeClass": "giant",
+      "state": "dirty",
+      "evidenceEligible": false
+    },
+    {
+      "id": "aspnetcore",
+      "path": "/home/ishaq2321/aspnetcore",
+      "revision": "ab2bf32a9eb59e8aae2b907d499d70da263f5251",
+      "trackedFiles": 16901,
+      "dirtyEntries": 2,
+      "sizeClass": "large",
+      "state": "dirty",
+      "evidenceEligible": false
+    },
+    {
+      "id": "openclaw",
+      "path": "/home/ishaq2321/openclaw",
+      "revision": "4924b10dcee35b9235319681a491d5e9028aacaf",
+      "trackedFiles": 19639,
+      "dirtyEntries": 2,
+      "sizeClass": "large",
+      "state": "dirty",
+      "evidenceEligible": false
+    },
+    {
+      "id": "paperclip",
+      "path": "/home/ishaq2321/paperclip",
+      "revision": "bfaa4b4bdc36370b4063137edbfe4049a128ab41",
+      "trackedFiles": 993,
+      "dirtyEntries": 1,
+      "sizeClass": "medium",
+      "state": "dirty",
+      "evidenceEligible": false
+    },
+    {
+      "id": "missing-example",
+      "path": "/home/ishaq2321/missing-m21-repository",
+      "revision": null,
+      "trackedFiles": null,
+      "dirtyEntries": null,
+      "sizeClass": "unknown",
+      "state": "missing",
+      "evidenceEligible": false
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.392Z",
+    "contentSha256": "1f86946dcffbaac05a893f5c1b8a1dedaf5bce8d6983ca2039bc3ca9457256c9"
+  }
+}

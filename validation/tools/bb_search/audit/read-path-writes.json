@@ -1,0 +1,77 @@
+{
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/bbdata/projects/82a42b87206708afbb4230b4d2d784b2ff204c00/brain.db",
+  "rows": [
+    {
+      "step": "baseline (after first index)",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "searchSymbols (symbols mode)",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "searchContent (content mode)",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "searchRegex (regex option)",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "ASTEngine.findSymbol (symbol mode)",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "handler file mode",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "handler symbols mode",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    },
+    {
+      "step": "handler symbols + language filter (shared describeUnknownFilters)",
+      "state": {
+        "db": "fb43ebecfdab75d3",
+        "wal": "c393fa921f048a4a",
+        "shm": "e7c510d1758de2ae"
+      },
+      "changed": false
+    }
+  ]
+}

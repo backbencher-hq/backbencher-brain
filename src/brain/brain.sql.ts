@@ -231,6 +231,51 @@ export const BrainTaintFlowTable = sqliteTable(
   ],
 )
 
+// ================================================================
+// M72 — SPEC-DRIVEN SECURITY LEADS (`brain_security_flow`)
+// ================================================================
+//
+// The store bb_security reads. One row per engine lead (see
+// src/intelligence/security/rebuild/store.ts for the writer/reader contract and
+// src/brain/schema-ddl.ts for the authoritative DDL + `ensureSecurityFlowTable`).
+// `brain_taint_flow` above is the archived legacy store that the default
+// pipeline no longer writes.
+//
+// The drizzle mirror exists because the query builder and the schema verifier
+// read it — it is not the table creator (schema-ddl is). Keep the two in sync:
+// a column added here without the DDL (or the reverse) is the seam class the
+// schema verifier was written to catch.
+export const BrainSecurityFlowTable = sqliteTable(
+  "brain_security_flow",
+  {
+    id: text().primaryKey(), // sec:<projectId>:<fileId>:<ruleId>:<byteStart>:<byteEnd> — no line numbers
+    project_id: text()
+      .$type<ProjectID>()
+      .notNull()
+      .references(() => ProjectTable.id, { onDelete: "cascade" }),
+    file_id: text().references(() => BrainFileTable.id, { onDelete: "cascade" }),
+    source_symbol_id: text().references(() => BrainSymbolTable.id, { onDelete: "cascade" }),
+    sink_symbol_id: text().references(() => BrainSymbolTable.id, { onDelete: "cascade" }),
+    vulnerability_type: text().notNull(), // spec-types SecurityVulnerability
+    severity: text().notNull(), // rule-defined: critical | high | medium | low
+    state: text().notNull().default("lead"), // "lead" | "candidate" | "mitigated"
+    tier: text().notNull(), // "scan" | "leads" (unsupported languages are never persisted)
+    rule_id: text().notNull(), // the single spec rule this row is evidence for
+    source_line: integer(), // absolute file line (symbol-relative line + declaration line - 1)
+    sink_line: integer(),
+    evidence: text({ mode: "json" }), // SecurityLeadEvidence + store join context
+    ...Timestamps,
+  },
+  (table) => [
+    index("brain_security_project_idx").on(table.project_id),
+    index("brain_security_file_idx").on(table.file_id),
+    index("brain_security_source_idx").on(table.source_symbol_id),
+    index("brain_security_sink_idx").on(table.sink_symbol_id),
+    index("brain_security_rule_idx").on(table.project_id, table.rule_id),
+    index("brain_security_state_idx").on(table.project_id, table.state),
+  ],
+)
+
 
 
 // ============================================================================

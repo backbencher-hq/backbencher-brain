@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.62",
+  "code": "V8",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: the owner fold is performed, marked, and declared",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "fold: a selected class draws the calls its members make",
+      "pass": true,
+      "detail": "folded=2 links=2"
+    },
+    {
+      "name": "fold: the folded edge is attributed to the class, not to the member",
+      "pass": true,
+      "detail": "Service:class->helper:function,caller:function->Service:class"
+    },
+    {
+      "name": "fold: every folded edge names the member it came through",
+      "pass": true,
+      "detail": "[[\"other:method\",\"run:method\"],[\"run:method\"]]"
+    },
+    {
+      "name": "fold: and the member name is the one that stores the row",
+      "pass": true,
+      "detail": "[\"other:method\",\"run:method\",\"run:method\"]"
+    },
+    {
+      "name": "fold: the symbol at the other end is added so the edge has two ends",
+      "pass": true,
+      "detail": "Service,caller,helper"
+    },
+    {
+      "name": "fold: considered.ownerCascade says it ran",
+      "pass": true,
+      "detail": "{\"applied\":true,\"owners\":1,\"membersScanned\":2,\"rowsFolded\":5,\"nodesAdded\":2,\"nodesDropped\":0,\"nodesFiltered\":0,\"foldedRowsWithoutDrawableCou"
+    },
+    {
+      "name": "fold: it reports the owners and members it scanned",
+      "pass": true,
+      "detail": "owners=1 membersScanned=2"
+    },
+    {
+      "name": "fold: it reports the rows it folded",
+      "pass": true,
+      "detail": "5"
+    },
+    {
+      "name": "fold: and that it was not capped",
+      "pass": true,
+      "detail": "false"
+    },
+    {
+      "name": "fold: the selection sentence admits the fold rather than presenting it as stored edges",
+      "pass": true,
+      "detail": "tionship table, including 5 row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)"
+    },
+    {
+      "name": "fold: the text reply declares the fold",
+      "pass": true,
+      "detail": "graph: 3 nodes, 2 links | scope: symbol (Service) | view: graph — the force-directed dependency map — nodes are symbols,"
+    },
+    {
+      "name": "fold: text and JSON report the same count",
+      "pass": true,
+      "detail": "text=5 json=5"
+    },
+    {
+      "name": "fold: the text reply does not hide the fold behind a silent edge set [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "owner cascade: 5 relationship(s) stored on members of selected classes are attributed to the class (marked ownerCascade, 2 connected symbol("
+    },
+    {
+      "name": "exact: the member's own stored edge is drawn when the member is in the set",
+      "pass": true,
+      "detail": "Service:class->run:method,Service:class->other:method,caller:function->run:method,caller:function->Service:class,caller:function->Service:class,other:method->helper:function,other:method->helper:function,run:method->helper:function,run:method->helper:function"
+    },
+    {
+      "name": "exact: and it is NOT marked as folded [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"source\":\"9af276a39b8d9798f3ef65485665e297ecdbe3d4:src/core/service.ts:run:2\",\"target\":\"9af276a39b8d9798f3ef65485665e297ecdbe3d4:src/core/s"
+    },
+    {
+      "name": "exact: no edge claims a fold without naming the member [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[]"
+    },
+    {
+      "name": "exact: the fold never rewrites a containment edge [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[]"
+    },
+    {
+      "name": "declared: project scope reports that the fold ran",
+      "pass": true,
+      "detail": "{\"applied\":true,\"owners\":1,\"membersScanned\":0,\"rowsFolded\":0,\"nodesAdded\":0,\"nodesDropped\":0,\"nodesFiltered\":0,\"foldedRo"
+    },
+    {
+      "name": "declared: with nothing to fold it reports zero rows",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "declared: a non-class-like target reports the fold as not applied",
+      "pass": true,
+      "detail": "{\"applied\":false,\"owners\":0,\"membersScanned\":0,\"rowsFolded\":0,\"nodesAdded\":0,\"nodesDropped\":0,\"nodesFiltered\":0,\"foldedR"
+    },
+    {
+      "name": "declared: so `applied` is not just a restatement of `rowsFolded` [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[false,true]"
+    },
+    {
+      "name": "declared: it is reported even when the fold found nothing",
+      "pass": true,
+      "detail": "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked owner"
+    },
+    {
+      "name": "claim: the bb_graph cascade sentence is gone from the description [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_graph's depth-N traversal: the edge set is the relationships between the selected nodes, plus the folded member rows."
+    },
+    {
+      "name": "claim: and from the generated docs page [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "claim: the description names the mark a folded edge carries",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "claim: and the counter a caller can audit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "claim: and states the fold is not bb_graph's traversal",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "claim: the engine implements the mark the description promises",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "claim: the description's narrow rule is statement-shaped, not a general claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "ned, how many rows it folded and whether a cap truncated it, so \"nothing to fold\" and \"the fold never ran\" are distinguishable. This is NOT "
+    }
+  ],
+  "negativeCases": 8,
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0
+  },
+  "decisions": {
+    "fixture": "one class with two methods that each call the same helper, plus a free function that calls one of the methods — so a fold and an exact edge are both present and must not be confused",
+    "marking": "a folded edge names the member it came through (matchedMembers) and an exact edge carries no mark",
+    "contrast": "project scope reports applied=true with rowsFolded=0, which is the measurement that makes 'found nothing' different from 'never ran'",
+    "text": "the JSON counters and the text reply must state the same number, so a caller who never asked for JSON is not told a different story"
+  },
+  "limitations": [
+    "One fixture shape (a TypeScript class with method members); the fold's cap (`capped`) is not driven to its limit here.",
+    "The fold is asserted through the handler, which is the door a caller uses; the engine's own helper is not called directly."
+  ],
+  "generatedAt": "2026-11-05T04:20:14.387Z"
+}

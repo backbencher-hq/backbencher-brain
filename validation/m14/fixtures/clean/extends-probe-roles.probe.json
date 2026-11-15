@@ -1,0 +1,251 @@
+{
+  "comment": "The `extends` RULING PROBE's slot roles, pinned per declaration. `script/m14/clean-ruled.ts` rules `extends` on instrument B — a parse-tree POSITION census — and this file is what stops the census's whitelist from being a list nobody exercised. A whitelist fitted to the answer and a whitelist derived from the grammar look identical until something is asserted about each entry, so every ROLE the census assigns is asserted here on one file, with the file parsing at 0 ERROR nodes and 0 MISSING tokens (asserted below), so each row is a statement about the grammar's shape rather than about error recovery. Checked by `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts`, which imports the census from the ruling table so the expectation and the arbiter's probe cannot drift. The six roles and the slots that took two iterations to reach: name (class_name, instance_class, constructor, identifier, and the 14 operator-token types), member (class_member, instance_member), parameter (type_variable, type_function, type_paren, type_application, list_type, tuple_type, array_type, dotted_type, fixity_annotation, generic_kind_type, uniqueness_star, question_type, unit_type), context (class_context), body (code_expression), comment (line_comment, block_comment), parse-error (ERROR, reported apart and never as a construct).",
+  "grammar": {
+    "errorNodes": 0,
+    "missingTokens": 0,
+    "comment": "The `:== code { … }` foreign-code instance is the only spelling that carries the `body` role, and it needs no `foreign export` to parse — an earlier revision of this fixture added one and produced 7 ERROR nodes."
+  },
+  "totals": {
+    "declarations": 18,
+    "unclassified": 0,
+    "comment": "18 = 5 class_declaration + 9 instance_declaration + 1 derive_declaration + 3 class_context."
+  },
+  "slotsByRole": {
+    "name": 25,
+    "parameter": 17,
+    "member": 13,
+    "comment": 7,
+    "context": 3,
+    "body": 1
+  },
+  "childInventory": {
+    "class_context > constructor": 2,
+    "class_context > operator_compare": 1,
+    "class_context > type_variable": 3,
+    "class_declaration > class_context": 2,
+    "class_declaration > class_member": 5,
+    "class_declaration > class_name": 5,
+    "class_declaration > dotted_type": 1,
+    "class_declaration > fixity_annotation": 1,
+    "class_declaration > line_comment": 3,
+    "class_declaration > type_function": 1,
+    "class_declaration > type_variable": 6,
+    "derive_declaration > constructor": 2,
+    "instance_declaration > class_context": 1,
+    "instance_declaration > code_expression": 1,
+    "instance_declaration > constructor": 6,
+    "instance_declaration > dotted_type": 1,
+    "instance_declaration > instance_class": 9,
+    "instance_declaration > instance_member": 8,
+    "instance_declaration > line_comment": 4,
+    "instance_declaration > question_type": 1,
+    "instance_declaration > type_function": 1,
+    "instance_declaration > type_variable": 1,
+    "instance_declaration > unit_type": 1,
+    "_comment_pairs": "Each key is `<declaration node type> > <direct named child>`. A pair absent from this list is a pair the grammar does not produce in this file, and a child type absent from CLEAN_DECLARATION_SLOTS would land in `unclassified` instead — which the `totals.unclassified: 0` row above already forbids."
+  },
+  "declarations": [
+    {
+      "line": 47,
+      "nodeType": "class_declaration",
+      "roles": [
+        "name:class_name",
+        "parameter:fixity_annotation",
+        "parameter:type_variable",
+        "parameter:type_function"
+      ],
+      "text": "class (==) infix 4\ta\t:: !a\t!a\t->\tBool",
+      "note": "An operator IS a class name in Clean, and a DECLARATION spells it parenthesised — clean-stdlib/StdOverloaded.icl:23. The name slot is `(==)` here; the INSTANCE below spells the same class bare, which is the mismatch `isLocallyDeclaredOperatorClass` exists for."
+    },
+    {
+      "line": 55,
+      "nodeType": "class_declaration",
+      "roles": [
+        "name:class_name",
+        "parameter:type_variable",
+        "member:class_member",
+        "comment:line_comment"
+      ],
+      "text": "class (>>=) a where",
+      "note": "The `where` form, which is the shape that makes the class MEMBER set readable and therefore the shape `overrides` needs. The corpus spells its operator-named classes on one line, which gives the member set nothing to read — so without this row the bare-spelling lookup would be unexercised by any fixture."
+    },
+    {
+      "line": 59,
+      "nodeType": "class_declaration",
+      "roles": [
+        "name:class_name",
+        "parameter:dotted_type",
+        "parameter:type_variable",
+        "member:class_member",
+        "member:class_member",
+        "comment:line_comment"
+      ],
+      "text": "class Box .a e",
+      "note": "`dotted_type` here is the KIND annotation on a type parameter, not a supertype. All 11 `class_declaration > dotted_type` sites in the corpus are this."
+    },
+    {
+      "line": 65,
+      "nodeType": "class_context",
+      "roles": [
+        "name:constructor",
+        "parameter:type_variable"
+      ],
+      "text": "class Ord2 a | Eq a where"
+    },
+    {
+      "line": 65,
+      "nodeType": "class_declaration",
+      "roles": [
+        "name:class_name",
+        "parameter:type_variable",
+        "context:class_context",
+        "member:class_member",
+        "comment:line_comment"
+      ],
+      "text": "class Ord2 a | Eq a where",
+      "note": "The context slot. `Ord2` is not a kind of `Eq`; the clause is a DICTIONARY REQUIREMENT, which is the whole reason `extends` is ruled rather than emitted."
+    },
+    {
+      "line": 69,
+      "nodeType": "class_context",
+      "roles": [
+        "name:constructor",
+        "parameter:type_variable"
+      ],
+      "text": "class Slot u a | Eq a where"
+    },
+    {
+      "line": 69,
+      "nodeType": "class_declaration",
+      "roles": [
+        "name:class_name",
+        "parameter:type_variable",
+        "parameter:type_variable",
+        "context:class_context",
+        "member:class_member"
+      ],
+      "text": "class Slot u a | Eq a where"
+    },
+    {
+      "line": 75,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "name:constructor",
+        "member:instance_member"
+      ],
+      "text": "instance == Thing where",
+      "note": "`className` is `==`, the BARE spelling, read from the instance. The declaration above published `(==)`. This row is the mismatch."
+    },
+    {
+      "line": 78,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "name:constructor",
+        "member:instance_member"
+      ],
+      "text": "instance Ord2 Thing where"
+    },
+    {
+      "line": 81,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "name:constructor",
+        "member:instance_member"
+      ],
+      "text": "instance Eq Thing where"
+    },
+    {
+      "line": 84,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "name:constructor",
+        "member:instance_member",
+        "comment:line_comment"
+      ],
+      "text": "instance Show Thing where"
+    },
+    {
+      "line": 88,
+      "nodeType": "derive_declaration",
+      "roles": [
+        "name:constructor",
+        "name:constructor"
+      ],
+      "text": "derive Eq Thing",
+      "note": "A `derive_declaration` names its class with a bare `constructor` and has no members, no context and no parameters."
+    },
+    {
+      "line": 91,
+      "nodeType": "class_context",
+      "roles": [
+        "name:operator_compare",
+        "parameter:type_variable"
+      ],
+      "text": "instance Box .a e | == e where"
+    },
+    {
+      "line": 91,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "parameter:dotted_type",
+        "parameter:type_variable",
+        "context:class_context",
+        "member:instance_member",
+        "comment:line_comment"
+      ],
+      "text": "instance Box .a e | == e where",
+      "note": "The operator-named CONSTRAINT. `class_context > operator_compare` is 160 corpus sites and is the constraint's NAME, the same role `constructor` plays 1,496 times for `| Eq a`. Reading it as a supertype is the false positive this slot table exists to prevent."
+    },
+    {
+      "line": 95,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "parameter:question_type",
+        "member:instance_member"
+      ],
+      "text": "instance Ord2 ? a where",
+      "note": "`question_type` — Clean's `? a`. One of the two type-expression slots the census was taught on its second iteration (9 corpus sites)."
+    },
+    {
+      "line": 98,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "parameter:unit_type",
+        "member:instance_member",
+        "comment:line_comment",
+        "comment:line_comment"
+      ],
+      "text": "instance Ord2 () where",
+      "note": "`unit_type` — the other second-iteration slot (6 corpus sites)."
+    },
+    {
+      "line": 103,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "name:constructor",
+        "parameter:type_function",
+        "body:code_expression"
+      ],
+      "text": "instance Ord2 Thing :: !Thing -> Bool :== code { no_op }",
+      "note": "The FOREIGN-CODE instance form, and the only spelling in the corpus that carries the `body` role — 135 sites in the 2,181-file census."
+    },
+    {
+      "line": 105,
+      "nodeType": "instance_declaration",
+      "roles": [
+        "name:instance_class",
+        "name:constructor",
+        "member:instance_member"
+      ],
+      "text": "instance >>= Thing where"
+    }
+  ]
+}

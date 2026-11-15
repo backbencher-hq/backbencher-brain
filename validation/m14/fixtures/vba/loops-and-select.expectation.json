@@ -1,0 +1,17 @@
+{
+  "fixtureId": "vba/loops-and-select",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "Iterate", "kind": "method" },
+    { "name": "item", "kind": "variable", "ownerName": "Iterate" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "Iterate", "target": "i", "meta.construct": "for_binder" },
+    { "type": "uses", "from": "Iterate", "target": "limit", "meta.construct": "for_end" },
+    { "type": "uses", "from": "Iterate", "target": "item", "meta.construct": "foreach_binder" },
+    { "type": "uses", "from": "Iterate", "target": "rest", "meta.construct": "foreach_collection" },
+    { "type": "uses", "from": "Iterate", "target": "item", "meta.construct": "select_value" },
+    { "type": "calls", "from": "Iterate", "target": "Consume" }
+  ]
+}

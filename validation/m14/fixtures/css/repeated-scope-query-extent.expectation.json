@@ -1,0 +1,121 @@
+{
+  "fixtureId": "css/repeated-scope-query-extent",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M14 ONTOLOGY PASS 2, the second of two defects. An at-rule SCOPE written more than once in one file: `@media` and `@layer` publish ONE symbol per name at the FIRST block, and the identity merge at the end of `analyze` never folds a second copy because the deduplication happens BEFORE the publish. So every rule of a later block kept a `contains` edge pointing at a symbol recorded somewhere the rule is not. Measured over the whole admitted corpus before the fix (validation/m14/census/css-boundary-probe.ts, probe P2): 7,257 of 25,181 `isMediaScope` edges (28.8%) and 40 of 505 `isLayerScope` edges (7.9%) carried a contained rule outside the source symbol's line range — e.g. bootstrap-grid.css pointing `.col-sm` at L284 through a symbol recorded at L22-L26. WHY THE EXTENT IS PINNED AND NOT ONLY THE EDGES: both containment edges existed before the fix and pass either way, because the edges were never wrong — only their endpoint's location was. A fixture asserting edges alone would have been green against the defect, which is the shape of a fixture that constrains nothing. `startLine`/`endLine` are therefore part of each symbol assertion, so a regression that collapses the extent to the first block fails on the extent and not only on some downstream count. WHY WIDENING RATHER THAN PUBLISHING TWICE: two symbols with one name is the identity collision the dedup exists to prevent, and the name is the only identity a consumer has here anyway — pool-worker.ts forwards a narrow allowlist of CSS metadata keys and `isMediaScope` is not on it, so 2,804 of 3,084 at-rule scope symbols arrive from `parseFile` with no metadata at all. The third symbol is the counter-case that keeps the rule honest: `@layer extra` is declared ONLY in the ordering statement `@layer base, extra;`, so it has no block and correctly keeps that statement's one-line extent L37-L37 rather than being widened to something it does not contain.",
+  "expectSymbols": [
+    {
+      "name": "@media (min-width: 40em)",
+      "kind": "module",
+      "startLine": 39,
+      "endLine": 49
+    },
+    {
+      "name": "@layer base",
+      "kind": "module",
+      "startLine": 51,
+      "endLine": 61
+    },
+    {
+      "name": "@layer extra",
+      "kind": "module",
+      "startLine": 37,
+      "endLine": 37
+    },
+    {
+      "name": ".first-block",
+      "kind": "class"
+    },
+    {
+      "name": ".second-block",
+      "kind": "class"
+    },
+    {
+      "name": ".layer-first",
+      "kind": "class"
+    },
+    {
+      "name": ".layer-second",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "@media (min-width: 40em)",
+      "equals": 1,
+      "kind": "module"
+    },
+    {
+      "name": "@layer base",
+      "equals": 1,
+      "kind": "module"
+    },
+    {
+      "name": "@layer extra",
+      "equals": 1,
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "@media (min-width: 40em)",
+      "target": "fixtures/css/repeated-scope-query-extent::.first-block",
+      "line_number": 40,
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "source": "@media (min-width: 40em)",
+      "target": "fixtures/css/repeated-scope-query-extent::.second-block",
+      "line_number": 46,
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "source": "@layer base",
+      "target": "fixtures/css/repeated-scope-query-extent::.layer-first",
+      "line_number": 52,
+      "meta.evidenceClass": "structural",
+      "meta.isLayerScope": true
+    },
+    {
+      "type": "contains",
+      "source": "@layer base",
+      "target": "fixtures/css/repeated-scope-query-extent::.layer-second",
+      "line_number": 58,
+      "meta.evidenceClass": "structural",
+      "meta.isLayerScope": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "@layer extra",
+      "target": "fixtures/css/repeated-scope-query-extent::.layer-first"
+    },
+    {
+      "type": "contains",
+      "source": "@layer extra",
+      "target": "fixtures/css/repeated-scope-query-extent::.layer-second"
+    },
+    {
+      "type": "contains",
+      "source": "@layer base",
+      "target": "fixtures/css/repeated-scope-query-extent::.first-block"
+    },
+    {
+      "type": "contains",
+      "source": "@media (min-width: 40em)",
+      "target": "fixtures/css/repeated-scope-query-extent::.layer-first"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

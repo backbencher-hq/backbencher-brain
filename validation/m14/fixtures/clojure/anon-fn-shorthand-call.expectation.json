@@ -1,0 +1,22 @@
+{
+  "issue": "F5-CERT",
+  "note": "Two rulings, one node. CLJ-D45: 55 residual edges were calls written in the anonymous-fn shorthand - core.clj is written in it - and `#(f ...)` parses as an `anon_fn_lit` whose children are the body DIRECTLY, with no list_lit and no `fn` head, so a walk that fires on lists never visited it; the analyzer names the shorthand `lambda_<row>_<col>` from the node's own position, so the `fn` owner rule applies to it too. CLJ-D46: the shorthand also has to ROUTE INTEROP HEADS the way the list path does. Written plainly `(.getName o)` is a member access and emits `uses: getName`; written as `#(.getName %)` it pushed `calls: lambda -> .getName`, a call edge to a name starting with a dot that is not a var, not an export, and not resolvable - 19 fabricated edges. It was invisible to the differential because the truth ALSO files these under `uses`, so the two agreed on the ontology and disagreed only on whether the shorthand had been analysed at all. Fixing it moved the `uses` gate from 2650 to 2685 edges at 100.00% and removed 19 fabricated `calls`. `#(% 1)` is the mirror of the head test: it APPLIES its argument and calls nothing, with identical node shape. Pins the call, the member access, the static member plus its class, and both negatives.",
+  "expectSymbols": [
+    { "name": "twice", "kind": "function" },
+    { "name": "applied", "kind": "function" },
+    { "name": "applied-arg", "kind": "function" },
+    { "name": "named", "kind": "function" },
+    { "name": "trimmed", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "lambda_15_24", "target": "twice", "line_number": 16 },
+    { "type": "uses", "from": "lambda_30_22", "target": "getName", "line_number": 31 },
+    { "type": "uses", "from": "lambda_34_24", "target": "trim", "line_number": 35 },
+    { "type": "uses", "from": "lambda_34_24", "target": "String", "line_number": 35 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "%" },
+    { "type": "calls", "target": ".getName" },
+    { "type": "calls", "target": ".trim" }
+  ]
+}

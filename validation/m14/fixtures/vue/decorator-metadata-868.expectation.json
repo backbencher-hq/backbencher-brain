@@ -1,0 +1,112 @@
+{
+  "fixtureId": "vue/decorator-metadata-868",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Fixture written first from the #868 contract (the SFC seam shifts line_number AND the metadata line mirrors); the numbers were then read off the post-fix run and agree with the file's own text — `@sealed` 24 / `class Service` 25, `@inject(\"db\")` 26 / `pool = 1` 27, `@sealed` 29 / `method() {}` 30, with the script block offset 14 recorded on every delegated row.",
+  "rationale": "M49 (#868), vue half of the SFC SEAM contract. A decorated class in a script block is analyzed by the JS delegate, so its rows are SCRIPT-relative and the container must shift them to file lines. `line_number` was shifted (the #825 round); the metadata LINE MIRRORS were not, so on this exact shape `references Service -> sealed` claimed line_number=24 while its own metadata said decoratorLine=10 — the payload contradicting itself, with `sfcLineOffset: 14` recorded on the very row that disagreed, i.e. an edge that is auditable and still wrong. The fix shifts numeric line mirrors (and line lists, e.g. a symbol's `decoratorLines`) by the same offset. The template ABOVE the script is what makes this reachable: with the script on line 1 the offset is 0 and a missing shift is invisible, which is why every earlier vue fixture missed it — and why this one is written with a comment header that keeps the offset non-zero. The symbol rows pin the list mirror too: `Service` carries decorators=[\"sealed\"] with decoratorLines=[24], the line `@sealed` is written on.",
+  "expectSymbols": [
+    {
+      "name": "Service",
+      "kind": "class",
+      "meta.decoratorLines": [
+        24
+      ]
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Service",
+      "meta.decoratorLines": [
+        26
+      ]
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Service",
+      "meta.decoratorLines": [
+        29
+      ]
+    }
+  ],
+  "expectDecorators": [
+    {
+      "symbol": "Service",
+      "contains": "sealed"
+    },
+    {
+      "symbol": "pool",
+      "contains": "inject"
+    },
+    {
+      "symbol": "method",
+      "contains": "sealed"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 24,
+      "meta.decoratorLine": 24,
+      "meta.sfcDelegated": true,
+      "meta.sfcLineOffset": 14,
+      "comment": "re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 26,
+      "meta.decoratorLine": 26,
+      "comment": "re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 29,
+      "meta.decoratorLine": 29,
+      "comment": "re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 10,
+      "comment": "pre-fix: the SCRIPT-relative line, i.e. the line above the file's whole script block"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "meta.decoratorLine": 10,
+      "comment": "pre-fix: line_number shifted but the metadata mirror left script-relative — the state this fixture was written for — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "meta.decoratorLine": 12,
+      "comment": "pre-fix: the unshifted mirror for the field's decorator — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "meta.decoratorLine": 15,
+      "comment": "pre-fix: the unshifted mirror for the method's decorator — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    }
+  ],
+  "unsatisfiableAssertionRemoved": {
+    "row": "{ \"type\": \"references\", \"from\": \"Service\", \"target\": \"sealed\", \"meta.decoratorLine\": null }",
+    "intent": "never invent a line: a decorator whose line was not recorded must stay null, not become a number (#823)",
+    "whyItCannotBeStated": "run-fixtures.ts matchConstraints cannot express it. Its generic `v === null` branch (the line_number:null convention, run-fixtures.ts:344) is evaluated BEFORE the `meta.` branch and it `continue`s, so the `meta.x: null` semantics added for exactly this purpose (run-fixtures.ts:371-377, 'M59 fixed this hole for line_number; it is the SAME hole one level down') are UNREACHABLE for a null value: a `meta.x: null` constraint matches on the other keys alone. Unit-measured rather than inferred - matchConstraints({type:references,from:Service,target:sealed,metadata:{decoratorLine:24}}, {type:references,from:Service,target:sealed,meta.decoratorLine:null}) returns TRUE, and meta.noSuchKey:null also returns TRUE, while line_number:null on the same row correctly returns FALSE.",
+    "consequence": "As a forbidRelationships row the degraded constraint forbids the EDGE, which this fixture own expectRelationships requires, so the row held the vue lane red at HEAD (52 pass / 1 fail) while asserting nothing about decoratorLine. It was the only failing vue fixture.",
+    "coverageNotLost": "the mutant this fixture exists for (vue/decorator-metadata-line-mirror-stale, mutate-analyzer.ts:6145) re-verts the shift and is still caught, by the three meta.decoratorLine script-relative forbid rows above - re-measured after this row was removed.",
+    "owner": "script/m14/run-fixtures.ts - MASTER lane. A one-line reorder (evaluate the meta. branch before the generic null branch, or make the generic null branch skip keys beginning with meta.) restores the documented semantics and makes this row live again by removing DISABLED. NOT changed here: run-fixtures.ts is shared harness."
+  }
+}

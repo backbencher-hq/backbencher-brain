@@ -11,7 +11,7 @@
 //   lists `calls` as silent. Both halves of that are properties of the
 //   INSTRUMENT, measured here:
 //
-//   D1  firing-check-v2 hardcodes REPO = $HOME/backbencher-brain, so
+//   D1  firing-check-v2 hardcodes REPO = /home/ishaq2321/backbencher-brain, so
 //       it reads the MAIN checkout. A lane worktree is invisible to it. This
 //       file takes the repo root as an argument instead.
 //
@@ -97,7 +97,7 @@ const FIRST_FLAG = RAW_ARGS.findIndex((a) => a.startsWith("--"))
 const POSITIONAL = FIRST_FLAG === -1 ? RAW_ARGS : RAW_ARGS.slice(0, FIRST_FLAG)
 const WANT = POSITIONAL.filter((a) => !a.startsWith("-") && !a.includes("/"))
 const REPO = process.env.BB_REPO || process.cwd()
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 // HEAP DEFECT — measured on this very census, and it nearly produced six false
 // RULED verdicts. A first version ran every corpus in ONE worker process and
 // recorded a parseFile throw as `failed`. web-tree-sitter allocates Parser and

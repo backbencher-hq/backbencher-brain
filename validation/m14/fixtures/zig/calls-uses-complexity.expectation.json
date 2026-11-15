@@ -1,0 +1,333 @@
+{
+  "fixtureId": "zig/calls-uses-complexity",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the zig systems-wave surface (2026-08-29): (1) calls to callee LEAFs (compute->perimeter, main->compute), (2) uses on field access (perimeter->sides), (3) contains for container ownership, (4) references via declared_type (Shape) AND via import (@import(\"std\") with meta.isImport, family c-standard), (5) per-symbol complexity (compute=3: if+else), (6) parameters payload (s:*Shape), (7) pub visibility, and (8) struct/enum/error-set/EnumMember symbol kinds. These fixtures make the grammar audit (F1), relationship-kind (section B), payload matrix (section C), and evidence-tiers (section D) gates possible for zig — the analyzer emitted NONE of calls/uses/references/complexity before this wave. ZGD-wave addendum (M37 #600): ZGD1 forbids uses on assignment LHS (set/bump); ZGD2 pins bare-ident (Widget) + qualified (Writer) return-type declared-type refs; ZGD3 forbids test/comptime locals as symbols; ZGD4 pins the usingnamespace-wrapped import and forbids calls->usingnamespace; ZGD5b forbids uses from qualified type annotations. Z44 (wave 9, the final review): the complexity OPERATORS (for/while/switch/and/or/orelse, and accumulation across two constructs) were counted by the implementation and pinned by NOTHING. All eight values were hand-computed from the documented rule and matched on the first run — the implementation was right and the fixture was thin. Pinned now, so a regression in any of them is caught by F3 instead of discovered by a reader.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "struct",
+      "visibility": "private"
+    },
+    {
+      "name": "sides",
+      "kind": "property"
+    },
+    {
+      "name": "perimeter",
+      "kind": "method",
+      "visibility": "public"
+    },
+    {
+      "name": "Direction",
+      "kind": "enum"
+    },
+    {
+      "name": "North",
+      "kind": "enum_member"
+    },
+    {
+      "name": "AppError",
+      "kind": "enum"
+    },
+    {
+      "name": "Timeout",
+      "kind": "enum_member"
+    },
+    {
+      "name": "compute",
+      "kind": "function",
+      "visibility": "private"
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "visibility": "public"
+    },
+    {
+      "name": "global_counter",
+      "kind": "variable"
+    },
+    {
+      "name": "MyList",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Shape",
+      "target": "Shape.sides",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Shape",
+      "target": "Shape.perimeter",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Direction",
+      "target": "Direction.North",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "AppError",
+      "target": "AppError.Timeout",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "source": "perimeter",
+      "target": "sides",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.relationshipType": "zig_field_access"
+    },
+    {
+      "type": "calls",
+      "source": "compute",
+      "target": "perimeter",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.relationshipType": "zig_function_call"
+    },
+    {
+      "type": "calls",
+      "source": "compute",
+      "target": "std.math.add",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.relationshipType": "zig_function_call",
+      "note": "Z66: the callee is `std.math.add`, a builtin reached through the name this file binds by @import, so the edge names the receiver instead of a bare `add` that a local `add` would also satisfy. meta.zigExternalRef/meta.zigImportAlias/meta.zigImportModule are pinned by zig/alias-receiver; the forbid row there pins the leaf."
+    },
+    {
+      "type": "calls",
+      "source": "main",
+      "target": "compute",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.relationshipType": "zig_function_call"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Shape",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "MyList",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "(global)",
+      "target": "std",
+      "meta.isImport": true,
+      "meta.evidenceClass": "import_based",
+      "meta.relationshipType": "zig_import"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Widget",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Writer",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "source": "(global)",
+      "target": "std.zig",
+      "meta.isImport": true,
+      "meta.evidenceClass": "import_based",
+      "meta.relationshipType": "zig_import"
+    },
+    {
+      "type": "references",
+      "source": "(global)",
+      "target": "io.zig",
+      "meta.isImport": true,
+      "meta.evidenceClass": "import_based",
+      "meta.relationshipType": "zig_import"
+    },
+    {
+      "type": "uses",
+      "source": "bump",
+      "target": "n",
+      "comment": "Z15 (2026-09-28): `self.n += 1;` READS self.n before writing it — a compound assignment is a read-modify-write, and `while (i < n) : (i += 1)` is Zig's own idiom for it. The write gate tested the NODE and not the OPERATOR, so it suppressed the read of every compound assignment (280 compound field/index/deref assignments in the pinned corpora). The pre-fix state, which this row replaces, is now the FORBID above: `set -> n` is the only one of the pair that is a fabrication."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "source": "Shape"
+    },
+    {
+      "type": "extends",
+      "source": "Shape"
+    },
+    {
+      "type": "implements",
+      "source": "Shape"
+    },
+    {
+      "type": "calls",
+      "source": "Shape",
+      "target": "Shape"
+    },
+    {
+      "type": "references",
+      "target": "North"
+    },
+    {
+      "type": "references",
+      "target": "South"
+    },
+    {
+      "type": "references",
+      "target": "Timeout"
+    },
+    {
+      "type": "uses",
+      "source": "set",
+      "target": "n"
+    },
+    {
+      "type": "uses",
+      "source": "qualifiedReturn",
+      "target": "Writer"
+    },
+    {
+      "type": "calls",
+      "target": "usingnamespace"
+    },
+    {
+      "type": "references",
+      "target": "io"
+    },
+    {
+      "type": "uses",
+      "source": "set",
+      "target": "n",
+      "comment": "ZGD1: `self.n = 5;` is a plain write — a write is not a read"
+    },
+    {
+      "type": "calls",
+      "source": "compute",
+      "target": "add",
+      "note": "pre-Z66 spelling. `std.math.add(u32, 1, 2)` is a builtin call, not a call of a local `add`; a regression to the leaf would satisfy nothing else in this fixture that names this edge."
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "compute",
+      "equals": 3
+    },
+    {
+      "symbol": "perimeter",
+      "equals": 1
+    },
+    {
+      "symbol": "pick",
+      "equals": 3
+    },
+    {
+      "symbol": "main",
+      "equals": 1
+    },
+    {
+      "symbol": "cyBase",
+      "equals": 1,
+      "note": "Z44: the documented base, pinned so a counter that started at 0 would be caught"
+    },
+    {
+      "symbol": "cyFor",
+      "equals": 2,
+      "note": "Z44: for_statement"
+    },
+    {
+      "symbol": "cyWhile",
+      "equals": 2,
+      "note": "Z44: while_statement"
+    },
+    {
+      "symbol": "cySwitch",
+      "equals": 2,
+      "note": "Z44: switch_expression — the expression form, which is the one the notes say the statement-only version missed"
+    },
+    {
+      "symbol": "cyAnd",
+      "equals": 2,
+      "note": "Z44: the `and` OPERATOR TOKEN. The earlier substring check counted `standard`/`order`; this pins the token, not the letters"
+    },
+    {
+      "symbol": "cyOr",
+      "equals": 2,
+      "note": "Z44: the `or` operator token, same trap"
+    },
+    {
+      "symbol": "cyOrelse",
+      "equals": 2,
+      "note": "Z44: `a orelse b` is a binary_expression with an `orelse` token, NOT an orelse_expression node — a fact the notes record as probe-verified and this now pins"
+    },
+    {
+      "symbol": "cyNested",
+      "equals": 3,
+      "note": "Z44: two constructs in one body, so the counter must ACCUMULATE rather than stop at the first"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "compute",
+      "parameters": [
+        {
+          "name": "s",
+          "type": "*Shape"
+        }
+      ]
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "main",
+      "visibility": "public"
+    },
+    {
+      "symbol": "compute",
+      "visibility": "private"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "std",
+      "meta.zigImport": true
+    },
+    {
+      "module": "std.zig",
+      "meta.zigImport": true,
+      "meta.usingnamespace": true
+    },
+    {
+      "module": "io.zig",
+      "meta.zigImport": true,
+      "meta.usingnamespace": true
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "local_only"
+    },
+    {
+      "name": "compile_time_local"
+    }
+  ]
+}

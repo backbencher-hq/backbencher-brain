@@ -1,0 +1,109 @@
+{
+ "fixtureId": "python/inline-type-parameter-is-not-a-class",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-D16. A PEP-695 type parameter is the third binding a type-holding name can have in this lane, and it is the one that looks most resolvable and is not: `def first[U](items: list[U]) -> U` declares `U` in the def's OWN lexical scope, so the annotation references a name the file's module scope does not hold. It was 52 of the 389 UNEXPLAINED `references` targets, classified with CPython's `ast` (which is what makes PEP 695 the interpreter's `type_params` field rather than a guess from the bracket syntax). The tempting fix — publish `U` as a symbol — is a lie about scope twice over: python exposes the parameter nowhere outside the def, and two `def f[T]` in one file would publish two symbols of ONE name, which the store can only report as ambiguous and would then have to rank. The measured corpus shape is exactly that: ansible_test's `_internal/cache.py` declares `[TValue]` on BOTH `get` and `get_with_args`. So the parameter is DECLARED (`inline-type-parameter`) rather than resolved, and the BOUNDED form is here because the name must be read from the declaration without mistaking the bound for it: `def bounded[W: int](value: W) -> W` names `W`, and the `int` that follows the colon is a bound, not another parameter. The module-level TypeVar CONTROL is what makes the code mean anything — `T = typing.TypeVar(\"T\")` is a real symbol at module scope and its references must keep the position codes, so a fix that inferred 'type parameter' from a capital-letter name would fail here.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "first",
+   "target": "U",
+   "line_number": 19,
+   "meta.reasonCode": "inline-type-parameter",
+   "meta.relationshipType": "return_type",
+   "note": "POSITIVE: the return position of a PEP-695 parameter."
+  },
+  {
+   "type": "references",
+   "from": "first",
+   "target": "U",
+   "line_number": 19,
+   "meta.reasonCode": "inline-type-parameter",
+   "meta.relationshipType": "declared_type",
+   "note": "and the annotation position of the SAME parameter. Both are pinned because the code replaces the position, which is the only reason the two rows are not one: the dedupe key is (source, target, relationship kind), so the pair proves the narrowing happens per edge rather than per name."
+  },
+  {
+   "type": "references",
+   "from": "get",
+   "target": "V",
+   "line_number": 27,
+   "meta.reasonCode": "inline-type-parameter",
+   "note": "A CLASS-scoped parameter: `class Box[V]` declares `V`, and this method's annotations are two scopes inside it. The check walks the leaf's ANCESTORS, so it reaches the class clause without any scope bookkeeping."
+  },
+  {
+   "type": "references",
+   "from": "bounded",
+   "target": "W",
+   "line_number": 31,
+   "meta.reasonCode": "inline-type-parameter",
+   "note": "The BOUNDED form. `bounded[W: int]` writes the parameter as `W: int` in tree-sitter's `constrained_type`, so the name is the FIRST identifier of the declaration and `int` is the bound — a reader that took the clause's text, or its last identifier, would name the wrong thing. `int` is also absent as a target because the scalar filter excludes it, which is a property of the annotation walk and not of this change."
+  },
+  {
+   "type": "references",
+   "from": "identity",
+   "target": "T",
+   "line_number": 14,
+   "meta.reasonCode": "annotation-type",
+   "note": "CONTROL: a module-level `TypeVar` is a real declaration and its reference KEEPS the position code. This row and the `first`/`U` pair differ only in where the name is bound, which is the distinction the whole fixture is about."
+  },
+  {
+   "type": "references",
+   "from": "identity",
+   "target": "T",
+   "line_number": 14,
+   "meta.reasonCode": "return-annotation"
+  },
+  {
+   "type": "references",
+   "from": "first",
+   "target": "list",
+   "line_number": 19,
+   "meta.reasonCode": "annotation-type",
+   "note": "`items: list[U]` names the generic HEAD as well as the argument, and the head is a builtin rather than a project type. Pinned so that the row is visible as intended behaviour (the same receiver/head reading `qualified-endpoint-spellings` pins) instead of being mistaken for fallout of this change; the resolution verdict bins it `builtin`, which is a fact about the interpreter."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "identity",
+   "target": "T",
+   "meta.reasonCode": "inline-type-parameter",
+   "note": "the OVER-correction direction: a module-level TypeVar is not a PEP-695 parameter, and the two are spelled the same way in the annotation (`value: T`)"
+  },
+  {
+   "type": "references",
+   "from": "first",
+   "target": "U",
+   "meta.reasonCode": null,
+   "note": "and the UNDER-correction direction: once the position no longer describes the target, the edge must not be left with no reason at all"
+  },
+  {
+   "type": "references",
+   "from": "bounded",
+   "target": "int",
+   "note": "the BOUND must not become a reference: `[W: int]` declares `W` and constrains it by `int`, and publishing `bounded -> int` from the clause would be reading a constraint as a use"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "U",
+   "equals": 0,
+   "note": "THE CENTRAL ASSERTION: the type parameter is NOT published as a symbol. Publishing it would claim a file-scope declaration python does not have, and `cache.py`'s two `[TValue]` defs show what it costs — two symbols of one name, which the store must then call ambiguous."
+  },
+  {
+   "name": "V",
+   "equals": 0,
+   "note": "class-scoped, same rule"
+  },
+  {
+   "name": "W",
+   "equals": 0,
+   "note": "bounded, same rule"
+  },
+  {
+   "name": "T",
+   "equals": 1,
+   "note": "CONTROL: the module-level `TypeVar` IS a declaration (`T = typing.TypeVar(\"T\")` is an assignment at module scope), which is the difference that makes `U`'s absence a decision rather than an inability"
+  }
+ ]
+}

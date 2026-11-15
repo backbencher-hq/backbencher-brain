@@ -38,5 +38,5 @@
     "src/hash/marshal_test.go:48  -> Hash (result node type qualified_type)"
   ],
   "sampleSize": 200,
-  "corpusRoot": "$HOME/fixtures/repositories/go-stdlib"
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories/go-stdlib"
 }

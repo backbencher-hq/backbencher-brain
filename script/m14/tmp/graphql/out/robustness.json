@@ -1,0 +1,191 @@
+{
+  "productionPath": {
+    "files": 9,
+    "differing": 0
+  },
+  "fixtures": [
+    {
+      "file": "01-empty.graphql",
+      "bytes": 0,
+      "symbols": 0,
+      "relationships": 0,
+      "exports": 0
+    },
+    {
+      "file": "02-whitespace-only.graphql",
+      "bytes": 9,
+      "symbols": 0,
+      "relationships": 0,
+      "exports": 0
+    },
+    {
+      "file": "03-comment-only.graphql",
+      "bytes": 17,
+      "symbols": 0,
+      "relationships": 0,
+      "exports": 0
+    },
+    {
+      "file": "04-no-trailing-newline.graphql",
+      "bytes": 24,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "05-bom.graphql",
+      "bytes": 28,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "06-crlf.graphql",
+      "bytes": 30,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "07-comment-unicode.graphql",
+      "bytes": 34,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "08-unicode-before-name.graphql",
+      "bytes": 40,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "09-invalid-utf8-comment.graphql",
+      "bytes": 30,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "10-many-fields-one-line.graphql",
+      "bytes": 54901,
+      "symbols": 4001,
+      "relationships": 8001,
+      "exports": 1
+    },
+    {
+      "file": "11-trailing-blank-lines.graphql",
+      "bytes": 27,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    },
+    {
+      "file": "12-tabs.graphql",
+      "bytes": 28,
+      "symbols": 2,
+      "relationships": 3,
+      "exports": 1
+    }
+  ],
+  "depths": [
+    "nested list   [[…[Int]]]",
+    "nested object {k:{k:…}}",
+    "implements    A & B & C…",
+    "union         A | B | C…",
+    "on locations  A | B | C…"
+  ],
+  "scale": [
+    {
+      "types": 50,
+      "lines": 255,
+      "symbols": 210,
+      "ms": 20.8,
+      "per1kSym": 99
+    },
+    {
+      "types": 100,
+      "lines": 505,
+      "symbols": 410,
+      "ms": 46.6,
+      "per1kSym": 113.7
+    },
+    {
+      "types": 200,
+      "lines": 1005,
+      "symbols": 810,
+      "ms": 80.6,
+      "per1kSym": 99.5
+    },
+    {
+      "types": 400,
+      "lines": 2005,
+      "symbols": 1610,
+      "ms": 160.6,
+      "per1kSym": 99.8
+    },
+    {
+      "types": 800,
+      "lines": 4005,
+      "symbols": 3210,
+      "ms": 425.2,
+      "per1kSym": 132.5
+    },
+    {
+      "types": 1600,
+      "lines": 8005,
+      "symbols": 6410,
+      "ms": 952.8,
+      "per1kSym": 148.6
+    }
+  ],
+  "countedScaling": [
+    {
+      "types": 50,
+      "symbols": 210,
+      "calls": 11481,
+      "perSymbol": 54.67
+    },
+    {
+      "types": 100,
+      "symbols": 410,
+      "calls": 22581,
+      "perSymbol": 55.08
+    },
+    {
+      "types": 200,
+      "symbols": 810,
+      "calls": 44781,
+      "perSymbol": 55.29
+    },
+    {
+      "types": 400,
+      "symbols": 1610,
+      "calls": 89181,
+      "perSymbol": 55.39
+    },
+    {
+      "types": 800,
+      "symbols": 3210,
+      "calls": 177981,
+      "perSymbol": 55.45
+    },
+    {
+      "types": 1600,
+      "symbols": 6410,
+      "calls": 355581,
+      "perSymbol": 55.47
+    }
+  ],
+  "idempotence": {
+    "orders": [
+      "forward",
+      "again",
+      "reversed",
+      "reversed again"
+    ],
+    "repeatDiffs": 0
+  },
+  "problems": []
+}

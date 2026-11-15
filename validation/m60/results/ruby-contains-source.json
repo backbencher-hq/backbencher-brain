@@ -1,0 +1,966 @@
+{
+  "at": "2026-09-29T07:00:01.727Z",
+  "corpusTotal": 8528,
+  "filesRead": 1200,
+  "declaredNames": 8838,
+  "unresolvedContainsSources": 113,
+  "classes": {
+    "bare Constant (ClassName) — a class the parser did not declare": {
+      "n": 47,
+      "files": 47,
+      "parents": [
+        "ActivityPub",
+        "Api",
+        "Auth",
+        "EmailSubscriptions",
+        "OAuth",
+        "Redirect",
+        "AnnualReport",
+        "Importer",
+        "NodeInfo",
+        "RSS",
+        "SEO",
+        "Vacuum",
+        "Webhooks",
+        "Form",
+        "TermsOfService",
+        "Trends",
+        "REST",
+        "Scheduler",
+        "DATS"
+      ]
+    },
+    "qualified constant (Klass#member / Klass::CONST)": {
+      "n": 66,
+      "files": 63,
+      "parents": [
+        "Admin::Disputes",
+        "Admin::FollowRecommendations",
+        "Admin::Settings",
+        "Admin::TermsOfService",
+        "Admin::Trends",
+        "Api::V1::Accounts",
+        "Api::V1::Admin",
+        "Api::V1::Apps",
+        "Api::V1",
+        "Api::V1::Instances",
+        "Api::V1::Polls",
+        "Api::V1::Statuses",
+        "Api::V1::Timelines",
+        "Api::V1::Trends",
+        "Api::V2",
+        "Api::Web",
+        "ActivityPub::Activity",
+        "ActivityPub::Parser",
+        "Admin::Metrics::Dimension",
+        "Admin::Metrics::Measure"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "file": "mastodon/app/controllers/activitypub/inboxes_controller.rb",
+      "source": "ActivityPub",
+      "target": "InboxesController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::InboxesController < ActivityPub::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/disputes/strikes_controller.rb",
+      "source": "Admin::Disputes",
+      "target": "StrikesController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Disputes::StrikesController < Disputes::StrikesController"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/follow_recommendations/suppressions_controller.rb",
+      "source": "Admin::FollowRecommendations",
+      "target": "SuppressionsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::FollowRecommendations::SuppressionsController < Admin::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/settings/about_controller.rb",
+      "source": "Admin::Settings",
+      "target": "AboutController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Settings::AboutController < Admin::SettingsController"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/terms_of_service/previews_controller.rb",
+      "source": "Admin::TermsOfService",
+      "target": "PreviewsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::TermsOfService::PreviewsController < Admin::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/admin/trends/tags_controller.rb",
+      "source": "Admin::Trends",
+      "target": "TagsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Trends::TagsController < Admin::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/base_controller.rb",
+      "source": "Api",
+      "target": "BaseController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Api::BaseController < ApplicationController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/oembed_controller.rb",
+      "source": "Api",
+      "target": "OEmbedController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Api::OEmbedController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/accounts/follower_accounts_controller.rb",
+      "source": "Api::V1::Accounts",
+      "target": "FollowerAccountsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Accounts::FollowerAccountsController < Api::V1::Accounts::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/accounts/search_controller.rb",
+      "source": "Api::V1::Accounts",
+      "target": "SearchController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Accounts::SearchController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/admin/domain_allows_controller.rb",
+      "source": "Api::V1::Admin",
+      "target": "DomainAllowsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Admin::DomainAllowsController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/admin/tags_controller.rb",
+      "source": "Api::V1::Admin",
+      "target": "TagsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Admin::TagsController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/apps/credentials_controller.rb",
+      "source": "Api::V1::Apps",
+      "target": "CredentialsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Apps::CredentialsController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/custom_emojis_controller.rb",
+      "source": "Api::V1",
+      "target": "CustomEmojisController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::CustomEmojisController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/favourites_controller.rb",
+      "source": "Api::V1",
+      "target": "FavouritesController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::FavouritesController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/instances/activity_controller.rb",
+      "source": "Api::V1::Instances",
+      "target": "ActivityController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Instances::ActivityController < Api::V1::Instances::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/instances/rules_controller.rb",
+      "source": "Api::V1::Instances",
+      "target": "RulesController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Instances::RulesController < Api::V1::Instances::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/markers_controller.rb",
+      "source": "Api::V1",
+      "target": "MarkersController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::MarkersController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/polls/votes_controller.rb",
+      "source": "Api::V1::Polls",
+      "target": "VotesController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Polls::VotesController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/reports_controller.rb",
+      "source": "Api::V1",
+      "target": "ReportsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::ReportsController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/statuses/histories_controller.rb",
+      "source": "Api::V1::Statuses",
+      "target": "HistoriesController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Statuses::HistoriesController < Api::V1::Statuses::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/statuses/sources_controller.rb",
+      "source": "Api::V1::Statuses",
+      "target": "SourcesController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Statuses::SourcesController < Api::V1::Statuses::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/timelines/link_controller.rb",
+      "source": "Api::V1::Timelines",
+      "target": "LinkController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Timelines::LinkController < Api::V1::Timelines::TopicController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v1/trends/tags_controller.rb",
+      "source": "Api::V1::Trends",
+      "target": "TagsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V1::Trends::TagsController < Api::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/v2/media_controller.rb",
+      "source": "Api::V2",
+      "target": "MediaController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::V2::MediaController < Api::V1::MediaController"
+    },
+    {
+      "file": "mastodon/app/controllers/api/web/embeds_controller.rb",
+      "source": "Api::Web",
+      "target": "EmbedsController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Api::Web::EmbedsController < Api::Web::BaseController"
+    },
+    {
+      "file": "mastodon/app/controllers/auth/omniauth_callbacks_controller.rb",
+      "source": "Auth",
+      "target": "OmniauthCallbacksController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Auth::OmniauthCallbacksController < Devise::OmniauthCallbacksController"
+    },
+    {
+      "file": "mastodon/app/controllers/concerns/api/rate_limit_headers.rb",
+      "source": "Api",
+      "target": "RateLimitHeaders",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "module Api::RateLimitHeaders"
+    },
+    {
+      "file": "mastodon/app/controllers/email_subscriptions/confirmations_controller.rb",
+      "source": "EmailSubscriptions",
+      "target": "ConfirmationsController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class EmailSubscriptions::ConfirmationsController < ApplicationController"
+    },
+    {
+      "file": "mastodon/app/controllers/oauth/authorizations_controller.rb",
+      "source": "OAuth",
+      "target": "AuthorizationsController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class OAuth::AuthorizationsController < Doorkeeper::AuthorizationsController"
+    },
+    {
+      "file": "mastodon/app/controllers/redirect/collections_controller.rb",
+      "source": "Redirect",
+      "target": "CollectionsController",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Redirect::CollectionsController < Redirect::BaseController"
+    },
+    {
+      "file": "mastodon/app/helpers/admin/trends/statuses_helper.rb",
+      "source": "Admin::Trends",
+      "target": "StatusesHelper",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "module Admin::Trends::StatusesHelper"
+    },
+    {
+      "file": "mastodon/app/lib/activitypub/activity/create.rb",
+      "source": "ActivityPub::Activity",
+      "target": "Create",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActivityPub::Activity::Create < ActivityPub::Activity"
+    },
+    {
+      "file": "mastodon/app/lib/activitypub/activity/reject.rb",
+      "source": "ActivityPub::Activity",
+      "target": "Reject",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActivityPub::Activity::Reject < ActivityPub::Activity"
+    },
+    {
+      "file": "mastodon/app/lib/activitypub/forwarder.rb",
+      "source": "ActivityPub",
+      "target": "Forwarder",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::Forwarder"
+    },
+    {
+      "file": "mastodon/app/lib/activitypub/parser/poll_parser.rb",
+      "source": "ActivityPub::Parser",
+      "target": "PollParser",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActivityPub::Parser::PollParser"
+    },
+    {
+      "file": "mastodon/app/lib/admin/metrics/dimension/base_dimension.rb",
+      "source": "Admin::Metrics::Dimension",
+      "target": "BaseDimension",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Metrics::Dimension::BaseDimension"
+    },
+    {
+      "file": "mastodon/app/lib/admin/metrics/dimension/sources_dimension.rb",
+      "source": "Admin::Metrics::Dimension",
+      "target": "SourcesDimension",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Metrics::Dimension::SourcesDimension < Admin::Metrics::Dimension::BaseDimension"
+    },
+    {
+      "file": "mastodon/app/lib/admin/metrics/measure/base_measure.rb",
+      "source": "Admin::Metrics::Measure",
+      "target": "BaseMeasure",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Metrics::Measure::BaseMeasure"
+    },
+    {
+      "file": "mastodon/app/lib/admin/metrics/measure/interactions_measure.rb",
+      "source": "Admin::Metrics::Measure",
+      "target": "InteractionsMeasure",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Metrics::Measure::InteractionsMeasure < Admin::Metrics::Measure::BaseMeasure"
+    },
+    {
+      "file": "mastodon/app/lib/admin/metrics/measure/tag_uses_measure.rb",
+      "source": "Admin::Metrics::Measure",
+      "target": "TagUsesMeasure",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::Metrics::Measure::TagUsesMeasure < Admin::Metrics::Measure::BaseMeasure"
+    },
+    {
+      "file": "mastodon/app/lib/admin/system_check/message.rb",
+      "source": "Admin::SystemCheck",
+      "target": "Message",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Admin::SystemCheck::Message"
+    },
+    {
+      "file": "mastodon/app/lib/annual_report/top_hashtags.rb",
+      "source": "AnnualReport",
+      "target": "TopHashtags",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class AnnualReport::TopHashtags < AnnualReport::Source"
+    },
+    {
+      "file": "mastodon/app/lib/importer/statuses_index_importer.rb",
+      "source": "Importer",
+      "target": "StatusesIndexImporter",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Importer::StatusesIndexImporter < Importer::BaseImporter"
+    },
+    {
+      "file": "mastodon/app/lib/node_info/adapter.rb",
+      "source": "NodeInfo",
+      "target": "Adapter",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class NodeInfo::Adapter < ActiveModelSerializers::Adapter::Attributes"
+    },
+    {
+      "file": "mastodon/app/lib/rss/item.rb",
+      "source": "RSS",
+      "target": "Item",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class RSS::Item < RSS::Element"
+    },
+    {
+      "file": "mastodon/app/lib/seo/case_transform.rb",
+      "source": "SEO",
+      "target": "CaseTransform",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "module SEO::CaseTransform"
+    },
+    {
+      "file": "mastodon/app/lib/vacuum/preview_cards_vacuum.rb",
+      "source": "Vacuum",
+      "target": "PreviewCardsVacuum",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Vacuum::PreviewCardsVacuum"
+    },
+    {
+      "file": "mastodon/app/lib/webhooks/payload_renderer.rb",
+      "source": "Webhooks",
+      "target": "PayloadRenderer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Webhooks::PayloadRenderer"
+    },
+    {
+      "file": "mastodon/app/models/concerns/fasp/provider/debug_concern.rb",
+      "source": "Fasp::Provider",
+      "target": "DebugConcern",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "module Fasp::Provider::DebugConcern"
+    },
+    {
+      "file": "mastodon/app/models/form/delete_confirmation.rb",
+      "source": "Form",
+      "target": "DeleteConfirmation",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Form::DeleteConfirmation"
+    },
+    {
+      "file": "mastodon/app/models/form/status_filter_batch_action.rb",
+      "source": "Form",
+      "target": "StatusFilterBatchAction",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Form::StatusFilterBatchAction"
+    },
+    {
+      "file": "mastodon/app/models/terms_of_service/generator.rb",
+      "source": "TermsOfService",
+      "target": "Generator",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class TermsOfService::Generator"
+    },
+    {
+      "file": "mastodon/app/models/trends/preview_card_batch.rb",
+      "source": "Trends",
+      "target": "PreviewCardBatch",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Trends::PreviewCardBatch"
+    },
+    {
+      "file": "mastodon/app/models/trends/statuses.rb",
+      "source": "Trends",
+      "target": "Statuses",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Trends::Statuses < Trends::Base"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/actor_serializer.rb",
+      "source": "ActivityPub",
+      "target": "ActorSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::ActorSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/actor_serializer.rb",
+      "source": "ActorSerializer::Account",
+      "target": "FieldSerializer",
+      "line": 235,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Account::FieldSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/collection_serializer.rb",
+      "source": "ActivityPub",
+      "target": "CollectionSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::CollectionSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/emoji_serializer.rb",
+      "source": "ActivityPub",
+      "target": "EmojiSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::EmojiSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/hashtag_serializer.rb",
+      "source": "ActivityPub",
+      "target": "HashtagSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::HashtagSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/quote_authorization_serializer.rb",
+      "source": "ActivityPub",
+      "target": "QuoteAuthorizationSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::QuoteAuthorizationSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/remove_hashtag_serializer.rb",
+      "source": "ActivityPub",
+      "target": "RemoveHashtagSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::RemoveHashtagSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/activitypub/update_featured_collection_serializer.rb",
+      "source": "ActivityPub",
+      "target": "UpdateFeaturedCollectionSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::UpdateFeaturedCollectionSerializer < ActivityPub::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/node_info/discovery_serializer.rb",
+      "source": "NodeInfo",
+      "target": "DiscoverySerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class NodeInfo::DiscoverySerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/account_warning_serializer.rb",
+      "source": "REST",
+      "target": "AccountWarningSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::AccountWarningSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/admin/existing_domain_block_error_serializer.rb",
+      "source": "REST::Admin",
+      "target": "ExistingDomainBlockErrorSerializer",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class REST::Admin::ExistingDomainBlockErrorSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/admin/trends/links/preview_card_provider_serializer.rb",
+      "source": "REST::Admin::Trends::Links",
+      "target": "PreviewCardProviderSerializer",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class REST::Admin::Trends::Links::PreviewCardProviderSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/appeal_serializer.rb",
+      "source": "REST",
+      "target": "AppealSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::AppealSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/conversation_serializer.rb",
+      "source": "REST",
+      "target": "ConversationSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::ConversationSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/extended_description_serializer.rb",
+      "source": "REST",
+      "target": "ExtendedDescriptionSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::ExtendedDescriptionSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/instance_serializer.rb",
+      "source": "REST",
+      "target": "InstanceSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::InstanceSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/notification_policy_serializer.rb",
+      "source": "REST",
+      "target": "NotificationPolicySerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::NotificationPolicySerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/privacy_policy_serializer.rb",
+      "source": "REST",
+      "target": "PrivacyPolicySerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::PrivacyPolicySerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/rule_serializer.rb",
+      "source": "REST",
+      "target": "RuleSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::RuleSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/status_source_serializer.rb",
+      "source": "REST",
+      "target": "StatusSourceSerializer",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class REST::StatusSourceSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/serializers/rest/v1/instance_serializer.rb",
+      "source": "REST::V1",
+      "target": "InstanceSerializer",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class REST::V1::InstanceSerializer < ActiveModel::Serializer"
+    },
+    {
+      "file": "mastodon/app/services/activitypub/fetch_remote_actor_service.rb",
+      "source": "ActivityPub",
+      "target": "FetchRemoteActorService",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::FetchRemoteActorService < BaseService"
+    },
+    {
+      "file": "mastodon/app/services/activitypub/process_account_service.rb",
+      "source": "ActivityPub",
+      "target": "ProcessAccountService",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::ProcessAccountService < BaseService"
+    },
+    {
+      "file": "mastodon/app/services/activitypub/verify_quote_service.rb",
+      "source": "ActivityPub",
+      "target": "VerifyQuoteService",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::VerifyQuoteService < BaseService"
+    },
+    {
+      "file": "mastodon/app/workers/activitypub/feature_request_worker.rb",
+      "source": "ActivityPub",
+      "target": "FeatureRequestWorker",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::FeatureRequestWorker < ActivityPub::RawDistributionWorker"
+    },
+    {
+      "file": "mastodon/app/workers/activitypub/post_upgrade_worker.rb",
+      "source": "ActivityPub",
+      "target": "PostUpgradeWorker",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::PostUpgradeWorker"
+    },
+    {
+      "file": "mastodon/app/workers/activitypub/status_update_distribution_worker.rb",
+      "source": "ActivityPub",
+      "target": "StatusUpdateDistributionWorker",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class ActivityPub::StatusUpdateDistributionWorker < ActivityPub::DistributionWorker"
+    },
+    {
+      "file": "mastodon/app/workers/scheduler/instance_refresh_scheduler.rb",
+      "source": "Scheduler",
+      "target": "InstanceRefreshScheduler",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Scheduler::InstanceRefreshScheduler"
+    },
+    {
+      "file": "mastodon/app/workers/scheduler/suspended_user_cleanup_scheduler.rb",
+      "source": "Scheduler",
+      "target": "SuspendedUserCleanupScheduler",
+      "line": 3,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class Scheduler::SuspendedUserCleanupScheduler"
+    },
+    {
+      "file": "mastodon/config/initializers/json_ld_cid.rb",
+      "source": "JSON::LD",
+      "target": "Context",
+      "line": 7,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class JSON::LD::Context"
+    },
+    {
+      "file": "rails/actioncable/test/connection/multiple_identifiers_test.rb",
+      "source": "ActionCable::Connection",
+      "target": "MultipleIdentifiersTest",
+      "line": 7,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActionCable::Connection::MultipleIdentifiersTest < ActionCable::TestCase"
+    },
+    {
+      "file": "rails/actionmailbox/app/controllers/rails/conductor/action_mailbox/inbound_emails/sources_controller.rb",
+      "source": "Rails::Conductor::ActionMailbox::InboundEmails",
+      "target": "SourcesController",
+      "line": 6,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Conductor::ActionMailbox::InboundEmails::SourcesController < Rails::Conductor::BaseController # :nodoc:"
+    },
+    {
+      "file": "rails/actionmailbox/test/unit/mailbox/bouncing_test.rb",
+      "source": "ActionMailbox::Base",
+      "target": "BouncingTest",
+      "line": 17,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActionMailbox::Base::BouncingTest < ActiveSupport::TestCase"
+    },
+    {
+      "file": "rails/actiontext/test/unit/editor_test.rb",
+      "source": "ActionText::Editor",
+      "target": "SubclassTest",
+      "line": 29,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActionText::Editor::SubclassTest < ActionView::TestCase"
+    },
+    {
+      "file": "rails/actionview/lib/action_view/template/handlers/html.rb",
+      "source": "ActionView::Template",
+      "target": "Handlers",
+      "line": 4,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "module Template::Handlers"
+    },
+    {
+      "file": "rails/activerecord/lib/active_record/associations/builder/has_one.rb",
+      "source": "ActiveRecord::Associations",
+      "target": "Builder",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "module ActiveRecord::Associations::Builder # :nodoc:"
+    },
+    {
+      "file": "rails/activerecord/test/cases/arel/nodes/delete_statement_test.rb",
+      "source": "Arel::Nodes",
+      "target": "DeleteStatementTest",
+      "line": 5,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Arel::Nodes::DeleteStatementTest < Arel::Test"
+    },
+    {
+      "file": "rails/activerecord/test/cases/encryption/config_test.rb",
+      "source": "ActiveRecord::Encryption",
+      "target": "ConfigTest",
+      "line": 5,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveRecord::Encryption::ConfigTest < ActiveRecord::EncryptionTestCase"
+    },
+    {
+      "file": "rails/activerecord/test/cases/encryption/encryptable_record_test.rb",
+      "source": "ActiveRecord::Encryption",
+      "target": "EncryptableRecordTest",
+      "line": 9,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveRecord::Encryption::EncryptableRecordTest < ActiveRecord::EncryptionTestCase"
+    },
+    {
+      "file": "rails/activerecord/test/cases/encryption/null_encryptor_test.rb",
+      "source": "ActiveRecord::Encryption",
+      "target": "NullEncryptorTest",
+      "line": 5,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveRecord::Encryption::NullEncryptorTest < ActiveRecord::EncryptionTestCase"
+    },
+    {
+      "file": "rails/activerecord/test/models/dats/car.rb",
+      "source": "DATS",
+      "target": "Car",
+      "line": 4,
+      "shape": "bare Constant (ClassName) — a class the parser did not declare",
+      "body": "class DATS::Car < ActiveRecord::Base"
+    },
+    {
+      "file": "rails/activestorage/app/controllers/active_storage/representations/base_controller.rb",
+      "source": "ActiveStorage::Representations",
+      "target": "BaseController",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Representations::BaseController < ActiveStorage::BaseController # :nodoc:"
+    },
+    {
+      "file": "rails/activestorage/app/models/active_storage/blob/servable.rb",
+      "source": "ActiveStorage::Blob",
+      "target": "Servable",
+      "line": 3,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "module ActiveStorage::Blob::Servable # :nodoc:"
+    },
+    {
+      "file": "rails/activestorage/lib/active_storage/analyzer/video_analyzer.rb",
+      "source": "ActiveStorage::Analyzer",
+      "target": "VideoAnalyzer",
+      "line": 26,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Analyzer::VideoAnalyzer < Analyzer"
+    },
+    {
+      "file": "rails/activestorage/lib/active_storage/attached/changes/delete_one.rb",
+      "source": "ActiveStorage::Attached::Changes",
+      "target": "DeleteOne",
+      "line": 4,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Attached::Changes::DeleteOne # :nodoc:"
+    },
+    {
+      "file": "rails/activestorage/lib/active_storage/attached/one.rb",
+      "source": "ActiveStorage::Attached",
+      "target": "One",
+      "line": 7,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Attached::One < Attached"
+    },
+    {
+      "file": "rails/activestorage/lib/active_storage/service/disk_service.rb",
+      "source": "ActiveStorage::Service",
+      "target": "DiskService",
+      "line": 11,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Service::DiskService < Service"
+    },
+    {
+      "file": "rails/activestorage/test/analyzer/image_analyzer/image_magick_test.rb",
+      "source": "ActiveStorage::Analyzer::ImageAnalyzer",
+      "target": "ImageMagickTest",
+      "line": 8,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Analyzer::ImageAnalyzer::ImageMagickTest < ActiveSupport::TestCase"
+    },
+    {
+      "file": "rails/activestorage/test/controllers/representations/proxy_controller_test.rb",
+      "source": "ActiveStorage::Representations",
+      "target": "ProxyControllerWithVariantsTest",
+      "line": 7,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Representations::ProxyControllerWithVariantsTest < ActionDispatch::IntegrationTest"
+    },
+    {
+      "file": "rails/activestorage/test/controllers/representations/proxy_controller_test.rb",
+      "source": "ActiveStorage::Representations",
+      "target": "ProxyControllerWithVariantsWithStrictLoadingTest",
+      "line": 79,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Representations::ProxyControllerWithVariantsWithStrictLoadingTest < ActionDispatch::Integ"
+    },
+    {
+      "file": "rails/activestorage/test/controllers/representations/proxy_controller_test.rb",
+      "source": "ActiveStorage::Representations",
+      "target": "ProxyControllerWithPreviewsTest",
+      "line": 133,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Representations::ProxyControllerWithPreviewsTest < ActionDispatch::IntegrationTest"
+    },
+    {
+      "file": "rails/activestorage/test/controllers/representations/proxy_controller_test.rb",
+      "source": "ActiveStorage::Representations",
+      "target": "ProxyControllerWithPreviewsWithStrictLoadingTest",
+      "line": 169,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Representations::ProxyControllerWithPreviewsWithStrictLoadingTest < ActionDispatch::Integ"
+    },
+    {
+      "file": "rails/activestorage/test/previewer/poppler_pdf_previewer_test.rb",
+      "source": "ActiveStorage::Previewer",
+      "target": "PopplerPDFPreviewerTest",
+      "line": 8,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Previewer::PopplerPDFPreviewerTest < ActiveSupport::TestCase"
+    },
+    {
+      "file": "rails/activestorage/test/service/mirror_service_test.rb",
+      "source": "ActiveStorage::Service",
+      "target": "MirrorServiceTest",
+      "line": 6,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class ActiveStorage::Service::MirrorServiceTest < ActiveSupport::TestCase"
+    },
+    {
+      "file": "rails/activesupport/lib/active_support/event_reporter/test_helper.rb",
+      "source": "ActiveSupport::EventReporter",
+      "target": "TestHelper",
+      "line": 4,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "module ActiveSupport::EventReporter::TestHelper # :nodoc:"
+    },
+    {
+      "file": "rails/railties/test/commands/boot_test.rb",
+      "source": "Rails::Command",
+      "target": "BootTest",
+      "line": 7,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Rails::Command::BootTest < ActiveSupport::TestCase"
+    },
+    {
+      "file": "rails/railties/test/commands/encrypted_test.rb",
+      "source": "Rails::Command",
+      "target": "EncryptedTest",
+      "line": 7,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Rails::Command::EncryptedTest < ActiveSupport::TestCase"
+    },
+    {
+      "file": "rails/railties/test/commands/restart_test.rb",
+      "source": "Rails::Command",
+      "target": "RestartTest",
+      "line": 6,
+      "shape": "qualified constant (Klass#member / Klass::CONST)",
+      "body": "class Rails::Command::RestartTest < ActiveSupport::TestCase"
+    }
+  ]
+}

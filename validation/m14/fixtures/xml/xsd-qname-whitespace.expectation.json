@@ -1,0 +1,93 @@
+{
+ "fixtureId": "xml/xsd-qname-whitespace",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 XML deep review, finding X10. XML Schema's `QName` datatype carries the `collapse` whiteSpace facet (XSD 1.0 3.3.13), so a QName-typed attribute value has its whitespace runs collapsed and its ends trimmed BEFORE it is read as a name. The analyzer did not, so `type=\"CT_GeoHierarchyEntity \"` — a trailing space, written by a human and legal, because XML only normalises tab and newline in an attribute value and leaves inner spaces alone — failed the QName parse and the reference was REFUSED. One site in the corpus, in office_drawing_2014_chartex.xsd, where a complex type declared 7 lines above went unreferenced because of one character. Four spellings are pinned because the facet distinguishes them: trailing, leading, and a double run on both ends all collapse to the same name, and `CT_ Target` does NOT — collapse replaces a run with ONE space, and an interior space makes the value not a QName at all, so that reference must still be refused. A fixture that only pinned the trailing-space case would pass against a fix that simply trimmed the ends, which accepts a different and wrong set of values. `clean` is the control, and the three collapsed spellings collapsing onto ONE target is itself pinned: three elements declaring the same type is three references, and the graph must say so through `occurrences` rather than losing two of them to the dedupe. The facet is applied ONCE, where the value enters the candidate queue, because the deferred pass re-parses `candidate.value` — applying it at the parse site alone passed the push-site check and then failed the deferred one, and the edge was refused exactly as before, which is the shape of a fix that appears to work and does not.",
+ "expectSymbols": [
+  {
+   "name": "CT_Target",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "trailing",
+   "kind": "class",
+   "meta.isVocabDeclaration": true
+  },
+  {
+   "name": "leading",
+   "kind": "class",
+   "meta.isVocabDeclaration": true
+  },
+  {
+   "name": "run",
+   "kind": "class",
+   "meta.isVocabDeclaration": true
+  },
+  {
+   "name": "clean",
+   "kind": "class",
+   "meta.isVocabDeclaration": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "trailing",
+   "target": "xsd:schema.CT_Target",
+   "line_number": 17,
+   "meta.resolvable": "in-document",
+   "meta.qname": "CT_Target"
+  },
+  {
+   "type": "references",
+   "from": "leading",
+   "target": "xsd:schema.CT_Target",
+   "line_number": 18,
+   "meta.resolvable": "in-document",
+   "meta.qname": "CT_Target"
+  },
+  {
+   "type": "references",
+   "from": "run",
+   "target": "xsd:schema.CT_Target",
+   "line_number": 19,
+   "meta.resolvable": "in-document",
+   "meta.qname": "CT_Target"
+  },
+  {
+   "type": "references",
+   "from": "clean",
+   "target": "xsd:schema.CT_Target",
+   "line_number": 21,
+   "meta.resolvable": "in-document",
+   "meta.qname": "CT_Target"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "interior",
+   "target": "CT_",
+   "note": "collapse replaces a whitespace RUN with ONE space and trims the ENDS; it does not remove an interior space, so `CT_ Target` is not a QName and no reference may be derived from it. This clause is what separates the facet from a trim."
+  },
+  {
+   "type": "references",
+   "from": "interior",
+   "target": "Target",
+   "note": "nor may the value be split on the space and one half published — a reference target is a NAME, and half a name is not one"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "CT_",
+   "note": "the half-name on either side of the interior space must not become a symbol; publishing it would put a truncated declaration in the graph"
+  },
+  {
+   "name": "Target",
+   "note": "same, the other half"
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

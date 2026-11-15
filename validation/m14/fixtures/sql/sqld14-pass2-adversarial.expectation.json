@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld14-pass2-adversarial.sql",
+  "authoredFrom": "M60 ONTOLOGY PASS 2, 2026-10-03. Every shape in the .sql was transcribed from a case the adversarial probe measured on the corpus, and the instrument is committed beside it: `validation/m14/fixtures/sql/adversarial-probe.mts`. Provenance per section: (1) the CTE self-reference is the shape of duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql, where `uses global->parse` was published for the recursive CTE's own name; (2) the qualified call and qualified table reference are the ordinary shapes the probe counted on 5 and 7 files respectively \u2014 `processCalls` and `processTrigger` passed no metadata, so `evidenceClassFor`'s `reference_qualified` tier was unreachable for `calls`, and `evidenceClassFor`'s `Uses` arm hardcoded `usage_contextual` while `addTableEdge` had always passed `qualified`; (3) the index-before-table order is what a migration that adds an index before the table writes, and 70 containment edges in a 200-file corpus slice had a member symbol with `ownerName: undefined`; (4) the function-then-view pair is the shape of hasura-engine/server/src-rsr/migrations/10_to_11.sql lines 7 and 25, where `state.redeclared` keyed on the name alone counted two different objects sharing a name as one redefinition \u2014 the corpus construct probe measured 15 same-kind OR REPLACE redeclarations against the analyzer's 22 emitted `overrides` edges, and the 7-edge gap was this. Pass 2 also fixed the THIRD entry point to the same wrong output, found after the first two were fixed: a WITH list whose `cte` nodes are SIBLINGS under an ERROR node instead of children of a `statement` (duckdb/benchmark/aoc24/queries/day05.sql, 34 unparseable regions in 1,428 lines), where the outermost-statement anchor finds nothing and the whole scope comes back empty.",
+  "comment": "This fixture exists because the six questions fail INDEPENDENTLY and pass 1 answered only 'does it fire'. Four of the five sections are forbid-side, because each defect is a place where the obvious implementation publishes something that reads true: a CTE's own name as a table, an unqualified `usage_contextual` tier on a reference that names its own schema, a containment edge whose member does not name its owner, and an override between two objects that merely share a name. Section 5 pins the POSITIVE form of the owner adoption \u2014 an index declared before its table, which the 200-file slice showed is the case the immediate lookup cannot see \u2014 because a fixture that only forbids would also pass if the analyzer emitted nothing at all. The three `forbidSymbols` rows are the CTE names: a CTE alias is a local binding and this analyzer does not publish it as a symbol, which is a stronger statement than the `uses`-edge forbid and is asserted alongside it because the two defects shared a root cause.",
+  "expectPatterns": [
+    "Common Table Expressions (CTE)",
+    "Custom Indexes",
+    "Triggers"
+  ],
+  "expectSymbols": [
+    {
+      "name": "d14_base",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d14_helper",
+      "kind": "function"
+    },
+    {
+      "name": "d14_trigger",
+      "kind": "function",
+      "meta.isTrigger": true
+    },
+    {
+      "name": "d14_v",
+      "kind": "class",
+      "meta.type": "view"
+    },
+    {
+      "name": "d14_early_idx",
+      "kind": "constant",
+      "meta.type": "index",
+      "ownerName": "d14_base"
+    },
+    {
+      "name": "d14_really_late_idx",
+      "kind": "constant",
+      "meta.type": "index",
+      "ownerName": "d14_really_late",
+      "meta.ownerDeclaredLater": true
+    },
+    {
+      "name": "d14_twin",
+      "kind": "function"
+    },
+    {
+      "name": "d14_twin",
+      "kind": "class",
+      "meta.type": "view"
+    },
+    {
+      "name": "d14_replace",
+      "kind": "function"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "d14_twin",
+      "equals": 2
+    },
+    {
+      "name": "d14_replace",
+      "equals": 2
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "d14_self"
+    },
+    {
+      "name": "d14_outer"
+    },
+    {
+      "name": "d14_inner"
+    },
+    {
+      "name": "d14_err_first"
+    },
+    {
+      "name": "d14_err_second"
+    },
+    {
+      "name": "d14_err_third"
+    },
+    {
+      "name": "d14_first_cte"
+    },
+    {
+      "name": "d14_second_cte"
+    },
+    {
+      "name": "d14_third_cte"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "d14_trigger",
+      "target": "d14_helper",
+      "meta.triggerAction": true,
+      "meta.qualified": "app.d14_helper",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "d14_v",
+      "target": "d14_base",
+      "meta.qualified": "app.d14_base",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "sqld14-pass2-adversarial.sql",
+      "target": "d14_base",
+      "meta.operation": "insert",
+      "meta.qualified": "app.d14_base",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "contains",
+      "from": "d14_base",
+      "target": "sqld14-pass2-adversarial.sql::d14_base.d14_early_idx"
+    },
+    {
+      "type": "contains",
+      "from": "d14_really_late",
+      "target": "sqld14-pass2-adversarial.sql::d14_really_late.d14_really_late_idx"
+    },
+    {
+      "type": "references",
+      "from": "d14_really_late_idx",
+      "target": "d14_really_late",
+      "meta.indexOn": "d14_really_late"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld14-pass2-adversarial.sql",
+      "target": "d14_replace",
+      "meta.orReplace": true,
+      "meta.redefinition": true,
+      "meta.scope": "file",
+      "meta.priorLine": 142,
+      "meta.replacementLine": 143,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "from": "sqld14-pass2-adversarial.sql",
+      "target": "d14_narrow",
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "d14_self"
+    },
+    {
+      "type": "uses",
+      "target": "d14_inner"
+    },
+    {
+      "type": "uses",
+      "target": "d14_outer"
+    },
+    {
+      "type": "references",
+      "target": "d14_self"
+    },
+    {
+      "type": "calls",
+      "target": "d14_self"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld14-pass2-adversarial.sql",
+      "target": "d14_twin"
+    },
+    {
+      "type": "uses",
+      "target": "d14_err_first"
+    },
+    {
+      "type": "uses",
+      "target": "d14_err_second"
+    },
+    {
+      "type": "uses",
+      "target": "d14_err_third"
+    },
+    {
+      "type": "uses",
+      "target": "d14_first_cte"
+    },
+    {
+      "type": "uses",
+      "target": "d14_second_cte"
+    },
+    {
+      "type": "uses",
+      "target": "d14_third_cte"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld14-pass2-adversarial.sql",
+      "target": "d14_overloaded"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "equals": 1
+    },
+    {
+      "type": "uses",
+      "equals": 3
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "fixtureId": "kotlin/exports-file-identity",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SOURCE of KOTLIN4's two file-level edge families when the file declares NO type to name it after. The source is the file's own identity — its base name without the extension, the family spelling (`moduleLeafName()` in typescript, `scriptName` in bash, `importerName` in css, `moduleName` in python: in a language with no module syntax the FILE is the module). The pre-KOTLIN4 fallback for the sibling `references` import edge is the literal `root`, which names no symbol in any file; a file-level edge must never carry it. The file is function-and-property-only on purpose — that is the shape with no primary top-level type, so it exercises the fallback rather than the primaryType branch the sibling fixture covers.",
+  "expectSymbols": [
+    { "name": "clamp", "kind": "function" },
+    { "name": "DEFAULT_LIMIT", "kind": "property" },
+    { "name": "helper", "kind": "function" }
+  ],
+  "expectExports": [
+    { "name": "clamp" },
+    { "name": "DEFAULT_LIMIT" },
+    { "name": "helper" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "exports-file-identity", "target": "kotlin.math.abs", "line_number": 3, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 },
+    { "type": "exports", "from": "exports-file-identity", "target": "clamp", "line_number": 5, "meta.evidenceClass": "structural", "confidenceMin": 1.0 },
+    { "type": "exports", "from": "exports-file-identity", "target": "DEFAULT_LIMIT", "line_number": 7, "meta.evidenceClass": "structural", "confidenceMin": 1.0 },
+    { "type": "exports", "from": "exports-file-identity", "target": "helper", "line_number": 11, "meta.evidenceClass": "structural", "confidenceMin": 1.0 }
+  ],
+  "forbidExports": [
+    { "name": "internalCounter" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "root" },
+    { "type": "imports", "from": "root" },
+    { "type": "exports", "target": "internalCounter" }
+  ]
+}

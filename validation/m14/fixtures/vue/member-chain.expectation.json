@@ -1,0 +1,16 @@
+{
+  "fixtureId": "vue/member-chain",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave M1 fix (family receiver-only rule): in {{ item.id }}, only the chain root is a use — the loop var's property must not fabricate a Uses edge to the same-named member id, while the real collection use (items) stays.",
+  "expectSymbols": [
+    { "name": "items", "kind": "property" },
+    { "name": "id", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "member-chain", "target": "items" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "member-chain", "target": "id" }
+  ]
+}

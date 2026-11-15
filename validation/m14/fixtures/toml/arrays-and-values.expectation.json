@@ -1,0 +1,227 @@
+{
+  "comment": "VALUE TYPES, ARRAY-OF-TABLES, and the INLINE-TABLE SCOPING RULING. Every TOML value form is a `property` carrying `metadata.valueType`, and a VALUE IS NOT A SYMBOL — a string `\"s\"` or an integer `42` is data, and publishing one per literal would make the graph a copy of the file. The load-bearing ruling here is the inline table: `table = { a = 1, b = \"two\" }` makes `inline.table` the symbol, and `a`/`b` are recorded on it in `metadata.inlineKeys` instead of published. A manifest with 200 dependencies written as `{ version = \"...\", features = [...] }` would otherwise publish 600+ symbols naming nothing a consumer can navigate to alone — a scoping decision, not a deletion, because the names are still on the key.  WHY ONE DEFECT IN THIS AREA HAS NO MUTANT. \"A value becomes a symbol\" is a real defect — it is exactly what the generic AST fallback did before this lane had an analyzer, measured at 28 symbols for a ten-line Cargo.toml with 11 names containing whitespace. But it cannot be modelled as a mutation: a harness transforms analyzer OUTPUT, and the output deliberately never carries a value's literal text, so no symbol can be given the name `\"s\"` or `42` in the first place. A transform that invented one would be imitating the defect rather than producing it, which is worth less than nothing. The evidence here is the measured enter state instead, which is stronger than a mutant: the defect is demonstrated by the code that had it, not by a stand-in. The inline-table half of the same ruling IS modelled, because `metadata.inlineKeys` publishes those names, so a symbol CAN be built from them — and note the first attempt at that pin forbade `a` and `b`, which the mutant never produced (it builds `inline.table.a`), so the pin was vacuous until it named what actually appears.",
+  "expectSymbols": [
+    {
+      "name": "arrays-and-values",
+      "kind": "module"
+    },
+    {
+      "name": "types",
+      "kind": "namespace"
+    },
+    {
+      "name": "types.a_string",
+      "kind": "property",
+      "meta.valueType": "string"
+    },
+    {
+      "name": "types.an_integer",
+      "kind": "property",
+      "meta.valueType": "integer"
+    },
+    {
+      "name": "types.a_float",
+      "kind": "property",
+      "meta.valueType": "float"
+    },
+    {
+      "name": "types.a_boolean",
+      "kind": "property",
+      "meta.valueType": "boolean"
+    },
+    {
+      "name": "types.a_datetime_offset",
+      "kind": "property",
+      "meta.valueType": "datetime",
+      "comment": "all four TOML date/time forms are values, and the datetime family is distinguishable as one kind"
+    },
+    {
+      "name": "types.a_datetime_local",
+      "kind": "property",
+      "meta.valueType": "datetime"
+    },
+    {
+      "name": "types.a_date",
+      "kind": "property",
+      "meta.valueType": "datetime"
+    },
+    {
+      "name": "types.a_time",
+      "kind": "property",
+      "meta.valueType": "datetime"
+    },
+    {
+      "name": "types.a_multiline_array",
+      "kind": "property",
+      "meta.valueType": "array",
+      "comment": "a multi-line array is ONE value; its elements are data, not symbols"
+    },
+    {
+      "name": "inline",
+      "kind": "namespace"
+    },
+    {
+      "name": "inline.table",
+      "kind": "property",
+      "meta.valueType": "inline-table",
+      "meta.inlineKeys": [
+        "a",
+        "b"
+      ],
+      "comment": "the inline table's keys are recorded HERE rather than published as symbols of the file"
+    },
+    {
+      "name": "bin",
+      "kind": "namespace",
+      "meta.isArrayOfTables": true
+    },
+    {
+      "name": "bin.name",
+      "kind": "property"
+    },
+    {
+      "name": "bin#2",
+      "kind": "namespace",
+      "meta.isArrayOfTables": true,
+      "comment": "each `[[bin]]` element is a DISTINCT table, so the second cannot reuse the name — and its keys are prefixed with the ALLOCATED name, which is what keeps `bin.name` and `bin#2.name` from colliding"
+    },
+    {
+      "name": "bin#2.name",
+      "kind": "property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "inline.table.a",
+      "comment": "an inline table's key is part of ONE value expression. Publishing it makes the graph a copy of the literal — a manifest with 200 `{ version = ..., features = [...] }` dependencies would emit 600+ symbols naming nothing independently navigable, and the key NAMES would be lost from `metadata.inlineKeys` where they belong."
+    },
+    {
+      "name": "inline.table.b",
+      "comment": "same"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "arrays-and-values",
+      "target": "arrays-and-values.types",
+      "line_number": 3,
+      "meta.isTableHeader": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_string",
+      "line_number": 4,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.an_integer",
+      "line_number": 5,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_float",
+      "line_number": 6,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_boolean",
+      "line_number": 7,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_datetime_offset",
+      "line_number": 8,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_datetime_local",
+      "line_number": 9,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_date",
+      "line_number": 10,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_time",
+      "line_number": 11,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.types",
+      "target": "arrays-and-values.types.a_multiline_array",
+      "line_number": 12,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values",
+      "target": "arrays-and-values.inline",
+      "line_number": 19,
+      "meta.isTableHeader": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.inline",
+      "target": "arrays-and-values.inline.table",
+      "line_number": 20,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values",
+      "target": "arrays-and-values.bin",
+      "line_number": 23,
+      "meta.isArrayOfTables": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.bin",
+      "target": "arrays-and-values.bin.name",
+      "line_number": 24,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values",
+      "target": "arrays-and-values.bin#2",
+      "line_number": 26,
+      "meta.isArrayOfTables": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "arrays-and-values.bin#2",
+      "target": "arrays-and-values.bin#2.name",
+      "line_number": 27,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "fileEquals": 5,
+      "comment": "`cyclomaticComplexity` is `1 + <table count>`, so it is a MEASURED decision-point count and not a constant wearing a metric's name. This file declares four headers — `[types]`, `[inline]`, and two `[[bin]]` elements — so the count is 5. Pinning it is what stops the field decaying into the constant 1 that a switch-shaped construct once measured, and it is the reason the two `[[bin]]` elements are counted separately: they are two branches the walk takes, not one table seen twice. No PER-SYMBOL complexity is published and none is pinned: a configuration key has no internal branching, so a per-symbol number would be a restatement of the symbol's own existence."
+    }
+  ]
+}

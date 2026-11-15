@@ -1,0 +1,25 @@
+{
+  "fixtureId": "typescript/consistency-tiers",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS #299 evidence tiers for TS: heritage=structural, calls=usage_contextual. Mirrors JVM pins for cross-language consistency.",
+  "expectSymbols": [
+    {
+      "name": "TierCheck"
+    },
+    {
+      "name": "work"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "targetEndsWith": "Base2",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ]
+}

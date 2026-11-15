@@ -1,0 +1,10 @@
+{
+  "issue": "CLJ-ADV F4",
+  "note": "A DATA-position `comment` symbol (`{comment 1}` map key) no longer flips the shadow flag — `(comment (fabricated))` stays data and emits nothing. Real calls still work.",
+  "expectRelationships": [
+    { "type": "calls", "from": "f", "target": "placeholder", "line_number": 5 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "fabricated" }
+  ]
+}

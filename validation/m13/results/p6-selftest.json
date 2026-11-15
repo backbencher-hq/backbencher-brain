@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.40",
+  "code": "P6",
+  "tool": "bb_patterns",
+  "title": "bb_patterns handler contract: read-only, bounded page, bounded history, honest staleness/evidence, falsifiable",
+  "gate": "script/m13/verify-patterns-handler-contract.ts",
+  "mode": "self-test (mutations in tmp copies)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": 8,
+  "passed": 8,
+  "failed": 0,
+  "negativeCases": 6,
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0
+  },
+  "baselineGreen": true,
+  "mutants": [
+    {
+      "mutant": "M1",
+      "caught": true,
+      "status": 1,
+      "undoes": "the byte-read-only open (a read must not write the index)"
+    },
+    {
+      "mutant": "M2",
+      "caught": true,
+      "status": 1,
+      "undoes": "the page-size contract (promotion must apply to the page the caller asked for)"
+    },
+    {
+      "mutant": "M3",
+      "caught": true,
+      "status": 1,
+      "undoes": "the limit ceiling"
+    },
+    {
+      "mutant": "M4",
+      "caught": true,
+      "status": 1,
+      "undoes": "the history findings window"
+    },
+    {
+      "mutant": "M5",
+      "caught": true,
+      "status": 1,
+      "undoes": "the manual-only staleness remediation"
+    },
+    {
+      "mutant": "M6",
+      "caught": true,
+      "status": 1,
+      "undoes": "the rendered evidence channels"
+    }
+  ],
+  "mutantsCaught": 6,
+  "mutantsPlanted": 6,
+  "decisions": {
+    "falsifiability": "every planted mutation must turn the gate RED on a mirrored tree"
+  },
+  "limitations": [
+    "Self-test only; the contract itself is verified by the green run."
+  ],
+  "generatedAt": "2026-11-04T00:39:00.239Z"
+}

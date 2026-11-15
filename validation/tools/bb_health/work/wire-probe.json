@@ -1,0 +1,60 @@
+{
+  "projectPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_health/work/proj-matrix",
+  "cases": {
+    "default": {
+      "keys": [
+        "content",
+        "healthy"
+      ],
+      "isError": false,
+      "healthy": true,
+      "head": "project: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_health/work/proj-matrix | projectId: c1c6f3798cb2b2b59d713949d2929f6ebb0ba274"
+    },
+    "history": {
+      "keys": [
+        "content",
+        "healthy"
+      ],
+      "isError": false,
+      "healthy": true,
+      "jsonKeys": [
+        "health",
+        "history"
+      ],
+      "head": "{   \"health\": {     \"projectId\": \"c1c6f3798cb2b2b59d713949d2929f6ebb0ba274\",    "
+    },
+    "unknownOption": {
+      "keys": [
+        "content",
+        "isError"
+      ],
+      "isError": true,
+      "head": "error: bb_health: unknown or irrelevant options: bogus — accepted options: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity, incl"
+    },
+    "paths": {
+      "keys": [
+        "content",
+        "healthy"
+      ],
+      "isError": false,
+      "healthy": true,
+      "head": "SCOPED ANSWER for 1 path(s) you named — everything below this block is PROJECT-WIDE: |   fresh        src/f2.ts — 1 symbol(s), typescript, verified by mtime+size only (file not read) | "
+    }
+  },
+  "toolsCount": 16,
+  "toolsHasBbHealth": true,
+  "advertisedSchemaKeys": [
+    "verbose",
+    "history",
+    "limit",
+    "refresh",
+    "force",
+    "wait",
+    "freshness",
+    "sampleSize",
+    "integrity",
+    "includeAnalysisRuns",
+    "paths",
+    "checkUnindexed"
+  ]
+}

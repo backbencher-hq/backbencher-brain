@@ -1,0 +1,78 @@
+{
+  "fixtureId": "vue/options-name-local-const",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. F32 (2026-10-12), the Options-API half. F17 (2026-10-31) ruled that a non-literal `name:` keeps the file stem and records `declaredNameUnreadable`, and its reasoning was explicit: the value is \"an IMPORTED IDENTIFIER, whose value lives in another module\". That is correct for an import and was generalized to every identifier, which is where it went wrong: this corpus declares component names through a LOCAL constant — `const COMPONENT_NAME = 'ElInput'` three lines above `defineOptions({ name: COMPONENT_NAME })` — so the value is not in another module at all, it is written in the file the lane is already reading. Measured before this fix on the 1,162-file draw: 724 unresolved component-usage `instantiates` edges, of which **253 (34.9%)** named a component whose own name is assigned as a string literal in the DECLARING file (`ElInput` 59 edges, `ElSelect` 42, `ElSwitch` 33, `ElForm` 20, 25 distinct names), while the lane published only the stem (`input`, `select`) — a name no `components: {}` map holds and no consumer can bind. The rule reads a top-level `const`/`let`/`var NAME = '<literal>'` in the SAME program and refuses an IMPORTED identifier first, so vue/component-name-identifier (the imported case, F17) stays exactly as it was: stem + synthesized + declaredNameUnreadable. That pair is the point of these two fixtures together — the two declarations are indistinguishable in the stem they used to produce and are now distinguishable in the name AND in the metadata. `meta.nameFromLocalConst` records how the identity was obtained, beside `identityFromFileStem`/`synthesized`, and the mutant `vue/local-const-name-revert` reverts exactly this from that field. The forbid row `{source: REAL_NAME}` is F17's original defect shape: the component's ONE identity must never be the VARIABLE's name, which is what the pre-F17 code published for option.vue (21 edges) and select.vue (43).",
+  "expectSymbols": [
+    {
+      "name": "OptionsConstNamed",
+      "kind": "class",
+      "meta.isVueComponent": true,
+      "meta.nameFromLocalConst": "REAL_NAME"
+    },
+    {
+      "name": "OptionsConstNamed",
+      "kind": "class",
+      "meta.moduleName": "options-name-local-const"
+    },
+    {
+      "name": "OptionsConstNamed",
+      "kind": "class",
+      "meta.isOptionsComponent": true
+    },
+    {
+      "name": "lab",
+      "kind": "property",
+      "ownerName": "OptionsConstNamed"
+    },
+    {
+      "name": "go",
+      "kind": "method",
+      "ownerName": "OptionsConstNamed"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "options-name-local-const",
+      "kind": "class"
+    },
+    {
+      "name": "REAL_NAME",
+      "kind": "class",
+      "note": "the constant holds the name; it is not the component"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "OptionsConstNamed",
+      "target": "lab"
+    },
+    {
+      "type": "contains",
+      "from": "OptionsConstNamed",
+      "target": "go"
+    },
+    {
+      "type": "renders",
+      "from": "OptionsConstNamed",
+      "target": "MyChild"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "options-name-local-const",
+      "target": "lab"
+    },
+    {
+      "type": "renders",
+      "from": "options-name-local-const",
+      "target": "MyChild"
+    },
+    {
+      "source": "REAL_NAME",
+      "comment": "F17's defect shape: no edge may be sourced at the VARIABLE that holds the name"
+    }
+  ]
+}

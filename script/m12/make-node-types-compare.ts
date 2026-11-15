@@ -33,7 +33,7 @@ const files = readdirSync("validation/m12/fixtures/make").filter((file) => /\.mk
 // permissive direction is as useless as one that cannot run, so the corpus is
 // enumerated by RULE across every checkout, exactly as the lane's manifest does it,
 // and the count it used is recorded in the artifact.
-const REPOS = "$HOME/fixtures/repositories"
+const REPOS = "/home/ishaq2321/bb_tests/repositories"
 const EXACT = new Set(["Makefile", "makefile", "GNUmakefile", "Makefile.am", "Makefile.in"])
 const SKIP = new Set([".git", "node_modules", "vendor", "target", "dist", "build", ".venv", "deps"])
 const MAX_CORPUS_FILES = 400
@@ -105,7 +105,7 @@ const result = {
   analyzer: "make",
   grammar: "vendored wasm/tree-sitter-make.wasm (tree-sitter-make@1.1.1)",
   fixtureFiles: files,
-  corpus: "enumerated by rule across every checkout under fixtures/repositories",
+  corpus: "enumerated by rule across every checkout under bb_tests/repositories",
   corpusRepositories: reposWithMakefiles,
   corpusFileCap: MAX_CORPUS_FILES,
   corpusNote: "A dead-reference check is a claim about the GRAMMAR, so it needs the whole corpus. This gate previously named ONE repository (and before that a hardcoded `elixir` that is not on this machine), so it could not run at all, and then could not answer its own question: on one checkout it called `substitution_reference` and `endif_directive` DEAD when the 99-file census produces them 9 and 51 times.",

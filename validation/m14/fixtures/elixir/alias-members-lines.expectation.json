@@ -1,0 +1,11 @@
+{
+  "issue": "ELX-ADV X12",
+  "note": "Multi-line alias member lists pin each member's OWN line (both members were emitted at the prefix line before).",
+  "expectRelationships": [
+    { "type": "references", "from": "EA", "target": "Foo.Alpha", "line_number": 3 },
+    { "type": "references", "from": "EA", "target": "Foo.Beta", "line_number": 4 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "Foo.Beta", "line_number": 2 }
+  ]
+}

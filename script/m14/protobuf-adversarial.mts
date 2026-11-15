@@ -30,7 +30,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import { RealProtobufAnalyzer } from "../../src/ast/real-protobuf-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.argv.includes("--out") ? process.argv[process.argv.indexOf("--out") + 1] : "/tmp/opencode/pb/adv.json"
 const ROOT = process.cwd()
 

@@ -1,0 +1,28 @@
+{
+  "fixtureId": "python/decorator-column-lines",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825): a decorated definition ranges at its own def line (24), never the decorator (23) — the 30-row requests defect class. Imported names carry their own item lines (6/7, not the statement line 5); multiline chain calls carry callee leaves (18/19). Round-trip verified. MEASURED BEFORE THE FIX at 200 files through the M59 oracle: python 17,781 relationships, 0 withLine / 17,781 noLine — the pre-fix state here is 'unlined' plus the decorator range. AFTER: 17,781/17,781 lined, 0 INCONSISTENT, mutation self-test CAUGHT.",
+  "expectSymbols": [
+    { "name": "plain", "kind": "function" },
+    { "name": "chained", "kind": "function" },
+    { "name": "decorated", "kind": "function" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "decorated", "startLine": 24 }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "os:*", "line_number": 4 },
+    { "type": "imports", "target": "typing:Optional", "line_number": 6 },
+    { "type": "imports", "target": "typing:List", "line_number": 7 },
+    { "type": "calls", "from": "plain", "target": "helper", "line_number": 12 },
+    { "type": "calls", "from": "chained", "target": "strip", "line_number": 18 },
+    { "type": "calls", "from": "chained", "target": "upper", "line_number": 19 }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "typing:Optional", "line_number": 5, "note": "pre-fix shape: the `from typing import (` statement line; the item name `Optional` is written on 6" },
+    { "type": "imports", "target": "typing:List", "line_number": 5, "note": "pre-fix shape: the statement line; `List` is written on 7" },
+    { "type": "calls", "from": "chained", "target": "strip", "line_number": 17, "note": "pre-fix shape: the receiver line (`items`); the called leaf `.strip` is written on 18" },
+    { "type": "calls", "from": "chained", "target": "upper", "line_number": 17, "note": "pre-fix shape: the receiver line; the called leaf `.upper` is written on 19" }
+  ]
+}

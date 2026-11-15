@@ -1,0 +1,64 @@
+# One file that provokes EVERY referenceable position GraphQL has, so the
+# construct-coverage probe's MISS means a real gap rather than an absent fixture.
+# The first family listed against each construct is the one that construct exists
+# to provoke; the probe asserts each one is EMITTED.
+
+directive @mark(role: Role = ADMIN, note: String) on FIELD_DEFINITION | OBJECT
+
+enum Role { ADMIN USER }
+
+interface Node { id: ID! }
+
+type Query implements Node { id: ID! search(term: String, filter: Filter, limit: Int): [User] }
+type User implements Node { id: ID! name: String role: Role = USER }
+
+union Actor = User
+
+input Filter { role: Role = ADMIN nested: Filter }
+
+extend type Query { extra: Color }
+enum Color { RED }
+
+schema { query: Query }
+
+query Search($term: String!, $limit: Int = 10, $f: Filter) @mark(role: USER) {
+  search(term: $term, filter: $f, limit: $limit)
+  ...UserBits
+  ... on Node { id }
+  aliased: name @mark(note: "x")
+}
+
+fragment UserBits on User { name role }
+
+# --- the MULTIPLICITY and NESTING half of each family -------------------------
+# The coverage gate proves a family is emitted ONCE. These lines make it emit
+# several times, and nest, because a family that works once can still be wrong
+# twice: a collector that stops after the first match, a `Set` that collapses two
+# genuine facts, or a walk that does not descend.
+#
+#   two enum values in ONE argument          -> the collector must return BOTH
+#   enum values nested in a list and object  -> the walk must DESCEND
+#   the same variable used twice             -> two SOURCES, one per use site
+#   the same fragment spread twice            -> two edges, distinguished by line
+#   a field selected twice under one parent  -> two edges, distinguished by line
+#   two directives on one selection           -> two applications
+#   two type references in one declaration    -> both edges survive
+
+enum Multi { ONE TWO THREE }
+input Deep { list: [Multi] nested: Deep inner: Multi = TWO }
+
+type Multi2 { pick(flags: [Multi], obj: Deep, again: Multi = ONE): Multi }
+
+query Twice($a: Multi, $b: Multi) {
+  first: pick(flags: [ONE, $a], obj: { list: [$b], inner: THREE })
+  reused: pick(flags: [$a], obj: { inner: $b })
+  pairEnum: pick(flags: [ONE, TWO, THREE], obj: { inner: ONE, list: [TWO, ONE] })
+  second: pick(flags: [ONE], again: TWO)
+  echo1: pick(flags: [THREE], obj: { inner: ONE })
+  echo2: pick(flags: [TWO])
+  ...TwiceBits
+  ...TwiceBits
+  ... on Multi2 { pick(flags: [ONE]) @tag(name: "x") @mark(note: "y") }
+}
+
+fragment TwiceBits on Multi2 { pick(flags: [TWO]) }

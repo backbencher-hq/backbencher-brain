@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE catalog [
+<!ELEMENT catalog EMPTY>
+<!ENTITY % mode "INCLUDE">
+<![%mode;[
+<!ATTLIST catalog extId CDATA #IMPLIED>
+]]>
+]>
+<catalog/>

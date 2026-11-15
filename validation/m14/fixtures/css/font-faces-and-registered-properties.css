@@ -1,0 +1,21 @@
+@font-face {
+  font-family: "Inter";
+  src: url(inter.woff2) format("woff2");
+}
+
+@property --brand {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #06c;
+}
+
+/* A rule that USES the family this file declares, before the declaration. */
+.prose {
+  font-family: "Inter", sans-serif;
+  color: var(--brand);
+}
+
+/* A family this file does NOT declare — no endpoint may be invented. */
+.other {
+  font-family: "NotDeclared", serif;
+}

@@ -1,0 +1,24 @@
+{
+  "fixtureId": "javascript/receiver-type-evidence",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the receiver-type channel and its EVIDENCE classes (2026-10-18 contract): `metadata.owner` is the EXISTING authoritative store channel (member-owner-resolution.ts's claimOwnerCarryingTargets + resolveMemberTargetsByOwner, read by both resolution paths in parallel-indexer.ts) and `metadata.ownerEvidence` says which syntactic proof produced it. Four proofs, all syntactic: (1) new — `const fresh = new Service(); fresh.run()`; (2) assignment — `this.svc = new Service(); this.svc.run()` AND the class field `svc = new Service(); this.svc.run()`; (3) this — `this.helper()` inside `class Consumer` (positional: the enclosing class DECLARATION, the only shape that publishes a class-like symbol for the owner channel); (4) jsdoc — `/** @type {Service} */ const documented = build(); documented.run()` AND the constructor parameter form `/** @param {Service} dep */ constructor(dep){ this.dep = dep } ; this.dep.run()`. CONTROLS: `controlResult`'s `result.run()` has a call initialiser and no JSDoc, so no owner may be attached; `controlDynamicThis`'s `this.other()` is a plain function's dynamic `this`, not a class instance, so no owner may be attached. The coverage this fixture pins is METADATA; it makes no resolution claim — the arbiter resolves targets, not owners, and the count of owner-carrying rows is reported separately by evidence class.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "class" },
+    { "name": "Consumer", "kind": "class" },
+    { "name": "FieldHolder", "kind": "class" },
+    { "name": "Injected", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "go", "target": "run", "meta.owner": "Service", "meta.ownerEvidence": "assignment", "comment": "this.svc = new Service() in the constructor states this.svc" },
+    { "type": "calls", "from": "go", "target": "helper", "meta.owner": "Consumer", "meta.ownerEvidence": "this", "comment": "this.helper() inside the class declaration" },
+    { "type": "calls", "from": "use", "target": "run", "meta.owner": "Service", "meta.ownerEvidence": "assignment", "comment": "FieldHolder: class field initialised with new" },
+    { "type": "calls", "from": "use", "target": "run", "meta.owner": "Service", "meta.ownerEvidence": "jsdoc", "comment": "Injected: constructor parameter typed by @param and carried onto this.dep" },
+    { "type": "calls", "from": "typedFresh", "target": "run", "meta.owner": "Service", "meta.ownerEvidence": "new" },
+    { "type": "calls", "from": "documentedUse", "target": "run", "meta.owner": "Service", "meta.ownerEvidence": "jsdoc", "comment": "the initialiser is a CALL; only the @type comment states the type" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "controlResult", "target": "run", "meta.owner": "Service", "comment": "call-result receiver states no type" },
+    { "type": "calls", "from": "controlDynamicThis", "target": "other", "meta.owner": "Consumer", "comment": "a plain function's dynamic this is not a class instance" }
+  ]
+}

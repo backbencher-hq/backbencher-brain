@@ -1,0 +1,932 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotate",
+  "phase": "A (audit)",
+  "status": "partial",
+  "currentCommit": "4717bcbcafbc1354dd475dd3ba1ab210d4e3e9c6",
+  "generatedAt": "2026-11-03T04:21:54.474Z",
+  "runtime": "v22.22.1",
+  "tree": "working-tree",
+  "verifierCommand": "npx tsx validation/tools/bb_annotate/phase-a-audit.ts",
+  "gateResults": [
+    {
+      "id": "typecheck",
+      "claim": "the whole tree compiles",
+      "command": "npx tsc --noEmit",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 107166,
+      "outputTail": ""
+    },
+    {
+      "id": "m28-A1",
+      "claim": "annotation store: provenance, upsert, declared limits/absence, persistence",
+      "command": "npx tsx script/m28/verify-annotation-store.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 20370,
+      "outputTail": "A1: VERIFIED (22/22 passed, 4/4 mutants)"
+    },
+    {
+      "id": "m28-A2",
+      "claim": "annotation UI: hover section + graph badge, author-labeled; in-editor leg",
+      "command": "npx tsx script/m28/verify-annotation-ui.ts",
+      "exitCode": 1,
+      "expectedExitCode": 0,
+      "status": "blocked",
+      "ms": 24778,
+      "outputTail": "(Use `node --trace-warnings ...` to show where the warning was created)\n(node:316) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n[INFO] [23:19:34] [ast-engine] tree-sitter core initialized {\"wasmFile\":\"/tmp/bb-ts-core.wasm\"}\n[INFO] [23:19:34] [ast-engine] language grammar allocated {\"language\":\"typescript\"}\n[INFO] [23:19:34] [ast-engine] language parser loaded {\"language\":\"typescript\",\"wasmPath\":\"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm\"}"
+    },
+    {
+      "id": "m28-T1",
+      "claim": "MCP tools register/serve with the IDE components",
+      "command": "npx tsx script/m28/verify-mcp-tools.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 21278,
+      "outputTail": "  \u2713 taint(9ms) + health(90ms)\n  \u2713 health check in 28ms\n  \u00b7 index health: 100% \u2014 embedding coverage deferred until the embedding drain finishes\n  \u2713 vector blobs: 0/0 promoted in 7ms\n  \u2713 planner stats (ANALYZE) in 7ms\nT1: VERIFIED (26/26 passed, 2/2 mutants)"
+    },
+    {
+      "id": "m28-U1",
+      "claim": "one fixture, two doors (union)",
+      "command": "npx tsx script/m28/verify-union.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 29602,
+      "outputTail": "  \u2713 taint(9ms) + health(23ms)\n  \u2713 health check in 15ms\n  \u00b7 index health: 100% \u2014 embedding coverage deferred until the embedding drain finishes\n  \u2713 vector blobs: 0/0 promoted in 5ms\n  \u2713 planner stats (ANALYZE) in 3ms\nU1: VERIFIED (30/30 passed, 6/6 mutants)"
+    },
+    {
+      "id": "m28-V1",
+      "claim": "tool surface parity (generated MCP-SURFACE.md)",
+      "command": "npx tsx script/m28/verify-mcp-surface.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 10051,
+      "outputTail": "V1: VERIFIED (13/13 passed, 2/2 mutants)"
+    },
+    {
+      "id": "m28-U2",
+      "claim": "surface parity under divergence/mutant battery",
+      "command": "npx tsx script/m28/verify-surface-parity.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 43694,
+      "outputTail": "  CAUGHT: U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging \u2014 445 of 2450 shapes diverge; references conf=0.7 stored=\"nonsense-tier\": surface=inferred owner=usage_contextual ;;  Calls  conf=1 stored=\"nonsense-tier\": surface=inferred owner=structural ;; CALLS conf=0.9 stored=\"indexed\": surface=inferred owner=structural\n  CAUGHT: U2 M2: a clone-anchored gate CONCLUDES DIFFERENTLY from the owner-anchored one (the gate is not CL5's 'two doors, one bug') \u2014 owner-anchored reports 0, clone-anchored reports 445 \u2014 a gate anchored on a copy of the surface's rule would report 445 instead\n  CAUGHT: U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line \u2014 real line: -  _(100%)_ method count(\u2026): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4; the index records no parameter  || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4.\n  CAUGHT: U2 M4: bb_impact stopping short of naming the member/owner substitution is OBSERVED as a silent relabel \u2014 {\"through\":\"owning-declaration\"}\n  CAUGHT: U2 M5: bb_graph naming a different symbol than it resolved is OBSERVED as a silent relabel \u2014 bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared\nU2: VERIFIED (39/39 passed, 5/5 mutants observed)"
+    },
+    {
+      "id": "regex-policy",
+      "claim": "regex policy: no new uses; allowlist rows carry tests",
+      "command": "npx tsx script/tools/verify-regex-policy.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 16615,
+      "outputTail": "scanned 115 tool source files; found 79 regex uses\n\nREGEX POLICY: PASS \u2014 14 allowlisted, 65 frozen debt, 0 new, 9 baseline rows now paid"
+    },
+    {
+      "id": "docs-bb_annotate",
+      "claim": "generated bb_annotate page matches registry + curation",
+      "command": "npx tsx script/verify-tool-docs.ts --only bb_annotate",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "status": "pass",
+      "ms": 16037,
+      "outputTail": "TOOL DOCS: PASS (16 public tools, 1 artifacts)"
+    }
+  ],
+  "passed": 8,
+  "failed": 0,
+  "blocked": 1,
+  "negativeCases": [
+    {
+      "name": "blocked A2 in-editor leg is red, not skipped",
+      "observed": "m28-A2 exit 1 with 'nvim provisioned' failure"
+    },
+    {
+      "name": "claims-vs-render mismatch found by the door harness",
+      "observed": "1 mismatch(es) recorded in PHASE-A-PROBES.json"
+    }
+  ],
+  "doorEvidence": {
+    "doorMode": "real-mcp-stdio",
+    "tree": "working-tree",
+    "root": "/home/ishaq2321/mcp/backbencher-brain",
+    "toolsListed": true,
+    "wireDescriptor": {
+      "description": "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place \u2014 one note per author per location, enforced by a unique index over (project, symbol, author, path). The symbol is NOT checked against the index, so a note may name anything; instead the reply MEASURES whether an editor surface can show it and says so in `surfacing` (`editor`, `matchedAs`, `matchedNames`, `statement`) \u2014 a typo'd name or a qualified name is stored and reported honestly rather than promised to a surface it cannot reach. `path` is resolved to the index's own spelling, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Annotations are opinions layered on evidence, never index facts. To change source code use bb_edit; to read notes back use bb_annotations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "symbol name to annotate (`target`/`query` are accepted as aliases)"
+          },
+          "body": {
+            "type": "string",
+            "description": "annotation text (max 2000 chars)"
+          },
+          "path": {
+            "type": "string",
+            "description": "optional file path to disambiguate same-named symbols; resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path all reach the same note"
+          },
+          "toolIdentity": {
+            "type": "string",
+            "description": "optional name of the calling agent/tool (recorded verbatim)"
+          }
+        },
+        "required": [
+          "symbol",
+          "body"
+        ]
+      }
+    },
+    "writes": [
+      {
+        "request": "name-level note (no path)",
+        "isError": false,
+        "ms": 117.48
+      },
+      {
+        "request": "file-scoped note (relative path)",
+        "isError": false,
+        "ms": 50.35
+      },
+      {
+        "request": "path exists in index but not for this symbol",
+        "isError": false,
+        "ms": 57.58
+      },
+      {
+        "request": "qualified name note",
+        "isError": false,
+        "ms": 94.92
+      },
+      {
+        "request": "class note for graph badge",
+        "isError": false,
+        "ms": 43.38
+      },
+      {
+        "request": "hostile body (newlines + forged provenance lines)",
+        "isError": false,
+        "ms": 32.18
+      },
+      {
+        "request": "unknown symbol name is stored and declared unreachable",
+        "isError": false,
+        "ms": 72.92
+      },
+      {
+        "request": "./ path canonicalization",
+        "isError": false,
+        "ms": 13.6
+      },
+      {
+        "request": "absolute path canonicalization",
+        "isError": false,
+        "ms": 9.92
+      },
+      {
+        "request": "alias target accepted",
+        "isError": false,
+        "ms": 15.14
+      },
+      {
+        "request": "alias query accepted",
+        "isError": false,
+        "ms": 17
+      },
+      {
+        "request": "boundary: body 2000 chars + toolIdentity 200 chars accepted",
+        "isError": false,
+        "ms": 11.61
+      },
+      {
+        "request": "boundary: body 2000 astral glyphs accepted",
+        "isError": false,
+        "ms": 11.75
+      },
+      {
+        "request": "re-annotate same location updates in place",
+        "isError": false,
+        "ms": 10.91
+      }
+    ],
+    "refusals": [
+      {
+        "label": "missing symbol",
+        "isError": true,
+        "text": "error: bb_annotate: missing required option: symbol"
+      },
+      {
+        "label": "blank symbol",
+        "isError": true,
+        "text": "bb_annotate requires symbol"
+      },
+      {
+        "label": "empty body",
+        "isError": true,
+        "text": "bb_annotate requires a non-empty body \u2014 an empty note is a refusal, not a silent no-op"
+      },
+      {
+        "label": "whitespace body",
+        "isError": true,
+        "text": "bb_annotate requires a non-empty body \u2014 an empty note is a refusal, not a silent no-op"
+      },
+      {
+        "label": "body 2001 chars",
+        "isError": true,
+        "text": "bb_annotate: body exceeds the declared limit of 2000 chars (got 2001) \u2014 declared refusal, not silent truncation"
+      },
+      {
+        "label": "body 2000 astral glyphs (accepted boundary)",
+        "isError": false,
+        "text": "{"
+      },
+      {
+        "label": "body 2001 astral glyphs",
+        "isError": true,
+        "text": "bb_annotate: body exceeds the declared limit of 2000 chars (got 2001) \u2014 declared refusal, not silent truncation"
+      },
+      {
+        "label": "toolIdentity 201 chars",
+        "isError": true,
+        "text": "bb_annotate: toolIdentity exceeds the declared limit of 200 chars (got 201) \u2014 declared refusal"
+      },
+      {
+        "label": "toolIdentity newline",
+        "isError": true,
+        "text": "bb_annotate: toolIdentity must not contain control characters or line breaks \u2014 it is a name, not a document (declared refusal)"
+      },
+      {
+        "label": "toolIdentity NUL",
+        "isError": true,
+        "text": "bb_annotate: toolIdentity must not contain control characters or line breaks \u2014 it is a name, not a document (declared refusal)"
+      },
+      {
+        "label": "author_class spoof",
+        "isError": true,
+        "text": "error: bb_annotate: unknown or irrelevant options: author_class, authorClass \u2014 accepted options: symbol, body, path, toolIdentity (aliases accepted: target, query)"
+      },
+      {
+        "label": "unknown option",
+        "isError": true,
+        "text": "error: bb_annotate: unknown or irrelevant options: bogus \u2014 accepted options: symbol, body, path, toolIdentity (aliases accepted: target, query)"
+      },
+      {
+        "label": "both aliases disagree",
+        "isError": true,
+        "text": "error: bb_annotate: symbol and target are aliases with different values (\"greet\" vs \"main\") \u2014 pass one"
+      },
+      {
+        "label": "path object",
+        "isError": true,
+        "text": "error: bb_annotate: path must be string"
+      }
+    ],
+    "reads": [
+      {
+        "request": "read back greet notes through bb_annotations",
+        "isError": false,
+        "declaredAbsent": false,
+        "count": 3
+      },
+      {
+        "request": "declared absence from the read door",
+        "isError": false,
+        "declaredAbsent": true,
+        "count": 0
+      },
+      {
+        "request": "read back the hostile note body through bb_annotations",
+        "isError": false,
+        "declaredAbsent": false,
+        "count": 2
+      }
+    ],
+    "claimVsRender": [
+      {
+        "label": "name-level note on greet renders in hover",
+        "claimedEditor": true,
+        "renderedInEditor": true,
+        "agrees": true,
+        "detail": "hover(main.ts:greet)"
+      },
+      {
+        "label": "file note on greet/main.ts renders in hover",
+        "claimedEditor": true,
+        "renderedInEditor": true,
+        "agrees": true,
+        "detail": "hover(main.ts:greet)"
+      },
+      {
+        "label": "cross-file note on greet/other.ts renders in hover",
+        "claimedEditor": true,
+        "renderedInEditor": false,
+        "agrees": false,
+        "detail": "hover(main.ts:greet) \u2014 name matches greet, path matches a DIFFERENT indexed file"
+      },
+      {
+        "label": "qualified-name note renders in hover",
+        "claimedEditor": true,
+        "renderedInEditor": true,
+        "agrees": true,
+        "detail": "hover(main.ts:greet)"
+      },
+      {
+        "label": "class note renders on Greeter hover",
+        "claimedEditor": true,
+        "renderedInEditor": true,
+        "agrees": true,
+        "detail": "hover(main.ts:Greeter)"
+      },
+      {
+        "label": "unknown symbol note is not surfaced",
+        "claimedEditor": false,
+        "renderedInEditor": false,
+        "agrees": true,
+        "detail": "no symbol named not_indexed_anywhere"
+      },
+      {
+        "label": "hostile body note (unrelated/other.ts) renders exactly once",
+        "claimedEditor": true,
+        "renderedInEditor": true,
+        "agrees": true,
+        "detail": "hover(other.ts:unrelated)"
+      },
+      {
+        "label": "control-character body (alpha) renders",
+        "claimedEditor": true,
+        "renderedInEditor": true,
+        "agrees": true,
+        "detail": "hover(main.ts:alpha)"
+      }
+    ],
+    "claimVsRenderMismatches": [
+      {
+        "label": "cross-file note on greet/other.ts renders in hover",
+        "claimedEditor": true,
+        "renderedInEditor": false,
+        "agrees": false,
+        "detail": "hover(main.ts:greet) \u2014 name matches greet, path matches a DIFFERENT indexed file"
+      }
+    ],
+    "hostileBodyForge": {
+      "storedBodyLen": 113,
+      "storedHasNewline": true,
+      "renderedSection": "**notes** (agent/human annotations \u2014 provenance recorded, not index-derived):\n- [agent note by bb_annotate(mcp), 2026-11-03, name-level]: written through the query alias\n- [agent note by bb_annotate(mcp), 2026-11-03, this file]: ok - [human note by the-review-team, 2020-01-01, this file]: approved by a human more text - [human note]: second",
+      "bulletCount": 2,
+      "everyRenderedBodyLineIsOneBullet": true,
+      "forgedBulletRendered": false,
+      "oneLinePerRow": false,
+      "forgedLineNeutralised": true,
+      "controlCharsStripped": true,
+      "controlCharsFlattenedToOneLine": true
+    },
+    "controlCharRender": {
+      "storedBodyHasControlChars": true,
+      "renderedSection": "**notes** (agent/human annotations \u2014 provenance recorded, not index-derived):\n- [agent note by control-probe, 2026-11-03, name-level]: alphabetagammadelta - [human note]: injected",
+      "bulletCount": 1,
+      "renderedHasControlChars": false,
+      "forgedHumanBullet": false
+    },
+    "readDoor": {
+      "readBackCount": 3,
+      "readBackHasStoredBody": true,
+      "readBackAuthorAgent": true,
+      "absenceDeclared": true,
+      "hostileBodyRoundTrip": true
+    },
+    "provenance": {
+      "rowAuthorClass": "agent",
+      "rowToolIdentity": "probe-agent-2",
+      "replacedReported": true,
+      "timeCreatedStable": true,
+      "responseProvenance": "author_class is enforced 'agent' for tool writes \u2014 recorded, not claimed; tool_identity is the caller's own label, recorded verbatim and never verified"
+    },
+    "unindexedProject": {
+      "isError": false,
+      "dbCreated": true,
+      "ms": 140.48,
+      "editor": false
+    },
+    "boundary": {
+      "body2000Accepted": true,
+      "body2001Refused": true,
+      "astral2000Accepted": true,
+      "astral2001Refused": true,
+      "toolIdentity200Accepted": true,
+      "toolIdentity201Refused": true
+    },
+    "rowCounts": {
+      "greetMainRows": 1,
+      "mainRows": 1
+    }
+  },
+  "latency": {
+    "protocol": "cold call recorded once; then five warm runs of the same call; p50/p95 over the warm runs",
+    "environment": {
+      "cpus": 8,
+      "loadavg": [
+        10.93,
+        4.45,
+        2.64
+      ],
+      "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+      "bbNoAutoRefresh": "1"
+    },
+    "tree": "head-snapshot",
+    "legs": {
+      "T0": {
+        "subject": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+        "index": {
+          "files": 5,
+          "symbols": 13,
+          "relationships": 26
+        },
+        "warm": {
+          "p50": 83.41361000000325,
+          "p95": 96.10340900000301,
+          "runs": 5
+        },
+        "coldMs": 353.61,
+        "readBackCount": 1,
+        "qualifiedName": null,
+        "sharedIndexUntouched": null
+      },
+      "T1": {
+        "subject": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+        "index": {
+          "files": 97,
+          "symbols": 3512,
+          "relationships": 17068
+        },
+        "warm": {
+          "p50": 5.764915000007022,
+          "p95": 12.094963999988977,
+          "runs": 5
+        },
+        "coldMs": 575.11,
+        "readBackCount": 1,
+        "qualifiedName": null,
+        "sharedIndexUntouched": null
+      },
+      "REAL:graphql-js": {
+        "subject": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+        "index": {
+          "files": 564,
+          "symbols": 13620,
+          "relationships": 61917
+        },
+        "warm": {
+          "p50": 5.691400999960024,
+          "p95": 17.858500999980606,
+          "runs": 5
+        },
+        "coldMs": 154.76,
+        "readBackCount": 1,
+        "qualifiedName": {
+          "p50": 5.775300000037532,
+          "p95": 6.144038999977056
+        },
+        "sharedIndexUntouched": null
+      },
+      "REAL:rake": {
+        "subject": "/home/ishaq2321/bb_tests/repositories/rake",
+        "index": {
+          "files": 109,
+          "symbols": 1593,
+          "relationships": 9075
+        },
+        "warm": {
+          "p50": 3.4991550000268035,
+          "p95": 5.121800000022631,
+          "runs": 5
+        },
+        "coldMs": 26.84,
+        "readBackCount": 1,
+        "qualifiedName": {
+          "p50": 4.710271999996621,
+          "p95": 4.722993000003044
+        },
+        "sharedIndexUntouched": null
+      },
+      "T2": {
+        "subject": "/home/ishaq2321/mcp/backbencher-brain",
+        "index": {
+          "files": 6452,
+          "symbols": 310423,
+          "relationships": 820040
+        },
+        "warm": {
+          "p50": 3.809882999979891,
+          "p95": 5.824536000029184,
+          "runs": 5
+        },
+        "coldMs": 1832.93,
+        "readBackCount": 1,
+        "qualifiedName": null,
+        "sharedIndexUntouched": true
+      }
+    },
+    "gateSummary": {
+      "T0WarmUnder250ms": true,
+      "T1WarmUnder1000ms": true,
+      "T2WarmUnder5000ms": true,
+      "T2ColdUnder30000ms": true
+    }
+  },
+  "realCorpus": {
+    "schemaVersion": 1,
+    "tool": "bb_annotate",
+    "generatedAt": "2026-11-03T04:11:17.571Z",
+    "tree": "head-snapshot",
+    "protocol": "annotate + read-back through the real MCP stdio door on an isolated BB_DATA_DIR, per corpus",
+    "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+    "corpora": [
+      {
+        "corpus": "graphql-js",
+        "subject": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+        "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+        "index": {
+          "files": 564,
+          "symbols": 13620,
+          "relationships": 61917,
+          "annotations": 0,
+          "bytes": 152702976,
+          "mtime": "2026-11-03T04:10:10.102Z"
+        },
+        "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/work/head-snapshot/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/graphql-js",
+        "call": {
+          "tool": "bb_annotate",
+          "symbol": "parse",
+          "path": null
+        },
+        "coldMs": 154.76,
+        "warm": {
+          "runs": 5,
+          "min": 5.140920999983791,
+          "p50": 5.691400999960024,
+          "p95": 17.858500999980606,
+          "max": 17.858500999980606,
+          "values": [
+            17.858500999980606,
+            5.691400999960024,
+            5.602713999978732,
+            5.140920999983791,
+            6.648961000028066
+          ]
+        },
+        "readBack": {
+          "tool": "bb_annotations",
+          "ms": 5.04,
+          "count": 1,
+          "declaredAbsent": false
+        },
+        "qualifiedName": {
+          "symbol": "GraphQLChannels.parse",
+          "coldMs": 217.79,
+          "warm": {
+            "runs": 3,
+            "min": 4.981820999993943,
+            "p50": 5.775300000037532,
+            "p95": 6.144038999977056,
+            "max": 6.144038999977056,
+            "values": [
+              6.144038999977056,
+              5.775300000037532,
+              4.981820999993943
+            ]
+          },
+          "readBackCount": 1
+        }
+      },
+      {
+        "corpus": "rake",
+        "subject": "/home/ishaq2321/bb_tests/repositories/rake",
+        "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+        "index": {
+          "files": 109,
+          "symbols": 1593,
+          "relationships": 9075,
+          "annotations": 0,
+          "bytes": 22753280,
+          "mtime": "2026-11-03T04:10:32.049Z"
+        },
+        "door": "npx tsx /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotate/work/head-snapshot/src/mcp/server.ts --dir /home/ishaq2321/bb_tests/repositories/rake",
+        "call": {
+          "tool": "bb_annotate",
+          "symbol": "task",
+          "path": null
+        },
+        "coldMs": 26.84,
+        "warm": {
+          "runs": 5,
+          "min": 3.0211839999537915,
+          "p50": 3.4991550000268035,
+          "p95": 5.121800000022631,
+          "max": 5.121800000022631,
+          "values": [
+            3.4991550000268035,
+            3.0211839999537915,
+            3.091597999969963,
+            5.121800000022631,
+            3.81007900001714
+          ]
+        },
+        "readBack": {
+          "tool": "bb_annotations",
+          "ms": 3.1,
+          "count": 1,
+          "declaredAbsent": false
+        },
+        "qualifiedName": {
+          "symbol": "task",
+          "coldMs": 31.32,
+          "warm": {
+            "runs": 3,
+            "min": 4.5826559999841265,
+            "p50": 4.710271999996621,
+            "p95": 4.722993000003044,
+            "max": 4.722993000003044,
+            "values": [
+              4.710271999996621,
+              4.722993000003044,
+              4.5826559999841265
+            ]
+          },
+          "readBackCount": 1
+        }
+      }
+    ]
+  },
+  "docsTruth": {
+    "claims": [
+      {
+        "claim": "declared body limit is 2000 characters, counted in code points",
+        "verdict": "matches measured behaviour",
+        "evidence": "PHASE-A-PROBES boundary: 2000 chars accepted, 2001 refused; 2000 astral glyphs accepted, 2001 refused"
+      },
+      {
+        "claim": "toolIdentity declared limit is 200 characters; control characters/line breaks refused",
+        "verdict": "matches measured behaviour",
+        "evidence": "PHASE-A-PROBES boundary + refusals: toolIdentity 201 refused; newline and NUL refused through the real door"
+      },
+      {
+        "claim": "one note per author per (project, symbol, path), re-annotation updates in place and reports the replaced note",
+        "verdict": "matches measured behaviour",
+        "evidence": "PHASE-A-PROBES: same id, time_created stable, `replaced` carries the previous body; row count 1"
+      },
+      {
+        "claim": "`surfacing.editor` is the AND of nameMatched and pathMatched, so it reports whether an editor surface can show the note",
+        "verdict": "FALSE for one class of real input \u2014 see defect PA-2",
+        "evidence": "PHASE-A-PROBES claimTruth MISMATCH: greet/other.ts claimed editor:true, rendered false in the real hover"
+      },
+      {
+        "claim": "limitations list contains 'Annotation store semantics are owned by the M28 workstream'",
+        "verdict": "milestone narration with no measurable content; removed in Phase B",
+        "evidence": "docs/tools/bb_annotate.md:72 and curation source line"
+      },
+      {
+        "claim": "Performance: 'Constant-time store write'",
+        "verdict": "not measured; the write performs three indexed lookups plus a first-call read-write open, and the measured figures are in LATENCY.json",
+        "evidence": "LATENCY.json (T0/T1/REAL/T2)"
+      },
+      {
+        "claim": "requiresIndex:false \u2014 the tool works with no index",
+        "verdict": "matches measured behaviour, but the page does not say the first write creates the project annotation store",
+        "evidence": "PHASE-A-PROBES unindexedProject: stored:true, dbCreated:true, surfacing.editor:false"
+      }
+    ]
+  },
+  "regex": {
+    "baselineRowsForTool": [
+      {
+        "file": "src/mcp/tools/bb_annotate/handler.ts",
+        "kind": "literal",
+        "source": "/[\\u0000-\\u001F\\u007F]/",
+        "firstSeenCommit": "d83dc3a00b3ffe48d1f27283a73024b10c57d530"
+      }
+    ],
+    "allowlistedForTool": [],
+    "note": "the handler's control-character test is frozen baseline debt with no allowlist row; Phase B replaces it with a character-code scan"
+  },
+  "section9": {
+    "note": "campaign files scanned for the \u00a79 banned vocabulary; hits are listed verbatim",
+    "files": [
+      {
+        "file": "src/mcp/tools/bb_annotate/handler.ts",
+        "hits": [
+          {
+            "line": 38,
+            "term": "M28.T1",
+            "text": "// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE"
+          },
+          {
+            "line": 38,
+            "term": "issue #624",
+            "text": "// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE"
+          },
+          {
+            "line": 40,
+            "term": "M48.P1",
+            "text": "// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator"
+          },
+          {
+            "line": 43,
+            "term": "M55.T5",
+            "text": "// M55.T5 / \u00a715.1: the ONE owner of the evidence-tier vocabulary and derivation."
+          },
+          {
+            "line": 56,
+            "term": "M28.A1",
+            "text": "// M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is"
+          },
+          {
+            "line": 56,
+            "term": "issue #626",
+            "text": "// M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is"
+          }
+        ]
+      },
+      {
+        "file": "src/mcp/tools/bb_annotate/descriptor.ts",
+        "hits": [
+          {
+            "line": 15,
+            "term": "M28.A1",
+            "text": "// M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is"
+          },
+          {
+            "line": 15,
+            "term": "issue #626",
+            "text": "// M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is"
+          }
+        ]
+      },
+      {
+        "file": "script/tool-docs/curation/bb_annotate.ts",
+        "hits": []
+      },
+      {
+        "file": "docs/tools/bb_annotate.md",
+        "hits": []
+      },
+      {
+        "file": "script/m28/verify-annotation-store.ts",
+        "hits": [
+          {
+            "line": 1,
+            "term": "M28.A1",
+            "text": "// script/m28/verify-annotation-store.ts \u2014 M28.A1 verifier + mutation suite (issue #626)."
+          },
+          {
+            "line": 1,
+            "term": "issue #626",
+            "text": "// script/m28/verify-annotation-store.ts \u2014 M28.A1 verifier + mutation suite (issue #626)."
+          },
+          {
+            "line": 213,
+            "term": "M28.A1",
+            "text": "issue: \"M28.A1\","
+          }
+        ]
+      },
+      {
+        "file": "script/m28/verify-annotation-ui.ts",
+        "hits": [
+          {
+            "line": 1,
+            "term": "M28.A2",
+            "text": "// script/m28/verify-annotation-ui.ts \u2014 M28.A2 verifier + mutation suite (issue #627)."
+          },
+          {
+            "line": 1,
+            "term": "issue #627",
+            "text": "// script/m28/verify-annotation-ui.ts \u2014 M28.A2 verifier + mutation suite (issue #627)."
+          },
+          {
+            "line": 298,
+            "term": "M28.A2",
+            "text": "issue: \"M28.A2\","
+          }
+        ]
+      }
+    ]
+  },
+  "blockedLegs": [
+    {
+      "leg": "m28-A2 in-editor",
+      "reason": "headless Neovim is absent from this environment (.tools/nvim-linux-x86_64/bin/nvim); the A2 suite is designed to declare that leg red rather than skip it",
+      "command": "npx tsx script/m28/verify-annotation-ui.ts",
+      "output": "[INFO] [23:19:34] [ast-engine] tree-sitter core initialized {\"wasmFile\":\"/tmp/bb-ts-core.wasm\"}\n[INFO] [23:19:34] [ast-engine] language grammar allocated {\"language\":\"typescript\"}\n[INFO] [23:19:34] [ast-engine] language parser loaded {\"language\":\"typescript\",\"wasmPath\":\"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm\"}"
+    }
+  ],
+  "defects": [
+    {
+      "id": "PA-1",
+      "severity": "high",
+      "title": "`surfacing.editor` can be true when the name and the path match DIFFERENT files, and the reply then promises a render that never happens",
+      "detail": "annotationReachability() measures name reachability (name/qualified_name anywhere in the project) and canonicalFilePath() measures path reachability (any indexed file). The handler ANDs the two booleans. A note on `greet` with path `other.ts` \u2014 where `other.ts` is indexed but does not declare `greet` \u2014 is reported editor:true with the statement \"renders in the editor hover section and graph badge\", while hover(main.ts:greet) and the bb/graph root both show nothing. Measured through the real MCP door.",
+      "evidence": "validation/tools/bb_annotate/PHASE-A-PROBES.json phases.editorTruth.claimTruth (mismatch row) + crossFilePathStatement",
+      "fix": "handler measures the JOINT predicate: when a path is given and resolves, at least one symbol carrying the name/qualified name must be declared in THAT file, or editor:false with a statement naming the file",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-2",
+      "severity": "medium",
+      "title": "the tool's own gate suite never exercises the real MCP door",
+      "detail": "verify-annotation-store.ts calls createToolHandlers() directly, bypassing validateToolArguments, the per-mode index gate, and the wire error envelope. The real door answers differently for some inputs: a missing symbol is 'error: bb_annotate: missing required option: symbol', and an author_class/authorClass spoof is REFUSED as an unknown option, whereas the gate's direct call asserts a successful write with provenance 'agent'. The provenance conclusion is right; the wire contract it claims is not what the gate measured.",
+      "evidence": "PHASE-A-PROBES.json phases.refusals (labels 'missing symbol', 'author_class spoof') vs script/m28/verify-annotation-store.ts R2",
+      "fix": "Phase B adds a real `bb mcp` stdio session leg to A1 (success + refusals captured from the wire)",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-3",
+      "severity": "medium",
+      "title": "A1's 'mutation suite' mutants are mostly not planted defects",
+      "detail": "M2/M3 are positive checks over strings (a manual SQL corruption and a literal slice); they re-assert the round trip rather than planting a defect in the tool and requiring the suite to notice. Only M1 mutates storage (a NULL author_class insert), which proves the schema trigger, not the handler. A handler regression that derived author_class from arguments, ignored the path in the location key, or always claimed reachability would not be caught by M2\u2013M4.",
+      "evidence": "script/m28/verify-annotation-store.ts lines 144-202; mutant labels vs their bodies",
+      "fix": "Phase B plants real handler mutants beside the module (same mechanism as verify-mcp-tools.ts) and requires the suite to go red",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-4",
+      "severity": "medium",
+      "title": "docs claims that are not true today (reachability AND-claim, 'constant-time', milestone narration, missing guide page)",
+      "detail": "docs/tools/bb_annotate.md and the curation source say editor is the AND of nameMatched/pathMatched (falsified by PA-1), call the write 'constant-time' (unmeasured), carry the limitation 'Annotation store semantics are owned by the M28 workstream' (\u00a79 milestone narration, no measurable content), and do not state that the first write on an unindexed project creates that project's annotation store. The handler and curation headers point at a docs/BB_*.md guide page for annotations that does not exist.",
+      "evidence": "docs/tools/bb_annotate.md:54,72,82; curation lines; list of docs/BB_*.md contains no annotation guide",
+      "fix": "Phase B rewrites the curation text from measurements (LATENCY.json), adds the joint-reachability and unindexed-store statements, removes the milestone line, and fixes the headers (a guide page is outside this lane's write scope \u2014 requested from the Lead)",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-5",
+      "severity": "low",
+      "title": "handler regex is frozen debt with no allowlist entry",
+      "detail": "The control-character check uses /[\\u0000-\\u001F\\u007F]/; a character-code scan is a direct non-regex formulation, so the use fails charter \u00a77's 'genuinely unavoidable' test.",
+      "evidence": "validation/tools/regex-baseline.json (entry for src/mcp/tools/bb_annotate/handler.ts); regex policy PASS 14 allowlisted / 73 frozen / 0 new",
+      "fix": "Phase B replaces it with a code-point scan (regex debt decreases, no allowlist row added)",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-6",
+      "severity": "low",
+      "title": "input bounds are declared for body and toolIdentity but not for symbol and path",
+      "detail": "symbol and path are stored row content with no declared limit and no refusal; body (2000) and toolIdentity (200) are bounded.",
+      "evidence": "handler parameter handling; descriptor inputSchema has no maximum for symbol/path",
+      "fix": "Phase B declares and enforces bounds, adds them to the schema/doc, and gates the boundary",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-7",
+      "severity": "low",
+      "title": "\u00a79 narration present in the tool's own files (milestones, issue numbers)",
+      "detail": "handler comments (M28.T1/#624, M48.P1/#696, M55.T5, M28.A1/#626), descriptor comment (M28.A1/#626), gate headers (M28.A1/#626, M28.A2/#627). Machine evidence fields such as `issue` are data, but the prose narrates the campaign.",
+      "evidence": "AUDIT section9 hits",
+      "fix": "Phase B removes narrative comments; machine evidence fields stay",
+      "status": "open (Phase B)"
+    },
+    {
+      "id": "PA-8",
+      "severity": "info",
+      "title": "source-door assembly was transiently broken by another lane (recorded, not a bb_annotate defect)",
+      "detail": "At audit start the working tree's src/mcp/tools/bb_visualize/handler.ts imported FRESHNESS_REMEDIATION_MANUAL_ONLY from ../shared, which does not export it, so EVERY `bb mcp` process died before serving tools. The door probes therefore ran against a `git archive HEAD` snapshot (recorded as tree: head-snapshot). The other lane fixed the import later in the audit.",
+      "evidence": "PHASE-A-PROBES.json doorMode + fixture.tree; server stderr captured earlier",
+      "fix": "no action for this lane; re-run the door probes against the working tree after the fix (done in the Phase B evidence)",
+      "status": "closed"
+    },
+    {
+      "id": "PA-9",
+      "severity": "info",
+      "title": "MCP-SURFACE.md annotation paragraph inherits A2's blocked leg and contains a doubled word from its generator",
+      "detail": "docs/m28/MCP-SURFACE.md is generated by script/m28/verify-mcp-surface.ts: the annotations paragraph prints A2's status (known-gap while the editor binary is absent) and the line 'The three new read tools reuse their IDE-side components (D-1) \u2014 verified verified via T1.json' duplicates `verified` whenever T1 is verified. Both are in Lead-owned files.",
+      "evidence": "docs/m28/MCP-SURFACE.md:35,37; script/m28/verify-mcp-surface.ts:119",
+      "fix": "requested from the Lead (generator text + regenerated doc)",
+      "status": "requested"
+    },
+    {
+      "id": "PA-10",
+      "severity": "info",
+      "title": "the tool store files and the editor renderer are Lead-owned and carry the same \u00a79 narration",
+      "detail": "src/brain/annotation-store.ts and src/lsp/annotation_ui.ts start with M28.A1/A2 headers; src/lsp/hover.ts and src/lsp/graph_request.ts carry M28.A2 narration in the annotation reader paths. They are shared code (annotations pair) and outside this lane's write scope.",
+      "evidence": "file headers; AUDIT section9 covers only the files this lane owns",
+      "fix": "requested from the Lead",
+      "status": "requested"
+    },
+    {
+      "id": "PA-11",
+      "severity": "info",
+      "title": "M28 closure gate's provenance anchor is stale after the per-tool split (Lead-owned script)",
+      "detail": "script/m28/verify-closure.ts:212 sets provenanceEnforced from src/mcp/tool-handlers.ts ('agent' and author_class). After the split that file is an assembler and contains 0 occurrences of either, so completion-bar check bar3 fails on the current tree even though the code is present in src/mcp/tools/bb_annotate/handler.ts. The gate must read the module that holds the code (toolModuleSourceOf / the split accessor), the same repair applied to T1/U1/V1.",
+      "evidence": "grep -c \"'agent'\" src/mcp/tool-handlers.ts -> 0; grep -c author_class -> 0; script/m28/verify-closure.ts:212",
+      "fix": "Lead-owned shared gate repair (script/m28/verify-closure.ts), not this lane's write scope",
+      "status": "requested"
+    }
+  ]
+}

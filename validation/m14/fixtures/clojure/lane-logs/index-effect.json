@@ -1,0 +1,127 @@
+{
+  "population": {
+    "files": 646,
+    "repos": 3
+  },
+  "index": [
+    {
+      "repo": "clj-kondo",
+      "files": 503,
+      "damaged": 2,
+      "names": 3735
+    },
+    {
+      "repo": "clojure",
+      "files": 142,
+      "damaged": 0,
+      "names": 4304
+    },
+    {
+      "repo": "nvim-treesitter",
+      "files": 1,
+      "damaged": 0,
+      "names": 1
+    }
+  ],
+  "floor": {
+    "rows": 768,
+    "bare": 662,
+    "answered": 1,
+    "referAnswered": 1
+  },
+  "byLabel": {
+    "calls": {
+      "total": 368,
+      "answered": 1,
+      "bare": 351,
+      "referAnswered": 1
+    },
+    "references": {
+      "total": 82,
+      "answered": 0,
+      "bare": 31
+    },
+    "imports": {
+      "total": 52,
+      "answered": 0,
+      "bare": 14
+    },
+    "uses": {
+      "total": 264,
+      "answered": 0,
+      "bare": 264
+    },
+    "instantiates": {
+      "total": 1,
+      "answered": 0,
+      "bare": 1
+    },
+    "implements": {
+      "total": 1,
+      "answered": 0,
+      "bare": 1
+    }
+  },
+  "reasons": {
+    "the target is not a bare name": 106,
+    "project-wide: declared 15 time(s)": 4,
+    "project-wide: declared 36 time(s)": 19,
+    "the namespace does not declare that name": 588,
+    "project-wide: declared 0 time(s)": 119,
+    "project-wide: declared 14 time(s)": 7,
+    "project-wide: declared 5 time(s)": 8,
+    "project-wide: declared 8 time(s)": 3,
+    "project-wide: declared 40 time(s)": 20,
+    "project-wide: declared 10 time(s)": 15,
+    "project-wide: declared 4 time(s)": 57,
+    "project-wide: declared 6 time(s)": 41,
+    "project-wide: declared 2 time(s)": 100,
+    "project-wide: declared 20 time(s)": 2,
+    "project-wide: declared 44 time(s)": 1,
+    "project-wide: declared 1 time(s)": 41,
+    "project-wide: declared 19 time(s)": 122,
+    "project-wide: declared 7 time(s)": 10,
+    "the file declares no namespace": 73,
+    "project-wide: declared 3 time(s)": 15,
+    "project-wide: declared 75 time(s)": 3,
+    "project-wide: declared 24 time(s)": 2
+  },
+  "closure": {
+    "classes": {
+      "1  the target is not a bare name": 106,
+      "3  the file's own namespace declares it EXACTLY ONCE — ANSWERED": 1,
+      "5b another namespace declares it and no `:refer` says which — the ambiguity is REAL at the project level": 469,
+      "5a no namespace anywhere declares it — a LOCAL or a synthetic name; NO INDEX CAN BIND IT": 119,
+      "2  the file declares no namespace": 73
+    },
+    "sum": 768,
+    "closes": true
+  },
+  "joinPrice": {
+    "inGateKeySpace": 841,
+    "inGateKeySpaceUnderPatchNamespaceSource": 856,
+    "inIndexKeySpace": 854,
+    "notPublishedByAnalyzer": 13,
+    "notPublishedRows": [
+      "potemkin/import-fn  (target potemkin/import-fn in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_fn.clj)",
+      "potemkin/import-macro  (target potemkin/import-macro in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_fn.clj)",
+      "potemkin/import-def  (target potemkin/import-def in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_fn.clj)",
+      "potemkin/import-fn  (target potemkin/import-fn in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_fn.clj)",
+      "potemkin/import-vars  (target potemkin/import-vars in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_vars.clj)",
+      "potemkin/import-vars  (target potemkin/import-vars in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_vars.clj)",
+      "potemkin/import-vars  (target potemkin/import-vars in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/import_vars.clj)",
+      "my-print/my-print  (target my-print in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/issue-1980/src/my_print.clj)",
+      "my-test/my-test  (target my-test in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/issue-1996/src/my_test.clj)",
+      "foo/foo  (target foo/foo in /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/issue-2641/bar.clj)",
+      "core/remove  (target core/remove in /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/core/reducers.clj)",
+      "clojure.core.server/repl-read  (target repl-read in /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/core/server.clj)",
+      "parallel/op  (target parallel/op in /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/parallel.clj)"
+    ],
+    "splitInGateKeySpace": {
+      "qualified": 841,
+      "plain": 0
+    },
+    "note": "THE FIRST PRICE MEASURED (854) WAS IN THE INDEX's KEY SPACE. THE JOIN LOOKS IN THE ANALYZER's PUBLICATION (the gate's countKey; the production's _res_qname over the store's symbols) => THE JOIN's REACH IS THE FIRST NUMBER, NOT THE SECOND."
+  },
+  "note": "THIS IS THE SPEC'S EFFECT ON THE FLOOR (768). IT IS NOT THE TIE-BREAK'S 2,120, WHICH MOVED THE CEILING."
+}

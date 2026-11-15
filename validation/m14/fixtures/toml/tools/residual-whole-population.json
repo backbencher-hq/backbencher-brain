@@ -1,0 +1,428 @@
+{
+  "instrument": "validation/m14/fixtures/toml/tools/residual-whole-population.mts",
+  "population": {
+    "parsed": 1485,
+    "admitted": 1485,
+    "repos": 77,
+    "failed": 0,
+    "emptyResults": 0,
+    "absent": 184,
+    "overCap": 0
+  },
+  "perType": {
+    "contains": {
+      "edges": 25033,
+      "resolved": 25033,
+      "ambColl": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0,
+      "intended": 25033,
+      "sameFileOffLine": 0,
+      "foreignOnly": 0,
+      "nothingAnywhere": 0
+    },
+    "imports": {
+      "edges": 331,
+      "resolved": 0,
+      "ambColl": 0,
+      "amb": 0,
+      "unres": 5,
+      "extOK": 326,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0,
+      "intended": 0,
+      "sameFileOffLine": 0,
+      "foreignOnly": 0,
+      "nothingAnywhere": 331
+    },
+    "references": {
+      "edges": 1350,
+      "resolved": 1350,
+      "ambColl": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFAIL": 0,
+      "bindOK": 0,
+      "bindQ": 0,
+      "bindFAIL": 0,
+      "causeOK": 0,
+      "causeFAIL": 0,
+      "intended": 0,
+      "sameFileOffLine": 265,
+      "foreignOnly": 1085,
+      "nothingAnywhere": 0
+    }
+  },
+  "expected": {
+    "contains": {
+      "edges": 25033,
+      "resolved": 25033,
+      "ofWhich": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0,
+      "intended": 25033,
+      "twin": 0,
+      "noDecl": 0
+    },
+    "references": {
+      "edges": 1350,
+      "resolved": 1350,
+      "ofWhich": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0,
+      "intended": 0,
+      "twin": 1085,
+      "noDecl": 0
+    },
+    "imports": {
+      "edges": 331,
+      "resolved": 0,
+      "ofWhich": 0,
+      "amb": 0,
+      "unres": 5,
+      "extOK": 326,
+      "extFAIL": 0,
+      "intended": 0,
+      "twin": 0,
+      "noDecl": 331
+    },
+    "exports": {
+      "edges": 0,
+      "resolved": 0,
+      "ofWhich": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0,
+      "intended": 0,
+      "twin": 0,
+      "noDecl": 0
+    }
+  },
+  "reproductionMismatches": 0,
+  "unresolved": [
+    {
+      "type": "imports",
+      "file": "test/test_packages/WorkspacePathResolution/SubProjectA/Project.toml",
+      "line": 9,
+      "target": "SubProjectB",
+      "claim": "none"
+    },
+    {
+      "type": "imports",
+      "file": "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml",
+      "line": 11,
+      "target": "dependency",
+      "claim": "none"
+    },
+    {
+      "type": "imports",
+      "file": "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml",
+      "line": 14,
+      "target": "dependency",
+      "claim": "none"
+    },
+    {
+      "type": "imports",
+      "file": "tests/testsuite/cargo_add/path_base/out/primary/Cargo.toml",
+      "line": 11,
+      "target": "dependency",
+      "claim": "none"
+    },
+    {
+      "type": "imports",
+      "file": "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/Cargo.toml",
+      "line": 11,
+      "target": "dependency",
+      "claim": "none"
+    }
+  ],
+  "falsifier": {
+    "importsTotal": 331,
+    "importsWithClaim": 321,
+    "importsWithoutClaim": 10,
+    "unresolvedImports": 5,
+    "nameManifestOnDisk": 0,
+    "nameAdmittedManifest": 0,
+    "wouldReceiveClaim": 0,
+    "rows": [
+      {
+        "file": "test/test_packages/WorkspacePathResolution/SubProjectA/Project.toml",
+        "line": 9,
+        "target": "SubProjectB",
+        "candidates": [
+          "test/test_packages/WorkspacePathResolution/SubProjectA/SubProjectB/Cargo.toml",
+          "test/test_packages/WorkspacePathResolution/SubProjectA/SubProjectB/Project.toml",
+          "test/test_packages/WorkspacePathResolution/SubProjectA/SubProjectB/JuliaProject.toml",
+          "test/test_packages/WorkspacePathResolution/SubProjectA/SubProjectB/pyproject.toml",
+          "test/test_packages/WorkspacePathResolution/SubProjectA/SubProjectB/Package.toml",
+          "test/test_packages/WorkspacePathResolution/SubProjectA/SubProjectB"
+        ],
+        "onDisk": [],
+        "admitted": [],
+        "guardClaim": null
+      },
+      {
+        "file": "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml",
+        "line": 11,
+        "target": "dependency",
+        "candidates": [
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/Cargo.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/Project.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/JuliaProject.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/pyproject.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/Package.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency"
+        ],
+        "onDisk": [],
+        "admitted": [],
+        "guardClaim": null
+      },
+      {
+        "file": "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml",
+        "line": 14,
+        "target": "dependency",
+        "candidates": [
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/Cargo.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/Project.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/JuliaProject.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/pyproject.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency/Package.toml",
+          "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/dependency"
+        ],
+        "onDisk": [],
+        "admitted": [],
+        "guardClaim": null
+      },
+      {
+        "file": "tests/testsuite/cargo_add/path_base/out/primary/Cargo.toml",
+        "line": 11,
+        "target": "dependency",
+        "candidates": [
+          "tests/testsuite/cargo_add/path_base/out/primary/dependency/Cargo.toml",
+          "tests/testsuite/cargo_add/path_base/out/primary/dependency/Project.toml",
+          "tests/testsuite/cargo_add/path_base/out/primary/dependency/JuliaProject.toml",
+          "tests/testsuite/cargo_add/path_base/out/primary/dependency/pyproject.toml",
+          "tests/testsuite/cargo_add/path_base/out/primary/dependency/Package.toml",
+          "tests/testsuite/cargo_add/path_base/out/primary/dependency"
+        ],
+        "onDisk": [],
+        "admitted": [],
+        "guardClaim": null
+      },
+      {
+        "file": "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/Cargo.toml",
+        "line": 11,
+        "target": "dependency",
+        "candidates": [
+          "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/dependency/Cargo.toml",
+          "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/dependency/Project.toml",
+          "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/dependency/JuliaProject.toml",
+          "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/dependency/pyproject.toml",
+          "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/dependency/Package.toml",
+          "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/dependency"
+        ],
+        "onDisk": [],
+        "admitted": [],
+        "guardClaim": null
+      }
+    ],
+    "oneLevelUp": {
+      "onDisk": 5,
+      "admitted": 5,
+      "rows": [
+        "test/test_packages/WorkspacePathResolution/SubProjectA/Project.toml:9 target=\"SubProjectB\" -> test/test_packages/WorkspacePathResolution/SubProjectB/Project.toml (ON DISK)",
+        "test/test_packages/WorkspacePathResolution/SubProjectA/Project.toml:9 target=\"SubProjectB\" -> test/test_packages/WorkspacePathResolution/SubProjectB/Project.toml (ADMITTED)",
+        "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml:11 target=\"dependency\" -> tests/testsuite/cargo_add/dev_existing_path_base/out/dependency/Cargo.toml (ON DISK)",
+        "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml:11 target=\"dependency\" -> tests/testsuite/cargo_add/dev_existing_path_base/out/dependency/Cargo.toml (ADMITTED)",
+        "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml:14 target=\"dependency\" -> tests/testsuite/cargo_add/dev_existing_path_base/out/dependency/Cargo.toml (ON DISK)",
+        "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml:14 target=\"dependency\" -> tests/testsuite/cargo_add/dev_existing_path_base/out/dependency/Cargo.toml (ADMITTED)",
+        "tests/testsuite/cargo_add/path_base/out/primary/Cargo.toml:11 target=\"dependency\" -> tests/testsuite/cargo_add/path_base/out/dependency/Cargo.toml (ON DISK)",
+        "tests/testsuite/cargo_add/path_base/out/primary/Cargo.toml:11 target=\"dependency\" -> tests/testsuite/cargo_add/path_base/out/dependency/Cargo.toml (ADMITTED)",
+        "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/Cargo.toml:11 target=\"dependency\" -> tests/testsuite/cargo_add/path_base_inferred_name/out/dependency/Cargo.toml (ON DISK)",
+        "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/Cargo.toml:11 target=\"dependency\" -> tests/testsuite/cargo_add/path_base_inferred_name/out/dependency/Cargo.toml (ADMITTED)"
+      ]
+    }
+  },
+  "fixArmA_fileClaim": {
+    "verified": 0,
+    "refuted": 5,
+    "unverifiable": 0
+  },
+  "fixArmB_externalMarker": {
+    "externalVerified": 5,
+    "refused": 0
+  },
+  "referencesLines": 1350,
+  "exports": {
+    "measured": true,
+    "sites": 174,
+    "stringSites": 118,
+    "documentReferents": 0,
+    "projectReferents": 1,
+    "pathShaped": 11,
+    "tomlShaped": 0,
+    "coordinateShaped": 69,
+    "projectReferentExamples": [
+      "docs/netlify.toml  publish = \"build\"  (project declares \"build\")"
+    ]
+  },
+  "workspaceInheritance": {
+    "measured": true,
+    "totalSites": 1269,
+    "documents": 137,
+    "byKind": {
+      "package-field": {
+        "sites": 417,
+        "files": 101,
+        "rootFound": 417,
+        "rootDeclares": 417,
+        "targetExists": 417,
+        "examples": [
+          "Cargo.toml  [package] edition.workspace = true",
+          "Cargo.toml  [package] license.workspace = true",
+          "Cargo.toml  [package] repository.workspace = true"
+        ],
+        "mismatches": []
+      },
+      "dependency-dotted": {
+        "sites": 251,
+        "files": 38,
+        "rootFound": 251,
+        "rootDeclares": 248,
+        "targetExists": 248,
+        "examples": [
+          "Cargo.toml  [dependencies] anstream.workspace = true",
+          "Cargo.toml  [dependencies] anstyle.workspace = true",
+          "Cargo.toml  [dependencies] anstyle-progress.workspace = true"
+        ],
+        "mismatches": []
+      },
+      "dependency-inline": {
+        "sites": 503,
+        "files": 88,
+        "rootFound": 503,
+        "rootDeclares": 503,
+        "targetExists": 503,
+        "examples": [
+          "Cargo.toml  [dependencies] clap = true",
+          "Cargo.toml  [dependencies] curl = true",
+          "Cargo.toml  [dependencies] jiff = true"
+        ],
+        "mismatches": []
+      },
+      "dependency-table": {
+        "sites": 14,
+        "files": 8,
+        "rootFound": 14,
+        "rootDeclares": 12,
+        "targetExists": 12,
+        "examples": [
+          "Cargo.toml  [target.'cfg(unix)'.dependencies] libc.workspace = true",
+          "Cargo.toml  [target.'cfg(target_os = \"linux\")'.dependencies] cargo-credential-libsecret.workspace = true",
+          "Cargo.toml  [target.'cfg(target_os = \"macos\")'.dependencies] cargo-credential-macos-keychain.workspace = true"
+        ],
+        "mismatches": []
+      },
+      "lints": {
+        "sites": 84,
+        "files": 84,
+        "rootFound": 84,
+        "rootDeclares": 84,
+        "targetExists": 0,
+        "examples": [
+          "Cargo.toml  [lints] workspace = true",
+          "benches/benchsuite/Cargo.toml  [lints] workspace = true",
+          "benches/capture/Cargo.toml  [lints] workspace = true"
+        ],
+        "mismatches": []
+      }
+    }
+  },
+  "battery": [
+    {
+      "file": "test/test_packages/WorkspacePathResolution/SubProjectA/Project.toml",
+      "line": 9,
+      "target": "SubProjectB",
+      "a1": null,
+      "a2": null,
+      "a3": null,
+      "a4": "test/test_packages/WorkspacePathResolution/SubProjectB/Project.toml",
+      "a5": "test/test_packages/WorkspacePathResolution/SubProjectB/Project.toml",
+      "a6": "1 dir(s) named \"SubProjectB\": test/test_packages/WorkspacePathResolution/SubProjectB",
+      "a7": null,
+      "a8": true
+    },
+    {
+      "file": "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml",
+      "line": 11,
+      "target": "dependency",
+      "a1": null,
+      "a2": null,
+      "a3": null,
+      "a4": null,
+      "a5": "tests/testsuite/cargo_add/dev_existing_path_base/out/dependency/Cargo.toml",
+      "a6": "80 dir(s) named \"dependency\": tests/testsuite/cargo_add/build_prefer_existing_version/in/dependency, tests/testsuite/cargo_add/build_prefer_existing_version/out/dependency, tests/testsuite/cargo_add/detect_workspace_inherit/in/dependency",
+      "a7": null,
+      "a8": false
+    },
+    {
+      "file": "tests/testsuite/cargo_add/dev_existing_path_base/out/primary/Cargo.toml",
+      "line": 14,
+      "target": "dependency",
+      "a1": null,
+      "a2": null,
+      "a3": null,
+      "a4": null,
+      "a5": "tests/testsuite/cargo_add/dev_existing_path_base/out/dependency/Cargo.toml",
+      "a6": "80 dir(s) named \"dependency\": tests/testsuite/cargo_add/build_prefer_existing_version/in/dependency, tests/testsuite/cargo_add/build_prefer_existing_version/out/dependency, tests/testsuite/cargo_add/detect_workspace_inherit/in/dependency",
+      "a7": null,
+      "a8": false
+    },
+    {
+      "file": "tests/testsuite/cargo_add/path_base/out/primary/Cargo.toml",
+      "line": 11,
+      "target": "dependency",
+      "a1": null,
+      "a2": null,
+      "a3": null,
+      "a4": null,
+      "a5": "tests/testsuite/cargo_add/path_base/out/dependency/Cargo.toml",
+      "a6": "80 dir(s) named \"dependency\": tests/testsuite/cargo_add/build_prefer_existing_version/in/dependency, tests/testsuite/cargo_add/build_prefer_existing_version/out/dependency, tests/testsuite/cargo_add/detect_workspace_inherit/in/dependency",
+      "a7": null,
+      "a8": false
+    },
+    {
+      "file": "tests/testsuite/cargo_add/path_base_inferred_name/out/primary/Cargo.toml",
+      "line": 11,
+      "target": "dependency",
+      "a1": null,
+      "a2": null,
+      "a3": null,
+      "a4": null,
+      "a5": "tests/testsuite/cargo_add/path_base_inferred_name/out/dependency/Cargo.toml",
+      "a6": "80 dir(s) named \"dependency\": tests/testsuite/cargo_add/build_prefer_existing_version/in/dependency, tests/testsuite/cargo_add/build_prefer_existing_version/out/dependency, tests/testsuite/cargo_add/detect_workspace_inherit/in/dependency",
+      "a7": null,
+      "a8": false
+    }
+  ]
+}

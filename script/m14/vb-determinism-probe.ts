@@ -49,7 +49,7 @@ function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
   return i !== -1 && i + 1 < process.argv.length ? process.argv[i + 1] : dflt
 }
-const CR = process.env.BB_VB_CORPUS_ROOT ?? "$HOME/fixtures/vb-corpus"
+const CR = process.env.BB_VB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/vb-corpus"
 const REPOS = (argOf("--repo", "p3d,dismt,pcl,tankex,runtime") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 const REPEATS = Math.max(2, parseInt(argOf("--repeats", "5") ?? "5"))
 const SAMPLE = parseInt(argOf("--sample", "400") ?? "400")

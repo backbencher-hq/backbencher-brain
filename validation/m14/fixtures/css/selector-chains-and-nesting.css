@@ -1,0 +1,27 @@
+nav {
+  color: black;
+}
+
+a {
+  color: blue;
+}
+
+nav a {
+  color: inherit;
+}
+
+.card {
+  color: red;
+
+  & .title {
+    font-weight: bold;
+  }
+
+  .body {
+    margin: 0;
+  }
+}
+
+ul.square li {
+  padding: 0;
+}

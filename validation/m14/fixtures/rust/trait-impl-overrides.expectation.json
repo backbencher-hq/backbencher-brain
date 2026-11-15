@@ -1,0 +1,137 @@
+{
+  "issue": "INCOMING_RUST \u2014 `overrides`: a trait method an impl block supplies, and nothing else",
+  "note": "Rust has no `override` keyword, but the semantic is real: `impl Greeter for En` supplying `fn greet(&self)` is the implementation of the method `trait Greeter` declares, replacing its default body. Measured as a GAP before this fixture existed \u2014 48 implementations of an in-file trait over 3 files of the 110-file ripgrep corpus (crates/matcher/src/lib.rs 27, crates/searcher/src/sink.rs 18, crates/ignore/src/walk.rs 3), none of them published. A bare method name cannot be both endpoints of this edge, so the family shape applies: `ImplType.method -> Trait.method` is what csharp, java, go, scala and objc emit, and both halves name REAL symbols this file declares (a `method` symbol owned by the implemented type, and one inside the trait). Two conditions keep the endpoints resolvable and are the forbid half here: the trait must be DECLARED IN THIS FILE (37 of the corpus's 85 trait impls implement a trait another module declares, and those stay silent), and the impl's OWN items are read \u2014 a local `fn helper` inside a method body that happens to share a trait method's name is not an implementation. Provenance: EXPECT rows are the rule as stated plus the corpus measurement; FORBID rows are the classes the rule must exclude. Nothing here was transcribed from an analyzer run.",
+  "expectSymbols": [
+    {
+      "name": "Greeter",
+      "kind": "trait"
+    },
+    {
+      "name": "Salut",
+      "kind": "trait"
+    },
+    {
+      "name": "En",
+      "kind": "struct"
+    },
+    {
+      "name": "Counter",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "En.greet",
+      "target": "greet",
+      "meta.relationshipType": "trait_method_impl",
+      "comment": "replaces the trait's DEFAULT body"
+    },
+    {
+      "type": "overrides",
+      "from": "En.name",
+      "target": "name",
+      "comment": "implements the bodiless `function_signature_item` declaration"
+    },
+    {
+      "type": "overrides",
+      "from": "Fr.name",
+      "target": "name",
+      "comment": "a second type, a second site: the rule is per implementation"
+    },
+    {
+      "type": "overrides",
+      "from": "De.name",
+      "target": "name",
+      "comment": "a SECOND trait declared here \u2014 the edge must name the trait THIS impl implements"
+    },
+    {
+      "type": "implements",
+      "from": "De",
+      "target": "Salut",
+      "comment": "the type-level relation already existed; the method-level one is new and sits beside it"
+    },
+    {
+      "type": "contains",
+      "from": "Greeter",
+      "target": "greet",
+      "comment": "unchanged: the trait still contains its own method symbols"
+    },
+    {
+      "type": "overrides",
+      "from": "Point.fmt",
+      "target": "fmt",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.85,
+      "meta.reasonCode": "cross-file-trait-signature",
+      "meta.trait": "Display",
+      "comment": "SUPERSEDES the old silence forbid: foreign trait (std::fmt::Display) not declared here \u2014 real override at the cross-file tier"
+    },
+    {
+      "type": "overrides",
+      "from": "Sink.write",
+      "target": "write",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.85,
+      "meta.reasonCode": "cross-file-trait-signature",
+      "meta.trait": "Write",
+      "comment": "SUPERSEDES the old silence forbid: foreign std::io::Write implementation"
+    },
+    {
+      "type": "overrides",
+      "from": "Sink.flush",
+      "target": "flush",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.85,
+      "meta.reasonCode": "cross-file-trait-signature",
+      "meta.trait": "Write",
+      "comment": "SUPERSEDES the old silence forbid: the method name collides with the local Flusher::flush, but the impl header is stdout Write \u2014 pinned with meta.trait so the collision cannot hide a mislabel"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Counter.name",
+      "target": "name",
+      "comment": "an INHERENT impl block overrides nothing, however the method is spelled"
+    },
+    {
+      "type": "overrides",
+      "target": "farewell",
+      "comment": "THE DEEP-WALK ROW. `fn farewell()` is a local item inside `En::greet`'s body and it borrows the name of a method `Greeter` declares and `En` does NOT override. Reading the impl subtree instead of its own items publishes `En.farewell -> Greeter.farewell`, which is not an override of anything."
+    },
+    {
+      "type": "overrides",
+      "target": "bump",
+      "comment": "an inherent method of an unrelated type"
+    },
+    {
+      "type": "overrides",
+      "from": "M.name",
+      "target": "name",
+      "comment": "THE GENERIC-PARAMETER ROW. `impl<'a, M: Greeter> Greeter for &'a M` supplies the method, but the type it supplies it for is one caller's reference to whatever M is bound to. `M` is declared by the impl block's own type_parameters node, so it is a locally bound name and never a type \u2014 the R8 rule applied to the SOURCE endpoint instead of the target."
+    },
+    {
+      "type": "overrides",
+      "from": "Sink.flush",
+      "target": "flush",
+      "meta.trait": "Flusher",
+      "comment": "MISLABELLING NEGATIVE (meta-constrained): Sink implements the FOREIGN std::io::Write; a rule that pairs an impl with a trait by NAME rather than by the impl header would publish Sink.flush -> Flusher.flush \u2014 the relation the code does not have"
+    },
+    {
+      "type": "overrides",
+      "from": "Fr.name",
+      "target": "name",
+      "meta.trait": "Salut",
+      "comment": "the implementation is Greeter::name (Fr implements Greeter); pairing it with the other trait declared in this file is the wrong-trait row"
+    },
+    {
+      "type": "overrides",
+      "from": "De.name",
+      "target": "name",
+      "meta.trait": "Greeter",
+      "comment": "De implements Salut only; the Greeter pairing is the wrong-trait row"
+    }
+  ],
+  "rationale": " SUPERSESSION (2026-10-19, Lead decision \u00a721.11, task-9 conditions): the fixture previously pinned FOREIGN-trait overrides as silent (`impl Display for Point`, `impl std::io::Write for Sink`). That contract is STALE: the winning `trait-override` contract (and the analyzer) treats a trait implementation as a real override even when the trait is not declared in this file, at 0.85 with `reasonCode: cross-file-trait-signature` (both ends are source facts; the target joins once the project is indexed). The forben rows that forbade those relations matched the CORRECT rows, so they are replaced by POSITIVE expectations at the cross-file tier. Coverage is not weakened: the mislabelling negative is preserved as a META-CONSTRAINED forbid (a row paired with the WRONG trait \u2014 e.g. Sink's foreign `Write::flush` must never be attributed to the local `Flusher::flush`), and the inherent-impl, deep-walk and generic-parameter negatives are kept unchanged. METADATA SPELLING (2026-10-19, task-9): the expected `meta.relationshipType` value was the long form 'trait_method_implementation'; the analyzer publishes the declared short form `trait_method_impl`. The semantic contract is the row (owner-qualified source + method leaf + cross-file tier), so the expectation is aligned to the published spelling and this paragraph records the supersession; the row is still pinned, not deleted."
+}

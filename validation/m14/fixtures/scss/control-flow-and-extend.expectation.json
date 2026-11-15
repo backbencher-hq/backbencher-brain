@@ -1,0 +1,60 @@
+{
+  "fixtureId": "scss/control-flow-and-extend",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A control-flow construct is an `interface` — the same shape the CSS lane gives `@supports`, and for the same reason: it is a CONDITIONAL SCOPE that publishes symbols and attributes rules to them, not a declaration of a callable. The scope is named from the construct's own text collapsed to one line, so a multi-line `@each` still yields a deterministic name (M60 R10). The loop variables are recorded by name because `@each $key, $value in $palette` is the only place a stylesheet says what it is iterating, and dropping it loses the only statement of intent the construct makes. `@extend` is a `uses` edge to the selector it extends, sliced from the node's own text so the edge names the SAME `.btn` the rule publishes. The `@for` body's selector interpolates (`.m-#{$i}`) because that form occurs 816 times in the corpus and parses. It deliberately does NOT interpolate a VALUE with a unit suffix — `margin: #{$i}px` is unreadable by the pinned grammar, and the first draft of this fixture used it. Measured before changing anything: `#{$…}px|em|rem|%` occurs ZERO times in 40,521 lines of corpus, and the 33 interpolations that are followed by anything at all are inside names and strings (`#{$prefix}body-bg`), not units. A fixture is supposed to pin constructs that EXIST, and writing one that demands a grammar patch nobody needs turns a declared limitation into a failing test. The limitation is recorded in the grammar header and the SCSS doc instead. Every relationship here also pins its LINE, and that is not decoration: the `line-numbers-dropped` mutant removes `line_number` from every edge, which changes no symbol and no edge COUNT, and it SURVIVED until these pins existed. Line provenance is the one class a counting gate cannot see, so it has to be asserted directly (M59/#855).",
+  "expectSymbols": [
+    {
+      "name": "@if $dark",
+      "kind": "interface",
+      "meta.isScssControlFlow": true
+    },
+    {
+      "name": "@each $key, $value in $palette",
+      "kind": "interface",
+      "meta.scssEachKey": "$key",
+      "meta.scssEachValue": "$value"
+    },
+    {
+      "name": "@for $i from 1 through 3",
+      "kind": "interface",
+      "meta.scssForFrom": "1",
+      "meta.scssForThrough": "3"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    },
+    {
+      "name": ".btn",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": ".card",
+      "target": ".btn",
+      "meta.evidenceClass": "structural",
+      "meta.isScssExtend": true,
+      "line_number": 16
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": ".btn",
+      "target": ".btn"
+    },
+    {
+      "type": "extends",
+      "from": ".btn",
+      "target": ".btn"
+    }
+  ]
+}

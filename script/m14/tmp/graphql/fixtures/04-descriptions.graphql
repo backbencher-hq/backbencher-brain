@@ -1,0 +1,36 @@
+"A regular quoted description."
+type A {
+  "field with a \"quoted\" word and a \\ backslash"
+  f: Int
+  """
+  a multi-line block description
+    with a deeper indent
+  """
+  g: Int
+}
+
+"""
+A block description.
+
+    indented block
+  back to two
+"""
+type B {
+  """
+  field block
+  """
+  h: Int
+}
+
+enum E {
+  "an enum value"
+  X
+}
+
+input I {
+  "an input field"
+  y: Int
+}
+
+"a directive that takes a reason"
+directive @d("the reason" reason: String) on FIELD

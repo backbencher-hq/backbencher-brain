@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.48",
+  "code": "M1",
+  "tool": "bb_migrate",
+  "title": "bb_migrate: decision rules, accounting, read-only invariant, refusals",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "contract: registry has bb_migrate",
+      "pass": true,
+      "detail": "found"
+    },
+    {
+      "name": "contract: description does not claim generation or compilation",
+      "pass": true,
+      "detail": "Read-only single or batch migration planning with dependency order, explicit eff"
+    },
+    {
+      "name": "contract: modes = [plan]",
+      "pass": true,
+      "detail": "[\"plan\"]"
+    },
+    {
+      "name": "contract: format is a separate text/json property",
+      "pass": true,
+      "detail": "{\"type\":\"string\",\"enum\":[\"text\",\"json\"],\"description\":\"output format (default text)\"}"
+    },
+    {
+      "name": "contract: targetLanguage is required",
+      "pass": true,
+      "detail": "[\"targetLanguage\"]"
+    },
+    {
+      "name": "contract: every selector is documented",
+      "pass": true,
+      "detail": "symbolName,symbolNames,paths,symbolIds,targetLanguage,format"
+    },
+    {
+      "name": "contract: legacy alias is marked legacy",
+      "pass": true,
+      "detail": "legacy single-symbol alias for symbolNames; when both are su"
+    },
+    {
+      "name": "read-only: every index open passes { readonly: true }",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "read-only: the predicate detects a read-write open [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a read-write open is flagged, a read-only open is not"
+    },
+    {
+      "name": "refusals: blank name/id/path entries are refused by name",
+      "pass": true,
+      "detail": "nonBlankEntries covers all three selectors"
+    },
+    {
+      "name": "refusals: the target language is trimmed before validation",
+      "pass": true,
+      "detail": "trim + named error"
+    },
+    {
+      "name": "refusals: the legacy alias unions with symbolNames",
+      "pass": true,
+      "detail": "no silent drop"
+    },
+    {
+      "name": "refusals: the union predicate rejects a dropped alias [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "an alias-dropping form does not contain the union"
+    },
+    {
+      "name": "resolution: an exact same-file spelling resolves to that component",
+      "pass": true,
+      "detail": "\"b\""
+    },
+    {
+      "name": "resolution: a cross-file collision is refused with candidate ids",
+      "pass": true,
+      "detail": "[\"c\",\"d\"]"
+    },
+    {
+      "name": "resolution: an unknown name is refused as missing-symbol",
+      "pass": true,
+      "detail": "\"missing-symbol\""
+    },
+    {
+      "name": "resolution: the ambiguity predicate rejects a silent first match [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a silent first match does not satisfy the refusal-and-name predicate"
+    },
+    {
+      "name": "methodology: base is 4h per planned component",
+      "pass": true,
+      "detail": "8"
+    },
+    {
+      "name": "methodology: one shared edge is charged once",
+      "pass": true,
+      "detail": "2 edges / 4h"
+    },
+    {
+      "name": "methodology: structural edges are shown but not charged",
+      "pass": true,
+      "detail": "[{\"kind\":\"calls\",\"edges\":1,\"hours\":2,\"shareOfRelationshipHours\":0.5},{\"kind\":\"references\",\"edges\":1,\"hours\":2,\"shareOfRelationshipHours\":0.5}]"
+    },
+    {
+      "name": "methodology: an unmapped library per file is charged once",
+      "pass": true,
+      "detail": "1 / 6h"
+    },
+    {
+      "name": "methodology: by-kind hours sum to relationshipHours",
+      "pass": true,
+      "detail": "4"
+    },
+    {
+      "name": "methodology: the rates are published as data",
+      "pass": true,
+      "detail": "{\"baseHoursPerComponent\":4,\"relationshipHoursPerEdge\":2,\"hoursPerUnmappedLibrary\":6}"
+    },
+    {
+      "name": "methodology: the arithmetic predicate rejects a wrong total [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a total that is not the sum of its parts does not satisfy the identity"
+    },
+    {
+      "name": "order: a dependency-first order places every dependency before its dependent",
+      "pass": true,
+      "detail": "bottom -> left -> right -> top (complete)"
+    },
+    {
+      "name": "order: the order predicate detects a reversed edge [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the reversed order is flagged and the dependency-first order is not"
+    },
+    {
+      "name": "waves: depth groups become parallel-workable layers",
+      "pass": true,
+      "detail": "[[\"bottom\"],[\"left\",\"right\"],[\"top\"]]"
+    },
+    {
+      "name": "order: a cycle is named and never reported complete",
+      "pass": true,
+      "detail": "[[\"a\",\"b\"]]"
+    },
+    {
+      "name": "order: an out-of-scope dependency is `partial`, not `no-edges`",
+      "pass": true,
+      "detail": "partial"
+    },
+    {
+      "name": "order: no relationships at all is `no-edges`",
+      "pass": true,
+      "detail": "no-edges"
+    },
+    {
+      "name": "order: a cyclic graph is never labelled complete [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "cyclic != complete"
+    },
+    {
+      "name": "textops: language labels fold separators",
+      "pass": true,
+      "detail": "objectivec,objectivec,csharp,cpp"
+    },
+    {
+      "name": "textops: unknown and non-migratable labels are refused",
+      "pass": true,
+      "detail": ",,"
+    },
+    {
+      "name": "textops: quoted specifiers lose their quotes",
+      "pass": true,
+      "detail": "single, double and no quotes"
+    },
+    {
+      "name": "textops: each wrapping quote strips independently, as the character rule states",
+      "pass": true,
+      "detail": "leading, trailing, mismatched pair"
+    },
+    {
+      "name": "textops: Go module paths reduce by host, and major versions are skipped",
+      "pass": true,
+      "detail": "testify,yaml,gonum,net/http"
+    },
+    {
+      "name": "textops: Java fully-qualified names reduce to their first segment",
+      "pass": true,
+      "detail": "java"
+    },
+    {
+      "name": "textops: node: builtins and type stubs are excluded, dots and scopes kept",
+      "pass": true,
+      "detail": "builtin, types, dotted, scoped"
+    },
+    {
+      "name": "textops: node_modules paths canonicalize like imports",
+      "pass": true,
+      "detail": "scoped, dotted, absent"
+    },
+    {
+      "name": "textops: Unicode and astral input is carried, not mangled",
+      "pass": true,
+      "detail": "multi-byte and astral"
+    },
+    {
+      "name": "textops: a very long specifier is handled without backtracking",
+      "pass": true,
+      "detail": "50k-character package name"
+    },
+    {
+      "name": "textops: test paths are recognized by segment and stem",
+      "pass": true,
+      "detail": "test/a.ts=true/true tests/a.ts=true/true spec/a.ts=true/true __tests__/a.ts=true/true testing/a.ts=true/true src/a_test.go=true/true src/a.spec.ts=true/true src/a.test.js=true/true src/Test.kt=true/true src/Spec.scala=true/true src/latest/a.ts=false/false src/contest/a.ts=false/false src/attestations/a.ts=false/false src/a.ts=false/false =false/false"
+    },
+    {
+      "name": "textops: data-shaped names are Critical, a substring is not",
+      "pass": true,
+      "detail": "users_table=Critical mytable=Low repo(function)=Low"
+    },
+    {
+      "name": "textops: import classification is per language",
+      "pass": true,
+      "detail": "go, rust, js, python, dart"
+    },
+    {
+      "name": "regex: the tool's four sources contain no regex literal or constructor",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex: the AST predicate detects a planted literal [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "one literal and one constructor detected"
+    },
+    {
+      "name": "honesty: the engine holds no target-code generator",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "honesty: the engine has no compileTarget claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    },
+    {
+      "name": "honesty: the engine has no produce-target-source claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    }
+  ],
+  "negativeCases": 9,
+  "summary": {
+    "total": 49,
+    "passed": 49,
+    "failed": 0
+  },
+  "decisions": {
+    "noFakeClaims": "no plan claims to generate/compile target source",
+    "readOnly": "every index open in the handler and the bounded loader passes { readonly: true }",
+    "identity": "one component is planned once; truncation identities are internal arithmetic"
+  },
+  "limitations": [
+    "Fixture-free unit layer; the end-to-end and corpus layers are M2/M3."
+  ],
+  "generatedAt": "2026-11-05T04:13:22.736Z"
+}

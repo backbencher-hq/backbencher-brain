@@ -1,0 +1,74 @@
+{
+  "fixtureId": "c/export-linkage-marker-989",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #989, which replaces the export MARKER REGISTER with C's own linkage rule. Before it, `exports` fired 0 times in 359 sqlite files while the corpus carried 274 export markers, for one reason: EXPORT_MACROS is a list of five other projects' names (EXPORT_SYMBOL, EXPORT_SYMBOL_GPL, CURL_EXTERN, REDISMODULE_API, GIT_EXTERN) and sqlite's are not on it. The register's own census falsifies it -- counting every macro in the `macro_prefixed_type_specifier` slot with NO allowlist returns 24 distinct markers in that one repository (CMPP_EXPORT 161, CMPP_PRIVATE 53, JIM_EXPORT 113, PRIVATE 22, JNIEXPORT 31, SQLITE_API 17, SQLITE_NOINLINE 87, ...), six of them export markers and four their exact opposite. A bounded name list cannot be right for a construct that is a project convention. The rule shipped instead asks C: a marker is an export marker when its own definition grants EXTERNAL LINKAGE, and is not one when it grants internal linkage. The negatives are the substance of the ruling and each has a real corpus instance: 53 CMPP_PRIVATE sites that a rule unable to refuse would publish, the `dllimport` arm libcmpp.c:108 writes beside the `dllexport` one, and the empty markers where emptiness decides nothing (REDISMODULE_API is empty and exports; libcmpp.c:5256's `#define CMPP_PRIVATE` is empty and does not). The one control that is NOT about linkage is pinned too: an ordinary non-static file-scope declaration publishes no `exports` edge, because `not static` is not a declared boundary and the target would have to be invented -- which is the fabricated-target class #963 removed. Measured effect on the corpus: `exports` 0 -> 276 edges over 3 files (autosetup/jimsh0.c 112, ext/wasm/libcmpp.c 161, ext/wasm/api/sqlite3-wasm.c 3), with calls/uses/contains/references/imports/instantiates byte-identical.",
+  "expectSymbols": [
+    { "name": "cfx_extern_linkage", "kind": "function" },
+    { "name": "cfx_visibility_default", "kind": "function" },
+    { "name": "cfx_win_export", "kind": "function" },
+    { "name": "cfx_holder", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "cfx_extern_linkage",
+      "target": "CFX_EXPORT",
+      "meta.markerSource": "linkage:extern",
+      "comment": "THE PINNED ROW. `#define CFX_EXPORT extern` -- the marker grants EXTERNAL LINKAGE, which is C's definition of belonging to a module's interface. 274 such sites on sqlite (CMPP_EXPORT 161 in ext/wasm/libcmpp.c, JIM_EXPORT 113 in autosetup/jimsh0.c)."
+    },
+    {
+      "type": "exports",
+      "from": "cfx_visibility_default",
+      "target": "CFX_ATTR_EXPORT",
+      "meta.markerSource": "linkage:extern",
+      "comment": "The GCC spelling of the same boundary. ext/wasm/api/sqlite3-wasm.c:236 writes `#define SQLITE_WASM_EXPORT __attribute__((used,visibility(\"default\")))` and gets 3 edges. This arm needs the #934 line scan rather than the AST: engine.ts blanks `__attribute__((...))` non-greedily to spaces before parsing, so the `preproc_def` value the analyzer sees is the single character `)`."
+    },
+    {
+      "type": "exports",
+      "from": "cfx_win_export",
+      "target": "CFX_WIN_EXPORT",
+      "meta.markerSource": "linkage:extern",
+      "comment": "`extern __declspec(dllexport)` -- the two combined, which is libcmpp.c:106's spelling. Kept separate from the dllimport arm below because the difference is one word in the macro's own body and the rule has to be able to read it."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "cfx_internal_linkage",
+      "comment": "THE NEGATIVE THAT MATTERS MOST. `#define CFX_PRIVATE static` grants INTERNAL linkage, the opposite of an export boundary. sqlite ships this pair in one file -- ext/wasm/libcmpp.c:161 CMPP_EXPORT and :53 CMPP_PRIVATE -- so a rule that recognises the marker but cannot refuse the `static` arm publishes 53 edges for private symbols. Internal linkage is the test, not the name."
+    },
+    {
+      "type": "exports",
+      "from": "cfx_dll_import",
+      "comment": "`extern __declspec(dllimport)` is an IMPORT boundary. libcmpp.c:108 writes exactly this arm in the same `#ifdef _WIN32` chain as the `dllexport` one, so treating every `extern __declspec(...)` marker as an export would invert it for the consuming side of that build."
+    },
+    {
+      "type": "exports",
+      "from": "cfx_empty_marker",
+      "comment": "An empty marker decides NOTHING, and both directions are real: REDISMODULE_API is `#define REDISMODULE_API` (empty) and IS an export marker carrying redis's 14 edges; libcmpp.c:5258 is `#define CMPP_PRIVATE` (empty) and is NOT. So emptiness is not evidence either way, and a marker whose body lives in another file -- sqlite's own SQLITE_API, defined in src/sqlite.h.in -- is C-D2 for the same reason."
+    },
+    {
+      "type": "exports",
+      "from": "cfx_local_not_exported",
+      "comment": "A marker on a LOCAL declaration is not part of any module interface. The rule asks whether a BLOCK intervenes and a `compound_statement` is one, so this must publish nothing however `CFX_EXPORT` is spelled."
+    },
+    {
+      "type": "exports",
+      "from": "cfx_plain_public",
+      "comment": "CONTROL, and the limit stated rather than implemented. An ordinary non-static file-scope declaration is C's ordinary public surface and there are 109 of them on this corpus -- but `not static` is not a DECLARED boundary, so there is no marker to name as the target and inventing one is the fabricated-target class #963 removed from this relation. Silence is the honest result and this row says so."
+    },
+    {
+      "type": "exports",
+      "from": "CFX_EXPORT",
+      "comment": "THE SELF-REFERENCE TRAP #963 pins. When recovery splits a declaration the declarator walk can reach the marker itself, and an exported name can never BE the marker. The #963 fixture already forbids this shape; it is repeated here because this rule reaches the same helper from a second direction."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "exports",
+      "equals": 3,
+      "note": "cfx_extern_linkage, cfx_visibility_default, cfx_win_export. The count is here so that a rule which publishes the `static` or `dllimport` arms fails HERE as well as through its forbid row, and so a rule which fires on the local or the plain declaration cannot pass by matching only the three positive targets."
+    }
+  ]
+}

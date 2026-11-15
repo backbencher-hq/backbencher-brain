@@ -1,0 +1,384 @@
+{
+  "fixtureId": "kotlin/contains-ownership",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "K4 (M60 kotlin deep review, 2026-09-27): the `contains` classes and every ownership boundary that SUPPRESSES one. All four analyzer defects this class found PUBLISHED a new edge, so a fixture pinning only emissions would have missed every one of them — the forbids are the load-bearing half. The through-line: a thing is a member of a class exactly when it is DECLARED IN THAT CLASS'S BODY. The walk threads an owner through every node it does not intercept, and that one fact produced four defects: an init-block local owned by its class (aa6a2beb), a local function, a local class, and — as a consequence of the owner flattening being RIGHT — a data-class componentN count that then over-generated. Two things here are pinned because NO corpus can pin them. The Compose UI-tree rule has zero coverage: neither Exposed nor kotlinx-coroutines contains a single @Composable file, so that rule is load-bearing by fixture ALONE. The data-class componentN count is likewise only visible in a file with a data class AND a companion object — the combination that produced component8 and component9 on a 7-property class — so `Seven` plus `Generated` assert an exact count rather than a lower bound. Naming note, because it cost a run: the helper was first written `anonries` and the expectations spelled it `anonries` — one transposed pair. The runner reported three `expected relationship not found` rows that read exactly like three missing edges, and the analyzer was right and the fixture wrong. An authored expectation whose `from` is a near-miss for a real symbol is indistinguishable from a missing edge until somebody reads the source, so the name is now `anonymousForms` and no longer sits one transposition away from a plausible misspelling. `WithCompanion2` exists because `Seven`'s component8/9 forbids are NOT independently load-bearing: reverting the fix on a data class with no companion and no body properties leaves the count unchanged, so those rows document the production shape (Exposed's ColumnDiff) while `BodyProperty->component2` is the row that actually goes red. Without a companion in the fixture, the real defect has no executable check here at all.",
+  "expectSymbols": [
+    {
+      "name": "Owner",
+      "kind": "class"
+    },
+    {
+      "name": "real",
+      "kind": "property"
+    },
+    {
+      "name": "realFun",
+      "kind": "method"
+    },
+    {
+      "name": "Nested",
+      "kind": "class"
+    },
+    {
+      "name": "withLocals",
+      "kind": "method"
+    },
+    {
+      "name": "Outer",
+      "kind": "class"
+    },
+    {
+      "name": "Middle",
+      "kind": "class"
+    },
+    {
+      "name": "Inner",
+      "kind": "class"
+    },
+    {
+      "name": "deepest",
+      "kind": "property"
+    },
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "kept",
+      "kind": "property"
+    },
+    {
+      "name": "Delegating",
+      "kind": "class"
+    },
+    {
+      "name": "Shade",
+      "kind": "enum"
+    },
+    {
+      "name": "LIGHT",
+      "kind": "enum_member"
+    },
+    {
+      "name": "DARK",
+      "kind": "enum_member"
+    },
+    {
+      "name": "WithCompanion",
+      "kind": "class"
+    },
+    {
+      "name": "shared",
+      "kind": "property"
+    },
+    {
+      "name": "Generated",
+      "kind": "class"
+    },
+    {
+      "name": "Seven",
+      "kind": "class"
+    },
+    {
+      "name": "BodyProperty",
+      "kind": "class"
+    },
+    {
+      "name": "NotADataClass",
+      "kind": "class"
+    },
+    {
+      "name": "Screen",
+      "kind": "class"
+    },
+    {
+      "name": "Content",
+      "kind": "method"
+    },
+    {
+      "name": "component1",
+      "kind": "method"
+    },
+    {
+      "name": "copy",
+      "kind": "method"
+    },
+    {
+      "name": "WithCompanion2",
+      "kind": "class"
+    },
+    {
+      "name": "shared1",
+      "kind": "property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "real",
+      "note": "a member property"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "realFun",
+      "note": "a member method"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "Nested",
+      "note": "a NESTED class is a member: it is declared in the owner's body"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "withLocals",
+      "note": "a member method"
+    },
+    {
+      "type": "contains",
+      "from": "Outer",
+      "target": "Middle",
+      "note": "nested class: contained by the outer"
+    },
+    {
+      "type": "contains",
+      "from": "Middle",
+      "target": "Inner",
+      "note": "nested class: contained by the middle, NOT the outer"
+    },
+    {
+      "type": "contains",
+      "from": "Inner",
+      "target": "deepest",
+      "note": "a nested class's members belong to the NESTED class"
+    },
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "kept",
+      "note": "a ctor `val` is a member"
+    },
+    {
+      "type": "contains",
+      "from": "Shade",
+      "target": "LIGHT",
+      "note": "an enum ENTRY is a member: its body is enum_class_body, not class_body"
+    },
+    {
+      "type": "contains",
+      "from": "Shade",
+      "target": "DARK",
+      "note": "enum entry"
+    },
+    {
+      "type": "contains",
+      "from": "Shade",
+      "target": "readable",
+      "note": "a method declared in an enum body is a member too"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion",
+      "target": "shared",
+      "note": "a COMPANION's members belong to the OWNER: companion_object is not an object_declaration, so owner resolution walks past it"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion",
+      "target": "readCompanion",
+      "note": "the owner's own method"
+    },
+    {
+      "type": "contains",
+      "from": "anonymousForms",
+      "target": "anonymous_IntIdTable",
+      "note": "anonymous object named after its DELEGATION supertype, `()` form"
+    },
+    {
+      "type": "contains",
+      "from": "anonymousForms",
+      "target": "anonymous_Deferred",
+      "note": "the `by` form resolves too — explicit_delegation and constructor_invocation are two shapes for one rule"
+    },
+    {
+      "type": "contains",
+      "from": "anonymousForms",
+      "target": "anonymous_object",
+      "note": "no delegation: the plain form"
+    },
+    {
+      "type": "contains",
+      "from": "Screen",
+      "target": "Content",
+      "note": "the @Composable function is a member of its class"
+    },
+    {
+      "type": "contains",
+      "from": "Content",
+      "target": "Column",
+      "meta.relationshipType": "compose_ui_tree",
+      "note": "Compose UI tree: a PascalCase call in a @Composable body, published with relationshipType compose_ui_tree"
+    },
+    {
+      "type": "contains",
+      "from": "Content",
+      "target": "Text",
+      "note": "the qualified spelling resolves to its TERMINAL name: androidx.compose.material.Text"
+    },
+    {
+      "type": "contains",
+      "from": "Generated",
+      "target": "a",
+      "note": "a data class's property"
+    },
+    {
+      "type": "contains",
+      "from": "Generated",
+      "target": "component1",
+      "meta.inferred": true,
+      "note": "componentN is generated per PRIMARY CONSTRUCTOR property, and is marked: the name is written nowhere"
+    },
+    {
+      "type": "contains",
+      "from": "Generated",
+      "target": "component2",
+      "note": "two properties, two components — an exact count"
+    },
+    {
+      "type": "contains",
+      "from": "Generated",
+      "target": "copy",
+      "meta.inferred": true,
+      "note": "generated, marked"
+    },
+    {
+      "type": "contains",
+      "from": "Seven",
+      "target": "component7",
+      "meta.inferred": true,
+      "note": "seven properties, seven components. The eighth would be a fabrication"
+    },
+    {
+      "type": "contains",
+      "from": "BodyProperty",
+      "target": "component1",
+      "note": "a BODY property generates no componentN: Kotlin's rule is about the primary constructor"
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "component1",
+      "meta.inferred": true,
+      "note": "a class named DataThing is not a data class, and `data class Plain` is — the modifier is the only statement of it"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion2",
+      "target": "a",
+      "note": "a property of the data class"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion2",
+      "target": "shared1",
+      "note": "the COMPANION's property belongs to the owner class"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion2",
+      "target": "component2",
+      "meta.inferred": true,
+      "note": "two properties, two components — with a companion present, so the over-count is reachable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "localFun",
+      "note": "a LOCAL function is not a member. M60 defect: published contains Owner->localFun. `suspend` and the extension receiver are the same defect in three spellings"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "localSuspend",
+      "note": "same defect, `suspend` spelling"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "localExt",
+      "note": "same defect, local EXTENSION spelling"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "LocalClass",
+      "note": "a LOCAL class is not a member. M60 defect: published contains Owner->LocalClass. nextParentClass is still set — the class owns the SCOPE of its own body, which is a different question from being a member"
+    },
+    {
+      "type": "contains",
+      "from": "Owner",
+      "target": "scratch",
+      "note": "an init-block LOCAL is not a member. M60 defect aa6a2beb: published contains Owner->scratch AND uses Owner->scratch"
+    },
+    {
+      "type": "contains",
+      "from": "Outer",
+      "target": "deepest",
+      "note": "two levels of nesting: the innermost member belongs to Inner, not to Outer"
+    },
+    {
+      "type": "contains",
+      "from": "Delegating",
+      "target": "argument",
+      "note": "a bare ctor parameter is an ARGUMENT, not a member. Only the val/var binding_pattern_kind makes a parameter a member"
+    },
+    {
+      "type": "contains",
+      "from": "Seven",
+      "target": "component8",
+      "note": "a 7-property data class has component1..component7. M60 defect: the count included the COMPANION's properties once owner flattening made the owner set correct, publishing component8 and component9 — members Kotlin never generates"
+    },
+    {
+      "type": "contains",
+      "from": "Seven",
+      "target": "component9",
+      "note": "same fabrication, one higher"
+    },
+    {
+      "type": "contains",
+      "from": "BodyProperty",
+      "target": "component2",
+      "note": "a body property generates no componentN"
+    },
+    {
+      "type": "contains",
+      "from": "NotADataClass",
+      "target": "component1",
+      "note": "not a data class: no componentN at all, despite the name"
+    },
+    {
+      "type": "contains",
+      "from": "Content",
+      "target": "lowercaseCall",
+      "note": "the Compose rule takes PascalCase names only — a PascalCase name is a HEURISTIC, which is why the row is stamped heuristic and not claimed as verified containment"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion2",
+      "target": "component3",
+      "note": "THE production defect, in the shape it occurred: with a companion present, counting every owned property instead of the primary-constructor ones publishes component3 and component4 for a 2-property data class. Kotlin generates component1..component2 and nothing else. Exposed's ColumnDiff published component1..component9 for 7 properties"
+    },
+    {
+      "type": "contains",
+      "from": "WithCompanion2",
+      "target": "component4",
+      "note": "same fabrication, one higher"
+    }
+  ]
+}

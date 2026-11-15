@@ -59,4 +59,4 @@ export const curation: CuratedToolDocumentation = {
 }
 
 /** Cross-reference rendered into the `Relationship to other tools` section. */
-export const relation: string = "For security-specific taint findings use `bb_security`; this tool covers orphans, framework patterns, and anti-patterns."
+export const relation: string = "For lexical security leads (source/sink token pairs; a lead generator, not a vulnerability scanner) use `bb_security`; this tool covers orphans, framework patterns, and anti-patterns."

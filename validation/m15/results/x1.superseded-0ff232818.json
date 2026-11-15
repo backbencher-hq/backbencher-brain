@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X1",
+  "code": "X1",
+  "tool": "bb_security",
+  "title": "classification — real taint detection",
+  "verified": true,
+  "checks": 14,
+  "passed": 14,
+  "failed": 0,
+  "positives": 14,
+  "negatives": 0,
+  "negativePassed": 0,
+  "skipped": [],
+  "generatedAt": "2026-09-30T23:13:35.298Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T23:13:35.299Z",
+    "contentSha256": "f5d9fe065f082c691327cbdc41ad4acb13bb7b128c41dc3b0402ae89b45dc09d"
+  }
+}

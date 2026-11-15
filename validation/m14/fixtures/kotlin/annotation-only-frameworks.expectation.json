@@ -1,0 +1,18 @@
+{
+  "fixtureId": "kotlin/annotation-only-frameworks",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Framework detection was import-only: files using fully-qualified annotations WITHOUT the corresponding import (conflict avoidance, generated code) were invisible to Spring/JPA detection even though their symbols carried the annotation names. Detection must consult symbol metadata.annotations short names. Also pins that FQ routes extract bare paths with the method in metadata.apiMethod.",
+  "expectSymbols": [
+    { "name": "OrderService", "kind": "class" },
+    { "name": "Widget", "kind": "class" }
+  ],
+  "expectFrameworks": [
+    "Spring Boot",
+    "Spring Framework",
+    "Hibernate / JPA"
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "orders", "equals": "/orders" }
+  ]
+}

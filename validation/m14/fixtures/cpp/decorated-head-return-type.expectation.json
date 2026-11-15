@@ -1,0 +1,106 @@
+{
+  "fixtureId": "cpp/decorated-head-return-type",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D17/D27/D18, the `returnType` half of the decorated head. A macro standing where a return type stands is a DECORATOR, and this lane published the macro spelling as the C++ return type: measured over the 465-file cpp corpus, 121 symbols named a macro there (42 DOCTEST_INTERFACE, 36 JSON_HEDLEY_WARN_UNUSED_RESULT, 12 DOCTEST_APPROX_PREFIX, 8 JSON_HEDLEY_NON_NULL, 8 JSON_HEDLEY_DEPRECATED_FOR, …, 14 distinct spellings), and a macro name is not a type any compiler accepts — it resolves to nothing, in a field the store treats as an overload-resolution input. The same nodes produced a second defect, worse because both endpoints resolve: `JSON_HEDLEY_NON_NULL(3) invalid_iterator(int id_, const char* what_arg) : exception(id_, what_arg) {}` published `method invalid_iterator.exception` — a member named after the class's own BASE, with NO parameters and a body it does not have, while the constructor itself was never published (4 sites on this corpus: invalid_iterator/type_error/out_of_range/other_error in nlohmann/detail/exceptions.hpp). The pre-fix reader took the direct child of the recovery's `parenthesized_declarator`, which on that shape is the base-class initializer read as a declarator, and the real one sits one level deeper inside the grammar's own ERROR.\n\nThe pins are the five measured head shapes, each with the evidence it turns on: a `macro_prefixed_type_specifier` (the grammar's own decorator/type split), a type whose alignment padding must not survive into the field (D27), a type left inside the recovery's ERROR, a type REJOINED to the name as a phantom qualifier (empty `::`), and a constructor's decorated head — which states NO type, so `returnType` is pinned as `null` (the ABSENT assertion this matcher supports). Three controls keep the rule honest from the other side: `HANDLE_CTX` is an all-caps TYPEDEF (the spelling alone can never be the test — the marker rule's own measurement over the two pinned corpora found 43 such false positives and lists HANDLE/DWORD/WORD among them), a decorated declaration still earns its own symbol, and a macro INVOCATION recovered into a declaration-shaped node (the preprocessor-split body at nlohmann json.hpp:3499) must not be published as the function its CALL's declarator names — the recovery may only be entered for a declaration that states a type or defines something.",
+  "expectReturnType": [
+    {
+      "symbol": "Shutdown",
+      "returnType": "void",
+      "note": "the specifier's non-macro children. Pre-fix this read `LIB_API void`: one function, two return types in one index, because its out-of-line definition in a .cpp states `void`."
+    },
+    {
+      "symbol": "Counter",
+      "returnType": "unsigned long long",
+      "note": "D27, and the only row that fails if the whitespace normalisation is dropped: the source writes the type with alignment padding, and `unsigned   long   long` is not a spelling of any C++ type a compiler accepts."
+    },
+    {
+      "symbol": "first_char",
+      "returnType": "char",
+      "note": "the recovery's ERROR holds TWO decorators, the type and the declarator — measured on nlohmann to_chars.hpp:1063, where the pre-fix reader published NOTHING at all (the declarator is inside the ERROR, one level below the wrapper's direct children), so this row is also a coverage gain. The pointer is dropped, which is this analyzer's existing convention for every pointer return type (`char* f()` publishes `char`)."
+    },
+    {
+      "symbol": "operator+",
+      "returnType": "String",
+      "note": "the type the grammar rejoined to the NAME. Measured on doctest.h:665 (`DOCTEST_INTERFACE String operator+`), where the qid's separator slot carries an EMPTY `::` — the same evidence `qualifiedDeclaratorLeaf` reads to split name from owner, which is why the two readers cannot disagree."
+    },
+    {
+      "symbol": "Plain",
+      "returnType": "std::string",
+      "note": "CONTROL: no decorator, so the declared type is published verbatim."
+    },
+    {
+      "symbol": "OpenContext",
+      "returnType": "HANDLE_CTX",
+      "note": "CONTROL: an all-caps TYPEDEF keeps its field. A rule spelled 'an all-caps spelling in type position is a decorator' would strip this one, and the spelling alone cannot tell it from the marker."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Sink",
+      "returnType": null,
+      "parameters": [
+        { "name": "id", "type": "int" },
+        { "name": "what", "type": "const char*" }
+      ],
+      "note": "THE ROW THE MIS-READER COST, twice over. Pre-fix there was no `Sink` constructor at all; instead a `method Sink.Base` — the base-class initializer read as a declarator — carried the body. The parameters are pinned because the declarator that names the function is the same one the signature comes from: the member arm looked it up with a one-level scan that CANNOT see a declarator inside the macro's parens, so the pre-fix symbol had no parameters either. `returnType: null` is the ABSENT assertion: a constructor states no type, and the macro spelling published there was a claim about a signature that does not exist."
+    },
+    {
+      "name": "first_char",
+      "kind": "function",
+      "parameters": [{ "name": "offset", "type": "int" }],
+      "note": "the coverage gain's other half: the pre-fix reader published no symbol here, so these parameters had no home."
+    },
+    {
+      "name": "Shutdown",
+      "kind": "function",
+      "note": "CONTROL: the decorator gates the FIELD, never the symbol — a decorated declaration is still a declaration."
+    },
+    {
+      "name": "getHairColor",
+      "kind": "method",
+      "note": "CONTROL: the REAL member, declared in `struct Probe`, is published and still owns the name — the gate refuses the recovery, not the name."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Base",
+      "kind": "method",
+      "ownerName": "Sink",
+      "note": "PRE-FIX, and the reason this fixture exists: the base-class initializer `Base(id, what)` read as a declarator published a member named after the class's own base. Both endpoints of its `contains` edge resolve, so no endpoint-shape audit could see it."
+    },
+    {
+      "name": "convert",
+      "startLine": 100,
+      "note": "PRE-GATE, and the pin that FAILS when the gate is opened: on the preprocessor-split body the recovery's ERROR holds an EXPRESSION (`ptr.convert()`), and a descent that enters every recovery publishes a member named after the CALL — measured on nlohmann json.hpp:3499, where an ungated descent published `function convert`, a name whose only occurrence in the source is a member call inside a return statement. KIND IS DELIBERATELY UNPINNED: the same defect lands as `method` here and as `function` there, so a kind-constrained row would assert nothing on one of the two. Mutating only `enterRecovery` back to `true` makes this row fail while every control still passes."
+    },
+    {
+      "name": "LIB_API",
+      "kind": "function",
+      "note": "the decorator is never the function: a symbol keyed on the macro would say LIB_API is declared where `void Shutdown()` is written."
+    },
+    {
+      "name": "LIB_NONNULL",
+      "kind": "function",
+      "note": "same, on the shape where the macro's own argument list is what parses as a declarator (the reader that took the wrapper's direct child was one node away from publishing this)."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Sink",
+      "target": "Base",
+      "note": "the containment edge that the pre-fix symbol owned: `Sink` contains its base-class CALL read as a member. A class does not contain its base's initializer, and `extends Sink -> Base` is the edge that does describe the relationship."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Sink",
+      "target": "Base",
+      "note": "CONTROL, and the row that says the fix did not cost the real relationship: `class Sink : public Base` still extends."
+    }
+  ]
+}

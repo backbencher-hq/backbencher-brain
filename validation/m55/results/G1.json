@@ -45,12 +45,12 @@
       {
         "gate": "m53-ladder",
         "exit": 0,
-        "lastLine": "Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json"
+        "lastLine": "Evidence: /home/ishaq2321/mcp/backbencher-brain/validation/m53/results/R1.json"
       },
       {
         "gate": "m53-closure",
         "exit": 0,
-        "lastLine": "Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
+        "lastLine": "Evidence: /home/ishaq2321/mcp/backbencher-brain/validation/m53/results/X1.json"
       }
     ]
   },

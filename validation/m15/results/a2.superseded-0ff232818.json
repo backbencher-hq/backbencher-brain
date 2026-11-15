@@ -1,0 +1,12 @@
+{
+  "issue": "M15.A2",
+  "code": "A2",
+  "tool": "bb_ask",
+  "title": "regex census — behaviorally tested",
+  "verified": false,
+  "checks": 5,
+  "passed": 3,
+  "failed": 3,
+  "negatives": 1,
+  "generatedAt": "2026-09-29T05:44:13.031Z"
+}

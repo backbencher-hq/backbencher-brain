@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/trap-handler-call-classification.sh",
+  "authoredFrom": "Round 7. `probe-bash-unresolved-targets.mts` section B2 put the analyzer's `isFunctionCall`/`isExternalCommand` CLAIM on one axis and measured reachability on the other, and 223 of 55,218 `calls` edges landed in a **NO FLAG** cell — 123 of them naming a function the same file declares. The cause is two emission sites: the main command site (real-bash-analyzer.ts:1889) sets both flags on every edge, and the trap-handler site (:2030) set neither. This fixture pins the classification at the trap site in BOTH directions, because a fix that hard-coded either value satisfies one half.",
+  "expectSymbols": [
+    { "name": "trap-handler-call-classification.sh", "kind": "module" },
+    { "name": "cleanup", "kind": "function", "ownerName": "trap-handler-call-classification.sh" },
+    { "name": "log", "kind": "function", "ownerName": "trap-handler-call-classification.sh" },
+    { "name": "sync_now", "kind": "function", "ownerName": "trap-handler-call-classification.sh" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls", "from": "trap-handler-call-classification.sh", "target": "cleanup", "line_number": 33,
+      "meta.isTrapHandler": true, "meta.isFunctionCall": true, "meta.isExternalCommand": false, "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "calls", "from": "trap-handler-call-classification.sh", "target": "rm", "line_number": 34,
+      "meta.isTrapHandler": true, "meta.isFunctionCall": false, "meta.isExternalCommand": true, "meta.resolvedWithinFile": false
+    },
+    {
+      "type": "calls", "from": "trap-handler-call-classification.sh", "target": "log", "line_number": 35,
+      "meta.isTrapHandler": true, "meta.isFunctionCall": true, "meta.isExternalCommand": false, "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "calls", "from": "trap-handler-call-classification.sh", "target": "sync_now", "line_number": 35,
+      "meta.isTrapHandler": true, "meta.isFunctionCall": true, "meta.isExternalCommand": false, "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "calls", "from": "trap-handler-call-classification.sh", "target": "cleanup", "line_number": 36,
+      "meta.isTrapHandler": true, "meta.isFunctionCall": true, "meta.isExternalCommand": false, "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "calls", "from": "trap-handler-call-classification.sh", "target": "sync_now", "line_number": 36,
+      "meta.isTrapHandler": true, "meta.isFunctionCall": true, "meta.isExternalCommand": false, "meta.resolvedWithinFile": true
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "EXIT" },
+    { "type": "calls", "from": "ERR" },
+    { "type": "calls", "from": "TERM" },
+    { "type": "calls", "from": "HUP" },
+    { "type": "calls", "target": "rm -f \"$1\"" },
+    { "type": "calls", "target": "log interrupted; sync_now" },
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" }
+  ]
+}

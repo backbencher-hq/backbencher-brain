@@ -64,7 +64,7 @@ import { execSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 const OUT = (() => {
   // --out= keeps half-sweeps from clobbering each other's evidence; the halves
   // are merged by script/m59/merge-matrix-halves.ts and the merged file records
@@ -147,7 +147,7 @@ async function withBound<T>(p: Promise<T>, ms: number): Promise<T | typeof BOUND
   return Promise.race([p, new Promise<typeof BOUND>((resolve) => setTimeout(() => resolve(BOUND), ms))])
 }
 
-// One real repo per line-emitting language, chosen from fixtures/repositories by
+// One real repo per line-emitting language, chosen from bb_tests/repositories by
 // what is actually there (counts measured, not assumed).
 const LANGS: Array<{ lang: string; repo: string; ext: string[] }> = [
   { lang: "scala", repo: "cats-effect", ext: [".scala"] },

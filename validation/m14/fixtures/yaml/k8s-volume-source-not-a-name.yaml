@@ -1,0 +1,27 @@
+# A Kubernetes volume SOURCE is configuration, not a reference. Measured over
+# kubernetes (M60 target-spelling census): a conflated resource-ref walk collected
+# every nested scalar of a volume source, so this file emitted a resource
+# reference to `3` — the integer of `defaultMode` — and to every `items[].key` and
+# `items[].path` string beneath it.
+volumes:
+- configMap:
+    defaultMode: 3
+    items:
+    - key: a
+      path: b/c
+- secret:
+    defaultMode: 420
+    optional: true
+- persistentVolumeClaim:
+    readOnly: true
+    defaultMode: 3
+# The shapes that DO name a resource, so the fix is not "stop emitting refs".
+- configMapRef:
+    name: my-cm
+- configMapRef: my-cm-shorthand
+- secretRef:
+    name: my-secret
+- secret: my-secret-shorthand
+- persistentVolumeClaim:
+    claimName: my-pvc
+- serviceAccountName: my-sa

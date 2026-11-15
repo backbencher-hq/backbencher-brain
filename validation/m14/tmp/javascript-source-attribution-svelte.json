@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-13T20:19:38.934Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "admittedFiles": 3383,
+  "sampledFiles": 120,
+  "parseCleanFiles": 120,
+  "totals": {
+    "files": 120,
+    "rows": 2776,
+    "withLine": 2776,
+    "attributed": 2776,
+    "attributedModule": 502,
+    "attributedLocalCallable": 870,
+    "outOfScope": 495,
+    "unattributed": 0
+  },
+  "note": "Checks the one dimension no other instrument covers: the differential matches label + normTarget and never source, and verify-js-source-attribution.ts asserts only NULL sources. Expected sources are REPLAYED from the analyzer's own resolveCurrent rule over the tree (function names, method names, local `const f = () =>` declarators, class names for static blocks/field inits, X.prototype.m, the enclosing class for the uses walk, and the module name at top level).",
+  "examples": []
+}

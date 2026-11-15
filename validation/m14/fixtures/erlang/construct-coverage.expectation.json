@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/construct-coverage.erl",
+  "authoredFrom": "M14.0.F6 erlang coverage (2026-10-08). The lane's completeness spec lists 104 handled_verified node types and F6 requires every one of them to OCCUR in a fixture's parse, so 'the analyzer can handle it' is not evidence and neither is reasoning about the grammar. 21 were reached by no fixture: pp_if, pp_ifndef, pp_elif, replacement_cr_clauses, replacement_function_clauses, replacement_guard_and, fun_type_sig, type_guards, fun_type, range_type, macro_string, map_generator, catch_expr, try_stack, binary_comprehension, map_comprehension, b_generator, block_expr, bit_type_list, bit_type_unit, unary_op_expr. Each was located by PARSING candidate sources against the pinned wasm and keeping the shape that produced the type (script/m14/tmp/erlang-coverage-probe{,2,3,4,5,6}.ts, and the file itself re-measured afterwards), and the fixture reaches 21 of 21 with a clean parse. Three shapes reach the same types and are NOT used because each parses with an ERROR node — a parenthesised clause list `-define(C, (a -> 1; b -> 2)).`, a `when`-prefixed guard body `-define(G, when X > 0).`, and a named clause-list macro invoked as `fun ?M end` — and pinning a shape the parser cannot read would trade a broken fixture for cover the clean forms already give. THE ROWS BELOW ARE READ FROM THE ANALYZER'S OWN OUTPUT for these bytes, not from what the constructs are expected to mean: 13 symbols and 29 relationships, of which the ones that carry meaning are pinned here. What this fixture is FOR is coverage; what the rows are for is that the file cannot silently stop being evidence — if the constructs stop being classified as macros and types (or start being published as calls), the coverage number would stay where it is while the lane's output drifted.",
+  "expectSymbols": [
+    { "name": "construct_coverage", "kind": "module" },
+    {
+      "name": "callback", "kind": "type", "meta.arity": 0, "meta.isOpaque": false, "meta.isNominal": false,
+      "note": "the fun TYPE alias: `fun((integer()) -> ok)` is what makes fun_type and fun_type_sig occur, and it must still be published as a type rather than as a call or an instantiation."
+    },
+    { "name": "range", "kind": "type", "meta.arity": 0, "note": "`1..10` — the range_type construct." },
+    { "name": "pick_cr", "kind": "function", "meta.arity": 1 },
+    { "name": "pick_fn", "kind": "function", "meta.arity": 1 },
+    {
+      "name": "pick_name", "kind": "function", "meta.arity": 1, "meta.hasSpec": true,
+      "note": "carries the `when Name :: atom()` spec, which is the type_guards construct."
+    },
+    { "name": "guarded", "kind": "function", "meta.arity": 1, "note": "its guard is the GUARD-SEQUENCE macro." },
+    { "name": "shaped", "kind": "function", "meta.arity": 3, "note": "holds catch_expr, block_expr, unary_op_expr, the bit types, both comprehensions and try_stack." },
+    {
+      "name": "IN_RANGE", "kind": "macro", "meta.isMacro": true, "meta.isFunctionLike": true, "meta.parameterCount": 1,
+      "note": "a parameterised macro whose BODY is a guard sequence — the replacement_guard_and construct."
+    },
+    {
+      "name": "NAME_OF", "kind": "macro", "meta.isMacro": true, "meta.isFunctionLike": true, "meta.parameterCount": 1,
+      "note": "the stringify macro `??X` — the macro_string construct."
+    },
+    {
+      "name": "PICK_CLAUSES", "kind": "constant", "meta.isMacro": true, "meta.isFunctionLike": false,
+      "note": "a CLAUSE LIST as a macro body with no parameters, so it is published as a constant macro (replacement_cr_clauses)."
+    },
+    {
+      "name": "PICK_FN_CLAUSES", "kind": "constant", "meta.isMacro": true, "meta.isFunctionLike": false,
+      "note": "a NAMED clause list as a macro body (replacement_function_clauses)."
+    },
+    { "name": "CONSTRUCT_COVERAGE_ON", "kind": "constant", "meta.isMacro": true, "note": "defined inside the `-ifndef` branch." }
+  ],
+  "expectSymbolCount": [
+    { "name": "construct_coverage", "kind": "module", "equals": 1 },
+    { "name": "callback", "kind": "type", "equals": 1 },
+    { "name": "range", "kind": "type", "equals": 1 },
+    { "name": "PICK_CLAUSES", "equals": 1 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references", "from": "guarded", "target": "IN_RANGE", "meta.context": "macro use",
+      "note": "A macro used in GUARD position is a reference to the macro. This is the row that says the guard-sequence body did not become a guard of the function and did not become a call: the construct is recorded as what the source says."
+    },
+    {
+      "type": "references", "from": "pick_cr", "target": "PICK_CLAUSES", "meta.context": "macro use",
+      "note": "the clause-list macro USE. The clauses themselves live in the definition and are not this file's control flow."
+    },
+    {
+      "type": "references", "from": "pick_fn", "target": "PICK_FN_CLAUSES", "meta.context": "macro use",
+      "note": "the named clause-list macro USE."
+    },
+    {
+      "type": "references", "from": "pick_name", "target": "NAME_OF", "meta.context": "macro use",
+      "note": "the stringify macro USE — the type it produces is a string literal, and the edge published is onto the macro, not onto the argument."
+    },
+    {
+      "type": "calls", "from": "shaped", "target": "maps:get", "meta.callArity": 3,
+      "note": "the only real call in the file, and it is qualified: a remote call's target is `maps:get`. Pinned because the comprehension and try bodies around it are exactly the shapes that could start absorbing or splitting it."
+    },
+    {
+      "type": "references", "from": "callback", "target": "integer", "meta.context": "type reference",
+      "note": "the fun type's ARGUMENT type is read as a type reference, which is what distinguishes a fun TYPE from the fun-valued expression elsewhere in the file."
+    },
+    {
+      "type": "exports", "from": "construct_coverage", "target": "shaped", "meta.arity": 3, "meta.exportForm": "export",
+      "note": "the `-export` sits INSIDE an `-if` branch. Pinned so a change that starts skipping preprocessor conditional branches cannot quietly drop the module's public surface; the arity travels with the identity."
+    },
+    {
+      "type": "contains", "from": "construct_coverage", "target": "IN_RANGE", "meta.isModuleMember": true,
+      "note": "a macro defined between the type aliases is a module member like any other declaration."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls", "from": "pick_cr", "target": "a",
+      "note": "the clause-list macro's heads (`a -> 1; b -> 2`) are PATTERNS. Read as calls they would put two names in the call graph that the source never invokes."
+    },
+    { "type": "calls", "from": "pick_cr", "target": "b", "note": "same clause list, second head." },
+    {
+      "type": "calls", "from": "pick_fn", "target": "foo",
+      "note": "the NAMED clause head inside the macro body is a clause head, not a call site."
+    },
+    {
+      "type": "calls", "from": "pick_name", "target": "NAME_OF",
+      "note": "`?NAME_OF(Name)` is a macro USE. The stringify operator turns its argument into a text literal; nothing is invoked."
+    },
+    {
+      "type": "calls", "from": "guarded", "target": "IN_RANGE",
+      "note": "the guard macro is not invoked by the guard."
+    },
+    {
+      "type": "calls", "from": "shaped", "target": "get",
+      "note": "`maps:get` must stay whole. Splitting a remote target into its last segment would name a function that does not exist anywhere in the file."
+    },
+    {
+      "type": "calls", "from": "shaped", "target": "maps",
+      "note": "and it must not be split the other way either: the module part is not the call."
+    }
+  ],
+  "forbidSymbols": [
+    { "name": "a", "note": "a clause pattern is not a declaration." },
+    { "name": "b", "note": "nor is the second one." },
+    { "name": "foo", "note": "a clause head inside a macro body is not a function of this module." },
+    { "name": "integer", "note": "a type NAME read inside a fun type is not a declaration of the module." }
+  ]
+}

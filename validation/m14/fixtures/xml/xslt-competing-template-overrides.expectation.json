@@ -1,0 +1,103 @@
+{
+ "fixtureId": "xml/xslt-competing-template-overrides",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "`overrides` — XSLT 1.0 §5.5 competing template rules. The lane RULED this type inapplicable on a parse-tree count; `script/m14/ontology-coverage-gate.ts` reported that ruling FALSIFIED over the full 11,456-file admitted population (3 sites in 3 files), so the type is EMITTED rather than re-ruled. The first counter-example the arbiter named is `libxslt/tests/docbook/fo/toc.xsl`, which declares `<xsl:template match=\"*\" mode=\"toc.for.section\">` at line 180 and again at line 190; row 1 below is that shape at fixture scale. §5.5: \"It is an error if a stylesheet contains more than one template with the same match and same import precedence\", and the processor runs the LATER one — so the second declaration silently REPLACES the first, which is the only sense this language has an override. Re-probed through production `parseFile`: 3 `overrides` edges, all confidence 1, all `evidenceClass: structural`, and 21 `contains` edges unchanged. Five rows, each of which a different wrong rule would pass: (1) two match-only templates at the same match/mode/priority -> edge from the LATER to the EARLIER, both endpoints DERIVED identities, because a match-based template has no `name` and this analyzer would otherwise give both of them the tag name `xsl:template` and collapse them into one symbol; the derived name carries the triple §5.5 compares PLUS an occurrence index, because the triple is by construction IDENTICAL for the two declarations and an identity built from it alone would make both endpoints the same name. (2) a single match-based template -> NO edge, so a rule emitting one edge per match-based template cannot pass. (3) two templates with DISTINCT names at the same match/mode/priority -> the edge uses the DECLARED names, because names written in the document are better endpoints than derived ones. (4) two templates sharing ONE name and one match -> §5.5 makes that an error as well, and here the declared name cannot separate the two declarations, so the edge is between derived identities carrying `metadata.declaredName` rather than an `overrides twin -> twin` self-edge that would carry no information. (5) two name-only templates with NEITHER a `match` -> NO edge: a named template is invoked by `xsl:call-template` and never competes for a node. Row 5 is the row the lane's own census probe got wrong — it keyed on `match|mode|priority` and ignored `name`, so every name-only template reduced to the key `||` and it reported 3 collisions across libxslt and powershell that were 9 legal named templates; see `validation/m14/fixtures/xml/overrides-probe.mts`.",
+ "expectRelationships": [
+  {
+   "type": "overrides",
+   "from": "xsl:template[match=*|mode=dup|priority=]#1",
+   "target": "xsl:stylesheet.xsl:template[match=*|mode=dup|priority=]#0",
+   "line_number": 75,
+   "meta.role": "xslt_competing_template_rule",
+   "meta.templateMatch": "*",
+   "meta.templateMode": "dup",
+   "meta.derivation": "xslt-5.5-later-template-replaces-earlier",
+   "meta.resolvable": "in-document",
+   "note": "Row 1, and the reason the corpus overturned the ruling. `#1` is the SECOND declaration in document order and `#0` the first, so the edge reads 'this rule silently took that one's place'. The occurrence index is required: the triple is identical for both, so without it both endpoints would be one name and the edge a self-edge. The brackets, pipes and equals signs are not NCName characters (XML 1.0 §2.3), so this derived identity cannot collide with any name a document declares."
+  },
+  {
+   "type": "overrides",
+   "from": "loser",
+   "target": "xsl:stylesheet.winner",
+   "line_number": 79,
+   "meta.role": "xslt_competing_template_rule",
+   "meta.templateMatch": "c",
+   "meta.derivation": "xslt-5.5-later-template-replaces-earlier",
+   "meta.resolvable": "in-document",
+   "note": "Row 3. Both templates carry a distinct `name`, and a name written in the document is a better endpoint than a derived identity, so no derived symbol is published for this group at all."
+  },
+  {
+   "type": "overrides",
+   "from": "xsl:template[match=d|mode=|priority=]#1",
+   "target": "xsl:stylesheet.xsl:template[match=d|mode=|priority=]#0",
+   "line_number": 83,
+   "meta.role": "xslt_competing_template_rule",
+   "meta.templateMatch": "d",
+   "meta.declaredName": "twin",
+   "meta.derivation": "xslt-5.5-later-template-replaces-earlier",
+   "meta.resolvable": "in-document",
+   "note": "Row 4. Both templates are named `twin`, so the declared name cannot separate the declarations and `overrides twin -> twin` would be a self-edge. `metadata.declaredName` carries the name the document actually wrote, so the only real name here is not lost."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "overrides",
+   "from": "xsl:template[match=node()|mode=uniq|priority=]#0",
+   "target": "xsl:template[match=node()|mode=uniq|priority=]#0",
+   "note": "Row 2. `node()|uniq|` is declared ONCE, so it must produce no edge in either direction. A rule that emitted one edge per match-based template would satisfy row 1 and pass without this row; a rule that emitted a self-edge for every template would fail only here."
+  },
+  {
+   "type": "overrides",
+   "target": "dumptext",
+   "note": "Row 5, and the lane's own instrument defect. Two name-only templates are declared and neither has a `match`. A named template is INVOKED by `xsl:call-template name=\"dumptext\"` and never competes for a node, so two of them cannot override one another. The census probe `same-file-template-override` keyed on `match|mode|priority` while ignoring `name`, so both of these reduced to the key `||` and were reported as collisions at 3 sites in 3 files — `libxslt/doc/EXSLT/devhelp/html.xsl` and `libxslt/doc/devhelp/html.xsl` (`name=\"dumptext\"` l.26, `name=\"generate_general\"` l.498, `name=\"generate_index\"` l.539) and `powershell/src/Schemas/PSMaml/Maml_HTML_Style.xsl` (`name='transformCALSCell'` l.121, `name='findInheritedAttribute'` l.216, `name='transformInheritedAttribute'` l.310). All nine were verified by hand to be name-only templates. That probe also holds `templateKeys` at module scope and reassigns it per file inside 4 concurrent workers, so one worker's reset can land inside another's file — a race that can both invent collisions and lose them."
+  },
+  {
+   "type": "overrides",
+   "from": "xsl:template[match=*|mode=dup|priority=]#0",
+   "target": "xsl:template[match=*|mode=dup|priority=]#1",
+   "note": "direction: XSLT 1.0 §5.5 runs the LAST matching template, so the edge runs from the later declaration to the earlier one. The reverse edge would say the first rule replaced the second, which is the opposite of what a processor does — and a graph carrying both directions would make every override look mutual."
+  },
+  {
+   "type": "overrides",
+   "from": "winner",
+   "target": "loser",
+   "note": "direction, for the named pair of row 3. `loser` is declared second and is the one that runs."
+  },
+  {
+   "type": "overrides",
+   "from": "twin",
+   "target": "twin",
+   "note": "row 4's reason for deriving identities at all: two declarations of one name would make this a self-edge, which resolves to itself and answers nothing about which declaration replaced which."
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "winner",
+   "note": "row 3's declared name — a template with a distinct name inside a colliding group is published under it, not under a derived identity."
+  },
+  {
+   "name": "loser",
+   "note": "row 3's declared name, and the source of the row-3 override edge."
+  },
+  {
+   "name": "xsl:template[match=*|mode=dup|priority=]#0",
+   "note": "row 1's FIRST declaration, as a published symbol. Both endpoints must be real symbols, not names carried only on an edge — an edge to a name nothing published is the M60.R10 class."
+  },
+  {
+   "name": "xsl:template[match=*|mode=dup|priority=]#1",
+   "note": "row 1's SECOND declaration and the source of the edge. `#1` rather than `#0` because §5.5 runs the later template."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "xsl:template[match=node()|mode=uniq|priority=]#0",
+   "note": "Row 2 again, from the symbol side: a template declared once must not gain a derived identity. Derived symbols are published ONLY for templates that actually collide, so the corpus cost is 4 rows in 11,456 files rather than one per match-based template."
+  },
+  {
+   "name": "unknown",
+   "note": "M60 rule R7: no symbol may be named the placeholder literal."
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

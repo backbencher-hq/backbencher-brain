@@ -19,7 +19,7 @@ import { writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve("script/m50", "../..")
-const REPO = "$HOME/mcp/backbencher-brain"
+const REPO = "/home/ishaq2321/mcp/backbencher-brain"
 const QUERY = process.argv[2] || "where are foreign keys enforced?"
 const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
 

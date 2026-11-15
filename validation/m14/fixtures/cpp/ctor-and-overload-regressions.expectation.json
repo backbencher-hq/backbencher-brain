@@ -1,0 +1,133 @@
+{
+  "fixtureId": "cpp/ctor-and-overload-regressions",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Deep review 2026-09-05 defect classes. CPPD9: ctor-body calls were sourced to the Class name (Engine -> start) while the symbol was normalized to 'constructor', so the call graph pointed at the Class and the qualified_calls payload never reached the constructor. CPPD10: qualified_calls were merged post-loop by bare method NAME, so Alpha.run and Beta.run BOTH carried [aFn, bFn]. CPPD11: the virtual registry kept one signature per method name (last-wins), so Derived overriding the FIRST-declared base overload f(int) was silently dropped.",
+  "expectSymbols": [
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Engine"
+    },
+    {
+      "name": "Alpha",
+      "kind": "class"
+    },
+    {
+      "name": "Beta",
+      "kind": "class"
+    },
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Derived",
+      "kind": "class"
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "constructor",
+      "includes": [
+        "start",
+        "warm"
+      ]
+    },
+    {
+      "symbol": "run",
+      "ownerName": "Alpha",
+      "includes": [
+        "aFn"
+      ],
+      "notIncludes": [
+        "bFn"
+      ]
+    },
+    {
+      "symbol": "run",
+      "ownerName": "Beta",
+      "includes": [
+        "bFn"
+      ],
+      "notIncludes": [
+        "aFn"
+      ]
+    },
+    {
+      "symbol": "drive",
+      "includes": [
+        "ns::func<int>",
+        "g.apply<double>"
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "start"
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "warm"
+    },
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived::f",
+      "target": "f",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived::g",
+      "target": "g",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "calls",
+      "from": "drive",
+      "target": "func"
+    },
+    {
+      "type": "calls",
+      "from": "drive",
+      "target": "apply"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "Engine",
+      "target": "start"
+    },
+    {
+      "type": "calls",
+      "from": "Engine",
+      "target": "warm"
+    },
+    {
+      "type": "calls",
+      "from": "drive",
+      "target": "func<int>"
+    },
+    {
+      "type": "calls",
+      "from": "drive",
+      "target": "apply<double>"
+    },
+    {
+      "type": "calls",
+      "from": "drive",
+      "target": "Gadget"
+    },
+    {"type": "calls", "from": "Engine", "target": "Engine::start", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "calls", "from": "Engine", "target": "Engine::warm", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

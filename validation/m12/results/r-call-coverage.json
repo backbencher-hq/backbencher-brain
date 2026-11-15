@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_call_coverage",
+  "why": "every other harness in this lane measures what the analyzer produced; this measures what it did not, with the denominator taken from the parse tree so it cannot move when the analyzer does",
+  "present": true,
+  "method": "call sites counted by walking the tree-sitter parse tree for `call` nodes, split by whether a `function_definition` encloses them; compared against the analyzer's emitted `calls` relationships and its own attribution counters",
+  "denominatorIsAnalyzerIndependent": true,
+  "totals": {
+    "files": 1174,
+    "callSites": 107534,
+    "callSitesAtFileScope": 59840,
+    "callSitesInFunction": 47694,
+    "callsEdges": 27177
+  },
+  "edgePerCallSite": 0.2527,
+  "counters": {
+    "unresolvedScope": 66394,
+    "throughClosure": 2325,
+    "heuristicS3Generic": 0,
+    "unnameableCallee": 83
+  },
+  "filesAnalyzed": 1174,
+  "filesSurfacingCounters": 1174,
+  "perRepo": {
+    "dplyr": {
+      "files": 195,
+      "callSites": 22574,
+      "callSitesAtFileScope": 16760,
+      "callSitesInFunction": 5814,
+      "callsEdges": 4687
+    },
+    "ggplot2": {
+      "files": 357,
+      "callSites": 31042,
+      "callSitesAtFileScope": 16509,
+      "callSitesInFunction": 14533,
+      "callsEdges": 6262
+    },
+    "shiny": {
+      "files": 276,
+      "callSites": 20521,
+      "callSitesAtFileScope": 10010,
+      "callSitesInFunction": 10511,
+      "callsEdges": 7330
+    },
+    "testthat": {
+      "files": 266,
+      "callSites": 10592,
+      "callSitesAtFileScope": 5306,
+      "callSitesInFunction": 5286,
+      "callsEdges": 4110
+    },
+    "Matrix": {
+      "files": 80,
+      "callSites": 22805,
+      "callSitesAtFileScope": 11255,
+      "callSitesInFunction": 11550,
+      "callsEdges": 4788
+    }
+  },
+  "knownLimitation": {
+    "what": "66,394 calls are not attributed to any symbol, which is 61.7% of all call sites",
+    "why": "R packages are mostly top-level code, so most calls have no enclosing function; `source` in this framework's relationship model is a symbol name, and there is no symbol to name",
+    "decision": "DESIGN LIMITATION, recorded rather than silently accepted. Attributing file-scope calls to the FILE, as file-level `imports` edges already do, is the available alternative and is a framework semantics decision, not this lane's to take alone."
+  },
+  "problems": [],
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T22:00:48.989Z",
+    "contentSha256": "d59b9d58e1dd080f9fd4378d79ac667e05866bfed77f1541c91832b1f874253e"
+  }
+}

@@ -1,0 +1,721 @@
+{
+  "tool": "validation/m14/elixir/elixir-no-regex.ts",
+  "lane": "ELIXIR_FIX2",
+  "subjectCommit": "30b6d1999350ec00561cb48990cdb831d52f6a9d",
+  "population": {
+    "derived": true,
+    "roots": [
+      "src/ast (real-elixir-analyzer*)",
+      "script/m14/oracles (elixir*)",
+      "validation/m14/elixir (*.ts)",
+      "validation/m14/fixtures/elixir (*.ex, *.exs)"
+    ],
+    "filesScanned": 100,
+    "unreadable": 0
+  },
+  "instrument": "tree-sitter TypeScript AST; `regex` node type plus RegExp constructor calls. NOT a text scan.",
+  "totalRegexLiterals": 5,
+  "totalRegExpConstructors": 0,
+  "rows": [
+    {
+      "file": "script/m14/oracles/elixir-contains.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 46395,
+      "sha256_16": "719e62ea73002a10"
+    },
+    {
+      "file": "script/m14/oracles/elixir-defoverridable-sites.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 5803,
+      "sha256_16": "83a11fc4d225ad3f"
+    },
+    {
+      "file": "script/m14/oracles/elixir-dump.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 2190,
+      "sha256_16": "25c369073e55ff6c"
+    },
+    {
+      "file": "script/m14/oracles/elixir-emission-audit.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 12986,
+      "sha256_16": "e0f5bac339aa7cbe"
+    },
+    {
+      "file": "script/m14/oracles/elixir-gap-truth.ts",
+      "regexLiterals": 4,
+      "regexConstructors": 0,
+      "bytes": 26105,
+      "sha256_16": "083d5baf05569a33"
+    },
+    {
+      "file": "script/m14/oracles/elixir-mutation-ab.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 12054,
+      "sha256_16": "3ccd75cfdca38dc2"
+    },
+    {
+      "file": "script/m14/oracles/elixir-ontology-probe.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 16177,
+      "sha256_16": "9e51ec588b46904e"
+    },
+    {
+      "file": "script/m14/oracles/elixir-overrides.ts",
+      "regexLiterals": 1,
+      "regexConstructors": 0,
+      "bytes": 14594,
+      "sha256_16": "3c9e64b5cb92fb94"
+    },
+    {
+      "file": "script/m14/oracles/elixir-shapes.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 3264,
+      "sha256_16": "93d7dc7763f15b28"
+    },
+    {
+      "file": "src/ast/real-elixir-analyzer.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 191398,
+      "sha256_16": "a429db3c64f4229e"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-construct-census.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 36658,
+      "sha256_16": "79dbbcdbf52e5b3d"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-contains-audit.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 11324,
+      "sha256_16": "890d01d3e223b0ce"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-emit-gap.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 27677,
+      "sha256_16": "6463018a8a4e0cd4"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-firing-census.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 17347,
+      "sha256_16": "8eee25e5a87e449c"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-mutants.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 20096,
+      "sha256_16": "a4d74daa3b3c0656"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-no-regex.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 5304,
+      "sha256_16": "52e692943e2a0983"
+    },
+    {
+      "file": "validation/m14/elixir/elixir-payload-latency.ts",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 12679,
+      "sha256_16": "f103a347bddf28e9"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/alias-members-lines.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 58,
+      "sha256_16": "2c09c3809d6e7790"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/alias-self-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 124,
+      "sha256_16": "5cb47efb9a57d284"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/attribute-value-code.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1245,
+      "sha256_16": "bb8f0566994ea27e"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/behaviour-atom.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 59,
+      "sha256_16": "6f79502e2818a49b"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/callback-declarations.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1021,
+      "sha256_16": "c8dc8c225bb2d7fe"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/chained-calls.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 69,
+      "sha256_16": "c9af912031a5410d"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/complexity-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 124,
+      "sha256_16": "f07023d84e9a5822"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/control-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 321,
+      "sha256_16": "b1a24d2b6a35d434"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/defdelegate.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 120,
+      "sha256_16": "29b17bea97a87ee6"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/defexception-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 133,
+      "sha256_16": "214c2f9cff3299e9"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/defimpl-target-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 555,
+      "sha256_16": "060f5d3e1ae04904"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/defmacro-head-no-struct.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 179,
+      "sha256_16": "e1fbbb8f51e490b0"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/delegate-local-identity.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 475,
+      "sha256_16": "0e44e7a1c8e434d0"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/derive-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 149,
+      "sha256_16": "ecc11d203b7414cc"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/derive-list.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 115,
+      "sha256_16": "d997e5ca0852912c"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/doc-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 228,
+      "sha256_16": "1c128644d7d692a1"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/elx4-exports-surface.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 357,
+      "sha256_16": "43cf65d533f77c3f"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/elx4-imports-directive.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 197,
+      "sha256_16": "e0c586dbe308a7d5"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/elx4-overrides-defoverridable.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 244,
+      "sha256_16": "2d49cdca6f8273b5"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/elx4-r7-no-fabrication.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 592,
+      "sha256_16": "16d2cdd15ea30a51"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/elx4-unnamed-declarations.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 172,
+      "sha256_16": "5028713028cec227"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/elx4-uses-mixin.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 274,
+      "sha256_16": "4759db3422f93c00"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-alias-resolution.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 683,
+      "sha256_16": "4b69e9e70bd0ed0d"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-generic-types.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 122,
+      "sha256_16": "e7e1de5b786c4461"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-import-scope.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 189,
+      "sha256_16": "5428c669f3048bed"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-otp-fake.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 78,
+      "sha256_16": "016f555d820306b1"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-otp-real.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 58,
+      "sha256_16": "597c08b81a70444e"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-scope-identity.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 141,
+      "sha256_16": "935169d64f063595"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-sigil-docs.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 223,
+      "sha256_16": "889a4314e2f1dc32"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex2-signature-defaults.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 304,
+      "sha256_16": "d3ed87f11ecd6f2f"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex3-callsite-lines.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 173,
+      "sha256_16": "e6a15f4d24f2161f"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex3-captures.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 138,
+      "sha256_16": "0f5a3e24392e615d"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex3-derive-list.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 159,
+      "sha256_16": "60224cc624741894"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex3-literal-params.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 52,
+      "sha256_16": "246914d996f786a1"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ex3-no-self-and-implied.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 171,
+      "sha256_16": "c39aa29c9d303fbb"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/export-surface.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1774,
+      "sha256_16": "9038eaed5b22d912"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/exports-public-surface.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 2284,
+      "sha256_16": "1be9e29dda976de5"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/framework-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 218,
+      "sha256_16": "69aec871d807e7cc"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/genserver-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 388,
+      "sha256_16": "b6ca2a243cd73e50"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/guard-skips.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 490,
+      "sha256_16": "c425dc0e7ea139ce"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/implied-alias-scope.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 784,
+      "sha256_16": "0626a4cbf92f1648"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/import-only-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 239,
+      "sha256_16": "0a7b71868398df4f"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/kernel-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 178,
+      "sha256_16": "2fc1a6f0601a96c6"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/kernel-qualified.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 104,
+      "sha256_16": "f6f7b8c7a8697a90"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/member-read-uses.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 3357,
+      "sha256_16": "5177db64baf34132"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/merged-clause-extent.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1237,
+      "sha256_16": "ab417870076b431e"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/module-self-call.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 93,
+      "sha256_16": "fd61dde3c7cff2ef"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/multi-alias-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 87,
+      "sha256_16": "fe4804d64fd8cd80"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/nested-head-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 146,
+      "sha256_16": "984224011aee9879"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ontology-directives.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 920,
+      "sha256_16": "7575bf2beba556b7"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ontology-exports.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1098,
+      "sha256_16": "40fa4b008ab0b477"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ontology-overrides.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1163,
+      "sha256_16": "f372a00360eaf0da"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ontology-placeholder-names.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1616,
+      "sha256_16": "8bc5c55e254d5ff8"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/ontology-uses.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1106,
+      "sha256_16": "f925b43a862a9685"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/operator-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 64,
+      "sha256_16": "6652624a5c635594"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/otp-messaging.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 660,
+      "sha256_16": "be6106d8f0398ebd"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/overrides-defoverridable.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 3220,
+      "sha256_16": "385a1b8b8fbe0bd2"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/paren-operator-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1057,
+      "sha256_16": "77217f5bd124055a"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/pattern-structs.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 162,
+      "sha256_16": "e35ccd19346ebb21"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/pipe-arity.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 140,
+      "sha256_16": "be1d296589745a12"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/proto-complexity.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 176,
+      "sha256_16": "a21080b789ceb4af"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/protocol-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 116,
+      "sha256_16": "f1d3eb65bd691223"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/quote-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 145,
+      "sha256_16": "61b443003d2f2304"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/quoted-attrs.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 130,
+      "sha256_16": "7284a59fa0cb85c1"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/quoted-struct-fields.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 120,
+      "sha256_16": "1eaa16d84d5964d5"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/r7-directive-names.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 2269,
+      "sha256_16": "e90b12cc316a0649"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/r7-endpoint-names.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 2911,
+      "sha256_16": "ded21be9809286e1"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/r7-module-names.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1853,
+      "sha256_16": "bedeaeb6edb3f4b5"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/remote-ref-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 119,
+      "sha256_16": "0d036ae882105018"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/same-line-arity.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 107,
+      "sha256_16": "73ed8d33ebe5c9d6"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/scope-arity.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 253,
+      "sha256_16": "db7ed539b656aa0d"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/self-struct-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 320,
+      "sha256_16": "a5aab0c606a517a9"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/struct-field-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 283,
+      "sha256_16": "a08ba2d84a46bb20"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/struct-fn-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 178,
+      "sha256_16": "b506aa61a715633f"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/struct-update.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 236,
+      "sha256_16": "e1a3e639a1b58517"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/top-level-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 152,
+      "sha256_16": "794d195ed6383b05"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/try-blocks.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 384,
+      "sha256_16": "5d92b011791b68ec"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/unnamed-module-owner.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 2855,
+      "sha256_16": "33ca82f842f663d0"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/unquote-code.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 125,
+      "sha256_16": "ecb9cd4304706726"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/use-defoverridable.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 3818,
+      "sha256_16": "d2681c0675719b91"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/use-option-source.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 241,
+      "sha256_16": "9a49c78cf56f71d5"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/uses-mixin-forms.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 1144,
+      "sha256_16": "550f3d5a2e5cc83b"
+    },
+    {
+      "file": "validation/m14/fixtures/elixir/x14-capture-and-operator-calls.ex",
+      "regexLiterals": 0,
+      "regexConstructors": 0,
+      "bytes": 991,
+      "sha256_16": "6e0049e445bd465e"
+    }
+  ]
+}

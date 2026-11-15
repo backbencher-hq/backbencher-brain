@@ -1,0 +1,19 @@
+import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
+
+const file = fileURLToPath(new URL('./verify-typescript-factory-bindings.mts', import.meta.url))
+const run = (args: string[]) => spawnSync(process.execPath, [file, ...args], { encoding: 'utf8', timeout: 60_000 })
+const control = run([])
+assert.equal(control.status, 0, control.stdout + control.stderr)
+const signatureKinds = ['function_signature', 'method_signature', 'abstract_method_signature',
+  'function_type', 'constructor_type', 'call_signature', 'construct_signature']
+for (const mutation of ['scope', 'assignment', 'source', ...signatureKinds.map(kind => `signature-${kind}`)]) {
+  const result = run([`--mutate=${mutation}`])
+  assert.equal(result.error, undefined)
+  assert.equal(result.signal, null)
+  assert.equal(result.status, 1, result.stdout + result.stderr)
+  assert.ok(result.stdout.includes(`APPLIED factory mutation: ${mutation}`))
+  assert.ok(result.stderr.includes('AssertionError'))
+  console.log(`Rejected factory ${mutation} source mutation`)
+}

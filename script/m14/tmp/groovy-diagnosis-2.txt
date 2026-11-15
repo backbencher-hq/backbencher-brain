@@ -1,0 +1,394 @@
+SERVED GRAMMAR  wasm/tree-sitter-groovy.wasm
+  bytes     4388255
+  sha256    f1e68cb398e63f3498c63b1675bb65496a33bd194efb65ec461bb3f589cece04
+  fixtures  21
+
+### anonymous-body-overrides
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (9): interface:TypeCodec@12  method:bsonType@TypeCodec@13  class:BaseCodec@16  method:bsonType@BaseCodec@17  class:Registry@20  constant:DEFAULT@Registry@21  class:anonymous_TypeCodec@Registry@21  method:bsonType@anonymous_TypeCodec@23  method:bsonType@Registry@27
+  RELATIONSHIPS (12):
+    extends[Registry->BaseCodec]@20{relationshipType=extends,evidenceClass=structural}
+    instantiates[Registry->TypeCodec]@21{relationshipType=instantiates,isNew=true,evidenceClass=structural}
+    overrides[anonymous_TypeCodec.bsonType->bsonType]@23{relationshipType=method_override,isGroovyOverride=true,reasonCode=exact-in-file,overriddenOwner=TypeCodec,evidenceClass=structural}
+    overrides[Registry.bsonType->bsonType]@27{relationshipType=method_override,isGroovyOverride=true,reasonCode=exact-in-file,overriddenOwner=BaseCodec,evidenceClass=structural}
+    contains[TypeCodec->bsonType]@13{isContained=true,evidenceClass=structural}
+    contains[BaseCodec->bsonType]@17{isContained=true,evidenceClass=structural}
+    contains[Registry->DEFAULT]@21{isContained=true,evidenceClass=structural}
+    contains[Registry->anonymous_TypeCodec]@21{isContained=true,evidenceClass=structural}
+    contains[anonymous_TypeCodec->bsonType]@23{isContained=true,evidenceClass=structural}
+    contains[Registry->bsonType]@27{isContained=true,evidenceClass=structural}
+    references[bsonType->String]@13{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[Registry->TypeCodec]@21{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+
+### as-cast
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (2): class:CastSvc@1  method:run@CastSvc@2
+  RELATIONSHIPS (4):
+    contains[CastSvc->run]@2{isContained=true,evidenceClass=structural}
+    references[run->Object]@2{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[run->String]@3{relationshipType=cast_type,declaredOn=binary_expression,evidenceClass=reference_qualified}
+    references[run->Set]@4{relationshipType=cast_type,declaredOn=binary_expression,evidenceClass=reference_qualified}
+
+### attribution-visibility
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (7): class:Svc@14  property:cfg@Svc@15  method:cap@Svc@17  method:leak@Svc@21  method:hidden@Svc@23  method:guard@Svc@25  method:greet@Svc@27
+  RELATIONSHIPS (9):
+    contains[Svc->cfg]@15{isContained=true,evidenceClass=structural}
+    contains[Svc->cap]@17{isContained=true,evidenceClass=structural}
+    contains[Svc->leak]@21{isContained=true,evidenceClass=structural}
+    contains[Svc->hidden]@23{isContained=true,evidenceClass=structural}
+    contains[Svc->guard]@25{isContained=true,evidenceClass=structural}
+    contains[Svc->greet]@27{isContained=true,evidenceClass=structural}
+    uses[cap->limit]@18{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[Svc->Cfg]@15{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[greet->String]@27{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+
+### cast-types
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (2): class:CastSvc@1  method:run@CastSvc@2
+  RELATIONSHIPS (4):
+    contains[CastSvc->run]@2{isContained=true,evidenceClass=structural}
+    references[run->Object]@2{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[run->String]@3{relationshipType=cast_type,declaredOn=cast_expression,evidenceClass=reference_qualified}
+    references[run->List]@4{relationshipType=cast_type,declaredOn=cast_expression,evidenceClass=reference_qualified}
+
+### class-body-dot-continuation-841
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (5): class:Cfg@8  property:scriptDir@Cfg@9  property:builder@Cfg@17  method:methodChainControl@Cfg@21  method:sameLineControl@Cfg@27
+  RELATIONSHIPS (21):
+    calls[Cfg->toURI]@13{groovyCallExpression=getClass()
+            .protectionDomain
+            .codeSource
+            .location.toURI,evidenceClass=usage_contextual}
+    calls[Cfg->toAbsolutePath]@14{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    uses[Cfg->parent]@15{isFieldAccess=true,evidenceClass=usage_contextual}
+    calls[Cfg->builder]@17{groovyCallExpression=pm.builder,evidenceClass=usage_contextual}
+    calls[Cfg->excludeTimestamps]@18{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    calls[Cfg->excludeVersion]@19{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    calls[methodChainControl->builder]@22{groovyCallExpression=pm.builder,evidenceClass=usage_contextual}
+    calls[methodChainControl->excludeTimestamps]@23{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    calls[methodChainControl->excludeVersion]@24{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    calls[sameLineControl->excludeVersion]@28{groovyCallExpression=pm.builder.excludeTimestamps.excludeVersion,evidenceClass=usage_contextual}
+    calls[sameLineControl->excludeTimestamps]@28{groovyCallExpression=pm.builder.excludeTimestamps,evidenceClass=usage_contextual}
+    calls[sameLineControl->builder]@28{groovyCallExpression=pm.builder,evidenceClass=usage_contextual}
+    contains[Cfg->scriptDir]@9{isContained=true,evidenceClass=structural}
+    contains[Cfg->builder]@17{isContained=true,evidenceClass=structural}
+    contains[Cfg->methodChainControl]@21{isContained=true,evidenceClass=structural}
+    contains[Cfg->sameLineControl]@27{isContained=true,evidenceClass=structural}
+    uses[Cfg->location]@12{isFieldAccess=true,evidenceClass=usage_contextual}
+    uses[Cfg->codeSource]@11{isFieldAccess=true,evidenceClass=usage_contextual}
+    uses[Cfg->protectionDomain]@10{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[Cfg->Path]@9{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Cfg->Builder]@17{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+
+### ctor-field-split-lines
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (4): class:Split@13  property:distance@Split@14  constructor:Split@Split@19  method:valueOf@Split@23
+  RELATIONSHIPS (10):
+    instantiates[valueOf->Split]@24{relationshipType=instantiates,isNew=true,evidenceClass=structural}
+    contains[Split->distance]@14{isContained=true,evidenceClass=structural}
+    contains[Split->Split]@19{isContained=true,evidenceClass=structural}
+    contains[Split->valueOf]@23{isContained=true,evidenceClass=structural}
+    uses[Split->distance]@20{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[Split->Distance]@14{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Split->Point]@19{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[Split->Distance]@19{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[valueOf->Split]@23{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[valueOf->List]@23{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### ctor-identity
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (4): class:Alpha@1  constructor:Alpha@Alpha@2  class:Beta@5  constructor:Beta@Beta@6
+  RELATIONSHIPS (3):
+    contains[Alpha->Alpha]@2{isContained=true,evidenceClass=structural}
+    contains[Beta->Beta]@6{isContained=true,evidenceClass=structural}
+    references[Beta->String]@6{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### duplicate-parse-field
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (5): class:Split@13  property:center@Split@14  property:distance@Split@19  constructor:Split@Split@24  method:valueOf@Split@32
+  RELATIONSHIPS (13):
+    instantiates[valueOf->Split]@33{relationshipType=instantiates,isNew=true,evidenceClass=structural}
+    contains[Split->center]@14{isContained=true,evidenceClass=structural}
+    contains[Split->distance]@19{isContained=true,evidenceClass=structural}
+    contains[Split->Split]@24{isContained=true,evidenceClass=structural}
+    contains[Split->valueOf]@32{isContained=true,evidenceClass=structural}
+    uses[Split->center]@25{isFieldAccess=true,evidenceClass=usage_contextual}
+    uses[Split->distance]@26{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[Split->Point]@14{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Split->Distance]@19{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Split->Point]@24{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[Split->Distance]@24{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[valueOf->Split]@32{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[valueOf->List]@32{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### exports-publication
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (14): class:Publisher@3  property:label@Publisher@4  method:describe@Publisher@6  interface:Greeter@9  method:greet@Greeter@10  enum:Shade@13  enum_member:RED@Shade@13  enum_member:GREEN@Shade@13  method:scriptHelper@15  method:otherHelper@17  class:Hidden@19  property:secret@Hidden@20  class:Shielded@23  property:guard@Shielded@24
+  RELATIONSHIPS (19):
+    contains[Publisher->label]@4{isContained=true,evidenceClass=structural}
+    contains[Publisher->describe]@6{isContained=true,evidenceClass=structural}
+    contains[Greeter->greet]@10{isContained=true,evidenceClass=structural}
+    contains[Shade->RED]@13{isContained=true,evidenceClass=structural}
+    contains[Shade->GREEN]@13{isContained=true,evidenceClass=structural}
+    contains[Hidden->secret]@20{isContained=true,evidenceClass=structural}
+    contains[Shielded->guard]@24{isContained=true,evidenceClass=structural}
+    references[Publisher->String]@4{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[describe->String]@6{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[greet->String]@10{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[greet->String]@10{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[scriptHelper->String]@15{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[Hidden->String]@20{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Shielded->String]@24{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    exports[com.acme.pub->Publisher]@3{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+    exports[com.acme.pub->Greeter]@9{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=interface,evidenceClass=structural}
+    exports[com.acme.pub->Shade]@13{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=enum,evidenceClass=structural}
+    exports[com.acme.pub->Hidden]@19{relationshipType=groovy_exportable_unit,exportForm=non_public_top_level_type,reasonCode=non_public_top_level_type,symbolKind=class,evidenceClass=structural}
+    exports[com.acme.pub->Shielded]@23{relationshipType=groovy_exportable_unit,exportForm=non_public_top_level_type,reasonCode=non_public_top_level_type,symbolKind=class,evidenceClass=structural}
+
+### fq-annotations
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (5): interface:Base@3  method:render@Base@4  class:FqService@8  method:render@FqService@11  method:save@FqService@14
+  RELATIONSHIPS (7):
+    extends[FqService->Base]@8{relationshipType=extends,evidenceClass=structural}
+    overrides[FqService.render->render]@11{relationshipType=method_override,isGroovyOverride=true,reasonCode=exact-in-file,overriddenOwner=Base,evidenceClass=structural}
+    contains[Base->render]@4{isContained=true,evidenceClass=structural}
+    contains[FqService->render]@11{isContained=true,evidenceClass=structural}
+    contains[FqService->save]@14{isContained=true,evidenceClass=structural}
+    exports[com.acme.groovy->Base]@3{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=interface,evidenceClass=structural}
+    exports[com.acme.groovy->FqService]@8{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+
+### grammar-rebuild-constructs
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (6): class:Rebuilt@1  property:mapWith@Rebuilt@2  constructor:Rebuilt@Rebuilt@4  method:convert@Rebuilt@9  method:tagged@Rebuilt@17  method:spreadCall@Rebuilt@21
+  RELATIONSHIPS (20):
+    calls[Rebuilt->super]@5{relationshipType=constructor_invocation,evidenceClass=usage_contextual}
+    calls[convert->add]@12{groovyCallExpression=out.add,evidenceClass=usage_contextual}
+    calls[tagged->each]@18{groovyCallExpression=values.each,evidenceClass=usage_contextual}
+    calls[tagged->fn]@18{groovyCallExpression=fn,evidenceClass=usage_contextual}
+    calls[spreadCall->convert]@22{groovyCallExpression=convert,evidenceClass=usage_contextual}
+    calls[spreadCall->isEmpty]@23{groovyCallExpression=args.isEmpty,evidenceClass=usage_contextual}
+    instantiates[spreadCall->IllegalStateException]@23{relationshipType=instantiates,isNew=true,evidenceClass=structural}
+    contains[Rebuilt->mapWith]@2{isContained=true,evidenceClass=structural}
+    contains[Rebuilt->Rebuilt]@4{isContained=true,evidenceClass=structural}
+    contains[Rebuilt->convert]@9{isContained=true,evidenceClass=structural}
+    contains[Rebuilt->tagged]@17{isContained=true,evidenceClass=structural}
+    contains[Rebuilt->spreadCall]@21{isContained=true,evidenceClass=structural}
+    uses[Rebuilt->name]@6{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[Rebuilt->String]@4{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[convert->List]@9{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[convert->List]@9{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[convert->String]@12{relationshipType=cast_type,declaredOn=binary_expression,evidenceClass=reference_qualified}
+    references[tagged->List]@17{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[tagged->Closure]@17{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[spreadCall->List]@21{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### imports-dependency-edge
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (3): class:Dep@9  property:items@Dep@10  method:run@Dep@12
+  RELATIONSHIPS (19):
+    references[Dep->java.util.List]@3{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,evidenceClass=import_based}
+    imports[com.acme.dep->java.util.List]@3{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,isImport=true,relationshipType=single_type,evidenceClass=import_based}
+    imports[com.acme.dep->java.util.List]@3{relationshipType=single_type_import,isGroovyImport=true,isWildcard=false,isStatic=false,fileLevel=true,evidenceClass=import_based}
+    references[Dep->java.util.Map]@4{isGroovyImport=true,isWildcard=true,isStatic=false,hasAlias=false,evidenceClass=import_based}
+    imports[com.acme.dep->java.util.Map]@4{isGroovyImport=true,isWildcard=true,isStatic=false,hasAlias=false,isImport=true,relationshipType=on_demand_type,evidenceClass=import_based}
+    imports[com.acme.dep->java.util.Map]@4{relationshipType=type_on_demand_import,isGroovyImport=true,isWildcard=true,isStatic=false,fileLevel=true,evidenceClass=import_based}
+    references[Dep->java.util.Collections.sort]@5{isGroovyImport=true,isWildcard=false,isStatic=true,hasAlias=false,evidenceClass=import_based}
+    imports[com.acme.dep->java.util.Collections.sort]@5{isGroovyImport=true,isWildcard=false,isStatic=true,hasAlias=false,isImport=true,relationshipType=static_member,evidenceClass=import_based}
+    imports[com.acme.dep->java.util.Collections.sort]@5{relationshipType=static_member_import,isGroovyImport=true,isWildcard=false,isStatic=true,fileLevel=true,evidenceClass=import_based}
+    references[Dep->groovy.transform.CompileStatic]@6{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,evidenceClass=import_based}
+    imports[com.acme.dep->groovy.transform.CompileStatic]@6{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,isImport=true,relationshipType=single_type,evidenceClass=import_based}
+    imports[com.acme.dep->groovy.transform.CompileStatic]@6{relationshipType=single_type_import,isGroovyImport=true,isWildcard=false,isStatic=false,fileLevel=true,evidenceClass=import_based}
+    calls[run->sort]@13{groovyCallExpression=sort,evidenceClass=usage_contextual}
+    instantiates[run->HashMap]@14{relationshipType=instantiates,isNew=true,evidenceClass=structural}
+    contains[Dep->items]@10{isContained=true,evidenceClass=structural}
+    contains[Dep->run]@12{isContained=true,evidenceClass=structural}
+    references[Dep->List]@10{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Dep->String]@10{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    exports[com.acme.dep->Dep]@9{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+
+### lambda-expression
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (3): class:LambdaHolder@20  method:target@LambdaHolder@21  method:run@LambdaHolder@23
+  RELATIONSHIPS (14):
+    calls[run->toUpperCase]@25{groovyCallExpression=s.toUpperCase,evidenceClass=usage_contextual}
+    calls[run->target]@26{groovyCallExpression=target,evidenceClass=usage_contextual}
+    calls[run->filter]@27{groovyCallExpression=java.util.Optional.ofNullable.filter,evidenceClass=usage_contextual}
+    calls[run->ofNullable]@27{groovyCallExpression=java.util.Optional.ofNullable,evidenceClass=usage_contextual}
+    calls[run->isEmpty]@27{groovyCallExpression=s.isEmpty,evidenceClass=usage_contextual}
+    calls[run->doubler]@28{groovyCallExpression=doubler,evidenceClass=usage_contextual}
+    calls[run->target]@28{groovyCallExpression=target,evidenceClass=usage_contextual}
+    calls[run->label]@29{groovyCallExpression=label,evidenceClass=usage_contextual}
+    calls[run->supplier]@30{groovyCallExpression=supplier,evidenceClass=usage_contextual}
+    contains[LambdaHolder->target]@21{isContained=true,evidenceClass=structural}
+    contains[LambdaHolder->run]@23{isContained=true,evidenceClass=structural}
+    uses[run->Optional]@27{isFieldAccess=true,evidenceClass=usage_contextual}
+    uses[run->util]@27{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[run->String]@25{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### lines-825
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (10): interface:Marker@5  method:use@Marker@6  interface:Second@9  method:more@Second@10  class:Plain@13  method:use@Plain@14  method:more@Plain@15  class:Wrapped@19  property:label@Wrapped@23  method:use@Wrapped@26
+  RELATIONSHIPS (21):
+    references[Marker->com.acme.lines.Marker]@3{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,evidenceClass=import_based}
+    imports[com.acme.lines->com.acme.lines.Marker]@3{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,isImport=true,relationshipType=single_type,evidenceClass=import_based}
+    imports[com.acme.lines->com.acme.lines.Marker]@3{relationshipType=single_type_import,isGroovyImport=true,isWildcard=false,isStatic=false,fileLevel=true,evidenceClass=import_based}
+    extends[Wrapped->Plain]@19{relationshipType=extends,evidenceClass=structural}
+    implements[Wrapped->Marker]@20{relationshipType=implements,evidenceClass=structural}
+    implements[Wrapped->Second]@20{relationshipType=implements,evidenceClass=structural}
+    calls[use->build]@29{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    calls[use->configure]@30{relationshipType=leading_dot_call,evidenceClass=usage_contextual}
+    overrides[Wrapped.use->use]@26{relationshipType=method_override,isGroovyOverride=true,reasonCode=exact-in-file,overriddenOwner=Plain,evidenceClass=structural}
+    contains[Marker->use]@6{isContained=true,evidenceClass=structural}
+    contains[Second->more]@10{isContained=true,evidenceClass=structural}
+    contains[Plain->use]@14{isContained=true,evidenceClass=structural}
+    contains[Plain->more]@15{isContained=true,evidenceClass=structural}
+    contains[Wrapped->label]@23{isContained=true,evidenceClass=structural}
+    contains[Wrapped->use]@26{isContained=true,evidenceClass=structural}
+    uses[Wrapped->label]@27{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[Wrapped->String]@23{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    exports[com.acme.lines->Marker]@5{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=interface,evidenceClass=structural}
+    exports[com.acme.lines->Second]@9{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=interface,evidenceClass=structural}
+    exports[com.acme.lines->Plain]@13{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+    exports[com.acme.lines->Wrapped]@19{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+
+### method-refs
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (4): class:Foo@1  method:bar@Foo@2  class:RefSvc@7  method:run@RefSvc@8
+  RELATIONSHIPS (5):
+    calls[run->map]@9{groovyCallExpression=list.stream.map,evidenceClass=usage_contextual}
+    calls[run->stream]@9{groovyCallExpression=list.stream,evidenceClass=usage_contextual}
+    contains[Foo->bar]@2{isContained=true,evidenceClass=structural}
+    contains[RefSvc->run]@8{isContained=true,evidenceClass=structural}
+    references[run->Foo]@9{relationshipType=method_reference,evidenceClass=reference_qualified}
+
+### multicatch-and-varargs
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (10): class:Catcher@8  method:run@Catcher@9  method:risky@Catcher@16  method:log@Catcher@17  method:runQualified@Catcher@25  method:riskyQualified@Catcher@32  class:VarBase@35  method:bar@VarBase@36  class:VarSub@38  method:bar@VarSub@39
+  RELATIONSHIPS (19):
+    calls[run->risky]@11{groovyCallExpression=risky,evidenceClass=usage_contextual}
+    calls[run->log]@13{groovyCallExpression=log,evidenceClass=usage_contextual}
+    calls[runQualified->riskyQualified]@27{groovyCallExpression=riskyQualified,evidenceClass=usage_contextual}
+    calls[runQualified->log]@29{groovyCallExpression=log,evidenceClass=usage_contextual}
+    extends[VarSub->VarBase]@38{relationshipType=extends,evidenceClass=structural}
+    overrides[VarSub.bar->bar]@39{relationshipType=method_override,isGroovyOverride=true,reasonCode=exact-in-file,overriddenOwner=VarBase,evidenceClass=structural}
+    contains[Catcher->run]@9{isContained=true,evidenceClass=structural}
+    contains[Catcher->risky]@16{isContained=true,evidenceClass=structural}
+    contains[Catcher->log]@17{isContained=true,evidenceClass=structural}
+    contains[Catcher->runQualified]@25{isContained=true,evidenceClass=structural}
+    contains[Catcher->riskyQualified]@32{isContained=true,evidenceClass=structural}
+    contains[VarBase->bar]@36{isContained=true,evidenceClass=structural}
+    contains[VarSub->bar]@39{isContained=true,evidenceClass=structural}
+    references[run->IOException]@12{relationshipType=declared_type,declaredOn=catch_formal_parameter,evidenceClass=reference_qualified}
+    references[run->SQLException]@12{relationshipType=declared_type,declaredOn=catch_formal_parameter,evidenceClass=reference_qualified}
+    references[risky->IOException]@16{relationshipType=throws_type,declaredOn=throws,evidenceClass=reference_qualified}
+    references[log->Exception]@17{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[runQualified->java.io.IOException]@28{relationshipType=declared_type,declaredOn=catch_formal_parameter,evidenceClass=reference_qualified}
+    references[runQualified->java.sql.SQLException]@28{relationshipType=declared_type,declaredOn=catch_formal_parameter,evidenceClass=reference_qualified}
+
+### parameters-payload
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (17): class:ParamSvc@1  method:apply@ParamSvc@2  method:join@ParamSvc@6  class:Outer@26  class:Criterion@Outer@27  class:Projection@Outer@28  interface:Handler@Outer@30  method:handle@Handler@31  class:HandlerImpl@Outer@34  method:handle@HandlerImpl@35  class:Holder@Outer@40  property:criterion@Holder@41  constructor:Holder@Holder@43  method:spread@Holder@47  class:Pair@Outer@51  property:criterion@Pair@51  property:projection@Pair@51
+  RELATIONSHIPS (28):
+    calls[join->join]@7{groovyCallExpression=parts.join,evidenceClass=usage_contextual}
+    implements[HandlerImpl->Handler]@34{relationshipType=implements,evidenceClass=structural}
+    overrides[HandlerImpl.handle->handle]@35{relationshipType=method_override,isGroovyOverride=true,reasonCode=exact-in-file,overriddenOwner=Handler,evidenceClass=structural}
+    contains[ParamSvc->apply]@2{isContained=true,evidenceClass=structural}
+    contains[ParamSvc->join]@6{isContained=true,evidenceClass=structural}
+    contains[Outer->Criterion]@27{isContained=true,evidenceClass=structural}
+    contains[Outer->Projection]@28{isContained=true,evidenceClass=structural}
+    contains[Outer->Handler]@30{isContained=true,evidenceClass=structural}
+    contains[Handler->handle]@31{isContained=true,evidenceClass=structural}
+    contains[Outer->HandlerImpl]@34{isContained=true,evidenceClass=structural}
+    contains[HandlerImpl->handle]@35{isContained=true,evidenceClass=structural}
+    contains[Outer->Holder]@40{isContained=true,evidenceClass=structural}
+    contains[Holder->criterion]@41{isContained=true,evidenceClass=structural}
+    contains[Holder->Holder]@43{isContained=true,evidenceClass=structural}
+    contains[Holder->spread]@47{isContained=true,evidenceClass=structural}
+    contains[Outer->Pair]@51{isContained=true,evidenceClass=structural}
+    contains[Pair->criterion]@51{isContained=true,evidenceClass=structural}
+    contains[Pair->projection]@51{isContained=true,evidenceClass=structural}
+    uses[Holder->criterion]@44{isFieldAccess=true,evidenceClass=usage_contextual}
+    references[handle->Outer.Criterion]@31{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[handle->java.util.Map.Entry]@31{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[handle->String]@31{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[handle->Boolean]@31{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[handle->StringBuilder]@31{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[Holder->Outer.Criterion]@41{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Holder->Outer.Criterion]@43{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[Outer->Outer.Criterion]@51{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[Outer->Outer.Projection]@51{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### pattern-refs
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (8): class:Point@1  property:x@Point@2  property:y@Point@3  class:ShapeSvc@6  method:describe@ShapeSvc@7  method:pick@ShapeSvc@17  method:describeQualified@ShapeSvc@32  method:pickQualified@ShapeSvc@42
+  RELATIONSHIPS (17):
+    calls[describe->length]@12{groovyCallExpression=s.length,evidenceClass=usage_contextual}
+    contains[Point->x]@2{isContained=true,evidenceClass=structural}
+    contains[Point->y]@3{isContained=true,evidenceClass=structural}
+    contains[ShapeSvc->describe]@7{isContained=true,evidenceClass=structural}
+    contains[ShapeSvc->pick]@17{isContained=true,evidenceClass=structural}
+    contains[ShapeSvc->describeQualified]@32{isContained=true,evidenceClass=structural}
+    contains[ShapeSvc->pickQualified]@42{isContained=true,evidenceClass=structural}
+    references[describe->Object]@7{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[describe->Point]@8{relationshipType=instanceof_expression,declaredOn=instanceof_expression,evidenceClass=reference_qualified}
+    references[describe->String]@11{relationshipType=instanceof_expression,declaredOn=instanceof_expression,evidenceClass=reference_qualified}
+    references[pick->Object]@17{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[pick->Point]@19{relationshipType=case_pattern,declaredOn=switch_label,evidenceClass=reference_qualified}
+    references[describeQualified->Object]@32{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[describeQualified->acme.shapes.Circle]@33{relationshipType=instanceof_expression,declaredOn=instanceof_expression,evidenceClass=reference_qualified}
+    references[describeQualified->acme.shapes.Rect]@36{relationshipType=instanceof_expression,declaredOn=instanceof_expression,evidenceClass=reference_qualified}
+    references[pickQualified->Object]@42{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[pickQualified->acme.shapes.Square]@44{relationshipType=case_pattern,declaredOn=switch_label,evidenceClass=reference_qualified}
+
+### scoped-type-recovery-refusal
+  GRAMMAR: hasError=true ERROR=4 MISSING=4 ERROR@1 ERROR@1 MISSING:decimal_integer_literal@1 MISSING:identifier@1 ERROR@3 MISSING:;@6 MISSING:->@8 ERROR@8
+  SYMBOLS (0): 
+  RELATIONSHIPS (5):
+    calls[(script)->"package ${packageName}"]@1{relationshipType=juxt_call,groovyCallExpression="package ${packageName}",evidenceClass=usage_contextual}
+    calls[(script)->${className}]@6{relationshipType=juxt_call,groovyCallExpression=${className},evidenceClass=usage_contextual}
+    calls[(script)->$]@6{groovyCallExpression=$,evidenceClass=usage_contextual}
+    calls[(script)->Controller]@6{groovyCallExpression=Controller,evidenceClass=usage_contextual}
+    references[(script)->Integer]@8{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+
+### scoped-type-references
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (7): class:Outer@3  class:Criterion@Outer@4  class:Projection@Outer@5  class:Fields@8  property:field@Fields@9  property:entries@Fields@10  method:make@Fields@12
+  RELATIONSHIPS (15):
+    contains[Outer->Criterion]@4{isContained=true,evidenceClass=structural}
+    contains[Outer->Projection]@5{isContained=true,evidenceClass=structural}
+    contains[Fields->field]@9{isContained=true,evidenceClass=structural}
+    contains[Fields->entries]@10{isContained=true,evidenceClass=structural}
+    contains[Fields->make]@12{isContained=true,evidenceClass=structural}
+    references[Fields->Outer.Criterion]@9{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Fields->java.util.Map.Entry]@10{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Fields->String]@10{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[Fields->Boolean]@10{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[make->Outer.Criterion]@12{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[make->Outer.Criterion]@12{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[make->Outer.Criterion]@13{relationshipType=declared_type,declaredOn=local_variable_declaration,evidenceClass=reference_qualified}
+    references[make->Outer.Projection]@14{relationshipType=cast_type,declaredOn=binary_expression,evidenceClass=reference_qualified}
+    exports[acme->Outer]@3{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+    exports[acme->Fields]@8{relationshipType=groovy_exportable_unit,exportForm=public_top_level_type,symbolKind=class,evidenceClass=structural}
+
+### type-usage-graph
+  GRAMMAR: hasError=false ERROR=0 MISSING=0 
+  SYMBOLS (3): class:TypeGraph@3  property:f@TypeGraph@4  method:m2@TypeGraph@5
+  RELATIONSHIPS (16):
+    references[TypeGraph->java.util.List]@1{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,evidenceClass=import_based}
+    imports[(script)->java.util.List]@1{isGroovyImport=true,isWildcard=false,isStatic=false,hasAlias=false,isImport=true,relationshipType=single_type,evidenceClass=import_based}
+    imports[(script)->java.util.List]@1{relationshipType=single_type_import,isGroovyImport=true,isWildcard=false,isStatic=false,fileLevel=true,evidenceClass=import_based}
+    contains[TypeGraph->f]@4{isContained=true,evidenceClass=structural}
+    contains[TypeGraph->m2]@5{isContained=true,evidenceClass=structural}
+    references[TypeGraph->List]@4{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[TypeGraph->String]@4{relationshipType=declared_type,declaredOn=field_declaration,evidenceClass=reference_qualified}
+    references[m2->Map]@5{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[m2->String]@5{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[m2->Integer]@5{relationshipType=return_type,declaredOn=method_declaration,evidenceClass=reference_qualified}
+    references[m2->List]@5{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[m2->Integer]@5{relationshipType=declared_type,declaredOn=formal_parameter,evidenceClass=reference_qualified}
+    references[m2->IOException]@5{relationshipType=throws_type,declaredOn=throws,evidenceClass=reference_qualified}
+    references[m2->Set]@6{relationshipType=declared_type,declaredOn=local_variable_declaration,evidenceClass=reference_qualified}
+    references[m2->Number]@6{relationshipType=declared_type,declaredOn=local_variable_declaration,evidenceClass=reference_qualified}
+    references[m2->List]@7{relationshipType=instanceof_expression,declaredOn=instanceof_expression,evidenceClass=reference_qualified}
+

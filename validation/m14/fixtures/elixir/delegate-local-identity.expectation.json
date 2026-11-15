@@ -1,0 +1,113 @@
+{
+  "expectSymbols": [
+    {
+      "name": "local_name",
+      "kind": "function",
+      "ownerName": "DelegateIdentity",
+      "meta.arity": 1,
+      "meta.heads": 1
+    },
+    {
+      "name": "unchanged",
+      "kind": "function",
+      "ownerName": "DelegateIdentity",
+      "meta.arity": 1,
+      "meta.heads": 1
+    },
+    {
+      "name": "rstrip",
+      "kind": "function",
+      "ownerName": "DelegateCollision",
+      "meta.arity": 1,
+      "meta.heads": 1
+    },
+    {
+      "name": "trim_trailing",
+      "kind": "function",
+      "ownerName": "DelegateCollision",
+      "meta.arity": 1,
+      "meta.heads": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "remote_name",
+      "ownerName": "DelegateIdentity"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "local_name",
+      "ownerName": "DelegateIdentity",
+      "equals": 1
+    },
+    {
+      "name": "rstrip",
+      "ownerName": "DelegateCollision",
+      "equals": 1
+    },
+    {
+      "name": "trim_trailing",
+      "ownerName": "DelegateCollision",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "DelegateIdentity",
+      "target": "local_name"
+    },
+    {
+      "type": "contains",
+      "from": "DelegateCollision",
+      "target": "rstrip"
+    },
+    {
+      "type": "references",
+      "from": "DelegateIdentity",
+      "target": "Target.Module"
+    },
+    {
+      "type": "calls",
+      "from": "DelegateIdentity.run/1",
+      "target": "local_name"
+    },
+    {
+      "type": "calls",
+      "from": "DelegateIdentity.run/1",
+      "target": "unchanged"
+    },
+    {
+      "type": "calls",
+      "from": "DelegateIdentity.run/1",
+      "target": "Target.Module.remote_name"
+    },
+    {
+      "type": "calls",
+      "from": "DelegateCollision.run/1",
+      "target": "rstrip"
+    },
+    {
+      "type": "calls",
+      "from": "DelegateCollision.run/1",
+      "target": "trim_trailing"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "DelegateIdentity",
+      "target": "remote_name"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "remote_name"
+    },
+    {
+      "type": "calls",
+      "target": "Remote.remote_name"
+    }
+  ]
+}

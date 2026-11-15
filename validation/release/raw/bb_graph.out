@@ -1,0 +1,2022 @@
+{
+  "symbol": "GraphQLSchema",
+  "root": {
+    "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189",
+    "name": "GraphQLSchema",
+    "symbolType": "class",
+    "file": "graphql-js/type/schema.ts",
+    "line": 189,
+    "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/type/schema.ts",
+    "candidates": 1,
+    "match": "exact"
+  },
+  "callers": [
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/Executor.ts:executeRootSelectionSetImpl:287",
+        "name": "executeRootSelectionSetImpl",
+        "symbolType": "method",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 287,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 319
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getRootType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/Executor.ts:executeRootSelectionSetImpl:287:getRootType:calls:319"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/Executor.ts:executeField:593",
+        "name": "executeField",
+        "symbolType": "method",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 593,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 607
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getField",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/Executor.ts:executeField:593:getField:calls:607"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/Executor.ts:ensureValidRuntimeType:1310",
+        "name": "ensureValidRuntimeType",
+        "symbolType": "method",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 1310,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 1334
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/Executor.ts:ensureValidRuntimeType:1310:getType:calls:1334"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/Executor.ts:ensureValidRuntimeType:1310",
+        "name": "ensureValidRuntimeType",
+        "symbolType": "method",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 1310,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/Executor.ts",
+        "line": 1349
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "isSubType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/Executor.ts:ensureValidRuntimeType:1310:isSubType:calls:1349"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/__tests__/collectFields-test.ts:collectRootFields:20",
+        "name": "collectRootFields",
+        "symbolType": "function",
+        "file": "graphql-js/execution/__tests__/collectFields-test.ts",
+        "line": 20,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/collectFields-test.ts",
+        "line": 30
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/collectFields-test.ts:collectRootFields:20:getQueryType:calls:30"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/collectFields.ts:doesFragmentConditionMatch:435",
+        "name": "doesFragmentConditionMatch",
+        "symbolType": "function",
+        "file": "graphql-js/execution/collectFields.ts",
+        "line": 435,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/collectFields.ts",
+        "line": 449
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "isSubType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/collectFields.ts:doesFragmentConditionMatch:435:isSubType:calls:449"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/execute.ts:executeImpl:153",
+        "name": "executeImpl",
+        "symbolType": "function",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 153,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 154
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirective",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/execute.ts:executeImpl:153:getDirective:calls:154"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/execute.ts:execute:115",
+        "name": "execute",
+        "symbolType": "function",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 115,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 947
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getPossibleTypes",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/execute.ts:execute:115:getPossibleTypes:calls:947"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/execute.ts:executeSubscription:1076",
+        "name": "executeSubscription",
+        "symbolType": "function",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 1076,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 1090
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getSubscriptionType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/execute.ts:executeSubscription:1076:getSubscriptionType:calls:1090"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/execution/execute.ts:executeSubscription:1076",
+        "name": "executeSubscription",
+        "symbolType": "function",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 1076,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/execute.ts",
+        "line": 1115
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getField",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/execute.ts:executeSubscription:1076:getField:calls:1115"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/__tests__/schema-test.ts:expectField:383",
+        "name": "expectField",
+        "symbolType": "function",
+        "file": "graphql-js/type/__tests__/schema-test.ts",
+        "line": 383,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/__tests__/schema-test.ts",
+        "line": 384
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getField",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/__tests__/schema-test.ts:expectField:383:getField:calls:384"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getRootType:515",
+        "name": "getRootType",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 515,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 518
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getRootType:515:getQueryType:calls:518"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getRootType:515",
+        "name": "getRootType",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 515,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 520
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getMutationType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getRootType:515:getMutationType:calls:520"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getRootType:515",
+        "name": "getRootType",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 515,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 522
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getSubscriptionType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getRootType:515:getSubscriptionType:calls:522"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getType:576",
+        "name": "getType",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 576,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 577
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getTypeMap",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getType:576:getTypeMap:calls:577"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getPossibleTypes:617",
+        "name": "getPossibleTypes",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 617,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 622
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getImplementations",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getPossibleTypes:617:getImplementations:calls:622"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:isSubType:706",
+        "name": "isSubType",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 706,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 715
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getImplementations",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:isSubType:706:getImplementations:calls:715"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getDirective:769",
+        "name": "getDirective",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 769,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 770
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirectives",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getDirective:769:getDirectives:calls:770"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getField:802",
+        "name": "getField",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 802,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 808
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getField:802:getQueryType:calls:808"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:getField:802",
+        "name": "getField",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 802,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 812
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:getField:802:getQueryType:calls:812"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:toConfig:851",
+        "name": "toConfig",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 851,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 854
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:toConfig:851:getQueryType:calls:854"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:toConfig:851",
+        "name": "toConfig",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 851,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 855
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getMutationType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:toConfig:851:getMutationType:calls:855"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:toConfig:851",
+        "name": "toConfig",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 851,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 856
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getSubscriptionType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:toConfig:851:getSubscriptionType:calls:856"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:toConfig:851",
+        "name": "toConfig",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 851,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 857
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getTypeMap",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:toConfig:851:getTypeMap:calls:857"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/schema.ts:toConfig:851",
+        "name": "toConfig",
+        "symbolType": "method",
+        "file": "graphql-js/type/schema.ts",
+        "line": 851,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/schema.ts",
+        "line": 858
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirectives",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:toConfig:851:getDirectives:calls:858"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/validate.ts:validateRootTypes:167",
+        "name": "validateRootTypes",
+        "symbolType": "function",
+        "file": "graphql-js/type/validate.ts",
+        "line": 167,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/validate.ts",
+        "line": 170
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/validate.ts:validateRootTypes:167:getQueryType:calls:170"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/validate.ts:validateRootTypes:167",
+        "name": "validateRootTypes",
+        "symbolType": "function",
+        "file": "graphql-js/type/validate.ts",
+        "line": 167,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/validate.ts",
+        "line": 179
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getRootType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/validate.ts:validateRootTypes:167:getRootType:calls:179"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/validate.ts:validateDirectives:220",
+        "name": "validateDirectives",
+        "symbolType": "function",
+        "file": "graphql-js/type/validate.ts",
+        "line": 220,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/validate.ts",
+        "line": 221
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirectives",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/validate.ts:validateDirectives:220:getDirectives:calls:221"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/type/validate.ts:validateTypes:407",
+        "name": "validateTypes",
+        "symbolType": "function",
+        "file": "graphql-js/type/validate.ts",
+        "line": 407,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/type/validate.ts",
+        "line": 410
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getTypeMap",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/validate.ts:validateTypes:407:getTypeMap:calls:410"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/TypeInfo.ts:enter:663",
+        "name": "enter",
+        "symbolType": "method",
+        "file": "graphql-js/utilities/TypeInfo.ts",
+        "line": 663,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/TypeInfo.ts",
+        "line": 688
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getField",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/TypeInfo.ts:enter:663:getField:calls:688"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/TypeInfo.ts:enter:663",
+        "name": "enter",
+        "symbolType": "method",
+        "file": "graphql-js/utilities/TypeInfo.ts",
+        "line": 663,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/TypeInfo.ts",
+        "line": 701
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getRootType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/TypeInfo.ts:enter:663:getRootType:calls:701"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/extendSchema.ts:extendSchema:150",
+        "name": "extendSchema",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/extendSchema.ts",
+        "line": 150,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/extendSchema.ts",
+        "line": 161
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "toConfig",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/extendSchema.ts:extendSchema:150:toConfig:calls:161"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/findSchemaChanges.ts:findDirectiveChanges:253",
+        "name": "findDirectiveChanges",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 253,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 260
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirectives",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/findSchemaChanges.ts:findDirectiveChanges:253:getDirectives:calls:260"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/findSchemaChanges.ts:findDirectiveChanges:253",
+        "name": "findDirectiveChanges",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 253,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 261
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirectives",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/findSchemaChanges.ts:findDirectiveChanges:253:getDirectives:calls:261"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/findSchemaChanges.ts:findTypeChanges:395",
+        "name": "findTypeChanges",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 395,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 402
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getTypeMap",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/findSchemaChanges.ts:findTypeChanges:395:getTypeMap:calls:402"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/findSchemaChanges.ts:findTypeChanges:395",
+        "name": "findTypeChanges",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 395,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/findSchemaChanges.ts",
+        "line": 403
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getTypeMap",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/findSchemaChanges.ts:findTypeChanges:395:getTypeMap:calls:403"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/lexicographicSortSchema.ts:lexicographicSortSchema:53",
+        "name": "lexicographicSortSchema",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/lexicographicSortSchema.ts",
+        "line": 53,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/lexicographicSortSchema.ts",
+        "line": 55
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "toConfig",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/lexicographicSortSchema.ts:lexicographicSortSchema:53:toConfig:calls:55"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:printFilteredSchema:97",
+        "name": "printFilteredSchema",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 97,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 102
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getDirectives",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:printFilteredSchema:97:getDirectives:calls:102"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:printFilteredSchema:97",
+        "name": "printFilteredSchema",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 97,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 103
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getTypeMap",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:printFilteredSchema:97:getTypeMap:calls:103"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:printSchemaDefinition:114",
+        "name": "printSchemaDefinition",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 114,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 115
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:printSchemaDefinition:114:getQueryType:calls:115"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:printSchemaDefinition:114",
+        "name": "printSchemaDefinition",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 114,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 116
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getMutationType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:printSchemaDefinition:114:getMutationType:calls:116"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:printSchemaDefinition:114",
+        "name": "printSchemaDefinition",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 114,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 117
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getSubscriptionType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:printSchemaDefinition:114:getSubscriptionType:calls:117"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161",
+        "name": "hasDefaultRootOperationTypes",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 161,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 164
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getQueryType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161:getQueryType:calls:164"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161",
+        "name": "hasDefaultRootOperationTypes",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 161,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 164
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161:getType:calls:164"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161",
+        "name": "hasDefaultRootOperationTypes",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 161,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 165
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getMutationType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161:getMutationType:calls:165"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161",
+        "name": "hasDefaultRootOperationTypes",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 161,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 165
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161:getType:calls:165"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161",
+        "name": "hasDefaultRootOperationTypes",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 161,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 166
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getSubscriptionType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161:getSubscriptionType:calls:166"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161",
+        "name": "hasDefaultRootOperationTypes",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 161,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/printSchema.ts",
+        "line": 166
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/printSchema.ts:hasDefaultRootOperationTypes:161:getType:calls:166"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/resolveSchemaCoordinate.ts:resolveTypeCoordinate:155",
+        "name": "resolveTypeCoordinate",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/resolveSchemaCoordinate.ts",
+        "line": 155,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/resolveSchemaCoordinate.ts",
+        "line": 161
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/resolveSchemaCoordinate.ts:resolveTypeCoordinate:155:getType:calls:161"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "graphql-js/utilities/resolveSchemaCoordinate.ts:resolveMemberCoordinate:176",
+        "name": "resolveMemberCoordinate",
+        "symbolType": "function",
+        "file": "graphql-js/utilities/resolveSchemaCoordinate.ts",
+        "line": 176,
+        "isExternal": false
+      },
+      "to": {
+        "id": "graphql-js/type/schema.ts:GraphQLSchema:189",
+        "name": "GraphQLSchema",
+        "symbolType": "class",
+        "file": "graphql-js/type/schema.ts",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/resolveSchemaCoordinate.ts",
+        "line": 183
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "getType",
+        "file": "graphql-js/type/schema.ts"
+      },
+      "targetBasis": "symbol",
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/resolveSchemaCoordinate.ts:resolveMemberCoordinate:176:getType:calls:183"
+    }
+  ],
+  "callees": [],
+  "summary": {
+    "totalCallers": 50,
+    "totalCallees": 0,
+    "maxDepthReached": 0,
+    "maxDepth": 2,
+    "crossLanguageEdges": 0,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 440,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": true,
+    "truncationReason": "caller-site-limit+total-edge-limit",
+    "truncationReasons": [
+      "caller-site-limit",
+      "total-edge-limit"
+    ],
+    "filterNarrowed": false,
+    "filterReason": null,
+    "edgeLimit": 200,
+    "maxEdges": 50,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": true,
+    "cappedQueries": 1,
+    "callersIfUncapped": 292,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 50,
+    "exactCallees": 0,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 0,
+    "edgesByType": {
+      "calls": 50
+    },
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "both",
+      "relationshipTypes": [
+        "calls",
+        "extends",
+        "implements",
+        "uses",
+        "instantiates",
+        "overrides",
+        "contains",
+        "references",
+        "imports",
+        "exports",
+        "decorates",
+        "renders",
+        "mixes_in",
+        "part_of"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "unattributed-source: 440 caller and 0 callee stored rows name this symbol (or a member of its owner cascade) but carry no source symbol, so no traversal can show them in either direction. They are counted, not listed — the rows exist and name this symbol; treating the edge sets above as the whole set would understate it. Depth-0 only: deeper symbols report their own edges, not their own unattributed rows. Remediation, if the count matters: a full re-index (the bb index command) is what re-attributes sources; a changed-only run does not re-parse the files those rows came from."
+    ],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "6623498ebe135a8cab4c46270ea6737f1d4526e3",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}

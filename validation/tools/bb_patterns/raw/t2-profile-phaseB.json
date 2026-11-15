@@ -1,0 +1,419 @@
+{
+  "approach": "read-only handle; every statement the pattern engines issue is timed. Multiple calls to one SQL shape are separate rows because each executes.",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": ".bb-data",
+  "orphansMs": 108979.54,
+  "rulesMs": 2136.64,
+  "totalMs": 111116.18,
+  "statementCount": 67,
+  "totalsByEngine": {
+    "orphans": 10026,
+    "scannedSymbols": 52903,
+    "rules": null
+  },
+  "statements": [
+    {
+      "sql": "SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r WHERE r.project_id = @projectId AND r.relationship_type IN (@t0,@t1,@t2,@t3,@t4,@t5,@t6,@t7,@t8,@t9,@t10) AND (CA",
+      "ms": 42784.4,
+      "rows": 36209,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT r.relationship_type AS rt, (CASE WHEN r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NOT NULL AND r.source_symbol_id = r.target_symbol_id THEN 'selfLoop' WHEN json",
+      "ms": 15176.74,
+      "rows": 1806,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT t.file_id AS f, COUNT(*) AS n FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = @projectId AND r.relationship_type IN (@t0,@t1,",
+      "ms": 14271.38,
+      "rows": 3922,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT t.file_id AS f, COUNT(DISTINCT COALESCE(r.source_symbol_id, '?')) AS n FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = @proje",
+      "ms": 9748.33,
+      "rows": 3922,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT DISTINCT r.target_external AS ext FROM brain_relationship r WHERE r.project_id = @projectId AND r.relationship_type IN (@t0,@t1,@t2,@t3,@t4,@t5,@t6,@t7,@t8,@t9,@t10) AND (CA",
+      "ms": 7440.25,
+      "rows": 27521,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT s.id, s.file_id AS fileId FROM brain_symbol s WHERE s.project_id = ?",
+      "ms": 6457.98,
+      "rows": 310423,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT DISTINCT t.file_id AS f FROM brain_relationship r JOIN brain_symbol s ON s.id = r.source_symbol_id JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = @pro",
+      "ms": 2954.92,
+      "rows": 1156,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT DISTINCT t.name AS name FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id WHERE r.project_id = @projectId AND r.relationship_type IN (@t0,@t1,@t2,@t",
+      "ms": 2627.49,
+      "rows": 4814,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT s.id, s.name, s.symbol_type AS symbolType, s.visibility, COALESCE(s.line_start,0) AS line, COALESCE(s.line_end,0) AS lineEnd, f.relative_path AS file, f.id AS fileId, f.lang",
+      "ms": 2520.71,
+      "rows": 52903,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r WHERE r.project_id = @projectId AND r.relationship_type IN (@t0,@t1,@t2,@t3,@t4,@t5,@t6,@t7,@t8,@t9,@t10) AND r.s",
+      "ms": 2084.68,
+      "rows": 36477,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT s.name AS name, COUNT(*) AS c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.symbol_type IN (?,?,?,?,?,?) GROUP BY s.name HAVING COUN",
+      "ms": 1783.78,
+      "rows": 4985,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT s.name, s.complexity, f.relative_path AS file, COALESCE(s.line_start, 0) AS line FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.compl",
+      "ms": 982.11,
+      "rows": 2867,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT s.name, s.parameters, f.relative_path AS file, COALESCE(s.line_start, 0) AS line, (SELECT COUNT(*) FROM json_each(s.parameters)) AS paramCount FROM brain_symbol s JOIN brain",
+      "ms": 606.14,
+      "rows": 39,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT id, relative_path AS relativePath, language, line_count AS lineCount FROM brain_file WHERE project_id = ?",
+      "ms": 291.03,
+      "rows": 6452,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT s.id, s.name, f.relative_path AS file, COALESCE(s.line_start, 0) AS line, (SELECT COUNT(*) FROM brain_symbol m WHERE m.owner_symbol_id = s.id) AS members FROM brain_symbol s",
+      "ms": 266.25,
+      "rows": 255,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT r.target_external AS ext, r.source_symbol_id AS src, s.file_id AS srcFile FROM brain_relationship r LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id WHERE r.project_id ",
+      "ms": 108.88,
+      "rows": 24942,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT framework_type, COUNT(*) c FROM brain_file WHERE project_id = ? AND framework_type IS NOT NULL AND framework_type NOT IN ('', 'unknown') GROUP BY framework_type ORDER BY c D",
+      "ms": 15.58,
+      "rows": 50,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 8.29,
+      "rows": 9,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.58,
+      "rows": 7,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.44,
+      "rows": 4,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.15,
+      "rows": 9,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.07,
+      "rows": 3,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.04,
+      "rows": 2,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.02,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 7.01,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.97,
+      "rows": 3,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.8,
+      "rows": 2,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.55,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.36,
+      "rows": 9,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.3,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.18,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.17,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 6.12,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.96,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.94,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.79,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.77,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.77,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.75,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.65,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.62,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.57,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.53,
+      "rows": 5,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.46,
+      "rows": 5,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.46,
+      "rows": 3,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.46,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.43,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.23,
+      "rows": 5,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.11,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 5.03,
+      "rows": 4,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 4.97,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 4.95,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 4.9,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 4.68,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 4.59,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 4.48,
+      "rows": 1,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 3.87,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 3.44,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 2.02,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 1.7,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 1.66,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 1.38,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 1.32,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 1.11,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 0.51,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 0.38,
+      "rows": 10,
+      "kind": "query"
+    },
+    {
+      "sql": "SELECT relative_path FROM brain_file WHERE project_id = ? AND framework_type = ? LIMIT 10",
+      "ms": 0.07,
+      "rows": 10,
+      "kind": "query"
+    }
+  ],
+  "generatedAt": "2026-11-03T00:49:29.408Z"
+}

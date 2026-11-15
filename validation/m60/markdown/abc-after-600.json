@@ -1,0 +1,1855 @@
+{
+  "instrument": "markdown ambiguity split (validation/m14/fixtures/markdown/ambiguity-split.ts)",
+  "whatThisIs": "the per-type split of ambiguous edge targets into the three buckets the round brief names, from production parseFile, plus a reproduction of script/m14/incoming-check.ts's own ambiguousTargets definition on the same edge set so the two are comparable",
+  "whatThisIsNot": "script/m14/incoming-check.ts's output. That file is shared machinery (workstream §8) and was not edited; its definition is recomputed here and both numbers are reported.",
+  "analyzerSha256": "5817913f9ab76ff2268ee35ac7e81cbd9f189f3d2f4b3030c12e7d9f855be273",
+  "analyzerStableDuringRun": true,
+  "sample": {
+    "files": 600,
+    "admittedPopulation": 17456,
+    "order": "repo ascending, then rel ascending — the same ordering as validation/m14/fixtures/markdown/whole-corpus-census.ts, so this sample is a PREFIX of the whole-corpus population and not an independent draw",
+    "populationSha256": "1d079c4fff2092ce0e11b8090c69d8e86d6e4fba4569b6886653170f6c020781",
+    "admissionTest": "detectLanguageFromPath(abs, text) === \"markdown\", size <= 512 KB, git ls-files",
+    "limitEnv": "BB_MARKDOWN_AMBIGUITY_FILES"
+  },
+  "walk": {
+    "total": 600,
+    "alreadyDone": 0,
+    "walked": 600,
+    "skippedBad": 0,
+    "partial": false,
+    "checkpoint": "../../../../../tmp/opencode/md-abc-after.txt"
+  },
+  "symbols": 8496,
+  "degraded": 0,
+  "parseFailures": 0,
+  "parseFailureExamples": [],
+  "edges": 12067,
+  "distinctPublishedNames": 10793,
+  "distinctDeclarations": 8496,
+  "sharedInstrumentReproduction": {
+    "definition": "target name published with more than one DISTINCT SymbolKind, file discarded — incoming-check.ts:107,176-188",
+    "ambiguous": 544,
+    "resolvableTargets": 7116,
+    "recordedInIncomingWholeTsv": 68,
+    "note": "a name published many times under ONE kind reads unambiguous to that map, so its figure and this one answer different questions; both are reported rather than reconciled by assertion"
+  },
+  "perType": {
+    "calls": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "uses": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 2,
+      "unresolved": 4951
+    },
+    "contains": {
+      "unique": 2331,
+      "sameFileMultiple": 174,
+      "crossFileOnly": 4512,
+      "unresolved": 0
+    },
+    "imports": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "references": {
+      "unique": 78,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 19,
+      "unresolved": 0
+    },
+    "exports": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "extends": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "implements": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "overrides": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "instantiates": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    }
+  },
+  "ambiguitySplit": {
+    "perType": {
+      "calls": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "uses": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 2,
+        "c_sharedPublishedName": 0
+      },
+      "contains": {
+        "none": 2331,
+        "a_scopeCollisionSameFile": 174,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 4512
+      },
+      "imports": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "references": {
+        "none": 78,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 19
+      },
+      "exports": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "extends": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "implements": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "overrides": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "instantiates": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      }
+    },
+    "totals": {
+      "resolvingTargets": 7116,
+      "a_scopeCollisionSameFile": 174,
+      "b_crossFileNoScopeModel": 2,
+      "c_sharedPublishedName": 4531
+    },
+    "repairableInThisAnalyzer": {
+      "buckets": [
+        "a_scopeCollisionSameFile",
+        "b_crossFileNoScopeModel"
+      ],
+      "edges": 176,
+      "note": "(c) is a fact about the published-name contract: the unique spelling IS published, as qualifiedName (src/ast/real-markdown-analyzer.ts:284), but it is not the edge's endpoint spelling"
+    }
+  },
+  "sourceDisambiguation": {
+    "of_a_scopeCollisionSameFile": 159,
+    "ofTotal": 174,
+    "test": "exactly one symbol in the edge's own file publishes the target name AND its id is the edge's source or a child of it, so (source,target) is unique although target alone is not"
+  },
+  "abcClosure": {
+    "whatThisIs": "the round brief's three causes measured against the fields this analyzer actually publishes: B on the unresolved population, A on the ambiguous population with closure attempted from published fields in a fixed order, C on the unresolved population split three ways",
+    "B_formatMismatch": {
+      "unresolvedTargets": 4951,
+      "dotted": 4672,
+      "finalSegmentPublished": 13,
+      "finalSegmentPublishedInOwnFile": 0,
+      "leaves": [
+        [
+          "Formatting",
+          4
+        ],
+        [
+          "Data",
+          3
+        ],
+        [
+          "Markup",
+          3
+        ],
+        [
+          "Tests",
+          1
+        ],
+        [
+          "Windows",
+          1
+        ],
+        [
+          "Environment",
+          1
+        ]
+      ],
+      "verdict": 0,
+      "test": "target does not resolve, contains a '.', and its last dot-segment is a published name",
+      "decidingTest": "the leaf must be published in the EDGE'S OWN FILE; a leaf published only elsewhere is a coincidental collision with a URL tail, and the 13 such leaves here are all of that shape",
+      "leavesAreAllForeignToTheEdge": true
+    },
+    "A_nameIsNotAnIdentifier": {
+      "ambiguousTargets": 4707,
+      "foreignOnly": 2,
+      "closedByLineNumber": 4705,
+      "closedBySourcePlusQualifiedName": 0,
+      "closedByOwnFile": 0,
+      "stillOpen": 2,
+      "byRule": {
+        "line_number": 4705
+      },
+      "perType": {
+        "contains": {
+          "ambiguous": 4686,
+          "closed": 4686,
+          "open": 0,
+          "byRule": {
+            "line_number": 4686
+          }
+        },
+        "references": {
+          "ambiguous": 19,
+          "closed": 19,
+          "open": 0,
+          "byRule": {
+            "line_number": 19
+          }
+        },
+        "uses": {
+          "ambiguous": 2,
+          "closed": 0,
+          "open": 2,
+          "byRule": {}
+        }
+      },
+      "openExamples": [
+        "Deedle/CONTRIBUTING.md :: Pull Requests -[uses]-> AGENTS.md @31 :: 0 here []",
+        "FSharp.Data/CONTRIBUTING.md :: Pull Requests -[uses]-> AGENTS.md @41 :: 0 here []"
+      ],
+      "fieldSources": {
+        "line_number": "src/ast/real-markdown-analyzer.ts:150-157 (M59 #822) and :319/:384/:421/:474",
+        "qualifiedName": "src/ast/real-markdown-analyzer.ts:283-284, built from siteId() at :79-87"
+      },
+      "ruleOrderIsAPartition": "the first rule that picks exactly one declaration wins; rules are not overlapping claims"
+    },
+    "C_external": {
+      "unresolvedTargets": 4951,
+      "external_uriScheme": 4107,
+      "relativePathInRepo": 572,
+      "bareToken": 272,
+      "schemes": {
+        "https": 3996,
+        "http": 110,
+        "some": 1
+      },
+      "perType": {
+        "uses": {
+          "external": 4107,
+          "relativePath": 572,
+          "bareToken": 272
+        }
+      },
+      "externalExamples": [
+        "Aporia/readme.markdown :: Aporia -[uses]-> https://github.com/nim-lang/Aporia/raw/master/screenshots/windows.png",
+        "Aporia/readme.markdown :: Aporia -[uses]-> https://github.com/nim-lang/Aporia/raw/master/screenshots/osx.png",
+        "Aporia/readme.markdown :: Mac OS X -[uses]-> https://github.com/nim-lang/Aporia/releases",
+        "Aporia/readme.markdown :: Linux/BSD -[uses]-> https://aur.archlinux.org/packages/aporia-git/",
+        "Aporia/readme.markdown :: Linux/BSD -[uses]-> http://github.com/nim-lang/nimble",
+        "Aporia/readme.markdown :: Linux/BSD -[uses]-> https://github.com/nim-lang/nimble#installation",
+        "Aporia/readme.markdown :: Windows -[uses]-> https://github.com/nim-lang/Aporia/issues/51",
+        "Aporia/readme.markdown :: GTK+ -[uses]-> http://sourceforge.net/projects/gtk-win/",
+        "Aporia/readme.markdown :: GtkSourceView -[uses]-> http://ftp.acc.umu.se/pub/gnome/binaries/win32/gtksourceview/",
+        "Aporia/readme.markdown :: libxml2-2 -[uses]-> http://ftp.gnome.org/pub/GNOME/binaries/win32/dependencies/",
+        "Aporia/readme.markdown :: Microsoft Visual C++ 2010 Redistributable Package (*optional*) -[uses]-> http://www.microsoft.com/download/en/details.aspx?id=5555",
+        "Aporia/readme.markdown :: Microsoft Visual C++ 2010 Redistributable Package (*optional*) -[uses]-> http://www.microsoft.com/download/en/details.aspx?id=14632",
+        "Aporia/readme.markdown :: Mac OS X -[uses]-> https://github.com/TingPing/homebrew-gnome",
+        "Aporia/readme.markdown :: Mac OS X -[uses]-> https://github.com/nim-lang/Aporia/issues"
+      ],
+      "relativeExamples": [
+        "Aqua.jl/README.md :: Aqua.jl: *A*uto *QU*ality *A*ssurance for Julia packages -[uses]-> CHANGELOG.md",
+        "DataFrames.jl/README.md :: DataFrames.jl -[uses]-> CONTRIBUTING.md",
+        "DataFrames.jl/README.md :: DataFrames.jl -[uses]-> CITATION.bib",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> frame.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> series.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> stats.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> missing.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> joining.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> excel.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> arrow.html",
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> parquet.html",
+        "Documenter.jl/AGENTS.md :: Read First -[uses]-> docs/src/contributing.md",
+        "Documenter.jl/AGENTS.md :: Changelog -[uses]-> CHANGELOG.md",
+        "Documenter.jl/AGENTS.md :: Changelog -[uses]-> docs/src/contributing.md"
+      ],
+      "bareExamples": [
+        "Aqua.jl/docs/src/persistent_tasks.md :: Manually running the persistent-tasks check -[uses]-> @ref",
+        "DataFrames.jl/docs/src/index.md :: What is DataFrames.jl? -[uses]-> @ref",
+        "DataFrames.jl/docs/src/index.md :: What is DataFrames.jl? -[uses]-> @ref",
+        "DataFrames.jl/docs/src/index.md :: DataFrames.jl and the Julia Data Ecosystem -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/indexing.md :: Indexing `GroupedDataFrame`s -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/indexing.md :: Indexing `GroupedDataFrame`s -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/indexing.md :: Indexing `GroupedDataFrame`s -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/indexing.md :: Indexing `GroupedDataFrame`s -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/indexing.md :: Indexing `GroupedDataFrame`s -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/indexing.md :: Indexing `GroupedDataFrame`s -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/metadata.md :: Design of metadata support -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/metadata.md :: Design of metadata support -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/metadata.md :: Design of metadata support -[uses]-> @ref",
+        "DataFrames.jl/docs/src/lib/metadata.md :: Design of metadata support -[uses]-> @ref"
+      ],
+      "schemeRule": "RFC 3986 alpha *( ALPHA / DIGIT / '+' / '-' / '.' ) ':', with '/' '?' '#' ending the scan, minimum TWO characters so a Windows drive letter is not a scheme, after stripping one balanced (...) or <...> wrapper",
+      "wrappedDestinations": 3
+    }
+  },
+  "storeLeafResolution": {
+    "whatThisMeasures": "what the production store searches for. extractLeaf is applied to the target before the name is matched (src/ast/parallel-indexer.ts:3377-3391, called :3393, used :3498-3501), so a dotted target is NOT searched for as the analyzer spelled it.",
+    "extractLeafSource": "src/ast/parallel-indexer.ts:3377-3391, copied verbatim",
+    "columnMeanings": {
+      "edges": "targets that resolve at least once, by type",
+      "targetNamesASymbolInThisFile": "the analyzer's own spelling names a symbol in the edge's own file",
+      "leafEqualsTarget": "extractLeaf is the identity here, so the store searches exactly what was published",
+      "leafNamesASymbolInThisFile": "the REWRITTEN string names a symbol in the edge's own file",
+      "leafNamesASymbolAnyFile": "the REWRITTEN string names a symbol somewhere in the index",
+      "leafIsAWrongKindOfThing": "target was rewritten AND the rewritten string names a symbol in this file AND it is not the declaration the edge is about"
+    },
+    "perType": {
+      "calls": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "uses": {
+        "edges": 2,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "contains": {
+        "edges": 7017,
+        "targetNamesASymbolInThisFile": 7017,
+        "leafEqualsTarget": 3565,
+        "leafNamesASymbolInThisFile": 3565,
+        "leafNamesASymbolAnyFile": 3566,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "imports": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "references": {
+        "edges": 97,
+        "targetNamesASymbolInThisFile": 97,
+        "leafEqualsTarget": 96,
+        "leafNamesASymbolInThisFile": 96,
+        "leafNamesASymbolAnyFile": 96,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "exports": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "extends": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "implements": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "overrides": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      },
+      "instantiates": {
+        "edges": 0,
+        "targetNamesASymbolInThisFile": 0,
+        "leafEqualsTarget": 0,
+        "leafNamesASymbolInThisFile": 0,
+        "leafNamesASymbolAnyFile": 0,
+        "leafIsAWrongKindOfThing": 0
+      }
+    },
+    "totals": {
+      "edges": 7116,
+      "targetNamesASymbolInThisFile": 7114,
+      "leafEqualsTarget": 3661,
+      "leafNamesASymbolInThisFile": 3661,
+      "leafNamesASymbolAnyFile": 3662,
+      "leafIsAWrongKindOfThing": 0
+    },
+    "rewrittenTargets": [
+      {
+        "target": "code_block.fsharp",
+        "edges": 368,
+        "leafHits": 0,
+        "examples": [
+          "Argu/src/Argu.SourceGenerator/README.md :: Why -> code_block.fsharp",
+          "Bolero/CHANGELOG.md :: 0.22 -> code_block.fsharp"
+        ]
+      },
+      {
+        "target": "code_block.julia",
+        "edges": 121,
+        "leafHits": 0,
+        "examples": [
+          "Aqua.jl/docs/src/ambiguities.md :: Examples -> code_block.julia",
+          "Aqua.jl/docs/src/index.md :: Quick usage -> code_block.julia"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest",
+        "edges": 109,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/lib/metadata.md :: Examples -> code_block.jldoctest",
+          "DataFrames.jl/docs/src/man/basics.md :: Setting up the Environment -> code_block.jldoctest"
+        ]
+      },
+      {
+        "target": "code_block.kotlin",
+        "edges": 100,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/CHANGELOG.md :: 0.37.1 -> code_block.kotlin",
+          "Exposed/CHANGELOG.md :: 0.35.1 -> code_block.kotlin"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#2",
+        "edges": 79,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#2",
+          "DataFrames.jl/docs/src/man/basics.md :: Reading Data From CSV Files -> code_block.jldoctest#2"
+        ]
+      },
+      {
+        "target": "code_block.fsharp#2",
+        "edges": 74,
+        "leafHits": 0,
+        "examples": [
+          "Bolero/CHANGELOG.md :: 0.20 -> code_block.fsharp#2",
+          "Bolero/CHANGELOG.md :: 0.17 -> code_block.fsharp#2"
+        ]
+      },
+      {
+        "target": "code_block.bash",
+        "edges": 73,
+        "leafHits": 0,
+        "examples": [
+          "Aporia/readme.markdown :: Linux/BSD -> code_block.bash",
+          "Aporia/readme.markdown :: Mac OS X -> code_block.bash"
+        ]
+      },
+      {
+        "target": "code_block.@docs",
+        "edges": 66,
+        "leafHits": 0,
+        "examples": [
+          "Aqua.jl/docs/src/ambiguities.md :: [Test function](@id test_ambiguities) -> code_block.@docs",
+          "Aqua.jl/docs/src/deps_compat.md :: [Test function](@id test_deps_compat) -> code_block.@docs"
+        ]
+      },
+      {
+        "target": "code_block.shell",
+        "edges": 62,
+        "leafHits": 0,
+        "examples": [
+          "Bolero/README.md :: Getting started with Bolero -> code_block.shell",
+          "Exposed/documentation-website/Writerside/snippets/exposed-dao-relationships/README.md :: Build -> code_block.shell"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#3",
+        "edges": 54,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#3",
+          "DataFrames.jl/docs/src/man/basics.md :: Basic Operations on Data Frames -> code_block.jldoctest#3"
+        ]
+      },
+      {
+        "target": "code_block.julia#2",
+        "edges": 52,
+        "leafHits": 0,
+        "examples": [
+          "Aqua.jl/docs/src/index.md :: ...to your tests? -> code_block.julia#2",
+          "Aqua.jl/docs/src/persistent_tasks.md :: Example -> code_block.julia#2"
+        ]
+      },
+      {
+        "target": "code_block.kotlin#2",
+        "edges": 52,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/CHANGELOG.md :: 0.37.1 -> code_block.kotlin#2",
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: 1.0.0-rc-1 -> code_block.kotlin#2"
+        ]
+      },
+      {
+        "target": "code_block.@meta",
+        "edges": 49,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/lib/functions.md :: document -> code_block.@meta",
+          "DataFrames.jl/docs/src/lib/indexing.md :: document -> code_block.@meta"
+        ]
+      },
+      {
+        "target": "code_block.markdown",
+        "edges": 48,
+        "leafHits": 0,
+        "examples": [
+          "Aqua.jl/README.md :: Badge -> code_block.markdown",
+          "Aqua.jl/docs/src/index.md :: Badge -> code_block.markdown"
+        ]
+      },
+      {
+        "target": "code_block.@example",
+        "edges": 44,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/man/latex.md :: Printing LaTeX from Julia -> code_block.@example",
+          "Documenter.jl/docs/src/man/syntax.md :: [`@example` block](@id reference-at-example) -> code_block.@example"
+        ]
+      },
+      {
+        "target": "code_block.csharp",
+        "edges": 41,
+        "leafHits": 0,
+        "examples": [
+          "Deedle/docs/csharp.md :: Deedle in C# -> code_block.csharp",
+          "Deedle/docs/csharp.md :: SeriesBuilder — collection-initialiser syntax -> code_block.csharp"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#4",
+        "edges": 34,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#4",
+          "DataFrames.jl/docs/src/man/basics.md :: Basic Operations on Data Frames -> code_block.jldoctest#4"
+        ]
+      },
+      {
+        "target": "code_block.@autodocs",
+        "edges": 31,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/lib/internals/anchors.md :: Anchors -> code_block.@autodocs",
+          "Documenter.jl/docs/src/lib/internals/builder.md :: Builder -> code_block.@autodocs"
+        ]
+      },
+      {
+        "target": "code_block.@repl",
+        "edges": 28,
+        "leafHits": 0,
+        "examples": [
+          "Aqua.jl/docs/src/ambiguities.md :: Examples -> code_block.@repl",
+          "Aqua.jl/docs/src/persistent_tasks.md :: Using an `expr` to check more than just `__init__` -> code_block.@repl"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#5",
+        "edges": 28,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#5",
+          "DataFrames.jl/docs/src/man/basics.md :: Basic Operations on Data Frames -> code_block.jldoctest#5"
+        ]
+      },
+      {
+        "target": "code_block.fsharp#3",
+        "edges": 27,
+        "leafHits": 0,
+        "examples": [
+          "Bolero/CHANGELOG.md :: 0.17 -> code_block.fsharp#3",
+          "Bolero/CHANGELOG.md :: 0.13 -> code_block.fsharp#3"
+        ]
+      },
+      {
+        "target": "code_block.kotlin#3",
+        "edges": 26,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: 1.0.0-rc-1 -> code_block.kotlin#3",
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: 0.53.0 -> code_block.kotlin#3"
+        ]
+      },
+      {
+        "target": "code_block.julia-repl",
+        "edges": 25,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Setting up the Environment -> code_block.julia-repl",
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.julia-repl"
+        ]
+      },
+      {
+        "target": "code_block.julia#3",
+        "edges": 24,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/importing_and_exporting.md :: CSV Files -> code_block.julia#3",
+          "DataFrames.jl/docs/src/man/importing_and_exporting.md :: `DataFrame` Definition in Source Code -> code_block.julia#3"
+        ]
+      },
+      {
+        "target": "code_block.@example#2",
+        "edges": 24,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Running interactive code -> code_block.@example#2",
+          "Documenter.jl/docs/src/showcase.md :: Named blocks -> code_block.@example#2"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#6",
+        "edges": 22,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#6",
+          "DataFrames.jl/docs/src/man/basics.md :: Basic Operations on Data Frames -> code_block.jldoctest#6"
+        ]
+      },
+      {
+        "target": "code_block.markdown#2",
+        "edges": 21,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/man/doctests.md :: \"Script\" Examples -> code_block.markdown#2",
+          "Documenter.jl/docs/src/man/doctests.md :: Exceptions -> code_block.markdown#2"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#7",
+        "edges": 20,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#7",
+          "DataFrames.jl/docs/src/man/basics.md :: Basic Operations on Data Frames -> code_block.jldoctest#7"
+        ]
+      },
+      {
+        "target": "code_block.ini",
+        "edges": 17,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/neutral/Fabulous.Benchmarks/snapshots/macos-i7-6820hq-2021-12-21/Fabulous.Tests.Benchmarks.DiffingAttributes.Benchmarks-report-github.md :: document -> code_block.ini",
+          "Fabulous/src/neutral/Fabulous.Benchmarks/snapshots/macos-i7-6820hq-2021-12-21/Fabulous.Tests.Benchmarks.NestedTreeCreation.Benchmarks-report-github.md :: document -> code_block.ini"
+        ]
+      },
+      {
+        "target": "DataFrames.jl",
+        "edges": 16,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/comparisons.md :: Operation/pandas/DataFrames.jl -> DataFrames.jl",
+          "DataFrames.jl/docs/src/man/comparisons.md :: Operation/pandas/DataFrames.jl -> DataFrames.jl"
+        ]
+      },
+      {
+        "target": "code_block.@example#3",
+        "edges": 16,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Running interactive code -> code_block.@example#3",
+          "Documenter.jl/docs/src/showcase.md :: Named blocks -> code_block.@example#3"
+        ]
+      },
+      {
+        "target": "code_block.@contents",
+        "edges": 15,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/index.md :: Package Manual -> code_block.@contents",
+          "DataFrames.jl/docs/src/index.md :: API -> code_block.@contents"
+        ]
+      },
+      {
+        "target": "code_block.@example#4",
+        "edges": 15,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Running interactive code -> code_block.@example#4",
+          "Documenter.jl/docs/src/showcase.md :: Named blocks -> code_block.@example#4"
+        ]
+      },
+      {
+        "target": "code_block.xml",
+        "edges": 15,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/snippets/README.md :: XML -> code_block.xml",
+          "Exposed/documentation-website/Writerside/snippets/README.md :: XML -> code_block.xml"
+        ]
+      },
+      {
+        "target": "code_block.bash#2",
+        "edges": 14,
+        "leafHits": 0,
+        "examples": [
+          "Aporia/readme.markdown :: Mac OS X -> code_block.bash#2",
+          "Exposed/.claude/skills/fix-bug/SKILL.md :: Step 4: Write a Failing Reproducer Test -> code_block.bash#2"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#8",
+        "edges": 14,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.jldoctest#8",
+          "DataFrames.jl/docs/src/man/basics.md :: Getting Basic Information about a Data Frame -> code_block.jldoctest#8"
+        ]
+      },
+      {
+        "target": "code_block.@example#5",
+        "edges": 14,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Running interactive code -> code_block.@example#5",
+          "Documenter.jl/docs/src/showcase.md :: Named blocks -> code_block.@example#5"
+        ]
+      },
+      {
+        "target": "1.0.0",
+        "edges": 13,
+        "leafHits": 0,
+        "examples": [
+          "Deedle/RELEASE_NOTES.md :: Release Notes -> 1.0.0",
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: Breaking Changes -> 1.0.0"
+        ]
+      },
+      {
+        "target": "code_block.kotlin#4",
+        "edges": 13,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: 1.0.0-rc-1 -> code_block.kotlin#4",
+          "Exposed/documentation-website/Writerside/topics/Migration-Guide-1-0-0.md :: `SqlExpressionBuilder` method imports {id = sql-expression-builder-imports} -> code_block.kotlin#4"
+        ]
+      },
+      {
+        "target": "code_block.@index",
+        "edges": 12,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/lib/functions.md :: Index -> code_block.@index",
+          "DataFrames.jl/docs/src/index.md :: Index -> code_block.@index"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest;",
+        "edges": 12,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Setup code -> code_block.jldoctest;",
+          "Documenter.jl/docs/src/showcase.md :: Teardown code -> code_block.jldoctest;"
+        ]
+      },
+      {
+        "target": "0.61.0",
+        "edges": 12,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: 0.61.0/1.0.0-beta-1 -> 0.61.0",
+          "Exposed/documentation-website/Writerside/topics/Breaking-Changes.md :: 0.61.0/1.0.0-beta-1 -> 0.61.0"
+        ]
+      },
+      {
+        "target": "code_block.fsharp#4",
+        "edges": 11,
+        "leafHits": 0,
+        "examples": [
+          "Bolero/CHANGELOG.md :: 0.13 -> code_block.fsharp#4",
+          "Fabulous/docs/advanced/composing-larger-applications/splitting-into-independent-mvu-states.md :: Decomposing a big app with View.map -> code_block.fsharp#4"
+        ]
+      },
+      {
+        "target": "code_block.shell#2",
+        "edges": 11,
+        "leafHits": 0,
+        "examples": [
+          "Bolero/README.md :: Getting started with Bolero -> code_block.shell#2",
+          "Exposed/documentation-website/Writerside/topics/Contributing.md :: Testing on Apple Silicon -> code_block.shell#2"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#9",
+        "edges": 11,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Getting Basic Information about a Data Frame -> code_block.jldoctest#9",
+          "DataFrames.jl/docs/src/man/basics.md :: Broadcasting Assignment -> code_block.jldoctest#9"
+        ]
+      },
+      {
+        "target": "code_block.Kotlin",
+        "edges": 11,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/snippets/exposed-data-types/README.md :: Configure -> code_block.Kotlin",
+          "Exposed/documentation-website/Writerside/snippets/exposed-databases-jdbc/README.md :: Configure -> code_block.Kotlin"
+        ]
+      },
+      {
+        "target": "code_block.julia-repl#2",
+        "edges": 10,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: Setting up the Environment -> code_block.julia-repl#2",
+          "DataFrames.jl/docs/src/man/basics.md :: Constructors -> code_block.julia-repl#2"
+        ]
+      },
+      {
+        "target": "code_block.yaml",
+        "edges": 10,
+        "leafHits": 0,
+        "examples": [
+          "Deedle/AGENTS.md :: CI Workflow -> code_block.yaml",
+          "Documenter.jl/docs/src/man/hosting.md :: GitHub Actions -> code_block.yaml"
+        ]
+      },
+      {
+        "target": "code_block.@example#6",
+        "edges": 10,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/test/examples/src/example-output.md :: `@example` outputs to file -> code_block.@example#6",
+          "Documenter.jl/test/examples/src/fonts.md :: Different weights: `100:100:900` -> code_block.@example#6"
+        ]
+      },
+      {
+        "target": "code_block.julia#4",
+        "edges": 9,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/importing_and_exporting.md :: CSV Files -> code_block.julia#4",
+          "Flux.jl/docs/old_tutorials/2021-10-08-dcgan-mnist.md :: Training -> code_block.julia#4"
+        ]
+      },
+      {
+        "target": "code_block.sh",
+        "edges": 9,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/man/guide.md :: Building an Empty Document -> code_block.sh",
+          "Fabulous/src/avalonia/Fabulous.Avalonia/README.md :: Getting Started -> code_block.sh"
+        ]
+      },
+      {
+        "target": "code_block.@meta#2",
+        "edges": 9,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Setup code -> code_block.@meta#2",
+          "Documenter.jl/docs/src/showcase.md :: Teardown code -> code_block.@meta#2"
+        ]
+      },
+      {
+        "target": "code_block.@setup",
+        "edges": 9,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/showcase.md :: Named blocks -> code_block.@setup",
+          "Documenter.jl/test/clear_module/src/index.md :: Testing -> code_block.@setup"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#10",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: `new_column_names` -> code_block.jldoctest#10",
+          "DataFrames.jl/docs/src/man/basics.md :: Broadcasting Operation Pairs -> code_block.jldoctest#10"
+        ]
+      },
+      {
+        "target": "code_block.markdown#3",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/man/doctests.md :: Exceptions -> code_block.markdown#3",
+          "Documenter.jl/docs/src/man/doctests.md :: Preserving Definitions Between Blocks -> code_block.markdown#3"
+        ]
+      },
+      {
+        "target": "code_block.@eval",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/man/hosting.md :: `docs/Project.toml` -> code_block.@eval",
+          "Documenter.jl/test/errors/src/index.md :: document -> code_block.@eval"
+        ]
+      },
+      {
+        "target": "code_block.@raw",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Documenter.jl/docs/src/man/syntax.md :: `@raw <format>` block -> code_block.@raw",
+          "Documenter.jl/test/examples/src.latex_showcase/showcase.md :: at-raw blocks -> code_block.@raw"
+        ]
+      },
+      {
+        "target": "0.61.0/1.0.0",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/topics/Migration-Guide-1-0-0.md :: Updated imports -> 0.61.0/1.0.0",
+          "Exposed/documentation-website/Writerside/topics/Migration-Guide-1-0-0.md :: Moved imports -> 0.61.0/1.0.0"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre13] - 2025-11-19",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre13] - 2025-11-19",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre13] - 2025-11-19"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre12] - 2025-05-25",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre12] - 2025-05-25",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre12] - 2025-05-25"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre11] - 2025-04-07",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre11] - 2025-04-07",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre11] - 2025-04-07"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre10] - 2025-02-28",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre10] - 2025-02-28",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre10] - 2025-02-28"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre9] - 2025-01-17",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre9] - 2025-01-17",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre9] - 2025-01-17"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre8] - 2024-12-27",
+        "edges": 8,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre8] - 2024-12-27",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre8] - 2024-12-27"
+        ]
+      },
+      {
+        "target": "code_block.@repl#2",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "Aqua.jl/docs/src/unbound_args.md :: Examples -> code_block.@repl#2",
+          "Documenter.jl/test/examples/src.latex_showcase/showcase.md :: at-REPL blocks -> code_block.@repl#2"
+        ]
+      },
+      {
+        "target": "code_block.fsharp#5",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "Bolero/CHANGELOG.md :: 0.13 -> code_block.fsharp#5",
+          "Fabulous/docs/advanced/composing-larger-applications/splitting-into-independent-mvu-states.md :: Decomposing a big app with View.map -> code_block.fsharp#5"
+        ]
+      },
+      {
+        "target": "code_block.jldoctest#11",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/basics.md :: `new_column_names` -> code_block.jldoctest#11",
+          "DataFrames.jl/docs/src/man/basics.md :: Broadcasting Operation Pairs -> code_block.jldoctest#11"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre5] - 2024-05-17",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/CHANGELOG.md :: Changelog -> [3.0.0-pre5] - 2024-05-17",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre5] - 2024-05-17"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre4] - 2024-04-19",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/CHANGELOG.md :: Changelog -> [3.0.0-pre4] - 2024-04-19",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre4] - 2024-04-19"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre7] - 2024-11-27",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre7] - 2024-11-27",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre7] - 2024-11-27"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre6] - 2024-05-20",
+        "edges": 7,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre6] - 2024-05-20",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre6] - 2024-05-20"
+        ]
+      },
+      {
+        "target": "Operation/pandas/DataFrames.jl",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "DataFrames.jl/docs/src/man/comparisons.md :: Accessing data -> Operation/pandas/DataFrames.jl",
+          "DataFrames.jl/docs/src/man/comparisons.md :: Common operations -> Operation/pandas/DataFrames.jl"
+        ]
+      },
+      {
+        "target": "code_block.sql",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/README.md :: SQL DSL -> code_block.sql",
+          "Exposed/README.md :: DAO -> code_block.sql"
+        ]
+      },
+      {
+        "target": "code_block.generic",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Exposed/documentation-website/Writerside/topics/Custom-type-mapping.md :: Registering the type mapper -> code_block.generic",
+          "Exposed/documentation-website/Writerside/topics/Get-started-with-Exposed-DAO.md :: Run the application -> code_block.generic"
+        ]
+      },
+      {
+        "target": "code_block.fs",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/docs/advanced/performance-optimization.md :: Optimizing view performance in advanced scenarios: the `key` property&#x20; -> code_block.fs",
+          "Fabulous/src/maui/Fabulous.MauiControls/Components.md :: Why introduce a new Components API? -> code_block.fs"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre3] - 2024-04-13",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre3] - 2024-04-13",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre3] - 2024-04-13"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre2] - 2024-03-31",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre2] - 2024-03-31",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre2] - 2024-03-31"
+        ]
+      },
+      {
+        "target": "[3.0.0-pre1] - 2024-03-23",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [3.0.0-pre1] - 2024-03-23",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [3.0.0-pre1] - 2024-03-23"
+        ]
+      },
+      {
+        "target": "[2.4.0-pre1] - 2024-02-09",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [2.4.0-pre1] - 2024-02-09",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [2.4.0-pre1] - 2024-02-09"
+        ]
+      },
+      {
+        "target": "[2.3.0] - 2024-01-17",
+        "edges": 6,
+        "leafHits": 0,
+        "examples": [
+          "Fabulous/src/avalonia/Fabulous.Avalonia.ColorPicker/CHANGELOG.md :: Changelog -> [2.3.0] - 2024-01-17",
+          "Fabulous/src/avalonia/Fabulous.Avalonia.DataGrid/CHANGELOG.md :: Changelog -> [2.3.0] - 2024-01-17"
+        ]
+      }
+    ],
+    "codeBlockCounterfactual": {
+      "edgesWithDottedCodeBlockTarget": 2269,
+      "ownFilePublishesBareCodeBlock": 796,
+      "ownFilePublishesNoCodeBlockAtAll": 0,
+      "examples": [
+        "Aporia/readme.markdown :: code_block.bash :: this file publishes 'code_block'",
+        "Aporia/readme.markdown :: code_block.bash :: this file publishes 'code_block'",
+        "Aporia/readme.markdown :: code_block.bash#2 :: this file publishes 'code_block'",
+        "Aporia/readme.markdown :: code_block.bash#3 :: this file publishes 'code_block'",
+        "Aporia/readme.markdown :: code_block.bash#4 :: this file publishes 'code_block'",
+        "Aqua.jl/README.md :: code_block.markdown :: 'code_block' exists in the index but NOT in this file"
+      ],
+      "question": "if the fenced block published `code_block` and carried the language in metadata.language (where it already is, real-markdown-analyzer.ts:470), how many of these edges' files would declare the name the edge would then address?"
+    }
+  },
+  "storeResolutionSimulation": {
+    "whatThisIs": "the production target-binding order replayed over this 600-file index: extractLeaf, then the insert-time name match with its per-type ORDER BY, then the post-index strategies for whatever insert time left NULL",
+    "whatThisIsNot": "the store. is_declaration, the project-wide symbol table the post-index passes read, and SQLite's tiebreak among equally-ranked candidates are all outside a single-file index, so this counts WHICH STRING the store searches and whether any declaration in this index carries it — not which row SQLite returns.",
+    "stageSources": {
+      "extractLeaf": "src/ast/parallel-indexer.ts:3377-3391",
+      "insertTime": "src/ast/parallel-indexer.ts:3498-3502",
+      "resolveContainsTargetStmt": "src/ast/parallel-indexer.ts:2354-2360",
+      "resolveTargetStmt": "src/ast/parallel-indexer.ts:2239-2245",
+      "postStrategy1QualifiedName": "src/ast/parallel-indexer.ts:3976-4005",
+      "postStrategy3UniqueName": "src/ast/parallel-indexer.ts:4008-4020",
+      "postStrategy4DottedLeaf": "src/ast/parallel-indexer.ts:3822-3833",
+      "i13": "src/ast/parallel-indexer.ts:4127-4146 (bare names only, non-contains, overwrites)",
+      "reverseWalkJoins": [
+        "src/lsp/impact.ts:529-539",
+        "src/lsp/relations.ts:130-134",
+        "src/lsp/navigation.ts:440-453"
+      ]
+    },
+    "perType": {
+      "insertTime": {
+        "calls": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "uses": {
+          "resolved": 13,
+          "unresolved": 4940
+        },
+        "contains": {
+          "resolved": 3566,
+          "unresolved": 3451
+        },
+        "imports": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "references": {
+          "resolved": 96,
+          "unresolved": 1
+        },
+        "exports": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "extends": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "implements": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "overrides": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "instantiates": {
+          "resolved": 0,
+          "unresolved": 0
+        }
+      },
+      "afterPostIndex": {
+        "calls": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "uses": {
+          "resolved": 15,
+          "unresolved": 4938
+        },
+        "contains": {
+          "resolved": 5454,
+          "unresolved": 1563
+        },
+        "imports": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "references": {
+          "resolved": 97,
+          "unresolved": 0
+        },
+        "exports": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "extends": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "implements": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "overrides": {
+          "resolved": 0,
+          "unresolved": 0
+        },
+        "instantiates": {
+          "resolved": 0,
+          "unresolved": 0
+        }
+      }
+    },
+    "totals": {
+      "insertResolved": 3675,
+      "insertUnresolved": 8392,
+      "afterResolved": 5566,
+      "afterUnresolved": 6501
+    },
+    "stageTally": {
+      "none": 6501,
+      "insert-time": 3675,
+      "post-strategy3-uniqueName": 960,
+      "post-strategy1-qualifiedName": 931
+    },
+    "stageTallyByType": {
+      "uses": {
+        "none": 4938,
+        "post-strategy1-qualifiedName": 2,
+        "insert-time": 13
+      },
+      "contains": {
+        "insert-time": 3566,
+        "none": 1563,
+        "post-strategy3-uniqueName": 959,
+        "post-strategy1-qualifiedName": 929
+      },
+      "references": {
+        "insert-time": 96,
+        "post-strategy3-uniqueName": 1
+      }
+    },
+    "misbindings": {
+      "count": 14,
+      "definition": "the store matched a REWRITTEN leaf onto some declaration, and that declaration's name is not the one the edge names — so the edge is bound, to the wrong thing, which is worse than unbound",
+      "examples": [
+        "Deedle/docs/csharp.md :: Further Reading -[uses]-> https://github.com/fslaborg/Deedle/tree/master/tests/Deedle.CSharp.Tests :: store searched Tests and bound Tests (Deedle/RELEASE_NOTES.md)",
+        "FSharp.Data/README.md :: FSharp.Data: Making Data Access Simple -[uses]-> https://www.nuget.org/packages/FSharp.Data :: store searched Data and bound Data (Flux.jl/docs/old_tutorials/2021-02-07-convnet.md)",
+        "FSharp.Data/docs/index.md :: Contributing and license -[uses]-> https://github.com/fsharp/FSharp.Data :: store searched Data and bound Data (Flux.jl/docs/old_tutorials/2021-02-07-convnet.md)",
+        "FSharp.Formatting/docs/index.md :: Using FSharp.Formatting as a library -[uses]-> https://nuget.org/packages/FSharp.Formatting :: store searched Formatting and bound Formatting (FSharp.Data/README.md)",
+        "FSharp.Formatting/docs/index.md :: More information -[uses]-> https://github.com/fsprojects/FSharp.Formatting :: store searched Formatting and bound Formatting (FSharp.Data/README.md)",
+        "FSharp.Formatting/docs/sidebyside/sidemarkdown.md :: Example: Using Markdown Content -[uses]-> http://fsprojects.github.io/FSharp.Formatting :: store searched Formatting and bound Formatting (FSharp.Data/README.md)",
+        "Fabulous/docs/guides/migration.md :: Migrate to Fabulous 10.0.x -[contains]-> From Fabulous 2 or Xamarin.Forms :: store searched Forms and bound Forms (Falco/documentation/markup.md)",
+        "Fake/docs/articles/installer-squirrel.md :: Releasifying NuGet Packages with Squirrel -[uses]-> https://github.com/Squirrel/Squirrel.Windows :: store searched Windows and bound Windows (Aporia/readme.markdown)",
+        "Fake/docs/guide/contributing.md :: Contributing Documentation -[uses]-> https://github.com/fsprojects/FSharp.Formatting :: store searched Formatting and bound Formatting (FSharp.Data/README.md)",
+        "Fake/docs/guide/help-users.md :: Who is using FAKE? -[uses]-> https://github.com/fsharp/FSharp.Data :: store searched Data and bound Data (Flux.jl/docs/old_tutorials/2021-02-07-convnet.md)",
+        "Fake/docs/guide/what-is-fake.md :: Can FAKE code be used from a regular F# project -[uses]-> https://www.nuget.org/packages/Fake.Core.Environment :: store searched Environment and bound Environment (Fabulous/docs/glossary.md)",
+        "Falco/README.md :: Related Libraries -[uses]-> https://github.com/FalcoFramework/Falco.Markup :: store searched Markup and bound Markup (Falco/documentation/markup.md)",
+        "Falco/CHANGELOG.md :: Removed -[uses]-> https://github.com/FalcoFramework/Falco.Markup :: store searched Markup and bound Markup (Falco/documentation/markup.md)",
+        "Falco/documentation/response.md :: HTML responses -[uses]-> https://www.nuget.org/packages/Falco.Markup :: store searched Markup and bound Markup (Falco/documentation/markup.md)"
+      ]
+    }
+  },
+  "unresolved": {
+    "edges": 4951,
+    "distinctNames": 3918,
+    "note": "bounded, not a verdict: this index is the sample and the corpus is the admitted population; an unresolved target naming a file outside the window is not a defect",
+    "topNames": [
+      [
+        "@ref",
+        262
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/element.md",
+        30
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/navigableelement.md",
+        28
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/visualelement.md",
+        28
+      ],
+      [
+        "https://github.com/",
+        20
+      ],
+      [
+        "https://github.com/hfazai",
+        19
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/view.md/",
+        16
+      ],
+      [
+        "https://semver.org/spec/v2.0.0.html",
+        15
+      ],
+      [
+        "https://keepachangelog.com/en/1.0.0/",
+        14
+      ],
+      [
+        "https://github.com/dimension-zero",
+        13
+      ],
+      [
+        "https://reference.avaloniaui.net/api/Avalonia/AvaloniaObject/",
+        12
+      ],
+      [
+        "https://github.com/spand",
+        11
+      ],
+      [
+        "https://youtrack.jetbrains.com/issues/EXPOSED",
+        10
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/view.md",
+        9
+      ],
+      [
+        "https://github.com/JuliaDocs/Documenter.jl/issues/1590",
+        8
+      ],
+      [
+        "https://discord.com/channels/196693847965696000/1541149327701971026",
+        8
+      ],
+      [
+        "https://fabulous-dev.github.io/Fabulous/docs/",
+        8
+      ],
+      [
+        "https://fabulous-dev.github.io/Fabulous/docs/tutorials/avalonia/",
+        8
+      ],
+      [
+        "https://github.com/naftalmm",
+        7
+      ],
+      [
+        "geometry.md",
+        7
+      ],
+      [
+        "../../transform.md",
+        7
+      ],
+      [
+        "/reference/fake-tools-signtool-signoptions.html",
+        7
+      ],
+      [
+        "https://github.com/JuliaDocs/DocumenterMarkdown.jl",
+        6
+      ],
+      [
+        "https://github.com/doyaaaaaken",
+        6
+      ],
+      [
+        "https://github.com/SciML/ColPrac",
+        5
+      ],
+      [
+        "https://github.com/lure",
+        5
+      ],
+      [
+        "https://github.com/jnfeinstein",
+        5
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/collections/itemsview.md",
+        5
+      ],
+      [
+        "/guide/fake-modules.html",
+        5
+      ],
+      [
+        "example-hello-world.md",
+        5
+      ],
+      [
+        "https://fluxml.ai/tutorials/",
+        5
+      ],
+      [
+        "https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet",
+        4
+      ],
+      [
+        "https://github.com/JuliaData/DataFrames.jl/pull/3055",
+        4
+      ],
+      [
+        "https://dplyr.tidyverse.org/",
+        4
+      ],
+      [
+        "https://github.com/FluxML/Flux.jl",
+        4
+      ],
+      [
+        "https://github.com/queryverse/Query.jl",
+        4
+      ],
+      [
+        "https://github.com/AlexeySoshin",
+        4
+      ],
+      [
+        "https://github.com/AliLozano",
+        4
+      ],
+      [
+        "https://github.com/t-kameyama",
+        4
+      ],
+      [
+        "https://www.docker.com/",
+        4
+      ]
+    ]
+  },
+  "topCrossFileCollisionNames": [
+    {
+      "name": "code_block.fsharp",
+      "edges": 368,
+      "files": 147,
+      "kinds": 1
+    },
+    {
+      "name": "Added",
+      "edges": 236,
+      "files": 15,
+      "kinds": 1
+    },
+    {
+      "name": "Description",
+      "edges": 184,
+      "files": 97,
+      "kinds": 2
+    },
+    {
+      "name": "code_block",
+      "edges": 177,
+      "files": 84,
+      "kinds": 1
+    },
+    {
+      "name": "Properties",
+      "edges": 168,
+      "files": 90,
+      "kinds": 2
+    },
+    {
+      "name": "Changed",
+      "edges": 156,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "Fixed",
+      "edges": 132,
+      "files": 7,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia",
+      "edges": 121,
+      "files": 43,
+      "kinds": 1
+    },
+    {
+      "name": "Properties/Description",
+      "edges": 120,
+      "files": 90,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest",
+      "edges": 109,
+      "files": 33,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.kotlin",
+      "edges": 100,
+      "files": 23,
+      "kinds": 1
+    },
+    {
+      "name": "Constructors",
+      "edges": 93,
+      "files": 61,
+      "kinds": 2
+    },
+    {
+      "name": "code_block.jldoctest#2",
+      "edges": 79,
+      "files": 28,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.fsharp#2",
+      "edges": 74,
+      "files": 41,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.bash",
+      "edges": 73,
+      "files": 35,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@docs",
+      "edges": 66,
+      "files": 45,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.shell",
+      "edges": 62,
+      "files": 33,
+      "kinds": 1
+    },
+    {
+      "name": "code_block#2",
+      "edges": 61,
+      "files": 37,
+      "kinds": 1
+    },
+    {
+      "name": "Constructors/Description",
+      "edges": 59,
+      "files": 59,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#3",
+      "edges": 54,
+      "files": 23,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia#2",
+      "edges": 52,
+      "files": 22,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.kotlin#2",
+      "edges": 52,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@meta",
+      "edges": 49,
+      "files": 44,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.markdown",
+      "edges": 48,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example",
+      "edges": 44,
+      "files": 21,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.csharp",
+      "edges": 41,
+      "files": 2,
+      "kinds": 1
+    },
+    {
+      "name": "Properties&#x20;",
+      "edges": 41,
+      "files": 41,
+      "kinds": 1
+    },
+    {
+      "name": "Constructors&#x20;",
+      "edges": 36,
+      "files": 36,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#4",
+      "edges": 34,
+      "files": 16,
+      "kinds": 1
+    },
+    {
+      "name": "Usages",
+      "edges": 34,
+      "files": 34,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@autodocs",
+      "edges": 31,
+      "files": 24,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@repl",
+      "edges": 28,
+      "files": 21,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#5",
+      "edges": 28,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "Usages&#x20;",
+      "edges": 28,
+      "files": 28,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.fsharp#3",
+      "edges": 27,
+      "files": 17,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.kotlin#3",
+      "edges": 26,
+      "files": 9,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia-repl",
+      "edges": 25,
+      "files": 16,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia#3",
+      "edges": 24,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example#2",
+      "edges": 24,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "Bug fixes",
+      "edges": 23,
+      "files": 2,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#6",
+      "edges": 22,
+      "files": 12,
+      "kinds": 1
+    },
+    {
+      "name": "Events&#x20;",
+      "edges": 22,
+      "files": 22,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.markdown#2",
+      "edges": 21,
+      "files": 5,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#7",
+      "edges": 20,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "Removed",
+      "edges": 18,
+      "files": 6,
+      "kinds": 1
+    },
+    {
+      "name": "code_block#3",
+      "edges": 18,
+      "files": 16,
+      "kinds": 1
+    },
+    {
+      "name": "Documentation",
+      "edges": 18,
+      "files": 18,
+      "kinds": 2
+    },
+    {
+      "name": "Build",
+      "edges": 17,
+      "files": 17,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.ini",
+      "edges": 17,
+      "files": 7,
+      "kinds": 1
+    },
+    {
+      "name": "DataFrames.jl",
+      "edges": 16,
+      "files": 3,
+      "kinds": 2
+    },
+    {
+      "name": "code_block.@example#3",
+      "edges": 16,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@contents",
+      "edges": 15,
+      "files": 9,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example#4",
+      "edges": 15,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.xml",
+      "edges": 15,
+      "files": 8,
+      "kinds": 1
+    },
+    {
+      "name": "Run",
+      "edges": 15,
+      "files": 15,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.bash#2",
+      "edges": 14,
+      "files": 9,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#8",
+      "edges": 14,
+      "files": 7,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example#5",
+      "edges": 14,
+      "files": 10,
+      "kinds": 1
+    },
+    {
+      "name": "1.0.0",
+      "edges": 13,
+      "files": 6,
+      "kinds": 2
+    },
+    {
+      "name": "code_block.kotlin#4",
+      "edges": 13,
+      "files": 5,
+      "kinds": 1
+    }
+  ],
+  "declaredLimit": "resolves by NAME. A name that a file outside this sample declares is counted unresolved, which conflates 'outside the window' with 'nowhere'. Ambiguity is keyed on name and on distinct kinds, both of which the shared harness also does, so the definitions differ and both numbers are given."
+}

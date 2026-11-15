@@ -1,0 +1,105 @@
+{
+  "fixtureId": "xml/dtd-attlist-default-entities",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M18 (ATTLIST-default round). An ATTRIBUTE'S DEFAULT IS A USE OF WHATEVER IT IS BUILT FROM: `<!ATTLIST foo bar CDATA \"&lt;&gt;&quot;\">` says `bar`'s default value is assembled from `lt`, `gt` and `quot`, and an attribute cannot be given its default without expanding them. The claim was dropped because an `EntityRef` was only collected under an OWNING ELEMENT and a DTD declaration has no element above it \u2014 the third instance of that same structural reason, after entity replacement text and parameter references. THE OWNER IS THE ATTRIBUTE, not the element the ATTLIST is about: the default is a property of `bar`, so `bar` is what depends on `lt`, and that is consistent with the `contains foo -> bar` edge already published for the declaration itself. Attaching it to `foo` would claim `foo` has a dependency its own declaration does not mention. Nine of the ten corpus sites are the PREDEFINED entities, so they resolve as `builtin` \u2014 and the fixture asserts that rather than assuming it, because \"an entity reference in a DTD is unresolved\" is precisely the assumption being corrected. Two shapes must produce NO edge, and both are here: `&ns;` inside a NAMESPACE URI (a URI is a literal string; no processor expands entity references in it, which is the whole point of comparing an entity-expanded name against one) and `%zz;` in a parameter-entity value form.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "styled",
+      "target": "lt",
+      "line_number": 38,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "builtin",
+      "note": "predefined in an ATTLIST default: builtin, NOT unresolved. Pre-M18 the predefined set was not consulted at all outside namespaces, and pre-fix this site did not exist."
+    },
+    {
+      "type": "references",
+      "from": "styled",
+      "target": "gt",
+      "line_number": 38,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "builtin"
+    },
+    {
+      "type": "references",
+      "from": "styled",
+      "target": "quot",
+      "line_number": 38,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "builtin"
+    },
+    {
+      "type": "references",
+      "from": "styled",
+      "target": "apos",
+      "line_number": 38,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "builtin"
+    },
+    {
+      "type": "references",
+      "from": "declared",
+      "target": "known",
+      "line_number": 39,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "in-document",
+      "note": "a declared entity in a default value: the ordinary in-document answer, and the case that distinguishes this fix from merely widening a set."
+    },
+    {
+      "type": "references",
+      "from": "dangling",
+      "target": "neverDeclared",
+      "line_number": 40,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "unresolved",
+      "meta.danglingEntityReference": true,
+      "note": "RECORDED and labelled rather than refused \u2014 the same ruling as X13 for a bare type reference. Refusing is what made 4,423 such claims invisible."
+    },
+    {
+      "type": "references",
+      "from": "root",
+      "target": "ns",
+      "line_number": 45,
+      "meta.role": "entity_reference",
+      "meta.resolvable": "in-document",
+      "note": "the CONTRAST case, and the reason this fixture is worth more than the three above. The same entity name used inside a namespace URI is a reference from the ELEMENT, because the value is used AS an attribute value; and the URI occurrence on line 45 produces no edge at all. A URI is a literal string \u2014 no processor expands entity references in it, which is the whole point of comparing an entity-expanded name against one \u2014 so an edge from the ATTLIST path would have asserted a dependency the language says does not exist."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "styled",
+      "target": "known",
+      "note": "OWNER DISCIPLINE: `known` is used in `declared`'s default, so only `declared` may depend on it. Attaching an ATTLIST default's use to the ATTLIST's ELEMENT, or to any sibling attribute, would claim a dependency that attribute does not have \u2014 the wrong-owner case the ruling exists to prevent."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "styled",
+      "kind": "property",
+      "meta.isDtdAttributeDeclaration": true
+    },
+    {
+      "name": "declared",
+      "kind": "property",
+      "meta.isDtdAttributeDeclaration": true
+    },
+    {
+      "name": "known",
+      "meta.isDtdEntityDeclaration": true
+    },
+    {
+      "name": "zz",
+      "kind": "type",
+      "meta.isDtdParameterEntity": true,
+      "note": "A PARAMETER-ENTITY VALUE FORM IS A DECLARATION. `% zz '...'` DECLARES the parameter entity named `zz`; `%zz;` USES one. Those are different forms and the corpus holds both, which is why the fixture asserts the symbol rather than forbidding it \u2014 an earlier draft of this file forbade `zz` on the reasoning that a value form 'names nothing', and the gate was right and the expectation wrong: nothing is named BY THE USE, but the declaration is a real declaration."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "neverDeclared",
+      "note": "a USE is not a DECLARATION: the reference is recorded, the target symbol is not."
+    }
+  ]
+}

@@ -22,7 +22,7 @@ import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
-const DEMO = "$HOME/bb-demo-hub"
+const DEMO = "/home/ishaq2321/bb-demo-hub"
 const OUT = path.join(ROOT, "validation/m53/results/R2.json")
 const BB = path.join(ROOT, "bin", "bb")
 const SERVER = path.join(ROOT, "dist", "lsp", "server.js")

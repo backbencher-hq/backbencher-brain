@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vba/class-module",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "Run", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "decorates", "from": "root", "target": "VB_Name" },
+    { "type": "exports", "from": "root", "target": "Run" }
+  ]
+}

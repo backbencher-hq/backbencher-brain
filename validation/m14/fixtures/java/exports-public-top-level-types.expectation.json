@@ -1,0 +1,100 @@
+{
+  "fixtureId": "java/exports-public-top-level-types",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPORTS_JAVA2 (M14 ontology). An `exports` edge asserts IMPORTABILITY, and a top-level type is importable from another compilation unit iff it is declared public (JLS 6.5.5.1, 7.6). So the 1.0 tier is the public top-level types and the 0.6 tier is the package-private ones; both tiers are live on the corpus (public 2565 / no-modifier 718 of 3289 entries on java-lib), so neither is a dead branch. Members are NOT exported: `import Api` binds the type, never a bare member name, and membership already rides `contains` (M49 JVM-closure exports-family ruling, reviews/jvm-closure-audit.md). The 0.6 tier carries a machine-readable reasonCode as honesty-contract \u00a74 requires of any sub-1.0 edge, and sits below the 0.7 patterns.ts fabrication threshold for the same reason the 0.5 override-guess tier does. The SOURCE is the package, which is what owns a top-level type; measured on the corpus, 0 of 3227 files carrying an export set declare no package. `record_declaration` and `annotation_type_declaration` map to SymbolKind Class in this lane (mapTypeToSymbolKind), so the pins say class \u2014 the node type is recorded on the symbol's metadata.nodeType instead. Confidence is pinned EXACTLY on the 1.0 rows and with confidenceMax 0.6 on the package-private row, because a mutant that collapses the tier to a flat 1.0 was measured SURVIVING before those pins existed: metadata.exportForm alone did not catch it. A fixture that cannot fail is decoration.",
+  "expectSymbols": [
+    {
+      "name": "Api",
+      "kind": "class"
+    },
+    {
+      "name": "Helper",
+      "kind": "interface"
+    },
+    {
+      "name": "Color",
+      "kind": "enum"
+    },
+    {
+      "name": "Point",
+      "kind": "class"
+    },
+    {
+      "name": "Marker",
+      "kind": "class"
+    },
+    {
+      "name": "internal",
+      "kind": "class"
+    },
+    {
+      "name": "Nested",
+      "kind": "class",
+      "ownerName": "Api"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "com.example.exports",
+      "target": "Api",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "confidence": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.example.exports",
+      "target": "Helper",
+      "meta.exportForm": "public_top_level_type",
+      "confidence": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.example.exports",
+      "target": "Color",
+      "meta.exportForm": "public_top_level_type",
+      "confidence": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.example.exports",
+      "target": "Point",
+      "meta.exportForm": "public_top_level_type",
+      "confidence": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.example.exports",
+      "target": "Marker",
+      "meta.exportForm": "public_top_level_type",
+      "confidence": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.example.exports",
+      "target": "internal",
+      "meta.exportForm": "package_private_top_level_type",
+      "meta.reasonCode": "package_private_top_level_type",
+      "confidenceMax": 0.6
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "Nested",
+      "comment": "M49 exports-family ruling: a member type is not an importable unit; membership rides `contains` (Api -> Nested)"
+    },
+    {
+      "type": "exports",
+      "target": "aMethod",
+      "comment": "same ruling for a member method; `import Api` binds the type, never a bare member name"
+    },
+    {
+      "type": "exports",
+      "target": "size",
+      "comment": "same ruling, one level down: a member of a member type"
+    }
+  ]
+}

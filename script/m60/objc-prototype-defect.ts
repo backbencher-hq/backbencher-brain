@@ -45,7 +45,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "$HOME/fixtures/repositories/objc"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/objc"
 const OUT = path.join(ROOT, "validation/m60/results/objc-prototype-defect.json")
 const files: string[] = []
 const walk = (d: string) => {

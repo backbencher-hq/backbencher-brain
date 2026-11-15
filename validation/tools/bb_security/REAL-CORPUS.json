@@ -1,11 +1,18 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tool": "bb_security",
   "kind": "real-corpus-and-adversarial",
-  "codeState": "post-fix (read-only read path, declared bounds, state-aware history identity)",
-  "generatedAt": "2026-11-03T17:27:35.101Z",
-  "currentCommit": "5eae556d3974e84fdb45ac57f5d1827deb8c845d",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "codeState": "M72 Phase 1 — spec engine leads persisted in brain_security_flow; legacy token cross-product retired (BB_SECURITY_LEGACY unset)",
+  "engine": {
+    "source": "src/intelligence/security/rebuild/{specs,matcher,flow,engine}.ts",
+    "store": "brain_security_flow",
+    "retiredStore": "brain_taint_flow (counted only to prove it is not written by the default path)",
+    "tierBaseline": "0 scan / 36 leads / 17 unsupported (registry.ts)",
+    "answerContract": "banner + registry tier line + per-project language declaration; leads carry the demoted grade label and never the word `confirmed`"
+  },
+  "generatedAt": "2026-11-14T04:29:31.343Z",
+  "currentCommit": "1c3d0351e2325de2d5745f5a315eb4965198e462",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "door": "MCP stdio over the SOURCE entry: tsx src/cli/index.ts mcp --dir <project>",
   "commands": {
     "run": "BB_DATA_DIR=<per-corpus dir> BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_security/work/probe-real-corpus.ts",
@@ -16,7 +23,7 @@
       "corpus": "graphql-js",
       "family": "TypeScript",
       "language": "typescript",
-      "files": 367
+      "files": 352
     },
     {
       "corpus": "graphql-js",
@@ -88,7 +95,7 @@
       "corpus": "sqlite",
       "family": "C",
       "language": "c",
-      "files": 78
+      "files": 149
     },
     {
       "corpus": "sqlite",
@@ -102,8 +109,8 @@
       "name": "graphql-js",
       "subpath": "src",
       "family": "TypeScript",
-      "path": "$HOME/fixtures/repositories/graphql-js/src",
-      "isolatedDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-graphql-js",
+      "path": "/home/ishaq2321/bb_tests/repositories/graphql-js/src",
+      "isolatedDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-graphql-js",
       "index": {
         "status": 0,
         "stderr": "",
@@ -115,7 +122,7 @@
         "languages": [
           {
             "language": "typescript",
-            "files": 367
+            "files": 352
           },
           {
             "language": "markdown",
@@ -123,86 +130,61 @@
           }
         ],
         "counts": {
-          "files": 375,
-          "symbols": 8057,
-          "relationships": 42667,
-          "taintFlows": 435
+          "files": 360,
+          "symbols": 6711,
+          "relationships": 37915,
+          "securityFlows": {
+            "table": "brain_security_flow",
+            "initialized": true,
+            "total": 0,
+            "byVulnerability": {},
+            "bySeverity": {},
+            "byState": {}
+          },
+          "retiredTaintFlows": {
+            "table": "brain_taint_flow",
+            "rows": 0
+          }
         },
-        "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-graphql-js/projects/8241fa6b4c87f5edcc5892994dfc4dcbfa87a917/brain.db",
-        "dbBytes": 110583808
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-graphql-js/projects/8241fa6b4c87f5edcc5892994dfc4dcbfa87a917/brain.db",
+        "dbBytes": 70053888
       },
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 2240,
-        "payloadBytes": 3382,
+        "durationMs": 1705,
+        "payloadBytes": 592,
         "parsed": {
-          "head": "security: 225 critical / 55 high / 0 medium / 0 low / 154 unknown (144 resolved flows, 290 unvalidated sources, 0 mitigated)",
-          "censusLine": "[scan: 435 taint flow(s) indexed → 434 finding(s); showing 20 finding(s) and 5 of 290 unvalidated observation(s)]",
-          "observationBlock": true,
-          "counts": {
-            "scannedFlows": 435,
-            "deduplicatedFlows": 434,
-            "findingsShown": 20,
-            "observationsShown": 5,
-            "observationsTotal": 290
-          },
-          "severityHead": {
-            "critical": 225,
-            "high": 55,
-            "medium": 0,
-            "low": 0,
-            "unknown": 154,
-            "resolved": 144,
-            "unvalidatedSources": 290,
-            "mitigated": 0
-          },
-          "findingLines": [
-            "  [critical] SQL injection (executeQuery) @ execution/__tests__/abstract-test.ts:27 <- database_read -> database_write",
-            "  [critical] SQL injection (executeQuery) @ execution/__tests__/errorPropagation-test.ts:30 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/errorPropagation-test.ts:44 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/errorPropagation-test.ts:62 <- database_read -> database_write",
-            "  [critical] SQL injection (complete) @ execution/__tests__/lists-test.ts:580 <- database_read -> database_write",
-            "  [critical] SQL injection (executeQuery) @ execution/__tests__/lists-test.ts:600 <- database_read -> database_write",
-            "  [critical] SQL injection (executeQuery) @ execution/__tests__/nonnull-test.ts:115 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:247 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:252 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:378 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:439 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:545 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:575 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:611 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:647 <- database_read -> database_write",
-            "  [critical] SQL injection (resultPromise) @ execution/__tests__/nonnull-test.ts:682 <- database_read -> database_write",
-            "  [critical] SQL injection (executeQuery) @ execution/__tests__/oneof-test.ts:28 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/oneof-test.ts:101 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/oneof-test.ts:122 <- database_read -> database_write",
-            "  [critical] SQL injection (result) @ execution/__tests__/oneof-test.ts:145 <- database_read -> database_write"
-          ],
-          "observationLines": [
-            "  [critical] unvalidated sink: SQL injection result @ __tests__/graphql-test.ts:148 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection 'graphql:execute:rootSelectionSet' @ diagnostics.ts:260 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection 'graphql:execute:variableCoercion' @ diagnostics.ts:258 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection 'graphql:execute' @ diagnostics.ts:256 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection execute @ diagnostics.ts:275 (sink found; source endpoint not resolved to an indexed symbol)"
-          ],
-          "staleMarkers": 0
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "bannerPresent": true,
+          "head": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)",
+          "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "censusLine": "[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
+          "notScannedLine": "not scanned by bb_security (no executable source model): markdown — prose; no executable source/sink surface",
+          "storedLeads": 0,
+          "emptyDeclared": true,
+          "engineInitialized": true,
+          "leadLines": [],
+          "leadRecords": [],
+          "leadCountByLabel": {},
+          "staleMarkers": 0,
+          "payloadBytes": 592
         },
-        "text": "security: 225 critical / 55 high / 0 medium / 0 low / 154 unknown (144 resolved flows, 290 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (executeQuery) @ execution/__tests__/abstract-test.ts:27 <- database_read -> database_write\n  [critical] SQL injection (executeQuery) @ execution/__tests__/errorPropagation-test.ts:30 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/errorPropagation-test.ts:44 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/errorPropagation-test.ts:62 <- database_read -> database_write\n  [critical] SQL injection (complete) @ execution/__tests__/lists-test.ts:580 <- database_read -> database_write\n  [critical] SQL injection (executeQuery) @ execution/__tests__/lists-test.ts:600 <- database_read -> database_write\n  [critical] SQL injection (executeQuery) @ execution/__tests__/nonnull-test.ts:115 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:247 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:252 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:378 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:439 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:545 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:575 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:611 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/nonnull-test.ts:647 <- database_read -> database_write\n  [critical] SQL injection (resultPromise) @ execution/__tests__/nonnull-test.ts:682 <- database_read -> database_write\n  [critical] SQL injection (executeQuery) @ execution/__tests__/oneof-test.ts:28 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/oneof-test.ts:101 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/oneof-test.ts:122 <- database_read -> database_write\n  [critical] SQL injection (result) @ execution/__tests__/oneof-test.ts:145 <- database_read -> database_write\n[scan: 435 taint flow(s) indexed → 434 finding(s); showing 20 finding(s) and 5 of 290 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection result @ __tests__/graphql-test.ts:148 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection 'graphql:execute:rootSelectionSet' @ diagnostics.ts:260 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection 'graphql:execute:variableCoercion' @ diagnostics.ts:258 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection 'graphql:execute' @ diagnostics.ts:256 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection execute @ diagnostics.ts:275 (sink found; source endpoint not resolved to an indexed symbol)",
+        "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nnot scanned by bb_security (no executable source model): markdown — prose; no executable source/sink surface\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)\n  no stored leads on this page\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
         "elapsedSinceIndexMs": 0
       },
       "determinism": {
         "identical": true,
-        "firstBytes": 3382,
-        "secondBytes": 3382
+        "firstBytes": 592,
+        "secondBytes": 592
       }
     },
     {
       "name": "rake",
       "subpath": "lib",
       "family": "Ruby",
-      "path": "$HOME/fixtures/repositories/rake/lib",
-      "isolatedDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rake",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake/lib",
+      "isolatedDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rake",
       "index": {
         "status": 0,
         "stderr": "",
@@ -219,85 +201,60 @@
         ],
         "counts": {
           "files": 44,
-          "symbols": 497,
-          "relationships": 2033,
-          "taintFlows": 52
+          "symbols": 498,
+          "relationships": 2139,
+          "securityFlows": {
+            "table": "brain_security_flow",
+            "initialized": true,
+            "total": 0,
+            "byVulnerability": {},
+            "bySeverity": {},
+            "byState": {}
+          },
+          "retiredTaintFlows": {
+            "table": "brain_taint_flow",
+            "rows": 0
+          }
         },
-        "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rake/projects/6c12680e105f08de7d080393c0e973af2ed6d0cb/brain.db",
-        "dbBytes": 8151040
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rake/projects/6c12680e105f08de7d080393c0e973af2ed6d0cb/brain.db",
+        "dbBytes": 9121792
       },
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 1971,
-        "payloadBytes": 3011,
+        "durationMs": 1473,
+        "payloadBytes": 481,
         "parsed": {
-          "head": "security: 19 critical / 17 high / 0 medium / 0 low / 8 unknown (20 resolved flows, 24 unvalidated sources, 0 mitigated)",
-          "censusLine": "[scan: 52 taint flow(s) indexed → 44 finding(s); showing 20 finding(s) and 5 of 24 unvalidated observation(s)]",
-          "observationBlock": true,
-          "counts": {
-            "scannedFlows": 52,
-            "deduplicatedFlows": 44,
-            "findingsShown": 20,
-            "observationsShown": 5,
-            "observationsTotal": 24
-          },
-          "severityHead": {
-            "critical": 19,
-            "high": 17,
-            "medium": 0,
-            "low": 0,
-            "unknown": 8,
-            "resolved": 20,
-            "unvalidatedSources": 24,
-            "mitigated": 0
-          },
-          "findingLines": [
-            "  [critical] SQL injection (Application) @ rake/application.rb:20 <- sensitive_data -> database_write",
-            "  [critical] Command injection (Application) @ rake/application.rb:20 <- sensitive_data -> shell_execution",
-            "  [critical] SQL injection (Rake) @ rake/application.rb:12 <- sensitive_data -> database_write",
-            "  [critical] Command injection (Rake) @ rake/application.rb:12 <- sensitive_data -> shell_execution",
-            "  [critical] SQL injection (standard_rake_options) @ rake/application.rb:427 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (DSL) @ rake/dsl_definition.rb:14 <- file_system -> database_write",
-            "  [critical] SQL injection (Rake) @ rake/dsl_definition.rb:5 <- file_system -> database_write",
-            "  [critical] Command injection (Rake) @ rake/task_manager.rb:2 <- user_input -> shell_execution",
-            "  [critical] Command injection (TaskManager) @ rake/task_manager.rb:5 <- user_input -> shell_execution",
-            "  [high] Code injection (Application) @ rake/application.rb:20 <- sensitive_data -> code_execution",
-            "  [high] Cross-site scripting (XSS) (Application) @ rake/application.rb:20 <- sensitive_data -> http_response",
-            "  [high] Code injection (Rake) @ rake/application.rb:12 <- sensitive_data -> code_execution",
-            "  [high] Cross-site scripting (XSS) (Rake) @ rake/application.rb:12 <- sensitive_data -> http_response",
-            "  [high] Code injection (standard_rake_options) @ rake/application.rb:427 <- sensitive_data -> code_execution",
-            "  [high] Cross-site scripting (XSS) (standard_rake_options) @ rake/application.rb:427 <- sensitive_data -> http_response",
-            "  [high] Path traversal (DSL) @ rake/dsl_definition.rb:14 <- file_system -> file_system",
-            "  [high] Path traversal (Rake) @ rake/dsl_definition.rb:5 <- file_system -> file_system",
-            "  [high] Path traversal (egrep) @ rake/file_list.rb:293 <- file_system -> file_system",
-            "  [high] Path traversal (FileList) @ rake/file_list.rb:22 <- file_system -> file_system",
-            "  [high] Path traversal (Rake) @ rake/file_list.rb:6 <- file_system -> file_system"
-          ],
-          "observationLines": [
-            "  [critical] unvalidated sink: SQL injection load_debug_at_stop_feature @ rake/application.rb:103 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection FileUtilsExt @ rake/file_utils_ext.rb:10 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection Rake @ rake/file_utils_ext.rb:4 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection FileUtils @ rake/file_utils.rb:8 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection sh @ rake/file_utils.rb:43 (sink found; source endpoint not resolved to an indexed symbol)"
-          ],
-          "staleMarkers": 0
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "bannerPresent": true,
+          "head": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)",
+          "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "censusLine": "[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
+          "notScannedLine": null,
+          "storedLeads": 0,
+          "emptyDeclared": true,
+          "engineInitialized": true,
+          "leadLines": [],
+          "leadRecords": [],
+          "leadCountByLabel": {},
+          "staleMarkers": 0,
+          "payloadBytes": 481
         },
-        "text": "security: 19 critical / 17 high / 0 medium / 0 low / 8 unknown (20 resolved flows, 24 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (Application) @ rake/application.rb:20 <- sensitive_data -> database_write\n  [critical] Command injection (Application) @ rake/application.rb:20 <- sensitive_data -> shell_execution\n  [critical] SQL injection (Rake) @ rake/application.rb:12 <- sensitive_data -> database_write\n  [critical] Command injection (Rake) @ rake/application.rb:12 <- sensitive_data -> shell_execution\n  [critical] SQL injection (standard_rake_options) @ rake/application.rb:427 <- sensitive_data -> database_write\n  [critical] SQL injection (DSL) @ rake/dsl_definition.rb:14 <- file_system -> database_write\n  [critical] SQL injection (Rake) @ rake/dsl_definition.rb:5 <- file_system -> database_write\n  [critical] Command injection (Rake) @ rake/task_manager.rb:2 <- user_input -> shell_execution\n  [critical] Command injection (TaskManager) @ rake/task_manager.rb:5 <- user_input -> shell_execution\n  [high] Code injection (Application) @ rake/application.rb:20 <- sensitive_data -> code_execution\n  [high] Cross-site scripting (XSS) (Application) @ rake/application.rb:20 <- sensitive_data -> http_response\n  [high] Code injection (Rake) @ rake/application.rb:12 <- sensitive_data -> code_execution\n  [high] Cross-site scripting (XSS) (Rake) @ rake/application.rb:12 <- sensitive_data -> http_response\n  [high] Code injection (standard_rake_options) @ rake/application.rb:427 <- sensitive_data -> code_execution\n  [high] Cross-site scripting (XSS) (standard_rake_options) @ rake/application.rb:427 <- sensitive_data -> http_response\n  [high] Path traversal (DSL) @ rake/dsl_definition.rb:14 <- file_system -> file_system\n  [high] Path traversal (Rake) @ rake/dsl_definition.rb:5 <- file_system -> file_system\n  [high] Path traversal (egrep) @ rake/file_list.rb:293 <- file_system -> file_system\n  [high] Path traversal (FileList) @ rake/file_list.rb:22 <- file_system -> file_system\n  [high] Path traversal (Rake) @ rake/file_list.rb:6 <- file_system -> file_system\n[scan: 52 taint flow(s) indexed → 44 finding(s); showing 20 finding(s) and 5 of 24 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection load_debug_at_stop_feature @ rake/application.rb:103 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection FileUtilsExt @ rake/file_utils_ext.rb:10 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection Rake @ rake/file_utils_ext.rb:4 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection FileUtils @ rake/file_utils.rb:8 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection sh @ rake/file_utils.rb:43 (sink found; source endpoint not resolved to an indexed symbol)",
+        "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)\n  no stored leads on this page\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
         "elapsedSinceIndexMs": 0
       },
       "determinism": {
         "identical": true,
-        "firstBytes": 3011,
-        "secondBytes": 3011
+        "firstBytes": 481,
+        "secondBytes": 481
       }
     },
     {
       "name": "rebar3",
       "subpath": "apps",
       "family": "Erlang",
-      "path": "$HOME/fixtures/repositories/rebar3/apps",
-      "isolatedDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rebar3",
+      "path": "/home/ishaq2321/bb_tests/repositories/rebar3/apps",
+      "isolatedDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rebar3",
       "index": {
         "status": 0,
         "stderr": "",
@@ -323,84 +280,59 @@
         "counts": {
           "files": 203,
           "symbols": 4832,
-          "relationships": 28373,
-          "taintFlows": 191
+          "relationships": 28444,
+          "securityFlows": {
+            "table": "brain_security_flow",
+            "initialized": true,
+            "total": 0,
+            "byVulnerability": {},
+            "bySeverity": {},
+            "byState": {}
+          },
+          "retiredTaintFlows": {
+            "table": "brain_taint_flow",
+            "rows": 0
+          }
         },
-        "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rebar3/projects/27111446f4c87c995644ea266ee33d943a1662a3/brain.db",
-        "dbBytes": 113745920
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-rebar3/projects/27111446f4c87c995644ea266ee33d943a1662a3/brain.db",
+        "dbBytes": 124133376
       },
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 2042,
-        "payloadBytes": 3318,
+        "durationMs": 1501,
+        "payloadBytes": 630,
         "parsed": {
-          "head": "security: 5 critical / 73 high / 0 medium / 0 low / 109 unknown (25 resolved flows, 162 unvalidated sources, 0 mitigated)",
-          "censusLine": "[scan: 191 taint flow(s) indexed → 187 finding(s); showing 20 finding(s) and 5 of 162 unvalidated observation(s)]",
-          "observationBlock": true,
-          "counts": {
-            "scannedFlows": 191,
-            "deduplicatedFlows": 187,
-            "findingsShown": 20,
-            "observationsShown": 5,
-            "observationsTotal": 162
-          },
-          "severityHead": {
-            "critical": 5,
-            "high": 73,
-            "medium": 0,
-            "low": 0,
-            "unknown": 109,
-            "resolved": 25,
-            "unvalidatedSources": 162,
-            "mitigated": 0
-          },
-          "findingLines": [
-            "  [high] Path traversal (dependencies) @ rebar/src/rebar_compiler_erl.erl:95 <- file_system -> file_system",
-            "  [high] Path traversal (modify_erlcinfo) @ rebar/src/rebar_erlc_compiler.erl:486 <- file_system -> file_system",
-            "  [high] Path traversal (run_test_quiet) @ rebar/src/rebar_prv_common_test.erl:767 <- file_system -> file_system",
-            "  [high] Path traversal (redirect_cover_output) @ rebar/src/rebar_prv_cover.erl:391 <- file_system -> file_system",
-            "  [high] Path traversal (write_index) @ rebar/src/rebar_prv_cover.erl:266 <- file_system -> file_system",
-            "  [high] Path traversal (get_output_file) @ rebar/src/rebar_prv_dialyzer.erl:206 <- file_system -> file_system",
-            "  [high] Code injection (eval) @ rebar/src/rebar_prv_shell.erl:385 <- sensitive_data -> code_execution",
-            "  [high] Open redirect (set_header) @ rebar/src/vendored/r3_hex_api.erl:143 <- sensitive_data -> http_response",
-            "  [high] Path traversal (create) @ rebar/src/vendored/r3_hex_erl_tar.erl:614 <- file_system -> file_system",
-            "  [high] Path traversal (do_copy) @ rebar/src/vendored/r3_hex_erl_tar.erl:1989 <- file_system -> file_system",
-            "  [high] Path traversal (foldl_read) @ rebar/src/vendored/r3_hex_erl_tar.erl:1578 <- file_system -> file_system",
-            "  [high] Path traversal (inflate_with_limit) @ rebar/src/vendored/r3_hex_erl_tar.erl:175 <- file_system -> file_system",
-            "  [high] Path traversal (open_output_file) @ rebar/src/vendored/r3_hex_erl_tar.erl:307 <- file_system -> file_system",
-            "  [high] Path traversal (open) @ rebar/src/vendored/r3_hex_erl_tar.erl:489 <- file_system -> file_system",
-            "  [high] Path traversal (open1) @ rebar/src/vendored/r3_hex_erl_tar.erl:504 <- file_system -> file_system",
-            "  [high] Path traversal (stream_to_file) @ rebar/src/vendored/r3_hex_http_httpc.erl:61 <- file_system -> file_system",
-            "  [high] Open redirect (set_header) @ rebar/src/vendored/r3_hex_repo.erl:397 <- sensitive_data -> http_response",
-            "  [high] Path traversal (create_memory_tarball) @ rebar/src/vendored/r3_hex_tarball.erl:1123 <- file_system -> file_system",
-            "  [high] Path traversal (file_checksum) @ rebar/src/vendored/r3_hex_tarball.erl:1232 <- file_system -> file_system",
-            "  [high] Path traversal (gzip_no_header) @ rebar/src/vendored/r3_hex_tarball.erl:1200 <- file_system -> file_system"
-          ],
-          "observationLines": [
-            "  [critical] unvalidated sink: SQL injection init @ rebar/src/rebar_prv_shell.erl:52 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection execute_template @ rebar/src/rebar_templater.erl:226 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection start_port @ rebar/src/rebar_user.erl:61 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection start @ rebar/src/rebar_user.erl:49 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection pool_misuse @ rebar/test/rebar_parallel_SUITE.erl:63 (sink found; source endpoint not resolved to an indexed symbol)"
-          ],
-          "staleMarkers": 0
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "bannerPresent": true,
+          "head": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)",
+          "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "censusLine": "[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
+          "notScannedLine": "not scanned by bb_security (no executable source model): make, markdown — build recipes are shell text; make is not parsed as an execution context",
+          "storedLeads": 0,
+          "emptyDeclared": true,
+          "engineInitialized": true,
+          "leadLines": [],
+          "leadRecords": [],
+          "leadCountByLabel": {},
+          "staleMarkers": 0,
+          "payloadBytes": 630
         },
-        "text": "security: 5 critical / 73 high / 0 medium / 0 low / 109 unknown (25 resolved flows, 162 unvalidated sources, 0 mitigated)\n  [high] Path traversal (dependencies) @ rebar/src/rebar_compiler_erl.erl:95 <- file_system -> file_system\n  [high] Path traversal (modify_erlcinfo) @ rebar/src/rebar_erlc_compiler.erl:486 <- file_system -> file_system\n  [high] Path traversal (run_test_quiet) @ rebar/src/rebar_prv_common_test.erl:767 <- file_system -> file_system\n  [high] Path traversal (redirect_cover_output) @ rebar/src/rebar_prv_cover.erl:391 <- file_system -> file_system\n  [high] Path traversal (write_index) @ rebar/src/rebar_prv_cover.erl:266 <- file_system -> file_system\n  [high] Path traversal (get_output_file) @ rebar/src/rebar_prv_dialyzer.erl:206 <- file_system -> file_system\n  [high] Code injection (eval) @ rebar/src/rebar_prv_shell.erl:385 <- sensitive_data -> code_execution\n  [high] Open redirect (set_header) @ rebar/src/vendored/r3_hex_api.erl:143 <- sensitive_data -> http_response\n  [high] Path traversal (create) @ rebar/src/vendored/r3_hex_erl_tar.erl:614 <- file_system -> file_system\n  [high] Path traversal (do_copy) @ rebar/src/vendored/r3_hex_erl_tar.erl:1989 <- file_system -> file_system\n  [high] Path traversal (foldl_read) @ rebar/src/vendored/r3_hex_erl_tar.erl:1578 <- file_system -> file_system\n  [high] Path traversal (inflate_with_limit) @ rebar/src/vendored/r3_hex_erl_tar.erl:175 <- file_system -> file_system\n  [high] Path traversal (open_output_file) @ rebar/src/vendored/r3_hex_erl_tar.erl:307 <- file_system -> file_system\n  [high] Path traversal (open) @ rebar/src/vendored/r3_hex_erl_tar.erl:489 <- file_system -> file_system\n  [high] Path traversal (open1) @ rebar/src/vendored/r3_hex_erl_tar.erl:504 <- file_system -> file_system\n  [high] Path traversal (stream_to_file) @ rebar/src/vendored/r3_hex_http_httpc.erl:61 <- file_system -> file_system\n  [high] Open redirect (set_header) @ rebar/src/vendored/r3_hex_repo.erl:397 <- sensitive_data -> http_response\n  [high] Path traversal (create_memory_tarball) @ rebar/src/vendored/r3_hex_tarball.erl:1123 <- file_system -> file_system\n  [high] Path traversal (file_checksum) @ rebar/src/vendored/r3_hex_tarball.erl:1232 <- file_system -> file_system\n  [high] Path traversal (gzip_no_header) @ rebar/src/vendored/r3_hex_tarball.erl:1200 <- file_system -> file_system\n[scan: 191 taint flow(s) indexed → 187 finding(s); showing 20 finding(s) and 5 of 162 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection init @ rebar/src/rebar_prv_shell.erl:52 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection execute_template @ rebar/src/rebar_templater.erl:226 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection start_port @ rebar/src/rebar_user.erl:61 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection start @ rebar/src/rebar_user.erl:49 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection pool_misuse @ rebar/test/rebar_parallel_SUITE.erl:63 (sink found; source endpoint not resolved to an indexed symbol)",
+        "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nnot scanned by bb_security (no executable source model): make, markdown — build recipes are shell text; make is not parsed as an execution context\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)\n  no stored leads on this page\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
         "elapsedSinceIndexMs": 0
       },
       "determinism": {
         "identical": true,
-        "firstBytes": 3318,
-        "secondBytes": 3318
+        "firstBytes": 630,
+        "secondBytes": 630
       }
     },
     {
       "name": "ansible",
       "subpath": "lib/ansible",
       "family": "Python",
-      "path": "$HOME/fixtures/repositories/ansible/lib/ansible",
-      "isolatedDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-ansible",
+      "path": "/home/ishaq2321/bb_tests/repositories/ansible/lib/ansible",
+      "isolatedDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-ansible",
       "index": {
         "status": 0,
         "stderr": "",
@@ -439,83 +371,93 @@
           "files": 777,
           "symbols": 26681,
           "relationships": 97335,
-          "taintFlows": 1561
+          "securityFlows": {
+            "table": "brain_security_flow",
+            "initialized": true,
+            "total": 3,
+            "byVulnerability": {
+              "path_traversal": 3
+            },
+            "bySeverity": {
+              "high": 2,
+              "medium": 1
+            },
+            "byState": {
+              "lead": 3
+            }
+          },
+          "retiredTaintFlows": {
+            "table": "brain_taint_flow",
+            "rows": 0
+          }
         },
-        "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-ansible/projects/418eaa3dcfd89d995461fa793ab956788b166705/brain.db",
-        "dbBytes": 359034880
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-ansible/projects/418eaa3dcfd89d995461fa793ab956788b166705/brain.db",
+        "dbBytes": 425508864
       },
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 1915,
-        "payloadBytes": 3291,
+        "durationMs": 1569,
+        "payloadBytes": 1009,
         "parsed": {
-          "head": "security: 218 critical / 282 high / 0 medium / 0 low (405 resolved flows, 95 unvalidated sources, 0 mitigated)",
-          "censusLine": "[scan: 1561 taint flow(s) indexed → 1258 finding(s) (758 beyond the cap); showing 20 finding(s) and 5 of 95 unvalidated observation(s)] — CAPPED at 500; 1258 finding(s) exist and 758 were not examined",
-          "observationBlock": true,
-          "counts": {
-            "scannedFlows": 1561,
-            "deduplicatedFlows": 1258,
-            "findingsShown": 20,
-            "observationsShown": 5,
-            "observationsTotal": 95
-          },
-          "severityHead": {
-            "critical": 218,
-            "high": 282,
-            "medium": 0,
-            "low": 0,
-            "unknown": 0,
-            "resolved": 405,
-            "unvalidatedSources": 95,
-            "mitigated": 0
-          },
-          "findingLines": [
-            "  [critical] SQL injection (_ansiballz_main) @ _internal/_ansiballz/_wrapper.py:39 <- file_system -> database_write",
-            "  [critical] SQL injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> database_write",
-            "  [critical] Command injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> shell_execution",
-            "  [critical] Command injection (_launch_ssh_agent) @ _internal/_ssh/_agent_launch.py:25 <- file_system -> shell_execution",
-            "  [critical] Command injection (CLI) @ cli/__init__.py:134 <- file_system -> shell_execution",
-            "  [critical] Command injection (get_password_from_file) @ cli/__init__.py:619 <- file_system -> shell_execution",
-            "  [critical] Command injection (pager_pipe) @ cli/__init__.py:534 <- file_system -> shell_execution",
-            "  [critical] Command injection (pager) @ cli/__init__.py:515 <- file_system -> shell_execution",
-            "  [critical] SQL injection (AdHocCLI) @ cli/adhoc.py:29 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (run) @ cli/adhoc.py:109 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (ConsoleCLI) @ cli/console.py:38 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (default) @ cli/console.py:162 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (GalaxyCLI) @ cli/galaxy.py:181 <- file_system -> database_write",
-            "  [critical] SQL injection (PlaybookCLI) @ cli/playbook.py:31 <- sensitive_data -> database_write",
-            "  [critical] Command injection (PullCLI) @ cli/pull.py:35 <- file_system -> shell_execution",
-            "  [critical] Command injection (run) @ cli/pull.py:161 <- file_system -> shell_execution",
-            "  [critical] SQL injection (become_wrapper.ps1) @ executor/powershell/become_wrapper.ps1:1 <- sensitive_data -> database_write",
-            "  [critical] Command injection (start_connection) @ executor/task_executor.py:1011 <- file_system -> shell_execution",
-            "  [critical] SQL injection (__init__) @ executor/task_queue_manager.py:173 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (TaskQueueManager) @ executor/task_queue_manager.py:152 <- sensitive_data -> database_write"
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "bannerPresent": true,
+          "head": "security leads: 3 stored lead(s)",
+          "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "censusLine": "[leads: showing 3 of 3; offset 0; page size 50; tier=leads]",
+          "notScannedLine": "not scanned by bb_security (no executable source model): html, markdown, yaml — markup; no executable source/sink surface",
+          "storedLeads": 3,
+          "emptyDeclared": false,
+          "engineInitialized": true,
+          "leadLines": [
+            "  [medium] lead: path traversal @ module_utils/csharp/Ansible.Basic.cs:523 <- source:523; rule=csharp.sink.file-path; symbol=GetParams [reach: csharp.source.args]",
+            "  [high] lead: path traversal @ modules/async_wrapper.py:315 <- source:218; rule=python.path.fs_mutation; symbol=main [reach: python.argv -> wrapped_module = sys.argv[4]]",
+            "  [high] lead: path traversal @ modules/async_wrapper.py:321 <- source:218; rule=python.path.fs_mutation; symbol=main [reach: python.argv -> wrapped_module = sys.argv[4]]"
           ],
-          "observationLines": [
-            "  [critical] unvalidated sink: SQL injection alarm_timeout @ _internal/_errors/_alarm_timeout.py:27 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection AnsibleTimeoutError @ _internal/_errors/_alarm_timeout.py:11 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection build_pwsh_cmd_statement @ _internal/_powershell/_script.py:119 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection LocalNotAProcess @ _internal/_rpc_host.py:24 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection init_parser @ cli/adhoc.py:38 (sink found; source endpoint not resolved to an indexed symbol)"
+          "leadRecords": [
+            {
+              "grade": "medium",
+              "label": "path traversal",
+              "location": "module_utils/csharp/Ansible.Basic.cs:523",
+              "rule": "csharp.sink.file-path",
+              "sourceLine": "523"
+            },
+            {
+              "grade": "high",
+              "label": "path traversal",
+              "location": "modules/async_wrapper.py:315",
+              "rule": "python.path.fs_mutation",
+              "sourceLine": "218"
+            },
+            {
+              "grade": "high",
+              "label": "path traversal",
+              "location": "modules/async_wrapper.py:321",
+              "rule": "python.path.fs_mutation",
+              "sourceLine": "218"
+            }
           ],
-          "staleMarkers": 0
+          "leadCountByLabel": {
+            "path traversal": 3
+          },
+          "staleMarkers": 0,
+          "payloadBytes": 1009
         },
-        "text": "security: 218 critical / 282 high / 0 medium / 0 low (405 resolved flows, 95 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (_ansiballz_main) @ _internal/_ansiballz/_wrapper.py:39 <- file_system -> database_write\n  [critical] SQL injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> database_write\n  [critical] Command injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> shell_execution\n  [critical] Command injection (_launch_ssh_agent) @ _internal/_ssh/_agent_launch.py:25 <- file_system -> shell_execution\n  [critical] Command injection (CLI) @ cli/__init__.py:134 <- file_system -> shell_execution\n  [critical] Command injection (get_password_from_file) @ cli/__init__.py:619 <- file_system -> shell_execution\n  [critical] Command injection (pager_pipe) @ cli/__init__.py:534 <- file_system -> shell_execution\n  [critical] Command injection (pager) @ cli/__init__.py:515 <- file_system -> shell_execution\n  [critical] SQL injection (AdHocCLI) @ cli/adhoc.py:29 <- sensitive_data -> database_write\n  [critical] SQL injection (run) @ cli/adhoc.py:109 <- sensitive_data -> database_write\n  [critical] SQL injection (ConsoleCLI) @ cli/console.py:38 <- sensitive_data -> database_write\n  [critical] SQL injection (default) @ cli/console.py:162 <- sensitive_data -> database_write\n  [critical] SQL injection (GalaxyCLI) @ cli/galaxy.py:181 <- file_system -> database_write\n  [critical] SQL injection (PlaybookCLI) @ cli/playbook.py:31 <- sensitive_data -> database_write\n  [critical] Command injection (PullCLI) @ cli/pull.py:35 <- file_system -> shell_execution\n  [critical] Command injection (run) @ cli/pull.py:161 <- file_system -> shell_execution\n  [critical] SQL injection (become_wrapper.ps1) @ executor/powershell/become_wrapper.ps1:1 <- sensitive_data -> database_write\n  [critical] Command injection (start_connection) @ executor/task_executor.py:1011 <- file_system -> shell_execution\n  [critical] SQL injection (__init__) @ executor/task_queue_manager.py:173 <- sensitive_data -> database_write\n  [critical] SQL injection (TaskQueueManager) @ executor/task_queue_manager.py:152 <- sensitive_data -> database_write\n[scan: 1561 taint flow(s) indexed → 1258 finding(s) (758 beyond the cap); showing 20 finding(s) and 5 of 95 unvalidated observation(s)] — CAPPED at 500; 1258 finding(s) exist and 758 were not examined\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection alarm_timeout @ _internal/_errors/_alarm_timeout.py:27 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection AnsibleTimeoutError @ _internal/_errors/_alarm_timeout.py:11 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection build_pwsh_cmd_statement @ _internal/_powershell/_script.py:119 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection LocalNotAProcess @ _internal/_rpc_host.py:24 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection init_parser @ cli/adhoc.py:38 (sink found; source endpoint not resolved to an indexed symbol)",
+        "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nnot scanned by bb_security (no executable source model): html, markdown, yaml — markup; no executable source/sink surface\nleads tier: 3 language(s) present; lexical output only\nsecurity leads: 3 stored lead(s)\n  [medium] lead: path traversal @ module_utils/csharp/Ansible.Basic.cs:523 <- source:523; rule=csharp.sink.file-path; symbol=GetParams [reach: csharp.source.args]\n  [high] lead: path traversal @ modules/async_wrapper.py:315 <- source:218; rule=python.path.fs_mutation; symbol=main [reach: python.argv -> wrapped_module = sys.argv[4]]\n  [high] lead: path traversal @ modules/async_wrapper.py:321 <- source:218; rule=python.path.fs_mutation; symbol=main [reach: python.argv -> wrapped_module = sys.argv[4]]\n[leads: showing 3 of 3; offset 0; page size 50; tier=leads]",
         "elapsedSinceIndexMs": 0
       },
       "determinism": {
         "identical": true,
-        "firstBytes": 3291,
-        "secondBytes": 3291
+        "firstBytes": 1009,
+        "secondBytes": 1009
       }
     },
     {
       "name": "sqlite",
       "subpath": "src",
       "family": "C",
-      "path": "$HOME/fixtures/repositories/sqlite/src",
-      "isolatedDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-sqlite",
+      "path": "/home/ishaq2321/bb_tests/repositories/sqlite/src",
+      "isolatedDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-sqlite",
       "index": {
         "status": 0,
         "stderr": "",
@@ -527,7 +469,7 @@
         "languages": [
           {
             "language": "c",
-            "files": 78
+            "files": 149
           },
           {
             "language": "markdown",
@@ -535,246 +477,246 @@
           }
         ],
         "counts": {
-          "files": 79,
-          "symbols": 5169,
-          "relationships": 36226,
-          "taintFlows": 290
+          "files": 150,
+          "symbols": 12397,
+          "relationships": 66730,
+          "securityFlows": {
+            "table": "brain_security_flow",
+            "initialized": true,
+            "total": 6,
+            "byVulnerability": {
+              "sql_injection": 5,
+              "path_traversal": 1
+            },
+            "bySeverity": {
+              "high": 5,
+              "medium": 1
+            },
+            "byState": {
+              "lead": 6
+            }
+          },
+          "retiredTaintFlows": {
+            "table": "brain_taint_flow",
+            "rows": 0
+          }
         },
-        "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-sqlite/projects/7194d3412d9ea1564fffb3ac3b270fd53ecb075b/brain.db",
-        "dbBytes": 63356928
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/corpus-sqlite/projects/7194d3412d9ea1564fffb3ac3b270fd53ecb075b/brain.db",
+        "dbBytes": 231063552
       },
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 2060,
-        "payloadBytes": 2868,
+        "durationMs": 1549,
+        "payloadBytes": 1436,
         "parsed": {
-          "head": "security: 10 critical / 63 high / 0 medium / 0 low / 200 unknown (31 resolved flows, 242 unvalidated sources, 0 mitigated)",
-          "censusLine": "[scan: 290 taint flow(s) indexed → 273 finding(s); showing 20 finding(s) and 5 of 242 unvalidated observation(s)]",
-          "observationBlock": true,
-          "counts": {
-            "scannedFlows": 290,
-            "deduplicatedFlows": 273,
-            "findingsShown": 20,
-            "observationsShown": 5,
-            "observationsTotal": 242
-          },
-          "severityHead": {
-            "critical": 10,
-            "high": 63,
-            "medium": 0,
-            "low": 0,
-            "unknown": 200,
-            "resolved": 31,
-            "unvalidatedSources": 242,
-            "mitigated": 0
-          },
-          "findingLines": [
-            "  [critical] SQL injection (sqlite3EndTable) @ build.c:2670 <- database_read -> database_write",
-            "  [critical] SQL injection (sqlite3Pragma) @ pragma.c:425 <- sensitive_data -> database_write",
-            "  [critical] SQL injection (generateWithRecursiveQuery) @ select.c:2707 <- database_read -> database_write",
-            "  [critical] SQL injection (sqlite3Select) @ select.c:7672 <- database_read -> database_write",
-            "  [critical] SQL injection (DbObjCmd) @ tclsqlite.c:2485 <- sensitive_data -> database_write",
-            "  [high] Code injection (sqlite3AddDefaultValue) @ build.c:1748 <- sensitive_data -> code_execution",
-            "  [high] Code injection (analyzeAggregate) @ expr.c:7503 <- sensitive_data -> code_execution",
-            "  [high] Code injection (exprNodeCanReturnSubtype) @ expr.c:4809 <- sensitive_data -> code_execution",
-            "  [high] Code injection (exprNodeIsConstantFunction) @ expr.c:2500 <- sensitive_data -> code_execution",
-            "  [high] Code injection (sqlite3ExprCodeTarget) @ expr.c:5045 <- database_read -> code_execution",
-            "  [high] Code injection (sqlite3ExprFunction) @ expr.c:1182 <- sensitive_data -> code_execution",
-            "  [high] Code injection (sqlite3ExprIsIIF) @ expr.c:6893 <- sensitive_data -> code_execution",
-            "  [high] Code injection (sqlite3IsLikeFunction) @ func.c:2388 <- sensitive_data -> code_execution",
-            "  [high] Path traversal (sqlite3MemdebugDump) @ mem2.c:476 <- file_system -> file_system",
-            "  [high] Path traversal (sqlite3Memsys3Dump) @ mem3.c:589 <- file_system -> file_system",
-            "  [high] Path traversal (sqlite3Memsys5Dump) @ mem5.c:528 <- file_system -> file_system",
-            "  [high] Path traversal (kvrecordRead) @ os_kv.c:277 <- file_system -> file_system",
-            "  [high] Path traversal (kvrecordWrite) @ os_kv.c:229 <- file_system -> file_system",
-            "  [high] Path traversal (findReusableFd) @ os_unix.c:6350 <- file_system -> file_system",
-            "  [high] Path traversal (posixOpen) @ os_unix.c:409 <- file_system -> file_system"
+          "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+          "bannerPresent": true,
+          "head": "security leads: 6 stored lead(s)",
+          "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+          "censusLine": "[leads: showing 6 of 6; offset 0; page size 50; tier=leads]",
+          "notScannedLine": "not scanned by bb_security (no executable source model): markdown — prose; no executable source/sink surface",
+          "storedLeads": 6,
+          "emptyDeclared": false,
+          "engineInitialized": true,
+          "leadLines": [
+            "  [medium] lead: path traversal @ test1.c:306 <- source:306; rule=c.sink.path_open; symbol=test_io_trace [reach: c.source.argv]",
+            "  [high] lead: sql injection @ test1.c:920 <- source:921; rule=c.sink.sql_exec; symbol=sqlite3ExecFunc [reach: c.source.argv]",
+            "  [high] lead: sql injection @ test1.c:560 <- source:560; rule=c.sink.sql_exec; symbol=test_exec_nr [reach: c.source.argv]",
+            "  [high] lead: sql injection @ test1.c:396 <- source:395; rule=c.sink.sql_exec; symbol=test_exec_printf [reach: c.source.argv -> zSql = sqlite3_mprintf(argv[2], argv[3])]",
+            "  [high] lead: sql injection @ test1.c:528 <- source:518; rule=c.sink.sql_exec; symbol=test_exec [reach: c.source.argv -> zSql = sqlite3_mprintf(\"%s\", argv[2])]",
+            "  [high] lead: sql injection @ test8.c:487 <- source:485; rule=c.sink.sql_exec; symbol=echoCreate [reach: c.source.argv -> zSql = sqlite3_mprintf(\"CREATE TABLE %Q(logmsg)\", pVtab->zLogName) -> zLogName = sqlite3_mprintf(\"%s\", argv[4])]"
           ],
-          "observationLines": [
-            "  [critical] unvalidated sink: SQL injection DbEvalContext @ tclsqlite.c:1627 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: Command injection DbTransPostCmd @ tclsqlite.c:1308 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection SqlCollate @ tclsqlite.c:164 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection SqlFunc @ tclsqlite.c:149 (sink found; source endpoint not resolved to an indexed symbol)",
-            "  [critical] unvalidated sink: SQL injection echoUpdate @ test8.c:965 (sink found; source endpoint not resolved to an indexed symbol)"
+          "leadRecords": [
+            {
+              "grade": "medium",
+              "label": "path traversal",
+              "location": "test1.c:306",
+              "rule": "c.sink.path_open",
+              "sourceLine": "306"
+            },
+            {
+              "grade": "high",
+              "label": "sql injection",
+              "location": "test1.c:920",
+              "rule": "c.sink.sql_exec",
+              "sourceLine": "921"
+            },
+            {
+              "grade": "high",
+              "label": "sql injection",
+              "location": "test1.c:560",
+              "rule": "c.sink.sql_exec",
+              "sourceLine": "560"
+            },
+            {
+              "grade": "high",
+              "label": "sql injection",
+              "location": "test1.c:396",
+              "rule": "c.sink.sql_exec",
+              "sourceLine": "395"
+            },
+            {
+              "grade": "high",
+              "label": "sql injection",
+              "location": "test1.c:528",
+              "rule": "c.sink.sql_exec",
+              "sourceLine": "518"
+            },
+            {
+              "grade": "high",
+              "label": "sql injection",
+              "location": "test8.c:487",
+              "rule": "c.sink.sql_exec",
+              "sourceLine": "485"
+            }
           ],
-          "staleMarkers": 0
+          "leadCountByLabel": {
+            "path traversal": 1,
+            "sql injection": 5
+          },
+          "staleMarkers": 0,
+          "payloadBytes": 1436
         },
-        "text": "security: 10 critical / 63 high / 0 medium / 0 low / 200 unknown (31 resolved flows, 242 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (sqlite3EndTable) @ build.c:2670 <- database_read -> database_write\n  [critical] SQL injection (sqlite3Pragma) @ pragma.c:425 <- sensitive_data -> database_write\n  [critical] SQL injection (generateWithRecursiveQuery) @ select.c:2707 <- database_read -> database_write\n  [critical] SQL injection (sqlite3Select) @ select.c:7672 <- database_read -> database_write\n  [critical] SQL injection (DbObjCmd) @ tclsqlite.c:2485 <- sensitive_data -> database_write\n  [high] Code injection (sqlite3AddDefaultValue) @ build.c:1748 <- sensitive_data -> code_execution\n  [high] Code injection (analyzeAggregate) @ expr.c:7503 <- sensitive_data -> code_execution\n  [high] Code injection (exprNodeCanReturnSubtype) @ expr.c:4809 <- sensitive_data -> code_execution\n  [high] Code injection (exprNodeIsConstantFunction) @ expr.c:2500 <- sensitive_data -> code_execution\n  [high] Code injection (sqlite3ExprCodeTarget) @ expr.c:5045 <- database_read -> code_execution\n  [high] Code injection (sqlite3ExprFunction) @ expr.c:1182 <- sensitive_data -> code_execution\n  [high] Code injection (sqlite3ExprIsIIF) @ expr.c:6893 <- sensitive_data -> code_execution\n  [high] Code injection (sqlite3IsLikeFunction) @ func.c:2388 <- sensitive_data -> code_execution\n  [high] Path traversal (sqlite3MemdebugDump) @ mem2.c:476 <- file_system -> file_system\n  [high] Path traversal (sqlite3Memsys3Dump) @ mem3.c:589 <- file_system -> file_system\n  [high] Path traversal (sqlite3Memsys5Dump) @ mem5.c:528 <- file_system -> file_system\n  [high] Path traversal (kvrecordRead) @ os_kv.c:277 <- file_system -> file_system\n  [high] Path traversal (kvrecordWrite) @ os_kv.c:229 <- file_system -> file_system\n  [high] Path traversal (findReusableFd) @ os_unix.c:6350 <- file_system -> file_system\n  [high] Path traversal (posixOpen) @ os_unix.c:409 <- file_system -> file_system\n[scan: 290 taint flow(s) indexed → 273 finding(s); showing 20 finding(s) and 5 of 242 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection DbEvalContext @ tclsqlite.c:1627 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection DbTransPostCmd @ tclsqlite.c:1308 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection SqlCollate @ tclsqlite.c:164 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection SqlFunc @ tclsqlite.c:149 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection echoUpdate @ test8.c:965 (sink found; source endpoint not resolved to an indexed symbol)",
+        "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nnot scanned by bb_security (no executable source model): markdown — prose; no executable source/sink surface\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 6 stored lead(s)\n  [medium] lead: path traversal @ test1.c:306 <- source:306; rule=c.sink.path_open; symbol=test_io_trace [reach: c.source.argv]\n  [high] lead: sql injection @ test1.c:920 <- source:921; rule=c.sink.sql_exec; symbol=sqlite3ExecFunc [reach: c.source.argv]\n  [high] lead: sql injection @ test1.c:560 <- source:560; rule=c.sink.sql_exec; symbol=test_exec_nr [reach: c.source.argv]\n  [high] lead: sql injection @ test1.c:396 <- source:395; rule=c.sink.sql_exec; symbol=test_exec_printf [reach: c.source.argv -> zSql = sqlite3_mprintf(argv[2], argv[3])]\n  [high] lead: sql injection @ test1.c:528 <- source:518; rule=c.sink.sql_exec; symbol=test_exec [reach: c.source.argv -> zSql = sqlite3_mprintf(\"%s\", argv[2])]\n  [high] lead: sql injection @ test8.c:487 <- source:485; rule=c.sink.sql_exec; symbol=echoCreate [reach: c.source.argv -> zSql = sqlite3_mprintf(\"CREATE TABLE %Q(logmsg)\", pVtab->zLogName) -> zLogName = sqlite3_mprintf(\"%s\", argv[4])]\n[leads: showing 6 of 6; offset 0; page size 50; tier=leads]",
         "elapsedSinceIndexMs": 0
       },
       "determinism": {
         "identical": true,
-        "firstBytes": 2868,
-        "secondBytes": 2868
+        "firstBytes": 1436,
+        "secondBytes": 1436
       }
     }
   ],
   "adversarial": [
     {
       "id": "clean-negative",
-      "requirement": "clean code produces no findings and no observations",
+      "requirement": "clean code produces no stored leads and the empty store is declared, not presented as a clean scan",
       "index": 0,
       "isError": false,
-      "text": "security: 0 critical / 0 high / 0 medium / 0 low (0 resolved flows, 0 unvalidated sources, 0 mitigated)\n  no findings with both endpoints resolved\n[scan: 0 taint flow(s) indexed → 0 finding(s); showing 0 finding(s)]",
       "parsed": {
-        "head": "security: 0 critical / 0 high / 0 medium / 0 low (0 resolved flows, 0 unvalidated sources, 0 mitigated)",
-        "censusLine": "[scan: 0 taint flow(s) indexed → 0 finding(s); showing 0 finding(s)]",
-        "observationBlock": false,
-        "counts": {
-          "scannedFlows": 0,
-          "deduplicatedFlows": 0,
-          "findingsShown": 0,
-          "observationsShown": 0,
-          "observationsTotal": 0
-        },
-        "severityHead": {
-          "critical": 0,
-          "high": 0,
-          "medium": 0,
-          "low": 0,
-          "unknown": 0,
-          "resolved": 0,
-          "unvalidatedSources": 0,
-          "mitigated": 0
-        },
-        "findingLines": [],
-        "observationLines": [],
-        "staleMarkers": 0
+        "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+        "bannerPresent": true,
+        "head": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)",
+        "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+        "censusLine": "[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
+        "notScannedLine": null,
+        "storedLeads": 0,
+        "emptyDeclared": true,
+        "engineInitialized": true,
+        "leadLines": [],
+        "leadRecords": [],
+        "leadCountByLabel": {},
+        "staleMarkers": 0,
+        "payloadBytes": 481
       },
-      "pass": true
+      "pass": true,
+      "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)\n  no stored leads on this page\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]"
     },
     {
       "id": "parameterized-sql-negative",
-      "requirement": "a parameterized sink is not a confirmed injection. The analyzer cannot tell it apart from a concatenated one (documented limitation), so the tool must not be the layer that lies: record what it reports",
+      "requirement": "a parameterized (safe) sink is not an injection: no SQL-injection lead is reported for the $1-bound query",
       "index": 0,
       "isError": false,
       "parsed": {
-        "head": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)",
-        "censusLine": "[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]",
-        "observationBlock": false,
-        "counts": {
-          "scannedFlows": 2,
-          "deduplicatedFlows": 1,
-          "findingsShown": 1,
-          "observationsShown": 0,
-          "observationsTotal": 0
-        },
-        "severityHead": {
-          "critical": 1,
-          "high": 0,
-          "medium": 0,
-          "low": 0,
-          "unknown": 0,
-          "resolved": 1,
-          "unvalidatedSources": 0,
-          "mitigated": 0
-        },
-        "findingLines": [
-          "  [critical] SQL injection (safe) @ src/safe.ts:3 <- database_read -> database_write"
-        ],
-        "observationLines": [],
-        "staleMarkers": 0
+        "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+        "bannerPresent": true,
+        "head": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)",
+        "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+        "censusLine": "[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
+        "notScannedLine": null,
+        "storedLeads": 0,
+        "emptyDeclared": true,
+        "engineInitialized": true,
+        "leadLines": [],
+        "leadRecords": [],
+        "leadCountByLabel": {},
+        "staleMarkers": 0,
+        "payloadBytes": 481
       },
-      "confirmedFindings": 1,
+      "sqlInjectionLeads": 0,
       "pass": true,
-      "note": "recorded, not asserted: the indexer matches the sink token without data-flow, and the docs state that. This case measures the tool surface against that claim.",
-      "text": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/safe.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]"
+      "note": "M72 Phase 1: deterministic/parameterized exclusions are specified in the TypeScript spec (`typescript.sql.binding`); the old token cross-product could not distinguish this case.",
+      "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)\n  no stored leads on this page\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]"
     },
     {
       "id": "sqli-positive",
-      "requirement": "a concatenated SQL injection is reported as a confirmed finding with severity and file:line",
+      "requirement": "a concatenated SQL injection is reported as a lead with a demoted grade, file:line and rule evidence — never as a confirmed [critical] finding",
       "index": 0,
       "isError": false,
       "parsed": {
-        "head": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)",
-        "censusLine": "[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]",
-        "observationBlock": false,
-        "counts": {
-          "scannedFlows": 2,
-          "deduplicatedFlows": 1,
-          "findingsShown": 1,
-          "observationsShown": 0,
-          "observationsTotal": 0
-        },
-        "severityHead": {
-          "critical": 1,
-          "high": 0,
-          "medium": 0,
-          "low": 0,
-          "unknown": 0,
-          "resolved": 1,
-          "unvalidatedSources": 0,
-          "mitigated": 0
-        },
-        "findingLines": [
-          "  [critical] SQL injection (search) @ src/vuln.ts:3 <- database_read -> database_write"
+        "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+        "bannerPresent": true,
+        "head": "security leads: 1 stored lead(s)",
+        "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+        "censusLine": "[leads: showing 1 of 1; offset 0; page size 50; tier=leads]",
+        "notScannedLine": null,
+        "storedLeads": 1,
+        "emptyDeclared": false,
+        "engineInitialized": true,
+        "leadLines": [
+          "  [high] lead: sql injection @ src/vuln.ts:5 <- source:4; rule=typescript.sql.query; symbol=search [reach: typescript.request -> q = req.query.q]"
         ],
-        "observationLines": [],
-        "staleMarkers": 0
+        "leadRecords": [
+          {
+            "grade": "high",
+            "label": "sql injection",
+            "location": "src/vuln.ts:5",
+            "rule": "typescript.sql.query",
+            "sourceLine": "4"
+          }
+        ],
+        "leadCountByLabel": {
+          "sql injection": 1
+        },
+        "staleMarkers": 0,
+        "payloadBytes": 526
       },
       "pass": true,
-      "text": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/vuln.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]"
+      "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 1 stored lead(s)\n  [high] lead: sql injection @ src/vuln.ts:5 <- source:4; rule=typescript.sql.query; symbol=search [reach: typescript.request -> q = req.query.q]\n[leads: showing 1 of 1; offset 0; page size 50; tier=leads]"
     },
     {
-      "id": "partial-mitigated-boundary",
-      "requirement": "a sink-only flow flagged mitigated is an unvalidated observation, never a confirmed or mitigated finding",
+      "id": "unsupported-project-not-scanned",
+      "requirement": "a project containing only unsupported languages answers 'not scanned by bb_security' with the language ids; a clean zero would be a lie",
       "index": 0,
-      "injected": true,
       "isError": false,
       "parsed": {
-        "head": "security: 1 critical / 1 high / 0 medium / 0 low (1 resolved flows, 1 unvalidated sources, 1 mitigated)",
-        "censusLine": "[scan: 2 taint flow(s) indexed → 2 finding(s); showing 1 finding(s) and 1 of 1 unvalidated observation(s)]",
-        "observationBlock": true,
-        "counts": {
-          "scannedFlows": 2,
-          "deduplicatedFlows": 2,
-          "findingsShown": 1,
-          "observationsShown": 1,
-          "observationsTotal": 1
-        },
-        "severityHead": {
-          "critical": 1,
-          "high": 1,
-          "medium": 0,
-          "low": 0,
-          "unknown": 0,
-          "resolved": 1,
-          "unvalidatedSources": 1,
-          "mitigated": 1
-        },
-        "findingLines": [
-          "  [critical] SQL injection (handle) @ src/handle.ts:1 <- database_read -> database_write"
-        ],
-        "observationLines": [
-          "  [high] unvalidated sink: SQL injection handle @ src/handle.ts:1 (sink found; source endpoint not resolved to an indexed symbol)"
-        ],
-        "staleMarkers": 0
+        "firstLine": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING",
+        "bannerPresent": true,
+        "head": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)",
+        "tierLine": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation",
+        "censusLine": "[leads: showing 0 of 0; offset 0; page size 50; tier=leads]",
+        "notScannedLine": "not scanned by bb_security (no executable source model): markdown, yaml — prose; no executable source/sink surface",
+        "storedLeads": 0,
+        "emptyDeclared": true,
+        "engineInitialized": true,
+        "leadLines": [],
+        "leadRecords": [],
+        "leadCountByLabel": {},
+        "staleMarkers": 0,
+        "payloadBytes": 543
       },
       "pass": true,
-      "text": "security: 1 critical / 1 high / 0 medium / 0 low (1 resolved flows, 1 unvalidated sources, 1 mitigated)\n  [critical] SQL injection (handle) @ src/handle.ts:1 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 2 finding(s); showing 1 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [high] unvalidated sink: SQL injection handle @ src/handle.ts:1 (sink found; source endpoint not resolved to an indexed symbol)"
+      "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nnot scanned by bb_security (no executable source model): markdown, yaml — prose; no executable source/sink surface\nsecurity leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)\n  no stored leads on this page\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]"
     },
     {
       "id": "unindexed-project-refusal",
       "requirement": "an unindexed project is refused with a named error, not answered as a clean project",
       "isError": true,
       "pass": true,
-      "text": "No index found for $HOME/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/adv-unindexed. Run: bb index \"$HOME/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/adv-unindexed\"."
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/adv-unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/adv-unindexed\"."
     },
     {
       "id": "staleness-marker",
-      "requirement": "a touched finding file marks the finding [stale] and adds a counts footer; the answer is identical whether or not auto-refresh is allowed, because this tool never refreshes",
+      "requirement": "a touched lead file marks the lead [stale]; the answer is identical whether or not auto-refresh is allowed, because this tool never refreshes",
       "index": 0,
       "isError": false,
       "staleMarkers": 1,
-      "footer": null,
+      "cleanLeadCount": 1,
       "identicalWithAutoRefresh": true,
-      "refreshedRows": {
-        "afterCalls": 1
-      },
       "pass": true,
-      "cleanAnswerBeforeTouch": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/stale.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]",
-      "text": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/stale.ts:3 <- database_read -> database_write [stale]\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]\n\n1 stale, 0 missing of 1 referenced file(s) — manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+      "cleanAnswerBeforeTouch": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 1 stored lead(s)\n  [high] lead: sql injection @ src/stale.ts:5 <- source:4; rule=typescript.sql.query; symbol=search [reach: typescript.request -> q = req.query.q]\n[leads: showing 1 of 1; offset 0; page size 50; tier=leads]",
+      "text": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation\nleads tier: 1 language(s) present; lexical output only\nsecurity leads: 1 stored lead(s)\n  [high] lead: sql injection @ src/stale.ts:5 <- source:4; rule=typescript.sql.query; symbol=search [reach: typescript.request -> q = req.query.q] [stale]\n[leads: showing 1 of 1; offset 0; page size 50; tier=leads]\n\n1 stale, 0 missing of 1 referenced file(s) — manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
     }
   ]
 }

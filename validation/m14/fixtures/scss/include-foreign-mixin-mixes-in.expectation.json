@@ -1,0 +1,67 @@
+{
+  "fixtureId": "scss/include-foreign-mixin-mixes-in",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE SITE CLASS THE OLD RULE LOST, PINNED — and the two forms a `hasError` test misreads. An `@include` whose mixin is NOT declared in the including file produced NO edge before 2026-10-23: the old code resolved the callee against the file's own mixin/function maps and returned when the name was absent, which MEASURED 1,995 of 2,205 clean `@include` sites (90%) on the whole admitted population. The 14-value campaign's `mixes_in` is now published for every COMPLETE include: a mixin named here and declared elsewhere is a real composition whose target is the written mixin name in the lane's published spelling (`@mixin <name>`); it is UNRESOLVED rather than absent, and the arbiter resolves it through the project index exactly as it resolves an `imports` specifier. The same-file case is still respelled to `<scope>::@mixin <name>` by publishScssFileScopedIdentities. THE LAST TWO ROWS ARE THE INSTRUMENT FIX: the first cut skipped any include whose subtree had `hasError`, which MEASURED 532 of 2,737 sites and wrongly included `@include f();` (an EMPTY argument list carries a MISSING token inside `arguments`) and `@include m { … }` (a CONTENT-BLOCK include can inherit an error from a nested rule). Completeness is the statement reaching its OWN terminator — `;` or a content block — and the census uses the same predicate, so the analyzer's emitted set and the measured site count cannot drift apart.",
+  "expectSymbols": [
+    { "name": "@mixin local-only", "kind": "function" },
+    { "name": ".from-elsewhere", "kind": "class" },
+    { "name": ".also-local", "kind": "class" },
+    { "name": ".empty-args", "kind": "class" },
+    { "name": ".with-content", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": ".from-elsewhere",
+      "target": "@mixin imported-mixin",
+      "line_number": 17,
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true,
+      "meta.mixinDeclaredInFile": false,
+      "note": "THE PUBLISHED-BUT-UNRESOLVED ROW: the mixin's declaration is not in this file, so the target is the written name in the published spelling and carries mixinDeclaredInFile:false."
+    },
+    {
+      "type": "mixes_in",
+      "from": ".also-local",
+      "target": "fixtures/scss/include-foreign-mixin-mixes-in::@mixin local-only",
+      "line_number": 21,
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true,
+      "note": "THE SAME-FILE CONTROL: the mixin IS declared here, so the target is respelled to the file-scoped identity."
+    },
+    {
+      "type": "mixes_in",
+      "from": ".empty-args",
+      "target": "@mixin imported-empty",
+      "line_number": 25,
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true,
+      "meta.mixinDeclaredInFile": false,
+      "note": "THE EMPTY ARGUMENT LIST: `@include imported-empty();` is COMPLETE, but its `arguments` node carries a MISSING token, so a subtree `hasError` test skips it. This row pins that it publishes."
+    },
+    {
+      "type": "mixes_in",
+      "from": ".with-content",
+      "target": "@mixin imported-content",
+      "line_number": 29,
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true,
+      "meta.mixinDeclaredInFile": false,
+      "note": "THE CONTENT-BLOCK FORM: `@include imported-content { … }` is a complete statement whose nested block can carry errors; a subtree `hasError` test skips it. This row pins that it publishes."
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": ".from-elsewhere" },
+    { "type": "calls", "from": ".also-local" },
+    { "type": "calls", "from": ".empty-args" },
+    { "type": "calls", "from": ".with-content" },
+    { "type": "uses", "from": ".from-elsewhere" },
+    { "type": "uses", "from": ".empty-args" },
+    { "type": "mixes_in", "from": ".from-elsewhere", "target": "fixtures/scss/include-foreign-mixin-mixes-in::@mixin imported-mixin" }
+  ]
+}

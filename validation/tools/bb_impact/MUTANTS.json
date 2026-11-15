@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_impact",
+  "generatedAt": "2026-11-03T17:49:47.914Z",
+  "currentCommit": "5d1dd58e169c98fe0b15ed30e93eea7b0fd59408",
+  "method": "each mutant is written into the named source file, its gate is run with BB_M48_READ_ONLY=1, the file is restored byte-exactly, and the sha256 is checked; then both gates are shown green on the restored tree",
+  "baseline": {
+    "p1": {
+      "exit": 0,
+      "pass": true
+    },
+    "p2": {
+      "exit": 0,
+      "pass": true
+    }
+  },
+  "mutants": [
+    {
+      "id": "M-B1-node-budget-removed",
+      "defect": "the declared 200-node budget no longer caps the returned set",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "2837cb65e6d18af661b64ba19c9f6f8c98c36c063c6cc4c8547544dbd697b71a",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "capped at the declared node budget",
+      "failureLines": [
+        "FAIL: P1: a >200-dependent hub is capped at the declared node budget — shown=233 budget=200"
+      ]
+    },
+    {
+      "id": "M-B2-hollow-total",
+      "defect": "the declared total is inferred from the returned set instead of measured",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "ea0cd6f0b6623bc536ca21b6db9951bb830feb2294dc849e8871481e6f382ae1",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "measured a larger total",
+      "failureLines": [
+        "FAIL: P1: >200 callers => bb_impact measured a larger total — 200 vs 200",
+        "FAIL: P1: the declared total measures the larger truth beyond the node budget — 200 vs 200"
+      ]
+    },
+    {
+      "id": "M-B3-truncated-hardcoded-false",
+      "defect": "a prefix set is reported as complete",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "c4635c69eaf09ddb9dc7cf185389777bce1ec2d191a84064c7eeadaa9a3c7fae",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "truncated:true",
+      "failureLines": [
+        "FAIL: P1: >200 callers => bb_impact truncated:true — truncated=false shown=200",
+        "FAIL: P1: >200 callers => bb_analyze impact truncated:true (honest, can be true) — truncated=false",
+        "FAIL: P1: the node budget declares truncation — truncated=false"
+      ]
+    },
+    {
+      "id": "M-B4-scan-ceiling-ignored",
+      "defect": "the counting walk returns a number after its declared scan ceiling",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "5a38fa6fb2ceb732e8e81646e1ca8f3a5516061b14441315a30fe4a506d3976c",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "scan ceiling",
+      "failureLines": [
+        "FAIL: P1: the counting walk reports a declared unknown past its scan ceiling — {\"hit\":true,\"total\":2,\"failed\":false}"
+      ]
+    },
+    {
+      "id": "M-C1-cascade-via-collapsed",
+      "defect": "owner-cascade dependents are labelled exact (attribution dropped)",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "0f2203de3911715ba56501ed63d1fdeacb5342de9ea9a4f895dad04e60770627",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "owner cascade",
+      "failureLines": [
+        "FAIL: P1: class dependents are attributed through the owner cascade — {\"exact\":2,\"member\":0,\"rangeFolded\":0}"
+      ]
+    },
+    {
+      "id": "M-C2-cascade-composition-hardcoded",
+      "defect": "the returned set's cascade composition is fabricated",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "66ead7f59ce9ae54219e73960e196d3e324d9536cab815b81376f4a54faee1d2",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "owner cascade",
+      "failureLines": [
+        "FAIL: P1: class dependents are attributed through the owner cascade — {\"exact\":2,\"member\":0,\"rangeFolded\":0}"
+      ]
+    },
+    {
+      "id": "M-H1-empty-rule-accepted",
+      "defect": "an empty relationshipTypes list is silently re-read as the engine default",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "8049677db172e8eabcbdc281a53a83dc04d03c9fc27b6c15d5b0b56f8cd615a0",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "REFUSES an empty relationshipTypes",
+      "failureLines": [
+        "FAIL: P1: the component REFUSES an empty relationshipTypes list — null"
+      ]
+    },
+    {
+      "id": "M-H2-completeness-clearing-removed",
+      "defect": "a measured-complete set keeps a stale prefix claim",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "7a674c8e2fbcaeda60ce25c589ea843a11cffdef4665ad8b31fddaf7b223eba6",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "NOT a set truncation",
+      "failureLines": [
+        "FAIL: P1: a row cap that hid no dependent is NOT a set truncation — truncated=true reason=traversal: caller-site-limit+caller-budget-exhausted"
+      ]
+    },
+    {
+      "id": "M-H3-complete-flag-hollow",
+      "defect": "countVerification.complete is always true",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "0dd6846ee0828476e360a6dccd03d73779902edabd7e3cbf77fd2f0ce4dbc56d",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "disagrees",
+      "failureLines": [
+        "FAIL: P1: >200 callers => completeness was measured and disagrees — {\"ran\":true,\"skipped\":false,\"timedOut\":false,\"boundarySuspect\":false,\"complete\":true}",
+        "FAIL: P1: the completeness measurement disagrees with a capped set — {\"ran\":true,\"skipped\":false,\"timedOut\":false,\"boundarySuspect\":false,\"complete\":true}"
+      ]
+    },
+    {
+      "id": "M-H4-refused-rule-reported-as-zero",
+      "defect": "a refused counting rule is reported as a measured zero instead of failed",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "65e7322198b079dfd3484728047e7839cd11c4a54271c66394085247cdd8fe9b",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "failed, not as zero",
+      "failureLines": [
+        "FAIL: P1: the counting walk marks a refused rule as failed, not as zero — {\"failed\":false,\"total\":null}"
+      ]
+    },
+    {
+      "id": "M-H5-file-hint-ignored",
+      "defect": "the optional file hint is silently dropped (ambiguous member cannot be resolved)",
+      "targetFile": "src/mcp/tools/bb_impact/handler.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "bce775382e4ab84a8c0bc7f96519a37c50efe793adb317da0c62bf7af3994e9e",
+      "restoredHash": "ddb9e0698e51c0f23bbb14b50f0a3a39906d0086d483de720754cb345c841ec2",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "hint resolves the member",
+      "failureLines": [
+        "FAIL: P1: the hint resolves the member through its owning declaration",
+        "FAIL: P1: the answer names the file identity it rooted at",
+        "FAIL: P1: the resolved root is the hinted class — {}",
+        "FAIL: P1: a hint that cannot identify the symbol is refused, not ignored — bb_impact: symbol 'constructor' is not a traversable root (constructor) — no impact set exists (declared error: the symbol was not found as a traversable root; run `bb index` or check the name — 2 sto"
+      ]
+    },
+    {
+      "id": "M-T1-walk-deadline-removed",
+      "defect": "the declared walk deadline is dropped, so a hub answer can spend unbounded wall time",
+      "targetFile": "src/lsp/impact.ts",
+      "gate": "script/m48/verify-p1-impact-unity.ts",
+      "mutatedHash": "228d4e149400ff7748d1093e17e1343035bffcdcfc7ec5529fcf0072849b190a",
+      "restoredHash": "56c8b1df313d67d7677cabcc079cefbfbb5fd22d321fb534285d283857e82be6",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "declares the walk deadline it applied",
+      "failureLines": [
+        "FAIL: P1: traversal declares the walk deadline it applied on leaf — {\"walkTimeBudgetMs\":0,\"exhausted\":false}",
+        "FAIL: P1: traversal declares the walk deadline it applied on Service — {\"walkTimeBudgetMs\":0,\"exhausted\":false}",
+        "FAIL: P1: traversal declares the walk deadline it applied on f1 — {\"walkTimeBudgetMs\":0,\"exhausted\":false}"
+      ]
+    },
+    {
+      "id": "M-P2-hollow-field-planted",
+      "defect": "a tool builder publishes a completeness field that can only ever be false",
+      "targetFile": "src/mcp/tools/bb_impact/handler.ts",
+      "gate": "script/m48/verify-p2-honesty-fields.ts",
+      "mutatedHash": "60583a8f538a4405c0f7384f9afab4d502b6327c10d0c8422a75ba5a526bf141",
+      "restoredHash": "ddb9e0698e51c0f23bbb14b50f0a3a39906d0086d483de720754cb345c841ec2",
+      "restoredExactly": true,
+      "exit": 1,
+      "redObserved": true,
+      "expectedFailureMatched": "hollow completeness field",
+      "failureLines": [
+        "FAIL: no hollow completeness field in any tool output builder — src/mcp/tools/bb_impact/handler.ts: \"declaredAbsent\" only ever assigned false (never the opposite, never dynamic)"
+      ]
+    }
+  ],
+  "allMutantsRed": true,
+  "allMutantsMatchedExpectedAssertion": true,
+  "allRestoredExactly": true,
+  "failuresAtStart": []
+}

@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld30-same-name-containment.sql",
+  "authoredFrom": "SQL-D30, 2026-10-21. The bare-name self-edge guard in `addRelationship` dropped a `contains` edge whose source and target NAMES were equal \u2014 but a table and one of its columns may legally share a name, and then they are two declarations, two kinds (`class` and `property`) and two ids (`d30_keyword` and `d30_keyword.keyword`), which a name test cannot tell apart. MEASURED over the whole admitted population (PATHS 2,131 \u00b7 DISTINCT 2,131 \u00b7 ADMITTED 2,125, 199 symlinked directories FOLLOWED, 0 parse failures): the before/after with the grammar handed to BOTH analyzers is distinct edges 31,630 -> 31,639, delta +9, REMOVED 0 \u2014 the nine edges are `contains useragent -> install.sql::useragent.useragent` (cloogle.org/db/install.sql), `contains keyword -> schema.sql::keyword.keyword`, `contains name -> schema.sql::name.name` and `contains title -> schema.sql::title.title` (duckdb/benchmark/imdb_plan_cost/init/schema.sql), `contains adresse -> big_schema.sql::adresse.adresse` and `contains message -> big_schema.sql::message.message` (postgrest/test/io/fixtures/big_schema.sql), and `contains being -> schema.sql::being.being`, `contains descendant -> schema.sql::descendant.descendant` and `contains part -> schema.sql::part.part` (postgrest/test/spec/fixtures/schema.sql). THE FIXTURE IS RED-ABLE AGAINST THE COMMITTED ANALYZER: the two same-name edges are ABSENT there and PRESENT here, so a fixture that could not go red would not be a fixture.",
+  "comment": "THE TWO RED ROWS ARE THE TWO TABLES WHOSE COLUMN SHARES THE TABLE'S OWN NAME \u2014 `d30_self` and `keyword` \u2014 and they are what the pre-fix analyzer dropped. The `keyword` table is the EXACT shape the differential measured as a MISSING row (duckdb/benchmark/imdb_plan_cost/init/schema.sql), so the fixture mirrors the corpus row rather than a paraphrase of it. THE NEGATIVE CONTROLS ARE TWO DIFFERENT QUESTIONS: `d30_keyword` carries a COLUMN named `keyword` under a table with a DIFFERENT name (so the old guard never fired there \u2014 a fix that stopped publishing keyword-named columns would fail this row), and `d30_distinct`/`d30_other` carry the ORDINARY shape (so a fix that stopped publishing containment edges altogether would fail these). THE SYMBOL ROWS MATTER AS MUCH AS THE EDGE ROWS: before the fix the column SYMBOL existed while its containment edge did not, so a consumer reading the graph saw a column that belonged to no table \u2014 and `expectSymbolCount` pins the same-name fact from the SYMBOL side: `d30_self` appears TWICE (once as the table, once as the column of that table), `keyword` appears once as a TABLE and once as the column of the table `keyword` and once as the column of the table `d30_keyword` \u2014 three distinct declarations sharing one name, which is exactly the population the bare-name test could not tell apart. THE `contains` COUNT IS 9, not 6: the fixture declares NINE columns across five tables (d30_self 2 \u00b7 keyword 2 \u00b7 d30_keyword 2 \u00b7 d30_distinct 2 \u00b7 d30_other 1).",
+  "expectSymbols": [
+    {
+      "name": "d30_self",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "keyword",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d30_keyword",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d30_distinct",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d30_other",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d30_self",
+      "kind": "property",
+      "ownerName": "d30_self"
+    },
+    {
+      "name": "other",
+      "kind": "property",
+      "ownerName": "d30_self"
+    },
+    {
+      "name": "keyword",
+      "kind": "property",
+      "ownerName": "keyword"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "keyword"
+    },
+    {
+      "name": "keyword",
+      "kind": "property",
+      "ownerName": "d30_keyword"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "d30_keyword"
+    },
+    {
+      "name": "alpha",
+      "kind": "property",
+      "ownerName": "d30_distinct"
+    },
+    {
+      "name": "beta",
+      "kind": "property",
+      "ownerName": "d30_distinct"
+    },
+    {
+      "name": "gamma",
+      "kind": "property",
+      "ownerName": "d30_other"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "d30_self",
+      "equals": 2
+    },
+    {
+      "name": "keyword",
+      "kind": "class",
+      "equals": 1
+    },
+    {
+      "name": "keyword",
+      "ownerName": "keyword",
+      "kind": "property",
+      "equals": 1
+    },
+    {
+      "name": "keyword",
+      "ownerName": "d30_keyword",
+      "kind": "property",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "d30_self",
+      "target": "sqld30-same-name-containment.sql::d30_self.d30_self"
+    },
+    {
+      "type": "contains",
+      "from": "d30_self",
+      "target": "sqld30-same-name-containment.sql::d30_self.other"
+    },
+    {
+      "type": "contains",
+      "from": "keyword",
+      "target": "sqld30-same-name-containment.sql::keyword.keyword"
+    },
+    {
+      "type": "contains",
+      "from": "keyword",
+      "target": "sqld30-same-name-containment.sql::keyword.id"
+    },
+    {
+      "type": "contains",
+      "from": "d30_keyword",
+      "target": "sqld30-same-name-containment.sql::d30_keyword.keyword"
+    },
+    {
+      "type": "contains",
+      "from": "d30_keyword",
+      "target": "sqld30-same-name-containment.sql::d30_keyword.id"
+    },
+    {
+      "type": "contains",
+      "from": "d30_distinct",
+      "target": "sqld30-same-name-containment.sql::d30_distinct.alpha"
+    },
+    {
+      "type": "contains",
+      "from": "d30_distinct",
+      "target": "sqld30-same-name-containment.sql::d30_distinct.beta"
+    },
+    {
+      "type": "contains",
+      "from": "d30_other",
+      "target": "sqld30-same-name-containment.sql::d30_other.gamma"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "equals": 9
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "fixtureId": "kotlin/override-fallback-confidence",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RE-PINNED by M49.K1 (K2 override-verification wave; original pin recorded the pre-K2 guess-only tier). Base DECLARES render() in the same file, so with the K2 in-file BFS + name-keyed declSigs index the edge now VERIFIES: 0.9/structural with reasonCode in-file-verified and a signature payload. The GUESS tier (first-supertype-guess @0.5/inferred for parents that never declared the method) remains below the 0.7 consumer threshold and is pinned separately by the K34 claim probe. Verification contract: confidence >= 0.9, reasonCode in-file-verified, evidenceClass structural, overrideSig payload present, and the source/target stay in the family Owner.name -> Parent.name shape.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "interface" },
+    { "name": "Impl", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Impl.render",
+      "targetEndsWith": "render",
+      "confidenceMin": 0.9,
+      "meta.reasonCode": "in-file-verified",
+      "meta.evidenceClass": "structural",
+      "meta.isOverride": true,
+      "meta.overrideSig": "()"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "M49.K1 name-blind-pairing bug class (kotlinx-coroutines BroadcastChannel.kt): a parent that never declared the method must NEVER verify — the name-keyed declSigs index forbids pairing SubBroadcastChannel.send against BroadcastChannel merely because some OTHER member's signature matched. The override-name-blind-pairing mutant injects exactly this edge.",
+      "type": "overrides",
+      "from": "SubBroadcastChannel.send",
+      "target": "BroadcastChannel.send",
+      "meta.reasonCode": "in-file-verified"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "fixtureId": "python/framework-surface-pins",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (#747), the python member of the C7 framework surface. The pre-fix analyzer published `hasFrameworkIntelligence: true` on EVERY file while `ctx.frameworks` was initialised and never written anywhere, so the published array was empty forever — a capability claimed over a dead surface. This fixture holds two things at once: (1) that the surface is LIVE — three markers present across two import forms (`import pytest` is a bare import statement, `from django.db import models` and `from flask import Flask` are from-imports, and django's marker must match the ROOT module `django` taken from the dotted name `django.db`) — and (2) that the emitted array is ordered by the MARKER TABLE and not by import order: pytest is imported first, and the contract puts test frameworks last (csharp's CS_FRAMEWORK_ORDER rule, CONV-CS-2), so `detectedFrameworks` must be [Django, Flask, pytest] and the primary pick must be Django. A revert to import order fails both the array pin and the primary pick. The whole-array comparison is what makes this holdable: a partial check could not see an order regression.",
+  "expectSymbols": [
+    { "name": "User", "kind": "class" },
+    { "name": "build_app", "kind": "function" },
+    { "name": "test_user", "kind": "function" },
+    { "name": "app", "kind": "variable" }
+  ],
+  "expectPrimaryFramework": ["Django"],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": ["Django", "Flask", "pytest"],
+      "comment": "table order, not import order (pytest is imported first and listed last)"
+    }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "pytest:*", "comment": "the bare import statement still emits its edge; the framework trigger rides the same node and must not disturb it" },
+    { "type": "imports", "target": "django.db:models" },
+    { "type": "imports", "target": "flask:Flask" }
+  ]
+}

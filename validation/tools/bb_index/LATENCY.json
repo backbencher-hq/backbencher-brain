@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "tier": "phase-b",
+  "status": "measured-with-blocked-legs",
+  "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+  "measuredAt": "2026-11-03T16:17:55.209Z",
+  "environment": {
+    "engine": "backbencher-brain 0.3.0",
+    "runtime": "node v22.22.1 via npx tsx (MCP server started with npx tsx src/mcp/server.ts --dir <fixture>)",
+    "door": "real MCP stdio (JSON-RPC tools/call), no in-process shortcuts",
+    "dataDir": "BB_DATA_DIR=validation/tools/bb_index/bbdata (T0/T1), validation/tools/bb_index/realcorpus/bbdata (real corpus)",
+    "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for every measurement; the shared .bb-data and ~/.bb indexes are never indexed, wiped or written by this lane"
+  },
+  "budgets": {
+    "t0DefaultP95Ms": 250,
+    "t1DefaultP95Ms": 1000,
+    "t2DefaultP95Ms": 5000,
+    "clientTimeoutMs": 30000,
+    "source": "docs/tools-campaign/CHARTER.md §6 (write tools: 30 s client timeout; T2 tiers are read-only by charter)"
+  },
+  "tiers": {
+    "T0": {
+      "subject": "test/fixtures/polyglot copy (5 files, 13 symbols, 26 relationships) in the lane's isolated data dir",
+      "fileModeChangedCold": {
+        "ms": 5218,
+        "note": "changed file: parse + bounded post-pass + WAL checkpoint; includes the per-process worker-pool start (dominant cost)"
+      },
+      "fileModeUnchangedNoop": {
+        "runs": [
+          119,
+          40,
+          23,
+          21,
+          16
+        ],
+        "p50": 23,
+        "p95": 119,
+        "note": "unchanged file: no parse at all (mtime+size+sha256 agree); this is the agent-fresh repeat case"
+      },
+      "dirModeSettled": {
+        "runs": [
+          24,
+          26
+        ],
+        "p50": 25,
+        "note": "unchanged dir: change detection only"
+      },
+      "postMode": {
+        "runs": [
+          115
+        ],
+        "p50": 115,
+        "p95": 115
+      }
+    },
+    "T1": {
+      "subject": ".perf-fixtures/bb-scale/n100 copy (100 files) in the lane's isolated data dir",
+      "fileModeColdFirstCall": {
+        "runs": [
+          10437
+        ],
+        "note": "first tools/call in a fresh MCP server process, including the worker-pool start"
+      },
+      "fileModeUnchangedNoop": {
+        "runs": [
+          19,
+          16,
+          15,
+          17
+        ],
+        "p50": 16,
+        "p95": 19
+      },
+      "dirModeFirstCallAfterIndex": {
+        "runs": [
+          42184
+        ],
+        "note": "first dir call re-validated 96 candidates right after the initial index; the settled measurement follows"
+      },
+      "dirModeSettled": {
+        "runs": [
+          210
+        ],
+        "p50": 210,
+        "p95": 210
+      },
+      "postMode": {
+        "runs": [
+          9743,
+          3923
+        ],
+        "p50": 3923,
+        "p95": 9743
+      },
+      "caveat": "All timings taken on a shared checkout under fleet load (load average 7–16 during the phase); p50 is the honest figure and the wall clock includes the MCP server's serialize/deserialize."
+    },
+    "T2": {
+      "status": "blocked",
+      "reason": "T2 is the workspace's existing index (charter §6: read-only tools only; §3.5/owner instruction: never index or wipe the shared .bb-data). bb_index is a write tool, so a T2 measurement would mutate fleet data. The reference population below was read byte-read-only and is recorded for context only.",
+      "referencePopulation": {
+        "projectDir": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "dbBytes": 3639963648,
+        "mtime": "2026-11-02T04:29:55.820Z"
+      }
+    }
+  },
+  "blockedLegs": [
+    {
+      "leg": "T2 latency",
+      "reason": "write tool vs charter §6 read-only T2 rule + never-index-shared-index owner instruction",
+      "exactCommand": "not run by design; population read with node:sqlite readOnly"
+    }
+  ],
+  "evidence": {
+    "t0Door": "audit/door-t0-postfix.json",
+    "t0Unchanged": "audit/door-unchanged.json",
+    "t1Door": "audit/latency-t1.json",
+    "realCorpus": "REAL-CORPUS.json"
+  }
+}

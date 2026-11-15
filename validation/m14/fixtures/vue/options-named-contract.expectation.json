@@ -1,0 +1,118 @@
+{
+  "fixtureId": "vue/options-named-contract",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F12 (master review 2026-09-30), SECOND HALF and the residual shapes. vue/named-contract pins the script-setup binding and the contract EDGE; this one pins what that fixture could not reach. (a) The Options API hoist: `props: optionProps` / `emits: optionEmits` name a declaration declared in the same file, and extracted NOTHING before F12 \u2014 14 of the corpus files that write `props:` and no `emits:` at all extracted no contract. (b) `defineProps(castProps as const)` \u2014 a cast wrapper around a binding, which the identifier test rejected. (c) `defineEmits([LOCAL_EVENT])` \u2014 an array of constant REFERENCES rather than string literals; the event name lives in the constant's own declaration, so it is named the way any other declaration is. (d) `defineProps<LeftProps & { rightB: number }>` \u2014 a COMPOUND type argument, where the first named operand is the declaration and the inline operand is already read by the generic walk. (e) `defineEmits<Wrapped>()` for a same-file type alias. Every row below is red on the pre-fix analyzer. `from` note: this component declares a `name:` option, so since F8 the ONE Class symbol is named `NamedContractOptions` and every component-owned edge sources it \u2014 not the file stem `options-named-contract`.",
+  "expectSymbols": [
+    {
+      "name": "optionA",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "optionB",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "option-save",
+      "kind": "event",
+      "meta.isEmit": true
+    },
+    {
+      "name": "option-close",
+      "kind": "event",
+      "meta.isEmit": true
+    },
+    {
+      "name": "castA",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.isScriptSetup": true,
+      "meta.contractSource": "binding"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "optionA",
+      "startLine": 6,
+      "startColumn": 23
+    },
+    {
+      "symbol": "optionB",
+      "startLine": 6,
+      "startColumn": 40
+    },
+    {
+      "symbol": "option-save",
+      "startLine": 7,
+      "startColumn": 22
+    },
+    {
+      "symbol": "option-close",
+      "startLine": 7,
+      "startColumn": 37
+    },
+    {
+      "symbol": "castA",
+      "startLine": 25,
+      "startColumn": 21
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "NamedContractOptions",
+      "target": "optionA",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "NamedContractOptions",
+      "target": "optionB"
+    },
+    {
+      "type": "contains",
+      "from": "NamedContractOptions",
+      "target": "option-save"
+    },
+    {
+      "type": "contains",
+      "from": "NamedContractOptions",
+      "target": "option-close"
+    },
+    {
+      "type": "contains",
+      "from": "NamedContractOptions",
+      "target": "castA"
+    },
+    {
+      "type": "references",
+      "from": "NamedContractOptions",
+      "target": "LOCAL_EVENT",
+      "meta.isEmitContract": true
+    },
+    {
+      "type": "references",
+      "from": "NamedContractOptions",
+      "target": "LeftProps",
+      "meta.isPropContract": true
+    },
+    {
+      "type": "references",
+      "from": "NamedContractOptions",
+      "target": "Wrapped",
+      "meta.isEmitContract": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "defineProps"
+    },
+    {
+      "type": "calls",
+      "target": "defineEmits"
+    }
+  ]
+}

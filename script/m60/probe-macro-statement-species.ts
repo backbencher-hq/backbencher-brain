@@ -23,7 +23,7 @@ import { createHash } from "node:crypto"
 // pinned wasm and web-tree-sitter are resolved against the CWD, as the sibling
 // m60 probes do.
 const ROOT = process.cwd()
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 const CAP = 400
 
 const wts: any = await import("web-tree-sitter")

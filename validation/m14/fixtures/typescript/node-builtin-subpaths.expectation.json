@@ -1,0 +1,41 @@
+{
+  "fixtureId": "typescript/node-builtin-subpaths",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Node builtin classification, subpath forms included. The analyzer's builtin table was a flat list of bare module names, so every subpath Node actually ships — node:fs/promises, node:test, stream/promises, node:readline/promises, timers/promises, util/types, assert/strict, path/posix — fell through to `external:<specifier>` and the index claimed a dependency on an npm package named 'fs/promises' or 'test'. `node:test` is a bare name missing from the table itself, not a subpath, so both halves are pinned: the table entries (test/sqlite/sea/diagnostics_channel) and the subpath head rule. ANTI-POLLUTION: `lodash/merge` has exactly the shape of a builtin subpath and must stay external, and `express` is the plain bare-package control. The `imports` relationship pin proves the EDGE (module:item) is unaffected — only the resolvedPath classification moved.",
+  "expectImports": [
+    { "module": "node:fs", "meta.resolvedPath": "node:fs" },
+    { "module": "node:fs/promises", "meta.resolvedPath": "node:fs/promises" },
+    { "module": "node:test", "meta.resolvedPath": "node:test" },
+    { "module": "stream/promises", "meta.resolvedPath": "node:stream/promises" },
+    { "module": "node:readline/promises", "meta.resolvedPath": "node:readline/promises" },
+    { "module": "timers/promises", "meta.resolvedPath": "node:timers/promises" },
+    { "module": "util/types", "meta.resolvedPath": "node:util/types" },
+    { "module": "assert/strict", "meta.resolvedPath": "node:assert/strict" },
+    { "module": "path/posix", "meta.resolvedPath": "node:path/posix" },
+    { "module": "express", "meta.resolvedPath": "external:express" },
+    { "module": "lodash/merge", "meta.resolvedPath": "external:lodash/merge" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "node-builtin-subpaths",
+      "target": "node:fs/promises:fsp",
+      "meta.evidenceClass": "import_based",
+      "note": "the edge is module:item and unchanged by the classification fix — pinned so a future 'fix' cannot quietly drop builtin imports from the graph"
+    },
+    {
+      "type": "imports",
+      "from": "node-builtin-subpaths",
+      "target": "node:test:test",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "node-builtin-subpaths",
+      "target": "lodash/merge:merge",
+      "meta.evidenceClass": "import_based",
+      "note": "control: a package subpath keeps its package identity in the edge"
+    }
+  ]
+}

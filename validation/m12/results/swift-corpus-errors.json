@@ -1,6 +1,6 @@
 {
   "analyzer": "swift",
-  "corpus": "$HOME/fixtures/repositories/alamofire",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/alamofire",
   "corpusRepo": "alamofire",
   "revision": "0455bfb650893e86ad07ace16e5f2d36dadf46f4",
   "extensions": [

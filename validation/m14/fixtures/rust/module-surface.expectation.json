@@ -1,0 +1,243 @@
+{
+  "fixtureId": "rust/module-surface",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "INCOMING_RUST. The lane measured 0 `imports` and 0 `exports` edges through the production entry over 110 real `.rs` files of ripgrep, while Rust states both explicitly (`use a::b::C;`, `pub fn f`) and this analyzer already read both nodes \u2014 into an ImportInfo/ExportInfo row that `bb_graph`'s file-level reader (`src/lsp/graph_usages.ts` filters relationship_type IN ('imports','exports')) cannot join. These pins are the regression guard for the surface an INBOUND query is made of. (1) `imports` TARGET is the module PATH as written, never a leaf and never raw text: a path is a dependency and the family's label for one is `imports` (c/#910, go), while `references` targets must stay separator-free (c/#924). (2) An `imports` SOURCE is the enclosing inline module, so the pin `from: scoped` is what distinguishes a module-scoped `use` from a file-scoped one \u2014 a row that attributed both to the file would still be a plausible-looking edge. (3) A path's LEAF is a binding, never a dependency: `use crate::flags::Flag` depends on `crate::flags`, `use std::collections::HashMap` on `std::collections`, `use ::libc::c_int` on `::libc`, and a ONE-segment path (`use self::x`) is its own dependency. The binding rides `meta.items`, because a binding is re-declared by every importer and is therefore not a dependency. (3b) A brace group's PREFIX is the dependency, and a NESTED group is a second dependency of its own: `use std::{env, path::PathBuf}` depends on `std` AND on `std::path`, where the second was previously invisible. (4) The NEGATIVE half is the load-bearing one. `exports` is gated on the name being one THIS FILE publishes, so a `pub use` of an imported name publishes its dependency and refuses its export: `exports -> Flag` names a symbol this file does not declare and R7/R10 forbid publishing a target no index can join. (5) `pub(crate)` is not externally importable (D3), so it must publish nothing \u2014 a pin that keeps the M49 invariant from being re-broken by a second exports producer. (6) A `pub` item inside `pub mod inner` rides `contains`, not `exports`: the module is the importable unit. (7) ORDERING is part of the contract: `use crate::flags::Flag;` followed by `pub use crate::flags::Flag;` is ONE dependency read twice, so the second line dedupes onto the first row. A lane mutant that widened the export-unit gate produced NO new `exports` row, which is how the publication loop being placed AFTER the dedupe (and therefore unreachable for every re-export of an already-imported path) was found. The publication now runs first, and the merge carries `metadata.reExports` onto the surviving row so the second fact is not lost either. R7_AUDIT_FLEET (2026-10-05) changes two endpoints on this surface and both are pins, not relaxations. (8) The SOURCE of a file-scope `imports`/`exports` row is the FILE, spelled `(file)` with `metadata.fileLevel: true` \u2014 the M60/#910 contract `parallel-indexer.ts:3481` acts on, and the spelling `real-graphql-analyzer.ts` already publishes. The previous pin `from: global` asserted the literal R7 forbids: measured over 110 ripgrep files it was the source of 100% of `exports` rows (140) and 503 of 610 `imports` rows, and because `global` is not on the store's SYMBOL_NAME_DENYLIST the store wrote `source_external = \"global\"`, which no reader can join on. (9) The TARGET of a two-segment path rooted at a Rust PATH KEYWORD is the whole written path: `super`, `crate` and `self` are relative anchors, not crates and not modules, so leaf-dropping onto them published a keyword. Both pins are asserted, so a reversion to `global` or to a bare `self` fails this fixture rather than passing silently. SUPERSESSION (2026-10-19, Lead decision \u00a721.11 task-36 defect 4, task-9 conditions): the forbid `exports -> Flag` said 'this file does not declare it, so no index can join the target'. That is STALE for a RE-EXPORT: `pub use crate::flags::Flag` publishes `Flag` THROUGH this module \u2014 the name a consumer imports here \u2014 and the project index joins it at its declaring file. The publication gate was narrowed by exactly that name test and the measured exports divergence (truth 271 vs analyzer 140 on ripgrep) was the missing re-export breadth. The forbid is replaced by an expectation constrained to `relationshipType: re_export`, so the distinguishing fact is still pinned (a re-export is not a file-declared public item). Coverage is not weakened: all other forbids (nested pub items, pub(crate), bindings, raw declaration text) are unchanged. TASK-41 ADDENDUM (2026-10-19): two rows added, both real names this file declares \u2014 `PublishedAlias` (pub type \u2192 EXPORT, the defect the D4 residual classification named: the type_item branch created the symbol but never pushed ctx.exports) and `RestrictedAlias` (pub(crate) type \u2192 FORBID, the negative half). This strengthens coverage; no existing pin changed.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "LocalThing",
+      "kind": "struct"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "inner",
+      "kind": "module"
+    },
+    {
+      "name": "nested",
+      "kind": "function"
+    },
+    {
+      "name": "scoped",
+      "kind": "module"
+    },
+    {
+      "name": "crate_only",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "std::io",
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 1
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "crate::flags",
+      "meta.moduleKind": "path"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "super::util",
+      "meta.moduleKind": "wildcard",
+      "meta.items": [
+        "*"
+      ]
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "::libc",
+      "comment": "an absolute path keeps its leading ::"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "std",
+      "meta.moduleKind": "group"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "std::path",
+      "meta.moduleKind": "nested_group"
+    },
+    {
+      "type": "imports",
+      "from": "scoped",
+      "target": "std::collections",
+      "comment": "a use inside a module belongs to that module"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "self::reexported_marker",
+      "comment": "R7: `self` is a path ROOT, not a module name. `use self::x` splits to the prefix `self`, which no declaration has, so the whole written path is the dependency. 69 such rows on the lane corpus (36 `super`, 33 `crate`)."
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "LocalThing",
+      "meta.relationshipType": "public_item",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "helper",
+      "meta.symbolKind": "function"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "inner",
+      "meta.symbolKind": "module"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "reexported_marker",
+      "meta.relationshipType": "re_export"
+    },
+    {
+      "type": "contains",
+      "from": "LocalThing",
+      "target": "id"
+    },
+    {
+      "type": "contains",
+      "from": "inner",
+      "target": "nested",
+      "comment": "a member rides contains, never exports"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "crate::flags",
+      "meta.reExports": [
+        "Flag"
+      ],
+      "comment": "a re-export of an ALREADY-imported path merges onto the one dependency row; the publication is what survives, and Flag declares nothing here so no exports row is published"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Flag",
+      "meta.relationshipType": "re_export",
+      "comment": "SUPERSEDED forbid: a re-export publishes the name through this module; pinned with the re_export type so it cannot be confused with a file-declared public item"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "PublishedAlias",
+      "meta.relationshipType": "public_item",
+      "meta.symbolKind": "type",
+      "comment": "TASK-41: a pub type alias is a published name (the named defect this fixture now pins)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "nested",
+      "comment": "a pub item inside a pub mod is not a second importable unit"
+    },
+    {
+      "type": "exports",
+      "target": "crate_only",
+      "comment": "pub(crate) is not externally importable (D3)"
+    },
+    {
+      "type": "exports",
+      "target": "c_int"
+    },
+    {
+      "type": "exports",
+      "target": "W"
+    },
+    {
+      "type": "exports",
+      "target": "Read"
+    },
+    {
+      "type": "exports",
+      "target": "Env"
+    },
+    {
+      "type": "imports",
+      "target": "std::io::{Read, Write as W}",
+      "comment": "raw declaration text is not a module path"
+    },
+    {
+      "type": "imports",
+      "target": "Read"
+    },
+    {
+      "type": "imports",
+      "target": "Write"
+    },
+    {
+      "type": "imports",
+      "target": "PathBuf"
+    },
+    {
+      "type": "imports",
+      "target": "Flag",
+      "comment": "a binding is not a dependency; the dependency is crate::flags"
+    },
+    {
+      "type": "references",
+      "target": "std::io",
+      "comment": "a module path on the references surface is the c/#924 defect"
+    },
+    {
+      "type": "references",
+      "target": "crate::flags"
+    },
+    {
+      "type": "imports",
+      "target": "::libc::c_int",
+      "comment": "the leaf is the binding c_int, not the dependency"
+    },
+    {
+      "type": "imports",
+      "target": "std::collections::HashMap",
+      "comment": "same rule one level up"
+    },
+    {
+      "type": "imports",
+      "target": "self",
+      "comment": "R7: the BARE path root is the violation this change removes \u2014 `super`, `crate` and `self` name no declaration. Asserted so the leaf-drop cannot creep back onto a keyword."
+    },
+    {
+      "type": "imports",
+      "target": "super",
+      "comment": "same, for a `use super::x` path: 36 rows on the lane corpus"
+    },
+    {
+      "type": "imports",
+      "target": "crate",
+      "comment": "same, for a `use crate::x` path: 33 rows on the lane corpus"
+    },
+    {
+      "type": "imports",
+      "target": "std::io",
+      "from": "scoped",
+      "comment": "a module-scoped use is not also a file-scoped one"
+    },
+    {
+      "type": "exports",
+      "target": "RestrictedAlias",
+      "comment": "pub(crate) type alias is crate-visible only \u2014 not an export"
+    }
+  ]
+}

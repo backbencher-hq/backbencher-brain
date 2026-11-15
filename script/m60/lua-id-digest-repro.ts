@@ -7,12 +7,12 @@ import { readFileSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 import { join } from "node:path"
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 async function main(): Promise<void> {
   const mod: any = await loadWebTreeSitter()
   await parseFile(join(CORPUS, "luvit", "init.lua"), CORPUS)
   const lang: any = await mod.Language.load(resolveWasmAsset("tree-sitter-lua.wasm"))
-  const src = readFileSync("$HOME/fixtures/repositories/kong/kong/runloop/handler.lua", "utf8")
+  const src = readFileSync("/home/ishaq2321/bb_tests/repositories/kong/kong/runloop/handler.lua", "utf8")
   const digests: string[] = []
   const idSeqs: number[][] = []
   for (let run = 0; run < 3; run++) {

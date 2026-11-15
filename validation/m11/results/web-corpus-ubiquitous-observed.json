@@ -1,0 +1,690 @@
+{
+  "timestamp": "2026-08-13T00:54:03.755Z",
+  "repositories": [
+    {
+      "id": "json-graphql_js",
+      "path": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+      "discoveryMs": 8.434349999999998,
+      "candidateFiles": 45,
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/18b0d5567b84edcae6dec4bfcc1faf8ac965e01e/brain.db",
+      "index": {
+        "wallMs": 1363,
+        "stats": {
+          "totalFiles": 43,
+          "processedFiles": 43,
+          "successFiles": 43,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 3702,
+          "relationshipsFound": 6799
+        }
+      },
+      "after": {
+        "files": 43,
+        "symbols": 460,
+        "relationships": 228,
+        "dbFiles": 45,
+        "dbSymbols": 3702,
+        "dbRelationships": 6799
+      },
+      "dbSizeBytes": 18714624,
+      "throughput": {
+        "filesPerSec": 31.6,
+        "symbolsPerSec": 337.5
+      }
+    },
+    {
+      "id": "json-powershell",
+      "path": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "discoveryMs": 30.22398300000009,
+      "candidateFiles": 43,
+      "projectId": "080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4/brain.db",
+      "index": {
+        "wallMs": 2862,
+        "stats": {
+          "totalFiles": 43,
+          "processedFiles": 43,
+          "successFiles": 43,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 11908,
+          "relationshipsFound": 10796
+        }
+      },
+      "after": {
+        "files": 43,
+        "symbols": 1982,
+        "relationships": 342,
+        "dbFiles": 776,
+        "dbSymbols": 11908,
+        "dbRelationships": 10796
+      },
+      "dbSizeBytes": 39395328,
+      "throughput": {
+        "filesPerSec": 15,
+        "symbolsPerSec": 692.6
+      }
+    },
+    {
+      "id": "json-terraform",
+      "path": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "discoveryMs": 91.72233500000038,
+      "candidateFiles": 415,
+      "projectId": "af3457599add6de2b94227c20625f2469975d0f2",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+      "index": {
+        "wallMs": 11942,
+        "stats": {
+          "totalFiles": 415,
+          "processedFiles": 415,
+          "successFiles": 415,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 30157,
+          "relationshipsFound": 9468
+        }
+      },
+      "after": {
+        "files": 415,
+        "symbols": 20026,
+        "relationships": 2534,
+        "dbFiles": 2259,
+        "dbSymbols": 30157,
+        "dbRelationships": 9468
+      },
+      "dbSizeBytes": 85090304,
+      "throughput": {
+        "filesPerSec": 34.8,
+        "symbolsPerSec": 1676.9
+      }
+    },
+    {
+      "id": "markdown-powershell",
+      "path": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "discoveryMs": 21.336723000000347,
+      "candidateFiles": 100,
+      "projectId": "080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4/brain.db",
+      "index": {
+        "wallMs": 3194,
+        "stats": {
+          "totalFiles": 100,
+          "processedFiles": 100,
+          "successFiles": 100,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 11908,
+          "relationshipsFound": 10247
+        }
+      },
+      "after": {
+        "files": 100,
+        "symbols": 364,
+        "relationships": 29,
+        "dbFiles": 776,
+        "dbSymbols": 11908,
+        "dbRelationships": 10247
+      },
+      "dbSizeBytes": 39395328,
+      "throughput": {
+        "filesPerSec": 31.3,
+        "symbolsPerSec": 113.9
+      }
+    },
+    {
+      "id": "markdown-dplyr",
+      "path": "/home/ishaq2321/bb_tests/repositories/dplyr",
+      "discoveryMs": 4.618941000000632,
+      "candidateFiles": 80,
+      "projectId": "5dcc713eb6974976169d94eb38427875519de2cd",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/5dcc713eb6974976169d94eb38427875519de2cd/brain.db",
+      "index": {
+        "wallMs": 2501,
+        "stats": {
+          "totalFiles": 80,
+          "processedFiles": 80,
+          "successFiles": 80,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 6343,
+          "relationshipsFound": 7654
+        }
+      },
+      "after": {
+        "files": 80,
+        "symbols": 151,
+        "relationships": 55,
+        "dbFiles": 298,
+        "dbSymbols": 6343,
+        "dbRelationships": 7654
+      },
+      "dbSizeBytes": 18001920,
+      "throughput": {
+        "filesPerSec": 32,
+        "symbolsPerSec": 60.4
+      }
+    },
+    {
+      "id": "markdown-luarocks",
+      "path": "/home/ishaq2321/bb_tests/repositories/luarocks",
+      "discoveryMs": 7.283031999999366,
+      "candidateFiles": 71,
+      "projectId": "8b77d2f76add9e6eb8c765cc25b6552a9fcde4a1",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/8b77d2f76add9e6eb8c765cc25b6552a9fcde4a1/brain.db",
+      "index": {
+        "wallMs": 2058,
+        "stats": {
+          "totalFiles": 71,
+          "processedFiles": 71,
+          "successFiles": 71,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 6402,
+          "relationshipsFound": 4953
+        }
+      },
+      "after": {
+        "files": 71,
+        "symbols": 100,
+        "relationships": 6,
+        "dbFiles": 234,
+        "dbSymbols": 6402,
+        "dbRelationships": 4953
+      },
+      "dbSizeBytes": 13623296,
+      "throughput": {
+        "filesPerSec": 34.5,
+        "symbolsPerSec": 48.6
+      }
+    },
+    {
+      "id": "markdown-terraform",
+      "path": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "discoveryMs": 63.29080000000249,
+      "candidateFiles": 44,
+      "projectId": "af3457599add6de2b94227c20625f2469975d0f2",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+      "index": {
+        "wallMs": 2683,
+        "stats": {
+          "totalFiles": 44,
+          "processedFiles": 44,
+          "successFiles": 44,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 30157,
+          "relationshipsFound": 9468
+        }
+      },
+      "after": {
+        "files": 44,
+        "symbols": 28,
+        "relationships": 1,
+        "dbFiles": 2259,
+        "dbSymbols": 30157,
+        "dbRelationships": 9468
+      },
+      "dbSizeBytes": 85090304,
+      "throughput": {
+        "filesPerSec": 16.4,
+        "symbolsPerSec": 10.4
+      }
+    },
+    {
+      "id": "markdown-phpunit",
+      "path": "/home/ishaq2321/bb_tests/repositories/phpunit",
+      "discoveryMs": 44.20876700000008,
+      "candidateFiles": 27,
+      "projectId": "143a92a9e61c91cf6c9ef1d247a15daedaad91c6",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/143a92a9e61c91cf6c9ef1d247a15daedaad91c6/brain.db",
+      "index": {
+        "wallMs": 5023,
+        "stats": {
+          "totalFiles": 25,
+          "processedFiles": 25,
+          "successFiles": 25,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 33216,
+          "relationshipsFound": 47594
+        }
+      },
+      "after": {
+        "files": 25,
+        "symbols": 187,
+        "relationships": 58,
+        "dbFiles": 3490,
+        "dbSymbols": 33216,
+        "dbRelationships": 47594
+      },
+      "dbSizeBytes": 170811392,
+      "throughput": {
+        "filesPerSec": 5,
+        "symbolsPerSec": 37.2
+      }
+    },
+    {
+      "id": "xml-phpunit",
+      "path": "/home/ishaq2321/bb_tests/repositories/phpunit",
+      "discoveryMs": 43.70804399999906,
+      "candidateFiles": 250,
+      "projectId": "143a92a9e61c91cf6c9ef1d247a15daedaad91c6",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/143a92a9e61c91cf6c9ef1d247a15daedaad91c6/brain.db",
+      "index": {
+        "wallMs": 7356,
+        "stats": {
+          "totalFiles": 249,
+          "processedFiles": 249,
+          "successFiles": 249,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 33216,
+          "relationshipsFound": 47313
+        }
+      },
+      "after": {
+        "files": 249,
+        "symbols": 3103,
+        "relationships": 2691,
+        "dbFiles": 3490,
+        "dbSymbols": 33216,
+        "dbRelationships": 47313
+      },
+      "dbSizeBytes": 170868736,
+      "throughput": {
+        "filesPerSec": 33.8,
+        "symbolsPerSec": 421.8
+      }
+    },
+    {
+      "id": "xml-powershell",
+      "path": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "discoveryMs": 29.92591900000116,
+      "candidateFiles": 22,
+      "projectId": "080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4/brain.db",
+      "index": {
+        "wallMs": 2322,
+        "stats": {
+          "totalFiles": 22,
+          "processedFiles": 22,
+          "successFiles": 22,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 11908,
+          "relationshipsFound": 10174
+        }
+      },
+      "after": {
+        "files": 22,
+        "symbols": 685,
+        "relationships": 531,
+        "dbFiles": 776,
+        "dbSymbols": 11908,
+        "dbRelationships": 10174
+      },
+      "dbSizeBytes": 39395328,
+      "throughput": {
+        "filesPerSec": 9.5,
+        "symbolsPerSec": 295.1
+      }
+    },
+    {
+      "id": "bash-terraform",
+      "path": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "discoveryMs": 83.93563200000062,
+      "candidateFiles": 18,
+      "projectId": "af3457599add6de2b94227c20625f2469975d0f2",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+      "index": {
+        "wallMs": 2515,
+        "stats": {
+          "totalFiles": 18,
+          "processedFiles": 18,
+          "successFiles": 18,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 30157,
+          "relationshipsFound": 9459
+        }
+      },
+      "after": {
+        "files": 18,
+        "symbols": 128,
+        "relationships": 188,
+        "dbFiles": 2259,
+        "dbSymbols": 30157,
+        "dbRelationships": 9459
+      },
+      "dbSizeBytes": 85090304,
+      "throughput": {
+        "filesPerSec": 7.2,
+        "symbolsPerSec": 50.9
+      }
+    },
+    {
+      "id": "bash-powershell",
+      "path": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "discoveryMs": 28.475892000002204,
+      "candidateFiles": 13,
+      "projectId": "080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4/brain.db",
+      "index": {
+        "wallMs": 2103,
+        "stats": {
+          "totalFiles": 13,
+          "processedFiles": 13,
+          "successFiles": 13,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 11908,
+          "relationshipsFound": 10162
+        }
+      },
+      "after": {
+        "files": 13,
+        "symbols": 320,
+        "relationships": 130,
+        "dbFiles": 776,
+        "dbSymbols": 11908,
+        "dbRelationships": 10162
+      },
+      "dbSizeBytes": 39395328,
+      "throughput": {
+        "filesPerSec": 6.2,
+        "symbolsPerSec": 152.2
+      }
+    },
+    {
+      "id": "bash-luarocks",
+      "path": "/home/ishaq2321/bb_tests/repositories/luarocks",
+      "discoveryMs": 11.42605299999559,
+      "candidateFiles": 3,
+      "projectId": "8b77d2f76add9e6eb8c765cc25b6552a9fcde4a1",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/8b77d2f76add9e6eb8c765cc25b6552a9fcde4a1/brain.db",
+      "index": {
+        "wallMs": 873,
+        "stats": {
+          "totalFiles": 3,
+          "processedFiles": 3,
+          "successFiles": 3,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 6402,
+          "relationshipsFound": 4954
+        }
+      },
+      "after": {
+        "files": 3,
+        "symbols": 12,
+        "relationships": 9,
+        "dbFiles": 234,
+        "dbSymbols": 6402,
+        "dbRelationships": 4954
+      },
+      "dbSizeBytes": 13623296,
+      "throughput": {
+        "filesPerSec": 3.4,
+        "symbolsPerSec": 13.7
+      }
+    },
+    {
+      "id": "yaml-powershell",
+      "path": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "discoveryMs": 25.858398999997007,
+      "candidateFiles": 127,
+      "projectId": "080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/080a9165881d51ea1e7d8c4aa7c68eaaef3a17e4/brain.db",
+      "index": {
+        "wallMs": 4277,
+        "stats": {
+          "totalFiles": 126,
+          "processedFiles": 126,
+          "successFiles": 126,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 11908,
+          "relationshipsFound": 8166
+        }
+      },
+      "after": {
+        "files": 126,
+        "symbols": 7563,
+        "relationships": 1445,
+        "dbFiles": 776,
+        "dbSymbols": 11908,
+        "dbRelationships": 8166
+      },
+      "dbSizeBytes": 39395328,
+      "throughput": {
+        "filesPerSec": 29.5,
+        "symbolsPerSec": 1768.2
+      }
+    },
+    {
+      "id": "yaml-dplyr",
+      "path": "/home/ishaq2321/bb_tests/repositories/dplyr",
+      "discoveryMs": 9.253862999998091,
+      "candidateFiles": 9,
+      "projectId": "5dcc713eb6974976169d94eb38427875519de2cd",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/5dcc713eb6974976169d94eb38427875519de2cd/brain.db",
+      "index": {
+        "wallMs": 1181,
+        "stats": {
+          "totalFiles": 9,
+          "processedFiles": 9,
+          "successFiles": 9,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 6343,
+          "relationshipsFound": 7545
+        }
+      },
+      "after": {
+        "files": 9,
+        "symbols": 403,
+        "relationships": 162,
+        "dbFiles": 298,
+        "dbSymbols": 6343,
+        "dbRelationships": 7545
+      },
+      "dbSizeBytes": 18001920,
+      "throughput": {
+        "filesPerSec": 7.6,
+        "symbolsPerSec": 341.3
+      }
+    },
+    {
+      "id": "yaml-phpunit",
+      "path": "/home/ishaq2321/bb_tests/repositories/phpunit",
+      "discoveryMs": 36.86694200000056,
+      "candidateFiles": 9,
+      "projectId": "143a92a9e61c91cf6c9ef1d247a15daedaad91c6",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/143a92a9e61c91cf6c9ef1d247a15daedaad91c6/brain.db",
+      "index": {
+        "wallMs": 4471,
+        "stats": {
+          "totalFiles": 7,
+          "processedFiles": 7,
+          "successFiles": 7,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 33216,
+          "relationshipsFound": 47279
+        }
+      },
+      "after": {
+        "files": 7,
+        "symbols": 618,
+        "relationships": 278,
+        "dbFiles": 3490,
+        "dbSymbols": 33216,
+        "dbRelationships": 47279
+      },
+      "dbSizeBytes": 170868736,
+      "throughput": {
+        "filesPerSec": 1.6,
+        "symbolsPerSec": 138.2
+      }
+    },
+    {
+      "id": "yaml-terraform",
+      "path": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "discoveryMs": 85.3324649999995,
+      "candidateFiles": 26,
+      "projectId": "af3457599add6de2b94227c20625f2469975d0f2",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+      "index": {
+        "wallMs": 2780,
+        "stats": {
+          "totalFiles": 26,
+          "processedFiles": 26,
+          "successFiles": 26,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 30157,
+          "relationshipsFound": 9341
+        }
+      },
+      "after": {
+        "files": 26,
+        "symbols": 1005,
+        "relationships": 469,
+        "dbFiles": 2259,
+        "dbSymbols": 30157,
+        "dbRelationships": 9341
+      },
+      "dbSizeBytes": 85090304,
+      "throughput": {
+        "filesPerSec": 9.4,
+        "symbolsPerSec": 361.5
+      }
+    },
+    {
+      "id": "make-luarocks",
+      "path": "/home/ishaq2321/bb_tests/repositories/luarocks",
+      "discoveryMs": 6.290094000003592,
+      "candidateFiles": 2,
+      "projectId": "8b77d2f76add9e6eb8c765cc25b6552a9fcde4a1",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/8b77d2f76add9e6eb8c765cc25b6552a9fcde4a1/brain.db",
+      "index": {
+        "wallMs": 808,
+        "stats": {
+          "totalFiles": 2,
+          "processedFiles": 2,
+          "successFiles": 2,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 6402,
+          "relationshipsFound": 4952
+        }
+      },
+      "after": {
+        "files": 2,
+        "symbols": 42,
+        "relationships": 18,
+        "dbFiles": 234,
+        "dbSymbols": 6402,
+        "dbRelationships": 4952
+      },
+      "dbSizeBytes": 13623296,
+      "throughput": {
+        "filesPerSec": 2.5,
+        "symbolsPerSec": 52
+      }
+    },
+    {
+      "id": "make-terraform",
+      "path": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "discoveryMs": 76.28040000000328,
+      "candidateFiles": 1,
+      "projectId": "af3457599add6de2b94227c20625f2469975d0f2",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+      "index": {
+        "wallMs": 2070,
+        "stats": {
+          "totalFiles": 1,
+          "processedFiles": 1,
+          "successFiles": 1,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 30157,
+          "relationshipsFound": 9339
+        }
+      },
+      "after": {
+        "files": 1,
+        "symbols": 11,
+        "relationships": 6,
+        "dbFiles": 2259,
+        "dbSymbols": 30157,
+        "dbRelationships": 9339
+      },
+      "dbSizeBytes": 85090304,
+      "throughput": {
+        "filesPerSec": 0.5,
+        "symbolsPerSec": 5.3
+      }
+    },
+    {
+      "id": "sql-proxicall",
+      "path": "/home/ishaq2321/ProxiCall",
+      "discoveryMs": 10.218646999999997,
+      "candidateFiles": 185,
+      "projectId": "7baab08fedaf7aa67a927f3908243a282e890c15",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/7baab08fedaf7aa67a927f3908243a282e890c15/brain.db",
+      "index": {
+        "wallMs": 9178,
+        "stats": {
+          "totalFiles": 185,
+          "processedFiles": 185,
+          "successFiles": 185,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 1556,
+          "relationshipsFound": 1541
+        }
+      },
+      "after": {
+        "files": 185,
+        "symbols": 1556,
+        "relationships": 1541,
+        "dbFiles": 185,
+        "dbSymbols": 1556,
+        "dbRelationships": 1541
+      },
+      "dbSizeBytes": 18317312,
+      "throughput": {
+        "filesPerSec": 20.2,
+        "symbolsPerSec": 169.5
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.825Z",
+    "contentSha256": "1f70b44a918854514a51a2b35e4800ff1be59edba18be5b7e3e19f48348385ce"
+  }
+}

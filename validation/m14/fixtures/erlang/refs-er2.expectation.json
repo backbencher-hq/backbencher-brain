@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/refs-er2.erl",
+  "authoredFrom": "ER2 reference surface (user findings #2/#4/#6, closes ER-G1/G2/G5; rulings ER-D8/D9/D11/D14) authored from the pinned grammar probe (2026-09-18) before this fixture's F3 run: ?MACRO uses emit references -> the macro name per-site (a use of a header-defined macro is still a use - ?SERVER_HEADER lands as an external, honest); fun values are references, never calls (the call happens at apply time); -callback emits a Method symbol owned by the module with the sig's arity; ?MODULE in remote-module position expands to the current module (the one predefined macro whose meaning is unambiguous) while the ?MODULE use itself still emits its macro reference; type syntax (the callback's state()) is DECL-ONLY - never a calls edge. ER3 (2026-09-25, from the M12 differential, which caught two fabricated dependencies): -type/-opaque emit references only where a type APPLIES a name - a call head (binary(), atom(), term()) or a record type's own name (#ctx{} -> ctx) - so a bare unquoted atom in type syntax is the atom LITERAL of that name (monday | tuesday declares no dependency; writing `integer` without parens is the atom integer, not the type integer()) and a map/record field key is a DECLARATION (the keys of #{id := binary()} are not references - the ER2 authoring counted every bare atom and produced job -> id / job -> kind). A remote type keeps its qualification (dict:dict() -> dict:dict, ER-D1), a record TYPE is a declaration and never an instantiates (the same DECL-ONLY boundary as calls), and the field types inside a record type are walked (ctx_rec -> pid).",
+  "expectSymbols": [
+    {
+      "name": "refs_er2",
+      "kind": "module"
+    },
+    {
+      "name": "handle",
+      "kind": "method",
+      "ownerName": "refs_er2",
+      "meta.arity": 1,
+      "meta.isCallback": true
+    },
+    {
+      "name": "TIMEOUT",
+      "kind": "constant",
+      "ownerName": "refs_er2"
+    },
+    {
+      "name": "maybe",
+      "kind": "type",
+      "ownerName": "refs_er2"
+    },
+    {
+      "name": "token",
+      "kind": "type",
+      "ownerName": "refs_er2",
+      "meta.isOpaque": true
+    },
+    {
+      "name": "ctx",
+      "kind": "struct",
+      "ownerName": "refs_er2"
+    },
+    {
+      "name": "server",
+      "kind": "property",
+      "ownerName": "ctx"
+    },
+    {
+      "name": "go",
+      "kind": "function",
+      "ownerName": "refs_er2",
+      "meta.arity": 1
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "refs_er2",
+      "meta.arity": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "refs_er2",
+      "target": "gen_server",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "refs_er2",
+      "target": "handle",
+      "line_number": 9,
+      "note": "the callback Method is a module member like any function"
+    },
+
+    {
+      "type": "references",
+      "from": "token",
+      "target": "binary",
+      "meta.context": "type reference",
+      "line_number": 12,
+      "note": "-opaque closes ER-G5: the same declaration surface as -type"
+    },
+    {
+      "type": "contains",
+      "from": "ctx",
+      "target": "server",
+      "line_number": 13
+    },
+    {
+      "type": "references",
+      "from": "go",
+      "target": "run",
+      "meta.context": "fun value reference",
+      "line_number": 17,
+      "note": "fun run/1 is a reference, not a call"
+    },
+    {
+      "type": "references",
+      "from": "go",
+      "target": "lists:map",
+      "meta.context": "fun value reference",
+      "line_number": 18,
+      "note": "qualified per ER-D1"
+    },
+    {
+      "type": "references",
+      "from": "go",
+      "target": "MODULE",
+      "meta.context": "macro use",
+      "line_number": 19,
+      "note": "the ?MODULE use itself is a macro reference"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "refs_er2:run",
+      "meta.context": "remote function call",
+      "meta.callArity": 1,
+      "meta.macroModule": true,
+      "line_number": 19,
+      "note": "?MODULE:run expands - ER-D14: the module is known, so the call resolves to the in-file function"
+    },
+    {
+      "type": "references",
+      "from": "go",
+      "target": "TIMEOUT",
+      "meta.context": "macro use",
+      "line_number": 20
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "lists:foreach",
+      "meta.context": "remote function call",
+      "meta.callArity": 2,
+      "line_number": 21
+    },
+    {
+      "type": "references",
+      "from": "go",
+      "target": "SERVER_HEADER",
+      "meta.context": "macro use",
+      "line_number": 22,
+      "note": "undefined macro: the use is still emitted; unresolved targets land as externals - honest"
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "TIMEOUT",
+      "meta.context": "macro use",
+      "line_number": 24
+    },
+    {
+      "type": "references",
+      "from": "job",
+      "target": "binary",
+      "meta.context": "type reference",
+      "line_number": 35,
+      "note": "ER3: an APPLIED name is a type dependency (the head of a call node)"
+    },
+    {
+      "type": "references",
+      "from": "job",
+      "target": "atom",
+      "meta.context": "type reference",
+      "line_number": 35,
+      "note": "a builtin type name is still a name the type applies (an honest unresolved target)"
+    },
+    {
+      "type": "references",
+      "from": "job",
+      "target": "term",
+      "meta.context": "type reference",
+      "line_number": 35,
+      "note": "three applied heads, three dependencies, from one map type"
+    },
+    {
+      "type": "references",
+      "from": "ctx_rec",
+      "target": "ctx",
+      "meta.context": "type reference",
+      "line_number": 36,
+      "note": "a record TYPE names its record (and is not a construction)"
+    },
+    {
+      "type": "references",
+      "from": "ctx_rec",
+      "target": "pid",
+      "meta.context": "type reference",
+      "line_number": 36,
+      "note": "the field TYPES inside a record type are walked: server :: pid() is a dependency"
+    },
+    {
+      "type": "references",
+      "from": "ext",
+      "target": "dict:dict",
+      "meta.context": "type reference",
+      "line_number": 37,
+      "note": "a remote type keeps its module qualification (ER-D1: bare `dict` hashes away which module's dict)"
+    },
+    {
+      "type": "contains",
+      "from": "refs_er2",
+      "target": "go"
+    },
+    {
+      "type": "contains",
+      "from": "refs_er2",
+      "target": "TIMEOUT"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "handle",
+      "target": "state",
+      "note": "type syntax is DECL-ONLY: the callback's state() parses as a call node but is a TYPE, not an invocation"
+    },
+    {
+      "type": "instantiates",
+      "from": "refs_er2",
+      "target": "ctx",
+      "note": "ER3: a record type (#ctx{...} inside -type) is a DECLARATION of the record's shape, never a construction - the same DECL-ONLY boundary as calls"
+    },
+    {
+      "type": "instantiates",
+      "from": "ctx_rec",
+      "target": "ctx",
+      "note": "ditto, under the declared type's own name"
+    },
+    {
+      "type": "references",
+      "from": "maybe",
+      "target": "undefined",
+      "note": "ER3: a bare unquoted atom in type syntax is the atom LITERAL of that name (maybe(T) :: T | undefined declares the atom undefined, not a type named undefined) - the ER2 authoring counted it as a dependency"
+    },
+    {
+      "type": "references",
+      "from": "day",
+      "target": "monday",
+      "note": "ER3: a union of atom literals declares no dependencies"
+    },
+    {
+      "type": "references",
+      "from": "day",
+      "target": "tuesday"
+    },
+    {
+      "type": "references",
+      "from": "job",
+      "target": "id",
+      "note": "ER3: a map field KEY is a declaration site - job -> id fabricated a dependency on the record property `id` of the same name (this is the M12 false positive that started ER3)"
+    },
+    {
+      "type": "references",
+      "from": "job",
+      "target": "kind"
+    },
+    {
+      "type": "references",
+      "from": "job",
+      "target": "payload"
+    },
+    {
+      "type": "references",
+      "from": "ctx_rec",
+      "target": "server",
+      "note": "ER3: a record type's field keys are declarations, only its field TYPES are dependencies"
+    },
+    {
+      "type": "references",
+      "from": "ext",
+      "target": "dict",
+      "note": "ER3: the module half of a remote type is not itself a type dependency - the pre-fix walk emitted both halves bare (dict:dict() -> 'dict' + 'dict')"
+    },
+    {
+      "type": "calls",
+      "from": "refs_er2",
+      "target": "state"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "run",
+      "note": "fun run/1 is a REFERENCE - go never calls run directly (the ?MODULE:run call targets the qualified form)"
+    },
+    {
+      "type": "references",
+      "from": "maybe",
+      "target": "T",
+      "note": "a type's vars are its PARAMETERS, never references"
+    },
+    {
+      "type": "references",
+      "from": "maybe",
+      "target": "maybe",
+      "note": "the type_name subtree is SKIPPED by span (hygiene KAD2/TSD2 catch: fresh-wrapper identity comparison never matched, emitting a type self-reference both sides mirrored)"
+    },
+    {
+      "type": "references",
+      "from": "token",
+      "target": "token",
+      "note": "ditto for -opaque"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "F"
+    },
+    {
+      "name": "G"
+    }
+  ]
+}

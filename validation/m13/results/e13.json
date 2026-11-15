@@ -1,0 +1,362 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.66",
+  "code": "E13",
+  "tool": "bb_edit",
+  "title": "bb_edit: batch mode — one plan, one cycle, one rollback envelope",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "expand: one entry × two files is two planned edits",
+      "pass": true,
+      "detail": "2 entries"
+    },
+    {
+      "name": "expand: the fan-out SUPPLIES filePath to the entry",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: several edits keep their own order and targets",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: the entry modes are the five single-file modes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: an empty edits array is refused [negative: batch requires a non-empty]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: a missing edits array is refused [negative: batch requires a non-empty]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: an entry with no mode is refused (it would pass every per-mode branch silently) [negative: batch entry 0 requires a mode of]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: a nested batch is refused [negative: must not itself be a batch]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: a per-entry dryRun is refused (a batch previews ONCE) [negative: must not set dryRun]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: a per-entry format is refused (a batch formats ONCE) [negative: must not set format]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: an entry naming its own filePath while `files` supplies them is refused [negative: must not also name one]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: a repeated path in `files` is refused [negative: repeats a.ts]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: a blank path in `files` is refused [negative: must be a non-empty project-relative path]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: an empty `files` array is refused [negative: must be a non-empty array]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: 201 planned edits exceed the cap of 200 [negative: exceeds the limit of 200]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "expand: exactly the cap is allowed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fan-out preview: 2 targets planned",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fan-out preview: the envelope reports 2 planned files, nothing committed",
+      "pass": true,
+      "detail": "[\"src/a.ts:true/false\",\"src/b.ts:true/false\"]"
+    },
+    {
+      "name": "fan-out preview: the pre-edit byte sizes come from the plan's own read",
+      "pass": true,
+      "detail": "48"
+    },
+    {
+      "name": "fan-out preview: nothing was written",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fan-out: the one edit landed in BOTH files",
+      "pass": true,
+      "detail": "a.ts/b.ts both carry the inserted line"
+    },
+    {
+      "name": "fan-out: a file NOT in `files` is untouched [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "fan-out: the batch report maps entry 0 to the two files it touched",
+      "pass": true,
+      "detail": "[{\"entry\":0,\"mode\":\"insert\",\"files\":[\"src/a.ts\",\"src/b.ts\"]}]"
+    },
+    {
+      "name": "fan-out: reindexed and validated",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fan-out: the envelope reports both files committed, none restored, with measured post sizes",
+      "pass": true,
+      "detail": "[\"src/a.ts 48->73\",\"src/b.ts 48->73\"]"
+    },
+    {
+      "name": "mixed: all three edits applied in one call",
+      "pass": true,
+      "detail": "true,true,true"
+    },
+    {
+      "name": "mixed: the report names each entry's mode and file",
+      "pass": true,
+      "detail": "[{\"entry\":0,\"mode\":\"update\",\"files\":[\"src/alpha.ts\"]},{\"entry\":1,\"mode\":\"insert\",\"files\":[\"src/beta.ts\"]},{\"entry\":2,\"mode\":\"delete\",\"files\":[\"src/delta.ts\"],\"importPruning\":{\"attempted\":true,\"language\":\"typescript\",\"removedBindings\":[]}}]"
+    },
+    {
+      "name": "mixed: ONE formatting pass covers all three targets",
+      "pass": true,
+      "detail": "[\"src/alpha.ts\",\"src/beta.ts\",\"src/delta.ts\"]"
+    },
+    {
+      "name": "mixed: ONE derived-data block for the whole call",
+      "pass": true,
+      "detail": "\"bounded\""
+    },
+    {
+      "name": "mixed: the envelope carries one entry per FILE, not per mode",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mixed: N single calls produce N cycles (each has its own derived block) — the shape the batch does not have [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "2 separate calls"
+    },
+    {
+      "name": "refusal: the failing entry is NAMED in the error",
+      "pass": true,
+      "detail": "batch entry 1 (update src/beta.ts): symbol noSuchSymbol not found or has no byte bounds"
+    },
+    {
+      "name": "refusal: the error still says why the entry failed",
+      "pass": true,
+      "detail": "batch entry 1 (update src/beta.ts): symbol noSuchSymbol not found or has no byte bounds"
+    },
+    {
+      "name": "refusal: nothing was written — not even the entry that planned cleanly [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "duplicate target: refused BY INDEX, naming both entries and the file",
+      "pass": true,
+      "detail": "bb_edit wrote nothing: batch entries 0 and 1 both resolve to src/alpha.ts — each entry is planned from the file's pre-edit bytes, so applying both would discard one of them. Edit that file in one entry, or make a second "
+    },
+    {
+      "name": "duplicate target: the file is untouched [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "duplicate target: the two sequential calls compose (this is the stated way forward)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-image control: the batch applies when nothing moves underneath it",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-image: the call is refused, naming the file that moved",
+      "pass": true,
+      "detail": "bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — src/target.ts (planned a9642d92048d, now 20328c0827e7). The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit t"
+    },
+    {
+      "name": "pre-image: the refusal reports both hashes for that file",
+      "pass": true,
+      "detail": "bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — src/target.ts (planned a9642d92048d, now 20328c0827e7). The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit t"
+    },
+    {
+      "name": "pre-image: the OTHER entry was not written either — the check is batch-wide [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-image: the file that moved was left exactly as the writer left it (no write happened)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback: the error is the VALIDATION failure, not the rollback's own",
+      "pass": true,
+      "detail": "validation failed for /tmp/bb-e13-rollback-LYVLYy/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node."
+    },
+    {
+      "name": "rollback: no file is reported as unrestorable",
+      "pass": true,
+      "detail": "validation failed for /tmp/bb-e13-rollback-LYVLYy/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node."
+    },
+    {
+      "name": "rollback: every file is byte-identical to its pre-edit bytes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback: the envelope says 3 committed and 3 restored",
+      "pass": true,
+      "detail": "{\"committed\":3,\"restored\":3,\"failed\":[]}"
+    },
+    {
+      "name": "rollback: every entry reports planned+committed+restored with the size back where it started",
+      "pass": true,
+      "detail": "[\"src/alpha.py 26->26 r=true\",\"src/gamma.py 26->26 r=true\",\"src/beta.py 25->25 r=true\"]"
+    },
+    {
+      "name": "rollback: the entry labels survive the failure (which entry touched which file)",
+      "pass": true,
+      "detail": "[\"0:update\",\"1:update\",\"2:write\"]"
+    },
+    {
+      "name": "rollback: no orphaned .bb-edit-* temp file is left in src",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guard: the refusal is raised in the PLAN, with the entry named",
+      "pass": true,
+      "detail": "batch entry 1 (write src/big.ts): write refused: it would replace src/big.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least half of a file's lines (and at least 5) is treated as a prob"
+    },
+    {
+      "name": "guard: the other entry's file is untouched too (the batch is refused whole) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "guard: overwrite:true on the entry replaces it, and both entries land",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wire: an entry that names its own filePath under `files` is refused with the reason",
+      "pass": true,
+      "detail": "error: bb_edit batch entry 0 sets filePath (src/alpha.py) and the batch sets `files` — `files` supplies the target of every entry, so an entry must not also name one"
+    },
+    {
+      "name": "wire: the fan-out call is accepted and the edit lands",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"batch\",\n  \"dryRun\": false,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-e13-mcp-VXXZOm/src/alpha.py\",\n      \"before\": \"def alpha():\\n    return 1\\n\",\n      \"after\": \"def alpha():\\n    retu"
+    },
+    {
+      "name": "wire: the answer carries the batch report and a committed envelope",
+      "pass": true,
+      "detail": "{\"atomic\":true,\"entries\":[{\"path\":\"src/alpha.py\",\"entry\":0,\"mode\":\"update\",\"planned\":true,\"committed\":true,\"restored\":false,\"bytesBefore\":26,\"bytesAfter\":29}],\"committed\":1,\"restored\":0,\"failed\":[]}"
+    },
+    {
+      "name": "wire: a fan-out that resolves in one file and not another is refused, naming entry 0 and gamma.py",
+      "pass": true,
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"batch\",\n  \"error\": \"batch entry 0 (update src/gamma.py): symbol alpha not found or has no byte bounds\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": true,\n    \"entries\": [],\n    \"committed\": 0,\n    \"restored\": 0,\n    \"failed\""
+    },
+    {
+      "name": "wire: and the file where it DID resolve was left alone (the whole batch is refused) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "wire: the failed batch answers ok:false with rolledBack:true",
+      "pass": true,
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"batch\",\n  \"error\": \"validation failed for /tmp/bb-e13-mcp-VXXZOm/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node.\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": true,\n   "
+    },
+    {
+      "name": "wire: the same answer carries the per-file envelope with every file restored",
+      "pass": true,
+      "detail": "[\"src/alpha.py c=true r=true\",\"src/beta.py c=true r=true\"]"
+    },
+    {
+      "name": "wire: the envelope on the wire is per FILE, with sizes that came back to their start",
+      "pass": true,
+      "detail": "[\"29->29\",\"25->25\"]"
+    },
+    {
+      "name": "wire: and the file on disk really is back to its pre-edit bytes",
+      "pass": true,
+      "detail": "{\"beta\":\"def beta():\\n    return 2\\n\",\"alphaHas123\":true}"
+    }
+  ],
+  "negativeCases": 19,
+  "summary": {
+    "total": 61,
+    "passed": 61,
+    "failed": 0
+  },
+  "decisions": {
+    "onePlan": "every entry is planned into ONE plan whose pre-image record is shared, so the commit's pre-image check (D9) covers the whole batch at once; `commitPlan` is the same function the single modes use, not a batch-specific copy",
+    "oneCycle": "formatting, validation and reindexing run once for the call — asserted structurally (one `formatting` array and one `derived` block for N targets)",
+    "atomicity": "a failure in any entry's PLAN writes nothing (planning never writes); a failure after the writes is rolled back per file and reported per file in `envelope` (planned/committed/restored + byte sizes)",
+    "duplicateTargets": "two entries resolving to one file are refused by entry index — both are planned from that file's pre-edit bytes, so applying both would discard one",
+    "entryContract": "an entry is validated by the SAME per-mode rule as the single-mode call it mirrors (E1 reads the same constant); `dryRun`/`format`/`edits`/`files` are refused inside an entry because the batch previews, formats and reindexes once",
+    "indexRule": "`batch` requires an index at the MCP gate (`indexFreeModes` is `write` alone): the mode cannot promise of a list what a single entry's plan proves"
+  },
+  "limitations": [
+    "The reindex is one `reindexFilesParallel` call for the batch; that it is ONE call is asserted structurally (one `derived` block) and not counted at the call site — the module is imported as a binding, so a probe cannot wrap it.",
+    "The fan-out form names its files explicitly; no glob or directory expansion is offered, so the caller decides the list.",
+    "Two entries may not compose on one file: the second is refused. Sequential calls are the composition mechanism, and that is stated in the refusal.",
+    "The plan→commit window is narrowed, not closed: the pre-image check runs immediately before the write loop, and a concurrent writer landing between that check and the per-file `renameSync` is still not detected (the same residue E9 records for the single modes).",
+    "The batch's result carries every target's before/after text, so a large batch is a large answer; the entry cap (`MAX_BATCH_EDITS`) is the only bound on that."
+  ],
+  "generatedAt": "2026-11-05T04:08:16.185Z"
+}

@@ -1,0 +1,406 @@
+{
+  "fixtureId": "protobuf/streaming-and-forward-refs",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS three things this analyzer's other fixtures did not reach. (1) STREAMING: `stream` is an anonymous token sibling immediately before the type it qualifies, so client- and server-streaming are read off the tree. All four rpc shapes are in one service, including the unary one, because a suite that pinned only the streaming cases would pass an analyzer that set both flags true everywhere. (2) The FORWARD REFERENCE: `Search` names `Results`, which is declared below it. protobuf permits this, so declarations have to be collected before facts are emitted; a resolver that reads declarations in visit order silently drops the edge, and the drop is invisible in a count because the file's other edges still resolve. (3) The CONFIDENCE contract: every edge this analyzer emits is a parse FACT \u2014 a declaration node, a named child, a position \u2014 so `confidenceMin: 0.9` is asserted on the positive rows and `confidenceMax: 1` on the unary row's. Nothing this analyzer emits is a name-match guess, so nothing belongs under the 0.7 threshold the honesty contract reserves for heuristics; a fixture asserting no confidence would let a blanket 0.5 pass and leave the workstream's heuristic-ratio question unanswerable for this lane.",
+  "expectSymbols": [
+    {
+      "name": "stream.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Query",
+      "kind": "class",
+      "ownerName": "stream.v1"
+    },
+    {
+      "name": "text",
+      "kind": "property",
+      "ownerName": "stream.v1.Query"
+    },
+    {
+      "name": "Search",
+      "kind": "class",
+      "ownerName": "stream.v1"
+    },
+    {
+      "name": "results",
+      "kind": "property",
+      "ownerName": "stream.v1.Search",
+      "note": "names a message declared BELOW it"
+    },
+    {
+      "name": "query",
+      "kind": "property",
+      "ownerName": "stream.v1.Search"
+    },
+    {
+      "name": "Page",
+      "kind": "class",
+      "ownerName": "stream.v1"
+    },
+    {
+      "name": "token",
+      "kind": "property",
+      "ownerName": "stream.v1.Page"
+    },
+    {
+      "name": "Results",
+      "kind": "class",
+      "ownerName": "stream.v1"
+    },
+    {
+      "name": "pages",
+      "kind": "property",
+      "ownerName": "stream.v1.Results"
+    },
+    {
+      "name": "Streamer",
+      "kind": "interface",
+      "ownerName": "stream.v1"
+    },
+    {
+      "name": "Unary",
+      "kind": "method",
+      "ownerName": "stream.v1.Streamer",
+      "meta.clientStreaming": false,
+      "meta.serverStreaming": false,
+      "note": "neither side streams"
+    },
+    {
+      "name": "Upload",
+      "kind": "method",
+      "ownerName": "stream.v1.Streamer",
+      "meta.clientStreaming": true,
+      "meta.serverStreaming": false,
+      "note": "the client sends a stream, the server sends one value"
+    },
+    {
+      "name": "Watch",
+      "kind": "method",
+      "ownerName": "stream.v1.Streamer",
+      "meta.clientStreaming": false,
+      "meta.serverStreaming": true,
+      "note": "the mirror image of Upload \u2014 and the pair is the point: an analyzer that read `stream` positionally rather than per-side would give both rpcs the same flags"
+    },
+    {
+      "name": "Chat",
+      "kind": "method",
+      "ownerName": "stream.v1.Streamer",
+      "meta.clientStreaming": true,
+      "meta.serverStreaming": true
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Unary",
+      "equals": 1
+    },
+    {
+      "name": "Results",
+      "equals": 1,
+      "note": "one declaration, referenced from above it"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Query",
+      "startLine": 7
+    },
+    {
+      "symbol": "Search",
+      "startLine": 17
+    },
+    {
+      "symbol": "results",
+      "startLine": 18
+    },
+    {
+      "symbol": "Streamer",
+      "startLine": 22
+    },
+    {
+      "symbol": "Unary",
+      "startLine": 24
+    },
+    {
+      "symbol": "Upload",
+      "startLine": 27
+    },
+    {
+      "symbol": "Watch",
+      "startLine": 30
+    },
+    {
+      "symbol": "Chat",
+      "startLine": 33
+    },
+    {
+      "symbol": "Results",
+      "startLine": 36
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "stream.v1",
+      "target": "stream.v1.Query",
+      "line_number": 7,
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1",
+      "target": "stream.v1.Search",
+      "line_number": 17,
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1",
+      "target": "stream.v1.Page",
+      "line_number": 11,
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1",
+      "target": "stream.v1.Results",
+      "line_number": 36,
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1",
+      "target": "stream.v1.Streamer",
+      "line_number": 22,
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Search.results",
+      "target": "stream.v1.Results",
+      "line_number": 18,
+      "confidenceMin": 0.9,
+      "note": "THE forward-reference row. `Results` is declared at line 36 and referenced at line 18, so this edge exists only if declarations are collected before facts are emitted. An analyzer that resolves in visit order drops it \u2014 and drops it SILENTLY, because the file's other nine edges still resolve and the symbol count is unchanged."
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Search.query",
+      "target": "stream.v1.Query",
+      "line_number": 19,
+      "confidenceMin": 0.9,
+      "note": "the BACKWARD-reference control for the row above: same field kind, same rule, but the target is declared above. Without it an analyzer that inverted the rule \u2014 resolving only forward references \u2014 would pass."
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1.Streamer",
+      "target": "stream.v1.Streamer.Unary",
+      "line_number": 24,
+      "meta.member": "rpc",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Unary",
+      "target": "stream.v1.Query",
+      "line_number": 24,
+      "meta.role": "rpcRequest",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Unary",
+      "target": "stream.v1.Page",
+      "line_number": 24,
+      "meta.role": "rpcResponse",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1.Streamer",
+      "target": "stream.v1.Streamer.Upload",
+      "line_number": 27,
+      "meta.member": "rpc",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Upload",
+      "target": "stream.v1.Query",
+      "line_number": 27,
+      "meta.role": "rpcRequest",
+      "confidenceMin": 0.9,
+      "note": "streaming does not change the reference: the request type is still a `uses` edge onto the message named in the signature"
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Upload",
+      "target": "stream.v1.Page",
+      "line_number": 27,
+      "meta.role": "rpcResponse",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1.Streamer",
+      "target": "stream.v1.Streamer.Watch",
+      "line_number": 30,
+      "meta.member": "rpc",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Watch",
+      "target": "stream.v1.Query",
+      "line_number": 30,
+      "meta.role": "rpcRequest",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Watch",
+      "target": "stream.v1.Page",
+      "line_number": 30,
+      "meta.role": "rpcResponse",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "stream.v1.Streamer",
+      "target": "stream.v1.Streamer.Chat",
+      "line_number": 33,
+      "meta.member": "rpc",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Query",
+      "line_number": 33,
+      "meta.role": "rpcRequest",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Page",
+      "line_number": 33,
+      "meta.role": "rpcResponse",
+      "confidenceMin": 0.9
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Unary",
+      "target": "stream.v1.Query",
+      "equals": 1,
+      "note": "exactly ONE request edge. Every rpc here names Query and Page, so a rule that emitted a request edge per occurrence rather than per role would report more than one \u2014 and the counts are per (type, from, target), so the response row below is the same fact from the other side."
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Unary",
+      "target": "stream.v1.Page",
+      "equals": 1
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Query",
+      "equals": 1
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Page",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Query",
+      "note": "protobuf has NO method calls. An rpc names a message; nothing is invoked at a call site, so a `calls` edge here would invent an execution edge the language does not have."
+    },
+    {
+      "type": "implements",
+      "from": "stream.v1.Streamer",
+      "target": "stream.v1.Query",
+      "note": "a service is a contract of operations but it does not IMPLEMENT the messages it names; it references them. `uses` is the relation and `implements` would be a different fact about the same two symbols."
+    },
+    {
+      "type": "extends",
+      "from": "stream.v1.Streamer",
+      "target": "stream.v1.Query",
+      "note": "no inheritance in protobuf."
+    },
+    {
+      "type": "references",
+      "from": "stream.v1.Search.results",
+      "target": "stream.v1.stream.v1.Results",
+      "note": "the package applied to a forward reference. Recorded because the forward-reference row above is the only thing standing between a correct resolver and one that guesses at a name it has not seen yet."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Search.results",
+      "target": "stream.v1.Results",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Search.query",
+      "target": "stream.v1.Query",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Unary",
+      "target": "stream.v1.Query",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Unary",
+      "target": "stream.v1.Page",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Upload",
+      "target": "stream.v1.Query",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Upload",
+      "target": "stream.v1.Page",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Watch",
+      "target": "stream.v1.Query",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Watch",
+      "target": "stream.v1.Page",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Query",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "stream.v1.Streamer.Chat",
+      "target": "stream.v1.Page",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "whatThisIs": "the corpus files that ended an ontology-coverage-gate run by killing the process, named by the gate's own [BB-HANG] line, plus the mechanism that makes the walk unable to record them itself",
+  "gate": "npx tsx script/m14/ontology-coverage-gate.ts markdown",
+  "driver": "validation/m14/fixtures/markdown/run-arbiter-to-completion.sh",
+  "verdict": {
+    "exit": 0,
+    "emitted": "4/10",
+    "ruledSound": 6,
+    "falsified": 0,
+    "ruledWithoutJustification": 0,
+    "walk": "17456/17456 files (100.0%), newly walked 2650, resumed 14806, SKIPPED-BAD 2, PARTIAL",
+    "log": "validation/m60/markdown/arbiter-verdict.log"
+  },
+  "whyTheGateCannotRecordTheseItself": {
+    "defect": "resumableWalk writes the '!<path>' bad-file marker from the catch around opts.run(i), but a WASM trap inside parser.parse() is answered by ASTEngine.parseWithTimeout calling process.exit(), which ends the process instead of rejecting the promise. The catch never runs, the marker is never appended, and the same file is offered again on the next run.",
+    "consequence": "the marker documented as making the walk resumable ('a re-run must not walk it again, or one poison file re-destroys every future run') is unwritable for the exact class of file the walk most needs it for",
+    "measured": "walk-markdown.txt carried 0 bad markers after repeated runs; duckdb/data/secrets/README.md trapped at 14:33:06 and its own 120s watchdog exited the process at 14:35:09, 123s later, for the same file",
+    "owner": "script/m14/resumable-walk.ts and src/ast/engine.ts are shared machinery (workstream 8) — reported, not edited. The driver supplies the marker from outside using the gate's own [BB-HANG] line.",
+    "fixThatWouldRemoveTheNeed": "retry the file once on a fresh Parser instance before taking the process down; getParser already builds one at src/ast/engine.ts:1034"
+  },
+  "loadDependence": {
+    "claim": "the hang is NOT a property of any one file",
+    "evidence": "19 distinct files were named across this lane's runs of the same corpus, and the two files named by the final successful run are not among the 17 named by earlier runs",
+    "consequence": "a corpus draw is not reproducible while the hang exists, and marking one file bad does not prevent another from appearing; the driver therefore loops rather than assuming one round is enough"
+  },
+  "filesNamedByTheGate": [
+    { "run": "direct arbiter run", "rel": "duckdb/data/secrets/README.md" },
+    { "run": "driver round 1", "rel": "kubernetes/vendor/cel.dev/expr/GOVERNANCE.md" },
+    { "run": "driver round 2", "rel": "redwood/docs/versioned_docs/version-2.x/tutorial/chapter1/layouts.md" },
+    { "run": "driver round 3", "rel": "redwood/tasks/all-contributors/README.md" },
+    { "run": "--fresh r1", "rel": "FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md" },
+    { "run": "--fresh r2", "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffPiece.md" },
+    { "run": "--fresh r3", "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffsApi.md" },
+    { "run": "--fresh r4", "rel": "apollo-server/docs/source/security/proxy-configuration.md" },
+    { "run": "--fresh r5", "rel": "Fake/docs/articles/dotnet-testing-coverlet.md" },
+    { "run": "--fresh r6", "rel": "elixir/lib/elixir/pages/mix-and-otp/task-and-gen-tcp.md" },
+    { "run": "--fresh r7", "rel": "Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/docs/ResolveReferenceEventBoundaryParameters.md" },
+    { "run": "--fresh r8", "rel": "apollo-server/packages/integration-testsuite/CHANGELOG.md" },
+    { "run": "--fresh r9", "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffApiDto.md" },
+    { "run": "--fresh r10", "rel": "Fake/docs/articles/core-vault.md" },
+    { "run": "--fresh r11", "rel": "FsToolkit.ErrorHandling/gitbook/validation/operators.md" },
+    { "run": "--fresh r12", "rel": "Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md" },
+    { "run": "final driver round 1", "rel": "ansible/.github/PULL_REQUEST_TEMPLATE/Bug fix.md" },
+    { "run": "final driver round 2", "rel": "nim-lang-nimble/nimble-guide/docs/use-packages.md" },
+    { "run": "references-imports-derivation probe", "rel": "kubernetes/SUPPORT.md" }
+  ],
+  "population": {
+    "admittedFiles": 17456,
+    "reposRepresented": 196,
+    "populationSha256": "1d079c4fff2092ce0e11b8090c69d8e86d6e4fba4569b6886653170f6c020781",
+    "admissionTest": "detectLanguageFromPath(abs, text) === \"markdown\", size <= 512 KB, git ls-files"
+  },
+  "secondLimitationFoundThisRound": {
+    "defect": "the gate's banner and its edge tally count DIFFERENT populations",
+    "mechanism": "observed is rebuilt every run (ontology-coverage-gate.ts:286) and is populated only inside run:, which resumableWalk SKIPS for files an earlier run covered. The banner's 'every edge count below is over X% of the corpus' is computed from walked+alreadyDone; the counts come from walked alone.",
+    "measured": "two runs of the same gate over the same 17,456-file population printed the banner '100.0%' both times while newly walking 972 files (5.6%) and 2,650 files (15.2%) respectively, and the printed totals scaled with the walk rather than with the corpus: uses 16,938 then 32,023; contains 9,651 then 33,624; imports 12 then 70; references 138 then 354",
+    "consequence": "a resumed gate run reports a per-run count under a corpus-wide claim",
+    "owner": "script/m14/ontology-coverage-gate.ts is shared machinery (workstream 8) — reported, not edited",
+    "wholePopulationAlternative": "validation/m60/markdown/whole-corpus-census.json carries the per-type totals over all 17,456 admitted files: contains 334,773 / uses 270,779 / references 16,857 / imports 105",
+    "whyAFreshSingleProcessWalkIsNotAvailable": "the gate OOMs at this lane's measured heap cliff (~6,900 parses / 62.4 MB, commit 6af7361fe), so one process cannot walk all 17,456 files; the walk must resume, and a resumed walk is where the banner diverges"
+  }
+}

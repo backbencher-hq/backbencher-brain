@@ -1,0 +1,35 @@
+{
+  "fixtureId": "r/F23-mixes-in-split",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The composition clause is TWO constructs and this file pins the split in both directions, because either half alone is passable by a wrong rule. THE FIRE HALF: a LIST-shaped `contains = c(\"SlotsA\", \"SlotsB\")` on BOTH spellings of R's composition clause — S4 `setClass` and R5 `setRefClass` — must publish `mixes_in` to EACH composed class, symbol-shaped, because the clause has no single base and the Scala `extends A with B` precedent labels the later positions `mixes_in` (src/ast/types.ts:156-160). THE FORBID HALF is the one that makes a revert go red: (a) an `R6Class(inherit = ...)` site must NEVER carry `mixes_in` — `inherit=` names one superclass and R's `inherits()`/`is()` are TRUE for it, so it is `extends`; (b) a ONE-class `contains=` (both spellings, `contains = \"SlotsA\"` and `contains = SlotsA`) must never carry `mixes_in` for the same reason; (c) `S7::new_class(parent = ...)` is likewise IS-A. A widened relabel — the failure mode that would make the mixes_in count look bigger — is exactly what (a), (b) and (c) catch, and the extends rows pin that the single-base shapes are still published rather than silently dropped. CAVEAT carried in the analyzer and this ruling, never hidden: R's own `contains=` makes `is()` TRUE for the composed classes too, so the list-shape label is the fleet's composition-clause reading, not a claim that no conformance exists.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "ComposedTwo", "kind": "class" },
+    { "name": "OneBase", "kind": "class" },
+    { "name": "OneBaseIdent", "kind": "class" },
+    { "name": "RefComposed", "kind": "class" },
+    { "name": "RefOne", "kind": "class" },
+    { "name": "R6Base", "kind": "class" },
+    { "name": "R6Child", "kind": "class" },
+    { "name": "S7Child", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "mixes_in", "from": "ComposedTwo", "target": "SlotsA", "confidenceMin": 1.0 },
+    { "type": "mixes_in", "from": "ComposedTwo", "target": "SlotsB", "confidenceMin": 1.0 },
+    { "type": "mixes_in", "from": "RefComposed", "target": "SlotsA", "confidenceMin": 1.0 },
+    { "type": "mixes_in", "from": "RefComposed", "target": "SlotsB", "confidenceMin": 1.0 },
+    { "type": "extends", "from": "OneBase", "target": "SlotsA", "confidenceMin": 1.0 },
+    { "type": "extends", "from": "OneBaseIdent", "target": "SlotsA", "confidenceMin": 1.0 },
+    { "type": "extends", "from": "RefOne", "target": "SlotsA", "confidenceMin": 1.0 },
+    { "type": "extends", "from": "R6Child", "target": "R6Base", "confidenceMin": 1.0 },
+    { "type": "extends", "from": "S7Child", "target": "R6Base", "confidenceMin": 1.0 }
+  ],
+  "forbidRelationships": [
+    { "type": "mixes_in", "from": "R6Child", "target": "R6Base" },
+    { "type": "mixes_in", "from": "OneBase", "target": "SlotsA" },
+    { "type": "mixes_in", "from": "OneBaseIdent", "target": "SlotsA" },
+    { "type": "mixes_in", "from": "RefOne", "target": "SlotsA" },
+    { "type": "mixes_in", "from": "S7Child", "target": "R6Base" }
+  ]
+}

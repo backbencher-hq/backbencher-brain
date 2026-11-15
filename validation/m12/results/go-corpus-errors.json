@@ -1,6 +1,6 @@
 {
   "analyzer": "go",
-  "corpus": "$HOME/fixtures/repositories/go-tools",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/go-tools",
   "corpusRepo": "go-tools",
   "revision": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
   "extensions": [

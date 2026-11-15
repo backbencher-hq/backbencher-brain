@@ -42,7 +42,7 @@ import { RealObjectiveCAnalyzer } from "../../src/ast/real-objective-c-analyzer"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
 
 const files: { label: string; abs: string; dir: string; text: string }[] = []

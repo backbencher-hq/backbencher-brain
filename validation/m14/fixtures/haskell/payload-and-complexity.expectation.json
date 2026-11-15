@@ -1,0 +1,684 @@
+{
+  "fixtureId": "haskell/payload-and-complexity",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the haskell analyzer's FP-family surface against probe-verified tree-sitter-haskell shapes (2026-09-03): module header + export list, qualified imports (references edges), data/record/newtype constructors + record-field properties, deriving implements, superclass context extends, instance implements (incl. list-parametrized []), operator-definition symbols (a +.+ b / (<!>)), backtick calls, $-application calls, where-local resolution, record-CONSTRUCTION instantiates with the record-UPDATE negative, per-symbol complexity (case/conditional/guards), and evidence tiers (structural/import_based/usage_contextual). Negatives: relabel's record update emits NO instantiates; no fabricated calls to imported names (M.lookup emits the qualified call, nothing for Data.Text members). HSD12/14/16/18/19 wave (2026-09-03 re-review): standalone deriving (bare/qualified/parens class heads), qualified constructor application instantiates, pattern-position negatives (record-pattern head, case alternatives, pattern guard), tuple-head backtick definition (defined function, no self-call), constructor-pattern bind variables are NOT symbols. #872 ANALYZER HALF (added 2026-09-25, found by the hledger full-extent depth draw): the fixture always carried a TUPLE context class (`class (Show a, Eq a) => Mergeable2 a`) and pinned NOTHING about it, while the analyzer emitted ZERO extends for every list-context and every qualified superclass — so the two mutants minted to guard #872 (`haskell/drop-tuple-superclass`, `haskell/apply-head-as-argument`) both recorded `0 -> 0` in F4 while the lane read clean. Now pinned: BOTH members of a tuple, a QUALIFIED head taken VERBATIM (`Csv.ToNamedRecord`, the text the oracle derives), a tuple mixing bare and qualified members, and an APPLIED head resolved to its LEFT SPINE — `Eq (f a) => Applied f a` gives Applied -> Eq and never Applied -> f a, which is the class one of those mutants names and which did not exist in this fixture.",
+  "expectSymbols": [
+    {
+      "name": "Data.User",
+      "kind": "module"
+    },
+    {
+      "name": "User",
+      "kind": "type"
+    },
+    {
+      "name": "Person",
+      "kind": "constructor",
+      "ownerName": "User"
+    },
+    {
+      "name": "userName",
+      "kind": "property",
+      "ownerName": "User"
+    },
+    {
+      "name": "userAge",
+      "kind": "property",
+      "ownerName": "User"
+    },
+    {
+      "name": "Bot",
+      "kind": "constructor",
+      "ownerName": "User"
+    },
+    {
+      "name": "botId",
+      "kind": "property",
+      "ownerName": "User"
+    },
+    {
+      "name": "UserId",
+      "kind": "type"
+    },
+    {
+      "name": "Mergeable",
+      "kind": "interface"
+    },
+    {
+      "name": "merge",
+      "kind": "method",
+      "ownerName": "Mergeable"
+    },
+    {
+      "name": "Mergeable2",
+      "kind": "interface"
+    },
+    {
+      "name": "merge2",
+      "kind": "method",
+      "ownerName": "Mergeable2"
+    },
+    {
+      "name": "+.+",
+      "kind": "function"
+    },
+    {
+      "name": "<!>",
+      "kind": "function"
+    },
+    {
+      "name": "mkUser",
+      "kind": "function"
+    },
+    {
+      "name": "buildUsers",
+      "kind": "function"
+    },
+    {
+      "name": "pickUser",
+      "kind": "function"
+    },
+    {
+      "name": "lookupName",
+      "kind": "function"
+    },
+    {
+      "name": "merged",
+      "kind": "function"
+    },
+    {
+      "name": "totalUser",
+      "kind": "function"
+    },
+    {
+      "name": "describe",
+      "kind": "function"
+    },
+    {
+      "name": "signed",
+      "kind": "function"
+    },
+    {
+      "name": "relabel",
+      "kind": "function"
+    },
+    {
+      "name": "Ticket",
+      "kind": "type"
+    },
+    {
+      "name": "ticketId",
+      "kind": "property",
+      "ownerName": "Ticket"
+    },
+    {
+      "name": "maybeOne",
+      "kind": "function"
+    },
+    {
+      "name": "nOf",
+      "kind": "function"
+    },
+    {
+      "name": "whoIs",
+      "kind": "function"
+    },
+    {
+      "name": "guardPick",
+      "kind": "function"
+    },
+    {
+      "name": "combine",
+      "kind": "function"
+    },
+    {
+      "name": "useCombine",
+      "kind": "function"
+    },
+    {
+      "name": "UserId",
+      "kind": "instance",
+      "comment": "dimension 8, SAME NAME at a second line. `instance Mergeable UserId` at 61 publishes a symbol named after its TARGET TYPE, so it collides by name with the `newtype UserId` at 29. It carries kind `instance`, NOT `class`: an instance is named after the type it instantiates, so containing it asserts this module DECLARES that type. Suppressed 176 such `contains` edges over the three corpora. The relationship that IS a fact about this module is `implements UserId -> Mergeable @61`."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "Data.User",
+      "target": "Data.Text",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "source": "Data.User",
+      "target": "Data.Map",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "implements",
+      "source": "User",
+      "target": "Show",
+      "meta.evidenceClass": "structural",
+      "meta.derived": true
+    },
+    {
+      "type": "implements",
+      "source": "User",
+      "target": "Eq",
+      "meta.evidenceClass": "structural",
+      "meta.derived": true
+    },
+    {
+      "type": "extends",
+      "source": "Mergeable",
+      "target": "Semigroup",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "extends",
+      "source": "Mergeable2",
+      "target": "Show",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "extends",
+      "source": "Mergeable2",
+      "target": "Eq",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "extends",
+      "source": "QualifiedSuper",
+      "target": "Csv.ToNamedRecord",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "extends",
+      "source": "BothSuper",
+      "target": "Show",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "extends",
+      "source": "BothSuper",
+      "target": "Csv.ToNamedRecord",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "extends",
+      "source": "Applied",
+      "target": "Eq",
+      "meta.evidenceClass": "structural",
+      "meta.isSuperclass": true
+    },
+    {
+      "type": "implements",
+      "source": "UserId",
+      "target": "Show",
+      "meta.evidenceClass": "structural",
+      "meta.derived": true
+    },
+    {
+      "type": "implements",
+      "source": "UserId",
+      "target": "Mergeable",
+      "meta.evidenceClass": "structural",
+      "meta.isInstance": true
+    },
+    {
+      "type": "implements",
+      "source": "[]",
+      "target": "Mergeable",
+      "meta.evidenceClass": "structural",
+      "meta.isInstance": true
+    },
+    {
+      "type": "instantiates",
+      "source": "mkUser",
+      "target": "Person",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isRecordConstruction": true
+    },
+    {
+      "type": "instantiates",
+      "source": "pickUser.choose",
+      "target": "Bot",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isRecordConstruction": true,
+      "comment": "scoped local identity (2026-09-26): a where-local's body edges carry the local's lexical owner chain"
+    },
+    {
+      "type": "instantiates",
+      "source": "merge",
+      "target": "UserId",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isConstructorApplication": true
+    },
+    {
+      "type": "calls",
+      "source": "buildUsers",
+      "target": "mkUser",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "buildUsers",
+      "target": "buildUsers\u0000buildUsers.double",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "scoped local identity: the call into a where-local names the local's owner chain, never the bare name"
+    },
+    {
+      "type": "calls",
+      "source": "pickUser",
+      "target": "pickUser\u0000pickUser.choose",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "lookupName",
+      "target": "M.lookup",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isQualifiedCall": true
+    },
+    {
+      "type": "calls",
+      "source": "merged",
+      "target": "merge",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "totalUser",
+      "target": "describe",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "source": "Data.User",
+      "target": "User",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "User",
+      "target": "Person",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "User",
+      "target": "userName",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Mergeable",
+      "target": "merge",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Data.User",
+      "target": "+.+",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Data.User",
+      "target": "<!>",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "Ticket",
+      "target": "Show",
+      "meta.evidenceClass": "structural",
+      "meta.derived": true
+    },
+    {
+      "type": "implements",
+      "source": "Ticket",
+      "target": "Csv.ToNamedRecord",
+      "meta.evidenceClass": "structural",
+      "meta.derived": true
+    },
+    {
+      "type": "implements",
+      "source": "Ticket",
+      "target": "ToJSON",
+      "meta.evidenceClass": "structural",
+      "meta.derived": true
+    },
+    {
+      "type": "instantiates",
+      "source": "maybeOne",
+      "target": "M.Just",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "useCombine",
+      "target": "combine",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "imports",
+      "source": "Data.User",
+      "target": "Data.Text",
+      "line_number": 17,
+      "comment": "dimension 8: the anchor is the imported module NAME's line (`import Data.Text (Text)`) [M60-HK: relabelled from `references` — a module import is an import, and 2,119 of 2,126 `references` edges were these.]"
+    },
+    {
+      "type": "contains",
+      "source": "Data.User",
+      "target": "UserId",
+      "line_number": 29,
+      "comment": "dimension 8: contains carries the CHILD's own naming line (the newtype decl at 29), not the module's (1)"
+    },
+    {
+      "type": "implements",
+      "source": "UserId",
+      "target": "Show",
+      "line_number": 30,
+      "comment": "dimension 8: the DERIVING clause's line (`deriving newtype (Show)`), the class name's node"
+    },
+    {
+      "type": "implements",
+      "source": "UserId",
+      "target": "Mergeable",
+      "line_number": 61,
+      "comment": "dimension 8: instance implements anchors on the CLASS name node (`instance Mergeable UserId where`)"
+    },
+    {
+      "type": "extends",
+      "source": "Mergeable",
+      "target": "Semigroup",
+      "line_number": 36,
+      "comment": "dimension 8: extends anchors on the superclass head node in the context (`class Semigroup a => Mergeable a`)"
+    },
+    {
+      "type": "calls",
+      "source": "lookupName",
+      "target": "M.lookup",
+      "line_number": 92,
+      "comment": "dimension 8: qualified call anchors on the qualified head node"
+    },
+    {
+      "type": "calls",
+      "source": "merged",
+      "target": "merge",
+      "line_number": 96,
+      "comment": "dimension 8: backtick call anchors on the infix_id's variable (`a `merge` b`)"
+    },
+    {
+      "type": "instantiates",
+      "source": "mkUser",
+      "target": "Person",
+      "line_number": 75,
+      "comment": "dimension 8: record construction anchors on the CONSTRUCTOR node"
+    },
+    {
+      "type": "instantiates",
+      "source": "maybeOne",
+      "target": "M.Just",
+      "line_number": 156,
+      "comment": "dimension 8: qualified constructor application anchors on the head node"
+    },
+    {
+      "type": "calls",
+      "source": "recount",
+      "target": "signed",
+      "line_number": 197,
+      "comment": "dimension 8, PAIR site 1: the callee head in `| n < 0 = signed n`"
+    },
+    {
+      "type": "calls",
+      "source": "recount",
+      "target": "signed",
+      "line_number": 198,
+      "comment": "dimension 8, PAIR site 2: the SAME source+target at its OWN line (`| otherwise = signed n + 1`) — `haskell/edge-line-per-set` keeps 197 and swallows this one, which is why the pair and the count pin below are the half that catches it"
+    },
+    {
+      "type": "calls",
+      "source": "callGlobal",
+      "target": "go",
+      "line_number": 213,
+      "comment": "scoped local identity: with NO local named `go` in scope, the module-level callable stays the bare target"
+    },
+    {
+      "type": "calls",
+      "source": "shadowHost",
+      "target": "shadowHost\u0000shadowHost.go",
+      "line_number": 218,
+      "comment": "scoped local identity: the where-binder SHADOWS the module-level `go` for the whole RHS, so the call resolves to the LOCAL's scoped identity — never to the module symbol (forbidden below)"
+    },
+    {
+      "type": "calls",
+      "source": "siblingA",
+      "target": "siblingA\u0000siblingA.hop",
+      "line_number": 224
+    },
+    {
+      "type": "calls",
+      "source": "siblingA.hop",
+      "target": "siblingA.hop\u0000siblingA.hop",
+      "line_number": 225,
+      "comment": "scoped local identity: a local's SELF-recursion is a real edge, sourced from its scoped identity"
+    },
+    {
+      "type": "calls",
+      "source": "siblingB",
+      "target": "siblingB\u0000siblingB.hop",
+      "line_number": 228
+    },
+    {
+      "type": "calls",
+      "source": "siblingB.hop",
+      "target": "siblingB.hop\u0000siblingB.hop",
+      "line_number": 229,
+      "comment": "scoped local identity: the SAME bare name `hop` in a sibling function keeps a DISTINCT identity (the pre-fix bare identity pooled both into `hop -> hop`)"
+    },
+    {
+      "type": "imports",
+      "source": "Data.User",
+      "target": "Data.Map",
+      "comment": "M60-HK: a module import is an `imports` edge. It was published as `references` with evidenceClass=import_based, which made 2,119 of the lane's 2,126 `references` edges a mislabel — only 7 were genuine references."
+    },
+    {
+      "type": "imports",
+      "source": "Data.User",
+      "target": "Data.Csv",
+      "comment": "M60-HK: a LATER import statement, so the relabel is not a first-import accident."
+    },
+    {
+      "type": "exports",
+      "source": "Data.User",
+      "target": "User",
+      "comment": "M60-HK: the export list is the module's API surface. The names were already collected into ctx.exports but never published as edges. `User(..)` normalises to the type it exports, not to a second name."
+    },
+    {
+      "type": "exports",
+      "source": "Data.User",
+      "target": "mkUser",
+      "comment": "M60-HK: a value export, as distinct from the type export above."
+    },
+    {
+      "type": "uses",
+      "source": "Alias",
+      "target": "Text",
+      "comment": "M60-HK: `type Alias = Text` USES Text. `uses` and not `references`: this is a synonym composed from a type, not a body referring to a name. A type PARAMETER in the RHS would be a fabrication and is excluded."
+    },
+    {
+      "type": "overrides",
+      "source": "UserId.merge",
+      "target": "Mergeable.merge",
+      "comment": "M60-HK: `instance Mergeable UserId` overrides the class method. `overrides` was in the audited label set with ZERO rows on BOTH sides, so the audit compared nothing to nothing and read green — the exact failure the allowlist records for perl."
+    },
+    {
+      "type": "contains",
+      "source": "Mergeable",
+      "target": "merge",
+      "comment": "REVISED. `merge` is a member of the CLASS `Mergeable`, not of the type `UserId` that `instance Mergeable UserId` instantiates — ownership moved to the class. Containment is emitted only when the owner is DECLARED in this module, which keeps this true local case (both `class Mergeable` and the instance are here) while dropping the far more common foreign-class body, e.g. `instance Applicative Reference` no longer claims this module declares `Applicative` or `pure`. The `implements UserId -> Mergeable @61` edge is what records that this module instantiates UserId."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "source": "recount",
+      "target": "signed",
+      "equals": 2,
+      "comment": "dimension 8: a call from TWO lines is TWO edges, not one edge at whichever line the walk saw first (the pre-round key was source|type|target)"
+    },
+    {
+      "type": "contains",
+      "source": "Data.User",
+      "target": "UserId",
+      "equals": 1,
+      "comment": "dimension 8, REVISED. This group was pinned at 2 because the file has two same-named children of Data.User: the `newtype UserId` at 29 and the `instance Mergeable UserId` at 61. The instance now carries kind `instance` and no longer emits `contains`, because an instance is named after the type it INSTANTIATES — containing it asserted this module DECLARES `UserId`. Only the newtype is declared here, so the count is 1. The instance is still covered, as a symbol (`kind: instance` at 61) and by `implements UserId -> Mergeable @61`. The multi-site group remains pinned, so `haskell/edge-line-per-set` still cannot collapse it unnoticed."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "source": "relabel",
+      "target": "User"
+    },
+    {
+      "type": "calls",
+      "source": "merged",
+      "target": "b"
+    },
+    {
+      "type": "calls",
+      "source": "merged",
+      "target": "a"
+    },
+    {
+      "type": "instantiates",
+      "source": "nOf",
+      "target": "Ticket",
+      "comment": "HSD14: record PATTERN in function head — pattern position, never instantiates"
+    },
+    {
+      "type": "instantiates",
+      "source": "whoIs",
+      "target": "Person",
+      "comment": "HSD14: case-alternative constructor patterns never instantiate"
+    },
+    {
+      "type": "instantiates",
+      "source": "whoIs",
+      "target": "Bot"
+    },
+    {
+      "type": "instantiates",
+      "source": "whoIs",
+      "target": "Plain"
+    },
+    {
+      "type": "instantiates",
+      "source": "guardPick",
+      "target": "Person",
+      "comment": "HSD14: pattern-guard bind form never instantiates"
+    },
+    {
+      "type": "calls",
+      "source": "combine",
+      "target": "combine",
+      "comment": "HSD19: a definition head never calls itself"
+    },
+    {
+      "type": "calls",
+      "source": "buildUsers",
+      "target": "double",
+      "comment": "scoped local identity: the pre-fix BARE endpoint form — `haskell/local-identity-flat` restores it and this forbid catches the revert"
+    },
+    {
+      "type": "calls",
+      "source": "pickUser",
+      "target": "choose"
+    },
+    {
+      "type": "instantiates",
+      "source": "choose",
+      "target": "Bot",
+      "comment": "the pre-fix bare SOURCE of a local's body edge"
+    },
+    {
+      "type": "calls",
+      "source": "siblingA",
+      "target": "hop"
+    },
+    {
+      "type": "calls",
+      "source": "siblingB",
+      "target": "hop"
+    },
+    {
+      "type": "calls",
+      "source": "hop",
+      "target": "hop",
+      "comment": "scoped local identity: the POOLED pre-fix identity — two sibling locals of the same name were one node"
+    },
+    {
+      "type": "calls",
+      "source": "shadowHost",
+      "target": "go",
+      "comment": "scoped local identity: the shadowing local must not resolve to the module-level namesake"
+    },
+    {
+      "type": "calls",
+      "source": "outOfScope",
+      "target": "hop",
+      "comment": "scoped local identity: `hop` is a local of siblingA/siblingB ONLY — outside those scopes it is not a callable in this file, so no edge exists (the old flat set made any local in the file a target from anywhere); `haskell/local-scope-blind` re-injects this exact pre-fix edge"
+    },
+    {
+      "type": "exports",
+      "target": "-- * Result",
+      "comment": "M60-HK: the export list INTERLEAVES Haddock comments with exports. Iterating every named child published them as exported names — 39 edges whose target was a `--` comment. A comment is not a name and no consumer can resolve it. The target is spelled exactly as the corpus defect produced it (`exports Hasql.Decoders -> \"-- * Result\"`) so the matching mutant is CAUGHT rather than surviving on a near-miss string."
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "describe",
+      "equals": 3
+    },
+    {
+      "symbol": "signed",
+      "equals": 3
+    },
+    {
+      "symbol": "relabel",
+      "equals": 1
+    },
+    {
+      "symbol": "mkUser",
+      "equals": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "a +.+ b",
+      "comment": "HSD3: operator defs are named by the operator, never the raw head text"
+    },
+    {
+      "name": "(<!>)",
+      "comment": "HSD3: prefix_id operator defs are named by the operator"
+    },
+    {
+      "name": "bindSample",
+      "comment": "HSD19: constructor-pattern bind variables are NEVER function symbols"
+    },
+    {
+      "name": "(a, b)",
+      "comment": "HSD19: tuple-pattern heads are named by the backtick operator (combine), not the raw head"
+    }
+  ]
+}

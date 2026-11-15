@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.60",
+  "code": "V6",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: a target is a VALUE — %, _ and \\ match themselves",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "control: a plain module target resolves",
+      "pass": true,
+      "detail": "nodes=1"
+    },
+    {
+      "name": "control: `src/util` does not bleed into `src/utilities`",
+      "pass": true,
+      "detail": "src/util/edit_distance.ts"
+    },
+    {
+      "name": "control: the segment boundary is exact (src/utilities is a different module)",
+      "pass": true,
+      "detail": "src/util/edit_distance.ts"
+    },
+    {
+      "name": "underscore: module target with `_` resolves (was 0 before the escape clause)",
+      "pass": true,
+      "detail": "nodes=1"
+    },
+    {
+      "name": "underscore: and is NOT declared absent against the project",
+      "pass": true,
+      "detail": "absent=false available=1"
+    },
+    {
+      "name": "underscore: the module's own file is returned",
+      "pass": true,
+      "detail": "src/my_mod/deep.ts"
+    },
+    {
+      "name": "underscore: a snake_case feature target resolves (was 0 before)",
+      "pass": true,
+      "detail": "nodes=1"
+    },
+    {
+      "name": "underscore: the named symbol is in the answer",
+      "pass": true,
+      "detail": "[\"deep_lookup\"]"
+    },
+    {
+      "name": "underscore: file scope resolves it by equality as well",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "underscore: a different spelling does not match `my_mod` [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "src/myXmod matched"
+    },
+    {
+      "name": "percent: a module whose NAME contains % and _ resolves",
+      "pass": true,
+      "detail": "nodes=1"
+    },
+    {
+      "name": "percent: the symbol under that directory is returned",
+      "pass": true,
+      "detail": "src/50%_util/mod.ts"
+    },
+    {
+      "name": "percent: the answer is not an absence note about an existing module [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "percent is literal: `src/util%` matches nothing",
+      "pass": true,
+      "detail": "nodes=0"
+    },
+    {
+      "name": "percent is literal: the miss is declared with the target verbatim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "no indexed symbol matches scope=module target=\"src/util%\" — absence declared, never guessed"
+    },
+    {
+      "name": "percent is literal: `100%` matches the docstring that contains it",
+      "pass": true,
+      "detail": "nodes=1"
+    },
+    {
+      "name": "percent is literal: the docstring's symbol is the one returned",
+      "pass": true,
+      "detail": "src/pricing.py"
+    },
+    {
+      "name": "percent is literal: `1%0` does not match `100%` (a wildcard would) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "nodes=0"
+    },
+    {
+      "name": "backslash: a target containing the escape character does not throw",
+      "pass": true,
+      "detail": "no result"
+    },
+    {
+      "name": "backslash: and does not widen into a match (the escape character is itself escapable) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "nodes=0"
+    },
+    {
+      "name": "trailing slash: a directory target with a trailing slash behaves like one without",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 21,
+    "passed": 21,
+    "failed": 0
+  },
+  "decisions": {
+    "metacharacters": "a real directory is named `src/50%_util`, so matching it proves both characters match themselves",
+    "wildcardNegatives": "`src/util%` and `feature 1%0` return nothing — both WOULD match if % were a wildcard",
+    "absence": "an empty answer names the target verbatim, so a declared absence is checkable"
+  },
+  "limitations": [
+    "No fixture file can contain a backslash on every platform, so the backslash case is asserted as a non-match that does not throw or widen.",
+    "Case-folding of targets and the rejection of unknown languages/relationship types (F6/F7) are the next batch."
+  ],
+  "generatedAt": "2026-11-05T04:20:15.883Z"
+}

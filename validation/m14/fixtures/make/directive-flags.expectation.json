@@ -1,0 +1,188 @@
+{
+  "fixtureId": "make/directive-flags",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Expectations are hand-derived from the numbered source, THEN compared with a run; the run confirmed every line and is not the source of any value here. Declarations: EXPORTED on 6, SECRET on 10, OVERRIDDEN on 11 and again on 12 (the `override` line carries its own assignment, so ONE name has TWO contains edges), GONE on 13, DYNAMIC on 15, target `all` on 18. Prerequisite references to SECRET and OVERRIDDEN sit on 18, the rule's own line; the recipe's `$(DYNAMIC)` and `$(GONE)` on 19. Line 16 (`vpath %.c src`) is the one line that must produce nothing, and `expectSymbolCount` is what pins that.",
+  "rationale": "This fixture exists because five constructs the analyzer MODELLED had no test at all \u2014 private_directive, override_directive, undefine_directive, unexport_directive and shell_assignment appeared in zero of 99 corpus files, and vpath_directive produced no observable output whatsoever. Untested code is not coverage, and here it was not even correct: three of those paths were broken. (1) `private VAR = v` and `override VAR := v` put the keyword and the assignment on ONE line, and the walker reads the directive before the assignment nested inside it, so the flag was applied to a symbol that did not exist yet and silently dropped \u2014 in exactly the spelling people write, while the rarer two-line form worked. (2) `undefine VAR` was a PHANTOM: its operand is a `variable` FIELD holding a bare word with no named children, and the branch searched for a nested `variable_assignment`, so it could never fire \u2014 the same failure mode as the dead `endif_directive` branch, which is why that one was found and this one survived, because nothing exercised either. (3) `unexport` cleared only the metadata flag and left the `exports` EDGE, so the graph said the file exports a variable the symbol table said it did not. Each is pinned as a forbidden shape below. The vpath line is pinned POSITIVELY as the pattern `Make vpath` and negatively by `expectSymbolCount`: it records that the file uses a search path while inventing no declaration, because a vpath names directories the file does not declare. Pinning both directions is what separates a deliberate silence from an unimplemented construct.",
+  "expectSymbolCount": [
+    {
+      "name": "OVERRIDDEN",
+      "equals": 1,
+      "note": "declared twice (line 11 and again inside the `override` on 12) and it is still ONE symbol, with TWO contains edges. The second declaration is not a second symbol."
+    },
+    {
+      "name": "EXPORTED",
+      "equals": 1,
+      "note": "`export` and then `unexport` on the same name is still one declaration, not two."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "directive-flags.mk",
+      "kind": "module"
+    },
+    {
+      "name": "EXPORTED",
+      "kind": "constant",
+      "meta.isExported": false
+    },
+    {
+      "name": "SECRET",
+      "kind": "constant",
+      "meta.isPrivate": true
+    },
+    {
+      "name": "OVERRIDDEN",
+      "kind": "constant",
+      "meta.isOverride": true
+    },
+    {
+      "name": "GONE",
+      "kind": "constant",
+      "meta.isUndefine": true
+    },
+    {
+      "name": "DYNAMIC",
+      "kind": "constant",
+      "meta.nodeType": "shell_assignment",
+      "meta.operator": "!="
+    },
+    {
+      "name": "all",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "EXPORTED",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "SECRET",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "OVERRIDDEN",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "OVERRIDDEN",
+      "line_number": 12
+    },
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "GONE",
+      "line_number": 13
+    },
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "DYNAMIC",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "directive-flags.mk",
+      "target": "all",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "all",
+      "target": "SECRET",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "all",
+      "target": "OVERRIDDEN",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "all",
+      "target": "DYNAMIC",
+      "line_number": 19
+    },
+    {
+      "type": "references",
+      "from": "all",
+      "target": "GONE",
+      "line_number": 19
+    },
+    {
+      "type": "exports",
+      "from": "directive-flags.mk",
+      "target": "all",
+      "line_number": 18
+    },
+    {
+      "type": "overrides",
+      "from": "directive-flags.mk",
+      "target": "OVERRIDDEN",
+      "line_number": 12,
+      "meta.via": "override_directive",
+      "meta.role": "redefinition",
+      "meta.overrideLine": 12,
+      "meta.baseLine": 11,
+      "meta.evidenceClass": "redefinition",
+      "note": "SECTION B PIN: `OVERRIDDEN := base` (L11) then `override OVERRIDDEN := forced` (L12) is a REDEFINITION, not a new declaration \u2014 the ONE construct among make's four silent kinds that exists. Both lines ride the edge (overrideLine/baseLine) so a reader can see which binding is replaced and where; the lane's ruling (real-makefile-analyzer.ts:830-858) refuses the edge when the replaced binding is the command line or the environment, because that is not a symbol in the graph and the edge would dangle by construction."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "src",
+      "note": "the `vpath %.c src` directory is not a declaration this file makes"
+    },
+    {
+      "name": "%.c",
+      "note": "neither is the vpath pattern"
+    },
+    {
+      "name": "SECRET",
+      "meta.isOverride": true,
+      "note": "flag bleed: `private` must not also read as `override`"
+    },
+    {
+      "name": "SECRET",
+      "meta.isUndefine": true,
+      "note": "flag bleed: `private` must not also read as `undefine`"
+    },
+    {
+      "name": "EXPORTED",
+      "meta.isPrivate": true,
+      "note": "`export`/`unexport` are not `private`; EXPORTED is the control variable and carries no directive flag"
+    },
+    {
+      "name": "EXPORTED",
+      "meta.isOverride": true,
+      "note": "same control, `override` must not bleed"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "directive-flags.mk",
+      "target": "EXPORTED",
+      "note": "THE THIRD DEFECT. `export EXPORTED` on 7 and `unexport EXPORTED` on 8 cancel: the symbol says isExported:false, so this edge must not exist. Pre-fix the flag was cleared and the edge kept, and a consumer reading relationships got the opposite answer from a consumer reading symbols. An unexport retracts the EDGE, not just the flag.",
+      "type": "exports"
+    },
+    {
+      "from": "directive-flags.mk",
+      "target": "DYNAMIC",
+      "type": "exports",
+      "note": "only the TARGET `all` is exported. A `shell_assignment` declaration is not an export, and a spurious one would make every shell-valued variable look published."
+    }
+  ],
+  "expectPatterns": [
+    "Make vpath"
+  ]
+}

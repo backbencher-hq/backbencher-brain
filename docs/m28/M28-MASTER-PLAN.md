@@ -42,13 +42,13 @@ not two surfaces; it is **one truth read through two doors**:
 
 | Code | Issue | Deliverable | Acceptance criteria (abridged) |
 |---|---|---|---|
-| G1 | [#623](https://github.com/backbencher-hq/backbencher-brain/issues/623) | Governance | Ledger, map, gate, M27-bar ladder audit |
-| T1 | [#624](https://github.com/backbencher-hq/backbencher-brain/issues/624) | MCP read tools | `bb_graph`, `bb_impact`, `bb_cross_language` over existing components |
-| U1 | [#625](https://github.com/backbencher-hq/backbencher-brain/issues/625) | Union differential gate | MCP ≡ IDE on the shared fixture |
-| A1 | [#626](https://github.com/backbencher-hq/backbencher-brain/issues/626) | Annotation store | `brain_annotation` migration + `bb_annotate`/`bb_annotations` with provenance |
-| A2 | [#627](https://github.com/backbencher-hq/backbencher-brain/issues/627) | Annotations in the IDE | Hover section + graph badge (author-labeled), in-editor verified |
-| V1 | [#628](https://github.com/backbencher-hq/backbencher-brain/issues/628) | Generated MCP surface doc | `docs/m28/MCP-SURFACE.md` from the registry + evidence |
-| X1 | [#629](https://github.com/backbencher-hq/backbencher-brain/issues/629) | Closure gate | Full suite, v4 completion bar, regeneration |
+| G1 | [#623](https://github.com/ishaq2321/backbencher-brain/issues/623) | Governance | Ledger, map, gate, M27-bar ladder audit |
+| T1 | [#624](https://github.com/ishaq2321/backbencher-brain/issues/624) | MCP read tools | `bb_graph`, `bb_impact`, `bb_cross_language` over existing components |
+| U1 | [#625](https://github.com/ishaq2321/backbencher-brain/issues/625) | Union differential gate | MCP ≡ IDE on the shared fixture |
+| A1 | [#626](https://github.com/ishaq2321/backbencher-brain/issues/626) | Annotation store | `brain_annotation` migration + `bb_annotate`/`bb_annotations` with provenance |
+| A2 | [#627](https://github.com/ishaq2321/backbencher-brain/issues/627) | Annotations in the IDE | Hover section + graph badge (author-labeled), in-editor verified |
+| V1 | [#628](https://github.com/ishaq2321/backbencher-brain/issues/628) | Generated MCP surface doc | `docs/m28/MCP-SURFACE.md` from the registry + evidence |
+| X1 | [#629](https://github.com/ishaq2321/backbencher-brain/issues/629) | Closure gate | Full suite, v4 completion bar, regeneration |
 
 ## v4 completion bar (X1 audits this)
 

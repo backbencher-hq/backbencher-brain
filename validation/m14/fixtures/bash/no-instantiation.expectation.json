@@ -1,0 +1,23 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/no-instantiation.sh",
+ "authoredFrom": "PIN THE ABSENCE, 2026-10-17. bash's grammar has NO construction form and the analyzer has NO `instantiates` emission — case-insensitive search of src/ast/real-bash-analyzer.ts finds zero occurrences of the word, and parsing all 34 .sh/.bash fixture sources emits exactly calls/contains/exports/imports/overrides/references/uses. The constructs in this fixture LOOK like construction to a naive reader — an array literal, an associative array (`declare -A`), a command literally named `new`, a function used as a factory, and command substitution — and the forbid row pins that NONE of them produces an `instantiates` edge. WHY THIS FIXTURE EXISTS: script/m14/completeness-inventory.ts section-B reported bash as 'EMITTED but absent from requiredKinds: instantiates'. That reading is an INSTRUMENT ARTIFACT, not a bash edge: its emittedKinds() parses every non-JSON file in validation/m14/fixtures/bash, which holds 65 .ts/.mts helper modules alongside the 34 bash sources, and the TypeScript analyzer's `new WSP()`-shaped rows were attributed to this lane (43 instantiates edges, every one from a file whose detected language is typescript; zero from .sh/.bash). A fixture proving the absence is worth more than a pin on a fabricated kind; the correct fix is the inventory's file filter, proposed separately.",
+ "expectSymbols": [
+  {"name": "no-instantiation.sh", "kind": "module"},
+  {"name": "arr", "kind": "variable", "ownerName": "no-instantiation.sh"},
+  {"name": "map", "kind": "variable", "ownerName": "no-instantiation.sh"},
+  {"name": "Class", "kind": "function", "ownerName": "no-instantiation.sh"},
+  {"name": "made", "kind": "variable", "ownerName": "no-instantiation.sh"}
+ ],
+ "expectRelationships": [
+  {"type": "calls", "from": "no-instantiation.sh", "target": "new", "line_number": 8,
+   "note": "a command whose NAME is `new` — the construct a naive reader mistakes for construction; bash publishes a CALL and must never publish instantiates."},
+  {"type": "calls", "from": "no-instantiation.sh", "target": "Class", "line_number": 10},
+  {"type": "uses", "from": "no-instantiation.sh", "target": "no-instantiation.sh.arr", "line_number": 12},
+  {"type": "contains", "from": "no-instantiation.sh", "target": "Class"}
+ ],
+ "forbidRelationships": [
+  {"type": "instantiates",
+   "note": "THE WHOLE POINT: no construct in this file (array literal, declare -A, a command named `new`, a factory function, command substitution) is an instantiation, because bash has no construction form. The section-B 'bash EMITS instantiates' reading came from the TypeScript helper modules in this directory, not from this lane."}
+ ]
+}

@@ -1,0 +1,797 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-12T21:34:40.405Z",
+  "symbols": [
+    {
+      "file": "CoreApi.h",
+      "name": "MAX_ITEMS",
+      "kind": "constant",
+      "start_line": 9
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "SAFE_CALL",
+      "kind": "macro",
+      "start_line": 10
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "x",
+      "kind": "property",
+      "start_line": 15
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "y",
+      "kind": "property",
+      "start_line": 16
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "Point",
+      "kind": "struct",
+      "start_line": 14
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "length",
+      "kind": "property",
+      "start_line": 20
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "capacity",
+      "kind": "property",
+      "start_line": 21
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "data",
+      "kind": "property",
+      "start_line": 22
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "Buffer",
+      "kind": "struct",
+      "start_line": 19
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "STATUS_OK",
+      "kind": "enum_member",
+      "start_line": 26
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "STATUS_ERROR",
+      "kind": "enum_member",
+      "start_line": 27
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "STATUS_TIMEOUT",
+      "kind": "enum_member",
+      "start_line": 28
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "Status",
+      "kind": "enum",
+      "start_line": 25
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "CompareFn",
+      "kind": "type",
+      "start_line": 31
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "Point2D",
+      "kind": "type",
+      "start_line": 33
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "core_init",
+      "kind": "function",
+      "start_line": 35
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "core_shutdown",
+      "kind": "function",
+      "start_line": 36
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "buffer_create",
+      "kind": "function",
+      "start_line": 37
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "buffer_destroy",
+      "kind": "function",
+      "start_line": 38
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "buffer_append",
+      "kind": "function",
+      "start_line": 39
+    },
+    {
+      "file": "CoreApi.h",
+      "name": "point_distance",
+      "kind": "function",
+      "start_line": 40
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "initialized",
+      "kind": "variable",
+      "start_line": 6
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "core_init",
+      "kind": "function",
+      "start_line": 8
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "core_shutdown",
+      "kind": "function",
+      "start_line": 13
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "buffer_create",
+      "kind": "function",
+      "start_line": 18
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "buffer_destroy",
+      "kind": "function",
+      "start_line": 27
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "buffer_append",
+      "kind": "function",
+      "start_line": 33
+    },
+    {
+      "file": "CoreApi.c",
+      "name": "point_distance",
+      "kind": "function",
+      "start_line": 40
+    },
+    {
+      "file": "Service.h",
+      "name": "example",
+      "kind": "namespace",
+      "start_line": 9
+    },
+    {
+      "file": "Service.h",
+      "name": "ILogger",
+      "kind": "class",
+      "start_line": 11
+    },
+    {
+      "file": "Service.h",
+      "name": "log",
+      "kind": "method",
+      "start_line": 14
+    },
+    {
+      "file": "Service.h",
+      "name": "Repository",
+      "kind": "class",
+      "start_line": 18
+    },
+    {
+      "file": "Service.h",
+      "name": "add",
+      "kind": "method",
+      "start_line": 21
+    },
+    {
+      "file": "Service.h",
+      "name": "find",
+      "kind": "method",
+      "start_line": 22
+    },
+    {
+      "file": "Service.h",
+      "name": "ConsoleLogger",
+      "kind": "class",
+      "start_line": 25
+    },
+    {
+      "file": "Service.h",
+      "name": "log",
+      "kind": "method",
+      "start_line": 27
+    },
+    {
+      "file": "Service.h",
+      "name": "User",
+      "kind": "class",
+      "start_line": 30
+    },
+    {
+      "file": "Service.h",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 32
+    },
+    {
+      "file": "Service.h",
+      "name": "getId",
+      "kind": "method",
+      "start_line": 33
+    },
+    {
+      "file": "Service.h",
+      "name": "getName",
+      "kind": "method",
+      "start_line": 34
+    },
+    {
+      "file": "Service.h",
+      "name": "id_",
+      "kind": "property",
+      "start_line": 37
+    },
+    {
+      "file": "Service.h",
+      "name": "name_",
+      "kind": "property",
+      "start_line": 38
+    },
+    {
+      "file": "Service.h",
+      "name": "UserRepository",
+      "kind": "class",
+      "start_line": 41
+    },
+    {
+      "file": "Service.h",
+      "name": "add",
+      "kind": "method",
+      "start_line": 43
+    },
+    {
+      "file": "Service.h",
+      "name": "find",
+      "kind": "method",
+      "start_line": 44
+    },
+    {
+      "file": "Service.h",
+      "name": "users_",
+      "kind": "property",
+      "start_line": 47
+    },
+    {
+      "file": "Service.h",
+      "name": "UserService",
+      "kind": "class",
+      "start_line": 50
+    },
+    {
+      "file": "Service.h",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 52
+    },
+    {
+      "file": "Service.h",
+      "name": "createUser",
+      "kind": "method",
+      "start_line": 53
+    },
+    {
+      "file": "Service.h",
+      "name": "getUser",
+      "kind": "method",
+      "start_line": 54
+    },
+    {
+      "file": "Service.h",
+      "name": "repository_",
+      "kind": "property",
+      "start_line": 57
+    },
+    {
+      "file": "Service.cpp",
+      "name": "example",
+      "kind": "namespace",
+      "start_line": 5
+    },
+    {
+      "file": "Service.cpp",
+      "name": "log",
+      "kind": "method",
+      "start_line": 7
+    },
+    {
+      "file": "Service.cpp",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 11
+    },
+    {
+      "file": "Service.cpp",
+      "name": "getId",
+      "kind": "method",
+      "start_line": 13
+    },
+    {
+      "file": "Service.cpp",
+      "name": "getName",
+      "kind": "method",
+      "start_line": 17
+    },
+    {
+      "file": "Service.cpp",
+      "name": "add",
+      "kind": "method",
+      "start_line": 21
+    },
+    {
+      "file": "Service.cpp",
+      "name": "find",
+      "kind": "method",
+      "start_line": 25
+    },
+    {
+      "file": "Service.cpp",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 32
+    },
+    {
+      "file": "Service.cpp",
+      "name": "createUser",
+      "kind": "method",
+      "start_line": 34
+    },
+    {
+      "file": "Service.cpp",
+      "name": "getUser",
+      "kind": "method",
+      "start_line": 40
+    },
+    {
+      "file": "lib.rs",
+      "name": "storage",
+      "kind": "module",
+      "start_line": 5
+    },
+    {
+      "file": "lib.rs",
+      "name": "Repository",
+      "kind": "trait",
+      "start_line": 9
+    },
+    {
+      "file": "lib.rs",
+      "name": "add",
+      "kind": "method",
+      "start_line": 10
+    },
+    {
+      "file": "lib.rs",
+      "name": "find",
+      "kind": "method",
+      "start_line": 11
+    },
+    {
+      "file": "lib.rs",
+      "name": "User",
+      "kind": "struct",
+      "start_line": 14
+    },
+    {
+      "file": "lib.rs",
+      "name": "id",
+      "kind": "property",
+      "start_line": 15
+    },
+    {
+      "file": "lib.rs",
+      "name": "name",
+      "kind": "property",
+      "start_line": 16
+    },
+    {
+      "file": "lib.rs",
+      "name": "User",
+      "kind": "impl",
+      "start_line": 19
+    },
+    {
+      "file": "lib.rs",
+      "name": "new",
+      "kind": "method",
+      "start_line": 20
+    },
+    {
+      "file": "lib.rs",
+      "name": "display_name",
+      "kind": "method",
+      "start_line": 27
+    },
+    {
+      "file": "lib.rs",
+      "name": "Status",
+      "kind": "enum",
+      "start_line": 32
+    },
+    {
+      "file": "lib.rs",
+      "name": "Active",
+      "kind": "enum_member",
+      "start_line": 33
+    },
+    {
+      "file": "lib.rs",
+      "name": "Inactive",
+      "kind": "enum_member",
+      "start_line": 34
+    },
+    {
+      "file": "lib.rs",
+      "name": "UserService",
+      "kind": "struct",
+      "start_line": 37
+    },
+    {
+      "file": "lib.rs",
+      "name": "repository",
+      "kind": "property",
+      "start_line": 38
+    },
+    {
+      "file": "lib.rs",
+      "name": "counter",
+      "kind": "property",
+      "start_line": 39
+    },
+    {
+      "file": "lib.rs",
+      "name": "UserService",
+      "kind": "impl",
+      "start_line": 42
+    },
+    {
+      "file": "lib.rs",
+      "name": "new",
+      "kind": "method",
+      "start_line": 43
+    },
+    {
+      "file": "lib.rs",
+      "name": "create",
+      "kind": "method",
+      "start_line": 50
+    },
+    {
+      "file": "lib.rs",
+      "name": "find",
+      "kind": "method",
+      "start_line": 57
+    },
+    {
+      "file": "lib.rs",
+      "name": "make_default_service",
+      "kind": "function",
+      "start_line": 62
+    },
+    {
+      "file": "lib.rs",
+      "name": "transform",
+      "kind": "function",
+      "start_line": 67
+    },
+    {
+      "file": "storage.rs",
+      "name": "MemoryStorage",
+      "kind": "struct",
+      "start_line": 6
+    },
+    {
+      "file": "storage.rs",
+      "name": "items",
+      "kind": "property",
+      "start_line": 7
+    },
+    {
+      "file": "storage.rs",
+      "name": "MemoryStorage",
+      "kind": "impl",
+      "start_line": 10
+    },
+    {
+      "file": "storage.rs",
+      "name": "new",
+      "kind": "method",
+      "start_line": 11
+    },
+    {
+      "file": "storage.rs",
+      "name": "MemoryStorage",
+      "kind": "impl",
+      "start_line": 16
+    },
+    {
+      "file": "storage.rs",
+      "name": "add",
+      "kind": "method",
+      "start_line": 17
+    },
+    {
+      "file": "storage.rs",
+      "name": "find",
+      "kind": "method",
+      "start_line": 21
+    },
+    {
+      "file": "geometry.zig",
+      "name": "MAX_POINTS",
+      "kind": "constant",
+      "start_line": 7
+    },
+    {
+      "file": "geometry.zig",
+      "name": "Point",
+      "kind": "struct",
+      "start_line": 9
+    },
+    {
+      "file": "geometry.zig",
+      "name": "x",
+      "kind": "property",
+      "start_line": 10
+    },
+    {
+      "file": "geometry.zig",
+      "name": "y",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "geometry.zig",
+      "name": "init",
+      "kind": "method",
+      "start_line": 13
+    },
+    {
+      "file": "geometry.zig",
+      "name": "distance",
+      "kind": "method",
+      "start_line": 17
+    },
+    {
+      "file": "geometry.zig",
+      "name": "ShapeType",
+      "kind": "enum",
+      "start_line": 24
+    },
+    {
+      "file": "geometry.zig",
+      "name": "circle",
+      "kind": "enum_member",
+      "start_line": 25
+    },
+    {
+      "file": "geometry.zig",
+      "name": "square",
+      "kind": "enum_member",
+      "start_line": 26
+    },
+    {
+      "file": "geometry.zig",
+      "name": "triangle",
+      "kind": "enum_member",
+      "start_line": 27
+    },
+    {
+      "file": "geometry.zig",
+      "name": "Circle",
+      "kind": "struct",
+      "start_line": 30
+    },
+    {
+      "file": "geometry.zig",
+      "name": "center",
+      "kind": "property",
+      "start_line": 31
+    },
+    {
+      "file": "geometry.zig",
+      "name": "radius",
+      "kind": "property",
+      "start_line": 32
+    },
+    {
+      "file": "geometry.zig",
+      "name": "Shape",
+      "kind": "union",
+      "start_line": 35
+    },
+    {
+      "file": "geometry.zig",
+      "name": "circle",
+      "kind": "property",
+      "start_line": 36
+    },
+    {
+      "file": "geometry.zig",
+      "name": "point",
+      "kind": "property",
+      "start_line": 37
+    },
+    {
+      "file": "geometry.zig",
+      "name": "area",
+      "kind": "method",
+      "start_line": 39
+    },
+    {
+      "file": "geometry.zig",
+      "name": "ParseError",
+      "kind": "enum",
+      "start_line": 47
+    },
+    {
+      "file": "geometry.zig",
+      "name": "InvalidPoint",
+      "kind": "enum_member",
+      "start_line": 47
+    },
+    {
+      "file": "geometry.zig",
+      "name": "OutOfMemory",
+      "kind": "enum_member",
+      "start_line": 47
+    },
+    {
+      "file": "geometry.zig",
+      "name": "parsePoint",
+      "kind": "function",
+      "start_line": 49
+    },
+    {
+      "file": "geometry.zig",
+      "name": "main",
+      "kind": "function",
+      "start_line": 54
+    },
+    {
+      "file": "Logger.h",
+      "name": "LoggerDelegate",
+      "kind": "interface",
+      "start_line": 7
+    },
+    {
+      "file": "Logger.h",
+      "name": "loggerDidLog",
+      "kind": "method",
+      "start_line": 8
+    },
+    {
+      "file": "Logger.h",
+      "name": "Logger",
+      "kind": "class",
+      "start_line": 11
+    },
+    {
+      "file": "Logger.h",
+      "name": "prefix",
+      "kind": "property",
+      "start_line": 13
+    },
+    {
+      "file": "Logger.h",
+      "name": "delegate",
+      "kind": "property",
+      "start_line": 14
+    },
+    {
+      "file": "Logger.h",
+      "name": "initWithPrefix",
+      "kind": "method",
+      "start_line": 16
+    },
+    {
+      "file": "Logger.h",
+      "name": "log",
+      "kind": "method",
+      "start_line": 17
+    },
+    {
+      "file": "Logger.h",
+      "name": "formattedMessage",
+      "kind": "method",
+      "start_line": 18
+    },
+    {
+      "file": "Logger.h",
+      "name": "sharedLogger",
+      "kind": "method",
+      "start_line": 19
+    },
+    {
+      "file": "Logger.h",
+      "name": "Logger",
+      "kind": "extension",
+      "start_line": 23
+    },
+    {
+      "file": "Logger.h",
+      "name": "uppercaseMessage",
+      "kind": "method",
+      "start_line": 24
+    },
+    {
+      "file": "Logger.m",
+      "name": "Logger",
+      "kind": "class",
+      "start_line": 7
+    },
+    {
+      "file": "Logger.m",
+      "name": "_lastMessage",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "Logger.m",
+      "name": "initWithPrefix",
+      "kind": "method",
+      "start_line": 11
+    },
+    {
+      "file": "Logger.m",
+      "name": "log",
+      "kind": "method",
+      "start_line": 19
+    },
+    {
+      "file": "Logger.m",
+      "name": "formattedMessage",
+      "kind": "method",
+      "start_line": 26
+    },
+    {
+      "file": "Logger.m",
+      "name": "sharedLogger",
+      "kind": "method",
+      "start_line": 30
+    },
+    {
+      "file": "Logger.m",
+      "name": "Logger",
+      "kind": "extension",
+      "start_line": 41
+    },
+    {
+      "file": "Logger.m",
+      "name": "uppercaseMessage",
+      "kind": "method",
+      "start_line": 43
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.820Z",
+    "contentSha256": "9ea36d3807d35599ccd48b5b9dfd74c40268d89ae15d7e5291c65de5869dac6d"
+  }
+}

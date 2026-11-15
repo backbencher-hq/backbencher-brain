@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "gate": "read door",
+  "status": "failed",
+  "currentCommit": "03acfe5cb68d390c8add3b52240a6b5e569f85d7",
+  "verifierCommand": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/verify-read-door.ts",
+  "generatedAt": "2026-11-03T16:30:20.840Z",
+  "checks": 40,
+  "passed": 39,
+  "failed": 1,
+  "failures": [
+    {
+      "name": "D at the declared cap the reason stops advising an impossible limit raise",
+      "ok": false,
+      "detail": "limit 200 reached; 500 annotations match this query — raise limit (max 200) or narrow the filter."
+    }
+  ],
+  "negativeCases": {
+    "refusalsObserved": [
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "limit": 0
+        },
+        "text": "bb_annotations: limit must be a number between 1 and 200"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "limit": 201
+        },
+        "text": "bb_annotations: limit must be a number between 1 and 200"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "limit": -1
+        },
+        "text": "error: bb_annotations: limit must be non-negative"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "limit": "5"
+        },
+        "text": "error: bb_annotations: limit must be number"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "limit": 1.5
+        },
+        "text": "error: bb_annotations: limit must be a whole number (got 1.5)"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "bogus": 1
+        },
+        "text": "error: bb_annotations: unknown or irrelevant options: bogus — accepted options: symbol, path, limit, includeNameLevel (aliases accepted: target, query)"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "symbol": "a",
+          "target": "b"
+        },
+        "text": "error: bb_annotations: symbol and target are aliases with different values (\"a\" vs \"b\") — pass one"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "path": 5
+        },
+        "text": "error: bb_annotations: path must be string"
+      },
+      {
+        "tool": "bb_annotations",
+        "args": {
+          "includeNameLevel": "true"
+        },
+        "text": "error: bb_annotations: includeNameLevel must be boolean"
+      }
+    ],
+    "mutantsTotal": 5,
+    "mutantsCaught": 5
+  },
+  "mutants": [
+    {
+      "name": "M5 read-write open creates a store for an unwritten project",
+      "caught": true,
+      "detail": {
+        "before": 1,
+        "after": 2
+      }
+    },
+    {
+      "name": "M1 name set reduced to the simple name is caught",
+      "caught": true,
+      "detail": {
+        "oldOk": false
+      }
+    },
+    {
+      "name": "M4 effective-scope echo instead of the accepted flag is caught",
+      "caught": true,
+      "detail": {
+        "parsed": {
+          "includeNameLevel": true
+        }
+      }
+    },
+    {
+      "name": "M2 cap reason that still says 'raise limit' is caught",
+      "caught": true,
+      "detail": "limit 200 reached; 500 annotations match this query — raise limit (max 200) or narrow the filter."
+    },
+    {
+      "name": "M3 invented row defeats the declared-absence check",
+      "caught": true
+    }
+  ],
+  "blockedLegs": [
+    {
+      "leg": "byte-level -shm identity",
+      "reason": "SQLite touches the -shm shared-memory file on a read-only open (the campaign's T2 protocol wording allows exactly that); brain.db and brain.db-wal are asserted byte-identical"
+    }
+  ],
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/gate-bbdata",
+  "note": "The gate builds its own BB_DATA_DIR from work/probe-fixture; no shared store is opened."
+}

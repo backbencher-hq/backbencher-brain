@@ -1,0 +1,31 @@
+{
+  "fixtureId": "objc/framework-surface-pins",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (CONV-OC-1), the objective-c member of the C7 framework surface. The lane published `detectedFrameworks` as `[...frameworks]` — a Set, so insertion order — and picked `[...frameworks][0]`, and it published no `frameworkPatterns` at all. This file imports Foundation and Cocoa FIRST and AppKit/UIKit last, so import order and contract order disagree on purpose: the pre-fix analyzer emitted [Foundation, Cocoa, AppKit, UIKit] with Foundation as the primary pick, while the contract's declared table (application frameworks most-specific first, the base library last) emits [UIKit, AppKit, Cocoa, Foundation] and picks UIKit. Reporting Foundation — the base library nearly every Objective-C file imports — as the primary framework of a UIKit view is the consumer-visible harm, and the whole-array comparison is what makes an order regression holdable: a contains-check could not see one. frameworkPatterns is pinned with its order because a lane that publishes an array of detection facts and no patterns has published half a contract; the census registered that missing key (missing-contract-key) and the runtime half measured it on 7 of 7 detecting corpus files over 153 real files.",
+  "expectSymbols": [
+    { "name": "PinView", "kind": "class" }
+  ],
+  "expectPrimaryFramework": ["UIKit"],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": ["UIKit", "AppKit", "Cocoa", "Foundation"],
+      "comment": "declared table order, not import order: Foundation and Cocoa are imported first in the file and listed last"
+    },
+    {
+      "frameworkPatterns": [
+        { "framework": "UIKit", "patterns": ["ui_framework"] },
+        { "framework": "AppKit", "patterns": ["ui_framework"] },
+        { "framework": "Cocoa", "patterns": ["app_umbrella"] },
+        { "framework": "Foundation", "patterns": ["base_library"] }
+      ],
+      "comment": "one entry per detected framework, in the same order, naming only frameworks detection lists"
+    }
+  ],
+  "expectImports": [
+    { "module": "Foundation/Foundation.h" },
+    { "module": "Cocoa/Cocoa.h" },
+    { "module": "AppKit/AppKit.h" },
+    { "module": "UIKit/UIKit.h" }
+  ]
+}

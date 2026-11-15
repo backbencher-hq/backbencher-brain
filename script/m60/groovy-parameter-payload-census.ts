@@ -64,7 +64,7 @@ async function main() {
   }
 
   // (2) corpus frequency of the placeholder, on symbols the analyzer emits.
-  const root = "$HOME/fixtures/repositories/grails-core"
+  const root = "/home/ishaq2321/bb_tests/repositories/grails-core"
   const files = walk(root)
   const stride = Math.max(1, Math.floor(files.length / 600))
   const picked: string[] = []

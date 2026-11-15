@@ -1,0 +1,164 @@
+{
+  "tier": "T2-copy",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+  "embeddingDisabled": false,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T2-copy",
+    "/home/ishaq2321/mcp/backbencher-brain",
+    "validation/tools/bb_ask/t2-latency-end-to-end.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": null,
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 2504.73,
+  "warmupChars": 4829,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 1813.67,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "10% (30906/310423 symbols embedded in this model space)",
+        "libraryCoverage": "11% (32837/310423 across all models)",
+        "scanned": "20000/20000 (cap reached)",
+        "filtered": "20000",
+        "candidates": "19980",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "8188",
+        "lines": "165"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 1723.46,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "10% (30906/310423 symbols embedded in this model space)",
+        "libraryCoverage": "11% (32837/310423 across all models)",
+        "scanned": "20000/20000 (cap reached)",
+        "filtered": "20000",
+        "candidates": "19957",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "5261",
+        "lines": "102"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 1778.68,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "10% (30906/310423 symbols embedded in this model space)",
+        "libraryCoverage": "11% (32837/310423 across all models)",
+        "scanned": "20000/20000 (cap reached)",
+        "filtered": "20000",
+        "candidates": "19973",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "4595",
+        "lines": "98"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 1752.17,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "10% (30906/310423 symbols embedded in this model space)",
+        "libraryCoverage": "11% (32837/310423 across all models)",
+        "scanned": "20000/20000 (cap reached)",
+        "filtered": "20000",
+        "candidates": "19923",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "4375",
+        "lines": "99"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 2186.8,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "10% (30906/310423 symbols embedded in this model space)",
+        "libraryCoverage": "11% (32837/310423 across all models)",
+        "scanned": "20000/20000 (cap reached)",
+        "filtered": "20000",
+        "candidates": "19907",
+        "ranking": "non-discriminative (49 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "3867",
+        "lines": "76"
+      }
+    }
+  ],
+  "exactName": {
+    "query": "buildStalenessEnvelope",
+    "limit": 1,
+    "runs": [
+      1.26,
+      0.93,
+      0.87,
+      0.72,
+      0.95
+    ],
+    "p50": 0.93,
+    "p95": 1.26,
+    "max": 1.26
+  },
+  "indexFiles": {
+    "before": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793571742313
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571786023
+      }
+    },
+    "after": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793571742313
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571786023
+      }
+    },
+    "dbUnchanged": true
+  },
+  "p50": 1778.68,
+  "p95": 2186.8,
+  "max": 2186.8,
+  "generatedAt": "2026-11-02T00:19:35.574Z"
+}

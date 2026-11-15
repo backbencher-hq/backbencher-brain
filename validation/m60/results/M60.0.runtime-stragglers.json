@@ -1,0 +1,1598 @@
+{
+  "measuredAt": "2026-09-27",
+  "purpose": "replace the recorded COUNT (phaseA.runtime0270.failures: 20) with a per-wasm LIST that any reader can reproduce, and check the recorded CAUSE against it",
+  "method": {
+    "profiles": [
+      {
+        "label": "P1 today: 0.25.9 + repo core",
+        "role": "the baseline. Every shipped grammar must load here or the tree is already broken.",
+        "core": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter.wasm"
+      },
+      {
+        "label": "P2 migration: 0.27.0 + repo core",
+        "role": "THE migration shape — new runtime, existing pinned core. This is the number M63's scope is supposed to be.",
+        "core": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter.wasm"
+      },
+      {
+        "label": "P3 candidate self-consistent: 0.27.0 + its own core",
+        "role": "runtime matched to its own core. Isolates 'runtime upgrade' from 'core upgrade'.",
+        "core": "(package-bundled)"
+      }
+    ],
+    "whyAMatrix": "the engine does not use the core its package bundles — src/ast/engine.ts calls init({ locateFile }) with the repo's own wasm/tree-sitter.wasm. 'Does 0.27.0 work?' has three answers depending on the core, and measuring one of them is how a count gets recorded and never reproduced. P2 is the migration's real shape: new runtime, existing pinned core.",
+    "loadIsForced": "Language.load() is LAZY and returns a Promise. The first version of this harness reported 61/61 ok for a tree containing a TRUNCATED wasm, a clobbered magic number and a scrambled payload, because it stopped at load(). Every load here is forced through setLanguage + parse. Without that, this file measures nothing.",
+    "control": "three deliberate corruptions of a working grammar must FAIL to load on every runtime, checked before any result is read. A harness that cannot detect failure cannot certify success — and this one could not, until the forcing was added."
+  },
+  "harnessControl": {
+    "mutations": [
+      "truncated-half",
+      "magic-clobbered",
+      "payload-scrambled"
+    ],
+    "perRuntime": [
+      {
+        "runtime": "0.25.9 + repo core",
+        "checked": 3,
+        "wronglyLoaded": []
+      },
+      {
+        "runtime": "0.27.0 + bundled core",
+        "checked": 3,
+        "wronglyLoaded": []
+      }
+    ],
+    "blind": false
+  },
+  "calibration": {
+    "question": "does this harness reproduce a PREVIOUSLY RECORDED answer, not just a plausible new one?",
+    "recordedBaseline": "pinned runtime fails exactly tree-sitter-elm + tree-sitter-ql",
+    "measuredBaseline": [
+      "tree-sitter-elm.wasm",
+      "tree-sitter-ql.wasm"
+    ],
+    "agrees": true
+  },
+  "runtimes": {
+    "pinned": "0.25.9",
+    "candidate": "0.27.0",
+    "candidatePath": "/tmp/opencode/rts027/node_modules/web-tree-sitter/web-tree-sitter.js"
+  },
+  "counts": {
+    "shippedGrammarWasms": 61,
+    "pinnedOk": 59,
+    "candidateOk": 40,
+    "candidateTotalFailures": 21,
+    "upgradeStragglers": 19,
+    "preExistingFailures": 2,
+    "dylink0": 40,
+    "dylinkLegacy": 21
+  },
+  "recorded": {
+    "phaseA_runtime0270_failures": 20,
+    "phaseA_total": 55,
+    "reproduced": false
+  },
+  "upgradeStragglers": [
+    "tree-sitter-elisp.wasm",
+    "tree-sitter-embedded_template.wasm",
+    "tree-sitter-go.wasm",
+    "tree-sitter-html.wasm",
+    "tree-sitter-java.wasm",
+    "tree-sitter-javascript.wasm",
+    "tree-sitter-json.wasm",
+    "tree-sitter-ocaml.wasm",
+    "tree-sitter-rescript.wasm",
+    "tree-sitter-ruby.wasm",
+    "tree-sitter-solidity.wasm",
+    "tree-sitter-swift.wasm",
+    "tree-sitter-systemrdl.wasm",
+    "tree-sitter-tlaplus.wasm",
+    "tree-sitter-toml.wasm",
+    "tree-sitter-tsx.wasm",
+    "tree-sitter-typescript.wasm",
+    "tree-sitter-vue.wasm",
+    "tree-sitter-zig.wasm"
+  ],
+  "preExistingFailures": [
+    "tree-sitter-elm.wasm",
+    "tree-sitter-ql.wasm"
+  ],
+  "preExistingNote": "fails on the PINNED runtime too, so it is a pre-existing condition and NOT an upgrade blocker. Counting these as stragglers would inflate the migration's scope with work that fixes nothing — and would misdescribe a broken grammar as a migration casualty.",
+  "fixedByAlsoUpgradingTheCore": [],
+  "mechanism": {
+    "claim": "0.27.0 calls getDylinkMetadata() and refuses a grammar wasm without the emscripten dylink.0 custom section",
+    "prediction": "{0.27.0 load failures} == {shipped wasms lacking dylink.0}, exactly",
+    "holds": true,
+    "onlyFailsButHaveDylink": [],
+    "lackDylinkButLoad": [],
+    "unparsable": [],
+    "note": "the 2-grammar gap between this and the STRAGGLER list is exactly the pre-existing failures. They lack dylink.0 AND fail on the pinned runtime, so they never needed the section to work. Comparing the candidate-failure set (not the straggler set) is what makes the correspondence exact."
+  },
+  "profiles": {
+    "P1 today: 0.25.9 + repo core": {
+      "core": "wasm/tree-sitter.wasm",
+      "ok": 59,
+      "failed": [
+        "tree-sitter-elm.wasm",
+        "tree-sitter-ql.wasm"
+      ]
+    },
+    "P2 migration: 0.27.0 + repo core": {
+      "core": "wasm/tree-sitter.wasm",
+      "ok": 40,
+      "failed": [
+        "tree-sitter-elisp.wasm",
+        "tree-sitter-elm.wasm",
+        "tree-sitter-embedded_template.wasm",
+        "tree-sitter-go.wasm",
+        "tree-sitter-html.wasm",
+        "tree-sitter-java.wasm",
+        "tree-sitter-javascript.wasm",
+        "tree-sitter-json.wasm",
+        "tree-sitter-ocaml.wasm",
+        "tree-sitter-ql.wasm",
+        "tree-sitter-rescript.wasm",
+        "tree-sitter-ruby.wasm",
+        "tree-sitter-solidity.wasm",
+        "tree-sitter-swift.wasm",
+        "tree-sitter-systemrdl.wasm",
+        "tree-sitter-tlaplus.wasm",
+        "tree-sitter-toml.wasm",
+        "tree-sitter-tsx.wasm",
+        "tree-sitter-typescript.wasm",
+        "tree-sitter-vue.wasm",
+        "tree-sitter-zig.wasm"
+      ]
+    },
+    "P3 candidate self-consistent: 0.27.0 + its own core": {
+      "core": "(package-bundled)",
+      "ok": 40,
+      "failed": [
+        "tree-sitter-elisp.wasm",
+        "tree-sitter-elm.wasm",
+        "tree-sitter-embedded_template.wasm",
+        "tree-sitter-go.wasm",
+        "tree-sitter-html.wasm",
+        "tree-sitter-java.wasm",
+        "tree-sitter-javascript.wasm",
+        "tree-sitter-json.wasm",
+        "tree-sitter-ocaml.wasm",
+        "tree-sitter-ql.wasm",
+        "tree-sitter-rescript.wasm",
+        "tree-sitter-ruby.wasm",
+        "tree-sitter-solidity.wasm",
+        "tree-sitter-swift.wasm",
+        "tree-sitter-systemrdl.wasm",
+        "tree-sitter-tlaplus.wasm",
+        "tree-sitter-toml.wasm",
+        "tree-sitter-tsx.wasm",
+        "tree-sitter-typescript.wasm",
+        "tree-sitter-vue.wasm",
+        "tree-sitter-zig.wasm"
+      ]
+    }
+  },
+  "perWasm": {
+    "dart.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 527
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 527
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 527
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-bash.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 280
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 280
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 280
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-c.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 366
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 366
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 366
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-c_sharp.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 533
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 533
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 533
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-clean.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 280
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 280
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 280
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-clojure.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 73
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 73
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 73
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-core_schema.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 7
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 7
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 7
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-cpp.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 547
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 547
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 547
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-css.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 151
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 151
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 151
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-dart.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 527
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 527
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 527
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-elisp.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 83
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-elixir.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 235
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 235
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 235
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-elm.wasm": {
+      "pinned": {
+        "ok": false,
+        "error": "Out of bounds memory access (evaluating 'C._ts_language_field_name_for_id(this[0], i2)')"
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-embedded_template.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 26
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-erlang.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 338
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 338
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 338
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-fsharp.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 544
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 544
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 544
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-fsharp_signature.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 413
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 413
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 413
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-go.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 216
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-graphql.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 143
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 143
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 143
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-groovy.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 384
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 384
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 384
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-haskell.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 552
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 552
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 552
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-hcl.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 121
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 121
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 121
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-html.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 41
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-java.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 322
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-javascript.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 271
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-json.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 26
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-json_schema.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 6
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 6
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 6
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-kotlin.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 378
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 378
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 378
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-lua.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 137
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 137
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 137
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-make.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 188
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 188
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 188
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-markdown.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 207
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 207
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 207
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-markdown_inline.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 153
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 153
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 153
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-objc.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 590
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 590
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 590
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-ocaml.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 427
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-perl.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 595
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 595
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 595
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-php.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 432
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 432
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 432
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-php_only.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 427
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 427
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 427
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-powershell.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 415
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 415
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 415
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-python.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 274
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 274
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 274
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-ql.wasm": {
+      "pinned": {
+        "ok": false,
+        "error": "Out of bounds memory access (evaluating 'C._ts_language_field_name_for_id(this[0], i2)')"
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-r.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 137
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 137
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 137
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-rescript.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 326
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-ruby.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 353
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-rust.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 355
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 355
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 355
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-scala.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 15,
+        "nodeTypes": 455
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 455
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 455
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-solidity.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 512
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-sql.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 729
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 729
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 729
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-svelte.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 118
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 118
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 118
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-swift.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 13,
+        "nodeTypes": 540
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-systemrdl.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 13,
+        "nodeTypes": 226
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-terraform.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 121
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 121
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 121
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-tlaplus.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 662
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-toml.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 13,
+        "nodeTypes": 66
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-tsx.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 405
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-typescript.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 385
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-vue.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 59
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tree-sitter-xml.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 143
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 143
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 143
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-yaml.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 301
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 301
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 301
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "tree-sitter-zig.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 274
+      },
+      "candidate": {
+        "ok": false,
+        "error": ""
+      },
+      "candidateOwnCore": {
+        "ok": false,
+        "error": ""
+      },
+      "dylink0": false,
+      "dylinkLegacy": true,
+      "customSections": [
+        "dylink"
+      ],
+      "parsed": true,
+      "straggler": true
+    },
+    "tsx.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 400
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 400
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 400
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    },
+    "typescript.wasm": {
+      "pinned": {
+        "ok": true,
+        "abi": 14,
+        "nodeTypes": 383
+      },
+      "candidate": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 383
+      },
+      "candidateOwnCore": {
+        "ok": true,
+        "abi": null,
+        "nodeTypes": 383
+      },
+      "dylink0": true,
+      "dylinkLegacy": false,
+      "customSections": [
+        "dylink.0"
+      ],
+      "parsed": true,
+      "straggler": false
+    }
+  },
+  "written": "validation/m60/results/M60.0.runtime-stragglers.json"
+}

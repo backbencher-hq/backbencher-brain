@@ -1,0 +1,56 @@
+{
+  "fixtureId": "cpp/friend-definition-published",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "CP3 (loss audit) — a friend DEFINITION is a free function the SOURCE writes, and the corpus's largest remaining loss was that nothing published it: 42 friend definitions (`operator==`, `operator<`, `operator<<`, `to_json`, `from_json`, `int_to_string`) over the cpp-example corpus, the ADL extension points nlohmann's serializers are built from, so every edge naming one was unresolvable. This fixture pins the publication and the three shapes around it that the arm's first cut got wrong. MEASURED, pre-fix vs post-fix on reduced probes and then on the whole 465-file corpus: symbols 5,868 -> 5,948 (functions +58, methods +22 — every added symbol sits on a source line that literally writes `friend`, or the `~` of a destructor, verified line by line), rows 50,463 -> 50,516, unpublished friend definitions 42 -> 1 (the survivor names a declarator recovery cannot read), destructor definitions 15 -> 0. (1) WHAT IS PUBLISHED. `friend bool operator==(widget, widget) { … }` inside `namespace ns` is published as a `Function` named `operator==` owned by `ns` — the scope the walk PUBLISHED around the class, never the class that befriended it ([class.friend]: a friend definition defines a free function in the enclosing namespace, reachable through ADL only). Its body's read is sourced at the friend itself, the discipline every member function already gets (`uses operator== -> size_`, previously `uses ns -> size_` — same fact, owner moved to the function that performs it). (2) CONTROL 1, THE SCOPE POP. The second friend (`operator!=`, line 40) must be owned by `ns` too, and the `contains operator== -> operator!=` edge must NOT exist. Without the exit-record push after the friend's body, the first friend stayed on the walk's scope stack for the rest of the file: MEASURED on a 4-line probe, the second definition published `function eq::ne` (owner: the PREVIOUS friend) plus `contains eq -> ne`, a containment edge between two unrelated free functions. Both endpoints are published symbols, so no endpoint-shape audit could see it; only the owner assert plus the forbid can. (3) CONTROL 2, ONE SYMBOL PER DEFINITION. The friend DECLARATION `friend bool operator<(handle, handle);` publishes NOTHING (CP2 — a declaration defines nobody's function, and publishing it as a member of `handle` would mint the class the fix exists to avoid), while its out-of-line DEFINITION at line 60 is one `operator<` symbol owned by `ns`. The first cut of the arm asked a helper that walked UP the ancestors looking for any `function_definition`, so in a file where a definition existed anywhere above it a friend declaration inherited that body: MEASURED on a 3-line probe (`class A { friend bool eq(const A&); };` then `bool eq(const A&) { … }`), TWO `eq` symbols were published, one of them on the declaration's line, claiming a body it does not have. `expectSymbolCount` is the pin that catches a regression to two. (4) CONTROL 3, THE FILE-SCOPE SENTINEL. `operator>` is defined inside a class at file scope, so nothing but the file encloses it: its owner is the `global` answer and the class must NOT own it — a rule that answered the class (or invented the enclosing class's name) fails `forbidSymbols`.",
+  "expectSymbols": [
+    { "name": "ns", "kind": "namespace" },
+    { "name": "widget", "kind": "class", "ownerName": "ns" },
+    { "name": "size_", "kind": "property", "ownerName": "widget" },
+    { "name": "operator==", "kind": "function", "ownerName": "ns", "meta.isCppFriendDefinition": true },
+    { "name": "gadget", "kind": "class", "ownerName": "ns" },
+    { "name": "operator!=", "kind": "function", "ownerName": "ns", "meta.isCppFriendDefinition": true },
+    { "name": "handle", "kind": "class", "ownerName": "ns" },
+    { "name": "operator<", "kind": "function", "ownerName": "ns" },
+    { "name": "free_widget", "kind": "class", "ownerName": null },
+    { "name": "operator>", "kind": "function", "ownerName": null, "meta.isCppFriendDefinition": true }
+  ],
+  "expectSymbolCount": [
+    { "name": "operator==", "equals": 1 },
+    { "name": "operator!=", "equals": 1 },
+    { "name": "operator<", "equals": 1 },
+    { "name": "operator>", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "ns", "target": "operator==" },
+    { "type": "contains", "from": "ns", "target": "operator!=" },
+    { "type": "contains", "from": "ns", "target": "operator<" },
+    { "type": "uses", "from": "operator==", "target": "size_" },
+    { "type": "uses", "from": "operator!=", "target": "weight_" },
+    { "type": "uses", "from": "operator<", "target": "id_" },
+    { "type": "uses", "from": "operator>", "target": "slot_" }
+  ],
+  "forbidSymbols": [
+    { "name": "operator!=", "ownerName": "operator==" },
+    { "name": "operator>", "ownerName": "free_widget" },
+    { "name": "operator<", "ownerName": "handle" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "operator==", "target": "operator!=" },
+    { "type": "contains", "from": "widget", "target": "operator==" },
+    { "type": "contains", "from": "handle", "target": "operator<" },
+    { "type": "uses", "from": "widget", "target": "size_" },
+    {"type": "contains", "from": "operator==", "target": "ns::operator!=", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "contains", "from": "ns::operator==", "target": "operator!=", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "contains", "from": "widget", "target": "ns::operator==", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "contains", "from": "ns::widget", "target": "operator==", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "contains", "from": "handle", "target": "ns::operator<", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "contains", "from": "ns::handle", "target": "operator<", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "widget", "target": "widget::size_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "ns::widget", "target": "size_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"contains","from":"ns::operator==","target":"ns::operator!=","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"contains","from":"ns::widget","target":"ns::operator==","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"contains","from":"ns::handle","target":"ns::operator<","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"uses","from":"ns::widget","target":"widget::size_","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

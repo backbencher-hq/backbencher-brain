@@ -1,0 +1,75 @@
+{
+  "repo": "sass-spec",
+  "files": 18,
+  "partition": {
+    "before": {
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      },
+      "contains": {
+        "resolved": 335,
+        "total": 335
+      },
+      "references": {
+        "resolved": 7,
+        "total": 7
+      },
+      "calls": {
+        "resolved": 26,
+        "total": 26
+      },
+      "exports": {
+        "resolved": 7,
+        "total": 7
+      },
+      "extends": {
+        "unresolved": 2,
+        "total": 2
+      },
+      "imports": {
+        "unresolved": 1,
+        "total": 1
+      }
+    },
+    "after": {
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      },
+      "contains": {
+        "resolved": 335,
+        "total": 335
+      },
+      "references": {
+        "resolved": 7,
+        "total": 7
+      },
+      "calls": {
+        "resolved": 26,
+        "total": 26
+      },
+      "exports": {
+        "resolved": 7,
+        "total": 7
+      },
+      "extends": {
+        "unresolved": 2,
+        "total": 2
+      },
+      "imports": {
+        "unresolved": 1,
+        "total": 1
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 3,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 377,
+    "falseBindings": 0
+  }
+}

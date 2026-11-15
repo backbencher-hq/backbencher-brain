@@ -1,0 +1,219 @@
+{
+  "generatedAt": "2026-10-05T09:58:10.882Z",
+  "claims": 53,
+  "failed": 12,
+  "detail": [
+    {
+      "id": "m12-contract",
+      "text": "**37/37**"
+    },
+    {
+      "id": "m12-shape-safety",
+      "text": "**71 referenced / 71 live / 0 dead / 0 fatal unnamed**"
+    },
+    {
+      "id": "m12-corpus-errors",
+      "text": "**0 error files, 0 crashes**"
+    },
+    {
+      "id": "m12-complexity-numbers",
+      "text": "3,251 symbols / 6,418 relationships"
+    },
+    {
+      "id": "m12-performance-truth",
+      "text": "**1.62× slower**"
+    },
+    {
+      "id": "m12-corpus-size-caveat",
+      "text": "a 2-file corpus is not coverage"
+    },
+    {
+      "id": "m14-fixture-count",
+      "text": "**4/4 pass**"
+    },
+    {
+      "id": "m14-check-id",
+      "text": "fixtures-graphql"
+    },
+    {
+      "id": "m14-pin-sha",
+      "text": "f988e0a0"
+    },
+    {
+      "id": "m14-pin-mirror",
+      "text": "is **not** byte-identical and is not expected to be"
+    },
+    {
+      "id": "m14-pin-proof",
+      "text": "zero in both directions"
+    },
+    {
+      "id": "m14-pin-files",
+      "text": "13 vendored files"
+    },
+    {
+      "id": "battery",
+      "text": "**59/59**"
+    },
+    {
+      "id": "differential",
+      "text": "**387 facts, P=1.000, R=1.000**"
+    },
+    {
+      "id": "mutation",
+      "text": "**44 caught, 0 survived**"
+    },
+    {
+      "id": "grammar-gaps",
+      "text": "**0 valid constructs rejected**"
+    },
+    {
+      "id": "grammar-gaps-count",
+      "text": "113 specification constructs"
+    },
+    {
+      "id": "source-guards",
+      "text": "**HOLDS / HOLDS**"
+    },
+    {
+      "id": "corpus-sweep",
+      "text": "8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members**"
+    },
+    {
+      "id": "corpus-bytes",
+      "text": "47 real files, 4 repositories, 691,855 bytes"
+    },
+    {
+      "id": "docstring-line-classes",
+      "text": "**3,131 of 3,332 symbols**"
+    },
+    {
+      "id": "docstring-zero",
+      "text": "points at the docstring for **0**"
+    },
+    {
+      "id": "ab-error-files",
+      "text": "**12 → 4** error files, **20 → 7** error nodes"
+    },
+    {
+      "id": "ab-delta",
+      "text": "**+4 symbols, +76 relationships**"
+    },
+    {
+      "id": "perf-parse",
+      "text": "parse ×1.55"
+    },
+    {
+      "id": "perf-analyze",
+      "text": "analyze ×1.65"
+    },
+    {
+      "id": "perf-throughput-measured",
+      "text": "throughput is a per-machine measurement, not a claim"
+    },
+    {
+      "id": "directive-memo",
+      "text": "**51% of the analyzer**"
+    },
+    {
+      "id": "project-resolvable",
+      "text": "**93.38% resolvable**"
+    },
+    {
+      "id": "project-nothing-provable-unqualified",
+      "text": "**0** provable-but-unqualified"
+    },
+    {
+      "id": "project-ambiguous",
+      "text": "**747** ambiguous"
+    },
+    {
+      "id": "project-dangling",
+      "text": "**514** dangling"
+    },
+    {
+      "id": "project-qualified-names",
+      "text": "7,730"
+    },
+    {
+      "id": "accessor-total-reduction",
+      "text": "**338,432 → 151,488, 55.2% fewer**"
+    },
+    {
+      "id": "namedchildcount-eliminated",
+      "text": "**93,956 → 0**"
+    },
+    {
+      "id": "facts-byte-identical-under-optimisation",
+      "text": "9,622 facts"
+    },
+    {
+      "id": "master-review-families-present",
+      "text": "three referenceable families"
+    },
+    {
+      "id": "unresolved-sources-zero",
+      "text": "**0** unresolved sources"
+    },
+    {
+      "id": "export-contract-is-not-just-object-types",
+      "text": "**and directive definitions**"
+    },
+    {
+      "id": "exports-are-the-whole-top-level-surface",
+      "text": "540 exports from its 540 top-level declarations"
+    },
+    {
+      "id": "evidence-is-tracked-in-the-repository",
+      "text": "they are **here, in the repository**"
+    },
+    {
+      "id": "offsets-are-characters-not-bytes",
+      "text": "measured rather than assumed, on a line where the two differ"
+    },
+    {
+      "id": "no-ast-recursion-remains",
+      "text": "Four** helpers were converted to an explicit stack"
+    },
+    {
+      "id": "robustness-depth-passes",
+      "text": "ok at 20,000"
+    },
+    {
+      "id": "linearity-is-counted-not-timed",
+      "text": "accessor calls per symbol is **flat to 1%** across a **32×** size range"
+    },
+    {
+      "id": "idempotent-on-a-shared-instance",
+      "text": "identical across four orderings and twenty repeats on one shared instance"
+    },
+    {
+      "id": "production-path-preserves-identities",
+      "text": "the production engine path preserves every identity"
+    },
+    {
+      "id": "every-gate-is-relative-to-the-lane",
+      "text": "a gate still pointed at the **old** `bb_tests` fixture path"
+    },
+    {
+      "id": "doc-truth-runs-last",
+      "text": "Gate 11 runs **last** and that ordering is load-bearing"
+    },
+    {
+      "id": "type-memo-reduced-type-accessors",
+      "text": "**99,735 → 41,558**"
+    },
+    {
+      "id": "accessor-count-moved-both-ways",
+      "text": "The count moved twice in this review and both directions are reported rather than the best one kept"
+    },
+    {
+      "id": "mutation-unapplied-is-fatal",
+      "text": "an unapplied edit is now a hard failure"
+    },
+    {
+      "id": "memo-isolation",
+      "text": "134 ms *slower*"
+    }
+  ]
+}

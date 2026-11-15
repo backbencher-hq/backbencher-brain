@@ -1,0 +1,239 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/new-object-variable-psb14.ps1",
+ "authoredFrom": "PS29. Authored 2026-10-03, from `validation/m14/fixtures/powershell/pass3-probes.ts` P14 \u2014 an adversarial argument written as 'the constructed name can be a VARIABLE', measured rather than suspected.\n\nThe defect: `New-Object`'s constructed name is `comObject ?? typeName ?? positional`, and all three readers produce TEXT. Nothing asked whether that text came from a `variable` node or a literal one, so `New-Object $type` published `instantiates -> type` \u2014 asserting the target IS a type, where the source says \"constructs whatever that variable holds\", resolved at run time. Measured over all 1,108 admitted corpus files through production `parseFile`, cross-referenced against the symbol table OF THE FILE THAT PUBLISHED IT (so a corpus-wide name collision cannot explain it): 123 of 1,268 `instantiates` edges \u2014 9.70% \u2014 named a `variable` symbol their own file declares.\n\nWhy the same class F9 already fixed elsewhere: the lane turned `$type::$method()` from `calls -> $method` into `uses -> method` precisely because a `$`-prefixed member is a VARIABLE, not a name. `instantiates` is the channel that did not get the same treatment, so the fix routes the variable form to `uses` at the same 0.9 and carries `isDynamicTypeName` so a consumer can tell \"reads the variable holding the type name\" from \"reads a variable for some other reason\".\n\nTHE TWIN IS THE LOAD-BEARING PART. `New-Object System.Version` and `New-Object $type` are the same code path with a different node underneath, so a fix that simply SUPPRESSED the variable form would satisfy every positive row in this file and still be wrong. The three literal rows below are what keep `instantiates` firing on the shapes it is for, and `expectRelationshipCount` is what makes the two populations independently pinned rather than one row carrying both.\n\nThe `-TypeName '\u2026'` row is a third shape and the one that decides the implementation: `'$literalType'` in SINGLE quotes is a literal string in PowerShell, while `\"$typeName\"` in double quotes is an interpolation. Line 44 is that case and it is pinned as `instantiates`. Neither is decided by the presence of a `$` in the text \u2014 the pinned grammar wraps BOTH in `array_literal_expression > unary_expression > string_literal`, and the two are separated by what is inside: an `expandable_string_literal > variable` chain versus a `verbatim_string_characters`. A text test would get the single-quoted case backwards.",
+ "expectSymbols": [
+  {
+   "name": "new-object-variable-psb14.ps1",
+   "kind": "module"
+  },
+  {
+   "name": "New-Dynamic",
+   "kind": "function",
+   "ownerName": "new-object-variable-psb14.ps1"
+  },
+  {
+   "name": "a",
+   "kind": "variable",
+   "ownerName": "New-Dynamic"
+  },
+  {
+   "name": "b",
+   "kind": "variable",
+   "ownerName": "New-Dynamic"
+  },
+  {
+   "name": "c",
+   "kind": "variable",
+   "ownerName": "New-Dynamic"
+  },
+  {
+   "name": "d",
+   "kind": "variable",
+   "ownerName": "New-Dynamic"
+  },
+  {
+   "name": "e",
+   "kind": "variable",
+   "ownerName": "New-Dynamic"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "typeName",
+   "line_number": 29,
+   "meta.isDynamicTypeName": true,
+   "meta.isVariableReference": true,
+   "meta.viaNewObject": true,
+   "comment": "The POSITIONAL variable form. A bare `$type` is wrapped by the pinned wasm in an `array_literal_expression`, which is why this arrives on the positional branch with no flag anywhere in the statement. Pre-fix this was `instantiates -> typeName`.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "typeName",
+   "line_number": 34,
+   "meta.isDynamicTypeName": true,
+   "meta.isVariableReference": true,
+   "meta.viaNewObject": true,
+   "comment": "The same shape BEHIND A FLAG. `parameterValue` accepts only a generic_token / string_literal / expandable_string_literal, so it finds nothing for a `variable` and the positional reader takes it \u2014 the flag changes nothing about the node underneath. This row is why the fix reads the node of whichever reader the `??` chain actually took, rather than re-deriving the source shape from the text.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "progId",
+   "line_number": 37,
+   "meta.isDynamicTypeName": true,
+   "meta.isVariableReference": true,
+   "meta.viaNewObject": true,
+   "comment": "The COM ProgID behind a flag, same shape. A COM ProgID is a dotted name by nature, which is why the external-name case was always the designed handling \u2014 but a ProgID held in a VARIABLE is not a name at all, and pre-fix it published `instantiates -> progId` with `isComObject: true` on top.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "typeName",
+   "line_number": 45,
+   "meta.isDynamicTypeName": true,
+   "meta.isVariableReference": true,
+   "meta.viaNewObject": true,
+   "comment": "The INTERPOLATED form. A double-quoted argument reaches the tree as `array_literal_expression > unary_expression > string_literal > expandable_string_literal > variable`, so the WRAPPER's descendant search finds the `variable` and the row is a `uses`. This row is what pins the wrapper rather than the quoted node: the first version of the fix tested the quoted node itself for `expandable_string_literal`, and `mutant-proof-psb14.sh` reported that arm SURVIVED the revert \u2014 nothing could reach it, because the grammar always wraps the argument. The arm was removed and this row is what holds up the test that replaced it.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "instantiates",
+   "from": "New-Dynamic",
+   "target": "System.Version",
+   "line_number": 49,
+   "meta.viaNewObject": true,
+   "comment": "THE TWIN, positional literal. Same command, same reader, same branch as line 29 \u2014 only the node underneath differs. Without this row a fix that suppressed the variable form would pass the whole file.",
+   "meta.isDynamicTypeName": null,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "instantiates",
+   "from": "New-Dynamic",
+   "target": "System.Text.StringBuilder",
+   "line_number": 50,
+   "meta.viaNewObject": true,
+   "comment": "THE TWIN, flagged literal. A dotted .NET name and a COM ProgID look alike and mean different things, which is the invariant `new-object-psa3` already pins; this row says the new arm did not swallow it.",
+   "meta.isDynamicTypeName": null,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "instantiates",
+   "from": "New-Dynamic",
+   "target": "System.Collections.ArrayList",
+   "line_number": 51,
+   "meta.viaNewObject": true,
+   "comment": "THE TWIN, flagged quoted literal. `array_literal_expression` wrapping a `string_literal`, so the descendant-variable search finds nothing and the edge stays an `instantiates`.",
+   "meta.isDynamicTypeName": null,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.a",
+   "line_number": 52,
+   "comment": "`return $a` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.b",
+   "line_number": 52,
+   "comment": "`return $b` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.c",
+   "line_number": 52,
+   "comment": "`return $c` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.d",
+   "line_number": 52,
+   "comment": "`return $d` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.e",
+   "line_number": 52,
+   "comment": "`return $e` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.lit1",
+   "line_number": 52,
+   "comment": "`return $lit1` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.lit2",
+   "line_number": 52,
+   "comment": "`return $lit2` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.lit3",
+   "line_number": 52,
+   "comment": "`return $lit3` evaluates the variable: a read, from the flow-control read (PS38). The eight names on the return list are the population that makes `instantiates 4 + uses` an honest partition, since none of them is a dynamic type name.",
+   "meta.isExpressionRead": true
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "instantiates",
+   "from": "New-Dynamic",
+   "target": "typeName",
+   "comment": "THE PRE-FIX CLASS, stated as a forbid because a forbid is the only vocabulary that can say a LABEL is absent. Every one of lines 29, 34, 37 and 43 published exactly this edge before PS29. This row is the assertion; the four `uses` rows above are the same fact read the other way, and both are kept because they fail independently \u2014 the forbid kills a regression that re-adds the mislabel, the positive rows kill one that drops the edge altogether."
+  },
+  {
+   "type": "instantiates",
+   "from": "New-Dynamic",
+   "target": "progId",
+   "comment": "The same pre-fix class on the COM form, which is the row that also carried `isComObject: true` \u2014 so before PS29 the graph asserted both that a variable was a type and that the type was a COM object."
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "System.Version",
+   "comment": "THE OTHER DIRECTION. The fix must not be a blanket reclassification: a literal type name read by `New-Object` is a construction, not a name read, and routing it to `uses` would be a different mislabel of the same size. This forbid and the `instantiates` row for the same target at the same line are the pair that makes the rule about the NODE rather than about the command."
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "System.Collections.ArrayList",
+   "comment": "The same, on the flagged quoted literal \u2014 the shape whose child node type is `string_literal`, so it is the case a text-based `$` test would most plausibly have broken."
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "$literalType",
+   "comment": "Line 46 is `New-Object '$literalType'` \u2014 SINGLE quotes, so a literal string in PowerShell and the control for the interpolated row at line 45. It stays an `instantiates`, and its target KEEPS the `$` sigil: `unquoteTarget` strips quotes but not a sigil, so this row names something no symbol can have. That residue is 0 on the admitted corpus (`pass3-probes.ts` P14 measures `targetsBeginningWithADollarSigil: 0` over 1,227 edges) and is declared in the doc's limitations rather than fixed here, because the fix belongs to the invocation-operator reader this fixture does not exercise."
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.a",
+   "line_number": 29,
+   "comment": "THE WRITE-AS-READ FABRICATION, and the row `powershell/assignment-read-reads-the-left` needs. `$a` is the variable this line DECLARES; a `uses` edge to it says the assignment read the name it was defining, which `bb_graph` renders as a self-loop. The pre-fix identity guard compared two tree-sitter wrappers with `===` and therefore excluded nothing, so every assignment's LHS was read. This forbid pins the shape on the bare positional form; the `uses == 12` count row is the aggregate backstop for the interpolated twin on line 45 and for any other LHS the reader might start reading."
+  },
+  {
+   "type": "uses",
+   "from": "New-Dynamic",
+   "target": "New-Dynamic.d",
+   "line_number": 45,
+   "comment": "The same fabrication on the INTERPOLATED form, which is a different reader: `$d = New-Object \"$typeName\"` reaches the variable through `array_literal_expression > unary_expression > string_literal > expandable_string_literal`, so a guard that excluded the LHS by direct-child identity would still leak this one. Pinned separately because the two shapes were fixed by the same node-identity change and a revert can restore one without the other."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "instantiates",
+   "equals": 4,
+   "comment": "Four literal targets: three type names and the single-quoted literal at line 46. A fix that suppressed the variable form scores 4 and passes; a fix that also reclassified literals scores 0 and fails; the pre-fix state scores 8."
+  },
+  {
+   "type": "uses",
+   "equals": 12,
+   "comment": "Four variable references, and the count is what makes the two populations independently load-bearing: `instantiates 4 + uses 4` is the whole `New-Object` edge population of this file, so a fix that dropped an edge without relabelling it cannot balance out. Raised 4 -> 12 by PS38: the return list at line 52 reads its eight operands, none of which is a `New-Object` type name."
+  }
+ ]
+}

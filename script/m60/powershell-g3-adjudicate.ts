@@ -20,8 +20,8 @@ import { readFileSync } from "fs"
 import { execFileSync } from "child_process"
 import { join } from "path"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
-const CORPUS = "$HOME/fixtures/repositories"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const NEW = argv[argv.indexOf("--candidate") + 1]
 const WIRED = join(ROOT, "wasm/tree-sitter-powershell.wasm")

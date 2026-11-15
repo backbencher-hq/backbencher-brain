@@ -1,0 +1,191 @@
+{
+  "fixtureId": "go/sub-unit-reason-codes",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "docs/M14-HONESTY-CONTRACT.md section 4, requirement 1: every relationship emitted with confidence < 1.0 must carry a machine-readable reason code, not just a number. Measured over bb_tests/repositories/go-stdlib at NFILES=200 through the production path (getParser -> parse -> analyze) on 2026-10-04, before GO_SUB_UNIT_REASON existed: 14,597 sub-1.0 rows carried NO reasonCode — 6,718 calls, 3,390 uses, 2,812 references, 855 instantiates, 781 imports, 41 extends — and only `overrides` (4 rows) complied. The fixture constructs one edge of every (type, metadata.relationshipType) pair that is published below 1.0, so a regression that drops or empties the table fails here. The FORBID half carries equal weight: a confidence-1.0 edge must NOT grow a reasonCode, which is the mutation a blanket 'stamp every row' fix would produce, and a sub-1.0 row must not borrow another type's code.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "struct" },
+    { "name": "Readable", "kind": "interface" },
+    { "name": "Doubler", "kind": "interface" },
+    { "name": "Holder", "kind": "struct" },
+    { "name": "Wrapper", "kind": "struct" },
+    { "name": "Produce", "kind": "function" },
+    { "name": "NewWidget", "kind": "function" },
+    { "name": "MakeWidget", "kind": "function" },
+    { "name": "ReadField", "kind": "function" },
+    { "name": "Pump", "kind": "function" },
+    { "name": "Drain", "kind": "function" },
+    { "name": "Describe", "kind": "method" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "source": "Wrapper",
+      "target": "Base",
+      "line_number": 35,
+      "meta.relationshipType": "go_struct_embedding",
+      "meta.evidenceClass": "inferred",
+      "meta.reasonCode": "promotion_by_embedding_not_a_declared_supertype",
+      "comment": "struct embedding: Go has no extends clause, so the edge records a promotion the compiler resolves"
+    },
+    {
+      "type": "extends",
+      "source": "Doubler",
+      "target": "Readable",
+      "line_number": 24,
+      "meta.relationshipType": "go_interface_embedding",
+      "meta.evidenceClass": "inferred",
+      "meta.reasonCode": "interface_method_set_inclusion_not_a_declared_supertype",
+      "comment": "interface embedding is method-set inclusion, the other Go inheritance shape"
+    },
+    {
+      "type": "calls",
+      "source": "MakeWidget",
+      "target": "NewWidget",
+      "line_number": 54,
+      "meta.relationshipType": "go_function_call",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+      "comment": "plain intra-package call: the LEAF is recorded and the owner is not resolved per file"
+    },
+    {
+      "type": "calls",
+      "source": "packageBuilt",
+      "target": "NewWidget",
+      "line_number": 58,
+      "meta.relationshipType": "go_package_scope_call",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file",
+      "comment": "the same fact reached from a package-scope var initializer carries a distinct label"
+    },
+    {
+      "type": "instantiates",
+      "source": "MakeWidget",
+      "target": "NewWidget",
+      "line_number": 54,
+      "meta.relationshipType": "go_instantiation",
+      "meta.evidenceClass": "inferred",
+      "meta.reasonCode": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
+      "comment": "0.6: PascalCase is a NAMING CONVENTION with no declaration behind it. Pinned at 0.6 because that is the honest level, not because the edge is certainly a construction."
+    },
+    {
+      "type": "instantiates",
+      "source": "packageBuilt",
+      "target": "NewWidget",
+      "line_number": 58,
+      "meta.relationshipType": "go_package_scope_instantiation",
+      "meta.evidenceClass": "inferred",
+      "meta.reasonCode": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
+      "comment": "the same convention reached from package scope. GOD12 carried to this push site: the source is the DECLARATION doing the construction, not the `global` pseudo-source — `var packageBuilt = NewWidget(1)` is work the binding `packageBuilt` exists to hold, and `resolveGoWorkSource` answers that name for this node (the `calls` row beside it already did)."
+    },
+    {
+      "type": "instantiates",
+      "source": "Build",
+      "target": "Holder",
+      "line_number": 45,
+      "meta.relationshipType": "go_composite_literal_construction",
+      "meta.evidenceClass": "structural",
+      "meta.reasonCode": "type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file",
+      "comment": "a composite literal's type IS read from the tree; 0.8 because the declaration may be in another file"
+    },
+    {
+      "type": "uses",
+      "source": "ReadField",
+      "target": "Field",
+      "line_number": 61,
+      "meta.relationshipType": "go_selector_use",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "field_leaf_read_whose_receiver_type_is_not_resolved_per_file",
+      "comment": "selector read: the FIELD leaf is recorded, the receiver's type is not resolved"
+    },
+    {
+      "type": "uses",
+      "source": "Pump",
+      "target": "Sink",
+      "line_number": 68,
+      "meta.relationshipType": "go_channel_operation",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "channel_leaf_read_without_its_element_type",
+      "comment": "channel send: direction is in operationType, the element type is not read"
+    },
+    {
+      "type": "uses",
+      "source": "Drain",
+      "target": "Sink",
+      "line_number": 70,
+      "meta.relationshipType": "go_channel_operation",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "channel_leaf_read_without_its_element_type",
+      "comment": "channel receive, same unresolved step as the send above"
+    },
+    {
+      "type": "references",
+      "source": "Holder",
+      "target": "Base",
+      "line_number": 28,
+      "meta.relationshipType": "declared_type",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.reasonCode": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
+      "comment": "struct field type position"
+    },
+    {
+      "type": "references",
+      "source": "Produce",
+      "target": "Base",
+      "line_number": 41,
+      "meta.relationshipType": "return_type",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.reasonCode": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
+      "comment": "return_type needs a NAMED result; an unnamed single result is a bare type_identifier and the pass reads the list from the tree"
+    },
+    {
+      "type": "imports",
+      "source": "gofixture",
+      "target": "fmt",
+      "line_number": 4,
+      "meta.isGoImportDep": true,
+      "meta.evidenceClass": "import_based",
+      "meta.reasonCode": "target_is_a_module_path_not_a_symbol",
+      "comment": "an import names a MODULE PATH, which is not a symbol any analyzer can bind"
+    },
+    {
+      "type": "contains",
+      "source": "Base",
+      "target": "Field",
+      "line_number": 17,
+      "meta.evidenceClass": "structural",
+      "comment": "confidence 1.0 — a struct field IS a member, and this row must NOT grow a reasonCode"
+    },
+    {
+      "type": "exports",
+      "source": "gofixture",
+      "target": "Base",
+      "line_number": 17,
+      "meta.evidenceClass": "structural",
+      "comment": "confidence 1.0 — Go's export rule is syntactic and total (spec, Exported identifiers), so there is nothing unresolved to state"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "Base",
+      "target": "Describe",
+      "meta.reasonCode": "promotion_by_embedding_not_a_declared_supertype",
+      "comment": "confidence 1.0 carries no reasonCode: stamping every row is the mutation this forbid kills"
+    },
+    {
+      "type": "calls",
+      "source": "Describe",
+      "target": "Sprintf",
+      "meta.reasonCode": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
+      "comment": "a calls row must not borrow the instantiates reason code"
+    },
+    {
+      "type": "extends",
+      "source": "Doubler",
+      "target": "Readable",
+      "meta.reasonCode": "promotion_by_embedding_not_a_declared_supertype",
+      "comment": "an INTERFACE embedding must not carry the struct-embedding reason code — the unresolved step differs"
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 {
   "status": "verified",
-  "currentCommit": "3002d47088ff50c4fcc2983cea51ae5081344c72",
+  "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
-  "generatedAt": "2026-11-03T23:57:56.011Z",
+  "generatedAt": "2026-11-04T23:06:25.681Z",
   "passed": 27,
   "failed": 0,
   "negativeCases": 3,
@@ -17,31 +17,31 @@
     "importResolvedInEdges": 0
   },
   "timing": {
-    "boundedMs": 1116,
-    "fullMs": 7783,
+    "boundedMs": 1543,
+    "fullMs": 13168,
     "refreshedRows": 1,
     "totalEdges0": 45980,
     "boundedSamples": [
-      1116,
-      1322,
-      1195
+      1543,
+      1726,
+      1678
     ],
     "fullSamples": [
-      7783,
-      9179,
-      15396
+      13168,
+      15543,
+      27720
     ]
   },
   "mutation": "not-run (control)",
   "checks": [
-    "ok: A2: full index succeeds — errors=0 wall=76089ms",
+    "ok: A2: full index succeeds — errors=0 wall=95234ms",
     "ok: A2: full run reports derivedPass=full — full",
     "ok: A2: full index has edges into hub0 — E0=15994",
     "ok: A2: fixture is edge-dense (≥25K edges) — 45980",
     "ok: A2: warm full pass succeeds — errors=0 derived=full",
     "ok: A2: incremental run succeeds — errors=0",
     "ok: A2: incremental run reports derivedPass=bounded — bounded",
-    "ok: A2: exactly 1 file newly parsed — {\"totalCandidates\":2001,\"newlyParsed\":1,\"unchanged\":2000,\"skipped\":0,\"symbolLoss\":0,\"errors\":0,\"timeouts\":0,\"cancelled\":0,\"derivedPass\":\"bounded\",\"parseMode\":\"worker-pool\",\"storeFailures\":0,\"storeFailureFiles\":0,\"missingAfterRecovery\":0,\"unresolvedRelationships\":0,\"embedModels\":[{\"model\":\"nvidia/nemotron-3-embed-1b\",\"dimension\":2048,\"count\":1110}],\"embeddingIntegrity\":{\"total\":1110,\"models\":[{\"model\":\"nvidia/nemotron-3-embed-1b\",\"rows\":1110,\"dimensions\":[2048]}],\"mixed\":false,\"dimensionMismatches\":0,\"malformedVectors\":0,\"unusableEmbeddings\":0,\"scanned\":1110,\"truncated\":false},\"embedOutcome\":{\"queued\":23994,\"embedded\":8640,\"failed\":0,\"skipped\":0,\"dropped\":0,\"invalid\":0}}",
+    "ok: A2: exactly 1 file newly parsed — {\"totalCandidates\":2001,\"newlyParsed\":1,\"unchanged\":2000,\"skipped\":0,\"symbolLoss\":0,\"errors\":0,\"timeouts\":0,\"cancelled\":0,\"derivedPass\":\"bounded\",\"parseMode\":\"worker-pool\",\"storeFailures\":0,\"storeFailureFiles\":0,\"missingAfterRecovery\":0,\"unresolvedRelationships\":0,\"embedModels\":[{\"model\":\"nvidia/nemotron-3-embed-1b\",\"dimension\":2048,\"count\":3102}],\"embeddingIntegrity\":{\"total\":3102,\"models\":[{\"model\":\"nvidia/nemotron-3-embed-1b\",\"rows\":3102,\"dimensions\":[2048]}],\"mixed\":false,\"dimensionMismatches\":0,\"malformedVectors\":0,\"unusableEmbeddings\":0,\"scanned\":3102,\"truncated\":false},\"embedOutcome\":{\"queued\":23994,\"embedded\":8380,\"failed\":0,\"skipped\":0,\"dropped\":0,\"invalid\":0}}",
     "ok: A2: bounded telemetry present — {\"repairedInEdges\":15994,\"purgedDeletedFiles\":0,\"touchedSymbols\":3,\"resolvedStoredEdges\":4008,\"stillUnresolvedInEdges\":0,\"healedZeroLines\":0,\"importResolvedInEdges\":0}",
     "ok: A2: caller edges into edited file RESTORED — E1=15997 vs E0=15994",
     "ok: A2: restored edges are resolved — 0",
@@ -58,14 +58,14 @@
     "ok: A2: bounded pass did NOT touch untouched hub1 edges (scope honesty) — 0",
     "ok: A2: deleted file leaves zero symbols (absence proof) — 0",
     "ok: A2: bounded telemetry touches only the edited file's symbols (≤ fixture file symbol count) — touched=3",
-    "ok: A2: full post-pass time recorded — 7783",
-    "ok: A2: bounded post-pass time recorded — 1116",
-    "ok: A2: bounded pass faster than full pass (min-of-3 interleaved) — bounded=1116ms (samples 1116,1322,1195) full=7783ms (samples 7783,9179,15396)"
+    "ok: A2: full post-pass time recorded — 13168",
+    "ok: A2: bounded post-pass time recorded — 1543",
+    "ok: A2: bounded pass faster than full pass (min-of-3 interleaved) — bounded=1543ms (samples 1543,1726,1678) full=13168ms (samples 13168,15543,27720)"
   ],
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-03T23:57:56.011Z",
-    "contentSha256": "c901b840610bba13b86800e05b3c376fc096cd5b9993bd0081deb18809ff9b1f"
+    "sealedAt": "2026-11-04T23:06:25.704Z",
+    "contentSha256": "ff9de434d28299f7f8be28c99c1661ca65fa3dc6380702e4972a1cc1892c0427"
   }
 }

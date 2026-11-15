@@ -1,0 +1,105 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.mts \u2014 DUPLICATE SPLIT pass, one store run per repository",
+  "reposBanked": [
+    "boundary",
+    "consul",
+    "docker",
+    "hasura-engine",
+    "kong",
+    "nomad",
+    "nvim-treesitter",
+    "packer",
+    "tflint",
+    "tfsec",
+    "vault",
+    "waypoint",
+    "yq"
+  ],
+  "reposAttempted": 16,
+  "indexerEligibleFiles": 1575,
+  "notYetBanked": "identical file count to the previous commit \u2014 the three largest repositories are still indexing; one JSON per repo, so the delta costs only those three",
+  "split": {
+    "spellingProjectUnique": 229,
+    "duplicatesExist": 2079,
+    "movable": 2308
+  },
+  "perType": {
+    "contains": {
+      "edges": 74517,
+      "scopedWouldMove": 1089,
+      "moveUniqueSpelling": 229,
+      "moveDuplicateSpelling": 860,
+      "boundOtherFile": 1089,
+      "targetUnbound": 27,
+      "scopedAlreadyRight": 73401,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    },
+    "references": {
+      "edges": 15527,
+      "scopedWouldMove": 606,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 606,
+      "boundOtherFile": 7670,
+      "targetUnbound": 1231,
+      "scopedAlreadyRight": 755,
+      "twinExists": 1375,
+      "noCandidateAnywhere": 11560
+    },
+    "exports": {
+      "edges": 7009,
+      "scopedWouldMove": 589,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 589,
+      "boundOtherFile": 589,
+      "targetUnbound": 3,
+      "scopedAlreadyRight": 6417,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    },
+    "uses": {
+      "edges": 688,
+      "scopedWouldMove": 0,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0,
+      "boundOtherFile": 484,
+      "targetUnbound": 169,
+      "scopedAlreadyRight": 0,
+      "twinExists": 32,
+      "noCandidateAnywhere": 487
+    },
+    "imports": {
+      "edges": 288,
+      "scopedWouldMove": 0,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0,
+      "boundOtherFile": 0,
+      "targetUnbound": 281,
+      "scopedAlreadyRight": 0,
+      "twinExists": 0,
+      "noCandidateAnywhere": 7
+    },
+    "extends": {
+      "edges": 53,
+      "scopedWouldMove": 24,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 24,
+      "boundOtherFile": 24,
+      "targetUnbound": 0,
+      "scopedAlreadyRight": 29,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    },
+    "calls": {
+      "edges": 4,
+      "scopedWouldMove": 0,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0,
+      "boundOtherFile": 0,
+      "targetUnbound": 0,
+      "scopedAlreadyRight": 4,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    }
+  }
+}

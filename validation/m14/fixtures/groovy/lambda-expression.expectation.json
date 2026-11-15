@@ -1,0 +1,30 @@
+{
+  "fixtureId": "groovy/lambda-expression",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 groovy lane (2026-09-25). M14.0.F6 read `fixture-coverage-groovy: FAIL — uncovered: [lambda_expression]` at HEAD: the analyzer branches on that node type in two places (the binding walk's scope boundary and the typed-closure-misparse discriminator) and NO committed fixture's parse contained it, so both branches had gone unexercised since they were written. The shape is not exotic and the first framing of it was WRONG: the rule is not 'the Java-8 parenthesised form' — the census over the two pinned corpora (script/m14/tmp/gr-lambda-census.ts) finds 60 occurrences in 26 files, with the node's parent a variable_declarator (26), an argument_list (20), an expression_statement (8), a range_expression (3), a closure (2) or a return_statement (1), and the sites are mainstream: `.filter(s -> !s.isEmpty())` (build.gradle), `map.forEach((K key, V value) -> { … })` (AbstractPromiseFactory), `context.registerBean(…, () -> userCacheManager)` (a Spring spec). The grammar rule (script/m14/tmp/gr-lambda-shape.ts) is: every BRACE form is a `closure` (`{ x -> x + 1 }`, `{ int x -> x + 1 }`, `{ x + 1 }`, `{ a, b -> a + b }`, `list.each { int x -> print x }`), and any UNBRACED arrow is a `lambda_expression` — `(int x) -> x + 1`, `s -> !s.isEmpty()`, `() -> x`, `(K k, V v) -> { … }` — parenthesised or not, typed or not. This fixture therefore states the CONTRACT for the real syntax rather than counting a node: a lambda is an EXPRESSION, it produces no symbol, its parameters are not project symbols, and the calls in its body attribute to the lexically enclosing declaration, at the line each call is written on.",
+  "expectSymbols": [
+    { "name": "LambdaHolder", "kind": "class" },
+    { "name": "target", "kind": "method", "ownerName": "LambdaHolder" },
+    { "name": "run", "kind": "method", "ownerName": "LambdaHolder" }
+  ],
+  "forbidSymbols": [
+    { "name": "x", "comment": "a typed lambda parameter `(int x)` is not a project symbol" },
+    { "name": "s", "comment": "neither is the inferred-parameter arrow's `s`, in either lambda" },
+    { "name": "doubler", "comment": "nor a local binding holding a lambda" },
+    { "name": "supplier", "comment": "nor the zero-argument arrow's binding" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "run", "target": "toUpperCase", "line_number": 25, "comment": "the arrow lambda's body call attributes to the enclosing method, at the line the call is written on (M49 G7 groovy attribution contract)" },
+    { "type": "calls", "from": "run", "target": "target", "line_number": 26, "comment": "the zero-argument arrow's body call (`() -> target()`) — the parent role the lane had never exercised" },
+    { "type": "calls", "from": "run", "target": "ofNullable", "line_number": 27, "comment": "an arrow lambda in ARGUMENT position (the corpus's second-largest parent role, 20 occurrences)" },
+    { "type": "calls", "from": "run", "target": "filter", "line_number": 27, "comment": "and the chained call that takes it" },
+    { "type": "calls", "from": "run", "target": "isEmpty", "line_number": 27, "comment": "the argument lambda's OWN body call, attributed to the enclosing method on ITS line" },
+    { "type": "calls", "from": "run", "target": "doubler", "line_number": 28, "comment": "invoking a local that holds a lambda is a call to that name" },
+    { "type": "references", "from": "run", "target": "String", "line_number": 25, "comment": "the lambda's typed parameter is a reference at the lambda's line" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "doubler", "comment": "the arrow lambda is an expression: it must not become a contained declaration of the method" },
+    { "type": "contains", "target": "supplier", "comment": "same for the zero-argument arrow's binding" }
+  ]
+}

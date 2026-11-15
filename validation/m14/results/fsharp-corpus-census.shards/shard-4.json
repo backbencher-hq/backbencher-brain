@@ -1,0 +1,752 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-fsharp-corpus-census",
+  "generatedAt": "2026-09-26T02:26:52.527Z",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories/fsharp",
+    "roots": [
+      "/tmp/fsharp-census/shard-4.txt"
+    ],
+    "files": 1323,
+    "discovered": 1323,
+    "repoRevision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "dirty": false
+  },
+  "note": "First honest corpus measurement of the fsharp lane (no differential lane exists: fsharp is in neither LANGS nor the oracle table of script/m14/differential.ts). Measures exit distribution, symbol kinds, relationship types, dangling endpoints (edge endpoint naming no symbol of the file) and path-valued endpoints. Not an oracle comparison — a census.",
+  "totals": {
+    "symbols": 17007,
+    "relationships": 43652,
+    "danglingSource": 1839,
+    "danglingTarget": 19313,
+    "qualifiedSourceMismatches": 1812,
+    "pathEndpoints": 0,
+    "parseErrorsOrHasError": 492,
+    "analyzerThrew": 0
+  },
+  "symbolKinds": {
+    "variable": 3154,
+    "function": 3097,
+    "namespace": 290,
+    "module": 1081,
+    "enum": 297,
+    "enum_member": 950,
+    "class": 1040,
+    "method": 3936,
+    "property": 2980,
+    "interface": 75,
+    "constructor": 41,
+    "type": 66
+  },
+  "relationshipTypes": {
+    "contains": 14613,
+    "references": 2340,
+    "implements": 338,
+    "overrides": 1809,
+    "calls": 24299,
+    "extends": 225,
+    "instantiates": 28
+  },
+  "topDanglingNames": [
+    {
+      "name": "Some",
+      "count": 692
+    },
+    {
+      "name": "map",
+      "count": 447
+    },
+    {
+      "name": "not",
+      "count": 392
+    },
+    {
+      "name": "Emit",
+      "count": 315
+    },
+    {
+      "name": "Equal",
+      "count": 301
+    },
+    {
+      "name": "box",
+      "count": 273
+    },
+    {
+      "name": "failwith",
+      "count": 270
+    },
+    {
+      "name": "failwithf",
+      "count": 198
+    },
+    {
+      "name": "sprintf",
+      "count": 190
+    },
+    {
+      "name": "ref",
+      "count": 180
+    },
+    {
+      "name": "Add",
+      "count": 178
+    },
+    {
+      "name": "emitExpr",
+      "count": 167
+    },
+    {
+      "name": "System",
+      "count": 154
+    },
+    {
+      "name": "True",
+      "count": 153
+    },
+    {
+      "name": "iter",
+      "count": 139
+    },
+    {
+      "name": "tryFix",
+      "count": 130
+    },
+    {
+      "name": "Tree",
+      "count": 126
+    },
+    {
+      "name": "uint16",
+      "count": 114
+    },
+    {
+      "name": "filter",
+      "count": 110
+    },
+    {
+      "name": "Combine",
+      "count": 105
+    },
+    {
+      "name": "Assert",
+      "count": 100
+    },
+    {
+      "name": "Xunit",
+      "count": 100
+    },
+    {
+      "name": "Contains",
+      "count": 98
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.Text",
+      "count": 96
+    },
+    {
+      "name": "IndexOf",
+      "count": 95
+    },
+    {
+      "name": "int32",
+      "count": 90
+    },
+    {
+      "name": "AssertEqual",
+      "count": 83
+    },
+    {
+      "name": "CancellableTasks",
+      "count": 82
+    },
+    {
+      "name": "Microsoft.VisualStudio.FSharp.Editor",
+      "count": 82
+    },
+    {
+      "name": "int64",
+      "count": 80
+    },
+    {
+      "name": "Append",
+      "count": 80
+    },
+    {
+      "name": "uint32",
+      "count": 77
+    },
+    {
+      "name": "TryGetValue",
+      "count": 76
+    },
+    {
+      "name": "GetTextAsync",
+      "count": 75
+    },
+    {
+      "name": "Microsoft.CodeAnalysis",
+      "count": 73
+    },
+    {
+      "name": "System.Collections.Immutable",
+      "count": 72
+    },
+    {
+      "name": "Fail",
+      "count": 71
+    },
+    {
+      "name": "System.IO",
+      "count": 68
+    },
+    {
+      "name": "AppendAllText",
+      "count": 67
+    },
+    {
+      "name": "System.Composition",
+      "count": 65
+    }
+  ],
+  "qualifiedSourceNames": [
+    {
+      "name": "TypeSymbolKind.GetCustomAttributes",
+      "count": 32
+    },
+    {
+      "name": "ProvidedParameter.GetCustomAttributes",
+      "count": 24
+    },
+    {
+      "name": "TypeSymbolKind.Equals",
+      "count": 20
+    },
+    {
+      "name": "TypeSymbolKind.ToString",
+      "count": 20
+    },
+    {
+      "name": "TypeSymbolKind.Name",
+      "count": 18
+    },
+    {
+      "name": "TypeSymbolKind.MetadataToken",
+      "count": 18
+    },
+    {
+      "name": "TypeSymbolKind.GetCustomAttributesData",
+      "count": 18
+    },
+    {
+      "name": "TypeSymbolKind.DeclaringType",
+      "count": 16
+    },
+    {
+      "name": "TypeSymbolKind.IsDefined",
+      "count": 16
+    },
+    {
+      "name": "TypeSymbolKind.MemberType",
+      "count": 16
+    },
+    {
+      "name": "TypeSymbolKind.GetHashCode",
+      "count": 15
+    },
+    {
+      "name": "ProvidedParameter.Name",
+      "count": 14
+    },
+    {
+      "name": "ProvidedParameter.GetCustomAttributesData",
+      "count": 14
+    },
+    {
+      "name": "ProvidedParameter.Attributes",
+      "count": 12
+    },
+    {
+      "name": "ProvidedParameter.DeclaringType",
+      "count": 12
+    },
+    {
+      "name": "ProvidedParameter.IsDefined",
+      "count": 12
+    },
+    {
+      "name": "TypeSymbolKind.MakeArrayType",
+      "count": 12
+    },
+    {
+      "name": "TypeSymbolKind.Attributes",
+      "count": 12
+    },
+    {
+      "name": "TypeSymbolKind.GetEvents",
+      "count": 11
+    },
+    {
+      "name": "ProvidedParameter.ReflectedType",
+      "count": 10
+    },
+    {
+      "name": "ProvidedParameter.MemberType",
+      "count": 10
+    },
+    {
+      "name": "TypeSymbolKind.ReflectedType",
+      "count": 10
+    },
+    {
+      "name": "TypeSymbolKind.FullName",
+      "count": 8
+    },
+    {
+      "name": "TypeSymbolKind.GetGenericArguments",
+      "count": 8
+    },
+    {
+      "name": "ProvidedParameter.Invoke",
+      "count": 6
+    },
+    {
+      "name": "ILTypeRefScope.ToString",
+      "count": 6
+    },
+    {
+      "name": "TypeSymbolKind.BaseType",
+      "count": 6
+    },
+    {
+      "name": "TypeSymbolKind.Assembly",
+      "count": 6
+    },
+    {
+      "name": "TypeSymbolKind.Namespace",
+      "count": 6
+    },
+    {
+      "name": "TypeSymbolKind.IsArrayImpl",
+      "count": 6
+    }
+  ],
+  "pathEndpointNames": [],
+  "buckets": {
+    "tests": {
+      "files": 1046,
+      "errorFiles": 473,
+      "symbols": 5941,
+      "relationships": 11235
+    },
+    "vsintegration": {
+      "files": 277,
+      "errorFiles": 19,
+      "symbols": 11066,
+      "relationships": 32417
+    }
+  },
+  "worstFiles": [
+    {
+      "file": "tests/service/data/TestTP/ProvidedTypes.fs",
+      "dangling": 4025,
+      "total": 9630
+    },
+    {
+      "file": "vsintegration/tests/MockTypeProviders/DummyProviderForLanguageServiceTesting/ProvidedTypes.fs",
+      "dangling": 3529,
+      "total": 8687
+    },
+    {
+      "file": "vsintegration/src/FSharp.ProjectSystem.FSharp/Project.fs",
+      "dangling": 557,
+      "total": 950
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.Project.fs",
+      "dangling": 435,
+      "total": 518
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.Miscellaneous.fs",
+      "dangling": 380,
+      "total": 460
+    },
+    {
+      "file": "vsintegration/tests/Salsa/VsMocks.fs",
+      "dangling": 341,
+      "total": 2042
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.UpToDate.fs",
+      "dangling": 303,
+      "total": 316
+    },
+    {
+      "file": "vsintegration/tests/Salsa/salsa.fs",
+      "dangling": 250,
+      "total": 701
+    },
+    {
+      "file": "vsintegration/src/FSharp.VS.FSI/fsiSessionToolWindow.fs",
+      "dangling": 237,
+      "total": 464
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.References.fs",
+      "dangling": 234,
+      "total": 285
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/Navigation/GoToDefinition.fs",
+      "dangling": 227,
+      "total": 356
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/TestLib.ProjectSystem.fs",
+      "dangling": 225,
+      "total": 444
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyLanguageService/Tests.LanguageService.Script.fs",
+      "dangling": 223,
+      "total": 281
+    },
+    {
+      "file": "vsintegration/src/FSharp.LanguageService/FSharpSource.fs",
+      "dangling": 199,
+      "total": 323
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/LanguageService/WorkspaceExtensions.fs",
+      "dangling": 195,
+      "total": 291
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/Completion/SignatureHelp.fs",
+      "dangling": 187,
+      "total": 227
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/LanguageService/FSharpProjectOptionsManager.fs",
+      "dangling": 170,
+      "total": 272
+    },
+    {
+      "file": "vsintegration/src/FSharp.LanguageService/Intellisense.fs",
+      "dangling": 170,
+      "total": 232
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/TestLib.LanguageService.fs",
+      "dangling": 160,
+      "total": 246
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/DocComments/XMLDocumentation.fs",
+      "dangling": 157,
+      "total": 312
+    },
+    {
+      "file": "vsintegration/tests/FSharp.Editor.Tests/SignatureHelpProviderTests.fs",
+      "dangling": 152,
+      "total": 234
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyLanguageService/Tests.LanguageService.TimeStamp.fs",
+      "dangling": 151,
+      "total": 180
+    },
+    {
+      "file": "vsintegration/tests/FSharp.Editor.Tests/CompletionProviderTests.fs",
+      "dangling": 150,
+      "total": 469
+    },
+    {
+      "file": "vsintegration/src/FSharp.ProjectSystem.FSharp/AppConfigHelper.fs",
+      "dangling": 149,
+      "total": 188
+    },
+    {
+      "file": "tests/service/data/TestTP/TestTP.fs",
+      "dangling": 140,
+      "total": 243
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.Configs.fs",
+      "dangling": 133,
+      "total": 155
+    },
+    {
+      "file": "vsintegration/tests/FSharp.Editor.Tests/Refactors/AddReturnTypeTests.fs",
+      "dangling": 132,
+      "total": 151
+    },
+    {
+      "file": "vsintegration/tests/FSharp.Editor.Tests/CodeFixes/RemoveUnnecessaryParenthesesTests.fs",
+      "dangling": 131,
+      "total": 475
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/LanguageService/LanguageService.fs",
+      "dangling": 126,
+      "total": 187
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.MultiTargeting.fs",
+      "dangling": 121,
+      "total": 136
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/Common/Extensions.fs",
+      "dangling": 120,
+      "total": 260
+    },
+    {
+      "file": "vsintegration/src/FSharp.VS.FSI/sessions.fs",
+      "dangling": 117,
+      "total": 215
+    },
+    {
+      "file": "vsintegration/src/FSharp.Editor/LanguageService/Tokenizer.fs",
+      "dangling": 109,
+      "total": 211
+    },
+    {
+      "file": "vsintegration/tests/FSharp.Editor.Tests/HelpContextServiceTests.fs",
+      "dangling": 105,
+      "total": 157
+    },
+    {
+      "file": "vsintegration/tests/FSharp.Editor.Tests/CodeFixes/AddMissingAttributeToSignatureTests.fs",
+      "dangling": 103,
+      "total": 154
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.RoundTrip.fs",
+      "dangling": 103,
+      "total": 119
+    },
+    {
+      "file": "vsintegration/src/FSharp.VS.FSI/fsiLanguageService.fs",
+      "dangling": 99,
+      "total": 155
+    },
+    {
+      "file": "vsintegration/src/FSharp.ProjectSystem.FSharp/MSBuildUtilities.fs",
+      "dangling": 96,
+      "total": 175
+    },
+    {
+      "file": "vsintegration/src/FSharp.LanguageService/ProjectSitesAndFiles.fs",
+      "dangling": 95,
+      "total": 164
+    },
+    {
+      "file": "vsintegration/tests/UnitTests/LegacyLanguageService/Tests.LanguageService.ParameterInfo.fs",
+      "dangling": 93,
+      "total": 151
+    }
+  ],
+  "samples": [
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/If 06.fs",
+      "type": "references",
+      "source": "Module",
+      "target": "global",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 01.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 01.fs",
+      "type": "overrides",
+      "source": "Module.P1",
+      "target": "P1",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 02.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 02.fs",
+      "type": "overrides",
+      "source": "Module.P1",
+      "target": "P1",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 03.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 03.fs",
+      "type": "overrides",
+      "source": "Module.P1",
+      "target": "P1",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 11.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 12.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 13.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 14.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Expression/Object - Class 15.fs",
+      "type": "implements",
+      "source": "Module",
+      "target": "T",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/LeadingKeyword/OverrideKeyword.fs",
+      "type": "overrides",
+      "source": "D.E",
+      "target": "E",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/LeadingKeyword/OverrideValKeyword.fs",
+      "type": "overrides",
+      "source": "X.val",
+      "target": "val",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Member/Inherit 01.fs",
+      "type": "extends",
+      "source": "T",
+      "target": "I",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Member/Inherit 02.fs",
+      "type": "extends",
+      "source": "T1",
+      "target": "T2",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Member/Inherit 05.fs",
+      "type": "extends",
+      "source": "T",
+      "target": "member",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Member/Inherit 07.fsi",
+      "type": "extends",
+      "source": "T",
+      "target": "member",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/Member/Inherit 08.fs",
+      "type": "extends",
+      "source": "T",
+      "target": "t",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/Member/Interface 01.fs",
+      "type": "overrides",
+      "source": "T.P1",
+      "target": "P1",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/MemberFlag/SynMemberDefnAutoPropertyHasCorrectKeyword.fs",
+      "type": "overrides",
+      "source": "Foo.val",
+      "target": "val",
+      "line": null
+    },
+    {
+      "class": "dangling-source",
+      "file": "tests/service/data/SyntaxTree/MemberFlag/SynMemberDefnMemberSynValDataHasCorrectKeyword.fs",
+      "type": "overrides",
+      "source": "Foo.C",
+      "target": "C",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/ModuleMember/Open 01.fs",
+      "type": "references",
+      "source": "Module",
+      "target": "Ns1",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/ModuleMember/Open 02.fs",
+      "type": "references",
+      "source": "Module",
+      "target": "Ns1",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/service/data/SyntaxTree/ModuleMember/Open 04.fs",
+      "type": "references",
+      "source": "Module",
+      "target": "ignore",
+      "line": null
+    }
+  ]
+}

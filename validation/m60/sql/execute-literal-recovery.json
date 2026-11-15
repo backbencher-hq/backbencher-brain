@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-execute-literal-recovery",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "SHIPPED FEATURE + its measurement. An analyzer pass that recovers declarations a migration hands to the database as a string. It works on the grammar that is actually wired, because it is text-based rather than tree-based.",
+  "date": "2026-09-27",
+  "theGap": {
+    "statement": "PostgreSQL migrations reach the database two ways: by writing DDL, or by handing it over as a string inside a procedural body. The second shape was invisible to every pass in the analyzer, because the DDL is a string literal: a tree-sitter grammar parses one language and cannot produce `statement` nodes for SQL that is text inside a literal.",
+    "whyNoGrammarCouldFixIt": "This was tested rather than assumed. The V4 plpgsql grammar candidate (validation/m60/sql/v4-plpgsql-candidate.json) cut ProxiCall error nodes 36% and added 9% structure while leaving product output BYTE-IDENTICAL — because parsing the body still leaves the DDL inside a string.",
+    "size": "On 387 PostgreSQL extension files (<=400 KB) the analyzer emitted 2,172 symbols. The pass adds +156 symbols and +234 relationships."
+  },
+  "implementation": {
+    "file": "src/ast/real-sql-analyzer.ts",
+    "entryPoints": ["scanExecuteLiterals", "runExecuteScan", "rowOf"],
+    "pattern": "Structurally identical to the existing runResync, and for the same reasons: the same parser, `state.slice` for absolute-offset translation, and `declarationKeys` making the pass strictly additive. A declaration the main pass or the resync already emitted cannot be emitted twice, so this pass can only add.",
+    "signature": "EXECUTE [IMMEDIATE] '<sql>'",
+    "offsetFidelity": "The RAW between-the-quotes slice is handed to the parser WITH its `''` escapes intact. That is deliberate: `''` is a valid escaped quote inside a SQL string, so the parser reads it correctly as written AND the slice stays a contiguous substring of the file, so `slice.byteOffset` maps every recovered range to its true absolute position. Unescaping first would shorten the text and silently shift every range after the first escaped quote.",
+    "skips": [
+      "`--` line comments, so commented-out DDL is not a declaration — the main false-positive risk, and measured to be real: extension files carry disabled DDL in comments",
+      "`/* */` block comments, same reason",
+      "`'...'`, `\"...\"` and backtick regions, so an EXECUTE inside another string is not matched and the matched literal's own text is not rescanned"
+    ],
+    "doesNotSkip": "Dollar-quoted regions, which is precisely where these literals live.",
+    "zeroRegex": "The scanner is a character state machine (charCodeAt comparisons) in keeping with reviews/regex-policy.md. `script/m12/verify-regex-census.ts` reports no sql finding."
+  },
+  "harnessBugFoundAndFixed": {
+    "bug": "script/m14/run-fixtures.ts calls `analyzer.analyze(...)` DIRECTLY rather than going through `ASTEngine.parseFile`, so the engine's `setGrammar` handoff in `parseRaw` never ran for the fixture lane. `analyze` is synchronous and `Language.load` is not, so the analyzer could not build the re-parse parser itself. Every recovery pass was therefore INERT in the fixture lane — the SQL declaration-resync AND the new EXECUTE pass both took the `acquireParser()` failure branch.",
+    "whyItMattered": "It is why the resync could not be pinned by any synthetic fixture and needed its own corpus gate (script/m60/verify-sql-resync.ts, which does call setGrammar), and why a mutant deleting the EXECUTE pass would have 'passed' by never running — the first version of sql/execute-literal-recovery-removed was exactly that vacuous mutant, caught only after the handoff was added. The engine's own comment claimed 'the pass is exercised by the fixture lane and not only in production'; that was true only for the engine path.",
+    "fix": "runLang now hands the parser's language to the analyzer's static setGrammar, mirroring verify-sql-resync.ts. A second, quieter bug in the same fix: `setGrammar` is STATIC, so `analyzer.setGrammar` finds nothing on the instance and the handoff silently does not happen — it must be reached through `analyzer.constructor`.",
+    "effect": "Fixture lane 10/10 -> 11/11 with no existing fixture changed."
+  },
+  "verification": {
+    "rangeFidelity": "6/6 and 24/24 symbols on two real corpus files have ranges containing their own name; 0 duplicate ids",
+    "negativeControl": "A file whose only EXECUTE literals are inside `--` and `/* */` comments yields symbols [real_one, id] and NO ghost_line_comment, NO ghost_block_comment — the comment guard works",
+    "fixtures": "sql/sqld11-execute-literal, 11/11 in the lane",
+    "mutants": [
+      { "id": "sql/execute-literal-recovery-removed", "caught": true, "by": "sql/sqld11-execute-literal" },
+      { "id": "sql/execute-literal-ignores-comments", "caught": true, "by": "sql/sqld11-execute-literal", "note": "the first version of this mutant added a ghost named `ghost_in_comment` while the fixture forbade `ghost_line_comment`, so it SURVIVED; a differently-named phantom is not a comment-blindness simulation, it is a different test" }
+    ],
+    "gatesUnaffected": "contract battery 54/54, node-types 83 referenced / 0 dead, m12 differential 84 facts P=R=1.000, resync corpus gate C1-C3 pass, typecheck 0 errors, regex census clean for sql"
+  },
+  "honestLimits": [
+    "94% of the EXECUTE literals on the extension corpus are CONCATENATED FRAGMENTS whose declaration NAME is computed at run time (`'CREATE SEQUENCE ' || quote_ident(x)`). The pass can recover the KIND; the NAME is unrecoverable in principle, and no extension of this technique changes that. See the correction recorded in second-corpus-recall.json.",
+    "`EXECUTE format('CREATE TABLE %I', x)` is not matched: the literal does not immediately follow the EXECUTE keyword. It is a real shape and a named gap, not a silent omission.",
+    "The pass re-parses each literal, so a file with many literals costs one extra parse each. It is bounded by the literal count and was not separately benchmarked; the lane has no perf gate at all."
+  ],
+  "evidence": [
+    "src/ast/real-sql-analyzer.ts",
+    "script/m14/run-fixtures.ts",
+    "validation/m14/fixtures/sql/sqld11-execute-literal.sql",
+    "validation/m14/fixtures/sql/sqld11-execute-literal.expectation.json",
+    "script/m14/mutate-analyzer.ts",
+    "validation/m60/sql/v4-plpgsql-candidate.json"
+  ]
+}

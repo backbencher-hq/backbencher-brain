@@ -1,0 +1,46 @@
+{
+  "fixtureId": "python/same-name-class-scopes",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two classes may share a name, and a class's bases belong to its DECLARATION rather than to its name. This is the third genuine ANALYZER defect the independent oracle found, and the subtlest of the three because it neither adds nor removes an edge \u2014 it POINTS AN EXISTING EDGE AT THE WRONG CLASS, which is the failure mode a count-based check cannot see and a set-based membership check cannot see either. `basesByClass` was keyed by class name, so in a file declaring the same name more than once every lookup merged them: a `class C` extending NOTHING inherited the bases of an unrelated `class C(Base)` and published overrides to them. CPython is the referee and its `ast` reading of this file is quoted in the docstring \u2014 `class C(Base)` at L48, `class C` with no base at L52 \u2014 while the lane emitted `C.m -> Base.m` at the line of BOTH `m` definitions. The edge is doubly wrong: it says the base-less class has a base, and every traversal from it lands in a subtree it was never part of. The `ObjectProxy` class in the middle is the #299 rebind \u2014 `class ObjectProxy(ObjectProxy)` shadows an IMPORT of the same name, so the base is external and the class overrides nothing. The leaf is still recorded in baseClasses metadata so nothing is lost, but the `extends` edge and any self-override are correctly absent. That row earned its place by catching a REGRESSION in the fix for this very defect: reading overrides from base metadata without re-applying the same-name exclusion made every such class publish `C.m -> C.m`, a class overriding itself, which is not a thing a class can do. The exclusion belongs to both derivations and only one of them had it. The positive row matters as much as the forbids: a change that simply stopped emitting when a name repeats would pass every forbid here and lose a real edge, so the class that genuinely extends `Base` must keep its override.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "C.m",
+      "target": "m",
+      "line_number": 49,
+      "note": "THE FIX, and the half a lazy version loses. Only the `class C(Base)` declaration at L48 has a base, so only its `m` overrides. A change that stopped emitting whenever a name repeats would pass every forbid in this file and drop this edge"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "C.m",
+      "line_number": 53,
+      "note": "THE DEFECT. `class C` at L52 has no base at all \u2014 CPython reports `bases: None` \u2014 so its `m` overrides nothing. Pre-fix this edge was emitted with the line of the OTHER class's method, which is why the same source and target appear once as a positive and once as a forbid: the LINE is what separates them, and a fixture asserting only the edge pair could not tell the two declarations apart",
+      "target": "m"
+    },
+    {
+      "type": "overrides",
+      "from": "ObjectProxy.m",
+      "note": "a class cannot override itself. `class ObjectProxy(ObjectProxy)` rebinds an IMPORT, so the base is external. Caught a regression in this fixture's own fix: reading overrides from base metadata without re-applying the #299 exclusion published exactly this edge",
+      "target": "m"
+    },
+    {
+      "type": "overrides",
+      "from": "Unrelated.m",
+      "note": "a name-keyed base table would also let an unrelated class claim a base it never declared; `Unrelated` has no base at all and only shares a METHOD name with everything else here",
+      "target": "m"
+    },
+    {
+      "type": "extends",
+      "from": "ObjectProxy",
+      "target": "ObjectProxy",
+      "note": "the #299 rebind, on the extends derivation. The leaf is still in baseClasses metadata \u2014 the information is kept, it is just not asserted as a relationship"
+    }
+  ],
+  "_seamNote": {
+    "what": "Identity for inheritance purposes is a class DECLARATION \u2014 name plus the line it is written on \u2014 and never the name alone. Two same-named classes in one file are two unrelated classes.",
+    "why": "Every other language this repository indexes gives a declaration an identity the name does not have to carry: a qualified name, a file and an offset. Python's classes are scoped inside whatever encloses them, so a name repeats freely and the repetition is not a redeclaration \u2014 `class C(Base)` in one method and `class C` in the next are as unrelated as two methods with the same name, which the analyzer already treats correctly because a method is identified by its owner and its line. Classes were the one place that still keyed on the bare name, and it took an independent oracle reading CPython's own `ast` output to find it, which is the argument for building the oracle at all: a reviewer reading `basesByClass.get(s.ownerName)` would have seen a Map lookup and called it correct."
+  }
+}

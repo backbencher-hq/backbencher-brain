@@ -1,0 +1,150 @@
+{
+  "fixtureId": "kotlin/top-level-property-owner",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the top-level-property attribution boundary, the defect the R7 endpoint probe MEASURED at 1,290 `Global` sources in clean files (998 calls / 147 references / 135 instantiates / 10 uses) on a 1,200-file every-Nth draw of bb_tests/repositories/kotlin@9b80c8ff. Three resolvers shared one declaration list that omitted `property_declaration`, so every edge in a top-level property's initializer or type clause fell through to `source_file` and was attributed to the literal `Global`. TWO halves are pinned, because the obvious over-correction (treat every property as a boundary) is a different defect: (1) a TOP-LEVEL property owns its initializer's call and its declared type — these are the pins that fail before the fix; (2) a MEMBER property's initializer and declared type belong to its CLASS, unchanged — the `parent.type === \"source_file\"` guard is the load-bearing condition and nothing else pins it. `buildModule` is not a stdlib leaf and `Holder` is not declared in this file, so both survive the stdlib and declared-type filters and the pins are about attribution only.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "moduleRoot",
+      "target": "buildModule",
+      "note": "TOP-LEVEL property owns the call in its own initializer. Before the fix this edge was `calls[Global->buildModule]`."
+    },
+    {
+      "type": "references",
+      "from": "moduleRoot",
+      "target": "String",
+      "note": "and the same property owns its own declared-type reference"
+    },
+    {
+      "type": "references",
+      "from": "modulePath",
+      "target": "Path"
+    },
+    {
+      "type": "calls",
+      "from": "modulePath",
+      "target": "get",
+      "note": "`Paths.get(...)` is a QUALIFIED call, so the stdlib filter keyed on the bare leaf does not suppress it"
+    },
+    {
+      "type": "references",
+      "from": "declaredOnly",
+      "target": "Holder",
+      "note": "a top-level property with no initializer still owns its declared type"
+    },
+    {
+      "type": "calls",
+      "from": "Registry",
+      "target": "buildModule",
+      "note": "MEMBER property: the class owns the initializer's call, NOT the property. The walk reaches class_declaration first, so the new branch is never reached here."
+    },
+    {
+      "type": "calls",
+      "from": "extensionLabel",
+      "target": "buildModule",
+      "note": "An EXTENSION property's accessor is a SIBLING of its declaration in the pinned wasm, so the walk crossed no declaration and this edge sourced to `Global` before the fix. The accessor belongs to the declaration written above it."
+    },
+    {
+      "type": "references",
+      "from": "extensionLabel",
+      "target": "String",
+      "note": "and the accessor's own declared type resolves through the same boundary"
+    },
+    {
+      "type": "calls",
+      "from": "Registry",
+      "target": "buildModule",
+      "note": "second member property, same rule — an edge is published for each, and both source to the class"
+    },
+    {
+      "type": "references",
+      "from": "Holder2",
+      "target": "Holder",
+      "note": "a member property's declared type belongs to the class too"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "Global",
+      "note": "the fallback this fixture exists for. kotlin has no symbol named `Global`; R7 forbids a placeholder literal in a name-bearing field and every consumer downstream can match, count and display it."
+    },
+    {
+      "type": "calls",
+      "target": "Global"
+    },
+    {
+      "type": "references",
+      "source": "Global"
+    },
+    {
+      "type": "references",
+      "target": "Global"
+    },
+    {
+      "type": "instantiates",
+      "source": "Global"
+    },
+    {
+      "type": "instantiates",
+      "target": "Global"
+    },
+    {
+      "type": "uses",
+      "source": "Global"
+    },
+    {
+      "type": "uses",
+      "target": "Global"
+    },
+    {
+      "type": "contains",
+      "source": "Global"
+    },
+    {
+      "type": "contains",
+      "target": "Global"
+    },
+    {
+      "type": "extends",
+      "source": "Global"
+    },
+    {
+      "type": "extends",
+      "target": "Global"
+    },
+    {
+      "type": "implements",
+      "source": "Global"
+    },
+    {
+      "type": "implements",
+      "target": "Global"
+    },
+    {
+      "type": "overrides",
+      "source": "Global"
+    },
+    {
+      "type": "overrides",
+      "target": "Global"
+    },
+    {
+      "type": "imports",
+      "source": "Global"
+    },
+    {
+      "type": "imports",
+      "target": "Global"
+    },
+    {
+      "type": "exports",
+      "source": "Global"
+    },
+    {
+      "type": "exports",
+      "target": "Global"
+    }
+  ]
+}

@@ -43,7 +43,7 @@
  * the specific reason the handover's guess ("Kotlin has no export keyword,
  * likely RULED") was wrong, and the census that refutes it is
  * `script/m14/kotlin-ontology-census.ts`: 91 non-public top-level declarations
- * in a 200-file sample of fixtures/repositories/kotlin, i.e. the discriminator
+ * in a 200-file sample of bb_tests/repositories/kotlin, i.e. the discriminator
  * is real corpus surface at 13.6% of the top-level population, not a construct
  * that never occurs.
  *

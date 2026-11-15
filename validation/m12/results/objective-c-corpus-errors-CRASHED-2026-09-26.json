@@ -1,6 +1,6 @@
 {
   "analyzer": "objective-c",
-  "corpus": "$HOME/fixtures/repositories/afnetworking",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/afnetworking",
   "corpusRepo": "afnetworking",
   "revision": "d9f589cc2c1fe9d55eb5eea00558010afea7a41e",
   "extensions": [

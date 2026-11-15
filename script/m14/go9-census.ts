@@ -23,7 +23,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || "/tmp/opencode/wt/VERIFY_GO9"
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const DIR = join(CORPUS, process.env.BB_DIR || "go-stdlib")
 const NFILES = Number(process.env.NFILES || 200)
 

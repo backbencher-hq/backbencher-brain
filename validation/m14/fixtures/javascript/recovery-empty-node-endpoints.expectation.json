@@ -1,0 +1,86 @@
+{
+  "fixtureId": "javascript/recovery-empty-node-endpoints",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 (runtime half), RECOVERY input — the shapes that actually produced the empty endpoints. javascript/empty-endpoints-refused pins the invariant on clean input; this file pins it on the input that triggered it. tree-sitter does not REJECT TypeScript syntax in a .js file, it PARSES it, and its recovery leaves zero-length `identifier` / `property_identifier` nodes behind: probed on the pinned wasm, `declare const c10: number[]` yields one empty `identifier`, `exports. = 1` one empty `property_identifier`, and `` `hello ${ }` `` one empty `identifier` inside the substitution. Each of those was published as an edge with an empty endpoint. The point of the fixture is that ONE unrepresentable token must not cost the file its other edges, so the expect rows pin the reads that must survive beside the damage (alpha, beta, name, sum) — a terminal guard implemented as 'drop everything' fails here. Parse errors are expected and deliberately NOT asserted either way: the runner's `expectNoParseErrors` is absent because the recovered regions ARE the subject of the fixture. THE EXPORTS SOURCE IS `(file)`: a module surface IS the file, and a module basename is a legal JavaScript identifier the store would resolve BY NAME (this ecosystem itself writes `visitors/Attribute.js` declaring `function Attribute`), so the family sentinel is used instead; `metadata.fileLevel` makes the store record the project-relative path.",
+  "expectSymbols": [
+    {
+      "name": "readBoth",
+      "kind": "function"
+    },
+    {
+      "name": "greet",
+      "kind": "function"
+    },
+    {
+      "name": "sum",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "readBoth",
+      "target": "readBoth\u0000alpha",
+      "note": "a real read beside the damaged line above it"
+    },
+    {
+      "type": "uses",
+      "from": "readBoth",
+      "target": "readBoth\u0000beta",
+      "note": "a real read beside the damaged line above it"
+    },
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "greet\u0000name",
+      "note": "a real read inside the function whose template holds the empty substitution"
+    },
+    {
+      "type": "calls",
+      "from": "recovery-empty-node-endpoints",
+      "target": "readBoth"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "sum"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "",
+      "note": "the zero-length identifier at `declare const c10: number[]` and the one inside `${ }` both reached here as a read of nothing"
+    },
+    {
+      "type": "uses",
+      "from": "",
+      "note": "and the SOURCE half of the same rule"
+    },
+    {
+      "type": "exports",
+      "target": "",
+      "note": "`exports. = 1` — the CJS surface path's empty segment"
+    },
+    {
+      "type": "calls",
+      "target": "",
+      "note": "an empty callee"
+    },
+    {
+      "type": "instantiates",
+      "target": ""
+    },
+    {
+      "type": "references",
+      "target": ""
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "",
+      "note": "R7 also governs SYMBOL names, and the invariant row is stated here rather than reproduced from damaged source on purpose: the corpus shape that produced the 32 empty-named symbols depends on preceding `import` recovery state in the TypeScript baselines (`import while = require(...)` above `var {while, return} = ...`), and a self-contained three-line reproduction was not found — five candidate shapes were probed and none yields a zero-length identifier on its own. What is pinned is the RULE, and the mutation `javascript/restore-empty-pattern-binding-symbol` injects the defect to show the row can fail."
+    }
+  ]
+}

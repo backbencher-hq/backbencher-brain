@@ -1,0 +1,83 @@
+{
+  "fixtureId": "css/selector-chains-and-nesting",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The chain class is 419 edges in the corpus and every one of its rules was measured rather than assumed: all four combinators produce it; ADJACENT pairs are joined, not just the ends; the right part's qualifiers are dropped while the left part's are not; and each part must be a SINGLE simple selector, so a compound like `ul.square` is not a chain part. Nesting is pinned in both forms — explicit `& .title` and implicit `.body`, which CSS nests as a descendant and which an oracle handling only `&` drops entirely.",
+  "expectSymbols": [
+    {
+      "name": "nav",
+      "kind": "type"
+    },
+    {
+      "name": "a",
+      "kind": "type"
+    },
+    {
+      "name": "nav a",
+      "kind": "type"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    },
+    {
+      "name": ".card .title",
+      "kind": "class"
+    },
+    {
+      "name": ".card .body",
+      "kind": "class"
+    },
+    {
+      "name": "ul.square li",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "nav",
+      "target": "fixtures/css/selector-chains-and-nesting::a",
+      "meta.evidenceClass": "structural",
+      "meta.isSelectorChain": true
+    },
+    {
+      "type": "contains",
+      "from": ".card",
+      "target": "fixtures/css/selector-chains-and-nesting::.card .title",
+      "meta.evidenceClass": "structural",
+      "meta.isNestedSelector": true,
+      "meta.asWrittenSelector": "& .title"
+    },
+    {
+      "type": "contains",
+      "from": ".card",
+      "target": "fixtures/css/selector-chains-and-nesting::.card .body",
+      "meta.evidenceClass": "structural",
+      "meta.isNestedSelector": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "ul.square",
+      "target": "li"
+    },
+    {
+      "type": "contains",
+      "from": "ul",
+      "target": "square li"
+    },
+    {
+      "type": "contains",
+      "from": ".card",
+      "target": "& .title"
+    },
+    {
+      "type": "contains",
+      "from": "nav",
+      "target": "color"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

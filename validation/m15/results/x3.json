@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X3",
+  "code": "X3",
+  "tool": "bb_security",
+  "title": "cross-file deterministic classification",
+  "verified": true,
+  "checks": 12,
+  "passed": 12,
+  "failed": 0,
+  "positives": 10,
+  "negatives": 2,
+  "negativePassed": 2,
+  "skipped": [],
+  "generatedAt": "2026-11-14T21:08:36.495Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:08:36.495Z",
+    "contentSha256": "1db368ebf5dd7af1d23d064fc64e6ae6993c0a16e642b99e4d8256ce98b3322d"
+  }
+}

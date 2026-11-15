@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "written": "2026-10-09",
+    "pool": "rxjs",
+    "files": 771,
+    "symbols": 33906,
+    "corpusFiles": 771,
+    "analyzerSha1": "17c19ca46d5d",
+    "instrument": "script/m14/ts-incoming-gate.ts",
+    "metric": "candidate declarations are DECLARING FILES; augmentations (metadata.isAugmentation) are consulted only when no non-augmentation declaration exists",
+    "resolutionRules": "an edge is RESOLVED when the pool publishes ONE declaration AND the edge's own file can name it, by one of four rules whose per-run counts are printed and exported as resolutionProvenance: leaf-unique | qualified-endpoint (the edge's own <source>.<target> is a qualifiedName published in the same file) | lexical-local (the file declares the name and the reference is a BARE name; uses/contains are excluded because a member name is not proof of ownership) | lexical-import (the file binds the name to exactly one relative import that resolves to a declaring file). The first three replace a pool-wide-only rule that called 4,234 bindable edges ambiguous; the shape guard excludes 17 member-shape 'traps' where an imported leaf name is not the reference (import { join } from node:path says nothing about [1,2].join).",
+    "note": "The classes map IS the lane's declaration of what is done. A class that is nonzero and absent here fails the gate as UNDECLARED; a class above its ceiling fails as OVER CEILING. Ceilings are deliberately at the measured value: the backlog may not grow."
+  },
+  "classes": {
+    "calls:ambiguous": {
+      "kind": "backlog",
+      "rule": "The lane's largest class. After the scope rules bind every edge whose own file can name the target, the residue is MEMBER names whose owner the edge does not name: `subscribe` (23 declaring files), `error` (41), `next` (19), `observable` (13), and the widest name on the pool `result` (294). A member call's receiver is a local variable, so no rule about the EDGE's file can bind it, and the family contract fixes leaf identity. Binding these needs the receiver's type or a qualified `Owner.member` target carried by the edge — an ontology decision that changes what every lane emits rather than a repair to this analyzer — so it is declared with a ceiling: it may not grow, it does not count as resolved, and its lever is named. 27,386 edges, down from 28,766 when only the pool-wide leaf rule existed (816 by the qualified endpoint, 1,928 by a bare name the file declares, 40 by a single relative import, the rest by the same rules on other types).",
+      "ceiling": 27386
+    },
+    "calls:external": {
+      "kind": "by-design",
+      "rule": "The declared-external marker and the four proofs it accepts: metadata.isExternalTarget plus metadata.externalReason is set only when the receiver is bound by an import/require of a BARE specifier that the nearest manifest lists as a dependency and this workspace does not publish (dependency-package), a Node builtin (builtin-module), a runtime global this file neither declares nor imports (runtime-global), or, in type positions, a name in the pinned TS_LIB_TYPE_NAMES table (builtin-lib-type). A file declaration, a relative import and a workspace package are excluded BEFORE the list is consulted. It is a STATEMENT about what the edge cannot bind here, not a resolution. Reasons on this run: dependency-package 15307, runtime-global 1146, builtin-lib-type 571, builtin-module 276. A ceiling is recorded because a marker that widens silently is worse than none: the lane's negative controls (a relative import and an 'rxjs' self-import stay UNMARKED) are what keep it honest, and this number is what shows if they stop working.",
+      "ceiling": 16260
+    },
+    "calls:externalUnreasoned": {
+      "kind": "by-design",
+      "rule": "A declared-external marker with no metadata.externalReason is a claim nobody can audit. Measured 0: all 17300 marked edges on this pool carry a reason, so the ceiling is 0 and a nonzero value fails the gate.",
+      "ceiling": 0
+    },
+    "calls:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "calls:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "Receivers that are neither in-file declarations, nor external imports (marked above), nor runtime globals: test-runner globals declared outside the pool (`expect` 949, `it` 491, `describe` 218, `toHaveBeenCalled` 146, `toHaveBeenCalledWith` 81 — their call sites import NOTHING and the callee is a bare identifier, measured, so no import-based proof can reach them and a pinned test-runner table would be the only mechanism), member calls on LOCAL variables (`push` 2,296 on arrays and Subjects), and DOM member calls whose receiver the emission records no name for. Marking these would be a guess unless the name is pinned with provenance, and the marker's negative controls exist precisely to stop it. A repo-wide binding pass is the honest repair and this lane does not have one. 6,276 edges, unchanged by the scope rules because resolution and external marking are different questions.",
+      "ceiling": 6276
+    },
+    "contains:ambiguous": {
+      "kind": "backlog",
+      "rule": "86 edges, down from 1,230: the qualified endpoint (`AppComponent.currentDocument`) now binds every member the pool publishes under the owner the edge names, and 1,229 of the 1,230 were exactly that shape. The residue is a member name whose owner the qualified key does not publish: `setSearch`, `search`, `codeTabsComponent`, `resolve`, `reject` — an edge whose source is not the owning declaration. `contains` gets NO lexical-local rule by design: a member name the file declares is not proof the edge's source owns it.",
+      "ceiling": 86
+    },
+    "contains:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "contains:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "6 edges whose container is a runtime global rather than a declaration: `window`, `document`, `module`.",
+      "ceiling": 6
+    },
+    "exports:ambiguous": {
+      "kind": "backlog",
+      "rule": "Barrel re-exports, 20 edges, down from 137 when 'the name is unique pool-wide' was the only rule: a local export now binds by its own qualified endpoint (\u003cfileLeaf\u003e.\u003cname\u003e published in the same file), and what remains is a module that re-exports a name declared elsewhere (`capabilityRegistryVersion`, `CompatibilityClassification`, `AsyncSubject`, `behaviorSubject`, `ColdObservable`), where the edge's own file does not declare it. Counted, not merged: collapsing them would hide the fact that a reverse walk to that name has several places to land.",
+      "ceiling": 20
+    },
+    "exports:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "exports:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "3 edges: `aliasedOperator`, `operatorWithoutDuplicate`, `window`. The first two are names in `.d.ts`-style generated declarations the pool does not track; the third is a global.",
+      "ceiling": 3
+    },
+    "extends:ambiguous": {
+      "kind": "backlog",
+      "rule": "6 edges, down from 9: `ColdObservable` (and the previous `ObservableBase` edges, bound when the file's own declaration or a single relative import names it) — an edge whose file neither declares the superclass nor imports it by a relative path, so the leaf stays ambiguous. The base-class half of the member-name problem.",
+      "ceiling": 6
+    },
+    "extends:external": {
+      "kind": "by-design",
+      "rule": "Superclasses bound by a bare dependency import or a runtime global (Angular's `ComponentFactoryResolver`, `NgModuleRef`): the same marker and the same four reasons as `calls:external`, applied to a heritage clause.",
+      "ceiling": 17
+    },
+    "extends:externalUnreasoned": {
+      "kind": "by-design",
+      "rule": "A declared-external marker with no metadata.externalReason is a claim nobody can audit. Measured 0: all 17300 marked edges on this pool carry a reason, so the ceiling is 0 and a nonzero value fails the gate.",
+      "ceiling": 0
+    },
+    "extends:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "extends:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "1 edge, `PerSubscriptionSubjectBaseSubpath`: a generated declaration this pool does not track.",
+      "ceiling": 1
+    },
+    "implements:ambiguous": {
+      "kind": "backlog",
+      "rule": "ZERO as of 2026-10-09, and the ceiling is 0: the 4 edges (`SubjectLike`, `ConnectableConnection`) bound by the scope rules — `SubjectLike` is imported from `./util/types.js` by the three files that implement it, and `ConnectableConnection` is declared in the file that implements it. A nonzero value now means a new interface name published by more than one declaring file AND not nameable from the edge's own file.",
+      "ceiling": 4
+    },
+    "implements:external": {
+      "kind": "by-design",
+      "rule": "Angular and DOM interfaces bound by a bare import (`OnInit`, `OnDestroy`, `AfterViewInit`): the marker's dependency-package proof in an implements clause.",
+      "ceiling": 27
+    },
+    "implements:externalUnreasoned": {
+      "kind": "by-design",
+      "rule": "A declared-external marker with no metadata.externalReason is a claim nobody can audit. Measured 0: all 17300 marked edges on this pool carry a reason, so the ceiling is 0 and a nonzero value fails the gate.",
+      "ceiling": 0
+    },
+    "implements:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "imports:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "imports:unresolved": {
+      "kind": "by-design",
+      "rule": "BY DESIGN, at 0% resolution, and no resolver can change it: the target is `<module>:<name>` — measured shapes on this pool: `vitest:describe`, `@angular/core:Component`, `rxjs/merge-map:mergeMap`. That is a module URI plus an exported name, not a symbol name, so nothing in the pool can ever publish it. The fleet arbiter counts this class as unresolved, which is why this lane cannot reach 100% under a rule that has no room for a declared design; this gate has room for it and shows the size (4626 edges, 5.5% of the pool's 84111).",
+      "ceiling": 4626
+    },
+    "instantiates:ambiguous": {
+      "kind": "backlog",
+      "rule": "298 edges, down from 921 before the augmentation rule and 437 before the scope rules. The augmentation rule removed `Observable`'s 93 competing `declare global` files (bindable by neither the file's scope nor a unique leaf); the qualified endpoint then bound the local class+barrel pairs where the edge names its owner. The residue is `Subject` (class plus barrel re-export in `packages/rxjs/src/index.ts`), `AsyncSubject`, `ColdObservable`, `EmptyError`, `TimeInterval`: constructor names with more than one declaring file, where the edge's own file names neither `\u003cowner\u003e.\u003cconstructor\u003e` nor imports the constructor relatively.",
+      "ceiling": 298
+    },
+    "instantiates:externalUnreasoned": {
+      "kind": "by-design",
+      "rule": "A declared-external marker with no metadata.externalReason is a claim nobody can audit. Measured 0: all 17300 marked edges on this pool carry a reason, so the ceiling is 0 and a nonzero value fails the gate.",
+      "ceiling": 0
+    },
+    "instantiates:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "instantiates:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "29 edges: `EventEmitter`, `InjectionToken`, `Builder` — Angular DI types bound by a bare import that the marker does NOT cover here, because markExternalTargets extends to calls, uses, references, extends and implements and not to instantiates. Measured and left: the same three proofs would close it, and 29 edges is below the cost of re-verifying the marker's negative controls for a sixth type.",
+      "ceiling": 29
+    },
+    "overrides:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "overrides:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "3 edges, and they are the qualified-spelling question in miniature: `MatIconRegistry.getNamedSvgIcon`, `ErrorHandler.handleError`, `ObservableBase.subscribe` are dotted `Owner.member` TARGETS, and no symbol in the pool publishes that spelling — the base member is declared in another file and the pool does not join the two. Exactly the lever the ambiguous class needs, at 3 edges, so it is recorded rather than fixed.",
+      "ceiling": 3
+    },
+    "references:ambiguous": {
+      "kind": "backlog",
+      "rule": "33 edges, down from 346 after augmentations were made non-competing and 786 before that. The scope rules bind a type the file itself declares (`HostComponent`, `TestLocationService` — mocks, 249 edges) or imports by a single relative path. The residue — `MockLogger`, `ConnectableObservable`, `Subject`, `SearchResult`, `Value` — is a type name published by more than one declaring file where the edge's own file names neither the type nor a relative import for it.",
+      "ceiling": 33
+    },
+    "references:external": {
+      "kind": "by-design",
+      "rule": "The marker in TYPE position (996 edges): the target name is bound by an import of a bare dependency or a Node builtin (`import type { Foo } from \"vitest\"`), is rooted at a global type namespace whose head the file does not declare (`NodeJS.Timeout`, `Intl.NumberFormat`), is a pinned TS_LIB_TYPE_NAMES entry (`Promise`, `Partial`, `Record`, `HTMLElement`), or is a QUALIFIED name whose head is an external binding (`fs.Stats` under `import * as fs from \"node:fs\"` — worth +124 marks on its own, found by inspection after the first extension landed). Same exclusions first: a file declaration wins (a file-declared interface named `Record` is NOT marked), and a relative type import is not marked.",
+      "ceiling": 996
+    },
+    "references:externalUnreasoned": {
+      "kind": "by-design",
+      "rule": "A declared-external marker with no metadata.externalReason is a claim nobody can audit. Measured 0: all 17300 marked edges on this pool carry a reason, so the ceiling is 0 and a nonzero value fails the gate.",
+      "ceiling": 0
+    },
+    "references:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "references:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "Composition MEASURED on the full pool (/tmp/ts-unresolved-lib-share.mts, 1011 unresolved type-position edges): 82 name a type some TypeScript lib file declares (`PropertyKey` 10, `HTMLAnchorElement` 7, `IteratorResult` 6), and 929 name something no lib file declares — dominated by TYPE PARAMETERS (`T` 621, `R` 46, `K` 30, `S` 17, `E` 13) and test-framework globals (`jasmine.Spy` 26, `jasmine.SpyObj` 3). Consequence, stated because it kills a plausible fix: extending the pinned TS_LIB_TYPE_NAMES table with the DOM set is worth 82 edges, 0.10% of the pool, and was measured and deliberately not done. A type parameter is a LOCAL binding: binding it needs type parameters published as symbols, and SUPPRESSING it instead is the uses-vs-references ontology contract question the lane has already declared OPEN (script/m14/spec/typescript-completeness.json) rather than decided by fiat.",
+      "ceiling": 981
+    },
+    "uses:ambiguous": {
+      "kind": "backlog",
+      "rule": "588 edges, down from 677 under the pool-wide rule alone. `uses` gets NO lexical-local rule (its target is a member name, so a declared member is not proof of ownership) and binds only by the qualified endpoint — 91 edges here. The residue is test-harness member names (`expectSubscriptions` declared by 3 declaring files, `expectObservable` likewise, `hot` 2 — member reads whose owner the edge does not name) and component members (`currentDocument`, `currentPath`) colliding with their own model types.",
+      "ceiling": 588
+    },
+    "uses:externalUnreasoned": {
+      "kind": "by-design",
+      "rule": "A declared-external marker with no metadata.externalReason is a claim nobody can audit. Measured 0: all 17300 marked edges on this pool carry a reason, so the ceiling is 0 and a nonzero value fails the gate.",
+      "ceiling": 0
+    },
+    "uses:targetless": {
+      "kind": "by-design",
+      "rule": "A relationship row with no target string binds nothing. Measured 0 for this type on this pool: a nonzero value means the analyzer emitted an edge with no endpoint, which is a defect and not a class, so the ceiling is 0.",
+      "ceiling": 0
+    },
+    "uses:unresolved": {
+      "kind": "not-provable-from-a-single-file",
+      "rule": "Same composition as `calls:unresolved` and the same reason: `exampleDir`, `stackblitzName` are property reads on objects the file does not declare a type for. 36 edges.",
+      "ceiling": 36
+    }
+  }
+}

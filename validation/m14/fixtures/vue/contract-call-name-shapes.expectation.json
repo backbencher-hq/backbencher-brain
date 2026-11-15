@@ -1,0 +1,123 @@
+{
+  "fixtureId": "vue/contract-call-name-shapes",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ONTOLOGY (2026-10-03): the provide/inject CONTRACT edge is matched by NAME, and in JavaScript a name test also matches constructs that are not Vue's provide/inject. The DECORATOR shape produced a FABRICATED edge inside this lane's own fixtures: `@inject(\"db\")` is a DI decorator whose argument is a string the component never receives, and the pre-fix analyzer published `references <Component> -> db` carrying `metadata.isInjectContract` at confidence 0.9. It was found by reading the output of `vue/decorator-metadata-868` — a fixture written for the #868 line-mirror seam, whose failure had nothing to do with it. Corpus incidence is 0 of the 79 contract calls on 1,151 admitted .vue files, so no sweep on this corpus could have surfaced it: that 0 is a LATENT defect, and the fixture is what makes it visible. `inject` is imported FROM 'vue' in this file, which isolates the decorator guard — an import from vue is the strongest evidence the name IS Vue's, so the local-shadow and foreign-import guards are both silent and only the decorator guard can be what rejects the row. The positives are here because a guard that stopped matching everything would pass a forbid-only fixture; the corpus writes 74 bare-global and 5 from-vue contract calls and both shapes are pinned across this file and `vue/contract-call-local-shadow`. The local-shadow partner cannot live in this file: it is the same call name in the same block, and pinning both would ask the analyzer to match and reject one identifier at once. The `Pool -> inject` row required below is the JS DELEGATE's decorator REFERENCE edge (`metadata.isDecorator`), a different relationship from the contract edge: it is pinned deliberately, because a 'fix' that suppressed `inject` under a decorator altogether would delete a correct edge while removing the fabricated one, and only requiring both makes the distinction checkable.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "ContractShapes",
+      "target": "anchorKey",
+      "meta.isInjectContract": true,
+      "confidence": 0.9,
+      "comment": "POSITIVE: Vue's global, named by an `import … from 'vue'` binding"
+    },
+    {
+      "type": "references",
+      "from": "ContractShapes",
+      "target": "STEPS_INJECTION_KEY",
+      "meta.isProvideContract": true,
+      "confidence": 0.9,
+      "comment": "POSITIVE: the other from-vue shape the corpus writes"
+    },
+    {
+      "type": "decorates",
+      "from": "Pool",
+      "target": "inject",
+      "meta.isDecorator": true,
+      "comment": "the delegate's DECORATOR REFERENCE edge, which is real and must survive: suppressing `inject` under a decorator outright would fix the fabrication by deleting a correct edge — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "calls",
+      "from": "ContractShapes",
+      "target": "inject"
+    },
+    {
+      "type": "calls",
+      "from": "mounted",
+      "target": "inject",
+      "meta.calleeExpression": "this.inject",
+      "comment": "the member call is recorded as a call and NOT as a contract"
+    },
+    {
+      "type": "contains",
+      "from": "ContractShapes",
+      "target": "value",
+      "comment": "the inline provide() value's key, synthesized and owned"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "db",
+      "comment": "THE DEFECT: `@inject(\"db\")` is a DI decorator, and no edge of any kind may claim the component receives a contract key `db`"
+    },
+    {
+      "type": "references",
+      "from": "ContractShapes",
+      "target": "db",
+      "meta.isInjectContract": true,
+      "comment": "the same row named explicitly, so a variant that published it under another source still fails"
+    },
+    {
+      "type": "references",
+      "from": "ContractShapes",
+      "target": "memberKey",
+      "comment": "`this.inject('memberKey')` is a method on the component instance, not Vue's global"
+    },
+    {
+      "type": "references",
+      "from": "ContractShapes",
+      "target": "foreignKey",
+      "comment": "the second block's `inject` is bound by `import { inject } from 'vue-router'`, so the call is another library's function under Vue's name"
+    },
+    {
+      "type": "references",
+      "from": "Pool",
+      "target": "db",
+      "comment": "the decorator's ARGUMENT belongs to the decorator call, not to the class it decorates"
+    },
+    {
+      "type": "decorates",
+      "from": "Pool",
+      "target": "db",
+      "comment": "the same guard under the canonical value: the decorator's ARGUMENT belongs to the decorator call, not to the class it decorates — re-spelled 2026-10-20 with the expect it guards"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "ContractShapes",
+      "kind": "class",
+      "meta.isOptionsComponent": true
+    },
+    {
+      "name": "Pool",
+      "kind": "class",
+      "meta.decoratorLines": [
+        51
+      ]
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Pool"
+    },
+    {
+      "name": "mounted",
+      "kind": "method",
+      "ownerName": "ContractShapes",
+      "meta.isLifecycleHook": true
+    },
+    {
+      "name": "anchorKey",
+      "kind": "constant"
+    },
+    {
+      "name": "value",
+      "kind": "variable",
+      "ownerName": "ContractShapes",
+      "meta.isProvided": true,
+      "meta.synthesized": true
+    }
+  ]
+}

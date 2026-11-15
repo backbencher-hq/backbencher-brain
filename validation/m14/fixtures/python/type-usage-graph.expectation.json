@@ -1,0 +1,17 @@
+{
+  "fixtureId": "python/type-usage-graph",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph: annotated attributes, typed params, return annotations, and isinstance checks each emit References; builtin scalars (str) excluded; generics/unions expand.",
+  "expectRelationships": [
+    { "type": "references", "target": "dict", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Foo", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "list", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Baz", "meta.relationshipType": "return_type" },
+    { "type": "references", "target": "Baz", "meta.relationshipType": "instanceof_check" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "str", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "None" }
+  ]
+}

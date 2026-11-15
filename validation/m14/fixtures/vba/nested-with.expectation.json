@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vba/nested-with",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "OpenBooks", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "OpenBooks", "target": "Run", "meta.implicitMember": true, "meta.withReceiver": "Application" },
+    { "type": "calls", "from": "OpenBooks", "target": "Open", "meta.implicitMember": true, "meta.withReceiver": "Workbooks" }
+  ]
+}

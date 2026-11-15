@@ -1,0 +1,50 @@
+{
+  "fixtureId": "fsharp/call-ownership",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-D10, FS-D11, FS-D12, FS-D13 (fsharp lane, 2026-09-28) — the CALL-OWNERSHIP and TYPE-QUERY rules, all four found by the lane's own truth oracle (script/m14/fsharp-truth-oracle.ts) as differential rows rather than by reading the analyzer, which is why they are grouped: three are one family (a body whose calls had no owner) and one is a type position that is not a declared type. Expectations are the analyzer's post-fix emission through the production walk (script/m14/tmp/fs004-dump.ts --raw). FS-D10: a TOP-LEVEL `let` owns the calls in its INITIALISER whatever its kind. The rule was keyed on the kind, so `let checker = …` — a VARIABLE, because it takes no arguments — never became an owner, and in an F# SCRIPT, where the top level IS the program and there is no enclosing namespace, module or function, every call in it had no source and was DROPPED: 2,520 MISSING `calls` rows per 200 real files. `topLevelValue` (a Variable) and `scriptStyle` (a Variable whose initialiser calls) pin that half; `topLevelFunction` and `counter` are the controls that must NOT move. FS-D12: a `default` implementation publishes no SYMBOL — the abstract signature is canonical and that dedup is correct, which is why `Describe` and `Area` appear ONCE each as `member_signature` symbols — but its BODY belongs to that member. The arm passed the enclosing owner through unchanged and inside a class the enclosing owner is undefined, so every call in every `default` implementation was dropped: 731 of the 817 MISSING rows after FS-D10, on 120 real files. FS-D13: the 'a computed property getter emits no calls' contract is inherited from the C# family and is about an EXPRESSION-bodied property, which in C# has no second body for code to live in. F#'s `with get, set` does: the accessor is a `property_accessor` node carrying its own `set` token, and the setter body executes. `Probe` (a setter) must emit `calls Probe -> reset`; `Computed` (expression-bodied, whose body calls `field.Length`) must emit NOTHING, and that forbid is the half that keeps FS-D13 from being read as 'properties emit calls'. `ComputedMethod` is the control: a METHOD with the same body must emit. FS-D11: a TYPE QUERY is not a written type — `typeof<T>` and `unbox<T>` are EXPRESSIONS carrying a type argument, and `typeof<T>.Assembly.Location` depends on a runtime value, so a `declared_type` edge claims the opposite. The grammar spells the query as a `typed_expression` whose `long_identifier_or_op` child reads `typeof`, a SIBLING of the type and not its parent, which is why the first two attempts at the discriminator each measured nothing; the two forbids below are what a `typeof`/`unbox` edge would fail on. `annotated : Bar` is the control: a real written type in the same shape must still emit. The last two rows are the OTHER defect the same differential found in this family: a `let` inside a member's BODY is a LOCAL, so its written type belongs to the enclosing CALLABLE — `FromLocal -> Leaf [local_annotation]` — and not to the class, which is what a first draft produced by asking 'is there a type above me'. The final row is a RECURSIVE call, added because the lane's own truth oracle was found to be WRONG about it — a defect class on the TRUTH side, not the analyzer side, and the only way a truth-side bug stays fixed is a fixture that pins the right answer. The oracle refused every label's self-edge on the reasoning that a self-edge is a statement about the graph rather than the code, and that reasoning is true for `contains` and false for `calls`. Measured: 668 UNEXPLAINED rows per 200 real files, every one of them a recursive call the analyzer was right to emit. The analyzer's refusal is per-label at the composition site; `calls loop -> loop` is what that distinction means in practice, and the mutant `fsharp/recursive-call-refused-as-a-self-edge` reverts the rule to the blanket version to keep it that way. That mutant was VACUOUS until this binding existed — it keyed on a recursive call, and the fixture had none, so it silently proved nothing. A vacuous mutant is a green that means nothing, which is the same lesson fsharp/whole-signature-as-symbol-name already paid for.",
+  "expectSymbols": [
+    { "name": "Fixture.Ownership", "kind": "namespace" },
+    { "name": "topLevelValue", "kind": "variable" },
+    { "name": "topLevelFunction", "kind": "function" },
+    { "name": "counter", "kind": "variable" },
+    { "name": "scriptStyle", "kind": "variable" },
+    { "name": "Shape", "kind": "class" },
+    { "name": "Describe", "kind": "method" },
+    { "name": "Area", "kind": "method" },
+    { "name": "Config", "kind": "class" },
+    { "name": "field", "kind": "variable" },
+    { "name": "Probe", "kind": "property" },
+    { "name": "Computed", "kind": "property" },
+    { "name": "ComputedMethod", "kind": "method" },
+    { "name": "FromLocal", "kind": "method" },
+    { "name": "Utility", "kind": "module" },
+    { "name": "quoted", "kind": "variable" },
+    { "name": "unboxed", "kind": "variable" },
+    { "name": "annotated", "kind": "variable" },
+    { "name": "loop", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Fixture.Ownership.topLevelValue", "target": "computeIt", "line_number": 46 },
+    { "type": "calls", "from": "Fixture.Ownership.topLevelFunction", "target": "combine", "line_number": 47 },
+    { "type": "calls", "from": "Fixture.Ownership.scriptStyle", "target": "transform", "line_number": 49 },
+
+    { "type": "calls", "from": "Shape.Describe", "target": "describeWith", "line_number": 54 },
+    { "type": "calls", "from": "Shape.Area", "target": "computeArea", "line_number": 55 },
+
+    { "type": "references", "from": "Fixture.Ownership.Config", "target": "Leaf", "line_number": 58, "meta.relationshipType": "declared_type", "meta.declaredOn": "class_field", "meta.targetResolution": "external-type" },
+    { "type": "references", "from": "Config.Probe", "target": "Leaf", "line_number": 61, "meta.relationshipType": "declared_type", "meta.declaredOn": "parameter", "meta.targetResolution": "external-type" },
+    { "type": "calls", "from": "Config.Probe", "target": "reset", "line_number": 62 },
+    { "type": "references", "from": "Config.FromLocal", "target": "Leaf", "line_number": 67, "meta.relationshipType": "declared_type", "meta.declaredOn": "local_annotation", "meta.targetResolution": "external-type" },
+    { "type": "references", "from": "Utility.annotated", "target": "Bar", "line_number": 73, "meta.relationshipType": "declared_type", "meta.declaredOn": "return_type", "meta.targetResolution": "external-type" },
+
+    { "type": "calls", "from": "Fixture.Ownership.loop", "target": "Fixture.Ownership.loop", "line_number": 77 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "Computed", "target": "Length", "note": "FS-D13, the OTHER half: an EXPRESSION-bodied property is a value and emits no calls. Without this forbid, FS-D13 reads as 'properties emit calls' and the C# family contract is silently lost." },
+    { "type": "references", "from": "quoted", "target": "Foo", "meta.relationshipType": "declared_type", "note": "FS-D11: `typeof<Foo>` is a TYPE QUERY — an expression carrying a type argument, not a written type. `typeof<Foo>.Assembly.Location` depends on a runtime value." },
+    { "type": "references", "from": "unboxed", "target": "int", "meta.relationshipType": "declared_type", "note": "FS-D11: `unbox<int>` is the same shape, and `int` is additionally a PREDEFINED type that names no declaration." },
+    { "type": "references", "from": "Config", "target": "Leaf", "meta.declaredOn": "local_annotation", "note": "the attribution half of the same differential finding: a `let` inside a member's BODY belongs to the CALLABLE (`FromLocal`), never to the class. The correct row is pinned positively above." },
+    { "type": "contains", "from": "loop", "target": "loop", "note": "FS-D3 restated on a different label: a recursive CALL is a true fact and is emitted (pinned above), while a self-CONTAINMENT is not. The two rules are per-label on purpose — a first draft of the truth oracle refused every label's self-edge and deleted 668 true recursive calls per 200 files." }
+  ]
+}

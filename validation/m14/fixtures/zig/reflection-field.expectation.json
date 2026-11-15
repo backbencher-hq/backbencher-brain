@@ -1,0 +1,123 @@
+{
+  "fixtureId": "zig/reflection-field",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Z24 (pass 24), from the firing half of the pass-24 GAP. `reflection-builtin-probe.mts` counted 989 `@hasDecl`/`@field` call sites on the parse tree across the whole zig corpus (8 shards, 3,848/3,848 files, 0 parse traps), of which 206 name a declaration as a string; `reflection-firing.mts` drove production `parseFile` over all 70 files carrying such a site and found 0 edges attributed to a reflection reason code. So the construct is present and was unread. This fixture pins the one construct a `uses` edge IS for (`@field(S, \"x\")` reads `S.x`) and pins, as FORBIDS, the two things a permissive implementation would get wrong. The `@hasDecl` forbid is the substantive one: an existence test whose surrounding code handles both answers, so an edge would assert a dependency the source deliberately does not take. The non-identifier forbid is second: `@field(anyerror, \"Expected closing ]\")` is a legal read of an error-set member, and publishing that text as a bare target is what produced junk targets once already (Z18); three corpus sites are exactly this shape and all three resolve to nothing published. Two rows pin that the emitted edge discloses its own resolvability rather than asserting a target it cannot bind — `containerMayBeAnExpression -> default` is the corpus's one application-code `@field` site (ghostty/src/input/Binding.zig:1324), where `default` has four published symbols in the file and picking one would be a guess.",
+  "expectSymbols": [
+    {
+      "name": "Point",
+      "kind": "struct",
+      "note": "the container `readByName` reflects into; its fields x/y/z are container_fields, which `contains` publishes"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "note": "a container_field of Point, so `uses readByName -> x` resolves at both ends inside the file"
+    },
+    {
+      "name": "one",
+      "kind": "property",
+      "note": "a FUNCTION-valued member: the edge is `uses`, not `calls`, because the callee is a name-as-text"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Expected closing ]",
+      "note": "an error-set member is not a declaration this file publishes, and must never be minted as one"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "readByName",
+      "target": "x",
+      "confidenceMin": 0.75,
+      "confidenceMax": 0.75,
+      "meta.relationshipType": "zig_field_reflection",
+      "meta.reflectedMember": "x",
+      "meta.targetScope": "file-local",
+      "note": "the plain read. 0.75 not 1.0: the analyzer knows the member NAME and not that the declaration the graph binds `x` to is Point's own member"
+    },
+    {
+      "type": "uses",
+      "source": "readByName",
+      "target": "x",
+      "meta.evidenceClass": "usage_contextual",
+      "note": "the same edge must be countable as a heuristic, which is what the contract requires of anything under 0.8"
+    },
+    {
+      "type": "uses",
+      "source": "writeByName",
+      "target": "y",
+      "meta.relationshipType": "zig_field_reflection",
+      "meta.targetScope": "file-local",
+      "note": "an ASSIGNMENT through the reflected field still names the member the function reaches"
+    },
+    {
+      "type": "uses",
+      "source": "writeByName",
+      "target": "x",
+      "meta.relationshipType": "zig_field_reflection",
+      "meta.targetScope": "file-local",
+      "note": "the read on the right-hand side — two edges from one source, and NOT collapsed into one"
+    },
+    {
+      "type": "uses",
+      "source": "callByName",
+      "target": "one",
+      "meta.relationshipType": "zig_field_reflection",
+      "meta.targetKind": "property",
+      "note": "a function-valued member read by name. targetKind is the member's kind, so a consumer does not read this as a call to a function"
+    },
+    {
+      "type": "uses",
+      "source": "containerMayBeAnExpression",
+      "target": "default",
+      "meta.relationshipType": "zig_field_reflection",
+      "meta.targetScope": "file-external",
+      "note": "the container is a field expression, which must not suppress the edge. Nothing publishes `default` here, and in the one application-code corpus site four symbols share it — so the edge is emitted and labelled file-external rather than attributed to a declaration by a rule nobody chose"
+    },
+    {
+      "type": "uses",
+      "source": "builtinEnumMemberIsExternal",
+      "target": "Int",
+      "meta.relationshipType": "zig_field_reflection",
+      "meta.targetScope": "file-external",
+      "note": "`Type.Int` is a real read through `@typeInfo`; the name is identifier-shaped so the edge is emitted, and no per-file rule can bind it"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "hasDeclIsNotARead",
+      "target": "x",
+      "note": "THE substantive forbid. `@hasDecl(Point, \"x\")` is an EXISTENCE TEST and the body handles both answers, so naming `x` would assert a dependency the source deliberately does not take. Measured: 184 of the 206 named sites in the corpus are `@hasDecl`, and 128 of those name a declaration this corpus publishes nowhere — a permissive reading would have produced 128 edges the graph cannot walk to"
+    },
+    {
+      "type": "references",
+      "source": "hasDeclIsNotARead",
+      "target": "x",
+      "note": "the same existence test must not become a references edge either — that type has the same 'asserts a dependency' meaning"
+    },
+    {
+      "type": "uses",
+      "source": "comptimeNamedMember",
+      "target": "field_name",
+      "note": "the member name given by a COMPTIME VALUE names nothing statically. This is the majority corpus shape — 757 of the 779 `@field` sites"
+    },
+    {
+      "type": "uses",
+      "source": "errorNameIsNotAMemberName",
+      "target": "Expected closing ]",
+      "note": "a non-identifier-shaped string is an error-set member, not a member this file declares. Publishing it as a bare target is the Z18 junk-target defect; all three corpus sites of this shape resolve to nothing published"
+    },
+    {
+      "type": "uses",
+      "source": "callByName",
+      "target": "one",
+      "meta.relationshipType": "zig_field_access",
+      "note": "the reason code must be the reflection one. A dot-access spelling does not occur here, so an implementation that reused the zig_field_access code would be indistinguishable to a consumer reading only the label — which is the whole reason a second code exists"
+    }
+  ],
+  "expectNoParseErrors": true
+}

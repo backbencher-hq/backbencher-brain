@@ -1,0 +1,50 @@
+{
+  "issue": "CLJ-D37",
+  "note": "`#js` HAS AN EVALUATED PAYLOAD, EXCEPT FOR ITS KEYS. ClojureScript compiles `#js {:year (.year a-date)}` to a JavaScript object LITERAL, and a literal's VALUES are evaluated; the blanket \"payloads are data either way\" rule dropped every call and member access in the values, six real ones in metabase's util/time/impl.cljs:313-319 alone. The discriminator is the TAG: `#js` (and the historical `#JS`) is the one tag whose payload is a literal with evaluated values, while `#inst`, `#uuid` and every record/class literal take DATA. The KEYS are still data \u2014 a key is a property name, not an expression \u2014 so a map walks its values and a vector walks its elements. `String/valueOf` and `Integer/parseInt` are namespace-qualified CALLS (no dot on either side of the slash) and must appear as calls inside the vector. `str/join` and `File/listFiles` stand in for the interop statics: `String/valueOf` and `Integer/parseInt` are among the 69 uncurried interop statics the core list DECLARES, so they are suppressed as builtins and would emit nothing inside a `#js` payload too \u2014 a fixture written with them would pass whether or not the payload were walked.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "day-parts",
+      "target": "year",
+      "line_number": 14
+    },
+    {
+      "type": "uses",
+      "from": "day-parts",
+      "target": "month",
+      "line_number": 15
+    },
+    {
+      "type": "calls",
+      "from": "pair",
+      "target": "str/join",
+      "line_number": 22
+    },
+    {
+      "type": "calls",
+      "from": "pair",
+      "target": "File/listFiles",
+      "line_number": 22
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "day-parts",
+      "target": "year:"
+    },
+    {
+      "type": "uses",
+      "from": "day-parts",
+      "target": ":year"
+    },
+    {
+      "type": "calls",
+      "target": "kind"
+    },
+    {
+      "type": "uses",
+      "target": "uuid"
+    }
+  ]
+}

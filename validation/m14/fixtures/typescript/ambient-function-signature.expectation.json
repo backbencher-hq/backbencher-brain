@@ -1,0 +1,55 @@
+{
+  "fixtureId": "typescript/ambient-function-signature",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a bodyless function DECLARATION emits a Function symbol. `declare function f(): T` parses to `function_signature`, not `function_declaration`, and the analyzer contained no reference to that type at all — while the spec has listed it as handled_verified since the typescript lane was declared CONFORMANT, and the fixture-coverage gate was satisfied by a fixture that merely PARSED one. That is the occurrence-is-not-emission gap in its sharpest form: a spec row, a fixture containing the node, a green gate, and zero symbols. This directory's own complexity-parity.ts has carried a `declare function f6Declared(...)` that no expectation ever named. Impact measured on the tracked corpus: 7 occurrences across 3 files, every one of them a `.d.ts` ambient declaration, and every one of the 7 functions previously invisible. The mutations that matter for usefulness are the payload, not just the name: parameter names, return type, and owner attribution (a signature inside `declare module \"ambient\"` belongs to that module). The isDeclare direction is pinned BOTH ways: `declare function` must read as a declaration, and a body-bearing `export function` must not be dragged into it.",
+  "expectSymbols": [
+    {
+      "name": "topLevel",
+      "kind": "function",
+      "returnType": "Promise<string[]>",
+      "note": "THE PIN. A top-level `declare function` produced no symbol whatsoever before the fix. meta.isDeclare is pinned too: the `declare` keyword is NOT a child of the function_signature node — the grammar puts it on a wrapping ambient_declaration — so modifier extraction cannot see it, and without this the declaration would be indistinguishable from an implementation even though it has no body and nothing to measure.",
+      "meta.isDeclare": true
+    },
+    {
+      "name": "insideModule",
+      "kind": "function",
+      "ownerName": "ambient",
+      "returnType": "number",
+      "note": "An ambient module body is nothing but signatures, so this is the shape that matters most in a .d.ts: the function belongs to its declaring module."
+    },
+    {
+      "name": "Holder",
+      "kind": "class",
+      "ownerName": "ambient"
+    },
+    {
+      "name": "value",
+      "kind": "method",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "nested",
+      "kind": "function",
+      "ownerName": "container",
+      "returnType": "void",
+      "note": "A signature nested in a namespace is dropped by the same missing case."
+    },
+    {
+      "name": "withBody",
+      "kind": "function",
+      "returnType": "number",
+      "note": "REGRESSION GUARD: a body-bearing declaration routes through the same extractor and must keep working — the signature case must not swallow or flatten the declaration case.",
+      "meta.isDeclare": false
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "topLevel",
+      "includes": [
+        "seed",
+        "label"
+      ]
+    }
+  ]
+}

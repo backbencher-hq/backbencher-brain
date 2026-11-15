@@ -1,0 +1,27 @@
+{
+  "fixtureId": "go/error-region-callee-descend-799",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The RECOVERY-DESCENT pin. Two shapes lose calls in this lane, and both are the same mistake at different distances from the source: (1) a call whose callee the analyzer cannot NAME must not cost the calls NESTED inside it — `Backward[[]int](tail(nil))` is a legal Go 1.21+ generic instantiation call whose callee is an index/type_arguments shape, so the package-scope walk abandoned the whole call_expression and `tail` with it; (2) the pinned tree-sitter-go errors on a package-scope generic function VALUE (`var _ = Backward[[]int]`) and its error RECOVERY re-reads everything after it as composite-literal debris wrapped in call_expression/selector_expression chains, so `s[i].Lock()` / `s[i].Unlock()` were unreachable while `s[i].String()` a few declarations later was — measured on go-tools, both full extent (script/m14/tmp/go-799-surface.ts: 2 `calls` MISSING rows, the only non-implements rows in the lane) and minimized (script/m14/tmp/go-799-errline.ts, go-799-region-tree.ts). The expectations below assert only what the source really says: the calls exist, and the lane publishes them. They do NOT assert the recovered declarations themselves (`usesMutex`, `usesMutexOnce`) as symbols or `contains` edges — losing those is the grammar gap registered in script/m14/spec/go-completeness.json, and this fixture would be writing a defect into a contract if it claimed them. What it does assert is that the loss stops at the declaration: the CALLS inside a recovered body are still calls.",
+  "expectSymbols": [
+    { "name": "errordescend", "kind": "module" },
+    { "name": "Backward", "kind": "function" },
+    { "name": "tail", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "Backward" },
+    { "type": "calls", "target": "tail" },
+    { "type": "calls", "target": "Lock" },
+    { "type": "calls", "target": "Unlock" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "global", "target": "s" },
+    { "type": "instantiates", "from": "(expr)", "target": "s" },
+    { "type": "calls", "target": "len" },
+    { "type": "contains", "from": "errordescend", "target": "s" }
+  ],
+  "forbidSymbols": [
+    { "name": "s", "kind": "property" },
+    { "name": "sync", "kind": "property" }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+ "fixtureId": "scala/ontology-imports-exports",
+ "language": "scala",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "JOB 2 of docs/analyzers/ONTOLOGY-WORKSTREAM.md \u2014 the two types this lane was handed as missing. JOB 1 measured the constructs on the full 9,353-file scala corpus: `import_declaration` occurs 13,353 times across 4,175 files, and the export CONVENTION (a top-level declaration that is neither private nor protected) occurs 19,826 times across 9,315 files. Both are real Scala constructs, so both are GAPs under the workstream's own rule and neither can be RULED. The analyzer filled `ExportInfo[]` (18,586 entries on the corpus) and published NO exports RELATIONSHIP, so bb_graph's traversal default could never return one \u2014 a value present in the enum, in the traversal default, and in no analyzer's output. `imports` was published as `references` (13,352 import_based edges), which puts dotted module paths into a target surface where every other target is a bare declaration name; a Scala identifier never contains a dot, because a dot is the selector between two names. So `imports` is added as its own label and `references` is LEFT ALONE: the hand-audited truth at validation/m12/ground-truth/scala.json records all six of its `references` rows sourced at 'root' citing an import, and deriveScalaReferencesTruth derives import paths as `references`; both are master-owned and a lane cannot move them. Both new edges source at '(file)', the family file sentinel \u2014 NOT 'root' (the scala import-`references` label, a different node) and NOT a package name (Scala's `package a.b { ... }` is a namespace marker with no symbol, so a package-named source would name something the graph does not have).",
+ "expectSymbols": [
+  {
+   "name": "Host",
+   "kind": "class"
+  },
+  {
+   "name": "id",
+   "kind": "property",
+   "ownerName": "Host"
+  },
+  {
+   "name": "member",
+   "kind": "method",
+   "ownerName": "Host"
+  },
+  {
+   "name": "Hidden",
+   "kind": "class"
+  },
+  {
+   "name": "secret",
+   "kind": "method",
+   "ownerName": "Hidden"
+  },
+  {
+   "name": "Registry",
+   "kind": "module"
+  },
+  {
+   "name": "lookup",
+   "kind": "method",
+   "ownerName": "Registry"
+  },
+  {
+   "name": "topLevel",
+   "kind": "function"
+  },
+  {
+   "name": "topLevelValue",
+   "kind": "constant"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "(file)",
+   "target": "scala.collection.mutable",
+   "note": "the whole-module form: the package IS the dependency, one edge"
+  },
+  {
+   "type": "imports",
+   "from": "(file)",
+   "target": "scala.collection.mutable.ListBuffer",
+   "note": "the member form keeps the full path (mutant scala/imports-target-leaf kills this)"
+  },
+  {
+   "type": "imports",
+   "from": "(file)",
+   "target": "scala.util.Try",
+   "note": "a SELECTOR clause names TWO dependencies and `imp.module` is only the PACKAGE they live in. handleImport's pathStr stops at the package because a plain selector is not part of the dotted path \u2014 correct for the prefix, wrong for a dependency edge."
+  },
+  {
+   "type": "imports",
+   "from": "(file)",
+   "target": "scala.util.Success",
+   "note": "the second selector of the same clause is its own edge, not a duplicate of the first"
+  },
+  {
+   "type": "exports",
+   "from": "(file)",
+   "target": "Host",
+   "note": "a public top-level class is exported"
+  },
+  {
+   "type": "exports",
+   "from": "(file)",
+   "target": "Registry",
+   "note": "a public top-level object is exported"
+  },
+  {
+   "type": "exports",
+   "from": "(file)",
+   "target": "topLevel",
+   "note": "a public top-level def is exported"
+  },
+  {
+   "type": "exports",
+   "from": "(file)",
+   "target": "topLevelValue",
+   "note": "a public top-level val is exported"
+  },
+  {
+   "type": "references",
+   "from": "root",
+   "target": "scala.collection.mutable",
+   "meta.isImportDep": true,
+   "note": "PRE-EXISTING and still required: the six hand-audited `references` rows in validation/m12/ground-truth/scala.json are sourced at 'root' and cite an import. This pin exists so a future relabel of `references`->`imports` is caught here rather than silently turning six pinned facts into MISSING in the master-owned differential."
+  },
+  {
+   "type": "exports",
+   "from": "(file)",
+   "target": "Alias",
+   "note": "a public top-level type alias is part of the export surface; `import p.Alias` binds it as a name"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "Hidden",
+   "note": "`private class Hidden` is NOT part of the export surface \u2014 the convention is the ABSENCE of private/protected, so a modifier-blind emission publishes it"
+  },
+  {
+   "type": "exports",
+   "target": "member",
+   "note": "a member is reached through its owner, not exported by name (the family ruling: `import Cls` binds the type, never bare members)"
+  },
+  {
+   "type": "exports",
+   "target": "lookup",
+   "note": "same: an object's member is not a package-level export"
+  },
+  {
+   "type": "exports",
+   "target": "secret",
+   "note": "a member of a private class is doubly not exported"
+  },
+  {
+   "type": "exports",
+   "from": "Host",
+   "note": "the source is the FILE sentinel, not a symbol \u2014 a member never exports"
+  },
+  {
+   "type": "imports",
+   "from": "root",
+   "note": "`root` is the scala import-`references` label; the imports edge sources at '(file)' and conflating the two merges two distinct graph nodes"
+  },
+  {
+   "type": "imports",
+   "target": "scala.util",
+   "note": "a SELECTOR import's target ends at the imported NAME, not at the package \u2014 `import scala.util.{Try, Success}` does not depend on bare `scala.util`"
+  },
+  {
+   "type": "imports",
+   "target": "mutable",
+   "note": "the full dotted module path is the target, never its last segment (the family lastSegment convention applies to REFERENCES, not to a module dependency \u2014 see the go lane's #910 note at real-go-analyzer.ts:337)"
+  },
+  {
+   "type": "exports",
+   "target": "Hidden",
+   "note": "`private type Hidden` is not \u2014 the convention is the ABSENCE of private/protected, for aliases as for every other declaration"
+  }
+ ]
+}

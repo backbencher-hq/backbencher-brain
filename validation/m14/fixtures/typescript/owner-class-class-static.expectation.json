@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/owner-class-class-static",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE CLASS-STATIC CLASS: a call whose receiver root names a CLASS declared in this file carries that class as owner (evidence `class-static`) ONLY when the class body declares the member — `Widget.create()` pins the positive. The negative row is `Other.notDeclared()`: the class is declared but does NOT declare the member, so the row must carry NO owner (`meta.owner: null`). That pair is the difference between reading the class and guessing it.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useClassStatic",
+      "target": "create",
+      "line_number": 12,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "class-static"
+    },
+    {
+      "type": "calls",
+      "from": "useClassStatic",
+      "target": "notDeclared",
+      "line_number": 13,
+      "meta.owner": null
+    }
+  ]
+}

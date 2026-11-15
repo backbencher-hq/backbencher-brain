@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "lang": "clojure",
+    "asked": "the fleet gate MEASURES clojure and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+    "instrument": "script/m14/incoming-gate.ts (the closure) + script/m14/clojure-wall-census.ts (the wall classes) — TWO INSTRUMENTS IN ONE POPULATION, because the arm's `--dump` is BOUNDED (BB_DUMP_LIMIT) and therefore cannot carry the wall census",
+    "instrumentVersion": "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + 25-name worklists; the wall census classifies by the ANALYZER'S OWN METADATA KEYS",
+    "sample": 646,
+    "corpusTotal": 646,
+    "corpusRepos": 3,
+    "parsed": 646,
+    "qualifiedNameAliases": 9166,
+    "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
+    "analyzer": "src/ast/real-clojure-analyzer.ts",
+    "analyzerDigest": "sha256:ac2abea4e8411e90",
+    "generated": "2026-10-22",
+    "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+    "populationRule": "THE POPULATION IS `git ls-files` INSIDE EACH CHECKOUT OF THE CORPUS ROOT, restricted to .clj/.cljs/.cljc/.edn and to files at or under the 1 MiB cap — NOT a walk of the disk, which would also find untracked files the repositories do not carry. MEASURED OVER /home/ishaq2321/mcp/backbencher-brain/.corpus: 381 symlinked DIRECTORY ENTRIES followed by the walk, 271 DISTINCT real paths behind them, deduplicated=false (a repeat target is counted per entry, because the walk really did enter each one). Both numbers are published rather than one, so a reader comparing this population with another lane's knows whether either deduplicated.",
+    "grammar": {
+      "servedWasmSha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+      "registrySha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+      "productionPath": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-clojure.wasm",
+      "nodeCountRule": "THE FLEET'S RULE: the count of the wasm's OWN named node types as nodeTypeForId reports them for every id the grammar declares, PLUS the universal ERROR and MISSING pair — the pair is in the rule because every tree-sitter parser produces those two nodes and every analyzer consults them.",
+      "namedAsTheGrammarDeclares": 35,
+      "namedUnderTheFleetRule": 37,
+      "universalPair": [
+        "ERROR",
+        "MISSING"
+      ],
+      "anonymousIds": 38,
+      "totalIds": 73,
+      "fieldCount": 11,
+      "idOrderDigest": "237152785479b22cceb93dce795f4e0c5b020a3ebe0c2bc763b07c70c7589e79",
+      "typeSetDigest": "ca7a7ee237c1730c36b4bfa2e4413ac4d631b80a95eeb13d19ffb2557698fc69",
+      "fieldSetDigest": "5c487278f2a72269d5c230098ea219976bf99d82af374c38cf42117a8be45c8d",
+      "measuredBy": "script/m14/clojure-grammar-binding-probe.ts (the PRODUCTION parser's own Language object) + script/m14/grammar-node-inventory.ts",
+      "note": "⇒ 35 named node types DECLARED BY THE GRAMMAR, 37 under the fleet's rule once the universal ERROR and MISSING pair is added, over 73 ids in total. The count carries the served wasm's sha256 in the same object, because a count of named node types without the grammar's digest is a measurement of a moment rather than of a grammar. THE RULED TYPES' COMPLETENESS WAS CHECKED AGAINST ALL OF THEM, not against the subset the population reaches: see validation/m14/measurements/clojure-whole-inventory-census.json."
+    },
+    "populationNote": "THE POPULATION IS THE WHOLE ADMITTED SET, AND THE SAMPLE *IS* THE POPULATION: there is no stride and no subsample. MEASURED by the arm's own population line over BB_CORPUS_ROOT=$PWD/.corpus — 646 admitted .clj/.cljs/.cljc/.edn files in 3 repositories (clj-kondo 503, clojure 142, nvim-treesitter 1), 0 excluded (0 tracked-but-absent/unreadable, 0 over the 1 MiB cap), 0 parse failures, 0 degraded (regex fallback), and the PROJECT INDEX WAS USED (3 repo indexes built over the same 646 files) — so this population IS production's scope for this lane. The wall census reads the SAME 646 files and the generator REFUSES to write if the two populations differ.",
+    "classMapping": "THE FIVE DECLARATION BUCKETS ARE THE GATE's CLASSES, MAPPED ONCE, HERE, SO NOTHING IS HIDDEN: resolved = resolved (collRes is a SUBSET of resolved and is never added — it is the tie-break's picks, 2,075 of them); ambiguous = amb(decl) (amb(kind) is a SUBSET of amb(decl), 484 of them, reported beside it and NEVER added); otherUnresolved = unresolved + bindOK + bind? + bindFAIL + causeOK + causeFAIL (a causeOK edge is STATED, not resolved — the gate says 'NEVER folded into resolved'); external = extOK + ext? + extFAIL; unclassed = 0, ALWAYS. THE CLOSURE: resolved + ambiguous + otherUnresolved + external + unclassed = edges, EXACTLY — and the generator REFUSES to write the file if it does not add up, per type and over all types.",
+    "edgeBucketsNote": "THE EDGE BUCKETS ARE THE POPULATION's — every admitted file is measured exactly once, so the edge counts are unbiased.",
+    "resolutionBucketsNote": "THE RESOLUTION BUCKETS ARE THE ARBITER's, and the arbiter resolves in a PROJECT SCOPE: a name collision in a half of the corpus that is not in the slice is INVISIBLE, so the name reads unique and the edge resolves. The scope and its consequence are named here so no reader assumes a resolved bucket means what another lane's resolved bucket means.",
+    "source": "the arm's own TABLE 1, validation/m14/measurements/clojure-gate-cap0-2026-10-22.txt (the whole-population arm, cap 0, --index)"
+  },
+  "rules": [],
+  "notes": [
+    "THE FOUR APPLIED TYPES ARE EMITTED AND MEASURED: calls, uses, contains, imports, references, exports, extends, implements, overrides, instantiates, and `renders` (the HICCUP-vector component render). The three ruled types (decorates, mixes_in, part_of) are excluded in script/m14/spec/clojure-completeness.json with their ladder walks and falsifiers.",
+    "THE IMPLEMENTED SET IS 11 OF 14 and the denominator is 14 with NO unclassified type: the coverage gate reads `clojure yes 11 11 3 - -`."
+  ],
+  "types": {
+    "calls": {
+      "resolved": 14050,
+      "external": 4919,
+      "ambiguous": 690,
+      "otherUnresolved": 1836,
+      "unclassed": 0
+    },
+    "uses": {
+      "resolved": 678,
+      "external": 4,
+      "ambiguous": 233,
+      "otherUnresolved": 1450,
+      "unclassed": 0
+    },
+    "contains": {
+      "resolved": 6484,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "imports": {
+      "resolved": 714,
+      "external": 657,
+      "ambiguous": 58,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "references": {
+      "resolved": 3016,
+      "external": 2138,
+      "ambiguous": 89,
+      "otherUnresolved": 330,
+      "unclassed": 0
+    },
+    "exports": {
+      "resolved": 4501,
+      "external": 0,
+      "ambiguous": 69,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "extends": {
+      "resolved": 1,
+      "external": 16,
+      "ambiguous": 0,
+      "otherUnresolved": 25,
+      "unclassed": 0
+    },
+    "implements": {
+      "resolved": 172,
+      "external": 64,
+      "ambiguous": 1,
+      "otherUnresolved": 49,
+      "unclassed": 0
+    },
+    "overrides": {
+      "resolved": 40,
+      "external": 0,
+      "ambiguous": 2,
+      "otherUnresolved": 86,
+      "unclassed": 0
+    },
+    "instantiates": {
+      "resolved": 231,
+      "external": 227,
+      "ambiguous": 1,
+      "otherUnresolved": 469,
+      "unclassed": 0
+    },
+    "decorates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "renders": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "mixes_in": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "part_of": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    }
+  },
+  "causeRulingsNote": "EVERY WALL IS DISPOSITIONED WITH A COUNT, A POPULATION, AND A FALSIFIER THAT HAS A RUN AND A WOULD-FAIL. The counts come from TWO INSTRUMENTS over the SAME 646-file population: the ARBITER's columns (the arm's TABLE 1) for the classes the arbiter decides, and the ANALYZER's own metadata (the wall census) for the classes the analyzer's rows carry. The two populations are the same 646 files and the generator refuses to write if they are not.",
+  "causeRulings": {
+    "language-namespace-claim": {
+      "count": 8216,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target names a LANGUAGE/RUNTIME namespace (the closed root set clojure/cljs/js/goog/java/javax), so no project can declare it",
+      "disposition": "CLAIMED — the analyzer publishes the languageNamespace claim with the closed root list; the arbiter confirms it against the project key space; extOK carries it, extFAIL would refute it (0 measured)",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts clojure clj,cljs,cljc,edn 0 --index --dump",
+        "wouldFail": "THIS RUN FAILS IF the claim is false: any edge carrying `languageNamespace` whose target's ROOT is NOT in the closed set {clojure,cljs,js,goog,java,javax}, or whose target IS declared by the project, reads `externalRefuted` — extFAIL > 0 and clause 4 fails. Note what is NOT a falsifier here: a language namespace being absent from the corpus (the claim is about the language, not about the corpus)."
+      }
+    },
+    "dependency-membership-claim": {
+      "count": 10587,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target names a THIRD-PARTY module (babashka.*, rewrite-clj.*, ring.* …), and whether that module is a project dependency or an external library is a PROJECT fact a single-file analyzer cannot hold",
+      "disposition": "CLAIMED — the analyzer publishes the dependency-membership claim and the arbiter checks it against the project's own manifest facts; the rows no check can reach read ext? and the rows the project CONFIRMS read extOK; extFAIL would refute it (0 measured)",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts clojure clj,cljs,cljc,edn 0 --index --dump",
+        "wouldFail": "THIS RUN FAILS IF the claim is false: any edge carrying `packageScope` whose target IS declared by the project, or whose specifier names a module the project's manifest DOES list, reads `externalRefuted` — extFAIL > 0 and clause 4 fails. Note what is NOT a falsifier here: a third-party module being absent from the corpus (absence of the library is not evidence about the edge)."
+      }
+    },
+    "java-jvm-interop": {
+      "count": 3200,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target is a JVM member (Class/member, Class.member, a .field read) or a JVM class — and the lane's declared contract is hasTypeInference: false, so a receiver's TYPE is not known",
+      "disposition": "RULED UNDECIDABLE — the lane's contract publishes no type inference, so `Class/member` carries no owner fact and no claim channel (owner / namespace / importPath / ownerMemberAbsent) can check a member of an unstated receiver type",
+      "falsifier": {
+        "run": "bun run script/m14/clojure-wall-census.ts",
+        "wouldFail": "THIS CENSUS FAILS IF the ruling is false: any edge in this class whose metadata carries an OWNER or a TYPE fact (a receiver type the analyzer published) would make the class CHECKABLE and the ruling void — the census prints the owner-bearing rows of this class separately, and a non-zero count there is the refutation."
+      }
+    },
+    "ctor-and-tagged-literal": {
+      "count": 37,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target is a constructor or a reader-literal class tag (#inst, #uuid, #tag) — data-adjacent, and the class is external to the project by construction",
+      "disposition": "RULED UNDECIDABLE — a reader literal's class tag is DATA-adjacent; there is no claim spelling for it in this lane's contract",
+      "falsifier": {
+        "run": "bun run script/m14/clojure-wall-census.ts",
+        "wouldFail": "THIS CENSUS FAILS IF the ruling is false: a tagged-literal or ctor row whose class IS declared in the project would be resolvable and would not belong in this class — the census prints those rows' count and a non-zero count of project-declared ones is the refutation."
+      }
+    },
+    "library-dependency": {
+      "count": 7002,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target names a library the analyzer knows is a dependency (its own `isLibraryDep` marker) — the dependency is real, the DECLARATION is in another file",
+      "disposition": "CLAIMED — the dependency fact is the analyzer's own; the arbiter's project facts decide whether it can be confirmed",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts clojure clj,cljs,cljc,edn 0 --index --dump",
+        "wouldFail": "THIS RUN FAILS IF the claim is false: any edge carrying `isLibraryDep` whose target IS declared by the project, or whose external claim is REFUTED, reads `externalRefuted` — extFAIL > 0 and clause 4 fails."
+      }
+    },
+    "overrides-cross-file-protocol": {
+      "count": 128,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "an `overrides` edge whose protocol method is declared in ANOTHER file of the project — the analyzer's strict join publishes an override only when the SAME file declares the protocol method",
+      "disposition": "RULED UNDECIDABLE — the residual names a member identity (Owner.member) with no declaration to resolve, and a claim needs the OWNING PROTOCOL, which the per-file analyzer does not have",
+      "falsifier": {
+        "run": "bun run script/m14/clojure-wall-census.ts",
+        "wouldFail": "THIS CENSUS FAILS IF the ruling is false: an `overrides` edge whose target protocol method IS declared in the project would be resolvable — the census prints the count of overrides rows whose target is a project-declared name, and a non-zero count there is the refutation."
+      }
+    },
+    "bare-name-absent": {
+      "count": 11935,
+      "countedBy": "script/m14/clojure-wall-census.ts over the same 646-file population (the ANALYZER's rows)",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target is a BARE name that no project file declares and no import brings in — a macro-created var, a dynamic invocation, or a genuinely absent name",
+      "disposition": "INSTRUMENT GAP — the name is not declared anywhere in the run and not imported; a single-file lane cannot decide ABSENCE from EXTERNALITY, and the gate's own key space (a project-wide declaration lookup) is what answers it",
+      "falsifier": {
+        "run": "bun run script/m14/clojure-wall-census.ts",
+        "wouldFail": "THIS CENSUS FAILS IF the ruling is false: a bare-name row whose target IS declared somewhere in the project would be RESOLVABLE and would not be a gap — the census prints the count of bare-name rows whose target is a project-declared symbol, and a non-zero count there is the refutation."
+      }
+    },
+    "name-model-ambiguity": {
+      "count": 1143,
+      "countedBy": "script/m14/incoming-gate.ts TABLE 1 (the ARBITER's amb(decl) column) over the same 646-file population",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target has MORE THAN ONE declaration in the project, so the project-scoped name model cannot choose — production's tie-break picks one and the row is resolved",
+      "disposition": "INSTRUMENT GAP — the gate resolves names PROJECT-WIDE and a bare name unique in a project is resolved; where the same name is declared in several files or namespaces the project-scoped name model collides. The lane owns no namespace-aware module-space fact, and the tie-break's own reach is measured separately (the join's 994 and the tie-break's 4,197 moved rows).",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts clojure clj,cljs,cljc,edn 0 --index --dump",
+        "wouldFail": "THIS RUN FAILS IF the claim is false: (1) any `extFAIL`/`bindFAIL`/`causeFAIL` row — a claim the project REFUTES is counted against the lane and clause 4 fails; or (2) an ambiguous row whose target has EXACTLY ONE project declaration would be RESOLVED by the name model and would not be ambiguous — the arm's own `arbitraryTwin` / `nothingAnywhere` columns are the instrument for that, and a row in the arbitraryTwin class that the arbiter cannot tie-break is the refutation. Note what is NOT a falsifier here: a name being declared in ANOTHER project — production's scope is PER PROJECT, so a collision across projects is not ambiguity to production."
+      }
+    },
+    "unresolved-without-a-declaration": {
+      "count": 4245,
+      "countedBy": "script/m14/incoming-gate.ts TABLE 1 (the ARBITER's unresolved column) over the same 646-file population",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the target names nothing the project declares and nothing the project imports — a macro-created var, a dynamic invocation, or a genuinely absent name",
+      "disposition": "INSTRUMENT GAP — a single-file analyzer cannot decide ABSENCE from EXTERNALITY, and the gate's own key space (a project-wide declaration lookup) is what answers it. The wall census splits this residual into its named classes (the java/jvm interop class, the ctor/tagged-literal class, the bare-name class) and each split class carries its own ruling above.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts clojure clj,cljs,cljc,edn 0 --index --dump",
+        "wouldFail": "THIS RUN FAILS IF the claim is false: any unresolved row that DOES have a project declaration and is left unresolved anyway — the arm's `nothingAnywhere` column counts exactly those rows (a target the project does not declare ANYWHERE), and a row in `nothingAnywhere` that the project in fact declares is the refutation. Note what is NOT a falsifier here: a name being absent from the corpus (absence of the symbol is not evidence about the edge)."
+      }
+    },
+    "unverified-external-claims": {
+      "count": 852,
+      "countedBy": "script/m14/incoming-gate.ts TABLE 1 (the ARBITER's ext? column) over the same 646-file population",
+      "population": "parsed=646/646 admitted=646 exts=clj,cljs,cljc,edn index=yes rule=git-ls-files@each-checkout+1MiB-cap,no-stride",
+      "what": "the edge carries an external claim (language namespace or package scope) and NO project fact can reach it — the claim is stated, not confirmed",
+      "disposition": "CLAIMED, NOT CONFIRMED — these rows are the lane's own claims that the project's facts cannot reach (a third-party module's membership is a manifest fact the corpus's clojure projects do not carry). They are counted in `external`, never in `resolved`.",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts clojure clj,cljs,cljc,edn 0 --index --dump",
+        "wouldFail": "THIS RUN FAILS IF the claim is false: (1) any `extFAIL` — a claim the project REFUTES is counted against the lane and clause 4 fails; or (2) an ext? row whose target IS declared by the project, or whose specifier IS listed by the project's own manifest — the claim is then checkable and the row belongs in `resolved`. Note what is NOT a falsifier here: a third-party module being absent from the corpus (absence of the library is not evidence about the edge)."
+      }
+    }
+  },
+  "resolution_caveats": [
+    "A CAUSE IS STATED, NOT RESOLVED: 0 edges carry a DECLARED cause (bucket 3) and live in otherUnresolved, never in resolved — the analyzer's scope is PER FILE and the arbiter (which holds the project) is what answers them. All 0 are `causeOK` edges and 0 are `causeFAIL`.",
+    "AMBIGUOUS COUNTS DECLARATIONS, NOT KINDS: 1143 edges. The by-KIND count is 484 and it is a SUBSET of the by-declaration count — the instrument prints it beside it and it is NEVER added. A number of 1143 and a number of 484 are the same edges counted two ways.",
+    "2075 OF THE 29887 RESOLVED EDGES ARE TIE-BREAK PICKS (the instrument's collRes): the target had MORE THAN ONE declaration and production's tie-break chose one. The fleet's own indexer measures 37,318 of 49,729 such picks as WRONG — so this lane's `resolved` INCLUDES picks the fleet's measurement calls wrong, and a reader comparing it with a lane whose `resolved` means 'the target was found' must know that.",
+    "EXTERNAL IS A CLAIM, NOT A RESOLUTION: 8025 edges live in `external`, of which 7173 the project CONFIRMS, 852 no check can reach, and 0 the project REFUTES (0 measured — a refuted claim is charged against the lane). None of them is a resolution, and none of them is folded into `resolved`.",
+    "THE TWO POPULATIONS DIFFER AND THE DECLARATION SAYS WHICH IS WHICH: the arm's TABLE 1 counts 43300 edges (the ARBITER's kept rows) and the wall census counts 43859 edges (the ANALYZER's published rows). The two are NOT the same set and must never be added together; the wall classes' counts are over the census's population and the closure is over the arm's.",
+    "THE `renders` RULE IS ONE IMPLEMENTATION WITH A MEASURED NEAR MISS, AND THE NEAR MISS IS PUBLISHED RATHER THAN ASSUMED AWAY: the emitted relation needs a keyword-led vector whose element names the rendered component (`[:div [widget]]`). MEASURED over the population — 900 keyword-led vectors over 123 files, of which 159 over 23 files carry a BARE SYMBOL child and 0 carry a component-VECTOR child; the NAIVE shape (a keyword-led vector with any bare symbol element) published 86 rows and ALL 86 were map key paths (`get-in`/`assoc-in`/`update-in`) rather than rendered components. The sound rule therefore carries a same-file-CALLABLE resolution test, and its population count is 0 — a 0 that was ASKED FOR, not a 0 that was never asked. The falsifier that would void it: a corpus site where a keyword-led vector names a same-file callable that is NOT a rendered component (0 measured).",
+    "THE WALL CENSUS's CONTROL IS PUBLISHED BESIDE THE CLASSES: 31838 of 43859 rows fall into a named wall class and 12021 do not (those are the rows the arbiter resolves). The falsifiers' OWN controls — a row in a RULED class whose target IS project-declared, which would make the class checkable — measured 19448 (bare-name class) and 42 (overrides class): 0 means the rulings are not refuted BY THIS INSTRUMENT, which is NOT the same as the rulings being true."
+  ]
+}

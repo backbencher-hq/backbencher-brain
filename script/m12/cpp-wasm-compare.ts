@@ -3,7 +3,7 @@
 import { readFileSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 
-const ROOT = "$HOME/fixtures/repositories/zig"
+const ROOT = "/home/ishaq2321/bb_tests/repositories/zig"
 const NEW_WASM = "/tmp/ts-cpp-npm/package/tree-sitter-cpp.wasm"
 const MIN_BYTES = 1024
 

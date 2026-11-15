@@ -1,0 +1,28 @@
+{
+  "fixtureId": "go/imports-contract",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `imports` CONTRACT, which had no fixture coverage and no oracle at all before round 7. The analyzer emitted `imports` for every import_spec since GO18 and go's own requiredKinds has named the label since the wave, yet nothing compared it: the label was absent from the compared set, so 2,214 distinct import targets across 6,836 files were entirely outside the differential. Each case below is a shape a derivation can plausibly get wrong, and the FORBID half is what makes them constraints rather than a snapshot: an oracle that published the ALIAS instead of the path, or that skipped any spec carrying a `name` field, would satisfy every expect row while the real module path went unchecked. `C` is cgo's pseudo-package and `_ \"embed\"` is the embed generator — one-character and name-bearing specs are exactly the two the resolvable-path derivations drop, and together they are 313 rows in the pinned corpora. The paths are asserted VERBATIM including `golang.org/x/net/context` and `github.com/go-logr/logr`, because the separators (/ . -) are the whole reason the label moved off `references` in the first place: an oracle that normalised or truncated a path would agree on `fmt` and disagree on every real module path in the corpus. Every line below was read back from live emission with script/m14/tmp/god9-dump.ts, never predicted.",
+  "expectRelationships": [
+    { "type": "imports", "from": "gofixture", "target": "fmt", "line_number": 3, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "os", "line_number": 9, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "strings", "line_number": 10, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "sort", "line_number": 11, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "encoding/json", "line_number": 16, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "bytes", "line_number": 19, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "C", "line_number": 24, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "embed", "line_number": 28, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "golang.org/x/net/context", "line_number": 35, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "net/http/pprof", "line_number": 36, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "github.com/go-logr/logr", "line_number": 37, "meta.isGoImportDep": true }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "gofixture", "target": "f" },
+    { "type": "imports", "from": "gofixture", "target": "g" },
+    { "type": "imports", "from": "gofixture", "target": "." },
+    { "type": "imports", "from": "gofixture", "target": "_" },
+    { "type": "imports", "from": "gofixture", "target": "context" },
+    { "type": "imports", "from": "gofixture", "target": "pprof" },
+    { "type": "imports", "from": "gofixture", "target": "logr" }
+  ]
+}

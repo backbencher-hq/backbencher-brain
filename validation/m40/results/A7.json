@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a7-cli-parity.ts",
+  "evidenceFile": "A7.json",
+  "generatedAt": "2026-11-05T04:30:16.653Z",
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 6,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-05T04:30:16.653Z",
+    "contentSha256": "141d3d4567d4738ca27286ee25c42b57db5f5f5358d1777ed4f3b721b46d2110"
+  }
+}

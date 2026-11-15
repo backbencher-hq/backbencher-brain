@@ -1,0 +1,18 @@
+{
+  "issue": "CLJ1",
+  "note": "C4: the doc channel (EX-L9/M60 parity) — comments carries the text (mirrored), docstring is the store-seam channel. Sources: the leading `;;` comment block and the form's own docstring string. The `greeting` notContains guard pins the style-\"def\" rule: `(def greeting \"hello\")` — a lone string is the VALUE, not a docstring, so it must not surface as documentation.",
+  "expectSymbols": [
+    { "name": "commented", "kind": "function" },
+    { "name": "documented", "kind": "function" },
+    { "name": "documented-var", "kind": "variable" },
+    { "name": "greeting", "kind": "variable" }
+  ],
+  "expectComments": [
+    { "symbol": "commented", "minCount": 2 },
+    { "symbol": "commented", "contains": "Leading block line one." },
+    { "symbol": "commented", "contains": "Leading block line two." },
+    { "symbol": "documented", "contains": "Doc string wins." },
+    { "symbol": "documented-var", "contains": "Doc var." },
+    { "symbol": "greeting", "notContains": "hello" }
+  ]
+}

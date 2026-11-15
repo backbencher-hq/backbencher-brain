@@ -1,0 +1,88 @@
+{
+  "fixtureId": "c/overrides-conditional-redefinition-989",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The C lane ruled `overrides` inapplicable on the prose 'C-D1: no class hierarchy'. That is exactly the reasoning `script/m14/ontology-coverage-gate.ts` was written to distrust: `overrides` was missing from bash for a whole wave on prose while the differential stayed green, because the oracle omitted the type too and two implementations that both say nothing agree perfectly. C has strictly MORE redefinitions than bash -- bash redefines functions across a file, C redefines them across preprocessor arms. The difference from bash is the whole rule: C 6.9p5 makes an unconditional second definition of an external identifier a CONSTRAINT VIOLATION, so in legal C a redefinition exists only in two arms of one `#if`/`#ifdef`. The test is structural (share a conditional, different arms of it) and never evaluates a condition, so it never needs to know whether a macro is defined (C-D2). The second shape needs no arm test because C 6.10.3p2 makes an unconditional macro redefinition a constraint violation unless the replacement lists are identical, so `#undef X` then `#define X <other>` is the sanctioned way to change a macro and the later definition replaces the earlier one whenever both are reached. Measured over 359 sqlite C/H files with `script/m14/tmp/c-audit/c-ontology-verdicts.ts`: 50 mutually-exclusive redefinition pairs in 23 files (`src/hwtime.h` alone carries SIX definitions of `sqlite3Hwtime` across one `#if/#elif/#elif/#elif/#else` chain) and 57 `#undef`-then-`#define` pairs in 13 files (`src/os_setup.h:50-87` is the shape). The CONTROLS are the point: they are the readings that must NOT fire and every one is a real corpus shape -- a prototype plus a definition (one entity, C 6.9p2, and the commonest shape in every corpus), two definitions under DIFFERENT conditionals whose conditions contradict (sqlite `src/mutex_noop.c:52` under `#ifndef SQLITE_DEBUG` vs `:188` under `#ifdef SQLITE_DEBUG`; `src/threads.c` unix vs win32), two definitions in the same arm of one conditional, and parse damage (sqlite `src/printf.c:76-90` is a Tcl script inside `#if 0` that recovery reads as a function named `c`). A fixture asserting only the positive rows would pass a rule that published every redefinition in the file.",
+  "expectSymbols": [
+    { "name": "c989_pick", "kind": "function", "note": "the three mutually-exclusive definitions merge into ONE symbol -- an `overrides` edge is about the LINES, not about extra symbols" },
+    { "name": "c989_ifdef_pick", "kind": "function" },
+    { "name": "c989_prototyped", "kind": "function", "note": "CONTROL: prototype + definition is one entity (C 6.9p2)" },
+    { "name": "c989_debug_build_pick", "kind": "function", "note": "CONTROL: two definitions whose conditions contradict" },
+    { "name": "c989_single", "kind": "function", "note": "CONTROL: defined once" },
+    { "name": "c989_not_exclusive_a", "kind": "function", "note": "CONTROL: two definitions in the SAME arm" },
+    { "name": "c989_not_exclusive_b", "kind": "function" },
+    { "name": "REDEFINED_MACRO", "kind": "constant" },
+    { "name": "REDEFINED_TWICE", "kind": "constant", "note": "CONTROL: `#define` twice with no `#undef` is a constraint violation and is NOT read as an override" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "c989_pick",
+      "target": "c989_pick",
+      "line_number": 59,
+      "meta.shape": "conditional-redefinition",
+      "meta.overridesLine": 54,
+      "meta.definitionsInFile": 3,
+      "note": "THE PINNED ROW, second definition: `#elif defined(SECOND_ARM)` sits in arm 1 where the `#if` region is arm 0. Both endpoints are the same name and the two LINES are what distinguish them -- the shape `real-bash-analyzer.ts:322` established for a language without classes."
+    },
+    {
+      "type": "overrides",
+      "from": "c989_pick",
+      "target": "c989_pick",
+      "line_number": 64,
+      "meta.shape": "conditional-redefinition",
+      "meta.overridesLine": 59,
+      "note": "the third definition, in the `#else` arm. `definitionsInFile: 3` is what lets a consumer see the whole chain."
+    },
+    {
+      "type": "overrides",
+      "from": "c989_ifdef_pick",
+      "target": "c989_ifdef_pick",
+      "line_number": 76,
+      "meta.shape": "conditional-redefinition",
+      "meta.overridesLine": 71,
+      "note": "the `#ifdef`/`#else` spelling of the same rule, which is the shape 15 of sqlite's 50 pairs use"
+    },
+    {
+      "type": "overrides",
+      "from": "REDEFINED_MACRO",
+      "target": "REDEFINED_MACRO",
+      "line_number": 124,
+      "meta.shape": "undef-redefine",
+      "meta.overridesLine": 51,
+      "note": "THE SECOND SHAPE. `#undef REDEFINED_MACRO` then `#define REDEFINED_MACRO 2` is the sanctioned macro redefinition (C 6.10.3p2) and needs no arm test, because the later definition replaces the earlier one whenever both are reached."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "c989_prototyped",
+      "target": "c989_prototyped",
+      "note": "CONTROL: a prototype and a definition are ONE entity in C (6.9p2 -- any number of declarations, exactly one definition). A rule that read `declaration + definition` as an override would fire on the commonest shape in every corpus; the analyzer merges the two symbols and this edge must not exist."
+    },
+    {
+      "type": "overrides",
+      "from": "c989_debug_build_pick",
+      "target": "c989_debug_build_pick",
+      "note": "CONTROL: LOGICALLY exclusive, STRUCTURALLY not. `#ifdef C989_DEBUG_BUILD` and `#ifndef C989_DEBUG_BUILD` cannot both hold, but they are two SEPARATE conditionals, so no shared-conditional test can see it -- it needs a preprocessor evaluator, which is C-D2. This is sqlite `src/mutex_noop.c:52` / `:188` and `src/threads.c:51` / `:146` verbatim."
+    },
+    {
+      "type": "overrides",
+      "from": "c989_not_exclusive_a",
+      "target": "c989_not_exclusive_a",
+      "note": "CONTROL: two different names in the same arm of one conditional -- no pair, so no edge"
+    },
+    {
+      "type": "overrides",
+      "from": "c989_single",
+      "target": "c989_single",
+      "note": "CONTROL: defined once"
+    },
+    {
+      "type": "overrides",
+      "from": "REDEFINED_TWICE",
+      "target": "REDEFINED_TWICE",
+      "note": "CONTROL: `#define X 1` twice with no `#undef` is a CONSTRAINT VIOLATION in C (6.10.3p2) unless the replacement lists are identical, and it is not the sanctioned redefinition. sqlite has 353 such pairs (`src/os_setup.h` alone has several) and the lane reads none of them as an override -- a rule that counted plain repeated `#define`s would fire on every config header in the corpus."
+    }
+  ]
+}

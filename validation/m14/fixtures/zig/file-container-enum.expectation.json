@@ -1,0 +1,89 @@
+{
+  "fixtureId": "zig/file-container-enum",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M13b, the companion to zig/file-container-fields. `const X = @This();` publishes X as a `Type` whether the file's body is a struct or an enum, so the published kind of the container cannot discriminate a file-level field's kind. The only evidence is the field's own `type` FIELD: the grammar uses one node type, `container_field`, for `a: u8` and for a bare `north`, and only the former carries a type. This is the analyzer's own discriminator, read the same way inside a named container at :2180. Without this fixture the file-container change is pinned only for the struct case, and an implementation that published every file-level field as a `Property` would pass it. These rows also pin the line the rule must not cross: a member spelled `pub const blue = 2` is a `variable_declaration` and therefore a constant, not an enum member, even though a reader sees an enum member.",
+  "expectSymbols": [
+    {
+      "name": "Color",
+      "kind": "type",
+      "note": "`const Color = @This()` — published as a Type, identically to the struct case. The kind that does NOT discriminate."
+    },
+    {
+      "name": "red",
+      "kind": "enum_member",
+      "note": "a bare file-level member: a `container_field` with no `type` field. Owned by the file's own container, which is what makes it an enum member's owner rather than nothing."
+    },
+    {
+      "name": "green",
+      "kind": "enum_member",
+      "note": "a second bare member, so a fixture with one member cannot pass by publishing the first."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Color.red",
+      "note": "a qualified name is not a symbol NAME. The analyzer publishes the member under its own name and the qualified name rides on the symbol's `qualifiedName`; a symbol literally named `Color.red` would be a second declaration of one member."
+    },
+    {
+      "name": "Color",
+      "kind": "enum",
+      "note": "`const Color = @This()` publishes a TYPE, identically to the struct case in file-container-fields — which is exactly why the field's kind has to come from the field's own `type` field. An implementation that recognised the file's body as an enum and published `Color` AS an enum would make the two fixtures agree with each other and lose the only evidence that discriminates them, so this row forbids it."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Color",
+      "target": "Color.red",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "enum_member",
+      "note": "THE row. The kind on the edge is what says the field was read as an enum member; a `Property` here is the regression this fixture exists to catch."
+    },
+    {
+      "type": "contains",
+      "source": "Color",
+      "target": "Color.green",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "enum_member",
+      "note": "the second member's ownership edge."
+    },
+    {
+      "type": "exports",
+      "source": "(file)",
+      "target": "blue",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "constant",
+      "note": "a `pub const` member is exported as a CONSTANT, not as an enum member. This is pre-existing behaviour for a `const` inside any container and this fixture pins that the file-level shape did not change it."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "Color",
+      "target": "blue",
+      "meta.targetKind": "enum_member",
+      "note": "`blue` is a `variable_declaration`, not a `container_field`. The `type`-field rule must be applied to the node the grammar actually produced, or `blue` comes out as an enum member with a `contains` edge the language never states — the enum's tag would then carry a member that is a declaration with a value."
+    },
+    {
+      "type": "contains",
+      "source": "Color",
+      "target": "blue",
+      "meta.targetKind": "constant",
+      "note": "and the converse, stated as its own row because one forbid cannot fail for both kinds: `blue` is owned by nobody and published as a constant. A rule that attributed every top-level name to the file's container would emit this edge."
+    },
+    {
+      "type": "contains",
+      "source": "file-container-enum",
+      "target": "red",
+      "note": "the file's basename is not its container's name. Inventing an owner from the path puts an edge on a symbol nothing publishes."
+    },
+    {
+      "type": "uses",
+      "source": "name",
+      "target": "red",
+      "meta.targetScope": "file-external",
+      "note": "the negative counterpart to the local rows. A switch on `.red` reads a member this file declares, so an edge naming it as file-EXTERNAL is a claim the index cannot back — and dropping the edge instead would satisfy this forbid, which is why the positive rows above exist."
+    }
+  ]
+}

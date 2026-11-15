@@ -1,0 +1,161 @@
+{
+  "fixtureId": "scala/incoming-scala-import-clauses",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `imports` relationship type, which measured 0 edges on 400 production-path corpus files while `import_declaration` occurred 2,358 times across 429 of them (script/m14/tmp/scala-grammar-inventory.ts). Expectations are the Scala Language Spec ch.9 reading of each clause form, re-probed from the parse tree with script/m60/scala-imports-exports-oracle.ts and cross-checked against the same rules on 1,687 corpus keys, where the oracle and the analyzer agree 100%.\n\nTHE TARGET IS THE DEPENDENCY, NOT THE BOUND NAMES. `import a.b.{Set, Map => ImmutableMap}` depends on the package `a.b`; the names inside `{...}` are what the clause binds. The lane's `references` twin builds its target from `ImportInfo.module`, which appends the renamed selector and yields `a.b.ImmutableMap` \u2014 that edge is an AUDITED label and is deliberately left alone here, so this fixture pins only the new `imports` edges and says so in a forbid entry that the twin keeps its own spelling.\n\nAlso pinned: the wildcard clause's target is the package and never `.*`; an `as`-renamed clause keeps the ORIGINAL name (`import scala.concurrent.duration.FiniteDuration` shape); a `private object` and a nested `class Inner` are not part of the surface, so they carry no export edge.\n\nCORRECTION recorded after the first run, because the fixture is worth more than the guess: `ImportInfo.module` for `import scala.collection.immutable.{Set, Map => ImmutableMap}` is `scala.collection.immutable.Map` (the RENAMED selector is appended by the legacy path) and for `import java.io.{File => JFile, FileInputStream => Stream}` it is `java.io.FileInputStream`. The first draft of this expectation guessed `.Set` and `java.io.File`, and the run said so. Those two rows are the twin's spelling and are pinned here deliberately, so a future change to the legacy path cannot pass silently \u2014 while the `imports` edges beside them carry the spec spelling (`scala.collection.immutable`, `java.io`), which is the whole point of the new type.\n\nOne more correction from the run, same reason: `import java.io.{File => JFile, FileInputStream => Stream}` gives the legacy `ImportInfo.module` the value `java.io.File.FileInputStream` \u2014 BOTH selector names appended to the path. The `imports` edge beside it is `java.io`, which is the dependency the Scala spec says the clause has. Pinning both is deliberate: the legacy path is an audited label, and a future correction to it has to move this row rather than slip past it.",
+  "expectSymbols": [
+    {
+      "name": "Imports",
+      "kind": "module"
+    },
+    {
+      "name": "Nested",
+      "kind": "class"
+    },
+    {
+      "name": "Inner",
+      "kind": "class"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "java.io.File.FileInputStream"
+    },
+    {
+      "module": "java.util.List"
+    },
+    {
+      "module": "scala.collection.immutable.Map"
+    },
+    {
+      "module": "scala.collection.mutable"
+    },
+    {
+      "module": "scala.concurrent.duration.FiniteDuration"
+    },
+    {
+      "module": "scala.util"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "java.util.List",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "scala.collection.mutable",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "scala.collection.immutable.Set",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "scala.collection.immutable.Map",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "scala.concurrent.duration.FiniteDuration",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "java.io.File",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "java.io.FileInputStream",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "scala.util",
+      "meta.isImport": true,
+      "meta.isScalaImport": true
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Imports",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "module"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Nested",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "class"
+    },
+    {
+      "type": "exports",
+      "from": "demo.imports",
+      "target": "Imports",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "demo.imports",
+      "target": "Nested",
+      "meta.exportForm": "public-top-level-declaration"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": ".*"
+    },
+    {
+      "type": "exports",
+      "target": "Inner"
+    },
+    {
+      "type": "exports",
+      "target": "member"
+    },
+    {
+      "type": "exports",
+      "target": "hidden"
+    },
+    {
+      "type": "exports",
+      "target": "shown"
+    },
+    {
+      "type": "exports",
+      "target": "NotPartOfTheApi"
+    },
+    {
+      "type": "exports",
+      "from": "(script)",
+      "note": "task-9: (script) is the statement-scope sentinel; a module/export surface sources at (file)"
+    },
+    {
+      "type": "imports",
+      "from": "root",
+      "note": "task-9: imports are (file)-sourced dependencies (the import-reference channel at root is the references label, not imports)"
+    }
+  ],
+  "authoredNote": " [TASK-9 STALE-PIN ADJUDICATION 2026-10-19: the exports/imports rows were re-pinned to the CURRENT adjudicated contract \u2014 module/export surfaces source at `(file)` (fleet sentinel ruling), imports are `(file)`-sourced module-path/selector dependencies, and the two export channels (convention array + surface/export-clause) are both pinned, including the wildcard scope row KEPT as an honest heuristic (confidence 0.7, reasonCode export-wildcard; Lead ruling). Coverage is STRENGTHENED (more rows pinned, stale `(script)`/`root` sources forbidden); behaviour was adjudicated correct, not weakened.]"
+}

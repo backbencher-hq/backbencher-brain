@@ -1,0 +1,422 @@
+{
+  "tool": "validation/m14/go/go-incoming-resolve.ts",
+  "phase": "resolve",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories/go-stdlib",
+  "shard": "0/1",
+  "indexFile": "/tmp/opencode/IRG/go-incoming-index.json",
+  "indexDistinctNames": 141417,
+  "indexFilesCovered": 9447,
+  "populationOffered": 400,
+  "populationFiles": 400,
+  "parsedFiles": 400,
+  "crashedFiles": 0,
+  "crashSamples": [],
+  "totalSymbols": 9665,
+  "totalRelationships": 32519,
+  "totalImportsChannel": 1305,
+  "wrongOwnerEndpoints": 0,
+  "enumValues": [
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "imports",
+    "exports",
+    "contains",
+    "references",
+    "overrides",
+    "instantiates"
+  ],
+  "fired": [
+    "calls",
+    "extends",
+    "implements",
+    "uses",
+    "imports",
+    "exports",
+    "contains",
+    "references",
+    "overrides",
+    "instantiates"
+  ],
+  "silent": [],
+  "buckets": {
+    "calls": {
+      "edges": 10629,
+      "tgt": {
+        "resolved": 2517,
+        "via_owner": 1006,
+        "ambiguous": 6757,
+        "unresolvable": 349,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 6068,
+        "via_owner": 1027,
+        "ambiguous": 3534,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 2614,
+      "collidesWithMember": 877,
+      "distinctTargets": 2630,
+      "ambiguousTargets": 1184,
+      "unresolvableTargets": 89,
+      "files": 266,
+      "foreignSource": 7920,
+      "duplicateRows": null,
+      "reverseTwinRows": null
+    },
+    "extends": {
+      "edges": 56,
+      "tgt": {
+        "resolved": 25,
+        "via_owner": 0,
+        "ambiguous": 31,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 30,
+        "via_owner": 0,
+        "ambiguous": 26,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 18,
+      "collidesWithMember": 16,
+      "distinctTargets": 44,
+      "ambiguousTargets": 25,
+      "unresolvableTargets": 0,
+      "files": 25,
+      "foreignSource": 0,
+      "reverseTwinRows": null
+    },
+    "implements": {
+      "edges": 40,
+      "tgt": {
+        "resolved": 11,
+        "via_owner": 0,
+        "ambiguous": 29,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 25,
+        "via_owner": 0,
+        "ambiguous": 15,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 8,
+      "collidesWithMember": 1,
+      "distinctTargets": 14,
+      "ambiguousTargets": 7,
+      "unresolvableTargets": 0,
+      "files": 11,
+      "foreignSource": 0,
+      "reverseTwinRows": null
+    },
+    "uses": {
+      "edges": 7907,
+      "tgt": {
+        "resolved": 3482,
+        "via_owner": 647,
+        "ambiguous": 3706,
+        "unresolvable": 72,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 4434,
+        "via_owner": 1029,
+        "ambiguous": 2433,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 11
+      },
+      "traversable": 3365,
+      "collidesWithMember": 522,
+      "distinctTargets": 4180,
+      "ambiguousTargets": 1157,
+      "unresolvableTargets": 40,
+      "files": 240,
+      "foreignSource": 4558,
+      "duplicateRows": null,
+      "reverseTwinRows": null
+    },
+    "imports": {
+      "edges": 1305,
+      "tgt": {
+        "resolved": 40,
+        "via_owner": 0,
+        "ambiguous": 756,
+        "unresolvable": 509,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 50,
+        "via_owner": 0,
+        "ambiguous": 1255,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 0,
+      "collidesWithMember": 0,
+      "distinctTargets": 242,
+      "ambiguousTargets": 33,
+      "unresolvableTargets": 207,
+      "files": 251,
+      "foreignSource": 1301,
+      "duplicateRows": null,
+      "reverseTwinRows": null
+    },
+    "exports": {
+      "edges": 3732,
+      "tgt": {
+        "resolved": 977,
+        "via_owner": 0,
+        "ambiguous": 2752,
+        "unresolvable": 3,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 42,
+        "via_owner": 0,
+        "ambiguous": 3690,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 33,
+      "collidesWithMember": 43,
+      "distinctTargets": 3435,
+      "ambiguousTargets": 2455,
+      "unresolvableTargets": 3,
+      "files": 233,
+      "foreignSource": 0,
+      "reverseTwinRows": null
+    },
+    "contains": {
+      "edges": 2989,
+      "tgt": {
+        "resolved": 291,
+        "via_owner": 633,
+        "ambiguous": 2065,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 1186,
+        "via_owner": 6,
+        "ambiguous": 1796,
+        "unresolvable": 1,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 482,
+      "collidesWithMember": 282,
+      "distinctTargets": 1911,
+      "ambiguousTargets": 1083,
+      "unresolvableTargets": 0,
+      "files": 148,
+      "foreignSource": 0,
+      "duplicateRows": null,
+      "reverseTwinRows": null
+    },
+    "references": {
+      "edges": 4931,
+      "tgt": {
+        "resolved": 1376,
+        "via_owner": 9,
+        "ambiguous": 3500,
+        "unresolvable": 46,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 2562,
+        "via_owner": 486,
+        "ambiguous": 1882,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 1
+      },
+      "traversable": 864,
+      "collidesWithMember": 352,
+      "distinctTargets": 795,
+      "ambiguousTargets": 370,
+      "unresolvableTargets": 26,
+      "files": 261,
+      "foreignSource": 2987,
+      "duplicateRows": null,
+      "reverseTwinRows": null
+    },
+    "overrides": {
+      "edges": 2,
+      "tgt": {
+        "resolved": 0,
+        "via_owner": 0,
+        "ambiguous": 2,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 0,
+        "via_owner": 0,
+        "ambiguous": 2,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "traversable": 0,
+      "collidesWithMember": 0,
+      "distinctTargets": 2,
+      "ambiguousTargets": 2,
+      "unresolvableTargets": 0,
+      "files": 1,
+      "foreignSource": 2,
+      "reverseTwinRows": null
+    },
+    "instantiates": {
+      "edges": 928,
+      "tgt": {
+        "resolved": 431,
+        "via_owner": 2,
+        "ambiguous": 483,
+        "unresolvable": 12,
+        "empty": 0,
+        "placeholder": 0
+      },
+      "src": {
+        "resolved": 546,
+        "via_owner": 65,
+        "ambiguous": 316,
+        "unresolvable": 0,
+        "empty": 0,
+        "placeholder": 1
+      },
+      "traversable": 353,
+      "collidesWithMember": 107,
+      "distinctTargets": 416,
+      "ambiguousTargets": 200,
+      "unresolvableTargets": 7,
+      "files": 147,
+      "foreignSource": 511,
+      "reverseTwinRows": null
+    }
+  },
+  "blockReasons": [
+    {
+      "pair": "ambiguous->ambiguous",
+      "n": 10541
+    },
+    {
+      "pair": "ambiguous->resolved",
+      "n": 8019
+    },
+    {
+      "pair": "resolved->ambiguous",
+      "n": 2966
+    },
+    {
+      "pair": "ambiguous->via_owner",
+      "n": 1507
+    },
+    {
+      "pair": "via_owner->ambiguous",
+      "n": 744
+    },
+    {
+      "pair": "unresolvable->ambiguous",
+      "n": 698
+    },
+    {
+      "pair": "unresolvable->resolved",
+      "n": 287
+    },
+    {
+      "pair": "ambiguous->placeholder",
+      "n": 13
+    },
+    {
+      "pair": "unresolvable->via_owner",
+      "n": 6
+    },
+    {
+      "pair": "ambiguous->unresolvable",
+      "n": 1
+    }
+  ],
+  "samples": {
+    "resolved": [
+      "lib/time/mkzip.go: usage -> Fprintf",
+      "lib/time/mkzip.go: main -> SetPrefix",
+      "lib/time/mkzip.go: main -> SetFlags",
+      "lib/time/mkzip.go: main -> IsDir",
+      "lib/time/mkzip.go: main -> ChecksumIEEE",
+      "lib/time/mkzip.go: main -> DirEntry",
+      "src/bytes/iter.go: FieldsSeq -> RuneSelf",
+      "src/cmd/cgo/gcc.go: Translate -> offset",
+      "src/cmd/cgo/gcc.go: loadDefines -> WriteString",
+      "src/cmd/cgo/gcc.go: loadDefines -> gccDefines",
+      "src/cmd/cgo/gcc.go: loadDefines -> Fprintf",
+      "src/cmd/cgo/gcc.go: guessKinds -> Sprintf"
+    ],
+    "viaOwner": [
+      "lib/time/mkzip.go: main -> CreateRaw",
+      "src/cmd/cgo/gcc.go: loadDebug -> guessKinds",
+      "src/cmd/cgo/gcc.go: loadDebug -> loadDWARF",
+      "src/cmd/cgo/gcc.go: Translate -> prepareNames",
+      "src/cmd/cgo/gcc.go: Translate -> rewriteCalls",
+      "src/cmd/cgo/gcc.go: Translate -> rewriteRef",
+      "src/cmd/cgo/gcc.go: guessKinds -> gccErrors",
+      "src/cmd/cgo/gcc.go: loadDWARF -> gccDebug",
+      "src/cmd/cgo/gcc.go: loadDWARF -> recordTypedefs",
+      "src/cmd/cgo/gcc.go: loadDWARF -> SkipChildren",
+      "src/cmd/cgo/gcc.go: recordTypes -> FinishType",
+      "src/cmd/cgo/gcc.go: recordTypedefs -> recordTypedefs1"
+    ],
+    "ambiguous": [
+      "lib/time/mkzip.go: usage -> Exit",
+      "lib/time/mkzip.go: main -> Parse",
+      "lib/time/mkzip.go: main -> Args",
+      "lib/time/mkzip.go: main -> HasSuffix",
+      "lib/time/mkzip.go: main -> usage",
+      "lib/time/mkzip.go: main -> NewWriter",
+      "lib/time/mkzip.go: main -> WalkDir",
+      "lib/time/mkzip.go: main -> ReadFile",
+      "lib/time/mkzip.go: main -> Fatal",
+      "lib/time/mkzip.go: main -> Fatalf",
+      "lib/time/mkzip.go: main -> ToSlash",
+      "lib/time/mkzip.go: main -> Write"
+    ],
+    "unresolvable": [
+      "lib/time/mkzip.go: main -> archive/zip",
+      "lib/time/mkzip.go: main -> hash/crc32",
+      "lib/time/mkzip.go: main -> io/fs",
+      "lib/time/mkzip.go: main -> path/filepath",
+      "src/bytes/iter.go: bytes -> unicode/utf8",
+      "src/cmd/cgo/gcc.go: main -> debug/dwarf",
+      "src/cmd/cgo/gcc.go: main -> debug/elf",
+      "src/cmd/cgo/gcc.go: main -> debug/macho",
+      "src/cmd/cgo/gcc.go: main -> debug/pe",
+      "src/cmd/cgo/gcc.go: main -> encoding/binary",
+      "src/cmd/cgo/gcc.go: main -> go/ast",
+      "src/cmd/cgo/gcc.go: main -> go/parser"
+    ],
+    "empty": [],
+    "placeholder": []
+  }
+}

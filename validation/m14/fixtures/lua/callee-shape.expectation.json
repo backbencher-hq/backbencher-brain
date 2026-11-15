@@ -1,0 +1,99 @@
+{
+  "fixtureId": "lua/callee-shape",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "LUA-56. `callee()` decides which of the grammar's callee forms a call has, and every branch it takes is a different fact about the target: an `identifier` is a NAME the language resolves through the file's lexical scope and then `_ENV`, while `dot_index_expression` / `method_index_expression` / a literal `bracket_index_expression` publish the FIELD of a receiver the edge does not name (LUA-13). The analyzer computed the distinction and discarded it, so the two marker keys `calleeIdentifier` / `calleeIndexed` are asserted here as a PARTITION: every calls edge carries exactly one, and the `null` rows are the half that makes this fixture able to fail on a one-key implementation. The two forbid rows are the shape whitelist's own negative arms (LUA-22, LUA-29) — a computed index and a call on a call have no name, and publishing their text as a target is the payload-as-a-name defect class. Line numbers are MEASURED from this committed file, not predicted.",
+  "expectSymbols": [
+    { "name": "M" },
+    { "name": "member" },
+    { "name": "method" },
+    { "name": "bracketed" },
+    { "name": "helper", "kind": "function" },
+    { "name": "caller", "kind": "function" },
+    { "name": "dynamic", "kind": "function" },
+    { "name": "callOnCall", "kind": "function" }
+  ],
+  "forbidSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "helper",
+      "line_number": 41,
+      "meta.calleeIdentifier": true,
+      "meta.calleeIndexed": null,
+      "comment": "a bare identifier callee: the name is looked up in the lexical scope, then _ENV. It is a LOCAL here, which is the case that shows the marker is about the CALLEE FORM and not about externality."
+    },
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "fn",
+      "line_number": 42,
+      "meta.calleeIdentifier": true,
+      "meta.calleeIndexed": null,
+      "comment": "an identifier callee whose declaration is a local bound to a function expression"
+    },
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "member",
+      "line_number": 43,
+      "meta.calleeIndexed": true,
+      "meta.calleeIdentifier": null,
+      "comment": "dot_index_expression: `M.member` names the field, and the edge carries only `member` — the receiver M is NOT recoverable from the target"
+    },
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "method",
+      "line_number": 44,
+      "meta.calleeIndexed": true,
+      "meta.calleeIdentifier": null,
+      "comment": "method_index_expression: same published name, different call convention (`self` is passed) — one key for both is deliberate, because the fact that decides the externalness question is NAME vs FIELD"
+    },
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "bracketed",
+      "line_number": 45,
+      "meta.calleeIndexed": true,
+      "meta.calleeIdentifier": null,
+      "comment": "LUA-30: a LITERAL string index IS a name (and the line is the STRING's line, not the receiver's)"
+    },
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "unknownGlobal",
+      "line_number": 46,
+      "meta.calleeIdentifier": true,
+      "meta.calleeIndexed": null,
+      "comment": "the class the marker exists for: an identifier callee that NOTHING declares — a runtime global reached through _ENV, which is where an externality question can even be asked"
+    },
+    {
+      "type": "imports",
+      "from": "callOnCall",
+      "target": "x",
+      "line_number": 59,
+      "meta.relationshipType": "lua_require",
+      "meta.evidenceClass": "import_based",
+      "comment": "SECTION B's missing pin. `imports` was the ONLY emitted kind over the 15 fixture sources with no expectation row (measured: 9 kinds emitted, 8 pinned), so a contract row naming it would have read `unpinned: imports`. `require(\"x\")` is a module-path import: the target is the string the call writes, the SOURCE is the enclosing function, and `relationshipType: lua_require` tells a consumer it is Lua's require and not an ES-style import. The pin lives HERE, in the same fixture that forbids the payload-as-call-target row, because the same source line is both a legitimate `imports` edge and a forbidden `calls` target — a rule that flattened the two would satisfy one row and fail the other."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "dynamic",
+      "comment": "LUA-22: `dao[key](dao)` — the field is an expression, so there is no name and there must be NO calls edge at all"
+    },
+    {
+      "type": "calls",
+      "from": "callOnCall",
+      "comment": "LUA-29: `require(\"x\")()` — a call on a call. The analyzer has a whitelist of the forms that carry a name, and this one is not on it"
+    },
+    {
+      "type": "calls",
+      "target": "dao[key]",
+      "comment": "the payload spelling, forbidden explicitly so the row names the defect even if the source is reached another way"
+    }
+  ]
+}

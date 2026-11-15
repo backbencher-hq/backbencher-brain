@@ -1,0 +1,18 @@
+{
+  "fixtureId": "c/dispatch-table-filter",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Dispatch-table invocations (handlers[i]()) have NO static callee name - the old code emitted the raw bracket text \"handlers[i]\" as a call target. Computed/dynamic calls are filtered (family contract with cpp); the named externs on/off still resolve.",
+  "expectSymbols": [
+    {
+      "name": "run",
+      "kind": "function"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "handlers[i]"
+    }
+  ]
+}

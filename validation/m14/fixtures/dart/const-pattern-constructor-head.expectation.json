@@ -1,0 +1,158 @@
+{
+  "fixtureId": "dart/const-pattern-constructor-head",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE THREE ROWS THE GATE REFUTED, and the two defects that produced them — pinned shape by shape, each shape measured pre-fix and post-fix before the pin was written (the fixture's own header records the table). DEFECT 1: the `qualified`-under-`constant_pattern` branch reads its head off the NODE TEXT (`n.text.split(\".\")`) rather than through `headNameText`, so `GenericClass<int>.new` arrives as `GenericClass<int>` — arguments attached — and every test below that point is a question about the type's NAME. `namedCtors.has(\"GenericClass<int>.new\")` is false, so the DT-A construction arm is missed; `qualifiedTarget(\"GenericClass<int>\", \"new\")` does not find the type VISIBLE under that spelling, so it spells the target and attaches `baseBeyondRunScope: \"GenericClass<int>\"`. Property 3 of the claim contract requires an identifier-SHAPED base that IS the target's own owner, and `GenericClass<int>` is neither: measured over the whole dart population (arm9, 33,738 files) `causeFAIL` went 0 -> 3, all three this row, in three dart-sdk files that each DECLARE `class GenericClass<T>` — the run held the very owner the claim said it could not reach. `incoming-gate.ts` refuses a non-identifier base in its own self-test, so this is not a judgement call. DEFECT 2, found by measuring rather than by reading the defect report: with the head normalized, `.new` fell to the member-read arm and published `uses -> new` — a bare leaf no project declares and no source wrote — so the refuted claim was replaced by a FABRICATED TARGET, which is worse. `.new` is the unnamed constructor's own spelling, the rule this lane already states in `isRealConstructor` (`lead === \"new\" || lead === owner`), and a member may not be spelled that way, so the spelling has no other reading. It now takes the arm a named constructor already takes, with its own flag (`isConstructorReference`, NOT `isNamedConstructor` — `.new` is the UNNAMED constructor and a consumer counting named constructions must not count it). The consistency argument is in the same file family: `case const GenericClass<int>.new():` — the INVOCATION form, one bracket away — already publishes `instantiates -> GenericClass` through the calls pass, so pre-fix the identical constructor published its class when invoked and a bogus member when torn off; and the corpus redirects four spellings of one constructor (bare, `prefix.`, and the parenthesised forms) onto a single edge anyway, because the dedup key is (type, source, target, confidence) and all four name the same ends. NO CLAIM IS ATTACHED to any of the new rows, which is pinned explicitly: a construction is not a member read of an unreachable owner, so `baseBeyondRunScope` must be null even for `ExternalGeneric<int>.new`, whose type is genuinely unseen. THE WALK is what the nested cases pin: a stripper that stopped at the first `>` would publish `Holder<Map<String, int` as a type name, and one that demanded no nesting would leave the head alone and publish the whole text — both are forbidden below, and the deep case (`List<Map<String, int>>`) separates a one-level implementation from a walk. The `valueHead` row is the boundary in the other direction: a LOWERCASE head names a value whose type the run did not resolve, so nothing is spelled and no claim appears; a normalizer that fired there would spell `box`, a value's own name, as if it were a type. Authored AFTER the shape table in the fixture header was measured — stated rather than left implied, because a pin written from assumption is how the flutter-bloc fixture manufactured three defects that did not exist.",
+  "expectSymbols": [
+    { "name": "const-pattern-constructor-head", "kind": "module" },
+    { "name": "Holder", "kind": "class" },
+    { "name": "Plain", "kind": "class" },
+    { "name": "Foo", "kind": "class" },
+    { "name": "genericNew", "kind": "function" },
+    { "name": "nestedNew", "kind": "function" },
+    { "name": "deepNestedNew", "kind": "function" },
+    { "name": "plainNew", "kind": "function" },
+    { "name": "prefixedNew", "kind": "function" },
+    { "name": "externalNew", "kind": "function" },
+    { "name": "namedCtor", "kind": "function" },
+    { "name": "valueHead", "kind": "function" },
+    { "name": "value", "kind": "property", "ownerName": "Holder" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "genericNew",
+      "target": "Holder",
+      "confidenceMin": 0.95,
+      "meta.isConstructorReference": true,
+      "meta.isConstantPattern": true,
+      "meta.baseBeyondRunScope": null,
+      "meta.receiverCause": null,
+      "note": "THE CORE PIN, and the exact shape of all three refuted corpus rows: a generic head on a type this file DECLARES. Pre-fix this row was `uses -> Holder<int>.new` with `baseBeyondRunScope: \"Holder<int>\"` — the claim the gate refutes. It is now a construction, spelled with the type's NAME. `baseBeyondRunScope: null` is the half that matters most: no claim survives on a construction, so the row is not merely re-spelled, it is no longer a claim at all."
+    },
+    {
+      "type": "instantiates",
+      "from": "nestedNew",
+      "target": "Holder",
+      "meta.isConstructorReference": true,
+      "note": "THE WALK PIN: `Holder<Map<String, int>>.new` normalizes to `Holder`. A rule that stopped at the first `>` would target `Holder<Map<String, int`; a rule that demanded no nesting would leave the head alone and target the whole text. Both are forbidden below."
+    },
+    {
+      "type": "instantiates",
+      "from": "deepNestedNew",
+      "target": "Holder",
+      "meta.isConstructorReference": true,
+      "note": "THE WALK PIN, one level deeper (`Holder<List<Map<String, int>>>.new`), which separates a walk over the argument run from an implementation that happens to handle exactly one nesting level."
+    },
+    {
+      "type": "instantiates",
+      "from": "plainNew",
+      "target": "Plain",
+      "meta.isConstructorReference": true,
+      "note": "THE FABRICATED LEAF, and the row that made the head normalization insufficient on its own: a NON-generic head. Pre-fix this published `uses -> new` with `receiverCause: receiverMemberOutsideRun` — a member name no source wrote, because the head's member table spells the unnamed constructor `constructor` and the leaf fell back to the source's own word. The work item predicted this row would become a spelled-but-unclaimed `GenericClass.new` read; measured, the member-read arm produces the bare leaf instead, which is why `.new` takes the constructor arm."
+    },
+    {
+      "type": "instantiates",
+      "from": "prefixedNew",
+      "target": "Holder",
+      "meta.isConstructorReference": true,
+      "note": "THE PREFIX FORM: `prefix.Holder<int>.new`. The head is the segment before the member, so the prefix is never part of it and the target is `Holder`, not `prefix.Holder` — the same rule the corpus's `prefix.GenericClass<int>.new` rows exercise, and the reason all four spellings of one constructor collapse onto one edge."
+    },
+    {
+      "type": "instantiates",
+      "from": "externalNew",
+      "target": "ExternalGeneric",
+      "meta.isConstructorReference": true,
+      "meta.baseBeyondRunScope": null,
+      "note": "A TYPE THIS RUN CANNOT SEE. `ExternalGeneric` is declared nowhere in this file and nowhere in the fixture set, which is exactly the situation `baseBeyondRunScope` was built for — and it must NOT be attached here. A construction is not a member read, so there is no unreachable owner to state; the `uses` arm's claim vocabulary has no business on the constructor arm. Pre-fix this row was `uses -> ExternalGeneric<int>.new` with the refuted claim."
+    },
+    {
+      "type": "instantiates",
+      "from": "namedCtor",
+      "target": "Foo",
+      "meta.isNamedConstructor": true,
+      "meta.isConstructorReference": null,
+      "note": "THE ARM IT SHARES, unchanged, and the flag boundary: a named constructor keeps `isNamedConstructor` and must NOT gain `isConstructorReference`. The two are separate because `.new` is the UNNAMED constructor — if the new rows borrowed the old flag, every consumer that counts named constructions (the m60 flag census among them) would count these."
+    },
+    {
+      "type": "uses",
+      "from": "valueHead",
+      "target": "value",
+      "meta.receiverCause": "receiverTypeUnknown",
+      "meta.baseBeyondRunScope": null,
+      "note": "THE LOWER BOUNDARY, and the row a widening fix would move first. A LOWERCASE head names a VALUE whose declared type the run did not resolve; there is no type name at the site, so nothing is spelled and no claim appears. A normalizer applied to the head text without a type test would spell `box` — the value's own name — as if it were a type, inventing a claim about an owner that is not a type at all."
+    },
+    {
+      "type": "references",
+      "from": "expressionForm",
+      "target": "Holder",
+      "meta.typePosition": "constructor_tearoff",
+      "note": "THE SAME TEXT IN AN EXPRESSION POSITION — `final f = Holder<int>.new;` — which already went through the selector/calls passes and is untouched by this fix. Pinned so a fix that WIDENED the const-pattern branch (or the head normalization) into the expression path is visible, and so the two shapes' rows can be compared: the expression form publishes the type mention and no construction, the pattern form publishes the construction."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "Holder<int>.new",
+      "note": "THE DEFECT, forbidden by its exact spelling: the refuted target the const-pattern branch published."
+    },
+    {
+      "meta.baseBeyondRunScope": "Holder<int>",
+      "note": "THE REFUTED CLAIM its own self, forbidden with no type named so no arm can emit it: a base with its arguments attached is not an identifier, and the gate's `causeFAIL` column is exactly this row."
+    },
+    {
+      "type": "uses",
+      "target": "Holder<Map<String, int>>.new",
+      "meta.baseBeyondRunScope": "Holder<Map<String, int>>",
+      "note": "the same defect one nesting level down — forbidden in both halves (target and claim), because a fix that normalized the target but left the claim on the raw head would satisfy the first row and fail this one"
+    },
+    {
+      "type": "uses",
+      "target": "Holder<List<Map<String, int>>>.new",
+      "note": "and one level deeper, so a stripper with a fixed nesting budget cannot creep back in"
+    },
+    {
+      "type": "uses",
+      "target": "new",
+      "note": "THE FABRICATED TARGET the normalized head alone produces: the bare leaf `new`, which names nothing in any key space and is not what the source wrote. This is the row that decided the fix's shape."
+    },
+    {
+      "type": "uses",
+      "target": "ExternalGeneric<int>.new",
+      "meta.baseBeyondRunScope": "ExternalGeneric<int>",
+      "note": "the unseen-type spelling of the same defect, forbidden in both halves"
+    },
+    {
+      "type": "instantiates",
+      "target": "Holder<Map<String, int>>",
+      "note": "WHAT A BROKEN STRIPPER PUBLISHES: the head truncated at the first `>`. An `instantiates` edge to a name no declaration carries is a false edge on the strongest relationship type in the family, so it is refused even though the target is capitalized and the row would look plausible."
+    },
+    {
+      "type": "instantiates",
+      "target": "Holder<List<Map<String, int>>>",
+      "note": "the un-stripped head, which is what a rule that refused to touch nesting would publish — the other half of the walk's boundary"
+    },
+    {
+      "type": "instantiates",
+      "target": "Holder<int>",
+      "note": "the simple un-stripped head"
+    },
+    {
+      "type": "instantiates",
+      "target": "new",
+      "note": "the leaf on the constructor arm — reachable only if the arm used `member` where it must use `head`"
+    },
+    {
+      "type": "uses",
+      "from": "genericNew",
+      "target": "Holder",
+      "note": "pins the EDGE TYPE, not just the spelling: a declaration the run can see means a construction, and a fix that kept the member-read arm with a normalized target would read as coverage while asserting the wrong relation."
+    },
+    {
+      "type": "instantiates",
+      "from": "valueHead",
+      "target": "box",
+      "note": "THE OVERREACH DIRECTION on the constructor arm: a value head is not a type, so no construction may be published for it — and spelling the value's own name would be the exact mistake a head normalizer applied without a type test makes."
+    }
+  ]
+}

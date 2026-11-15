@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/manifest/package.json",
+  "authoredFrom": "Two pins in one manifest, because both are convention-shaped and both were unpinned. CALLS: the lane ruled `calls` out twice on a grammar inventory - the JSON grammar has no node type for a function, so it has none for an invocation either - which is the same unsound question that produced the wrong `imports`, `exports` and `extends` rulings. A `scripts` object declares its entries as ordinary keys, so both endpoints of `pretest -> compile` are symbols IN THE SAME FILE, and the corpus carries the shape (apollo-server/package.json declares 7 such invocations). Five DECLINED cases are pinned with forbidRelationships, each because emitting it would be an edge the file does not state: a target that is not a key of this `scripts` object (a binary or another package's script), a self-reference (npm rejects it, and a self-edge carries no order), a QUOTED target (the shell rewrote the argument), and two shapes where the runner token is not a runner at all - `npx run` and a PATH named `npm`. The last two are the reason the tokeniser compares WHOLE tokens: a substring test would read `npx` as `npm`. EXPORTS: `exports` was emitted on measurement and had NO fixture, so a change to the manifest pass could have passed every fixture in the lane; this pins all three forms it reads (`main`, `bin`, `exports`) plus the `uses` edge a dependency entry produces. That dependency edge is pinned on its QUALIFIED target `package.dependencies.left-pad`, not the bare package name: a bare `left-pad` is published by every manifest that depends on left-pad, so on the 601-file sample the bare form asked for one binding and got 11 across 9 files. The package NAME moved to `meta.package`, which is where a consumer reads it. The last forbidRelationships entry pins the bare target as FORBIDDEN, so reverting the target fails this fixture rather than silently restoring the ambiguity.",
+  "expectSymbols": [
+    { "name": "scripts", "kind": "class", "ownerName": "package" },
+    { "name": "pretest", "kind": "property", "ownerName": "scripts" },
+    { "name": "compile", "kind": "property", "ownerName": "scripts" },
+    { "name": "lint", "kind": "property", "ownerName": "scripts" },
+    { "name": "left-pad", "kind": "property", "ownerName": "dependencies" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "package.scripts.pretest", "target": "package.scripts.compile" },
+    { "type": "calls", "from": "package.scripts.test:smoke", "target": "package.scripts.compile" },
+    { "type": "calls", "from": "package.scripts.test:smoke", "target": "package.scripts.lint" },
+    { "type": "calls", "from": "package.scripts.pretest", "target": "package.scripts.compile", "confidenceMin": 0.7, "confidenceMax": 0.8, "meta.reasonCode": "npm_run_sibling_script" },
+    { "type": "exports", "from": "package", "target": "package.main" },
+    { "type": "exports", "from": "package", "target": "package.exports.." },
+    { "type": "exports", "from": "package", "target": "package.exports../sub" },
+    { "type": "exports", "from": "package", "target": "package.bin.fixture-bin" },
+    { "type": "uses", "from": "package", "target": "package.dependencies.left-pad" },
+    { "type": "uses", "from": "package", "target": "package.dependencies.left-pad", "meta.relationshipType": "package_dependency", "meta.package": "left-pad", "meta.version": "^1.3.0" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "package.scripts.external", "target": "package.scripts.not-declared-here" },
+    { "type": "calls", "from": "package.scripts.selfref", "target": "package.scripts.selfref" },
+    { "type": "calls", "from": "package.scripts.quoted", "target": "package.scripts.compile" },
+    { "type": "calls", "from": "package.scripts.notarunner", "target": "package.scripts.compile" },
+    { "type": "calls", "from": "package.scripts.pathrunner", "target": "package.scripts.compile" },
+    { "type": "calls", "from": "package.scripts.pretest", "target": "package.scripts.compile", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "package", "target": "package.dependencies.left-pad", "meta.version": "string" },
+    { "type": "uses", "from": "package", "target": "package.dependencies.left-pad", "meta.version": "unknown" },
+    { "type": "uses", "from": "package", "target": "left-pad", "meta.relationshipType": "package_dependency" },
+    { "type": "exports", "from": "package", "target": "main", "note": "FS-JSON-EXPORTS-SCOPED: the BARE entry-point keys are forbidden now, for the reason this file already records for the dependency edge above — every `package.json` has a `main`, so a bare `main` is one edge attributed to every document that declares one. Measured on a 400-file draw: 22 of the lane's 37 `exports` edges were ambiguous, with `main` carrying 4 declarations and `.` 2-3. The target is the entry point's own position (`package.main`), which is the identity the symbol table publishes and the same spelling `contains` uses." },
+    { "type": "exports", "from": "package", "target": "." },
+    { "type": "exports", "from": "package", "target": "./sub" },
+    { "type": "exports", "from": "package", "target": "fixture-bin" }
+  ]
+}

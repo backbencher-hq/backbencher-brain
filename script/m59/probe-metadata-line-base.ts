@@ -12,11 +12,11 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOTS = [
-  "$HOME/fixtures/repositories/grails-core",
-  "$HOME/fixtures/repositories/scala3",
-  "$HOME/fixtures/repositories/lodash",
-  "$HOME/fixtures/repositories/element-plus",
-  "$HOME/fixtures/repositories/nlohmann-json",
+  "/home/ishaq2321/bb_tests/repositories/grails-core",
+  "/home/ishaq2321/bb_tests/repositories/scala3",
+  "/home/ishaq2321/bb_tests/repositories/lodash",
+  "/home/ishaq2321/bb_tests/repositories/element-plus",
+  "/home/ishaq2321/bb_tests/repositories/nlohmann-json",
 ]
 const EXTS = ["java", "kt", "scala", "groovy", "gradle", "ts", "tsx", "js", "vue", "cpp", "hpp", "cs", "dart", "swift", "php", "py", "go", "rs", "rb"]
 

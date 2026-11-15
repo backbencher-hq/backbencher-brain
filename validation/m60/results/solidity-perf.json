@@ -1,0 +1,67 @@
+{
+  "gate": "M60.solidity-perf",
+  "title": "Solidity analyzer throughput, and whether any trial can be qualified",
+  "at": "2026-10-01T05:31:35.930Z",
+  "commit": "c25c144d",
+  "corpus": {
+    "repo": "/home/ishaq2321/bb_tests/repositories/solidity",
+    "files": 389,
+    "allSolidityFiles": 420
+  },
+  "method": {
+    "trials": 3,
+    "statistic": "minimum per-file time across trials, with median and worst alongside",
+    "why": [
+      "Contention only ADDS time, so the fastest observed run is the closest available approach to the unloaded figure. The minimum is therefore an UPPER BOUND on unloaded per-file time, not a measurement of it.",
+      "The spread between min and worst is contention, and it is reported rather than divided out — a mean over contended trials is a number about the machine, not about the analyzer.",
+      "The whole corpus is re-read and re-analysed per trial; nothing is cached between trials, so each is a cold run of the same work the surface artifact measures."
+    ],
+    "qualificationRule": "loadAvg1 < 8, unchanged from M60.solidity-surface"
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "loadAvg1": 21.17,
+      "wallMs": 23238,
+      "perFileMs": 59.738,
+      "facts": 32783
+    },
+    {
+      "trial": 2,
+      "loadAvg1": 22.58,
+      "wallMs": 38334,
+      "perFileMs": 98.545,
+      "facts": 32783
+    },
+    {
+      "trial": 3,
+      "loadAvg1": 27.07,
+      "wallMs": 39354.2,
+      "perFileMs": 101.168,
+      "facts": 32783
+    }
+  ],
+  "results": {
+    "bestPerFileMs": 59.738,
+    "medianPerFileMs": 98.545,
+    "worstPerFileMs": 101.168,
+    "spreadRatio": 1.69,
+    "factsPerTrial": 32783,
+    "factsPerMsAtBest": 1.4
+  },
+  "qualification": {
+    "perfIsQualified": false,
+    "rule": "at least one trial at loadAvg1 < 8",
+    "observedLoads": [
+      21.17,
+      22.58,
+      27.07
+    ],
+    "verdict": "UNQUALIFIED — no trial ran below the threshold. The best figure below is an upper bound on the unloaded time, and the repository's own rule for a perf claim is NOT met. The box is shared: a 14-minute poll during this change never saw loadAvg1 below 16, with other agents' processes at ~200% CPU."
+  },
+  "limits": [
+    "A single whole-corpus run per trial, so the figure is a mean over 389 files of very different sizes. The smallest files dominate the per-file average in count terms while the largest dominate in time, and this does not separate them.",
+    "Wall time only. No profiling was done, so this says how long and not where the time goes — the TS lane's own perf work is what attributes cost between parse and analyze.",
+    "The qualification flag is NOT satisfied by a good-looking minimum. It is satisfied only by a trial that genuinely ran below the threshold, and this run did not."
+  ]
+}

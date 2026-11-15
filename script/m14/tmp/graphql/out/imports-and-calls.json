@@ -1,0 +1,76 @@
+{
+ "kind": "m60-imports-and-calls-measurement",
+ "producedBy": "script/m14/tmp/graphql/probe/imports-and-calls.mts",
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "admittedFiles": 1905,
+ "imports": {
+  "commentNodes": 4510,
+  "commentFiles": 131,
+  "hashImportDirectives": 170,
+  "hashImportFiles": 131,
+  "byForm": {
+   "none": 0,
+   "bare": 11,
+   "from_binding": 147,
+   "as_binding": 0,
+   "unrecognised": 12
+  },
+  "formsObserved": [
+   "bare",
+   "from_binding",
+   "unrecognised"
+  ],
+  "targetExistsOnDisk": 144,
+  "targetMissingFromDisk": 7,
+  "targetIsOutsideTheRepo": 1,
+  "targetNotAPath": 6,
+  "existingExamples": [
+   "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query-default.gql -> ./fragments/bar-fragment.gql [bare]",
+   "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query.gql -> ./fragments/bar-fragment.gql [from_binding]",
+   "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query-default.gql -> ./fragments/foo-fragment.gql [bare]",
+   "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query.gql -> ./fragments/foo-fragment.gql [from_binding]",
+   "gql-graphql-eslint/packages/plugin/__tests__/mocks/test-directives-with-import.graphql -> ./user-fields.graphql [bare]",
+   "gql-graphql-tools/packages/import/tests/documents/import-test/default/a.graphql -> b.graphql [bare]",
+   "gql-graphql-tools/packages/import/tests/documents/import-test/default/b.graphql -> c.graphql [bare]",
+   "gql-graphql-tools/packages/import/tests/documents/import-test/default/d.gql -> with-nested-fragment.gql [bare]"
+  ],
+  "missingExamples": [
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/global/a.graphql -> shared [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/import-module/a.graphql -> graphql-import-test/b.graphql [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/exact/a.graphql -> @b-schema [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/mixed-use/schema.graphql -> c-graphql [bare]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/node-subpath/a.graphql -> #b.graphql [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/require-paths/b.graphql -> require:./a.graphql [from_binding]",
+   "gql-graphql-tools/packages/loaders/graphql-file/tests/test-files/type-defs-with-failing-import.graphql -> ./invalid-path.graphql [from_binding]"
+  ],
+  "unrecognisedExamples": [
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/circular/b.graphql: \"# import C1, C2 from 'c.graphql'\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/complex/a.graphql: \"# import PLACE_SIZES, DateTime, PAYMENT_PROVIDER, NOTIFICATION_TYPE, CURRENCY from \\\"b.grap\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/import-duplicate/all.graphql: \"# import Query.first, Query.second from \\\"a.graphql\\\"\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/import-nested/a.graphql: \"# import Query.first, Query.second from \\\"c.graphql\\\"\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/import-nested/all.graphql: \"# import Query.first, Query.second from \\\"a.graphql\\\"\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/interfaces-many/c.graphql: \"# import D1, D2 from \\\"d.graphql\\\"\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/merged-root-fields/a.graphql: \"# import Query.*, Dummy.* from 'b.graphql'\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/mix-n-match/b.graphql: \"# import C1, C2 from '../import-all/c.graphql'\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/multiple-imports/schema.graphql: \"# import Query.*, Mutation.* from \\\"a.graphql\\\"\"",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/multiple-imports/schema.graphql: \"# import Query.*, Mutation.* from \\\"b.graphql\\\"\""
+  ],
+  "notAPathExamples": [
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/a.graphql -> @circular/b.graphql [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/b.graphql -> @circular/a.graphql [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/mixed-use/schema.graphql -> @mixed-use/a.graphql [bare]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/multiple-levels/level1.graphql -> @multiple-levels/level2.graphql [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/multiple-levels/level2.graphql -> @multiple-levels/level3.graphql [from_binding]",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/multiple-levels/level3.graphql -> @multiple-levels/level4.graphql [from_binding]"
+  ]
+ },
+ "calls": {
+  "fieldNodes": 64885,
+  "fieldNodesWithArguments": 1150,
+  "fieldNodesWithArgumentsInACleanDoc": 1112,
+  "filesWithArgumentBearingField": 484,
+  "argumentNodes": 5105,
+  "argumentNodesOnAField": 0,
+  "directiveApplicationsWithArguments": 2682
+ }
+}

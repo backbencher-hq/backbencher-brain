@@ -1,0 +1,179 @@
+{
+ "schemaVersion": 1,
+ "fixture": "solidity/branches-sol.sol",
+ "authoredFrom": "The payload matrix (F9 section C) had nothing to check. Authored 2026-09-30 from the analyzer's measured output after the gate reported `section-c-payload-matrix FAIL: missing pins: complexity` \u2014 and the reason it had nothing to check is the finding: this lane's FIRST complexity metric counted `binary_expression` UNCONDITIONALLY and missed `if` entirely, so it read 3 for a file with six contracts, and no fixture in the lane carried a branch for any gate to notice.",
+ "note": "12 = 1 base + 11 decision points: `if` (1), `for` (1), `while` (1), `do`-`while` (1), `&&` (1), `||` (1), ternary (2 \u2014 `both ? r : either ? a : b` nests two), `catch` (1), `yul_if_statement` (1), `yul_switch_statement` (1). Two details are load-bearing. (1) `else` is part of `if_statement` in this grammar \u2014 ONE node \u2014 so the `if`/`else` pair is ONE decision point; counting the `else` separately would make the number a measure of the grammar's node layout rather than of the code. (2) `yul_switch_statement` is counted ONCE for the whole switch, not once per case, matching how the `catch` clause is counted once: a switch is one place control flow diverges. The operator of a `binary_expression` is read STRUCTURALLY \u2014 grammar.js puts it between the `left:` and `right:` fields as an anonymous token \u2014 so `a + b` is arithmetic and `a && b` is a branch, decided by the tree rather than by matching source text. Two more measured facts this fixture pins, both corrected against a first draft that asserted them rather than reading them. (1) `IThing(t)` is a TYPE CAST and the grammar models it as a `call_expression`, so the analyzer emits `calls -> IThing` \u2014 NOT a `references` edge as the first draft of this fixture asserted. That is the same shape as `Feeder(v).report()`: a cast names the type it converts to, and modelling it as a call keeps one rule (a name in callee position is a `calls` target) instead of two. (2) The assembly's reads of `a` and `b` arrive as `isVariableReference`, not as `isYulPathSegment`: `gt(a, b)` spells its arguments as bare identifiers under an `expression`, while `r := add(r, 1)` spells `r` as a `yul_path`. Both are reads of the same Solidity binding from the same scope, and the distinction is the grammar's shape rather than a difference in meaning. And a correction worth recording: this row was almost mis-authored by reading the metadata column of one probe script against the line column of another. Both printed the same line number, so the mismatch was invisible until the runner refused the row.",
+ "expectComplexity": [
+  {
+   "fileEquals": 12,
+   "comment": "The pin. `fileEquals` and not `fileMin`: a metric that silently starts counting `a + b` again would satisfy a minimum and break an equality, and the metric that was wrong in this lane was wrong by ADDING branches, so only an equality pins it. Every branch construct in the language is present in this one file, so a branch set that loses a construct drops the number below 12 and fails."
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "branches-sol.sol",
+   "kind": "module"
+  },
+  {
+   "name": "Branches",
+   "kind": "class",
+   "ownerName": "branches-sol.sol"
+  },
+  {
+   "name": "values",
+   "kind": "property",
+   "ownerName": "Branches"
+  },
+  {
+   "name": "everyBranch",
+   "kind": "method",
+   "ownerName": "Branches"
+  },
+  {
+   "name": "unreachableTail",
+   "kind": "method",
+   "ownerName": "Branches"
+  },
+  {
+   "name": "IThing",
+   "kind": "interface",
+   "ownerName": "branches-sol.sol"
+  },
+  {
+   "name": "fetch",
+   "kind": "method",
+   "ownerName": "IThing"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Branches",
+   "target": "everyBranch",
+   "line_number": 14,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "Branches",
+   "target": "values",
+   "line_number": 12,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "branches-sol.sol",
+   "target": "IThing",
+   "line_number": 54,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "IThing",
+   "target": "fetch",
+   "line_number": 54,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "calls",
+   "from": "everyBranch",
+   "target": "fetch",
+   "line_number": 37,
+   "comment": "The `try` attempt expression is a real call. `try_statement` is a transparent wrapper \u2014 the call edge comes from the `expression` under its `attempt:` field \u2014 which is why the F9 spec records it as internal_silent with that child named rather than as a gap.",
+   "meta.isSolidityCall": true,
+   "meta.isMemberCall": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "everyBranch",
+   "target": "everyBranch\u0000r",
+   "line_number": 16,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  },
+  {
+   "type": "uses",
+   "from": "everyBranch",
+   "target": "everyBranch\u0000a",
+   "line_number": 44,
+   "comment": "A YUL PATH READ that reaches a Solidity binding: `gt(a, b)` spells its arguments as `yul_path > yul_identifier`, so this is the YUL branch of the read rule rather than the positional one, and the confidence differs (0.7 against 0.75) because they are. The assembly sees the enclosing function locals - OpenZeppelin has 447 `assembly_statement` nodes, and a rule that scoped assembly reads to Yul variables only would drop every one of them. This row was nearly mis-authored: a first draft asserted it was a positional read, because I read the `{...}` column of ONE probe script while reading the LINE column of ANOTHER. Two instruments, two columns, one conclusion - which is the shape of a fabricated fact. SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed.",
+   "meta.evidenceClass": "usage_contextual",
+   "meta.isYulPathSegment": true,
+   "meta.isYulVariableRead": true
+  },
+  {
+   "type": "exports",
+   "from": "branches-sol.sol",
+   "target": "Branches",
+   "line_number": 11,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "branches-sol.sol",
+   "target": "IThing",
+   "line_number": 54,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "calls",
+   "from": "everyBranch",
+   "target": "IThing",
+   "line_number": 37,
+   "comment": "`IThing(t)` is a TYPE CAST and the grammar models it as a `call_expression`, so the type it converts to is a `calls` target. The first draft of this fixture asserted a `references` edge here and the runner refused it \u2014 the measurement is what settles it. One rule covers a cast and a call: a name in callee position is the callee, whether the source wrote `IThing(t)` or `fetch()`.",
+   "meta.isSolidityCall": true,
+   "meta.evidenceClass": "usage_contextual"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "everyBranch",
+   "target": "either",
+   "line_number": 34,
+   "comment": "A local read is a `uses` edge; the nesting of the two ternaries is a STRUCTURE fact, not a reference. `either` is read here and read again on the next line \u2014 two rows, per SOL-2's per-site rule."
+  },
+  {
+   "type": "contains",
+   "from": "branches-sol.sol",
+   "target": "global",
+   "comment": "SOL-1. The synthesised global scope, forbidden by name in every fixture in this lane."
+  },
+  {
+   "type": "calls",
+   "from": "everyBranch",
+   "target": "gt",
+   "comment": "SOL-8: `gt` is an EVM opcode in Yul, not a function. It is the only call-shaped construct in the assembly block besides `add`, and both are silent."
+  },
+  {
+   "type": "uses",
+   "from": "everyBranch",
+   "target": "r",
+   "line_number": 16,
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  },
+  {
+   "type": "uses",
+   "from": "everyBranch",
+   "target": "a",
+   "line_number": 44,
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "exports",
+   "equals": 2,
+   "comment": "The two file-scope type declarations. `unreachableTail` is a file-scope FUNCTION and is deliberately excluded (SOL-12: `solc` emits an ABI for contracts, interfaces and libraries and for nothing else), which is why this is 2 and not 3."
+  },
+  {
+   "type": "calls",
+   "equals": 2,
+   "comment": "Exactly two calls: `IThing(t).fetch()` \u2014 the cast and the call on it. The assembly's `gt` and `add` are EVM opcodes (SOL-8) and `catch` is not a call, so a rule that did not separate opcodes from calls would report 4, and one that missed the cast would report 1."
+  }
+ ]
+}

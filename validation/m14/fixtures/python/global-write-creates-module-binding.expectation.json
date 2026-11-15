@@ -1,0 +1,84 @@
+{
+ "fixtureId": "python/global-write-creates-module-binding",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-D18 (round 10). `global X` plus a CREATING write in the SAME function body binds X in the MODULE namespace, and the module namespace is this FILE's scope — a place the ontology can hold — so the name is publishable as an ownerless module variable instead of being excused as unresolvable. The mechanism was PRICED before it was written (`.tmp-py/price-globals9.py`, CPython's own `ast`: 397 global+creating-write pairs, 140 already module-bound, 257 matter pairs, 98 rows of the round-9 residual dump) and the positive rows below are the priced shapes. HALF THE FIXTURE IS THE PRECISION, because a rule this easy to widen is a rule that fabricates: `ANNOT_ONLY: int` under a `global` declares no value, and CPython agrees the name is not created (`exec(\"x: int\", m.__dict__)` adds no namespace entry), so it must publish NOTHING — the price script counted it, the implementation must not, and this is where the difference is pinned. `COUNTER += 1` is a read-modify-write (it REQUIRES the binding to exist) and `del GONE` removes it; neither creates. `outer_declares_but_nested_writes` names the scope rule: the nested `def` has its OWN globals, so a `global` in the outer body plus a write in the inner body is NOT a pair (CPython: the inner assignment is a local of the inner function). `nested_owner`/`inner` prove the other direction — a nested function's OWN global write IS a pair, because every function node is visited on its own. The dedupe rows are the two ways a name can already be bound when the write is read: `BOUND` is a module-level assignment (published once, and the write must not publish a second symbol), and `os` is bound by an import (the conservative rule: an import-bound name gets no second declaration). Lines and the exact reasonCode spellings are MEASURED against the analyzer's own output (`.tmp-py/fixture-shapes-round10.mts`) rather than written from memory — a line pin remembered instead of measured is a guess with a number on it.",
+ "expectSymbols": [
+  {
+   "name": "RUN",
+   "kind": "variable",
+   "meta.isModuleVariable": true,
+   "meta.boundByGlobalWrite": true,
+   "note": "THE POSITIVE ROW. `init()` declares `global RUN` and assigns `RUN = make_runner()`; the symbol sits at the WRITE (line 16), not at the `global` line, because the write is the binding."
+  },
+  {
+   "name": "INNER_ONLY",
+   "kind": "variable",
+   "meta.boundByGlobalWrite": true,
+   "note": "A NESTED function's own `global` + write is a pair too. Each `function_definition` is visited as its own node, so nothing is inherited from the enclosing body — and the fact is a fact about the inner scope, not a guess about the outer one."
+  },
+  {
+   "name": "P",
+   "kind": "variable",
+   "meta.boundByGlobalWrite": true,
+   "note": "The outer half of the same nesting shape: `nested_owner`'s own `global P` + `P = 1`."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "global_write_creates_module_binding",
+   "target": "RUN",
+   "line_number": 63,
+   "confidence": 0.9,
+   "meta.reasonCode": "bare-name-callee",
+   "note": "The call the round exists for, in its corpus shape: `RUN()` at MODULE level, 47 lines after the function that binds it. The source is the module scope (the file stem) because a call with no enclosing def belongs to the module — the same rule the `module.py` note in `processCall` records. Before this round the target name bound to nothing anywhere; now it binds to the symbol above, in the same file, which is what 'resolved' means."
+  },
+  {
+   "type": "references",
+   "from": "Uses",
+   "target": "RUN",
+   "line_number": 67,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "The reference half — the sqlalchemy corpus shape (`global str30` inside a test function, a nested class annotating `Mapped[str30]`). 90 of the 98 priced rows were this shape, so the fixture pins it independently of the call."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "RUN",
+   "equals": 1,
+   "note": "ONE symbol: the whole point is that the module namespace gets a declaration, not that a name gets counted twice."
+  },
+  {
+   "name": "BOUND",
+   "equals": 1,
+   "note": "DEDUPE 1. `BOUND = 1` at module level is already a declaration; `netter`'s `global BOUND; BOUND = 2` must NOT publish a second one. Counting by name is exactly the falsifier: the mutant that skips the dedupe reports 2 here."
+  },
+  {
+   "name": "os",
+   "equals": 0,
+   "note": "DEDUPE 2. `os` is bound by an IMPORT — the conservative rule adds no second declaration for it, and this row is the one that fails if the import half of the dedupe is removed."
+  },
+  {
+   "name": "ANNOT_ONLY",
+   "equals": 0,
+   "note": "THE PRECISION ROW the price script got wrong: a valueless annotation creates no namespace entry in CPython, so this round does not create one either. A mutant that treats every `assignment` node as creating fails HERE."
+  },
+  {
+   "name": "COUNTER",
+   "equals": 0,
+   "note": "`+=` is a read-modify-write. It cannot create the binding it reads, so it proves nothing about the module namespace."
+  },
+  {
+   "name": "GONE",
+   "equals": 0,
+   "note": "`del GONE` under `global` names a binding it REMOVES. Publishing a symbol for it would be the opposite of the fact."
+  },
+  {
+   "name": "NOT_A_PAIR",
+   "equals": 0,
+   "note": "THE SCOPE ROW. The `global` is in the outer body and the write is in the inner one. Two different scopes, so not a pair — CPython makes the inner assignment a local of the inner function, and a collector that walked a nested body as part of its parent would publish a module symbol here."
+  }
+ ]
+}

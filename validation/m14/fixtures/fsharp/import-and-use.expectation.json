@@ -1,0 +1,287 @@
+{
+  "fixtureId": "fsharp/import-and-use",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 ontology lane (fsharp, 2026-10-02) — the two GAP relationship types this lane implements, `imports` and `uses`, plus the one it rules, `exports`. Every row here was measured against the wired wasm on the whole 6,619-file corpus before it was written (validation/m14/fixtures/fsharp/ontology-probe.ts): `import_decl` 11,371 nodes in 2,540 files, `fsi_directive_decl` 193 in 135, `module_abbrev` 5 in 5, `attribute` 29,441 in 2,492 — so the constructs are present and were unread. FOUR facts this file pins that prose would not have caught, and each of them was a wrong answer first. (1) BOTH labels stay on an `open`: `imports` is the dependency `src/intelligence/analysis/dependencies.ts` reads, `references` is the mention, and the ER-D41 precedent is this lane's own shape — `open X` recorded under a label nothing read. The confidences are asymmetric on purpose: 1.0 on `imports` because the directive NAMES the path and nothing is inferred, 0.9 on `references` because that is what it was already measured at. (2) `#time`/`#help`/`#quit` are `fsi_directive_decl` nodes too and import NOTHING — `#time \"on\"` even carries a string. The three resource keywords are read off the tree and the other three are refused, so the forbid rows below are what stop this file from being about a plausible fabrication. (3) THE QUOTES ARE NOT PART OF THE PATH. `(fsi_directive_decl (string))` gives the content no node — the two children are the `\"` tokens — so reading `node.text` produced `imports -> \"nuget: FSharp.Core\"`, a target that binds to nothing. The delimiters are now read off the tree and the span between them is the value. (4) `[<return: Struct>]` on a `val` is a VARIANCE annotation, and its target field is the literal word `return`. Skipping that field by object identity (`c === attrTarget`) does not work — web-tree-sitter builds the Node wrapper on each accessor call — so the variance keyword was read as the dependency: 11 `uses` edges targeting the string `return` in a 200-file draw. It is skipped by FIELD NAME now, and the `imports`-forbid rows for the `#time` family plus the `[<return: …]>` line below are the regression net for both. FORMATTING, which cost a run again: `module Diagnostics = …` below does NOT produce a `module_abbrev` node on this grammar — it parses as `module_defn` + `dot_expression`, so the alias target is a module DECLARATION and not an import, and the forbid row says so. The `module_abbrev` branch is live (5 corpus files) and is measured over the whole corpus by the probe rather than pinned here, because a fixture cannot assert a node the fixture itself does not produce. (5) THE `exports` RULING IS OVERTURNED (FS-D13, 2026-10-09), and this file is where it was pinned in both directions. The old forbid row ruled `exports` out on INSTRUMENT A — no export-declaration node type exists — and instrument A is the wrong instrument here for the reason `script/m14/lua-ruled.ts` records as json's error: an export SURFACE need not be an export DECLARATION, and F#'s is expressed with ordinary declarations plus visibility. Instrument B, counted on the tree over a deterministic 288-file draw of the corpus (`bun .tmp-probe/fsharp-lane/fs-exports-census.mts 300`): 2,535 importable names in 245 of 288 files (85.1%), restricted by `access_modifier` (internal 120, private 70, public 10), with all six candidate node types at 0. So the surface exists, and the fixture now pins the EDGES it produces: one per importable unit, target = the published identity, source = the publishing scope (`Global` for the file's own header). The overlap question is answered separately and does not overturn it: of the 2,143 OWNED surface entries, 2,143 (100.00%) are pairs `contains` also carries — but `contains` is membership and `exports` is the importable-unit set, which the M49 invariant above states as two different facts. THE RATIONALE ABOVE WAS WRITTEN WHEN THE FILE WAS AUTHORED; this sentence and the `exports` rows are the 2026-10-09 correction. The rule ids, the node-type census and the two numbers that priced the old ruling (2,143 owned entries, 100.00% shared with `contains`) are in `script/m14/spec/fsharp-completeness.json` and `docs/analyzers/fsharp.md` PASS 16.",
+  "expectSymbols": [
+    {
+      "name": "Fixture.ImportAndUse",
+      "kind": "module"
+    },
+    {
+      "name": "Diagnostics",
+      "kind": "module"
+    },
+    {
+      "name": "Point",
+      "kind": "class"
+    },
+    {
+      "name": "Origin",
+      "kind": "variable"
+    },
+    {
+      "name": "Flag",
+      "kind": "enum"
+    },
+    {
+      "name": "Apply",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "System",
+      "line_number": 2,
+      "meta.relationshipType": "open_directive",
+      "meta.targetResolution": "external-namespace"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.ImportAndUse",
+      "target": "System",
+      "line_number": 2,
+      "meta.isImport": true,
+      "meta.targetResolution": "external-namespace"
+    },
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "System.Math",
+      "line_number": 3,
+      "meta.relationshipType": "open_directive",
+      "meta.opensTypes": true,
+      "meta.targetResolution": "external-namespace"
+    },
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "nuget: FSharp.Core",
+      "line_number": 5,
+      "meta.relationshipType": "resource_directive",
+      "meta.directive": "#r",
+      "meta.targetResolution": "resource-path"
+    },
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "/tmp/fixture-lib",
+      "line_number": 6,
+      "meta.relationshipType": "resource_directive",
+      "meta.directive": "#I",
+      "meta.targetResolution": "resource-path"
+    },
+    {
+      "type": "part_of",
+      "from": "Fixture.ImportAndUse",
+      "target": "fixtures/fsharp/Other.fsx",
+      "line_number": 7,
+      "meta.relationshipType": "part_directive",
+      "meta.directive": "#load",
+      "meta.partRole": "library",
+      "meta.targetResolution": "project-relative-path",
+      "note": "RELABELLED 2026-10-22 (the R3 remedy): a `#load` is a TEXTUAL INCLUDE — the named file is compiled as part of THIS compilation unit, shares this file's single scope, imports nothing, and cannot be resolved as a separate module. That is the `part_of` contract (src/ast/types.ts:164-190) and DART's `part 'x.dart'`, and it is NOT an `imports` row. THE TARGET ALSO MOVED: from the raw specifier `Other.fsx` to the PROJECT-RELATIVE PATH the directive resolves to, because a specifier is a path and no resolver can bind it (the dart lane's `part-of` fixture records the same correction, on 2026-10-08). The target is resolved against the INCLUDING FILE'S OWN DIRECTORY; the path here is the synthetic one the harness hands `analyze()`, and the corpus runs pass real paths."
+    },
+    {
+      "type": "uses",
+      "from": "Fixture.ImportAndUse.Point",
+      "target": "Struct",
+      "line_number": 15,
+      "meta.relationshipType": "attribute_application",
+      "meta.isAttributeUsage": true,
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "uses",
+      "from": "Fixture.ImportAndUse",
+      "target": "Literal",
+      "line_number": 20,
+      "meta.relationshipType": "attribute_application",
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "uses",
+      "from": "Fixture.ImportAndUse.Flag",
+      "target": "RequireQualifiedAccess",
+      "line_number": 23,
+      "meta.relationshipType": "attribute_application",
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "uses",
+      "from": "Fixture.ImportAndUse",
+      "target": "CompilationRepresentation",
+      "line_number": 26,
+      "meta.relationshipType": "attribute_application",
+      "meta.attributeTarget": "assembly",
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "uses",
+      "from": "Fixture.ImportAndUse",
+      "target": "Struct",
+      "line_number": 29,
+      "meta.relationshipType": "attribute_application",
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.ImportAndUse",
+      "target": "System.Collections.Generic",
+      "line_number": 42,
+      "meta.isImport": true,
+      "meta.targetResolution": "external-namespace",
+      "note": "FS-P8 RETIRED (2026-10-09). This row pinned `meta.isExternalTarget: true` on this edge; the marker is gone. `external-namespace` is a statement about THIS FILE (\"this file does not publish this path\"), and the marker turned it into a statement about the PROJECT, which the incoming gate adjudicates and refutes: at project scope (a 200-file draw, adjudicated against every admitted file of the claim's own repository) `external-namespace` is 238 true / 100 false = 70.4% and `base-member-external` 15 true / 69 false = 17.9%. The gate's own 60-file stride verified 120 of 124 only because its key space IS 60 files, so an owner absent from the SAMPLE reads as absent from the PROJECT. The reason code stays; the claim does not."
+    },
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "System.Collections.Generic",
+      "line_number": 42,
+      "meta.relationshipType": "open_directive",
+      "meta.targetResolution": "external-namespace",
+      "note": "the same edge on the label the dependency pass reads, and the same retirement — one `open` produces both rows, which is why the marker was set in a final pass at all and why removing it there removes it on every label."
+    },
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "System.IO",
+      "line_number": 12,
+      "meta.relationshipType": "module_alias",
+      "meta.moduleAlias": "IO",
+      "meta.targetResolution": "module-alias-path"
+    },
+    {
+      "type": "exports",
+      "from": "Global",
+      "target": "Fixture.ImportAndUse",
+      "line_number": 1,
+      "meta.exportForm": "module-surface",
+      "meta.declaredKind": "module",
+      "meta.publishedBy": "file-scope",
+      "meta.targetResolution": "published-identity",
+      "note": "FS-D13 (2026-10-09): the file's OWN top-level unit has no owner, so its publisher is the file-scope source `Global` — this lane's established spelling for a file-scope edge (FS-D10). No module name is invented from the filename."
+    },
+    {
+      "type": "exports",
+      "from": "Fixture.ImportAndUse",
+      "target": "Fixture.ImportAndUse.Diagnostics",
+      "line_number": 13,
+      "meta.exportForm": "module-surface",
+      "meta.declaredKind": "module",
+      "meta.publishedBy": "enclosing-scope",
+      "note": "a module-owned unit: `open Fixture.ImportAndUse` binds `Diagnostics` directly, which is the M49 exports-family invariant's own wording for the haskell/ocaml shape (`run-fixtures.ts:1471`)"
+    },
+    {
+      "type": "exports",
+      "from": "Fixture.ImportAndUse",
+      "target": "Fixture.ImportAndUse.Point",
+      "line_number": 15,
+      "meta.exportForm": "module-surface",
+      "meta.declaredKind": "class"
+    },
+    {
+      "type": "exports",
+      "from": "Fixture.ImportAndUse",
+      "target": "Fixture.ImportAndUse.Flag",
+      "line_number": 23,
+      "meta.exportForm": "module-surface",
+      "meta.declaredKind": "enum"
+    },
+    {
+      "type": "exports",
+      "from": "Fixture.ImportAndUse",
+      "target": "Fixture.ImportAndUse.Apply",
+      "line_number": 29,
+      "meta.exportForm": "module-surface",
+      "meta.declaredKind": "function"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "Fixture.ImportAndUse",
+      "target": "System",
+      "meta.isExternalTarget": true,
+      "note": "FS-P8: the claim must NOT be blanket. `open System` writes a ONE-segment owner, and `incoming-rule.ts`'s lookup cannot answer for it — the project very often declares something named `System` of its own, and `System(2118)` is one of the top six owners the gate REFUTES. A marker here would buy nothing verifiable and, where the project owns the name, would be a false claim. Priced: a blanket marker on every dotted target converts 26,795 verified against 35,839 REFUTED (42.8%); the shipped rule's population is 6,893 edges at 93.0% verified."
+    },
+    {
+      "type": "references",
+      "from": "Fixture.ImportAndUse",
+      "target": "System.Math",
+      "meta.isExternalTarget": true,
+      "note": "same one-segment owner (`System`), on the `references` half of the `open type`."
+    },
+    {
+      "type": "imports",
+      "target": "System.Collections.Generic",
+      "meta.isExternalTarget": true,
+      "note": "FS-P8 RETIRED (2026-10-09): this is the row that pins the retirement in the direction that matters. `System.Collections` is a two-segment owner and this is exactly the edge the old rule claimed — the fixture asserted the marker here, and the gate's PROJECT-scope reading refutes the class it belongs to 30% of the time. The edge still resolves nothing and is still reported; what it no longer does is assert something about the corpus that a single file cannot know."
+    },
+    {
+      "type": "references",
+      "target": "System.Collections.Generic",
+      "meta.isExternalTarget": true,
+      "note": "the same retirement on the label the dependency pass reads."
+    },
+    {
+      "type": "imports",
+      "target": "Fabulous.Avalonia.View",
+      "meta.isExternalTarget": true,
+      "note": "THE GATE'S OWN REFUTATION, pinned as a forbid. `incoming-gate.ts fsharp fs 60` refuted four claims on this target and on `Fabulous.Maui.View` (two files, both labels each): each writes `open type Fabulous.Avalonia.View` in a project that DECLARES `namespace Fabulous.Avalonia` in another file, and its owner is published at project scope. No per-file discriminator separates these four from the claims that verify — measured, the best candidate removes 56 verified claims to remove these four — which is why the class is retired rather than tightened."
+    },
+    {
+      "type": "imports",
+      "target": "\"nuget: FSharp.Core\"",
+      "note": "the quotes are delimiters, not part of the path — the string node gives its content no node, so reading node.text put them in the dependency and produced a target that binds to nothing"
+    },
+    {
+      "type": "imports",
+      "target": "on",
+      "note": "`#time \"on\"` is an fsi_directive_decl carrying a string and imports nothing: `#time`, `#help` and `#quit` are REPL controls that touch no resource outside the file"
+    },
+    {
+      "type": "imports",
+      "target": "\r",
+      "note": "`#quit` takes no argument at all; an edge whose target is a bare CR is the shape of an edge nothing asked for"
+    },
+    {
+      "type": "imports",
+      "target": "Diagnostic",
+      "note": "`module Diagnostics = FSharp.Compiler.Diagnostic` on line 13 does NOT produce a module_abbrev node on this grammar — it parses as module_defn + dot_expression (measured: the same line with two path segments, `module IO = System.IO`, DOES produce one, and line 12's edge is the assertion that pins the branch). So this alias target is a module declaration, not an import. The branch is live over the corpus — 5 files — and ontology-probe.ts counts them"
+    },
+    {
+      "type": "uses",
+      "target": "return",
+      "note": "`[<return: Struct>]` on line 28's val is a variance annotation: the attribute's `target` field is the literal word `return` and the TYPE is Struct. Skipping the field by object identity fails — web-tree-sitter rebuilds the Node wrapper per accessor call — which measured 11 `uses` edges targeting `return` in a 200-file draw"
+    },
+    {
+      "type": "uses",
+      "target": "assembly",
+      "note": "same field, same failure: `[<assembly: CompilationRepresentation(…)>]` on line 25 must read CompilationRepresentation"
+    },
+    {
+      "type": "exports",
+      "target": "Fixture.ImportAndUse.Origin",
+      "note": "FS-D12: `let Origin = Point.Zero` is a VALUE (a Variable, no arguments), and values are excluded from the export set — a value is not an importable UNIT in this ontology's sense and the payload excludes it. The positive rows above are the surface; this row is what keeps the exclusion pinned rather than assumed. NOTE the old forbid row that stood here (`{\"type\": \"exports\"}` with no target) was the RULED position and is now OVERTURNED — see the rationale: instrument A was the wrong instrument for F#, because a surface can be expressed by ordinary declarations plus visibility, which is exactly the case `lua-ruled.ts` records as json's `exports` error."
+    },
+    {
+      "type": "imports",
+      "target": "unknown",
+      "note": "ledger R7: no relationship endpoint may be the literal `unknown`"
+    },
+    {
+      "type": "uses",
+      "target": "unknown",
+      "note": "ledger R7: no relationship endpoint may be the literal `unknown`"
+    },
+    {
+      "type": "imports",
+      "target": "fixtures/fsharp/Other.fsx",
+      "note": "THE SUPERSEDED SHAPE — a `#load` is a part directive, not an import. Forbidden so a relabel that ADDS `part_of` without REMOVING the `imports` row cannot pass. One construct, one label."
+    }
+  ],
+  "correction_2026_10_22_part_of": "RELABELLED: the `#load` row above was `imports` (target `Other.fsx`, `meta.relationshipType: \"resource_directive\"`). It is now `part_of` (target `fixtures/fsharp/Other.fsx`, `meta.relationshipType: \"part_directive\"`, `meta.partRole: \"library\"`). REASON: `#r` and `#I` ARE resource references — an assembly and an include path — and they stay `imports` (measured over the whole admitted population: 838 `#r` sites, 99 `#I` sites, 236 `#load` sites in 135 files). `#load` is a TEXTUAL INCLUDE and the vocabulary has a name for it. The label moved; the construct, the source, the line and the confidence did not. The TARGET SPELLING ALSO MOVED, because a specifier is a path no resolver can bind."
+}

@@ -1,0 +1,48 @@
+{
+  "fixtureId": "vue/template-member-uses",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. V2 (#419): template expressions ({{ count }}, :label=\"label\", @click=\"onSave\", v-model=\"count\", v-if=\"show\") read script-side members — the template<->script data-flow must emit Uses edges from the component to those members. Pre-fix: the template pass emitted only instantiates for component tags; every member binding was silent.",
+  "expectSymbols": [
+    {
+      "name": "count",
+      "kind": "constant"
+    },
+    {
+      "name": "onSave",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "count",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "label",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "onSave",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-member-uses",
+      "target": "show",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "renders",
+      "from": "template-member-uses",
+      "target": "MyButton",
+      "meta.isComponentUsage": true
+    }
+  ]
+}

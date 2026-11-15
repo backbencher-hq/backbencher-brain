@@ -1,0 +1,36 @@
+{
+  "expectSymbols": [
+    { "name": "TaskError", "kind": "module" },
+    { "name": "TaskError", "kind": "struct", "ownerName": "TaskError" },
+    { "name": "task", "kind": "property", "ownerName": "TaskError" },
+    { "name": "message", "kind": "property", "ownerName": "TaskError" },
+    { "name": "mix", "kind": "property", "ownerName": "TaskError" },
+    { "name": "MessageError", "kind": "module" },
+    { "name": "MessageError", "kind": "struct", "ownerName": "MessageError" },
+    { "name": "message", "kind": "property", "ownerName": "MessageError" }
+  ],
+  "expectSymbolCount": [
+    { "name": "TaskError", "kind": "struct", "equals": 1 },
+    { "name": "MessageError", "kind": "struct", "equals": 1 }
+  ],
+  "forbidSymbols": [
+    { "name": "defexception" }
+  ],
+  "expectExports": [
+    { "name": "TaskError", "kind": "module" },
+    { "name": "MessageError", "kind": "module" }
+  ],
+  "forbidExports": [
+    { "name": "TaskError", "kind": "struct" },
+    { "name": "MessageError", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "TaskError", "target": "task" },
+    { "type": "contains", "from": "TaskError", "target": "message" },
+    { "type": "contains", "from": "TaskError", "target": "mix" },
+    { "type": "contains", "from": "MessageError", "target": "message" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "defexception" }
+  ]
+}

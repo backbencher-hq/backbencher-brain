@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-member-identity",
+  "title": "M60 lua LUA-15 — a member's identity is its container plus its own name, recorded once",
+  "at": "2026-10-04T00:42:43.513Z",
+  "analyzer": "src/ast/real-lua-analyzer.ts",
+  "fixture": {
+    "members.lua": "local Buffer = {}\nlocal M = {}\n\nfunction Buffer:initialize(length)\n  self.len = length\nend\n\nfunction Buffer.readUInt8(self)\n  return 0\nend\n\nfunction M.new(opts)\n  return setmetatable({}, M)\nend\n\nfunction plain(x)\n  return x\nend\n\nfunction use()\n  local b = Buffer:initialize(1)\n  local v = Buffer.readUInt8(b)\n  local o = M.new({})\n  plain(1)\nend\n\nfunction outer()\n  local inner = 1\n  function nested()\n    return inner\n  end\n  return nested()\nend\n\nlocal handler = function(payload)\n  local payloadCopy = payload\n  return payloadCopy\nend\n\nreturn use\n"
+  },
+  "expectedMembers": [
+    {
+      "name": "initialize",
+      "owner": "Buffer",
+      "line": 4
+    },
+    {
+      "name": "readUInt8",
+      "owner": "Buffer",
+      "line": 8
+    },
+    {
+      "name": "new",
+      "owner": "M",
+      "line": 12
+    }
+  ],
+  "expectedPlain": [
+    {
+      "name": "plain",
+      "line": 16
+    }
+  ],
+  "observedSymbols": [
+    {
+      "name": "Buffer",
+      "owner": "global",
+      "startLine": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "M",
+      "owner": "global",
+      "startLine": 2,
+      "kind": "variable"
+    },
+    {
+      "name": "initialize",
+      "owner": "Buffer",
+      "startLine": 4,
+      "kind": "method"
+    },
+    {
+      "name": "readUInt8",
+      "owner": "Buffer",
+      "startLine": 8,
+      "kind": "method"
+    },
+    {
+      "name": "new",
+      "owner": "M",
+      "startLine": 12,
+      "kind": "method"
+    },
+    {
+      "name": "plain",
+      "owner": "global",
+      "startLine": 16,
+      "kind": "function"
+    },
+    {
+      "name": "use",
+      "owner": "global",
+      "startLine": 20,
+      "kind": "function"
+    },
+    {
+      "name": "b",
+      "owner": "use",
+      "startLine": 21,
+      "kind": "variable"
+    },
+    {
+      "name": "v",
+      "owner": "use",
+      "startLine": 22,
+      "kind": "variable"
+    },
+    {
+      "name": "o",
+      "owner": "use",
+      "startLine": 23,
+      "kind": "variable"
+    },
+    {
+      "name": "outer",
+      "owner": "global",
+      "startLine": 27,
+      "kind": "function"
+    },
+    {
+      "name": "inner",
+      "owner": "outer",
+      "startLine": 28,
+      "kind": "variable"
+    },
+    {
+      "name": "nested",
+      "owner": "outer",
+      "startLine": 29,
+      "kind": "function"
+    },
+    {
+      "name": "handler",
+      "owner": "global",
+      "startLine": 35,
+      "kind": "variable"
+    },
+    {
+      "name": "payloadCopy",
+      "owner": "global",
+      "startLine": 36,
+      "kind": "variable"
+    }
+  ],
+  "checks": [
+    {
+      "name": "every method is a symbol under its OWN name with its owner",
+      "pass": true,
+      "detail": "3/3 present"
+    },
+    {
+      "name": "no symbol name contains '.' or ':' (a path, not a name)",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "no symbol name duplicates its own owner",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "each owner is itself a symbol",
+      "pass": true,
+      "detail": "Buffer:1 Buffer:1 M:1"
+    },
+    {
+      "name": "a plain function has no owner",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "a member is a method and a plain function is a function",
+      "pass": true,
+      "detail": "correct"
+    },
+    {
+      "name": "every method call target joins to a declaration of that name",
+      "pass": true,
+      "detail": "4 joined"
+    },
+    {
+      "name": "each member is filed at its own declaration line",
+      "pass": true,
+      "detail": "all correct"
+    },
+    {
+      "name": "a function nested in another function is scoped to it, not to global",
+      "pass": true,
+      "detail": "scope=outer"
+    },
+    {
+      "name": "the nested function is filed at its own declaration line",
+      "pass": true,
+      "detail": "nested@29, expected L29"
+    },
+    {
+      "name": "the contains edge for a nested function names its enclosing function",
+      "pass": true,
+      "detail": "outer -> nested"
+    },
+    {
+      "name": "a top-level function is still scoped to global",
+      "pass": true,
+      "detail": "scope=global"
+    },
+    {
+      "name": "a top-level closure's internal return is NOT published as a file export",
+      "pass": true,
+      "detail": "published: use"
+    },
+    {
+      "name": "a closure's own local is not attributed to an enclosing NAMED function",
+      "pass": true,
+      "detail": "owner=global"
+    },
+    {
+      "name": "the unmutated symbols pass every expectation",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "every planted regression is caught",
+      "pass": true,
+      "detail": "6/6"
+    },
+    {
+      "name": "the export leg is not vacuous: the fixture's real export IS published",
+      "pass": true,
+      "detail": "use"
+    }
+  ],
+  "mutants": {
+    "caught": 6,
+    "total": 6,
+    "detail": [
+      {
+        "name": "LUA-15 again: the name is the full qualified text",
+        "caught": true,
+        "failures": [
+          "Buffer:initialize not a symbol under its own name",
+          "Buffer:readUInt8 not a symbol under its own name"
+        ]
+      },
+      {
+        "name": "the owner is dropped entirely",
+        "caught": true,
+        "failures": [
+          "Buffer:initialize not a symbol under its own name",
+          "Buffer:readUInt8 not a symbol under its own name"
+        ]
+      },
+      {
+        "name": "a plain function is filed as a method",
+        "caught": true,
+        "failures": [
+          "plain function has a real owner: plain",
+          "plain filed as method, not function"
+        ]
+      },
+      {
+        "name": "a member is filed at the wrong line",
+        "caught": true,
+        "failures": [
+          "readUInt8 at L1, expected L8"
+        ]
+      },
+      {
+        "name": "LUA-19 again: a nested function is scoped to global",
+        "caught": true,
+        "failures": [
+          "nested scoped to global, expected outer"
+        ]
+      },
+      {
+        "name": "LUA-20 again: a closure's return is published as a file export",
+        "caught": true,
+        "failures": [
+          "Buffer:initialize not a symbol under its own name",
+          "Buffer:readUInt8 not a symbol under its own name"
+        ]
+      }
+    ],
+    "method": "output mutation — the engine caches analyzer modules, so in-process source mutation has no effect"
+  },
+  "passed": true,
+  "status": "pass",
+  "limitations": [
+    "The call-to-declaration join test asserts that a symbol exists whose name IS the call target. It does not assert the RECEIVER matches, because the call edge does not carry one — under LUA-13 the receiver is dropped from the edge. Adding it is a separate change with its own trade-off (an unqualified target cannot be resolved, which is why `M.new` and `Account:new` are currently indistinguishable on the wire).",
+    "The fixture is one file with five declarations. It exercises each shape but is not a corpus; script/m60/lua-truth-oracle.ts is the corpus-scale check on the same contract."
+  ]
+}

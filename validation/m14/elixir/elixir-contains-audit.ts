@@ -25,7 +25,7 @@ import { join, relative } from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 import { deriveElixirContainsTruth, deriveElixirUsesTruth, deriveElixirExportsTruth } from "../../../script/m14/oracles/elixir-contains"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const CORPUS_DIRS = (process.env.ELIXIR_CORPUS_DIRS ?? "elixir,otp").split(",")
 const EXTS = [".ex", ".exs"]
 const WANT = Number(process.argv[2] || 0)

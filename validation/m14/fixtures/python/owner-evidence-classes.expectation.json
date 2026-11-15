@@ -1,0 +1,284 @@
+{
+  "fixtureId": "python/owner-evidence-classes",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE OWNER CHANNEL'S EXTENSION, pinned by EVIDENCE CLASS. `metadata.owner` is already authoritative in production (`src/ast/member-owner-resolution.ts`: exactly one class-like symbol, members by owner, ancestors through `super_types`, name binding WITHDRAWN for owner-carrying rows). Python published it only for the implicit `self`/`cls` parameter; this fixture pins the two additional classes of static evidence the source really writes down \u2014 a single-identifier PARAMETER ANNOTATION (`def f(x: Widget)`) and a SINGLE CONSTRUCTOR ASSIGNMENT in one lexical scope (`w = Widget()`, and the `with Widget() as w2` form) \u2014 and, in the opposite direction, the cases where NO owner may be emitted: a receiver bound by nothing provable (`z.render()`), a receiver rebound after its constructor (`q = Widget(); q = make_other()`), and a parameter whose annotation is contradicted by a later assignment (`x: Widget` then `x = make_other()`). Those three refusals are the whole safety property: the store WITHDRAWS the name binding for an owner-carrying row, so an owner that is wrong turns an edge production had resolved by name into an honest NULL \u2014 a missing owner costs nothing, a wrong one costs a resolution. `ownerEvidence` is asserted beside `owner` because the Lead's instruction is to price each evidence class separately and because a single `owner` key without its provenance cannot be audited later. A name that is merely capitalised is NOT evidence here (class-like means declared in this file, or a `class` the complete project index records), which is why `make_other()`'s return type produces no owner. ROUND 2 (2026-10-18, overnight autonomy): the ANNOTATION evidence class is widened to the three shapes the source writes down just as plainly \u2014 a forward reference `x: \"Widget\"`, `Optional[Widget]` / `Union[Widget, None]` with exactly one named type, and the PEP 604 `Widget | None` \u2014 plus an ANNOTATED ASSIGNMENT (`z: Widget = make()`), which is annotation evidence and outranks the constructor reading of its right-hand side (a factory call's return type is written nowhere). The same row pins the REFUSALS that keep the class honest: a CONTAINER (`list[Widget]` \u2014 the receiver is the list) and a union of TWO named classes (`Union[Widget, Other]`) prove no single owner, so they must carry NO owner. Each refusal is a forbid row, because a widening without its negative direction is a licence.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "paint",
+      "kind": "method",
+      "ownerName": "Widget"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "paint",
+      "target": "render",
+      "line_number": 13,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "self",
+      "note": "`self.render()` \u2014 the pre-existing emission, now TAGGED with its evidence class so the old rows can be counted separately from the new ones."
+    },
+    {
+      "type": "calls",
+      "from": "from_annotation",
+      "target": "render",
+      "line_number": 17,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "ANNOTATION EVIDENCE: `x: Widget` proves the receiver's type; a target-only annotation like `list[Widget]` proves no single class name and is refused (the single-identifier rule)."
+    },
+    {
+      "type": "calls",
+      "from": "from_assignment",
+      "target": "render",
+      "line_number": 22,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "assignment",
+      "note": "ASSIGNMENT EVIDENCE: `w = Widget()` \u2014 the ONLY binding of `w` in its function body."
+    },
+    {
+      "type": "calls",
+      "from": "from_with",
+      "target": "render",
+      "line_number": 27,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "assignment",
+      "note": "`with Widget() as w2:` \u2014 the same single-binding rule on the `with_item` shape; the grammar spells the target through `as_pattern`/`as_pattern_target`, which is why it shares the assignment evidence class rather than inventing a fourth spelling."
+    },
+    {
+      "type": "uses",
+      "from": "read_annotation",
+      "target": "render",
+      "line_number": 50,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "MEMBER READ: the same owner on a `uses` row \u2014 the two emission sites (calls and reads) must answer 'whose type is this receiver' identically, so a read through a typed parameter is resolvable through the owner too."
+    },
+    {
+      "type": "calls",
+      "from": "from_optional",
+      "target": "render",
+      "line_number": 62,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "OPTIONAL EVIDENCE: `x: Optional[Widget]` \u2014 exactly one named type beside None. The receiver is Widget-or-None, and a member read on it is Widget's member whenever it is not None."
+    },
+    {
+      "type": "calls",
+      "from": "from_forward",
+      "target": "render",
+      "line_number": 66,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "FORWARD REFERENCE: `x: \"Widget\"` names the same class as a string literal; read through the module-scope character-scan predicates (the getattr reader's, one implementation)."
+    },
+    {
+      "type": "calls",
+      "from": "from_union_none",
+      "target": "render",
+      "line_number": 70,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "PEP 604 UNION WITH NONE: `x: Widget | None` \u2014 the same rule as Optional, different spelling."
+    },
+    {
+      "type": "calls",
+      "from": "from_annotated_local",
+      "target": "render",
+      "line_number": 75,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation",
+      "note": "ANNOTATED ASSIGNMENT: `z: Widget = make_widget()` \u2014 the annotation is written in the source and outranks the right-hand side's constructor reading (a factory call proves nothing)."
+    },
+    {
+      "type": "calls",
+      "from": "forward",
+      "target": "send",
+      "line_number": 108,
+      "meta.owner": "Payload",
+      "meta.ownerEvidence": "field",
+      "note": "DATACLASS FIELD EVIDENCE: `self.body.send()` \u2014 `body: Payload` is a field DECLARED on a `@dataclass`, so the member call's owner is the FIELD'S type. This is the two-dot receiver the one-dot rule deliberately refuses; the dataclass declaration is the static proof that unblocks it."
+    },
+    {
+      "type": "uses",
+      "from": "forward_read",
+      "target": "send",
+      "line_number": 111,
+      "meta.owner": "Payload",
+      "meta.ownerEvidence": "field",
+      "note": "same field ownership on the READ path \u2014 calls and reads must answer 'whose member is this' identically."
+    },
+    {
+      "type": "calls",
+      "from": "optional_field",
+      "target": "send",
+      "line_number": 114,
+      "meta.owner": "Payload",
+      "meta.ownerEvidence": "field",
+      "note": "FIELD TYPE THROUGH THE SHARED ANNOTATION READER: `maybe: \"Optional[Payload]\"` reads exactly like the parameter form (forward reference + Optional-of-one), so the field class reuses `annotationOwnerName` rather than re-implementing it."
+    },
+    {
+      "type": "uses",
+      "from": "plain_self_field",
+      "target": "body",
+      "line_number": 120,
+      "meta.owner": "Envelope",
+      "meta.ownerEvidence": "self",
+      "note": "the ONE-DOT receiver still resolves through `self` \u2014 the field rule must not replace the implicit-parameter evidence on `self.body`; it only supplies the second dot."
+    },
+    {
+      "type": "calls",
+      "from": "from_container_iteration",
+      "target": "render",
+      "line_number": 137,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation-element",
+      "note": "CONTAINER-ELEMENT EVIDENCE: `for item in xs:` where `xs: list[Widget]` \u2014 python's own rule is that the for target binds the iterable's ELEMENT, and the annotation states the element type. This is the class that unblocks loop-variable receivers without ever typing the CONTAINER receiver."
+    },
+    {
+      "type": "uses",
+      "from": "from_container_read",
+      "target": "render",
+      "line_number": 142,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation-element",
+      "note": "the same element evidence on the READ path \u2014 calls and reads answer identically."
+    },
+    {
+      "type": "calls",
+      "from": "from_tuple_iteration",
+      "target": "render",
+      "line_number": 147,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "annotation-element",
+      "note": "`tuple[Widget, ...]` \u2014 a homogeneous tuple's element is the single named type; a heterogeneous tuple would be a union and is refused by the reader."
+    },
+    {
+      "type": "calls",
+      "from": "from_qualified_assignment",
+      "target": "render",
+      "line_number": 170,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "assignment",
+      "note": "QUALIFIED CONSTRUCTOR: `w = container_shapes.Widget()` \u2014 the qualified spelling constructs the same class, and the leaf names a class-like type this file declares; the single-binding assignment rule is unchanged."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "unproven",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO OWNER for a receiver bound by nothing: `z` is a parameter with no annotation, so its type is written nowhere. Emitting Widget here would be the fabrication class the channel exists to avoid."
+    },
+    {
+      "type": "calls",
+      "from": "rebound",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO OWNER after a REBINDING: `q = Widget(); q = make_other()` \u2014 the second binding makes the receiver's type a maybe, and a maybe is not an owner."
+    },
+    {
+      "type": "calls",
+      "from": "param_then_rebind",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO OWNER when the annotation is contradicted by a later assignment \u2014 two binding events for one name in one scope, one of them untyped."
+    },
+    {
+      "type": "calls",
+      "from": "from_container",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO OWNER for a CONTAINER annotation: `xs: list[Widget]` \u2014 the receiver is the list, not a Widget. An owner here would be a wrong owner, which the store turns into a withdrawn name binding."
+    },
+    {
+      "type": "calls",
+      "from": "from_two_classes",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO OWNER for a union of TWO named classes: `a: Union[Widget, Other]` proves no single owner."
+    },
+    {
+      "type": "calls",
+      "from": "from_two_classes",
+      "target": "render",
+      "meta.owner": "Other",
+      "note": "the second class of the same union \u2014 neither may be emitted."
+    },
+    {
+      "type": "uses",
+      "from": "container_field",
+      "target": "append",
+      "meta.owner": "Payload",
+      "note": "NO FIELD OWNER FOR A CONTAINER FIELD: `tags: list[Payload]` \u2014 the field is the list, not a Payload; `append` is a list member, not Payload's."
+    },
+    {
+      "type": "calls",
+      "from": "forward",
+      "target": "send",
+      "line_number": 127,
+      "meta.owner": "Payload",
+      "note": "NO FIELD OWNER OUTSIDE A DATACLASS: `class NotADataClass: body: Payload` \u2014 a bare class-body annotation is only a type-checker hint at runtime (the runtime ignores it and untyped code rebinds `self.body`), so it is not a field declaration; the method also has the same spelling and evidence, so this row forbids the whole non-dataclass class."
+    },
+    {
+      "type": "calls",
+      "from": "from_container_rebound",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO ELEMENT OWNER AFTER A REBINDING: the loop target is assigned a second value inside the body (`item = make_other()`), so the receiver is a maybe \u2014 the same one-binding rule every other evidence class obeys."
+    },
+    {
+      "type": "calls",
+      "from": "from_container_two_targets",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO ELEMENT OWNER FOR A TWO-TARGET LOOP: `for a, b in xs` binds two names and the annotation does not say which element type each receives \u2014 sharing one owner across both would be a guess."
+    },
+    {
+      "type": "calls",
+      "from": "from_untyped_container",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO ELEMENT OWNER FOR AN UNPARAMETERISED CONTAINER: `xs: list` states no element type."
+    },
+    {
+      "type": "calls",
+      "from": "from_qualified_factory",
+      "target": "render",
+      "meta.owner": "Widget",
+      "note": "NO OWNER FROM A QUALIFIED FACTORY: `container_shapes.make_widget()` \u2014 the leaf is not a class-like name, so the constructor evidence class does not apply (the return type is written nowhere)."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "unproven",
+      "target": "render",
+      "equals": 1
+    },
+    {
+      "type": "calls",
+      "from": "rebound",
+      "target": "render",
+      "equals": 1
+    },
+    {
+      "type": "calls",
+      "from": "param_then_rebind",
+      "target": "render",
+      "equals": 1
+    }
+  ]
+}

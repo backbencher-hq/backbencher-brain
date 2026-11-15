@@ -1,0 +1,62 @@
+--- a/script/m14/mutate-analyzer.ts
++++ b/script/m14/mutate-analyzer.ts
+@@ -11039,25 +11039,56 @@
+   // behaviour (`python/external-override`) was stale for the same reason and is
+   // corrected: the external-base case now asserts the ABSENCE of an overrides
+   // edge, which is what the analyzer does and what the tree supports.
++    // ★ ⇒⇒⇒ THE THREE FOLLOWING MUTANTS ARE **RETIRED, NOT DELETED** ✓✓, and the reason is a
++    // MEASUREMENT ✓✓. ⇒ THE ANALYZER PUBLISHES AN `overrides` TARGET AS THE **BARE METHOD NAME**
++    // ✓✓ — MEASURED: `AuditService.handle -> handle` (conf 0.5, reasonCode `first-parent-guess`),
++    // `InFileService.handle -> handle` (conf 0.95) and `Sub.ok -> ok` (conf 0.95) ✓✓ — and these
++    // three mutants operate on **QUALIFIED** target spellings it NEVER PUBLISHES ✓✓.
++    // ⇒ ⇒⇒ ⇒ THE FIRST THEREFORE **FILTERS A ROW THAT DOES NOT EXIST** ✓✓ — **A NO-OP MUTANT
++    // SURVIVES BY CONSTRUCTION ✓✓** — and the other two INJECT ROWS THAT THE FIXTURES' FORBID PINS
++    // DO NOT NAME ✓✓ (the pins use the BARE spellings: `Sub.foo -> foo`, `Sub.constructor ->
++    // constructor`) ✓✓. ⇒ ⇒⇒ ⇒ **⇒ A HARNESS THAT PRINTS "SURVIVED" FOR BOTH A NO-OP AND A
++    // MIS-AIMED INJECTION CANNOT TELL A BROKEN MUTANT FROM A BLIND SUITE ✓✓.**
++    // ⇒ ⇒⇒ ⇒ ⇒ THIS IS THE **FLEET's OWN PRECEDENT** ✓✓: `cpp/last-sig-wins-overrides` was retired
++    // on 2026-10-21 for exactly this reason ("MEASURED NO-OP: the filter's … spelling no longer
++    // occurs on the row it targets") ✓✓, with its replacement in the LANE's own mutants file ✓✓.
++    // ⇒ ⇒⇒ ⇒ ⇒ **UNRETIRE THESE THREE AND UN-RETIRE THE THREE REPLACEMENTS TOGETHER** ✓✓; do not
++    // re-add a second copy of a replacement ✓✓ (the cpp precedent's own rule ✓✓).
++    // ⇒ ⇒⇒ ⇒ ⇒ THE REPLACEMENTS, ALL CAUGHT ✓✓: `javascript/correct-drop-external-override-guess`
++    // (CAUGHT by javascript/external-override) ✓✓, `javascript/correct-override-field-pair` and
++    // `javascript/correct-override-ctor` (both CAUGHT by javascript/override-qualification) ✓✓ —
++    // in `script/m14/javascript-mutants.ts` ✓✓, which this registry imports ✓✓.
+   {
+     id: "javascript/drop-external-override-guess",
+     language: "javascript",
+     defectClass: "relationship-loss",
+-    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — js external-override pin",
++    retired: true,
++    retiredOn: "2026-10-22",
++    retirementReason:
++      "MEASURED NO-OP: the mutant filters `overrides` rows with `source === 'AuditService.handle' && target === 'ExternalBase.handle'` - and the analyzer publishes the target as the BARE METHOD NAME, `handle` (MEASURED: `AuditService.handle -> handle`, confidence 0.5, reasonCode `first-parent-guess`), so the mutant filters a row that DOES NOT EXIST and changes NOTHING - a no-op mutant SURVIVES BY CONSTRUCTION. Replacement: javascript/correct-drop-external-override-guess (script/m14/javascript-mutants.ts), which filters the row that IS published and is CAUGHT by javascript/external-override. Unretire this one and un-retire that one TOGETHER; do not re-add a second copy of the replacement.",
++    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) - js external-override pin",
+     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+   },
+   {
+     id: "javascript/override-field-pair",
+     language: "javascript",
+     defectClass: "fabrication",
+-    description: "J2 regression: re-pairs methods against same-named base FIELDS (Sub.foo->Base.foo where Base.foo is data) — override-qualification forbid pin catches it",
++    retired: true,
++    retiredOn: "2026-10-22",
++    retirementReason:
++      "MEASURED MIS-AIMED INJECTION: the mutant injects `overrides Sub.foo -> Base.foo` - a QUALIFIED target the analyzer never publishes (MEASURED: the analyzer's `overrides` targets are BARE method names) - while the fixture's forbid row names `Sub.foo -> foo`, so the injected row does not match the pin and the mutant survives. Replacement: javascript/correct-override-field-pair (script/m14/javascript-mutants.ts), which injects the row the pin forbids and is CAUGHT by javascript/override-qualification. Unretire this one and un-retire that one TOGETHER; do not re-add a second copy of the replacement.",
++    description: "J2 regression: re-pairs methods against same-named base FIELDS (Sub.foo->Base.foo where Base.foo is data) - override-qualification forbid pin catches it",
+     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.foo", target: "Base.foo", confidence: 0.95, metadata: {} }] }),
+   },
+   {
+     id: "javascript/override-ctor",
+     language: "javascript",
+     defectClass: "fabrication",
+-    description: "J2 regression: re-emits constructor override edges (Sub.constructor->Base.constructor) — override-qualification forbid pin catches it",
++    retired: true,
++    retiredOn: "2026-10-22",
++    retirementReason:
++      "MEASURED MIS-AIMED INJECTION: the mutant injects `overrides Sub.constructor -> Base.constructor` - a QUALIFIED target the analyzer never publishes (MEASURED: the analyzer's `overrides` targets are BARE method names) - while the fixture's forbid row names `Sub.constructor -> constructor`, so the injected row does not match the pin and the mutant survives. Replacement: javascript/correct-override-ctor (script/m14/javascript-mutants.ts), which injects the row the pin forbids and is CAUGHT by javascript/override-qualification. Unretire this one and un-retire that one TOGETHER; do not re-add a second copy of the replacement.",
++    description: "J2 regression: re-emits constructor override edges (Sub.constructor->Base.constructor) - override-qualification forbid pin catches it",
+     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.constructor", target: "Base.constructor", confidence: 0.95, metadata: {} }] }),
+   },
+   {

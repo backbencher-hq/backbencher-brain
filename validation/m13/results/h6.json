@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.34",
+  "code": "H6",
+  "tool": "bb_health",
+  "title": "bb_health: honesty + docs + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "docs: bb_health.md exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: category matches registry",
+      "pass": true,
+      "detail": "registry=lifecycle"
+    },
+    {
+      "name": "docs: mutability matches registry",
+      "pass": true,
+      "detail": "registry=read"
+    },
+    {
+      "name": "docs: requiresIndex matches registry",
+      "pass": true,
+      "detail": "registry=false"
+    },
+    {
+      "name": "docs: defaults match registry",
+      "pass": true,
+      "detail": "registry={\"verbose\":false,\"history\":false,\"limit\":20,\"refresh\":false,\"force\":false,\"wait\":true,\"freshness\":\"sampled\",\"sampleSize\":200,\"integrity\":false,\"includeAnalysisRuns\":false}"
+    },
+    {
+      "name": "docs: every input property is documented",
+      "pass": true,
+      "detail": "12 props"
+    },
+    {
+      "name": "docs: refresh documented as explicit mutation",
+      "pass": true,
+      "detail": "A status call is read-only: the index is opened through the driver's read-only mode, so no migrations, healers or WAL writes run. refresh=true and force=true ar"
+    },
+    {
+      "name": "docs: generator verify mode passes (bb_health.md byte-fresh)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "evidence: h1.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: h2.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: h3.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: h4.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: h5.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: all 5 H-issues claim verified with negatives",
+      "pass": true,
+      "detail": "H1:2neg H2:2neg H3:2neg H4:5neg H5:1neg"
+    },
+    {
+      "name": "gate: verify-health-mutability.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-mutability.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-verbose.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-verbose.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-integrity.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-integrity.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-refresh.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-refresh.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-e2e-corpus.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-health-e2e-corpus.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: evidence validator (B3) is part of the gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: tampered doc (failed>0, no negatives) cannot claim verified [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary.failed 3 != actual 0; negativeCases 0 is less than 2 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
+    },
+    {
+      "name": "gate: removing any single H-verifier breaks the gate [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "all verifiers still present"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tool-registry.ts + script/verify-tool-docs.ts (curated doc) are the single source; docs/tools/bb_health.md is a generated artifact",
+    "releaseGate": "verify-quality-gate.ts (H1-H5 verifiers wired) + verify-evidence.ts B3 invariant; proven by tamper test",
+    "evidenceInputs": "validation/m13/results/h1..h5.json must all exist, validate, and claim verified for bb_health to be release-eligible"
+  },
+  "limitations": [
+    "Docs byte-freshness is proven by the generator's own verify mode, not by a duplicated render.",
+    "This gate covers bb_health only; other tools have their own issues in M13."
+  ],
+  "generatedAt": "2026-11-05T04:12:44.458Z"
+}

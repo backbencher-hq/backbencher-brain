@@ -1,0 +1,11 @@
+{
+  "issue": "CLJ-D34",
+  "note": "`user` IS A REAL NAMESPACE WHEN THE FILE DECLARES IT. The containment and export passes skipped every symbol whose owner was `user`, so a file could not claim a `user` namespace it never declared. But `(in-ns 'user)` DECLARES one, and the definitions after it belong to it: clojure/core/server.clj:169 does exactly this, and its `repl-read`, `repl`, `prepl`, `ex->data`, `resolve-fn`, `io-prepl`, `remote-prepl` and `repl-reply` had no containment at all — 36 real edges lost. The guard belongs on the FALLBACK, never on the NAME; the pair with `no-ns-fallback` is what says so.",
+  "expectRelationships": [
+    { "type": "contains", "from": "user", "target": "declared-user-fn", "line_number": 11 },
+    { "type": "contains", "from": "user", "target": "declared-user-var", "line_number": 13 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "'user", "target": "declared-user-fn" }
+  ]
+}

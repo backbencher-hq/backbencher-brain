@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_production_path",
+  "why": "every other R harness constructs RealRAnalyzer directly and so never exercises grammar resolution, the analyzer registry, or the temp copy the engine makes; a green harness is not evidence the product uses what the harness used",
+  "present": true,
+  "shippedSha256": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6",
+  "loadedSha256": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6",
+  "loadedIsShippedArtifact": true,
+  "patch1HexFloatReachable": true,
+  "patch2DotDotIdentifierReachable": true,
+  "s7BindingEdgeLine": 5,
+  "shadowCandidates": [
+    {
+      "path": "/tmp/bb-wasm_tree-sitter-r_tree-sitter-r.wasm",
+      "sha256": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6",
+      "matchesShipped": true
+    }
+  ],
+  "symbolsFromPublicApi": 5,
+  "relationshipsFromPublicApi": 8,
+  "problems": [],
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T22:00:48.968Z",
+    "contentSha256": "e6bc084058c554a8e70505d310809c157dbe6ac1c93fb5bf23464bb847f0fad1"
+  }
+}

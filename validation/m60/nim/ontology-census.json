@@ -1,0 +1,1121 @@
+{
+  "lang": "nim",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "analyzerSha256": "a59574036eb9f7fb866ac30be681a46988b424fa8d3e88ee8bfbb33aea349482",
+  "analyzerStableDuringRun": true,
+  "files": 4555,
+  "filesByRepo": {
+    "Aporia": 12,
+    "bigints": 21,
+    "dom96-jester": 19,
+    "graphql-nim": 55,
+    "nim": 3968,
+    "nim-lang-nimble": 435,
+    "nimterop": 45
+  },
+  "parsed": 4555,
+  "parseFileThrew": 0,
+  "rawParseThrew": 0,
+  "symbolsTotal": 83286,
+  "emptyNameSymbols": 0,
+  "emptyKindSymbols": 63,
+  "kinds": {
+    "class": 840,
+    "property": 12129,
+    "function": 30030,
+    "constant": 8961,
+    "variable": 10775,
+    "macro": 4145,
+    "enum": 934,
+    "enum_member": 8122,
+    "struct": 4189,
+    "type": 2705,
+    "interface": 216,
+    "method": 177,
+    "": 63
+  },
+  "types": [
+    {
+      "type": "calls",
+      "emitted": true,
+      "edges": 79079,
+      "files": 6,
+      "srcResolved": 79075,
+      "tgtResolved": 31172,
+      "bothResolved": 31170,
+      "heuristicUnder07": 1,
+      "underOne": 79079,
+      "syntheticSrc": 12565,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "usage_contextual": 79024,
+        "import_based": 54,
+        "(none)": 1
+      },
+      "confidences": {
+        "0.85": 75675,
+        "0.9": 3349,
+        "0.75": 54,
+        "0.5": 1
+      },
+      "topUnresolvedTargets": [
+        [
+          "add",
+          2645
+        ],
+        [
+          "doAssert",
+          2095
+        ],
+        [
+          "defined",
+          1460
+        ],
+        [
+          "len",
+          575
+        ],
+        [
+          "skipTypes",
+          483
+        ],
+        [
+          "default",
+          452
+        ],
+        [
+          "newException",
+          433
+        ],
+        [
+          "setLen",
+          409
+        ],
+        [
+          "localError",
+          352
+        ],
+        [
+          "await",
+          292
+        ],
+        [
+          "newNodeI",
+          265
+        ],
+        [
+          "fileExists",
+          256
+        ],
+        [
+          "newSymNode",
+          230
+        ],
+        [
+          "write",
+          221
+        ],
+        [
+          "push",
+          212
+        ],
+        [
+          "newTree",
+          206
+        ],
+        [
+          "close",
+          205
+        ],
+        [
+          "compiles",
+          202
+        ],
+        [
+          "osLastError",
+          200
+        ],
+        [
+          "quit",
+          190
+        ],
+        [
+          "newLit",
+          184
+        ],
+        [
+          "contains",
+          176
+        ],
+        [
+          "items",
+          172
+        ],
+        [
+          "check",
+          168
+        ],
+        [
+          "ok",
+          168
+        ]
+      ],
+      "examples": [
+        "Aporia/AboutDialog.nim:13 closeBtn_click -[calls]-> destroy c=0.85",
+        "Aporia/AboutDialog.nim:17 newAboutDialog -[calls]-> windowNew c=0.85",
+        "Aporia/AboutDialog.nim:18 newAboutDialog -[calls]-> setTitle c=0.85"
+      ]
+    },
+    {
+      "type": "uses",
+      "emitted": true,
+      "edges": 30972,
+      "files": 6,
+      "srcResolved": 30964,
+      "tgtResolved": 30901,
+      "bothResolved": 30893,
+      "heuristicUnder07": 0,
+      "underOne": 15980,
+      "syntheticSrc": 5047,
+      "unknownEndpoint": 4,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "usage_contextual": 30916,
+        "import_based": 56
+      },
+      "confidences": {
+        "1": 14992,
+        "0.75": 15980
+      },
+      "topUnresolvedTargets": [
+        [
+          "root",
+          53
+        ],
+        [
+          "program",
+          7
+        ],
+        [
+          "self",
+          7
+        ],
+        [
+          "unknown",
+          4
+        ]
+      ],
+      "examples": [
+        "Aporia/AboutDialog.nim:17 newAboutDialog -[uses]-> dialog c=0.75",
+        "Aporia/AboutDialog.nim:31 newAboutDialog -[uses]-> titleLabel c=0.75",
+        "Aporia/AboutDialog.nim:36 newAboutDialog -[uses]-> descLabel c=0.75"
+      ]
+    },
+    {
+      "type": "contains",
+      "emitted": true,
+      "edges": 21326,
+      "files": 6,
+      "srcResolved": 21316,
+      "tgtResolved": 21293,
+      "bothResolved": 21284,
+      "heuristicUnder07": 0,
+      "underOne": 0,
+      "syntheticSrc": 0,
+      "unknownEndpoint": 4,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "structural": 21326
+      },
+      "confidences": {
+        "1": 21326
+      },
+      "topUnresolvedTargets": [
+        [
+          "root",
+          20
+        ],
+        [
+          "self",
+          5
+        ],
+        [
+          "unknown",
+          4
+        ],
+        [
+          "destructor",
+          2
+        ],
+        [
+          "program",
+          1
+        ],
+        [
+          "me",
+          1
+        ]
+      ],
+      "examples": [
+        "Aporia/AboutDialog.nim:6 AboutDialog -[contains]-> dialog c=1",
+        "Aporia/AboutDialog.nim:7 AboutDialog -[contains]-> titleLabel c=1",
+        "Aporia/AboutDialog.nim:8 AboutDialog -[contains]-> descLabel c=1"
+      ]
+    },
+    {
+      "type": "imports",
+      "emitted": true,
+      "edges": 9332,
+      "files": 6,
+      "srcResolved": 9332,
+      "tgtResolved": 4151,
+      "bothResolved": 4151,
+      "heuristicUnder07": 0,
+      "underOne": 0,
+      "syntheticSrc": 9332,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "import_based": 9332
+      },
+      "confidences": {
+        "1": 9332
+      },
+      "topUnresolvedTargets": [
+        [
+          "std/assertions",
+          371
+        ],
+        [
+          "std/strutils",
+          260
+        ],
+        [
+          "std/os",
+          196
+        ],
+        [
+          "std/tables",
+          132
+        ],
+        [
+          "std/sequtils",
+          115
+        ],
+        [
+          "std/syncio",
+          113
+        ],
+        [
+          "std/macros",
+          111
+        ],
+        [
+          "strutils",
+          98
+        ],
+        [
+          "std/options",
+          83
+        ],
+        [
+          "unittest",
+          80
+        ],
+        [
+          "std/times",
+          65
+        ],
+        [
+          "std/sets",
+          62
+        ],
+        [
+          "std/sugar",
+          56
+        ],
+        [
+          "std/algorithm",
+          53
+        ],
+        [
+          "std/strformat",
+          49
+        ],
+        [
+          "std/hashes",
+          49
+        ],
+        [
+          "std/streams",
+          47
+        ],
+        [
+          "strformat",
+          46
+        ],
+        [
+          "std/private/since",
+          46
+        ],
+        [
+          "std/posix",
+          46
+        ],
+        [
+          "std/math",
+          45
+        ],
+        [
+          "std/json",
+          44
+        ],
+        [
+          "os",
+          42
+        ],
+        [
+          "std/strtabs",
+          41
+        ],
+        [
+          "std/intsets",
+          40
+        ]
+      ],
+      "examples": [
+        "Aporia/AboutDialog.nim:1 (global) -[imports]-> gtk2 c=1",
+        "Aporia/AboutDialog.nim:2 (global) -[imports]-> gdk2 c=1",
+        "Aporia/aporia.nim:11 (global) -[imports]-> glib2 c=1"
+      ]
+    },
+    {
+      "type": "references",
+      "emitted": true,
+      "edges": 40336,
+      "files": 6,
+      "srcResolved": 40134,
+      "tgtResolved": 18598,
+      "bothResolved": 18567,
+      "heuristicUnder07": 0,
+      "underOne": 40336,
+      "syntheticSrc": 0,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "reference_qualified": 34189,
+        "import_based": 6147
+      },
+      "confidences": {
+        "0.9": 40336
+      },
+      "topUnresolvedTargets": [
+        [
+          "PNode",
+          2285
+        ],
+        [
+          "PSym",
+          984
+        ],
+        [
+          "PType",
+          941
+        ],
+        [
+          "PContext",
+          675
+        ],
+        [
+          "ConfigRef",
+          529
+        ],
+        [
+          "TGLenum",
+          483
+        ],
+        [
+          "Node",
+          444
+        ],
+        [
+          "TLineInfo",
+          364
+        ],
+        [
+          "NimNode",
+          356
+        ],
+        [
+          "TGLuint",
+          344
+        ],
+        [
+          "static",
+          335
+        ],
+        [
+          "typed",
+          306
+        ],
+        [
+          "ModuleGraph",
+          306
+        ],
+        [
+          "Options",
+          290
+        ],
+        [
+          "BProc",
+          276
+        ],
+        [
+          "Future",
+          263
+        ],
+        [
+          "Option",
+          241
+        ],
+        [
+          "type",
+          241
+        ],
+        [
+          "TGLint",
+          205
+        ],
+        [
+          "BModule",
+          192
+        ],
+        [
+          "TLoc",
+          185
+        ],
+        [
+          "RespResult",
+          183
+        ],
+        [
+          "TGLsizei",
+          182
+        ],
+        [
+          "PackageInfo",
+          177
+        ],
+        [
+          "Args",
+          175
+        ]
+      ],
+      "examples": [
+        "Aporia/AboutDialog.nim:6 AboutDialog -[references]-> PWindow c=0.9",
+        "Aporia/AboutDialog.nim:7 AboutDialog -[references]-> PLabel c=0.9",
+        "Aporia/AboutDialog.nim:11 closeBtn_click -[references]-> PButton c=0.9"
+      ]
+    },
+    {
+      "type": "exports",
+      "emitted": true,
+      "edges": 399,
+      "files": 6,
+      "srcResolved": 399,
+      "tgtResolved": 16,
+      "bothResolved": 16,
+      "heuristicUnder07": 0,
+      "underOne": 0,
+      "syntheticSrc": 399,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "structural": 399
+      },
+      "confidences": {
+        "1": 399
+      },
+      "topUnresolvedTargets": [
+        [
+          "init",
+          4
+        ],
+        [
+          "ast",
+          4
+        ],
+        [
+          "Parser",
+          4
+        ],
+        [
+          "httpcore",
+          3
+        ],
+        [
+          "options",
+          3
+        ],
+        [
+          "respstream",
+          3
+        ],
+        [
+          "ParserError",
+          3
+        ],
+        [
+          "ParserFlag",
+          3
+        ],
+        [
+          "defaultParserConf",
+          3
+        ],
+        [
+          "nodekinds",
+          3
+        ],
+        [
+          "ReadDirEffect",
+          3
+        ],
+        [
+          "WriteDirEffect",
+          3
+        ],
+        [
+          "PathComponent",
+          3
+        ],
+        [
+          "osseps",
+          3
+        ],
+        [
+          "renamed",
+          3
+        ],
+        [
+          "second",
+          3
+        ],
+        [
+          "tables",
+          2
+        ],
+        [
+          "ast_helper",
+          2
+        ],
+        [
+          "new",
+          2
+        ],
+        [
+          "int128",
+          2
+        ],
+        [
+          "quoteShellWindows",
+          2
+        ],
+        [
+          "quoteShellPosix",
+          2
+        ],
+        [
+          "quoteShell",
+          2
+        ],
+        [
+          "asyncmacro",
+          2
+        ],
+        [
+          "asyncfutures",
+          2
+        ]
+      ],
+      "examples": [
+        "dom96-jester/jester.nim:13 (global) -[exports]-> request c=1",
+        "dom96-jester/jester.nim:14 (global) -[exports]-> strtabs c=1",
+        "dom96-jester/jester.nim:15 (global) -[exports]-> tables c=1"
+      ]
+    },
+    {
+      "type": "extends",
+      "emitted": true,
+      "edges": 570,
+      "files": 6,
+      "srcResolved": 570,
+      "tgtResolved": 404,
+      "bothResolved": 404,
+      "heuristicUnder07": 0,
+      "underOne": 0,
+      "syntheticSrc": 0,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "structural": 570
+      },
+      "confidences": {
+        "1": 570
+      },
+      "topUnresolvedTargets": [
+        [
+          "CatchableError",
+          24
+        ],
+        [
+          "ValueError",
+          21
+        ],
+        [
+          "Exception",
+          19
+        ],
+        [
+          "Defect",
+          18
+        ],
+        [
+          "JsRoot",
+          17
+        ],
+        [
+          "T",
+          12
+        ],
+        [
+          "PPassContext",
+          6
+        ],
+        [
+          "IOError",
+          6
+        ],
+        [
+          "BaseLexer",
+          6
+        ],
+        [
+          "RootEffect",
+          6
+        ],
+        [
+          "NimbleError",
+          5
+        ],
+        [
+          "Base",
+          3
+        ],
+        [
+          "TPassContext",
+          2
+        ],
+        [
+          "StreamObj",
+          2
+        ],
+        [
+          "ReadIOEffect",
+          2
+        ],
+        [
+          "WriteIOEffect",
+          2
+        ],
+        [
+          "VtableBaseA",
+          2
+        ],
+        [
+          "TTextBuffer",
+          1
+        ],
+        [
+          "TTextView",
+          1
+        ],
+        [
+          "InstrumentRef",
+          1
+        ],
+        [
+          "RstGenerator",
+          1
+        ],
+        [
+          "TBaseLexer",
+          1
+        ],
+        [
+          "OVERLAPPED",
+          1
+        ],
+        [
+          "Stream",
+          1
+        ],
+        [
+          "QObject",
+          1
+        ]
+      ],
+      "examples": [
+        "Aporia/cfg.nim:19 CFGParseError -[extends]-> Exception c=1",
+        "Aporia/gtksourceview.nim:26 TSourceBuffer -[extends]-> TTextBuffer c=1",
+        "Aporia/gtksourceview.nim:29 TSourceView -[extends]-> TTextView c=1"
+      ]
+    },
+    {
+      "type": "implements",
+      "emitted": false
+    },
+    {
+      "type": "overrides",
+      "emitted": true,
+      "edges": 48,
+      "files": 6,
+      "srcResolved": 48,
+      "tgtResolved": 48,
+      "bothResolved": 48,
+      "heuristicUnder07": 0,
+      "underOne": 0,
+      "syntheticSrc": 0,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "structural": 48
+      },
+      "confidences": {
+        "1": 48
+      },
+      "topUnresolvedTargets": [],
+      "examples": [
+        "nim/lib/pure/logging.nim:342 ConsoleLogger.log -[overrides]-> Logger.log c=1",
+        "nim/lib/pure/logging.nim:342 FileLogger.log -[overrides]-> Logger.log c=1",
+        "nim/lib/pure/logging.nim:435 RollingFileLogger.log -[overrides]-> FileLogger.log c=1"
+      ]
+    },
+    {
+      "type": "instantiates",
+      "emitted": true,
+      "edges": 1987,
+      "files": 6,
+      "srcResolved": 1987,
+      "tgtResolved": 1987,
+      "bothResolved": 1987,
+      "heuristicUnder07": 0,
+      "underOne": 1987,
+      "syntheticSrc": 867,
+      "unknownEndpoint": 0,
+      "emptyEndpoint": 0,
+      "evidenceClasses": {
+        "usage_contextual": 1987
+      },
+      "confidences": {
+        "0.9": 1987
+      },
+      "topUnresolvedTargets": [],
+      "examples": [
+        "Aporia/CustomStatusBar.nim:113 setPerm -[instantiates]-> StatusID c=0.9",
+        "dom96-jester/jester.nim:281 initRouteError -[instantiates]-> RouteError c=0.9",
+        "dom96-jester/jester.nim:440 register -[instantiates]-> Matcher c=0.9"
+      ]
+    }
+  ],
+  "offOntology": {},
+  "totalUnknownEndpoints": 8,
+  "totalEmptyEndpoints": 0,
+  "grammarNodeTypeCount": 209,
+  "grammarNodeTypes": {
+    "identifier": 1068429,
+    "argument_list": 233119,
+    ":": 208794,
+    ",": 191937,
+    "(": 190725,
+    ")": 190721,
+    "call": 190107,
+    "\"": 164342,
+    ".": 148598,
+    "dot_expression": 148568,
+    "symbol_declaration": 148082,
+    "symbol_declaration_list": 130460,
+    "=": 128255,
+    "statement_list": 115160,
+    "type_expression": 109611,
+    "infix_expression": 97741,
+    "integer_literal": 90456,
+    "operator": 88124,
+    "string_content": 82139,
+    "comment_content": 81750,
+    "interpreted_string_literal": 80016,
+    "]": 61125,
+    "[": 61108,
+    "parameter_declaration": 59826,
+    "if": 52251,
+    "variable_declaration": 50144,
+    "comment": 46601,
+    "#": 46601,
+    "bracket_expression": 44109,
+    "assignment": 36761,
+    "parameter_declaration_list": 35172,
+    "documentation_comment": 34646,
+    "##": 34646,
+    "*": 31409,
+    "exported_symbol": 31408,
+    "proc": 29591,
+    "proc_declaration": 27799,
+    "colon_expression": 27173,
+    "var": 25298,
+    "expression_list": 21433,
+    "var_section": 19331,
+    "let_section": 18169,
+    "let": 18169,
+    "prefix_expression": 17129,
+    "'": 17014,
+    "of": 16648,
+    "pragma_list": 16572,
+    "{.": 16572,
+    ".}": 16549,
+    "of_branch": 15636,
+    "for": 15413,
+    "else_branch": 12522,
+    "else": 12522,
+    "field_declaration": 12471,
+    "in": 12221,
+    "when": 10101,
+    "type_declaration": 9352,
+    "type_symbol_declaration": 9352,
+    "array_construction": 8852,
+    "block": 8652,
+    "char_literal": 8507,
+    "\"\"\"": 8446,
+    "and": 8383,
+    "enum_field_declaration": 8361,
+    "discard_statement": 7280,
+    "`": 7168,
+    "discard": 7153,
+    "escape_sequence": 7105,
+    ";": 6939,
+    "char_content": 6861,
+    "nil_literal": 6000,
+    "nil": 6000,
+    "var_type": 5955,
+    "parenthesized": 5695,
+    "field_declaration_list": 5679,
+    "return_statement": 5666,
+    "return": 5666,
+    "}": 5602,
+    "{": 5579,
+    "curly_construction": 5416,
+    "not": 5383,
+    "object": 5151,
+    "case": 5138,
+    "cast": 5074,
+    "object_declaration": 5037,
+    "generic_parameter_list": 5029,
+    "tuple_construction": 4750,
+    "import": 4665,
+    "type": 4662,
+    "type_section": 4636,
+    "source_file": 4555,
+    "while": 4542,
+    "import_statement": 4184,
+    "long_string_literal": 3932,
+    "const_section": 3905,
+    "const": 3905,
+    "equal_expression": 3791,
+    "accent_quoted": 3584,
+    "template_declaration": 3290,
+    "template": 3290,
+    "or": 3288,
+    "elif_branch": 3147,
+    "elif": 3147,
+    "float_literal": 3041,
+    "ptr": 2271,
+    "pointer_type": 2270,
+    "generalized_string": 2246,
+    "ref": 1898,
+    "ref_type": 1897,
+    "try": 1851,
+    "pragma_statement": 1651,
+    "func": 1516,
+    "func_declaration": 1509,
+    "break_statement": 1462,
+    "break": 1462,
+    "custom_numeric_literal": 1432,
+    "notin": 1313,
+    "is": 1208,
+    "proc_type": 1128,
+    "enum": 1064,
+    "tuple_deconstruct_declaration": 1057,
+    "enum_declaration": 1001,
+    "raise_statement": 972,
+    "raise": 972,
+    "yield_statement": 926,
+    "yield": 926,
+    "except": 907,
+    "iterator": 880,
+    "macro_declaration": 869,
+    "macro": 869,
+    "tuple_type": 861,
+    "tuple": 861,
+    "except_branch": 843,
+    "iterator_declaration": 741,
+    "blank_identifier": 688,
+    "proc_expression": 663,
+    "static": 642,
+    "static_statement": 641,
+    "shr": 631,
+    "shl": 572,
+    "div": 494,
+    "from": 482,
+    "import_from_statement": 481,
+    "do_block": 452,
+    "do": 452,
+    "block_comment": 442,
+    "]#": 442,
+    "#[": 442,
+    "distinct_type": 433,
+    "distinct": 433,
+    "continue_statement": 431,
+    "continue": 431,
+    "raw_string_literal": 394,
+    "r\"": 394,
+    "mod": 353,
+    "defer": 340,
+    "variant_declaration": 311,
+    "variant_discriminator_declaration": 311,
+    "as": 254,
+    "finally": 234,
+    "finally_branch": 233,
+    "include_statement": 228,
+    "include": 228,
+    "concept_declaration": 216,
+    "concept": 216,
+    "conditional_declaration": 203,
+    "xor": 195,
+    "export_statement": 179,
+    "export": 179,
+    "method": 179,
+    "method_declaration": 178,
+    "parameter_list": 129,
+    "curly_expression": 128,
+    "object_type": 114,
+    "iterator_type": 103,
+    "isnot": 99,
+    "ERROR": 88,
+    "converter_declaration": 80,
+    "converter": 80,
+    "mixin_statement": 72,
+    "mixin": 72,
+    "except_clause": 64,
+    "enum_type": 63,
+    "block_documentation_comment": 61,
+    "]##": 61,
+    "##[": 61,
+    "pragma_expression": 54,
+    "bind_statement": 41,
+    "bind": 41,
+    "iterator_expression": 36,
+    "term_rewriting_pattern": 34,
+    "->": 30,
+    "out_type": 19,
+    "out": 19,
+    "dot_generic_call": 17,
+    "generic_argument_list": 17,
+    "[:": 17,
+    "type_parameter": 16,
+    "var_parameter": 12,
+    "assembly_statement": 11,
+    "asm": 11,
+    "typeof": 10,
+    "func_expression": 7,
+    "using_section": 4,
+    "using": 4,
+    "\"\"": 4,
+    "static_parameter": 1,
+    "pointer_parameter": 1,
+    "ref_parameter": 1
+  },
+  "probes": [
+    {
+      "id": "implements/concept-refines",
+      "question": "concept_declaration.refines — a concept naming a supertype contract",
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    },
+    {
+      "id": "exports/export-statement",
+      "question": "export_statement — a module publishing names onward",
+      "occurrences": 179,
+      "files": 104,
+      "examples": [
+        "dom96-jester/jester.nim: export request",
+        "dom96-jester/jester.nim: export strtabs",
+        "dom96-jester/jester.nim: export tables",
+        "dom96-jester/jester.nim: export httpcore",
+        "dom96-jester/jester.nim: export options"
+      ]
+    },
+    {
+      "id": "extends/object-inherits",
+      "question": "object_declaration.inherits — an object naming a base type",
+      "occurrences": 941,
+      "files": 347,
+      "examples": [
+        "Aporia/cfg.nim: of Exception",
+        "Aporia/gtksourceview.nim: of TTextBuffer",
+        "Aporia/gtksourceview.nim: of TTextView",
+        "dom96-jester/jester/private/utils.nim: of Exception",
+        "dom96-jester/tests/alltest.nim: of Exception"
+      ]
+    },
+    {
+      "id": "overrides/second-declaration",
+      "question": "a SECOND proc/func/method/iterator declaration of one name in one file",
+      "occurrences": 2750,
+      "files": 808,
+      "examples": [
+        "Aporia/CustomStatusBar.nim: restorePrevious* (declared 2x)",
+        "Aporia/aporia.nim: addTab (declared 2x)",
+        "Aporia/aporia.nim: fileMenuItem_Activate (declared 2x)",
+        "Aporia/aporia.nim: recentFile_Activate (declared 2x)",
+        "Aporia/aporia.nim: onCloseTab (declared 2x)"
+      ]
+    },
+    {
+      "id": "exports/star-marker",
+      "question": "exported_symbol — the `*` that makes a declared name visible outside its module",
+      "occurrences": 31408,
+      "files": 1500,
+      "examples": [
+        "Aporia/AboutDialog.nim: AboutDialog*",
+        "Aporia/AboutDialog.nim: newAboutDialog*",
+        "Aporia/AboutDialog.nim: show*",
+        "Aporia/CustomStatusBar.nim: Urgency*",
+        "Aporia/CustomStatusBar.nim: CustomStatusBar*"
+      ]
+    },
+    {
+      "id": "instantiates/generic-construction",
+      "question": "bracket_expression in callee position — Foo[int](x), a generic construction",
+      "occurrences": 2998,
+      "files": 749,
+      "examples": [
+        "Aporia/aporia.nim: initOrderedTable",
+        "Aporia/aporia.nim: initTable",
+        "Aporia/autocomplete.nim: createThread",
+        "Aporia/autocomplete.nim: createThread",
+        "Aporia/autocomplete.nim: tryRecv"
+      ]
+    }
+  ]
+}

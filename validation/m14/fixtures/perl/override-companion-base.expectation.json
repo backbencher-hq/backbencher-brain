@@ -1,0 +1,24 @@
+{
+ "fixtureId": "perl/override-companion-base",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "COMPANION SOURCE for perl/override-companion-resolve, pinned for its own sake rather than as an accessory. A cross-file override can only be resolved when the base's declaration set is KNOWN, so 'the base does not declare it' has to be checkable rather than assumed. override-companion-base declares `run`; override-companion-silent declares `unrelated` and deliberately NOT `gone`, which is what makes the withdrawn case decidable instead of indistinguishable from an absent base. Neither file needs an overrides edge of its own -- they are bases, not subclasses -- and this fixture asserts that.",
+ "expectSymbols": [
+  {
+   "name": "Remote::Base",
+   "kind": "class"
+  },
+  {
+   "name": "run",
+   "kind": "method",
+   "ownerName": "Remote::Base"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "overrides",
+   "from": "Remote::Base.run",
+   "note": "a BASE declares a method, it does not override one. An overrides edge here would mean the companion pass invented a relationship no file states."
+  }
+ ]
+}

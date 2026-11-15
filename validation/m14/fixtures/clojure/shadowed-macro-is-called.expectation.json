@@ -1,0 +1,22 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the derived calls oracle: the truth's name-based lists - 'this is a macro', 'this is a binding form', 'this is a def head' - were consulted BEFORE the shadow table, so a macro the FILE defines was treated as the language's. clojure/core.clj is the worst possible file for that mistake because it IS clojure.core: it defines when-let at :1879, if-let at :1859, doseq, lazy-seq and loop, then calls them 29, 9, 12, 41 and 29 times, and not one was published. Pins all three ways the rule splits: a redefined macro's call IS published; an unredefined core macro is still suppressed; and three groups stay non-calls whatever supplies the name - a threading macro is transparent expansion so the arrow is punctuation, a def head is a definition that CLJ-D30 already gives its own class, and a libspec is a directive that invokes nothing.",
+  "expectSymbols": [
+    { "name": "when-not", "kind": "function" },
+    { "name": "use-it", "kind": "function" },
+    { "name": "core-macro-still-macro", "kind": "function" },
+    { "name": "threaded", "kind": "function" },
+    { "name": "defined-here", "kind": "function" },
+    { "name": "twice", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "use-it", "target": "when-not", "line_number": 19 },
+    { "type": "calls", "from": "clj.fixture.shadowed-macro", "target": "twice", "line_number": 31 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "lazy-seq" },
+    { "type": "calls", "target": "->" },
+    { "type": "calls", "target": "definline" },
+    { "type": "calls", "target": "require" }
+  ]
+}

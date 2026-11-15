@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "yul-label",
+  "why": "grammar.js:396 — `yul_label: seq($.identifier, \":\")`, a `_yul_statement`. A labelled block is the only construct that makes one.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "yul_label",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

@@ -1,0 +1,164 @@
+{
+  "population": {
+    "filelist": "validation/m14/fixtures/sql/residual-400-filelist.txt",
+    "sampledFiles": 400,
+    "parsed": 400,
+    "failed": 0,
+    "repos": 13,
+    "unsampledFilesParsed": 1564,
+    "cap": "none (whole filelist)"
+  },
+  "totals": {
+    "edges": 5570,
+    "unresolved": 1577,
+    "resolved": 3561,
+    "refuted": 0
+  },
+  "buckets": {
+    "projectElsewhere": 1082,
+    "absentEverywhere": 451,
+    "queryLocalBinding-textHint": 17,
+    "extKind:platform": 14,
+    "extKind:informationSchema": 13
+  },
+  "bucketByType": {
+    "references": {
+      "projectElsewhere": 158,
+      "absentEverywhere": 25
+    },
+    "uses": {
+      "projectElsewhere": 863,
+      "absentEverywhere": 214,
+      "queryLocalBinding-textHint": 15,
+      "extKind:informationSchema": 13,
+      "extKind:platform": 2
+    },
+    "calls": {
+      "absentEverywhere": 208,
+      "projectElsewhere": 58,
+      "extKind:platform": 12,
+      "queryLocalBinding-textHint": 2
+    },
+    "imports": {
+      "projectElsewhere": 3,
+      "absentEverywhere": 2
+    },
+    "instantiates": {
+      "absentEverywhere": 2
+    }
+  },
+  "samples": {
+    "references|projectElsewhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql:? -> iam_scope",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql:? -> iam_user",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/13_auth_password_argon.up.sql:? -> auth_password_conf",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/13_auth_password_argon.up.sql:? -> auth_password_credential",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql:? -> iam_user",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql:? -> host",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql:? -> target",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql:? -> host_set"
+    ],
+    "uses|projectElsewhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql:? -> iam_user",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql:? -> iam_user",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/13_auth_password_argon.up.sql:? -> oplog_ticket",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql:? -> session_connection",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql:? -> session_connection_state",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/65_wh_session_dimensions.up.sql:? -> static_host",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/65_wh_session_dimensions.up.sql:? -> static_host_catalog",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/65_wh_session_dimensions.up.sql:? -> static_host_set_member"
+    ],
+    "calls|projectElsewhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/0/65_wh_session_dimensions.up.sql:? -> wh_dim_id",
+      "boundary/internal/db/schema/migrations/oss/postgres/0/65_wh_session_dimensions.up.sql:? -> wh_dim_id",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> wt_to_sentinel",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> wt_to_sentinel",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> wt_to_sentinel",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> wt_to_sentinel",
+      "boundary/internal/db/schema/migrations/oss/postgres/20/06_plugin_host_views.up.sql:? -> host",
+      "boundary/internal/db/schema/migrations/oss/postgres/26/02_wh_network_address_dimensions.up.sql:? -> host"
+    ],
+    "references|absentEverywhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_mapping_override",
+      "boundary/internal/db/schema/migrations/oss/postgres/65/01_ldap.up.sql:? -> auth_ldap_group_entry_search",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_hst",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_deleted",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_mapping_override",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_ssh_private_key_mapping_ovrd"
+    ],
+    "uses|absentEverywhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_username_password_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_ssh_private_key_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_usern_pass_domain_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_username_password_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_ssh_private_key_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_usern_pass_domain_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library"
+    ],
+    "calls|absentEverywhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/26/02_wh_network_address_dimensions.up.sql:? -> family",
+      "boundary/internal/db/schema/migrations/oss/postgres/84/04_wh_auth_token_insert.up.sql:? -> wh_date_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/84/04_wh_auth_token_insert.up.sql:? -> wh_time_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql:? -> wh_date_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql:? -> wh_time_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql:? -> wh_time_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql:? -> wh_date_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql:? -> wh_time_key"
+    ],
+    "uses|extKind:informationSchema": [
+      "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql:? -> constraint_column_usage (qualified information_schema.constraint_column_usage) [external informationSchema]",
+      "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql:? -> referential_constraints (qualified information_schema.referential_constraints) [external informationSchema]",
+      "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql:? -> key_column_usage (qualified information_schema.key_column_usage) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/20_to_19.sql:? -> tables (qualified information_schema.tables) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/20_to_19.sql:? -> tables (qualified information_schema.tables) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/20_to_19.sql:? -> columns (qualified information_schema.columns) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/20_to_19.sql:? -> table_constraints (qualified information_schema.table_constraints) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/20_to_19.sql:? -> views (qualified information_schema.views) [external informationSchema]"
+    ],
+    "uses|queryLocalBinding-textHint": [
+      "duckdb/benchmark/aoc24/queries/day04.sql:? -> part1",
+      "duckdb/benchmark/aoc24/queries/day04.sql:? -> part2",
+      "duckdb/benchmark/aoc24/queries/day16.sql:? -> tmp",
+      "duckdb/benchmark/aoc24/queries/day24.sql:? -> part2",
+      "duckdb/benchmark/aoc24/queries/day24.sql:? -> tmp",
+      "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12.sql:? -> visited_positions",
+      "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql:? -> candidates",
+      "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql:? -> hops (qualified recurring.hops)"
+    ],
+    "calls|queryLocalBinding-textHint": [
+      "duckdb/benchmark/recursive_cte/aoc2022/load/day23.sql:? -> aoc2022_day23_v2",
+      "proxicall/database/archive/2026/20260131_pms_exchange_rates.sql:? -> x"
+    ],
+    "imports|absentEverywhere": [
+      "postgrest/test/io/fixtures/load.sql:? -> ../../orioledb.sql",
+      "postgrest/test/pgbench/fixtures.sql:? -> ../spec/fixtures/load.sql"
+    ],
+    "imports|projectElsewhere": [
+      "postgrest/test/io/fixtures/load.sql:? -> database.sql",
+      "postgrest/test/io/fixtures/load.sql:? -> db_config.sql",
+      "postgrest/test/io/fixtures/load.sql:? -> roles.sql"
+    ],
+    "instantiates|absentEverywhere": [
+      "postgrest/test/spec/fixtures/schema.sql:? -> composite_domain",
+      "postgrest/test/spec/fixtures/schema.sql:? -> composite_domain"
+    ],
+    "calls|extKind:platform": [
+      "proxicall/database/archive/2026/20260125_create_oms_tables.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260125_create_oms_tables.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260125_create_oms_tables.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260203_wms_foundation.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260203_wms_foundation.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260203_wms_foundation.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260203_wms_foundation.sql:? -> uid (qualified auth.uid) [external platform]",
+      "proxicall/database/archive/2026/20260203_wms_foundation.sql:? -> uid (qualified auth.uid) [external platform]"
+    ],
+    "uses|extKind:platform": [
+      "proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]"
+    ]
+  },
+  "perType": {}
+}

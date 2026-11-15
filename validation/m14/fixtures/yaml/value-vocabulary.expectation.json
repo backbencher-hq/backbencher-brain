@@ -1,0 +1,89 @@
+{
+ "fixtureId": "yaml/value-vocabulary",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The lane's CLOSED vocabulary of resolved value shapes, pinned end to end. A data language has no type system to read, so the value vocabulary IS its type contract, and leaving one member unpinned is how a placeholder string comes back: the M60 sentinel census records `return \"unknown\"` as this lane's one R7 violation, and the fix replaced it with `untyped`, YAML's own name for a plain scalar carrying no tag. `danglingAnchor` is the shape that produces `untyped` -- an anchor with no value -- and it is pinned with its `valueTypeSource: default`, which is what distinguishes \"the grammar resolved this\" from \"nothing resolved it\". Measured: all ten members are reachable, so the vocabulary is a contract and not an aspiration.",
+ "expectSymbols": [
+  {
+   "name": "object",
+   "meta.valueType": "object",
+   "meta.valueTypeSource": "grammar"
+  },
+  {
+   "name": "array",
+   "meta.valueType": "array",
+   "meta.valueTypeSource": "grammar"
+  },
+  {
+   "name": "string",
+   "meta.valueType": "string",
+   "meta.valueTypeSource": "grammar",
+   "meta.scalarType": "string"
+  },
+  {
+   "name": "integer",
+   "meta.valueType": "integer",
+   "meta.valueTypeSource": "grammar",
+   "meta.scalarType": "integer"
+  },
+  {
+   "name": "float",
+   "meta.valueType": "float",
+   "meta.valueTypeSource": "grammar",
+   "meta.scalarType": "float"
+  },
+  {
+   "name": "boolean",
+   "meta.valueType": "boolean",
+   "meta.valueTypeSource": "grammar",
+   "meta.scalarType": "boolean"
+  },
+  {
+   "name": "nullValue",
+   "meta.valueType": "null",
+   "meta.valueTypeSource": "grammar",
+   "meta.scalarType": "null"
+  },
+  {
+   "name": "danglingAnchor",
+   "meta.valueType": "untyped",
+   "meta.valueTypeSource": "default"
+  },
+  {
+   "name": "stillAnInteger",
+   "meta.valueType": "integer",
+   "meta.valueTypeSource": "grammar"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "unknown"
+  },
+  {
+   "name": "<unknown>"
+  }
+ ],
+ "expectErrorCount": [
+  {
+   "equals": 0
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   8,
+   9,
+   10,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

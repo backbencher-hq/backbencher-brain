@@ -1,0 +1,11 @@
+{
+  "_purpose": "The committed artefact the SPACE CHECK's control verifies against (script/m14/ontology-coverage-gate.ts, spaceCheckSelfTest). The numbers are fixed on purpose: the control's arms B and C must read real values through a real JSON pointer, and arm F must be able to fail when a declaration contradicts the file. This file is NOT a measurement of anything — the HCL measurement is validation/m14/fixtures/hcl/construct-census.current.json.",
+  "_placement": "JSON, so completeness-inventory's emittedKinds scan (every top-level non-.json file in a fixtures directory) skips it.",
+  "nodeTypes": 64,
+  "blockTypes": 455,
+  "attributeKeys": 5311,
+  "sites": {
+    "extends": 0,
+    "extendsPresent": 44
+  }
+}

@@ -1,0 +1,54 @@
+{
+ "issue": "M60 relationship-ontology wave — CLJ-D58 (R10 literal target spelling)",
+ "note": "ClojureScript names a JavaScript module with a STRING: `(:require [\"dayjs\" :as dayjs])` puts a `str_lit` where every other libspec puts a `sym_lit`. The libspec reader returned the node's text, so the alias table entry, the `references` edge and (from CLJ-D53) the `imports` edge all carried `\"dayjs\"` WITH ITS QUOTES — R10's `literal` class, convicted on clojure at 5 sites before this and measured at 8 after CLJ-D53 duplicated them under a second label. The specifier is the string's VALUE, so the value is what is read. This is R10's `literal` class and nothing softer: the target is the whole quoted token, with no name behind it.",
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "dayjs"
+  },
+  {
+   "type": "imports",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "dayjs/plugin/timezone"
+  },
+  {
+   "type": "imports",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "dayjs/plugin/utc"
+  },
+  {
+   "type": "imports",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "dayjs/plugin/utc2"
+  },
+  {
+   "type": "references",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "dayjs",
+   "meta.evidenceClass": "reference_qualified"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "\"dayjs\""
+  },
+  {
+   "type": "references",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "\"dayjs\""
+  },
+  {
+   "type": "references",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "\"dayjs/plugin/utc\""
+  },
+  {
+   "type": "imports",
+   "from": "clj-fixture.cljs-module-spec",
+   "target": "\"dayjs/plugin/utc2\""
+  }
+ ]
+}

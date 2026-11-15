@@ -1,0 +1,11 @@
+{
+  "fixtureId": "vba/form-module",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "UserForm_Initialize", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "decorates", "from": "root", "target": "VB_Name" }
+  ]
+}

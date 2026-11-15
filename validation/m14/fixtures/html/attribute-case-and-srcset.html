@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- ATTRIBUTE FIDELITY. HTML attribute names are ASCII case-INSENSITIVE. The
+       pre-fix analyzer lowercased the TAG name and not the attribute name, so
+       every carrier written in caps or mixed case matched no rule and produced
+       NO symbol, NO relationship and NO import. Measured: 4.08% of corpus
+       attributes are non-lowercase, and a document containing one lost its whole
+       graph. These five lines are the whole defect. -->
+  <LINK REL="stylesheet" HREF="/assets/site.css">
+  <META CHARSET="utf-8">
+  <SCRIPT SRC="/assets/boot.js"></SCRIPT>
+  <DIV CLASS="Mixed-Case-Block" ID="mixed">upper attrs</DIV>
+  <IMG SRC="/assets/hero.png" ALT="hero" SRCSET="/assets/hero-480.png 480w, /assets/hero-1080.png 1080w">
+
+  <!-- CHARACTER REFERENCES. The grammar hands over the RAW attribute text, so an
+       undecoded `&amp;` made the stored module name a URL the index can never
+       resolve, and an undecoded numeric reference is how `javascript:` is
+       obfuscated. Decoding runs BEFORE the scheme test, so the two
+       entity-obfuscated forms below are recognized, not smuggled. -->
+  <link rel="stylesheet" href="/assets/theme.css?v=2&amp;mode=dark">
+  <a href="/docs/page&#46;html">numeric reference in a path</a>
+</head>
+<body>
+  <!-- SRCSET is a CANDIDATE LIST, not one URL. The pre-fix scanner was "skip
+       spaces and commas, take the first whitespace-delimited token", which cannot
+       distinguish a candidate from its descriptor. These three lines pin the
+       WHATWG shape: width descriptors, a pixel-density descriptor, a URL that
+       itself contains a comma, and a FINAL candidate that carries no descriptor
+       at all (the trailing-comma form) — the last of which the old scanner
+       dropped entirely. -->
+  <img id="gallery"
+       src="/assets/gallery.jpg"
+       srcset="/assets/g1.png 1x, /assets/g2.png 2x, /assets/g3.png">
+  <picture>
+    <source id="hero-src"
+            srcset="/assets/wide.webp 1000w, /assets/narrow.webp 500w"
+            media="(min-width: 800px)"
+            type="image/webp">
+    <img id="hero-img" src="/assets/hero-fallback.jpg" alt="hero">
+  </picture>
+</body>
+</html>

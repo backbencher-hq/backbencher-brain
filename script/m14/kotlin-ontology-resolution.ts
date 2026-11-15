@@ -44,7 +44,7 @@ const wireOf = (v: string): string | null => {
   const t = WIRE_ALIASES[v] ?? v
   return ALL_TYPES.includes(t) ? t : null
 }
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.argv[2] ?? "kotlin"
 const LIMIT = Number(process.env.BB_KT_LIMIT ?? 200)
 

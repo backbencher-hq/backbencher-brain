@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M60 X10: XML Schema's `QName` datatype carries the `collapse` whiteSpace
+     facet, so a QName-typed attribute value has its whitespace runs collapsed
+     and trimmed BEFORE it is read as a name. The trailing space on CT_T below is
+     legal and appears in the corpus (office_drawing_2014_chartex.xsd line 551),
+     where it left a complex type declared 7 lines above unreferenced. XML only
+     normalises tab and newline in an attribute value and leaves inner spaces
+     alone, so the value really does carry the space — the FACET is what says it
+     does not count. CT_Interior is the control: collapse cannot fix an interior
+     space, so that reference must still be refused. -->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:example:x10">
+  <xsd:complexType name="CT_Target">
+    <xsd:sequence>
+      <xsd:element name="inner" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="trailing"  type="CT_Target "/>
+  <xsd:element name="leading"   type=" CT_Target"/>
+  <xsd:element name="run"       type="  CT_Target  "/>
+  <xsd:element name="interior"  type="CT_ Target"/>
+  <xsd:element name="clean"     type="CT_Target"/>
+</xsd:schema>

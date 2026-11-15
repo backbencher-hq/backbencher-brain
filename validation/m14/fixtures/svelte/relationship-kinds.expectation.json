@@ -1,0 +1,111 @@
+{
+  "fixtureId": "svelte/relationship-kinds",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Section B/C (#419): pin every relationship kind and payload svelte emits. Script-side kinds (extends, overrides, calls, references, uses, contains, exports, imports) flow through the JS/TS sub-analyzer merge; renders + the S1 template uses come from the template pass. Payloads: complexity/parameters/visibility on script symbols must survive the merge. Pre-fix: uses/references/overrides were pinned by no svelte fixture (section B red).",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Derived",
+      "kind": "class"
+    },
+    {
+      "name": "increment",
+      "kind": "function"
+    },
+    {
+      "name": "title",
+      "kind": "property"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "./helper"
+    },
+    {
+      "module": "./Widget.svelte"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "increment",
+      "equals": 2
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "increment",
+      "parameters": [
+        {
+          "name": "n"
+        }
+      ]
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "title",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.render",
+      "target": "Base.render"
+    },
+    {
+      "type": "calls",
+      "from": "main",
+      "target": "increment"
+    },
+    {
+      "type": "calls",
+      "from": "main",
+      "target": "helper"
+    },
+    {
+      "type": "references",
+      "from": "main",
+      "target": "increment"
+    },
+    {
+      "type": "references",
+      "from": "useField",
+      "target": "state"
+    },
+    {
+      "type": "uses",
+      "from": "toggle",
+      "target": "open",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "imports",
+      "from": "relationship-kinds",
+      "target": "./helper:helper",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "renders",
+      "from": "relationship-kinds",
+      "target": "Widget",
+      "meta.isComponentUsage": true
+    },
+    {
+      "type": "uses",
+      "from": "relationship-kinds",
+      "target": "title",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

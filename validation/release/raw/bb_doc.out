@@ -1,0 +1,132 @@
+# module: graphql-js
+
+100 file(s) and 40 symbol(s) in scope, 71 cited claim(s) across 4 section(s) from 1058 source(s).
+
+## Purpose
+
+10 claims, 10 read directly from the index, resting on 10 sources (1 file).
+
+-  _(100%)_ graphql-js/README.md is an indexed markdown file with 23 lines.[1]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/dedent-test.ts is an indexed typescript file with 120 lines.[2]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEqualPromisesOrValues-test.ts is an indexed typescript file with 41 lines.[3]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts is an indexed typescript file with 134 lines.[4]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectMatchingValues-test.ts is an indexed typescript file with 15 lines.[5]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectNoTracingActivity-test.ts is an indexed typescript file with 90 lines.[6]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectPromise-test.ts is an indexed typescript file with 59 lines.[7]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectToThrow-test.ts is an indexed typescript file with 18 lines.[8]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/genFuzzStrings-test.ts is an indexed typescript file with 12 lines.[9]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/inspectStr-test.ts is an indexed typescript file with 0 lines.[10]
+
+## Entry points
+
+10 claims, 10 read directly from the index, resting on 10 sources (1 symbol).
+
+-  _(70%)_ function valid is exported from rebar3/rebar/src/vendored/r3\_hex\_licenses.erl at line 11.[25]
+-  _(70%)_ function yystate is exported from rebar3/rebar/src/vendored/r3\_safe\_erl\_term.erl at line 463.[26]
+-  _(70%)_ function message\_to\_string is exported from rebar3/rebar/src/rebar\_dialyzer\_format.erl at line 99.[27]
+-  _(70%)_ type config is exported from rebar3/rebar/src/vendored/r3\_hex\_core.erl at line 105.[28]
+-  _(100%)_ property parse is exported from graphql-js/diagnostics.ts at line 281.[29]
+-  _(70%)_ function buildSchema is exported from graphql-js/utilities/buildASTSchema.ts at line 150.[30]
+-  _(70%)_ class GraphQLObjectType is exported from graphql-js/type/definition.ts at line 2413.[31]
+-  _(70%)_ class GraphQLSchema is exported from graphql-js/type/schema.ts at line 189.[32]
+-  _(70%)_ type t is exported from rebar3/rebar/src/rebar\_app\_info.erl at line 119.[33]
+-  _(70%)_ function format is exported from rebar3/rebar/src/rebar\_compiler\_format.erl at line 13.[34]
+
+## Public surface
+
+11 claims, 11 read directly from the index, resting on 11 sources (1 symbol).
+
+-  _(100%)_ type GraphQL JS is public in graphql-js/README.md at line 1.[35]
+-  _(100%)_ module validation/release/workspace/graphql-js/README.md is public in graphql-js/README.md at line 1.[36]
+-  _(100%)_ function code\_block.js is public in graphql-js/README.md at line 6.[37]
+-  _(100%)_ method subscribe is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 32.[38]
+-  _(100%)_ method unsubscribe is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 35.[39]
+-  _(100%)_ method traceSync is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 39.[40]
+-  _(100%)_ method publish is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 43.[41]
+-  _(100%)_ method publish is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 49.[42]
+-  _(100%)_ method publish is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 55.[43]
+-  _(100%)_ method publish is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 61.[44]
+-  _(100%)_ method publish is public in graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts at line 67.[45]
+
+## Module graph
+
+10 claims, 10 read directly from the index, resting on 14 sources (1 import).
+
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/dedent-test.ts imports node:test as an external dependency.[11][12]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/dedent-test.ts imports chai as an external dependency.[13]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/dedent-test.ts imports ../dedent.ts, which is a file this project indexes.[14][15]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEqualPromisesOrValues-test.ts imports node:test as an external dependency.[16][17]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEqualPromisesOrValues-test.ts imports chai as an external dependency.[18]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEqualPromisesOrValues-test.ts imports ../expectEqualPromisesOrValues.ts, which is a file this project indexes.[19]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEqualPromisesOrValues-test.ts imports ../expectPromise.ts, which is a file this project indexes.[20]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts imports node:test as an external dependency.[21][22]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts imports chai as an external dependency.[23]
+-  _(100%)_ graphql-js/\_\_testUtils\_\_/\_\_tests\_\_/expectEvents-test.ts imports ../expectEvents.ts, which is a file this project indexes.[24]
+
+## Unknowns
+
+- The scope contains more indexed files than the evidence limit allows; 275 file(s) were not examined. _(output-budget, affects: purpose)_
+- The evidence limit selected 40 of 2198 indexed symbol(s) in this scope (at most twice the limit); the document describes the selection, not the whole set. Raise limit or narrow the target to widen it. _(output-budget, affects: purpose)_
+- The per-section evidence cap is 20 at detail "standard", so 80 of 100 purpose items were not selected. The output budget may have shortened this further; it reports its own count. _(output-budget, affects: purpose)_
+- The per-section evidence cap is 20 at detail "standard", so 615 of 635 module graph items were not selected. The output budget may have shortened this further; it reports its own count. _(output-budget, affects: module-graph)_
+- 10 more purpose item(s) were dropped to stay inside the 8000-token budget. _(output-budget, affects: purpose)_
+- 10 more entry points item(s) were dropped to stay inside the 8000-token budget. _(output-budget, affects: entry-points)_
+- 10 more module graph item(s) were dropped to stay inside the 8000-token budget. _(output-budget, affects: module-graph)_
+
+## Quality
+
+- passed: true
+- factuality: true (0 uncited claim(s))
+- references: true (0 broken, 0 stale, 0 missing)
+- completeness: true (4/4 required sections, 7 unknown(s))
+- budget: true (2923/8000 tokens)
+- snapshot: `1a92a580471d6ffe67c084eba7e456c6`
+
+## Sources
+
+- [1](graphql-js/README.md) — file: Indexed file graphql-js/README.md
+- [2](graphql-js/__testUtils__/__tests__/dedent-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/dedent-test.ts
+- [3](graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts
+- [4](graphql-js/__testUtils__/__tests__/expectEvents-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/expectEvents-test.ts
+- [5](graphql-js/__testUtils__/__tests__/expectMatchingValues-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/expectMatchingValues-test.ts
+- [6](graphql-js/__testUtils__/__tests__/expectNoTracingActivity-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/expectNoTracingActivity-test.ts
+- [7](graphql-js/__testUtils__/__tests__/expectPromise-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/expectPromise-test.ts
+- [8](graphql-js/__testUtils__/__tests__/expectToThrow-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/expectToThrow-test.ts
+- [9](graphql-js/__testUtils__/__tests__/genFuzzStrings-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/genFuzzStrings-test.ts
+- [10](graphql-js/__testUtils__/__tests__/inspectStr-test.ts) — file: Indexed file graphql-js/__testUtils__/__tests__/inspectStr-test.ts
+- [11](graphql-js/__testUtils__/__tests__/dedent-test.ts#L1) — import: Import node:test
+- [12](graphql-js/__testUtils__/__tests__/dedent-test.ts#L1) — import: Import node:test
+- [13](graphql-js/__testUtils__/__tests__/dedent-test.ts#L3) — import: Import chai
+- [14](graphql-js/__testUtils__/__tests__/dedent-test.ts#L5) — import: Import ../dedent.ts
+- [15](graphql-js/__testUtils__/__tests__/dedent-test.ts#L5) — import: Import ../dedent.ts
+- [16](graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts#L1) — import: Import node:test
+- [17](graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts#L1) — import: Import node:test
+- [18](graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts#L3) — import: Import chai
+- [19](graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts#L5) — import: Import ../expectEqualPromisesOrValues.ts
+- [20](graphql-js/__testUtils__/__tests__/expectEqualPromisesOrValues-test.ts#L6) — import: Import ../expectPromise.ts
+- [21](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L1) — import: Import node:test
+- [22](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L1) — import: Import node:test
+- [23](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L3) — import: Import chai
+- [24](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L5) — import: Import ../expectEvents.ts
+- [25](rebar3/rebar/src/vendored/r3_hex_licenses.erl#L11-L671) — symbol: Exported function valid — unknown
+- [26](rebar3/rebar/src/vendored/r3_safe_erl_term.erl#L463-L682) — symbol: Exported function yystate — unknown
+- [27](rebar3/rebar/src/rebar_dialyzer_format.erl#L99-L306) — symbol: Exported function message_to_string — unknown
+- [28](rebar3/rebar/src/vendored/r3_hex_core.erl#L105-L129) — symbol: Exported type config — unknown
+- [29](graphql-js/diagnostics.ts#L281) — symbol: Exported property parse
+- [30](graphql-js/utilities/buildASTSchema.ts#L150-L163) — symbol: Exported function buildSchema — unknown
+- [31](graphql-js/type/definition.ts#L2413-L2712) — symbol: Exported class GraphQLObjectType — unknown
+- [32](graphql-js/type/schema.ts#L189-L865) — symbol: Exported class GraphQLSchema — unknown
+- [33](rebar3/rebar/src/rebar_app_info.erl#L119) — symbol: Exported type t — unknown
+- [34](rebar3/rebar/src/rebar_compiler_format.erl#L13-L29) — symbol: Exported function format — unknown
+- [35](graphql-js/README.md#L1) — symbol: Public type GraphQL JS
+- [36](graphql-js/README.md#L1) — symbol: Public module validation/release/workspace/graphql-js/README.md
+- [37](graphql-js/README.md#L6) — symbol: Public function code_block.js
+- [38](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L32) — symbol: Public method subscribe
+- [39](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L35) — symbol: Public method unsubscribe
+- [40](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L39) — symbol: Public method traceSync
+- [41](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L43) — symbol: Public method publish
+- [42](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L49) — symbol: Public method publish
+- [43](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L55) — symbol: Public method publish
+- [44](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L61) — symbol: Public method publish
+- [45](graphql-js/__testUtils__/__tests__/expectEvents-test.ts#L67) — symbol: Public method publish
+

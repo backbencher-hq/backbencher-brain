@@ -1,0 +1,33 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/declaration-span-before-after.mts",
+  "claim": "anchoring an all-on-one-line vocabulary declaration to the ELEMENT instead of the name= Attribute changes no symbol's reported startLine, adds and removes no symbol, and reduces the number of byte ranges held by two or more distinct names",
+  "method": "two child processes, one per revision, each importing the analyzer fresh; the working-tree change is stashed for the BEFORE leg and the stash is asserted both ways",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "admittedTotal": 11464,
+    "admitted": 400,
+    "workers": 1
+  },
+  "before": {
+    "symbols": 36774,
+    "spansHeldByTwoOrMoreNames": 253
+  },
+  "after": {
+    "symbols": 36774,
+    "spansHeldByTwoOrMoreNames": 0
+  },
+  "delta": {
+    "symbols": 0,
+    "startLineMoved": 0,
+    "startIndexMoved": 241,
+    "rowsOnlyInBefore": 0,
+    "rowsOnlyInAfter": 0,
+    "spansHeldByTwoOrMoreNames": -253,
+    "movedExamples": []
+  },
+  "limitations": [
+    "The comparison is on (name, ownerName) as the worker publishes them. A symbol whose NAME changed appears as one row removed and one added rather than as a moved line, so both are counted and reported separately.",
+    "production parseFile does not forward metadata.isVocabDeclaration or metadata.elementRange — pool-worker's symbol metadata is a WHITELIST — so the shape population cannot be counted through this entry point. The residual cost of the partial fix is measured by containment-ledger.mts instead, which counts the edges whose containment is still unverifiable.",
+    "It runs on the gate's own population (every git-tracked file the router hands to the XML analyzer) unless BB_SPAN_MAX bounds it, and the bound is printed rather than assumed."
+  ]
+}

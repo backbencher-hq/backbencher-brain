@@ -1,0 +1,378 @@
+{
+  "fixtureId": "scala/exports-surface",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `exports` relationship, which this lane never published. Before it, the analyzer filled ParseResult.exports (597 ExportInfo entries in 387 files at 400 corpus files) and emitted NO relationship of the type, so the one label that states \"this module offers this name\" was stored and compared against nothing \u2014 the shape 12 lanes shared fleet-wide. Three separate things are pinned here, and each was measured first. (1) The SOURCE is the module: the full CHAINED package path `com.example.exports`, joined from the two `package` clauses. metadata.packageName holds only the LAST clause (`exports`) on every multi-clause file \u2014 308 of 600 corpus files \u2014 so an edge built on that field would name a package no reference site spells. (2) The SURFACE is the implicit one: every public top-level declaration, and NOT a private top-level class. (3) A companion pair declared object-first publishes exactly ONE edge. The ExportInfo array's object-suppression is order-dependent (Contexts.scala:2003 `object ContextMode`, :2109 `class ContextMode` \u2014 42 repeated names per 883 entries at 600 files), and without the dedupe that pair becomes two edges for one fact. expectRelationshipCount pins the count; expectSymbolCount pins that the two SYMBOLS were not merged, because a surface edge is a statement about visibility, not about identity. The Scala 3 clauses pin the reader: a plain path, plain selectors, a RENAMED selector (`Delta => Renamed` introduces `Renamed`, which is the name bound HERE \u2014 `Delta` is only reachable under it), and a given selector. The two wildcard clauses are pinned as FORBIDDEN: `export other.module.*` and `export other.module.given` re-export a set the clause does not name, so there is no name to publish, and enumerating imagined members would be exactly the fabricated edge the ontology gate exists to catch.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "Renderer",
+      "kind": "interface"
+    },
+    {
+      "name": "Helper",
+      "kind": "class"
+    },
+    {
+      "name": "defaultId",
+      "kind": "constant"
+    },
+    {
+      "name": "helperName",
+      "kind": "function"
+    },
+    {
+      "name": "Hidden",
+      "kind": "class",
+      "note": "a private top-level class is still a SYMBOL in this file; it is only absent from the SURFACE"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Widget",
+      "equals": 2,
+      "note": "class + companion object: the surface dedupes the NAME, the symbol table does not merge the two declarations"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "id",
+      "note": "a surface edge must not REPLACE the containment graph: the member is still owned"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "make",
+      "note": "the companion object's member is still contained"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Widget",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Alpha",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Beta",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Gamma",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Renamed",
+      "meta.isExportClause": true,
+      "meta.exportKind": "renamed"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Ordering",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Epsilon",
+      "meta.isExportClause": true,
+      "meta.exportKind": "named"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module",
+      "confidenceMin": 0.65,
+      "meta.isExportClause": true,
+      "meta.reasonCode": "export-wildcard",
+      "meta.exportKind": "all_members"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module",
+      "confidenceMin": 0.65,
+      "meta.isExportClause": true,
+      "meta.reasonCode": "export-wildcard",
+      "meta.exportKind": "all_members"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Widget",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "class"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Renderer",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "interface"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Helper",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "class"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "defaultId",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "constant"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "helperName",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "function"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "odd name",
+      "meta.isScalaExport": true,
+      "meta.exportKind": "constant"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": true
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": true
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module.Epsilon",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module.Delta",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module.Beta.Gamma",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module.Alpha",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "other.module.Widget",
+      "meta.isScalaExport": true,
+      "meta.isScalaReExport": true,
+      "meta.wildcard": false
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Widget",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Renderer",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Helper",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "defaultId",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "helperName",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "odd name",
+      "meta.exportForm": "public-top-level-declaration"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Alpha",
+      "meta.exportForm": "scala3-export-clause"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Beta",
+      "meta.exportForm": "scala3-export-selector"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Gamma",
+      "meta.exportForm": "scala3-export-selector"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Renamed",
+      "meta.exportForm": "scala3-export-renamed-selector"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Ordering",
+      "meta.exportForm": "scala3-export-given-selector"
+    },
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Epsilon",
+      "meta.exportForm": "scala3-export-clause"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "exports",
+      "from": "com.example.exports",
+      "target": "Widget",
+      "equals": 1,
+      "note": "`Widget` is introduced twice \u2014 declared here and re-exported by a Scala 3 clause \u2014 and the module exports the NAME once"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "Hidden",
+      "note": "a private top-level class is not part of the module's surface"
+    },
+    {
+      "type": "exports",
+      "from": "exports",
+      "note": "the LAST package clause is a fragment; an edge sourced there names a package that does not exist"
+    },
+    {
+      "type": "exports",
+      "from": "com.example",
+      "note": "the FIRST clause alone is equally not the module"
+    },
+    {
+      "type": "exports",
+      "target": "Delta",
+      "note": "`export other.module.{Delta => Renamed}` introduces Renamed; Delta is not bound in this file"
+    },
+    {
+      "type": "exports",
+      "target": "*",
+      "note": "`export other.module.*` re-exports a set the clause does not name \u2014 there is no name to publish and inventing members is fabrication"
+    },
+    {
+      "type": "exports",
+      "target": "given",
+      "note": "same for `export other.module.given`: the instances are defined by implicit resolution elsewhere"
+    },
+    {
+      "type": "exports",
+      "target": "other",
+      "note": "same: an intermediate path segment is not a name this module exports"
+    },
+    {
+      "type": "exports",
+      "target": "module",
+      "note": "same"
+    },
+    {
+      "type": "exports",
+      "target": "`odd name`",
+      "note": "quoting syntax is not part of a name (M60/#924): the export must carry the same spelling as the symbol, not the raw identifier text"
+    },
+    {
+      "type": "exports",
+      "from": "`com.example`",
+      "note": "same, on the module side"
+    },
+    {
+      "type": "exports",
+      "from": "(script)",
+      "note": "task-9: (script) is the statement-scope sentinel; a module/export surface sources at (file)"
+    },
+    {
+      "type": "imports",
+      "from": "root",
+      "note": "task-9: imports are (file)-sourced dependencies (the import-reference channel at root is the references label, not imports)"
+    },
+    {
+      "type": "exports",
+      "target": "other.module",
+      "meta.isScalaReExport": false,
+      "confidenceMin": 0.9,
+      "note": "TASK-9 (Lead wildcard ruling): the wildcard scope row is KEPT as an honest heuristic (0.7, reasonCode export-wildcard); this forbid now bars only a CONFIDENT bare-path export from the named-clause channel, while the re-export channel's isScalaReExport surface rows are pinned positively."
+    }
+  ],
+  "authoredNote": " [TASK-9 STALE-PIN ADJUDICATION 2026-10-19: the exports/imports rows were re-pinned to the CURRENT adjudicated contract \u2014 module/export surfaces source at `(file)` (fleet sentinel ruling), imports are `(file)`-sourced module-path/selector dependencies, and the two export channels (convention array + surface/export-clause) are both pinned, including the wildcard scope row KEPT as an honest heuristic (confidence 0.7, reasonCode export-wildcard; Lead ruling). Coverage is STRENGTHENED (more rows pinned, stale `(script)`/`root` sources forbidden); behaviour was adjudicated correct, not weakened.]"
+}

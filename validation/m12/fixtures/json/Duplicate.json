@@ -1,0 +1,4 @@
+{
+  "dup": "first",
+  "outer": { "dup": "second" }
+}

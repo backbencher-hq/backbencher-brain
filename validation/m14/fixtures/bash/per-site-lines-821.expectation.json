@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/per-site-lines-821.sh",
+  "authoredFrom": "BD1 (per-site identity + mandatory line). Authored from a probe 2026-09-26. Pre-wave the edge identity was the 3-field (source|type|target) with NO line, so three call sites of one callee were one row; the store's `relId` keys on the line (M59/#822) and its source-attribution fallback is line-driven (M59/#855), so a line-less edge can be neither per-site nor attributed.",
+  "expectSymbols": [
+    {
+      "name": "per-site-lines-821.sh",
+      "kind": "module"
+    },
+    {
+      "name": "emit",
+      "kind": "function",
+      "ownerName": "per-site-lines-821.sh"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "per-site-lines-821.sh",
+      "target": "emit",
+      "line_number": 10,
+      "meta.isFunctionCall": true
+    },
+    {
+      "type": "calls",
+      "from": "per-site-lines-821.sh",
+      "target": "emit",
+      "line_number": 11,
+      "meta.isFunctionCall": true
+    },
+    {
+      "type": "calls",
+      "from": "per-site-lines-821.sh",
+      "target": "emit",
+      "line_number": 12,
+      "meta.isFunctionCall": true
+    },
+    {
+      "type": "contains",
+      "from": "per-site-lines-821.sh",
+      "target": "emit",
+      "line_number": 6
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "per-site-lines-821.sh",
+      "target": "emit",
+      "line_number": null
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "imports",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "per-site-lines-821.sh",
+      "target": "emit",
+      "equals": 3
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld9-declaration-resync.sql",
+  "authoredFrom": "SQLD9 (M60 SQL wave, 2026-09-27). Both halves measured. The cascade: `CREATE FUNCTION ... AS $$ BEGIN RAISE EXCEPTION 'nope'; END; $$` followed by any statement collapsed the file to `program > ERROR` flattened into bare keyword_* nodes (minimal-repro sweep in the review; the file-level consequence measured on database/schema.sql, 163 CREATE TABLE -> 10 table symbols). The recall figures are the three strategies on /home/ishaq2321/ProxiCall @902a92b2b: whole-file 1,557/2,336 = 66.65%, full-tree sweep 1,644 = 70.38%, statement resync 2,263 = 96.88%. The residual: a TAGGED dollar-quote with a `pg_temp.`-qualified name still defeats the main pass, which is the live shape the resync recovers \u2014 measured firing on 9 corpus files for 31 declarations, worst case verify_m95_3043_coms_rls_hardening.sql at +12 declarations from 27 statements.",
+  "comment": "Two rows, two mechanisms, plus one documented residual. `d9_after` sits after a plain dollar-quote body with an unknown statement keyword (RAISE): the grammar patch makes the declarations after it reachable, and so does the resync, so this row alone does not separate them. `d9_last` sits after a TAGGED body that the main pass still cannot fully parse, so it is reachable only by the resync. `d9_raises` \u2014 the function whose OWN body contains RAISE \u2014 is a documented RESIDUAL: tree-sitter's error recovery commits to the partial parse of that one function rather than backtracking to the grammar's opaque dollar-quote alternative, so no analyzer-side pass can recover the symbol and none claims to. The fixture pins that its existence is REPORTED (expectErrors) and that the file's OTHER declarations are still extracted. Together the rows pin both recoverable halves and name the one that is not.",
+  "expectSymbols": [
+    {
+      "name": "d9_before",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d9_after",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d9_after_idx",
+      "kind": "constant",
+      "meta.type": "index"
+    },
+    {
+      "name": "d9_after_tagged",
+      "kind": "function"
+    },
+    {
+      "name": "d9_last",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d9_last_view",
+      "kind": "class",
+      "meta.type": "view"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "d9_after"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "d9_last"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "d9_after_idx",
+      "target": "d9_after"
+    },
+    {
+      "type": "uses",
+      "from": "d9_last_view",
+      "target": "d9_last"
+    }
+  ],
+  "expectUniqueIds": [
+    {
+      "name": "id",
+      "ownerName": "d9_after"
+    },
+    {
+      "name": "id",
+      "ownerName": "d9_last"
+    }
+  ],
+  "note": "The `d9_raises` row is the grammar-patch pin: the whole-file parse cannot build a create_function node for a body it cannot parse, so no analyzer-side pass recovers that symbol. The `d9_last` rows are the resync pin. SQLD1-SQLD8 pass with the resync switched off, so without this fixture the 33% recall loss is invisible to the whole suite.",
+  "forbidErrors": [
+    {
+      "severity": "warning"
+    }
+  ],
+  "premiseChanged": "PREMISE CHANGED 2026-09-27, and the change is an improvement, not a relaxation. This fixture asserted `expectErrors: [{severity: warning}]` because the grammar could not parse the plpgsql body in the source, so the file was damaged and the recovery passes were what recovered the declarations. The shipped plpgsql scaffolding parses this shape, so the file is now CLEAN: the assertion is inverted to `forbidErrors`, which is a strictly stronger pin (all expected symbols AND zero errors, rather than symbols plus a warning that was always going to be there). The recovery passes are still pinned, on damage that a plpgsql grammar does not fix: script/m60/verify-sql-resync.ts fires on 19 real corpus files and asserts C1 reachable, C2 every firing recovers, C3 recovered ranges are file-absolute. The header comment below still describes the ORIGINAL defect and is kept as the record of why the fixture exists."
+}

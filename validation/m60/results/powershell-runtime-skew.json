@@ -1,0 +1,9023 @@
+{
+ "_question": "For one grammar and one set of wasm bytes, how far apart are the two tree-sitter runtimes this repo uses \u2014 and in which direction?",
+ "_why": "Grammar patch G10 is ADMISSIBLE, fixes 7 corpus files under the CLI, and changes NOTHING in the product. The product loads the same wasm through web-tree-sitter 0.25.9; the CLI is 0.26.9. This measures the gap rather than leaving it as a story about one patch.",
+ "_method": "Every tracked .ps1/.psm1 in powershell and ansible, parsed twice: once by web-tree-sitter 0.25.9 through the wired wasm (the product runtime), once by the tree-sitter CLI 0.26.9 (the tooling). Node LABELS are counted from each parse's own output, so a variable named $ERROR is not counted as an error node. Counts only \u2014 tree SHAPE is not compared, because a native-vs-wasm shape diff is exactly the comparison that misled G10.",
+ "runtimes": {
+  "product": "web-tree-sitter 0.25.9",
+  "tooling": "tree-sitter CLI 0.26.9"
+ },
+ "totals": {
+  "files": 691,
+  "product": {
+   "errors": 627,
+   "missing": 107
+  },
+  "tooling": {
+   "errors": 657,
+   "missing": 20
+  },
+  "delta": {
+   "errors": 30,
+   "missing": -87
+  }
+ },
+ "agreement": {
+  "identical": 629,
+  "disagree": 62,
+  "pct_disagree": 9.0,
+  "tooling_sees_fewer_problems": 41,
+  "product_sees_fewer_problems": 29
+ },
+ "conclusions": [
+  "The disagreement is 9% of files and NOT one-directional: 41 files parse better under the tooling and 21 better under the product, so 'upgrade and everything improves' is not what the data says.",
+  "MISSING differs roughly five to one (107 product vs 20 tooling), which is a systematic difference in ERROR RECOVERY rather than in parsing \u2014 the runtimes agree on what is an error far more often than on what to insert to recover.",
+  "Therefore the CLI cannot validate a grammar patch's EFFECT. It can validate SAFETY \u2014 that no clean file changes shape \u2014 because a native-to-native tree diff compares one runtime with itself, which is how F11's G2 was pre-filtered. G10 is the counterexample for effect: 7 files 'fixed' natively, 0 in the product.",
+  "F11 (script/m14/verify-grammar-leaves.ts) is the only valid arbiter, because it runs on the product runtime. Its 'G1 fixed 0' row is not a weak signal to be explained away; it is the measurement.",
+  "This is not powershell-specific. Every lane loads its parser through the same web-tree-sitter 0.25.9, so any lane whose A/B work used the CLI has the same exposure."
+ ],
+ "files": [
+  {
+   "repo": "powershell",
+   "file": ".github/actions/infrastructure/markdownlinks/Parse-MarkdownLink.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 6,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": ".github/actions/test/process-pester-results/process-pester-results.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": ".github/skills/analyze-pester-failures/scripts/analyze-pr-test-failures.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": ".github/workflows/GHWorkflowHelper/GHWorkflowHelper.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": ".pipelines/EV2Specs/ServiceGroupRoot/Shell/Run/Run.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "assets/GroupPolicy/InstallPSCorePolicyDefinitions.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "build.psm1",
+   "product": {
+    "errors": 19,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 12,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "dsc/pwsh.profile.resource.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "src/Modules/Windows/PSDiagnostics/PSDiagnostics.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "src/PowerShell.Core.Instrumentation/RegisterManifest.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "src/powershell-native/Install-PowerShellRemoting.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/SSHRemoting/SSHRemoting.Basic.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/fuzzing/runFuzzer.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/infrastructure/ciModule.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/nanoserver/nanoserver.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/packaging/linux/package-validation.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/packaging/macos/package-validation.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/packaging/packaging.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/packaging/windows/exe.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/packaging/windows/msi.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/perf/benchmarks/assets/compiler.test.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/perf/perf.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/Base-Directory.Tests.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 8,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/ConsoleHost.Tests.ps1",
+   "product": {
+    "errors": 24,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 23,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/HostUtilities.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/Logging.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/PSVersionTable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/Read-Host.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/Startup.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/TabCompletion/BugFix.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Host/TabCompletion/TabCompletion.Tests.ps1",
+   "product": {
+    "errors": 6,
+    "missing": 6
+   },
+   "tooling": {
+    "errors": 6,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/MSFT_778492.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/ProtectedAccess.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.Attributes.Tests.ps1",
+   "product": {
+    "errors": 22,
+    "missing": 11
+   },
+   "tooling": {
+    "errors": 23,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.BasicParsing.Tests.ps1",
+   "product": {
+    "errors": 10,
+    "missing": 3
+   },
+   "tooling": {
+    "errors": 10,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.Break.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.Exceptions.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.MiscOps.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.Modules.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.NoRunspaceAffinity.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.RunPath.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/Scripting.Classes.StaticMethod.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/scripting.Classes.NestedModules.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/scripting.Classes.inheritance.tests.ps1",
+   "product": {
+    "errors": 29,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 29,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/scripting.Classes.using.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Classes/scripting.enums.tests.ps1",
+   "product": {
+    "errors": 18,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 19,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/CompletionTestSupport.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Interop/DotNet/DotNetAPI.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Interop/DotNet/DotNetInterop.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/ComparisonOperator.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/NullConditional.Tests.ps1",
+   "product": {
+    "errors": 16,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 16,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/PipelineChainOperator.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/RangeOperator.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/ReplaceOperator.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/SplitOperator.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/Ast.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/AutomaticVariables.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/BNotOperator.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/Conversions.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/ExtensibleCompletion.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/LanguageAndParser.TestFollowup.Tests.ps1",
+   "product": {
+    "errors": 5,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 5,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/LineContinuance.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/MethodInvocation.Tests.ps1",
+   "product": {
+    "errors": 41,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 43,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/ParameterBinding.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/Parser.Tests.ps1",
+   "product": {
+    "errors": 9,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 14,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/Parsing.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/RedirectionOperator.Tests.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/TypeAccelerator.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/UsingAssembly.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Parser/UsingNamespace.Tests.ps1",
+   "product": {
+    "errors": 7,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 7,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ActionPreference.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Adapter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Array.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/CleanBlockErrorHandling.Tests.ps1",
+   "product": {
+    "errors": 15,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 15,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/CmdletDeclaration.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/CommandErrorHandling.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/CommonParameters.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ConstrainedLanguageMode.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Debugging/DebuggerCommand.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Debugging/DebuggerScriptTests.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Debugging/DebuggingInHost.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Delegates.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/DeserializedMethods.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/DeserializedTypeConversion.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Dynamicparameters.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ErrorHistoryId.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ErrorPosition.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ForeachParallel.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Generics.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/HashtableToPSCustomObjectConversion.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/I18n/I18n.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Indexer.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/LineEndings.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/MyInvocation.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeCommandArguments.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeCommandPathUpdate.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeCommandProcessor.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeLinuxCommands.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeStreams.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeUnixGlobbing.Tests.ps1",
+   "product": {
+    "errors": 33,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 45,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/NativeExecution/NativeWindowsTildeExpansion.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/OrderedAttributeForHashTables.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/OutErrorVariable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/PSSerializer.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ParameterBinding.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/PipelineBehaviour.Tests.ps1",
+   "product": {
+    "errors": 36,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 34,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/PipelineStoppedToken.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Requires.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ScriptHelp.NotesFormatting.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/ScriptHelp.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Scripting.Followup.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/SuppressAnsiEscapeSequence.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/SwitchParallel.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/TestsOnWinFullOnly.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/Trap.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Language/Scripting/TryCatch.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/CimCmdlets/CimInstance.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/CimCmdlets/CimSession.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/CimCmdlets/Get-CimClass.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/CompatiblePSEditions.Module.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Enter-PSHostProcess.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Exec.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/ForEach-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Get-Command.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Get-Error.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Get-Module.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Get-PSHostProcessInfo.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/History.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Import-Module.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/ImportProvider.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Job.Tests.ps1",
+   "product": {
+    "errors": 6,
+    "missing": 9
+   },
+   "tooling": {
+    "errors": 6,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/ModuleConstraint.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/ModuleManifest.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Out-Default.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Out-Host.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/PSSessionConfiguration.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Pester.Commands.Cmdlets.GetCommand.Tests.ps1",
+   "product": {
+    "errors": 5,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 5,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/RemoteGetModule.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/RemoteImportModule.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/RemotingCmdlets.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Remove-Module.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Set-PSDebug.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Core/Where-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Diagnostics/CounterTestHelperFunctions.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Diagnostics/Export-Counter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Diagnostics/Get-Counter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Diagnostics/Get-WinEvent.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Diagnostics/Import-Counter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Diagnostics/New-WinEvent.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.LocalAccounts/Pester.Command.Cmdlets.LocalAccounts.LocalGroup.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.LocalAccounts/Pester.Command.Cmdlets.LocalAccounts.LocalGroupMember.Tests.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.LocalAccounts/Pester.Command.Cmdlets.LocalAccounts.LocalUser.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Add-Content.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Alias.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Clear-Content.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Clear-EventLog.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Clear-Item.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Clipboard.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/ControlService.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Convert-Path.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Copy-Item.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/FileSystem.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/FileSystemProviderExtended.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/FunctionProvider.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-ChildItem.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-Content.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-EventLog.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-HotFix.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-Item.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-ItemProperty.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-Location.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-PSDrive.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-PSProvider.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-Process.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Get-Service.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Hierarchical-Path.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/ItemProperty.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 4
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Join-Path.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Move-Item.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/New-EventLog.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/New-Item.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/New-PSDrive.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/PSDrive.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Pester.Commands.Cmdlets.NoNewlineParameter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Pop-Location.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Push-Location.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Registry.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Remove-EventLog.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Remove-Item.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Rename-Computer.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Rename-Item.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Resolve-Path.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Restart-Computer.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Set-Content.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Set-Item.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Set-Location.Tests.ps1",
+   "product": {
+    "errors": 5,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 5,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Set-Service.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Split-Path.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Start-Process.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Stop-Computer.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Test-Connection.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 7
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Test-Path.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/TimeZone.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Unimplemented-Cmdlet.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/UnixStat.Tests.ps1",
+   "product": {
+    "errors": 8,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 8,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Variable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Management/Wait-Process.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.PSResourceGet/Microsoft.PowerShell.PSResourceGet.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/AclCmdlets.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/AmsiInterface.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/CertificateProvider.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/CmsMessage.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/CmsMessage2.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/ConstrainedLanguageDebugger.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/ConstrainedLanguageModules.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/ConstrainedLanguageRestriction.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/ConstrainedLanguageValidation.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/ExecutionPolicy.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/FileCatalog.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/FileOnlyEntry.Tests.ps1",
+   "product": {
+    "errors": 5,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 5,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/GetCredential.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/SecureString.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/UserConfigProv/DSCResources/UserConfigProviderModVersion1/UserConfigProviderModVersion1.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/UserConfigProv/DSCResources/UserConfigProviderModVersion2/UserConfigProviderModVersion2.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/UserConfigProv/DSCResources/UserConfigProviderModVersion3/UserConfigProviderModVersion3.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/UserConfigProv/DSCResources/scriptdsc/scriptdsc.schema.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Security/certificateCommon.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Clear-Variable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Compare-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Csv.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-SddlString.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-StringData.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Csv.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Json.PSSerializeJSONLongEnumAsNumber.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Json.Tests.ps1",
+   "product": {
+    "errors": 5,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-SecureString.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Xml.Tests.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 8,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Debug-Runspace.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Disable-PSBreakpoint.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Enable-PSBreakpoint.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Environment-Variables.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Eventing.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Export-Alias.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Export-Csv.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Export-FormatData.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Foreach-Object-Parallel.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Format-Custom.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Format-Hex.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Format-List.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Format-Table.Tests.ps1",
+   "product": {
+    "errors": 13,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 13,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Format-Wide.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Alias.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Command.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Culture.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Date.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Error.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Event.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-EventSubscriber.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-FileHash.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-FormatData.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Host.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Member.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-PSBreakpoint.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-PSCallStack.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Random.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-RunspaceDebug.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-SecureRandom.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-TraceSource.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-UICulture.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Unique.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Uptime.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Variable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Verb.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Group-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Implicit.Remoting.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 4
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Import-Alias.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Import-Csv.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Import-LocalizedData.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ImportExportCSV.Delimiter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Invoke-Expression.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Invoke-Item.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Join-String.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Json.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/JsonObject.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/MarkdownCmdlets.Tests.ps1",
+   "product": {
+    "errors": 15,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 16,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Measure-Command.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Measure-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/MiscCmdletUpdates.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-Alias.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-Event.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-Guid.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-Object.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-TemporaryFile.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-TimeSpan.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/New-Variable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Out-File.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Out-String.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/PowerShellData.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Read-Host.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Register-EngineEvent.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Register-ObjectEvent.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Remove-Alias.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Remove-Event.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Remove-PSBreakpoint.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Remove-TypeData.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Remove-Variable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/RunspaceBreakpointManagement.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/RunspaceCmdlets.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Select-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Select-String.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Select-Xml.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Send-MailMessage.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Set-Alias.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Set-Date.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Set-PSBreakpoint.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Set-Variable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Sort-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Start-Sleep.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Tee-Object.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Test-Json.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Test-Mocks.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Trace-Command.Tests.ps1",
+   "product": {
+    "errors": 8,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 8,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Unblock-File.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Unimplemented-Cmdlet.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Update-FormatData.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Update-List.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Wait-Debugger.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Wait-Event.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/WebCmdlets.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Debug.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Error.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Host.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Output.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Progress.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Stream.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/Write-Verbose.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/XMLCommand.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/alias.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/assets/localized.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/clixml.tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/command.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/object.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/string.tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/typedata.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.Powershell.Host/Start-Transcript.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.WSMan.Management/ConfigProvider.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.WSMan.Management/CredSSP.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/Microsoft.WSMan.Management/TestWSMan.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/PSDiagnostics/PSDiagnostics.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/PSReadLine/PSReadLine.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/PackageManagement/PackageManagement.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/PowerShellGet/PowerShellGet.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Modules/ThreadJob/ThreadJob.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Provider/AutomountSubstDrive.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Provider/AutomountSubstDriveCore.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Provider/AutomountVHDDrive.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Provider/Pester.AutomountedDrives.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/Provider/ProviderIntrinsics.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/SDK/Breakpoint.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/SDK/Json.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/SDK/PSDebugging.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/dsc/dsc.profileresource.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/BasicEngine.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/GetNewClosure.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/InitialSessionState.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/LanguagePrimitive.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/PSCommand.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/ProxyCommand.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/Serialization.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/SuspiciousContentChecker.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/TaskBasedAsyncPowerShellAPI.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Api/TypeInference.Tests.ps1",
+   "product": {
+    "errors": 21,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 22,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Assembly.LoadBytesAndLoadFile.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Assembly.LoadFrom.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Assembly.LoadNative.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Assembly.LoadWithPartialName.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Assembly.LoadedInSeparateALC.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Attributes.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/CLRBinding.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/CommandDiscovery.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Credential.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/DefaultCommands.Tests.ps1",
+   "product": {
+    "errors": 18,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 16,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Encoding.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/GroupPolicySettings.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/NativeCommandBytePiping.Tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/NativeCommandEncoding.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/NativeCommandErrorHandling.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/PropertyAccessor.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/ProxyCommand.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/RegisterAssemblyResolverEarly.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/SemanticVersion.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/StandardLibraryTypes.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/Telemetry.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/TypeResolution.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/ValidateAttributes.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Basic/assets/WriteConsoleOut.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/COM/COM.Basic.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Cdxml/Cdxml.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ETS/Adapter.Tests.ps1",
+   "product": {
+    "errors": 14,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 14,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ETS/CimAdapter.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ETS/TypeTable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ExperimentalFeature/EnableDisable-ExperimentalFeature.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ExperimentalFeature/ExperimentalFeature.Basic.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ExperimentalFeature/Get-ExperimentalFeature.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ExperimentalFeature/assets/ExpTest/ExpTest.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Formatting/BugFix.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Formatting/ErrorView.Tests.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Formatting/OutputRendering.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Formatting/PSStyle.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Help/HelpSystem.OnlineHelp.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Help/HelpSystem.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Help/UpdatableHelpSystem.Tests.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Job/Jobs.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/IsolatedModule.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/ModulePath.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/ModuleSpecification.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/NewModuleManifest.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/SubmodulePathInManifest.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/TestModuleManifest.Tests.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/UpdateModuleManifest.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Module/assets/testmodulerunspace/NestedRequiredModule1/2.5/NestedRequiredModule1.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/OrderedHashtable.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ParameterBinding/BooleanParameterDCR.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ParameterBinding/NullableBooleanDCR.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ParameterBinding/ParameterBinding.Tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 9
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ParameterBinding/Splatting.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ParameterBinding/StaticParameterBinder.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/CustomConnection.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/InvokeCommandRemoteDebug.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/PSSession.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/RemoteSession.Basic.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/RemoteSession.Disconnect.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/RoleCapabilityFiles.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/RunspacePool.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/SSHRemotingAPI.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/SSHRemotingCmdlets.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Remoting/SessionOption.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/CimCmdletsResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/ConsoleHostResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/DotNetEventingResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/LocProject.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/LocalizedResource.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/ManagementCommandsResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/SMAResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/SecurityResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/TestRunner.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/UtilityResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/ResourceValidation/WSManResources.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Security/FileSignature.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/Security/UntrustedDataMode.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/powershell/engine/WildcardPattern.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/releaseTools/releaseTools.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/shebang/script.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/CodeCoverageAutomation/Start-CodeCoverageRun.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HelpersCommon/HelpersCommon.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HelpersDebugger/HelpersDebugger.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HelpersHostCS/HelpersHostCS.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HelpersLanguage/HelpersLanguage.psm1",
+   "product": {
+    "errors": 1,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HelpersRemoting/HelpersRemoting.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HelpersSecurity/HelpersSecurity.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/HttpListener/HttpListener.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/Microsoft.PowerShell.RemotingTools/Microsoft.PowerShell.RemotingTools.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/PSSysLog/PSSysLog.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/UnixSocket/UnixSocket.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/Modules/WebListener/WebListener.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/NamedPipeConnection/build.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/NamedPipeConnection/doBuild.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/NamedPipeConnection/test/CustomConnection.Tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "test/tools/OpenCover/OpenCover.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 4
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/AttackSurfaceAnalyzer/Run-AttackSurfaceAnalyzer.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/AttackSurfaceAnalyzer/Summarize-AsaResults.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/ComponentGovernance/ComponentGovernance.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/ResxGen/ResxGen.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/ResxGen/ResxGen.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/Sign-Package.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/UpdateDotnetRuntime.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/WindowsCI.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/Xml/Xml.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/buildCommon/startNativeExecution.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/ci.psm1",
+   "product": {
+    "errors": 7,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 9,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/clearlyDefined/Find-LastHarvestedVersion.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/clearlyDefined/src/ClearlyDefined/ClearlyDefined.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/failingTests/fail.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/findMissingNotices.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/install-powershell.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/packaging/packaging.psm1",
+   "product": {
+    "errors": 11,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 10,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/packaging/releaseTests/sbom.tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/performance/Invoke-PerfviewPS.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/releaseBuild/setReleaseTag.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/releaseTools.psm1",
+   "product": {
+    "errors": 8,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/super-linter/super-linter.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/windows/Reset-PWSHSystemPath.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "powershell",
+   "file": "tools/wix/wix.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/async_watchdog.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/async_wrapper.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/become_wrapper.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/bootstrap_wrapper.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+   "product": {
+    "errors": 8,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 8,
+    "missing": 1
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/module_wrapper.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/powershell_expand_user.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/powershell_mkdtemp.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/psrp_fetch_file.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/psrp_put_file.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/executor/powershell/winrm_put_file.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.AddType.psm1",
+   "product": {
+    "errors": 5,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 10,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.ArgvParser.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.CamelConversion.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.CommandUtil.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Legacy.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.PrivilegeUtil.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.SID.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-doc/library/test_win_module.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-coverage-windows/ansible_collections/ns/col/plugins/module_utils/CollectionPwshCoverage.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-coverage-windows/ansible_collections/ns/col/plugins/modules/win_collection.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-coverage-windows/ansible_collections/ns/col/tests/integration/targets/win_collection/library/test_win_collection_async.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-coverage-windows/ansible_collections/ns/col/tests/integration/targets/win_collection/library/test_win_collection_become.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-coverage-windows/ansible_collections/ns/col/tests/integration/targets/win_collection/library/test_win_collection_normal.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-coverage-windows/ansible_collections/ns/col/tests/integration/targets/win_collection/module_utils/Ansible.ModuleUtils.AdjacentPwshCoverage.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-docker/ansible_collections/ns/col/plugins/module_utils/PSUtil.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-docker/ansible_collections/ns/col/plugins/modules/win_util_args.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-shebang/ansible_collections/ns/col/plugins/modules/powershell.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/failure/plugins/modules/failure_ps.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/module_utils/share_module.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/module_utils/validate.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/modules/in_function.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/modules/sidecar.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/modules/util_ansible_requires.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/modules/util_optional.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/ansible-test-sanity-validate-modules/ansible_collections/ns/ps_only/plugins/modules/validate.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/module_utils/MyPSMU.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/module_utils/MyPSMUOptional.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/module_utils/subpkg/subps.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/win_csbasic_only.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/win_selfcontained.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/win_uses_coll_csmu.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/win_uses_coll_psmu.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/win_uses_optional.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections_relative_imports/collection_root/ansible_collections/my_ns/my_col/plugins/module_utils/PSRel1.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections_relative_imports/collection_root/ansible_collections/my_ns/my_col/plugins/module_utils/PSRel4.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections_relative_imports/collection_root/ansible_collections/my_ns/my_col/plugins/module_utils/sub_pkg/PSRel2.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections_relative_imports/collection_root/ansible_collections/my_ns/my_col/plugins/modules/win_relative.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections_relative_imports/collection_root/ansible_collections/my_ns/my_col/plugins/modules/win_relative_optional.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/collections_relative_imports/collection_root/ansible_collections/my_ns/my_col2/plugins/module_utils/PSRel3.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/incidental_win_reboot/templates/post_reboot.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.AccessToken/library/ansible_access_token_tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.Basic/library/ansible_basic_tests.ps1",
+   "product": {
+    "errors": 11,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 11,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.Become/library/ansible_become_tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.AddType/library/add_type_test.ps1",
+   "product": {
+    "errors": 5,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 5,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.ArgvParser/library/argv_parser_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.Backup/library/backup_file_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.CamelConversion/library/camel_conversion_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.CommandUtil/library/command_util_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.FileUtil/library/file_util_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.Legacy/library/testlist.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.Legacy/library/testpath.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.LinkUtil/library/symbolic_link_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.PrivilegeUtil/library/privilege_util_test.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.SID/library/sid_utils_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.ModuleUtils.WebRequest/library/web_request_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 2
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 1
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.Privilege/library/ansible_privilege_tests.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.Process/library/ansible_process_tests.ps1",
+   "product": {
+    "errors": 3,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.Secrets/library/ansible_secrets_tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/module_utils_Ansible.Service/library/ansible_service_tests.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/get_env.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/get_info.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_all_options.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_builtin_module_ets.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_datetime_string.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_exec_wrapper_scope.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_fail.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_invalid_requires.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_invalid_syntax.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_invalid_util_syntax.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_min_os_version.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_min_ps_version.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_no_utils.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/library/test_rc_1.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/module_utils/Ansible.ModuleUtils.InvalidSyntax.psm1",
+   "product": {
+    "errors": 2,
+    "missing": 1
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_exec_wrapper/module_utils/Ansible.ModuleUtils.ScopedUtil.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/csharp_util.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/legacy_only_new_way.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/legacy_only_new_way_win_line_ending.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/legacy_only_old_way.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/legacy_only_old_way_win_line_ending.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/recursive_requires.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/uses_bogus_utils.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/library/uses_local_utils.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/module_utils/Ansible.ModuleUtils.Recursive1.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/module_utils/Ansible.ModuleUtils.Recursive2.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/module_utils/Ansible.ModuleUtils.Recursive3.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/powershell_module_utils/module_utils/Ansible.ModuleUtils.ValidTestModule.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/secret_masking_module_powershell/library/discover_secret.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/module_utils/PwshSigned.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/module_utils/PwshUnsigned.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/inline_signed.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/inline_signed_not_trusted.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/scope.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/signed.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/signed_module_util.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/skipped.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/unsigned_csharp_util.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/unsigned_module_with_util.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/unsigned_pwsh_util.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/plugins/modules/unsupported.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/roles/app_control_script/files/signed.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/col/roles/app_control_script/files/unsigned.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/invalid_manifest/plugins/modules/module.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/ansible_collections/ns/module_util_ref/plugins/modules/module.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/files/New-AnsiblePowerShellSignature.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 3,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/files/Set-ManifestSignature.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/library/wdac_enable.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_app_control/library/wdac_setup.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_async_wrapper/library/async_test.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_async_wrapper/library/trailing_output.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/space path/test_script.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_psversion.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_bool.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_creates_file.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_removes_file.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_unicode.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_whoami.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_with_args.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_with_env.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_with_errors.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_with_native_stderr.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/win_script/files/test_script_with_splatting.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/test_no_exec_wrapper.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/win_ping.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/win_ping_set_attr.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/win_ping_strict_mode_error.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/win_ping_syntax_error.ps1",
+   "product": {
+    "errors": 2,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/win_ping_throw.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/integration/targets/windows-minimal/library/win_ping_throw_string.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_data/playbooks/windows_hosts_prepare.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_data/playbooks/windows_hosts_restore.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_data/requirements/sanity.pslint.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_util/controller/sanity/pslint/pslint.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_util/controller/sanity/validate-modules/validate_modules/ps_argspec.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_util/controller/tools/coverage_stub.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_util/target/setup/bootstrap.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 1,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/lib/ansible_test/_util/target/setup/entrypoint.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/module_utils/Process.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/module_utils/WebRequest.psm1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_acl.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_ping.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_powershell.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_shell.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_stat.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_uri.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/async_status.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/setup.ps1",
+   "product": {
+    "errors": 4,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 4,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/slurp.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_acl.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_certificate_store.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_command.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_file.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_get_url.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_lineinfile.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_ping.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_regedit.ps1",
+   "product": {
+    "errors": 1,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 2,
+    "missing": 0
+   },
+   "agree": false
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_shell.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_stat.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_tempfile.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_user.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_user_right.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_wait_for.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  },
+  {
+   "repo": "ansible",
+   "file": "test/support/windows-integration/plugins/modules/win_whoami.ps1",
+   "product": {
+    "errors": 0,
+    "missing": 0
+   },
+   "tooling": {
+    "errors": 0,
+    "missing": 0
+   },
+   "agree": true
+  }
+ ]
+}

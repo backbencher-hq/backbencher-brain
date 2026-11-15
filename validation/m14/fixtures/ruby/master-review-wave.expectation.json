@@ -1,0 +1,35 @@
+{
+  "fixtureId": "ruby/master-review-wave",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M14 master-review wave (2026-09), verified on rake + rack at 100%/0/0. RUBD12: hash/argument pair VALUES are real expressions — colon `{ key: fetch_key }`, rocket `{ pair => fetch_val }`, and keyword-argument `store.write(cache: build_entry)` values must emit their method calls (the `pair` skip-parent silently suppressed them on BOTH analyzer and oracle — a shared blind spot F5 cannot see); local values (`{ z: local_val }`) stay silent. Dynamic superclass (RUBD13/RB-C): `class Tuple < Struct.new(:a,:b)` emits NO extends (anonymous base) while the Struct.new call surfaces as instantiates:Struct; static superclasses (`Child < Base`) keep extends. Keyword `alias` at declaration scope is alias_method's twin (RB-E contract): calls:copy with aliasedTo:original. Reopen identity (RUBD13): `class M::Inner` carries the SAME identity as the nested `module M; class Inner` (name Inner, owner M — fqn recorded in metadata), so cross-file reopen spellings unify.",
+  "expectSymbols": [
+    { "name": "StatelessHelper", "kind": "class" },
+    { "name": "compute", "kind": "method", "ownerName": "StatelessHelper" },
+    { "name": "Tuple", "kind": "class" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Child", "kind": "class" },
+    { "name": "Api", "kind": "class" },
+    { "name": "original", "kind": "method", "ownerName": "Api" },
+    { "name": "M", "kind": "module" },
+    { "name": "Inner", "kind": "class", "ownerName": "M" },
+    { "name": "stop", "kind": "method", "ownerName": "Inner" },
+    { "name": "Tok", "kind": "class", "ownerName": "Parser" },
+    { "name": "read", "kind": "method", "ownerName": "Tok" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "compute", "target": "fetch_key", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "compute", "target": "fetch_val", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "compute", "target": "build_entry", "meta.evidenceClass": "usage_contextual" },
+    { "type": "instantiates", "source": "Global", "target": "Struct", "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "Child", "target": "Base", "meta.evidenceClass": "structural" },
+    { "type": "calls", "source": "Api", "target": "copy", "meta.aliasedTo": "original" },
+    { "type": "contains", "source": "M", "target": "Inner" },
+    { "type": "contains", "source": "Inner", "target": "stop" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "source": "Tuple" },
+    { "type": "calls", "target": "local_val" },
+    { "type": "overrides", "confidence": 0.95 }
+  ]
+}

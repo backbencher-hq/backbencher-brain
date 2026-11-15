@@ -1,0 +1,128 @@
+{
+  "fixtureId": "vb/member-read-and-construction",
+  "language": "vb",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The expectation the lane's fixture source was written against, authored from the CONTRACT the source's own doc comments state (five construction surfaces for `instantiates`, the read/callee/write/attribute-argument exclusions for `uses`) and from the naming conventions the four sibling fixtures already pinned: a member read is `uses` on the MEMBER name, a bare receiver names nothing, a dotted path is one edge per segment the file reads, and an attribute argument names a symbol for the compiler rather than reading it. The source predates this file and its comments are the specification; nothing here was copied from analyzer output, and the run after authoring is the test of the analyzer against that specification. `meta.constructsArray` is pinned exactly where the source demands the distinction (`New Gauge()` is an object_creation, `New Gauge(1)` and `New Integer(10)` arrive through the array-shaped node the grammar gives every construction with arguments, and the source says the edge must record which node produced it rather than pretend the two are one thing).",
+  "expectSymbols": [
+    { "name": "Gauge", "kind": "class" },
+    { "name": "Reading", "kind": "property", "ownerName": "Gauge" },
+    { "name": "Scale", "kind": "method", "ownerName": "Gauge" },
+    { "name": "Inner", "kind": "method", "ownerName": "Gauge" },
+    { "name": "Reset", "kind": "method", "ownerName": "Gauge" },
+    { "name": "MakeGauge", "kind": "method" },
+    { "name": "MakeScaledGauge", "kind": "method" },
+    { "name": "Holder", "kind": "class" },
+    { "name": "MakeSlots", "kind": "method" },
+    { "name": "Reader", "kind": "class" },
+    { "name": "ReadOnce", "kind": "method", "ownerName": "Reader" },
+    { "name": "ReadTwice", "kind": "method", "ownerName": "Reader" },
+    { "name": "WriteOnce", "kind": "method", "ownerName": "Reader" },
+    { "name": "Chain", "kind": "method", "ownerName": "Reader" },
+    { "name": "ReadExternal", "kind": "method", "ownerName": "Reader" },
+    { "name": "operator", "kind": "method", "ownerName": "Reader", "comment": "the contract literal, as in declaration-shapes: `Operator =` has no name field, so the name is `operator`" },
+    { "name": "Legacy", "kind": "method", "ownerName": "Reader" },
+    { "name": "Marker", "kind": "class" }
+  ],
+  "forbidSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "MakeGauge",
+      "target": "Gauge",
+      "line_number": 36,
+      "comment": "SURFACE 1: `New Gauge()` is an `object_creation_expression` with the name in a `type` field and no `function` field, so the callee must be read the way a construction is read, not the way an invocation is read.",
+      "meta.constructsArray": false
+    },
+    {
+      "type": "instantiates",
+      "from": "MakeScaledGauge",
+      "target": "Gauge",
+      "line_number": 46,
+      "comment": "SURFACE 2: `New Gauge(1)` is an ARRAY CREATION in this grammar -- the same node type a real array construction produces -- so a visitor keyed on `object_creation_expression` alone misses it. `constructsArray` records which node produced the edge instead of pretending the two are one thing.",
+      "meta.constructsArray": true
+    },
+    {
+      "type": "instantiates",
+      "from": "Holder",
+      "target": "Gauge",
+      "line_number": 53,
+      "comment": "SURFACE 3: `As New T` is a construction with NO EXPRESSION around it -- it hangs off the declaration's own `as_clause`, so it is reachable only from the declaration visitor and from nowhere an expression walk looks. The source attribution for a field initializer is the containing TYPE, the same attribution the ontology fixture pins for `Builds -> Timer`."
+    },
+    {
+      "type": "instantiates",
+      "from": "MakeSlots",
+      "target": "Integer",
+      "line_number": 61,
+      "comment": "SURFACE 4: an ARRAY construction over a PREDEFINED type. `Integer` is never a project symbol, so this edge is the heuristic-confidence one -- the two facts are different: 'this file constructs a type it declares' and 'this file allocates an array of a type it does not'.",
+      "meta.constructsArray": true
+    },
+    {
+      "type": "instantiates",
+      "from": "operator",
+      "target": "Gauge",
+      "line_number": 112,
+      "comment": "SURFACE 5: a construction inside an OPERATOR. The operator's own symbol is the contract literal `operator`, so the edge is sourced at a name a consumer can navigate to -- a source that is a keyword would not be."
+    },
+    {
+      "type": "uses",
+      "from": "ReadOnce",
+      "target": "Reading",
+      "line_number": 73,
+      "comment": "USES 1, the shape that IS a use: `Me.Reading` is a value read that is neither a call nor a write. `Reading` is declared in this file, so the edge carries the resolved confidence."
+    },
+    {
+      "type": "uses",
+      "from": "Chain",
+      "target": "Reading",
+      "line_number": 96,
+      "comment": "USES 4, the chained call: `a.Inner().Reading` puts the leading segment under a node the climb has to pass THROUGH, or `Inner` is published as a read of a member that is being CALLED. `Reading` at the end of the chain is the real use."
+    },
+    {
+      "type": "uses",
+      "from": "ReadExternal",
+      "target": "Counter",
+      "line_number": 104,
+      "comment": "USES 5a: the middle segment of `Metrics.Counter.Total`. The receiver `Metrics` is a bare identifier and names nothing; `Counter` is a segment the file reads, published at the heuristic confidence because a bare member name is project-ambiguous and only this file could have resolved it."
+    },
+    {
+      "type": "uses",
+      "from": "ReadExternal",
+      "target": "Total",
+      "line_number": 104,
+      "comment": "USES 5b: the read of the LAST segment on a receiver this file does NOT declare. The edge is still published, because the read is real, at the heuristic confidence."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "ReadTwice",
+      "target": "Scale",
+      "comment": "USES 2, the shape that is NOT a use: `obj.Method()` is a CALL, and publishing the receiver's member as a read too would put one line under two types -- which is how a `calls` count and a `uses` count drift apart."
+    },
+    {
+      "type": "uses",
+      "from": "WriteOnce",
+      "target": "Reading",
+      "comment": "USES 3, the shape that is NOT a use: `obj.Member = x` is a WRITE. The definition is a read that is neither a call nor a write; an assignment's left side is the other side of that sentence. Scoped to WriteOnce so the legitimate ReadOnce read of the same member is untouched."
+    },
+    {
+      "type": "uses",
+      "from": "Chain",
+      "target": "Inner",
+      "comment": "the callee half of USES 4: `Inner` is being CALLED, so it belongs to `calls` and not to `uses` -- the same exclusion CalleeIsNotARead and Invoked pin in the ontology fixture."
+    },
+    {
+      "type": "uses",
+      "from": "Legacy",
+      "target": "Marker",
+      "comment": "AN ATTRIBUTE ARGUMENT IS NOT A MEMBER READ. `<Obsolete(Marker)>` names a symbol FOR THE COMPILER; publishing `uses -> Marker` off the declaration it is written on would claim the declaration reads itself."
+    },
+    {
+      "type": "uses",
+      "from": "ReadExternal",
+      "target": "Metrics",
+      "comment": "control: the receiver of the dotted read is a bare identifier and names nothing -- the same rule that keeps `System` out of the Utf8 chain in the ontology fixture."
+    }
+  ],
+  "knownResidual": "`uses` targets are the NAME the file reads and not a resolved symbol, so `Counter` and `Total` resolve at the heuristic confidence a cross-file name always carries; that is the honest number for this shape, not a defect (the lane's ontology fixture records the same residual). The `instantiates` rows here pin the contract for five surfaces; whether the analyzer satisfies them is what the run after authoring decides, and a failing row is a defect finding to be probed and fixed, never a row to be edited to match output."
+}

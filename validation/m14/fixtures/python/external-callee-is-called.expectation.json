@@ -1,0 +1,46 @@
+{
+ "fixtureId": "python/external-callee-is-called",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-11. No python fixture pinned a `calls` edge whose target is an UPPERCASE name, and that is the exact shape the fix restored. `python/uppercase-callee-dropped` — a faithful revert, written generically off the edge's own target — SURVIVED against the whole lane on first run, which is the honest way this gap was found: not by reading the fixture list, but by asking what a revert of the fix would break and discovering the answer was nothing. Measured over 300 pinned corpus files, 1,152 uppercase callees produced 263 `instantiates` and 889 NO EDGE, and 368 of those 889 named a class the file explicitly imports, so the missing edges were not exotic: they were the ordinary `module = AnsibleModule(...)` opening line, once per file, across an entire corpus. The three rows below are the distinction the pre-fix lane collapsed. An in-file class that is called is `instantiates`, because the analyzer can read its constructor and the attributes assigned to the result. A class the file does not declare and calls is `calls`, because claiming `instantiates` there would publish attribute evidence that was never read — the same rule that keeps a `calls` edge from asserting an ownership the file does not state. Dropping the edge instead of downgrading it is the worse error of the two, because a missing edge is invisible in every consumer: no graph, no impact query, no test can report a relationship that is not there, whereas a wrongly-typed edge at least shows up to be argued with. The two forbid rows are the other half of the same claim. An imported name is never `instantiates` here, and a fixture that only asserted the positive would pass against a lane that typed BOTH shapes as `instantiates` — which is the neighbouring wrong answer, and the one that would make the graph assert attribute writes against a constructor nobody read.",
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "build_cache",
+   "target": "OrderedDict",
+   "line_number": 26,
+   "confidenceMin": 0.9,
+   "note": "the restored shape: an UPPERCASE callee the file imports. Pre-fix this produced no relationship at all"
+  },
+  {
+   "type": "calls",
+   "from": "external_callee_is_called",
+   "target": "Registry",
+   "line_number": 29,
+   "note": "module scope, imported class. The single largest measured call shape in python — `module = AnsibleModule(...)`"
+  },
+  {
+   "type": "calls",
+   "from": "external_callee_is_called",
+   "target": "build_cache",
+   "line_number": 30,
+   "note": "lowercase, declared in this file — the contrast that shows the uppercase rows are not being matched by a lowercase-only rule"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "instantiates",
+   "target": "Registry",
+   "note": "an IMPORTED class is not instantiated-in-file. The analyzer cannot read its constructor, so `instantiates` would assert attribute evidence it does not have"
+  },
+  {
+   "type": "instantiates",
+   "target": "OrderedDict",
+   "note": "same claim, for the stdlib import. A lane that typed both shapes as `instantiates` would satisfy every expect row above and still be wrong"
+  }
+ ],
+ "_seamNote": {
+  "what": "The callee a file NAMES is a relationship whether or not the file DEFINES it. `instantiates` is reserved for a class whose constructor this file can read; everything else called is a `calls` edge to an unresolved target, which is the store's legal `target_external` state rather than a missing one.",
+  "why": "The pre-fix lane branched on whether the uppercase name was declared locally and returned NOTHING from the other arm — so the commonest call in the language produced no edge. Dropping it was worse than mistyping it: a mistyped edge is visible to every consumer and can be argued with, while an absent edge is invisible to all of them, and no graph query, impact analysis or test can report a relationship that was never written. The distinction is drawn at the point where the evidence runs out — the constructor is readable in one case and not the other — so the relation type states what was actually read rather than what the callee's spelling suggested. Both forbids exist because a fixture asserting only the positives would pass against the neighbouring wrong answer."
+ }
+}

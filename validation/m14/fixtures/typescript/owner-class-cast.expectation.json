@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/owner-class-cast",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE CAST CLASS: `const w = value as Widget` states the receiver type (evidence `cast`) even though `value` is `unknown`. The negative is the SAME initializer without the cast: it must carry NO owner. Casting is a claim the source makes; an un-cast unknown is not.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useCast",
+      "target": "run",
+      "line_number": 7,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "cast"
+    },
+    {
+      "type": "calls",
+      "from": "negativeCast",
+      "target": "never",
+      "line_number": 11,
+      "meta.owner": null
+    }
+  ]
+}

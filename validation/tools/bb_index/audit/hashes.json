@@ -1,0 +1,70 @@
+{
+ "commit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+ "changed": [
+  {
+   "path": "docs/indexing/INDEXER-REVIEW.md",
+   "sha256_16": "1adac37e645cd0d5",
+   "status": "M "
+  },
+  {
+   "path": "docs/indexing/environment-variables.md",
+   "sha256_16": "b8e92a2604e71d55",
+   "status": " M"
+  },
+  {
+   "path": "docs/indexing/troubleshooting.md",
+   "sha256_16": "9d5548c306eb4527",
+   "status": " M"
+  },
+  {
+   "path": "script/m40/verify-a1-post-entry.ts",
+   "sha256_16": "a54228537502c4cc",
+   "status": " M"
+  },
+  {
+   "path": "script/m40/verify-a3-write-parity.ts",
+   "sha256_16": "3b15eab54c9865d1",
+   "status": " M"
+  },
+  {
+   "path": "script/m40/verify-a9-purge.ts",
+   "sha256_16": "8c894fb49d6b4ab2",
+   "status": " M"
+  },
+  {
+   "path": "script/m43/verify-p1-index-lock.ts",
+   "sha256_16": "761f0e4e2e6df1b3",
+   "status": " M"
+  },
+  {
+   "path": "script/tool-docs/curation/bb_index.ts",
+   "sha256_16": "d2972328c7ed0e7f",
+   "status": " M"
+  },
+  {
+   "path": "src/ast/index-lock.ts",
+   "sha256_16": "c48271cd7b9994e8",
+   "status": " M"
+  },
+  {
+   "path": "src/ast/index-space.ts",
+   "sha256_16": "9c733cdba67c8c86",
+   "status": " M"
+  },
+  {
+   "path": "src/ast/parallel-indexer.ts",
+   "sha256_16": "24ca56c33aa96553",
+   "status": " M"
+  },
+  {
+   "path": "src/mcp/tools/bb_index/descriptor.ts",
+   "sha256_16": "0e59caf9a7448ed4",
+   "status": " M"
+  },
+  {
+   "path": "src/mcp/tools/bb_index/handler.ts",
+   "sha256_16": "04626ae13df71075",
+   "status": " M"
+  }
+ ]
+}

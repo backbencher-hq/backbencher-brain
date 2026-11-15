@@ -1,0 +1,137 @@
+{
+  "fixtureId": "cpp/reason-code-4",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M14-HONESTY-CONTRACT \u00a74, and it exists because a census asked the contract's own question instead of reading the documentation table. \u00a74: 'Any relationship or symbol emitted with confidence < 1.0 must carry a machine-readable reason code (not just a number).' Measured over 929 corpus files (912 attributed to cpp) through the production entry, script/cpp-review/ontology-census.ts:\n\n    type         below 1.0   of those, carrying NO reasonCode\n    overrides          103                     0     (signature-match)\n    references         625                   625     <- the violation\n    uses             3,012                 3,012     <- the violation\n\n  3,637 rows carried a number a consumer could bucket and not explain. It was invisible from inside the analyzer because `classifyEvidenceTier` defaults a MISSING confidence to 1, so the tier looked fine; and invisible from the fixture suite because no expectation asserted `confidence` on any of these rows. That is the same shape as the `calls` finding of the previous round (101,340 rows with no confidence field at all, against a table claiming 1.0) \u2014 a field nobody asserted.\n\n  This fixture pins the code on BOTH sides of 1.0 in one file, because the interesting question is not 'is there a code' but 'does the confidence agree with the evidence'. `Silent::sides` overrides `Shape::sides` with NO `override` keyword, so the only evidence is a name and a parameter list and the edge is an INFERENCE at 0.9 with `signature-match`. `Asserted::sides` carries the keyword, which is the author asserting it, so the same shape is a FACT at 1.0 with `override-keyword+signature-match`. A mutant that promotes both to 1.0, or demotes both to 0.9, passes a suite that only checks for the presence of a code \u2014 and fails this one.\n\n  The `uses` arm states the limit rather than the mechanism: the receiver's TYPE is not resolved anywhere in this analyzer, so `state.count` cannot say which class declares `count`, and `member-read-receiver-type-unresolved` is the machine-readable form of that sentence. The negative arm is the write: `state.count = 3` must publish no `uses` edge at all, so it cannot acquire a reason code by being emitted wrongly.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "readMember",
+      "target": "count",
+      "line_number": 42,
+      "confidence": 0.9,
+      "meta.reasonCode": "member-read-receiver-type-unresolved",
+      "meta.relationshipType": "field_access",
+      "meta.evidenceClass": "usage_contextual",
+      "note": "A member READ through a field expression. The code says what the 0.9 is: the receiver's type is unresolved."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "std::string",
+      "line_number": 32,
+      "confidence": 0.9,
+      "meta.reasonCode": "using-dependency-name-only",
+      "meta.relationshipType": "using_dependency",
+      "note": "A `using` at file scope. The edge binds the name the source spells and nothing inside the named module."
+    },
+    {
+      "type": "overrides",
+      "from": "Silent::sides",
+      "target": "sides",
+      "line_number": 63,
+      "confidence": 0.9,
+      "meta.reasonCode": "signature-match",
+      "meta.overrideSpecifier": null,
+      "note": "NO keyword: a same-name/same-parameter coincidence is indistinguishable from a real override on this evidence, so the edge is an inference.",
+      "meta.overriddenOwner": "Shape"
+    },
+    {
+      "type": "overrides",
+      "from": "Silent::area",
+      "target": "area",
+      "line_number": 64,
+      "confidence": 0.9,
+      "meta.reasonCode": "signature-match",
+      "meta.overriddenOwner": "Shape"
+    },
+    {
+      "type": "overrides",
+      "from": "Asserted::sides",
+      "target": "sides",
+      "line_number": 68,
+      "confidence": 1,
+      "meta.reasonCode": "override-keyword+signature-match",
+      "meta.overrideSpecifier": "override",
+      "meta.evidenceClass": "structural",
+      "note": "THE ASSERTED ARM, and the one that makes the pair meaningful: the author wrote `override`, so this is a fact at 1.0 rather than a 0.9 inference.",
+      "meta.overriddenOwner": "Shape"
+    },
+    {
+      "type": "overrides",
+      "from": "Asserted::area",
+      "target": "area",
+      "line_number": 69,
+      "confidence": 1,
+      "meta.reasonCode": "override-keyword+signature-match",
+      "meta.overrideSpecifier": "override",
+      "meta.overriddenOwner": "Shape"
+    },
+    {
+      "type": "extends",
+      "from": "Silent",
+      "target": "Shape",
+      "line_number": 62,
+      "confidence": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "from": "Silent",
+      "target": "Shape",
+      "line_number": 62,
+      "confidence": 1,
+      "meta.reasonCode": "pure-virtual-base",
+      "meta.evidenceClass": "structural",
+      "note": "`Shape` declares two pure virtuals, so it IS the contract, and the same base clause carries both facts: `extends` says it inherits, `implements` says the base holds no state."
+    },
+    {
+      "type": "implements",
+      "from": "Asserted",
+      "target": "Shape",
+      "line_number": 67,
+      "confidence": 1,
+      "meta.reasonCode": "pure-virtual-base"
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "vector",
+      "line_number": 29,
+      "confidence": 1,
+      "meta.relationshipType": "include_dependency",
+      "meta.evidenceClass": "import_based",
+      "note": "CONTROL, and it is why the fixture has an import in it at all: a 1.0 row must NOT carry a below-1.0 reason code, and this is the shape a mutant that stamps codes everywhere would break."
+    },
+    {
+      "type": "contains",
+      "from": "Shape",
+      "target": "sides",
+      "line_number": 58,
+      "confidence": 1,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "writeMember",
+      "target": "count",
+      "note": "NEGATIVE ARM, and it is a forbid rather than an absence so the assertion is exact: an assignment to a member is a WRITE (the family contract: C CGD27, SCD1), so no `uses` edge is published and none can acquire a reason code by being emitted wrongly."
+    },
+    {
+      "type": "uses",
+      "from": "construct",
+      "target": "count",
+      "note": "no read of a member of a DIFFERENT scope leaks in"
+    },
+    {
+      "type": "instantiates",
+      "from": "construct",
+      "target": "Widget",
+      "note": "`Widget w;` is an aggregate initialization, not a `new_expression`. The census measured 523 `instantiates` rows corpus-wide and this is the shape that must not be among them."
+    },
+    {"type": "uses", "from": "writeMember", "target": "Counter::count", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "construct", "target": "Counter::count", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

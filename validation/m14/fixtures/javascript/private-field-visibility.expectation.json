@@ -1,0 +1,13 @@
+{
+  "fixtureId": "javascript/private-field-visibility",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave J9 fix (TS parity): #private fields report private visibility — the hardcoded 'public' contradicted metadata.isPrivate on the same symbol. RE-PINNED by the M49 W15 #813 ruling (owner: 'the symbol keeps the declared name'): the member is named `#secret`, not `secret`. The pre-ruling expectation asserted the stripped spelling, which left every reading edge targeting a name no symbol in the graph carried — the join `edge.target -> symbol.name` failed for every private member in both js and ts.",
+  "expectSymbols": [
+    { "name": "Vault", "kind": "class" }
+  ],
+  "expectVisibility": [
+    { "symbol": "#secret", "visibility": "private" },
+    { "symbol": "open", "visibility": "public" }
+  ]
+}

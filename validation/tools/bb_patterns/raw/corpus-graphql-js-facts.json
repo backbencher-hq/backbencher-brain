@@ -1,0 +1,38 @@
+{
+  "tier": "CORPUS-graphql-js",
+  "projectDir": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/graphql-js",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/graphql-js/projects/18b0d5567b84edcae6dec4bfcc1faf8ac965e01e/brain.db",
+  "exists": true,
+  "index": {
+    "files": 564,
+    "symbols": 13620,
+    "relationships": 61917,
+    "frameworkFiles": 429,
+    "analysisRuns": 0
+  },
+  "dbBefore": {
+    "db": {
+      "bytes": 178655232,
+      "mtime": "2026-11-02T04:15:11.194Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "dbAfter": {
+    "db": {
+      "bytes": 178655232,
+      "mtime": "2026-11-02T04:15:11.194Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-02T04:15:13.944Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-02T04:15:13.945Z"
+    }
+  },
+  "generatedAt": "2026-11-02T04:15:14.134Z"
+}

@@ -1,0 +1,17 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/lifecycle-corpus.ts --gate",
+  "evidenceFile": "A4.json",
+  "generatedAt": "2026-09-05T01:56:40.198Z",
+  "passed": 37,
+  "failed": 0,
+  "negativeCases": 1,
+  "scenarios": 6,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.486Z",
+    "contentSha256": "113b04f039895c58951c4d6ac58fb1cb6bd2d6b94bc7612a28415e8b858e4424"
+  }
+}

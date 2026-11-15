@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "action": "cap/bound behaviour and query plans on a 235-note fixture",
+  "measuredAt": "2026-11-03T16:09:50.147Z",
+  "currentCommit": "dcbe5f3ca676cee3d265bff9b6f5a66e5cbea5be",
+  "fixture": {
+    "workspace": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/limit-fixture",
+    "projectId": "7d9a34b5d8d37ed48eb74cd813f53841e707a12c",
+    "dbBytes": 499712
+  },
+  "L1_capAndBounds": {
+    "question": "does the declared cap/bound behave and does the truncation advice name an action the caller can take?",
+    "storedRows": {
+      "writeCalls": 235,
+      "rows": 206,
+      "nameLevelRows": 205,
+      "fileScopedRows": 1,
+      "note": "one note per (project, symbol, author, path) location — 30 file-scoped writes to one location are one row"
+    },
+    "defaultRead": {
+      "isError": false,
+      "count": 50,
+      "totalCountIfKnown": 206,
+      "truncated": true,
+      "truncationReason": "limit 50 reached; 206 annotations match this query. Raise limit (max 200) or narrow the filter.",
+      "declaredAbsent": false,
+      "bytes": 17591,
+      "elapsedMs": 8.55
+    },
+    "capRead": {
+      "isError": false,
+      "count": 200,
+      "totalCountIfKnown": 206,
+      "truncated": true,
+      "truncationReason": "limit 200 reached; 206 annotations match this query. Raise limit (max 200) or narrow the filter.",
+      "declaredAbsent": false,
+      "bytes": 69245,
+      "elapsedMs": 8.723
+    },
+    "capMinusOneRead": {
+      "isError": false,
+      "count": 199,
+      "totalCountIfKnown": 206,
+      "truncated": true,
+      "truncationReason": "limit 199 reached; 206 annotations match this query. Raise limit (max 200) or narrow the filter.",
+      "declaredAbsent": false,
+      "bytes": 68902,
+      "elapsedMs": 8.874
+    },
+    "pathRead": {
+      "isError": false,
+      "count": 1,
+      "totalCountIfKnown": 1,
+      "truncated": false,
+      "truncationReason": null,
+      "declaredAbsent": false,
+      "bytes": 601,
+      "elapsedMs": 5.92
+    },
+    "absentSymbol": {
+      "isError": false,
+      "count": 0,
+      "totalCountIfKnown": 0,
+      "truncated": false,
+      "truncationReason": null,
+      "declaredAbsent": true,
+      "bytes": 296,
+      "elapsedMs": 6.727
+    }
+  },
+  "L2_queryPlans": {
+    "indexes": [
+      {
+        "name": "sqlite_autoindex_brain_annotation_1",
+        "sql": null
+      },
+      {
+        "name": "brain_annotation_project_symbol_idx",
+        "sql": "CREATE INDEX brain_annotation_project_symbol_idx ON brain_annotation(project_id, symbol_name)"
+      },
+      {
+        "name": "brain_annotation_project_idx",
+        "sql": "CREATE INDEX brain_annotation_project_idx ON brain_annotation(project_id)"
+      },
+      {
+        "name": "brain_annotation_location_idx",
+        "sql": "CREATE UNIQUE INDEX brain_annotation_location_idx\n      ON brain_annotation(project_id, symbol_name, author_class, COALESCE(symbol_path, ''))"
+      }
+    ],
+    "rowsStored": 206,
+    "plans": {
+      "projectWideRows": [
+        "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "projectWideCount": [
+        "SEARCH brain_annotation USING COVERING INDEX brain_annotation_project_idx (project_id=?)"
+      ],
+      "symbolRows": [
+        "SEARCH brain_annotation USING INDEX brain_annotation_location_idx (project_id=? AND symbol_name=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "symbolCount": [
+        "SEARCH brain_annotation USING COVERING INDEX brain_annotation_location_idx (project_id=? AND symbol_name=?)"
+      ],
+      "pathRows": [
+        "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "pathCount": [
+        "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)"
+      ],
+      "pathWithNameLevelRows": [
+        "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "projectWideWallMs": 0.344,
+      "pathWallMs": 0.135
+    }
+  }
+}

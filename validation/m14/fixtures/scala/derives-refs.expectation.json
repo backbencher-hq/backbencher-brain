@@ -1,0 +1,16 @@
+{
+  "fixtureId": "scala/derives-refs",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G6 gap: the derives clause (derives Show, Hashing) references the derived typeclasses — a real dependency of the case class on Show/Hashing. Previously the clause only set a pattern flag. Fully-qualified derives (scala.util.hashing.Hashing) reference the leaf name, consistent with the family's lastSegment convention.",
+  "expectSymbols": [
+    { "name": "Show", "kind": "interface" },
+    { "name": "Person", "kind": "class" },
+    { "name": "Point", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Person", "target": "Show", "meta.relationshipType": "derives_type" },
+    { "type": "references", "from": "Point", "target": "Show", "meta.relationshipType": "derives_type" },
+    { "type": "references", "from": "Point", "target": "Hashing", "meta.relationshipType": "derives_type" }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.55",
+  "code": "D1",
+  "tool": "bb_doc",
+  "title": "bb_doc: fact classification + citation completeness",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "docs: bb_doc in registry",
+      "pass": true,
+      "detail": "found"
+    },
+    {
+      "name": "docs: 7 modes registered",
+      "pass": true,
+      "detail": "7"
+    },
+    {
+      "name": "docs: requires target for scoped modes",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "engine: file exists",
+      "pass": true,
+      "detail": "160684"
+    },
+    {
+      "name": "engine: no code-generation claims [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    },
+    {
+      "name": "engine: has fact classification",
+      "pass": true,
+      "detail": "classification found"
+    },
+    {
+      "name": "engine: confidence is derived, not passed in",
+      "pass": true,
+      "detail": "deriveConfidence present"
+    },
+    {
+      "name": "engine: no caller-supplied confidence field on DocRequest [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "DocRequest has no confidence field"
+    },
+    {
+      "name": "handler: module exists at the split path",
+      "pass": true,
+      "detail": "handler chars=13994"
+    },
+    {
+      "name": "handler: validates mode",
+      "pass": true,
+      "detail": "mode refusal present"
+    },
+    {
+      "name": "handler: requires target for scoped modes",
+      "pass": true,
+      "detail": "target refusal present"
+    },
+    {
+      "name": "handler: refuses out-of-range limit",
+      "pass": true,
+      "detail": "limit range refusal"
+    },
+    {
+      "name": "handler: refuses out-of-range maxTokens",
+      "pass": true,
+      "detail": "maxTokens range refusal"
+    },
+    {
+      "name": "handler: refuses includeTests where the mode cannot honour it",
+      "pass": true,
+      "detail": "includeTests refusal"
+    },
+    {
+      "name": "engine/handler: refuses an unmatched module target [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "exception type handled by the handler, message raised by the engine"
+    },
+    {
+      "name": "descriptor: declares the option ranges",
+      "pass": true,
+      "detail": "schema ranges present"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0
+  },
+  "decisions": {
+    "citations": "every fact is classified; no uncited fact reaches output"
+  },
+  "limitations": [
+    "Contract-level; the engine-level truth predicates live in m20/doc-truth."
+  ],
+  "generatedAt": "2026-11-05T04:07:30.974Z"
+}

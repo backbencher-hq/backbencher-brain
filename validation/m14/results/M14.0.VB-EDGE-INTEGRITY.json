@@ -1,0 +1,416 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "284410de7506bfdbce26892387ed9451222e796b89f84241f487f8b2369d2b27",
+    "sealedAt": "2026-11-04T23:46:59.000Z"
+  },
+  "checks": [
+    {
+      "description": "every published symbol carries a readable name and a known kind",
+      "detail": "filesRead=2378 symbols=25806 emptyName=0 unknownKind=0",
+      "id": "vb-edge-endpoints-name-shaped",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "0ece21ae7e1581f70bf013d38efb69c478d60294",
+  "committedAt": "2026-11-04T18:46:59-05:00",
+  "data": {
+    "admitted": 2378,
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "drawn": 2378,
+    "emptyNameSymbols": 0,
+    "filesRead": 2378,
+    "filesWithNonAscii": 794,
+    "heritageInNonAsciiFiles": {
+      "extends": 690,
+      "implements": 9
+    },
+    "symbols": 25806,
+    "types": {
+      "calls": {
+        "belowConfidenceFloor": 9146,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 7,
+        "bracketedSamples": [
+          "GetAttribute -> [GetType] (P3D-Legacy/P3D/Pokemon/Items/Item.vb:54)",
+          "IsBall -> [GetType] (P3D-Legacy/P3D/Pokemon/Items/Item.vb:259)",
+          "IsBerry -> [GetType] (P3D-Legacy/P3D/Pokemon/Items/Item.vb:272)",
+          "IsMail -> [GetType] (P3D-Legacy/P3D/Pokemon/Items/Item.vb:285)"
+        ],
+        "confidence": {
+          "1": 4034,
+          "0.6": 9146,
+          "0.7": 18341
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 31521,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "inferred": 9146,
+          "structural": 22375
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 6539,
+        "resolvedBothEndsPct": 20.74,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 24982,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/ApplicationEvents.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DnsZoneChooserDialog.Designer.vb"
+        ],
+        "selfEdges": 1141
+      },
+      "contains": {
+        "belowConfidenceFloor": 0,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 42,
+        "bracketedSamples": [
+          "MySettings -> [Default] (DISMTools/Helpers/extps1/PE_Helper/tools/HotInstall/Installer/My Project/Settings.Designer.vb:40)",
+          "MySettings -> [Default] (DISMTools/Helpers/extps1/PE_Helper/tools/PEHelperMainMenu/My Project/Settings.Designer.vb:40)",
+          "MySettings -> [Default] (DISMTools/My Project/Settings.Designer.vb:40)",
+          "MySettings -> [Default] (DISMTools/Tools/AutoReloadService/My Project/Settings.Designer.vb:40)"
+        ],
+        "confidence": {
+          "1": 22413
+        },
+        "contractLiteralTargets": 1872,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 22413,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "structural": 22413
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 22413,
+        "resolvedBothEndsPct": 100,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 0,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AppxPackage.vb",
+          "DISMTools/ApplicationEvents.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb"
+        ],
+        "selfEdges": 0
+      },
+      "exports": {
+        "belowConfidenceFloor": 0,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 41,
+        "bracketedSamples": [
+          "MySettings -> [Default] (DISMTools/Helpers/extps1/PE_Helper/tools/HotInstall/Installer/My Project/Settings.Designer.vb:40)",
+          "MySettings -> [Default] (DISMTools/Helpers/extps1/PE_Helper/tools/PEHelperMainMenu/My Project/Settings.Designer.vb:40)",
+          "MySettings -> [Default] (DISMTools/My Project/Settings.Designer.vb:40)",
+          "MySettings -> [Default] (DISMTools/Tools/AutoReloadService/My Project/Settings.Designer.vb:40)"
+        ],
+        "confidence": {
+          "1": 10960
+        },
+        "contractLiteralTargets": 1929,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 10960,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 1164,
+        "evidenceClass": {
+          "structural": 10960
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 10960,
+        "resolvedBothEndsPct": 100,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 0,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AppxPackage.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DnsZoneChooserDialog.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DomainRole.vb"
+        ],
+        "selfEdges": 4
+      },
+      "extends": {
+        "belowConfidenceFloor": 0,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 1,
+        "bracketedSamples": [
+          "[Return] -> Attack (P3D-Legacy/P3D/Pokemon/Attacks/Normal/Return.vb:5)"
+        ],
+        "confidence": {
+          "1": 6,
+          "0.7": 1837
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 1843,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "structural": 1843
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 6,
+        "resolvedBothEndsPct": 0.33,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 1837,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DnsZoneChooserDialog.Designer.vb",
+          "DISMTools/Elements/Contemporaneus/ImageOperations/MountImageIO.vb",
+          "DISMTools/Elements/IniParserConfigurators/FfuIniParserConfiguration.vb"
+        ],
+        "selfEdges": 0
+      },
+      "implements": {
+        "belowConfidenceFloor": 0,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 0,
+        "bracketedSamples": [],
+        "confidence": {
+          "0.7": 61
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 61,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "structural": 61
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 0,
+        "resolvedBothEndsPct": 0,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 61,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Panels/Get_Ops/WinPE/GetWinPESettings.vb",
+          "DISMTools/Panels/Img_Ops/AppxPkgs/AddProvAppxPackage.vb",
+          "DISMTools/Panels/Img_Ops/AppxPkgs/RemProvAppxPackage.vb",
+          "DISMTools/Panels/Img_Ops/Capabilities/AddCapabilities.vb"
+        ],
+        "selfEdges": 0
+      },
+      "imports": {
+        "belowConfidenceFloor": 0,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 0,
+        "bracketedSamples": [],
+        "confidence": {
+          "1": 882
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 882,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "import_based": 882
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 0,
+        "resolvedBothEndsPct": 0,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 882,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AppxPackage.vb",
+          "DISMTools/ApplicationEvents.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DnsZoneChooserDialog.vb"
+        ],
+        "selfEdges": 0
+      },
+      "instantiates": {
+        "belowConfidenceFloor": 24796,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 0,
+        "bracketedSamples": [],
+        "confidence": {
+          "1": 367,
+          "0.6": 24796
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 25163,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "inferred": 24796,
+          "structural": 367
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 777,
+        "resolvedBothEndsPct": 3.09,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 24386,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/ApplicationEvents.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DnsZoneChooserDialog.Designer.vb"
+        ],
+        "selfEdges": 24
+      },
+      "overrides": {
+        "belowConfidenceFloor": 140,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 0,
+        "bracketedSamples": [],
+        "confidence": {
+          "0.6": 140,
+          "0.9": 2834
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 2974,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "inferred": 140,
+          "structural": 2834
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 140,
+        "resolvedBothEndsPct": 4.71,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 2834,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AppxPackage.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/DnsZoneChooserDialog.Designer.vb"
+        ],
+        "selfEdges": 140
+      },
+      "references": {
+        "belowConfidenceFloor": 21019,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 0,
+        "bracketedSamples": [],
+        "confidence": {
+          "0.6": 21019
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 21019,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "inferred": 21019
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 132,
+        "resolvedBothEndsPct": 0.63,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 20887,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AppxPackage.vb",
+          "DISMTools/ApplicationEvents.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb"
+        ],
+        "selfEdges": 0
+      },
+      "uses": {
+        "belowConfidenceFloor": 0,
+        "belowFloorWithoutEvidenceClass": 0,
+        "bracketedIdentifierEndpoints": 26,
+        "bracketedSamples": [
+          "[Default] -> Shutdown (DISMTools/Helpers/extps1/PE_Helper/tools/HotInstall/Installer/My Project/Settings.Designer.vb:47)",
+          "[Default] -> Application (DISMTools/Helpers/extps1/PE_Helper/tools/HotInstall/Installer/My Project/Settings.Designer.vb:47)",
+          "[Default] -> Shutdown (DISMTools/Helpers/extps1/PE_Helper/tools/PEHelperMainMenu/My Project/Settings.Designer.vb:47)",
+          "[Default] -> Application (DISMTools/Helpers/extps1/PE_Helper/tools/PEHelperMainMenu/My Project/Settings.Designer.vb:47)"
+        ],
+        "confidence": {
+          "1": 46553,
+          "0.7": 11975,
+          "0.9": 72
+        },
+        "contractLiteralTargets": 0,
+        "duplicatePairSamples": [],
+        "duplicateRows": 0,
+        "edges": 58600,
+        "edgesWithoutPositiveLine": 0,
+        "emptyEndpoints": 0,
+        "enumMemberTargets": 0,
+        "evidenceClass": {
+          "usage_contextual": 58600
+        },
+        "notNameShaped": 0,
+        "notNameShapedSamples": [],
+        "resolvedBothEnds": 9496,
+        "resolvedBothEndsPct": 16.2,
+        "resolvedNeither": 0,
+        "resolvedSourceOnly": 49104,
+        "resolvedTargetOnly": 0,
+        "sampleFiles": [
+          "DISMTools/Elements/AppxPackage.vb",
+          "DISMTools/ApplicationEvents.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.Designer.vb",
+          "DISMTools/Elements/AutoUnattend/ActiveDirectory/ADDSJoinDialog.vb"
+        ],
+        "selfEdges": 42
+      }
+    },
+    "unknownKindSamples": [],
+    "unknownKindSymbols": 0,
+    "workers": 2
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.VB-EDGE-INTEGRITY",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "the sample is drawn from the checkouts under the configured corpus root; the population is stated in `data.admitted`/`drawn`, not assumed"
+    },
+    {
+      "description": "endpoint shape is checked against this analyzer's own symbol and relationship records, not against an independent oracle for every label"
+    }
+  ],
+  "regeneratedAt": "2026-11-04T18:46:59-05:00",
+  "regeneratedAtCommit": "0ece21ae7e1581f70bf013d38efb69c478d60294",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "VB relationship-edge endpoint integrity over the derived VB corpus (2378 drawn of 2378)"
+}

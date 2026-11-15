@@ -1,0 +1,16 @@
+# The walk cache this directory's harnesses write, not source.
+#
+# `r-cause-a-counterfactual.ts` appends one JSON line per parsed file to
+# `cause-a-walk-<corpus-set-sha-prefix>.jsonl` and skips files already recorded, so a run
+# killed by the shared 120-second parse watchdog (`src/ast/engine.ts` `process.exit()`)
+# resumes instead of losing the walk. The bytes are a cache of production `parseFile`
+# output over a corpus that is itself reproducible, so they are not committed. Delete the
+# file, or set BB_R_FRESH=1, to force a re-walk.
+cause-a-walk-*.jsonl
+
+# Same arrangement for `r-incoming-population.ts`: one JSON line per parsed file, keyed by
+# BOTH the corpus-set digest and the analyzer digest, so a spool written by one analyzer
+# build can never be read as another build's result. `r-population-drift.ts` consumes these
+# to name the edge separating two builds, which is why they are worth keeping on disk while
+# a bisect runs, and why they are still not source.
+r-incoming-walk-*.jsonl

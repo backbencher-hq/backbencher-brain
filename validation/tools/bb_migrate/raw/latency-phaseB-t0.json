@@ -1,0 +1,179 @@
+{
+ "tier": "t0",
+ "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+ "dir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata",
+ "measuredAt": "2026-11-03T16:12:30.722Z",
+ "loadAverage": [
+  19.45,
+  12.58,
+  5.71
+ ],
+ "index": {
+  "counts": {
+   "files": 5,
+   "symbols": 13,
+   "relationships": 26
+  },
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+  "dbMtimeMs": 1793578844311
+ },
+ "firstCall": {
+  "args": {
+   "symbolNames": [
+    "Inventory"
+   ],
+   "targetLanguage": "python"
+  },
+  "ms": 27.7,
+  "isError": false
+ },
+ "shapes": {
+  "singleText": {
+   "args": {
+    "symbolNames": [
+     "Inventory"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    2,
+    2.4,
+    1.1,
+    1.6,
+    1.7
+   ],
+   "p50Ms": 1.7,
+   "p95Ms": 2.4,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: none (no-edges)"
+   ]
+  },
+  "singleJson": {
+   "args": {
+    "symbolNames": [
+     "Inventory"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "samplesMs": [
+    1.4,
+    1.1,
+    0.8,
+    0.8,
+    0.7
+   ],
+   "p50Ms": 0.8,
+   "p95Ms": 1.4,
+   "lastIsError": false,
+   "lastPlans": 0,
+   "lastTextHead": [
+    "{",
+    "  \"targetLanguage\": \"python\","
+   ]
+  },
+  "twelveNames": {
+   "args": {
+    "symbolNames": [
+     "Inventory",
+     "Warehouse",
+     "applyDiscount",
+     "basePrice",
+     "refill",
+     "getStock",
+     "currentStock",
+     "total",
+     "restock",
+     "Polyglot fixtures (M26.A1, issue #615)"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    6.4,
+    5.8,
+    5.9,
+    5.3,
+    5
+   ],
+   "p50Ms": 5.8,
+   "p95Ms": 6.4,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: applyDiscount -> basePrice -> getStock -> currentStock -> restock -> refill -> Warehouse -> total (partial)"
+   ]
+  },
+  "cohort": {
+   "args": {
+    "paths": [
+     "ts-js"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    3.1,
+    3.3,
+    4.6,
+    3.3,
+    6
+   ],
+   "p50Ms": 3.3,
+   "p95Ms": 6,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: applyDiscount -> basePrice -> total (partial)"
+   ]
+  }
+ },
+ "dbState": {
+  "before": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793578844311
+   },
+   "-wal": {
+    "size": 2439072,
+    "mtimeMs": 1793667333667
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793722350577
+   }
+  },
+  "afterFirstCall": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793578844311
+   },
+   "-wal": {
+    "size": 2439072,
+    "mtimeMs": 1793667333667
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793722350577
+   }
+  },
+  "after": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793578844311
+   },
+   "-wal": {
+    "size": 2439072,
+    "mtimeMs": 1793667333667
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793722350577
+   }
+  }
+ }
+}

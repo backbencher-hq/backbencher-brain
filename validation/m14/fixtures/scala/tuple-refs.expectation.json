@@ -1,0 +1,40 @@
+{
+  "fixtureId": "scala/tuple-refs",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G5 gap: tuple-typed returns ((Int, String)) reference their element types. The return-type collector only matched generic_type/type_identifier/functional_type, so tuple_type returns were silently invisible (the val/var case already matched *_type forms — the function case did not). The edges carry relationshipType return_type with declaredOn tuple_type (the tuple form is distinguishable from ordinary return types for the mutant pin).",
+  "expectSymbols": [
+    { "name": "T", "kind": "module" },
+    { "name": "pair", "ownerName": "T" },
+    { "name": "both", "ownerName": "T" }
+  ],
+  "expectRelationships": [{
+  "type": "references",
+  "from": "pair",
+  "target": "Int",
+  "meta.relationshipType": "return_type",
+  "meta.declaredOn": "function_definition"
+ },
+ {
+  "type": "references",
+  "from": "pair",
+  "target": "String",
+  "meta.relationshipType": "return_type",
+  "meta.declaredOn": "function_definition"
+ },
+ {
+  "type": "references",
+  "from": "both",
+  "target": "List",
+  "meta.relationshipType": "return_type",
+  "meta.declaredOn": "function_definition"
+ },
+ {
+  "type": "references",
+  "from": "both",
+  "target": "Map",
+  "meta.relationshipType": "return_type",
+  "meta.declaredOn": "function_definition"
+ }
+  ]
+}

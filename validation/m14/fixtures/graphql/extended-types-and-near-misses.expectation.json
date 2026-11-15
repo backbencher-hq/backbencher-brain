@@ -1,0 +1,145 @@
+{
+  "fixtureId": "graphql/extended-types-and-near-misses",
+  "language": "graphql",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The five rows the 2026-10-31 measurement resolved, pinned in ONE fixture so a regression cannot move one without failing the others. Four types are RULED (decorates/renders/mixes_in/part_of) and one (`extends`) is IMPLEMENTED but corpus-unexercised (0 of 3,179 `implements` clauses resolves to an inheritance-shaped supertype). Every construct a keyword scan would mislabel is PRESENT here, and each is pinned TWICE: the ruled type is pinned at ZERO by expectRelationshipCount, and the honest label beside it is pinned positive - an `extend type` member is `contains{extension}`, an interface supertype is `implements`, a directive application is `uses{relationshipRole=directive_application}`, the `#import` convention is `imports`, an executable document is an operation symbol and nothing `renders`. Source of the rulings and their whole-population counts: validation/m14/fixtures/graphql/extended-census.json (1,911 admitted .graphql/.gql files, 22 repositories, 2,338,690 nodes, 0 parse failures). Every row below was derived from the fixture SOURCE; the analyzer's output was not consulted.",
+  "expectSymbols": [
+    { "name": "Node", "kind": "interface", "startLine": 19 },
+    { "name": "id", "kind": "property", "ownerName": "Node", "startLine": 20 },
+    { "name": "User", "kind": "class", "startLine": 23 },
+    { "name": "id", "kind": "property", "ownerName": "User", "startLine": 24 },
+    { "name": "name", "kind": "property", "ownerName": "User", "startLine": 25 },
+    { "name": "Query", "kind": "class", "startLine": 28 },
+    { "name": "me", "kind": "property", "ownerName": "Query", "startLine": 29 },
+    { "name": "friends", "kind": "property", "ownerName": "Query", "startLine": 34 },
+    { "name": "Mutation", "kind": "class", "startLine": 42 },
+    { "name": "noop", "kind": "property", "ownerName": "Mutation", "startLine": 43 },
+    { "name": "Role", "kind": "enum", "startLine": 14 },
+    { "name": "ADMIN", "kind": "enum_member", "ownerName": "Role", "startLine": 15 },
+    { "name": "VIEWER", "kind": "enum_member", "ownerName": "Role", "startLine": 16 },
+    { "name": "GetMe", "kind": "method", "startLine": 47 },
+    { "name": "UserFields", "kind": "method", "startLine": 53 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "extended-types-and-near-misses.graphql",
+      "target": "./fragments/user-fields.gql",
+      "line_number": 8,
+      "confidenceMin": 0.7,
+      "meta.importForm": "bare",
+      "note": "the `#import` convention IS published - as `imports`, its honest label, not as `part_of`. The part_of row below pins the ZERO separately."
+    },
+    {
+      "type": "contains",
+      "from": "Query",
+      "target": "Query.me",
+      "line_number": 29,
+      "note": "ordinary member containment, beside the extension member below."
+    },
+    {
+      "type": "contains",
+      "from": "Query",
+      "target": "Query.friends",
+      "line_number": 34,
+      "meta.extension": true,
+      "note": "THE EXTENSION MEMBER. `extend type Query` continues the SAME type; its member is contained by Query with metadata.extension, not an `extends` edge to a second type and not a mixin."
+    },
+    {
+      "type": "contains",
+      "from": "User",
+      "target": "User.name",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "schema",
+      "target": "schema.mutation",
+      "line_number": 39,
+      "meta.extension": true,
+      "note": "`extend schema` adds a ROOT OPERATION to the schema symbol - the 95 `extend schema` sites in the corpus are this construct, not a supertype clause and not a member-set composition."
+    },
+    {
+      "type": "implements",
+      "from": "User",
+      "target": "Node",
+      "line_number": 23,
+      "note": "Node is declared as an INTERFACE in this document, so the supertype clause is interface CONFORMANCE. The fixture keeps it an interface deliberately: an object-typed supertype would satisfy the analyzer's `extends` branch (pinned in ontology-heritage-and-surface), and this fixture must be able to read the zero extends pin."
+    },
+    {
+      "type": "uses",
+      "from": "User.name",
+      "target": "@auth",
+      "line_number": 25,
+      "meta.relationshipRole": "directive_application",
+      "note": "THE DIRECTIVE APPLICATION. It is a `uses` with role directive_application - the declaration reads the directive's NAME. It is NOT `decorates`: the definition at line 12 carries a signature and no body, which is the callable test failing on the composer half."
+    },
+    {
+      "type": "references",
+      "from": "Query.friends",
+      "target": "User",
+      "line_number": 34,
+      "meta.relationshipType": "declared_type",
+      "note": "ledger rule R9: a declaration's type position is `references{declared_type}`, one label per fact."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Query",
+      "target": "friends",
+      "note": "an extension member is CONTAINMENT. Reading it as inheritance fabricates a supertype the document never names."
+    },
+    {
+      "type": "decorates",
+      "from": "User.name",
+      "target": "@auth",
+      "note": "the directive is applied, but its definition has no body: the ontological ruling says an edge would assert an implementation the population cannot witness. The same site is pinned as `uses{relationshipRole=directive_application}` above."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Query",
+      "target": "friends",
+      "note": "there is no member-set PROVIDER symbol in this fixture - the extension is anonymous and its members belong to Query itself."
+    },
+    {
+      "type": "part_of",
+      "from": "extended-types-and-near-misses.graphql",
+      "target": "./fragments/user-fields.gql",
+      "note": "the inclusion target is a FILE PATH and no declaration answers it; the construct is already published as `imports`, and one-fact-one-label (R10) forbids a second label."
+    },
+    {
+      "type": "renders",
+      "from": "GetMe",
+      "target": "User",
+      "note": "an executable document selects fields on a type; it does not render a component. The operation symbol is pinned in expectSymbols; no renders edge exists."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "extends",
+      "equals": 0,
+      "note": "the whole-population count is 0 (0 of 3,179 implements clauses inheritance-shaped); the fixture may not create one either."
+    },
+    {
+      "type": "decorates",
+      "equals": 0,
+      "note": "RULED ontological: 3,747 applications / 600 definitions / 0 definitions with a body on the whole admitted population."
+    },
+    {
+      "type": "renders",
+      "equals": 0,
+      "note": "RULED grammar-absence: 0 of the served build's 142 declared node types is a component/element production."
+    },
+    {
+      "type": "mixes_in",
+      "equals": 0,
+      "note": "RULED grammar-absence: 252 type-extension sites, 0 member-set providers, 0 of 142 declared node types match mixin|trait|member_set|embed."
+    },
+    {
+      "type": "part_of",
+      "equals": 0,
+      "note": "RULED grammar-absence: 170 `#import` sites are comment text naming file paths, 0 symbol-shaped targets name a declaration; published as `imports`."
+    }
+  ]
+}

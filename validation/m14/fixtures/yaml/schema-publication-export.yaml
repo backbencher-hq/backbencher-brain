@@ -1,0 +1,39 @@
+# The one place YAML writes down an export. Each named definition here is defined ONCE
+# in this document and reached from other documents as `$ref: '#/components/schemas/X'`,
+# which is what `exports` means in every other lane: a name this unit makes reachable
+# to its consumers. Both endpoints are symbols of this file, so unlike every external
+# edge in this analyzer the edge resolves at BOTH ends.
+openapi: "3.0.3"
+info:
+  title: catalogue
+  version: "1.0"
+paths:
+  /items:
+    get:
+      operationId: listItems
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+    Page:
+      type: object
+      properties:
+        next:
+          $ref: "#/components/schemas/Page"
+  responses:
+    NotFound:
+      description: absent
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer

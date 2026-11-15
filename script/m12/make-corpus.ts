@@ -20,7 +20,7 @@
 import { execFileSync } from "node:child_process"
 import { readdirSync, statSync } from "node:fs"
 
-export const REPOS_ROOT = "$HOME/fixtures/repositories"
+export const REPOS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 
 /** Preferred, in order. Each is used when the checkout is present. */
 export const PREFERRED_REPOS = [

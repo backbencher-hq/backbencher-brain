@@ -1,0 +1,303 @@
+{
+  "measuredAt": "2026-09-27",
+  "purpose": "replace 'a local build of unrecorded provenance' with a reproducible-build verdict wherever the source can be named, and measure how far short of byte-identity the toolchain falls",
+  "builder": {
+    "recorded": "0.26.9",
+    "installed": "0.26.9",
+    "matches": true,
+    "wasmOnly": true
+  },
+  "measuredFact": {
+    "claim": "byte-identical rebuild is not a reachable acceptance bar, because the builder is not bit-reproducible for a fixed source and output name",
+    "evidence": "bash: 1,403,134 of 1,403,135 bytes identical to a CLI 0.26.9 rebuild of tree-sitter-bash@0.25.1; the single differing byte is in the wasm DATA section (a segment descriptor), i.e. a linker/emcc configuration difference rather than a grammar difference",
+    "consequence": "M63 #953 must accept measured behaviour over identity; this turns that position into a measurement"
+  },
+  "policy": {
+    "nearMissIsNeverAMatch": "an 'equivalent' grade requires an identical prefix AND <=64 differing bytes AND a named section; anything else is 'different'",
+    "neverWritesToWasm": "builds happen in a temp dir and are only compared. Bytes in wasm/ change only through F11, by hand, with a review document.",
+    "outputNameMatters": "the rebuild is given the SHIPPED build-output name, because that name is written into the module's name section; using a convenient filename manufactures a difference that has nothing to do with the grammar"
+  },
+  "summary": {
+    "byteIdentical": 1,
+    "equivalent": 1,
+    "different": 0,
+    "noCandidate": 3,
+    "notAttempted": 1
+  },
+  "results": [
+    {
+      "lane": "bash",
+      "shipped": {
+        "file": "tree-sitter-bash.wasm",
+        "bytes": 1405135,
+        "sha256": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+        "buildOutputName": "tree-sitter-bash-new.wasm"
+      },
+      "verdict": "equivalent",
+      "best": {
+        "package": "tree-sitter-bash",
+        "version": "0.25.1",
+        "origin": "survey candidate (search-derived)",
+        "grade": "equivalent",
+        "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-bash-new.wasm   # in a temp dir holding tree-sitter-bash@0.25.1, CLI 0.26.9",
+        "byteIdentical": false,
+        "shippedBytes": 1405135,
+        "rebuiltBytes": 1405135,
+        "shippedSha256": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+        "rebuiltSha256": "f6f97ac5f3e159132816fe975119c66a1189b755df99c0933dba031ddd1f3420",
+        "bytesDiffering": 1,
+        "sharedPrefixBytes": 1403060,
+        "sharedPrefixPercent": 99.8523,
+        "firstDifferingOffset": 1403060,
+        "differingSection": "data",
+        "note": "1 byte(s) differ, all at or after offset 1403060, inside the data section"
+      },
+      "attempts": [
+        {
+          "package": "tree-sitter-bash",
+          "version": "0.25.1",
+          "origin": "survey candidate (search-derived)",
+          "grade": "equivalent",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-bash-new.wasm   # in a temp dir holding tree-sitter-bash@0.25.1, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 1405135,
+          "rebuiltBytes": 1405135,
+          "shippedSha256": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+          "rebuiltSha256": "f6f97ac5f3e159132816fe975119c66a1189b755df99c0933dba031ddd1f3420",
+          "bytesDiffering": 1,
+          "sharedPrefixBytes": 1403060,
+          "sharedPrefixPercent": 99.8523,
+          "firstDifferingOffset": 1403060,
+          "differingSection": "data",
+          "note": "1 byte(s) differ, all at or after offset 1403060, inside the data section"
+        },
+        {
+          "package": "@curlconverter/tree-sitter-bash",
+          "version": "0.0.4",
+          "origin": "survey candidate (search-derived)",
+          "grade": "different",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-bash-new.wasm   # in a temp dir holding @curlconverter/tree-sitter-bash@0.0.4, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 1405135,
+          "rebuiltBytes": 523227,
+          "shippedSha256": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+          "rebuiltSha256": "b3b7b0cf5228c25a16e0e222e8117483dd7dab262ee0bc9d52f4166dab70ce93",
+          "bytesDiffering": 1289844,
+          "sharedPrefixBytes": 21,
+          "sharedPrefixPercent": 0.0015,
+          "firstDifferingOffset": 21,
+          "differingSection": "custom(dylink.0)",
+          "note": "1289844 byte(s) differ, all at or after offset 21, inside the custom section dylink.0 section"
+        }
+      ],
+      "action": "reproduces to within an enumerated difference inside one named section: the same build, with the toolchain resolving one linker flag differently. Accept measured behaviour; do not require identity."
+    },
+    {
+      "lane": "graphql",
+      "shipped": {
+        "file": "tree-sitter-graphql.wasm",
+        "bytes": 41223,
+        "sha256": "9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27",
+        "buildOutputName": "tree-sitter-graphql.wasm"
+      },
+      "verdict": "no-candidate-reproduced-it",
+      "best": null,
+      "attempts": [
+        {
+          "package": "tree-sitter-graphql",
+          "version": "1.0.0",
+          "origin": "survey candidate (search-derived)",
+          "grade": "different",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-graphql.wasm   # in a temp dir holding tree-sitter-graphql@1.0.0, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 41223,
+          "rebuiltBytes": 122868,
+          "shippedSha256": "9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27",
+          "rebuiltSha256": "ac1598f295ee5a8e850d1c1168fe5648aa94462ca5910ba156e615549aa6bb24",
+          "bytesDiffering": 110017,
+          "sharedPrefixBytes": 21,
+          "sharedPrefixPercent": 0.0171,
+          "firstDifferingOffset": 21,
+          "differingSection": "custom(dylink.0)",
+          "note": "110017 byte(s) differ, all at or after offset 21, inside the custom section dylink.0 section"
+        }
+      ],
+      "action": "no named source reproduces these bytes: the build is a local one from a source this repo does not record. Record it as a local rebuild of an UNNAMED source, or find the source."
+    },
+    {
+      "lane": "hcl",
+      "shipped": {
+        "file": "tree-sitter-hcl.wasm",
+        "bytes": 92478,
+        "sha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+        "buildOutputName": null
+      },
+      "verdict": "no-candidate-reproduced-it",
+      "best": null,
+      "attempts": [
+        {
+          "package": "tree-sitter-hcl",
+          "version": "0.0.1-security",
+          "origin": "survey candidate (search-derived)",
+          "error": "no grammar.js or src/grammar.json in the tarball — nothing to build from"
+        },
+        {
+          "package": "@tree-sitter-grammars/tree-sitter-hcl",
+          "version": "1.2.0",
+          "origin": "survey candidate (search-derived)",
+          "grade": "different",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-hcl.wasm   # in a temp dir holding @tree-sitter-grammars/tree-sitter-hcl@1.2.0, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 92478,
+          "rebuiltBytes": 96305,
+          "shippedSha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+          "rebuiltSha256": "67fa9fc91a31aa6922601a814e40a78f25aa278128d10b9b9e114e6a3cdfee2e",
+          "bytesDiffering": 84689,
+          "sharedPrefixBytes": 21,
+          "sharedPrefixPercent": 0.0218,
+          "firstDifferingOffset": 21,
+          "differingSection": "custom(dylink.0)",
+          "note": "84689 byte(s) differ, all at or after offset 21, inside the custom section dylink.0 section"
+        }
+      ],
+      "action": "no named source reproduces these bytes: the build is a local one from a source this repo does not record. Record it as a local rebuild of an UNNAMED source, or find the source."
+    },
+    {
+      "lane": "kotlin",
+      "shipped": {
+        "file": "tree-sitter-kotlin.wasm",
+        "bytes": 5837109,
+        "sha256": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
+        "buildOutputName": "tree-sitter-kotlin.wasm"
+      },
+      "verdict": "not-attempted",
+      "best": null,
+      "attempts": [],
+      "action": "the shipped grammar is 5837109 B, over the 2000000 B build cap: compiling its parser.c exhausts memory on a small machine. This is a DECLARED non-measurement, not a verdict — do not read it as \"different\"."
+    },
+    {
+      "lane": "r",
+      "shipped": {
+        "file": "tree-sitter-r.wasm",
+        "bytes": 502920,
+        "sha256": "a5cf0d30ccaf5350430dbdbe44d17080988a5838b6a56e072940884b3a5b89cc",
+        "buildOutputName": null
+      },
+      "verdict": "no-candidate-reproduced-it",
+      "best": null,
+      "attempts": [
+        {
+          "package": "tree-sitter-r",
+          "version": "0.0.1-security",
+          "origin": "survey candidate (search-derived)",
+          "error": "no grammar.js or src/grammar.json in the tarball — nothing to build from"
+        },
+        {
+          "package": "@davisvaughan/tree-sitter-r",
+          "version": "1.3.0",
+          "origin": "survey candidate (search-derived)",
+          "grade": "different",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-r.wasm   # in a temp dir holding @davisvaughan/tree-sitter-r@1.3.0, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 502920,
+          "rebuiltBytes": 487039,
+          "shippedSha256": "a5cf0d30ccaf5350430dbdbe44d17080988a5838b6a56e072940884b3a5b89cc",
+          "rebuiltSha256": "3e406e27cec05a60ba3281e2da021187200b83d152d9eb0dcf0a731cbfbcc28d",
+          "bytesDiffering": 400205,
+          "sharedPrefixBytes": 21,
+          "sharedPrefixPercent": 0.0042,
+          "firstDifferingOffset": 21,
+          "differingSection": "custom(dylink.0)",
+          "note": "400205 byte(s) differ, all at or after offset 21, inside the custom section dylink.0 section"
+        },
+        {
+          "package": "@eagleoutice/tree-sitter-r",
+          "version": "1.1.2",
+          "origin": "survey candidate (search-derived)",
+          "grade": "different",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-r.wasm   # in a temp dir holding @eagleoutice/tree-sitter-r@1.1.2, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 502920,
+          "rebuiltBytes": 493378,
+          "shippedSha256": "a5cf0d30ccaf5350430dbdbe44d17080988a5838b6a56e072940884b3a5b89cc",
+          "rebuiltSha256": "11207f51291fbdd3a1ab8be9a760f8f73bc3b3fe25541f94978de8eadefa2172",
+          "bytesDiffering": 342703,
+          "sharedPrefixBytes": 21,
+          "sharedPrefixPercent": 0.0042,
+          "firstDifferingOffset": 21,
+          "differingSection": "custom(dylink.0)",
+          "note": "342703 byte(s) differ, all at or after offset 21, inside the custom section dylink.0 section"
+        }
+      ],
+      "action": "no named source reproduces these bytes: the build is a local one from a source this repo does not record. Record it as a local rebuild of an UNNAMED source, or find the source."
+    },
+    {
+      "lane": "svelte",
+      "shipped": {
+        "file": "tree-sitter-svelte.wasm",
+        "bytes": 47873,
+        "sha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+        "buildOutputName": "tree-sitter-svelte-new.wasm"
+      },
+      "verdict": "byte-identical",
+      "best": {
+        "package": "@tree-sitter-grammars/tree-sitter-svelte",
+        "version": "1.0.2",
+        "origin": "survey candidate (search-derived)",
+        "grade": "byte-identical",
+        "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-svelte-new.wasm   # in a temp dir holding @tree-sitter-grammars/tree-sitter-svelte@1.0.2, CLI 0.26.9",
+        "byteIdentical": true,
+        "shippedBytes": 47873,
+        "rebuiltBytes": 47873,
+        "shippedSha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+        "rebuiltSha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+        "bytesDiffering": 0,
+        "sharedPrefixBytes": null,
+        "sharedPrefixPercent": null,
+        "firstDifferingOffset": null,
+        "differingSection": null,
+        "note": "the rebuild IS the shipped artefact, byte for byte"
+      },
+      "attempts": [
+        {
+          "package": "tree-sitter-svelte",
+          "version": "0.11.0",
+          "origin": "survey candidate (search-derived)",
+          "grade": "different",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-svelte-new.wasm   # in a temp dir holding tree-sitter-svelte@0.11.0, CLI 0.26.9",
+          "byteIdentical": false,
+          "shippedBytes": 47873,
+          "rebuiltBytes": 36998,
+          "shippedSha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+          "rebuiltSha256": "0c87f7e36bd0e95947e8641390182dbf3e254bf6d708f8e2f11d077f39b2ec3b",
+          "bytesDiffering": 39129,
+          "sharedPrefixBytes": 21,
+          "sharedPrefixPercent": 0.0439,
+          "firstDifferingOffset": 21,
+          "differingSection": "custom(dylink.0)",
+          "note": "39129 byte(s) differ, all at or after offset 21, inside the custom section dylink.0 section"
+        },
+        {
+          "package": "@tree-sitter-grammars/tree-sitter-svelte",
+          "version": "1.0.2",
+          "origin": "survey candidate (search-derived)",
+          "grade": "byte-identical",
+          "command": "tree-sitter build --wasm --output <tmp>/tree-sitter-svelte-new.wasm   # in a temp dir holding @tree-sitter-grammars/tree-sitter-svelte@1.0.2, CLI 0.26.9",
+          "byteIdentical": true,
+          "shippedBytes": 47873,
+          "rebuiltBytes": 47873,
+          "shippedSha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+          "rebuiltSha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+          "bytesDiffering": 0,
+          "sharedPrefixBytes": null,
+          "sharedPrefixPercent": null,
+          "firstDifferingOffset": null,
+          "differingSection": null,
+          "note": "the rebuild IS the shipped artefact, byte for byte"
+        }
+      ],
+      "action": "reproduces exactly from the recorded source and CLI — this lane can be re-derived on demand, which is a stronger provenance statement than any hash match."
+    }
+  ],
+  "written": "validation/m60/results/M60.0.local-rebuilds.json"
+}

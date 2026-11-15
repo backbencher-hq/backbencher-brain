@@ -3,7 +3,7 @@
   "purpose": "Pinned XML corpora for the XML analyzer lane. Every record names an exact revision so a measurement can be re-run and get the same bytes. A corpus without a revision is an anecdote.",
   "establishedAt": "2026-09-27",
   "restoredCorpus": {
-    "path": "$HOME/fixtures/repositories/grails-core",
+    "path": "/home/ishaq2321/bb_tests/repositories/grails-core",
     "status": "VANISHED",
     "note": "script/m12/xml-corpus-errors.ts and xml-corpus-measure.ts both pinned this path by default, and the directory does not exist on this machine. So the XML lane's M12 corpus results were unreproducible: validation/m12/results/xml-corpus-errors.json named a corpus nobody could read, and its globs (`*.xml`, `*.xsd`) covered 314 of the repository's 467 XML-family files. The corpus is restored below at a new path, the scripts' default now names it, and their globs now cover every file type the wired grammar's own tree-sitter.json declares.",
     "evidenceAffected": [
@@ -42,7 +42,7 @@
   "corpora": [
     {
       "name": "grails-core",
-      "path": "$HOME/fixtures/xml/repos/grails-core",
+      "path": "/home/ishaq2321/bb_tests/xml/repos/grails-core",
       "url": "https://github.com/grails/grails-core",
       "revision": "334007a8b5622a3c428c009ef1e19569ce9135d9",
       "cloneDepth": 1,
@@ -53,7 +53,7 @@
           "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_2.dtd",
           "measured": "50 ERROR nodes, 0 MISSING",
           "verdict": "CORRECT BEHAVIOUR FOR A ROUTED EXTENSION THE GRAMMAR CANNOT REPRESENT, NOT AN ANALYZER DEFECT",
-          "why": "A standalone DTD has no document element, and the wired `xml` grammar's `document` rule is `O(_S), O(prolog), field(root, element), repeat(_Misc)` \u2014 a document element is REQUIRED. The file therefore parses to a root `ERROR` node, and the analyzer correctly publishes nothing from it. Upstream 0.7.0's SEPARATE `dtd` grammar parses the same file with 0 ERROR nodes (fixtures/xml/out/regression-adjudication.json), which is filed as the owed wiring for `.dtd` rather than counted as a parse failure of this analyzer."
+          "why": "A standalone DTD has no document element, and the wired `xml` grammar's `document` rule is `O(_S), O(prolog), field(root, element), repeat(_Misc)` \u2014 a document element is REQUIRED. The file therefore parses to a root `ERROR` node, and the analyzer correctly publishes nothing from it. Upstream 0.7.0's SEPARATE `dtd` grammar parses the same file with 0 ERROR nodes (bb_tests/xml/out/regression-adjudication.json), which is filed as the owed wiring for `.dtd` rather than counted as a parse failure of this analyzer."
         },
         {
           "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_3.dtd",
@@ -77,7 +77,7 @@
     },
     {
       "name": "docx4j",
-      "path": "$HOME/fixtures/xml/repos/docx4j",
+      "path": "/home/ishaq2321/bb_tests/xml/repos/docx4j",
       "url": "https://github.com/plutext/docx4j",
       "revision": "0e8e763",
       "cloneDepth": 1,
@@ -86,7 +86,7 @@
     },
     {
       "name": "libxml2",
-      "path": "$HOME/fixtures/xml/repos/libxml2",
+      "path": "/home/ishaq2321/bb_tests/xml/repos/libxml2",
       "url": "https://gitlab.gnome.org/GNOME/libxml2",
       "revision": "c43dc98",
       "cloneDepth": 1,
@@ -95,7 +95,7 @@
     },
     {
       "name": "maven",
-      "path": "$HOME/fixtures/xml/repos/maven",
+      "path": "/home/ishaq2321/bb_tests/xml/repos/maven",
       "url": "https://github.com/apache/maven",
       "revision": "d296cc33",
       "cloneDepth": 1,
@@ -104,7 +104,7 @@
     },
     {
       "name": "cxf",
-      "path": "$HOME/fixtures/xml/repos/cxf",
+      "path": "/home/ishaq2321/bb_tests/xml/repos/cxf",
       "url": "https://github.com/apache/cxf",
       "revision": "e43776be",
       "cloneDepth": 1,
@@ -181,13 +181,13 @@
           "pathGlob": "**/wsdl/2001/XMLSchema.xsd",
           "measured": "1 ERROR node, exactly on the `<?xml version='1.0' encoding='UTF-8'?>` declaration at line 11",
           "verdict": "A REAL DEFECT IN THE UPSTREAM FILE \u2014 and the one that made a THIRD grammar defect worth proposing and then REJECTING",
-          "why": "The file opens with an 8-line licence comment and only then the XML declaration. The grammar's `prolog` admits an `XMLDecl` only as the first construct, so the declaration is rejected; that looked like a third grammar defect (a `Misc` may precede the declaration). It is not: XML 1.0 \u00a72.8 reads `prolog ::= XMLDecl? Misc* (doctypedecl Misc*)?`, which places the declaration FIRST, and Python's expat \u2014 a conforming implementation this repository does not own \u2014 rejects the same file with `XML or text declaration not at start of entity`. The grammar is right and the W3C's vendored copy violates the specification, so NO REPAIR WAS MADE. The hypothesis and its refutation are recorded in fixtures/xml/out/grammar-verdict-vs-reference.json, and the full 16-case accept/reject agreement with the reference parser is the evidence that a rejection is correct rather than a defect."
+          "why": "The file opens with an 8-line licence comment and only then the XML declaration. The grammar's `prolog` admits an `XMLDecl` only as the first construct, so the declaration is rejected; that looked like a third grammar defect (a `Misc` may precede the declaration). It is not: XML 1.0 \u00a72.8 reads `prolog ::= XMLDecl? Misc* (doctypedecl Misc*)?`, which places the declaration FIRST, and Python's expat \u2014 a conforming implementation this repository does not own \u2014 rejects the same file with `XML or text declaration not at start of entity`. The grammar is right and the W3C's vendored copy violates the specification, so NO REPAIR WAS MADE. The hypothesis and its refutation are recorded in bb_tests/xml/out/grammar-verdict-vs-reference.json, and the full 16-case accept/reject agreement with the reference parser is the evidence that a rejection is correct rather than a defect."
         }
       ]
     },
     {
       "name": "libxslt",
-      "path": "$HOME/fixtures/xml/repos/libxslt",
+      "path": "/home/ishaq2321/bb_tests/xml/repos/libxslt",
       "url": "https://gitlab.gnome.org/GNOME/libxslt",
       "revision": "ec95343",
       "cloneDepth": 1,

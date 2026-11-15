@@ -1,0 +1,9 @@
+@each $size in (large, small) {
+  .a-#{$size} { width: 1px; }
+}
+
+.card {
+  @each $size in (large, small) {
+    .b-#{$size} { width: 2px; }
+  }
+}

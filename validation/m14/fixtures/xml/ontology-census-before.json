@@ -1,0 +1,1744 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/ontology-census.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "sampling": {
+    "method": "family-stratified deterministic round-robin over git-tracked files routed to xml by detectLanguageFromPath; per-repo cap then total cap",
+    "repoFilter": "none",
+    "perRepoCap": 100000,
+    "totalCap": 100000,
+    "repositoriesAdmittingXml": 91,
+    "inventory": [
+      {
+        "repo": "Aporia",
+        "admitted": 31
+      },
+      {
+        "repo": "Exposed",
+        "admitted": 62
+      },
+      {
+        "repo": "alamofire",
+        "admitted": 3
+      },
+      {
+        "repo": "ansible",
+        "admitted": 2
+      },
+      {
+        "repo": "bash-completion",
+        "admitted": 4
+      },
+      {
+        "repo": "bootstrap",
+        "admitted": 6
+      },
+      {
+        "repo": "bulma",
+        "admitted": 5302
+      },
+      {
+        "repo": "cargo",
+        "admitted": 389
+      },
+      {
+        "repo": "cats-effect",
+        "admitted": 1
+      },
+      {
+        "repo": "clj-kondo",
+        "admitted": 2
+      },
+      {
+        "repo": "clojure",
+        "admitted": 4
+      },
+      {
+        "repo": "cloogle.org",
+        "admitted": 1
+      },
+      {
+        "repo": "consul",
+        "admitted": 5
+      },
+      {
+        "repo": "cython",
+        "admitted": 3
+      },
+      {
+        "repo": "dart-http",
+        "admitted": 24
+      },
+      {
+        "repo": "dart-sdk",
+        "admitted": 13
+      },
+      {
+        "repo": "dbeaver",
+        "admitted": 850
+      },
+      {
+        "repo": "docker",
+        "admitted": 4
+      },
+      {
+        "repo": "dplyr",
+        "admitted": 10
+      },
+      {
+        "repo": "duckdb",
+        "admitted": 4
+      },
+      {
+        "repo": "element-plus",
+        "admitted": 9
+      },
+      {
+        "repo": "flutter-packages",
+        "admitted": 362
+      },
+      {
+        "repo": "fmt",
+        "admitted": 2
+      },
+      {
+        "repo": "fsharp",
+        "admitted": 10
+      },
+      {
+        "repo": "geb",
+        "admitted": 9
+      },
+      {
+        "repo": "ggplot2",
+        "admitted": 325
+      },
+      {
+        "repo": "gh-cli",
+        "admitted": 1
+      },
+      {
+        "repo": "ghostty",
+        "admitted": 2
+      },
+      {
+        "repo": "go-tools",
+        "admitted": 2
+      },
+      {
+        "repo": "grails-core",
+        "admitted": 318
+      },
+      {
+        "repo": "graphql-java",
+        "admitted": 1
+      },
+      {
+        "repo": "graphql-js",
+        "admitted": 6
+      },
+      {
+        "repo": "graphql-js-full",
+        "admitted": 6
+      },
+      {
+        "repo": "graphql-nim",
+        "admitted": 1
+      },
+      {
+        "repo": "hasura-engine",
+        "admitted": 216
+      },
+      {
+        "repo": "helm",
+        "admitted": 23
+      },
+      {
+        "repo": "hledger",
+        "admitted": 4
+      },
+      {
+        "repo": "jq",
+        "admitted": 2
+      },
+      {
+        "repo": "kong",
+        "admitted": 1
+      },
+      {
+        "repo": "kotlinx-coroutines",
+        "admitted": 12
+      },
+      {
+        "repo": "kubernetes",
+        "admitted": 5
+      },
+      {
+        "repo": "libxslt",
+        "admitted": 1143
+      },
+      {
+        "repo": "lodash",
+        "admitted": 1
+      },
+      {
+        "repo": "nim",
+        "admitted": 1
+      },
+      {
+        "repo": "nlohmann-json",
+        "admitted": 12
+      },
+      {
+        "repo": "nomad",
+        "admitted": 2
+      },
+      {
+        "repo": "ohmyzsh",
+        "admitted": 2
+      },
+      {
+        "repo": "otp",
+        "admitted": 116
+      },
+      {
+        "repo": "packer",
+        "admitted": 1
+      },
+      {
+        "repo": "pb-grpc",
+        "admitted": 4
+      },
+      {
+        "repo": "phpmyadmin",
+        "admitted": 214
+      },
+      {
+        "repo": "phpunit",
+        "admitted": 295
+      },
+      {
+        "repo": "pico",
+        "admitted": 2
+      },
+      {
+        "repo": "postgrest",
+        "admitted": 11
+      },
+      {
+        "repo": "powershell",
+        "admitted": 83
+      },
+      {
+        "repo": "primer-css",
+        "admitted": 7
+      },
+      {
+        "repo": "proxicall",
+        "admitted": 292
+      },
+      {
+        "repo": "r-air",
+        "admitted": 1
+      },
+      {
+        "repo": "r-cli",
+        "admitted": 54
+      },
+      {
+        "repo": "r-pkgdown",
+        "admitted": 12
+      },
+      {
+        "repo": "r-rlang",
+        "admitted": 10
+      },
+      {
+        "repo": "r-scales",
+        "admitted": 11
+      },
+      {
+        "repo": "r-testthat",
+        "admitted": 9
+      },
+      {
+        "repo": "r-vctrs",
+        "admitted": 10
+      },
+      {
+        "repo": "r-withr",
+        "admitted": 9
+      },
+      {
+        "repo": "redis",
+        "admitted": 2
+      },
+      {
+        "repo": "redwood",
+        "admitted": 36
+      },
+      {
+        "repo": "ripgrep",
+        "admitted": 1
+      },
+      {
+        "repo": "riverpod",
+        "admitted": 7
+      },
+      {
+        "repo": "rocks.nvim",
+        "admitted": 1
+      },
+      {
+        "repo": "scala3",
+        "admitted": 309
+      },
+      {
+        "repo": "sdwebimage",
+        "admitted": 1
+      },
+      {
+        "repo": "shadcn-svelte",
+        "admitted": 4
+      },
+      {
+        "repo": "shellcheck",
+        "admitted": 1
+      },
+      {
+        "repo": "slim",
+        "admitted": 1
+      },
+      {
+        "repo": "solidity",
+        "admitted": 4
+      },
+      {
+        "repo": "spectre",
+        "admitted": 1
+      },
+      {
+        "repo": "sqlite",
+        "admitted": 1
+      },
+      {
+        "repo": "terraform",
+        "admitted": 3
+      },
+      {
+        "repo": "terragrunt",
+        "admitted": 50
+      },
+      {
+        "repo": "traefik",
+        "admitted": 4
+      },
+      {
+        "repo": "usethis",
+        "admitted": 8
+      },
+      {
+        "repo": "vault",
+        "admitted": 34
+      },
+      {
+        "repo": "vega",
+        "admitted": 44
+      },
+      {
+        "repo": "vue-core",
+        "admitted": 1
+      },
+      {
+        "repo": "vue-element-admin",
+        "admitted": 46
+      },
+      {
+        "repo": "wagtail",
+        "admitted": 138
+      },
+      {
+        "repo": "water.css",
+        "admitted": 6
+      },
+      {
+        "repo": "waypoint",
+        "admitted": 19
+      },
+      {
+        "repo": "yq",
+        "admitted": 3
+      },
+      {
+        "repo": "zls",
+        "admitted": 2
+      }
+    ],
+    "sampled": 11066,
+    "sampledPerRepo": {
+      "Aporia": 31,
+      "Exposed": 62,
+      "alamofire": 3,
+      "ansible": 2,
+      "bash-completion": 4,
+      "bootstrap": 6,
+      "bulma": 5302,
+      "cargo": 389,
+      "cats-effect": 1,
+      "clj-kondo": 2,
+      "clojure": 4,
+      "cloogle.org": 1,
+      "consul": 5,
+      "cython": 3,
+      "dart-http": 24,
+      "dart-sdk": 13,
+      "dbeaver": 850,
+      "docker": 4,
+      "dplyr": 10,
+      "duckdb": 4,
+      "element-plus": 9,
+      "flutter-packages": 362,
+      "fmt": 2,
+      "fsharp": 10,
+      "geb": 9,
+      "ggplot2": 325,
+      "gh-cli": 1,
+      "ghostty": 2,
+      "go-tools": 2,
+      "grails-core": 318,
+      "graphql-java": 1,
+      "graphql-js": 6,
+      "graphql-js-full": 6,
+      "graphql-nim": 1,
+      "hasura-engine": 216,
+      "helm": 23,
+      "hledger": 4,
+      "jq": 2,
+      "kong": 1,
+      "kotlinx-coroutines": 12,
+      "kubernetes": 5,
+      "libxslt": 1143,
+      "lodash": 1,
+      "nim": 1,
+      "nlohmann-json": 12,
+      "nomad": 2,
+      "ohmyzsh": 2,
+      "otp": 116,
+      "packer": 1,
+      "pb-grpc": 4,
+      "phpmyadmin": 214,
+      "phpunit": 295,
+      "pico": 2,
+      "postgrest": 11,
+      "powershell": 83,
+      "primer-css": 7,
+      "proxicall": 292,
+      "r-air": 1,
+      "r-cli": 54,
+      "r-pkgdown": 12,
+      "r-rlang": 10,
+      "r-scales": 11,
+      "r-testthat": 9,
+      "r-vctrs": 10,
+      "r-withr": 9,
+      "redis": 2,
+      "redwood": 36,
+      "ripgrep": 1,
+      "riverpod": 7,
+      "rocks.nvim": 1,
+      "scala3": 309,
+      "sdwebimage": 1,
+      "shadcn-svelte": 4,
+      "shellcheck": 1,
+      "slim": 1,
+      "solidity": 4,
+      "spectre": 1,
+      "sqlite": 1,
+      "terraform": 3,
+      "terragrunt": 50,
+      "traefik": 4,
+      "usethis": 8,
+      "vault": 34,
+      "vega": 44,
+      "vue-core": 1,
+      "vue-element-admin": 46,
+      "wagtail": 138,
+      "water.css": 6,
+      "waypoint": 19,
+      "yq": 3,
+      "zls": 2
+    }
+  },
+  "production": {
+    "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+    "filesParsed": 11066,
+    "filesFailed": 0,
+    "filesWithErrors": 55,
+    "totalSymbols": 734988,
+    "totalRelationships": 191251,
+    "importInfoRows": 208,
+    "fileSamples": [
+      "Aporia/share/gtksourceview-2.0/language-specs/language.dtd",
+      "Aporia/share/gtksourceview-2.0/language-specs/language.rng",
+      "Aporia/share/gtksourceview-2.0/language-specs/language2.rng",
+      "Aporia/share/gtksourceview-2.0/language-specs/styles.rng",
+      "Aporia/share/gtksourceview-2.0/styles/brackets.xml"
+    ]
+  },
+  "integrity": {
+    "symbolKinds": [
+      [
+        "property",
+        466862
+      ],
+      [
+        "class",
+        254845
+      ],
+      [
+        "namespace",
+        12659
+      ],
+      [
+        "type",
+        419
+      ],
+      [
+        "module",
+        203
+      ]
+    ],
+    "emptyNameSymbols": 0,
+    "unknownEndpointEdges": 2,
+    "unknownEndpointExamples": [
+      "libxslt/tests/general/bug-166.xsl: type-sort-order -contains-> unknown",
+      "libxslt/tests/general/bug-166.xsl: attribute-sort-order -contains-> unknown"
+    ]
+  },
+  "relationshipTypes": [
+    {
+      "type": "calls",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    },
+    {
+      "type": "uses",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    },
+    {
+      "type": "contains",
+      "edges": 179629,
+      "files": 10845,
+      "fileExamples": [
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml",
+        "Aporia/share/gtksourceview-2.0/styles/breeze.xml",
+        "Aporia/share/gtksourceview-2.0/language-specs/language2.rng"
+      ],
+      "roles": {
+        "xml_attribute": 105593,
+        "xml_element": 61702,
+        "xml_namespace": 12086,
+        "dtd_entity_declaration": 181,
+        "processing_instruction": 25,
+        "pseudo_attribute": 14,
+        "dtd_attribute_declaration": 10,
+        "dtd_element_declaration": 12,
+        "dtd_ndata_notation": 4,
+        "dtd_notation_declaration": 2
+      },
+      "evidenceTiers": {
+        "structural": 179629
+      },
+      "confidenceUnder07": 0,
+      "resolvability": {
+        "<none>": 179629
+      },
+      "resolvedBothEnds": 179628,
+      "resolvedSource": 179628,
+      "resolvedTarget": 179629,
+      "resolutionRate": 1,
+      "unresolvableExamples": [
+        "libxslt/tests/general/bug-110.xml: elem -contains-> id (src=n tgt=y)"
+      ]
+    },
+    {
+      "type": "imports",
+      "edges": 415,
+      "files": 278,
+      "fileExamples": [
+        "Exposed/documentation-website/Writerside/cfg/build-script.xml",
+        "Exposed/documentation-website/Writerside/redirection-rules.xml",
+        "ansible/test/integration/targets/setup_rpm_repo/files/comps.xml"
+      ],
+      "roles": {
+        "doctype_external_id": 195,
+        "schema_location": 155,
+        "entity_external_id": 49,
+        "processing_instruction_href": 14,
+        "notation_external_id": 2
+      },
+      "evidenceTiers": {
+        "import_based": 415
+      },
+      "confidenceUnder07": 0,
+      "resolvability": {
+        "<none>": 415
+      },
+      "resolvedBothEnds": 3,
+      "resolvedSource": 415,
+      "resolvedTarget": 3,
+      "resolutionRate": 0.0072,
+      "unresolvableExamples": [
+        "Exposed/documentation-website/Writerside/cfg/build-script.xml: root -imports-> https://resources.jetbrains.com/writerside/1.0/build-script.dtd (src=y tgt=n)",
+        "Exposed/documentation-website/Writerside/redirection-rules.xml: rules -imports-> https://helpserver.labs.jb.gg/help/schemas/mvp/redirection-rules.dtd (src=y tgt=n)",
+        "ansible/test/integration/targets/setup_rpm_repo/files/comps.xml: comps -imports-> comps.dtd (src=y tgt=n)",
+        "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/webfonts/fa-regular-400.svg: svg -imports-> http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd (src=y tgt=n)"
+      ]
+    },
+    {
+      "type": "references",
+      "edges": 11207,
+      "files": 442,
+      "fileExamples": [
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml",
+        "Aporia/share/gtksourceview-2.0/language-specs/language2.rng",
+        "Aporia/share/gtksourceview-2.0/language-specs/language.rng"
+      ],
+      "roles": {
+        "attribute_qname_reference": 9961,
+        "xslt_named_template_reference": 511,
+        "entity_reference": 735
+      },
+      "evidenceTiers": {
+        "reference_qualified": 11207
+      },
+      "confidenceUnder07": 0,
+      "resolvability": {
+        "builtin": 5506,
+        "unresolved": 24,
+        "in-document": 5293,
+        "external": 384
+      },
+      "resolvedBothEnds": 5841,
+      "resolvedSource": 11207,
+      "resolvedTarget": 5841,
+      "resolutionRate": 0.5212,
+      "unresolvableExamples": [
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml: style -references-> attribute-name (src=y tgt=n)",
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml: style -references-> element-name (src=y tgt=n)",
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml: style -references-> entity (src=y tgt=n)",
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml: style -references-> processing-instruction (src=y tgt=n)"
+      ]
+    },
+    {
+      "type": "exports",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    },
+    {
+      "type": "extends",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    },
+    {
+      "type": "implements",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    },
+    {
+      "type": "overrides",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    },
+    {
+      "type": "instantiates",
+      "edges": 0,
+      "files": 0,
+      "fileExamples": [],
+      "roles": {},
+      "evidenceTiers": {},
+      "confidenceUnder07": 0,
+      "resolvability": {},
+      "resolvedBothEnds": 0,
+      "resolvedSource": 0,
+      "resolvedTarget": 0,
+      "resolutionRate": null,
+      "unresolvableExamples": []
+    }
+  ],
+  "allRelationshipTypesSeen": [
+    [
+      "contains",
+      179629
+    ],
+    [
+      "references",
+      11207
+    ],
+    [
+      "imports",
+      415
+    ]
+  ],
+  "instrumentA": {
+    "note": "every node type the wired grammar produced across the sample, with counts. Types named as the construct for a ruled type are absent by inspection.",
+    "distinctNodeTypes": 95,
+    "nodesSeen": 5444635,
+    "errorNodes": 6955,
+    "nodeTypes": [
+      [
+        "Name",
+        909630
+      ],
+      [
+        "\"",
+        771472
+      ],
+      [
+        "=",
+        484934
+      ],
+      [
+        "AttValue",
+        480150
+      ],
+      [
+        "Attribute",
+        480149
+      ],
+      [
+        "CharData",
+        335619
+      ],
+      [
+        ">",
+        297033
+      ],
+      [
+        "<",
+        259815
+      ],
+      [
+        "element",
+        254853
+      ],
+      [
+        "'",
+        204316
+      ],
+      [
+        "</",
+        146072
+      ],
+      [
+        "STag",
+        145340
+      ],
+      [
+        "ETag",
+        141146
+      ],
+      [
+        "content",
+        137547
+      ],
+      [
+        "/>",
+        113712
+      ],
+      [
+        "EmptyElemTag",
+        113707
+      ],
+      [
+        ";",
+        24388
+      ],
+      [
+        "CharRef",
+        14650
+      ],
+      [
+        "Comment",
+        12652
+      ],
+      [
+        "document",
+        11025
+      ],
+      [
+        "&#",
+        9233
+      ],
+      [
+        "ERROR",
+        6955
+      ],
+      [
+        "&#x",
+        5878
+      ],
+      [
+        "&",
+        5721
+      ],
+      [
+        "EntityRef",
+        5717
+      ],
+      [
+        "%",
+        5274
+      ],
+      [
+        "<!",
+        4709
+      ],
+      [
+        "CDATA",
+        4357
+      ],
+      [
+        "[",
+        4178
+      ],
+      [
+        "<![",
+        4114
+      ],
+      [
+        "]]>",
+        4114
+      ],
+      [
+        "CDSect",
+        3464
+      ],
+      [
+        "CDStart",
+        3464
+      ],
+      [
+        "CData",
+        3464
+      ],
+      [
+        "<?",
+        2781
+      ],
+      [
+        "?>",
+        2778
+      ],
+      [
+        "prolog",
+        2656
+      ],
+      [
+        "version",
+        2590
+      ],
+      [
+        "xml",
+        2576
+      ],
+      [
+        "XMLDecl",
+        2575
+      ],
+      [
+        "VersionNum",
+        2575
+      ],
+      [
+        "encoding",
+        2038
+      ],
+      [
+        "EncName",
+        2024
+      ],
+      [
+        "|",
+        1949
+      ],
+      [
+        "(",
+        1709
+      ],
+      [
+        ")",
+        1709
+      ],
+      [
+        "#IMPLIED",
+        817
+      ],
+      [
+        ",",
+        755
+      ],
+      [
+        "Nmtoken",
+        533
+      ],
+      [
+        "*",
+        508
+      ],
+      [
+        "?",
+        456
+      ],
+      [
+        "TokenizedType",
+        452
+      ],
+      [
+        "+",
+        338
+      ],
+      [
+        "#PCDATA",
+        297
+      ],
+      [
+        "ExternalID",
+        245
+      ],
+      [
+        "SystemLiteral",
+        245
+      ],
+      [
+        "URI",
+        245
+      ],
+      [
+        "PUBLIC",
+        237
+      ],
+      [
+        "doctypedecl",
+        222
+      ],
+      [
+        "DOCTYPE",
+        222
+      ],
+      [
+        "ATTLIST",
+        196
+      ],
+      [
+        "PI",
+        189
+      ],
+      [
+        "PITarget",
+        189
+      ],
+      [
+        "ENTITY",
+        182
+      ],
+      [
+        "PubidLiteral",
+        181
+      ],
+      [
+        "GEDecl",
+        181
+      ],
+      [
+        "EntityValue",
+        132
+      ],
+      [
+        "#REQUIRED",
+        125
+      ],
+      [
+        "SYSTEM",
+        104
+      ],
+      [
+        "standalone",
+        103
+      ],
+      [
+        "no",
+        100
+      ],
+      [
+        "ELEMENT",
+        91
+      ],
+      [
+        "EMPTY",
+        81
+      ],
+      [
+        "]",
+        64
+      ],
+      [
+        "NOTATION",
+        56
+      ],
+      [
+        "IGNORE",
+        47
+      ],
+      [
+        "INCLUDE",
+        39
+      ],
+      [
+        "PseudoAtt",
+        28
+      ],
+      [
+        "PseudoAttValue",
+        28
+      ],
+      [
+        "yes",
+        21
+      ],
+      [
+        "StyleSheetPI",
+        14
+      ],
+      [
+        "xml-stylesheet",
+        14
+      ],
+      [
+        "elementdecl",
+        12
+      ],
+      [
+        "contentspec",
+        12
+      ],
+      [
+        "#FIXED",
+        11
+      ],
+      [
+        "AttlistDecl",
+        10
+      ],
+      [
+        "AttDef",
+        10
+      ],
+      [
+        "DefaultDecl",
+        10
+      ],
+      [
+        "Mixed",
+        6
+      ],
+      [
+        "NDataDecl",
+        4
+      ],
+      [
+        "NDATA",
+        4
+      ],
+      [
+        "children",
+        3
+      ],
+      [
+        "NotationDecl",
+        2
+      ],
+      [
+        "PublicID",
+        1
+      ],
+      [
+        "Enumeration",
+        1
+      ]
+    ]
+  },
+  "instrumentB": [
+    {
+      "type": "calls",
+      "probe": "xslt-call-template",
+      "construct": "an XSLT element that invokes a named template",
+      "occurrences": 5694,
+      "files": 282,
+      "breakdown": {
+        "apply-templates": 4166,
+        "call-template": 1528,
+        "call-template target NOT declared in file": 774,
+        "call-template target declared in file": 754
+      },
+      "examples": [
+        "libxslt/doc/EXSLT/devhelp/devhelp2.xsl: <xsl:apply-templates> name=<none>",
+        "libxslt/doc/EXSLT/devhelp/devhelp2.xsl: <xsl:call-template> name=generate_index",
+        "libxslt/doc/EXSLT/devhelp/devhelp2.xsl: <xsl:call-template> name=generate_general",
+        "libxslt/doc/EXSLT/devhelp/html.xsl: <xsl:apply-templates> name=<none>"
+      ]
+    },
+    {
+      "type": "uses",
+      "probe": "use-construct",
+      "construct": "an element naming a reusable definition it adopts rather than names",
+      "occurrences": 0,
+      "files": 0,
+      "breakdown": {},
+      "examples": []
+    },
+    {
+      "type": "exports",
+      "probe": "export-declaration",
+      "construct": "an element that declares a name part of a public surface",
+      "occurrences": 620,
+      "files": 8,
+      "breakdown": {
+        "exportFormat": 5,
+        "exportedmodules": 1,
+        "exports": 610,
+        "pma_xml_export": 4
+      },
+      "examples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.ui.editors.erd/plugin.xml: <exportFormat>",
+        "ghostty/DoxygenLayout.xml: <exportedmodules>",
+        "libxslt/doc/EXSLT/libexslt-api.xml: <exports>",
+        "libxslt/doc/libxslt-api.xml: <exports>"
+      ]
+    },
+    {
+      "type": "extends",
+      "probe": "xsd-derivation-base",
+      "construct": "an XSD extension/restriction carrying base= (type derivation)",
+      "occurrences": 1648,
+      "files": 111,
+      "breakdown": {
+        "restriction": 534,
+        "prefixed base": 1240,
+        "extension": 1114,
+        "bare base": 408,
+        "restriction without base=": 2
+      },
+      "examples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2005/showplanxml.xsd: <xsd:restriction base=\"xsd:string\">",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2005/showplanxml.xsd: <xsd:extension base=\"shp:BaseStmtInfoType\">",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2005/showplanxml.xsd: <xsd:extension base=\"shp:RelOpBaseType\">",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2005/showplanxml.xsd: <xsd:extension base=\"shp:RowsetType\">"
+      ]
+    },
+    {
+      "type": "implements",
+      "probe": "supertype-clause",
+      "construct": "an element carrying an interface/implements clause",
+      "occurrences": 307,
+      "files": 20,
+      "breakdown": {
+        "interface": 261,
+        "abstract": 46
+      },
+      "examples": [
+        "ghostty/src/apprt/gtk/winproto/wayland/protocols/vicinae-hotkey-v1.xml: <interface>",
+        "libxslt/doc/tutorial/libxslttutorial.xml: <abstract>",
+        "libxslt/tests/docbook/fo/titlepage.templates.xml: <abstract>",
+        "libxslt/tests/docbook/html/titlepage.templates.xml: <abstract>"
+      ]
+    },
+    {
+      "type": "overrides",
+      "probe": "same-file-template-override",
+      "construct": "two xsl:template in one file with the same (match, mode, priority) — XSLT 1.0 s5.5 last wins",
+      "occurrences": 54,
+      "files": 54,
+      "breakdown": {
+        "match|": 51,
+        "match|*": 2,
+        "match|/": 1
+      },
+      "examples": [
+        "libxslt/doc/EXSLT/devhelp/html.xsl: xsl:template match=\"\" x3 times",
+        "libxslt/doc/devhelp/html.xsl: xsl:template match=\"\" x3 times",
+        "libxslt/tests/REC/test-6.1.xsl: xsl:template match=\"\" x2 times",
+        "libxslt/tests/XSLTMark/bottles.xsl: xsl:template match=\"\" x2 times"
+      ]
+    },
+    {
+      "type": "overrides",
+      "probe": "cross-file-override-source",
+      "construct": "an include/import/redefine edge — the construct that CREATES an override, across files",
+      "occurrences": 455,
+      "files": 221,
+      "breakdown": {
+        "import": 142,
+        "include": 312,
+        "redefine": 1
+      },
+      "examples": [
+        "bash-completion/test/fixtures/ant/build-with-import.xml: <import>",
+        "clojure/build.xml: <include>",
+        "clojure/src/assembly/distribution.xml: <include>",
+        "dbeaver/features/org.jkiss.dbeaver.ce.feature/pom.xml: <include>"
+      ]
+    },
+    {
+      "type": "instantiates",
+      "probe": "constructor-or-new",
+      "construct": "an element that creates an instance of a declared construct",
+      "occurrences": 0,
+      "files": 0,
+      "breakdown": {},
+      "examples": []
+    }
+  ],
+  "elementLocalNameTop": [
+    [
+      "path",
+      26576
+    ],
+    [
+      "text",
+      13007
+    ],
+    [
+      "tspan",
+      12190
+    ],
+    [
+      "svg",
+      9982
+    ],
+    [
+      "circle",
+      9529
+    ],
+    [
+      "element",
+      9469
+    ],
+    [
+      "g",
+      8523
+    ],
+    [
+      "template",
+      7820
+    ],
+    [
+      "attribute",
+      6958
+    ],
+    [
+      "polyline",
+      6066
+    ],
+    [
+      "rect",
+      5426
+    ],
+    [
+      "glyph",
+      4549
+    ],
+    [
+      "title",
+      4318
+    ],
+    [
+      "gentext",
+      4186
+    ],
+    [
+      "apply-templates",
+      4168
+    ],
+    [
+      "file",
+      4103
+    ],
+    [
+      "complexType",
+      3404
+    ],
+    [
+      "use",
+      3296
+    ],
+    [
+      "enumeration",
+      3242
+    ],
+    [
+      "entry",
+      3136
+    ],
+    [
+      "p",
+      2509
+    ],
+    [
+      "sequence",
+      2243
+    ],
+    [
+      "LINE",
+      2159
+    ],
+    [
+      "style",
+      2128
+    ],
+    [
+      "para",
+      2111
+    ],
+    [
+      "symbol",
+      2037
+    ],
+    [
+      "defs",
+      1993
+    ],
+    [
+      "extension",
+      1899
+    ],
+    [
+      "value-of",
+      1846
+    ],
+    [
+      "documentation",
+      1758
+    ],
+    [
+      "annotation",
+      1688
+    ],
+    [
+      "polygon",
+      1668
+    ],
+    [
+      "call-template",
+      1528
+    ],
+    [
+      "clipPath",
+      1521
+    ],
+    [
+      "tree",
+      1226
+    ],
+    [
+      "i",
+      1204
+    ],
+    [
+      "stop",
+      1197
+    ],
+    [
+      "when",
+      1191
+    ],
+    [
+      "item",
+      1175
+    ],
+    [
+      "hkern",
+      1141
+    ],
+    [
+      "variable",
+      1036
+    ],
+    [
+      "line",
+      1010
+    ],
+    [
+      "arg",
+      998
+    ],
+    [
+      "with-param",
+      994
+    ],
+    [
+      "id",
+      988
+    ],
+    [
+      "setting",
+      858
+    ],
+    [
+      "order",
+      834
+    ],
+    [
+      "total",
+      834
+    ],
+    [
+      "orderdate",
+      830
+    ],
+    [
+      "param",
+      811
+    ],
+    [
+      "a",
+      785
+    ],
+    [
+      "if",
+      758
+    ],
+    [
+      "command",
+      726
+    ],
+    [
+      "items",
+      691
+    ],
+    [
+      "property",
+      673
+    ],
+    [
+      "code",
+      662
+    ],
+    [
+      "complexContent",
+      638
+    ],
+    [
+      "exports",
+      610
+    ],
+    [
+      "parameter",
+      609
+    ],
+    [
+      "stylesheet",
+      595
+    ],
+    [
+      "choose",
+      594
+    ],
+    [
+      "eg",
+      554
+    ],
+    [
+      "simpleType",
+      553
+    ],
+    [
+      "div",
+      551
+    ],
+    [
+      "listitem",
+      551
+    ],
+    [
+      "folder",
+      541
+    ],
+    [
+      "restriction",
+      538
+    ],
+    [
+      "xref",
+      534
+    ],
+    [
+      "group",
+      533
+    ],
+    [
+      "version",
+      525
+    ],
+    [
+      "artifactId",
+      511
+    ],
+    [
+      "simpleContent",
+      505
+    ],
+    [
+      "field",
+      504
+    ],
+    [
+      "SPEECH",
+      500
+    ],
+    [
+      "SPEAKER",
+      500
+    ],
+    [
+      "otherwise",
+      480
+    ],
+    [
+      "linearGradient",
+      476
+    ],
+    [
+      "plugin",
+      464
+    ],
+    [
+      "description",
+      431
+    ],
+    [
+      "td",
+      423
+    ],
+    [
+      "choice",
+      421
+    ],
+    [
+      "function",
+      407
+    ],
+    [
+      "block",
+      406
+    ],
+    [
+      "color",
+      404
+    ],
+    [
+      "info",
+      399
+    ],
+    [
+      "handler",
+      354
+    ],
+    [
+      "date",
+      336
+    ],
+    [
+      "nt",
+      329
+    ],
+    [
+      "context",
+      326
+    ],
+    [
+      "return",
+      319
+    ],
+    [
+      "include",
+      312
+    ],
+    [
+      "ellipse",
+      311
+    ],
+    [
+      "directory",
+      302
+    ],
+    [
+      "attributeGroup",
+      298
+    ],
+    [
+      "groupId",
+      295
+    ],
+    [
+      "issue",
+      295
+    ],
+    [
+      "module",
+      292
+    ],
+    [
+      "test",
+      290
+    ],
+    [
+      "desc",
+      284
+    ],
+    [
+      "location",
+      283
+    ],
+    [
+      "name",
+      274
+    ],
+    [
+      "objectType",
+      272
+    ],
+    [
+      "dataType",
+      266
+    ],
+    [
+      "term",
+      265
+    ],
+    [
+      "span",
+      264
+    ],
+    [
+      "member",
+      263
+    ],
+    [
+      "interface",
+      261
+    ],
+    [
+      "with",
+      259
+    ],
+    [
+      "enabledWhen",
+      259
+    ],
+    [
+      "key",
+      255
+    ],
+    [
+      "row",
+      251
+    ],
+    [
+      "column",
+      247
+    ],
+    [
+      "type",
+      246
+    ],
+    [
+      "image",
+      246
+    ],
+    [
+      "parent",
+      245
+    ],
+    [
+      "copy-of",
+      242
+    ],
+    [
+      "application",
+      240
+    ],
+    [
+      "doc",
+      240
+    ],
+    [
+      "reference",
+      235
+    ],
+    [
+      "visibleWhen",
+      235
+    ]
+  ]
+}

@@ -46,6 +46,13 @@ import { claimOwnerCarryingTargets, resolveMemberTargetsByOwner } from "./member
 import { reconcilePhpProjectOverrides } from "./php-project-overrides"
 import { reconcilePhpTypeTargets } from "./php-type-resolution"
 import { reconcilePhpFunctionTargets } from "./php-function-resolution"
+import {
+  deleteSecurityFlowsForFile,
+  persistSecurityLeads,
+  prepareSecurityFlowStatements,
+  readSecurityFlows,
+  securityLegacyEnabled,
+} from "../intelligence/security/rebuild/store"
 import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
@@ -1245,6 +1252,9 @@ async function discoverAndFilterFiles(
 
           deleteFileRelationships.run(projectId, fileId, relativePath)
           deleteFileTaints.run(fileId, fileId)
+          // M72: the file is gone from disk, so every lead it owned must go
+          // too (as a source AND as a sink endpoint).
+          deleteSecurityFlowsForFile(rawDb, projectId, fileId)
           deleteFileSymbols.run(fileId)
           deleteFileImports.run(fileId)
           deleteFile.run(fileId)
@@ -3654,6 +3664,8 @@ export async function storeResults(
   symbols: number
   relationships: number
   imports: number
+  /** M72: spec-engine leads persisted into brain_security_flow by this call. */
+  securityLeads?: number
   /** Batches that rolled back during this call — their files are NOT in the index. */
   rolledBackBatches?: number
   /** How many files those rolled-back batches carried (an upper bound on the loss). */
@@ -3662,6 +3674,9 @@ export async function storeResults(
   let totalSymbols = 0
   let totalRelationships = 0
   let totalImports = 0
+  // M72: security leads persisted in this call. Counted separately so a run can
+  // report "0 leads" as a fact about the engine/specs rather than as silence.
+  let totalSecurityLeads = 0
   // A rollback used to be swallowed: the batch was skipped, a line went to stderr, and
   // the run went on to report success with a status of "complete". Measured consequence:
   // a full disk (or any constraint failure) produced `✓ indexed N files` with N silently
@@ -3798,6 +3813,20 @@ export async function storeResults(
      WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
         OR sink_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
    `)
+
+   // M72: the spec-engine lead store. Prepared ONCE for the whole store phase —
+   // `prepareSecurityFlowStatements` also creates the table when a pre-existing
+   // database has never been opened writable since the table existed (additive,
+   // idempotent; safe on every open).
+   //
+   // The delete is FILE-scoped and must run BEFORE `deleteFileSymbols`, because
+   // two of its three predicates resolve through `brain_symbol`. That ordering is
+   // the whole stale-row contract: an edit that REMOVES a lead re-parses the file,
+   // the delete drops every row the file owned (as a source OR as a sink), and
+   // only then does the new parse insert whatever leads remain — so a dead lead
+   // cannot survive the edit.
+   const securityFlowStmts = prepareSecurityFlowStatements(rawDb)
+   const deleteFileSecurityFlows = securityFlowStmts.deleteForFile
  
    const batchSize = ParallelIndexerConfig.dbBatchSize
  
@@ -3970,6 +3999,10 @@ export async function storeResults(
      deleteFileRelationships,
      deleteFileRelationshipsByTarget,
      deleteFileTaints,
+     // M72 lead store: participates in the same per-file delete sequence and the
+     // same #737 per-statement diagnostics map as every other file-scoped write.
+     deleteFileSecurityFlows,
+     insertSecurityFlow: securityFlowStmts.insert,
    }
    const stmt: Record<string, any> = { ...stmtOriginal }
 
@@ -3977,6 +4010,9 @@ export async function storeResults(
    for (let i: any = 0; i < results.length; i += batchSize) {
      const batch = results.slice(i, i + batchSize)
      let batchSymbols = 0, batchRelationships = 0, batchImports = 0
+   // M72: security leads are counted per batch like every other write, so a
+   // ROLLED-BACK batch cannot leave its leads in the run's total.
+   let batchSecurityLeads = 0
  
      const tx = rawDb.transaction((batch: any) => {
        for (const result of batch) {
@@ -4049,6 +4085,14 @@ export async function storeResults(
          // Must precede deleteFileSymbols — it resolves the file's symbol ids
          // through brain_symbol, so running it after would delete nothing.
          stmt.deleteFileEmbeddings.run(fileId)
+         // M72: the file's security leads are deleted HERE — before the symbol
+         // rows go — for the same reason as embeddings: the delete finds the
+         // rows through brain_symbol as well as through file_id. This is the
+         // stale-lead contract: reindexing a file clears every lead it owned, so
+         // a lead the edit removed is GONE (and only re-inserted if the new parse
+         // still produces it). Ordered after relationships and before symbols so
+         // no FK/REPLACE cascade can pre-empt it.
+         stmt.deleteFileSecurityFlows.run(projectId, fileId, fileId, fileId)
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
@@ -4137,6 +4181,12 @@ export async function storeResults(
         // (test-classification.ts) now gates on file type first; the path-shape
         // rules are unchanged and shared with AnalysisExclusions (T5).
         const isTestFile = isTestFileCandidate(relativePath, result.language) ? 1 : 0
+        // M72: leads are deduped per FILE by (ruleId, absolute sink line,
+        // vulnerability). Container symbols are skipped in pool-worker; this set
+        // is the second guard against any remaining duplicate emission (e.g. a
+        // macro-expanded body and its declaration) and keeps the stored row count
+        // equal to the number of distinct danger sites, not symbol matches.
+        const securityLeadKeys = new Set<string>()
  
          // Count lines — use max symbol endLine as estimate, fallback to 0
          let lineCount = 0
@@ -4694,6 +4744,47 @@ export async function storeResults(
              )
              batchSymbols++
              insertedSymbolIds.add(symbolId)
+             // M72: persist the spec engine's leads for this symbol into
+             // brain_security_flow. The file-scoped delete for this file already
+             // ran earlier in the per-file sequence (before brain_symbol was
+             // deleted), so this insert only adds the leads the NEW parse emitted.
+             // `securityFlows` is attached by pool-worker; the stored symbol id is
+             // computed HERE, which is why the worker cannot persist them itself.
+             {
+               const rawSecurityFlows = (symbol as any).securityFlows
+               if (Array.isArray(rawSecurityFlows) && rawSecurityFlows.length > 0) {
+                 const securityFlows = rawSecurityFlows.filter((lead: any) => {
+                   const relativeSinkLine = Number(lead?.evidence?.sink?.line ?? 0)
+                   const absoluteSinkLine =
+                     symbolStartLine + (Number.isFinite(relativeSinkLine) && relativeSinkLine > 0 ? relativeSinkLine - 1 : 0)
+                   const key = `${String(lead?.ruleId ?? "?")}|${absoluteSinkLine}|${String(lead?.vulnerability ?? "?")}`
+                   if (securityLeadKeys.has(key)) return false
+                   securityLeadKeys.add(key)
+                   return true
+                 })
+                 if (securityFlows.length > 0) {
+                   // Through the `stmt` map, not the raw prepared handle: #737
+                   // swaps these entries with capturing wrappers when a batch
+                   // rolls back, so a security-row failure gets the same
+                   // file/statement diagnosis as every other write.
+                   const persisted = persistSecurityLeads(
+                     { deleteForFile: stmt.deleteFileSecurityFlows, insert: stmt.insertSecurityFlow },
+                     {
+                       projectId,
+                       fileId,
+                       relativePath,
+                       symbolId,
+                       symbolStartLine,
+                       language: fileLang,
+                       isTestFile: isTestFile === 1,
+                     },
+                     securityFlows,
+                     now,
+                   )
+                   batchSecurityLeads += persisted.inserted
+                 }
+               }
+             }
              // Universal contains relationship — owner→owned containment even
              // when analyzers have scope tracking bugs or when WASM fallback
              // skips the analyzer.
@@ -4788,8 +4879,14 @@ export async function storeResults(
                }
              }
  
-             // Process taint sources and sinks
-             if (symbol.taintSources || symbol.taintSinks) {
+             // ── LEGACY (rollback only): BB_SECURITY_LEGACY=1 ─────────────────────
+             // The token cross-product (every source x every sink in the symbol,
+             // severity hardcoded critical for sql/command) is what M72 replaces.
+             // It writes ONLY the archived brain_taint_flow table, and only when the
+             // env gate is set: the default pipeline writes brain_security_flow rows
+             // from the spec engine instead. Kept for one release so an operator can
+             // compare/diff results without a code revert.
+             if (securityLegacyEnabled() && (symbol.taintSources || symbol.taintSinks)) {
                const sources = symbol.taintSources || []
                const sinks = symbol.taintSinks || []
  
@@ -4879,7 +4976,10 @@ export async function storeResults(
                "java", "python", "go", "php", "ruby", "csharp", "kotlin", "scala",
                "typescript", "javascript", "tsx", "jsx", "rust", "swift", "dart",
              ])
-             if (!symbol.taintSources && !symbol.taintSinks && symbolKind === "function" && LANGUAGES_WITH_SQL.has(fileLang)) {
+             // LEGACY (rollback only): the BUG 6 heuristic wrote isolated-sink rows
+             // from string concatenation + a sink word for languages with no explicit
+             // taint extraction. Same gate as the cross-product above.
+             if (securityLegacyEnabled() && !symbol.taintSources && !symbol.taintSinks && symbolKind === "function" && LANGUAGES_WITH_SQL.has(fileLang)) {
                const snippet = symbol.snippet || ""
                const qualifiedCalls = symbol.qualifiedCalls || []
                const hasStringConcat = snippet.includes("+ ") || snippet.includes("concat")
@@ -5565,6 +5665,9 @@ export async function storeResults(
        totalSymbols += batchSymbols
        totalRelationships += batchRelationships
        totalImports += batchImports
+       // M72: security leads are written inside the SAME batch transaction, so a
+       // rolled-back batch must not leave its leads in this run's total.
+       totalSecurityLeads += batchSecurityLeads
      } catch (error) {
        rolledBackBatches++
        rolledBackFiles += batch.length
@@ -5857,7 +5960,7 @@ export async function storeResults(
      }
    } // Close the if (!options.skipResolution) block
  
-   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports, rolledBackBatches, rolledBackFiles }
+   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports, rolledBackBatches, rolledBackFiles, securityLeads: totalSecurityLeads }
   } finally {
     // M54.P1: restore the open-time FK policy on EVERY exit path (success,
     // throw, early return). The connection is process-cached and shared —
@@ -6721,6 +6824,14 @@ export const CROSS_SYMBOL_TAINT_QUERY = `
   `
 
 export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<number> {
+  // M72: this resolver stitched isolated-source rows to isolated-sink rows through
+  // call edges. The default pipeline no longer writes those legacy rows, so the
+  // resolver has nothing legitimate to join — returning early is the honest no-op,
+  // and it protects a direct caller (probes, post-processing) that forgot the gate.
+  if (!securityLegacyEnabled()) {
+    log.debug("cross-symbol taint resolution skipped (legacy detector disabled)", { projectId })
+    return 0
+  }
   log.debug("starting cross-symbol taint resolution", { projectId })
   const { BrainDatabase } = await import("../brain/database")
   const rawDb = await BrainDatabase.getRawInstance(projectId)
@@ -8447,13 +8558,30 @@ export async function runPostProcessing(
     _log.log("  [4/8] analyzing taint flows & security…")
     _t = Date.now()
     try {
-      await withHeartbeat("taint analysis", () => resolveCrossSymbolTaints(projectId))
+      // M72 default: the spec engine's leads are written by the store phase and
+      // need no cross-symbol stitching (Phase-1 leads are intra-symbol). The
+      // legacy resolver is gated with the writer that feeds it.
+      if (securityLegacyEnabled()) {
+        await withHeartbeat("taint analysis", () => resolveCrossSymbolTaints(projectId))
+      }
       recordPhase("taint", Date.now() - _t, "ok")
       try {
-        const taintFlows = Number(
-          (rawDb.prepare("SELECT COUNT(*) AS c FROM brain_taint_flow WHERE project_id = ?").get(projectId) as any)?.c ?? 0,
-        )
-        if (taintFlows > 0) _log.log(`        taint flows: ${taintFlows.toLocaleString()}`)
+        // M72 default: report the SPEC ENGINE's persisted leads, and say so when
+        // the store is initialized but empty (0 is a fact about specs/engine, not
+        // silence). The legacy table is only counted under the rollback gate, so a
+        // stale pre-M72 brain_taint_flow cannot be printed as current output.
+        const security = readSecurityFlows(rawDb, projectId, { limit: 1 })
+        if (!security.initialized) {
+          _log.log(`        security: ${security.message}`)
+        } else {
+          _log.log(`        security leads: ${security.total.toLocaleString()} (tier leads; not findings)`)
+        }
+        if (securityLegacyEnabled()) {
+          const taintFlows = Number(
+            (rawDb.prepare("SELECT COUNT(*) AS c FROM brain_taint_flow WHERE project_id = ?").get(projectId) as any)?.c ?? 0,
+          )
+          if (taintFlows > 0) _log.log(`        legacy taint flows (rollback): ${taintFlows.toLocaleString()}`)
+        }
       } catch {}
     } catch (postErr: any) {
       recordPhase("taint", Date.now() - _t, "failed")
@@ -8986,6 +9114,9 @@ export async function purgeDeletedFiles(projectId: ProjectID, projectPath: strin
       deleteRelBySource.run(projectId, id, id.slice(projectId.length + 1))
       deleteRelByTarget.run(id)
       deleteTaints.run(id, id)
+      // M72: same contract as the legacy taint delete above — a purged file's
+      // rows must not outlive it in brain_security_flow.
+      deleteSecurityFlowsForFile(rawDb, projectId, id)
       deleteSymbols.run(id)
       deleteImports.run(id)
       deleteFile.run(id)
@@ -9248,11 +9379,13 @@ export async function runBoundedPostProcessing(
     }
   }
 
-  // 5. taint — resolution processes only unresolved flows
+  // 5. taint — legacy cross-symbol resolution (rollback only; see
+  // resolveCrossSymbolTaints' own gate). Phase-1 leads are intra-symbol and need
+  // no stitching, so the default path has nothing to do here.
   {
     const _t = Date.now()
     try {
-      await resolveCrossSymbolTaints(projectId)
+      if (securityLegacyEnabled()) await resolveCrossSymbolTaints(projectId)
       recordPhase("taint", Date.now() - _t, "ok")
     } catch (e: any) {
       recordPhase("taint", Date.now() - _t, "failed")
@@ -9474,6 +9607,9 @@ export async function reindexFilesParallel(
           const fileId = `${projectId}:${relativePath}`
           deleteRelationships.run(projectId, fileId, relativePath)
           deleteTaints.run(fileId, fileId)
+          // M72: a deleted file's security leads are removed with it, before the
+          // symbol rows that the delete resolves through are removed.
+          deleteSecurityFlowsForFile(rawDb, projectId, fileId)
           deleteSymbols.run(fileId)
           deleteImports.run(fileId)
           deleteFile.run(fileId)

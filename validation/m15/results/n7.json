@@ -1,0 +1,12 @@
+{
+  "issue": "M15.N7",
+  "code": "N7",
+  "tool": "bb_analyze",
+  "title": "evidence + gate + closure",
+  "verified": true,
+  "checks": 6,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:20:26.850Z"
+}

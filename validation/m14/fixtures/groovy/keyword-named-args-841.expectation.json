@@ -1,0 +1,21 @@
+{
+  "fixtureId": "groovy/keyword-named-args-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS #841 round 9: KEYWORD-named argument keys (`g.formatBoolean(boolean: model.value)`). `map_item`'s key choice already accepted `identifier` and `_reserved_identifier` — which covers the CONTEXTUAL keywords (`class`, `default`, `module`, `record`, `sealed`, `var`), added for `exclude module: 'x'` in #850 — but not the type keywords or the remaining Java keywords, so the argument was an ERROR and recovery swallowed the enclosing class; forbidErrors is therefore the load-bearing assertion. The set is MEASURED, not guessed: 64 keywords were probed as `g.f(KW: v)` (script/m14/tmp/g841-r9-keyword-probe.ts), exactly 13 were refused by us, and real Groovy 3.0.24 accepted all 13 — boolean int long short byte char float double void new switch this super. After the fix the same probe refuses 0 of 64. Corpus consequence at the rebuilt wasm (grails-core @ a83f8748, whole tracked corpus, production parseFile pipeline), run corpus-A/B-FIRST per reviews/m59-841-assert-comma-separator.md 7h: 266 -> 265, 1 fixed (FormFieldsTagLib.groovy, the file that nominated the work), 0 regressed, crashes 0, pipeline mismatches 0. NOTE: authoredBeforeAnalyzerRun is false — the expectation was authored from live emission via script/m14/tmp/g841-fixture-dump.ts.",
+  "forbidErrors": [{}],
+  "expectSymbols": [
+    { "name": "KeywordNamedArgs841", "kind": "class" },
+    { "name": "format", "kind": "method" },
+    { "name": "formatNumber", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "format", "target": "formatBoolean" },
+    { "type": "calls", "source": "formatNumber", "target": "formatNumber" },
+    { "type": "contains", "source": "KeywordNamedArgs841", "target": "format" },
+    { "type": "contains", "source": "KeywordNamedArgs841", "target": "formatNumber" },
+    { "type": "uses", "source": "format", "target": "value" },
+    { "type": "uses", "source": "formatNumber", "target": "count" },
+    { "type": "uses", "source": "formatNumber", "target": "ratio" }
+  ]
+}

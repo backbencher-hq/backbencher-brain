@@ -1,0 +1,155 @@
+{
+  "comment": "The `exports` edge, one row per OPERAND of an `export` statement. Every spelling the statement has is asserted, and the two negative halves are the ones a name-collecting reader fails: the `except` operands must NOT be published, and a `*`-marked declaration must NOT acquire an `exports` edge (its visibility is already published as `visibility: public` + `metadata.exported`, which is a different fact stated by a different carrier).",
+  "expectSymbols": [
+    {
+      "name": "Payload",
+      "kind": "struct"
+    },
+    {
+      "name": "visible",
+      "kind": "function"
+    },
+    {
+      "name": "hidden",
+      "kind": "function"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "another",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "foo",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "meta.nimReExport": true,
+      "meta.evidenceClass": "structural",
+      "comment": "`export foo, Bar` — a bare operand is published by its own name. Confidence 1.0: the statement names it outright, with no inference and no name matching"
+    },
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "Bar",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "comment": "the second operand of the same expression_list"
+    },
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "hidden",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "comment": "`export hidden except …` — the operand BEFORE `except` is the re-export; the two after it are the exclusion"
+    },
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "Parser",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "meta.nimQualifiedName": "common_parser.Parser",
+      "comment": "a qualified operand is published by its LEAF, because the store resolves an endpoint by matching it against a symbol name and R10 requires the spelling the lane gives its own symbols. The written form is kept in nimQualifiedName, the two-part record the f# lane writes for `System.IDisposable`"
+    },
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "Payload",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "meta.nimAlias": "Renamed",
+      "comment": "`export Payload as Renamed` renames LOCALLY; what leaves the module is still `Payload`, so `Renamed` is the alias carried beside it and never the endpoint"
+    },
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "std/os",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "meta.nimModuleReExport": true,
+      "comment": "a `/`-separated operand is a MODULE, not a symbol, and is published whole — the same spelling the `imports` reader gives that module, so the two readings of one module are one target in the graph"
+    },
+    {
+      "type": "exports",
+      "from": "(global)",
+      "target": "strutils",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_reexport",
+      "comment": "a bare identifier that names an imported module is indistinguishable from one that names a local symbol without cross-file context, so it is published as written and carries no module marker. Recorded as a resolution finding, not guessed at"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "hidden",
+      "comment": "the importable-unit list keeps the names THIS FILE PROVIDES. `hidden` is declared here, so `export hidden` re-publishes a unit this module is the provider of — the ordinary Nim idiom for widening a private proc to a public one, and the one thing `except` qualifies"
+    },
+    {
+      "name": "Payload",
+      "meta.nimAlias": "Renamed",
+      "comment": "published under its own name; `Renamed` is the local alias and never enters the list, because no importer can bind `Renamed` from this module"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "foo",
+      "comment": "PROVIDER semantics. `export foo` where `foo` is declared in another module is a name somebody ELSE provides; listing it in this module's importable-unit set would give one name two providers. The re-export is still published — as the `exports` RELATIONSHIP asserted above — because 'this module hands this name onward' is true whoever declares it"
+    },
+    {
+      "name": "Parser",
+      "comment": "the same rule for the qualified spelling, whose endpoint is the leaf: `common_parser.Parser` is provided by common_parser, not here"
+    },
+    {
+      "name": "strutils",
+      "comment": "a re-exported module is provided by the module it names"
+    },
+    {
+      "name": "std/os",
+      "comment": "a `/` path is the provider itself"
+    },
+    {
+      "name": "helper",
+      "comment": "the withheld half, restated on the importable-unit carrier: `export hidden except helper` means `helper` does NOT leave this module, so it must not be in the list of units an importer can bind"
+    },
+    {
+      "name": "another",
+      "comment": "the second operand of the same `except_clause`"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "helper",
+      "comment": "THE regression this fixture exists for. `except` names what does NOT leave the module, so publishing `helper` states the inverse of the construct. A reader that collects every identifier under `export_statement` passes every positive row above and still fails here. Corpus evidence that the form is real: nim/compiler/nifstreams.nim withholds nine names this way"
+    },
+    {
+      "type": "exports",
+      "target": "another",
+      "comment": "the second operand of the same `except_clause` — one forbid per withheld name, so dropping the whole clause and dropping one name are different failures"
+    },
+    {
+      "type": "exports",
+      "target": "visible",
+      "comment": "the `*` marker is NOT the `export` statement. `proc visible*()` is published as `visibility: public` + `metadata.exported`, persisted into brain_symbol.visibility and already read by gravity (28,900 exported_symbol nodes in 1,335 corpus files). A second edge would restate it at ~17.6% payload growth for no query a reader could not already ask"
+    },
+    {
+      "type": "exports",
+      "target": "Renamed",
+      "comment": "an alias is a LOCAL name. The module publishes `Payload`; nothing named `Renamed` exists outside it, so an endpoint spelled `Renamed` would not resolve to any symbol"
+    },
+    {
+      "type": "imports",
+      "target": "foo",
+      "comment": "the neighbouring-label half of question 4: `import std/strutils` is an `imports` edge, `export strutils` is an `exports` edge. A reader that filed both under one of the two would satisfy a looser expectation and be wrong here.\\n\\nThis row used to forbid `imports -> strutils`, and it is RETARGETED to `foo` because that forbid became UNSATISFIABLE rather than false. `reexport.nim` line 41 is `import std/[strutils, os]`, so a real `imports` edge to the module `strutils` exists and must exist; the old row would have failed against a correct analyzer. The discriminator is unchanged in kind: `foo` is published ONLY by `export foo, Bar` and is imported by nothing, so an implementation that filed that re-export under `imports` still fails here. Choosing a target the language cannot also produce as an import is what keeps the check satisfiable by a correct implementation."
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

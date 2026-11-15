@@ -1,0 +1,115 @@
+{
+ "fixtureId": "markdown/setext-heading-inline",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A SETEXT heading holds its text one level below itself -- `setext_heading > paragraph > inline` plus a `setext_hN_underline` sibling -- while an ATX heading holds it in a DIRECT `inline` child beside its `atx_hN_marker`. Both shapes are dumped from the pinned wasm by this lane's own probe, not read off a spec. `emitInlineUses` resolved the heading's inline with `findChildByType`, which walks DIRECT named children only, so it returned null for every setext heading and the method returned before emitting anything: every link, image, autolink and reference link inside a setext heading was dropped. The `if (!inline) return` read as a guard against a heading with no text and was in fact a guard that matched half the heading forms. The population is small and is stated rather than inflated: 76 setext headings in a 1,200-file corpus draw, across 17 files, and a whole-corpus scan of every line whose FOLLOWING line is a setext underline and which itself contains a link found 3 -- the H1 of `docker/vendor/github.com/hashicorp/go-immutable-radix/README.md`, the H1 of its `v2/` sibling, and line 4 of `packer/README.md`. All three are badge banners of exactly the shape of this fixture's H1. Three instances is small; the asymmetry inside ONE construct is the defect, which is the argument that closed MD-G1 for indented code blocks at a population the lane's first estimate understated by 100x. THIS FIXTURE IS PROVEN ABLE TO FAIL: with the fix reverted, `run-fixtures.ts --lang markdown` reads `FAIL markdown/setext-heading-inline` (8 pass / 1 fail) and this document emits 1 `uses` edge instead of 8. An earlier version of this file asserted the setext rows using ATX headings whose TEXT mentioned a setext destination, and it passed with the fix reverted -- it was the trivially-true fixture the honesty contract's red-team duty names, and reverting the fix is what exposed it. Nine behaviours are pinned. (1) BOTH links inside the setext H1 badge banner emit, which is the corpus shape. (2) Two destinations in one setext H2 both emit, so the fix is not a first-match path. (3) An autolink inside a setext heading emits, so the fix reaches the autolink arm. (4) A REFERENCE link inside a setext heading resolves through the document's own block-level `link_reference_definition`, matched by byte offset rather than by containment. (5) A setext heading whose text WRAPS emits a link that sits on the continuation line -- the inline block is the whole paragraph while the published NAME is the first line, which is the declared limitation recorded below. (6) A setext heading holding a code span publishes nothing for the code span's destination, because the inline grammar gives `code_span` only anonymous children; that exclusion is STRUCTURAL and the row that proves the fix did not become a text scan. (7) The ATX control still emits, so the setext rows are a fix and not a behaviour change. (8) The H1's own `contains` edges still name it, so the fix did not disturb heading identity. (9) Two `code_block` sites under the setext H1 publish as `code_block` and `code_block#2`, so the fix did not disturb site ordinals.",
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "go-immutable-radix [![CircleCI](https://circleci.com/gh/hashicorp/go-immutable-radix/tree/master.svg?style=svg)](https://circleci.com/gh/hashicorp/go-immutable-radix/tree/master)",
+   "target": "https://circleci.com/gh/hashicorp/go-immutable-radix/tree/master.svg?style=svg"
+  },
+  {
+   "type": "uses",
+   "from": "go-immutable-radix [![CircleCI](https://circleci.com/gh/hashicorp/go-immutable-radix/tree/master.svg?style=svg)](https://circleci.com/gh/hashicorp/go-immutable-radix/tree/master)",
+   "target": "https://circleci.com/gh/hashicorp/go-immutable-radix/tree/master"
+  },
+  {
+   "type": "uses",
+   "from": "A setext H2 with a [link](https://example.com/setext-h2), a second [one](https://example.com/setext-h2-b) and an <https://example.com/setext-h2-auto>",
+   "target": "https://example.com/setext-h2"
+  },
+  {
+   "type": "uses",
+   "from": "A setext H2 with a [link](https://example.com/setext-h2), a second [one](https://example.com/setext-h2-b) and an <https://example.com/setext-h2-auto>",
+   "target": "https://example.com/setext-h2-b"
+  },
+  {
+   "type": "uses",
+   "from": "A setext H2 with a [link](https://example.com/setext-h2), a second [one](https://example.com/setext-h2-b) and an <https://example.com/setext-h2-auto>",
+   "target": "https://example.com/setext-h2-auto",
+   "meta.role": "markdown_autolink"
+  },
+  {
+   "type": "uses",
+   "from": "A setext H2 naming [the reference][setext-ref], which is defined at block level below",
+   "target": "https://example.com/setext-reference",
+   "meta.resolvedVia": "link_reference_definition"
+  },
+  {
+   "type": "uses",
+   "from": "This setext heading's text is two lines long and the second carries a [wrapped link](https://example.com/setext-wrapped), so the paragraph the",
+   "target": "https://example.com/setext-wrapped"
+  },
+  {
+   "type": "uses",
+   "from": "The ATX control, which worked before this fixture existed",
+   "target": "https://example.com/atx-control"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "target": "https://bad.example/setext-code-span",
+   "comment": "a code span inside a setext heading is still not a link, and this row is the load-bearing negative: a fix that reached the setext inline by walking TEXT instead of by matching the parsed tree would publish it, so this assertion is what separates the two implementations."
+  },
+  {
+   "target": "Setext Level Two is not a heading here; the badge banner is the only setext H1",
+   "comment": "the record of the trivially-true row. Kept as a forbid so the name can never be reintroduced as an expectation, and so a reader sees the correction rather than only the correction's absence."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "A setext heading carrying two destinations and an autolink",
+   "equals": 1
+  },
+  {
+   "name": "A setext heading holding a code span is still not a link",
+   "equals": 1
+  },
+  {
+   "name": "code_block",
+   "equals": 1
+  },
+  {
+   "name": "code_block#2",
+   "equals": 1
+  }
+ ],
+ "_measuredOnTheLaneCorpus": {
+  "note": "the numbers the fix is accountable for, each re-derivable by the probe named beside it",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedMarkdownFiles": 12729,
+  "drawFiles": 1200,
+  "probe": "validation/m14/fixtures/markdown/construct-probe.ts plus the per-heading-form split in this lane's report",
+  "setextHeadingsInDraw": 76,
+  "filesWithASetextHeadingInDraw": 17,
+  "inlineFactsInsideSetextHeadingText": {
+   "nonFragmentLinkDestination": 0,
+   "fragmentOnlyLinkDestination": 0,
+   "uriOrEmailAutolink": 0,
+   "referenceLinkUse": 0
+  },
+  "inlineFactsInsideAtxHeadingText": {
+   "nonFragmentLinkDestination": 211,
+   "referenceLinkUse": 151
+  },
+  "wholeCorpusScanOfSetextHeadingLinesContainingALink": 3,
+  "wholeCorpusScanMethod": "for every tracked .md/.markdown line whose FOLLOWING line is a setext underline and which itself contains a link, over the whole corpus root",
+  "instances": [
+   "docker/vendor/github.com/hashicorp/go-immutable-radix/README.md:1",
+   "docker/vendor/github.com/hashicorp/go-immutable-radix/v2/README.md:1",
+   "packer/README.md:4"
+  ],
+  "fixtureAblation": {
+   "note": "the proof that this file is not trivially true, recorded because the first version of it was",
+   "withFix": "9 pass / 0 fail; this document emits 19 relationships of which 8 are `uses`",
+   "fixReverted": "8 pass / 1 fail; this document emits 14 relationships of which 1 is `uses` (the ATX control)",
+   "firstVersionOfThisFixture": "asserted the setext rows using ATX headings whose TEXT mentioned a setext destination. Every row matched an ATX edge, so it read 9 pass / 0 fail with the fix reverted. Caught by reverting the fix, which is the only reason it was caught."
+  }
+ },
+ "_declaredLimitation": {
+  "what": "A setext heading's published NAME is the FIRST LINE of its text, while the inline block its links are read from is the whole paragraph. A setext heading whose text wraps therefore publishes the first line as its name and any link on the continuation line as an edge FROM that name -- so the link's source name does not contain the link.",
+  "why": "The name is the contract spelling (MD-D2) and 59 hand-audited M12 ground-truth facts depend on it. Widening it to the whole paragraph would change every setext heading's identity, and the corpus holds 0 multi-line setext headings carrying a link outside this fixture, so there is no measurement to justify the change.",
+  "wouldBeWrongTo": "widen the name to the whole paragraph without a corpus measurement of how many setext headings wrap and what their names would become"
+ }
+}

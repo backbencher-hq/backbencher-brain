@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_evidence_tier_verification",
+  "at": "2026-10-04",
+  "rule": "real-lua-analyzer.ts:1381 — `evidenceClassFor` derives the tier from the type alone, and a confidence below 1.0 must not carry `structural`. `usage_contextual` is the family's word for a link resting on a name in a value position (real-css-analyzer.ts:737); honesty contract §4 requires the reason code beside every sub-1.0 confidence.",
+  "entryPoint": "src/ast/pool-worker.ts parseFile",
+  "filesSampled": 3252,
+  "cap": null,
+  "analyzerEdgesExamined": 219576,
+  "poolWorkerFallbackEdges": 0,
+  "poolWorkerFallbackEdgesMissingATier": 0,
+  "poolWorkerFallbackExamples": [],
+  "analyzerEdgesMissingATier": 0,
+  "byTier": {
+    "structural": 118118,
+    "import_based": 46623,
+    "usage_contextual": 54835
+  },
+  "byTypeAndLabel": {
+    "calls/(none)": {
+      "conf=1 tier=structural": 57392
+    },
+    "references/lua_member_read": {
+      "conf=0.9 tier=import_based": 40022
+    },
+    "contains/(none)": {
+      "conf=1 tier=structural": 55203
+    },
+    "uses/lua_name_read": {
+      "conf=0.9 tier=usage_contextual": 54831
+    },
+    "exports/lua_module_return": {
+      "conf=1 tier=structural": 5167
+    },
+    "imports/lua_require": {
+      "conf=1 tier=import_based": 6601
+    },
+    "extends/lua_metatable": {
+      "conf=1 tier=structural": 169
+    },
+    "instantiates/instantiates": {
+      "conf=1 tier=structural": 122
+    },
+    "overrides/lua_redefinition": {
+      "conf=1 tier=structural": 65
+    },
+    "extends/lua_factory_supertype": {
+      "conf=0.95 tier=usage_contextual": 2
+    },
+    "overrides/lua_inherited_member": {
+      "conf=0.95 tier=usage_contextual": 2
+    }
+  },
+  "violations": {
+    "count": 0,
+    "sample": []
+  },
+  "overturn": "a violation count above 0 means a sub-1.0 edge claims a parse-fact tier. The check cannot show the rule is right for a type nobody has exercised; it tests the tiers this corpus produces."
+}

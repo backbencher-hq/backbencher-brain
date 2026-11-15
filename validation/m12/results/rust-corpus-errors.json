@@ -1,0 +1,305 @@
+{
+  "analyzer": "rust",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/cargo",
+  "corpusRepo": "cargo",
+  "revision": "94faf9175f010e171466841c77e38b47d9503ac8",
+  "extensions": [
+    "*.rs"
+  ],
+  "mode": "deterministic-first-400-sorted",
+  "trackedFilesInCorpus": 1373,
+  "measuredFiles": 400,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 24,
+  "cleanFiles": 376,
+  "missingNodeFiles": 0,
+  "errorNodeFiles": 24,
+  "errorRates": {
+    "any": 6,
+    "missing": 0,
+    "error": 6
+  },
+  "grammarErrorFiles": 24,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 37784,
+  "missingTokens": {},
+  "errorLineSignatures": {
+    ".ID(ID![[ID#\"": 639,
+    "ID![[ID#\"": 125,
+    "ID.ID().ID(ID).ID(ID![[ID#\"": 51,
+    "ID.ID(ID).ID(ID![[ID#\"": 17,
+    "ID![[ID##\"": 12,
+    "ID![[ID#ID.32ID#]],": 11,
+    "ID.ID(ID![[ID#\"": 11,
+    "ID(ID![[ID#\"": 7,
+    "ID.ID().ID(ID).ID(ID![": 5,
+    "ID![ID],": 4,
+    "(ID, ID![[ID#ID.32ID#]]),": 2,
+    "(ID, ID![ID]),": 2,
+    "(ID, ID(ID![ID])),": 2,
+    "ID ID = ID.ID(&ID);": 2,
+    "&ID(ID) => ID,": 1,
+    "}": 1,
+    "ID ID ID {": 1,
+    ".ID(ID![[ID#\"[ID] ID `--ID-ID` ID ID ID, ID ID ID ID ID ID ID ID ID, I": 1,
+    ".ID(ID![])": 1,
+    "ID().ID(&ID, ID![[ID#\"": 1
+  },
+  "firstErrorLineSignatures": {
+    ".ID(ID![[ID#\"": 13,
+    "ID![[ID#\"": 4,
+    "(ID, ID![[ID#ID.32ID#]]),": 2,
+    "(ID, ID(ID![ID])),": 1,
+    "&ID(ID) => ID,": 1,
+    "}": 1,
+    "ID![ID],": 1,
+    ".ID(ID![[ID#\"[ID] ID `--ID-ID` ID ID ID, ID ID ID ID ID ID ID ID ID, I": 1
+  },
+  "errorFileList": [
+    {
+      "file": "crates/cargo-util-schemas/src/core/partial_version.rs",
+      "nodes": 8,
+      "missingTokens": [],
+      "errorNodes": 8,
+      "firstRow": 237,
+      "firstKind": "ERROR",
+      "firstLine": "(\"foodaddle\", str![[r#\"expected a version like \"1.32\"\"#]]),",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "crates/cargo-util-schemas/src/index.rs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 317,
+      "firstKind": "ERROR",
+      "firstLine": "(\"2025-01-02T09:03:02Z\", Some(str![\"2025-01-02T09:03:02Z\"])),",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "crates/cargo-util-schemas/src/manifest/rust_version.rs",
+      "nodes": 7,
+      "missingTokens": [],
+      "errorNodes": 7,
+      "firstRow": 246,
+      "firstKind": "ERROR",
+      "firstLine": "(\"foodaddle\", str![[r#\"expected a version like \"1.32\"\"#]]),",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "crates/rustfix/tests/everything/handle-insert-only.rs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 6,
+      "firstKind": "ERROR",
+      "firstLine": "&Some(x) => x,",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/util/cpu.rs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 187,
+      "firstKind": "ERROR",
+      "firstLine": "}",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/util/frontmatter.rs",
+      "nodes": 18,
+      "missingTokens": [],
+      "errorNodes": 18,
+      "firstRow": 702,
+      "firstKind": "ERROR",
+      "firstLine": "str![\"unclosed frontmatter; expected `---`\"],",
+      "pipelineErrors": 18
+    },
+    {
+      "file": "tests/build-std/main.rs",
+      "nodes": 6,
+      "missingTokens": [],
+      "errorNodes": 6,
+      "firstRow": 474,
+      "firstKind": "ERROR",
+      "firstLine": "str![[r#\"",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "tests/testsuite/alt_registry.rs",
+      "nodes": 40,
+      "missingTokens": [],
+      "errorNodes": 40,
+      "firstRow": 2107,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 40
+    },
+    {
+      "file": "tests/testsuite/artifact_dep.rs",
+      "nodes": 58,
+      "missingTokens": [],
+      "errorNodes": 58,
+      "firstRow": 3726,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "tests/testsuite/artifact_dir.rs",
+      "nodes": 7,
+      "missingTokens": [],
+      "errorNodes": 7,
+      "firstRow": 357,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"[ERROR] the `--artifact-dir` flag is unstable, and only available on the nightly channel of C",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "tests/testsuite/bad_config.rs",
+      "nodes": 120,
+      "missingTokens": [],
+      "errorNodes": 120,
+      "firstRow": 4190,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "tests/testsuite/bad_manifest_path.rs",
+      "nodes": 60,
+      "missingTokens": [],
+      "errorNodes": 60,
+      "firstRow": 787,
+      "firstKind": "ERROR",
+      "firstLine": "str![[r#\"",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "tests/testsuite/bench.rs",
+      "nodes": 64,
+      "missingTokens": [],
+      "errorNodes": 64,
+      "firstRow": 2123,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "tests/testsuite/binary_name.rs",
+      "nodes": 16,
+      "missingTokens": [],
+      "errorNodes": 16,
+      "firstRow": 520,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 16
+    },
+    {
+      "file": "tests/testsuite/build.rs",
+      "nodes": 155,
+      "missingTokens": [],
+      "errorNodes": 155,
+      "firstRow": 6831,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "tests/testsuite/build_analysis.rs",
+      "nodes": 17,
+      "missingTokens": [],
+      "errorNodes": 17,
+      "firstRow": 733,
+      "firstKind": "ERROR",
+      "firstLine": "str![[r#\"",
+      "pipelineErrors": 17
+    },
+    {
+      "file": "tests/testsuite/build_dir.rs",
+      "nodes": 45,
+      "missingTokens": [],
+      "errorNodes": 45,
+      "firstRow": 1502,
+      "firstKind": "ERROR",
+      "firstLine": ".assert_build_dir_layout(str![[r#\"",
+      "pipelineErrors": 45
+    },
+    {
+      "file": "tests/testsuite/build_dir_fine_grain_locking.rs",
+      "nodes": 40,
+      "missingTokens": [],
+      "errorNodes": 40,
+      "firstRow": 1321,
+      "firstKind": "ERROR",
+      "firstLine": ".assert_build_dir_layout(str![[r#\"",
+      "pipelineErrors": 40
+    },
+    {
+      "file": "tests/testsuite/build_dir_legacy.rs",
+      "nodes": 40,
+      "missingTokens": [],
+      "errorNodes": 40,
+      "firstRow": 1377,
+      "firstKind": "ERROR",
+      "firstLine": "str![[r#\"",
+      "pipelineErrors": 40
+    },
+    {
+      "file": "tests/testsuite/build_script.rs",
+      "nodes": 137,
+      "missingTokens": [],
+      "errorNodes": 137,
+      "firstRow": 7095,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "tests/testsuite/build_script_env.rs",
+      "nodes": 19,
+      "missingTokens": [],
+      "errorNodes": 19,
+      "firstRow": 448,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 19
+    },
+    {
+      "file": "tests/testsuite/build_script_extra_link_arg.rs",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 437,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "tests/testsuite/build_scripts_multiple.rs",
+      "nodes": 16,
+      "missingTokens": [],
+      "errorNodes": 16,
+      "firstRow": 872,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 16
+    },
+    {
+      "file": "tests/testsuite/cache_messages.rs",
+      "nodes": 13,
+      "missingTokens": [],
+      "errorNodes": 13,
+      "firstRow": 506,
+      "firstKind": "ERROR",
+      "firstLine": ".with_stderr_data(str![[r#\"",
+      "pipelineErrors": 13
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "tier": "T0",
+  "subject": "test/fixtures/polyglot",
+  "measuredAt": "2026-11-03T04:12:12.001Z",
+  "currentCommit": "755157b7fa1ebb9606a6284699e5b3ff4ff3d060",
+  "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/latency.mts --tier T0",
+  "environment": {
+    "node": "v22.22.1",
+    "cpus": 8,
+    "loadavg": "11.31 27.78 19.95 5/1669 53"
+  },
+  "database": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+    "bytes": 4096,
+    "mtimeMs": 1793593692950.985,
+    "population": {
+      "files": 5,
+      "symbols": 13,
+      "relationships": 26,
+      "annotations": 0
+    }
+  },
+  "rules": [
+    "BB_NO_AUTO_REFRESH=1",
+    "one discarded warmup call per subject",
+    "5 measured runs",
+    "p50/p95 from the measured runs",
+    "handler imported from source"
+  ],
+  "subjects": {
+    "default-project-wide": {
+      "args": {},
+      "runs": [
+        2.498,
+        2.722,
+        2.56,
+        2.631,
+        2.563
+      ],
+      "p50Ms": 2.563,
+      "p95Ms": 2.722,
+      "minMs": 2.498,
+      "maxMs": 2.722,
+      "bytes": 941,
+      "answerShape": {
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    },
+    "another-name-absent": {
+      "args": {
+        "symbol": "bb-annotations-audit-name-that-does-not-exist"
+      },
+      "runs": [
+        2.791,
+        2.773,
+        2.75,
+        2.687,
+        2.869
+      ],
+      "p50Ms": 2.773,
+      "p95Ms": 2.869,
+      "minMs": 2.687,
+      "maxMs": 2.869,
+      "bytes": 374,
+      "answerShape": {
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "declaredAbsent": true,
+        "isError": false
+      }
+    },
+    "limit-1": {
+      "args": {
+        "limit": 1
+      },
+      "runs": [
+        2.668,
+        3.067,
+        2.882,
+        2.905,
+        3.221
+      ],
+      "p50Ms": 2.905,
+      "p95Ms": 3.221,
+      "minMs": 2.668,
+      "maxMs": 3.221,
+      "bytes": 678,
+      "answerShape": {
+        "count": 1,
+        "totalCountIfKnown": 2,
+        "truncated": true,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    },
+    "subject-symbol": {
+      "args": {
+        "symbol": "Inventory"
+      },
+      "runs": [
+        3.217,
+        3.289,
+        3.299,
+        3.486,
+        3.227
+      ],
+      "p50Ms": 3.289,
+      "p95Ms": 3.486,
+      "minMs": 3.217,
+      "maxMs": 3.486,
+      "bytes": 947,
+      "answerShape": {
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    },
+    "subject-path": {
+      "args": {
+        "path": "README.md"
+      },
+      "runs": [
+        2.971,
+        2.97,
+        3.131,
+        2.608,
+        2.649
+      ],
+      "p50Ms": 2.97,
+      "p95Ms": 3.131,
+      "minMs": 2.608,
+      "maxMs": 3.131,
+      "bytes": 596,
+      "answerShape": {
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    }
+  },
+  "absencePath": {
+    "args": {},
+    "coldCallMs": 10.097,
+    "isError": false,
+    "count": 0,
+    "totalCountIfKnown": 0,
+    "declaredAbsent": true,
+    "bytes": 265
+  },
+  "seed": {
+    "subjectSymbol": "Inventory",
+    "subjectPath": "README.md",
+    "seededIds": 3,
+    "rowsAfterSeed": 2
+  },
+  "budget": {
+    "p95Ms": 250,
+    "verdict": "within budget",
+    "rule": "campaign §6 (T0<250ms, T1<1s, read tools <5s at T2)"
+  }
+}

@@ -1,0 +1,96 @@
+{
+ "fixtureId": "perl/ontology-mixin-composition",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "Authored 2026-10-26 BEFORE the analyzer run that proves it, as the LIVE CONTROL for a corpus-unexercised declaration: the whole-population census (validation/m14/measurements/perl-extended-census.json) measured 0 role-composition sites over 656 admitted files, so this file is the only witness that the emission can fire.",
+ "rationale": "`mixes_in` is composition-WITHOUT-is-a: the consuming class takes the role's IMPLEMENTATION, and the source writes no `extends`/`@ISA` for the role. Perl's vocabulary for it is exactly the two spellings here — Moose/Moo `with` (one name, a `qw` list, or the modifier-specification forms) and the pre-`with` `use role 'R'`. The SAME statement is also conformance (a Moose role can declare required methods; the class answers DOES), which is why each row appears twice under two labels: the fixture's job is to keep the two facts SEPARABLE, not to make one of them stand for the other. The last two lines are the REFUSALS: `with $dynamic` and `use role $other` name a runtime VALUE, so the file writes no name and no edge is published for either.",
+ "expectSymbols": [
+  {
+   "name": "Ontology::Composed",
+   "kind": "class"
+  },
+  {
+   "name": "own",
+   "kind": "method",
+   "ownerName": "Ontology::Composed"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "Ontology::Composed",
+   "target": "Plain",
+   "line_number": 24,
+   "meta.reasonCode": "moo-role-composition",
+   "meta.mooseKeyword": "with",
+   "note": "the conformance half: the class answers DOES for the role's declared interface."
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Composed",
+   "target": "One",
+   "line_number": 25,
+   "meta.reasonCode": "moo-role-composition"
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Composed",
+   "target": "Two",
+   "line_number": 25,
+   "meta.reasonCode": "moo-role-composition",
+   "note": "the SECOND word of a `qw(...)` — the defect that read only the first word is why all words of the element are read."
+  },
+  {
+   "type": "implements",
+   "from": "Ontology::Composed",
+   "target": "Legacy",
+   "line_number": 26,
+   "meta.reasonCode": "use-role-composition"
+  },
+  {
+   "type": "mixes_in",
+   "from": "Ontology::Composed",
+   "target": "Plain",
+   "line_number": 24,
+   "meta.reasonCode": "moo-role-composition",
+   "meta.compositionSite": "role-composition",
+   "note": "the composition half: the role's implementation is copied into the class and no is-a relation is written."
+  },
+  {
+   "type": "mixes_in",
+   "from": "Ontology::Composed",
+   "target": "One",
+   "line_number": 25,
+   "meta.reasonCode": "moo-role-composition",
+   "meta.compositionSite": "role-composition"
+  },
+  {
+   "type": "mixes_in",
+   "from": "Ontology::Composed",
+   "target": "Two",
+   "line_number": 25,
+   "meta.reasonCode": "moo-role-composition",
+   "meta.compositionSite": "role-composition"
+  },
+  {
+   "type": "mixes_in",
+   "from": "Ontology::Composed",
+   "target": "Legacy",
+   "line_number": 26,
+   "meta.reasonCode": "use-role-composition",
+   "meta.compositionSite": "role-composition"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "mixes_in",
+   "target": "dynamic",
+   "note": "`with $dynamic` names a VARIABLE. If a widening ever strips the sigil and publishes the varname, this row catches the fabricated target."
+  },
+  {
+   "type": "mixes_in",
+   "target": "other",
+   "note": "the same refusal on the `use role $other` spelling."
+  }
+ ]
+}

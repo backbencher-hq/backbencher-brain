@@ -1,0 +1,114 @@
+{
+ "fixtureId": "perl/ontology-uses",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "PERL-ONTOLOGY. Written to hold FOUR rules that all failed at once, in the two shapes perl actually writes. SUPERSEDED 2026-10-26 for the code-slot TARGET only: the analyzer publishes the LEAF with `meta.qualifiedAs`, and that is measured (see rationale). The predecessor is kept byte-identical beside this file as `ontology-uses.expectation.superseded-2026-10-26.json`.",
+ "rationale": "SUPERSESSION RECORD (2026-10-26), measured against the analyzer's own output (script/m14/perl-fixture-divergence.mts): the old file pinned the code-slot rows' targets as the FULLY QUALIFIED name (`Ontology::Reads::handler`, `builtin::is_bool`). The analyzer publishes the LEAF (`handler`, `is_bool`) with the written package in `meta.qualifiedAs`, and that is deliberate at `src/ast/real-perl-analyzer.ts`'s `\\&name` branch: 1,267 `\\&name` + 278 `\\&Pkg::name` sites against 3,618 reference sites whose target is COMPUTED (`\\&$cb`, `\\&{\"Pkg::sub\"}`), so a target that trusted the text would have to fabricate one for the computed majority; `\\&Pkg::helper` and `\\&helper` are the SAME sub and one edge. The passing peer fixture `perl/code-references` already pins the identical leaf contract, so the old qualified-target rows were stale against the tree. THE TWO GAPS the old file named are now IMPLEMENTED and pinned here: (1) `defined &builtin::is_bool` — a code-slot reference the grammar types as a FUNCTION CALL (there is no `refgen_expression` in it), which the call branch correctly refused and nothing else published; the discriminator is the ARGUMENT LIST, not the leading `&`, because `&foo(@args)` is perl's explicit-call syntax; (2) `$Pkg::name` / `@Pkg::name` / `%Pkg::name` — a qualified variable READ, which keeps its FULL qualification because unlike a code slot a package variable has no per-sub binding (`$Foo::LIMIT` and `$Bar::LIMIT` are two globals, and a leaf would collapse them onto one node). The seven forbid rows are the controls: three shapes the file writes and the analyzer must NOT turn into an edge, the line-11 explicit-CALL discrimination narrowed to its own sub, and two rows pinning the QUALIFIED code-slot targets so a silent widening of the leaf rule goes red.",
+ "expectSymbols": [
+  {
+   "name": "Ontology::Reads",
+   "kind": "class"
+  },
+  {
+   "name": "slot",
+   "kind": "method",
+   "ownerName": "Ontology::Reads"
+  },
+  {
+   "name": "config",
+   "kind": "method",
+   "ownerName": "Ontology::Reads"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "slot",
+   "target": "handler",
+   "line_number": 8,
+   "meta.reasonCode": "code-reference",
+   "meta.qualifiedAs": "Ontology::Reads::handler",
+   "meta.evidenceClass": "usage_contextual",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9. The LEAF is the target and the package rides in meta.qualifiedAs — one sub, one node; see the supersession record in the rationale."
+  },
+  {
+   "type": "uses",
+   "from": "top",
+   "target": "SIGINT",
+   "line_number": 9,
+   "meta.reasonCode": "code-reference",
+   "note": "the unqualified case. This is the ONLY `uses` edge the lane emitted before this wave, which is why a dead-by-construction rewrite read as a working rule."
+  },
+  {
+   "type": "uses",
+   "from": "typed",
+   "target": "is_bool",
+   "line_number": 10,
+   "meta.reasonCode": "code-reference",
+   "meta.qualifiedAs": "builtin::is_bool",
+   "note": "a code-slot reference written where the grammar types a CALL: there is no `refgen_expression` in `defined &builtin::is_bool` at all. The discriminator is the ARGUMENT LIST, not the leading `&`, because `&foo(@args)` is perl's explicit-call syntax. Leaf target + qualifiedAs, the same rule as the `\\&name` row above."
+  },
+  {
+   "type": "uses",
+   "from": "config",
+   "target": "Config::SSL_ERROR",
+   "line_number": 12,
+   "meta.reasonCode": "qualified-variable-read",
+   "note": "a READ of another package's declared variable. The target keeps its full qualification: a leaf would collapse two packages' same-named globals onto one node."
+  },
+  {
+   "type": "uses",
+   "from": "queue",
+   "target": "Ontology::Reads::QUEUE",
+   "line_number": 13,
+   "meta.reasonCode": "qualified-variable-read"
+  },
+  {
+   "type": "uses",
+   "from": "table",
+   "target": "Ontology::Reads::TABLE",
+   "line_number": 14,
+   "meta.reasonCode": "qualified-variable-read"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "Ontology::Reads.handler",
+   "note": "the pre-fix shape: the `Owner.member` rewrite produced a target the written-name allowlist refuses, so the edge was DROPPED rather than published wrong — and nothing counted it"
+  },
+  {
+   "type": "uses",
+   "target": "SSL_ERROR",
+   "note": "the leaf collapse: two packages' same-named globals would become one node, which is the PERL-MR11 defect"
+  },
+  {
+   "type": "uses",
+   "from": "dynamic",
+   "note": "line 15 `$Config{ $key }::SSL_ERROR` computes its package half at runtime. An INTERPOLATED name is not a name: nothing written can be resolved, so nothing is published."
+  },
+  {
+   "type": "uses",
+   "from": "probe",
+   "note": "line 19 `$obj->can('maybe_missing')` names a method that MAY NOT EXIST — it is perl's conditional probe. Carrying it into bb_impact as a real dependency on a name the target may not have is the fabrication this workstream exists to keep out of the graph."
+  },
+  {
+   "type": "uses",
+   "from": "called",
+   "target": "handler",
+   "note": "line 11 `&Ontology::Reads::handler(1)` HAS an argument list, so it is perl's explicit-CALL syntax and the `calls` edge owns it. The two labels must not overlap. NARROWED to its own sub by the supersession: the old row forbade ANY `uses -> handler`, which the leaf contract above now legitimately emits for line 8."
+  },
+  {
+   "type": "uses",
+   "from": "slot",
+   "target": "Ontology::Reads::handler",
+   "note": "the QUALIFIED code-slot target the superseded file pinned. It must never come back: the leaf + meta.qualifiedAs rule is the measured contract, and a widening that publishes the qualified name would put one sub in the graph under a second target."
+  },
+  {
+   "type": "uses",
+   "from": "typed",
+   "target": "builtin::is_bool",
+   "note": "the same widening control on the typed code slot."
+  }
+ ]
+}

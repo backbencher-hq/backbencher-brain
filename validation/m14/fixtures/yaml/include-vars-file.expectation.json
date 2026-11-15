@@ -1,0 +1,66 @@
+{
+ "fixtureId": "yaml/include-vars-file",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "Ansible's `include_vars` names ANOTHER FILE — a vars file loaded into the play's scope — and the analyzer did not attempt it. The miss was an ASYMMETRY, not a decision: the TAG spelling `!include_vars` was in the include family from the start, while the KEY spelling `include_vars:` was not in the key set, so one construct was covered in one spelling and absent in the other. The corpus found it (25 ansible files carry the key) and the open sweep over the include family — counted from the TREE over the whole admitted population, never from the analyzer's own decisions — decided which spellings name a file and which do not: the boolean flags (`include-hidden-files: true`, `include_aggregate_mounts: true`, `include_in_metadata: true`, `include_tags: true`), the environment variable `INCLUDE_DIR: ${{ github.workspace }}/…`, and Helm's `import-values:` (which names VALUE PATHS between charts) are not file inclusions; `include_vars:` is. `authoredBeforeAnalyzerRun` is false because the expectation was written from that corpus measurement and from the analyzer's output on the same construct, not from a guess about what the analyzer would do. FOUR SHAPES ARE PINNED because the value's shape is what decides the edge: a plain file name; a MAPPING with a `file:` key; a FOLDED BLOCK SCALAR, whose CONTENT is the value (the `>` indicator is on the node's first line and is not part of it — read as raw text the target was the string `>\\n    shared/folded.yml`, a name no project has); and a MAPPING with a `dir:` key, which names a DIRECTORY of vars and therefore NO file, so it must produce NO import at all.",
+ "expectSymbols": [
+  {
+   "name": "vars",
+   "kind": "variable"
+  },
+  {
+   "name": "include_vars",
+   "kind": "property"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "shared/vars.yml",
+   "importType": "yaml_keyword_include",
+   "isExternal": true
+  },
+  {
+   "module": "shared/more.yml",
+   "importType": "yaml_keyword_include",
+   "isExternal": true
+  },
+  {
+   "module": "shared/folded.yml",
+   "importType": "yaml_keyword_include",
+   "isExternal": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "include-vars-file.vars[0].include_vars",
+   "target": "shared/vars.yml",
+   "meta.relationshipType": "yaml_keyword_include",
+   "meta.evidenceClass": "import_based",
+   "line_number": 22
+  },
+  {
+   "type": "imports",
+   "from": "include-vars-file.vars[1].include_vars",
+   "target": "shared/more.yml",
+   "meta.relationshipType": "yaml_keyword_include",
+   "meta.evidenceClass": "import_based",
+   "line_number": 23
+  },
+  {
+   "type": "imports",
+   "from": "include-vars-file.vars[2].include_vars",
+   "target": "shared/folded.yml",
+   "meta.relationshipType": "yaml_keyword_include",
+   "meta.evidenceClass": "import_based",
+   "line_number": 25
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "from": "include-vars-file.vars[3].include_vars"
+  }
+ ],
+ "_forbidRationale": "The `dir:` form names a DIRECTORY of vars files, not a file, so it must produce NO import edge. A directory cannot be the target of a file import, and publishing the `dir:` value as a target would be a claim about a name no project carries. The forbid entry names the SOURCE only, so it forbids any relationship at all from that source — the shape is what is being pinned, not one target."
+}

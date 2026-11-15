@@ -1,0 +1,15 @@
+{
+  "fixtureId": "groovy/groovydoc-payload",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b docstring payloads: Groovydoc lands on method symbols. Class-level groovydoc also supported (verified via root-level block_comment sibling). M37 #597 KAD2-sweep: adjacency pin — the doc-less idle() must carry NO doc (dead `sibling === node` stop leaked the first GroovyDoc).",
+  "expectSymbols": [
+    { "name": "Svc" },
+    { "name": "work" },
+    { "name": "idle" }
+  ],
+  "expectComments": [
+    { "symbol": "work", "minCount": 1 },
+    { "symbol": "idle", "notContains": "Works hard" }
+  ]
+}

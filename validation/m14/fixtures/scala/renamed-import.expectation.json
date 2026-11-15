@@ -1,0 +1,12 @@
+{
+  "fixtureId": "scala/renamed-import",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Scala 2 rename syntax {immutable => im} parses as namespace_selectors > arrow_renamed_identifier. The imported segment must be preserved in the module path (scala.collection.immutable) - dropping it truncated the references edge target exactly like the Scala 3 'as' form bug that was fixed earlier in this same function.",
+  "expectSymbols": [
+    { "name": "UsesIm", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "scala.collection.immutable" }
+  ]
+}

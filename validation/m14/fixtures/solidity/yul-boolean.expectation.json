@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "yul-boolean",
+  "why": "grammar.js:416 — `yul_boolean: choice('true','false')`, a member of `_yul_literal`. OpenZeppelin's assembly is arithmetic, never boolean-valued.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "yul_boolean",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

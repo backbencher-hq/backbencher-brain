@@ -1,0 +1,11 @@
+{
+  "issue": "ELX-ADV X8",
+  "note": "defdelegate links to its delegated target (`to:` resolved through aliases, `as:` renames the segment) — 71+12 corpus definitions carried zero dependency signal.",
+  "expectRelationships": [
+    { "type": "calls", "from": "ED.fetch/1", "target": "MyApp.Repo.fetch", "line_number": 4 },
+    { "type": "calls", "from": "ED.get/1", "target": "MyApp.Repo.find", "line_number": 6 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "Repo.fetch" }
+  ]
+}

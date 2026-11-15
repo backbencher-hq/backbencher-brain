@@ -1,0 +1,125 @@
+{
+ "fixtureId": "yaml/error-recovery-identity",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "An unterminated flow sequence makes the whole file one ERROR node and destroys the `steps:` mapping pair. The pre-fix `sequenceIndex` scanned siblings for `sibling === itemNode`, which can NEVER hold -- web-tree-sitter returns a fresh wrapper per call, so the early return was dead code and the loop returned a file-wide count: eleven distinct steps collapsed onto the single id `[13]`, with every contains edge into it addressing all eleven, and no error reported. Pinned: ids are unique, every symbol is marked recovered, the recovery is a named scope rather than an anonymous parent, the damage is DECLARED as a pattern rather than silent, and the three items keep their source order.",
+ "expectUniqueIds": [
+  {
+   "name": "item_0"
+  },
+  {
+   "name": "item_1"
+  },
+  {
+   "name": "item_2"
+  },
+  {
+   "name": "steps"
+  },
+  {
+   "name": "name"
+  },
+  {
+   "name": "image"
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "steps",
+   "kind": "variable"
+  },
+  {
+   "name": "item_0",
+   "kind": "class",
+   "ownerName": "error-recovery-identity.steps"
+  },
+  {
+   "name": "item_1",
+   "kind": "class",
+   "ownerName": "error-recovery-identity.steps"
+  },
+  {
+   "name": "item_2",
+   "kind": "class",
+   "ownerName": "error-recovery-identity.steps"
+  },
+  {
+   "name": "steps",
+   "meta.recovered": true,
+   "meta.itemCount": 3
+  },
+  {
+   "name": "item_0",
+   "meta.recovered": true,
+   "meta.arrayIndex": 0
+  },
+  {
+   "name": "item_2",
+   "meta.recovered": true,
+   "meta.arrayIndex": 2
+  }
+ ],
+ "expectPatterns": [
+  "Grammar Error Recovery"
+ ],
+ "expectSymbolRanges": [
+  {
+   "symbol": "item_0",
+   "ownerName": "error-recovery-identity.steps",
+   "startLine": 8
+  },
+  {
+   "symbol": "item_1",
+   "ownerName": "error-recovery-identity.steps",
+   "startLine": 10
+  },
+  {
+   "symbol": "item_2",
+   "ownerName": "error-recovery-identity.steps",
+   "startLine": 12
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "[0]"
+  },
+  {
+   "name": "[1]"
+  },
+  {
+   "name": "[2]"
+  },
+  {
+   "name": "recovered_scope"
+  },
+  {
+   "name": "error-recovery-identity",
+   "kind": "module"
+  }
+ ],
+ "expectMetadata": [
+  {
+   "documentCount": 0
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "target": "error-recovery-identity#damaged@1.steps"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

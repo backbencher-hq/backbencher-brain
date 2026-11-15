@@ -1,0 +1,1848 @@
+{
+  "generatedAt": "2026-11-05T04:31:56.820Z",
+  "sourceCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "counts": {
+    "registryRows": 251,
+    "cliRows": 55,
+    "total": 306,
+    "verified": 251
+  },
+  "rows": [
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "caseSensitive",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "exact",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "filePath",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "includeContent",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "language",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "mode",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "offset",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "query",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "refresh",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "regex",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "symbolKind",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "param",
+      "name": "symbolName",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "enum",
+      "name": "mode=symbols",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "enum",
+      "name": "mode=content",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "enum",
+      "name": "mode=symbol",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "enum",
+      "name": "mode=file",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "mode",
+      "name": "symbols",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "mode",
+      "name": "content",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "mode",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "mode",
+      "name": "file",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_ask.json"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "param",
+      "name": "query",
+      "verifiedBy": "C1-bb_ask.json"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "mode",
+      "name": "answer",
+      "verifiedBy": "C1-bb_ask.json"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "planned",
+      "name": "explain",
+      "verifiedBy": "C1-bb_ask.json"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "planned",
+      "name": "feature",
+      "verifiedBy": "C1-bb_ask.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "checkUnindexed",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "force",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "freshness",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "history",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "includeAnalysisRuns",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "integrity",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "paths",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "refresh",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "sampleSize",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "verbose",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "param",
+      "name": "wait",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "enum",
+      "name": "freshness=sampled",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "enum",
+      "name": "freshness=complete",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "mode",
+      "name": "status",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_health",
+      "kind": "mode",
+      "name": "refresh",
+      "verifiedBy": "C1-bb_health.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "confidenceThreshold",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "history",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "includeAntiPatterns",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "includeFramework",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "includeOrphaned",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "recordRun",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "param",
+      "name": "scope",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "enum",
+      "name": "scope=orphaned",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "enum",
+      "name": "scope=all",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "mode",
+      "name": "orphaned",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "mode",
+      "name": "all",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "planned",
+      "name": "quality",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "planned",
+      "name": "architecture",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "param",
+      "name": "history",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "param",
+      "name": "recordRun",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "mode",
+      "name": "findings",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "planned",
+      "name": "flow",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "planned",
+      "name": "summary",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "planned",
+      "name": "hotspots",
+      "verifiedBy": "C1-bb_security.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "excludePatterns",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "format",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "includeTests",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "languages",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "layout",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "maxLinks",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "maxNodes",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "offset",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "relationshipTypes",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "scope",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "symbolKinds",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "target",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "param",
+      "name": "view",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "scope=project",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "scope=file",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "scope=module",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "scope=symbol",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "scope=feature",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "view=graph",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "layout=regions",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "layout=force",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "format=text",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "format=json",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "enum",
+      "name": "format=html",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "mode",
+      "name": "project",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "mode",
+      "name": "file",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "mode",
+      "name": "module",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "mode",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "mode",
+      "name": "feature",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "param",
+      "name": "format",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "param",
+      "name": "paths",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "param",
+      "name": "symbolIds",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "param",
+      "name": "symbolName",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "param",
+      "name": "symbolNames",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "param",
+      "name": "targetLanguage",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "enum",
+      "name": "format=text",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "enum",
+      "name": "format=json",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "mode",
+      "name": "plan",
+      "verifiedBy": "C1-bb_migrate.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "param",
+      "name": "filePath",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "param",
+      "name": "mode",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "param",
+      "name": "target",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=callers",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=callees",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=trace",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=dependencies",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=stats",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=complexity",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=impact",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=test_mapping",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=test_gaps",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=test_impact",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "enum",
+      "name": "mode=test_quality",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "callers",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "callees",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "trace",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "dependencies",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "stats",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "complexity",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "impact",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "test_mapping",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "test_gaps",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "test_impact",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "mode",
+      "name": "test_quality",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "audience",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "detail",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "format",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "includeDiagrams",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "includeExamples",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "includeTests",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "maxTokens",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "mode",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "refresh",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "param",
+      "name": "target",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=symbol",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=file",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=module",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=feature",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=api",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=project",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "mode=coverage",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "format=markdown",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "format=json",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "audience=developer",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "audience=maintainer",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "audience=user",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "audience=website",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "detail=brief",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "detail=standard",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "enum",
+      "name": "detail=deep",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "file",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "module",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "feature",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "api",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "project",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "mode",
+      "name": "coverage",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "content",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "dryRun",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "edits",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "filePath",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "files",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "force",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "format",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "lineStart",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "mode",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "newContent",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "newName",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "overwrite",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "position",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "symbolName",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "param",
+      "name": "targetSymbolName",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "mode=write",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "mode=update",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "mode=insert",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "mode=delete",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "mode=refactor",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "mode=batch",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "position=before",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "position=after",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "position=inside-top",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "enum",
+      "name": "position=inside-bottom",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "mode",
+      "name": "write",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "mode",
+      "name": "update",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "mode",
+      "name": "insert",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "mode",
+      "name": "delete",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "mode",
+      "name": "refactor",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "mode",
+      "name": "batch",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "param",
+      "name": "mode",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "param",
+      "name": "path",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "enum",
+      "name": "mode=auto",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "enum",
+      "name": "mode=file",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "enum",
+      "name": "mode=dir",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "enum",
+      "name": "mode=post",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "mode",
+      "name": "auto",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "mode",
+      "name": "file",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "mode",
+      "name": "dir",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "mode",
+      "name": "post",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "direction",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "edgeLimit",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "includeCrossLanguage",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "maxDepth",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "maxEdges",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "relationshipTypes",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "param",
+      "name": "timeBudgetMs",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "enum",
+      "name": "direction=callers",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "enum",
+      "name": "direction=callees",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "enum",
+      "name": "direction=both",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "mode",
+      "name": "graph",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "param",
+      "name": "file",
+      "verifiedBy": "C1-bb_impact.json"
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "param",
+      "name": "refresh",
+      "verifiedBy": "C1-bb_impact.json"
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "param",
+      "name": "relationshipTypes",
+      "verifiedBy": "C1-bb_impact.json"
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "param",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_impact.json"
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "mode",
+      "name": "impact",
+      "verifiedBy": "C1-bb_impact.json"
+    },
+    {
+      "tool": "bb_cross_language",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_cross_language.json"
+    },
+    {
+      "tool": "bb_cross_language",
+      "kind": "param",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_cross_language.json"
+    },
+    {
+      "tool": "bb_cross_language",
+      "kind": "mode",
+      "name": "cross-language",
+      "verifiedBy": "C1-bb_cross_language.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "param",
+      "name": "body",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "param",
+      "name": "path",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "param",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "param",
+      "name": "toolIdentity",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "mode",
+      "name": "annotate",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "param",
+      "name": "includeNameLevel",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "param",
+      "name": "limit",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "param",
+      "name": "path",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "param",
+      "name": "symbol",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "mode",
+      "name": "annotate",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "rejection",
+      "name": "unknown mode rejected",
+      "verifiedBy": "C1-bb_search.json"
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "rejection",
+      "name": "unknown mode rejected",
+      "verifiedBy": "C1-bb_analyze.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "rejection",
+      "name": "unknown scope rejected",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "rejection",
+      "name": "symbol scope missing target rejected",
+      "verifiedBy": "C1-bb_visualize.json"
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "rejection",
+      "name": "unknown scope rejected",
+      "verifiedBy": "C1-bb_patterns.json"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "rejection",
+      "name": "unknown mode rejected",
+      "verifiedBy": "C1-bb_doc.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "rejection",
+      "name": "unknown mode rejected",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "rejection",
+      "name": "update without symbolName rejected",
+      "verifiedBy": "C1-bb_edit.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "rejection",
+      "name": "missing path rejected",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "rejection",
+      "name": "unknown mode rejected (no silent dir fallback)",
+      "verifiedBy": "C1-bb_index.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "rejection",
+      "name": "missing symbol rejected",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "rejection",
+      "name": "maxDepth out of range rejected",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "rejection",
+      "name": "negative maxDepth rejected",
+      "verifiedBy": "C1-bb_graph.json"
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "rejection",
+      "name": "missing symbol rejected",
+      "verifiedBy": "C1-bb_impact.json"
+    },
+    {
+      "tool": "bb_cross_language",
+      "kind": "rejection",
+      "name": "missing symbol rejected",
+      "verifiedBy": "C1-bb_cross_language.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "rejection",
+      "name": "empty body rejected",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "rejection",
+      "name": "body over the declared limit rejected",
+      "verifiedBy": "C1-bb_annotate.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "rejection",
+      "name": "limit out of range rejected",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "rejection",
+      "name": "limit above declared max rejected",
+      "verifiedBy": "C1-bb_annotations.json"
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "help",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "tool",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "index",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "setup",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "show",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "doctor",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "upgrade",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "stats",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "status",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "projects",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "search",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "health",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "onboard",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "mcp",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-command",
+      "name": "version",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--verbose",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--quiet",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--dir",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--args",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--force",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--no-setup",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--skip-post-processing",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--post",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--changed",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--resume",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--import",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--concurrency",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--dir",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--fix",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--check",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--to",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--json",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--json",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--sort",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--remove",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--force",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--json",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--mode",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--file-path",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--symbol-name",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--dir",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--limit",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--language",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--no-auto-refresh",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--refresh",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--force",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--no-wait",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--complete",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--integrity",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--sample-size",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--verbose-config",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--check",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--print",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--file",
+      "verifiedBy": null
+    },
+    {
+      "tool": "cli",
+      "kind": "cli-flag",
+      "name": "--dir",
+      "verifiedBy": null
+    }
+  ]
+}

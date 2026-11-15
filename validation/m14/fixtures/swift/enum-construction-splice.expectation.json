@@ -1,0 +1,24 @@
+{
+  "fixtureId": "swift/enum-construction-splice",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#942 (swift lane, second corpus, full extent 98-file alamofire draw): SW-B converts enum-cased member calls (`Path.method(.get)`) into `instantiates` and retires the dangling `calls`. The retirement removed \"the FIRST calls edge with this (source, leaf)\" — and `emittedCalls` had already folded both call sites into ONE relationship, so a DIFFERENT site's genuine call vanished. Measured on Tests/TestHelpers.swift: `static var get: Endpoint { method(.get) }` lost its real call to `Endpoint.method` because a property initializer elsewhere in the same type called `Path.method(.get)`; both sites attribute to the enclosing TYPE, so they collide on (source, leaf). The retirement now counts SITES (`callSiteCounts`) and drops the edge only when no genuine site remains — and every site that can emit a `calls` edge is counted, including the BARE identifier calls this fixture's second site is. Both halves are pinned: the construction still converts (instantiates, not calls) and the real call SURVIVES beside it.",
+  "expectSymbols": [
+    { "name": "Path", "kind": "enum" },
+    { "name": "method", "kind": "enum_member", "ownerName": "Path" },
+    { "name": "upload", "kind": "enum_member", "ownerName": "Path" },
+    { "name": "Endpoint", "kind": "class" },
+    { "name": "path", "kind": "property", "ownerName": "Endpoint" },
+    { "name": "method", "kind": "method", "ownerName": "Endpoint" },
+    { "name": "get", "kind": "property", "ownerName": "Endpoint" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "source": "Endpoint", "target": "Path", "meta.isEnumConstruction": true, "line_number": 22, "note": "`var path = Path.method(.get)` — the enum-cased navigation is construction, and its line is ITS site (22)" },
+    { "type": "calls", "source": "Endpoint", "target": "method", "line_number": 29, "note": "#942: the SECOND site (`return method(.get)` inside `static var get`, line 29) is a genuine bare call to `Endpoint.method` and must survive the construction's retirement — pre-fix it was spliced away because the retirement took the first (source, leaf) edge and the bare site never joined the site count. M59.A7: the edge's line must ALSO move to the surviving site — the dedupe kept site 1's edge, whose line (22) belongs to the construction" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "source": "Endpoint", "target": "Path", "comment": "SW-B: enum construction is instantiates ONLY — never also a calls edge (the dangling call is what the conversion must retire)" },
+    { "type": "instantiates", "source": "Endpoint", "target": "method", "comment": "the surviving site is a method call on the type, not a construction" },
+    { "type": "calls", "source": "Endpoint", "target": "method", "line_number": 22, "comment": "M59.A7 line pin: 22 is the CONVERTED site (`var path = Path.method(.get)`), which no longer emits a call — the surviving call edge must name line 29, the site that still is one" }
+  ]
+}

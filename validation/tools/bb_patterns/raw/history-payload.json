@@ -1,0 +1,47 @@
+{
+  "projectId": "ddc4da0a608ed84a00de02c9e798be24a9f322ea",
+  "projectDir": "/tmp/bb-patterns-behavior-88vtzB",
+  "cases": [
+    {
+      "args": {
+        "history": true,
+        "limit": 2
+      },
+      "ms": 85.79,
+      "chars": 1787433,
+      "isError": false,
+      "runs": 1,
+      "runFindingCounts": [
+        1113
+      ],
+      "findingsReturned": 1113,
+      "hasTruncationDeclaration": false,
+      "jsonKeys": [
+        "runs",
+        "findings",
+        "summary"
+      ]
+    },
+    {
+      "args": {
+        "history": true,
+        "limit": 100
+      },
+      "ms": 56.05,
+      "chars": 1787433,
+      "isError": false,
+      "runs": 1,
+      "runFindingCounts": [
+        1113
+      ],
+      "findingsReturned": 1113,
+      "hasTruncationDeclaration": false,
+      "jsonKeys": [
+        "runs",
+        "findings",
+        "summary"
+      ]
+    }
+  ],
+  "generatedAt": "2026-11-01T23:42:08.762Z"
+}

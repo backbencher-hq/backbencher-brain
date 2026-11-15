@@ -1,0 +1,135 @@
+{
+  "fixtureId": "haskell/ruled-extended-types",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS THE TWO RULED EXTENDED TYPES (`renders`, `mixes_in`) BESIDE THE CONSTRUCTS THAT MAKE THE RULING TRUE, so the ruling is a measurement and a control rather than an absence. THE RULING'S EVIDENCE (whole admitted population, 3,702 .hs/.lhs files over 6 repositories, validation/m14/measurements/haskell-extended-census.json): `renders` 0 sites — the nearest analogue (a Template Haskell template LOADER) is 0 sites and names a FILE, not a component symbol, so the vocabulary's component->component relation has nothing to bind; `mixes_in` has no construct — the served grammar's 174 distinct named types (253 named slots of 552 ids, digest 37a6b07b1a83) contain no mixin/trait/composition node, and the family a mixin would have to come from is CONFORMANCE, pinned here as `extends` (superclass constraint), `implements` (instance) and `overrides` (instance method). FORBID (A) is the load-bearing negative: `deriving (Semigroup, Monoid) via (Sum Int)` is the closest construct in the language to implementation composition — 493 corpus sites — and it is conformance obtained THROUGH a carrier, which attaches no member set and puts nothing in a supertype chain; the analyzer reads it as `implements` with metadata.derived, never as mixes_in. FORBID (B) is the renders negative: a function producing a markup String is a VALUE producer, not a component rendered by a host; a rule keyed on `String`-returning functions would emit it. FIRE rows are the same three conformance constructors the ruling leans on, so a lane that silenced them to 'clean up' the extended verdicts would fail this fixture.",
+  "expectSymbols": [
+    { "name": "RuledExtendedTypes", "kind": "module", "comment": "the module scope every containment row is sourced from" },
+    { "name": "MonadWidget", "kind": "interface", "comment": "a typeclass is published as an Interface (the FP-family mapping), and it is the superclass constraint's subject" },
+    { "name": "widgetLabel", "kind": "method", "ownerName": "MonadWidget", "comment": "the class method — a member set the INSTANCES supply, not one composed into any type" },
+    { "name": "Widget", "kind": "type", "comment": "the instance's type" },
+    { "name": "Widget", "kind": "instance", "comment": "the instance declaration is its own symbol" },
+    { "name": "Gadget", "kind": "type", "comment": "the DerivingVia subject — the FORBID (A) source" },
+    { "name": "Gadget", "kind": "constructor", "ownerName": "Gadget", "comment": "the newtype constructor" },
+    { "name": "renderWidget", "kind": "function", "comment": "the FORBID (B) source — a value producer" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "MonadWidget",
+      "target": "Monad",
+      "line_number": 55,
+      "meta.isSuperclass": true,
+      "comment": "FIRE (1) — `class Monad m => MonadWidget m` is a superclass CONSTRAINT: one declared supertype. This is the shape a mixin reading would have to steal, and it is `extends`."
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "MonadWidget",
+      "line_number": 66,
+      "meta.isInstance": true,
+      "comment": "FIRE (2) — the instance writes its own methods; no member set is attached by composition."
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.widgetLabel",
+      "target": "MonadWidget.widgetLabel",
+      "line_number": 67,
+      "meta.isInstanceMethod": true,
+      "comment": "FIRE (3) — the instance method overrides the class default"
+    },
+    {
+      "type": "implements",
+      "source": "Gadget",
+      "target": "Semigroup",
+      "line_number": 73,
+      "meta.derived": true,
+      "comment": "FORBID (A) read the RIGHT way — DerivingVia is conformance, so it is `implements` with metadata.derived. The carrier `Sum Int` is where the implementation comes FROM; it is not a mixin composed into Gadget."
+    },
+    {
+      "type": "implements",
+      "source": "Gadget",
+      "target": "Monoid",
+      "line_number": 73,
+      "meta.derived": true,
+      "comment": "the second derived class on the same clause"
+    },
+    {
+      "type": "calls",
+      "source": "renderWidget",
+      "target": "widgetLabel",
+      "line_number": 78,
+      "comment": "FORBID (B) read the RIGHT way — building markup text CALLS a function; it renders no component"
+    },
+    {
+      "type": "contains",
+      "source": "RuledExtendedTypes",
+      "target": "Gadget",
+      "comment": "containment invariant for the FORBID (A) subject"
+    },
+    {
+      "type": "contains",
+      "source": "RuledExtendedTypes",
+      "target": "renderWidget",
+      "comment": "containment invariant for the FORBID (B) subject"
+    },
+    {
+      "type": "exports",
+      "source": "RuledExtendedTypes",
+      "target": "MonadWidget",
+      "comment": "the export list; the export invariant requires it to resolve"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "mixes_in",
+      "equals": 0,
+      "comment": "THE RULING, PINNED AS A COUNT. Haskell has no member-set composition: `deriving via` is conformance through a carrier, and the typeclass family is extends/implements/overrides above. A rule that relabelled the 493 deriving-via sites as mixes_in would fire the moment a fixture carried one — this one does."
+    },
+    {
+      "type": "renders",
+      "equals": 0,
+      "comment": "THE SECOND RULING, PINNED AS A COUNT. This file contains a function that assembles a markup String, which is the only render-shaped thing an fp language can write. No host renderer constructs an element here, and the target would be a value, not a declaration."
+    },
+    {
+      "type": "extends",
+      "equals": 1,
+      "comment": "EXACTLY the superclass constraint. An over-eager rule that read every `=>` as an inheritance edge (the corpus has 6,124 `=>` sites; 189 became edges) would add rows here."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "comment": "FORBID (A) — no mixes_in at all, from any endpoint. `deriving (...) via (...)` composes an implementation obtained THROUGH the carrier; it attaches no member set and declares no supertype chain, which is what the vocabulary's mixin is."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Gadget",
+      "target": "Sum",
+      "comment": "the specific wrong edge the carrier invites: Gadget does not compose Sum's members"
+    },
+    {
+      "type": "renders",
+      "comment": "FORBID (B) — no renders at all. Assembling markup text is not rendering a component, and a corpus-zero ruling must not be reachable by a shape the language really has."
+    },
+    {
+      "type": "renders",
+      "source": "renderWidget",
+      "target": "String",
+      "comment": "the specific wrong edge a value-shape test would emit: the target is a builtin type, not a declared component"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Widget",
+      "target": "MonadWidget",
+      "comment": "the instance relation restated as a mixin — the exact relabel this fixture exists to refuse; it is `implements`"
+    }
+  ],
+  "forbidSymbols": [
+    { "name": "Monad", "comment": "the superclass is IMPORTED from Prelude and declared nowhere in this file; an `extends` target must not be minted as a symbol of this file" },
+    { "name": "Sum", "comment": "the DerivingVia carrier is imported; it must not become a symbol of this file even though the clause names it" },
+    { "name": "String", "comment": "a builtin return type is not a symbol" },
+    { "name": "via", "comment": "the deriving strategy keyword is not a name" },
+    { "name": "deriving", "comment": "as above — the clause keyword is not a name" }
+  ]
+}

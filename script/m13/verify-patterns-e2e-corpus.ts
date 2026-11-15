@@ -165,8 +165,8 @@ async function indexAndRunPatterns(rootDir: string): Promise<string> {
 // script/m12/zig-deep-review-evidence.ts, script/m15/verify-doc-deep.ts), and the
 // sibling gate script/m13/verify-edit-corpus.ts was fixed the same way in this
 // lane. An absent corpus is an absence of evidence, so it is recorded as a skip.
-// This resolved the corpus as `$HOME/fixtures/repositories`, which does not exist on
-// this machine — the corpus is a SIBLING of the repo, at ../fixtures/repositories.
+// This resolved the corpus as `$HOME/bb_tests/repositories`, which does not exist on
+// this machine — the corpus is a SIBLING of the repo, at ../bb_tests/repositories.
 // The gate therefore reported "corpus directory exists … missing" and measured nothing.
 // Routed through script/lib/corpus-root.ts, which searches the declared candidates in
 // order and names them all when none exists.
@@ -176,7 +176,7 @@ const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 //
 // Go is the case that proves it, and this entry was on the wrong side of it:
 // `script/m14/differential.ts` measured the root this repo resolves —
-// `fixtures/repositories` lists `go-tools` (hyphen) and `go_tools` does not exist —
+// `bb_tests/repositories` lists `go-tools` (hyphen) and `go_tools` does not exist —
 // and the finding is recorded in
 // `validation/m14/verification/A-PORT-BROKE-THE-LEG-IT-CLAIMED-TO-FIX.md`. This leg
 // asked for the underscore, so it printed `skip: corpus go_tools/go/analysis/passes

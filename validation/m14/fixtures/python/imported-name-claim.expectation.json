@@ -1,0 +1,26 @@
+{
+  "fixtureId": "python/imported-name-claim",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D7 DEPTH \u2014 THE `importedName` CLAIM (Lead arbiter, charter \u00a718.19), pinned in both directions. A BARE name the file imports from a stdlib-rooted specifier names a binding that occupies THIS FILE's scope, so the honest row is a CLAIM verified from the run's own import evidence (the analyzer's moduleImportBindings map: name -> specifier, certified from the file's own `from X import name` syntax), counted in the binding family (`bindOK`, verifiedBy importEvidence) and NEVER resolved. The POSITIVE row is `from tempfile import mkstemp` + `mkstemp()`: the claim carries {specifier: tempfile, name: mkstemp}, and `tempfile` is a `python-stdlib` vocabulary root (script/m14/citations.ts). The NEGATIVE rows are the principled restriction, not arbitrary: (a) a bare name the file never imports (orphan_use) carries NO claim \u2014 there is no evidence to verify it, so the arbiter would REFUTE it; (b) a RELATIVE specifier (`.helpers`) is this project BY THE GRAMMAR, so no citation; (c) a THIRD-PARTY root (requests) can be the project's own code in its own checkout (the kotlinx precedent), so it stays a NAMED class in the D7 ledger until a project-module test exists \u2014 it is not marked and not laundered. The gate-side refutation controls (target != name, name not name-shaped, name not imported, specifier not imported, no evidence) live in the Lead's selfTest battery; this fixture pins the LANE's emission side.",
+  "expectSymbols": [
+    {
+      "name": "claimed_use",
+      "kind": "function"
+    },
+    {
+      "name": "orphan_use",
+      "kind": "function"
+    },
+    {
+      "name": "relative_use",
+      "kind": "function"
+    },
+    {
+      "name": "third_party_use",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [],
+  "note": "The nested metadata OBJECT (`metadata.importedName`) is asserted by the executable probe imported-name-claim.mts: the fixture runner compares meta values with === by design, so a nested object cannot be asserted here. Rationale and negatives live below/here."
+}

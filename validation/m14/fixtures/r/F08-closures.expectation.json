@@ -1,0 +1,102 @@
+{
+  "fixtureId": "r/F08-closures",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The attribution rule for R has exactly one moving part, and this fixture is where it is pinned. `lapply(items, function(item) transform_one(item))` calls `transform_one` from inside an ANONYMOUS function, so the nearest enclosing NAMED binding is `outer` -- not `item`, which is a parameter and not a symbol, and not `global`, which has no body to attribute to. The confidence is pinned to EXACTLY 0.7 with a max as well as a min: 55.6% of R call sites in the corpus sit at file scope with no enclosing named symbol at all, and those are counted in `metadata.callAttribution.unresolvedScope` rather than given an invented source. A call whose only home is a parameter name is forbidden three ways, because publishing `outer -> item` puts a name in the graph that R never binds at any scope. `local({ nested() })` is here for the opposite reason: `nested` is at 1.0, because `local()` creates no `function_definition` node, and F14 pins that its assignments do not become file-level bindings.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "outer",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "transform_one",
+      "confidenceMin": 0.7,
+      "confidenceMax": 0.7
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "transform_two",
+      "confidenceMin": 0.7,
+      "confidenceMax": 0.7
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "recover_from",
+      "confidenceMin": 0.7,
+      "confidenceMax": 0.7
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "note_warning",
+      "confidenceMin": 0.7,
+      "confidenceMax": 0.7
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "risky",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "lapply",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "vapply",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "tryCatch",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "withCallingHandlers",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "nested",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "item",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "e"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "w"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "item"
+    }
+  ]
+}

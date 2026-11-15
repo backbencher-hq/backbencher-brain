@@ -1,0 +1,57 @@
+{
+  "repo": "phpmyadmin",
+  "files": 74,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 1599,
+        "total": 1599
+      },
+      "imports": {
+        "unresolved": 112,
+        "total": 112
+      },
+      "references": {
+        "unresolved": 45,
+        "ambDeclOnly": 99,
+        "resolved": 43,
+        "total": 187
+      },
+      "exports": {
+        "ambDeclOnly": 291,
+        "resolved": 26,
+        "total": 317
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 1599,
+        "total": 1599
+      },
+      "imports": {
+        "unresolved": 112,
+        "total": 112
+      },
+      "references": {
+        "unresolved": 45,
+        "resolved": 142,
+        "total": 187
+      },
+      "exports": {
+        "resolved": 317,
+        "total": 317
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 977,
+    "before": {
+      "ambDeclOnly": 390
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 2022,
+    "falseBindings": 0
+  }
+}

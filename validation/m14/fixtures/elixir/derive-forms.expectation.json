@@ -1,0 +1,20 @@
+{
+  "expectSymbols": [
+    { "name": "Derived", "kind": "module" },
+    { "name": "Derived", "kind": "struct", "ownerName": "Derived" },
+    { "name": "a", "kind": "property", "ownerName": "Derived" },
+    { "name": "DerivedOpts", "kind": "module" },
+    { "name": "DerivedOpts", "kind": "struct", "ownerName": "DerivedOpts" },
+    { "name": "a", "kind": "property", "ownerName": "DerivedOpts" }
+  ],
+  "expectExports": [
+    { "name": "Derived", "kind": "module" },
+    { "name": "DerivedOpts", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Derived", "target": "JSON.Encoder" },
+    { "type": "implements", "from": "DerivedOpts", "target": "JSON.Encoder" },
+    { "type": "contains", "from": "Derived", "target": "a" },
+    { "type": "contains", "from": "DerivedOpts", "target": "a" }
+  ]
+}

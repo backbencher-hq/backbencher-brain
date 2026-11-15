@@ -1,0 +1,22 @@
+{
+  "fixtureId": "javascript/cjs-export-methods",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JD5 regression: a shorthand METHOD in a CommonJS export object never reached the module's public surface. The grammar spells `run() {}` as a `method_definition`, and the export collector read only `shorthand_property_identifier`, `identifier`, and `pair` keys — so `module.exports = { run(){…} }` exported NOTHING while a sibling `plain: 1` key still made the export list look populated, which is exactly why no gate caught it: the row read as covered. Accessor halves (`get val`/`set val`) are `method_definition` too and were dropped by the same miss. The symbol count pins B5 as well — the two accessors are DISTINCT descriptor slots and both survive as symbols, while the EXPORT list is a name set and carries `val` once. THE EXPORTS SOURCE IS `(file)`: a module surface IS the file, and a module basename is a legal JavaScript identifier the store would resolve BY NAME (this ecosystem itself writes `visitors/Attribute.js` declaring `function Attribute`), so the family sentinel is used instead; `metadata.fileLevel` makes the store record the project-relative path.",
+  "expectExports": [
+    { "name": "run" },
+    { "name": "val" },
+    { "name": "plain" },
+    { "name": "ref" }
+  ],
+  "expectSymbolCount": [
+    { "name": "val", "equals": 2 }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "(file)", "target": "run" },
+    { "type": "exports", "from": "(file)", "target": "val" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "default" }
+  ]
+}

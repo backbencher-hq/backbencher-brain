@@ -29,7 +29,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, basename } from "node:path"
 
 const REPO = process.env.BB_LANE_REPO ?? "/tmp/opencode/wt/ENUM_SWEEP"
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 function argOf(flag, dflt) {
   const i = process.argv.indexOf(flag)

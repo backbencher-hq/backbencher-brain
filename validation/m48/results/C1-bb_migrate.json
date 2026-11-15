@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_migrate.json",
+  "generatedAt": "2026-11-04T05:55:38.531Z",
+  "tools": [
+    "bb_migrate"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 27,
+      "args": "{\"symbolName\":\"join\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"join\",\"symbolId\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"sourceFile\":\"lib/"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 89,
+      "args": "{\"symbolName\":\"unwrap\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"unwrap\",\"symbolId\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"sourceFil"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 107,
+      "args": "{\"symbolName\":\"toDeepEqual\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"toDeepEqual\",\"symbolId\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:toDeepEqual:"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 36,
+      "args": "{\"symbolName\":\"is_newline\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"is_newline\",\"symbolId\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"sourceFile\":\"s"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 62,
+      "args": "{\"symbolName\":\"map\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"map\",\"symbolId\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"sourceFile\":\"lodash.js\",\"source"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"join\",\n      \"symbolId\": \"132"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"unwrap\",\n      \"symbolId\": \"a"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"toDeepEqual\",\n      \"symbolId"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"is_newline\",\n      \"symbolId\""
+    },
+    {
+      "repo": "lodash",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"map\",\n      \"symbolId\": \"f9a8"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_migrate"
+    ]
+  }
+}

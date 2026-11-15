@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.64",
+  "code": "V10",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: the artifact driven in a real browser — layouts, the picked-item box, and the pixels",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "browser: a chromium binary was found to drive this gate",
+      "pass": true,
+      "detail": "/home/ishaq2321/.cache/ms-playwright/chromium-1194/chrome-linux/chrome"
+    },
+    {
+      "name": "browser: chromium launched and answered a CDP request",
+      "pass": true,
+      "detail": "chrome-linux"
+    },
+    {
+      "name": "regions: the mounted document publishes its state",
+      "pass": true,
+      "detail": "{\"nodes\":10,\"edges\":24,\"layout\":\"regions\"}"
+    },
+    {
+      "name": "regions: the document knows which arrangement it is",
+      "pass": true,
+      "detail": "regions"
+    },
+    {
+      "name": "regions: the canvas actually has ink on it",
+      "pass": true,
+      "detail": "ink samples=156 on a 1600x860 canvas"
+    },
+    {
+      "name": "regions: region links are drawn and published at the overview",
+      "pass": true,
+      "detail": "{\"links\":4,\"cross\":13,\"zoom\":0.88}"
+    },
+    {
+      "name": "regions: no summary is claimed for a frame that is not bundling [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "more links than edges summarised"
+    },
+    {
+      "name": "regions: the links are published with their screen geometry",
+      "pass": true,
+      "detail": "pkg/a ↔ pkg/b · 6 edges"
+    },
+    {
+      "name": "regions: a real click on a link selects it",
+      "pass": true,
+      "detail": "pkg/a to pkg/b"
+    },
+    {
+      "name": "regions: and the box names both regions",
+      "pass": true,
+      "detail": "pkg/a ↔ pkg/b · 6 edges"
+    },
+    {
+      "name": "panel: the box is on screen before the collapse is clicked",
+      "pass": true,
+      "detail": "{\"collapsed\":false,\"dock\":\"right\",\"visible\":true,\"title\":\"pkg/a ↔ pkg/b · 6 edges\"}"
+    },
+    {
+      "name": "panel: collapsing hides the body and keeps the box on screen",
+      "pass": true,
+      "detail": "{\"collapsed\":true,\"dock\":\"right\",\"visible\":true,\"title\":\"pkg/a ↔ pkg/b · 6 edges\"}"
+    },
+    {
+      "name": "panel: collapsing does NOT clear the selection (the X is what clears) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before=pkg/a to pkg/b after=pkg/a to pkg/b"
+    },
+    {
+      "name": "panel: a collapsed box still names what it is hiding",
+      "pass": true,
+      "detail": "pkg/a ↔ pkg/b · 6 edges"
+    },
+    {
+      "name": "panel: expanding restores the same subject",
+      "pass": true,
+      "detail": "{\"selected\":\"pkg/a to pkg/b\",\"panel\":{\"collapsed\":false,\"dock\":\"right\",\"visible\":true,\"title\":\"pkg/a ↔ pkg/b · 6 edges\"}}"
+    },
+    {
+      "name": "panel: the move control docks it to the left edge",
+      "pass": true,
+      "detail": "{\"panel\":{\"collapsed\":false,\"dock\":\"left\",\"visible\":true,\"title\":\"pkg/a ↔ pkg/b · 6 edges\"},\"left\":14}"
+    },
+    {
+      "name": "panel: a real drag across the middle docks it on the other side",
+      "pass": true,
+      "detail": "{\"panel\":{\"collapsed\":false,\"dock\":\"right\",\"visible\":true,\"title\":\"pkg/a ↔ pkg/b · 6 edges\"},\"left\":1206,\"selected\":\"pkg/a to pkg/b\"}"
+    },
+    {
+      "name": "panel: and the drag did not drop the pick",
+      "pass": true,
+      "detail": "pkg/a to pkg/b"
+    },
+    {
+      "name": "force: the force document draws the same graph",
+      "pass": true,
+      "detail": "{\"nodes\":10,\"edges\":24}"
+    },
+    {
+      "name": "force: no region links exist where there are no regions [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"links\":0}"
+    },
+    {
+      "name": "force: the encoding key stops explaining the region map's marks",
+      "pass": true,
+      "detail": "size = index gravity | fill = language (see Languages) | hollow ring = stale since index | opacity = stored confidence | thickness = stored rows behind the edge | cross-language edge (none in this sli"
+    },
+    {
+      "name": "force: switching the layout re-runs the simulation rather than reusing the map's positions",
+      "pass": true,
+      "detail": "force"
+    },
+    {
+      "name": "studio: the sidebar offers both arrangements",
+      "pass": true,
+      "detail": "[\"Regions\",\"Force\"]"
+    },
+    {
+      "name": "studio: the mounted document starts in the requested arrangement",
+      "pass": true,
+      "detail": "regions"
+    },
+    {
+      "name": "studio: a real click on the Force chip re-draws the mounted document",
+      "pass": true,
+      "detail": "{\"layout\":\"force\",\"declared\":\"force\"}"
+    },
+    {
+      "name": "studio: and the region links are gone from the frame it is drawing [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"links\":0}"
+    },
+    {
+      "name": "browser: no uncaught exception or console error across the whole session [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0
+  },
+  "decisions": {
+    "driver": "chromium over the CDP WebSocket that Node 22 ships; no browser package is added to this repository",
+    "discovery": "BB_VISUALIZE_CHROME, then CHROME_PATH, then playwright's own cache, then the system binary names — and a hard failure naming the variable when none is found, because a check that cannot run must not read as one that passed",
+    "input": "interaction is asserted through REAL input events (Input.dispatchMouseEvent), never by calling the view's API for the gesture under test",
+    "coverage": "the graph's two arrangements are driven in this browser — the regions map and the force map — and a click target is chosen from what the PAGE says is under the point (elementFromPoint), because a click on a floating overlay is a click on the overlay",
+    "evidence": "the state asserted is the state the view PUBLISHES (state(), links(), panel()), so a pass is a claim the artifact makes about itself",
+    "pixels": "the regions canvas is asserted to have ink on it (sampled alpha), because a renderer that dies on its first frame leaves a blank canvas every text assertion still passes",
+    "zoomGesture": "the overview is reached with a REAL wheel gesture (Input.dispatchMouseEvent mouseWheel), never by calling the view's API for the gesture under test"
+  },
+  "limitations": [
+    "This gate needs a chromium binary and is therefore run as `npm run verify:viz-browser` rather than from the `verify` chain: the chain must stay runnable where no browser exists.",
+    "It verifies the DOCUMENTS, not the composed studio's every sidebar control: the layout switch is driven from the sidebar for both arrangements, and the remaining sidebar controls (filters, downloads, the census) are asserted by the view-publishing gate — V7 structurally.",
+    "One fixture, one viewport (1600x1000). A layout defect that only appears at a large node count, or at another aspect ratio, is not exercised here — the region and force layouts were inspected at 200 nodes and two widths out of band (validation/m13/results/viz-layout-panel).",
+    "This gate drives the graph's two arrangements and nothing else."
+  ],
+  "generatedAt": "2026-11-03T16:37:36.872Z"
+}

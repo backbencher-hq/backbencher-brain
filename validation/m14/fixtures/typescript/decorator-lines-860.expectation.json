@@ -1,0 +1,102 @@
+{
+  "fixtureId": "typescript/decorator-lines-860",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M59 (#860). Every expected line below is read off the fixture's own text (the flag above says so rather than claiming an authorship order that did not happen; the values were then checked against live emission line by line). Before this round `extractDecoratorRelationships` set NO line on a decorator's `references` edge — the only relationship emitter in the web family with no line field — which is why the svelte lane's pinned 40-file sample read 110/111. Each decorator here sits on a DIFFERENT line from the declaration it decorates (18 vs 19, 20 vs 21, 23 vs 24), so the correct answer and the near-miss 'borrow the declaration's line' answer are different numbers; the forbid entries name the wrong one, which is what makes the pin falsifiable rather than merely present. Scope note: this fixture pins ONLY the decorator reference edges. Two adjacent defects measured on it are deliberately NOT pinned, because either pinning would encode a wrong answer as the expected one — (a) a decorated class/field symbol's range starts at its decorator, so `exports -> Service` reads 18 and `contains Service -> pool` reads 20 when the names are written on 19 and 21 (issue #861, with the probe), and (b) the walker attributes a class-body decorator expression to the enclosing CLASS (`references Service -> sealed` at 23 alongside the correct `references method -> sealed` at 23); decorator call sites are excluded from the differential by declaration, so (b) is #861's call-site half. They are left unpinned here rather than frozen as correct. RELABEL (2026-10-18, vocabulary extension): the decorator rows are `decorates`; the four line pins are unchanged in meaning (correct line expected, declaration line and line-less states forbidden), and the forbid rows keep biting on the new type.",
+  "expectSymbols": [
+    {
+      "name": "sealed",
+      "kind": "function"
+    },
+    {
+      "name": "inject",
+      "kind": "function"
+    },
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "pool",
+      "kind": "property"
+    },
+    {
+      "name": "method",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 18,
+      "note": "the CLASS decorator's own line; the class declaration it decorates is on 19"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 20,
+      "note": "the FIELD decorator's own line; `private pool` is on 21"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 23,
+      "note": "the METHOD decorator's own line; `method()` is on 24"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "method",
+      "line_number": 24,
+      "note": "unaffected by the decorator: method decorators are class_body siblings, not children of the member"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": null,
+      "note": "pre-fix: extractDecoratorRelationships set no line at all (the state the svelte lane read as 110/111 and every decorator in real code read as unlocatable)"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": null,
+      "note": "pre-fix: the same silence on a field decorator"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": null,
+      "note": "pre-fix: and on a method decorator"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 19,
+      "note": "the decorated DECLARATION's line — the near-miss this pin exists for"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 21,
+      "note": "the field's declaration line, not the decorator's"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 24,
+      "note": "the method's declaration line, not the decorator's"
+    }
+  ]
+}

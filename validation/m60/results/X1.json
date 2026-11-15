@@ -1,0 +1,127 @@
+{
+  "gate": "M60.X1",
+  "title": "Family closure as a computed boolean (jvm + web + oo), with the fold record",
+  "at": "2026-09-25T16:13:28.402Z",
+  "atCommit": "d09934d98a74c0e4bfd3b31e55616cbc994dcddd",
+  "verdict": "not-closed",
+  "milestoneConditions": {
+    "familiesClosed": [
+      "web"
+    ],
+    "familiesOpen": [
+      "jvm",
+      "oo"
+    ],
+    "m49ClosureGateLive": false
+  },
+  "families": {
+    "jvm": {
+      "verdict": "not-closed",
+      "conditions": {
+        "foldersClosed": true,
+        "analyzersCommitted": true,
+        "cellsAlive": true,
+        "trackerClean": false,
+        "foldPresent": true
+      },
+      "openFolders": [],
+      "missingFolders": [],
+      "unmoored": []
+    },
+    "web": {
+      "verdict": "closed-computable",
+      "conditions": {
+        "foldersClosed": true,
+        "analyzersCommitted": true,
+        "cellsAlive": true,
+        "trackerClean": true,
+        "foldPresent": true
+      },
+      "openFolders": [],
+      "missingFolders": [],
+      "unmoored": []
+    },
+    "oo": {
+      "verdict": "not-closed",
+      "conditions": {
+        "foldersClosed": true,
+        "analyzersCommitted": false,
+        "cellsAlive": true,
+        "trackerClean": false,
+        "foldPresent": false
+      },
+      "openFolders": [],
+      "missingFolders": [],
+      "unmoored": [
+        "objc"
+      ]
+    }
+  },
+  "selfTest": {
+    "cases": 9,
+    "failures": []
+  },
+  "remainderClassifier": {
+    "contract": "an open issue names a family's remainder when it IS the registered remainder issue, or carries a registered code, or names one of the family's registered languages as a whole word",
+    "selfTest": {
+      "cases": 12,
+      "failures": []
+    }
+  },
+  "blockedCells": [],
+  "ruledDeadCells": [
+    "comments",
+    "ownerKind",
+    "gravityScore",
+    "layer"
+  ],
+  "openRemainder": {
+    "jvm": [
+      {
+        "number": 926,
+        "title": "groovy: .gsp templates were routed to the Groovy grammar (39/39 = 100% unparseable) — the sibling of #913",
+        "why": "language:groovy"
+      },
+      {
+        "number": 924,
+        "title": "M60 name surface: a quoted identifier's quoting syntax is published as part of the name (kotlin/scala/zig), and payloads and expressions are published as names (haskell/elixir/cpp/scala)",
+        "why": "language:kotlin"
+      }
+    ],
+    "web": [],
+    "oo": [
+      {
+        "number": 943,
+        "title": "M60.R8/R10 adjudicate a COMMITTED census artifact, so a dirty-derived one passes its gate forever — php's framework surface is un-adjudicated at HEAD (0 sites, 1 binding) and cpp's committed R10 row is not HEAD-true",
+        "why": "language:php"
+      },
+      {
+        "number": 930,
+        "title": "m60: the `lines` cell is defined as `alive`, so ONE writer satisfies it — php passed with 92.7% of its edges unlined",
+        "why": "language:php"
+      },
+      {
+        "number": 593,
+        "title": "M37: Dual-lens backfill of the 18 gated-done analyzers (read + census, csharp/haskell method)",
+        "why": "language:csharp"
+      }
+    ]
+  },
+  "foldRecord": {
+    "contract": "R4: M60's family results are recorded into M49 as the evidence its jvm/web closure claims are true",
+    "rows": {
+      "jvm": true,
+      "web": true,
+      "oo": false
+    }
+  },
+  "passed": 9,
+  "failed": 5,
+  "failures": [
+    "jvm remainder fully closed on the tracker — #926 [language:groovy] groovy: .gsp templates were routed to the Groovy grammar (39/39 = 100% unparseable) — t | #924 [language:kotlin] M60 name surface: a quoted identifier's quoting syntax is published as part of the name",
+    "oo remainder fully closed on the tracker — #943 [language:php] M60.R8/R10 adjudicate a COMMITTED census artifact, so a dirty-derived one passes its gate  | #930 [language:php] m60: the `lines` cell is defined as `alive`, so ONE writer satisfies it — php passed with  | #593 [language:csharp] M37: Dual-lens backfill of the 18 gated-done analyzers (read + census, csharp/haskell m",
+    "jvm family: every condition green — open: trackerClean",
+    "oo family: every condition green — open: analyzersCommitted, trackerClean, foldPresent (dirty: objc)",
+    "M49 closure gate passes live — milestone-level condition: the gate returns not-closed while any language folder is open"
+  ]
+}

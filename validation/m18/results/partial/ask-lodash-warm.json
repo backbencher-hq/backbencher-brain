@@ -1,0 +1,156 @@
+{
+  "mode": "warm",
+  "data": {
+    "tag": "lodash",
+    "cold": false,
+    "embeddings": 652,
+    "flushCompleted": true,
+    "rows": [
+      {
+        "id": "lodash-a1",
+        "query": "deep clone an object",
+        "negative": false,
+        "gold": "cloneDeep",
+        "hit": true,
+        "confidence": 0.58,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "cloneDeep",
+          "cloneDeepWith",
+          "createCloner",
+          "conforms",
+          "initCloneObject"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lodash.js (Line 11186) ---\n[function] cloneDeep — similarity 0.659\n```\n    fun",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-a2",
+        "query": "delay calling a function until calls stop",
+        "negative": false,
+        "gold": "debounce",
+        "hit": true,
+        "confidence": 0.42,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "baseDelay",
+          "once",
+          "shouldInvoke",
+          "debounced",
+          "remainingWait"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lodash.js (Line 2793) ---\n[function] baseDelay — similarity 0.470\n```\n    func",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-a3",
+        "query": "limit how often a function can run",
+        "negative": false,
+        "gold": "throttle",
+        "hit": false,
+        "confidence": 0.41,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "once"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lodash.js (Line 10716) ---\n[function] once — similarity 0.409\n```\n    function",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-a4",
+        "query": "split an array into smaller chunks",
+        "negative": false,
+        "gold": "chunk",
+        "hit": true,
+        "confidence": 0.51,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "code_block.js",
+          "chunk",
+          "asciiToArray"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: doc/README.md (Line 435) ---\n[function] code_block.js — similarity 0.586\n```\n`",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-a5",
+        "query": "check if two values are deeply equal",
+        "negative": false,
+        "gold": "isEqual",
+        "hit": true,
+        "confidence": 0.48,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "baseIsEqual",
+          "isEqual",
+          "eq",
+          "baseIsEqualDeep",
+          "cloneDeep"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lodash.js (Line 3314) ---\n[function] baseIsEqual — similarity 0.519\n```\n    fu",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-s1",
+        "query": "trimStart",
+        "negative": false,
+        "gold": "trimStart",
+        "hit": true,
+        "confidence": 0.42,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "trimStart",
+          "baseTrim",
+          "trim",
+          "trimmedEndIndex",
+          "trimEnd"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lodash.js (Line 15145) ---\n[function] trimStart — similarity 0.521\n```\n    fun",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-c1",
+        "query": "Creates an array of elements split into groups the length of size",
+        "negative": false,
+        "gold": "chunk",
+        "hit": true,
+        "confidence": 0.4,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "chunk",
+          "code_block.js",
+          "arraySampleSize"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lodash.js (Line 6934) ---\n[function] chunk — similarity 0.438\n```\n    function",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "lodash-n1",
+        "query": "render html canvas and play video",
+        "negative": true,
+        "gold": null,
+        "hit": null,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "code_block.html",
+          "Vulnerability Chaining and Gadgets",
+          "Step 3: Patch and release",
+          "Step 2: Review the Report and determine its severity",
+          "Step 1: Assign Security Report Coordinator (SRC) and consolidate the report"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      }
+    ]
+  },
+  "generatedAt": "2026-08-24T23:50:20.716Z"
+}

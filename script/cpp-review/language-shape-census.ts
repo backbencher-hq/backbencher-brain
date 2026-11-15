@@ -33,7 +33,7 @@ import path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"
 const EXTS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++", ".h", ".ipp", ".tpp"])
 const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-debug", "bazel-bin", "CMakeFiles"])

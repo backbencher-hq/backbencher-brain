@@ -1,0 +1,167 @@
+{
+  "analyzer": "bash",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/fsharp",
+  "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+  "perFile": {
+    "build.sh": {
+      "symbols": 2,
+      "relationships": 6,
+      "errors": 0
+    },
+    "buildtools/checkpackages/check.sh": {
+      "symbols": 2,
+      "relationships": 4,
+      "errors": 0
+    },
+    "eng/build.sh": {
+      "symbols": 72,
+      "relationships": 124,
+      "errors": 0
+    },
+    "eng/cibuild.sh": {
+      "symbols": 2,
+      "relationships": 8,
+      "errors": 0
+    },
+    "eng/common/SetupNugetSources.sh": {
+      "symbols": 31,
+      "relationships": 64,
+      "errors": 0
+    },
+    "eng/common/build.sh": {
+      "symbols": 42,
+      "relationships": 58,
+      "errors": 0
+    },
+    "eng/common/cibuild.sh": {
+      "symbols": 2,
+      "relationships": 7,
+      "errors": 0
+    },
+    "eng/common/cross/build-android-rootfs.sh": {
+      "symbols": 18,
+      "relationships": 30,
+      "errors": 0
+    },
+    "eng/common/cross/build-rootfs.sh": {
+      "symbols": 92,
+      "relationships": 128,
+      "errors": 0
+    },
+    "eng/common/cross/tizen-build-rootfs.sh": {
+      "symbols": 8,
+      "relationships": 19,
+      "errors": 0
+    },
+    "eng/common/cross/tizen-fetch.sh": {
+      "symbols": 50,
+      "relationships": 107,
+      "errors": 0
+    },
+    "eng/common/darc-init.sh": {
+      "symbols": 12,
+      "relationships": 27,
+      "errors": 0
+    },
+    "eng/common/dotnet-install.sh": {
+      "symbols": 13,
+      "relationships": 25,
+      "errors": 0
+    },
+    "eng/common/dotnet.sh": {
+      "symbols": 4,
+      "relationships": 11,
+      "errors": 0
+    },
+    "eng/common/internal-feed-operations.sh": {
+      "symbols": 21,
+      "relationships": 53,
+      "errors": 0
+    },
+    "eng/common/msbuild.sh": {
+      "symbols": 9,
+      "relationships": 14,
+      "errors": 0
+    },
+    "eng/common/native/common-library.sh": {
+      "symbols": 31,
+      "relationships": 64,
+      "errors": 0
+    },
+    "eng/common/native/init-compiler.sh": {
+      "symbols": 18,
+      "relationships": 27,
+      "errors": 0
+    },
+    "eng/common/native/init-distro-rid.sh": {
+      "symbols": 17,
+      "relationships": 41,
+      "errors": 0
+    },
+    "eng/common/native/init-os-and-arch.sh": {
+      "symbols": 5,
+      "relationships": 11,
+      "errors": 0
+    },
+    "eng/common/native/install-cmake-test.sh": {
+      "symbols": 20,
+      "relationships": 30,
+      "errors": 0
+    },
+    "eng/common/native/install-cmake.sh": {
+      "symbols": 20,
+      "relationships": 30,
+      "errors": 0
+    },
+    "eng/common/native/install-dependencies.sh": {
+      "symbols": 4,
+      "relationships": 10,
+      "errors": 0
+    },
+    "eng/common/sdk-task.sh": {
+      "symbols": 22,
+      "relationships": 42,
+      "errors": 0
+    },
+    "eng/common/tools.sh": {
+      "symbols": 125,
+      "relationships": 306,
+      "errors": 0
+    },
+    "eng/common/vmr-sync.sh": {
+      "symbols": 24,
+      "relationships": 41,
+      "errors": 0
+    },
+    "restore.sh": {
+      "symbols": 2,
+      "relationships": 6,
+      "errors": 0
+    },
+    "test.sh": {
+      "symbols": 2,
+      "relationships": 6,
+      "errors": 0
+    },
+    "tests/EndToEndBuildTests/DesignTimeProviderPackaging/TestDesignTimeProviderPackaging.sh": {
+      "symbols": 2,
+      "relationships": 8,
+      "errors": 0
+    },
+    "tests/benchmarks/SmokeTestBenchmarks.sh": {
+      "symbols": 2,
+      "relationships": 4,
+      "errors": 0
+    }
+  },
+  "excludedFiles": [
+    "eng/common/init-tools-native.sh",
+    "eng/common/pipeline-logging-functions.sh"
+  ],
+  "crashes": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.834Z",
+    "contentSha256": "ca9bd663e45613ccdc95d3076f72b3f1976d4f8157e89951bc2c66ff6885a7db"
+  }
+}

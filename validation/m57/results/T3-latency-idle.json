@@ -13,7 +13,7 @@
     "digest": "e3b0c44298fc1c14"
   },
   "classifierEpoch": "d1af1c1e4ba070dc",
-  "dataDir": "$HOME/.khushal_file/.bb",
+  "dataDir": "/home/ishaq2321/.khushal_file/.bb",
   "dist": "rebuilt at HEAD before measuring (npx tsup, build success)",
   "method": {
     "engine": "script/m57/probe-scope-all.ts --mode src (direct engine import, N rounds)",
@@ -57,7 +57,7 @@
     "engineOnly": "825 ms"
   },
   "caveats": [
-    "First call in a fresh MCP server is slower than steady state (lazy engine/analyzer initialization): 4568 ms in runB, 20694 ms in runA under load ~9 (opencode + client-tooling at ~100% CPU). Steady state is the number shown above; the first-call penalty is disclosed, not hidden.",
+    "First call in a fresh MCP server is slower than steady state (lazy engine/analyzer initialization): 4568 ms in runB, 20694 ms in runA under load ~9 (opencode + freebuff at ~100% CPU). Steady state is the number shown above; the first-call penalty is disclosed, not hidden.",
     "The box is shared with co-agent processes; load average is recorded per run so every number is attributable.",
     "Cold-process numbers include Node startup (~1.5–2.5 s) that a long-lived MCP client never pays per call.",
     "Parity of the findings payload across modes was proven by M57's T3 gate (17/17 on both runtimes); the digests here are recorded for traceability and intentionally differ by mode because the MCP result envelope differs from the engine's raw payload."

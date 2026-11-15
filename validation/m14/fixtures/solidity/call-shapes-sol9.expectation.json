@@ -1,0 +1,254 @@
+{
+ "schemaVersion": 1,
+ "fixture": "solidity/call-shapes-sol9.sol",
+ "authoredFrom": "SOL-9 and SOL-10 \u2014 what a Solidity call target can actually BE. Authored 2026-09-30 from the analyzer's measured output, and it exists because writing it found a defect that no corpus run could see.",
+ "note": "THE DEFECT. `t.call{value: 1, gas: 100}(\"\")` published NO edge at all. Two independent causes met on one line. (1) `call`, `balance` and `delegatecall` are EVM OPCODE TOKENS and they are also members of Solidity's built-in types, so the reserved-token rule \u2014 correct for a BARE call \u2014 deleted the member call as well. (2) The member flag came from a SECOND traversal (`isMemberLike` over the callee's DIRECT children) which cannot see a `member_expression` nested under the `struct_expression`'s `type:` field, which is where this call's callee actually lives. So the resolver found the name `call` and a different function then failed to say where it came from. The name and that fact now come from one function and cannot disagree. The surface measure could not report the loss, because the edge never existed to be counted \u2014 which is what makes this fixture the only instrument that could see it.",
+ "expectSymbols": [
+  {
+   "name": "call-shapes-sol9.sol",
+   "kind": "module"
+  },
+  {
+   "name": "Shapes",
+   "kind": "class",
+   "ownerName": "call-shapes-sol9.sol"
+  },
+  {
+   "name": "S",
+   "kind": "struct",
+   "ownerName": "Shapes"
+  },
+  {
+   "name": "a",
+   "kind": "property",
+   "ownerName": "S"
+  },
+  {
+   "name": "b",
+   "kind": "property",
+   "ownerName": "S"
+  },
+  {
+   "name": "value",
+   "kind": "property",
+   "ownerName": "Shapes"
+  },
+  {
+   "name": "value()",
+   "kind": "method",
+   "ownerName": "Shapes",
+   "meta.isSynthesisedGetter": true
+  },
+  {
+   "name": "everyShape",
+   "kind": "method",
+   "ownerName": "Shapes"
+  },
+  {
+   "name": "legacy",
+   "kind": "variable",
+   "ownerName": "everyShape"
+  },
+  {
+   "name": "modern",
+   "kind": "variable",
+   "ownerName": "everyShape"
+  },
+  {
+   "name": "ok",
+   "kind": "variable",
+   "ownerName": "everyShape"
+  },
+  {
+   "name": "z",
+   "kind": "variable",
+   "ownerName": "everyShape"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Shapes",
+   "target": "S",
+   "line_number": 5,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "everyShape",
+   "target": "legacy",
+   "line_number": 9,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "S",
+   "line_number": 9,
+   "comment": "SOL-10, SPELLING 1 of 2. `S { a: 1, b: 2 }` is the pre-0.8.8 form: a `struct_expression` whose `type:` field names the struct. The declared-type mention and the CONSTRUCTOR CALL are two different facts and both are real, so both edges are emitted \u2014 and they differ only in `type` and metadata, which is why the dedupe key must carry the type.",
+   "meta.isTypeReference": true,
+   "meta.typeReferenceSite": "type_name",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "target": "S",
+   "line_number": 9,
+   "meta.isStructConstructor": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "contains",
+   "from": "everyShape",
+   "target": "modern",
+   "line_number": 10,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "S",
+   "line_number": 10,
+   "comment": "SOL-10, SPELLING 2 of 2. `S({a: 3, b: 4})` is the MODERN form: a `call_expression` with `call_struct_argument` children. The corpus holds 13 `struct_expression` and 33 `call_struct_argument` occurrences \u2014 disjoint counts, two spellings, one meaning.",
+   "meta.isTypeReference": true,
+   "meta.typeReferenceSite": "type_name",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "target": "S",
+   "line_number": 10,
+   "meta.isSolidityCall": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "target": "call",
+   "line_number": 11,
+   "comment": "THE ROW THIS FIXTURE EXISTS FOR. The callee is a `struct_expression` whose `type:` field is a `member_expression`, so `t.call` resolves through TWO wrappers before the name. A resolver written to the intuitive `identifier`/`member_expression` model returns nothing for every option-bearing call in the language.",
+   "meta.isSolidityCall": true,
+   "meta.isMemberCall": true,
+   "meta.hasCallOptions": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "contains",
+   "from": "everyShape",
+   "target": "ok",
+   "line_number": 11,
+   "comment": "A tuple element of `(bool ok, ) = \u2026`, which is a `variable_declaration`. Its container is the function (SOL-13), so `contains Shapes -> ok` \u2014 which says the contract contains a variable \u2014 would be false.",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "target": "transfer",
+   "line_number": 13,
+   "comment": "`payable(t).transfer(1)` \u2014 a third wrapper shape: the `object:` field holds a `payable_conversion_expression`. `transfer` is NOT a grammar token, so the reserved rule never touched this one and it was the only member call in the file that survived before the fix \u2014 which is how the defect hid: the BARE spelling was clean and only the interesting spellings were broken.",
+   "meta.isSolidityCall": true,
+   "meta.isMemberCall": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "z",
+   "line_number": 15,
+   "comment": "`type(uint256).max` contributes the local `z`; it contributes NO reference to `uint256`, because that is a language type rather than a project one, and no `uses -> max`, because `max` is a member of the META TYPE \u2014 grammar.js puts the `.` and the property in a SEPARATE `member_expression` wrapping the `meta_type_expression`, so suppressing the meta type's own subtree was not enough.",
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "a",
+   "line_number": 15,
+   "meta.isMemberReference": true,
+   "meta.viaObject": "legacy",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "b",
+   "line_number": 15,
+   "meta.isMemberReference": true,
+   "meta.viaObject": "modern",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "references",
+   "from": "value",
+   "target": "value()",
+   "line_number": 6,
+   "meta.isGetterFor": true,
+   "meta.getterOfVariable": "value",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "contains",
+   "from": "Shapes",
+   "target": "value()",
+   "line_number": 6,
+   "meta.isSynthesisedGetter": true,
+   "meta.getterOfVariable": "value",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "everyShape\u0000t",
+   "line_number": 13,
+   "comment": "`payable(t).transfer(1)` - the address is READ, and the conversion does not hide it: `t` sits under an `expression`, which is SOL-2's read position. Asserted positively; a first draft forbade it on the theory that a conversion swallows its operand, and measurement refuted the theory. SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed.",
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "max",
+   "comment": "SOL-7's second half: `type(X).max` names a member of the META TYPE, not of the project. Measured before the fix: the corpus emitted `uses -> max` for every `type(\u2026)` in it."
+  },
+  {
+   "type": "references",
+   "from": "everyShape",
+   "target": "uint256",
+   "line_number": 14,
+   "comment": "`type(uint256)` names a language-supplied type, not a project one. A `references` edge to it would resolve against no project symbol."
+  },
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "target": "S",
+   "line_number": 11,
+   "comment": "A third `calls -> S`: the struct is constructed TWICE in this file (lines 9 and 10) and not at all on line 11, so a resolver that also read the tuple's type would emit a third row. The count below is 2."
+  },
+  {
+   "type": "uses",
+   "from": "everyShape",
+   "target": "t",
+   "line_number": 13,
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "target": "S",
+   "equals": 2,
+   "comment": "Exactly the two struct constructions \u2014 the legacy spelling and the modern one. This is the number that says SOL-10's generality is real rather than one of the two spellings having slipped through."
+  },
+  {
+   "type": "calls",
+   "from": "everyShape",
+   "equals": 4,
+   "comment": "Two struct constructors, `t.call{\u2026}(\u2026)`, and `transfer`. Before the fix this was 3 \u2014 `t.call{\u2026}` was missing entirely \u2014 and a rule that resolved no callee at all would report 0."
+  }
+ ]
+}

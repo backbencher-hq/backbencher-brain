@@ -1,0 +1,148 @@
+{
+  "fixtureId": "make/includes-and-exports",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the numbered source: `MODULE` on 12, the three includes on 15 / 18 / 23, the two exports on 26 / 27, `PUBLIC_TARGET` on 29. The `contains` row for `EXPORTED_BARE` was NOT in the first transcription — the measured run gave it `exports` and no `contains`, because the bare-export branch declared the symbol without recording that the module owns it. That is an inconsistency (a member of the public surface the module does not own) and it was fixed before this file was authored; the row is asserted so it cannot come back.",
+  "rationale": "Includes and exports, including the three shapes one directive can take. The include SOURCE must be this file's module and not a hardcoded name: with a constant source, every makefile that includes `hooks` produced the same edge and two files could not be told apart in the graph. A target IS an export — an including makefile invokes it by name — so the file's public surface is answerable. And `export NAME` with no `=` wraps a `list`, with no assignment node anywhere, so it is the ONLY place that name appears and without that branch the export is invisible entirely. A computed include names no file this parse can know, so the EXPRESSION is recorded and flagged rather than dropped: an unresolved import is a fact and a silently absent one is not.",
+  "expectSymbols": [
+    {
+      "name": "includes-and-exports.mk",
+      "kind": "module"
+    },
+    {
+      "name": "MODULE",
+      "kind": "constant"
+    },
+    {
+      "name": "EXPORTED_BARE",
+      "kind": "constant"
+    },
+    {
+      "name": "EXPORTED_WITH_VALUE",
+      "kind": "constant"
+    },
+    {
+      "name": "PUBLIC_TARGET",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "includes-and-exports.mk",
+      "target": "MODULE",
+      "line_number": 12,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "imports",
+      "from": "includes-and-exports.mk",
+      "target": "hooks",
+      "line_number": 15
+    },
+    {
+      "type": "imports",
+      "from": "includes-and-exports.mk",
+      "target": "extra.mk",
+      "line_number": 18
+    },
+    {
+      "type": "imports",
+      "from": "includes-and-exports.mk",
+      "target": "$(shell echo generated.mk)",
+      "line_number": 23,
+      "meta.evidenceClass": "include_computed"
+    },
+    {
+      "type": "contains",
+      "from": "includes-and-exports.mk",
+      "target": "EXPORTED_BARE",
+      "line_number": 26,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "exports",
+      "from": "includes-and-exports.mk",
+      "target": "EXPORTED_BARE",
+      "line_number": 26,
+      "meta.evidenceClass": "export_directive"
+    },
+    {
+      "type": "exports",
+      "from": "includes-and-exports.mk",
+      "target": "EXPORTED_WITH_VALUE",
+      "line_number": 27,
+      "meta.evidenceClass": "export_directive"
+    },
+    {
+      "type": "contains",
+      "from": "includes-and-exports.mk",
+      "target": "EXPORTED_WITH_VALUE",
+      "line_number": 27,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "includes-and-exports.mk",
+      "target": "PUBLIC_TARGET",
+      "line_number": 29,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "references",
+      "from": "PUBLIC_TARGET",
+      "target": "EXPORTED_BARE",
+      "line_number": 29,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "PUBLIC_TARGET",
+      "target": "EXPORTED_WITH_VALUE",
+      "line_number": 29,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "exports",
+      "from": "includes-and-exports.mk",
+      "target": "PUBLIC_TARGET",
+      "line_number": 29,
+      "meta.evidenceClass": "export_target"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "hooks",
+      "note": "an include path is an import, not a declaration"
+    },
+    {
+      "name": "extra.mk",
+      "note": "same"
+    },
+    {
+      "name": "export",
+      "note": "a KEYWORD reaching the name-capture path. It happened in boundary/Makefile, where `export` became the target of six edges — an edge to a keyword is an edge to nothing, and it means the exported variable was never declared. Added after the mutant `make/accept-keywords-as-names` SURVIVED this battery: a mutant that survives is a hole in the fixtures, not a pass."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "makefile",
+      "note": "the pre-fix shape: every include edge was sourced at a literal `makefile`, so two makefiles including the same path produced the same edge"
+    },
+    {
+      "type": "exports",
+      "target": "hooks",
+      "note": "an included file is IMPORTED, not exported"
+    },
+    {
+      "type": "imports",
+      "target": "MODULE",
+      "note": "the inverse: a variable is contained, not imported"
+    },
+    {
+      "type": "uses",
+      "target": "export",
+      "note": "an edge to the `export` KEYWORD. Added with the symbol forbid above, for the same reason: the surviving mutant showed this battery did not check for it."
+    }
+  ]
+}

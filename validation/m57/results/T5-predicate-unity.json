@@ -1,0 +1,16 @@
+{
+  "probe": "M57.T5-predicate-unity",
+  "issue": 793,
+  "milestone": "M57",
+  "at": "2026-11-04T02:25:27.139Z",
+  "commit": "94d9b3497fb38ce34689770c95cf85dcd981f6cf",
+  "checks": 19,
+  "passed": 18,
+  "failed": 1,
+  "battery": 13,
+  "allowlistSize": 14,
+  "corpus": null,
+  "classifierEpoch": "d1af1c1e4ba070dc",
+  "verifierCommand": "npx tsx script/m57/verify-t5-predicate-unity.ts",
+  "status": "known-gap"
+}

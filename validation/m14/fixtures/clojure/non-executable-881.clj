@@ -1,0 +1,17 @@
+(ns boundary-probe)
+(defn caller []
+  '(quoted-ghost)
+  (quote (explicit-ghost))
+  #_(discarded-ghost)
+  (comment (commented-ghost))
+  (clojure.core/comment (qualified-ghost))
+  (#_ignored quote (trivia-ghost))
+  (live))
+(defn templates []
+  `(template-ghost ~(live-unquote) ~@(live-splice))
+  `(comment ~(live-comment-unquote))
+  `(quote ~(live-quote-unquote))
+  (after-template))
+'(defn quoted-definition [] (hidden))
+#_(defn discarded-definition [] (hidden))
+(comment (defn commented-definition [] (hidden)))

@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process"
 import { writeFileSync } from "node:fs"
 
 const ROOT = process.cwd()
-const corpus = process.argv[2] || "$HOME/fixtures/repositories/phpunit"
+const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/phpunit"
 const allRelative = execFileSync("git", ["-C", corpus, "ls-files", "*.php"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
 const sample = allRelative.slice(0, 400)

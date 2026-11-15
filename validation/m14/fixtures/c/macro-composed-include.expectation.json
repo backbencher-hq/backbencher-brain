@@ -1,0 +1,72 @@
+{
+  "fixtureId": "c/macro-composed-include",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W22 (F5 rotation finding on sqlite3-wasm.c): #include with a macro-composed argument (INC__STRINGIFY(SQLITE_C)) must not fabricate an include_dependency edge \u2014 the path is not statically resolvable (C-D2, preprocessor is textual). Literal quoted/system includes still emit. M60/#910: the edge is the first-class `imports` KIND (the same kind ts/js/python/dart emit), not `references` + metadata \u2014 so this fixture pins the ontology, and the forbid block pins that a `references` edge is NOT an acceptable substitute (a downgrade is caught here and by the c/include-kind-downgraded mutant). CONTRACT REPIN (2026-10-25): a QUOTED `#include` is the translation unit's own fragment (the preprocessor splices the header's text into this unit, so the file shares the unit's single scope) and is published as `part_of` with `partRole:\"library\"` and the part's MODULE SYMBOL as the target (the file stem); the path stays in `metadata.partPath`. An ANGLE include is another module's interface and keeps `imports`. This is a LABEL MOVE plus the target's space (path -> stem, because the arbiter resolves target strings against symbol names): no dependency is gained or lost, and each repinned row gains a forbid row pinning the same target in the old label so a revert goes red.",
+  "expectSymbols": [
+    {
+      "name": "helper",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "target": "real_header",
+      "meta.relationshipType": "include_part_of",
+      "meta.partRole": "library",
+      "meta.isQuotedInclude": true
+    },
+    {
+      "type": "part_of",
+      "target": "real_header",
+      "meta.isImport": true,
+      "meta.partRole": "library",
+      "meta.isQuotedInclude": true
+    },
+    {
+      "type": "imports",
+      "target": "stdio.h",
+      "meta.relationshipType": "include_dependency"
+    },
+    {
+      "type": "imports",
+      "target": "stdio.h",
+      "meta.isSystemInclude": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "INC__STRINGIFY(SQLITE_C)"
+    },
+    {
+      "type": "references",
+      "target": "real_header.h"
+    },
+    {
+      "type": "references",
+      "target": "stdio.h"
+    },
+    {
+      "type": "imports",
+      "target": "real_header.h",
+      "note": "a QUOTED include is a part_of row now; the old imports label is forbidden so a revert goes red"
+    },
+    {
+      "type": "imports",
+      "target": "real_header",
+      "note": "and the STEM target too \u2014 one edge, one label"
+    },
+    {
+      "type": "imports",
+      "target": "real_header.h",
+      "note": "a QUOTED include is a part_of row now; the old imports label is forbidden so a revert goes red"
+    },
+    {
+      "type": "imports",
+      "target": "real_header",
+      "note": "and the STEM target too \u2014 one edge, one label"
+    }
+  ]
+}

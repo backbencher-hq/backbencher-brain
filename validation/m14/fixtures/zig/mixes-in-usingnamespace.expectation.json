@@ -1,0 +1,106 @@
+{
+  "fixtureId": "zig/mixes-in-usingnamespace",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "`mixes_in` for Zig is `usingnamespace`, which merges another struct's declaration SET into the enclosing container \u2014 member-set composition, with no conformance declared. It is rung R3: the pinned grammar already carries `using_namespace_declaration`, so nothing is patched and no node type is invented; the construct-site census over the whole admitted population (3,844 .zig files over 4 repositories, validation/m14/measurements/zig-extended-census.json) counts 0 sites, because the language removed the construct, so this fixture is the only place the emission can be observed. The rows pin the DIRECTION (composing container -> merged unit) and every argument form. The target is never the written PATH: the arbiter resolves target strings against SYMBOL NAMES, so a path target binds nothing while the stem does (the same measured rule the part-file lanes apply); the path survives as `meta.module` and the forbid rows make a regression to the path fail. A file-scope `usingnamespace` composes into the file's own unit, whose source is the lane's file-scope marker `(global)`. The import fact is untouched: the same statements still publish their imports/references rows, and this fixture does not restate them.",
+  "expectSymbols": [
+    {
+      "name": "merged",
+      "kind": "constant",
+      "note": "the @import binding; a namespace import binding is a symbol (its alias names the module)"
+    },
+    {
+      "name": "Shared",
+      "kind": "struct"
+    },
+    {
+      "name": "answer",
+      "kind": "constant",
+      "visibility": "public",
+      "ownerName": "Shared"
+    },
+    {
+      "name": "Host",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "Host",
+      "target": "Shared",
+      "meta.isMixin": true,
+      "meta.mixinForm": "identifier",
+      "meta.evidenceClass": "structural",
+      "note": "POSITIVE 1 \u2014 the same-file struct form: the host's member set gains Shared's declarations."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Host",
+      "target": "imported",
+      "meta.isMixin": true,
+      "meta.mixinForm": "import",
+      "meta.module": "imported.zig",
+      "note": "POSITIVE 2 \u2014 the @import form: the target is the module's SYMBOL (the stem), and the written path stays in metadata."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Host",
+      "target": "merged",
+      "meta.isMixin": true,
+      "meta.mixinForm": "identifier",
+      "note": "POSITIVE 3 \u2014 the alias form: the merged unit is the binding the file published for the module."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Host",
+      "target": "inner",
+      "meta.isMixin": true,
+      "meta.mixinForm": "import_member",
+      "meta.module": "with_member.zig",
+      "note": "POSITIVE 4 \u2014 `@import(\"x.zig\").Member` composes the MEMBER's declaration set; the member is the target."
+    },
+    {
+      "type": "mixes_in",
+      "from": "(global)",
+      "target": "root",
+      "meta.isMixin": true,
+      "meta.mixinForm": "import",
+      "meta.module": "root.zig",
+      "meta.fileLevel": true,
+      "note": "POSITIVE 5 \u2014 a file-scope `usingnamespace` composes into the file's own unit; the source is the lane's file-scope marker."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "target": "imported.zig",
+      "comment": "the PATH is never the target: it binds nothing; the stem is the target and the path is metadata"
+    },
+    {
+      "type": "mixes_in",
+      "target": "with_member.zig",
+      "comment": "same rule for the member form"
+    },
+    {
+      "type": "mixes_in",
+      "target": "root.zig",
+      "comment": "same rule for the file-scope form"
+    },
+    {
+      "type": "implements",
+      "from": "Host",
+      "comment": "composition declares no conformance, so it is not an implements clause"
+    },
+    {
+      "type": "extends",
+      "from": "Host",
+      "comment": "there is no supertype here; a merged declaration set is not a base class"
+    },
+    {
+      "type": "calls",
+      "target": "usingnamespace",
+      "comment": "`usingnamespace` is a keyword-like declaration, not a callable; a calls edge to it would name a symbol that does not exist"
+    }
+  ]
+}

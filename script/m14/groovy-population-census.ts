@@ -65,7 +65,7 @@ import { createHash } from "node:crypto"
 import * as path from "node:path"
 
 const ROOT = path.resolve(import.meta.dir, "../..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const SIZE_CAP = 1024 * 1024
 // ★ THE ROUTER'S OWN TABLE, AND IT IS READ, NOT COPIED. `script/m14/language-extensions.ts` is the
 // ONE table the fleet's consumers read (the extension set MOVED there from the incoming-gate, so

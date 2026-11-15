@@ -1,0 +1,735 @@
+{
+  "issue": "M21.W3",
+  "code": "W3",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 212,
+  "passed": 212,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-w3-reliability-matrix.ts",
+  "evidenceFile": "W3.json",
+  "generatedAt": "2026-09-01T14:15:29.710Z",
+  "methodology": {
+    "coldRuns": "every project's derived index DB is wiped before indexing; the checkout is never modified",
+    "sampling": "tracked files (git ls-files) sorted by path, stride-sampled to 250 files when the repo exceeds the cap; identical input → identical sample",
+    "perLanguageSource": "phases.byLanguage accumulated from the same final one-outcome-per-file pass that drives successFiles/errorFiles",
+    "fallbackDefinition": "regex/structural extraction (FileResult.fallback === true), counted separately and never presented as full AST parsing",
+    "eligibility": "only clean registry repositories are run; dirty/missing rows are documented as unavailable"
+  },
+  "matrix": [
+    {
+      "repo": "rake",
+      "state": "clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake",
+      "trackedFiles": 127,
+      "candidates": 107,
+      "sampled": false,
+      "sampleSize": 107,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 107,
+      "success": 107,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "yaml": {
+          "files": 9,
+          "success": 9,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "ruby": {
+          "files": 95,
+          "success": 95,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "c": {
+          "files": 3,
+          "success": 3,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 6599
+    },
+    {
+      "repo": "rebar3",
+      "state": "clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "trackedFiles": 456,
+      "candidates": 299,
+      "sampled": true,
+      "sampleSize": 250,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 250,
+      "success": 250,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "markdown": {
+          "files": 18,
+          "success": 18,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "erlang": {
+          "files": 222,
+          "success": 222,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "yaml": {
+          "files": 5,
+          "success": 5,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "make": {
+          "files": 2,
+          "success": 2,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "bash": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "powershell": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "elixir": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 11788
+    },
+    {
+      "repo": "element-plus",
+      "state": "clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/element-plus",
+      "trackedFiles": 2704,
+      "candidates": 2591,
+      "sampled": true,
+      "sampleSize": 250,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 250,
+      "success": 250,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "vue": {
+          "files": 96,
+          "success": 96,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "markdown": {
+          "files": 13,
+          "success": 13,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "css": {
+          "files": 16,
+          "success": 16,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "yaml": {
+          "files": 3,
+          "success": 3,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "typescript": {
+          "files": 104,
+          "success": 104,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "json": {
+          "files": 5,
+          "success": 5,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "tsx": {
+          "files": 11,
+          "success": 11,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "html": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "bash": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 12886
+    },
+    {
+      "repo": "svelte",
+      "state": "clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/svelte",
+      "trackedFiles": 8981,
+      "candidates": 8965,
+      "sampled": true,
+      "sampleSize": 250,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 250,
+      "success": 250,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "javascript": {
+          "files": 95,
+          "success": 95,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "svelte": {
+          "files": 122,
+          "success": 122,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "html": {
+          "files": 7,
+          "success": 7,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "css": {
+          "files": 5,
+          "success": 5,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "markdown": {
+          "files": 4,
+          "success": 4,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "json": {
+          "files": 14,
+          "success": 14,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "typescript": {
+          "files": 3,
+          "success": 3,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 9358
+    },
+    {
+      "repo": "scala3",
+      "state": "clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/scala3",
+      "trackedFiles": 25945,
+      "candidates": 20025,
+      "sampled": true,
+      "sampleSize": 250,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 250,
+      "success": 250,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "markdown": {
+          "files": 11,
+          "success": 11,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "scala": {
+          "files": 226,
+          "success": 226,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "css": {
+          "files": 2,
+          "success": 2,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "java": {
+          "files": 10,
+          "success": 10,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "yaml": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 11424
+    },
+    {
+      "repo": "zig",
+      "state": "clean",
+      "path": "/home/ishaq2321/bb_tests/repositories/zig",
+      "trackedFiles": 20545,
+      "candidates": 17027,
+      "sampled": true,
+      "sampleSize": 250,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 250,
+      "success": 250,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "yaml": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "zig": {
+          "files": 43,
+          "success": 43,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "c": {
+          "files": 205,
+          "success": 205,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "cpp": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 15545
+    },
+    {
+      "repo": "typescript",
+      "state": "clean",
+      "path": "/home/ishaq2321/TypeScript",
+      "trackedFiles": 81368,
+      "candidates": 41886,
+      "sampled": true,
+      "sampleSize": 250,
+      "cold": true,
+      "mode": "worker-pool",
+      "workerCount": 7,
+      "files": 250,
+      "success": 250,
+      "error": 0,
+      "timeout": 0,
+      "skipped": 0,
+      "retries": 0,
+      "startupFailures": 0,
+      "poison": 0,
+      "fallbacks": 0,
+      "byLanguage": {
+        "json": {
+          "files": 17,
+          "success": 17,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "javascript": {
+          "files": 108,
+          "success": 108,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "typescript": {
+          "files": 123,
+          "success": 123,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "markdown": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        },
+        "tsx": {
+          "files": 1,
+          "success": 1,
+          "error": 0,
+          "timeout": 0,
+          "fallback": 0
+        }
+      },
+      "durationMs": 22933
+    }
+  ],
+  "grammarLoadResults": {
+    "typescript": {
+      "state": "loaded",
+      "files": 230,
+      "success": 230,
+      "asset": "tree-sitter-typescript.wasm"
+    },
+    "tsx": {
+      "state": "loaded",
+      "files": 12,
+      "success": 12,
+      "asset": "tree-sitter-tsx.wasm"
+    },
+    "javascript": {
+      "state": "loaded",
+      "files": 203,
+      "success": 203,
+      "asset": "tree-sitter-javascript.wasm"
+    },
+    "html": {
+      "state": "loaded",
+      "files": 8,
+      "success": 8,
+      "asset": "tree-sitter-html.wasm"
+    },
+    "css": {
+      "state": "loaded",
+      "files": 23,
+      "success": 23,
+      "asset": "tree-sitter-css.wasm"
+    },
+    "svelte": {
+      "state": "loaded",
+      "files": 122,
+      "success": 122,
+      "asset": "tree-sitter-svelte.wasm"
+    },
+    "json": {
+      "state": "loaded",
+      "files": 36,
+      "success": 36,
+      "asset": "tree-sitter-json.wasm"
+    },
+    "perl": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-perl.wasm"
+    },
+    "yaml": {
+      "state": "loaded",
+      "files": 19,
+      "success": 19,
+      "asset": "tree-sitter-yaml.wasm"
+    },
+    "c": {
+      "state": "loaded",
+      "files": 208,
+      "success": 208,
+      "asset": "tree-sitter-c.wasm"
+    },
+    "cpp": {
+      "state": "loaded",
+      "files": 1,
+      "success": 1,
+      "asset": "tree-sitter-cpp.wasm"
+    },
+    "rust": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-rust.wasm"
+    },
+    "go": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-go.wasm"
+    },
+    "java": {
+      "state": "loaded",
+      "files": 10,
+      "success": 10,
+      "asset": "tree-sitter-java.wasm"
+    },
+    "kotlin": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-kotlin.wasm"
+    },
+    "scala": {
+      "state": "loaded",
+      "files": 226,
+      "success": 226,
+      "asset": "tree-sitter-scala.wasm"
+    },
+    "python": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-python.wasm"
+    },
+    "ruby": {
+      "state": "loaded",
+      "files": 95,
+      "success": 95,
+      "asset": "tree-sitter-ruby.wasm"
+    },
+    "php": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-php.wasm"
+    },
+    "lua": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-lua.wasm"
+    },
+    "elixir": {
+      "state": "loaded",
+      "files": 1,
+      "success": 1,
+      "asset": "tree-sitter-elixir.wasm"
+    },
+    "erlang": {
+      "state": "loaded",
+      "files": 222,
+      "success": 222,
+      "asset": "tree-sitter-erlang.wasm"
+    },
+    "haskell": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-haskell.wasm"
+    },
+    "clean": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-clean.wasm"
+    },
+    "clojure": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-clojure.wasm"
+    },
+    "swift": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-swift.wasm"
+    },
+    "dart": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-dart.wasm"
+    },
+    "csharp": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-c_sharp.wasm"
+    },
+    "r": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-r.wasm"
+    },
+    "sql": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-sql.wasm"
+    },
+    "bash": {
+      "state": "loaded",
+      "files": 2,
+      "success": 2,
+      "asset": "tree-sitter-bash.wasm"
+    },
+    "objective-c": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-objc.wasm"
+    },
+    "groovy": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-groovy.wasm"
+    },
+    "vue": {
+      "state": "loaded",
+      "files": 96,
+      "success": 96,
+      "asset": "tree-sitter-vue.wasm"
+    },
+    "hcl": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-hcl.wasm"
+    },
+    "terraform": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-hcl.wasm"
+    },
+    "graphql": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-graphql.wasm"
+    },
+    "zig": {
+      "state": "loaded",
+      "files": 43,
+      "success": 43,
+      "asset": "tree-sitter-zig.wasm"
+    },
+    "fsharp": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-fsharp.wasm"
+    },
+    "powershell": {
+      "state": "loaded",
+      "files": 1,
+      "success": 1,
+      "asset": "tree-sitter-powershell.wasm"
+    },
+    "markdown": {
+      "state": "loaded",
+      "files": 47,
+      "success": 47,
+      "asset": "tree-sitter-markdown.wasm"
+    },
+    "toml": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-toml.wasm"
+    },
+    "xml": {
+      "state": "not-covered-by-corpus",
+      "asset": "tree-sitter-xml.wasm"
+    },
+    "make": {
+      "state": "loaded",
+      "files": 2,
+      "success": 2,
+      "asset": "tree-sitter-make.wasm"
+    }
+  },
+  "unavailableRepositories": [
+    "intellij-community (dirty)",
+    "aspnetcore (dirty)",
+    "openclaw (dirty)",
+    "paperclip (dirty)",
+    "missing-example (missing) — path missing"
+  ],
+  "notCoveredLanguages": [
+    "perl",
+    "rust",
+    "go",
+    "kotlin",
+    "python",
+    "php",
+    "lua",
+    "haskell",
+    "clean",
+    "clojure",
+    "swift",
+    "dart",
+    "csharp",
+    "r",
+    "sql",
+    "objective-c",
+    "groovy",
+    "hcl",
+    "terraform",
+    "graphql",
+    "fsharp",
+    "toml",
+    "xml"
+  ],
+  "limitations": [
+    "Matrix rows are COLD runs with skipPostProcessing (post-processing is outside this issue's scope); timings include worker boot and WASM load.",
+    "Languages absent from the clean corpus (list in notCoveredLanguages) have load result 'not-covered-by-corpus' and remain a known-gap until a clean repository exercising them is added to the registry.",
+    "Dirty repositories are not evidence-eligible per the corpus policy and were not run: intellij-community (dirty); aspnetcore (dirty); openclaw (dirty); paperclip (dirty).",
+    "Fallback counts reflect files whose parse used regex/structural extraction; a file parsed with a valid dedicated grammar is never labeled fallback."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.387Z",
+    "contentSha256": "0a538b193e557bca7e30e227640ed325cfb801d7df6267afba6e1bbe8a2fc8d4"
+  }
+}

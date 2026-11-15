@@ -1,0 +1,33 @@
+{
+  "name": "bash-corpus-production",
+  "wallTimeMs": 1020.38129,
+  "userCpuMs": 1654.998,
+  "systemCpuMs": 234.626,
+  "peakRssBytes": 285569024,
+  "rssDeltaBytes": 239628288,
+  "databaseBytes": null,
+  "files": 30,
+  "symbols": 674,
+  "relationships": 1311,
+  "filesPerSecond": 29.400774292911624,
+  "symbolsPerSecond": 660.5373957807478,
+  "relationshipsPerSecond": 1284.813836600238,
+  "trackedFiles": 32,
+  "errors": 0,
+  "errorFiles": 0,
+  "crashFiles": 0,
+  "crashSamples": [],
+  "acceptanceFiles": 30,
+  "excludedFiles": [
+    "eng/common/init-tools-native.sh",
+    "eng/common/pipeline-logging-functions.sh"
+  ],
+  "passed": true,
+  "complexityPolicy": "one production parseFile pass per acceptance file; the bash analyzer uses one iterative DFS over the tree with constant-time scope stack, Map-based function params, declaration-dedupe set, and Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol relationship scan",
+  "corpusPolicy": "tracked .sh/.bash files from clean fsharp@22a8a5dc; two named grammar-level limitations (POSIX-class regex match and ] pattern expansion) are excluded and measured separately by bash-corpus-errors.ts",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.832Z",
+    "contentSha256": "eb8522e07a7aa4ec5fb4befe36f0aae2c2c6563e67cbbe1faff22ada6a61f8c9"
+  }
+}

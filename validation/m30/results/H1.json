@@ -1,0 +1,47 @@
+{
+  "issue": "M30.H1",
+  "code": "H1",
+  "milestone": "M30",
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
+  "negativeCases": 5,
+  "mutants": [
+    {
+      "name": "no-key weakness declaration removed",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "S2 notice paraphrased",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "vector-mixing rule removed",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "--force re-embed requirement removed",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "S3 401 message paraphrased",
+      "caught": true,
+      "detail": "caught"
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "sourceFingerprint": "f3bc3d33253e0315ad4f8ae5bfa9544f4b86bf5fdbe6a07e37d6b98606c80996",
+  "verifierCommand": "npx tsx script/m30/verify-honesty-docs.ts",
+  "evidenceFile": "H1.json",
+  "generatedAt": "2026-11-15T04:10:24.250Z",
+  "limitations": [
+    "Docs-truth is verified by verbatim-string and rule checks against the implementation; it does not audit prose claims outside the M30 scope (no-key trade-off, mixing rule, --force, setup).",
+    "Banned-vocabulary lint covers the two edited docs; the full M14 gate (script/verify-honesty.ts) remains authoritative for all artifacts.",
+    "Mutants are simulated against the doc text in memory; the pristine file is never modified by this verifier."
+  ]
+}

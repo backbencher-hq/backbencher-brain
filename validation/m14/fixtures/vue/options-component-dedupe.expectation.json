@@ -1,0 +1,22 @@
+{
+  "fixtureId": "vue/options-component-dedupe",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The SFC skeleton pushes a Class symbol for the file module name; the Options-API pass pushed a SECOND identical Class symbol when no `name:` option was present. Exactly one component symbol must exist. (Also covers findExportDefault: raw_text begins with a newline after <script>, so text.startsWith missed the default export entirely on such files.)",
+  "expectSymbols": [
+    {
+      "name": "options-component-dedupe",
+      "kind": "class"
+    },
+    {
+      "name": "data",
+      "kind": "method"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "options-component-dedupe",
+      "equals": 1
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "fixtureId": "typescript/class-implements-interface-overrides",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W22 (rotation-found on vue-core packages/reactivity/src/effect.ts): a CLASS implementing an in-file INTERFACE emitted no override for the members it supplies, so ReactiveEffect.notify -> Subscriber.notify was permanently MISSING while the oracle derived it generically (declParents takes extends AND implements edges whose target resolves in-file) and java already carries the same contract (clojure TransformerIterator: Empty.add -> Buffer.add, probe-verified). The gain is pinned beside every ABSTENTION the name-only pairing would get wrong: a class FIELD implementing an interface property must NOT pair (the oracle keeps public_field_definition out of its member set so truth cannot outrun the analyzer), an overloaded interface name abstains (two notify declarations cannot be paired name-only), an EXTERNAL/qualified base resolves to no in-file declaration, and a member the interface never declares pairs with nothing. Also pins the M59.A7 implements-line repair (6 unstamped edges measured across the four TS corpora + 1 delegated from svelte; the 40-file oracle sample drew none, which is why the milestone instrument read 0 noLine): every implements edge carries the interface NAME's line, parallel to extendsLines.",
+  "expectSymbols": [
+    { "name": "Subscriber", "kind": "interface" },
+    { "name": "Debuggable", "kind": "interface" },
+    { "name": "Base", "kind": "interface" },
+    { "name": "Effect", "kind": "class" },
+    { "name": "Overloaded", "kind": "interface" },
+    { "name": "Ambiguous", "kind": "class" },
+    { "name": "External", "kind": "class" },
+    { "name": "Derived", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Effect.notify",
+      "target": "Subscriber.notify",
+      "line_number": 35,
+      "note": "THE GAIN: the implementing member's own line (the edge names the member, not the class on 33)"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.notify",
+      "target": "Subscriber.notify",
+      "line_number": 59,
+      "note": "TRANSITIVE: Base extends Subscriber, so the member pairs with the ancestor that DECLARES it"
+    },
+    { "type": "implements", "from": "Effect", "target": "Subscriber", "line_number": 33, "note": "the interface NAME's line (name on 33); pre-fix this edge carried no line" },
+    { "type": "implements", "from": "Ambiguous", "target": "Overloaded", "line_number": 47 },
+    { "type": "implements", "from": "External", "target": "ImportedThing", "line_number": 52 },
+    { "type": "implements", "from": "Derived", "target": "Base", "line_number": 57 },
+    { "type": "extends", "from": "Base", "target": "Subscriber", "line_number": 30, "note": "control: the extends arm already stamped the base name's line" },
+    { "type": "extends", "from": "Derived", "target": "Object", "line_number": 57 }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Effect.kind",
+      "target": "Subscriber.kind",
+      "note": "a class FIELD implementing an interface property must NOT pair — the oracle's member set keeps public_field_definition out precisely so truth cannot outrun the analyzer"
+    },
+    {
+      "type": "overrides",
+      "from": "Ambiguous.notify",
+      "target": "Overloaded.notify",
+      "note": "the interface declares notify TWICE (44, 45): name-only pairing cannot choose, so it must abstain"
+    },
+    {
+      "type": "overrides",
+      "from": "External.run",
+      "target": "ImportedThing.run",
+      "note": "the base resolves to no in-file declaration — external truth is not derivable"
+    },
+    {
+      "type": "overrides",
+      "from": "Effect.dispose",
+      "target": "Subscriber.dispose",
+      "note": "Subscriber never declares dispose — a member pairs with nothing"
+    },
+    {
+      "type": "implements",
+      "from": "Effect",
+      "target": "Subscriber",
+      "line_number": null,
+      "note": "pre-fix: implements edges carried no line at all (the one kind the web line round did not cover)"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.kind",
+      "target": "Base.kind",
+      "note": "same field abstention through a transitive base"
+    }
+  ]
+}

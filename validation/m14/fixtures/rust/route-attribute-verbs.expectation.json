@@ -1,0 +1,31 @@
+{
+  "fixtureId": "rust/route-attribute-verbs",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RUST-D24. An actix-web route attribute is an `exports` relationship whose target is a URL. The framework guard listed six verbs while the path extractor listed four, so head/patch were recognised as actix and produced no route, and options/trace/`#[route(..)]` were missing from both — four of the eight routes here were silently dropped. Both sides now read one shared list, and the verb match requires `(` or whitespace after it. The two negative controls exist to make that word-boundary rule falsifiable: `#[getter]` begins with `#[get` as a bare prefix, which is how the old startsWith guard claimed actix, and `#[cfg(feature = \"x\")]` is an attribute with a string literal that is not a route. Without the controls a prefix-matching extractor would still pass this fixture.",
+  "expectSymbols": [
+    { "name": "list_users", "kind": "function" },
+    { "name": "create_user", "kind": "function" },
+    { "name": "update_user", "kind": "function" },
+    { "name": "delete_user", "kind": "function" },
+    { "name": "ping", "kind": "function" },
+    { "name": "cors", "kind": "function" },
+    { "name": "legacy", "kind": "function" },
+    { "name": "not_a_route", "kind": "function" },
+    { "name": "also_not_a_route", "kind": "function" },
+    { "name": "Service", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "list_users", "target": "/users" },
+    { "type": "exports", "from": "create_user", "target": "/users" },
+    { "type": "exports", "from": "update_user", "target": "/users/{id}" },
+    { "type": "exports", "from": "delete_user", "target": "/users/{id}" },
+    { "type": "exports", "from": "ping", "target": "/ping" },
+    { "type": "exports", "from": "cors", "target": "/cors" },
+    { "type": "exports", "from": "legacy", "target": "/legacy" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "not_a_route" },
+    { "type": "exports", "from": "also_not_a_route" }
+  ]
+}

@@ -1,0 +1,1108 @@
+{
+  "question": "Does treating `&` as a constraint separator in `readClassContext` add `references` edges, or only duplicates?",
+  "instrument": "class_context child sequence, read twice: as the analyzer reads it, and as a `,`/`&`-separated read",
+  "populations": [
+    {
+      "population": "TRACKED",
+      "files": 312,
+      "filesParsed": 312,
+      "filesUnparsed": 0,
+      "classContexts": 473,
+      "contextsWithComma": 60,
+      "contextsWithAmpersand": 85,
+      "contextsWithOtherUnnamedChild": 473,
+      "unnamedChildTypeInventory": {
+        "&": 104,
+        ",": 81,
+        "|": 473
+      },
+      "contextsWhereAConjunctIsUnreadAndNamesADifferentClass": 62,
+      "conjunctsWhereTheRowWouldBeDistinct": 62,
+      "conjunctsWhereTheRowWouldDuplicateAnExistingOne": 47,
+      "duplicateRisk": 47,
+      "examplesOfUnreadDistinctConjunct": [
+        {
+          "file": "clean-stdlib/StdMaybe.dcl",
+          "line": 33,
+          "text": "| UMaybe x & == x",
+          "published": [
+            "UMaybe"
+          ],
+          "unread": [
+            "=="
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdMaybe.icl",
+          "line": 55,
+          "text": "| UMaybe x & == x",
+          "published": [
+            "UMaybe"
+          ],
+          "unread": [
+            "=="
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 8,
+          "text": "| == a & UList a",
+          "published": [
+            "=="
+          ],
+          "unread": [
+            "UList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 11,
+          "text": "| == a & UTSList a",
+          "published": [
+            "=="
+          ],
+          "unread": [
+            "UTSList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 18,
+          "text": "| Ord a & UList a",
+          "published": [
+            "Ord"
+          ],
+          "unread": [
+            "UList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 21,
+          "text": "| Ord a & UTSList a",
+          "published": [
+            "Ord"
+          ],
+          "unread": [
+            "UTSList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 52,
+          "text": "| toChar x & UList x",
+          "published": [
+            "toChar"
+          ],
+          "unread": [
+            "UList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 54,
+          "text": "| toChar x & UTSList x",
+          "published": [
+            "toChar"
+          ],
+          "unread": [
+            "UTSList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 60,
+          "text": "| fromChar x & UList x",
+          "published": [
+            "fromChar"
+          ],
+          "unread": [
+            "UList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 62,
+          "text": "| fromChar x & UTSList x",
+          "published": [
+            "fromChar"
+          ],
+          "unread": [
+            "UTSList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 336,
+          "text": "| List l e & List l Int",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Int"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 435,
+          "text": "| List l Bool",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Bool"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 439,
+          "text": "| List l Bool",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Bool"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 457,
+          "text": "| List l e & Eq e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Eq"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 471,
+          "text": "| List l e & Eq e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Eq"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 485,
+          "text": "| List l e & Eq e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Eq"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 501,
+          "text": "| List l e & Eq e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Eq"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 515,
+          "text": "| List l e & Eq e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Eq"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 529,
+          "text": "| List l e & Eq e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "Eq"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 548,
+          "text": "| List l e & == e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "=="
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 578,
+          "text": "| List l e & * e & one e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "one"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 592,
+          "text": "| List l e & / e & IncDec e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "/"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 592,
+          "text": "| List l e & / e & IncDec e",
+          "published": [
+            "List"
+          ],
+          "unread": [
+            "IncDec"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 38,
+          "text": "| == a & UList a",
+          "published": [
+            "=="
+          ],
+          "unread": [
+            "UList"
+          ]
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 49,
+          "text": "| == a & UTSList a",
+          "published": [
+            "=="
+          ],
+          "unread": [
+            "UTSList"
+          ]
+        }
+      ],
+      "examplesOfConjunctThatWouldDuplicate": [
+        {
+          "file": "Clyde/Clyde/timeprofile.icl",
+          "line": 337,
+          "text": "| toReal a & toReal b & toReal c",
+          "alreadyPublished": [
+            "toReal"
+          ],
+          "conjunctThatWouldRepeat": "toReal"
+        },
+        {
+          "file": "Clyde/Clyde/timeprofile.icl",
+          "line": 337,
+          "text": "| toReal a & toReal b & toReal c",
+          "alreadyPublished": [
+            "toReal"
+          ],
+          "conjunctThatWouldRepeat": "toReal"
+        },
+        {
+          "file": "clean-stdlib/StdMaybe.dcl",
+          "line": 26,
+          "text": "| Maybe m a & Maybe m b",
+          "alreadyPublished": [
+            "Maybe"
+          ],
+          "conjunctThatWouldRepeat": "Maybe"
+        },
+        {
+          "file": "clean-stdlib/StdMaybe.icl",
+          "line": 37,
+          "text": "| Maybe m a & Maybe m b",
+          "alreadyPublished": [
+            "Maybe"
+          ],
+          "conjunctThatWouldRepeat": "Maybe"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 336,
+          "text": "| List l e & List l Int",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 364,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 364,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 375,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 375,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 384,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 384,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.dcl",
+          "line": 564,
+          "text": "| List l e & + , zero e",
+          "alreadyPublished": [
+            "List",
+            "zero"
+          ],
+          "conjunctThatWouldRepeat": "zero"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 542,
+          "text": "| List l e & List l Int",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 545,
+          "text": "| List l e & List l Int",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 567,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 567,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 580,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 580,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 589,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 589,
+          "text": "| List l a & List l b & List l (a,b)",
+          "alreadyPublished": [
+            "List"
+          ],
+          "conjunctThatWouldRepeat": "List"
+        },
+        {
+          "file": "clean-stdlib/StdOverloadedList.icl",
+          "line": 749,
+          "text": "| List l e & + , zero e",
+          "alreadyPublished": [
+            "List",
+            "zero"
+          ],
+          "conjunctThatWouldRepeat": "zero"
+        },
+        {
+          "file": "clean-stdlib/StdTuple.dcl",
+          "line": 23,
+          "text": "| Eq a & Eq b",
+          "alreadyPublished": [
+            "Eq"
+          ],
+          "conjunctThatWouldRepeat": "Eq"
+        },
+        {
+          "file": "clean-stdlib/StdTuple.dcl",
+          "line": 23,
+          "text": "| Eq a & Eq b",
+          "alreadyPublished": [
+            "Eq"
+          ],
+          "conjunctThatWouldRepeat": "Eq"
+        },
+        {
+          "file": "clean-stdlib/StdTuple.dcl",
+          "line": 24,
+          "text": "| Eq a & Eq b & Eq c",
+          "alreadyPublished": [
+            "Eq"
+          ],
+          "conjunctThatWouldRepeat": "Eq"
+        },
+        {
+          "file": "clean-stdlib/StdTuple.dcl",
+          "line": 24,
+          "text": "| Eq a & Eq b & Eq c",
+          "alreadyPublished": [
+            "Eq"
+          ],
+          "conjunctThatWouldRepeat": "Eq"
+        }
+      ],
+      "examplesOfNonCommaUnnamedChild": [
+        "Clyde/Clyde/Link.icl:303 [|] | Eq a",
+        "Clyde/Clyde/outlineviewcontroller.icl:523 [|] | Array {!} e",
+        "Clyde/Clyde/timeprofile.icl:150 [|] | FileSystem a",
+        "Clyde/Clyde/timeprofile.icl:263 [| ,] | * , toInt a",
+        "Clyde/Clyde/timeprofile.icl:337 [| & &] | toReal a & toReal b & toReal c",
+        "Clyde/Cocoa/layout.dcl:32 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.dcl:33 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.dcl:34 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.dcl:40 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.dcl:41 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.dcl:42 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.icl:44 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.icl:48 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.icl:50 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.icl:54 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.icl:58 [|] | NSLayoutAnchor a",
+        "Clyde/Cocoa/layout.icl:60 [|] | NSLayoutAnchor a",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.dcl:48 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.dcl:55 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.dcl:61 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.dcl:67 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.dcl:91 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.icl:79 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.icl:109 [|] | FileEnv env",
+        "Clyde/cleantools/MacOSX/PmCleanSystem.icl:167 [|] | FileEnv env"
+      ]
+    },
+    {
+      "population": "WIDE",
+      "files": 2181,
+      "filesParsed": 2181,
+      "filesUnparsed": 0,
+      "classContexts": 1995,
+      "contextsWithComma": 161,
+      "contextsWithAmpersand": 365,
+      "contextsWithOtherUnnamedChild": 1995,
+      "unnamedChildTypeInventory": {
+        "&": 504,
+        ",": 214,
+        "|": 1995
+      },
+      "contextsWhereAConjunctIsUnreadAndNamesADifferentClass": 249,
+      "conjunctsWhereTheRowWouldBeDistinct": 249,
+      "conjunctsWhereTheRowWouldDuplicateAnExistingOne": 264,
+      "duplicateRisk": 264,
+      "examplesOfUnreadDistinctConjunct": [
+        {
+          "file": "../clean-wide/CleanSerial/src/CleanSerial/iTasks.dcl",
+          "line": 31,
+          "text": "| iTask a & iTask b & RWShared sds",
+          "published": [
+            "iTask"
+          ],
+          "unread": [
+            "RWShared"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-core/Sources/Algebra/Order/Bounded.dcl",
+          "line": 13,
+          "text": "| UpperBounded a & LowerBounded a",
+          "published": [
+            "UpperBounded"
+          ],
+          "unread": [
+            "LowerBounded"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/APLAS.icl",
+          "line": 19,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/Copy of allGECexamples.icl",
+          "line": 27,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/Copy of allGECexamples.icl",
+          "line": 86,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/Copy of allGECexamples.icl",
+          "line": 103,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & gGEC{|*|} c & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/Copy of allGECexamples.icl",
+          "line": 138,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.dcl",
+          "line": 12,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.dcl",
+          "line": 13,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.dcl",
+          "line": 14,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.dcl",
+          "line": 16,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & gGEC{|*|} c & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.dcl",
+          "line": 18,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.icl",
+          "line": 15,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.icl",
+          "line": 18,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.icl",
+          "line": 24,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.icl",
+          "line": 31,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & gGEC{|*|} c & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.icl",
+          "line": 40,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.dcl",
+          "line": 12,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.dcl",
+          "line": 13,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.dcl",
+          "line": 14,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.dcl",
+          "line": 16,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & gGEC{|*|} c & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.dcl",
+          "line": 18,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.icl",
+          "line": 17,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.icl",
+          "line": 22,
+          "text": "| gGEC{|*|} t & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        },
+        {
+          "file": "../clean-wide/clean-libraries/Examples/GEC/basicEditors.icl",
+          "line": 27,
+          "text": "| gGEC{|*|} a & gGEC{|*|} b & bimap{|*|} ps",
+          "published": [
+            "gGEC"
+          ],
+          "unread": [
+            "bimap"
+          ]
+        }
+      ],
+      "examplesOfConjunctThatWouldDuplicate": [
+        {
+          "file": "../clean-wide/CleanSerial/src/CleanSerial/iTasks.dcl",
+          "line": 31,
+          "text": "| iTask a & iTask b & RWShared sds",
+          "alreadyPublished": [
+            "iTask"
+          ],
+          "conjunctThatWouldRepeat": "iTask"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 22,
+          "text": "| toString l & toString r",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 23,
+          "text": "| toString a & toString b & toString c",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 23,
+          "text": "| toString a & toString b & toString c",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 24,
+          "text": "| toString a & toString b & toString c & toString d",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 24,
+          "text": "| toString a & toString b & toString c & toString d",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 24,
+          "text": "| toString a & toString b & toString c & toString d",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 25,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 25,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 25,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 25,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 26,
+          "text": "| toString a & toString b & toString c & toString d & toString e & toString f",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 26,
+          "text": "| toString a & toString b & toString c & toString d & toString e & toString f",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 26,
+          "text": "| toString a & toString b & toString c & toString d & toString e & toString f",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 26,
+          "text": "| toString a & toString b & toString c & toString d & toString e & toString f",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.dcl",
+          "line": 26,
+          "text": "| toString a & toString b & toString c & toString d & toString e & toString f",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 68,
+          "text": "| toString l & toString r",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 72,
+          "text": "| toString a & toString b & toString c",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 72,
+          "text": "| toString a & toString b & toString c",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 76,
+          "text": "| toString a & toString b & toString c & toString d",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 76,
+          "text": "| toString a & toString b & toString c & toString d",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 76,
+          "text": "| toString a & toString b & toString c & toString d",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 80,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 80,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        },
+        {
+          "file": "../clean-wide/clean-ide/Mac/dodebug.icl",
+          "line": 80,
+          "text": "| toString a & toString b & toString c & toString d & toString e",
+          "alreadyPublished": [
+            "toString"
+          ],
+          "conjunctThatWouldRepeat": "toString"
+        }
+      ],
+      "examplesOfNonCommaUnnamedChild": [
+        "../clean-wide/CleanSerial/src/CleanSerial/iTasks.dcl:31 [| & &] | iTask a & iTask b & RWShared sds",
+        "../clean-wide/clean-core/Extensions.icl:8 [| ,] | Ord, Fractional a",
+        "../clean-wide/clean-core/Extensions.icl:21 [| ,] | Ord, Transcendental a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.dcl:26 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.dcl:32 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.dcl:45 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.dcl:69 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.dcl:80 [|] | Fractional a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.dcl:90 [| ,] | Num, Fractional a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.icl:10 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.icl:13 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.icl:17 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.icl:21 [|] | Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric.icl:26 [|] | Fractional a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric/Signed.dcl:11 [| ,] | Ord, Seminum a",
+        "../clean-wide/clean-core/Sources/Algebra/Numeric/Signed.dcl:16 [| ,] | Ord, Num a",
+        "../clean-wide/clean-core/Sources/Algebra/Order.dcl:25 [|] | Eq a",
+        "../clean-wide/clean-core/Sources/Algebra/Order.dcl:51 [|] | Ord a",
+        "../clean-wide/clean-core/Sources/Algebra/Order.icl:22 [|] | Ord a",
+        "../clean-wide/clean-core/Sources/Algebra/Order/Bounded.dcl:7 [|] | Ord a",
+        "../clean-wide/clean-core/Sources/Algebra/Order/Bounded.dcl:10 [|] | Ord a",
+        "../clean-wide/clean-core/Sources/Algebra/Order/Bounded.dcl:13 [| &] | UpperBounded a & LowerBounded a",
+        "../clean-wide/clean-core/Sources/Data/Array.dcl:18 [|] | Show a",
+        "../clean-wide/clean-core/Sources/Data/Array.dcl:20 [|] | Eq a",
+        "../clean-wide/clean-core/Sources/Data/Array.dcl:21 [|] | Ord a"
+      ]
+    }
+  ]
+}

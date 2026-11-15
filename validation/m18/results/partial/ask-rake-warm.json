@@ -1,0 +1,126 @@
+{
+  "mode": "warm",
+  "data": {
+    "tag": "rake",
+    "cold": false,
+    "embeddings": 445,
+    "flushCompleted": true,
+    "rows": [
+      {
+        "id": "rake-a1",
+        "query": "how do I define a new task",
+        "negative": false,
+        "gold": "task",
+        "hit": true,
+        "confidence": 0.48,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "define_task",
+          "task",
+          "task_defined?",
+          "intern",
+          "multitask"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lib/rake/task.rb (Line 416) ---\n[method] define_task — similarity 0.511\n```\n  ",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "rake-a2",
+        "query": "the main application entry point of rake",
+        "negative": false,
+        "gold": "Application",
+        "hit": true,
+        "confidence": 0.5,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "application",
+          "[]",
+          "tasks",
+          "with_application",
+          "clear"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lib/rake/rake_module.rb (Line 8) ---\n[method] application — similarity 0.553\n`",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "rake-a3",
+        "query": "arguments passed to a task",
+        "negative": false,
+        "gold": "TaskArguments",
+        "hit": false,
+        "confidence": 0.56,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "invoke",
+          "TaskArgumentError",
+          "invoke_task",
+          "task",
+          "resolve_args_without_dependencies"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lib/rake/task.rb (Line 186) ---\n[method] invoke — similarity 0.591\n```\n    def",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "rake-s1",
+        "query": "TaskArguments",
+        "negative": false,
+        "gold": "TaskArguments",
+        "hit": true,
+        "confidence": 0.51,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "TaskArgumentError",
+          "invoke",
+          "TaskArguments",
+          "resolve_args_without_dependencies",
+          "resolve_args_with_dependencies"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lib/rake/task_argument_error.rb (Line 5) ---\n[class] TaskArgumentError — simil",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "rake-s2",
+        "query": "FileTask",
+        "negative": false,
+        "gold": "FileTask",
+        "hit": true,
+        "confidence": 0.53,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "synthesize_file_task",
+          "file",
+          "FileTask",
+          "file_create",
+          "FileCreationTask"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: lib/rake/task_manager.rb (Line 81) ---\n[method] synthesize_file_task — similar",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "rake-n1",
+        "query": "render html to canvas",
+        "negative": true,
+        "gold": null,
+        "hit": null,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "to_s",
+          "to_s",
+          "to_s",
+          "to_s",
+          "to_i"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      }
+    ]
+  },
+  "generatedAt": "2026-08-25T00:13:11.781Z"
+}

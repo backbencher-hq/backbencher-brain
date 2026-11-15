@@ -1,7 +1,7 @@
 {
   "instrument": "markdown pipeline-drop probe (validation/m14/fixtures/markdown/pipeline-drop-probe.ts)",
   "compared": "ASTEngine.parseFile (pre-filter) vs pool-worker.parseFile (post-filter), same file, same analyzer",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "seed": "markdown-pipeline-drop-v1",
   "admittedMarkdownFiles": 12729,
   "drawn": 1200,

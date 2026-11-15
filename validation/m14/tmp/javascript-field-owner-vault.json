@@ -1,0 +1,155 @@
+{
+  "at": "2026-11-13T02:58:23.523Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/vault",
+  "tag": "vault",
+  "admittedFiles": 1729,
+  "sampledFiles": 300,
+  "parseCleanFiles": 299,
+  "totals": {
+    "files": 299,
+    "fieldsWritten": 542,
+    "fieldsWithTwoClasses": 0,
+    "fieldsWithTwoTypes": 0,
+    "crossClassReads": 17,
+    "readsWithNoWriter": 0
+  },
+  "note": "A tree-only census: it never asks the analyzer for the field->type map, so it cannot inherit the defect it is measuring. crossClassReads = `this.<f>` member reads sitting in a class that never writes `<f>`, while another class in the same file does. collectLocalReceiverTypes keys fieldTypes by FIELD NAME alone, so every such read is published with the WRITING class's type as metadata.owner. If that type declares the member, the store binds the edge to it.",
+  "examples": [
+    {
+      "file": "ui/tests/integration/components/code-generator/policy/stanza-test.js",
+      "line": 152,
+      "field": "stanza",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PolicyStanza"
+    },
+    {
+      "file": "ui/tests/integration/components/code-generator/policy/stanza-test.js",
+      "line": 143,
+      "field": "stanza",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PolicyStanza"
+    },
+    {
+      "file": "ui/tests/integration/components/code-generator/policy/stanza-test.js",
+      "line": 124,
+      "field": "stanza",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PolicyStanza"
+    },
+    {
+      "file": "ui/tests/integration/components/code-generator/policy/stanza-test.js",
+      "line": 115,
+      "field": "stanza",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PolicyStanza"
+    },
+    {
+      "file": "ui/tests/integration/components/code-generator/policy/stanza-test.js",
+      "line": 106,
+      "field": "stanza",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PolicyStanza"
+    },
+    {
+      "file": "ui/tests/integration/components/kv/kv-create-edit-form-test.js",
+      "line": 196,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "KvForm"
+    },
+    {
+      "file": "ui/tests/integration/components/kv/kv-create-edit-form-test.js",
+      "line": 148,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "KvForm"
+    },
+    {
+      "file": "ui/tests/integration/components/kv/kv-create-edit-form-test.js",
+      "line": 116,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "KvForm"
+    },
+    {
+      "file": "ui/tests/integration/components/mfa-login-enforcement-form-test.js",
+      "line": 204,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "MfaLoginEnforcementForm"
+    },
+    {
+      "file": "ui/tests/integration/components/mfa-login-enforcement-form-test.js",
+      "line": 159,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "MfaLoginEnforcementForm"
+    },
+    {
+      "file": "ui/tests/integration/components/mfa-login-enforcement-form-test.js",
+      "line": 157,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "MfaLoginEnforcementForm"
+    },
+    {
+      "file": "ui/tests/integration/components/mfa-login-enforcement-form-test.js",
+      "line": 156,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "MfaLoginEnforcementForm"
+    },
+    {
+      "file": "ui/tests/integration/components/mfa-login-enforcement-form-test.js",
+      "line": 85,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "MfaLoginEnforcementForm"
+    },
+    {
+      "file": "ui/tests/integration/components/mfa-login-enforcement-form-test.js",
+      "line": 85,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "MfaLoginEnforcementForm"
+    },
+    {
+      "file": "ui/tests/integration/components/pki/pki-key-usage-test.js",
+      "line": 54,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PkiRoleForm"
+    },
+    {
+      "file": "ui/tests/integration/components/pki/pki-key-usage-test.js",
+      "line": 49,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PkiRoleForm"
+    },
+    {
+      "file": "ui/tests/integration/components/policy-form-modal-test.js",
+      "line": 77,
+      "field": "form",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "PolicyForm"
+    }
+  ]
+}

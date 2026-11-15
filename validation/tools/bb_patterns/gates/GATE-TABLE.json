@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_patterns",
+  "generatedAt": "2026-11-01T23:09:00.174561+00:00",
+  "currentCommit": "6cecd6ec81fa9788b57e433cbf4378c2b40939e7",
+  "note": "exit codes are process exit codes; logs are the raw output and the sha256 pins them",
+  "gates": [
+    {
+      "gate": "verify-patterns",
+      "command": "bun run script/verify-patterns.ts",
+      "exitCode": 0,
+      "durationMs": 2938,
+      "logSha256": "00b28b2a9783eba1096c0ea995ab555bf22c252c84cdb7b6a2a6693872528fc6",
+      "log": "validation/tools/bb_patterns/gates/logs/verify-patterns.log"
+    },
+    {
+      "gate": "m13-patterns-orphans",
+      "command": "bun run script/m13/verify-patterns-orphans.ts",
+      "exitCode": 0,
+      "durationMs": 7726,
+      "logSha256": "6e6200376398e80744cb1a4ab9a4bef6f780683a6c78305c9a130d1fe2a38ad6",
+      "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-orphans.log"
+    },
+    {
+      "gate": "m13-patterns-rules",
+      "command": "bun run script/m13/verify-patterns-rules.ts",
+      "exitCode": 0,
+      "durationMs": 4603,
+      "logSha256": "ea3f90e09b0d1700f27d3095304f7c70ea7b43eadbdb381d2c5eead4cffd9e37",
+      "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-rules.log"
+    },
+    {
+      "gate": "m13-patterns-contract",
+      "command": "bun run script/m13/verify-patterns-contract.ts",
+      "exitCode": 1,
+      "durationMs": 18111,
+      "logSha256": "4429d604ab7ea456bf3e0bb68ebdc2276f8efde3c244503783dbf833a8baa702",
+      "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-contract.log"
+    },
+    {
+      "gate": "m13-patterns-docs",
+      "command": "bun run script/m13/verify-patterns-docs.ts",
+      "exitCode": 1,
+      "durationMs": 1523,
+      "logSha256": "395df772045b13a7f985c963f4ffc9655d688c14d10b5d34fcb226d2ddc4b21f",
+      "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-docs.log"
+    },
+    {
+      "gate": "m13-patterns-e2e-corpus",
+      "command": "bun run script/m13/verify-patterns-e2e-corpus.ts",
+      "exitCode": 1,
+      "durationMs": 431100,
+      "logSha256": "64ee87607e6536f17cb6440f2efbedc1a8ec54986c0ee79fc49419caa62374f7",
+      "log": "validation/tools/bb_patterns/gates/logs/m13-patterns-e2e-corpus.log"
+    },
+    {
+      "gate": "m15-patterns-deep",
+      "command": "bun run script/m15/verify-patterns-deep.ts",
+      "exitCode": 2,
+      "durationMs": 202575,
+      "logSha256": "c08c4a8c02f0926e15e7ab51be45fef5e373b6c530d9292e47c7aae976335dd3",
+      "log": "validation/tools/bb_patterns/gates/logs/m15-patterns-deep.log"
+    },
+    {
+      "gate": "m20-patterns-parameter-scan",
+      "command": "bun run script/m20/verify-patterns-parameter-scan.ts",
+      "exitCode": 0,
+      "durationMs": 6842,
+      "logSha256": "cbb6ae7f95b276e9a8da88c433e4decb1317e15e94793a2ad0fe6c6ac971827c",
+      "log": "validation/tools/bb_patterns/gates/logs/m20-patterns-parameter-scan.log"
+    },
+    {
+      "gate": "m20-patterns-orphan-semantics",
+      "command": "bun run script/m20/verify-patterns-orphan-semantics.ts",
+      "exitCode": 1,
+      "durationMs": 1233,
+      "logSha256": "d48fa8c09bdaddc32181fea85ccd34eb7c069d007ecb056f77acadab0aba2ed7",
+      "log": "validation/tools/bb_patterns/gates/logs/m20-patterns-orphan-semantics.log"
+    },
+    {
+      "gate": "m20-patterns-pagination-history",
+      "command": "bun run script/m20/verify-patterns-pagination-history.ts",
+      "exitCode": 0,
+      "durationMs": 2077,
+      "logSha256": "710caeecbdb4c65460f1b88c869299e2a298907bac820b0206b29ae1bcb37254",
+      "log": "validation/tools/bb_patterns/gates/logs/m20-patterns-pagination-history.log"
+    },
+    {
+      "gate": "m57-t3-scope-all",
+      "command": "bun run script/m57/verify-t3-scope-all.ts",
+      "exitCode": 0,
+      "durationMs": 2602,
+      "logSha256": "162a9d11868d7ae500869afc6ff557f527223441c8382b159a949dd948902e3e",
+      "log": "validation/tools/bb_patterns/gates/logs/m57-t3-scope-all.log"
+    },
+    {
+      "gate": "m64-patterns-evidence-gate",
+      "command": "bun run script/m64/verify-patterns-evidence-gate.ts",
+      "exitCode": 0,
+      "durationMs": 4325,
+      "logSha256": "302d21cb4ad5bfd9a5ccd2fdedda2bf360d8e8797d4dc3a121bf99aed91ebcec",
+      "log": "validation/tools/bb_patterns/gates/logs/m64-patterns-evidence-gate.log"
+    },
+    {
+      "gate": "m64-gate-selftest",
+      "command": "bun run script/m64/verify-gate-selftest.ts",
+      "exitCode": 1,
+      "durationMs": 6707,
+      "logSha256": "20ad7f0a3249d44f19f372baa1273b65a43cb58877650efb2b52b21f7d1e4c7a",
+      "log": "validation/tools/bb_patterns/gates/logs/m64-gate-selftest.log"
+    },
+    {
+      "gate": "m65-rules-budget-and-gates",
+      "command": "bun run script/m65/verify-rules-budget-and-gates.ts",
+      "exitCode": 0,
+      "durationMs": 2151,
+      "logSha256": "730a0479b603417f1c195aa78188242c2c4cdf1cbe70f467114a812ea637cc4b",
+      "log": "validation/tools/bb_patterns/gates/logs/m65-rules-budget-and-gates.log"
+    },
+    {
+      "gate": "m65-rules-gate-selftest",
+      "command": "bun run script/m65/verify-rules-gate-selftest.ts",
+      "exitCode": 1,
+      "durationMs": 4728,
+      "logSha256": "d77e7ed22647d76a29b289125f5a1c6910d6fc032569cc7770ce5f9879a9b004",
+      "log": "validation/tools/bb_patterns/gates/logs/m65-rules-gate-selftest.log"
+    },
+    {
+      "gate": "m69-page-class-representation",
+      "command": "bun run script/m69/verify-patterns-page-class-representation.ts",
+      "exitCode": 0,
+      "durationMs": 5184,
+      "logSha256": "bd987088062061398477aa37a6fc7739325b496a1c97b5aa399abcef8f34a689",
+      "log": "validation/tools/bb_patterns/gates/logs/m69-page-class-representation.log"
+    },
+    {
+      "gate": "m16-docs-truth",
+      "command": "bun run script/m16/verify-docs-truth.ts",
+      "exitCode": 1,
+      "durationMs": 122,
+      "logSha256": "e6f940df82732f12986db6c6d27d7710a6f97576bfb96035c7a2786ac7127922",
+      "log": "validation/tools/bb_patterns/gates/logs/m16-docs-truth.log"
+    },
+    {
+      "gate": "m15-registry-handlers",
+      "command": "bun run script/m15/verify-registry-handlers.ts",
+      "exitCode": 0,
+      "durationMs": 1003,
+      "logSha256": "d37307eb577628c766113bb92894e330758e706583ab4721737e68fd8f04cefe",
+      "log": "validation/tools/bb_patterns/gates/logs/m15-registry-handlers.log"
+    }
+  ],
+  "passed": 10,
+  "failed": 8
+}

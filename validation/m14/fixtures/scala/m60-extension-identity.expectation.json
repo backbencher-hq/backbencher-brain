@@ -1,0 +1,26 @@
+{
+  "fixtureId": "scala/m60-extension-identity",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS M60/SDJ-9, extension method identity. A Scala 3 extension method is in scope only for its receiver type, so (receiver, name) is its identity. The analyzer published the bare name, so two extensions declaring `isPackage` for AbstractFile and JFile published two byte-identical symbols, both `FileUtils.isPackage`, with the receiver recorded NOWHERE on either. The fix decorates a COLLIDING name as `name@ReceiverLeaf`. expectSymbols pins the decorated pair; forbidSymbols pins that the bare colliding name is gone, and — just as important — that the two controls stay BARE: the in-block overloads (the receiver cannot distinguish them, and decorating them collides them just as hard while claiming a distinction that is not there) and the non-colliding method. The overload control is a real regression guard, not a hypothetical: the oracle counts DISTINCT RECEIVERS, so a method-COUNT analyzer published `substring@SourceFile` where the oracle published `substring`, which is a false MISSING per overload. The bare `uniqueHelper` pins that the fix is collision-only, since renaming every extension method would stop the ~3,026 unambiguous ones resolving — a call's target is the callee as written.",
+  "expectSymbols": [
+    { "name": "isPackage@AbstractFile", "ownerName": "FileUtils" },
+    { "name": "isPackage@JFile", "ownerName": "FileUtils" },
+    { "name": "substring", "ownerName": "FileUtils" },
+    { "name": "uniqueHelper", "ownerName": "FileUtils" }
+  ],
+  "forbidSymbols": [
+    { "name": "isPackage", "note": "the pre-fix merge: both extensions published this one name, so the receiver was unrecoverable" },
+    { "name": "substring@SourceFile", "note": "an in-block OVERLOAD must stay bare — the receiver is shared, so decorating claims a distinction that does not exist and collides both overloads on the same decorated name" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "FileUtils", "target": "isPackage@AbstractFile" },
+    { "type": "contains", "from": "FileUtils", "target": "isPackage@JFile" },
+    { "type": "contains", "from": "FileUtils", "target": "substring" },
+    { "type": "uses", "from": "isPackage@AbstractFile", "targetEndsWith": "AbstractFile", "meta.isExtension": true },
+    { "type": "uses", "from": "isPackage@JFile", "targetEndsWith": "JFile", "meta.isExtension": true }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "FileUtils", "target": "isPackage", "note": "pre-fix: the undecorated colliding target" }
+  ]
+}

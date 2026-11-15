@@ -1,0 +1,64 @@
+// `@extend` whose target the grammar hands over on a `class_selector` spanning the rest of
+// the rule body — the shape that made this lane publish a string naming no selector.
+//
+// `%reset; background-color: cv.getVar` is not a selector. It is a `%placeholder` followed by
+// a `;` and half a declaration, which happens when the namespaced call `cv.getVar("…")` on
+// the NEXT line derails the parse. `findDescendant` is breadth-first, so it returns that
+// `class_selector` rather than the `placeholder` nested inside it, and a guard keyed on
+// `sel.type === "placeholder"` cannot fire.
+//
+// Measured on 600 corpus files, production `parseFile`: 7 such targets / 7 edges out of 293
+// `extends` edges — bulma/docs/_sass/docs/options.scss, bulma/sass/base/skeleton.scss,
+// bulma/sass/components/breadcrumb.scss and bulma/sass/components/card.scss. `extends`
+// stayed at 293 edges and the target SET went 199 -> 193 distinct, i.e. 7 fabricated targets
+// left, 1 new distinct arrived, and the other 6 recovered onto names already present. A
+// repair that had merely suppressed would have shown as a falling total; this one shows as an
+// unchanged total with a different set, which is the only signature that distinguishes them.
+@use "../utilities" as cv;
+
+%reset {
+  box-sizing: border-box;
+}
+
+.bd-tabs-nav {
+  display: flex;
+
+  button {
+    @extend %reset;
+    background-color: cv.getVar("scheme-main-ter");
+    border-radius: 0.375em;
+  }
+}
+
+// THE CONTROL, and it is the point of the fixture. The same `@extend` with the same
+// `%reset`, one line away from the first and differing only in that the following
+// declaration's value is an UNQUALIFIED call: the grammar then produces a clean `placeholder`
+// node and the broken shape never arises.
+//
+// Without this second rule a regression could make BOTH rows pass by never emitting an
+// `extends` edge at all — the defect this fixture exists to catch is an edge published to the
+// wrong string, and "emit nothing" is a shape that bug can hide behind.
+.bd-tabs-list {
+  tab-size: initial;
+
+  button {
+    @extend %reset;
+    background-color: getVar("scheme-main-ter");
+    border-radius: 0.375em;
+  }
+}
+
+// A broken `@extend` with NO readable placeholder inside it emits NOTHING. `%` alone is the
+// degenerate form the grammar produces when the referent is cut off entirely; an edge to it
+// would have an endpoint that resolves to no symbol, which is the phantom-endpoint defect
+// this lane has removed twice.
+@use "../other" as ov;
+
+.bd-quote {
+  display: flex;
+
+  button {
+    @extend %;
+    background-color: ov.getVar("x");
+  }
+}

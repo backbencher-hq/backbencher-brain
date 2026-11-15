@@ -1,0 +1,114 @@
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:19] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:19] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:19] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 13ms [plan=linear largest-intermediate=4]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 8 relationships (0 patterns) in 9ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:19] [project-health] project health computed {"projectId":"c5f7e59b41943fc83d827e19696a4a5fac676019","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(10ms)
+  ✓ health check in 6ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 4 symbols are indexed.
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: handler: findings is an array type=object
+  ok: handler: suspiciousSources is an array type=object
+  ok: handler: cross_language_vulnerabilities is an array type=object
+  ok: handler: summary is an object type=object
+  ok: handler: summary has severity breakdown {"total":2,"critical":1,"high":0,"medium":0,"low":0,"unknown":1,"resolved":1,"unresolvedSources":1,"sourceOnly":1,"sinkOnly":0,"mitigated":0,"crossLanguage":0,"byType":{"sql_injection":1},"byFile":{"s
+  ok: handler: findings have non-empty file paths 0 missing files
+  ok: handler: findings carry severity 0 missing severity
+  ok: handler: findings carry flow chains (non-empty) max flow chain length: 1
+  ok: handler: no zero-length severity values [negative] empty severity found
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:20] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:20] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [12:23:20] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 12ms [plan=linear largest-intermediate=2]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 10 relationships (0 patterns) in 4ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:20] [project-health] project health computed {"projectId":"a8d65b37d125ef34cd504352e4dfcb5e6c3ade0e","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(4ms) + health(4ms)
+  ✓ health check in 4ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: handler (python): findings carry vulnerability type missing types: 0
+  ok: honesty: taint-analyzer.ts uses pattern matching (fact) pattern matches detected
+  ok: honesty: docs/BB_SECURITY.md acknowledges indexer heuristics missing heuristic acknowledgment
+  ok: honesty: docs/BB_SECURITY.md does not claim AST data-flow proof claims AST where it should not
+  ok: honesty: no doc claims taint detection is a pure-AST proof [negative] pure-AST claim found
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:20] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:20] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:21] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 11ms [plan=linear largest-intermediate=2]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"ccf75b48","danglingSources":3,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 2 relationships (0 patterns) in 2ms
+  Computing gravity scores...
+  ✓ gravity in 1ms
+  Analyzing taint flows & security...
+[INFO] [12:23:21] [project-health] project health computed {"projectId":"ccf75b4875b136f71fd1fb386142e34740984ed5","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(3ms) + health(3ms)
+  ✓ health check in 2ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: read-path: the CLI findings read succeeds exit=0 stderr=
+  ok: read-path: the CLI history read succeeds exit=0 stderr=
+  ok: read-path: the database file is byte-identical after a history read [negative] before=40cf07c52bfa after=40cf07c52bfa
+  ok: read-path: the dropped healing index is STILL missing after a read [negative] before=null after=null
+  ok: read-path: the database file is byte-identical after a read [negative] before=40cf07c52bfa after=40cf07c52bfa
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:22] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:22] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:22] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 11ms [plan=linear largest-intermediate=1]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 3ms
+  Computing gravity scores...
+  ✓ gravity in 3ms
+  Analyzing taint flows & security...
+[INFO] [12:23:22] [project-health] project health computed {"projectId":"67f19859b0d7ddc81f3ab22b1bdd5bc429f9ff2c","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(3ms) + health(4ms)
+  ✓ health check in 3ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: bounds: the live read renders at most the findings window lines=20
+  ok: bounds: the live census states the pre-cap total [scan: 510 taint flow(s) indexed → 510 finding(s) (10 beyond the cap); showing 20 finding(s)] — CAPPED at 500; 510 finding(s) exist and 10 were not examined
+  ok: bounds: the live read publishes the explicit CAPPED sentence [scan: 510 taint flow(s) indexed → 510 finding(s) (10 beyond the cap); showing 20 finding(s)] — CAPPED at 500; 510 finding(s) exist and 10 were not examined
+  ok: bounds: recordRun persists the census-sized set (not the 500 display cap) recorded run: 4c6a0fc6-93e6-4cc0-9af0-04cbbb6204be
+  ok: bounds: history declares its rendered page {"findingsShown":200,"findingsTotal":510}
+  ok: bounds: history page is capped at the declared 200 findings {"shown":200,"total":510,"truncated":310}
+  ok: bounds: history census object names the page {"runsTotal":1,"runLimit":20,"findingsTotal":510,"findingsShown":200,"findingsBeyondCap":310}
+  ok: history: the read-only page lists the same runs as the shared reader handler=1 oracle=1
+  ok: history: the read-only page is the shared reader's ordered prefix handler=200 oraclePrefix=200
+  ok: bounds: no unvalidated observation is persisted to history [negative] ["open/sql_injection"]
+  ok: library-door: an unindexed project is refused by name bb_security: no index found for project 247708e75dad64d78ec9dbc825345301b1e592ea: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/projects/247708e75dad64d78ec9dbc825345301b1e592ea/brain.db — run: bb index <project>
+  ok: library-door: the refused call did not create an index [negative] created /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/projects/247708e75dad64d78ec9dbc825345301b1e592ea/brain.db
+Sec2: VERIFIED (31/31 passed, 7 negatives)

@@ -1,0 +1,25 @@
+{
+  "fixtureId": "scala/callsite-lines-825",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is the line the CALL is written on in callsite-lines-825.scala, read off the source, not off analyzer output. The fixture exists because a call_expression starts at its RECEIVER, so a multi-line chain used to stamp every call in the chain with the opening line: on the real cats-effect Example.scala, `.as(ExitCode(2))` written on line 23 was reported on line 22, and on a 300-file scala3 sample that mechanism put 330 of 7,517 landed lines in the wrong place. The forbidRelationships entries are the load-bearing half — they are the pre-fix behaviour, so re-introducing the receiver-start line fails the gate instead of silently passing.",
+  "expectSymbols": [
+    { "name": "Chains", "kind": "module" },
+    { "name": "chained" },
+    { "name": "continued" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "chained", "target": "println", "line_number": 12 },
+    { "type": "calls", "from": "chained", "target": "println", "line_number": 13 },
+    { "type": "calls", "from": "chained", "target": "replicate", "line_number": 12 },
+    { "type": "calls", "from": "chained", "target": "replicate", "line_number": 13 },
+    { "type": "calls", "from": "chained", "target": "as", "line_number": 13 },
+    { "type": "calls", "from": "continued", "target": "map", "line_number": 17 },
+    { "type": "calls", "from": "continued", "target": "filter", "line_number": 18 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "chained", "target": "as", "line_number": 12, "note": "the pre-fix defect: `.as(...)` is on line 13, reported on the chain-opening line 12" },
+    { "type": "calls", "from": "continued", "target": "filter", "line_number": 16, "note": "same mechanism on a newline-continued chain: `.filter` is on line 18, the receiver opens on line 16" },
+    { "type": "calls", "from": "continued", "target": "map", "line_number": 16, "note": "`.map` is on line 17" }
+  ]
+}

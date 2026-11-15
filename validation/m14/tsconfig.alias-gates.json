@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "noEmit": true
+  },
+  "include": [
+    "../../src/ast/pool_worker_globals.d.ts",
+    "verify-typescript-inherited-fields.mts",
+    "verify-typescript-inheritance-mutations.mts",
+    "verify-typescript-alias-writes.mts",
+    "verify-typescript-alias-mutations.mts",
+    "verify-typescript-conditional-aliases.mts",
+    "verify-typescript-conditional-alias-mutations.mts",
+    "verify-typescript-destructured-aliases.mts",
+    "verify-typescript-destructured-alias-mutations.mts",
+    "verify-typescript-redeclared-aliases.mts",
+    "verify-typescript-redeclared-alias-mutations.mts",
+    "verify-typescript-container-writes.mts",
+    "verify-typescript-container-write-mutations.mts",
+    "verify-typescript-iterated-aliases.mts",
+    "verify-typescript-iterated-alias-mutations.mts"
+  ]
+}

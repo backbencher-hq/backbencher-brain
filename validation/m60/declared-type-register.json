@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R9",
+  "purpose": "A declaration's written type is a dependency. The family emits a `references` edge from the declaration to the type it names, marked `metadata.relationshipType === 'declared_type'` — rust's R13 header calls it a family standard and names go/c/zig as its siblings, and ten lanes implement it. This register exists because an ABSENT capability emits nothing: every gate the lanes had (the M59.A7 line contract, the differential depth draws, the fixtures) asks whether an edge that EXISTS is right, and none asks whether an edge the family promises was never emitted. csharp's absence was recorded as a 'recorded gap for its own wave' in reviews/csharp/master-review.md and survived a whole review wave for exactly that reason.",
+  "establishedAt": "2026-09-22",
+  "contract": {
+    "marker": "declared_type",
+    "edge": "references",
+    "meaning": "the declaration that WRITES a type name (field / variable declaration, parameter, return type, property, indexer, event, delegate) references the type it names",
+    "measurement": "script/m60/declared-type-refs-census.ts — one minimal source per lane through ASTEngine, with a holder-symbol CONTROL so a snippet the grammar rejects can never read as a missing capability",
+    "censusCommand": "bun script/m60/declared-type-refs-census.ts",
+    "mechanism": "runtime census vs register, exact reading per lane; a lane may only change its reading by a deliberate register edit"
+  },
+  "baseline": {
+    "lanes": 19,
+    "presentDeclaredType": 11,
+    "presentOtherMarker": 1,
+    "absent": 7,
+    "measuredAt": "2026-09-22 (csharp and php closed)"
+  },
+  "ooTarget": {
+    "absent": 3,
+    "note": "The seven OO lanes (csharp, dart, objc, php, python, ruby, swift) are the owner standard's zero target. python, csharp and (2026-09-22) php emit the graph; ruby is exempt-dynamic (RULED, not unmeasured); THREE lanes still emit nothing — dart, swift, objc — each with its own differential-oracle mirror, fixture, reverting mutants and depth draws to write. This is the family's largest remaining single axis, and it is not in any per-lane item list: it was invisible because nothing measured it. Target zero, lane by lane — never by editing this register."
+  },
+  "lanes": [
+    {
+      "lang": "c",
+      "family": "systems",
+      "reading": "present-other-marker",
+      "ruling": "divergent-marker",
+      "markers": [
+        "type_reference"
+      ],
+      "reason": "CAPABILITY PRESENT, LABEL DIVERGENT: c emits the edge under `type_reference`, so a consumer filtering on `declared_type` silently misses every C dependency. Recorded rather than convicted — mislabelling is a smaller finding than a missing capability, and the same probe that found it also found c's FIELD type position uncovered (only the return type emitted), which is a coverage item for the c lane."
+    },
+    {
+      "lang": "cpp",
+      "family": "systems",
+      "reading": "absent",
+      "ruling": "owed",
+      "reason": "Four declared-type positions measured (field, parameter, return, local), zero edges. Owner: cpp lane."
+    },
+    {
+      "lang": "csharp",
+      "family": "oo",
+      "reading": "present-declared_type",
+      "ruling": "family-standard",
+      "reason": "CLOSED 2026-09-22 — the lane this census was built for (#804). The graph emits for every declaration position that WRITES a type name (field/variable declaration, parameter, return, property, indexer, event, delegate) plus locals, with the source-attribution contract measured off java/kotlin/python (a member's dependency belongs to the enclosing TYPE, a parameter's/return's/local's to the enclosing CALLABLE) and the family's `return_type` marker on returns. The differential oracle derives its truth from the analyzer's own csharpDeclaredTypeRefs — never a second implementation — so the class is COMPARABLE: fsharp FULL EXTENT 243/243, truth 4,679 -> 12,886 at 100% coverage with 0 fabrication (identical sample hash, a strict before/after); powershell 200 truth 14,433 covered 14,433; the canonical 60-file draw clean. Pinned by csharp/declared-type-graph (27 edges over every position and shape, forbidding the four name-as-type spellings) with 8 reverting mutants, all caught. Both defects the round found were found by that fixture's own first measurement rather than by reading the code: a tuple element's NAME published as a type, and a name bound as a type PARAMETER published as a dependency."
+    },
+    {
+      "lang": "dart",
+      "family": "oo",
+      "reading": "absent",
+      "ruling": "owed",
+      "reason": "Zero edges across four positions. #753 lane."
+    },
+    {
+      "lang": "fsharp",
+      "family": "systems",
+      "reading": "absent",
+      "ruling": "owed",
+      "reason": "Zero edges across four positions (`let mutable f: Dep`, a member's parameter and return). Owner: fsharp lane."
+    },
+    {
+      "lang": "go",
+      "family": "systems",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "groovy",
+      "family": "jvm",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "java",
+      "family": "jvm",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "kotlin",
+      "family": "jvm",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "objc",
+      "family": "oo",
+      "reading": "absent",
+      "ruling": "owed",
+      "reason": "Zero edges across four positions, including an ivar `Dep *f` and a `- (Dep *)m:(Dep *)a` protocol-style declaration. #815 lane."
+    },
+    {
+      "lang": "php",
+      "family": "oo",
+      "reading": "present-declared_type",
+      "ruling": "family-standard",
+      "reason": "CLOSED 2026-09-22 (#835) — the lane that owed it after csharp. php has no generics and no type parameters, so csharp's two name-as-type traps cannot arise here; what CAN is php's own shape set (optional/union/intersection wrappers, a QUALIFIED name whose leaf every other php edge keys on, and `self`/`static`/`parent`, which resolve through this lane's own probe-verified relative-type rule: self/static -> the enclosing CLASS, parent -> its declared base, nothing when the base is unresolvable). The attribution contract is the one measured off java/kotlin/python for csharp — a property's dependency belongs to the enclosing TYPE, a parameter's/return's to the enclosing CALLABLE — and the oracle derives truth from the analyzer's own phpDeclaredTypeRefs, never a second implementation, so the class is COMPARABLE: phpunit FULL EXTENT 2,907/2,907 files, truth 29,064 at 100% coverage with 0 fabrication and 0 unexplained, and phpmyadmin FULL EXTENT 1,232/1,232 files, truth 42,558 at 100% with 0/0. Pinned by php/declared-type-graph (13 edges over every position and shape). The fixture's own first measurement corrected the rule: `function copy(): self` had published the METHOD's name as its type, because a relative type belongs to the enclosing CLASS."
+    },
+    {
+      "lang": "powershell",
+      "family": "systems",
+      "reading": "absent",
+      "ruling": "owed",
+      "reason": "Zero edges for `[Dep] $f` / `[Dep] M([Dep] $a)`. Owner: powershell lane."
+    },
+    {
+      "lang": "python",
+      "family": "oo",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "rust",
+      "family": "systems",
+      "reading": "present-declared_type",
+      "ruling": "family-standard",
+      "reason": "R13 closed exactly this gap for rust; the header that made csharp's absence visible."
+    },
+    {
+      "lang": "scala",
+      "family": "jvm",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "swift",
+      "family": "oo",
+      "reading": "absent",
+      "ruling": "owed",
+      "reason": "Zero edges across four positions. #836 lane."
+    },
+    {
+      "lang": "typescript",
+      "family": "web",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "yaml",
+      "family": "config",
+      "reading": "present-declared_type",
+      "ruling": "family-standard",
+      "reason": "CLOSED 2026-09-27 — a YAML TAG is the language's only declared-type position, and it is what the lane emits `declared_type` from. The capability was ABSENT until this round: `tag` was in no handled set, so `!!str 7` reported valueType=integer and the tag was read straight through. Four forms are emitted as a closed declared_type edge (`!!local`, `!custom`, `!<verbatim>`, and `!handle!name` resolved through a %TAG directive), pinned by fixtures tag-declared-type, tag-declared-type-negative and directive-tag-handle, with the value vocabulary held closed by yaml/value-vocabulary. The capability row is measured by script/m60/declared-type-refs-census.ts, which reads present-declared_type for yaml (declared=2 typeRefs=2 control=y) after a yaml snippet joined its table; the snippet uses a CUSTOM tag because the census's shared typeRefs rule keys on the target ending in `Dep`, and a `!!map` would correctly emit an edge to `map` — a real capability this language-agnostic rule cannot see. Coverage of the `!!` local form is the lane's own contract probe, not this row."
+    },
+    {
+      "lang": "zig",
+      "family": "systems",
+      "reading": "present-declared_type",
+      "ruling": "family-standard"
+    },
+    {
+      "lang": "ruby",
+      "family": "oo",
+      "reading": "absent",
+      "ruling": "exempt-dynamic",
+      "reason": "RULED, NOT UNMEASURED: ruby is dynamically typed — no declared-type position exists for fields, parameters or returns, so the family contract has no surface to attach to. Ruby's dependency facts are constant/constructor references, which the lane already emits. If ruby ever gains a typed position (RBS/Sorbet signatures), this ruling is what has to be revisited, and the census's snippet table is where the new shape goes."
+    }
+  ],
+  "runtimeOwed": "None for this rule: the census IS the runtime measurement (it drives the real analyzers), which is why it can see an absent capability. The differential draws are the per-lane confirmation that a lane's graph agrees with its oracle; csharp's are draws 7/8/9 of validation/m60/results/depth-probes.json. What remains owed is the CAPABILITY itself, per lane, recorded above as `owed`.",
+  "laneCount": 20,
+  "presentDeclaredType": 12
+}

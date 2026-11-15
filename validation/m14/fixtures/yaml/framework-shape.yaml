@@ -1,0 +1,13 @@
+# Framework detection is a SET OF EXACT PATHS WITH SHAPES, not a set of names anywhere
+# in the file. The previous whole-file name set reported three frameworks for a
+# seven-line file containing `version`, `services`, `jobs`, `on` and `stages`.
+name: ci
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./local-action

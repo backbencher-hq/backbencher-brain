@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_ask",
+  "title": "lexical fallback latency on a real index",
+  "generatedAt": "2026-11-03T20:22:16.157Z",
+  "currentCommit": "9594a0d83f17bdba36678dad24f59b732c235038",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "indexSymbols": 310423,
+  "budgetMs": 5000,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 864.1,
+      "totalMatches": 948,
+      "matchMode": "terms",
+      "truncated": true,
+      "probedTerms": [
+        "request",
+        "handling"
+      ],
+      "topMatched": [
+        "request"
+      ]
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 1250.3,
+      "totalMatches": 19589,
+      "matchMode": "terms",
+      "truncated": true,
+      "probedTerms": [
+        "index",
+        "lock"
+      ],
+      "topMatched": [
+        "index",
+        "lock"
+      ]
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 922.6,
+      "totalMatches": 4979,
+      "matchMode": "terms",
+      "truncated": true,
+      "probedTerms": [
+        "tool",
+        "descriptors"
+      ],
+      "topMatched": [
+        "tool",
+        "descriptors"
+      ]
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 855.7,
+      "totalMatches": 1030,
+      "matchMode": "terms",
+      "truncated": true,
+      "probedTerms": [
+        "parses",
+        "configuration"
+      ],
+      "topMatched": [
+        "parses"
+      ]
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 1018.3,
+      "totalMatches": 5055,
+      "matchMode": "terms",
+      "truncated": true,
+      "probedTerms": [
+        "search",
+        "engine"
+      ],
+      "topMatched": [
+        "search",
+        "engine"
+      ]
+    }
+  ],
+  "p50": 922.6,
+  "p95": 1250.3,
+  "max": 1250.3,
+  "withinBudget": true,
+  "needleProbe": {
+    "term": "acquired",
+    "columns": 4,
+    "ms": 300.5,
+    "matches": 6,
+    "note": "one full-corpus substring scan; the giant-corpus terms route probes at most GIANT_TERM_BUDGET=4 words per query"
+  },
+  "limitations": [
+    "Measured on an isolated copy of the reference index; the live shared index also pays for other processes' I/O.",
+    "Page cache is cold for the first query in a process; the first row is retained and labelled by order."
+  ]
+}

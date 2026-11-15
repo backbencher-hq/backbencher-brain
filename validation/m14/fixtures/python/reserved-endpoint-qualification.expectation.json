@@ -1,0 +1,164 @@
+{
+ "fixtureId": "python/reserved-endpoint-qualification",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Standing rule R7 forbids an edge endpoint equal to the placeholder literal `unknown`, and `unknown` is one of the six names in the indexer's own GENERIC_SOURCE_NAMES (src/ast/parallel-indexer.ts:3519). CPython's own uuid.py contains the shape: `class SafeUUID(Enum)` with a member literally NAMED `unknown`, read as `SafeUUID.unknown`. Measured over the whole derived corpus - 5,984 python files through production parseFile - 7 emitted edges carried a reserved endpoint and all 7 came from this one construct (1 contains, 6 uses, four of them in uuid.py itself). It was found by the RESOLVED question of script/m14/python-six-questions.mts and by nothing else: no fixture, no mutant and no completeness gate saw it, because the edge is structurally perfect and only its endpoint is wrong. The edge is NOT dropped - the containment and the read are both true and `SafeUUID.unknown` is the name Python gives the member - the endpoint is published QUALIFIED by its owner, which is how every other member edge in this analyzer is already shaped. The two forbid rows are the half that is easy to get wrong in the eager direction: `self.unknown` is instance state this analyzer has never seen declared, so no owner can be invented for it and the bare spelling must stand. A fix that qualified every reserved-looking leaf would pass both positive rows and fabricate an owner on those two, which is the fabrication R7 exists to prevent. The `Plain.safe` row is the third boundary: a member with an ordinary name keeps its bare endpoint, because the 88,535 contains edges that resolve at 100.0% must not all be rewritten in order to fix 7.",
+ "expectSymbols": [
+  {
+   "name": "unknown",
+   "kind": "enum_member",
+   "ownerName": "SafeUUID",
+   "note": "the member itself keeps its real name. R7 is a rule about EDGE ENDPOINTS, not about symbol names - `SafeUUID.unknown` is what the symbol is called in Python and renaming the symbol would be the fabrication, not the fix"
+  },
+  {
+   "name": "unknown",
+   "kind": "property",
+   "ownerName": "Holder",
+   "note": "`self.unknown = None` in __init__ is an instance attribute promoted to a class Property. Same reserved spelling, different declaration route, so this row proves the fix covers the assignment path and not only the enum path"
+  },
+  {
+   "name": "unsafe",
+   "kind": "enum_member",
+   "ownerName": "SafeUUID",
+   "note": "PY-27, found by the INDEPENDENT DIFFERENTIAL while every fixture was passing: `unsafe = -1` parses as a unary_operator wrapping an integer, not as an integer, so the enum-member rule missed it and a member of CPython's own SafeUUID was absent from the graph. Measured: 1 site in 253 enum members across 132 enum classes"
+  },
+  {
+   "name": "negative",
+   "kind": "enum_member",
+   "ownerName": "Signed",
+   "note": "the same rule on `-1` in a class written here, so the fix is pinned in both the stdlib's spelling and a plain one. `positive = +3` and `ratio = -0.5` are the other two forms, and float is covered as well as int"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "SafeUUID",
+   "target": "SafeUUID.unknown",
+   "line_number": 43,
+   "note": "THE FIX. The endpoint is qualified by its owner, so it is a real navigable symbol path and cannot be mistaken for the indexer's synthetic scope"
+  },
+  {
+   "type": "contains",
+   "from": "Holder",
+   "target": "Holder.unknown",
+   "line_number": 88,
+   "note": "the same rule reached by the assignment route. Without this row a fix that only patched the enum-member branch would pass row 1 and leave the uuid.py `__init__` edge broken"
+  },
+  {
+   "type": "uses",
+   "from": "read_enum",
+   "target": "SafeUUID.unknown",
+   "line_number": 94,
+   "note": "the member read whose RECEIVER is a type this file declares. `SafeUUID` is in declaredTypes, so the owner is known and the endpoint is qualified"
+  },
+  {
+   "type": "uses",
+   "from": "outer",
+   "target": "SafeUUID.unknown",
+   "line_number": 102,
+   "note": "the same read from a function with no enclosing class, so the qualifier cannot come from ctx.currentClass - it comes from the receiver being a declared type. This is the row that fails if the fix is written against the current scope instead of against the receiver"
+  },
+  {
+   "type": "contains",
+   "from": "Plain",
+   "target": "safe",
+   "line_number": 81,
+   "note": "BOUNDARY: an ordinary member name keeps its BARE endpoint. 88,535 contains edges resolve at 100.0%; qualifying all of them to fix 7 would have rewritten all of them"
+  },
+  {
+   "type": "contains",
+   "from": "SafeUUID",
+   "target": "safe",
+   "line_number": 41,
+   "note": "same class, one member reserved and one not. If this row fails the fix has stopped discriminating between the two and is qualifying indiscriminately"
+  },
+  {
+   "type": "uses",
+   "from": "read",
+   "target": "unknown",
+   "line_number": 91,
+   "note": "THE DELIBERATE BOUNDARY, and the reason it is pinned as a positive row rather than left out. `self.unknown` is instance state this analyzer has never seen declared, so no owner exists for it and the bare spelling stands. It is an EXPECT row because it is emitted on purpose: an expectation file that omitted it would let the qualifier grow to cover it later without anything failing. It is still an R7-shaped string and the six-questions instrument counts it, which is why both facts are recorded rather than one"
+  },
+  {
+   "type": "contains",
+   "from": "SafeUUID",
+   "target": "unsafe",
+   "line_number": 42,
+   "note": "PY-27. The member the constant-value test missed, because `-1` is a unary_operator and the `-` token is an ANONYMOUS child (child(0), isNamed === false). Scanning named children finds no operator and excludes every signed numeric \u2014 the third off-by-a-child measured zero in this session"
+  },
+  {
+   "type": "contains",
+   "from": "Signed",
+   "target": "negative",
+   "line_number": 62,
+   "note": "the fix, pinned on a class in this file so it does not depend on the stdlib copy"
+  },
+  {
+   "type": "contains",
+   "from": "Signed",
+   "target": "positive",
+   "line_number": 63,
+   "note": "`+3` \u2014 an explicitly signed POSITIVE literal, which is the form a fix that only looked for `-` would miss"
+  },
+  {
+   "type": "contains",
+   "from": "Signed",
+   "target": "ratio",
+   "line_number": 64,
+   "note": "`-0.5` \u2014 the float form"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "SafeUUID",
+   "target": "unknown",
+   "note": "THE R7 BREACH THIS FIXTURE EXISTS FOR. The bare `unknown` endpoint is the placeholder literal, so this edge and a synthetic scope are the same string"
+  },
+  {
+   "type": "contains",
+   "from": "Holder",
+   "target": "unknown",
+   "note": "same breach on the assignment route"
+  },
+  {
+   "type": "uses",
+   "from": "read_enum",
+   "target": "unknown",
+   "note": "and on the read route"
+  },
+  {
+   "type": "uses",
+   "from": "outer",
+   "target": "unknown"
+  },
+  {
+   "type": "uses",
+   "from": "read",
+   "target": "Holder.unknown",
+   "note": "THE BOUNDARY, and the row a fix written in the eager direction fails. `self.unknown` is instance state: no owner for it exists in this file or any other the analyzer has read. Inventing `Holder` as its owner would be a fabricated edge, so the bare spelling stands (see the `read` -> `unknown` EXPECT row) and the six-questions instrument counts it rather than hiding it"
+  },
+  {
+   "type": "contains",
+   "from": "NotConstant",
+   "target": "inverted",
+   "note": "BOUNDARY. `~x` is also a unary_operator node and is NOT a constant. A fix that accepted any unary_operator would publish a member here and invent an enum surface the source does not declare"
+  },
+  {
+   "type": "contains",
+   "from": "NotConstant",
+   "target": "negated",
+   "note": "same for `not x`, whose operator is a keyword rather than a sign"
+  },
+  {
+   "type": "contains",
+   "from": "NotConstant",
+   "target": "NotConstant",
+   "note": "no self-containment from a value the rule must reject"
+  }
+ ],
+ "_seamNote": {
+  "what": "A member edge publishes a QUALIFIED endpoint when - and only when - the member name is one the store has reserved AND an owner for it is known. For `contains` the owner is always known (it is `symbol.ownerName`). For `uses` the owner is known only when the attribute's receiver is a type declared in this file.",
+  "why": "The reserved names are the indexer's own GENERIC_SOURCE_NAMES, and one of them is `unknown` - a word CPython itself uses as an enum member name in uuid.py. R7 exists because a placeholder-literal endpoint is a name a consumer cannot resolve and, worse, one the store filters as synthetic scope: the edge then disappears without a trace and the graph looks complete. The reachable half of the rule is that the member IS real and dropping the edge would be a coverage loss, so the fix qualifies rather than suppresses. The unreachable half is `self.<reserved>`: this analyzer has not read the declaration of an instance attribute, so it cannot name an owner, and inventing one would put a symbol on the graph that the source never wrote. A narrow graph that is true beats a wide graph that is not. RESERVED_ENDPOINT_NAMES is a declared copy of a downstream set rather than an import, because parallel-indexer is a consumer and importing it would invert the layering - so extending the indexer's list is a stated obligation on whoever extends it, named at the constant."
+ }
+}

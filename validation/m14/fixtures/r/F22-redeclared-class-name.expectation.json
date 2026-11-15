@@ -1,0 +1,172 @@
+{
+  "fixtureId": "r/F22-redeclared-class-name",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS THE RESOLUTION RULE FOR A REDECLARED CLASS NAME, which is where `overrides` edges were being invented. `R6Class(\"AC\", \u2026)` is a constructor call evaluated top to bottom and `inherit = AC` inside it is an ordinary lookup at that point in the file, so the base in scope is the nearest PRECEDING DECLARATION of that name \u2014 not the union of every declaration of it, and not the last one in the file. The corpus shape that makes this unavoidable: R6's own test suite declares a class named `AC` NINETEEN times in one file (R6/tests/testthat/test-clone.R) with a different member set each time, and 6 of the 8 corpus files that carry an `overrides` edge redeclare a class name (measured by validation/m14/fixtures/r/probe-overrides-scoping.ts, population 2184 admitted files / 16 repositories / production parseFile / 0 parse failures). (1) LINE 20 vs LINE 21: two declarations of `AC`, the first with `first_only` and the second with `second_only`. `BC` at line 22 inherits the binding at line 21, so `BC` overrides `second_only` and NOT `first_only` \u2014 `overrides BC -> first_only` is forbidden because the base in scope does not declare that member. A union-keyed pass emits exactly that edge. (2) LINE 28 is the same base resolved across an intervening class declaration, so `DC` overrides `second_only` and not `first_only` too; under a `last`-declaration rule both derived classes still resolve to line 21 here, so this case alone cannot separate `preceding` from `last`. (3) LINE 37 inherits `Ghost`, a name this file never binds. `extends EC -> Ghost` IS emitted, because `extends` records the name written in the source and needs no declaration to exist; `overrides EC -> second_only` is forbidden, because asserting it would require inventing a base class with that member. The asymmetry is the point and it is deliberate. The decline is counted as `metadata.callAttribution.overridesBasesNotDeclaredEarlierInFile` = 1 here, so \"no edges emitted\" cannot be read as \"this corpus contains no undeclared inheritance\". (4) LINE 44 declares a class that shares BOTH member names with `BC` and inherits nothing: `overrides Standalone -> first_only` and `overrides Standalone -> second_only` are forbidden, and this is the harder half of the case than F12's three distinct names, because a name-keyed pass has no way to tell `Standalone` from `BC` at all. All four `overrides` edges sit at 0.95 and carry `overridingMember` and `overriddenClass`, because a bare `second_only` target names a member of four classes in this file. (5) LINES 65-67 are the case that separates `preceding` from `last`, and cases 1-4 cannot: in all four the derived class sits BELOW the last declaration of its base, so both rules name the same declaration and agree. Here `FC` at line 66 inherits the `AC` bound at line 65 `{alpha_only}`, and line 67 rebinds `AC` to `{omega_only}` out of scope at line 66. `preceding` emits `overrides FC -> alpha_only` and forbids `omega_only`; `last` resolves the base to line 67 and emits NOTHING; `union` sees `alpha_only` and agrees with `preceding`. So case 5 rejects `last` without rejecting `union`, cases 1-2 reject `union` without rejecting `last`, and the file needs both. That separation was added after `--mutants` reported `src-overrides-base-is-last-declaration` SURVIVED all 22 fixtures: the fixture was wrong, not the mutant unfalsifiable, and the survivor is what said so.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "AC",
+      "kind": "class"
+    },
+    {
+      "name": "BC",
+      "kind": "class"
+    },
+    {
+      "name": "DC",
+      "kind": "class"
+    },
+    {
+      "name": "EC",
+      "kind": "class"
+    },
+    {
+      "name": "Standalone",
+      "kind": "class"
+    },
+    {
+      "name": "first_only",
+      "kind": "method",
+      "ownerName": "BC"
+    },
+    {
+      "name": "second_only",
+      "kind": "method",
+      "ownerName": "BC"
+    },
+    {
+      "name": "second_only",
+      "kind": "method",
+      "ownerName": "DC"
+    },
+    {
+      "name": "second_only",
+      "kind": "method",
+      "ownerName": "Standalone"
+    },
+    {
+      "name": "FC",
+      "kind": "class"
+    },
+    {
+      "name": "alpha_only",
+      "kind": "method",
+      "ownerName": "FC"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "BC",
+      "target": "AC",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "extends",
+      "from": "DC",
+      "target": "AC",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "extends",
+      "from": "EC",
+      "target": "Ghost",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "overrides",
+      "from": "BC",
+      "target": "second_only",
+      "confidenceMin": 0.95,
+      "meta.overridingMember": "BC$second_only", "meta.overriddenMember": "AC$second_only", "meta.overriddenClass": "AC"
+    },
+    {
+      "type": "overrides",
+      "from": "DC",
+      "target": "second_only",
+      "confidenceMin": 0.95,
+      "meta.overridingMember": "DC$second_only", "meta.overriddenMember": "AC$second_only", "meta.overriddenClass": "AC"
+    },
+    {
+      "type": "extends",
+      "from": "FC",
+      "target": "AC",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "overrides",
+      "from": "FC",
+      "target": "alpha_only",
+      "confidenceMin": 0.95,
+      "meta.overridingMember": "FC$alpha_only", "meta.overriddenMember": "AC$alpha_only", "meta.overriddenClass": "AC"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "BC",
+      "target": "first_only"
+    },
+    {
+      "type": "overrides",
+      "from": "DC",
+      "target": "first_only"
+    },
+    {
+      "type": "overrides",
+      "from": "EC",
+      "target": "second_only"
+    },
+    {
+      "type": "overrides",
+      "from": "EC",
+      "target": "first_only"
+    },
+    {
+      "type": "overrides",
+      "from": "Standalone",
+      "target": "first_only"
+    },
+    {
+      "type": "overrides",
+      "from": "Standalone",
+      "target": "second_only"
+    },
+    {
+      "type": "extends",
+      "from": "Standalone",
+      "target": "AC"
+    },
+    {
+      "type": "extends",
+      "from": "BC",
+      "target": "DC"
+    },
+    {
+      "type": "extends",
+      "from": "DC",
+      "target": "BC"
+    },
+    {
+      "type": "overrides",
+      "from": "FC",
+      "target": "omega_only"
+    },
+    {
+      "type": "overrides",
+      "from": "FC",
+      "target": "first_only"
+    },
+    {
+      "type": "overrides",
+      "from": "FC",
+      "target": "second_only"
+    },
+    {
+      "type": "overrides",
+      "from": "FC",
+      "target": "Ghost"
+    }
+  ]
+}

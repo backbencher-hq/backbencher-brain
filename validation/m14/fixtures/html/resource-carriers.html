@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head><title>Resource carriers</title></head>
+<body>
+  <!-- RESOURCE COVERAGE. The pre-fix analyzer was an `if/else if` chain over ten
+       tag names, and a carrier nobody thought of in the chain simply did not
+       exist. These eight produced NO relationship and NO import, verified one
+       document at a time. A rule TABLE can be enumerated; a branch chain cannot,
+       which is why the table replaced it. -->
+  <object id="obj" data="/assets/embed.json" type="application/json"></object>
+  <embed id="emb" src="/assets/plugin.swf" type="application/x-shockwave-flash">
+  <video id="vid" src="/assets/clip.mp4" poster="/assets/poster.jpg" controls>
+    <track id="trk" src="/assets/clip.en.vtt" kind="captions" srclang="en" label="English">
+  </video>
+  <input id="imgbtn" type="image" src="/assets/button.png" alt="Search">
+  <iframe id="fr" src="/pages/embed.html" title="Embedded" loading="lazy"></iframe>
+  <frameset id="fs"><frame id="frm" src="/pages/legacy.html"></frameset>
+
+  <!-- SVG reference carriers, BOTH spellings of the attribute. `href="#icon"` is
+       a same-document reference and resolves against the id space; the legacy
+       `xlink:href` spelling must land on the same rule, which it only can if the
+       attribute map is lowercased (`XLINK:HREF`). -->
+  <svg id="sprite" viewBox="0 0 24 24" aria-hidden="true">
+    <defs>
+      <linearGradient id="grad"></linearGradient>
+      <symbol id="icon" viewBox="0 0 16 16"><path id="iconPath" d="M0 0h16v16H0z"></path></symbol>
+    </defs>
+    <use id="use1" href="#icon"></use>
+    <use id="use2" XLINK:HREF="sprite.svg#icon"></use>
+    <image id="imgsvg" href="/assets/hero.svg" width="24" height="24"></image>
+  </svg>
+
+  <!-- `<param value>` is a resource only for a resource-bearing `name`; every
+       other param value is a plain value and must not become an edge. -->
+  <object id="obj2" data="/assets/movie.swf">
+    <param id="p-movie" name="movie" value="/assets/movie-real.swf">
+    <param id="p-quality" name="quality" value="high">
+  </object>
+
+  <!-- `<link rel>` decides BOTH whether the href is a document the page fetches
+       and which kind it is. `preconnect`/`dns-prefetch` name a host for a
+       connection warm-up and fetch nothing: the pre-fix analyzer mirrored them
+       into `imports`, so the index claimed a dependency on a URL that is
+       deliberately never requested. -->
+  <link id="l-icon" rel="shortcut icon" href="/favicon.ico">
+  <link id="l-pre" rel="preconnect" href="https://cdn.example.com">
+  <link id="l-dns" rel="dns-prefetch" href="//fonts.example.net">
+  <link id="l-manifest" rel="manifest" href="/app.webmanifest">
+  <link id="l-preload" rel="preload" href="/assets/font.woff2" as="font" crossorigin>
+
+  <!-- `<source>` is a candidate carrier in BOTH forms, and its own `media` is the
+       context test. The pre-fix analyzer required the IMMEDIATE parent to be
+       picture/audio/video, so ONE wrapper element silently lost the resource —
+       and a `<picture>` inside a grid cell is not a rarity. -->
+  <video id="wrapped">
+    <div class="responsive-wrapper">
+      <source id="deep-src" src="/assets/deep.mp4" type="video/mp4">
+    </div>
+  </video>
+  <picture id="pic">
+    <source id="pic-src" srcset="/assets/one.webp" media="(min-width: 1200px)">
+    <img id="pic-img" src="/assets/one.jpg" alt="one">
+  </picture>
+
+  <!-- `<base href>` rewrites how every relative URL in the file resolves, so it
+       is architecturally load-bearing — but it FETCHES nothing. The pre-fix
+       analyzer had no `base` branch at all; the right answer is a document
+       metric, not a graph edge claiming a resource dependency. -->
+  <base id="base" href="/app/">
+</body>
+</html>

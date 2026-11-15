@@ -1,0 +1,61 @@
+{
+  "key": "rebar3",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/rebar3",
+  "language": "Erlang",
+  "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/f542cf36820e749046766ff9bede22e70d5990e7/brain.db",
+  "db": {
+    "path": "brain.db",
+    "exists": true,
+    "size": 106369024,
+    "sha256": "812c5485e6c351dcd3cb3d352673949786b135d287be0652ccd5ccb4e9b5d7fc"
+  },
+  "wal": {
+    "path": "brain.db-wal",
+    "exists": true,
+    "size": 39692112,
+    "sha256": "2955f554f6b78275c4ac9b0bd34c9ec3594d24b1eb8f44899aca9be0b99e4ab5"
+  },
+  "files": 303,
+  "symbols": 7012,
+  "relationships": 38143,
+  "languages": [
+    {
+      "language": "erlang",
+      "files": 266
+    },
+    {
+      "language": "markdown",
+      "files": 18
+    },
+    {
+      "language": "bash",
+      "files": 9
+    },
+    {
+      "language": "yaml",
+      "files": 6
+    },
+    {
+      "language": "make",
+      "files": 2
+    },
+    {
+      "language": "elixir",
+      "files": 1
+    },
+    {
+      "language": "powershell",
+      "files": 1
+    }
+  ],
+  "indexMs": 105009,
+  "reused": false,
+  "targets": {
+    "file": "apps/rebar/src/vendored/r3_hex_erl_tar.hrl",
+    "module": "apps/rebar/src/vendored",
+    "symbol": "valid",
+    "feature": "vali",
+    "fallbackModuleFile": ".github/ISSUE_TEMPLATE.md"
+  }
+}

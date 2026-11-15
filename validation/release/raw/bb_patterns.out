@@ -1,0 +1,10 @@
+orphaned code (1141 found):
+  orphaned_class PackageTask — rake/rake/packagetask.rb:45 (70%)
+  orphaned_class TestTask — rake/rake/testtask.rb:35 (70%)
+  orphaned_class EarlyTime — rake/rake/early_time.rb:5 (70%)
+  orphaned_function EnumValue — graphql-js/validation/rules/custom/NoDeprecatedCustomRule.ts:104 (70%)
+  orphaned_class LateTime — rake/rake/late_time.rb:4 (70%)
+[scan: 1141 orphan candidate(s) (orphaned_function=1062 orphaned_file=65 orphaned_class=14); showing 5 — raise `limit` to see more (maximum 500)]
+[suppressed: testPath=1887 entryPointName=74 nonCodeFile=13 manifestFile=1]
+[usage-evidence: refused 1400 row(s) (selfLoop=1395, inferred=5, lowConfidence=0); imports: 4347 row(s), 1225 attributed to a file, 0 resolved, 0 file(s) cleared]
+[provenance: static_finding via orphans@intelligence; scanned 6338 symbol(s) in 365 file(s); limitations: 4]

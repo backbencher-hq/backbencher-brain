@@ -1,0 +1,805 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C relationship LINE truth: in range, and does the line contain the target",
+  "generatedAt": "2026-09-30T03:37:14.421Z",
+  "method": "every relationship in the router's universe (329 files, 24114 edges). For each edge: is the line within the file, and does the SOURCE TEXT of that line contain the edge's target — under a per-type rule, because \"the line mentions the target\" is the right question for a member declaration and the wrong one for a superclass member that is not in the file at all. The arbiter is the file's own text, which the analyzer has no access to and which the F5 oracle cannot supply either, since it derives truth from the same tree.",
+  "why": "presence is the easy half and it is the half that survives being wrong: a row pointing at line 1 of a 600-line file is present and useless, and a wrong line is worse than a missing one because a consumer lands somewhere confident",
+  "files": 329,
+  "totalEdges": 24114,
+  "rules": {
+    "contains": {
+      "rule": "exact",
+      "why": "a member is declared on the member's own declaration; the OBJCD7 defect was exactly this relationship publishing the CONTAINER's line for member rows. Selector-shaped members are matched by leaf over a small window, because an Objective-C selector WRAPS and no single line carries the full string"
+    },
+    "extends": {
+      "rule": "exact",
+      "why": "the superclass name is written on the @interface/@protocol line that the edge is about"
+    },
+    "implements": {
+      "rule": "exact",
+      "why": "a conformed protocol is named in the @interface's protocol list, on that line"
+    },
+    "uses": {
+      "rule": "plausible",
+      "why": "a value read's target is a name in scope, which need not be on the read's own line (a parameter is read far from its declaration) — so presence on the line is necessary, not sufficient"
+    },
+    "calls": {
+      "rule": "plausible",
+      "why": "a selector is written at the send, and the edge's target is the FULL selector, so the LEAF is what must appear — over a window, since a send routinely wraps across lines in this language"
+    },
+    "instantiates": {
+      "rule": "plausible",
+      "why": "the class receiver is on the line for [[Foo alloc] init] and [Foo new], but a nested alloc puts the receiver one line up"
+    },
+    "overrides": {
+      "rule": "not-decidable",
+      "why": "the target is a SUPERCLASS member, absent from the subclass file by definition — an override's line is the overriding declaration, which is correct"
+    },
+    "references": {
+      "rule": "not-decidable",
+      "why": "the target is a module name from an #import, and whether the line is the import or the use is a design choice this lane has not pinned"
+    }
+  },
+  "byType": [
+    {
+      "type": "uses",
+      "rule": "plausible",
+      "ruleWhy": "a value read's target is a name in scope, which need not be on the read's own line (a parameter is read far from its declaration) — so presence on the line is necessary, not sufficient",
+      "edges": 9473,
+      "inRange": 9473,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 9473,
+      "lineMissesTarget": 0,
+      "containsPct": 100,
+      "samples": []
+    },
+    {
+      "type": "calls",
+      "rule": "plausible",
+      "ruleWhy": "a selector is written at the send, and the edge's target is the FULL selector, so the LEAF is what must appear — over a window, since a send routinely wraps across lines in this language",
+      "edges": 8309,
+      "inRange": 8309,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 8247,
+      "lineMissesTarget": 62,
+      "containsPct": 99.25,
+      "samples": [
+        "PLAUSIBLE-MISS  SDWebImage/Core/NSButton+WebCache.m:61 sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 61: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/NSButton+WebCache.m:122 sd_setAlternateImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 122: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/SDAnimatedImageView+WebCache.m:64 sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 64: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/UIButton+WebCache.m:70 sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 70: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/UIButton+WebCache.m:138 sd_setBackgroundImageWithURL:forState:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 138: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/UIImageView+HighlightedWebCache.m:57 sd_setHighlightedImageWithURL:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 57: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/UIImageView+WebCache.m:55 sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 55: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  SDWebImage/Core/UIView+WebCache.m:329 sd_setImage:imageData:options:basedOnClassOrViaCustomSetImageBlock:transition:cacheType:imageURL:callback: calls transitionWithView:duration:options:animations:completion:\n              line 329: [UIView transitionWithView:view duration:0 options:0 animations:^{",
+        "PLAUSIBLE-MISS  SDWebImage/Core/UIView+WebCache.m:363 sd_setImage:imageData:options:basedOnClassOrViaCustomSetImageBlock:transition:cacheType:imageURL:callback: calls runAnimationGroup:completionHandler:\n              line 363: [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull prepareContext) {",
+        "PLAUSIBLE-MISS  SDWebImageMapKit/MapKit/MKAnnotationView+WebCache.m:54 sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 54: [self sd_internalSetImageWithURL:url",
+        "PLAUSIBLE-MISS  Tests/Tests/SDAnimatedImageTest.m:339 test23AnimatedImageViewCategoryProgressive calls sd_setImageWithURL:placeholderImage:options:progress:completed:\n              line 339: [imageView sd_setImageWithURL:testURL placeholderImage:nil options:SDWebImageProgressiveLoad progres",
+        "PLAUSIBLE-MISS  Tests/Tests/SDWebCacheCategoriesTests.m:200 testUIViewInternalSetImageWithURL calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:\n              line 200: [view sd_internalSetImageWithURL:originalImageURL"
+      ]
+    },
+    {
+      "type": "contains",
+      "rule": "exact",
+      "ruleWhy": "a member is declared on the member's own declaration; the OBJCD7 defect was exactly this relationship publishing the CONTAINER's line for member rows. Selector-shaped members are matched by leaf over a small window, because an Objective-C selector WRAPS and no single line carries the full string",
+      "edges": 3895,
+      "inRange": 3895,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 3870,
+      "lineMissesTarget": 25,
+      "containsPct": 99.36,
+      "samples": [
+        "EXACT-MISS  SDWebImage/Core/SDImageCache.h:244 SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:\n              line 244: - (void)storeImage:(nullable UIImage *)image",
+        "EXACT-MISS  SDWebImage/Core/SDImageCache.m:236 SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:\n              line 236: - (void)storeImage:(nullable UIImage *)image",
+        "EXACT-MISS  SDWebImage/Core/SDImageCacheDefine.h:139 SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:\n              line 139: - (void)storeImage:(nullable UIImage *)image",
+        "EXACT-MISS  SDWebImage/Core/SDWebImageManager.m:403 SDWebImageManager contains callDownloadProcessForOperation:url:options:context:cachedImage:cachedData:cacheType:progress:completed:\n              line 403: - (void)callDownloadProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation",
+        "EXACT-MISS  SDWebImage/Core/SDWebImageManager.m:496 SDWebImageManager contains callTransformProcessForOperation:url:options:context:originalImage:originalData:cacheType:finished:completed:\n              line 496: - (void)callTransformProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation",
+        "EXACT-MISS  SDWebImage/Core/SDWebImageManager.m:552 SDWebImageManager contains callStoreOriginCacheProcessForOperation:url:options:context:originalImage:cacheImage:originalData:cacheData:cacheType:finished:completed:\n              line 552: - (void)callStoreOriginCacheProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation",
+        "EXACT-MISS  SDWebImage/Core/SDWebImageManager.m:607 SDWebImageManager contains callStoreCacheProcessForOperation:url:options:context:image:data:cacheType:finished:completed:\n              line 607: - (void)callStoreCacheProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation",
+        "EXACT-MISS  SDWebImage/Core/SDWebImageManager.m:657 SDWebImageManager contains storeImage:imageData:forKey:options:context:imageCache:cacheType:finished:completion:\n              line 657: - (void)storeImage:(nullable UIImage *)image",
+        "EXACT-MISS  SDWebImage/Core/SDWebImageManager.m:707 SDWebImageManager contains callCompletionBlockForOperation:completion:image:data:error:cacheType:finished:queue:url:\n              line 707: - (void)callCompletionBlockForOperation:(nullable SDWebImageCombinedOperation*)operation",
+        "EXACT-MISS  SDWebImage/Core/UIButton+WebCache.h:198 UIButton contains sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed:\n              line 198: - (void)sd_setImageWithURL:(nullable NSURL *)url",
+        "EXACT-MISS  SDWebImage/Core/UIButton+WebCache.h:380 UIButton contains sd_setBackgroundImageWithURL:forState:placeholderImage:options:context:progress:completed:\n              line 380: - (void)sd_setBackgroundImageWithURL:(nullable NSURL *)url",
+        "EXACT-MISS  SDWebImage/Core/UIButton+WebCache.m:55 UIButton contains sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed:\n              line 55: - (void)sd_setImageWithURL:(nullable NSURL *)url"
+      ]
+    },
+    {
+      "type": "references",
+      "rule": "not-decidable",
+      "ruleWhy": "the target is a module name from an #import, and whether the line is the import or the use is a design choice this lane has not pinned",
+      "edges": 916,
+      "inRange": 916,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 0,
+      "lineMissesTarget": 0,
+      "containsPct": null,
+      "samples": []
+    },
+    {
+      "type": "overrides",
+      "rule": "not-decidable",
+      "ruleWhy": "the target is a SUPERCLASS member, absent from the subclass file by definition — an override's line is the overriding declaration, which is correct",
+      "edges": 621,
+      "inRange": 621,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 0,
+      "lineMissesTarget": 0,
+      "containsPct": null,
+      "samples": []
+    },
+    {
+      "type": "instantiates",
+      "rule": "plausible",
+      "ruleWhy": "the class receiver is on the line for [[Foo alloc] init] and [Foo new], but a nested alloc puts the receiver one line up",
+      "edges": 519,
+      "inRange": 519,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 519,
+      "lineMissesTarget": 0,
+      "containsPct": 100,
+      "samples": []
+    },
+    {
+      "type": "extends",
+      "rule": "exact",
+      "ruleWhy": "the superclass name is written on the @interface/@protocol line that the edge is about",
+      "edges": 255,
+      "inRange": 255,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 255,
+      "lineMissesTarget": 0,
+      "containsPct": 100,
+      "samples": []
+    },
+    {
+      "type": "implements",
+      "rule": "exact",
+      "ruleWhy": "a conformed protocol is named in the @interface's protocol list, on that line",
+      "edges": 126,
+      "inRange": 126,
+      "lineZero": 0,
+      "outOfRange": 0,
+      "inRangePct": 100,
+      "lineContainsTarget": 126,
+      "lineMissesTarget": 0,
+      "containsPct": 100,
+      "samples": []
+    }
+  ],
+  "totals": {
+    "inRange": 24114,
+    "lineZero": 0,
+    "outOfRange": 0,
+    "decidableEdges": 22577,
+    "decidableHits": 22490,
+    "exactEdges": 4276,
+    "exactHits": 4251
+  },
+  "failures": [
+    {
+      "file": "SDWebImage/Core/NSButton+WebCache.m",
+      "rel": "sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 61,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/NSButton+WebCache.m",
+      "rel": "sd_setAlternateImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 122,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageView+WebCache.m",
+      "rel": "sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 64,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCache.h",
+      "rel": "SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:",
+      "line": 244,
+      "rule": "exact",
+      "text": "- (void)storeImage:(nullable UIImage *)image"
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCache.m",
+      "rel": "SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:",
+      "line": 236,
+      "rule": "exact",
+      "text": "- (void)storeImage:(nullable UIImage *)image"
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCacheDefine.h",
+      "rel": "SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:",
+      "line": 139,
+      "rule": "exact",
+      "text": "- (void)storeImage:(nullable UIImage *)image"
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "rel": "SDWebImageManager contains callDownloadProcessForOperation:url:options:context:cachedImage:cachedData:cacheType:progress:completed:",
+      "line": 403,
+      "rule": "exact",
+      "text": "- (void)callDownloadProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation"
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "rel": "SDWebImageManager contains callTransformProcessForOperation:url:options:context:originalImage:originalData:cacheType:finished:completed:",
+      "line": 496,
+      "rule": "exact",
+      "text": "- (void)callTransformProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation"
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "rel": "SDWebImageManager contains callStoreOriginCacheProcessForOperation:url:options:context:originalImage:cacheImage:originalData:cacheData:cacheType:finished:completed:",
+      "line": 552,
+      "rule": "exact",
+      "text": "- (void)callStoreOriginCacheProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation"
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "rel": "SDWebImageManager contains callStoreCacheProcessForOperation:url:options:context:image:data:cacheType:finished:completed:",
+      "line": 607,
+      "rule": "exact",
+      "text": "- (void)callStoreCacheProcessForOperation:(nonnull SDWebImageCombinedOperation *)operation"
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "rel": "SDWebImageManager contains storeImage:imageData:forKey:options:context:imageCache:cacheType:finished:completion:",
+      "line": 657,
+      "rule": "exact",
+      "text": "- (void)storeImage:(nullable UIImage *)image"
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "rel": "SDWebImageManager contains callCompletionBlockForOperation:completion:image:data:error:cacheType:finished:queue:url:",
+      "line": 707,
+      "rule": "exact",
+      "text": "- (void)callCompletionBlockForOperation:(nullable SDWebImageCombinedOperation*)operation"
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.h",
+      "rel": "UIButton contains sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed:",
+      "line": 198,
+      "rule": "exact",
+      "text": "- (void)sd_setImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.h",
+      "rel": "UIButton contains sd_setBackgroundImageWithURL:forState:placeholderImage:options:context:progress:completed:",
+      "line": 380,
+      "rule": "exact",
+      "text": "- (void)sd_setBackgroundImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.m",
+      "rel": "sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 70,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.m",
+      "rel": "sd_setBackgroundImageWithURL:forState:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 138,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.m",
+      "rel": "UIButton contains sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed:",
+      "line": 55,
+      "rule": "exact",
+      "text": "- (void)sd_setImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.m",
+      "rel": "UIButton contains sd_setBackgroundImageWithURL:forState:placeholderImage:options:context:progress:completed:",
+      "line": 123,
+      "rule": "exact",
+      "text": "- (void)sd_setBackgroundImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/Core/UIImageView+HighlightedWebCache.m",
+      "rel": "sd_setHighlightedImageWithURL:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 57,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/UIImageView+WebCache.m",
+      "rel": "sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 55,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCache.h",
+      "rel": "UIView contains sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 85,
+      "rule": "exact",
+      "text": "- (nullable id<SDWebImageOperation>)sd_internalSetImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCache.m",
+      "rel": "sd_setImage:imageData:options:basedOnClassOrViaCustomSetImageBlock:transition:cacheType:imageURL:callback: calls transitionWithView:duration:options:animations:completion:",
+      "line": 329,
+      "rule": "plausible",
+      "text": "[UIView transitionWithView:view duration:0 options:0 animations:^{"
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCache.m",
+      "rel": "sd_setImage:imageData:options:basedOnClassOrViaCustomSetImageBlock:transition:cacheType:imageURL:callback: calls runAnimationGroup:completionHandler:",
+      "line": 363,
+      "rule": "plausible",
+      "text": "[NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull prepareContext) {"
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCache.m",
+      "rel": "UIView contains sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 58,
+      "rule": "exact",
+      "text": "- (nullable id<SDWebImageOperation>)sd_internalSetImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCache.h",
+      "rel": "SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:",
+      "line": 244,
+      "rule": "exact",
+      "text": "- (void)storeImage:(nullable UIImage *)image"
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCacheDefine.h",
+      "rel": "SDImageCache contains storeImage:imageData:forKey:options:context:cacheType:completion:",
+      "line": 139,
+      "rule": "exact",
+      "text": "- (void)storeImage:(nullable UIImage *)image"
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIButton+WebCache.h",
+      "rel": "UIButton contains sd_setImageWithURL:forState:placeholderImage:options:context:progress:completed:",
+      "line": 198,
+      "rule": "exact",
+      "text": "- (void)sd_setImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIButton+WebCache.h",
+      "rel": "UIButton contains sd_setBackgroundImageWithURL:forState:placeholderImage:options:context:progress:completed:",
+      "line": 380,
+      "rule": "exact",
+      "text": "- (void)sd_setBackgroundImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIView+WebCache.h",
+      "rel": "UIView contains sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 85,
+      "rule": "exact",
+      "text": "- (nullable id<SDWebImageOperation>)sd_internalSetImageWithURL:(nullable NSURL *)url"
+    },
+    {
+      "file": "SDWebImageMapKit/MapKit/MKAnnotationView+WebCache.m",
+      "rel": "sd_setImageWithURL:placeholderImage:options:context:progress:completed: calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 54,
+      "rule": "plausible",
+      "text": "[self sd_internalSetImageWithURL:url"
+    },
+    {
+      "file": "Tests/Tests/SDAnimatedImageTest.m",
+      "rel": "test23AnimatedImageViewCategoryProgressive calls sd_setImageWithURL:placeholderImage:options:progress:completed:",
+      "line": 339,
+      "rule": "plausible",
+      "text": "[imageView sd_setImageWithURL:testURL placeholderImage:nil options:SDWebImageProgressiveLoad progress:^(NSInteger receivedSize, NSInteger ex"
+    },
+    {
+      "file": "Tests/Tests/SDWebCacheCategoriesTests.m",
+      "rel": "testUIViewInternalSetImageWithURL calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 200,
+      "rule": "plausible",
+      "text": "[view sd_internalSetImageWithURL:originalImageURL"
+    },
+    {
+      "file": "Tests/Tests/SDWebCacheCategoriesTests.m",
+      "rel": "testUIViewIndicatorWork calls sd_setImageWithURL:placeholderImage:options:progress:completed:",
+      "line": 560,
+      "rule": "plausible",
+      "text": "[imageView sd_setImageWithURL:originalImageURL"
+    },
+    {
+      "file": "Tests/Tests/SDWebCacheCategoriesTests.m",
+      "rel": "testUIViewOperationKeyContextWorks calls sd_internalSetImageWithURL:placeholderImage:options:context:setImageBlock:progress:completed:",
+      "line": 610,
+      "rule": "plausible",
+      "text": "[view sd_internalSetImageWithURL:originalImageURL"
+    },
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.h",
+      "rel": "AFHTTPSessionManager contains POST:parameters:headers:constructingBodyWithBlock:progress:success:failure:",
+      "line": 201,
+      "rule": "exact",
+      "text": "- (nullable NSURLSessionDataTask *)POST:(NSString *)URLString"
+    },
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.h",
+      "rel": "AFHTTPSessionManager contains dataTaskWithHTTPMethod:URLString:parameters:headers:uploadProgress:downloadProgress:success:failure:",
+      "line": 274,
+      "rule": "exact",
+      "text": "- (nullable NSURLSessionDataTask *)dataTaskWithHTTPMethod:(NSString *)method"
+    },
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.m",
+      "rel": "GET:parameters:headers:progress:success:failure: calls dataTaskWithHTTPMethod:URLString:parameters:headers:uploadProgress:downloadProgress:success:failure:",
+      "line": 128,
+      "rule": "plausible",
+      "text": "NSURLSessionDataTask *dataTask = [self dataTaskWithHTTPMethod:@\"GET\""
+    },
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.m",
+      "rel": "AFHTTPSessionManager contains dataTaskWithHTTPMethod:URLString:parameters:headers:uploadProgress:downloadProgress:success:failure:",
+      "line": 252,
+      "rule": "exact",
+      "text": "- (NSURLSessionDataTask *)dataTaskWithHTTPMethod:(NSString *)method"
+    },
+    {
+      "file": "Example/Classes/Models/Post.m",
+      "rel": "globalTimelinePostsWithBlock: calls GET:parameters:headers:progress:success:failure:",
+      "line": 47,
+      "rule": "plausible",
+      "text": "return [[AFAppDotNetAPIClient sharedClient] GET:@\"stream/0/posts/stream/global\" parameters:nil headers: nil progress:nil success:^(NSURLSess"
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testDownloadFileCompletionSpecifiesURLInCompletionBlock calls downloadTaskWithRequest:progress:destination:completionHandler:",
+      "line": 165,
+      "rule": "plausible",
+      "text": "NSURLSessionDownloadTask *downloadTask = [self.sessionManager downloadTaskWithRequest:[NSURLRequest requestWithURL:self.baseURL]"
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testSettingHTTPHeadersPerRequestCanReplaceTheDefaultValueSpecifiedInRequestSerializer calls dataTaskWithHTTPMethod:URLString:parameters:headers:uploadProgress:downloadProgress:success:failure:",
+      "line": 218,
+      "rule": "plausible",
+      "text": "[self.sessionManager dataTaskWithHTTPMethod:@\"GET\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testDownloadProgressIsReportedForGET calls GET:parameters:headers:progress:success:failure:",
+      "line": 270,
+      "rule": "plausible",
+      "text": "GET:@\"image\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testUploadProgressIsReportedForPOST calls POST:parameters:headers:progress:success:failure:",
+      "line": 292,
+      "rule": "plausible",
+      "text": "POST:@\"post\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testUploadProgressIsReportedForStreamingPost calls POST:parameters:headers:constructingBodyWithBlock:progress:success:failure:",
+      "line": 314,
+      "rule": "plausible",
+      "text": "POST:@\"post\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testThatSuccessBlockIsCalledFor200 calls GET:parameters:headers:progress:success:failure:",
+      "line": 335,
+      "rule": "plausible",
+      "text": "GET:@\"status/200\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testThatResponseObjectIsEmptyFor204 calls GET:parameters:headers:progress:success:failure:",
+      "line": 364,
+      "rule": "plausible",
+      "text": "GET:@\"status/204\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testGET calls GET:parameters:headers:progress:success:failure:",
+      "line": 382,
+      "rule": "plausible",
+      "text": "GET:@\"get\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testHEAD calls HEAD:parameters:headers:success:failure:",
+      "line": 397,
+      "rule": "plausible",
+      "text": "HEAD:@\"get\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testPOST calls POST:parameters:headers:progress:success:failure:",
+      "line": 413,
+      "rule": "plausible",
+      "text": "POST:@\"post\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testPOSTWithConstructingBody calls POST:parameters:headers:constructingBodyWithBlock:progress:success:failure:",
+      "line": 431,
+      "rule": "plausible",
+      "text": "POST:@\"post\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testPUT calls PUT:parameters:headers:success:failure:",
+      "line": 456,
+      "rule": "plausible",
+      "text": "PUT:@\"put\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testDELETE calls DELETE:parameters:headers:success:failure:",
+      "line": 473,
+      "rule": "plausible",
+      "text": "DELETE:@\"delete\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testPATCH calls PATCH:parameters:headers:success:failure:",
+      "line": 490,
+      "rule": "plausible",
+      "text": "PATCH:@\"patch\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testHiddenBasicAuthentication calls GET:parameters:headers:progress:success:failure:",
+      "line": 509,
+      "rule": "plausible",
+      "text": "GET:@\"hidden-basic-auth/user/password\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testInvalidServerTrustProducesCorrectErrorForCertificatePinning calls GET:parameters:headers:progress:success:failure:",
+      "line": 582,
+      "rule": "plausible",
+      "text": "GET:@\"\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testInvalidServerTrustProducesCorrectErrorForPublicKeyPinning calls GET:parameters:headers:progress:success:failure:",
+      "line": 608,
+      "rule": "plausible",
+      "text": "GET:@\"\""
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "rel": "testAuthenticationChallengeHandlerCredentialResult calls GET:parameters:headers:progress:success:failure:",
+      "line": 638,
+      "rule": "plausible",
+      "text": "GET:@\"basic-auth/user/passwd\""
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatImageDownloaderCanDownloadImage calls downloadImageForURLRequest:success:failure:",
+      "line": 99,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatItCanDownloadMultipleImagesSimultaneously calls downloadImageForURLRequest:success:failure:",
+      "line": 119,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatSimultaneouslyRequestsForTheSameAssetReceiveSameResponse calls downloadImageForURLRequest:success:failure:",
+      "line": 155,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatImageBehindRedirectCanBeDownloaded calls downloadImageForURLRequest:success:failure:",
+      "line": 191,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:downloadRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatResponseIsNilWhenReturnedFromCache calls downloadImageForURLRequest:success:failure:",
+      "line": 211,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatImageCacheIsPromptedShouldCache calls downloadImageForURLRequest:success:failure:",
+      "line": 261,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatImageCacheIsPromptedShouldCacheNot calls downloadImageForURLRequest:success:failure:",
+      "line": 310,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatCacheIsIgnoredIfCacheIgnoredInRequest calls downloadImageForURLRequest:success:failure:",
+      "line": 383,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "rel": "testThatCancellingDownloadWithMultipleResponseHandlersCancelsFirstYetAllowsSecondToComplete calls downloadImageForURLRequest:success:failure:",
+      "line": 450,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:self.pngRequest"
+    },
+    {
+      "file": "Tests/Tests/AFNetworkActivityManagerTests.m",
+      "rel": "testThatNetworkActivityIndicatorTurnsOnAndOffIndicatorWhenRequestSucceeds calls GET:parameters:headers:progress:success:failure:",
+      "line": 71,
+      "rule": "plausible",
+      "text": "GET:@\"/delay/1\""
+    },
+    {
+      "file": "Tests/Tests/AFNetworkActivityManagerTests.m",
+      "rel": "testThatVisibilityDelaysAreApplied calls GET:parameters:headers:progress:success:failure:",
+      "line": 132,
+      "rule": "plausible",
+      "text": "GET:@\"/delay/2\""
+    },
+    {
+      "file": "Tests/Tests/AFNetworkActivityManagerTests.m",
+      "rel": "testThatIndicatorBlockIsOnlyCalledOnceEachForStartAndEndForMultipleRequests calls GET:parameters:headers:progress:success:failure:",
+      "line": 162,
+      "rule": "plausible",
+      "text": "GET:@\"/delay/4\""
+    },
+    {
+      "file": "Tests/Tests/AFUIButtonTests.m",
+      "rel": "testThatForegroundImageCanBeCancelledAndDownloadedImmediately calls setImageForState:withURLRequest:placeholderImage:success:failure:",
+      "line": 79,
+      "rule": "plausible",
+      "text": "setImageForState:UIControlStateNormal"
+    },
+    {
+      "file": "Tests/Tests/AFUIButtonTests.m",
+      "rel": "testThatBackgroundImageCanBeCancelledAndDownloadedImmediately calls setBackgroundImageForState:withURLRequest:placeholderImage:success:failure:",
+      "line": 98,
+      "rule": "plausible",
+      "text": "setBackgroundImageForState:UIControlStateNormal"
+    },
+    {
+      "file": "Tests/Tests/AFUIImageViewTests.m",
+      "rel": "testResponseIsNilWhenLoadedFromCache calls setImageWithURLRequest:placeholderImage:success:failure:",
+      "line": 108,
+      "rule": "plausible",
+      "text": "setImageWithURLRequest:self.jpegURLRequest"
+    },
+    {
+      "file": "Tests/Tests/AFUIImageViewTests.m",
+      "rel": "testThatImageCanBeCancelledAndDownloadedImmediately calls setImageWithURLRequest:placeholderImage:success:failure:",
+      "line": 129,
+      "rule": "plausible",
+      "text": "setImageWithURLRequest:self.jpegURLRequest"
+    },
+    {
+      "file": "Tests/Tests/AFURLSessionManagerTests.m",
+      "rel": "testDataTaskDoesReportDownloadProgress calls dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:",
+      "line": 87,
+      "rule": "plausible",
+      "text": "dataTaskWithRequest:[self bigImageURLRequest]"
+    },
+    {
+      "file": "Tests/Tests/AFURLSessionManagerTests.m",
+      "rel": "testDownloadTaskDoesReportProgress calls downloadTaskWithRequest:progress:destination:completionHandler:",
+      "line": 124,
+      "rule": "plausible",
+      "text": "downloadTaskWithRequest:[self bigImageURLRequest]"
+    },
+    {
+      "file": "Tests/Tests/AFURLSessionManagerTests.m",
+      "rel": "testUploadTaskDoesReportProgress calls uploadTaskWithRequest:fromData:progress:completionHandler:",
+      "line": 190,
+      "rule": "plausible",
+      "text": "uploadTaskWithRequest:request"
+    },
+    {
+      "file": "Tests/Tests/AFURLSessionManagerTests.m",
+      "rel": "testTaskMoveFailedAfterDownloading calls downloadTaskWithRequest:progress:destination:completionHandler:",
+      "line": 467,
+      "rule": "plausible",
+      "text": "NSURLSessionDownloadTask *downloadTask = [self.localManager downloadTaskWithRequest:[self bigImageURLRequest]"
+    },
+    {
+      "file": "Tests/Tests/AFWKWebViewTests.m",
+      "rel": "testNilProgressDoesNotCauseCrash calls loadRequest:navigation:progress:success:failure:",
+      "line": 60,
+      "rule": "plausible",
+      "text": "loadRequest:self.HTMLRequest"
+    },
+    {
+      "file": "Tests/Tests/AFWKWebViewTests.m",
+      "rel": "testNUllProgressDoesNotCauseCrash calls loadRequest:navigation:progress:success:failure:",
+      "line": 76,
+      "rule": "plausible",
+      "text": "loadRequest:self.HTMLRequest"
+    },
+    {
+      "file": "Tests/Tests/AFWKWebViewTests.m",
+      "rel": "testProgressIsSet calls loadRequest:navigation:progress:success:failure:",
+      "line": 94,
+      "rule": "plausible",
+      "text": "loadRequest:self.largeHTMLRequest"
+    },
+    {
+      "file": "Tests/Tests/AFWKWebViewTests.m",
+      "rel": "testRequestWithCustomHeaders calls loadRequest:navigation:progress:success:failure:",
+      "line": 114,
+      "rule": "plausible",
+      "text": "loadRequest:self.headerRequest"
+    },
+    {
+      "file": "UIKit+AFNetworking/UIButton+AFNetworking.m",
+      "rel": "setImageForState:withURLRequest:placeholderImage:success:failure: calls downloadImageForURLRequest:withReceiptID:success:failure:",
+      "line": 164,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:urlRequest"
+    },
+    {
+      "file": "UIKit+AFNetworking/UIButton+AFNetworking.m",
+      "rel": "setBackgroundImageForState:withURLRequest:placeholderImage:success:failure: calls downloadImageForURLRequest:withReceiptID:success:failure:",
+      "line": 243,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:urlRequest"
+    },
+    {
+      "file": "UIKit+AFNetworking/UIImageView+AFNetworking.m",
+      "rel": "setImageWithURLRequest:placeholderImage:success:failure: calls downloadImageForURLRequest:withReceiptID:success:failure:",
+      "line": 114,
+      "rule": "plausible",
+      "text": "downloadImageForURLRequest:urlRequest"
+    },
+    {
+      "file": "UIKit+AFNetworking/WKWebView+AFNetworking.h",
+      "rel": "WKWebView contains loadRequest:navigation:MIMEType:textEncodingName:progress:success:failure:",
+      "line": 68,
+      "rule": "exact",
+      "text": "- (void)loadRequest:(NSURLRequest *)request"
+    },
+    {
+      "file": "UIKit+AFNetworking/WKWebView+AFNetworking.m",
+      "rel": "loadRequest:navigation:progress:success:failure: calls loadRequest:navigation:MIMEType:textEncodingName:progress:success:failure:",
+      "line": 89,
+      "rule": "plausible",
+      "text": "[self loadRequest:request navigation:navigation MIMEType:nil textEncodingName:nil progress:progress success:^NSData * _Nonnull(NSHTTPURLResp"
+    },
+    {
+      "file": "UIKit+AFNetworking/WKWebView+AFNetworking.m",
+      "rel": "WKWebView contains loadRequest:navigation:MIMEType:textEncodingName:progress:success:failure:",
+      "line": 107,
+      "rule": "exact",
+      "text": "- (void)loadRequest:(NSURLRequest *)request"
+    }
+  ],
+  "verdict": "all 24,114 lines in range. Of the 22,577 edges whose type makes the line decidable, 22,490 point at a line containing the target (99.61%). EXACT types only (contains/extends/implements, where the line is decidable): 4251/4276 (99.42%)."
+}

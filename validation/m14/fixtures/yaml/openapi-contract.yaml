@@ -1,0 +1,19 @@
+# The two shapes that genuinely ARE an API contract, and the only two this lane fills
+# `apiContractPath` for. A YAML key is not an API surface, so the field stays absent
+# everywhere else rather than carrying a constant.
+swagger: "2.0"
+info:
+  title: demo
+paths:
+  /tasks:
+    get:
+      responses:
+        "200":
+          description: ok
+    post:
+      responses:
+        "201":
+          description: created
+definitions:
+  Task:
+    type: object

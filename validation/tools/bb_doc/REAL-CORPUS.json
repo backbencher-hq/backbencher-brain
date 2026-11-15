@@ -1,0 +1,1673 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_doc",
+  "generatedAt": "2026-11-03T00:39:36.427Z",
+  "door": "REAL MCP stdio: `node bin/bb mcp --dir <corpus>` driven by @modelcontextprotocol/sdk Client (the node runtime is the one `bin/bb` targets and the one an MCP host spawns)",
+  "env": {
+    "BB_DATA_DIR": "validation/tools/bb_doc/realcorpus/bbdata",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "commands": {
+    "indexAndProbe": "BB_DATA_DIR=validation/tools/bb_doc/realcorpus/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/real-corpus.ts",
+    "mcpDoor": "node bin/bb mcp --dir <corpus>  (StdioClientTransport, env: process.env)",
+    "singleProbe": "BB_DATA_DIR=validation/tools/bb_doc/realcorpus/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/mcp-probe.ts"
+  },
+  "runtimeNote": "The MCP child is `node` (bin/bb has a node shebang). A bun-child probe on the same WAL-backed corpus answered 'No index found' because bun:sqlite could not open the read-only handle; the identical request over the node door answers with the full document, so the release door is the node one.",
+  "coldOpen": {
+    "declaration": "Reference-index cold open measured in a fresh process: read-only DB open 2 ms, first cheap query 1 ms, first DEFAULT project call 3.9 s on a cold page cache (930 ms with a warm cache), warm default call 1.4 s. The cold cost is page-cache warm-up, not query time; it is declared in LATENCY.json, EVIDENCE.json, docs/BB_DOC.md and the generated page. The corpus indexes above are small (1.6k-34k symbols), so their MCP calls are 60-2272 ms with no cold-open issue.",
+    "referenceIndex": {
+      "files": 6452,
+      "symbols": 310423,
+      "relationships": 820040
+    }
+  },
+  "corpora": [
+    {
+      "corpus": "rake",
+      "language": "Ruby",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake",
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "indexMs": 1740,
+      "indexFile": {
+        "bytes": 34869248,
+        "mtime": "2026-11-02T04:43:13.565Z"
+      },
+      "population": {
+        "files": 109,
+        "symbols": 1593,
+        "relationships": 9075,
+        "imports": 123,
+        "languages": [
+          {
+            "language": "ruby",
+            "files": 97
+          },
+          {
+            "language": "yaml",
+            "files": 9
+          },
+          {
+            "language": "c",
+            "files": 3
+          }
+        ],
+        "syntaxErrorFiles": 0
+      },
+      "targets": {
+        "symbol": "name",
+        "file": "test/test_rake_file_list.rb",
+        "module": "test"
+      },
+      "mcp": {
+        "symbol": {
+          "ms": 621,
+          "isError": false,
+          "bytes": 29000,
+          "mode": "symbol",
+          "sections": [
+            "api",
+            "behavior",
+            "dependencies",
+            "tests",
+            "limitations"
+          ],
+          "facts": 39,
+          "citations": 29,
+          "resolvedCitations": 29,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7251,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "file": {
+          "ms": 236,
+          "isError": false,
+          "bytes": 27917,
+          "mode": "file",
+          "sections": [
+            "overview",
+            "public-symbols",
+            "dependencies",
+            "risks"
+          ],
+          "facts": 31,
+          "citations": 31,
+          "resolvedCitations": 31,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6980,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "module": {
+          "ms": 315,
+          "isError": false,
+          "bytes": 26338,
+          "mode": "module",
+          "sections": [
+            "purpose",
+            "entry-points",
+            "public-surface",
+            "module-graph"
+          ],
+          "facts": 35,
+          "citations": 35,
+          "resolvedCitations": 35,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6585,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "feature": {
+          "ms": 439,
+          "isError": false,
+          "bytes": 25410,
+          "mode": "feature",
+          "sections": [
+            "entry-points",
+            "flow",
+            "components",
+            "test-coverage"
+          ],
+          "facts": 28,
+          "citations": 26,
+          "resolvedCitations": 26,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6353,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "api": {
+          "ms": 82,
+          "isError": false,
+          "bytes": 18411,
+          "mode": "api",
+          "sections": [
+            "endpoints",
+            "inputs-outputs",
+            "errors",
+            "examples",
+            "dependencies"
+          ],
+          "facts": 20,
+          "citations": 20,
+          "resolvedCitations": 20,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 4604,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "project": {
+          "ms": 432,
+          "isError": false,
+          "bytes": 26285,
+          "mode": "project",
+          "sections": [
+            "architecture",
+            "inventory",
+            "risks",
+            "documentation-map",
+            "dependencies"
+          ],
+          "facts": 34,
+          "citations": 34,
+          "resolvedCitations": 30,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6572,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "coverage": {
+          "ms": 141,
+          "isError": false,
+          "bytes": 25298,
+          "mode": "coverage",
+          "sections": [
+            "documented",
+            "undocumented",
+            "stale",
+            "unsupported"
+          ],
+          "facts": 31,
+          "citations": 32,
+          "resolvedCitations": 32,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6325,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "projectWarmRepeatMs": 428
+      },
+      "refusals": [
+        {
+          "case": "unknown-module",
+          "isError": true,
+          "named": true,
+          "ms": 8,
+          "text": "bb_doc module mode: no indexed file matches the module \"no/such/module\" — tried the repository-relative directory prefix \"no/such/module/\" and the path prefix \"no/such/module\". Pass a repository-relative directory that t"
+        },
+        {
+          "case": "limit-101",
+          "isError": true,
+          "named": true,
+          "ms": 52,
+          "text": "bb_doc limit must be a whole number between 1 and 100 (default 20) — got 101. It is refused rather than clamped because the document would not be the one requested."
+        },
+        {
+          "case": "maxTokens-0",
+          "isError": true,
+          "named": true,
+          "ms": 21,
+          "text": "bb_doc maxTokens must be a whole number between 1 and 16000 (default 8000) — got 0. Raise it or narrow the target; there is no larger ceiling."
+        },
+        {
+          "case": "includeTests-on-project",
+          "isError": true,
+          "named": true,
+          "ms": 19,
+          "text": "bb_doc includeTests is accepted for symbol and feature modes only — project mode renders no test evidence, so the option would do nothing."
+        },
+        {
+          "case": "symbol-missing-target",
+          "isError": true,
+          "named": true,
+          "ms": 27,
+          "text": "bb_doc symbol mode requires target"
+        },
+        {
+          "case": "bad-mode",
+          "isError": true,
+          "named": true,
+          "ms": 19,
+          "text": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+        }
+      ]
+    },
+    {
+      "corpus": "rebar3",
+      "language": "Erlang",
+      "path": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+      "indexMs": 3672,
+      "indexFile": {
+        "bytes": 152432640,
+        "mtime": "2026-11-02T04:43:13.578Z"
+      },
+      "population": {
+        "files": 303,
+        "symbols": 7012,
+        "relationships": 38143,
+        "imports": 308,
+        "languages": [
+          {
+            "language": "erlang",
+            "files": 266
+          },
+          {
+            "language": "markdown",
+            "files": 18
+          },
+          {
+            "language": "bash",
+            "files": 9
+          },
+          {
+            "language": "yaml",
+            "files": 6
+          },
+          {
+            "language": "make",
+            "files": 2
+          },
+          {
+            "language": "elixir",
+            "files": 1
+          },
+          {
+            "language": "powershell",
+            "files": 1
+          }
+        ],
+        "syntaxErrorFiles": 19
+      },
+      "targets": {
+        "symbol": "valid",
+        "file": "apps/rebar/src/vendored/r3_hex_erl_tar.hrl",
+        "module": "apps"
+      },
+      "mcp": {
+        "symbol": {
+          "ms": 402,
+          "isError": false,
+          "bytes": 28434,
+          "mode": "symbol",
+          "sections": [
+            "api",
+            "behavior",
+            "dependencies",
+            "tests",
+            "limitations"
+          ],
+          "facts": 42,
+          "citations": 26,
+          "resolvedCitations": 26,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7109,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "file": {
+          "ms": 380,
+          "isError": false,
+          "bytes": 26147,
+          "mode": "file",
+          "sections": [
+            "overview",
+            "public-symbols",
+            "dependencies",
+            "risks"
+          ],
+          "facts": 32,
+          "citations": 32,
+          "resolvedCitations": 31,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6538,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "module": {
+          "ms": 799,
+          "isError": false,
+          "bytes": 27585,
+          "mode": "module",
+          "sections": [
+            "purpose",
+            "entry-points",
+            "public-surface",
+            "module-graph"
+          ],
+          "facts": 27,
+          "citations": 27,
+          "resolvedCitations": 27,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6897,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "feature": {
+          "ms": 533,
+          "isError": false,
+          "bytes": 28479,
+          "mode": "feature",
+          "sections": [
+            "entry-points",
+            "flow",
+            "components",
+            "test-coverage"
+          ],
+          "facts": 25,
+          "citations": 23,
+          "resolvedCitations": 23,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7121,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "api": {
+          "ms": 153,
+          "isError": false,
+          "bytes": 22666,
+          "mode": "api",
+          "sections": [
+            "endpoints",
+            "inputs-outputs",
+            "errors",
+            "examples",
+            "dependencies"
+          ],
+          "facts": 20,
+          "citations": 20,
+          "resolvedCitations": 20,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 5667,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "project": {
+          "ms": 733,
+          "isError": false,
+          "bytes": 25684,
+          "mode": "project",
+          "sections": [
+            "architecture",
+            "inventory",
+            "risks",
+            "documentation-map",
+            "dependencies"
+          ],
+          "facts": 29,
+          "citations": 28,
+          "resolvedCitations": 19,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6422,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "coverage": {
+          "ms": 114,
+          "isError": false,
+          "bytes": 26971,
+          "mode": "coverage",
+          "sections": [
+            "documented",
+            "undocumented",
+            "stale",
+            "unsupported"
+          ],
+          "facts": 26,
+          "citations": 26,
+          "resolvedCitations": 26,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6744,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "projectWarmRepeatMs": 679
+      },
+      "refusals": [
+        {
+          "case": "unknown-module",
+          "isError": true,
+          "named": true,
+          "ms": 76,
+          "text": "bb_doc module mode: no indexed file matches the module \"no/such/module\" — tried the repository-relative directory prefix \"no/such/module/\" and the path prefix \"no/such/module\". Pass a repository-relative directory that t"
+        },
+        {
+          "case": "limit-101",
+          "isError": true,
+          "named": true,
+          "ms": 94,
+          "text": "bb_doc limit must be a whole number between 1 and 100 (default 20) — got 101. It is refused rather than clamped because the document would not be the one requested."
+        },
+        {
+          "case": "maxTokens-0",
+          "isError": true,
+          "named": true,
+          "ms": 37,
+          "text": "bb_doc maxTokens must be a whole number between 1 and 16000 (default 8000) — got 0. Raise it or narrow the target; there is no larger ceiling."
+        },
+        {
+          "case": "includeTests-on-project",
+          "isError": true,
+          "named": true,
+          "ms": 73,
+          "text": "bb_doc includeTests is accepted for symbol and feature modes only — project mode renders no test evidence, so the option would do nothing."
+        },
+        {
+          "case": "symbol-missing-target",
+          "isError": true,
+          "named": true,
+          "ms": 97,
+          "text": "bb_doc symbol mode requires target"
+        },
+        {
+          "case": "bad-mode",
+          "isError": true,
+          "named": true,
+          "ms": 61,
+          "text": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+        }
+      ]
+    },
+    {
+      "corpus": "clojure",
+      "language": "Clojure",
+      "path": "/home/ishaq2321/bb_tests/repositories/clojure",
+      "projectId": "e7061750d7a40bd40cedb55a73ad049dd9f40a37",
+      "indexMs": 4708,
+      "indexFile": {
+        "bytes": 208998400,
+        "mtime": "2026-11-02T04:43:13.603Z"
+      },
+      "population": {
+        "files": 347,
+        "symbols": 12764,
+        "relationships": 65458,
+        "imports": 944,
+        "languages": [
+          {
+            "language": "java",
+            "files": 190
+          },
+          {
+            "language": "clojure",
+            "files": 141
+          },
+          {
+            "language": "markdown",
+            "files": 4
+          },
+          {
+            "language": "xml",
+            "files": 4
+          },
+          {
+            "language": "yaml",
+            "files": 4
+          },
+          {
+            "language": "html",
+            "files": 3
+          },
+          {
+            "language": "bash",
+            "files": 1
+          }
+        ],
+        "syntaxErrorFiles": 1
+      },
+      "targets": {
+        "symbol": "ret1",
+        "file": "src/jvm/clojure/lang/Compiler.java",
+        "module": "src"
+      },
+      "mcp": {
+        "symbol": {
+          "ms": 854,
+          "isError": false,
+          "bytes": 16589,
+          "mode": "symbol",
+          "sections": [
+            "api",
+            "behavior",
+            "dependencies",
+            "tests",
+            "limitations"
+          ],
+          "facts": 23,
+          "citations": 13,
+          "resolvedCitations": 13,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 4148,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "file": {
+          "ms": 421,
+          "isError": false,
+          "bytes": 25884,
+          "mode": "file",
+          "sections": [
+            "overview",
+            "public-symbols",
+            "dependencies",
+            "risks"
+          ],
+          "facts": 31,
+          "citations": 31,
+          "resolvedCitations": 29,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6472,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "module": {
+          "ms": 680,
+          "isError": false,
+          "bytes": 31891,
+          "mode": "module",
+          "sections": [
+            "purpose",
+            "entry-points",
+            "public-surface",
+            "module-graph"
+          ],
+          "facts": 40,
+          "citations": 42,
+          "resolvedCitations": 42,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7974,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "feature": {
+          "ms": 105,
+          "isError": false,
+          "bytes": 10532,
+          "mode": "feature",
+          "sections": [
+            "entry-points",
+            "flow",
+            "components",
+            "test-coverage"
+          ],
+          "facts": 13,
+          "citations": 7,
+          "resolvedCitations": 7,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 2634,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "api": {
+          "ms": 206,
+          "isError": false,
+          "bytes": 20740,
+          "mode": "api",
+          "sections": [
+            "endpoints",
+            "inputs-outputs",
+            "errors",
+            "examples",
+            "dependencies"
+          ],
+          "facts": 20,
+          "citations": 21,
+          "resolvedCitations": 21,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 5186,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "project": {
+          "ms": 642,
+          "isError": false,
+          "bytes": 28194,
+          "mode": "project",
+          "sections": [
+            "architecture",
+            "inventory",
+            "risks",
+            "documentation-map",
+            "dependencies"
+          ],
+          "facts": 39,
+          "citations": 38,
+          "resolvedCitations": 28,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7049,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "coverage": {
+          "ms": 115,
+          "isError": false,
+          "bytes": 21308,
+          "mode": "coverage",
+          "sections": [
+            "documented",
+            "undocumented",
+            "stale",
+            "unsupported"
+          ],
+          "facts": 23,
+          "citations": 24,
+          "resolvedCitations": 24,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 5328,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "projectWarmRepeatMs": 430
+      },
+      "refusals": [
+        {
+          "case": "unknown-module",
+          "isError": true,
+          "named": true,
+          "ms": 6,
+          "text": "bb_doc module mode: no indexed file matches the module \"no/such/module\" — tried the repository-relative directory prefix \"no/such/module/\" and the path prefix \"no/such/module\". Pass a repository-relative directory that t"
+        },
+        {
+          "case": "limit-101",
+          "isError": true,
+          "named": true,
+          "ms": 3,
+          "text": "bb_doc limit must be a whole number between 1 and 100 (default 20) — got 101. It is refused rather than clamped because the document would not be the one requested."
+        },
+        {
+          "case": "maxTokens-0",
+          "isError": true,
+          "named": true,
+          "ms": 2,
+          "text": "bb_doc maxTokens must be a whole number between 1 and 16000 (default 8000) — got 0. Raise it or narrow the target; there is no larger ceiling."
+        },
+        {
+          "case": "includeTests-on-project",
+          "isError": true,
+          "named": true,
+          "ms": 2,
+          "text": "bb_doc includeTests is accepted for symbol and feature modes only — project mode renders no test evidence, so the option would do nothing."
+        },
+        {
+          "case": "symbol-missing-target",
+          "isError": true,
+          "named": true,
+          "ms": 2,
+          "text": "bb_doc symbol mode requires target"
+        },
+        {
+          "case": "bad-mode",
+          "isError": true,
+          "named": true,
+          "ms": 2,
+          "text": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+        }
+      ]
+    },
+    {
+      "corpus": "go-tools/gopls",
+      "language": "Go",
+      "path": "/home/ishaq2321/bb_tests/repositories/go-tools/gopls",
+      "projectId": "8f5519254c0d5d53306e145fa782b484d02019ba",
+      "indexMs": 3357,
+      "indexFile": {
+        "bytes": 212926464,
+        "mtime": "2026-11-02T04:43:13.637Z"
+      },
+      "population": {
+        "files": 706,
+        "symbols": 16069,
+        "relationships": 72134,
+        "imports": 4927,
+        "languages": [
+          {
+            "language": "go",
+            "files": 644
+          },
+          {
+            "language": "markdown",
+            "files": 48
+          },
+          {
+            "language": "bash",
+            "files": 3
+          },
+          {
+            "language": "yaml",
+            "files": 3
+          },
+          {
+            "language": "css",
+            "files": 2
+          },
+          {
+            "language": "javascript",
+            "files": 2
+          },
+          {
+            "language": "json",
+            "files": 2
+          },
+          {
+            "language": "xml",
+            "files": 2
+          }
+        ],
+        "syntaxErrorFiles": 0
+      },
+      "targets": {
+        "symbol": "Context",
+        "file": "internal/doc/api.json",
+        "module": "internal"
+      },
+      "mcp": {
+        "symbol": {
+          "ms": 643,
+          "isError": false,
+          "bytes": 27356,
+          "mode": "symbol",
+          "sections": [
+            "api",
+            "behavior",
+            "dependencies",
+            "tests",
+            "limitations"
+          ],
+          "facts": 42,
+          "citations": 23,
+          "resolvedCitations": 23,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6840,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "file": {
+          "ms": 96,
+          "isError": false,
+          "bytes": 30556,
+          "mode": "file",
+          "sections": [
+            "overview",
+            "public-symbols",
+            "dependencies",
+            "risks"
+          ],
+          "facts": 41,
+          "citations": 41,
+          "resolvedCitations": 41,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7640,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "module": {
+          "ms": 617,
+          "isError": false,
+          "bytes": 26671,
+          "mode": "module",
+          "sections": [
+            "purpose",
+            "entry-points",
+            "public-surface",
+            "module-graph"
+          ],
+          "facts": 30,
+          "citations": 30,
+          "resolvedCitations": 30,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6669,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "feature": {
+          "ms": 420,
+          "isError": false,
+          "bytes": 29079,
+          "mode": "feature",
+          "sections": [
+            "entry-points",
+            "flow",
+            "components",
+            "test-coverage"
+          ],
+          "facts": 30,
+          "citations": 28,
+          "resolvedCitations": 28,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7271,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "api": {
+          "ms": 478,
+          "isError": false,
+          "bytes": 25099,
+          "mode": "api",
+          "sections": [
+            "endpoints",
+            "inputs-outputs",
+            "errors",
+            "examples",
+            "dependencies"
+          ],
+          "facts": 25,
+          "citations": 20,
+          "resolvedCitations": 20,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6276,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "project": {
+          "ms": 539,
+          "isError": false,
+          "bytes": 27001,
+          "mode": "project",
+          "sections": [
+            "architecture",
+            "inventory",
+            "risks",
+            "documentation-map",
+            "dependencies"
+          ],
+          "facts": 34,
+          "citations": 34,
+          "resolvedCitations": 24,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6751,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "coverage": {
+          "ms": 49,
+          "isError": false,
+          "bytes": 19542,
+          "mode": "coverage",
+          "sections": [
+            "documented",
+            "undocumented",
+            "stale",
+            "unsupported"
+          ],
+          "facts": 21,
+          "citations": 23,
+          "resolvedCitations": 23,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 4886,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "projectWarmRepeatMs": 403
+      },
+      "refusals": [
+        {
+          "case": "unknown-module",
+          "isError": true,
+          "named": true,
+          "ms": 4,
+          "text": "bb_doc module mode: no indexed file matches the module \"no/such/module\" — tried the repository-relative directory prefix \"no/such/module/\" and the path prefix \"no/such/module\". Pass a repository-relative directory that t"
+        },
+        {
+          "case": "limit-101",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc limit must be a whole number between 1 and 100 (default 20) — got 101. It is refused rather than clamped because the document would not be the one requested."
+        },
+        {
+          "case": "maxTokens-0",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc maxTokens must be a whole number between 1 and 16000 (default 8000) — got 0. Raise it or narrow the target; there is no larger ceiling."
+        },
+        {
+          "case": "includeTests-on-project",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc includeTests is accepted for symbol and feature modes only — project mode renders no test evidence, so the option would do nothing."
+        },
+        {
+          "case": "symbol-missing-target",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc symbol mode requires target"
+        },
+        {
+          "case": "bad-mode",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+        }
+      ]
+    },
+    {
+      "corpus": "zig/src",
+      "language": "Zig",
+      "path": "/home/ishaq2321/bb_tests/repositories/zig/src",
+      "projectId": "1c94b3d88710cf584fa6823997de3b3b86e5a7f6",
+      "indexMs": 2560,
+      "indexFile": {
+        "bytes": 340074496,
+        "mtime": "2026-11-02T04:43:13.649Z"
+      },
+      "population": {
+        "files": 174,
+        "symbols": 34006,
+        "relationships": 143618,
+        "imports": 1417,
+        "languages": [
+          {
+            "language": "zig",
+            "files": 167
+          },
+          {
+            "language": "cpp",
+            "files": 5
+          },
+          {
+            "language": "json",
+            "files": 1
+          },
+          {
+            "language": "c",
+            "files": 1
+          }
+        ],
+        "syntaxErrorFiles": 9
+      },
+      "targets": {
+        "symbol": "body",
+        "file": "codegen/aarch64/encoding.zig",
+        "module": "link"
+      },
+      "mcp": {
+        "symbol": {
+          "ms": 887,
+          "isError": false,
+          "bytes": 28209,
+          "mode": "symbol",
+          "sections": [
+            "api",
+            "behavior",
+            "dependencies",
+            "tests",
+            "limitations"
+          ],
+          "facts": 55,
+          "citations": 19,
+          "resolvedCitations": 19,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7053,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "file": {
+          "ms": 160,
+          "isError": false,
+          "bytes": 24041,
+          "mode": "file",
+          "sections": [
+            "overview",
+            "public-symbols",
+            "dependencies",
+            "risks"
+          ],
+          "facts": 31,
+          "citations": 31,
+          "resolvedCitations": 30,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6011,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "module": {
+          "ms": 390,
+          "isError": false,
+          "bytes": 26061,
+          "mode": "module",
+          "sections": [
+            "purpose",
+            "entry-points",
+            "public-surface",
+            "module-graph"
+          ],
+          "facts": 38,
+          "citations": 38,
+          "resolvedCitations": 38,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6516,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "feature": {
+          "ms": 188,
+          "isError": false,
+          "bytes": 27722,
+          "mode": "feature",
+          "sections": [
+            "entry-points",
+            "flow",
+            "components",
+            "test-coverage"
+          ],
+          "facts": 30,
+          "citations": 25,
+          "resolvedCitations": 25,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 6931,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "api": {
+          "ms": 290,
+          "isError": false,
+          "bytes": 19438,
+          "mode": "api",
+          "sections": [
+            "endpoints",
+            "inputs-outputs",
+            "errors",
+            "examples",
+            "dependencies"
+          ],
+          "facts": 20,
+          "citations": 20,
+          "resolvedCitations": 20,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 4860,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "project": {
+          "ms": 408,
+          "isError": false,
+          "bytes": 28008,
+          "mode": "project",
+          "sections": [
+            "architecture",
+            "inventory",
+            "risks",
+            "documentation-map",
+            "dependencies"
+          ],
+          "facts": 36,
+          "citations": 35,
+          "resolvedCitations": 29,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7003,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "coverage": {
+          "ms": 88,
+          "isError": false,
+          "bytes": 30578,
+          "mode": "coverage",
+          "sections": [
+            "documented",
+            "undocumented",
+            "stale",
+            "unsupported"
+          ],
+          "facts": 42,
+          "citations": 43,
+          "resolvedCitations": 43,
+          "unresolvedCitations": [],
+          "passed": true,
+          "budget": {
+            "passed": true,
+            "estimatedTokens": 7645,
+            "maxTokens": 8000
+          },
+          "freshnessPassed": true,
+          "refs": {
+            "passed": true,
+            "broken": 0,
+            "stale": 0,
+            "missing": 0,
+            "collectedStale": 0,
+            "collectedMissing": 0
+          }
+        },
+        "projectWarmRepeatMs": 388
+      },
+      "refusals": [
+        {
+          "case": "unknown-module",
+          "isError": true,
+          "named": true,
+          "ms": 2,
+          "text": "bb_doc module mode: no indexed file matches the module \"no/such/module\" — tried the repository-relative directory prefix \"no/such/module/\" and the path prefix \"no/such/module\". Pass a repository-relative directory that t"
+        },
+        {
+          "case": "limit-101",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc limit must be a whole number between 1 and 100 (default 20) — got 101. It is refused rather than clamped because the document would not be the one requested."
+        },
+        {
+          "case": "maxTokens-0",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc maxTokens must be a whole number between 1 and 16000 (default 8000) — got 0. Raise it or narrow the target; there is no larger ceiling."
+        },
+        {
+          "case": "includeTests-on-project",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc includeTests is accepted for symbol and feature modes only — project mode renders no test evidence, so the option would do nothing."
+        },
+        {
+          "case": "symbol-missing-target",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "bb_doc symbol mode requires target"
+        },
+        {
+          "case": "bad-mode",
+          "isError": true,
+          "named": true,
+          "ms": 1,
+          "text": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "One MCP call per mode per corpus (plus one warm repeat) — this is a real-door smoke and citation check, not a latency percentile study; percentiles are in LATENCY.json.",
+    "Corpora are real repository checkouts; the JS corpus named in the tool's corpus notes (graphql-js) is absent from this machine, so the five here are Ruby, Erlang, Clojure, Go and Zig.",
+    "The isolated BB_DATA_DIR lives under validation/tools/bb_doc/realcorpus/bbdata and is gitignored build state (1.2 GB); it is regenerable with the command above."
+  ],
+  "summary": {
+    "corporaIndexed": 5,
+    "corporaBlocked": 0,
+    "modesAnswered": 35,
+    "modesAttempted": 35,
+    "citationsChecked": 932,
+    "citationsUnresolved": 0,
+    "refusalsNamed": 30,
+    "refusalsAttempted": 30,
+    "freshnessPassed": {
+      "documents": 35,
+      "passed": 35,
+      "note": "every JSON answer publishes its own freshness verdict; all 35 real-corpus documents report passed=true on freshly indexed corpora"
+    },
+    "latencyMs": {
+      "symbol": [
+        621,
+        402,
+        854,
+        643,
+        887
+      ],
+      "file": [
+        236,
+        380,
+        421,
+        96,
+        160
+      ],
+      "module": [
+        315,
+        799,
+        680,
+        617,
+        390
+      ],
+      "feature": [
+        439,
+        533,
+        105,
+        420,
+        188
+      ],
+      "api": [
+        82,
+        153,
+        206,
+        478,
+        290
+      ],
+      "project": [
+        432,
+        733,
+        642,
+        539,
+        408
+      ],
+      "coverage": [
+        141,
+        114,
+        115,
+        49,
+        88
+      ]
+    }
+  }
+}

@@ -1,0 +1,272 @@
+{
+ "schemaVersion": 1,
+ "fixture": "solidity/module-owner-sol1.sol",
+ "authoredFrom": "SOL-1. Authored 2026-09-30 from the analyzer's own measured output for this file. The question is ownership: a `.sol` file is a COMPILATION UNIT holding several top-level declarations (OpenZeppelin's AccessControl.sol holds AccessControl AND AccessControlEnumerable), so the file's `module` symbol is the real owner of everything at file scope, and members carry `ownerName`.",
+ "note": "`FILE_SCOPE_MAX` is a `constant_variable_declaration`, which grammar.js places in `_declaration` \u2014 FILE scope only. Inside a contract the same source text is a `state_variable_declaration`; the two are distinct node types and the corpus holds 6 and 352 of them respectively. `Owned.held` and `Owned.read` are contract members and are owned by `Owned`, not by the file. `FileScopeStruct.a` and `FileScopeEnum.ALPHA` are owned by their own type, which is the frame the declaration opens.",
+ "expectSymbols": [
+  {
+   "name": "module-owner-sol1.sol",
+   "kind": "module"
+  },
+  {
+   "name": "FILE_SCOPE_MAX",
+   "kind": "constant",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "Price",
+   "kind": "type",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "FileScopeStruct",
+   "kind": "struct",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "FileScopeEnum",
+   "kind": "enum",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "FileScopeError",
+   "kind": "type",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "FileScopeEvent",
+   "kind": "event",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "fileScopeFunction",
+   "kind": "function",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "Owned",
+   "kind": "class",
+   "ownerName": "module-owner-sol1.sol"
+  },
+  {
+   "name": "held",
+   "kind": "property",
+   "ownerName": "Owned"
+  },
+  {
+   "name": "read",
+   "kind": "method",
+   "ownerName": "Owned"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "global",
+   "kind": "module",
+   "comment": "SOL-1, and the reason this fixture exists. The pre-wave PowerShell lane spelled its file-scope edge source as the literal string `global`, and `isIndexArtifactName` (src/ast/analysis-exclusions.ts:129) REJECTS `global` as a symbol name \u2014 so not one of those edges could ever resolve to a stored symbol: measured at the store, 4 of 7 relationships on a two-file project had source_symbol_id = NULL. A synthesised global scope symbol is the same defect wearing a different language, and forbidding it by name is what pins the BEHAVIOUR rather than the intent."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "FILE_SCOPE_MAX",
+   "line_number": 4,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "Price",
+   "line_number": 5,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeStruct",
+   "line_number": 7,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "FileScopeStruct",
+   "target": "a",
+   "line_number": 7,
+   "comment": "A struct's member is owned by the STRUCT, not by the contract that contains the struct. The struct declaration opens a frame for exactly this.",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeEnum",
+   "line_number": 9,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "FileScopeEnum",
+   "target": "ALPHA",
+   "line_number": 9,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "FileScopeEnum",
+   "target": "BETA",
+   "line_number": 9,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeError",
+   "line_number": 11,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeEvent",
+   "line_number": 13,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "fileScopeFunction",
+   "line_number": 15,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "Owned",
+   "line_number": 17,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "Owned",
+   "target": "held",
+   "line_number": 18,
+   "comment": "SOL-13: a contract's member is owned by the CONTRACT. Compare the local `x` inside `fileScopeFunction`, whose own `contains` names the FUNCTION \u2014 Solidity locals are strictly function-scoped, so `contains module-owner-sol1.sol -> x` would be false.",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "Owned",
+   "target": "read",
+   "line_number": 19,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "uses",
+   "from": "read",
+   "target": "held",
+   "line_number": 19,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "fileScopeFunction",
+   "target": "fileScopeFunction\u0000x",
+   "line_number": 15,
+   "comment": "SOL-2, pinned from the read position. A `identifier` whose PARENT is an `expression` is a read. Every declaration name in Solidity is the `name:` FIELD of its declaration node, so a declaration name can never sit under an `expression` and the two classes cannot overlap \u2014 which is why the rule is positional and not a name list. SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed.",
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "FILE_SCOPE_MAX",
+   "line_number": 4,
+   "comment": "SOL-12. Solidity has NO export construct, and the edge is still emitted: a `.sol` file's entire top-level surface is compiled into that unit's artifacts, so every file-scope declaration IS what the file offers its importers. Tier structural \u2014 the tree states which declarations are at file scope. `fileScopeFunction` is deliberately ABSENT from these rows: see expectRelationshipCount.",
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "Price",
+   "line_number": 5,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeStruct",
+   "line_number": 7,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeEnum",
+   "line_number": 9,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeError",
+   "line_number": 11,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "FileScopeEvent",
+   "line_number": 13,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "Owned",
+   "line_number": 17,
+   "meta.isCompilationUnitSurface": true,
+   "meta.evidenceClass": "structural"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "global",
+   "target": "Owned",
+   "comment": "The `global` scope source, forbidden by name. See forbidSymbols."
+  },
+  {
+   "type": "exports",
+   "from": "module-owner-sol1.sol",
+   "target": "fileScopeFunction",
+   "comment": "SOL-12, a stated boundary rather than an accident: the module's `exports` surface is the file-scope DECLARATION surface a compiler emits into the unit's ABI and abstractions. A free function is in the unit's bytecode but contributes no ABI entry, and publishing it as an export would claim a surface the language does not define. Counted below so a widening is visible."
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-sol1.sol",
+   "target": "x",
+   "comment": "SOL-13: `x` is a local of `fileScopeFunction`, and its own `contains` names the FUNCTION. A file-scope containment edge for a local would say the compilation unit contains it."
+  },
+  {
+   "type": "uses",
+   "from": "fileScopeFunction",
+   "target": "x",
+   "line_number": 15,
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED \u2014 only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "exports",
+   "equals": 7,
+   "comment": "Exactly the seven file-scope declarations that form the unit's ABI surface: one constant, one user-defined type, one struct, one enum, one error, one event, one contract. The free function is excluded (see forbidRelationships), which is why this is 7 and not 8 \u2014 a rule that exported every file-scope symbol would emit 8 and fail here."
+  }
+ ]
+}

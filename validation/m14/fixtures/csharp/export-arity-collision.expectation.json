@@ -1,0 +1,46 @@
+{
+  "fixtureId": "csharp/export-arity-collision",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "One published NAME, two C# types — the arity rule. `class Reporter` and `class Reporter<TChannel>` are different types, which is exactly why `class X : X<int>` compiles; the grammar's `name` field for a generic declaration is the BARE identifier with `type_parameter_list` as a sibling, so the arity is a fact in the tree that nothing read (verified: script/m14/tmp/cs-ont-08-shapes-probe.ts). Measured on real code before this fixture was written (`script/m14/tmp/cs-ont-09-name-identity.ts`, 800 aspnetcore `src` files, 1,456 type declarations, 90 carrying a `type_parameter_list`): 10 name repeats within one owner at a DIFFERENT arity, 1.25% of files — OwningComponentBase.cs:17 `class OwningComponentBase` vs :105 `class OwningComponentBase<TService>`, RenderFragment.cs:13 vs :21 for a delegate, CollectionConverter.cs:20 vs :24. THREE defects were visible there and this fixture pins all three, because a fix to any one of them can be wrong: (1) `exportLineByName` was keyed by NAME, so the second declaration's line was stamped on BOTH edges and the line-42 edge pointed at a declaration it was not about; (2) the export list held two entries for one exported unit, which the shared harness's own M49 invariant rejects — 'export names must be UNIQUE — a duplicate cannot identify its provider'; (3) the two `exports` graph edges were indistinguishable from each other. The repairs pull in opposite directions and the pins are chosen so that only the right combination survives: `Reporter`/`Handler` are arity-MIXED and must stay TWO edges on TWO lines; `Split` is a `partial` split at ONE arity and must collapse to ONE edge on the FIRST declaration's line; `SplitGeneric` is a `partial` split that CROSSES arity and must stay TWO edges — which is the row a dedupe-by-name 'fix' loses, and therefore the row that makes the other two pins mean something. `arity` is not an invention: run-fixtures.ts's M49 invariant already keys on `name/arity` where an export carries an arity, and ERLANG sets it for the same reason (`-export([pick/0, pick/1])`). In C# arity is TYPE identity. The published NAME is deliberately unchanged, so `contains` and the symbol table are untouched; the symbol-name collision that remains is filed to master and is NOT pinned here, because pinning it would assert a change that has not been made.",
+  "expectSymbols": [
+    { "name": "Reporter", "kind": "class", "ownerName": "Acme.Arity", "note": "the non-generic one" },
+    { "name": "Reporter", "kind": "class", "ownerName": "Acme.Arity", "note": "and the generic one — SAME name, which is the filed half of this defect and deliberately not pinned here" },
+    { "name": "Handler", "kind": "delegate", "ownerName": "Acme.Arity" },
+    { "name": "Handler", "kind": "delegate", "ownerName": "Acme.Arity" }
+  ],
+  "expectSymbolCount": [
+    { "name": "Reporter", "kind": "class", "equals": 2, "note": "two declarations, two symbols. The analyzer neither merges them (they are different types) nor distinguishes them (the filed half). One would be a merge that loses a type; three would be a duplicate." },
+    { "name": "Handler", "kind": "delegate", "equals": 2 },
+    { "name": "Split", "kind": "class", "equals": 2, "note": "the symbol table still holds BOTH `partial` declarations. The export set collapses them (one importable unit); the symbol table must not, or the two members `A` and `B` lose their owner." }
+  ],
+  "expectExports": [
+    { "name": "Acme.Arity.Reporter", "arity": 0, "line": 42 },
+    { "name": "Acme.Arity.Reporter", "arity": 1, "line": 51, "note": "THE PIN THAT MAKES THE OTHERS MEANINGFUL: the same export NAME at a different arity is a different exported type, so it is a second entry rather than a duplicate of the first." },
+    { "name": "Acme.Arity.Split", "arity": 0, "line": 69, "note": "and `partial` at ONE arity is ONE entry, on the FIRST declaration's line. `equals: 1` below is the pin; this row is where the line comes from." },
+    { "name": "Acme.Arity.SplitGeneric", "arity": 1, "line": 81 }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "target": "Acme.Arity.Reporter", "line_number": 42, "meta.evidenceClass": "structural", "meta.arity": 0, "note": "the NON-GENERIC declaration's line. Pre-fix this edge carried line 51 — the generic declaration's — because `exportLineByName` was keyed by name." },
+    { "type": "exports", "target": "Acme.Arity.Reporter", "line_number": 51, "meta.arity": 1, "note": "the GENERIC declaration's line, on its own edge" },
+    { "type": "exports", "target": "Acme.Arity.Handler", "line_number": 57, "meta.arity": 0 },
+    { "type": "exports", "target": "Acme.Arity.Handler", "line_number": 60, "meta.arity": 1 },
+    { "type": "exports", "target": "Acme.Arity.Split", "line_number": 69, "meta.arity": 0, "note": "ONE edge for a `partial` pair, on the first declaration's line — never line 71" },
+    { "type": "exports", "target": "Acme.Arity.SplitGeneric", "line_number": 79, "meta.arity": 0 },
+    { "type": "exports", "target": "Acme.Arity.SplitGeneric", "line_number": 81, "meta.arity": 1 }
+  ],
+  "expectRelationshipCount": [
+    { "type": "exports", "from": "root", "target": "Acme.Arity.Reporter", "equals": 2, "note": "one edge per exported TYPE. Arity-mixed: two types, so two edges. One is a dedupe that loses a declaration; three is a duplicate." },
+    { "type": "exports", "from": "root", "target": "Acme.Arity.Handler", "equals": 2 },
+    { "type": "exports", "from": "root", "target": "Acme.Arity.Split", "equals": 1, "note": "THE DEDUPE PIN. A `partial` split is one type, so one exported unit. This is the row a name-keyed fix breaks, and the row that stops `Acme.Arity.Split`'s second declaration from being published as a second provider of the same name." },
+    { "type": "exports", "from": "root", "target": "Acme.Arity.SplitGeneric", "equals": 2, "note": "and this is the row that stops the dedupe from being over-applied: same spelling of `partial`, different arity, still two types" }
+  ],
+  "forbidExports": [
+    { "name": "Reporter", "note": "a BARE name is not an export name for a namespaced type (the rule csharp/import-export-edges pins), restated here so this fixture holds it on its own" },
+    { "name": "Acme.Arity.Reporter<TChannel>", "note": "and the OPPOSITE error: welding type parameters onto the published name. Arity rides the `arity` field, not the name — welding it in would move every `contains` row and break the master-owned `contains` oracle. Pinning this spelling as forbidden is what makes that boundary enforceable rather than merely stated." }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "Acme.Arity.Split", "line_number": 71, "note": "the SECOND `partial` declaration's line must appear on no edge. Stated as a per-line forbid because the M49 duplicate-name invariant already forbids the second NAME, so without this the line half of the defect would be unpinned." },
+    { "type": "contains", "from": "Acme.Arity.Reporter", "target": "Report", "note": "the members of the non-generic type are contained by the published name and stay there; an arity fix that rewrote the OWNER would move these, so the boundary is pinned where the filed change would land" }
+  ]
+}

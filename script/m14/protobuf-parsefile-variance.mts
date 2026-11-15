@@ -39,7 +39,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const argOf = (name: string, dflt: number): number => {
   const i = process.argv.indexOf(`--${name}`)

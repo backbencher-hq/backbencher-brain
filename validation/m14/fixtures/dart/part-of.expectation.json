@@ -1,0 +1,14 @@
+{
+  "fixtureId": "dart/part-of",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "correction_2026_10_08_targets": "The target moved from the specifier (`order_domain.dart:*`) to the FILE the specifier names (`fixtures/dart/order_domain.dart`), because a specifier is a path and no resolver can bind it: the same file now publishes that string as its library identity, so the edge resolves by exact match. The prefix is the synthetic path the harness hands `analyze()` (see import-resolution.expectation.json); the corpus runs pass real paths and the rule is the same one. No `order_domain.dart` exists in this fixture directory — the fixture is a `part of` SNIPPET, and the pin is about the rule (a relative specifier resolves to the path it names), which does not depend on the file being present. Whether a NAMED file is answerable at all is the gate's question: a missing one stays unresolved and is visible as such.",
+  "correction_2026_10_18": "Relabelled to the canonical vocabulary (`part_of`, Lead df5a03eb2): type imports -> part_of, role moved from metadata.isPart/isPartOf to metadata.partRole. Source, target and line unchanged.",
+  "rationale": "PINS the part-of library-coupling edge: a `part of 'library.dart'` directive is a library dependency exactly like `part 'x.dart'` on the library side (deep-review dart #264). Without this branch the analyzer emitted nothing for the 29 `part of` files in the ProxiCall corpus (freezed-generated state files, cubit/state splits), silently dropping part-library coupling from the import graph.",
+  "expectRelationships": [
+    { "type": "part_of", "source": "part-of", "target": "fixtures/dart/order_domain.dart", "meta.partRole": "part", "meta.evidenceClass": "import_based", "note": "2026-10-18: canonical part_of replacing imports{isPart,isPartOf}. This file is the PART (`part of ...`), so partRole is \"part\"; target/line unchanged." }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "fixtures/dart/order_domain.dart", "note": "THE SUPERSEDED SHAPE — a part directive is not an import. Forbidden so a relabel that adds part_of without removing the imports row cannot pass." }
+  ]
+}

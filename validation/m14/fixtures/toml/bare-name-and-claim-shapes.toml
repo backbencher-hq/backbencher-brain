@@ -1,0 +1,55 @@
+# THE CLAIM SHAPES — and the one refusal that keeps this lane honest.
+#
+# A `path` dependency names a unit this manifest cannot be built without. What the
+# graph can SAY about it depends on its SHAPE, and the shape rule is the whole
+# anti-laundering mechanism:
+#
+#   * a PATH-SHAPED target ("../core", "file:///x") can be checked against the
+#     project's admitted file list, so it carries a CLAIM — `importProjectFile`
+#     when an admitted file answers it, `sourcePathClaim` when none does. The
+#     source-path claim is the INVERSE of a file claim: a candidate in the
+#     admitted list REFUTES it, and no candidate verifies it. It is refutable by
+#     the checkout — ship the file and the claim flips to refuted.
+#
+#   * a BARE NAME ("SubProjectB", "dependency") has no shape to check. The
+#     analyzer emits the edge and carries NO CLAIM AT ALL, and the edge stays
+#     `unresolved` — which is the honest outcome for a target nothing can check.
+#
+# WHY THE BARE-NAME CASE IS THE ONE THAT MATTERS: a claim that cannot be
+# refuted is a claim that can certify anything, and the fleet's laundering
+# vector is exactly a bare fixture name promoted to a verified external. The
+# five remaining unresolved `imports` edges in this lane are all bare names,
+# and the reason they are not "fixed" is THIS RULE.
+#
+# Measured on the corpus: 331 `imports` edges · 326 carry a claim the project
+# verifies · 5 carry none, and every one of the 5 is a bare name.
+#
+# This fixture pins BOTH directions of the shape rule:
+#   1. a bare name carries NEITHER claim key (the refusal);
+#   2. a path-shaped target carries `sourcePathClaim` and NOT `importProjectFile`
+#      (the claim that CAN be refuted, on a path no admitted file answers).
+#
+# It pins the ABSENCE with the `meta.x: null` convention (M59): "this edge must
+# NOT carry x". That is the case a consumer actually hits most, and a strict
+# `!==` could never state it.
+
+[package]
+name = "bare-name-and-claim-shapes"
+version = "0.0.0"
+edition = "2021"
+
+# 1. A BARE NAME. No "/" and no scheme, so the shape rule refuses every claim
+#    and the edge carries neither `importProjectFile` nor `sourcePathClaim`.
+[dependencies]
+SubProjectB = { path = "SubProjectB" }
+
+# 2. A PATH-SHAPED target that no admitted file answers. The source-path claim
+#    fires, and it is the claim the checkout can refute.
+[dev-dependencies]
+core = { path = "../core" }
+
+# 3. NOT a dependency: a `path` key outside any dependency section is ordinary
+#    data, so it is not an import at all. (The exclusion is by SECTION, not by
+#    the key's name — `path-dependencies` pins that.)
+[lints.clippy]
+path = "not/a/dependency"

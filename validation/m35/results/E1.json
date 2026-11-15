@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
+  "evidenceFile": "E1.json",
+  "generatedAt": "2026-09-04T01:49:42.208Z",
+  "passed": 37,
+  "failed": 0,
+  "negativeCases": 8,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.478Z",
+    "contentSha256": "541087a9b71808be4f2151ddc1be58a5b57b1abb48d26ea464e4725a26c8b75a"
+  }
+}

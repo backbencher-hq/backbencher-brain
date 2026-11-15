@@ -1,0 +1,5058 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "d46f550d8463a47ff479008f50a9c480d0db84abfd6aafa4ee5f3afa92f5a99b",
+    "sealedAt": "2026-10-27T22:23:54.000Z"
+  },
+  "checks": [
+    {
+      "description": "THIS lane's own analyzer and spec are this commit's",
+      "detail": "1 of this lane's own input(s) differ from head 61daf0354a: script/m14/spec/powershell-completeness.json",
+      "id": "differential-lane-code-inputs",
+      "status": "fail"
+    },
+    {
+      "description": "the SHARED oracle/harness that produced these rows is this commit's",
+      "detail": "shared harness clean at head 61daf0354a",
+      "id": "differential-harness-code-inputs",
+      "status": "pass"
+    },
+    {
+      "description": "powershell: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=4206 covered=3503 (83.3%) MISSING=703 | analyzer-edges=4217 unexplained=936 (22.2%) heuristic=0 hash=00d5982e5cf1f4c6",
+      "id": "differential-powershell",
+      "status": "fail"
+    },
+    {
+      "description": "ansible:powershell: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=5588 covered=4686 (83.9%) MISSING=902 | analyzer-edges=5213 unexplained=891 (17.1%) heuristic=0 hash=b316cd3dd025ab43",
+      "id": "differential-ansible:powershell",
+      "status": "fail"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "61daf0354a9a036e80098f34f7bcfb346858589e",
+  "committedAt": "2026-10-27T18:23:54-04:00",
+  "corpusPins": {
+    "ansible": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+    "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4"
+  },
+  "data": {
+    "codeInputs": {
+      "clean": false,
+      "dirty": [
+        "script/m14/spec/powershell-completeness.json",
+        "script/m14/spec/solidity-completeness.json",
+        "src/ast/real-makefile-analyzer.ts",
+        "src/ast/real-protobuf-analyzer.ts",
+        "src/ast/real-solidity-analyzer.ts"
+      ],
+      "head": "61daf0354a9a036e80098f34f7bcfb346858589e",
+      "laneDirt": [
+        "script/m14/spec/powershell-completeness.json"
+      ],
+      "otherDirt": [
+        "script/m14/spec/solidity-completeness.json",
+        "src/ast/real-makefile-analyzer.ts",
+        "src/ast/real-protobuf-analyzer.ts",
+        "src/ast/real-solidity-analyzer.ts"
+      ],
+      "ownInputs": [
+        "src/ast/real-powershell-analyzer.ts",
+        "script/m14/spec/powershell-completeness.json"
+      ],
+      "sharedDirt": [],
+      "sharedInputs": [
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts"
+      ]
+    },
+    "report": {
+      "powershell": {
+        "analyzerEdges": 4217,
+        "coveragePct": 83.3,
+        "coveredByAnalyzer": 3503,
+        "explainableByTree": 3281,
+        "fabricationPct": 22.2,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 703,
+        "perf": {
+          "avgMsPerFile": 16.1,
+          "loadAvg1": 0.94,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 138.2,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "00d5982e5cf1f4c6",
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "contains",
+            "target": "LastReleaseTag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "contains",
+            "target": "CommitHash"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "contains",
+            "target": "CommitMetadata"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "target": "true"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "target": "false"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "target": "HasCherryPick"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLogMessage",
+            "label": "contains",
+            "target": "OriginalMessage"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "contains",
+            "target": "Path"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "contains",
+            "target": "IncludeAll"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "contains",
+            "target": "NewReleaseTag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "contains",
+            "target": "NextReleaseTag"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "contains",
+            "target": "Path"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-GitHubCliVersion",
+            "label": "contains",
+            "target": "RequiredVersion"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "contains",
+            "target": "TriageState"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "contains",
+            "target": "Web"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "contains",
+            "target": "true"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "contains",
+            "target": "PrNumber"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "contains",
+            "target": "_"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "contains",
+            "target": "Overwrite"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "contains",
+            "target": "BranchPostFix"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "contains",
+            "target": "UpstreamRemote"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "script:Invoke-NativeCommand",
+            "label": "contains",
+            "target": "ScriptBlock"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "script:Test-ShouldContinue",
+            "label": "contains",
+            "target": "Message"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "CommitNode",
+            "label": "contains",
+            "target": "this"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "Script:powershell_team"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "script:psteam_logins"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "Script:community_login_map"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "contains",
+            "target": "hash"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "target": "commit_hash"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "contains",
+            "target": "null"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "darpa@yandex.ru"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "c.bergmeister@gmail.com"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "github@markekraus.com"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "target": "info@powercode-consulting.se"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "target": "Authorization"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "contains",
+            "target": "host"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "script:Invoke-NativeCommand",
+            "label": "calls",
+            "target": "$ScriptBlock"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "calls",
+            "target": "Export-ModuleMember"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "calls",
+            "target": "CommitNode::new"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "CommitNode",
+            "label": "uses",
+            "target": "Matches"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "this"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-IncludePackageVersion",
+            "label": "uses",
+            "target": "\\-"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-GitHubCliVersion",
+            "label": "uses",
+            "target": "matches"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "target": "matches"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "target": "Matches"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "CommitNode",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "CommitNode",
+            "label": "uses",
+            "target": "bool"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "target": "PSCustomObject"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "String"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "Switch"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "xml"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "pscustomobject"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-IncludePackageVersion",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "target": "String"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-GitHubCliVersion",
+            "label": "uses",
+            "target": "Automation"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-GitHubCliVersion",
+            "label": "uses",
+            "target": "Management"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Test-GitHubCliVersion",
+            "label": "uses",
+            "target": "System"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "uses",
+            "target": "String"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "uses",
+            "target": "PScustomObject"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "script:Invoke-NativeCommand",
+            "label": "uses",
+            "target": "scriptblock"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackportApproved",
+            "label": "uses",
+            "target": "semver"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "target": "powershell_team"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "target": "{version}"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "target": "{LastReleaseTag}"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "target": "{ThisReleaseTag}"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "PrintChangeLog",
+            "label": "uses",
+            "target": "clSection"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "PrintChangeLog",
+            "label": "uses",
+            "target": "Compress"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "package"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "target": "Package"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "references",
+            "line": 1,
+            "target": "6.0"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "CommitNode",
+            "label": "contains",
+            "line": 18,
+            "target": "constructor"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "constructor",
+            "label": "uses",
+            "line": 20,
+            "target": "parents"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "constructor",
+            "label": "uses",
+            "line": 21,
+            "target": "name"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "constructor",
+            "label": "uses",
+            "line": 23,
+            "target": "subject"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "line": 73,
+            "target": "\"darpa@yandex.ru\""
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "line": 74,
+            "target": "\"c.bergmeister@gmail.com\""
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "line": 75,
+            "target": "\"github@markekraus.com\""
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "releaseTools.psm1",
+            "label": "contains",
+            "line": 76,
+            "target": "\"info@powercode-consulting.se\""
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "uses",
+            "line": 106,
+            "target": "CommitHash"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "uses",
+            "line": 110,
+            "target": "Get-ChildMergeCommit.tag_hash"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "contains",
+            "line": 140,
+            "target": "subject"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "uses",
+            "line": 140,
+            "target": "CommitMetadata"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "New-CommitNode",
+            "label": "instantiates",
+            "line": 142,
+            "target": "CommitNode"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 187,
+            "target": "Get-ChangeLog.Token"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "line": 187,
+            "target": "\"Authorization\""
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 190,
+            "target": "Get-ChangeLog.tag_hash"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "contains",
+            "line": 193,
+            "target": "parent_hashes"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 193,
+            "target": "Get-ChangeLog.child_merge_commit"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 209,
+            "target": "Get-ChangeLog.other_parent_hash"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 216,
+            "target": "Get-ChangeLog.new_commits_from_last_release"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 216,
+            "target": "Get-ChangeLog.new_commits_from_other_parent"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 219,
+            "target": "Get-ChangeLog.duplicate_commits"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 220,
+            "target": "Get-ChangeLog.duplicate_pr_numbers"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 224,
+            "target": "commit_hash"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 225,
+            "target": "Get-ChangeLog.new_commits_after_merge_commit"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 239,
+            "target": "Get-ChangeLog.new_commits_during_last_release"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 239,
+            "target": "Get-ChangeLog.new_commits_after_last_release"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 284,
+            "target": "Get-ChangeLog.commitSubject"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 289,
+            "target": "Get-ChangeLog.prNumber"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 290,
+            "target": "Get-ChangeLog.header"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 312,
+            "target": "Get-ChangeLog.userPattern"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 370,
+            "target": "Get-ChangeLog.multipleLabelsPRs"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 373,
+            "target": "Get-ChangeLog.unlabeledPRs"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 377,
+            "target": "Get-ChangeLog.clBreakingChange"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 378,
+            "target": "Get-ChangeLog.clBuildPackage"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 379,
+            "target": "Get-ChangeLog.clCodeCleanup"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 380,
+            "target": "Get-ChangeLog.clDocs"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 381,
+            "target": "Get-ChangeLog.clEngine"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 382,
+            "target": "Get-ChangeLog.clExperimental"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 383,
+            "target": "Get-ChangeLog.clGeneral"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 384,
+            "target": "Get-ChangeLog.clPerformance"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 385,
+            "target": "Get-ChangeLog.clTest"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 386,
+            "target": "Get-ChangeLog.clTools"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLog",
+            "label": "uses",
+            "line": 387,
+            "target": "Get-ChangeLog.clUntagged"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "PrintChangeLog",
+            "label": "uses",
+            "line": 459,
+            "target": "PrintChangeLog.thankYou"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChangeLogMessage",
+            "label": "uses",
+            "line": 482,
+            "target": "OriginalMessage"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "line": 518,
+            "target": "Path"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "line": 519,
+            "target": "Get-NewOfficalPackage.filter"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "line": 539,
+            "target": "Get-NewOfficalPackage.name"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "line": 544,
+            "target": "Get-NewOfficalPackage.versions"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-NewOfficalPackage",
+            "label": "uses",
+            "line": 578,
+            "target": "Get-NewOfficalPackage.file"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 707,
+            "target": "Update-PsVersionInCode.metaDataPath"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 710,
+            "target": "Update-PsVersionInCode.currentTag"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 711,
+            "target": "NewReleaseTag"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 713,
+            "target": "Update-PsVersionInCode.metaData"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 717,
+            "target": "Update-PsVersionInCode.currentVersion"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 720,
+            "target": "Update-PsVersionInCode.content"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 720,
+            "target": "Update-PsVersionInCode.newVersion"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Update-PsVersionInCode",
+            "label": "uses",
+            "line": 721,
+            "target": "Update-PsVersionInCode.newContent"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "uses",
+            "line": 791,
+            "target": "Get-PRBackportReport.requiredVersion"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-PRBackportReport",
+            "label": "uses",
+            "line": 799,
+            "target": "TriageState"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 833,
+            "target": "UpstreamRemote"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 833,
+            "target": "Get-UpstreamInfo.upstreamName"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 834,
+            "target": "Get-UpstreamInfo.pattern"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 835,
+            "target": "Get-UpstreamInfo.Upstream"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 844,
+            "target": "3"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 848,
+            "target": "4"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 849,
+            "target": "7"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-UpstreamInfo",
+            "label": "uses",
+            "line": 867,
+            "target": "Get-UpstreamInfo.upstreamHost"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "script:Invoke-NativeCommand",
+            "label": "uses",
+            "line": 920,
+            "target": "ScriptBlock"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 944,
+            "target": "PrNumber"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 949,
+            "target": "Target"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 949,
+            "target": "Invoke-PRBackport.originaltitle"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 951,
+            "target": "Invoke-PRBackport.commitId"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 952,
+            "target": "Invoke-PRBackport.backportTitle"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 959,
+            "target": "Invoke-PRBackport.upstream"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 974,
+            "target": "Invoke-PRBackport.branchName"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 974,
+            "target": "BranchPostFix"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 977,
+            "target": "PSCmdlet"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 986,
+            "target": "Invoke-PRBackport.revParseParams"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackport",
+            "label": "uses",
+            "line": 1012,
+            "target": "Invoke-PRBackport.parameters"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackportApproved",
+            "label": "uses",
+            "line": 1083,
+            "target": "Invoke-PRBackportApproved.tagVersion"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackportApproved",
+            "label": "uses",
+            "line": 1086,
+            "target": "Invoke-PRBackportApproved.prNumber"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Invoke-PRBackportApproved",
+            "label": "uses",
+            "line": 1086,
+            "target": "Invoke-PRBackportApproved.target"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Get-ChangeLog"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Get-NewOfficalPackage"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Update-PsVersionInCode"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Get-PRBackportReport"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Invoke-PRBackport"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Invoke-PRBackportApproved"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/releaseTools.psm1",
+            "from": "Get-ChildMergeCommit",
+            "label": "exports",
+            "line": 1090,
+            "target": "Get-UpstreamInfo"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "contains",
+            "target": "global:DollarQuestionMarkResults"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "contains",
+            "target": "global:results"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "contains",
+            "target": "null"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "calls",
+            "target": "$path"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "calls",
+            "target": "$Path"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "target": "results"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "target": "bp"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "target": "ss"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 30,
+            "target": "Debugging.Tests.ps1.testScript"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 43,
+            "target": "0"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 65,
+            "target": "Debugging.Tests.ps1.script"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 66,
+            "target": "Debugging.Tests.ps1.path"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 95,
+            "target": "Debugging.Tests.ps1.breakpoint"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 137,
+            "target": "Debugging.Tests.ps1.for_script_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 138,
+            "target": "Debugging.Tests.ps1.ForScript_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 140,
+            "target": "Debugging.Tests.ps1.for_script_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 141,
+            "target": "Debugging.Tests.ps1.ForScript_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 143,
+            "target": "Debugging.Tests.ps1.for_script_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 144,
+            "target": "Debugging.Tests.ps1.ForScript_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 146,
+            "target": "Debugging.Tests.ps1.for_script_4"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 147,
+            "target": "Debugging.Tests.ps1.ForScript_4"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 149,
+            "target": "Debugging.Tests.ps1.for_script_5"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 150,
+            "target": "Debugging.Tests.ps1.ForScript_5"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 153,
+            "target": "Debugging.Tests.ps1.bp_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 154,
+            "target": "Debugging.Tests.ps1.bp_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 155,
+            "target": "Debugging.Tests.ps1.bp_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 156,
+            "target": "Debugging.Tests.ps1.bp_4"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 157,
+            "target": "Debugging.Tests.ps1.bp_5"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 165,
+            "target": "Debugging.Tests.ps1.testCases"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 189,
+            "target": "Debugging.Tests.ps1.while_script_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 190,
+            "target": "Debugging.Tests.ps1.WhileScript_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 192,
+            "target": "Debugging.Tests.ps1.while_script_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 193,
+            "target": "Debugging.Tests.ps1.WhileScript_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 225,
+            "target": "Debugging.Tests.ps1.do_while_script_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 226,
+            "target": "Debugging.Tests.ps1.DoWhileScript_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 228,
+            "target": "Debugging.Tests.ps1.do_while_script_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 229,
+            "target": "Debugging.Tests.ps1.DoWhileScript_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 261,
+            "target": "Debugging.Tests.ps1.do_until_script_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 262,
+            "target": "Debugging.Tests.ps1.DoUntilScript_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 264,
+            "target": "Debugging.Tests.ps1.do_until_script_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 265,
+            "target": "Debugging.Tests.ps1.DoUntilScript_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 304,
+            "target": "Debugging.Tests.ps1.if_script_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 305,
+            "target": "Debugging.Tests.ps1.IfScript_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 307,
+            "target": "Debugging.Tests.ps1.if_script_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 308,
+            "target": "Debugging.Tests.ps1.IfScript_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 310,
+            "target": "Debugging.Tests.ps1.if_script_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 311,
+            "target": "Debugging.Tests.ps1.IfScript_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 313,
+            "target": "Debugging.Tests.ps1.if_script_4"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 314,
+            "target": "Debugging.Tests.ps1.IfScript_4"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 352,
+            "target": "Debugging.Tests.ps1.return_script_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 353,
+            "target": "Debugging.Tests.ps1.ReturnScript_1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 355,
+            "target": "Debugging.Tests.ps1.return_script_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 356,
+            "target": "Debugging.Tests.ps1.ReturnScript_2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 358,
+            "target": "Debugging.Tests.ps1.return_script_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 359,
+            "target": "Debugging.Tests.ps1.ReturnScript_3"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 389,
+            "target": "Debugging.Tests.ps1.iss"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 391,
+            "target": "Debugging.Tests.ps1.rs"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 401,
+            "target": "Debugging.Tests.ps1.ps"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 401,
+            "target": "Debugging.Tests.ps1.scriptPath"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/Debugging/Debugging.Tests.ps1",
+            "from": "Debugging.Tests.ps1",
+            "label": "uses",
+            "line": 433,
+            "target": "Debugging.Tests.ps1.debuggerBeforeReset"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "contains",
+            "target": "true"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "calls",
+            "target": "Import-Module"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "target": "extraParams"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "target": "switch"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "target": "Pscustomobject"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "target": "Harvest"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "target": "Test"
+          },
+          {
+            "dir": "MISSING",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "target": "TestAndHarvest"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "contains",
+            "line": 9,
+            "target": "Test"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "contains",
+            "line": 12,
+            "target": "TestAndHarvest"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "references",
+            "line": 22,
+            "target": "PSScriptRoot"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "references",
+            "line": 22,
+            "target": "@extraParams"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "line": 34,
+            "target": "ClearlyDefined.ps1.fullCgList"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "tools/clearlyDefined/ClearlyDefined.ps1",
+            "from": "ClearlyDefined.ps1",
+            "label": "uses",
+            "line": 36,
+            "target": "ClearlyDefined.ps1.fullList"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "Hook",
+            "label": "contains",
+            "target": "Value"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "contains",
+            "target": "script:hookValues"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "contains",
+            "target": "null"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "calls",
+            "target": "System.Collections.Generic.List[bool]::new"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "Hook",
+            "label": "uses",
+            "target": "bool"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "target": "object"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "Invoke",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "instantiates",
+            "line": 6,
+            "target": "System.Collections.Generic.List[bool]"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 70,
+            "target": "Script"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 72,
+            "target": "Results"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 83,
+            "target": "Expression"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 85,
+            "target": "HookResults"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 86,
+            "target": "PipelineResults"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "Invoke",
+            "label": "uses",
+            "line": 138,
+            "target": "pwsh"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 142,
+            "target": "DollarHook.Tests.ps1.root"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 147,
+            "target": "DollarHook.Tests.ps1.pwsh"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/DollarHook.Tests.ps1",
+            "from": "DollarHook.Tests.ps1",
+            "label": "uses",
+            "line": 165,
+            "target": "Result"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "calls",
+            "target": "DateTimeOffset::new"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "calls",
+            "target": "DateTime::new"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "target": "out"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "New-NestedJson",
+            "label": "uses",
+            "target": "int"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "Count-ObjectDepth",
+            "label": "uses",
+            "target": "PSCustomObject"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "target": "DateTime"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "target": "DateTimeOffset"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "New-NestedJson",
+            "label": "uses",
+            "line": 14,
+            "target": "New-NestedJson.nestedJson"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "Count-ObjectDepth",
+            "label": "uses",
+            "line": 25,
+            "target": "Count-ObjectDepth.InputObject"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 46,
+            "target": "ConvertFrom-Json.Tests.ps1.testCasesWithAndWithoutAsHashtableSwitch"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 48,
+            "target": "AsHashtable"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 55,
+            "target": "1"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 102,
+            "target": "ConvertFrom-Json.Tests.ps1.nestedJson"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 122,
+            "target": "ConvertFrom-Json.Tests.ps1.testCasesWithAndWithoutNoEnumerateSwitch"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 124,
+            "target": "NoEnumerate"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 149,
+            "target": "0"
+          },
+          {
+            "confidence": 0.7,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 151,
+            "target": "2"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "instantiates",
+            "line": 168,
+            "target": "DateTimeOffset"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "instantiates",
+            "line": 176,
+            "target": "DateTime"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 201,
+            "target": "Value"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 204,
+            "target": "Expected"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 400,
+            "target": "ConvertFrom-Json.Tests.ps1.testCasesJsonDepthWithAndWithoutAsHashtableSwitch"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertFrom-Json.Tests.ps1",
+            "from": "ConvertFrom-Json.Tests.ps1",
+            "label": "uses",
+            "line": 402,
+            "target": "Depth"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "list",
+            "label": "calls",
+            "target": "System.Collections.Generic.List[String]::new"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "CheckRestrictedlanguage.Tests.ps1",
+            "label": "uses",
+            "target": "PSCulture"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "CheckRestrictedlanguage.Tests.ps1",
+            "label": "uses",
+            "target": "PSUICulture"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "CheckRestrictedlanguage.Tests.ps1",
+            "label": "uses",
+            "target": "a"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "CheckRestrictedlanguage.Tests.ps1",
+            "label": "uses",
+            "target": "b"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "CheckRestrictedlanguage.Tests.ps1",
+            "label": "uses",
+            "target": "c"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "CheckRestrictedlanguage.Tests.ps1",
+            "label": "uses",
+            "target": "env:foo"
+          },
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "test/powershell/Language/Scripting/CheckRestrictedlanguage.Tests.ps1",
+            "from": "list",
+            "label": "instantiates",
+            "line": 8,
+            "target": "System.Collections.Generic.List[String]"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "testFunc",
+            "label": "contains",
+            "target": "psExec"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "contains",
+            "target": "global:PSDefaultParameterValues"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "calls",
+            "target": "$Script"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "calls",
+            "target": "$result"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "calls",
+            "target": "System.IO.FileInfo::new"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "uses",
+            "target": "string"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "uses",
+            "target": "{true}"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "uses",
+            "target": "PID"
+          },
+          {
+            "dir": "MISSING",
+            "file": "test/powershell/Language/Operators/TernaryOperator.Tests.ps1",
+            "from": "TernaryOperator.Tests.ps1",
+            "label": "uses",
+            "target": "skipTest"
+          }
+        ],
+        "treeTruthEdges": 4206,
+        "unexplainedInAnalyzer": 936
+      }
+    },
+    "samplingRule": "seeded 60 files/language, scoped to powershell",
+    "scope": "powershell",
+    "scoped": true,
+    "secondCorpus": {
+      "mapping": {
+        "c": "jq",
+        "clean": "clean-stdlib",
+        "clojure": "clj-kondo",
+        "cpp": "nlohmann-json",
+        "csharp": "fsharp",
+        "css": "grails-core",
+        "dart": "dart-http",
+        "elixir": "phoenix",
+        "erlang": "otp",
+        "fsharp": "fsharp-data",
+        "go": "terraform",
+        "groovy": "geb",
+        "haskell": "hledger",
+        "hcl": "tf-aws-components",
+        "html": "sqlite",
+        "java": "clojure",
+        "javascript": "lodash",
+        "kotlin": "kotlinx-coroutines",
+        "make": "consul",
+        "markdown": "kubernetes",
+        "nim": "pixie",
+        "objc": "afnetworking",
+        "perl": "plack",
+        "php": "phpmyadmin",
+        "powershell": "ansible",
+        "python": "requests",
+        "ruby": "rack",
+        "rust": "cargo",
+        "scala": "cats-effect",
+        "svelte": "shadcn-svelte",
+        "swift": "alamofire",
+        "toml": "ripgrep",
+        "typescript": "element-plus",
+        "vue": "vue-element-admin",
+        "yaml": "ansible",
+        "zig": "zls"
+      },
+      "report": {
+        "ansible:powershell": {
+          "analyzerEdges": 5213,
+          "coveragePct": 83.9,
+          "coveredByAnalyzer": 4686,
+          "explainableByTree": 4322,
+          "fabricationPct": 17.1,
+          "filesSampled": 60,
+          "heuristicUnexplained": 0,
+          "missingInAnalyzer": 902,
+          "perf": {
+            "avgMsPerFile": 10,
+            "loadAvg1": 1.34,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 39.3,
+            "samplesTimed": 60
+          },
+          "sampleSetHash": "b316cd3dd025ab43",
+          "samples": [
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+              "from": "Backup-File",
+              "label": "contains",
+              "target": "true"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+              "from": "Ansible.ModuleUtils.Backup.psm1",
+              "label": "calls",
+              "target": "Export-ModuleMember"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+              "from": "Backup-File",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+              "from": "Backup-File",
+              "label": "uses",
+              "target": "pid"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+              "from": "Backup-File",
+              "label": "uses",
+              "line": 23,
+              "target": "Backup-File.backup_path"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Backup.psm1",
+              "from": "Ansible.ModuleUtils.Backup.psm1",
+              "label": "exports",
+              "line": 34,
+              "target": "Backup-File"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "calls",
+              "target": "New-Object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Copy-Folder",
+              "label": "uses",
+              "target": "child_item"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "target": "entry"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "target": "entry"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "target": "child_file"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "references",
+              "line": 7,
+              "target": "Ansible.ModuleUtils.Legacy"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "references",
+              "line": 8,
+              "target": "Ansible.ModuleUtils.Backup"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 13,
+              "target": "win_copy.ps1.params"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 24,
+              "target": "win_copy.ps1.copy_mode"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Copy-File",
+              "label": "uses",
+              "line": 55,
+              "target": "result"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Copy-File",
+              "label": "uses",
+              "line": 70,
+              "target": "Copy-File.file_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Copy-File",
+              "label": "uses",
+              "line": 74,
+              "target": "check_mode"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Copy-Folder",
+              "label": "uses",
+              "line": 107,
+              "target": "Copy-Folder.parent_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Copy-Folder",
+              "label": "uses",
+              "line": 123,
+              "target": "Copy-Folder.dest_child_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 157,
+              "target": "Extract-Zip.archive_name"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 170,
+              "target": "Extract-Zip.base64_name"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 173,
+              "target": "Extract-Zip.decoded_archive_name"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 176,
+              "target": "Extract-Zip.entry_target_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 178,
+              "target": "Extract-Zip.entry_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 188,
+              "target": "Extract-Zip.archive"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 196,
+              "target": "Extract-ZipLegacy.shell"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 199,
+              "target": "Extract-ZipLegacy.zip"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 203,
+              "target": "Extract-ZipLegacy.encoded_archive_entry"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 205,
+              "target": "Extract-ZipLegacy.decoded_archive_entry"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 209,
+              "target": "Extract-ZipLegacy.entry_target_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 211,
+              "target": "Extract-ZipLegacy.entry_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 221,
+              "target": "Extract-ZipLegacy.dest_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 225,
+              "target": "Extract-ZipLegacy.combined_encoded_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 241,
+              "target": "win_copy.ps1.filename"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 242,
+              "target": "win_copy.ps1.filepath"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 246,
+              "target": "win_copy.ps1.changed_files"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 250,
+              "target": "win_copy.ps1.result"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "contains",
+              "line": 256,
+              "target": "directory"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 259,
+              "target": "win_copy.ps1.dirname"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 260,
+              "target": "win_copy.ps1.dirpath"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 261,
+              "target": "win_copy.ps1.parent_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 267,
+              "target": "win_copy.ps1.changed_directories"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 275,
+              "target": "win_copy.ps1.changed_symlinks"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 319,
+              "target": "win_copy.ps1.dest_child_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 335,
+              "target": "win_copy.ps1.source_basename"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 375,
+              "target": "win_copy.ps1.remote_dest"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 396,
+              "target": "win_copy.ps1.check_mode"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "contains",
+              "target": "env:TMP"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "contains",
+              "target": "env:LIB"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Ansible.ModuleUtils.LinkUtil.psm1",
+              "label": "calls",
+              "target": "Export-ModuleMember"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "uses",
+              "target": "module_params"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Ansible.ModuleUtils.LinkUtil.psm1",
+              "label": "references",
+              "line": 4,
+              "target": "Ansible.ModuleUtils.PrivilegeUtil"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "uses",
+              "line": 403,
+              "target": "env:TMP"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "uses",
+              "line": 404,
+              "target": "env:LIB"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "uses",
+              "line": 406,
+              "target": "Load-LinkUtils.original_tmp"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "uses",
+              "line": 417,
+              "target": "Load-LinkUtils.link_util"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+              "from": "Load-LinkUtils",
+              "label": "uses",
+              "line": 419,
+              "target": "Load-LinkUtils.original_lib"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "calls",
+              "target": "New-Object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Copy-Folder",
+              "label": "uses",
+              "target": "child_item"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "target": "entry"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "target": "entry"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "target": "child_file"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "references",
+              "line": 7,
+              "target": "Ansible.ModuleUtils.Legacy"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "references",
+              "line": 8,
+              "target": "Ansible.ModuleUtils.Backup"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 13,
+              "target": "win_copy.ps1.params"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 24,
+              "target": "win_copy.ps1.copy_mode"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Copy-File",
+              "label": "uses",
+              "line": 55,
+              "target": "result"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Copy-File",
+              "label": "uses",
+              "line": 70,
+              "target": "Copy-File.file_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Copy-File",
+              "label": "uses",
+              "line": 74,
+              "target": "check_mode"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Copy-Folder",
+              "label": "uses",
+              "line": 107,
+              "target": "Copy-Folder.parent_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Copy-Folder",
+              "label": "uses",
+              "line": 123,
+              "target": "Copy-Folder.dest_child_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 157,
+              "target": "Extract-Zip.archive_name"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 170,
+              "target": "Extract-Zip.base64_name"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 173,
+              "target": "Extract-Zip.decoded_archive_name"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 176,
+              "target": "Extract-Zip.entry_target_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 178,
+              "target": "Extract-Zip.entry_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-Zip",
+              "label": "uses",
+              "line": 188,
+              "target": "Extract-Zip.archive"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 196,
+              "target": "Extract-ZipLegacy.shell"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 199,
+              "target": "Extract-ZipLegacy.zip"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 203,
+              "target": "Extract-ZipLegacy.encoded_archive_entry"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 205,
+              "target": "Extract-ZipLegacy.decoded_archive_entry"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 209,
+              "target": "Extract-ZipLegacy.entry_target_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 211,
+              "target": "Extract-ZipLegacy.entry_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 221,
+              "target": "Extract-ZipLegacy.dest_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "Extract-ZipLegacy",
+              "label": "uses",
+              "line": 225,
+              "target": "Extract-ZipLegacy.combined_encoded_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 241,
+              "target": "win_copy.ps1.filename"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 242,
+              "target": "win_copy.ps1.filepath"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 246,
+              "target": "win_copy.ps1.changed_files"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 250,
+              "target": "win_copy.ps1.result"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "contains",
+              "line": 256,
+              "target": "directory"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 259,
+              "target": "win_copy.ps1.dirname"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 260,
+              "target": "win_copy.ps1.dirpath"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 261,
+              "target": "win_copy.ps1.parent_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 267,
+              "target": "win_copy.ps1.changed_directories"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 275,
+              "target": "win_copy.ps1.changed_symlinks"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 319,
+              "target": "win_copy.ps1.dest_child_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 335,
+              "target": "win_copy.ps1.source_basename"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 375,
+              "target": "win_copy.ps1.remote_dest"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/plugins/modules/win_copy.ps1",
+              "from": "win_copy.ps1",
+              "label": "uses",
+              "line": 396,
+              "target": "win_copy.ps1.check_mode"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "contains",
+              "target": "true"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Get-AnsibleItem",
+              "label": "contains",
+              "target": "true"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "contains",
+              "target": "null"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Get-AnsibleItem",
+              "label": "calls",
+              "target": "New-Object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Ansible.ModuleUtils.FileUtil.psm1",
+              "label": "calls",
+              "target": "Export-ModuleMember"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "DriveNotFoundException"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "Automation"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "Management"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "System"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "FileNotFoundException"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "IO"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "DirectoryNotFoundException"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "target": "int"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Get-AnsibleItem",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Get-AnsibleItem",
+              "label": "uses",
+              "target": "Int32"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "line": 19,
+              "target": "Test-AnsiblePath.drive"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Test-AnsiblePath",
+              "label": "uses",
+              "line": 21,
+              "target": "Test-AnsiblePath.provider"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Get-AnsibleItem",
+              "label": "uses",
+              "line": 66,
+              "target": "Get-AnsibleItem.file_attributes"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Ansible.ModuleUtils.FileUtil.psm1",
+              "label": "exports",
+              "line": 74,
+              "target": "Test-AnsiblePath"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.FileUtil.psm1",
+              "from": "Ansible.ModuleUtils.FileUtil.psm1",
+              "label": "exports",
+              "line": 74,
+              "target": "Get-AnsibleItem"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_ping.ps1",
+              "from": "win_ping.ps1",
+              "label": "uses",
+              "line": 13,
+              "target": "win_ping.ps1.spec"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_ping.ps1",
+              "from": "win_ping.ps1",
+              "label": "uses",
+              "line": 21,
+              "target": "win_ping.ps1.module"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/powershell_mkdtemp.ps1",
+              "from": "powershell_mkdtemp.ps1",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/powershell_mkdtemp.ps1",
+              "from": "powershell_mkdtemp.ps1",
+              "label": "uses",
+              "line": 15,
+              "target": "powershell_mkdtemp.ps1.Directory"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/powershell_mkdtemp.ps1",
+              "from": "powershell_mkdtemp.ps1",
+              "label": "uses",
+              "line": 16,
+              "target": "powershell_mkdtemp.ps1.path"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/powershell_expand_user.ps1",
+              "from": "powershell_expand_user.ps1",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/powershell_expand_user.ps1",
+              "from": "powershell_expand_user.ps1",
+              "label": "uses",
+              "line": 15,
+              "target": "powershell_expand_user.ps1.Path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/powershell_expand_user.ps1",
+              "from": "powershell_expand_user.ps1",
+              "label": "uses",
+              "line": 16,
+              "target": "powershell_expand_user.ps1.userProfile"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "Uri"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "Method"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "FollowRedirects"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "Headers"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "MaximumRedirection"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "Timeout"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ValidateCerts"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ClientCert"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ClientCertPassword"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ForceBasicAuth"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "UrlUsername"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "UrlPassword"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "UseDefaultCredential"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "UseProxy"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ProxyUrl"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ProxyUsername"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ProxyPassword"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "ProxyUseDefaultCredential"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "target": "_"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "contains",
+              "target": "true"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "contains",
+              "target": "Body"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "contains",
+              "target": "IgnoreBadResponse"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "contains",
+              "target": "Module"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "calls",
+              "target": "New-Object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "calls",
+              "target": "$Script"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Ansible.ModuleUtils.WebRequest.psm1",
+              "label": "calls",
+              "target": "Export-ModuleMember"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "$alias"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "WebRequest"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Net"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "System"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "String"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "IDictionary"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Collections"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Int32"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Boolean"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Switch"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "RemoteCertificateValidationCallback"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Security"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "bool"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "X509Certificate"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "X509Certificates"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Cryptography"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "X509Chain"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "SslPolicyErrors"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "SecurityProtocolType"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "HttpWebRequest"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "CryptographicException"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "Object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "System"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "WebRequest"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "Net"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "ScriptBlock"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "Stream"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "IO"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "Switch"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "target": "WebException"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "param"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "alias"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "Param"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "target": "header"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "instantiates",
+              "target": "$crypto_ns.X509Certificate2"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "instantiates",
+              "target": "$crypto_ns.X509Certificate2Collection"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "line": 177,
+              "target": "param"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 178,
+              "target": "PSBoundParameters"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "contains",
+              "line": 183,
+              "target": "alias"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 186,
+              "target": "Get-AnsibleWebRequest.var_value"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 205,
+              "target": "Get-AnsibleWebRequest.callback"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 211,
+              "target": "Get-AnsibleWebRequest.security_protocols"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 229,
+              "target": "UrlUsername"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 229,
+              "target": "UrlPassword"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 230,
+              "target": "Get-AnsibleWebRequest.auth_value"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 234,
+              "target": "Get-AnsibleWebRequest.credential"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 249,
+              "target": "Get-AnsibleWebRequest.crypto_ns"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 292,
+              "target": "Get-AnsibleWebRequest.proxy"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 307,
+              "target": "Get-AnsibleWebRequest.web_request"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 326,
+              "target": "Module"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 329,
+              "target": "Get-AnsibleWebRequest.HttpAgent"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Get-AnsibleWebRequest",
+              "label": "uses",
+              "line": 348,
+              "target": "MaximumRedirection"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "line": 435,
+              "target": "Body"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "line": 436,
+              "target": "Invoke-WithWebRequest.request_st"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "line": 476,
+              "target": "Invoke-WithWebRequest.web_response"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+              "from": "Invoke-WithWebRequest",
+              "label": "uses",
+              "line": 482,
+              "target": "Invoke-WithWebRequest.response_stream"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "contains",
+              "target": "env:TMP"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "Remove-Directory",
+              "label": "uses",
+              "target": "directory"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "references",
+              "line": 6,
+              "target": "Ansible.ModuleUtils.Legacy"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 12,
+              "target": "win_file.ps1.params"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 13,
+              "target": "env:TMP"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 20,
+              "target": "win_file.ps1.path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 21,
+              "target": "win_file.ps1.original_basename"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 55,
+              "target": "win_file.ps1._remote_tmp"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 56,
+              "target": "win_file.ps1.symlink_util"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 57,
+              "target": "win_file.ps1.original_tmp"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "Remove-File",
+              "label": "uses",
+              "line": 80,
+              "target": "result"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 99,
+              "target": "win_file.ps1.check_mode"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 107,
+              "target": "win_file.ps1.fileinfo"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+              "from": "win_file.ps1",
+              "label": "uses",
+              "line": 111,
+              "target": "win_file.ps1.result"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "contains",
+              "target": "null"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "calls",
+              "target": "using"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "calls",
+              "target": "FileStream::new"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "calls",
+              "target": "byte[]::new"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "target": "CmdletBinding"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "target": "int"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "target": "long"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "line": 21,
+              "target": "winrm_fetch_file.ps1.Path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "instantiates",
+              "line": 22,
+              "target": "FileStream"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "line": 29,
+              "target": "winrm_fetch_file.ps1.stream"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "line": 29,
+              "target": "winrm_fetch_file.ps1.Offset"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "line": 30,
+              "target": "winrm_fetch_file.ps1.BufferSize"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "instantiates",
+              "line": 30,
+              "target": "byte[]"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+              "from": "winrm_fetch_file.ps1",
+              "label": "uses",
+              "line": 31,
+              "target": "winrm_fetch_file.ps1.buffer"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "contains",
+              "target": "InputObject"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "value"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "object"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "PSCustomObject"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "Automation"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "Management"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "System"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "uses",
+              "target": "Array"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "references",
+              "line": 5,
+              "target": "Ansible.ModuleUtils.Legacy"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "uses",
+              "line": 10,
+              "target": "async_status.ps1.parsed_args"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "uses",
+              "line": 10,
+              "target": "async_status.ps1.results"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "Convert-JsonObject",
+              "label": "contains",
+              "line": 29,
+              "target": "prop"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "uses",
+              "line": 43,
+              "target": "async_status.ps1.async_dir"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "uses",
+              "line": 43,
+              "target": "async_status.ps1.jid"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "uses",
+              "line": 45,
+              "target": "async_status.ps1.log_path"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/async_status.ps1",
+              "from": "async_status.ps1",
+              "label": "uses",
+              "line": 64,
+              "target": "async_status.ps1.data_raw"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "Compare-PathFilterPattern",
+              "label": "contains",
+              "target": "Patterns"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "calls",
+              "target": "using"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "calls",
+              "target": "else"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "calls",
+              "target": "UTF8Encoding::new"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "args"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "string"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "String"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "CommandBaseAst"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "PSCustomObject"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "List"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "Breakpoint"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "LineBreakpoint"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "BindingFlags"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "int"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "scriptblock"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "HashSet"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "Compare-PathFilterPattern",
+              "label": "uses",
+              "target": "String"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "target": "cmd"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "Compare-PathFilterPattern",
+              "label": "uses",
+              "target": "pattern"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "target": "PID"
+            },
+            {
+              "confidence": 0.7,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "line": 44,
+              "target": "0"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "line": 46,
+              "target": "New-CoverageBreakpointsForScriptBlock.predicate"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "line": 50,
+              "target": "AnsiblePath"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "contains",
+              "line": 69,
+              "target": "cmd"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "line": 70,
+              "target": "New-CoverageBreakpointsForScriptBlock.scannedLines"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "line": 75,
+              "target": "New-CoverageBreakpointsForScriptBlock.lineCtor"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "New-CoverageBreakpointsForScriptBlock",
+              "label": "uses",
+              "line": 75,
+              "target": "ScriptName"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "Compare-PathFilterPattern",
+              "label": "contains",
+              "line": 90,
+              "target": "pattern"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 106,
+              "target": "coverage_wrapper.ps1.PathFilter"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 108,
+              "target": "coverage_wrapper.ps1.scriptName"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 108,
+              "target": "coverage_wrapper.ps1.ModuleName"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 113,
+              "target": "coverage_wrapper.ps1.scriptInfo"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 116,
+              "target": "coverage_wrapper.ps1.ast"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 117,
+              "target": "coverage_wrapper.ps1.covParams"
+            },
+            {
+              "confidence": 1,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "contains",
+              "line": 108,
+              "target": "scriptName"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 115,
+              "target": "coverage_wrapper.ps1.coveragePathFilter"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 144,
+              "target": "coverage_wrapper.ps1.OutputPath"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "uses",
+              "line": 144,
+              "target": "coverage_wrapper.ps1.psVersion"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "lib/ansible/executor/powershell/coverage_wrapper.ps1",
+              "from": "coverage_wrapper.ps1",
+              "label": "instantiates",
+              "line": 148,
+              "target": "UTF8Encoding"
+            },
+            {
+              "dir": "MISSING",
+              "file": "test/lib/ansible_test/_util/controller/tools/coverage_stub.ps1",
+              "from": "coverage_stub.ps1",
+              "label": "uses",
+              "target": "args"
+            }
+          ],
+          "treeTruthEdges": 5588,
+          "unexplainedInAnalyzer": 891
+        }
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5.powershell",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "LANE-SCOPED artifact: this run measured 2 lane(s) (powershell, ansible:powershell), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane."
+    },
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "the code-input check is scoped to this lane's producers (src/ast/real-powershell-analyzer.ts, script/m14/spec/powershell-completeness.json, script/m14/differential.ts, script/m14/evidence-harness.ts); 4 OTHER measured input(s) are dirty in this checkout from other lanes (script/m14/spec/solidity-completeness.json, src/ast/real-makefile-analyzer.ts, src/ast/real-protobuf-analyzer.ts, src/ast/real-solidity-analyzer.ts) and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts"
+    }
+  ],
+  "regeneratedAt": "2026-10-27T18:23:54-04:00",
+  "regeneratedAtCommit": "61daf0354a9a036e80098f34f7bcfb346858589e",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness, LANE-SCOPED (powershell: powershell, ansible:powershell) — NOT the canonical 47-language claim"
+}

@@ -1,0 +1,325 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/data-shapes-psb10.ps1",
+ "authoredFrom": "PS12/PS13/PS15/PS24 \u2014 the data shapes PowerShell is actually written in. Authored 2026-09-26. PS15: a hashtable literal is the commonest PowerShell data structure and the pre-wave lane named NEITHER `hash_entry` NOR `key_expression`, so 711 keys in the production draw published no symbol and no edge. PS12: the pre-wave lane named neither `attributed_variable` nor `cast_expression`, so a typed declaration published nothing \u2014 and the real shape puts `type_literal` and `variable` under `cast_expression`, not under the `expression_with_unary_operator` the old code read. PS13: `switch_clause` was never named, so a switch's cases added nothing to cyclomatic complexity. PS24: a class-typed member is how two classes in one file refer to each other, and the pre-wave lane read such a type only into the symbol's `type` metadata, which pool-worker DROPS at the worker boundary. GRAMMAR GAP, pinned as a negative: `[ValidateSet('a','b')]$mode = 'a'` \u2014 a validation attribute on a SCRIPT variable \u2014 puts the whole construct in an ERROR node whose ONLY named child is the `attribute_list`; the variable and the assignment are gone from the tree in every form (with and without an assignment, one and two arguments). Nothing an analyzer can do recovers it, so the honest record is the variable's ABSENCE plus the gap, not a fabricated declaration.",
+ "expectSymbols": [
+  {
+   "name": "data-shapes-psb10.ps1",
+   "kind": "module"
+  },
+  {
+   "name": "EventEntry",
+   "kind": "class",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "Message",
+   "kind": "property",
+   "ownerName": "EventEntry"
+  },
+  {
+   "name": "Level",
+   "kind": "property",
+   "ownerName": "EventEntry"
+  },
+  {
+   "name": "Tags",
+   "kind": "property",
+   "ownerName": "EventEntry"
+  },
+  {
+   "name": "EventMessage",
+   "kind": "class",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "Body",
+   "kind": "property",
+   "ownerName": "EventMessage"
+  },
+  {
+   "name": "Code",
+   "kind": "property",
+   "ownerName": "EventMessage"
+  },
+  {
+   "name": "LogLevel",
+   "kind": "enum",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "Debug",
+   "kind": "enum_member",
+   "ownerName": "LogLevel"
+  },
+  {
+   "name": "Info",
+   "kind": "enum_member",
+   "ownerName": "LogLevel"
+  },
+  {
+   "name": "options",
+   "kind": "variable",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "Retries",
+   "kind": "property",
+   "ownerName": "data-shapes-psb10.ps1",
+   "comment": "PS15: a hashtable key DECLARES a named slot"
+  },
+  {
+   "name": "Label",
+   "kind": "property",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "Nested",
+   "kind": "property",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "Inner",
+   "kind": "property",
+   "ownerName": "data-shapes-psb10.ps1",
+   "comment": "a NESTED hashtable's key declares too \u2014 `@{ Nested = @{ Inner = 'x' } }`"
+  },
+  {
+   "name": "attempts",
+   "kind": "variable",
+   "ownerName": "data-shapes-psb10.ps1",
+   "comment": "PS12: `[int]$attempts = 0` \u2014 a typed declaration WITH an assignment"
+  },
+  {
+   "name": "label",
+   "kind": "variable",
+   "ownerName": "data-shapes-psb10.ps1",
+   "comment": "PS12: `[string]$label` \u2014 a typed declaration with NO assignment"
+  },
+  {
+   "name": "counts",
+   "kind": "variable",
+   "ownerName": "data-shapes-psb10.ps1",
+   "comment": "PS12: `[int[]]$counts` \u2014 an ARRAY type suffix. The accelerator test must strip the `[]`, or the lane emits `uses -> string[]`/`int[]`, a target no symbol can have."
+  },
+  {
+   "name": "tags",
+   "kind": "variable",
+   "ownerName": "data-shapes-psb10.ps1"
+  },
+  {
+   "name": "first",
+   "kind": "variable",
+   "ownerName": "data-shapes-psb10.ps1"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "mode",
+   "comment": "GRAMMAR GAP, not an analyzer defect: `[ValidateSet('a','b')]$mode = 'a'` puts the construct in an ERROR node whose ONLY named child is the `attribute_list` \u2014 the variable and the assignment are absent from the tree in every form. Recorded so the absence is a PIN rather than a silence, and carried to the F11 grammar-leaf wave. (The same attribute inside a `param()` block parses cleanly, which is why `Get-Report` in payload-psb11 keeps its `[ValidateSet]`.)"
+  },
+  {
+   "name": "string[]",
+   "comment": "PRE-FIX SHAPE of PS12's array-suffix gap: a TYPE ACCELERATOR published as a type-reference target"
+  },
+  {
+   "name": "int[]"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "EventEntry",
+   "line_number": 23
+  },
+  {
+   "type": "contains",
+   "from": "EventEntry",
+   "target": "Message",
+   "line_number": 24
+  },
+  {
+   "type": "uses",
+   "from": "EventEntry",
+   "target": "EventMessage",
+   "line_number": 24,
+   "meta.isTypeReference": true,
+   "meta.viaMemberType": "Message",
+   "comment": "PS24: the ONLY edge between two classes in one file"
+  },
+  {
+   "type": "contains",
+   "from": "EventEntry",
+   "target": "Level",
+   "line_number": 25
+  },
+  {
+   "type": "uses",
+   "from": "EventEntry",
+   "target": "LogLevel",
+   "line_number": 25,
+   "meta.isTypeReference": true,
+   "meta.viaMemberType": "Level"
+  },
+  {
+   "type": "contains",
+   "from": "EventEntry",
+   "target": "Tags",
+   "line_number": 26
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "EventMessage",
+   "line_number": 29
+  },
+  {
+   "type": "contains",
+   "from": "EventMessage",
+   "target": "Body",
+   "line_number": 30
+  },
+  {
+   "type": "contains",
+   "from": "EventMessage",
+   "target": "Code",
+   "line_number": 31
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "LogLevel",
+   "line_number": 34
+  },
+  {
+   "type": "contains",
+   "from": "LogLevel",
+   "target": "Debug",
+   "line_number": 35
+  },
+  {
+   "type": "contains",
+   "from": "LogLevel",
+   "target": "Info",
+   "line_number": 36
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "options",
+   "line_number": 39
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "Retries",
+   "line_number": 40
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "Label",
+   "line_number": 41
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "Nested",
+   "line_number": 42
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "Inner",
+   "line_number": 42
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "attempts",
+   "line_number": 45
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "label",
+   "line_number": 46
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "counts",
+   "line_number": 47
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "tags",
+   "line_number": 49
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "first",
+   "line_number": 50
+  },
+  {
+   "type": "uses",
+   "from": "data-shapes-psb10.ps1",
+   "target": "Label",
+   "line_number": 52,
+   "meta.isMemberReference": true,
+   "comment": "`$options.Label` reads the slot `Label` that line 41 declared \u2014 the two rows are what make a hashtable a graph rather than a blob"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "string[]",
+   "comment": "PRE-FIX SHAPE: an accelerator with its array suffix, as a type-reference target"
+  },
+  {
+   "type": "uses",
+   "target": "int[]"
+  },
+  {
+   "type": "uses",
+   "target": "mode"
+  },
+  {
+   "type": "contains",
+   "from": "data-shapes-psb10.ps1",
+   "target": "mode"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  },
+  {
+   "type": "uses",
+   "target": "0",
+   "comment": "PS-B28 \u2014 the numeric index at line 50 (`$first = $tags[0]`) must publish NO `uses` row. PS-B10 published `uses -> 0` with `isNumericIndex: true`; the record that produced is a DEPENDENCY ON A SYMBOL NAMED `0`, a target no declaration can have, and measured over the whole population it was 3,734 permanently unresolvable rows. The string key and the variable key in this same file are the controls: `$options.Label` -> `Label` and `$names[$index]` -> `index` still publish, so a rule that silenced the whole element-access branch fails them."
+  }
+ ]
+}

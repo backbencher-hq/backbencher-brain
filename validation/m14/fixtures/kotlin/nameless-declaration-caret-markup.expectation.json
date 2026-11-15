@@ -1,0 +1,27 @@
+{
+  "fixtureId": "kotlin/nameless-declaration-caret-markup",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DERIV_EXPORTS_KOT4 R7 half 1. Kotlin's corpus carries IntelliJ test markup (`<caret>`), and tree-sitter's recovery makes the swallowed declaration's NAME node zero-length rather than absent — so `findChildByType(node, [\"simple_identifier\", \"type_identifier\"])` returned a node whose text was \"\". Measured on the corpus file this fixture reproduces (analysis-api/testData/.../ambiguouslyInheritedGeneric.kt): one symbol with `name: \"\"`, and through it two `implements` edges with an EMPTY SOURCE. An empty name is not a name, and an empty endpoint is absence published as a field — the row asserts a relationship and identifies nobody (R7, validation/m60/ledger.json). The contract pinned here is threefold: no symbol is named \"\", no relationship has an empty endpoint, and the malformed syntax stays DISCLOSED as a ParseError rather than being renamed. The last forbid row additionally pins the decision NOT to recover the name out of the ERROR node's text (`Child` really is there in the ERROR subtree): a name read from error recovery is a guess about intent published at the confidence of a real declaration. Both the forbid row and the error-count row are tied to the pinned wasm — with a grammar that parsed this markup cleanly the class would legitimately publish, and the fixture would be re-authored then, not before.",
+  "expectSymbols": [
+    { "name": "A", "kind": "interface" },
+    { "name": "Recovered", "kind": "class" }
+  ],
+  "expectSymbolCount": [
+    { "name": "", "equals": 0, "comment": "the standing rule in the only spelling a fixture can state: zero symbols carry the empty name" }
+  ],
+  "expectErrorCount": [
+    { "atLeast": 1, "comment": "the `<caret>` markup is reported as a warning ParseError — disclosed, never silently dropped (doc: 'syntax errors pushed as warning ParseError')" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Recovered", "target": "A", "line_number": 19, "comment": "a sibling declaration in the SAME file with a real name still publishes its heritage edge — the fix drops only the nameless one" }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "comment": "the nameless class's supertype list produced two edges whose source was \"\" (tgt A and tgt B on the corpus file). No relationship in this file may have an empty endpoint, and the only way to say that with the runner's vocabulary is to forbid the type those two edges carried" },
+    { "type": "extends", "from": "", "comment": "explicit empty-source form of the same rule" },
+    { "type": "implements", "from": "", "comment": "and for the type the corpus file actually produced" }
+  ],
+  "forbidSymbols": [
+    { "name": "Child", "comment": "the name IS present in the ERROR node's text, and is deliberately not published: recovering it would be a guess about the author's intent at the confidence of a real declaration. Absence is the honest state, and the ParseError above reports the damaged line" }
+  ]
+}

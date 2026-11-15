@@ -188,7 +188,7 @@ const targetOnly: string[] = []
 const sourceDiff: Array<{ file: string; target: string; analyzer: string; independent: string }> = []
 const markerDiff: string[] = []
 for (const repo of ["phpunit", "phpmyadmin"]) {
-  const dir = path.join("$HOME/fixtures/repositories", repo)
+  const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
   for (const f of execSync(`git ls-files -z -- '*.php'`, { cwd: dir, maxBuffer: 1 << 28 }).toString().split("\0").filter(Boolean).sort()) {
     let src: string, root: any
     try { src = readFileSync(path.join(dir, f), "utf8"); root = parser.parse(src).rootNode } catch { continue }

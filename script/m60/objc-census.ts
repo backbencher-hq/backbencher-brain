@@ -5,7 +5,7 @@
 // The Objective-C lane shipped two reviews, a 27KB closure record, a vendored and PATCHED
 // grammar, and a corpus instrument. The corpus instrument measures SEVEN files:
 //
-//     const ROOT = "$HOME/fixtures/repositories/Clyde"   // 4 .m + 3 .h
+//     const ROOT = "/home/ishaq2321/bb_tests/repositories/Clyde"   // 4 .m + 3 .h
 //
 // and its number is what the manifest publishes as the lane's corpus claim
 // (corpusSymbols=100, corpusRelationships=333, grammarErrorFiles=0). Meanwhile the lane's own
@@ -50,7 +50,7 @@ import { execSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/objc-census.json")
 const ANALYZER = path.join(ROOT, "src/ast/real-objective-c-analyzer.ts")
 const DETECT = path.join(ROOT, "src/ast/language-detection.ts")

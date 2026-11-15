@@ -1,0 +1,184 @@
+{
+  "fixtureId": "java/import-label",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SUPERSEDED BEHAVIOUR UPDATED 2026-10-18 (Lead ruling task-9, per-fixture adjudication): the analyzer behaviour is ADJUDICATED CORRECT \u2014 pinned by the PASSING sibling java/import-dependency-edges and by the analyzer's import post-pass rationale \u2014 so the expectation is updated instead of the analyzer reverted. WHAT WAS SUPERSEDED AND WHY: (1) the four form labels are spelled `single_type_import` / `type_on_demand_import` / `static_member_import` (the sibling's spellings), and every import declaration ALSO publishes its module path on a second `imports` row labelled `import_declaration` sourced at the file's primary type \u2014 a second row the fixture's `source: com.acme.dep` FORBID used to reject, although that PACKAGE-sourced fileLevel row is what bb_graph's per-file dependency query requires (source_external = the file, source_symbol_id NULL) and the sibling pins. COVERAGE IS NOT WEAKENED: all FOUR JLS 7.5 forms are still pinned, now as a pair per declaration (dependency channel + fileLevel channel), and the truncation forbids remain. ONE NAMED OPEN DEFECT IS RECORDED, NOT HIDDEN: JLS 7.5.4 static-on-demand still shares the `static_member_import` label with 7.5.3 (the lane is one label short; JAVA-FIXTURE-RECONCILIATION.md \u00a72), so the fourth form is pinned by its DISTINCT isStatic+isWildcard flags \u2014 losing the distinction is a failure, and when the fourth label lands its expectation updates here.",
+  "expectSymbols": [
+    {
+      "name": "Shapes",
+      "kind": "class"
+    },
+    {
+      "name": "single"
+    },
+    {
+      "name": "onDemand"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "Shapes",
+      "target": "java.util.List",
+      "meta.relationshipType": "import_declaration",
+      "meta.isJavaImport": true,
+      "confidenceMin": 0.9,
+      "line_number": 3
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.List",
+      "meta.relationshipType": "single_type_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": false,
+      "meta.isWildcard": false,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 3
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Map",
+      "meta.relationshipType": "single_type_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": false,
+      "meta.isWildcard": false,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 4
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Set",
+      "meta.relationshipType": "single_type_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": false,
+      "meta.isWildcard": false,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 5
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.concurrent",
+      "meta.relationshipType": "type_on_demand_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": false,
+      "meta.isWildcard": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 6
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.io",
+      "meta.relationshipType": "type_on_demand_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": false,
+      "meta.isWildcard": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 7
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Collections.sort",
+      "meta.relationshipType": "static_member_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": true,
+      "meta.isWildcard": false,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 8
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Arrays",
+      "meta.relationshipType": "static_member_import",
+      "meta.isJavaImport": true,
+      "meta.isStatic": true,
+      "meta.isWildcard": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "line_number": 9
+    },
+    {
+      "type": "imports",
+      "source": "Shapes",
+      "target": "java.util.concurrent",
+      "meta.relationshipType": "import_declaration",
+      "meta.isJavaImport": true,
+      "confidenceMin": 0.9,
+      "line_number": 6
+    },
+    {
+      "type": "imports",
+      "source": "Shapes",
+      "target": "java.util.Collections.sort",
+      "meta.relationshipType": "import_declaration",
+      "meta.isJavaImport": true,
+      "confidenceMin": 0.9,
+      "line_number": 8
+    },
+    {
+      "type": "imports",
+      "source": "Shapes",
+      "target": "java.util.Arrays",
+      "meta.relationshipType": "import_declaration",
+      "meta.isJavaImport": true,
+      "confidenceMin": 0.9,
+      "line_number": 9
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.List",
+      "meta.relationshipType": "single_type_import",
+      "meta.fileLevel": true,
+      "comment": "the PACKAGE-sourced fileLevel row the stale forbid rejected; it is the shape bb_graph's dependency query reads"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "java.util",
+      "comment": "truncation to the parent: `import java.util.List` names the type path, not the package \u2014 unchanged by this update"
+    },
+    {
+      "type": "imports",
+      "target": "util",
+      "comment": "truncation to a middle segment \u2014 unchanged"
+    },
+    {
+      "type": "imports",
+      "target": "List",
+      "meta.isJavaImport": true,
+      "comment": "truncation to the leaf \u2014 unchanged"
+    },
+    {
+      "type": "imports",
+      "target": "sort",
+      "meta.isJavaImport": true,
+      "comment": "a static single-member import keeps the member path \u2014 unchanged"
+    },
+    {
+      "type": "imports",
+      "target": "java.util.concurrent.*",
+      "comment": "the wildcard is a SEPARATE grammar node; the target must not carry the star \u2014 unchanged"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+ "fixtureId": "yaml/tag-file-include-negative",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The negative half of the include channel. A first version accepted any tag whose name BEGAN `include` or `import`, and this fixture caught it: `!included_decoration` and `!include_real` were both read as file references. YAML tags are an open vocabulary, so a prefix rule over them is a substring rule wearing a costume. The include set is now a closed list of the tags the defining ecosystems actually use, and the cost of that precision -- an include-family tag outside the list is not recognised -- is declared in the spec rather than hidden.",
+ "expectSymbols": [
+  {
+   "name": "steps",
+   "kind": "variable"
+  }
+ ],
+ "forbidImports": [
+  {
+   "module": "free text"
+  },
+  {
+   "module": "value"
+  },
+  {
+   "module": "included_decoration"
+  },
+  {
+   "module": "include_real"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "tag-file-include-negative.steps",
+   "target": "included_decoration",
+   "meta.relationshipType": "declared_type"
+  },
+  {
+   "type": "references",
+   "from": "tag-file-include-negative.steps",
+   "target": "include_real",
+   "meta.relationshipType": "declared_type"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   3,
+   4,
+   5
+  ],
+  "evidenceClasses": [
+   "reference_qualified",
+   "structural"
+  ]
+ }
+}

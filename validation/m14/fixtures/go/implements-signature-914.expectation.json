@@ -1,0 +1,168 @@
+{
+  "fixtureId": "go/implements-signature-914",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Go `implements` contract as Go defines it — a type T satisfies I when T's method set holds a method with the SAME NAME and the SAME CANONICAL SIGNATURE as every method I declares — against the four analyzer defects and the one oracle defect that made up #914. FOUND by classifying every remaining implements disagreement at FULL extent: go-tools 9 MISSING + 2 UNEXPLAINED (1,931 files), terraform 18 MISSING (1,993 files), kubernetes 90 MISSING (13,488 files). FOUR ANALYZER defects: (1) VARIADIC interface params — the interface-method extractor rejected `variadic_parameter_declaration` outright, so `Logf(format string, args ...any)` lost `args` on the DECLARED side while the implementor kept a plain param, and the two texts could never match (every grpc client ends in `opts ...grpc.CallOption`; every `Output(code, args ...any)` view interface was un-satisfiable); (2) RECEIVER-ONLY implementors — the candidates were the types DECLARED in the file, but Go's method set is a PACKAGE-level property, and the oracle has always keyed its map by receiver name (gopls declares `clientDispatcher` in protocol.go and all of Client's methods in tsclient.go, so the pair is provable from this file alone — the type is declared NOWHERE here, deliberately); the pre-fix analyzer FABRICATED `unimplementedDialer -> Dialer` for the SAME reason (dropping the interface's variadic param made a fixed-arity method look like a match — a false positive the corpora could not show because the name-only oracle over-claimed it too, the C5 collusion pattern); (3) ALIAS interfaces (`type A = interface{ M() }` is a `type_alias`, not a `type_spec`) and the interfaces that embed one (gcimporter testdata issue25301.go was the lane's only UNEXPLAINED pair); (4) DIAMOND interface embedding (`A { B; C }`, `B { D }`, `C { D }`) — the visiting mark was never released, so it was a global seen set and D's methods reached C and A only by declaration order; both sides lost the edge in different ways, so no differential could ever see it, and the F9 probe is where it is pinned. THE ORACLE defect is the negative half: it compared method NAMES only, a strict SUPERSET of Go's rule, so it published pairs Go refuses (`Value -> Type` with `Elem() Value` against `Elem() Type`; `VT -> VI` with `F(int, ...string)` against `F(int)`; `Diff -> DiffRenderer`; `graphTransformerMulti -> GraphVertexTransformer`; every `UnimplementedXServer -> XClient`, fixed arity against variadic) — each charged to the analyzer as a MISSING edge it could never close. The five `forbidRelationships` rows are those shapes, and the oracle now refuses all five too (proven by executing the negative against HEAD's code: pre-fix it derived 5 fabricated pairs, post-fix it derives none). A variadic parameter is `...T`: a DIFFERENT type from `T` (BareIface/VariadicOnly) and from `[]T` (SliceIface/SliceNotVariadic) — the `isVariadic` payload field carries it, and the `expectParameters` rows pin it by name.",
+  "expectSymbols": [
+    { "name": "Logger", "kind": "interface" },
+    { "name": "myLogger", "kind": "type" },
+    { "name": "Client", "kind": "interface" },
+    { "name": "Alias", "kind": "interface" },
+    { "name": "Embedder", "kind": "interface" },
+    { "name": "AliasImpl", "kind": "struct" },
+    { "name": "A", "kind": "interface" },
+    { "name": "B", "kind": "interface" },
+    { "name": "C", "kind": "interface" },
+    { "name": "D", "kind": "interface" },
+    { "name": "Diamond", "kind": "struct" },
+    { "name": "StrictType", "kind": "interface" },
+    { "name": "StrictValue", "kind": "struct" },
+    { "name": "ArityIface", "kind": "interface" },
+    { "name": "ArityVariadic", "kind": "struct" },
+    { "name": "SliceIface", "kind": "interface" },
+    { "name": "SliceNotVariadic", "kind": "struct" },
+    { "name": "Dialer", "kind": "interface" },
+    { "name": "unimplementedDialer", "kind": "struct" },
+    { "name": "BareIface", "kind": "interface" },
+    { "name": "VariadicOnly", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "myLogger",
+      "target": "Logger",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "clientDispatcher",
+      "target": "Client",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "AliasImpl",
+      "target": "Alias",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "AliasImpl",
+      "target": "Embedder",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "Diamond",
+      "target": "D",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "Diamond",
+      "target": "A",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "Embedder",
+      "target": "Alias",
+      "meta.relationshipType": "go_interface_embedding",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "extends",
+      "source": "B",
+      "target": "D",
+      "meta.relationshipType": "go_interface_embedding",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "extends",
+      "source": "C",
+      "target": "D",
+      "meta.relationshipType": "go_interface_embedding",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "extends",
+      "source": "A",
+      "target": "B",
+      "meta.relationshipType": "go_interface_embedding",
+      "meta.evidenceClass": "inferred"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "Logf",
+      "ownerName": "myLogger",
+      "parameters": [
+        { "name": "format", "type": "string" },
+        { "name": "args", "type": "any", "isVariadic": true }
+      ]
+    },
+    {
+      "symbol": "Logf",
+      "ownerName": "Logger",
+      "parameters": [
+        { "name": "args", "type": "any", "isVariadic": true }
+      ]
+    },
+    {
+      "symbol": "G",
+      "ownerName": "SliceIface",
+      "parameters": [{ "name": "xs", "type": "string", "isVariadic": true }]
+    },
+    {
+      "symbol": "G",
+      "ownerName": "SliceNotVariadic",
+      "parameters": [{ "name": "xs", "type": "[]string" }]
+    },
+    {
+      "symbol": "Dial",
+      "ownerName": "Dialer",
+      "parameters": [{ "name": "opts", "type": "string", "isVariadic": true }]
+    },
+    {
+      "symbol": "H",
+      "ownerName": "VariadicOnly",
+      "parameters": [{ "name": "x", "type": "string", "isVariadic": true }]
+    },
+    {
+      "symbol": "H",
+      "ownerName": "BareIface",
+      "parameters": [{ "name": "x", "type": "string" }]
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "G",
+      "ownerName": "SliceNotVariadic",
+      "types": ["string", "...string"]
+    },
+    {
+      "symbol": "H",
+      "ownerName": "BareIface",
+      "types": ["...string"]
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "source": "StrictValue", "target": "StrictType" },
+    { "type": "implements", "source": "ArityVariadic", "target": "ArityIface" },
+    { "type": "implements", "source": "SliceNotVariadic", "target": "SliceIface" },
+    { "type": "implements", "source": "unimplementedDialer", "target": "Dialer" },
+    { "type": "implements", "source": "VariadicOnly", "target": "BareIface" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "implements", "source": "myLogger", "target": "Logger", "equals": 1 },
+    { "type": "implements", "source": "clientDispatcher", "target": "Client", "equals": 1 },
+    { "type": "implements", "source": "Diamond", "target": "A", "equals": 1 },
+    { "type": "implements", "source": "AliasImpl", "target": "Alias", "equals": 1 }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "issue": "(write/update/insert/delete regression)",
+  "code": "E4",
+  "tool": "bb_edit",
+  "title": "E4",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "runLog": {
+    "validated": true,
+    "reindexed": true
+  },
+  "generatedAt": "2026-11-05T04:27:58.961Z"
+}

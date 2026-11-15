@@ -1,0 +1,110 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+  "fileCount": 6452,
+  "embedding": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 278.58,
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "failed": false
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 208.35,
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "failed": false
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 94.68,
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "failed": false
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 94.05,
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "failed": false
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 110.11,
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "failed": false
+    }
+  ],
+  "indexStateMs": 1.87,
+  "coverageMs": 146.37,
+  "coverage": {
+    "symbols": 310423,
+    "embedded": 32837
+  },
+  "coverageRatio": 0.10578146593519165,
+  "scan": [
+    {
+      "query": "how does request handling work in this codebase",
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "rows": 20000,
+      "bytes": 163840000,
+      "loadMs": 3952.15,
+      "scoreMs": 217.19,
+      "kept": 19980,
+      "top": 0.75165666571184
+    },
+    {
+      "query": "where is the index lock acquired",
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "rows": 20000,
+      "bytes": 163840000,
+      "loadMs": 1822.77,
+      "scoreMs": 202.67,
+      "kept": 19957,
+      "top": 0.7049947979445973
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "rows": 20000,
+      "bytes": 163840000,
+      "loadMs": 1410.85,
+      "scoreMs": 207.04,
+      "kept": 19973,
+      "top": 0.7393894635910929
+    }
+  ],
+  "exactNameMs": 1.17,
+  "files": {
+    "before": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793571636749.845
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571722854.1218
+      }
+    },
+    "after": {
+      "db": {
+        "size": 3639963648,
+        "mtimeMs": 1793571636749.845
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571722854.1218
+      }
+    },
+    "dbUnchanged": true
+  },
+  "generatedAt": "2026-11-01T22:22:16.600Z"
+}

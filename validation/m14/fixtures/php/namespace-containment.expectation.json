@@ -1,0 +1,248 @@
+{
+  "fixtureId": "php/namespace-containment",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 NAMESPACE CONTAINMENT. The lane emitted 4,442 `namespace` symbols corpus-wide and joined NONE of them to anything: every relationship it produced came from a MEMBER's ownerName, and a top-level declaration has no owner. The csharp analyzer sets `ownerName`/`ownerKind: Namespace` for a top-level type (verified on `namespace App.Services { interface IRunner; class Runner; }` -> `contains App.Services -> IRunner`, `contains App.Services -> Runner`) and the typescript analyzer does the same via `ScopeKind.Namespace`, so php was the outlier against the project's own convention rather than against a preference.\n\nThe grammar is why this was not visible from a reading of the heritage code. PHP has TWO namespace forms and tree-sitter spells them differently: `namespace A { ... }` puts the declarations in a `compound_statement` INSIDE the `namespace_definition`, so the walk reached them with `ns` set, while `namespace A; ...` ends at the `;` and leaves the declarations as SIBLINGS at `program` level. The semicolon form is the common one, so the reachable branch was the rare one \u2014 which is why the defect survived: `namespaceSegments()` now indexes the semicolon form by node startIndex, because web-tree-sitter re-creates the Node wrapper per call and a child index would not be a stable key.\n\nTwo consequences beyond the edge itself, both measured on the same file: a declaration's `qualifiedName` was the LEAF (`A`) rather than the FQN (`App\\One\\A`) for every declaration under the semicolon form, and `qualifiedName` is a store column (pool-worker.ts:870 reads `metadata.fqn`). So this fixture pins the containment edges and the fixture's own symbol list pins the owners, which is what makes the qn change observable.\n\nAlso pinned here, because the round's first implementation got it wrong: `include`/`require` stays FILE-scoped inside a namespace. An include path resolves against the file's own directory and the namespace in force has no part in it, so the owner is `global` exactly as it is for a `use` clause (php's own rule scopes both to the compilation unit). Leaving it as `ns || \"global\"` filed the SAME kind at two different owners depending only on which namespace syntax the file used; `php/include-paths` caught that on 6 edges. The forbidRelationships below is the namespaced case of the same rule.",
+  "expectSymbols": [
+    {
+      "name": "App\\One",
+      "kind": "namespace"
+    },
+    {
+      "name": "App\\Two",
+      "kind": "namespace"
+    },
+    {
+      "name": "App\\Three",
+      "kind": "namespace"
+    },
+    {
+      "name": "ONE",
+      "kind": "constant",
+      "ownerName": "App\\One"
+    },
+    {
+      "name": "A",
+      "kind": "class",
+      "ownerName": "App\\One"
+    },
+    {
+      "name": "fa",
+      "kind": "function",
+      "ownerName": "App\\One"
+    },
+    {
+      "name": "IOne",
+      "kind": "interface",
+      "ownerName": "App\\One"
+    },
+    {
+      "name": "TOne",
+      "kind": "trait",
+      "ownerName": "App\\One"
+    },
+    {
+      "name": "EOne",
+      "kind": "enum",
+      "ownerName": "App\\One"
+    },
+    {
+      "name": "B",
+      "kind": "class",
+      "ownerName": "App\\Two"
+    },
+    {
+      "name": "ITwo",
+      "kind": "interface",
+      "ownerName": "App\\Two"
+    },
+    {
+      "name": "C",
+      "kind": "class",
+      "ownerName": "App\\Three"
+    },
+    {
+      "name": "am",
+      "kind": "method",
+      "ownerName": "A"
+    },
+    {
+      "name": "First",
+      "kind": "enum_member",
+      "ownerName": "EOne"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "ONE",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "A",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "fa",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "IOne",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "TOne",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "EOne",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\Two",
+      "target": "B",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\Two",
+      "target": "ITwo",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "App\\Three",
+      "target": "C",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "A",
+      "target": "am",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "source": "EOne",
+      "target": "First",
+      "confidenceMin": 1
+    },
+    {
+      "type": "imports",
+      "source": "global",
+      "target": "App\\Two\\B",
+      "meta.relationshipType": "use_clause"
+    },
+    {
+      "type": "part_of",
+      "source": "global",
+      "target": "__DIR__/one-helper.php",
+      "meta.relationshipType": "include_path",
+      "meta.partRole": "library"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "am"
+    },
+    {
+      "type": "contains",
+      "source": "App\\One",
+      "target": "First"
+    },
+    {
+      "type": "contains",
+      "source": "A",
+      "target": "ONE"
+    },
+    {
+      "type": "imports",
+      "source": "App\\One",
+      "target": "App\\Two\\B"
+    },
+    {
+      "type": "part_of",
+      "source": "App\\One",
+      "target": "__DIR__/one-helper.php"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "App\\One",
+      "target": "A",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "App\\One",
+      "target": "ONE",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "App\\One",
+      "target": "EOne",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "App\\One",
+      "target": "TOne",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "App\\Two",
+      "target": "B",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "App\\Three",
+      "target": "C",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "A",
+      "target": "am",
+      "equals": 1
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "App\\Two\\B",
+      "equals": 1
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "__DIR__/one-helper.php",
+      "equals": 1
+    }
+  ]
+}

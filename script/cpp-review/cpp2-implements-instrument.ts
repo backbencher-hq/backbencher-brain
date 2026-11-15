@@ -53,14 +53,14 @@
  *   discipline `script/cpp-review/defect-register.ts` applies to D7, whose first cut
  *   could not even load against the code it gated.
  *
- *   BB_CORPUS_ROOT=$HOME/fixtures/repositories CPP_REPOS=sqlite,cpp-sample \
+ *   BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories CPP_REPOS=sqlite,cpp-sample \
  *     bun run script/cpp-review/cpp2-implements-instrument.ts [--out p] [--no-selftest]
  */
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { ASTEngine, parseFile } from "../../src/ast/engine"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"
 const SELF_TEST_FIXTURE = path.join(process.cwd(), "validation", "m14", "fixtures", "cpp", "pure-virtual-signature-910.cpp")
 const GRAMMAR = path.join(process.cwd(), "grammars", "tree-sitter-cpp", "grammar.js")

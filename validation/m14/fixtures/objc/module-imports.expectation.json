@@ -1,0 +1,107 @@
+{
+  "fixtureId": "objc/module-imports",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Objective-C has TWO dependency declarations and the lane read one. `@import Module;` is a clang module import — a `module_import` node whose only named child is a bare `identifier`, with no <> and no quotes to strip, so the preproc_include branch cannot be widened to cover it. Measured on the router's own 322 admitted files through production parseFile before the branch was written (script/m60/objc-call-shape-probe.ts): preproc_include 904 sites / 322 files -> 902 imports + 902 references; module_import 6 sites / 6 files -> 0 edges. All six corpus sites are `@import AFNetworking;` in the AFNetworking example applications. Both labels are published for the same two reasons as `#import`: `imports` is the kind src/lsp/graph_request.ts filters on to answer \"what does this file depend on\", and `references` is the kind the shared F5 oracle derives for an include. The module's references row carries its OWN reason code — `clang-module-name-not-resolved`, not `include-target-not-resolved` — because a clang module is not a header path and nothing in this walk knows whether the build defines a module under that name.",
+  "expectSymbols": [
+    {
+      "name": "ModuleImportDemo",
+      "kind": "class"
+    },
+    {
+      "name": "rowHeight",
+      "kind": "method",
+      "ownerName": "ModuleImportDemo"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "WidgetKit",
+      "kind": "class",
+      "comment": "a module import names a MODULE, never a class declared in this file"
+    },
+    {
+      "name": "CoreData",
+      "kind": "class",
+      "comment": "same: the module name is a dependency target, not a declaration"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "meta.relationshipType": "include_dependency",
+      "meta.isObjCModuleImport": false,
+      "line_number": 35,
+      "comment": "the pre-existing include path is unchanged by this fixture: it keeps include_dependency and is NOT tagged as a module import"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "WidgetKit",
+      "meta.relationshipType": "module_import",
+      "meta.isObjCModuleImport": true,
+      "meta.isObjCImport": true,
+      "meta.isImport": true,
+      "meta.fileLevel": true,
+      "meta.module": "WidgetKit",
+      "line_number": 36,
+      "comment": "fileLevel is load-bearing, not decoration: it is what makes the store put the IMPORTING FILE in source_external instead of the file-scope placeholder, which is how src/lsp/graph_request.ts's usages mode reaches the edge"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "CoreData",
+      "meta.relationshipType": "module_import",
+      "meta.isObjCModuleImport": true,
+      "meta.isObjCImport": true,
+      "meta.isImport": true,
+      "meta.fileLevel": true,
+      "meta.module": "CoreData",
+      "line_number": 37
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "WidgetKit",
+      "meta.isObjCModuleImport": true,
+      "meta.reasonCode": "clang-module-name-not-resolved",
+      "line_number": 36,
+      "comment": "the sub-1.0 twin carries its OWN reason code; an include's row below keeps the other one"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "CoreData",
+      "meta.isObjCModuleImport": true,
+      "meta.reasonCode": "clang-module-name-not-resolved",
+      "line_number": 37
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "meta.reasonCode": "include-target-not-resolved",
+      "line_number": 35,
+      "comment": "an #include and an @import are DIFFERENT claims about the same relationship kind, so they must not share one code — the same collapsing the two overrides branches refuse"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "WidgetKit",
+      "comment": "a module is a dependency this unit consumes, never a declaration this unit exports"
+    },
+    {
+      "type": "exports",
+      "target": "CoreData",
+      "comment": "same: exports means external-linkage DECLARATION (C99 6.2.2p5), and a module import declares nothing"
+    },
+    {
+      "type": "imports",
+      "target": "Foundation",
+      "comment": "the include target is the path as spelled, <Foundation/Foundation.h>; a module import's target is the bare module name, and neither is truncated to a framework"
+    }
+  ]
+}

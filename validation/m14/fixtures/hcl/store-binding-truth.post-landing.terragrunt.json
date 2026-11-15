@@ -1,0 +1,459 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.mts",
+  "draw": "f07bdaa05f5ed2f0",
+  "repos": [
+    "terragrunt"
+  ],
+  "admittedFiles": 3399,
+  "filesDrawn": 3399,
+  "filesCopied": 3399,
+  "indexerEligible": 3376,
+  "indexerDiscoveredPaths": 3376,
+  "excludedFromTheIndexer": {
+    "testdata": 17,
+    "test": 4,
+    ".terraform.lock.hcl": 2
+  },
+  "indexMs": 438960,
+  "indexStats": {
+    "totalFiles": 3376,
+    "symbols": 17516
+  },
+  "store": {
+    "brainFile": 3376,
+    "brainSymbol": 17516,
+    "brainRelationship": 30560
+  },
+  "perType": {
+    "contains": {
+      "edges": 23328,
+      "sourceUnbound": 0,
+      "targetUnbound": 133,
+      "bound": 23195,
+      "boundSameFile": 23195,
+      "boundOtherFile": 0,
+      "boundNameExact": 14225,
+      "boundQnameExact": 14239,
+      "boundNeedsLeafReduction": 8636,
+      "withLine": 23328,
+      "boundSameFileSameLine": 23195,
+      "boundSameFileOffLine": 0,
+      "boundOtherFileSameLine": 0,
+      "boundOtherFileOffLine": 0,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 23195,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0
+    },
+    "exports": {
+      "edges": 4937,
+      "sourceUnbound": 0,
+      "targetUnbound": 5,
+      "bound": 4932,
+      "boundSameFile": 4932,
+      "boundOtherFile": 0,
+      "boundNameExact": 4932,
+      "boundQnameExact": 4923,
+      "boundNeedsLeafReduction": 0,
+      "withLine": 4937,
+      "boundSameFileSameLine": 4923,
+      "boundSameFileOffLine": 9,
+      "boundOtherFileSameLine": 0,
+      "boundOtherFileOffLine": 0,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 4932,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0
+    },
+    "references": {
+      "edges": 2118,
+      "sourceUnbound": 0,
+      "targetUnbound": 244,
+      "bound": 1874,
+      "boundSameFile": 1060,
+      "boundOtherFile": 814,
+      "boundNameExact": 49,
+      "boundQnameExact": 174,
+      "boundNeedsLeafReduction": 1825,
+      "withLine": 2118,
+      "boundSameFileSameLine": 92,
+      "boundSameFileOffLine": 968,
+      "boundOtherFileSameLine": 50,
+      "boundOtherFileOffLine": 764,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 98,
+      "twinExists": 76,
+      "noCandidateAnywhere": 1700,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0
+    },
+    "uses": {
+      "edges": 124,
+      "sourceUnbound": 0,
+      "targetUnbound": 0,
+      "bound": 124,
+      "boundSameFile": 0,
+      "boundOtherFile": 124,
+      "boundNameExact": 0,
+      "boundQnameExact": 0,
+      "boundNeedsLeafReduction": 124,
+      "withLine": 124,
+      "boundSameFileSameLine": 0,
+      "boundSameFileOffLine": 0,
+      "boundOtherFileSameLine": 0,
+      "boundOtherFileOffLine": 124,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 0,
+      "twinExists": 0,
+      "noCandidateAnywhere": 124,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0
+    },
+    "imports": {
+      "edges": 53,
+      "sourceUnbound": 0,
+      "targetUnbound": 52,
+      "bound": 1,
+      "boundSameFile": 1,
+      "boundOtherFile": 0,
+      "boundNameExact": 0,
+      "boundQnameExact": 0,
+      "boundNeedsLeafReduction": 1,
+      "withLine": 53,
+      "boundSameFileSameLine": 0,
+      "boundSameFileOffLine": 1,
+      "boundOtherFileSameLine": 0,
+      "boundOtherFileOffLine": 0,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 0,
+      "twinExists": 0,
+      "noCandidateAnywhere": 1,
+      "moveUniqueSpelling": 0,
+      "moveDuplicateSpelling": 0
+    }
+  },
+  "gateModelOverTheSameFiles": {
+    "contains": {
+      "edges": 14372,
+      "resolved": 1743,
+      "amb": 12496,
+      "unresolved": 133,
+      "noSource": 0
+    },
+    "exports": {
+      "edges": 5274,
+      "resolved": 505,
+      "amb": 4764,
+      "unresolved": 5,
+      "noSource": 0
+    },
+    "references": {
+      "edges": 2118,
+      "resolved": 7,
+      "amb": 167,
+      "unresolved": 1944,
+      "noSource": 0
+    },
+    "uses": {
+      "edges": 124,
+      "resolved": 0,
+      "amb": 0,
+      "unresolved": 124,
+      "noSource": 0
+    },
+    "imports": {
+      "edges": 53,
+      "resolved": 0,
+      "amb": 0,
+      "unresolved": 53,
+      "noSource": 0
+    }
+  },
+  "totals": {
+    "edges": 30560,
+    "bound": 30126,
+    "targetUnbound": 434,
+    "boundSameFile": 29188,
+    "boundOtherFile": 938,
+    "boundNameExact": 19206,
+    "boundQnameExact": 19336,
+    "boundNeedsLeafReduction": 10586,
+    "sourceUnbound": 0,
+    "boundSameFileSameLine": 28210,
+    "boundSameFileOffLine": 978,
+    "boundOtherFileSameLine": 50,
+    "boundOtherFileOffLine": 888,
+    "scopedWouldMove": 0,
+    "moveUniqueSpelling": 0,
+    "moveDuplicateSpelling": 0,
+    "scopedWouldMoveLeafReduced": 0,
+    "scopedAlreadyRight": 28225,
+    "twinExists": 76,
+    "noCandidateAnywhere": 1825
+  },
+  "unboundByRoot": {
+    "contains": {
+      "external": 6,
+      "locals": 1,
+      "(empty)": 5,
+      "terraform": 121
+    },
+    "exports": {
+      "(empty)": 5
+    },
+    "imports": {
+      "": 44,
+      "/tmp/not-existing-path": 1,
+      "cloudposse/label/null": 2,
+      "git::__MIRROR_URL__//test/fixtures/aws-provider-patch/example-module?ref=__BRANCH_NAME__": 1,
+      "git::__MIRROR_URL__//test/fixtures/download/hello-world-no-remote?ref=v0": 1,
+      "git::__MIRROR_URL__//test/fixtures/download/hello-world?ref=v0": 1,
+      "github": 2
+    },
+    "references": {
+      "aws": 1,
+      "aws_lambda_function_url": 8,
+      "data": 1,
+      "dependency": 14,
+      "include": 2,
+      "local": 3,
+      "module": 189,
+      "random_id": 3,
+      "triggers": 6,
+      "values": 17
+    }
+  },
+  "unboundTopTargets": [
+    {
+      "type": "contains",
+      "target": "terraform.required_providers.null",
+      "n": 112
+    },
+    {
+      "type": "references",
+      "target": "module.ddb.aws_dynamodb_table.asset_metadata",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_policy.lambda_basic_execution",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_policy.lambda_dynamodb",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_policy.lambda_s3_read",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_role.lambda_role",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_role_policy_attachment.lambda_basic_execution",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_role_policy_attachment.lambda_dynamodb",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.iam.aws_iam_role_policy_attachment.lambda_s3_read",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "module.s3.aws_s3_bucket.static_assets",
+      "n": 12
+    },
+    {
+      "type": "references",
+      "target": "aws_lambda_function_url.main.function_url",
+      "n": 8
+    },
+    {
+      "type": "imports",
+      "target": "../ddb",
+      "n": 6
+    },
+    {
+      "type": "imports",
+      "target": "../iam",
+      "n": 6
+    },
+    {
+      "type": "imports",
+      "target": "../lambda",
+      "n": 6
+    },
+    {
+      "type": "imports",
+      "target": "../s3",
+      "n": 6
+    },
+    {
+      "type": "references",
+      "target": "triggers.large_data",
+      "n": 6
+    },
+    {
+      "type": "contains",
+      "target": "null",
+      "n": 5
+    },
+    {
+      "type": "exports",
+      "target": "null",
+      "n": 5
+    },
+    {
+      "type": "references",
+      "target": "dependency.vpc.outputs.private_subnets",
+      "n": 5
+    },
+    {
+      "type": "references",
+      "target": "module.main.module.ddb.aws_dynamodb_table.asset_metadata",
+      "n": 4
+    }
+  ],
+  "boundOtherFileSamples": [
+    {
+      "type": "references",
+      "target": "feature.key_prefix.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/azure-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.disable_versioning.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/azure-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.enable_soft_delete.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/azure-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.dep.value",
+      "src_name": "dependencies",
+      "src_file": "terragrunt/test/fixtures/external-dependency/terragrunt.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "dependency.vpc.outputs.new_attribute",
+      "src_name": "inputs",
+      "src_file": "terragrunt/test/fixtures/include-deep/root.hcl",
+      "tgt_name": "new_attribute",
+      "tgt_file": "terragrunt/test/fixtures/include-deep/child/main.tf"
+    },
+    {
+      "type": "references",
+      "target": "dependency.vpc.outputs.new_attribute",
+      "src_name": "terragrunt_inputs",
+      "src_file": "terragrunt/test/fixtures/include-multiple/terragrunt_inputs.hcl",
+      "tgt_name": "new_attribute",
+      "tgt_file": "terragrunt/test/fixtures/include-deep/child/main.tf"
+    },
+    {
+      "type": "references",
+      "target": "dependency.vpc.outputs.new_attribute",
+      "src_name": "terragrunt_inputs_final",
+      "src_file": "terragrunt/test/fixtures/include-multiple/terragrunt_inputs_final.hcl",
+      "tgt_name": "new_attribute",
+      "tgt_file": "terragrunt/test/fixtures/include-deep/child/main.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.key_prefix.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/gcs-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.disable_versioning.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/gcs-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "uses",
+      "target": "path.module",
+      "src_name": "local_file.file",
+      "src_file": "terragrunt/test/fixtures/ephemeral-inputs/main.tf",
+      "tgt_name": "module",
+      "tgt_file": "terragrunt/test/fixtures/hclvalidate/valid/var-in-source/main.tf"
+    },
+    {
+      "type": "references",
+      "target": "var.resource_count",
+      "src_name": "null_resource.test-resources",
+      "src_file": "terragrunt/test/fixtures/planfile-order-test/resource.tf",
+      "tgt_name": "resource_count",
+      "tgt_file": "terragrunt/test/fixtures/planfile-order-test/inputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "dependency.baz.outputs.baz",
+      "src_name": "terragrunt",
+      "src_file": "terragrunt/test/fixtures/render-json-regression/terragrunt.hcl",
+      "tgt_name": "baz",
+      "tgt_file": "terragrunt/test/fixtures/exec-cmd-tf-path/app/main.tf"
+    },
+    {
+      "type": "references",
+      "target": "dependency.dep.outputs.name",
+      "src_name": "common_vars",
+      "src_file": "terragrunt/test/fixtures/render-json-with-encryption/common_vars.hcl",
+      "tgt_name": "name",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-7-taking-advantage-of-terragrunt-stacks/live/dev/terragrunt.stack.hcl"
+    },
+    {
+      "type": "references",
+      "target": "feature.key_prefix.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/s3-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.disable_versioning.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/s3-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/outputs.tf"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the F5 clj-kondo lane (UNEXPLAINED references self-edges on clj-kondo node.clj and corpus/invalid_arity/order.clj): a self-require and a self-qualified call are lexical no-ops as dependencies — ELXD8 mirror. The call edge itself must still emit (go -> clj.fixture.selfref/helper); only the self-references edge is forbidden.",
+  "expectSymbols": [
+    { "name": "go", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "go", "target": "clj.fixture.selfref/helper", "line_number": 4 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "clj.fixture.selfref" }
+  ]
+}

@@ -8,7 +8,7 @@
 // Corpora:
 //   small  - rake/lib/rake (Ruby)
 //   medium - rebar3/apps (Erlang)
-//   large  - $HOME/TypeScript/src/compiler (TypeScript)
+//   large  - /home/ishaq2321/TypeScript/src/compiler (TypeScript)
 //
 // Per repo: index wall time, file/symbol counts, patterns scan time + count,
 // security scan time + count. Missing corpus -> recorded as blocked.
@@ -48,10 +48,10 @@ function crossToolSourceFingerprint(rootPath: string): string {
   return createHash("sha256").update(joined).digest("hex")
 }
 
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
 
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
-// WAS: the literal "$HOME/TypeScript/src/compiler" — the owner's TypeScript
+// WAS: the literal "/home/ishaq2321/TypeScript/src/compiler" — the owner's TypeScript
 // clone on the OTHER laptop. It does not exist on this machine, so the ledger was
 // derived from a real-repo anchor that is not here.
 //

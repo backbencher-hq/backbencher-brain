@@ -1,0 +1,11 @@
+{
+  "fixtureId": "typescript/accessor-pair",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Family contract: get/set pair over same name is ONE property symbol (isAccessor), not two methods.",
+  "expectSymbols": [
+    { "name": "Temperature" },
+    { "name": "celsius" }
+  ],
+  "forbidRelationships": []
+}

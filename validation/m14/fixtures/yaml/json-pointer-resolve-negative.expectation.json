@@ -1,0 +1,35 @@
+{
+ "fixtureId": "yaml/json-pointer-resolve-negative",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The negative half: a string that merely STARTS with `#` is not a pointer. Before the narrowing all three values here became references. One is a plain hash, one is anchor style; only the middle value is a pointer, and it is unresolved because this file declares no `/a/b`.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "json-pointer-resolve-negative.real",
+   "target": "#/a/b",
+   "meta.resolved": false,
+   "line_number": 4
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "json-pointer-resolve-negative.note"
+  },
+  {
+   "from": "json-pointer-resolve-negative.alsoNot"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   3,
+   4,
+   5
+  ],
+  "evidenceClasses": [
+   "reference_qualified",
+   "structural"
+  ]
+ }
+}

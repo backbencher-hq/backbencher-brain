@@ -1,0 +1,1 @@
+[{"label":"symbol.fixtures","args":{"mode":"symbol","symbolName":"applyDiscount"}},{"label":"symbols.fixtures","args":{"query":"applyDiscount"}},{"label":"symbol.filePathLang","args":{"mode":"symbol","symbolName":"duplicateName","filePath":"src/b.ts"}}]

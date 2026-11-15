@@ -1,0 +1,27 @@
+# Value kinds, array-of-tables, and the inline-table scoping ruling.
+
+[types]
+a_string = "s"
+an_integer = 42
+a_float = 1.5
+a_boolean = true
+a_datetime_offset = 1979-05-27T07:32:00Z
+a_datetime_local = 1979-05-27T07:32:00
+a_date = 1979-05-27
+a_time = 07:32:00
+a_multiline_array = [
+  "x",
+  "y",
+]
+
+# An inline table's keys are part of ONE value expression: `inline` is the symbol,
+# and `a`/`b` are recorded on it rather than published as symbols of the file.
+[inline]
+table = { a = 1, b = "two" }
+
+# Each `[[bin]]` element is a DISTINCT table, so the second cannot reuse the name.
+[[bin]]
+name = "cli"
+
+[[bin]]
+name = "cli2"

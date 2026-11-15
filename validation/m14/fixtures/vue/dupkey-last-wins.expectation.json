@@ -1,0 +1,15 @@
+{
+  "fixtureId": "vue/dupkey-last-wins",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 dup-key ruling Option A (#745): Options-API object members were first-wins while JS executes the LAST same-key declaration (and the JS analyzer's J3 contract is last-wins). Family contract after the ruling: one symbol per key keyed to the LAST declaration. Mutant vue/dupkey-revert-first-wins reverts to first-wins and dies on this fixture.",
+  "expectSymbols": [
+    { "name": "save", "kind": "method", "note": "exactly ONE save symbol (dup-key collapsed)" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "lastHelper", "note": "the surviving (LAST) body's call" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "firstHelper", "note": "the phantom first body must not emit calls (first-wins revert caught here)" }
+  ]
+}

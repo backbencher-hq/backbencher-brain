@@ -1,5 +1,5 @@
 {
-  "repo": "$HOME/intellij-community",
+  "repo": "/home/ishaq2321/intellij-community",
   "sampleSize": 100,
   "samplesAreDisjoint": true,
   "deferredFinalization": true,

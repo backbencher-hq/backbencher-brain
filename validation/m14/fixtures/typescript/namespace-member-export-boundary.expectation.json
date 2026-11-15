@@ -1,0 +1,11 @@
+{
+  "fixtureId": "typescript/namespace-member-export-boundary",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "TS export semantics: a namespace/module member needs its OWN export keyword. The ancestor-climbing isNodeExported crossed the container boundary, so `class Hidden {}` inside `export namespace NS` was marked exported/public - inflating public-API surfaces and gravity scores. Visible (own export) stays exported; Hidden does not; the container itself stays exported.",
+  "expectSymbols": [
+    { "name": "NS", "kind": "namespace", "meta.isExported": true },
+    { "name": "Visible", "kind": "class", "meta.isExported": true },
+    { "name": "Hidden", "kind": "class", "meta.isExported": false }
+  ]
+}

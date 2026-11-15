@@ -1,0 +1,142 @@
+{
+  "comment": "ORIGIN DISCLOSURE / #288 \u2014 every channel the inline-block seam writes to must say WHERE it was written. This is the only html fixture that pins that property, and it exists because three of the four merged channels were inconsistently marked: symbols / relationships / imports carried htmlEmbedded + embeddedLang + embeddedLineOffset, while the seam's OWN `contains` rows carried none of them and the exports[] channel carried nothing at all. Measured, vuejs production path: 245 of 921 delegate rows arrived untagged; full corpus (1,652 documents): 8. The method's own header told auditors to use `htmlEmbedded` as the origin test, so those rows read as html's own output. script/m14/html-origin-census.ts measures origin the other way \u2014 by differencing the production path against the seam switched off \u2014 and these pins are what makes the tag agree with the difference. NEGATIVE CONTROLS, all three run and all three observed to FAIL: (1) removing `htmlEmbedded` + `embeddedLineOffset` from the seam's `contains` metadata fails the three `contains` pins here and the four in `inline-embedded-code`; (2) removing the marker from the exports merge fails the two `expectExports` pins; (3) restoring `frameworks[\"Web Components\"] = true` fails the `forbidFrameworks` string pin here and in `framework-and-scores`. A fourth control was WRITTEN and did not fail, which is why (3) is a bare string: `forbidFrameworks` is compared with `actual.includes(want)`, so the object form `{framework, comment}` never matches and a pin written that way reads as coverage while being unable to fail.",
+  "expectFrameworks": [
+    "HTML5"
+  ],
+  "forbidFrameworks": [
+    "Web Components"
+  ],
+  "expectSymbols": [
+    {
+      "name": "embedded-origin-marks",
+      "kind": "module"
+    },
+    {
+      "name": "app",
+      "kind": "class",
+      "meta.tagName": "main"
+    },
+    {
+      "name": "widget",
+      "kind": "class",
+      "meta.tagName": "panel-widget"
+    },
+    {
+      "name": "widget-again",
+      "kind": "class",
+      "meta.tagName": "panel-widget"
+    },
+    {
+      "comment": "Delegate symbol: shifted from block-relative to file coordinates, and the applied offset is RECORDED on the row so the shift is auditable rather than merely correct.",
+      "name": "MOUNTED",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 45
+    },
+    {
+      "name": "teardown",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 45
+    },
+    {
+      "comment": "The CSS delegate's own selector symbol, on its file-coordinate line (the selector is written on 37 and the offset is 35).",
+      "name": ".lead",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "css"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "SEAM-CREATED contains, and this is the pin that did not exist before 2026-10-05. These rows are manufactured by mergeEmbeddedBlocks itself \u2014 they join a delegate symbol to its owner \u2014 so no delegate ever tagged them, and they arrived with isEmbeddedCode + embeddedLang but WITHOUT htmlEmbedded or embeddedLineOffset while every other merged row carried both.",
+      "type": "contains",
+      "from": "embedded-origin-marks",
+      "target": "MOUNTED",
+      "line_number": 49,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 45
+    },
+    {
+      "type": "contains",
+      "from": "embedded-origin-marks",
+      "target": "teardown",
+      "line_number": 51,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "comment": "The CSS half: the seam created this one too, so it carries the same three markers.",
+      "type": "contains",
+      "from": "embedded-origin-marks",
+      "target": ".lead",
+      "line_number": 37,
+      "meta.isEmbeddedCode": true,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "css"
+    },
+    {
+      "comment": "html's OWN containment: no htmlEmbedded, no embeddedLang, because html's own walk wrote it. This is the negative half of the pin \u2014 if the marker were on html's own rows too, the origin test would be worthless in the other direction.",
+      "type": "contains",
+      "from": "app",
+      "target": "widget",
+      "line_number": 43
+    },
+    {
+      "type": "contains",
+      "from": "app",
+      "target": "widget-again",
+      "line_number": 44
+    },
+    {
+      "comment": "The import is written on line 47; block-relative it is line 2, so the shift is what makes this pin true.",
+      "type": "imports",
+      "from": "embedded-origin-marks",
+      "target": "/lib/mount.js:mount",
+      "line_number": 47,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLineOffset": 45
+    }
+  ],
+  "expectExports": [
+    {
+      "comment": "EXPORTS CHANNEL ORIGIN. The exports merge was the ONLY merged channel with no marker of any kind: not htmlEmbedded, not embeddedLang, not the offset. Over the corpus, 575 exports[] rows arrive in 17 files and 0 of them are html's own \u2014 so the lane's doc claim of '0 exports, because markup has no module surface' was right about html and silent about where the rows came from, and the graph could not tell. html genuinely has no module surface; the point of this pin is that a consumer can now SEE that these rows are not html's.",
+      "name": "MOUNTED",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 45
+    },
+    {
+      "name": "teardown",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 45
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "html publishes no `exports` RELATIONSHIP row of its own. Markup has no module surface. The two `exports` rows this document produces are the JS delegate's and arrive merged \u2014 but they are not html's, and a pin that cannot tell the difference would let an html export slip in unnoticed.",
+      "from": "app",
+      "type": "exports"
+    },
+    {
+      "comment": "A hyphen in a tag name is a POTENTIAL custom element, not a registered one. Emitting `instantiates <module> -> panel-widget` here is the measured fabrication html-custom-element-join.ts rules out: 0 of the corpus's 2,010 hyphenated-tag occurrences name an element any indexed js/ts file registers, and the endpoint would bind to a framework component or a generated <elem-N> and resolve to nothing.",
+      "type": "instantiates",
+      "target": "panel-widget"
+    },
+    {
+      "comment": "An ARIA role is a specification token, not a declaration this project owns. `implements` on role= is ruled by measurement: 365 occurrences, 9 distinct values, 365 of 365 members of the WAI-ARIA enumeration \u2014 and four of the nine (button, main, document, dialog) collide with names html's own identity ruling publishes for <button id=\u2026>, <main id=\u2026>, a file called document.html and <dialog id=\u2026>, so the edge would bind to an arbitrary DOM element.",
+      "type": "implements"
+    },
+    {
+      "comment": "The customized-built-in attribute `is=` is present on no element of this document and occurs 0 times in 1,652 corpus documents, so no `extends` edge exists to emit.",
+      "type": "extends"
+    },
+    {
+      "comment": "HTML defines no member, method or class, and `role=\"presentation\"` occurs 6 times across 2 corpus documents and names no declaration. There is nothing for an override edge to attach to at either end.",
+      "type": "overrides"
+    }
+  ]
+}

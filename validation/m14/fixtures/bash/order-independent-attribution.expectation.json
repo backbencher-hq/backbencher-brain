@@ -1,0 +1,112 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/order-independent-attribution.sh",
+ "authoredFrom": "Authored 2026-10-04 from a defect this lane's own census found by reading the wrong FIELD: `census-bash-ontology.ts` printed the ambiguity table's line column from `s.line_number ?? s.range?.start?.line`, and `parseFile` publishes NEITHER — it reshapes every symbol to `startLine`/`endLine`. So the column read as 0,0,0,0 for every candidate set and the table could not support the claim built on it. With the field corrected, the same corpus showed something the broken column had been hiding: `resolveDeclaration` is called from INSIDE the walk that emits the edges (analyzer line 524 reads `declSites`; lines 528-536 fill it), so the question \"is this name declared more than once in this file?\" was answered against a HALF-BUILT index. Measured over all 4,130 admitted files, 4,220 `uses` edges in 400 files named a target with two or more declarations in their own file and published NO `targetResolution`, every one of them because the edge was emitted before the walk reached the later declarations. The published answer depended on where in the file the READ sat rather than on what the file declares.\n\nThis is an omission and not a fabrication — nothing wrong was asserted — which is why 39 mutants and 22 fixtures did not catch it: every mutant removes or inverts a rule and this defect is a rule that was never asked the question. It is invisible to a differential too, because the oracle is a separate walker and never published target metadata to begin with.\n\nThe fix re-asks the question after the walk, against the finished index, calling the SAME `resolveDeclaration` so there is one rule and not two, and only for edges that published nothing — so a name that really is unique in its file still gains no keys. Measured before/after on one unchanged corpus: unattributed-but-ambiguous 4,220 → 37, attributed 7,780 → 11,967, genuinely-unique-and-correctly-silent 68,843 → 68,791.\n\nThe residual 37 are NOT this defect and the fixture does not claim them: they are `uses` edges whose target name is also the name of a FUNCTION in the same file (e.g. `consul/build-support/functions/10-util.sh` has function `ui_version` at line 597 and variable `ui_version` at 612). bash keeps functions and variables in separate namespaces, so a `$name` read cannot denote the function, and `declSites` — which records variable declarations — is the correct universe for a variable read. The census probe's residual count is what conflates the two namespaces by counting published symbols of any kind.\n\nBoth directions are asserted because a fix that simply published `ambiguousInFile` everywhere would pass the first block and fail the second. The second block is the one that costs the edge its LINE, and it is the block that distinguishes \"the rule was re-asked\" from \"a refusal was blanket-published\".",
+ "expectSymbols": [
+  {
+   "name": "order-independent-attribution.sh",
+   "kind": "module"
+  },
+  {
+   "name": "probe_before_any_declaration",
+   "kind": "function"
+  },
+  {
+   "name": "declares_first",
+   "kind": "function"
+  },
+  {
+   "name": "ORDER_MATTERS",
+   "kind": "variable",
+   "ownerName": "declares_first"
+  },
+  {
+   "name": "declares_second",
+   "kind": "function"
+  },
+  {
+   "name": "ORDER_MATTERS",
+   "kind": "variable",
+   "ownerName": "declares_second"
+  },
+  {
+   "name": "declares_in_own_scope_first",
+   "kind": "function"
+  },
+  {
+   "name": "OWN_EARLY",
+   "kind": "variable",
+   "ownerName": "declares_in_own_scope_first"
+  },
+  {
+   "name": "declares_the_same_name_later",
+   "kind": "function"
+  },
+  {
+   "name": "OWN_EARLY",
+   "kind": "variable",
+   "ownerName": "declares_the_same_name_later"
+  },
+  {
+   "name": "DECLARED_ONCE",
+   "kind": "variable"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "probe_before_any_declaration",
+   "target": "ORDER_MATTERS",
+   "line_number": 32,
+   "meta.targetResolution": "ambiguousInFile",
+   "note": "THE row, and the one the ordering defect suppressed. The read is on line 32; both declarations of ORDER_MATTERS are on lines 35 and 36, AFTER it. Before the fix the edge was emitted while declSites held fewer than two candidates, so it published nothing at all — a row indistinguishable from a name declared once. Neither the reading scope nor the file declares the name, so the correct answer is the refusal and no line."
+  },
+  {
+   "type": "uses",
+   "from": "declares_in_own_scope_first",
+   "target": "declares_in_own_scope_first.OWN_EARLY",
+   "meta.targetLine": 44,
+   "meta.targetKind": "variable",
+   "meta.targetResolution": "innermostScope",
+   "note": "The row that costs the edge its LINE, and the reason the fix cannot be a blanket refusal. The declaration in the reading scope is at 44, at or before the read at 45, so this one IS resolvable even though the second declaration sits further down the file at 48 and was not in the index when the edge was emitted. Pre-fix this edge also published nothing. An implementation that re-asked the question but answered `ambiguousInFile` would pass the previous row and fail this one."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "probe_before_any_declaration",
+   "target": "ORDER_MATTERS",
+   "meta.targetLine": 35,
+   "note": "declares_first's declaration. The edge must name NEITHER candidate: publishing the nearest of several is the invented attribution the ambiguity mechanism exists to prevent, and this row plus the next is the pair that convicts a fix which resolves when it cannot know."
+  },
+  {
+   "type": "uses",
+   "from": "probe_before_any_declaration",
+   "target": "ORDER_MATTERS",
+   "meta.targetLine": 36,
+   "note": "declares_second's declaration, at 36 — LATER than 35, so a nearest-preceding-line rule would answer 35 and a first-declaration rule would answer 35. Forbidding both lines rather than one means neither of the two plausible wrong answers is left available."
+  },
+  {
+   "type": "uses",
+   "from": "declares_in_own_scope_first",
+   "target": "OWN_EARLY",
+   "meta.targetLine": 48,
+   "note": "The other-scope declaration. 44 is in effect at the read on 45 and 48 belongs to a function that does not execute; an edge asserting 48 says the read picks up a value another function assigns, which bash does not do."
+  },
+  {
+   "type": "uses",
+   "from": "order-independent-attribution.sh",
+   "target": "DECLARED_ONCE",
+   "meta.targetLine": 56,
+   "note": "The payload constraint, and the cost boundary of the whole fix. DECLARED_ONCE is declared exactly once in this file, so its read must carry no line. The second pass re-asks the ambiguity question for EVERY unattributed `uses` edge, so without this row an implementation that attached the keys unconditionally would pass all four rows above and attach three keys to every `uses` edge in the corpus — 68,791 of them on the pinned corpus, each saying what its target already said."
+  },
+  {
+   "type": "uses",
+   "from": "order-independent-attribution.sh",
+   "target": "DECLARED_ONCE",
+   "meta.targetResolution": "innermostScope",
+   "note": "Not even the resolution RULE is published for a non-ambiguous target: the key's presence is the signal that the target was ambiguous, so publishing it unconditionally would make every edge claim ambiguity it does not have."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

@@ -1,0 +1,56 @@
+{
+  "fixtureId": "php/cross-file-override-base",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE BASE HALF of the cross-file `overrides` pin, and it is pinned for its own sake rather than as an accessory. `RealPhpAnalyzer.resolveOverrides` can only verify an override whose base declaration is VISIBLE, and until the M60 round nothing on any test or gate path ever built `AnalyzeContext.overrideCompanion` — so the cross-file path had NO pin at all: no fixture, no mutant, and no differential that could see a wrong target either, because the published match is `(label, target)` through `normTarget`, the LAST SEGMENT, so a truth row naming `TestCase.__construct` is satisfied by any other `__construct` override in the draw. `run-fixtures.ts` now accepts an opt-in `crossFileOverride` key, and this file is the companion source `cross-file-override.php` names. Pinning what the base DECLARES matters because the subclass fixture's forbid rows are only meaningful against a known declaration set: `inheritedOnly` and `neverRedeclared` are here precisely so that 'the base does not declare it' is checkable. The private and protected members are the half that found a real defect — see the subclass file's rationale.",
+  "expectSymbols": [
+    {
+      "name": "BaseContract",
+      "kind": "class",
+      "comment": "an abstract base declared in its OWN compilation unit — this file"
+    },
+    {
+      "name": "execute",
+      "kind": "method",
+      "ownerName": "BaseContract",
+      "comment": "redeclared by the subclass across a file boundary: a genuine override"
+    },
+    {
+      "name": "describe",
+      "kind": "method",
+      "ownerName": "BaseContract"
+    },
+    {
+      "name": "inheritedOnly",
+      "kind": "method",
+      "ownerName": "BaseContract",
+      "comment": "NOT redeclared by the subclass. Inheriting is not overriding, and the cross-file path must be as strict about that as the same-file path."
+    },
+    {
+      "name": "neverRedeclared",
+      "kind": "method",
+      "ownerName": "BaseContract",
+      "comment": "no subclass declares this, so no override edge may name it"
+    },
+    {
+      "name": "make",
+      "kind": "method",
+      "ownerName": "BaseContract",
+      "comment": "static, and redeclared as static by the subclass, which PHP permits"
+    },
+    {
+      "name": "privateHelper",
+      "kind": "method",
+      "ownerName": "BaseContract",
+      "visibility": "private",
+      "comment": "PRIVATE. PHP does not inherit a private method, so a subclass method of the same name is a DIFFERENT method. This row is the one that found a real defect — and note that the filter applies to SAME-FILE bases, because that is where identity is exact; for a cross-file base the visibility is knowable only from a name-keyed index, which php's leaf-name model makes ambiguous, so it is deliberately not acted upon. See the subclass fixture's forbid rows."
+    },
+    {
+      "name": "protectedHelper",
+      "kind": "method",
+      "ownerName": "BaseContract",
+      "visibility": "protected",
+      "comment": "protected, and redeclared protected: a genuine override, and the contrast case that proves the filter is on VISIBILITY rather than on presence"
+    }
+  ]
+}

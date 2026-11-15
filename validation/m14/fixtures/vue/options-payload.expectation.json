@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/options-payload",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave M5 fix (found in the TS-path expansion): Options-API members copy the sub-analyzer payload instead of emitting bare signatures — save keeps its (id: string) parameter and void return.",
+  "expectSymbols": [
+    { "name": "save", "kind": "method", "ownerName": "options-payload", "returnType": "void" }
+  ],
+  "expectParameters": [
+    { "symbol": "save", "parameters": [{ "name": "id", "type": "string" }] }
+  ]
+}

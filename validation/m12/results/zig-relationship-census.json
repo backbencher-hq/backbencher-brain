@@ -1,0 +1,117 @@
+{
+  "engineTypes": 15,
+  "counts": {
+    "not-an-analyzers-class": 4,
+    "emitted+gated": 7,
+    "not-applicable": 4
+  },
+  "rows": [
+    {
+      "type": "affected_by",
+      "definedIn": "src/ast/graph.ts",
+      "bucket": "not-an-analyzers-class",
+      "reason": "inferred from a blast-radius computation, not from syntax",
+      "gate": null
+    },
+    {
+      "type": "calls",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "callee leaf, including a member-leaf callee (`list.append` -> append); derived independently by the differential's zig truth",
+      "gate": "script/m14/differential.ts deriveZigEdges"
+    },
+    {
+      "type": "contains",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "owner -> member, from the tree's own declaration structure (Z19/Z21/Z22/Z26/Z28) and gated owner-keyed in BOTH directions",
+      "gate": "script/m14/tmp/zigw-contains.ts (Z27: F5 matches this class by NAME; the owner half needs the owner-keyed gate)"
+    },
+    {
+      "type": "depends_on",
+      "definedIn": "src/ast/graph.ts",
+      "bucket": "not-applicable",
+      "reason": "yaml owns this as a DATA key (`depends_on: [db]`), and engine.ts lists it as a legacy alias of `references`; zig has no such construct, and its dependency surface is `imports` (Z30)",
+      "gate": null
+    },
+    {
+      "type": "exports",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "the module's public API surface: 1,584 file-scope `pub`/`export` declarations over 400 corpus files, generated FROM the export list so the two surfaces cannot drift. A `pub` member INSIDE a container is deliberately excluded (Z20): 1,720 of them in the same sample",
+      "gate": "script/m14/tmp/zigw-exports.ts"
+    },
+    {
+      "type": "extends",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "not-applicable",
+      "reason": "zig has no class inheritance: there is no `extends`, no base class, and no subtype syntax in the language or its grammar",
+      "gate": null
+    },
+    {
+      "type": "implements",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "not-applicable",
+      "reason": "no interfaces and no implements clause; the language's composition idiom is a struct field or an opaque vtable, which is a field and therefore a `contains` edge",
+      "gate": null
+    },
+    {
+      "type": "imports",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "a module DEPENDENCY, not a symbol: 1,918 sites over 400 corpus files, 176 of them paths no declaration name could hold. One site pass, not a shape enumeration (Z30)",
+      "gate": "script/m14/tmp/zigw-imports.ts"
+    },
+    {
+      "type": "instantiates",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "the two statically derivable classes: construction of an in-file type (77) and a call to an in-file `fn ... type` (55) over 400 corpus files (Z32)",
+      "gate": "script/m14/tmp/zigw-instantiation.ts"
+    },
+    {
+      "type": "overrides",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "not-applicable",
+      "reason": "no `override` keyword and no virtual-method table to override; a same-named method on a different type is not an override and claiming it would be a fabrication",
+      "gate": null
+    },
+    {
+      "type": "part_of_feature",
+      "definedIn": "src/ast/graph.ts",
+      "bucket": "not-an-analyzers-class",
+      "reason": "inferred from a feature grouping, not from syntax",
+      "gate": null
+    },
+    {
+      "type": "references",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "declared types and imports; the declared-type truth was added in Z14 and the import mirror in wave 2",
+      "gate": "script/m14/differential.ts deriveZigReferenceEdges"
+    },
+    {
+      "type": "relates_to_pattern",
+      "definedIn": "src/ast/graph.ts",
+      "bucket": "not-an-analyzers-class",
+      "reason": "inferred from a detected pattern set, not from syntax; the analyzer layer has no such notion",
+      "gate": null
+    },
+    {
+      "type": "similar_to",
+      "definedIn": "src/ast/graph.ts",
+      "bucket": "not-an-analyzers-class",
+      "reason": "an INFERRED relationship: derived above the analyzer from symbol similarity, so no analyzer may emit it (defined in graph.ts only; no analyzer in the tree publishes it)",
+      "gate": null
+    },
+    {
+      "type": "uses",
+      "definedIn": "src/ast/engine.ts",
+      "bucket": "emitted+gated",
+      "reason": "bare value reads and field-path leaves; the bare-read half is derived independently by deriveZigBareUses (Z3, Z24, Z25)",
+      "gate": "script/m14/differential.ts deriveZigBareUses"
+    }
+  ],
+  "problems": [],
+  "verdict": "complete"
+}

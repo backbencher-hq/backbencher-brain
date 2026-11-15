@@ -1,0 +1,256 @@
+{
+  "repo": "lodash",
+  "indexSeconds": 31.016,
+  "fileCount": 76,
+  "negatives": 1,
+  "perTool": {
+    "bb_search": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 4,
+      "args": "{\"mode\":\"file\",\"filePath\":\"lodash.js\",\"query\":\"lodash.js\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"lodash.js\",\"fileId\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js\",\"language\":\"javascript\",\"content\":\"/**\\n * @license\\n * Lo"
+    },
+    "bb_health": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 17,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/lodash\\nprojectId: f9a8a05427a9c1a48971d679fbd420028dcfb0f6\\nfiles=76 symbols=3606 relationships=55055 imports=1"
+    },
+    "bb_ask": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 236,
+      "args": "{\"query\":\"what does map do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 8 other symbol(s) scored within the same margin of the best. The similarity numbers below sep"
+    },
+    "bb_patterns": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 333,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (358 found):\\n  orphaned_function minify — lib/common/minify.js:24 (70%)\\n  orphaned_function pitch — lib/common/util.js:31 (70%)\\n  orphaned_fun"
+    },
+    "bb_security": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 44,
+      "args": "{}",
+      "outHead": "\"security: 16 critical / 44 high / 0 medium / 0 low / 4 unknown (27 resolved flows, 37 unvalidated sources, 0 mitigated)\\n  [critical] SQL injection (cloneRegEx"
+    },
+    "bb_visualize": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 22,
+      "args": "{\"scope\":\"symbol\",\"target\":\"map\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"map\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\","
+    },
+    "bb_migrate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 62,
+      "args": "{\"symbolName\":\"map\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"map\",\"symbolId\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"sourceFile\":\"lodash.js\",\"source"
+    },
+    "bb_analyze": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 22,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":76,\"linesOfCode\":102036,\"avgFileSize\":45994.40789473684,\"avgFileSizeUnit\":\"bytes\",\"symbols\":3606,\"symbolsWithComplexity\":3606,\"avgComplexity\":1.7748197"
+    },
+    "bb_doc": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 35,
+      "args": "{\"mode\":\"symbol\",\"target\":\"map\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: map\\n\\n1 file(s) and 1 symbol(s) in scope, 19 cited claim(s) across 5 section(s) from 16 source(s). No indexed evidence was found for: Limitations.\\n"
+    },
+    "bb_edit": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 929,
+      "args": "{\"mode\":\"update\",\"filePath\":\"lodash.js\",\"symbolName\":\"map\",\"newContent\":\"export function map(): void { /* m48 c1 dry-run */ }\",\"dryRun\":true,\"format\":false}",
+      "outHead": "{\"mode\":\"update\",\"dryRun\":true,\"changes\":[{\"path\":\"/home/ishaq2321/bb_tests/repositories/lodash/lodash.js\",\"before\":\"/**\\n * @license\\n * Lodash <https://lodash"
+    },
+    "bb_index": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 52,
+      "args": "{\"path\":\"lodash.js\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"lodash.js\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothing changed: 1 file("
+    },
+    "bb_graph": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 91,
+      "args": "{\"symbol\":\"map\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"map\",\"root\":{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"name\":\"map\",\"symbolType\":\"function\",\"file\":\"lodash.js\",\"line\":9651,\""
+    },
+    "bb_impact": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 8,
+      "args": "{\"symbol\":\"map\"}",
+      "outHead": "{\"symbol\":\"map\",\"root\":{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"name\":\"map\",\"file\":\"lodash.js\",\"filePath\":\"/home/ishaq2321/bb_tests/"
+    },
+    "bb_cross_language": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 4,
+      "args": "{\"symbol\":\"map\"}",
+      "outHead": "{\"symbol\":\"map\",\"language\":\"javascript\",\"languages\":[\"javascript\"],\"copies\":[{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"symbol\":\"map\","
+    },
+    "bb_annotate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"symbol\":\"module\",\"body\":\"m48 c1 corpus note (lodash)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-04a0c0d30bca79614dc1cb78b491ae122014d7f2ea72fdf28ffe39320e9f99cc\",\"symbol_name\":\"module\",\"symbol_path\":null,\"author_cla"
+    },
+    "bb_annotations": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 7,
+      "args": "{\"symbol\":\"module\"}",
+      "outHead": "{\"symbol\":\"module\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-04a0c0d30b"
+    }
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_search",
+      "repo": "lodash",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "map [function] lodash.js:9651 (javascript)\nMapCache [function] lodash.js:2172 (javascript)\nmapCacheC rows=0"
+    },
+    {
+      "tool": "bb_search",
+      "repo": "lodash",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"lodash.js\",\n  \"fileId\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js\",\n  \"la"
+    },
+    {
+      "tool": "bb_health",
+      "repo": "lodash",
+      "label": "health.files == SQL count (76)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/lodash\nprojectId: f9a8a05427a9c1a48971d679fbd420028dcfb0f6\nfiles=76 symbo"
+    },
+    {
+      "tool": "bb_ask",
+      "repo": "lodash",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 8 other symbol(s) scored within th"
+    },
+    {
+      "tool": "bb_patterns",
+      "repo": "lodash",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (358 found):\n  orphaned_function minify — lib/common/minify.js:24 (70%)\n  orphaned_fun"
+    },
+    {
+      "tool": "bb_security",
+      "repo": "lodash",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 16 critical / 44 high / 0 medium / 0 low / 4 unknown (27 resolved flows, 37 unvalidated so"
+    },
+    {
+      "tool": "bb_visualize",
+      "repo": "lodash",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"map\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n   "
+    },
+    {
+      "tool": "bb_migrate",
+      "repo": "lodash",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"map\",\n      \"symbolId\": \"f9a8"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "lodash",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\n    \"name\": \""
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "lodash",
+      "label": "analyze stats.files == SQL count (76)",
+      "pass": true,
+      "detail": "out files=76 sql=76"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "lodash",
+      "label": "analyze stats.symbols == SQL count (3606)",
+      "pass": true,
+      "detail": "out symbols=3606 sql=3606"
+    },
+    {
+      "tool": "bb_doc",
+      "repo": "lodash",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: map\n\n1 file(s) and 1 symbol(s) in scope, 19 cited claim(s) across 5 section(s) from 16 sou"
+    },
+    {
+      "tool": "bb_edit",
+      "repo": "lodash",
+      "label": "dry-run leaves file untouched",
+      "pass": true,
+      "detail": "before=129fb413 after=129fb413"
+    },
+    {
+      "tool": "bb_index",
+      "repo": "lodash",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"lodash.js\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\""
+    },
+    {
+      "tool": "bb_graph",
+      "repo": "lodash",
+      "label": "graph root == map",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"map\",\n  \"root\": {\n    \"id\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\n    \"name\": \"m"
+    },
+    {
+      "tool": "bb_impact",
+      "repo": "lodash",
+      "label": "impact root == map",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"map\",\n  \"root\": {\n    \"id\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\n    \"name\": \"m"
+    },
+    {
+      "tool": "bb_cross_language",
+      "repo": "lodash",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"map\",\n  \"language\": \"javascript\",\n  \"languages\": [\n    \"javascript\"\n  ],\n  \"copies\": "
+    },
+    {
+      "tool": "bb_annotate",
+      "repo": "lodash",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-9ff9a1592fc44a35c54e151dad8e86e59823c36d6fb2f"
+    },
+    {
+      "tool": "bb_annotations",
+      "repo": "lodash",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"module\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false"
+    }
+  ],
+  "failures": []
+}

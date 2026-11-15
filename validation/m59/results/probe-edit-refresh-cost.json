@@ -1,7 +1,7 @@
 {
   "probe": "M59.A11 — bb_edit stale-file refresh, real repo slice",
   "at": "2026-09-19T03:22:12.947Z",
-  "repo": "$HOME/fixtures/repositories/graphql-js",
+  "repo": "/home/ishaq2321/bb_tests/repositories/graphql-js",
   "sliceFiles": 46,
   "indexMs": 8496,
   "target": "src/args.ts",

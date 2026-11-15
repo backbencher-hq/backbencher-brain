@@ -1,0 +1,26 @@
+{
+  "fixtureId": "java/singleimportproject/ToolOwners",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE PROJECT'S OWN DECLARATIONS, the two that make the lane's rules bite. This file lives in a sub-directory, so the runner gives it a real project index (JAVA_DECLARATION_SPEC, complete=true) — the fail-closed rules need it. It declares the simple names the importing file uses: `Tool` TWICE (two nested classes, so the project's key space gives the name MORE THAN ONE answer and the name-keyed resolver TIES), `Unique` ONCE (the key space answers it uniquely, so the name model RESOLVES it and a claim there would trade a resolution for a claim), and `Own` TWICE (the tie holds, but the import names the PROJECT's own type, so the claim is refused on externality, not on the tie). Each refusal is pinned in ToolOwners.expectation.json; this file is the other half of the pair — the declarations those refusals are measured against.",
+  "expectSymbols": [
+    {
+      "name": "ToolOwners",
+      "kind": "class"
+    },
+    {
+      "name": "Tool",
+      "kind": "class"
+    },
+    {
+      "name": "Unique",
+      "kind": "class"
+    },
+    {
+      "name": "Own",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": []
+}

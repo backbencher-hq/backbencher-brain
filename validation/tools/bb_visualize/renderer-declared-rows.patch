@@ -1,0 +1,54 @@
+# Proposal for the Lead's renderer change (cross-scope: src/ast/visualization/map-renderer.ts).
+#
+# WHY: the engine now carries the declared bounds in the HTML payload under `declared`
+# (totalNodesAvailable, originalNodes, originalLinks, maxNodes, maxLinks, truncated,
+# offset, nextOffset, returnedNodes, returnedLinks, page, ownerCascade, freshness,
+# rule). The artifact is therefore machine-auditable, but a READER of the page still
+# cannot see the ceiling the graph was cut from. This patch adds those rows to the
+# graph view's own census and publishes the object on window.__bbView so the sidebar
+# and the browser gate can assert it.
+#
+# WHERE, in src/ast/visualization/map-renderer.ts:
+#   (1) inside MAP_SCRIPT, the `censusRows()` function;
+#   (2) inside MAP_SCRIPT, the `window.__bbView = { ... }` object literal.
+# The MAP_SCRIPT body is stored as an assembled template chunk, so the fragments below
+# are written in the ESCAPED form they have in the file (\" for a quote).
+# Both hunks are guarded: an artifact generated before this change has no
+# `G.declared`, and then the rows simply do not appear.
+#
+# --- HUNK 1 ---------------------------------------------------------------
+# FIND (exact, in censusRows):
+#     if (cross) out.push(row(\"cross-language edges\", cross, true));
+#     if (stale) out.push(row(\"stale since index\", stale, true));
+#     return out;
+# REPLACE WITH:
+#     if (cross) out.push(row(\"cross-language edges\", cross, true));
+#     if (stale) out.push(row(\"stale since index\", stale, true));
+#     // The declared bounds ride the payload (engine `declared`): the ceiling this
+#     // page was cut from belongs ON the page, not only in a JSON call next to it.
+#     // Guarded, so an artifact generated before the field existed still renders.
+#     var declared = G && G.declared;
+#     if (declared) {
+#       out.push(row(\"available in scope\", declared.totalNodesAvailable));
+#       out.push(row(\"reached the projection\", declared.originalNodes, declared.truncated));
+#       out.push(row(\"returned\", declared.returnedNodes));
+#       if (declared.truncated) out.push(row(\"cut by\", \"maxNodes \" + declared.maxNodes + \" / maxLinks \" + declared.maxLinks, true));
+#       if (declared.page) out.push(row(\"page\", declared.page.number + \" of \" + declared.page.limit + \" (offset \" + declared.page.offset + \")\"));
+#       if (declared.freshness) out.push(row(\"freshness\", declared.freshness.fresh + \" fresh, \" + declared.freshness.stale + \" stale, \" + declared.freshness.missing + \" missing\", declared.freshness.stale + declared.freshness.missing > 0));
+#     }
+#     return out;
+#
+# --- HUNK 2 ---------------------------------------------------------------
+# FIND (exact, in window.__bbView):
+#     census: censusRows,
+#     note: excludedNote,
+# REPLACE WITH:
+#     census: censusRows,
+#     // The declared bounds, published for the same reason the links are: a fact that
+#     // can only be seen cannot be checked. Null for a pre-change artifact.
+#     declared: function () { return G && G.declared ? G.declared : null; },
+#     note: excludedNote,
+#
+# VERIFICATION after applying: `npx tsx validation/tools/bb_visualize/lib/html-audit.ts`
+# must report `declared rows in view: true`, and `npx tsx script/m13/verify-visualize-browser.ts`
+# must stay VERIFIED (the view still publishes state()/census() and both layouts).

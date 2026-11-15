@@ -1,0 +1,271 @@
+{
+  "tool": "powershell-grammar-ab",
+  "lane": "powershell",
+  "issue": "#278",
+  "generatedBy": "script/m60/powershell-grammar-ab.ts",
+  "candidate": {
+    "label": "G6: comma-separated command argument lists (M60 #278)",
+    "path": "/tmp/opencode/ps-lane/cand-g6.wasm",
+    "sha256": "83e1eb86343a445d9898d5b60568ced6618dbad0688adca88ae92524b0869990",
+    "bytes": 1120509
+  },
+  "wired": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-powershell.wasm",
+    "sha256": "b41e15c79fa86941a70d8b1faaf5571c38a84f3dc8a84222e4d832ca6223b5da",
+    "bytes": 1116109
+  },
+  "method": "Corpora: the production (non-test) tracked .ps1/.psm1/.psd1 files of powershell and ansible, drawn by a hash of `repo/relative-path` (unbiased, reproducible) with the digest recorded per repo so a re-run that drew a different set says so rather than being compared. `powershell`' test/ tree is excluded because it is parser-error TEST DATA, not a corpus. Damage is measured with a parser loaded directly from the wasm under test, so it is the GRAMMAR's number and no analyzer decision can move it. Q3 (no collateral) is the deciding question and is checked as a file SET, not a spot check. Q4 compares the node-type multiset over each corpus. Q5 is the id-order digest from M49 W19, because a rebuild's sha256 is not a function of its source across toolchain versions. --rebuild answers Q1: whether the vendored source reproduces the WIRED behaviour, without which no patch on that source is attributable to the wired grammar.",
+  "q4_shapeDelta": {
+    "candidateOnlyTypes": [
+      "_command_argument_tail"
+    ],
+    "wiredOnlyTypes": [],
+    "namedCandidateOnly": [],
+    "namedWiredOnly": [],
+    "fieldSetMatches": true,
+    "idOrderMatches": false,
+    "namedVocabularyUnchanged": true,
+    "corpusMultisetDelta": [
+      {
+        "repo": "powershell",
+        "deltas": [
+          {
+            "type": "simple_name",
+            "wired": 4189,
+            "next": 4147
+          },
+          {
+            "type": "generic_token",
+            "wired": 820,
+            "next": 842
+          },
+          {
+            "type": "-",
+            "wired": 54,
+            "next": 36
+          },
+          {
+            "type": "array_literal_expression",
+            "wired": 13835,
+            "next": 13846
+          },
+          {
+            "type": "ERROR",
+            "wired": 112,
+            "next": 106
+          },
+          {
+            "type": "unary_expression",
+            "wired": 15925,
+            "next": 15921
+          },
+          {
+            "type": "pipeline",
+            "wired": 10932,
+            "next": 10936
+          },
+          {
+            "type": "pipeline_chain",
+            "wired": 8404,
+            "next": 8408
+          },
+          {
+            "type": ",",
+            "wired": 1699,
+            "next": 1702
+          },
+          {
+            "type": "statement_list",
+            "wired": 3104,
+            "next": 3107
+          },
+          {
+            "type": "command_argument_sep",
+            "wired": 7977,
+            "next": 7974
+          },
+          {
+            "type": " ",
+            "wired": 8007,
+            "next": 8004
+          },
+          {
+            "type": "string_literal",
+            "wired": 4703,
+            "next": 4701
+          },
+          {
+            "type": "-ne",
+            "wired": 75,
+            "next": 74
+          },
+          {
+            "type": "-f",
+            "wired": 47,
+            "next": 46
+          }
+        ],
+        "deltaCount": 15
+      },
+      {
+        "repo": "ansible",
+        "deltas": [
+          {
+            "type": "simple_name",
+            "wired": 1256,
+            "next": 1249
+          },
+          {
+            "type": "ERROR",
+            "wired": 35,
+            "next": 28
+          },
+          {
+            "type": "generic_token",
+            "wired": 200,
+            "next": 204
+          },
+          {
+            "type": "unary_expression",
+            "wired": 3288,
+            "next": 3285
+          },
+          {
+            "type": "pipeline",
+            "wired": 2204,
+            "next": 2207
+          },
+          {
+            "type": "-",
+            "wired": 14,
+            "next": 11
+          },
+          {
+            "type": "array_literal_expression",
+            "wired": 2573,
+            "next": 2575
+          },
+          {
+            "type": "pipeline_chain",
+            "wired": 1611,
+            "next": 1613
+          },
+          {
+            "type": "script_block",
+            "wired": 87,
+            "next": 86
+          },
+          {
+            "type": "script_block_body",
+            "wired": 87,
+            "next": 86
+          },
+          {
+            "type": "statement_block",
+            "wired": 501,
+            "next": 502
+          },
+          {
+            "type": "}",
+            "wired": 664,
+            "next": 663
+          },
+          {
+            "type": "command",
+            "wired": 296,
+            "next": 295
+          },
+          {
+            "type": "command_name",
+            "wired": 287,
+            "next": 286
+          },
+          {
+            "type": "command_elements",
+            "wired": 273,
+            "next": 272
+          },
+          {
+            "type": "command_argument_sep",
+            "wired": 774,
+            "next": 773
+          },
+          {
+            "type": " ",
+            "wired": 770,
+            "next": 769
+          },
+          {
+            "type": "finally_clause",
+            "wired": 15,
+            "next": 16
+          },
+          {
+            "type": "finally",
+            "wired": 15,
+            "next": 16
+          },
+          {
+            "type": "script_block_expression",
+            "wired": 37,
+            "next": 36
+          }
+        ],
+        "deltaCount": 20
+      }
+    ]
+  },
+  "q2_netWin": [
+    {
+      "repo": "powershell",
+      "files": 49,
+      "drawDigest": "79bea463a8b4d0b1033847c522223d601ffbb191abe88107c46f6c425bf5b8b2",
+      "wired": {
+        "damaged": 14,
+        "err": 112,
+        "missing": 15
+      },
+      "candidate": {
+        "damaged": 14,
+        "err": 106,
+        "missing": 12
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    },
+    {
+      "repo": "ansible",
+      "files": 24,
+      "drawDigest": "9659980cd43799161f714a2db8b18542298b03c8394ef429c6eb9986c1bb76cf",
+      "wired": {
+        "damaged": 15,
+        "err": 35,
+        "missing": 2
+      },
+      "candidate": {
+        "damaged": 11,
+        "err": 28,
+        "missing": 1
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    }
+  ],
+  "q3_collateral": [
+    {
+      "repo": "powershell",
+      "brokeFiles": [],
+      "count": 0
+    },
+    {
+      "repo": "ansible",
+      "brokeFiles": [],
+      "count": 0
+    }
+  ],
+  "verdict": "no collateral; read q2_netWin for the net effect"
+}

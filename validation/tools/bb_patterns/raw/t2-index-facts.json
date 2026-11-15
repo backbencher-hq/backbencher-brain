@@ -1,0 +1,38 @@
+{
+  "tier": "T2",
+  "projectDir": ".",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "exists": true,
+  "index": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "frameworkFiles": 3913,
+    "analysisRuns": 0
+  },
+  "dbBefore": {
+    "db": {
+      "bytes": 3639963648,
+      "mtime": "2026-11-01T23:21:55.505Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "dbAfter": {
+    "db": {
+      "bytes": 3639963648,
+      "mtime": "2026-11-01T23:21:55.505Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-01T23:26:34.579Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-01T23:26:34.580Z"
+    }
+  },
+  "generatedAt": "2026-11-01T23:26:39.125Z"
+}

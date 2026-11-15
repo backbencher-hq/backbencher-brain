@@ -1,0 +1,109 @@
+{
+  "fixtureId": "ruby/mixin-discriminator",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE DISCRIMINATOR FIXTURE — dart's `renders` lesson applied to ruby's `mixes_in`. Dart's lane shipped a filter that DISCRIMINATES: the construct is Flutter's `build` method and the trigger is a `build` method whose DECLARED RETURN TYPE IS `Widget`, which is what keeps the protobuf-style message builders out (5,893 `build` methods, 5,578 of which declare something else). A FILTER ON THE NAME DOES NOT SEPARATE THE CONSTRUCT FROM ITS IMPOSTORS — and ruby's `mixes_in` was exactly such a filter, the name being `include`/`extend`/`prepend`. MEASURED over the whole admitted population (989 files, 543 published rows), 127 of the 543 (23.4 %) were impostors, in three classes: 45 with an explicit receiver (A), 18 where `self` is an instance (C), and 80 at the file's top level (T) — the last being RSpec's example-group `include`, the SAME NAME and a DIFFERENT CONSTRUCT, which is dart's impostor exactly. THE DISCRIMINATOR HERE IS THE STATIC SELF-TYPE AT THE CALL SITE — ruby's analogue of dart's declared return type — and it is decidable from GRAMMAR NODE TYPES alone: `def self.x` and `def x.y` are `singleton_method` nodes, a plain `def x` is a `method` node, and a `Class.new { }` block is a `do_block` whose enclosing call names the class. THE POSITIVES BELOW ARE THE CONTROL: they are what makes the forbids mean something, and the singleton-method row is what catches a fix that refuses too much (a naive `is there a def above me` rule would refuse it and the row would go missing). AND A FOURTH IMPOSTOR CLASS WAS FOUND LATER, BY A DIFFERENT ROAD: the three-way scope agreement (`script/m14/ruby-mixin-scope-agreement.ts`) compared the analyzer's parent-walk, the oracle's walk frame and the census's scope stack over all 543 sites and found 20 disagreements — the composition into an ANONYMOUS `Class.new { }` block, which the analyzer attributed to the file-scope sentinel `Global`. THAT CLASS IS PINNED HERE BY `AnonymousModule`, and the expectation COUNT is unchanged at 5 because the ownerless factory publishes nothing. **⇒ THE POINT OF THE FIXTURE IS THAT IT PINS EVERY CLASS THE DISCRIMINATOR REFUSES, INCLUDING THE ONE ONLY AN INDEPENDENT READING COULD FIND.**",
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "Real",
+      "target": "BodyModule",
+      "meta.mixinType": "include",
+      "comment": "THE CLASS-BODY POSITIVE: a class body is where the construct is legal, and `self` is the class there."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Real",
+      "target": "SingletonModule",
+      "meta.mixinType": "extend",
+      "comment": "THE extend POSITIVE: composition into the SINGLETON class, recorded with its keyword."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Real",
+      "target": "PrependedModule",
+      "meta.mixinType": "prepend",
+      "comment": "THE prepend POSITIVE: the same composition value with a different role recorded."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Real",
+      "target": "ClassMethodModule",
+      "meta.mixinType": "include",
+      "comment": "THE SINGLETON-METHOD POSITIVE — THE ROW THAT CATCHES A FIX THAT REFUSES TOO MUCH. `def self.class_level` is a `singleton_method` NODE, so `self` IS the class there and `include` genuinely composes into it. A naive rule that refused every call inside a `def` would lose this row, and this row is what makes that mistake visible."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Factory",
+      "target": "FactoryModule",
+      "meta.mixinType": "include",
+      "comment": "THE FACTORY POSITIVE: a `Class.new { }` block is class_eval'd, so `self` inside it is the NEW class — whatever encloses it lexically. The block is a `do_block` node whose PARENT is the `Class.new` call, and reading the block's own first child (the first statement of its body) would never find the class."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "target": "InstanceBodyModule",
+      "comment": "IMPOSTOR C (self is an INSTANCE): `include` inside a plain `def` is not Module#include at all — only Module answers `include`, and `self` in an instance method is not a Module. FORBIDDEN WITH NO `from` BECAUSE THE POINT IS THAT NO SOURCE IS CORRECT: the row must not exist wherever it would have been attributed. A forbid that named only the enclosing class would let a mutant re-attribute the edge to the file scope and pass."
+    },
+    {
+      "type": "mixes_in",
+      "from": "InstanceHost",
+      "target": "InstanceBodyModule",
+      "comment": "IMPOSTOR C, THE FALSE ATTRIBUTION NAMED: the enclosing class is NOT the composer. This row pins the specific false edge the pre-fix analyzer published (source = the enclosing class), so a mutant that keeps the edge but changes its source is caught by the forbid above and not only by this one."
+    },
+    {
+      "type": "mixes_in",
+      "target": "InstanceSingletonModule",
+      "comment": "IMPOSTOR C, THE extend FORM: inside an instance method `extend M` extends the INSTANCE's singleton class, so the enclosing class is not the composer and the mixin is not in its ancestor chain."
+    },
+    {
+      "type": "mixes_in",
+      "target": "ReceiverModule",
+      "comment": "IMPOSTOR A (AN EXPLICIT RECEIVER): `target.extend M` composes the mixin into `target`, not into the enclosing class — and `target` is a LOCAL VARIABLE, so it names no class at all and the row is UNATTRIBUTABLE. An unattributable row is not a fact; it is worse than a gap, because a gap is visible."
+    },
+    {
+      "type": "mixes_in",
+      "target": "ReceiverIncludedModule",
+      "comment": "IMPOSTOR A, THE include FORM: the same receiver, the same refusal. Pinning BOTH forms matters — a fix that only handled `extend` would pass a forbid set that named only `extend`."
+    },
+    {
+      "type": "mixes_in",
+      "target": "TopLevelModule",
+      "comment": "IMPOSTOR T (THE FILE'S TOP LEVEL): `self` is `main`, an Object instance, and only Module answers `include`. This is the RSpec shape — `include SomeModule` at the top level of a spec file is RSpec's example-group include, NOT Ruby's Module#include. THE SAME NAME AND A DIFFERENT CONSTRUCT, which is dart's impostor exactly, and it was this lane's largest class at 80 rows."
+    },
+    {
+      "type": "mixes_in",
+      "target": "TopLevelSingletonModule",
+      "comment": "IMPOSTOR T, THE extend FORM: the same top-level refusal for `extend`."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Global",
+      "target": "TopLevelModule",
+      "comment": "IMPOSTOR T, THE FILE-SCOPE ATTRIBUTION NAMED: the pre-fix analyzer attributed the top-level include to the file-scope sentinel `Global`, and `ruby/file-scope-owner-pins` PINNED that attribution. That pin was authored against the family contract BEFORE the discriminator was measured, and it was pinning the defect: the sentinel question (is the source `Global` or the denylisted literal `unknown`?) has a STRONGER answer for a mixin than a sentinel — the answer is that there is NO ROW. This row forbids the specific false attribution so a fix that keeps the row and re-sources it to the file scope is caught."
+    },
+    {
+      "type": "mixes_in",
+      "target": "AnonymousModule",
+      "comment": "IMPOSTOR D (THE OWNERLESS FACTORY) — THE FOURTH CLASS, AND THE ONE THE THREE-WAY SCOPE AGREEMENT FOUND. `anonymous = Class.new { include AnonymousModule }` builds an ANONYMOUS class, so the mixin composes into a class that has NO NAME: there is nothing to attribute the row to, and a row that cannot be attributed is not a fact. MEASURED over the whole admitted population: 20 published `mixes_in` rows were exactly this shape (e.g. `rack/test/spec_utils.rb:33`, `gql-ruby/spec/graphql/schema/interface_spec.rb:58`), and the ORACLE refused them on its own namable-owner rule while the analyzer published them with the file-scope sentinel. FORBIDDEN WITH NO `from` BECAUSE NO SOURCE IS CORRECT — the row must not exist wherever it would have been attributed."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Global",
+      "target": "AnonymousModule",
+      "comment": "IMPOSTOR D, THE FALSE ATTRIBUTION NAMED: the pre-fix analyzer attributed the ownerless factory's composition to the file-scope sentinel `Global`. This row forbids that SPECIFIC false edge, so a fix that keeps the row and re-sources it to the file scope is caught — and not only by the forbid above, which would also accept a row attributed to some other wrong name."
+    },
+    {
+      "type": "implements",
+      "comment": "THE SPELLING CONTRACT (Lead ruling L-2026-10-21-07): `implements` is the OLD name for a `mixes_in` row, and it is ruled NOT APPLICABLE for ruby. A forbid that pinned only `mixes_in` would let a mutant re-spell the row as `implements` and pass — so the spelling is forbidden too."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "mixes_in",
+      "equals": 5,
+      "note": "class body (3) + singleton method (1) + factory block (1). THE COUNT MAKES A SUPERSET FIX FAIL: a mutant that published one of the seven impostor targets would leave the five positives intact and pass every positive row, and only the count catches it. A mutant that refused too much loses a positive row AND the count."
+    }
+  ]
+}

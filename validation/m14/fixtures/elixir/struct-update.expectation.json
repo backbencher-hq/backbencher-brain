@@ -1,0 +1,27 @@
+{
+  "issue": "M49 CC1",
+  "note": "CC1-e pin: `%S{base | \u2026}` (struct-update expression) emits instantiates to the struct \u2014 the same construction-expression rule as the literal form `%S{}`; the edge source is the arity-qualified enclosing scope (post-#17 identity). Frozen so the family audit cannot change the form silently. Falsifier: mutant elixir/struct-update-dropped. The meta.* pins arrived with ELIXIR_FIX2-C1/C2: M14-HONESTY-CONTRACT \u00a74 requires a machine-readable reason code on every edge under 1.0, and reasonCodeSource=default_at_pushrel is the marker that this edge RELIES on that default rather than carrying a site code \u2014 which is what makes the guarantee in pushRel a live branch instead of dead code. Falsifier for the guarantee: mutant elixir/reason-code-stripped.",
+  "expectSymbols": [
+    {
+      "name": "Cc1.StructUpdate",
+      "kind": "module"
+    },
+    {
+      "name": "bump",
+      "kind": "function",
+      "ownerName": "Cc1.StructUpdate"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "Cc1.StructUpdate.bump/1",
+      "target": "Cc1.Point",
+      "line_number": 5,
+      "meta.reasonCode": "elixir_instantiates_heuristic",
+      "meta.reasonCodeSource": "default_at_pushrel",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

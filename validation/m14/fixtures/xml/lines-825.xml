@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config
+    xmlns="http://acme.example/config"
+    xmlns:sec="http://acme.example/security"
+    name="root"
+    mode="strict">
+    <database
+        host="localhost"
+        port="5432">
+        <pool size="10"/>
+    </database>
+    <security:realm ref="main"/>
+</config>

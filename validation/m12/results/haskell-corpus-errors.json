@@ -1,0 +1,71 @@
+{
+  "analyzer": "haskell",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/cabal",
+  "corpusRepo": "cabal",
+  "revision": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+  "extensions": [
+    "*.hs"
+  ],
+  "mode": "deterministic-first-400-sorted",
+  "trackedFilesInCorpus": 2151,
+  "measuredFiles": 400,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 2,
+  "cleanFiles": 398,
+  "missingNodeFiles": 0,
+  "errorNodeFiles": 2,
+  "errorRates": {
+    "any": 0.5,
+    "missing": 0,
+    "error": 0.5
+  },
+  "grammarErrorFiles": 2,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 21011,
+  "missingTokens": {},
+  "errorLineSignatures": {
+    "ID(ID ID [ID|": 4,
+    ", ID :: ID": 4,
+    "ID ID ID ID": 2,
+    "ID = ID ID \\ID ID -> ID": 2,
+    "|])": 2,
+    "{ ID :: ID": 2,
+    "ID :: ID ()": 1,
+    "ID = ID": 1,
+    "ID :: ID ID": 1,
+    "ID <- ID ID ID": 1,
+    "ID ID.ID (ID (..), ID, ID)": 1,
+    ", ID :: ID -> ID": 1
+  },
+  "firstErrorLineSignatures": {
+    "ID ID ID ID": 1,
+    "|])": 1
+  },
+  "errorFileList": [
+    {
+      "file": "cabal-dev-scripts/src/GenCabalMacros.hs",
+      "nodes": 18,
+      "missingTokens": [],
+      "errorNodes": 18,
+      "firstRow": 110,
+      "firstKind": "ERROR",
+      "firstLine": "instance Zinza PackageName where",
+      "pipelineErrors": 34
+    },
+    {
+      "file": "cabal-dev-scripts/src/GenPathsModule.hs",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 45,
+      "firstKind": "ERROR",
+      "firstLine": "|])",
+      "pipelineErrors": 7
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

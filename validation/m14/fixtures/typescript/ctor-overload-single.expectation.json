@@ -1,0 +1,13 @@
+{
+  "fixtureId": "typescript/ctor-overload-single",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Constructor overload groups (N declarations + 1 implementation) must yield exactly ONE constructor symbol carrying the implementation's parameters. The dedupe excluded constructors by name, pushing a duplicate symbol per declaration.",
+  "expectSymbols": [
+    { "name": "A", "kind": "class" },
+    { "name": "constructor", "kind": "constructor" }
+  ],
+  "expectSymbolCount": [
+    { "name": "constructor", "equals": 1 }
+  ]
+}

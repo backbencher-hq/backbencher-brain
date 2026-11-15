@@ -1,0 +1,13 @@
+{
+  "fixtureId": "groovy/ctor-identity",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave G4 gap (java C3 parity): constructors keep their declared (class) names — the old 'constructor' literal collided across classes (contains Alpha->constructor vs Beta->constructor indistinguishable). Kind stays constructor; overloads keep distinct signatures.",
+  "expectSymbols": [
+    { "name": "Alpha", "kind": "constructor", "ownerName": "Alpha" },
+    { "name": "Beta", "kind": "constructor", "ownerName": "Beta" }
+  ],
+  "forbidSymbols": [
+    { "name": "constructor" }
+  ]
+}

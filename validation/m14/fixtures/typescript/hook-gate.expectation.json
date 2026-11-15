@@ -1,0 +1,12 @@
+{
+  "fixtureId": "typescript/hook-gate",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T1 fix: Rules-of-Hooks warnings only mean something in React files — this plain module (no react import, no JSX) must produce zero hook warnings. A use*-named util is not a hook outside React. Requires the forbidErrors gate.",
+  "expectSymbols": [
+    { "name": "helper", "kind": "function" }
+  ],
+  "forbidErrors": [
+    { "message": "React Hook \"useThing\" is called outside a React component or custom hook." }
+  ]
+}

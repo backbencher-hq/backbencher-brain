@@ -57,7 +57,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { isExtensionShaped, routerDisagreements, walkCorpus, type WalkFile } from "./corpus-extension-walk"
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.env.BB_UEC_OUT ?? `${REPO_ROOT}/validation/m14/measurements/unrouted-extension-census.json`
 const CHECKPOINT = process.env.BB_UEC_CHECKPOINT ?? `${REPO_ROOT}/validation/m14/measurements/unrouted-extension-census.rows.jsonl`
 const RESET = process.env.BB_UEC_RESET === "1"

@@ -5,7 +5,7 @@
   "wasmArtifact": "tree-sitter-sql.wasm",
   "wasmSha256": "63d46ade20c611a685ffb85924f7c9b81419a4a3d635cd62481e261b6a60a289",
   "wasmBytes": 11574479,
-  "corpus": "$HOME/ProxiCall",
+  "corpus": "/home/ishaq2321/ProxiCall",
   "corpusRevision": "1f3e3567345399798e0436515565e64e62fac5a7",
   "corpusDirty": true,
   "files": 441,

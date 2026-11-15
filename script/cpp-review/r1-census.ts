@@ -24,14 +24,14 @@
  *   REAL      the grammar's node ends before the source's brace balance does
  *   ARTIFACT  the naive counter said so and the aware one does not
  *
- *   BB_CORPUS_ROOT=$HOME/fixtures/repositories \
+ *   BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories \
  *   bun run script/cpp-review/r1-census.ts
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, existsSync } from "node:fs"
 import { join, extname } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2,abseil-cpp,spdlog,zig").split(",").filter(Boolean)
 // the register's extension set EXACTLY, so the two numbers are comparable.
 // A wider set here (`.h`, `.ipp`, `.inl`) scans 13,753 files instead of

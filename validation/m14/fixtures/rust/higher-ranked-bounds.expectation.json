@@ -1,0 +1,16 @@
+{
+  "issue": "RUST-MR — a higher-ranked trait bound is still a bound",
+  "note": "Pre-fix, `for<'de> Deserialize<'de>` named a supertrait that NOBODY published: the grammar wraps the bound type in a `higher_ranked_trait_bound` node, which the direct-child test in the supertrait extraction never matched, and the F5 oracle read the BINDER's text instead and fabricated `extends -> \"for\"` — so both sides were wrong in opposite directions on one construct. Controls: the plain two-bound trait still publishes both bounds, the mixed trait publishes the higher-ranked one AND its plain sibling (neither collapses into the other), and a `where`-clause higher-ranked bound stays a where-bound and must NOT become an `extends`.",
+  "expectRelationships": [
+    { "type": "extends", "from": "DeserializeOwned", "target": "Deserialize", "line_number": 17 },
+    { "type": "extends", "from": "Plain", "target": "Sized", "line_number": 21 },
+    { "type": "extends", "from": "Plain", "target": "Clone", "line_number": 21 },
+    { "type": "extends", "from": "Mixed", "target": "AsRef", "line_number": 25 },
+    { "type": "extends", "from": "Mixed", "target": "Clone", "line_number": 25 }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "target": "for" },
+    { "type": "extends", "from": "ViaWhere", "target": "FnOnce" },
+    { "type": "extends", "from": "DeserializeOwned", "target": "DeserializeOwned" }
+  ]
+}

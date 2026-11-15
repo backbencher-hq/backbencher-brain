@@ -1,0 +1,71 @@
+// B: is a local val extracted, and under which scope?
+package p
+class K {
+  def m(): Int = { def loc1 = 1; val loc2 = 2; loc1 + loc2 }
+}
+---
+// B2: two statements, braces
+package p
+class K {
+  def m(): Int = { val a = 1; a }
+}
+---
+// B3: val directly in a def body block, no local def at all
+package p
+class K {
+  def m(): Int = { val a = 1; a }
+}
+---
+// B4: val in a CLASS body block-ish position
+package p
+class K {
+  { val a = 1 }
+}
+---
+// B5: val inside an if inside a def
+package p
+class K {
+  def m(): Int = { if (true) { val a = 1; a } else 0 }
+}
+---
+// B6: val inside a try inside a def
+package p
+class K {
+  def m(): Int = { try { val a = 1; a } catch { case _: Throwable => 0 } }
+}
+---
+// B7: val directly in a CLASS body
+package p
+class K {
+  val direct = 1
+}
+---
+// B8: val directly in an OBJECT body
+package p
+object K {
+  val direct = 1
+}
+---
+// B9: val in a testUnit-style lambda block inside a def (the UnsafeUnbounded shape)
+package p
+class S {
+  def m(): Unit = { testUnit("x") { val q = new UnsafeUnbounded[Int]() } }
+}
+---
+// B10: the SAME lambda-block shape but the val is in the lambda body directly
+package p
+class S {
+  def m(): Unit = testUnit("x") { val q = 1 }
+}
+---
+// B11: val inside a for-comprehension body inside a def
+package p
+class S {
+  def m(): Unit = { for (i <- 1 to 2) { val q = i } }
+}
+---
+// B12: val inside a match case body inside a def
+package p
+class S {
+  def m(x: Int): Int = { x match { case 1 => val q = 1; q; case _ => 0 } }
+}

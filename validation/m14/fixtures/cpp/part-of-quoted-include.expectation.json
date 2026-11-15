@@ -1,0 +1,35 @@
+{
+  "fixtureId": "cpp/part-of-quoted-include",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PART_OF, TAKEN AT R3 (no grammar change: `preproc_include` is a NAMED node type of the served build). The contract's test (src/ast/types.ts:148-160) is that a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module \u2014 which is a QUOTED include, and is NOT an angle include (that names another module's header and stays `imports`). MEASURED over the admitted population before the emission: 51,874 include sites = 39,665 QUOTED + 12,209 angle-bracket (script/m14/cpp-four-types-census.ts, validation/m14/measurements/cpp-four-types-census.json). THE DIRECTION IS THE DIRECTIVE'S OWN: source = the including unit (file scope), target = the part. THE TARGET IS A PATH, NOT THE SPECIFIER, because a specifier is a path and no resolver can bind it (the fsharp lane's measured rule on the same construct) \u2014 the target is the including file's directory joined with the specifier. metadata.partRole is MANDATORY and is \"part\" for a part_of_directive, which is the only written form C++ has. THE BEHAVIOURAL HALF: the edge exists only when the directive reaches the analyzer as a REAL preproc_include node, so a recovery-text regression drops BOTH rows and fails both ways. FALSIFIER OF THE EMISSION: an include site whose target resolves to a separate module in the same project \u2014 that would retire `part_of` for that site and put it back on `imports`.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "global",
+      "meta.partRole": "part",
+      "meta.relationshipType": "part_of_directive",
+      "target": "part-of-quoted-include",
+      "meta.partSymbol": "part-of-quoted-include",
+      "note": "THE TARGET IS NOW PINNED, BECAUSE IT IS NOW STABLE. It was left unconstrained while it was a PATH - a path varies with the checkout, and pinning one would have made the fixture a test of the machine. It is now the part's MODULE SYMBOL (its file stem), the same on every machine and the only form the arbiter can bind: MEASURED path => 0 resolved of 4,612 and symbol => 383 resolved of 4,612, same population, same 2,000-file stride sample, the target's FORM the only variable. A CONSTRAINT THAT CAN NOW BE PINNED IS A CHECK THAT SHOULD NOW BE OWNED, so this fixture asserts the stem itself rather than merely that some part_of row exists."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "vector"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "part-of-quoted-include.h"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "partOfWidget",
+      "kind": "function"
+    }
+  ]
+}

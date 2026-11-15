@@ -1,0 +1,49 @@
+{
+  "fixtureId": "typescript/nested-scope-local-shadow",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the scoping contract; lines are from `nl -ba` of THIS file: `let lastCode` 14, `function inner()` 16, `return lastCode` 17, the template call `${inner()}` 20, `return moduleConst` 21. The positive/forbid pair is what makes the fix falsifiable in both directions.",
+  "rationale": "PINS LEXICAL SCOPE INHERITANCE in the usage pass, both directions. (1) A NESTED function reading its ENCLOSING function's `let` must NOT publish a name-resolved reference: that name is a local binding, not a file declaration, and the first version of the pass RESET its locals set per function, so `inner` published `inner -> lastCode` (the differential classified this class UNEXPLAINED, 196 rows over two draws; the measured instance was `compileCode -> lastSuccessfulCode`). (2) The CONTROL: a MODULE-level name read inside a function must still resolve — the fix must not over-suppress genuine references. A forbid on one direction with a positive on the other is the only shape that can fail if the fix is too broad or too narrow.",
+  "expectSymbols": [
+    {
+      "name": "outer",
+      "kind": "function"
+    },
+    {
+      "name": "inner",
+      "kind": "function"
+    },
+    {
+      "name": "moduleConst",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "outer",
+      "target": "moduleConst",
+      "line_number": 21,
+      "note": "THE CONTROL: a module-level declaration read inside a function still resolves — the inheritance fix is not an over-suppression"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "inner",
+      "line_number": 20,
+      "note": "the nested call still publishes (the fix is about REFERENCES to enclosing locals, not about calls)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "lastCode",
+      "note": "the enclosing function's local read inside the nested function must NOT be a reference — the measured defect class"
+    },
+    {
+      "type": "uses",
+      "target": "lastCode",
+      "note": "nor a uses row: a local is not a project symbol, and this fixture's shape has no template/field surface that would legitimately publish one"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
 import { getParser } from "../m14/run-fixtures"
-const ROOTS = ["$HOME/fixtures/repositories/fmt", "$HOME/fixtures/repositories/nlohmann-json"]
+const ROOTS = ["/home/ishaq2321/bb_tests/repositories/fmt", "/home/ishaq2321/bb_tests/repositories/nlohmann-json"]
 const EXTS = [".h", ".hpp", ".hh", ".hxx", ".cpp", ".cc", ".cxx"]
 const SKIP = new Set([".git", "build", "node_modules", "docs", "doc", "third_party"])
 const parser = await getParser("cpp")

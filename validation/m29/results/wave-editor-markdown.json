@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -31,7 +31,7 @@
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 0,\n      line = 10\n    },\n    start = {\n      character = 0,\n      line = 9\n    }\n  },\n  uri = \"file://$HOMEh",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 0,\n      line = 10\n    },\n    start = {\n      character = 0,\n      line = 9\n    }\n  },\n  uri = \"file:///home/ish",
       "name": "S6: definition resolves",
       "ok": true
     },
@@ -65,7 +65,7 @@
           "line": 9
         }
       },
-      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
+      "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
     },
     "documentSymbol": [
       {
@@ -198,7 +198,7 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\npublic type Configure\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**Configure** — type, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified\n\n**connected**: referenced by [Install](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [Install — main.md:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 1 member, declared in 1 (declaration containment; never a usage)\ndeclares [Advanced tuning](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A13%2C%22character%22%3A0%7D%5D)\ndeclared in [Wave fixture document](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D))_"
+        "value": "```\npublic type Configure\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**Configure** — type, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified\n\n**connected**: referenced by [Install](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [Install — main.md:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 1 member, declared in 1 (declaration containment; never a usage)\ndeclares [Advanced tuning](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A13%2C%22character%22%3A0%7D%5D)\ndeclared in [Wave fixture document](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D))_"
       },
       "data": {
         "provenance": {
@@ -225,7 +225,7 @@
             "structural",
             "reference_qualified"
           ],
-          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md",
           "freshnessStatus": "fresh",
           "indexedFileCount": 2,
           "lineEnd": 11,
@@ -279,7 +279,7 @@
             "line": 9
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
       },
       {
         "range": {
@@ -292,7 +292,7 @@
             "line": 9
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
       }
     ],
     "workspaceAbsence": []

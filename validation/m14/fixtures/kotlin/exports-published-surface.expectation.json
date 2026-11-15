@@ -1,0 +1,261 @@
+{
+ "fixtureId": "kotlin/exports-published-surface",
+ "language": "kotlin",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PINS the `exports` relationship type on kotlin (DERIV_EXPORTS_KOT3). Kotlin has NO export statement: probe A over a 600-file corpus walk counted 233 distinct grammar node types and none of export_declaration / export_list / export_statement among them (validation/m14/results/kotlin-ontology-census.txt). What kotlin DOES define is that a top-level declaration is `public` unless it says otherwise, while `internal` restricts to the module and `private` to the file. So the compilation unit's published surface is exactly { top-level declaration whose visibility is `public` or absent }, and that is what these expectations assert. Probe B8 measured 4,180 such declarations across 558 of 600 files, so this is the majority case and not a corner. The publication's source is the file's first top-level TYPE (PublicType here); a file with no top-level type publishes no relationship and reports metadata.exportsWithheldNoModuleIdentity instead. The SCOPE cases are here because omitting getter/setter/lambda_literal from extractProperty's scope scan (real-kotlin-analyzer.ts:1548) published locals as part of the exported surface \u2014 24 analyzer-only edges over a 120-file draw, 22 of them a val inside a block-valued get(). The expectations below were authored from the kotlin language rule and re-probed; script/m60/kotlin-exports-oracle.ts is the independent walker that measures agreement at 100.0% over 200 files (417 truth edges, 0 missing, 0 extra).",
+ "expectSymbols": [
+  {
+   "name": "PublicType",
+   "kind": "class"
+  },
+  {
+   "name": "DefaultPublicType",
+   "kind": "class"
+  },
+  {
+   "name": "WithAccessor",
+   "kind": "class"
+  },
+  {
+   "name": "WithLambda",
+   "kind": "class"
+  },
+  {
+   "name": "PublishedObject",
+   "kind": "class"
+  },
+  {
+   "name": "topLevelLambda",
+   "kind": "property"
+  },
+  {
+   "name": "publishedFun",
+   "kind": "function"
+  },
+  {
+   "name": "publishedVal",
+   "kind": "property"
+  },
+  {
+   "name": "defaultPublicVal",
+   "kind": "property"
+  },
+  {
+   "name": "computed",
+   "ownerName": "WithAccessor"
+  },
+  {
+   "name": "strategy",
+   "ownerName": "WithLambda"
+  },
+  {
+   "name": "method",
+   "ownerName": "WithLambda"
+  },
+  {
+   "name": "memberOfObject",
+   "ownerName": "PublishedObject"
+  }
+ ],
+ "expectVisibility": [
+  {
+   "symbol": "PublicType",
+   "visibility": "public"
+  },
+  {
+   "symbol": "InternalType",
+   "visibility": "internal"
+  },
+  {
+   "symbol": "PrivateType",
+   "visibility": "private"
+  },
+  {
+   "symbol": "DefaultPublicType",
+   "visibility": "public"
+  },
+  {
+   "symbol": "publishedFun",
+   "visibility": "public"
+  },
+  {
+   "symbol": "withheldFun",
+   "visibility": "internal"
+  },
+  {
+   "symbol": "withheldPrivateFun",
+   "visibility": "private"
+  },
+  {
+   "symbol": "withheldVal",
+   "visibility": "internal"
+  },
+  {
+   "symbol": "defaultPublicVal",
+   "visibility": "public"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "PublicType"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "DefaultPublicType"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "WithAccessor"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "WithLambda"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "PublishedObject"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "topLevelLambda"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "publishedFun"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "publishedVal"
+  },
+  {
+   "type": "exports",
+   "from": "PublicType",
+   "target": "defaultPublicVal"
+  },
+  {
+   "type": "exports",
+   "from": "(file)",
+   "target": "DefaultPublicType",
+   "meta.via": "default-public",
+   "note": "basis pin: a declaration with NO visibility modifier is published by the FILE as default-public; the pre-fix field logic claimed explicit-public for everything, so a mutant that always says explicit-public must fail HERE (metadata.via is the current field spelling)."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "InternalType",
+   "comment": "internal restricts a top-level declaration to the MODULE, so it is not part of the consumer surface"
+  },
+  {
+   "type": "exports",
+   "target": "PrivateType",
+   "comment": "private restricts a top-level declaration to the FILE"
+  },
+  {
+   "type": "exports",
+   "target": "withheldFun",
+   "comment": "internal \u2014 module-scoped, not published"
+  },
+  {
+   "type": "exports",
+   "target": "withheldPrivateFun",
+   "comment": "private \u2014 file-scoped, not published"
+  },
+  {
+   "type": "exports",
+   "target": "withheldVal",
+   "comment": "internal \u2014 module-scoped, not published"
+  },
+  {
+   "type": "exports",
+   "target": "memberIsNotPublishedSeparately",
+   "comment": "a member of PublicType is reachable through PublicType, not published under its own name"
+  },
+  {
+   "type": "exports",
+   "target": "computed",
+   "comment": "a member of WithAccessor, not a top-level declaration"
+  },
+  {
+   "type": "exports",
+   "target": "strategy",
+   "comment": "a member of WithLambda, not a top-level declaration"
+  },
+  {
+   "type": "exports",
+   "target": "method",
+   "comment": "a member of WithLambda, not a top-level declaration"
+  },
+  {
+   "type": "exports",
+   "target": "memberOfObject",
+   "comment": "a member of PublishedObject, reachable through the object"
+  },
+  {
+   "type": "exports",
+   "target": "insideGetter",
+   "comment": "a val inside a block-valued get() is a LOCAL. The pinned grammar puts it at statements < function_body < getter < class_body, with no function_declaration on the chain, so the pre-fix scope scan walked past the accessor and published it. This forbid is the regression pin for that defect."
+  },
+  {
+   "type": "exports",
+   "target": "insideLambda",
+   "comment": "a val inside a lambda assigned to a class property is a LOCAL. The chain is ... < lambda_literal < property_declaration < class_body, again with no function_declaration. Second regression pin."
+  },
+  {
+   "type": "exports",
+   "target": "insideMethod",
+   "comment": "a val inside a method body is a local; the pre-fix scan already stopped at function_declaration and this forbid guards that branch"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "insideGetter",
+   "comment": "local inside a property accessor \u2014 must not become a symbol at all"
+  },
+  {
+   "name": "insideLambda",
+   "comment": "local inside a lambda literal \u2014 must not become a symbol at all"
+  },
+  {
+   "name": "insideMethod",
+   "comment": "local inside a method body \u2014 must not become a symbol at all"
+  }
+ ],
+ "expectNoRelationshipWhereSourceIsPath": {
+  "comment": "the module identity is the file's first top-level TYPE. An earlier version fell back to the FILE PATH when a file declared no type, which put a 90-character absolute path in the source of every edge; 24 of 26 analyzer-only edges over a 120-file draw were exactly that. parallel-indexer.ts:3451 drops an export edge whose source cannot resolve to a symbol, so those rows were unreadable as well as unmatchable."
+ },
+ "expectMetadataAbsence": [
+  "exportsWithheldNoModuleIdentity"
+ ],
+ "expectMetadataAbsenceWhy": "this file DOES declare a top-level type (PublicType), so no name is withheld for want of a module identity and the field is ABSENT rather than 0 \u2014 a zero is a claim that the count was measured to be zero, an absent field is an unknown. The no-module-identity branch is pinned separately by kotlin/exports-no-module-identity, which expects 3.",
+ "expectPublicationBasis": {
+  "comment": "publicationBasis names WHICH rule published the declaration, and it must be able to report both arms. The first version read `s.visibility === 'public'`, which is always true because determineVisibility returns the literal 'public' for a declaration that said nothing, so every edge claimed explicit-public and the default-public arm was dead code \u2014 while 1,334 of 4,180 published declarations in the 600-file walk said nothing. Kotlin's default-public convention is the MAJORITY case and was being reported as the minority one.",
+  "explicitPublic": [
+   "PublicType",
+   "WithAccessor",
+   "WithLambda",
+   "publishedFun",
+   "publishedVal",
+   "PublishedObject"
+  ],
+  "defaultPublic": [
+   "DefaultPublicType",
+   "topLevelLambda",
+   "defaultPublicVal"
+  ]
+ },
+ "evidence": {
+  "census": "validation/m14/results/kotlin-ontology-census.txt",
+  "oracle": "validation/m14/results/kotlin-exports-oracle.txt",
+  "oracleAgreement": "100.0% (417/417 truth edges, 0 oracle-only, 0 analyzer-only) at KOT_ORACLE_N=200"
+ }
+}

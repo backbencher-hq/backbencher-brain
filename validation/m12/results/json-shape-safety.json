@@ -1,0 +1,54 @@
+{
+  "analyzer": "json",
+  "corpus": "/home/ishaq2321/roslyn",
+  "acceptanceFiles": 122,
+  "excludedFiles": [
+    ".devcontainer/devcontainer.json",
+    ".vscode/extensions.json",
+    ".vscode/launch.json",
+    ".vscode/settings.json",
+    ".vscode/tasks.json",
+    "src/EditorFeatures/CSharpTest2/EmbeddedLanguages/RegularExpressions/Regex_RealWorldPatterns.json",
+    "src/Razor/src/Compiler/.vscode/launch.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/UnifiedSettings/razor.registration.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/csharp-language-configuration.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/javascript-language-configuration.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/language-configuration.json",
+    "src/VisualStudio/CSharp/Impl/UnifiedSettings/csharpSettings.registration.json",
+    "src/VisualStudio/Core/Def/UnifiedSettings/roslynSettings.registration.json",
+    "src/VisualStudio/VisualBasic/Impl/UnifiedSettings/visualBasicSettings.registration.json"
+  ],
+  "parseErrors": 8,
+  "excludedParseErrors": 8,
+  "unexpectedParseErrors": 0,
+  "referencedNodeTypes": [
+    "ERROR",
+    "array",
+    "document",
+    "false",
+    "null",
+    "number",
+    "object",
+    "string",
+    "true"
+  ],
+  "liveReferencedNodeTypes": [
+    "ERROR",
+    "array",
+    "document",
+    "false",
+    "null",
+    "number",
+    "object",
+    "string",
+    "true"
+  ],
+  "deadDefensiveReferences": [],
+  "observedNodeTypeCount": 13,
+  "passed": true,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.918Z",
+    "contentSha256": "af1863e7fcdeeb56ae8de0c03b6d1d44844a6c5520c4612f04be813905b638b7"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "fixtureId": "c/contains-name-line-921",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60-C (#921) — the C half, and it is an INVARIANT pin rather than a defect reproduction, deliberately. #921's rule is that a `contains` edge carries the line that NAMES the child; in this analyzer the two candidate lines already coincide for the shapes that matter, because the struct/union member extractor ranges the field at its DECLARATOR (`rawDecl`, the loop that skips `primitive_type`/`type_identifier`/`type_qualifier`/`struct_specifier`/… and stops at `field_identifier`/`identifier`), not at the whole field_declaration — so `unsigned long long` on one line and the name on the next still yields a symbol whose range starts on the NAME's line. The `meta.nameLine` field the rule is keyed on is therefore equal to `range.startLine` in every row this fixture produces (measured: counter 16/16, oneline 17/17, byte_value 23/23, word_value 25/25, options 32/32, plain 33/33, bits 31/31), and an expectation with FORBID entries for the declaration-start line would be self-contradictory. What this fixture therefore does is pin the invariant the rule depends on — member containment lands on the member's own name line in C — so that a change to the C member extractor's range (the plausible way this could regress) is caught rather than assumed. NO C MUTANT ACCOMPANIES IT, and that is the honest reason: the pre-fix C behaviour is byte-identical on this fixture, so a mutant reproducing it would SURVIVE and prove nothing — the same measurement that retired `cpp/metadata-only-line-second-base`. The residue #921 was filed for is real and is measured on the cpp fixture beside this one: of the oracle's 166 rows, the 101 it attributes to lane `c` are produced by the CPP analyzer, on .h files that lane draws and the product dispatches to cpp by the language-detection policy (verified per file: every one of those rows comes back from `parseFile` with `language: \"cpp\"`).",
+  "expectSymbols": [
+    {
+      "name": "Wrapped",
+      "kind": "struct"
+    },
+    {
+      "name": "counter",
+      "kind": "property",
+      "ownerName": "Wrapped"
+    },
+    {
+      "name": "oneline",
+      "kind": "property",
+      "ownerName": "Wrapped"
+    },
+    {
+      "name": "Choice",
+      "kind": "type"
+    },
+    {
+      "name": "byte_value",
+      "kind": "property",
+      "ownerName": "Choice"
+    },
+    {
+      "name": "word_value",
+      "kind": "property",
+      "ownerName": "Choice"
+    },
+    {
+      "name": "Outer",
+      "kind": "struct"
+    },
+    {
+      "name": "options",
+      "kind": "property",
+      "ownerName": "Outer"
+    },
+    {
+      "name": "plain",
+      "kind": "property",
+      "ownerName": "Outer"
+    },
+    {
+      "name": "bits",
+      "kind": "property",
+      "ownerName": "Outer.options",
+      "note": "#951: the owner was `anonymous_struct` until this wave, which is a file-global PLACEHOLDER -- every anonymous struct in a file collapsed onto it, so two members of two different anonymous types looked like one type's duplicate member. The corpus census reported exactly that for curl's ftplistparser.c (`anonymous_struct.main x2`), and the lane's own P8 property called it a violation when another fixture grew five inline aggregates. The owner is now the MEMBER PATH, `Outer.options`, which is derived from the source and is unique by construction. This fixture's own note previously said the synthesised name 'is written nowhere' -- it now is."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "counter",
+      "line_number": 16,
+      "note": "`unsigned long long` is on 15; the member's name is on 16 — the extractor ranges the declarator, so the two readings agree here"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "oneline",
+      "line_number": 17,
+      "note": "CONTROL: a one-line member"
+    },
+    {
+      "type": "contains",
+      "from": "Choice",
+      "target": "byte_value",
+      "line_number": 23,
+      "note": "the union spelling of the wrapped-type member"
+    },
+    {
+      "type": "contains",
+      "from": "Choice",
+      "target": "word_value",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "Outer",
+      "target": "options",
+      "line_number": 32,
+      "note": "the nested aggregate's member name is written on the closing line"
+    },
+    {
+      "type": "contains",
+      "from": "Outer",
+      "target": "plain",
+      "line_number": 33,
+      "note": "CONTROL: a one-line member"
+    },
+    {
+      "type": "contains",
+      "from": "Outer.options",
+      "target": "bits",
+      "note": "#951: `Outer.options` rather than `anonymous_struct`. The nested aggregate is now addressable by the path a consumer can actually follow: Outer -> options -> bits. It was previously reachable only through a placeholder shared with every other anonymous struct in the file."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "equals": 7
+    }
+  ]
+}

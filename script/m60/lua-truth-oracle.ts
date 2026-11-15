@@ -55,7 +55,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { parseWithAnalyzer } from "./lua-analyzer-direct"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
+const REPOS = "/home/ishaq2321/bb_tests/repositories"
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 
 export interface TruthEdge { rel: string; label: string; from: string; target: string; line: number | null; rule: string }

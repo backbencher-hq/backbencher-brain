@@ -1,0 +1,54 @@
+{
+  "issue": "ELX4 `exports`",
+  "note": "Elixir has no export-list statement, so the public surface is read off the declarations: `def`/`defmacro`/`defguard`/`defdelegate` are public and `defp`/`defmacrop`/`defguardp` are not. That is a DIFFERENT statement from `contains` ('is a member') \u2014 it is the set another module can call as `Mod.f(...)`, which is what `bb_migrate`'s cross-language mapping and the go/java/kotlin exports edges are for; the go lane publishes `pkg -> CapitalizedName` at 1.0 on the declaration's own line and this does the same. A struct and a struct field are NOT exports (`%Mod{}` already produces `instantiates`).",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "ELX4.ExportsSurface",
+      "target": "new",
+      "line_number": 4,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ELX4.Nested.Inner",
+      "target": "visible",
+      "line_number": 15,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ELX4.Unnamed",
+      "target": "file_level",
+      "line_number": 22,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "secret"
+    },
+    {
+      "type": "exports",
+      "target": "helper"
+    },
+    {
+      "type": "exports",
+      "target": "hidden"
+    },
+    {
+      "type": "exports",
+      "target": "invisible"
+    },
+    {
+      "type": "exports",
+      "target": "id"
+    },
+    {
+      "type": "exports",
+      "target": "ELX4.ExportsSurface"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-grasped-fields",
+  "title": "M60 lua LUA-00 — every analyzer node-type/field literal is emitted and reachable",
+  "at": "2026-10-04T00:45:44.336Z",
+  "commit": null,
+  "analyzer": "src/ast/real-lua-analyzer.ts",
+  "grammar": "wasm/tree-sitter-lua.wasm",
+  "rationale": "Five childForFieldName literals in the lua analyzer name fields the pinned grammar does not have, and each sits behind a `|| namedChild(0)` fallback that converts a dead path into a silent wrong answer. M14.0.F1 reports lua grammar:fail for the same five but has no reachability notion and does not fail the build. This gate is the permanent gate the F7 rule requires BEFORE such a fix counts as landed.",
+  "measurement": {
+    "literalsFound": 121,
+    "typeLiterals": 87,
+    "fieldLiterals": 34,
+    "unknownNodeTypes": [],
+    "unknownFields": [],
+    "unreachableFields": [],
+    "unattributedFieldsNotCounted": [
+      {
+        "field": "name",
+        "line": 209,
+        "resolvesOn": [
+          "field",
+          "for_numeric_clause",
+          "function_call",
+          "function_declaration",
+          "parameters",
+          "variable_list"
+        ]
+      },
+      {
+        "field": "method",
+        "line": 1010,
+        "resolvesOn": [
+          "method_index_expression"
+        ]
+      },
+      {
+        "field": "field",
+        "line": 1010,
+        "resolvesOn": [
+          "bracket_index_expression",
+          "dot_index_expression"
+        ]
+      },
+      {
+        "field": "table",
+        "line": 1011,
+        "resolvesOn": [
+          "bracket_index_expression",
+          "dot_index_expression",
+          "method_index_expression"
+        ]
+      },
+      {
+        "field": "name",
+        "line": 1092,
+        "resolvesOn": [
+          "field",
+          "for_numeric_clause",
+          "function_call",
+          "function_declaration",
+          "parameters",
+          "variable_list"
+        ]
+      },
+      {
+        "field": "body",
+        "line": 1285,
+        "resolvesOn": [
+          "for_statement",
+          "function_declaration",
+          "function_definition",
+          "repeat_statement",
+          "while_statement"
+        ]
+      },
+      {
+        "field": "parameters",
+        "line": 1301,
+        "resolvesOn": [
+          "function_declaration",
+          "function_definition"
+        ]
+      },
+      {
+        "field": "name",
+        "line": 1322,
+        "resolvesOn": [
+          "field",
+          "for_numeric_clause",
+          "function_call",
+          "function_declaration",
+          "parameters",
+          "variable_list"
+        ]
+      },
+      {
+        "field": "arguments",
+        "line": 1323,
+        "resolvesOn": [
+          "function_call"
+        ]
+      },
+      {
+        "field": "name",
+        "line": 1826,
+        "resolvesOn": [
+          "field",
+          "for_numeric_clause",
+          "function_call",
+          "function_declaration",
+          "parameters",
+          "variable_list"
+        ]
+      },
+      {
+        "field": "table",
+        "line": 1855,
+        "resolvesOn": [
+          "bracket_index_expression",
+          "dot_index_expression",
+          "method_index_expression"
+        ]
+      },
+      {
+        "field": "parameters",
+        "line": 1862,
+        "resolvesOn": [
+          "function_declaration",
+          "function_definition"
+        ]
+      },
+      {
+        "field": "value",
+        "line": 1883,
+        "resolvesOn": [
+          "expression_list",
+          "field"
+        ]
+      },
+      {
+        "field": "arguments",
+        "line": 1888,
+        "resolvesOn": [
+          "function_call"
+        ]
+      }
+    ],
+    "grammarNodeTypesSeen": 55
+  },
+  "checks": [
+    {
+      "name": "the analyzer has literals to check",
+      "pass": true,
+      "detail": "121 literals"
+    },
+    {
+      "name": "every node-type literal names a type the grammar emits",
+      "pass": true,
+      "detail": "0 unknown: none"
+    },
+    {
+      "name": "every field literal resolves on some node",
+      "pass": true,
+      "detail": "0 unknown: none"
+    },
+    {
+      "name": "every field literal is reachable on the node it is asked of",
+      "pass": true,
+      "detail": "0 unreachable: none"
+    },
+    {
+      "name": "every mutant was actually planted in the source",
+      "pass": true,
+      "detail": "3/3 planted"
+    },
+    {
+      "name": "every planted regression is caught by the gate itself",
+      "pass": true,
+      "detail": "3/3"
+    },
+    {
+      "name": "the real analyzer file was not mutated by the mutant run",
+      "pass": true,
+      "detail": "source string equal to baseline"
+    }
+  ],
+  "mutants": {
+    "caught": 3,
+    "total": 3,
+    "unplanted": 0,
+    "detail": [
+      {
+        "name": "invented node type",
+        "caught": true,
+        "planted": true,
+        "violations": [
+          "node type \"function_declarashun\" is never emitted by the grammar (line 289)",
+          "field \"name\" (line 557) is asked of function_declarashun, but the grammar only resolves it on: field, for_numeric_clause, function_call, function_declaration, parameters, variable_list"
+        ]
+      },
+      {
+        "name": "invented field literal",
+        "caught": true,
+        "planted": true,
+        "violations": [
+          "field \"argumenz\" resolves on no node in the grammar (line 1108)"
+        ]
+      },
+      {
+        "name": "field asked of the wrong node (reachable nowhere at that site)",
+        "caught": true,
+        "planted": true,
+        "violations": [
+          "field \"method\" (line 302) is asked of return_statement, but the grammar only resolves it on: method_index_expression"
+        ]
+      }
+    ]
+  },
+  "passed": true,
+  "status": "pass",
+  "limitations": [
+    "Reachability attributes each field site to the nearest enclosing `case \"type\"`; a literal inside a helper method called from several dispatch sites is attributed to the method's own context and is reported as reachable-if-anywhere. This is a known softness, recorded rather than hidden.",
+    "The probe is one file. It exercises each extraction path but is not a corpus; a literal that only appears on a rare shape would read as unreachable here and need a wider probe."
+  ]
+}

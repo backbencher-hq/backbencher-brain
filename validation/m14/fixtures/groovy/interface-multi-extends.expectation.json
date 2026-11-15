@@ -1,0 +1,13 @@
+{
+  "fixtureId": "groovy/interface-multi-extends",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Groovy (like Java): interfaces extend all listed parents; none are implements. Mirrors the Java multi-extends bug class.",
+  "expectRelationships": [
+    { "type": "extends", "from": "Channel", "target": "Readable" },
+    { "type": "extends", "from": "Channel", "target": "Writable" }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "from": "Channel" }
+  ]
+}

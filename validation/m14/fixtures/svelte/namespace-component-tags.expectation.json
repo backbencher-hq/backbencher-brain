@@ -1,0 +1,84 @@
+{
+  "fixtureId": "svelte/namespace-component-tags",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ONTOLOGY-WORKSTREAM SVELTE3, `instantiates` q5 RESOLVED. Measured over shadcn-svelte's 1,878 files: 7,845 of 11,706 `instantiates` edges (67.0%) carry a DOTTED target written as `<Namespace.Member>`, and 0 of those 7,845 name a symbol the file publishes or the corpus holds — `Card.Root` is not a symbol anywhere, the module exports `Root`, and the file's import binding is `Card`. Every one is an edge bb_graph cannot follow. Three facts are pinned here. (1) A dotted tag whose FIRST SEGMENT IS AN IMPORT BINDING emits, at confidence 0.9 with `resolution: namespace-member` and the module it binds to: the tag as written is a fact and the namespace is a fact, while the MEMBER inside a module that lives outside the corpus is not verified, which is what the lowered confidence and the reason code declare. (2) A dotted tag whose first segment is NOT imported emits NOTHING — Svelte resolves `<Ns.M>` by reading the namespace object bound to `Ns`, so an unbound `Ns` is a compile error, the same reasoning D9/D11 already applies to the reserved `svelte:` prefix. `Ghost.Body` is that case, and `svelte/reserved-svelte-namespace` shows why inventing one would be a shared-premise defect: the F5 oracle pushes `tag_name` verbatim too, so both sides agree and the differential reports the lane clean. (3) THE SIBLING RULE WAS DEAD AND IS PINNED AS ALIVE: `<svelte:component this={X}/>` resolved its binding set from `imp.items` VERBATIM, and the JS analyzer writes the item AS SPELLED — `import * as Card` gives `items: [\"* as Card\"]` and `import { alpha as renamed }` gives `items: [\"alpha as renamed\"]` — so neither `Card` nor `renamed` was ever in the set and the branch published NOTHING for either. 1,052 of the corpus's 1,878 files contain a namespace import, so the rule was silent on exactly the form it was written for. WITHOUT this row the H2 fix is unpinned and a later change can silently re-break it. Every ordinary tag in the file is asserted PRESENT, because a rule that suppressed components would pass the forbids while destroying the lane. `class=\"card.root\"` is the Tailwind-shaped decoy: a dotted string in an ATTRIBUTE VALUE is not a tag and must not emit. THREE SOURCES, NOT ONE. The namespace segment 0 of a dotted tag is bound by an IMPORT (`import * as Card`), by a TEMPLATE-LOCAL the walk recorded (`{#each items as entry}`), or by a SCRIPT SYMBOL (`const active = $derived(...)`). The first two versions of this rule knew one and two respectively, and the differential reported each omission as MISSING — 12 loop-variable components first, then a single `status.icon` in a `$derived` state. All three are structural facts this analyzer can prove; an unbound segment 0 is the only genuinely unresolvable case and is the one that is dropped.",
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "target": "Card.Root",
+      "confidence": 0.9,
+      "line_number": 14,
+      "meta.resolution": "namespace-member",
+      "meta.namespaceBinding": "Card",
+      "comment": "the corpus's dominant shape (67.0% of shadcn-svelte's instantiates edges). Emitted, with the namespace BINDING recorded so a consumer can follow the edge to a module: the module itself is already in this same result's `imports` records keyed by that binding, and copying it onto the edge cost 45 bytes x 7,802 corpus edges (+903 KiB / +16.6% of the serialized relationship payload), so `meta.namespaceModule: null` pins that it is NOT duplicated.",
+      "meta.namespaceModule": null
+    },
+    {
+      "type": "renders",
+      "target": "Card.Header",
+      "confidence": 0.9,
+      "meta.namespaceBinding": "Card",
+      "comment": "a DIFFERENT member of the SAME namespace is a different edge, not a duplicate"
+    },
+    {
+      "type": "renders",
+      "target": "Plain",
+      "confidence": 0.95,
+      "comment": "an ordinary tag is untouched by any of this and stays at the plain 0.95 tier"
+    },
+    {
+      "type": "renders",
+      "target": "Card",
+      "confidence": 0.95,
+      "meta.isComponentUsage": true,
+      "meta.namespaceBinding": null,
+      "comment": "THE H2 ROW. `<svelte:component this={Card}/>` where `Card` is a NAMESPACE import. Pre-fix this published nothing: the binding set held the literal `\"* as Card\"`, never `Card`. `meta.namespaceBinding: null` pins that this is the plain dynamic-target shape and not a dotted tag."
+    },
+    {
+      "type": "renders",
+      "target": "entry.icon",
+      "confidence": 0.9,
+      "line_number": 32,
+      "meta.resolution": "namespace-member",
+      "meta.namespaceLocal": true,
+      "meta.namespaceModule": null,
+      "comment": "THE TEMPLATE-LOCAL NAMESPACE, and this row exists because the first version of the rule got it WRONG. `{#each items as entry}` declares `entry` and `<entry.icon/>` is a legal Svelte dynamic component — but `entry` is not an IMPORT, so an import-only test dropped the edge. The 400-file differential reported exactly that: 12 MISSING in its shadcn-svelte sample, every one a loop-variable component (shadcn-svelte's own blocks: `nav-secondary.svelte:22` `<item.icon/>`, `demo-sidebar-menu.svelte` `<project.icon/>`, `demo-sidebar-icon.svelte` `<team.logo/>` and `<activeTeam.logo/>`, `+page.svelte` `<data.component/>`). A rule that removed 12 real edges to fix 54 unbindable ones was the wrong trade, and the gate that caught it is the one whose job is comparing the two sides. `meta.namespaceBinding: null` pins that the template-local case names no namespace BINDING either — there is no import behind it, and inventing one would be the fabrication the rule exists to avoid.",
+      "meta.namespaceBinding": null
+    },
+    {
+      "type": "renders",
+      "target": "renamed",
+      "confidence": 0.95,
+      "comment": "THE OTHER H2 ROW. `import { alpha as renamed }` — the binding is `renamed`, never `alpha`, and pre-fix the set held the literal `\"alpha as renamed\"`."
+    },
+    {
+      "type": "renders",
+      "target": "active.icon",
+      "confidence": 0.9,
+      "line_number": 41,
+      "meta.resolution": "namespace-member",
+      "meta.namespaceSymbol": true,
+      "meta.namespaceBinding": null,
+      "meta.namespaceLocal": null,
+      "comment": "THE THIRD NAMESPACE SOURCE, and the differential found this one too. `const active = $derived(items[0])` binds `active` in SCRIPT state, and `<active.icon/>` reads a component held in a runtime value — neither an import nor a template-local. Both earlier versions of this rule dropped it: the import-only rule and the import-or-local rule. It is real in the corpus — `docs/src/routes/(app)/(layout)/examples/tasks/components/data-table-status-cell.svelte:11` has `const status = $derived(statuses.find(...))` then `{#if status}<status.icon class=.../>`. `meta.namespaceSymbol: true` pins the third source distinctly, because a consumer asked to resolve the target must know whether to look at an import, a block binding or a declaration."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "target": "Ghost.Body",
+      "comment": "first segment NOT imported, so Svelte cannot resolve it and the compiler rejects the file. Pre-fix this was published as an ordinary component usage at 0.95, naming a component that cannot exist — the same defect class as `svelte:selfdestructive` in svelte/reserved-svelte-namespace."
+    },
+    {
+      "type": "renders",
+      "target": "card.root",
+      "comment": "lower-case, so it is an HTML/SVG unknown element rather than a component; the template lexer is case-sensitive and a lowercase dotted name is not the namespace form"
+    },
+    {
+      "type": "renders",
+      "target": "Unused",
+      "comment": "an imported namespace with NO tag using it must not produce a component usage — the rule reads TEMPLATE TAGS, not the import list. Guards against an implementation that resolves namespaces from imports alone."
+    }
+  ]
+}

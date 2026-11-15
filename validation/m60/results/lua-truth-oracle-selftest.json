@@ -1,0 +1,4182 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "luvit",
+  "sample": null,
+  "filesDrawn": 199,
+  "parseErrorFiles": 0,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 7228,
+    "observedEdges": 7102,
+    "missing": 593,
+    "missingFromAnalyzer": [
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "res",
+        "line": 34,
+        "rule": "return-id",
+        "rel": "bench/http-cluster/app.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "initialize",
+        "line": 58,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__ipairs",
+        "line": 92,
+        "rule": "fn-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__len",
+        "line": 102,
+        "rule": "fn-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__tostring",
+        "line": 106,
+        "rule": "fn-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__concat",
+        "line": 110,
+        "rule": "fn-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__index",
+        "line": 114,
+        "rule": "fn-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__newindex",
+        "line": 122,
+        "rule": "fn-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "inspect",
+        "line": 131,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readUInt8",
+        "line": 143,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readInt8",
+        "line": 147,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readUInt16LE",
+        "line": 155,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readUInt16BE",
+        "line": 160,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readInt16LE",
+        "line": 165,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readInt16BE",
+        "line": 169,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readUInt32LE",
+        "line": 173,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readUInt32BE",
+        "line": 180,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readInt32LE",
+        "line": 187,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "readInt32BE",
+        "line": 191,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "writeUInt8",
+        "line": 195,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "writeInt8",
+        "line": 199,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "writeUInt16LE",
+        "line": 203,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "writeUInt16BE",
+        "line": 208,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "writeUInt32LE",
+        "line": 216,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "writeUInt32BE",
+        "line": 223,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "toString",
+        "line": 233,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Buffer",
+        "target": "isBuffer",
+        "line": 250,
+        "rule": "method-decl",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "buffer",
+        "line": 254,
+        "rule": "return-id",
+        "rel": "deps/buffer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Process",
+        "target": "initialize",
+        "line": 43,
+        "rule": "method-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Process",
+        "target": "setHandle",
+        "line": 49,
+        "rule": "method-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Process",
+        "target": "setPid",
+        "line": 53,
+        "rule": "method-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Process",
+        "target": "kill",
+        "line": 57,
+        "rule": "method-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Process",
+        "target": "close",
+        "line": 61,
+        "rule": "method-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Process",
+        "target": "destroy",
+        "line": 66,
+        "rule": "method-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "spawn",
+        "target": "onExit",
+        "line": 125,
+        "rule": "fn-decl",
+        "rel": "deps/childprocess.lua"
+      },
+      {
+        "label": "contains",
+        "from": "emitter",
+        "target": "pause",
+        "line": 43,
+        "rule": "method-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "emitter",
+        "target": "resume",
+        "line": 47,
+        "rule": "method-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "wrapEmitter",
+        "target": "write",
+        "line": 56,
+        "rule": "fn-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "emitter",
+        "target": "write",
+        "line": 74,
+        "rule": "method-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "emitter",
+        "target": "shutdown",
+        "line": 85,
+        "rule": "method-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "wrapEmitter",
+        "target": "read",
+        "line": 94,
+        "rule": "fn-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "wrapStream",
+        "target": "onRead",
+        "line": 134,
+        "rule": "fn-decl",
+        "rel": "deps/codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "core",
+        "target": "instanceof",
+        "line": 55,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Object",
+        "target": "create",
+        "line": 85,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Object",
+        "target": "new",
+        "line": 105,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Object",
+        "target": "extend",
+        "line": 123,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "missingHandlerType",
+        "line": 166,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onceMeta",
+        "target": "__call",
+        "line": 182,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "once",
+        "line": 188,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "on",
+        "line": 197,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "listenerCount",
+        "line": 215,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "emit",
+        "line": 235,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "removeListener",
+        "line": 260,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "removeAllListeners",
+        "line": 290,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "listeners",
+        "line": 307,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "wrap",
+        "line": 326,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Emitter",
+        "target": "propagate",
+        "line": 335,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__tostring",
+        "line": 351,
+        "rule": "fn-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Error",
+        "target": "initialize",
+        "line": 355,
+        "rule": "method-decl",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "core",
+        "line": 364,
+        "rule": "return-id",
+        "rel": "deps/core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "initialize",
+        "line": 53,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setTimeout",
+        "line": 64,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "send",
+        "line": 76,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "bind",
+        "line": 81,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "close",
+        "line": 86,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "address",
+        "line": 96,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setBroadcast",
+        "line": 100,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setMembership",
+        "line": 104,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "addMembership",
+        "line": 119,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "dropMembership",
+        "line": 123,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setTTL",
+        "line": 127,
+        "rule": "method-decl",
+        "rel": "deps/dgram.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_query",
+        "target": "onError",
+        "line": 670,
+        "rule": "fn-decl",
+        "rel": "deps/dns.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_query",
+        "target": "onTimeout",
+        "line": 675,
+        "rule": "fn-decl",
+        "rel": "deps/dns.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_query",
+        "target": "onConnect",
+        "line": 680,
+        "rule": "fn-decl",
+        "rel": "deps/dns.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_query",
+        "target": "onData",
+        "line": 690,
+        "rule": "fn-decl",
+        "rel": "deps/dns.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_query",
+        "target": "onMessage",
+        "line": 746,
+        "rule": "fn-decl",
+        "rel": "deps/dns.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "close",
+        "line": 41,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "closeSync",
+        "line": 44,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "open",
+        "line": 48,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "openSync",
+        "line": 73,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "read",
+        "line": 84,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readSync",
+        "line": 102,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "unlink",
+        "line": 111,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "unlinkSync",
+        "line": 114,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "write",
+        "line": 117,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "writeSync",
+        "line": 128,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "mkdir",
+        "line": 134,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "mkdirSync",
+        "line": 147,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "mkdirpSync",
+        "line": 155,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "mkdtemp",
+        "line": 167,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "mkdtempSync",
+        "line": 170,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "rmdir",
+        "line": 173,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "rmdirSync",
+        "line": 176,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readdir",
+        "line": 197,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readdirSync",
+        "line": 200,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "scandir",
+        "line": 231,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "scandirSync",
+        "line": 234,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "exists",
+        "line": 247,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "existsSync",
+        "line": 251,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "stat",
+        "line": 255,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "statSync",
+        "line": 258,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fstat",
+        "line": 261,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fstatSync",
+        "line": 264,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "lstat",
+        "line": 267,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "lstatSync",
+        "line": 270,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "rename",
+        "line": 273,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "renameSync",
+        "line": 276,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fsync",
+        "line": 279,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fsyncSync",
+        "line": 282,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fdatasync",
+        "line": 285,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fdatasyncSync",
+        "line": 288,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "ftruncate",
+        "line": 291,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "truncate",
+        "line": 302,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "ftruncateSync",
+        "line": 323,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "truncateSync",
+        "line": 329,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "sendfile",
+        "line": 341,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "sendfileSync",
+        "line": 344,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "access",
+        "line": 347,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "accessSync",
+        "line": 358,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "chmod",
+        "line": 364,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "chmodSync",
+        "line": 367,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fchmod",
+        "line": 370,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fchmodSync",
+        "line": 373,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "utime",
+        "line": 376,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "utimeSync",
+        "line": 379,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "futime",
+        "line": 382,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "futimeSync",
+        "line": 385,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "link",
+        "line": 388,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "linkSync",
+        "line": 391,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "symlink",
+        "line": 394,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "symlinkSync",
+        "line": 402,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readlink",
+        "line": 405,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readlinkSync",
+        "line": 408,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "chown",
+        "line": 411,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "chownSync",
+        "line": 414,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fchown",
+        "line": 417,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "fchownSync",
+        "line": 420,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "readFile",
+        "target": "onStat",
+        "line": 431,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "readFile",
+        "target": "onRead",
+        "line": 443,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "readFile",
+        "target": "onChunk",
+        "line": 447,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readFile",
+        "line": 461,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "readFileSync",
+        "line": 464,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "writeFile",
+        "target": "onWrite",
+        "line": 496,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "writeFile",
+        "line": 501,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "writeFileSync",
+        "line": 504,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "initialize",
+        "line": 514,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "open",
+        "line": 534,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "_write",
+        "line": 548,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "close",
+        "line": 561,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "destroy",
+        "line": 564,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "createWriteStream",
+        "line": 570,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "_read",
+        "line": 648,
+        "rule": "fn-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "createReadStream",
+        "line": 684,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "appendFile",
+        "line": 687,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "appendFileSync",
+        "line": 707,
+        "rule": "method-decl",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "fs",
+        "line": 716,
+        "rule": "return-id",
+        "rel": "deps/fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "string",
+        "target": "levenshtein",
+        "line": 30,
+        "rule": "method-decl",
+        "rel": "deps/helpful.lua"
+      },
+      {
+        "label": "contains",
+        "from": "string",
+        "target": "luvitGlobalExtend",
+        "line": 65,
+        "rule": "method-decl",
+        "rel": "deps/helpful.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "e",
+        "line": 39,
+        "rule": "return-id",
+        "rel": "deps/hooks.lua"
+      },
+      {
+        "label": "contains",
+        "from": "encoder",
+        "target": "encodeHead",
+        "line": 101,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "encoder",
+        "target": "encodeRaw",
+        "line": 132,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "encoder",
+        "target": "encodeChunked",
+        "line": 140,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "decoder",
+        "target": "decodeHead",
+        "line": 170,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "decoder",
+        "target": "decodeEmpty",
+        "line": 239,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "decoder",
+        "target": "decodeRaw",
+        "line": 244,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "decoder",
+        "target": "decodeChunked",
+        "line": 250,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "contains",
+        "from": "decoder",
+        "target": "decodeCounted",
+        "line": 270,
+        "rule": "fn-decl",
+        "rel": "deps/http-codec.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "value",
+        "line": 38,
+        "rule": "return-id",
+        "rel": "deps/http-header.lua"
+      },
+      {
+        "label": "contains",
+        "from": "IncomingMessage",
+        "target": "initialize",
+        "line": 47,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "IncomingMessage",
+        "target": "_read",
+        "line": 63,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "initialize",
+        "line": 69,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "setHeader",
+        "line": 92,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "getHeader",
+        "line": 97,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "removeHeader",
+        "line": 102,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "flushHeaders",
+        "line": 107,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "write",
+        "line": 166,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "_end",
+        "line": 174,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "finish",
+        "line": 178,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ServerResponse",
+        "target": "writeHead",
+        "line": 203,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "getDefaultUserAgent",
+        "line": 303,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "initialize",
+        "line": 310,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "flushHeaders",
+        "line": 431,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "write",
+        "line": 440,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "_write",
+        "line": 454,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "_done",
+        "line": 458,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "_setConnection",
+        "line": 466,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "done",
+        "line": 472,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "setTimeout",
+        "line": 490,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ClientRequest",
+        "target": "destroy",
+        "line": 496,
+        "rule": "method-decl",
+        "rel": "deps/http.lua"
+      },
+      {
+        "label": "contains",
+        "from": "json",
+        "target": "addnewline",
+        "line": 223,
+        "rule": "method-decl",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "contains",
+        "from": "json",
+        "target": "encodeexception",
+        "line": 275,
+        "rule": "method-decl",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "buflen",
+        "line": 380,
+        "rule": "return-id",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "contains",
+        "from": "json",
+        "target": "encode",
+        "line": 383,
+        "rule": "method-decl",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "number",
+        "line": 595,
+        "rule": "return-id",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "nullval",
+        "line": 606,
+        "rule": "return-id",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "contains",
+        "from": "json",
+        "target": "decode",
+        "line": 621,
+        "rule": "method-decl",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "contains",
+        "from": "json",
+        "target": "use_lpeg",
+        "line": 626,
+        "rule": "method-decl",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "contains",
+        "from": "jsonlpeg",
+        "target": "decode",
+        "line": 746,
+        "rule": "method-decl",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "json",
+        "line": 772,
+        "rule": "return-id",
+        "rel": "deps/json.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "initialize",
+        "line": 43,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "_onSocketFinish",
+        "line": 70,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "_onSocketEnd",
+        "line": 79,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "bind",
+        "line": 85,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "address",
+        "line": 89,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setTimeout",
+        "line": 93,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "_write",
+        "line": 103,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "_read",
+        "line": 114,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket:_read",
+        "target": "onRead",
+        "line": 117,
+        "rule": "fn-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "shutdown",
+        "line": 137,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "nodelay",
+        "line": 149,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "keepalive",
+        "line": 153,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "getSendBufferSize",
+        "line": 157,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "getRecvBufferSize",
+        "line": 161,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setSendBufferSize",
+        "line": 165,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "setRecvBufferSize",
+        "line": 170,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "pause",
+        "line": 175,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "resume",
+        "line": 182,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "connect",
+        "line": 187,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "destroy",
+        "line": 246,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "listen",
+        "line": 273,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket:listen",
+        "target": "onListen",
+        "line": 276,
+        "rule": "fn-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Socket",
+        "target": "getsockname",
+        "line": 285,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "init",
+        "line": 292,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "destroy",
+        "line": 306,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "listen",
+        "line": 310,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "address",
+        "line": 341,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "close",
+        "line": 348,
+        "rule": "method-decl",
+        "rel": "deps/net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "initialize",
+        "line": 23,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_get",
+        "line": 28,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "getRoot",
+        "line": 32,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "getSep",
+        "line": 36,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "pathsEqual",
+        "line": 40,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_splitPath",
+        "line": 45,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_normalizeArray",
+        "line": 62,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_splitBySeparators",
+        "line": 84,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "normalize",
+        "line": 92,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_filterparts",
+        "line": 121,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_rawjoin",
+        "line": 147,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_filteredjoin",
+        "line": 151,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "join",
+        "line": 161,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "resolve",
+        "line": 169,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "_commonParts",
+        "line": 209,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "relative",
+        "line": 231,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "dirname",
+        "line": 258,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "basename",
+        "line": 277,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Path",
+        "target": "extname",
+        "line": 286,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PosixPath",
+        "target": "initialize",
+        "line": 297,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PosixPath",
+        "target": "isAbsolute",
+        "line": 301,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PosixPath",
+        "target": "isUNC",
+        "line": 305,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PosixPath",
+        "target": "isDriveRelative",
+        "line": 309,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PosixPath",
+        "target": "normalizeSeparators",
+        "line": 313,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PosixPath",
+        "target": "_makeLong",
+        "line": 317,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "initialize",
+        "line": 324,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "pathsEqual",
+        "line": 329,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "isAbsolute",
+        "line": 333,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "isUNC",
+        "line": 337,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "isDriveRelative",
+        "line": 342,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "getRoot",
+        "line": 351,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "join",
+        "line": 371,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "normalizeSeparators",
+        "line": 385,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WindowsPath",
+        "target": "_makeLong",
+        "line": 389,
+        "rule": "method-decl",
+        "rel": "deps/path/base.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_G",
+        "target": "print",
+        "line": 317,
+        "rule": "method-decl",
+        "rel": "deps/pretty-print.lua"
+      },
+      {
+        "label": "contains",
+        "from": "lenv",
+        "target": "get",
+        "line": 56,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "lenv",
+        "target": "iterate",
+        "line": 59,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "UvStreamWritable",
+        "target": "initialize",
+        "line": 175,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "UvStreamWritable",
+        "target": "_write",
+        "line": 180,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "UvStreamReadable",
+        "target": "initialize",
+        "line": 185,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "UvStreamReadable",
+        "target": "_onPause",
+        "line": 193,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "UvStreamReadable",
+        "target": "_read",
+        "line": 199,
+        "rule": "method-decl",
+        "rel": "deps/process.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "add",
+        "line": 46,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "setMaxLength",
+        "line": 54,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "clean",
+        "line": 62,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "dump",
+        "line": 68,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "load",
+        "line": 71,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "updateLastLine",
+        "line": 78,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "History",
+        "target": "new",
+        "line": 82,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "refreshLine",
+        "line": 88,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "insertAbove",
+        "line": 109,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "insert",
+        "line": 119,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "moveLeft",
+        "line": 136,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "moveRight",
+        "line": 142,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "getHistory",
+        "line": 148,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "backspace",
+        "line": 167,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "delete",
+        "line": 177,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "swap",
+        "line": 186,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "deleteLine",
+        "line": 201,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "deleteEnd",
+        "line": 207,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "moveHome",
+        "line": 212,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "moveEnd",
+        "line": 217,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "deleteWord",
+        "line": 235,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "jumpLeft",
+        "line": 243,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "jumpRight",
+        "line": 247,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "clearScreen",
+        "line": 252,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "beep",
+        "line": 256,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "complete",
+        "line": 259,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "onKey",
+        "line": 411,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "readLine",
+        "line": 452,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor:readLine",
+        "target": "onKey",
+        "line": 460,
+        "rule": "fn-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor:readLine",
+        "target": "finish",
+        "line": 473,
+        "rule": "fn-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Editor",
+        "target": "new",
+        "line": 493,
+        "rule": "method-decl",
+        "rel": "deps/readline.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "global",
+        "line": 49,
+        "rule": "local-decl",
+        "rel": "deps/repl.lua"
+      },
+      {
+        "label": "calls",
+        "from": "onLine",
+        "target": "coroutine.wrap(function ()\n        if line then\n          prompt = evaluateLine(line)\n          editor:readLine(prompt, onLine)\n          -- TODO: break out of >> with control+C\n        elseif onSaveHistoryLines then\n          onSaveHistoryLines(history:dump())\n        end\n      end)",
+        "line": 185,
+        "rule": "call",
+        "rel": "deps/repl.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Module",
+        "target": "load",
+        "line": 218,
+        "rule": "method-decl",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Module",
+        "target": "scan",
+        "line": 237,
+        "rule": "method-decl",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Module",
+        "target": "stat",
+        "line": 241,
+        "rule": "method-decl",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Module",
+        "target": "action",
+        "line": 245,
+        "rule": "method-decl",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Module",
+        "target": "resolve",
+        "line": 255,
+        "rule": "method-decl",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Module",
+        "target": "require",
+        "line": 271,
+        "rule": "method-decl",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "generator",
+        "line": 362,
+        "rule": "return-id",
+        "rel": "deps/require.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream",
+        "target": "pipe",
+        "line": 28,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream:pipe",
+        "target": "ondata",
+        "line": 34,
+        "rule": "fn-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream:pipe",
+        "target": "ondrain",
+        "line": 44,
+        "rule": "fn-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream:pipe",
+        "target": "onend",
+        "line": 53,
+        "rule": "fn-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream:pipe",
+        "target": "onclose",
+        "line": 61,
+        "rule": "fn-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream:pipe",
+        "target": "onerror",
+        "line": 82,
+        "rule": "fn-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Stream:pipe",
+        "target": "cleanup",
+        "line": 95,
+        "rule": "fn-decl",
+        "rel": "deps/stream/stream_core.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Duplex",
+        "target": "initialize",
+        "line": 32,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_duplex.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Observable",
+        "target": "initialize",
+        "line": 30,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_observable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Observable",
+        "target": "_transform",
+        "line": 42,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_observable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Observable",
+        "target": "observe",
+        "line": 49,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_observable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PassThrough",
+        "target": "initialize",
+        "line": 29,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_passthrough.lua"
+      },
+      {
+        "label": "contains",
+        "from": "PassThrough",
+        "target": "_transform",
+        "line": 38,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_passthrough.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ReadableState",
+        "target": "initialize",
+        "line": 26,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "initialize",
+        "line": 122,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "push",
+        "line": 135,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "unshift",
+        "line": 146,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "read",
+        "line": 285,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "_read",
+        "line": 507,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "pipe",
+        "line": 511,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "unpipe",
+        "line": 674,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "on",
+        "line": 759,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "resume",
+        "line": 795,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "pause",
+        "line": 825,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Readable",
+        "target": "wrap",
+        "line": 848,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_readable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TransformState",
+        "target": "initialize",
+        "line": 74,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_transform.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Transform",
+        "target": "initialize",
+        "line": 114,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_transform.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Transform",
+        "target": "push",
+        "line": 152,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_transform.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Transform",
+        "target": "_transform",
+        "line": 169,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_transform.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Transform",
+        "target": "_write",
+        "line": 173,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_transform.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Transform",
+        "target": "_read",
+        "line": 192,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_transform.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WriteReq",
+        "target": "initialize",
+        "line": 29,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WritableState",
+        "target": "initialize",
+        "line": 37,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "initialize",
+        "line": 163,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "pipe",
+        "line": 181,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "write",
+        "line": 217,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "cork",
+        "line": 235,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "uncork",
+        "line": 241,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "_write",
+        "line": 470,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Writable",
+        "target": "_end",
+        "line": 476,
+        "rule": "method-decl",
+        "rel": "deps/stream/stream_writable.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Worker",
+        "target": "queue",
+        "line": 82,
+        "rule": "method-decl",
+        "rel": "deps/thread.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Timer",
+        "target": "initialize",
+        "line": 41,
+        "rule": "method-decl",
+        "rel": "deps/timer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Timer",
+        "target": "_update",
+        "line": 46,
+        "rule": "method-decl",
+        "rel": "deps/timer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Timer",
+        "target": "start",
+        "line": 51,
+        "rule": "method-decl",
+        "rel": "deps/timer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Timer",
+        "target": "stop",
+        "line": 57,
+        "rule": "method-decl",
+        "rel": "deps/timer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Timer",
+        "target": "again",
+        "line": 63,
+        "rule": "method-decl",
+        "rel": "deps/timer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Timer",
+        "target": "close",
+        "line": 69,
+        "rule": "method-decl",
+        "rel": "deps/timer.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Credential",
+        "target": "initialize",
+        "line": 113,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Credential",
+        "target": "addRootCerts",
+        "line": 126,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Credential",
+        "target": "setCA",
+        "line": 130,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Credential",
+        "target": "setKeyCert",
+        "line": 146,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "initialize",
+        "line": 156,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "_init",
+        "line": 200,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "version",
+        "line": 218,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "getPeerCertificate",
+        "line": 222,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "_verifyClient",
+        "line": 226,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "_verifyServer",
+        "line": 249,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "destroy",
+        "line": 271,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "connect",
+        "line": 331,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "sni",
+        "line": 344,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "flush",
+        "line": 355,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "_write",
+        "line": 368,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket",
+        "target": "_read",
+        "line": 383,
+        "rule": "method-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket:_read",
+        "target": "incoming",
+        "line": 386,
+        "rule": "fn-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket:_read",
+        "target": "onData",
+        "line": 401,
+        "rule": "fn-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "TLSSocket:_read",
+        "target": "handshake",
+        "line": 422,
+        "rule": "fn-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "contains",
+        "from": "createCredentials",
+        "target": "returnOne",
+        "line": 482,
+        "rule": "fn-decl",
+        "rel": "deps/tls/common.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "obj",
+        "line": 35,
+        "rule": "return-id",
+        "rel": "deps/tls/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "init",
+        "line": 39,
+        "rule": "method-decl",
+        "rel": "deps/tls/init.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Server",
+        "target": "sni",
+        "line": 61,
+        "rule": "method-decl",
+        "rel": "deps/tls/init.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "URL",
+        "line": 356,
+        "rule": "return-id",
+        "rel": "deps/url.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "new",
+        "line": 52,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "copy",
+        "line": 87,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "index2uindex",
+        "line": 95,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "uindex2index",
+        "line": 123,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "gsub",
+        "line": 154,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "sub",
+        "line": 158,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "find",
+        "line": 170,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "format",
+        "line": 178,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "gmatch",
+        "line": 182,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "match",
+        "line": 186,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "lower",
+        "line": 190,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "upper",
+        "line": 198,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "rep",
+        "line": 206,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ustring",
+        "target": "reverse",
+        "line": 216,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_meta",
+        "target": "__eq",
+        "line": 227,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_meta",
+        "target": "__tostring",
+        "line": 232,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "contains",
+        "from": "_meta",
+        "target": "__concat",
+        "line": 236,
+        "rule": "method-decl",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "ustring",
+        "line": 246,
+        "rule": "return-id",
+        "rel": "deps/ustring.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "utils",
+        "line": 118,
+        "rule": "return-id",
+        "rel": "deps/utils.lua"
+      },
+      {
+        "label": "contains",
+        "from": "stack",
+        "target": "stack",
+        "line": 22,
+        "rule": "method-decl",
+        "rel": "examples/app/libs/stack.lua"
+      },
+      {
+        "label": "contains",
+        "from": "stack",
+        "target": "compose",
+        "line": 49,
+        "rule": "method-decl",
+        "rel": "examples/app/libs/stack.lua"
+      },
+      {
+        "label": "contains",
+        "from": "stack",
+        "target": "mount",
+        "line": 76,
+        "rule": "method-decl",
+        "rel": "examples/app/libs/stack.lua"
+      },
+      {
+        "label": "contains",
+        "from": "stack",
+        "target": "translate",
+        "line": 88,
+        "rule": "method-decl",
+        "rel": "examples/app/libs/stack.lua"
+      },
+      {
+        "label": "contains",
+        "from": "stack",
+        "target": "errorHandler",
+        "line": 114,
+        "rule": "method-decl",
+        "rel": "examples/app/libs/stack.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "stack",
+        "line": 124,
+        "rule": "return-id",
+        "rel": "examples/app/libs/stack.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Response",
+        "target": "notFound",
+        "line": 189,
+        "rule": "method-decl",
+        "rel": "examples/http-static-file-server.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Response",
+        "target": "error",
+        "line": 198,
+        "rule": "method-decl",
+        "rel": "examples/http-static-file-server.lua"
+      },
+      {
+        "label": "contains",
+        "from": "JoystickTransform",
+        "target": "initialize",
+        "line": 7,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick-stream.lua"
+      },
+      {
+        "label": "contains",
+        "from": "JoystickTransform",
+        "target": "_transform",
+        "line": 12,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick-stream.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Joystick",
+        "target": "initialize",
+        "line": 22,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Joystick",
+        "target": "onOpen",
+        "line": 30,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Joystick",
+        "target": "startRead",
+        "line": 36,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Joystick",
+        "target": "onRead",
+        "line": 40,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Joystick",
+        "target": "close",
+        "line": 47,
+        "rule": "method-decl",
+        "rel": "examples/linux-joystick.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Multi",
+        "target": "initialize",
+        "line": 103,
+        "rule": "method-decl",
+        "rel": "examples/poll-libcurl.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Multi",
+        "target": "add",
+        "line": 112,
+        "rule": "method-decl",
+        "rel": "examples/poll-libcurl.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Multi",
+        "target": "_onData",
+        "line": 124,
+        "rule": "method-decl",
+        "rel": "examples/poll-libcurl.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Multi",
+        "target": "_onSocket",
+        "line": 129,
+        "rule": "method-decl",
+        "rel": "examples/poll-libcurl.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Multi",
+        "target": "_onTimeout",
+        "line": 173,
+        "rule": "method-decl",
+        "rel": "examples/poll-libcurl.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "open",
+        "line": 14,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "read",
+        "line": 30,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "write",
+        "line": 45,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fs",
+        "target": "close",
+        "line": 60,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ReadStream",
+        "target": "initialize",
+        "line": 72,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "ReadStream",
+        "target": "read",
+        "line": 78,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WriteStream",
+        "target": "initialize",
+        "line": 97,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "WriteStream",
+        "target": "write",
+        "line": 102,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "fs",
+        "line": 117,
+        "rule": "return-id",
+        "rel": "examples/stream/libs/file.lua"
+      },
+      {
+        "label": "contains",
+        "from": "iStream",
+        "target": "pipe",
+        "line": 10,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/stream.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "core",
+        "line": 25,
+        "rule": "return-id",
+        "rel": "examples/stream/libs/stream.lua"
+      },
+      {
+        "label": "contains",
+        "from": "fiber",
+        "target": "new",
+        "line": 7,
+        "rule": "method-decl",
+        "rel": "examples/stream/libs/wait.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "fiber",
+        "line": 67,
+        "rule": "return-id",
+        "rel": "examples/stream/libs/wait.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "exports",
+        "line": 110,
+        "rule": "return-id",
+        "rel": "tests/fixture-tls.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "string",
+        "line": 28,
+        "rule": "return-id",
+        "rel": "tests/fixtures/a.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "string",
+        "line": 28,
+        "rule": "return-id",
+        "rel": "tests/fixtures/a1.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "string",
+        "line": 34,
+        "rule": "return-id",
+        "rel": "tests/fixtures/b/c.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "string",
+        "line": 24,
+        "rule": "return-id",
+        "rel": "tests/fixtures/b/d.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "deepEqual",
+        "line": 67,
+        "rule": "return-id",
+        "rel": "tests/libs/deep-equal.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "tap",
+        "line": 169,
+        "rule": "return-id",
+        "rel": "tests/libs/tap.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "outputs",
+        "line": 28,
+        "rule": "return-id",
+        "rel": "tests/libs/test-codec.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "err",
+        "line": 40,
+        "rule": "return-id",
+        "rel": "tests/test-fs-long-path.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "st",
+        "line": 48,
+        "rule": "return-id",
+        "rel": "tests/test-fs-readfile-zero-byte-liar.lua"
+      },
+      {
+        "label": "contains",
+        "from": "sink",
+        "target": "write",
+        "line": 47,
+        "rule": "method-decl",
+        "rel": "tests/test-fs-readstream.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "er",
+        "line": 152,
+        "rule": "return-id",
+        "rel": "tests/test-fs-truncate.lua"
+      },
+      {
+        "label": "contains",
+        "from": "runTest",
+        "target": "syncTests",
+        "line": 77,
+        "rule": "fn-decl",
+        "rel": "tests/test-fs-utime.lua"
+      },
+      {
+        "label": "calls",
+        "from": "global",
+        "target": "coroutine.wrap(function ()\n      local thread = coroutine.running()\n      p{thread=thread}\n      local fd = assert(fs.open(module.path, \"r\", thread))\n      p{fd=fd}\n      local stat = assert(fs.fstat(fd, thread))\n      p(stat)\n      local chunk = assert(fs.read(fd, stat.size, thread))\n      p{chunk=#chunk}\n      assert(fs.close(fd, thread))\n      finish()\n    end)",
+        "line": 52,
+        "rule": "call",
+        "rel": "tests/test-fs.lua"
+      },
+      {
+        "label": "calls",
+        "from": "global",
+        "target": "coroutine.wrap(function ()\n      local thread = coroutine.running()\n      for k,v in fs.scandir(module.dir, thread) do\n        p{name=k,type=v}\n      end\n      done()\n    end)",
+        "line": 120,
+        "rule": "call",
+        "rel": "tests/test-fs.lua"
+      },
+      {
+        "label": "calls",
+        "from": "global",
+        "target": "coroutine.wrap(function ()\n      local thread = coroutine.running()\n      local result = {\n        read = fs.access(module.path, \"r\", thread),\n        write = fs.access(module.path, \"w\", thread),\n        execute = fs.access(module.path, \"x\", thread),\n      }\n      p(result)\n      assert(type(result.read) == \"boolean\")\n      assert(type(result.write) == \"boolean\")\n      assert(type(result.execute) == \"boolean\")\n    end)",
+        "line": 165,
+        "rule": "call",
+        "rel": "tests/test-fs.lua"
+      },
+      {
+        "label": "calls",
+        "from": "global",
+        "target": "coroutine.wrap(expect(function ()\n      local thread = coroutine.running()\n      local data = fs.readFile(module.path, thread)\n      assert(#data > 0)\n    end))",
+        "line": 204,
+        "rule": "call",
+        "rel": "tests/test-fs.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onListen",
+        "target": "onConnect",
+        "line": 104,
+        "rule": "fn-decl",
+        "rel": "tests/test-net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onListen",
+        "target": "onTimeout",
+        "line": 106,
+        "rule": "fn-decl",
+        "rel": "tests/test-net.lua"
+      },
+      {
+        "label": "contains",
+        "from": "Foo",
+        "target": "initialize",
+        "line": 22,
+        "rule": "method-decl",
+        "rel": "tests/test-object.lua"
+      },
+      {
+        "label": "contains",
+        "from": "global",
+        "target": "__tostring",
+        "line": 25,
+        "rule": "fn-decl",
+        "rel": "tests/test-object.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onServerConnection",
+        "target": "onData",
+        "line": 30,
+        "rule": "fn-decl",
+        "rel": "tests/test-tcp.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onData",
+        "target": "onWrite",
+        "line": 33,
+        "rule": "fn-decl",
+        "rel": "tests/test-tcp.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onConnect",
+        "target": "onData",
+        "line": 51,
+        "rule": "fn-decl",
+        "rel": "tests/test-tcp.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onConnect",
+        "target": "onWrite",
+        "line": 58,
+        "rule": "fn-decl",
+        "rel": "tests/test-tcp.lua"
+      },
+      {
+        "label": "exports",
+        "from": "global",
+        "target": "self",
+        "line": 37,
+        "rule": "return-id",
+        "rel": "tests/test-thread.lua"
+      },
+      {
+        "label": "contains",
+        "from": "startClient",
+        "target": "onData",
+        "line": 87,
+        "rule": "fn-decl",
+        "rel": "tests/test-tls-client-openssl-server.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onClient",
+        "target": "onData",
+        "line": 40,
+        "rule": "fn-decl",
+        "rel": "tests/test-tls-client-reject.lua"
+      },
+      {
+        "label": "contains",
+        "from": "theTest",
+        "target": "testIter",
+        "line": 160,
+        "rule": "fn-decl",
+        "rel": "tests/test-tls-server-verify.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onListen",
+        "target": "onStdout",
+        "line": 67,
+        "rule": "fn-decl",
+        "rel": "tests/test-tls-set-ciphers.lua"
+      },
+      {
+        "label": "contains",
+        "from": "onListen",
+        "target": "onExit",
+        "line": 71,
+        "rule": "fn-decl",
+        "rel": "tests/test-tls-set-ciphers.lua"
+      },
+      {
+        "label": "contains",
+        "from": "BindHelper",
+        "target": "func1",
+        "line": 9,
+        "rule": "method-decl",
+        "rel": "tests/test-utils.lua"
+      },
+      {
+        "label": "contains",
+        "from": "BindHelper",
+        "target": "func2",
+        "line": 14,
+        "rule": "method-decl",
+        "rel": "tests/test-utils.lua"
+      },
+      {
+        "label": "contains",
+        "from": "BindHelper",
+        "target": "func3",
+        "line": 19,
+        "rule": "method-decl",
+        "rel": "tests/test-utils.lua"
+      }
+    ],
+    "missingByPipelineNoiseFilter": 127,
+    "noiseTargetsHit": [
+      "parent",
+      "text",
+      "type"
+    ],
+    "unexplained": 467,
+    "lineChecked": 6635,
+    "lineExact": 6635,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 3506,
+      "observed": 3383,
+      "missing": 123,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 0.9649
+    },
+    "contains": {
+      "truth": 3123,
+      "observed": 3121,
+      "missing": 438,
+      "unexplained": 436,
+      "precision": 0.8775,
+      "recall": 0.8598
+    },
+    "extends": {
+      "truth": 7,
+      "observed": 10,
+      "missing": 0,
+      "unexplained": 3,
+      "precision": 0.7,
+      "recall": 1
+    },
+    "instantiates": {
+      "truth": 7,
+      "observed": 35,
+      "missing": 0,
+      "unexplained": 28,
+      "precision": 0.2,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 554,
+      "observed": 553,
+      "missing": 1,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 0.9982
+    },
+    "exports": {
+      "truth": 31,
+      "observed": 0,
+      "missing": 31,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 0
+    }
+  },
+  "missingSample": [
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "res",
+      "line": 34,
+      "rule": "return-id",
+      "rel": "bench/http-cluster/app.lua"
+    },
+    {
+      "label": "calls",
+      "from": "process",
+      "target": "type",
+      "line": 49,
+      "rule": "call",
+      "rel": "bench/http-cluster/worker.lua"
+    },
+    {
+      "label": "calls",
+      "from": "global",
+      "target": "type",
+      "line": 39,
+      "rule": "call",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "initialize",
+      "line": 58,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "calls",
+      "from": "Buffer:initialize",
+      "target": "type",
+      "line": 60,
+      "rule": "call",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "__ipairs",
+      "line": 92,
+      "rule": "fn-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "__len",
+      "line": 102,
+      "rule": "fn-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "__tostring",
+      "line": 106,
+      "rule": "fn-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "__concat",
+      "line": 110,
+      "rule": "fn-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "__index",
+      "line": 114,
+      "rule": "fn-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "calls",
+      "from": "Buffer.meta:__index",
+      "target": "type",
+      "line": 115,
+      "rule": "call",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "__newindex",
+      "line": 122,
+      "rule": "fn-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "calls",
+      "from": "Buffer.meta:__newindex",
+      "target": "type",
+      "line": 123,
+      "rule": "call",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "inspect",
+      "line": 131,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readUInt8",
+      "line": 143,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readInt8",
+      "line": 147,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readUInt16LE",
+      "line": 155,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readUInt16BE",
+      "line": 160,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readInt16LE",
+      "line": 165,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readInt16BE",
+      "line": 169,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readUInt32LE",
+      "line": 173,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readUInt32BE",
+      "line": 180,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readInt32LE",
+      "line": 187,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "readInt32BE",
+      "line": 191,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "writeUInt8",
+      "line": 195,
+      "rule": "method-decl",
+      "rel": "deps/buffer.lua"
+    }
+  ],
+  "unexplainedSample": [
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:initialize",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer.meta",
+      "target": "Buffer.meta:__ipairs",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer.meta",
+      "target": "Buffer.meta:__len",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer.meta",
+      "target": "Buffer.meta:__tostring",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer.meta",
+      "target": "Buffer.meta:__concat",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer.meta",
+      "target": "Buffer.meta:__index",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer.meta",
+      "target": "Buffer.meta:__newindex",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:inspect",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readUInt8",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readInt8",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readUInt16LE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readUInt16BE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readInt16LE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readInt16BE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readUInt32LE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readUInt32BE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readInt32LE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:readInt32BE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:writeUInt8",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:writeInt8",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:writeUInt16LE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:writeUInt16BE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:writeUInt32LE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:writeUInt32BE",
+      "rel": "deps/buffer.lua"
+    },
+    {
+      "label": "contains",
+      "from": "Buffer",
+      "target": "Buffer:toString",
+      "rel": "deps/buffer.lua"
+    }
+  ],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": true,
+    "dropObservedShowsMissing": true,
+    "dropTruthShowsUnexplained": true,
+    "corruptLineIsCaught": true
+  },
+  "hardFailures": true,
+  "status": "fail"
+}

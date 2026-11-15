@@ -1,0 +1,69 @@
+/* M14 ONTOLOGY PASS 2 — `overrides` for a `--custom-property` assigned twice inside ONE
+   declaration block. Found by measurement, not by reading: probe Q3 in
+   `validation/m14/census/css-boundary-probe.ts` counts the shape on the parse tree.
+
+   WHY THIS IS THE SAME CONSTRUCT AS THE `@keyframes` CASE ALREADY PINNED
+   (`keyframes-redefinition-overrides.css`). Two declarations of one property inside one
+   block share origin, context, layer, specificity and importance, so position is the only
+   thing that separates them, and CSS Cascade 5 §6.1 resolves that: "The last declaration
+   in document order wins." CSS Variables 1 §2: "Custom properties are ordinary
+   properties, so they can be declared on any element, are resolved with the normal
+   inheritance and cascade rules." So the second assignment replaces the first outright
+   and the first is dead — the same claim `@keyframes` makes, from a different spec.
+
+   THE CORPUS SHAPE IS BULMA'S MINIFIED BUNDLES: `:root { --bulma-light-l: 90%; …;
+   --bulma-light-l: 96%; … }` writes the same token twice inside one block.
+
+   THE FOUR CASES BELOW ARE THE WHOLE RULE, and three of them are cases where an edge
+   must NOT be emitted. A fixture that pinned only the positive case would constrain
+   nothing about where the boundary is, and the boundary is the entire content of the
+   claim.
+
+     1. POSITIVE — `--twice` twice in one block, interleaved with another property, so a
+        naive "adjacent duplicate" test would miss it. One edge.
+     2. POSITIVE, THREE TIMES — a chain, so the SECOND declaration is itself superseded.
+        Two edges, each naming the declaration it kills.
+     3. NEGATIVE, CROSS-BLOCK — `:root { --scoped: 1px }` then `.dark { --scoped: 2px }`.
+        Same file, same name, DIFFERENT elements: the cascade chooses per element, so
+        the second does not replace the first. Emitting here would be the false claim the
+        lane's own identity merge (`--bg-1` under `:root` and again under `.dark` is one
+        node) already makes impossible to read correctly from a name alone.
+     4. NEGATIVE, DIFFERING IMPORTANCE — `--guarded: 1px !important; --guarded: 2px`.
+        Cascade 5 §6.1 sorts importance ABOVE document order, so the later declaration
+        LOSES. An edge would be backwards.
+
+   A `@media` body is a `rule_set`, so case 5 checks the same positive case inside a
+   conditional block — the block identity is the node, not the nesting depth.
+*/
+
+:root {
+  --twice: 1px;
+  --between: 2px;
+  --twice: 3px;
+}
+
+.chain {
+  --thrice: 1px;
+  --thrice: 2px;
+  --thrice: 3px;
+}
+
+:root {
+  --scoped: 1px;
+}
+
+.dark {
+  --scoped: 2px;
+}
+
+.guarded {
+  --guarded: 1px !important;
+  --guarded: 2px;
+}
+
+@media print {
+  :root {
+    --conditional: 1px;
+    --conditional: 2px;
+  }
+}

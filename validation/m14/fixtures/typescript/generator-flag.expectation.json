@@ -1,0 +1,11 @@
+{
+  "fixtureId": "typescript/generator-flag",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the isGenerator fix: generators parse as method_definition with anonymous '*' token; flag must be true only for generator methods.",
+  "expectSymbols": [
+    { "name": "Gen" },
+    { "name": "numbers" },
+    { "name": "plain" }
+  ]
+}

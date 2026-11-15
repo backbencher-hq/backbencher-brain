@@ -1,0 +1,80 @@
+{
+ "fixtureId": "perl/builtins-and-branches",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "M14 line-contract pins on `contains`, added 2026-10-02. Every `line_number` below was transcribed from the NUMBERED source .pm file and then confirmed against one analyzer run, so the analyzer agrees with the source rather than defining it. This lane previously asserted `contains` MEMBERSHIP ONLY -- no row anywhere named a line -- which is why the two mutants `perl/contains-line-is-absent` (strips the field) and `perl/contains-line-at-declaration-start` (shifts it by +1) both SURVIVED at (0 -> 0): the transform touched a channel no fixture read. `core-oo-class-role` already said so in prose -- its `Point->sum` row carried the note that the old `line_number: null` sentinel \"asserted ignorance about a line written in the file\", and the numeric replacement it asked for was never written. Dropping the pin is not dropping the contract: the M60 line contract applies to `contains` as it does to every other label. Each row resolved to exactly ONE actual edge, so each value below is the only line that edge has and no value was inferred.",
+ "rationale": "Two defects with the same shape: a list that was maintained by hand instead of derived, so it was wrong. BUILTINS: `say` (17), `system` (19), `accept` (20), `chr` (18) and `fc` (21) are core named operators and produced `calls` edges to symbols that cannot exist -- `say` and `system` alone on the mojo corpus. The pre-review list was missing exactly 10 words. The list is now the grammar's own fixed op-token sets intersected with perl 5.38's opcode.h, so it cannot drift from the parser that reads it. `bless` on line 22 is the control: a builtin that WAS in the list stays suppressed. BRANCHES: the pre-review complexity counter named six node types the pinned grammar does not declare (`if_statement`, `unless_statement`, `while_statement`, `until_statement`, `foreach_statement`, `ternary_expression`), so only `for_statement` and `conditional_expression` ever fired and the metric was 1 for almost every real file. This grammar spells them `conditional_statement`, `elsif`, `loop_statement`, `cstyle_for_statement`, `postfix_conditional_expression` and `conditional_expression`; lines 4-12 exercise one of each, and the count is 11.",
+ "expectSymbols": [
+  {
+   "name": "B",
+   "kind": "class"
+  },
+  {
+   "name": "flow",
+   "kind": "method",
+   "ownerName": "B"
+  },
+  {
+   "name": "builtins",
+   "kind": "method",
+   "ownerName": "B"
+  }
+ ],
+ "expectMetadata": [
+  {
+   "cyclomaticComplexity": 11,
+   "comment": "ten decision points on lines 4-12 plus the base 1; the pre-fix counter reported 1 because six of its eight node types do not exist in this grammar"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "say",
+   "note": "pre-fix shape: `say` is a core named operator and is not in the analyzer's builtin set"
+  },
+  {
+   "type": "calls",
+   "target": "system",
+   "note": "pre-fix shape: same, and the highest-volume site in real corpora"
+  },
+  {
+   "type": "calls",
+   "target": "accept",
+   "note": "pre-fix shape: same"
+  },
+  {
+   "type": "calls",
+   "target": "chr",
+   "note": "pre-fix shape: same"
+  },
+  {
+   "type": "calls",
+   "target": "fc",
+   "note": "pre-fix shape: same"
+  },
+  {
+   "type": "calls",
+   "target": "bless",
+   "note": "control: `bless` was already suppressed and must stay suppressed"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "type": "contains",
+   "from": "B",
+   "target": "flow",
+   "line_number": 2,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "contains",
+   "from": "B",
+   "target": "builtins",
+   "line_number": 15,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  }
+ ]
+}

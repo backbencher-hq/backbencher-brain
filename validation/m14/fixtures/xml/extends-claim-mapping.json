@@ -1,0 +1,57 @@
+{
+  "instrument": "xml extends claim mapping \u2014 the derivation base routed to the claim its class can verify",
+  "at": "2026-10-10T01:19:00-04:00",
+  "change": {
+    "file": "src/ast/real-xml-analyzer.ts",
+    "site": "the XSD derivation pass (`xsd_derivation_base`) \u2014 the same four resolvability classes as the reference pass, per the code's own comment",
+    "marker": "isExternalTarget when the class is `builtin` or `external`",
+    "refused": "class `unresolved` (a bare value in a declaration vocabulary that this file does not declare) is NOT marked \u2014 the analyzer measured that THIS FILE does not declare it, not that the population does not. Same refusal as the reference pass."
+  },
+  "beforeAfter": {
+    "population": "11,562 files, 126 repos, production scope, 0 degraded \u2014 the same population for both columns",
+    "before": {
+      "artifact": "validation/m14/fixtures/xml/contains-intent.txt",
+      "extends": {
+        "edges": 1429,
+        "resolved": 84,
+        "ambiguous": 991,
+        "unresolved": 354,
+        "residualPct": 94.1,
+        "intended": 0,
+        "twin": 645,
+        "noDecl": 125
+      },
+      "TOTAL": {
+        "unresolved": 631,
+        "residual": "4.7%"
+      }
+    },
+    "after": {
+      "artifact": "validation/m14/fixtures/xml/residual-extends.txt",
+      "extends": {
+        "edges": 1429,
+        "resolved": 84,
+        "ambiguous": 991,
+        "unresolved": 0,
+        "residualPct": 69.3,
+        "intended": 0,
+        "twin": 645,
+        "noDecl": 125
+      },
+      "TOTAL": {
+        "unresolved": 277,
+        "residual": "4.5%",
+        "extFAIL": 0,
+        "bindFAIL": 0,
+        "causeFAIL": 0
+      }
+    },
+    "fixtures": "xml 31 pass / 0 fail",
+    "reading": "`extends` unresolved 354 -> 0 and the lane's residual 4.7% -> 4.5%, with extFAIL still 0. The 991 ambiguous minus 645 twins and 125 noDecl are collisions the own file settles; the twins are untouched by this change and remain the real wrongness on this type."
+  },
+  "whatThisDoesNotFix": {
+    "theTwins": "645 `extends` edges bind to a declaration in ANOTHER file because the base type is declared in an imported namespace and no declaration in the edge's own file answers the name. The claim mapping does not touch that column \u2014 the intent classifier is independent of the claim mechanism. The fix the Lead named is the identity one: give the target an identity the store can match exactly instead of a name a tie-break must choose. `references` carries 4,137 of the same shape, so one mechanism may serve both.",
+    "theRemainingUnresolved": "277 = references 12 + imports 265 (file-class imports the analyzer cannot safely claim, and X13 references it deliberately does not)."
+  },
+  "raw": "validation/m14/fixtures/xml/residual-extends.txt"
+}

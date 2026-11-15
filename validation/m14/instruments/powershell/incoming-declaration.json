@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "lang": "powershell",
+    "instrument": "script/m14/incoming-gate.ts --json powershell ps1,psm1,psd1 0",
+    "generator": "script/m14/arm-declaration.ts — transcribes the arm's own per-type buckets and REFUSES a sample, a non-whole population, a broken external split or a closure that does not sum",
+    "sample": 1181,
+    "corpusTotal": 1181,
+    "corpusRepos": 30,
+    "parsed": 1181,
+    "population": "parsed=1181/1181 admitted=1181 exts=ps1,psm1,psd1 index=no",
+    "metric": "edges counted once per (source, type, target, line) by the analyzer; buckets counted on the SAME edge in the SAME loop",
+    "analyzer": "src/ast/real-powershell-analyzer.ts",
+    "analyzerDigest": "sha256:45367f74f868f1f5dcb08bb1be0271b7c45866f8ce81b1328f82751b17d4766b",
+    "arm": "validation/m14/measurements/powershell-gate-whole-2026-10-27-psb22.json",
+    "indexArm": false,
+    "armVerdict": "FAIL",
+    "armReason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 66016 ambiguous/unresolved + 107 refuted claim(s) + 3388 claim(s) no check can reach (ext? 3388, bind? 0)  ||  CLAUSE 4 (extFAIL / bindFAIL / causeFAIL = 0) FAILS — extFAIL 107 · bindFAIL 0 · causeFAIL 0  --  17747 ambiguous + 48269 unresolved of 196597 edges, resolved against the file's OWN PROJECT (production's scope), and 107 external claim(s) REFUTED by the project; 3388 external claim(s) unverifiable (25165 verified + 3388 unverifiable external)",
+    "instrumentSelfTest": {
+      "ok": true,
+      "failures": []
+    },
+    "absentFiles": 3,
+    "overCapFiles": 0,
+    "sizeCapBytes": 1048576
+  },
+  "causeRulings": {},
+  "causeRulingsNote": "EMPTY BECAUSE NO EDGE CARRIES A DECLARED CAUSE: the arm's cause columns read causeDeclared 0 and the residual is dispositioned by the WALL classes it does not name. An empty map here means 'the analyzer declares no cause that would need a ruling', which the completion gate reads as clause 3 SATISFIED — not as a missing section.",
+  "types": {
+    "calls": {
+      "edges": 73342,
+      "resolved": 10850,
+      "external": 25339,
+      "ambiguous": 3525,
+      "otherUnresolved": 33628,
+      "unclassed": 0,
+      "_ambKind": 362,
+      "_collRes": 0
+    },
+    "uses": {
+      "edges": 92604,
+      "resolved": 62380,
+      "external": 1907,
+      "ambiguous": 14171,
+      "otherUnresolved": 14146,
+      "unclassed": 0,
+      "_ambKind": 9009,
+      "_collRes": 0
+    },
+    "contains": {
+      "edges": 27887,
+      "resolved": 27887,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 16996
+    },
+    "imports": {
+      "edges": 572,
+      "resolved": 215,
+      "external": 241,
+      "ambiguous": 3,
+      "otherUnresolved": 113,
+      "unclassed": 0,
+      "_ambKind": 2,
+      "_collRes": 0
+    },
+    "references": {
+      "edges": 603,
+      "resolved": 216,
+      "external": 253,
+      "ambiguous": 3,
+      "otherUnresolved": 131,
+      "unclassed": 0,
+      "_ambKind": 2,
+      "_collRes": 0
+    },
+    "exports": {
+      "edges": 111,
+      "resolved": 95,
+      "external": 1,
+      "ambiguous": 12,
+      "otherUnresolved": 3,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "extends": {
+      "edges": 47,
+      "resolved": 30,
+      "external": 0,
+      "ambiguous": 3,
+      "otherUnresolved": 14,
+      "unclassed": 0,
+      "_ambKind": 3,
+      "_collRes": 0
+    },
+    "implements": {
+      "edges": 3,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 3,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "overrides": {
+      "edges": 12,
+      "resolved": 12,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "instantiates": {
+      "edges": 1378,
+      "resolved": 199,
+      "external": 812,
+      "ambiguous": 30,
+      "otherUnresolved": 337,
+      "unclassed": 0,
+      "_ambKind": 21,
+      "_collRes": 0
+    },
+    "decorates": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "part_of": {
+      "edges": 38,
+      "resolved": 37,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 1,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    }
+  },
+  "resolution_caveats": {
+    "buckets": "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ARM'S ELEVEN TERMS, NOT THE ELEVEN TERMS: external = externalVerified + externalUnverified, and otherUnresolved carries unresolved + externalRefuted + the binding and cause columns. Every row's buckets sum to its edge count and `unclassed` is 0 by construction — the generator REFUSES to write a row that does not close.",
+    "indexNo": "INDEX=NO, AND THAT IS THE HONEST ARM: there is no INDEX_SPECS entry for powershell in script/m14/incoming-gate.ts, so no production project index is built. TABLE 1's scope is the gate's own per-repository declaration table, built from every file this whole-population run parsed (1,181 admitted, 30 repositories). A reader must not read `resolved` as 'the production index bound it'.",
+    "collResSubset": "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: a resolved edge whose target had MORE THAN ONE declaration, so production's own-file tie-break chose the row. 16,996 of 101,921 resolved edges. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+    "ambKindSubset": "`amb(kind)` IS A SUBSET OF `amb(decl)`: 9,399 of 17,747. Two different questions about the same edges, and only the by-declaration count is in the closure.",
+    "externalIsAClaim": "EXTERNAL IS A CLAIM, NOT A RESOLUTION: 28,660 edges carry an external claim, of which 25,165 the project CONFIRMS, 3,388 no check can reach (ext?) and 107 it REFUTES (extFAIL). A refuted claim is charged to otherUnresolved and to clause 4, never folded into `external`.",
+    "refutedClaims": "107 EXTERNAL CLAIMS ARE REFUTED by the project's own declarations — a measured defect, not a wall, and the arm's clause 4 reports it (extFAIL 107). They stay in the closure so the number is visible.",
+    "absentFiles": "3 TRACKED FILES ARE ABSENT FROM DISK (`excluded.absent`), so the population is the tracked set MINUS files that cannot be read. They are counted, not silently dropped.",
+    "partOf": "`part_of` IS A DIRECTIVE RELATION AND ITS TARGET IS A FILE'S OWN NAME: 38 rows (the dot-source form), 37 resolved, 1 unresolved because the sourced file is not in the admitted set. The AMP half of the invocation operator stayed `calls` (115 rows) and the total did not move when the 38 were relabelled.",
+    "ruledTypes": "`renders` AND `mixes_in` PUBLISH ZERO ROWS AND THAT IS A RULING, NOT A BLIND SPOT: each has a whole-population construct census with a passing control (validation/m14/measurements/powershell-extended-census.json), a ladder walked (R1/R2/R3 unavailable), and a fixture that fires in both directions (validation/m14/fixtures/powershell/ruled-extended-types.ps1). They appear here as DECLARED ZEROS rather than absent keys, so 'measured nothing' and 'never measured' are different rows."
+  }
+}

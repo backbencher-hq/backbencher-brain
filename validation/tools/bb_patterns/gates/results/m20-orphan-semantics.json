@@ -1,0 +1,1 @@
+{"gate":"m20-orphan-semantics","command":"bun run script/m20/verify-patterns-orphan-semantics.ts","exitCode":0,"durationMs":4616,"log":"validation/tools/bb_patterns/gates/logs/m20-orphan-semantics.log","recordedAt":"2026-11-03T16:12:55Z"}

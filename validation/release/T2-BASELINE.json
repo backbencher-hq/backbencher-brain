@@ -5,7 +5,7 @@
   "head": "ref: re",
   "referenceIndex": {
     "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-    "projectPath": "$HOME/mcp/backbencher-brain",
+    "projectPath": "/home/ishaq2321/mcp/backbencher-brain",
     "dbPath": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
     "dbBytes": 3885883392,
     "dbMtimeMs": 1793749442893.4658

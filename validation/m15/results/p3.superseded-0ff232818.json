@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P3",
+  "code": "P3",
+  "tool": "bb_patterns",
+  "title": "cross-file orphan + rules correctness",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:16:43.543Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.339Z",
+    "contentSha256": "4f49a79960eb7c06f386e2c3cd5433303cb02781c9812e38b19c57e3b461e945"
+  }
+}

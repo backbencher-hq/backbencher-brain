@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "authorities": {
+    "csharp": "Microsoft.CodeAnalysis.CSharp from .NET SDK 8.0.423",
+    "fsharp": "FSharp.Compiler.Service from .NET SDK 8.0.423"
+  },
+  "files": {
+    "CustomerService.cs": [
+      {"name":"Example.Domain","kind":"namespace","line":6},
+      {"name":"CustomerService","kind":"class","line":8},
+      {"name":"customers","kind":"property","line":10},
+      {"name":"CustomerCreated","kind":"event","line":11},
+      {"name":"constructor","kind":"constructor","line":13},
+      {"name":"constructor","kind":"constructor","line":14},
+      {"name":"Get","kind":"method","line":16},
+      {"name":"GetAsync","kind":"method","line":17},
+      {"name":"Add","kind":"method","line":18},
+      {"name":"ICustomerService","kind":"interface","line":21},
+      {"name":"Get","kind":"method","line":23},
+      {"name":"Add","kind":"method","line":24},
+      {"name":"Customer","kind":"class","line":27},
+      {"name":"Id","kind":"property","line":27},
+      {"name":"Name","kind":"property","line":27},
+      {"name":"DisplayName","kind":"property","line":29},
+      {"name":"CustomerFilter","kind":"delegate","line":32},
+      {"name":"CustomerExtensions","kind":"class","line":34},
+      {"name":"Filter","kind":"method","line":36}
+    ],
+    "CustomerService.Part2.cs": [
+      {"name":"Example.Domain","kind":"namespace","line":4},
+      {"name":"CustomerService","kind":"class","line":6},
+      {"name":"FindAll","kind":"method","line":8}
+    ],
+    "CustomerModule.fs": [
+      {"name":"Example.Domain","kind":"namespace","line":1},
+      {"name":"CustomerModule","kind":"module","line":5},
+      {"name":"Status","kind":"enum","line":6},
+      {"name":"Active","kind":"enum_member","line":7},
+      {"name":"Inactive","kind":"enum_member","line":8},
+      {"name":"Customer","kind":"class","line":10},
+      {"name":"Id","kind":"property","line":10},
+      {"name":"Name","kind":"property","line":10},
+      {"name":"Repository","kind":"interface","line":12},
+      {"name":"Get","kind":"method","line":13},
+      {"name":"Save","kind":"method","line":14},
+      {"name":"format","kind":"function","line":16},
+      {"name":"findById","kind":"function","line":17},
+      {"name":"createAsync","kind":"function","line":19}
+    ]
+  }
+}

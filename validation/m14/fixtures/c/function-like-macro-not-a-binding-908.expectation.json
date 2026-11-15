@@ -1,0 +1,20 @@
+{
+  "fixtureId": "c/function-like-macro-not-a-binding-908",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#908 (M60-C) ruling: a function-like macro's NAME is never a LOCAL BINDING. Corpus shape (jq src/parser.c L2229-2230): `YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);` parses as a declaration whose DECLARATOR field is a function_declarator NAMED AFTER THE MACRO, with the real declared name (`yylval`) demoted to the declaration's type_identifier. Both collectors (oracle fnLocals and analyzer collectBoundLocals) read that declarator's leftmost identifier as a bound local, put the macro name in the function's locals, and then suppressed the genuine macro use — the jq c lane's single unexplained row. The ruling applied is the one #908's four-row lesson established (the truth counts a macro invocation as `calls (expr)` AND `uses (expr)`; the analyzer's identifier path is load-bearing for the second), scoped to the collector: these names bind nothing. The fixture pins three rows. (1) `uses yyparse -> YY_INITIAL_VALUE` is the corpus order, where the use (L38) precedes the misparsing declaration (L39) — it regresses only if someone re-adds the reverted blanket macro-name suppression, which is the other half of #908. (2) `uses c908_after -> YY_INITIAL_VALUE` is the pair REVERSED (declaration L45, use L46) and is the order-independence pin: with the collector gate removed the declaration binds the macro name first and BOTH rows of that function disappear, which is what the accompanying mutant is expected to prove. (3) `calls c908_read -> YY_INITIAL_VALUE` is a macro invocation in a value position in a function that never sees the misparse — the guard against trading this row for MISSING ones. `forbidSymbols` pins C-D1: `yylval` is a function-local binding and must never become a symbol on either side.",
+  "expectSymbols": [
+    { "name": "YY_INITIAL_VALUE", "kind": "macro" },
+    { "name": "yyparse", "kind": "function" },
+    { "name": "c908_after", "kind": "function" },
+    { "name": "c908_read", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "yylval" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "yyparse", "target": "YY_INITIAL_VALUE", "meta.relationshipType": "identifier_usage" },
+    { "type": "uses", "from": "c908_after", "target": "YY_INITIAL_VALUE", "meta.relationshipType": "identifier_usage" },
+    { "type": "calls", "from": "c908_read", "target": "YY_INITIAL_VALUE" }
+  ]
+}

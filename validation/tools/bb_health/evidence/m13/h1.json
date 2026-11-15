@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.29",
+  "code": "H1",
+  "tool": "bb_health",
+  "title": "bb_health: mutability contract (read vs index)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "registry: mutability is exactly read",
+      "pass": true,
+      "detail": "read"
+    },
+    {
+      "name": "registry: refresh/force described as explicit reindex",
+      "pass": true,
+      "detail": "missing explicit mutation docs"
+    },
+    {
+      "name": "contract artifact: mutability is read",
+      "pass": true,
+      "detail": "read"
+    },
+    {
+      "name": "docs: mutability line is read",
+      "pass": true,
+      "detail": "missing/incorrect"
+    },
+    {
+      "name": "docs: refresh/force documented as explicit index mutation",
+      "pass": true,
+      "detail": "A status call is read-only: the index is opened through the driver's read-only mode, so no migrations, healers or WAL writes run. refresh=true and force=true ar"
+    },
+    {
+      "name": "handler: refresh gated on explicit refresh/force flags",
+      "pass": true,
+      "detail": "implicit refresh possible"
+    },
+    {
+      "name": "provider: read calls open the index read-only",
+      "pass": true,
+      "detail": "writable open on a read path"
+    },
+    {
+      "name": "runtime: plain health call performs ZERO index mutation (brain.db + WAL bytes) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "changed=false"
+    },
+    {
+      "name": "runtime: the shared-memory sidecar is the only file that may move",
+      "pass": true,
+      "detail": "shm unchanged (brain.db+WAL unchanged)"
+    },
+    {
+      "name": "runtime: plain health call returns a report",
+      "pass": true,
+      "detail": "no report"
+    },
+    {
+      "name": "runtime: refresh=true explicitly mutates the index [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "changed=true"
+    },
+    {
+      "name": "runtime: force=true performs an explicit in-place reindex",
+      "pass": true,
+      "detail": "changed=true"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "decisions": {
+    "singleTruth": "registry mutability field is the authority; docs/data/public-tools.json and docs/tools/bb_health.md are generated from it and must agree",
+    "explicitMutation": "refresh=true / force=true are documented and implemented as explicit index mutation; a plain call must never mutate",
+    "runtimeProof": "DB fingerprint (bytes + symbol count) must be identical after a plain call and different after refresh/force"
+  },
+  "limitations": [
+    "The fingerprint covers the project DB file; unrelated writes (e.g. shared caches outside the project) are out of scope."
+  ],
+  "generatedAt": "2026-11-03T04:02:06.074Z"
+}

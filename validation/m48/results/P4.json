@@ -1,0 +1,18 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-p4-param-matrix.ts",
+  "evidenceFile": "P4.json",
+  "generatedAt": "2026-11-05T04:31:56.834Z",
+  "passed": 512,
+  "failed": 0,
+  "negativeCases": 2,
+  "failures": [],
+  "matrixStats": {
+    "registryRows": 251,
+    "cliRows": 55,
+    "total": 306,
+    "verifiedRows": 251
+  }
+}

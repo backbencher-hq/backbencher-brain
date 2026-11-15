@@ -1,0 +1,528 @@
+{
+  "meta": {
+    "lang": "erlang",
+    "instrument": "script/m14/incoming-gate.ts erlang erl,hrl 0 --dump (the arbiter; ONE measurement, no second resolution instrument)",
+    "generator": "script/m14/erlang-declaration.ts — transcribes the arm's own TABLE 1 and the cause census, and REFUSES a sample, a non-closing row, a partition that does not sum, an unclassified row, a census/arm disagreement, or a ruling the emissions violate",
+    "sample": 4465,
+    "corpusTotal": 4465,
+    "corpusRepos": 3,
+    "parsed": 4465,
+    "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+    "populationRule": {
+      "rule": "GIT-TRACKED set per repository: every entry of the corpus root is considered, symlinked directories are followed, only real git checkouts are corpus, the file set is git ls-files -z, extension admission is extensionsFor(\"erlang\") = the router's ONE table, the cap is the engine's FULL_AST_LIMIT 1 MiB, and paths are deduplicated by realpath into DISTINCT FILES.",
+      "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+      "exts": [
+        "erl",
+        "hrl"
+      ],
+      "corpusEntries": 202,
+      "symlinkedDirEntriesFollowed": 199,
+      "paths": 4465,
+      "distinctFiles": 4451,
+      "admitted": 4465,
+      "absent": 0,
+      "overCap": 6,
+      "overCapLargest": 1824427,
+      "repos": 3,
+      "repoPaths": {
+        "elixir": 48,
+        "otp": 4148,
+        "rebar3": 269
+      },
+      "repoDistinct": {
+        "elixir": 48,
+        "otp": 4134,
+        "rebar3": 269
+      },
+      "sample": 4465,
+      "cap": 0,
+      "index": "no — there is no INDEX_SPECS entry for erlang, so the arm's (and this census's) resolution scope is the arm's own per-repository declaration table, not a production project index"
+    },
+    "metric": "edges counted once per row the analyzer emits; the five gate buckets are a DECLARED COARSENING of the eleven closure terms, and every row publishes the eleven terms in `closure` so nothing is hidden by it",
+    "analyzer": "src/ast/real-erlang-analyzer.ts",
+    "analyzerDigest": "sha256:ab4d553cd9ea86a4",
+    "generated": "2026-10-23",
+    "measurementForm": "ONE arm run over the whole admitted population (whole graph in one process, no chunks) — so the EDGE buckets and the RESOLUTION buckets are both the population's, and there is no chunk-resolution bias to caveat. 4,465 files sits under the ~7,600-parse WASM abort point the dart lane measured, and the arm frees every tree, so no chunking was needed.",
+    "arm": "validation/m14/measurements/erlang-gate-whole-2026-10-23.log",
+    "causeCensus": "validation/m14/measurements/erlang-cause-census.json",
+    "census": "validation/m14/measurements/erlang-extended-census.json"
+  },
+  "rules": {
+    "resolved": "the target is a published name in the edge's own REPOSITORY (TABLE 1's scope, built from this run's own symbol loop). It is NOT a claim that the chosen declaration is correct: collRes is the share whose target had more than one declaration, and the fleet's own indexer measures a large share of such tie-break picks as WRONG — so `resolved` is a FLOOR on correctness.",
+    "external": "extOK + ext?: the analyzer's provable external marker (an import/include_lib classification, ER-D20), of which extOK is confirmed and ext? is unverifiable. Marking is NOT claimed complete, and external is never folded into resolved.",
+    "ambiguous": "amb(decl): the target matched more than one declaration IN THE PROJECT'S KEY SPACE. amb(kind) is the distinct-kind subset and is reported beside it, never added.",
+    "otherUnresolved": "unresolved + extFAIL + bindOK + bind? + bindFAIL + causeOK + causeFAIL. A declared cause (causeOK) is a STATEMENT, not a resolution, and never lifts `resolved`.",
+    "unclassed": "0 by construction, and REFUSED by this generator when it is not: an edge the instrument cannot classify is a hole in the instrument, not a class.",
+    "bucketRule": "resolved = resolved · ambiguous = amb(decl) · external = extOK + ext? · otherUnresolved = unresolved + extFAIL + bindOK + bind? + bindFAIL + causeOK + causeFAIL · unclassed = 0. collRes (of resolved) and amb(kind) (of amb(decl)) are SUBSETS printed beside and NEVER added.",
+    "direction": "the arm's TABLE 1 is the PROJECT (repository) scope, built from the whole run's own symbols; the closure is over TABLE 1's eleven terms and the wall partition is over TABLE 1's `unresolved` column."
+  },
+  "causeRulings": {
+    "Q1_qualified_remote_call": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 231620,
+      "what": "231620 unresolved row(s), by label {\"calls\":231620}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/scripts/windows_installer/update_system_path.erl:9 calls -> win32reg:open ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/scripts/windows_installer/update_system_path.erl:10 calls -> win32reg:change_key ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/scripts/windows_installer/update_system_path.erl:11 calls -> win32reg:value",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json>",
+        "wouldFail": "a `calls` unresolved target WITHOUT a colon landing in this class, or an erlang ANALYZER symbol carrying a non-empty `qualifiedName` (ER-D1: the analyzer sets none; the ARBITER's own population counter `qualifiedNameAliases` read 0 in the lane's prior declaration; the parseFile projection derives one for every symbol and is explicitly not used — see the census's analyzerQualifiedNameNote) — either would mean the target COULD be resolved by name, so the class would be a defect and not a spelling wall."
+      }
+    },
+    "Q2_qualified_reference": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 10882,
+      "what": "10882 unresolved row(s), by label {\"references\":10882}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:348 references -> elixir:eval_local_handler ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:349 references -> elixir:eval_external_handler ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir_bitstring.erl:25 references -> elixir_expand:expand_arg",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json>",
+        "wouldFail": "a non-calls unresolved target WITHOUT a colon landing in this class; the class is defined by the spelling, so a bare target here would falsify it."
+      }
+    },
+    "F1_file_inclusion_path": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 4340,
+      "what": "4340 unresolved row(s), by label {\"part_of\":4340}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:16 part_of -> elixir.hrl ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir_aliases.erl:8 part_of -> elixir.hrl ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir_bitstring.erl:8 part_of -> elixir.hrl",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json>",
+        "wouldFail": "a `part_of` target that the census's declared-name index carries in the row's own repository — that would mean the target is a declaration and the file-inclusion label is wrong; or a `part_of` row that resolves in TABLE 1 while this class counts it."
+      }
+    },
+    "B1_bare_declared_in_another_repository": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 2186,
+      "what": "2186 unresolved row(s), by label {\"references\":2146,\"implements\":24,\"instantiates\":2,\"uses\":14}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:25 references -> nonempty_string ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:27 references -> any ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:29 references -> any",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json>",
+        "wouldFail": "a B1 target that IS in the row's own repository's name set (it would be W1 and the under-report would move the row, not disappear), or a target absent from the corpus union (it would be B2)."
+      }
+    },
+    "B2_bare_declared_nowhere_in_corpus": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 16699,
+      "what": "16699 unresolved row(s), by label {\"references\":15880,\"instantiates\":186,\"exports\":187,\"uses\":444,\"implements\":2}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:348 references -> MODULE ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:349 references -> MODULE ; /home/ishaq2321/mcp/backbencher-brain/.corpus/elixir/lib/elixir/src/elixir.erl:437 references -> MODULE",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json>",
+        "wouldFail": "a B2 target that the corpus union DOES contain — the class would be claiming an external boundary for a name the corpus declares."
+      }
+    },
+    "W1_declared_in_own_repository_yet_unresolved": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 0,
+      "what": "0 unresolved row(s), by label {}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: ",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json> --fail-nonzero-w1",
+        "wouldFail": "W1 > 0: a name declared in the edge's own repository that the arm still left unresolved is a resolution-model gap, and the --fail-nonzero-w1 run is the falsifier-as-exit-code."
+      }
+    },
+    "U0_unclassified": {
+      "population": "parsed=4465/4465 admitted=4465 exts=erl,hrl index=no",
+      "count": 0,
+      "what": "0 unresolved row(s), by label {}. Partition evidence: validation/m14/measurements/erlang-cause-census.json (script/m14/erlang-cause-census.ts over validation/m14/measurements/erlang-gate-whole-2026-10-23.log with declared-name index validation/m14/measurements/erlang-extended-census.json). Examples: ",
+      "falsifier": {
+        "run": "bun script/m14/erlang-cause-census.ts --arm <arm log> --census <erlang-extended-census.json>",
+        "wouldFail": "U0 > 0 exits 11: a row this instrument cannot name falsifies the claim that the partition is exact."
+      }
+    }
+  },
+  "types": {
+    "calls": {
+      "edges": 480990,
+      "resolved": 249370,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 231620,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 3601,
+      "repos": 3,
+      "closure": {
+        "edges": 480990,
+        "resolved": 249370,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 231620,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "uses": {
+      "edges": 57933,
+      "resolved": 36196,
+      "external": 0,
+      "ambiguous": 21279,
+      "otherUnresolved": 458,
+      "unclassed": 0,
+      "_ambKind": 17025,
+      "_collRes": 0,
+      "files": 1014,
+      "repos": 3,
+      "closure": {
+        "edges": 57933,
+        "resolved": 36196,
+        "collRes": 0,
+        "ambDecl": 21279,
+        "ambKind": 17025,
+        "unresolved": 458,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "contains": {
+      "edges": 196234,
+      "resolved": 196234,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 122848,
+      "files": 4346,
+      "repos": 3,
+      "closure": {
+        "edges": 196234,
+        "resolved": 196234,
+        "collRes": 122848,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "imports": {
+      "edges": 314,
+      "resolved": 93,
+      "external": 2,
+      "ambiguous": 219,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 155,
+      "_collRes": 0,
+      "files": 252,
+      "repos": 3,
+      "closure": {
+        "edges": 314,
+        "resolved": 93,
+        "collRes": 0,
+        "ambDecl": 219,
+        "ambKind": 155,
+        "unresolved": 0,
+        "extOK": 2,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "references": {
+      "edges": 201468,
+      "resolved": 108537,
+      "external": 0,
+      "ambiguous": 64023,
+      "otherUnresolved": 28908,
+      "unclassed": 0,
+      "_ambKind": 45444,
+      "_collRes": 0,
+      "files": 3233,
+      "repos": 3,
+      "closure": {
+        "edges": 201468,
+        "resolved": 108537,
+        "collRes": 0,
+        "ambDecl": 64023,
+        "ambKind": 45444,
+        "unresolved": 28908,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "exports": {
+      "edges": 71412,
+      "resolved": 71049,
+      "external": 0,
+      "ambiguous": 176,
+      "otherUnresolved": 187,
+      "unclassed": 0,
+      "_ambKind": 136,
+      "_collRes": 0,
+      "files": 3516,
+      "repos": 3,
+      "closure": {
+        "edges": 71412,
+        "resolved": 71049,
+        "collRes": 0,
+        "ambDecl": 176,
+        "ambKind": 136,
+        "unresolved": 187,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "extends": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "implements": {
+      "edges": 655,
+      "resolved": 151,
+      "external": 0,
+      "ambiguous": 478,
+      "otherUnresolved": 26,
+      "unclassed": 0,
+      "_ambKind": 468,
+      "_collRes": 0,
+      "files": 633,
+      "repos": 3,
+      "closure": {
+        "edges": 655,
+        "resolved": 151,
+        "collRes": 0,
+        "ambDecl": 478,
+        "ambKind": 468,
+        "unresolved": 26,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "overrides": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "instantiates": {
+      "edges": 9844,
+      "resolved": 5507,
+      "external": 0,
+      "ambiguous": 4149,
+      "otherUnresolved": 188,
+      "unclassed": 0,
+      "_ambKind": 3727,
+      "_collRes": 0,
+      "files": 1044,
+      "repos": 3,
+      "closure": {
+        "edges": 9844,
+        "resolved": 5507,
+        "collRes": 0,
+        "ambDecl": 4149,
+        "ambKind": 3727,
+        "unresolved": 188,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "decorates": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 0,
+      "repos": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "part_of": {
+      "edges": 4340,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 4340,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "files": 2464,
+      "repos": 3,
+      "closure": {
+        "edges": 4340,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 4340,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    }
+  },
+  "resolution_caveats": [
+    "INDEX=NO, AND THAT IS THE HONEST ARM: there is no INDEX_SPECS entry for erlang in script/m14/incoming-gate.ts, so no production project index is built. TABLE 1's scope is the ARM's OWN per-repository declaration table, built from every file this whole-population run parsed. It is as complete as the admitted corpus allows, and it is NOT the production index's mechanism; a reader must not read `resolved` as 'the production index bound it'.",
+    "ER-D1 — THE QUALIFIED-TARGET SPELLING WALL, DECLARED AS A CAUSE AND NOT AS A DEFECT: a remote call's target KEEPS `module:function` and the ANALYZER never sets a `qualifiedName` alias (ER-D1 in src/ast/real-erlang-analyzer.ts). A name-count resolver therefore cannot bind remote calls by construction; they are counted in `Q1_qualified_remote_call`, and the falsifier is an analyzer symbol carrying such an alias. NOTE ON THE INSTRUMENT: the census does NOT publish a qualifiedName-alias count because the production projection derives a qualifiedName for EVERY symbol (pool-worker.ts:1438), so a projection-based count would read every symbol and be useless — the claim is a source-level fact about the analyzer, not a corpus count.",
+    "`resolved` MEANS 'the target is a published name in the edge's own repository' — IT DOES NOT MEAN THE PICK IS CORRECT. `collRes` is the subset whose target had more than one declaration; the fleet's own indexer measures 37,318 of 49,729 such tie-break picks as WRONG, so this lane's resolved column is a FLOOR on correctness and must not be compared with a lane whose resolved bucket excludes collisions.",
+    "`amb(kind)` IS A SUBSET OF `amb(decl)` (distinct kinds among colliding declarations vs distinct declarations) and `collRes` IS A SUBSET OF `resolved`. Both are printed beside their parents and NEVER added to any bucket or to the closure.",
+    "`contains` RESOLVES BY THE GATE'S containsLike RULE: the project holds at least one declaration of the name, so production's LIMIT-1 bind yields exactly one row (file-first preference not modelled in full). Its resolved share is NOT the same measurement as a name-count lane's.",
+    "`part_of` TARGETS ARE FILE PATHS, NOT SYMBOL NAMES (the include directive is file inclusion, ER-D46). They are counted in `F1_file_inclusion_path`; 'unresolved by name' is the CORRECT outcome for a path target, not a defect.",
+    "THE W1 CLASS IS PUBLISHED, NOT HIDDEN: `W1_declared_in_own_repository_yet_unresolved` is the resolution model's residual. A non-zero W1 is a named, counted gap rather than an unexplained row, and the cause census has a `--fail-nonzero-w1` run whose exit code is the falsifier.",
+    "THE CORPUS CHANGED SINCE ER3, AND THE OLD ARTIFACTS ARE SUPERSEDED, NOT EDITED: the ER3 wave measured 4,326/4,617 files over otp+rebar3+cowboy; this corpus has no cowboy, carries elixir (48 `.erl`), and otp is at a different revision. The 4,465-file population above is the ONLY population this declaration speaks about; `validation/m14/results/erlang-er3-corpus-census.json` and the dual-lens artifacts are SUPERSEDED and must not be compared with these numbers."
+  ]
+}

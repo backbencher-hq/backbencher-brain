@@ -1,0 +1,853 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "title": "Extension-routing outliers: an extension routed to a grammar that cannot represent the format",
+  "issueId": 913,
+  "purpose": "language-detection routes BY EXTENSION, which is right for a dialect and wrong for a format that merely lives beside the language. The parse-success artifact measures the result per lane and cannot separate 'weak grammar on its own language' from 'not that language at all'. This census compares each measured extension bucket against the lane's own pooled canonical rate and convicts only extensions DECLARED `other-format` — the ruling is data in EXTENSION_RELATION, the arithmetic is in the artifact.",
+  "method": "Reads validation/m14/results/M14.0.F10.json (per-lane, per-extension file and ERROR-node counts over digest-pinned hash-ordered corpus samples) and the live router (detectLanguageFromPath). canonical = the lane's POOLED `same-language` + `ambiguous-sniff` rate, chosen over largest-bucket so that a lane whose biggest bucket IS its defect cannot launder it. finding = declared other-format AND >= MIN_FILES files AND >= GAP_PTS absolute points AND >= RATIO-fold above canonical.",
+  "thresholds": {
+    "MIN_FILES": 20,
+    "GAP_PTS": 15,
+    "RATIO": 5
+  },
+  "sourceArtifact": "validation/m14/results/M14.0.F10.json",
+  "sourceCommit": "229c0c1ead72f7d539b38a42d88a9d9892ebb3dc",
+  "sourceGeneratedAt": "2026-09-24T15:09:22.917Z",
+  "generatedAt": "2026-09-24",
+  "lanes": 48,
+  "findingCount": 0,
+  "findings": [],
+  "baseline": [],
+  "newFindings": [],
+  "vanishedFindings": [],
+  "drift": false,
+  "undeclaredExtensions": [],
+  "routerDisagreements": [],
+  "rateDivergences": {
+    "note": "Declared `same-language` (the format IS the routed language) yet far above the lane's canonical rate: a GRAMMAR gap, not a routing defect. Reported so the number is visible and never convicted here.",
+    "rows": [
+      {
+        "lang": "groovy",
+        "ext": "gradle",
+        "files": 27,
+        "errorFiles": 10,
+        "rate": 37,
+        "canonical": 4.5,
+        "gap": 32.5,
+        "ratio": 8.2
+      },
+      {
+        "lang": "groovy",
+        "ext": "gradle",
+        "files": 20,
+        "errorFiles": 12,
+        "rate": 60,
+        "canonical": 8.75,
+        "gap": 51.3,
+        "ratio": 6.9
+      }
+    ]
+  },
+  "belowSampleFloor": {
+    "note": "Declared other-format but under 20 files: reported, cannot convict (a small denominator cannot manufacture a finding).",
+    "rows": [
+      {
+        "lang": "haskell",
+        "ext": "lhs",
+        "files": 2,
+        "errorFiles": 2,
+        "rate": 100,
+        "canonical": 1.61,
+        "gap": 98.4,
+        "ratio": 62.1
+      }
+    ]
+  },
+  "unmeasured": {
+    "note": "Declared other-format with no F10 lane sampling the extension: unknown, not clean. No rate exists, so nothing is claimed about it.",
+    "rows": [
+      {
+        "ext": "jsonc",
+        "lang": "json",
+        "note": "JSON with comments (tsconfig.json, wrangler.jsonc): tree-sitter-json has no comment production. No json lane exists in F10 — UNMEASURED"
+      },
+      {
+        "ext": "sass",
+        "lang": "css",
+        "note": "indented-syntax Sass (no braces, no semicolons): tree-sitter-css cannot represent it. No css lane exists in F10 — UNMEASURED"
+      },
+      {
+        "ext": "less",
+        "lang": "css",
+        "note": "LESS is a CSS superset with variables/mixins; the css grammar's handling of it is unmeasured. No css lane exists in F10 — UNMEASURED"
+      }
+    ]
+  },
+  "retired": {
+    "note": "Ruled (2026-09-24): the format is real but no pinned grammar can represent it, so the registry does not route it and nothing claims to have analyzed it. `measured: true` would mean the artifact still carries a bucket for a retired extension — a finding, not a retirement.",
+    "rows": [
+      {
+        "ext": "gsp",
+        "lang": "groovy",
+        "measured": false
+      },
+      {
+        "ext": "pyx",
+        "lang": "python",
+        "measured": false
+      },
+      {
+        "ext": "pxd",
+        "lang": "python",
+        "measured": false
+      }
+    ]
+  },
+  "measured": {
+    "java.java": {
+      "lane": "clojure:java",
+      "lang": "java",
+      "files": 190,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "groovy.gradle": {
+      "lane": "geb:groovy",
+      "lang": "groovy",
+      "files": 20,
+      "errorFiles": 12,
+      "rate": 60,
+      "relation": "same-language"
+    },
+    "groovy.groovy": {
+      "lane": "geb:groovy",
+      "lang": "groovy",
+      "files": 380,
+      "errorFiles": 23,
+      "rate": 6.1,
+      "relation": "same-language"
+    },
+    "kotlin.kt": {
+      "lane": "kotlinx-coroutines:kotlin",
+      "lang": "kotlin",
+      "files": 389,
+      "errorFiles": 6,
+      "rate": 1.5,
+      "relation": "same-language"
+    },
+    "kotlin.kts": {
+      "lane": "kotlinx-coroutines:kotlin",
+      "lang": "kotlin",
+      "files": 11,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "scala.sc": {
+      "lane": "scala3:scala",
+      "lang": "scala",
+      "files": 1,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "scala.scala": {
+      "lane": "cats-effect:scala",
+      "lang": "scala",
+      "files": 400,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "typescript.ts": {
+      "lane": "element-plus:typescript",
+      "lang": "typescript",
+      "files": 400,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "javascript.js": {
+      "lane": "lodash:javascript",
+      "lang": "javascript",
+      "files": 55,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "vue.vue": {
+      "lane": "vue-element-admin:vue",
+      "lang": "vue",
+      "files": 131,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "svelte.svelte": {
+      "lane": "shadcn-svelte:svelte",
+      "lang": "svelte",
+      "files": 400,
+      "errorFiles": 5,
+      "rate": 1.3,
+      "relation": "same-language"
+    },
+    "c.c": {
+      "lane": "jq:c",
+      "lang": "c",
+      "files": 45,
+      "errorFiles": 17,
+      "rate": 37.8,
+      "relation": "same-language"
+    },
+    "c.h": {
+      "lane": "jq:c",
+      "lang": "c",
+      "files": 31,
+      "errorFiles": 2,
+      "rate": 6.5,
+      "relation": "ambiguous-sniff"
+    },
+    "cpp.cc": {
+      "lane": "fmt:cpp",
+      "lang": "cpp",
+      "files": 47,
+      "errorFiles": 16,
+      "rate": 34,
+      "relation": "same-language"
+    },
+    "cpp.h": {
+      "lane": "nlohmann-json:cpp",
+      "lang": "cpp",
+      "files": 16,
+      "errorFiles": 2,
+      "rate": 12.5,
+      "relation": "ambiguous-sniff"
+    },
+    "rust.rs": {
+      "lane": "cargo:rust",
+      "lang": "rust",
+      "files": 400,
+      "errorFiles": 155,
+      "rate": 38.8,
+      "relation": "same-language"
+    },
+    "go.go": {
+      "lane": "terraform:go",
+      "lang": "go",
+      "files": 400,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "zig.zig": {
+      "lane": "zls:zig",
+      "lang": "zig",
+      "files": 90,
+      "errorFiles": 2,
+      "rate": 2.2,
+      "relation": "same-language"
+    },
+    "csharp.cs": {
+      "lane": "fsharp:csharp",
+      "lang": "csharp",
+      "files": 243,
+      "errorFiles": 4,
+      "rate": 1.6,
+      "relation": "same-language"
+    },
+    "dart.dart": {
+      "lane": "dart-http:dart",
+      "lang": "dart",
+      "files": 335,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "swift.swift": {
+      "lane": "alamofire:swift",
+      "lang": "swift",
+      "files": 98,
+      "errorFiles": 6,
+      "rate": 6.1,
+      "relation": "same-language"
+    },
+    "objc.h": {
+      "lane": "afnetworking:objc",
+      "lang": "objc",
+      "files": 26,
+      "errorFiles": 14,
+      "rate": 53.8,
+      "relation": "ambiguous-sniff"
+    },
+    "objc.m": {
+      "lane": "afnetworking:objc",
+      "lang": "objc",
+      "files": 49,
+      "errorFiles": 3,
+      "rate": 6.1,
+      "relation": "same-language"
+    },
+    "php.php": {
+      "lane": "phpmyadmin:php",
+      "lang": "php",
+      "files": 400,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "ruby.rb": {
+      "lane": "rack:ruby",
+      "lang": "ruby",
+      "files": 95,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "python.py": {
+      "lane": "requests:python",
+      "lang": "python",
+      "files": 37,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "haskell.hs": {
+      "lane": "hledger:haskell",
+      "lang": "haskell",
+      "files": 186,
+      "errorFiles": 3,
+      "rate": 1.6,
+      "relation": "same-language"
+    },
+    "elixir.ex": {
+      "lane": "phoenix:elixir",
+      "lang": "elixir",
+      "files": 89,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "elixir.exs": {
+      "lane": "phoenix:elixir",
+      "lang": "elixir",
+      "files": 116,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "erlang.erl": {
+      "lane": "otp:erlang",
+      "lang": "erlang",
+      "files": 370,
+      "errorFiles": 11,
+      "rate": 3,
+      "relation": "same-language"
+    },
+    "erlang.hrl": {
+      "lane": "otp:erlang",
+      "lang": "erlang",
+      "files": 30,
+      "errorFiles": 1,
+      "rate": 3.3,
+      "relation": "same-language"
+    },
+    "clojure.clj": {
+      "lane": "clj-kondo:clojure",
+      "lang": "clojure",
+      "files": 318,
+      "errorFiles": 2,
+      "rate": 0.6,
+      "relation": "same-language"
+    },
+    "clojure.cljc": {
+      "lane": "clj-kondo:clojure",
+      "lang": "clojure",
+      "files": 16,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "cpp.cpp": {
+      "lane": "nlohmann-json:cpp",
+      "lang": "cpp",
+      "files": 334,
+      "errorFiles": 42,
+      "rate": 12.6,
+      "relation": "same-language"
+    },
+    "cpp.hpp": {
+      "lane": "nlohmann-json:cpp",
+      "lang": "cpp",
+      "files": 50,
+      "errorFiles": 26,
+      "rate": 52,
+      "relation": "same-language"
+    },
+    "haskell.lhs": {
+      "lane": "hledger:haskell",
+      "lang": "haskell",
+      "files": 2,
+      "errorFiles": 2,
+      "rate": 100,
+      "relation": "other-format"
+    },
+    "clojure.cljs": {
+      "lane": "clj-kondo:clojure",
+      "lang": "clojure",
+      "files": 20,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    },
+    "clojure.edn": {
+      "lane": "clj-kondo:clojure",
+      "lang": "clojure",
+      "files": 46,
+      "errorFiles": 0,
+      "rate": 0,
+      "relation": "same-language"
+    }
+  },
+  "laneCanonicals": [
+    {
+      "lane": "grails-core:java",
+      "lang": "java",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "grails-core:groovy",
+      "lang": "groovy",
+      "canonical": 4.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "Exposed:kotlin",
+      "lang": "kotlin",
+      "canonical": 2,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "scala3:scala",
+      "lang": "scala",
+      "canonical": 2.25,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "vue-core:typescript",
+      "lang": "typescript",
+      "canonical": 0.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "grails-core:javascript",
+      "lang": "javascript",
+      "canonical": 0,
+      "canonicalFiles": 53,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 53
+    },
+    {
+      "lane": "element-plus:vue",
+      "lang": "vue",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "svelte:svelte",
+      "lang": "svelte",
+      "canonical": 2.25,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "sqlite:c",
+      "lang": "c",
+      "canonical": 52.6,
+      "canonicalFiles": 346,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 346
+    },
+    {
+      "lane": "fmt:cpp",
+      "lang": "cpp",
+      "canonical": 47.22,
+      "canonicalFiles": 72,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 72
+    },
+    {
+      "lane": "ripgrep:rust",
+      "lang": "rust",
+      "canonical": 0,
+      "canonicalFiles": 110,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 110
+    },
+    {
+      "lane": "go-tools:go",
+      "lang": "go",
+      "canonical": 2,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "zig:zig",
+      "lang": "zig",
+      "canonical": 4.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "powershell:csharp",
+      "lang": "csharp",
+      "canonical": 1.75,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "proxicall:dart",
+      "lang": "dart",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "swift-nio:swift",
+      "lang": "swift",
+      "canonical": 11.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "sdwebimage:objc",
+      "lang": "objc",
+      "canonical": 11.58,
+      "canonicalFiles": 190,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 190
+    },
+    {
+      "lane": "phpunit:php",
+      "lang": "php",
+      "canonical": 0.25,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "rake:ruby",
+      "lang": "ruby",
+      "canonical": 0,
+      "canonicalFiles": 95,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 95
+    },
+    {
+      "lane": "cython:python",
+      "lang": "python",
+      "canonical": 2.75,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "cabal:haskell",
+      "lang": "haskell",
+      "canonical": 0.25,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "elixir:elixir",
+      "lang": "elixir",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "rebar3:erlang",
+      "lang": "erlang",
+      "canonical": 6.32,
+      "canonicalFiles": 269,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 269
+    },
+    {
+      "lane": "clojure:clojure",
+      "lang": "clojure",
+      "canonical": 0,
+      "canonicalFiles": 142,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 142
+    },
+    {
+      "lane": "clojure:java",
+      "lang": "java",
+      "canonical": 0,
+      "canonicalFiles": 190,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 190
+    },
+    {
+      "lane": "geb:groovy",
+      "lang": "groovy",
+      "canonical": 8.75,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "kotlinx-coroutines:kotlin",
+      "lang": "kotlin",
+      "canonical": 1.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "cats-effect:scala",
+      "lang": "scala",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "element-plus:typescript",
+      "lang": "typescript",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "lodash:javascript",
+      "lang": "javascript",
+      "canonical": 0,
+      "canonicalFiles": 55,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 55
+    },
+    {
+      "lane": "vue-element-admin:vue",
+      "lang": "vue",
+      "canonical": 0,
+      "canonicalFiles": 131,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 131
+    },
+    {
+      "lane": "shadcn-svelte:svelte",
+      "lang": "svelte",
+      "canonical": 1.25,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "jq:c",
+      "lang": "c",
+      "canonical": 25,
+      "canonicalFiles": 76,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 76
+    },
+    {
+      "lane": "nlohmann-json:cpp",
+      "lang": "cpp",
+      "canonical": 17.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "cargo:rust",
+      "lang": "rust",
+      "canonical": 38.75,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "terraform:go",
+      "lang": "go",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "zls:zig",
+      "lang": "zig",
+      "canonical": 2.22,
+      "canonicalFiles": 90,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 90
+    },
+    {
+      "lane": "fsharp:csharp",
+      "lang": "csharp",
+      "canonical": 1.65,
+      "canonicalFiles": 243,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 243
+    },
+    {
+      "lane": "dart-http:dart",
+      "lang": "dart",
+      "canonical": 0,
+      "canonicalFiles": 335,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 335
+    },
+    {
+      "lane": "alamofire:swift",
+      "lang": "swift",
+      "canonical": 6.12,
+      "canonicalFiles": 98,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 98
+    },
+    {
+      "lane": "afnetworking:objc",
+      "lang": "objc",
+      "canonical": 22.67,
+      "canonicalFiles": 75,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 75
+    },
+    {
+      "lane": "phpmyadmin:php",
+      "lang": "php",
+      "canonical": 0,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "rack:ruby",
+      "lang": "ruby",
+      "canonical": 0,
+      "canonicalFiles": 95,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 95
+    },
+    {
+      "lane": "requests:python",
+      "lang": "python",
+      "canonical": 0,
+      "canonicalFiles": 37,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 37
+    },
+    {
+      "lane": "hledger:haskell",
+      "lang": "haskell",
+      "canonical": 1.61,
+      "canonicalFiles": 186,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 188
+    },
+    {
+      "lane": "phoenix:elixir",
+      "lang": "elixir",
+      "canonical": 0,
+      "canonicalFiles": 205,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 205
+    },
+    {
+      "lane": "otp:erlang",
+      "lang": "erlang",
+      "canonical": 3,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    },
+    {
+      "lane": "clj-kondo:clojure",
+      "lang": "clojure",
+      "canonical": 0.5,
+      "canonicalFiles": 400,
+      "pooled": true,
+      "verdict": "pass",
+      "files": 400
+    }
+  ],
+  "limitations": [
+    "Only what F10 measures: an extension mis-routed in a lane F10 does not sample is invisible (see `unmeasured`).",
+    "The discriminant is a rate comparison; damage under the thresholds or under MIN_FILES is reported without conviction.",
+    "The relation table is a HAND-GROWN ruling set, like the R10 register — it may only grow by hand. An extension present in the artifact and absent here is a failure, so a new registry entry cannot quietly acquire a routing claim.",
+    "Parse rates are inherited from the artifact's commit stamp (`sourceCommit`); HEAD may have moved. The round that ACTS on a finding re-emits the artifact first.",
+    "`.h` is content-sniffed by the harness and excluded from the router cross-check: this script's contentless probe cannot know a header's language."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "fixtureId": "java/default-package-exports",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the DEFAULT-package case for `exports`, and it pins it as a REFUSAL. JLS 7.4.2: a type in the unnamed package cannot be referred to from a named package, so it cannot be imported by name from anywhere, so publishing it would assert a reachability the language denies. The analyzer's exports condition requires a non-empty package for exactly this reason, and this fixture is the only thing that makes dropping that condition a failure rather than a silent over-publication. It also pins the empty-endpoint half of standing rule R7: with no package declaration the edge's SOURCE would be the empty string, and an empty endpoint is an invented name. Nothing is expected here — the whole content of this fixture is its forbid list.",
+  "expectSymbols": [
+    { "name": "DefaultPackageType", "kind": "class" },
+    { "name": "DefaultPackageHidden" }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": [
+    { "type": "exports" },
+    { "type": "imports" },
+    { "type": "exports", "source": "" },
+    { "type": "exports", "source": "root" },
+    { "type": "exports", "from": "root" }
+  ]
+}

@@ -1,0 +1,89 @@
+// D: complete the owner model — every declaration kind, every name shape.
+package p
+class Outer {
+  class Inner { def m = 1 }
+  trait T { def abs: Int; val v: Int; var w: Int; type A; def g: Int = 1 }
+}
+---
+// D2: case class params + companion object name collision
+package p
+case class P(val v: Int, b: String)
+object P { def make = new P(1, "x"); val n = 1 }
+---
+// D3: class params without val/var — are they symbols/members?
+package p
+class C(a: Int, val b: Int, var c: Int, protected val d: Int, private var e: Int)
+---
+// D4: anonymous class shapes
+package p
+class K {
+  val a = new Runnable { def run(): Unit = () }
+  val b = new java.util.concurrent.Callable[String] { def call(): String = "" }
+  val c = new Foo with Bar { def z = 1 }
+  val d = new { def z = 1 }
+}
+trait Foo
+trait Bar
+---
+// D5: enum with params
+package p
+enum Color(val rgb: Int) {
+  case Red extends Color(0xFF0000)
+  case Green extends Color(0x00FF00)
+  def hex: String = "x"
+}
+---
+// D6: multi-name val, tuple val, backtick name
+package p
+class K {
+  val a, b = 1
+  val (t1, t2) = (1, 2)
+  val `odd name` = 3
+}
+---
+// D7: nested object in object; implicit class
+package p
+object O {
+  object Inner { def z = 1 }
+  implicit class Ops(val s: String) extends AnyVal { def shout = s }
+}
+---
+// D8: given owner, extension owner, local def chain
+package p
+class K {
+  def m(): Any = { def a = { def b = 1; b }; a }
+  def n(): Any = { type T1 = { }; type T2 = Int; 1 }
+}
+---
+// D9: abstract trait members — are they members of the trait?
+package p
+trait S {
+  def save(item: String): String
+  val name: String
+  var count: Int
+  type Id = String
+}
+---
+// D10: def with named params, type params, curried — the `name:` field
+package p
+class K {
+  def f[T](x: T)(implicit ev: Ord[T]): T = x
+  def g(a: Int, b: Int = 2): Int = a
+  def h[T <: AnyRef](implicit ev: Ord[T]): T = ??? 
+}
+trait Ord[A]
+---
+// D11: object expression in a val (not `new`) — is it handled at all?
+package p
+class K {
+  val r = new Runnable { def run(): Unit = () }
+  val s: Runnable = new Runnable { def run(): Unit = () }
+}
+---
+// D12: private[this] val, and a val whose name is an operator
+package p
+class K {
+  private[this] val secret = 1
+  val unary_- = 1
+  def `weird name` = 1
+}

@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_health.json",
+  "generatedAt": "2026-11-04T05:55:38.529Z",
+  "tools": [
+    "bb_health"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 10,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/rake\\nprojectId: 132aab0103080d56a8ce5ef28cf2034710b21a80\\nfiles=109 symbols=1593 relationships=9075 imports=123"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 23,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/ripgrep\\nprojectId: a65e53f2a2b3113027192b7bd846d8b5ca38a33a\\nfiles=161 symbols=6476 relationships=34075 imports"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 42,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/graphql-js\\nprojectId: 18b0d5567b84edcae6dec4bfcc1faf8ac965e01e\\nfiles=564 symbols=13620 relationships=61917 imp"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 18,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/tree-sitter-clean\\nprojectId: 235ad9d82c3da4698f454f7ec2af4bc043b36694\\nfiles=33 symbols=10617 relationships=220"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 17,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/lodash\\nprojectId: f9a8a05427a9c1a48971d679fbd420028dcfb0f6\\nfiles=76 symbols=3606 relationships=55055 imports=1"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "health.files == SQL count (109)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/rake\nprojectId: 132aab0103080d56a8ce5ef28cf2034710b21a80\nfiles=109 symbol"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "health.files == SQL count (161)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/ripgrep\nprojectId: a65e53f2a2b3113027192b7bd846d8b5ca38a33a\nfiles=161 sym"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "health.files == SQL count (564)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/graphql-js\nprojectId: 18b0d5567b84edcae6dec4bfcc1faf8ac965e01e\nfiles=564 "
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "health.files == SQL count (33)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/tree-sitter-clean\nprojectId: 235ad9d82c3da4698f454f7ec2af4bc043b36694\nfil"
+    },
+    {
+      "repo": "lodash",
+      "label": "health.files == SQL count (76)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/lodash\nprojectId: f9a8a05427a9c1a48971d679fbd420028dcfb0f6\nfiles=76 symbo"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_health"
+    ]
+  }
+}

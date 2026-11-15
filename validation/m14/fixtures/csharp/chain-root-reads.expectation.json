@@ -1,0 +1,20 @@
+{
+  "fixtureId": "csharp/chain-root-reads",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CONV-CS-1 (#750): the sweep's two recorded shapes verbatim — `return x;` (bare member read) and `return inner.deeper.leaf;` (chain ROOT read missing while the deeper leaves emitted). CS-R1 built the bare-identifier mechanism that repairs both; this fixture pins the issue's own code so the recorded regression class is gated, and the drop-bare-uses mutant (drops every identifier_usage edge) reproduces the pre-CS-R1 state, making the pin a live gate rather than documentation.",
+  "expectSymbols": [
+    { "name": "W", "kind": "class" },
+    { "name": "Get", "kind": "method" },
+    { "name": "Inner", "kind": "class" },
+    { "name": "Deeper", "kind": "class" },
+    { "name": "Ch", "kind": "class" },
+    { "name": "Read", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "Get", "target": "x", "meta.relationshipType": "identifier_usage" },
+    { "type": "uses", "from": "Read", "target": "inner", "meta.relationshipType": "identifier_usage" },
+    { "type": "uses", "from": "Read", "target": "deeper" },
+    { "type": "uses", "from": "Read", "target": "leaf" }
+  ]
+}

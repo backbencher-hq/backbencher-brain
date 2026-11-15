@@ -1795,6 +1795,20 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // Only type-owned bare members (java/groovy/kotlin/scala/cpp/go methods)
     // are rejected — membership rides Contains.
     const lang = result.language ?? runLangLang
+    // PowerShell `-Alias`/`-Cmdlet` exports publish names the file cannot declare — an
+    // alias is made by `New-Alias` at run time, a cmdlet comes from a module — so they
+    // cannot resolve to a top-level symbol and are exempt from the invariant (PS30 sets
+    // `metadata.via` to the flag name, so the exemption is claim-checked, not free).
+    const psRuntimeExportNames = new Set(
+      lang === "powershell"
+        ? (result.exports ?? [])
+            .filter((e: any) => {
+              const via = String(e.metadata?.via ?? "").toLowerCase()
+              return via === "-alias" || via === "-cmdlet"
+            })
+            .map((e: any) => e.name)
+        : [],
+    )
     const isJsFamily = lang === "javascript" || lang === "typescript" || lang === "vue" || lang === "svelte"
     const hasReExport = (result.imports ?? []).some((i: any) => i.metadata?.reExport)
     // THE ROLE, NOT THE LANGUAGE LIST — and the difference is who declares it.
@@ -1843,7 +1857,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           (r.metadata ?? {}).externalTarget === true,
       )
     const unresolvable = [...new Set(exportNames)].filter(
-      (n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n) && !claimedReExport(n),
+      (n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n) && !claimedReExport(n) && !psRuntimeExportNames.has(n),
     )
     if (unresolvable.length) {
       problems.push(`export invariant violated: export(s) ${JSON.stringify(unresolvable)} do not resolve to a top-level symbol (membership rides Contains)`)

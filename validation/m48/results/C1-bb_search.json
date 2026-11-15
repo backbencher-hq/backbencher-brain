@@ -1,0 +1,125 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_search.json",
+  "generatedAt": "2026-11-04T05:55:38.528Z",
+  "tools": [
+    "bb_search"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"mode\":\"file\",\"filePath\":\"lib/rake/thread_pool.rb\",\"query\":\"lib/rake/thread_pool.rb\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"lib/rake/thread_pool.rb\",\"fileId\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb\",\"language\":\"ruby\",\"content\":\"#"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"mode\":\"file\",\"filePath\":\"crates/index/src/literal.rs\",\"query\":\"crates/index/src/literal.rs\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"crates/index/src/literal.rs\",\"fileId\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs\",\"language\":\"rust\",\"con"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"mode\":\"file\",\"filePath\":\"src/__testUtils__/expectJSON.ts\",\"query\":\"src/__testUtils__/expectJSON.ts\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"src/__testUtils__/expectJSON.ts\",\"fileId\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts\",\"language\":\"ty"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"mode\":\"file\",\"filePath\":\"src/scanner.c\",\"query\":\"src/scanner.c\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"src/scanner.c\",\"fileId\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c\",\"language\":\"c\",\"content\":\"#include \\\"tree_sitter/p"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 4,
+      "args": "{\"mode\":\"file\",\"filePath\":\"lodash.js\",\"query\":\"lodash.js\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"lodash.js\",\"fileId\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js\",\"language\":\"javascript\",\"content\":\"/**\\n * @license\\n * Lo"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "join [method] lib/rake/thread_pool.rb:44 (ruby)\ntest_pool_join_empties_queue [method] test/test_rake rows=0"
+    },
+    {
+      "repo": "rake",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"lib/rake/thread_pool.rb\",\n  \"fileId\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "unwrap [method] crates/index/src/literal.rs:57 (rust)\nunwrap_literal [method] crates/index/src/liter rows=0"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"crates/index/src/literal.rs\",\n  \"fileId\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "toDeepEqual [method] src/__testUtils__/expectJSON.ts:36 (typescript)\n[match-set] searchMode=symbols  rows=0"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/__testUtils__/expectJSON.ts\",\n  \"fileId\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "is_newline [function] src/scanner.c:171 (c)\n[match-set] searchMode=symbols totalMatches=1 returned=1 rows=0"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/scanner.c\",\n  \"fileId\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c"
+    },
+    {
+      "repo": "lodash",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "map [function] lodash.js:9651 (javascript)\nMapCache [function] lodash.js:2172 (javascript)\nmapCacheC rows=0"
+    },
+    {
+      "repo": "lodash",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"lodash.js\",\n  \"fileId\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js\",\n  \"la"
+    }
+  ],
+  "passed": 10,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_search"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+  [journal] --force-fresh: ignoring any existing lane journal for this run
+  [cold-pool] solidity:solidity: 0/60 fresh (rot 9, corpus 420)
+[solidity] solidity: files=60 tree-truth=2618 covered=2618 (100%) MISSING=0 | analyzer-edges=2080 unexplained=0 (0%) heuristic=0 hash=e9708e750546e983
+probe run (--lang solidity): measured 1 lane(s) — M14.0.F5 NOT written. The artifact belongs to the canonical 60-file, 47-language sweep; a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.

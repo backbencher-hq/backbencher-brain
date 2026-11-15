@@ -1,0 +1,313 @@
+{
+ "gate": "M14 fleet mutation battery (item 1: every lane's registry must KILL the mutants it declares)",
+ "population": "50 lanes; each lane run in a fresh process (one process exhausts the WASM call_indirect table after thousands of parses)",
+ "scope": "every live mutant in the lane's registry (inline MUTANTS + script/m14/<lane>-mutants.ts + script/m60/scss-mutants.ts), each executed against that lane's own fixture set",
+ "rule": "CAUGHT = the mutant increases failing fixtures (or problems inside already-failing fixtures) over the clean run; SURVIVED = the mutant changed nothing the fixtures pin, i.e. a no-op that proves nothing",
+ "totals": {
+  "mutantsRun": 2130,
+  "caught": 2130,
+  "survived": 0
+ },
+ "lanes": {
+  "bash": {
+   "exit": 0,
+   "caught": 23,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "c": {
+   "exit": 0,
+   "caught": 34,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "clean": {
+   "exit": 0,
+   "caught": 23,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "clojure": {
+   "exit": 0,
+   "caught": 102,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "cpp": {
+   "exit": 0,
+   "caught": 64,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "csharp": {
+   "exit": 0,
+   "caught": 74,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "css": {
+   "exit": 0,
+   "caught": 25,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "dart": {
+   "exit": 0,
+   "caught": 48,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "elixir": {
+   "exit": 0,
+   "caught": 107,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "erlang": {
+   "exit": 0,
+   "caught": 54,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "fsharp": {
+   "exit": 0,
+   "caught": 38,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "go": {
+   "exit": 0,
+   "caught": 62,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "graphql": {
+   "exit": 0,
+   "caught": 3,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "groovy": {
+   "exit": 0,
+   "caught": 73,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "haskell": {
+   "exit": 0,
+   "caught": 28,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "hcl": {
+   "exit": 0,
+   "caught": 12,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "html": {
+   "exit": 0,
+   "caught": 59,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "java": {
+   "exit": 0,
+   "caught": 36,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "javascript": {
+   "exit": 0,
+   "caught": 68,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "json": {
+   "exit": 0,
+   "caught": 28,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "julia": {
+   "exit": 0,
+   "caught": 32,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "kotlin": {
+   "exit": 0,
+   "caught": 49,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "lua": {
+   "exit": 0,
+   "caught": 4,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "make": {
+   "exit": 0,
+   "caught": 32,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "markdown": {
+   "exit": 0,
+   "caught": 15,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "matlab": {
+   "exit": 0,
+   "caught": 4,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "nim": {
+   "exit": 0,
+   "caught": 73,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "objc": {
+   "exit": 0,
+   "caught": 32,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "perl": {
+   "exit": 0,
+   "caught": 68,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "php": {
+   "exit": 0,
+   "caught": 79,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "powershell": {
+   "exit": 0,
+   "caught": 90,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "protobuf": {
+   "exit": 0,
+   "caught": 35,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "python": {
+   "exit": 0,
+   "caught": 30,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "r": {
+   "exit": 0,
+   "caught": 3,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "ruby": {
+   "exit": 0,
+   "caught": 42,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "rust": {
+   "exit": 0,
+   "caught": 45,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "scala": {
+   "exit": 0,
+   "caught": 47,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "scss": {
+   "exit": 0,
+   "caught": 28,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "solidity": {
+   "exit": 0,
+   "caught": 50,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "sql": {
+   "exit": 0,
+   "caught": 35,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "svelte": {
+   "exit": 0,
+   "caught": 41,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "swift": {
+   "exit": 0,
+   "caught": 70,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "toml": {
+   "exit": 0,
+   "caught": 9,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "typescript": {
+   "exit": 0,
+   "caught": 83,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "vb": {
+   "exit": 0,
+   "caught": 9,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "vba": {
+   "exit": 0,
+   "caught": 7,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "vue": {
+   "exit": 0,
+   "caught": 58,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "xml": {
+   "exit": 0,
+   "caught": 21,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "yaml": {
+   "exit": 0,
+   "caught": 28,
+   "survived": 0,
+   "survivorIds": []
+  },
+  "zig": {
+   "exit": 0,
+   "caught": 50,
+   "survived": 0,
+   "survivorIds": []
+  }
+ }
+}

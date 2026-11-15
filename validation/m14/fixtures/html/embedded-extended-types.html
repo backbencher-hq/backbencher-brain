@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head><title>embedded-extended-types</title></head>
+<body>
+  <!-- THE FOUR EXTENDED TYPES, REACHING AN `.html` PAYLOAD THROUGH THE EMBEDDED-SCRIPT SEAM.
+       Each one is a construct HTML'S OWN GRAMMAR CANNOT SPELL: the pinned
+       tree-sitter-html build declares 19 distinct named node types and none of
+       them is a type declaration, a member declaration, a supertype clause or
+       a decorator. They arrive because the analyzer is a CONTAINER — it hands
+       every <script> block to the javascript / typescript delegate and copies
+       the delegate's relationships verbatim, tagged `htmlEmbedded` so the layer
+       that produced a row is auditable.
+
+       WHAT IS PINNED IS THE SHAPE OF THE DELEGATION, NOT A COUNT: the corpus
+       census (script/m14/html-extended-construct-probe.ts) counts ZERO
+       decorator nodes, ZERO implements clauses, ZERO jsx elements and ZERO
+       mixin clauses across the whole 8,888-file admitted population, so no
+       corpus row could prove these. A planted document is the only honest
+       witness, and each row below is a SAME-FILE CAUSAL EDGE — it exists only
+       when the construct reaches the analyzer as a REAL NODE rather than as
+       recovery text. -->
+  <main id="app">
+    <script>
+      function sealed(target) { return target }
+
+      @sealed
+      class Decorated {
+        describe() { return "decorated" }
+      }
+
+      function Button() { return null }
+
+      function Panel() {
+        return <Button />
+      }
+
+      class Base {}
+
+      const Timestamped = (Base) => class extends Base {}
+
+      class Record extends Timestamped(Base) {}
+    </script>
+
+    <script lang="ts">
+      interface Shape {
+        area(): number
+      }
+
+      class Square implements Shape {
+        area(): number { return 1 }
+      }
+    </script>
+  </main>
+</body>
+</html>

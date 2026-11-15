@@ -1,0 +1,24 @@
+# One key, three meanings, decided by POSITION and nothing else.
+# GitHub Actions gives `uses` a different meaning at job level than at step level:
+#   jobs.<job>.uses          a REUSABLE WORKFLOW this job invokes  -> calls
+#   jobs.<job>.steps[].uses  an ACTION this step runs               -> imports
+# Before the role was read from the path, both took the imports branch, so every
+# reusable-workflow reference was labelled as an import of a third-party action.
+name: call-role
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: which tag
+        required: false
+        type: string
+jobs:
+  call-local:
+    uses: ./.github/workflows/reusable.yml
+  call-remote:
+    uses: acme/infra/.github/workflows/deploy.yml@v3
+  run-steps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./local-action

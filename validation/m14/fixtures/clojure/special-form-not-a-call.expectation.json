@@ -1,0 +1,18 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the derived calls oracle: clojure/core.clj:4748 is `(defmacro fn …)`, so core.clj redefines `fn` as a bootstrap macro, and the CLJ-D39 shadow rule — a local definition wins over the core list — published every `(fn …)` below that line as a call to the file's own var. 212 edges, all wrong. `fn` is a SPECIAL FORM; a file defining it does not turn it into a var. The check belongs BEFORE the shadow rule, not after it, and it is on the whole head rather than a prefix. Pins: `fn` and `loop` are never call targets, and `fnan?` — a name that merely starts with \"fn\" — is an ordinary var and is.",
+  "expectSymbols": [
+    { "name": "fn", "kind": "function" },
+    { "name": "anon", "kind": "function" },
+    { "name": "looped", "kind": "function" },
+    { "name": "fnan?", "kind": "function" },
+    { "name": "call-fnan?", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "call-fnan?", "target": "fnan?", "line_number": 23 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "fn" },
+    { "type": "calls", "target": "loop" }
+  ]
+}

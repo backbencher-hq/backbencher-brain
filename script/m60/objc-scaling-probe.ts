@@ -54,7 +54,7 @@ import { RealObjectiveCAnalyzer } from "../../src/ast/real-objective-c-analyzer"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/objc-scaling.json")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const TMP = path.join(ROOT, ".objc-scaling-tmp")
 
 /** Deterministic PRNG so a slow run is reproducible rather than a rumour. */

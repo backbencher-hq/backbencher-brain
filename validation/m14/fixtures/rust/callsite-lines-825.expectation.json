@@ -1,0 +1,42 @@
+{
+  "fixtureId": "rust/callsite-lines-825",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The expected lines were TRANSCRIBED from a measured run of this fixture through the production entry and checked line by line against the source (`cat -n`) — they record what the analyzer does, not what it ought to. What makes them constraints rather than a snapshot is the forbid set: every entry there is an independently-argued construct-start position that Rust parses (a call chain broken before the dot, a plain field access broken the same way, wrapped supertrait bounds, a wrapped trait reference in an impl header), so the fixture fails if the analyzer moves to any of them.",
+  "rationale": "M59.A7 (#825). Rust emitted NO line_number on any relationship before this pin — measured through the production entry on a 200-file draw of cargo+ripgrep: 0 of 65,390 edges lined, now 65,390/65,390 lined with 0 fabricated zeros and 0 lines outside their file. The pre-fix state is therefore 'unlined', and the traps below are the ways a rust line can be PRESENT and still wrong, each valid Rust and each measured on this fixture before being written down: (1) a call chain BROKEN BEFORE THE DOT — `repo` + newline + `.find(1)` parses, a `field_expression` starts at its VALUE, so the callee leaf is one and two lines later than the construct start; (2) the same shape as a plain FIELD ACCESS (`self` / `.items` / `.len()` on three lines); (3) wrapped SUPERTRAIT BOUNDS, where the bound's own line is the site and the `trait` keyword line is not; (4) a wrapped TRAIT REFERENCE in an impl header, where the edge names the trait written after `impl`; (5) a `Self`-returning signature, where the target is the enclosing type that the source writes only as the keyword `Self`. The one residual this fixture cannot pin is the `Self`-resolution CLASS itself, which the M59 oracle now reports in its notCheckable bucket with a per-file sample and reason (21 of 65,390 claims, all on correct lines: `-> Self`, `-> Result<Self, D::Error>`, `&mut Self`, `Self { .. }`).",
+  "expectSymbols": [
+    { "name": "Repository", "kind": "trait" },
+    { "name": "find", "kind": "method" },
+    { "name": "Service", "kind": "trait" },
+    { "name": "name", "kind": "method" },
+    { "name": "Repo", "kind": "struct" },
+    { "name": "items", "kind": "property" },
+    { "name": "extra", "kind": "method" },
+    { "name": "new", "kind": "method" },
+    { "name": "first", "kind": "method" },
+    { "name": "read", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Service", "target": "Repository", "line_number": 23 },
+    { "type": "extends", "from": "Service", "target": "Clone", "line_number": 24 },
+    { "type": "implements", "from": "Repo", "target": "Repository", "line_number": 40 },
+    { "type": "calls", "from": "read", "target": "find", "line_number": 62 },
+    { "type": "uses", "from": "first", "target": "items", "line_number": 55 },
+    { "type": "calls", "from": "first", "target": "len", "line_number": 56 },
+    { "type": "instantiates", "from": "new", "target": "Repo", "line_number": 50 },
+    { "type": "references", "from": "new", "target": "Repo", "line_number": 49, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Repo", "target": "Vec", "line_number": 30, "meta.relationshipType": "declared_type" },
+    { "type": "contains", "from": "Repo", "target": "items", "line_number": 30 },
+    { "type": "contains", "from": "Repo", "target": "read", "line_number": 60 },
+    { "type": "contains", "from": "Service", "target": "name", "line_number": 26 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "read", "target": "find", "line_number": 61, "note": "pre-fix shape: the `field_expression`'s VALUE line (`let n = repo`); the called leaf `find` is written on 62" },
+    { "type": "uses", "from": "first", "target": "items", "line_number": 54, "note": "pre-fix shape: the receiver line (`let n = self`); `.items` is written on 55" },
+    { "type": "calls", "from": "first", "target": "len", "line_number": 54, "note": "pre-fix shape: the outermost field_expression still starts at its receiver (54); the called leaf `len` is written on 56" },
+    { "type": "extends", "from": "Service", "target": "Repository", "line_number": 22, "note": "pre-fix shape: the `trait` keyword line; the bound is written on 23" },
+    { "type": "extends", "from": "Service", "target": "Clone", "line_number": 22, "note": "pre-fix shape: the `trait` keyword line; the second bound is written on 24" },
+    { "type": "implements", "from": "Repo", "target": "Repository", "line_number": 39, "note": "pre-fix shape: the `impl` keyword line of the wrapped header; the trait reference is written on 40" },
+    { "type": "contains", "from": "Repo", "target": "items", "line_number": 29, "note": "pre-fix shape: the container's own start line; `items` is declared on 30" }
+  ]
+}

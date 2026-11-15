@@ -40,7 +40,7 @@ import { existsSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine, parseFile } from "../../src/ast/engine"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/sano/ishaq/bb_tests/repositories"
 
 /**
  * One file per lane, chosen for SIZE and DEPTH rather than for being interesting:

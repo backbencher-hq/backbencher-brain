@@ -1,0 +1,138 @@
+{
+  "fixtureId": "c/macro-in-field-position-932",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A bare macro token in FIELD position makes the grammar promote it to a type_identifier, and the parse comes out as field_declaration{ type_identifier(TSD_DATA_SLOW) field_identifier(tsd_state_t) ';' MISSING } followed by field_declaration{ type_identifier(state) ';' }. The extractor then published the TYPE as a member of tsd_s -- a symbol a reader can navigate to that resolves to nothing. Measured: 1 occurrence over the 2,498-file curl+libgit2+redis corpus (redis/deps/jemalloc/include/jemalloc/internal/tsd.h:255). The construct is legal C: the preprocessor does not care about braces, so a #define inside a struct body and a macro token where a field belongs are both fine. #932 SUPPRESSES the phantom and does NOT MEND the real member. `state` is one token away in the next declaration's type slot, and a two-token mend whose generality was not measured is exactly the fabrication recovery risks; so the loss of `state` is declared rather than invented. The trade is deliberate: a phantom member is a symbol that exists and is wrong, which is worse than a member that is absent and recorded as absent. The two controls are what make the rule sound rather than a shape heuristic. `struct type_named_member { struct S S; }` is LEGAL C -- the declarator is an ordinary identifier while the tag lives in its own namespace -- so a member may share a spelling with a type declared in the same file, and only the MISSING ';' (which well-formed C never produces) separates that case from the defect. The `define_only` control is the #define-inside-a-struct shape with a well-formed field after it, which must change nothing.",
+  "expectSymbols": [
+    {
+      "name": "TSD_DATA_SLOW",
+      "kind": "constant"
+    },
+    {
+      "name": "TSD_DATA_FAST",
+      "kind": "constant"
+    },
+    {
+      "name": "tsd_state_t",
+      "kind": "type"
+    },
+    {
+      "name": "tsd_s",
+      "kind": "struct"
+    },
+    {
+      "name": "S",
+      "kind": "property",
+      "ownerName": "type_named_member",
+      "note": "CONTROL: a member may LEGALLY share a spelling with a type in the same file. The struct here is a FORWARD declaration (`struct S;` with no body), so it is deliberately NOT a symbol -- a reference declaration is not a definition site -- and what the control pins is that the MEMBER named after it still lands with its containment."
+    },
+    {
+      "name": "type_named_member",
+      "kind": "struct"
+    },
+    {
+      "name": "S",
+      "kind": "property",
+      "ownerName": "type_named_member",
+      "note": "CONTROL: a member may LEGALLY share a spelling with a type declared in the same file"
+    },
+    {
+      "name": "plain",
+      "kind": "property",
+      "ownerName": "type_named_member"
+    },
+    {
+      "name": "arr",
+      "kind": "property",
+      "ownerName": "type_named_member"
+    },
+    {
+      "name": "callback",
+      "kind": "property",
+      "ownerName": "type_named_member"
+    },
+    {
+      "name": "define_only",
+      "kind": "struct"
+    },
+    {
+      "name": "kept",
+      "kind": "property",
+      "ownerName": "define_only",
+      "note": "CONTROL: a #define inside a struct body with a well-formed field after it"
+    },
+    {
+      "name": "also_kept",
+      "kind": "property",
+      "ownerName": "define_only"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "tsd_state_t",
+      "kind": "property",
+      "ownerName": "tsd_s",
+      "note": "THE DEFECT: a TYPE published as a member because the bare macro token before it shifted the parse by one declaration"
+    },
+    {
+      "name": "TSD_DATA_SLOW",
+      "kind": "property",
+      "note": "THE DEFECT, the other half: a bare macro token in field position is a macro USE, never a member"
+    },
+    {
+      "name": "TSD_DATA_FAST",
+      "kind": "property",
+      "note": "THE DEFECT, same, second token"
+    },
+    {
+      "name": "LATER_MACRO",
+      "kind": "property",
+      "note": "THE DEFECT, the #define-inside-a-struct spelling"
+    },
+    {
+      "name": "O",
+      "kind": "property",
+      "note": "THE DEFECT, the #define that opens the region"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "type_named_member",
+      "target": "S",
+      "note": "CONTROL: the type-named member keeps its containment"
+    },
+    {
+      "type": "contains",
+      "from": "type_named_member",
+      "target": "plain"
+    },
+    {
+      "type": "contains",
+      "from": "type_named_member",
+      "target": "arr"
+    },
+    {
+      "type": "contains",
+      "from": "type_named_member",
+      "target": "callback"
+    },
+    {
+      "type": "contains",
+      "from": "define_only",
+      "target": "kept"
+    },
+    {
+      "type": "contains",
+      "from": "define_only",
+      "target": "also_kept"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "tsd_state_t",
+      "note": "THE DEFECT: containment onto a type"
+    }
+  ]
+}

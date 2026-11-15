@@ -1,0 +1,54 @@
+{
+  "issue": "M21.I1",
+  "code": "I1",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 32,
+  "passed": 32,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-i1-phases.ts",
+  "evidenceFile": "I1.json",
+  "generatedAt": "2026-09-01T14:06:05.913Z",
+  "corpus": {
+    "kind": "temporary-fixture-plus-real-repository",
+    "fixtureFiles": 3,
+    "realRepository": "/home/ishaq2321/bb_tests/repositories/rake"
+  },
+  "timings": {
+    "coldDiscoveryMs": 166,
+    "coldParseMs": 3838,
+    "coldDbFlushMs": 47,
+    "coldFinalAccountingMs": 104,
+    "coldTotalMs": 10671,
+    "realDiscoveryMs": 117,
+    "realParseMs": 4775
+  },
+  "counts": {
+    "coldSuccessFiles": 3,
+    "coldParsedFiles": 3,
+    "coldWorkerCount": 1,
+    "coldRetries": 0,
+    "coldNoop": false,
+    "realSuccessFiles": 57,
+    "realParsedFiles": 57
+  },
+  "outcomes": {
+    "coldRun": "executed",
+    "incrementalNoopRun": "no-op-confirmed",
+    "incrementalChangeRun": "executed",
+    "realRepository": "executed"
+  },
+  "limitations": [
+    "Timings are wall-clock on this machine and include worker pool fork/concurrency noise; they are phase-boundary evidence, not a cross-machine benchmark.",
+    "dbFlushMs is the accumulated storeResults wall time inside the pool; parseMs includes IPC and scheduling around per-file parsing.",
+    "The real repository run uses skipPostProcessing=true to isolate I1 phases; post-processing timing is I2 scope."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.383Z",
+    "contentSha256": "2091aacc4ac1f1bf94f06ccaa6561d1fb34beecdfb39a63945225972e6d93714"
+  }
+}

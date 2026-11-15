@@ -1,0 +1,192 @@
+{
+  "analyzer": "powershell",
+  "checks": [
+    {
+      "name": "Get-Config function",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "params typed",
+      "pass": true,
+      "detail": "EnvName: string"
+    },
+    {
+      "name": "param optional",
+      "pass": true,
+      "detail": "Retries defaults"
+    },
+    {
+      "name": "script param declared",
+      "pass": true,
+      "detail": "param([string]$Environment)"
+    },
+    {
+      "name": "no $ prefix on symbols",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "class Deployment",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "property Name owned by class",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "constructor named like class",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "constructor params",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "method Start owned by class",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "static method FromName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "inheritance edge",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "enum EnvironmentKind",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "enum members",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "assignment declares variable",
+      "pass": true,
+      "detail": "$cfg = ..."
+    },
+    {
+      "name": "foreach var declared",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "switch mode declared once",
+      "pass": true,
+      "detail": "reassignment deduped"
+    },
+    {
+      "name": "global-qualified skipped",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "automatic var skipped",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "cmdlet call",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "static call qualified",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "static new instantiates",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "method call",
+      "pass": true,
+      "detail": "$app.Describe()"
+    },
+    {
+      "name": "dot-source invocation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "call operator invocation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Import-Module bare arg",
+      "pass": true,
+      "detail": "-Name flag value captured"
+    },
+    {
+      "name": "using module import",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "#requires module import",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pipeline commands each called",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "property read not called",
+      "pass": true,
+      "detail": "$svc.Status member access"
+    },
+    {
+      "name": "no global marker symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no script-block symbols",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no self-contains",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "negative reports syntax error",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "negative keeps valid symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "analyzer source has no regex literals",
+      "pass": true,
+      "detail": "ctor=0 methodUses=0"
+    }
+  ],
+  "passed": true,
+  "total": 36,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.948Z",
+    "contentSha256": "d80e470427c2f92a1010b45275a53bbc75901e35deac4f525abba7c6506262c6"
+  }
+}

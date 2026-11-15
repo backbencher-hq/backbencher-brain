@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-09-27T07:07:32.384Z",
+  "files": [
+    "/home/ishaq2321/bb_tests/graphql/repos/graphql-js/benchmark/github-schema.graphql"
+  ],
+  "rows": [
+    {
+      "file": "github-schema.graphql",
+      "lines": 20368,
+      "cell": "A: new analyzer + new wasm (WIRED)",
+      "parseMs": 552,
+      "analyzeMs": 1185,
+      "symbols": 3242,
+      "relationships": 6379
+    },
+    {
+      "file": "github-schema.graphql",
+      "lines": 20368,
+      "cell": "B: old analyzer + old wasm (BEFORE)",
+      "parseMs": 344,
+      "analyzeMs": 883,
+      "symbols": 3242,
+      "relationships": 6022
+    },
+    {
+      "file": "github-schema.graphql",
+      "lines": 20368,
+      "cell": "C: old analyzer + NEW wasm (isolates the wasm)",
+      "parseMs": 330,
+      "analyzeMs": 702,
+      "symbols": 3242,
+      "relationships": 5786
+    },
+    {
+      "file": "github-schema.graphql",
+      "lines": 20368,
+      "cell": "D: new analyzer + OLD wasm (isolates the analyzer)",
+      "parseMs": 161,
+      "analyzeMs": 1005,
+      "symbols": 3242,
+      "relationships": 6371
+    }
+  ],
+  "totals": {
+    "A: new analyzer + new wasm (WIRED)": {
+      "parseMs": 552,
+      "analyzeMs": 1185,
+      "facts": 9621
+    },
+    "B: old analyzer + old wasm (BEFORE)": {
+      "parseMs": 344,
+      "analyzeMs": 883,
+      "facts": 9264
+    },
+    "C: old analyzer + NEW wasm (isolates the wasm)": {
+      "parseMs": 330,
+      "analyzeMs": 702,
+      "facts": 9028
+    },
+    "D: new analyzer + OLD wasm (isolates the analyzer)": {
+      "parseMs": 161,
+      "analyzeMs": 1005,
+      "facts": 9613
+    }
+  }
+}

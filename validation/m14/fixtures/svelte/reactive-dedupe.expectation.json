@@ -1,0 +1,17 @@
+{
+  "fixtureId": "svelte/reactive-dedupe",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "S6 (#419): a `$:` reactive declaration is a component-state VARIABLE; the SAME target assigned from multiple `$:` blocks (here `doubled` from two blocks, `total` from one) is STILL a single variable. Each reactive target must be declared EXACTLY once — no per-block duplication. `doubled` and `total` are pinned to count exactly 1; `count` (exported prop) must remain a single Property.",
+  "expectSymbolCount": [
+    { "name": "doubled", "equals": 1 },
+    { "name": "total", "equals": 1 },
+    { "name": "count", "equals": 1 }
+  ],
+  "expectSymbols": [
+    { "name": "doubled" },
+    { "name": "total" },
+    { "name": "count", "kind": "property" }
+  ],
+  "forbidRelationships": []
+}

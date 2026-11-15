@@ -24,7 +24,7 @@ import { measureOperation } from "../m11/differential-harness"
 const ROOT = process.cwd()
 const repoArg = process.argv.find((a) => a.startsWith("--repo="))
 const repo = repoArg ? repoArg.split("=")[1]! : "p3d"
-const CORPUS_ROOT = "$HOME/fixtures/vb-corpus"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/vb-corpus"
 const corpus = `${CORPUS_ROOT}/${repo}`
 const revision = execFileSync("git", ["-C", corpus, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
 const allRelative = execFileSync("git", ["-C", corpus, "ls-files", "*.vb"], { encoding: "utf8" })

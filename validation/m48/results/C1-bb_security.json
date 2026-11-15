@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_security.json",
+  "generatedAt": "2026-11-04T05:55:38.531Z",
+  "tools": [
+    "bb_security"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 11,
+      "args": "{}",
+      "outHead": "\"security: 38 critical / 30 high / 0 medium / 0 low / 22 unknown (30 resolved flows, 60 unvalidated sources, 0 mitigated)\\n  [critical] SQL injection (Applicati"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 28,
+      "args": "{}",
+      "outHead": "\"security: 52 critical / 74 high / 0 medium / 0 low / 90 unknown (32 resolved flows, 184 unvalidated sources, 0 mitigated)\\n  [critical] Command injection (Deco"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 32,
+      "args": "{}",
+      "outHead": "\"security: 284 critical / 105 high / 0 medium / 0 low / 111 unknown (199 resolved flows, 301 unvalidated sources, 0 mitigated)\\n  [critical] Command injection ("
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 6,
+      "args": "{}",
+      "outHead": "\"security: 0 critical / 0 high / 0 medium / 0 low / 7 unknown (0 resolved flows, 7 unvalidated sources, 0 mitigated)\\n  no findings with both endpoints resolved"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 44,
+      "args": "{}",
+      "outHead": "\"security: 16 critical / 44 high / 0 medium / 0 low / 4 unknown (27 resolved flows, 37 unvalidated sources, 0 mitigated)\\n  [critical] SQL injection (cloneRegEx"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 38 critical / 30 high / 0 medium / 0 low / 22 unknown (30 resolved flows, 60 unvalidated s"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 52 critical / 74 high / 0 medium / 0 low / 90 unknown (32 resolved flows, 184 unvalidated "
+    },
+    {
+      "repo": "graphql-js",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 284 critical / 105 high / 0 medium / 0 low / 111 unknown (199 resolved flows, 301 unvalida"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 0 critical / 0 high / 0 medium / 0 low / 7 unknown (0 resolved flows, 7 unvalidated source"
+    },
+    {
+      "repo": "lodash",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 16 critical / 44 high / 0 medium / 0 low / 4 unknown (27 resolved flows, 37 unvalidated so"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_security"
+    ]
+  }
+}

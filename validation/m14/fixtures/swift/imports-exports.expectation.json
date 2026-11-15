@@ -1,0 +1,270 @@
+{
+  "fixtureId": "swift/imports-exports",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "INCOMING_SWIFT JOB 2. Pins the two ontology types this lane did not emit. `imports` is the family's first-class MODULE-DEPENDENCY label (go #799: with the edge labelled `references`, every module name landed in the references target surface and a module is not a symbol \u2014 measured over 800 corpus files, 671/671 references edges had a module name as target). `exports` is Swift's export surface, which has no keyword: it is the declared `visibility_modifier` token, plus `@_exported import` (the one construct whose name is an export). `references` is KEPT alongside `imports` on purpose \u2014 the shared differential's swift oracle derives `references` from import_declaration, so dropping it here would manufacture MISSING rows this lane cannot fix; bash publishes the same pair (isSourceImport + isSourceDependency), and the two metadata markers keep the claims distinct. Source is `root`, never a module name: a Swift module is a build TARGET, not a file, so naming it after the file's leaf would assert a module that does not exist. The fixture also pins the ownership defect the lane's independent span oracle found: `contains` whose SOURCE is a function is forbidden (143 such edges on the 800-file corpus draw).\n\nSUPERSESSION 2026-10-25 (rows only; the analyzer's emission was already right). The original expectation table pinned TWO things the lane's own ruling contradicts, and both were measured against a PASSING sibling fixture rather than argued: (1) MEMBER exports \u2014 `count`, `constructor`, `bump`, `added` were pinned as `exports`, while the rationale above states DERIV_EXPORTS_SWIFT4 narrowed the label to FILE-SCOPE declarations and `scoped-import-metadata`/`exports-visibility` forbid member rows; those four are now `contains` (pinned here) and forbidden as exports. (2) The KIND-RESTRICTED import `import struct Swift.Optional` pinned the dotted path as an `imports` TARGET, while `scoped-import-metadata` pins the module (`Single`) as the target and the spelled path as a `references` row under R10; the corrected rows are `imports -> Swift` (with isScopedImport/moduleSpecifier/scopedKind/scopedItem) and `references -> Swift.Optional`. (3) The `exports` metadata vocabulary is DERIV's: `exportForm`/`accessLevel`/`reExport`, not the pre-DERIV `visibility`/`isModuleSurface`/`isReExport`. The old table is kept beside this file as imports-exports.expectation.superseded-2026-10-25.json so the change is auditable.",
+  "expectSymbols": [
+    {
+      "name": "Store",
+      "kind": "struct",
+      "visibility": "public"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Store",
+      "visibility": "public"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Store",
+      "visibility": "public"
+    },
+    {
+      "name": "bump",
+      "kind": "method",
+      "ownerName": "Store",
+      "visibility": "public"
+    },
+    {
+      "name": "hidden",
+      "kind": "method",
+      "ownerName": "Store",
+      "visibility": "private"
+    },
+    {
+      "name": "implicit",
+      "kind": "method",
+      "ownerName": "Store",
+      "visibility": "internal"
+    },
+    {
+      "name": "Base",
+      "kind": "class",
+      "visibility": "open"
+    },
+    {
+      "name": "Proto",
+      "kind": "interface",
+      "visibility": "public"
+    },
+    {
+      "name": "requirement",
+      "kind": "method",
+      "ownerName": "Proto"
+    },
+    {
+      "name": "added",
+      "kind": "method",
+      "ownerName": "Store",
+      "visibility": "public",
+      "note": "member of a `public extension` inherits the block's access level (Swift's own rule)"
+    },
+    {
+      "name": "Internal",
+      "kind": "struct",
+      "visibility": "internal"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Internal"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Foundation",
+      "meta.isModuleDependency": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Swift",
+      "meta.isModuleDependency": true,
+      "meta.isScopedImport": true,
+      "meta.moduleSpecifier": "Swift.Optional",
+      "meta.scopedKind": "struct",
+      "meta.scopedItem": "Optional",
+      "note": "`import struct Swift.Optional` is a KIND-RESTRICTED import: the target is the MODULE (`Swift`), and the dotted path is the SPELLED reference \u2014 see the sibling row and scoped-import-metadata, which pins the same split for `import struct Single.Alpha`."
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Swift.Optional",
+      "note": "the SPELLED path is a `references` row, per statement; a dotted string is not a module name (scoped-import-metadata's R10 row forbids a dotted `imports` target)."
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "MyModule"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "ReExported"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "MyModule",
+      "meta.isModuleDependency": true,
+      "note": "@testable import \u2014 the attribute is not part of the module name"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "ReExported",
+      "meta.isModuleDependency": true,
+      "meta.reExport": true,
+      "meta.reExportForm": "underscored_exported_import"
+    },
+    {
+      "type": "exports",
+      "source": "imports-exports",
+      "target": "Store",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "imports-exports",
+      "target": "Base",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "open",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "imports-exports",
+      "target": "Proto",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "imports-exports",
+      "target": "ReExported",
+      "meta.exportForm": "underscored_exported_import",
+      "meta.reExport": true,
+      "meta.evidenceClass": "import_based",
+      "note": "@_exported import \u2014 the one construct whose name is literally a re-publication of a module"
+    },
+    {
+      "type": "instantiates",
+      "source": "makeHolder",
+      "target": "Local",
+      "note": "`_ = Local()` is Swift construction syntax"
+    },
+    {
+      "type": "instantiates",
+      "source": "makeHolder",
+      "target": "Pair"
+    },
+    {
+      "type": "contains",
+      "source": "Store",
+      "target": "count"
+    },
+    {
+      "type": "contains",
+      "source": "Pair",
+      "target": "a",
+      "note": "a local struct still OWNS its own members \u2014 the gate removes the function as an owner, not the structure"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "hidden",
+      "note": "`private` is not part of a module's export surface"
+    },
+    {
+      "type": "exports",
+      "target": "implicit",
+      "note": "no access modifier = `internal` = not exported"
+    },
+    {
+      "type": "exports",
+      "target": "Internal",
+      "note": "an `internal` type is not exported"
+    },
+    {
+      "type": "exports",
+      "target": "value",
+      "note": "a member of an internal type is not exported"
+    },
+    {
+      "type": "exports",
+      "target": "requirement",
+      "note": "a protocol requirement has no access modifier of its own; the PROTOCOL is the exported name"
+    },
+    {
+      "type": "imports",
+      "target": "struct",
+      "note": "the kind keyword is not a module"
+    },
+    {
+      "type": "imports",
+      "target": "_exported",
+      "note": "the attribute is not a module"
+    },
+    {
+      "type": "imports",
+      "target": "testable",
+      "note": "the attribute is not a module"
+    },
+    {
+      "type": "contains",
+      "source": "makeHolder",
+      "target": "Local",
+      "note": "a type declared in a function body is not owned by the function (INCOMING_SWIFT span-oracle finding: 143 such edges on the 800-file draw)"
+    },
+    {
+      "type": "contains",
+      "source": "makeHolder",
+      "target": "Pair",
+      "note": "same"
+    },
+    {
+      "type": "contains",
+      "target": "Local",
+      "note": "no owner at all: the local type is not a member of any type"
+    },
+    {
+      "type": "exports",
+      "target": "count",
+      "note": "SUPERSEDED 2026-10-25: a MEMBER is reached through its type (the family's `contains`, go GO7) \u2014 it is not a second publication of the module surface. The old row pinned it as an export."
+    },
+    {
+      "type": "exports",
+      "target": "constructor",
+      "note": "SUPERSEDED: a member/initializer is not module surface"
+    },
+    {
+      "type": "exports",
+      "target": "bump",
+      "note": "SUPERSEDED: a public member is reached through Store, not exported by the module"
+    },
+    {
+      "type": "exports",
+      "target": "added",
+      "note": "SUPERSEDED: a `public extension` publishes its members as SYMBOLS; the module surface stays the file-scope declarations"
+    },
+    {
+      "type": "imports",
+      "target": "Swift.Optional",
+      "note": "a dotted path is not a module name \u2014 R10 (scoped-import-metadata)"
+    }
+  ]
+}

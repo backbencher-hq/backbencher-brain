@@ -1,0 +1,376 @@
+{
+  "key": "go-tools",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/go-tools",
+  "language": "Go",
+  "projectId": "f58244847d810aee6ece4959e595d1c704e7f3ec",
+  "connectMs": 4116,
+  "index": {
+    "files": 2017,
+    "symbols": 32726,
+    "relationships": 147112,
+    "languages": [
+      {
+        "language": "go",
+        "files": 1929
+      },
+      {
+        "language": "markdown",
+        "files": 58
+      },
+      {
+        "language": "javascript",
+        "files": 9
+      },
+      {
+        "language": "css",
+        "files": 6
+      },
+      {
+        "language": "bash",
+        "files": 5
+      },
+      {
+        "language": "yaml",
+        "files": 3
+      },
+      {
+        "language": "c",
+        "files": 2
+      },
+      {
+        "language": "json",
+        "files": 2
+      },
+      {
+        "language": "xml",
+        "files": 2
+      },
+      {
+        "language": "html",
+        "files": 1
+      }
+    ]
+  },
+  "targets": {
+    "file": "gopls/internal/doc/api.json",
+    "module": "gopls/internal/doc",
+    "symbol": "String",
+    "feature": "Stri",
+    "fallbackModuleFile": "CONTRIBUTING.md"
+  },
+  "dbBefore": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 479977472,
+      "sha256": "023d5732fc20fa756a54f6dd963714b705c5e528ed45f12c532290ad058c1a24"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 178251832,
+      "sha256": "f2c021ea071e98ec90b145307eea6569b0107c87d97c15a12e758df865deac3f"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 479977472,
+      "sha256": "023d5732fc20fa756a54f6dd963714b705c5e528ed45f12c532290ad058c1a24"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 178251832,
+      "sha256": "f2c021ea071e98ec90b145307eea6569b0107c87d97c15a12e758df865deac3f"
+    }
+  },
+  "dbUnchanged": true,
+  "stderrTail": [
+    "[INFO] [11:17:55] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:17:55] [dependency-graph-visualizer] ✅ Graph Data Generated: 150 nodes, 287 links",
+    "[INFO] [11:17:55] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:17:55] [dependency-graph-visualizer] ✅ Graph Data Generated: 356 nodes, 1218 links"
+  ],
+  "cases": [
+    {
+      "name": "project text (default)",
+      "args": {},
+      "isError": false,
+      "ms": 2057,
+      "bytes": 1683,
+      "nodes": 200,
+      "links": 407,
+      "truncated": true,
+      "totalNodesAvailable": 32726,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json",
+      "args": {
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 606,
+      "bytes": 516704,
+      "nodes": 200,
+      "links": 407,
+      "truncated": true,
+      "totalNodesAvailable": 32726,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project html regions",
+      "args": {
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 1185,
+      "bytes": 583133,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project html force",
+      "args": {
+        "format": "html",
+        "layout": "force"
+      },
+      "isError": false,
+      "ms": 1214,
+      "bytes": 583129,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "force",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project json large budget",
+      "args": {
+        "format": "json",
+        "maxNodes": 1000,
+        "maxLinks": 20000
+      },
+      "isError": false,
+      "ms": 8589,
+      "bytes": 5670431,
+      "nodes": 1000,
+      "links": 5590,
+      "truncated": true,
+      "totalNodesAvailable": 32726,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json calls only",
+      "args": {
+        "format": "json",
+        "relationshipTypes": [
+          "calls"
+        ],
+        "maxNodes": 200
+      },
+      "isError": false,
+      "ms": 425,
+      "bytes": 260671,
+      "nodes": 200,
+      "links": 154,
+      "truncated": true,
+      "totalNodesAvailable": 32726,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file text",
+      "args": {
+        "scope": "file",
+        "target": "gopls/internal/doc/api.json",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 350,
+      "bytes": 1439,
+      "nodes": 200,
+      "links": 199,
+      "truncated": true,
+      "totalNodesAvailable": 3346,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file json",
+      "args": {
+        "scope": "file",
+        "target": "gopls/internal/doc/api.json",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 76,
+      "bytes": 280400,
+      "nodes": 200,
+      "links": 199,
+      "truncated": true,
+      "totalNodesAvailable": 3346,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "module json",
+      "args": {
+        "scope": "module",
+        "target": "gopls/internal/doc",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 94,
+      "bytes": 271400,
+      "nodes": 200,
+      "links": 204,
+      "truncated": true,
+      "totalNodesAvailable": 3429,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol text",
+      "args": {
+        "scope": "symbol",
+        "target": "String",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 137,
+      "bytes": 1739,
+      "nodes": 200,
+      "links": 23,
+      "truncated": true,
+      "totalNodesAvailable": 249,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol html",
+      "args": {
+        "scope": "symbol",
+        "target": "String",
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 58,
+      "bytes": 210079,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "feature json",
+      "args": {
+        "scope": "feature",
+        "target": "Stri",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 943,
+      "bytes": 160152,
+      "nodes": 200,
+      "links": 97,
+      "truncated": true,
+      "totalNodesAvailable": 590,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json offset page 2",
+      "args": {
+        "format": "json",
+        "maxNodes": 50,
+        "offset": 50
+      },
+      "isError": false,
+      "ms": 245,
+      "bytes": 27445,
+      "nodes": 50,
+      "links": 8,
+      "truncated": true,
+      "totalNodesAvailable": 32726,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project text includeTests false",
+      "args": {
+        "format": "text",
+        "includeTests": false
+      },
+      "isError": false,
+      "ms": 338,
+      "bytes": 1625,
+      "nodes": 200,
+      "links": 476,
+      "truncated": true,
+      "totalNodesAvailable": 32726,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "unknown scope refused",
+      "args": {
+        "scope": "galaxy"
+      },
+      "isError": true,
+      "ms": 2,
+      "bytes": 81,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "missing target refused",
+      "args": {
+        "scope": "symbol"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 60,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "maxNodes 0 refused",
+      "args": {
+        "maxNodes": 0
+      },
+      "isError": true,
+      "ms": 2,
+      "bytes": 222,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    }
+  ]
+}

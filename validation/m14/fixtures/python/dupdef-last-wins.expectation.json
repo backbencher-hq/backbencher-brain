@@ -1,0 +1,49 @@
+{
+  "fixtureId": "python/dupdef-last-wins",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 #748 — the M49 dup-key family ruling (Option A) in python, in BOTH directions (a genuine rebinding collapses, a declaration chain does not). MEASURED before the change, range-keyed over python's two pinned corpora (cython 475 + requests 37 files): 25 duplicate-name scopes, of which only ONE is a genuine same-block rebinding — cython tests/run/class_scope.py MethodRedef.a, whose own docstring asserts the rule (`MethodRedef().a(5)` is 7 — the SECOND body wins). The other 24 split into 21 DECLARATION CHAINS (5 @overload groups in cython's Shadow.py, 9 in requests, 7 property-accessor chains) and 3 BRANCH ALTERNATIVES under `if/else` or `try/except/else` (Dependencies.record_results, runtests.skip_test, Pythran.pythran_is_numpy_func_supported) — exactly one of each pair runs, so neither may be dropped. Both of the last two are what a block-blind last-wins gets wrong, and it cost 2 real edges on cython before they were separated. requests has no genuine rebinding at all, and the corpus delta is 0 edges on both sides: the differential cannot score this rule, which is why a fixture has to hold it — in both directions. The blind-spot sweep found it (C4 class); only a fixture keeps it. Binding semantics: `def` is a binding statement and python binds the LAST definition of a name in one container scope — the earlier function object is rebound away before the module finishes executing, so its body can never run. The lane kept BOTH (a second symbol plus a call graph and a cyclomatic count split across a dead body). The ruling: ONE symbol per (container, name) keyed to the LAST declaration, phantom body edges dropped — the same contract js/ts/vue pinned for duplicate keys. Container identity is the scope NODE, not the class NAME: the sibling class D reuses `foo` freely (the W2/J3 identity ruling). Four independent passes are pinned, because a skipped subtree has to be skipped by every pass, not just the structural one: symbols (expectSymbolCount = 1, and expectSymbolRanges startLine at the WINNER's line, so a keep-both reading fails twice — once on the count, once on which def survived), the WINNER's edges (expectRelationships, with the M59 line of each), the phantom's body edges in three kinds (calls / uses / references, all forbid pins), and the file complexity (expectMetadata: the phantom's `if` is not a decision point of a file that cannot execute it). A result-transform mutant python/dupdef-keep-both re-injects the pre-fix observable (duplicate symbols, the phantom's three edges, complexity 2) and dies on every one of them.",
+  "expectSymbols": [
+    { "name": "chained", "kind": "function" },
+    { "name": "size", "kind": "method", "ownerName": "P" },
+    { "name": "top", "kind": "function" },
+    { "name": "foo", "kind": "method", "ownerName": "C" },
+    { "name": "foo", "kind": "method", "ownerName": "D" },
+    { "name": "DeadType", "kind": "class" },
+    { "name": "phantom_marker", "kind": "function" },
+    { "name": "winner_marker", "kind": "function" }
+  ],
+  "expectSymbolCount": [
+    { "name": "top", "equals": 1, "note": "one module attribute `top` — the LAST def; keep-both yields 2" },
+    { "name": "foo", "ownerName": "C", "equals": 1, "note": "one class attribute C.foo — the LAST def; keep-both yields 2" },
+    { "name": "foo", "ownerName": "D", "equals": 1, "note": "the sibling container control: D.foo is untouched by C's duplicate" },
+    { "name": "chained", "equals": 3, "note": "DECLARATION CHAIN: both @overload stubs AND the implementation are kept — a BLANKET last-wins leaves 1, which is the failure this pin exists for" },
+    { "name": "size", "ownerName": "P", "equals": 2, "note": "ACCESSOR CHAIN: @property getter + @size.setter are two methods of one descriptor, the ts/dupkey 'get/set pairs untouched' rule — a blanket rule leaves 1" },
+    { "name": "alt", "equals": 2, "note": "BRANCH ALTERNATIVES are not shadows: exactly one runs, and which one the source does not settle, so both survive — a block-blind rule leaves 1. This is the CORPUS shape: 3 of cython's 4 duplicate-name sites are `if/else` or `try/else` alternatives, and removing them cost 2 real edges." }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "top", "startLine": 49, "note": "the binding that survives is the LAST def, never the first" },
+    { "symbol": "foo", "ownerName": "C", "startLine": 58, "note": "same rule inside a class body" },
+    { "symbol": "alt", "startLine": 110, "note": "the FIRST branch's alternative is still a symbol — a block-blind last-wins drops it" },
+    { "symbol": "chained", "startLine": 81, "note": "the FIRST @overload stub is still a symbol: `find` returns the earliest match, so a blanket last-wins (which would leave only line 88) fails here even if it passed the count above" }
+  ],
+  "expectMetadata": [
+    { "complexity": 2, "comment": "base 1 + the LIVE `if alt_flag` on line 109. The shadowed module-level body's own `if phantom_marker()` on line 45 is NOT a decision point: a body that cannot run cannot raise the file's cyclomatic count. Keep-both reads 3, which is why the mutant injects 3 and not 2 — the file has to contain a live branch for this pin to have anything to compare against." }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "top", "target": "winner_marker", "line_number": 50, "note": "the surviving module-level def's call" },
+    { "type": "calls", "from": "foo", "target": "winner_marker", "line_number": 60, "note": "the surviving class-body def's call" },
+    { "type": "uses", "from": "foo", "target": "d_read", "line_number": 65, "note": "D.foo's OWN body was walked: a sibling container is a different container, so C's duplicate never reaches it — and the phantom skip does not spill past C either. (`calls foo -> winner_marker` cannot pin this: pushRel dedupes by type/source/target with no line component, so D.foo's identical call collapses onto C's under the same source NAME.)" },
+    { "type": "uses", "from": "foo", "target": "live_read", "line_number": 59, "note": "the surviving def's member read (PYD1 surface)" },
+    { "type": "contains", "from": "C", "target": "foo", "line_number": 58, "note": "containment points at the def that survives — pre-fix it deduped onto the PHANTOM's line 54" },
+    { "type": "calls", "from": "chained", "target": "winner_marker", "line_number": 89, "note": "the overload chain's implementation still emits its call" },
+    { "type": "calls", "from": "alt", "target": "phantom_marker", "line_number": 111, "note": "the `if` branch alternative's call — live code, kept" },
+    { "type": "calls", "from": "alt", "target": "winner_marker", "line_number": 114, "note": "the `else` branch alternative's call — live code, kept" },
+    { "type": "uses", "from": "size", "target": "_size", "line_number": 95, "note": "the @property GETTER's member read survives — this is the corpus-shaped half: a blanket last-wins drops the getter's body and takes a real read with it (7 such chains exist across the pinned corpora, e.g. Symtab.Entry.type, Shadow.py's overloads, requests' _encode_params)" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "top", "target": "phantom_marker", "comment": "the shadowed module-level body's call — unreachable code exactly once removed from the call graph" },
+    { "type": "uses", "from": "foo", "target": "dead_read", "comment": "the shadowed class-body def's member read: the uses pass must skip the phantom subtree too" },
+    { "type": "references", "from": "foo", "target": "DeadType", "comment": "the shadowed def's declared-type annotation: the references pass must skip it as well — three separate passes, one ruling" }
+  ]
+}

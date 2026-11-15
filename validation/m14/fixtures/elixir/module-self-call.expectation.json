@@ -1,0 +1,10 @@
+{
+  "issue": "ELX-ADV X5",
+  "note": "`__MODULE__.raise` resolves to the enclosing module (ELXD21 parity) — the literal prefix matched no symbol (5+8 corpus sites).",
+  "expectRelationships": [
+    { "type": "calls", "from": "ESelf.run/1", "target": "ESelf.raise", "line_number": 3 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "__MODULE__.raise" }
+  ]
+}

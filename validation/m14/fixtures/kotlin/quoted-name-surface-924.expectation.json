@@ -1,0 +1,32 @@
+{
+  "fixtureId": "kotlin/quoted-name-surface-924",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "#924 (M60 name surface, kotlin half). False, and stated rather than claimed: this fixture was written AFTER the repair, because the class reached the lane through the target-spelling CENSUS (a quoted identifier only entered the register's routing when it contained whitespace, which is why 52 distinct scala names and every backticked kotlin name were invisible) and through one 60-file lane draw, not through a fixture. What it pins is the contract, not the observation: `fun `in`(x: Int)` DECLARES the identifier `in`, so the published symbol name, its owner, its `contains` target and the `calls` target of `param.`in`(1)` are all the BARE spelling, while the source keeps the backticks. The negatives are written as `targetEndsWith: \"`\"` rather than as the three quoted strings, so the pin covers the class (any name that leaks the syntax, on any label) instead of the sample. FALSIFIED IN THE PRE-FIX STATE, and this is the part that matters here: the fixture is not the instrument that found the defect. Its sibling mutant (kotlin/quoted-name-surface-revert) reintroduces the pre-fix spelling and the fixture dies on four pins — but the DEAD half of the shipped repair (the oracle's strip call merged onto the tail of a `//` comment, i.e. commented out) passes this fixture untouched, because the fixture reads the analyzer and the oracle was the broken side. That half is pinned by F9-PROBE-KT-QUOTED-NAME-924-ORACLE in script/m14/verify-probe-battery.ts, which asserts the oracle derives the bare spelling and fails on that exact state; measured: analyzer probe ok / oracle probe FAIL in the dead-strip tree, both ok after the repair. The lane row that found it is Exposed exposed-r2dbc/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/mappers/BinaryTypeMapper.kt (`Parameters.`in`(R2dbcType.BLOB, ...)`), the one missing truth row in a 60-file draw (hash f39e30d3648bd4a2) that is now covered=1586/1586 MISSING=0 on the SAME hash.",
+  "expectSymbols": [
+    { "name": "Parameters", "kind": "class" },
+    { "name": "in", "kind": "method", "ownerName": "Parameters", "comment": "#924: the declaration names `in`; the backticks are how kotlin SPELLS it" },
+    { "name": "Holder", "kind": "class" },
+    { "name": "when", "kind": "method", "ownerName": "Holder" },
+    { "name": "use", "kind": "method", "ownerName": "Holder" },
+    { "name": "object", "kind": "function", "comment": "#924: the censused shape — a backticked DECLARATION whose name contains no whitespace, which the register's routing could not see" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Parameters", "target": "in" },
+    { "type": "contains", "from": "Holder", "target": "when" },
+    { "type": "calls", "target": "in", "comment": "#924: `param.`in`(1)` calls `in`" },
+    { "type": "calls", "target": "when", "comment": "#924: `this.`when`(2)` and `Holder().`when`(3)`" },
+    { "type": "uses", "from": "use", "target": "total" }
+  ],
+  "forbidSymbols": [
+    { "name": "`in`", "comment": "#924: the quoting syntax must never be part of a published NAME" },
+    { "name": "`when`" },
+    { "name": "`object`" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "targetEndsWith": "`", "comment": "#924: no edge target on the containment surface may end in the quoting syntax" },
+    { "type": "calls", "targetEndsWith": "`", "comment": "#924: nor on the call surface — this is the pin the corpus row (Exposed BinaryTypeMapper.kt) exercised" },
+    { "type": "uses", "targetEndsWith": "`" },
+    { "type": "references", "targetEndsWith": "`" }
+  ]
+}

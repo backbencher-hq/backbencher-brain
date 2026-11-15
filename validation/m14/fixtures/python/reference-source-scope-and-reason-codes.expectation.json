@@ -1,0 +1,148 @@
+{
+  "fixtureId": "python/reference-source-scope-and-reason-codes",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two fixes pinned by one file, because they are one defect class: a name-bearing field holding something that is not a name. PY-24 \u2014 `extractDeclaredTypeRefs` had its own source resolver that did not apply the analyzer's own symbol rule (a def inside a def is a local, published no symbol, and `if (ctx.currentFunction) break` in the main walk is where that lives). So an annotation on a nested def's parameter published `references inner -> SomeType` naming a scope the graph does not hold. MEASURED on python-codesql with production `parseFile` before the fix: 18 such edges, 2.8% of the type, all in scripts/regression_test_python.py where `fetch_native`, `fetch_pandas` and `fetch_arrow` annotate `rel: duckdb.DuckDBPyRelation` inside `test_tpch`. After the fix, 0 of 646 `references` edges have a source that is not a symbol of its file. The source-resolution rate for the type went from 96.3% to 99.1% in-file with the remaining 0.9% the module scope, which is the filename stem and is deliberately not a symbol (PY-4). PY-25 \u2014 docs/M14-HONESTY-CONTRACT \u00a74 rule 1 requires a machine-readable reason code on any relationship emitted with confidence below 1.0. Measured before the change on python-codesql: 17,468 of 19,801 relationships (88.2%) carried confidence < 1.0 and 41 of those (0.2%) carried a `reasonCode` \u2014 the 41 first-parent override guesses. After: 17,468 carry confidence < 1.0 and 17,468 of them carry a code. All four affected types are pinned here \u2014 `references`, `calls`, `uses`, `instantiates` \u2014 plus the verified `overrides` row, so that dropping any one of the five codes fails a row rather than being absorbed by the others. The nested-class method row is here to convict the OVER-correction: the fix is a scope test, not 'annotations belong to the outermost function', so `Nested.method`'s own annotation stays sourced to `method`. RECONCILED 2026-10-09 (PY-34). The four codes this file pinned were written by the PY-25 pass that introduced reason codes: `annotation-type-name`, `callee-leaf-name`, `member-read-leaf-name`, `in-file-class-callee`. A later revision of the same work \u2014 the INCOMING_PY pass, whose fixture `python/dispatch-reason-codes` shipped with it \u2014 renamed all four, and its names are pinned by TWO fixtures (`dispatch-reason-codes`, `qualified-endpoint-spellings`). Both vocabularies arrived in the same merge, so this file and those two could not both pass: `uses self.value` would have had to carry two different codes at once. The reconciliation keeps the landed vocabulary, because the analyzer implements it, two fixtures pin it against this file's one, and the SUBJECT of this file is the source SCOPE of an edge (PY-24) \u2014 the code column is here so that dropping a code fails a row, not to fix the spelling of one. Nothing about the rows' subjects changed: every edge is still emitted below 1.0 and still carries a code a consumer can filter on.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "outer",
+      "target": "SourceType",
+      "line_number": 37,
+      "meta.reasonCode": "annotation-type",
+      "note": "PY-24: `outer` IS a symbol, so this is the right source"
+    },
+    {
+      "type": "references",
+      "from": "outer",
+      "target": "NestedType",
+      "line_number": 40,
+      "meta.reasonCode": "annotation-type",
+      "note": "PY-24, the whole point: this annotation is written on `def nested_a(target: NestedType)`, which is a LOCAL of `outer`. Before the fix the edge read `references nested_a -> NestedType` and `nested_a` is not in the graph. `nested_b` annotates the same type and the type's documented dedup is per (source, target, kind), so ONE row covers both \u2014 that is why there is no second row at 43, and the second case is pinned as a forbid instead"
+    },
+    {
+      "type": "references",
+      "from": "method",
+      "target": "MethodParamType",
+      "line_number": 47,
+      "note": "and the over-correction is not available: `Nested.method` is a real symbol (a method of `Nested`), so its own annotation stays sourced to it rather than to `outer`"
+    },
+    {
+      "type": "references",
+      "from": "annotated",
+      "target": "FreeFunctionReturnType",
+      "line_number": 70,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "annotated",
+      "target": "FreeFunctionParamType",
+      "line_number": 70,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "calls",
+      "from": "makes_one",
+      "target": "kind",
+      "line_number": 64,
+      "confidence": 0.9,
+      "meta.reasonCode": "dispatch-on-receiver",
+      "note": "PY-25. A call SITE is a fact about the source; the target is a name reduced from the callee expression (`kind.kind()` reduces to the receiver attribute's leaf `kind`), so the resolution is what carries the uncertainty \u2014 and the code says so. Vocabulary reconciled with python/dispatch-reason-codes: the receiver is neither `self`/`cls` nor an import root, so the reading is dispatch-on-receiver."
+    },
+    {
+      "type": "uses",
+      "from": "uses_member",
+      "target": "value",
+      "line_number": 61,
+      "confidence": 0.9,
+      "meta.reasonCode": "member-read",
+      "meta.isMemberRead": true,
+      "note": "PY-25, vocabulary reconciled with python/dispatch-reason-codes: a member read carries `member-read` and the chain the source wrote (`self.value`), which is the same shape that fixture pins on `self.stash`."
+    },
+    {
+      "type": "instantiates",
+      "from": "build",
+      "target": "Owner",
+      "line_number": 80,
+      "confidence": 0.9,
+      "meta.reasonCode": "in-file-class-constructor",
+      "note": "PY-25. `Owner()` is a call in the grammar whatever its capitalisation says; `instantiates` is the READING of it, so the code records that the classification is the inference and not the call"
+    },
+    {
+      "type": "overrides",
+      "from": "Payload.kind",
+      "target": "kind",
+      "meta.reasonCode": "first-parent-guess",
+      "meta.evidenceClass": "inferred",
+      "note": "PY-25, the existing code: a guess declares itself. Kept here so that a change which makes every override look verified cannot pass unnoticed"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "nested_a",
+      "target": "NestedType",
+      "note": "PY-24: `nested_a` is a LOCAL of `outer`, published no symbol, and `outer.nested_a` does not resolve in python. This edge names a scope the graph does not have, so nothing can be traversed from it"
+    },
+    {
+      "type": "references",
+      "from": "nested_b",
+      "target": "NestedType",
+      "note": "PY-24, pinned a second time so that fixing the first case by name cannot satisfy the row"
+    },
+    {
+      "type": "calls",
+      "from": "nested_a",
+      "note": "PY-24's sibling, already correct before this work and pinned because the fix touches the same resolver: a nested def's body attributes its calls to the enclosing function"
+    },
+    {
+      "type": "calls",
+      "from": "nested_b",
+      "note": "PY-24's sibling, second case"
+    },
+    {
+      "type": "references",
+      "from": "nested_a",
+      "target": "NestedType",
+      "meta.reasonCode": null,
+      "note": "DECLARED BOUNDARY as a second, independent assertion: the edge must not merely be gone, it must not reappear carrying no reason code. \u00a74 is about the value being readable, so a fix that restores the edge without the code fails here"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "outer",
+      "equals": 1
+    },
+    {
+      "name": "nested_a",
+      "equals": 0,
+      "note": "a def inside a def is a local, and locals are not symbols (PYD4) \u2014 the scripting-family contract every lane in this family holds"
+    },
+    {
+      "name": "nested_b",
+      "equals": 0,
+      "note": "same"
+    },
+    {
+      "name": "Nested",
+      "equals": 1,
+      "note": "a class in a function body IS a symbol, published ownerless \u2014 `extractClass` clears the function scope on entry and sets no ownerName when one was open. So `Nested.method` is a method of a module-level class and its annotation keeps its own source"
+    },
+    {
+      "name": "method",
+      "equals": 2,
+      "note": "`Nested.method` and `Owner.method` are two real methods in two owners, and `references` from either dedupes onto one key \u2014 which is why the pin is a COUNT and the `references` row above is a single row"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "global",
+      "note": "PY-4, still pinned: the module scope used to be the literal keyword `global`. A file whose annotations all resolve to the module must not resolve them to a keyword"
+    }
+  ],
+  "_seamNote": {
+    "what": "A `references` source is the nearest enclosing symbol, and a def nested inside a def is not a symbol \u2014 so the walk continues outward to the def that is.",
+    "why": "The test asks the question directly by walking parents rather than threading a counter through the walk, for the reason `insideNonClassScope` already gives: a counter has to be balanced on entry and exit for every def in the file, and one missed decrement re-opens the defect for the rest of the file rather than for one node. The five reason codes are pinned individually because \u00a74 is a per-EDGE obligation \u2014 a lane that satisfies it on four types and forgets the fifth has produced a graph where 'how much of this is guesswork' is still not a queryable number."
+  }
+}

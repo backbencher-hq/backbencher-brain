@@ -1,0 +1,27 @@
+{
+  "fixtureId": "svelte/template-lines-825",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M59 (#825). Lines read off the fixture's own text; the pre-fix values are MEASURED by running this same fixture through the HEAD worktree's analyzer (all 8 relationships reported no line). svelte's template expressions are opaque `svelte_raw_text` leaves, so the identifier walk is a pure-string scan — and the collector kept a Set of names, which discards the fragment the name was read out of. Three contracts are pinned: a component usage's line is its TAG (23), an event directive's handler line is the directive's expression (24), and a template read's line is the fragment it was read from (24 `{count}`, 26 `{label}`). One edge per name is pre-existing behaviour (the same name read twice emits one `uses`); its line is one of the occurrences and is verified to be a line the name is written on. The prop's containment line is the `$props()` destructure's own line (14), and the import edge is a FILE line (12) because the delegated script's lines are shifted by the merge.",
+  "expectSymbols": [
+    { "name": "label", "kind": "property" },
+    { "name": "count", "kind": "variable" },
+    { "name": "bump", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "./Child.svelte:Child", "line_number": 12, "note": "SEAM: a script-relative line shifted to the file's" },
+    { "type": "renders", "target": "Child", "line_number": 23, "note": "the template tag's own line" },
+    { "type": "calls", "target": "bump", "line_number": 24, "note": "`on:click={bump}` — the handler's line" },
+    { "type": "uses", "target": "count", "line_number": 24, "note": "`{count}` in the button body" },
+    { "type": "uses", "target": "bump", "line_number": 24 },
+    { "type": "uses", "target": "label", "line_number": 26, "note": "`<span>{label}</span>`" },
+    { "type": "contains", "from": "template-lines-825", "target": "label", "line_number": 14, "note": "the `$props()` destructuring's line" },
+    { "type": "uses", "from": "bump", "target": "count", "line_number": 18, "note": "script-side read, shifted by the seam" }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "target": "Child", "line_number": null, "note": "pre-fix (measured on this fixture at HEAD): no line on any of the 8 relationships" },
+    { "type": "calls", "target": "bump", "line_number": null, "note": "pre-fix: same silence for the event handler" },
+    { "type": "uses", "target": "label", "line_number": null, "note": "pre-fix: and for every template read" },
+    { "type": "contains", "from": "template-lines-825", "target": "label", "line_number": null, "note": "pre-fix: and for the prop containment" }
+  ]
+}

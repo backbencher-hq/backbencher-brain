@@ -1,0 +1,12 @@
+{
+  "issue": "M15.N8",
+  "code": "N8",
+  "tool": "bb_analyze",
+  "title": "mode coverage — all 11 modes",
+  "verified": true,
+  "checks": 11,
+  "passed": 11,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:20:27.682Z"
+}

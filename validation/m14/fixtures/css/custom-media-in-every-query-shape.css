@@ -1,0 +1,58 @@
+/* Every shape a `@media` query can put a custom-media REFERENCE in.
+ *
+ * The branch this pins had ZERO corpus occurrences, which is the whole reason it needs
+ * a fixture: `css-ontology-probe.ts` measures 0 `@custom-media` declarations and 0
+ * `@media (--x)` uses across the whole admitted corpus, so no corpus number can
+ * distinguish a working branch from a broken one. A fixture is the only instrument left
+ * for a branch the corpus is silent about, and this one is written to fail if the
+ * branch narrows back to the whole-query-is-one-parenthesised-ident shape.
+ *
+ * The four shapes, and what each one is:
+ *
+ *   1. `@media (--narrow)`                     the reference IS the query
+ *   2. `@media screen and (--narrow)`          composed: `screen AND (--narrow)`
+ *   3. `@media (--a), (--b)`                   a comma list, so the scope depends on TWO
+ *   4. `@media not (--c)`                     negated
+ *
+ * The two NEGATIVE cases matter more than the four positive ones, because the previous
+ * implementation read the query's whole text and peeled one leading `(` and one
+ * trailing `)` off it — which is what made shapes 2 and 3 invisible:
+ *
+ *   `@media screen and (--narrow)` -> the string starts with `s`, nothing is peeled,
+ *                                     the leading-`--` test fails, the edge is LOST.
+ *
+ * So a fixture pinning only the positive shapes would pass against the old code.
+ * `--plain` below is the shape a media-type `keyword_query` takes: it is a
+ * `keyword_query` node like `--narrow` is, and it must NOT become an edge. Without it,
+ * an implementation that matched on the node type alone would pass this file.
+ */
+@custom-media --narrow (max-width: 400px);
+@custom-media --wide (min-width: 900px);
+@custom-media --a (max-width: 100px);
+@custom-media --b (max-width: 200px);
+@custom-media --c (max-width: 300px);
+
+@media (--narrow) {
+  .bare { color: red }
+}
+
+@media screen and (--wide) {
+  .composed { color: red }
+}
+
+@media (--a), (--b) {
+  .listed { color: red }
+}
+
+@media not (--c) {
+  .negated { color: red }
+}
+
+/* NEGATIVE: a media TYPE is also a `keyword_query`, and is not a reference. */
+@media print {
+  .plain { color: red }
+}
+
+@media screen and (min-width: 400px) {
+  .feature { color: red }
+}

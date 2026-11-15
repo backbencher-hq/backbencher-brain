@@ -1,0 +1,89 @@
+{
+  "fixtureId": "r/F14-local-boundary",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Where a name becomes a FILE-LEVEL binding is the question this file answers, and R's answer is four different answers for four shapes that a lexical-scope reader gets wrong in three of them. `local({ ... })` evaluates in a NEW environment -- `local({ x <- 1 }); ls()` leaves `ls()` empty -- so `trapped_by_local` is forbidden, and this is the one construct an ancestor-function test CANNOT see, because `local()` introduces no `function_definition` node. A plain `{ ... }` inside a call is a DIFFERENT thing: R evaluates it in the CALLING frame, so `bound_in_block` really is global and is pinned. An assignment nested as a call argument binds at file level, because arguments are promises evaluated in the caller's environment -- `bound_via_argument` is pinned, and it is the shape a reader which stops at the first `function` boundary misses. Parenthesised and used as a subset index, both bind too. The forbid count is one, deliberately: this fixture's value is the four POSITIVE pins, each of which is a case where the conservative answer would be to publish nothing, and publishing nothing is also a defect the census counts.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "inside_local",
+      "kind": "variable"
+    },
+    {
+      "name": "in_a_plain_block",
+      "kind": "variable"
+    },
+    {
+      "name": "bound_in_block",
+      "kind": "variable"
+    },
+    {
+      "name": "wrap",
+      "kind": "function"
+    },
+    {
+      "name": "bound_as_argument",
+      "kind": "variable"
+    },
+    {
+      "name": "bound_via_argument",
+      "kind": "variable"
+    },
+    {
+      "name": "bound_via_parens",
+      "kind": "variable"
+    },
+    {
+      "name": "vec",
+      "kind": "variable"
+    },
+    {
+      "name": "bound_via_subset",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "inside_local"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "bound_in_block"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "bound_via_argument"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "bound_via_parens"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "bound_via_subset"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "trapped_by_local",
+      "kind": "variable"
+    },
+    {
+      "name": "x",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "trapped_by_local"
+    }
+  ]
+}

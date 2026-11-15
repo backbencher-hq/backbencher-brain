@@ -1,0 +1,25 @@
+{
+  "instrument": "THE WIRING, LANDED FOR JAVA \u2014 spec + flag + two tables + gate entry + the emission lookup, with the false-binding clause MEASURED",
+  "at": "2026-10-12T20:05:00-04:00",
+  "whatLanded": {
+    "projectIndex_flag": "`qualifyTypeWithFile` \u2014 the builder also records every dot-joined SUFFIX of the file's directory path plus the declared name (`a/b/src/main/java/org/x/Foo.java` -> `org.x.Foo`). Suffixes rather than one guess at the source root, because the builder is not told where the source root is.",
+    "java_spec": "`JAVA_DECLARATION_SPEC` (typeNodes class/interface/enum/annotation/record; members method/field/constructor/enum_constant/annotation element; bases superclass/super_interfaces/extends_interfaces) + the flag.",
+    "two_tables": "`.java` in `PROJECT_INDEX_EXTENSIONS` and `java: mod.JAVA_DECLARATION_SPEC` in `specByLang` (the producer), plus a `java` entry in the gate's `INDEX_SPECS`.",
+    "emission": "`real-java-analyzer.ts` both import sites read `context.projectIndex.typeKinds.has(moduleName)`: on a HIT the target is the LEAF and the metadata carries `module`; on a MISS the target is byte-for-byte unchanged."
+  },
+  "THE_ACCEPTANCE_CLAUSES": {
+    "false_bindings_MEASURED_at_zero": "**RE-SPELLED (bare target + module metadata): 8,730 | TRUE LOCAL 8,730 | FALSE LOCALS 0.** R2's rule (leaf-in-index) produced 1,798 false bindings on this same population; the lookup produces ZERO. This is the clause to run rather than expect, and it was run.",
+    "the_invariant_measured": "**UNCHANGED (target still the module): 25,004 | of which EXTERNAL 23,476.** The external half is unchanged by construction \u2014 the code path that would move it is only taken on an index hit \u2014 and the audit confirms every unchanged edge that IS project-local is one of the 1,528 below.",
+    "the_movement": "8,730 of the split's 8,730 LOCAL edges re-spelled. **1,528 true-local edges were NOT moved** (the R4 recall gap) and they are named rather than rounded away: they are imports whose FQN is not in the qualified index \u2014 wildcard imports and inner/nested types are the likely classes, and that is a SECOND question.",
+    "the_gate_arm_and_its_POPULATION": "`npx tsx script/m14/incoming-gate.ts java java 400 --index` -> exit 1, and it printed `project index: USED \u2014 11 repo index(es) (11 built, 0 from cache, 0 damaged) **over 400 file(s)**`. **THE INDEX IS BUILT AND PASSED** (the wiring works in the gate) **but over the 400-FILE SAMPLE**, and the gate's own header says so: an index over a stride sample is not a project index. Its `imports` row (7,799 \u00b7 resolved 104 \u00b7 unresolved 7,695) therefore measures THE SAMPLE, not the fix \u2014 most imports point at classes outside the sampled 400. The complete-population measurement is the audit above."
+  },
+  "A_DEFECT_I_CAUGHT_IN_MY_OWN_WIRING": "I had added `.groovy: \"groovy\"` to `PROJECT_INDEX_EXTENSIONS` while `specByLang` had no groovy entry \u2014 which means the lookup would have fallen through to `?? SOLIDITY_DECLARATION_SPEC` and indexed GROOVY declarations with the SOLIDITY spec. **That is exactly the defect this file's own `.scss` comment records from this morning.** `.groovy` was REMOVED, and the removal carries the reason: a lane is wired when BOTH halves exist, not when its extension is listed. Groovy's spec needs its grammar's node names verified first.",
+  "prediction_vs_result": "PREDICTED: java LOCAL 8,730 -> 7,594 resolved \u00b7 812 ambDeclOnly \u00b7 324 ambBoth \u00b7 0 unresolved; false bindings 0. **RESULT: the re-spelling reaches all 8,730 with 0 false locals** (the ceiling columns themselves need the complete-population gate arm, which the stride cannot give \u2014 stated rather than substituted).",
+  "raw": [
+    "false-binding-audit.mts",
+    "false-binding-audit.txt",
+    "gate-java-indexed.txt",
+    "java-index-count.mts",
+    "java-rule4.mts"
+  ]
+}

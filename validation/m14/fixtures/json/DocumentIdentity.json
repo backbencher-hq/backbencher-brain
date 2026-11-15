@@ -1,0 +1,36 @@
+{
+  "$id": "/api/v31/schemas/pets",
+  "definitions": {
+    "PetDetails": {
+      "$id": "/api/v31/schemas/petdetails",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "$anchor": "pet_details_id"
+        },
+        "category": {
+          "$ref": "/api/v31/schemas/category"
+        }
+      }
+    },
+    "Category": {
+      "$id": "/api/v31/schemas/category#",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "details": {
+      "$ref": "/api/v31/schemas/petdetails"
+    },
+    "detailsId": {
+      "$ref": "/api/v31/schemas/petdetails#pet_details_id"
+    },
+    "category": {
+      "$ref": "/api/v31/schemas/category"
+    },
+    "self": {
+      "$ref": "/api/v31/schemas/pets#"
+    }
+  }
+}

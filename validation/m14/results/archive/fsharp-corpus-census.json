@@ -61,7 +61,7 @@
     }
   },
   "corpus": {
-    "root": "$HOME/fixtures/repositories/fsharp",
+    "root": "/home/ishaq2321/bb_tests/repositories/fsharp",
     "files": 6627,
     "shards": 5
   },

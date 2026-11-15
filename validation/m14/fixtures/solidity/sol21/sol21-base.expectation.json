@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/sol21/sol21-base.sol",
+  "authoredFrom": "SOL-21 — cross-file resolution, the BASE half. Authored 2026-09-30 from the analyzer's measured output.",
+  "note": "A fixture in a SUBDIRECTORY is a PROJECT: the runner indexes every source file in that directory and hands the result to `AnalyzeContext.projectIndex`. This is opt-in by structure — every flat fixture still gets no context, which is why the 27 pre-existing Solidity expectations are unchanged by any of it. Without that mechanism a lane whose analyzer reads the index cannot be tested at all, and two Solidity mutants survived their first run for exactly this reason: the runner called `analyze()` with no context, so both were no-ops against zero rows.",
+  "expectSymbols": [
+    { "name": "IThing", "kind": "interface" },
+    { "name": "feedKind", "kind": "method", "ownerName": "IThing" },
+    { "name": "FeedBase", "kind": "class" },
+    { "name": "latest", "kind": "method", "ownerName": "FeedBase" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "FeedBase",
+      "target": "IThing",
+      "confidenceMin": 1,
+      "meta.interfaceResolvedInFile": true,
+      "comment": "An IN-FILE interface base, resolved by the tree alone. This row is the pre-existing SOL-5 behaviour and needs no index — pinned so that adding the index cannot be mistaken for what settled THIS edge."
+    }
+  ]
+}

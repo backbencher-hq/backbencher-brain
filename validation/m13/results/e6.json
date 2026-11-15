@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.11",
+  "code": "E6",
+  "tool": "bb_edit",
+  "title": "bb_edit: atomicity and multi-file rollback",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "setup: no temps before edit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "success: refactor completes",
+      "pass": true,
+      "detail": "[\"/tmp/bb-e6-success-BGKMv3/src/target.py\",\"/tmp/bb-e6-success-BGKMv3/src/caller1.py\",\"/tmp/bb-e6-success-BGKMv3/src/caller0.py\"]"
+    },
+    {
+      "name": "success: declaration renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "success: no .bb-edit-* temps leak",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mid-failure (keyword rename) aborts with validation error [negative: validation failed]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback: target restored",
+      "pass": true,
+      "detail": "def target():\n    return 1\n"
+    },
+    {
+      "name": "rollback: caller0 restored",
+      "pass": true,
+      "detail": "from target import target\n\ndef caller0():\n    return target()\n"
+    },
+    {
+      "name": "rollback: caller1 restored",
+      "pass": true,
+      "detail": "from target import target\n\ndef caller1():\n    return target()\n"
+    },
+    {
+      "name": "rollback: no .bb-edit-* temps leak",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "newfile: validateFile rejected invalid content",
+      "pass": true,
+      "detail": "Error: validation failed for /tmp/bb-e6-newfile-8IdTIz/src/newmod.py: Syntax ERR"
+    },
+    {
+      "name": "newfile: created file removed on rollback",
+      "pass": true,
+      "detail": "exists=false"
+    },
+    {
+      "name": "newfile: no .bb-edit-* temps leak",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "snapshot: pre-edit content differs from post-edit",
+      "pass": true,
+      "detail": "def target():\n    return 1\n | def renamedTarget():\n    return 1\n"
+    },
+    {
+      "name": "snapshot: post-edit is the renamed form",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  },
+  "decisions": {
+    "rollback": "snapshots capture every file's pre-edit state (existence + content); on any error each file is restored (rewritten or removed)",
+    "tempWrite": "each file is written to a .bb-edit-<uuid> temp then renameSync'd atomically; temps are tracked and scrubbed on failure",
+    "failureInjection": "rename to a language keyword (Python `class`) passes the identifier regex but yields invalid syntax, so validateFile throws after all writes — a faithful mid-operation failure"
+  },
+  "limitations": [
+    "Rollback restores file content but cannot undo a cross-process concurrent edit that raced between planEdit and executeEdit (no file locking).",
+    "If renameSync itself fails on the first file, no later file is touched — the snapshot loop is a no-op for untouched files."
+  ],
+  "generatedAt": "2026-11-05T04:07:58.427Z"
+}

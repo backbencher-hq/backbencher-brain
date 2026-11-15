@@ -1,0 +1,19 @@
+{
+  "fixtureId": "javascript/dead-span-index-shift",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JD1 regression: the two post-walk symbol-removal rules ran as sequential splices, and because `b5Zombies` stores indices captured during the walk while the dead-span splice ran first and shifted them, the B5 splice deleted a LIVE UNRELATED symbol (`keep`) and left the accessor half it was supposed to kill. Both rules are now decided against the original index space and applied in one splice, so neither can perturb the other's indices. This fixture is the ONLY shape in the javascript lane that reaches the B5 zombie path at all: `accessor-slot-semantics` is the single fixture with a get+set pair, its pair's slot is never replaced by a data member, and its Overwrite class has no setter half — so `otherKey` resolves to undefined and no zombie is ever created. Its `forbidSymbols` pin therefore cannot fire on the path it appears to guard. The trigger requires a nested class (the only symbol-yielding declaration legal inside a method body) before the triple.",
+  "expectSymbols": [
+    { "name": "Trigger", "kind": "class" },
+    { "name": "m", "kind": "method", "note": "J3 last-wins: the SECOND m survives" },
+    { "name": "x", "kind": "method", "note": "the data member owns the slot" },
+    { "name": "keep", "kind": "method", "note": "JD1 load-bearing pin — pre-fix this symbol was DELETED by the stale-index B5 splice" }
+  ],
+  "forbidSymbols": [
+    { "name": "x", "kind": "property", "note": "no accessor half survives: the inner class shifted the zombie index and pre-fix the setter leaked through" },
+    { "name": "Inner", "kind": "class", "note": "J3: a symbol strictly inside the superseded first m body is dropped" }
+  ],
+  "expectSymbolCount": [
+    { "name": "x", "equals": 1, "note": "one member owns the slot, whatever its kind" }
+  ]
+}

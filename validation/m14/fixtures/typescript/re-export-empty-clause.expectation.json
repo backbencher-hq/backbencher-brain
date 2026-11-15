@@ -1,0 +1,38 @@
+{
+  "fixtureId": "typescript/re-export-empty-clause",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "An EMPTY re-export clause (export {} from) exports NOTHING and must not be recorded \u2014 the !foundNamed fallback misfired it as a star re-export ('*'). Star re-export records '*'. M14 IMPORTS_ENUM (2026-10-04) CHANGED the namespace-export row and the reason is recorded here rather than silently re-pinned: `export * as ns from \"./ns\"` asks the module for the MODULE, so its dependency item is `*` \u2014 the same target a plain `import * as ns from \"./ns\"` records, and the oracle states that rule in as many words ('A namespace import asks for the module itself, not a member'). It previously recorded `ns`, which is a LOCAL BINDING, not something the source module exports, so it asked \"./ns\" for a name \"./ns\" does not have. The binding is not lost: it rides the ImportInfo's `alias`, which is the field `brain_import.imported_as` is read for, and the exports edge still records `ns`. This lane-owned fixture is the only place in the repository that pinned the old value, so the change is visible here instead of appearing as a count that moved.",
+  "expectSymbols": [],
+  "expectImports": [
+    {
+      "module": "./real",
+      "items": [
+        "real"
+      ],
+      "meta.reExport": true
+    },
+    {
+      "module": "./star",
+      "items": [
+        "*"
+      ],
+      "meta.reExport": true
+    },
+    {
+      "module": "./ns",
+      "items": [
+        "*"
+      ],
+      "alias": "ns",
+      "meta.reExport": true,
+      "note": "the name ASKED FOR is `*` (the whole module) and the LOCAL BINDING `ns` rides `alias`. The old pin recorded items:[\"ns\"], which asks ./ns for a name ./ns does not export"
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "./empty"
+    }
+  ],
+  "forbidRelationships": []
+}

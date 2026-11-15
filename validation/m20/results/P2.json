@@ -1,0 +1,21 @@
+{
+  "issue": "M20.P2",
+  "code": "P2",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "negativeCases": 1,
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "e848a4a098f19fd67617f7715e526e49917c691484b508c33eb34592f4cf618b",
+  "verifierCommand": "bun run script/m20/verify-patterns-orphan-semantics.ts",
+  "evidenceFile": "P2.json",
+  "generatedAt": "2026-11-05T04:28:30.304Z",
+  "workingTreeRelevantChanges": [],
+  "limitations": [
+    "Engine-level invariants: the gate builds the unanchored name rows a resolver records, rather than asserting the indexer produced one.",
+    "Upstream environmental behaviour (not a gate assertion): an analyzer that resolves a call to EVERY same-named declaration makes both look consumed; the engine cannot disambiguate a resolution it was given, so such a symbol is not reported and the finding's class is an upstream coverage property.",
+    "Dynamic dispatch, reflection and string-keyed lookups are invisible to a static resolver; the engine reports their targets with the limitation stated on the finding rather than fabricating a target."
+  ]
+}

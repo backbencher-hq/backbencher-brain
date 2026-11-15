@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "tool": "bb_index",
   "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
-  "fixture": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/work/vendor-fixture",
-  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/vendor-fixture",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
   "startedAt": "2026-11-03T00:34:50.264Z",
   "cases": [
     {

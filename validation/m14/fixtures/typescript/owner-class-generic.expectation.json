@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/owner-class-generic",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE GENERIC-PROPAGATION CLASS: the member `value: T` is resolved to the INSTANTIATED argument `Widget` from `new Box<Widget>()`; the evidence class is `generic` (the type came through the type arguments, not a literal member type). The negative row is the same call shape on an object whose type states no instantiation — it must carry NO owner (`meta.owner: null`).",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useGeneric",
+      "target": "run",
+      "line_number": 7,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "generic"
+    },
+    {
+      "type": "calls",
+      "from": "negativeGeneric",
+      "target": "run",
+      "line_number": 11,
+      "meta.owner": null
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "fixtureId": "javascript/accessor-overrides-accessor",
+  "rationale": "J10 (2026-09-30). An accessor pair is a prototype member, so a subclass accessor DOES shadow a base accessor of the same name \u2014 the lane emitted nothing for it because accessors are kinded `property` and `overrides` was scoped to Methods and Constructors. The omission was found by building the J9 oracle and reading its MISSING rows: 12 of them, all in svelte/src/reactivity/url.js, where `class SvelteURL extends URL` re-declares twelve URL.prototype members as accessor pairs. Pins three things. (1) The positive case, or the cheap fix is to suppress accessors entirely. (2) The get/set PAIR collapsing to ONE edge \u2014 deduping only the verified in-file branch doubled every accessor guess instead, visible as SvelteURL.hash at both line 77 (get) and line 81 (set). (3) The negative case: an accessor over a member the base does not have is still refused, so widening the rule does not degrade into treating every accessor as an override. J9's private-name rule is pinned here too, to show the two hold together: a private accessor is still silent.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "SvelteURL",
+      "target": "URL"
+    },
+    {
+      "type": "overrides",
+      "from": "SvelteURL.hash",
+      "target": "hash",
+      "note": "the accessor pair collapses to ONE edge; `URL` really declares `hash`, so this is a real override confirmed against the builtin prototype chain"
+    },
+    {
+      "type": "overrides",
+      "from": "SvelteURL.toString",
+      "target": "toString",
+      "note": "a plain method is unaffected by the widening \u2014 the fix must not change method behaviour"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "SvelteURL.notAUrlMember",
+      "target": "notAUrlMember",
+      "note": "being an accessor is not sufficient; the builtin prototype chain confirms URL has no such member, so the accessor shape alone must not fabricate an override"
+    },
+    {
+      "type": "overrides",
+      "from": "Widget.#secret",
+      "target": "#secret",
+      "note": "J9 outranks J10: a private accessor is class-scoped, installed per instance, never on the prototype \u2014 so it still cannot override"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "SvelteURL",
+      "kind": "class",
+      "equals": 1
+    },
+    {
+      "name": "hash",
+      "kind": "property",
+      "equals": 2,
+      "note": "the get and set pair are two SYMBOLS; they are one OVERRIDE. The distinction is the point of this fixture."
+    },
+    {
+      "name": "notAUrlMember",
+      "kind": "property",
+      "equals": 1
+    },
+    {
+      "name": "toString",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "Widget",
+      "kind": "class",
+      "equals": 1
+    },
+    {
+      "name": "#secret",
+      "kind": "property",
+      "equals": 1
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "SvelteURL.hash",
+      "target": "hash",
+      "equals": 1,
+      "note": "the get/set PAIR is ONE override. This is the assertion that makes the dedup load-bearing: the first attempt at J10 deduplicated only the verified in-file branch, so every accessor guess was emitted TWICE and this suite still passed, because expectRelationships only requires >=1 match."
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "expectSymbols": [
+    {
+      "name": "NoSelf",
+      "kind": "module"
+    },
+    {
+      "name": "NoSelf",
+      "kind": "struct",
+      "ownerName": "NoSelf"
+    },
+    {
+      "name": "Wrap",
+      "kind": "module"
+    },
+    {
+      "name": "Wrap.Inner",
+      "kind": "module"
+    },
+    {
+      "name": "Wrap.Inner",
+      "kind": "struct",
+      "ownerName": "Wrap.Inner"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "NoSelf.build/0",
+      "target": "NoSelf",
+      "line_number": 3
+    },
+    {
+      "type": "instantiates",
+      "from": "Wrap.make/0",
+      "target": "Wrap.Inner",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "Wrap",
+      "target": "Wrap.Inner",
+      "line_number": 7
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "NoSelf",
+      "target": "NoSelf"
+    },
+    {
+      "type": "contains",
+      "from": "Wrap.Inner",
+      "target": "Wrap.Inner"
+    }
+  ]
+}

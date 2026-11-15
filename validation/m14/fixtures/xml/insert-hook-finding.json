@@ -1,0 +1,77 @@
+{
+  "instrument": "xml insert hook \u2014 the 1.83x `contains` factor, explained to the edge",
+  "at": "2026-10-10T13:40:00-04:00",
+  "status": "RESOLVED. It is not an instrument artifact and not this lane's defect: it is a duplicated-edge defect in the SHARED indexer, and it fires for every owned symbol whose name contains a colon.",
+  "theQuestion": "300 libxslt files: `contains` emitted 4,375 through parseFile, stored 7,649 = 1.748x, while calls/imports were exactly 1.0 and references 0.91. One-file probe: tests/docbook/common/common.xsl emitted 294 contains edges, the store held 511.",
+  "mechanism": {
+    "where": "src/ast/parallel-indexer.ts \u2014 the auto-generated containment pass (#756 / M51.A1): for every symbol with an owner, if the engine has not already emitted that containment it BUFFERS one `contains` row (`:3955-3984`, `:4208-4213`).",
+    "theDefect": "THE DEDUP KEY IS BUILT WITH ONE SHAPE AND LOOKED UP WITH ANOTHER. The key set is built from the analyzer's contains edges with BOTH ENDS LEAF-REDUCED \u2014 `containsPairs.add(`${srcLeaf} ${tgtLeaf}`)` via `/^.*:([^:]+):?\\d*$/` (`:3651-3659`). The lookup reduces only the OWNER and leaves the CHILD RAW \u2014 `containsPairs.has(`${ownerLeaf} ${symbol.name}`)` (`:3971-3972`). For any name containing a colon the two keys differ by construction, the guard never fires, and a containment edge the analyzer already emitted is written a SECOND time.",
+    "whyXml": "prefixed names are the norm in this lane (`xsl:template`, `doc:reference`, `xsl:value-of`), so 217 of the file's 292 owned symbols take the second path.",
+    "notAHypothesis": "predicted with the indexer's own two regexes from the symbol table: 217 owned symbols whose lookup key is absent from the leaf-reduced key set \u2014 all 217 colon-named \u2014 against a measured difference of exactly 217. MATCH: true (validation/m14/fixtures/xml/insert-hook.json counts.synthesizedPredicted vs counts.storedContainsMinusAnalyzer)."
+  },
+  "measured": {
+    "file": "libxslt/tests/docbook/common/common.xsl",
+    "analyzerContainsEdges": 294,
+    "storedContainsRows": 511,
+    "difference": 217,
+    "predictedSynthesized": 217,
+    "ofWhichColonNamed": 217,
+    "ownedSymbols": 292,
+    "otherTypesUnaffected": {
+      "calls": {
+        "emitted": 11,
+        "stored": 11
+      },
+      "references": {
+        "emitted": 6,
+        "stored": 6
+      }
+    }
+  },
+  "whatItMeans": {
+    "forThisLane": "The lane's four-clause numbers do NOT move: the residual gate is a key-space model over analyzer output and never reads the store; every store-derived figure is a ratio over the stored set, and a duplicated row is one more row of the same (owner, child) pair, so it does not change a binding verdict. The 120-file draw's percentages are affected only in their DENOMINATOR and are already labelled as one run.",
+    "fleet": "Every lane whose symbols carry a colon in their name gets duplicate containment edges. xml is measured; the condition is mechanical (a colon in the child symbol's name) so other lanes can be checked by counting colon-named owned symbols in their stores.",
+    "fixBelongsToTheSharedIndexer": "make the two key shapes agree \u2014 leaf-reduce the child in the lookup, or key the pair set on resolved ids like the row identity already does. `src/ast/parallel-indexer.ts` is not this lane's file, so this is REPORTED, not edited."
+  },
+  "howItWasFound": "The Lead's order was one file with an insert hook. The hook recorded ZERO inserts because the store runs in worker threads, where a main-thread driver patch is invisible \u2014 which itself is a fact worth keeping: any probe that patches better-sqlite3 in the main thread sees nothing. The answer came from the store side instead: analyzer edges beside stored rows for one file, then the indexer's own regexes replayed in the probe to predict the exact difference.",
+  "raw": [
+    "validation/m14/fixtures/xml/insert-hook.json",
+    "validation/m14/fixtures/xml/insert-hook.txt",
+    "validation/m14/fixtures/xml/emitted-vs-stored.json"
+  ],
+  "theFix": {
+    "status": "CORRECT FIX MEASURED AND HANDED OVER, NOT LANDED BY THIS LANE: src/ast/parallel-indexer.ts is outside this lane's write scope and the Lead owns the shared-indexer change. The file was restored byte-exact to HEAD after the experiment (sha256 b660dc9ecf80536a811965c7d0f579c9ac61d9e0f764532b7f8a4f62961eb594, no diff).",
+    "patch": "validation/m14/fixtures/xml/child-only.patch \u2014 one line at the lookup: reduce the CHILD with the build site's own regex and leave the owner regex untouched.",
+    "control": "the SAME probe, the SAME 300-file draw, and the emitted column identical at 4,375 in every arm \u2014 HEAD, the symmetric repair, and the child-only arm \u2014 so the stored column is comparable across all three.",
+    "threeArms": {
+      "HEAD_original": {
+        "libxslt300_containsEmitted": 4375,
+        "libxslt300_containsStored": 7649,
+        "ratio": 1.748,
+        "note": "the 1.83x this lane disclosed four times"
+      },
+      "symmetricRepair_byTheLead": {
+        "libxslt300_containsStored": 55734,
+        "ratio": 12.74,
+        "factorWorseThanHead": "7.3x",
+        "runs": "twice, two fresh stores",
+        "status": "REVERTED \u2014 parallel-indexer.ts back at HEAD"
+      },
+      "childOnly_Arm1": {
+        "libxslt300_containsStored": 4369,
+        "ratio": 0.999,
+        "dbeaver300": {
+          "containsEmitted": 23742,
+          "containsStored": 23742,
+          "ratio": 1.0
+        },
+        "status": "CORRECT \u2014 stored returns to the emitted count on two repositories"
+      }
+    },
+    "whySymmetricIsWorse": {
+      "answer": "THE OWNER REGEX, and it is a one-line A/B as the Lead suspected. The build-site regex `/^.*:([^:]+):?\\d*$/` applied to an `ownerSymbolId` \u2014 which ends `:<line>` \u2014 captures the LINE NUMBER as the leaf: `proj:\u2026:xsl:stylesheet:1` -> `1`, not `stylesheet`, because `.*:` is greedy to the last colon and `\\d*$` then matches the empty string. The ORIGINAL lookup regex `/^.*:([^:]+):\\d+$/` anchors the digit-run into the required `:\\d+$` suffix, so the NAME is captured instead. Making the owner regex 'consistent' therefore breaks the ownerLeaf for every symbol id (all of them end in a line number) and 48,085 MORE rows are synthesized.",
+      "consequenceForTheGuard": "`containsPairs` IS NOT a leaf-keyed set in the way its build site suggests. The same regex that produces a usable leaf from a NAME produces a LINE NUMBER from an ID, so no repair may reuse it on both sides. A shape-appropriate leaf function is required \u2014 strip a trailing `:<digits>` from ids first, then take the last colon segment \u2014 or, better, key the pair set on resolved symbol ids the way the row identity already does."
+    },
+    "methodNoteKept": "The main-thread insert hook recorded 0 inserts: the store writes in worker threads, where a main-thread `better-sqlite3` patch is invisible. The experiment was run through the store-side probe instead, which is the instrument that can see the rows."
+  }
+}

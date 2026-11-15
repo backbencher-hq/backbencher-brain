@@ -1,0 +1,66 @@
+{
+  "fixtureId": "groovy/override-key-parameter-lists",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 R10 sibling pin. groovy builds an override endpoint the same way java does (`${ownerFqn}.${name}${signature}`, buildFqn + resolveOverrides), so the parameter list is inside the string the edge label is derived from, and its pre-fix rule cut at the FIRST '(' before splitting on dots \u2014 immune to a qualified-parameter split, but truncating a paren-bearing owner chain. Both lanes now call one shared rule (src/ast/override-context.ts localEdgeLabel). MEASURED INTERACTION, recorded rather than smoothed over: on this fixture the groovy signature reads `(Entity,,StringBuilder,boolean)` \u2014 the WRITTEN qualified type `Outer.Criterion` is recorded as absent, so the label defect this fixture guards cannot currently fire in this lane. That payload loss is a separate, measured finding with its own instrument (script/m60/groovy-parameter-payload-census.ts: 8 of 33 joined written-qualified slots record no type on a 600-file grails-core sample; root cause probe-verified \u2014 the grammar uses `scoped_type_identifier` for such a type and the parameter extractor's node list does not name it). When that is fixed, the forbid below becomes live, which is why it is pinned now.",
+  "expectSymbols": [
+    {
+      "name": "Builder",
+      "kind": "class"
+    },
+    {
+      "name": "IQuery",
+      "kind": "interface"
+    },
+    {
+      "name": "Criterion",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Builder.query",
+      "target": "query",
+      "meta.overriddenOwner": "IQuery"
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.remember",
+      "target": "remember",
+      "meta.overriddenOwner": "IQuery"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "Builder.query",
+      "target": "query",
+      "equals": 1,
+      "meta.overriddenOwner": "IQuery"
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.remember",
+      "target": "remember",
+      "equals": 1,
+      "meta.overriddenOwner": "IQuery"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "query.Criterion,StringBuilder,boolean)",
+      "target": "Criterion,StringBuilder,boolean)",
+      "note": "java's pre-fix derivation on this signature once the parameter payload keeps the written qualified type \u2014 not a name, owner lost. Vacuous today only because the type is dropped; the pin is for the day it is not.",
+      "meta.overriddenOwner": "query"
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.query)",
+      "target": "query)",
+      "note": "the related degraded shape: a bare parameter-list fragment where a member name belongs",
+      "meta.overriddenOwner": "Builder"
+    }
+  ]
+}

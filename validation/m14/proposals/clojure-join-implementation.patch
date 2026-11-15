@@ -1,0 +1,169 @@
+THE QUALIFIED-NAME JOIN — the clojure lane's implementation, for the Lead's gate edit.
+
+AUTHOR: Muhammad Ishaq Khan (the clojure lane) · 2026-10-21
+THE LANE DOES NOT EDIT THE GATE — THIS IS THE PATCH, IN THE LANE's OWN CHANNEL.
+Apply with:  git apply validation/m14/proposals/clojure-join-implementation.patch
+
+THE SPEC THIS IMPLEMENTS, VERBATIM:
+  (i)   the shape test is "THE TARGET CONTAINS A `/`" — NOT `isBare` (a join gated on `isBare`
+        moves 1 row, not 841 — MEASURED on the clojure population);
+  (ii)  the join branch is the PROBE's JOIN BRANCH, PASTED VERBATIM;
+  (iii) the namespace source is the ANALYZER's `(ns …)` MODULE SYMBOL's NAME;
+  (iv)  the answer comes from the GATE's OWN `projectDecl.get(repo)` map, qualified form `ns/target`,
+        with a count of EXACTLY ONE;
+  (v)   it is PASSED INTO `classifyEdge(...)` AS A NEW OPTIONAL PARAMETER AFTER `edgeFile?: string`,
+        AT BOTH CALL SITES (the main one and the owner cross-check's);
+  (vi)  in the arbiter, the join goes BETWEEN THE TIE-BREAK AND THE AMBIGUOUS RETURN, the tie-break
+        stays VERBATIM, and exactly one qualified declaration ⇒ `resolved`.
+
+THE PRICE THIS PATCH MUST PRODUCE ON THE CLOJURE POPULATION: 841 rows.
+  Instrument: validation/m14/fixtures/clojure/clojure-project-index-probe.ts
+  Population: 646 files / 3 repos   Root: BB_CORPUS_ROOT=$PWD/.corpus (the FARM)
+  Scope: the 43,324-edge population
+  Class: 83.2979 % ⇒ 85.2391 %  ⇒  +1.9412 points  ⇒  11.62 % of the wall
+  Log:   validation/m14/fixtures/clojure/lane-logs/index-effect.txt
+  THE HARNESS THAT CHECKS IT: validation/m14/fixtures/clojure/run-postjoin-pair.sh — it DERIVES its
+  expectation from the probe on the SAME TREE, so no hand-copied number is in it.
+
+WHAT THE PATCH DOES, IN FIVE PLACES:
+  1. `incoming-rule.ts` — `classifyEdge` gains ONE optional parameter, `qualifiedJoin`, AFTER
+     `edgeFile?: string`. `undefined` ⇒ the row behaves exactly as before the join existed.
+  2. `incoming-rule.ts` — ONE rule, placed BETWEEN the tie-break and the ambiguous return. The
+     tie-break is untouched. The join resolves the row only when the count is EXACTLY ONE; a count
+     of zero and a count above one both leave the row where it was.
+  3. `incoming-gate.ts` — `nsByFile`, the per-file namespace, collected from the analyzer's
+     `(ns …)` MODULE SYMBOL (kind `module`, name = the namespace). The FIRST module symbol in a file
+     is the file's FIRST namespace form.
+  4. `incoming-gate.ts` — `qualifiedJoinFor`, the shape test ("the target contains a `/`") and the
+     lookup, read from the gate's OWN `projectDecl` map — the same map the name model uses.
+  5. `incoming-gate.ts` — the join is PASSED AT BOTH `classifyEdge` CALL SITES: the main one and the
+     owner cross-check's.
+
+--- a/script/m14/incoming-rule.ts
++++ b/script/m14/incoming-rule.ts
+@@ -1829,6 +1829,19 @@
+    * the edge's own word.
+    */
+   edgeFile?: string,
++  /**
++   * THE QUALIFIED-NAME JOIN (2026-10-21, clojure lane) — the ONE answer the project-scoped
++   * QUALIFIED-NAME strategy gives this row, computed by the CALLER, because only the caller holds
++   * the FILE's NAMESPACE and the PROJECT's own key space.
++   *
++   * `qualified` is the spelling production would look up — the target itself when it already
++   * carries a `/`, otherwise `<the file's namespace>/<the target>`. `count` is the number of
++   * declarations answering to that spelling in the PROJECT's own key space.
++   *
++   * `undefined` means the join could not be run at all — the file declares no namespace, or the
++   * caller did not compute it. The row then behaves EXACTLY as before the join existed.
++   */
++  qualifiedJoin?: { qualified: string; count: number },
+ ): Classified {
+   const decls = declCount.get(tgt) ?? 0
+   if (containsLike === true && decls >= 1) {
+@@ -2153,6 +2166,24 @@
+     if (ownFileDeclares === true && isPlainIdentifier(tgt)) {
+       return { outcome: "resolved", decls, kinds: kindText }
+     }
++    // ── THE QUALIFIED-NAME JOIN (2026-10-21, clojure lane) ─────────────────────────────────────────
++    // PRODUCTION'S PROJECT-SCOPED QUALIFIED-NAME STRATEGY, AS ONE RULE. A target that is ALREADY
++    // QUALIFIED (it carries a `/`) is a name in a namespace, and production's `_res_qname` resolves
++    // it by an EXACT qualified-name match. A BARE target in a file that DECLARES A NAMESPACE is
++    // qualified by that namespace (`ns/target`) and resolved the same way. Production fills
++    // `target_symbol_id` from that match ONLY when the qualified name is held by EXACTLY ONE
++    // declaration — so the join answers the row only when the count is ONE.
++    //
++    // IT IS BESIDE THE TIE-BREAK, NOT INSIDE IT. The tie-break is production's OWN rule and stays
++    // VERBATIM. The two are DISJOINT: a qualified target is never a plain identifier, so the
++    // tie-break can never reach a row the join reaches ⇒ THE ORDER DOES NOT CHANGE THE REACH ✓✓
++    // (MEASURED on the clojure population: the overlap is ZERO).
++    //
++    // A COUNT OF ZERO LEAVES THE ROW UNCHANGED — the join narrows nothing when it answers nothing.
++    // A COUNT ABOVE ONE LEAVES THE ROW AMBIGUOUS — the join does not narrow a collision.
++    if (qualifiedJoin !== undefined && qualifiedJoin.count === 1) {
++      return { outcome: "resolved", decls, kinds: kindText }
++    }
+     // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.
+     return {
+       outcome: (kindSet?.size ?? 0) > 1 ? "ambBoth" : "ambDeclOnly",
+--- a/script/m14/incoming-gate.ts
++++ b/script/m14/incoming-gate.ts
+@@ -1400,6 +1400,47 @@
+   const pooledDecl = new Map<string, number>()
+   const pooledKinds = new Map<string, Set<string>>()
+   const projectDecl = new Map<string, Map<string, number>>()
++  /**
++   * THE FILE's NAMESPACE, from the ANALYZER's own `(ns …)` MODULE SYMBOL — the symbol whose
++   * NAME is the namespace the analyzer saw at that form.
++   *
++   * WHY THIS SOURCE AND NOT THE PER-SYMBOL `scope`: the namespace is NOT a file-level fact. A file
++   * may declare SEVERAL (`in-ns` switches the namespace mid-file), the analyzer's `scope` is derived
++   * from a RUNNING value, and for the nested type forms it is a DOT-qualified nested name
++   * (`clojure.core.VecNode`) rather than a namespace at all. The `(ns …)` module symbol carries
++   * the namespace exactly, and the FIRST one in the file is the file's FIRST namespace form —
++   * which is what the production's own `clojureFileNamespace` returns.
++   *
++   * A file that declares no namespace at all has NO entry here, and the join then answers nothing
++   * for it — the row is left exactly as it was.
++   */
++  const nsByFile = new Map<string, string>()
++
++  /**
++   * THE QUALIFIED-NAME JOIN, COMPUTED WHERE THE KEY SPACES ARE.
++   *
++   * THE SHAPE TEST IS "THE TARGET CONTAINS A `/`" — a target that is already qualified IS its own
++   * qualification, and a bare target is qualified by ITS FILE's namespace. (A join gated on "the
++   * target is bare" would answer ONE row instead of 841 — MEASURED.)
++   *
++   * `count` is read from the gate's OWN `projectDecl` map — the same map the name model uses —
++   * so the answer is a lookup, not a second count and not a second key space.
++   */
++  const qualifiedJoinFor = (
++    repo: string, target: string, file: string | undefined,
++  ): { qualified: string; count: number } | undefined => {
++    let qualified: string
++    if (target.includes("/")) {
++      qualified = target
++    } else {
++      if (file === undefined) return undefined
++      const ns = nsByFile.get(file)
++      if (ns === undefined || ns === "") return undefined
++      qualified = `${ns}/${target}`
++    }
++    const count = projectDecl.get(repo)?.get(qualified) ?? 0
++    return { qualified, count }
++  }
+   const projectKinds = new Map<string, Map<string, Set<string>>>()
+   /**
+    * THE SYMBOLS THE OWNER CHANNEL NEEDS, per project — kept as a COMPACT record per relevant symbol,
+@@ -1669,6 +1710,13 @@
+       const genuineQual = symQual && symQual !== name ? symQual : ""
+       countKey(name, symKind, f, symLine, genuineQual)
+ 
++      // THE FILE's NAMESPACE — the ANALYZER's `(ns …)` MODULE SYMBOL's NAME. The FIRST module symbol
++      // in the file is the file's FIRST namespace form ✓✓. `Module = "module"` in the engine's
++      // `SymbolKind`, so the kind string is compared case-insensitively, as the probe does.
++      if (symKind.toLowerCase() === "module" && !nsByFile.has(f)) {
++        nsByFile.set(f, name)
++      }
++
+       // THE QUALIFIED-NAME ALIAS, and this gate's first version omitted it — which is
+       // worth recording, because the omission did not produce a small error. It produced
+       // `json 22,153 unresolved` against a fleet measurement of `json 0 unresolved`, and
+@@ -1986,6 +2034,7 @@
+     const pc = classifyEdge(
+       projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
+       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
++      qualifiedJoinFor(e.repo, e.tgt, e.srcFile),
+     )
+     if (ownerVerdict !== undefined) {
+       ownerRows++
+@@ -1995,7 +2044,7 @@
+       // THE TWO CROSS-CHECKS THAT MAKE THIS DISCLOSURE WORTH HAVING: how many rows the channel moved
+       // in each direction relative to the name model alone. Not used for any count in the table — a
+       // diagnostic, so a reader can see the size of the correction instead of trusting that it is small.
+-      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares, undefined, e.srcFile)
++      const nameOnly = classifyEdge(projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares, undefined, e.srcFile, qualifiedJoinFor(e.repo, e.tgt, e.srcFile))
+       if (ownerVerdict.outcome === "declined" && nameOnly.outcome === "resolved") ownerDeclinedButNameWouldResolve++
+       if (ownerVerdict.outcome === "resolved" && (nameOnly.outcome === "ambBoth" || nameOnly.outcome === "ambDeclOnly" || nameOnly.outcome === "unresolved")) ownerResolvedButNameSaidAmbiguous++
+     }

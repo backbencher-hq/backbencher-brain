@@ -1,0 +1,855 @@
+{
+  "meta": {
+    "lang": "ruby",
+    "asked": "the fleet gate MEASURES ruby and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
+    "instrument": "script/m14/incoming-gate.ts (single measurement; no second instrument)",
+    "instrumentVersion": "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + 25-name worklists",
+    "sample": 989,
+    "corpusTotal": 989,
+    "corpusRepos": 15,
+    "parsed": 989,
+    "qualifiedNameAliases": 9,
+    "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
+    "analyzer": "src/ast/real-ruby-analyzer.ts",
+    "analyzerDigest": "sha256:09952f5a6a97e47b",
+    "generated": "2026-10-22",
+    "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase). The classes are siblings that partition the edges: edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last of those is checked to be 0 rather than assumed.",
+    "population": "parsed=989/989 admitted=989 exts=rb index=no",
+    "populationNote": "THE POPULATION IS THE WHOLE ADMITTED SET, AND THE SAMPLE *IS* THE POPULATION: there is no stride and no subsample. MEASURED by script/m14/ruby-mixin-scope.ts's discoverRubyFiles over BB_CORPUS_ROOT=$PWD/.corpus: 989 admitted .rb files in 15 repositories, 0 over the 1 MiB per-file cap, 191 tracked-but-not-on-disk paths (gitlinks/submodules not checked out) that are NOT files and therefore not part of any population, and 1,180 tracked .rb paths across the corpus's 202 repositories. The gate's own run parses 989 of 989 and reports 0 parse failures, so 'parsed=989/989 admitted=989' is what the instrument saw, not a claim about it.",
+    "classMapping": "THE FIVE DECLARATION BUCKETS ARE THE GATE'S CLASSES, MAPPED ONCE, HERE, SO NOTHING IS HIDDEN: resolved = resolved (collRes is a SUBSET of resolved and is never added); ambiguous = amb(decl) (amb(kind) is a SUBSET of amb(decl), reported beside it and never added); otherUnresolved = unresolved + bindOK + bind? + bindFAIL + causeOK + causeFAIL (a causeOK edge is STATED, not resolved - the gate says 'NEVER folded into resolved'); external = extOK + ext? + extFAIL; unclassed = 0, always. THE CLOSURE: resolved + ambiguous + otherUnresolved + external + unclassed = edges, EXACTLY."
+  },
+  "rules": {
+    "resolved": "target matched exactly one declaration in the 200-file sample's declaration pool (name or qualifiedName alias). A floor, not a ceiling: resolution is the point of the lane.",
+    "external": "target matched no declaration and the edge carries the analyzer's provable external marker (isExternalTarget:true + a recorded externalReason). A floor: such an edge must keep being able to say so. Marking is NOT claimed complete \u2014 see otherUnresolved.",
+    "ambiguous": "target matched two or more declarations. Counted by DECLARATION (incoming-gate.ts) \u2014 a name declared in n files counts n. The pool is file-local, so a member name emitted unqualified by one file can collide with another file's declaration of the same word.",
+    "otherUnresolved": "target matched no declaration and carries no marker. This is the backlog. It is explicitly NOT asserted to be third-party: each name in it is either (a) a member path of a foreign type the analyzer cannot see, (b) a local declaration question the target spelling defeats, or (c) project code not present in the 200-file sampled pool.",
+    "unclassed": "edges with an empty target string. Ceiling 0, always: the instrument can only classify an edge it has a target for, and an empty target is a defect in the emitting type, not a class."
+  },
+  "notes": [
+    "A ceiling is a claim about what is known and accepted, never that the class is fine. Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
+    "This gate shares the instrument with the fleet gate on purpose: two instruments measuring the same population and disagreeing is the failure mode script/m14/verify-honesty.ts exists to catch. One measurement, two verdicts \u2014 the fleet's bar and Ruby's declaration.",
+    "The worklist printed below each type is the instrument's own (up to 25 names per type, per run). A count that cannot be walked back to its names is not a measurement.",
+    "EXTERNAL IS 0 on all ten types, and that is a state, not a defect claim: this lane's analyzer emits no provable external marker, so by construction every unbound target in it is backlog (cli/unknown targets included) and the ceiling carries the whole weight. Marking is future work with a proof obligation the Java precedent shows how to meet: an edge may only join the external class if the analyzer can record WHY the target is outside the project (see real-java-analyzer.ts's isExternalTarget + externalReason), because an unmarked unresolved edge and a marked one are different claims.",
+    "THE 2026-10-10 NUMBERS IN THIS FILE WERE A 200-FILE SAMPLE AND THEY ARE GONE. The meta block said parsed 200 / sample 200 / corpusTotal 7452 while all 105 cause rulings said parsed=989/989 admitted=989 - a declaration carrying its population TWICE with the copies DISAGREEING, which is the one thing a declaration may not do. Both copies now say the whole admitted set, and the per-type block is that same whole population: 85,102 edges = resolved 29,518 + ambiguous 18,986 + otherUnresolved 36,598 + external 0 + unclassed 0, exactly. The per-type block also stops listing `implements` (RULED, 0 edges since RUBY-D1) and starts listing `mixes_in` (IMPLEMENTED, 396 edges) - the old block still carried the pre-relabel world, where `implements` was emitted and `mixes_in` did not exist."
+  ],
+  "types": {
+    "calls": {
+      "resolved": 14450,
+      "external": 0,
+      "ambiguous": 18133,
+      "otherUnresolved": 24741,
+      "unclassed": 0
+    },
+    "uses": {
+      "resolved": 14,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 4746,
+      "unclassed": 0
+    },
+    "contains": {
+      "resolved": 10209,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "imports": {
+      "resolved": 30,
+      "external": 0,
+      "ambiguous": 12,
+      "otherUnresolved": 1262,
+      "unclassed": 0
+    },
+    "references": {
+      "resolved": 30,
+      "external": 0,
+      "ambiguous": 12,
+      "otherUnresolved": 1262,
+      "unclassed": 0
+    },
+    "exports": {
+      "resolved": 1365,
+      "external": 0,
+      "ambiguous": 2,
+      "otherUnresolved": 0,
+      "unclassed": 0
+    },
+    "extends": {
+      "resolved": 1267,
+      "external": 0,
+      "ambiguous": 558,
+      "otherUnresolved": 70,
+      "unclassed": 0
+    },
+    "overrides": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 3117,
+      "unclassed": 0
+    },
+    "instantiates": {
+      "resolved": 1831,
+      "external": 0,
+      "ambiguous": 235,
+      "otherUnresolved": 1360,
+      "unclassed": 0
+    },
+    "mixes_in": {
+      "resolved": 322,
+      "external": 0,
+      "ambiguous": 34,
+      "otherUnresolved": 40,
+      "unclassed": 0
+    }
+  },
+  "causeRulingsNote": "ADDED 2026-10-16 by the ruby lane (validation/m14/verification/RUBY-FIX.md \u00a73/\u00a75). The analyzer now routes its already-computed `first-parent-guess` reason onto the arbiter's declared-cause channel (`baseBeyondRunScope`, src/ast/real-ruby-analyzer.ts), and clause 3 requires a ruling for every NAMED cause with a nonzero count. A cause is NAMED BY THE BASE IT COULD NOT REACH, so this map is keyed by base class rather than by one constant; `count_in_this_run` is recorded beside each ruling so the count a ruling was written for is visible, though the gate checks only population + falsifier. THE POPULATION STRING IS EXACT: the gate compares it to `populationFingerprint(rep)` (parsed/admitted/exts/index), so a ruling is valid for THIS bounded run and must be re-measured for any other cap \u2014 clause 3 says the SAME population, and a different sample has a different one. INDEX-ARM SCOPE (2026-10-19, task-22): these rulings carry the ARM-A fingerprint \"parsed=989/989 admitted=989 exts=rb index=no\" \u2014 clause 3 is scoped to ARM A, the no-index verdict arm, and that is the population the classification was measured on. The `--index` MECHANISM arm (same 989 files, index=yes, metadata-only ruby consumption behind BB_RUBY_INDEX_CONSUME=1) is NOT the verdict arm; its clause-3 FAIL by population fingerprint is a DECLARED SCOPE, not a cause defect (the 105 causes / 2,943 edges are IDENTICAL on both arms \u2014 measured +0 movement). Do NOT re-fingerprint these rulings for an index arm without a fresh whole-population re-baseline; an index arm that ever becomes a verdict arm needs its own ruling population recorded here first.",
+  "causeRulings": {
+    "AbstractHandler": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `AbstractHandler`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `AbstractHandler` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `AbstractHandler` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "AbstractRequest": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `AbstractRequest`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `AbstractRequest` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `AbstractRequest` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ActiveRecordRelationConnection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ActiveRecordRelationConnection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ActiveRecordRelationConnection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ActiveRecordRelationConnection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Adapter": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Adapter`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Adapter` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Adapter` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "AnalysisError": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `AnalysisError`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `AnalysisError` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `AnalysisError` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Analyzer": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Analyzer`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Analyzer` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Analyzer` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ApplicationController": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ApplicationController`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ApplicationController` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ApplicationController` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ApplicationSystemTestCase": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ApplicationSystemTestCase`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ApplicationSystemTestCase` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ApplicationSystemTestCase` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Argument": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Argument`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Argument` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Argument` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Array": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Array`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Array` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Array` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ArrayConnection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ArrayConnection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ArrayConnection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ArrayConnection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "AsyncDataloader": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `AsyncDataloader`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `AsyncDataloader` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `AsyncDataloader` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Base": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Base`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Base` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Base` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseArgument": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseArgument`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseArgument` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseArgument` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseConnection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseConnection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseConnection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseConnection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseCop": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseCop`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseCop` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseCop` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseEdge": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseEdge`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseEdge` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseEdge` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseField": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseField`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseField` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseField` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseInputObject": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseInputObject`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseInputObject` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseInputObject` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseMutation": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseMutation`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseMutation` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseMutation` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseObject": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseObject`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseObject` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseObject` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseResolver": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseResolver`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseResolver` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseResolver` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseScalar": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseScalar`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseScalar` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseScalar` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseSubscription": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseSubscription`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseSubscription` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseSubscription` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BaseUnion": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BaseUnion`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BaseUnion` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BaseUnion` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Block": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Block`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Block` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Block` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BodyProxy": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BodyProxy`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BodyProxy` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BodyProxy` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "BreadthBaseObject": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `BreadthBaseObject`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `BreadthBaseObject` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `BreadthBaseObject` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Configuration": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Configuration`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Configuration` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Configuration` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Connection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Connection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Connection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Connection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ConnectionExtension": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ConnectionExtension`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ConnectionExtension` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ConnectionExtension` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Context": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Context`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Context` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Context` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "DataDogTracing": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `DataDogTracing`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `DataDogTracing` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `DataDogTracing` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Dataloader": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Dataloader`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Dataloader` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Dataloader` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Directive": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Directive`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Directive` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Directive` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Edge": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Edge`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Edge` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Edge` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "EmptyLinkedList": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `EmptyLinkedList`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `EmptyLinkedList` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `EmptyLinkedList` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Enum": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Enum`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Enum` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Enum` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "EnumValue": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `EnumValue`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `EnumValue` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `EnumValue` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Error": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Error`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Error` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Error` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Exception": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Exception`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Exception` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Exception` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ExecutionError": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ExecutionError`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ExecutionError` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ExecutionError` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Field": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Field`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Field` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Field` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "FieldExtension": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `FieldExtension`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `FieldExtension` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `FieldExtension` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "FileTask": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `FileTask`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `FileTask` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `FileTask` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Formula": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Formula`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Formula` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Formula` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "GraphQLResultHash": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `GraphQLResultHash`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `GraphQLResultHash` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `GraphQLResultHash` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Hash": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Hash`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Hash` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Hash` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "InputObject": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `InputObject`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `InputObject` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `InputObject` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "InstrumentType": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `InstrumentType`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `InstrumentType` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `InstrumentType` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "IntegrationTest": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `IntegrationTest`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `IntegrationTest` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `IntegrationTest` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "LinkedList": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `LinkedList`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `LinkedList` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `LinkedList` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Loader": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Loader`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Loader` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Loader` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Member": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Member`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Member` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Member` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "MongoidRelationConnection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `MongoidRelationConnection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `MongoidRelationConnection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `MongoidRelationConnection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Monitor": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Monitor`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Monitor` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Monitor` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Mutation": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Mutation`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Mutation` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Mutation` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "NamedBase": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `NamedBase`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `NamedBase` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `NamedBase` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Object": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Object`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Object` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Object` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "OrmMutationsBase": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `OrmMutationsBase`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `OrmMutationsBase` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `OrmMutationsBase` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "ParentErrorsTestSchema": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `ParentErrorsTestSchema`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `ParentErrorsTestSchema` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `ParentErrorsTestSchema` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "PlatformTracing": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `PlatformTracing`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `PlatformTracing` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `PlatformTracing` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Printer": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Printer`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Printer` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Printer` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Profile": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Profile`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Profile` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Profile` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "QueryComplexity": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `QueryComplexity`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `QueryComplexity` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `QueryComplexity` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "QueryDepth": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `QueryDepth`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `QueryDepth` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `QueryDepth` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "RakeTaskSchema": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `RakeTaskSchema`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `RakeTaskSchema` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `RakeTaskSchema` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Raw": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Raw`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Raw` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Raw` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "RelationConnection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `RelationConnection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `RelationConnection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `RelationConnection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "RelayClassicMutation": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `RelayClassicMutation`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `RelayClassicMutation` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `RelayClassicMutation` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Request": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Request`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Request` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Request` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Resolver": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Resolver`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Resolver` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Resolver` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Response": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Response`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Response` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Response` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Runtime": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Runtime`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Runtime` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Runtime` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "RuntimeError": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `RuntimeError`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `RuntimeError` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `RuntimeError` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "RuntimeLimiter": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `RuntimeLimiter`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `RuntimeLimiter` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `RuntimeLimiter` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "RuntimeTypeError": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `RuntimeTypeError`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `RuntimeTypeError` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `RuntimeTypeError` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "SanitizedPrinter": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `SanitizedPrinter`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `SanitizedPrinter` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `SanitizedPrinter` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Scalar": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Scalar`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Scalar` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Scalar` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Schema": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Schema`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Schema` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Schema` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "SequelDatasetConnection": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `SequelDatasetConnection`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `SequelDatasetConnection` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `SequelDatasetConnection` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Service": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Service`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Service` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Service` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Source": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Source`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Source` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Source` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Spec": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Spec`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Spec` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Spec` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "StandardError": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `StandardError`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `StandardError` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `StandardError` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "StaticVisitor": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `StaticVisitor`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `StaticVisitor` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `StaticVisitor` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "String": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `String`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `String` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `String` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Subscription": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Subscription`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Subscription` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Subscription` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Subscriptions": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Subscriptions`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Subscriptions` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Subscriptions` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Tag": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Tag`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Tag` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Tag` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Task": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Task`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Task` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Task` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "TaskLib": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `TaskLib`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `TaskLib` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `TaskLib` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Test": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Test`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Test` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Test` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "TestCase": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `TestCase`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `TestCase` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `TestCase` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "TestSocket": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `TestSocket`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `TestSocket` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `TestSocket` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Timeout": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Timeout`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Timeout` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Timeout` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "TypeCollector": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `TypeCollector`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `TypeCollector` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `TypeCollector` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "TypeGeneratorBase": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `TypeGeneratorBase`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `TypeGeneratorBase` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `TypeGeneratorBase` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "TypeMembership": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `TypeMembership`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `TypeMembership` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `TypeMembership` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "UnauthorizedError": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `UnauthorizedError`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `UnauthorizedError` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `UnauthorizedError` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Union": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Union`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Union` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Union` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Validator": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Validator`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Validator` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Validator` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Visitor": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Visitor`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Visitor` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Visitor` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "VisitorSpecVisitor": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `VisitorSpecVisitor`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `VisitorSpecVisitor` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `VisitorSpecVisitor` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    },
+    "Wrapper": {
+      "population": "parsed=989/989 admitted=989 exts=rb index=no",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts ruby rb 0",
+        "wouldFail": "THIS RUN FAILS IF the claim is false for `Wrapper`: (1) any edge carrying `baseBeyondRunScope` whose value is not the target's owner or is not identifier-shaped, or which also carries an external marker (`isExternal`/`isExternalBase`/any EXTERNAL_KEYS spelling), reads `causeRefuted` \u2014 causeFAIL > 0 and clause 4 fails, which is the mechanism that stops the marker being a blanket excuse; or (2) an `overrides` edge whose base `Wrapper` IS declared in the EDGE'S OWN FILE \u2014 the per-file run parsed that file, so the base was within its reach and 'beyond this run's reach' would be a false statement. Note what is NOT a falsifier here: `Wrapper` being published in ANOTHER file of the project. Production populates no `context.overrideCompanion` (M37.10), so the run genuinely cannot look, and with no owner-qualified member identity published (see RUBY-FIX.md \u00a74) a cross-file declaration cannot answer the target `Object.<method>` either \u2014 the edge would still read `causeDeclared`."
+      }
+    }
+  },
+  "resolution_caveats": [
+    "A CAUSE IS STATED, NOT RESOLVED: 2,945 edges carry a DECLARED cause (baseBeyondRunScope) and live in otherUnresolved, never in resolved \u2014 the analyzer's scope is PER FILE and INDEX-LESS, so a base class declared in ANOTHER file of the project is genuinely out of its reach, and the arbiter (which holds the project) is what answers it. All 2,945 are `overrides` edges. A reader comparing ruby's 29,518 `resolved` with a lane whose `resolved` means 'the target was found' must know that 2,945 of this lane's edges are DECLARED, and that the declared ones are counted as unresolved on purpose.",
+    "`ambiguous` COUNTS DECLARATIONS, NOT KINDS: 18,986 edges. The by-KIND count is 9,695 and it is a SUBSET of the by-declaration count \u2014 the instrument prints it beside it and it is NEVER added. A number of 18,986 and a number of 9,695 are the same edges counted two ways.",
+    "5,732 OF THE 29,518 `resolved` EDGES ARE TIE-BREAK PICKS (the instrument's collRes): the target had MORE THAN ONE declaration and production's tie-break chose one. The fleet's own indexer measures 37,318 of 49,729 such picks as WRONG \u2014 so ruby's `resolved` INCLUDES picks the fleet's measurement calls wrong, and this lane's resolved count is NOT comparable to a lane's resolved count that excludes them. The number is published so the reader can discount it, not so the reader can admire it.",
+    "THE `uses` TYPE RESOLVES AGAINST NO DECLARATION BY CONSTRUCTION: 4,760 edges, 4,746 of them `otherUnresolved` and 14 resolved. A variable is not a declaration, so a near-100 % unresolved rate on `uses` is the CORRECT class and not a defect \u2014 and it is the one type where a reader should NOT read the unresolved share as a failure.",
+    "THE POPULATION IS THE NO-INDEX ARM (ARM A): index=no. The `--index` mechanism arm is a DIFFERENT population fingerprint and is NOT this declaration's; every one of the 105 cause rulings carries the ARM-A fingerprint, and the gate's clause 3 refuses a ruling written over another population.",
+    "THE VERDICT IS THE SHARED ARBITER'S MEASUREMENT OF THIS LANE'S OWN DECLARATION. The lane's independent oracle (script/m14/ruby-truth.ts) is a CROSS-CHECK ON THE ANALYZER \u2014 a second reader of the same language \u2014 and it is NOT the arbiter; the oracle's rows and the arbiter's classes are not interchangeable numbers, and the two are reported side by side in validation/m14/measurements/ruby-differential-gap-2026-10-22.json.",
+    "THE `mixes_in` CLASS (396 edges: 322 resolved / 34 ambiguous / 40 unresolved) IS THE RUBY-D1 RELABEL of the module-composition class. It is a COMPOSITION row (include/extend/prepend), not a type-conformance row, and it is measured by its own instrument (script/m14/ruby-mixin-impostor-census.ts: 396 published, 396 located, IMPOSTOR A/B/C all 0) rather than by the arbiter's conformance vocabulary.",
+    "THE ARM AND ITS COMMAND: BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts ruby rb 0, over 989 admitted .rb files in 15 repositories (0 parse failures), arm preserved at validation/m14/measurements/ruby-gate-postownerless-2026-10-22.txt. The analyzer digest in meta is the digest of the analyzer the arm measured."
+  ]
+}

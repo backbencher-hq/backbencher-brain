@@ -1,0 +1,72 @@
+{
+  "gate": "bb_patterns handler contract (Phase B target)",
+  "checks": 18,
+  "passed": 6,
+  "failed": 12,
+  "failures": [
+    "READ PATHS DO NOT WRITE: default all-scope call leaves db/wal untouched",
+    "READ PATHS DO NOT WRITE: orphaned-scope call leaves db/wal untouched",
+    "UNINDEXED: the answer is an error, not a clean zero",
+    "UNINDEXED: the error names the index and the repair",
+    "UNINDEXED: no database is created by a read",
+    "UNINDEXED: the answer does not claim 'patterns (0 found)'",
+    "PAGE: default call represents the requested ORPHAN class when the census names it",
+    "PAGE: default call represents the requested FRAMEWORK class when the census names it",
+    "RECORD-RUN: scope=orphaned+recordRun either records a run or refuses by name",
+    "LIMIT: an above-maximum page request is refused by name, not answered",
+    "STALENESS: the footer does not promise auto-refresh the tool does not do",
+    "STALENESS: the footer does not name a refresh=false option the tool does not have"
+  ],
+  "protocoldata": [
+    {
+      "check": "read-path-writes",
+      "before": {
+        "db": {
+          "bytes": 4096,
+          "mtime": "2026-11-02T00:14:51.170Z"
+        },
+        "wal": {
+          "bytes": 2233072,
+          "mtime": "2026-11-02T00:14:54.234Z"
+        },
+        "shm": {
+          "bytes": 32768,
+          "mtime": "2026-11-02T00:14:51.173Z"
+        }
+      },
+      "after": {
+        "db": {
+          "bytes": 4096,
+          "mtime": "2026-11-02T00:14:51.170Z"
+        },
+        "wal": {
+          "bytes": 2331952,
+          "mtime": "2026-11-02T00:14:54.569Z"
+        },
+        "shm": {
+          "bytes": 32768,
+          "mtime": "2026-11-02T00:14:54.541Z"
+        }
+      },
+      "ms": 34.85
+    },
+    {
+      "check": "handler-page-classes",
+      "rows": 20,
+      "orphanRows": 0,
+      "frameworkRows": 0,
+      "census": "1102 finding(s) across orphaned_function=850 orphaned_file=131 orphaned_class=60 god-class=60 framework-detected=1 rule(s); showing 20 — raise `limit` to see more"
+    },
+    {
+      "check": "limit-max",
+      "isError": false,
+      "rowsDisplayed": 60,
+      "chars": 2847
+    },
+    {
+      "check": "history-bound",
+      "chars": 187189
+    }
+  ],
+  "generatedAt": "2026-11-02T00:15:12.823Z"
+}

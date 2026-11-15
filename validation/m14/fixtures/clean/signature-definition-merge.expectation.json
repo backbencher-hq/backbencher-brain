@@ -1,0 +1,37 @@
+{
+  "comment": "Two contracts. (1) `mergeTarget :: …` + `mergeTarget x = …` are ONE entity and the DEFINITION wins — pinned twice: exactly one symbol, and its range starts on the definition line (20), not the declaration line (19). Both halves are needed: a mutant that keeps the declaration beside the definition is caught by the symbol count, and the same regression inside the analyzer's export loop would offer the name twice, which the exports-family invariant rejects. (2) `(++.) x y = helper x` is an `operator_definition` — a different node from `function_declaration` — and it IS a callable, so the call belongs to `++.` and the attribution is released when its scope ends: `laterFn z = tweak z` must stay `laterFn`'s. Measured defect: `(++|)` in clean-stdlib/StdOverloadedList.icl claimed `flatten l` from a macro six lines below it, the single row the exhaustive mini-differential could not explain. Mutants: `clean/declaration-range-wins`, `clean/declaration-beside-definition`, `clean/operator-not-callable`, `clean/operator-attribution-leak`.",
+  "expectSymbols": [
+    { "name": "mergeTarget", "kind": "function", "ownerName": "SignatureDefinitionMerge" },
+    { "name": "++.", "kind": "function", "ownerName": "SignatureDefinitionMerge", "comment": "the operator definition publishes its unparenthesized name" },
+    { "name": "tweak", "kind": "function" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "mergeTarget", "startLine": 20, "comment": "the DEFINITION (line 20) wins over the declaration (line 19)" },
+    { "symbol": "++.", "startLine": 23 }
+  ],
+  "expectSymbolCount": [
+    { "name": "mergeTarget", "equals": 1, "comment": "the merge produced one entity, not a declaration beside a definition" }
+  ],
+  "expectExports": [
+    { "name": "mergeTarget", "kind": "function" },
+    { "name": "++.", "kind": "function" },
+    { "name": "laterFn", "kind": "function" },
+    { "name": "tweak", "kind": "function" },
+    { "name": "helper", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "mergeTarget", "target": "helper", "meta.cleanSpecific": true, "line_number": 20, "comment": "M59.O2: the call's own line — the DEFINITION line, which is also the merged symbol's range" },
+    { "type": "calls", "from": "++.", "target": "helper", "line_number": 23, "comment": "the operator body's call — attributed to no one before the ruling, and now carrying its site line" },
+    { "type": "calls", "from": "laterFn", "target": "tweak", "line_number": 26, "comment": "the module-level application AFTER the operator keeps its own source AND its own line" },
+    { "type": "contains", "from": "SignatureDefinitionMerge", "target": "mergeTarget", "line_number": 20, "comment": "the membership edge carries the child's own line — the definition's (20), not the declaration's (19), exactly as the range pin above requires" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "++.", "target": "tweak", "comment": "the attribution leak: the operator swallows the next module-level application" },
+    { "type": "calls", "from": "mergeTarget", "target": "mergeTarget", "comment": "no self-edge is derived here" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "from": "++.", "target": "helper", "equals": 1 },
+    { "type": "calls", "from": "laterFn", "target": "tweak", "equals": 1 }
+  ],
+  "forbidErrors": [{}]
+}

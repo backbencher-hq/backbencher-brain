@@ -1,0 +1,31 @@
+{
+  "fixtureId": "groovy/continuation-shapes-851",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M49-CONV #851 + #852, measured 2026-09-15. Two edge-set defects in groovy's newline-continuation handling, each pinned here beside its own ONE-LINE control, because the control is the contract: the same chain written on one line and written across a continuation must emit the SAME calls multiset, and a member access must stay a read. The pinned grammar shapes a continuation as its own `leading_dot_call` statement node (a documented grammar tradeoff), so (a) `this\\n .label` — an extremely common Groovy layout — carried NO argument list and was emitted as `calls -> label`, fabricating a call to a property and losing the read entirely (the same access on one line emits `uses A -> label`), while `helper\\n .build(1)` DOES carry `arguments` and is a genuine call; and (b) a continued dotted call folds into `juxt_function_call name: (field_access ...)`, whose whole dotted text became the call target (`helper.build` where the one-line form emits `build`) and whose callee-position field_access additionally leaked a `uses -> build` read that java/kotlin/scala all suppress. The read in the continued form is attributed to the enclosing METHOD rather than the type because the continuation node does not carry its receiver — the GAD1 convention for an unresolvable receiver, which is why `uses A -> label` (line 5) and `uses continuedRead -> label` (line 11) deliberately name different owners for the same member. Every expectation below is the corrected contract read off the source; the forbid entries are the two pre-fix emissions, both measured before the fix on exactly these lines.",
+  "expectSymbols": [
+    { "name": "A", "kind": "class" },
+    { "name": "sameLineRead", "kind": "method" },
+    { "name": "continuedRead", "kind": "method" },
+    { "name": "continuedCall", "kind": "method" },
+    { "name": "continuedChain", "kind": "method" },
+    { "name": "label", "kind": "property", "ownerName": "A" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "A", "target": "label", "line_number": 5, "note": "CONTROL, unchanged: the same-line `this.label` is a read owned by the type" },
+    { "type": "uses", "from": "continuedRead", "target": "label", "line_number": 11, "note": "#851 fixed: the continued `.label` is a READ (pre-fix it was `calls -> label` and no read existed)" },
+    { "type": "calls", "from": "continuedRead", "target": "consume", "line_number": 12 },
+    { "type": "calls", "from": "continuedCall", "target": "build", "line_number": 17, "note": "#851 boundary: `helper\\n .build(1)` DOES carry an argument list, so it stays a call" },
+    { "type": "calls", "from": "continuedCall", "target": "consume", "line_number": 18 },
+    { "type": "calls", "from": "sameLineChain", "target": "build", "line_number": 22, "note": "CONTROL: one line, bare callee leaf" },
+    { "type": "calls", "from": "sameLineChain", "target": "configure", "line_number": 22 },
+    { "type": "calls", "from": "continuedChain", "target": "build", "line_number": 27, "note": "#852 fixed: the continuation's callee is the BARE leaf `build`, the same node the one-line control reaches" },
+    { "type": "calls", "from": "continuedChain", "target": "configure", "line_number": 28 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "continuedRead", "target": "label", "note": "#851 pre-fix: the property read emitted as a CALL, on any line" },
+    { "type": "calls", "from": "continuedChain", "target": "helper.build", "note": "#852 pre-fix: the whole dotted name stored as the call target, duplicating one method as two graph nodes" },
+    { "type": "uses", "from": "continuedChain", "target": "build", "line_number": 27, "note": "#852 pre-fix: the callee leaked as a member READ (a callee is not a read — java/kotlin/scala all suppress it)" },
+    { "type": "calls", "from": "continuedRead", "target": "label", "line_number": 11 }
+  ]
+}

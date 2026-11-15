@@ -1,0 +1,61 @@
+/* M14 ONTOLOGY PASS 2 — an at-rule SCOPE written more than once in one file, and the
+   extent of the one symbol that stands for it.
+
+   THE DEFECT. `@media` publishes ONE symbol per name, at the FIRST block, and the
+   identity merge at the end of `analyze` never sees a second copy to fold — because the
+   deduplication happens BEFORE the publish, not after it. So a file that writes
+   `@media (min-width: 40em)` twice has one symbol for it, recorded at the first block,
+   and every rule of the second block receives a `contains` edge pointing at a symbol
+   somewhere the rule is not. The edge is TRUE (the rule is inside a block of that query)
+   and its endpoint is at the wrong place.
+
+   MEASURED over the whole admitted corpus before the fix
+   (`validation/m14/census/css-boundary-probe.ts`, probe P2): 7,257 of 25,181
+   `isMediaScope` containment edges (28.8%) and 40 of 505 `isLayerScope` edges (7.9%)
+   carried a contained rule outside the source symbol's line range. Worked example,
+   `bootstrap/dist/css/bootstrap-grid.css`: the edge for `.col-sm` carries L284 while the
+   symbol it names is recorded at L22-L26.
+
+   WHY WIDENING RATHER THAN PUBLISHING TWICE. Two symbols with one name is the identity
+   collision the deduplication exists to prevent, and the NAME is the only identity a
+   consumer has here anyway: `pool-worker.ts` forwards a narrow allowlist of CSS
+   `metadata` keys and `isMediaScope` is not on it, so 2,804 of 3,084 at-rule scope symbols
+   arrive from `parseFile` with no metadata at all. So the extent has to be the union.
+
+   `@layer` gets the same treatment for the same reason, and the third case is the
+   ordering statement: `@layer base, extra;` declares an ORDER, `@layer base { }` holds
+   CONTENT, and a layer written only as an ordering statement keeps the statement's
+   one-line extent because there is no block to move it to.
+
+   WHAT THE PINS BELOW ASSERT, and why the extent itself is pinned rather than only the
+   edges: both containment EDGES existed before the fix and pass either way, because the
+   edges were never wrong — only their endpoint's location was. A fixture that asserted
+   edges alone would have been green against the defect, which is the shape of a fixture
+   that constrains nothing.
+*/
+
+@layer base, extra;
+
+@media (min-width: 40em) {
+  .first-block {
+    color: red;
+  }
+}
+
+@media (min-width: 40em) {
+  .second-block {
+    color: blue;
+  }
+}
+
+@layer base {
+  .layer-first {
+    color: green;
+  }
+}
+
+@layer base {
+  .layer-second {
+    color: teal;
+  }
+}

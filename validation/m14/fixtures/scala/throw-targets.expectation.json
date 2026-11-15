@@ -1,0 +1,20 @@
+{
+  "fixtureId": "scala/throw-targets",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCD4 contract (M37 #598): a throw's References target must be a NAMEABLE type. `throw new IllegalArgumentException(...)` previously embedded the ENTIRE construction — raw text including the message argument (`new IllegalArgumentException(\"negative: \" + x)`) — as one unmatchable graph node. Now: construction throws reference the exception type; bare-identifier throws (throw ex) reference the identifier; non-exception throws emit nothing (no nameable target). The instantiates edge for the construction stays (separate collector).",
+  "expectSymbols": [
+    { "name": "Repo", "kind": "class" },
+    { "name": "load", "ownerName": "Repo" },
+    { "name": "ex", "ownerName": "Repo" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "load", "target": "IllegalArgumentException", "meta.relationshipType": "throw_target" },
+    { "type": "references", "from": "load", "target": "ex", "meta.relationshipType": "throw_target" },
+    { "type": "instantiates", "from": "load", "target": "IllegalArgumentException" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "new IllegalArgumentException(\"negative: \" + x)" },
+    { "type": "references", "from": "load", "target": "\"negative: \" + x" }
+  ]
+}

@@ -6,7 +6,7 @@ import { copyFileSync, mkdirSync, statSync, existsSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const REPO = "$HOME/fixtures/repositories/cabal"
+const REPO = "/home/ishaq2321/bb_tests/repositories/cabal"
 const ROOT = process.cwd()
 const NPM_WASM = "/tmp/ts-haskell-npm/node_modules/tree-sitter-haskell/tree-sitter-haskell.wasm"
 const PINNED_WASM = join(ROOT, "wasm/tree-sitter-haskell.wasm")

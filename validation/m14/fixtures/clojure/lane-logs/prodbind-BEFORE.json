@@ -1,0 +1,680 @@
+{
+  "population": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "files": 646,
+    "sampled": 646,
+    "whole": true,
+    "repos": 3,
+    "parsed": 646,
+    "failed": 0,
+    "excluded": {
+      "absent": 0,
+      "overCap": 0
+    }
+  },
+  "totals": {
+    "edges": 43324,
+    "resolved": 28911,
+    "ambiguousByDecl": 2139,
+    "unresolved": 5755,
+    "externalVerified": 6519,
+    "externalUnverified": 0,
+    "externalRefuted": 0
+  },
+  "closure": {
+    "sum": 43324,
+    "edges": 43324,
+    "exact": true
+  },
+  "perType": {
+    "calls": {
+      "edges": 21506,
+      "resolved": 13512,
+      "ambOwn": 867,
+      "ambMulti": 0,
+      "ambCross": 368,
+      "unres": 2613,
+      "unresOwn": 0,
+      "extOK": 4146,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "uses": {
+      "edges": 2365,
+      "resolved": 647,
+      "ambOwn": 0,
+      "ambMulti": 0,
+      "ambCross": 264,
+      "unres": 1450,
+      "unresOwn": 0,
+      "extOK": 4,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "contains": {
+      "edges": 6491,
+      "resolved": 6491,
+      "ambOwn": 0,
+      "ambMulti": 0,
+      "ambCross": 0,
+      "unres": 0,
+      "unresOwn": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "imports": {
+      "edges": 1429,
+      "resolved": 714,
+      "ambOwn": 6,
+      "ambMulti": 0,
+      "ambCross": 52,
+      "unres": 152,
+      "unresOwn": 0,
+      "extOK": 505,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "references": {
+      "edges": 5573,
+      "resolved": 3016,
+      "ambOwn": 7,
+      "ambMulti": 0,
+      "ambCross": 82,
+      "unres": 907,
+      "unresOwn": 0,
+      "extOK": 1561,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "exports": {
+      "edges": 4576,
+      "resolved": 4087,
+      "ambOwn": 489,
+      "ambMulti": 0,
+      "ambCross": 0,
+      "unres": 0,
+      "unresOwn": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "extends": {
+      "edges": 42,
+      "resolved": 1,
+      "ambOwn": 0,
+      "ambMulti": 0,
+      "ambCross": 0,
+      "unres": 25,
+      "unresOwn": 0,
+      "extOK": 16,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "implements": {
+      "edges": 286,
+      "resolved": 172,
+      "ambOwn": 0,
+      "ambMulti": 0,
+      "ambCross": 1,
+      "unres": 49,
+      "unresOwn": 0,
+      "extOK": 64,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "overrides": {
+      "edges": 128,
+      "resolved": 40,
+      "ambOwn": 2,
+      "ambMulti": 0,
+      "ambCross": 0,
+      "unres": 86,
+      "unresOwn": 0,
+      "extOK": 0,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    },
+    "instantiates": {
+      "edges": 928,
+      "resolved": 231,
+      "ambOwn": 0,
+      "ambMulti": 0,
+      "ambCross": 1,
+      "unres": 473,
+      "unresOwn": 0,
+      "extOK": 223,
+      "extQ": 0,
+      "extFail": 0,
+      "claimOK": 0,
+      "claimQ": 0,
+      "claimFail": 0
+    }
+  },
+  "split": {
+    "calls": {
+      "unresolved · shape: Class/member (a JVM static)": {
+        "edges": 350,
+        "samples": [
+          "System/getenv @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:10",
+          "Instant/now @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:28",
+          "ManagementFactory/getThreadMXBean @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/benchmarks/metabase+clojure-lsp.clj:11"
+        ]
+      },
+      "unresolved": {
+        "edges": 2613,
+        "samples": [
+          "System/getenv @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:10",
+          "Instant/now @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:28",
+          "babashka.process/process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:44"
+        ]
+      },
+      "unresolved · shape: ns/member (a qualified call)": {
+        "edges": 772,
+        "samples": [
+          "babashka.process/process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:44",
+          "babashka.process/check @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:45",
+          "babashka.fs/create-dirs @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:92"
+        ]
+      },
+      "amb-own-file-one (production BINDS: r0own/r0ownName)": {
+        "edges": 867,
+        "samples": [
+          "expand-catch @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/.clj-kondo/macroexpand/try_plus.clj:29",
+          "-foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/defprotocol.clj:11",
+          "-foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/defprotocol.clj:12"
+        ]
+      },
+      "amb-cross-file · shape: ns/member (a qualified call)": {
+        "edges": 15,
+        "samples": [
+          "corpus.cljc.test-cljc/foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc.cljs:4",
+          "corpus.cljc.test-cljc/foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc.cljs:5",
+          "corpus.cljc.test-cljc/foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljs.cljs:4"
+        ]
+      },
+      "amb-cross-file (production leaves NULL — A REAL WALL)": {
+        "edges": 368,
+        "samples": [
+          "corpus.cljc.test-cljc/foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc.cljs:4",
+          "corpus.cljc.test-cljc/foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc.cljs:5",
+          "bar @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc.cljs:7"
+        ]
+      },
+      "amb-cross-file · shape: bare name": {
+        "edges": 353,
+        "samples": [
+          "bar @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc.cljs:7",
+          "handler @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core_test.clj:159",
+          "handler @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core_test.clj:160"
+        ]
+      },
+      "unresolved · shape: bare name": {
+        "edges": 1434,
+        "samples": [
+          "pred @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/clojure.test.are.cljc:18",
+          "route @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core_test.clj:94",
+          "route @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core_test.clj:101"
+        ]
+      },
+      "unresolved · shape: single-segment/member": {
+        "edges": 45,
+        "samples": [
+          "macro/name-with-attributes @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:8",
+          "foo/compile-route @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:13",
+          "foo/compile-route @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:17"
+        ]
+      },
+      "unresolved · shape: Capitalised (a JVM type)": {
+        "edges": 12,
+        "samples": [
+          "WebServiceRef @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/annotations/java_8.clj:13",
+          "WebServiceRef @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/annotations/java_8.clj:14",
+          "WebServiceRef @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/annotations/java_8.clj:21"
+        ]
+      }
+    },
+    "uses": {
+      "unresolved · shape: bare name": {
+        "edges": 1441,
+        "samples": [
+          "getLocalPort @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.sbx/repl.clj:56",
+          "listFiles @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/benchmarks/alloc-profile.clj:16",
+          "getName @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/benchmarks/alloc-profile.clj:17"
+        ]
+      },
+      "unresolved": {
+        "edges": 1450,
+        "samples": [
+          "getLocalPort @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.sbx/repl.clj:56",
+          "listFiles @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/benchmarks/alloc-profile.clj:16",
+          "getName @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/benchmarks/alloc-profile.clj:17"
+        ]
+      },
+      "amb-cross-file · shape: bare name": {
+        "edges": 264,
+        "samples": [
+          "name @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/extract/clj_kondo/impl/ExtractJava.clj:23",
+          "toString @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:61",
+          "toString @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:171"
+        ]
+      },
+      "amb-cross-file (production leaves NULL — A REAL WALL)": {
+        "edges": 264,
+        "samples": [
+          "name @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/extract/clj_kondo/impl/ExtractJava.clj:23",
+          "toString @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:61",
+          "toString @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:171"
+        ]
+      },
+      "unresolved · shape: Capitalised (a JVM type)": {
+        "edges": 9,
+        "samples": [
+          "HASHMAP-THRESHOLD @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:266",
+          "HASHMAP-THRESHOLD @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/edn.cljs:202",
+          "File @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/java_interop.clj:707"
+        ]
+      }
+    },
+    "contains": {
+      "resolved-among-collision": {
+        "edges": 2077,
+        "samples": [
+          "exec @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:41",
+          "one-of @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.clj-kondo/hooks/one_of.clj:6",
+          "out @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.sbx/repl.clj:29"
+        ]
+      }
+    },
+    "imports": {
+      "unresolved · shape: dotted.namespace": {
+        "edges": 134,
+        "samples": [
+          "babashka.fs @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:1",
+          "babashka.process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:2",
+          "babashka.cli @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.sbx/repl.clj:16"
+        ]
+      },
+      "unresolved": {
+        "edges": 152,
+        "samples": [
+          "babashka.fs @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:1",
+          "babashka.process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:2",
+          "babashka.cli @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.sbx/repl.clj:16"
+        ]
+      },
+      "amb-cross-file · shape: dotted.namespace": {
+        "edges": 38,
+        "samples": [
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc_from_clj.clj:2",
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljs.cljs:2",
+          "cljs.core @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/skip_args/comment.cljs:3"
+        ]
+      },
+      "amb-cross-file (production leaves NULL — A REAL WALL)": {
+        "edges": 52,
+        "samples": [
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc_from_clj.clj:2",
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljs.cljs:2",
+          "foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:2"
+        ]
+      },
+      "unresolved · shape: bare name": {
+        "edges": 15,
+        "samples": [
+          "apsl-react-native-button @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljs_ns_as_as_object.cljs:3",
+          "constructor-export @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljs_ns_as_as_object.cljs:4",
+          "macro @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:2"
+        ]
+      },
+      "amb-cross-file · shape: bare name": {
+        "edges": 14,
+        "samples": [
+          "foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:2",
+          "bar @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/config_dir/foo.clj:2",
+          "myns @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/hooks/coerce_sexpr_roundtrip.clj:2"
+        ]
+      },
+      "amb-own-file-one (production BINDS: r0own/r0ownName)": {
+        "edges": 6,
+        "samples": [
+          "foo.foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deprecated_var.clj:5",
+          "foo.foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deprecated_var.clj:9",
+          "foo.foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deprecated_var.clj:17"
+        ]
+      },
+      "unresolved · shape: single-segment/member": {
+        "edges": 3,
+        "samples": [
+          "dayjs/plugin/timezone @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/shadow_cljs/dot_alias.cljs:3",
+          "dayjs/plugin/utc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/shadow_cljs/dot_alias.cljs:4",
+          "dayjs/plugin/utc2 @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/shadow_cljs/dot_alias.cljs:9"
+        ]
+      }
+    },
+    "references": {
+      "unresolved · shape: dotted.namespace": {
+        "edges": 555,
+        "samples": [
+          "babashka.fs @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:1",
+          "babashka.process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:2",
+          "babashka.process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:44"
+        ]
+      },
+      "unresolved": {
+        "edges": 907,
+        "samples": [
+          "babashka.fs @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:1",
+          "babashka.process @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:2",
+          "System @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:10"
+        ]
+      },
+      "unresolved · shape: Capitalised (a JVM type)": {
+        "edges": 323,
+        "samples": [
+          "System @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:10",
+          "Instant @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.circleci/script/docker.clj:28",
+          "ManagementFactory @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/benchmarks/metabase+clojure-lsp.clj:11"
+        ]
+      },
+      "amb-cross-file · shape: dotted.namespace": {
+        "edges": 51,
+        "samples": [
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc_from_clj.clj:2",
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljs.cljs:2",
+          "cljs.core @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/skip_args/comment.cljs:3"
+        ]
+      },
+      "amb-cross-file (production leaves NULL — A REAL WALL)": {
+        "edges": 82,
+        "samples": [
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljc_from_clj.clj:2",
+          "corpus.cljc.test-cljc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljc/test_cljs.cljs:2",
+          "foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:2"
+        ]
+      },
+      "unresolved · shape: bare name": {
+        "edges": 22,
+        "samples": [
+          "apsl-react-native-button @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljs_ns_as_as_object.cljs:3",
+          "constructor-export @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljs_ns_as_as_object.cljs:4",
+          "macro @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:2"
+        ]
+      },
+      "amb-cross-file · shape: bare name": {
+        "edges": 31,
+        "samples": [
+          "foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:2",
+          "foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:13",
+          "foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/compojure/core.clj:17"
+        ]
+      },
+      "amb-own-file-one (production BINDS: r0own/r0ownName)": {
+        "edges": 7,
+        "samples": [
+          "foo.foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deprecated_var.clj:5",
+          "foo.foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deprecated_var.clj:9",
+          "foo.foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deprecated_var.clj:17"
+        ]
+      },
+      "unresolved · shape: single-segment/member": {
+        "edges": 3,
+        "samples": [
+          "dayjs/plugin/timezone @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/shadow_cljs/dot_alias.cljs:3",
+          "dayjs/plugin/utc @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/shadow_cljs/dot_alias.cljs:4",
+          "dayjs/plugin/utc2 @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/shadow_cljs/dot_alias.cljs:9"
+        ]
+      },
+      "unresolved · shape: dotted.Class (a JVM type)": {
+        "edges": 4,
+        "samples": [
+          "sun.misc.Signal @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/repl.clj:285",
+          "compilation.JDK8InterfaceMethods @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/compilation.clj:438",
+          "compilation.JDK8InterfaceMethods @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/compilation.clj:439"
+        ]
+      }
+    },
+    "exports": {
+      "amb-own-file-one (production BINDS: r0own/r0ownName)": {
+        "edges": 489,
+        "samples": [
+          "one-of @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.clj-kondo/hooks/one_of.clj:6",
+          "-main @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/.sbx/repl.clj:98",
+          "-main @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/analysis/script/private_vars.cljs:8"
+        ]
+      }
+    },
+    "extends": {
+      "unresolved · shape: Capitalised (a JVM type)": {
+        "edges": 24,
+        "samples": [
+          "ThreadLocal @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj:166",
+          "ThreadLocal @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj:212",
+          "ClassVisitor @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/src/clj_kondo/impl/analysis/java.clj:167"
+        ]
+      },
+      "unresolved": {
+        "edges": 25,
+        "samples": [
+          "ThreadLocal @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj:166",
+          "ThreadLocal @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj:212",
+          "ClassVisitor @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/src/clj_kondo/impl/analysis/java.clj:167"
+        ]
+      },
+      "unresolved · shape: dotted.Class (a JVM type)": {
+        "edges": 1,
+        "samples": [
+          "sun.misc.SignalHandler @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/repl.clj:287"
+        ]
+      }
+    },
+    "implements": {
+      "unresolved · shape: Capitalised (a JVM type)": {
+        "edges": 49,
+        "samples": [
+          "FileNameMap @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/defrecord.clj:12",
+          "Object @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deftype.cljs:4",
+          "IPending @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deftype.cljs:16"
+        ]
+      },
+      "unresolved": {
+        "edges": 49,
+        "samples": [
+          "FileNameMap @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/defrecord.clj:12",
+          "Object @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deftype.cljs:4",
+          "IPending @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/deftype.cljs:16"
+        ]
+      },
+      "amb-cross-file · shape: Capitalised (a JVM type)": {
+        "edges": 1,
+        "samples": [
+          "ExampleInterface @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/protocols.clj:639"
+        ]
+      },
+      "amb-cross-file (production leaves NULL — A REAL WALL)": {
+        "edges": 1,
+        "samples": [
+          "ExampleInterface @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/test/clojure/test_clojure/protocols.clj:639"
+        ]
+      }
+    },
+    "overrides": {
+      "unresolved · shape: dotted.namespace": {
+        "edges": 86,
+        "samples": [
+          "Foo.-foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/defprotocol.clj:9",
+          "Handler.handle @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/record_protocol_metadata.clj:9",
+          "Reader.read-char @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs:44"
+        ]
+      },
+      "unresolved": {
+        "edges": 86,
+        "samples": [
+          "Foo.-foo @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/defprotocol.clj:9",
+          "Handler.handle @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/record_protocol_metadata.clj:9",
+          "Reader.read-char @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs:44"
+        ]
+      },
+      "amb-own-file-one (production BINDS: r0own/r0ownName)": {
+        "edges": 2,
+        "samples": [
+          "assert-valid-fdecl @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/core.clj:7769",
+          "global-hierarchy @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clojure/src/clj/clojure/core.clj:5689"
+        ]
+      }
+    },
+    "instantiates": {
+      "unresolved · shape: Capitalised (a JVM type)": {
+        "edges": 464,
+        "samples": [
+          "Integer @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/analysis/src/clj_kondo/tools/popular_vars.clj:5",
+          "ConstructorExport @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljs_ns_as_as_object.cljs:7",
+          "String @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/hooks/coerce_sexpr_roundtrip.clj:4"
+        ]
+      },
+      "unresolved": {
+        "edges": 473,
+        "samples": [
+          "Integer @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/analysis/src/clj_kondo/tools/popular_vars.clj:5",
+          "sci.lang.Var @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/aliased_namespaces/interop.cljc:17",
+          "ConstructorExport @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/cljs_ns_as_as_object.cljs:7"
+        ]
+      },
+      "unresolved · shape: dotted.Class (a JVM type)": {
+        "edges": 5,
+        "samples": [
+          "sci.lang.Var @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/corpus/aliased_namespaces/interop.cljc:17",
+          "clj-kondo.impl.toolsreader.v1v2v2.clojure.tools.reader.impl.utils.TaggedLiteral @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/impl/utils.clj:45",
+          "clj-kondo.impl.toolsreader.v1v2v2.clojure.tools.reader.impl.utils.ReaderConditional @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/impl/utils.clj:69"
+        ]
+      },
+      "unresolved · shape: single-segment/member": {
+        "edges": 4,
+        "samples": [
+          "js/Object @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:196",
+          "js/Object @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:197",
+          "js/Object @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader.cljs:483"
+        ]
+      },
+      "amb-cross-file · shape: Capitalised (a JVM type)": {
+        "edges": 1,
+        "samples": [
+          "PushbackReader @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/parser/clj_kondo/impl/rewrite_clj/reader.clj:226"
+        ]
+      },
+      "amb-cross-file (production leaves NULL — A REAL WALL)": {
+        "edges": 1,
+        "samples": [
+          "PushbackReader @ /home/ishaq2321/mcp/backbencher-brain/.corpus/clj-kondo/parser/clj_kondo/impl/rewrite_clj/reader.clj:226"
+        ]
+      }
+    }
+  },
+  "slashOptIn": {
+    "rows": 23,
+    "byLabel": {
+      "calls": 19,
+      "instantiates": 4
+    },
+    "targets": [
+      {
+        "label": "calls",
+        "target": "js/require",
+        "count": 1
+      },
+      {
+        "label": "calls",
+        "target": "js/parseInt",
+        "count": 8
+      },
+      {
+        "label": "calls",
+        "target": "js/isNaN",
+        "count": 2
+      },
+      {
+        "label": "calls",
+        "target": "js/String.fromCharCode",
+        "count": 6
+      },
+      {
+        "label": "instantiates",
+        "target": "js/Object",
+        "count": 3
+      },
+      {
+        "label": "calls",
+        "target": "js/parseFloat",
+        "count": 2
+      },
+      {
+        "label": "instantiates",
+        "target": "js/Error",
+        "count": 1
+      }
+    ]
+  },
+  "gateComparison": {
+    "got": {
+      "edges": 43324,
+      "resolved": 28911,
+      "amb": 2139,
+      "unres": 5755
+    },
+    "want": {
+      "edges": 43324,
+      "resolved": 28911,
+      "amb": 2139,
+      "unres": 5755
+    },
+    "ok": true
+  },
+  "clause1": {
+    "sourceParity": {
+      "unrLine": true,
+      "clause1Template": true
+    },
+    "gate": {
+      "unr": 7894,
+      "refuted": 0,
+      "unreachable": 0,
+      "failure": 7894
+    },
+    "lane": {
+      "amb": 2139,
+      "unresolved": 5755,
+      "extUnverified": 0,
+      "wall": 7894
+    },
+    "identical": true,
+    "term1Identical": true,
+    "term2Identical": true
+  }
+}

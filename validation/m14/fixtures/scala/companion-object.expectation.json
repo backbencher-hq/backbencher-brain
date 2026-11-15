@@ -1,0 +1,13 @@
+{
+  "fixtureId": "scala/companion-object",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "companion object shares name with class; both symbols exist; create() instantiates Service.",
+  "expectSymbols": [
+    { "name": "Service" },
+    { "name": "create" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "create", "targetEndsWith": "Service" }
+  ]
+}

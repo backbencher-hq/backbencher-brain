@@ -1,0 +1,310 @@
+{
+  "instrument": "validation/m14/fixtures/php/uses-resolution-shape.mts",
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "reposScanned": 199,
+  "admittedPopulation": 5094,
+  "requestedFiles": 300,
+  "filesArgumentPresent": true,
+  "sampleFiles": 300,
+  "sampling": "deterministic stride over the admitted files sorted by repo/relative/path",
+  "symbolsPublished": 2369,
+  "usesEdges": 9024,
+  "parseFailures": 0,
+  "degraded": 0,
+  "distinctFlags": 10,
+  "flaglessUses": 0,
+  "controls": {
+    "variableNameLeavesCollected": 2158,
+    "filesWithVariableLeaves": 258,
+    "distinctFlagsSeen": 10,
+    "distinctFlagsAtLeast4": true,
+    "usesEdgesSeen": 9024,
+    "symbolsPublishedUnderJoinedName": 276,
+    "ownerScopedBucketCanFire": true
+  },
+  "classTotals": {
+    "UNCLASSIFIED": 483,
+    "internalSymbol": 107,
+    "resolvesBare": 2562,
+    "variableInFile": 5872
+  },
+  "byFlag": {
+    "isClosureCapture": 23,
+    "isConstFetch+isMemberRead": 199,
+    "isConstRead": 77,
+    "isGlobalRead": 4,
+    "isInterpolationRead": 79,
+    "isLocalRead": 5967,
+    "isMemberRead+isStaticRead": 183,
+    "isMemberRead": 1741,
+    "isSubscriptBase": 749,
+    "isTraitUse": 2
+  },
+  "byFlagClass": {
+    "isLocalRead": {
+      "resolvesBare": 1223,
+      "variableInFile": 4744
+    },
+    "isConstRead": {
+      "UNCLASSIFIED": 2,
+      "internalSymbol": 69,
+      "resolvesBare": 6
+    },
+    "isMemberRead": {
+      "UNCLASSIFIED": 356,
+      "internalSymbol": 35,
+      "resolvesBare": 1098,
+      "variableInFile": 252
+    },
+    "isSubscriptBase": {
+      "resolvesBare": 68,
+      "variableInFile": 681
+    },
+    "isInterpolationRead": {
+      "resolvesBare": 1,
+      "variableInFile": 78
+    },
+    "isConstFetch+isMemberRead": {
+      "UNCLASSIFIED": 123,
+      "internalSymbol": 3,
+      "resolvesBare": 73
+    },
+    "isMemberRead+isStaticRead": {
+      "resolvesBare": 91,
+      "variableInFile": 92
+    },
+    "isGlobalRead": {
+      "variableInFile": 4
+    },
+    "isClosureCapture": {
+      "resolvesBare": 2,
+      "variableInFile": 21
+    },
+    "isTraitUse": {
+      "UNCLASSIFIED": 2
+    }
+  },
+  "topUnresolved": {
+    "isLocalRead": {
+      "request": 150,
+      "result": 137,
+      "meta": 90,
+      "text": 75,
+      "expected": 71,
+      "displayParts": 65,
+      "resolver": 61,
+      "value": 58,
+      "statementInfo": 57,
+      "message": 55,
+      "i": 47,
+      "node": 45,
+      "haystack": 43,
+      "statement": 42,
+      "column": 38,
+      "event": 37,
+      "doc": 36,
+      "form": 35,
+      "valueNode": 34,
+      "error": 31,
+      "handler": 30,
+      "container": 30,
+      "transformationPlugin": 29,
+      "hash": 29,
+      "schema": 28
+    },
+    "isSubscriptBase": {
+      "_SESSION": 120,
+      "matches": 48,
+      "query": 36,
+      "args": 31,
+      "GLOBALS": 24,
+      "createOptions": 19,
+      "result": 17,
+      "_POST": 17,
+      "results": 16,
+      "text_stack": 13,
+      "state": 13,
+      "_REQUEST": 12,
+      "ret": 12,
+      "parts": 11,
+      "relDb": 10,
+      "urlParams": 10,
+      "info": 9,
+      "frame": 9,
+      "classes": 8,
+      "tempVal": 8,
+      "record": 8,
+      "data": 8,
+      "forms": 8,
+      "expected": 8,
+      "columns": 6
+    },
+    "isInterpolationRead": {
+      "url": 7,
+      "em": 6,
+      "tag": 6,
+      "span": 5,
+      "title": 4,
+      "level": 4,
+      "strong": 4,
+      "marker_ul_re": 3,
+      "typeName": 3,
+      "link_text": 2,
+      "alt_text": 2,
+      "marker_ol_re": 2,
+      "list_type": 2,
+      "notUrl": 2,
+      "valueNode": 2,
+      "type": 2,
+      "safeNode": 2,
+      "varName": 2,
+      "fieldName": 2,
+      "key": 1,
+      "boundary": 1,
+      "codeblock": 1,
+      "code": 1,
+      "bq": 1,
+      "addr": 1
+    },
+    "isMemberRead": {
+      "name": 46,
+      "value": 33,
+      "list": 28,
+      "diagram": 27,
+      "selectedServer": 22,
+      "statement": 22,
+      "deleteLink": 19,
+      "expr": 16,
+      "fields": 14,
+      "type": 14,
+      "orgtable": 14,
+      "RowActionLinks": 13,
+      "tableName": 13,
+      "hasEditLink": 12,
+      "flags": 9,
+      "SendErrorReports": 8,
+      "index": 8,
+      "orgname": 7,
+      "operation": 6,
+      "parser": 6,
+      "columnName": 6,
+      "direction": 6,
+      "queryType": 6,
+      "customLinks": 6,
+      "history": 5
+    },
+    "isGlobalRead": {
+      "_POST": 2,
+      "_GET": 1,
+      "_SESSION": 1
+    },
+    "isClosureCapture": {
+      "obj": 3,
+      "context": 2,
+      "DogType": 2,
+      "CatType": 2,
+      "HumanType": 2,
+      "newDbName": 2,
+      "self": 2,
+      "responseProphecy": 2,
+      "config": 1,
+      "schema": 1,
+      "that": 1,
+      "dispatcher": 1
+    },
+    "isConstFetch+isMemberRead": {
+      "NO_DELETE": 17,
+      "ThirdParty": 9,
+      "ControlUser": 8,
+      "DELETE_ROW": 6,
+      "FirstParty": 6,
+      "Select": 5,
+      "Symbol": 5,
+      "None": 5,
+      "TYPE_STRING": 4,
+      "SESSION_KEY": 4,
+      "DISABLED": 3,
+      "Error": 3,
+      "ColumnOrder": 3,
+      "TYPE_BLOB": 3,
+      "FALLBACK_THEME": 3,
+      "INCLUDE_DEBUG_MESSAGE": 2,
+      "STATUS_FOUND": 2,
+      "KILL_PROCESS": 2,
+      "ColumnVisibility": 2,
+      "Get": 2,
+      "STATUS_OK": 2,
+      "CLASS_MAP": 1,
+      "OPERATION_DEFINITION": 1,
+      "VARIABLE_DEFINITION": 1,
+      "INPUT_OBJECT_TYPE_DEFINITION": 1
+    },
+    "isTraitUse": {
+      "ArraySubsetAsserts": 2
+    },
+    "isMemberRead+isStaticRead": {
+      "table": 33,
+      "CalledCount": 23,
+      "sqlQuery": 10,
+      "params": 6,
+      "CalledContainer": 6,
+      "message": 3,
+      "autoIncrement": 2,
+      "lang": 2,
+      "errorNumber": 2,
+      "messageToShow": 1,
+      "server": 1,
+      "cls": 1,
+      "hasBeenInstantiated": 1,
+      "container": 1
+    },
+    "isConstRead": {
+      "DIRECTORY_SEPARATOR": 21,
+      "PHP_EOL": 9,
+      "E_USER_DEPRECATED": 5,
+      "INF": 4,
+      "MYSQLI_TYPE_STRING": 4,
+      "E_USER_NOTICE": 3,
+      "E_USER_WARNING": 3,
+      "E_DEPRECATED": 2,
+      "E_USER_ERROR": 2,
+      "PHP_OS_FAMILY": 2,
+      "CONFIG_FILE": 1,
+      "E_NOTICE": 1,
+      "E_WARNING": 1,
+      "E_CORE_WARNING": 1,
+      "E_COMPILE_WARNING": 1,
+      "E_RECOVERABLE_ERROR": 1,
+      "E_ERROR": 1,
+      "E_PARSE": 1,
+      "E_CORE_ERROR": 1,
+      "E_COMPILE_ERROR": 1,
+      "VERSION_SUFFIX": 1,
+      "SORT_NATURAL": 1,
+      "SORT_REGULAR": 1,
+      "E_ALL": 1,
+      "ENT_QUOTES": 1
+    }
+  },
+  "examples": {
+    "variableInFile": [
+      "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php:49 Markdown -> parser",
+      "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php:51 Markdown -> parser_class",
+      "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php:55 Markdown -> parser",
+      "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php:55 Markdown -> text"
+    ],
+    "UNCLASSIFIED": [
+      "gql-graphql-php/examples/01-blog/Blog/Type/Scalar/UrlType.php:40 parseLiteral -> kind",
+      "gql-graphql-php/src/Server/Helper.php:177 validateOperationParams -> variables",
+      "gql-graphql-php/src/Server/Helper.php:180 validateOperationParams -> originalInput",
+      "gql-graphql-php/src/Server/Helper.php:289 promiseToExecuteOperation -> readOnly"
+    ],
+    "internalSymbol": [
+      "phpmyadmin/src/Controllers/Operations/TableController.php:362 __invoke -> Error",
+      "phpmyadmin/src/Controllers/Table/Structure/ChangeController.php:89 displayHtmlForColumnChange -> key",
+      "phpmyadmin/src/Controllers/Table/Structure/ChangeController.php:90 displayHtmlForColumnChange -> default",
+      "phpmyadmin/src/Display/Results.php:1215 getOrderLinkAndSortedHeaderHtml -> list"
+    ]
+  }
+}

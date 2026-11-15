@@ -1,0 +1,47 @@
+{
+ "call": {
+  "isError": false,
+  "ms": 820
+ },
+ "before": {
+  "files": {
+   "db": {
+    "size": 598016,
+    "mtimeMs": 1793667562214
+   },
+   "-wal": null,
+   "-shm": null
+  },
+  "sha256": "e5a360e7e3e01a457e77432db21ab8d919936285fccd737920b8274417ce2075"
+ },
+ "during": {
+  "files": {
+   "db": {
+    "size": 598016,
+    "mtimeMs": 1793667562214
+   },
+   "-wal": {
+    "size": 98912,
+    "mtimeMs": 1793667578381
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793667577876
+   }
+  },
+  "sha256": "e5a360e7e3e01a457e77432db21ab8d919936285fccd737920b8274417ce2075"
+ },
+ "after": {
+  "files": {
+   "db": {
+    "size": 598016,
+    "mtimeMs": 1793667579010
+   },
+   "-wal": null,
+   "-shm": null
+  },
+  "sha256": "60ff3fc76eeb9dc0d45ec8ab6ef829213a83d7d94848a8c1467f18dc2c777a60"
+ },
+ "walAppeared": true,
+ "dbBytesChanged": true
+}

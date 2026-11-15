@@ -1,0 +1,13 @@
+{
+  "fixtureId": "kotlin/fq-annotations",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Fully-qualified annotations parse as annotation > user_type with MULTIPLE type_identifier children (org, springframework, ...). The short name is the LAST dotted segment; first-identifier extraction yields the wrong name and silently kills Spring route extraction. apiContractPath stores the bare path (cross-language contract: doc-engine exact-matches this column); the HTTP method lives in metadata.apiMethod.",
+  "expectSymbols": [
+    { "name": "FqController", "kind": "class" },
+    { "name": "users" }
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "users", "equals": "/users" }
+  ]
+}

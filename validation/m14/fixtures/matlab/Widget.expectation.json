@@ -1,0 +1,21 @@
+{
+  "fixtureId": "matlab/Widget",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins instantiation: a call whose callee is a class declared in the same file constructs an object, so it is published as `instantiates`, not as a plain `calls` edge — the same call site cannot be both. The constructor method (named after the class) is published as a constructor, and the class's property/method membership rides `contains`.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "value", "kind": "property", "ownerName": "Widget" },
+    { "name": "Widget", "kind": "constructor", "ownerName": "Widget" },
+    { "name": "read", "kind": "method", "ownerName": "Widget" },
+    { "name": "makeWidget", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "makeWidget", "target": "Widget" },
+    { "type": "contains", "from": "Widget", "target": "value" },
+    { "type": "contains", "from": "Widget", "target": "read" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "makeWidget", "target": "Widget" }
+  ]
+}

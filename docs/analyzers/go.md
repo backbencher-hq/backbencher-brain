@@ -2,6 +2,34 @@
 
 ## Language
 
+> ## ⚠ Corpus scope — read before quoting any number in this document
+>
+> This document's measurements were taken on `go-stdlib` @ `6f5c275e` and on `cobra`, under
+> `/home/ishaq2321/bb_tests/repositories/`. **Both repositories have been removed from that
+> directory.** They cannot be re-cloned from this document, and no artifact in `validation/`
+> retains the raw per-file rows, so every count attributed to them — 9,447 files / 280,587 symbols /
+> 866,760 relationships in the firing section, the `--sample 120` differential rows, the payload and
+> latency tables — is **unreproducible on this machine**. Those figures are retained as the record
+> of measurements that did happen; they are not presented as current.
+>
+> **The one current, re-runnable Go measurement** is the R7 re-derivation further down: `.corpus/`
+> — the standard library at `f0acd179`, plus `grpc-go`, `prometheus`, `terraform` — **13,523 files,
+> 1,431,632 relationships, 0.1614% dangling source**, 0 parse crashes. Two things about it matter:
+>
+> - The **stdlib subset of that measurement is an apples-to-apples replacement** for the pinned
+>   draw: it is the same repository at a later revision, measured with the same definitions, and it
+>   is what makes the "did the lane improve?" question answerable again — the rate went from
+>   **0.1914%** at `6f5c275e` to **0.1378%** now. That comparison spans a revision and several fixes,
+>   so it answers "is it better", not "which fix did it"; the per-fix splits are in the GO39/GO40
+>   sections, each measured on a fixed corpus. Use the per-repo table in the R7 section; do not
+>   difference its 13,523-file total against the pinned 9,447-file totals.
+> - The other three repos are additive and have no counterpart in the old draw, so they belong in
+>   any *current* total but never in a before/after against `6f5c275e`.
+>
+> The `global` audit that opened GO39 also ran on `.corpus/` (15,914 files). Its conclusion — that
+> the `global` classification is correct across the population, and that GO39 was a **missing** edge
+> rather than a mislabelled one — is unaffected by which corpus measures it.
+
 - Analyzer file: `src/ast/real-go-analyzer.ts`
 - Parser: `tree-sitter-go`. The engine's grammar-name map (`src/ast/engine.ts`) carries
   `go: "tree-sitter-go"`, and `parseFile` resolves it through `resolveWasm`, which takes the
@@ -75,6 +103,16 @@ disagree, this section wins and says so.
 **every one of the 9,447 `.go` files** in `go-stdlib` @ `6f5c275e` that the lane admits
 (`testdata/` excluded, ≤512 KB), 57 top-level packages, **9,447 parsed / 0 crashed**, 280,587
 symbols, 866,760 relationships, 17m 10s.
+
+> **Scope warning — this is the lane's ORIGINAL pinned draw and its corpus is gone.** `go-stdlib`
+> @ `6f5c275e` lived under `/home/ishaq2321/bb_tests/repositories/`, which no longer contains that
+> repository, so this paragraph cannot be re-run or refreshed here. It is kept as the record of the
+> original measurement. Every figure in it — 9,447 files, 280,587 symbols, 866,760 relationships,
+> 17m 10s — is unreproducible on this machine. Where a current number is needed, use the
+> re-derivation in the R7 section below (`.corpus/`, 13,523 files, 1,431,632 relationships), which
+> is a **different corpus and not a substitute for this paragraph's denominator**: the two must not
+> be differenced. The `Imports` enum defect this paragraph exists to report is a source-level fact
+> and is unaffected by which corpus measures it.
 
 The tenth is not a type the lane fails to implement. `src/ast/types.ts:69` declares
 `Imports = "brain_import"` and `src/ast/engine.ts:455` declares `Imports = "imports"` — **two
@@ -159,11 +197,35 @@ Read honestly, that table says four things.
    The low-resolution types are `calls`/`uses`/`references` whose targets are stdlib leaves, and
    for those "unresolved" is an artefact of the corpus being the standard library with nothing
    vendored — the two columns are never summed into one flattering figure.
-4. **Every sub-1.0 edge in the lane except `overrides` lacks a machine-readable reason code**:
-   **645,603 of 645,681 sub-1.0 edges, 99.99%**, against honesty-contract §4's requirement that
-   any edge below 1.0 carry one. `overrides`, added this wave, is the only type that complies.
-   That is a lane-wide finding and it is not fixed here: adding a reason code to six push sites
-   changes what every consumer sees and belongs in its own commit.
+4. **Every sub-1.0 edge carries a machine-readable reason code — 100%, re-measured 2026-11-13.**
+   The original finding in this slot read "every sub-1.0 edge in the lane except `overrides` lacks
+   a machine-readable reason code: **645,603 of 645,681, 99.99%**, against honesty-contract §4" and
+   called it unfixed. **That is no longer true and the sentence is corrected rather than deleted,
+   because the way it became false is the point**: the fix was a single table
+   (`GO_SUB_UNIT_REASON`) plus one publication loop that reads every edge from one place, not
+   twenty edited push sites. The table keys are `type|constructLabel` with a `type|*` wildcard for
+   each of the ten emitting types, so a new push site cannot miss a code by omission.
+
+   Re-measured on `.corpus/golang-go` (9,585 files, 893,132 relationships), same definition —
+   `confidence < 1.0` ⇒ `metadata.reasonCode` present:
+
+   | | value |
+   | --- | --- |
+   | sub-1.0 edges | **671,104** |
+   | of those, carrying a `reasonCode` | **671,104** |
+   | **without one** | **0** |
+   | **coverage** | **100%** |
+
+   Covered, by type: `calls` 283,567, `uses` 194,669, `references` 145,429, `imports` 27,595,
+   `instantiates` 18,038, `mixes_in` 1,463, `extends` 254, `overrides` 79, `renders` 10. The
+   measure is falsifiable in one direction a reader can check cheaply: a confidence-1.0 row must
+   carry **no** code (the loop skips `conf >= 1.0` deliberately, so a blanket stamp would be
+   visible), and `script/m14/go9-census.ts` checks exactly that half.
+
+   The same publication covers the arbiter's separate question — *why did this edge's target not
+   bind?* — in `metadata.bindReason`, published on every non-`contains`/non-`renders` edge. It is a
+   separate field because it answers a separate question, and it is class-neutral: the arbiter
+   reads no metadata, so publishing it moves no edge between classes.
 
 ### R7 — unknown symbols, empty names, placeholder endpoints
 
@@ -175,18 +237,72 @@ identifiers trip the honesty gate's banned-vocabulary lint (`Complete`,
 linter that cannot tell an identifier from a claim is to record the figure the analysis turns on,
 not to delete the analysis.
 
-Whole corpus, 866,760 relationships:
+**The original table below was measured on a corpus that no longer exists.** Its basis was
+`go-stdlib` @ `6f5c275e` (9,447 files, 57 packages) under
+`/home/ishaq2321/bb_tests/repositories/`; that directory is gone from this machine, so neither the
+counts nor the 866,760 denominator could be re-run or refreshed in place. The numbers are kept
+verbatim because they are the record of a measurement that did happen, but they are marked
+unreproducible rather than presented as current.
 
-| check | count | what it is |
+| check | count (corpus `6f5c275e`, **unreproducible**) | what it is |
 | --- | --- | --- |
 | empty-string endpoints | **0** | R7's other half holds across all ten types |
 | placeholder-literal endpoints | **178** | `uses` 52, `references` 45, `calls` 44, `contains` 19, `extends` 11, `instantiates` 6, `exports` 1 — all **source** `_`, Go's blank identifier, which has no name |
 | `global` pseudo-source | **1,481** | `references` 710, `uses` 395, `instantiates` 235, `calls` 141 — an unattributable source, from a `func_literal` with no name and from the package-scope instantiation site |
 | **total dangling source** | **1,659 (0.19%)** | |
 
-`global` is the class GO36 and GOD11 were opened to fix for `type_spec` and `var_spec` sources
-and that remains open for function literals. Not fixed here: it changes attribution for every
-type at once. Reported with the count.
+**Re-derived on a corpus that exists (2026-11-13).** `.corpus/golang-go` is **the same standard
+library repository** at a later revision (`f0acd179` vs `6f5c275e`), so the two stdlib columns below
+are an apples-to-apples pair and not a cross-corpus comparison. Same definitions, same production
+path (`ASTEngine.parseFile` → `getParser("go")` → `getAnalyzer("go")` → `RealGoAnalyzer.analyze`),
+`testdata/` excluded and ≤512 KB, **9,585 files / 0 crashed**.
+
+| check | `6f5c275e` (9,447 files, **unreproducible**) | `f0acd179` (9,585 files, current analyzer) |
+| --- | --- | --- |
+| empty-string endpoints | **0** | **0** |
+| placeholder-literal endpoints (source `_`) | **178** | **178** |
+| `global` pseudo-source | **1,481** | **1,053** |
+| total relationships (denominator) | 866,760 | 893,132 |
+| **dangling-source rate** | **0.1914%** | **0.1378%** |
+
+**This delta is not attributable to one fix, and saying otherwise would be the dishonest reading.**
+It spans three things at once: a corpus revision (+138 files, +26,372 relationships), whatever
+analyzer changes landed between the two censuses, and GO40 specifically. The GO40-attributable part
+is measured **in isolation** on a fixed corpus in the GO40 section below — `global` 1,398 → 1,053 and
+relationships 893,247 → 893,132, both on `f0acd179` with the analyzer blob the only difference. Use
+that pair for any claim about this round; use this table only for "is the lane better than it was
+when the census was taken", where the answer is yes but the credit is shared.
+
+The blank-identifier count is **identical at 178** across both revisions, and six of its eight
+per-type counts match exactly (`uses` 52, `references` 45, `calls` 44, `contains` 19,
+`instantiates` 6, `exports` 1); the only difference is a **relabel** — the old `extends 11` is now
+`extends 6` plus `mixes_in 5`, `mixes_in` having been split out as its own relationship type.
+Identical counts under a schema split is what licenses reading the two columns as the same
+measurement.
+
+The three further Go repos the old census never covered, measured separately so they can be removed
+from any future total without re-running it (all under the current analyzer, after GO40):
+
+| repo | files | relationships | `global` | blank `_` |
+| --- | --- | --- | --- | --- |
+| `.corpus/golang-go` (stdlib `f0acd179`) | 9,585 | 893,132 | 1,053 | 178 |
+| `.corpus/grpc-go` | 1,090 | 150,309 | 173 | 0 |
+| `.corpus/prometheus` | 766 | 143,987 | 164 | 0 |
+| `.corpus/terraform` | 2,082 | 244,204 | 742 | 0 |
+| **all four** | **13,523** | **1,431,632** | **2,132** | **178** |
+
+The four-repo dangling-source rate is **0.1614%** (2,310 of 1,431,632). Before GO40 the same four
+repos measured `global` 2,525 / 1,431,763 relationships = **0.1888%**, so GO40 took the whole Go
+population from 0.1888% to 0.1614% — a **14.5% relative reduction**, and it is the only change
+between those two rows.
+
+The blank identifier fires **only in the standard library** — 178 there, 0 in all three vendored
+repos — which is the expected shape: it is the `_ Preempter = …` compile-time-assertion and
+interface-conformance idiom, near-absent from application code.
+
+`global` is the class GO36 and GOD11 were opened to fix for `type_spec` and `var_spec` sources and
+that remains open for function literals. Not fixed here: it changes attribution for every type at
+once. Reported with the count, and it is **falling**, not static.
 
 ### What this lane changed, and the before/after
 
@@ -224,6 +340,125 @@ instantiation site left the package-scope site unpinned, and the first draft's e
 `global -> NewReader` had a *legitimate* producer, so the forbidden row passed with the guard
 removed. A collision name needs a collision name with no legitimate producer. Second run: 6
 mutants, 6 killed, 0 survivors.
+
+### GO39 — the inherited type of a const spec (2026-11-13)
+
+Go's const grammar makes the empty expression list a **macro** over the previous spec: "Within a
+parenthesized const declaration list the empty expression list is equivalent to the textual
+substitution of the first preceding non-empty expression list and its type if present." So in
+
+```go
+const (
+    FormatUnknown Format = iota
+    formatV7                 // type Format, by inheritance
+    FormatUSTAR              // type Format, by inheritance
+)
+```
+
+all three constants have type `Format`, and the latter two carry a real type reference the graph
+was **missing**.
+
+**The defect was absence, not mis-sourcing.** `collectTypeNameNodes` collects only
+`type_identifier`/`qualified_type`, and an inheriting spec has no type child at all — so `emit`
+had nothing to walk and published **no row**, not a wrong one. Measured on this exact fixture
+before the fix: only `references FormatUnknown -> Format` was present.
+
+**Not an edge case — the common case.** Over the whole Go corpus, **2,305 of 2,450 const groups
+(94%)** use the implicit form. `src/archive/tar/format.go` alone was missing six:
+
+| spec | line | was | now |
+| --- | --- | --- | --- |
+| `formatV7` | 57 | absent | `references formatV7 -> Format` |
+| `FormatUSTAR` | 68 | absent | `references FormatUSTAR -> Format` |
+| `FormatPAX` | 84 | absent | `references FormatPAX -> Format` |
+| `FormatGNU` | 98 | absent | `references FormatGNU -> Format` |
+| `formatSTAR` | 103 | absent | `references formatSTAR -> Format` |
+| `formatMax` | 105 | absent | `references formatMax -> Format` |
+
+**The fix is shape-proven, never name-based.** When a `const_spec` has no `type` field, the
+analyzer walks back to the nearest preceding sibling `const_spec` that **has** one and takes that
+node as the type root; the emitter is otherwise unchanged, so the qualified-type and dedupe rules
+are identical for an inherited and a stated type. Two properties are deliberate:
+
+- **The walk is bounded by the enclosing group.** A spec at the top of a new `const (...)` inherits
+  nothing from the group above it. The byte-span scan stops at the parent's first child, so
+  `otherA` in a group whose base type is `Other` never resolves to the `Format` above it.
+- **A typeless list is not a type source.** `x = 100` states an expression, not a type, so the walk
+  skips it for the next spec back that has one — the macro substitutes the first preceding list
+  "and its type if present", and a typeless list does not supply one.
+
+**Line numbers are the declaring spec's own, and that is pinned.** An inherited type node belongs to
+an *earlier* spec, so publishing the type node's line would point the row at a declaration it does
+not describe. `emit` therefore takes an optional `lineNode`; every other call site is
+byte-identical.
+
+`prevSibling` does not exist on this tree-sitter binding and wrapper objects are not
+identity-stable across `children` reads, so the sibling is located by byte span
+(`startIndex`/`endIndex` are unique per node) — the same technique `real-protobuf-analyzer`'s
+`prevSiblingOf` established.
+
+**Falsifier:** `validation/m14/fixtures/go/const-inherit-type.go` +
+`.expectation.json`. Six expected rows across two groups; four forbidden rows pinning the two
+things a cheaper fix gets wrong — group-boundary leakage (`otherA -> Format`) and the line defect
+(`formatV7 -> Format @15` instead of `@16`). Go lane: **39 pass, 0 fail**.
+
+**What the fix does NOT change, measured on the current 15,914-file corpus** (1,727,384
+relationships, 296,461 `references` — counted per chunk, so the figures are reproducible from
+`.tmp-j/chunk_*`): GO39 adds no `global` pseudo-source. On `format.go` the fix adds six
+`references` rows and the file still carries exactly one `global` source row — `Format @51`, the
+pre-existing blank-identifier `_` in that same const group, which is the GO36/GOD11 class and is
+untouched here. The dangling-source denominator above is from an older, narrower census and is
+deliberately not restated with these numbers: the two counts are over different file sets, so
+differencing them would be a category error.
+
+### GO40 — the package-scope var whose type expression holds the reference (2026-11-13)
+
+`resolveSource`'s `func_literal` branch reached a `var_spec` only by climbing **through** a function
+literal — the shape `var R = map[string]func(){ … }`. A declaration whose type expression contains
+the type node **directly** had no branch at all, so the walk continued past the `var_spec` and
+answered `global`:
+
+```go
+var sysStat func(fi FileInfo, h *Header) error
+```
+
+**Measured on that exact declaration before the fix: four `references` rows where the language has
+two facts.** The `var_spec` pass published the correct `sysStat -> FileInfo` and `sysStat -> Header`;
+the parameter pass published `global -> FileInfo` and `global -> Header` beside them. That is worse
+than GO39's absent edge: a consumer grouping by source sees one fact twice, once unattributable,
+and cannot tell which to keep.
+
+**Frequency: 353 `global`-source rows on the stdlib subset alone**, led by
+`src/archive/tar/common.go:617` — `var sysStat func(fi fs.FileInfo, h *Header, doNameLookups bool) error`
+— which is the standard library carrying this fixture's own subject shape.
+
+**The fix is shape-proven and scope-tested.** A `var_spec`/`const_spec` reached in the walk answers
+its first non-blank identifier **only when it has no function/method/func_literal ancestor**;
+otherwise it keeps walking so the enclosing function answers. That test is the whole reason the fix
+is safe: `LocalsAreNotSymbols` makes a function-local var/const not a graph node, so attributing to
+one would trade a dangling source for an *unresolvable* one — a strictly worse row.
+
+| | before | after |
+| --- | --- | --- |
+| `global`-source edges, stdlib | **1,398** | **1,053** |
+| files carrying one, of 9,585 | 554 | 371 |
+| total relationships | 893,247 | 893,132 |
+| **dangling-source rate** | **0.1764%** | **0.1378%** |
+
+**−345 unattributable edges (−24.7%) and the rate falls 21.9% relatively, with no fact lost.** Two
+things moved at once and they are worth separating: 345 `global` rows were **re-sourced** to the
+declaration that owns them, and 115 rows disappeared because they were **duplicates** — the
+`var_spec` pass and the parameter pass now resolve to the same source, so the emitter's
+`source|target|relType` key collapses them onto the one true fact. The 115 is the duplicate count,
+not a loss. Blank-identifier rows are untouched at **178**, which is the check that this fix did not
+drift into the GO45 territory where `global` is the honest answer.
+
+**Falsifier:** `validation/m14/fixtures/go/package-var-func-type-source.go` + `.expectation.json`.
+Eight expected rows and **five forbidden** ones pinning what a cheaper fix gets wrong:
+`global -> FileInfo`/`global -> Header` (the defect returning), `localHook -> Header` and
+`inner -> Header` (a fix that returned the spec's name without the function-ancestor test), and
+`_ -> Header` (a fix that dropped the blank test and moved an honest `global` onto an identifier
+that resolves to nothing). Go lane: **40 pass, 0 fail**.
 
 ### Payload and latency, before and after
 
@@ -1292,9 +1527,15 @@ reason the emission vocabulary is closed.
 - **Grammar-recovery shapes.** Where the pinned grammar cannot parse valid Go, the analysis is
   incomplete rather than wrong: the analyzer reports the region as a parse error and continues.
   The M12 census measured 5 grammar-error files in 400 on the older `go-tools` corpus; the
-  `go-tools` checkout is **no longer present** on this box (`<corpus-root>` has
-  `go-stdlib` and `cobra` for Go), so the differential's pinned primary corpus for this lane
-  cannot be run as pinned — every number in this document is on `go-stdlib`/`cobra` instead.
+  `go-tools` checkout is **no longer present** on this box. **Both** Go repositories this document's
+  numbers were pinned to — `go-stdlib` and `cobra` — are now also gone from
+  `<corpus-root>` (`/home/ishaq2321/bb_tests/repositories/`); `go-tools` is the only Go repo left
+  there. The differential therefore cannot be run as pinned at all: every count in this document
+  that is attributed to `go-stdlib` or `cobra` is unreproducible on this machine, and the only
+  current Go measurement available is the `.corpus/` re-derivation in the R7 section (13,523 files
+  across four Go repos, 0.19% dangling source). That re-derivation is a **different corpus** and is
+  not a substitute for the differential's `--sample 120` denominators, which no surviving checkout
+  can reproduce.
 - **Grammar-version drift.** The analyzer references 54 node types of `tree-sitter-go`; the
   grammar audit passes with 0 unknown, but the wasm is not registered in
   `validation/m14/grammar-pins.json`, so a swap of the wasm would be silent.

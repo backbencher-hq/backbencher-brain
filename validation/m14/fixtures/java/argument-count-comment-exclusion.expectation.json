@@ -1,0 +1,17 @@
+{
+ "fixtureId": "java/argument-count-comment-exclusion",
+ "language": "java",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M49 W9 F6 adjudication. metadata.argumentCount must count ARGUMENTS. The pre-fix guard skipped a node type named `comment`, which the pinned tree-sitter-java grammar does not define — comments are `line_comment` / `block_comment` — so the guard could never fire and a comment inside an argument list was counted as an argument (`b2(1 /* inline */, 2)` -> 3, `e0(/* nothing */)` -> 1; probe-verified). Each call below has its own target so no clean sibling can satisfy the pin: a2 is the no-comment control, b2/c2 are trailing/leading inline comments, d1 has an argument beside a comment, e0 is a comment-only (EMPTY) argument list.",
+ "expectSymbols": [
+  { "name": "CommentArity" },
+  { "name": "run" }
+ ],
+ "expectRelationships": [
+  { "type": "calls", "target": "a2", "meta.argumentCount": 2 },
+  { "type": "calls", "target": "b2", "meta.argumentCount": 2 },
+  { "type": "calls", "target": "c2", "meta.argumentCount": 2 },
+  { "type": "calls", "target": "d1", "meta.argumentCount": 1 },
+  { "type": "calls", "target": "e0", "meta.argumentCount": 0 }
+ ]
+}

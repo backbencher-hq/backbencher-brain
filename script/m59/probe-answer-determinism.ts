@@ -19,7 +19,7 @@ import { createHash } from "node:crypto"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const REPO = "$HOME/fixtures/repositories/cats-effect"
+const REPO = "/home/ishaq2321/bb_tests/repositories/cats-effect"
 const META = "/tmp/m59-det-meta.json"
 const SKIP_DIRS = new Set([".git", "node_modules", "build", "target", "dist", "out", ".gradle", "__pycache__", "vendor", "test", "perf", "gen", "generated"])
 

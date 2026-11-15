@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/verify-s3-graph-migrate.ts",
+  "evidenceFile": "S3.json",
+  "generatedAt": "2026-09-04T01:50:20.171Z",
+  "passed": 23,
+  "failed": 0,
+  "negativeCases": 4,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.481Z",
+    "contentSha256": "f8d5be1d3d06983b818e9766c123d86521100b0b879d14acb999251572555ab2"
+  }
+}

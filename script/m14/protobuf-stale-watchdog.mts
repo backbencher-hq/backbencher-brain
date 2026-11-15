@@ -101,7 +101,7 @@ import { readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 /**
  * Both spellings are accepted. An earlier version read only `--k=N`, so `--files 60`
  * was silently ignored and the run used the default while its own banner printed a

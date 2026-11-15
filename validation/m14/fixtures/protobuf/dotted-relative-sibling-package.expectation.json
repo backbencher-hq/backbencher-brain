@@ -1,0 +1,74 @@
+{
+  "fixtureId": "protobuf/dotted-relative-sibling-package",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE REFUSAL on the one relative-reference shape the dotted scope walk cannot resolve, so that 'the analyzer declines rather than guessing' is an asserted property with a regression mutant behind it rather than an unexamined gap. The corpus case is consul: `consul/proto/private/pbconfigentry/config_entry.proto` declares `package hashicorp.consul.internal.configentry`, imports `private/pbcommon/common.proto` (which declares `package hashicorp.consul.internal.common`), and writes the field type `common.EnterpriseMeta` 26 times across the corpus. `common` and `configentry` are SIBLING packages under `hashicorp.consul.internal`, so protoc's C++ scope lookup resolves the written name at level 1. This analyzer emits it as written because an import path is relative to an include root the analyzer is never told, and consul's path (`private/pbcommon`) is not any prefix of any package name, so `resolveViaImports`' directory guard declines correctly. PRICED over all 842 on-disk corpus files through production `parseFile` (script/m14/protobuf-ambiguity-split.mts): 42 edges on 12 distinct targets across 12 files, of 13,024 `uses` edges \u2014 0.32%. Both formulations of protoc's scope walk (prepending an enclosing scope, and protoc's own first-segment rule) were run against each other over those 15 unresolvable targets and DISAGREE ON 0 ROWS, so the level-1 resolution this fixture names is protoc's and not an artefact of the shorthand. THE CONTRAST WITH `protobuf/ancestor-scope-resolution` IS THE POINT: that fixture pins the same dotted climb SUCCEEDING, and the only difference between its rows and this one is that its import path's directory IS its package path. A mutant that always declines is caught there; a mutant that always prefixes the file's own package is caught here.",
+  "expectSymbols": [
+    {
+      "name": "corp.api.resources.accounts.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Holder",
+      "kind": "class",
+      "ownerName": "corp.api.resources.accounts.v1"
+    },
+    {
+      "name": "unresolved",
+      "kind": "property",
+      "ownerName": "corp.api.resources.accounts.v1.Holder"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "vendor/pb/scopes/v1/scope.proto",
+      "path": "vendor/pb/scopes/v1/scope.proto",
+      "note": "The evidence that is NOT evidence. `vendor/pb/scopes/v1` is not any prefix of any package name, so the directory guard has nothing to match and the walk declines. consul's is `private/pbcommon/common.proto` with the same property: path and package are independent because the path is relative to an include root the analyzer is never told."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "corp.api.resources.accounts.v1.Holder",
+      "line_number": 62,
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "corp.api.resources.accounts.v1.Holder",
+      "target": "corp.api.resources.accounts.v1.Holder.unresolved",
+      "line_number": 68,
+      "meta.evidenceClass": "structural",
+      "meta.member": "field"
+    },
+    {
+      "type": "references",
+      "from": "corp.api.resources.accounts.v1.Holder.unresolved",
+      "target": "resources.scopes.v1.ScopeInfo",
+      "line_number": 68,
+      "meta.evidenceClass": "structural",
+      "meta.role": "fieldType",
+      "confidenceMin": 0.9,
+      "note": "THE PINNED DECLINE, and the assertion that makes the refusal falsifiable. protoc resolves this written name to `corp.api.resources.scopes.v1.ScopeInfo` by walking up one enclosing scope; this analyzer emits it exactly as written because no per-file evidence distinguishes that from the level-0 candidate. It resolves to no symbol in this fixture and to none in the corpus either, and that is the honest state: the graph asserts a legal protobuf name that this corpus does not declare, rather than a guessed package the corpus also does not declare. The forbidden alternative is `corp.api.resources.accounts.v1.resources.scopes.v1.ScopeInfo` \u2014 the file's own package prefixed onto a name that is already relative \u2014 which no file anywhere publishes and which the `protobuf/dotted-relative-name-package-prefixed` mutant below exists to catch. Confidence is `structural` because what was derived is a parse fact (the `message_or_enum_type` node's text) and a refusal, not a name match."
+    },
+    {
+      "type": "imports",
+      "from": "corp.api.resources.accounts.v1",
+      "target": "vendor/pb/scopes/v1/scope.proto",
+      "line_number": 60,
+      "meta.evidenceClass": "import_based",
+      "meta.moduleOwner": "package",
+      "note": "The source is the file's own package namespace, the same fix `protobuf/module-edge-source-fallback` pins, asserted here so this fixture also fails if that regresses \u2014 an edge whose source is a bare basename would bind to nothing."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "corp.api.resources.accounts.v1.Holder.unresolved",
+      "target": "resources.scopes.v1.ScopeInfo",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ]
+}

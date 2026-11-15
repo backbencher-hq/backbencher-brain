@@ -84,7 +84,7 @@ const admit = (dir: string, repo: string) => {
     files.push({ repo, rel, abs })
   }
 }
-for (const r of REPOS) admit(path.join("$HOME/fixtures/repositories", r), r)
+for (const r of REPOS) admit(path.join("/home/ishaq2321/bb_tests/repositories", r), r)
 for (const d of EXTRA_DIRS) admit(d, path.basename(d))
 const drawn = SAMPLE > 0 ? files.slice(0, SAMPLE) : files
 

@@ -1,0 +1,127 @@
+{
+  "compared": 500,
+  "crashed": 0,
+  "exportsTotal": 4165,
+  "bogusExportCount": 11,
+  "filesWithBogusExports": 2,
+  "bogusExports": [
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "B",
+      "line": 20
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "Z",
+      "line": 26
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "S",
+      "line": 32
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "T",
+      "line": 38
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "P",
+      "line": 41
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "C",
+      "line": 48
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "I1",
+      "line": 55
+    },
+    {
+      "file": "test/fixedbugs/bug285.go",
+      "target": "I2",
+      "line": 56
+    },
+    {
+      "file": "src/cmd/compile/internal/test/align_test.go",
+      "target": "X2",
+      "line": 78
+    },
+    {
+      "file": "src/cmd/compile/internal/test/align_test.go",
+      "target": "X4",
+      "line": 84
+    },
+    {
+      "file": "src/cmd/compile/internal/test/align_test.go",
+      "target": "X8",
+      "line": 90
+    }
+  ],
+  "instSixTotal": 155,
+  "instSixSelector": 8,
+  "instSixQualifiedOrBare": 132,
+  "sawTopLevelFuncNamedTarget": 155,
+  "filesWithBogusInst": 6,
+  "bogusInst": [
+    {
+      "file": "src/database/sql/sql.go",
+      "source": "Connect",
+      "target": "Open",
+      "line": 814,
+      "call": "selector:compound-operand"
+    },
+    {
+      "file": "src/mime/quotedprintable/reader.go",
+      "source": "NewReader",
+      "target": "NewReader",
+      "line": 26,
+      "call": "selector:receiver"
+    },
+    {
+      "file": "src/net/http/httputil/httputil.go",
+      "source": "NewChunkedReader",
+      "target": "NewChunkedReader",
+      "line": 21,
+      "call": "selector:receiver"
+    },
+    {
+      "file": "src/net/http/httputil/httputil.go",
+      "source": "NewChunkedWriter",
+      "target": "NewChunkedWriter",
+      "line": 36,
+      "call": "selector:receiver"
+    },
+    {
+      "file": "src/reflect/value.go",
+      "source": "FieldByIndexErr",
+      "target": "New",
+      "line": 1338,
+      "call": "selector:receiver"
+    },
+    {
+      "file": "test/abi/part_live.go",
+      "source": "GC",
+      "target": "GC",
+      "line": 29,
+      "call": "selector:receiver"
+    },
+    {
+      "file": "test/typeparam/issue50598.dir/main.go",
+      "source": "New",
+      "target": "New",
+      "line": 15,
+      "call": "selector:receiver"
+    },
+    {
+      "file": "test/typeparam/issue50598.dir/main.go",
+      "source": "New",
+      "target": "New",
+      "line": 15,
+      "call": "selector:receiver"
+    }
+  ]
+}

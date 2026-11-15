@@ -48,7 +48,7 @@ import * as cp from "node:child_process"
 import * as WTS from "web-tree-sitter"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.env.BB_ONLY_REPO ?? "solidity"
 const DIR = path.join(CORPUS_ROOT, REPO)
 const OUT = path.join(ROOT, "validation/m60/results/solidity-type-census.json")

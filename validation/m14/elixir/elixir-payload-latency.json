@@ -1,0 +1,146 @@
+{
+  "tool": "validation/m14/elixir/elixir-payload-latency.ts",
+  "lane": "ELIXIR_FIX2",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "corpusDirs": [
+      "elixir",
+      "otp"
+    ],
+    "extensions": [
+      ".ex",
+      ".exs"
+    ],
+    "derived": true,
+    "files": 601
+  },
+  "baselineRef": "63a48923e",
+  "productionPathCrossCheck": {
+    "files": 601,
+    "relationships": 68357,
+    "wallMs": 144371,
+    "note": "ASTEngine.parseFile on the same population; must match `after` on edge count for the comparison above to be on the production path"
+  },
+  "before": {
+    "label": "BEFORE (63a48923e)",
+    "filesParsed": 601,
+    "filesCrashed": 0,
+    "wallMs": 119087,
+    "msPerFile": 198.148,
+    "relationships": 61188,
+    "symbols": 10849,
+    "bytesTotal": 9330748,
+    "bytesWithoutReasonMetadata": 9330748,
+    "bytesByType": {
+      "calls": 7852052,
+      "references": 116300,
+      "contains": 1144543,
+      "instantiates": 194686,
+      "implements": 23167
+    },
+    "countByType": {
+      "calls": 49007,
+      "references": 930,
+      "contains": 9873,
+      "instantiates": 1187,
+      "implements": 191
+    },
+    "heuristicByType": {
+      "calls": {
+        "sub": 49007,
+        "total": 49007
+      },
+      "references": {
+        "sub": 930,
+        "total": 930
+      },
+      "contains": {
+        "sub": 0,
+        "total": 9873
+      },
+      "instantiates": {
+        "sub": 1187,
+        "total": 1187
+      },
+      "implements": {
+        "sub": 73,
+        "total": 191
+      }
+    },
+    "distinctTypes": [
+      "calls",
+      "contains",
+      "implements",
+      "instantiates",
+      "references"
+    ]
+  },
+  "after": {
+    "label": "AFTER (working tree)",
+    "filesParsed": 601,
+    "filesCrashed": 0,
+    "wallMs": 92259,
+    "msPerFile": 153.509,
+    "relationships": 68357,
+    "symbols": 10829,
+    "bytesTotal": 16248987,
+    "bytesWithoutReasonMetadata": 10602197,
+    "bytesByType": {
+      "calls": 12076581,
+      "uses": 617387,
+      "references": 204312,
+      "contains": 1968689,
+      "exports": 1002197,
+      "instantiates": 341806,
+      "implements": 38015
+    },
+    "countByType": {
+      "calls": 49007,
+      "uses": 2117,
+      "references": 930,
+      "contains": 9849,
+      "exports": 5076,
+      "instantiates": 1187,
+      "implements": 191
+    },
+    "heuristicByType": {
+      "calls": {
+        "sub": 49007,
+        "total": 49007
+      },
+      "uses": {
+        "sub": 2117,
+        "total": 2117
+      },
+      "references": {
+        "sub": 930,
+        "total": 930
+      },
+      "contains": {
+        "sub": 0,
+        "total": 9849
+      },
+      "exports": {
+        "sub": 0,
+        "total": 5076
+      },
+      "instantiates": {
+        "sub": 1187,
+        "total": 1187
+      },
+      "implements": {
+        "sub": 73,
+        "total": 191
+      }
+    },
+    "distinctTypes": [
+      "calls",
+      "contains",
+      "exports",
+      "implements",
+      "instantiates",
+      "references",
+      "uses"
+    ]
+  }
+}

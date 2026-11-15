@@ -1,0 +1,28 @@
+{
+  "fixtureId": "vue/ts-class-heritage-seam",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Written from the TypeScript family's contract (real-typescript-analyzer.ts: class heritage -> extends, implements_clause -> implements, a member the base or an in-file interface also declares -> overrides with the `${sub}.${member}` -> `${base}.${member}` endpoint) plus the SFC seam's two published rewrites (F8 re-points a delegated row's SOURCE at the one component identity; M59 #825 shifts its line by the block offset). No expectation value was copied from analyzer output.",
+  "rationale": "Pins the positive half of this lane's `implements` and `overrides` verdicts. Both are RULED-BY-CORPUS — measured 0 occurrences of a class-with-superclass, a class-with-implements and an `override` modifier across 897 script blocks in 1,151 real .vue files (script/vue-fix/vue-construct-probe.ts) — and a ruling whose positive half is only a probe dies with the probe. This is the shape that proves the seam carries the delegate's class-heritage rows rather than dropping them, which is the claim the corpus cannot make. It is deliberately NOT a Vue construct: a class in a script block is ordinary TypeScript, so every row here is the DELEGATE's arriving through the seam, and the assertions that matter are the seam's: `sfcDelegated: true` on every row, the class-identity SOURCE (F8), and a line on the FILE's numbering rather than the script-relative one (M59 #825 — the script block starts on line 2 here, so an unshifted line would be 1 lower on every row).",
+  "expectSymbols": [
+    { "name": "ts-class-heritage-seam", "kind": "class", "meta.isVueComponent": true },
+    { "name": "Shape", "kind": "interface" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Widget", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Widget", "target": "Base", "meta.sourceKind": "class", "meta.sfcDelegated": true, "meta.sfcLineOffset": 1, "line_number": 36 },
+    { "type": "implements", "from": "Widget", "target": "Shape", "meta.sfcDelegated": true, "meta.sfcLineOffset": 1, "line_number": 36 },
+    { "type": "overrides", "from": "Widget.render", "target": "Base.render", "confidenceMin": 0.7, "meta.baseClass": "Base", "meta.sfcDelegated": true, "line_number": 37 },
+    { "type": "overrides", "from": "Widget.area", "target": "Shape.area", "confidenceMin": 0.7, "meta.implementedInterface": "Shape", "meta.sfcDelegated": true, "line_number": 38 },
+    { "type": "exports", "from": "ts-class-heritage-seam", "target": "Widget", "meta.isDefault": true, "meta.sfcDelegated": true },
+    { "type": "contains", "from": "Widget", "target": "render" },
+    { "type": "contains", "from": "Widget", "target": "area" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "default", "comment": "F19: `default` is a keyword, never a symbol. A NAMED default export (`export default class Widget`) resolves to `Widget` and ships; the anonymous object form publishes no exports row at all." },
+    { "type": "overrides", "from": "Widget.render", "target": "Shape.render", "comment": "Shape declares `area`, not `render`: the interface arm must not invent the member it does not declare." },
+    { "type": "overrides", "from": "Base.render", "target": "Widget.render", "comment": "direction: the subclass overrides the base, never the reverse." },
+    { "type": "implements", "from": "Shape", "target": "Widget", "comment": "direction: the class implements the interface." }
+  ]
+}

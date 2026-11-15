@@ -27,7 +27,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.env.BB_ONLY_REPO ?? "solidity"
 const REV = process.env.BB_CORPUS_REV ?? "32b5b8c4655448291e27272d43607b9e3ae8c1d8"
 const EXTS = ["sol"]

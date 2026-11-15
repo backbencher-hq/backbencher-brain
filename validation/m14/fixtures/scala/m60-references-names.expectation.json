@@ -1,0 +1,65 @@
+{
+  "fixtureId": "scala/m60-references-names",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the M60/S7 + S8 rulings; spellings and lines recorded from the post-fix run. Both defects published an edge carrying a wrong NAME — a backticked module path and a type parameter used as a source — so the assertion that can fail on either is on the positive spelling of the name, plus the forbids below.",
+  "rationale": "M60/S7 and S8 — two `references` defects, both about what a published NAME is. S7: handleImport built the module path from raw node text while createSymbol strips quoting everywhere else, so `import scala.language.`2.13`` published a `references` target no other edge can spell (658 of 23,650 scala3 imports; 0 of 1,337 in cats-effect). S8: resolveSource read the first `identifier` child, which for `def <&[B](that: IO[B])` is the TYPE PARAMETER `B`, so every reference inside an operator-named method was attributed to a binding — and because the dedupe key is (source, target, kind), all such methods in a file collapsed onto one source and the edge count dropped too. Neither is visible to the lane, which matches on (label, target): a wrong SOURCE cannot change a label's coverage, which is why `uses` also sat at 100% with the same resolveSource.",
+  "expectSymbols": [
+    { "name": "Refs", "kind": "class" },
+    { "name": "<&", "kind": "method", "ownerName": "Refs", "comment": "the operator-named method whose name must survive into the reference SOURCE" },
+    { "name": "zip", "ownerName": "Refs", "comment": "control: an identifier-named method resolves its own source" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "root", "target": "scala.language.2.13", "line_number": 9, "comment": "S7: the module with the quoting stripped. `2.13` is backticked precisely because it is not a legal Scala identifier, so the ONLY other spelling of this package is scala.language.2.13 — a backticked target joins to nothing" },
+    { "type": "references", "from": "root", "target": "scala.collection.immutable", "line_number": 10, "comment": "a renamed selector contributes the IMPORTED segment to the path, not the alias" },
+    { "type": "references", "from": "root", "target": "cats.effect.IO", "line_number": 11, "comment": "an `as` alias likewise keeps the original segment" },
+
+    { "type": "references", "from": "<&", "target": "Refs", "line_number": 19, "comment": "S8: the reference SOURCE is the method, not its type parameter" },
+    { "type": "references", "from": "<&", "target": "A", "line_number": 19 },
+    { "type": "references", "from": "<&", "target": "Map", "line_number": 20 },
+    { "type": "references", "from": "<&", "target": "String", "line_number": 20 },
+
+    { "type": "references", "from": "zip", "target": "Refs", "line_number": 23, "comment": "control" },
+    { "type": "references", "from": "zip", "target": "B", "line_number": 23 },
+
+    { "type": "references", "from": "size", "target": "Int", "line_number": 30, "comment": "a parameterless def's type child is its RETURN type. The `annotation_type` label that position would otherwise carry is unreachable — see SDJ-6" },
+    { "type": "references", "from": "save", "target": "IO", "line_number": 34, "comment": "a throws clause names its ARGUMENTS; `throws` itself is never a reference" },
+    { "type": "references", "from": "save", "target": "String", "line_number": 35 }
+  ],
+  "forbidSymbols": [
+    { "name": "scala.language.`2.13`", "comment": "S7: quoting is syntax, not part of a name" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "root",
+      "target": "scala.language.`2.13`",
+      "comment": "S7 — the defect published exactly this row"
+    },
+    {
+      "type": "references",
+      "from": "A",
+      "target": "Refs",
+      "line_number": 19,
+      "comment": "S8 — the defect published `<&`'s references under `A`, its own type parameter. Both `def <&` overloads collapsed onto one bogus source, so the edge COUNT dropped as well as the source being wrong."
+    },
+    {
+      "type": "references",
+      "from": "A",
+      "target": "Map",
+      "line_number": 20
+    },
+    {
+      "type": "references",
+      "from": "A",
+      "target": "String",
+      "line_number": 20
+    },
+    {
+      "type": "references",
+      "from": "save",
+      "target": "throws",
+      "comment": "the throws clause's own head is never a reference"
+    }
+  ]
+}

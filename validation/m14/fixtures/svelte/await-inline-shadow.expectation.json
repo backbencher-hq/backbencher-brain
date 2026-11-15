@@ -1,0 +1,50 @@
+{
+  "fixtureId": "svelte/await-inline-shadow",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Sv1 review wave M4: INLINE then/as vars (`then value` / `as d` with no then_block node) were never registered as template-locals, so {value}/{d} leaked as member uses. ADVERSARIAL: same-named members value and d EXIST — the inline vars must shadow them while the real promise/data reads still emit. M1 companion pin: member x read inside the await block MUST emit (the deleted phantom `\" x\"` shadow suppressed exactly this shape).",
+  "expectSymbols": [
+    {
+      "name": "promise",
+      "kind": "variable"
+    },
+    {
+      "name": "data",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "await-inline-shadow",
+      "target": "promise",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "await-inline-shadow",
+      "target": "data",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "await-inline-shadow",
+      "target": "x",
+      "meta.isTemplateExpression": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "await-inline-shadow",
+      "target": "value",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "await-inline-shadow",
+      "target": "d",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

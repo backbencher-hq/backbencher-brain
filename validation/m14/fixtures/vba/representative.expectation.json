@@ -1,0 +1,26 @@
+{
+  "fixtureId": "vba/representative",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the first VBA lane contract across module attributes, public exports, nested declarations, typed references, calls, construction, and body reads.",
+  "expectSymbols": [
+    { "name": "MaxCount", "kind": "constant" },
+    { "name": "count", "kind": "variable" },
+    { "name": "Main", "kind": "method" },
+    { "name": "item", "kind": "variable", "ownerName": "Main" },
+    { "name": "Add", "kind": "function" },
+    { "name": "LogMessage", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "decorates", "from": "root", "target": "VB_Name", "line_number": 1 },
+    { "type": "exports", "from": "root", "target": "MaxCount" },
+    { "type": "exports", "from": "root", "target": "Main" },
+    { "type": "contains", "from": "Main", "target": "item" },
+    { "type": "references", "from": "Main", "target": "Widget" },
+    { "type": "instantiates", "from": "Main", "target": "Widget" },
+    { "type": "calls", "from": "Main", "target": "Run" },
+    { "type": "calls", "from": "Main", "target": "LogMessage" },
+    { "type": "uses", "from": "Main", "target": "count" },
+    { "type": "uses", "from": "LogMessage", "target": "value" }
+  ]
+}

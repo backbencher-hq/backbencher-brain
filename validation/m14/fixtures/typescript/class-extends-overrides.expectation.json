@@ -1,0 +1,30 @@
+{
+  "fixtureId": "typescript/class-extends-overrides",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS class EXTENDS overrides (M1). The analyzer paired `implements` bases structurally but not `extends` ones, so `class Sub extends Base { run(){} }` emitted nothing — and `override` is OPTIONAL in TypeScript (only required under noImplicitOverride), so that was the majority shape. The oracle already derives these as truth: `declParents` takes extends AND implements edges whose target resolves in-file (script/m14/differential.ts:12469); running it on this file's shape gave truth `Sub.run -> Base.run` against an analyzer that emitted nothing. Every abstention is pinned beside the gain because a name-only pairing arm over-claims without them: the keyword form must emit exactly ONE edge (the keyword arm and the structural arm must not both fire), a class FIELD must not pair (the oracle excludes public_field_definition by name so truth cannot outrun the analyzer), a QUALIFIED/EXTERNAL base resolves to no in-file declaration and abstains, and a member the base never declares pairs with nothing. The overload group in the subclass collapses to its last declaration by the class extractor's existing rule, so it still resolves; the live overload ABSTENTION is the base-side one (a doubly-declared interface member), pinned by class-implements-interface-overrides. Verified: the analyzer's override set on this file equals the oracle's truth set exactly (6 edges).",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Sub", "kind": "class" },
+    { "name": "SubKeyword", "kind": "class" },
+    { "name": "SubTransitive", "kind": "class" },
+    { "name": "WithField", "kind": "class" },
+    { "name": "External", "kind": "class" },
+    { "name": "Unpaired", "kind": "class" },
+    { "name": "Contract", "kind": "interface" },
+    { "name": "Implements", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "Sub.run", "target": "Base.run", "note": "THE GAIN: no `override` keyword, and the edge exists anyway" },
+    { "type": "overrides", "from": "SubKeyword.run", "target": "Base.run", "note": "with the keyword: exactly one edge — the keyword arm and the structural arm must not both fire" },
+    { "type": "overrides", "from": "SubTransitive.run", "target": "Base.run", "note": "transitive through a base that declares nothing itself" },
+    { "type": "overrides", "from": "WithField.helper", "target": "Base.helper", "note": "the field `run2` pairs with nothing; a class FIELD is public_field_definition, which the oracle excludes by name" },
+    { "type": "overrides", "from": "Implements.handle", "target": "Contract.handle", "note": "CONTROL: the implements path the analyzer already carried is unchanged" },
+    { "type": "extends", "from": "Sub", "target": "Base" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "WithField.run2", "target": "Base.run2", "note": "a class FIELD must not pair — the oracle's member set keeps public_field_definition out precisely so truth cannot outrun the analyzer" },
+    { "type": "overrides", "from": "External.run", "target": "ImportedBase.run", "note": "a QUALIFIED/external base resolves to no in-file declaration: abstain" },
+    { "type": "overrides", "from": "Unpaired.extra", "target": "Base.extra", "note": "the base never declares `extra` — a member pairs with nothing" }
+  ]
+}

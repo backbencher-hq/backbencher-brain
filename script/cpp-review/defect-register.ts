@@ -8,7 +8,7 @@
  * "looks wrong" is not a finding, "C++ has no identifier spelled this way" is.
  * A class that reads 0 is the gate; a class that reads non-zero fails it.
  *
- *   BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
+ *   BB_CORPUS_ROOT=/home/sano/ishaq/bb_tests/repositories \
  *   bun run script/cpp-review/defect-register.ts
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs"
@@ -67,7 +67,7 @@ const d7LegibleName = (n: any): string | null => {
   return leaf(nf)
 }
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/sano/ishaq/bb_tests/repositories"
 const REPOS = (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2,abseil-cpp,spdlog,zig").split(",").filter(Boolean)
 const EXTS = [".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++"]
 const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-debug"])

@@ -272,7 +272,7 @@ async function main() {
       },
       {
         description:
-          "the corpus is the pinned fixtures repositories and rotates as a pool, so a construct no corpus exercises is reported as NOT SEEN rather than unaccounted — `MISSING` is in that state today, handled and pinned by fixture instead",
+          "the corpus is the pinned bb_tests repositories and rotates as a pool, so a construct no corpus exercises is reported as NOT SEEN rather than unaccounted — `MISSING` is in that state today, handled and pinned by fixture instead",
       },
     ],
     data: {

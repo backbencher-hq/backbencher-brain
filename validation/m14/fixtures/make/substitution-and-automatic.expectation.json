@@ -1,0 +1,193 @@
+{
+  "fixtureId": "make/substitution-and-automatic",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the numbered source: `SRC` on 11, `OBJ` on 12 (whose substitution reference to SRC is on the SAME line), `all` on 15, its first recipe on 16, its second on 21. The OBJ->SRC row is the whole reason this fixture exists and it is asserted with the substitution form named in the note. Lines 27-34 were added after the corpus grew to 100 files: phpmyadmin/docs/Makefile reads `$(PAPEROPT_$(PAPER))` while declaring `PAPEROPT_a4` and `PAPEROPT_letter`, and the differential reported 2 of those reads MISSING. The analyzer looked for a `word` child of `variable_reference` and found none, because the name is a `concatenation`. Line numbers transcribed from the numbered source and checked against a run: FLAVOUR_a 31, FLAVOUR_b 32, FLAV 33, OPTS 34, and both edges on 34.",
+  "rationale": "Two reference forms that are easy to miss because they are not `$(VAR)`. `$(VAR:.c=.o)` is a `substitution_reference` — a SIBLING of `variable_reference`, not a child — so an analyzer reading only the latter loses every substitution reference in the corpus (9 of them). `$@` / `$<` / `$^` are `automatic_variable`s: they name something no file can declare, which is exactly what the `uses` class exists for, so they are published rather than dropped and labelled `automatic` rather than `builtin`. `$$` is Make's ESCAPED dollar, so `$$?` is the SHELL's exit-status variable, not a Make automatic one; the edge is real information but calling it a builtin would be a category error, so it is labelled `shell_variable`.",
+  "expectSymbols": [
+    {
+      "name": "substitution-and-automatic.mk",
+      "kind": "module"
+    },
+    {
+      "name": "SRC",
+      "kind": "constant"
+    },
+    {
+      "name": "OBJ",
+      "kind": "constant"
+    },
+    {
+      "name": "all",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "SRC",
+      "line_number": 11,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "OBJ",
+      "line_number": 12,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "all",
+      "line_number": 15,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "references",
+      "from": "OBJ",
+      "target": "SRC",
+      "line_number": 12,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "substitution-and-automatic.mk",
+      "target": "all",
+      "line_number": 14,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "all",
+      "target": "OBJ",
+      "line_number": 15,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "all",
+      "target": "$@",
+      "line_number": 16,
+      "meta.evidenceClass": "automatic"
+    },
+    {
+      "type": "uses",
+      "from": "all",
+      "target": "$<",
+      "line_number": 16,
+      "meta.evidenceClass": "automatic"
+    },
+    {
+      "type": "uses",
+      "from": "all",
+      "target": "$^",
+      "line_number": 16,
+      "meta.evidenceClass": "automatic"
+    },
+    {
+      "type": "uses",
+      "from": "all",
+      "target": "$(@D)",
+      "line_number": 16,
+      "meta.evidenceClass": "automatic"
+    },
+    {
+      "type": "uses",
+      "from": "all",
+      "target": "$$?",
+      "line_number": 21,
+      "meta.evidenceClass": "shell_variable"
+    },
+    {
+      "type": "exports",
+      "from": "substitution-and-automatic.mk",
+      "target": "all",
+      "line_number": 15,
+      "meta.evidenceClass": "export_target"
+    },
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "FLAVOUR_a",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "FLAVOUR_b",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "FLAV",
+      "line_number": 33
+    },
+    {
+      "type": "contains",
+      "from": "substitution-and-automatic.mk",
+      "target": "OPTS",
+      "line_number": 34
+    },
+    {
+      "type": "uses",
+      "from": "OPTS",
+      "target": "FLAVOUR_$(FLAV)",
+      "line_number": 34,
+      "meta.evidenceClass": "external"
+    },
+    {
+      "type": "references",
+      "from": "OPTS",
+      "target": "FLAV",
+      "line_number": 34,
+      "meta.evidenceClass": "reference"
+    }
+  ],
+  "forbidSymbols": [],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "SRC",
+      "note": "SRC is declared in this file, so the substitution reference to it is a `references` edge; `uses` would demote a real declaration"
+    },
+    {
+      "type": "references",
+      "target": "$@",
+      "note": "an automatic variable names nothing any file can declare, so it is `uses`; `references` would claim a declaration named `$@`"
+    },
+    {
+      "type": "references",
+      "target": "$<",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "$^",
+      "note": "same"
+    },
+    {
+      "type": "calls",
+      "target": "$@",
+      "note": "an automatic variable is a READ, not a call"
+    },
+    {
+      "from": "substitution-and-automatic.mk",
+      "target": "FLAVOUR_$(FLAV)",
+      "note": "a computed name is not DECLARED, so no `contains` edge may claim this file declares it. The declaration belongs to the two concrete names the expansion can resolve to (FLAVOUR_a / FLAVOUR_b), and inventing a symbol for the computed text would assert a referent that does not exist."
+    },
+    {
+      "from": "OPTS",
+      "target": "FLAVOUR_$(FLAV)",
+      "type": "references",
+      "note": "the label must be `uses`, not `references`: `references` is emitted iff THIS file declares the name, and no file can declare a name built at expand time. Getting this wrong would publish a declaration that does not exist."
+    },
+    {
+      "from": "OPTS",
+      "target": "FLAVOUR_",
+      "note": "only the `word` HALF of the concatenation. The whole point of the read is that the name is assembled from `FLAVOUR_` AND `$(FLAV)`; publishing the prefix alone records a name that appears nowhere in the file."
+    }
+  ]
+}

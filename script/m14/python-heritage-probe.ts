@@ -52,7 +52,7 @@ import { getParser } from "../../src/ast/engine"
 import { RealPythonAnalyzer } from "../../src/ast/real-python-analyzer"
 
 const CORPUS_ROOT = path.resolve(
-  process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories",
+  process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories",
 )
 const ADMITTED_EXTENSIONS = [".py", ".pyi", ".pyw"]
 const SIZE_CAP = 1024 * 1024

@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/exports-edges",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the exports relationship kind (section B). ES module semantics: exported declarations are the module's public surface — exports edges from the module leaf to each exported name.",
+  "expectSymbols": [
+    { "name": "alpha", "kind": "constant" },
+    { "name": "beta", "kind": "function" },
+    { "name": "Gamma", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "exports-edges", "target": "alpha" },
+    { "type": "exports", "from": "exports-edges", "target": "beta" },
+    { "type": "exports", "from": "exports-edges", "target": "Gamma" }
+  ]
+}

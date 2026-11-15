@@ -1,0 +1,12 @@
+{
+  "issue": "M15.P1",
+  "code": "P1",
+  "tool": "bb_patterns",
+  "title": "classification — orphan semantics",
+  "verified": true,
+  "checks": 5,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:23:15.456Z"
+}

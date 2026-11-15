@@ -1,0 +1,56 @@
+{
+  "comment": "THE FOUR EXTENDED TYPES ON AN `.html` PAYLOAD, AND THE ONE THAT IS NOT THERE. The html grammar is a markup grammar — the pinned build declares 19 distinct named node types (validation/m14/measurements/html-grammar-nodes.json) and none of them is a type declaration, a member declaration, a supertype clause or a decorator — so every row below arrives through the EMBEDDED-SCRIPT SEAM, tagged `htmlEmbedded` so the layer that produced it is auditable. THE CORPUS CANNOT WITNESS ANY OF THEM: script/m14/html-extended-construct-probe.ts counts 0 decorator nodes, 0 implements clauses, 0 jsx elements and 0 mixin clauses over the WHOLE 8,888-file admitted population, and the production arm's own per-type rows are 0 for all four. So a planted document is the only honest witness, and each row is a SAME-FILE CAUSAL EDGE: it exists only when the construct reaches the analyzer as a REAL NODE rather than as recovery text. NEGATIVE CONTROLS, RUN AND OBSERVED TO FAIL: deleting the `@sealed` line fails the `decorates` pin by name; deleting `implements Shape` fails the `implements` pin by name; deleting `<Button />` fails the `renders` pin by name; deleting `extends Timestamped(Base)` fails the `mixes_in` pin by name. `part_of` is pinned as FORBIDDEN, which is the negative half of the ruling: the nearest construct a javascript block can carry — a `part 'other.js'` directive — is not a part directive at all (javascript has no such construct), so no `part_of` row is published.",
+  "expectSymbols": [
+    { "name": "embedded-extended-types", "kind": "module" },
+    { "name": "app", "kind": "class", "meta.tagName": "main" },
+    { "name": "sealed", "kind": "function", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Decorated", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Button", "kind": "function", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Panel", "kind": "function", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Base", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Timestamped", "kind": "function", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Record", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Shape", "kind": "interface", "meta.htmlEmbedded": true, "meta.embeddedLang": "ts" },
+    { "name": "Square", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "ts" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "`decorates` — THE DIRECTION types.ts:120-144 fixes: source = the DECORATED DECLARATION, target = the decorator. NOT `calls`: the decorated symbol does not invoke the decorator. NOT `references`: a reference says the decorator's NAME is mentioned, which says nothing about application.",
+      "type": "decorates",
+      "from": "Decorated",
+      "target": "sealed",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "comment": "`implements` — source = the class, target = the interface it conforms to. The block is `lang=\"ts\"`, so the DELEGATE is the typescript analyzer; a javascript block cannot carry this construct at all (the javascript lane ruled `implements` for javascript on a measured `class_heritage` shape distribution).",
+      "type": "implements",
+      "from": "Square",
+      "target": "Shape",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "ts"
+    },
+    {
+      "comment": "`renders` — source = the RENDERING symbol, target = the RENDERED component. NOT `instantiates`: nothing is `new`ed — the host renderer constructs the element, and a construction edge would claim an allocation site the source does not contain.",
+      "type": "renders",
+      "from": "Panel",
+      "target": "Button",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "comment": "`mixes_in` — source = the class that COMPOSES the mixin, target = the mixin. A mixin is not `extends` (there is no single base) and not `implements` (no conformance is declared). The javascript lane's discriminator is POSITION — the call IN the heritage IS the mixin — so the edge exists only where the heritage clause's own shape is a call.",
+      "type": "mixes_in",
+      "from": "Record",
+      "target": "Timestamped",
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "THE NEGATIVE HALF OF THE `part_of` RULING. The nearest construct a javascript block can carry is a `part 'other.js'` directive, and it is not one: javascript has NO part directive, so the directive parses as an ordinary expression statement and no `part_of` row is published. The ruling's near miss is COUNTED over the admitted population (the template-language include family) and its falsifier names a counted construct; this row is the same fact, pinned as a behaviour rather than as prose.",
+      "type": "part_of"
+    }
+  ]
+}

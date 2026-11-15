@@ -1,0 +1,36 @@
+@import "base.css";
+@import url("theme.css");
+
+@layer base {
+  .btn {
+    color: red;
+  }
+}
+
+@media print {
+  .only-print {
+    display: none;
+  }
+}
+
+@container (min-width: 400px) {
+  .wide {
+    color: blue;
+  }
+}
+
+@supports (display: grid) {
+  .grid-capable {
+    display: grid;
+  }
+}
+
+:root {
+  --brand: #06c;
+  --gap: 8px;
+}
+
+.btn {
+  color: var(--brand);
+  padding: var(--gap);
+}

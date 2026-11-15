@@ -26,8 +26,8 @@ import { RealPhpAnalyzer } from "../../src/ast/real-php-analyzer"
 
 const ROOT = process.cwd()
 const CORPORA = [
-  "$HOME/fixtures/repositories/phpunit",
-  "$HOME/fixtures/repositories/phpmyadmin",
+  "/home/ishaq2321/bb_tests/repositories/phpunit",
+  "/home/ishaq2321/bb_tests/repositories/phpmyadmin",
 ].filter((d) => existsSync(d))
 const PER_CORPUS = Number(process.env.SAMPLE ?? 600)
 

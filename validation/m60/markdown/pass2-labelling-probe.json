@@ -1,7 +1,7 @@
 {
   "instrument": "markdown pass-2 labelling probe (validation/m14/fixtures/markdown/pass2-labelling-probe.ts)",
   "entryPoint": "parseFile (src/ast/pool-worker.ts) for the emitted edge census; both pinned wasms for the tree counts",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "seed": "markdown-pass2-labelling-v1",
   "admittedMarkdownFiles": 12729,
   "reposWithMarkdown": 139,

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/modifier-decorates-relabel.sol",
+  "authoredFrom": "The decorates relabel, authored from the analyzer's measured output BEFORE the run: 222 `modifier_invocation` sites over the whole admitted population, 144 resolving to a declared `modifier_definition` and 78 to a declared contract/interface/library, 0 ambiguous, 0 unresolved (validation/m14/measurements/solidity-extended-census.json).",
+  "note": "ONE NODE TYPE WEARS TWO CONSTRUCTS. `modifier_invocation` is both an applied modifier and a base-constructor call, and the tree cannot tell them apart — the discriminator is RESOLUTION, so every row here is a resolution claim. `guarded`/`twice` fire `decorates` because their targets resolve to the in-file `modifier_definition`. The constructor's `Base(42)`/`Other()` resolve to declared CONTRACTS, so they stay `calls` and are FORBIDDEN as `decorates` — the impostor is pinned in both directions. `fromIndex` is declared nowhere in this file, so with NO project index it must stay `calls` unresolved and is FORBIDDEN as `decorates`: an unresolved name is not a decorator claim. `neverApplied` is declared and applied by nothing, so it decorates nothing. `twice` applies the SAME modifier twice, and the relabel's dedupe is per (source, target) pair — the pin states one edge, and a forbid guards against the reverse mistake only where a second edge shape would be wrong.",
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "source": "guarded",
+      "target": "onlyGuard",
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file",
+      "comment": "THE FIRED ROW. `onlyGuard` resolves to the `modifier_definition` in `Guarded` — an in-file declaration — so the application decorates `guarded`. Source = the decorated declaration, target = the modifier, the direction the vocabulary states."
+    },
+    {
+      "type": "decorates",
+      "source": "twice",
+      "target": "onlyGuard",
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file",
+      "comment": "Second application site, same modifier. One edge per (source, target) pair — the dedupe already holds for the pre-relabel `calls` spelling and the relabel must not change it."
+    },
+    {
+      "type": "calls",
+      "source": "constructor",
+      "target": "Base",
+      "meta.isBaseConstructorCall": true,
+      "meta.calleeKind": "baseConstructorCall",
+      "comment": "THE IMPOSTOR, pinned. `Base(42)` sits in `constructor() Base(42) Other()` — the same `modifier_invocation` node type as `onlyGuard` — but its target resolves to a declared CONTRACT, so it stays `calls`: the base constructor is being invoked, nothing is being annotated."
+    },
+    {
+      "type": "calls",
+      "source": "constructor",
+      "target": "Other",
+      "meta.isBaseConstructorCall": true,
+      "meta.calleeKind": "baseConstructorCall",
+      "comment": "The second base-constructor call in the same header, so a rule keyed on position (first vs later base) cannot pass."
+    },
+    {
+      "type": "calls",
+      "source": "unresolvedName",
+      "target": "fromIndex",
+      "meta.isModifierInvocation": true,
+      "comment": "`fromIndex` is declared NOWHERE in this file and no project index is supplied, so the analyzer cannot say what it is. The honest row is `calls` unresolved — and the forbid row below is what makes a fabricated `decorates` go red."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "source": "constructor",
+      "target": "Base",
+      "comment": "THE IMPOSTOR FORBIDDEN. `Base` is a declared CONTRACT, so `Base(42)` can never decorate the constructor. This is the one row a name-based or position-based discriminator would get wrong, and the whole reason the discriminator is resolution-based."
+    },
+    {
+      "type": "decorates",
+      "source": "constructor",
+      "target": "Other",
+      "comment": "Same impostor, second base — a rule that decorated only the FIRST base-constructor call would pass the previous forbid and fail this one."
+    },
+    {
+      "type": "decorates",
+      "source": "unresolvedName",
+      "target": "fromIndex",
+      "comment": "AN UNRESOLVED NAME IS NOT A DECORATOR CLAIM. With no in-file declaration and no project index, `fromIndex` must not become `decorates` — the analyzer's refusal is the rule, not a gap."
+    },
+    {
+      "type": "decorates",
+      "source": "guarded",
+      "target": "neverApplied",
+      "comment": "A DECLARED modifier applied by nothing decorates nothing. The failure mode of a rule that treated every modifier name in scope as applied."
+    },
+    {
+      "type": "calls",
+      "source": "guarded",
+      "target": "onlyGuard",
+      "comment": "THE RELABEL'S OWN FORBID. An applied modifier that resolves to its `modifier_definition` is `decorates`, never `calls` — this is what makes a revert of the label move go red, and a widening that emits BOTH edges red too."
+    },
+    {
+      "type": "calls",
+      "source": "twice",
+      "target": "onlyGuard",
+      "comment": "Second application site, same relabel forbid, so the second site cannot revert independently of the first."
+    }
+  ]
+}

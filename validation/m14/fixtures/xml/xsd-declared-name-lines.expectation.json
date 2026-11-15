@@ -1,0 +1,133 @@
+{
+  "fixtureId": "xml/xsd-declared-name-lines",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M19 (master review). A vocabulary DECLARATION is written on its `name=` attribute, and a formatted document routinely puts that attribute \u2014 or the value itself \u2014 on a different line from the tag that opens the declaration. Both the symbol and the `contains` edge were anchored to the ELEMENT, so a reader following either to its line landed one or two lines above the string that spells the name. Measured over the 2,500-file blast radius: 4 of 19,852 declarations, in 2 files. Small, and small is the point: every other instrument missed it, because each asks the analyzer a question it can answer correctly while the LINE is wrong, and the differential compares label+target only. The anchor is the line carrying the VALUE, which is the Attribute when the two share a line and the AttValue when the keyword and the value are split. Each entry below names a DIFFERENT shape: attribute on the next line (28, 37), keyword and value split across lines (24, 33), and a value with surrounding whitespace that is trimmed (36). A fixture that only covered the first shape would pass against a fix that got the other two wrong. The complexType is named distinctly from the element that uses it, because a fixture that cannot tell two same-named declarations apart would be asserting against whichever one the runner's first-match lookup happens to find \u2014 a pin that passes for the wrong reason is the failure mode the overlap-aware comment in the runner warns about.",
+  "expectSymbols": [
+    {
+      "name": "SplitKeywordAndValue",
+      "kind": "class",
+      "meta.isVocabDeclaration": true,
+      "meta.declaredByAttribute": "name"
+    },
+    {
+      "name": "AttrOnNextLine",
+      "kind": "class",
+      "meta.isVocabDeclaration": true
+    },
+    {
+      "name": "AttrWithSpace",
+      "kind": "class",
+      "meta.isVocabDeclaration": true
+    },
+    {
+      "name": "AttrKeywordSplitToo",
+      "kind": "class",
+      "meta.isVocabDeclaration": true
+    },
+    {
+      "name": "TrimmedName",
+      "kind": "class",
+      "meta.isVocabDeclaration": true
+    },
+    {
+      "name": "TopLevelOnNextLine",
+      "kind": "class",
+      "meta.isVocabDeclaration": true
+    },
+    {
+      "name": "SplitKeywordAndValueType",
+      "kind": "class",
+      "meta.isVocabDeclaration": true
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "SplitKeywordAndValue",
+      "ownerName": "xsd:schema",
+      "startLine": 24
+    },
+    {
+      "symbol": "SplitKeywordAndValueType",
+      "ownerName": "xsd:schema",
+      "startLine": 26
+    },
+    {
+      "symbol": "AttrOnNextLine",
+      "ownerName": "SplitKeywordAndValueType",
+      "startLine": 28
+    },
+    {
+      "symbol": "AttrWithSpace",
+      "ownerName": "SplitKeywordAndValueType",
+      "startLine": 30
+    },
+    {
+      "symbol": "AttrKeywordSplitToo",
+      "ownerName": "SplitKeywordAndValueType",
+      "startLine": 33
+    },
+    {
+      "symbol": "TrimmedName",
+      "ownerName": "xsd:schema",
+      "startLine": 36
+    },
+    {
+      "symbol": "TopLevelOnNextLine",
+      "ownerName": "xsd:schema",
+      "startLine": 37
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "xsd:schema",
+      "target": "SplitKeywordAndValue",
+      "line_number": 24,
+      "meta.declarationKind": "element",
+      "note": "`<xsd:element name=` is on 23 and the value `\"SplitKeywordAndValue\"` is on 24, so the declaration is reported on the line the NAME is written on rather than the line the tag opens on."
+    },
+    {
+      "type": "contains",
+      "from": "SplitKeywordAndValueType",
+      "target": "AttrOnNextLine",
+      "line_number": 28,
+      "meta.declarationKind": "attribute",
+      "note": "the tag is on 27 and `name=\"AttrOnNextLine\"` is on 28."
+    },
+    {
+      "type": "contains",
+      "from": "SplitKeywordAndValueType",
+      "target": "AttrWithSpace",
+      "line_number": 30,
+      "meta.declarationKind": "attribute",
+      "note": "single-line declaration: the Attribute and its value share line 30, which is the case the fix must not regress while handling the split one."
+    },
+    {
+      "type": "contains",
+      "from": "SplitKeywordAndValueType",
+      "target": "AttrKeywordSplitToo",
+      "line_number": 33,
+      "meta.declarationKind": "attribute",
+      "note": "keyword on 32, value on 33 \u2014 the shape that needs the AttValue rather than the Attribute."
+    },
+    {
+      "type": "contains",
+      "from": "xsd:schema",
+      "target": "TrimmedName",
+      "line_number": 36,
+      "meta.declarationKind": "element",
+      "note": "the source writes `name=\"  TrimmedName  \"`; the analyzer trims before publishing, and the anchor must still be the line that carries the value."
+    },
+    {
+      "type": "contains",
+      "from": "xsd:schema",
+      "target": "TopLevelOnNextLine",
+      "line_number": 37,
+      "meta.declarationKind": "attribute",
+      "note": "a top-level declaration outside any complexType, so the anchor does not depend on there being an owner element."
+    }
+  ],
+  "forbidRelationships": [],
+  "forbidSymbols": []
+}

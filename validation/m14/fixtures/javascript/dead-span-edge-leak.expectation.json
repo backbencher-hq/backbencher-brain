@@ -1,0 +1,16 @@
+{
+  "fixtureId": "javascript/dead-span-edge-leak",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JD6 regression: three edge-emitting paths did not know about superseded duplicate bodies. `extractCallRelationships` re-checked isNodeInDeadSpans throughout; the rows pushed inline during the walk (heritage, CJS surface writes), the `exports` array that extractExportRelationships turns into rows, and collectFieldAccessUses did not. The result was a symbol removed as dead that kept its edges — rows whose source or target is not in the index, which bb_graph and bb_impact traverse as if it were a real node. Each leaking shape is pinned twice: once inside the superseded body, where it must be ABSENT, and once live, where it must be PRESENT. The live half is the one that matters: a dead-span filter that is too eager silently deletes real edges, and only the live assertions can catch that. The trigger is a nested class, the only symbol-yielding declaration legal inside a function body.",
+  "expectRelationships": [
+    { "type": "extends", "from": "Inner", "target": "Base", "note": "the LIVE nested class keeps its heritage" },
+    { "type": "exports", "target": "real", "note": "the LIVE CJS surface write survives" },
+    { "type": "uses", "from": "n", "target": "stored", "note": "the LIVE member read survives — collectFieldAccessUses gained the dead-span guard its sibling already had" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "Inner", "target": "Base", "line_number": 21, "note": "heritage written inside the SUPERSEDED first m body must die with the symbol" },
+    { "type": "exports", "target": "ghost", "note": "a CJS surface write inside a superseded body is not part of the module's public surface" },
+    { "type": "uses", "from": "Inner", "target": "Base", "line_number": 21, "note": "collectFieldAccessUses had no dead-span guard, so the read of the base inside the superseded body still emitted — its sibling extractCallRelationships has had the guard all along" }
+  ]
+}

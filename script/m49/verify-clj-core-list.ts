@@ -57,7 +57,7 @@ const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.a
 // repository, which is true of every checkout that has one, so derive it and keep
 // the variable as the override.
 const CORPUS_ROOT =
-  process.env.BB_CORPUS_ROOT ?? path.resolve(import.meta.dir, "../../../fixtures/repositories")
+  process.env.BB_CORPUS_ROOT ?? path.resolve(import.meta.dir, "../../../bb_tests/repositories")
 export const CORE_DIR = path.join(CORPUS_ROOT, "clojure/src/clj/clojure")
 
 // ── The DECLARED extras ────────────────────────────────────────────────────

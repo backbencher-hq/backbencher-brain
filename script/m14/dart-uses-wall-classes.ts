@@ -59,7 +59,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { buildProjectIndexStreaming, DART_DECLARATION_SPEC } from "../../src/ast/project-index"
 import { BINDING_SEP } from "../../src/ast/types"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const argOf = (name: string): string | undefined => {
   const withEq = argv.find((a) => a.startsWith(`${name}=`))

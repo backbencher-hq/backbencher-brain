@@ -1,0 +1,80 @@
+{
+  "fixtureId": "java/enum-constant-bodies",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ENUM CONSTANT BODIES (owner ruling 2026-10-18, Java-only constructs item: 'enum constant bodies'). JLS 8.9.1: a constant with a body declares an ANONYMOUS SUBCLASS of the enum, and its members belong to that subclass, not to the enum. Pre-fix probe: `enum Mode { ONE { void act() { helper(); } }, TWO; void helper() {} }` produced `contains Mode->act` and NO symbol for the body - the body's members leaked into the enum's containment graph and the body itself did not exist (the exact defect class JD18/JD32 fixed for `new Foo() { ... }`, unfixed for this shape). Fixed the same way: the family's `anonymous_<constant>` noise name, ownerName = the enclosing enum, a pushed scope, and classHierarchy registered to the enum so @Override inside the body has an ancestor to BFS. Authored from semantics before the fix; pins the anonymous symbol, both containment directions (enum -> body, body -> member), the member's owner, the call inside the body sourced at the member, and the @Override resolution the registered hierarchy makes possible.",
+  "expectSymbols": [
+    {
+      "name": "EnumConstantBodies",
+      "kind": "enum"
+    },
+    {
+      "name": "ALPHA",
+      "kind": "enum_member"
+    },
+    {
+      "name": "anonymous_ALPHA",
+      "kind": "class"
+    },
+    {
+      "name": "apply"
+    },
+    {
+      "name": "helper"
+    },
+    {
+      "name": "BETA",
+      "kind": "enum_member"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "EnumConstantBodies",
+      "target": "ALPHA"
+    },
+    {
+      "type": "contains",
+      "source": "EnumConstantBodies",
+      "target": "anonymous_ALPHA"
+    },
+    {
+      "type": "contains",
+      "source": "anonymous_ALPHA",
+      "target": "apply"
+    },
+    {
+      "type": "contains",
+      "source": "EnumConstantBodies",
+      "target": "helper"
+    },
+    {
+      "type": "calls",
+      "source": "apply",
+      "target": "helper",
+      "line_number": 7
+    },
+    {
+      "type": "overrides",
+      "source": "anonymous_ALPHA.apply",
+      "target": "apply",
+      "meta.reasonCode": "exact-in-file",
+      "meta.declaringType": "EnumConstantBodies"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "EnumConstantBodies",
+      "target": "apply",
+      "comment": "the @Override member at line 6 is declared in ALPHA's body; attributing THAT member to the enum is the leak this fixture closes. The enum's own apply() at line 12 is a different symbol and its contains row is correct, which is why this forbid is line-scoped.",
+      "line_number": 6
+    },
+    {
+      "type": "overrides",
+      "source": "EnumConstantBodies.apply",
+      "target": "apply",
+      "comment": "the overriding member belongs to the anonymous body, not to the enum itself"
+    }
+  ]
+}

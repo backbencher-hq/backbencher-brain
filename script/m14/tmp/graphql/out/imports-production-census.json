@@ -1,0 +1,193 @@
+{
+ "kind": "m60-graphql-imports-production-census",
+ "producedBy": "script/m14/tmp/graphql/probe/imports-production-census.mts",
+ "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "population": {
+  "admittedFiles": 1905,
+  "filesParsed": 1905,
+  "parseErrors": 0,
+  "repos": 22
+ },
+ "imports": {
+  "edges": 170,
+  "distinctFiles": 131,
+  "pctOfCorpusFiles": 6.88,
+  "byForm": {
+   "bare": 11,
+   "from_binding": 159
+  },
+  "emptyOrUnknownEndpoints": 0,
+  "magicFileLiteralSources": 0,
+  "targetExistsAtImportingFilesDirectory": 156,
+  "targetExistsAtImportingFilesDirectory_pct": 91.76,
+  "targetExistsAtRepositoryRoot": 0,
+  "targetExistsAtRepositoryRoot_pct": 0,
+  "targetIsNotAPath": 8,
+  "targetIsOutsideRepo": 1,
+  "missingAtOwnDirectory": 5,
+  "missingExamples": [
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/global/a.graphql -> shared",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/import-module/a.graphql -> graphql-import-test/b.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/exact/a.graphql -> @b-schema",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/mixed-use/schema.graphql -> c-graphql",
+   "gql-graphql-tools/packages/loaders/graphql-file/tests/test-files/type-defs-with-failing-import.graphql -> ./invalid-path.graphql"
+  ],
+  "notAPathExamples": [
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/a.graphql -> @circular/b.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/b.graphql -> @circular/a.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/mixed-use/schema.graphql -> @mixed-use/a.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/multiple-levels/level1.graphql -> @multiple-levels/level2.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/multiple-levels/level2.graphql -> @multiple-levels/level3.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/multiple-levels/level3.graphql -> @multiple-levels/level4.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/node-subpath/a.graphql -> #b.graphql",
+   "gql-graphql-tools/packages/import/tests/schema/fixtures/require-paths/b.graphql -> require:./a.graphql"
+  ],
+  "resolutionNote": "0% against a symbol SET would be true by construction and is not reported as a rate: the target names another file and this analyzer is a per-file unit. The two bases above are both real; the importing file's own directory is what graphql-import-node, graphql-tools and eslint-plugin-graphql resolve against."
+ },
+ "context": {
+  "otherRelationshipsInThoseFiles": 1035,
+  "symCountInImportFiles": 572
+ },
+ "sample": [
+  {
+   "file": "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query-default.gql",
+   "source": "invalid-query-default.gql",
+   "target": "./fragments/bar-fragment.gql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "invalid-query-default.gql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query.gql",
+   "source": "invalid-query.gql",
+   "target": "./fragments/bar-fragment.gql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "invalid-query.gql",
+    "importForm": "from_binding",
+    "importBindings": [
+     "FooFields"
+    ],
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query-default.gql",
+   "source": "valid-query-default.gql",
+   "target": "./fragments/foo-fragment.gql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "valid-query-default.gql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query.gql",
+   "source": "valid-query.gql",
+   "target": "./fragments/foo-fragment.gql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "valid-query.gql",
+    "importForm": "from_binding",
+    "importBindings": [
+     "FooFields"
+    ],
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-eslint/packages/plugin/__tests__/mocks/test-directives-with-import.graphql",
+   "source": "test-directives-with-import.graphql",
+   "target": "./user-fields.graphql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "test-directives-with-import.graphql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/a.graphql",
+   "source": "a.graphql",
+   "target": "b.graphql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "a.graphql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/b.graphql",
+   "source": "b.graphql",
+   "target": "c.graphql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "b.graphql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/d.gql",
+   "source": "d.gql",
+   "target": "with-nested-fragment.gql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "d.gql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/with-comments.graphql",
+   "source": "with-comments.graphql",
+   "target": "c.graphql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "with-comments.graphql",
+    "importForm": "bare",
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/specific/a.graphql",
+   "source": "a.graphql",
+   "target": "b.graphql",
+   "line": -1,
+   "meta": {
+    "isGraphqlImport": true,
+    "importSource": "a.graphql",
+    "importForm": "from_binding",
+    "importBindings": [
+     "FooFragment"
+    ],
+    "relationshipRole": "imports",
+    "evidenceClass": "structural"
+   }
+  }
+ ]
+}

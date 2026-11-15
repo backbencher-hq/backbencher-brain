@@ -1,0 +1,25 @@
+{
+  "fixtureId": "groovy/duplicate-parse-field",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#841 round 16 removed the javadoc-separated duplicate parse this fixture was measured on (the field absorbed into the constructor's node, and the `static Split valueOf` header prefix re-parsed as a phantom field) by penalising the grammar's TYPELESS field branch — the absorb and the `def`-named-field split are the same ambiguity. The expectations now pin the correct contract: both fields are real property symbols (including `distance`, whose absence was this fixture's documented 'known residual'), the constructor is a real `constructor_declaration` emitted with kind `constructor` (java/kotlin family parity) at its NAME's line 24 — not the swallowed field's line 19 — and `valueOf` stays. The forbid entries keep the pre-fix shapes pinned so the duplicate parse cannot silently return.",
+  "expectSymbols": [
+    { "name": "Split", "kind": "class" },
+    { "name": "center", "kind": "property", "ownerName": "Split" },
+    { "name": "distance", "kind": "property", "ownerName": "Split" },
+    { "name": "Split", "kind": "constructor", "ownerName": "Split" },
+    { "name": "valueOf", "ownerName": "Split" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Split", "target": "center", "line_number": 14, "meta.isContained": true },
+    { "type": "contains", "from": "Split", "target": "distance", "line_number": 19, "meta.isContained": true },
+    { "type": "contains", "from": "Split", "target": "Split", "line_number": 24, "meta.isContained": true },
+    { "type": "contains", "from": "Split", "target": "valueOf", "line_number": 32, "meta.isContained": true }
+  ],
+  "forbidSymbols": [
+    { "name": "Split", "kind": "property", "note": "pre-fix: phantom field from the `static Split valueOf` header prefix" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Split", "target": "Split", "line_number": 19, "note": "pre-fix: the absorbed field's line; the name Split is written on 24" }
+  ]
+}

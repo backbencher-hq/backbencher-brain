@@ -1,0 +1,85 @@
+{
+  "fixtureId": "fsharp/call-target-spelling",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-P5-2/3/4 + FS-P6, 2026-10-07 — THE TARGET SIDE. Every other fixture in this lane pins WHICH edges exist; this one pins WHAT THE TARGET SAYS, which is the half a consumer resolves against and the half that had no test at all. Before this round the analyzer read the qualifier the source wrote and DISCARDED it: `Array.fold` was emitted as `fold`, `Microsoft.FSharp.Collections.Seq.map` as `map`, and a fluent chain `factory.Build().Render()` as the whole chain as one target. Measured on a 3,000-file draw of the 11,809-file corpus, scored against the full-corpus pool with the store's own three strategies (parallel-indexer.ts 4282/4305/4357): `calls` targets were determinate for 19.1% of edges, and the two classes that held the rest were `external-type-or-module` (68,453 edges, 18.0%) and `bare-external` (65,296, 13.3%). Respelling the discarded qualifier into `${qualifierLeaf}.${leaf}` — which is PROVABLY never worse than the leaf, because strategy 3's tail of a two-segment string IS the leaf, while strategy 1 becomes reachable — moved 11,709 targets to determinate and 1,821 the other way, and every one of the 11,709 is a `q_cnt == 1` identity. The 1,821 are not a loss: they are cases where the BARE name coincides with some symbol's `qualified_name` while the qualified form names an identity held by two symbols (`seq.fs` and `seq.fsi` both declare `Seq.choose`, which is what a `.fsi` file is), and the identity the source wrote is the one the store should attach. Whole-draw result: `calls` target-determinacy 19.1% -> 29.1%, all labels 22.4% -> 34.2%, unattached 33,002 -> 34,921 against 243,870 -> 200,090 arbitrary. WHY EACH ROW IS HERE. `local-binding` is a `let` in a BODY, which this lane does not publish, so the name cannot be an identity and the edge says so instead of pretending. `in-file-declaration` is the bare name of a binding THIS file published, spelled exactly — the one class where an unqualified call is still determinate, and it is the reason the local/public split is worth carrying. `in-file-qualified` is `Message.SetInput`, a DU case whose owner is the type, which is the store's own shape for a case (`publish` mints `${ownerName}.${name}`). `external-type-or-module` and `opened-module` are the two shapes of a written qualifier nothing in this file declares: kept, because `Array.fold` and `FSharpPlus.map` are what the source wrote and what the store keys those members under. `module-member` is the three-segment form, where the store's shape is the LAST TWO segments and not the whole path — a type declared inside a namespace carries the whole namespace as ONE scope segment, so the full path would name nothing. `receiver-value` is the negative half, and it is measured rather than stylistic: a lowercase qualifier is a VALUE, no symbol is ever stored as `value.member`, and applying the same respelling to that class LOSES 510 edges against the 109 it gains. `call-chain-receiver` is the defect FS-P6-1 fixed: `ArgumentParser.Create<'Template'>().ToParseResults` was returned as an edge TARGET — 514 `calls` targets on the draw are not names at all — because the `dot_get` node's text is the whole chain and the chain's head happened to be a published name. The member actually called is the last NAME in the chain. `self-member` and `base-member` are the two spellings the analyzer derives rather than reads, and both are only used when the type they name is one this file published. `bare-external` is the honest floor: a name written with no qualifier and declared nowhere in this file, which no spelling can turn into an identity. The forbid rows are the two ways a revert breaks these: the chain target as one string, and the qualified form collapsed back to its leaf. The mutant that reverts the rule is `fsharp/qualified-callee-reduced-to-leaf`, and the one that reverts the chain guard is `fsharp/call-chain-spelled-as-a-path`.",
+  "expectSymbols": [
+    { "name": "Fixture.TargetSpelling", "kind": "namespace" },
+    { "name": "renderSink", "kind": "function" },
+    { "name": "Message", "kind": "enum" },
+    { "name": "SetInput", "kind": "enum_member" },
+    { "name": "Factory", "kind": "class" },
+    { "name": "Widget", "kind": "class" },
+    { "name": "Render", "kind": "method" },
+    { "name": "RenderTo", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Widget.Render", "target": "Widget.Render\u0000helper", "meta.targetResolution": "local-binding", "meta.localBinding": true },
+    { "type": "calls", "from": "Widget.Render", "target": "Fixture.TargetSpelling.renderSink", "meta.targetResolution": "in-file-declaration" },
+    { "type": "calls", "from": "Widget.Render", "target": "Message.SetInput", "meta.targetResolution": "in-file-qualified" },
+    { "type": "calls", "from": "Widget.Render", "target": "Array.fold", "meta.targetResolution": "external-type-or-module", "meta.targetQualifier": "Array" },
+    { "type": "calls", "from": "Widget.Render", "target": "FSharpPlus.map", "meta.targetResolution": "opened-module", "meta.targetQualifier": "FSharpPlus" },
+    { "type": "calls", "from": "Widget.Render", "target": "Seq.map", "meta.targetResolution": "module-member", "meta.targetQualifier": "Microsoft.FSharp.Collections.Seq" },
+    { "type": "calls", "from": "Widget.Render", "target": "Render", "meta.targetResolution": "receiver-value", "meta.targetQualifier": "sink" },
+    { "type": "calls", "from": "Widget.Render", "target": "Render", "meta.targetResolution": "call-chain-receiver", "meta.targetQualifier": "factory.Build()" },
+    { "type": "calls", "from": "Widget.Render", "target": "Widget.RenderTo", "meta.targetResolution": "self-member" },
+    { "type": "calls", "from": "Widget.Render", "target": "unqualifiedCall", "meta.targetResolution": "bare-external" },
+    { "type": "calls", "from": "Derived.Speak", "target": "Base.Speak", "meta.targetResolution": "base-member" },
+    { "type": "instantiates", "from": "Widget.Render", "target": "StringBuilder", "meta.targetResolution": "external-type-or-module", "meta.targetQualifier": "System.Text" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "Array.fold",
+      "meta.isExternalTarget": true,
+      "note": "FS-P8, the negative half, pinned where the refutations actually live. `Array.fold` is two segments and its owner is ONE, which the incoming gate's lookup cannot answer for (`incoming-rule.ts`: the owner is everything before the last dot, and `Array(1,943)` is one of the top six owners the gate REFUTES because projects declare modules of that name themselves). The price is measured: a marker on every dotted target is 26,795 verified against 35,839 REFUTED (42.8%); only owners of two or more segments whose ROOT this file does not declare are claimed, 6,893 edges at 93.0%. This row is what makes a blanket marker fail rather than pass."
+    },
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "Seq.map",
+      "meta.isExternalTarget": true,
+      "note": "the same shape on the `module-member` class — a two-segment target whose owner is a module NAME (`Seq` refutes 4,447 times on this draw)."
+    },
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "FSharpPlus.map",
+      "meta.isExternalTarget": true,
+      "note": "and on `opened-module`, which is the class most likely to be marked by a future edit: the qualifier IS a module this file opened (`FSharpPlus`), which reads like a fact about the corpus and is not one — the open is a name the file looks up, not a declaration it holds."
+    },
+    {
+      "type": "instantiates",
+      "from": "Widget.Render",
+      "target": "StringBuilder",
+      "meta.isExternalTarget": true,
+      "note": "`instantiates`' target is a LEAF by FS-P6-4's position rule (`new System.Text.StringBuilder()` stores `StringBuilder`), and a bare target has no owner at all: the gate reads a claim on it `externalUnverified`, which blocks a pass without buying a verification. So a bare target is never claimed, on any label."
+    },
+
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "factory.Build().Render",
+      "note": "FS-P6-1: a call CHAIN is not a path. The pre-fix spelling returned the whole `dot_get` text as the target — 514 such targets on the 3,000-file draw, none of which can be a store identity, because a target with a parameter list in it is not a name at all."
+    },
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "fold",
+      "note": "FS-P6-3: the qualifier the source WROTE. Discarding it is what the leaf spelling means, and the leaf is the state the mutant reverts to. `Array.fold` is named by the source and stored by the store as exactly that."
+    },
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "Microsoft.FSharp.Collections.Seq.map",
+      "note": "FS-P6-4, the position half: a callee is stored as `${entry}.${name}` with the INNERMOST owner, so the whole written path is the WRONG shape for a member — it is the RIGHT shape for a written TYPE, which is why the rule is position-dependent instead of one compromise answer."
+    },
+    {
+      "type": "calls",
+      "from": "Widget.Render",
+      "target": "sink.Render",
+      "note": "FS-P6-3, the negative half: a lowercase qualifier names a VALUE, and no symbol is ever stored as `value.member`, so the receiver must stay in metadata and out of the target. Measured: respelling this class loses 510 edges against the 109 it gains."
+    }
+  ]
+}

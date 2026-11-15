@@ -45,7 +45,7 @@ import { readFileSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 
 const REPO = path.resolve(import.meta.dir, "..", "..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 function argOf(name: string, dflt: string): string {
   const i = process.argv.indexOf(name)

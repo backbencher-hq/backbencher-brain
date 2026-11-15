@@ -1,0 +1,77 @@
+{
+  "fixtureId": "svelte/error-recovery",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Svelte's grammar is ERROR- AND MISSING-live on the real corpus, which neither html nor toml is, and that is why both types were sitting in no bucket and failing section A. Measured over 410 sampled files of the 6,143-file corpus: 10 files (2.44%) carry recovery nodes, 55 ERROR nodes and 5 MISSING nodes, the MISSING ones all the grammar's expected `>` tag terminator. Eight of twelve deliberately malformed documents also produce ERROR, and NONE produce a MISSING except an unterminated tag \u2014 so both rulings here rest on corpus measurement, not on the html/toml precedent, which points the other way for MISSING. THE CONTRACT, three parts, all pinned: the broken region is REPORTED at the node's OWN span; it is NOT turned into a node; and the sections AROUND it still publish. The third part is the one that cannot be taken on trust, and the document is arranged to prove it: the unclosed `{#if}` at L9 makes the parser's ERROR span swallow everything to the end of the file, so the whole tail \u2014 `Beta` at L12, `div` at L14, `p` at L18 \u2014 sits INSIDE the error region. A walk that stopped at the recovery node would publish the module, `shared` and `Alpha` at L7, and then nothing, and the document would still look analysed because its component symbol is present. That is the defect class html needed a fixture for and no gate here could see. The two-per-site error shape is the engine's plus this analyzer's, and both messages are expected rather than redundant: the analyzer reports the node it is bypassing, the engine reports the parse. DELIBERATELY NOT PINNED: the `instantiates` edge to `Comp.` at L15. `<Comp.` is an unterminated tag, so the grammar's own recovery names it with a trailing dot, and that names something that cannot exist. Every occurrence in the corpus is in ONE file \u2014 svelte's own deliberately-unparseable `parser-legacy/samples/loose-unclosed-tag` test fixture, 5 MISSING nodes and all 5 adjacent tag names in that single path \u2014 so this is not a corpus-scale defect and is recorded as a declared limitation tied to spec decisions D9/D10 rather than changed here. It is left unpinned on purpose: asserting it would freeze a behaviour I have judged questionable, and forbidding it would assert a fix I have not made.",
+  "expectSymbols": [
+    {
+      "name": "error-recovery",
+      "comment": "the module symbol's range is the whole root, so it spans the error region \u2014 a document with a parse error still has an identity"
+    },
+    {
+      "name": "shared",
+      "comment": "the script declaration, before the error"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "target": "Alpha",
+      "line_number": 7,
+      "comment": "BEFORE the error \u2014 the baseline half"
+    },
+    {
+      "type": "renders",
+      "target": "Beta",
+      "line_number": 12,
+      "comment": "AFTER the error, and INSIDE the parser's ERROR span. THIS ROW IS THE POINT OF THE FIXTURE: a walk that stopped at the recovery node would publish Alpha at L7 and nothing after, and the file would still look analysed because its module symbol is there."
+    },
+    {
+      "type": "imports",
+      "target": "./Alpha.svelte:Alpha",
+      "line_number": 2
+    },
+    {
+      "type": "imports",
+      "target": "./Beta.svelte:Beta",
+      "line_number": 3
+    },
+    {
+      "type": "uses",
+      "target": "shared",
+      "line_number": 12,
+      "comment": "also after the error \u2014 a data read in the swallowed tail still resolves"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "target": "ERROR",
+      "comment": "a recovery node is a DIAGNOSTIC, not a component. An edge to one joins to nothing a consumer can navigate to."
+    },
+    {
+      "type": "renders",
+      "target": ">",
+      "comment": "the MISSING node's expected token is the grammar's own `>`. It is the token the parser wished for, never a name."
+    },
+    {
+      "type": "renders",
+      "target": "if",
+      "comment": "`{#if shared}` opens a block; `if` is its keyword token, not a component"
+    }
+  ],
+  "expectErrors": [
+    {
+      "startLine": 9
+    },
+    {
+      "startLine": 16
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "atLeast": 2,
+      "comment": "two per recovery site: this analyzer's `Syntax <type> detected ... bypassing this broken node` plus the engine's own `Syntax error (...)`. Both messages are wanted \u2014 the analyzer says what it skipped, the engine says what failed to parse \u2014 so the count is not deduplicated. Anchored by line above rather than as an exact number because the number of ERROR nodes a document produces is the grammar's business, not a contract of this analyzer's."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+ "issue": "CLJ-ADV F1",
+ "note": "`#(f …)` shorthand: the first named child is the callee — the head call must emit from the lambda context (168 sites / 61 files were dropped across the corpora). Lambda names are position-derived (lambda_row_col).",
+ "expectSymbols": [
+  {
+   "name": "head-call",
+   "kind": "function"
+  },
+  {
+   "name": "qualified",
+   "kind": "function"
+  },
+  {
+   "name": "nested",
+   "kind": "function"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "lambda_2_20",
+   "target": "helper",
+   "line_number": 3,
+   "meta.callArity": 1,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "calls",
+   "from": "lambda_4_20",
+   "target": "clj.fixture.util/conv",
+   "line_number": 5,
+   "meta.callArity": 2
+  },
+  {
+   "type": "references",
+   "from": "clj.fixture.anonfn",
+   "target": "clj.fixture.util",
+   "line_number": 5
+  },
+  {
+   "type": "calls",
+   "from": "lambda_6_17",
+   "target": "outer",
+   "line_number": 7
+  },
+  {
+   "type": "calls",
+   "from": "lambda_6_17",
+   "target": "inner",
+   "line_number": 7
+  }
+ ]
+}

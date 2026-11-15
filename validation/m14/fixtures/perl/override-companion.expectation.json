@@ -1,0 +1,41 @@
+{
+ "fixtureId": "perl/override-companion",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PERL-MR14. A cross-file base index decides an `overrides` edge three ways, and this fixture pins all three plus the case that was silently deleting them.\n\n`Remote::Base` is declared in ANOTHER file, which is the whole point: 99.5% of this lane's `overrides` edges (3,182 of 8,085) are `first-parent-guess`, because the base's declaration is not in the file being analyzed. `src/ast/override-context.ts` has had `buildOverrideCompanion` since it was written, and six analyzers import the resolver, but NO CALLER EVER BUILT ONE -- M37.10 says so in as many words: 'it is never populated in production'. So the rule was written, wired, and never exercised.\n\nThe three answers the rule must give, all on the same two methods:\n\n  no companion at all        both methods are GUESSES at 0.5\n  companion HAS Remote::Base\n    and it declares `run`    `run` CONFIRMED at 0.95, `only_here` WITHDRAWN\n    and it declares neither   NO edge at all -- the base is present and does not\n                              declare either, so the guess was wrong\n  companion has never heard\n    of Remote::Base          both GUESSES at 0.5, unchanged\n\nThat last case is the one this fixture exists for. The guard used to read `else if (!context?.overrideCompanion)` -- whether a companion OBJECT was supplied, not whether it had an opinion about THIS base -- so passing any companion at all silenced the guess for every base the companion did not cover, and the edge was DELETED rather than kept. Measured on a 120-file draw per corpus: 2,235 guessed edges, of which 1,742 named a base the companion DID contain, 307 were confirmed, and 186 named a base it did not -- and the pre-fix code deleted all 1,928 of the first two groups' worth of survivors while reporting success.\n\nA companion is a PARTIAL view by construction: a sample, a subset, an incremental index, one worker's share. 'I have never heard of this base' is not 'this base does not declare the method', and conflating them turns a coverage gap into silent data loss. The python lane already reads it correctly (`else if (!overrideCompanion?.has(base))`), which is where the correct form came from.\n\nThe honest ceiling is stated rather than hidden: on a 120-file draw only 13.7% of guesses were CONFIRMED, 78.0% WITHDRAWN, and 8.3% still guessed. A companion that covers the whole project moves guesses from the last bucket into the first two, and it is the withdrawn 78% that is the finding: most of this label was not a weak claim, it was a wrong one.",
+ "expectSymbols": [
+  {"name": "OC", "kind": "class"},
+  {"name": "run", "kind": "method", "ownerName": "OC"},
+  {"name": "only_here", "kind": "method", "ownerName": "OC"}
+ ],
+ "expectSymbolRanges": [
+  {"symbol": "OC", "startLine": 1, "endLine": 1},
+  {"symbol": "run", "startLine": 5, "endLine": 5},
+  {"symbol": "only_here", "startLine": 6, "endLine": 6}
+ ],
+ "expectRelationships": [
+  {"type": "extends", "from": "OC", "target": "Base", "line_number": 3,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"},
+  {"type": "overrides", "from": "OC.run", "target": "Base.run", "confidence": 0.5, "line_number": 5,
+   "meta.evidenceClass": "inferred",
+   "note": "THE CASE THIS FIXTURE EXISTS FOR. With no companion supplied -- the per-file default, and what every production caller does today -- the base is not in this file, so both methods are first-parent guesses. Measured across the seven corpora: 3,182 of 8,085 `overrides` edges are in exactly this state, which is 99.5% of the label. The pre-fix guard dropped this edge as soon as ANY companion was passed, even one that had never heard of `Remote::Base`; perl/partial-companion-deletes-guesses reproduces that."},
+  {"type": "overrides", "from": "OC.only_here", "target": "Base.only_here", "confidence": 0.5, "line_number": 6,
+   "meta.evidenceClass": "inferred",
+   "note": "the second guess, for the same reason: neither method is declared by any base this file can see"}
+ ],
+ "forbidRelationships": [
+  {"type": "overrides", "from": "OC.run", "target": "Base.run", "confidence": 0.95,
+   "note": "a CONFIRMED override needs a companion that says `Remote::Base` declares `run`. Nothing supplies one here, so asserting 0.95 would be asserting that the cross-file index exists, which is the open item -- not a fact about this file."},
+  {"type": "overrides", "from": "OC.only_here", "target": "Base.only_here", "confidence": 0.95,
+   "note": "same, and this one could not be confirmed under ANY companion: `only_here` is not a method of the base in the measured corpora. It is the shape the 78% withdrawn bucket is made of."}
+ ],
+ "forbidSymbols": [
+  {"name": "Remote::Base", "ownerName": "OC",
+   "note": "the base is named by `use parent`, not DECLARED in this file; a class symbol here would mean the analyzer had adopted an inherited name as its own declaration"}
+ ],
+ "expectUniqueIds": [
+  {"name": "run", "ownerName": "OC",
+   "note": "the method and the class must not collapse onto one id, or the override source would name the wrong node"}
+ ]
+}

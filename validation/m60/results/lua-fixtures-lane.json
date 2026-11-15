@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-fixtures",
+  "note": "runs every lua fixture through the SHARED runLang, by registering a lua entry into its LANGS map at run time; the shared map itself still has no lua entry, so the milestone gate does not run this lane",
+  "expected": [
+    "closure-scope",
+    "edge-lines",
+    "export-edges",
+    "export-shapes",
+    "extends-supertype",
+    "local-declarations",
+    "loop-bindings",
+    "member-identity",
+    "name-reads",
+    "order-independent-ctor",
+    "override-shapes",
+    "read-classes"
+  ],
+  "ran": [
+    "closure-scope",
+    "edge-lines",
+    "export-edges",
+    "export-shapes",
+    "extends-supertype",
+    "local-declarations",
+    "loop-bindings",
+    "member-identity",
+    "name-reads",
+    "order-independent-ctor",
+    "override-shapes",
+    "read-classes"
+  ],
+  "pass": 10,
+  "fail": 2,
+  "details": [
+    {
+      "fixture": "lua/closure-scope",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/edge-lines",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/export-edges",
+      "ok": false,
+      "problems": [
+        "export invariant violated: export(s) [\"greet\",\"farewell\"] do not resolve to a top-level symbol (membership rides Contains)"
+      ]
+    },
+    {
+      "fixture": "lua/export-shapes",
+      "ok": false,
+      "problems": [
+        "export invariant violated: export(s) [\"fromDoBlock\",\"fromLoop\",\"alpha\",\"beta\",\"gamma\",\"nested\"] do not resolve to a top-level symbol (membership rides Contains)"
+      ]
+    },
+    {
+      "fixture": "lua/extends-supertype",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/local-declarations",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/loop-bindings",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/member-identity",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/name-reads",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/order-independent-ctor",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/override-shapes",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "fixture": "lua/read-classes",
+      "ok": true,
+      "problems": []
+    }
+  ]
+}

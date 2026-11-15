@@ -1,0 +1,141 @@
+{
+  "comment": "TOML-REFERENCE-ANCHORS. Three facts, and each one is a regression that a spelling-comparing differential cannot catch on its own. (1) THE SOURCE OF A `references` EDGE MUST BE A PUBLISHED SYMBOL. The edge used to be spelled `libraries.<lib>.version.ref`, which no symbol ever carries: an inline table's keys are recorded as `inlineKeys` METADATA on the owning key, not as symbols. Measured over the corpus, 167 of 167 edges bound to ZERO source symbols against 167 of 167 binding targets — unreachable by every incoming query, because `traceCallers` JOINs `brain_symbol` on the source. The oracle spelled the same phantom, so both sides agreed and the lane read 100% covered. The anchor is the owning key; the specificity the phantom carried now travels in `metadata.aliasKeyPath`. (2) A COMMENT IS A NAMED CHILD OF ITS PAIR, so 'the last named child' is the comment and not the value. That made a commented key invisible to scalar detection and dropped its alias with it — 4 of the corpus's 167 aliases sit on a commented line, and the oracle carried the same defect independently until the differential reported it as UNEXPLAINED. (3) An alias naming a final segment declared TWICE emits NO edge: there is no single right answer, and a guess cannot be falsified downstream. The same holds for an alias naming nothing the document declares, which is a string and not a reference.",
+  "expectSymbols": [
+    {
+      "name": "reference-anchors",
+      "kind": "module",
+      "comment": "the FILE is the module, named from its stem"
+    },
+    {
+      "name": "versions",
+      "kind": "namespace"
+    },
+    {
+      "name": "versions.groovy",
+      "kind": "property"
+    },
+    {
+      "name": "versions.kotlin",
+      "kind": "property"
+    },
+    {
+      "name": "libraries",
+      "kind": "namespace"
+    },
+    {
+      "name": "libraries.groovy-bom",
+      "kind": "property",
+      "comment": "the OWNING KEY is the edge's source, and it is a published symbol"
+    },
+    {
+      "name": "libraries.kotlin-stdlib",
+      "kind": "property"
+    },
+    {
+      "name": "versions#2",
+      "kind": "namespace",
+      "comment": "the SECOND `[versions]` header collides with the first and takes the deterministic suffix the file's name space already uses"
+    },
+    {
+      "name": "versions#2.detekt",
+      "kind": "property",
+      "comment": "a COMMENTED key is still a key: `detekt = \"1.23.8\" # ...` declares this"
+    },
+    {
+      "name": "versions#2.plugins.detekt",
+      "kind": "property"
+    },
+    {
+      "name": "versions#3",
+      "kind": "namespace",
+      "comment": "the THIRD `[versions]` header. A document may repeat a header, and each repeat is its own node rather than a merge into the first."
+    },
+    {
+      "name": "versions#3.dup",
+      "kind": "property",
+      "comment": "the FIRST declaration of final segment `dup`"
+    },
+    {
+      "name": "other",
+      "kind": "namespace"
+    },
+    {
+      "name": "other.dup",
+      "kind": "property",
+      "comment": "the SECOND declaration of final segment `dup`, which is what makes that alias ambiguous"
+    },
+    {
+      "name": "libraries#2",
+      "kind": "namespace"
+    },
+    {
+      "name": "libraries#2.ambiguous",
+      "kind": "property",
+      "comment": "declares a `version.ref` alias, and emits NO edge for it"
+    },
+    {
+      "name": "libraries#3",
+      "kind": "namespace"
+    },
+    {
+      "name": "libraries#3.dangling",
+      "kind": "property",
+      "comment": "declares a `version.ref` alias naming nothing this document declares, and emits NO edge for it"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "libraries.groovy-bom.version.ref",
+      "comment": "the PHANTOM source name. No symbol is ever published for a key inside an inline table, so an edge anchored here is unreachable by every incoming query."
+    },
+    {
+      "name": "versions.absent",
+      "comment": "an alias naming nothing the document declares is a string, not a reference"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "reference-anchors.libraries.groovy-bom",
+      "target": "reference-anchors.versions.groovy",
+      "line_number": 26,
+      "meta.aliasKeyPath": "version.ref",
+      "meta.resolvedBy": "final-segment"
+    },
+    {
+      "type": "references",
+      "from": "reference-anchors.libraries.kotlin-stdlib",
+      "target": "reference-anchors.versions.kotlin",
+      "line_number": 27,
+      "meta.aliasKeyPath": "version.ref"
+    },
+    {
+      "type": "references",
+      "from": "reference-anchors.versions#2.plugins.detekt",
+      "target": "reference-anchors.versions#2.detekt",
+      "line_number": 37,
+      "meta.aliasKeyPath": "version.ref",
+      "comment": "the alias and its target both sit on COMMENTED lines. A comment is a named child, so picking the pair's last named child as its value loses this edge entirely."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "libraries.groovy-bom.version.ref",
+      "target": "reference-anchors.versions.groovy",
+      "comment": "THE REGRESSION THIS FIXTURE EXISTS FOR: the phantom source spelling. Both endpoints look right to a spelling comparison, so restoring it would leave every other gate green while making the edge unreachable by `traceCallers`."
+    },
+    {
+      "type": "references",
+      "from": "reference-anchors.libraries#2.ambiguous",
+      "target": "reference-anchors.versions#3.dup",
+      "comment": "`dup` is declared twice — `versions#3.dup` and `other.dup` — so there is no single right target and the lane declines rather than guess."
+    },
+    {
+      "type": "references",
+      "from": "reference-anchors.libraries#3.dangling",
+      "target": "versions.absent",
+      "comment": "the alias names nothing the document declares, so there is no edge to emit."
+    }
+  ]
+}

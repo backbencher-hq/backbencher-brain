@@ -1,0 +1,47 @@
+{
+  "fixtureId": "xml/xinclude-part-of",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "`part_of` at rung R3 for XML's ONE textual-inclusion construct: XInclude (https://www.w3.org/TR/xinclude/). `<xi:include href=\"...\"/>` is REPLACED by the named document's content (XInclude 1.0 §4.1), so the included document is a FRAGMENT of the including one: it shares the including document's single scope, contributes no module of its own, and cannot be resolved as a separate unit once included — the `part_of` contract in `src/ast/types.ts` word for word, and the same construct class as the fleet's five implemented `part_of` rows (cpp `#include \"...\"`, fsharp `#load`, php `include`/`require`, erlang `-include`, typescript `/// <reference path>`). No grammar change is needed (R3): the construct is a NAMESPACED ELEMENT, which the pinned grammar already parses as an ordinary `element` with an `Attribute` href, so R1/R2 would buy nothing. THE TARGET IS A SYMBOL, NOT A PATH: the cpp lane measured 0 of 4,612 `part_of` edges resolved when the target was a path, because the arbiter resolves target strings against SYMBOL NAMES; the contract permits either (\"the part's file or its module symbol\", types.ts:148-160), so the target is the included document's module STEM (basename without directory and extension) and the written path rides in `meta.partPath` — the path is evidence, the stem is the target. `partRole` is MANDATORY and is `library` here: this document carries the directive and names the part, exactly as erlang's `-include` and fsharp's `#load` rows are; XML has no `part of` spelling, so it never produces the `part` half. THE DIRECTION IS THE DIRECTIVE'S OWN (types.ts:167-190): source is the file carrying the directive — the DOCUMENT ELEMENT, since XML publishes no file-level symbol — target is what it names. parse=\"text\" IS STILL part_of, DECIDED AND PINNED HERE: a text inclusion splices the target's bytes as character data instead of its element content, but another file's content still becomes part of THIS document at that point and contributes no module; the distinction is recorded as `meta.parseMode` rather than silently mixed (the second `xi:include` on line 5 is that row). THE THREE FORBIDS ARE THE BOUNDARY, and each is a construct that LOOKS like an inclusion and is not: (1) a plain `<a href=\"linked-doc.xml\">` is a hyperlink — a reference, not a splice; (2) `xsi:schemaLocation` is a schema HINT (an instance-document reference to schema documents), not an inclusion of their content; (3) an `<include>` element OUTSIDE the XInclude namespace (line 7) is not XInclude at all — the detection is by resolved NAMESPACE, never by the written prefix, which is why the fixture also carries two spellings that MUST fire (the `xi:` prefix on line 4 and the same namespace through the default is unnecessary here: one prefix spelling plus the three forbids pin both sides). Lines are read off the file.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "doc",
+      "target": "intro",
+      "line_number": 4,
+      "meta.partRole": "library",
+      "meta.partPath": "sections/intro.xml",
+      "meta.partSymbol": "intro",
+      "meta.parseMode": "xml",
+      "meta.role": "xinclude_part",
+      "meta.isFileInclusion": true,
+      "meta.isImport": false
+    },
+    {
+      "type": "part_of",
+      "from": "doc",
+      "target": "appendix",
+      "line_number": 5,
+      "meta.partRole": "library",
+      "meta.partPath": "appendix.xml",
+      "meta.parseMode": "text"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "target": "linked-doc",
+      "note": "a plain <a href=\"...\"> is a hyperlink — a reference, not an inclusion of the target's content"
+    },
+    {
+      "type": "part_of",
+      "target": "common",
+      "note": "xsi:schemaLocation is a schema HINT on an instance document (a reference to schema documents); it does not splice their content in"
+    },
+    {
+      "type": "part_of",
+      "target": "not-xinclude",
+      "note": "an <include> element outside the XInclude namespace is not XInclude; detection is by resolved NAMESPACE, never by element spelling"
+    }
+  ]
+}

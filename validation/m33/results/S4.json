@@ -1,0 +1,37 @@
+{
+  "issue": "M33.S4",
+  "code": "S4",
+  "milestone": "M33",
+  "status": "verified",
+  "checks": 127,
+  "passed": 127,
+  "failed": 0,
+  "negativeCases": 4,
+  "mutants": [
+    {
+      "name": "Turkish description reintroduced (diacritics)",
+      "caught": true
+    },
+    {
+      "name": "Turkish description reintroduced (ASCII only)",
+      "caught": true
+    },
+    {
+      "name": "implementation flag hidden from help",
+      "caught": true
+    },
+    {
+      "name": "doctor --fix honesty claim reverted to the old lie",
+      "caught": true
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m33/verify-help-parity.ts",
+  "evidenceFile": "S4.json",
+  "generatedAt": "2026-11-15T04:15:23.452Z",
+  "limitations": [
+    "The ASCII-Turkish vocabulary list is a curated denylist, not a translator; a NEW Turkish word outside the list would pass the vocabulary check (the diacritic check still applies to accented spellings).",
+    "Parity derives help-side lists from the built binary's rendered help and code-side lists from .command/.option declarations; a command registered dynamically would need this parser extended.",
+    "The help-flag regex reads only lines in the Options section that start with a dash-flag token; wrapped description lines cannot inject false flags."
+  ]
+}

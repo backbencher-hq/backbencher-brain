@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-plpgsql-body-sql-blind-spot",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "FINDING + fix in flight. A defect in the plpgsql scaffolding that made the scaffolding parseable and the SQL inside it invisible — found by asking why a fixture assertion failed, not by a corpus sweep.",
+  "date": "2026-09-27",
+  "howItWasFound": "Writing the sqld12 fixture for external-target classification, I asserted `references global->pg_policies` from a `PERFORM 1 FROM pg_policies` inside a `DO $$ … $$` body. The fixture failed. The obvious reading was that the classifier did not fire, so I checked the classifier with a top-level SELECT — which produced `uses[global->pg_policies] external=postgresCatalog` correctly. The classification was fine; the EDGE did not exist.",
+  "theDefect": {
+    "shape": "Every plpgsql control structure — `plpgsql_block`, `plpgsql_if`, `plpgsql_loop`, `plpgsql_while`, `plpgsql_for` — repeated `_plpgsql_statement`, which deliberately EXCLUDES `$.statement`. `_plpgsql_body_item` is the rule that wraps `$.statement` with its `;`, and it was only used at the body's top level.",
+    "consequence": "A procedural block could contain procedural forms and nothing else. `SELECT`, `INSERT`, `UPDATE`, `DELETE` and `CREATE TABLE` inside a body were all unparseable.",
+    "measured": [
+      { "input": "SELECT count(*) FROM pg_policies;", "atTopLevel": "OK, produces uses[global->pg_policies]" },
+      { "input": "DO $$ BEGIN SELECT 1 FROM pg_policies; END $$;", "atTopLevel": "ERROR node, ZERO edges" },
+      { "input": "DO $$ BEGIN SELECT 1 FROM t; END $$;", "atTopLevel": "ERROR, zero edges" },
+      { "input": "DO $$ BEGIN INSERT INTO t VALUES (1); END $$;", "atTopLevel": "ERROR, zero edges" },
+      { "input": "DO $$ BEGIN UPDATE t SET a = 1; END $$;", "atTopLevel": "ERROR, zero edges" }
+    ],
+    "treeEvidence": "program > statement > do_statement > plpgsql_block > keyword_begin, ERROR(identifier, (, *, ), keyword_from, ;), keyword_end"
+  },
+  "whyItMattersMoreThanItsSize": [
+    "It is the exact population the lane was chasing. 56.7% of all declarations across the three corpora sit inside a dollar-quoted body, and the SQL inside those bodies is what an extension script and a `DO $$ … EXECUTE '…'; END $$;` wrapper are made of.",
+    "It means V6 and V8 improved FUNCTION recall (17.6% -> 37.0% by count, 834 -> 951 distinct names) for a reason I had not understood: the plpgsql scaffolding let files parse FURTHER, so the declaration sweep and the resync could reach more nodes. The embedded statements themselves still produced nothing. The recall gain was real and its mechanism was not the one I described.",
+    "A plpgsql body contributed SYMBOLS but zero RELATIONSHIPS. On a corpus that wraps its DDL in procedural blocks, that is most of the file's graph.",
+    "`PERFORM expr` is additionally unhandled as a statement form at any level, so `PERFORM 1 FROM some_table` yields no reference even at top level. Named as a residual gap, not silently folded in."
+  ],
+  "theFix": {
+    "change": "All eight control-structure bodies now repeat `$._plpgsql_body_item` instead of `$._plpgsql_statement`, so a block accepts embedded SQL and procedural forms alike.",
+    "safety": "`_plpgsql_body_item` is `choice(seq($.statement, ';'), $._plpgsql_statement)`, so the single-terminator invariant is unchanged: every item still ends with exactly one `;` and `;` cannot begin anything else. The mutual recursion (`_plpgsql_body_item` -> `plpgsql_block` -> `_plpgsql_body_item`) is on a rule that already existed in that cycle.",
+    "candidate": "V9"
+  },
+  "companionFixInTheAnalyzer": {
+    "change": "`sweepDeclarations` now also dispatches `statement` nodes it finds NESTED inside another statement, guarded by a `nestedStatements` set of absolute start indices.",
+    "whyItWasNeeded": "Even with the grammar fixed, the root walk only visited top-level `statement`/`block`/`transaction` and the deep walk only dispatched DECLARATION nodes — so a statement inside a plpgsql block would parse and still contribute no relationships.",
+    "safety": "`relationshipsByKey` and `symbolKeys` make both passes idempotent, and `nestedStatements` stops a top-level statement being processed twice."
+  },
+  "residualGapsAfterThisFix": [
+    "`PERFORM expr` is not routed to the reference extractor at any nesting level; it is a statement form the analyzer does not yet read.",
+    "`@placeholder@` templating (154 extension files) is still unaddressed.",
+    "Distinct-name function recall was 951/1170 with V8; this fix is expected to move it, and the number will be re-measured rather than predicted."
+  ],
+  "evidence": [
+    "bb_tests/sql/grammar/src/grammar/statements/plpgsql.js",
+    "src/ast/real-sql-analyzer.ts (sweepDeclarations, nestedStatements)",
+    "validation/m14/fixtures/sql/sqld12-external-targets.sql",
+    "bb_tests/sql/out/gen-v9.log"
+  ]
+}

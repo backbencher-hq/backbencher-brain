@@ -1,0 +1,63 @@
+{
+  "fixtureId": "r/F07-imports",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "R names a dependency FOUR ways and every one of them lands on this file. `library(dplyr, warn.conflicts = FALSE)` and `require(methods, character.only = TRUE)` attach a PACKAGE and sit at 0.8, because `warn.conflicts` / `character.only` are named arguments that a positional reader would mistake for the package name -- the confidence is the attribution's and this fixture is why it is below 1.0. `library(\"stats\")` is the same package named by a STRING and is 1.0: there is no second reading of it. `source(\"helpers.R\")` and `sourceCpp(\"code.cpp\")` name a FILE ON DISK, which is a dependency whatever the grammar calls it and which a grammar inventory cannot see because it is a string -- the same reason json's `imports` ruling needed instrument B. `dplyr::filter` and `internal:::secret()` reach a package through `::` and `:::`, and the TARGET is the PACKAGE (`dplyr`, `internal`), never the function: `imports global -> filter` is forbidden because it would assert a package called `filter` exists. The file has NO symbols at all, which is the point -- a dependency is not a declaration.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "dplyr",
+      "confidenceMin": 0.8
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "methods",
+      "confidenceMin": 0.8
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "stats",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "helpers.R",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "code.cpp",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "internal",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "NotReal"
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "filter"
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "dplyr"
+    }
+  ]
+}

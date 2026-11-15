@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/init-attribution",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the K7 gap: calls made from class-level contexts — property initializers (val xs = IntArray(3)) and init blocks (init { helper() }) — belong to the enclosing class. Previously the call-graph source resolution only recognized function_declaration ancestors, so these attributed to the bogus 'Global' placeholder.",
+  "expectSymbols": [
+    { "name": "Boot", "kind": "class" },
+    { "name": "helper", "ownerName": "Boot" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Boot", "targetEndsWith": "helper", "meta.evidenceClass": "usage_contextual" },
+    { "type": "instantiates", "from": "Boot", "targetEndsWith": "IntArray", "meta.evidenceClass": "usage_contextual" }
+  ]
+}

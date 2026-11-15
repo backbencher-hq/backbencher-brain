@@ -1,0 +1,91 @@
+{
+  "probe": "bb_graph door",
+  "section": "twin",
+  "at": "2026-11-01T20:28:35.442Z",
+  "project": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbBefore": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564910573
+  },
+  "twin": [
+    {
+      "symbol": "likeContains",
+      "lsp": {
+        "callers": 2,
+        "callees": 0,
+        "maxDepth": 1,
+        "maxDepthReached": 0,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "timeBudgetMs": 0
+      },
+      "mcp": {
+        "callers": 2,
+        "callees": 0,
+        "maxDepth": 1,
+        "maxDepthReached": 0,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "timeBudgetMs": 0
+      },
+      "defaultDepthAgrees": true,
+      "sameEdgeCount": true
+    },
+    {
+      "symbol": "cascadeMatch",
+      "lsp": {
+        "callers": 5,
+        "callees": 3,
+        "maxDepth": 1,
+        "maxDepthReached": 0,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "timeBudgetMs": 0
+      },
+      "mcp": {
+        "callers": 5,
+        "callees": 3,
+        "maxDepth": 1,
+        "maxDepthReached": 0,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "timeBudgetMs": 0
+      },
+      "defaultDepthAgrees": true,
+      "sameEdgeCount": true
+    },
+    {
+      "symbol": "traverseGraph",
+      "lsp": {
+        "callers": 2,
+        "callees": 169,
+        "maxDepth": 1,
+        "maxDepthReached": 0,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "timeBudgetMs": 0
+      },
+      "mcp": {
+        "callers": 2,
+        "callees": 169,
+        "maxDepth": 1,
+        "maxDepthReached": 0,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "timeBudgetMs": 0
+      },
+      "defaultDepthAgrees": true,
+      "sameEdgeCount": true
+    }
+  ],
+  "dbAfter": {
+    "db": 1793564403175,
+    "-wal": 1793564924990,
+    "-shm": 1793564924989
+  },
+  "dbUnchanged": false
+}

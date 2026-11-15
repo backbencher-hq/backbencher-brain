@@ -5,7 +5,7 @@
   "status": "blocked",
   "whatWasMeasured": "src/lsp/evidence_tier.ts (the imported owner) vs the PRE-FIX inline derivation bb_graph's tierFor carried (transcribed verbatim in this script, and byte-identical to the body script/m28/verify-surface-parity.ts plants as mutant M1)",
   "shippedDoorNowDelegates": false,
-  "dataDir": "$HOME/mcp/backbencher-brain/.tmp-review-data/B-16",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.tmp-review-data/B-16",
   "currentCommit": "bb21fce0e728f3598f95eff19815d5401a543eb7",
   "verifierCommand": "npx tsx script/m28/measure-surface-divergence.ts",
   "evidenceFile": "U2-CORPUS.json",

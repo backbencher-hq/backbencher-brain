@@ -1,0 +1,94 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/dynamic-command-bd4.sh",
+ "authoredFrom": "BD4 (a computed command is not a call to a name). Authored from a probe 2026-09-26. Pre-wave the command-position word was taken verbatim, so `\"$dotnetPath\"` and `$pkg_mgr` became edge targets containing a dollar sign. The read of the deciding variable is real and is pinned as a `uses` edge instead; `/usr/bin/env` is pinned as a call to prove the guard is structural and does not over-reject a legitimate command name containing slashes.",
+ "expectSymbols": [
+  {
+   "name": "dynamic-command-bd4.sh",
+   "kind": "module"
+  },
+  {
+   "name": "dotnetPath",
+   "kind": "variable",
+   "ownerName": "dynamic-command-bd4.sh"
+  },
+  {
+   "name": "pkg_mgr",
+   "kind": "variable",
+   "ownerName": "dynamic-command-bd4.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "dynamic-command-bd4.sh",
+   "target": "dynamic-command-bd4.sh.dotnetPath",
+   "line_number": 9,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "uses",
+   "from": "dynamic-command-bd4.sh",
+   "target": "dynamic-command-bd4.sh.pkg_mgr",
+   "line_number": 10,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "calls",
+   "from": "dynamic-command-bd4.sh",
+   "target": "/usr/bin/env",
+   "line_number": 11
+  },
+  {
+   "type": "contains",
+   "from": "dynamic-command-bd4.sh",
+   "target": "dotnetPath",
+   "line_number": 6
+  },
+  {
+   "type": "contains",
+   "from": "dynamic-command-bd4.sh",
+   "target": "pkg_mgr",
+   "line_number": 7
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "\"$dotnetPath\""
+  },
+  {
+   "type": "calls",
+   "target": "$pkg_mgr"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

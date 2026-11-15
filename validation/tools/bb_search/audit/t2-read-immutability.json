@@ -1,0 +1,52 @@
+{
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbBefore": "dfde822e5036b2d2",
+  "dbAfter": "dfde822e5036b2d2",
+  "dbUnchanged": true,
+  "walUnchangedEachStep": true,
+  "allUnchanged": true,
+  "rows": [
+    {
+      "step": "baseline",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    },
+    {
+      "step": "searchSymbols",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    },
+    {
+      "step": "searchContent",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    },
+    {
+      "step": "searchRegex",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    },
+    {
+      "step": "handler file mode",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    },
+    {
+      "step": "handler symbols mode",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    },
+    {
+      "step": "handler content mode",
+      "wal": "e3b0c44298fc1c14",
+      "walStats": "0:1793572735311.2507",
+      "db": "dfde822e5036b2d2"
+    }
+  ]
+}

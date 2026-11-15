@@ -1,0 +1,28 @@
+{
+  "fixtureId": "svelte/props-default-value-not-a-prop",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Shape written first from the corpus file it was found in (shadcn-svelte docs/src/lib/registry/ui/chart/chart-container.svelte: `const uid = $props.id()` then `let { ref = $bindable(null), id = uid, ... } = $props()`). The three forbids name the defect, not the fix's shape.",
+  "rationale": "Found by the lane's own truth (script/m14/svelte-truth.ts), which derives component ownership from the grammar: `contains chart-container -> uid` and `contains chart-tooltip -> defaultFormatter` came back with no derivable owner. `{ a = default }` is an object_assignment_pattern whose RIGHT side is a value; walking it as a container published both children as component props, and the same name list also drives the merge dedupe, so the delegate's real `uid` Constant was dropped — one binding, two false facts and the true declaration lost from the graph. The rename pair (`renamed: local`) pins the M59 value-side rule in the same destructure.",
+  "expectSymbols": [
+    { "name": "id", "kind": "property", "meta.isSvelteProp": true },
+    { "name": "label", "kind": "property", "meta.isSvelteProp": true },
+    { "name": "size", "kind": "property", "meta.isSvelteProp": true },
+    { "name": "local", "kind": "property", "meta.isSvelteProp": true },
+    { "name": "uid", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "props-default-value-not-a-prop", "target": "id" },
+    { "type": "contains", "from": "props-default-value-not-a-prop", "target": "local" },
+    { "type": "uses", "from": "props-default-value-not-a-prop", "target": "uid" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "uid", "comment": "the default VALUE of `id = uid` is not a component-owned binding" },
+    { "type": "contains", "target": "renamed", "comment": "the rename binds `local`; the key is not a symbol (M59 #825)" },
+    { "type": "exports", "target": "uid", "comment": "a module-level const is not the component's public API" }
+  ],
+  "forbidSymbols": [
+    { "name": "uid", "ownerName": "props-default-value-not-a-prop" },
+    { "name": "renamed" }
+  ]
+}

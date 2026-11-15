@@ -1,0 +1,3079 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-18T01:56:13.385Z",
+  "atCommit": "42e10d2d0b819e7fe78dd3aae73c9d96b0f6210f",
+  "treeModifiedInputs": 46,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "scala:scala3/tests/warn/12974.scala",
+    "token": "toMap",
+    "trueLine": 19,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "scala": {
+      "files": 200,
+      "rels": 4673,
+      "withLine": 4673,
+      "noLine": 0,
+      "consistent": 4433,
+      "inconsistent": 0,
+      "notCheckable": 240
+    }
+  },
+  "sampleHash": {
+    "scala": "971cc3c08289"
+  },
+  "samplePins": {
+    "scala": [
+      {
+        "file": "scala3/tests/warn/12974.scala",
+        "contentSha": "f678fae3b947"
+      },
+      {
+        "file": "scala3/tests/warn/14034b.scala",
+        "contentSha": "eee3fc75284c"
+      },
+      {
+        "file": "scala3/tests/warn/15981.scala",
+        "contentSha": "bc69e6a3c0ef"
+      },
+      {
+        "file": "scala3/tests/warn/17284.scala",
+        "contentSha": "88dd21325969"
+      },
+      {
+        "file": "scala3/tests/warn/1828.scala",
+        "contentSha": "17c45f6d5f9d"
+      },
+      {
+        "file": "scala3/tests/warn/18493.scala",
+        "contentSha": "5c0cdc9d6891"
+      },
+      {
+        "file": "scala3/tests/warn/21557.scala",
+        "contentSha": "f3026fa9d40e"
+      },
+      {
+        "file": "scala3/tests/warn/21681.scala",
+        "contentSha": "c62451f36c8b"
+      },
+      {
+        "file": "scala3/tests/warn/21681b.scala",
+        "contentSha": "096ec7deb830"
+      },
+      {
+        "file": "scala3/tests/warn/21681c.scala",
+        "contentSha": "5e534517467e"
+      },
+      {
+        "file": "scala3/tests/warn/21770.scala",
+        "contentSha": "17677de40017"
+      },
+      {
+        "file": "scala3/tests/warn/3324b.scala",
+        "contentSha": "c3696ff02abc"
+      },
+      {
+        "file": "scala3/tests/warn/3324f.scala",
+        "contentSha": "14cb62b7e92f"
+      },
+      {
+        "file": "scala3/tests/warn/3324g.scala",
+        "contentSha": "46d5990614d1"
+      },
+      {
+        "file": "scala3/tests/warn/IsInstanceOfClassTag2.scala",
+        "contentSha": "a8220261793c"
+      },
+      {
+        "file": "scala3/tests/warn/JavaSeqLiteral.scala",
+        "contentSha": "5be5738e90f4"
+      },
+      {
+        "file": "scala3/tests/warn/alphanumeric-infix-operator-3.4.scala",
+        "contentSha": "7a3d8828d422"
+      },
+      {
+        "file": "scala3/tests/warn/alphanumeric-infix-operator.scala",
+        "contentSha": "dbbbea4c3c0b"
+      },
+      {
+        "file": "scala3/tests/warn/applied_constructor_types.scala",
+        "contentSha": "7a315a836aaa"
+      },
+      {
+        "file": "scala3/tests/warn/avoid-warn-deprecation.scala",
+        "contentSha": "250f6af09493"
+      },
+      {
+        "file": "scala3/tests/warn/better-fors-deprecated-flag.scala",
+        "contentSha": "a17bb1b3c0ae"
+      },
+      {
+        "file": "scala3/tests/warn/better-fors-deprecated-import.scala",
+        "contentSha": "9bf5d0ef3c74"
+      },
+      {
+        "file": "scala3/tests/warn/better-match-type-extractors-deprecated-flag.scala",
+        "contentSha": "14874971a7fb"
+      },
+      {
+        "file": "scala3/tests/warn/better-match-type-extractors-deprecated-import.scala",
+        "contentSha": "3175533ba2fe"
+      },
+      {
+        "file": "scala3/tests/warn/clause-interleaving-deprecated-flag.scala",
+        "contentSha": "714f7a76effe"
+      },
+      {
+        "file": "scala3/tests/warn/clause-interleaving-deprecated-import.scala",
+        "contentSha": "8ae752f0d7fc"
+      },
+      {
+        "file": "scala3/tests/warn/conditionalWarnings.scala",
+        "contentSha": "cb4ff5f96798"
+      },
+      {
+        "file": "scala3/tests/warn/context-bounds-migration-3.4.scala",
+        "contentSha": "9f3a9ac0035e"
+      },
+      {
+        "file": "scala3/tests/warn/convertible.scala",
+        "contentSha": "b26af1a5279e"
+      },
+      {
+        "file": "scala3/tests/warn/deprecated-origin-verbose.scala",
+        "contentSha": "f6727832de35"
+      },
+      {
+        "file": "scala3/tests/warn/deprecated-origin.scala",
+        "contentSha": "a84fe938ccac"
+      },
+      {
+        "file": "scala3/tests/warn/deprecated-override.scala",
+        "contentSha": "1e03909d66f7"
+      },
+      {
+        "file": "scala3/tests/warn/enum-approx2.scala",
+        "contentSha": "0db89126d673"
+      },
+      {
+        "file": "scala3/tests/warn/ext-override.scala",
+        "contentSha": "01b499ce5a9f"
+      },
+      {
+        "file": "scala3/tests/warn/feature-shadowing.scala",
+        "contentSha": "e00f8e1e7c70"
+      },
+      {
+        "file": "scala3/tests/warn/fewerbraces-deprecated-flag.scala",
+        "contentSha": "d2833885a299"
+      },
+      {
+        "file": "scala3/tests/warn/fewerbraces-deprecated-import.scala",
+        "contentSha": "6efa53c1b383"
+      },
+      {
+        "file": "scala3/tests/warn/gadt-contradictory-pattern.scala",
+        "contentSha": "551c211cd84e"
+      },
+      {
+        "file": "scala3/tests/warn/gadt.scala",
+        "contentSha": "8156f7dfba8b"
+      },
+      {
+        "file": "scala3/tests/warn/html.scala",
+        "contentSha": "6fa35ef78b80"
+      },
+      {
+        "file": "scala3/tests/warn/i10247.scala",
+        "contentSha": "93fcc0f0f95d"
+      },
+      {
+        "file": "scala3/tests/warn/i10930.scala",
+        "contentSha": "abfac41c6900"
+      },
+      {
+        "file": "scala3/tests/warn/i10994.scala",
+        "contentSha": "b4c9c093a6a5"
+      },
+      {
+        "file": "scala3/tests/warn/i11022.scala",
+        "contentSha": "aa01ca4e2922"
+      },
+      {
+        "file": "scala3/tests/warn/i11097.scala",
+        "contentSha": "bfec769c83f8"
+      },
+      {
+        "file": "scala3/tests/warn/i11178.scala",
+        "contentSha": "bbed47c0d067"
+      },
+      {
+        "file": "scala3/tests/warn/i11333.scala",
+        "contentSha": "9ee45916e4c6"
+      },
+      {
+        "file": "scala3/tests/warn/i11344.scala",
+        "contentSha": "e72bda37fafa"
+      },
+      {
+        "file": "scala3/tests/warn/i11963a.scala",
+        "contentSha": "e408d52e5367"
+      },
+      {
+        "file": "scala3/tests/warn/i11963b.scala",
+        "contentSha": "22f1bd799d29"
+      },
+      {
+        "file": "scala3/tests/warn/i11963c.scala",
+        "contentSha": "cc268de85a97"
+      },
+      {
+        "file": "scala3/tests/warn/i12253.scala",
+        "contentSha": "4af7b1f633bc"
+      },
+      {
+        "file": "scala3/tests/warn/i12460.scala",
+        "contentSha": "4d3c0382ca98"
+      },
+      {
+        "file": "scala3/tests/warn/i12597.scala",
+        "contentSha": "00b8783315c7"
+      },
+      {
+        "file": "scala3/tests/warn/i13011.scala",
+        "contentSha": "c832f7fe5f79"
+      },
+      {
+        "file": "scala3/tests/warn/i13440.scala",
+        "contentSha": "4133d1fe91dd"
+      },
+      {
+        "file": "scala3/tests/warn/i13542.scala",
+        "contentSha": "1c705cb4795a"
+      },
+      {
+        "file": "scala3/tests/warn/i14579.scala",
+        "contentSha": "262742544b06"
+      },
+      {
+        "file": "scala3/tests/warn/i14705.scala",
+        "contentSha": "8294aa94a6cd"
+      },
+      {
+        "file": "scala3/tests/warn/i14721.scala",
+        "contentSha": "ee9de9b6286a"
+      },
+      {
+        "file": "scala3/tests/warn/i15226.scala",
+        "contentSha": "209c67d1b6a0"
+      },
+      {
+        "file": "scala3/tests/warn/i15264.scala",
+        "contentSha": "fcf8860e4982"
+      },
+      {
+        "file": "scala3/tests/warn/i15474.scala",
+        "contentSha": "a30693300acf"
+      },
+      {
+        "file": "scala3/tests/warn/i15479.scala",
+        "contentSha": "820a8c58b517"
+      },
+      {
+        "file": "scala3/tests/warn/i15503a.scala",
+        "contentSha": "20f0040e9115"
+      },
+      {
+        "file": "scala3/tests/warn/i15503b.scala",
+        "contentSha": "97c9087a765d"
+      },
+      {
+        "file": "scala3/tests/warn/i15503c.scala",
+        "contentSha": "f626d47d09c5"
+      },
+      {
+        "file": "scala3/tests/warn/i15503d.scala",
+        "contentSha": "6acf32395040"
+      },
+      {
+        "file": "scala3/tests/warn/i15503e.scala",
+        "contentSha": "342c80bba001"
+      },
+      {
+        "file": "scala3/tests/warn/i15503f.scala",
+        "contentSha": "7df06483b663"
+      },
+      {
+        "file": "scala3/tests/warn/i15503g.scala",
+        "contentSha": "6deec71c612a"
+      },
+      {
+        "file": "scala3/tests/warn/i15503h.scala",
+        "contentSha": "2e4f56a070ad"
+      },
+      {
+        "file": "scala3/tests/warn/i15503i.scala",
+        "contentSha": "2c11d0470789"
+      },
+      {
+        "file": "scala3/tests/warn/i15503j.scala",
+        "contentSha": "4740a22732bf"
+      },
+      {
+        "file": "scala3/tests/warn/i15503k.scala",
+        "contentSha": "3c0fa7bcca37"
+      },
+      {
+        "file": "scala3/tests/warn/i15661.scala",
+        "contentSha": "534f9bc78ccd"
+      },
+      {
+        "file": "scala3/tests/warn/i15662.scala",
+        "contentSha": "97515d2c19c8"
+      },
+      {
+        "file": "scala3/tests/warn/i15893.min.scala",
+        "contentSha": "b3d98db579aa"
+      },
+      {
+        "file": "scala3/tests/warn/i15893.scala",
+        "contentSha": "e8daf4e4bf10"
+      },
+      {
+        "file": "scala3/tests/warn/i15967.scala",
+        "contentSha": "dc0e71051302"
+      },
+      {
+        "file": "scala3/tests/warn/i16072.scala",
+        "contentSha": "59955d1ae979"
+      },
+      {
+        "file": "scala3/tests/warn/i16451.scala",
+        "contentSha": "36622887e9a3"
+      },
+      {
+        "file": "scala3/tests/warn/i16610.scala",
+        "contentSha": "c3c168e84102"
+      },
+      {
+        "file": "scala3/tests/warn/i16639a.scala",
+        "contentSha": "ffb3146e6442"
+      },
+      {
+        "file": "scala3/tests/warn/i16639false-pos-on-trait.scala",
+        "contentSha": "e335d04fd9ab"
+      },
+      {
+        "file": "scala3/tests/warn/i16649-refutable.scala",
+        "contentSha": "ae06c2753891"
+      },
+      {
+        "file": "scala3/tests/warn/i16723.scala",
+        "contentSha": "b8e5cdf48a9d"
+      },
+      {
+        "file": "scala3/tests/warn/i16723a.scala",
+        "contentSha": "647e70b19de0"
+      },
+      {
+        "file": "scala3/tests/warn/i16728.scala",
+        "contentSha": "78c3ac46807b"
+      },
+      {
+        "file": "scala3/tests/warn/i16743.scala",
+        "contentSha": "5032f0c5dc93"
+      },
+      {
+        "file": "scala3/tests/warn/i16930.scala",
+        "contentSha": "986ce43885d4"
+      },
+      {
+        "file": "scala3/tests/warn/i17230.min1.scala",
+        "contentSha": "3ba79090ae40"
+      },
+      {
+        "file": "scala3/tests/warn/i17230.orig.scala",
+        "contentSha": "6930572ac92a"
+      },
+      {
+        "file": "scala3/tests/warn/i17266.scala",
+        "contentSha": "c5e85dff2637"
+      },
+      {
+        "file": "scala3/tests/warn/i17314.scala",
+        "contentSha": "9083447c353f"
+      },
+      {
+        "file": "scala3/tests/warn/i17314a.scala",
+        "contentSha": "35c29b533a17"
+      },
+      {
+        "file": "scala3/tests/warn/i17314b.scala",
+        "contentSha": "cc3fd6b0a7cf"
+      },
+      {
+        "file": "scala3/tests/warn/i17318.scala",
+        "contentSha": "d37416b5b1c8"
+      },
+      {
+        "file": "scala3/tests/warn/i17371.scala",
+        "contentSha": "64a70dffb4d5"
+      },
+      {
+        "file": "scala3/tests/warn/i17429.scala",
+        "contentSha": "4e04f4f62738"
+      },
+      {
+        "file": "scala3/tests/warn/i17493.scala",
+        "contentSha": "cce501a7c71a"
+      },
+      {
+        "file": "scala3/tests/warn/i17612a.scala",
+        "contentSha": "f7e86f0656bd"
+      },
+      {
+        "file": "scala3/tests/warn/i17613a.scala",
+        "contentSha": "d847d7d3b84a"
+      },
+      {
+        "file": "scala3/tests/warn/i17667.scala",
+        "contentSha": "f99135ec320a"
+      },
+      {
+        "file": "scala3/tests/warn/i17667b.scala",
+        "contentSha": "8c081863a301"
+      },
+      {
+        "file": "scala3/tests/warn/i17753.scala",
+        "contentSha": "9c3344dca3ab"
+      },
+      {
+        "file": "scala3/tests/warn/i17762.scala",
+        "contentSha": "2ddee1d31b86"
+      },
+      {
+        "file": "scala3/tests/warn/i18234.scala",
+        "contentSha": "a6ee7ec52df4"
+      },
+      {
+        "file": "scala3/tests/warn/i18313.scala",
+        "contentSha": "c30520df18dc"
+      },
+      {
+        "file": "scala3/tests/warn/i18341.scala",
+        "contentSha": "45be15a3794d"
+      },
+      {
+        "file": "scala3/tests/warn/i18366.scala",
+        "contentSha": "46878fea50aa"
+      },
+      {
+        "file": "scala3/tests/warn/i18559a.scala",
+        "contentSha": "d170b516ca8b"
+      },
+      {
+        "file": "scala3/tests/warn/i18559b.scala",
+        "contentSha": "6a9cfce3136f"
+      },
+      {
+        "file": "scala3/tests/warn/i18559c.scala",
+        "contentSha": "a811b48e4257"
+      },
+      {
+        "file": "scala3/tests/warn/i18564.scala",
+        "contentSha": "77bf83b17691"
+      },
+      {
+        "file": "scala3/tests/warn/i18661.scala",
+        "contentSha": "fe0ce5723fc0"
+      },
+      {
+        "file": "scala3/tests/warn/i18722.scala",
+        "contentSha": "b3e637ca04f9"
+      },
+      {
+        "file": "scala3/tests/warn/i18862-3.4.scala",
+        "contentSha": "453961543ed9"
+      },
+      {
+        "file": "scala3/tests/warn/i18862-future-migration.scala",
+        "contentSha": "f7a91baef53b"
+      },
+      {
+        "file": "scala3/tests/warn/i18867-3.4.scala",
+        "contentSha": "01cd998ec1c5"
+      },
+      {
+        "file": "scala3/tests/warn/i18867.scala",
+        "contentSha": "1b9cb67ee9e9"
+      },
+      {
+        "file": "scala3/tests/warn/i19002.scala",
+        "contentSha": "68b22e5198ba"
+      },
+      {
+        "file": "scala3/tests/warn/i19013-a.scala",
+        "contentSha": "3e150d5e0885"
+      },
+      {
+        "file": "scala3/tests/warn/i19013-b.scala",
+        "contentSha": "efe490ac933e"
+      },
+      {
+        "file": "scala3/tests/warn/i19031.ci-reg1.scala",
+        "contentSha": "e74dfc8a1cb8"
+      },
+      {
+        "file": "scala3/tests/warn/i19031.ci-reg2.scala",
+        "contentSha": "6306d9815409"
+      },
+      {
+        "file": "scala3/tests/warn/i19031.scala",
+        "contentSha": "957392e1c455"
+      },
+      {
+        "file": "scala3/tests/warn/i19031b.scala",
+        "contentSha": "d514454287b3"
+      },
+      {
+        "file": "scala3/tests/warn/i19077.scala",
+        "contentSha": "b8fafb9e77c8"
+      },
+      {
+        "file": "scala3/tests/warn/i19252.scala",
+        "contentSha": "4cc068cf07ba"
+      },
+      {
+        "file": "scala3/tests/warn/i19275.scala",
+        "contentSha": "4fa9e103ea1d"
+      },
+      {
+        "file": "scala3/tests/warn/i19302.scala",
+        "contentSha": "eaebdc00e6c7"
+      },
+      {
+        "file": "scala3/tests/warn/i19359.scala",
+        "contentSha": "353e7613d8a2"
+      },
+      {
+        "file": "scala3/tests/warn/i19416.scala",
+        "contentSha": "4e92cb923685"
+      },
+      {
+        "file": "scala3/tests/warn/i19505.scala",
+        "contentSha": "26cf9511b634"
+      },
+      {
+        "file": "scala3/tests/warn/i19506.scala",
+        "contentSha": "6e2f49c98517"
+      },
+      {
+        "file": "scala3/tests/warn/i19657-mega.scala",
+        "contentSha": "a175dcad5147"
+      },
+      {
+        "file": "scala3/tests/warn/i19657.scala",
+        "contentSha": "19e78b682e3a"
+      },
+      {
+        "file": "scala3/tests/warn/i19687.scala",
+        "contentSha": "a1c2a3c9bd9f"
+      },
+      {
+        "file": "scala3/tests/warn/i19687a.scala",
+        "contentSha": "b89f3e5973bc"
+      },
+      {
+        "file": "scala3/tests/warn/i19687b.scala",
+        "contentSha": "97a20f30e7e4"
+      },
+      {
+        "file": "scala3/tests/warn/i19687c.scala",
+        "contentSha": "8702dd06094c"
+      },
+      {
+        "file": "scala3/tests/warn/i19913.scala",
+        "contentSha": "80383d773c18"
+      },
+      {
+        "file": "scala3/tests/warn/i20105.scala",
+        "contentSha": "3247927ce1d6"
+      },
+      {
+        "file": "scala3/tests/warn/i20121.scala",
+        "contentSha": "92ec9197705f"
+      },
+      {
+        "file": "scala3/tests/warn/i20122.scala",
+        "contentSha": "a9edcd51a046"
+      },
+      {
+        "file": "scala3/tests/warn/i20123.scala",
+        "contentSha": "896500e6c237"
+      },
+      {
+        "file": "scala3/tests/warn/i20128.scala",
+        "contentSha": "3a71ac59428a"
+      },
+      {
+        "file": "scala3/tests/warn/i20129.scala",
+        "contentSha": "1d25f92fb3f9"
+      },
+      {
+        "file": "scala3/tests/warn/i20130.scala",
+        "contentSha": "7a1092518f88"
+      },
+      {
+        "file": "scala3/tests/warn/i20131.scala",
+        "contentSha": "2c43d75d4eb9"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.alt.scala",
+        "contentSha": "8699fd653a27"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.future-Left.scala",
+        "contentSha": "192f20a9ae78"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.list-Seq.scala",
+        "contentSha": "3ab6b7297d96"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.scala",
+        "contentSha": "1cd18faa24b7"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.stream-Tuple2.safeNulls.fixed.scala",
+        "contentSha": "85f891c097a7"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.stream-Tuple2.safeNulls.scala",
+        "contentSha": "d9d30c80674d"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.stream-Tuple2.scala",
+        "contentSha": "f3fb0825caff"
+      },
+      {
+        "file": "scala3/tests/warn/i20132.wo.scala",
+        "contentSha": "068e214b452e"
+      },
+      {
+        "file": "scala3/tests/warn/i20146.scala",
+        "contentSha": "c86ccfcacb65"
+      },
+      {
+        "file": "scala3/tests/warn/i20372.scala",
+        "contentSha": "fa3385dbda8a"
+      },
+      {
+        "file": "scala3/tests/warn/i20420.scala",
+        "contentSha": "4022a91fa8b6"
+      },
+      {
+        "file": "scala3/tests/warn/i20520.scala",
+        "contentSha": "fcd763e0d958"
+      },
+      {
+        "file": "scala3/tests/warn/i20536.scala",
+        "contentSha": "74cf82fa910d"
+      },
+      {
+        "file": "scala3/tests/warn/i20651.scala",
+        "contentSha": "71521b5b0b16"
+      },
+      {
+        "file": "scala3/tests/warn/i20860.scala",
+        "contentSha": "56e98d452734"
+      },
+      {
+        "file": "scala3/tests/warn/i20951.scala",
+        "contentSha": "12aca8da7213"
+      },
+      {
+        "file": "scala3/tests/warn/i21036a.scala",
+        "contentSha": "22de1d7f7ffe"
+      },
+      {
+        "file": "scala3/tests/warn/i21036b.scala",
+        "contentSha": "05a1ad108b39"
+      },
+      {
+        "file": "scala3/tests/warn/i21036c.scala",
+        "contentSha": "ee5e85944776"
+      },
+      {
+        "file": "scala3/tests/warn/i21187.scala",
+        "contentSha": "de933c8924a8"
+      },
+      {
+        "file": "scala3/tests/warn/i21190.scala",
+        "contentSha": "5ad31f86a7f0"
+      },
+      {
+        "file": "scala3/tests/warn/i21218.scala",
+        "contentSha": "e22401c2c388"
+      },
+      {
+        "file": "scala3/tests/warn/i21239.Frac.scala",
+        "contentSha": "7f2894bc1802"
+      },
+      {
+        "file": "scala3/tests/warn/i21258.scala",
+        "contentSha": "48b2261c437f"
+      },
+      {
+        "file": "scala3/tests/warn/i21420.scala",
+        "contentSha": "ac7e81acdd2d"
+      },
+      {
+        "file": "scala3/tests/warn/i21525.scala",
+        "contentSha": "824779e29643"
+      },
+      {
+        "file": "scala3/tests/warn/i21649.scala",
+        "contentSha": "a7b9f2cd1abb"
+      },
+      {
+        "file": "scala3/tests/warn/i21805.scala",
+        "contentSha": "6791e74d82ec"
+      },
+      {
+        "file": "scala3/tests/warn/i21809.scala",
+        "contentSha": "69c88422fd03"
+      },
+      {
+        "file": "scala3/tests/warn/i21816.scala",
+        "contentSha": "44790917adb5"
+      },
+      {
+        "file": "scala3/tests/warn/i21845.orig.scala",
+        "contentSha": "44d1d2a7561b"
+      },
+      {
+        "file": "scala3/tests/warn/i21845.scala",
+        "contentSha": "869e18083442"
+      },
+      {
+        "file": "scala3/tests/warn/i21860.scala",
+        "contentSha": "450b579d7062"
+      },
+      {
+        "file": "scala3/tests/warn/i21860.unenum.scala",
+        "contentSha": "c94dbe29d52b"
+      },
+      {
+        "file": "scala3/tests/warn/i21917.scala",
+        "contentSha": "70af83701d4a"
+      },
+      {
+        "file": "scala3/tests/warn/i22051.scala",
+        "contentSha": "4651d4eca37e"
+      },
+      {
+        "file": "scala3/tests/warn/i22232.scala",
+        "contentSha": "7d6b334eb542"
+      },
+      {
+        "file": "scala3/tests/warn/i22233.scala",
+        "contentSha": "32aa82d4e84a"
+      },
+      {
+        "file": "scala3/tests/warn/i22267.scala",
+        "contentSha": "7c629785b4f9"
+      },
+      {
+        "file": "scala3/tests/warn/i22279.scala",
+        "contentSha": "a1fa19d321d8"
+      },
+      {
+        "file": "scala3/tests/warn/i22371.scala",
+        "contentSha": "800c7e58529b"
+      },
+      {
+        "file": "scala3/tests/warn/i22412.scala",
+        "contentSha": "a5e8b0150da4"
+      },
+      {
+        "file": "scala3/tests/warn/i22439.scala",
+        "contentSha": "6254ef32bfa1"
+      },
+      {
+        "file": "scala3/tests/warn/i22440.scala",
+        "contentSha": "6aeb03927a45"
+      },
+      {
+        "file": "scala3/tests/warn/i22507.scala",
+        "contentSha": "fc65dc4bb702"
+      },
+      {
+        "file": "scala3/tests/warn/i22527.scala",
+        "contentSha": "49337953d529"
+      },
+      {
+        "file": "scala3/tests/warn/i22590.arity2.scala",
+        "contentSha": "8e501c8c18f8"
+      },
+      {
+        "file": "scala3/tests/warn/i22590.scala",
+        "contentSha": "e741a3faef79"
+      },
+      {
+        "file": "scala3/tests/warn/i22629.scala",
+        "contentSha": "b978535bf0a8"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "scala": {
+      "prev": "971cc3c08289",
+      "now": "971cc3c08289",
+      "same": true
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "scala": [
+      {
+        "file": "scala3/tests/warn/12974.scala",
+        "language": "scala",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/14034b.scala",
+        "language": "scala",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/15981.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/17284.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/1828.scala",
+        "language": "scala",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/18493.scala",
+        "language": "scala",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/21557.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/21681.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/21681b.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/21681c.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/21770.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/3324b.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/3324f.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/3324g.scala",
+        "language": "scala",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/IsInstanceOfClassTag2.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/JavaSeqLiteral.scala",
+        "language": "scala",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/alphanumeric-infix-operator-3.4.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/alphanumeric-infix-operator.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/applied_constructor_types.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/avoid-warn-deprecation.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/better-fors-deprecated-flag.scala",
+        "language": "scala",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/better-fors-deprecated-import.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/better-match-type-extractors-deprecated-flag.scala",
+        "language": "scala",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/better-match-type-extractors-deprecated-import.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/clause-interleaving-deprecated-flag.scala",
+        "language": "scala",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/clause-interleaving-deprecated-import.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/conditionalWarnings.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/context-bounds-migration-3.4.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/convertible.scala",
+        "language": "scala",
+        "rels": 51,
+        "withLine": 51,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/deprecated-origin-verbose.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/deprecated-origin.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/deprecated-override.scala",
+        "language": "scala",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/enum-approx2.scala",
+        "language": "scala",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/ext-override.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/feature-shadowing.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/fewerbraces-deprecated-flag.scala",
+        "language": "scala",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/fewerbraces-deprecated-import.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/gadt-contradictory-pattern.scala",
+        "language": "scala",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/gadt.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/html.scala",
+        "language": "scala",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i10247.scala",
+        "language": "scala",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i10930.scala",
+        "language": "scala",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i10994.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11022.scala",
+        "language": "scala",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11097.scala",
+        "language": "scala",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11178.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11333.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11344.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11963a.scala",
+        "language": "scala",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11963b.scala",
+        "language": "scala",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i11963c.scala",
+        "language": "scala",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i12253.scala",
+        "language": "scala",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i12460.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i12597.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i13011.scala",
+        "language": "scala",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i13440.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i13542.scala",
+        "language": "scala",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i14579.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i14705.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i14721.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15226.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15264.scala",
+        "language": "scala",
+        "rels": 65,
+        "withLine": 65,
+        "noLine": 0,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15474.scala",
+        "language": "scala",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15479.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503a.scala",
+        "language": "scala",
+        "rels": 321,
+        "withLine": 321,
+        "noLine": 0,
+        "consistent": 314,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503b.scala",
+        "language": "scala",
+        "rels": 62,
+        "withLine": 62,
+        "noLine": 0,
+        "consistent": 62,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503c.scala",
+        "language": "scala",
+        "rels": 81,
+        "withLine": 81,
+        "noLine": 0,
+        "consistent": 69,
+        "inconsistent": 0,
+        "notCheckable": 12,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503d.scala",
+        "language": "scala",
+        "rels": 102,
+        "withLine": 102,
+        "noLine": 0,
+        "consistent": 96,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503e.scala",
+        "language": "scala",
+        "rels": 109,
+        "withLine": 109,
+        "noLine": 0,
+        "consistent": 105,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503f.scala",
+        "language": "scala",
+        "rels": 122,
+        "withLine": 122,
+        "noLine": 0,
+        "consistent": 114,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503g.scala",
+        "language": "scala",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503h.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503i.scala",
+        "language": "scala",
+        "rels": 241,
+        "withLine": 241,
+        "noLine": 0,
+        "consistent": 224,
+        "inconsistent": 0,
+        "notCheckable": 17,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503j.scala",
+        "language": "scala",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15503k.scala",
+        "language": "scala",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15661.scala",
+        "language": "scala",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15662.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15893.min.scala",
+        "language": "scala",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15893.scala",
+        "language": "scala",
+        "rels": 145,
+        "withLine": 145,
+        "noLine": 0,
+        "consistent": 140,
+        "inconsistent": 0,
+        "notCheckable": 5,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i15967.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16072.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16451.scala",
+        "language": "scala",
+        "rels": 65,
+        "withLine": 65,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16610.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16639a.scala",
+        "language": "scala",
+        "rels": 146,
+        "withLine": 146,
+        "noLine": 0,
+        "consistent": 137,
+        "inconsistent": 0,
+        "notCheckable": 9,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16639false-pos-on-trait.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16649-refutable.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16723.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16723a.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16728.scala",
+        "language": "scala",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16743.scala",
+        "language": "scala",
+        "rels": 216,
+        "withLine": 216,
+        "noLine": 0,
+        "consistent": 212,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i16930.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17230.min1.scala",
+        "language": "scala",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17230.orig.scala",
+        "language": "scala",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17266.scala",
+        "language": "scala",
+        "rels": 63,
+        "withLine": 63,
+        "noLine": 0,
+        "consistent": 63,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17314.scala",
+        "language": "scala",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17314a.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17314b.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17318.scala",
+        "language": "scala",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17371.scala",
+        "language": "scala",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17429.scala",
+        "language": "scala",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17493.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17612a.scala",
+        "language": "scala",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17613a.scala",
+        "language": "scala",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17667.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17667b.scala",
+        "language": "scala",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17753.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i17762.scala",
+        "language": "scala",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18234.scala",
+        "language": "scala",
+        "rels": 86,
+        "withLine": 86,
+        "noLine": 0,
+        "consistent": 78,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18313.scala",
+        "language": "scala",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18341.scala",
+        "language": "scala",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18366.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18559a.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18559b.scala",
+        "language": "scala",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18559c.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18564.scala",
+        "language": "scala",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18661.scala",
+        "language": "scala",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18722.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18862-3.4.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18862-future-migration.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18867-3.4.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i18867.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19002.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19013-a.scala",
+        "language": "scala",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19013-b.scala",
+        "language": "scala",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19031.ci-reg1.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19031.ci-reg2.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19031.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19031b.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19077.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19252.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19275.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19302.scala",
+        "language": "scala",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19359.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19416.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19505.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19506.scala",
+        "language": "scala",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19657-mega.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19657.scala",
+        "language": "scala",
+        "rels": 109,
+        "withLine": 109,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 8,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19687.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19687a.scala",
+        "language": "scala",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19687b.scala",
+        "language": "scala",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19687c.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i19913.scala",
+        "language": "scala",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20105.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20121.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20122.scala",
+        "language": "scala",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20123.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20128.scala",
+        "language": "scala",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20129.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20130.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20131.scala",
+        "language": "scala",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.alt.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.future-Left.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.list-Seq.scala",
+        "language": "scala",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.stream-Tuple2.safeNulls.fixed.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.stream-Tuple2.safeNulls.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.stream-Tuple2.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20132.wo.scala",
+        "language": "scala",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20146.scala",
+        "language": "scala",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20372.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20420.scala",
+        "language": "scala",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20520.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20536.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20651.scala",
+        "language": "scala",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20860.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i20951.scala",
+        "language": "scala",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21036a.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21036b.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21036c.scala",
+        "language": "scala",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21187.scala",
+        "language": "scala",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21190.scala",
+        "language": "scala",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21218.scala",
+        "language": "scala",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21239.Frac.scala",
+        "language": "scala",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21258.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21420.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21525.scala",
+        "language": "scala",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21649.scala",
+        "language": "scala",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21805.scala",
+        "language": "scala",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21809.scala",
+        "language": "scala",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21816.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21845.orig.scala",
+        "language": "scala",
+        "rels": 69,
+        "withLine": 69,
+        "noLine": 0,
+        "consistent": 63,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21845.scala",
+        "language": "scala",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21860.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21860.unenum.scala",
+        "language": "scala",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i21917.scala",
+        "language": "scala",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22051.scala",
+        "language": "scala",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22232.scala",
+        "language": "scala",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22233.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22267.scala",
+        "language": "scala",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22279.scala",
+        "language": "scala",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22371.scala",
+        "language": "scala",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22412.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22439.scala",
+        "language": "scala",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22440.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22507.scala",
+        "language": "scala",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22527.scala",
+        "language": "scala",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22590.arity2.scala",
+        "language": "scala",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22590.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/i22629.scala",
+        "language": "scala",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

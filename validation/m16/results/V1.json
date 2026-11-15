@@ -1,0 +1,12 @@
+{
+  "issue": "M16.V1 (visualize validity + honest caps)",
+  "code": "V1",
+  "tool": "bb_visualize",
+  "title": "V1",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:28:14.628Z"
+}

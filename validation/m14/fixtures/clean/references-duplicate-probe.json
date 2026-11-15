@@ -1,0 +1,420 @@
+{
+  "question": "Does reading `&` as a class-context separator emit duplicate `references` edges on one line?",
+  "population": "TRACKED — the git-tracked clean files, the same set ontology-coverage-gate.ts walks",
+  "files": 312,
+  "parseFailures": 0,
+  "referencesEdges": 10108,
+  "distinctSourceTargetLineGroups": 9629,
+  "groupsWithMoreThanOneEdge": 387,
+  "edgesInvolvedInDuplicatedGroups": 866,
+  "duplicateGroupsByDiscriminatorCombination": {
+    "": 67,
+    "declared_type": 268,
+    "class_context": 37,
+    "type_alias_rhs": 2,
+    "record_field_type": 8,
+    "instance_context": 5
+  },
+  "examples": [
+    {
+      "source": "StdReal",
+      "target": "StdOverloaded",
+      "line": 8,
+      "count": 4,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdReal.dcl",
+      "discriminators": [
+        ""
+      ]
+    },
+    {
+      "source": "StdString",
+      "target": "StdOverloaded",
+      "line": 8,
+      "count": 4,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdString.dcl",
+      "discriminators": [
+        ""
+      ]
+    },
+    {
+      "source": "==",
+      "target": "Bool",
+      "line": 12,
+      "count": 3,
+      "file": "clean-stdlib/StdBool.icl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "Bool",
+      "line": 28,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "File",
+      "line": 28,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "Char",
+      "line": 28,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "Int",
+      "line": 28,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fclose",
+      "target": "Bool",
+      "line": 31,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fclose",
+      "target": "File",
+      "line": 31,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "stdio",
+      "target": "File",
+      "line": 33,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "sfopen",
+      "target": "Bool",
+      "line": 35,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "sfopen",
+      "target": "File",
+      "line": 35,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "sfopen",
+      "target": "Char",
+      "line": 35,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "sfopen",
+      "target": "Int",
+      "line": 35,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "accFiles",
+      "target": "Files",
+      "line": 45,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "appFiles",
+      "target": "Files",
+      "line": 46,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freopen",
+      "target": "Bool",
+      "line": 53,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freopen",
+      "target": "File",
+      "line": 53,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freopen",
+      "target": "Int",
+      "line": 53,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadc",
+      "target": "Bool",
+      "line": 59,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadc",
+      "target": "Char",
+      "line": 59,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadc",
+      "target": "File",
+      "line": 59,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadi",
+      "target": "Bool",
+      "line": 63,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadi",
+      "target": "Int",
+      "line": 63,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadi",
+      "target": "File",
+      "line": 63,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadr",
+      "target": "Bool",
+      "line": 68,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadr",
+      "target": "Real",
+      "line": 68,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freadr",
+      "target": "File",
+      "line": 68,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freads",
+      "target": "Char",
+      "line": 73,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freads",
+      "target": "File",
+      "line": 73,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "freads",
+      "target": "Int",
+      "line": 73,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "StdFile",
+      "target": "StdClass",
+      "line": 10,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        ""
+      ]
+    },
+    {
+      "source": "StdFile",
+      "target": "StdMisc",
+      "line": 10,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        ""
+      ]
+    },
+    {
+      "source": "StdFile",
+      "target": "StdArray",
+      "line": 10,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        ""
+      ]
+    },
+    {
+      "source": "StdFile",
+      "target": "StdInt",
+      "line": 10,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        ""
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "Bool",
+      "line": 30,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "File",
+      "line": 30,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "Char",
+      "line": 30,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fopen",
+      "target": "Int",
+      "line": 30,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        "declared_type"
+      ]
+    },
+    {
+      "source": "fclose",
+      "target": "Bool",
+      "line": 33,
+      "count": 3,
+      "file": "clean-stdlib/StdEnv 64 Changed Files/StdFile.icl",
+      "discriminators": [
+        "declared_type"
+      ]
+    }
+  ]
+}

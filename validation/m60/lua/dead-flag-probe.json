@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_dead_flag_probe",
+  "at": "2026-10-04",
+  "filesDrawn": 3252,
+  "parseFailures": 0,
+  "f1_dedupeFalse": {
+    "claim": "real-lua-analyzer.ts:1758-1761 — both arms of the dedupe test run the same check and the key is recorded either way, so `dedupe: false` cannot change any output.",
+    "callSitesPassingIt": [
+      "addContainsRelationships:1717",
+      "addOverrideRelationships:1628 (lua_redefinition)",
+      "addOverrideRelationships:1654 (lua_inherited_member)",
+      "addFactorySupertypeEdges:1392 (lua_factory_supertype)"
+    ],
+    "population": {
+      "note": "overrides/lua_redefinition only: a redefinition declared N times attempts N-1 edges of ONE key, so the dedup publishes 1 and the population below is what it drops. contains and lua_inherited_member need a frame property that is not a node and are not claimed here.",
+      "attempts": 90,
+      "distinctKeys": 53,
+      "suppressedByDedup": 37,
+      "maxAttemptsOnOneKey": 13,
+      "maxKey": "overridesglobalenqueue"
+    },
+    "examples": [
+      "wrap@180 (first at 42)",
+      "wrap@285 (first at 42)",
+      "serialize@946 (first at 857)",
+      "_RESPONSE.exit@1005 (first at 943)",
+      "crypt.hash@177 (first at 140)",
+      "crypt.hash@260 (first at 140)"
+    ],
+    "overturn": "a suppressed count above 0 means the flag is either lying to its four call sites or the dedup is losing a redefinition line; 0 means the flag is dead AND harmless on this corpus."
+  },
+  "f2_identifierDetectFrameworks": {
+    "claim": "real-lua-analyzer.ts:308-309 — detectFrameworks returns early unless the text contains a dot, and an identifier node in the pinned grammar never does, so the identifier arm can never add a framework.",
+    "identifierNodes": 782443,
+    "identifiersContainingADot": 0,
+    "examples": [],
+    "livePathForFrameworkDetection": [
+      "processCall:872 detectFrameworks(qualified) — qualified is the index expression's text",
+      "addImport:983-988 — a module name that names a framework"
+    ],
+    "overturn": "identifiersContainingADot > 0 would mean a bare name CAN name a framework, which LUA-04's rule forbids; 0 means the arm is unreachable on every file."
+  },
+  "perRepo": {
+    "docker": {
+      "files": 2,
+      "overrideAttempts": 0
+    },
+    "hledger": {
+      "files": 8,
+      "overrideAttempts": 0
+    },
+    "kong": {
+      "files": 1312,
+      "overrideAttempts": 42
+    },
+    "lapis": {
+      "files": 93,
+      "overrideAttempts": 0
+    },
+    "lazy.nvim": {
+      "files": 65,
+      "overrideAttempts": 0
+    },
+    "lspsaga.nvim": {
+      "files": 44,
+      "overrideAttempts": 0
+    },
+    "luarocks": {
+      "files": 162,
+      "overrideAttempts": 8
+    },
+    "luvit": {
+      "files": 199,
+      "overrideAttempts": 35
+    },
+    "nlohmann-json": {
+      "files": 1,
+      "overrideAttempts": 0
+    },
+    "nvim-cmp": {
+      "files": 57,
+      "overrideAttempts": 0
+    },
+    "nvim-lspconfig": {
+      "files": 863,
+      "overrideAttempts": 0
+    },
+    "nvim-treesitter": {
+      "files": 79,
+      "overrideAttempts": 0
+    },
+    "plenary.nvim": {
+      "files": 113,
+      "overrideAttempts": 1
+    },
+    "redis": {
+      "files": 20,
+      "overrideAttempts": 0
+    },
+    "ripgrep": {
+      "files": 1,
+      "overrideAttempts": 0
+    },
+    "rocks.nvim": {
+      "files": 51,
+      "overrideAttempts": 0
+    },
+    "snacks.nvim": {
+      "files": 141,
+      "overrideAttempts": 4
+    },
+    "trouble.nvim": {
+      "files": 38,
+      "overrideAttempts": 0
+    },
+    "yq": {
+      "files": 1,
+      "overrideAttempts": 0
+    }
+  }
+}

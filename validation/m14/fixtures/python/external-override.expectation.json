@@ -1,0 +1,81 @@
+{
+  "fixtureId": "python/external-override",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.10 (overrideCompanion dead-machinery sweep): the pre-fix analyzer dropped EVERY override whose base was declared in another file \u2014 the companion index it falls back to is never populated in production. Pins: in-file verified override @0.95/structural, external-base Pass-3 first-parent guess @0.5/inferred with reasonCode, and the extends edges that drive resolution. The `expectSymbols` rows are an OWNER pin, and they exist because of a retraction rather than a fix: this review had recorded that 37.8% of `overrides` edges resolved ambiguously, which turned out to be an artefact of measuring the analyzer instead of the store \u2014 `nameToSymbol` carries an owner-qualified key, so these three same-named methods resolve exactly. The dependency is real and load-bearing even though the defect was not, and before this commit it was pinned only incidentally: the mutant that strips `ownerName` was caught by the `contains` derivation, a different consumer of the same field. A pin held up by an unrelated fixture is one edit away from disappearing, so the three `handle` methods here \u2014 three classes, one leaf name, the precise shape the false finding was about \u2014 now carry their owner as a direct assertion.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "InFileService",
+      "target": "LocalBase"
+    },
+    {
+      "type": "extends",
+      "source": "AuditService",
+      "target": "ExternalBase"
+    },
+    {
+      "type": "overrides",
+      "source": "InFileService.handle",
+      "target": "handle",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "handle",
+      "confidenceMax": 0.5
+    },
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "handle",
+      "meta.reasonCode": "first-parent-guess"
+    },
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "handle",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "contains",
+      "source": "LocalBase",
+      "target": "handle"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "handle",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "overrides",
+      "source": "InFileService.handle",
+      "target": "handle",
+      "confidenceMax": 0.5
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "handle",
+      "ownerName": "LocalBase",
+      "note": "OWNER PIN. Three `handle` methods in three classes is the exact shape the retracted PY-3 was about, and the reason the store resolves their `overrides` sources to the right method: `parallel-indexer` keys `nameToSymbol` on `${scope || ownerName}.${name}` as well as `name`, so `InFileService.handle` is an EXACT key while the bare leaf `handle` is ambiguous. Pinned here rather than left to a side effect, because the mutant that strips `ownerName` was caught by the `contains` derivation \u2014 a different consumer of the same field \u2014 and a pin held up by an unrelated fixture is one edit away from disappearing. Declared at L10",
+      "kind": "method"
+    },
+    {
+      "name": "handle",
+      "ownerName": "InFileService",
+      "note": "the in-file override's own owner (L15) \u2014 the source of the one `overrides` edge this fixture pins",
+      "kind": "method"
+    },
+    {
+      "name": "handle",
+      "ownerName": "AuditService",
+      "note": "the cross-file override's owner (L20). Same leaf as the two above, so nothing but the owner distinguishes them",
+      "kind": "method"
+    }
+  ]
+}

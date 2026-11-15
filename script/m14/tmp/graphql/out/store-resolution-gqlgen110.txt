@@ -1,0 +1,51 @@
+graphql store resolution — real CLI (bb index) -> brain.db
+corpus: /home/ishaq2321/bb_tests/repositories/gql-gqlgen, first 200 .graphql/.gql by sorted relpath
+indexed: 110 files, 1625 symbols, 4118 relationships
+population: every brain_relationship row in that project (no sampling)
+
+rel            edges  tgt_unres  src_unres  tgt_resolved%
+rel         edges  tgt_unres  src_unres  pct  
+----------  -----  ---------  ---------  -----
+contains    2144   2          0          99.91
+references  1312   714        0          45.58
+exports     327    0          327        100.0
+uses        228    5          1          97.81
+overrides   73     0          0          100.0
+implements  34     0          0          100.0
+
+symbols / qualified_name:
+symbols  with_qual  dotted_name
+-------  ---------  -----------
+1625     1625       0          
+
+unresolved references targets (top 20):
+target   n  
+-------  ---
+String   495
+Int      119
+Boolean  76 
+Float    24 
+
+unresolved exports sources (top 20):
+source                                                         n 
+-------------------------------------------------------------  --
+codegen/testserver/followschema/directive.graphql              22
+codegen/testserver/followschema/schema.graphql                 20
+codegen/testserver/singlefile/interfaces.graphql               17
+_examples/starwars/schema.graphql                              15
+codegen/testserver/subscriptioncontextfield/test.graphql       14
+_examples/batchresolver/schema.graphql                         13
+codegen/testserver/singlefile/directive.graphql                11
+codegen/testserver/childfielddedup/schema.graphql              9 
+_examples/todo/schema.graphql                                  9 
+integration/server/schema/schema.graphql                       8 
+codegen/testserver/followschema/maps.graphql                   8 
+codegen/testserver/followschema/inline_arguments_test.graphql  8 
+codegen/testserver/benchmark/schema.graphql                    8 
+_examples/scalars/schema.graphql                               8 
+_examples/chat/schema.graphql                                  7 
+codegen/testserver/followschema/weird_type_cases.graphql       6 
+codegen/testserver/compliant-int/schema.graphql                6 
+_examples/type-system-extension/schemas/schema.graphql         6 
+codegen/testserver/followschema/wrapped_type.graphql           5 
+codegen/testserver/followschema/validtypes.graphql             5 

@@ -1,0 +1,25 @@
+{
+  "fixtureId": "typescript/dts-interface-property-overrides",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W4 (ledger T2, rotated-sample finding). The svelte-repo .d.ts corpus re-declares interface properties in a derived interface (HTMLAttributes.ontoggle over DOMAttributes.ontoggle, BaseElement.name over BaseNode.name, ...). The analyzer's heritage rule is intentional and emitted all 19 of those edges; the F5 truth oracle registered only method_signature, so they surfaced as unexplained fabrication. This fixture pins the analyzer half (exact count 2 — a second member and a non-redeclared member must NOT pair), while the oracle mirror (`property_signature` in the member set) is verified on the corpus. Mutant: typescript/property-override-drop.",
+  "expectSymbols": [
+    { "name": "DomAttributes", "kind": "interface" },
+    { "name": "HtmlAttributes", "kind": "interface" },
+    { "name": "NodeBase", "kind": "interface" },
+    { "name": "ElementBase", "kind": "interface" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "HtmlAttributes.ontoggle", "target": "DomAttributes.ontoggle" },
+    { "type": "overrides", "from": "ElementBase.type", "target": "NodeBase.type" },
+    { "type": "extends", "from": "HtmlAttributes", "target": "DomAttributes" },
+    { "type": "extends", "from": "ElementBase", "target": "NodeBase" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "target": "DomAttributes.onmessage" },
+    { "type": "overrides", "target": "NodeBase.type", "from": "NodeBase.type" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "overrides", "equals": 2 }
+  ]
+}

@@ -1,0 +1,3642 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-29T02:04:04.057Z",
+  "atCommit": "0b27b5b871144f2152ab2c2b141400cd08657df7",
+  "treeModifiedInputs": 55,
+  "corpus": "/home/sano/ishaq/bb_tests/repositories",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    },
+    "resolutionSelfTest": {
+      "selfNewIsUncheckable": true,
+      "selfClassNewIsUncheckable": true,
+      "bareNewIsUncheckable": true,
+      "wrongLineStillFails": true,
+      "unmarkedClaimIsNotExcused": true,
+      "writtenReceiverIsNotExcused": true
+    }
+  },
+  "mutation": {
+    "file": "zig:zig/build.zig",
+    "token": "std",
+    "trueLine": 1,
+    "trueLineConsistent": true,
+    "mutatedLine": 3,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "zig": {
+      "files": 200,
+      "rels": 20969,
+      "withLine": 20969,
+      "noLine": 0,
+      "consistent": 20869,
+      "inconsistent": 0,
+      "notCheckable": 100
+    }
+  },
+  "sampleHash": {
+    "zig": "23f5f40285ef"
+  },
+  "samplePins": {
+    "zig": [
+      {
+        "file": "zig/build.zig",
+        "contentSha": "81abfa9c0071"
+      },
+      {
+        "file": "zig/test/behavior.zig",
+        "contentSha": "7c6978c48921"
+      },
+      {
+        "file": "zig/test/cases.zig",
+        "contentSha": "d18ce1d0133c"
+      },
+      {
+        "file": "zig/test/compile_errors.zig",
+        "contentSha": "5ea158bdac34"
+      },
+      {
+        "file": "zig/test/error_traces.zig",
+        "contentSha": "a813ce95764f"
+      },
+      {
+        "file": "zig/test/gen_h.zig",
+        "contentSha": "6a9e345fe5c6"
+      },
+      {
+        "file": "zig/test/libc.zig",
+        "contentSha": "9f9fc6cfd12f"
+      },
+      {
+        "file": "zig/test/llvm_ir.zig",
+        "contentSha": "befefc442060"
+      },
+      {
+        "file": "zig/test/llvm_targets.zig",
+        "contentSha": "cef9e612e53b"
+      },
+      {
+        "file": "zig/test/stack_traces.zig",
+        "contentSha": "a674db0a606c"
+      },
+      {
+        "file": "zig/test/standalone/build.zig",
+        "contentSha": "b837e4ceca19"
+      },
+      {
+        "file": "zig/test/standalone/load_dynamic_library/add.zig",
+        "contentSha": "997b487b2c32"
+      },
+      {
+        "file": "zig/test/standalone/mix_c_files/build.zig",
+        "contentSha": "16725cd68958"
+      },
+      {
+        "file": "zig/test/standalone/mix_c_files/main.zig",
+        "contentSha": "f3fc23e51eac"
+      },
+      {
+        "file": "zig/test/standalone/mix_o_files/base64.zig",
+        "contentSha": "5baa9f95eedf"
+      },
+      {
+        "file": "zig/test/standalone/mix_o_files/build.zig",
+        "contentSha": "782ff63baeca"
+      },
+      {
+        "file": "zig/test/standalone/pkg_import/build.zig",
+        "contentSha": "16ecd0ebca19"
+      },
+      {
+        "file": "zig/test/standalone/pkg_import/pkg.zig",
+        "contentSha": "34d71537cd3d"
+      },
+      {
+        "file": "zig/test/standalone/pkg_import/test.zig",
+        "contentSha": "89380e7cdcc2"
+      },
+      {
+        "file": "zig/test/standalone/posix/build.zig",
+        "contentSha": "2c7d09c0fde8"
+      },
+      {
+        "file": "zig/test/standalone/posix/cwd.zig",
+        "contentSha": "02f51965d5b7"
+      },
+      {
+        "file": "zig/test/standalone/posix/getenv.zig",
+        "contentSha": "1937933abc40"
+      },
+      {
+        "file": "zig/test/standalone/posix/relpaths.zig",
+        "contentSha": "ff620eb26fad"
+      },
+      {
+        "file": "zig/test/standalone/posix/sigaction.zig",
+        "contentSha": "976851b27743"
+      },
+      {
+        "file": "zig/test/standalone/run_cwd/build.zig",
+        "contentSha": "d4788a5f2198"
+      },
+      {
+        "file": "zig/test/standalone/run_cwd/check_file_exists.zig",
+        "contentSha": "4704547f28ad"
+      },
+      {
+        "file": "zig/test/standalone/run_output_caching/build.zig",
+        "contentSha": "16397f88b67a"
+      },
+      {
+        "file": "zig/test/standalone/run_output_caching/main.zig",
+        "contentSha": "4e689e07b4b2"
+      },
+      {
+        "file": "zig/test/standalone/run_output_paths/build.zig",
+        "contentSha": "ceed650aa858"
+      },
+      {
+        "file": "zig/test/standalone/run_output_paths/create_file.zig",
+        "contentSha": "5f2aed6f7fac"
+      },
+      {
+        "file": "zig/test/standalone/self_exe_symlink/build.zig",
+        "contentSha": "0937eb44cdaa"
+      },
+      {
+        "file": "zig/test/standalone/self_exe_symlink/create-symlink.zig",
+        "contentSha": "3e9338fb4b42"
+      },
+      {
+        "file": "zig/test/standalone/self_exe_symlink/main.zig",
+        "contentSha": "2e8b624db2ec"
+      },
+      {
+        "file": "zig/test/standalone/shared_library/build.zig",
+        "contentSha": "491f5c6d93c7"
+      },
+      {
+        "file": "zig/test/standalone/shared_library/mathtest.zig",
+        "contentSha": "997b487b2c32"
+      },
+      {
+        "file": "zig/test/standalone/simple/build.zig",
+        "contentSha": "a2df4c98de24"
+      },
+      {
+        "file": "zig/test/standalone/simple/cat/main.zig",
+        "contentSha": "c0c587299dcc"
+      },
+      {
+        "file": "zig/test/standalone/simple/guess_number/main.zig",
+        "contentSha": "c87d9b6cc136"
+      },
+      {
+        "file": "zig/test/standalone/simple/hello_world/hello.zig",
+        "contentSha": "a05cd3f4e57e"
+      },
+      {
+        "file": "zig/test/standalone/simple/hello_world/hello_libc.zig",
+        "contentSha": "74b71b65dc50"
+      },
+      {
+        "file": "zig/test/standalone/simple/issue_12471/main.zig",
+        "contentSha": "48aa0165a471"
+      },
+      {
+        "file": "zig/test/standalone/simple/issue_7030.zig",
+        "contentSha": "8029933859b2"
+      },
+      {
+        "file": "zig/test/standalone/simple/issue_9402/main.zig",
+        "contentSha": "65b29f34c6d1"
+      },
+      {
+        "file": "zig/test/standalone/simple/main_return_error/error_u8.zig",
+        "contentSha": "a9b2a99734e5"
+      },
+      {
+        "file": "zig/test/standalone/simple/main_return_error/error_u8_non_zero.zig",
+        "contentSha": "91653c364df2"
+      },
+      {
+        "file": "zig/test/standalone/simple/noreturn_call/as_arg.zig",
+        "contentSha": "35b95e2c9771"
+      },
+      {
+        "file": "zig/test/standalone/simple/noreturn_call/inline.zig",
+        "contentSha": "79907ac53da7"
+      },
+      {
+        "file": "zig/test/standalone/simple/std_enums_big_enums.zig",
+        "contentSha": "a216b2a25cb6"
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/build.zig",
+        "contentSha": "1ba29cd6e412"
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/foo.zig",
+        "contentSha": "fa52edf9c2a5"
+      },
+      {
+        "file": "zig/test/standalone/strip_empty_loop/build.zig",
+        "contentSha": "c5893c752827"
+      },
+      {
+        "file": "zig/test/standalone/strip_empty_loop/main.zig",
+        "contentSha": "2314adcd50f8"
+      },
+      {
+        "file": "zig/test/standalone/strip_struct_init/build.zig",
+        "contentSha": "47a3d88bde17"
+      },
+      {
+        "file": "zig/test/standalone/strip_struct_init/main.zig",
+        "contentSha": "55dd59e8b4b0"
+      },
+      {
+        "file": "zig/test/standalone/test_obj_link_run/build.zig",
+        "contentSha": "720d06a05b87"
+      },
+      {
+        "file": "zig/test/standalone/test_obj_link_run/src/main.zig",
+        "contentSha": "c400ec22dd6c"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/build.zig",
+        "contentSha": "54cb04ba01ed"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/module1/main.zig",
+        "contentSha": "ae79b08439eb"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/module2/main.zig",
+        "contentSha": "031fc6098aab"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/src/main.zig",
+        "contentSha": "b20fba1484fa"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/test_runner/main.zig",
+        "contentSha": "93492e21cf6e"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_path/build.zig",
+        "contentSha": "e48430a6fc7d"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_path/test.zig",
+        "contentSha": "6f67f89024e4"
+      },
+      {
+        "file": "zig/test/standalone/test_runner_path/test_runner.zig",
+        "contentSha": "8bbfd98c6ae8"
+      },
+      {
+        "file": "zig/test/standalone/tsan/build.zig",
+        "contentSha": "9f722da9f7ae"
+      },
+      {
+        "file": "zig/test/standalone/tsan/main.zig",
+        "contentSha": "c3fdfd79be7d"
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/build.zig",
+        "contentSha": "d698ad762b78"
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/fuzz.zig",
+        "contentSha": "7a420bceefb1"
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/lib.zig",
+        "contentSha": "79ea43bb2e40"
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/build.zig",
+        "contentSha": "67f484725920"
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/echo-args.zig",
+        "contentSha": "2d72938d8035"
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/fuzz.zig",
+        "contentSha": "486aa3ff21a8"
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/test.zig",
+        "contentSha": "737f43b5133a"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/build.zig",
+        "contentSha": "df039fafde48"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.zig",
+        "contentSha": "9d3ca9a66487"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wwinmain.zig",
+        "contentSha": "b1557918d02d"
+      },
+      {
+        "file": "zig/test/standalone/windows_paths/build.zig",
+        "contentSha": "a1fdbde50a2a"
+      },
+      {
+        "file": "zig/test/standalone/windows_paths/relative.zig",
+        "contentSha": "34bc6c6bee0b"
+      },
+      {
+        "file": "zig/test/standalone/windows_paths/test.zig",
+        "contentSha": "d1e63629a31e"
+      },
+      {
+        "file": "zig/test/standalone/windows_resources/build.zig",
+        "contentSha": "80dcdd6ecf60"
+      },
+      {
+        "file": "zig/test/standalone/windows_resources/main.zig",
+        "contentSha": "7857153b41c8"
+      },
+      {
+        "file": "zig/test/standalone/windows_spawn/build.zig",
+        "contentSha": "66a6ba686f5b"
+      },
+      {
+        "file": "zig/test/standalone/windows_spawn/hello.zig",
+        "contentSha": "4ea2d28405f0"
+      },
+      {
+        "file": "zig/test/standalone/windows_spawn/main.zig",
+        "contentSha": "9b325a571db6"
+      },
+      {
+        "file": "zig/test/standalone/zerolength_check/build.zig",
+        "contentSha": "ab9e33f1d52d"
+      },
+      {
+        "file": "zig/test/standalone/zerolength_check/src/main.zig",
+        "contentSha": "5a1e6d1b4253"
+      },
+      {
+        "file": "zig/test/tests.zig",
+        "contentSha": "bc9794b94689"
+      },
+      {
+        "file": "zig/tools/docgen.zig",
+        "contentSha": "2125d7c12ffe"
+      },
+      {
+        "file": "zig/tools/doctest.zig",
+        "contentSha": "4fa6438e7aa4"
+      },
+      {
+        "file": "zig/tools/dump-cov.zig",
+        "contentSha": "e743ee16e4e7"
+      },
+      {
+        "file": "zig/tools/fetch_them_macos_headers.zig",
+        "contentSha": "ab51d33d4ee8"
+      },
+      {
+        "file": "zig/tools/gen_macos_headers_c.zig",
+        "contentSha": "0c922f7e1d0e"
+      },
+      {
+        "file": "zig/tools/gen_outline_atomics.zig",
+        "contentSha": "daa08a87a99d"
+      },
+      {
+        "file": "zig/tools/gen_spirv_spec.zig",
+        "contentSha": "5208cb91e6ce"
+      },
+      {
+        "file": "zig/tools/gen_stubs.zig",
+        "contentSha": "a7ea582e3ef4"
+      },
+      {
+        "file": "zig/tools/generate_JSONTestSuite.zig",
+        "contentSha": "cf10da646a63"
+      },
+      {
+        "file": "zig/tools/generate_c_size_and_align_checks.zig",
+        "contentSha": "664c28194fdb"
+      },
+      {
+        "file": "zig/tools/generate_linux_syscalls.zig",
+        "contentSha": "af277f233e1d"
+      },
+      {
+        "file": "zig/tools/incr-check.zig",
+        "contentSha": "0f1dcec4df1b"
+      },
+      {
+        "file": "zig/tools/migrate_langref.zig",
+        "contentSha": "298301af2146"
+      },
+      {
+        "file": "zig/tools/process_headers.zig",
+        "contentSha": "47c084360d8c"
+      },
+      {
+        "file": "zig/tools/spirv/grammar.zig",
+        "contentSha": "04e9971b6814"
+      },
+      {
+        "file": "zig/tools/update-linux-headers.zig",
+        "contentSha": "0e43beac1e99"
+      },
+      {
+        "file": "zig/tools/update_clang_options.zig",
+        "contentSha": "83dda4ccafcc"
+      },
+      {
+        "file": "zig/tools/update_cpu_features.zig",
+        "contentSha": "bf712e36b382"
+      },
+      {
+        "file": "zig/tools/update_crc_catalog.zig",
+        "contentSha": "541d913ad743"
+      },
+      {
+        "file": "zig/tools/update_freebsd_libc.zig",
+        "contentSha": "39bab19473cb"
+      },
+      {
+        "file": "zig/tools/update_glibc.zig",
+        "contentSha": "5db43055cf0a"
+      },
+      {
+        "file": "zig/tools/update_mingw.zig",
+        "contentSha": "a9819320a543"
+      },
+      {
+        "file": "zig/tools/update_netbsd_libc.zig",
+        "contentSha": "26f9960fbbbb"
+      },
+      {
+        "file": "zls/.github/workflows/prepare_release_payload.zig",
+        "contentSha": "80db0ec16416"
+      },
+      {
+        "file": "zls/build.zig",
+        "contentSha": "e587d4d4f66f"
+      },
+      {
+        "file": "zls/src/BuildAssociatedConfig.zig",
+        "contentSha": "762ab7d1a50f"
+      },
+      {
+        "file": "zls/src/Config.zig",
+        "contentSha": "688a1e70f5ec"
+      },
+      {
+        "file": "zls/src/DiagnosticsCollection.zig",
+        "contentSha": "89a54d58d024"
+      },
+      {
+        "file": "zls/src/DocumentScope.zig",
+        "contentSha": "6d6410b842ed"
+      },
+      {
+        "file": "zls/src/DocumentStore.zig",
+        "contentSha": "94a3ec053c3b"
+      },
+      {
+        "file": "zls/src/Server.zig",
+        "contentSha": "820cb0a3b7a0"
+      },
+      {
+        "file": "zls/src/TrigramStore.zig",
+        "contentSha": "84268381732a"
+      },
+      {
+        "file": "zls/src/Uri.zig",
+        "contentSha": "9246ea8c07cc"
+      },
+      {
+        "file": "zls/src/analyser/InternPool.zig",
+        "contentSha": "2251e263e07e"
+      },
+      {
+        "file": "zls/src/analyser/analyser.zig",
+        "contentSha": "7f2a0eb829e1"
+      },
+      {
+        "file": "zls/src/analyser/completions.zig",
+        "contentSha": "74efcee2f8be"
+      },
+      {
+        "file": "zls/src/analyser/degibberish.zig",
+        "contentSha": "c19d2d6beaad"
+      },
+      {
+        "file": "zls/src/analyser/error_msg.zig",
+        "contentSha": "77b68a680423"
+      },
+      {
+        "file": "zls/src/analyser/segmented_list.zig",
+        "contentSha": "dfbbcaaf5b2a"
+      },
+      {
+        "file": "zls/src/analyser/string_pool.zig",
+        "contentSha": "3f89d2c1166f"
+      },
+      {
+        "file": "zls/src/analysis.zig",
+        "contentSha": "b77e28239278"
+      },
+      {
+        "file": "zls/src/ast.zig",
+        "contentSha": "d467623865d0"
+      },
+      {
+        "file": "zls/src/configuration.zig",
+        "contentSha": "d28b53fc087e"
+      },
+      {
+        "file": "zls/src/diff.zig",
+        "contentSha": "051cf99a8ef6"
+      },
+      {
+        "file": "zls/src/features/code_actions.zig",
+        "contentSha": "f63123a3d7c3"
+      },
+      {
+        "file": "zls/src/features/completions.zig",
+        "contentSha": "197404e31db9"
+      },
+      {
+        "file": "zls/src/features/diagnostics.zig",
+        "contentSha": "85845062dc1d"
+      },
+      {
+        "file": "zls/src/features/document_symbol.zig",
+        "contentSha": "9f383e49819e"
+      },
+      {
+        "file": "zls/src/features/folding_range.zig",
+        "contentSha": "8a4a4b730e1a"
+      },
+      {
+        "file": "zls/src/features/goto.zig",
+        "contentSha": "2c38fd3d3577"
+      },
+      {
+        "file": "zls/src/features/hover.zig",
+        "contentSha": "8d0fa829bf0d"
+      },
+      {
+        "file": "zls/src/features/inlay_hints.zig",
+        "contentSha": "e424e8425492"
+      },
+      {
+        "file": "zls/src/features/references.zig",
+        "contentSha": "d607decf0cab"
+      },
+      {
+        "file": "zls/src/features/selection_range.zig",
+        "contentSha": "94fbe0972f25"
+      },
+      {
+        "file": "zls/src/features/semantic_tokens.zig",
+        "contentSha": "2ce3a08562a4"
+      },
+      {
+        "file": "zls/src/features/signature_help.zig",
+        "contentSha": "a70443decef2"
+      },
+      {
+        "file": "zls/src/features/workspace_symbols.zig",
+        "contentSha": "a71e0ffa80db"
+      },
+      {
+        "file": "zls/src/main.zig",
+        "contentSha": "c2a2ff237e58"
+      },
+      {
+        "file": "zls/src/offsets.zig",
+        "contentSha": "15df5f83acc0"
+      },
+      {
+        "file": "zls/src/print_ast.zig",
+        "contentSha": "6049014fdd74"
+      },
+      {
+        "file": "zls/src/snippets.zig",
+        "contentSha": "eebec1936e24"
+      },
+      {
+        "file": "zls/src/testing.zig",
+        "contentSha": "015c0f29b33f"
+      },
+      {
+        "file": "zls/src/tools/config_gen.zig",
+        "contentSha": "1fe167be1910"
+      },
+      {
+        "file": "zls/src/tracy.zig",
+        "contentSha": "f8512cc57c2c"
+      },
+      {
+        "file": "zls/src/zls.zig",
+        "contentSha": "b5eef78c6e51"
+      },
+      {
+        "file": "zls/tests/ErrorBuilder.zig",
+        "contentSha": "cf6f259b2fcd"
+      },
+      {
+        "file": "zls/tests/add_analysis_cases.zig",
+        "contentSha": "21afdcf1c4d3"
+      },
+      {
+        "file": "zls/tests/analysis/address_of.zig",
+        "contentSha": "34db91c37fa7"
+      },
+      {
+        "file": "zls/tests/analysis/arithmetic.zig",
+        "contentSha": "c915e81cd28b"
+      },
+      {
+        "file": "zls/tests/analysis/array.zig",
+        "contentSha": "ebd686ed1122"
+      },
+      {
+        "file": "zls/tests/analysis/assembly.zig",
+        "contentSha": "3c1d4e6f0fda"
+      },
+      {
+        "file": "zls/tests/analysis/assign_destructure.zig",
+        "contentSha": "9c2866bff1ca"
+      },
+      {
+        "file": "zls/tests/analysis/basic.zig",
+        "contentSha": "3f794424b0ae"
+      },
+      {
+        "file": "zls/tests/analysis/block.zig",
+        "contentSha": "5900305bce16"
+      },
+      {
+        "file": "zls/tests/analysis/builtins.zig",
+        "contentSha": "185db9627f40"
+      },
+      {
+        "file": "zls/tests/analysis/capture.zig",
+        "contentSha": "27f70010c26a"
+      },
+      {
+        "file": "zls/tests/analysis/container.zig",
+        "contentSha": "0e7ba21a0eca"
+      },
+      {
+        "file": "zls/tests/analysis/decl_literal.zig",
+        "contentSha": "de793bbfec8c"
+      },
+      {
+        "file": "zls/tests/analysis/either.zig",
+        "contentSha": "b7918c6dd901"
+      },
+      {
+        "file": "zls/tests/analysis/error_union.zig",
+        "contentSha": "a387616e732f"
+      },
+      {
+        "file": "zls/tests/analysis/function.zig",
+        "contentSha": "5d8631009b1e"
+      },
+      {
+        "file": "zls/tests/analysis/generics.zig",
+        "contentSha": "9762e473088a"
+      },
+      {
+        "file": "zls/tests/analysis/integer_literal.zig",
+        "contentSha": "f0a3076d181d"
+      },
+      {
+        "file": "zls/tests/analysis/meta.zig",
+        "contentSha": "059af8141527"
+      },
+      {
+        "file": "zls/tests/analysis/optional.zig",
+        "contentSha": "fc6d2464d5f0"
+      },
+      {
+        "file": "zls/tests/analysis/peer_type_resolution.zig",
+        "contentSha": "552bdc6f3905"
+      },
+      {
+        "file": "zls/tests/analysis/pointer.zig",
+        "contentSha": "1c240099f5cf"
+      },
+      {
+        "file": "zls/tests/analysis/result_location_type.zig",
+        "contentSha": "a6b634b49204"
+      },
+      {
+        "file": "zls/tests/analysis/string_literal.zig",
+        "contentSha": "3b1e4e1b9e59"
+      },
+      {
+        "file": "zls/tests/analysis/switch.zig",
+        "contentSha": "b8445fa89d3c"
+      },
+      {
+        "file": "zls/tests/analysis/tuple.zig",
+        "contentSha": "3681be2766f8"
+      },
+      {
+        "file": "zls/tests/analysis/variable.zig",
+        "contentSha": "2ba854c2145c"
+      },
+      {
+        "file": "zls/tests/analysis_check.zig",
+        "contentSha": "906c1625c0e3"
+      },
+      {
+        "file": "zls/tests/context.zig",
+        "contentSha": "3e696e084991"
+      },
+      {
+        "file": "zls/tests/helper.zig",
+        "contentSha": "10b0c29a276b"
+      },
+      {
+        "file": "zls/tests/lifecycle.zig",
+        "contentSha": "685bd3f7c217"
+      },
+      {
+        "file": "zls/tests/lsp_features/code_actions.zig",
+        "contentSha": "9f711307f56c"
+      },
+      {
+        "file": "zls/tests/lsp_features/completion.zig",
+        "contentSha": "c491e1e0ccdf"
+      },
+      {
+        "file": "zls/tests/lsp_features/definition.zig",
+        "contentSha": "ea2e65645597"
+      },
+      {
+        "file": "zls/tests/lsp_features/diagnostics.zig",
+        "contentSha": "77ceb35e303b"
+      },
+      {
+        "file": "zls/tests/lsp_features/document_symbol.zig",
+        "contentSha": "54f3b11647ea"
+      },
+      {
+        "file": "zls/tests/lsp_features/folding_range.zig",
+        "contentSha": "313ec2cfd277"
+      },
+      {
+        "file": "zls/tests/lsp_features/hover.zig",
+        "contentSha": "8f732c690b49"
+      },
+      {
+        "file": "zls/tests/lsp_features/inlay_hints.zig",
+        "contentSha": "e74d0ccdc01f"
+      },
+      {
+        "file": "zls/tests/lsp_features/references.zig",
+        "contentSha": "c2ec1f28a441"
+      },
+      {
+        "file": "zls/tests/lsp_features/selection_range.zig",
+        "contentSha": "9e38f93e8420"
+      },
+      {
+        "file": "zls/tests/lsp_features/semantic_tokens.zig",
+        "contentSha": "aa8f449c55d5"
+      },
+      {
+        "file": "zls/tests/lsp_features/signature_help.zig",
+        "contentSha": "9028e31ddeb7"
+      },
+      {
+        "file": "zls/tests/lsp_features/workspace_symbols.zig",
+        "contentSha": "bbaab0217309"
+      },
+      {
+        "file": "zls/tests/tests.zig",
+        "contentSha": "680143a621f6"
+      },
+      {
+        "file": "zls/tests/utility/ast.zig",
+        "contentSha": "9ceca342bb75"
+      },
+      {
+        "file": "zls/tests/utility/diff.zig",
+        "contentSha": "d13d13f879fc"
+      },
+      {
+        "file": "zls/tests/utility/position_context.zig",
+        "contentSha": "ad23967af1bb"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "zig": {
+      "prev": "23f5f40285ef",
+      "now": "23f5f40285ef",
+      "same": true
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "zig": [
+      {
+        "file": "zig/build.zig",
+        "language": "zig",
+        "rels": 325,
+        "withLine": 325,
+        "noLine": 0,
+        "consistent": 325,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/behavior.zig",
+        "language": "zig",
+        "rels": 122,
+        "withLine": 122,
+        "noLine": 0,
+        "consistent": 122,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/cases.zig",
+        "language": "zig",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/compile_errors.zig",
+        "language": "zig",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/error_traces.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/gen_h.zig",
+        "language": "zig",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/libc.zig",
+        "language": "zig",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/llvm_ir.zig",
+        "language": "zig",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/llvm_targets.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/stack_traces.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/build.zig",
+        "language": "zig",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 87,
+            "sourceLine": "inline for (@typeInfo(all_pkgs).@\"struct\".decls) |decl| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/test/standalone/load_dynamic_library/add.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/mix_c_files/build.zig",
+        "language": "zig",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/mix_c_files/main.zig",
+        "language": "zig",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/mix_o_files/base64.zig",
+        "language": "zig",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/mix_o_files/build.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/pkg_import/build.zig",
+        "language": "zig",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/pkg_import/pkg.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/pkg_import/test.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/posix/build.zig",
+        "language": "zig",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/posix/cwd.zig",
+        "language": "zig",
+        "rels": 52,
+        "withLine": 52,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/posix/getenv.zig",
+        "language": "zig",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/posix/relpaths.zig",
+        "language": "zig",
+        "rels": 58,
+        "withLine": 58,
+        "noLine": 0,
+        "consistent": 58,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/posix/sigaction.zig",
+        "language": "zig",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/run_cwd/build.zig",
+        "language": "zig",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/run_cwd/check_file_exists.zig",
+        "language": "zig",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/run_output_caching/build.zig",
+        "language": "zig",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/run_output_caching/main.zig",
+        "language": "zig",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/run_output_paths/build.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/run_output_paths/create_file.zig",
+        "language": "zig",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/self_exe_symlink/build.zig",
+        "language": "zig",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/self_exe_symlink/create-symlink.zig",
+        "language": "zig",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/self_exe_symlink/main.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/shared_library/build.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/shared_library/mathtest.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/build.zig",
+        "language": "zig",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/cat/main.zig",
+        "language": "zig",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/guess_number/main.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/hello_world/hello.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/hello_world/hello_libc.zig",
+        "language": "zig",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/issue_12471/main.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/issue_7030.zig",
+        "language": "zig",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/issue_9402/main.zig",
+        "language": "zig",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/main_return_error/error_u8.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/main_return_error/error_u8_non_zero.zig",
+        "language": "zig",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/noreturn_call/as_arg.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/noreturn_call/inline.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/simple/std_enums_big_enums.zig",
+        "language": "zig",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/build.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/foo.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/strip_empty_loop/build.zig",
+        "language": "zig",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/strip_empty_loop/main.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/strip_struct_init/build.zig",
+        "language": "zig",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/strip_struct_init/main.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_obj_link_run/build.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_obj_link_run/src/main.zig",
+        "language": "zig",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/build.zig",
+        "language": "zig",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/module1/main.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/module2/main.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/src/main.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_module_imports/test_runner/main.zig",
+        "language": "zig",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_path/build.zig",
+        "language": "zig",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_path/test.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/test_runner_path/test_runner.zig",
+        "language": "zig",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/tsan/build.zig",
+        "language": "zig",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/tsan/main.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/build.zig",
+        "language": "zig",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/fuzz.zig",
+        "language": "zig",
+        "rels": 70,
+        "withLine": 70,
+        "noLine": 0,
+        "consistent": 70,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/lib.zig",
+        "language": "zig",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/build.zig",
+        "language": "zig",
+        "rels": 30,
+        "withLine": 30,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/echo-args.zig",
+        "language": "zig",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/fuzz.zig",
+        "language": "zig",
+        "rels": 82,
+        "withLine": 82,
+        "noLine": 0,
+        "consistent": 82,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_bat_args/test.zig",
+        "language": "zig",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 60,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/build.zig",
+        "language": "zig",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.zig",
+        "language": "zig",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wwinmain.zig",
+        "language": "zig",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_paths/build.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_paths/relative.zig",
+        "language": "zig",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_paths/test.zig",
+        "language": "zig",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_resources/build.zig",
+        "language": "zig",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_resources/main.zig",
+        "language": "zig",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_spawn/build.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_spawn/hello.zig",
+        "language": "zig",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_spawn/main.zig",
+        "language": "zig",
+        "rels": 71,
+        "withLine": 71,
+        "noLine": 0,
+        "consistent": 71,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/zerolength_check/build.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/zerolength_check/src/main.zig",
+        "language": "zig",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/tests.zig",
+        "language": "zig",
+        "rels": 376,
+        "withLine": 376,
+        "noLine": 0,
+        "consistent": 376,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/docgen.zig",
+        "language": "zig",
+        "rels": 274,
+        "withLine": 274,
+        "noLine": 0,
+        "consistent": 274,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/doctest.zig",
+        "language": "zig",
+        "rels": 249,
+        "withLine": 249,
+        "noLine": 0,
+        "consistent": 248,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 876,
+            "sourceLine": "@\"test\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/dump-cov.zig",
+        "language": "zig",
+        "rels": 76,
+        "withLine": 76,
+        "noLine": 0,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/fetch_them_macos_headers.zig",
+        "language": "zig",
+        "rels": 175,
+        "withLine": 175,
+        "noLine": 0,
+        "consistent": 175,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/gen_macos_headers_c.zig",
+        "language": "zig",
+        "rels": 64,
+        "withLine": 64,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/gen_outline_atomics.zig",
+        "language": "zig",
+        "rels": 101,
+        "withLine": 101,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/gen_spirv_spec.zig",
+        "language": "zig",
+        "rels": 354,
+        "withLine": 354,
+        "noLine": 0,
+        "consistent": 352,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 131,
+            "sourceLine": ".name = set_name.@\"0\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 132,
+            "sourceLine": ".opcode_name = set_name.@\"1\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/gen_stubs.zig",
+        "language": "zig",
+        "rels": 248,
+        "withLine": 248,
+        "noLine": 0,
+        "consistent": 241,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 142,
+            "sourceLine": "const arches: [@typeInfo(Arch).@\"enum\".fields.len]Arch = blk: {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 161,
+            "sourceLine": "inline for (@typeInfo(Arch).@\"enum\".fields) |field| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 173,
+            "sourceLine": "inline for (@typeInfo(Arch).@\"enum\".fields) |field| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 194,
+            "sourceLine": "inline for (@typeInfo(Arch).@\"enum\".fields) |field| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 234,
+            "sourceLine": "inline for (@typeInfo(Arch).@\"enum\".fields) |field| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/generate_JSONTestSuite.zig",
+        "language": "zig",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/generate_c_size_and_align_checks.zig",
+        "language": "zig",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 52,
+            "sourceLine": "inline for (@typeInfo(std.Target.CType).@\"enum\".fields) |field| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/generate_linux_syscalls.zig",
+        "language": "zig",
+        "rels": 92,
+        "withLine": 92,
+        "noLine": 0,
+        "consistent": 88,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 54,
+            "sourceLine": "@\"32\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 56,
+            "sourceLine": "@\"64\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 85,
+            "sourceLine": "@\"var\": []const u8,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 229,
+            "sourceLine": "try Io.Writer.print(stdout, \"pub const {s} = enum(usize) {{\\n\", .{arch.@\"var\"});",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/incr-check.zig",
+        "language": "zig",
+        "rels": 406,
+        "withLine": 406,
+        "noLine": 0,
+        "consistent": 406,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/migrate_langref.zig",
+        "language": "zig",
+        "rels": 159,
+        "withLine": 159,
+        "noLine": 0,
+        "consistent": 158,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 260,
+            "sourceLine": "@\"test\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/process_headers.zig",
+        "language": "zig",
+        "rels": 100,
+        "withLine": 100,
+        "noLine": 0,
+        "consistent": 100,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/spirv/grammar.zig",
+        "language": "zig",
+        "rels": 70,
+        "withLine": 70,
+        "noLine": 0,
+        "consistent": 68,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 62,
+            "sourceLine": "@\"?\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 64,
+            "sourceLine": "@\"*\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/update-linux-headers.zig",
+        "language": "zig",
+        "rels": 107,
+        "withLine": 107,
+        "noLine": 0,
+        "consistent": 107,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/update_clang_options.zig",
+        "language": "zig",
+        "rels": 161,
+        "withLine": 161,
+        "noLine": 0,
+        "consistent": 160,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 659,
+            "sourceLine": "inline for (@typeInfo(cpu_targets).@\"struct\".decls) |decl| {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/tools/update_cpu_features.zig",
+        "language": "zig",
+        "rels": 200,
+        "withLine": 200,
+        "noLine": 0,
+        "consistent": 200,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/update_crc_catalog.zig",
+        "language": "zig",
+        "rels": 58,
+        "withLine": 58,
+        "noLine": 0,
+        "consistent": 58,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/update_freebsd_libc.zig",
+        "language": "zig",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/update_glibc.zig",
+        "language": "zig",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/update_mingw.zig",
+        "language": "zig",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/update_netbsd_libc.zig",
+        "language": "zig",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/.github/workflows/prepare_release_payload.zig",
+        "language": "zig",
+        "rels": 60,
+        "withLine": 60,
+        "noLine": 0,
+        "consistent": 60,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/build.zig",
+        "language": "zig",
+        "rels": 248,
+        "withLine": 248,
+        "noLine": 0,
+        "consistent": 248,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/BuildAssociatedConfig.zig",
+        "language": "zig",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/Config.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/DiagnosticsCollection.zig",
+        "language": "zig",
+        "rels": 282,
+        "withLine": 282,
+        "noLine": 0,
+        "consistent": 282,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/DocumentScope.zig",
+        "language": "zig",
+        "rels": 529,
+        "withLine": 529,
+        "noLine": 0,
+        "consistent": 529,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/DocumentStore.zig",
+        "language": "zig",
+        "rels": 785,
+        "withLine": 785,
+        "noLine": 0,
+        "consistent": 785,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/Server.zig",
+        "language": "zig",
+        "rels": 892,
+        "withLine": 892,
+        "noLine": 0,
+        "consistent": 847,
+        "inconsistent": 0,
+        "notCheckable": 45,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1261,
+            "sourceLine": "@\"textDocument/willSaveWaitUntil\": types.TextDocument.WillSaveParams,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1262,
+            "sourceLine": "@\"textDocument/semanticTokens/full\": types.semantic_tokens.Params,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1263,
+            "sourceLine": "@\"textDocument/semanticTokens/range\": types.semantic_tokens.Params.Range,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1264,
+            "sourceLine": "@\"textDocument/inlayHint\": types.InlayHint.Params,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1265,
+            "sourceLine": "@\"textDocument/completion\": types.completion.Params,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/TrigramStore.zig",
+        "language": "zig",
+        "rels": 240,
+        "withLine": 240,
+        "noLine": 0,
+        "consistent": 240,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/Uri.zig",
+        "language": "zig",
+        "rels": 186,
+        "withLine": 186,
+        "noLine": 0,
+        "consistent": 186,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analyser/InternPool.zig",
+        "language": "zig",
+        "rels": 1460,
+        "withLine": 1460,
+        "noLine": 0,
+        "consistent": 1460,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analyser/analyser.zig",
+        "language": "zig",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analyser/completions.zig",
+        "language": "zig",
+        "rels": 88,
+        "withLine": 88,
+        "noLine": 0,
+        "consistent": 88,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analyser/degibberish.zig",
+        "language": "zig",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analyser/error_msg.zig",
+        "language": "zig",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analyser/segmented_list.zig",
+        "language": "zig",
+        "rels": 118,
+        "withLine": 118,
+        "noLine": 0,
+        "consistent": 117,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 126,
+            "sourceLine": "if (@typeInfo(SelfType).pointer.attrs.@\"const\") {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/analyser/string_pool.zig",
+        "language": "zig",
+        "rels": 157,
+        "withLine": 157,
+        "noLine": 0,
+        "consistent": 157,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/analysis.zig",
+        "language": "zig",
+        "rels": 2340,
+        "withLine": 2340,
+        "noLine": 0,
+        "consistent": 2340,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/ast.zig",
+        "language": "zig",
+        "rels": 599,
+        "withLine": 599,
+        "noLine": 0,
+        "consistent": 595,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1095,
+            "sourceLine": "@\"asm\": struct {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 362,
+            "sourceLine": "const extra_index, const extra = tree.nodeData(node).@\"for\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 650,
+            "sourceLine": "const extra_index, const extra = tree.nodeData(n).@\"for\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 1369,
+            "sourceLine": "const extra_index, const extra = tree.nodeData(node).@\"for\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/configuration.zig",
+        "language": "zig",
+        "rels": 304,
+        "withLine": 304,
+        "noLine": 0,
+        "consistent": 303,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 632,
+            "sourceLine": "const struct_info: std.lang.Type.Struct = @typeInfo(Config).@\"struct\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/diff.zig",
+        "language": "zig",
+        "rels": 63,
+        "withLine": 63,
+        "noLine": 0,
+        "consistent": 63,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/code_actions.zig",
+        "language": "zig",
+        "rels": 603,
+        "withLine": 603,
+        "noLine": 0,
+        "consistent": 597,
+        "inconsistent": 0,
+        "notCheckable": 6,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1146,
+            "sourceLine": "@\"function parameter\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1147,
+            "sourceLine": "@\"local constant\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1148,
+            "sourceLine": "@\"local variable\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1149,
+            "sourceLine": "@\"switch tag capture\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 1154,
+            "sourceLine": "@\"error capture; omit it instead\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/features/completions.zig",
+        "language": "zig",
+        "rels": 759,
+        "withLine": 759,
+        "noLine": 0,
+        "consistent": 759,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/diagnostics.zig",
+        "language": "zig",
+        "rels": 248,
+        "withLine": 248,
+        "noLine": 0,
+        "consistent": 248,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/document_symbol.zig",
+        "language": "zig",
+        "rels": 127,
+        "withLine": 127,
+        "noLine": 0,
+        "consistent": 127,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/folding_range.zig",
+        "language": "zig",
+        "rels": 159,
+        "withLine": 159,
+        "noLine": 0,
+        "consistent": 159,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/goto.zig",
+        "language": "zig",
+        "rels": 209,
+        "withLine": 209,
+        "noLine": 0,
+        "consistent": 209,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/hover.zig",
+        "language": "zig",
+        "rels": 238,
+        "withLine": 238,
+        "noLine": 0,
+        "consistent": 238,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/inlay_hints.zig",
+        "language": "zig",
+        "rels": 264,
+        "withLine": 264,
+        "noLine": 0,
+        "consistent": 264,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/references.zig",
+        "language": "zig",
+        "rels": 353,
+        "withLine": 353,
+        "noLine": 0,
+        "consistent": 353,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/selection_range.zig",
+        "language": "zig",
+        "rels": 77,
+        "withLine": 77,
+        "noLine": 0,
+        "consistent": 77,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/semantic_tokens.zig",
+        "language": "zig",
+        "rels": 417,
+        "withLine": 417,
+        "noLine": 0,
+        "consistent": 415,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 18,
+            "sourceLine": "@\"enum\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 20,
+            "sourceLine": "@\"struct\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/features/signature_help.zig",
+        "language": "zig",
+        "rels": 103,
+        "withLine": 103,
+        "noLine": 0,
+        "consistent": 103,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/features/workspace_symbols.zig",
+        "language": "zig",
+        "rels": 57,
+        "withLine": 57,
+        "noLine": 0,
+        "consistent": 57,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/main.zig",
+        "language": "zig",
+        "rels": 344,
+        "withLine": 344,
+        "noLine": 0,
+        "consistent": 343,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 469,
+            "sourceLine": "try @\"zls env\"(io, allocator, environ_map);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/offsets.zig",
+        "language": "zig",
+        "rels": 250,
+        "withLine": 250,
+        "noLine": 0,
+        "consistent": 250,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/print_ast.zig",
+        "language": "zig",
+        "rels": 253,
+        "withLine": 253,
+        "noLine": 0,
+        "consistent": 253,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/snippets.zig",
+        "language": "zig",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/testing.zig",
+        "language": "zig",
+        "rels": 135,
+        "withLine": 135,
+        "noLine": 0,
+        "consistent": 135,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/tools/config_gen.zig",
+        "language": "zig",
+        "rels": 398,
+        "withLine": 398,
+        "noLine": 0,
+        "consistent": 384,
+        "inconsistent": 0,
+        "notCheckable": 14,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 20,
+            "sourceLine": "@\"enum\": ?[]const []const u8 = null,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 22,
+            "sourceLine": "default: std.json.Value,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 85,
+            "sourceLine": "@\"$schema\": []const u8 = \"https://json-schema.org/draft-07/schema\",",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 96,
+            "sourceLine": "@\"enum\": ?[]const []const u8 = null,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "default",
+            "claimedLine": 97,
+            "sourceLine": "default: std.json.Value,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/src/tracy.zig",
+        "language": "zig",
+        "rels": 145,
+        "withLine": 145,
+        "noLine": 0,
+        "consistent": 145,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/src/zls.zig",
+        "language": "zig",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/ErrorBuilder.zig",
+        "language": "zig",
+        "rels": 185,
+        "withLine": 185,
+        "noLine": 0,
+        "consistent": 185,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/add_analysis_cases.zig",
+        "language": "zig",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/address_of.zig",
+        "language": "zig",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/arithmetic.zig",
+        "language": "zig",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/array.zig",
+        "language": "zig",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/assembly.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/assign_destructure.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/basic.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/block.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/builtins.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/capture.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/container.zig",
+        "language": "zig",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/decl_literal.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/either.zig",
+        "language": "zig",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/error_union.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/function.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/generics.zig",
+        "language": "zig",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 48,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/integer_literal.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/meta.zig",
+        "language": "zig",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/optional.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/peer_type_resolution.zig",
+        "language": "zig",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/pointer.zig",
+        "language": "zig",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/result_location_type.zig",
+        "language": "zig",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/string_literal.zig",
+        "language": "zig",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/switch.zig",
+        "language": "zig",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis/tuple.zig",
+        "language": "zig",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 19,
+            "sourceLine": "const some_tuple_field_access_0 = some_tuple.@\"0\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 21,
+            "sourceLine": "const some_tuple_field_access_1 = some_tuple.@\"1\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 23,
+            "sourceLine": "const some_tuple_field_access_2 = some_tuple.@\"2\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/tests/analysis/variable.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/analysis_check.zig",
+        "language": "zig",
+        "rels": 126,
+        "withLine": 126,
+        "noLine": 0,
+        "consistent": 126,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/context.zig",
+        "language": "zig",
+        "rels": 112,
+        "withLine": 112,
+        "noLine": 0,
+        "consistent": 112,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/helper.zig",
+        "language": "zig",
+        "rels": 101,
+        "withLine": 101,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lifecycle.zig",
+        "language": "zig",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 41,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/code_actions.zig",
+        "language": "zig",
+        "rels": 93,
+        "withLine": 93,
+        "noLine": 0,
+        "consistent": 93,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/completion.zig",
+        "language": "zig",
+        "rels": 202,
+        "withLine": 202,
+        "noLine": 0,
+        "consistent": 202,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/definition.zig",
+        "language": "zig",
+        "rels": 76,
+        "withLine": 76,
+        "noLine": 0,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/diagnostics.zig",
+        "language": "zig",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/document_symbol.zig",
+        "language": "zig",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/folding_range.zig",
+        "language": "zig",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/hover.zig",
+        "language": "zig",
+        "rels": 44,
+        "withLine": 44,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/inlay_hints.zig",
+        "language": "zig",
+        "rels": 81,
+        "withLine": 81,
+        "noLine": 0,
+        "consistent": 81,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/references.zig",
+        "language": "zig",
+        "rels": 129,
+        "withLine": 129,
+        "noLine": 0,
+        "consistent": 129,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/selection_range.zig",
+        "language": "zig",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 45,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/semantic_tokens.zig",
+        "language": "zig",
+        "rels": 93,
+        "withLine": 93,
+        "noLine": 0,
+        "consistent": 90,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 2199,
+            "sourceLine": "try error_builder.msgAtIndex(\"expected a `{s}` token here\", uri.raw, last_token_index, .err, .{expec",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 2207,
+            "sourceLine": "const expected_token_type = expected_token.@\"1\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 2208,
+            "sourceLine": "const expected_token_modifiers = expected_token.@\"2\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zls/tests/lsp_features/signature_help.zig",
+        "language": "zig",
+        "rels": 43,
+        "withLine": 43,
+        "noLine": 0,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/workspace_symbols.zig",
+        "language": "zig",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/tests.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/utility/ast.zig",
+        "language": "zig",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/utility/diff.zig",
+        "language": "zig",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zls/tests/utility/position_context.zig",
+        "language": "zig",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 48,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

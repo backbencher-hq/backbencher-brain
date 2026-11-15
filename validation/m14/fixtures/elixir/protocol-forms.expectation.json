@@ -1,0 +1,55 @@
+{
+  "expectSymbols": [
+    {
+      "name": "Sized",
+      "kind": "interface",
+      "meta.isProtocol": true
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Sized"
+    },
+    {
+      "name": "Tuple",
+      "kind": "class",
+      "meta.isProtocolImplementation": true,
+      "meta.forType": "Tuple"
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Tuple"
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "size",
+      "contains": "Measures."
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Sized",
+      "kind": "interface"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Tuple",
+      "target": "Sized"
+    },
+    {
+      "type": "contains",
+      "from": "Sized",
+      "target": "size"
+    },
+    {
+      "type": "contains",
+      "from": "Tuple",
+      "target": "size"
+    }
+  ],
+  "note": " EX-PAYLOAD pins (2026-09-28): the protocol-side markers (`meta.isProtocol`, `meta.isProtocolImplementation`) and the implementation's own `meta.forType` are asserted (mutants elixir/protocol-metadata-dropped and elixir/defimpl-fortype-dropped survived before this). The Implements edge names the PAIR; nothing in the edge payload says which side of the protocol a symbol is."
+}

@@ -1,0 +1,187 @@
+{
+ "fixtureId": "xml/declared-name-xsd",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 XML deep review, finding X1: in a schema language a construct's DECLARED NAME is the VALUE of its `name` attribute, not its tag. `<xs:complexType name=\"EntryType\">` declares the type `EntryType`; the tag names the KIND. The pre-fix analyzer published the tag, so the whole corpus filed every XSD type under one of six names (`xsd:element` alone appeared 5,914 times) and `bb_search(\"EntryType\")` — the search a developer actually types — returned nothing: measured 1,197 of 26,578 in-vocabulary declarations published under their declared name, a recall of 0.045. The rule is gated on the element's EFFECTIVE NAMESPACE because tag-only gating is measurably wrong: 29,196 `name` attributes in the same corpus sit OUTSIDE any declaration vocabulary and are DATA (`<property name=\"wsdl.dir\">`, `<target name=\"client\">`), so a tag-gated rule would have published data values as symbols. This fixture pins both halves. Lines are read off the file: `catalog` 5, the ANONYMOUS inline `xs:complexType` 6 (an inline type has no name, so the tag IS the honest reading and it is pinned as such), `entry` 8, the NAMED `EntryType` 12, `Version` 15. ONTOLOGY RELABEL. One entry in this fixture asserted `<xs:restriction base=\"xs:int\"/>` as a `references` edge. XSD 1.0 Part 1 s3.4.2 defines that attribute as the qualified name of the BASE TYPE and names the mechanism type derivation, so the edge is `extends`. The expectation was updated to the spec, not to observed output: the relabel is quoted, and the forbid half pins that the `references` reading does not come back.",
+ "expectSymbols": [
+  {
+   "name": "catalog",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredName": "catalog",
+   "meta.declarationKind": "element",
+   "meta.tagName": "xs:element",
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "xs:complexType",
+   "kind": "class",
+   "ownerName": "catalog",
+   "meta.tagName": "xs:complexType"
+  },
+  {
+   "name": "entry",
+   "kind": "class",
+   "ownerName": "xs:sequence",
+   "meta.declaredName": "entry",
+   "meta.declarationKind": "element"
+  },
+  {
+   "name": "EntryType",
+   "kind": "class",
+   "meta.declaredName": "EntryType",
+   "meta.declarationKind": "complexType",
+   "meta.tagName": "xs:complexType",
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "Version",
+   "kind": "class",
+   "meta.declaredName": "Version",
+   "meta.declarationKind": "simpleType",
+   "meta.tagName": "xs:simpleType",
+   "meta.declaredByAttribute": "name"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "xs:schema",
+   "target": "catalog",
+   "line_number": 5
+  },
+  {
+   "type": "contains",
+   "from": "catalog",
+   "target": "xs:complexType",
+   "line_number": 6
+  },
+  {
+   "type": "contains",
+   "from": "xs:complexType",
+   "target": "xs:sequence",
+   "line_number": 7
+  },
+  {
+   "type": "contains",
+   "from": "xs:sequence",
+   "target": "entry",
+   "line_number": 8
+  },
+  {
+   "type": "contains",
+   "from": "xs:schema",
+   "target": "EntryType",
+   "line_number": 12
+  },
+  {
+   "type": "contains",
+   "from": "EntryType",
+   "target": "id",
+   "line_number": 13
+  },
+  {
+   "type": "contains",
+   "from": "xs:schema",
+   "target": "Version",
+   "line_number": 15
+  },
+  {
+   "type": "references",
+   "from": "entry",
+   "target": "xs:schema.EntryType",
+   "line_number": 8
+  },
+  {
+   "type": "references",
+   "from": "id",
+   "target": "string",
+   "line_number": 13
+  },
+  {
+   "type": "extends",
+   "from": "Version",
+   "target": "int",
+   "line_number": 16,
+   "note": "SOURCE CORRECTED 2026-10-04, and this is the substantive change in this fixture's history. This edge used to be asserted with `from: \"xs:restriction\"`, which is the XSD vocabulary's own word for a type CONSTRUCTOR and not a type at all. The analyzer computed an attribute's owner as the element the attribute sits on (src/ast/real-xml-analyzer.ts, `symbolName = declaredName ?? name`), and an inline `<xs:restriction>` carries no `name`, so the owner fell back to the tag text. Measured over the full 11,456-file admitted corpus that put a fabricated source on **438 of 438 `extends` edges — 100%, with zero sources a document declares** (validation/m14/fixtures/xml/derivation-accounting.mts). `extends` relates two TYPES, so its source must be the nearest ancestor that DECLARES a name. The analyzer now threads that ancestor (`nearestNamedSchemaOwner`) and the fabricated count is 0 of 1,429. The note that previously called the old source \"an anonymous inline element\" and argued the real type was reachable via `bb_graph` owner-cascade was a rationalisation: owner-cascade attributes MEMBER rows to an owner class, and `xs:restriction` is not a member of `Version` in that sense."
+  },
+  {
+   "type": "references",
+   "from": "id",
+   "target": "string",
+   "line_number": 13,
+   "meta.evidenceClass": "reference_qualified",
+   "note": "a BUILT-IN, reached through the prefix xs. Still a qualified reference: the namespace is what makes `string` name the XSD built-in rather than a local declaration, which is why the analyzer marks it `resolvable: builtin` instead of publishing a phantom symbol."
+  },
+  {
+   "type": "contains",
+   "from": "xs:schema",
+   "target": "EntryType",
+   "line_number": 12,
+   "meta.evidenceClass": "structural"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "xs:schema",
+   "target": "xs:complexType",
+   "note": "a NAMED complexType is published as EntryType, never as its tag; the anonymous one on line 6 IS published as its tag, and this forbid cannot tell the two apart, so the symbol expectations above are what distinguish them"
+  },
+  {
+   "type": "contains",
+   "from": "xs:schema",
+   "target": "xs:element",
+   "note": "`<xs:element name=\"catalog\">` declares `catalog`"
+  },
+  {
+   "type": "references",
+   "from": "entry",
+   "target": "tns:EntryType",
+   "note": "a prefix must never reach the target: the edge names the DECLARATION, and the prefix rides in metadata (M60.R10, 'a value where a name belongs')"
+  },
+  {
+   "type": "references",
+   "from": "id",
+   "target": "xs:string",
+   "note": "same: the local name is the name a declaration carries"
+  },
+  {
+   "type": "references",
+   "from": "entry",
+   "target": "entry",
+   "note": "a construct never references itself"
+  },
+  {
+   "type": "references",
+   "from": "Version",
+   "target": "int",
+   "note": "the negative half of the relabel: an XSD derivation is `extends` and MUST NOT also be a `references` edge. Edge identity is source|type|target, so emitting both would double the same fact under two labels — and `references` is the neighbouring type, which is exactly what the `Labelled` question is asked about."
+  },
+  {
+   "type": "extends",
+   "from": "xs:restriction",
+   "target": "int",
+   "note": "THE REGRESSION PIN for the fabricated-source defect, kept as a forbid because the wrong edge is the one that must never come back. `xs:restriction` is a schema CONSTRUCTOR, not a declared type: the document declares `Version` and declares nothing called `xs:restriction`. An `extends` edge whose source is a vocabulary tag is a name in the graph that no file supports, which is what makes a fake caller into wrong refactoring advice in bb_graph, bb_impact and bb_migrate. This row is the same pair the fixture's own expectation used to carry."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "xs:element",
+   "note": "a named xs:element declares its `name` attribute's value"
+  },
+  {
+   "name": "xs:simpleType",
+   "note": "a named xs:simpleType declares `Version`"
+  },
+  {
+   "name": "tns:EntryType",
+   "note": "a reference VALUE published as a symbol: no declaration anywhere carries a colon-bearing name, and the fixtures forbid both this symbol and the edge that names it"
+  },
+  {
+   "name": "xs:string",
+   "note": "same: the written value, not the local name `string` a declaration carries"
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

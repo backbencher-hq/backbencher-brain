@@ -1,0 +1,56 @@
+{
+  "fixtureId": "vb/loop-and-using-bindings",
+  "language": "vb",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M14.0.F1 register repayment (2026-10-08), measured before and after rather than asserted. The register's vb finding was `childForFieldName(\"control\")` at real-vb-analyzer.ts:1105, a read the audit reported as a dead field literal: the pinned tree-sitter-vbnet wasm declares 54 field names and `control` is in none of them, so the read returned null on every node and the branch that records a `For Each` / `Using` binding as a LOCAL never ran. The consequence is the one this lane's own comment already described for `Dim` locals: this grammar gives an argument-bearing call and an array index the SAME node type (`array_access_expression`), so a bare `item(0)` in statement position is published as `calls -> item` unless the head name is known to be a local. Measured on THIS fixture by running the pre-fix analyzer (a detached worktree at the commit before the repair) and the repaired one over the same bytes: pre-fix 15 relationship rows including `calls Run -> item`, `calls Run -> kv` and `calls Run -> g`; post-fix 12 rows with none of the three. The repair reads what the grammar actually builds, measured by parsing the same source with the pinned wasm: `for_each_statement` carries the loop variable in its `variable` FIELD (identifier `item`) and the sequence in `collection`; `using_statement` carries the declaration in its `resource` field as a `variable_declarator` whose own `name` field holds `g` — the same node the `Dim`/`Const` branch already reads through `declaredName`. Two controls are pinned so a repair cannot be mistaken for a blanket suppression: `d(0)` on a `Dim` local was suppressed BEFORE the fix as well (variablesInFile, a branch that was never broken), and `Helper()` / `Me.Touch()` are real calls that must survive. WHY A FIXTURE IS PART OF THE REPAYMENT: the lane had no fixture exercising `For Each` or `Using` at all (measured: zero matches under validation/m14/fixtures/vb before this file), so the three fabricated rows were reachable by nothing in the repository's own battery, and the register's per-literal gate would only report a re-introduction of the `control` spelling as UNREGISTERED — it cannot see the behaviour. The forbid rows below are the part that fails if the binders stop being recorded as locals, whichever way that regresses.",
+  "expectSymbols": [
+    { "name": "LoopAndUsingBindings", "kind": "module" },
+    { "name": "Run", "kind": "method", "ownerName": "LoopAndUsingBindings" },
+    { "name": "Pairs", "kind": "property", "ownerName": "LoopAndUsingBindings" },
+    { "name": "Helper", "kind": "method", "ownerName": "LoopAndUsingBindings" },
+    { "name": "Touch", "kind": "method", "ownerName": "LoopAndUsingBindings" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "CONTROL, real call. A repair that narrowed the statement-level signal too far — or that suppressed every name in a `For Each` body — would take this row with it, so it is pinned rather than assumed.",
+      "type": "calls", "from": "Run", "target": "Helper"
+    },
+    {
+      "comment": "CONTROL, qualified real call: `Me.Touch()`. The `Me` receiver is not the target and never was; the edge is the member name.",
+      "type": "calls", "from": "Run", "target": "Touch"
+    },
+    {
+      "comment": "CONTROL from the `Dim` branch: the property's declared type is a type-level read of `KeyValuePair`, unchanged by this repair — what a reader checks first when a `uses` count moves for an unrelated reason.",
+      "type": "references", "from": "Pairs", "target": "KeyValuePair"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "THE PRE-FIX SHAPE. `item` is a `For Each` binder used as an INDEX (`item(0)`), which this grammar spells as an `array_access_expression` — the same node a real call-with-arguments gets. Published as a call it put a loop variable in the call graph. Measured present before the repair, absent after.",
+      "type": "calls", "from": "Run", "target": "item"
+    },
+    {
+      "comment": "THE PRE-FIX SHAPE, typed binder. `For Each kv As KeyValuePair(Of String, Integer)` binds `kv` through the same `variable` field, and the typed form is measured to be an identifier too, so it is not a separate code path.",
+      "type": "calls", "from": "Run", "target": "kv"
+    },
+    {
+      "comment": "THE PRE-FIX SHAPE, `Using`. `g` is the `resource` declarator's name; before the repair it too reached the call graph as `calls -> g`.",
+      "type": "calls", "from": "Run", "target": "g"
+    },
+    {
+      "comment": "CONTROL that was already correct and must stay correct: `d(0)` on a `Dim` local. This row is here so the fixture distinguishes 'the For Each / Using binders are recorded' from 'the statement-level signal was switched off' — if the latter regressed, this forbid would fail too.",
+      "type": "calls", "from": "Run", "target": "d"
+    },
+    {
+      "comment": "The `xs` sequence itself is indexed in the `For Each` and must never be a call target; pinned because a repair that started reading the `collection` field as a declarator name would fail here rather than silently.",
+      "type": "calls", "from": "Run", "target": "xs"
+    }
+  ],
+  "knownResidual": "The `Using` block's construction is NOT pinned here, and deliberately not claimed: this fixture emits no `instantiates` row for `As New Graphics()`, which is the same standing red the lane's ontology fixture reports for its CONSTRUCTION SURFACE 4 rows (`As New T()`) and for its `As New` row that is currently an expected-relationship miss. Two runs of the vb lane — one against the commit before this repair and one after — report an identical problem set for the three other fixtures (pass 1 / fail 3 before, the same three before this file was added), so the `As New` surface is a pre-existing gap in this lane and not an effect of the binder repair. Pinning an `instantiates` row here would have asserted a row the analyzer does not emit, which is how a fixture stops being evidence; the surface is left to the fixture that already convicts it.",
+  "expectComplexity": [
+    {
+      "fileEquals": 3,
+      "comment": "SECTION C Matrix 1b pin. The analyzer publishes metadata.cyclomaticComplexity = 1 + decision points; this fixture measures 3 by hand and is the only vb source that is not a straight-line declaration file. Pinning it keeps the field a measured decision-point count instead of a metric name wearing a constant."
+    }
+  ]
+}

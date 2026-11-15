@@ -1,0 +1,82 @@
+{
+  "fixtureId": "scss/scope-containment-and-complexity",
+  "language": "scss",
+  "targetSpellingReason": "TARGET SPELLING UPDATED 2026-10-11 for the same reason as the sibling fixtures: the CSS base qualifies targets with their stylesheet (`<file>::<name>`) and its own 51 expectation rows use that spelling. The containment, its line and `isMediaScope` are unchanged.",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two things this lane's other fixtures do not pin. (1) SCOPE CONTAINMENT: the CSS lane gets `contains` edges from `@media`/`@layer`/`@container`/`@scope` through its own at-rule handling, and the SCSS lane DELEGATES that walk — so `contains` works here, but nothing in this lane's fixtures asserted it, and a delegation is exactly the kind of thing that can stop being wired without any local test noticing. The nesting depth and the `:nth-child` are there to make the selector non-trivial rather than a bare class. (2) COMPLEXITY: the payload matrix needs a pin, and the CSS lane's complexity-matrix fixture is written in CSS — it cannot exercise a mixin's parameter count or an `@if`/`@else chain, which are the constructs that make SCSS complexity differ from CSS complexity at all. The `else if` arm is included because it is the form that a one-armed `@if` pin would miss. The first draft asserted `uses @if $steps > 4 -> @mixin ladder`, which is a relationship the file does not contain — the `@if` is INSIDE the mixin and nothing includes anything. Authoring an expectation and then failing against the analyzer is the fixture working: the alternative is a fixture transcribed from output, which cannot fail.",
+  "expectSymbols": [
+    {
+      "name": "@media (min-width: 768px)",
+      "kind": "module"
+    },
+    {
+      "name": ".grid",
+      "kind": "class"
+    },
+    {
+      "name": "@mixin ladder",
+      "kind": "function"
+    },
+    {
+      "name": "@if $steps > 4",
+      "kind": "interface"
+    },
+    {
+      "name": ".panel",
+      "kind": "class"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "@mixin ladder",
+      "parameters": [
+        {
+          "name": "$steps"
+        }
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "@media (min-width: 768px)",
+      "target": "fixtures/scss/scope-containment-and-complexity::.grid",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "mixes_in",
+      "from": ".panel",
+      "target": "fixtures/scss/scope-containment-and-complexity::@mixin ladder",
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true
+    }
+  ],
+  "expectComplexity": [
+    {
+      "comment": "one class, nothing else",
+      "symbol": ".grid",
+      "equals": 1
+    },
+    {
+      "comment": "a child combinator plus a functional pseudo",
+      "symbol": ".grid > .span-6:nth-child(2n)",
+      "equals": 4
+    },
+    {
+      "comment": "one step for the declaration, one for the parameter, one for the body",
+      "symbol": "@mixin ladder",
+      "equals": 3
+    },
+    {
+      "comment": "the condition and the `else if` arm each cost a step",
+      "symbol": "@if $steps > 4",
+      "equals": 6
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ]
+}

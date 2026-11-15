@@ -1,0 +1,1169 @@
+{
+ "gate": "M60.LCM",
+ "title": "Per-language completion matrix — a tick only where every applicable dimension is green",
+ "at": "2026-09-29T02:57:18.642Z",
+ "method": "joins M14.0.F5 (diff), M60.SHARP (sharp), M14.0.F3 (fixtures), M12 corpus-claims gate, M14.0.F1 (grammar audit), M60.P1 (line emission), reviews/* closure markers, and the dated tracker snapshot validation/m49/lang-open-issues.json; a missing dimension reports 'n/a' or is disclosed '~' and never counts as a pass, and a measured M60.SHARP row with hard>0 fails the lane",
+ "inputs": {
+  "differential": "validation/m14/results/M14.0.F5.json @ 54c0f684",
+  "sharpness": "validation/m60/results/oracle-sharpness.json @ absent — no lane has been measured under the written-target rule yet, so every diff cell above is the LEAF rule's",
+  "fixtures": "validation/m60/results/fixtures-at-head.json @ 2026-09-29T02:56:44.725Z (live canonical run, untracked-fixture rule applied)",
+  "grammarAudit": "validation/m14/results/M14.0.F1.json @ 04402447",
+  "corpusClaims": "validation/m12/results/corpus-claims-gate.json @ 2026-09-29T02:13:53.365Z",
+  "lineEmission": "validation/m60/results/P1.json @ 2026-09-25T18:58:41.001Z",
+  "depth": "validation/m60/results/depth-probes.json @ 2026-09-25T18:59:53.498Z (77 draws over 25 lanes)",
+  "tracker": "validation/m49/lang-open-issues.json @ 2026-09-25T19:07:34.011Z (103 open)"
+ },
+ "crossCuttingIssues": {
+  "593": "M37 dual-lens backfill: open for the languages still in its table, but java/kotlin/scala/ts/js rows are recorded ✅ done",
+  "864": "M14 Matrix 4 grammar provenance/pinning: matrix-wide item that names fsharp+clean as examples, not their completion gap",
+  "930": "m60 lines-cell wording: the gate asks `is line_number written anywhere` so ONE emit site satisfies it — the fix re-measures every lane's cell, so it is family work, not the named lane's completion gap",
+  "943": "M60.R8/R10 adjudicate a COMMITTED artifact: the fix is a freshness pin every lane's census/register pair needs (family sweep), and both named instances — php's un-adjudicated surface, cpp's stale R10 row — are repaired at HEAD this round"
+ },
+ "depthProbes": {
+  "javascript": "clean @200 files",
+  "typescript": "clean @200 files",
+  "svelte": "clean @200 files",
+  "vue": "MISSING=6 unexplained=8 @200 files — #906",
+  "java": "clean @200 files",
+  "groovy": "clean @6931 files",
+  "kotlin": "clean @200 files",
+  "scala": "MISSING=1 unexplained=0 @200 files — #905",
+  "cpp": "clean @496 files",
+  "c": "clean @200 files",
+  "ruby": "clean @95 files",
+  "swift": "clean @554 files",
+  "objc": "clean @247 files",
+  "csharp": "clean @900 files",
+  "php": "clean @2907 files",
+  "rust": "clean @200 files",
+  "python": "clean @475 files",
+  "go": "clean @1931 files",
+  "dart": "clean @2211 files",
+  "clojure": "clean @200 files",
+  "elixir": "clean @200 files",
+  "erlang": "clean @200 files",
+  "haskell": "clean @200 files",
+  "zig": "clean @200 files",
+  "html": "clean @undefined files"
+ },
+ "columns": {
+  "diff": "M14.0.F5 MISSING/unexplained/fabrication all zero (leaf rule: the target's LAST SEGMENT)",
+  "sharp": "M60.SHARP: the target compared AS WRITTEN — hard=0 means the leaf rule hid nothing; hard>0 fails the lane; an absent row is disclosed (~), never a pass",
+  "depth": "every 200-file draw on the lane's pinned repo is MISSING=0 and unexplained=0 (60 is the canonical draw)",
+  "fixtures": "M14.0.F3 committed-fixture fail=0 (untracked failures excluded, #899)",
+  "corpus": "M12 claim agrees with artifact",
+  "fresh": "M12 artifact pinned to input digests and confirmed to describe this tree (~ = unpinned, disclosed not passed)",
+  "grammar": "M14.0.F1 0 unknown refs",
+  "lines": "line_number alive (M59.A7)",
+  "folder": "reviews/<lang> closure marker",
+  "tracker": "no OPEN issue names the language"
+ },
+ "rows": [
+  {
+   "lang": "bash",
+   "family": "config",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=1945 covered=1945 analyzer-edges=1712 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 17/17 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 277"
+   ],
+   "done": false
+  },
+  {
+   "lang": "c",
+   "family": "systems",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=5863 covered=5863 analyzer-edges=5863 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 18/18 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "tracker: open issue(s) 612"
+   ],
+   "done": false
+  },
+  {
+   "lang": "clean",
+   "family": "functional",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "fail",
+    "folder": "fail",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=689 covered=689 analyzer-edges=512 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 8/8 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: line_number not emitted (M59.A7 handoff open for this language)",
+    "folder: reviews/clean has no closure marker",
+    "tracker: open issue(s) 272, 884"
+   ],
+   "done": false
+  },
+  {
+   "lang": "clojure",
+   "family": "functional",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=2035 covered=2035 analyzer-edges=1268 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 36/36 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "tracker: open issue(s) 273, 881, 882, 883"
+   ],
+   "done": false
+  },
+  {
+   "lang": "cpp",
+   "family": "systems",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=4759 covered=4759 analyzer-edges=4571 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 22/22 committed",
+    "depth: clean on 496-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "tracker: open issue(s) 612, 924"
+   ],
+   "done": false
+  },
+  {
+   "lang": "csharp",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=2784 covered=2784 analyzer-edges=1669 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 15/15 committed",
+    "depth: clean on 900-file draws (canonical draw is 60)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "css",
+   "family": "config",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=66 covered=66 analyzer-edges=33 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 10/10 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 289"
+   ],
+   "done": false
+  },
+  {
+   "lang": "dart",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=4860 covered=4860 analyzer-edges=4289 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 11/11 committed",
+    "depth: clean on 2211-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "elixir",
+   "family": "functional",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=2125 covered=2125 analyzer-edges=1532 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 56/56 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "tracker: open issue(s) 274, 924"
+   ],
+   "done": false
+  },
+  {
+   "lang": "erlang",
+   "family": "functional",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "fail",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=2743 covered=2743 analyzer-edges=1600 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 10/10 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: line_number not emitted (M59.A7 handoff open for this language)",
+    "tracker: open issue(s) 275, 880, 899, 911"
+   ],
+   "done": false
+  },
+  {
+   "lang": "fsharp",
+   "family": "functional",
+   "cells": {
+    "diff": "fail",
+    "sharp": "disclosed",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: MISSING=0 unexplained=53 fab=2.9% (60 files)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 276"
+   ],
+   "done": false
+  },
+  {
+   "lang": "go",
+   "family": "systems",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=1029 covered=1029 analyzer-edges=1027 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 12/12 committed",
+    "depth: clean on 1931-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "tracker: open issue(s) 612, 799, 872, 889, 914"
+   ],
+   "done": false
+  },
+  {
+   "lang": "graphql",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 284"
+   ],
+   "done": false
+  },
+  {
+   "lang": "groovy",
+   "family": "jvm",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=1250 covered=1250 analyzer-edges=1318 (heuristic-class 71)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 73/73 committed",
+    "depth: clean on 6931-file draws (canonical draw is 60)",
+    "tracker: open issue(s) 947, 948"
+   ],
+   "done": false
+  },
+  {
+   "lang": "haskell",
+   "family": "functional",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "fail",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=576 covered=576 analyzer-edges=417 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 1/1 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: line_number not emitted (M59.A7 handoff open for this language)",
+    "tracker: open issue(s) 271, 755, 872, 899, 924"
+   ],
+   "done": false
+  },
+  {
+   "lang": "hcl",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 291"
+   ],
+   "done": false
+  },
+  {
+   "lang": "html",
+   "family": "web",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "fail",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=341 covered=341 analyzer-edges=341 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 12/12 committed",
+    "depth: clean on undefined-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "folder: reviews/html has no closure marker",
+    "tracker: open issue(s) 288"
+   ],
+   "done": false
+  },
+  {
+   "lang": "java",
+   "family": "jvm",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=668 covered=668 analyzer-edges=750 (heuristic-class 85)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 48/48 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "javascript",
+   "family": "web",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=911 covered=911 analyzer-edges=910 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 67/67 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "json",
+   "family": "config",
+   "cells": {
+    "diff": "fail",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: MISSING=10 unexplained=0 fab=0% (60 files)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 7/7 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 285"
+   ],
+   "done": false
+  },
+  {
+   "lang": "kotlin",
+   "family": "jvm",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=1751 covered=1751 analyzer-edges=1555 (heuristic-class 43)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 46/46 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "tracker: open issue(s) 924"
+   ],
+   "done": false
+  },
+  {
+   "lang": "lua",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "fail",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "grammar: 0 unknown node type(s), 5 unknown field(s)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 280, 863"
+   ],
+   "done": false
+  },
+  {
+   "lang": "makefile",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "fail",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "fail",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "corpus: manifest claim does not agree with its artifact",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "grammar: 1 unknown node type(s), 0 unknown field(s)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 282"
+   ],
+   "done": false
+  },
+  {
+   "lang": "markdown",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: 8/8 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 290"
+   ],
+   "done": false
+  },
+  {
+   "lang": "objc",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=1940 covered=1940 analyzer-edges=2100 (heuristic-class 160)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 8/8 committed",
+    "depth: clean on 247-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "perl",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "fail",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "grammar: 0 unknown node type(s), 1 unknown field(s)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 279, 863"
+   ],
+   "done": false
+  },
+  {
+   "lang": "php",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=1172 covered=1172 analyzer-edges=1314 (heuristic-class 201)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 16/16 committed",
+    "depth: clean on 2907-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "powershell",
+   "family": "config",
+   "cells": {
+    "diff": "fail",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: MISSING=532 unexplained=217 fab=8.7% (60 files)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 12/12 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 278"
+   ],
+   "done": false
+  },
+  {
+   "lang": "python",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=1879 covered=1879 analyzer-edges=2373 (heuristic-class 463)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 8/8 committed",
+    "depth: clean on 475-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "r",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "fail",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "grammar: 0 unknown node type(s), 1 unknown field(s)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 863"
+   ],
+   "done": false
+  },
+  {
+   "lang": "ruby",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=1125 covered=1125 analyzer-edges=1487 (heuristic-class 362)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 8/8 committed",
+    "depth: clean on 95-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "rust",
+   "family": "systems",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=2947 covered=2947 analyzer-edges=2896 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 18/18 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "tracker: open issue(s) 612"
+   ],
+   "done": false
+  },
+  {
+   "lang": "scala",
+   "family": "jvm",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "disclosed",
+    "fresh": "pass",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=620 covered=620 analyzer-edges=523 (heuristic-class 57)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 54/54 committed",
+    "depth: MISSING=1 unexplained=0 at 200 files, red in 0 draw(s) — #905 (ORACLE-side, analyzer refusal correct)",
+    "tracker: open issue(s) 924"
+   ],
+   "done": false
+  },
+  {
+   "lang": "scss",
+   "family": "other",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: 9/9 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "sql",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "n/a",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "fail",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: no adversarial fixture lane",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "grammar: 13 unknown node type(s), 0 unknown field(s)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 283"
+   ],
+   "done": false
+  },
+  {
+   "lang": "svelte",
+   "family": "web",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=31 covered=31 analyzer-edges=30 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 37/37 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "swift",
+   "family": "oo",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=2307 covered=2307 analyzer-edges=2292 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 16/16 committed",
+    "depth: clean on 554-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "toml",
+   "family": "other",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "n/a",
+    "depth": "n/a",
+    "fresh": "n/a",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "n/a",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=664 covered=664 analyzer-edges=664 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 6/6 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "lines: not a payload-matrix language (emission undefined here)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "typescript",
+   "family": "web",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=1067 covered=1067 analyzer-edges=1058 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 84/84 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "vue",
+   "family": "web",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "disclosed",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "pass"
+   },
+   "notes": [
+    "diff: truth=373 covered=373 analyzer-edges=373 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 32/32 committed",
+    "depth: MISSING=6 unexplained=8 at 200 files, red in 2 draw(s) — #906 (ORACLE-side, analyzer refusal correct)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)"
+   ],
+   "done": true
+  },
+  {
+   "lang": "xml",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "n/a",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: 1/1 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "tracker: open issue(s) 287"
+   ],
+   "done": false
+  },
+  {
+   "lang": "yaml",
+   "family": "config",
+   "cells": {
+    "diff": "n/a",
+    "sharp": "n/a",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "n/a",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "n/a",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: not a measured differential lane",
+    "sharp: not a differential lane",
+    "fixtures: 28/28 committed",
+    "depth: no deeper-than-canonical draw measured for this lane",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "lines: not a payload-matrix language (emission undefined here)",
+    "tracker: open issue(s) 286"
+   ],
+   "done": false
+  },
+  {
+   "lang": "zig",
+   "family": "systems",
+   "cells": {
+    "diff": "pass",
+    "sharp": "disclosed",
+    "fixtures": "pass",
+    "corpus": "pass",
+    "depth": "pass",
+    "fresh": "disclosed",
+    "grammar": "pass",
+    "lines": "pass",
+    "folder": "pass",
+    "tracker": "fail"
+   },
+   "notes": [
+    "diff: truth=3225 covered=3225 analyzer-edges=3221 (heuristic-class 0)",
+    "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's",
+    "fixtures: 4/4 committed",
+    "depth: clean on 200-file draws (canonical draw is 60)",
+    "fresh: M12 artifact is unpinned — freshness cannot be checked (project-wide pinning ceremony, #840 residual)",
+    "tracker: open issue(s) 612, 800, 839, 924"
+   ],
+   "done": false
+  }
+ ],
+ "ticked": [
+  "csharp",
+  "dart",
+  "java",
+  "javascript",
+  "objc",
+  "php",
+  "python",
+  "ruby",
+  "scss",
+  "svelte",
+  "swift",
+  "toml",
+  "typescript",
+  "vue"
+ ],
+ "nonAnalyzerDetected": [
+  "nim",
+  "protobuf",
+  "vb"
+ ],
+ "totals": {
+  "languages": 43,
+  "ticked": 14
+ }
+}

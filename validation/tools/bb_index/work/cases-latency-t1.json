@@ -1,0 +1,11 @@
+[
+  {"label":"T1 file mode: cold process, unchanged file (no-op)","arguments":{"path":"t0000_document_highlight.ts"}},
+  {"label":"T1 file mode: unchanged run 2","arguments":{"path":"t0000_document_highlight.ts"}},
+  {"label":"T1 file mode: unchanged run 3","arguments":{"path":"t0000_document_highlight.ts"}},
+  {"label":"T1 file mode: unchanged run 4","arguments":{"path":"t0000_document_highlight.ts"}},
+  {"label":"T1 file mode: unchanged run 5","arguments":{"path":"t0000_document_highlight.ts"}},
+  {"label":"T1 dir mode: settled tree run 1","arguments":{"path":".","mode":"dir"}},
+  {"label":"T1 dir mode: settled tree run 2","arguments":{"path":".","mode":"dir"}},
+  {"label":"T1 post mode run 1","arguments":{"path":".","mode":"post"}},
+  {"label":"T1 post mode run 2","arguments":{"path":".","mode":"post"}}
+]

@@ -1,0 +1,99 @@
+{
+  "fixtureId": "groovy/grammar-round3-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #841 round-3 grammar + analyzer round: .& method references, interaction-DSL slashy callee with >> closure and def closure params, leading-dot chain + elvis continuation, operator-first && continuation, GString call names, zero-arg arrow closures, exclusive ..< ranges, primitive-type value operands, bare assert closure tails, and def-returning class-body methods (via the _method_header def variant — previously force-parsed as a bogus field plus a CONSTRUCTOR-kind symbol). Census context: grails-core parse errors 36 -> 29 of 400 across this round. Pins the analyzer-visible consequence only (parse-tree internals deliberately unpinned so the pin survives grammar refactors); parse-clean property is pinned by F9 and the regression mutant groovy/grammar-round3-call-drop.",
+  "expectSymbols": [
+    {
+      "name": "R3Svc",
+      "kind": "class"
+    },
+    {
+      "name": "refer",
+      "kind": "method"
+    },
+    {
+      "name": "interact",
+      "kind": "method"
+    },
+    {
+      "name": "fetch",
+      "kind": "method"
+    },
+    {
+      "name": "check",
+      "kind": "method"
+    },
+    {
+      "name": "dispatch",
+      "kind": "method"
+    },
+    {
+      "name": "window",
+      "kind": "method"
+    },
+    {
+      "name": "kind",
+      "kind": "method"
+    },
+    {
+      "name": "verify",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "refer",
+      "target": "eachEntry"
+    },
+    {
+      "type": "calls",
+      "source": "interact",
+      "target": "/print.*/"
+    },
+    {
+      "type": "calls",
+      "source": "check",
+      "target": "isPresent"
+    },
+    {
+      "type": "calls",
+      "source": "dispatch",
+      "target": "\"$entry.key\""
+    },
+    {
+      "type": "calls",
+      "source": "fetch",
+      "target": "getProperty"
+    },
+    {
+      "type": "calls",
+      "source": "verify",
+      "target": "each"
+    },
+    {
+      "type": "contains",
+      "source": "R3Svc",
+      "target": "cfg"
+    },
+    {
+      "type": "contains",
+      "source": "R3Svc",
+      "target": "refer"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "def",
+      "kind": "property"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "refer",
+      "target": "validate"
+    }
+  ]
+}

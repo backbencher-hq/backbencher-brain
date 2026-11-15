@@ -30,7 +30,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const ROOT = process.env.BB_LANE_ROOT ?? path.resolve(process.cwd())
-const CORPUS = process.env.BB_CORPUS ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const REPOS = (arg("repo") ?? "elixir").split(",").filter(Boolean)
 

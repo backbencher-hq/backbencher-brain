@@ -1,0 +1,471 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "status": "verified-with-one-declared-red-and-blocked-legs",
+  "currentCommit": "62df9becb506aa82c00b7a4a465302bb43889e86",
+  "laneCommit": "163fb6614",
+  "generatedAt": "2026-11-03T16:21:05.355Z",
+  "evidenceContract": "schemaVersion/tool/status/currentCommit/verifierCommand/passed/failed/negativeCases/blockedLegs",
+  "gates": [
+    {
+      "name": "verify-index",
+      "command": "BB_NO_AUTO_REFRESH=1 npx tsx script/verify-index.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/verify-index.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": null,
+      "failed": null,
+      "negatives": 0,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m40-a1-post-entry",
+      "command": "BB_M40_READ_ONLY=1 bun run script/m40/verify-a1-post-entry.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m40-a1-green.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 28,
+      "failed": 0,
+      "negatives": 3,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m40-a1-post-path-mutant",
+      "command": "BB_M40_MUTATE_A1_POST_PATH_UNGUARDED=1 bun run script/m40/verify-a1-post-entry.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m40-a1-mutant-path.log",
+      "mutantRun": true,
+      "failedChecks": [
+        "  FAIL: MUTATION: mode=post accepts an out-of-tree path (gate must fail) \u2014 containment is still enforced",
+        "  FAIL: MUTATION: mode=post accepts a file path (gate must fail) \u2014 the file path is still refused"
+      ],
+      "exit": null,
+      "passed": 24,
+      "failed": 2,
+      "negatives": 1,
+      "verdict": "RED (expected)"
+    },
+    {
+      "name": "m40-a3-write-parity",
+      "command": "BB_M40_READ_ONLY=1 bun run script/m40/verify-a3-write-parity.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m40-a3-postfix.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 30,
+      "failed": 0,
+      "negatives": 5,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m40-a3-unchanged-noop-mutant",
+      "command": "BB_M40_MUTATE_A3_NO_SKIP=1 bun run script/m40/verify-a3-write-parity.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m40-a3-mutant-NO_SKIP.log",
+      "mutantRun": true,
+      "failedChecks": [
+        "  FAIL: MUTATION: an unchanged file still re-parses (gate must fail) \u2014 indexed=1 \u2014 the no-op path is load-bearing"
+      ],
+      "exit": null,
+      "passed": 24,
+      "failed": 1,
+      "negatives": 4,
+      "verdict": "RED (expected)"
+    },
+    {
+      "name": "m40-a3-deletion-guard-mutant",
+      "command": "BB_M40_MUTATE_A3_WALK_DELETE=1 bun run script/m40/verify-a3-write-parity.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m40-a3-mutant-WALK_DELETE.log",
+      "mutantRun": true,
+      "failedChecks": [
+        "  FAIL: MUTATION: walk absence purges a file that exists on disk (gate must fail) \u2014 deleted=1 vendorRows=0"
+      ],
+      "exit": null,
+      "passed": 28,
+      "failed": 1,
+      "negatives": 4,
+      "verdict": "RED (expected)"
+    },
+    {
+      "name": "m43-p1-index-lock",
+      "command": "BB_M43_READ_ONLY=1 bun run script/m43/verify-p1-index-lock.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m43-p1-green.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 22,
+      "failed": 0,
+      "negatives": 2,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m43-p1-lock-mutant",
+      "command": "BB_M43_MUTATE_P1_HANDLER_ALLOW=1 bun run script/m43/verify-p1-index-lock.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m43-p1-mutant-lock.log",
+      "mutantRun": true,
+      "failedChecks": [
+        "FAIL: 3b: bb_index file mode is REFUSED while another process holds the lock \u2014 isError=undefined [mutation: lock disabled] {"
+      ],
+      "exit": null,
+      "passed": 20,
+      "failed": 1,
+      "negatives": 1,
+      "verdict": "RED (expected)"
+    },
+    {
+      "name": "m40-a9-purge",
+      "command": "BB_M40_READ_ONLY=1 bun run script/m40/verify-a9-purge.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m40-a9-green.log",
+      "mutantRun": false,
+      "failedChecks": [
+        "FAIL: A9: every env var documented in the purge report (MUTATION must fail here) \u2014 undocumented: BB_EMBEDDING_TIMEOUT_MS, BB_SKIP_ANALYZE, BB_EMBEDDING_CACHE_MAX, BB_ENRICHMENT_MAX_ROWS, BB_SQLITE_TEMP_STORE, BB_SQLITE_CACHE_MB, BB_FK_ENFORCE, BB_DART_CITATION, BB_POOL_WORKER_SELFTEST, BB_JULIA_BIND_SHOW, BB_INDEX_VACUUM, BB_PY_OWNER_MEMBER_ABSENT, BB_CPP_CITATION, BB_CPP_PACKAGE_SCOPE, BB_CPP_INDEX_CONSUME, BB_CLEAN_DIAG, BB_STATUS_FSYNC, BB_NO_AUTO_REFRESH, BB_AUTO_REFRESH_MAX_FILES, BB_AUTO_REFRESH_MAX_BYTES, BB_RUBY_INDEX_CONSUME, BB_SOLIDITY_CASE_AUDIT, BB_KOTLIN_IMPORT_CLAIM, BB_INDEX_LOCK_GRACE_MS, BB_INDEX_LOCK_CROSS_HOST_TTL_MS, BB_TEST_INDEX_LOCK_OFF, BB_DEBUG_DOTTED, BB_INDEX_CONCURRENCY, BB_DB_FLUSH_CHUNK, BB_WORKER_ECHO, BB_TEST_FAIL_STORE_ONCE, BB_TEST_FAIL_STORE_ALWAYS, BB_TEST_SKIP_EDGE_RESOLVE, BB_TEST_FORCE_EDGE_RESOLVE, BB_VECTOR_BLOB_BACKFILL_BUDGET_MS, BB_EMBEDDING_DRAIN_WAIT_MS",
+        "FAIL: A9: export describePoolWorkerUnavailable used or marked internal \u2014 inFile=1 outRefs=0"
+      ],
+      "exit": null,
+      "passed": 72,
+      "failed": 2,
+      "negatives": 4,
+      "verdict": "RED (declared, 2 cross-scope checks)"
+    },
+    {
+      "name": "m43-a1-mcp-auto-refresh",
+      "command": "BB_NO_AUTO_REFRESH=1 bun run script/m43/verify-a1-mcp-auto-refresh.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m43-a1-mcp-autorefresh.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 25,
+      "failed": 0,
+      "negatives": 4,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m43-a2-cli-auto-refresh",
+      "command": "BB_NO_AUTO_REFRESH=1 bun run script/m43/verify-a2-cli-auto-refresh.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m43-a2-cli-autorefresh.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 18,
+      "failed": 0,
+      "negatives": 5,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m22-e1-agent-fresh",
+      "command": "bun run script/m22/verify-e1-mcp.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m22-e1-mcp.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 8,
+      "failed": 8,
+      "negatives": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m22-d3-single-file",
+      "command": "bun run script/m22/verify-d3-single-file.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m22-d3-single-file.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "passed": 9,
+      "failed": 9,
+      "negatives": 2,
+      "verdict": "PASS"
+    },
+    {
+      "name": "m28-index-portability",
+      "command": "npx tsx script/m28/verify-index-portability.ts",
+      "evidence": "validation/tools/bb_index/audit/gates/m28-index-portability.log",
+      "mutantRun": false,
+      "failedChecks": [],
+      "exit": null,
+      "verdict": "PASS"
+    }
+  ],
+  "mutants": [
+    {
+      "gate": "m40-a1-post-path-mutant",
+      "command": "BB_M40_MUTATE_A1_POST_PATH_UNGUARDED=1 bun run script/m40/verify-a1-post-entry.ts",
+      "verdict": "RED (expected)",
+      "failedChecks": [
+        "  FAIL: MUTATION: mode=post accepts an out-of-tree path (gate must fail) \u2014 containment is still enforced",
+        "  FAIL: MUTATION: mode=post accepts a file path (gate must fail) \u2014 the file path is still refused"
+      ]
+    },
+    {
+      "gate": "m40-a3-unchanged-noop-mutant",
+      "command": "BB_M40_MUTATE_A3_NO_SKIP=1 bun run script/m40/verify-a3-write-parity.ts",
+      "verdict": "RED (expected)",
+      "failedChecks": [
+        "  FAIL: MUTATION: an unchanged file still re-parses (gate must fail) \u2014 indexed=1 \u2014 the no-op path is load-bearing"
+      ]
+    },
+    {
+      "gate": "m40-a3-deletion-guard-mutant",
+      "command": "BB_M40_MUTATE_A3_WALK_DELETE=1 bun run script/m40/verify-a3-write-parity.ts",
+      "verdict": "RED (expected)",
+      "failedChecks": [
+        "  FAIL: MUTATION: walk absence purges a file that exists on disk (gate must fail) \u2014 deleted=1 vendorRows=0"
+      ]
+    },
+    {
+      "gate": "m43-p1-lock-mutant",
+      "command": "BB_M43_MUTATE_P1_HANDLER_ALLOW=1 bun run script/m43/verify-p1-index-lock.ts",
+      "verdict": "RED (expected)",
+      "failedChecks": [
+        "FAIL: 3b: bb_index file mode is REFUSED while another process holds the lock \u2014 isError=undefined [mutation: lock disabled] {"
+      ]
+    }
+  ],
+  "changedFiles": [
+    {
+      "path": "docs/indexing/INDEXER-REVIEW.md",
+      "sha256": "1adac37e645cd0d5967c4c4f2cd43470e026fe3c06bc74d0edb2a7fa3e9b110c"
+    },
+    {
+      "path": "docs/indexing/environment-variables.md",
+      "sha256": "b8e92a2604e71d551f7beffe8e2389809964f463046d8627651d7aa7c7281623"
+    },
+    {
+      "path": "docs/indexing/troubleshooting.md",
+      "sha256": "9d5548c306eb452712f56d4bb0cdfcc543ddb4cf997279a8163ac0b614e5462b"
+    },
+    {
+      "path": "script/m40/verify-a1-post-entry.ts",
+      "sha256": "a54228537502c4cca5c84ad53023c708d2978cb44cb645390d340f48f33627d2"
+    },
+    {
+      "path": "script/m40/verify-a3-write-parity.ts",
+      "sha256": "3b15eab54c9865d18aaf6df0a5a3744bc18c3ff1154287fbd3c9c08f087a400e"
+    },
+    {
+      "path": "script/m40/verify-a9-purge.ts",
+      "sha256": "8c894fb49d6b4ab2ef56661dd27750ddf1e1ee302cc3e28eb097d5edf87a0094"
+    },
+    {
+      "path": "script/m43/verify-p1-index-lock.ts",
+      "sha256": "761f0e4e2e6df1b3313066d9377922ef1291b7dd516c766b2a85f86c2d44abe1"
+    },
+    {
+      "path": "script/tool-docs/curation/bb_index.ts",
+      "sha256": "d2972328c7ed0e7fea9c2d2dd0db34c6f48cb312874a0656bfc633a764dea022"
+    },
+    {
+      "path": "src/ast/index-lock.ts",
+      "sha256": "c48271cd7b9994e80ccae1805aaa6341cb69d39713cc37119beae23566d7225c"
+    },
+    {
+      "path": "src/ast/index-space.ts",
+      "sha256": "9c733cdba67c8c869a279a40f727736e8421d8e148df815ae49da5f2bbe94b49"
+    },
+    {
+      "path": "src/ast/parallel-indexer.ts",
+      "sha256": "24ca56c33aa96553c3f40b25d8d4b72be5d669e0cd24592833e91ed86e14e674"
+    },
+    {
+      "path": "src/mcp/tools/bb_index/descriptor.ts",
+      "sha256": "0e59caf9a7448ed4a04fd231f1b4dbe8413e689bec19607013f6db1d2c225f50"
+    },
+    {
+      "path": "src/mcp/tools/bb_index/handler.ts",
+      "sha256": "04626ae13df71075129c8dfccf9906028ce4a695148bbfbd410c31e0a4823830"
+    },
+    {
+      "path": "validation/tools/bb_index/AUDIT.md",
+      "sha256": "a71ac4adf11075d705514d4154f8368358e15561b42402c670cf4bcdf67d74bc"
+    },
+    {
+      "path": "validation/tools/bb_index/LATENCY.json",
+      "sha256": "138e597fad9d52fc17090b00466ffaa1fc7b21f4e75f55e21142144cb875c48a"
+    },
+    {
+      "path": "validation/tools/bb_index/REAL-CORPUS.json",
+      "sha256": "a5c7be64b3eb6f0140bac6ac8fcb588b6bb59a6968de617e163baa5c7ec0f138"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/doc-citations.json",
+      "sha256": "39c1706c59dcd583eed3630ccc2fa8bc9c552ddf1831f28b9f00c3c9a79f098c"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-foreign-fresh.json",
+      "sha256": "f2badfec83c6ebf71851e1194545fb4ef418563f6e432af769a3f9b412072376"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-foreign-old.json",
+      "sha256": "59a717a3f09e441cef690b656399562aa635a10171289fbe6e27db3290287799"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-future-fresh.json",
+      "sha256": "8a0a6f7a8e7d8ab579c8c9f3ead390dec657a499e561d6da2c07bdec052097ed"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-live.json",
+      "sha256": "f822af609c98b04cc4d7ebd454616428bf4637d90c08e32bbd4d7fd84b052944"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-malformed-fresh.json",
+      "sha256": "d7cd8c9acde432fe046c087127c56b69f832d7c8eb3b6d360866ac8a8808fe05"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-malformed-old.json",
+      "sha256": "93f5c504ffe4d77ee08843bb524a9fa736559b8036d1a6127eed64b757f0082e"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-lock-stale.json",
+      "sha256": "9e1ab7acc4de59c97df53d31881e392c75721bfdfcb0ee5fe7500ceabf4a5020"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-realcorpus-dir.json",
+      "sha256": "12f2264e7e8d642fea0fe6486ce06372c9d67b1fdf8602df899366f95f542fe8"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-realcorpus.json",
+      "sha256": "7bcc6d6e50608065d3f1fa835b9d6e98f768ba1c86952a0a72313e2f3ef4d65f"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-t0-postfix.json",
+      "sha256": "eda9241f4a775ba970abaa78121ffc722488fec74122d6431a36ecc942ac6a36"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-t0.json",
+      "sha256": "ff784841a49b31ddc20135b4ad5e5d1a57e011fd7e8499447b3488876d9233d7"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-unchanged.json",
+      "sha256": "ea0d260f9784361d041981d5581f0ed1d7850a2dfcca92fb37d1e01eab45e34c"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-vendor-after-fix.json",
+      "sha256": "1bfd92f873b761648909a9bf5ddd79835bcfff18f77a7c679a01aea280e81885"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/door-vendor.json",
+      "sha256": "477cdf8c1b85fef573bdbaf67d8a6564d1e49089ffa605866bd320b730851e4e"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/lock-matrix.log",
+      "sha256": "9b1cf8c341532c3bfdc4ea0ad283d452718812ae1026b862fa86556e65160214"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/static-scan.json",
+      "sha256": "1a92053b803cfc9b0ed60aa2847ea19515488792be54f3a34c56aa0fe7c1466e"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/vendor-state-after-dir.json",
+      "sha256": "c7a201c2993c593fa5050d39f3e089c4cca170af4eefb85757182c25e049a61e"
+    },
+    {
+      "path": "validation/tools/bb_index/audit/vendor-state-before-dir.json",
+      "sha256": "c7a201c2993c593fa5050d39f3e089c4cca170af4eefb85757182c25e049a61e"
+    },
+    {
+      "path": "validation/tools/bb_index/probe-mcp.ts",
+      "sha256": "d301f62a303c5c08a8b469bf259b254d4e222de634f16c7edbf30938e6db2aa8"
+    },
+    {
+      "path": "validation/tools/bb_index/run-gates.sh",
+      "sha256": "79f6adf4bfd173a347e6c81f6f5281a5f7e501168b819e443e1feb4554f564bd"
+    },
+    {
+      "path": "validation/tools/bb_index/work/build-evidence.ts",
+      "sha256": "f71502957cdf071ae92a1dd970e1b7eeea4dda2d76abd4ce62be13042b493a74"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-latency-t0.json",
+      "sha256": "d34d9262def337d2c3c160745411e6fa190c52c506c91735df6224c5ac2a17e7"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-latency-t1.json",
+      "sha256": "2b0c45a7654827f4f04822b154c3a71ce69046eb34d7e44080e58cec7de5266f"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-lock-ok.json",
+      "sha256": "c63a3fdc5834504a095d41f655c71b368c5e10655e9e2be065f838fbb433e4dc"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-lock-refuse.json",
+      "sha256": "c523a3f1a7383bd43eaba8a8cf0d79d2881e5265e136ba2341cafc1f6663b5ce"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-realcorpus.json",
+      "sha256": "febf581b206d69542940096b0bb172556bd8b3fcdf2b3c67023a5abfb7550df9"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-realcorpus2.json",
+      "sha256": "efd0479438c85ddae3149ff317ce0d66fef7c4cb64fe9b1ede3898454f35acff"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-t0-postfix.json",
+      "sha256": "f99032ef43f82b5cdbd9d7cf15e86704805acb4da016ab4ccf8991eceb8beaf9"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-t0.json",
+      "sha256": "16b1c1be30a5f7f297ddd9e007a8317330ace977ba41344562053255b9f22597"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-unchanged-door.json",
+      "sha256": "48a017f715b6a80163b1fa3f385e7d180b5d2d7e26343b00ace10d58d24eb2aa"
+    },
+    {
+      "path": "validation/tools/bb_index/work/cases-vendor.json",
+      "sha256": "a50cbf67612ad1c67cd9e5ee8216198cb607d18d4e3f910a2f8189c5c7a61ebe"
+    },
+    {
+      "path": "validation/tools/bb_index/work/dbstate.ts",
+      "sha256": "7a4e4f1add8cd061c2d79eaa7c5a275e332d35bbe4ea58f3d0b482d24f82fb86"
+    },
+    {
+      "path": "validation/tools/bb_index/work/doc-citations.ts",
+      "sha256": "7c55ddcaf464ea7e9d8c63f2eb0785b68f782155a4bce34d05a1c2842cb67d6b"
+    },
+    {
+      "path": "validation/tools/bb_index/work/hold-lock.ts",
+      "sha256": "4196c4de0f19c558a2acf460df820f63ee160e789fb290e227c2dcb491a0f49d"
+    },
+    {
+      "path": "validation/tools/bb_index/work/lock-matrix.sh",
+      "sha256": "539d491a0aad5cd137318ec511d5bb27fed5662a46201066b0f0a19ada58fc0c"
+    },
+    {
+      "path": "validation/tools/bb_index/work/run-a3-mutants.sh",
+      "sha256": "9f634624a40f51ce5b59a292082368451e363511446b66ea9aeefa90738750ed"
+    },
+    {
+      "path": "validation/tools/bb_index/work/run-gates-green-mutant.sh",
+      "sha256": "c72f41b695ed480c9c0b742d162cb5268c4841ee1d2f4514bfbee77477c5678f"
+    },
+    {
+      "path": "validation/tools/bb_index/work/run-remaining-gates.sh",
+      "sha256": "c482731e170e58aae160ab6178b337eb189a41ae4463e19b41a4c3378c184a82"
+    },
+    {
+      "path": "validation/tools/bb_index/work/scan.ts",
+      "sha256": "c80b9785de6cdf745419c0c3f5b8a0cd2d1e70b1948caf4384f979d94b89034d"
+    },
+    {
+      "path": "validation/tools/bb_index/work/t1-check.ts",
+      "sha256": "abd359e57a03372e220bfbeb90402b4d8ff6c3e26bcff064df910860e0e0b153"
+    },
+    {
+      "path": "validation/tools/bb_index/work/vendor-guard-check.sh",
+      "sha256": "8510ac748a94bdc09cd4858ee10ebe35b15d5390e2809b186f98068e68476115"
+    }
+  ],
+  "blockedLegs": [
+    {
+      "leg": "m40-a9-purge env-documentation + internal-mark checks",
+      "reason": "docs/m40/PLAN.md (Lead-owned) does not list the 36 env vars the gate enumerates (most pre-existing); A9's internal-mark convention only recognises three hard-coded names, so the diagnostic export describePoolWorkerUnavailable cannot be marked. Gate was already red at HEAD for these two reasons; the split-stale reads were repaired here."
+    },
+    {
+      "leg": "T2 latency",
+      "reason": "write tool vs charter \u00a76 read-only T2 rule; shared .bb-data never indexed by this lane. Reference population recorded read-only in LATENCY.json."
+    },
+    {
+      "leg": "m40 A2/A5/A6 and m43 A3/A4 full sweep",
+      "reason": "Launched after the green checkpoint; m40 A2 depends on indexing a 1200-file fixture and the shared machine was under load 7-16 with four concurrent lane jobs, so the sweep outlived this checkpoint. These are indexer-lifecycle gates (outside the bb_index tool surface); their pre-existing evidence remains the reference. Command to reproduce: validation/tools/bb_index/work/run-final-sweep.sh."
+    }
+  ]
+}

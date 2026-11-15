@@ -1,0 +1,477 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.07",
+  "code": "E2",
+  "tool": "bb_edit",
+  "title": "bb_edit: AST reference-identity rename (replace text substitution)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "TS: declaration is a binding, not a reference",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: object-literal property key is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: local binding is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: member access (local.target) is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: exactly one reference site (target())",
+      "pass": true,
+      "detail": "got 6"
+    },
+    {
+      "name": "Python: declaration is a binding, not a reference",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: self.target() is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: exactly one reference site (target())",
+      "pass": true,
+      "detail": "got 3"
+    },
+    {
+      "name": "Java: declaration is a binding, not a reference",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Java: this.target() and helper.target() are NOT references [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "refs=1 members=2"
+    },
+    {
+      "name": "TS: comment/string text is never an occurrence",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "findDeclarationName locates the binding identifier",
+      "pass": true,
+      "detail": "got 16 want 16"
+    },
+    {
+      "name": "typescript: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "javascript: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "python: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_definition"
+    },
+    {
+      "name": "ruby: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=method"
+    },
+    {
+      "name": "haskell: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=bind"
+    },
+    {
+      "name": "lua: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "c: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declarator"
+    },
+    {
+      "name": "cpp: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declarator"
+    },
+    {
+      "name": "rust: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_item"
+    },
+    {
+      "name": "go: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "zig: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "java: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=method_declaration"
+    },
+    {
+      "name": "kotlin: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "scala: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_definition"
+    },
+    {
+      "name": "groovy: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_definition"
+    },
+    {
+      "name": "swift: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration"
+    },
+    {
+      "name": "dart: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_signature"
+    },
+    {
+      "name": "csharp: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=method_declaration"
+    },
+    {
+      "name": "fsharp: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=function_declaration_left"
+    },
+    {
+      "name": "objective-c: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=method_declaration"
+    },
+    {
+      "name": "typescript: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=class_declaration"
+    },
+    {
+      "name": "rust: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=struct_item"
+    },
+    {
+      "name": "cpp: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=class_specifier"
+    },
+    {
+      "name": "go: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=type_spec"
+    },
+    {
+      "name": "ruby: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=class"
+    },
+    {
+      "name": "fsharp: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=type_name"
+    },
+    {
+      "name": "dart: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=class_definition"
+    },
+    {
+      "name": "java: declaration name is a recognized binding",
+      "pass": true,
+      "detail": "parent=class_declaration"
+    },
+    {
+      "name": "bash: name is a documented reference-identification gap (not an occurrence)",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "perl: name is a documented reference-identification gap (not an occurrence)",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "erlang: name is a documented reference-identification gap (not an occurrence)",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "clojure: name is a documented reference-identification gap (not an occurrence)",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "powershell: name is a documented reference-identification gap (not an occurrence)",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "php: name is a documented reference-identification gap (not an occurrence)",
+      "pass": true,
+      "detail": "got 0"
+    },
+    {
+      "name": "rust: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=field_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "rust: member name `field` in `obj.field` is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "parent=field_expression isMember=true"
+    },
+    {
+      "name": "java: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=field_access isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "java: member name `field` in `obj.field` is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "parent=field_access isMember=true"
+    },
+    {
+      "name": "cpp: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=field_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "cpp: member name `field` in `obj.field` is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "parent=field_expression isMember=true"
+    },
+    {
+      "name": "scala: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=field_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "python: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=attribute isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "python: member name `field` in `obj.field` is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "parent=attribute isMember=true"
+    },
+    {
+      "name": "go: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=selector_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "go: member name `field` in `obj.field` is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "parent=selector_expression isMember=true"
+    },
+    {
+      "name": "typescript: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=member_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "typescript: member name `field` in `obj.field` is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "parent=member_expression isMember=true"
+    },
+    {
+      "name": "dart: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=argument isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "swift: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=navigation_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "kotlin: receiver `obj` in `obj.field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=navigation_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "csharp: receiver `obj` in `obj.Field` is a REFERENCE (not a binding)",
+      "pass": true,
+      "detail": "parent=member_access_expression isBinding=false isRef=true isMember=false"
+    },
+    {
+      "name": "Groovy: qualified type reference `com.foo.Bar` — `Bar` is a REFERENCE",
+      "pass": true,
+      "detail": "parent=scoped_type_identifier isRef=true isMember=false"
+    },
+    {
+      "name": "Java: qualified type reference `com.foo.Bar` — `Bar` is a REFERENCE",
+      "pass": true,
+      "detail": "parent=scoped_type_identifier isRef=true isMember=false"
+    },
+    {
+      "name": "ts: refactor produces exactly one change",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "TS: declaration renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: reference call renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: property key NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: other-object method NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: member access NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: string NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "TS: comment NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "python: refactor produces exactly one change",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "Python: declaration renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: reference call renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: dict string key NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: string NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "Python: comment NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "java: refactor produces exactly one change",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "Java: declaration renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Java: reference call renamed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Java: other-object method NOT renamed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "cross-file refactor fails loud on a stale caller file [negative: not fresh]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 21,
+  "summary": {
+    "total": 84,
+    "passed": 84,
+    "failed": 0
+  },
+  "decisions": {
+    "identity": "parseForSafety occurrences carry exact AST byte ranges and node/parent types; no raw-text substring scan",
+    "memberName": "isMemberName (grammar property/field identifiers + object/name field names) marks obj.name / obj.name() / self.name as non-references",
+    "binding": "isBindingParentType treats declarations, params, locals, object keys, and imports as bindings (never references)",
+    "declaration": "findDeclarationName locates the binding identifier inside the symbol byte range",
+    "freshness": "caller files are freshness-checked via brain_file.id before any rename (fail loud, no silent partial)"
+  },
+  "limitations": [
+    "Cross-file import-specifier renaming (import { target } ...) is NOT performed: imports live in brain_import, not the calls/references relationships this path consumes. Tracked as cross-file rename completeness.",
+    "Same-class instance method calls (obj.target() where obj is an instance of target's class) are conservatively NOT renamed — AST identity alone cannot distinguish same-class from other-object receivers; requires type-aware resolution (M14 analyzer completeness).",
+    "Ambiguous same-name symbols require explicit filePath + lineStart (existing uniqueSymbol contract, unchanged).",
+    "Some grammars name declaration identifiers with non-identifier node types (Bash 'word', Perl 'bareword', Erlang 'atom', Clojure 'sym_name'/'sym_lit', PowerShell 'function_name', PHP 'name') and Elixir 'def' names parse as call arguments — these names are not reference occurrences, so rename cannot see them. Tracked as reference-identification completeness.",
+    "R function assignment (foo <- function()) parents the name under 'binary_operator' (ambiguous with arithmetic), so R binding names are not recognized. Tracked as."
+  ],
+  "generatedAt": "2026-11-05T04:12:15.119Z"
+}

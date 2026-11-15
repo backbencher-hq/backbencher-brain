@@ -1,0 +1,424 @@
+[
+ {
+  "id": "same-language-json",
+  "args": {
+   "symbolNames": [
+    "basePrice"
+   ],
+   "targetLanguage": "javascript",
+   "format": "json"
+  },
+  "isError": false,
+  "rpcError": null,
+  "ms": 94,
+  "summary": {
+   "plans": 0,
+   "unsupported": [
+    {
+     "symbolName": "basePrice",
+     "reason": "source and target are both javascript",
+     "unsupportedReason": "same-language"
+    }
+   ],
+   "truncation": {
+    "truncated": false,
+    "requested": 1,
+    "returned": 1,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "effort": {
+    "totalHours": 0,
+    "perPlanSumHours": 0,
+    "sharedRelationshipHours": 0,
+    "reconciliation": "per-plan effort sums to the methodology total"
+   },
+   "scope": "no integration points are indexed for these components, so this request covers no known integration surface",
+   "cohort": {
+    "symbolsResolved": 1,
+    "pathsRequested": [],
+    "pathsUnmatched": [],
+    "byLanguage": [
+     {
+      "language": "javascript",
+      "symbols": 1,
+      "processed": 1,
+      "planned": 0,
+      "refused": 1
+     }
+    ],
+    "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"basePrice\"). The cohort's language mix is 1 javascript; the 1 entry the cap let through identified 1 component(s) (1 javascript)."
+   },
+   "freshness": {
+    "fresh": 0,
+    "stale": 0,
+    "missing": 0,
+    "mode": "complete",
+    "remediationKeys": []
+   }
+  }
+ },
+ {
+  "id": "unknown-target-json",
+  "args": {
+   "symbolNames": [
+    "basePrice"
+   ],
+   "targetLanguage": "cobol",
+   "format": "json"
+  },
+  "isError": false,
+  "rpcError": null,
+  "ms": 14,
+  "summary": {
+   "plans": 0,
+   "unsupported": [
+    {
+     "symbolName": "basePrice",
+     "reason": "no migration data is registered for target language \"cobol\"",
+     "unsupportedReason": "unsupported-target"
+    }
+   ],
+   "truncation": {
+    "truncated": false,
+    "requested": 1,
+    "returned": 1,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "effort": {
+    "totalHours": 0,
+    "perPlanSumHours": 0,
+    "sharedRelationshipHours": 0,
+    "reconciliation": "per-plan effort sums to the methodology total"
+   },
+   "scope": "no integration points are indexed for these components, so this request covers no known integration surface",
+   "cohort": {
+    "symbolsResolved": 1,
+    "pathsRequested": [],
+    "pathsUnmatched": [],
+    "byLanguage": [
+     {
+      "language": "javascript",
+      "symbols": 1,
+      "processed": 1,
+      "planned": 0,
+      "refused": 1
+     }
+    ],
+    "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"basePrice\"). The cohort's language mix is 1 javascript; the 1 entry the cap let through identified 1 component(s) (1 javascript)."
+   },
+   "freshness": {
+    "fresh": 0,
+    "stale": 0,
+    "missing": 0,
+    "mode": "complete",
+    "remediationKeys": []
+   }
+  }
+ },
+ {
+  "id": "blank-name-json",
+  "args": {
+   "symbolNames": [
+    ""
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": true,
+  "rpcError": null,
+  "ms": 5,
+  "summary": {
+   "textHead": [
+    "bb_migrate: symbolNames contains 1 blank entry (position 0) — a blank entry names no component and would silently narrow the request; remove it or pass the component you mean"
+   ]
+  }
+ },
+ {
+  "id": "missing-name-json",
+  "args": {
+   "symbolNames": [
+    "does_not_exist"
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": false,
+  "rpcError": null,
+  "ms": 8,
+  "summary": {
+   "plans": 0,
+   "unsupported": [
+    {
+     "symbolName": "does_not_exist",
+     "reason": "no indexed symbol named \"does_not_exist\"",
+     "unsupportedReason": "missing-symbol"
+    }
+   ],
+   "truncation": {
+    "truncated": false,
+    "requested": 1,
+    "returned": 1,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "effort": {
+    "totalHours": 0,
+    "perPlanSumHours": 0,
+    "sharedRelationshipHours": 0,
+    "reconciliation": "per-plan effort sums to the methodology total"
+   },
+   "scope": "no integration points are indexed for these components, so this request covers no known integration surface",
+   "cohort": {
+    "symbolsResolved": 0,
+    "pathsRequested": [],
+    "pathsUnmatched": [],
+    "byLanguage": [],
+    "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"does_not_exist\"). The cohort's language mix is empty (no symbols resolved); the 1 entry the cap let through identified 0 component(s) (none)."
+   },
+   "freshness": {
+    "fresh": 0,
+    "stale": 0,
+    "missing": 0,
+    "mode": "complete",
+    "remediationKeys": []
+   }
+  }
+ },
+ {
+  "id": "blank-target-json",
+  "args": {
+   "symbolNames": [
+    "basePrice"
+   ],
+   "targetLanguage": "",
+   "format": "json"
+  },
+  "isError": true,
+  "rpcError": null,
+  "ms": 3,
+  "summary": {
+   "textHead": [
+    "bb_migrate: targetLanguage must be a non-empty language name (for example rust, go, python)"
+   ]
+  }
+ },
+ {
+  "id": "blank-target-text",
+  "args": {
+   "symbolNames": [
+    "basePrice"
+   ],
+   "targetLanguage": "   "
+  },
+  "isError": true,
+  "rpcError": null,
+  "ms": 3,
+  "summary": {
+   "textHead": [
+    "bb_migrate: targetLanguage must be a non-empty language name (for example rust, go, python)"
+   ]
+  }
+ },
+ {
+  "id": "wrong-type-symbolNames",
+  "args": {
+   "symbolNames": "basePrice",
+   "targetLanguage": "python"
+  },
+  "isError": true,
+  "rpcError": null,
+  "ms": 3,
+  "summary": {
+   "textHead": [
+    "error: bb_migrate: symbolNames must be array"
+   ]
+  }
+ },
+ {
+  "id": "path-root-cohort",
+  "args": {
+   "paths": [
+    "."
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": false,
+  "rpcError": null,
+  "ms": 103,
+  "summary": {
+   "plans": 11,
+   "unsupported": [
+    {
+     "symbolName": "Polyglot fixtures (M26.A1, issue #615)",
+     "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
+     "unsupportedReason": "unsupported-source"
+    },
+    {
+     "symbolName": "test/fixtures/polyglot/README.md",
+     "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
+     "unsupportedReason": "unsupported-source"
+    }
+   ],
+   "truncation": {
+    "truncated": false,
+    "requested": 13,
+    "returned": 13,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 13,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "effort": {
+    "totalHours": 56,
+    "perPlanSumHours": 68,
+    "sharedRelationshipHours": 12,
+    "reconciliation": "per-plan effort sums to 68h; 12h of that is relationship time on edges cited by more than one plan, counted once in the 56h methodology total"
+   },
+   "scope": "12 of 21 integration points (57.1%) are inside this request",
+   "cohort": {
+    "symbolsResolved": 13,
+    "pathsRequested": [
+     "."
+    ],
+    "pathsUnmatched": [],
+    "byLanguage": [
+     {
+      "language": "java",
+      "symbols": 4,
+      "processed": 4,
+      "planned": 4,
+      "refused": 0
+     },
+     {
+      "language": "scala",
+      "symbols": 4,
+      "processed": 4,
+      "planned": 4,
+      "refused": 0
+     },
+     {
+      "language": "javascript",
+      "symbols": 2,
+      "processed": 2,
+      "planned": 2,
+      "refused": 0
+     },
+     {
+      "language": "markdown",
+      "symbols": 2,
+      "processed": 2,
+      "planned": 0,
+      "refused": 2
+     },
+     {
+      "language": "typescript",
+      "symbols": 1,
+      "processed": 1,
+      "planned": 1,
+      "refused": 0
+     }
+    ],
+    "statement": "13 indexed symbol(s) under 1 path(s), covering 4 file(s) in the plans returned"
+   },
+   "freshness": {
+    "fresh": 4,
+    "stale": 0,
+    "missing": 0,
+    "mode": "complete",
+    "remediationKeys": []
+   }
+  }
+ },
+ {
+  "id": "numeric-name",
+  "args": {
+   "symbolNames": [
+    123
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": true,
+  "rpcError": null,
+  "ms": 2,
+  "summary": {
+   "textHead": [
+    "error: bb_migrate: symbolNames must be array"
+   ]
+  }
+ },
+ {
+  "id": "path-and-name-union",
+  "args": {
+   "symbolNames": [
+    "applyDiscount"
+   ],
+   "paths": [
+    "ts-js/src/pricing.js"
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": false,
+  "rpcError": null,
+  "ms": 17,
+  "summary": {
+   "plans": 2,
+   "unsupported": [],
+   "truncation": {
+    "truncated": false,
+    "requested": 2,
+    "returned": 2,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 2,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "effort": {
+    "totalHours": 12,
+    "perPlanSumHours": 12,
+    "sharedRelationshipHours": 0,
+    "reconciliation": "per-plan effort sums to the methodology total"
+   },
+   "scope": "0 of 8 integration points (0.0%) are inside this request; 8 belong to components that were not asked for, so these plans alone are NOT a complete migration",
+   "cohort": {
+    "symbolsResolved": 2,
+    "pathsRequested": [
+     "ts-js/src/pricing.js"
+    ],
+    "pathsUnmatched": [],
+    "byLanguage": [
+     {
+      "language": "javascript",
+      "symbols": 2,
+      "processed": 2,
+      "planned": 2,
+      "refused": 0
+     }
+    ],
+    "statement": "2 indexed symbol(s) under 1 path(s), covering 1 file(s) in the plans returned"
+   },
+   "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "mode": "complete",
+    "remediationKeys": []
+   }
+  }
+ }
+]

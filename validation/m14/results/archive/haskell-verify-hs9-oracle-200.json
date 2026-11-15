@@ -1,7 +1,7 @@
 {
   "generatedBy": "script/m14/tmp/hs9-oracle-operator.ts (200-file draw artifact)",
   "lane": "VERIFY_HS9",
-  "corpus": "$HOME/fixtures/repositories/haskell",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/haskell",
   "corpusHead": "54381079 (GHC)",
   "filesDrawn": 200,
   "parsed": 200,

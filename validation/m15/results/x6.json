@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X6",
+  "code": "X6",
+  "tool": "bb_security",
+  "title": "handler answer contract + docs honesty",
+  "verified": true,
+  "checks": 46,
+  "passed": 46,
+  "failed": 0,
+  "positives": 39,
+  "negatives": 7,
+  "negativePassed": 7,
+  "skipped": [],
+  "generatedAt": "2026-11-14T21:10:18.918Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:10:18.919Z",
+    "contentSha256": "8c30c07e5815243736a8e4861f288ece5eae8f910136044969c2f8dc1605f5b0"
+  }
+}

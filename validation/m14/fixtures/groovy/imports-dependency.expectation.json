@@ -1,0 +1,94 @@
+{
+  "fixtureId": "groovy/imports-dependency",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M60 ontology `imports` LABEL for groovy \u2014 one dependency per `import_declaration`, in all FIVE forms the Groovy docs define (single-type, on-demand type, static member, static on-demand, and the `as` alias), plus the two things a plausible wrong fix would break. (1) The ALIAS is the local name and must NOT enter the target: `import static java.util.Collections.emptyList as nothing` binds `nothing` locally, so the dependency is still `java.util.Collections.emptyList` and the two files join on the name the exporting side calls it. (2) A wildcard import's target is the CONTAINER the grammar names (`java.util.concurrent` for `java.util.concurrent.*`), never the truncated `java.util` \u2014 the pinned grammar's `scoped_identifier` stops before the `asterisk`, and the shape that fact means is carried in metadata.relationshipType rather than inferred from the target. The `references` mention for the same declarations is pinned by groovy/import-edges; both labels are emitted because they are two readings of one declaration (DEPENDENCY vs MENTION), and a fixture that pinned only one would let the other be dropped silently. RE-PIN 2026-10-22: the `imports` rows' source moved from the file's primary type to the PACKAGE, because the file-level dependency query (src/lsp/graph_request.ts:291-297) only returns rows whose source resolves to no symbol in the file; the primary-type source made every groovy file's imports unanswerable. The five FORMS, the alias rule and the wildcard rule \u2014 what this fixture is for \u2014 are unchanged, and the `references` mention keeps the primary-type source (groovy/import-edges).",
+  "expectSymbols": [
+    {
+      "name": "Importer",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "Importer"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.List",
+      "meta.relationshipType": "single_type",
+      "meta.isWildcard": false,
+      "meta.isStatic": false,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "note": "The `imports` DEPENDENCY is sourced at the PACKAGE, not at the file's primary type: the consumer that reads this kind is exact (src/lsp/graph_request.ts:291-297) and needs source_symbol_id NULL so parallel-indexer writes source_external = the file path. The PRIMARY-TYPE source is the pre-fix shape and is forbidden by groovy/imports-dependency-edge. The `references` MENTION keeps the primary-type source (groovy/import-edges)."
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.concurrent.TimeUnit",
+      "meta.relationshipType": "single_type",
+      "note": "The `imports` DEPENDENCY is sourced at the PACKAGE, not at the file's primary type: the consumer that reads this kind is exact (src/lsp/graph_request.ts:291-297) and needs source_symbol_id NULL so parallel-indexer writes source_external = the file path. The PRIMARY-TYPE source is the pre-fix shape and is forbidden by groovy/imports-dependency-edge. The `references` MENTION keeps the primary-type source (groovy/import-edges)."
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.concurrent",
+      "meta.relationshipType": "on_demand_type",
+      "meta.isWildcard": true,
+      "note": "The `imports` DEPENDENCY is sourced at the PACKAGE, not at the file's primary type: the consumer that reads this kind is exact (src/lsp/graph_request.ts:291-297) and needs source_symbol_id NULL so parallel-indexer writes source_external = the file path. The PRIMARY-TYPE source is the pre-fix shape and is forbidden by groovy/imports-dependency-edge. The `references` MENTION keeps the primary-type source (groovy/import-edges)."
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Collections.sort",
+      "meta.relationshipType": "static_member",
+      "meta.isStatic": true,
+      "note": "The `imports` DEPENDENCY is sourced at the PACKAGE, not at the file's primary type: the consumer that reads this kind is exact (src/lsp/graph_request.ts:291-297) and needs source_symbol_id NULL so parallel-indexer writes source_external = the file path. The PRIMARY-TYPE source is the pre-fix shape and is forbidden by groovy/imports-dependency-edge. The `references` MENTION keeps the primary-type source (groovy/import-edges)."
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Collections.emptyList",
+      "meta.relationshipType": "static_member",
+      "meta.hasAlias": true,
+      "note": "The `imports` DEPENDENCY is sourced at the PACKAGE, not at the file's primary type: the consumer that reads this kind is exact (src/lsp/graph_request.ts:291-297) and needs source_symbol_id NULL so parallel-indexer writes source_external = the file path. The PRIMARY-TYPE source is the pre-fix shape and is forbidden by groovy/imports-dependency-edge. The `references` MENTION keeps the primary-type source (groovy/import-edges)."
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.dep",
+      "target": "java.util.Collections",
+      "meta.relationshipType": "static_on_demand",
+      "meta.isStatic": true,
+      "meta.isWildcard": true,
+      "note": "The `imports` DEPENDENCY is sourced at the PACKAGE, not at the file's primary type: the consumer that reads this kind is exact (src/lsp/graph_request.ts:291-297) and needs source_symbol_id NULL so parallel-indexer writes source_external = the file path. The PRIMARY-TYPE source is the pre-fix shape and is forbidden by groovy/imports-dependency-edge. The `references` MENTION keeps the primary-type source (groovy/import-edges)."
+    },
+    {
+      "type": "references",
+      "source": "Importer",
+      "target": "java.util.List",
+      "meta.isGroovyImport": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "java.util.Collections.emptyList as nothing"
+    },
+    {
+      "type": "imports",
+      "target": "nothing"
+    },
+    {
+      "type": "imports",
+      "target": "java.util"
+    },
+    {
+      "type": "imports",
+      "target": "java.util.concurrent.*"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+// Resolution: protobuf resolves a relative type name from the INNERMOST
+// enclosing scope outward, and a leading dot is ABSOLUTE.
+syntax = "proto3";
+
+package scope.v1;
+
+// Two declarations with the SAME leaf name in different scopes. This is legal
+// protobuf and it is the only shape that can tell the scope walk apart from a
+// resolver that always lands on the top-level declaration of that name.
+message Inner {
+  string top = 1;
+}
+
+message Outer {
+  // Relative, and the innermost scope declaring `Inner` is `Outer` itself, so
+  // this is scope.v1.Outer.Inner -- NOT the scope.v1.Inner above.
+  Inner inner = 1;
+
+  message Inner {
+    string nested = 1;
+  }
+
+  // Same spelling as the line above, reached from one scope deeper.
+  message Deepest {
+    Inner inner = 1;
+  }
+}
+
+// Fully qualified from the top level: no leading dot, still the global spelling.
+message Refs {
+  scope.v1.Outer.Inner qualified = 1;
+  Inner toplevel = 2;
+
+  // ABSOLUTE: the leading dot says "this is the global name", so it is
+  // other.v1.Thing and never scope.v1.other.v1.Thing.
+  .other.v1.Thing absolute = 3;
+
+  // Relative and declared nowhere in this file: protobuf resolves it within the
+  // package by specification, so the fallback is scope.v1.Imported.
+  Imported imported = 4;
+
+  // Dotted and not declared here: written fully qualified in practice, so it
+  // falls back AS WRITTEN rather than gaining the package prefix.
+  google.protobuf.Timestamp stamped = 5;
+}
+
+// A field whose NAME equals the type it names. This is legal protobuf and it is
+// the shape that made the resolver answer the type reference with the field
+// itself: the field is published as `scope.v1.SelfNamed.Inner` moments before
+// its own edge is emitted, so the innermost scope candidate matched the field
+// and the edge became `scope.v1.SelfNamed.Inner -> scope.v1.SelfNamed.Inner`.
+//
+// Measured on the corpus before the fix: 9 such self-edges over 606 files, in
+// docker/daemon/cluster/convert/netextra/extra.proto:12 and 8 under
+// docker/vendor/github.com/moby/buildkit. The rule that prevents them is that
+// only TYPES are in the resolution namespace — a field declares no type.
+message SelfNamed {
+  Inner Inner = 1;
+  Shadow shadow = 2;
+}
+
+message Shadow {
+  string value = 1;
+}

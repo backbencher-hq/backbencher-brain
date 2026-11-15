@@ -1,7 +1,7 @@
 {
   "instrument": "validation/m14/fixtures/php/ambiguity-split.mts",
   "entryPoint": "parseFile (src/ast/pool-worker.ts)",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "reposScanned": 199,
   "admittedPopulation": 5094,
   "requestedFiles": 5094,

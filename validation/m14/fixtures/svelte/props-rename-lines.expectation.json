@@ -1,0 +1,20 @@
+{
+  "fixtureId": "svelte/props-rename-lines",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up: a `$props()` rename destructure binds the VALUE (`local`, not the key `renamed`), each binding ranges at its own NAME line, and the merge dedupe drops the JS delegate's duplicate so exactly one symbol exists. Forbid entries are the measured pre-fix shapes (round-trip verified).",
+  "expectSymbols": [
+    { "name": "local", "kind": "property" },
+    { "name": "plain", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "target": "local", "line_number": 9 },
+    { "type": "contains", "target": "plain", "line_number": 10 }
+  ],
+  "forbidSymbols": [
+    { "name": "renamed", "kind": "property", "note": "pre-fix: phantom from the pair key; the binding is local" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "local", "line_number": 8, "note": "pre-fix: the declarator's line; the name local is written on 9" }
+  ]
+}

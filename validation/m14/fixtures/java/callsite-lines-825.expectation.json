@@ -1,0 +1,25 @@
+{
+  "fixtureId": "java/callsite-lines-825",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off callsite-lines-825.java. java has the same defect class as scala: a `method_invocation` node starts at its RECEIVER, so before this pin every call in a newline-continued chain was stamped with the line the chain opened on (`trim` and `toUpperCase` both claimed line 14, which is `return base`). The line now comes from the invocation's `name` field — the identifier that names the call. The instantiation half is the same rule: `instantiates` takes the line of the type node that NAMES the constructed type, not the statement's line. The forbidRelationships entries are the pre-fix behaviour, so re-introducing the receiver-start line fails the gate instead of passing silently.",
+  "expectSymbols": [
+    { "name": "Chains", "kind": "class" },
+    { "name": "chained" },
+    { "name": "delegate" },
+    { "name": "built" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "chained", "target": "trim", "line_number": 15 },
+    { "type": "calls", "from": "chained", "target": "toUpperCase", "line_number": 16 },
+    { "type": "instantiates", "from": "delegate", "target": "Chains", "line_number": 20 },
+    { "type": "instantiates", "from": "built", "target": "StringBuilder", "line_number": 24 },
+    { "type": "calls", "from": "built", "target": "append", "line_number": 25 },
+    { "type": "calls", "from": "built", "target": "append", "line_number": 26 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "chained", "target": "trim", "line_number": 14, "note": "pre-fix: the chain-opening line `return base`; `.trim()` is written on 15" },
+    { "type": "calls", "from": "chained", "target": "toUpperCase", "line_number": 14, "note": "pre-fix: same receiver-start line; `.toUpperCase()` is written on 16" },
+    { "type": "calls", "from": "built", "target": "append", "line_number": 23, "note": "pre-fix: the statement's line `return new StringBuilder()`; the first `.append(n)` is written on 25" }
+  ]
+}

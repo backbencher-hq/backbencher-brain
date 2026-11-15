@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "ruby_corpus_tracked_complexity",
+  "corpus": "rake",
+  "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+  "trackedRubyFiles": 95,
+  "measurement": {
+    "name": "ruby-corpus-tracked",
+    "wallTimeMs": 1284.091478,
+    "userCpuMs": 2895.666,
+    "systemCpuMs": 341.108,
+    "peakRssBytes": 330932224,
+    "rssDeltaBytes": 246652928,
+    "databaseBytes": null,
+    "files": 95,
+    "symbols": 1309,
+    "relationships": 6524,
+    "filesPerSecond": 73.98226810753742,
+    "symbolsPerSecond": 1019.3977784501735,
+    "relationshipsPerSecond": 5080.634917195517,
+    "parseErrors": 0
+  },
+  "note": "Tracked .rb files only; production pool-worker parseFile path; no generated or untracked files included.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.963Z",
+    "contentSha256": "3832b8e8a7c3be9c75592d50c9b0deb47fd7b0b96c43778e9d046d690ff1c4e0"
+  }
+}

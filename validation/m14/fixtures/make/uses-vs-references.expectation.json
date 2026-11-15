@@ -1,0 +1,317 @@
+{
+  "fixtureId": "make/uses-vs-references",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the numbered source: declarations on 14-16, `build` on 19 with its recipe on 20, `info` on 23 with its recipe on 24, `foreach-binder` on 28 with its recipe on 29. The `$(DESTDIR)usr/bin/app` prerequisite is recorded under its own text AND its inner reference is recorded separately — the dependency is on the expansion, the reference is on the variable, and they are different facts.",
+  "rationale": "The BUILTIN / EXTERNAL / PROJECT split, which decides the relationship LABEL. A Make prerequisite is usually a FILE and a Make variable is often set by the command line, the environment, or another makefile, and GNU Make ships builtins no file can declare. Publishing any of those as a project-internal `references` asserts a declaration that does not exist: over the corpus, 231 unresolved edge ends were file paths, 187 external variables and 160 builtins. So `references` is emitted only when THIS file declares the target, and `uses` carries the rest — labelled, so the class is visible rather than pooled. Line 20 deliberately reads a declared variable and an undeclared one on the SAME recipe line, so the fixture fails if the two classes are ever collapsed back together.",
+  "expectSymbols": [
+    {
+      "name": "uses-vs-references.mk",
+      "kind": "module"
+    },
+    {
+      "name": "CC",
+      "kind": "constant"
+    },
+    {
+      "name": "SRC",
+      "kind": "constant"
+    },
+    {
+      "name": "OBJ",
+      "kind": "constant"
+    },
+    {
+      "name": "build",
+      "kind": "function"
+    },
+    {
+      "name": "build-braces",
+      "kind": "function"
+    },
+    {
+      "name": "info",
+      "kind": "function"
+    },
+    {
+      "name": "foreach-binder",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "CC",
+      "line_number": 14,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "SRC",
+      "line_number": 15,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "OBJ",
+      "line_number": 16,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "build",
+      "line_number": 19,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "build-braces",
+      "line_number": 29,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "info",
+      "line_number": 33,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "contains",
+      "from": "uses-vs-references.mk",
+      "target": "foreach-binder",
+      "line_number": 38,
+      "meta.evidenceClass": "declared_in_file"
+    },
+    {
+      "type": "references",
+      "from": "OBJ",
+      "target": "SRC",
+      "line_number": 16,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "build",
+      "target": "OBJ",
+      "line_number": 19,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "build",
+      "target": "$(DESTDIR)usr/bin/app",
+      "line_number": 19,
+      "meta.evidenceClass": "external_prerequisite"
+    },
+    {
+      "type": "uses",
+      "from": "build",
+      "target": "DESTDIR",
+      "line_number": 19,
+      "meta.evidenceClass": "external"
+    },
+    {
+      "type": "references",
+      "from": "build",
+      "target": "CC",
+      "line_number": 20,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "build",
+      "target": "OBJ",
+      "line_number": 20,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "build",
+      "target": "DESTDIR",
+      "line_number": 20,
+      "meta.evidenceClass": "external"
+    },
+    {
+      "type": "references",
+      "from": "build-braces",
+      "target": "CC",
+      "line_number": 29,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "build-braces",
+      "target": "OBJ",
+      "line_number": 29,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "build-braces",
+      "target": "CC",
+      "line_number": 30,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "build-braces",
+      "target": "OBJ",
+      "line_number": 30,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "info",
+      "target": "CURDIR",
+      "line_number": 34,
+      "meta.evidenceClass": "builtin"
+    },
+    {
+      "type": "uses",
+      "from": "info",
+      "target": "MAKE",
+      "line_number": 34,
+      "meta.evidenceClass": "builtin"
+    },
+    {
+      "type": "uses",
+      "from": "info",
+      "target": "MAKEFILE_LIST",
+      "line_number": 34,
+      "meta.evidenceClass": "builtin"
+    },
+    {
+      "type": "references",
+      "from": "uses-vs-references.mk",
+      "target": "foreach-binder",
+      "line_number": 37,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "references",
+      "from": "foreach-binder",
+      "target": "SRC",
+      "line_number": 39,
+      "meta.evidenceClass": "reference"
+    },
+    {
+      "type": "uses",
+      "from": "foreach-binder",
+      "target": "mod",
+      "line_number": 39,
+      "meta.evidenceClass": "local_binding"
+    },
+    {
+      "type": "exports",
+      "from": "uses-vs-references.mk",
+      "target": "build",
+      "line_number": 19,
+      "meta.evidenceClass": "export_target"
+    },
+    {
+      "type": "exports",
+      "from": "uses-vs-references.mk",
+      "target": "build-braces",
+      "line_number": 29,
+      "meta.evidenceClass": "export_target"
+    },
+    {
+      "type": "exports",
+      "from": "uses-vs-references.mk",
+      "target": "info",
+      "line_number": 33,
+      "meta.evidenceClass": "export_target"
+    },
+    {
+      "type": "exports",
+      "from": "uses-vs-references.mk",
+      "target": "foreach-binder",
+      "line_number": 38,
+      "meta.evidenceClass": "export_target"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "DESTDIR",
+      "note": "DESTDIR is not declared in this fixture, so it must not become a symbol"
+    },
+    {
+      "name": "CURDIR",
+      "note": "a builtin must not become a symbol"
+    },
+    {
+      "name": "mod",
+      "note": "a foreach binder is a local, not a declaration"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "DESTDIR",
+      "note": "the pre-split shape: a variable this file does not declare published as `references` claims a declaration named DESTDIR that no line here creates"
+    },
+    {
+      "type": "references",
+      "target": "CURDIR",
+      "note": "a GNU Make BUILTIN published as `references` — same category error, 160 corpus edge ends"
+    },
+    {
+      "type": "references",
+      "target": "MAKE",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "MAKEFILE_LIST",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "CC",
+      "note": "the INVERSE error: a project declaration published as `uses` demotes it out of the reference graph"
+    },
+    {
+      "type": "uses",
+      "target": "OBJ",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "SRC",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "mod",
+      "note": "`mod` is a `$(foreach mod,…)` binder — a LOCAL. It is published as `uses` labelled `local_binding`, never as a project `references`"
+    },
+    {
+      "type": "uses",
+      "target": "CC",
+      "from": "build-braces",
+      "note": "the `${CC}` form of a variable THIS FILE DECLARES. Added after the differential found the `${…}` normalisation gap: the row existed with the wrong label only because `${` was not handled at all"
+    },
+    {
+      "type": "uses",
+      "target": "OBJ",
+      "from": "build-braces",
+      "note": "same, for `${OBJ}`"
+    },
+    {
+      "type": "uses",
+      "target": "${CC}",
+      "note": "the raw wrapper as an edge target. 68 corpus occurrences across 14 files produced exactly this row, each of them a second spelling of a fact already published under the bare name"
+    },
+    {
+      "type": "uses",
+      "target": "${OBJ}",
+      "note": "same"
+    }
+  ]
+}

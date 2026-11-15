@@ -1,0 +1,76 @@
+{
+  "fixtureId": "powershell/static-call-psb22",
+  "language": "powershell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PS-B22 — A STATIC MEMBER CALL MUST TARGET THE NAME THE STORE CAN ANSWER, NOT THE SOURCE SPELLING. `[Counter]::Add(1, 2)` used to publish `calls -> Counter::Add`. A class method is stored with `name = \"Add\"` and `qualifiedName = \"Counter.Add\"`, so no exact-key lookup can ever answer `Counter::Add`: MEASURED over the whole admitted population (1,183 files, production `parseFile`), there are 3,458 static member calls, 254 name a class the EMITTING FILE declares, and 219 of those 254 name a member that class really declares. Every one of the 219 was a project-internal call published under a spelling the graph cannot bind, and the externality pass then read it as an EXTERNAL claim because `declaredInFile(\"Counter::Add\")` is false. The fix spells the target with the store's own qualified-name separator, `Counter.Add`, which the arbiter resolves against `qualifiedName` (the same mechanism the lane's variable-read retarget already uses for `Get-Targets.index`). MEASURED ON A CONTROLLED TWO-FILE PROJECT through `incoming-gate.ts --json`: before, the single static call read resolved 0 / markedExternal 1 / externalUnverified 1; after, resolved 1 / markedExternal 0. THE TWIN IS THE LOAD-BEARING HALF: `[System.Math]::Max` becomes `System.Math.Max`, still names no declaration, and is still marked external — the change moves the PROJECT-LOCAL rows into resolution and leaves the BCL rows where they were. A THIRD SHAPE is pinned too: a static call to an inherited .NET member through an in-file class (`[Counter]::ReferenceEquals`) must not collect a generic external claim — the arbiter would find `Counter` and REFUTE it — so it publishes the fleet's `ownerMemberAbsent` claim, verified by the project's own member map. And the FORBID rows make a revert to `::` red in every direction.",
+  "expectSymbols": [
+    { "name": "static-call-psb22.ps1", "kind": "module" },
+    { "name": "Counter", "kind": "class", "ownerName": "static-call-psb22.ps1" },
+    { "name": "Add", "kind": "method", "ownerName": "Counter" },
+    { "name": "Zero", "kind": "method", "ownerName": "Counter" },
+    { "name": "Use-Static", "kind": "function", "ownerName": "static-call-psb22.ps1" },
+    { "name": "Use-Inherited", "kind": "function", "ownerName": "static-call-psb22.ps1" },
+    { "name": "Use-Bcl", "kind": "function", "ownerName": "static-call-psb22.ps1" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Use-Static",
+      "target": "Counter.Add",
+      "line_number": 16,
+      "meta.staticMemberCall": true,
+      "meta.staticType": "Counter",
+      "comment": "THE POSITIVE ROW. `Counter.Add` is the class method's own `qualifiedName`; `Counter::Add` is not a name any declaration has. The metadata keeps the type recoverable without splitting the target."
+    },
+    {
+      "type": "calls",
+      "from": "Use-Static",
+      "target": "Counter.Zero",
+      "line_number": 17,
+      "meta.staticMemberCall": true,
+      "comment": "the second site, so a fix that special-cased one call cannot pass"
+    },
+    {
+      "type": "calls",
+      "from": "Use-Inherited",
+      "target": "Counter.ReferenceEquals",
+      "line_number": 21,
+      "meta.staticMemberCall": true,
+      "meta.ownerMemberAbsent": { "owner": "Counter", "member": "ReferenceEquals" },
+      "meta.isExternalTarget": null,
+      "comment": "THE OWNER-DECLARED/MEMBER-ABSENT SHAPE. `Counter` is in this file and does not declare `ReferenceEquals` (it is an inherited .NET member), so the generic external reading would ask the arbiter about `Counter`, find it, and REFUTE the claim. The `ownerMemberAbsent` claim states the verifiable absence instead: owner published, member not."
+    },
+    {
+      "type": "calls",
+      "from": "Use-Bcl",
+      "target": "System.Math.Max",
+      "line_number": 25,
+      "meta.staticMemberCall": true,
+      "comment": "THE BCL TWIN. It moves from `System.Math::Max` to `System.Math.Max` with the same fix and must still be an external row; the dot is the qualified-name separator, not a claim that a project declaration exists."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "Counter::Add",
+      "comment": "THE REVERT NEGATIVE: the old source spelling is not a target. This row goes red if the emission is reverted to `::`, which is exactly what the fixture exists to prevent."
+    },
+    {
+      "type": "calls",
+      "target": "Counter::Zero",
+      "comment": "second revert negative, so one un-reverted site cannot hide behind the other"
+    },
+    {
+      "type": "calls",
+      "target": "System.Math::Max",
+      "comment": "the BCL twin under the old spelling — the change is uniform, not conditional on an in-file owner"
+    },
+    {
+      "type": "calls",
+      "source": "Use-Inherited",
+      "target": "Counter.ReferenceEquals",
+      "meta.isExternalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE: an in-file owner must not be marked external for a member it does not declare, because `verifyExternalClaim` asks about the owner and would report a REFUTED claim. The claim published is `ownerMemberAbsent` instead."
+    }
+  ]
+}

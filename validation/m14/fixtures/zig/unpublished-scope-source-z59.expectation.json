@@ -1,0 +1,134 @@
+{
+  "fixtureId": "zig/unpublished-scope-source-z59",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Z59. An edge SOURCE must name a symbol the index publishes. Three classes of declaration are deliberately NOT published \u2014 a member of a container written inside a function or test body, a member of an anonymous container, and a member of a container nested in another unpublished one (Z22 / the C negative contract: such a type has no file-scope identity) \u2014 and the three edge passes each took the nearest function/test identifier as the source name without asking. Measured through production `parseFile` over the FULL 3,834-file corpus (validation/m14/fixtures/zig/dangling-source-census.ts, draw sha256:8e174b8d28069b5144e92d9e32a942fc75258a8480fdb61af92fa54854af68f3 at 200 files): 11,332 of 224,599 calls+uses+instantiates edges = 5.05% carried a source naming an unpublished declaration, and the class residual \u2014 a dangling source no tree declaration explains \u2014 was 0, so this is the whole population rather than a sample of it. Overturning reading: a non-zero residual in that census. The fixture's trap is a GENERIC FUNCTION returning an anonymous struct, so every method in it is an unpublished member; the pre-fix analyzer emitted `uses push -> items`, `calls push -> reserve` and `uses reserve -> len`, each naming a caller the store cannot hold. The post-fix reading attributes them to the nearest PUBLISHED scope, which here is `Stack`. The named-test half is asserted too because the fix must not have reverted Z39: `test namedScope` still attributes to `namedScope`, and no symbol exists for a test either \u2014 that residual class is a declared limitation with its own measured count, not an oversight, so both sides of the boundary are pinned here.",
+  "expectSymbols": [
+    {
+      "name": "std",
+      "kind": "constant"
+    },
+    {
+      "name": "Stack",
+      "kind": "function"
+    },
+    {
+      "name": "S",
+      "kind": "type"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Stack",
+      "target": "reserve",
+      "line_number": 55,
+      "confidenceMin": 0.85
+    },
+    {
+      "type": "calls",
+      "from": "Stack",
+      "target": "capacity",
+      "line_number": 56,
+      "confidenceMin": 0.85
+    },
+    {
+      "type": "uses",
+      "from": "Stack",
+      "target": "items",
+      "line_number": 54,
+      "confidenceMin": 0.75
+    },
+    {
+      "type": "uses",
+      "from": "Stack",
+      "target": "len",
+      "line_number": 46,
+      "confidenceMin": 0.75
+    },
+    {
+      "type": "uses",
+      "from": "Stack",
+      "target": "std.debug",
+      "line_number": 56,
+      "confidenceMin": 0.75,
+      "note": "Z66: `std.debug.assert(...)` at :56 is a read through a name this file binds by @import, so the edge names the receiver. The SOURCE spelling `debug` alone is forbidden below: the unpublished-scope question this fixture pins \u2014 which scope an edge may be attributed to \u2014 is unaffected, but a receiver-less target is indistinguishable from a local `debug`."
+    },
+    {
+      "type": "instantiates",
+      "from": "(global)",
+      "target": "Stack",
+      "line_number": 61
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Stack",
+      "line_number": 38
+    },
+    {
+      "type": "calls",
+      "from": "namedScope",
+      "target": "reserve",
+      "line_number": 65,
+      "note": "Z39, asserted so the Z59 fix cannot have reverted it: a named test is a scope with a name"
+    },
+    {
+      "type": "calls",
+      "from": "namedScope",
+      "target": "push",
+      "line_number": 66
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "push",
+      "target": "items",
+      "line_number": 54,
+      "note": "pre-fix shape: the source named `push`, a member of the anonymous struct `Stack` returns, which the analyzer publishes no symbol for"
+    },
+    {
+      "type": "uses",
+      "from": "push",
+      "target": "std.debug",
+      "line_number": 56,
+      "note": "pre-fix shape, same class. Z66 changed the SPELLING of the target, so this forbid is retargeted to the qualified spelling: it still forbids attributing the read to the inner `push` scope, and it would no longer fail if the receiver were dropped."
+    },
+    {
+      "type": "calls",
+      "from": "push",
+      "target": "reserve",
+      "line_number": 55,
+      "note": "pre-fix shape: a caller edge into an unpublished declaration, so a traversal from `reserve` had no caller to return"
+    },
+    {
+      "type": "calls",
+      "from": "push",
+      "target": "assert",
+      "line_number": 56,
+      "note": "pre-fix shape, same class"
+    },
+    {
+      "type": "calls",
+      "from": "push",
+      "target": "capacity",
+      "line_number": 56,
+      "note": "pre-fix shape, same class"
+    },
+    {
+      "type": "uses",
+      "from": "reserve",
+      "target": "len",
+      "line_number": 46,
+      "note": "pre-fix shape: a member of the SAME unpublished container, so the class is not confined to one method"
+    },
+    {
+      "type": "calls",
+      "from": "capacity",
+      "target": "anywhere",
+      "line_number": 0,
+      "note": "structural guard: no edge may name any member of the anonymous container as its source, whatever it targets"
+    }
+  ]
+}

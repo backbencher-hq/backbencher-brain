@@ -1,0 +1,172 @@
+{
+  "fixtureId": "php/define-exports",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE `exports` CONTRACT for PHP \u2014 a name the file PUBLISHES and no declaration in it writes. This lane had RULED the type inapplicable on a measured parse-tree count, and the ruling was falsified by its own probe: the `define('NAME', \u2026)` test compared `arguments.namedChild(0)` against `string`/`encapsed_string` while tree-sitter-php puts an `argument` node between them, so the rule could not fire on any input, and no corpus could make it non-zero. The control corpus (validation/m14/fixtures/php/exports-probe-controls.mts) reads 1 on `define(\"X\", 1);` where the corpus sweep read 0; with the wrapper descended the corpus reads 60 occurrences in 20 files, 49 of them at file scope. So `exports` is a GAP, implemented here, and the corpus numbers in docs/analyzers/php.md are the post-fix ones. THREE rules, each load-bearing for the counts: (1) the callee is EXACTLY the bare name `define` \u2014 the qualified `class_alias` in this fixture is a different function and is refused; (2) the first argument's VALUE is a string literal read THROUGH the `argument` wrapper \u2014 `define($name, 4)` publishes a name nobody can write down, so no edge may be invented for it, and refusing it is what keeps the endpoint set resolvable; (3) the call is at FILE scope \u2014 `define('LAZY_ONLY', 3)` sits in a function body, so the FILE does not publish it and an edge from `global` would assert something the file does not guarantee. Rule 3's asymmetry is why this is a fixture and not a count: `define('CONDITIONAL_TOP_LEVEL', 2)` is inside a top-level `if`, which is NOT a scope \u2014 it executes when the file is included \u2014 so it IS published. Getting that backwards would silently drop real publications. The symbol span is pinned to the NAME inside the quotes, matching the `const_declaration` branch's convention for the same kind. The global-vs-namespace contrast is pinned too: `DECLARED_CONST` is namespace-scoped and carried by `contains`, a `define()`d name resolves against the GLOBAL scope and gets no ownerName and therefore no `contains` edge \u2014 conflating the two is the mislabelling this fixture exists to catch. RULE 1 WAS WRONG AND IS NOW A RESOLUTION RULE (2026-10-08): the callee must resolve to the global `define`, which the bare name reaches only through PHP's UNQUALIFIED-name fallback, while the fully qualified `\\define` reaches it unconditionally (\"Fully qualified names always resolve to the name without leading namespace separator\"). A whole-population define-audit built the denominator this contract never had \u2014 every `define`-family call in the admitted population, split by callee resolution, scope and name literalness \u2014 and read 58 tree-implied file-scope publications against 57 emitted edges. The missing one was phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php`: one file-scope `\\define('AUTO_PREPEND_FILE_LOADED', true);`, a file whose ENTIRE PURPOSE is that a prepended file publishes a constant later scripts read, refused for its spelling alone. The audit also priced the three shapes the rule still refuses \u2014 qualified `Other\\define` (a different function), relative `namespace\\define` (no global fallback: the fallback is a rule for unqualified names) and the aliased `use function define as pub` (which DOES publish, and occurs 0 times in 5,094 files, so it is recorded rather than half-implemented) \u2014 and measured 0 files that declare their own `define`, the one unsoundness the bare-name test could have had.",
+  "expectSymbols": [
+    {
+      "name": "AUTO_PREPEND_STYLE",
+      "kind": "constant"
+    },
+    {
+      "name": "CLOOGLE_DB_HOST",
+      "kind": "constant"
+    },
+    {
+      "name": "CLOOGLE_DB_USER",
+      "kind": "constant"
+    },
+    {
+      "name": "CONDITIONAL_TOP_LEVEL",
+      "kind": "constant"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "LAZY_ONLY",
+      "note": "a `define()` inside a function body publishes the name only if that function runs; the file does not publish it, so neither the symbol nor the edge may exist"
+    },
+    {
+      "name": "NAMESPACED_OTHER",
+      "note": "a QUALIFIED callee (`Other\\define`) is a different function; it publishes nothing, so no symbol may be invented for its first argument"
+    },
+    {
+      "name": "RELATIVE_NAMESPACE_SHAPE",
+      "note": "a RELATIVE callee (`namespace\\define`) resolves to the current namespace and does not fall back to the global function, so nothing is published"
+    },
+    {
+      "name": "NESTED_ABSOLUTE",
+      "note": "the scope rule is independent of the callee's spelling: a `\\define` inside a function body is still a nested call, and the file does not publish it"
+    },
+    {
+      "name": "ALIASED_PUBLICATION",
+      "note": "`pub('X', 1)` through `use function define as pub;` DOES publish in PHP (unqualified names go through the function import table), but the shape is PRICED at 0 occurrences over the whole admitted population by exports-probe.mts, so the lane refuses it and records the reason rather than half-implementing an import table for one callee"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "AUTO_PREPEND_STYLE",
+      "confidenceMin": 1,
+      "meta.relationshipType": "define_call",
+      "meta.calleeShape": "absolute-fq",
+      "meta.fileLevel": true,
+      "note": "the FULLY QUALIFIED spelling of the global `define`. PHP resolves `\\define` to the global function unconditionally (no namespace lookup, no fallback), so refusing this callee was a MISSED publication — measured: phpunit's `tests/end-to-end/generic/_files/auto_prepend_file.php` is one file-scope `\\define('AUTO_PREPEND_FILE_LOADED', true);` whose whole purpose is a globally visible constant, and the census went 57 -> 58 `exports` edges when this shape was accepted."
+    },
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "CLOOGLE_DB_HOST",
+      "confidenceMin": 1,
+      "meta.relationshipType": "define_call",
+      "meta.calleeShape": "bare",
+      "meta.fileLevel": true
+    },
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "CLOOGLE_DB_USER",
+      "confidenceMin": 1,
+      "meta.relationshipType": "define_call",
+      "meta.calleeShape": "bare"
+    },
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "CONDITIONAL_TOP_LEVEL",
+      "confidenceMin": 1,
+      "meta.relationshipType": "define_call",
+      "meta.calleeShape": "bare",
+      "note": "a top-level `if` is not a scope: this call runs when the file is included, so the file DOES publish the name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "LAZY_ONLY",
+      "note": "the scope rule: a `define()` in a function body is not a file publication. Emitting it would put 11 corpus edges (measured) on a claim the file does not make."
+    },
+    {
+      "type": "exports",
+      "target": "Widget",
+      "note": "the callee rule: a QUALIFIED `class_alias(...)` is a different function. The bare-name rule is what keeps a same-named user function from being read as the builtin."
+    },
+    {
+      "type": "exports",
+      "target": "Original\\Widget",
+      "note": "an alias publishes the NEW name, never the class it points at; the target must be the name a consumer writes."
+    },
+    {
+      "type": "exports",
+      "target": "",
+      "note": "rule R7: no empty endpoint. `define($name, 4)` has no literal name, and the 1 corpus occurrence of that shape must stay unemitted rather than be given an invented target."
+    },
+    {
+      "type": "contains",
+      "target": "CLOOGLE_DB_HOST",
+      "note": "the label rule: a `define()`d name resolves against the GLOBAL scope, so it has no owner and gets NO `contains` edge. `contains` is the edge for a name something in the file declares \u2014 publishing one is `exports`, and filing it under both is how a file appears to contain a global."
+    },
+    {
+      "type": "contains",
+      "target": "CONDITIONAL_TOP_LEVEL",
+      "note": "same: no ownerName, therefore no contains edge"
+    },
+    {
+      "type": "exports",
+      "target": "NAMESPACED_OTHER",
+      "note": "the QUALIFIED-callee rule. `Other\\define(...)` resolves against the current namespace, so it is a userland function with that name; emitting an edge from it would assert a publication PHP never performs."
+    },
+    {
+      "type": "exports",
+      "target": "RELATIVE_NAMESPACE_SHAPE",
+      "note": "the RELATIVE-callee rule, and the reason the fixture spells both of them: `namespace\\define(...)` differs from the emitted bare form by five characters and resolves to `App\\Config\\define` WITHOUT the global fallback (the fallback is a rule for unqualified names only). A rule that widened to `endsWith('define')` would publish this and phpunit's class_alias-free corpus would never notice."
+    },
+    {
+      "type": "exports",
+      "target": "NESTED_ABSOLUTE",
+      "note": "the scope rule must apply to the new absolute shape too — the fix must not arrive with a loophole for it"
+    },
+    {
+      "type": "exports",
+      "target": "ALIASED_PUBLICATION",
+      "note": "an aliased `define` publishes in PHP, and this lane refuses it on a MEASURED population of 0 (`aliased-use-function` occurrences over 5,094 admitted files, exports-probe.mts). Recorded as a priced boundary rather than silently unimplemented."
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "AUTO_PREPEND_STYLE"
+    },
+    {
+      "name": "CLOOGLE_DB_HOST"
+    },
+    {
+      "name": "CLOOGLE_DB_USER"
+    },
+    {
+      "name": "CONDITIONAL_TOP_LEVEL"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "LAZY_ONLY",
+      "note": "same scope rule, on the ExportInfo channel as well as the relationship \u2014 the two must not disagree"
+    },
+    {
+      "name": "NAMESPACED_OTHER",
+      "note": "the ExportInfo channel must refuse a qualified callee exactly as the relationship channel does"
+    },
+    {
+      "name": "RELATIVE_NAMESPACE_SHAPE",
+      "note": "the ExportInfo channel must refuse a relative callee too"
+    },
+    {
+      "name": "NESTED_ABSOLUTE",
+      "note": "and must refuse the absolute spelling when the call is nested"
+    },
+    {
+      "name": "ALIASED_PUBLICATION",
+      "note": "priced at 0 occurrences over the admitted population \u2014 refused on the ExportInfo channel for the same reason, so the two channels cannot disagree"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "fixtureId": "scala/abstract-members",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCD9 gap (M37 #598): ABSTRACT trait fields parse as val_declaration/var_declaration (type clause, no initializer) while concrete ones parse as val_definition/var_definition. The walk handled only the concrete forms, so every abstract interface field emitted NOTHING — the exact gap already fixed for abstract def (function_declaration). Abstract def, abstract val, abstract var must all be symbols with contains edges; the abstract forms carry isAbstract metadata.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "interface" },
+    { "name": "name", "kind": "constant", "ownerName": "Service" },
+    { "name": "mutableCount", "kind": "variable", "ownerName": "Service" },
+    { "name": "act", "kind": "method", "ownerName": "Service" },
+    { "name": "Impl", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Service", "target": "name" },
+    { "type": "contains", "from": "Service", "target": "mutableCount" },
+    { "type": "contains", "from": "Service", "target": "act" },
+    { "type": "extends", "from": "Impl", "target": "Service" },
+    { "type": "references", "from": "Service", "target": "String", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Service", "target": "Int", "meta.relationshipType": "declared_type" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Service", "target": "String" }
+  ]
+}

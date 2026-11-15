@@ -15,7 +15,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "n
 import path from "node:path"
 import { parseFile } from "../../src/ast/engine"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/sano/ishaq/bb_tests/repositories"
 const REPOS = (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2,abseil-cpp,spdlog").split(",").filter(Boolean)
 const EXTS = [".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++"]
 const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-debug"])

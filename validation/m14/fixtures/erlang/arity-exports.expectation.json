@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/arity-exports.erl",
+  "authoredFrom": "Erlang semantics: arity is part of function identity; -export([pick/0, pick/1]) is a legal export list naming two distinct functions. Authored from the language contract and the pinned grammar's fun_decl/function_clause/expr_args shapes (probed 2026-09-17), before observing this fixture's F3 run. ER-D43 (2026-10-03): the edge rows below were added when the corpus draw found that a same-line multi-arity export list published one row instead of two.",
+  "expectSymbols": [
+    {
+      "name": "arity_exports",
+      "kind": "module"
+    },
+    {
+      "name": "pick",
+      "kind": "function",
+      "ownerName": "arity_exports",
+      "meta.arity": 0,
+      "meta.clauseCount": 1
+    },
+    {
+      "name": "pick",
+      "kind": "function",
+      "ownerName": "arity_exports",
+      "meta.arity": 1,
+      "meta.clauseCount": 2
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "pick",
+      "kind": "function",
+      "equals": 2
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "pick",
+      "arity": 0
+    },
+    {
+      "name": "pick",
+      "arity": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls"
+    },
+    {
+      "type": "instantiates"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "unit"
+    },
+    {
+      "name": "zero"
+    },
+    {
+      "name": "X"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "arity_exports",
+      "target": "pick",
+      "meta.arity": 0,
+      "meta.exportForm": "export",
+      "line_number": 2,
+      "note": "ER-D43: an `exports` edge publishes the module's INTERFACE, and the interface is keyed by `name/arity`. Before this row existed nothing pinned the EDGES of this fixture \u2014 `expectExports` reads the `ExportInfo` array, which recorded both identities, so the fixture passed while the relationship published only `pick/0`. The dedupe key carried `line`, and both publications sit on line 2, so the second was dropped: the module's public surface was published at half its real size with no error and no counter. Measured 340 sites in a 204-file corpus draw (`otp/lib/asn1/examples/test_driver.erl:10` publishes four identities on ONE line, two of them under the same name at arities 0 and 1). Two identities, one name, two rows."
+    },
+    {
+      "type": "exports",
+      "from": "arity_exports",
+      "target": "pick",
+      "meta.arity": 1,
+      "meta.exportForm": "export",
+      "line_number": 2,
+      "note": "the second identity, same target and same line as the first"
+    },
+    {
+      "type": "contains",
+      "from": "arity_exports",
+      "target": "pick",
+      "line_number": 4,
+      "note": "ER-D30/D2: `contains` is per SYMBOL, and the two identities are two symbols, so this row appears twice at lines 4 and 5"
+    },
+    {
+      "type": "contains",
+      "from": "arity_exports",
+      "target": "pick",
+      "line_number": 6,
+      "note": "the SECOND identity's name line. `pick/1` spans clauses 5 and 6 (`pick(0) -> zero;` / `pick(X) -> X.`) and `contains` is named at the last clause head, which is the same rule ER-D33 records for a declaration split across lines."
+    }
+  ]
+}

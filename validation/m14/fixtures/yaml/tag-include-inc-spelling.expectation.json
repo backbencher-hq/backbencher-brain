@@ -1,0 +1,89 @@
+{
+ "fixtureId": "yaml/tag-include-inc-spelling",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "The include-family tag has two real-world spellings and the lane knew only one. `!include` is not an Ansible tag at all — it belongs to third-party PyYAML extensions — and pyyaml-include 2.x, the current release, renamed it to `!inc`. The set of include tags was GUESSED rather than derived, and measuring it is what proved that: across all 9,953 files in the eight pinned corpora every spelling the lane originally knew occurs ZERO times, while the tags Ansible actually uses (`!vault` 30, `!unsafe` 31) are not in the set at all. So the gap could not be seen from the corpus and only a check of the libraries defining the construct exposed it. authoredBeforeAnalyzerRun is FALSE and that is recorded rather than glossed: this fixture was authored after the gap was found, from a documented library's published usage, which is a weaker form of independence than a pre-registered prediction.",
+ "expectImports": [
+  {
+   "module": "include.d/1.yml",
+   "importType": "yaml_tag_include",
+   "isExternal": true,
+   "comment": "`!inc`, the CURRENT pyyaml-include spelling, which the analyzer did not recognise before this fix. The LINE is pinned on the relationship rows below rather than here: this fixture's runner reads the ANALYZER result, where the field is `line_number`, while the production entry renames it to `line`. Pinning one spelling here would pass on the analyzer and fail the moment the shape is read at the seam, or the reverse. The relationship pin is the seam-independent place for it."
+  },
+  {
+   "module": "include.d/2.yml",
+   "importType": "yaml_tag_include",
+   "isExternal": true,
+   "comment": "`!include`, the 1.x spelling, which the analyzer did recognise"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "tag-include-inc-spelling.modern",
+   "target": "include.d/1.yml",
+   "meta.relationshipType": "yaml_tag_include",
+   "line_number": 9
+  },
+  {
+   "type": "imports",
+   "from": "tag-include-inc-spelling.legacy",
+   "target": "include.d/2.yml",
+   "meta.relationshipType": "yaml_tag_include",
+   "line_number": 10
+  },
+  {
+   "type": "imports",
+   "from": "tag-include-inc-spelling.list",
+   "target": "include.d/1.yml",
+   "meta.relationshipType": "yaml_tag_include",
+   "line_number": 11
+  },
+  {
+   "type": "imports",
+   "from": "tag-include-inc-spelling.list",
+   "target": "include.d/2.yml",
+   "meta.relationshipType": "yaml_tag_include",
+   "line_number": 11
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "encrypted-blob",
+   "note": "THE NEGATIVE HALF, asserted by value. `!vault` annotates a value in place and names no file; if the include set were a substring or prefix rule this would be published as a file import, which is the over-firing class (Y24) rather than a missed edge."
+  },
+  {
+   "type": "imports",
+   "target": "1.2",
+   "note": "`!unsafe` likewise annotates in place. Together with the row above this is what distinguishes a CLOSED set from a pattern match."
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "secret",
+   "kind": "property",
+   "comment": "carries tagUri=vault and NO tagIncludePath — the assertion that a non-include tag stays a typed value"
+  },
+  {
+   "name": "version",
+   "kind": "property",
+   "comment": "carries tagUri=unsafe and NO tagIncludePath"
+  },
+  {
+   "name": "modern",
+   "kind": "property",
+   "comment": "carries tagUri=inc AND tagIncludePath — the positive half of the same distinction"
+  }
+ ],
+ "_shapesProbed": {
+  "note": "Probed directly against the analyzer before the expectation was written, because the fix widened a closed set and the failure mode of widening a set is over-firing, not under-firing. `!vault` and `!unsafe` record a tagUri and leave tagIncludePath undefined, so they stay typed values; `!inc` and `!include` both record tagIncludePath and emit an import with a 1-based line.",
+  "probed": {
+   "modern: !inc": "tagUri=inc, tagIncludePath=include.d/1.yml, import emitted",
+   "legacy: !include": "tagUri=include, tagIncludePath=include.d/2.yml, import emitted",
+   "list: [!inc .., !include ..]": "both items import; the item path carries the sequence index",
+   "secret: !vault": "tagUri=vault, tagIncludePath=undefined — NOT an import",
+   "version: !unsafe": "tagUri=unsafe, tagIncludePath=undefined — NOT an import"
+  }
+ }
+}

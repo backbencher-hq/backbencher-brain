@@ -110,7 +110,7 @@ export const TS_MUTANTS: TsMutant[] = [
     language: "typescript",
     defectClass: "missing-whole-class",
     description:
-      "PRE-FIX (M14 IMPORTS_ENUM, 2026-10-04): a re-export recorded a module dependency in `ParseResult.imports` (which reaches the brain_import TABLE via parallel-indexer.ts:2168) and published NO relationship (brain_relationship is written by the separate statement at :2174, and no consumer reconciles the two stores). So a barrel file appeared to depend on nothing in the graph bb_graph, bb_impact and bb_migrate read. Measured with script/m14/ts-construct-probe.ts over tracked .ts of fixtures/repositories/typescript: `export … from` in 14 of the first 40 files, 0 imports edges; the star form published no exports edge either. Caught by typescript/re-export-module-dependency, which expects six re-export dependency edges including the star and the type-only forms.",
+      "PRE-FIX (M14 IMPORTS_ENUM, 2026-10-04): a re-export recorded a module dependency in `ParseResult.imports` (which reaches the brain_import TABLE via parallel-indexer.ts:2168) and published NO relationship (brain_relationship is written by the separate statement at :2174, and no consumer reconciles the two stores). So a barrel file appeared to depend on nothing in the graph bb_graph, bb_impact and bb_migrate read. Measured with script/m14/ts-construct-probe.ts over tracked .ts of bb_tests/repositories/typescript: `export … from` in 14 of the first 40 files, 0 imports edges; the star form published no exports edge either. Caught by typescript/re-export-module-dependency, which expects six re-export dependency edges including the star and the type-only forms.",
     transform: dropReExportImports,
   },
   {
@@ -155,7 +155,7 @@ export const TS_MUTANTS: TsMutant[] = [
     language: "typescript",
     defectClass: "missing-whole-position",
     description:
-      "PRE-FIX (M14 IMPORTS_ENUM, 2026-10-04): `<T extends C>` published the BINDING (`references f -> T`) and never the CONSTRAINT, so the one place `C` is named produced no edge. `(type_parameter name: (type_identifier) constraint: (constraint (type_identifier)))` had no case in the declared-type-refs walk. Measured: 53 constraint sites in the first 40 files of fixtures/repositories/typescript, 13 of 24 distinct names reached by an edge. Caught by typescript/type-predicate-and-constraint-refs (four type_parameter_constraint rows) and by typescript/heritage-parameterized-leaves (the `shrink` row).",
+      "PRE-FIX (M14 IMPORTS_ENUM, 2026-10-04): `<T extends C>` published the BINDING (`references f -> T`) and never the CONSTRAINT, so the one place `C` is named produced no edge. `(type_parameter name: (type_identifier) constraint: (constraint (type_identifier)))` had no case in the declared-type-refs walk. Measured: 53 constraint sites in the first 40 files of bb_tests/repositories/typescript, 13 of 24 distinct names reached by an edge. Caught by typescript/type-predicate-and-constraint-refs (four type_parameter_constraint rows) and by typescript/heritage-parameterized-leaves (the `shrink` row).",
     transform: dropPosition("type_parameter_constraint"),
   },
   {

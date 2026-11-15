@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "relationshipType family reachability",
+  "generatedAt": "2026-09-29T02:06:56.836Z",
+  "method": "every yaml file in every pinned repository, NO sampling. Repos read from script/m12/yaml-corpus-errors.ts (9): grails-core, docker, ansible, kubernetes, terraform, openapi-spec, helm, gh-cli, pyyaml-include",
+  "why": "a sampled draw cannot distinguish a rare construct from an unreachable one, and this lane has already had a table that did",
+  "filesScanned": 9961,
+  "families": 9,
+  "corpusBacked": 9,
+  "unbacked": [],
+  "verdict": "all 9 families have corpus evidence",
+  "rows": [
+    {
+      "family": "declared_type",
+      "occurrences": 67,
+      "repos": [
+        "ansible",
+        "grails-core",
+        "pyyaml-include"
+      ],
+      "firstSeenAt": "grails-core/grails-bootstrap/src/test/resources/grails/config/application.yml:40",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_json_pointer",
+      "occurrences": 9689,
+      "repos": [
+        "docker",
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "firstSeenAt": "docker/api/docs/v1.25.yaml:214",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_depends_on",
+      "occurrences": 151,
+      "repos": [
+        "ansible",
+        "docker",
+        "gh-cli",
+        "grails-core",
+        "kubernetes",
+        "pyyaml-include",
+        "terraform"
+      ],
+      "firstSeenAt": "grails-core/.github/workflows/coverage.yml:102",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_resource_ref",
+      "occurrences": 3250,
+      "repos": [
+        "ansible",
+        "helm",
+        "kubernetes"
+      ],
+      "firstSeenAt": "ansible/test/integration/targets/module_no_log/test_no_log.yml:7",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_action_use",
+      "occurrences": 735,
+      "repos": [
+        "docker",
+        "gh-cli",
+        "grails-core",
+        "helm",
+        "openapi-spec",
+        "terraform"
+      ],
+      "firstSeenAt": "grails-core/.github/workflows/codeanalysis.yml:36",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_action_use_unverified",
+      "occurrences": 2,
+      "repos": [
+        "gh-cli"
+      ],
+      "firstSeenAt": "gh-cli/.github/codeql/codeql-config.yml:18",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_tag_include",
+      "occurrences": 4,
+      "repos": [
+        "pyyaml-include"
+      ],
+      "firstSeenAt": "pyyaml-include/tests/data/0.yaml:1",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_keyword_include",
+      "occurrences": 1172,
+      "repos": [
+        "ansible",
+        "docker",
+        "gh-cli",
+        "grails-core",
+        "kubernetes",
+        "terraform"
+      ],
+      "firstSeenAt": "grails-core/.github/workflows/gradle.yml:130",
+      "corpusBacked": true
+    },
+    {
+      "family": "yaml_merge",
+      "occurrences": 11,
+      "repos": [
+        "ansible",
+        "pyyaml-include"
+      ],
+      "firstSeenAt": "ansible/lib/ansible/config/base.yml:1668",
+      "corpusBacked": true
+    }
+  ]
+}

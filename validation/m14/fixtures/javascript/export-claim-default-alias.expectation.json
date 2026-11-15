@@ -1,0 +1,26 @@
+{
+  "rationale": "PINS the `export { local as default }` evidence form: target `default`, form `export-alias`, local name as evidence. The forbid row pins that the local name is not published as an export target.",
+  "expectSymbols": [
+    {
+      "name": "local",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "default",
+      "meta.defaultExportForm": "export-alias",
+      "meta.defaultExportLocalName": "local"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "local"
+    }
+  ],
+  "fixtureId": "javascript/export-claim-default-alias",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true
+}

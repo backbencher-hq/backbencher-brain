@@ -1,0 +1,9 @@
+{
+  "issue": "ELX-ADV X10",
+  "note": "`@derive [A, B]` list form and `@derive [{C, :ok}]` tuple-in-list form both emit implements — synthetic-pinned (real corpus incidence is 0; the original '8 real sites' claim was docstring text, corrected).",
+  "expectRelationships": [
+    { "type": "implements", "from": "ED1", "target": "A", "line_number": 2 },
+    { "type": "implements", "from": "ED1", "target": "B", "line_number": 2 },
+    { "type": "implements", "from": "ED2", "target": "C", "line_number": 7 }
+  ]
+}

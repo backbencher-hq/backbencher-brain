@@ -7,7 +7,7 @@
 
 import { spawn } from "node:child_process"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
 const HEALTH_CALLS = 5
 
 const frame = (id: number, method: string, params?: any) =>
@@ -16,7 +16,7 @@ const notif = JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialize
 
 const child = spawn("node", ["bin/bb", "mcp"], {
   cwd: ROOT,
-  env: { ...process.env, BB_DATA_DIR: "$HOME/.bb" },
+  env: { ...process.env, BB_DATA_DIR: "/home/ishaq2321/.bb" },
   stdio: ["pipe", "pipe", "pipe"],
 })
 child.stderr.on("data", (d) => process.stderr.write(`[child] ${d}`))

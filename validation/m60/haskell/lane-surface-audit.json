@@ -1,0 +1,139 @@
+[
+  {
+    "lang": "haskell",
+    "repos": [
+      "postgrest"
+    ],
+    "files": 207,
+    "filesWithEdges": 205,
+    "edges": 9919,
+    "symbols": 2678,
+    "labels": {
+      "calls": 2958,
+      "contains": 2368,
+      "imports": 2119,
+      "instantiates": 1224,
+      "exports": 610,
+      "implements": 334,
+      "overrides": 195,
+      "uses": 105,
+      "references": 6
+    },
+    "noLine": {},
+    "zeroLine": {},
+    "missingSeamKeys": {},
+    "kinds": {
+      "function": 1092,
+      "constructor": 484,
+      "property": 448,
+      "type": 260,
+      "module": 207,
+      "method": 102,
+      "class": 75,
+      "interface": 10
+    },
+    "unlinedSample": [],
+    "unlinedSampleCount": 0,
+    "badNames": [],
+    "ghosts": [],
+    "ghostCount": 0,
+    "contractNames": [
+      {
+        "file": "postgrest/Setup.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql-dynamic-statements/test/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql-transaction/conflicts-test/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql/benchmarks/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql/profiling/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql/threads-test/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql/hspec/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql/tasty/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql-notifications/test/Spec.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/vendor/hasql-pool/src/test/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/src/executable/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/test/doc/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/test/observability/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/test/spec/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 1
+      },
+      {
+        "file": "postgrest/nix/hsie/Main.hs",
+        "symbol": "Main",
+        "kind": "module",
+        "line": 12
+      }
+    ],
+    "contractNameCount": 15,
+    "excludedDirs": [],
+    "contractTargets": [],
+    "contractTargetCount": 0,
+    "parseErrors": [],
+    "parseErrorCount": 0
+  }
+]

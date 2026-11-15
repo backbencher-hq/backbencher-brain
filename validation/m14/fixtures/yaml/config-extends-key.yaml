@@ -1,0 +1,79 @@
+# CONFIGURATION INHERITANCE — the `extends:` key.
+#
+# `extends` on a YAML mapping is the same relation the merge key carries, written the other way
+# round: "this thing inherits that thing's configuration". These dialects say it with a KEY, and
+# the key's VALUE SHAPE says what the base is.
+#
+# MEASURED over the admitted population, the `extends:` key occurs 80 times in five shapes, and
+# every one of them names a configuration base:
+#
+#   `extends: .hidden-job`            33   GitLab CI — a SIBLING KEY in the same file
+#   `extends: {file: F, service: S}`  17   Docker Compose — a service in ANOTHER file
+#   `extends: {template: T}`          15   Azure Pipelines — a TEMPLATE FILE
+#   `extends: name`                    8   yamllint — a config of another tool
+#   `extends: {service: S}`            6   Docker Compose — a SIBLING service in the same file
+#
+# AND THE CONTRAST: the same sweep found the OTHER supertype-candidate keys in the corpus —
+# `implements` 59, `inherits` 38, `base` 30, `superclass` 2 — and none of them names a YAML
+# supertype clause (they are Dart plugin lists in Flutter pubspecs, pnpm-lock entries, and
+# Ansible filter-plugin bases). The `extends:` key is the only one whose value names another
+# thing whose CONFIGURATION is inherited.
+#
+# FIVE SHAPES ARE PINNED HERE, because the shape is what decides the claim:
+#   1. a sibling-dot name      -> the base is a SYMBOL in this file, resolved
+#   2. `{service: S}`          -> the base is a SIBLING service in this file, resolved
+#   3. `{file: F, service: S}` -> the base is a service in ANOTHER file: the FILE is the target,
+#                                 the service's name rides in the metadata, and the file is also
+#                                 READ, so an `imports` edge is published for it
+#   4. `{template: T}`         -> the base is a TEMPLATE FILE
+#   5. a bare name             -> the base is a config of another tool, which this document does
+#                                 not declare, so the edge says exactly that
+.base:
+  stage: test
+  script:
+    - pytest
+
+job-a:
+  extends: .base
+  image: python:3.11
+
+services:
+  db:
+    image: postgres
+  db-replica:
+    extends:
+      service: db
+  # A DOTTED service name. The qualified path joins with a dot, so this service's PATH ends
+  # `.cache.redis` while its NAME is `cache.redis`, and an index keyed by the path's LAST SEGMENT
+  # would file it under `redis` — so `extends: {service: cache.redis}` would miss. The name is
+  # spelled by the KEY, and the key is what the index is keyed by.
+  cache.redis:
+    image: redis
+  cache-replica:
+    extends:
+      service: cache.redis
+
+api:
+  extends:
+    file: docker-compose/databases.yaml
+    service: postgres
+
+pipeline:
+  extends:
+    template: azure-pipelines/MicroBuild.yml@MicroBuildTemplate
+
+lint:
+  extends: default
+
+# A BLOCK SCALAR value. A `block_scalar` node's own text starts with the INDICATOR (`>` folded,
+# `|` literal) and the content follows it, so a value read as raw text carries the indicator into
+# the name. The folded form folds to ONE line and names a config; the literal form keeps its
+# newlines, and a NAME DOES NOT SPAN LINES, so it names nothing and no edge is published.
+lint-folded:
+  extends: >
+    default
+
+lint-literal:
+  extends: |
+    default
+    preset

@@ -61,7 +61,7 @@ export const TASK_DISAMBIGUATION: Record<string, string> = {
   bb_annotations: "Read notes back — all annotations, or one symbol's.",
   bb_analyze: "Typed per-mode analysis: callers/callees/stats/complexity/tests.",
   bb_patterns: "Find dead code, orphans, and anti-patterns.",
-  bb_security: "Find taint flows and injection findings.",
+  bb_security: "Generate lexical security leads from indexed source→dynamic-sink reachability (not a vulnerability scanner; requires manual validation).",
   bb_health: "Is the index complete, fresh, and healthy.",
   bb_index: "Reindex just-written or changed files/directories.",
   bb_edit: "Change source code safely (preview, validate, rollback, reindex).",

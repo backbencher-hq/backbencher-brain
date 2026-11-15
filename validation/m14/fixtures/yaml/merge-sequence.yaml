@@ -1,0 +1,9 @@
+# A merge key may take a SEQUENCE of anchors, and each one is a separate inheritance
+# edge. Anchors also carry the same name in different scopes.
+alpha: &alpha
+  a: 1
+beta: &beta
+  b: 2
+combined:
+  <<: [*alpha, *beta]
+  c: 3

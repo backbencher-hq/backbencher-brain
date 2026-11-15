@@ -46,7 +46,7 @@ import path from "node:path"
 import { isExtensionShaped, looksText, routerDisagreements, walkCorpus, type ExtensionWalk } from "./corpus-extension-walk"
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const BASELINE_PATH = process.env.BB_UEG_BASELINE ?? path.join(REPO_ROOT, "validation/m14/measurements/unrouted-extension-census.json")
 const RULINGS_PATH = process.env.BB_UEG_RULINGS ?? path.join(REPO_ROOT, "validation/m60/results/unrouted-extension-rulings.json")
 const OUT = process.env.BB_UEG_OUT ?? path.join(REPO_ROOT, "validation/m60/results/unrouted-extension-gate.json")

@@ -1,0 +1,57 @@
+{
+  "fixtureId": "groovy/anonymous-type-owner",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #867 ruling; spellings and lines recorded from the post-ruling run. groovy already satisfied the ruling.",
+  "rationale": "M49/M37 #867 — the family ruling pinned on groovy: a class-level anonymous type is owned by the CLASS, a literal declared inside a method by that METHOD, with each crossed containment edge forbidden. Before this fixture no language pinned the owner at all, so groovy's compliance was unverifiable.",
+  "expectSymbols": [
+    {
+      "name": "AnonOwner",
+      "kind": "class"
+    },
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "AnonOwner",
+      "comment": "#867 context 1: class-level literal -> the class"
+    },
+    {
+      "name": "anonymous_Comparator",
+      "kind": "class",
+      "ownerName": "inMethod",
+      "comment": "#867 context 2: in-method literal -> the method"
+    },
+    {
+      "name": "classLevel",
+      "comment": "control: a class-level FIELD is a member of the class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Runnable",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Comparator",
+      "line_number": 8
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Comparator",
+      "comment": "#867 the defect direction (kotlin's pre-ruling behaviour)"
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Runnable",
+      "comment": "the mirror direction"
+    }
+  ]
+}

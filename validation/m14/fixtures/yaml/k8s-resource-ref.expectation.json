@@ -1,0 +1,58 @@
+{
+ "fixtureId": "yaml/k8s-resource-ref",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A Kubernetes object reference names a declared resource, and multi-document streams are where it resolves. The resolved target is the DOCUMENT that owns the ConfigMap, which is the honest answer for a name declared in another document of the same file. The unresolvable `secretRef` stays unresolved with a reason and a sub-1.0 confidence.",
+ "expectFrameworks": [
+  "Kubernetes"
+ ],
+ "expectMetadata": [
+  {
+   "documentCount": 2
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "k8s-resource-ref#2.spec.containers[0].envFrom[0].configMapRef",
+   "target": "k8s-resource-ref",
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "meta.relationshipType": "yaml_resource_ref",
+   "line_number": 15
+  },
+  {
+   "type": "references",
+   "from": "k8s-resource-ref#2.spec.containers[0].envFrom[1].secretRef",
+   "target": "not-declared-here",
+   "confidenceMax": 0.9,
+   "meta.resolved": false,
+   "meta.unresolvedReason": "not-declared-in-file",
+   "line_number": 17
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ],
+  "evidenceClasses": [
+   "inferred",
+   "structural",
+   "usage_contextual"
+  ]
+ }
+}

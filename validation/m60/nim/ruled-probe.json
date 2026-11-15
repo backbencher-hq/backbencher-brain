@@ -1,0 +1,109 @@
+{
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "files": 4555,
+  "filesByRepo": {
+    "Aporia": 12,
+    "bigints": 21,
+    "dom96-jester": 19,
+    "graphql-nim": 55,
+    "nim": 3968,
+    "nim-lang-nimble": 435,
+    "nimterop": 45
+  },
+  "instrumentA": {
+    "nodeTypeCount": 209,
+    "conceptDeclaration": 216,
+    "refinementList": 0
+  },
+  "conceptDecls": {
+    "total": 216,
+    "files": 69
+  },
+  "ofForm": {
+    "withRefinesField": 0,
+    "examples": []
+  },
+  "isForm": {
+    "everyIsInConceptBody": 156,
+    "leftIsBareConceptParameter": 13,
+    "rightNamesSameFileConcept": 0,
+    "passesAllGuards": 0,
+    "guardFailures": {
+      "argumentList": 143,
+      "leftNotParameter": 143,
+      "rightNotIdentifier": 5,
+      "rightNotLocalConcept": 8,
+      "selfReference": 0
+    },
+    "rightSideNames": {
+      "U": 2,
+      "int1": 1,
+      "int2": 1,
+      "PrimitiveBase": 1,
+      "IntegerBase": 1,
+      "IdBase": 1,
+      "string": 1
+    },
+    "examples": []
+  },
+  "tableProbe": {
+    "conceptsExamined": 174,
+    "withRefinesField": 0,
+    "isExpressionsInConceptBodies": 156,
+    "refinements": 0,
+    "hits": 0,
+    "hitExamples": []
+  },
+  "textProbeNonInstrument": {
+    "hits": 7,
+    "byNodeType": {
+      "comment": 6,
+      "code": 1
+    },
+    "sample": [
+      {
+        "file": "nim/compiler/parser.nim:2268",
+        "line": 2268,
+        "nodeType": "comment",
+        "snippet": "conceptParam ^* ',')? pragma? ('of"
+      },
+      {
+        "file": "nim/compiler/parser.nim:2276",
+        "line": 2276,
+        "nodeType": "comment",
+        "snippet": "concept of"
+      },
+      {
+        "file": "nim/lib/std/paths.nim:242",
+        "line": 242,
+        "nodeType": "comment",
+        "snippet": "concept of"
+      },
+      {
+        "file": "nim/lib/std/paths.nim:245",
+        "line": 245,
+        "nodeType": "comment",
+        "snippet": "concept of"
+      },
+      {
+        "file": "nim/lib/std/private/ospaths2.nim:791",
+        "line": 791,
+        "nodeType": "comment",
+        "snippet": "concept of"
+      },
+      {
+        "file": "nim/lib/std/private/ospaths2.nim:794",
+        "line": 794,
+        "nodeType": "comment",
+        "snippet": "concept of"
+      },
+      {
+        "file": "nim/tests/concepts/tspec.nim:23",
+        "line": 23,
+        "nodeType": "code",
+        "snippet": "concept ## the most basic of"
+      }
+    ]
+  },
+  "rawParseFailures": []
+}

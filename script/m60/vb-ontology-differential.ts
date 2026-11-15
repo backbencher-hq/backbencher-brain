@@ -34,7 +34,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { deriveVbTruth, vbEdgeKey, VB_ORACLE_LABELS } from "../m14/vb-truth"
 import type { VbTruthLabel } from "../m14/vb-truth"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (process.env.BB_VB_REPOS ?? "roslyn-vb,vbnet-samples").split(",").filter(Boolean)
 const LIMIT = Number(process.env.BB_VB_LIMIT ?? 0)
 const SHOW = Number(process.env.BB_VB_SHOW ?? 10)

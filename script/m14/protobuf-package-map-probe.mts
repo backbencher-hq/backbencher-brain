@@ -68,7 +68,7 @@ import { readdirSync, statSync, writeFileSync, mkdirSync, readFileSync } from "n
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : "/tmp/opencode/pb/pkgmap.json"
 const LIMIT_ARG = argv.find((a) => a.startsWith("--limit="))

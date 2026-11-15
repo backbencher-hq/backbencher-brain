@@ -1,6 +1,6 @@
 {
   "analyzer": "ruby",
-  "corpus": "$HOME/fixtures/repositories/rake",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/rake",
   "corpusRepo": "rake",
   "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
   "extensions": [

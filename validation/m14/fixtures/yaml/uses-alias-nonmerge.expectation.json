@@ -1,0 +1,41 @@
+{
+ "fixtureId": "yaml/uses-alias-nonmerge",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "SECTION B's missing pin. The inventory reads yaml's contract row and reports `uses` as EMITTED but absent from `requiredKinds`; the contract's own `coverage.implemented` already names the kind (the `6/8` board reading was retracted on a whole-population measurement, not on a guess). What was missing is the thing that lets the row NAME it: a fixture that pins what a `uses` edge in this language actually is. A yaml `uses` is a NON-MERGE ALIAS: `settings: *defaults` READS the value the anchor `&defaults` declared, so the edge leaves the containing path and points at the anchored declaration's qualified name. The construct is one `merge` flag away from its sibling, which is why the merge control is in the same file: `<<: *defaults` INHERITS, so it publishes `extends` (`yaml_merge`) and must never publish `uses`. The forbid half pins the two arms apart; a rule that collapsed them would satisfy the positive half and fail here. Measured on this file through the production path (ASTEngine.parseFile): `uses uses-alias-nonmerge.service.settings -> uses-alias-nonmerge.defaults#defaults` line 11, evidenceClass `usage_contextual`, metadata.relationshipType `yaml_alias`, resolved true; `extends uses-alias-nonmerge.override -> uses-alias-nonmerge.defaults#defaults` line 13, `yaml_merge`, resolved true. The evidence tier is the second reason this fixture exists: section D needs more than one evidenceClass value and this pin is a `usage_contextual` row alongside the structural ones.",
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "uses-alias-nonmerge.service.settings",
+   "target": "uses-alias-nonmerge.defaults#defaults",
+   "line_number": 11,
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.relationshipType": "yaml_alias",
+   "note": "THE PINNED ROW — the non-merge alias that makes `uses` a real yaml kind rather than an emitted accident."
+  },
+  {
+   "type": "extends",
+   "from": "uses-alias-nonmerge.override",
+   "target": "uses-alias-nonmerge.defaults#defaults",
+   "line_number": 13,
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "meta.relationshipType": "yaml_merge",
+   "note": "the sibling arm: the same anchor reached through a merge key is INHERITANCE, and it must stay `extends`."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "uses-alias-nonmerge.override",
+   "note": "CONTROL: a merge key is not a use. `override` inherits `*defaults` with `<<:`; publishing `uses` here would conflate the two arms the analyzer's own `merge` flag separates (resolveAliases: `type = alias.merge ? Extends : Uses`)."
+  },
+  {
+   "type": "extends",
+   "from": "uses-alias-nonmerge.service.settings",
+   "note": "CONTROL, the other direction: a plain alias does not inherit. `settings` reads the value; it does not merge it into itself."
+  }
+ ]
+}

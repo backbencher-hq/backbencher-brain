@@ -1,0 +1,152 @@
+{
+  "fixtureId": "cpp/pure-virtual-signature-910",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "ONTOLOGY `overrides`, and the SYMBOL loss underneath it. A pure virtual is how C++ spells an interface \u2014 there is no `interface` keyword and no `implements` clause, so `= 0` IS the construct, and it was invisible twice over. (1) `virtual bool ReportContext(const Context&) = 0;` parses as `declaration > init_declarator > function_declarator`, and `init_declarator` was missing from the declarator-wrapper list in `getFunctionDetails`, which returned null; the caller takes the function's SYMBOL and its SCOPE out of that result, so the interface's own methods were published NOWHERE. Measured on `cpp-sample/include/benchmark/reporter.h`: `BenchmarkReporter` published `ReportRunsConfig`, `Finalize`, `List` and nine more, and NOT `ReportContext` or `ReportRuns` \u2014 and with the base's members absent from the virtual registry, `overrides` fired ZERO times over 128 admitted files carrying 77 written `override` specifiers in 26 of them. (2) The override matcher built its parameter signature with a SECOND, weaker declared-name lookup (a `declarator`-FIELD chain only), so a parameter declared `const Context& context` \u2014 whose name sits under a `reference_declarator` as a plain NAMED child \u2014 resolved to no name and the whole text, NAME INCLUDED, became the 'type'. Two declarations of the same type with different parameter names then hashed differently. A name is not part of a C++ signature, so those are one signature. The rule is now the analyzer's single declared-name funnel, the same one the published `parameters` payload uses; the two had drifted into a second answer about a second question and the divergence was invisible because the payload's own fixture passed. `Hidden` is the control in the other direction: a genuinely different parameter TYPE must still NOT produce an edge, because C++ name hiding is not virtual dispatch \u2014 a type-only signature that ignored types would pass every case above and be wrong about all of them.",
+  "expectSymbols": [
+    {
+      "name": "ReportContext",
+      "kind": "method",
+      "ownerName": "Base",
+      "note": "(1) the pure virtual is published as a member of its base. Pre-fix: absent from the graph entirely, while the derived classes' implementations of it were present \u2014 so the graph asserted that `Same` and `Renamed` override a method no base declares."
+    },
+    {
+      "name": "ReportRuns",
+      "kind": "method",
+      "ownerName": "Base"
+    },
+    {
+      "name": "Weighted",
+      "kind": "method",
+      "ownerName": "Base",
+      "note": "a pure virtual with a DEFAULTED parameter. The default is not part of a signature, and `Hidden`'s three-parameter version must not match it \u2014 which is the only way to tell that the key dropped the default rather than keeping it."
+    },
+    {
+      "name": "Helper",
+      "kind": "method",
+      "ownerName": "Base",
+      "note": "CONTROL: a non-virtual member is published and is never an override target."
+    },
+    {
+      "name": "tick",
+      "kind": "method",
+      "ownerName": "Decorated",
+      "note": "THE `init_declarator` CASE. `Decorated` is macro-decorated, and a pure virtual inside a macro-decorated class parses as `declaration > init_declarator > function_declarator` rather than `field_declaration > function_declarator` \u2014 so a shallow declarator lookup missed it and `getFunctionDetails` returned null, taking the method's SYMBOL and its SCOPE with it. Measured over the two pinned corpora: 7 pure-virtual sites, 4 in the direct shape (published) and 3 in the `init_declarator` shape (published NOWHERE) \u2014 `benchmark/reporter.h:132`, `:136` and `benchmark_api.h:146`, which are `BenchmarkReporter.ReportContext`, `BenchmarkReporter.ReportRuns` and `Benchmark.Run`."
+    },
+    {
+      "name": "flush",
+      "kind": "method",
+      "ownerName": "Decorated"
+    },
+    {
+      "name": "Impl",
+      "kind": "class",
+      "startLine": 106,
+      "note": "THE ROW THAT FAILS PRE-FIX, and it took a second row to find. `class IFACE_EXPORT Impl : public IFACE_EXPORT Decorated {` is the A2 shape, so the pre-fix reader published this class as `Decorated` \u2014 which meant the `tick`/`flush` symbols it then owned still carried `ownerName: Decorated` and the obvious symbol assertion PASSED for the wrong reason. Pinning the line is what makes the assertion about the declaration rather than about a name that happens to exist: pre-fix there is no symbol named `Impl` at all, and `Impl`'s members were attributed to its own base."
+    },
+    {
+      "name": "Decorated",
+      "kind": "class",
+      "startLine": 99,
+      "note": "the BASE, under its own name at its own line. The pair (this row + the `Impl` row) is what distinguishes 'the class is published' from 'a class with that name is published somewhere'."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Same",
+      "target": "Base"
+    },
+    {
+      "type": "extends",
+      "from": "Renamed",
+      "target": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Same::ReportContext",
+      "target": "ReportContext",
+      "confidence": 1,
+      "meta.reasonCode": "override-keyword+signature-match",
+      "note": "the control: identical spelling throughout, so a matcher that ignored types would also produce this row. It is here so a future 'fix' that over-matches is caught by the same fixture. STALE-PIN FIX 2026-10-17: this row pinned `signature-match` (0.9, the inference arm), but the fixture's own `Same::ReportContext` is written `override` — so under M14-HONESTY-CONTRACT §4 the edge is a 1.0 FACT and its code is `override-keyword+signature-match`, exactly as cpp/reason-code-4 pins the same shape. The strength of the assertion is unchanged (same-spelling control); only the evidence class it is asserted at was corrected, upward.",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Same::ReportRuns",
+      "target": "ReportRuns",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Renamed::ReportRuns",
+      "target": "ReportRuns",
+      "note": "(2) THE CASE. `const std::vector<Run>& report` in the base and `const std::vector<Run>& reports` in the derived are the SAME C++ signature \u2014 names are not part of it. Pre-fix this produced no edge at all, and the pre-fix `reporter.h` count was 2 of 4 with both survivors being the zero-argument methods, which is exactly the population where 'no parameters' accidentally agrees with 'parameters whose names happen to match'.",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Renamed::ReportContext",
+      "target": "ReportContext",
+      "note": "same, for the reference parameter: `const Context& context` vs `const Context& ctx`. The name lives under a `reference_declarator` as a plain named child, which is the case the FIELD-chain lookup could not see at all.",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "extends",
+      "from": "Impl",
+      "target": "Decorated",
+      "note": "the macro-decorated base clause: the grammar puts `Name : access` in an ERROR node, so `base_class_clause` is never produced and this edge did not exist. Without it there is no `classBases` entry, and a `classBases` entry is the precondition for ANY override on this pair."
+    },
+    {
+      "type": "overrides",
+      "from": "Impl::tick",
+      "target": "tick",
+      "note": "and the override through it \u2014 the base's own pure virtual has to be published AND registered before a derived override of it can resolve.",
+      "meta.overriddenOwner": "Decorated"
+    },
+    {
+      "type": "overrides",
+      "from": "Impl::flush",
+      "target": "flush",
+      "note": "`flush(bool hard)`: a single ordinary parameter, so the two halves of the signature key are exercised with nothing else in play.",
+      "meta.overriddenOwner": "Decorated"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Hidden::ReportRuns",
+      "target": "ReportRuns",
+      "note": "C++ NAME HIDING, not virtual dispatch: `ReportRuns(const Context&)` is a different function from `ReportRuns(const std::vector<Run>&)`. An `overrides` edge here says `Hidden` replaces the base's behaviour, and no compiler would dispatch to it.",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Hidden::Weighted",
+      "target": "Weighted",
+      "note": "the defaulted parameter is not part of the signature, but the extra `int` IS: `Weighted(int, int)` and `Weighted(int, int, int)` are different functions.",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Same::Helper",
+      "target": "Helper",
+      "note": "CONTROL: `Helper` is not virtual. Every class-scope method registers in the virtual registry by design (C++ virtual dispatch does not require the keyword), so the guard here is the SIGNATURE \u2014 and `Hidden`'s rows above show the signature still discriminates. A matcher that resolved by name alone would emit this row and both rows above.",
+      "meta.overriddenOwner": "Base"
+    },
+    {"type": "overrides", "from": "Hidden::ReportRuns", "target": "Base::ReportRuns", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "Hidden::ReportRuns", "target": "Same::ReportRuns", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "Hidden::ReportRuns", "target": "Renamed::ReportRuns", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "Hidden::ReportRuns", "target": "Hidden::ReportRuns", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "Hidden::Weighted", "target": "Base::Weighted", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "Hidden::Weighted", "target": "Hidden::Weighted", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "Same::Helper", "target": "Base::Helper", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ],
+  "forbidSymbols": [
+    {
+      "name": "final",
+      "kind": "class",
+      "note": "a keyword is not a class name."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "fixtureId": "vue/data-keys",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave H1 fix: data-state keys are Property symbols (Vue-2 object form here; factory return form shares the helper) so template refs resolve — previously only a bare 'data' Method existed and {{ count }} emitted nothing.",
+  "expectSymbols": [
+    { "name": "count", "kind": "property", "ownerName": "data-keys" },
+    { "name": "total", "kind": "property", "ownerName": "data-keys" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "data-keys", "target": "count" },
+    { "type": "uses", "from": "data-keys", "target": "total" }
+  ]
+}

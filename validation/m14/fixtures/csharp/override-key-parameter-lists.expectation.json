@@ -1,0 +1,60 @@
+{
+  "fixtureId": "csharp/override-key-parameter-lists",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 R10 sibling pin. csharp builds an override endpoint the same way java does (`${ownerFqn}.${name}${signature}`), so the parameter list is inside the string the edge label is derived from. Its pre-fix rule cut at the FIRST '(' before splitting on dots \u2014 which is the honest answer for these shapes, but truncates a paren-bearing owner chain \u2014 and the two lanes now call one shared rule (src/ast/override-context.ts localEdgeLabel). What this fixture catches is the OTHER direction: if csharp ever adopted java's pre-fix derivation (split on '.', last two segments, cut each at '('), the qualified parameter type inside the signature would be split as a qualifier and the labels would become `Text.StringBuilder,bool)` and `Generic.KeyValuePair<string, bool>)`, measured below as the forbids. Parameter types are written QUALIFIED on purpose \u2014 the signature carries the written text \u2014 and the base method is abstract with an explicit `override` because that, not interface implementation, is what this lane resolves overrides from (measured: an interface-only shape emits zero override edges).",
+  "expectSymbols": [
+    {
+      "name": "Builder",
+      "kind": "class"
+    },
+    {
+      "name": "Query",
+      "kind": "class"
+    },
+    {
+      "name": "Criterion",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Builder.Handle",
+      "target": "Handle"
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.Remember",
+      "target": "Remember"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "Builder.Handle",
+      "target": "Handle",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Builder.Remember",
+      "target": "Remember",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Text.StringBuilder,bool)",
+      "target": "StringBuilder,bool)",
+      "note": "what java's pre-fix derivation produces on this signature (`System.Text.StringBuilder` splits as a qualifier): not a name, owner lost"
+    },
+    {
+      "type": "overrides",
+      "from": "Generic.KeyValuePair<string, bool>)",
+      "target": "KeyValuePair<string, bool>)",
+      "note": "the same rule on the generic + qualified parameter type"
+    }
+  ]
+}

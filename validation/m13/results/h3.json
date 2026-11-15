@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.31",
+  "code": "H3",
+  "tool": "bb_health",
+  "title": "bb_health: integrity + schema + embedding coverage",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "integrity: the reported checks are the battery's own count",
+      "pass": true,
+      "detail": "checks=14 summary.total=14"
+    },
+    {
+      "name": "integrity: every check carries a valid status",
+      "pass": true,
+      "detail": ",,,,,,,,,,,,,"
+    },
+    {
+      "name": "integrity: summary accounts for every check (scored + informational = total)",
+      "pass": true,
+      "detail": "{\"ok\":12,\"warn\":0,\"error\":1,\"total\":14,\"scored\":13,\"informational\":1}"
+    },
+    {
+      "name": "integrity: statuses account for every SCORED check",
+      "pass": true,
+      "detail": "{\"ok\":12,\"warn\":0,\"error\":1,\"total\":14,\"scored\":13,\"informational\":1}"
+    },
+    {
+      "name": "integrity: the informational check is excluded from the score",
+      "pass": true,
+      "detail": "{\"ok\":12,\"warn\":0,\"error\":1,\"total\":14,\"scored\":13,\"informational\":1}"
+    },
+    {
+      "name": "integrity: byte-bounds check ok on clean index",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "integrity: line-bounds check ok on clean index",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "integrity: hash-drift check ok before modification",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "integrity: modifying a file flips hash-drift to warn/error (never silently ok) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Hash Drift (Stale Files)=error(1)"
+    },
+    {
+      "name": "integrity: overall health reflects the corruption",
+      "pass": true,
+      "detail": "clean=92% corrupt=85%"
+    },
+    {
+      "name": "integrity: orphan-target check reports stored truth (0 orphan targets in stored data)",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "integrity: dangling-source check reports stored truth (0 after M51.A3 generator fix)",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "schema: reported version equals the DB row",
+      "pass": true,
+      "detail": "report=1 db=1"
+    },
+    {
+      "name": "schema: reported migration name equals the DB row",
+      "pass": true,
+      "detail": "report=m13-universal-brain db=m13-universal-brain"
+    },
+    {
+      "name": "schema: version is a positive number",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "coverage: percentage equals stored-row computation exactly",
+      "pass": true,
+      "detail": "report=0 computed=0"
+    },
+    {
+      "name": "coverage: entity count equals distinct stored entity rows",
+      "pass": true,
+      "detail": "report=0 db=0"
+    },
+    {
+      "name": "coverage: output labels it coverage, never a quality claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /tmp/bb-health-integrity-aR7Epn\nprojectId: 5fc37c684b94a1d1122e5794749fac18b3597ced\nfiles=2 symbols=12 relationships=34 imports=11 syntaxErrors=0\nfresh"
+    },
+    {
+      "name": "docs: embedding coverage labeled as stored state, not quality",
+      "pass": true,
+      "detail": "missing label"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 19,
+    "passed": 19,
+    "failed": 0
+  },
+  "decisions": {
+    "integrity": "each of the 13 checks reports status computed from the DB; corrupting rows flips the matching check to warn/error (13 since M51.A2 split orphan owners from by-design synthetic container references)",
+    "schema": "report.schema.version must equal the actual brain_schema_version row",
+    "embeddings": "coverage is stored-row-count / symbol-count — a state report, never a quality claim (label audited)"
+  },
+  "limitations": [
+    "The WAL-size and ratio sanity checks are environment-dependent; their status is recorded as computed, not forced.",
+    "M14-observed defect FIXED by M51.A3: the indexer once stored same-file edges with dangling source ids (dangling-source > 0 on fresh indexes). Since M51, a fresh index must report 0 — a nonzero value now means an indexer regression."
+  ],
+  "generatedAt": "2026-11-05T04:13:15.110Z"
+}

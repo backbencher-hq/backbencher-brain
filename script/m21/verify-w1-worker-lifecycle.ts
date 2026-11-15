@@ -45,7 +45,7 @@ function negative(label: string, ok: boolean, detail = "") {
   check(`${label} [negative]`, ok, detail)
 }
 
-const REAL_REPO = "$HOME/fixtures/repositories/rake"
+const REAL_REPO = "/home/ishaq2321/bb_tests/repositories/rake"
 const REAL_REPO_ELIGIBLE = existsSync(path.join(REAL_REPO, ".git"))
 const FIXTURE_RUNNER = path.join(ROOT, "script/m21/w1-fixture-run.ts")
 

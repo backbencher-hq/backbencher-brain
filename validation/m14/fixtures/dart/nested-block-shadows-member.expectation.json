@@ -1,0 +1,135 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it — U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` — a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/nested-block-shadows-member",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Every line and every endpoint below was TRANSCRIBED from a measured run (script/m14/tmp/dt-fixture-dump.ts) against THIS file, and each one is named with what it is measuring. Two rows are the 2026-10-08 repair of a fixture that had gone STALE against its own source: the file was rewritten to contain the member read its rationale claimed, and the expectation was re-derived from the rewritten file rather than patched. The seven rows are: three `contains` (the three declarations, at 44/46/56), one local read (48), one member read (57, qualified), and the count that pins local-read DEDUP.",
+  "rationale": "PINS the premise the collectDartLocals skip rests on, in BOTH directions, AND the discrimination the fixture is named for. real-dart-analyzer.ts:1858 declines to re-walk a block whose subtree a strict ancestor already collected, arguing S(n) is a SUBSET of the ancestor's already-merged set and so contributes no new name. That argument only holds while the ancestor's merge really is a superset. This file puts three local reads and one FIELD read on the same name `value` so that each way of getting the skip wrong shows up as the same single number changing. Skipping when insideCollected is TRUE (shipped) and the ancestor's merge not being a superset -> the nested block's local stops suppressing and line 51 gains a spurious field edge. Skipping when insideCollected is FALSE (guard inverted) -> the BODY's own declarations are dropped, since the body is where collection happens first, and line 48 stops being a local read. The body-level declaration on line 47 is what makes the second case detectable: with the guard inverted, line 48 stops being a local read and the `uses` count goes 2 -> 1. Both failures move ONE number, `expectRelationshipCount`, which is why the count has a note naming the direction each failure moves it.\n\n## 2026-10-20 — THIS ASSERTION WAS CORRECTED, AND THE PREVIOUS FILE'S RATIONALE IS QUOTED ABOVE BECAUSE ITS INTENT WAS RIGHT AND ITS ASSERTION WAS NOT.\n\nTHE PREVIOUS FILE (kept as `nested-block-shadows-member.expectation.superseded-1e03d662.json`) asserted that the three reads in `run()` — at lines 48, 51 and 53 — were \"all three the body local\", because \"`var value = 1;` on line 47 shadows the field for the whole body\", and it pinned exactly ONE `uses run -> run\\u0000value` edge, at line 48, FORBIDDING the edges at 51 and 53.\n\n**THE MEASURED CONTRADICTION, in this fixture's own line numbers:**\n\n  44:  int value = 0;      <- the class FIELD\n  47:  var value = 1;      <- the BODY local\n  48:  print(value);        <- reads the BODY local\n  49:  {\n  50:    var value = 2;    <- the NESTED declaration, which SHADOWS the body local\n  51:    print(value);      <- reads the NESTED local  (Dart's block-scope rule)\n  52:  }\n  53:  print(value);        <- reads the BODY local again\n\n**THE READ AT 51 IS LEXICALLY INSIDE THE NESTED BLOCK, AND DART'S BLOCK-SCOPE RULE SAYS THE INNER DECLARATION SHADOWS THE OUTER ONE FOR THE WHOLE OF THE INNER BLOCK. SO THE READ AT 51 IS A READ OF A DIFFERENT DECLARATION.** The previous file's own HEADER said so in its first paragraph — \"a declaration in the function BODY, **a declaration in a NESTED BLOCK that shadows it**, and a read of the enclosing class's FIELD\" — and its own ASSERTION then said the opposite. **THE FIXTURE CONTRADICTED ITSELF, AND THE CONTRADICTION WAS THE DEFECT: the header stated the correct semantics and the assertion stated the loss.**\n\nThe previous file's own forbid row for line 51 shows the contradiction from the inside: \"the read inside the NESTED block (declared at 50) must not get an edge of its own — the dedup keeps the first occurrence (48), and an edge here means either the dedup broke **or the nested local stopped suppressing**\". It NAMES the nested local as the thing being read at 51, and then forbids recording the read of it. The resolution is not \"the nested local stopped suppressing\" — it is the OPPOSITE: the nested local IS the binding at 51, and it suppresses the BODY local there.\n\n**WHAT THE LOSS WAS, in the family's own terms.** A local read's spelling is `<callable>\\u0000<name>` and the CALLABLE is the enclosing FUNCTION, so the read at 48 (body local) and the read at 51 (nested local) spell IDENTICALLY. The relationship dedup key was `type|source|target|confidence` and carried NO LINE, so the two reads of two DIFFERENT declarations collapsed into one — **a resolution loss wearing a dedup's clothes.** The fix gives the line to the dedup key for a row whose line IS the fact (a `localBinding` row), and only for such a row, so the 192,761-row payload-pollution dedup is untouched.\n\n**WHAT DID NOT CHANGE, and is the reason this fixture still exists.** The fixture is named `nested-block-shadows-member` and its subject is the FIELD-vs-LOCAL discrimination: the forbid `uses run -> Box.value` exists because \"every read of `value` inside `run()` is LOCAL, so no field edge may come out of it\" — and that remains TRUE, because every read in `run()` is local (the body local at 47, the nested local at 50, and the FIELD never). **The field forbid STAYS, with its reason intact.** What changed is the COUNT and the LINE of the local reads, which is a correction and not a weakening.\n\n**THE COUNT'S DIRECTION NOTE IS REWRITTEN, because the old one was written for a world where the three reads were ONE declaration's reads.** The new directions: 0 means the local reads were suppressed (the inverted collectDartLocals guard); **1 means a read was LOST (the no-line dedup — the defect this correction recovers)**; 2 is correct (one body read at 48 + one nested read at 51); 3 means a read was attributed to the wrong declaration; and a line other than 48/51 means the wrong occurrence was kept. The note exists precisely to name the direction each failure moves it — that discipline stays, and the directions change to match the true scope semantics.",
+  "expectSymbols": [
+    {
+      "name": "nested-block-shadows-member",
+      "kind": "module"
+    },
+    {
+      "name": "Box",
+      "kind": "class"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Box"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "Box"
+    },
+    {
+      "name": "readsMember",
+      "kind": "method",
+      "ownerName": "Box"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Box.value",
+      "line_number": 44,
+      "comment": "the field's own name line"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Box.run",
+      "line_number": 46,
+      "comment": "the first method, the one the shadowing happens in"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Box.readsMember",
+      "line_number": 56,
+      "comment": "the method added on 2026-10-08 so the file contains the member read its rationale always claimed"
+    },
+    {
+      "type": "uses",
+      "from": "readsMember",
+      "target": "Box.value",
+      "line_number": 57,
+      "confidence": 0.6,
+      "meta.isBareRead": true,
+      "meta.qualifier": "enclosing",
+      "comment": "the FIELD read, in a function with no local of that name: qualified to its declared owner, and tagged with the qualifier rule that produced the spelling"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000value",
+      "line_number": 48,
+      "confidence": 0.9,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "THE BODY LOCAL — `var value = 1;` at line 47. The edge carries `isLocalRead` so a consumer can tell it from a declaration read, and the target is SPELLED as a binding — `<callable>\\u0000<binding>` — because the marker is metadata and the store resolves by string: a bare `value` was bound to any single `value` declaration in the project."
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000value",
+      "line_number": 51,
+      "confidence": 0.9,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "THE NESTED LOCAL — `var value = 2;` at line 50 SHADOWS the body local for the whole of the nested block, so THIS READ IS A READ OF A DIFFERENT DECLARATION and it is a DIFFERENT FACT. It spells identically to the row at 48 (`run\\u0000value`, because the callable is the enclosing FUNCTION), and the dedup key used to carry no LINE, so this read was LOST. THE CORRECTION: the line joins the dedup key for a row whose line IS the fact, so the two reads are two rows at their own lines and the arbiter still resolves both to the same BINDING SPELLING."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000value",
+      "equals": 2,
+      "note": "TWO reads of TWO DIFFERENT declarations that share a name: the body local at 48 and the nested local at 51. THE DIRECTIONS, in each failure: 0 means the local reads were suppressed (the inverted collectDartLocals guard); 1 means a read was LOST (the no-line dedup — the defect the shadow-scope fix recovers, and the one this correction was made for); 2 is correct; 3 means a read was attributed to the wrong declaration; and a line other than 48/51 means the wrong occurrence was kept."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "Box.value",
+      "note": "THE PROPERTY THIS FIXTURE IS NAMED FOR, and the row the pre-2026-10-08 file could not state: every read of `value` inside `run()` is LOCAL, so no field edge may come out of it. A broken local suppression emits exactly this edge (measured shape: on line 51), which is what makes the four-line skip guard load-bearing"
+    },
+    {
+      "type": "uses",
+      "from": "readsMember",
+      "target": "value",
+      "note": "the field read must be QUALIFIED — the member's published spelling is `Box.value`, and the bare name is the pre-2026-10-08 spelling. This is the direction the fixture was missing: it pins that a real field read is not published as a local-shaped bare name"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run\u0000value",
+      "line_number": 53,
+      "note": "the body-local read AFTER the nested block: it reads the body's `value` (declared at 47) again, so it is the SAME declaration and the SAME binding as the read at 48 — the family's dedup keeps ONE row for one declaration's reads, and this line is that row. An edge here means the dedup key grew the line for a row whose line is NOT the fact, or that a second local declaration was invented."
+    }
+  ],
+  "authoredFrom": {
+    "supersededFile": "nested-block-shadows-member.expectation.superseded-1e03d662.json",
+    "supersededBy": "the dart lane, 2026-10-20, on the Lead's ruling after reading the fixture's own file",
+    "previousRationale": "PINS the premise the collectDartLocals skip rests on, in BOTH directions, AND the discrimination the fixture is named for. real-dart-analyzer.ts:1858 declines to re-walk a block whose subtree a strict ancestor already collected, arguing S(n) is a SUBSET of the ancestor's already-merged set and so contributes no new name. That argument only holds while the ancestor's merge really is a superset. This file puts three local reads and one FIELD read on the same name `value` so that each way of getting the skip wrong shows up as the same single number changing: the field is shadowed for the whole of `run()` by the body declaration at 47, so all three reads in `run()` (48, 51, 53) are local, while `readsMember()` (56) declares no local and reads the field at 57. Skipping when insideCollected is TRUE (shipped) and the ancestor's merge not being a superset -> the nested block's local stops suppressing and line 51 gains a spurious field edge. Skipping when insideCollected is FALSE (guard inverted) -> the BODY's own declarations are dropped, since the body is where collection happens first, and line 48 stops being a local read. The body-level declaration on line 47 is what makes the second case detectable: a fixture whose only declaration sits inside a nested block survives the inverted guard untouched, because that name is still collected one level down. Both failures move expectRelationshipCount, so one expectation catches the mutant from either side. ## 2026-10-08 — WHY THIS FILE WAS REWRITTEN. As first committed (blob of 02937fddc) the file's code began with `var value = 1;`, which in Dart shadows the field for the WHOLE body, so the file contained NO member read at all — while its own header said 'two local reads and one member read ... tell them apart'. Its two forbidRelationships rows named lines 20 and 22, which in the committed file are COMMENT lines, so they could not fire; and the surviving count of 1 was really pinning local-read DEDUP, not the local/member discrimination. That the count is a DEDUP pin is measured IN THIS FILE, which is why the rewrite keeps the three reads: 48, 51 and 53 all name the same local, and exactly one `uses` edge comes out — on the first of them. The fixture passed while asserting nothing about the property it was named for. The repair is in the source AND the pins: `readsMember()` makes the member read exist, `uses readsMember -> Box.value` pins that it is QUALIFIED and owned by the field's owner, and `forbidRelationships` refuses the unqualified spelling for that very read as well as any field edge out of `run()` — so the discrimination is now pinned in both directions on a spelling the analyzer can really produce.",
+    "measuredContradiction": {
+      "theFixtureSaysInItsHeader": "a declaration in the NESTED BLOCK that shadows it — the header states the CORRECT semantics",
+      "theFixtureAsserted": "all three are the body local (48, 51, 53) — the assertion states the LOSS",
+      "theLines": {
+        "44": "int value = 0;    — the class FIELD",
+        "47": "var value = 1;    — the BODY local",
+        "48": "print(value);      — reads the BODY local",
+        "50": "var value = 2;    — the NESTED declaration, shadowing the body local",
+        "51": "print(value);      — reads the NESTED local (Dart's block-scope rule): a DIFFERENT declaration",
+        "53": "print(value);      — reads the BODY local again"
+      },
+      "theMechanism": "the read at 48 and the read at 51 spell IDENTICALLY (`run\\u0000value`, because the callable is the enclosing FUNCTION), and the dedup key carried no line, so two reads of two DIFFERENT declarations collapsed into one",
+      "theScopeRule": "Dart's block scope: an inner declaration shadows an outer binding of the same name for the whole of the inner block"
+    }
+  }
+}

@@ -3,7 +3,7 @@ Date: 2026-10-05. Machine: / (42 G free).
 
 WHY THIS FILE EXISTS
   The briefed instrument, script/m14/firing-check-v2.mjs, hardcodes
-    const REPO = "$HOME/backbencher-brain"
+    const REPO = "/home/ishaq2321/backbencher-brain"
   so it can only ever measure whichever analyzer the MAIN CHECKOUT carries. A lane
   branch's work is invisible to it. script/m14/** is the supervisor's file, so this
   lane did not edit it; it made a lane copy whose only functional change is that one
@@ -26,10 +26,10 @@ an added comment block and one added `import`; no logic differs.
 PROOF 2 — BEHAVIOUR. Both instruments, same analyzer (the main checkout's, at
 e73c3e58e), same corpus, same NFILES. stdout must be byte-identical.
 
-  $ cd $HOME/backbencher-brain
+  $ cd /home/ishaq2321/backbencher-brain
   $ NFILES=200 bun script/m14/firing-check-v2.mjs SVELTE_FIX2 2>/dev/null > fid-shared.txt
   $ cd /tmp/opencode/wt/SVELTE_FIX2
-  $ NFILES=200 BB_REPO=$HOME/backbencher-brain \
+  $ NFILES=200 BB_REPO=/home/ishaq2321/backbencher-brain \
       bun script/m14/svelte-firing-v2.mjs SVELTE_FIX2 2>/dev/null > fid-lane.txt
   $ diff fid-shared.txt fid-lane.txt
   (no output)  exit 0  -- BYTE-IDENTICAL
@@ -41,7 +41,7 @@ Both runs, same result, which is the pre-fix baseline this lane inherited:
 POPULATION DECLARATION (M14 honesty contract, "an instrument must declare the
 population it covered")
   The instrument prints its own parameters, so the population is checkable:
-  NFILES=200, sampling=code-bearing, corpus=$HOME/fixtures/repositories,
+  NFILES=200, sampling=code-bearing, corpus=/home/ishaq2321/bb_tests/repositories,
   corpus dir for this lane = shadcn-svelte, extensions = .svelte.
   It prints `parsed/files` (200/200) and the first two sampled paths, so a reader can
   see WHAT was sampled, not only how many.

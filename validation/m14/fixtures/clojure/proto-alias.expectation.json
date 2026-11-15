@@ -1,0 +1,10 @@
+{
+  "issue": "CLJ-ADV F3",
+  "note": "Alias names collide with Object.prototype names (`toString`, `valueOf`): a plain `{}` alias table answered `[\"toString\"]` with the inherited function, emitting `function toString() { [native code] }/f` as a call target. Object.create(null) (declaration AND ns reset) fixes it; the oracle's Map was already honest.",
+  "expectRelationships": [
+    { "type": "calls", "from": "f", "target": "clj.fixture.proto/helper", "line_number": 5 },
+    { "type": "calls", "from": "g", "target": "clj.fixture.other/other", "line_number": 7 },
+    { "type": "references", "from": "clj.fixture.protoalias", "target": "clj.fixture.proto", "line_number": 2 },
+    { "type": "references", "from": "clj.fixture.protoalias", "target": "clj.fixture.other", "line_number": 3 }
+  ]
+}

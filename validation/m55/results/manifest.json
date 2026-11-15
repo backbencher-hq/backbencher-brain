@@ -12,7 +12,7 @@
     "run": "filing-2026-09-12",
     "dir": "validation/m55/frames/filing-2026-09-12",
     "bundleUnderTest": "ide/vscode/bb-lsp-vscode-0.1.0.vsix (built 2026-09-12 16:20 from HEAD), installed into ~/.vscode/extensions",
-    "fixture": "$HOME/bb-demo-hub (external declared fixture, owner decision 2026-09-12: used as-is)",
+    "fixture": "/home/ishaq2321/bb-demo-hub (external declared fixture, owner decision 2026-09-12: used as-is)",
     "why": "the owner's 2026-09-12 report was made against an installed bundle from 2026-09-06 that predated M44.U2/U3/U4/U6; the re-shoot cleared three of four complaints and exposed the six defects this milestone closes"
   },
   "issues": [
@@ -248,7 +248,7 @@
         "realFailed": 0,
         "negativeCases": 14,
         "currentCommit": "02d330054f994b9e6f0c391343ee80e49487497b",
-        "blockedReason": "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
+        "blockedReason": "The frames leg depends on the declared EXTERNAL fixture (/home/ishaq2321/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
         "mutantsCaught": 14,
         "mutantsTotal": 14
       },

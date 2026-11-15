@@ -1,0 +1,17 @@
+{
+  "issue": "CLJ1",
+  "note": "C7-seam: `(:import (java.util Date))` — the package-class LIST spec is reader data consumed by the libspec handler; it must never be walked as a call. The calls→java.util forbid pins the fabrication C8's top-level attribution exposed (found by the M12 differential as a false positive), and the references/import pins hold the legitimate dependency rows.",
+  "expectSymbols": [
+    { "name": "mk", "kind": "function" }
+  ],
+  "expectImports": [
+    { "module": "java.util", "items": ["Date"] }
+  ],
+  "expectRelationships": [
+    { "type": "references", "target": "java.util", "line_number": 2 },
+    { "type": "instantiates", "from": "mk", "target": "Date", "line_number": 4 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "java.util" }
+  ]
+}

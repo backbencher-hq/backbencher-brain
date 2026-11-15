@@ -1,0 +1,18 @@
+{
+  "fixtureId": "scala/import-multiline-825",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off import-multiline-825.scala. An import reference is a References edge whose target is the dotted module, and the analyzer appends a RENAMED selector to that module (`{mutable => mut}` imports `scala.collection.mutable`). The old line came from the import statement's start, so the edge claimed line 11 (`import scala.collection.{`) while the name it names — `mutable` — is written on line 12. Found on real code: the store check's single remaining inconsistent line on cats-effect was `cats.effect.kernel.testkit.TestInstances`, whose renamed segment is written nine lines after the statement opens. The forbid entry is the pre-fix behaviour.",
+  "expectSymbols": [
+    { "name": "Uses", "kind": "class" },
+    { "name": "f" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "root", "target": "scala.collection.mutable", "line_number": 12 },
+    { "type": "references", "from": "root", "target": "scala.util.Try", "line_number": 16 },
+    { "type": "contains", "from": "Uses", "target": "f", "line_number": 19 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "root", "target": "scala.collection.mutable", "line_number": 11, "note": "pre-fix: the import statement's opening line; the segment `mutable` that names the target is written on 12" }
+  ]
+}

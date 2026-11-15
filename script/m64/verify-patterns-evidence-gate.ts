@@ -3,7 +3,7 @@
 // M64.P1 — the evidence gate, as a hermetic gate inside the repo.
 //
 // WHY THIS FILE EXISTS. Every defect this lane found in bb_patterns was found on
-// a real corpus in fixtures/bb_patterns/, which is outside this repository and
+// a real corpus in bb_tests/bb_patterns/, which is outside this repository and
 // not wired into `npm run verify`. So none of the fixes are guarded: the page
 // could go back to being an alphabetical prefix of the repository, the god-class
 // join could go back to ignoring its index, and the evidence gate could go back

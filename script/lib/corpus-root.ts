@@ -1,7 +1,7 @@
 // script/lib/corpus-root.ts — where the fixture corpus lives on THIS machine.
 //
 // WHY THIS EXISTS. 54 gate scripts in `npm run verify` used to hardcode one absolute
-// `/home/<user>/fixtures/repositories` path. On any other machine, every one of those
+// `/home/<user>/bb_tests/repositories` path. On any other machine, every one of those
 // gates either crashed with ENOENT or resolved to nothing and passed vacuously.
 //
 // Measured on script/m13/verify-ask-e2e-corpus.ts, changing only the corpus root:
@@ -19,7 +19,7 @@
 //
 // ORDER MATTERS and is deliberate:
 //   1. an explicit env var, because a machine may keep the corpus anywhere;
-//   2. $HOME/fixtures/repositories, the natural per-user location;
+//   2. $HOME/bb_tests/repositories, the natural per-user location;
 //   3. a sibling of the repo, which is where it is checked out in the reference
 //      workspace;
 //   4. inside the repo itself.
@@ -35,9 +35,9 @@ export function corpusRootCandidates(repoRoot: string): string[] {
   return [
     process.env.BB_CORPUS_ROOT,
     process.env.BB_SECURITY_CORPUS_ROOT,
-    path.join(process.env.HOME ?? "", "fixtures", "repositories"),
-    path.join(repoRoot, "fixtures", "repositories"),
-    path.resolve(repoRoot, "../fixtures/repositories"),
+    path.join(process.env.HOME ?? "", "bb_tests", "repositories"),
+    path.join(repoRoot, "bb_tests", "repositories"),
+    path.resolve(repoRoot, "../bb_tests/repositories"),
   ].filter((c): c is string => typeof c === "string" && c.length > 0)
 }
 

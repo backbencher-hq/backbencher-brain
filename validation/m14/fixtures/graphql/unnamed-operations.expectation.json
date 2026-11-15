@@ -1,0 +1,106 @@
+{
+  "fixtureId": "graphql/unnamed-operations",
+  "language": "graphql",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "An operation's name is OPTIONAL in GraphQL (Oct. 2021 spec sec.3.2: `{ hero { name } }` is a complete query), so an unnamed operation is a real thing in the language whose selection edges need a source. This fixture pins the identity published for one. The pre-fix name was `anonymous_operation_<startIndex>`, which is wrong three times over and each of the three is pinned here. (1) It matches `/^(anonymous|anon|unnamed)[_-]/i` in src/ast/analysis-exclusions.ts:171, so `isIndexArtifactName` discards it at store time BY DESIGN: measured over 750 corpus files, 66 such symbols reached the store as 0 rows, and all 836 relationships sourced from them left it with no source. `forbidSymbols` pins `anonymous_operation_0` so a reversion cannot pass silently. (2) A byte offset is per file, so it is not an identity across files -- two documents whose first operation both begin at byte 0 published the same name. (3) The name is not stable under an edit: inserting a line above an operation changes its offset. The published identity is the file the analyzer is reading, which is what `imports` already does at `lastPathSegment(filePath)` for the same reason -- a per-file analyzer can name its own file without inventing anything -- plus the operation's ordinal in that document. Three unnamed operations here become `unnamed-operations::operation_0`, `_1` and `_2`, so the ordinals are asserted in document order and `expectSymbolRanges` pins which operation each one belongs to. `::` rather than `.` because a dotted name would be indistinguishable from this lane's `Owner.field` targets. The fallback `document::operation_<n>` covers a caller that supplies no path; `document` is the specification's own word (ExecutableDocument).",
+  "expectSymbols": [
+    {
+      "name": "unnamed-operations::operation_0",
+      "kind": "method"
+    },
+    {
+      "name": "Named",
+      "kind": "method"
+    },
+    {
+      "name": "unnamed-operations::operation_1",
+      "kind": "method"
+    },
+    {
+      "name": "unnamed-operations::operation_2",
+      "kind": "method"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "unnamed-operations::operation_0",
+      "startLine": 1,
+      "note": "the shorthand `{ hero { name } }`, which the specification reads as `query`"
+    },
+    {
+      "symbol": "Named",
+      "startLine": 7
+    },
+    {
+      "symbol": "unnamed-operations::operation_1",
+      "startLine": 13,
+      "note": "`mutation { createReview(episode: JEDI) { stars } }` -- ordinal 1, because the named operation between them does not consume an ordinal"
+    },
+    {
+      "symbol": "unnamed-operations::operation_2",
+      "startLine": 19,
+      "note": "a second shorthand operation in the same document, so the identity needs the ordinal as well as the file"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "unnamed-operations::operation_0",
+      "target": "hero",
+      "line_number": 2,
+      "meta.relationshipRole": "field_selection",
+      "note": "the edge keeps its source: pre-fix it was emitted from `anonymous_operation_0` and reached the store with no source symbol at all"
+    },
+    {
+      "type": "uses",
+      "from": "unnamed-operations::operation_0",
+      "target": "name",
+      "line_number": 3,
+      "meta.relationshipRole": "field_selection",
+      "note": "bare, not `hero.name`: inside a field's own selection set the parent type is the field's return type, which an executable document does not carry"
+    },
+    {
+      "type": "uses",
+      "from": "unnamed-operations::operation_1",
+      "target": "createReview",
+      "line_number": 14,
+      "meta.relationshipRole": "field_selection"
+    },
+    {
+      "type": "uses",
+      "from": "unnamed-operations::operation_1",
+      "target": "JEDI",
+      "line_number": 14,
+      "note": "an enum value passed as an argument is a use of the value"
+    },
+    {
+      "type": "uses",
+      "from": "unnamed-operations::operation_2",
+      "target": "droid",
+      "line_number": 20,
+      "meta.relationshipRole": "field_selection"
+    },
+    {
+      "type": "uses",
+      "from": "Named",
+      "target": "viewer",
+      "line_number": 8,
+      "meta.relationshipRole": "field_selection",
+      "note": "a NAMED operation keeps its own name; the file identity applies only where the document supplies no name"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "anonymous_operation_0",
+      "note": "the pre-fix name for the first operation (its startIndex is 0, so the old code emitted exactly this). Its absence is the point: it matches the store's artifact filter at analysis-exclusions.ts:171 and 66 of them reached the index as 0 rows."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "anonymous_operation_0",
+      "target": "hero",
+      "note": "the same fact from the pre-fix source name. An edge whose source the store cannot bind is indistinguishable from no edge, which is how 836 relationships disappeared."
+    }
+  ]
+}

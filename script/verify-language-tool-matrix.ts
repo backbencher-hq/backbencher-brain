@@ -6,6 +6,12 @@
 //   tools answer over it (search, graph, impact, doc, annotations, edit, cross-
 //   language, migrate) plus the project-wide surfaces (health, analyze, patterns,
 //   security, visualize, index, annotate round-trip).
+// SECURITY AXIS (M72): every row carries the registry's `securityTier`
+//   (scan|leads|unsupported) and the bb_security answer is checked PER LANGUAGE
+//   against that tier: an unsupported language must answer "not scanned" (a clean
+//   zero is a FAIL), a leads language must carry the banner + registry tier line +
+//   leads declaration and no finding vocabulary, and a scan language must render a
+//   located finding. Negative controls prove the contract predicate can go red.
 // WHICH TOOLS IT SERVES — all sixteen public MCP tools: the matrix is about the
 //   TOOL LAYER over every analyzer, not about analyzer accuracy (that is the M14
 //   language campaign's own per-language evidence).
@@ -54,6 +60,12 @@ const EVIDENCE = join(ROOT, "validation", "languages", "results", "tool-matrix.j
 
 interface Fixture { source: string; rel: string; origin: string }
 interface CheckResult { name: string; ok: boolean; detail: string; strict: boolean }
+type SecurityTier = "scan" | "leads" | "unsupported"
+interface SecurityAnswerEvidence {
+  ok: boolean
+  failures: string[]
+  observed: Record<string, unknown> | null
+}
 interface LanguageRow {
   language: string
   routeExtension: string
@@ -69,6 +81,9 @@ interface LanguageRow {
   checks: CheckResult[]
   editSupport: "dry-run-planned" | "refused" | "not-run"
   migrateShape: string
+  securityTier: SecurityTier
+  securityTierReason: string
+  securityAnswer: SecurityAnswerEvidence | null
 }
 
 let checks = 0
@@ -130,6 +145,10 @@ async function main(): Promise<number> {
   const { PUBLIC_TOOL_DESCRIPTORS } = await import("../src/mcp/tool-registry")
   const { validateToolArguments } = await import("../src/mcp/tool-validation")
   const { getProjectId } = await import("../src/cli/index")
+  // M72 security tier registry + the shared bb_security answer contract. Both are
+  // imported after BB_DATA_DIR is redirected; the registry is data-only.
+  const registry = await import("../src/intelligence/security/rebuild/registry")
+  const securityContract = await import("./m72/lib/security-answer-contract")
 
   const languages = engine.ASTEngine.supportedLanguageNames().slice().sort()
   if (LIST_ONLY) {
@@ -181,6 +200,9 @@ async function main(): Promise<number> {
       language, routeExtension: extension, fixture, projectRel: "",
       routed: null, indexedLanguage: null, files: 0, symbols: 0, relationships: 0,
       probeSymbol: null, probeKind: null, checks: [], editSupport: "not-run", migrateShape: "",
+      securityTier: registry.securityTierFor(language) as SecurityTier,
+      securityTierReason: registry.securityEntryFor(language).reason,
+      securityAnswer: null,
     })
   }
 
@@ -262,12 +284,16 @@ async function main(): Promise<number> {
   // ── 5. tool harness: direct handler calls through the SAME validator ──────
   const handlers = createToolHandlers()
   const descriptorByName = new Map(PUBLIC_TOOL_DESCRIPTORS.map((d) => [d.name, d]))
-  async function tool(name: string, args: Record<string, unknown>): Promise<ToolReply> {
+  async function tool(
+    name: string,
+    args: Record<string, unknown>,
+    ctx: { projectId: string; projectPath: string } = { projectId, projectPath: PROJECT_ROOT },
+  ): Promise<ToolReply> {
     const descriptor = descriptorByName.get(name)
     if (!descriptor) return { isError: true, text: `no descriptor for ${name}`, json: null, threw: null }
     try {
       const validated = validateToolArguments(descriptor, args)
-      const reply = await handlers[name](validated, { projectId, projectPath: PROJECT_ROOT })
+      const reply = await handlers[name](validated, ctx)
       const text = reply.content.map((item) => item.text).join("\n")
       let json: unknown = null
       try { json = JSON.parse(text) } catch { json = null }
@@ -360,6 +386,68 @@ async function main(): Promise<number> {
       cross.isError ? cross.text.slice(0, 160) : "response is not JSON")
   }
 
+  // ── 6b. per-language security answer contract (M72 Phase 0) ───────────────
+  // bb_security answers over a PROJECT, so a per-language contract needs a
+  // per-language index: each selected row's fixture is indexed once more in its
+  // own one-file project and the REAL handler answer is checked. The predicate
+  // lives in script/m72/lib/security-answer-contract.ts and is shared with the
+  // m72 gates; it is negative-controlled below, so this check can go red.
+  //
+  // Cost: one tiny index per row (~3-4 s measured on this repo). This is the
+  // price of proving the "not scanned" declaration is DERIVED from the index
+  // rather than printed unconditionally — the aggregate project alone cannot
+  // distinguish the two.
+  const securityTiers: Record<SecurityTier, number> = { scan: 0, leads: 0, unsupported: 0 }
+  for (const row of selectedRows) securityTiers[row.securityTier]++
+  const registryCounts = registry.securityTierCounts() as unknown as Record<SecurityTier, number> & { total: number }
+  check("security: every derived language carries a registry securityTier", selectedRows.every((row) => row.securityTier === registry.securityTierFor(row.language)),
+    selectedRows.filter((row) => row.securityTier !== registry.securityTierFor(row.language)).map((row) => row.language).join(","))
+  const tierCountsReconcile = securityTiers.scan === registryCounts.scan && securityTiers.leads === registryCounts.leads && securityTiers.unsupported === registryCounts.unsupported
+  check("security: derived tier counts reconcile with the registry (scan/leads/unsupported)",
+    ONLY ? selectedRows.length === 1 : tierCountsReconcile,
+    ONLY
+      ? `--only=${ONLY}: narrowed run, tier counts not asserted (the row's own tier is checked per row)`
+      : `matrix scan=${securityTiers.scan} leads=${securityTiers.leads} unsupported=${securityTiers.unsupported} vs registry scan=${registryCounts.scan} leads=${registryCounts.leads} unsupported=${registryCounts.unsupported}`)
+  // Registry-derived, not a frozen 53/36/17. The per-language answer contract is
+  // already asserted row by row; this check only proves the registry is internally
+  // consistent and that the scan tier is still empty (Phase 2 promotes). A magic
+  // number here failed on every intentional coverage change (svelte/vue, then make).
+  check("security: registry tier counts are consistent and scan is 0",
+    registryCounts.total === 53 && registryCounts.scan === 0 &&
+      registryCounts.scan + registryCounts.leads + registryCounts.unsupported === registryCounts.total,
+    `total=${registryCounts.total} scan=${registryCounts.scan} leads=${registryCounts.leads} unsupported=${registryCounts.unsupported}`)
+
+  const silentIndexer = { log: () => {}, write: () => {} }
+  for (const row of selectedRows) {
+    const langProject = join(PROJECT_ROOT, row.language)
+    if (!row.fixture || !isDir(langProject)) {
+      record(row, `security(${row.securityTier}): per-language fixture project exists`, false, langProject)
+      continue
+    }
+    const securityProjectId = getProjectId(langProject)
+    try {
+      await indexProjectParallel(securityProjectId, langProject, { skipPostProcessing: true, logger: silentIndexer })
+    } catch (error) {
+      record(row, `security(${row.securityTier}): per-language index succeeds`, false, error instanceof Error ? error.message.slice(0, 200) : String(error))
+      continue
+    }
+    const reply = await tool("bb_security", {}, { projectId: securityProjectId, projectPath: langProject })
+    const verdict = reply.threw
+      ? { ok: false, failures: [`handler threw: ${reply.threw.slice(0, 200)}`], observed: null }
+      : securityContract.checkSecurityAnswerContract({
+          tier: row.securityTier,
+          language: row.language,
+          text: reply.text,
+          expected: {
+            leadLanguages: row.securityTier === "leads" ? 1 : 0,
+            unsupportedLanguages: row.securityTier === "unsupported" ? [row.language] : [],
+          },
+        })
+    row.securityAnswer = { ok: verdict.ok, failures: verdict.failures, observed: verdict.observed as Record<string, unknown> | null }
+    record(row, `security(${row.securityTier}): per-language answer carries the tier contract`, verdict.ok,
+      verdict.failures.length ? verdict.failures.join("; ") : `banner + registry tier line + ${row.securityTier} declaration`)
+  }
+
   // ── 7. project-wide surfaces ──────────────────────────────────────────────
   const health = await tool("bb_health", {})
   check("health: bb_health answers the whole matrix project", !health.isError && /files=/.test(health.text), health.text.slice(0, 160))
@@ -370,8 +458,21 @@ async function main(): Promise<number> {
   const patterns = await tool("bb_patterns", { scope: "all", limit: 5 })
   check("patterns: bb_patterns answers over the matrix project", !patterns.isError && !CRASH.test(patterns.text), patterns.text.slice(0, 160))
 
+  // The aggregate answer must name exactly the unsupported languages the index
+  // actually contains and count exactly the leads-tier languages — proving the
+  // declaration is derived from brain_file rows, not printed unconditionally.
   const security = await tool("bb_security", {})
-  check("security: bb_security answers over the matrix project", !security.isError && !CRASH.test(security.text), security.text.slice(0, 160))
+  const projectComposition: { leadLanguages: number; unsupportedLanguages: string[] } = {
+    leadLanguages: selectedRows.filter((row) => row.securityTier === "leads").length,
+    unsupportedLanguages: selectedRows.filter((row) => row.securityTier === "unsupported").map((row) => row.language).sort(),
+  }
+  const projectWideSecurity = security.isError
+    ? { ok: false, failures: [`bb_security failed: ${security.text.slice(0, 160)}`] }
+    : securityContract.checkProjectWideSecurityAnswer({ text: security.text, expected: projectComposition })
+  check("security: project-wide answer declares tiers derived from the indexed languages",
+    projectWideSecurity.ok,
+    projectWideSecurity.failures.join("; ") ||
+      `leads=${projectComposition.leadLanguages} unsupported=${projectComposition.unsupportedLanguages.length}`)
 
   const visualize = await tool("bb_visualize", { scope: "project", maxNodes: 30 })
   check("visualize: bb_visualize project scope answers", !visualize.isError && !CRASH.test(visualize.text), visualize.text.slice(0, 160))
@@ -441,6 +542,35 @@ async function main(): Promise<number> {
   negative("bb_migrate refuses a blank target language", blankMigrate.isError, `isError=${blankMigrate.isError}`)
   negative("a language without a fixture would be reported (predicate can fail)", missingFixtures.length === rows.length || missingFixtures.length >= 0,
     "the missing-fixture check above is the strict form of this predicate")
+  // ── security answer-contract negative controls (M72) ─────────────────────
+  // The contract predicate must reject synthetic BAD answers — without these a
+  // bug in the predicate could make every row pass vacuously. The two positive
+  // controls prove it is not simply always-false.
+  const registryDeclarationLine = securityContract.securityTierLine()
+  const cleanZeroAnswer = "security leads: 0 stored lead(s)\n[leads: showing 0 of 0; offset 0; page size 50; tier=leads]"
+  const goodLeadsAnswer = [
+    securityContract.SECURITY_BANNER,
+    registryDeclarationLine,
+    "leads tier: 1 language(s) present; lexical output only",
+    "security leads: 1 stored lead(s)",
+    "  [exec] lead: command injection @ src/app.ts:4 <- source:2; rule=python.command.os-system; symbol=run",
+    "[leads: showing 1 of 1; offset 0; page size 50; tier=leads]",
+  ].join("\n")
+  negative("security contract rejects a clean-zero answer for an unsupported language",
+    !securityContract.checkSecurityAnswerContract({ tier: "unsupported", language: "json", text: cleanZeroAnswer, expected: { leadLanguages: 0, unsupportedLanguages: ["json"] } }).ok)
+  negative("security contract rejects a leads answer without the banner",
+    !securityContract.checkSecurityAnswerContract({ tier: "leads", language: "python", text: goodLeadsAnswer.replace(securityContract.SECURITY_BANNER + "\n", ""), expected: { leadLanguages: 1, unsupportedLanguages: [] } }).ok)
+  negative("security contract rejects a leads answer that claims [critical]",
+    !securityContract.checkSecurityAnswerContract({ tier: "leads", language: "python", text: goodLeadsAnswer + "\n  [critical] lead: sql injection @ src/app.ts:9", expected: { leadLanguages: 1, unsupportedLanguages: [] } }).ok)
+  negative("security contract rejects a scan tier answered with leads-only wording",
+    !securityContract.checkSecurityAnswerContract({ tier: "scan", language: "python", text: goodLeadsAnswer, expected: { leadLanguages: 1, unsupportedLanguages: [] } }).ok)
+  negative("security contract rejects an unsupported declaration that omits the language id",
+    !securityContract.checkSecurityAnswerContract({ tier: "unsupported", language: "json", text: [securityContract.SECURITY_BANNER, registryDeclarationLine, "not scanned by bb_security (no executable source model): yaml — data format"].join("\n"), expected: { leadLanguages: 0, unsupportedLanguages: ["json"] } }).ok)
+  negative("security contract accepts a correct leads answer (positive control)",
+    securityContract.checkSecurityAnswerContract({ tier: "leads", language: "python", text: goodLeadsAnswer, expected: { leadLanguages: 1, unsupportedLanguages: [] } }).ok)
+  negative("security contract accepts a correct unsupported answer (positive control)",
+    securityContract.checkSecurityAnswerContract({ tier: "unsupported", language: "json", text: [securityContract.SECURITY_BANNER, registryDeclarationLine, "not scanned by bb_security (no executable source model): json — data format; no executable source/sink surface"].join("\n"), expected: { leadLanguages: 0, unsupportedLanguages: ["json"] } }).ok)
+
   const routedUnrouted = selectedRows.filter((r) => r.fixture && r.routed === null).map((r) => r.language)
   negative("an unrouted fixture would fail the route check", routedUnrouted.length === 0, routedUnrouted.join(","))
   negative("the matrix covers every derived language", selectedRows.length === (ONLY ? selectedRows.length : languages.length), `${selectedRows.length} running row(s) for ${languages.length} derived language(s)`)
@@ -468,6 +598,10 @@ async function main(): Promise<number> {
     indexMs,
     indexStats: { totalFiles: Number(stats.totalFiles ?? 0), symbolsExtracted: Number(stats.symbolsExtracted ?? 0), relationshipsFound: Number(stats.relationshipsFound ?? 0) },
     checks, passed, failed, negativeCases: negatives,
+    securityTiers,
+    securityTierBaseline: { scan: registryCounts.scan, leads: registryCounts.leads, unsupported: registryCounts.unsupported, total: registryCounts.total },
+    securityComposition: projectComposition,
+    securityProjectWide: { ok: projectWideSecurity.ok, failures: projectWideSecurity.failures },
     editSupport,
     migrateShapes,
     nichePairs: nicheObservations,
@@ -479,6 +613,8 @@ async function main(): Promise<number> {
       symbols: r.symbols, relationships: r.relationships,
       probeSymbol: r.probeSymbol, probeKind: r.probeKind,
       editSupport: r.editSupport, migrateShape: r.migrateShape,
+      securityTier: r.securityTier, securityTierReason: r.securityTierReason,
+      securityAnswer: r.securityAnswer,
       checks: r.checks,
     })),
   }
@@ -489,6 +625,7 @@ async function main(): Promise<number> {
   console.log(`\nLANGUAGE × TOOL MATRIX: ${failed === 0 ? "PASS" : "FAIL"} — ${selectedRows.length} of ${languages.length} languages, ${checks} checks (${negatives} negatives), ${failed} failed`)
   if (failed > 0) console.log(`  failing languages: ${failedLanguages.join(", ")}`)
   console.log(`  indexed ${Number(stats.totalFiles ?? 0)} file(s) in ${indexMs} ms; evidence: validation/languages/results/tool-matrix.json`)
+  console.log(`  security axis: ${securityTiers.scan} scan / ${securityTiers.leads} leads / ${securityTiers.unsupported} unsupported rows (registry: ${registryCounts.scan}/${registryCounts.leads}/${registryCounts.unsupported}); per-language answer contract ${selectedRows.filter((row) => row.securityAnswer?.ok).length}/${selectedRows.filter((row) => row.securityAnswer).length} rows pass`)
 
   BrainDatabase.closeAll()
   if (!KEEP) rmSync(SCRATCH, { recursive: true, force: true })

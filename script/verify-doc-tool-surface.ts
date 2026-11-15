@@ -43,7 +43,7 @@ interface ToolFact {
 
 /** Names that are NOT tools but legitimately appear as technical identifiers. */
 const NON_TOOL_IDENTIFIERS: Record<string, string> = {
-  fixtures: "external corpus directory path (~/fixtures/repositories), not a tool",
+  bb_tests: "external corpus directory path (~/bb_tests/repositories), not a tool",
   bb_lsp: "editor/LSP method namespace (bb/graph, …), not an MCP tool name",
   bb_lsp_path: "LSP adapter environment variable, not a tool",
   bb_lsp_root: "LSP adapter environment variable, not a tool",
@@ -256,7 +256,7 @@ async function main(): Promise<number> {
   negative("a stale QUALIFIED tool count is flagged", scanCounts("The ten public tools below are callable.", expectedCount).length === 1)
   negative("an unqualified subset count is not a surface claim", scanCounts("Three tools write the history rows.", expectedCount).length === 0)
   negative("the registry count is accepted", scanCounts(`The ${expectedCount} tools below are public.`, expectedCount).length === 0)
-  negative("an allowlisted non-tool identifier is allowed", scanTokens("the fixtures repository root", known).length === 0)
+  negative("an allowlisted non-tool identifier is allowed", scanTokens("the bb_tests repository root", known).length === 0)
 
   const deduped = violations.filter((violation, index, all) =>
     all.findIndex((other) => other.file === violation.file && other.line === violation.line && other.kind === violation.kind && other.detail === violation.detail) === index)

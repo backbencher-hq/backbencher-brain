@@ -1,0 +1,24 @@
+{
+  "fixtureId": "rust/where-clause-bounds-798",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R16 (rust review #798, cargo full extent): the where-clause climb's three holes, each paired with the exact PRE-FIX emission it must refuse. The pre-fix rule is applied verbatim from `git show HEAD:src/ast/real-rust-analyzer.ts` by script/m14/tmp/rust-798-wherebounds.ts, which printed, on this very file: `F`, `N`, `String`, `anyhow::Error`. So every forbid below provably FAILS on revert. (a) `function_signature_item` was not in the item list, so a TRAIT method signature's own `<F, E>` were invisible and `where F: FnOnce() -> ...;` emitted `references -> F` (cargo once.rs/paths.rs/package_id_spec.rs). (b) the climb took the FIRST enclosing item and STOPPED, so `impl<N, E> Graph<N, E>`'s `N` was read as a file type by a method `where N: Borrow<Q>` (cargo src/util/graph.rs). (c) the bounded side published RAW TEXT: `where anyhow::Error: From<E>` published `anyhow::Error` (cargo src/compiler/job_queue/mod.rs) — the c/cpp #924 name-surface class — where the name is `Error`. `String: PartialEq` is the CONTROL (a real path bound that is not locally bound still emits, exactly as relationship-kinds pins it), and `Borrow` is the negative control for the RIGHT side of a predicate, which is not a dependency.",
+  "expectSymbols": [
+    { "name": "Try", "kind": "trait" },
+    { "name": "Graph", "kind": "struct" },
+    { "name": "bound", "kind": "method" },
+    { "name": "parse", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "bound", "target": "String", "meta.whereBound": true, "comment": "CONTROL: a real path bound still emits (the relationship-kinds pin, re-derived here)" },
+    { "type": "references", "from": "parse", "target": "Error", "meta.whereBound": true, "comment": "R16c: the scoped path's NAME leaf, never the raw text `anyhow::Error`" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "F", "comment": "R16a: F is bound by the enclosing function_signature_item's own <F, E> — locally bound, never a dependency (pre-fix emitted references -> F)" },
+    { "type": "references", "target": "N", "comment": "R16b: N is bound by the enclosing impl's <N, E> — the climb must walk the WHOLE chain, not stop at the method (pre-fix emitted references -> N)" },
+    { "type": "references", "target": "anyhow::Error", "comment": "R16c: the pre-fix raw-text target — a scoped path is not a name" },
+    { "type": "references", "target": "anyhow", "comment": "R16c: neither is the module prefix (the declared-type pass already publishes the leaf only; this pins the where branch to the same rule)" },
+    { "type": "references", "target": "Borrow", "comment": "the RIGHT side of a where predicate is the bound, not a dependency — nothing is emitted for it" },
+    { "type": "references", "target": "Q", "comment": "Q is the method's own parameter" }
+  ]
+}

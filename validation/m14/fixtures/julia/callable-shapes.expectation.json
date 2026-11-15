@@ -1,0 +1,36 @@
+{
+  "fixtureId": "julia/callable-shapes",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE CALLABLE-NAME SHAPES AND THE FOUR NAMES THAT MUST NOT BE PUBLISHED. Each row is a defect measured on the whole population on 2026-10-28, and each is pinned in both directions because every one of them published a name at some point. (1) A PARAMETRIC ALIAS DECLARES A TYPE NAME: `Dims{N} = NTuple{N,Int}` puts a `parametrized_type_expression` on the assignment's left, which is neither a call (a short-form method) nor a plain binding, so the assignment case skipped it — 43 sites corpus-wide (`Base.Dims`, `Base.AbstractVecOrTuple`, `Flux._ParallelONE`, `StaticArrays.SizedMatrix`) published no symbol and no `contains` row while the truth oracle derived all 43. (2) A CALL-OVERLOAD PATTERN IS NOT NAMED AFTER ITS ARGUMENT: `(m::Model)(x) = …` adds a method to Model's call table and declares no binding `m`; 423 such sites exist in the corpus and the analyzer's guard already refused the plain form. (3) THE `where` FORM LEAKED THROUGH `unwrapWhere`: `(t::Type{Model} where X)(x) = …` unwrapped the `where` and then walked THROUGH the `typed_expression` to the binding `t`, so the guard never saw a typed node and published `function t` plus a `contains` row (`julia/test/subtype.jl:2962` region, `julia/Compiler/test/irpasses.jl`). (4) A SPLICED MEMBER IS DYNAMIC: `(Base.$fJ)(x::Rational{BigInt}, …)` (`julia/base/gmp.jl`) named the overloaded function through a loop variable, and `fieldPath` read the RECEIVER — publishing `contains MPQ -> Base`, a module named as a member of another module. (5) AN INTERPOLATED TYPE HEAD IS A RUNTIME VALUE: `@eval struct $(Symbol(:T58129, k)){T} end` (`julia/test/subtype.jl:2962`) puts an interpolation at the base of a parameterized head and the identifier fallback read the TYPE PARAMETER `T` — publishing `decorates T -> eval`. (6) A LONG-FORM DECLARATION WITH NO ARGUMENT LIST (`@doc @doc(nothing) function bare_declaration end`, corpus shape Documenter.jl/doctestapi.jl) declares its name, and the macro applied to it decorates it — the truth side could not name a bare `signature (identifier)` and derived no row at all.",
+  "expectSymbols": [
+    { "name": "CallableShapes", "kind": "module" },
+    { "name": "Model", "kind": "class", "ownerName": "CallableShapes" },
+    { "name": "value", "kind": "property", "ownerName": "Model" },
+    { "name": "Dims", "kind": "class", "ownerName": "CallableShapes", "comment": "POSITIVE 1 — a parametric alias is a declaration" },
+    { "name": "bare_declaration", "kind": "function", "ownerName": "CallableShapes", "comment": "POSITIVE 2 — a signature with no argument list" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "CallableShapes", "target": "CallableShapes.Model", "comment": "the control row" },
+    { "type": "contains", "source": "Model", "target": "Model.value", "comment": "the control row for a struct field" },
+    { "type": "contains", "source": "CallableShapes", "target": "CallableShapes.Dims", "comment": "POSITIVE 1 — the parametric alias is a member" },
+    { "type": "decorates", "source": "bare_declaration", "target": "doc", "comment": "POSITIVE 2 — `@doc` applied to a declaration, through a nested macrocall argument" },
+    { "type": "contains", "source": "CallableShapes", "target": "CallableShapes.bare_declaration", "comment": "POSITIVE 2 — the declaration is a member of its module" }
+  ],
+  "forbidSymbols": [
+    { "name": "m", "comment": "NEGATIVE 1 — the call-overload pattern's VARIABLE is not a declaration" },
+    { "name": "t", "comment": "NEGATIVE 2 — the same variable in the `where` form, which used to leak" },
+    { "name": "T", "comment": "NEGATIVE 4 — the type PARAMETER of an interpolated head is not the head's name" },
+    { "name": "fJ", "comment": "NEGATIVE 3 — a spliced member's loop variable is not a declaration" },
+    { "name": "Base", "comment": "NEGATIVE 3 — the receiver of a spliced member is a module, not a member of this one" },
+    { "name": "GeneratedOne", "comment": "NEGATIVE 4 — an interpolated head is a runtime value; the file spells no such type" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "source": "Model", "target": "Model.m", "comment": "NEGATIVE 1 — a call-overload's variable is not a member" },
+    { "type": "contains", "source": "CallableShapes", "target": "CallableShapes.t", "comment": "NEGATIVE 2 — the where form published this member before the fix" },
+    { "type": "contains", "source": "CallableShapes", "target": "CallableShapes.Base", "comment": "NEGATIVE 3 — the receiver of a spliced member published as a member (gmp.jl's MPQ -> Base)" },
+    { "type": "contains", "source": "CallableShapes", "target": "CallableShapes.fJ", "comment": "NEGATIVE 3 — the loop variable of a spliced member is not a member" },
+    { "type": "decorates", "source": "t", "target": "inline", "comment": "NEGATIVE 2 — the fabricated symbol used to be decorated too" },
+    { "type": "decorates", "source": "T", "target": "eval", "comment": "NEGATIVE 4 — an interpolated struct head published `decorates T -> eval`" }
+  ]
+}

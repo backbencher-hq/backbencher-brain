@@ -26,7 +26,7 @@ const isDigits = (s: string) => s.length > 0 && [...s].every((c) => c >= "0" && 
 const repos = args.filter((a) => !a.startsWith("--") && !isDigits(a) && a !== "first" && a !== "stride")
 const CORPUS = repos.length
   ? repos
-  : ["$HOME/fixtures/repositories/grails-core", "$HOME/intellij-community"]
+  : ["/home/ishaq2321/bb_tests/repositories/grails-core", "/home/ishaq2321/intellij-community"]
 
 const SKIP_DIR = new Set(["node_modules", ".git", "build", "out", "target", ".gradle", "generated"])
 

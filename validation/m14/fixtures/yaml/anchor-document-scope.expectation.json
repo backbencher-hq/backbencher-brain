@@ -1,0 +1,63 @@
+{
+ "fixtureId": "yaml/anchor-document-scope",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Anchors are document-scoped in YAML, so an alias in document 2 must not bind document 1's same-named anchor. The pre-fix registry was keyed by the bare anchor name across the whole file and was FIRST-wins, so this edge resolved -- at confidence 1.0, marked resolved -- to an anchor in a different document. It is now unresolved WITH A REASON, because 'declared in another document' and 'never declared' are different findings and only one is a defect.",
+ "expectSymbolCount": [
+  {
+   "name": "shared",
+   "equals": 1
+  },
+  {
+   "name": "other",
+   "equals": 1
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "shared",
+   "kind": "constant"
+  },
+  {
+   "name": "other",
+   "kind": "constant"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "from": "anchor-document-scope#2",
+   "target": "shared",
+   "confidenceMax": 0.5,
+   "meta.resolved": false,
+   "meta.unresolvedReason": "anchor-defined-in-another-document",
+   "meta.confidenceReason": "cross-document-alias",
+   "meta.evidenceClass": "inferred",
+   "line_number": 7
+  }
+ ],
+ "expectMetadata": [
+  {
+   "documentCount": 2
+  }
+ ],
+ "expectPatterns": [
+  "Anchors and Aliases",
+  "Configuration Inheritance",
+  "Multi-document YAML"
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   8
+  ],
+  "evidenceClasses": [
+   "inferred",
+   "structural"
+  ]
+ }
+}

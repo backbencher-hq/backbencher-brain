@@ -1,0 +1,324 @@
+{
+  "fixtureId": "objc/payload-and-complexity",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the objective-c analyzer's relationship + payload surface on real ObjC architecture (protocol/class/category/property/ivar): protocol contracts, class inheritance (extends the ONE superclass after the colon \u2014 never protocols), protocol adoption (implements), categories as Extension symbols with methods owned by the extended class, instantiates via [Foo alloc]/[Foo new] (including nested [[Foo alloc] ...]), message-expression calls + C function calls, imports as references, and per-symbol complexity. Re-pinned 2026-09 (OBJCD7/OBJCD8): method identity is the FULL SELECTOR (`initWithName:`, never the leaf `initWithName` \u2014 distinct overloads sharing a first keyword must stay distinct symbols), message sends carry the full selector, and the implicit-override contract (M37.10 family model) emits a verified override `PaymentService.initWithName: -> BaseService.initWithName:` @0.95 because the in-file superclass BaseService declares the same selector. NSObject/NSProxy roots are excluded (no per-method guess noise toward the universal root).",
+  "expectSymbols": [
+    {
+      "name": "PaymentGateway",
+      "kind": "interface"
+    },
+    {
+      "name": "Refundable",
+      "kind": "interface"
+    },
+    {
+      "name": "BaseService",
+      "kind": "class"
+    },
+    {
+      "name": "PaymentService",
+      "kind": "class"
+    },
+    {
+      "name": "serviceName",
+      "kind": "property",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "balance",
+      "kind": "property",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "initWithName:",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "authorizeAmount:",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "refund:",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "sharedService",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "PaymentService",
+      "kind": "extension",
+      "meta.categoryName": "Audit"
+    },
+    {
+      "name": "auditTrail",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "initWithName:",
+      "kind": "method",
+      "ownerName": "BaseService"
+    },
+    {
+      "name": "globalCounter",
+      "kind": "variable"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "initWithName",
+      "kind": "method"
+    },
+    {
+      "name": "authorizeAmount",
+      "kind": "method"
+    },
+    {
+      "name": "refund",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "extends",
+      "source": "BaseService",
+      "target": "NSObject",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "PaymentService",
+      "target": "BaseService",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "PaymentService",
+      "target": "PaymentGateway",
+      "meta.isProtocol": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "PaymentService",
+      "target": "Refundable",
+      "meta.isProtocol": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "sharedService",
+      "target": "initWithName:",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "auditTrail",
+      "target": "sharedService",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "auditTrail",
+      "target": "stringWithFormat:",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "initWithName:",
+      "target": "init",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentGateway",
+      "target": "authorizeAmount:",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Refundable",
+      "target": "refund:",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "PaymentGateway.h",
+      "line_number": 6,
+      "note": "M59.A7: a QUOTED include names the file inside the quotes"
+    },
+    {
+      "type": "contains",
+      "source": "BaseService",
+      "target": "initWithName:",
+      "line_number": 64,
+      "note": "M59.A7: the IMPLEMENTATION's line (BaseService's @interface declares it at 17 and the declaration is not symbolized)"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentService",
+      "target": "serviceName",
+      "line_number": 21,
+      "note": "M59.A7: property declaration line, not the container's (20)"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentService",
+      "target": "balance",
+      "line_number": 22,
+      "note": "M59.A7: the next property"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentService",
+      "target": "auditTrail",
+      "line_number": 57,
+      "note": "M59.A7: a category member is owned by the EXTENDED class (PaymentService), and the line is the category implementation's"
+    },
+    {
+      "type": "overrides",
+      "source": "PaymentService.initWithName:",
+      "target": "BaseService.initWithName:",
+      "line_number": 29,
+      "note": "M59.A7: verified in-file override \u2014 the overriding implementation's line"
+    },
+    {
+      "type": "uses",
+      "source": "authorizeAmount:",
+      "target": "balance",
+      "line_number": 36,
+      "note": "M59.A7: `if (amount > self.balance)` \u2014 the read's own line"
+    },
+    {
+      "type": "calls",
+      "source": "authorizeAmount:",
+      "target": "printf",
+      "line_number": 37,
+      "note": "M59.A7: C function call inside the for body"
+    },
+    {
+      "type": "instantiates",
+      "source": "sharedService",
+      "target": "PaymentService",
+      "line_number": 47,
+      "note": "M59.A7: `[[PaymentService alloc] initWithName:]` inside the guard body"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "PaymentService"
+    },
+    {
+      "type": "calls",
+      "target": "NSString"
+    },
+    {
+      "type": "implements",
+      "source": "BaseService",
+      "target": "NSObject"
+    },
+    {
+      "type": "calls",
+      "target": "initWithName"
+    },
+    {
+      "type": "calls",
+      "target": "stringWithFormat"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentService",
+      "target": "serviceName",
+      "line_number": 20,
+      "comment": "M59.A7 near-miss: the container's line (`@interface PaymentService : BaseService <...>`)"
+    },
+    {
+      "type": "uses",
+      "source": "authorizeAmount:",
+      "target": "balance",
+      "line_number": 34,
+      "comment": "M59.A7 near-miss: the method DECLARATION (34), not the read (36)"
+    },
+    {
+      "type": "contains",
+      "source": "BaseService",
+      "target": "initWithName:",
+      "line_number": 17,
+      "comment": "M59.A7 near-miss: BaseService's @interface declaration (17), not the owning implementation (64)"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentService",
+      "target": "auditTrail",
+      "line_number": 53,
+      "comment": "M59.A7 near-miss: the category's @interface declaration (53), not the category implementation (57)"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "sharedService",
+      "equals": 1
+    },
+    {
+      "name": "auditTrail",
+      "equals": 1
+    },
+    {
+      "name": "globalCounter",
+      "equals": 1
+    },
+    {
+      "name": "authorizeAmount:",
+      "equals": 2
+    },
+    {
+      "name": "initWithName:",
+      "equals": 2
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "authorizeAmount:",
+      "ownerName": "PaymentService",
+      "equals": 6
+    },
+    {
+      "symbol": "sharedService",
+      "ownerName": "PaymentService",
+      "equals": 2
+    },
+    {
+      "symbol": "initWithName:",
+      "ownerName": "PaymentService",
+      "equals": 2
+    },
+    {
+      "symbol": "refund:",
+      "ownerName": "PaymentService",
+      "equals": 1
+    },
+    {
+      "symbol": "auditTrail",
+      "ownerName": "PaymentService",
+      "equals": 1
+    }
+  ]
+}

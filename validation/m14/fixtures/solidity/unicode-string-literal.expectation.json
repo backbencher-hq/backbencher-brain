@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "unicode-string-literal",
+  "why": "grammar.js — the `unicode` string prefix. OpenZeppelin's literals are all ASCII or `hex\"…\"` (10 of those).",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "unicode_string_literal",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

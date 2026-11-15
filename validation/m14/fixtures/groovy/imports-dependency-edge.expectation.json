@@ -1,0 +1,26 @@
+{
+  "fixtureId": "groovy/imports-dependency-edge",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JOB 2, the `imports` RELATIONSHIP type, which was absent from the analyzer while ParseResult.imports was carrying every import. Expected values here are read off the WRITTEN SOURCE above - four import declarations on lines 3, 4, 5 and 6, the package on line 1, the class on line 8 - not off an analyzer run, which is what the honesty contract's oracle rule asks of an expectation file.\n\nWHAT THE EDGE IS. `imports` is the DEPENDENCY: this file needs java.util.List, java.util.Map, java.util.Collections.sort and groovy.transform.CompileStatic. `references` is the MENTION of the same declaration and both survive, because they answer different questions - dropping either loses one. The import-edges fixture already pins the `references` half; this one pins the `imports` half and asserts the half did not replace it.\n\nWHY THE SOURCE IS THE PACKAGE AND NOT THE PRIMARY TYPE. bb_graph's per-file dependencies section is one exact query (src/lsp/graph_request.ts:291-297): relationship_type = 'imports' AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = <the file>. parallel-indexer.ts:3481-3485 only writes source_external = the repo-relative path when the source resolves to NO symbol in the file AND metadata.fileLevel is true. Sourcing the edge at the class Dep would make source_symbol_id resolve, so no source_external would ever be written and the dependency would be unanswerable for every file whose class name matches its file name - which is the normal case in Groovy. `forbidRelationships` pins that, because the wrong choice produces a number that still looks populated.\n\nTHE THREE SUB-LABELS come from the ANONYMOUS TOKENS of the import declaration (this pinned grammar declares the wildcard as `asterisk` and the static marker as `static`), so a form the source does not write cannot be asserted.\n\n`fileLevel: true` is the storage flag and is pinned here because a fixture that checked only the label would pass against an edge the indexer could not store.",
+  "expectSymbols": [
+    { "name": "Dep", "kind": "class" },
+    { "name": "run" },
+    { "name": "items" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "source": "com.acme.dep", "target": "java.util.List", "line_number": 3, "meta.relationshipType": "single_type_import", "meta.fileLevel": true, "meta.isGroovyImport": true, "meta.isStatic": false, "meta.isWildcard": false, "meta.evidenceClass": "import_based", "confidenceMin": 1.0 },
+    { "type": "imports", "source": "com.acme.dep", "target": "java.util.Map", "line_number": 4, "meta.relationshipType": "type_on_demand_import", "meta.fileLevel": true, "meta.isWildcard": true, "meta.isStatic": false, "meta.evidenceClass": "import_based" },
+    { "type": "imports", "source": "com.acme.dep", "target": "java.util.Collections.sort", "line_number": 5, "meta.relationshipType": "static_member_import", "meta.fileLevel": true, "meta.isWildcard": false, "meta.isStatic": true, "meta.evidenceClass": "import_based" },
+    { "type": "imports", "source": "com.acme.dep", "target": "groovy.transform.CompileStatic", "line_number": 6, "meta.relationshipType": "single_type_import", "meta.fileLevel": true, "meta.isWildcard": false, "meta.isStatic": false, "meta.evidenceClass": "import_based" },
+
+    { "type": "references", "source": "Dep", "target": "java.util.List", "meta.isGroovyImport": true, "meta.isWildcard": false, "meta.evidenceClass": "import_based", "confidenceMin": 0.9, "note": "the MENTION half survives the new DEPENDENCY half" },
+    { "type": "references", "source": "Dep", "target": "java.util.Collections.sort", "meta.isGroovyImport": true, "meta.evidenceClass": "import_based" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "java.util", "note": "a truncated module path names a package, not an import" },
+    { "type": "imports", "target": "java.util.Map.*", "note": "the wildcard is a FORM on the parent module, not part of the target" },
+    { "type": "imports", "source": "Dep", "note": "sourcing the dependency at the primary type resolves source_symbol_id, so parallel-indexer never writes source_external and bb_graph's file-level dependencies query cannot return it" },
+    { "type": "imports", "source": "(script)", "note": "this file declares a package; the lane sentinel must not stand in for it" }
+  ]
+}

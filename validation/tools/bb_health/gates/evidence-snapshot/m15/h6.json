@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H6",
+  "code": "H6",
+  "tool": "bb_health",
+  "title": "docs honesty",
+  "verified": true,
+  "checks": 12,
+  "passed": 12,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:16:38.886Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.336Z",
+    "contentSha256": "745b2a497250c02f33418297d977d593da9e77d7c6c103016aa8613c7d353875"
+  }
+}

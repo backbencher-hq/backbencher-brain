@@ -1,0 +1,67 @@
+{
+  "fixtureId": "perl/external-deps-perl1",
+  "language": "perl",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PERL-1 — A DEPENDENCY THE FILE DOES NOT DECLARE IS A CLAIM, NOT SILENCE. The lane published no externality reading at all: its whole-population arm read 10,096 edges, 4,605 resolved, 9,435 ambiguous/unresolved, 0 verified, 0 refuted — 93% of the graph was wall. The two largest unresolved labels were the two dependencies Perl names without syntax of its own: `use strict` / `use warnings` / `use Test::More` (imports 1,654, strict 328 / Test::More 267 / warnings 228) and a BARE function call (calls 2,966, is 206 / plan 175 / run_tests 124 / repeat_each 122 / blocks 120). The claim is safe by construction: the arbiter consults it only where the name model has nothing (decls === 0), so a name the project declares keeps its resolved answer and this row cannot refute it. MEASURED EFFECT: wall 9,435 -> 4,891, ext? 0, refuted 0.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "strict",
+      "line_number": 7,
+      "meta.externalTarget": true,
+      "meta.externalVia": "use",
+      "comment": "A PRAGMA IS A MODULE. `use strict` names something no corpus file declares; before this rule the row was one of 328 such imports with no reading."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "warnings",
+      "line_number": 8,
+      "meta.externalTarget": true,
+      "meta.externalVia": "use",
+      "comment": "second pragma, so a fix that special-cased `strict` cannot pass."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "Test::More",
+      "line_number": 9,
+      "meta.externalTarget": true,
+      "meta.externalReason": "module-namespace",
+      "meta.externalSpecifier": "Test::More",
+      "comment": "A `Package::Name` TARGET IS A MODULE PATH, so the module claim is the one that fits it — and it is the one the instrument can answer: the generic owner claim was refused as a path (812 rows in `ext?` on the first measurement) because the target contains colons."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "is",
+      "line_number": 16,
+      "meta.externalTarget": true,
+      "meta.externalVia": "call",
+      "comment": "A BARE CALL TO A NAME NO FILE DECLARES. `is` is Test::More's; the file declares no sub of that spelling."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "local_helper",
+      "line_number": 15,
+      "meta.externalTarget": null,
+      "comment": "THE LOCAL TWIN. `local_helper` is declared in this file, so its call must carry no claim — the guard is the file's own declaration table, not the call's shape."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "local_helper",
+      "meta.externalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE: a call to this file's own sub marked external."
+    },
+    {
+      "type": "calls",
+      "target": "is",
+      "meta.externalTarget": null,
+      "comment": "THE SILENCE NEGATIVE: without the claim the row falls back to the wall it came from."
+    }
+  ]
+}

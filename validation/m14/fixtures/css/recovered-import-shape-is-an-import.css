@@ -1,0 +1,23 @@
+/* Two @import statements the pinned CSS grammar recovers into a shape where the quoted
+   specifier is NOT a direct child of `import_statement`, plus a same-file quoted decoy on a
+   LATER line that the analyzer must not mistake for a module name.
+
+   The Sass placeholder syntax (`%control`, `+control`) and the `$map: (...)` block are here
+   for one reason: they are what the CSS grammar cannot parse, which is what forces the
+   recovery. A well-formed .css file never reaches the branch this fixture pins. */
+@import "mixins";
+
+%control
+  +control
+
+@import "real-module.css"
+
+$map: (
+  "a-key": 1,
+  "b-key": 2,
+);
+
+%x
+  +y
+
+@import url("theme.css");

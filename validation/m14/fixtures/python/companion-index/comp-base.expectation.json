@@ -1,0 +1,55 @@
+{
+ "fixtureId": "python/companion-index/comp-base",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-7, the BASE half of the only fixture in the suite that can observe the second tier of the `overrides` contract. All three files under `validation/m14/fixtures/python/companion-index/` are one PROJECT: the runner builds a `ProjectIndex` over the directory and hands it to the analyzer as both `projectIndex` and `overrideCompanion`. That structure is the point — tier 2 answers \"does a base this file has never read declare this method?\", and that question has no answer inside a single tree. The Solidity suite learned this the expensive way: `project-index-ignored` and `project-index-candidate-as-resolution` both SURVIVED their first run because the runner called `analyze()` with no context, so each was a no-op against zero rows. `Mixin` declares `send` and deliberately nothing else, because it is the shape of the real `requests` `SessionRedirectMixin` — seven redirect methods and no `__init__` at all — and a base that declared everything would let a broken resolution pass by luck, because every guess would happen to be true. The forbid row on the nested `inner` pins the `scopeNodes` half of `PYTHON_DECLARATION_SPEC`: a closure is not an inherited method, and indexing it as one makes a base appear to declare a method it does not have, which is how a REAL override gets suppressed on the strength of a fabricated member. Nothing in this file publishes an override edge, and that is also asserted implicitly: the base of an override lives in another file.",
+ "expectSymbols": [
+  {
+   "name": "Mixin",
+   "kind": "class"
+  },
+  {
+   "name": "send",
+   "kind": "method",
+   "ownerName": "Mixin"
+  },
+  {
+   "name": "helper",
+   "kind": "method",
+   "ownerName": "Mixin"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Mixin",
+   "target": "send",
+   "line_number": 25
+  },
+  {
+   "type": "contains",
+   "from": "Mixin",
+   "target": "helper",
+   "line_number": 28
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "inner",
+   "contains": "THE SCOPE ROW. `inner` is a function DEFINED INSIDE `helper`, so it is not a method of `Mixin` and nothing inherits it. CPython's own `ast` agrees: a `function_definition` that is not a direct child of the class body is a local of its enclosing function. If it were indexed as a member, the companion index would report `Mixin` as declaring `inner`, and the resolution would suppress a real override of `inner` somewhere in the corpus on the strength of a name that exists only inside a closure"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "Mixin",
+   "target": "inner",
+   "note": "the same fact as a relationship. `PYTHON_DECLARATION_SPEC` carries `scopeNodes: [\"function_definition\", \"lambda\"]`, and this row is what proves it is read: drop `scopeNodes` and this row starts failing"
+  }
+ ],
+ "_seamNote": {
+  "what": "Two seams, both in `src/ast/project-index.ts`: `PYTHON_DECLARATION_SPEC.memberNodes` (which nodes count as members) and `PYTHON_DECLARATION_SPEC.scopeNodes` (which nodes open a scope so their contents do not count).",
+  "howToBreak": "Remove `scopeNodes` from the spec and the nested `inner` becomes a member of `Mixin`; both the forbidSymbol and the forbidRelationship fail. Add `assignment` to `memberNodes` and a class-level variable is indexed as an inheritable member, which is the mistake PY-21 defect 4 already made once in the analyzer itself.",
+  "note": "This file also asserts what it does NOT publish: an override edge needs a base, and every base that could be here lives in `comp-child.py`. A fixture that pinned 'no overrides' explicitly would be asserting an absence, and absence assertions belong to the consumer half where the claim is."
+ }
+}

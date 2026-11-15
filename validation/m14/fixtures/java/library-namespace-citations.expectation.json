@@ -1,0 +1,74 @@
+{
+  "fixtureId": "java/library-namespace-citations",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "LIBRARY-NAMESPACE CITATIONS (Lead ruling 2026-10-19, vocabulary `java-platform-libraries`). THE CLAIM REQUIRES A COMPLETE PROJECT KEY SPACE: the Lead's reproduction of the first emission measured 468 previously-RESOLVED rows withdrawn, and 87 of the 214 resolved-withdrawal candidate pairs were TRUE project references (registry-rooted FQNs the project itself declares \u2014 scala3's own dotty.tools.xsbt classes, androidx sources vendored in flutter's repo). Because the arbiter's namespace claim is the SOLE AUTHORITY for its rows, an over-claim is extOK where a resolution belongs; the emission is therefore FAIL-CLOSED: no complete projectIndex, no citation, and a project-declared target FQN is never claimed. FLAT fixtures receive NO project index (run-fixtures passes a context only to sub-directory fixtures), so THIS fixture pins the fail-closed half: no row may carry a namespace claim here. The positive half (dotted + bare-symbol citations against a complete index, plus a project-owned negative that must be skipped) belongs in a sub-directory fixture and needs the fixture runner to give java sub-directory fixtures its own JAVA_DECLARATION_SPEC and `complete = true` \u2014 a Lead-owned two-line change requested in the depth report; until then the positives are measured on the whole-population arm instead of a fixture, and that gap is stated rather than papered over.",
+  "expectSymbols": [
+    {
+      "name": "LibraryNamespaceCitations",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "com.acme.cite",
+      "target": "androidx.media3.common.C",
+      "meta.languageNamespace": null
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.cite",
+      "target": "jakarta.persistence.Entity",
+      "meta.languageNamespace": null
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.cite",
+      "target": "org.yaml.snakeyaml.Yaml",
+      "meta.languageNamespace": null
+    },
+    {
+      "type": "references",
+      "source": "LibraryNamespaceCitations",
+      "target": "Filter",
+      "meta.languageNamespace": null
+    },
+    {
+      "type": "references",
+      "source": "LibraryNamespaceCitations",
+      "target": "com.google.common.base.Preconditions",
+      "meta.languageNamespace": null
+    },
+    {
+      "type": "references",
+      "source": "LibraryNamespaceCitations",
+      "target": "HttpServletRequest",
+      "meta.languageNamespace": null
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "jakarta.persistence.Entity",
+      "meta.languageNamespace": [
+        "jakarta"
+      ],
+      "comment": "no index, no citation (fail-closed): the claim would be a sole-authority over-claim"
+    },
+    {
+      "type": "references",
+      "target": "Filter",
+      "meta.languageNamespace": [
+        "Filter"
+      ]
+    },
+    {
+      "type": "references",
+      "target": "com.google.common.base.Preconditions",
+      "meta.languageNamespace": [
+        "Preconditions"
+      ]
+    }
+  ]
+}

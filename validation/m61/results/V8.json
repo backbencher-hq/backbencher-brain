@@ -1,0 +1,363 @@
+{
+  "issue": "M61.V8 claim source-fingerprint census",
+  "code": "V8",
+  "milestone": "M61",
+  "status": "known-gap",
+  "checks": 20,
+  "passed": 17,
+  "failed": 3,
+  "realFailed": 3,
+  "negativeCases": 12,
+  "mutantsTotal": 12,
+  "mutantsCaught": 12,
+  "mutantRecords": [
+    {
+      "name": "M5: a 64-hex CONSTANT does not reach `verifiable`",
+      "caught": true
+    },
+    {
+      "name": "M6: an EMPTY string does not reach `verifiable`",
+      "caught": true
+    },
+    {
+      "name": "M7: sha256 of ZERO BYTES does not reach `verifiable`",
+      "caught": true
+    },
+    {
+      "name": "M8: the record's OWN digest does not reach `verifiable`, and is NAMED as the self-reference it is",
+      "caught": true
+    },
+    {
+      "name": "M9: a correct digest of the WRONG file does not reach `verifiable`",
+      "caught": true
+    },
+    {
+      "name": "M10: the control — the REAL digest of the declared coverage DOES reach `verifiable` (M5-M9 are not passing because the classifier refuses everything)",
+      "caught": true
+    },
+    {
+      "name": "M11: a CORRECT digest over a single covered path is still refused (the coverage floor is load-bearing)",
+      "caught": true
+    },
+    {
+      "name": "M12: a CORRECT digest naming ONLY the oracle is refused (a harness hash is not a component hash)",
+      "caught": true
+    },
+    {
+      "name": "M1: an EMPTY sourceFingerprint does not count as present",
+      "caught": true
+    },
+    {
+      "name": "M2: a verified record with NO sourceFingerprint is counted as missing",
+      "caught": true
+    },
+    {
+      "name": "M3: the in-scope filter discriminates (a non-LSP lane is out of scope)",
+      "caught": true
+    },
+    {
+      "name": "M4: only `verified` records are measured",
+      "caught": true
+    }
+  ],
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "verifierCommand": "npx tsx script/m61/verify-claim-fingerprints.ts",
+  "evidenceFile": "V8.json",
+  "generatedAt": "2026-10-05T22:40:08.756Z",
+  "census": {
+    "repository": {
+      "records": 1136,
+      "trustedReads": 534,
+      "refusedReads": 602,
+      "refusedByKind": [
+        "tampered",
+        "unsealed"
+      ],
+      "verified": 227,
+      "withSourceFingerprint": 26,
+      "withoutSourceFingerprint": 201
+    },
+    "inScope": {
+      "lanes": [
+        "m24",
+        "m26",
+        "m27",
+        "m28",
+        "m29",
+        "m42",
+        "m44",
+        "m55",
+        "m62"
+      ],
+      "verified": 91,
+      "withSourceFingerprint": 21,
+      "withoutSourceFingerprint": 70,
+      "missing": [
+        "m24.X1",
+        "m28.T1",
+        "m28.U1",
+        "m28.U2",
+        "m29.D1-verify",
+        "m29.R1",
+        "m29.R2",
+        "m29.R3-verify",
+        "m29.R3",
+        "m29.R4-verify",
+        "m29.R5-verify",
+        "m29.V1-verify",
+        "m29.X1",
+        "m29.wave-c",
+        "m29.wave-cpp",
+        "m29.wave-editor-c",
+        "m29.wave-editor-cpp",
+        "m29.wave-editor-go",
+        "m29.wave-editor-groovy",
+        "m29.wave-editor-java",
+        "m29.wave-editor-javascript",
+        "m29.wave-editor-kotlin",
+        "m29.wave-editor-python",
+        "m29.wave-editor-rust",
+        "m29.wave-editor-scala",
+        "m29.wave-editor-svelte",
+        "m29.wave-editor-typescript",
+        "m29.wave-editor-vue",
+        "m29.wave-editor-zig",
+        "m29.wave-go",
+        "m29.wave-groovy",
+        "m29.wave-java",
+        "m29.wave-javascript",
+        "m29.wave-kotlin",
+        "m29.wave-python",
+        "m29.wave-rust",
+        "m29.wave-scala",
+        "m29.wave-svelte",
+        "m29.wave-typescript",
+        "m29.wave-vue",
+        "m29.wave-zig",
+        "m42.H1",
+        "m42.H2",
+        "m42.H3",
+        "m42.H4",
+        "m42.H6",
+        "m42.KNOWN-GAPS",
+        "m42.board-closure",
+        "m44.KNOWN-GAPS",
+        "m44.U1",
+        "m44.U2",
+        "m44.U4",
+        "m44.U5",
+        "m55.EVID-TREE",
+        "m55.HOV-COVERAGE",
+        "m55.HOV-REDTEAM",
+        "m55.P1",
+        "m55.T1",
+        "m55.T2",
+        "m55.T3",
+        "m55.T4",
+        "m55.T5",
+        "m55.V1-action-args",
+        "m55.V1-status-panel",
+        "m55.V1",
+        "m62.A1",
+        "m62.A3",
+        "m62.D1",
+        "m62.G1",
+        "m62.X1"
+      ]
+    },
+    "outOfScope": {
+      "lanes": [
+        "embedding",
+        "m20",
+        "m21",
+        "m22",
+        "m23",
+        "m25",
+        "m30",
+        "m31",
+        "m32",
+        "m33",
+        "m34",
+        "m35",
+        "m36",
+        "m40",
+        "m41",
+        "m43",
+        "m45",
+        "m48",
+        "m50",
+        "m53",
+        "m54",
+        "m56",
+        "m57",
+        "m59",
+        "m60",
+        "m61",
+        "m63",
+        "typing"
+      ],
+      "verified": 136,
+      "withSourceFingerprint": 5,
+      "withoutSourceFingerprint": 131,
+      "reasons": {
+        "m20": "M14-era migration/patterns/security/doc lane; its records DO carry m20's own fingerprint convention (src/intelligence/*/evidence.ts), which this fix does not redefine — a second rule for it is m20's decision, not this lane's",
+        "m21": "Indexing Performance & Reliability Truth — a benchmark lane whose records are timings from the bench harness on named corpora; the generator (script/m21/*) belongs to another track",
+        "m22": "CLI cwd/env lane (bun run script/m22/verify-c1-cwd.ts and siblings); generator owned by another track",
+        "m23": "governance + parsing lane (bun run script/m23/verify-g1-governance.ts and siblings); generator owned by another track",
+        "m25": "editor/fork/OS-platform lane: its legs are runtime-scoped (fork editors, VS Code, the os-matrix workflow) and its records are the declared platform measurements; the OS/forks census is script/m61/verify-ledger-truth.ts G5's job",
+        "m30": "onboarding/setup lane with its own `sha256sum`-spawn fingerprint convention (C above) — that spawn is BANNED by script/m24/portability.ts and is a real portability defect, but m30 owns the fix and this lane does not edit its records",
+        "m31": "docs tool-mode lane, generator owned by another track",
+        "m32": "setup/show/doctor lane, generator owned by another track",
+        "m33": "CLI surface lane, generator owned by another track",
+        "m34": "install/packaging lane (artifact-dependent legs), generator owned by another track",
+        "m35": "staleness/envelope lane, generator owned by another track",
+        "m36": "CI-repair lane, generator owned by another track",
+        "m40": "post-entry/index-refresh lane, generator owned by another track",
+        "m41": "website truth/SEO lane, generator owned by another track",
+        "m43": "MCP auto-refresh lane, generator owned by another track",
+        "m45": "demo-media/capture lane: artifact-dependent (pinned VSIX, capture runtimes), generator owned by another track",
+        "m48": "impact/honesty-fields lane, generator owned by another track",
+        "m50": "vector/planner lane, generator owned by another track",
+        "m53": "lifecycle-corpus lane (the 41-gate ladder's own record), generator owned by another track",
+        "m54": "fk/stdio lane, generator owned by another track",
+        "m56": "website IA/tools lane, generator owned by another track",
+        "m57": "classifier/triage lane, generator owned by another track",
+        "m59": "language-surface lane, generator owned by another track",
+        "m60": "family-closure lane, generator owned by another track",
+        "m63": "cross-language/wiring lane, generator owned by another track",
+        "embedding": "not a milestone lane (validation/embedding) — a corpus artifact directory, not a claim ledger",
+        "typing": "not a milestone lane (validation/typing) — a corpus artifact directory, not a claim ledger",
+        "m61": "this gate's own lane: m61's records are governance records about OTHER lanes' gates, and m61 owns the fingerprints for them under script/m61/ — declared here rather than converted by this gate"
+      },
+      "perLane": {
+        "m20": {
+          "verified": 5,
+          "withFingerprint": 5
+        },
+        "m21": {
+          "verified": 19,
+          "withFingerprint": 0
+        },
+        "m22": {
+          "verified": 15,
+          "withFingerprint": 0
+        },
+        "m23": {
+          "verified": 5,
+          "withFingerprint": 0
+        },
+        "m24": {
+          "verified": 12,
+          "withFingerprint": 11
+        },
+        "m25": {
+          "verified": 9,
+          "withFingerprint": 0
+        },
+        "m26": {
+          "verified": 8,
+          "withFingerprint": 8
+        },
+        "m28": {
+          "verified": 4,
+          "withFingerprint": 1
+        },
+        "m29": {
+          "verified": 38,
+          "withFingerprint": 1
+        },
+        "m30": {
+          "verified": 1,
+          "withFingerprint": 0
+        },
+        "m31": {
+          "verified": 7,
+          "withFingerprint": 0
+        },
+        "m32": {
+          "verified": 1,
+          "withFingerprint": 0
+        },
+        "m33": {
+          "verified": 1,
+          "withFingerprint": 0
+        },
+        "m34": {
+          "verified": 1,
+          "withFingerprint": 0
+        },
+        "m35": {
+          "verified": 10,
+          "withFingerprint": 0
+        },
+        "m36": {
+          "verified": 4,
+          "withFingerprint": 0
+        },
+        "m40": {
+          "verified": 10,
+          "withFingerprint": 0
+        },
+        "m41": {
+          "verified": 1,
+          "withFingerprint": 0
+        },
+        "m42": {
+          "verified": 7,
+          "withFingerprint": 0
+        },
+        "m43": {
+          "verified": 8,
+          "withFingerprint": 0
+        },
+        "m44": {
+          "verified": 5,
+          "withFingerprint": 0
+        },
+        "m45": {
+          "verified": 3,
+          "withFingerprint": 0
+        },
+        "m48": {
+          "verified": 22,
+          "withFingerprint": 0
+        },
+        "m53": {
+          "verified": 4,
+          "withFingerprint": 0
+        },
+        "m54": {
+          "verified": 5,
+          "withFingerprint": 0
+        },
+        "m55": {
+          "verified": 12,
+          "withFingerprint": 0
+        },
+        "m61": {
+          "verified": 2,
+          "withFingerprint": 0
+        },
+        "m62": {
+          "verified": 5,
+          "withFingerprint": 0
+        },
+        "m63": {
+          "verified": 3,
+          "withFingerprint": 0
+        }
+      }
+    }
+  },
+  "limitations": [
+    "This first form of the gate COUNTS the field; it does not yet re-derive it. A value that is present but wrong (a constant, the digest of nothing, the record's own hash) is counted as present here and is not caught — the re-derivation and discrimination predicates (F3/F4) are the next commit, and until they land this gate is a census with teeth, not a proof.",
+    "The census reads records through the trusted sealed path. A record the path REFUSES (581 unsealed under the D-1 migration window, 21 whose seal does not verify, measured at this HEAD) is returned with its reason, counted under `refusedReads`, and EXCLUDED from the verified-with/without counts: it is neither a pass nor a count of missing fields. Those refusals are script/m61/verify-sealing.ts (V1)'s finding and this gate does not repair them.",
+    "Out-of-scope lanes are declared, not repaired: their generators belong to other tracks, and a red this lane cannot clear is a red that gets ignored (script/m61/verify-ledger-truth.ts makes the same argument for out-of-scope ledgers).",
+    "The m30 out-of-scope reason names a LIVE defect found while measuring (its verifiers spawn `sha256sum`, a binary script/m24/portability.ts bans — the same class that killed two m24 gates on darwin). It is reported here, not fixed: m30 owns those records."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-05T22:40:08.760Z",
+    "contentSha256": "27facbe719288de48062c6806194d7074cd68af1be84c884333f76abd9e7eb9f"
+  }
+}

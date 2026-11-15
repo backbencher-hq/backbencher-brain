@@ -1,0 +1,59 @@
+{
+  "issue": "M62.A1",
+  "code": "A1",
+  "milestone": "M62",
+  "status": "verified",
+  "checks": 76,
+  "passed": 76,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 9,
+  "mutantsCaught": 9,
+  "mutantsTotal": 9,
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "sourceFingerprint": "ff60028048f7e5bcb9afa4bd370ab027a33bdd7371be9f61e09bd651d98995e7",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m62/verify-address.ts",
+    "src/brain/database.ts",
+    "src/intelligence/graph/graph-engine.ts",
+    "src/intelligence/graph/line-address.ts",
+    "src/lsp/positions.ts",
+    "src/util/project-id.ts",
+    "script/m62/a1-fixture.ts"
+  ],
+  "verifierCommand": "npx tsx script/m62/verify-address.ts",
+  "evidenceFile": "A1.json",
+  "generatedAt": "2026-11-09T10:22:32.864Z",
+  "schemaVersion": 1,
+  "laws": [
+    "L1 position-from-real-only",
+    "L2 substitute-always-labeled",
+    "L3 unknown-first-class-with-reason",
+    "L4 line0-agrees-with-position-owner",
+    "L5 declared-kind-per-store-state"
+  ],
+  "vocabulary": {
+    "legacy": "call site not stored (legacy index: line_number is 0)",
+    "notStored": "call site not stored (no line_number in the index)",
+    "substitute": "this is the calling symbol's declaration, not the call site"
+  },
+  "fixture": {
+    "cases": 14,
+    "seededRows": 9,
+    "states": [
+      "real (> 0)",
+      "legacy-placeholder (0)",
+      "not-stored (null/absent/invalid)"
+    ]
+  },
+  "limitations": [
+    "The fixture seeds stored rows with the analyzer storage vocabulary; real per-language emission is M59's lane and is measured by script/m62/verify-arrival.ts (A3).",
+    "Consumer rendering (hub/webview/MCP/hover) is A2's gate — this gate pins the owner and the engine's derivation."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:22:32.864Z",
+    "contentSha256": "6a1f30221139c524740a90a73a223e36642d0e835b809d6107b916750e35a171"
+  }
+}

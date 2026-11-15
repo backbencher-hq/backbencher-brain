@@ -1,0 +1,94 @@
+{
+  "fixtureId": "javascript/runtime-global-claims",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the second closed cited claim table (src/ast/js-runtime-globals.ts, 2026-10-18): a BARE name documented as a Node.js runtime global or a test-runner global is claimed external with its citation as externalClaimReason, exactly like the platform HOST_GLOBALS list — a name not in that table gets no claim, and there is no heuristic fallback. POSITIVE: describe/it/test/expect/beforeEach (reason test-runner-global) and process/Buffer (reason node-runtime-global). NEGATIVE 1 (binding): `shadowed(context)` binds the name in the file, so the file's own binding refuses the claim — a parameter is not the runner's global; `context` is a table name NOT used as a positive here because the bound set is file-wide by design (binding `describe` would suppress the file's positive describe claim too). NEGATIVE 2 (member): the table claims BARE names only; `process.env`'s `env` and `expect(...).toBe`'s `toBe` are members whose leaf a project may genuinely declare, so no claim is made on them (the member rule for platform globals requires the receiver ROOT to be on its cited list; this table deliberately does not extend that to runtime/test globals). DECLARATION refusal is pinned in javascript/host-global-claims for setTimeout; the guard is the same file-wide bound-name test. LIMITATION stated in the module header: a per-file analyzer cannot read the project manifest (package.json / jest.config / .mocharc) to prove WHICH runner installs a name, and a project that injects its own global test through a setup file is outside what any per-file instrument can see — the closed list plus refutability is the honest substitute.",
+  "expectSymbols": [
+    {
+      "name": "readNodeState",
+      "kind": "function"
+    },
+    {
+      "name": "makeBuffer",
+      "kind": "function"
+    },
+    {
+      "name": "shadowed",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "describe",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "test-runner-global"
+    },
+    {
+      "type": "calls",
+      "target": "it",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "test-runner-global"
+    },
+    {
+      "type": "calls",
+      "target": "test",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "test-runner-global"
+    },
+    {
+      "type": "calls",
+      "target": "expect",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "test-runner-global"
+    },
+    {
+      "type": "calls",
+      "target": "beforeEach",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "test-runner-global"
+    },
+    {
+      "type": "uses",
+      "from": "readNodeState",
+      "target": "process",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "node-runtime-global"
+    },
+    {
+      "type": "uses",
+      "from": "makeBuffer",
+      "target": "Buffer",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "node-runtime-global"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "context",
+      "meta.isExternalTarget": true,
+      "comment": "a parameter binding refuses the claim (read shape)"
+    },
+    {
+      "type": "calls",
+      "from": "shadowed",
+      "target": "context",
+      "meta.isExternalTarget": true,
+      "comment": "a parameter binding refuses the claim (call shape)"
+    },
+    {
+      "type": "uses",
+      "target": "env",
+      "meta.isExternalTarget": true,
+      "comment": "a MEMBER of process is not claimed from this table"
+    },
+    {
+      "type": "calls",
+      "target": "toBe",
+      "meta.isExternalTarget": true,
+      "comment": "a member leaf is not claimed from this table"
+    }
+  ]
+}

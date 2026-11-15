@@ -5,7 +5,7 @@
 # WHAT THIS RUNS AND WHY IT IS WRITTEN THIS WAY
 #
 # * THE CORPUS ROOT IS NAMED.  The corpus has TWO roots (the gate's default
-#   `$HOME/fixtures/repositories`, 199 repos, and the campaign's own
+#   `/home/ishaq2321/bb_tests/repositories`, 199 repos, and the campaign's own
 #   symlink farm `$PWD/.corpus`, 202 repos).  24 of the 48 lanes admit a
 #   DIFFERENT file set under each; perl admits 427 under the default and 656
 #   under the farm.  Every recorded perl population in the fleet ledger is the

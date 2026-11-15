@@ -1,0 +1,732 @@
+{
+  "schemaVersion": 1,
+  "fixture": "validation/m11/fixtures/dart",
+  "projectId": "385c85a5493eba4a8d652ecc81f5919da1995db8",
+  "files": [
+    {
+      "path": "/tmp/bb-m11-dart-277301/base.dart",
+      "language": "dart"
+    },
+    {
+      "path": "/tmp/bb-m11-dart-277301/service.dart",
+      "language": "dart"
+    }
+  ],
+  "symbols": [
+    {
+      "name": "BaseService",
+      "kind": "class",
+      "start_line": 1,
+      "end_line": 7
+    },
+    {
+      "name": "BaseService.BaseService",
+      "kind": "constructor",
+      "start_line": 4,
+      "end_line": 4
+    },
+    {
+      "name": "Loggable",
+      "kind": "mixin",
+      "start_line": 11,
+      "end_line": 15
+    },
+    {
+      "name": "Repository",
+      "kind": "class",
+      "start_line": 7,
+      "end_line": 9
+    },
+    {
+      "name": "Role",
+      "kind": "enum",
+      "start_line": 21,
+      "end_line": 21
+    },
+    {
+      "name": "StringExtension",
+      "kind": "extension",
+      "start_line": 17,
+      "end_line": 19
+    },
+    {
+      "name": "User",
+      "kind": "class",
+      "start_line": 9,
+      "end_line": 14
+    },
+    {
+      "name": "User.User",
+      "kind": "constructor",
+      "start_line": 13,
+      "end_line": 13
+    },
+    {
+      "name": "UserService",
+      "kind": "class",
+      "start_line": 24,
+      "end_line": 39
+    },
+    {
+      "name": "UserService.UserService",
+      "kind": "constructor",
+      "start_line": 27,
+      "end_line": 27
+    },
+    {
+      "name": "UserWidget",
+      "kind": "class",
+      "start_line": 41,
+      "end_line": 52
+    },
+    {
+      "name": "UserWidget",
+      "kind": "constructor",
+      "start_line": 44,
+      "end_line": 44
+    },
+    {
+      "name": "_pattern",
+      "kind": "property",
+      "start_line": 25,
+      "end_line": 25
+    },
+    {
+      "name": "build",
+      "kind": "method",
+      "start_line": 47,
+      "end_line": 47
+    },
+    {
+      "name": "createDefault",
+      "kind": "function",
+      "start_line": 54,
+      "end_line": 58
+    },
+    {
+      "name": "format",
+      "kind": "method",
+      "start_line": 6,
+      "end_line": 6
+    },
+    {
+      "name": "format",
+      "kind": "method",
+      "start_line": 30,
+      "end_line": 30
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "name": "log",
+      "kind": "method",
+      "start_line": 12,
+      "end_line": 12
+    },
+    {
+      "name": "matches",
+      "kind": "method",
+      "start_line": 38,
+      "end_line": 38
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "start_line": 11,
+      "end_line": 11
+    },
+    {
+      "name": "repeat",
+      "kind": "method",
+      "start_line": 18,
+      "end_line": 18
+    },
+    {
+      "name": "save",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "name": "save",
+      "kind": "method",
+      "start_line": 33,
+      "end_line": 33
+    },
+    {
+      "name": "service",
+      "kind": "property",
+      "start_line": 42,
+      "end_line": 42
+    },
+    {
+      "name": "store",
+      "kind": "property",
+      "start_line": 2,
+      "end_line": 2
+    }
+  ],
+  "imports": [
+    {
+      "import_path": "base.dart",
+      "imported_name": "base.dart",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "dart:async",
+      "imported_name": "dart:async",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "package:flutter/material.dart",
+      "imported_name": "package:flutter/material.dart",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "service.dart",
+      "imported_name": "service.dart",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "calls",
+      "count": 4
+    },
+    {
+      "relationship_type": "contains",
+      "count": 18
+    },
+    {
+      "relationship_type": "extends",
+      "count": 2
+    },
+    {
+      "relationship_type": "implements",
+      "count": 1
+    },
+    {
+      "relationship_type": "instantiates",
+      "count": 5
+    },
+    {
+      "relationship_type": "references",
+      "count": 52
+    }
+  ],
+  "relationshipsDetail": [
+    {
+      "type": "calls",
+      "line": 0,
+      "source": "build",
+      "target": "Container"
+    },
+    {
+      "type": "calls",
+      "line": 0,
+      "source": "build",
+      "target": "Text"
+    },
+    {
+      "type": "calls",
+      "line": 0,
+      "source": "createDefault",
+      "target": "UserService"
+    },
+    {
+      "type": "calls",
+      "line": 0,
+      "source": "createDefault",
+      "target": "User"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "Role",
+      "target": "createDefault"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "Repository",
+      "target": "save"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "Loggable",
+      "target": "log"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "StringExtension",
+      "target": "repeat"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "_pattern"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "UserService.UserService"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "format"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "save"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "matches"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "service"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "UserWidget"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "build"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "BaseService",
+      "target": "store"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "BaseService",
+      "target": "BaseService.BaseService"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "BaseService",
+      "target": "format"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "id"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "name"
+    },
+    {
+      "type": "contains",
+      "line": 0,
+      "source": "User",
+      "target": "User.User"
+    },
+    {
+      "type": "extends",
+      "line": 0,
+      "source": "User",
+      "target": "BaseService"
+    },
+    {
+      "type": "extends",
+      "line": 0,
+      "source": "User",
+      "target": "StatelessWidget"
+    },
+    {
+      "type": "implements",
+      "line": 0,
+      "source": "User",
+      "target": "Repository"
+    },
+    {
+      "type": "instantiates",
+      "line": 0,
+      "source": "save",
+      "target": "T"
+    },
+    {
+      "type": "instantiates",
+      "line": 0,
+      "source": "User",
+      "target": "User"
+    },
+    {
+      "type": "instantiates",
+      "line": 0,
+      "source": "User",
+      "target": "String"
+    },
+    {
+      "type": "instantiates",
+      "line": 0,
+      "source": "BaseService",
+      "target": "String"
+    },
+    {
+      "type": "instantiates",
+      "line": 0,
+      "source": "BaseService",
+      "target": "User"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "global",
+      "target": "dart:async"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "global",
+      "target": "package:flutter/material.dart"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "global",
+      "target": "base.dart"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "global",
+      "target": "service.dart"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Repository",
+      "target": "T"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "save",
+      "target": "T"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "save",
+      "target": "value"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Loggable",
+      "target": "Loggable"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Loggable",
+      "target": "String"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Loggable",
+      "target": "message"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Loggable",
+      "target": "print"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Loggable",
+      "target": "runtimeType"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "StringExtension",
+      "target": "StringExtension"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "StringExtension",
+      "target": "String"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "StringExtension",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "StringExtension",
+      "target": "times"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Role",
+      "target": "Role"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Role",
+      "target": "admin"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "Role",
+      "target": "user"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "User"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "RegExp"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "UserService"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "Map"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "String"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "store"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "override"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "value"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "format"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "id"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "hasMatch"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "UserService"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "service"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "UserWidget"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "key"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "override"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "BuildContext"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "context"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "Container"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "child"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "Text"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "format"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "Map"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "String"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "User"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "store"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "BaseService"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "value"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "BaseService",
+      "target": "trim"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "String"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "id"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "name"
+    },
+    {
+      "type": "references",
+      "line": 0,
+      "source": "User",
+      "target": "User"
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.795Z",
+    "contentSha256": "db446c2936cb2e077f559983063746f8e058bb65c3b5f9d126f789466827082e"
+  }
+}

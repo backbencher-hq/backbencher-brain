@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "instrument": "merge-arm-slices.ts",
+    "population": {
+      "parsed": 2346,
+      "corpusTotal": 2346,
+      "admitted": 2346,
+      "string": "parsed=2346/2346 admitted=2346 exts=(slices' own) index=(slices' own)"
+    },
+    "slices": [
+      {
+        "file": "kotlin-0-1000.txt",
+        "range": [
+          0,
+          1000
+        ],
+        "parsed": 1000,
+        "edges": 134974
+      },
+      {
+        "file": "kotlin-1000-2000.txt",
+        "range": [
+          1000,
+          2000
+        ],
+        "parsed": 1000,
+        "edges": 95996
+      },
+      {
+        "file": "kotlin-2000-2346.txt",
+        "range": [
+          2000,
+          2346
+        ],
+        "parsed": 346,
+        "edges": 26612
+      }
+    ],
+    "incompleteIgnored": [],
+    "tilingRule": "every slice's parsed equals its claimed width; the union is contiguous from 0 with no overlap and no shortfall; mixed widths are legitimate",
+    "closureRule": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges"
+  },
+  "closure": {
+    "edges": 257582,
+    "resolved": 98335,
+    "collRes": 25311,
+    "ambDecl": 66478,
+    "ambKind": 33194,
+    "unresolved": 81879,
+    "extOK": 10868,
+    "extPending": 22,
+    "extFAIL": 0,
+    "bindOK": 0,
+    "bindPending": 0,
+    "bindFAIL": 0,
+    "causeOK": 0,
+    "causeFAIL": 0,
+    "sum": 257582,
+    "exact": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "fixtureId": "cpp/system-completeness",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins C++ calls, instantiates (new-expression), imports (include dependency) and references (using dependency), plus the imports payload, for the completeness gate Section B; mirrors the c/c-completeness fixture for the systems family. M14 ONTOLOGY (2026-10-04): `#include` is C++'s FILE INCLUSION and is now a first-class `imports` edge — the same kind, with the same metadata, the C lane already emits for the identical construct (pinned there by c/macro-composed-include, reverted there by the `c/include-kind-downgraded` mutant). The measured reason: the one consumer that answers \"what does this module depend on\" is the LSP usages file-level section, which filters on `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts, src/lsp/graph_usages.ts), so a C++ include was invisible to it no matter what its metadata said. A LABEL move, not an edge move — 5,404 include sites in 905 corpus files, 5,118 distinct module names, and the include-dependency row count is identical before and after. The `using`-dependency rows stay `references`: an include dependency and a using-dependency are two facts, and only the first is file inclusion.",
+  "expectRelationships": [
+    {"type": "calls", "target": "draw", "meta.evidenceClass": "usage_contextual"},
+    {"type": "instantiates", "target": "Shape"},
+    {"type": "instantiates", "target": "stringstream", "meta.isNew": true},
+    {"type": "imports", "target": "vector", "meta.relationshipType": "include_dependency"},
+    {"type": "imports", "target": "vector", "meta.isImport": true, "meta.evidenceClass": "import_based"},
+    {"type": "references", "target": "std", "meta.relationshipType": "using_dependency"},
+    {"type": "references", "target": "std::pair", "meta.relationshipType": "using_dependency"}
+  ],
+  "forbidRelationships": [
+    {"type": "references", "target": "vector", "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one — the same discipline c/macro-composed-include uses, and the reason a silent relabel cannot pass."}
+  ],
+  "expectSymbols": [
+    {"name": "Base", "kind": "class"},
+    {"name": "Shape", "kind": "class"},
+    {"name": "render", "kind": "function"}
+  ],
+  "expectImports": [
+    { "module": "vector", "meta.isImport": true },
+    { "module": "memory", "meta.isImport": true },
+    { "module": "std", "items": ["*"], "meta.isImport": true, "meta.isNamespaceImport": true },
+    { "module": "std::pair", "items": ["pair"], "meta.isImport": true }
+  ]
+}

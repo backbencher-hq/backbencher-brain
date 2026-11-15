@@ -1,0 +1,20 @@
+{
+  "fixtureId": "groovy/type-usage-graph",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph: fields, params, locals, throws clauses and instanceof targets each emit References to every named type; generics expand; `def`/`as` keywords never become type edges. M37 #597 KAD6 sweep: return-type refs now source to the METHOD (pre-fix: the enclosing class/Global) and carry the honest return_type label (pre-fix mislabeled declared_type — Map appears only as m2's return type, so its pin moves).",
+  "expectRelationships": [
+    { "type": "references", "target": "List", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "String", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "m2", "target": "Map", "meta.relationshipType": "return_type", "comment": "KAD6: return-type refs carry return_type (pre-fix: declared_type mislabel) and source to m2 (pre-fix: TypeGraph)" },
+    { "type": "references", "target": "Integer", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "IOException", "meta.relationshipType": "throws_type" },
+    { "type": "references", "target": "Set", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Number", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "List", "meta.relationshipType": "instanceof_expression" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "def" },
+    { "type": "references", "target": "as" }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "fixtureId": "dart/override-mixin-base-choice/mixins",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE TWO MIXINS — the cross-file evidence the base-choice rule needs. Both are declared HERE, in a sibling file, so the project index is the only thing that can tell the analyzer which of them declares `onCheckForClose`. A single-file fixture could not exercise the rule at all: with the base and the member in one file, the per-file `exposed()` closure already answers, and the first-parent fallback never runs. The names are the MEASURED dart-http ones (`pkgs/http2/lib/src/error_handler.dart`), because a fixture that invents its own names measures a different thing. THE INDEX HALF of the fix is pinned by `script/m14/dart-override-mixin-base-check.ts`, which asserts that the project index NAMES both mixins and carries the right member sets — because the defect was that Dart's `mixin_declaration` has no `name` field, so the generic index read \"\" for every mixin and the spec \"indexed the right SHAPE and held NOTHING\" for the name.",
+  "expectSymbols": [
+    { "name": "TerminatableMixin", "kind": "mixin" },
+    { "name": "ClosableMixin", "kind": "mixin" },
+    { "name": "terminate", "kind": "method", "ownerName": "TerminatableMixin" },
+    { "name": "onTerminated", "kind": "method", "ownerName": "TerminatableMixin" },
+    { "name": "wasTerminated", "kind": "property", "ownerName": "TerminatableMixin" },
+    { "name": "onCheckForClose", "kind": "method", "ownerName": "ClosableMixin" },
+    { "name": "onClosing", "kind": "method", "ownerName": "ClosableMixin" },
+    { "name": "isClosing", "kind": "property", "ownerName": "ClosableMixin" },
+    { "name": "startClosing", "kind": "method", "ownerName": "ClosableMixin" }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": [
+    { "type": "overrides", "source": "TerminatableMixin.onTerminated", "target": "TerminatableMixin.onTerminated", "note": "A mixin does not override ITSELF. The base-choice rule is about a subclass's `@override` member, and a self-edge here would be a fabricated override." },
+    { "type": "overrides", "source": "ClosableMixin.onClosing", "target": "ClosableMixin.onClosing", "note": "the same for the second mixin." }
+  ]
+}

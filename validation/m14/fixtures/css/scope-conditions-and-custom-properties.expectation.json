@@ -1,0 +1,138 @@
+{
+  "fixtureId": "css/scope-conditions-and-custom-properties",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Scope containment is the largest `contains` class in the corpus (7,601 @layer + 2,921 @media + 11 @container) and custom-property containment the second (3,999). The `var()` reads are the `references` class (13,218). Pinned together because they are the same shape seen from both sides: a rule both DECLARES a property and READS one. @import is pinned in both spellings — quoted and `url()` — because the unquoted form has no string_value node and was a real oracle bug once already. The two `imports` rows also pin the edge's SOURCE, which no css fixture pinned until now: the source is the importing stylesheet's own basename, produced by the pure-String `lastPathSegment` helper, and a mutant that took the FIRST path segment instead would otherwise have survived because every row constrained only `target`. That source is also the whole of the lane's declared `imports`-resolves-at-0% limitation, so it is worth a pin rather than a sentence in a document.",
+  "expectSymbols": [
+    {
+      "name": "@layer base",
+      "kind": "module"
+    },
+    {
+      "name": "@media print",
+      "kind": "module"
+    },
+    {
+      "name": "@container (min-width: 400px)",
+      "kind": "module"
+    },
+    {
+      "name": "@supports (display: grid)",
+      "kind": "interface"
+    },
+    {
+      "name": ".grid-capable",
+      "kind": "class"
+    },
+    {
+      "name": ".btn",
+      "kind": "class"
+    },
+    {
+      "name": ".only-print",
+      "kind": "class"
+    },
+    {
+      "name": ".wide",
+      "kind": "class"
+    },
+    {
+      "name": ":root",
+      "kind": "class"
+    },
+    {
+      "name": "--brand",
+      "kind": "variable"
+    },
+    {
+      "name": "--gap",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "scope-conditions-and-custom-properties.css",
+      "target": "base.css",
+      "line_number": 1,
+      "meta.evidenceClass": "import_based",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "imports",
+      "from": "scope-conditions-and-custom-properties.css",
+      "target": "theme.css",
+      "line_number": 2,
+      "meta.evidenceClass": "import_based",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::.btn",
+      "meta.evidenceClass": "structural",
+      "meta.isLayerScope": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::.only-print",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::.wide",
+      "meta.evidenceClass": "structural",
+      "meta.isContainerScope": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::.grid-capable",
+      "meta.evidenceClass": "structural",
+      "meta.isSupportsScope": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::--brand",
+      "meta.evidenceClass": "structural",
+      "meta.isCustomPropertyScope": true
+    },
+    {
+      "type": "contains",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::--gap",
+      "meta.evidenceClass": "structural",
+      "meta.isCustomPropertyScope": true
+    },
+    {
+      "type": "references",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::--brand",
+      "meta.evidenceClass": "import_based",
+      "meta.isVariableRef": true
+    },
+    {
+      "type": "references",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::--gap",
+      "meta.evidenceClass": "import_based",
+      "meta.isVariableRef": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "color"
+    },
+    {
+      "type": "references",
+      "target": "color"
+    },
+    {
+      "type": "uses",
+      "target": "fixtures/css/scope-conditions-and-custom-properties::--brand"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

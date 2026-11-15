@@ -1,0 +1,57 @@
+{
+  "fixtureId": "scala/anonymous-type-owner",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #867 ruling; spellings and lines recorded from the post-ruling run. scala already satisfied the ruling.",
+  "rationale": "M49/M37 #867 — the ruling pinned on scala: a class-level anonymous type is owned by the CLASS, a literal declared inside a method by that METHOD. Both contexts are pinned so the two can never drift apart again, and the crossed containment edges are forbidden in both directions.",
+  "expectSymbols": [
+    {
+      "name": "AnonOwner",
+      "kind": "class"
+    },
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "AnonOwner",
+      "comment": "#867 context 1: class-level literal -> the class"
+    },
+    {
+      "name": "anonymous_Comparator",
+      "kind": "class",
+      "ownerName": "inMethod",
+      "comment": "#867 context 2: in-method literal -> the method"
+    },
+    {
+      "name": "classLevel",
+      "comment": "control: a class-level FIELD is a member of the class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Runnable",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Comparator",
+      "line_number": 7
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Comparator",
+      "comment": "#867 the defect direction (kotlin's pre-ruling behaviour)"
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Runnable",
+      "comment": "the mirror direction"
+    }
+  ]
+}

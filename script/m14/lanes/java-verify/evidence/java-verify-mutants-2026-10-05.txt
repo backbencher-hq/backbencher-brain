@@ -8,26 +8,26 @@ mutants:    injected below, each into a COPY of the committed analyzer
 computing the BASELINE signature over the WHOLE corpus (so a survivor of the
 sample sweep can be re-asked against the population the invariant is about)...
 [INFO] [13:01:46] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
-[INFO] [13:01:46] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:02:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:02:35] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:02:51] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:03:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:03:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:03:59] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:01:46] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:02:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:02:35] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:02:51] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:03:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:03:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:03:59] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
   relationships: {"references":221725,"imports":38968,"extends":4265,"calls":262951,"overrides":19924,"contains":83991,"exports":3285,"uses":19729,"instantiates":21344,"implements":1949}
   imports[] 38953 (static 10975, wildcard 2)
   exports[] 3315 (public 2557, not-public 758, NOT a top-level type 0)
   endpoints that cannot be a Java name: 4
   fixture behaviour digest: 37872 bytes over 55 fixture files
 
-[INFO] [13:04:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:04:41] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:05:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:05:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:05:58] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:06:34] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:06:57] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:04:19] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:04:41] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:05:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:05:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:05:58] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:06:34] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:06:57] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M1 exports: drop the top-level-type guard
             rel exports: 3285 -> 3299 (+14)
             rel metadata exports/java_exportable_unit: 3283 -> 3297 (+14)
@@ -36,12 +36,12 @@ caught    M1 exports: drop the top-level-type guard
             exports not-public: 758 -> 764 (+6)
             exports NOT a top-level type: 0 -> 60 (+60)
             exports entries that are NOT a top-level type (tree identity): 0 -> 60 (+60)
-[INFO] [13:07:12] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:07:32] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:07:51] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:08:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:08:25] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:08:48] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:07:12] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:07:32] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:07:51] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:08:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:08:25] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:08:48] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M2 exports: flat 1.0 for a package-private top-level type
             fixture behaviour digest CHANGED (1188 -> 1188 rows)
                 + R|exports|lines|Items|1
@@ -51,13 +51,13 @@ caught    M2 exports: flat 1.0 for a package-private top-level type
                 - R|exports|lines|Items|0.6
                 - R|exports|com.acme.jvm|Service|0.6
                 - R|exports|com.acme.m49|CommentArity|0.6
-[INFO] [13:09:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:09:26] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:09:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:10:07] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:10:16] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:10:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:10:57] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:09:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:09:26] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:09:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:10:07] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:10:16] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:10:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:10:57] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M3 imports: remove the dependency edge
             rel imports: 38968 -> 15 (-38953)
             rel references: 221725 -> 260678 (+38953)
@@ -67,23 +67,23 @@ caught    M3 imports: remove the dependency edge
             rel metadata references/single_type_import: 0 -> 27976 (+27976)
             rel metadata references/static_member_import: 0 -> 10975 (+10975)
             rel metadata references/type_on_demand_import: 0 -> 2 (+2)
-[INFO] [13:14:24] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:14:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:15:22] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:15:36] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:15:47] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:16:08] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:16:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:14:24] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:14:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:15:22] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:15:36] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:15:47] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:16:08] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:16:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M4 imports: isStatic always false
             rel metadata imports/single_type_import: 27976 -> 38953 (+10977)
             rel metadata imports/static_member_import: 10975 -> 0 (-10975)
             rel metadata imports/type_on_demand_import: 2 -> 0 (-2)
-[INFO] [13:16:39] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:16:57] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:17:14] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:17:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:17:40] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:17:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:16:39] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:16:57] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:17:14] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:17:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:17:40] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:17:54] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M5 JPMS: point the requires guard at a role the corpus never produces
             rel imports: 38968 -> 38953 (-15)
             rel metadata imports/module_requires_dependency: 15 -> 0 (-15)
@@ -91,25 +91,25 @@ caught    M5 JPMS: point the requires guard at a role the corpus never produces
                 - R|imports|com.example.app|com.example.core|1
                 - R|imports|com.example.app|java.logging|1
                 - R|imports|com.example.app|jdk.unsupported|1
-[INFO] [13:18:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:18:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:18:55] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:19:11] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:19:23] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:19:52] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:20:16] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:18:06] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:18:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:18:55] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:19:11] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:19:23] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:19:52] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:20:16] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M6 type endpoints: fall back to the node TEXT
             rel references: 221725 -> 221731 (+6)
             rel metadata references/method_reference_receiver: 1076 -> 1082 (+6)
             fixture behaviour digest CHANGED (1188 -> 1189 rows)
                 + R|references|expressionReceivers|this.field|0.9
-[INFO] [13:20:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:21:01] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:21:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:21:48] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:22:13] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:22:36] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:22:55] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:20:33] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:21:01] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:21:28] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:21:48] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:22:13] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:22:36] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:22:55] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M7 exports: emit a package source when the file declares no package
             rel exports: 3285 -> 3317 (+32)
             rel metadata exports/java_exportable_unit: 3283 -> 3315 (+32)
@@ -119,12 +119,12 @@ caught    M7 exports: emit a package source when the file declares no package
                 + R|exports|root|ArrayAccessUses|1
                 + R|exports|root|Store|0.6
                 ... 32 added, 0 removed in total
-[INFO] [13:23:05] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:23:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:23:50] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:24:07] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:24:22] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
-[INFO] [13:24:43] [ast-engine] language parser loaded {"language":"java","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:23:05] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:23:27] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:23:50] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:24:07] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:24:22] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [13:24:43] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 caught    M8 contains: publish a phantom member at 1.0
             fixture behaviour digest CHANGED (1188 -> 1188 rows)
                 + R|contains|AccountRepository|count|1

@@ -1,0 +1,63 @@
+{
+ "fixtureId": "typescript/mixin-application",
+ "language": "typescript",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Mixin APPLICATION vs INHERITANCE, discriminated by the SHAPE of the heritage expression: `Post extends Tagged(Timestamped)` CALLS a factory, so it is a `mixes_in` edge to the CALLEE `Tagged` AND an `extends` edge whose base name is also the callee \u2014 the javascript lane's measured convention, where 76 call-shaped heritage clauses give 76 `extends` and 83 `mixes_in`. `Plain extends Timestamped` names a type and is an `extends` edge only. THE FIXTURE FOUND A REAL DEFECT ON ITS FIRST RUN: the base name of a call-shaped heritage was the WHOLE CALL TEXT `Tagged(Timestamped)`, a target no symbol can own. Both directions are pinned, including that the ARGUMENT never becomes a target.",
+ "expectSymbols": [
+  {
+   "name": "Timestamped"
+  },
+  {
+   "name": "Tagged"
+  },
+  {
+   "name": "Post"
+  },
+  {
+   "name": "Plain"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "mixes_in",
+   "from": "Post",
+   "targetEndsWith": "Tagged"
+  },
+  {
+   "type": "extends",
+   "from": "Post",
+   "targetEndsWith": "Tagged"
+  },
+  {
+   "type": "extends",
+   "from": "Plain",
+   "targetEndsWith": "Timestamped"
+  },
+  {
+   "type": "part_of",
+   "from": "mixin-application",
+   "target": "fixture-should-not-matter",
+   "meta.relationshipType": "reference_directive",
+   "note": "the triple-slash reference directive is the one surface that emits part_of on this lane; the mutant that drops the whole type must fail HERE"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "extends",
+   "from": "Post",
+   "targetEndsWith": "(",
+   "note": "THE DEFECT THIS FIXTURE CAUGHT: a call-shaped heritage published its base name as the whole call text, so the edge named `Tagged(Timestamped)` \u2014 a target that no symbol can own. The base name is the callee."
+  },
+  {
+   "type": "mixes_in",
+   "from": "Post",
+   "targetEndsWith": "Timestamped",
+   "note": "the ARGUMENT of the factory is not the mixin's target \u2014 the relation is to the callee"
+  },
+  {
+   "type": "mixes_in",
+   "from": "Plain",
+   "note": "a plain type name in the heritage position is INHERITANCE, not an application; this is the negative half that makes the shape test real"
+  }
+ ]
+}

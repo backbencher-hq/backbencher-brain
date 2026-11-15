@@ -1,0 +1,321 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it \u2014 U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` \u2014 a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/callsite-lines-825",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The expected line numbers below were TRANSCRIBED from a measured run of this fixture through the production entry (RealDartAnalyzer.analyze) and then checked LINE BY LINE against the source with the claimed line's own text printed under each edge (script/m14/tmp/dt-fixture-dump.ts) — so they record what the analyzer does, not what it ought to. What makes them constraints rather than a snapshot is the forbid set: every entry there is a construct-start position the Dart grammar permits writing (a wrapped directive, a wrapped member type, a wrapped heritage clause, a receiver-continued selector, a wrapped redirect target) and three of them (contains @45, @48, @54) are the MEASURED pre-fix positions of this very file.",
+  "rationale": "M60 line contract, dart lane (#929 lineage). dart emitted NO line_number on any relationship before this round: MEASURED 42,310 edges over a 240-file draw of both pinned corpora (proxicall + dart-http) with 0 lined - every one of the 32 inline `relationships.push` sites unlined, since the analyzer had no line helper at all. It now has one (`nodeLine(node)`), the four text-only helpers gained node-returning forms (`lastIdentifierNode`, `linkMemberNode`, `resolveSelectorCalleeNode`, `resolvedHeritageNodes`, `signatureNameNode`) so the TEXT and the LINE of an edge can never come from two different selections, and all 32 sites carry the field. Measured on the same draws: 0 of 32,016 (120 files) and 0 of 42,310 (240 files) unlined, 0 lines outside their file, and a name-token check over 31,866 checkable edges reports 0 INCONSISTENT (the 150 exempted edges are `contains -> constructor`, a SYNTHESISED name and the kotlin/phantom class). The change is provably ADDITIVE: script/m14/tmp/dt-lines-equivalence.ts compares every payload field with `line_number` stripped against HEAD's analyzer on the same files - 0 payload-different files (identical symbols, identical edge multisets, identical label histogram). Two of the traps are the round's own discoveries: (a) a WRAPPED member declaration (`final void Function(int a,\\n    int b) _wrapped;`, the shape of cronet_http's generated jni_bindings.dart) put the edge on the declaration's START line - a line the member name is not written on - for 148 of 32,016 edges on the equivalence draw, fixed by recording each member's NAME line at symbol creation (`nameLines`, keyed by name+range because one declaration node can carry several names); (b) the node-form refactor of `signatureName` briefly published the raw operator token (`==`) instead of the contract spelling (`operator ==`) for operator overloads, and the same equivalence proof caught it on cupertino_api.dart before any fixture was written. Reverting mutant: dart/lines-dropped (strips every line - the exact pre-fix state) plus dart/line-zero-based (the off-by-one that proves the fixture pins the arithmetic, not merely the presence of a number).",
+  "expectSymbols": [
+    { "name": "Shape", "kind": "class" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Figure", "kind": "class" },
+    { "name": "area", "kind": "method", "ownerName": "Figure" },
+    { "name": "_wrapped", "kind": "property", "ownerName": "Figure" },
+    { "name": "perimeter", "kind": "method", "ownerName": "Figure" },
+    { "name": "total", "kind": "property", "ownerName": "Figure" },
+    { "name": "Counter", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Counter" },
+    { "name": "value", "kind": "property", "ownerName": "Counter" },
+    { "name": "Reporter", "kind": "class" },
+    { "name": "_Reporter", "kind": "class" },
+    { "name": "gTotal", "kind": "constant" },
+    { "name": "Ledger", "kind": "class" },
+    { "name": "xs", "kind": "property", "ownerName": "Ledger" },
+    { "name": "firstOf", "kind": "method", "ownerName": "Ledger" },
+    { "name": "spinAll", "kind": "method", "ownerName": "Ledger" },
+    { "name": "run", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "callsite-lines-825",
+      "target": "dart:async:*",
+      "line_number": 26,
+      "comment": "the URI LITERAL is written on 26; the `import` keyword on 25 is a line the name is not on"
+    },
+    {
+      "type": "exports",
+      "from": "callsite-lines-825",
+      "target": "fixtures/dart/src/api.dart",
+      "line_number": 29,
+      "comment": "the URI literal `'src/api.dart'` (line 29), not the `export` statement (28). 2026-10-08: the target is now the FILE the specifier names — a specifier is a path and no resolver can bind it (see import-resolution.expectation.json); the LINE contract this row exists for is unchanged, and the forbid row below moved with it so the 28-vs-29 distinction still has teeth."
+    },
+    {
+      "type": "part_of",
+      "from": "callsite-lines-825",
+      "target": "fixtures/dart/src/widgets.dart",
+      "meta.partRole": "library",
+      "line_number": 32,
+      "comment": "the `part` directive's URI literal (line 32), not the `part` keyword (31) — 2026-10-18 the row is `part_of` (canonical vocabulary) with partRole library; the LINE contract this fixture exists for is unchanged. Target still the named file."
+    },
+    {
+      "type": "extends",
+      "from": "Figure",
+      "target": "Base",
+      "line_number": 43,
+      "comment": "the base NAME in `extends Base` (43), not the class header (42)"
+    },
+    {
+      "type": "implements",
+      "from": "Figure",
+      "target": "Shape",
+      "meta.isImplements": true,
+      "line_number": 44,
+      "comment": "the interface NAME in `implements Shape` (44) - each heritage clause carries its own line"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure._wrapped",
+      "line_number": 46,
+      "comment": "the member NAME (46), not the wrapped declaration's start (45) - the shape measured on cronet_http's jni_bindings.dart"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure.perimeter",
+      "line_number": 49,
+      "comment": "the signature's name line (49), not the wrapped return type's line (48)"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure.area",
+      "line_number": 55,
+      "comment": "the overriding method's own name line (55), not `@override` (53) nor the wrapped return type (54)"
+    },
+    {
+      "type": "overrides",
+      "from": "Figure.area",
+      "target": "Base.area",
+      "line_number": 55,
+      "comment": "the edge names the OVERRIDING method, so its line is the override's own signature (55)"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure.total",
+      "line_number": 57,
+      "comment": "a single-line member declaration: name node and declaration start agree"
+    },
+    {
+      "type": "contains",
+      "from": "Counter",
+      "target": "Counter.constructor",
+      "line_number": 61,
+      "comment": "`constructor` is a SYNTHESISED name (no such spelling in the file); its line is the declaration's (61)"
+    },
+    {
+      "type": "instantiates",
+      "from": "Reporter",
+      "target": "_Reporter",
+      "meta.isFactoryRedirection": true,
+      "line_number": 70,
+      "comment": "the REDIRECT TARGET `_Reporter` (70), not the `factory Reporter() =` line (69)"
+    },
+    {
+      "type": "contains",
+      "from": "Ledger",
+      "target": "Ledger.xs",
+      "line_number": 78,
+      "comment": "the declared member's name line (78)"
+    },
+    {
+      "type": "uses",
+      "from": "acquire",
+      "target": "Counter.value",
+      "note": "2026-10-08: was the bare `value`; the read is inside Counter, which declares it",
+      "meta.isBareRead": true,
+      "line_number": 65,
+      "comment": "a bare identifier read of a declared member: the identifier's own line (65)"
+    },
+    {
+      "type": "uses",
+      "from": "perimeter",
+      "target": "perimeter\u0000sides",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "line_number": 51,
+      "comment": "a bound parameter read: the identifier is written on the expression body's line (51). Target respelled 2026-10-08 to `<callable>#<binding>` — a PARAMETER is a binding too, and the bare `sides` was resolvable by name against any single `sides` declaration in the project"
+    },
+    {
+      "type": "uses",
+      "from": "firstOf",
+      "target": "xs",
+      "meta.isSubscriptBase": true,
+      "line_number": 82,
+      "comment": "the subscript BASE `xs` (82) - an index operation presupposes the value"
+    },
+    {
+      "type": "uses",
+      "from": "label",
+      "target": "gTotal",
+      "meta.isInterpolationRead": true,
+      "line_number": 84,
+      "comment": "inside `'total=$gTotal value=$value'` - the interpolation is written on 84, so both reads land there"
+    },
+    {
+      "type": "calls",
+      "from": "spinAll",
+      "target": "_wrapped",
+      "line_number": 90,
+      "comment": "a call through a function-typed field: the callee identifier's line (90)"
+    },
+    {
+      "type": "uses",
+      "from": "spinAll",
+      "target": "Ledger.xs",
+      "note": "2026-10-08: was the bare `xs`; `spinAll` is a Ledger method and the read is of Ledger's own field. The `spinAll -> xs` LOCAL read (a parameter) is a different edge and is still bare.",
+      "meta.isBareRead": true,
+      "line_number": 91,
+      "comment": "the cascade RECEIVER `xs` is itself a read, written on 91 while its sections run to 93"
+    },
+    {
+      "type": "calls",
+      "from": "spinAll",
+      "target": "add",
+      "meta.isCascade": true,
+      "line_number": 92,
+      "comment": "the cascade selector names `add` on 92 (the multi-invocation fix: `..add(x)..clear()` emits BOTH)"
+    },
+    {
+      "type": "calls",
+      "from": "spinAll",
+      "target": "clear",
+      "meta.isCascade": true,
+      "line_number": 93,
+      "comment": "the second section's selector names `clear` on 93"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "Counter.acquire",
+      "line_number": 102,
+      "note": "2026-10-08: was the bare `acquire`. `counter` is a PARAMETER declared `Counter`, so the receiver's type is written in the signature and the target names the declaration.",
+      "comment": "a RECEIVER-CONTINUED call: `return counter` is on 101 and the callee on 102 (`.` does not end a statement)"
+    },
+    {
+      "type": "instantiates",
+      "from": "run",
+      "target": "Counter",
+      "meta.isNamedConstructor": true,
+      "line_number": 99,
+      "comment": "the named-constructor CALLEE `.named(2)` is on 99; the receiver `Counter` is on 98"
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "Counter.value",
+      "meta.isMemberRead": true,
+      "line_number": 100,
+      "note": "2026-10-08: was the bare `value`. `made` is a local whose INITIALIZER constructs `Counter` (`final made = Counter.named(2)`), which is what types the receiver.",
+      "comment": "the member NAME in `made.value` (100)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "callsite-lines-825",
+      "target": "dart:async:*",
+      "line_number": 25,
+      "note": "pre-fix shape: the `import` KEYWORD line; the URI literal is written on 26"
+    },
+    {
+      "type": "exports",
+      "from": "callsite-lines-825",
+      "target": "fixtures/dart/src/api.dart",
+      "line_number": 28,
+      "note": "pre-fix shape: the `export` keyword line; the URI literal is written on 29"
+    },
+    {
+      "type": "part_of",
+      "from": "callsite-lines-825",
+      "target": "fixtures/dart/src/widgets.dart",
+      "line_number": 31,
+      "note": "pre-fix shape: the `part` keyword line; the URI literal is written on 32 — relabelled with the row it guards (2026-10-18)"
+    },
+    {
+      "type": "extends",
+      "from": "Figure",
+      "target": "Base",
+      "line_number": 42,
+      "note": "pre-fix shape: the `class Figure` header line; the base name is written on 43"
+    },
+    {
+      "type": "implements",
+      "from": "Figure",
+      "target": "Shape",
+      "line_number": 42,
+      "note": "pre-fix shape: one heritage line for the whole header; the interface name is written on 44"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure._wrapped",
+      "line_number": 45,
+      "note": "the MEASURED pre-fix position of this very file: the wrapped declaration's start line (the type), where the member name is not written; measured 148 of 32,016 edges on the equivalence draw"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure.perimeter",
+      "line_number": 48,
+      "note": "the MEASURED pre-fix position: the wrapped return type's line, not the signature's name line (49)"
+    },
+    {
+      "type": "contains",
+      "from": "Figure",
+      "target": "Figure.area",
+      "line_number": 54,
+      "note": "the MEASURED pre-fix position: the wrapped return type's line (54), one line above the name (55)"
+    },
+    {
+      "type": "overrides",
+      "from": "Figure.area",
+      "target": "Base.area",
+      "line_number": 53,
+      "note": "the `@override` annotation line: in tree-sitter-dart an annotation is a SIBLING before the declaration (probed), so this is the java/csharp annotated-declaration class - the edge belongs to the overriding method (55)"
+    },
+    {
+      "type": "overrides",
+      "from": "Figure.area",
+      "target": "Base.area",
+      "line_number": 54,
+      "note": "pre-fix shape: the declaration's START line (the return type) rather than the name line"
+    },
+    {
+      "type": "instantiates",
+      "from": "Reporter",
+      "target": "_Reporter",
+      "line_number": 69,
+      "note": "pre-fix shape: the `factory Reporter() =` line; the redirect target is written on 70"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "acquire",
+      "line_number": 101,
+      "note": "pre-fix shape: the RECEIVER line (`return counter`); the callee is written on 102 - the shape the go and c lanes measured on newline-continued calls"
+    },
+    {
+      "type": "instantiates",
+      "from": "run",
+      "target": "Counter",
+      "line_number": 98,
+      "note": "pre-fix shape: the construction's receiver line; the constructor NAME is written on 99"
+    },
+    {
+      "type": "calls",
+      "from": "spinAll",
+      "target": "add",
+      "line_number": 91,
+      "note": "pre-fix shape: the cascade RECEIVER line for every section; each section's callee names its own line (92/93)"
+    },
+    {
+      "type": "imports",
+      "from": "callsite-lines-825",
+      "line_number": 0,
+      "note": "the M59 FABRICATED ZERO class: no edge may claim line 0 (absence is honest, a synthesized 0 is not)"
+    }
+  ]
+}

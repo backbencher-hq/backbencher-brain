@@ -1,0 +1,1896 @@
+{
+  "instrument": "script/m14/tmp/make/define-census.mts",
+  "whatThisIs": "define/endef census for the mixes_in question: macro declaration sites, call sites, and the composition discriminators (body calls another macro, body references a declared variable, define nested in a conditional), over the whole gate-admitted make population.",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "membership": "gate's own admission (exts=[mk,mak,makefile,gnumakefile] + basename + router verdict), git ls-files, 1 MiB cap",
+    "admitted": 755,
+    "absent": 66,
+    "overCap": 0,
+    "walkFailed": 0,
+    "repos": 67
+  },
+  "defineSites": {
+    "total": 80,
+    "files": 21,
+    "withOperator": 1,
+    "bare": 79,
+    "inConditional": 3
+  },
+  "callSites": {
+    "total": 190,
+    "files": 26,
+    "ofDeclaredMacros": 93
+  },
+  "composition": {
+    "chainInBody": 0,
+    "chainInBodySites": [],
+    "bodyRefsDeclaredMacros": 0,
+    "bodyRefsAnyDeclared": 0
+  },
+  "perDefine": [
+    {
+      "file": "docker/Makefile",
+      "line": 121,
+      "name": "\\n",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/otelttrpc/Makefile",
+      "line": 62,
+      "name": "WHALE_TARGET",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/otelttrpc/Makefile",
+      "line": 52,
+      "name": "BUILD_BINARY",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 114,
+      "name": "BUILD_BINARY",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "docker/vendor/github.com/tetratelabs/wazero/Makefile",
+      "line": 316,
+      "name": "go-build",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 742,
+      "name": "ensure_apt_packages",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 731,
+      "name": "ensure_apt_commands",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 455,
+      "name": "cmake_build",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 328,
+      "name": "BUILD_MANPAGES",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 263,
+      "name": "FORMAT",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 70,
+      "name": "READ_SOURCE_DATE_EPOCH",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 62,
+      "name": "WRITE_SOURCE_DATE_EPOCH",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 42,
+      "name": "APP_TEMPLATE",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 34,
+      "name": "CHECK_ERLANG_RELEASE",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "gql-graphql-php/Makefile",
+      "line": 18,
+      "name": "run-php-cs-fixer",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 33,
+      "name": "run_ghcid_run_main",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 29,
+      "name": "run_ghcid",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 18,
+      "name": "run_ghcid_main_tests",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 8,
+      "name": "run_ghcid_api_tests",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "hledger/hledger/shell-completion/Makefile",
+      "line": 40,
+      "name": "M4DEPS",
+      "operator": ":=",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 503,
+      "name": "HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 485,
+      "name": "CMD_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 458,
+      "name": "CROSS_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 440,
+      "name": "PACKAGE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 415,
+      "name": "QUICK_RELEASE_IMAGES_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 391,
+      "name": "RELEASE_SKIP_TESTS_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 367,
+      "name": "RELEASE_IMAGES_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 345,
+      "name": "RELEASE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 330,
+      "name": "LINT_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 314,
+      "name": "CLEAN_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 295,
+      "name": "TEST_CMD_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 218,
+      "name": "TEST_E2E_NODE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 195,
+      "name": "TEST_IT_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 169,
+      "name": "CHECK_TEST_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 154,
+      "name": "UPDATE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 139,
+      "name": "QUICK_VERIFY_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 115,
+      "name": "VERIFY_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 100,
+      "name": "GINKGO_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/Makefile",
+      "line": 67,
+      "name": "ALL_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 503,
+      "name": "HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 485,
+      "name": "CMD_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 458,
+      "name": "CROSS_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 440,
+      "name": "PACKAGE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 415,
+      "name": "QUICK_RELEASE_IMAGES_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 391,
+      "name": "RELEASE_SKIP_TESTS_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 367,
+      "name": "RELEASE_IMAGES_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 345,
+      "name": "RELEASE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 330,
+      "name": "LINT_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 314,
+      "name": "CLEAN_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 295,
+      "name": "TEST_CMD_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 218,
+      "name": "TEST_E2E_NODE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 195,
+      "name": "TEST_IT_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 169,
+      "name": "CHECK_TEST_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 154,
+      "name": "UPDATE_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 139,
+      "name": "QUICK_VERIFY_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 115,
+      "name": "VERIFY_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 100,
+      "name": "GINKGO_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/build/root/Makefile",
+      "line": 67,
+      "name": "ALL_HELP_INFO",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "kubernetes/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 114,
+      "name": "BUILD_BINARY",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 114,
+      "name": "makePackageTarget",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "nvm/Makefile",
+      "line": 76,
+      "name": "RESOLVE_VERSIONS",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "redis/Makefile",
+      "line": 57,
+      "name": "_capture_goal_args",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "redis/deps/hiredis/Makefile",
+      "line": 29,
+      "name": "REDIS_TEST_CONFIG",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 18,
+      "name": "submake",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 371,
+      "name": "MAKE_INSTALL",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": true
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 366,
+      "name": "MAKE_INSTALL",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": true
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 375,
+      "name": "MULTIOPT",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 257,
+      "name": "ADD_JNI_H",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 165,
+      "name": "CLASSFILE_DEPS",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1399,
+      "name": "gen-tester1.html",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1377,
+      "name": "gen-tester1.js",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1334,
+      "name": "gen-st64",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1230,
+      "name": "gen-dwp",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1211,
+      "name": "gen-promiser",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1194,
+      "name": "gen-worker1",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 897,
+      "name": "b.call.patch-export-default",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 302,
+      "name": "b.strip-js-emcc-bindings",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": true
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 246,
+      "name": "b.c-pp.target",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 231,
+      "name": "b.c-pp.shcmd",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    },
+    {
+      "file": "wagtail/Makefile",
+      "line": 54,
+      "name": "OPENAPI_SNAPSHOT_SCRIPT",
+      "operator": "define",
+      "bodyCallsMacro": [],
+      "bodyRefsDeclared": [],
+      "inConditional": false
+    }
+  ],
+  "perCall": [
+    {
+      "file": "docker/man/Makefile",
+      "line": 29,
+      "callee": "man_section",
+      "caller": ""
+    },
+    {
+      "file": "docker/man/Makefile",
+      "line": 26,
+      "callee": "MANPAGE_template",
+      "caller": ""
+    },
+    {
+      "file": "docker/man/Makefile",
+      "line": 18,
+      "callee": "man_section",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/anchore/go-struct-converter/Makefile",
+      "line": 74,
+      "callee": "title",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/anchore/go-struct-converter/Makefile",
+      "line": 62,
+      "callee": "title",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/anchore/go-struct-converter/Makefile",
+      "line": 47,
+      "callee": "title",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 121,
+      "callee": "BUILD_BINARY",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/tetratelabs/wazero/Makefile",
+      "line": 306,
+      "callee": "go-build",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/tetratelabs/wazero/Makefile",
+      "line": 303,
+      "callee": "go-build",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 30,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 30,
+      "callee": "goroot",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 28,
+      "callee": "fmt",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 28,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 24,
+      "callee": "fmt",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 24,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 21,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 20,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 18,
+      "callee": "unroot",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 17,
+      "callee": "goroot",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 10,
+      "callee": "uniq",
+      "caller": ""
+    },
+    {
+      "file": "docker/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 9,
+      "callee": "uniq",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 772,
+      "callee": "ensure_apt_commands",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 759,
+      "callee": "ensure_apt_packages",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 758,
+      "callee": "ensure_apt_commands",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 670,
+      "callee": "cmake_build",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 667,
+      "callee": "cmake_build",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 510,
+      "callee": "cmake_build",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 507,
+      "callee": "cmake_build",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 478,
+      "callee": "vcpkg_cmake_flag",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 477,
+      "callee": "sync_extensions_into",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 473,
+      "callee": "vcpkg_cmake_flag",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 472,
+      "callee": "sync_extensions_into",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 467,
+      "callee": "cmake_build",
+      "caller": ""
+    },
+    {
+      "file": "duckdb/Makefile",
+      "line": 464,
+      "callee": "cmake_build",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 275,
+      "callee": "FORMAT",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 272,
+      "callee": "FORMAT",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 231,
+      "callee": "DOCS_CONFIG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 230,
+      "callee": "DOCS_COMPILE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 225,
+      "callee": "DOCS_CONFIG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 224,
+      "callee": "DOCS_COMPILE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 219,
+      "callee": "DOCS_CONFIG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 218,
+      "callee": "DOCS_COMPILE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 213,
+      "callee": "DOCS_CONFIG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 212,
+      "callee": "DOCS_COMPILE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 207,
+      "callee": "DOCS_CONFIG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 206,
+      "callee": "DOCS_COMPILE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 201,
+      "callee": "DOCS_CONFIG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 200,
+      "callee": "DOCS_COMPILE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 192,
+      "callee": "SOURCE_REF",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 191,
+      "callee": "GIT_REVISION",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 191,
+      "callee": "GIT_TAG",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 161,
+      "callee": "READ_SOURCE_DATE_EPOCH",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 147,
+      "callee": "WRITE_SOURCE_DATE_EPOCH",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 127,
+      "callee": "APP_TEMPLATE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 126,
+      "callee": "APP_TEMPLATE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 125,
+      "callee": "APP_TEMPLATE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 124,
+      "callee": "APP_TEMPLATE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 123,
+      "callee": "APP_TEMPLATE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 89,
+      "callee": "CHECK_ERLANG_RELEASE",
+      "caller": ""
+    },
+    {
+      "file": "elixir/Makefile",
+      "line": 25,
+      "callee": "GIT_REVISION",
+      "caller": ""
+    },
+    {
+      "file": "fmt/support/Android.mk",
+      "line": 1,
+      "callee": "my-dir",
+      "caller": ""
+    },
+    {
+      "file": "gql-graphql-php/Makefile",
+      "line": 27,
+      "callee": "run-php-cs-fixer",
+      "caller": ""
+    },
+    {
+      "file": "gql-graphql-php/Makefile",
+      "line": 26,
+      "callee": "run-php-cs-fixer",
+      "caller": ""
+    },
+    {
+      "file": "gql-graphql-php/Makefile",
+      "line": 25,
+      "callee": "run-php-cs-fixer",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 130,
+      "callee": "run_ghcid_main_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 125,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 120,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 113,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 107,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 101,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 95,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 88,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 82,
+      "callee": "run_ghcid_api_tests",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 77,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 72,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 67,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 62,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 57,
+      "callee": "run_ghcid_run_main",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 50,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 45,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/ghcid.mk",
+      "line": 40,
+      "callee": "run_ghcid",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/tests.mk",
+      "line": 97,
+      "callee": "stop_after",
+      "caller": ""
+    },
+    {
+      "file": "hasura-engine/scripts/make/tests.mk",
+      "line": 90,
+      "callee": "stop_after",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/build/pause/Makefile",
+      "line": 102,
+      "callee": "word-hyphen",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/build/pause/Makefile",
+      "line": 102,
+      "callee": "word-hyphen",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/build/pause/Makefile",
+      "line": 102,
+      "callee": "word-hyphen",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/build/pause/Makefile",
+      "line": 102,
+      "callee": "word-hyphen",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/containerd/ttrpc/Makefile",
+      "line": 121,
+      "callee": "BUILD_BINARY",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 30,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 30,
+      "callee": "goroot",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 28,
+      "callee": "fmt",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 28,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 24,
+      "callee": "fmt",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 24,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 21,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 20,
+      "callee": "testdirs",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 18,
+      "callee": "unroot",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 17,
+      "callee": "goroot",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 10,
+      "callee": "uniq",
+      "caller": ""
+    },
+    {
+      "file": "kubernetes/vendor/github.com/vishvananda/netlink/Makefile",
+      "line": 9,
+      "callee": "uniq",
+      "caller": ""
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 126,
+      "callee": "makePackageTarget",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 223,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 221,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 219,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 217,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 215,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 213,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 211,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 209,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 207,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 205,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 203,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 201,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 98,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 96,
+      "callee": "list",
+      "caller": ""
+    },
+    {
+      "file": "pixie/Makefile",
+      "line": 35,
+      "callee": "make-lazy",
+      "caller": ""
+    },
+    {
+      "file": "pixie/Makefile",
+      "line": 34,
+      "callee": "make-lazy",
+      "caller": ""
+    },
+    {
+      "file": "pixie/Makefile",
+      "line": 33,
+      "callee": "make-lazy",
+      "caller": ""
+    },
+    {
+      "file": "redis/Makefile",
+      "line": 65,
+      "callee": "_capture_goal_args",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 325,
+      "callee": "c_program",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 150,
+      "callee": "c_dynamic_library",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 143,
+      "callee": "static_library",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 136,
+      "callee": "c_program",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 133,
+      "callee": "c_program",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 129,
+      "callee": "c_program",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 114,
+      "callee": "c_program",
+      "caller": ""
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 59,
+      "callee": "detect_x86_arch",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 44,
+      "callee": "submake",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 41,
+      "callee": "submake",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 38,
+      "callee": "submake",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 35,
+      "callee": "submake",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 30,
+      "callee": "submake",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 27,
+      "callee": "submake",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/common.mk",
+      "line": 68,
+      "callee": "manifest-field",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/common.mk",
+      "line": 19,
+      "callee": "manifest-field",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/common.mk",
+      "line": 17,
+      "callee": "manifest-ref-kind",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/common.mk",
+      "line": 16,
+      "callee": "manifest-ref",
+      "caller": ""
+    },
+    {
+      "file": "redis/modules/common.mk",
+      "line": 15,
+      "callee": "manifest-field",
+      "caller": ""
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 577,
+      "callee": "MAKE_INSTALL",
+      "caller": ""
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 576,
+      "callee": "MAKE_INSTALL",
+      "caller": ""
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 575,
+      "callee": "MAKE_INSTALL",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 387,
+      "callee": "MULTIOPT",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 386,
+      "callee": "MULTIOPT",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 385,
+      "callee": "MULTIOPT",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 384,
+      "callee": "MULTIOPT",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 383,
+      "callee": "MULTIOPT",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 382,
+      "callee": "MULTIOPT",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 269,
+      "callee": "ADD_JNI_H",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 268,
+      "callee": "ADD_JNI_H",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 267,
+      "callee": "ADD_JNI_H",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 265,
+      "callee": "ADD_JNI_H",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 264,
+      "callee": "ADD_JNI_H",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/jni/GNUmakefile",
+      "line": 172,
+      "callee": "CLASSFILE_DEPS",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1494,
+      "callee": "b.c-pp.target",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1481,
+      "callee": "b.cp",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1480,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1475,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1440,
+      "callee": "b.c-pp.target",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1438,
+      "callee": "b.c-pp.target",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1426,
+      "callee": "gen-tester1.html",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1420,
+      "callee": "gen-tester1.html",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1414,
+      "callee": "gen-tester1.html",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1408,
+      "callee": "gen-tester1.html",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1393,
+      "callee": "gen-tester1.js",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1391,
+      "callee": "gen-tester1.js",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1389,
+      "callee": "gen-tester1.js",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1387,
+      "callee": "gen-tester1.js",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1350,
+      "callee": "gen-st64",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1349,
+      "callee": "gen-st64",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1348,
+      "callee": "gen-st64",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1321,
+      "callee": "b.echo",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1321,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1246,
+      "callee": "b.c-pp.target",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1236,
+      "callee": "gen-dwp",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1235,
+      "callee": "gen-dwp",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1222,
+      "callee": "gen-promiser",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1221,
+      "callee": "gen-promiser",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1220,
+      "callee": "gen-promiser",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1205,
+      "callee": "gen-worker1",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1204,
+      "callee": "gen-worker1",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1203,
+      "callee": "gen-worker1",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1067,
+      "callee": "b.c-pp.shcmd",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1066,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1010,
+      "callee": "b.echo",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 943,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 925,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 716,
+      "callee": "b.c-pp.target",
+      "caller": ""
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 207,
+      "callee": "b.mkdir@",
+      "caller": ""
+    },
+    {
+      "file": "wagtail/Makefile",
+      "line": 60,
+      "callee": "OPENAPI_SNAPSHOT_SCRIPT",
+      "caller": ""
+    },
+    {
+      "file": "wagtail/Makefile",
+      "line": 59,
+      "callee": "OPENAPI_SNAPSHOT_SCRIPT",
+      "caller": ""
+    }
+  ],
+  "walkFailedFiles": []
+}

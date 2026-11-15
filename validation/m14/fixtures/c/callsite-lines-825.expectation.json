@@ -1,0 +1,201 @@
+{
+  "fixtureId": "c/callsite-lines-825",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off callsite-lines-825.c. c emitted NO line on any relationship before this pin (0 of 414 turn-audit sample), so the pre-fix state is 'unlined', and the two traps are the ways a line can be present and still wrong. (1) A newline-continued function-pointer member call: `call_expression` starts at the RECEIVER, so the construct-start line would stamp `run -> record` at 45 (`return c`) while the callee leaf `->record` is written on 46 \u2014 after the fix the line comes from the callee leaf. (2) A wrapped `struct` specifier: the specifier starts at the KEYWORD, so the construct-start line would put `Tally` at 15 and the wrapped use at 31, while the tag is written on 16 and 32. This second trap was NOT hypothetical \u2014 it was measured on jq jv_dtoa.c, where `struct` sits on 512 and `Bigint {` on 513, and the pre-fix analyzer put the reference edge on 512 (the audit's Tier-A check flagged it as the only inconsistency in 13,186 jq relationships). The forbidRelationships entries are exactly those pre-fix shapes, so re-introducing any of them fails the gate instead of passing silently. CONTRACT REPIN (2026-10-25): a QUOTED `#include` is the translation unit's own fragment (the preprocessor splices the header's text into this unit, so the file shares the unit's single scope) and is published as `part_of` with `partRole:\"library\"` and the part's MODULE SYMBOL as the target (the file stem); the path stays in `metadata.partPath`. An ANGLE include is another module's interface and keeps `imports`. This is a LABEL MOVE plus the target's space (path -> stem, because the arbiter resolves target strings against symbol names): no dependency is gained or lost, and each repinned row gains a forbid row pinning the same target in the old label so a revert goes red.",
+  "expectSymbols": [
+    {
+      "name": "Tally",
+      "kind": "struct"
+    },
+    {
+      "name": "total",
+      "kind": "property"
+    },
+    {
+      "name": "Counters",
+      "kind": "struct"
+    },
+    {
+      "name": "hits",
+      "kind": "property"
+    },
+    {
+      "name": "misses",
+      "kind": "property"
+    },
+    {
+      "name": "record",
+      "kind": "property"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "seed",
+      "kind": "function"
+    },
+    {
+      "name": "record_impl",
+      "kind": "function"
+    },
+    {
+      "name": "run",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "stdio.h",
+      "line_number": 12
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "counters",
+      "line_number": 13,
+      "meta.partRole": "library",
+      "meta.isQuotedInclude": true
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "Tally",
+      "line_number": 16
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "Counters",
+      "line_number": 21
+    },
+    {
+      "type": "references",
+      "from": "seed",
+      "target": "Tally",
+      "line_number": 32
+    },
+    {
+      "type": "calls",
+      "from": "seed",
+      "target": "helper",
+      "line_number": 33
+    },
+    {
+      "type": "references",
+      "from": "record_impl",
+      "target": "Counters",
+      "line_number": 37
+    },
+    {
+      "type": "calls",
+      "from": "record_impl",
+      "target": "helper",
+      "line_number": 38
+    },
+    {
+      "type": "uses",
+      "from": "record_impl",
+      "target": "hits",
+      "line_number": 38
+    },
+    {
+      "type": "uses",
+      "from": "record_impl",
+      "target": "misses",
+      "line_number": 39
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "Counters",
+      "line_number": 43
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "record_impl",
+      "line_number": 44
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "record",
+      "line_number": 46
+    },
+    {
+      "type": "contains",
+      "from": "Tally",
+      "target": "total",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "hits",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "misses",
+      "line_number": 23
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "record",
+      "line_number": 24
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "record",
+      "line_number": 45,
+      "note": "pre-fix shape: the call_expression (receiver) line; `->record` is written on 46"
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "Tally",
+      "line_number": 15,
+      "note": "pre-fix shape: the specifier KEYWORD line; the tag is written on 16"
+    },
+    {
+      "type": "references",
+      "from": "seed",
+      "target": "Tally",
+      "line_number": 31,
+      "note": "pre-fix shape: the wrapped return type's keyword line; the tag is written on 32"
+    },
+    {
+      "type": "contains",
+      "from": "Counters",
+      "target": "hits",
+      "line_number": 21,
+      "note": "pre-fix shape: the enclosing declaration's line (the fabricated-substitute class); `hits` is declared on 22"
+    },
+    {
+      "type": "calls",
+      "from": "record_impl",
+      "target": "helper",
+      "line_number": 37,
+      "note": "pre-fix shape: the enclosing function's declaration line; the call is written on 38"
+    },
+    {
+      "type": "imports",
+      "target": "counters.h",
+      "note": "a QUOTED include is a part_of row now; the old imports label is forbidden so a revert goes red"
+    },
+    {
+      "type": "imports",
+      "target": "counters",
+      "note": "and the STEM target too \u2014 one edge, one label"
+    }
+  ]
+}

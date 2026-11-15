@@ -1,0 +1,204 @@
+{
+ "fixtureId": "python/import-evidence-is-an-external-claim",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The fleet's finding (a) on this lane, second instance: the lane's own census ALREADY bins a name bound by an import as EXTERNAL (`python-endpoint-resolution.ts`, the `EXTERNAL` bin \u2014 'binds to a name this file IMPORTED and to nothing in the corpus') and the analyzer published nothing the arbiter reads, so the gate counted every one as UNRESOLVED. This fixture pins the claim that closes it: `certifyImportEvidenceClaims` marks an edge `metadata.isExternalTarget` when the target (or the edge's own written route) is a name this file's MODULE scope binds by import, and records WHY (`externalReason`) and WHICH module (`externalSpecifier`) instead of a bare boolean. THE TARGET STAYS THE LEAF \u2014 the endpoint contract eight fixtures pin \u2014 and the claim is additive metadata, so it cannot raise `resolved`, cannot move a tie-break, and cannot touch `collRes`: the arbiter reads an external claim only where the target names nothing. TWO SHAPES ARE PINNED POSITIVE because a name reaches a module two ways: TARGET-BOUND (`from pathlib import Path` -> the type `Path`; `from collections import OrderedDict` -> the base; `from typing import Protocol` -> the interface base) and ROUTE-BOUND (`import os` -> `os.path.exists`; `import numpy as np` -> `np.ndarray`, the ALIAS case that the `importRoots` pre-scan misses because it records the module name rather than the bound alias). THE SIX FORBID ROWS ARE THE CLAIM'S BOUNDARY, and each one is a shape a blanket marker would lie about: a RELATIVE import names this project; a name the enclosing FUNCTION binds is a local by LEGB; a member read whose receiver is a local has no imported root; a bare callee nothing imports is the structurally closed class; a receiver that is an EXPRESSION (`re.sub(...).strip()`) starts with an imported name but its member belongs to the result, which is why the route evidence accepts only a pure dotted chain; and a name the file DECLARES is a declaration even when an import of the same spelling precedes it. Lines, reasons and specifiers are the analyzer's own output (`validation/m14/fixtures/python/dump-fixture-edges.mts`).",
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "Service",
+   "target": "Protocol",
+   "line_number": 36,
+   "meta.reasonCode": "stdlib-interface-marker",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "typing",
+   "note": "TARGET-BOUND through the interface proof: `from typing import Protocol` binds the base. The edge's own confidence and tier are unchanged; only the claim is added."
+  },
+  {
+   "type": "extends",
+   "from": "Base",
+   "target": "OrderedDict",
+   "line_number": 43,
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "collections",
+   "note": "TARGET-BOUND with NO route (a bare base), which is the second branch of the certifier: `from collections import OrderedDict` binds the base name itself."
+  },
+  {
+   "type": "references",
+   "from": "read",
+   "target": "Path",
+   "line_number": 47,
+   "meta.reasonCode": "annotation-type",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "pathlib",
+   "note": "TARGET-BOUND in a parameter annotation. The same line also publishes the return annotation as a separate edge, pinned next."
+  },
+  {
+   "type": "references",
+   "from": "read",
+   "target": "Path",
+   "line_number": 47,
+   "meta.reasonCode": "return-annotation",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "pathlib",
+   "note": "The return annotation is its own edge (the lane's position codes), and it is certified by the same binding."
+  },
+  {
+   "type": "calls",
+   "from": "path_exists",
+   "target": "exists",
+   "line_number": 54,
+   "meta.qualified": "os.path.exists",
+   "meta.reasonCode": "external-member-call",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "os",
+   "note": "ROUTE-BOUND. The target is the LEAF the endpoint contract pins; `metadata.qualified` is the written route, and its ROOT `os` is the module-level import that makes the member external."
+  },
+  {
+   "type": "uses",
+   "from": "path_exists",
+   "target": "path",
+   "line_number": 54,
+   "meta.qualified": "os.path",
+   "meta.reasonCode": "member-read",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "os",
+   "note": "The receiver of a member call is traversal (the lane's own rule), so the read is `path` on route `os.path` \u2014 and the route root is an imported module."
+  },
+  {
+   "type": "calls",
+   "from": "parse_json",
+   "target": "loads",
+   "line_number": 59,
+   "meta.qualified": "json.loads",
+   "meta.reasonCode": "external-member-call",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "json",
+   "note": "The same shape through a different module; pinned so a rule that only knows one spelling of `import` fails here."
+  },
+  {
+   "type": "uses",
+   "from": "write_err",
+   "target": "stderr",
+   "line_number": 64,
+   "meta.qualified": "sys.stderr",
+   "meta.reasonCode": "member-read",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "sys",
+   "note": "A member READ with an imported module root, the shape whose leaf (`stderr`) looks like a name and is really sys's member."
+  },
+  {
+   "type": "references",
+   "from": "make_array",
+   "target": "np",
+   "line_number": 67,
+   "meta.reasonCode": "return-annotation",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "numpy",
+   "note": "THE ALIAS CASE. `import numpy as np` binds `np`, and the lane's `importRoots` pre-scan records `numpy` (the module name) rather than the alias, so a rule keyed on that set would miss this. The certifier reads the BOUND NAME from the import shape, not the module spelling."
+  },
+  {
+   "type": "references",
+   "from": "make_array",
+   "target": "ndarray",
+   "line_number": 67,
+   "meta.qualified": "np.ndarray",
+   "meta.reasonCode": "return-annotation",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "numpy",
+   "note": "ROUTE-BOUND through the ALIAS: the root `np` resolves to `numpy`, and the specifier records the MODULE the alias names rather than the alias itself."
+  },
+  {
+   "type": "uses",
+   "from": "make_array",
+   "target": "ndarray",
+   "line_number": 67,
+   "meta.qualified": "np.ndarray",
+   "meta.reasonCode": "member-read",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "numpy",
+   "note": "The annotation also publishes a member read (the lane's existing member-use surface), and the same route certifies it."
+  },
+  {
+   "type": "calls",
+   "from": "expression",
+   "target": "sub",
+   "line_number": 94,
+   "meta.qualified": "re.sub",
+   "meta.reasonCode": "external-member-call",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "re",
+   "note": "THE INNER CALL in the expression row below it: `re.sub` IS the module chain, so it is certified \u2014 while the OUTER `.strip()` on its result is refused (the forbid row). The pair pins both directions on one source line."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "local_base",
+   "target": "LocalBase",
+   "line_number": 74,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: `from .local import LocalBase` is a RELATIVE import, which names this project rather than an outside module. The certifier skips relative imports entirely."
+  },
+  {
+   "type": "references",
+   "from": "shadowed",
+   "target": "JSONDecoder",
+   "line_number": 79,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: the name is a PARAMETER of the enclosing function, so LEGB binds it locally; the reason code says `local-binding-target` and the claim is refused. Without this row a `from json import JSONDecoder` in the header would certify every use of the spelling, including this one."
+  },
+  {
+   "type": "uses",
+   "from": "local_receiver",
+   "target": "count",
+   "line_number": 84,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: `rows.count` has a LOCAL receiver; its route root is not a module-level import, so the dynamic class stays unresolved."
+  },
+  {
+   "type": "calls",
+   "from": "bare",
+   "target": "helper",
+   "line_number": 89,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: a bare callee nothing in this file imports \u2014 the structurally closed class PYTHON-FIX \u00a73 proved a declared cause cannot carry. It must stay unresolved."
+  },
+  {
+   "type": "calls",
+   "from": "expression",
+   "target": "strip",
+   "line_number": 94,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: the route text is `re.sub(r\"x\", \"\", t).strip` \u2014 it STARTS with an imported name but the member `strip` belongs to the RESULT expression, not to `re`. The route evidence accepts only a pure dotted chain, which is why this row is refused and the `sub` row above is certified."
+  },
+  {
+   "type": "references",
+   "from": "uses_declared",
+   "target": "JSONDecoder",
+   "line_number": 101,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: the FILE declares `class JSONDecoder` (after the import of the same spelling), so the name is a declaration here and the import is not the binding the annotation sees."
+  },
+  {
+   "type": "calls",
+   "from": "shadowed_root",
+   "target": "getenv",
+   "line_number": 108,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: `os` is a PARAMETER of this function, so the route root is a LOCAL by LEGB even though the module scope also says `import os`. This is the one shape the reason code cannot see (it still says `external-member-call`), which is why the certifier carries its own local-shadow set \u2014 and why this row is the only test of that guard."
+  }
+ ]
+}

@@ -1,0 +1,119 @@
+{
+  "calls": [
+    {
+      "label": "__init__",
+      "projectId": "82a42b87206708afbb4230b4d2d784b2ff204c00",
+      "projectDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project"
+    },
+    {
+      "label": "symbols.footer.limit1",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 1
+      },
+      "isError": false,
+      "ms": 38.57,
+      "text": "pagedSymbol01 [function] src/paged.ts:1 (typescript)\nshowing 1 of 25 matches\n[match-set] searchMode=symbols totalMatches=25 returned=1 truncated=false staleCount=0",
+      "parsed": null
+    },
+    {
+      "label": "symbols.footer.nolimit",
+      "args": {
+        "query": "handleRequest",
+        "limit": 1
+      },
+      "isError": false,
+      "ms": 9.58,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)\n[match-set] searchMode=symbols totalMatches=1 returned=1 truncated=false staleCount=0",
+      "parsed": null
+    },
+    {
+      "label": "symbols.footer.trunc",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 0
+      },
+      "isError": false,
+      "ms": 9.69,
+      "text": "no results for \"pagedSymbol\"\nshowing 0 of 25 matches\n[match-set] searchMode=symbols totalMatches=25 returned=0 truncated=false staleCount=0",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exactRegexConflict",
+      "args": {
+        "query": "^handle.*",
+        "regex": true,
+        "exact": true
+      },
+      "isError": true,
+      "ms": 6.52,
+      "text": "bb_search symbols mode: exact and regex cannot be combined — exact asks for a whole-name match, regex asks for a pattern; pass one",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limitCeiling",
+      "args": {
+        "query": "handleRequest",
+        "limit": 5000
+      },
+      "isError": true,
+      "ms": 4.65,
+      "text": "bb_search: limit must be between 0 and 2000 — refused rather than clamped, so a returned page always means the page asked for",
+      "parsed": null
+    },
+    {
+      "label": "file.staleManualOnly",
+      "args": {
+        "mode": "file",
+        "filePath": "src/stale.ts"
+      },
+      "isError": false,
+      "ms": 7.61,
+      "text": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/stale.ts\",\n  \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"export function staleHost(): number { return 1 }\\n// modified after indexing\\nexport function staleHostTwo(): number { return 2 }\\n\",\n  \"contentLength\": 128,\n  \"truncated\": false,\n  \"totalMatches\": 1,\n  \"stale\": true,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 1,\n    \"missing\": 0,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \\\"src/stale.ts\\\" (or the bb_index tool with that file path)\"\n  }\n}",
+      "parsed": {
+        "searchMode": "file",
+        "file": "src/stale.ts",
+        "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale.ts",
+        "language": "typescript",
+        "content": "export function staleHost(): number { return 1 }\n// modified after indexing\nexport function staleHostTwo(): number { return 2 }\n",
+        "contentLength": 128,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": true,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/stale.ts\" (or the bb_index tool with that file path)"
+        }
+      }
+    },
+    {
+      "label": "symbol.missingFound",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "zzzNoSuch"
+      },
+      "isError": false,
+      "ms": 24.08,
+      "text": "{\n  \"matches\": [],\n  \"found\": false,\n  \"totalMatches\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "matches": [],
+        "found": false,
+        "totalMatches": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    }
+  ],
+  "serverStderr": ""
+}

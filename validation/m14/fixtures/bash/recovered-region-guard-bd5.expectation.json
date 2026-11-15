@@ -1,0 +1,73 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/recovered-region-guard-bd5.sh",
+ "authoredFrom": "BD5 / BA-G2 (nothing is emitted from a damaged region). Authored from a probe 2026-09-26. The pinned corpus emitted `calls: -> ]/%5D}` from `${value/]/%5D}`, in the very file validation/m12/results/bash-corpus-errors.json excludes from acceptance while its own policy claims the analyzer 'never synthesizes phantom rows'. The guard is scoped to the damaged NAME, not the file, so the two `uses` edges on `value` are still emitted.",
+ "expectSymbols": [
+  {
+   "name": "recovered-region-guard-bd5.sh",
+   "kind": "module"
+  },
+  {
+   "name": "value",
+   "kind": "variable",
+   "ownerName": "recovered-region-guard-bd5.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "recovered-region-guard-bd5.sh",
+   "target": "recovered-region-guard-bd5.sh.value",
+   "line_number": 8,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "uses",
+   "from": "recovered-region-guard-bd5.sh",
+   "target": "recovered-region-guard-bd5.sh.value",
+   "line_number": 9,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "contains",
+   "from": "recovered-region-guard-bd5.sh",
+   "target": "value",
+   "line_number": 7
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "]/%5D}"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

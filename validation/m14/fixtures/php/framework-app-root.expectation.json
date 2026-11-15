@@ -1,0 +1,22 @@
+{
+  "fixtureId": "php/framework-app-root",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (#931) — the `App\\` root marker, isolated from the explicit import that can stand in for it. `framework-surface-pins` pins both repaired markers but also imports Illuminate, so Laravel is detected there twice over and a revert of the prefix marker would be invisible. This file is the marker's own witness: a controller under Laravel's app root with no framework import anywhere, which is exactly the probe's `laravel-app-root-only` case and the shape the dead marker was written for. MEASURED at HEAD (before the repair): `namespace App\\Http\\Controllers;` detected `[]` for both this shape and a bare `namespace App;`, while the marker read `text === \"App\\\\\"` — an exact match on a namespace string ending in a separator, which no node's text carries. The repair reads the PREFIX the literal was reaching for. The expectation also pins the deliberate EXCLUSION: `namespace App;` alone must not fire (the lane's own literal asked for the `App\\` root, not for a project that names one namespace `App`), and PHPUnit must not appear, since nothing here extends `TestCase` — that is the other marker's witness, held in the sibling fixture.",
+  "expectSymbols": [
+    { "name": "App\\Http\\Controllers", "kind": "namespace" },
+    { "name": "HomeController", "kind": "class" },
+    { "name": "show", "kind": "method", "ownerName": "HomeController" }
+  ],
+  "expectFrameworks": ["Laravel"],
+  "expectPrimaryFramework": ["Laravel"],
+  "forbidFrameworks": ["PHPUnit", "Symfony", "Doctrine", "WordPress", "Magento", "Drupal"],
+  "expectPatterns": ["MVC Architecture (Controllers)"],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "HomeController",
+      "comment": "no base clause in this file — the framework marker must not become a fabrication source"
+    }
+  ]
+}

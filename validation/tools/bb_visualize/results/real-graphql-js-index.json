@@ -1,0 +1,69 @@
+{
+  "key": "graphql-js",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  "language": "TypeScript/JavaScript",
+  "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/18b0d5567b84edcae6dec4bfcc1faf8ac965e01e/brain.db",
+  "db": {
+    "path": "brain.db",
+    "exists": true,
+    "size": 153116672,
+    "sha256": "3194f9dff92e619c8e447179deab3ba68bc6b2f8d4276a95f04fbd153e7e085a"
+  },
+  "wal": {
+    "path": "brain.db-wal",
+    "exists": true,
+    "size": 48632512,
+    "sha256": "119f8c12ad274e08b3d98fee3a53eefb9b7c75134f341ab8d8f819aee632c960"
+  },
+  "files": 564,
+  "symbols": 13620,
+  "relationships": 61917,
+  "languages": [
+    {
+      "language": "typescript",
+      "files": 413
+    },
+    {
+      "language": "javascript",
+      "files": 77
+    },
+    {
+      "language": "json",
+      "files": 42
+    },
+    {
+      "language": "markdown",
+      "files": 12
+    },
+    {
+      "language": "yaml",
+      "files": 7
+    },
+    {
+      "language": "xml",
+      "files": 6
+    },
+    {
+      "language": "tsx",
+      "files": 4
+    },
+    {
+      "language": "graphql",
+      "files": 2
+    },
+    {
+      "language": "css",
+      "files": 1
+    }
+  ],
+  "indexMs": 117046,
+  "reused": false,
+  "targets": {
+    "file": "benchmark/github-schema.graphql",
+    "module": "benchmark",
+    "symbol": "GraphQLSchema",
+    "feature": "GraphQ",
+    "fallbackModuleFile": ".github/CONTRIBUTING.md"
+  }
+}

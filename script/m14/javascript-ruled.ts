@@ -29,7 +29,7 @@
  *
  * ## The corpus measurement (this is why the table is instrument A and not prose)
  *
- * Over `$HOME/fixtures/repositories/typescript` (the lane's largest measured JS
+ * Over `/home/ishaq2321/bb_tests/repositories/typescript` (the lane's largest measured JS
  * surface, 6,124 admitted js-family files), every `class_heritage` is read off the tree:
  *
  *   heritage clauses            1,502   every anonymous token under one is `extends` (1:1)

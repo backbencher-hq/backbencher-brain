@@ -35,7 +35,7 @@
  *
  * The nine, measured over the lane's whole corpus through production `parseFile`
  * (script/m14/tmp/svfix2-full-shadcn-1878.txt for shadcn-svelte's 1,878 files, and the same
- * walk over fixtures/repositories/svelte's 4,561):
+ * walk over bb_tests/repositories/svelte's 4,561):
  *
  *   type         shadcn-svelte (1,878 files)      svelte (4,561 files)
  *   instantiates      11,706 edges / 1,627 files       1,151 / 991

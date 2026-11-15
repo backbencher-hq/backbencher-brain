@@ -54,7 +54,7 @@ import { getParser } from "../../src/ast/engine"
 import { RealRustAnalyzer } from "../../src/ast/real-rust-analyzer"
 import { deriveRustContainsTruth } from "../m14/oracles/rust-contains"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const ARGS = process.argv.slice(2)
 const WANT_JSON = ARGS.includes("--json")
 const REPO_FILTER = ARGS.find((a) => a.startsWith("--repo="))?.slice(7)

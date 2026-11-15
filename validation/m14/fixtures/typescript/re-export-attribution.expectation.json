@@ -1,0 +1,30 @@
+{
+  "fixtureId": "typescript/re-export-attribution",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Re-export names must be attributed to THEIR OWN statement. The old collector re-scanned the global exports array by line-range overlap: two export statements sharing a line (minified/bundled code) made ./m2 claim alpha from ./m1. Star re-exports (export * from) record the dependency with item '*'.",
+  "expectSymbols": [],
+  "expectImports": [
+    {
+      "module": "./m1",
+      "items": [
+        "alpha"
+      ],
+      "meta.reExport": true
+    },
+    {
+      "module": "./m2",
+      "items": [
+        "beta"
+      ],
+      "meta.reExport": true
+    },
+    {
+      "module": "./starred",
+      "items": [
+        "*"
+      ],
+      "meta.reExport": true
+    }
+  ]
+}

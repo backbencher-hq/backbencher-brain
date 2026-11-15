@@ -1,6 +1,6 @@
 # M60: Family Truth Reconciliation — the standing rules, and the JVM/web remainder
 
-> GitHub milestone [M60](https://github.com/backbencher-hq/backbencher-brain/milestones) (owner-ordered).
+> GitHub milestone [M60](https://github.com/ishaq2321/backbencher-brain/milestones) (owner-ordered).
 > This is the **last new milestone**. Its purpose is to make that sentence enforceable instead of a hope.
 >
 > Depends on: **M59** (`docs/m59/PLAN.md` — call-site truth; tool layer, 6 issues open).
@@ -101,11 +101,11 @@ handoff that sat **unregistered** — no ledger row, no issue — until M59 was 
 
 | ID | Issue | Title | State |
 |---|---|---|---|
-| G1 | [#828](https://github.com/backbencher-hq/backbencher-brain/issues/828) | Standing rules R1–R4 + the gate that enforces them | open |
-| P1 | [#829](https://github.com/backbencher-hq/backbencher-brain/issues/829) | Payload-seam matrix: 33 fields × 21 languages × 4 stages; wired into the closure gate | open |
-| J1 | [#830](https://github.com/backbencher-hq/backbencher-brain/issues/830) | JVM remainder: #739 #740 #741 #742 under the verify-first protocol | open |
-| W1 | [#831](https://github.com/backbencher-hq/backbencher-brain/issues/831) | Web remainder: #816 #818, and re-assert web closure through the matrix | open |
-| X1 | [#832](https://github.com/backbencher-hq/backbencher-brain/issues/832) | Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required | open |
+| G1 | [#828](https://github.com/ishaq2321/backbencher-brain/issues/828) | Standing rules R1–R4 + the gate that enforces them | open |
+| P1 | [#829](https://github.com/ishaq2321/backbencher-brain/issues/829) | Payload-seam matrix: 33 fields × 21 languages × 4 stages; wired into the closure gate | open |
+| J1 | [#830](https://github.com/ishaq2321/backbencher-brain/issues/830) | JVM remainder: #739 #740 #741 #742 under the verify-first protocol | open |
+| W1 | [#831](https://github.com/ishaq2321/backbencher-brain/issues/831) | Web remainder: #816 #818, and re-assert web closure through the matrix | open |
+| X1 | [#832](https://github.com/ishaq2321/backbencher-brain/issues/832) | Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required | open |
 
 ## Evidence
 

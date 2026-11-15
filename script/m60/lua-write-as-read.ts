@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = path.resolve(ROOT, process.argv.includes("--out")
   ? process.argv[process.argv.indexOf("--out") + 1]!
   : "validation/m60/lua/write-as-read.json")

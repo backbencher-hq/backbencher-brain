@@ -173,6 +173,25 @@ const BATTERY: Case[] = [
   { id: "invokation-path-slash-ctrl-argpath", construct: "CONTROL: `cd /tmp/x` — a path as an ARGUMENT already worked", control: true, source: "cd /tmp/x\n" },
   { id: "var-prefixed-path-2", construct: "`$PSHOME\\pwsh` as an argument", control: false, source: "$exe = \"$PSHOME\\pwsh\"\n& $exe -NoLogo\n" },
   { id: "var-prefixed-control", construct: "CONTROL: plain variable argument", control: true, source: "$Destination = '/d'\n& $Destination -x\n" },
+
+  // --- class member name split (PS27, pass 2) ------------------------------
+  // The pinned wasm's `caseInsensitive` helper (grammar.js:1839) emits `[sS][tT][aA][tT][iI][cC]`
+  // with NO word boundary, so `class_attribute` matches the first six characters of any
+  // identifier beginning `Static` or `Hidden`. `[int] StaticOpen()` parses as
+  // `attribute "[int]" · class_attribute "Static" · simple_name "Open"` — the analyzer
+  // published a method named `Open` stamped `isStatic: true`. With a leading modifier,
+  // `static [int] StaticOpen()` parses correctly. Neither case is in the 16 named M12
+  // limits; both are added here so the battery catches the regression if it returns.
+  { id: "class-member-name-split", construct: "`[int] StaticOpen()` — no leading modifier", control: false, source: "class C {\n  [int] StaticOpen() { return 40 }\n}\n" },
+  { id: "class-member-name-split-ctrl", construct: "CONTROL: `static [int] StaticOpen()` — leading modifier present", control: true, source: "class C {\n  static [int] StaticOpen() { return 40 }\n}\n" },
+
+  // --- `clean` block unsupported (PS33, pass 3) ------------------------------
+  // `clean` is not a `block_name` in the pinned wasm (the inventory is
+  // `begin`/`process`/`end`/`dynamicparam` in 12 spellings, no `clean`), so
+  // `function f { clean { ... } }` leaves an ERROR that consumes the NEXT
+  // declaration. `end` is the same shape and parses fine — that is the control.
+  { id: "clean-block-unsupported", construct: "`function f { clean { $z = 5 } }`", control: false, source: "function f { clean { $z = 5 } }\nfunction g { end { $w = 6 } }\n" },
+  { id: "clean-block-ctrl-end", construct: "CONTROL: `function f { end { ... } }` — end IS a block_name", control: true, source: "function f { end { $z = 5 } }\nfunction g { end { $w = 6 } }\n" },
 ]
 
 await WTS.Parser.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })

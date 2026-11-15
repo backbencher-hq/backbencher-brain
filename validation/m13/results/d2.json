@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.56",
+  "code": "D2",
+  "tool": "bb_doc",
+  "title": "bb_doc: all 7 modes verified with per-mode negatives",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "mode: symbol exits zero",
+      "pass": true,
+      "detail": "status=0 # symbol: greet\n\n1 file(s) and 1 symbol(s) in scope, 7 cited claim(s) across 5 section(s) from 3 sou"
+    },
+    {
+      "name": "mode: symbol returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# symbol: greet\\n\\n1 file(s) and 1 symbol(s) in scope, 7 cited\""
+    },
+    {
+      "name": "mode: file exits zero",
+      "pass": true,
+      "detail": "status=0 # file: src/app.ts\n\n1 file(s) and 2 symbol(s) in scope, 5 cited claim(s) across 4 section(s) from 5 "
+    },
+    {
+      "name": "mode: file returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# file: src/app.ts\\n\\n1 file(s) and 2 symbol(s) in scope, 5 ci\""
+    },
+    {
+      "name": "mode: module exits zero",
+      "pass": true,
+      "detail": "status=0 # module: src\n\n1 file(s) and 2 symbol(s) in scope, 9 cited claim(s) across 4 section(s) from 9 sourc"
+    },
+    {
+      "name": "mode: module returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# module: src\\n\\n1 file(s) and 2 symbol(s) in scope, 9 cited c\""
+    },
+    {
+      "name": "mode: feature exits zero",
+      "pass": true,
+      "detail": "status=0 # feature: greet\n\n1 file(s) and 1 symbol(s) in scope, 6 cited claim(s) across 4 section(s) from 3 so"
+    },
+    {
+      "name": "mode: feature returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# feature: greet\\n\\n1 file(s) and 1 symbol(s) in scope, 6 cite\""
+    },
+    {
+      "name": "mode: api exits zero",
+      "pass": true,
+      "detail": "status=0 # api documentation\n\n1 file(s) and 0 symbol(s) in scope, 0 cited claim(s) across 5 section(s) from 1"
+    },
+    {
+      "name": "mode: api returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# api documentation\\n\\n1 file(s) and 0 symbol(s) in scope, 0 c\""
+    },
+    {
+      "name": "mode: project exits zero",
+      "pass": true,
+      "detail": "status=0 # project documentation\n\n1 file(s) and 2 symbol(s) in scope, 9 cited claim(s) across 5 section(s) fr"
+    },
+    {
+      "name": "mode: project returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# project documentation\\n\\n1 file(s) and 2 symbol(s) in scope,\""
+    },
+    {
+      "name": "mode: coverage exits zero",
+      "pass": true,
+      "detail": "status=0 # coverage documentation\n\n1 file(s) and 2 symbol(s) in scope, 3 cited claim(s) across 4 section(s) f"
+    },
+    {
+      "name": "mode: coverage returns a document, not a refusal",
+      "pass": true,
+      "detail": "first line: \"# coverage documentation\\n\\n1 file(s) and 2 symbol(s) in scope\""
+    },
+    {
+      "name": "the is-a-document predicate convicts a refusal [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a prose refusal is rejected by isDocument"
+    },
+    {
+      "name": "neg: symbol mode rejects missing target [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "neg: invalid mode rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected by the registry validator"
+    },
+    {
+      "name": "neg: unmatched module target refused with the forms tried [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "neg: limit 101 refused, not clamped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "neg: limit 0 refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "neg: maxTokens 0 refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "neg: maxTokens 20000 refused, not clamped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "neg: includeTests on a mode without test evidence refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "pos: includeTests on symbol mode is accepted",
+      "pass": true,
+      "detail": "symbol refuses nothing for includeTests"
+    }
+  ],
+  "negativeCases": 9,
+  "summary": {
+    "total": 24,
+    "passed": 24,
+    "failed": 0
+  },
+  "decisions": {
+    "allModes": "7 modes: symbol,file,module,feature,api,project,coverage"
+  },
+  "limitations": [
+    "Small fixture; real-repository coverage in D3."
+  ],
+  "generatedAt": "2026-11-05T04:07:52.819Z"
+}

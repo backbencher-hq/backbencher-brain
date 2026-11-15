@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/record-pattern-refs",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419 G3: record patterns (JLS 14.30.2) — o instanceof Point(int a, int b) — reference the record type by name and MUST produce a References edge, exactly like the plain type-pattern form (o instanceof Point p) already does. Authored from semantics before observing analyzer output; proven failing pre-fix (G3), now pinned so it cannot regress.",
+  "expectSymbols": [
+    { "name": "RecordPatternRefs", "kind": "class" },
+    { "name": "Point", "kind": "class" },
+    { "name": "Box", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "sourceEndsWith": "f", "target": "Point", "meta.relationshipType": "record_pattern" },
+    { "type": "references", "sourceEndsWith": "f", "target": "Box", "meta.relationshipType": "record_pattern" }
+  ]
+}

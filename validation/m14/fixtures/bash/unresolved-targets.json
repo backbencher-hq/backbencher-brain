@@ -1,0 +1,131 @@
+{
+  "instrument": "parseFile + filesystem arithmetic, no regex",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "repos": 118,
+  "admitted": 4130,
+  "tracked": 482541,
+  "parseFailures": 0,
+  "sectionA": {
+    "sourceEdges": 677,
+    "shapes": {
+      "unexpanded": 455,
+      "tilde": 1,
+      "external-absolute": 0,
+      "resolves-to-an-admitted-file": 131,
+      "resolves-to-a-file-the-router-declined": 29,
+      "resolves-outside-every-corpus-repo": 25,
+      "does-not-resolve": 36
+    },
+    "unindexedFiles": 9,
+    "routerDeclinedButBashReadable": 1,
+    "unindexedEdges": 29,
+    "files": [
+      {
+        "repo": "hasura-engine",
+        "rel": "scripts/containers/citus",
+        "bytes": 1717,
+        "symbols": 3,
+        "functions": 0,
+        "firstLine": "### This file is not meant to be run directly, but to be sourced from"
+      }
+    ]
+  },
+  "sectionB": {
+    "callsTotal": 55222,
+    "fnCallTotal": 13934,
+    "extCallTotal": 41065,
+    "filesWithLiteralSource": 160,
+    "reach": {
+      "external": 40908,
+      "resolves-in-own-file": 14058,
+      "declared-by-a-literal-sourced-file": 256
+    },
+    "examples": {
+      "external": [
+        "Aporia/osx/bundle/launcher.sh:13 -[calls]-> basename",
+        "Aporia/osx/bundle/launcher.sh:15 -[calls]-> dirname",
+        "Aporia/osx/bundle/launcher.sh:16 -[calls]-> dirname",
+        "Aporia/osx/bundle/launcher.sh:17 -[calls]-> dirname",
+        "Aporia/osx/bundle/launcher.sh:50 -[calls]-> defaults",
+        "Aporia/osx/bundle/launcher.sh:50 -[calls]-> sed",
+        "Aporia/osx/bundle/launcher.sh:81 -[calls]-> defaults",
+        "Aporia/osx/bundle/launcher.sh:93 -[calls]-> defaults"
+      ],
+      "declared-by-a-literal-sourced-file": [
+        "consul/test/integration/connect/envoy/run-tests.sh:400 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:410 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:414 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:477 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:481 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:485 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:506 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:509 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:510 -[calls]-> docker_consul   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:513 -[calls]-> is_set   declared in consul/helpers.bash"
+      ]
+    },
+    "quadrant": {
+      "externalCommand x external": 40808,
+      "functionCall x resolves-in-own-file": 13934,
+      "**NO FLAG** x external": 100,
+      "**NO FLAG** x resolves-in-own-file": 123,
+      "externalCommand x declared-by-a-literal-sourced-file": 256,
+      "externalCommand x resolves-in-own-file": 1
+    },
+    "quadrantExamples": {
+      "externalCommand x external": [
+        "Aporia/osx/bundle/launcher.sh:13 -[calls]-> basename",
+        "Aporia/osx/bundle/launcher.sh:15 -[calls]-> dirname",
+        "Aporia/osx/bundle/launcher.sh:16 -[calls]-> dirname",
+        "Aporia/osx/bundle/launcher.sh:17 -[calls]-> dirname",
+        "Aporia/osx/bundle/launcher.sh:50 -[calls]-> defaults",
+        "Aporia/osx/bundle/launcher.sh:50 -[calls]-> sed",
+        "Aporia/osx/bundle/launcher.sh:81 -[calls]-> defaults",
+        "Aporia/osx/bundle/launcher.sh:93 -[calls]-> defaults"
+      ],
+      "functionCall x resolves-in-own-file": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/gradlew:128 -[calls]-> die",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/gradlew:137 -[calls]-> die",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/gradlew:151 -[calls]-> warn",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/gradlew:159 -[calls]-> warn",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/gradlew:219 -[calls]-> die",
+        "Exposed/documentation-website/Writerside/snippets/gradlew:127 -[calls]-> die",
+        "Exposed/documentation-website/Writerside/snippets/gradlew:136 -[calls]-> die",
+        "Exposed/documentation-website/Writerside/snippets/gradlew:150 -[calls]-> warn"
+      ],
+      "**NO FLAG** x external": [
+        "ansible/test/integration/targets/ansible-doc/runme.sh:290 -[calls]-> rm",
+        "ansible/test/integration/targets/ansible-galaxy/runme.sh:21 -[calls]-> ansible-playbook",
+        "ansible/test/integration/targets/ansible-pull/runme.sh:8 -[calls]-> rm",
+        "ansible/test/integration/targets/ansible-pull/runme.sh:18 -[calls]-> ansible-playbook",
+        "ansible/test/integration/targets/ansible-test-git/runme.sh:10 -[calls]-> rm",
+        "ansible/test/integration/targets/ansible-vault/runme.sh:8 -[calls]-> chmod",
+        "ansible/test/integration/targets/ansible-vault/runme.sh:8 -[calls]-> rm",
+        "ansible/test/integration/targets/callback_results/runme.sh:8 -[calls]-> rm"
+      ],
+      "**NO FLAG** x resolves-in-own-file": [
+        "ansible/test/integration/targets/ansible-test-git/collection-tests/git-common.bash:27 -[calls]-> uninstall_git",
+        "ansible/test/integration/targets/ansible-test-sanity-import/runme.sh:33 -[calls]-> cleanup",
+        "ansible/test/integration/targets/ansible-test-vendoring/runme.sh:15 -[calls]-> cleanup",
+        "ansible/test/integration/targets/become_unprivileged/runme.sh:29 -[calls]-> end_sandwich",
+        "ansible/test/integration/targets/callback_default/runme.sh:119 -[calls]-> cleanup",
+        "ansible/test/integration/targets/config/runme.sh:38 -[calls]-> cleanup",
+        "ansible/test/integration/targets/delegate_to/runme.sh:43 -[calls]-> teardown",
+        "ansible/test/integration/targets/fetch/runme.sh:11 -[calls]-> cleanup"
+      ],
+      "externalCommand x declared-by-a-literal-sourced-file": [
+        "consul/test/integration/connect/envoy/run-tests.sh:400 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:410 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:414 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:477 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:481 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:485 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:506 -[calls]-> is_set   declared in consul/helpers.bash",
+        "consul/test/integration/connect/envoy/run-tests.sh:509 -[calls]-> is_set   declared in consul/helpers.bash"
+      ],
+      "externalCommand x resolves-in-own-file": [
+        "ohmyzsh/plugins/mvn/mvn.plugin.zsh:30 -[calls]-> mvn"
+      ]
+    }
+  }
+}

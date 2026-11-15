@@ -17,7 +17,7 @@
     "planned": 5
   },
   "fixture": {
-    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture",
     "file": "src/main/java/com/demo/App.java"
   },
   "budgets": {

@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/reserved-words-psb4.ps1",
+  "authoredFrom": "PS5/PS6 — a RESERVED WORD IS NOT A CALL, and nothing is emitted from a recovery region. Authored 2026-09-26. TWO of the classes here are invisible to every gate this repository has. (a) NAMED BLOCKS: the grammar models `Begin`/`Process`/`End` as `command` nodes — reproduced in isolation as `hasError=false`, `command nodes: [\"End\",\"Process\",\"Begin\"]` — and the pre-wave `FLOW_KEYWORDS` did not list them, so every advanced function emitted three fabricated `calls` edges naming its own block keywords; hand-confirmed at `dsc/pwsh.profile.resource.ps1:15-16` of the pinned corpus. (b) `if` AS AN EXPRESSION: `$mode = if (…) { } elseif (…) { } else { }` parses with `hasError = FALSE` and still leaves `elseif`/`else` as bare `command` nodes — F1 cannot see it (the node type is real), F10 cannot see it (the file is not damaged) and the M12 corpus-errors census cannot see it (it counts ERROR nodes). That is why `script/m60/powershell-keyword-census.ts` exists. (c) DSC: before the fix, 4 of 4 relationships in a representative configuration were fabrications (`Configuration`, `node`, `File`, `Destination`).",
+  "expectSymbols": [
+    { "name": "reserved-words-psb4.ps1", "kind": "module" },
+    { "name": "Get-Mode", "kind": "function", "ownerName": "reserved-words-psb4.ps1" },
+    { "name": "seed", "kind": "variable", "ownerName": "Get-Mode" },
+    { "name": "mode", "kind": "variable", "ownerName": "reserved-words-psb4.ps1" },
+    { "name": "SiteConfig", "kind": "class", "ownerName": "reserved-words-psb4.ps1", "comment": "PS5 (c): a DSC configuration's own NAME is a real declaration" },
+    { "name": "Marker", "kind": "class", "ownerName": "SiteConfig", "comment": "PS5 (c): a DSC RESOURCE instance. `File` is a DSC built-in the engine resolves, so it is not a cmdlet call; the instance name is the declaration." },
+    { "name": "Destination", "kind": "property", "ownerName": "Marker" },
+    { "name": "Ensure", "kind": "property", "ownerName": "Marker" },
+    { "name": "value", "kind": "variable", "ownerName": "reserved-words-psb4.ps1" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "reserved-words-psb4.ps1", "target": "Get-Mode", "line_number": 29 },
+    { "type": "contains", "from": "Get-Mode", "target": "seed", "line_number": 34, "comment": "the `begin` block's assignment declares the variable ONCE, at its own line — pre-fix the `begin`/`process`/`end` keywords also produced three `calls` edges" },
+    { "type": "calls", "from": "Get-Mode", "target": "Write-Output", "line_number": 42 },
+    { "type": "contains", "from": "reserved-words-psb4.ps1", "target": "mode", "line_number": 46 },
+    { "type": "contains", "from": "reserved-words-psb4.ps1", "target": "SiteConfig", "line_number": 56 },
+    { "type": "contains", "from": "SiteConfig", "target": "Marker", "line_number": 58, "comment": "DSC containment NESTS: the configuration contains the resource" },
+    { "type": "contains", "from": "Marker", "target": "Destination", "line_number": 59 },
+    { "type": "contains", "from": "Marker", "target": "Ensure", "line_number": 60 },
+    { "type": "contains", "from": "reserved-words-psb4.ps1", "target": "value", "line_number": 65, "comment": "the DECLARATION. PS2's per-site identity means a second `$value = …` on 66 also earns a `uses` edge, but `contains` marks the declaration and only the declaration" },
+    { "type": "uses", "from": "reserved-words-psb4.ps1", "target": "reserved-words-psb4.ps1.value", "line_number": 66, "meta.isVariableReference": true, "comment": "the read inside `$(if ($value -gt 0) {…})` on the reassignment line" },
+    { "type": "calls", "from": "reserved-words-psb4.ps1", "target": "Get-Mode", "line_number": 67 },
+    { "type": "contains", "from": "reserved-words-psb4.ps1", "target": "sb", "line_number": 73, "comment": "PS19: the script block is a real declaration" },
+    { "type": "uses", "from": "reserved-words-psb4.ps1", "target": "reserved-words-psb4.ps1.sb", "line_number": 74, "meta.isInvokedVariable": true, "comment": "PS19: `& $sb` — the invoked VARIABLE gets a `uses` edge" },
+    { "type": "uses", "from": "reserved-words-psb4.ps1", "target": "reserved-words-psb4.ps1.sb", "line_number": 75, "meta.isInvokedVariable": true, "comment": "PS19: `. $sb` — dot-sourcing a variable is the same shape and published NOTHING pre-fix" }
+  ],
+  "expectComplexity": [
+    { "fileEquals": 3, "comment": "PS13: a `switch` CASE is a decision point. The pre-wave `isBranch` list named `switch_statement` but not `switch_clause`, so this file's three-case switch contributed 1 instead of 3 and the pre-fix figure was 1. Verified in isolation: a four-clause switch measures 6 (1 base + 1 statement + 4 clauses). `metadata.complexity` is NOT this and must not be substituted — it is symbols + relationships, so it grows with the analyzer's own output and pinning it would pin the regression in place." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "target": "value", "equals": 1, "comment": "TWO assignment sites, ONE declaration. Pre-fix the per-site edge identity published two `contains` edges for one variable, which reads as an owner containing two same-named members." }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "begin" },
+    { "type": "calls", "target": "process" },
+    { "type": "calls", "target": "end" },
+    { "type": "calls", "target": "elseif" },
+    { "type": "calls", "target": "else" },
+    { "type": "calls", "target": "Configuration" },
+    { "type": "calls", "target": "node" },
+    { "type": "calls", "target": "File" },
+    { "type": "calls", "target": "Destination" },
+    { "type": "calls", "target": "Ensure" },
+    { "type": "contains", "from": "reserved-words-psb4.ps1", "target": "Marker", "comment": "PRE-FIX SHAPE: the DSC resource contained by the FILE rather than by the configuration that declares it" },
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "calls", "from": "reserved-words-psb4.ps1", "target": "$sb", "comment": "PRE-FIX SHAPE, PS19: the raw command text, so the target is the dollar-prefixed string — a name no symbol can have, since a variable is stored stripped" },
+    { "type": "calls", "from": "global" },
+    { "type": "uses", "from": "global" },
+    { "type": "contains", "from": "global" },
+    { "type": "references", "from": "global" },
+    { "type": "exports", "from": "global" },
+    { "type": "calls", "target": "global" }
+  ]
+}

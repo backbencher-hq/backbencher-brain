@@ -1,0 +1,123 @@
+{
+  "fixtureId": "python/companion-index/comp-child",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PY-7, the CONSUMER half, and the only place in the suite where all three tiers of the `overrides` contract appear together. Every base here is declared in ANOTHER file (`comp-base.py`) or NOWHERE at all, so nothing about them is decidable from this tree \u2014 which is exactly why a flat fixture cannot test tier 2, and why two Solidity mutants once survived as no-ops against zero rows. The contract is three tiers (verified in-file, then companion index, then a 0.5 first-parent guess) and a fixture that pinned only one of them would let a change collapse them into each other and still pass. `Redirect` produces BOTH outcomes of tier 2 from one base: `send`, which `Mixin` really declares, is promoted from a 0.5 guess to a verified 0.95 edge; `__init__`, which `Mixin` does NOT declare \u2014 it has two members and neither is named `__init__` \u2014 publishes NO EDGE AT ALL. Before the fix that second case was a fabricated override at 0.5, and it is not hypothetical: `RedirectSession.__init__ -> SessionRedirectMixin.__init__` is in the requests corpus right now, and a census over 3,271 files (`script/m14/python-companion-opportunity.ts`) found that **76% of the guesses whose base IS present in the corpus name a method the base does not declare**. Those are not unverified edges; they are wrong ones, published at a confidence that invites a reader to trust them. `Orphan` pins the half that must NOT be fixed: `FirstUnknown` is declared nowhere, so nothing has been learned and the 0.5 guess is the only honest output. 23.6% of the corpus's guesses are legitimately in that position \u2014 the base is in a dependency rather than the repo \u2014 and a change that deleted them would be removing the tier rather than demoting it, which is the unilateral move a shared family contract exists to prevent. `Local` inherits nothing and declares a method, so it must publish nothing at all; without it a 'fix' implemented as 'emit fewer overrides' would pass.",
+  "expectSymbols": [
+    {
+      "name": "Redirect",
+      "kind": "class"
+    },
+    {
+      "name": "send",
+      "kind": "method",
+      "ownerName": "Redirect"
+    },
+    {
+      "name": "__init__",
+      "kind": "method",
+      "ownerName": "Redirect"
+    },
+    {
+      "name": "Orphan",
+      "kind": "class"
+    },
+    {
+      "name": "go",
+      "kind": "method",
+      "ownerName": "Orphan"
+    },
+    {
+      "name": "Local",
+      "kind": "class"
+    },
+    {
+      "name": "standalone",
+      "kind": "method",
+      "ownerName": "Local"
+    },
+    {
+      "name": "ClosureOwner",
+      "kind": "class"
+    },
+    {
+      "name": "inner",
+      "kind": "method",
+      "ownerName": "ClosureOwner"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Redirect.send",
+      "target": "send",
+      "confidenceMin": 0.9,
+      "note": "TIER 2, THE PROMOTION. `Mixin` is declared in another file and really does declare `send`, so the edge is CONFIRMED rather than guessed \u2014 0.95, not the 0.5 the same class publishes when nothing knows its bases. The census counted 855 corpus edges that a populated index moves from unverified to verified. Without `confidenceMin` this row would also pass against the 0.5 guess, which is the whole difference the tier makes"
+    },
+    {
+      "type": "overrides",
+      "from": "Orphan.go",
+      "target": "go",
+      "confidenceMax": 0.5,
+      "note": "TIER 3, AND IT MUST SURVIVE. `FirstUnknown` is declared in no file of this project, so the question is genuinely open and 0.5 with `first-parent-guess` is the honest answer. This row is the guard on the fix: suppressing every unreadable-base guess would delete the tier instead of demoting it, and it would delete 1,110 corpus edges that are correct as guesses. It is also MRO-first: `Orphan` has two unknown bases and gets ONE guessed override, from the first"
+    },
+    {
+      "type": "extends",
+      "from": "Redirect",
+      "target": "Mixin"
+    },
+    {
+      "type": "extends",
+      "from": "Orphan",
+      "target": "FirstUnknown"
+    },
+    {
+      "type": "contains",
+      "from": "Redirect",
+      "target": "send"
+    },
+    {
+      "type": "contains",
+      "from": "Local",
+      "target": "standalone"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Redirect.__init__",
+      "target": "__init__",
+      "note": "THE FABRICATION THIS FIX EXISTS TO REMOVE. `Mixin` declares `send` and `helper` and nothing else \u2014 CPython's `ast` over `comp-base.py` reports exactly two members \u2014 so there is no `__init__` to override. The lane published this edge at 0.5 with `reasonCode: first-parent-guess`, which reads as 'we looked and this is probably right' about a method that does not exist. Real instances in the corpus: `RedirectSession.__init__ -> SessionRedirectMixin.__init__` and `RedirectSession.build_response -> SessionRedirectMixin.build_response`, both in requests/tests/test_requests.py"
+    },
+    {
+      "type": "overrides",
+      "from": "Redirect.send",
+      "target": "send",
+      "confidenceMax": 0.5,
+      "note": "THE DISCRIMINATOR IS NOW CONFIDENCE, NOT SPELLING. Commit d2ca95628 respelled the override TARGET from `Owner.member` to the DECLARED MEMBER (its own record: `Redirect.send -> Mixin.send`, the TIER-2 promotion, vs a guess at `SecondUnknown.send`), so the promoted edge and the guess are BOTH spelled `send` and this row matched the 0.95 edge it is meant to permit — which is why that commit left this fixture failing on purpose and named the follow-up (carry the owner in metadata and re-anchor on it); the owner qualifier no longer lives anywhere on the row. THIS RE-ANCHORS ON THE FACT THAT STILL SEPARATES THE TWO CASES: the promotion raises the confidence from the 0.5 guess to 0.95, so `confidenceMax: 0.5` forbids exactly the UNPROMOTED guess and nothing else, and the row still fires if the promotion stops happening. The claim is unchanged: MRO-FIRST, NOT EVERY BASE — `Redirect` names two bases and only the first unreadable one is a candidate, so a class with three external bases gets one guessed override rather than three. Here the index KNOWS `Mixin`, so no guess is made at all, and `SecondUnknown` must not be reached around it. The `expectRelationships` row above pins the promoted edge at `confidenceMin: 0.9`, so the pair is two-sided: the promotion must happen AND the guess must not be published beside it."
+    },
+    {
+      "type": "overrides",
+      "from": "ClosureOwner.inner",
+      "target": "inner",
+      "note": "THE SCOPE ROW, and the only way `scopeNodes` is observable. `inner` in comp-base.py is a function DEFINED INSIDE `Mixin.helper` \u2014 a local of that function, not a method of `Mixin`, and CPython's own `ast` puts it nowhere near the class's direct body. `PYTHON_DECLARATION_SPEC.scopeNodes` keeps it out of the index, so the companion says `Mixin` declares only `send` and `helper` and this edge is never published. Delete `scopeNodes` and the index reports `Mixin` as declaring `inner`, this becomes a VERIFIED 0.95 override of a closure, and the graph asserts an inheritance python does not have. My first version of this fixture pinned `contains Mixin -> inner` instead, which tested nothing: the analyzer already excludes closures from class members regardless of the index, so that row passed with the spec's scope handling deleted. The index is the only thing that can see this, and the index is only visible through what it lets a subclass conclude."
+    },
+    {
+      "type": "overrides",
+      "from": "Local.standalone",
+      "target": "standalone",
+      "note": "A class that inherits NOTHING declares no override to anything. Included so a change implemented as 'publish fewer overrides' cannot pass this fixture \u2014 the two rows above are about WHICH bases, and this one is about whether the relation is emitted at all"
+    },
+    {
+      "type": "overrides",
+      "from": "Redirect.__init__",
+      "target": "__init__",
+      "note": "the same suppression requirement reached through the second base rather than the first, so a fix cannot be written as 'only look at the first base' while leaving the other two unexamined"
+    }
+  ],
+  "_seamNote": {
+    "what": "Two seams, on opposite sides of the contract. The lane: `context?.overrideCompanion` in `extractOverrideRelationships` \u2014 before this, the lane read `(ctx as any)._overrideCompanion`, a field nothing wrote, spelled differently from the declared `overrideCompanion`, on an `analyze()` that took three parameters and so never received a context at all. Three layers of disconnection, and `[key: string]: any` on `AnalyzeContext` made all three read as correct because an unknown property on an index-signature type is not an error, it is simply `undefined`. The suppression: `if (firstUnread !== undefined && !overrideCompanion?.has(firstUnread))`, which needed NO change \u2014 it already emits a guess only for a base nothing knows. Only the data was missing.",
+    "howToBreak": "Return `undefined` for `context?.overrideCompanion` and this file fails with the two `__init__` forbids present and the `send` row dropped to 0.5 (failing `confidenceMin`). Drop `!overrideCompanion?.has(firstUnread)` from the suppression and the fabricated `__init__` edges come back at 0.5.",
+    "theOtherSide": "The flat fixture `python/external-override` pins what production does TODAY \u2014 the companion index is never populated, so tier 3 absorbs everything \u2014 and it is deliberately left untouched. Both states are now pinned, in different fixtures, because a suite that only described the fixed world would make the fix unfalsifiable and a suite that only described today's would make the fix unnecessary."
+  }
+}

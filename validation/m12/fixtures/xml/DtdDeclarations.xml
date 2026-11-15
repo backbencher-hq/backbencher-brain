@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE catalog SYSTEM "catalog.dtd" [
+<!ENTITY % shared SYSTEM "shared.dtd">
+<!ENTITY logo SYSTEM "logo.png" NDATA png>
+<!ENTITY simple "replacement text">
+<!NOTATION png SYSTEM "image/png">
+<!ATTLIST entry src NOTATION (png|jpg) #IMPLIED>
+]>
+<catalog>&logo;&simple;</catalog>

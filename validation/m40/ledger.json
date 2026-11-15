@@ -1,0 +1,323 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 630,
+    "tool": "governance",
+    "status": "verified",
+    "scope": "milestone doc, ledger, evidence dir, gates registry, closure gate, mutation self-test, stamp agreement",
+    "acceptanceCriteria": [
+      "all five scaffolds exist and run green on a clean checkout",
+      "self-test proves at least one mutation per registered gate (control passes clean world, mutation bites)",
+      "closure gate rejects hand-closing (missing evidence, status flip, stamp drift)",
+      "docs/m40/PLAN.md states the milestone invariant verbatim"
+    ],
+    "closureRequirements": [
+      "persist G1 evidence with standard envelope",
+      "mutation self-test proves every registered M40 gate can fail",
+      "no auto-pass assertions in any M40 verifier"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "d40abdb6839eeb562d91eb7f15ef03de261dae74",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-05T03:17:37.687Z",
+      "passed": 106,
+      "failed": 0,
+      "negativeCases": 2
+    }
+  },
+  {
+    "code": "A1",
+    "githubIssue": 631,
+    "tool": "index-lifecycle",
+    "status": "verified",
+    "scope": "standalone post-processing entry: runPostProcessing extraction, bb index --post, MCP bb_index mode=post",
+    "acceptanceCriteria": [
+      "fixture: full index, corrupt relationships, bb index --post restores resolved relationships (query-proven)",
+      "per-phase timing/outcome recorded in performanceStats and visible in CLI output",
+      "--post with zero prior index exits non-zero with actionable message",
+      "MCP bb_index mode=post returns the same phase report",
+      "phase failure never reports complete silently"
+    ],
+    "closureRequirements": [
+      "persist A1 evidence with standard envelope",
+      "negative case: no-op --post must fail the gate",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a1-post-entry.ts",
+      "evidenceFile": "A1.json",
+      "generatedAt": "2026-09-05T01:52:19.360Z",
+      "passed": 24,
+      "failed": 0,
+      "negativeCases": 1
+    }
+  },
+  {
+    "code": "A2",
+    "githubIssue": 632,
+    "tool": "index-lifecycle",
+    "status": "verified",
+    "scope": "bounded incremental post-processing for --changed/--resume/adoption paths, provably sub-linear",
+    "acceptanceCriteria": [
+      "edit fixture file A, bb index --changed, relationships for A call-sites resolved (query-proven)",
+      "boundedness: post-pass on 1000-file fixture with 1 changed file far below full post-pass (both numbers in evidence)",
+      "deleted-file case leaves no orphan relationships/taints",
+      "run summary honestly reports derived/deferred",
+      "scoping correctness note documented with residual risk"
+    ],
+    "closureRequirements": [
+      "persist A2 evidence with standard envelope",
+      "timing evidence recorded, not asserted",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a2-bounded-post.ts",
+      "evidenceFile": "A2.json",
+      "generatedAt": "2026-09-05T01:55:17.383Z",
+      "passed": 25,
+      "failed": 0,
+      "negativeCases": 3
+    }
+  },
+  {
+    "code": "A3",
+    "githubIssue": 633,
+    "tool": "index-lifecycle",
+    "status": "verified",
+    "scope": "write-path parity: bb_edit, LSP didSave, MCP bb_index file-mode leave derived data consistent",
+    "acceptanceCriteria": [
+      "bb_edit creates a function; symbol query returns it with resolved edges (e2e)",
+      "LSP didSave yields the same assertion or a recorded deferral visible in output",
+      "MCP bb_index mode=file yields the same assertion",
+      "edit round-trip p95 < 2s on fixture corpus",
+      "deferrals visible in tool output, not only logs"
+    ],
+    "closureRequirements": [
+      "persist A3 evidence with standard envelope",
+      "per-path latency recorded",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a3-write-parity.ts",
+      "evidenceFile": "A3.json",
+      "generatedAt": "2026-09-05T01:55:35.821Z",
+      "passed": 21,
+      "failed": 0,
+      "negativeCases": 3
+    }
+  },
+  {
+    "code": "A4",
+    "githubIssue": 634,
+    "tool": "lifecycle-corpus",
+    "status": "verified",
+    "scope": "the lifecycle-invariant corpus: 6 end-to-end scenarios, mutation-registered, wired into closure + self-test",
+    "acceptanceCriteria": [
+      "all six scenarios pass deterministically (two runs byte-identical summary)",
+      "each scenario has a registered mutation proven to bite",
+      "corpus wired into verify-closure and gate-selftest registries",
+      "evidence records per-scenario pass/fail + mutation proof"
+    ],
+    "closureRequirements": [
+      "persist A4 evidence with standard envelope",
+      "baseline checked in; --check drift mode green",
+      "tampering any scenario fails the gate"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/lifecycle-corpus.ts --gate",
+      "evidenceFile": "A4.json",
+      "generatedAt": "2026-09-05T01:56:40.198Z",
+      "passed": 37,
+      "failed": 0,
+      "negativeCases": 1
+    }
+  },
+  {
+    "code": "A5",
+    "githubIssue": 635,
+    "tool": "cli-semantics",
+    "status": "verified",
+    "scope": "flag semantics matrix, combination guards, honest help text, --resume truthfulness",
+    "acceptanceCriteria": [
+      "semantics matrix documented in PLAN and enforced by gate",
+      "illegal combinations rejected pre-run with clear errors",
+      "help text states derived-data consequences matching post-M40 behavior",
+      "gate enumerates the full combination space"
+    ],
+    "closureRequirements": [
+      "persist A5 evidence with standard envelope",
+      "no combination left undefined",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a5-flag-semantics.ts",
+      "evidenceFile": "A5.json",
+      "generatedAt": "2026-09-05T01:55:39.438Z",
+      "passed": 266,
+      "failed": 0,
+      "negativeCases": 3
+    }
+  },
+  {
+    "code": "A6",
+    "githubIssue": 636,
+    "tool": "health-refresh",
+    "status": "verified",
+    "scope": "health --refresh honesty: derived-data freshness signal, no silently stale stats",
+    "acceptanceCriteria": [
+      "stale fixture + bb health --refresh reflects post-pass or explicit deferred + remediation",
+      "derived-data freshness signal surfaced in CLI output",
+      "force path unchanged",
+      "gate fails if refresh claims derived data current while post-pass was skipped"
+    ],
+    "closureRequirements": [
+      "persist A6 evidence with standard envelope",
+      "negative case: stubbed post-pass must fail the gate",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a6-health-refresh.ts",
+      "evidenceFile": "A6.json",
+      "generatedAt": "2026-09-05T01:55:43.417Z",
+      "passed": 17,
+      "failed": 0,
+      "negativeCases": 3
+    }
+  },
+  {
+    "code": "A7",
+    "githubIssue": 637,
+    "tool": "cli-parity",
+    "status": "verified",
+    "scope": "CLI/MCP read parity: bb search modes, stale footer, command-selection table",
+    "acceptanceCriteria": [
+      "bb search --mode content/file parity with MCP fields on same fixture",
+      "stale-count footer + remediation matches MCP envelope truth",
+      "remaining CLI limitations stated in help/docs",
+      "command-selection table verified against each command's actual output"
+    ],
+    "closureRequirements": [
+      "persist A7 evidence with standard envelope",
+      "CLI vs MCP differential recorded",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a7-cli-parity.ts",
+      "evidenceFile": "A7.json",
+      "generatedAt": "2026-09-05T01:55:48.607Z",
+      "passed": 24,
+      "failed": 0,
+      "negativeCases": 5
+    }
+  },
+  {
+    "code": "A8",
+    "githubIssue": 638,
+    "tool": "config",
+    "status": "verified",
+    "scope": "config single-source: embedding precedence function + BB_TEST_HOOKS quarantine for test-only env vars",
+    "acceptanceCriteria": [
+      "precedence implemented in one function; bb health verbose shows effective config + source",
+      "test-only hooks no-op without BB_TEST_HOOKS=1",
+      "gate asserts resolved values match documented precedence under conflicting config",
+      "gate asserts hooks are inert without opt-in"
+    ],
+    "closureRequirements": [
+      "persist A8 evidence with standard envelope",
+      "precedence matrix in evidence",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a8-config.ts",
+      "evidenceFile": "A8.json",
+      "generatedAt": "2026-09-05T01:55:57.276Z",
+      "passed": 41,
+      "failed": 0,
+      "negativeCases": 20
+    }
+  },
+  {
+    "code": "A9",
+    "githubIssue": 639,
+    "tool": "purge",
+    "status": "verified",
+    "scope": "dead-surface purge: every lifecycle flag/env/export used or removed, purge report in PLAN",
+    "acceptanceCriteria": [
+      "purge report in docs/m40/PLAN.md: item, verdict, proof",
+      "removals compile + full chain green",
+      "M22 phantom-flag gate updated for real --post",
+      "no exported lifecycle function without a caller"
+    ],
+    "closureRequirements": [
+      "persist A9 evidence with standard envelope",
+      "surface enumeration gate green",
+      "negativeCases > 0"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "905be9ab4665f6f44c8fe0e347120ad04f41d52b",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-a9-purge.ts",
+      "evidenceFile": "A9.json",
+      "generatedAt": "2026-09-05T01:56:16.139Z",
+      "passed": 57,
+      "failed": 0,
+      "negativeCases": 4
+    }
+  },
+  {
+    "code": "X1",
+    "githubIssue": 0,
+    "tool": "closure",
+    "status": "verified",
+    "scope": "closure gate: refuses milestone close unless every issue has conformant, current, stamped evidence",
+    "acceptanceCriteria": [
+      "closure gate runs all subordinate gates read-only",
+      "stamp agreement enforced across the chain",
+      "control seam honored (BB_M40_SELFTEST_CONTROL) for mid-flight checks"
+    ],
+    "closureRequirements": [
+      "X1 evidence green twice consecutively at final HEAD",
+      "zero residue on governed surfaces",
+      "all subordinate statuses verified"
+    ],
+    "evidence": {
+      "status": "blocked",
+      "currentCommit": "d40abdb6839eeb562d91eb7f15ef03de261dae74",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m40/verify-closure.ts",
+      "evidenceFile": "X1.json",
+      "generatedAt": "2026-09-05T03:39:20.363Z",
+      "passed": 101,
+      "failed": 1,
+      "negativeCases": 3
+    }
+  }
+]

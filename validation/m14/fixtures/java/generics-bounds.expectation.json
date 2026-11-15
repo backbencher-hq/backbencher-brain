@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/generics-bounds",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Generic type parameters and bounded type variables must not corrupt symbol names or produce phantom types as symbols.",
+  "expectSymbols": [
+    { "name": "Box", "kind": "class" },
+    { "name": "value" },
+    { "name": "map" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "target": "T" },
+    { "type": "implements", "target": "Comparable" }
+  ]
+}

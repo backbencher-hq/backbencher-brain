@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "what": "T2 default live scan (bb_security {}) budget, before and after the endpoint-resolution fix; plus the planner evidence that identifies the defect",
+  "generatedAt": "2026-11-03T17:45:25Z",
+  "referenceIndex": {
+    "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+    "dbPath": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "dbBytes": 3885883392
+  },
+  "budgetMs": 5000,
+  "before": {
+    "source": "validation/release/T2-BASELINE.json (Lead harness, protocol: 1 warm-up + 3 measured, handler in-process)",
+    "runsMs": [
+      5484,
+      5546
+    ],
+    "p50Ms": 5515,
+    "p95Ms": 5546,
+    "withinBudget": false,
+    "outputBytes": 2897,
+    "loadavg": [
+      4.33,
+      5.13,
+      9.5
+    ],
+    "verdict": "OVER by 546 ms at p95"
+  },
+  "after_lead_protocol": {
+    "source": "validation/tools/bb_security/runlogs2/t2-lead-protocol.log",
+    "protocol": "in-process handler, shared 3.6 GB index project 1d3d57, 1 warm-up + 3 measured runs, bb_security {}, BB_DATA_DIR=.bb-data, BB_NO_AUTO_REFRESH=1",
+    "runtime": "node v22.22.1",
+    "warmupMs": [
+      626
+    ],
+    "runsMs": [
+      560,
+      501,
+      648
+    ],
+    "all3_p50Ms": 560,
+    "all3_p95Ms": 648,
+    "harnessStyle_p50Ms": 574,
+    "harnessStyle_p95Ms": 648,
+    "dbUnchanged": true,
+    "dbBytes": 3885883392,
+    "loadavg": [
+      2.38,
+      1.3,
+      3.28
+    ],
+    "census": "[scan: 14701 taint flow(s) indexed \u2192 10256 finding(s) (9756 beyond the cap); showing 20 finding(s)] \u2014 CAPPED at 500; 10256 finding(s) exist and 9756 were not examined",
+    "withinBudget": true
+  },
+  "after_8run_node": {
+    "runtime": "node v22.22.1",
+    "warmupMs": [
+      680
+    ],
+    "runsMs": [
+      493,
+      474,
+      493,
+      443,
+      475,
+      440,
+      438,
+      504
+    ],
+    "p50Ms": 475,
+    "p95Ms": 504,
+    "dbUnchanged": true,
+    "loadavg": [
+      6.02,
+      7.66,
+      7.54
+    ],
+    "withinBudget": true
+  },
+  "after_8run_bun": {
+    "runtime": "node v24.3.0 (bun 1.3.14)",
+    "warmupMs": [
+      348
+    ],
+    "runsMs": [
+      304,
+      299,
+      292,
+      270,
+      262,
+      295,
+      331,
+      311
+    ],
+    "p50Ms": 297,
+    "p95Ms": 331,
+    "dbUnchanged": true,
+    "loadavg": [
+      5.79,
+      7.59,
+      7.52
+    ],
+    "withinBudget": true
+  },
+  "rootCause": {
+    "what": "the endpoint-resolution query filtered project_id inside the indexed predicate",
+    "plannerEvidence": "validation/tools/bb_security/runlogs2/t2-resolve-plan.log",
+    "chunkIds": 200,
+    "shapes": [
+      {
+        "id": "project-filtered",
+        "plan": [
+          "SEARCH s USING INDEX brain_symbol_type_cover_idx (project_id=?)",
+          "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?) LEFT-JOIN"
+        ],
+        "usesPrimaryKey": false,
+        "usesProjectIndex": true,
+        "p50Ms": 349.548,
+        "samplesMs": [
+          342.814,
+          349.548,
+          360.492
+        ]
+      },
+      {
+        "id": "primary-key",
+        "plan": [
+          "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)",
+          "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?) LEFT-JOIN"
+        ],
+        "usesPrimaryKey": true,
+        "usesProjectIndex": false,
+        "p50Ms": 1.992,
+        "samplesMs": [
+          1.493,
+          1.992,
+          2.18
+        ]
+      }
+    ],
+    "costModel": "one chunk scanned the whole project index (310,423 symbols) instead of 200 primary-key seeks; the reference index needs 18 chunks per scan"
+  },
+  "semanticsInvariant": {
+    "statement": "the fix changes the QUERY PLAN, not the classification: every corpus keeps the same deduplicated/resolved/observation counts",
+    "corpora": {
+      "graphql-js": {
+        "before": [
+          434,
+          144,
+          290
+        ],
+        "after": [
+          434,
+          144,
+          290
+        ]
+      },
+      "rake": {
+        "before": [
+          44,
+          20,
+          24
+        ],
+        "after": [
+          44,
+          20,
+          24
+        ]
+      },
+      "rebar3": {
+        "before": [
+          187,
+          25,
+          162
+        ],
+        "after": [
+          187,
+          25,
+          162
+        ]
+      },
+      "ansible": {
+        "before": [
+          1258,
+          405,
+          95
+        ],
+        "after": [
+          1258,
+          405,
+          95
+        ]
+      },
+      "sqlite": {
+        "before": [
+          273,
+          31,
+          242
+        ],
+        "after": [
+          273,
+          31,
+          242
+        ]
+      }
+    },
+    "unchanged": true,
+    "stateCounts": {
+      "confirmed": 5362,
+      "mitigated": 0,
+      "source_only": 5912,
+      "unresolved": 3427,
+      "dedupFindings": 10256
+    },
+    "stateCountsSource": "validation/tools/bb_security/runlogs2/t2-profile.log"
+  },
+  "truncationDeclared": {
+    "sentence": "[scan: 14701 taint flow(s) indexed \u2192 10256 finding(s) (9756 beyond the cap); showing 20 finding(s)] \u2014 CAPPED at 500; 10256 finding(s) exist and 9756 were not examined",
+    "meaning": "the 500-result scan cap still drops 9,756 of 10,256 deduplicated findings and states so; no new cap or budget change was introduced"
+  }
+}

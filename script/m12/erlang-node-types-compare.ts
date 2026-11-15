@@ -5,8 +5,8 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
-const CORPUS = "$HOME/fixtures/repositories/rebar3"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/rebar3"
 const ANALYZER = readFileSync(`${ROOT}/src/ast/real-erlang-analyzer.ts`, "utf8")
 
 const refs = new Set<string>()

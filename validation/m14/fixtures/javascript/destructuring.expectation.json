@@ -1,0 +1,12 @@
+{
+  "fixtureId": "javascript/destructuring",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Destructured require imports the MODULE; object-destructured params must not crash extraction or produce garbage symbols.",
+  "expectImports": [
+    { "module": "./config.js" }
+  ],
+  "expectSymbols": [
+    { "name": "useParts" }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "instrument": "validation/m14/fixtures/xml/mixin-discriminator.mts",
+  "population": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "repos": 202,
+    "admitted": 11593,
+    "parsedCandidates": 71
+  },
+  "sites": {
+    "group_ref": {
+      "sites": 296,
+      "files": 55,
+      "in_file": 256,
+      "cross_file": 17,
+      "absent": 23
+    },
+    "attributeGroup_ref": {
+      "sites": 222,
+      "files": 60,
+      "in_file": 109,
+      "cross_file": 110,
+      "absent": 3
+    }
+  },
+  "in_file_examples": [
+    "dbeaver/plugins/org.jkiss.dbeaver.ui.app.standalone/src/org/jkiss/dbeaver/ui/app/standalone/tipoftheday/tips.xsd:51 <xs:group ref=\"tipContentMarkupElement\">",
+    "dbeaver/plugins/org.jkiss.dbeaver.ui.app.standalone/src/org/jkiss/dbeaver/ui/app/standalone/tipoftheday/tips.xsd:55 <xs:group ref=\"tipNoLinksMarkupElement\">",
+    "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/mim.xsd:21 <xs:group ref=\"anyElement\">",
+    "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/mim.xsd:37 <xs:group ref=\"namedStruct\">",
+    "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/mim.xsd:39 <xs:group ref=\"dataTypeDef\">",
+    "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/mim.xsd:58 <xs:group ref=\"namedStruct\">",
+    "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/mim.xsd:60 <xs:group ref=\"dataTypeDef\">",
+    "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/mim.xsd:67 <xs:group ref=\"namedStruct\">"
+  ],
+  "cross_file_examples": [
+    "powershell/src/Schemas/PSMaml/blockCommon.xsd:42 <xs:group ref=\"maml:inlineGroup\">",
+    "powershell/src/Schemas/PSMaml/blockCommon.xsd:44 <xs:attributeGroup ref=\"maml:contentIdentificationSharingAndConditionGroup\">",
+    "powershell/src/Schemas/PSMaml/blockCommon.xsd:55 <xs:attributeGroup ref=\"maml:contentIdentificationSharingAndConditionGroup\">",
+    "powershell/src/Schemas/PSMaml/command.xsd:106 <xs:attributeGroup ref=\"maml:contentIdentificationSharingAndConditionGroup\">",
+    "powershell/src/Schemas/PSMaml/command.xsd:122 <xs:attributeGroup ref=\"maml:contentIdentificationSharingAndConditionGroup\">"
+  ],
+  "absent_examples": [
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_4.xsd:513 <xs:group ref=\"j2ee:descriptionGroup\">",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_4.xsd:880 <xs:group ref=\"j2ee:descriptionGroup\">",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_4.xsd:1077 <xs:group ref=\"j2ee:descriptionGroup\">",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_4.xsd:1120 <xs:group ref=\"j2ee:jndiEnvironmentRefsGroup\">",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_5.xsd:408 <xs:group ref=\"javaee:descriptionGroup\">"
+  ]
+}

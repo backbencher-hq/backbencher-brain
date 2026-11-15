@@ -1,0 +1,23 @@
+[
+  {"label":"file: create new agent file","setup":{"write":{"path":"src/agent-fresh.ts","content":"export function AGENT_FRESH_SYM(x: number): number { return x * 3 }\n"}},"arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file: repeat unchanged file (no-op reason truth)","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file: unsupported extension (binary) no-op reason truth","setup":{"write":{"path":"assets/data.bin","content":"not source code at all"}},"arguments":{"path":"assets/data.bin"}},
+  {"label":"auto: file path resolves to file","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"auto: dir path resolves to dir","arguments":{"path":"src"}},
+  {"label":"dir: settled tree unchanged","arguments":{"path":"src","mode":"dir"}},
+  {"label":"dir: after edit, one candidate","setup":{"write":{"path":"src/agent-fresh.ts","content":"export function AGENT_FRESH_SYM(x: number): number { return x * 4 }\nexport function AGENT_FRESH_SYM2(): number { return 2 }\n"}},"arguments":{"path":"src","mode":"dir"}},
+  {"label":"post: path .","arguments":{"path":".","mode":"post"}},
+  {"label":"REFUSE: blank path","arguments":{"path":""}},
+  {"label":"REFUSE: missing path (schema)","arguments":{}},
+  {"label":"REFUSE: nonexistent path","arguments":{"path":"src/does-not-exist.ts"}},
+  {"label":"REFUSE: ../ traversal","arguments":{"path":"../outside.ts"}},
+  {"label":"REFUSE: absolute path outside project","arguments":{"path":"/etc/hostname"}},
+  {"label":"REFUSE: symlink inside pointing outside","setup":{"symlink":{"path":"src/escape.ts","target":"/etc/hostname"}},"arguments":{"path":"src/escape.ts"}},
+  {"label":"REFUSE: mode=file on directory","arguments":{"path":"src","mode":"file"}},
+  {"label":"REFUSE: mode=dir on file","arguments":{"path":"src/agent-fresh.ts","mode":"dir"}},
+  {"label":"REFUSE: unknown mode","arguments":{"path":"src","mode":"bogus"}},
+  {"label":"REFUSE: unknown option","arguments":{"path":"src","mode":"dir","depth":3}},
+  {"label":"REFUSE: mode=post nonexistent path","arguments":{"path":"no/such/path","mode":"post"}},
+  {"label":"PROBE: mode=post with path outside project (documented as refused)","arguments":{"path":"/etc","mode":"post"}},
+  {"label":"PROBE: mode=post with a FILE path (schema says project)","arguments":{"path":"README.md","mode":"post"}}
+]

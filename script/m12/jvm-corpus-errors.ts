@@ -35,10 +35,10 @@ import { parseFile } from "../../src/ast/pool-worker"
 //   bun script/m12/jvm-corpus-errors.ts groovy --full   # whole tracked corpus
 //   options: [--full] [--limit N] [--head N]
 const LANGS: Record<string, { lang: string; repo: string; ext: string }> = {
-  java: { lang: "java", repo: "$HOME/intellij-community", ext: "*.java" },
-  kotlin: { lang: "kotlin", repo: "$HOME/intellij-community", ext: "*.kt" },
-  scala: { lang: "scala", repo: "$HOME/fixtures/repositories/scala3", ext: "*.scala" },
-  groovy: { lang: "groovy", repo: "$HOME/fixtures/repositories/grails-core", ext: "*.groovy" },
+  java: { lang: "java", repo: "/home/ishaq2321/intellij-community", ext: "*.java" },
+  kotlin: { lang: "kotlin", repo: "/home/ishaq2321/intellij-community", ext: "*.kt" },
+  scala: { lang: "scala", repo: "/home/ishaq2321/bb_tests/repositories/scala3", ext: "*.scala" },
+  groovy: { lang: "groovy", repo: "/home/ishaq2321/bb_tests/repositories/grails-core", ext: "*.groovy" },
 }
 
 const args = process.argv.slice(2)

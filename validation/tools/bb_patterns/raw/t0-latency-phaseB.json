@@ -1,0 +1,227 @@
+{
+  "tier": "T0",
+  "projectDir": "test/fixtures/polyglot",
+  "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t0",
+  "route": "handler (source door): createToolHandlers().bb_patterns — the same handler src/mcp/server.ts calls",
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t0",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "protocol": "warm: one excluded warmup per shape, then five measured calls; p50/p95 over the five; BB_NO_AUTO_REFRESH=1",
+  "indexBefore": {
+    "db": {
+      "bytes": 589824,
+      "mtime": "2026-11-01T23:24:14.656Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "shapes": [
+    {
+      "shape": "default-all",
+      "args": {},
+      "warmupMs": 152.91,
+      "warmupChars": 741,
+      "runs": [
+        {
+          "ms": 16.55,
+          "cpuMs": 9,
+          "isError": false,
+          "facts": {
+            "censusHeader": "9",
+            "scan": "9 finding(s) across orphaned_function=3 orphaned_file=3 framework-detected=2 orphaned_class=1; showing 9",
+            "displayRows": 9,
+            "chars": 741,
+            "lines": 11
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 14.31,
+          "cpuMs": 8,
+          "isError": false,
+          "facts": {
+            "censusHeader": "9",
+            "scan": "9 finding(s) across orphaned_function=3 orphaned_file=3 framework-detected=2 orphaned_class=1; showing 9",
+            "displayRows": 9,
+            "chars": 741,
+            "lines": 11
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 18.62,
+          "cpuMs": 10,
+          "isError": false,
+          "facts": {
+            "censusHeader": "9",
+            "scan": "9 finding(s) across orphaned_function=3 orphaned_file=3 framework-detected=2 orphaned_class=1; showing 9",
+            "displayRows": 9,
+            "chars": 741,
+            "lines": 11
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 25.04,
+          "cpuMs": 10,
+          "isError": false,
+          "facts": {
+            "censusHeader": "9",
+            "scan": "9 finding(s) across orphaned_function=3 orphaned_file=3 framework-detected=2 orphaned_class=1; showing 9",
+            "displayRows": 9,
+            "chars": 741,
+            "lines": 11
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 21.39,
+          "cpuMs": 10,
+          "isError": false,
+          "facts": {
+            "censusHeader": "9",
+            "scan": "9 finding(s) across orphaned_function=3 orphaned_file=3 framework-detected=2 orphaned_class=1; showing 9",
+            "displayRows": 9,
+            "chars": 741,
+            "lines": 11
+          },
+          "dbUnchanged": true
+        }
+      ],
+      "p50Ms": 18.62,
+      "p95Ms": 25.04,
+      "maxMs": 25.04,
+      "minMs": 14.31,
+      "medianOfRuns": [
+        14.31,
+        16.55,
+        18.62,
+        21.39,
+        25.04
+      ],
+      "isError": false
+    },
+    {
+      "shape": "orphaned",
+      "args": {
+        "scope": "orphaned"
+      },
+      "warmupMs": 13.65,
+      "warmupChars": 969,
+      "runs": [
+        {
+          "ms": 11.24,
+          "cpuMs": 10,
+          "isError": false,
+          "facts": {
+            "censusHeader": "7",
+            "scan": "7 orphan candidate(s) (orphaned_function=3 orphaned_file=3 orphaned_class=1); showing 7",
+            "displayRows": 7,
+            "chars": 969,
+            "lines": 12
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 9.2,
+          "cpuMs": 5,
+          "isError": false,
+          "facts": {
+            "censusHeader": "7",
+            "scan": "7 orphan candidate(s) (orphaned_function=3 orphaned_file=3 orphaned_class=1); showing 7",
+            "displayRows": 7,
+            "chars": 969,
+            "lines": 12
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 7.99,
+          "cpuMs": 5,
+          "isError": false,
+          "facts": {
+            "censusHeader": "7",
+            "scan": "7 orphan candidate(s) (orphaned_function=3 orphaned_file=3 orphaned_class=1); showing 7",
+            "displayRows": 7,
+            "chars": 969,
+            "lines": 12
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 18.6,
+          "cpuMs": 8,
+          "isError": false,
+          "facts": {
+            "censusHeader": "7",
+            "scan": "7 orphan candidate(s) (orphaned_function=3 orphaned_file=3 orphaned_class=1); showing 7",
+            "displayRows": 7,
+            "chars": 969,
+            "lines": 12
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 18.75,
+          "cpuMs": 11,
+          "isError": false,
+          "facts": {
+            "censusHeader": "7",
+            "scan": "7 orphan candidate(s) (orphaned_function=3 orphaned_file=3 orphaned_class=1); showing 7",
+            "displayRows": 7,
+            "chars": 969,
+            "lines": 12
+          },
+          "dbUnchanged": true
+        }
+      ],
+      "p50Ms": 11.24,
+      "p95Ms": 18.75,
+      "maxMs": 18.75,
+      "minMs": 7.99,
+      "medianOfRuns": [
+        7.99,
+        9.2,
+        11.24,
+        18.6,
+        18.75
+      ],
+      "isError": false
+    }
+  ],
+  "generatedAt": "2026-11-03T05:20:40.606Z",
+  "indexAfter": {
+    "db": {
+      "bytes": 589824,
+      "mtime": "2026-11-01T23:24:14.656Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-03T05:20:40.632Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-03T05:20:40.633Z"
+    }
+  },
+  "readMovedIndex": false,
+  "shmMoved": true,
+  "cpuMs": {
+    "default-all": [
+      9,
+      8,
+      10,
+      10,
+      10
+    ],
+    "orphaned": [
+      10,
+      5,
+      5,
+      8,
+      11
+    ]
+  }
+}

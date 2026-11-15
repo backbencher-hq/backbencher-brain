@@ -1,0 +1,228 @@
+{
+ "rows": 486,
+ "sourceLanguages": [
+  "bash",
+  "c",
+  "clojure",
+  "cpp",
+  "csharp",
+  "dart",
+  "elixir",
+  "erlang",
+  "fsharp",
+  "go",
+  "groovy",
+  "haskell",
+  "java",
+  "javascript",
+  "kotlin",
+  "lua",
+  "objectivec",
+  "perl",
+  "php",
+  "powershell",
+  "python",
+  "r",
+  "ruby",
+  "rust",
+  "scala",
+  "svelte",
+  "swift",
+  "typescript",
+  "vue",
+  "zig"
+ ],
+ "targetsFor": {
+  "elixir": [
+   "dart",
+   "go",
+   "python",
+   "ruby",
+   "rust",
+   "typescript"
+  ],
+  "erlang": [
+   "elixir",
+   "go",
+   "typescript"
+  ],
+  "clojure": [
+   "dart",
+   "typescript"
+  ],
+  "javascript": [
+   "dart",
+   "go",
+   "python",
+   "typescript"
+  ],
+  "typescript": [
+   "dart",
+   "go",
+   "javascript",
+   "python"
+  ],
+  "ruby": [
+   "dart",
+   "elixir",
+   "go",
+   "javascript",
+   "python",
+   "typescript"
+  ],
+  "python": [
+   "dart",
+   "go",
+   "javascript",
+   "typescript"
+  ],
+  "go": [
+   "dart",
+   "elixir",
+   "java",
+   "javascript",
+   "python",
+   "rust",
+   "swift",
+   "typescript"
+  ],
+  "rust": [
+   "cpp",
+   "dart",
+   "go",
+   "java",
+   "javascript",
+   "python",
+   "typescript"
+  ]
+ },
+ "routes": {
+  "elixir": {
+   "typescript": true,
+   "python": true,
+   "go": true,
+   "rust": true,
+   "erlang": false,
+   "elixir": false,
+   "clojure": false,
+   "javascript": false,
+   "ruby": true
+  },
+  "erlang": {
+   "typescript": true,
+   "python": false,
+   "go": true,
+   "rust": false,
+   "erlang": false,
+   "elixir": true,
+   "clojure": false,
+   "javascript": false,
+   "ruby": false
+  },
+  "clojure": {
+   "typescript": true,
+   "python": false,
+   "go": false,
+   "rust": false,
+   "erlang": false,
+   "elixir": false,
+   "clojure": false,
+   "javascript": false,
+   "ruby": false
+  },
+  "javascript": {
+   "typescript": true,
+   "python": true,
+   "go": true,
+   "rust": false,
+   "erlang": false,
+   "elixir": false,
+   "clojure": false,
+   "javascript": false,
+   "ruby": false
+  },
+  "typescript": {
+   "typescript": false,
+   "python": true,
+   "go": true,
+   "rust": false,
+   "erlang": false,
+   "elixir": false,
+   "clojure": false,
+   "javascript": true,
+   "ruby": false
+  },
+  "ruby": {
+   "typescript": true,
+   "python": true,
+   "go": true,
+   "rust": false,
+   "erlang": false,
+   "elixir": true,
+   "clojure": false,
+   "javascript": true,
+   "ruby": false
+  },
+  "python": {
+   "typescript": true,
+   "python": false,
+   "go": true,
+   "rust": false,
+   "erlang": false,
+   "elixir": false,
+   "clojure": false,
+   "javascript": true,
+   "ruby": false
+  },
+  "go": {
+   "typescript": true,
+   "python": true,
+   "go": false,
+   "rust": true,
+   "erlang": false,
+   "elixir": true,
+   "clojure": false,
+   "javascript": true,
+   "ruby": false
+  },
+  "rust": {
+   "typescript": true,
+   "python": true,
+   "go": true,
+   "rust": false,
+   "erlang": false,
+   "elixir": false,
+   "clojure": false,
+   "javascript": true,
+   "ruby": false
+  }
+ },
+ "resolveSourceLanguage": {
+  "elixir": {
+   "language": "elixir",
+   "label": "elixir",
+   "reason": null
+  },
+  "erlang": {
+   "language": "erlang",
+   "label": "erlang",
+   "reason": null
+  },
+  "clojure": {
+   "language": "clojure",
+   "label": "clojure",
+   "reason": null
+  },
+  "javascript": {
+   "language": "javascript",
+   "label": "javascript",
+   "reason": null
+  },
+  "typescript": {
+   "language": "typescript",
+   "label": "typescript",
+   "reason": null
+  }
+ },
+ "dictPairs": 126
+}

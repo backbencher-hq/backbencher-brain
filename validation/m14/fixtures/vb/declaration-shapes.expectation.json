@@ -1,0 +1,414 @@
+{
+  "fixtureId": "vb/declaration-shapes",
+  "language": "vb",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Every row here is one of the three defects the F5 differential found in the analyzer, plus the oracle defects that had to be fixed alongside them so the differential could see the first two at all. None of the three was visible to a corpus-wide count: in each case the counts stayed healthy while a whole class of output was missing or wrong. (1) CONSTRUCTORS: `Public Sub New()` has no `name` field — the grammar lexes `New` as an anonymous token — so the 'declaration without a name' guard returned before the naming contract was reached and the index contained zero constructors across 435 files. (2) NESTED TYPE CONTAINMENT: a nested enum recorded `owner=Box` on its symbol but no visitor emitted the edge, so containment navigation stopped at the enclosing class. (3) A FIELD'S UNIT IS THE DECLARATOR: `Public Left, Top, Depth As Integer` is one `field_declaration` with three `variable_declarator` children, so it is three members, not one. (4) A CONSTRUCTION WITH ARGUMENTS WAS INVISIBLE ON THE NODE TYPE THE ANALYZER KEYED ON: `New Box(1, 2)` is an `array_creation_expression` with a `type` field, not an `invocation_expression`, so keying on one node type dropped every such construct — 15,577 of them across 1,718 corpus files. The construct was the finding; the LABEL this row first carried (`calls Build -> Box`) was superseded later, because a construction is one syntactic event published as `instantiates` and publishing `calls` beside it counts it twice and puts a constructor in the call graph. Line numbers are MEASURED from this committed file. (5) MEMBER-LEVEL HERITAGE WAS NEVER COLLECTED: `visitHeritage` was called from exactly one place, the TYPE visitor, so `Public Sub Draw() Implements IShape.Draw` published nothing at all. The full-corpus sweep found it as 17 of 23 missing rows, and every one of them read as a self-edge (`implements Initialize -> Initialize`) because a member that implements `IThing.Refresh` is NAMED `Refresh` -- so the oracle was right that a relationship existed and wrong about its shape. (6) THE CENSUS FOUND TWO MORE WHOLE KINDS. A node-type census over 2,660 files showed 146 distinct named types against 42 classified, so the claim that every construct is accounted for was 29% true and nothing had ever measured it. Two gaps fell out: an INTERFACE's members produced nothing (three node types in neither set, so nothing visited them and every interface in an interface-driven codebase was an empty shell), and OPERATORS produced nothing (no name field, plus a visitor that classified the operator's own symbol as punctuation). The census now classifies 145/145 and fails when a node type appears that the analyzer has not accounted for. (7) THE MODIFIER READ WAS A SINGULAR READ OF A REPEATED FIELD. The grammar emits `modifiers` once per modifier, and `childForFieldName` returns one node, so every modifier after the first was invisible: `Public Shared` reported isStatic=false, `Public Overrides` published no overrides edge at all (0 across 435 files), and `Const`, `MustOverride`, `ReadOnly` and `NotInheritable` were missed the same way. VB writes `Public` first by convention, so the one modifier that was ever read was the one least worth reading. The `overrides` edge it unlocked is now qualified by the base type (`Go -> Base.Go`) rather than being a self-edge. (8) THE MODIFIER READ WAS A SINGULAR READ OF A REPEATED FIELD, and it is the largest single defect this wave found. The grammar emits `modifiers` once per modifier, so `Public Overrides Sub` is `modifiers: (...) modifiers: (...)` and `childForFieldName(\"modifiers\")` returned only `public`. Every modifier-dependent fact was therefore wrong wherever the modifier was not written FIRST: `Public Shared` reported isStatic=false, `Public Overrides` published ZERO overrides edges across 435 files and zero on a textbook override, and `Const`, `MustOverride`, `ReadOnly` and `NotInheritable` were missed the same way. VB writes `Public` first by convention, so the one modifier that was ever read was the one least worth reading. It was found because the docs claimed `overrides` was published and it was not -- a false claim in our own documentation, which is the only kind that reliably gets checked. (9) AUDITING `references` -- the label that was 37% of the index and agreed with by NO second implementation, because it had been excluded from the audit on the grounds that the oracle did not derive it. Excluding the largest class did not shrink it; it made it invisible. The oracle now derives it from a declaration's signature `as_clause`s, and that audit immediately found the analyzer reading an `array_type` declared_type as its own text, publishing a `references` target of `Timers.Timer()`. It also found the ORACLE over-deriving 35 rows by walking a declaration's BODY for `as_clause` nodes, so every `Dim x As Pokemon` local became a type reference from the enclosing method — locals are not project-symbol-table members, and the fix is to stop walking at the signature. The #910 lesson cuts both ways: an underived label is a manufactured green, and a label derived wrongly is a manufactured red. Both were live in the same audit.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "class"
+    },
+    {
+      "name": "Box",
+      "kind": "class",
+      "comment": "Inherits Shape, so `extends` has a target that is not this file's root"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "comment": "the Shape constructor, line 7 — a constructor is named by the CONTRACT, with the class in ownerName"
+    },
+    {
+      "name": "Kind",
+      "kind": "enum",
+      "comment": "NESTED in Box: ownerName is set AND the containment edge exists"
+    },
+    {
+      "name": "Small",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Large",
+      "kind": "enum_member"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "comment": "the Box constructor, line 22 — two constructors in one file, both named `constructor`"
+    },
+    {
+      "name": "Left",
+      "kind": "variable",
+      "comment": "first of THREE declarators in one field_declaration"
+    },
+    {
+      "name": "Top",
+      "kind": "variable",
+      "comment": "second declarator — reading one name per field_declaration loses this one"
+    },
+    {
+      "name": "Depth",
+      "kind": "variable",
+      "comment": "third declarator"
+    },
+    {
+      "name": "MaxDepth",
+      "kind": "constant",
+      "comment": "a `Const` field is a Constant, not a Variable. It was published as a Variable until the modifier read was fixed: this grammar emits `modifiers` as a REPEATED field, so the singular `childForFieldName(\"modifiers\")` returned only `public` and dropped `const` -- the same bug that made `Public Shared` report isStatic=false."
+    },
+    {
+      "name": "Area",
+      "kind": "method"
+    },
+    {
+      "name": "Resize",
+      "kind": "method"
+    },
+    {
+      "name": "Registry",
+      "kind": "class"
+    },
+    {
+      "name": "_items",
+      "kind": "variable",
+      "comment": "`As New Dictionary(Of String, Shape)` — a field with an initializer"
+    },
+    {
+      "name": "Add",
+      "kind": "method"
+    },
+    {
+      "name": "Build",
+      "kind": "method"
+    },
+    {
+      "name": "IShape",
+      "kind": "interface"
+    },
+    {
+      "name": "Draw",
+      "kind": "method",
+      "comment": "the member carrying a MEMBER-LEVEL `Implements` clause"
+    },
+    {
+      "name": "IMeasurable",
+      "kind": "interface"
+    },
+    {
+      "name": "Area",
+      "kind": "method",
+      "comment": "an INTERFACE member, owner=IMeasurable. Interface members are declarations: the three node types were in neither the declaration set nor the silent set, so nothing visited them and the interface was an empty shell"
+    },
+    {
+      "name": "Label",
+      "kind": "property",
+      "comment": "the interface's property member — same gap"
+    },
+    {
+      "name": "Square",
+      "kind": "class"
+    },
+    {
+      "name": "operator",
+      "kind": "method",
+      "comment": "the contract literal, owner=Square. `operator_declaration` has no name field, so the same empty-name guard that hid constructors hid every operator; and its visitor skipped the operator's own symbol as punctuation, so it produced nothing even when reached"
+    },
+    {
+      "name": "Size",
+      "kind": "property",
+      "comment": "`Overridable` — a modifier AFTER `Public`, so it was invisible before the modifier read was fixed"
+    },
+    {
+      "name": "Reset",
+      "kind": "method",
+      "comment": "`Overridable Sub`"
+    },
+    {
+      "name": "Square2",
+      "kind": "class",
+      "comment": "Inherits Square"
+    },
+    {
+      "name": "Size",
+      "kind": "property",
+      "comment": "the OVERRIDING property, owner=Square2 — a property override published nothing until `overrides` was read outside the method visitor"
+    },
+    {
+      "name": "WatcherHost",
+      "kind": "class"
+    },
+    {
+      "name": "_watcher",
+      "kind": "variable",
+      "comment": "`As New Timers.Timer()` — `declared_type` is an `array_type` wrapping the real name"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "New",
+      "comment": "control: a constructor is never named by the source keyword. `New` is a keyword, it collides across every class in a file, and it made the differential read `calls New -> ToList` with no way to tell which constructor"
+    },
+    {
+      "name": "scratch",
+      "comment": "control: `Dim scratch, spare As Integer` is a method LOCAL. Locals are not project-symbol-table members (the family convention, java/typescript/kotlin all agree), so neither is published — a local leaking into the class is the defect this forbids"
+    },
+    {
+      "name": "spare",
+      "comment": "control: the second local of the same statement"
+    },
+    {
+      "name": "Integer",
+      "comment": "control: a predefined type is not a project symbol. It appears as a `references` edge, never as a declared one"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Shape",
+      "target": "constructor",
+      "line_number": 7,
+      "comment": "a constructor is contained by its CLASS, and the edge carries the line the `New` is written on"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "constructor",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Kind",
+      "line_number": 17,
+      "comment": "NESTED-TYPE CONTAINMENT PRE-FIX: the enum had owner=Box and NO edge, so containment navigation stopped at Box"
+    },
+    {
+      "type": "contains",
+      "from": "Kind",
+      "target": "Small",
+      "line_number": 18
+    },
+    {
+      "type": "contains",
+      "from": "Kind",
+      "target": "Large",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Left",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Top",
+      "line_number": 31,
+      "comment": "all three declarators land on the ONE line the field is written on"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Depth",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "MaxDepth",
+      "line_number": 33
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Area",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "Resize",
+      "line_number": 39
+    },
+    {
+      "type": "contains",
+      "from": "Registry",
+      "target": "Build",
+      "line_number": 53
+    },
+    {
+      "type": "extends",
+      "from": "Box",
+      "target": "Shape",
+      "line_number": 12,
+      "comment": "the following `Inherits` line form, read as the statement it is"
+    },
+    {
+      "type": "instantiates",
+      "from": "Build",
+      "target": "Box",
+      "line_number": 55,
+      "comment": "SUPERSEDES an earlier `calls Build -> Box` row: the CONSTRUCT was correctly found -- `New Box(1, 2)` is an `array_creation_expression` with a `type` field and no `function` field, so keying on `invocation_expression` alone drops it -- but the LABEL was wrong. A construction is one syntactic event and it is `instantiates`; publishing `calls` beside it counted it twice and put a constructor in the call graph. Confidence 1.0 because this file declares `Box`.",
+      "meta.constructedType": "Box",
+      "meta.constructionNode": "array_creation_expression",
+      "meta.constructionForm": "new-with-bounds",
+      "meta.isNew": true,
+      "meta.resolvedInFile": true
+    },
+    {
+      "type": "imports",
+      "from": "root",
+      "target": "System.Collections.Generic",
+      "line_number": 1,
+      "comment": "`Imports System.Collections.Generic` — THE TARGET IS THE NAMESPACE AS WRITTEN, and this row REPLACED a last-segment pin (`Generic`) on 2026-10-28 with a measurement rather than a preference. The old spelling published a segment that collides with the project's own `Generic` symbols (54 of the lane's 320 ambiguous edges were exactly this) and it could not carry the ruling layer's `importPath` claim, because that claim is synthesized only for a DOTTED path. MEASURED on the 58-file arm, old -> new: ambiguous 320 -> 267, unresolved 4,047 -> 3,828, externalVerified 1,831 -> 2,118, resolved 5,721 -> 5,715. The six lost resolutions are imports whose LEAF happened to name a project declaration; a namespace path is not that declaration, so those six were mis-bindings, not losses."
+    },
+    {
+      "type": "implements",
+      "from": "Canvas",
+      "target": "IShape",
+      "line_number": 70,
+      "comment": "the CLASS-level clause, kept separate from the member's own"
+    },
+    {
+      "type": "implements",
+      "from": "Draw",
+      "target": "IShape.Draw",
+      "line_number": 72,
+      "comment": "MEMBER-LEVEL heritage, pre-fix absent entirely: `visitHeritage` was called from the TYPE visitor only, so no member's clause was ever read. The target KEEPS ITS QUALIFIER -- `Draw` is the method's own name, so last-segment reduction would give `implements Draw -> Draw`, a symbol pointing at itself."
+    },
+    {
+      "type": "contains",
+      "from": "IMeasurable",
+      "target": "Area",
+      "line_number": 81,
+      "comment": "INTERFACE-MEMBER CONTAINMENT: an interface's members must be reachable from the interface, or the interface is an empty shell in the graph"
+    },
+    {
+      "type": "contains",
+      "from": "IMeasurable",
+      "target": "Label",
+      "line_number": 82
+    },
+    {
+      "type": "contains",
+      "from": "Square",
+      "target": "operator",
+      "line_number": 94,
+      "comment": "OPERATOR CONTAINMENT: the operator is a member like any other. `Operator =` carries its symbol in metadata.operatorSymbol; the NAME is the literal so the contract has one shape"
+    },
+    {
+      "type": "contains",
+      "from": "Square",
+      "target": "Area",
+      "line_number": 98
+    },
+    {
+      "type": "contains",
+      "from": "Square",
+      "target": "Label",
+      "line_number": 102
+    },
+    {
+      "type": "overrides",
+      "from": "Size",
+      "target": "Square.Size",
+      "line_number": 130,
+      "comment": "QUALIFIED by the base type. The unqualified form is the self-edge `Size -> Size`, which cannot answer \"what does this override?\"; the base type is derivable because `Inherits` was already read to publish `extends`"
+    },
+    {
+      "type": "overrides",
+      "from": "Reset",
+      "target": "Square.Reset",
+      "line_number": 136
+    },
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "WatcherHost",
+      "line_number": 146
+    },
+    {
+      "type": "contains",
+      "from": "WatcherHost",
+      "target": "_watcher",
+      "line_number": 147
+    },
+    {
+      "type": "references",
+      "from": "_watcher",
+      "target": "Timer",
+      "line_number": 147,
+      "comment": "PRE-FIX the target was the whole expression, `Timers.Timer()` — parens included. Not a name in the file, not navigable, and unmatchable by any independent oracle. `array_type` must descend to its `element_type`"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "Build",
+      "target": "Box",
+      "comment": "ONE LABEL, NOT TWO. A construction is `instantiates` and nothing else: `calls` here would double-count line 55 and put a constructor in the call graph. Matches the `calls EmptyArgs -> Widget` forbid in `vb/ontology-exports-instantiates-uses`, so both fixtures fail together if a construction edge is ever published twice."
+    },
+    {
+      "type": "calls",
+      "from": "Build",
+      "target": "New Box",
+      "comment": "PRE-FIX CALLEE: the target was the literal expression text. A construction names its type in a `type` field, so the callee is the last identifier leaf under it"
+    },
+    {
+      "type": "calls",
+      "from": "Build",
+      "target": "New Box(1, 2)",
+      "comment": "PRE-FIX CALLEE, the worse spelling: the whole expression including its arguments"
+    },
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "Kind",
+      "comment": "PRE-FIX NESTED-TYPE CONTAINMENT: the nested enum was filed under the NAMESPACE, skipping the class that actually contains it"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "scratch",
+      "comment": "control: a method local is not a member of the class"
+    },
+    {
+      "type": "extends",
+      "from": "Box",
+      "target": "Contoso",
+      "comment": "control: heritage is ONE edge per name expression. `Namespace Contoso.Shapes` contributes no `extends`, and a dotted base type is not one edge per segment"
+    },
+    {
+      "type": "implements",
+      "from": "Draw",
+      "target": "Draw",
+      "comment": "PRE-FIX SHAPE: last-segment reduction of `IShape.Draw`. A self-edge is not navigable and cannot answer 'where is IShape.Draw implemented?'"
+    },
+    {
+      "type": "contains",
+      "from": "IMeasurable",
+      "target": "function",
+      "comment": "control: a member is never named by a keyword"
+    },
+    {
+      "type": "overrides",
+      "from": "Size",
+      "target": "Size",
+      "comment": "PRE-FIX SHAPE: an unqualified override edge is a self-edge, and a self-edge is not navigable"
+    },
+    {
+      "type": "references",
+      "from": "_watcher",
+      "target": "Timers.Timer()",
+      "comment": "PRE-FIX SHAPE: the `array_type` node's own text used as a target"
+    },
+    {
+      "type": "imports",
+      "from": "root",
+      "target": "Generic",
+      "comment": "THE PRE-FIX SPELLING, now forbidden: a namespace import published as its LAST SEGMENT. This is the row that keeps the fix load-bearing in the failing direction — reverting to the leaf would satisfy nothing here and fail the expect row above."
+    }
+  ],
+  "knownResidual": "The namespace symbol is published as `Shapes`, not `Contoso.Shapes`, because the naming contract descends a qualified name to its last segment — the same last-segment rule that makes `Inherits System.Windows.Forms.Form` a single edge to `Form`. `Contoso` is therefore not a symbol, and containment from a dotted namespace starts at its last segment. This is a deliberate, documented contract rather than a defect, and it is the one place where the namespace's full identity is not recoverable from the symbol table alone. Separately, the `Imports` target follows the same rule: `Imports System.Collections.Generic` publishes `Generic`, not the full dotted namespace."
+}

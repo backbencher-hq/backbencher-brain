@@ -1,0 +1,12 @@
+{
+  "fixtureId": "javascript/anon-default-export",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANONYMOUS default declarations have no name node and were dropped entirely - losing the module's main export. They must be recorded under the family sentinel 'default'. M49 exports invariant: an ES module has at most ONE default binding \u2014 two anonymous default declarations in one file dedupe to a single 'default' export entry (the second was a fabricated duplicate; both decl sites still counted via expectSymbolCount on the module).",
+  "expectSymbols": [],
+  "expectExports": [
+    {
+      "name": "default"
+    }
+  ]
+}

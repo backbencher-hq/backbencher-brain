@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M60 X13. A bare reference this document does not satisfy is a REAL claim and
+     was being dropped. The three cases below are indistinguishable from inside
+     this file and all three are pinned:
+       CT_Shadow      a type from an xs:include  -> unresolved, not ambiguous
+       string         a BUILT-IN, but shadowed by a same-named type in the
+                      included file               -> unresolved AND ambiguous
+       xs:int         an UNDECLARED prefix, which is a malformed reference, not a
+                      cross-file one               -> refused, no edge
+     The include is never resolved: that needs the include GRAPH, which a per-file
+     analyzer cannot see and which belongs to a project-level pass. What is pinned
+     is that the CLAIM survives with its ambiguity recorded. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:example:x13"
+           targetNamespace="urn:example:x13">
+  <xs:include schemaLocation="shared-types.xsd"/>
+  <xs:complexType name="CT_Local">
+    <xs:sequence>
+      <xs:element name="shadow"  type="CT_Shadow"/>
+      <xs:element name="ambiguous" type="string"/>
+      <xs:element name="present"  type="CT_Local"/>
+      <xs:element name="malformed" type="nope:int"/>
+      <xs:element name="external"  type="tns:CT_Remote"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

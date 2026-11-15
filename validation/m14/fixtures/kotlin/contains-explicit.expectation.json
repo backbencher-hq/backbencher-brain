@@ -1,0 +1,9 @@
+{
+  "fixtureId": "kotlin/contains-explicit",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPLICIT contains pin (was only differential-implicit): Host contains member.",
+  "expectRelationships": [
+    { "type": "contains", "from": "Host", "targetEndsWith": "member" }
+  ]
+}

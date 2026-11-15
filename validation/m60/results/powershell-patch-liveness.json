@@ -1,0 +1,120 @@
+{
+  "instrument": "m60-powershell-patch-liveness",
+  "question": "Is every patch the pin record CLAIMS actually present in the wired bytes this lane measures with?",
+  "whyNotSha": "the pin record and grammar.js agree with each other and both disagree with the bytes; a sha comparison cannot see that, because the record was updated in the same change that added the patch to the source",
+  "wasm": {
+    "path": "wasm/tree-sitter-powershell.wasm",
+    "bytes": 1168838
+  },
+  "totals": {
+    "probes": 9,
+    "live": 8,
+    "NOT_LIVE": 1
+  },
+  "notLive": [
+    {
+      "patch": "G10",
+      "claim": "a value GLUED to a double-dash parameter, with no argument separator",
+      "failures": [
+        "expected clean, got ERROR=false MISSING=[>]"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "patch": "G1",
+      "claim": "a script-level param() after a `using` statement is a param_block",
+      "source": "using namespace System.Text ; param( ;   [string]$Name ; ) ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G5a/b",
+      "claim": "PS7 `??` and `? :`",
+      "source": "$a = 1 ; $b = $a ?? 'fallback' ; $c = $a ? 1 : 2 ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G5c",
+      "claim": "PS7 `?.` and `?[`",
+      "source": "$a = 1 ; $b = $a?.Name ; $c = $a?[1,2] ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G6",
+      "claim": "a command argument list including a BARE WORD",
+      "source": "Get-Thing deb, rpm ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G7",
+      "claim": "a command ARGUMENT that is a sigil-led path",
+      "source": "Resolve-Path $PSScriptRoot/x.ps1 ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G8a",
+      "claim": "`+` as .NET's nested-type separator",
+      "source": "$x = [System.Environment+SpecialFolder] ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G8b",
+      "claim": "`=` admitted to the DOUBLE-dash command_parameter class",
+      "source": "Get-Thing --flag=alnum ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G9",
+      "claim": "a bracketed generic type argument",
+      "source": "$x = [Dictionary[[string],[int]]]::New() ; ",
+      "hasError": false,
+      "missing": [],
+      "live": true,
+      "failures": [],
+      "redirectionFabrication": false
+    },
+    {
+      "patch": "G10",
+      "claim": "a value GLUED to a double-dash parameter, with no argument separator",
+      "source": "Get-Thing --flag=$x ; ",
+      "hasError": false,
+      "missing": [
+        ">"
+      ],
+      "live": false,
+      "failures": [
+        "expected clean, got ERROR=false MISSING=[>]"
+      ],
+      "redirectionFabrication": true
+    }
+  ],
+  "precedent": "objective-c, c and fsharp each settled the same question with a three-build A/B (WIRED vs REBUILD vs PRISTINE) recording surface AND behaviour. The C lane rejected a sha-only pin for exactly this reason. This is the behaviour half, re-runnable, and it exits non-zero."
+}

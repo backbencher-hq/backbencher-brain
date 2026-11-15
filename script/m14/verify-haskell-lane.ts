@@ -73,7 +73,7 @@ const ANALYZER_DOC = "docs/analyzers/haskell.md"
 const REVIEW = "reviews/haskell/master-review.md"
 const SPEC = "script/m14/spec/haskell-completeness.json"
 const PIN = "validation/m14/grammar-pins.json"
-const CORPUS_ROOT = "$HOME/fixtures/repositories/cabal"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories/cabal"
 const EXTRA_CORPORA = ["hledger", "postgrest"]
 const F5 = "validation/m14/results/M14.0.F5.json"
 const PRODUCT_TYPES = ["calls", "extends", "implements", "uses", "imports", "exports",
@@ -132,7 +132,7 @@ const FIXTURES = ["validation/m12/fixtures/haskell/Service.hs",
                   "validation/m12/fixtures/haskell/Negative.hs",
                   "validation/m14/fixtures/haskell/payload-and-complexity.hs"]
 const files = [
-  ...run("bash", ["-lc", `for d in ${CORPUS_ROOT} ${EXTRA_CORPORA.map((c) => `$HOME/fixtures/repositories/${c}`).join(" ")}; do find $d -name '*.hs' -not -path '*/.git/*'; done | sort`])
+  ...run("bash", ["-lc", `for d in ${CORPUS_ROOT} ${EXTRA_CORPORA.map((c) => `/home/ishaq2321/bb_tests/repositories/${c}`).join(" ")}; do find $d -name '*.hs' -not -path '*/.git/*'; done | sort`])
     .out.trim().split("\n").filter(Boolean),
   ...FIXTURES.filter((f) => existsSync(f)),
 ]

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:css",
   "fixtureDir": "validation/m12/fixtures/css",
-  "corpusDir": "$HOME/fixtures/repositories/svelte",
+  "corpusDir": "/home/ishaq2321/bb_tests/repositories/svelte",
   "corpusManifest": {
-    "corpusDir": "$HOME/fixtures/repositories/svelte",
+    "corpusDir": "/home/ishaq2321/bb_tests/repositories/svelte",
     "fileCount": 185,
     "extensions": [
       ".css"

@@ -1,0 +1,187 @@
+{
+  "comment": "The ANALYZER's rows for `extends-probe-roles.icl`. The file itself exists for the `extends` RULING PROBE \u2014 `extends-probe-roles.probe.json` pins the census's slot ROLES per declaration, checked by `extends-probe-roles-check.mts`. These rows are here so `runLang(\"clean\")` exercises the same file through the analyzer too, and so the two suites cannot drift apart.\n\nThe one defect class this file pins is a SPELLING mismatch, and it is worth stating precisely because it is invisible to every count-based check on this lane. An operator IS a class name in Clean, and the two sites spell it differently: a DECLARATION writes `class (>>=) a where` and an INSTANCE writes `instance >>= Thing where`. The analyzer read the declaration's `name` field verbatim as `(>>=)` and the instance's as `>>=`, so before the fix `declaredTypeNames` held `(>>=)` while both lookups held `>>=` and BOTH missed: `implements` reported `isExternalClass: true` for a class declared in the same file, and `overrides` refused the edge because the in-file member set was unreachable. Measured on the 312-file corpus: 24 `implements` edges carried the false `isExternalClass`, and the false count is now 0. No edge was ADDED or REMOVED by the fix on that corpus \u2014 the corpus spells its operator-named classes on one line (`class (==) \u2026 ::`, clean-stdlib/StdOverloaded.icl:23), which gives the member set nothing to read \u2014 so the `overrides` half is pinned HERE, where a `where` block gives it something to read, because otherwise the correction would ship untested.",
+  "expectSymbols": [
+    {
+      "name": "ExtendsProbeRoles",
+      "kind": "module",
+      "comment": "the definition module"
+    },
+    {
+      "name": "(==)",
+      "kind": "interface",
+      "comment": "an operator-named class publishes with its DECLARATION's spelling, parentheses included"
+    },
+    {
+      "name": "Box",
+      "kind": "interface",
+      "comment": "a class with a kind annotation and two members"
+    },
+    {
+      "name": "unbox",
+      "kind": "method",
+      "ownerName": "Box"
+    },
+    {
+      "name": "pack",
+      "kind": "method",
+      "ownerName": "Box"
+    },
+    {
+      "name": "Ord2",
+      "kind": "interface"
+    },
+    {
+      "name": "cmp",
+      "kind": "method",
+      "ownerName": "Ord2"
+    },
+    {
+      "name": "Slot",
+      "kind": "interface"
+    },
+    {
+      "name": "read",
+      "kind": "method",
+      "ownerName": "Slot"
+    },
+    {
+      "name": "(>>=)",
+      "kind": "interface",
+      "comment": "the SAME operator-named class in the `where` form, so its member set is readable"
+    },
+    {
+      "name": ">>=",
+      "kind": "method",
+      "ownerName": "(>>=)",
+      "comment": "memberDeclaredName unparenthesises, so the member is `>>=` while its owner keeps the declared spelling"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": "==",
+      "line_number": 75,
+      "comment": "THE FIX, half one: `class (==)` is declared in THIS file at line 47, so `isExternalClass` must be false. It read true before the fix because the declaration publishes `(==)` and the instance reads `==`.",
+      "meta.isExternalClass": false
+    },
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": ">>=",
+      "line_number": 105,
+      "comment": "the same correction on the `where`-form class",
+      "meta.isExternalClass": false
+    },
+    {
+      "type": "overrides",
+      "from": "Thing.>>=",
+      "target": ">>=.>>=",
+      "line_number": 106,
+      "comment": "THE FIX, half two: the in-file guard could not see `(>>=)`'s member set under the key `>>=`, so this edge was refused for a class this file declares. Endpoints are qualified on both sides and the direction is instance-member -> class-member, unchanged by the fix."
+    },
+    {
+      "type": "overrides",
+      "from": "Thing.cmp",
+      "target": "Ord2.cmp",
+      "line_number": 79,
+      "comment": "the ordinary, non-operator case, which must be unaffected by the fix"
+    },
+    {
+      "type": "overrides",
+      "from": "().cmp",
+      "target": "Ord2.cmp",
+      "line_number": 99,
+      "comment": "a unit-annotated instance target still publishes its member and still overrides"
+    },
+    {
+      "type": "implements",
+      "from": "()",
+      "target": "Ord2",
+      "line_number": 98,
+      "comment": "an instance target that is a TYPE EXPRESSION (`()`) publishes a symbol by that text \u2014 known limit 12 in the analyzer doc, pinned here so a change to it is visible",
+      "meta.isExternalClass": false
+    },
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": "Eq",
+      "line_number": 81,
+      "comment": "the negative half of the flag: `Eq` is NOT declared here, so `isExternalClass` stays true. Without this row the fix could pass by making the flag always false.",
+      "meta.isExternalClass": true
+    },
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": "Show",
+      "line_number": 84,
+      "comment": "ditto for `Show`",
+      "meta.isExternalClass": true
+    },
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": "Eq",
+      "line_number": 88,
+      "comment": "a `derive` declaration is an instance too, and it carries NO `isExternalClass` key at all \u2014 the derive branch does not set it. Pinned by omission rather than by value, because `meta.isExternalClass: null` would also be satisfied by a key holding `null`, and the honest statement is that the field is absent."
+    },
+    {
+      "type": "references",
+      "from": "Ord2",
+      "target": "Eq",
+      "line_number": 65,
+      "comment": "the class context, published as `references` and NOT as `extends`. This is the label the construct earns, and the row that would change first if anyone relabelled it \u2014 see the `extends` forbids below."
+    },
+    {
+      "type": "references",
+      "from": "e",
+      "target": "==",
+      "line_number": 91,
+      "comment": "the operator-named constraint on an INSTANCE, same label"
+    },
+    {
+      "type": "references",
+      "from": "unbox",
+      "target": "Box",
+      "line_number": 61,
+      "comment": "a declared_type reference"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "comment": "`extends` is RULED at 0 on this lane (script/m14/clean-ruled.ts, instrument B position census: 0 UNCLASSIFIED of 5,567 declarations). No edge of that type may appear here, and this row is what convicts a future edit that relabels a dictionary requirement as a supertype \u2014 `| Eq a` on line 65 and `| == e` on line 91 are the two sites in this file where that mistake would be easiest to make."
+    },
+    {
+      "type": "overrides",
+      "from": "Thing.>>=",
+      "target": "(>>=).>>=",
+      "comment": "the class endpoint uses the BARE spelling. The class member's identity comes from the member set, which is keyed by the declaration, so a parenthesised endpoint here would be a different symbol and would not resolve \u2014 pinning the exact spelling so a 'normalisation' that changes it is caught."
+    },
+    {
+      "type": "overrides",
+      "from": "Thing.>>=",
+      "target": "Thing.>>=",
+      "comment": "no SELF-edge. A polymorphic instance publishes no symbol of its own, so its members are attributed to the class and the two endpoints compose to the same string; the analyzer refuses those (mutant clean/overrides-self-edge-guard-dropped)."
+    },
+    {
+      "type": "overrides",
+      "from": ">>=.>>=",
+      "target": "Thing.>>=",
+      "comment": "the direction is instance-member -> class-member and never the reverse: a class member is abstract and overrides nothing."
+    },
+    {
+      "type": "overrides",
+      "from": ">>=",
+      "target": ">>=.>>=",
+      "comment": "endpoints are QUALIFIED. A bare member name collides with every other member of that name in any consumer."
+    },
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": "Eq",
+      "meta.isExternalClass": false,
+      "comment": "the exact defect this fixture exists to catch, stated as a FORBID: `Eq` is not declared in this file, so its `isExternalClass` must never read false. Without this row the two halves of the fix could both pass by making the flag constant."
+    }
+  ]
+}

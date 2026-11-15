@@ -1,0 +1,74 @@
+{
+  "instrument": "the `imports` colon — the CEILING in the gate's own columns, split by LOCAL vs EXTERNAL module",
+  "lane": "typescript",
+  "population": {
+    "admitted": 1256,
+    "parsed": 1256,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "redwood"
+    ],
+    "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default and production's scope",
+  "colonEdges": 5810,
+  "dotClauseCrossTab": {
+    "LOCAL": {
+      "ambBoth": 243,
+      "ambDeclOnly": 164,
+      "resolved": 1178,
+      "unresolved": 189
+    },
+    "EXTERNAL": {
+      "unresolved": 56
+    }
+  },
+  "dotInModuleHalf": {
+    "LOCAL": 1774,
+    "EXTERNAL": 56,
+    "ofColonEdges": 5810
+  },
+  "bothClauses": {
+    "note": "colon is present on EVERY edge counted here (it is the selection rule); a dot in the module half is the second clause",
+    "dotAndColon_LOCAL": 1774,
+    "dotAndColon_EXTERNAL": 56
+  },
+  "corpusConstruction": "ONE PROJECT PER REPOSITORY, no merging: each file is parsed with `projectRoot` set to its own repo and the key space is built per repo, which is the gate's own scope and production's. r-lane's hcl instrument copies 13 repos into a single scratch project, which inflates cross-repo collisions; that artifact is NOT present here and cannot be.",
+  "targetAsIs": {
+    "LOCAL": {
+      "ambBoth": 243,
+      "ambDeclOnly": 164,
+      "unresolved": 872,
+      "resolved": 1178
+    },
+    "EXTERNAL": {
+      "unresolved": 3353
+    }
+  },
+  "targetBareItemName": {
+    "LOCAL": {
+      "ambBoth": 390,
+      "ambDeclOnly": 195,
+      "resolved": 1389,
+      "unresolved": 483
+    },
+    "EXTERNAL": {
+      "resolved": 432,
+      "ambBoth": 645,
+      "ambDeclOnly": 164,
+      "unresolved": 2112
+    },
+    "ALL": {
+      "resolved": 1821,
+      "ambBoth": 1035,
+      "ambDeclOnly": 359,
+      "unresolved": 2595
+    }
+  },
+  "reading": {
+    "asIs": "`classifyEdge` on the target AS EMITTED — the colon makes it path-like to the gate, and with no declaration of that spelling the outcome is `unresolved` (the lane's measured `resolves 0`).",
+    "ceiling": "`classifyEdge` on the BARE ITEM NAME, which is the emission change candidate. `resolved` here is the ceiling the change could reach; `ambDeclOnly`/`ambBoth` are edges it would NOT settle; `unresolved` are edges whose item is declared nowhere in the project.",
+    "localVsExternal": "the split that decides whether a change is a fix or a regression: an EXTERNAL module's items are legitimately outside the population, so an emission change that makes them resolve would be WRONG — their current unverified state is correct."
+  }
+}

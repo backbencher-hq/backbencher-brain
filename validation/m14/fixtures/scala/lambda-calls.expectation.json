@@ -1,0 +1,14 @@
+{
+  "fixtureId": "scala/lambda-calls",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Calls within class resolve: caller->helper; transform->map is stdlib (may be filtered - only caller->helper is pinned as required).",
+  "expectSymbols": [
+    { "name": "Processor", "kind": "class" },
+    { "name": "transform" },
+    { "name": "caller" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "caller", "targetEndsWith": "helper" }
+  ]
+}

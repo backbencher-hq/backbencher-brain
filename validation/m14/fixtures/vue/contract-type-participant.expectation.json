@@ -1,0 +1,54 @@
+{
+  "fixtureId": "vue/contract-type-participant",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F14 (full 829-file corpus draw, 2026-09-30): the rule for what counts as a CONTRACT PARTICIPANT in `defineProps<\u2026>()` was 'walk to the first type_identifier ANYWHERE in the type arguments', which descends into the object literal's property signatures. A property's type is not a participant. Two corpus files exposed it in OPPOSITE directions, which is what identified it: node.vue's `defineProps<{ node: NodeShape; menuId?: string }>()` has no participant at all (the props are symbols; NodeShape is the type of ONE prop, which the delegate already publishes as a declared_type row) yet the oracle derived a contract row for it \u2014 a permanent MISSING; and menu.vue's `defineProps<{ \u2026 } & Pick<CommonProps, 'height'>>()` should name `Pick`, but the analyzer took the nested `NodeShape` while the oracle took `Pick`, so each side manufactured half of one disagreement. The correct rule descends INTERSECTION and UNION constituents and type wrappers, reads a GENERIC's own name, and STOPS at an object literal. `nodes: NodeShape[]` is the array-element case that made the old pre-order rule look plausible: an array type still sits inside a property signature, so it is still not a participant. `namedControl` is the plain named type, which must keep working \u2014 a rule that only ever returns nothing would pass four of these five assertions.",
+  "expectSymbols": [
+    {
+      "name": "ContractTypeParticipant",
+      "kind": "class"
+    },
+    {
+      "name": "nodes",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "index",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "node",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "menuId",
+      "kind": "property",
+      "meta.isProp": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "source": "ContractTypeParticipant",
+      "target": "Pick",
+      "type": "references",
+      "meta.isPropContract": true
+    },
+    {
+      "source": "ContractTypeParticipant",
+      "target": "CommonProps",
+      "type": "references",
+      "meta.isPropContract": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "source": "ContractTypeParticipant",
+      "target": "NodeShape",
+      "meta.isPropContract": true,
+      "note": "a PROPERTY's type is not a contract participant. Scoped to a contract-marked edge from the COMPONENT: the delegate's own declared_type row to NodeShape (sourced at the `intersect` variable, from `nodes: NodeShape[]`) is CORRECT and must survive \u2014 the first version of this row forbaded the bare target and so forbaded that legitimate row too."
+    }
+  ]
+}

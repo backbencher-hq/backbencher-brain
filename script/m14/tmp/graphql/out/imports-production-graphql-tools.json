@@ -1,0 +1,146 @@
+{
+ "repo": "gql-graphql-tools",
+ "trackedGraphqlFiles": 240,
+ "filesWithImports": 126,
+ "importEdges": 165,
+ "byForm": {
+  "bare": 8,
+  "from_binding": 157
+ },
+ "nonImportRelationshipsInThoseFiles": 14649,
+ "emptyOrUnknownEndpoints": 0,
+ "magicFileLiteralSources": 0,
+ "distinctSources": [
+  "1.mutation.graphql",
+  "1.query.graphql",
+  "10.mutation.graphql",
+  "10.query.graphql",
+  "2.mutation.graphql",
+  "2.query.graphql",
+  "3.mutation.graphql",
+  "3.query.graphql",
+  "4.mutation.graphql",
+  "4.query.graphql",
+  "5.mutation.graphql",
+  "5.query.graphql",
+  "6.mutation.graphql",
+  "6.query.graphql",
+  "7.mutation.graphql",
+  "7.query.graphql",
+  "8.mutation.graphql",
+  "8.query.graphql",
+  "9.mutation.graphql",
+  "9.query.graphql",
+  "a.graphql",
+  "all.graphql",
+  "b.graphql",
+  "c.graphql",
+  "d.gql",
+  "d.graphql",
+  "executable.graphql",
+  "index.graphql",
+  "level1.graphql",
+  "level2.graphql",
+  "level3.graphql",
+  "query-interfaces.graphql",
+  "query.graphql",
+  "schema.graphql",
+  "type-defs-import-after-comment.graphql",
+  "type-defs-spaced-default-import.graphql",
+  "type-defs-with-failing-import.graphql",
+  "type-defs-with-import.graphql",
+  "typedefs-&-copy.graphql",
+  "with-comments.graphql"
+ ],
+ "sample": [
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/a.graphql",
+   "imports": 1,
+   "example": "",
+   "source": "a.graphql",
+   "target": "b.graphql",
+   "line": 1,
+   "form": "bare",
+   "bindings": []
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/b.graphql",
+   "imports": 1,
+   "example": "",
+   "source": "b.graphql",
+   "target": "c.graphql",
+   "line": 1,
+   "form": "bare",
+   "bindings": []
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/d.gql",
+   "imports": 1,
+   "example": "",
+   "source": "d.gql",
+   "target": "with-nested-fragment.gql",
+   "line": 1,
+   "form": "bare",
+   "bindings": []
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/default/with-comments.graphql",
+   "imports": 1,
+   "example": "",
+   "source": "with-comments.graphql",
+   "target": "c.graphql",
+   "line": 1,
+   "form": "bare",
+   "bindings": []
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/specific/a.graphql",
+   "imports": 1,
+   "example": "",
+   "source": "a.graphql",
+   "target": "b.graphql",
+   "line": 1,
+   "form": "from_binding",
+   "bindings": [
+    "FooFragment"
+   ]
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/documents/import-test/specific/b.graphql",
+   "imports": 1,
+   "example": "",
+   "source": "b.graphql",
+   "target": "c.graphql",
+   "line": 1,
+   "form": "from_binding",
+   "bindings": [
+    "BarFragment"
+   ]
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/schema/fixtures/circular/a.graphql",
+   "imports": 1,
+   "example": "",
+   "source": "a.graphql",
+   "target": "b.graphql",
+   "line": 1,
+   "form": "from_binding",
+   "bindings": [
+    "*"
+   ]
+  },
+  {
+   "file": "gql-graphql-tools/packages/import/tests/schema/fixtures/circular/b.graphql",
+   "imports": 2,
+   "example": "",
+   "source": "b.graphql",
+   "target": "c.graphql",
+   "line": 1,
+   "form": "from_binding",
+   "bindings": [
+    "C1",
+    "C2"
+   ]
+  }
+ ]
+}

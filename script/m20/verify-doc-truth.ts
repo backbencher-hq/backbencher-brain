@@ -1330,11 +1330,11 @@ const result = {
   sourceFingerprint: docSourceFingerprint(ROOT),
   workingTreeRelevantChanges: docRelevantWorkingTreeChanges(ROOT),
   verifierCommand: "bun run script/m20/verify-doc-truth.ts",
-  corpusCompanion: "fixtures/bb_doc/verify-corpus.ts (real repositories, real runtime)",
+  corpusCompanion: "bb_tests/bb_doc/verify-corpus.ts (real repositories, real runtime)",
   evidenceFile: "DOC-TRUTH.json",
   generatedAt: new Date().toISOString(),
   limitations: [
-    "Fixture-level truth/self-consistency gate; the same predicate set runs against real indexed repositories by fixtures/bb_doc/verify-corpus.ts.",
+    "Fixture-level truth/self-consistency gate; the same predicate set runs against real indexed repositories by bb_tests/bb_doc/verify-corpus.ts.",
     "api mode's surface is planted in the fixture (a file the index marks net_http with an exported symbol) rather than drawn from a real HTTP project; the negative half removes the attribution and proves the mode then claims nothing.",
   ],
 }

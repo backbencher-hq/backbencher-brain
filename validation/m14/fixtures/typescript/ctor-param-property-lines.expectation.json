@@ -1,0 +1,19 @@
+{
+  "fixtureId": "typescript/ctor-param-property-lines",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up, measured on element-plus cascader-panel/node.ts (9 corpus rows). Constructor parameter properties are members named on their own parameter lines; the old nodeRange(constructor) stamped `constructor(` for all of them. Forbid entries are the measured pre-fix lines (round-trip verified).",
+  "expectSymbols": [
+    { "name": "Node", "kind": "class" },
+    { "name": "data", "kind": "property" },
+    { "name": "parent", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Node", "target": "data", "line_number": 9 },
+    { "type": "contains", "from": "Node", "target": "parent", "line_number": 10 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Node", "target": "data", "line_number": 8, "note": "pre-fix: the `constructor(` line; the name data is written on 9" },
+    { "type": "contains", "from": "Node", "target": "parent", "line_number": 8, "note": "pre-fix: the `constructor(` line; the name parent is written on 10" }
+  ]
+}

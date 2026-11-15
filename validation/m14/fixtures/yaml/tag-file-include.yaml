@@ -1,0 +1,7 @@
+# An include-family tag names ANOTHER FILE. That is a real cross-file dependency, and
+# before the tag was read the analyzer emitted zero symbols and zero relationships for
+# it — an entire edge of the graph was invisible.
+tasks:
+  - !include other.yml
+  - name: build
+    include_tasks: sub/tasks.yml

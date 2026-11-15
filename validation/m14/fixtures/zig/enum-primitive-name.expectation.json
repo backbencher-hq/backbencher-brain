@@ -1,0 +1,35 @@
+{
+  "fixtureId": "zig/enum-primitive-name",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Z-p20 (2026-10-04). Zig has no reserved words, so an enum member can be NAMED with a primitive type name, and the pinned lexer classifies that name as a `builtin_type` node rather than an `identifier`. The analyzer read a field's name only when the grammar's `name` field was an `identifier`, so every such member was dropped: measured over the 3,834-file draw `sha256:2f3545f9`, 468 sites carry a `builtin_type` name field, of which 122 sit inside an `enum_declaration`, and all 122 were ABSENT from production `parseFile` output -- `Feature.clamps` published beside an unpublished `Feature.bool`, same enum, same container, the only difference being how the lexer spelled the name. Each dropped declaration made every read of it an edge naming something the parser was holding. The rule is GATED ON AN ENUM, and the gate is the substance of the fix rather than a caveat: Zig enum bodies have no positional form, so a bare token there is a member name by the language's own rules, while struct and union bodies do have one -- `struct { usize, bool }` (ghostty/src/simd/base64.zig:197) and `struct { []const u8, usize }` (zig/lib/std/json/Stringify.zig:600) are TUPLE types whose bare tokens are element types, and naming them fabricates declarations. That is 332 of the 468 sites and the reason an earlier blanket refusal (recorded at real-zig-analyzer.ts:760) was right for zls/src/analyser/InternPool.zig and wrong as a rule. The forbid rows below are the half that a mutation widening the gate past ENUM would break, and `usize: u32` in `Sized` pins the distinction the gate rests on: there the builtin is in the grammar's `type` FIELD and the name is a plain identifier, so it is published either way and cannot be confused with the ambiguous shape.",
+  "expectSymbols": [
+    { "name": "Feature", "kind": "enum" },
+    { "name": "bool", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "usize", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "type", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "void", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "noreturn", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "anyerror", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "clamps", "kind": "enum_member", "ownerName": "Feature" },
+    { "name": "BlockType", "kind": "enum" },
+    { "name": "f64", "kind": "enum_member", "ownerName": "BlockType" },
+    { "name": "f32", "kind": "enum_member", "ownerName": "BlockType" },
+    { "name": "custom", "kind": "enum_member", "ownerName": "BlockType" },
+    { "name": "SimpleValue", "kind": "enum" },
+    { "name": "undefined", "kind": "enum_member", "ownerName": "SimpleValue" },
+    { "name": "null", "kind": "enum_member", "ownerName": "SimpleValue" },
+    { "name": "true", "kind": "enum_member", "ownerName": "SimpleValue" },
+    { "name": "false", "kind": "enum_member", "ownerName": "SimpleValue" },
+    { "name": "void", "kind": "enum_member", "ownerName": "SimpleValue" },
+    { "name": "Sized", "kind": "struct" },
+    { "name": "usize", "kind": "property", "ownerName": "Sized" },
+    { "name": "bool", "kind": "property", "ownerName": "Sized" }
+  ],
+  "forbidSymbols": [
+    { "name": "bool", "kind": "property", "ownerName": "Tuple" },
+    { "name": "usize", "kind": "property", "ownerName": "Tuple" },
+    { "name": "bool", "kind": "enum_member", "ownerName": "Tag" },
+    { "name": "usize", "kind": "enum_member", "ownerName": "Tag" }
+  ]
+}

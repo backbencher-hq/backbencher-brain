@@ -1,0 +1,27 @@
+--- a/grammar.js	2026-09-29 01:34:14.923936148 -0400
++++ b/grammar.js	2026-11-13 16:24:04.319536292 -0500
+@@ -709,6 +709,7 @@
+       'class',
+       field('name', optional($.identifier)),
+       optional($.class_heritage),
++      optional($.implements_clause),
+       field('body', $.class_body),
+     )),
+ 
+@@ -717,12 +718,16 @@
+       'class',
+       field('name', $.identifier),
+       optional($.class_heritage),
++      optional($.implements_clause),
+       field('body', $.class_body),
+       optional($._automatic_semicolon),
+     )),
+ 
+     class_heritage: $ => seq('extends', $.expression),
+ 
++    // PATCH (bb): an `implements` clause, the Flow/TS spelling JavaScript itself rejects.
++    implements_clause: $ => seq('implements', commaSep1($.expression)),
++
+     function_expression: $ => prec('literal', seq(
+       optional('async'),
+       'function',

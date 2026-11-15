@@ -1,0 +1,14 @@
+{
+  "fixtureId": "groovy/override-fallback-confidence",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pass-1 in-file BFS legitimately resolves exact matches at confidence 1.0. Pass 3 (the GUESS tier) fires only when NO ancestor declares the method in-file: here AbstractRenderer does not define draw(), so the edge to it is a per-file guess at the true declaring parent and must carry confidence < 0.7 (patterns.ts consumer threshold). Guesses at 1.0 contaminated thresholded analysis identically to verified overrides.",
+  "expectSymbols": [
+    { "name": "AbstractRenderer", "kind": "class" },
+    { "name": "ShapeRenderer", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "fromEndsWith": "ShapeRenderer.draw", "targetEndsWith": "draw", "confidenceMax": 0.55 },
+    { "type": "extends", "from": "ShapeRenderer", "targetEndsWith": "AbstractRenderer" }
+  ]
+}

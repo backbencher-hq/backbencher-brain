@@ -1,0 +1,99 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/module-and-scope-psd13.ps1",
+ "authoredFrom": "PSD13 — THREE SPELLINGS THE OWNER QUESTION CANNOT ANSWER. Each row here carried the generic externality marker, and each one's arbiter question (`verifyExternalClaim` asks about the target's OWNER) was unanswerable: `Microsoft.PowerShell.Management\\Join-Path` has owner `Microsoft.PowerShell` (a colon or slash is refused, a backslash is not), `using:target` has a colon, and `it:skip` has a colon in DATA. 216 rows sat in `ext?` for the three shapes together.\n\nTHE CLAIM THAT FITS EACH ONE IS THE ONE THE FLEET ALREADY HAS. A MODULE-QUALIFIED command is `moduleNamespace`: the target states which module's command it is (about_Command_Precedence, \"Use a module-qualified name\"), and the arbiter checks the MODULE against the project's own file/directory space — the module's presence is the evidence, and the claim demotes to `ext?` rather than refuting when the module IS project layout. A `$using:` read is a NAMESPACE-shaped target whose root is a reserved scope keyword: no admitted file can declare `using:Something` (measured: zero `function using:…` declarations in the whole population), so the namespace claim — root carried AS WRITTEN, PSD11's rule — is checkable by its list. A quoted NAME key is DATA: the colon is punctuation in a string, so the externality reading is withheld and the row keeps only `noDeclarationInFile`.\n\nTHE NEGATIVES ARE THE GUARD, AND ONE OF THEM IS THE CONTROL. `stage3-release\\bin\\zig` (two path segments) and `.\\lib\\Helper.psm1` (an extension leaf) are FILES: the module claim must not attach to either, and the relative-path rule already owns the second. Row 6 is the control for the DATA rule: a quoted PATH key — `/usr/lib/Helper.ps1` — KEEPS its externality reading, because the path claim is answered against the project's admitted FILE list (PS-B18), which is a different question from the owner question this wave removes. A guard that withheld the reading on every constant key passed the first three rows and broke PS-B18's fixture, which is why the control is pinned here as well as there.",
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "module-and-scope-psd13.ps1",
+   "target": "Microsoft.PowerShell.Management\\Join-Path",
+   "line_number": 26,
+   "meta.externalTarget": true,
+   "meta.externalReason": "module-namespace",
+   "meta.externalSpecifier": "Microsoft.PowerShell.Management",
+   "meta.isExternalTarget": true,
+   "comment": "THE MODULE CLAIM. `externalSpecifier` is the module name before the backslash, which is what the arbiter checks against the project's module space; a module the project carries demotes this row to `ext?` rather than refuting it, so the claim cannot raise `extFAIL` by construction."
+  },
+  {
+   "type": "uses",
+   "from": "module-and-scope-psd13.ps1",
+   "target": "using:target",
+   "line_number": 29,
+   "meta.isScopedEnvironmentRead": true,
+   "meta.languageNamespace": ["using"],
+   "comment": "THE `$using:` CLAIM. The root is carried as written because `namespaceMatchOf` compares the target's first segment byte for byte; `using` is a reserved scope keyword in `RUNTIME_TABLE_SCOPE_PREFIXES`, unlike `global:`/`script:` which a file CAN declare into."
+  },
+  {
+   "type": "uses",
+   "from": "module-and-scope-psd13.ps1",
+   "target": "it:skip",
+   "line_number": 32,
+   "meta.isConstantKey": true,
+   "meta.externalTarget": null,
+   "meta.isExternalTarget": null,
+   "meta.noDeclarationInFile": true,
+   "comment": "THE DATA ROW. A colon inside a quoted key is punctuation in a string: nothing can declare `it:skip`, so an externality claim about it is neither true nor false — it is meaningless. The row stays (PS-B10: a constant key names the slot) and loses only the claim."
+  },
+  {
+   "type": "calls",
+   "from": "module-and-scope-psd13.ps1",
+   "target": "stage3-release\\bin\\zig",
+   "line_number": 35,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "meta.externalSpecifier": null,
+   "comment": "THE TWO-SEGMENT PATH TWIN. A directory path is not a module qualification, so no `moduleNamespace` claim may attach — the generic qualified reading stays, which is the pre-wave behaviour for this row."
+  },
+  {
+   "type": "calls",
+   "from": "module-and-scope-psd13.ps1",
+   "target": ".\\lib\\Helper.psm1",
+   "line_number": 38,
+   "meta.noDeclarationInFile": true,
+   "meta.externalSpecifier": null,
+   "comment": "THE EXTENSION-LEAF TWIN. A script on disk, invoked through `&`: PS-B18's rule already withholds the externality reading on a relative script path, and the module rule must not put a claim back on it through the backslash."
+  },
+  {
+   "type": "uses",
+   "from": "module-and-scope-psd13.ps1",
+   "target": "/usr/lib/Helper.ps1",
+   "line_number": 42,
+   "meta.isConstantKey": true,
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "comment": "THE CONTROL. A quoted PATH key keeps its reading: the claim is about a FILE, and it is answered by the project's admitted file list rather than by the owner question. `verifyExternalClaim`'s path branch can never refute an absolute path, so the claim is true and checkable — withholding it would have thrown a true claim away, which is exactly what the first version of this guard did."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "stage3-release\\bin\\zig",
+   "meta.externalReason": "module-namespace",
+   "comment": "A path must never carry the module claim."
+  },
+  {
+   "type": "calls",
+   "target": ".\\lib\\Helper.psm1",
+   "meta.externalReason": "module-namespace",
+   "comment": "Same, for the extension leaf, which is the shape a `Module\\Command` rule is most likely to swallow."
+  },
+  {
+   "type": "uses",
+   "target": "it:skip",
+   "meta.externalTarget": true,
+   "comment": "The pre-fix claim on data. Its absence is what makes the key rule measurable rather than a matter of taste."
+  },
+  {
+   "type": "uses",
+   "target": "/usr/lib/Helper.ps1",
+   "meta.externalTarget": null,
+   "comment": "The control's inversion: a PATH key must NOT lose its reading while a NAME key does."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "equals": 10,
+   "comment": "The whole file: 5 `calls` (the module-qualified command, `Invoke-Command`, `Out-Null`, the two path twins), 3 `uses` (`using:target`, `it:skip`, the path key) and 2 `contains` (`result`, `root`). The count matters because the DATA rule removes a claim without removing a row — an implementation that deleted the key edge instead would satisfy every forbid row and fail here."
+  }
+ ]
+}

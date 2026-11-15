@@ -1,0 +1,43 @@
+{
+  "fixtureId": "groovy/script-methods",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Jenkins-pipeline-style scripts are top-level methods + calls (no class wrapper); both the method symbol and its call edges (echo, sh, deploy) must exist. GAD2 (M37 #599): script files use ONE sentinel, (script), for calls/instantiates/import refs \u2014 the old global/root split one file's graph across phantom nodes. Mixed class+script file: class members stay under the class; top-level statements stay under (script). Forbids: no relationship may originate from 'global' or 'root' \u2014 the retired script sentinels (GAD2).",
+  "expectSymbols": [
+    {
+      "name": "deploy"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "echo"
+    },
+    {
+      "type": "calls",
+      "target": "sh"
+    },
+    {
+      "type": "calls",
+      "target": "deploy"
+    },
+    {
+      "type": "instantiates",
+      "from": "(script)",
+      "target": "Deployer"
+    },
+    {
+      "type": "references",
+      "from": "Deployer",
+      "target": "groovy.json.JsonSlurper"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "source": "global"
+    },
+    {
+      "source": "root"
+    }
+  ]
+}

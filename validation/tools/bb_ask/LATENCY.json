@@ -23,15 +23,15 @@
         "configuration": "local word vectors only (BB_EMBEDDING_DISABLED=1)",
         "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0 test/fixtures/polyglot validation/tools/bb_ask/t0-latency-local.json",
         "env": {
-          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+          "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
           "BB_NO_AUTO_REFRESH": "1",
           "BB_EMBEDDING_DISABLED": "1",
           "BB_VECTOR_SCAN_CAP": null
         },
         "argv": [
           "T0",
-          "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
-          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-local.json"
+          "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+          "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-local.json"
         ],
         "median_of_runs_ms": [
           17.42,
@@ -90,15 +90,15 @@
         "configuration": "provider configured in bb.json, index embedded locally → fallback path (no-matching-model-embeddings)",
         "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0-remote-query test/fixtures/polyglot validation/tools/bb_ask/t0-latency-remote-query.json",
         "env": {
-          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+          "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
           "BB_NO_AUTO_REFRESH": "1",
           "BB_EMBEDDING_DISABLED": null,
           "BB_VECTOR_SCAN_CAP": null
         },
         "argv": [
           "T0-remote-query",
-          "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
-          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-remote-query.json"
+          "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+          "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-remote-query.json"
         ],
         "median_of_runs_ms": [
           175.22,
@@ -158,15 +158,15 @@
         "configuration": "provider configured (nvidia/nemotron-3-embed-1b), index embedded through the provider → true remote vector path",
         "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0api BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0-api-vector test/fixtures/polyglot validation/tools/bb_ask/t0-latency-api.json",
         "env": {
-          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
+          "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
           "BB_NO_AUTO_REFRESH": "1",
           "BB_EMBEDDING_DISABLED": null,
           "BB_VECTOR_SCAN_CAP": null
         },
         "argv": [
           "T0-api-vector",
-          "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
-          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-api.json"
+          "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+          "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-api.json"
         ],
         "median_of_runs_ms": [
           110.5,
@@ -225,15 +225,15 @@
         "configuration": "local word vectors only",
         "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T1 .perf-fixtures/bb-scale/n100 validation/tools/bb_ask/t1-latency-local.json",
         "env": {
-          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+          "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
           "BB_NO_AUTO_REFRESH": "1",
           "BB_EMBEDDING_DISABLED": "1",
           "BB_VECTOR_SCAN_CAP": null
         },
         "argv": [
           "T1",
-          "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
-          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-local.json"
+          "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+          "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-local.json"
         ],
         "median_of_runs_ms": [
           231.97,
@@ -292,15 +292,15 @@
         "configuration": "provider configured, index embedded locally → fallback path",
         "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T1-remote-query .perf-fixtures/bb-scale/n100 validation/tools/bb_ask/t1-latency-remote-query.json",
         "env": {
-          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+          "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
           "BB_NO_AUTO_REFRESH": "1",
           "BB_EMBEDDING_DISABLED": null,
           "BB_VECTOR_SCAN_CAP": null
         },
         "argv": [
           "T1-remote-query",
-          "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
-          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-remote-query.json"
+          "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+          "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-remote-query.json"
         ],
         "median_of_runs_ms": [
           255.79,
@@ -376,14 +376,14 @@
         "configuration": "provider configured as bb.json ships (nvidia/nemotron-3-embed-1b); live-index end-to-end is blocked by the read-write path (audit C1)",
         "command": "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T2-copy \"$PWD\" validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json",
         "env": {
-          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+          "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
           "BB_NO_AUTO_REFRESH": "1",
           "BB_EMBEDDING_DISABLED": null,
           "BB_VECTOR_SCAN_CAP": null
         },
         "argv": [
           "T2-copy",
-          "$HOME/mcp/backbencher-brain",
+          "/home/ishaq2321/mcp/backbencher-brain",
           "validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json"
         ],
         "median_of_runs_ms": [
@@ -543,7 +543,7 @@
     },
     "tiers": {
       "T0-local": {
-        "projectDir": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+        "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
         "warmupMs": 47.26,
         "p50": 2.26,
         "p95": 4.16,
@@ -611,7 +611,7 @@
         }
       },
       "T0-provider": {
-        "projectDir": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+        "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
         "warmupMs": 2052.77,
         "p50": 1710.73,
         "p95": 2005.49,
@@ -679,7 +679,7 @@
         }
       },
       "T1-local": {
-        "projectDir": "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+        "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
         "warmupMs": 112.44,
         "p50": 72.59,
         "p95": 200.79,
@@ -747,7 +747,7 @@
         }
       },
       "T2-provider-copy": {
-        "projectDir": "$HOME/mcp/backbencher-brain",
+        "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
         "warmupMs": 2504.73,
         "p50": 1778.68,
         "p95": 2186.8,
@@ -826,7 +826,7 @@
         }
       },
       "T2-local-copy": {
-        "projectDir": "$HOME/mcp/backbencher-brain",
+        "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
         "warmupMs": 444.24,
         "p50": 95.28,
         "p95": 1325.37,
@@ -905,7 +905,7 @@
         }
       },
       "T2-live-shared": {
-        "projectDir": "$HOME/mcp/backbencher-brain",
+        "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
         "warmupMs": 16808.15,
         "p50": 5145.58,
         "p95": 13306.96,

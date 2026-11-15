@@ -1,0 +1,21 @@
+{
+  "fixtureId": "dart/part-of-named",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE NAMED `part of` FORM. `part of my.lib;` names a LIBRARY (declared `library my.lib;` in the owning file), not a file, and the analyzer published no row for it: the part branch only handled the URI form (`part of 'lib.dart';`). The pinned grammar parses the named form as `(part_of_directive (part_of_builtin) (dotted_identifier_list ...))` (probed) — no `string_literal`/`uri` child at all, which is why the old reader, which looked for a URI, declared the directive empty and emitted nothing. The target is the library NAME as written with inner whitespace stripped by the SAME helper the library-name reader uses, so `part of a . b;` and `library a.b;` spell one string — that string IS the module symbol's name in the store, which is what makes the row resolvable (strategy 2, unique name). The direction is the directive's own direction: this file is the PART, so partRole is \"part\". `isNamedLibrary` records the spelling form so a consumer can tell it from the URI form without re-reading the source.",
+  "expectSymbols": [
+    { "name": "part-of-named", "kind": "module" },
+    { "name": "NamedPartDemo", "kind": "class" },
+    { "name": "value", "kind": "property", "ownerName": "NamedPartDemo" },
+    { "name": "useDemo", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "part_of", "source": "part-of-named", "target": "my.lib", "confidenceMin": 1.0, "meta.partRole": "part", "meta.isNamedLibrary": true, "meta.evidenceClass": "import_based", "note": "THE NEW ROW — the whole point of this fixture. Before the fix the directive produced NOTHING: there is no string_literal/uri child to unquote, and the branch only pushed a row when the URI was non-empty." },
+    { "type": "uses", "source": "useDemo", "target": "NamedPartDemo.value", "note": "the fixture's ordinary content must still publish its reads — a fix that returned early at the directive must not swallow the rest of the file." }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "my.lib", "note": "THE NAMED PART-OF DIRECTIVE IS NOT AN IMPORT — it is a part/library coupling, the canonical `part_of` label." },
+    { "type": "part_of", "source": "part-of-named", "target": "my.lib:*", "note": "the retired specifier shape: a named library is a name, never a `name:*` URI stand-in." },
+    { "type": "part_of", "source": "part-of-named", "target": "my . lib", "note": "WHITESPACE STRIPPED — the target must be the same spelling `library a.b;` publishes (`my.lib`), or the store cannot bind the two sides of one library name. The grammar accepts `part of my . lib;` and this fixture's source writes it tight; the pin makes the normalisation visible." }
+  ]
+}

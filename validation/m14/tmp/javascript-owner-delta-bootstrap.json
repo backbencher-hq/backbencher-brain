@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-13T04:20:59.009Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/bootstrap",
+  "tag": "bootstrap",
+  "admittedFiles": 125,
+  "sampledFiles": 125,
+  "parseCleanFiles": 124,
+  "kept": 80,
+  "dropped": 0,
+  "noWriter": 552,
+  "ratio": null,
+  "note": "kept = a `this.<f>.<m>()` call inside a class that WRITES this.<f> (the owner is correct and survives the fix). dropped = the same call inside a class that never writes it (the owner is another class's type — the wrong owner the fix removes). noWriter = no class in the file writes the field, so no owner was ever published.",
+  "dropExamples": []
+}

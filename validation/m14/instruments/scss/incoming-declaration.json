@@ -407,16 +407,16 @@
         "part_of": 177
       },
       "examples": [
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:88 -> \"bulma/utilities/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:90 -> \"bulma/helpers/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:130 -> \"bulma/elements/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:131 -> \"bulma/form/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:132 -> \"bulma/components/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:133 -> \"bulma/grid/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:134 -> \"bulma/layout/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:67 -> \"bulma/utilities/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:69 -> \"bulma/helpers/all\"",
-        "part_of $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:95 -> \"bulma/elements/all\""
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:88 -> \"bulma/utilities/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:90 -> \"bulma/helpers/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:130 -> \"bulma/elements/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:131 -> \"bulma/form/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:132 -> \"bulma/components/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:133 -> \"bulma/grid/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:134 -> \"bulma/layout/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:67 -> \"bulma/utilities/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:69 -> \"bulma/helpers/all\"",
+        "part_of /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:95 -> \"bulma/elements/all\""
       ],
       "falsifier": {
         "run": "bun script/m14/scss-cause-census.ts --arm=validation/m14/measurements/scss/scss-gate-whole-2026-10-23.txt",
@@ -434,16 +434,16 @@
         "mixes_in": 166
       },
       "examples": [
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin/_overrides.scss:196 -> \"@mixin touch\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/darkly/_overrides.scss:193 -> \"@mixin touch\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:22 -> \"@mixin desktop\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:28 -> \"@mixin touch\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:81 -> \"@mixin touch\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:94 -> \"@mixin touch\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:137 -> \"@mixin touch\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:27 -> \"@mixin desktop\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:34 -> \"@mixin desktop\"",
-        "mixes_in $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:258 -> \"@mixin desktop\""
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin/_overrides.scss:196 -> \"@mixin touch\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/darkly/_overrides.scss:193 -> \"@mixin touch\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:22 -> \"@mixin desktop\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:28 -> \"@mixin touch\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:81 -> \"@mixin touch\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:94 -> \"@mixin touch\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_main.scss:137 -> \"@mixin touch\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:27 -> \"@mixin desktop\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:34 -> \"@mixin desktop\"",
+        "mixes_in /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:258 -> \"@mixin desktop\""
       ],
       "falsifier": {
         "run": "bun script/m14/scss-cause-census.ts --arm=validation/m14/measurements/scss/scss-gate-whole-2026-10-23.txt",
@@ -461,16 +461,16 @@
         "extends": 128
       },
       "examples": [
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/_patches.scss:32 -> \".is-dark\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:33 -> \"%block\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/components/_docstring.scss:63 -> \".is-primary\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/components/_docstring.scss:64 -> \".is-size-7\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:45 -> \".image\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:222 -> \".input\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:223 -> \".is-rounded\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:224 -> \".is-small\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_button-group.scss:67 -> \".btn-sm\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_button-group.scss:68 -> \".btn-lg\""
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/_patches.scss:32 -> \".is-dark\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:33 -> \"%block\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/components/_docstring.scss:63 -> \".is-primary\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/components/_docstring.scss:64 -> \".is-size-7\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:45 -> \".image\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:222 -> \".input\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:223 -> \".is-rounded\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter/layout/_sidebar.scss:224 -> \".is-small\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_button-group.scss:67 -> \".btn-sm\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_button-group.scss:68 -> \".btn-lg\""
       ],
       "falsifier": {
         "run": "bun script/m14/scss-cause-census.ts --arm=validation/m14/measurements/scss/scss-gate-whole-2026-10-23.txt",
@@ -488,16 +488,16 @@
         "imports": 44
       },
       "examples": [
-        "imports $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:89 -> \"assets/html/scss/bulma/base/minireset::minireset.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:126 -> \"assets/html/scss/bulma/base/generic::generic.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:68 -> \"assets/html/scss/bulma/base/minireset::minireset.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:91 -> \"assets/html/scss/bulma/base/generic::generic.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-grid.scss:21 -> \"scss/utilities::utilities\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-reboot.scss:8 -> \"scss/mixins::mixins\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-utilities.scss:9 -> \"scss/mixins::mixins\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-utilities.scss:10 -> \"scss/utilities::utilities\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-utilities.scss:16 -> \"scss/helpers::helpers\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap.scss:11 -> \"scss/mixins::mixins\""
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:89 -> \"assets/html/scss/bulma/base/minireset::minireset.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/catppuccin.scss:126 -> \"assets/html/scss/bulma/base/generic::generic.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:68 -> \"assets/html/scss/bulma/base/minireset::minireset.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/Documenter.jl/assets/html/scss/documenter-dark.scss:91 -> \"assets/html/scss/bulma/base/generic::generic.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-grid.scss:21 -> \"scss/utilities::utilities\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-reboot.scss:8 -> \"scss/mixins::mixins\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-utilities.scss:9 -> \"scss/mixins::mixins\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-utilities.scss:10 -> \"scss/utilities::utilities\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap-utilities.scss:16 -> \"scss/helpers::helpers\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/bootstrap.scss:11 -> \"scss/mixins::mixins\""
       ],
       "falsifier": {
         "run": "bun script/m14/scss-cause-census.ts --arm=validation/m14/measurements/scss/scss-gate-whole-2026-10-23.txt",
@@ -515,27 +515,27 @@
         "extends": 27
       },
       "examples": [
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_containers.scss:16 -> \".container-fluid\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:5 -> \"h1\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:9 -> \"h2\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:13 -> \"h3\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:17 -> \"h4\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:21 -> \"h5\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:25 -> \"h6\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:49 -> \"small\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:53 -> \"mark\"",
-        "extends $HOME/mcp/backbencher-brain/.corpus/bulma/sass/base/skeleton.scss:36 -> \"%skeleton-pulsation\""
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_containers.scss:16 -> \".container-fluid\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:5 -> \"h1\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:9 -> \"h2\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:13 -> \"h3\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:17 -> \"h4\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:21 -> \"h5\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:25 -> \"h6\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:49 -> \"small\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:53 -> \"mark\"",
+        "extends /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/sass/base/skeleton.scss:36 -> \"%skeleton-pulsation\""
       ],
       "falsifier": {
         "run": "bun script/m14/scss-cause-census.ts --arm=validation/m14/measurements/scss/scss-gate-whole-2026-10-23.txt",
         "wouldFail": "a row in THIS class: the same-file declaration check is the refutation, and it fires on the rows themselves — which is exactly why the class is declared as a defect rather than as a wall.",
         "measuredHits": 27,
         "hitExamples": [
-          "$HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_containers.scss:16 .container-fluid",
-          "$HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:5 h1",
-          "$HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:9 h2",
-          "$HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:13 h3",
-          "$HOME/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:17 h4"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_containers.scss:16 .container-fluid",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:5 h1",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:9 h2",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:13 h3",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/bootstrap/scss/_type.scss:17 h4"
         ]
       }
     },
@@ -548,16 +548,16 @@
         "imports": 11
       },
       "examples": [
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:29 -> \"_all.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:30 -> \"_all.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:31 -> \"button.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:32 -> \"container.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:33 -> \"title.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:34 -> \"_all.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:35 -> \"navbar.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:36 -> \"hero.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:37 -> \"section.sass\"",
-        "imports $HOME/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/override.scss:4 -> \"initial-variables.sass\""
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:29 -> \"_all.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:30 -> \"_all.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:31 -> \"button.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:32 -> \"container.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:33 -> \"title.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:34 -> \"_all.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:35 -> \"navbar.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:36 -> \"hero.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/customize.scss:37 -> \"section.sass\"",
+        "imports /home/ishaq2321/mcp/backbencher-brain/.corpus/bulma/test/ruby-sass/sass/override.scss:4 -> \"initial-variables.sass\""
       ],
       "falsifier": {
         "run": "bun script/m14/scss-cause-census.ts --arm=validation/m14/measurements/scss/scss-gate-whole-2026-10-23.txt",

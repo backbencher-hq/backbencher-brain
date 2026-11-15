@@ -1,0 +1,194 @@
+{
+  "fixtureId": "rust/r7-endpoint-names",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7_AUDIT_FLEET. R7 is the ambiguity rule: an endpoint must NAME A REAL DECLARATION, not a placeholder. `validation/m60/ledger.json` states the consequence — 'a literal in a name-bearing field becomes a symbol (or an edge endpoint) that does not exist in the source' — and its ENFORCED half is a SOURCE-level census whose marker is the literal `unknown`, so `global` was invisible to it. Measured over 110 ripgrep `.rs` files through the production entry, 1,280 of 29,660 edges named the literal `global` on their SOURCE. These pins are the four shapes that produced them, written before the analyzer change so they are expectations rather than a transcript. (1) A file-scope `static`/`const` OWNS its initializer: the `Choice { .. }` literals and the `Vec::new`/`acc.push` calls are attributed to `CHOICES` and `ALIASES`, which are real declarations this file writes. Before the change every one of them was attributed to `global`. (2) A `let` inside a closure inside that initializer binds LOCALLY and declares nothing outside its body (M11.11), so `acc` publishes no symbol. This is the regression guard for a defect the fix EXPOSED: M11.11's boundary tested only the immediate parent for Function|Method, so the moment a `static` became an owner, `let mut acc` began publishing a Variable owned by ALIASES. Found by diffing the 5,150-symbol inventory file by file, not by reading. (3) A file-scope `macro_invocation` has no owning declaration, so R7's own sentence governs — 'the honest state is ABSENCE' — and the `bodyprobe!` edge is FORBIDDEN rather than published under a fake owner. Its argument is an opaque `token_tree`, which is why the body contributes nothing at all: that is the grammar's statement, not a gap in this fixture. (4) A two-segment path rooted at a Rust PATH KEYWORD keeps the whole written path: `super`, `crate` and `self` are relative anchors, not crates and not modules, so leaf-dropping onto one published a keyword (69 rows on the lane corpus: 36 `super`, 33 `crate`). The bare roots are FORBIDDEN so the leaf-drop cannot creep back. (5) A `pub` item's export names the FILE as its source — `(file)` with `metadata.fileLevel: true`, the M60/#910 contract parallel-indexer.ts:3481 acts on. Not cosmetic: `global` is not on the store's SYMBOL_NAME_DENYLIST, so the store wrote `source_external = \"global\"`, which no reader can join on, and both of bb_graph's file-level queries were unreachable for every Rust imports/exports row. (6) The global forbid below is the rule stated once, so a re-introduced `global` fallback anywhere in this file fails even if every pin above still matched. (7) The last shape is the one the fixture could not express until the grammar was read: a macro invocation's ARGUMENT is an opaque `token_tree` to tree-sitter-rust, so the closure inside `rgtest!(..)` does not exist in the tree as a closure, a call or a field access — only `identifier` and `token_tree` nodes. The DFS descends into them anyway, and every name the macro was handed was read as if this file evaluated it (205 identifier reads in `tests/feature.rs` alone, 36 surviving the (source,target) dedupe as published `uses` edges sourced at the `global` fallback). A macro may discard or never expand its input, so `uses -> SHERLOCK_MARKER` is a claim the source does not make. RUST-D2 already declared a macro's BODY opaque; this extends the same principle to its ARGUMENT, and the two forbids below are the gate.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Choice",
+      "kind": "struct"
+    },
+    {
+      "name": "CHOICES",
+      "kind": "variable"
+    },
+    {
+      "name": "ALIASES",
+      "kind": "variable"
+    },
+    {
+      "name": "read_choices",
+      "kind": "function"
+    },
+    {
+      "name": "Widget",
+      "kind": "struct"
+    },
+    {
+      "name": "make_widget",
+      "kind": "function"
+    },
+    {
+      "name": "inner",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "CHOICES",
+      "target": "Choice",
+      "comment": "a const initializer is code, and the const is the declaration that owns it"
+    },
+    {
+      "type": "calls",
+      "from": "ALIASES",
+      "target": "new",
+      "comment": "same, for a call inside the initializer"
+    },
+    {
+      "type": "calls",
+      "from": "ALIASES",
+      "target": "push"
+    },
+    {
+      "type": "uses",
+      "from": "read_choices",
+      "target": "CHOICES"
+    },
+    {
+      "type": "contains",
+      "from": "Choice",
+      "target": "name"
+    },
+    {
+      "type": "contains",
+      "from": "inner",
+      "target": "nested",
+      "comment": "a member rides contains, never exports"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "super::sibling",
+      "meta.fileLevel": true,
+      "meta.items": [
+        "Alpha",
+        "Beta"
+      ]
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "crate::flags",
+      "meta.fileLevel": true,
+      "meta.items": [
+        "Flag"
+      ]
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "self::local_marker",
+      "comment": "`self` is a path root, so the whole written path is the dependency"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Choice",
+      "meta.fileLevel": true,
+      "meta.relationshipType": "public_item"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "CHOICES",
+      "meta.fileLevel": true,
+      "meta.symbolKind": "variable"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "read_choices",
+      "meta.fileLevel": true,
+      "meta.symbolKind": "function"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "inner",
+      "meta.fileLevel": true,
+      "meta.symbolKind": "module"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "crate::hay",
+      "meta.fileLevel": true,
+      "meta.items": [
+        "SHERLOCK_MARKER"
+      ],
+      "comment": "the `use` is a real dependency; the identifier inside the macro's token tree is not a read"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "acc",
+      "comment": "M11.11: a `let` binds inside the block that contains it and declares nothing outside it. Publishing it here is the regression the R7 change would otherwise have introduced."
+    },
+    {
+      "name": "dir",
+      "comment": "a closure parameter is an execution artifact, not a declaration"
+    },
+    {
+      "name": "cmd",
+      "comment": "a closure parameter is an execution artifact, not a declaration"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "global",
+      "comment": "R7, stated once: no edge in this file may name the literal `global` as a source. Measured 1,280 of 29,660 ripgrep edges before the fix and 0 after; this row fails if any fallback returns, anywhere."
+    },
+    {
+      "from": "",
+      "comment": "R7: an EMPTY source is the shape the store turns into `unknown` (parallel-indexer.ts:3370-3371), so it is manufactured at the seam rather than named."
+    },
+    {
+      "type": "calls",
+      "target": "bodyprobe",
+      "comment": "R7: a file-scope macro invocation has no owning declaration, so the honest state is ABSENCE rather than an edge under a fake owner. 350 such rows on the lane corpus."
+    },
+    {
+      "type": "imports",
+      "target": "super",
+      "comment": "R7: `super` is a relative anchor, not a module. 36 rows on the lane corpus."
+    },
+    {
+      "type": "imports",
+      "target": "crate",
+      "comment": "R7: `crate` is a relative anchor, not a crate name. 33 rows on the lane corpus."
+    },
+    {
+      "type": "imports",
+      "target": "self",
+      "comment": "R7: `self` is a relative anchor, not a module."
+    },
+    {
+      "type": "exports",
+      "target": "nested",
+      "comment": "a pub item inside a pub mod is not a second importable unit"
+    },
+    {
+      "type": "calls",
+      "target": "bodyprobe_reads",
+      "comment": "same rule on the call surface: a file-scope macro invocation has no owning declaration, so the edge is ABSENCE (the `from: global` forbid above states the general case)"
+    },
+    {
+      "type": "uses",
+      "target": "SHERLOCK_MARKER",
+      "comment": "the read resolves (it is use-imported) but NO DECLARATION OWNS IT -- it sits in the `token_tree` of a file-scope `macro_invocation` -- so R7's honest state is ABSENCE rather than an edge sourced at a placeholder. 205 such reads in ripgrep's tests/feature.rs alone, 36 distinct edges across 9 files."
+    }
+  ]
+}

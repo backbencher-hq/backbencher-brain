@@ -1,0 +1,28 @@
+{
+  "fixtureId": "svelte/rune-call-filter",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DOTTED runes ($derived.by, $effect.root) leaked noise call edges: the JS extractor keeps the last path segment, so targets \"by\"/\"root\"/\"id\" bypassed the exact-name rune filter. Any call whose full callee expression starts with $ is a rune.",
+  "expectSymbols": [
+    {
+      "name": "count"
+    },
+    {
+      "name": "doubled"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "by"
+    },
+    {
+      "type": "calls",
+      "target": "root"
+    },
+    {
+      "type": "calls",
+      "target": "state"
+    }
+  ]
+}

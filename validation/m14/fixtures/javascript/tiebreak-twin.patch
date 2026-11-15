@@ -1,0 +1,176 @@
+--- a/script/m14/incoming-gate.ts
++++ b/script/m14/incoming-gate.ts
+@@ -121,14 +121,14 @@
+ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs"
+ import { tmpdir } from "node:os"
+ import * as path from "node:path"
+-import { parseFile } from "../../src/ast/pool-worker"
++import { parseFile } from "../src/ast/pool-worker"
+ // THE ROUTER'S OWN DETECTION, imported rather than re-spelled: the basename clause below has to
+ // agree with what production admits, and production admits by `detectLanguageFromPath`.
+-import { detectLanguageFromPath } from "../../src/ast/language-detection"
++import { detectLanguageFromPath } from "../src/ast/language-detection"
+ // The separator a binding's target carries. Imported from the FAMILY constant rather than
+ // re-spelled here: the analyzer writes it (src/ast/types.ts) and this gate checks it, and two
+ // copies of a spelling would be two rules.
+-import { BINDING_SEP } from "../../src/ast/types"
++import { BINDING_SEP } from "../src/ast/types"
+ // The empty-result kind lives in ONE module because it was written twice and the two copies diverged
+ // on their first run — see `script/m14/empty-result-kind.ts`. The classification is imported, never
+ // re-implemented, so the instrument and its control cannot disagree about what "empty" means.
+@@ -1255,43 +1255,43 @@
+  * pre-existing entry did.
+  */
+ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> = {
+-  dart: { spec: async () => (await import("../../src/ast/project-index")).DART_DECLARATION_SPEC, wasm: "tree-sitter-dart/tree-sitter-dart.wasm" },
+-  protobuf: { spec: async () => (await import("../../src/ast/real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC, wasm: "tree-sitter-protobuf.wasm" },
++  dart: { spec: async () => (await import("../src/ast/project-index")).DART_DECLARATION_SPEC, wasm: "tree-sitter-dart/tree-sitter-dart.wasm" },
++  protobuf: { spec: async () => (await import("../src/ast/real-protobuf-analyzer")).PROTOBUF_DECLARATION_SPEC, wasm: "tree-sitter-protobuf.wasm" },
+   // SCSS had NO entry, so `--index` built 0 indexes for the lane and the arm that exercises the
+   // cross-file mechanism could not be produced: the gate reported `project index: USED — 0 repo
+   // index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s)` while production's
+   // PROJECT_INDEX_EXTENSIONS already carried `.scss`. The spec lives in project-index.ts and is
+   // exported as of this change.
+-  scss: { spec: async () => (await import("../../src/ast/project-index")).SCSS_DECLARATION_SPEC, wasm: "tree-sitter-scss.wasm" },
++  scss: { spec: async () => (await import("../src/ast/project-index")).SCSS_DECLARATION_SPEC, wasm: "tree-sitter-scss.wasm" },
+   // CLOJURE — the lane's own spec, in the shared index's clojure region (the java/dart precedent).
+   // THE GATE HAD NO CLOJURE ENTRY, and `projectIndexesFor` returns ZERO indexes for a language with
+   // no entry — so every recorded clojure arm was a NO-INDEX arm, and the 768 could not have been
+   // asked of a project index. The spec answers 1 of the 768 (the probe's own arm); the other 767 are
+   // accounted for by three reasons no index can reach. See CLOJURE-VERDICT-2026-10-20.md §4.
+-  clojure: { spec: async () => (await import("../../src/ast/project-index")).CLOJURE_DECLARATION_SPEC, wasm: "tree-sitter-clojure.wasm" },
++  clojure: { spec: async () => (await import("../src/ast/project-index")).CLOJURE_DECLARATION_SPEC, wasm: "tree-sitter-clojure.wasm" },
+   // SOLIDITY — the OPPOSITE of the cpp gap: production ALREADY builds this index (`PROJECT_INDEX_EXTENSIONS`
+   // carries `.sol: "solidity"` and `parallel-indexer.ts` wires `SOLIDITY_DECLARATION_SPEC` + wasm),
+   // and the analyzer CONSUMES it (SOL-21: 507 undecided kinds → 0, 99 mis-typed fixed, external
+   // 1,677→190). This table had no entry, so `--index` would build 0 indexes and the arm that measures
+   // the analyzer's real indexed behaviour could not be produced — a fake non-arm, unlike cpp where the
+   // production list genuinely has no C++ spelling. Both halves are wired; the gate now measures them.
+-  solidity: { spec: async () => (await import("../../src/ast/project-index")).SOLIDITY_DECLARATION_SPEC, wasm: "tree-sitter-solidity.wasm" },
++  solidity: { spec: async () => (await import("../src/ast/project-index")).SOLIDITY_DECLARATION_SPEC, wasm: "tree-sitter-solidity.wasm" },
+   // JAVA, and the spec is the point rather than the wasm: `JAVA_DECLARATION_SPEC` carries
+   // `qualifyTypeWithFile`, which is what lets the analyzer decide whether an import is LOCAL —
+   // a qualified lookup instead of the package-prefix heuristic that scored 0.84 precision.
+-  java: { spec: async () => (await import("../../src/ast/project-index")).JAVA_DECLARATION_SPEC, wasm: "tree-sitter-java.wasm" },
++  java: { spec: async () => (await import("../src/ast/project-index")).JAVA_DECLARATION_SPEC, wasm: "tree-sitter-java.wasm" },
+   // JAVASCRIPT — absent like `.scss` was, and with the same consequence: `--index` built 0 repo indexes
+   // for the lane, so the arm that exercises its cross-file claim mechanism could not be produced. The
+   // analyzer's module claims are fail-closed on `complete===true`, so this is the ONLY arm where the
+   // JS claim columns can mean anything.
+-  javascript: { spec: async () => (await import("../../src/ast/project-index")).JAVASCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-javascript/tree-sitter-javascript.wasm" },
++  javascript: { spec: async () => (await import("../src/ast/project-index")).JAVASCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-javascript/tree-sitter-javascript.wasm" },
+   // TYPESCRIPT AND PYTHON. Both were wired in PRODUCTION (`parallel-indexer.ts` carries `.ts`/`.tsx` and
+   // `.py` with their specs) while this table was missing them, so `--index` built 0 repo indexes and
+   // parsed the analyzer with NO context -- the same instrument-gap shape as `.scss` above, where the gate
+   // reported "0 repo index(es) over 0 file(s)" while production was already wired. The indexed arm
+   // therefore could not be measured AT ALL, and a fix proven only by unit test is not measured.
+-  typescript: { spec: async () => (await import("../../src/ast/project-index")).TYPESCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-typescript.wasm" },
+-  python: { spec: async () => (await import("../../src/ast/project-index")).PYTHON_DECLARATION_SPEC, wasm: "tree-sitter-python.wasm" },
++  typescript: { spec: async () => (await import("../src/ast/project-index")).TYPESCRIPT_DECLARATION_SPEC, wasm: "tree-sitter-typescript.wasm" },
++  python: { spec: async () => (await import("../src/ast/project-index")).PYTHON_DECLARATION_SPEC, wasm: "tree-sitter-python.wasm" },
+   // FSHARP — ADDED 2026-10-20 (Lead). Production ALREADY builds this index: `PROJECT_INDEX_EXTENSIONS`
+   // carries `.fs: "fsharp"` and `parallel-indexer.ts` wires `FSHARP_DECLARATION_SPEC` + the
+   // `wasm/tree-sitter-fsharp.wasm` asset. This table had NO entry, so `--index` built 0 repo indexes
+@@ -1302,15 +1302,15 @@
+   // (11,807 files / 26 repos / TOTAL 1,305,221 / vc 42.57%) is therefore a NO-INDEX number, and the
+   // gate could not say so. With the entry present, the lane's indexed arm becomes measurable and
+   // the difference between the two populations is a per-column pair (R1), not a guess.
+-  fsharp: { spec: async () => (await import("../../src/ast/project-index")).FSHARP_DECLARATION_SPEC, wasm: "tree-sitter-fsharp.wasm" },
++  fsharp: { spec: async () => (await import("../src/ast/project-index")).FSHARP_DECLARATION_SPEC, wasm: "tree-sitter-fsharp.wasm" },
+   // CPP — the lane the index instrument was PROPOSED for. Its analyzer reads the project index only
+   // behind BB_CPP_INDEX_CONSUME=1 (task-22), and the W1 wall's claim (`projectIndexDeclaration`,
+   // task-24) is verified from the index's facts; without this entry `--index` builds 0 indexes for the
+   // lane and the arm that exercises either mechanism cannot be produced at all.
+-  cpp: { spec: async () => (await import("../../src/ast/project-index")).CPP_DECLARATION_SPEC, wasm: "tree-sitter-cpp/tree-sitter-cpp.wasm" },
++  cpp: { spec: async () => (await import("../src/ast/project-index")).CPP_DECLARATION_SPEC, wasm: "tree-sitter-cpp/tree-sitter-cpp.wasm" },
+   // RUBY (task-22): the lane's index facts; without this entry `--index` builds 0 indexes for ruby and
+   // the arm that exercises the consumption cannot be produced at all.
+-  ruby: { spec: async () => (await import("../../src/ast/project-index")).RUBY_DECLARATION_SPEC, wasm: "tree-sitter-ruby.wasm" },
++  ruby: { spec: async () => (await import("../src/ast/project-index")).RUBY_DECLARATION_SPEC, wasm: "tree-sitter-ruby.wasm" },
+ }
+ const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
+ 
+@@ -1338,7 +1338,7 @@
+   const byRepo = new Map<string, any>()
+   const entry = INDEX_SPECS[lang]
+   if (!entry) return { byRepo, built: 0, cached: 0, damaged: 0, indexed: 0 }
+-  const mod: any = await import("../../src/ast/project-index")
++  const mod: any = await import("../src/ast/project-index")
+   // ONE LOOKUP, and an entry with no loader keeps Solidity's spec exactly as before.
+   const spec = entry.spec === undefined ? mod.SOLIDITY_DECLARATION_SPEC : await entry.spec()
+   const { resolveWasmAsset } = await import("../../src/util/wasm")
+@@ -1615,6 +1615,16 @@
+      */
+     reasonCode: string
+   }
++  // ── THE TWIN's INSTRUMENTATION (script/m14/javascript-tiebreak-twin.ts) ─────────────────────
++  // The OWN-FILE TIE-BREAK's PER-ROW MOVEMENT, and the C4 check that it merges no claim.
++  let tiebreakMoved = 0
++  let tiebreakMovedCarryingClaim = 0
++  const tiebreakByLabel = new Map<string, number>()
++  const tiebreakPairs = new Map<string, number>()
++  const tiebreakClaimKinds = new Map<string, number>()
++  const tiebreakClaimDispositions = new Map<string, number>()
++  // THE PER-TYPE FILE COUNT — the files in which a type fired at all.
++  const twinTypeFiles = new Map<string, Set<string>>()
+   const pending: PendingEdge[] = []
+   /** file -> specifier -> local names bound, from the run's own IMPORT edges. The evidence the
+    *  imported-binding claim is verified against (charter §18.10). */
+@@ -1891,6 +1901,8 @@
+       // cannot carry both without making every reader guess which one it is holding.
+       const edgeBindReason = String((rel as any)?.metadata?.bindReason ?? "")
+       const edgeReasonCode = String((rel as any)?.metadata?.reasonCode ?? "")
++      if (!twinTypeFiles.has(label)) twinTypeFiles.set(label, new Set<string>())
++      twinTypeFiles.get(label)!.add(f)
+       pending.push({ label, tgt, claim, owner, sig, repo: repoOf(f), srcFile: f, line: edgeLine, bindReason: edgeBindReason, reasonCode: edgeReasonCode })
+       continue
+     }
+@@ -2089,6 +2101,28 @@
+       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
+       qj, edgeRelFile(e.repo, e.srcFile),
+     )
++    // ── THE TWIN's INSTRUMENTATION: THE SAME ROW, THE SAME KEY SPACE, THE TIE-BREAK OFF ────────────
++    // The ONLY difference is `ownFileDeclares`, which is the arbiter's single input to the
++    // tie-break (incoming-rule.ts:2223) — so a DIFFERENT OUTCOME is a MOVED ROW, per row.
++    const pcNoTie = classifyEdge(
++      projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, undefined,
++      ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
++      qj, edgeRelFile(e.repo, e.srcFile),
++    )
++    if (pc.outcome !== pcNoTie.outcome) {
++      tiebreakMoved++
++      tiebreakByLabel.set(e.label, (tiebreakByLabel.get(e.label) ?? 0) + 1)
++      const pair = `${pcNoTie.outcome}->${pc.outcome}`
++      tiebreakPairs.set(pair, (tiebreakPairs.get(pair) ?? 0) + 1)
++      // THE C4 CHECK: a row that carried a CLAIM and became `resolved` has had its claim ABSORBED.
++      if (e.claim !== null) {
++        tiebreakMovedCarryingClaim++
++        const ck = e.claim.kind
++        tiebreakClaimKinds.set(ck, (tiebreakClaimKinds.get(ck) ?? 0) + 1)
++        const disp = pcNoTie.claimOnAmbiguous?.disposition ?? "(none)"
++        tiebreakClaimDispositions.set(disp, (tiebreakClaimDispositions.get(disp) ?? 0) + 1)
++      }
++    }
+     if (qj !== undefined) {
+       if (qj.branch === "slash") joinAskedSlash++
+       else joinAskedNamespace++
+@@ -2198,6 +2232,19 @@
+   // actually holds for owner-carrying rows. BOTH directions are printed, because one of them is the
+   // uncomfortable one: `declined` rows are bindings the store WITHDREW, so a run where that number is
+   // large is a run whose name model would have over-credited resolution.
++  // ── THE TWIN's DISCLOSURE — the tie-break's per-row movement, and the C4 check ──────────────
++  process.stderr.write(
++    `  TIE-BREAK (own-file, e1e2f7a19) PER-ROW MOVEMENT: ${tiebreakMoved} row(s) moved · ` +
++    `of which ${tiebreakMovedCarryingClaim} carried a CLAIM (C4: a claim merged into resolved) · ` +
++    `by label: ${JSON.stringify([...tiebreakByLabel.entries()].sort((a, b) => b[1] - a[1]))} · ` +
++    `outcome pairs: ${JSON.stringify([...tiebreakPairs.entries()].sort((a, b) => b[1] - a[1]))} · ` +
++    `claim kinds: ${JSON.stringify([...tiebreakClaimKinds.entries()].sort((a, b) => b[1] - a[1]))} · ` +
++    `pre-tie-break claim dispositions: ${JSON.stringify([...tiebreakClaimDispositions.entries()].sort((a, b) => b[1] - a[1]))}\n`,
++  )
++  process.stderr.write(
++    `  PER-TYPE FILES (the _implemented_measured files half, same population, same instrument): ` +
++    `${JSON.stringify([...twinTypeFiles.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, v.size]))}\n`,
++  )
+   if (ownerRows > 0) {
+     const reasons = [...ownerReasons.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(" · ")
+     process.stderr.write(

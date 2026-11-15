@@ -18,14 +18,14 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-p1-index-lock.ts",
       "evidenceFile": "P1.json",
-      "generatedAt": "2026-09-05T22:36:11.657Z",
-      "passed": 17,
+      "generatedAt": "2026-11-04T22:49:37.852Z",
+      "passed": 22,
       "failed": 0,
-      "negativeCases": 1
+      "negativeCases": 2
     }
   },
   {
@@ -47,11 +47,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-a1-mcp-auto-refresh.ts",
       "evidenceFile": "A1.json",
-      "generatedAt": "2026-09-05T22:36:20.623Z",
+      "generatedAt": "2026-11-04T22:50:04.410Z",
       "passed": 25,
       "failed": 0,
       "negativeCases": 4
@@ -75,11 +75,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-a2-cli-auto-refresh.ts",
       "evidenceFile": "A2.json",
-      "generatedAt": "2026-09-05T22:36:31.290Z",
+      "generatedAt": "2026-11-04T22:50:44.876Z",
       "passed": 18,
       "failed": 0,
       "negativeCases": 5
@@ -102,11 +102,11 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-a3-flag-semantics.ts",
       "evidenceFile": "A3.json",
-      "generatedAt": "2026-09-05T22:36:45.344Z",
+      "generatedAt": "2026-11-04T22:51:22.546Z",
       "passed": 32,
       "failed": 0,
       "negativeCases": 2
@@ -119,7 +119,7 @@
     "status": "verified",
     "scope": "E2E corpus on real repos: edit-then-read auto-repair, concurrency under the lock, honest-decline path; per-scenario evidence",
     "acceptanceCriteria": [
-      "all scenarios pass on a real repo from fixtures, not only synthetic fixtures",
+      "all scenarios pass on a real repo from bb_tests, not only synthetic fixtures",
       "concurrency scenario: zero interleaved writes, zero crashes, all readers declared honest",
       "corpus gate mode with evidence stamp"
     ],
@@ -128,7 +128,7 @@
     ],
     "evidence": {
       "status": "verified",
-      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-a4-corpus.ts",
       "evidenceFile": "A4.json",
@@ -153,14 +153,14 @@
       "evidence file + ledger sync + evidence comment"
     ],
     "evidence": {
-      "status": "verified",
-      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "status": "blocked",
+      "currentCommit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
       "workingTreeRelevantChanges": [],
       "verifierCommand": "bun run script/m43/verify-governance.ts",
       "evidenceFile": "G1.json",
-      "generatedAt": "2026-09-05T22:40:14.206Z",
-      "passed": 65,
-      "failed": 0,
+      "generatedAt": "2026-11-04T01:07:02.351Z",
+      "passed": 57,
+      "failed": 8,
       "negativeCases": 2
     }
   },
@@ -177,6 +177,17 @@
     ],
     "closureRequirements": [
       "closes last with the full-chain evidence comment"
-    ]
+    ],
+    "evidence": {
+      "status": "blocked",
+      "currentCommit": "4d0d44a0e4747f2fa01b598ecf9f8023b372faba",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-closure.ts",
+      "evidenceFile": "X1.json",
+      "generatedAt": "2026-10-15T07:20:19.258Z",
+      "passed": 48,
+      "failed": 10,
+      "negativeCases": 3
+    }
   }
 ]

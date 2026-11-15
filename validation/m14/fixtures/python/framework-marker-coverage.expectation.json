@@ -1,0 +1,37 @@
+{
+ "fixtureId": "python/framework-marker-coverage",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-15. The marker table's coverage was never measured, and the measurement is uncomfortable: over 3,271 corpus `.py` files carrying 160 distinct non-stdlib import roots, SEVEN of the nine declared roots fired zero times — celery, django, fastapi, flask, sqlalchemy, starlette, tornado — and only `pytest` (1,010 sites) and `aiohttp` (1) matched anything at all. The original census for this surface established that it was REACHABLE, by parsing a minimal Django model and a minimal Flask app and observing a non-empty result; reachability was reported as coverage, and a table whose rows fire nowhere looks identical to a table whose rows fire. `ansible`, the corpus's dominant framework by an order of magnitude at 3,452 sites across 322 directories, was not in the table. So this fixture pins the three claims that census produced. First, the four roots added alongside it — `ansible` (automation), `setuptools` (build), `sphinx` (documentation) and `unittest` (testing) — are detected by IMPORT ROOT and not by text, so a file that merely mentions a name in a docstring does not count and one that imports it does. `unittest` is the notable addition: the table could name the third-party test runner and not the STANDARD LIBRARY's own, detected in 132 corpus files, which is an asymmetry rather than a policy. Second, the ORDERING. This is the more interesting half, because the two obvious places to pin order cannot: `expectMetadata` compares with strict JSON equality so the array IS order-sensitive there and can be pinned, while the relationship-and-symbol matcher's `meta.` branch sorts both sides and so treats any array as a set — an asymmetry worth knowing, because a fixture written against the wrong one of the two would silently pin nothing. The pin that matters regardless is `expectPrimaryFramework`, since `metadata.framework` is a single string: this file imports five marker roots, `pytest` and `unittest` among them, and it must still report `ansible`, or the primary pick would depend on which import happened to be written first — a property of how the file is sorted rather than of what it is. Third, the Cython boundary, pinned by EXHAUSTION rather than by a forbid row: `detectedFrameworks` is asserted as the exact ordered list, so a Cython marker added to the table later changes this array and fails here on purpose. Cython is the corpus's second-largest root (260 lower-case plus 169 capitalised import sites) and it is a DIALECT, not a framework — and no lane in this repository publishes a `dialect` field, so the only way to record Cython inside this table would be to record it as a framework, which is the false claim this row exists to prevent. It is filed as PY-16 instead, where a cross-lane field can carry it honestly.",
+ "expectPrimaryFramework": ["ansible"],
+ "expectMetadata": [
+  {
+   "framework": "ansible",
+   "comment": "the PRIMARY PICK. This file imports five marker roots, two of them test frameworks, and the application framework still has to win — the table's declaration order, not import order"
+  },
+  {
+   "detectedFrameworks": ["ansible", "setuptools", "sphinx", "pytest", "unittest"],
+   "comment": "the EXACT ordered list, and the row that carries the Cython boundary by exhaustion: Cython is imported in this file and is absent from this array, so a lane that admitted a Cython framework marker would return six entries and fail here on purpose. Removing this row would make the boundary unpinnable. Note that this comparison is strict JSON equality and therefore ORDER-SENSITIVE, unlike the `meta.` branch of the symbol/relationship matcher, which sorts both sides and so treats arrays as sets"
+  },
+  {
+   "frameworkPatterns": [
+    { "framework": "ansible", "patterns": [{ "type": "automation", "detected": true, "description": "ansible usage detected" }] },
+    { "framework": "setuptools", "patterns": [{ "type": "build", "detected": true, "description": "setuptools usage detected" }] },
+    { "framework": "sphinx", "patterns": [{ "type": "documentation", "detected": true, "description": "sphinx usage detected" }] },
+    { "framework": "pytest", "patterns": [{ "type": "testing", "detected": true, "description": "pytest usage detected" }] },
+    { "framework": "unittest", "patterns": [{ "type": "testing", "detected": true, "description": "unittest usage detected" }] }
+   ],
+   "comment": "index-ALIGNED to `detectedFrameworks`, and this is what makes a pattern label load-bearing rather than decorative: `unittest` reuses `testing` because it is the same KIND of framework as `pytest`, while ansible, setuptools and sphinx each introduce a kind of their own. Pinned because the array is emitted per file and nothing else in the lane checks its shape or its alignment"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "ansible",
+   "comment": "an IMPORT is not a declaration. `import ansible.module_utils.basic` must not publish a symbol named `ansible` — the same rule as the module-all-exports fixture's `__all__` entries, and the reason a framework marker is a metadata fact rather than a symbol"
+  }
+ ],
+ "_seamNote": {
+  "what": "A framework is a root-level IMPORT this table names. Detection reads the parsed AST's import roots — never text — and the table is declared one root per line so a marker that stops matching is a visible deletion rather than a silent loss.",
+  "why": "The table was previously justified by REACHABILITY: a minimal Django model and a minimal Flask app each produced a detection, so the surface was reported alive. Reachability is not coverage, and a census over 3,271 files then found seven of nine markers firing zero times while the corpus's own dominant framework was absent — a table that looks identical whether or not its rows work. That is why the table now carries measured counts beside it, and why this fixture pins the exact ordered array: a coverage claim with no row behind it is the same defect as a coverage claim with no fixture behind it, and the second is the one a mutant can catch."
+ }
+}

@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-03T05:22:51.372Z",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata",
+  "repos": [
+    {
+      "key": "graphql-js",
+      "repoPath": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+      "language": "TypeScript/JavaScript",
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/18b0d5567b84edcae6dec4bfcc1faf8ac965e01e/brain.db",
+      "db": {
+        "path": "brain.db",
+        "exists": true,
+        "size": 153116672,
+        "sha256": "3194f9dff92e619c8e447179deab3ba68bc6b2f8d4276a95f04fbd153e7e085a"
+      },
+      "wal": {
+        "path": "brain.db-wal",
+        "exists": true,
+        "size": 48632512,
+        "sha256": "119f8c12ad274e08b3d98fee3a53eefb9b7c75134f341ab8d8f819aee632c960"
+      },
+      "files": 564,
+      "symbols": 13620,
+      "relationships": 61917,
+      "languages": [
+        {
+          "language": "typescript",
+          "files": 413
+        },
+        {
+          "language": "javascript",
+          "files": 77
+        },
+        {
+          "language": "json",
+          "files": 42
+        },
+        {
+          "language": "markdown",
+          "files": 12
+        },
+        {
+          "language": "yaml",
+          "files": 7
+        },
+        {
+          "language": "xml",
+          "files": 6
+        },
+        {
+          "language": "tsx",
+          "files": 4
+        },
+        {
+          "language": "graphql",
+          "files": 2
+        },
+        {
+          "language": "css",
+          "files": 1
+        }
+      ],
+      "indexMs": 117046,
+      "reused": false,
+      "targets": {
+        "file": "benchmark/github-schema.graphql",
+        "module": "benchmark",
+        "symbol": "GraphQLSchema",
+        "feature": "GraphQ",
+        "fallbackModuleFile": ".github/CONTRIBUTING.md"
+      }
+    },
+    {
+      "key": "rake",
+      "repoPath": "/home/ishaq2321/bb_tests/repositories/rake",
+      "language": "Ruby",
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/132aab0103080d56a8ce5ef28cf2034710b21a80/brain.db",
+      "db": {
+        "path": "brain.db",
+        "exists": true,
+        "size": 22683648,
+        "sha256": "c61b1ff4c9fd7dd8a704889c55b1698beb27fb22a116e3a1aefdd16e8e7642b3"
+      },
+      "wal": {
+        "path": "brain.db-wal",
+        "exists": true,
+        "size": 8928072,
+        "sha256": "e13c59ad3c166d81841a88aa7132174d22c8e48d1e41cf93ec2bce19113b30ec"
+      },
+      "files": 109,
+      "symbols": 1593,
+      "relationships": 9075,
+      "languages": [
+        {
+          "language": "ruby",
+          "files": 97
+        },
+        {
+          "language": "yaml",
+          "files": 9
+        },
+        {
+          "language": "c",
+          "files": 3
+        }
+      ],
+      "indexMs": 16545,
+      "reused": false,
+      "targets": {
+        "file": "test/test_rake_file_list.rb",
+        "module": "test",
+        "symbol": "invoke",
+        "feature": "invo",
+        "fallbackModuleFile": ".github/dependabot.yml"
+      }
+    },
+    {
+      "key": "rebar3",
+      "repoPath": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "language": "Erlang",
+      "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/f542cf36820e749046766ff9bede22e70d5990e7/brain.db",
+      "db": {
+        "path": "brain.db",
+        "exists": true,
+        "size": 106369024,
+        "sha256": "812c5485e6c351dcd3cb3d352673949786b135d287be0652ccd5ccb4e9b5d7fc"
+      },
+      "wal": {
+        "path": "brain.db-wal",
+        "exists": true,
+        "size": 39692112,
+        "sha256": "2955f554f6b78275c4ac9b0bd34c9ec3594d24b1eb8f44899aca9be0b99e4ab5"
+      },
+      "files": 303,
+      "symbols": 7012,
+      "relationships": 38143,
+      "languages": [
+        {
+          "language": "erlang",
+          "files": 266
+        },
+        {
+          "language": "markdown",
+          "files": 18
+        },
+        {
+          "language": "bash",
+          "files": 9
+        },
+        {
+          "language": "yaml",
+          "files": 6
+        },
+        {
+          "language": "make",
+          "files": 2
+        },
+        {
+          "language": "elixir",
+          "files": 1
+        },
+        {
+          "language": "powershell",
+          "files": 1
+        }
+      ],
+      "indexMs": 105009,
+      "reused": false,
+      "targets": {
+        "file": "apps/rebar/src/vendored/r3_hex_erl_tar.hrl",
+        "module": "apps/rebar/src/vendored",
+        "symbol": "valid",
+        "feature": "vali",
+        "fallbackModuleFile": ".github/ISSUE_TEMPLATE.md"
+      }
+    },
+    {
+      "key": "go-tools",
+      "repoPath": "/home/ishaq2321/bb_tests/repositories/go-tools",
+      "language": "Go",
+      "projectId": "f58244847d810aee6ece4959e595d1c704e7f3ec",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/f58244847d810aee6ece4959e595d1c704e7f3ec/brain.db",
+      "db": {
+        "path": "brain.db",
+        "exists": true,
+        "size": 437944320,
+        "sha256": "0870e76ea5ccad0f2eef4ac74fa4d0cc7e748b7fe8b37dc286df91c2eabd3f7a"
+      },
+      "wal": {
+        "path": "brain.db-wal",
+        "exists": true,
+        "size": 178251832,
+        "sha256": "3240ea2c1caead1ad85e909e824e0b55fd177bacccc69923abec231e81a0a8e3"
+      },
+      "files": 2017,
+      "symbols": 32726,
+      "relationships": 147112,
+      "languages": [
+        {
+          "language": "go",
+          "files": 1929
+        },
+        {
+          "language": "markdown",
+          "files": 58
+        },
+        {
+          "language": "javascript",
+          "files": 9
+        },
+        {
+          "language": "css",
+          "files": 6
+        },
+        {
+          "language": "bash",
+          "files": 5
+        },
+        {
+          "language": "yaml",
+          "files": 3
+        },
+        {
+          "language": "c",
+          "files": 2
+        },
+        {
+          "language": "json",
+          "files": 2
+        },
+        {
+          "language": "xml",
+          "files": 2
+        },
+        {
+          "language": "html",
+          "files": 1
+        }
+      ],
+      "indexMs": 364636,
+      "reused": false,
+      "targets": {
+        "file": "gopls/internal/doc/api.json",
+        "module": "gopls/internal/doc",
+        "symbol": "String",
+        "feature": "Stri",
+        "fallbackModuleFile": "CONTRIBUTING.md"
+      }
+    },
+    {
+      "key": "zig-std",
+      "repoPath": "/home/ishaq2321/bb_tests/repositories/zig/lib/std",
+      "language": "Zig/C",
+      "projectId": "da4223144a25e2ee9b38acfcd4500124a836927a",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/da4223144a25e2ee9b38acfcd4500124a836927a/brain.db",
+      "db": {
+        "path": "brain.db",
+        "exists": true,
+        "size": 456257536,
+        "sha256": "20814be1373cc0e6257e087bafe9a27e1f0f1c9acb92cc2e60d5d3b279ebe02e"
+      },
+      "wal": {
+        "path": "brain.db-wal",
+        "exists": true,
+        "size": 130550472,
+        "sha256": "ea20d936279fb8a5f329a8d4883ee0959c0dddf6293597350f1f426e91a00e7b"
+      },
+      "files": 550,
+      "symbols": 61655,
+      "relationships": 178628,
+      "languages": [
+        {
+          "language": "zig",
+          "files": 550
+        }
+      ],
+      "indexMs": 12390,
+      "reused": false,
+      "targets": {
+        "file": "os/linux/syscalls.zig",
+        "module": "os/linux",
+        "symbol": "append",
+        "feature": "appe",
+        "fallbackModuleFile": "BitStack.zig"
+      }
+    }
+  ]
+}

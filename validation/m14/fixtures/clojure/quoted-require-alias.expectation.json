@@ -1,0 +1,38 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the same oracle: the alias timeline read the `ns` form's clauses and nothing else, so every TOP-LEVEL `require` was invisible — `jio` at core.clj:7248, plus `str/replace` and `ns/find-namespaces-in-dir`, were the three surviving misses. Reading only the unquoted `(require [lib :as a])` finds nothing in real code, because nobody writes that: the quote IS the convention. A top-level require's children are the SPEC VECS themselves, where an `ns` form's clauses hold them, so one spec reader has to serve both shapes. Pins all three alias keys resolve: `:as` at :14 and :15, and the positional `:as-alias` — which has no `:as` keyword to read — at :26.",
+  "expectSymbols": [
+    {
+      "name": "reader",
+      "kind": "function"
+    },
+    {
+      "name": "shout",
+      "kind": "function"
+    },
+    {
+      "name": "has-subset?",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "reader",
+      "target": "clojure.java.io/file",
+      "line_number": 14
+    },
+    {
+      "type": "calls",
+      "from": "shout",
+      "target": "clojure.string/upper-case",
+      "line_number": 15
+    },
+    {
+      "type": "calls",
+      "from": "has-subset?",
+      "target": "clojure.set/subset?",
+      "line_number": 26
+    }
+  ]
+}

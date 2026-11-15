@@ -1,0 +1,23 @@
+{
+  "issue": "M21.R2",
+  "code": "R2",
+  "milestone": "M21",
+  "status": "known-gap",
+  "checks": 13,
+  "passed": 9,
+  "failed": 4,
+  "negativeCases": 2,
+  "currentCommit": "unknown",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-postprocessing-passes.ts",
+  "evidenceFile": "R2.json",
+  "generatedAt": "2026-11-13T21:36:39.134Z",
+  "limitations": [
+    "Error: no index found for project 7de270f9525714fa776b1b17aad09ae9dc91482c-missing: /tmp/bb-m21-data/projects/7de270f9525714fa776b1b17aad09ae9dc91482c-missing/brain.db — run: bb index <project>"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-13T21:36:39.359Z",
+    "contentSha256": "e11dca47e9427e17c34b4073864aebc6361ee383f8468da695ff4b74e1cc0124"
+  }
+}

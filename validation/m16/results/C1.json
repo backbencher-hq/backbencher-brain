@@ -1,0 +1,12 @@
+{
+  "issue": "M16.C1",
+  "code": "C1",
+  "tool": "governance",
+  "title": "gates, ledger, closure gate, quality-gate wiring",
+  "verified": true,
+  "checks": 16,
+  "passed": 16,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:27:27.237Z"
+}

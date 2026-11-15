@@ -1,0 +1,24 @@
+{
+  "fixtureId": "go/dot-import-calls",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "GO3 (#736 go wave): dot-imported calls (`Print` via `import . \"fmt\"`) were dropped as unresolvable bare callees on both sides. With a dot-import in the file, bare callees resolve leniently (builtins still excluded), mirrored by the oracle. Bare READS stay strict under dot-imports (documented limitation).",
+  "expectSymbols": [
+    {
+      "name": "F",
+      "kind": "function"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "fmt"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "F",
+      "target": "Print"
+    }
+  ]
+}

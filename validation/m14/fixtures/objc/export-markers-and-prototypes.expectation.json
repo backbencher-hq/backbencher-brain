@@ -1,0 +1,45 @@
+{
+ "fixtureId": "objc/export-markers-and-prototypes",
+ "language": "objc",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "OBJCD9 (M60 DERIV_EXPORTS_OBJC): `exports` is a GAP and a file-scope prototype is symbol-loss. Census over the 322-file admitted universe (script/m60/objc-exports-census.ts): FOUNDATION_EXPORT on 98 declarations in 18 files, `extern` on 1, attribute_specifier 0, visibility_specification 1, export-named preproc_def 0 of 24 — so the marker is a NAMED storage_class_specifier the grammar emits and the edge is declaration-backed. script/m60/objc-prototype-defect.ts: of 23 file-scope prototypes, 8 published no symbol and 13 published `variable`; after the fix 23 of 23 publish as `function`. Pins: all four corpus marker-bearing declarator shapes (bare identifier constant, pointer-returning prototype, bare function_declarator prototype, `extern` constant), the export edge per marker, the function LABEL, and the unterminated stacked-macro refusal — a phantom declarator must publish neither a symbol nor an export edge.\n\nSUPERSEDED IN PART, 2026-10-15 (OC-ONT-8, owner ruling). This file's three assertions about the export FAMILY's scope and tier were re-authored, not the analyzer bent to them: OBJCD9 settled `exports` as marker-bearing declarations only and the lane's classifier put the whole family at `evidenceClass: import_based`, while the later OC-ONT wave specced it as EXTERNAL LINKAGE (C99 6.2.2p5) with the fleet vocabulary and tier — the same scope the F5 oracle's own export site derivation uses (script/m60/objc-construct-site-probe.ts: 338 file-scope external-linkage construct sites against 98 edges emitted by the marker-only rule) and the tier c/cpp/powershell classify `exports` as. The two specs are mutually exclusive on two axes (a class cannot be both required and forbidden as an export; the same `extern` declaration cannot be both `import_based` and `structural`), so the owner chose OC-ONT when the conflict was measured. Changed here: `ExportedConstValue` and `ExportedExternConst` are `structural` (still marker-bearing: `meta.exportMarker` is untouched), and the class `Exported` is now REQUIRED as an export instead of forbidden. UNCHANGED: every marker value, the four marker-bearing declarator shapes, the phantom/`NS_ASSUME_NONNULL_BEGIN`/marker-name refusals, and the `expectExports` name list. The analyzer change that makes this file's remaining assertions true is script/m14/fixtures/objc/linkage-and-imports, which stayed red precisely on them.",
+ "expectSymbols": [
+  { "name": "Exported", "kind": "class" },
+  { "name": "touch", "kind": "method", "ownerName": "Exported" },
+  { "name": "ExportedConstValue", "kind": "variable" },
+  { "name": "ExportedPrototype", "kind": "function" },
+  { "name": "ExportedVoidPrototype", "kind": "function" },
+  { "name": "ExportedExternConst", "kind": "variable" }
+ ],
+ "forbidSymbols": [
+  { "name": "ExportedPrototype", "kind": "variable" },
+  { "name": "ExportedVoidPrototype", "kind": "variable" },
+  { "name": "ExportedConst", "kind": "variable" },
+  { "name": "ExportedConst", "kind": "function" },
+  { "name": "NS_ASSUME_NONNULL_BEGIN", "kind": "variable" },
+  { "name": "FOUNDATION_EXPORT", "kind": "variable" },
+  { "name": "extern", "kind": "variable" }
+ ],
+ "expectRelationships": [
+  { "type": "exports", "source": "root", "target": "ExportedConstValue", "meta.exportMarker": "FOUNDATION_EXPORT", "meta.evidenceClass": "structural", "comment": "OC-ONT-8 (owner-ruled supersession): the row is a DECLARATION fact — the declaration is in this file and its linkage comes off the grammar's own storage_class_specifier — so it is `structural`, the tier c/cpp/powershell give `exports`. It stays marker-bearing (`meta.exportMarker` above): the marker is a second fact about the same declaration, not a different tier" },
+  { "type": "exports", "source": "root", "target": "ExportedPrototype", "meta.exportMarker": "FOUNDATION_EXPORT" },
+  { "type": "exports", "source": "root", "target": "ExportedVoidPrototype", "meta.exportMarker": "FOUNDATION_EXPORT" },
+  { "type": "exports", "source": "root", "target": "ExportedExternConst", "meta.exportMarker": "extern", "meta.evidenceClass": "structural", "comment": "`extern` is external linkage, exactly as objc/linkage-and-imports pins it for the same shape — the two files disagreeing on this one row was the measured conflict the owner ruled on" },
+  { "type": "exports", "source": "root", "target": "Exported", "meta.relationshipType": "module_export", "meta.isExport": true, "meta.fileLevel": true, "meta.evidenceClass": "structural", "comment": "OC-ONT-8 (owner-ruled supersession): this row was FORBIDDEN here while OBJCD9's marker-only scope stood — a class was held to be a type, not a linkage unit. Under the external-linkage scope a class IS a publishable declaration, and objc/linkage-and-imports requires `Serializer`/`LoudSerializer` for exactly this shape (`@interface` + `@implementation`), which is the conflict that was measured and ruled on. The assertion is MOVED here rather than deleted, so the flip is visible in the diff instead of reading as a fixture that never had an opinion. It is the row `expectExports` never named either: the relationship family and the `exports` list were always two different claims." }
+ ],
+ "forbidRelationships": [
+  { "type": "exports", "source": "root", "target": "ExportedConst" },
+  { "type": "exports", "source": "root", "target": "ExportedPhantom" },
+  { "type": "exports", "source": "root", "target": "NS_ASSUME_NONNULL_BEGIN" },
+  { "type": "exports", "source": "root", "target": "FOUNDATION_EXPORT" },
+  { "type": "exports", "source": "root", "target": "extern" },
+  { "type": "exports", "source": "ExportedPrototype", "target": "FOUNDATION_EXPORT" },
+  { "type": "uses", "source": "touch", "target": "ExportedConst" },
+  { "type": "references", "source": "root", "target": "FOUNDATION_EXPORT" }
+ ],
+ "expectExports": [
+  { "name": "ExportedPrototype" },
+  { "name": "ExportedVoidPrototype" },
+  { "name": "ExportedConstValue" }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+  "gate": "M60.W1",
+  "at": "2026-09-25T16:13:28.402Z",
+  "atCommit": "d09934d98a74c0e4bfd3b31e55616cbc994dcddd",
+  "issues": {
+    "816": "cross-language name-resolution FP — FIXED+CLOSED (15c918af: nearest-candidate deterministic resolver, pinned in verify-index.ts, proven by revert)",
+    "818": "dart F5 lane re-measure — CLOSED (DT wave landed; lane 100/0/0 at HEAD)"
+  },
+  "familyVerdict": "closed-computable",
+  "familyConditions": {
+    "foldersClosed": true,
+    "analyzersCommitted": true,
+    "cellsAlive": true,
+    "trackerClean": true,
+    "foldPresent": true
+  },
+  "openIssues": [],
+  "closureReassertion": "through the P1 matrix per the M60 plan, not through closure-report prose",
+  "verdict": "complete"
+}

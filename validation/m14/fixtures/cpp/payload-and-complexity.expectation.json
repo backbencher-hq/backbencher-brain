@@ -1,0 +1,27 @@
+{
+  "fixtureId": "cpp/payload-and-complexity",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#383/#419-C parity: qualified_calls payload and per-symbol cyclomatic complexity were entirely absent from the C++ analyzer. handle(): decisions = if = 1 -> complexity 2; calls carry dotted/qualified paths without arguments.",
+  "expectSymbols": [
+    {
+      "name": "handle",
+      "kind": "method"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "handle",
+      "equals": 2
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "handle",
+      "includes": [
+        "log",
+        "db.save"
+      ]
+    }
+  ]
+}

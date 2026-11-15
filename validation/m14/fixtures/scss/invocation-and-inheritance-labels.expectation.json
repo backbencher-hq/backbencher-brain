@@ -1,0 +1,66 @@
+{
+  "fixtureId": "scss/invocation-and-inheritance-labels",
+  "language": "scss",
+  "targetSpellingReason": "TARGET SPELLING UPDATED 2026-10-11, NOT RE-PINNED. The CSS base now qualifies a target with the stylesheet it belongs to (`<file>::<name>`, its file-scoped identity), and the base's OWN fixtures were updated with it \u2014 51 of css's expectation rows carry a `::` target, of which this lane's had ZERO. So the behaviour is the base's tested convention and this row was stale, not the reverse. The target moved; the LABEL did not, and the label is what this fixture exists for.",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE LABEL FIXTURE, AND IT NOW PINS THE CAMPAIGN'S FOUR-WAY SPLIT. The 14-value campaign implemented `mixes_in` for this lane (2026-10-23) from the `include_statement` construct: `@include` is a MIXIN COMPOSITION — the rule composes the named mixin's body into itself, no conformance is declared and nothing is inherited — so the row that used to be `calls` is `mixes_in` now. The fixture keeps the three other claims beside it so the four are asserted side by side: a rule that COMPOSES a mixin (`mixes_in`), a rule that INVOKES a function (`calls`), a rule that INHERITS a selector's declarations (`extends`), and a rule that CONSUMES a keyframes animation (`uses`). Nothing in the project can catch a merge of these labels by counting — every edge is still present, both endpoints still resolve, and every count is unchanged — so the fixture pins them in one file, and every forbid row names the NEIGHBOUR label as well as the right one, because a fixture that only pins the positive row passes just as happily when the edge is relabelled back. The `uses` row is here for a second reason: on a 200-file corpus sample every one of this lane's 20 `uses` edges had been an `@include` or an `@extend`, so the label change took the type to ZERO there. It survives on the keyframes reference — a rule consuming `animation: fade-in`, which is neither an invocation nor an inheritance, and is exactly what `uses` is for. Corpus-wide: 663 of 4,433 admitted files declare `@keyframes` and 57 reference their own declared name. So this row is load-bearing for the TYPE, not only for the label. NOTE ON THE TARGET SPELLING: the `<file>::` prefix is the CSS base's file-scoped identity, unchanged by the relabel.",
+  "expectSymbols": [
+    { "name": "%badge", "kind": "class" },
+    { "name": "@mixin button-size", "kind": "function" },
+    { "name": "@function double", "kind": "function" },
+    { "name": ".call-included", "kind": "class" },
+    { "name": ".call-invoked", "kind": "class" },
+    { "name": ".inherits", "kind": "class" },
+    { "name": ".fade", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": ".fade",
+      "target": "fixtures/scss/invocation-and-inheritance-labels::fade-in",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isAnimationRef": true,
+      "line_number": 31
+    },
+    {
+      "type": "mixes_in",
+      "from": ".call-included",
+      "target": "fixtures/scss/invocation-and-inheritance-labels::@mixin button-size",
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true,
+      "line_number": 35
+    },
+    {
+      "type": "calls",
+      "from": ".call-invoked",
+      "target": "fixtures/scss/invocation-and-inheritance-labels::@function double",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isScssFunctionCall": true,
+      "line_number": 39
+    },
+    {
+      "type": "extends",
+      "from": ".inherits",
+      "target": "%badge",
+      "meta.evidenceClass": "structural",
+      "meta.isScssExtend": true,
+      "meta.scssExtendShape": "recovered",
+      "line_number": 43
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": ".call-included" },
+    { "type": "uses", "from": ".call-invoked" },
+    { "type": "uses", "from": ".inherits" },
+    { "type": "calls", "from": ".inherits" },
+    { "type": "calls", "from": ".fade" },
+    { "type": "calls", "from": ".call-included" },
+    { "type": "mixes_in", "from": ".call-invoked" },
+    { "type": "mixes_in", "from": ".inherits" },
+    { "type": "extends", "from": ".call-included" },
+    { "type": "extends", "from": ".call-invoked" },
+    { "type": "references", "from": ".call-invoked" },
+    { "type": "contains", "from": ".call-invoked", "target": "@function double" }
+  ]
+}

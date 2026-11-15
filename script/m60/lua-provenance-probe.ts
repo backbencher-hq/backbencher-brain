@@ -2,7 +2,7 @@
 // sha256 against the wired bytes. The gate re-measures; this records the result.
 import { createHash } from "node:crypto"
 import { readFileSync, existsSync } from "node:fs"
-const G = "$HOME/fixtures/grammars"
+const G = "/home/ishaq2321/bb_tests/grammars"
 const sha = (p: string) => (existsSync(p) ? createHash("sha256").update(readFileSync(p)).digest("hex") : null)
 const wired = sha("wasm/tree-sitter-lua.wasm")
 const cands = [

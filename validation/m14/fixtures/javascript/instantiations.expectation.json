@@ -1,0 +1,16 @@
+{
+  "fixtureId": "javascript/instantiations",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the instantiates relationship kind (section B). new Widget() instantiates the declared class; global constructors (Date) are filtered by JS_GLOBAL_CONSTRUCTORS. Pre-fix: no javascript fixture pinned instantiates.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "w", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "instantiations", "target": "Widget" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "instantiations", "target": "Date" }
+  ]
+}

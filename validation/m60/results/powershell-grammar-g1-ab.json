@@ -1,0 +1,218 @@
+{
+  "tool": "powershell-grammar-ab",
+  "lane": "powershell",
+  "issue": "#278",
+  "generatedBy": "script/m60/powershell-grammar-ab.ts",
+  "candidate": {
+    "label": "G1b: param() after a statement, WITHOUT the attribute route (M60 #278)",
+    "path": "/tmp/opencode/ps-lane/cand-g1b.wasm",
+    "sha256": "b41e15c79fa86941a70d8b1faaf5571c38a84f3dc8a84222e4d832ca6223b5da",
+    "bytes": 1116109
+  },
+  "wired": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-powershell.wasm",
+    "sha256": "c160c2f824a43dee81cb17365a51f4d412418cb3f837e8b65de1a3ad0a3f468f",
+    "bytes": 1111614
+  },
+  "method": "Corpora: the production (non-test) tracked .ps1/.psm1/.psd1 files of powershell and ansible, drawn by a hash of `repo/relative-path` (unbiased, reproducible) with the digest recorded per repo so a re-run that drew a different set says so rather than being compared. `powershell`' test/ tree is excluded because it is parser-error TEST DATA, not a corpus. Damage is measured with a parser loaded directly from the wasm under test, so it is the GRAMMAR's number and no analyzer decision can move it. Q3 (no collateral) is the deciding question and is checked as a file SET, not a spot check. Q4 compares the node-type multiset over each corpus. Q5 is the id-order digest from M49 W19, because a rebuild's sha256 is not a function of its source across toolchain versions. --rebuild answers Q1: whether the vendored source reproduces the WIRED behaviour, without which no patch on that source is attributable to the wired grammar.",
+  "q4_shapeDelta": {
+    "candidateOnlyTypes": [],
+    "wiredOnlyTypes": [],
+    "namedCandidateOnly": [],
+    "namedWiredOnly": [],
+    "fieldSetMatches": true,
+    "idOrderMatches": false,
+    "namedVocabularyUnchanged": true,
+    "corpusMultisetDelta": [
+      {
+        "repo": "powershell",
+        "deltas": [],
+        "deltaCount": 0
+      },
+      {
+        "repo": "ansible",
+        "deltas": [
+          {
+            "type": "unary_expression",
+            "wired": 3418,
+            "next": 3288
+          },
+          {
+            "type": "attribute",
+            "wired": 180,
+            "next": 262
+          },
+          {
+            "type": "ERROR",
+            "wired": 98,
+            "next": 35
+          },
+          {
+            "type": "expression_with_unary_operator",
+            "wired": 194,
+            "next": 132
+          },
+          {
+            "type": "cast_expression",
+            "wired": 130,
+            "next": 71
+          },
+          {
+            "type": "pipeline",
+            "wired": 2249,
+            "next": 2204
+          },
+          {
+            "type": "pipeline_chain",
+            "wired": 1654,
+            "next": 1611
+          },
+          {
+            "type": "attribute_name",
+            "wired": 99,
+            "next": 142
+          },
+          {
+            "type": "script_parameter",
+            "wired": 123,
+            "next": 162
+          },
+          {
+            "type": "attribute_list",
+            "wired": 107,
+            "next": 146
+          },
+          {
+            "type": "array_literal_expression",
+            "wired": 2606,
+            "next": 2573
+          },
+          {
+            "type": "parenthesized_expression",
+            "wired": 79,
+            "next": 48
+          },
+          {
+            "type": "command",
+            "wired": 326,
+            "next": 296
+          },
+          {
+            "type": "command_name",
+            "wired": 317,
+            "next": 287
+          },
+          {
+            "type": "range_expression",
+            "wired": 2348,
+            "next": 2322
+          },
+          {
+            "type": "logical_expression",
+            "wired": 2158,
+            "next": 2134
+          },
+          {
+            "type": "bitwise_expression",
+            "wired": 2161,
+            "next": 2137
+          },
+          {
+            "type": "comparison_expression",
+            "wired": 2323,
+            "next": 2299
+          },
+          {
+            "type": "additive_expression",
+            "wired": 2337,
+            "next": 2313
+          },
+          {
+            "type": "multiplicative_expression",
+            "wired": 2344,
+            "next": 2320
+          },
+          {
+            "type": "format_expression",
+            "wired": 2346,
+            "next": 2322
+          },
+          {
+            "type": "type_literal",
+            "wired": 521,
+            "next": 499
+          },
+          {
+            "type": "type_spec",
+            "wired": 632,
+            "next": 653
+          },
+          {
+            "type": "type_name",
+            "wired": 934,
+            "next": 955
+          },
+          {
+            "type": "type_identifier",
+            "wired": 934,
+            "next": 955
+          }
+        ],
+        "deltaCount": 49
+      }
+    ]
+  },
+  "q2_netWin": [
+    {
+      "repo": "powershell",
+      "files": 49,
+      "drawDigest": "79bea463a8b4d0b1033847c522223d601ffbb191abe88107c46f6c425bf5b8b2",
+      "wired": {
+        "damaged": 14,
+        "err": 112,
+        "missing": 15
+      },
+      "candidate": {
+        "damaged": 14,
+        "err": 112,
+        "missing": 15
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    },
+    {
+      "repo": "ansible",
+      "files": 24,
+      "drawDigest": "9659980cd43799161f714a2db8b18542298b03c8394ef429c6eb9986c1bb76cf",
+      "wired": {
+        "damaged": 15,
+        "err": 98,
+        "missing": 23
+      },
+      "candidate": {
+        "damaged": 15,
+        "err": 35,
+        "missing": 2
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    }
+  ],
+  "q3_collateral": [
+    {
+      "repo": "powershell",
+      "brokeFiles": [],
+      "count": 0
+    },
+    {
+      "repo": "ansible",
+      "brokeFiles": [],
+      "count": 0
+    }
+  ],
+  "verdict": "no collateral; read q2_netWin for the net effect"
+}

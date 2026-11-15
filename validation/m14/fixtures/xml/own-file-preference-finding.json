@@ -1,0 +1,84 @@
+{
+  "instrument": "xml own-file preference \u2014 the fix for the `calls` 138, measured with a toggle control",
+  "at": "2026-10-11T00:00:00-04:00",
+  "population": "libxslt, 1,143 files indexed, ONE RUN PER ARM. Every arm below is the same population and the same instrument; the only thing that differs is stated per arm.",
+  "theDefect": {
+    "where": "src/ast/parallel-indexer.ts, the resolve pass (`resolveRelationships`).",
+    "what": "Both lookup tables collapse EVERY name and every dotted suffix to ONE global winner via `MIN(id)` \u2014 the lexicographically smallest symbol id in the PROJECT. File paths sort, so an edge written in `tests/docbook/html/admon.xsl` binds to the same-named template declared in the PARALLEL tree `tests/docbook/fo/admon.xsl` (`fo` < `html`). Strategy 1's `_res_qname` does the same for exact qualified names, which is why `colspec.colnum` bound to an attribute symbol in `tests/docbook/test/article2.xml`.",
+    "hypothesisRefutedOnTheWay": "The first reading was the INSERT-time statement (`resolveTargetStmt`) preferring `COALESCE(is_declaration,0)` over own-file. A kept store REFUTED it: for `admon.graphic.width` both candidates are tier 0 and the own file wins that statement \u2014 yet the row was bound to `fo/`. The pass, not the insert, was binding them. Recorded because the wrong site would have produced a fix that could not work."
+  },
+  "theFix": {
+    "shape": "three own-file passes that run BEFORE the project-wide statements, which are untouched and still fire for every row they fired for before (they require `target_symbol_id IS NULL`): (1) own-file exact qualified-name match, (2) own-file NAME match, (3) own-file dotted-suffix match. Each binds only when the edge's target is declared in the edge's OWN file, and sets `is_cross_file = 0`.",
+    "author": "designed and measured by this lane; landed inside another lane's commit \u2014 see landedIn",
+    "patches": [
+      "validation/m14/fixtures/xml/own-file-preference.patch (arm A: qname-exact + suffix, 138 -> 15)",
+      "validation/m14/fixtures/xml/own-file-preference-armB.patch (arm B: + own-file NAME, 138 -> 0; this is what landed)"
+    ],
+    "landedIn": "63a888b03 (23:40:24) \u2014 another lane's commit for its `extractLeaf` path fix swept this lane's uncommitted in-flight edits into the same commit. The patch is therefore IN HEAD, not handed over. This lane did not commit it, and reports the sweep as a process finding: the Lead's exact-path commit rule exists for this."
+  },
+  "measurements": {
+    "toggleControl": {
+      "note": "THE DECISIVE ARM. Same tree (current HEAD, which contains both the extractLeaf fix and the own-file passes), same population, one run each; the ONLY change is the three own-file UPDATEs neutered with `WHERE 0 AND`.",
+      "ownFilePassesEnabled": {
+        "totalViolations": 4,
+        "calls": 0,
+        "references": 1,
+        "imports": 3,
+        "overrides": 0,
+        "callsSameFile": 400,
+        "callsOtherFile": 0,
+        "containsLineSplit": {
+          "intended": 17625,
+          "sameFileOffLine": 1554,
+          "arbitraryTwin": 2296,
+          "unbound": 13
+        }
+      },
+      "ownFilePassesDisabled": {
+        "totalViolations": 147,
+        "calls": 138,
+        "references": 5,
+        "imports": 3,
+        "overrides": 1,
+        "callsSameFile": 262,
+        "callsOtherFile": 138,
+        "containsLineSplit": {
+          "intended": 16106,
+          "sameFileOffLine": 187,
+          "arbitraryTwin": 3393,
+          "unbound": 1802
+        }
+      },
+      "reading": "The three own-file passes account for the ENTIRE reduction on this population: 147 -> 4, calls 138 -> 0. The extractLeaf fix does not move these counts."
+    },
+    "developmentArms": {
+      "baseBefore": {
+        "totalViolations": 147,
+        "calls": 138
+      },
+      "armA_qnameAndSuffix": {
+        "totalViolations": 19,
+        "calls": 15
+      },
+      "armB_plusOwnFileName": {
+        "totalViolations": 4,
+        "calls": 0
+      }
+    },
+    "regressionCheck": {
+      "condition": "the `builtin` / `external` / `unresolved` / `file` classes bind elsewhere CORRECTLY and are never scored, so any movement there is a regression.",
+      "result": "0 of those classes moved in the toggle control.",
+      "contains": "every axis improves, none worsens: intended 16,106 -> 17,625 (+1,519), arbitraryTwin 3,393 -> 2,296 (-1,097), unbound 1,802 -> 13 (-1,789). The newly bound rows are containment edges whose target IS declared in their own file and which the eager contains path had left unbound."
+    }
+  },
+  "theRemaining4": {
+    "imports3": "`xml-stylesheet` -> `#style1` / `#transform` in libxslt/tests/REC/stand-2.7-*.xml \u2014 document-internal ID references, class `in-document` with NO own-file declaration of that name (`declaredInSourceFile` empty). Nothing for a name-based resolver to prefer; the store leaves them unbound, which is arguably the right shape, and the analyzer's class is what is loose here.",
+    "references1": "one edge with an EMPTY source spelling and the target `target`, bound to XSLTMark/tower.xsl:12, class `in-document`, no own-file declaration. An outlier rather than the same mechanism.",
+    "whyTheFixCannotReachThem": "own-file preference needs an own-file declaration to prefer; for these 4 there is none. They are a different question (the analyzer's class), not a resolver question."
+  },
+  "raw": [
+    "validation/m14/fixtures/xml/own-file-preference.patch",
+    "validation/m14/fixtures/xml/own-file-preference-armB.patch",
+    "internal scratch runs sis-head.json / sis-head-noown.json / sis-libxslt-before.json / sis-libxslt-after.json / sis-libxslt-afterB.json"
+  ]
+}

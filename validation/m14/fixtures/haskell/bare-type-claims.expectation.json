@@ -1,0 +1,88 @@
+{
+  "fixtureId": "haskell/bare-type-claims",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "HSA1 — A DEPENDENCY THE MODULE DOES NOT DECLARE IS A CLAIM, NOT SILENCE. The haskell wall was 60,898 ambiguous/unresolved of 193,418 edges, and its two largest classes are the two dependencies the language spells as a BARE UPPER-CASE name: the type class in an `instance` head and the data constructor in an expression. MEASURED over the whole admitted population (3,702 files / 6 repos): implements 11,563 unresolved, led by Show 2,459 / Eq 1,899 / Generic 1,404 / Ord 703 / ToJSON 662 / FromJSON 641 / NFData 530 / Hashable 327; instantiates 10,978 unresolved, led by Just 3,657 / Right 1,017 / Left 617. None can be declared by a corpus file that does not already declare it, so every row was a dependency published with NO reading. The claim is the fleet's `externalTarget`, and it is SAFE BY CONSTRUCTION rather than by care: the arbiter consults a claim only where the name model has nothing (`decls === 0`), so a name the project really declares keeps its resolved/ambiguous answer and this row can never refute it. MEASURED EFFECT: wall 60,898 -> 43,364, verified external 9,988 -> 27,522, refuted 0, ambiguous unchanged at 9,326. The twins are the boundary: a class declared in THIS module must not be claimed, and neither must the module's own constructor — which is why the candidate set carries CONSTRUCTORS separately from types.",
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Int",
+      "target": "Show",
+      "line_number": 29,
+      "meta.isInstance": true,
+      "meta.externalTarget": true,
+      "comment": "THE POSITIVE ROW. `Show` is `base`'s class; this module declares nothing of that spelling, so the row says so — and the arbiter verifies it by finding nothing. Before this rule the row was one of 11,563 unresolved `implements` edges that named a library class and said nothing about it."
+    },
+    {
+      "type": "implements",
+      "from": "Bool",
+      "target": "Shape",
+      "line_number": 33,
+      "meta.isInstance": true,
+      "meta.externalTarget": null,
+      "comment": "THE LOCAL TWIN. `class Shape` is declared above in this module, so `instance Shape Bool` is a project-internal dependency; the claim must not appear, or the row would assert that the project does not declare a class it declares eight lines earlier."
+    },
+    {
+      "type": "instantiates",
+      "from": "justFoo",
+      "target": "Just",
+      "line_number": 38,
+      "meta.isConstructorApplication": true,
+      "meta.externalTarget": true,
+      "comment": "THE BUILTIN CONSTRUCTOR. `Just` belongs to `Maybe`, which the language supplies; 3,657 population rows named it with no reading. The claim is about the NAME, and the arbiter consults it only where the project declares nothing."
+    },
+    {
+      "type": "instantiates",
+      "from": "justFoo",
+      "target": "MkFoo",
+      "line_number": 38,
+      "meta.isConstructorApplication": true,
+      "meta.externalTarget": null,
+      "comment": "THE CONSTRUCTOR TWIN IN THE SAME EXPRESSION. `MkFoo` is this module's own constructor of `data Foo`, so `Just (MkFoo 1)` must claim one half of the row and not the other — the guard is the declaration table, and it needs CONSTRUCTORS in that table: the first version of this rule claimed `MkFoo` because only the TYPE name `Foo` was collected, and this fixture is what caught it."
+    },
+    {
+      "type": "instantiates",
+      "from": "eitherFoo",
+      "target": "Right",
+      "line_number": 41,
+      "meta.externalTarget": true,
+      "comment": "second builtin, so a fix that special-cased `Just` cannot pass"
+    },
+    {
+      "type": "instantiates",
+      "from": "leftFoo",
+      "target": "Left",
+      "line_number": 44,
+      "meta.externalTarget": true,
+      "comment": "third builtin — the `Either` pair is claimed in both directions"
+    },
+    {
+      "type": "instantiates",
+      "from": "mkFoo",
+      "target": "MkFoo",
+      "line_number": 48,
+      "meta.externalTarget": null,
+      "comment": "THE LOCAL CONSTRUCTOR, ALONE. Same name as the twin above, no claim either time."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "target": "Shape",
+      "meta.externalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE. Claiming a class this module declares is exactly the defect the guard exists for."
+    },
+    {
+      "type": "instantiates",
+      "target": "MkFoo",
+      "meta.externalTarget": true,
+      "comment": "second false-claim negative, on the constructor half — the one the fixture caught in the first cut."
+    },
+    {
+      "type": "implements",
+      "target": "Show",
+      "meta.externalTarget": null,
+      "comment": "THE SILENCE NEGATIVE. Without the claim `Show` falls back to the wall it came from; this row makes that revert red."
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "tool": "validation/m14/go/go-incoming-resolve.ts",
+  "phase": "self-test-classifier",
+  "ok": true,
+  "rows": [
+    {
+      "endpoint": "OnlyPackage",
+      "facts": "pkg=1 mem=0",
+      "expected": "resolved",
+      "got": "resolved",
+      "ok": true
+    },
+    {
+      "endpoint": "PkgAndMembers",
+      "facts": "pkg=1 mem=3",
+      "expected": "resolved",
+      "got": "resolved",
+      "ok": true
+    },
+    {
+      "endpoint": "TwoPackages",
+      "facts": "pkg=2 mem=0",
+      "expected": "ambiguous",
+      "got": "ambiguous",
+      "ok": true
+    },
+    {
+      "endpoint": "MemberOnly",
+      "facts": "pkg=0 mem=1",
+      "expected": "via_owner",
+      "got": "via_owner",
+      "ok": true
+    },
+    {
+      "endpoint": "MembersMany",
+      "facts": "pkg=0 mem=4",
+      "expected": "ambiguous",
+      "got": "ambiguous",
+      "ok": true
+    },
+    {
+      "endpoint": "Absent",
+      "facts": "not in the index",
+      "expected": "unresolvable",
+      "got": "unresolvable",
+      "ok": true
+    },
+    {
+      "endpoint": "",
+      "facts": "zero length",
+      "expected": "empty",
+      "got": "empty",
+      "ok": true
+    },
+    {
+      "endpoint": "_",
+      "facts": "Go's blank identifier",
+      "expected": "placeholder",
+      "got": "placeholder",
+      "ok": true
+    },
+    {
+      "endpoint": "Owner.MemberOnly",
+      "facts": "member of Owner",
+      "expected": "via_owner",
+      "got": "via_owner",
+      "ok": true
+    },
+    {
+      "endpoint": "Owner.BothMemberAndPkg",
+      "facts": "member of Owner AND package-scope",
+      "expected": "ambiguous",
+      "got": "ambiguous",
+      "ok": true
+    },
+    {
+      "endpoint": "NoSuchOwner.MemberOnly",
+      "facts": "owner undeclared",
+      "expected": "unresolvable",
+      "got": "unresolvable",
+      "ok": true
+    },
+    {
+      "endpoint": "OnlyPackage.MemberOnly",
+      "facts": "MemberOnly belongs to Owner, not OnlyPackage",
+      "expected": "unresolvable",
+      "got": "unresolvable",
+      "ok": true
+    },
+    {
+      "endpoint": "github.com/x/y",
+      "facts": "a module path: no head, no tail",
+      "expected": "unresolvable",
+      "got": "unresolvable",
+      "ok": true
+    },
+    {
+      "endpoint": "path/filepath",
+      "facts": "a module path with no dot",
+      "expected": "unresolvable",
+      "got": "unresolvable",
+      "ok": true
+    }
+  ]
+}

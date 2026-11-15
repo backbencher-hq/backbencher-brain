@@ -1,0 +1,63 @@
+{
+ "fixtureId": "javascript/named-function-expression-source",
+ "language": "javascript",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PINS the source-attribution parity between the two walks. A named function expression (`return function handler(event) {…}`) rebinds the code's actor to `handler`. The CALLS walk's resolveCurrent has always listed `function_expression`, so a call inside it is sourced `handler`. The USES walk's rebinding clause listed only function_declaration, generator_function_declaration and method_definition, so every READ inside the same body was sourced to the OUTER function. Measured on bootstrap's bundle on the SAME line: `calls handler -> off` next to `uses bootstrapHandler -> handler\\0EventHandler / oneOff / type / fn` — bootstrapHandler merely RETURNS handler and does not read those names. It went unnoticed because differential.ts and the per-label oracle both match on label + normTarget and NEVER on source, and verify-js-source-attribution.ts asserts only the NULL-source class; it was found by script/m14/javascript-source-attribution-census.ts. Four nesting contexts (function declaration, function expression, const arrow, X.prototype.m) because the A/B showed ALL FOUR were wrong before the fix — the first draft of the fixture called three of them positive controls, which was false. All four rows must attribute to the INNER named function, which is where the read actually happens.",
+ "expectSymbols": [
+  { "name": "outerDeclaration", "kind": "function" },
+  { "name": "outerExpression", "kind": "function" },
+  { "name": "PrototypeHost", "kind": "function" }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "innerDeclarationRead",
+   "target": "DECLARATION_TOKEN",
+   "comment": "enclosing form: function DECLARATION. The read is inside innerDeclarationRead; before the fix it was sourced outerDeclaration."
+  },
+  {
+   "type": "uses",
+   "from": "handlerExpression",
+   "target": "EVENT_TOKEN",
+   "comment": "enclosing form: function EXPRESSION — the shape measured on bootstrap's bundle. Before the fix the source was outerExpression."
+  },
+  {
+   "type": "uses",
+   "from": "innerArrowRead",
+   "target": "ARROW_TOKEN",
+   "comment": "enclosing form: const ARROW. Proves the fix composes with the variable_declarator rule instead of replacing it (before the fix: outerArrow)."
+  },
+  {
+   "type": "uses",
+   "from": "innerPrototypeRead",
+   "target": "PROTOTYPE_TOKEN",
+   "comment": "enclosing form: X.prototype.m = function () {} — the rule the fix now wraps in an else-branch. Before the fix: outerPrototype."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "outerDeclaration",
+   "target": "DECLARATION_TOKEN",
+   "comment": "NEGATIVE: the pre-fix source. outerDeclaration returns innerDeclarationRead; it does not read DECLARATION_TOKEN itself."
+  },
+  {
+   "type": "uses",
+   "from": "outerExpression",
+   "target": "EVENT_TOKEN",
+   "comment": "NEGATIVE: the exact defect measured in bootstrap's bundle."
+  },
+  {
+   "type": "uses",
+   "from": "outerArrow",
+   "target": "ARROW_TOKEN",
+   "comment": "NEGATIVE: the pre-fix source for the const-arrow nesting."
+  },
+  {
+   "type": "uses",
+   "from": "outerPrototype",
+   "target": "PROTOTYPE_TOKEN",
+   "comment": "NEGATIVE: the pre-fix source for the prototype nesting. A fix that replaced the prototype rule instead of wrapping it would ALSO produce this row, so it guards the else-branch."
+  }
+ ]
+}

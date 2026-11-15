@@ -1,0 +1,33 @@
+{
+  "fixtureId": "xml/xsd-entity-replacement-builtin",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M18 (accounting round). Three defects the corpus-wide accounting gate (script/m12/xml-entity-accounting.mts) found, pinned here at the smallest size that shows each. 1. AN ENTITY'S REPLACEMENT TEXT IS ITS OWN DOCUMENT: `<!ENTITY shout \"&greeting; …\">` makes a claim — shout cannot be expanded without greeting — and it was dropped, because an EntityRef was only collected under an OWNING ELEMENT and replacement text has no element above it. 611 of the then-651-site shortfall sat here. The owner is the DECLARING ENTITY. 2. THE FIVE PREDEFINED ENTITIES ARE BUILTIN: &lt; &gt; &amp; &apos; &quot; are declared by the specification itself in every document, and all 4,575 such sites across 180 files were stamped `resolvable: \"unresolved\"` with `danglingEntityReference: true` — the analyzer asserting that a well-formed document references an entity nothing defines. &nbsp; appears here too and is NOT predefined, so it MUST stay unresolved: a gate that cannot tell those two apart is not measuring anything. 3. NO LENGTH CAP: libxml2's bigentname.xml names an entity 3,965 characters long whose declaration was published uncapped while both its uses were dropped by a 256 cap, so the graph carried the symbol and none of its uses. A parameter entity is included because the first fix guarded the replacement-text walk with `!isParameter` and that was over-broad — t8a.xml's `<!ENTITY % deftest '&lt;…'>` contains a predefined reference the document genuinely makes.",
+  "expectRelationships": [
+    { "type": "references", "from": "shout", "target": "greeting", "line_number": 44, "meta.role": "entity_reference", "meta.resolvable": "in-document", "meta.occurrences": 2, "note": "M18.1: the owner is the DECLARING ENTITY, not the DTD and not an element. occurrences=2 because the replacement text writes &greeting; twice, and a collapsed edge must COUNT the uses rather than hide them." },
+    { "type": "references", "from": "bare", "target": "undefinedEntity", "line_number": 46, "meta.role": "entity_reference", "meta.resolvable": "unresolved", "meta.danglingEntityReference": true, "note": "M18.1 the other direction: a dangling reference inside replacement text is still a real claim the document makes about itself, so it is recorded and labelled rather than refused." },
+    { "type": "references", "from": "title", "target": "greeting", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "in-document" },
+    { "type": "references", "from": "title", "target": "shout", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "in-document" },
+    { "type": "references", "from": "title", "target": "lt", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "builtin", "note": "M18.2: predefined, therefore never dangling. Pre-M18 this edge carried resolvable=unresolved and danglingEntityReference=true." },
+    { "type": "references", "from": "title", "target": "gt", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "builtin" },
+    { "type": "references", "from": "title", "target": "amp", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "builtin" },
+    { "type": "references", "from": "title", "target": "quot", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "builtin", "meta.occurrences": 2, "note": "written twice as &quot;quoted&quot;" },
+    { "type": "references", "from": "title", "target": "apos", "line_number": 51, "meta.role": "entity_reference", "meta.resolvable": "builtin", "meta.occurrences": 2, "note": "written twice as &apos;q&apos;" },
+    { "type": "references", "from": "body", "target": "nbsp", "line_number": 52, "meta.role": "entity_reference", "meta.resolvable": "unresolved", "meta.danglingEntityReference": true, "note": "M18.2 the half that keeps the fix honest: &nbsp; is NOT predefined, so an XML document using it without declaring it really does reference something undefined, and widening the builtin set to make the other five pass would be the wrong fix." },
+    { "type": "references", "from": "body", "target": "bare", "line_number": 52, "meta.role": "entity_reference", "meta.resolvable": "in-document" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "title", "target": "nbsp", "note": "nbsp belongs to body in this document; a cross-owner edge would mean the owner was computed from the wrong node." },
+    { "type": "references", "from": "shared", "target": "TITLE", "note": "a parameter entity's replacement text is plain text here, so there is no reference to publish." }
+  ],
+  "expectSymbols": [
+    { "name": "greeting", "meta.isDtdEntityDeclaration": true },
+    { "name": "shout", "meta.isDtdEntityDeclaration": true },
+    { "name": "shared", "meta.isDtdParameterEntity": true },
+    { "name": "bare", "meta.isDtdEntityDeclaration": true }
+  ],
+  "forbidSymbols": [
+    { "name": "lt", "note": "a predefined entity is not a component of this document: nothing declares it here, and a use is not a declaration." },
+    { "name": "nbsp", "note": "same — &nbsp; is referenced but never declared, so no symbol may be published for it." }
+  ]
+}

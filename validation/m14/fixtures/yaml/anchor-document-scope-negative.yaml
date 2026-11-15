@@ -1,0 +1,10 @@
+# The negative twin, and the control for the fixture above: an alias in the SAME
+# document as its anchor resolves at full confidence. If the document-scoping change
+# over-corrected, this is the fixture that catches it.
+base: &base
+  a: 1
+derived:
+  <<: *base
+  b: 2
+other:
+  <<: *base

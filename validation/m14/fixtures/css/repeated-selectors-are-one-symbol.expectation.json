@@ -1,0 +1,51 @@
+{
+  "fixtureId": "css/repeated-selectors-are-one-symbol",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Identity is `(kind, resolved name)`, so a selector written N times is ONE symbol and the repetitions are provenance, not nodes. Before the fix identity was the node's own RANGE, so every rule re-published its selector: 36.6% of corpus files carried an ambiguous name, the same selector up to 12 times, and a `contains` edge addressed one of N indistinguishable rows — so \"what is inside this rule\" had no single answer. The pins are per-NAME rather than a total, because a total would also pass if the lane published `.btn` once and `.btn:hover` zero times. `.btn:hover` and `.btn::before` are separate symbols: a pseudo-class is part of the selector's identity, not a variant of the base rule's identity.",
+  "expectSymbols": [
+    {
+      "name": ".btn",
+      "kind": "class"
+    },
+    {
+      "name": ".btn:hover",
+      "kind": "class"
+    },
+    {
+      "name": ".btn::before",
+      "kind": "class"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": ".btn",
+      "equals": 1,
+      "kind": "class"
+    },
+    {
+      "name": ".card",
+      "equals": 1,
+      "kind": "class"
+    },
+    {
+      "name": ".btn:hover",
+      "equals": 1,
+      "kind": "class"
+    },
+    {
+      "name": ".btn::before",
+      "equals": 1,
+      "kind": "class"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ]
+}

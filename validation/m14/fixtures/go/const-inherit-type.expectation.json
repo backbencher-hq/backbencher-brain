@@ -1,0 +1,88 @@
+{
+  "fixtureId": "go/const-inherit-type",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the inherited type of a const spec, the Go const grammar's own macro. Go spec: 'Within a parenthesized const declaration list the empty expression list is equivalent to the textual substitution of the first preceding non-empty expression list and its type if present'. So in `const ( FormatUnknown Format = iota; formatV7; FormatUSTAR )` all three constants have type Format, and the latter two carry a real type reference the graph was MISSING. MEASURED DEFECT, proven before the fix on this exact fixture: only `references FormatUnknown -> Format` was published; `formatV7 -> Format` and `FormatUSTAR -> Format` were ABSENT. Not mis-sourced — absent, because `collectTypeNameNodes` collects only `type_identifier`/`qualified_type` and an inheriting spec has no type child at all, so `emit` had nothing to walk. REAL CORPUS FREQUENCY: measured over the Go corpus, 2,305 of 2,450 const groups (94%) use the implicit form, so this was the COMMON case rather than an edge case — `src/archive/tar/format.go` alone was missing `formatV7 -> Format @57`, `FormatUSTAR -> Format @68`, `FormatPAX -> Format @84`, `FormatGNU -> Format @98`, `formatSTAR -> Format @103` and `formatMax -> Format @105`. THE FIX IS SHAPE-PROVEN, NEVER NAME-BASED: the analyzer walks back to the nearest preceding sibling `const_spec` that HAS a `type` field and takes that node as the type root, leaving the emitter unchanged so the qualified-type and dedupe rules are identical for an inherited and a stated type. LINE NUMBERS ARE THE DECLARING SPEC'S OWN, and this is pinned: an inherited type node belongs to an EARLIER spec, so publishing the type node's line would point the row at a declaration it does not describe. Sibling lookup is a byte-span scan because `prevSibling` does not exist on this tree-sitter binding and wrapper objects are not identity-stable across `children` reads — the same technique real-protobuf-analyzer's `prevSiblingOf` established. THE FORBIDDEN ROWS ARE THE OTHER HALF, each a shape a cheaper fix would get wrong: (a) `B -> Other` is forbidden because group 1's `Format` must not leak into group 2 — a fix that scanned all previous specs in the FILE rather than the GROUP would claim it; (b) `D -> Format` is forbidden because group 2 has no type ANYWHERE (`D = 1` states an expression, not a type), so a fix that defaulted to a non-null type root would invent one; (c) `E -> Format` is forbidden for the same reason, and additionally pins that a typeless spec does not inherit through the group boundary; (d) `G -> Format` is forbidden in group 3 only for `G = 100`, which is a typeless EXPRESSION spec — it must not become a type SOURCE for `H` that follows it, and `H -> Format` is expected precisely because the walk skips the typeless list and keeps the real `F Format = iota`. NOT PINNED: confidence (every row is 0.95 structural, identical for any declared-type reference) and the symbol/exports rows, which the export pass owns unchanged.",
+  "expectSymbols": [
+    { "name": "Format", "kind": "type" },
+    { "name": "Other", "kind": "type" },
+    { "name": "FormatUnknown", "kind": "constant" },
+    { "name": "formatV7", "kind": "constant" },
+    { "name": "FormatUSTAR", "kind": "constant" },
+    { "name": "otherUnknown", "kind": "constant" },
+    { "name": "otherA", "kind": "constant" },
+    { "name": "otherB", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "A spec that STATES its type publishes the reference, as before the fix.",
+      "type": "references",
+      "from": "FormatUnknown",
+      "target": "Format",
+      "line_number": 15
+    },
+    {
+      "comment": "A spec with no type child INHERITS the previous spec's type: a real Format reference on its own declaration line.",
+      "type": "references",
+      "from": "formatV7",
+      "target": "Format",
+      "line_number": 16
+    },
+    {
+      "comment": "The second inheritance in the same group, on its own line.",
+      "type": "references",
+      "from": "FormatUSTAR",
+      "target": "Format",
+      "line_number": 17
+    },
+    {
+      "comment": "A second group proves the walk is not a one-shot: the first spec of group 2 states Other.",
+      "type": "references",
+      "from": "otherUnknown",
+      "target": "Other",
+      "line_number": 23
+    },
+    {
+      "comment": "Inheritance in the second group, resolved against THAT group's base type.",
+      "type": "references",
+      "from": "otherA",
+      "target": "Other",
+      "line_number": 24
+    },
+    {
+      "comment": "Second inheritance in the second group.",
+      "type": "references",
+      "from": "otherB",
+      "target": "Other",
+      "line_number": 25
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "Group 1's Format must not leak into group 2. A fix that scanned all previous specs in the FILE instead of stopping at the group boundary would claim this.",
+      "type": "references",
+      "from": "otherA",
+      "target": "Format"
+    },
+    {
+      "comment": "Group 2's type is Other, so Format is wrong for every member of that group.",
+      "type": "references",
+      "from": "otherB",
+      "target": "Format"
+    },
+    {
+      "comment": "The LINE must be the declaring spec's own. An inherited type node belongs to an earlier spec, so a fix that kept the type node's line would report 15 instead of 16.",
+      "type": "references",
+      "from": "formatV7",
+      "target": "Format",
+      "line_number": 15
+    },
+    {
+      "comment": "Same line defect on the second inheriting spec: it declares on 17, not on the 15 the borrowed type node carries.",
+      "type": "references",
+      "from": "FormatUSTAR",
+      "target": "Format",
+      "line_number": 15
+    }
+  ]
+}

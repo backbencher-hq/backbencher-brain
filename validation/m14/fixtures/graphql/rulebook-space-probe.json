@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-rulebook-space-probe",
+  "lane": "graphql",
+  "generatedAt": "2026-10-12T11:56:28.789Z",
+  "producedBy": "validation/m14/fixtures/graphql/rulebook-space-probe.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "readBy": "validation/m14/fixtures/graphql/ruling-attestation.json -> script/m14/ontology-coverage-gate.ts",
+  "grammar": {
+    "wasm": "wasm/tree-sitter-graphql.wasm",
+    "wiredAt": "script/m14/differential.ts LANGS.graphql",
+    "why": "before that entry existed the arbiter resolved `(LANGS as any)[LANG]?.wasm ?? tree-sitter-bash.wasm`, so BOTH instruments walked a bash tree — 57 node types, none of them GraphQL's"
+  },
+  "population": {
+    "admittedFiles": 1911,
+    "excluded": {
+      "tracked": 525586,
+      "absent": 0,
+      "overCap": 4,
+      "wrongLanguage": 0
+    },
+    "note": "same discovery loop as script/m14/ontology-coverage-gate.ts: git-tracked, detectLanguageFromPath === graphql, at or under the 1 MB FULL_AST_LIMIT cap"
+  },
+  "grammarInventory": {
+    "nodes": 2338690,
+    "parseFailures": 0,
+    "namedTypes": 75,
+    "anonymousTokens": 53,
+    "distinctTypes": 128,
+    "inventory": {
+      "Name": 502668,
+      "Selection": 188932,
+      "Field": 184885,
+      "comma": 126339,
+      "Alias": 125040,
+      "NamedType": 76961,
+      "Type": 75809,
+      "Definition": 51536,
+      "SelectionSet": 46436,
+      "StringValue": 39104,
+      "ExecutableDefinition": 37455,
+      "FieldDefinition": 37394,
+      "OperationDefinition": 36293,
+      "Description": 34637,
+      "NonNullType": 31530,
+      "InputValueDefinition": 30545,
+      "Value": 14712,
+      "TypeSystemDefinition": 13734,
+      "TypeDefinition": 12758,
+      "comment": 12556,
+      "FieldsDefinition": 7976,
+      "ListType": 7526,
+      "ObjectTypeDefinition": 7299,
+      "EnumValue": 7232,
+      "ObjectField": 5668,
+      "Argument": 5411,
+      "EnumValueDefinition": 5382,
+      "ArgumentsDefinition": 5037,
+      "Arguments": 4114,
+      "FragmentName": 3821,
+      "Directive": 3747,
+      "ObjectValue": 3715,
+      "Directives": 3254,
+      "ImplementsInterfaces": 3179,
+      "FragmentSpread": 2656,
+      "InputFieldsDefinition": 2655,
+      "InputObjectTypeDefinition": 2655,
+      "UnionMemberTypes": 2538,
+      "TypeCondition": 2517,
+      "IntValue": 2087,
+      "Document": 1835,
+      "source_file": 1835,
+      "InlineFragment": 1391,
+      "EnumValuesDefinition": 1252,
+      "EnumTypeDefinition": 1251,
+      "OperationType": 1234,
+      "DirectiveLocation": 1167,
+      "DirectiveLocations": 1167,
+      "FragmentDefinition": 1162,
+      "Variable": 1124,
+      "DefaultValue": 1101,
+      "ListValue": 1030,
+      "TypeSystemDirectiveLocation": 927,
+      "ERROR": 820,
+      "BooleanValue": 688,
+      "DirectiveDefinition": 600,
+      "UnionTypeDefinition": 597,
+      "InterfaceTypeDefinition": 522,
+      "OperationTypeDefinition": 444,
+      "ScalarTypeDefinition": 434,
+      "SchemaDefinition": 376,
+      "TypeSystemExtension": 347,
+      "VariableDefinition": 342,
+      "TypeExtension": 252,
+      "ExecutableDirectiveLocation": 240,
+      "NullValue": 204,
+      "VariableDefinitions": 198,
+      "ObjectTypeExtension": 181,
+      "SchemaExtension": 95,
+      "InterfaceTypeExtension": 18,
+      "EnumTypeExtension": 15,
+      "FloatValue": 15,
+      "InputObjectTypeExtension": 15,
+      "UnionTypeExtension": 15,
+      "ScalarTypeExtension": 8
+    },
+    "anonymousTokenInventory": {
+      ":": 205025,
+      "{": 68993,
+      "}": 62485,
+      "\"\"\"": 44089,
+      "[": 34846,
+      "\"": 34128,
+      "!": 31620,
+      "(": 9384,
+      ")": 9379,
+      "]": 8626,
+      "type": 7484,
+      "@": 4384,
+      "...": 4050,
+      "on": 3174,
+      "input": 2678,
+      "|": 2675,
+      "implements": 1782,
+      "=": 1749,
+      "&": 1398,
+      "enum": 1271,
+      "$": 1239,
+      "fragment": 1166,
+      "query": 1003,
+      "union": 615,
+      "directive": 605,
+      "interface": 541,
+      "schema": 472,
+      "scalar": 444,
+      "false": 365,
+      "extend": 355,
+      "true": 326,
+      "repeatable": 235,
+      "FIELD_DEFINITION": 203,
+      "OBJECT": 189,
+      "mutation": 182,
+      "INTERFACE": 110,
+      "FIELD": 77,
+      "INPUT_FIELD_DEFINITION": 76,
+      "SCALAR": 68,
+      "SCHEMA": 64,
+      "ARGUMENT_DEFINITION": 61,
+      "INLINE_FRAGMENT": 59,
+      "FRAGMENT_SPREAD": 57,
+      "subscription": 54,
+      "ENUM": 48,
+      "INPUT_OBJECT": 39,
+      "ENUM_VALUE": 37,
+      "QUERY": 33,
+      "UNION": 32,
+      "MUTATION": 11,
+      "SUBSCRIPTION": 5,
+      "FRAGMENT_DEFINITION": 2,
+      "VARIABLE_DEFINITION": 2
+    }
+  },
+  "keySpace": {
+    "rule": "the gate's own: n.childCount >= 3 && n.child(1).type is \"=\" or \":\" — observed structurally, not assumed from the language's name",
+    "bindings": 50284,
+    "distinctKeyNodeTypes": 7,
+    "distinctKeys": 5502,
+    "byKeyNodeType": {
+      "InputValueDefinition": 21094,
+      "FieldDefinition": 17334,
+      "ObjectField": 5665,
+      "Argument": 5404,
+      "OperationTypeDefinition": 444,
+      "VariableDefinition": 340,
+      "ERROR": 3
+    },
+    "samples": [
+      "Argument `includeDeprecated`",
+      "Argument `includeDeprecated`",
+      "InputValueDefinition `red255`",
+      "InputValueDefinition `green255`",
+      "InputValueDefinition `blue255`",
+      "InputValueDefinition `useFullAddress`"
+    ]
+  },
+  "constructSites": {
+    "calls": 0,
+    "instantiates": 0,
+    "rule": "a site is a KEY-BEARING node whose key names a callee/constructor AND whose value applies or constructs it. GraphQL's key value is a `Type` node — an annotation — so the applied/constructed set is empty; both counters are implemented as shape tests on the value node, and the RAW keyword calibration beside them proves the counters are not inert.",
+    "keywordCalibration": {
+      "callsShapedKeys": 22,
+      "instantiatesShapedKeys": 340,
+      "why": "THE CALIBRATION, because 'absent from a list I wrote' is only evidence if the list can hold a present entry. These counters fired on this corpus WITHOUT the site rule: the keys are ordinary field and argument NAMES (`create`, `run`, `make`, `apply` …) declared as `name: Boolean`, and treating a field NAME as a call is exactly the defect a keyword scan has — the same one that made the arbiter's first `extends` probe match `class voice` inside a bash word list. `byKey` counts every fired key, and `samples` prints them verbatim.",
+      "samples": [
+        {
+          "key": "create",
+          "kind": "instantiates",
+          "nodeType": "ObjectField",
+          "binding": "create: [{ node: { name: \"a0\", born: 100"
+        },
+        {
+          "key": "create",
+          "kind": "instantiates",
+          "nodeType": "ObjectField",
+          "binding": "create: [{ node: { name: \"a1\", born: 100"
+        },
+        {
+          "key": "create",
+          "kind": "instantiates",
+          "nodeType": "ObjectField",
+          "binding": "create: [{ node: { name: \"a2\", born: 100"
+        },
+        {
+          "key": "create",
+          "kind": "instantiates",
+          "nodeType": "ObjectField",
+          "binding": "create: [{ node: { name: \"a3\", born: 100"
+        },
+        {
+          "key": "create",
+          "kind": "instantiates",
+          "nodeType": "ObjectField",
+          "binding": "create: [{ node: { name: \"a4\", born: 100"
+        },
+        {
+          "key": "create",
+          "kind": "instantiates",
+          "nodeType": "ObjectField",
+          "binding": "create: [{ node: { name: \"a5\", born: 100"
+        },
+        {
+          "key": "execute",
+          "kind": "calls",
+          "nodeType": "FieldDefinition",
+          "binding": "execute: BooleanOrString"
+        },
+        {
+          "key": "apply",
+          "kind": "calls",
+          "nodeType": "Argument",
+          "binding": "apply: AFTER_RESOLVER"
+        },
+        {
+          "key": "apply",
+          "kind": "calls",
+          "nodeType": "Argument",
+          "binding": "apply: VALIDATION"
+        },
+        {
+          "key": "apply",
+          "kind": "calls",
+          "nodeType": "Argument",
+          "binding": "apply: AFTER_RESOLVER"
+        },
+        {
+          "key": "apply",
+          "kind": "calls",
+          "nodeType": "Argument",
+          "binding": "apply: VALIDATION"
+        },
+        {
+          "key": "apply",
+          "kind": "calls",
+          "nodeType": "Argument",
+          "binding": "apply: VALIDATION"
+        }
+      ],
+      "byKey": {
+        "instantiates:create": 337,
+        "calls:apply": 21,
+        "instantiates:new": 3,
+        "calls:execute": 1
+      },
+      "distinctKeysFired": [
+        "apply",
+        "create",
+        "execute",
+        "new"
+      ]
+    },
+    "excludedSitePopulations": {
+      "argumentBearingFields": 1150,
+      "argumentBearingDirectives": 2962,
+      "objectValues": 3715,
+      "why": "the nearest real forms, published so the 0 is not read as 'nothing of the shape occurs'. Argument-bearing `Field`/`Directive` nodes are labelled `uses` under the family's one-fact-one-label rule (ledger R10), which is the OVERTURN CONDITION for `calls`; `ObjectValue` is an argument value, not an instance of a declared type, which is the OVERTURN condition statement for `instantiates`."
+    }
+  }
+}

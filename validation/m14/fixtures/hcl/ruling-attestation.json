@@ -1,0 +1,30 @@
+{
+  "_purpose": "The hcl lane's SPACE ATTESTATION for script/m14/ontology-coverage-gate.ts. A ruling that certifies ABSENCE must say which spaces its probe enumerated, and this file is where the hcl lane says it — because the HCL container grammar can spell a construct as an attribute key, which no node-type inventory can see. Every pointer below is read by the gate against `artefact`; a pointer that does not resolve, or a declared number the artefact contradicts, turns the ruling RULED-UNJUSTIFIED instead of RULED-SOUND.",
+  "lane": "hcl",
+  "instrument": "validation/m14/fixtures/hcl/tools/construct-census.mts",
+  "artefact": "validation/m14/fixtures/hcl/construct-census.current.json",
+  "spacesProbed": ["node-types", "block-types", "attribute-keys"],
+  "spaceEvidence": {
+    "nodeTypes": { "pointer": ["grammarInventory", "namedTypes"], "observed": 64 },
+    "blockTypes": { "pointer": ["treeCensus", "distinctBlockTypes"], "observed": 455 },
+    "attributeKeys": { "pointer": ["treeCensus", "distinctAttributeKeys"], "observed": 5311 }
+  },
+  "rulings": {
+    "extends": {
+      "spaces": ["node-types", "block-types", "attribute-keys"],
+      "constructSites": 44,
+      "pointer": ["extendsProbe", "sites"],
+      "note": "GAP CLOSED 2026-10-09 by HCL-D10: `extends` is now EMITTED (53 edges over the 8 docker-bake files, 53/53 binding), so this row is normally unreachable — the gate reads EMITTED first. It is kept as the regression trap: if a change ever stops the emission, the attested count is 44 construct sites, so the row reads FALSIFIED (present, derivable, not emitted) rather than SOUND. The count is read from the census artefact through the pointer above, not restated here."
+    },
+    "implements": {
+      "spaces": ["node-types", "block-types", "attribute-keys"],
+      "constructSites": 0,
+      "note": "0 of 18 declaration-shaped node types are produced; 0 of the 455 block types and 0 of the 5311 attribute keys name an interface/protocol/trait/impl construct. The 162 `protocol` attribute-key sites are network-protocol DATA (ALB / security-group / enos), not contract satisfaction — see the census artefact's candidateWordPopulations."
+    },
+    "instantiates": {
+      "spaces": ["node-types", "block-types", "attribute-keys"],
+      "constructSites": 0,
+      "note": "The key space holds no construction keyword (the 2 `new` sites are data attributes in terraform test fixtures). The second, measured half is recorded in the spec as zero-sites: 3932 resource/data blocks over 444 distinct type labels, 0 of those labels declared as an address anywhere in the corpus, so an `instantiates` edge would have no bindable target (HCL-G2)."
+    }
+  }
+}

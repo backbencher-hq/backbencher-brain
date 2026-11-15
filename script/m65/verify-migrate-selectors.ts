@@ -64,7 +64,7 @@ async function main(): Promise<void> {
   check(
     "migrate selectors: the corpus fixture is present",
     present,
-    present ? `${FIXTURE.id} under ${corpus}` : optionalCorpusMissingMessage("fixtures corpus", "BB_CORPUS_ROOT"),
+    present ? `${FIXTURE.id} under ${corpus}` : optionalCorpusMissingMessage("bb_tests corpus", "BB_CORPUS_ROOT"),
   )
 
   let measurements: Record<string, unknown> = { skipped: "the corpus fixture is absent on this machine" }

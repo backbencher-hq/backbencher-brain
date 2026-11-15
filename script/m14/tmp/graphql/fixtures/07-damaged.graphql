@@ -1,0 +1,37 @@
+# A file the grammar CANNOT parse cleanly, to pin what the analyzer does with the
+# recovered tree. `broken:` has no type, so the grammar's recovery emits a `Type`
+# node whose `Name` is MISSING — and a `if (typeNode)` guard passes on that node
+# while the resolved name is undefined. The pre-fix analyzer then published
+# `uses Query.broken -> ""`, a relationship whose TARGET NAMES NOTHING, which the
+# store would write as a row with an empty `target_external`.
+#
+# Found by script/m12/graphql-contract-probe.ts, whose check "missing-type field
+# emits no bogus type reference" had been asserting this since 2026-09-14 and had
+# been failing against this analyzer since the start of this review.
+type Product {
+  id: ID!
+  title: String!
+}
+
+type Query {
+  product(id: ID!): Product
+  broken:
+  alsoBroken(x: )
+}
+
+input Damaged {
+  good: String
+  bad:
+}
+
+# The shape that makes the defect REACHABLE. `broken:` and `alsoBroken(x: )` do
+# not produce a FieldDefinition at all, so a field-side empty endpoint cannot be
+# observed from them. An UNTERMINATED list does: `a: [Int` leaves a
+# `FieldDefinition` whose `Type > ListType` has no `NamedType` and therefore no
+# name, so `namedTypeName` resolves to undefined while the `Type` node exists.
+# With the guard on the NODE rather than on the RESOLVED NAME, this field
+# published `uses T.unterminated -> ""`.
+type T {
+  unterminated: [Int
+  ok: Int
+}

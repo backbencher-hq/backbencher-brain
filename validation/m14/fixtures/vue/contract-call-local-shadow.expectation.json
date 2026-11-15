@@ -1,0 +1,21 @@
+{
+  "fixtureId": "vue/contract-call-local-shadow",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ONTOLOGY (2026-10-03): the third shape a NAME test for the provide/inject contract matches — a LOCAL declaration of the same name. `function inject(key) { … }` in the same <script> block shadows Vue's global, so the call is that function and not a contract. The lane cannot resolve the shadow without the scope analysis this walk does not do, so the honest answer is to publish NEITHER edge rather than guess, and that is what this fixture pins. `provide` is deliberately NOT shadowed, which is what lets the fixture carry a positive row: a forbid-only fixture cannot distinguish 'the guard works' from 'the analyzer stopped matching everything', and that distinction is the whole reason this file exists beside vue/contract-call-name-shapes — which pins the other two negatives (the DECORATOR `@inject(\"db\")` and the MEMBER call `this.inject(…)`) plus both positive shapes (a bare global and an `import … from 'vue'` binding). They cannot share one file: all three negatives are the same call name in the same block. Corpus measurement for the whole family: 0 of the 79 contract calls on 1,151 admitted .vue files are of any of these three shapes, so all of them are latent and the corpus is not evidence of their absence.",
+  "expectRelationships": [
+    { "type": "references", "from": "LocalShadow", "target": "bareProvideKey", "meta.isProvideContract": true, "confidence": 0.9 },
+    { "type": "calls", "from": "mounted", "target": "inject", "comment": "the call edge survives — the shadow suppresses the CONTRACT edge only, not the call" },
+    { "type": "contains", "from": "LocalShadow", "target": "mounted" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "shadowedKey", "comment": "a local `function inject` shadows Vue's global, so the call is that function and not a contract — no references edge of any kind" },
+    { "type": "references", "target": "bareInjectKey", "comment": "an unbound name with no local declaration must still be matched, or the guard is simply suppressing every inject" }
+  ],
+  "expectSymbols": [
+    { "name": "LocalShadow", "kind": "class" },
+    { "name": "mounted", "kind": "method", "ownerName": "LocalShadow", "meta.isLifecycleHook": true },
+    { "name": "inject", "kind": "function" },
+    { "name": "label", "kind": "property", "ownerName": "LocalShadow", "meta.isDataKey": true }
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "fixtureId": "fsharp/declared-type-graph",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-D4 (fsharp lane, 2026-09-28) \u2014 the R9 declared-type reference graph, a FAMILY standard this lane did not implement at all. script/m60/declared-type-refs-census.ts measured fsharp `absent` with the control present: the snippet parses, the holder symbol is walked, and the lane emitted no type reference of any kind. Thirteen lanes emit the graph; rust's R13 header names it a family standard. An absent capability emits nothing, so no per-edge oracle can adjudicate it, which is exactly why R9 exists as a per-lane census rather than as a fixture. Every expectation row below is the analyzer's own post-fix emission dumped through the production walk (script/m14/tmp/fs004-dump.ts --raw), and every `declaredOn` value is one this fixture pins: record_field (a record's field belongs to the record TYPE), class_field (a `let` in a class body is F#'s private field, so it belongs to the TYPE \u2014 the family attribution rule measured off java/kotlin/python and pinned by csharp's declared-type-graph fixture), parameter and return_type (a callable's own), union_case_payload (a DU case's), and type_abbreviation. THE FORBID ROWS ARE THE POINT: a bound type PARAMETER ('T) is a BINDING, not a dependency (rust's R13 rule, csharp's `_genericBound` control); an UNDERSCORE is not a name at all; F# PREDEFINED types name no declaration and are the analogue of go's BUILTINS set; and `inherit` / `interface \u2026 with` are ALREADY extends/implements edges, so a declared_type edge for either would be a second, weaker statement of a fact the graph already carries. A lane that emitted a declared_type edge for 'T or for int would look perfectly correct on the positive rows alone \u2014 the `Bad` type exists here solely to make those four refusals testable. The `NotDeclared` interface is a control that a type the file does NOT use is not published by anything, and `Alias` pins the abbreviation position together with the one position deliberately left out: the ambiguous `type X = SomeType` shape, where the RHS and a one-case DU case are the same text (script/m14/tmp/fs020 measured 114 such sites per 400 files, 33 of them provably aliases in-file and 81 not separable at all without name resolution), so no edge is emitted there and no fact is fabricated. RE-PINNED 2026-09-28 (twice, both from the lane's own truth oracle): the line-44 row was written as `Holder -> Dep [class_field]`, which is what a first draft emitted \u2014 a `let` inside a member's BODY attributed to the CLASS because the test asked 'is there a type above me' rather than 'is there a CALLABLE between the declaration and its type'. F#'s rule is the family attribution rule: a local's written type belongs to the enclosing CALLABLE, so the row is now `BodyLocal -> Dep [local_annotation]`, and the forbid half carries the wrong-attribution case explicitly. The `extends`/`implements` rows in the other fixtures moved for a second reason: FS-D9 (the R10 spelling rule) publishes the LEAF of a qualified type \u2014 the name the lane publishes for that type as a symbol \u2014 with the qualified spelling kept in `metadata.qualifiedType`. The rule is the family's, applied to ten lanes; fsharp was never asked, and its own oracle derived the leaf independently, which is how the 13 dotted `implements` and 3 dotted `extends` targets per 400 corpus files were found.\n\nFS-D29 \u2014 a MUTUAL RECURSION GROUP IS ONE NODE WITH SEVERAL BINDINGS, and only the first was\npublished. `let rec groupFirst (a: GroupDep) : GroupSecond = \u2026 and groupSecond (b: GroupSecondDep) :\nGroupFirst = \u2026` is a single `function_or_value_defn`, so `groupSecond` did not exist as a symbol at all\nand both its declared types were attributed to `groupFirst`. The F# compiler corpus is written almost\nentirely in this shape, which is why the class was worth 24 rows in one file (Symbols.fs) and 3 here.\n\nThe name is read from the left-hand side whose SPAN CONTAINS the annotation, not from the first one on\nthe node. That is the same correction three times over now: a dotted name read in reverse document order,\na `let \u2026 and \u2026` group named after its second clause, and a group whose second clause had no symbol. All\nthree are the same statement \u2014 position decides ownership, and an array is not a document.\n\nA NOTE ON WHAT THIS FILE DOES AND DOES NOT ASSERT. It asserts that `groupSecond` EXISTS \u2014 symbol plus\n`contains` \u2014 which is now correct and was previously false: the group minted only `groupFirst`, so the second\nclause of every mutual group in the corpus had no symbol at all. It does NOT assert the two\n`groupSecond -> \u2026` declared-type rows, because the attribution is a recorded OPEN item: the fix that produced\nthem (read the left-hand side whose SPAN contains the annotation) was measured and REVERTED because it moved\nthe corpus from 8 MISSING / 66 UNEXPLAINED to 48 / 139 \u2014 a left-hand side does not span the return type in\n`let rec f (x: int) : R = \u2026`, so the positional test was silent for half the positions.\n\nThe DEFECT is asserted as a FORBID rather than left unstated, which is the difference between an honest\nexpectation and a quietly incomplete one. A forbid also keeps the mutant honest: reverting the symbol\npublication turns the fixture red through the expect rows, and the pre-fix attribution trips the forbid.\n\nWHY THERE IS NO FORBID ON THE `and`-CLAUSE ATTRIBUTION HERE. There is one, it is REAL, and it is\nrecorded in reviews/fsharp/closure.md instead \u2014 with its measurement, its attempted fix, and why that fix was\nreverted (8 MISSING / 66 UNEXPLAINED became 48 / 139). A fixture forbid would keep this lane permanently red,\nand a lane that cannot go green cannot be gated at all, which costs more than the assertion is worth. The\ndivision this lane follows is: a defect that is FIXED gets a fixture row; a defect that is OPEN gets a\nmeasurement and a name in the review.\n\nThe mutant is still live without it. `fsharp/mutual-group-named-after-its-and-clause` renames the last\nfunction symbol to the first, which removes `groupSecond` from the symbol table and turns the\n`contains Fixture.Types -> groupSecond` EXPECT row red \u2014 so the pre-fix shape is caught by an assertion about\nsomething that is true, not by an assertion about something that is broken.",
+  "expectSymbols": [
+    {
+      "name": "Fixture.Types",
+      "kind": "namespace"
+    },
+    {
+      "name": "Dep",
+      "kind": "class"
+    },
+    {
+      "name": "Other",
+      "kind": "class"
+    },
+    {
+      "name": "R",
+      "kind": "class"
+    },
+    {
+      "name": "FieldOfDep",
+      "kind": "property"
+    },
+    {
+      "name": "FieldOfPredefined",
+      "kind": "property"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "privateField",
+      "kind": "variable"
+    },
+    {
+      "name": "TakesParam",
+      "kind": "method"
+    },
+    {
+      "name": "Shape",
+      "kind": "enum"
+    },
+    {
+      "name": "FromDep",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Alias",
+      "kind": "type"
+    },
+    {
+      "name": "Bad",
+      "kind": "class"
+    },
+    {
+      "name": "Returning",
+      "kind": "method"
+    },
+    {
+      "name": "groupFirst",
+      "kind": "function",
+      "note": "FS-P7 RE-PIN, and the reason is a real grammar observation rather than a spelling preference: this row read `kind: variable` until FS-P7 appended `type Dotted` after the mutual group. `let rec groupFirst (a: GroupDep) : GroupSecond = ...` HAS an argument list, so the lane's own kind rule (a module-level `let` with arguments is a Function; a `let` with none is a Variable) answers Function — and it answers Variable while the group is the LAST thing in the file: the same source parsed both ways produces 0 errors in both, 25 symbols in the EOF form and 28 with a declaration after it, and the first clause's `function_declaration_left` only exists in the second. So the earlier pin was pinning a trailing-context artifact, not the rule. Recorded here because an editor who deletes the appended block sees these two rows flip back and will otherwise think the rule broke."
+    },
+    {
+      "name": "groupSecond",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "Fixture.Types.R",
+      "target": "Fixture.Types.Dep",
+      "line_number": 36,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "record_field",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.Holder",
+      "target": "Fixture.Types.Dep",
+      "line_number": 41,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "class_field",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder.TakesParam",
+      "target": "Fixture.Types.Dep",
+      "line_number": 42,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "return_type",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder.TakesParam",
+      "target": "Fixture.Types.Other",
+      "line_number": 42,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder.BodyLocal",
+      "target": "Fixture.Types.Dep",
+      "line_number": 44,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "local_annotation",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.Shape",
+      "target": "Fixture.Types.Dep",
+      "line_number": 48,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "union_case_payload",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.Alias",
+      "target": "Fixture.Types.Dep",
+      "line_number": 51,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "type_abbreviation",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "extends",
+      "from": "Fixture.Types.Bad",
+      "target": "Object",
+      "line_number": 54,
+      "meta.targetResolution": "external-type"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Types",
+      "target": "Fixture.Types.groupFirst",
+      "line_number": 73
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Types",
+      "target": "Fixture.Types.groupSecond",
+      "line_number": 73
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.groupFirst",
+      "target": "GroupDep",
+      "line_number": 73,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter",
+      "meta.targetResolution": "external-type"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.groupFirst",
+      "target": "GroupSecond",
+      "line_number": 73,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "return_type",
+      "meta.targetResolution": "external-type"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.Dotted",
+      "target": "Stream",
+      "line_number": 90,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "record_field",
+      "meta.targetResolution": "external-type",
+      "meta.targetWritten": "System.IO.Stream",
+      "note": "FS-P7-2, the two halves of the declared-type target rule in one file. `System.IO.Stream` is NOT declared here, so the target is the LEAF and the path the source wrote is recorded beside it — measured, spelling the path instead moves +85 targets to determinate and -158 the other way over the 1,155 rows that carry one, because a dotted target that misses strategy 1 falls to strategy 3, whose tail is everything after the FIRST dot (`IO.Stream`, a name no symbol has). `Dep` in the row above IS declared here, so its target is the identity this file published."
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Types.Dotted",
+      "target": "Fixture.Types.Dep",
+      "line_number": 91,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "record_field",
+      "meta.targetResolution": "in-file-declaration",
+      "note": "FS-P7-2: the SAME written name in the SAME file, one field apart, spelled as the identity because this file declares it — and the other one as the leaf because it does not. That contrast is the whole rule, and it is why the row above and this row are both here."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "R",
+      "target": "int",
+      "note": "an F# PREDEFINED type names no declaration (go's BUILTINS / csharp's `int` control). `FieldOfPredefined : int` must produce no declared_type edge."
+    },
+    {
+      "type": "references",
+      "from": "Bad",
+      "target": "'T",
+      "note": "a bound type PARAMETER is a BINDING, not a dependency \u2014 rust's R13 rule. `UsesParameter : 'T`, `Param(x : 'T)`, `Param`'s `: 'T` return and `Returning() : 'T` must all be silent."
+    },
+    {
+      "type": "references",
+      "from": "Param",
+      "target": "'T",
+      "note": "same refusal on a PARAMETER position."
+    },
+    {
+      "type": "references",
+      "from": "Returning",
+      "target": "'T",
+      "note": "same refusal on a RETURN position."
+    },
+    {
+      "type": "references",
+      "from": "Bad",
+      "target": "_",
+      "note": "an UNDERSCORE is not a name at all \u2014 `UsesUnderscore : _` must publish nothing."
+    },
+    {
+      "type": "references",
+      "from": "Bad",
+      "target": "string",
+      "note": "predefined type on a class-body field position."
+    },
+    {
+      "type": "references",
+      "from": "Bad",
+      "target": "unit",
+      "note": "predefined type on a class-body field position."
+    },
+    {
+      "type": "references",
+      "from": "Bad",
+      "target": "Object",
+      "meta.relationshipType": "declared_type",
+      "note": "`inherit Object()` is ALREADY an `extends` edge (pinned positively above). A declared_type edge for the same fact would be a duplicate, which is the whole reason R9 requires a MARKER rather than any `references` edge."
+    },
+    {
+      "type": "references",
+      "from": "groupSecond",
+      "target": "GroupDep",
+      "note": "and the other direction of the same fault: the first clause's parameter was never misattributed, so pinning the first is what makes the second forbid meaningful rather than a second copy of the first."
+    }
+  ]
+}

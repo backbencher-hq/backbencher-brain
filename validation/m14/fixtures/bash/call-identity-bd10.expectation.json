@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/call-identity-bd10.sh",
+  "authoredFrom": "BD10 (isFunctionCall and isExternalCommand are mutually exclusive and order-independent). Authored from a probe 2026-09-26. `forward` is called on line 16 and defined on line 22, which is the case a pre-order walk gets wrong. Pre-wave the emitter set BOTH flags true on every call, so a call to a function defined in the same file claimed to be an external binary. `ll` is an alias and is callable, so it is a local call.",
+  "expectSymbols": [
+    {
+      "name": "call-identity-bd10.sh",
+      "kind": "module"
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "ownerName": "call-identity-bd10.sh"
+    },
+    {
+      "name": "ll",
+      "kind": "function",
+      "ownerName": "call-identity-bd10.sh"
+    },
+    {
+      "name": "forward",
+      "kind": "function",
+      "ownerName": "call-identity-bd10.sh"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "call-identity-bd10.sh",
+      "target": "forward",
+      "line_number": 16,
+      "meta.isFunctionCall": true,
+      "meta.isExternalCommand": false,
+      "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "calls",
+      "from": "call-identity-bd10.sh",
+      "target": "helper",
+      "line_number": 17,
+      "meta.isFunctionCall": true,
+      "meta.isExternalCommand": false,
+      "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "calls",
+      "from": "call-identity-bd10.sh",
+      "target": "grep",
+      "line_number": 18,
+      "meta.isFunctionCall": false,
+      "meta.isExternalCommand": true,
+      "meta.resolvedWithinFile": false
+    },
+    {
+      "type": "calls",
+      "from": "call-identity-bd10.sh",
+      "target": "ll",
+      "line_number": 20,
+      "meta.isFunctionCall": true,
+      "meta.isExternalCommand": false,
+      "meta.resolvedWithinFile": true
+    },
+    {
+      "type": "contains",
+      "from": "call-identity-bd10.sh",
+      "target": "helper",
+      "line_number": 12
+    },
+    {
+      "type": "contains",
+      "from": "call-identity-bd10.sh",
+      "target": "ll",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "call-identity-bd10.sh",
+      "target": "forward",
+      "line_number": 22
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "helper",
+      "meta.isFunctionCall": true,
+      "meta.isExternalCommand": true
+    },
+    {
+      "type": "calls",
+      "target": "forward",
+      "meta.isFunctionCall": true,
+      "meta.isExternalCommand": true
+    },
+    {
+      "type": "calls",
+      "target": "forward",
+      "meta.isFunctionCall": false
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "imports",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "repo": "primer-css",
+  "files": 113,
+  "partition": {
+    "before": {
+      "imports": {
+        "resolved": 139,
+        "unresolved": 16,
+        "total": 155
+      },
+      "references": {
+        "unresolved": 1268,
+        "resolved": 211,
+        "total": 1479
+      },
+      "contains": {
+        "resolved": 509,
+        "total": 509
+      },
+      "exports": {
+        "resolved": 194,
+        "total": 194
+      },
+      "uses": {
+        "resolved": 18,
+        "total": 18
+      },
+      "calls": {
+        "resolved": 10,
+        "total": 10
+      }
+    },
+    "after": {
+      "imports": {
+        "resolved": 139,
+        "unresolved": 16,
+        "total": 155
+      },
+      "references": {
+        "unresolved": 1268,
+        "resolved": 211,
+        "total": 1479
+      },
+      "contains": {
+        "resolved": 509,
+        "total": 509
+      },
+      "exports": {
+        "resolved": 194,
+        "total": 194
+      },
+      "uses": {
+        "resolved": 18,
+        "total": 18
+      },
+      "calls": {
+        "resolved": 10,
+        "total": 10
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 23,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 961,
+    "falseBindings": 139
+  }
+}

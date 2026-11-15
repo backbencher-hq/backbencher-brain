@@ -1,0 +1,38 @@
+query GetUser($id: ID!, $withPosts: Boolean = false) {
+  user(id: $id) {
+    ...UserFields
+    ... on Admin { level }
+    nick: name
+    posts(first: 3) @include(if: $withPosts) { edges { node { id } } }
+  }
+}
+
+fragment UserFields on User {
+  id
+  name
+}
+
+"A regular quoted description with a \"quoted\" word and a \\ backslash."
+type Doc {
+  """
+  A block description.
+
+      indented by four
+    indented by two
+  """
+  field: Int
+  """A single-line block description."""
+  other: Int
+}
+
+input Filter {
+  "an input field"
+  name: String
+  limit: Int = 10
+}
+
+enum Color {
+  "an enum value"
+  RED
+  GREEN @deprecated(reason: "unused")
+}

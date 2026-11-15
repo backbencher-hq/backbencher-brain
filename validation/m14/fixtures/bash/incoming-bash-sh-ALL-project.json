@@ -1,0 +1,3063 @@
+{
+  "lang": "bash",
+  "population": {
+    "sampled": 2360,
+    "parsed": 2360,
+    "failed": 0,
+    "corpusTotal": 2360,
+    "repos": 117,
+    "degraded": 0,
+    "degradedFiles": [],
+    "qualifiedNameAliases": 20581,
+    "excluded": {
+      "absent": 394,
+      "overCap": 0,
+      "overCapLargest": 0,
+      "sizeCapBytes": 1048576
+    }
+  },
+  "verdict": "FAIL",
+  "reason": "41931 ambiguous + 27219 unresolved of 112823 edges, resolved against the file's OWN PROJECT (production's scope); 748 external claim(s) unverifiable (1 verified + 748 unverifiable external)",
+  "ambiguityMetric": "declarations (distinct-kind shown for comparison only)",
+  "resolutionScope": "per project (the repository a file belongs to) — parallel-indexer.resolveRelationships' scope",
+  "instrumentSelfTest": {
+    "ok": true,
+    "failures": []
+  },
+  "perType": {
+    "calls": {
+      "type": "calls",
+      "edges": 35984,
+      "project": {
+        "resolved": 8843,
+        "ambiguousByDecl": 6158,
+        "ambiguousByKind": 290,
+        "unresolved": 20234,
+        "markedExternal": 749,
+        "externalVerified": 1,
+        "externalVerifiedByOwner": 1,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 748,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "cleanup",
+            "declarations": 11,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "cleanup",
+            "declarations": 11,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "cleanup",
+            "declarations": 11,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "python",
+            "declarations": 5,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "basename",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "sed",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "find",
+            "type": "calls"
+          },
+          {
+            "name": "sed",
+            "type": "calls"
+          },
+          {
+            "name": "cat",
+            "type": "calls"
+          },
+          {
+            "name": "find",
+            "type": "calls"
+          },
+          {
+            "name": "sed",
+            "type": "calls"
+          },
+          {
+            "name": "mkdir",
+            "type": "calls"
+          },
+          {
+            "name": "tee",
+            "type": "calls"
+          },
+          {
+            "name": "tail",
+            "type": "calls"
+          },
+          {
+            "name": "osascript",
+            "type": "calls"
+          },
+          {
+            "name": "xmllint",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "dotnet",
+            "type": "calls"
+          },
+          {
+            "name": "dotnet",
+            "type": "calls"
+          },
+          {
+            "name": "dirname",
+            "type": "calls"
+          },
+          {
+            "name": "docker",
+            "type": "calls"
+          },
+          {
+            "name": "git",
+            "type": "calls"
+          },
+          {
+            "name": "git",
+            "type": "calls"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 9312,
+        "ambiguousByDecl": 10559,
+        "ambiguousByKind": 2291,
+        "unresolved": 15364,
+        "markedExternal": 749,
+        "externalVerified": 1,
+        "externalVerifiedByOwner": 1,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 748,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "basename",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "sed",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "sed",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "sed",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "head",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "tr",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "usage",
+            "declarations": 58,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "usage",
+            "declarations": 58,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "basename",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "dirname",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "basename",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "basename",
+            "declarations": 2,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "defaults",
+            "type": "calls"
+          },
+          {
+            "name": "cat",
+            "type": "calls"
+          },
+          {
+            "name": "mkdir",
+            "type": "calls"
+          },
+          {
+            "name": "tee",
+            "type": "calls"
+          },
+          {
+            "name": "tail",
+            "type": "calls"
+          },
+          {
+            "name": "osascript",
+            "type": "calls"
+          },
+          {
+            "name": "xmllint",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "julia",
+            "type": "calls"
+          },
+          {
+            "name": "grep",
+            "type": "calls"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "uses": {
+      "type": "uses",
+      "edges": 53657,
+      "project": {
+        "resolved": 22854,
+        "ambiguousByDecl": 24739,
+        "ambiguousByKind": 1686,
+        "unresolved": 6064,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "output_dir",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "projects",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "projects",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "projects",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "project_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "project",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "relative",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "project_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "relative",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "slug",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "slug",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "relative",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "project",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "configuration",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "slug",
+            "declarations": 4,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "GTK_DEBUG_LAUNCHER",
+            "type": "uses"
+          },
+          {
+            "name": "GTK_DEBUG_GDB",
+            "type": "uses"
+          },
+          {
+            "name": "PREFIX",
+            "type": "uses"
+          },
+          {
+            "name": "PIPESTATUS",
+            "type": "uses"
+          },
+          {
+            "name": "srcdir",
+            "type": "uses"
+          },
+          {
+            "name": "srcdir",
+            "type": "uses"
+          },
+          {
+            "name": "GITHUB_TOKEN",
+            "type": "uses"
+          },
+          {
+            "name": "NUGET_KEY",
+            "type": "uses"
+          },
+          {
+            "name": "GITHUB_TOKEN",
+            "type": "uses"
+          },
+          {
+            "name": "NUGET_KEY",
+            "type": "uses"
+          },
+          {
+            "name": "CONFIG",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SCREENSHOT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SAMPLE_CAPTURE_MODE",
+            "type": "uses"
+          },
+          {
+            "name": "gallery_pages",
+            "type": "uses"
+          },
+          {
+            "name": "visible_windows",
+            "type": "uses"
+          },
+          {
+            "name": "existing_windows",
+            "type": "uses"
+          },
+          {
+            "name": "visible_windows",
+            "type": "uses"
+          },
+          {
+            "name": "existing_windows",
+            "type": "uses"
+          },
+          {
+            "name": "CONFIG",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SCREENSHOT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_ANDROID_PACKAGE_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "sample_names",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 18351,
+        "ambiguousByDecl": 30126,
+        "ambiguousByKind": 4953,
+        "unresolved": 5180,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "tmp",
+            "declarations": 12,
+            "kinds": "variable"
+          },
+          {
+            "name": "tmp",
+            "declarations": 12,
+            "kinds": "variable"
+          },
+          {
+            "name": "tmp",
+            "declarations": 12,
+            "kinds": "variable"
+          },
+          {
+            "name": "bundle",
+            "declarations": 5,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "APP",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "APP",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "APP",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "APP",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "APP",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "PREFIX",
+            "declarations": 21,
+            "kinds": "variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "FILES",
+            "declarations": 9,
+            "kinds": "variable"
+          },
+          {
+            "name": "FILES",
+            "declarations": 9,
+            "kinds": "variable"
+          },
+          {
+            "name": "PID",
+            "declarations": 8,
+            "kinds": "variable"
+          },
+          {
+            "name": "name",
+            "declarations": 73,
+            "kinds": "variable"
+          },
+          {
+            "name": "EXTRA_ARGS",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "name",
+            "declarations": 73,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "GTK_DEBUG_LAUNCHER",
+            "type": "uses"
+          },
+          {
+            "name": "GTK_DEBUG_GDB",
+            "type": "uses"
+          },
+          {
+            "name": "PIPESTATUS",
+            "type": "uses"
+          },
+          {
+            "name": "NUGET_KEY",
+            "type": "uses"
+          },
+          {
+            "name": "NUGET_KEY",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SCREENSHOT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SAMPLE_CAPTURE_MODE",
+            "type": "uses"
+          },
+          {
+            "name": "gallery_pages",
+            "type": "uses"
+          },
+          {
+            "name": "visible_windows",
+            "type": "uses"
+          },
+          {
+            "name": "existing_windows",
+            "type": "uses"
+          },
+          {
+            "name": "visible_windows",
+            "type": "uses"
+          },
+          {
+            "name": "existing_windows",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_SCREENSHOT_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "FABULOUS_ANDROID_PACKAGE_DIR",
+            "type": "uses"
+          },
+          {
+            "name": "PWD",
+            "type": "uses"
+          },
+          {
+            "name": "sample_names",
+            "type": "uses"
+          },
+          {
+            "name": "sample_names",
+            "type": "uses"
+          },
+          {
+            "name": "sample_names",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          },
+          {
+            "name": "manifests",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "contains": {
+      "type": "contains",
+      "edges": 20582,
+      "project": {
+        "resolved": 10583,
+        "ambiguousByDecl": 9998,
+        "ambiguousByKind": 830,
+        "unresolved": 1,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "configuration",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "output_dir",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "projects",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "project_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "project",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "relative",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "slug",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "screenshot",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "_",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "configuration",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "output_dir",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "application_id",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "logcat_path",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "_",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "application_id",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "apk",
+            "declarations": 3,
+            "kinds": "variable"
+          },
+          {
+            "name": "logcat_path",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "slug",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "application_id",
+            "declarations": 5,
+            "kinds": "variable"
+          },
+          {
+            "name": "projects",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "project_index",
+            "declarations": 2,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "this",
+            "type": "contains"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 8621,
+        "ambiguousByDecl": 11960,
+        "ambiguousByKind": 2226,
+        "unresolved": 1,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "name",
+            "declarations": 73,
+            "kinds": "variable"
+          },
+          {
+            "name": "tmp",
+            "declarations": 12,
+            "kinds": "variable"
+          },
+          {
+            "name": "bundle",
+            "declarations": 5,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "APP",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "FILES",
+            "declarations": 9,
+            "kinds": "variable"
+          },
+          {
+            "name": "LC_ALL",
+            "declarations": 30,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "EXTRA_ARGS",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "PID",
+            "declarations": 8,
+            "kinds": "variable"
+          },
+          {
+            "name": "MESSAGE",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "files",
+            "declarations": 19,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "lang",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "file",
+            "declarations": 107,
+            "kinds": "variable"
+          },
+          {
+            "name": "IMAGE_LABEL",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "arg",
+            "declarations": 24,
+            "kinds": "variable"
+          },
+          {
+            "name": "VERSION",
+            "declarations": 83,
+            "kinds": "variable"
+          },
+          {
+            "name": "IMAGE_LABEL",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "configuration",
+            "declarations": 7,
+            "kinds": "variable"
+          },
+          {
+            "name": "output_dir",
+            "declarations": 10,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "shard_count",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "projects",
+            "declarations": 4,
+            "kinds": "variable"
+          },
+          {
+            "name": "project_index",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "project",
+            "declarations": 12,
+            "kinds": "variable"
+          },
+          {
+            "name": "relative",
+            "declarations": 3,
+            "kinds": "variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "this",
+            "type": "contains"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "imports": {
+      "type": "imports",
+      "edges": 508,
+      "project": {
+        "resolved": 18,
+        "ambiguousByDecl": 30,
+        "ambiguousByKind": 0,
+        "unresolved": 460,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "imports"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 18,
+        "ambiguousByDecl": 30,
+        "ambiguousByKind": 0,
+        "unresolved": 460,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "imports"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "references": {
+      "type": "references",
+      "edges": 508,
+      "project": {
+        "resolved": 18,
+        "ambiguousByDecl": 30,
+        "ambiguousByKind": 0,
+        "unresolved": 460,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "references"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 18,
+        "ambiguousByDecl": 30,
+        "ambiguousByKind": 0,
+        "unresolved": 460,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          },
+          {
+            "name": "defines.sh",
+            "declarations": 5,
+            "kinds": "module"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "$bundle_res/environment.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "references"
+          },
+          {
+            "name": "collection-tests/git-common.bash",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          },
+          {
+            "name": "../collection/setup.sh",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "exports": {
+      "type": "exports",
+      "edges": 1565,
+      "project": {
+        "resolved": 608,
+        "ambiguousByDecl": 957,
+        "ambiguousByKind": 360,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "PATH",
+            "declarations": 3,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN_CONNECTION",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_NOCOLOR",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_COLLECTIONS_PATH",
+            "declarations": 11,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_ROLES_PATH",
+            "declarations": 26,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_CALLBACK_PLUGINS",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_ROLES_PATH",
+            "declarations": 26,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_STDOUT_CALLBACK",
+            "declarations": 9,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_HOST_PATTERN_MISMATCH",
+            "declarations": 6,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN_CONNECTION",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_CONFIG",
+            "declarations": 7,
+            "kinds": "variable"
+          },
+          {
+            "name": "GIT_TOP_LEVEL",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "SUBMODULE_DST",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "GIT_TOP_LEVEL",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "SUBMODULE_DST",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "TEST_DIR",
+            "declarations": 3,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "WORK_DIR",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_DEPRECATION_WARNINGS",
+            "declarations": 9,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN",
+            "declarations": 6,
+            "kinds": "constant"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 509,
+        "ambiguousByDecl": 1056,
+        "ambiguousByKind": 519,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LANG",
+            "declarations": 15,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "LC_ALL",
+            "declarations": 30,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "PATH",
+            "declarations": 67,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "UNSTABLE",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "UNSTABLE",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "COMMIT_MESSAGE",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "COVERAGE",
+            "declarations": 2,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_CACHE_PLUGIN_CONNECTION",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_NOCOLOR",
+            "declarations": 6,
+            "kinds": "constant"
+          },
+          {
+            "name": "ANSIBLE_COLLECTIONS_PATH",
+            "declarations": 11,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_ROLES_PATH",
+            "declarations": 26,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_CALLBACK_PLUGINS",
+            "declarations": 2,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_ROLES_PATH",
+            "declarations": 26,
+            "kinds": "constant|variable"
+          },
+          {
+            "name": "ANSIBLE_STDOUT_CALLBACK",
+            "declarations": 9,
+            "kinds": "constant|variable"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "extends": {
+      "type": "extends",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "implements": {
+      "type": "implements",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "overrides": {
+      "type": "overrides",
+      "edges": 19,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 19,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "fetch",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "download",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "cleanup",
+            "declarations": 5,
+            "kinds": "function"
+          },
+          {
+            "name": "approve_docker",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "merge_docker",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "submit_docker",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "upload_luarock",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "nvm_make_alias",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "omz_f",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "is_tty",
+            "declarations": 6,
+            "kinds": "function"
+          },
+          {
+            "name": "is_tty",
+            "declarations": 6,
+            "kinds": "function"
+          },
+          {
+            "name": "is_tty",
+            "declarations": 6,
+            "kinds": "function"
+          },
+          {
+            "name": "print_msg",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "print_msg",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "print_msg",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "log_prefix",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "testBasicTrailingContent",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "testBasicTrailingContentEvalAll",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "testPrettyPrintOtherStringValues",
+            "declarations": 2,
+            "kinds": "function"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 19,
+        "ambiguousByKind": 2,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "fetch",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "download",
+            "declarations": 5,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "cleanup",
+            "declarations": 76,
+            "kinds": "function|variable"
+          },
+          {
+            "name": "approve_docker",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "merge_docker",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "submit_docker",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "upload_luarock",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "nvm_make_alias",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "omz_f",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "is_tty",
+            "declarations": 6,
+            "kinds": "function"
+          },
+          {
+            "name": "is_tty",
+            "declarations": 6,
+            "kinds": "function"
+          },
+          {
+            "name": "is_tty",
+            "declarations": 6,
+            "kinds": "function"
+          },
+          {
+            "name": "print_msg",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "print_msg",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "print_msg",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "log_prefix",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "testBasicTrailingContent",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "testBasicTrailingContentEvalAll",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "testPrettyPrintOtherStringValues",
+            "declarations": 2,
+            "kinds": "function"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "instantiates": {
+      "type": "instantiates",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    }
+  },
+  "totals": {
+    "resolved": 42924,
+    "ambiguousByDecl": 41931,
+    "ambiguousByKind": 3166,
+    "unresolved": 27219,
+    "markedExternal": 749,
+    "externalVerified": 1,
+    "externalVerifiedByOwner": 1,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 748,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": []
+  },
+  "totalsPooled": {
+    "resolved": 36829,
+    "ambiguousByDecl": 53780,
+    "ambiguousByKind": 9991,
+    "unresolved": 21465,
+    "markedExternal": 749,
+    "externalVerified": 1,
+    "externalVerifiedByOwner": 1,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 748,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": []
+  }
+}

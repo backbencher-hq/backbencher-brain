@@ -1,0 +1,17 @@
+{
+  "repo": "snacks.nvim",
+  "files": 1,
+  "partition": {
+    "before": {},
+    "after": {}
+  },
+  "theCollisionClass": {
+    "collidingNames": 0,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 0,
+    "falseBindings": 0
+  }
+}

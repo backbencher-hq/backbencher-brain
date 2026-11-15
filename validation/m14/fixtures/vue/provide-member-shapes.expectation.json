@@ -1,0 +1,59 @@
+{
+  "fixtureId": "vue/provide-member-shapes",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F18 (2026-10-31): what a `provide()` publishes is not only its `key: value` pairs. Vue hands the injector whatever object the call was given, so a SHORTHAND (which shares a local), a SHORTHAND METHOD, and an object WRAPPED in `reactive()`/`computed()` all name members a consumer reads. The old walk required the direct second argument to be an `object` and accepted only `pair` children, so it published the pairs and dropped the rest — dropdown.vue lost contentRef / triggerId / isUsingKeyboard / onItemEnter / onItemLeave / handleClose, and form.vue lost every member of its `reactive({ ... })` including emit / resetFields / clearValidate / validateField. Measured: 12 real provided rows the `contains` oracle derived and the analyzer never emitted. A provided member with no symbol of its own is now SYNTHESIZED with `metadata.synthesized`, the same declaration the stem fallback uses, so the m60 surface audit still governs it.",
+  "expectSymbols": [
+    {
+      "name": "PanelGroup",
+      "kind": "class"
+    },
+    {
+      "name": "contentRef",
+      "meta.isProvided": true
+    },
+    {
+      "name": "size",
+      "meta.isProvided": true
+    },
+    {
+      "name": "close",
+      "meta.isProvided": true
+    },
+    {
+      "name": "nodes",
+      "meta.isProvided": true
+    },
+    {
+      "name": "index",
+      "meta.isProvided": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "source": "PanelGroup",
+      "target": "contentRef",
+      "type": "contains"
+    },
+    {
+      "source": "PanelGroup",
+      "target": "size",
+      "type": "contains"
+    },
+    {
+      "source": "PanelGroup",
+      "target": "close",
+      "type": "contains"
+    },
+    {
+      "source": "PanelGroup",
+      "target": "nodes",
+      "type": "contains"
+    },
+    {
+      "source": "PanelGroup",
+      "target": "index",
+      "type": "contains"
+    }
+  ]
+}

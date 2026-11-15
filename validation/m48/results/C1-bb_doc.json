@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_doc.json",
+  "generatedAt": "2026-11-04T05:55:38.532Z",
+  "tools": [
+    "bb_doc"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 23,
+      "args": "{\"mode\":\"symbol\",\"target\":\"join\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: join\\n\\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 36 source(s).\\n\\n## API\\n\\n1 claim, 1 read directly from the i"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 47,
+      "args": "{\"mode\":\"symbol\",\"target\":\"unwrap\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: unwrap\\n\\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 33 source(s).\\n\\n## API\\n\\n1 claim, 1 read directly from the"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 61,
+      "args": "{\"mode\":\"symbol\",\"target\":\"toDeepEqual\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: toDeepEqual\\n\\n1 file(s) and 1 symbol(s) in scope, 20 cited claim(s) across 5 section(s) from 17 source(s).\\n\\n## API\\n\\n1 claim, 1 read directly fro"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 30,
+      "args": "{\"mode\":\"symbol\",\"target\":\"is_newline\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: is_newline\\n\\n1 file(s) and 1 symbol(s) in scope, 14 cited claim(s) across 5 section(s) from 10 source(s). No indexed evidence was found for: Tests.\\"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 35,
+      "args": "{\"mode\":\"symbol\",\"target\":\"map\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: map\\n\\n1 file(s) and 1 symbol(s) in scope, 19 cited claim(s) across 5 section(s) from 16 source(s). No indexed evidence was found for: Limitations.\\n"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: join\n\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 36 so"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: unwrap\n\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 33 "
+    },
+    {
+      "repo": "graphql-js",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: toDeepEqual\n\n1 file(s) and 1 symbol(s) in scope, 20 cited claim(s) across 5 section(s) fro"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: is_newline\n\n1 file(s) and 1 symbol(s) in scope, 14 cited claim(s) across 5 section(s) from"
+    },
+    {
+      "repo": "lodash",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: map\n\n1 file(s) and 1 symbol(s) in scope, 19 cited claim(s) across 5 section(s) from 16 sou"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_doc"
+    ]
+  }
+}

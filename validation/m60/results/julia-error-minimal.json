@@ -1,0 +1,2829 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "the SMALLEST failing span per defect file, clustered",
+  "generatedAt": "2026-10-01T00:36:12.193Z",
+  "method": "for every file the differential found Julia accepts and tree-sitter rejects, collect all ERROR nodes and keep the smallest by byte span; normalise it (identifiers to X, literals to S/N) and cluster. The FIRST error is the wrong thing to localise on: when a construct wrecks a region the ERROR node often starts at the top of the file, so 121 of 185 defect files pointed at line 1 and clustering produced 15 clusters of which 9 were the Julia licence header.",
+  "bias": "a construct that wrecks a LARGE region hides every smaller error inside it, so a file whose only damage is one file-wide span still yields a large span here. Cluster counts are therefore per-shape incidences, not per-construct prevalence.",
+  "defectFiles": 177,
+  "resolved": 177,
+  "licenceHeaderOnly": 0,
+  "missingOnDisk": 0,
+  "distinctShapes": 174,
+  "top": 18,
+  "shapes": [
+    {
+      "shape": ", X) ⏎  X X : X ⏎  X ⏎  X",
+      "files": 2,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/src/sort.jl:58  …, o)…",
+        "base/sort.jl:234  …, o)…"
+      ]
+    },
+    {
+      "shape": "X X ⏎  X X ⏎  X X::X ⏎  X ⏎",
+      "files": 2,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/test/inference.jl:2494  …uct ABCDconst…",
+        "test/core.jl:69  …uct ABCDconst…"
+      ]
+    },
+    {
+      "shape": "X...) ⏎  X X = X($X) ⏎",
+      "files": 2,
+      "medianSpanBytes": 10,
+      "examples": [
+        "base/task.jl:965  …letargs...)…",
+        "base/threadingconstructs.jl:883  …letargs...)…"
+      ]
+    },
+    {
+      "shape": "X(X) ⏎  ⊑ₚ, ⊔ₚ, ⊔ᵢ = X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/src/abstractinterpretation.jl:129  …inf_lattice(interp)…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X X::X ⏎  X::X{",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "Compiler/src/inferencestate.jl:239  …et…"
+      ]
+    },
+    {
+      "shape": "X::X, ::X, ::X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/src/optimize.jl:1050  …inst::Instruction, ::Int, ::Int…"
+      ]
+    },
+    {
+      "shape": "X, X) ⏎ X ⊥, ⊤ = X(), X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/src/ssair/EscapeAnalysis.jl:147  …e, TOP_LIVENESS)…"
+      ]
+    },
+    {
+      "shape": "X)) ⏎  @X X(X, X{X, X, X}) X",
+      "files": 1,
+      "medianSpanBytes": 53,
+      "examples": [
+        "Compiler/src/ssair/inlining.jl:49  …em))…"
+      ]
+    },
+    {
+      "shape": "(X)==X, ::X->X{X,X}(X, X)",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/src/ssair/slot2ssa.jl:153  …(x)==slot, ::SlotNumber->Pair{Any,Any}(ssa, true)…"
+      ]
+    },
+    {
+      "shape": "X X ===# ⏎  X::X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "Compiler/src/types.jl:134  …ialized fields ===#…"
+      ]
+    },
+    {
+      "shape": "X(@X(X) -> X(X) ? X : X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/src/typeutils.jl:40  …nymap(@nospecialize(a) -> isvarargtype(a) ? a : w…"
+      ]
+    },
+    {
+      "shape": "X(X)) ⏎  X X === X.⊥ ⏎  X, X = (",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/test/EAUtils.jl:113  …eof(x))…"
+      ]
+    },
+    {
+      "shape": "X(X.X.X.X) X @X X ⏎  X(X) && X(X.X, X.X) ⏎  X) ⏎  @X X",
+      "files": 1,
+      "medianSpanBytes": 83,
+      "examples": [
+        "Compiler/test/EscapeAnalysis.jl:1373  …l(result.ir.stmts.stmt) do @nospecialize x…"
+      ]
+    },
+    {
+      "shape": "X = @X (X +ₚ X) +ₚ X ⏎  X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/test/inline.jl:721  …a = @inline (a +ₚ b) +ₚ b…"
+      ]
+    },
+    {
+      "shape": "X(@X(X)->X.X(X, :X), X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/test/irpasses.jl:1063  …indall(@nospecialize(x)->Meta.isexpr(x, :new), sr…"
+      ]
+    },
+    {
+      "shape": "(X) = @X(X) -> X(X, X) ⏎ X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/test/irutils.jl:27  …(y) = @nospecialize(x) -> iscall(y, x)…"
+      ]
+    },
+    {
+      "shape": "X(@X(X)->X.X(X, :X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "Compiler/test/ssair.jl:620  …rst(@nospecialize(stmt)->Meta.isexpr(stmt, :invok…"
+      ]
+    },
+    {
+      "shape": "X\" X X X X X...] -> X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/binding_analysis.jl:36  …mbda\" _ _ _ body _...] -> begin…"
+      ]
+    },
+    {
+      "shape": "::X = X ⏎  X::X # X X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "JuliaLowering/src/bindings.jl:11  …::T = 10…"
+      ]
+    },
+    {
+      "shape": "X, X, X) ⏎  X = X(X, X)",
+      "files": 1,
+      "medianSpanBytes": 7,
+      "examples": [
+        "JuliaLowering/src/closure_conversion.jl:63  …nversionCtx, var, box_ex)…"
+      ]
+    },
+    {
+      "shape": "X X (:X, :X, :(::)) && X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/compat.jl:25  …head in (:escape, :where, :(::)) && is_eventually…"
+      ]
+    },
+    {
+      "shape": "[X X] -> X # X X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/desugaring.jl:1814  …[K\"static_eval\" _] -> ex # already done…"
+      ]
+    },
+    {
+      "shape": "X [X]] -> X[X].X::X ? ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/eval.jl:492  …\"inbounds\" [K\"Value\"]] -> stmt[1].value::Bool ?…"
+      ]
+    },
+    {
+      "shape": "[X X X] -> (X, X, X, X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/linear_ir.jl:548  …[K\"trycatchelse\" t c] -> (t, c, nothing, nothing…"
+      ]
+    },
+    {
+      "shape": "X && X X ⏎  X(X",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "JuliaLowering/src/scope_analysis.jl:85  …K\"softscope\"  && return true…"
+      ]
+    },
+    {
+      "shape": "X\"] X] -> X X(X[X])",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/syntax_macros.jl:124  …\" [K\"Identifier\"] val] -> if syntax_name(opt[1])…"
+      ]
+    },
+    {
+      "shape": "X ⏎  [X] -> X(X, X) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/src/validation.jl:138  …in…"
+      ]
+    },
+    {
+      "shape": "X = X ⏎  X(X::X) = X ⏎  :X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "JuliaLowering/test/closures.jl:1619  …ok = try…"
+      ]
+    },
+    {
+      "shape": "@X X(X, :(@($X)(X))) == (X, X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/test/decls.jl:850  …@test jl_eval(gr_mod, :(@($mac_sym)(1))) == (1, t…"
+      ]
+    },
+    {
+      "shape": "X(:X, X(:X, X(:X, X(:...,",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/test/functions.jl:1675  …r(:function, Expr(:where, Expr(:where, Expr(:...,…"
+      ]
+    },
+    {
+      "shape": "X, X.@X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/test/import.jl:80  …aLowering, JuliaLowering.@legacy_quote_to_syntax…"
+      ]
+    },
+    {
+      "shape": "X, ⏎  X(:X, ⏎  X(:X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/test/misc.jl:953  …on,…"
+      ]
+    },
+    {
+      "shape": "X ⏎ X ..X.@X ⏎ X ..X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaLowering/test/scopes.jl:642  …l_mod…"
+      ]
+    },
+    {
+      "shape": "X}} ⏎  X::X ⏎  X::X{X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "JuliaSyntax/src/porcelain/syntax.jl:38  …SyntaxTree}}…"
+      ]
+    },
+    {
+      "shape": "X(:X, X(:X, X(:X, :X), :X), ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaSyntax/test/expr.jl:125  …r(:function, Expr(:where, Expr(:call, :f), :T),…"
+      ]
+    },
+    {
+      "shape": "[X X X X X] -> X ⏎  [X\"X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "JuliaSyntax/test/syntax.jl:297  …[K\"function\" f a b c] -> false…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X ⏎  X (X == :(=) |",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "JuliaSyntax/test/test_utils.jl:184  …end…"
+      ]
+    },
+    {
+      "shape": "X(X(:X, X(:(=), ⏎",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "JuliaSyntax/test/test_utils_tests.jl:29  …prs_roughly_equal(Expr(:for, Expr(:(=),…"
+      ]
+    },
+    {
+      "shape": "$(X(X)) ⏎  X.X(X::X{$(X(X",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "base/Enums.jl:226  …$(esc(namemap))…"
+      ]
+    },
+    {
+      "shape": "X) = X(X.X,X) ⏎ X.X(X::X",
+      "files": 1,
+      "medianSpanBytes": 6,
+      "examples": [
+        "base/Terminals.jl:155  …l) = write(t.err_stream,\"\\x7\")…"
+      ]
+    },
+    {
+      "shape": "X} = X(X -% X(X)) < X(X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/abstractarray.jl:753  …tInteger} = unsigned(i -% one(i)) < unsigned(last…"
+      ]
+    },
+    {
+      "shape": "= X(X) ⏎  X, = X(((), X), X..",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/accumulate.jl:298  …= BottomRF(op)…"
+      ]
+    },
+    {
+      "shape": "X X<:X = X +% ((X -% X) >>> X) ⏎ X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/array.jl:2281  …where T<:Integer = lo +% ((hi -% lo) >>> 0x01)…"
+      ]
+    },
+    {
+      "shape": "X X ⏎",
+      "files": 1,
+      "medianSpanBytes": 5,
+      "examples": [
+        "base/arrayshow.jl:311  …break entry…"
+      ]
+    },
+    {
+      "shape": "X (X() -% X) > X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/asyncevent.jl:488  …elseif (time_ns() -% start) > ns_timeout…"
+      ]
+    },
+    {
+      "shape": ")?\\.X$X\" ⏎  # X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "base/binaryplatforms.jl:883  …)?\\.dll$\"isa…"
+      ]
+    },
+    {
+      "shape": "X X() ⏎  X = X{X}(X,",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/bitset.jl:19  …nction BitSet()…"
+      ]
+    },
+    {
+      "shape": "X, X::X) = X(X) +% X(X) ⏎ -(X::X, X::X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/bool.jl:145  …ool, y::Bool) = Int(x) +% Int(y)…"
+      ]
+    },
+    {
+      "shape": "X || X.X === :X) && ⏎  X.X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/broadcast.jl:1322  …ion || x.head === :macro) &&…"
+      ]
+    },
+    {
+      "shape": "⏎  X::X{X} ⏎  X X = X X ⏎ X ⏎ X(",
+      "files": 1,
+      "medianSpanBytes": 23,
+      "examples": [
+        "base/c.jl:20  …_2::Ptr{Cvoid}…"
+      ]
+    },
+    {
+      "shape": ":X ⏎  X, X = X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/cartesian.jl:456  …:elseif…"
+      ]
+    },
+    {
+      "shape": "X(((X(X, X) +% X(X)) <<",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/char.jl:266  …r(((bitcast(UInt32, x) +% UInt64(0xd4d64234)) <<…"
+      ]
+    },
+    {
+      "shape": ":X, X::X) = (X +% X, X) ⏎ X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/checked.jl:140  …:Bool, y::Bool) = (x +% y, false)…"
+      ]
+    },
+    {
+      "shape": "X::X |= X ⏎  #",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/client.jl:329  …is_interactive::Bool |= interactiveinput…"
+      ]
+    },
+    {
+      "shape": "X} ⏎  X X::X ⏎  X{X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/condition.jl:77  …tEntry}…"
+      ]
+    },
+    {
+      "shape": "X(X, X) ⏎  (X, X -% X *% X) ⏎  X X ==",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/div.jl:320  …ld(a, b)…"
+      ]
+    },
+    {
+      "shape": "X = X(:X, X, X[X]) ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/docs/Docs.jl:119  …sig = Expr(:where, sig, tv[i])…"
+      ]
+    },
+    {
+      "shape": "X *% X ⏎ X ⏎ X` ⏎ X ⏎  /",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "base/docs/basedocs.jl:3518  …f *% 0xff…"
+      ]
+    },
+    {
+      "shape": "& X(@X(X) -> X(X) <: X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/errorshow.jl:1473  …& all(@nospecialize(a) -> unwrapva(a) <: Abstract…"
+      ]
+    },
+    {
+      "shape": "X = X(:X, X.X[X], X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "base/essentials.jl:1032  …body = Expr(:for, body.args[1], wrapped_…"
+      ]
+    },
+    {
+      "shape": "X(:(X $X = $$X($(X(X)), $",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/experimental.jl:500  …esc(:(const $name = $$new_mt($(quot(name)), $…"
+      ]
+    },
+    {
+      "shape": "÷, ⏎  &, ⏎  *, ⏎  *%, ⏎  +, ⏎  +%, ⏎  -, ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/exports.jl:231  …÷,…"
+      ]
+    },
+    {
+      "shape": "⏎  X = X.X[X] ⏎  X = X.X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/expr.jl:1333  …body = f.args[2]…"
+      ]
+    },
+    {
+      "shape": "X.*X\\\\X ⏎ X> X(\"X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/file.jl:168  …r\"^\\\\\".*testingdir\\\\\"\\$\"…"
+      ]
+    },
+    {
+      "shape": "X ⏎ X .X: *, *%, +, +%, -, -%, /, <, <<,",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/gmp.jl:7  …Int…"
+      ]
+    },
+    {
+      "shape": "X, X}, X{X, X}}} ⏎  X::X ⏎  X{X,X}(X",
+      "files": 1,
+      "medianSpanBytes": 6,
+      "examples": [
+        "base/hamt.jl:64  …K, V}, HAMT{K, V}}}…"
+      ]
+    },
+    {
+      "shape": "X}, X::X) = X *% X -% X ⏎ X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/hashing.jl:56  …Int32}, h::UInt) = 3 *% h -% x…"
+      ]
+    },
+    {
+      "shape": "X, X % X) -% X -% X) % X ⏎ X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/int.jl:139  …UInt128, b % UInt128) -% t1 -% t2) % Int128…"
+      ]
+    },
+    {
+      "shape": "X {X<:X} = X -% X *% X ⏎ X(X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/intfuncs.jl:189  …ere {T<:Unsigned} = s0 -% q *% s1…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X ⏎  X.X : X.X ⏎  X ⏎ X ⏎",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "base/iobuffer.jl:671  …ize…"
+      ]
+    },
+    {
+      "shape": "X, X::X) = X *% X -% X(X) ⏎ X(:",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/irrationals.jl:203  …tional, h::UInt) = 3 *% h -% objectid(x)…"
+      ]
+    },
+    {
+      "shape": "X) = X[X + X - X] ⏎ X X(::X{",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "base/iterators.jl:1737  …eger) = itr[begin + n - 1]…"
+      ]
+    },
+    {
+      "shape": "X, (X{X}, X), X, X(X)) ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/libc.jl:346  …t32, (Ptr{UInt8}, UInt32), hn, length(hn))…"
+      ]
+    },
+    {
+      "shape": "X, X), X) ⏎ X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/libdl.jl:463  …l_libdl_dlopen_func, Any), dlopen)…"
+      ]
+    },
+    {
+      "shape": "X X(X) === X.X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/loading.jl:1178  …if UUID(uuid) === where.uuid…"
+      ]
+    },
+    {
+      "shape": "⏎  X X::X ⏎  X{X}(X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/lock.jl:1052  …const initializer::F…"
+      ]
+    },
+    {
+      "shape": "X = X % X ⏎  X = X +% X ⏎  # X, X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/math.jl:876  …n = e % Int…"
+      ]
+    },
+    {
+      "shape": "] ⏎  X = X[X] +% X(X) ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/multidimensional.jl:471  …]…"
+      ]
+    },
+    {
+      "shape": "X = X +% X(X) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/multinverses.jl:70  …q1 = q1 +% one(UT)…"
+      ]
+    },
+    {
+      "shape": "X X (:+, :(+%), :*, :(*%), :&, :|, :X, :X, :",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "base/operators.jl:663  …op in (:+, :(+%), :*, :(*%), :&, :|, :xor, :min, :…"
+      ]
+    },
+    {
+      "shape": "⏎  X = X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/osutils.jl:35  …ex = br…"
+      ]
+    },
+    {
+      "shape": "X} ⏎  @X X::X ⏎  @X X::X",
+      "files": 1,
+      "medianSpanBytes": 5,
+      "examples": [
+        "base/partr.jl:11  …sk}…"
+      ]
+    },
+    {
+      "shape": "X, X::X) = X(X) -% X(X) ⏎ -%(X::X, X::",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/pointer.jl:312  …tr,  y::Ptr) = UInt(x) -% UInt(y)…"
+      ]
+    },
+    {
+      "shape": "⏎  X (X() -% X) >= X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/precompilation.jl:89  …if (time_ns() -% start_ns) >= timeout_ns…"
+      ]
+    },
+    {
+      "shape": "X) = X +% X ⏎ X(X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/range.jl:34  …geWrappingInteger) = x +% y…"
+      ]
+    },
+    {
+      "shape": "X, X)) ⏎ X ⏎ X +%(X::X, X::X) ⏎  X, X = X(X,",
+      "files": 1,
+      "medianSpanBytes": 27,
+      "examples": [
+        "base/rational.jl:412  …en, yd))…"
+      ]
+    },
+    {
+      "shape": "X\") ⏎  X, = X(X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/reflection.jl:964  …functions\")…"
+      ]
+    },
+    {
+      "shape": "X.@X X X X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "base/reinterpretarray.jl:888  …GC.@preserve in out begin…"
+      ]
+    },
+    {
+      "shape": "X & ((X(X) << -X) -% X(X)) == X ⏎  X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/ryu/shortest.jl:17  …mf & ((one(U) << -ef) -% one(U)) == 0…"
+      ]
+    },
+    {
+      "shape": "X(X(X), X; X=*%) ⏎  # X X X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/ryu/utils.jl:68  …ring(UInt64(5), p; mul=*%)…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X X::X ⏎  X{X}() X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/scopedvalues.jl:83  …alue…"
+      ]
+    },
+    {
+      "shape": "X(@X(X) -> X === X, X), X) > X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/show.jl:806  …rst(@nospecialize(w) -> w === p, wheres), 0) > el…"
+      ]
+    },
+    {
+      "shape": "=== :(=) || X.X === :X)) || X(X(\"=",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "base/simdloop.jl:18  …=== :(=) || x.head === :in)) || throw(SimdError(\"=…"
+      ]
+    },
+    {
+      "shape": "X, X +% X) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/some.jl:172  …alue, hash_some_seed +% h)…"
+      ]
+    },
+    {
+      "shape": "X, X) ⏎  X = (X +% X) & X(X",
+      "files": 1,
+      "medianSpanBytes": 11,
+      "examples": [
+        "base/special/cbrt.jl:127  …Int64, t)…"
+      ]
+    },
+    {
+      "shape": "X = ((X % X) +% X(X)) << X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/special/exp.jl:224  …twopk = ((k % UInt64) +% UInt64(53)) << 52…"
+      ]
+    },
+    {
+      "shape": "X ⏎ X .X.X.@X ⏎ # X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/special/log.jl:12  …trunc…"
+      ]
+    },
+    {
+      "shape": "X) ⏎  X = X(X *% X) << X # X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/special/rem_pio2.jl:189  …t)…"
+      ]
+    },
+    {
+      "shape": "X(X, X -% X)>>X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/special/trig.jl:635  …reinterpret(Int32, ypw -% xpw)>>ATAN2_RATIO_BIT_S…"
+      ]
+    },
+    {
+      "shape": "X(X, X.X ? :X : :X) ⏎  X(X) ⏎  X X",
+      "files": 1,
+      "medianSpanBytes": 5,
+      "examples": [
+        "base/stream.jl:1988  …d(p, f.writable ? :in : :out)…"
+      ]
+    },
+    {
+      "shape": "X[X+X-X] ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/strings/annotated_io.jl:178  …newannots[begin+runlen-1]…"
+      ]
+    },
+    {
+      "shape": "X(X, X +% (X(X) << X) +% (X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/strings/cstring.jl:216  …push!(dst, 0xe5b8 +% (UInt16(a) << 8) +% (UI…"
+      ]
+    },
+    {
+      "shape": "X> X(X) ⏎ X ⏎ X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/strings/io.jl:420  …lia> escape_string(\"aaa\\\\nbbb\")…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X X::X # X & X X",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "base/strings/lazy.jl:38  …uple…"
+      ]
+    },
+    {
+      "shape": "X}}, ⏎  ; X::X=X) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/strings/search.jl:653  …nt8}},…"
+      ]
+    },
+    {
+      "shape": "X, :X, \"X X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/terminfo_data.jl:180  …t_null_glitch,       :in,    \"insert mode disting…"
+      ]
+    },
+    {
+      "shape": "X)) ⏎  (X() -% X) / 1X ⏎  X ⏎ X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/timing.jl:506  …x))…"
+      ]
+    },
+    {
+      "shape": "!= X && X != X && X= X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/toml/parser.jl:1438  …!= 'e' && c != '\"' && c!= '\\\\'…"
+      ]
+    },
+    {
+      "shape": "X) = X(X.X, X +% (X % X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/version.jl:577  …nt) = hash(s.ranges, h +% (0x2fd2ca6efa023f44 % U…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X X === :X ⏎",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "base/views.jl:117  …true…"
+      ]
+    },
+    {
+      "shape": "() X {X, X} ⏎  X = X{X,X}(X{X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "base/weakdict.jl:32  …() where {K, V}…"
+      ]
+    },
+    {
+      "shape": "X X ⏎  X ⏎  X, = X ⏎  # X X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "contrib/asan/check.jl:20  …rn 2…"
+      ]
+    },
+    {
+      "shape": "X, ⏎  X(:(;;)); ⏎  X=X, ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "doc/make.jl:563  …up,…"
+      ]
+    },
+    {
+      "shape": "X{X} ⏎  X::X ⏎  X::X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "stdlib/Base64/src/buffer.jl:6  …mory{UInt8}…"
+      ]
+    },
+    {
+      "shape": "X > X && X X ⏎  X ⏎",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "stdlib/Dates/src/parse.jl:231  …i > end_pos && break done…"
+      ]
+    },
+    {
+      "shape": "X} ⏎  X X::X # X X X X X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "stdlib/FileWatching/src/FileWatching.jl:333  …Cvoid}…"
+      ]
+    },
+    {
+      "shape": "X(X::X; X...) = X(X, X(",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/FileWatching/src/pidfile.jl:91  …ck(at::String; kwopts...) = mkpidlock(at, getpid(…"
+      ]
+    },
+    {
+      "shape": "X X ⏎  X(:X, X, X.(X).",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/InteractiveUtils/src/macros.jl:47  …eturn ex…"
+      ]
+    },
+    {
+      "shape": "X = X(X, X) ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "stdlib/InteractiveUtils/test/runtests.jl:964  …f = open(fname, \"w\")…"
+      ]
+    },
+    {
+      "shape": ": X ⏎ X X.@X ⏎ X .X: X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/LibGit2/src/types.jl:4  …: something…"
+      ]
+    },
+    {
+      "shape": "X. ⏎ X\" ⏎ X X ⏎ X X.X: ⏎  X, ⏎  X, ⏎  X, ⏎  X, X, X, X, ⏎  X, ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 150,
+      "examples": [
+        "stdlib/Logging/src/Logging.jl:11  …lt.…"
+      ]
+    },
+    {
+      "shape": "X X(X[X+X], X(X^X.X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "stdlib/Markdown/test/runtests.jl:1266  …t startswith(lines[begin+1], Regex(' '^Markdown.ma…"
+      ]
+    },
+    {
+      "shape": "X X X X*X X ⏎ X = X{X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "stdlib/Mmap/test/runtests.jl:680  …ve type PrimType9Bytes 9*8 end…"
+      ]
+    },
+    {
+      "shape": "::X, ⏎  ; ⏎  X = :X,",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Profile/src/Allocs.jl:313  …::AllocResults,…"
+      ]
+    },
+    {
+      "shape": "X), @X(X) -> X(X, X)) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/REPL/src/REPL.jl:2085  …d), @nospecialize(ast) -> out_transform(ast, n))…"
+      ]
+    },
+    {
+      "shape": "X(@X(X) -> X === X || X === X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/REPL/src/REPLCompletions.jl:881  …all(@nospecialize(T) -> T === Any || T === Vararg…"
+      ]
+    },
+    {
+      "shape": "X(X) ⏎  X = X.X(X.X, X.X",
+      "files": 1,
+      "medianSpanBytes": 15,
+      "examples": [
+        "stdlib/REPL/src/docview.jl:408  …nd_readme(m)…"
+      ]
+    },
+    {
+      "shape": "X, X] ⏎  X =",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/REPL/test/history.jl:252  …\"\\Qof\\E\"i, r\"\\Qwords\\E\"i]…"
+      ]
+    },
+    {
+      "shape": "X(X(),:X=>X),X()) ⏎  X = X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/REPL/test/repl.jl:2271  …t(IOBuffer(),:foo=>true),IOBuffer())…"
+      ]
+    },
+    {
+      "shape": "XδX, ⏎  X, X, @X",
+      "files": 1,
+      "medianSpanBytes": 32,
+      "examples": [
+        "stdlib/REPL/test/replcompletions.jl:29  …cmδ_cmd,…"
+      ]
+    },
+    {
+      "shape": "X X ⏎  X::X ⏎  X::X ⏎  # X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "stdlib/Random/src/MersenneTwister.jl:21  …ed internally…"
+      ]
+    },
+    {
+      "shape": "X, (X, X, X, X, X +% (X *% X) +% (X *% X)",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Random/src/Xoshiro.jl:237  …x, (s0, s1, s2, s3, s0 +% (3 *% s1) +% (5 *% s2)…"
+      ]
+    },
+    {
+      "shape": "X(X *% X(X, X)), X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Random/src/XoshiroSimd.jl:159  …ent(0x02011ce34bce797f *% rand(rng, UInt64)), Val…"
+      ]
+    },
+    {
+      "shape": "X(X) ⏎  X = (X(X) -% X(X)) % X(X)",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Random/src/generation.jl:383  …up(T)…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X X::X ⏎  X::X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Serialization/src/Serialization.jl:26  …erializer…"
+      ]
+    },
+    {
+      "shape": "X = -X ⏎  X X=X ⏎  X-=X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Sockets/src/IPAddr.jl:148  …_sub_i = -1…"
+      ]
+    },
+    {
+      "shape": "@X X X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Test/src/Test.jl:1984  …@testset \"\\$$testsetname\" begin…"
+      ]
+    },
+    {
+      "shape": "X X ⏎  X X=X(X) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "stdlib/Unicode/test/runtests.jl:201  …1 controls…"
+      ]
+    },
+    {
+      "shape": "X $X`, ⏎  ; X = X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/JuliaLowering_stdlibs.jl:74  …e $setupproject_command`,…"
+      ]
+    },
+    {
+      "shape": "X X $X <: X $X X ⏎  # X: X X X",
+      "files": 1,
+      "medianSpanBytes": 13,
+      "examples": [
+        "test/apint.jl:18  …rimitive type $sname <: Signed $w end…"
+      ]
+    },
+    {
+      "shape": "X{X}(X)] ⏎  X, = X(X).X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/atomics.jl:1497  …mic{Any}(0)]…"
+      ]
+    },
+    {
+      "shape": "X ≢ X && @X X(X, X) X=(; X, X",
+      "files": 1,
+      "medianSpanBytes": 14,
+      "examples": [
+        "test/bitarray.jl:22  …e ≢ nothing && @test isa(r1, ret_type) context=(; ret_type, ac…"
+      ]
+    },
+    {
+      "shape": "X::X, ⏎  ; # X X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/ccall.jl:2111  …fmt::Cstring,…"
+      ]
+    },
+    {
+      "shape": "X, X) == \"X: X X+1X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/char.jl:341  …\"text/plain\", '\\U001f428') == \"'🐨': Unicode U+1F…"
+      ]
+    },
+    {
+      "shape": "X ⏎ X ⏎ X X.X.@X ⏎ @X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/complex.jl:408  …1…"
+      ]
+    },
+    {
+      "shape": "X X.\" ⏎ :@X ⏎ @X (@",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/docs.jl:56  …h `@doc \\\"...\\\" @...`.\"…"
+      ]
+    },
+    {
+      "shape": "X(@X X X=X) ⏎ @X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/enums.jl:97  …macrocall(@enum Test22 1=2)…"
+      ]
+    },
+    {
+      "shape": "X = @X X::X X ⏎  @X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/errorshow.jl:416  …rr_str = @except_str 0::7 TypeError…"
+      ]
+    },
+    {
+      "shape": "X X X * X ⏎  X ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/goto.jl:397  …break inner j * 100…"
+      ]
+    },
+    {
+      "shape": "X}) = $X ⏎  X.X(X::$X) = ⏎",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "test/intfuncs.jl:541  …Int8}) = $to_u8…"
+      ]
+    },
+    {
+      "shape": "- ⏎ @X X(X:X) X X X(X:X) X X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/iterators.jl:575  …-…"
+      ]
+    },
+    {
+      "shape": "X(@X, X, X) ⏎  @X X",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "test/loading.jl:2175  …npath(@__DIR__, \"project\", \"Rot13\")…"
+      ]
+    },
+    {
+      "shape": "X::X = X ⏎  X X ⏎  X X::X ⏎  X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/misc.jl:1344  …c::Int = 1…"
+      ]
+    },
+    {
+      "shape": "=== X.X ⏎  @X X.X === X. ⏎  @X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/numbers.jl:2055  …=== 1.875…"
+      ]
+    },
+    {
+      "shape": "-X,X+X,X+X,X-X] ⏎ # X ⏎ X = X(X, :,",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/offsetarray.jl:136  …-1,begin+2,begin+3,end-1]…"
+      ]
+    },
+    {
+      "shape": "@X X(X(X) : -X : X) == X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/ranges.jl:2018  …@test length(UInt(100) : -1 : 1) == checked_leng…"
+      ]
+    },
+    {
+      "shape": "/ (X(X) + X(X)X) ⏎  @X X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "test/rational.jl:229  …/ (Int8(100) + Int8(100)im)…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X ..@X ⏎  @X",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "test/rebinding.jl:628  …xporter1…"
+      ]
+    },
+    {
+      "shape": "X .X.X ⏎ ==ₜ(::X, ::X) = X ⏎",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "test/reduce.jl:7  …ing .Main.OffsetArrays…"
+      ]
+    },
+    {
+      "shape": "@X X(X) == (X=X, X=X, X=X) ⏎  @X X(X) =",
+      "files": 1,
+      "medianSpanBytes": 26,
+      "examples": [
+        "test/regex.jl:130  …@test NamedTuple(m) == (a=\"x\", var\"2\"=\"y\", b=\"z\")…"
+      ]
+    },
+    {
+      "shape": "X X == X ⏎",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "test/runtests.jl:372  …if c == '\\x3'…"
+      ]
+    },
+    {
+      "shape": ",:X=>X)X:((X,; X))\" ⏎ @X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/show.jl:243  …,:z=>2)\"…"
+      ]
+    },
+    {
+      "shape": "(X, X, X), X(X, X);) ⏎  @X X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/sorting.jl:71  …(Int, 3, 3), rand(3, 3);)…"
+      ]
+    },
+    {
+      "shape": "⏎ @X X(X(X.X), X(X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/spawn.jl:576  …@test samepath(only(`~/'a b'`.exec), joinpath(ho…"
+      ]
+    },
+    {
+      "shape": "X, X X X = X X X).X[X]::X.X ⏎",
+      "files": 1,
+      "medianSpanBytes": 4,
+      "examples": [
+        "test/stacktraces.jl:103  …in, quote let x = 1 end end).args[1]::Core.CodeInfo…"
+      ]
+    },
+    {
+      "shape": "\\\\1771X\\X\" == X(",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/strings/io.jl:141  …\\\\1771\")…"
+      ]
+    },
+    {
+      "shape": "X X X (X, X, X) ⏎",
+      "files": 1,
+      "medianSpanBytes": 9,
+      "examples": [
+        "test/strings/types.jl:288  …for c in ('X', 'δ', '\\U0001d6a5')…"
+      ]
+    },
+    {
+      "shape": "@X X[X:X,X,X+X] == @X X[X:X,X,X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/subarray.jl:663  …@test X[1:end,2,begin+1] == @view X[1:end,2,begi…"
+      ]
+    },
+    {
+      "shape": "X, X) ⏎  X(:X, X(X), X(X)) ⏎ X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/subtype.jl:8  …r, expr)…"
+      ]
+    },
+    {
+      "shape": "@X X.X(X) == X.X(\"",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/syntax.jl:2709  …@test Meta.parse(\"begin x=1 end\") == Meta.parse(\"…"
+      ]
+    },
+    {
+      "shape": "=> X, ⏎  :X => X, ⏎  :X =>",
+      "files": 1,
+      "medianSpanBytes": 2,
+      "examples": [
+        "test/terminfo.jl:520  …=> \"\\e[L\",…"
+      ]
+    },
+    {
+      "shape": "X ⏎ X X: +, -, +%, -%, ==, !=, <, <=, X",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/testhelpers/Furlongs.jl:69  …d…"
+      ]
+    },
+    {
+      "shape": ".@X (X(X); :(+($$X, $X, X))) ⏎",
+      "files": 1,
+      "medianSpanBytes": 1,
+      "examples": [
+        "test/threads_exec.jl:1056  ….@spawn (take!(ch); :(+($$a, $a, a)))…"
+      ]
+    },
+    {
+      "shape": "X ⏎  X)) ⏎  X ⏎  # X",
+      "files": 1,
+      "medianSpanBytes": 3,
+      "examples": [
+        "test/typegroup.jl:646  …end…"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "file": "Compiler/src/abstractinterpretation.jl",
+      "errorNodes": 41,
+      "smallestSpanBytes": 1,
+      "smallestLine": 129,
+      "smallestText": "⊑",
+      "shape": "X(X) ⏎  ⊑ₚ, ⊔ₚ, ⊔ᵢ = X"
+    },
+    {
+      "file": "Compiler/src/optimize.jl",
+      "errorNodes": 19,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1050,
+      "smallestText": ",",
+      "shape": "X::X, ::X, ::X ⏎  X"
+    },
+    {
+      "file": "Compiler/src/sort.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 58,
+      "smallestText": "a",
+      "shape": ", X) ⏎  X X : X ⏎  X ⏎  X"
+    },
+    {
+      "file": "Compiler/src/ssair/EscapeAnalysis.jl",
+      "errorNodes": 75,
+      "smallestSpanBytes": 1,
+      "smallestLine": 147,
+      "smallestText": "⊥",
+      "shape": "X, X) ⏎ X ⊥, ⊤ = X(), X"
+    },
+    {
+      "file": "Compiler/src/ssair/slot2ssa.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 153,
+      "smallestText": ">",
+      "shape": "(X)==X, ::X->X{X,X}(X, X)"
+    },
+    {
+      "file": "Compiler/src/typeutils.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 40,
+      "smallestText": ">",
+      "shape": "X(@X(X) -> X(X) ? X : X"
+    },
+    {
+      "file": "Compiler/test/EAUtils.jl",
+      "errorNodes": 11,
+      "smallestSpanBytes": 1,
+      "smallestLine": 113,
+      "smallestText": "⊥",
+      "shape": "X(X)) ⏎  X X === X.⊥ ⏎  X, X = ("
+    },
+    {
+      "file": "Compiler/test/inference.jl",
+      "errorNodes": 73,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2494,
+      "smallestText": "a",
+      "shape": "X X ⏎  X X ⏎  X X::X ⏎  X ⏎"
+    },
+    {
+      "file": "Compiler/test/inline.jl",
+      "errorNodes": 17,
+      "smallestSpanBytes": 1,
+      "smallestLine": 721,
+      "smallestText": "b",
+      "shape": "X = @X (X +ₚ X) +ₚ X ⏎  X ⏎"
+    },
+    {
+      "file": "Compiler/test/irpasses.jl",
+      "errorNodes": 7,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1063,
+      "smallestText": ">",
+      "shape": "X(@X(X)->X.X(X, :X), X"
+    },
+    {
+      "file": "Compiler/test/irutils.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 27,
+      "smallestText": ">",
+      "shape": "(X) = @X(X) -> X(X, X) ⏎ X X"
+    },
+    {
+      "file": "Compiler/test/ssair.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 1,
+      "smallestLine": 620,
+      "smallestText": ">",
+      "shape": "X(@X(X)->X.X(X, :X"
+    },
+    {
+      "file": "JuliaLowering/src/binding_analysis.jl",
+      "errorNodes": 14,
+      "smallestSpanBytes": 1,
+      "smallestLine": 36,
+      "smallestText": ">",
+      "shape": "X\" X X X X X...] -> X ⏎  X"
+    },
+    {
+      "file": "JuliaLowering/src/compat.jl",
+      "errorNodes": 62,
+      "smallestSpanBytes": 1,
+      "smallestLine": 25,
+      "smallestText": ",",
+      "shape": "X X (:X, :X, :(::)) && X"
+    },
+    {
+      "file": "JuliaLowering/src/desugaring.jl",
+      "errorNodes": 63,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1814,
+      "smallestText": ">",
+      "shape": "[X X] -> X # X X ⏎"
+    },
+    {
+      "file": "JuliaLowering/src/eval.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 1,
+      "smallestLine": 492,
+      "smallestText": ">",
+      "shape": "X [X]] -> X[X].X::X ? ⏎"
+    },
+    {
+      "file": "JuliaLowering/src/linear_ir.jl",
+      "errorNodes": 21,
+      "smallestSpanBytes": 1,
+      "smallestLine": 548,
+      "smallestText": ">",
+      "shape": "[X X X] -> (X, X, X, X"
+    },
+    {
+      "file": "JuliaLowering/src/syntax_macros.jl",
+      "errorNodes": 8,
+      "smallestSpanBytes": 1,
+      "smallestLine": 124,
+      "smallestText": ">",
+      "shape": "X\"] X] -> X X(X[X])"
+    },
+    {
+      "file": "JuliaLowering/src/validation.jl",
+      "errorNodes": 261,
+      "smallestSpanBytes": 1,
+      "smallestLine": 138,
+      "smallestText": ">",
+      "shape": "X ⏎  [X] -> X(X, X) ⏎"
+    },
+    {
+      "file": "JuliaLowering/test/decls.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 1,
+      "smallestLine": 850,
+      "smallestText": "@",
+      "shape": "@X X(X, :(@($X)(X))) == (X, X"
+    },
+    {
+      "file": "JuliaLowering/test/functions.jl",
+      "errorNodes": 8,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1675,
+      "smallestText": ",",
+      "shape": "X(:X, X(:X, X(:X, X(:...,"
+    },
+    {
+      "file": "JuliaLowering/test/import.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 80,
+      "smallestText": ".",
+      "shape": "X, X.@X ⏎"
+    },
+    {
+      "file": "JuliaLowering/test/misc.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 1,
+      "smallestLine": 953,
+      "smallestText": ",",
+      "shape": "X, ⏎  X(:X, ⏎  X(:X"
+    },
+    {
+      "file": "JuliaLowering/test/scopes.jl",
+      "errorNodes": 28,
+      "smallestSpanBytes": 1,
+      "smallestLine": 642,
+      "smallestText": "@",
+      "shape": "X ⏎ X ..X.@X ⏎ X ..X"
+    },
+    {
+      "file": "JuliaSyntax/test/expr.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 1,
+      "smallestLine": 125,
+      "smallestText": ",",
+      "shape": "X(:X, X(:X, X(:X, :X), :X), ⏎"
+    },
+    {
+      "file": "JuliaSyntax/test/syntax.jl",
+      "errorNodes": 34,
+      "smallestSpanBytes": 1,
+      "smallestLine": 297,
+      "smallestText": ">",
+      "shape": "[X X X X X] -> X ⏎  [X\"X"
+    },
+    {
+      "file": "base/abstractarray.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 753,
+      "smallestText": "%",
+      "shape": "X} = X(X -% X(X)) < X(X"
+    },
+    {
+      "file": "base/accumulate.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 298,
+      "smallestText": "=",
+      "shape": "= X(X) ⏎  X, = X(((), X), X.."
+    },
+    {
+      "file": "base/array.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2281,
+      "smallestText": "%",
+      "shape": "X X<:X = X +% ((X -% X) >>> X) ⏎ X"
+    },
+    {
+      "file": "base/asyncevent.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 488,
+      "smallestText": "%",
+      "shape": "X (X() -% X) > X ⏎"
+    },
+    {
+      "file": "base/bitset.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 19,
+      "smallestText": "a",
+      "shape": "X X() ⏎  X = X{X}(X,"
+    },
+    {
+      "file": "base/bool.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 1,
+      "smallestLine": 145,
+      "smallestText": "%",
+      "shape": "X, X::X) = X(X) +% X(X) ⏎ -(X::X, X::X"
+    },
+    {
+      "file": "base/broadcast.jl",
+      "errorNodes": 22,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1322,
+      "smallestText": ")",
+      "shape": "X || X.X === :X) && ⏎  X.X"
+    },
+    {
+      "file": "base/cartesian.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 456,
+      "smallestText": ",",
+      "shape": ":X ⏎  X, X = X"
+    },
+    {
+      "file": "base/char.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 1,
+      "smallestLine": 266,
+      "smallestText": "%",
+      "shape": "X(((X(X, X) +% X(X)) <<"
+    },
+    {
+      "file": "base/checked.jl",
+      "errorNodes": 8,
+      "smallestSpanBytes": 1,
+      "smallestLine": 140,
+      "smallestText": "y",
+      "shape": ":X, X::X) = (X +% X, X) ⏎ X X"
+    },
+    {
+      "file": "base/client.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 329,
+      "smallestText": "=",
+      "shape": "X::X |= X ⏎  #"
+    },
+    {
+      "file": "base/condition.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 77,
+      "smallestText": "L",
+      "shape": "X} ⏎  X X::X ⏎  X{X"
+    },
+    {
+      "file": "base/div.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 1,
+      "smallestLine": 320,
+      "smallestText": "%",
+      "shape": "X(X, X) ⏎  (X, X -% X *% X) ⏎  X X =="
+    },
+    {
+      "file": "base/docs/Docs.jl",
+      "errorNodes": 15,
+      "smallestSpanBytes": 1,
+      "smallestLine": 119,
+      "smallestText": ",",
+      "shape": "X = X(:X, X, X[X]) ⏎  X"
+    },
+    {
+      "file": "base/errorshow.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1473,
+      "smallestText": ">",
+      "shape": "& X(@X(X) -> X(X) <: X"
+    },
+    {
+      "file": "base/experimental.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 1,
+      "smallestLine": 500,
+      "smallestText": "$",
+      "shape": "X(:(X $X = $$X($(X(X)), $"
+    },
+    {
+      "file": "base/exports.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 231,
+      "smallestText": ",",
+      "shape": "÷, ⏎  &, ⏎  *, ⏎  *%, ⏎  +, ⏎  +%, ⏎  -, ⏎"
+    },
+    {
+      "file": "base/expr.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1333,
+      "smallestText": "]",
+      "shape": "⏎  X = X.X[X] ⏎  X = X.X"
+    },
+    {
+      "file": "base/file.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 168,
+      "smallestText": "\"",
+      "shape": "X.*X\\\\X ⏎ X> X(\"X"
+    },
+    {
+      "file": "base/gmp.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 1,
+      "smallestLine": 7,
+      "smallestText": ",",
+      "shape": "X ⏎ X .X: *, *%, +, +%, -, -%, /, <, <<,"
+    },
+    {
+      "file": "base/hashing.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 56,
+      "smallestText": "h",
+      "shape": "X}, X::X) = X *% X -% X ⏎ X X"
+    },
+    {
+      "file": "base/int.jl",
+      "errorNodes": 32,
+      "smallestSpanBytes": 1,
+      "smallestLine": 139,
+      "smallestText": "%",
+      "shape": "X, X % X) -% X -% X) % X ⏎ X ⏎"
+    },
+    {
+      "file": "base/intfuncs.jl",
+      "errorNodes": 13,
+      "smallestSpanBytes": 1,
+      "smallestLine": 189,
+      "smallestText": "%",
+      "shape": "X {X<:X} = X -% X *% X ⏎ X(X"
+    },
+    {
+      "file": "base/irrationals.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 203,
+      "smallestText": "h",
+      "shape": "X, X::X) = X *% X -% X(X) ⏎ X(:"
+    },
+    {
+      "file": "base/libc.jl",
+      "errorNodes": 29,
+      "smallestSpanBytes": 1,
+      "smallestLine": 346,
+      "smallestText": ")",
+      "shape": "X, (X{X}, X), X, X(X)) ⏎  X"
+    },
+    {
+      "file": "base/libdl.jl",
+      "errorNodes": 14,
+      "smallestSpanBytes": 1,
+      "smallestLine": 463,
+      "smallestText": ")",
+      "shape": "X, X), X) ⏎ X X"
+    },
+    {
+      "file": "base/loading.jl",
+      "errorNodes": 36,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1178,
+      "smallestText": ".",
+      "shape": "X X(X) === X.X ⏎"
+    },
+    {
+      "file": "base/lock.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1052,
+      "smallestText": "F",
+      "shape": "⏎  X X::X ⏎  X{X}(X"
+    },
+    {
+      "file": "base/math.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 876,
+      "smallestText": "%",
+      "shape": "X = X % X ⏎  X = X +% X ⏎  # X, X X"
+    },
+    {
+      "file": "base/multidimensional.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 471,
+      "smallestText": "%",
+      "shape": "] ⏎  X = X[X] +% X(X) ⏎  X"
+    },
+    {
+      "file": "base/multinverses.jl",
+      "errorNodes": 27,
+      "smallestSpanBytes": 1,
+      "smallestLine": 70,
+      "smallestText": "%",
+      "shape": "X = X +% X(X) ⏎"
+    },
+    {
+      "file": "base/osutils.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 35,
+      "smallestText": "=",
+      "shape": "⏎  X = X ⏎"
+    },
+    {
+      "file": "base/pointer.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 312,
+      "smallestText": "%",
+      "shape": "X, X::X) = X(X) -% X(X) ⏎ -%(X::X, X::"
+    },
+    {
+      "file": "base/precompilation.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 1,
+      "smallestLine": 89,
+      "smallestText": "%",
+      "shape": "⏎  X (X() -% X) >= X"
+    },
+    {
+      "file": "base/range.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 1,
+      "smallestLine": 34,
+      "smallestText": "%",
+      "shape": "X) = X +% X ⏎ X(X"
+    },
+    {
+      "file": "base/reflection.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 964,
+      "smallestText": "=",
+      "shape": "X\") ⏎  X, = X(X"
+    },
+    {
+      "file": "base/ryu/shortest.jl",
+      "errorNodes": 23,
+      "smallestSpanBytes": 1,
+      "smallestLine": 17,
+      "smallestText": "%",
+      "shape": "X & ((X(X) << -X) -% X(X)) == X ⏎  X X"
+    },
+    {
+      "file": "base/ryu/utils.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 1,
+      "smallestLine": 68,
+      "smallestText": "%",
+      "shape": "X(X(X), X; X=*%) ⏎  # X X X X"
+    },
+    {
+      "file": "base/scopedvalues.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 83,
+      "smallestText": "T",
+      "shape": "X ⏎  X X::X ⏎  X{X}() X"
+    },
+    {
+      "file": "base/show.jl",
+      "errorNodes": 59,
+      "smallestSpanBytes": 1,
+      "smallestLine": 806,
+      "smallestText": "w",
+      "shape": "X(@X(X) -> X === X, X), X) > X"
+    },
+    {
+      "file": "base/some.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 172,
+      "smallestText": "h",
+      "shape": "X, X +% X) ⏎"
+    },
+    {
+      "file": "base/sort.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 1,
+      "smallestLine": 234,
+      "smallestText": "a",
+      "shape": ", X) ⏎  X X : X ⏎  X ⏎  X"
+    },
+    {
+      "file": "base/special/exp.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 1,
+      "smallestLine": 224,
+      "smallestText": "%",
+      "shape": "X = ((X % X) +% X(X)) << X ⏎"
+    },
+    {
+      "file": "base/special/log.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 12,
+      "smallestText": "@",
+      "shape": "X ⏎ X .X.X.@X ⏎ # X X"
+    },
+    {
+      "file": "base/special/rem_pio2.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 189,
+      "smallestText": "%",
+      "shape": "X) ⏎  X = X(X *% X) << X # X X"
+    },
+    {
+      "file": "base/special/trig.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 635,
+      "smallestText": "%",
+      "shape": "X(X, X -% X)>>X"
+    },
+    {
+      "file": "base/strings/annotated_io.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 178,
+      "smallestText": "]",
+      "shape": "X[X+X-X] ⏎  X"
+    },
+    {
+      "file": "base/strings/cstring.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 216,
+      "smallestText": "%",
+      "shape": "X(X, X +% (X(X) << X) +% (X"
+    },
+    {
+      "file": "base/strings/io.jl",
+      "errorNodes": 17,
+      "smallestSpanBytes": 1,
+      "smallestLine": 420,
+      "smallestText": "\\",
+      "shape": "X> X(X) ⏎ X ⏎ X"
+    },
+    {
+      "file": "base/strings/search.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 653,
+      "smallestText": ";",
+      "shape": "X}}, ⏎  ; X::X=X) ⏎"
+    },
+    {
+      "file": "base/terminfo_data.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 180,
+      "smallestText": ",",
+      "shape": "X, :X, \"X X X"
+    },
+    {
+      "file": "base/timing.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 506,
+      "smallestText": "%",
+      "shape": "X)) ⏎  (X() -% X) / 1X ⏎  X ⏎ X ⏎"
+    },
+    {
+      "file": "base/toml/parser.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1438,
+      "smallestText": "=",
+      "shape": "!= X && X != X && X= X ⏎"
+    },
+    {
+      "file": "base/version.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 577,
+      "smallestText": "%",
+      "shape": "X) = X(X.X, X +% (X % X"
+    },
+    {
+      "file": "base/weakdict.jl",
+      "errorNodes": 12,
+      "smallestSpanBytes": 1,
+      "smallestLine": 32,
+      "smallestText": "t",
+      "shape": "() X {X, X} ⏎  X = X{X,X}(X{X"
+    },
+    {
+      "file": "contrib/asan/check.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 20,
+      "smallestText": "=",
+      "shape": "X X ⏎  X ⏎  X, = X ⏎  # X X X"
+    },
+    {
+      "file": "doc/make.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 563,
+      "smallestText": ";",
+      "shape": "X, ⏎  X(:(;;)); ⏎  X=X, ⏎"
+    },
+    {
+      "file": "stdlib/FileWatching/src/pidfile.jl",
+      "errorNodes": 8,
+      "smallestSpanBytes": 1,
+      "smallestLine": 91,
+      "smallestText": ")",
+      "shape": "X(X::X; X...) = X(X, X("
+    },
+    {
+      "file": "stdlib/InteractiveUtils/src/macros.jl",
+      "errorNodes": 15,
+      "smallestSpanBytes": 1,
+      "smallestLine": 47,
+      "smallestText": ",",
+      "shape": "X X ⏎  X(:X, X, X.(X)."
+    },
+    {
+      "file": "stdlib/LibGit2/src/types.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 4,
+      "smallestText": "@",
+      "shape": ": X ⏎ X X.@X ⏎ X .X: X"
+    },
+    {
+      "file": "stdlib/Profile/src/Allocs.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 313,
+      "smallestText": ";",
+      "shape": "::X, ⏎  ; ⏎  X = :X,"
+    },
+    {
+      "file": "stdlib/REPL/src/REPL.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2085,
+      "smallestText": ">",
+      "shape": "X), @X(X) -> X(X, X)) ⏎"
+    },
+    {
+      "file": "stdlib/REPL/src/REPLCompletions.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 881,
+      "smallestText": "T",
+      "shape": "X(@X(X) -> X === X || X === X"
+    },
+    {
+      "file": "stdlib/REPL/test/history.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 252,
+      "smallestText": "]",
+      "shape": "X, X] ⏎  X ="
+    },
+    {
+      "file": "stdlib/REPL/test/repl.jl",
+      "errorNodes": 5,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2271,
+      "smallestText": ",",
+      "shape": "X(X(),:X=>X),X()) ⏎  X = X"
+    },
+    {
+      "file": "stdlib/Random/src/Xoshiro.jl",
+      "errorNodes": 15,
+      "smallestSpanBytes": 1,
+      "smallestLine": 237,
+      "smallestText": "%",
+      "shape": "X, (X, X, X, X, X +% (X *% X) +% (X *% X)"
+    },
+    {
+      "file": "stdlib/Random/src/XoshiroSimd.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 1,
+      "smallestLine": 159,
+      "smallestText": "%",
+      "shape": "X(X *% X(X, X)), X"
+    },
+    {
+      "file": "stdlib/Random/src/generation.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 383,
+      "smallestText": "%",
+      "shape": "X(X) ⏎  X = (X(X) -% X(X)) % X(X)"
+    },
+    {
+      "file": "stdlib/Serialization/src/Serialization.jl",
+      "errorNodes": 7,
+      "smallestSpanBytes": 1,
+      "smallestLine": 26,
+      "smallestText": "I",
+      "shape": "X ⏎  X X::X ⏎  X::X ⏎  X"
+    },
+    {
+      "file": "stdlib/Sockets/src/IPAddr.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 148,
+      "smallestText": "=",
+      "shape": "X = -X ⏎  X X=X ⏎  X-=X ⏎  X"
+    },
+    {
+      "file": "stdlib/Test/src/Test.jl",
+      "errorNodes": 18,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1984,
+      "smallestText": "$",
+      "shape": "@X X X ⏎"
+    },
+    {
+      "file": "stdlib/Unicode/test/runtests.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 201,
+      "smallestText": "=",
+      "shape": "X X ⏎  X X=X(X) ⏎"
+    },
+    {
+      "file": "test/JuliaLowering_stdlibs.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 74,
+      "smallestText": ",",
+      "shape": "X $X`, ⏎  ; X = X"
+    },
+    {
+      "file": "test/atomics.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1497,
+      "smallestText": "=",
+      "shape": "X{X}(X)] ⏎  X, = X(X).X ⏎"
+    },
+    {
+      "file": "test/ccall.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2111,
+      "smallestText": ";",
+      "shape": "X::X, ⏎  ; # X X ⏎"
+    },
+    {
+      "file": "test/char.jl",
+      "errorNodes": 8,
+      "smallestSpanBytes": 1,
+      "smallestLine": 341,
+      "smallestText": "'",
+      "shape": "X, X) == \"X: X X+1X"
+    },
+    {
+      "file": "test/complex.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 1,
+      "smallestLine": 408,
+      "smallestText": "@",
+      "shape": "X ⏎ X ⏎ X X.X.@X ⏎ @X X"
+    },
+    {
+      "file": "test/core.jl",
+      "errorNodes": 36,
+      "smallestSpanBytes": 1,
+      "smallestLine": 69,
+      "smallestText": "a",
+      "shape": "X X ⏎  X X ⏎  X X::X ⏎  X ⏎"
+    },
+    {
+      "file": "test/docs.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 1,
+      "smallestLine": 56,
+      "smallestText": ":",
+      "shape": "X X.\" ⏎ :@X ⏎ @X (@"
+    },
+    {
+      "file": "test/enums.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 97,
+      "smallestText": "=",
+      "shape": "X(@X X X=X) ⏎ @X X"
+    },
+    {
+      "file": "test/errorshow.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 1,
+      "smallestLine": 416,
+      "smallestText": "7",
+      "shape": "X = @X X::X X ⏎  @X X"
+    },
+    {
+      "file": "test/goto.jl",
+      "errorNodes": 25,
+      "smallestSpanBytes": 1,
+      "smallestLine": 397,
+      "smallestText": "j",
+      "shape": "X X X * X ⏎  X ⏎"
+    },
+    {
+      "file": "test/iterators.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 1,
+      "smallestLine": 575,
+      "smallestText": "j",
+      "shape": "- ⏎ @X X(X:X) X X X(X:X) X X ⏎  X"
+    },
+    {
+      "file": "test/misc.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1344,
+      "smallestText": "d",
+      "shape": "X::X = X ⏎  X X ⏎  X X::X ⏎  X"
+    },
+    {
+      "file": "test/numbers.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2055,
+      "smallestText": ".",
+      "shape": "=== X.X ⏎  @X X.X === X. ⏎  @X X"
+    },
+    {
+      "file": "test/offsetarray.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 136,
+      "smallestText": "]",
+      "shape": "-X,X+X,X+X,X-X] ⏎ # X ⏎ X = X(X, :,"
+    },
+    {
+      "file": "test/ranges.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2018,
+      "smallestText": ":",
+      "shape": "@X X(X(X) : -X : X) == X"
+    },
+    {
+      "file": "test/show.jl",
+      "errorNodes": 41,
+      "smallestSpanBytes": 1,
+      "smallestLine": 243,
+      "smallestText": ",",
+      "shape": ",:X=>X)X:((X,; X))\" ⏎ @X"
+    },
+    {
+      "file": "test/sorting.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 71,
+      "smallestText": ")",
+      "shape": "(X, X, X), X(X, X);) ⏎  @X X"
+    },
+    {
+      "file": "test/spawn.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 576,
+      "smallestText": "'",
+      "shape": "⏎ @X X(X(X.X), X(X"
+    },
+    {
+      "file": "test/strings/io.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 1,
+      "smallestLine": 141,
+      "smallestText": "\"",
+      "shape": "\\\\1771X\\X\" == X("
+    },
+    {
+      "file": "test/subarray.jl",
+      "errorNodes": 20,
+      "smallestSpanBytes": 1,
+      "smallestLine": 663,
+      "smallestText": "]",
+      "shape": "@X X[X:X,X,X+X] == @X X[X:X,X,X"
+    },
+    {
+      "file": "test/subtype.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 8,
+      "smallestText": ",",
+      "shape": "X, X) ⏎  X(:X, X(X), X(X)) ⏎ X"
+    },
+    {
+      "file": "test/syntax.jl",
+      "errorNodes": 71,
+      "smallestSpanBytes": 1,
+      "smallestLine": 2709,
+      "smallestText": "x",
+      "shape": "@X X.X(X) == X.X(\""
+    },
+    {
+      "file": "test/testhelpers/Furlongs.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 69,
+      "smallestText": ",",
+      "shape": "X ⏎ X X: +, -, +%, -%, ==, !=, <, <=, X"
+    },
+    {
+      "file": "test/threads_exec.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 1,
+      "smallestLine": 1056,
+      "smallestText": "$",
+      "shape": ".@X (X(X); :(+($$X, $X, X))) ⏎"
+    },
+    {
+      "file": "Compiler/src/types.jl",
+      "errorNodes": 17,
+      "smallestSpanBytes": 2,
+      "smallestLine": 134,
+      "smallestText": "ci",
+      "shape": "X X ===# ⏎  X::X"
+    },
+    {
+      "file": "base/binaryplatforms.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 883,
+      "smallestText": "os",
+      "shape": ")?\\.X$X\" ⏎  # X"
+    },
+    {
+      "file": "base/docs/basedocs.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 3518,
+      "smallestText": "*%",
+      "shape": "X *% X ⏎ X ⏎ X` ⏎ X ⏎  /"
+    },
+    {
+      "file": "base/iterators.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 2,
+      "smallestLine": 1737,
+      "smallestText": "1]",
+      "shape": "X) = X[X + X - X] ⏎ X X(::X{"
+    },
+    {
+      "file": "base/operators.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 663,
+      "smallestText": "*%",
+      "shape": "X X (:+, :(+%), :*, :(*%), :&, :|, :X, :X, :"
+    },
+    {
+      "file": "base/simdloop.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 2,
+      "smallestLine": 18,
+      "smallestText": "in",
+      "shape": "=== :(=) || X.X === :X)) || X(X(\"="
+    },
+    {
+      "file": "base/views.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 117,
+      "smallestText": "ex",
+      "shape": "X ⏎  X X === :X ⏎"
+    },
+    {
+      "file": "stdlib/InteractiveUtils/test/runtests.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 2,
+      "smallestLine": 964,
+      "smallestText": "w\"",
+      "shape": "X = X(X, X) ⏎  X"
+    },
+    {
+      "file": "stdlib/Markdown/test/runtests.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 1266,
+      "smallestText": "+1",
+      "shape": "X X(X[X+X], X(X^X.X"
+    },
+    {
+      "file": "stdlib/Mmap/test/runtests.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 680,
+      "smallestText": "*8",
+      "shape": "X X X X*X X ⏎ X = X{X"
+    },
+    {
+      "file": "test/rational.jl",
+      "errorNodes": 7,
+      "smallestSpanBytes": 2,
+      "smallestLine": 229,
+      "smallestText": "im",
+      "shape": "/ (X(X) + X(X)X) ⏎  @X X"
+    },
+    {
+      "file": "test/rebinding.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 2,
+      "smallestLine": 628,
+      "smallestText": "..",
+      "shape": "X ⏎  X ..@X ⏎  @X"
+    },
+    {
+      "file": "test/reduce.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 2,
+      "smallestLine": 7,
+      "smallestText": "==",
+      "shape": "X .X.X ⏎ ==ₜ(::X, ::X) = X ⏎"
+    },
+    {
+      "file": "test/terminfo.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 2,
+      "smallestLine": 520,
+      "smallestText": "=>",
+      "shape": "=> X, ⏎  :X => X, ⏎  :X =>"
+    },
+    {
+      "file": "Compiler/src/inferencestate.jl",
+      "errorNodes": 24,
+      "smallestSpanBytes": 3,
+      "smallestLine": 239,
+      "smallestText": "Int",
+      "shape": "X ⏎  X X::X ⏎  X::X{"
+    },
+    {
+      "file": "JuliaLowering/src/bindings.jl",
+      "errorNodes": 23,
+      "smallestSpanBytes": 3,
+      "smallestLine": 11,
+      "smallestText": "Int",
+      "shape": "::X = X ⏎  X::X # X X"
+    },
+    {
+      "file": "JuliaLowering/test/closures.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 3,
+      "smallestLine": 1619,
+      "smallestText": "::3",
+      "shape": "X = X ⏎  X(X::X) = X ⏎  :X"
+    },
+    {
+      "file": "JuliaSyntax/src/porcelain/syntax.jl",
+      "errorNodes": 17,
+      "smallestSpanBytes": 3,
+      "smallestLine": 38,
+      "smallestText": "Any",
+      "shape": "X}} ⏎  X::X ⏎  X::X{X"
+    },
+    {
+      "file": "JuliaSyntax/test/test_utils.jl",
+      "errorNodes": 16,
+      "smallestSpanBytes": 3,
+      "smallestLine": 184,
+      "smallestText": "end",
+      "shape": "X ⏎  X ⏎  X (X == :(=) |"
+    },
+    {
+      "file": "JuliaSyntax/test/test_utils_tests.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 3,
+      "smallestLine": 29,
+      "smallestText": "for",
+      "shape": "X(X(:X, X(:(=), ⏎"
+    },
+    {
+      "file": "base/essentials.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 3,
+      "smallestLine": 1032,
+      "smallestText": "for",
+      "shape": "X = X(:X, X.X[X], X"
+    },
+    {
+      "file": "base/iobuffer.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 3,
+      "smallestLine": 671,
+      "smallestText": "ptr",
+      "shape": "X ⏎  X ⏎  X.X : X.X ⏎  X ⏎ X ⏎"
+    },
+    {
+      "file": "base/reinterpretarray.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 3,
+      "smallestLine": 888,
+      "smallestText": "out",
+      "shape": "X.@X X X X ⏎  X"
+    },
+    {
+      "file": "stdlib/Base64/src/buffer.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 3,
+      "smallestLine": 6,
+      "smallestText": "Int",
+      "shape": "X{X} ⏎  X::X ⏎  X::X ⏎  X"
+    },
+    {
+      "file": "stdlib/FileWatching/src/FileWatching.jl",
+      "errorNodes": 20,
+      "smallestSpanBytes": 3,
+      "smallestLine": 333,
+      "smallestText": "Int",
+      "shape": "X} ⏎  X X::X # X X X X X"
+    },
+    {
+      "file": "stdlib/Random/src/MersenneTwister.jl",
+      "errorNodes": 9,
+      "smallestSpanBytes": 3,
+      "smallestLine": 21,
+      "smallestText": "Int",
+      "shape": "X X ⏎  X::X ⏎  X::X ⏎  # X"
+    },
+    {
+      "file": "test/typegroup.jl",
+      "errorNodes": 15,
+      "smallestSpanBytes": 3,
+      "smallestLine": 646,
+      "smallestText": "end",
+      "shape": "X ⏎  X)) ⏎  X ⏎  # X"
+    },
+    {
+      "file": "JuliaLowering/src/scope_analysis.jl",
+      "errorNodes": 25,
+      "smallestSpanBytes": 4,
+      "smallestLine": 85,
+      "smallestText": "true",
+      "shape": "X && X X ⏎  X(X"
+    },
+    {
+      "file": "base/Enums.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 4,
+      "smallestLine": 226,
+      "smallestText": "Base",
+      "shape": "$(X(X)) ⏎  X.X(X::X{$(X(X"
+    },
+    {
+      "file": "base/strings/lazy.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 4,
+      "smallestLine": 38,
+      "smallestText": "Bool",
+      "shape": "X ⏎  X X::X # X & X X"
+    },
+    {
+      "file": "stdlib/Dates/src/parse.jl",
+      "errorNodes": 26,
+      "smallestSpanBytes": 4,
+      "smallestLine": 231,
+      "smallestText": "done",
+      "shape": "X > X && X X ⏎  X ⏎"
+    },
+    {
+      "file": "test/intfuncs.jl",
+      "errorNodes": 6,
+      "smallestSpanBytes": 4,
+      "smallestLine": 541,
+      "smallestText": "Base",
+      "shape": "X}) = $X ⏎  X.X(X::$X) = ⏎"
+    },
+    {
+      "file": "test/loading.jl",
+      "errorNodes": 10,
+      "smallestSpanBytes": 4,
+      "smallestLine": 2175,
+      "smallestText": "\", \"",
+      "shape": "X(@X, X, X) ⏎  @X X"
+    },
+    {
+      "file": "test/runtests.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 4,
+      "smallestLine": 372,
+      "smallestText": "'\\x3",
+      "shape": "X X == X ⏎"
+    },
+    {
+      "file": "test/stacktraces.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 4,
+      "smallestLine": 103,
+      "smallestText": "end)",
+      "shape": "X, X X X = X X X).X[X]::X.X ⏎"
+    },
+    {
+      "file": "base/arrayshow.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 5,
+      "smallestLine": 311,
+      "smallestText": "entry",
+      "shape": "X X ⏎"
+    },
+    {
+      "file": "base/partr.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 5,
+      "smallestLine": 11,
+      "smallestText": "Int32",
+      "shape": "X} ⏎  @X X::X ⏎  @X X::X"
+    },
+    {
+      "file": "base/stream.jl",
+      "errorNodes": 28,
+      "smallestSpanBytes": 5,
+      "smallestLine": 1988,
+      "smallestText": ":out)",
+      "shape": "X(X, X.X ? :X : :X) ⏎  X(X) ⏎  X X"
+    },
+    {
+      "file": "base/Terminals.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 6,
+      "smallestLine": 155,
+      "smallestText": "\"\\x7\")",
+      "shape": "X) = X(X.X,X) ⏎ X.X(X::X"
+    },
+    {
+      "file": "base/hamt.jl",
+      "errorNodes": 4,
+      "smallestSpanBytes": 6,
+      "smallestLine": 64,
+      "smallestText": "bitmap",
+      "shape": "X, X}, X{X, X}}} ⏎  X::X ⏎  X{X,X}(X"
+    },
+    {
+      "file": "JuliaLowering/src/closure_conversion.jl",
+      "errorNodes": 16,
+      "smallestSpanBytes": 7,
+      "smallestLine": 63,
+      "smallestText": ")\n    b",
+      "shape": "X, X, X) ⏎  X = X(X, X)"
+    },
+    {
+      "file": "test/strings/types.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 9,
+      "smallestLine": 288,
+      "smallestText": "'\\U0001d6",
+      "shape": "X X X (X, X, X) ⏎"
+    },
+    {
+      "file": "base/task.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 10,
+      "smallestLine": 965,
+      "smallestText": "local task",
+      "shape": "X...) ⏎  X X = X($X) ⏎"
+    },
+    {
+      "file": "base/threadingconstructs.jl",
+      "errorNodes": 14,
+      "smallestSpanBytes": 10,
+      "smallestLine": 883,
+      "smallestText": "local task",
+      "shape": "X...) ⏎  X X = X($X) ⏎"
+    },
+    {
+      "file": "base/special/cbrt.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 11,
+      "smallestLine": 127,
+      "smallestText": "0x8000_0000",
+      "shape": "X, X) ⏎  X = (X +% X) & X(X"
+    },
+    {
+      "file": "test/apint.jl",
+      "errorNodes": 3,
+      "smallestSpanBytes": 13,
+      "smallestLine": 18,
+      "smallestText": "Signed $w end",
+      "shape": "X X $X <: X $X X ⏎  # X: X X X"
+    },
+    {
+      "file": "test/bitarray.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 14,
+      "smallestLine": 22,
+      "smallestText": "(r1, ret_type)",
+      "shape": "X ≢ X && @X X(X, X) X=(; X, X"
+    },
+    {
+      "file": "stdlib/REPL/src/docview.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 15,
+      "smallestLine": 408,
+      "smallestText": "= Base.ispublic",
+      "shape": "X(X) ⏎  X = X.X(X.X, X.X"
+    },
+    {
+      "file": "base/c.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 23,
+      "smallestLine": 20,
+      "smallestText": "let constructor = false",
+      "shape": "⏎  X::X{X} ⏎  X X = X X ⏎ X ⏎ X("
+    },
+    {
+      "file": "test/regex.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 26,
+      "smallestLine": 130,
+      "smallestText": "(a=\"x\", var\"2\"=\"y\", b=\"z\")",
+      "shape": "@X X(X) == (X=X, X=X, X=X) ⏎  @X X(X) ="
+    },
+    {
+      "file": "base/rational.jl",
+      "errorNodes": 2,
+      "smallestSpanBytes": 27,
+      "smallestLine": 412,
+      "smallestText": "%(x::Rational, y::Rational)",
+      "shape": "X, X)) ⏎ X ⏎ X +%(X::X, X::X) ⏎  X, X = X(X,"
+    },
+    {
+      "file": "stdlib/REPL/test/replcompletions.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 32,
+      "smallestLine": 29,
+      "smallestText": "\"complicated symbol with spaces\"",
+      "shape": "XδX, ⏎  X, X, @X"
+    },
+    {
+      "file": "Compiler/src/ssair/inlining.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 53,
+      "smallestLine": 49,
+      "smallestText": "(item, Union{InliningTodo, InvokeCase, ConstantCase})",
+      "shape": "X)) ⏎  @X X(X, X{X, X, X}) X"
+    },
+    {
+      "file": "Compiler/test/EscapeAnalysis.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 83,
+      "smallestLine": 1373,
+      "smallestText": "do @nospecialize x\n            isreturn(x) && isa(x.val, Core.SSAValue)\n        end",
+      "shape": "X(X.X.X.X) X @X X ⏎  X(X) && X(X.X, X.X) ⏎  X) ⏎  @X X"
+    },
+    {
+      "file": "stdlib/Logging/src/Logging.jl",
+      "errorNodes": 1,
+      "smallestSpanBytes": 150,
+      "smallestLine": 11,
+      "smallestText": "import Base.CoreLogging:\n    LogLevel,\n    AbstractLogger,\n    NullLogger,\n    handle_message, shouldlog, min_enabled_level, catch_exceptions,\n    var",
+      "shape": "X. ⏎ X\" ⏎ X X ⏎ X X.X: ⏎  X, ⏎  X, ⏎  X, ⏎  X, X, X, X, ⏎  X, ⏎  X"
+    }
+  ]
+}

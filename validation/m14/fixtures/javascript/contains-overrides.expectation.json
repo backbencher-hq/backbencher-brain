@@ -1,0 +1,40 @@
+{
+  "fixtureId": "javascript/contains-overrides",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS contains + overrides relationship kinds (section B). JS class semantics: a class contains its methods, and a derived class's same-name method overrides the base's. Pre-fix: neither kind was pinned by any javascript fixture.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Derived",
+      "kind": "class"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Derived"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "render",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Derived",
+      "target": "render",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.render",
+      "target": "render"
+    }
+  ]
+}

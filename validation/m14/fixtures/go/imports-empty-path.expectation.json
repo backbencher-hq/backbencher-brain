@@ -1,0 +1,20 @@
+{
+  "fixtureId": "go/imports-empty-path",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "TWO defects this fixture pins, both found by the full go-stdlib census (11,789 files through the production parseFile) rather than by reading the analyzer. (1) R7 forbids an EMPTY edge endpoint, and the census recorded 5 `imports` edges with an empty TARGET, all in compiler-rejection fixtures (`import \"\"`, `import ;`). An empty import path is not a dependency on nothing: Go's spec requires ImportPath to be a non-empty string and the compiler rejects the file, so the edge resolved to nothing and could never be followed by import-resolution.ts. (2) `ImportPath = string_lit` and `string_lit` is EITHER an interpreted string OR a RAW string, but only the interpreted form had its delimiters stripped - so a raw-string path reached the target WITH ITS BACKTICKS, and the empty-endpoint guard was BYPASSED by the spelling rather than defeated by the construct: an empty raw string produced the target \"``\", which is not empty, so the guard never saw it. A guard that a one-character difference in the source walks past is the worst shape a guard can have, because it looks effective. THE FORBIDS CARRY AS MUCH WEIGHT AS THE EXPECTATIONS: the five REAL paths still produce their edges, two of them sitting in grouped blocks alongside an empty spec, so the guard cannot be implemented by dropping a whole declaration or a whole block; and no target may carry backticks. metadata.invalidImportPathCount is pinned because a guard that drops rows with nothing to show for it is indistinguishable from a guard that is not running - `expectMetadata` is an ARRAY in the runner's contract, and the runner has no `forbidMetadata` section, so the \"the count is never 0\" direction is pinned by the positive value instead: 0 would mean the guard stopped counting. Line numbers and the count are authored from a re-probed emission (`script/m14/tmp/go-fixture-dump.mts`), not predicted.",
+  "expectRelationships": [
+    { "type": "imports", "from": "gofixture", "target": "fmt", "line_number": 28, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "strings", "line_number": 31, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "sort", "line_number": 37, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "errors", "line_number": 39, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "bytes", "line_number": 44, "meta.isGoImportDep": true }
+  ],
+  "expectMetadata": [
+    { "invalidImportPathCount": 2, "comment": "one interpreted empty path and one raw empty path; both suppressed, both counted" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "gofixture", "target": "", "comment": "R7: an empty endpoint. `import \"\"` is not a dependency; the compiler rejects the file." },
+    { "type": "imports", "from": "gofixture", "target": "``", "comment": "the raw string's DELIMITERS survived, which both bypassed the empty-endpoint guard and published a target no Go declaration can contain" }
+  ]
+}

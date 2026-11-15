@@ -1,0 +1,90 @@
+{
+  "door": "MCP stdio (source door)",
+  "entry": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/work/node-server-entry.ts",
+  "command": "npx tsx /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/work/node-server-entry.ts --dir <fixture>",
+  "protocol": "JSON-RPC over stdio via @modelcontextprotocol/sdk StdioClientTransport; child env carries BB_DATA_DIR and BB_NO_AUTO_REFRESH=1",
+  "indexedFixture": {
+    "dir": "/tmp/bb-patterns-door-6I1A8f",
+    "projectId": "74aaed7ba62becaaa25a3a7ce76565be380d92be"
+  },
+  "unindexedFixture": {
+    "dir": "/tmp/bb-patterns-door-empty-tPkgdC",
+    "projectId": "2ae6460297fee5de8c6b0e6fd3bf628db5d4d0b9"
+  },
+  "cases": [
+    {
+      "label": "success-orphaned",
+      "result": {
+        "tool": "bb_patterns",
+        "arguments": {
+          "scope": "orphaned",
+          "limit": 5
+        },
+        "isError": false,
+        "text": "orphaned code (2 found):\n  orphaned_function dead — src/app.ts:2 (70%)\n  orphaned_function caller — src/app.ts:3 (70%)\n[scan: 2 orphan candidate(s) (orphaned_function=2); showing 2]\n[suppressed: nothing]\n[provenance: static_finding via orphans@intelligence; scanned 3 symbol(s) in 0 file(s); limitations: 3]",
+        "chars": 307
+      }
+    },
+    {
+      "label": "success-default-all",
+      "result": {
+        "tool": "bb_patterns",
+        "arguments": {},
+        "isError": false,
+        "text": "patterns (2 found):\n  [info] orphaned_function @ src/app.ts:2 (70%)\n  [info] orphaned_function @ src/app.ts:3 (70%)\n[scan: 2 finding(s) across orphaned_function=2 rule(s); showing 2]",
+        "chars": 182
+      }
+    },
+    {
+      "label": "refuse-invalid-scope",
+      "result": {
+        "tool": "bb_patterns",
+        "arguments": {
+          "scope": "quality"
+        },
+        "isError": true,
+        "text": "error: bb_patterns: scope must be one of: orphaned, all",
+        "chars": 55
+      }
+    },
+    {
+      "label": "refuse-unknown-option",
+      "result": {
+        "tool": "bb_patterns",
+        "arguments": {
+          "foo": true
+        },
+        "isError": true,
+        "text": "error: bb_patterns: unknown or irrelevant options: foo — accepted options: scope, limit, includeOrphaned, includeFramework, includeAntiPatterns, confidenceThreshold, history, recordRun",
+        "chars": 184
+      }
+    },
+    {
+      "label": "refuse-invalid-threshold",
+      "result": {
+        "tool": "bb_patterns",
+        "arguments": {
+          "confidenceThreshold": 2
+        },
+        "isError": true,
+        "text": "error: bb_patterns: confidenceThreshold must be between 0 and 1",
+        "chars": 63
+      }
+    },
+    {
+      "label": "refuse-missing-index",
+      "result": {
+        "tool": "bb_patterns",
+        "arguments": {},
+        "isError": true,
+        "text": "No index found for /tmp/bb-patterns-door-empty-tPkgdC. Run: bb index \"/tmp/bb-patterns-door-empty-tPkgdC\".",
+        "chars": 106
+      }
+    }
+  ],
+  "generatedAt": "2026-11-01T23:24:59.357Z",
+  "serverStderr": {
+    "indexed": "",
+    "unindexed": ""
+  }
+}

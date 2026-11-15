@@ -1,0 +1,23 @@
+{
+  "fixtureId": "css/keyframes-name-collides-with-element-rule",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "AN ANIMATION NAME RESOLVES AGAINST `@keyframes` ONLY — the language's rule, not a preference: `animation: progress` matches keyframes at-rules by name, so any other declaration that happens to share the spelling is not a candidate the animation property can mean. Two halves are pinned here: the `uses` edge names the KEYFRAMES declaration, and with CSS-D15 it names it by its project-unique spelling rather than leaving a bare `progress` for the store's tie-break to decide.\n\nWHAT THIS FIXTURE CANNOT PIN, AND WHY THE HARNESS SAYS SO. The sharper case is one file publishing `progress` TWICE — an element rule beside `@keyframes progress`, which is exactly the shape the gate's worklist measured for the lane's two ambiguous `uses` edges (`progress`, two declarations, `[function|type]`). A css file has TWO name spaces (selectors and at-rule names), and `run-fixtures.ts`'s export invariant is name-only, so it refuses that file as `duplicate export name(s) [\"progress\"]` — the same class of exemption Erlang needed for arity (#880). Writing the element rule nested (as here) keeps the fixture admissible but also changes its published name to the resolved selector, which removes the collision. So the collision case is pinned by MEASUREMENT instead (the gate's `uses` ambiguity at population scale) and the harness limitation is recorded rather than worked around silently.",
+  "expectSymbols": [
+    { "name": "progress", "kind": "function", "meta.isKeyframes": true },
+    { "name": ".card", "kind": "class" },
+    { "name": ".spinner", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": ".spinner",
+      "target": "fixtures/css/keyframes-name-collides-with-element-rule::progress",
+      "meta.isAnimationRef": true
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": ".spinner", "target": "progress" }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

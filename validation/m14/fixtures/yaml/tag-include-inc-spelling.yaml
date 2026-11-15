@@ -1,0 +1,18 @@
+# The include-family tag has TWO real-world spellings and the analyzer was missing one.
+#
+# `!include` is not an Ansible tag: it belongs to third-party PyYAML extensions, and
+# pyyaml-include 2.x — the current release, on PyPI with readthedocs docs — renamed it
+# to `!inc`. Measured over all 9,953 files in the eight pinned corpora: every spelling
+# this lane originally knew occurs ZERO times, so the gap was invisible from the corpus
+# and only a check of the libraries that define the construct exposed it. The set was
+# guessed, and this file is the correction pinned.
+modern: !inc include.d/1.yml
+legacy: !include include.d/2.yml
+list: [!inc include.d/1.yml, !include include.d/2.yml]
+# THE NEGATIVE HALF, which is the half that matters. `!vault` and `!unsafe` are the tags
+# Ansible actually uses (30 and 31 occurrences across the eight corpora) and NEITHER is an
+# include: they annotate a value in place. If the set were a prefix rule — anything
+# matching an include substring — these would be published as file imports, which is the
+# over-firing class this lane keeps being bitten by.
+secret: !vault encrypted-blob
+version: !unsafe "1.2"

@@ -1,0 +1,38 @@
+{
+  "generatedBy": "validation/m14/fixtures/markdown/hang-probe.ts --trap-sweep",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "sampleMethod": "admitted markdown files in the gate's own order (readdirSync + git ls-files), then every `stride`-th file, stride = floor(admitted/limit) — identical byte-for-byte in both runs",
+  "note": "src/ast/engine.ts:1410 arms the 120s parse bomb, :1416 clearTimeout runs only when parse RETURNS; a WASM trap throws past it and the leaked timer later exits the process naming a file that already failed fast",
+  "runs": [
+    {
+      "requestedConcurrency": 8,
+      "status": 0,
+      "signal": null,
+      "stderrTail": 0,
+      "ok": true,
+      "concurrency": 8,
+      "admitted": 17456,
+      "sample": 800,
+      "stride": 21,
+      "parsedByTheRealAnalyzer": 800,
+      "degraded": 0,
+      "degradedFiles": [],
+      "wallMs": 57665
+    },
+    {
+      "requestedConcurrency": 1,
+      "status": 0,
+      "signal": null,
+      "stderrTail": 0,
+      "ok": true,
+      "concurrency": 1,
+      "admitted": 17456,
+      "sample": 800,
+      "stride": 21,
+      "parsedByTheRealAnalyzer": 800,
+      "degraded": 0,
+      "degradedFiles": [],
+      "wallMs": 49395
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "_planted": "CASE A — a GRAMMAR-ABSENCE ruling: a field-valued label whose verdict is up front and whose instrument is the whole grammar.",
+  "language": "json",
+  "gap": {
+    "_description": "planted",
+    "gaps": [
+      { "id": "P-G1", "label": "implements", "severity": "ruled", "instrument": "A:grammar-inventory",
+        "ruling": "RULED INAPPLICABLE. Instrument A: the wired grammar produced 12 distinct node types and none of them declares a type, so there is no endpoint for an `implements` edge at either end." }
+    ]
+  }
+}

@@ -3,7 +3,7 @@
   "lane": "VUE_MERGE2",
   "mode": "prod",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "repo": "vuejs",
     "tracked": 11,
     "admitted": 11,

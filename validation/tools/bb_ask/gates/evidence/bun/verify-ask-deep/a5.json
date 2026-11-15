@@ -1,0 +1,12 @@
+{
+  "issue": "bb_ask measured aggregate scaling",
+  "code": "A5",
+  "tool": "bb_ask",
+  "title": "measured time complexity",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-03T20:25:39.336Z"
+}

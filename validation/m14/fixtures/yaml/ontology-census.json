@@ -1,0 +1,533 @@
+{
+  "_purpose": "The yaml lane's SPACE + CONSTRUCT census, read by validation/m14/fixtures/yaml/ruling-attestation.json through POINTERS so a stale attestation fails instead of passing. Emitted by validation/m14/fixtures/yaml/ontology-census.ts.",
+  "generatedAt": "2026-10-10T19:52:05.543Z",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "filesOnDisk": 18354,
+    "draw": 3671,
+    "stride": 5,
+    "repos": 167,
+    "parsed": 3671,
+    "failed": 0,
+    "note": "A stride draw over the whole admitted .yaml/.yml population. Enough for a SPACE question; the grammar inventory half is population-independent."
+  },
+  "grammarInventory": {
+    "nodeTypeCount": 301,
+    "namedTypes": 36,
+    "anonymousTokens": 104,
+    "fields": [
+      "key",
+      "value"
+    ],
+    "namedTypeList": [
+      "alias",
+      "alias_name",
+      "anchor",
+      "anchor_name",
+      "block_mapping",
+      "block_mapping_pair",
+      "block_node",
+      "block_scalar",
+      "block_sequence",
+      "block_sequence_item",
+      "boolean_scalar",
+      "comment",
+      "directive_name",
+      "directive_parameter",
+      "document",
+      "double_quote_scalar",
+      "escape_sequence",
+      "float_scalar",
+      "flow_mapping",
+      "flow_node",
+      "flow_pair",
+      "flow_sequence",
+      "integer_scalar",
+      "null_scalar",
+      "plain_scalar",
+      "reserved_directive",
+      "single_quote_scalar",
+      "stream",
+      "string_scalar",
+      "tag",
+      "tag_directive",
+      "tag_handle",
+      "tag_prefix",
+      "timestamp_scalar",
+      "yaml_directive",
+      "yaml_version"
+    ],
+    "declarationNodeTypesSought": [
+      "class_declaration",
+      "interface_declaration",
+      "declaration",
+      "type_declaration",
+      "extends_clause",
+      "implements_clause",
+      "base_class_clause"
+    ],
+    "declarationNodeTypesPresent": [],
+    "constructionNodeTypesSought": [
+      "new_expression",
+      "object_creation",
+      "constructor_call",
+      "class_instance",
+      "instance"
+    ],
+    "constructionNodeTypesPresent": []
+  },
+  "treeCensus": {
+    "distinctNodeTypes": 43,
+    "distinctBlockTypes": 4,
+    "blockTypesNote": "distinct node types a document directly contains",
+    "distinctTopLevelKeys": 3845,
+    "distinctAttributeKeys": 18368,
+    "attributeKeySites": 296009,
+    "topTypes": [
+      {
+        "type": "flow_node",
+        "count": 564929
+      },
+      {
+        "type": "plain_scalar",
+        "count": 502656
+      },
+      {
+        "type": "string_scalar",
+        "count": 473218
+      },
+      {
+        "type": ":",
+        "count": 296047
+      },
+      {
+        "type": "block_mapping_pair",
+        "count": 291267
+      },
+      {
+        "type": "block_node",
+        "count": 149032
+      },
+      {
+        "type": "-",
+        "count": 112914
+      },
+      {
+        "type": "block_sequence_item",
+        "count": 112907
+      },
+      {
+        "type": "block_mapping",
+        "count": 101294
+      },
+      {
+        "type": "\"",
+        "count": 76391
+      },
+      {
+        "type": "double_quote_scalar",
+        "count": 38192
+      },
+      {
+        "type": "block_sequence",
+        "count": 37405
+      },
+      {
+        "type": "'",
+        "count": 25498
+      },
+      {
+        "type": "boolean_scalar",
+        "count": 16895
+      },
+      {
+        "type": "single_quote_scalar",
+        "count": 12749
+      },
+      {
+        "type": "integer_scalar",
+        "count": 12001
+      },
+      {
+        "type": "escape_sequence",
+        "count": 11700
+      },
+      {
+        "type": "block_scalar",
+        "count": 10333
+      },
+      {
+        "type": "|",
+        "count": 9849
+      },
+      {
+        "type": "comment",
+        "count": 9173
+      },
+      {
+        "type": "{",
+        "count": 6673
+      },
+      {
+        "type": "flow_mapping",
+        "count": 6645
+      },
+      {
+        "type": "}",
+        "count": 6645
+      },
+      {
+        "type": "flow_pair",
+        "count": 4742
+      },
+      {
+        "type": "flow_sequence",
+        "count": 4566
+      }
+    ],
+    "topLevelKeysByFrequency": [
+      {
+        "key": "apiVersion",
+        "count": 1481
+      },
+      {
+        "key": "kind",
+        "count": 1419
+      },
+      {
+        "key": "metadata",
+        "count": 1366
+      },
+      {
+        "key": "spec",
+        "count": 1265
+      },
+      {
+        "key": "name",
+        "count": 461
+      },
+      {
+        "key": "description",
+        "count": 315
+      },
+      {
+        "key": "type",
+        "count": 296
+      },
+      {
+        "key": "jobs",
+        "count": 263
+      },
+      {
+        "key": "status",
+        "count": 251
+      },
+      {
+        "key": "on",
+        "count": 250
+      },
+      {
+        "key": "response",
+        "count": 234
+      },
+      {
+        "key": "version",
+        "count": 204
+      },
+      {
+        "key": "url",
+        "count": 155
+      },
+      {
+        "key": "query",
+        "count": 153
+      },
+      {
+        "key": "permissions",
+        "count": 128
+      },
+      {
+        "key": "args",
+        "count": 121
+      },
+      {
+        "key": "title",
+        "count": 116
+      },
+      {
+        "key": "dependencies",
+        "count": 115
+      },
+      {
+        "key": "message",
+        "count": 96
+      },
+      {
+        "key": "request",
+        "count": 93
+      },
+      {
+        "key": "sourceSchemas",
+        "count": 91
+      },
+      {
+        "key": "scope",
+        "count": 85
+      },
+      {
+        "key": "operationPlan",
+        "count": 82
+      },
+      {
+        "key": "environment",
+        "count": 80
+      },
+      {
+        "key": "dev_dependencies",
+        "count": 68
+      },
+      {
+        "key": "sources",
+        "count": 60
+      },
+      {
+        "key": "worlds",
+        "count": 49
+      },
+      {
+        "key": "publish_to",
+        "count": 46
+      },
+      {
+        "key": "info",
+        "count": 43
+      },
+      {
+        "key": "concurrency",
+        "count": 42
+      },
+      {
+        "key": "flutter",
+        "count": 38
+      },
+      {
+        "key": "headers",
+        "count": 36
+      },
+      {
+        "key": "expression",
+        "count": 34
+      },
+      {
+        "key": "body",
+        "count": 32
+      },
+      {
+        "key": "include",
+        "count": 32
+      },
+      {
+        "key": "definitions",
+        "count": 32
+      },
+      {
+        "key": "operation",
+        "count": 31
+      },
+      {
+        "key": "nodes",
+        "count": 31
+      },
+      {
+        "key": "DOCUMENTATION",
+        "count": 29
+      },
+      {
+        "key": "EXAMPLES",
+        "count": 28
+      }
+    ]
+  },
+  "implementsSites": 0,
+  "instantiatesSites": 0,
+  "candidateWordPopulations": {
+    "_rule": "A keyword KEY is a SITE only when the document ALSO declares a type for the construct to name. yaml has no type-declaration construct, so no document does, and the site counts are 0 by measurement. The raw keyword counts below are what was found and excluded.",
+    "implementsKeywordSites": 329,
+    "instantiatesKeywordSites": 14,
+    "documentsDeclaringAType": 1,
+    "implementsSamples": [
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/file_selector/file_selector_android/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/google_maps_flutter/google_maps_flutter_ios/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/google_maps_flutter/google_maps_flutter_web/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/image_picker/image_picker_macos/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/path_provider/path_provider_foundation/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/path_provider/path_provider_windows/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/shared_preferences/shared_preferences_android/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/url_launcher/url_launcher_android/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "implements",
+        "file": "flutter-packages/packages/webview_flutter/webview_flutter_web/pubspec.yaml",
+        "line": 13
+      },
+      {
+        "key": "protocol",
+        "file": "hasura-engine/cli/internal/metadataobject/opentelemetry/testdata/export_test/t1/want.opentelemetry.yaml",
+        "line": 9
+      },
+      {
+        "key": "protocol",
+        "file": "helm/internal/chart/v3/util/testdata/subpop/charts/subchart2/charts/subchartC/templates/service.yaml",
+        "line": 12
+      },
+      {
+        "key": "protocol",
+        "file": "helm/internal/chart/v3/util/testdata/subpop/noreqs/templates/service.yaml",
+        "line": 12
+      },
+      {
+        "key": "protocol",
+        "file": "helm/internal/chart/v3/util/testdata/three-level-dependent-chart/umbrella/charts/app3/charts/library/templates/service.yaml",
+        "line": 8
+      },
+      {
+        "key": "protocol",
+        "file": "helm/pkg/chart/v2/lint/rules/testdata/albatross/templates/svc.yaml",
+        "line": 16
+      },
+      {
+        "key": "protocol",
+        "file": "helm/pkg/chart/v2/util/testdata/three-level-dependent-chart/umbrella/charts/app3/charts/library/templates/service.yaml",
+        "line": 8
+      },
+      {
+        "key": "protocol",
+        "file": "helm/pkg/cmd/testdata/testcharts/chart-with-lib-dep/templates/deployment.yaml",
+        "line": 29
+      },
+      {
+        "key": "protocol",
+        "file": "helm/pkg/cmd/testdata/testcharts/chart-with-template-lib-archive-dep/templates/deployment.yaml",
+        "line": 29
+      },
+      {
+        "key": "protocol",
+        "file": "kubernetes/cluster/addons/calico-policy-controller/networkpolicies-crd.yaml",
+        "line": 242
+      },
+      {
+        "key": "protocol",
+        "file": "kubernetes/cluster/addons/calico-policy-controller/networkpolicies-crd.yaml",
+        "line": 573
+      },
+      {
+        "key": "protocol",
+        "file": "kubernetes/cluster/addons/calico-policy-controller/typha-service.yaml",
+        "line": 13
+      }
+    ],
+    "instantiatesSamples": [
+      {
+        "key": "create",
+        "file": "ansible/test/integration/targets/blockinfile/tasks/encoding.yml",
+        "line": 10
+      },
+      {
+        "key": "clone",
+        "file": "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/metadata/icons.yml",
+        "line": 4000
+      },
+      {
+        "key": "clone",
+        "file": "bulma/docs/vendor/fontawesome-free-5.15.2-web/metadata/icons.yml",
+        "line": 4000
+      },
+      {
+        "key": "clone",
+        "file": "bulma/docs/vendor/fontawesome-free-6.5.2-web/metadata/icons.yml",
+        "line": 9524
+      },
+      {
+        "key": "clone",
+        "file": "consul/ui/pnpm-lock.yaml",
+        "line": 10561
+      },
+      {
+        "key": "clone",
+        "file": "consul/ui/pnpm-lock.yaml",
+        "line": 10575
+      },
+      {
+        "key": "clone",
+        "file": "consul/ui/pnpm-lock.yaml",
+        "line": 11466
+      },
+      {
+        "key": "clone",
+        "file": "consul/ui/pnpm-lock.yaml",
+        "line": 11782
+      },
+      {
+        "key": "clone",
+        "file": "consul/ui/pnpm-lock.yaml",
+        "line": 11817
+      },
+      {
+        "key": "create",
+        "file": "helm/internal/chart/v3/lint/rules/testdata/malformed-template/values.yaml",
+        "line": 19
+      },
+      {
+        "key": "create",
+        "file": "terraform-aws-components/deprecated/github-actions-runner/runners/actions-runner-controller/values.yaml",
+        "line": 2
+      },
+      {
+        "key": "create",
+        "file": "terraform-aws-components/deprecated/github-actions-runner/runners/actions-runner-controller/values.yaml",
+        "line": 6
+      },
+      {
+        "key": "create",
+        "file": "terraform-aws-components/modules/eks/cert-manager/resources/cert-manager-values.yaml",
+        "line": 2
+      },
+      {
+        "key": "create",
+        "file": "terraform-aws-components/modules/eks/cert-manager/resources/cert-manager-values.yaml",
+        "line": 5
+      }
+    ]
+  }
+}

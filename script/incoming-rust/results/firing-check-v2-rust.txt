@@ -1,6 +1,6 @@
 ########## NFILES=25 ##########
 selected lane(s): RUST  (from RUST)
-firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=$HOME/fixtures/repositories   NFILES=25   sampling=code-bearing
+firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=/home/ishaq2321/bb_tests/repositories   NFILES=25   sampling=code-bearing
 production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
 types.ts vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
 in types.ts but NOT produced: (none)
@@ -18,7 +18,7 @@ RUST           10/10  25/25 parsed · imports[] 76 in 19 files
 10/10  RUST          silent: -
 ########## NFILES=50 ##########
 selected lane(s): RUST  (from RUST)
-firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=$HOME/fixtures/repositories   NFILES=50   sampling=code-bearing
+firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=/home/ishaq2321/bb_tests/repositories   NFILES=50   sampling=code-bearing
 production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
 types.ts vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
 in types.ts but NOT produced: (none)
@@ -36,7 +36,7 @@ RUST           10/10  50/50 parsed · imports[] 175 in 42 files
 10/10  RUST          silent: -
 ########## NFILES=200 ##########
 selected lane(s): RUST  (from RUST)
-firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=$HOME/fixtures/repositories   NFILES=200   sampling=code-bearing
+firing-check v2 (lane copy)   REPO=/tmp/opencode/wt/R7_AUDIT_FLEET   corpus=/home/ishaq2321/bb_tests/repositories   NFILES=200   sampling=code-bearing
 production vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
 types.ts vocabulary (10): calls extends implements uses imports exports contains references overrides instantiates
 in types.ts but NOT produced: (none)

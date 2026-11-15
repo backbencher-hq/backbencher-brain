@@ -22,7 +22,7 @@
 set -uo pipefail
 
 # ── paths, resolved from THIS FILE rather than hardcoded ────────────────────
-# The original hardcoded $HOME/…, which made the gate unrunnable on
+# The original hardcoded /home/ishaq2321/…, which made the gate unrunnable on
 # any other machine and on any clone. Everything below is derived from the
 # script's own location, so a clone is self-contained. Overridable for a
 # toolchain that lives elsewhere:
@@ -57,7 +57,7 @@ if [ "${1:-}" != "--no-build" ]; then
   echo "repro cases: $(grep -o 'cases: .*' "$BUILDLOG" | head -1)"
 fi
 
-OUT=$(OUT=$CAND BB_VB_CORPUS="${BB_VB_CORPUS:-$HOME/fixtures/vb-corpus}" $TSX $PROBES/grammar-baseline.ts 2>&1)
+OUT=$(OUT=$CAND BB_VB_CORPUS="${BB_VB_CORPUS:-/home/ishaq2321/bb_tests/vb-corpus}" $TSX $PROBES/grammar-baseline.ts 2>&1)
 echo "$OUT" | tail -12
 echo ""
 

@@ -127,7 +127,7 @@ The wire answer is deliberately explicit about its own coverage: census and per-
 
 ## Relationship to other tools
 
-For security-specific taint findings use `bb_security`; this tool covers orphans, framework patterns, and anti-patterns.
+For lexical security leads (source/sink token pairs; a lead generator, not a vulnerability scanner) use `bb_security`; this tool covers orphans, framework patterns, and anti-patterns.
 
 ## Deep guides
 

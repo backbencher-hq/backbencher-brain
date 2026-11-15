@@ -1,0 +1,21 @@
+{
+  "fixtureId": "matlab/references",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the two non-call reference constructs on their own grammar nodes: `handle_operator` (@helper, @pkg.f) and `metaclass_operator` (?Widget). A reference is distinct from a call, so `?Widget` must never be published as a call, and the handle's identifier must not also be published as a plain `uses` read (references is the stronger, correct label for a name captured as a handle). The local function `helper` is declared in the same file, so its handle edge is structural; `Widget` and `pkg.f` are not declared here and stay inferred.",
+  "expectSymbols": [
+    { "name": "references", "kind": "function" },
+    { "name": "helper", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "references", "target": "helper", "meta.construct": "function_handle" },
+    { "type": "references", "from": "references", "target": "Widget", "meta.construct": "metaclass_object" },
+    { "type": "references", "from": "references", "target": "pkg.f", "meta.construct": "function_handle" },
+    { "type": "calls", "from": "references", "target": "helper" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "references", "target": "helper" },
+    { "type": "uses", "from": "references", "target": "Widget" },
+    { "type": "calls", "from": "references", "target": "Widget" }
+  ]
+}

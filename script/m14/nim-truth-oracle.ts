@@ -6,7 +6,7 @@
  * differential rather than a self-check: if both sides shared one traversal, a
  * defect in that traversal would be invisible to both. So this file is written
  * against the GRAMMAR (the node types and fields tree-sitter-nim actually
- * exposes, enumerated in fixtures/nim/grammar/dump-grammar.mts) and derives each
+ * exposes, enumerated in bb_tests/nim/grammar/dump-grammar.mts) and derives each
  * fact by its own walk, in its own order, with its own data structures.
  *
  * Where a rule is a single SHARED SHAPE (a name-shaping helper both sides must

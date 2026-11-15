@@ -1,0 +1,67 @@
+{
+  "fixtureId": "scss/reads-recovered-from-error-regions",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "This fixture pins the lane reading INSIDE a region the grammar could not parse, rather than treating the region as opaque. The construct is real, not invented: it is the shape in `element-plus/packages/theme-chalk/src/color/index.scss`, where `color.channel($u, 'red', $space: rgb)` is a NAMED ARGUMENT in a call, and the CSS `arguments` rule this grammar inherits permits only bare values, so the declaration is broken. `$opacity` is read from inside that broken declaration at L4.\n\nREWRITTEN 2026-09-29, twice, and the reasons are the useful part. The first version manufactured its error region with a multi-line `@include` argument list; grammar patch 5 FIXED that construct, so the fixture's error region ceased to exist and the fixture started failing on a lane that had got better. A fixture that pins a defect as a *precondition* stops testing the thing it was written for the moment the defect is fixed — the benign direction to fail in is still a failure, and the fix should update the fixture in the same commit that removes the bug.\n\nSECOND REWRITE, and this one is a LIMITATION rather than an expiry. The second attempt used `--font-size: #{map.get($input-font-size, $size)}` from `form-item.scss`, and it produced 15 error spans and ZERO relationships: the read was not recovered at all. The reason is structural and worth stating because it bounds what this lane can recover. The read scan is STATEMENT-SCOPED — it is invoked for `declaration`, `include_statement`, control-flow and `return_statement` nodes. When a broken region never becomes a statement node (here the ERROR wraps raw tokens of a declaration the grammar could not assemble), there is nothing to hand the scanner and the reads inside it stay invisible, even with the descend-through-error walk in place. So recovery works where a statement node survives the error, and does not where the statement itself was destroyed.\n\nWHAT IS AND IS NOT ASSERTED. The `scssRecoveredFromError` MARKER is deliberately not pinned. It fires only when the read NODE sits inside an ERROR subtree, which is rarer than 'in a file with errors' — 5 edges across all 160 element-plus files, in 3 of them. The read at L4 here is recovered from a broken declaration while the node itself is a sibling of the error, so the marker is correctly absent. Hand-building a shape to make a 5-occurrence marker fire would be a fixture about the fixture; the marker is verified where it actually occurs instead. And the L4 edge itself is asserted as an EDGE rather than a count, because a count is identical on both sides of the fix.\n\nTHE MARKER IS PINNED AGAIN, and the third attempt is the one that worked, so the two failures are worth keeping. The construct is real — `element-plus/packages/theme-chalk/src/color/index.scss` L12/L14/L16, where `color.channel($upper, 'red', $space: rgb) * $opacity +` is a NAMED ARGUMENT in a call that the inherited CSS `arguments` rule does not permit, so the declaration is broken. Three attempts to reproduce it minimally failed in ways that each taught something. First, a multi-line `@include` argument list — grammar patch 5 FIXED that, so the error region ceased to exist and the fixture began failing on a lane that had got better. Second, `--font-size: #{map.get($input-font-size, $size)}` — 15 error spans and ZERO relationships, which bounds the lane: the read scan is STATEMENT-SCOPED, so a region where the STATEMENT ITSELF was destroyed has nothing to hand the scanner and stays invisible even with the descend-through-error walk. Third, a SINGLE-LINE version of the working construct, which parsed the read cleanly and so produced no marker — the marker fires only when the read NODE sits inside an ERROR subtree, and a one-line declaration leaves it beside the error rather than inside it. The real file wraps the declaration across two lines, and that wrapping is what puts the node inside. So the marker depends on line layout, which is a property of the MARKER worth knowing and a property of the FIXTURE worth stating.\n\nL4 and L5 are the same read of the same variable in the same declaration, one recovered and one not. That pair is what makes this fixture able to fail: a walk that emitted neither, or both, or that stamped every edge, breaks one of the two assertions, and `error-recovery-marker-dropped` is caught by the difference between them.",
+  "expectErrorCount": [
+    {
+      "atLeast": 1
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "$opacity",
+      "kind": "variable"
+    },
+    {
+      "name": "@function mix",
+      "kind": "function"
+    },
+    {
+      "name": "$red",
+      "kind": "variable"
+    },
+    {
+      "name": ".a",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "$red",
+      "target": "fixtures/scss/reads-recovered-from-error-regions::$opacity",
+      "meta.isScssVarRef": true,
+      "meta.scssRecoveredFromError": true,
+      "line_number": 4
+    },
+    {
+      "type": "references",
+      "from": "$red",
+      "target": "fixtures/scss/reads-recovered-from-error-regions::$opacity",
+      "meta.isScssVarRef": true,
+      "line_number": 5
+    },
+    {
+      "type": "references",
+      "from": "@function mix",
+      "target": "fixtures/scss/reads-recovered-from-error-regions::$red",
+      "meta.isScssVarRef": true,
+      "line_number": 6
+    },
+    {
+      "type": "calls",
+      "from": ".a",
+      "target": "fixtures/scss/reads-recovered-from-error-regions::@function mix",
+      "meta.isScssFunctionCall": true,
+      "line_number": 10
+    },
+    {
+      "type": "references",
+      "from": ".a",
+      "target": "fixtures/scss/reads-recovered-from-error-regions::$opacity",
+      "meta.isScssVarRef": true,
+      "line_number": 11
+    }
+  ]
+}

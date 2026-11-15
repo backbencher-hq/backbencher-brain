@@ -1,0 +1,29 @@
+{
+  "fixtureId": "java/receiver-owner-evidence",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RECEIVER TYPING — the four DECLARATION evidence sources beyond the plain local/param cases already pinned by java/receiver-owner-type. Java states a receiver's type in more places than a simple declaration, and each is a different syntactic fact: a TYPED LAMBDA PARAMETER (JLS 15.27.1), the ENHANCED-FOR variable (JLS 14.14.2), a TRY-WITH-RESOURCES resource (JLS 14.20.3), and a CAUGHT EXCEPTION variable (JLS 14.20). All four now carry metadata.owner + ownerEvidence onto the calls edge, so the store's owner channel can resolve the member inside the declared type instead of binding the bare leaf by name. Authored from Java semantics before observing the fix. THE NEGATIVES ARE THE POINT OF THE FIXTURE: an UNTYPED lambda parameter (`w -> w.paint()`) declares no type at all, and a MULTI-CATCH variable (`catch (A | B e)`) has more than one declared type — both must carry NO owner, because a wrong owner is worse than none (the store withdraws the name binding for an owner-carrying row and then declines). Also pins that an enclosing method's parameter is visible to a lambda body's call.",
+  "expectSymbols": [
+    { "name": "ReceiverOwnerEvidence", "kind": "class" },
+    { "name": "Widget", "kind": "class" },
+    { "name": "paint" },
+    { "name": "lambdaCase" },
+    { "name": "untypedLambdaCase" },
+    { "name": "enhancedForCase" },
+    { "name": "tryResourceCase" },
+    { "name": "multiCatchCase" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "lambdaCase", "target": "paint", "meta.owner": "Widget", "meta.ownerEvidence": "param", "line_number": 16 },
+    { "type": "calls", "source": "untypedLambdaCase", "target": "forEach", "meta.owner": "List", "meta.ownerEvidence": "param", "line_number": 20 },
+    { "type": "calls", "source": "enhancedForCase", "target": "paint", "meta.owner": "Widget", "meta.ownerEvidence": "local", "line_number": 25 },
+    { "type": "calls", "source": "tryResourceCase", "target": "read", "meta.owner": "Reader", "meta.ownerEvidence": "local", "line_number": 31 },
+    { "type": "calls", "source": "tryResourceCase", "target": "printStackTrace", "meta.owner": "IOException", "meta.ownerEvidence": "local", "line_number": 33 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "paint", "line_number": 20, "meta.owner": "Widget", "comment": "the lambda parameter `w` is UNTYPED (inferred): this file states no type for it, so an owner here is a guess" },
+    { "type": "calls", "source": "untypedLambdaCase", "target": "paint", "meta.ownerEvidence": "param", "comment": "same rule from the evidence side: no typed parameter exists in that lambda" },
+    { "type": "calls", "target": "printStackTrace", "line_number": 41, "meta.owner": "RuntimeException", "comment": "a MULTI-CATCH variable has several declared types; picking one is exactly the guess the contract forbids" },
+    { "type": "calls", "target": "printStackTrace", "line_number": 41, "meta.owner": "Error", "comment": "same rule for the second member of the union" }
+  ]
+}

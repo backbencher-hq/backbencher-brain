@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/owner-class-destructured",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE DESTRUCTURED-FROM-TYPED-SOURCE CLASS: `const { worker } = cfg` with `cfg: Settings` makes the binding a `Worker` — the member's declared type — and the evidence class is `destructured` (the type was inferred from a VALUE, not from an annotation on the pattern). The negative row is a destructuring from a value with NO stated type (`cfg as any`): the row exists but must carry NO owner (`meta.owner: null`), so over-claim fails too.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useDestructured",
+      "target": "run",
+      "line_number": 7,
+      "meta.owner": "Worker",
+      "meta.ownerEvidence": "destructured"
+    },
+    {
+      "type": "calls",
+      "from": "negativeDestructured",
+      "target": "never",
+      "line_number": 11,
+      "meta.owner": null
+    }
+  ]
+}

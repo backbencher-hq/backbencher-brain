@@ -1,0 +1,14 @@
+{
+  "fixtureId": "vue/ts-type-inference",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F7 (master review 2026-09-30): `hasTypeInference: false` was HARDCODED in real-vue-analyzer.ts, so it said the same thing for every SFC — 778 of the 1,150 restored corpus files carry a lang=\"ts\" block and were all reported as having no type inference, including files whose interface/annotation members the analyzer DOES extract (the TS grammar ran). The field is a statement about what the pipeline did on this file, and the pipeline already computes the fact: `isTs` is true exactly when a block was handed to the TypeScript analyzer. BOTH directions are pinned here, and deliberately: a mutant that flips the constant to `true` unconditionally passes a one-sided pin, which is why js-type-inference pairs with this one.",
+  "expectMetadata": [
+    { "hasTypeInference": true }
+  ],
+  "expectSymbols": [
+    { "name": "Props", "kind": "interface" },
+    { "name": "size", "kind": "property", "meta.isInterfaceMember": true },
+    { "name": "p", "kind": "constant" }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/new-object-psa3.ps1",
+  "authoredFrom": "PS-A3 (`New-Object` as a CONSTRUCTOR CALL). Authored 2026-09-27, from hand-auditing the F5 differential's MISSING samples. Three spellings of the same cmdlet, and only one was read: `-TypeName <managed type>`. `-ComObject <ProgID>` was not read AT ALL, so `New-Object -ComObject Shell.Application` published no edge rather than a wrong one, and the POSITIONAL form `New-Object System.Collections.ArrayList` published none either. The F5 samples show `instantiates Extract-ZipLegacy -> Shell.Application` on ansible's own Windows modules, so the shape is common in the corpora rather than hypothetical.\n\nThe fixture also pins the guard that keeps this honest in the other direction: `-TypeName string` is a type ACCELERATOR and constructs nothing the graph should name, and a bare `New-Object` with no argument has nothing to construct. Both are `forbid` rows, so the fix cannot be widened into silence.\n\nAnd it pins a mistake this work made and caught before committing: the first version keyed `isComObject` on the constructed name containing a dot, so `-TypeName System.Text.StringBuilder` was published as a COM object. The FLAG decides the kind, never the spelling of the type — a dotted .NET name and a COM ProgID look alike and mean different things. The two metadata rows below are what caught it.",
+  "expectSymbols": [
+    {
+      "name": "new-object-psa3.ps1",
+      "kind": "module"
+    },
+    {
+      "name": "New-Com",
+      "kind": "function",
+      "ownerName": "new-object-psa3.ps1"
+    },
+    {
+      "name": "shell",
+      "kind": "variable",
+      "ownerName": "New-Com"
+    },
+    {
+      "name": "app",
+      "kind": "variable",
+      "ownerName": "New-Com"
+    },
+    {
+      "name": "sb",
+      "kind": "variable",
+      "ownerName": "New-Com"
+    },
+    {
+      "name": "text",
+      "kind": "variable",
+      "ownerName": "New-Com"
+    },
+    {
+      "name": "plain",
+      "kind": "variable",
+      "ownerName": "New-Com"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "Shell.Application",
+      "line_number": 17,
+      "meta.isComObject": true,
+      "meta.viaNewObject": true,
+      "comment": "The COM form. `-ComObject` is not a rarer spelling of `-TypeName`, it is the ONLY spelling for a COM object, and `$shell = New-Object -ComObject Shell.Application` is how the language gets a Shell handle. The ProgID is dotted and external by nature, which is the designed handling for a name the file does not declare.",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "System.Text.StringBuilder",
+      "line_number": 18,
+      "meta.viaNewObject": true,
+      "comment": "The flagged .NET form. `meta.isComObject: null` is the load-bearing part and it is an ASSERTION, not a note: the runner's `meta.x: null` convention means \"this edge must NOT carry x\", which is the only channel that can say a label is absent. Keying the flag on the constructed name containing a dot published this row as a COM object, and the first version of the fix did exactly that — a comment could not have caught it, and the `com-object-keyed-on-a-dot` mutant survived until this row said it.",
+      "meta.isComObject": null,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "System.Collections.ArrayList",
+      "line_number": 19,
+      "meta.viaNewObject": true,
+      "comment": "The POSITIONAL form, written whenever the author did not bother with a flag. `commandArgs` returns values only, having skipped every `command_parameter`, so the first entry is the type name and the flagged forms leave it empty.",
+      "meta.isComObject": null,
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "string",
+      "line_number": 20,
+      "comment": "PRE-FIX-CLASS, kept deliberately: `New-Object -TypeName string` constructs a type ACCELERATOR, which is a PowerShell language primitive rather than a declared type, and naming it would put `instantiates -> string` in the graph. The `isTypeAccelerator` guard exists so this cannot happen, and this row is what stops the guard being widened away while fixing the positional form."
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "plain",
+      "comment": "A bare `New-Object` has no argument and nothing to construct; an edge here would name an object the source never mentions."
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "System.Text.StringBuilder",
+      "meta.isComObject": true,
+      "comment": "PS25 — the WORKING half of the `meta.isComObject: null` assertion above, and the row that actually kills `powershell/com-object-keyed-on-a-dot`. The two rows say the same thing in the runner's two vocabularies, and only this one is enforced: `matchConstraints` in `script/m14/run-fixtures.ts` reaches its top-level `if (v === null)` branch (line 338) BEFORE its `k.startsWith(\"meta.\")` branch (line 358) and `continue`s, so `meta.isComObject` is looked up as a TOP-LEVEL key that never exists on a relationship. Measured, both directions, through the exported `matchConstraints`: an edge that DOES carry `isComObject: true` still satisfies `{ \"meta.isComObject\": null }` -> true, and an edge that does not carry it -> true. The assertion is therefore TRUE for every analyzer, correct or defective, and the null-metadata convention is a no-op for 16 expectation rows across 6 lanes (yaml 4, vue 1, typescript 1, svelte 1, powershell 1, bash 1). The array-valued `meta.*` case directly above it was fixed for exactly this routing bug (the comment at line 320 records it, and two elixir mutants had survived); the `v === null` case has the identical shape and did not get the same fix. `script/m14/run-fixtures.ts` is shared machinery, so this is a report item and not an edit. `forbidRelationships` does not share the defect — a non-null value routes to the `meta.` branch and compares there — which is why the negative assertion is written this way and the null row above is kept as the statement of intent rather than deleted."
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Com",
+      "target": "System.Collections.ArrayList",
+      "meta.isComObject": true,
+      "comment": "The same invariant on the POSITIONAL spelling, which carries the same `meta.isComObject: null` (inert) row above. Two forbids rather than one because the mutant keys on the target's punctuation and flips every dotted target it sees, so a single forbid would be caught by whichever row happened to be checked first — two rows make the invariant a property of the construct (a non-COM construction never claims COM) rather than of one fixture line."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "instantiates",
+      "equals": 3,
+      "comment": "Three spellings, three edges. A fix that read `-ComObject` but not the positional form scores 2 and fails; one that dropped the accelerator guard scores 4 and fails. The count is what makes the guard and the positional form independently load-bearing rather than one row carrying both."
+    }
+  ]
+}

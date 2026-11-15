@@ -1,0 +1,517 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.02",
+  "code": "B2",
+  "tool": "baseline",
+  "title": "Shared machine-readable evidence schema + harness",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "every document in validation/m13/results declares the M13 milestone",
+      "pass": true,
+      "detail": "88 documents"
+    },
+    {
+      "name": "p6-selftest.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "m2.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "m1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "d1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v2.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v4.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v11.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "s2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p6.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e10.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a6.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "b5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "s4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "m3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "m2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e13.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "b1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "s3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "b2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "b5.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "s5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "an4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a1.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p5.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e6.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "b4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "b3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "d3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a5.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h6.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p5.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v8.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a7.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "an3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "d3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "an2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "s3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p4.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e9.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v6.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "d2.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v10.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v7.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "an1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e7.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e8.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v9.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "v1.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e12.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "d2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "an3.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e10.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "h5.superseded-e7c9819f4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "d4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "s1.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a2.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "e11.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec4.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "p3.json is schema-valid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "non-object evidence rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "evidence must be a JSON object"
+    },
+    {
+      "name": "missing required field rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "missing required field: milestone; missing required field: issue; missing required field: code; missing required field: tool; missing required field: title; missing required field: verifiedState; missing required field: layers; missing required field: checks; missing required field: negativeCases; missing required field: summary; missing required field: decisions; missing required field: limitations; missing required field: generatedAt; milestone must be M13; issue must match M13.NN; code/tool/title must be non-empty strings; verifiedState must be a valid state; layers must be a non-empty array of valid layers; checks must be a non-empty array; negativeCases must be a non-negative integer; summary required; limitations must be a string array; generatedAt must be a non-empty string"
+    },
+    {
+      "name": "bad issue format rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "issue must match M13.NN"
+    },
+    {
+      "name": "bad verifiedState rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "verifiedState must be a valid state"
+    },
+    {
+      "name": "verified with failed>0 rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "verified claim has failed>0"
+    },
+    {
+      "name": "a document declaring another milestone is rejected in the M13 corpus [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "milestone must be M13 — this document declares M64 and belongs in /home/ishaq2321/mcp/backbencher-brain/validation/m64/results"
+    },
+    {
+      "name": "a document with no milestone is rejected in the M13 corpus [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "missing required field: milestone; milestone must be M13"
+    }
+  ],
+  "negativeCases": 7,
+  "summary": {
+    "total": 96,
+    "passed": 96,
+    "failed": 0
+  },
+  "decisions": {
+    "authority": "script/m13/harness.ts (Harness) + validation/m13/schemas/evidence.schema.json",
+    "enforcement": "script/m13/verify-evidence.ts validates every validation/m13/results/*.json AND asserts that every one of them declares M13 — a harness reuse by a later milestone writes to its own corpus (script/m64/verify-evidence.ts), never into this one",
+    "verifiedDefinition": "all checks pass AND >=1 negative case AND evidence is schema-valid"
+  },
+  "limitations": [
+    "Per-tool verifiers adopt the Harness in their own M13 issue (E7/S1/A3/…); the legacy M10-M12 verifiers are migrated as each tool is rebuilt.",
+    "The JSON Schema file documents the shape; verify-evidence.ts is the executable enforcement (no external JSON Schema engine dependency)."
+  ],
+  "generatedAt": "2026-11-05T04:12:44.155Z"
+}

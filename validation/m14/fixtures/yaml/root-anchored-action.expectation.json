@@ -1,0 +1,41 @@
+{
+ "fixtureId": "yaml/root-anchored-action",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "A step-level `uses:` written `$/.github/actions/cache-restore` is a ROOT-ANCHORED path, the spelling terragrunt uses where every other repository writes `./`. Before the rewrite it fell to `actionUseClaim`'s last line, `return { remoteRef: true }` -- a claim that `$` is a GitHub OWNER and `.github` the repository under it. `$` is not an owner, and the target is a path in the checked-out tree: `terragrunt/.github/actions/go-cache-restore/action.yml` and `.../go-cache-save/action.yml` are files the project carries, and the same `$/` spelling occurs in exactly 18 corpus sites, all of them these two directories. So the wild edge asserted an external remote action that does not exist, was read as `externalUnverified`, and blocked an incoming PASS. The rewrite is unconditional, which is why this fixture is authored against the CLAIM and not against the target's existence: a `$/...` action with no manifest in the project lands in the same local branch and falls back to the pre-existing `isExternal: true`, so the change can only ever convert an unsupportable remote claim into a local one, never manufacture a verification. The harness passes no project root, so the local branch's `relativePathCandidates` is null and the marker is `isExternal: false` -- the pre-existing spelling for a `./` action, which is exactly the equivalence this fixture pins.",
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "root-anchored-action.jobs.build.steps[1].uses",
+   "target": "./.github/actions/cache-restore",
+   "meta.relationshipType": "yaml_action_use",
+   "meta.isExternal": false,
+   "meta.actionSpelling": "$/.github/actions/cache-restore"
+  },
+  {
+   "type": "imports",
+   "from": "root-anchored-action.jobs.build.steps[2].uses",
+   "target": "./.github/actions/cache-save",
+   "meta.relationshipType": "yaml_action_use",
+   "meta.isExternal": false,
+   "meta.actionSpelling": "$/.github/actions/cache-save"
+  },
+  {
+   "type": "imports",
+   "from": "root-anchored-action.jobs.build.steps[0].uses",
+   "target": "actions/checkout@v4",
+   "meta.relationshipType": "yaml_action_use",
+   "meta.remoteRef": true
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "$/.github/actions/cache-restore"
+  },
+  {
+   "type": "imports",
+   "target": "$/.github/actions/cache-save"
+  }
+ ]
+}

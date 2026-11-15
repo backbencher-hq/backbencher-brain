@@ -1,0 +1,17 @@
+{
+  "fixtureId": "typescript/type-alias-refs",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS type-alias RHS references (gap T2, scala G7 analog). TS semantics: type Fn = (a: Id) => Id declares the alias AND references the RHS types (Id in param + return, Id in tuple elements, Rec self-ref in object type). The alias symbols are emitted; the RHS references are lost.",
+  "expectSymbols": [
+    { "name": "Id", "kind": "type" },
+    { "name": "Fn", "kind": "type" },
+    { "name": "Pair", "kind": "type" },
+    { "name": "Rec", "kind": "type" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Fn", "target": "Id", "meta.relationshipType": "type_alias" },
+    { "type": "references", "from": "Pair", "target": "Id", "meta.relationshipType": "type_alias" },
+    { "type": "references", "from": "Rec", "target": "Rec", "meta.relationshipType": "type_alias" }
+  ]
+}

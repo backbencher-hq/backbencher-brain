@@ -13,8 +13,8 @@ import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
 
 const REPOS: Record<string, string> = {
-  "grails-core": "$HOME/fixtures/repositories/grails-core",
-  geb: "$HOME/fixtures/repositories/geb",
+  "grails-core": "/home/ishaq2321/bb_tests/repositories/grails-core",
+  geb: "/home/ishaq2321/bb_tests/repositories/geb",
 }
 const only = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : null
 

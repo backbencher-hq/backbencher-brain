@@ -1,0 +1,37 @@
+{
+  "fixtureId": "typescript/object-literal-accessor-pair",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a get/set pair in an OBJECT LITERAL is one property, matching the rule the CLASS path already applies. The class body pre-pass keeps the last declaration of each name, so `class C { get size(){}; set size(v){} }` has always yielded a single `size`. The object-literal path had no equivalent pass: the same declaration written as a literal produced two `size` symbols sharing one owner and, because containment emits one `contains` row per member symbol, two IDENTICAL `contains o -> size` rows. The `equals: 1` pin is the guard that can actually fail on this — `expectSymbols` is a >=1 match and would have passed with both duplicates present, which is why the exact-count assertion is the one that matters here. The `calls o -> compute` pin is the other half: the getter is the accessor that gets skipped, so if its body stopped being walked the collapse would have traded a duplicate edge for a missing one. Pre-fix that call is attributed to the owner `o`, and it must survive. Measured: the fix is byte-identical on all 2457 tracked corpus files, so this shape does not occur in this repository — it is a real-world correctness fix, and this fixture is the only evidence for it.",
+  "expectSymbols": [
+    {
+      "name": "o",
+      "kind": "constant"
+    },
+    {
+      "name": "size",
+      "kind": "property"
+    },
+    {
+      "name": "compute",
+      "kind": "function"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "o",
+      "target": "size",
+      "equals": 1,
+      "note": "THE PIN. Pre-fix this count is 2: one `contains` row per accessor, both identical. A get/set pair is one property, so the edge must appear once."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "object-literal-accessor-pair",
+      "target": "compute",
+      "note": "NOTHING LOST. The call lives in the getter's body, and the getter is the accessor the fix skips. Returning false from the extractor (instead of extracting a second symbol) leaves the walker to descend into that body, so the call is still recorded — attributed to the MODULE, which is where this analyzer puts a call from a literal initializer's accessor body, and identically so before the fix (verified both ways: the pre-fix analyzer emits the same single edge). Note the contrast with the containment pin above, whose `from` is the owner variable `o`: containment names the member's container, while this call names the module."
+    }
+  ]
+}

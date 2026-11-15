@@ -1,0 +1,46 @@
+{
+  "fixtureId": "r/F17-uses",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `uses` surface, which R did not have at all before this fixture. In R a member read of a value -- `obj$member`, `obj@slot`, `df[[\"col\"]]` -- is neither a call nor a package dependency, so it is `uses`; the same construct is published as `uses` by the Python lane (real-python-analyzer.ts:1425, `isMemberRead`) and by the Julia oracle (script/m14/oracles/julia-refs.ts on `a.b`). The target is the MEMBER NAME alone, never `receiver$member`, so the edge binds to the same name an R6/R5/S4/S7 property symbol is published under; the receiver rides in metadata. Four gates, each pinned by at least one line that must produce NOTHING, because a gate no line exercises is a comment: (1) CALLEE -- `obj$compute(1)` is already a `calls` edge to `obj$compute`, and a second edge to `compute` would put one fact under two labels; the `pkg::obj$compute(3)` shape is included because there the `namespace_operator` holds the call's function field and the `extract_operator` is only its `rhs`, so a gate that looks one level up misses it. (2) WRITE -- `obj$field <- v`, `<<-` and `=` all store into the member and do not read it; the SAME member appears in value position on the last line of that function and MUST produce an edge, so an inverted rule fails as loudly as a missing one. (3) NAMEABILITY -- `obj[[i]]` and `obj[[paste0(...)]]` name no member and must publish nothing, because a guessed target is the fabrication this workstream calls its most expensive mistake. (4) ATTRIBUTION -- a read inside an anonymous function goes to the nearest enclosing NAMED symbol at 0.7 with a reason code (the same rule `calls` uses), and a read with no enclosing named symbol is counted in `metadata.callAttribution.memberReadsUnresolvedScope` rather than given an invented source; `read_at_file_scope` is that case and 55.6% of R call sites are at file scope. Section 5 exists because one shared member name would have made it unfailable: `obj[\"viaOneBracket\"]` and `obj[[\"viaTwoBrackets\"]]` are DIFFERENT names, so the `[` case cannot be satisfied by the `[[` case. `[` and `[[` are not interchangeable in R -- `obj[\"name\"]` is a character subset that is NULL on a plain list -- and the rule turns on that. Section 7 pins the chained form in both directions: `a$b$c` unwrapped reads BOTH `b` and `c`, while `a$b$c()` reads only `b`, because the receiver of a call is traversal. Section 9 is the shape tidyverse code actually writes, so the surface is pinned against real R6 code and not only against a synthetic page.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "read_two_members", "kind": "function" },
+    { "name": "read_via_call", "kind": "function" },
+    { "name": "write_member", "kind": "function" },
+    { "name": "computed_index", "kind": "function" },
+    { "name": "bracket_one_is_not_a_member_read", "kind": "function" },
+    { "name": "backticked_member", "kind": "function" },
+    { "name": "read_in_closure", "kind": "function" },
+    { "name": "Counter", "kind": "class" },
+    { "name": "value", "kind": "property", "ownerName": "Counter" },
+    { "name": "read_state", "kind": "method", "ownerName": "Counter" },
+    { "name": "bump", "kind": "method", "ownerName": "Counter" },
+    { "name": "read_via_bracket", "kind": "method", "ownerName": "Counter" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "read_two_members", "target": "alpha", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "read_two_members", "target": "beta", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "write_member", "target": "field", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "bracket_one_is_not_a_member_read", "target": "viaTwoBrackets", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "backticked_member", "target": "odd name", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "chained_read", "target": "b", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "chained_read", "target": "c", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "chained_call", "target": "b", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "read_in_closure", "target": "inner", "confidenceMin": 0.7, "confidenceMax": 0.7 },
+    { "type": "uses", "from": "read_state", "target": "value", "confidenceMin": 1.0 },
+    { "type": "uses", "from": "read_via_bracket", "target": "value", "confidenceMin": 1.0 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "read_via_call" },
+    { "type": "uses", "from": "write_member", "target": "writtenByArrow" },
+    { "type": "uses", "from": "write_member", "target": "writtenBySuperArrow" },
+    { "type": "uses", "from": "write_member", "target": "writtenByEquals" },
+    { "type": "uses", "from": "computed_index" },
+    { "type": "uses", "from": "bracket_one_is_not_a_member_read", "target": "viaOneBracket" },
+    { "type": "uses", "from": "chained_call", "target": "c" },
+    { "type": "uses", "target": "orphan" },
+    { "type": "uses", "target": "bump" },
+    { "type": "uses", "target": "`odd name`" }
+  ]
+}

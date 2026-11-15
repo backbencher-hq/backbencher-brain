@@ -33,7 +33,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 const ROOT = process.cwd()
-const DEFAULT_CORPUS = "$HOME/fixtures/repositories"
+const DEFAULT_CORPUS = "/home/ishaq2321/bb_tests/repositories"
 const corpusArg = process.argv.indexOf("--corpus")
 const REPOS = corpusArg > 0 ? process.argv[corpusArg + 1] : DEFAULT_CORPUS
 

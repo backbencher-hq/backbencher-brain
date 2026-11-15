@@ -11,12 +11,12 @@
       "sha256": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7"
     },
     "rebuiltPatched": {
-      "path": "fixtures/c/grammar/rebuilt-patched.wasm",
+      "path": "bb_tests/c/grammar/rebuilt-patched.wasm",
       "bytes": 630720,
       "sha256": "30ed4aae063d4ca5bfbc8a3ef5496c560a5bc25912b7b624e5679f1507e1d81f"
     },
     "pristineNpm0241": {
-      "path": "fixtures/c/grammar/pristine-tree-sitter-c-0.24.1.wasm",
+      "path": "bb_tests/c/grammar/pristine-tree-sitter-c-0.24.1.wasm",
       "bytes": 625918,
       "sha256": "c852c2a85ebf2beb636aa3b0ef7f7e70458684d74f6741b20dcb296885bed9f9"
     }

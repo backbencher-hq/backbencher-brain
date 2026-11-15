@@ -1,0 +1,106 @@
+--- a/script/m14/differential.ts
++++ b/script/m14/differential.ts
+@@ -14219,6 +14219,23 @@
+ 
+ // Independent oracle: derive extends/implements/instantiates edges straight
+ // from clause node structure — no analyzer code involved.
++/**
++ * M60 K11: render the heuristic bucket's per-label composition for the lane
++ * summary line. Sorted by count so the dominant label is first, and omitted
++ * entirely when the bucket is empty, so a clean lane's line is unchanged.
++ *
++ * `heuristic=621 [overrides=621]` is the difference between a number a reader can
++ * act on and one they cannot: it says the whole bucket is a single label, which
++ * is exactly what a reader needs in order to know that `unexplained=0` says
++ * nothing at all about that label.
++ */
++function heuristicByLabelStr(by: Record<string, number> | undefined): string {
++  if (!by) return ""
++  const entries = Object.entries(by).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
++  if (entries.length === 0) return ""
++  return " [" + entries.map(([k, n]) => `${k}=${n}`).join(" ") + "]"
++}
++
+ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
+   const edges: TreeEdge[] = []
+   const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
+@@ -17356,6 +17373,29 @@
+     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
+     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
+     let heuristicUnexplained = 0
++    // M60 K11 (kotlin): the heuristic bucket's per-LABEL breakdown.
++    //
++    // `heuristic=N` is a bare count, so it says nothing about WHICH labels are in
++    // it. That matters because of how the bucket is formed: an unmatched edge
++    // below confidence 0.7 is filed as HEURISTIC and excluded from
++    // `unexplained`, which is a defensible policy (a low-confidence edge is
++    // declared suspicion, not fabrication) — but it means `unexplained=0` can
++    // coexist with a label that nothing in the truth derives at all.
++    //
++    // Kotlin is the case that makes it concrete. deriveTreeEdges(root, "kotlin")
++    // emits extends/instantiates/implements and NEVER overrides, so every kotlin
++    // `overrides` edge is unmatched by truth BY CONSTRUCTION. On real code
++    // essentially all of them sit below 0.7, because Exposed's and kotlinx's
++    // hierarchies are cross-module, so the in-file BFS cannot verify the
++    // declarer and the guess tier takes every one of them. The result was
++    // `unexplained=0`, `heuristic=621`, and 65.2% of those rows naming the wrong
++    // parent (KDJ-1, measured against a repo-wide type index over 791 files).
++    //
++    // The number was not wrong and the policy was not wrong. The REPORTING was:
++    // nothing at the summary line let a reader see that an entire label lived in
++    // the excluded bucket. A count with no composition is a count a reader
++    // cannot act on.
++    const heuristicByLabel: Record<string, number> = {}
+     // Sharpness counters (BB_F5_STRICT only). strictMissing counts truth rows the
+     // written-target rule cannot match; strictMasks counts the subset the
+     // PUBLISHED rule passes anyway, both sides qualified and disagreeing — i.e.
+@@ -18459,6 +18499,7 @@
+         const conf = typeof r.confidence === "number" ? r.confidence : 1
+         if (conf < 0.7) {
+           heuristicUnexplained++
++          heuristicByLabel[r.label] = (heuristicByLabel[r.label] ?? 0) + 1
+           if (samples.length < 300 && samplesHeuristic.length < 100) samplesHeuristic.push({ dir: "HEURISTIC", file: relPath, ...r })
+         } else {
+           unexplainedInAnalyzer++
+@@ -18530,6 +18571,7 @@
+       explainableByTree,
+       unexplainedInAnalyzer,
+       heuristicUnexplained,
++      heuristicByLabel,
+       coveragePct: treeEdgesTotal ? +(100 * coveredByAnalyzer / treeEdgesTotal).toFixed(1) : null,
+       fabricationPct: analyzerEdgesTotal ? +(100 * unexplainedInAnalyzer / analyzerEdgesTotal).toFixed(1) : null,
+       perf: {
+@@ -18608,7 +18650,7 @@
+     // two runs comparable at all. A lane line that omits them forces a
+     // re-derivation to answer "did this grow?", which is how a rotated sample
+     // gets misread as a code regression.
+-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
++    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained}${heuristicByLabelStr(heuristicByLabel)} hash=${row.sampleSetHash}`)
+     // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
+     // were captured for exactly this purpose and then had no output path —
+     // triage of a MISSING/UNEXPLAINED diff required re-deriving the lane by
+@@ -18688,6 +18730,7 @@
+   for (const [lang, r] of Object.entries<any>(report)) current[`${repoFor(lang)}:${lang}`] = {
+     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
+     heuristic: r.heuristicUnexplained,
++    heuristicByLabel: r.heuristicByLabel,
+     perf: { avgMsPerFile: r.perf.avgMsPerFile },
+     sampleHash: r.sampleSetHash,
+   }
+@@ -18695,6 +18738,7 @@
+   for (const [key, r] of Object.entries<any>(reportSecond)) currentSecond[key] = {
+     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
+     heuristic: r.heuristicUnexplained,
++    heuristicByLabel: r.heuristicByLabel,
+     perf: { avgMsPerFile: r.perf.avgMsPerFile },
+     sampleHash: r.sampleSetHash,
+   }
+@@ -18825,7 +18869,7 @@
+         status: (row.missingInAnalyzer === 0 && row.unexplainedInAnalyzer === 0 ? "pass" : "fail") as "pass" | "fail",
+         detail:
+           `files=${row.filesSampled} tree-truth=${row.treeTruthEdges} covered=${row.coveredByAnalyzer} (${row.coveragePct}%) MISSING=${row.missingInAnalyzer} ` +
+-          `| analyzer-edges=${row.analyzerEdges} unexplained=${row.unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${row.heuristicUnexplained} hash=${row.sampleSetHash}`,
++          `| analyzer-edges=${row.analyzerEdges} unexplained=${row.unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${row.heuristicUnexplained}${heuristicByLabelStr(row.heuristicByLabel)} hash=${row.sampleSetHash}`,
+       })
+       const base = {
+         title: `Differential corpus harness, LANE-SCOPED (${scope}: ${measuredKeys.join(", ")}) — NOT the canonical ${Object.keys(LANGS).length}-language claim`,

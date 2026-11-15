@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/sol21/sol21-derived.sol",
+  "authoredFrom": "SOL-21 \u2014 cross-file resolution, the CONSUMER half, WITH the project index. Authored 2026-09-30 from the analyzer's measured output.",
+  "note": "Every base here is declared in ANOTHER file, so nothing about the kind is decidable from this tree alone. Without an index both bases are labelled `kindUnresolved` at 0.9/`inferred` and the call to the other file's member is `external`; with one they settle and the call resolves. The runner supplies the index because this fixture lives in a subdirectory, which is how a sub-directory fixture is defined as a project. Pinned here WITH the index; `script/m60/solidity-crossfile-gate.ts` pins the same file WITHOUT one, so both directions are gated rather than one being assumed.",
+  "expectSymbols": [
+    {
+      "name": "Feed",
+      "kind": "class"
+    },
+    {
+      "name": "current",
+      "kind": "method",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "feedKind",
+      "kind": "method",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "doubled",
+      "kind": "method",
+      "ownerName": "Feed"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "Feed",
+      "target": "IThing",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural",
+      "meta.kindResolvedProjectWide": true,
+      "meta.baseDeclarationKind": "interface",
+      "comment": "THE FIX. Without an index this row is `extends IThing` at 0.9/`inferred` with `kindUnresolved` \u2014 the tree cannot say whether IThing is an interface, because IThing is declared in the other file. With one it is `implements` at full confidence, and `baseDeclarationKind` records HOW it was settled so a consumer can tell a cross-file resolution from an in-file one."
+    },
+    {
+      "type": "extends",
+      "source": "Feed",
+      "target": "FeedBase",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural",
+      "meta.kindResolvedProjectWide": true,
+      "meta.baseDeclarationKind": "contract",
+      "comment": "Settled as a CONTRACT, so the KIND DOES NOT CHANGE \u2014 it stays `extends`. Pinned because the tempting failure is a resolver that 'fixes' every cross-file base into `implements`: this row is the one that proves the index settles the question rather than assuming the answer."
+    },
+    {
+      "type": "calls",
+      "source": "current",
+      "target": "latest",
+      "meta.calleeKind": "crossFileInheritedMember",
+      "comment": "A member of an ancestor declared in another file. Without an index this is `external`; with one it is RESOLVED, because the owning type is known and its ancestors are a fixed set \u2014 the call site proves which type is meant."
+    },
+    {
+      "type": "calls",
+      "source": "doubled",
+      "target": "twice",
+      "meta.calleeKind": "projectMemberCandidate",
+      "comment": "THE HONEST FLOOR. `twice` is a member of Lib, declared in the OTHER file, so the index knows the name. But `using Lib for uint256` does not put Lib in Feed's INHERITANCE chain, and a Solidity `calls` edge carries no receiver type for a free function \u2014 so WHICH type is meant is undecidable from the call site. Naming the grade `projectMemberCandidate` is what stops 1,031 corpus rows from being dressed up as resolutions, which would be the exact failure this repo's evidence tiers exist to prevent."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "Feed",
+      "target": "FeedBase",
+      "meta.baseDeclarationKind": "interface",
+      "comment": "A resolver that assumed every cross-file base was an interface would pass the `implements IThing` row and fail here. The two rows are what make the ruling 'SETTLE IT' rather than 'assume the interesting case'."
+    },
+    {
+      "type": "calls",
+      "source": "current",
+      "target": "latest",
+      "meta.calleeKind": "projectMemberCandidate",
+      "comment": "`latest` resolves through the OWNER's ancestors, so it is a resolution and not a candidate. A classifier that reached for the name-anywhere table first would demote it, which is the same confusion the `candidate-is-not-a-resolution` gate check pins from the other side."
+    },
+    {
+      "type": "calls",
+      "source": "doubled",
+      "target": "twice",
+      "meta.calleeKind": "crossFileInheritedMember",
+      "comment": "The confusion this row exists to prevent, pinned from BOTH sides: `current -> latest` is a genuine cross-file resolution (the owner's ancestor declares it) and `doubled -> twice` is not (a `using` directive is not inheritance). A classifier with one rule for both would satisfy one row and fail the other."
+    }
+  ]
+}

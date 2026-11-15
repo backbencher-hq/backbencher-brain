@@ -1,0 +1,39 @@
+{
+  "tool": "verify-lua-stdlib-external",
+  "commit": "b66bd41de09e968dfc2a69b543b668a423546b20",
+  "population": {
+    "method": "git ls-files '*.lua' per repo, sorted, first 5000 per repo",
+    "filesParsed": 3250,
+    "parseErrorFiles": 2,
+    "relationships": 219981
+  },
+  "rule": "target is the field of a member read whose receiver names a documented Lua 5.4 standard table, and this file declares no symbol under that receiver",
+  "edgeDigest": "bc0c38b6b77c23cacea92cfc613366cdf14e9699ccc89c56be963a69f21d5608",
+  "edgeDigestNote": "hashes every edge as (file, type, source, target, line). Metadata is not in the key, so this is identical with and without the rule — which is what makes the marking additive.",
+  "marked": 3525,
+  "byType": {
+    "calls": 2738,
+    "references": 787
+  },
+  "byReceiver": {
+    "io": 217,
+    "table": 1367,
+    "string": 976,
+    "math": 455,
+    "utf8": 1,
+    "debug": 90,
+    "os": 309,
+    "coroutine": 110
+  },
+  "badReceiver": [],
+  "guardViolations": [],
+  "control": {
+    "fired": true,
+    "plantedStdlibReceivers": [
+      "string"
+    ],
+    "falsePositiveOnLocalTable": false,
+    "totalEdges": 7,
+    "markedEdges": 2
+  }
+}

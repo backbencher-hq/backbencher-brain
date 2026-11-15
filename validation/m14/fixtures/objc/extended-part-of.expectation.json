@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "fixture": "objc/extended-part-of.m",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "part_of on the EXISTING preproc_include node type (R3 — no grammar change): an Objective-C `#import`/`#include` is FILE INCLUSION. The header's text is spliced into THIS translation unit, its declarations enter this file's scope, and it has no compilation unit of its own — the vocabulary's part_of contract (src/ast/types.ts:PartOf, 'a library unit INCLUDES a part file, one compilation unit'). `imports` already says the file depends on a header; it cannot say the header's text became part of this unit, so this label is ADDITIVE and the imports/references rows stay (the imports row is re-pinned below). THE TARGET IS SYMBOL-SHAPED, NEVER THE WRITTEN PATH: a path target is resolved by name against the symbol table and resolves zero rows (measured at 0 of 4,612 on the fleet's cpp include rows), so the target is the name a reader can look up — the framework/module for `<Framework/Header.h>` (first path segment) and the declared type's stem for a quoted `\"LocalType.h\"` — while the written path is preserved in metadata.partPath where it is metadata rather than identity. partRole is MANDATORY on every part_of row: 'library', because this file carries the directive and names the part. The negative half is the point: a clang `@import Module;` is a SEPARATELY COMPILED module imported by name, the opposite of spliced text, so it must produce no part_of row; and no part_of target may be a path.",
+  "expectSymbols": [
+    {
+      "name": "PartOfDemo",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "PartOfDemo"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Foundation",
+      "kind": "class",
+      "comment": "a framework header is a part of this unit, never a class declared here"
+    },
+    {
+      "name": "WidgetKit",
+      "kind": "class",
+      "comment": "a clang module is imported by name, never declared here"
+    },
+    {
+      "name": "stdlib",
+      "kind": "class",
+      "comment": "a system header is included, never declared here"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "root",
+      "target": "Foundation",
+      "line_number": 35,
+      "meta.partRole": "library",
+      "meta.partPath": "Foundation/Foundation.h",
+      "meta.isFileInclusion": true,
+      "meta.isObjCImport": true,
+      "meta.isObjCModuleImport": false,
+      "meta.isSystem": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "import_based",
+      "comment": "framework header: the target is the MODULE (an identifier a consumer can resolve), the written path lives in partPath, and the row is import_based at 1.0 because the directive IS the syntax"
+    },
+    {
+      "type": "part_of",
+      "from": "root",
+      "target": "LocalThing",
+      "line_number": 36,
+      "meta.partRole": "library",
+      "meta.partPath": "LocalThing.h",
+      "meta.isFileInclusion": true,
+      "meta.isSystem": false,
+      "comment": "quoted project header: the target is the declared type's stem — the name the rest of the file spells — not the path"
+    },
+    {
+      "type": "part_of",
+      "from": "root",
+      "target": "stdlib",
+      "line_number": 37,
+      "meta.partRole": "library",
+      "meta.partPath": "stdlib.h",
+      "meta.isSystem": true,
+      "comment": "`#include` is the same construct as `#import` here: both are preproc_include and both splice text"
+    },
+    {
+      "type": "imports",
+      "from": "root",
+      "target": "Foundation/Foundation.h",
+      "line_number": 35,
+      "meta.relationshipType": "include_dependency",
+      "meta.isObjCModuleImport": false,
+      "comment": "the part_of row is ADDITIVE: the imports dependency row keeps its written-path target and its own label, nothing is relabelled away"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "target": "Foundation/Foundation.h",
+      "comment": "PATH AS TARGET resolves zero rows — the exact failure this shape exists to avoid; the written path belongs in metadata.partPath"
+    },
+    {
+      "type": "part_of",
+      "target": "LocalThing.h",
+      "comment": "same for a quoted include: a header path is metadata, never identity"
+    },
+    {
+      "type": "part_of",
+      "target": "stdlib.h",
+      "comment": "same"
+    },
+    {
+      "type": "part_of",
+      "target": "WidgetKit",
+      "comment": "a clang module is a separately compiled unit imported by name, the OPPOSITE of textual inclusion — part_of would assert the header's text entered this unit"
+    },
+    {
+      "type": "part_of",
+      "from": "PartOfDemo",
+      "comment": "an #import is preprocessor scope, never a member of a class: file scope is the only source"
+    },
+    {
+      "type": "part_of",
+      "from": "run",
+      "comment": "same: a part_of row may not be sourced from a method body"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  M18 (accounting round). Three defects the corpus-wide accounting gate found,
+  each pinned here at the smallest size that shows it.
+
+  1. AN ENTITY'S REPLACEMENT TEXT IS ITS OWN DOCUMENT.
+     `<!ENTITY laugh1 "&laugh0;">` makes a claim — laugh1 cannot be expanded
+     without laugh0 — and the claim was dropped, because an EntityRef was only
+     collected under an OWNING ELEMENT and replacement text has no element above
+     it. 611 of the 651-site shortfall sat here; libxml2's
+     test/recurse/lol_ig_content.xml is the extreme at 147 sites and 1 edge.
+     The owner is the DECLARING ENTITY: laugh1 uses laugh0.
+
+  2. THE FIVE PREDEFINED ENTITIES ARE BUILTIN.
+     &lt; &gt; &amp; &apos; &quot; are declared by the specification itself, in
+     every document. They arrived as EntityRef nodes and took the only other
+     answer, so 4,575 sites across 180 files were stamped
+     `resolvable: "unresolved"` with `danglingEntityReference: true` — the
+     analyzer asserting a well-formed document references an entity nothing
+     defines. &nbsp; is here too, and is NOT predefined: an XML document that
+     uses it without declaring it really does reference something undefined, and
+     that must stay unresolved. The contrast is the point; a gate that cannot
+     tell those two apart is not measuring anything.
+
+  3. NO LENGTH CAP ON A NAME THAT CAME FROM THE FILE.
+     libxml2's result/bigentname.xml names an entity 3,965 characters long. Its
+     declaration was published (that path has no cap) and both its uses were
+     dropped (that path capped at 256), so the graph carried the symbol and none
+     of the uses. A cap cannot bound what the file size has not already bounded,
+     and a guard that disagrees with the guard on the other side of the same
+     fact is a defect rather than a defence.
+
+  A parameter entity is included because the first version of the fix guarded the
+  replacement-text walk with `!isParameter` to avoid conflating an EntityRef with
+  a PEReference, and that guard was over-broad: t8a.xml's
+  `<!ENTITY % deftest '&lt;!ELEMENT test (#PCDATA) >'>` contains a predefined
+  reference the document genuinely makes.
+-->
+<!DOCTYPE catalog [
+  <!ELEMENT catalog (title, body)>
+  <!ELEMENT title (#PCDATA)>
+  <!ELEMENT body (#PCDATA)>
+  <!ENTITY greeting "hello">
+  <!ENTITY shout "&greeting; &greeting; THERE">
+  <!ENTITY % shared "TITLE">
+  <!ENTITY bare "&undefinedEntity;">
+  <!NOTATION png SYSTEM "image/png">
+  <!ENTITY logo SYSTEM "logo.png" NDATA png>
+]>
+<catalog>
+  <title>&greeting; &shout; &lt;tag&gt; &amp; &quot;quoted&quot; &apos;q&apos;</title>
+  <body>&nbsp; &bare; %shared;</body>
+</catalog>

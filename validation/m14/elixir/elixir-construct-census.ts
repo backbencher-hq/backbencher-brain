@@ -45,7 +45,7 @@ function headCommit(): string {
   try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: join(import.meta.dir, "../../.."), encoding: "utf8" }).trim() } catch { return "unknown" }
 }
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const CORPUS_DIRS = (process.env.ELIXIR_CORPUS_DIRS ?? "elixir,otp").split(",")
 const EXTS = [".ex", ".exs"]
 const WANT = Number(process.argv[2] || 0)

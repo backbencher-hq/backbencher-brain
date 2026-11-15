@@ -1,0 +1,31 @@
+{
+  "fixtureId": "cpp/call-target-name-surface-924",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60/#924, cpp's THIRD name-surface class (the census's surviving conviction for the lane is `calls` targets that are source text, not symbol names). The callee descent returned whatever node it stopped on, so a callee the grammar does not name published its SOURCE TEXT as the edge target. Sized on the tree over the two pinned corpora (script/m14/tmp/c924-calls-ws.ts): 224 call sites, the descent stopping on compound_literal_expression 97, subscript_expression 50, call_expression 40 (already suppressed by CPPD13), binary_expression 15, lambda_expression 10, assignment_expression 5, concatenated_string 2, update_expression 2, ERROR 2, unary_expression 1. The rule is the one CPPD13 already applies to functor temporaries and pointer-to-member invocations: the descent must end on a NAME-BEARING node, or the call has no named callee and emits nothing. Measured A/B against HEAD over both corpora (script/m14/tmp/c924-calls-ab.ts): 322 `calls` edges removed, **0 added, 0 symbols changed** — 179 with source-text targets and **143 that spelled a functional CAST** (`calls -> int`, `calls -> char`, `calls -> size_t`: the grammar puts a `primitive_type` in the callee slot, and no function is named `int`). Acceptance re-run through the production entry (script/m14/tmp/c924-calls-post.ts, 68,864 `calls` edges): **targets containing whitespace 224 -> 0**. The residue is named and deliberately NOT in this fixture: 18 targets still spell a builtin type because the grammar reads that keyword as an `identifier` rather than a `primitive_type` (`unsigned` 12, `short` 3, `long` 2, `uint64_t` 1) — forbidding a row the analyzer still emits would make the fixture fail rather than pin a contract. **Reverting mutant: `cpp/call-target-source-text`** (mutate-analyzer.ts) re-adds the source-text target from the result's own source line; this fixture is the only one that catches it.",
+  "expectSymbols": [
+    { "name": "take", "kind": "function" },
+    { "name": "to_unsigned", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "controls", "target": "take", "comment": "CONTROL: a plain call still emits." },
+    { "type": "calls", "from": "controls", "target": "method", "meta.qualified": "s.method", "comment": "CONTROL: a member call still emits, with the qualified path in the payload." },
+    { "type": "calls", "from": "controls", "target": "Buffer", "comment": "CONTROL and the boundary of this fix: `Buffer(1, 2u)` is a class-type functional CONSTRUCTION — a real constructor call whose callee is an `identifier`, so it survives. Only a `primitive_type` callee is a cast." },
+    { "type": "calls", "from": "controls", "target": "Box", "meta.qualified": "Box<int>", "comment": "CONTROL: template construction — `template_function` unwraps to the type's name and still emits." },
+    { "type": "calls", "from": "controls", "target": "to_unsigned", "comment": "CONTROL: a call to a function whose return type is a builtin type is unaffected — the rule reads the CALLEE, not the signature." },
+    { "type": "calls", "from": "method", "target": "consume", "comment": "CONTROL: an enclosing method is the edge's source, as before." }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "lambda_iife", "note": "PRE-FIX: the IIFE's callee IS the lambda expression (format.h:1113), so the whole lambda body was published as the target." },
+    { "type": "calls", "from": "element_call", "note": "PRE-FIX: `fns[0](n)` published the subscript text `fns[0]` as the target (base.h:1737)." },
+    { "type": "calls", "from": "conditional_callee", "note": "PRE-FIX: a parenthesized expression callee published the expression text." },
+    { "type": "calls", "from": "cast_rows", "note": "PRE-FIX: `int(value) + char('a')` published `calls -> int` and `calls -> char`, and `unsigned(value)`/`short(value)`/`long(value)` published calls to those keyword spellings — fabricated call edges to a type. The keyword half survived the first fix and is refused by `CPP_BUILTIN_TYPE_KEYWORDS`, the discipline the C lane has always had (`C_SPECIFIER_KEYWORDS`)." },
+    { "type": "calls", "targetEndsWith": "}", "note": "the pre-fix lambda-body target always ended with the closing brace of the body — an identifier never does." },
+    { "type": "calls", "targetEndsWith": "]", "note": "the pre-fix element-call target ended with the subscript's close bracket." },
+    { "type": "calls", "target": "int", "note": "PRE-FIX: the functional cast to `int` (the `primitive_type` callee)." },
+    { "type": "calls", "target": "char", "note": "PRE-FIX: the functional cast to `char`." },
+    { "type": "calls", "target": "unsigned", "note": "PRE-FIX: the keyword-spelled functional cast the grammar classified as an `identifier` rather than a `primitive_type` (12 sites on the corpora)." },
+    { "type": "calls", "target": "short", "note": "PRE-FIX: same keyword-spelled cast (3 sites on the corpora)." },
+    { "type": "calls", "target": "long", "note": "PRE-FIX: same keyword-spelled cast (2 sites on the corpora)." }
+  ]
+}

@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/inheritance-sol5.sol",
+  "authoredFrom": "SOL-5 \u2014 `is` is not always `extends`. Authored 2026-09-30 from the analyzer's measured output. This fixture exists because `extends` had 537 corpus rows and ZERO fixture rows: all-kinds-sol's heritage edges all name an interface, so the kind was exercised only by a corpus measurement, which is not a gate.",
+  "note": "BOTH kinds appear in one file, and that is the whole design: a rule that always emitted `extends` would fail the `implements` row, and a rule that always emitted `implements` would fail the `extends` row, so neither can pass by accident. Solidity's heritage list has NO `interface` keyword \u2014 `contract C is A, B` is the only form \u2014 so the tree does not say which kind each ancestor is and the distinction comes from the ancestor's own declaration, resolved within this file. `FeedBase is IFeed` is `implements` because `IFeed` is an `interface_declaration` here; `Feed is FeedBase` is `extends` because `FeedBase` is a `contract_declaration`. `override(FeedBase)` on `Feed.latest` names its base EXPLICITLY, which is the case Solidity gives the analyzer and PowerShell never did \u2014 the target inside that base is still located by matching, so the tier is `inferred`. SOL-19 added a third shape to this file: a base NOT declared here, whose kind is therefore undecided. The three together are the whole ruling \u2014 settled by the tree (1.0/structural), settled as a non-interface by an in-file declaration (1.0/structural), and undecided because the declaration is elsewhere (0.9/inferred + flag).",
+  "expectSymbols": [
+    {
+      "name": "inheritance-sol5.sol",
+      "kind": "module"
+    },
+    {
+      "name": "IFeed",
+      "kind": "interface",
+      "ownerName": "inheritance-sol5.sol"
+    },
+    {
+      "name": "latest",
+      "kind": "method",
+      "ownerName": "IFeed"
+    },
+    {
+      "name": "feedKind",
+      "kind": "method",
+      "ownerName": "IFeed"
+    },
+    {
+      "name": "FeedBase",
+      "kind": "class",
+      "ownerName": "inheritance-sol5.sol",
+      "meta.isAbstract": true
+    },
+    {
+      "name": "current",
+      "kind": "property",
+      "ownerName": "FeedBase"
+    },
+    {
+      "name": "latest",
+      "kind": "method",
+      "ownerName": "FeedBase",
+      "meta.isVirtual": true,
+      "meta.hasOverrideSpecifier": true
+    },
+    {
+      "name": "feedKind",
+      "kind": "method",
+      "ownerName": "FeedBase",
+      "meta.isVirtual": true,
+      "meta.hasOverrideSpecifier": true
+    },
+    {
+      "name": "Feed",
+      "kind": "class",
+      "ownerName": "inheritance-sol5.sol"
+    },
+    {
+      "name": "counter",
+      "kind": "property",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "counter()",
+      "kind": "method",
+      "ownerName": "Feed",
+      "meta.isSynthesisedGetter": true
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "latest",
+      "kind": "method",
+      "ownerName": "Feed",
+      "meta.hasOverrideSpecifier": true,
+      "meta.overrideExternal": false
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "is",
+      "comment": "SOL-5's trap in name form: `is` is the heritage KEYWORD and reaches the graph as a bare `identifier`. A callee pass that treated any identifier under an expression as a call would publish `calls -> is`. It is refused by the derived reserved-token rule, which is why that rule exists as a derived set rather than a remembered list."
+    },
+    {
+      "name": "override",
+      "comment": "The `override` keyword, same shape as `is`. Solidity keywords are reserved tokens and no project can declare them."
+    },
+    {
+      "name": "super",
+      "comment": "`super.latest()` resolves the PROPERTY as the call target, and `super` is a global object rather than a project member, so SOL-7 silences it as a member read."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "FeedBase",
+      "target": "IFeed",
+      "line_number": 15,
+      "comment": "SOL-5, the `implements` half. `FeedBase is IFeed` and `IFeed` is an `interface_declaration` in THIS file, so the kind is settled by the ancestor's own declaration rather than by anything in the heritage list.",
+      "meta.isSolidityInheritance": true,
+      "meta.interfaceResolvedInFile": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "from": "Feed",
+      "target": "FeedBase",
+      "line_number": 21,
+      "comment": "SOL-5, the `extends` half, and the row this fixture was written for: the kind had 537 corpus rows and no fixture row at all. `FeedBase` is an abstract CONTRACT, so this is implementation inheritance rather than interface satisfaction.",
+      "meta.isSolidityInheritance": true,
+      "meta.interfaceResolvedInFile": false,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "latest",
+      "target": "FeedBase",
+      "line_number": 25,
+      "comment": "SOL-11. `override(FeedBase)` NAMES the base, which the grammar settles \u2014 Solidity has the keyword where PowerShell had nothing. The TARGET inside that base is located by matching the member name, so the tier is `inferred` and not `structural`. Measured on the corpus: 8 emitted against 386 unresolved, because a base declared in another file yields NO edge at all rather than a fabricated one, and the unresolved count is reported rather than hidden.",
+      "meta.overridesMember": "latest",
+      "meta.baseType": "FeedBase",
+      "meta.baseNamedByOverrideSpecifier": true,
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "overrides",
+      "from": "latest",
+      "target": "IFeed",
+      "line_number": 17,
+      "comment": "An override resolved from the CONTRACT HEADER rather than an explicit list \u2014 `FeedBase is IFeed` with a bare `override`. The metadata distinguishes the two shapes, so a reader can tell which bases were named and which were inferred from the heritage list.",
+      "meta.overridesMember": "latest",
+      "meta.baseType": "IFeed",
+      "meta.baseFromContractHeader": true,
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "overrides",
+      "from": "feedKind",
+      "target": "IFeed",
+      "line_number": 18,
+      "meta.overridesMember": "feedKind",
+      "meta.baseType": "IFeed",
+      "meta.baseFromContractHeader": true,
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "FeedBase",
+      "line_number": 23,
+      "comment": "A BASE CONSTRUCTOR INVOCATION. `constructor() FeedBase() {}` is a `modifier_invocation`, which grammar.js gives no field at all, so the name is the first `identifier` child. 204 of them exist in the corpus and a callee pass over `call_expression` alone would publish none of them \u2014 the base-constructor half of `extends` would simply be missing.",
+      "meta.isModifierInvocation": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "latest",
+      "target": "latest",
+      "line_number": 26,
+      "comment": "`super.latest()` \u2014 a call THROUGH a global object. SOL-7 silences a global's member READ (`msg.sender` names no project member) but keeps a CALL through one, because `latest` IS a project function and `super.f()` is how Solidity reaches a base implementation. The edge's source and target happen to share a name because the enclosing function and the overridden one are both `latest`; that is what the source says.",
+      "meta.isSolidityCall": true,
+      "meta.isMemberCall": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "from": "inheritance-sol5.sol",
+      "target": "IFeed",
+      "line_number": 10,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "IFeed",
+      "target": "latest",
+      "line_number": 11,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "inheritance-sol5.sol",
+      "target": "FeedBase",
+      "line_number": 15,
+      "comment": "`abstract contract FeedBase` \u2014 the `abstract` keyword is read off the node's FIRST child token rather than by matching source text, so `meta.isAbstract` is a structural fact and not a substring hit.",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "FeedBase",
+      "target": "current",
+      "line_number": 16,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "FeedBase",
+      "target": "latest",
+      "line_number": 17,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "FeedBase",
+      "target": "feedKind",
+      "line_number": 18,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "inheritance-sol5.sol",
+      "target": "Feed",
+      "line_number": 21,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "from": "latest",
+      "target": "current",
+      "line_number": 17,
+      "meta.isVariableReference": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "constructor",
+      "line_number": 23,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "latest",
+      "line_number": 25,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "counter",
+      "line_number": 22,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "counter()",
+      "line_number": 22,
+      "meta.isSynthesisedGetter": true,
+      "meta.getterOfVariable": "counter",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "counter",
+      "target": "counter()",
+      "line_number": 22,
+      "meta.isGetterFor": true,
+      "meta.getterOfVariable": "counter",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "exports",
+      "from": "inheritance-sol5.sol",
+      "target": "IFeed",
+      "line_number": 10,
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "inheritance-sol5.sol",
+      "target": "FeedBase",
+      "line_number": 15,
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "inheritance-sol5.sol",
+      "target": "Feed",
+      "line_number": 21,
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "CrossFile",
+      "target": "IOther",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.95,
+      "meta.evidenceClass": "inferred",
+      "meta.kindUnresolved": true,
+      "meta.assumedKind": "extends",
+      "meta.reasonCode": "base-not-declared-in-file",
+      "comment": "SOL-19. `IOther` is not declared here, so the tree does not say whether it is an interface. The edge is still emitted \u2014 omitting a TRUE inheritance edge to avoid annotating an uncertain KIND would trade a labelled fact for a silence \u2014 but the claim is marked: 0.9, tier `inferred`, `kindUnresolved`, and the kind that was ASSUMED. It was published at 1.0/`structural` before, which is the overstatement this row exists to prevent: a consumer weighting by tier read a guess as a fact, and one filtering `extends` to find contracts inherited a mis-typed base."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "FeedBase",
+      "target": "IFeed",
+      "line_number": 15,
+      "comment": "THE ROW THAT MAKES SOL-5 A DECISION. `IFeed` is an interface, so this is `implements`. A rule that relabelled every interface base as `extends` would lose no edge and change no total \u2014 only the KIND \u2014 which is why this forbid row exists alongside the `implements` row and the count below."
+    },
+    {
+      "type": "implements",
+      "from": "Feed",
+      "target": "FeedBase",
+      "line_number": 21,
+      "comment": "The mirror image: `FeedBase` is a contract, so implementation inheritance is `extends`. Pins that the rule is not 'implements for the first base' \u2014 a positional guess would get both of these backwards relative to the file's own declarations."
+    },
+    {
+      "type": "calls",
+      "from": "latest",
+      "target": "super",
+      "line_number": 26,
+      "comment": "SOL-7: `super` is a global object, not a project member. The call's TARGET is the property `latest`, which is what the expect row above pins."
+    },
+    {
+      "type": "uses",
+      "from": "latest",
+      "target": "super",
+      "line_number": 26,
+      "comment": "SOL-7 again, the read side. `super` cannot be declared by a project, so a `uses` edge naming it is a fabrication by construction."
+    },
+    {
+      "type": "overrides",
+      "from": "latest",
+      "target": "Feed",
+      "line_number": 25,
+      "comment": "A SELF-TARGET: `Feed.latest` does not override a member of itself. `override(FeedBase)` names a base, and the resolution skips `base === owner` so a diamond-inheritance header that lists the deriving contract cannot produce an edge a function overrides in its own owner. This file's `Feed` does not list itself, so the row is absent rather than wrong \u2014 and it is forbidden so the skip stays load-bearing."
+    },
+    {
+      "type": "extends",
+      "source": "CrossFile",
+      "target": "IOther",
+      "confidenceMin": 0.99,
+      "comment": "The same row from the other side: the undecided-kind population must never be reported at full confidence. `confidenceMin: 0.99` is the assertion; a single FORBID row for the CONFIDENCE is what stops the tier from being fixed while the number is not."
+    },
+    {
+      "type": "implements",
+      "source": "FeedBase",
+      "target": "IFeed",
+      "confidenceMax": 0.99,
+      "comment": "The IN-FILE case must keep full confidence. `IFeed` is an `interface_declaration` in this file, so its kind is settled by the tree and downgrading it would be the opposite error \u2014 reporting a fact as a guess."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "implements",
+      "equals": 1,
+      "comment": "One interface base in the file. A rule that emitted `implements` for every heritage edge would report 2 and fail here."
+    },
+    {
+      "type": "extends",
+      "equals": 2,
+      "comment": "Two contract bases: `Feed is FeedBase`, whose kind the tree SETTLES, and `CrossFile is IOther`, whose kind it cannot settle because IOther is declared in another file. Both are `extends`; they differ in CONFIDENCE and TIER, which is the point of SOL-19 \u2014 a count that cannot tell them apart cannot gate either."
+    },
+    {
+      "type": "overrides",
+      "equals": 4,
+      "comment": "FeedBase overrides both interface functions (resolved from the heritage list), and Feed overrides FeedBase's `latest` (resolved from the explicit `override(FeedBase)`). A rule that ignored the explicit list and matched any same-named member in any ancestor would add `overrides feedKind -> FeedBase`... which does not exist because `Feed` does not declare `feedKind`, so this count is also what pins that a member is only overridden if it is actually DECLARED in the base. CrossFile's bare `override` resolves against its SINGLE header base IOther (SOL-11's one-base rule), which is the fourth."
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "FeedBase",
+      "equals": 1
+    }
+  ]
+}

@@ -57,13 +57,13 @@ pretend otherwise.
 
 | Code | Issue | Deliverable | Acceptance criteria (abridged) |
 |---|---|---|---|
-| G1 | [#616](https://github.com/backbencher-hq/backbencher-brain/issues/616) | Governance | Ledger, governance map, gate, ladder check (re-audits the M26 bar) |
-| N1 | [#617](https://github.com/backbencher-hq/backbencher-brain/issues/617) | Neovim (I3) | init.lua adapter + headless driver + verifier |
-| J1 | [#618](https://github.com/backbencher-hq/backbencher-brain/issues/618) | JetBrains / LSP4IJ (I2, stretch I3) | LSP4IJ user-defined template (JSON) + verifier |
-| Z1 | [#619](https://github.com/backbencher-hq/backbencher-brain/issues/619) | Zed (I2) | Extension (`extension.toml` + wasm shim) + verifier |
-| H1 | [#620](https://github.com/backbencher-hq/backbencher-brain/issues/620) | Helix (I2) | `languages.toml` fragment + verifier |
-| V1 | [#621](https://github.com/backbencher-hq/backbencher-brain/issues/621) | Fork capability matrix v3 | `docs/m27/FORK-CAPABILITY-MATRIX.md` |
-| X1 | [#622](https://github.com/backbencher-hq/backbencher-brain/issues/622) | Closure gate | Full-suite audit + v3 completion bar + regeneration |
+| G1 | [#616](https://github.com/ishaq2321/backbencher-brain/issues/616) | Governance | Ledger, governance map, gate, ladder check (re-audits the M26 bar) |
+| N1 | [#617](https://github.com/ishaq2321/backbencher-brain/issues/617) | Neovim (I3) | init.lua adapter + headless driver + verifier |
+| J1 | [#618](https://github.com/ishaq2321/backbencher-brain/issues/618) | JetBrains / LSP4IJ (I2, stretch I3) | LSP4IJ user-defined template (JSON) + verifier |
+| Z1 | [#619](https://github.com/ishaq2321/backbencher-brain/issues/619) | Zed (I2) | Extension (`extension.toml` + wasm shim) + verifier |
+| H1 | [#620](https://github.com/ishaq2321/backbencher-brain/issues/620) | Helix (I2) | `languages.toml` fragment + verifier |
+| V1 | [#621](https://github.com/ishaq2321/backbencher-brain/issues/621) | Fork capability matrix v3 | `docs/m27/FORK-CAPABILITY-MATRIX.md` |
+| X1 | [#622](https://github.com/ishaq2321/backbencher-brain/issues/622) | Closure gate | Full-suite audit + v3 completion bar + regeneration |
 
 ## v3 completion bar (X1 audits this)
 

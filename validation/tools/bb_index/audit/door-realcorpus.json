@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/realcorpus/bbdata",
+  "startedAt": "2026-11-03T16:10:30.531Z",
+  "cases": [
+    {
+      "label": "real corpus: file mode on an unchanged source file (no-op path)",
+      "arguments": {
+        "path": "src/language/parser.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/language/parser.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 98
+    },
+    {
+      "label": "real corpus: dir mode on a settled corpus",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 80,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 0,\n  \"declined\": 80,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"every candidate was already current in the index\",\n  \"walCheckpointed\": false\n}",
+      "ms": 279
+    },
+    {
+      "label": "REFUSE: outside-project path in a real corpus",
+      "arguments": {
+        "path": "/etc/hostname"
+      },
+      "isError": true,
+      "text": "bb_index : refusing a path outside the project. \"/etc/hostname\" resolves to /etc/hostname, which is not inside /home/ishaq2321/bb_tests/repositories/graphql-js. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.",
+      "ms": 3
+    },
+    {
+      "label": "REFUSE: ../ traversal in a real corpus",
+      "arguments": {
+        "path": "../other-repo/file.ts"
+      },
+      "isError": true,
+      "text": "bb_index: no such path: /home/ishaq2321/bb_tests/repositories/other-repo/file.ts",
+      "ms": 2
+    },
+    {
+      "label": "REFUSE: mode=post on a file path in a real corpus",
+      "arguments": {
+        "path": "src/language/parser.ts",
+        "mode": "post"
+      },
+      "isError": true,
+      "text": "bb_index mode=post: /home/ishaq2321/bb_tests/repositories/graphql-js/src/language/parser.ts is a file — mode=post re-derives the phases of the PROJECT, so `path` must be the project root or a directory inside it (pass the project path or \".\").",
+      "ms": 4
+    },
+    {
+      "label": "real corpus: post mode on the project root",
+      "arguments": {
+        "path": ".",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \".\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 8121,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 2272,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 611,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 152,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 166,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 541,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 8,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 796,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 12730,\n  \"integrityHealth\": 100\n}",
+      "ms": 12742
+    }
+  ],
+  "stderr": "[WARN] [11:10:43] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"18b0d556\",\"danglingSources\":27549,\"totalRelationships\":61917}\n[INFO] [11:10:46] [project-health] project health computed {\"projectId\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e\",\"complexityScore\":84,\"maintainabilityScore\":83,\"techDebtScore\":0,\"codeQualityScore\":55,\"languages\":9,\"bottlenecks\":20}\n",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1654,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project root or a directory inside it whose derived phases should be re-run (a file path is refused). REQUIRED in every mode and checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T16:10:48.354Z"
+}

@@ -1,0 +1,409 @@
+{
+  "fixtureId": "php/payload-and-complexity",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "variableReadSpelling": "VARIABLE-READ SPELLING (php, 2026-10-11). The `uses` targets in this file that name a `$variable` are BINDINGS, not declaration names: the analyzer spells a variable read as `<read source>\\u0000<binding>` with `metadata.localBinding`, because a local/param/superglobal is never a published symbol and the BARE name let the store bind the read to an unrelated same-named declaration in another file. The defect and its counterfactual are in validation/m14/fixtures/php/local-read-phantom.mts; the whole-population effect is in docs/analyzers/history/php-lane-notes.md. What each row PINS (which read, from where, and how many) did not move.",
+  "rationale": "PINS the php analyzer's relationship + payload surface on real PHP architecture (namespace/interface/class/trait/enum): interface contracts, class inheritance (extends the ONE superclass via base_clause), interface inheritance (extends N parents via base_clause), protocol adoption (implements N interfaces via class_interface_clause), trait composition (mixes_in, isTraitUse \u2014 relabelled from `uses` 2026-10-23 at R3, no grammar change), module-part inclusion (part_of with partRole, relabelled from `imports` on the same round: `require_once __DIR__ . '/bootstrap/app.php'` names a path and creates no binding), magic/static methods, class constants, member READS (uses via member_access_expression \u2014 assignment-LHS writes excluded; call-receiver MEMBER sides excluded, receiver BASE variables read as ordinary bare values per PHP2-D), instantiates via `new`, per-symbol complexity (if/for/while/switch/ternary/&&), and family evidence tiers (structural/usage_contextual/import_based). Authored as a .php file BEFORE the analyzer's M14 wave run; expectations reflect the verified M12.21 contract, not the analyzer's current output. SCD1 (M37 #599 pre-wave follow-up): compound-assign parses as augmented_assignment_expression (distinct node) \u2014 both shapes gated; authorize keeps 2 genuine reads, refund's pure write is forbidden. PHP2 second review: bare `$var`/NAME reads landed (scope inventory); the blanket `uses->gateway` forbid it broke encoded the old receiver exclusion and is replaced by member-side forbids + variable-side expects.",
+  "expectSymbols": [
+    {
+      "name": "Authorizer",
+      "kind": "interface"
+    },
+    {
+      "name": "Refundable",
+      "kind": "interface"
+    },
+    {
+      "name": "BaseService",
+      "kind": "class"
+    },
+    {
+      "name": "PaymentService",
+      "kind": "class"
+    },
+    {
+      "name": "Loggable",
+      "kind": "trait"
+    },
+    {
+      "name": "OrderService",
+      "kind": "class"
+    },
+    {
+      "name": "OrderStatus",
+      "kind": "enum"
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "ownerName": "BaseService",
+      "visibility": "protected"
+    },
+    {
+      "name": "balance",
+      "kind": "property",
+      "ownerName": "PaymentService",
+      "visibility": "private"
+    },
+    {
+      "name": "gateway",
+      "kind": "property",
+      "ownerName": "PaymentService",
+      "visibility": "private"
+    },
+    {
+      "name": "MAX_RETRIES",
+      "kind": "constant",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "authorize",
+      "kind": "method",
+      "ownerName": "Authorizer"
+    },
+    {
+      "name": "refund",
+      "kind": "method",
+      "ownerName": "Refundable"
+    },
+    {
+      "name": "__construct",
+      "kind": "method",
+      "ownerName": "BaseService"
+    },
+    {
+      "name": "__construct",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "authorize",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "refund",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "create",
+      "kind": "method",
+      "ownerName": "PaymentService"
+    },
+    {
+      "name": "log",
+      "kind": "method",
+      "ownerName": "Loggable"
+    },
+    {
+      "name": "process",
+      "kind": "method",
+      "ownerName": "OrderService"
+    },
+    {
+      "name": "Pending",
+      "kind": "enum_member",
+      "ownerName": "OrderStatus"
+    },
+    {
+      "name": "Paid",
+      "kind": "enum_member",
+      "ownerName": "OrderStatus"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "PaymentService",
+      "target": "Authorizer",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "PaymentService",
+      "target": "Refundable",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "PaymentService",
+      "target": "BaseService",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "mixes_in",
+      "source": "PaymentService",
+      "target": "Loggable",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "mixes_in",
+      "source": "OrderService",
+      "target": "Loggable",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "__construct",
+      "target": "BaseService.__construct",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "authorize",
+      "target": "PaymentService.balance",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "authorize",
+      "target": "backoff",
+      "meta.evidenceClass": "usage_contextual",
+      "note": "Call in a nested loop attributed to the enclosing method."
+    },
+    {
+      "type": "instantiates",
+      "source": "create",
+      "target": "PaymentService",
+      "meta.isNew": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "create",
+      "target": "StripeGateway",
+      "meta.isNew": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "process",
+      "target": "log",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "process",
+      "target": "id",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "instantiates",
+      "source": "process",
+      "target": "PaymentService",
+      "meta.isNew": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "process",
+      "target": "StripeGateway",
+      "meta.isNew": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "process",
+      "target": "authorize",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "process",
+      "target": "total",
+      "meta.isMemberRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "process",
+      "target": "dispatch",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "part_of",
+      "target": "__DIR__/bootstrap/app.php",
+      "meta.includeType": "require_once",
+      "meta.partRole": "library",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "overrides",
+      "source": "PaymentService.__construct",
+      "target": "BaseService.__construct",
+      "meta.isOverride": true,
+      "meta.evidenceClass": "inferred",
+      "confidence": 0.85
+    },
+    {
+      "type": "contains",
+      "source": "Authorizer",
+      "target": "authorize",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "PaymentService",
+      "target": "authorize",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "OrderStatus",
+      "target": "Pending",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "spawn",
+      "target": "PaymentService",
+      "meta.isNew": true
+    },
+    {
+      "type": "instantiates",
+      "source": "spawn",
+      "target": "BaseService",
+      "meta.isNew": true
+    },
+    {
+      "type": "uses",
+      "source": "__construct",
+      "target": "__construct\u0000gateway",
+      "comment": "PHP2-D: ctor param value flows into the property write `$this->gateway = $gateway` (RHS reads)"
+    },
+    {
+      "type": "uses",
+      "source": "process",
+      "target": "process\u0000gateway",
+      "comment": "PHP2-D: call-receiver base variable reads \u2014 wave-1 `receivers excluded` narrowed to the member-link side (PHP-A chains already read links; bare bases now read as ordinary variables)"
+    },
+    {
+      "type": "calls",
+      "source": "authorize",
+      "target": "usleep",
+      "meta.functionCandidates": [
+        "app\\service\\usleep",
+        "usleep"
+      ],
+      "note": "An unqualified namespaced function can shadow a builtin in another file; retain ordered fallback evidence."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "instantiates",
+      "from": "spawn",
+      "target": "PaymentService",
+      "equals": 2
+    },
+    {
+      "type": "instantiates",
+      "from": "spawn",
+      "target": "BaseService",
+      "equals": 1
+    },
+    {
+      "type": "uses",
+      "from": "authorize",
+      "target": "PaymentService.balance",
+      "equals": 2
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "authorize",
+      "ownerName": "PaymentService",
+      "equals": 6
+    },
+    {
+      "symbol": "refund",
+      "ownerName": "PaymentService",
+      "equals": 1
+    },
+    {
+      "symbol": "create",
+      "ownerName": "PaymentService",
+      "equals": 1
+    },
+    {
+      "symbol": "process",
+      "ownerName": "OrderService",
+      "equals": 2
+    },
+    {
+      "symbol": "__construct",
+      "ownerName": "PaymentService",
+      "equals": 1
+    },
+    {
+      "symbol": "log",
+      "ownerName": "Loggable",
+      "equals": 1
+    },
+    {
+      "symbol": "f6_global_helper",
+      "equals": 10
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "name",
+      "visibility": "protected"
+    },
+    {
+      "symbol": "balance",
+      "visibility": "private"
+    },
+    {
+      "symbol": "gateway",
+      "visibility": "private"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "json_encode"
+    },
+    {
+      "type": "calls",
+      "target": "PaymentService"
+    },
+    {
+      "type": "instantiates",
+      "target": "self"
+    },
+    {
+      "type": "instantiates",
+      "target": "static"
+    },
+    {
+      "type": "instantiates",
+      "target": "parent"
+    },
+    {
+      "type": "uses",
+      "from": "refund",
+      "target": "balance"
+    },
+    {
+      "type": "uses",
+      "target": "authorize",
+      "comment": "PHP2-D: the wave-1 receiver exclusion still holds on the MEMBER side \u2014 `$gw->authorize()` reads the base variable (uses process->gateway), never the method name"
+    },
+    {
+      "type": "uses",
+      "target": "dispatch",
+      "comment": "PHP2-D: `$this->dispatch()` reads nothing ($this never reads; method side excluded)"
+    },
+    {
+      "type": "uses",
+      "source": "global",
+      "target": "greeting",
+      "comment": "PHP2: top-level `$greeting = 'hi'` is a pure write \u2014 the method-side read is sourced run (via global decl), never global (retargeted php/emit-write-as-uses fabrication)"
+    }
+  ]
+}

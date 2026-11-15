@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P7",
+  "code": "P7",
+  "tool": "bb_patterns",
+  "title": "evidence + gate + closure",
+  "verified": true,
+  "checks": 6,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-08-23T17:18:50.628Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.340Z",
+    "contentSha256": "13c6e17d244acd8a7487f0283b440d9585b980d1bd5cf143ffd9f6918d79be1c"
+  }
+}

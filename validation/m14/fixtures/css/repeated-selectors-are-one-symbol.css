@@ -1,0 +1,6 @@
+.btn { color: red; }
+.btn { padding: 4px; }
+.btn:hover { color: blue; }
+.btn::before { content: ""; }
+.card { border: 0; }
+.card { margin: 0; }

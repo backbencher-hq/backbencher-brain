@@ -1,0 +1,24 @@
+{
+  "fixtureId": "scala/implicit-overrides",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two-corpus gate wave 2026-09 (cats-effect). ScalaD-A: implementing an ABSTRACT member needs no `override` keyword in Scala (required only for CONCRETE base members) — keywordless ImplA.value/ImplB.value are genuine overrides of BaseTrait.value, resolved signature-exact through intermediate abstract classes. ScalaD-B: a keyworded override must resolve to the TRUE declaring ancestor (ImplB.doubled -> BaseTrait.doubled), never a first-supertype guess against Mid (which does not declare doubled). ScalaD-C: `private[scope]` is package-visible and overridable, not a hard private. Overloads with different parameter lists never pair.",
+  "expectSymbols": [
+    { "name": "BaseTrait", "kind": "interface" },
+    { "name": "ImplA", "kind": "class" },
+    { "name": "ImplB", "kind": "class" },
+    { "name": "value", "kind": "method", "ownerName": "ImplB" },
+    { "name": "doubled", "kind": "method", "ownerName": "ImplB" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "source": "ImplA", "target": "BaseTrait" },
+    { "type": "extends", "source": "ImplB", "target": "Mid" },
+    { "type": "overrides", "source": "ImplB.doubled", "target": "BaseTrait.doubled", "meta.reasonCode": "exact-in-file", "meta.evidenceClass": "structural" },
+    { "type": "overrides", "source": "ImplA.value", "target": "BaseTrait.value", "meta.reasonCode": "exact-in-file", "meta.evidenceClass": "structural" },
+    { "type": "overrides", "source": "ImplB.value", "target": "BaseTrait.value", "meta.reasonCode": "exact-in-file", "meta.evidenceClass": "structural" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "target": "Mid.doubled" },
+    { "type": "overrides", "target": "Mid.value" }
+  ]
+}

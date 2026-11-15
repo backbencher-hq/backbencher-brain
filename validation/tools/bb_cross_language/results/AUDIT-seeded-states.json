@@ -1,0 +1,1190 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "generatedAt": "2026-11-01T19:06:46.495Z",
+  "currentCommit": "c43282e92",
+  "projectIds": {
+    "unpairable": "clauditunpairable00000000000000000000000",
+    "deeperOut": "clauditdeeperout000000000000000000000000",
+    "deeperIn": "clauditdeeperin0000000000000000000000000",
+    "budget": "clauditbudget000000000000000000000000000",
+    "memberOnly": "clauditmemberonly00000000000000000000000",
+    "copies": "clauditcopies00000000000000000000000000000"
+  },
+  "answers": {
+    "p1Store": {
+      "crossRows": 1,
+      "rowTarget": "u-target"
+    },
+    "p1Unpairable": {
+      "isError": false,
+      "text": "{\n  \"symbol\": \"uMystery\",\n  \"language\": null,\n  \"languages\": [],\n  \"copies\": [\n    {\n      \"id\": \"u-target\",\n      \"symbol\": \"uMystery\",\n      \"file\": \"mystery.unknownlang\",\n      \"language\": null,\n      \"line\": 1,\n      \"crossRowCount\": 1\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\": null,\n  \"facts\": [],",
+      "parsed": {
+        "symbol": "uMystery",
+        "language": null,
+        "languages": [],
+        "copies": [
+          {
+            "id": "u-target",
+            "symbol": "uMystery",
+            "file": "mystery.unknownlang",
+            "language": null,
+            "line": 1,
+            "crossRowCount": 1
+          }
+        ],
+        "copyCount": 1,
+        "copiesTruncated": false,
+        "copiesCap": 200,
+        "copiesNote": null,
+        "ambiguous": false,
+        "ambiguityNote": null,
+        "facts": [],
+        "ownFactCount": 0,
+        "ownFactsTruncated": false,
+        "memberFacts": [],
+        "memberFactCount": 0,
+        "memberFactsTruncated": false,
+        "memberCount": 0,
+        "memberNote": null,
+        "factCount": 0,
+        "pairCount": 0,
+        "signatureCount": 0,
+        "storedRowCount": 1,
+        "unpairableRowCount": 1,
+        "collapsedRowCount": 0,
+        "limit": 200,
+        "truncated": false,
+        "truncationReason": null,
+        "totalCountIfKnown": 0,
+        "declaredAbsent": false,
+        "deeperDescendantRowCount": 0,
+        "deeperDescendantNote": null,
+        "absenceNote": null,
+        "pairlessRowNote": "1 stored cross-language row(s) matched this name but 1 of them cannot name a language pair (an endpoint file with no detected language, or two endpoint languages that are equal), so there is no fact to report. The rows exist; see unpairableRowCount.",
+        "silentItselfButNotItsMembers": false
+      }
+    },
+    "p2DeeperOutgoing": {
+      "isError": false,
+      "text": "{\n  \"symbol\": \"oOwner\",\n  \"language\": \"typescript\",\n  \"languages\": [\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"o-owner-s\",\n      \"symbol\": \"oOwner\",\n      \"file\": \"owner.ts\",\n      \"language\": \"typescript\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\"",
+      "parsed": {
+        "symbol": "oOwner",
+        "language": "typescript",
+        "languages": [
+          "typescript"
+        ],
+        "copies": [
+          {
+            "id": "o-owner-s",
+            "symbol": "oOwner",
+            "file": "owner.ts",
+            "language": "typescript",
+            "line": 1,
+            "crossRowCount": 0
+          }
+        ],
+        "copyCount": 1,
+        "copiesTruncated": false,
+        "copiesCap": 200,
+        "copiesNote": null,
+        "ambiguous": false,
+        "ambiguityNote": null,
+        "facts": [],
+        "ownFactCount": 0,
+        "ownFactsTruncated": false,
+        "memberFacts": [],
+        "memberFactCount": 0,
+        "memberFactsTruncated": false,
+        "memberCount": 0,
+        "memberNote": null,
+        "factCount": 0,
+        "pairCount": 0,
+        "signatureCount": 0,
+        "storedRowCount": 0,
+        "unpairableRowCount": 0,
+        "collapsedRowCount": 0,
+        "limit": 200,
+        "truncated": false,
+        "truncationReason": null,
+        "totalCountIfKnown": 0,
+        "declaredAbsent": true,
+        "deeperDescendantRowCount": 1,
+        "deeperDescendantNote": "1 stored cross-language row(s) sit on descendants of 'oOwner' at depth 2 or deeper (either direction). They are NOT cascaded into the facts above — they are the descendants' edges, not 'oOwner's — and bb_graph reports none of them either, so both doors are silent about them. Ask about the member directly to see them.",
+        "absenceNote": "no stored cross-language rows anywhere in THIS PROJECT's index for 'oOwner' or for any of its DIRECT members — but 1 row(s) sit on descendants at depth 2 or deeper (deeperDescendantRowCount), which are the descendants' edges and are deliberately not cascaded. Absence at this level declared, never guessed; this is not the same as the symbol being unconnected.",
+        "pairlessRowNote": null,
+        "silentItselfButNotItsMembers": false
+      }
+    },
+    "p3DeeperIncoming": {
+      "isError": false,
+      "text": "{\n  \"symbol\": \"iOwner\",\n  \"language\": \"typescript\",\n  \"languages\": [\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"i-owner-s\",\n      \"symbol\": \"iOwner\",\n      \"file\": \"owner.ts\",\n      \"language\": \"typescript\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\"",
+      "parsed": {
+        "symbol": "iOwner",
+        "language": "typescript",
+        "languages": [
+          "typescript"
+        ],
+        "copies": [
+          {
+            "id": "i-owner-s",
+            "symbol": "iOwner",
+            "file": "owner.ts",
+            "language": "typescript",
+            "line": 1,
+            "crossRowCount": 0
+          }
+        ],
+        "copyCount": 1,
+        "copiesTruncated": false,
+        "copiesCap": 200,
+        "copiesNote": null,
+        "ambiguous": false,
+        "ambiguityNote": null,
+        "facts": [],
+        "ownFactCount": 0,
+        "ownFactsTruncated": false,
+        "memberFacts": [],
+        "memberFactCount": 0,
+        "memberFactsTruncated": false,
+        "memberCount": 0,
+        "memberNote": null,
+        "factCount": 0,
+        "pairCount": 0,
+        "signatureCount": 0,
+        "storedRowCount": 0,
+        "unpairableRowCount": 0,
+        "collapsedRowCount": 0,
+        "limit": 200,
+        "truncated": false,
+        "truncationReason": null,
+        "totalCountIfKnown": 0,
+        "declaredAbsent": true,
+        "deeperDescendantRowCount": 1,
+        "deeperDescendantNote": "1 stored cross-language row(s) sit on descendants of 'iOwner' at depth 2 or deeper (either direction). They are NOT cascaded into the facts above — they are the descendants' edges, not 'iOwner's — and bb_graph reports none of them either, so both doors are silent about them. Ask about the member directly to see them.",
+        "absenceNote": "no stored cross-language rows anywhere in THIS PROJECT's index for 'iOwner' or for any of its DIRECT members — but 1 row(s) sit on descendants at depth 2 or deeper (deeperDescendantRowCount), which are the descendants' edges and are deliberately not cascaded. Absence at this level declared, never guessed; this is not the same as the symbol being unconnected.",
+        "pairlessRowNote": null,
+        "silentItselfButNotItsMembers": false
+      }
+    },
+    "p4Budget": {
+      "limit1": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"bOwner\",\n  \"language\": \"kotlin\",\n  \"languages\": [\n    \"kotlin\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"b-owner-s\",\n      \"symbol\": \"bOwner\",\n      \"file\": \"budgetOwner.kt\",\n      \"language\": \"kotlin\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\": null",
+        "parsed": {
+          "symbol": "bOwner",
+          "language": "kotlin",
+          "languages": [
+            "kotlin"
+          ],
+          "copies": [
+            {
+              "id": "b-owner-s",
+              "symbol": "bOwner",
+              "file": "budgetOwner.kt",
+              "language": "kotlin",
+              "line": 1,
+              "crossRowCount": 0
+            }
+          ],
+          "copyCount": 1,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": false,
+          "ambiguityNote": null,
+          "facts": [],
+          "ownFactCount": 0,
+          "ownFactsTruncated": false,
+          "memberFacts": [
+            {
+              "self": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-1",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "matchedMemberId": "b-m1"
+            }
+          ],
+          "memberFactCount": 1,
+          "memberFactsTruncated": true,
+          "memberCount": 3,
+          "memberNote": "3 member symbol(s) of 'bOwner' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'bOwner's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+          "factCount": 1,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 3,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 1,
+          "truncated": true,
+          "truncationReason": "declared limit of 1 facts; 3 facts exist for this name (0 on the symbol itself, 3 on its members)",
+          "totalCountIfKnown": 3,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": true
+        }
+      },
+      "limit2": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"bOwner\",\n  \"language\": \"kotlin\",\n  \"languages\": [\n    \"kotlin\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"b-owner-s\",\n      \"symbol\": \"bOwner\",\n      \"file\": \"budgetOwner.kt\",\n      \"language\": \"kotlin\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\": null",
+        "parsed": {
+          "symbol": "bOwner",
+          "language": "kotlin",
+          "languages": [
+            "kotlin"
+          ],
+          "copies": [
+            {
+              "id": "b-owner-s",
+              "symbol": "bOwner",
+              "file": "budgetOwner.kt",
+              "language": "kotlin",
+              "line": 1,
+              "crossRowCount": 0
+            }
+          ],
+          "copyCount": 1,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": false,
+          "ambiguityNote": null,
+          "facts": [],
+          "ownFactCount": 0,
+          "ownFactsTruncated": false,
+          "memberFacts": [
+            {
+              "self": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-1",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "matchedMemberId": "b-m1"
+            },
+            {
+              "self": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-2",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "matchedMemberId": "b-m2"
+            }
+          ],
+          "memberFactCount": 2,
+          "memberFactsTruncated": true,
+          "memberCount": 3,
+          "memberNote": "3 member symbol(s) of 'bOwner' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'bOwner's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+          "factCount": 2,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 3,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 2,
+          "truncated": true,
+          "truncationReason": "declared limit of 2 facts; 3 facts exist for this name (0 on the symbol itself, 3 on its members)",
+          "totalCountIfKnown": 3,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": true
+        }
+      },
+      "limit5": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"bOwner\",\n  \"language\": \"kotlin\",\n  \"languages\": [\n    \"kotlin\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"b-owner-s\",\n      \"symbol\": \"bOwner\",\n      \"file\": \"budgetOwner.kt\",\n      \"language\": \"kotlin\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\": null",
+        "parsed": {
+          "symbol": "bOwner",
+          "language": "kotlin",
+          "languages": [
+            "kotlin"
+          ],
+          "copies": [
+            {
+              "id": "b-owner-s",
+              "symbol": "bOwner",
+              "file": "budgetOwner.kt",
+              "language": "kotlin",
+              "line": 1,
+              "crossRowCount": 0
+            }
+          ],
+          "copyCount": 1,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": false,
+          "ambiguityNote": null,
+          "facts": [],
+          "ownFactCount": 0,
+          "ownFactsTruncated": false,
+          "memberFacts": [
+            {
+              "self": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-1",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "matchedMemberId": "b-m1"
+            },
+            {
+              "self": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-2",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "matchedMemberId": "b-m2"
+            },
+            {
+              "self": {
+                "symbol": "bMemberThree",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 7
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-3",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberThree",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 7
+              },
+              "matchedMemberId": "b-m3"
+            }
+          ],
+          "memberFactCount": 3,
+          "memberFactsTruncated": false,
+          "memberCount": 3,
+          "memberNote": "3 member symbol(s) of 'bOwner' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'bOwner's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+          "factCount": 3,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 3,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 5,
+          "truncated": false,
+          "truncationReason": null,
+          "totalCountIfKnown": 3,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": true
+        }
+      },
+      "default": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"bOwner\",\n  \"language\": \"kotlin\",\n  \"languages\": [\n    \"kotlin\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"b-owner-s\",\n      \"symbol\": \"bOwner\",\n      \"file\": \"budgetOwner.kt\",\n      \"language\": \"kotlin\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\": null",
+        "parsed": {
+          "symbol": "bOwner",
+          "language": "kotlin",
+          "languages": [
+            "kotlin"
+          ],
+          "copies": [
+            {
+              "id": "b-owner-s",
+              "symbol": "bOwner",
+              "file": "budgetOwner.kt",
+              "language": "kotlin",
+              "line": 1,
+              "crossRowCount": 0
+            }
+          ],
+          "copyCount": 1,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": false,
+          "ambiguityNote": null,
+          "facts": [],
+          "ownFactCount": 0,
+          "ownFactsTruncated": false,
+          "memberFacts": [
+            {
+              "self": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-1",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "matchedMemberId": "b-m1"
+            },
+            {
+              "self": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-2",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "matchedMemberId": "b-m2"
+            },
+            {
+              "self": {
+                "symbol": "bMemberThree",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 7
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-3",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberThree",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 7
+              },
+              "matchedMemberId": "b-m3"
+            }
+          ],
+          "memberFactCount": 3,
+          "memberFactsTruncated": false,
+          "memberCount": 3,
+          "memberNote": "3 member symbol(s) of 'bOwner' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'bOwner's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+          "factCount": 3,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 3,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 200,
+          "truncated": false,
+          "truncationReason": null,
+          "totalCountIfKnown": 3,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": true
+        }
+      }
+    },
+    "p5MemberOnly": {
+      "isError": false,
+      "text": "{\n  \"symbol\": \"mOwner\",\n  \"language\": null,\n  \"languages\": [\n    \"kotlin\",\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"m-owner-s\",\n      \"symbol\": \"mOwner\",\n      \"file\": \"memberOwner.kt\",\n      \"language\": \"kotlin\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    },\n    {\n      \"id\": \"m-copy2\",\n      \"symbol\": \"mOwner\",\n      \"file\": \"memberOwner.ts\",\n      \"language\": \"typescript\",\n    ",
+      "parsed": {
+        "symbol": "mOwner",
+        "language": null,
+        "languages": [
+          "kotlin",
+          "typescript"
+        ],
+        "copies": [
+          {
+            "id": "m-owner-s",
+            "symbol": "mOwner",
+            "file": "memberOwner.kt",
+            "language": "kotlin",
+            "line": 1,
+            "crossRowCount": 0
+          },
+          {
+            "id": "m-copy2",
+            "symbol": "mOwner",
+            "file": "memberOwner.ts",
+            "language": "typescript",
+            "line": 1,
+            "crossRowCount": 0
+          }
+        ],
+        "copyCount": 2,
+        "copiesTruncated": false,
+        "copiesCap": 200,
+        "copiesNote": null,
+        "ambiguous": true,
+        "ambiguityNote": "2 indexed symbols are named 'mOwner' across 2 file(s); the facts below are the union over all of them, and every fact names the copy it came from",
+        "facts": [],
+        "ownFactCount": 0,
+        "ownFactsTruncated": false,
+        "memberFacts": [
+          {
+            "self": {
+              "symbol": "mOwnerMember",
+              "file": "memberOwner.kt",
+              "language": "kotlin",
+              "line": 4
+            },
+            "direction": "caller",
+            "other": {
+              "symbol": "mPy",
+              "file": "y.py",
+              "language": "python",
+              "line": 4
+            },
+            "pair": "kotlin → python",
+            "bridge": "name-resolution",
+            "tier": "structural",
+            "confidence": 0.9,
+            "relationshipType": "calls",
+            "rowId": "m-rel",
+            "match": "owner-cascade",
+            "owner": {
+              "symbol": "mOwner",
+              "file": "memberOwner.kt",
+              "language": "kotlin",
+              "line": 1
+            },
+            "matchedMember": {
+              "symbol": "mOwnerMember",
+              "file": "memberOwner.kt",
+              "language": "kotlin",
+              "line": 4
+            },
+            "matchedMemberId": "m-member"
+          }
+        ],
+        "memberFactCount": 1,
+        "memberFactsTruncated": false,
+        "memberCount": 1,
+        "memberNote": "1 member symbol(s) of 'mOwner' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'mOwner's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+        "factCount": 1,
+        "pairCount": 1,
+        "signatureCount": 1,
+        "storedRowCount": 1,
+        "unpairableRowCount": 0,
+        "collapsedRowCount": 0,
+        "limit": 200,
+        "truncated": false,
+        "truncationReason": null,
+        "totalCountIfKnown": 1,
+        "declaredAbsent": false,
+        "deeperDescendantRowCount": 0,
+        "deeperDescendantNote": null,
+        "absenceNote": null,
+        "pairlessRowNote": null,
+        "silentItselfButNotItsMembers": true
+      }
+    },
+    "p6Copies": {
+      "limit1": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"copyName\",\n  \"language\": null,\n  \"languages\": [\n    \"javascript\",\n    \"python\",\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"c-a\",\n      \"symbol\": \"copyName\",\n      \"file\": \"one.ts\",\n      \"language\": \"typescript\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    },\n    {\n      \"id\": \"c-c\",\n      \"symbol\": \"copyName\",\n      \"file\": \"three.py\",\n      \"language\": \"python\",\n    ",
+        "parsed": {
+          "symbol": "copyName",
+          "language": null,
+          "languages": [
+            "javascript",
+            "python",
+            "typescript"
+          ],
+          "copies": [
+            {
+              "id": "c-a",
+              "symbol": "copyName",
+              "file": "one.ts",
+              "language": "typescript",
+              "line": 1,
+              "crossRowCount": 0
+            },
+            {
+              "id": "c-c",
+              "symbol": "copyName",
+              "file": "three.py",
+              "language": "python",
+              "line": 3,
+              "crossRowCount": 0
+            },
+            {
+              "id": "c-b",
+              "symbol": "copyName",
+              "file": "two.js",
+              "language": "javascript",
+              "line": 2,
+              "crossRowCount": 1
+            }
+          ],
+          "copyCount": 3,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": true,
+          "ambiguityNote": "3 indexed symbols are named 'copyName' across 3 file(s); the facts below are the union over all of them, and every fact names the copy it came from",
+          "facts": [
+            {
+              "self": {
+                "symbol": "copyName",
+                "file": "two.js",
+                "language": "javascript",
+                "line": 2
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "otherJava",
+                "file": "four.java",
+                "language": "java",
+                "line": 1
+              },
+              "pair": "javascript → java",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "c-rel",
+              "match": "exact"
+            }
+          ],
+          "ownFactCount": 1,
+          "ownFactsTruncated": false,
+          "memberFacts": [],
+          "memberFactCount": 0,
+          "memberFactsTruncated": false,
+          "memberCount": 0,
+          "memberNote": null,
+          "factCount": 1,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 1,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 1,
+          "truncated": false,
+          "truncationReason": null,
+          "totalCountIfKnown": 1,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": false
+        }
+      },
+      "limit200": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"copyName\",\n  \"language\": null,\n  \"languages\": [\n    \"javascript\",\n    \"python\",\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"c-a\",\n      \"symbol\": \"copyName\",\n      \"file\": \"one.ts\",\n      \"language\": \"typescript\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    },\n    {\n      \"id\": \"c-c\",\n      \"symbol\": \"copyName\",\n      \"file\": \"three.py\",\n      \"language\": \"python\",\n    ",
+        "parsed": {
+          "symbol": "copyName",
+          "language": null,
+          "languages": [
+            "javascript",
+            "python",
+            "typescript"
+          ],
+          "copies": [
+            {
+              "id": "c-a",
+              "symbol": "copyName",
+              "file": "one.ts",
+              "language": "typescript",
+              "line": 1,
+              "crossRowCount": 0
+            },
+            {
+              "id": "c-c",
+              "symbol": "copyName",
+              "file": "three.py",
+              "language": "python",
+              "line": 3,
+              "crossRowCount": 0
+            },
+            {
+              "id": "c-b",
+              "symbol": "copyName",
+              "file": "two.js",
+              "language": "javascript",
+              "line": 2,
+              "crossRowCount": 1
+            }
+          ],
+          "copyCount": 3,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": true,
+          "ambiguityNote": "3 indexed symbols are named 'copyName' across 3 file(s); the facts below are the union over all of them, and every fact names the copy it came from",
+          "facts": [
+            {
+              "self": {
+                "symbol": "copyName",
+                "file": "two.js",
+                "language": "javascript",
+                "line": 2
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "otherJava",
+                "file": "four.java",
+                "language": "java",
+                "line": 1
+              },
+              "pair": "javascript → java",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "c-rel",
+              "match": "exact"
+            }
+          ],
+          "ownFactCount": 1,
+          "ownFactsTruncated": false,
+          "memberFacts": [],
+          "memberFactCount": 0,
+          "memberFactsTruncated": false,
+          "memberCount": 0,
+          "memberNote": null,
+          "factCount": 1,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 1,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 200,
+          "truncated": false,
+          "truncationReason": null,
+          "totalCountIfKnown": 1,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": false
+        }
+      }
+    },
+    "refusals": {
+      "missing": {
+        "isError": true,
+        "text": "bb_cross_language: requires a non-empty symbol name",
+        "parsed": null
+      },
+      "blank": {
+        "isError": true,
+        "text": "bb_cross_language: requires a non-empty symbol name",
+        "parsed": null
+      },
+      "emptyString": {
+        "isError": true,
+        "text": "bb_cross_language: requires a non-empty symbol name",
+        "parsed": null
+      },
+      "unknown": {
+        "isError": true,
+        "text": "bb_cross_language: symbol 'no-such-name-xyz' not found — declared error, not an empty set",
+        "parsed": null
+      },
+      "limitZero": {
+        "isError": true,
+        "text": "bb_cross_language: limit must be a whole number between 1 and 1000",
+        "parsed": null
+      },
+      "limitTooBig": {
+        "isError": true,
+        "text": "bb_cross_language: limit must be a whole number between 1 and 1000",
+        "parsed": null
+      },
+      "limitFractional": {
+        "isError": true,
+        "text": "bb_cross_language: limit must be a whole number between 1 and 1000",
+        "parsed": null
+      },
+      "limitString": {
+        "isError": true,
+        "text": "bb_cross_language: limit must be a whole number between 1 and 1000",
+        "parsed": null
+      },
+      "symbolNumber": {
+        "isError": true,
+        "text": "bb_cross_language: requires a non-empty symbol name",
+        "parsed": null
+      },
+      "extraOption": {
+        "isError": false,
+        "text": "{\n  \"symbol\": \"bOwner\",\n  \"language\": \"kotlin\",\n  \"languages\": [\n    \"kotlin\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"b-owner-s\",\n      \"symbol\": \"bOwner\",\n      \"file\": \"budgetOwner.kt\",\n      \"language\": \"kotlin\",\n      \"line\": 1,\n      \"crossRowCount\": 0\n    }\n  ],\n  \"copyCount\": 1,\n  \"copiesTruncated\": false,\n  \"copiesCap\": 200,\n  \"copiesNote\": null,\n  \"ambiguous\": false,\n  \"ambiguityNote\": null",
+        "parsed": {
+          "symbol": "bOwner",
+          "language": "kotlin",
+          "languages": [
+            "kotlin"
+          ],
+          "copies": [
+            {
+              "id": "b-owner-s",
+              "symbol": "bOwner",
+              "file": "budgetOwner.kt",
+              "language": "kotlin",
+              "line": 1,
+              "crossRowCount": 0
+            }
+          ],
+          "copyCount": 1,
+          "copiesTruncated": false,
+          "copiesCap": 200,
+          "copiesNote": null,
+          "ambiguous": false,
+          "ambiguityNote": null,
+          "facts": [],
+          "ownFactCount": 0,
+          "ownFactsTruncated": false,
+          "memberFacts": [
+            {
+              "self": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-1",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberOne",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 5
+              },
+              "matchedMemberId": "b-m1"
+            },
+            {
+              "self": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-2",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberTwo",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 6
+              },
+              "matchedMemberId": "b-m2"
+            },
+            {
+              "self": {
+                "symbol": "bMemberThree",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 7
+              },
+              "direction": "caller",
+              "other": {
+                "symbol": "bPyOther",
+                "file": "x.py",
+                "language": "python",
+                "line": 8
+              },
+              "pair": "typescript → python",
+              "bridge": "name-resolution",
+              "tier": "structural",
+              "confidence": 0.9,
+              "relationshipType": "calls",
+              "rowId": "b-mem-3",
+              "match": "owner-cascade",
+              "owner": {
+                "symbol": "bOwner",
+                "file": "budgetOwner.kt",
+                "language": "kotlin",
+                "line": 1
+              },
+              "matchedMember": {
+                "symbol": "bMemberThree",
+                "file": "budget.ts",
+                "language": "typescript",
+                "line": 7
+              },
+              "matchedMemberId": "b-m3"
+            }
+          ],
+          "memberFactCount": 3,
+          "memberFactsTruncated": false,
+          "memberCount": 3,
+          "memberNote": "3 member symbol(s) of 'bOwner' hold cross-language rows of their own. They are reported under memberFacts, marked match \"owner-cascade\" with matchedMember naming the member and owner naming the copy it was attributed through — they are the MEMBER's edges, not 'bOwner's. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.",
+          "factCount": 3,
+          "pairCount": 1,
+          "signatureCount": 1,
+          "storedRowCount": 3,
+          "unpairableRowCount": 0,
+          "collapsedRowCount": 0,
+          "limit": 200,
+          "truncated": false,
+          "truncationReason": null,
+          "totalCountIfKnown": 3,
+          "declaredAbsent": false,
+          "deeperDescendantRowCount": 0,
+          "deeperDescendantNote": null,
+          "absenceNote": null,
+          "pairlessRowNote": null,
+          "silentItselfButNotItsMembers": true
+        }
+      },
+      "aliasTarget": {
+        "isError": true,
+        "text": "bb_cross_language: requires a non-empty symbol name",
+        "parsed": null
+      }
+    },
+    "doorNote": "handler calls above bypass validateToolArguments; alias/type refusals are re-checked through the real MCP stdio door separately",
+    "keepError": "Error: src and dest cannot be the same /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_cross_language/fixtures/seeddata/projects/clauditunpairable00000000000000000000000/brain.db"
+  },
+  "dataDirKeptAt": "fixtures/seeddata"
+}

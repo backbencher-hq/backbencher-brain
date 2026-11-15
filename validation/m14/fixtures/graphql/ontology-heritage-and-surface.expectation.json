@@ -1,0 +1,260 @@
+{
+  "fixtureId": "graphql/ontology-heritage-and-surface",
+  "language": "graphql",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The three relationship families the ontology census measured as derivable from real GraphQL and that this lane did not read. Every row below was derived from the FIXTURE SOURCE with an independent tree-sitter walker and printed beside the source line it was read from; the analyzer's output was not consulted. (1) `exports` — a schema's public type surface, published as EDGES from `(file)`. `ParseResult.exports` had no consumer at all: parallel-indexer reads `result.imports` into `brain_import` (line 3293) and reads nothing named `exports`, so the only `exports` it knows is a relationship. The source carries `metadata.fileLevel=true`, the store's M60/#910 contract for a module-level edge whose source is the FILE rather than a symbol. An `extend type Audit` in a file that never declares `Audit` is still an export: the analyzer publishes a `partial` symbol for it and the file genuinely contributes a member. (2) `overrides` — a member an object declares that a type it implements also declares. Spec 3.6 requires the object to supply every member the interface declares, so the object's field is the one that implements it. `User.id` overrides `Node.id`; `Car.wheels` overrides `Vehicle.wheels`. This is the ONLY override-shaped construct GraphQL has, and it is derivable from one document. (3) `extends` vs `implements` — GraphQL writes both with ONE grammar rule, so the label is a decision about what the supertype IS. `Car implements Vehicle` where this document declares `Vehicle` as an OBJECT type is inheritance; `User implements Node` where `Node` is an INTERFACE is interface conformance; and `Order implements Ledger` where the document says NOTHING about `Ledger` stays `implements`, because a per-file analyzer cannot know a name declared in another file is an object, and 6 of the 11 object-typed supertypes in the corpus are named by files other than the one carrying the clause. The three forbid rows below are the fabrications this fixture exists to catch. (4) `references` + `metadata.relationshipType='declared_type'` for the positions where a DECLARATION writes a type name — ledger rule R9, the label java/kotlin/scala/csharp/go/typescript/rust all use and none of them duplicates under `uses`.",
+  "expectSymbols": [
+    {
+      "name": "Node",
+      "kind": "interface",
+      "startLine": 1
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "startLine": 2
+    },
+    {
+      "name": "User",
+      "kind": "class",
+      "startLine": 5
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "startLine": 6
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "startLine": 7
+    },
+    {
+      "name": "Vehicle",
+      "kind": "class",
+      "startLine": 10
+    },
+    {
+      "name": "wheels",
+      "kind": "property",
+      "startLine": 11
+    },
+    {
+      "name": "Car",
+      "kind": "class",
+      "startLine": 14
+    },
+    {
+      "name": "wheels",
+      "kind": "property",
+      "startLine": 15
+    },
+    {
+      "name": "Order",
+      "kind": "class",
+      "startLine": 18
+    },
+    {
+      "name": "total",
+      "kind": "property",
+      "startLine": 19
+    },
+    {
+      "name": "Audit",
+      "kind": "class",
+      "startLine": 22
+    },
+    {
+      "name": "at",
+      "kind": "property",
+      "startLine": 23
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Audit",
+      "target": "Audit.at",
+      "line_number": 23,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Car",
+      "target": "Car.wheels",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "Node",
+      "target": "Node.id",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Order",
+      "target": "Order.total",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "User",
+      "target": "User.id",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "User",
+      "target": "User.name",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "Vehicle",
+      "target": "Vehicle.wheels",
+      "line_number": 11
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Audit",
+      "line_number": 22
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Car",
+      "line_number": 14
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Node",
+      "line_number": 1
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Order",
+      "line_number": 18
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "User",
+      "line_number": 5
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Vehicle",
+      "line_number": 10
+    },
+    {
+      "type": "extends",
+      "from": "Car",
+      "target": "Vehicle",
+      "line_number": 14
+    },
+    {
+      "type": "implements",
+      "from": "Order",
+      "target": "Ledger",
+      "line_number": 18
+    },
+    {
+      "type": "implements",
+      "from": "User",
+      "target": "Node",
+      "line_number": 5
+    },
+    {
+      "type": "overrides",
+      "from": "Car.wheels",
+      "target": "Vehicle.wheels",
+      "line_number": 15
+    },
+    {
+      "type": "overrides",
+      "from": "User.id",
+      "target": "Node.id",
+      "line_number": 6
+    },
+    {
+      "type": "references",
+      "from": "Audit.at",
+      "target": "String",
+      "line_number": 23,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "Car.wheels",
+      "target": "Int",
+      "line_number": 15,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "Node.id",
+      "target": "ID",
+      "line_number": 2,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "Order.total",
+      "target": "Int",
+      "line_number": 19,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "User.id",
+      "target": "ID",
+      "line_number": 6,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "User.name",
+      "target": "String",
+      "line_number": 7,
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "Vehicle.wheels",
+      "target": "Int",
+      "line_number": 11,
+      "meta.relationshipType": "declared_type"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "Car",
+      "target": "Vehicle",
+      "note": "an object-typed supertype is INHERITANCE, not interface conformance. The `extends` row above is the same fact under the right label, and two labels for one clause is the divergence class R10 exists to catch."
+    },
+    {
+      "type": "extends",
+      "from": "Order",
+      "target": "Ledger",
+      "note": "the document says NOTHING about `Ledger`. Reading absence as inheritance is a guess, and the corpus measures 11 clauses whose supertype is declared by ANOTHER file — a per-file analyzer cannot resolve those, so they stay `implements` and the remainder is a declared limitation with its count."
+    },
+    {
+      "type": "overrides",
+      "from": "User.name",
+      "target": "Node.id",
+      "note": "`name` is not a member `Node` declares, so there is nothing to override. An override edge must be a SHARED member name, never a positional guess."
+    },
+    {
+      "type": "uses",
+      "from": "User.id",
+      "target": "ID",
+      "note": "the pre-R9 label for the same fact. Ledger rule R9 is satisfied by ONE label per fact, and two labels for one fact is exactly what R10 was written to catch."
+    }
+  ],
+  "forbidSymbols": []
+}

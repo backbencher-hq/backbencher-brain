@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "yul-continue",
+  "why": "grammar.js:395 — a `_yul_statement`. OpenZeppelin's 15 `yul_for_statement` loops all run to completion.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "yul_continue",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

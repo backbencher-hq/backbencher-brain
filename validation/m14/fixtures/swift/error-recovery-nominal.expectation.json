@@ -1,0 +1,27 @@
+{
+  "fixtureId": "swift/error-recovery-nominal",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#940 / #941 (swift lane, full extent 554 files of swift-nio). `nonisolated(unsafe)` is newer than the pinned wasm (same species as `~Copyable` and `#assert`) and the failure cost the file its whole `class` HEADER: header+body landed in an ERROR node instead of a class_declaration, so no container symbol existed and every member it owns was orphaned (ownerName undefined). #940: recover the CONTAINER from the ERROR's token sequence — child[0] is the nominal keyword `class`, child[1] the recovery's own name — so members regain their owner (`contains`). #941 rides the same file: the convenience initializer BELOW the recovered range is a file-scope sibling whose symbol carries no owner, and the pre-fix `ownerName ?? name` fallback minted the symbol's OWN name as a target (`instantiates constructor -> constructor`, not a type in this vocabulary). SW-G says unresolvable stays silent, and an initializer delegation is never a `calls` edge (`init` is not a name in this vocabulary — constructors are literally `constructor`). The positive half: the resolvable delegation ABOVE the recovery point still builds the recovered container, and the member read in `read()` still resolves through the recovered ownership.",
+  "expectSymbols": [
+    { "name": "Container", "kind": "class", "note": "#940: the recovered container" },
+    { "name": "count", "kind": "property", "ownerName": "Container" },
+    { "name": "legacy", "kind": "property", "ownerName": "Container" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Container" },
+    { "name": "bump", "kind": "method", "ownerName": "Container" },
+    { "name": "read", "kind": "method", "ownerName": "Container" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "Container", "target": "count", "line_number": 25, "note": "#940: the membership edge is what an orphaned member loses; M59.A7 — line 25 is the member's own declaration (`private var count = 0`)" },
+    { "type": "contains", "source": "Container", "target": "read", "line_number": 41 },
+    { "type": "instantiates", "source": "constructor", "target": "Container", "meta.isSelfInit": true, "line_number": 33, "note": "#941 positive half: the delegation INSIDE the recovered range resolves and builds the container; its site is line 33 (`self.init()`)" },
+    { "type": "uses", "source": "read", "target": "count", "meta.isFieldAccess": true, "line_number": 42, "note": "a real member read still resolves through the recovered ownership; line 42 is `return self.count`" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "source": "constructor", "target": "constructor", "comment": "#941: the enclosing symbol's own name is not a type — pre-fix the unresolved owner minted exactly this self-target" },
+    { "type": "calls", "source": "constructor", "target": "init", "comment": "SW-G: an initializer delegation is never a `calls` edge — `init` is not a name in this vocabulary" },
+    { "type": "uses", "source": "constructor", "target": "count", "comment": "SCD1: `self.count = seed` / `= handle` are WRITES — the write gate must hold inside the recovered range too" },
+    { "type": "instantiates", "source": "constructor", "target": "Container", "line_number": 32, "comment": "M59.A7 line pin: 32 is `convenience init(seed: Int) {` — the enclosing DECLARATION; the delegation's site is 33" },
+    { "type": "uses", "source": "read", "target": "count", "line_number": 41, "comment": "M59.A7 line pin: 41 is `func read() -> Int {` — the read's site is 42" }
+  ]
+}

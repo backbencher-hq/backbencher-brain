@@ -1,0 +1,12 @@
+{
+  "_planted": "CASE C — an UNEXERCISED type: the spec declares an emitted set smaller than the applicable set, so the remainder is applicable+implemented-with-no-corpus-construct.",
+  "language": "lua",
+  "design_decision": {
+    "description": "planted",
+    "decisions": [
+      { "id": "P-U1", "node_type": "(coverage)", "status": "RULED",
+        "counts": { "emitted_edges": { "contains": 41, "uses": 7 } },
+        "resolution": "the lane declares exactly these two emitted; every other applicable type has no construct in the corpus." }
+    ]
+  }
+}

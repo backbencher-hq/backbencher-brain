@@ -1,0 +1,67 @@
+{
+  "issue": "M30.S3",
+  "code": "S3",
+  "milestone": "M30",
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
+  "negativeCases": 8,
+  "mutants": [
+    {
+      "name": "401 error mapping removed",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "429 soft-pass removed (rate-limited key rejected)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "5xx soft-pass removed (provider blip rejected)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "timeout mapped as generic error (no actionable timeout branch)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "Authorization header dropped (all calls 401)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "trailing-slash normalization removed (double-slash URL)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "embedding-array check removed",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "request timeout removed (hangs on dead provider)",
+      "caught": true,
+      "detail": "caught"
+    }
+  ],
+  "live": {
+    "status": "blocked",
+    "detail": "BB_M30_LIVE_KEYS=1 + --live not set; live provider validation not exercised (mock coverage only). This is recorded, not hidden.",
+    "providers": []
+  },
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "sourceFingerprint": "76699eb7e7846ef780ff5065dadf64c658cc51f30bc1637f8baeb290d1ea4dc1",
+  "verifierCommand": "npx tsx script/m30/verify-key-validation.ts",
+  "evidenceFile": "S3.json",
+  "generatedAt": "2026-11-15T04:10:08.419Z",
+  "limitations": [
+    "Live provider tests run only when BB_M30_LIVE_KEYS=1, --live is passed, and provider keys are in env; without them this suite covers mock paths only and records live: blocked.",
+    "Live-call budget is 1 request per provider per run; free-tier rate limits are respected and 429 soft-pass is accepted as a valid outcome.",
+    "Network-error mapping is tested against a closed local port, not real internet failures."
+  ]
+}

@@ -1,0 +1,101 @@
+{
+ "fixtureId": "make/part-of-include",
+ "language": "make",
+ "authoredBeforeAnalyzerRun": false,
+ "authoredNote": "line_number values transcribed from a measured run (script/m14/tmp/make/fixture-dump.mts) and checked against the numbered source: the include on 16, `DEPS` on 19, `EVALUED` on 23, `literal-target` on 27. The fire row is the part_of edge on 16; the three near misses were checked to produce NO part_of edge in the same dump — a count of the dump's part_of rows is 1, and its only line is 16.",
+ "rationale": "`include` is the textual-inclusion construct: make splices the included file's text into the SAME make instance's scope, which is the single-shared-scope fact `part_of` asserts. The edge's target is the INCLUDED FILE'S MODULE SYMBOL (its basename — the same spelling this analyzer's moduleName() gives every file), never the written path, because the arbiter resolves a target string against symbol names and has no space for a filesystem path; a path target resolves 0 rows. The written path is kept in metadata.partPath where a reader can check it against the source line. Three near misses are pinned as FORBIDS rather than expected absences: `$(shell cat x.mk)` is a command substitution that READS a file without splicing it into this make instance's scope, an `include` inside `$(eval …)` is runtime-generated text this parse sees only as a string, and a commented-out include is a comment node the walk handles as a comment. An expression-target include (`include lib$(ARCH).mk`) is covered by the addIncludePartOf guard's refusal and pinned here as a forbid so the guard cannot be removed silently.",
+ "expectSymbols": [
+  { "name": "part-of-include.mk", "kind": "module" },
+  { "name": "DEPS", "kind": "constant" },
+  { "name": "EVALUED", "kind": "constant" },
+  { "name": "literal-target", "kind": "function" }
+ ],
+ "expectRelationships": [
+  {
+   "type": "part_of",
+   "from": "part-of-include.mk",
+   "target": "part-of-library.mk",
+   "line_number": 16,
+   "meta.partRole": "library",
+   "meta.partPath": "part-of-library.mk",
+   "meta.partSymbol": "part-of-library.mk",
+   "meta.isMakeIncludePart": true,
+   "meta.evidenceClass": "include_literal"
+  },
+  {
+   "type": "imports",
+   "from": "part-of-include.mk",
+   "target": "part-of-library.mk",
+   "line_number": 16
+  },
+  {
+   "type": "contains",
+   "from": "part-of-include.mk",
+   "target": "DEPS",
+   "line_number": 19,
+   "meta.evidenceClass": "declared_in_file"
+  },
+  {
+   "type": "contains",
+   "from": "part-of-include.mk",
+   "target": "EVALUED",
+   "line_number": 23,
+   "meta.evidenceClass": "declared_in_file"
+  },
+  {
+   "type": "contains",
+   "from": "part-of-include.mk",
+   "target": "literal-target",
+   "line_number": 27,
+   "meta.evidenceClass": "declared_in_file"
+  },
+  {
+   "type": "exports",
+   "from": "part-of-include.mk",
+   "target": "literal-target",
+   "line_number": 27,
+   "meta.evidenceClass": "export_target"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "part-of-library.mk",
+   "note": "an included file is a PART, not a declaration of THIS file"
+  },
+  {
+   "name": "part-of-commented.mk",
+   "note": "a commented-out include names no file: the line is a comment node, and a comment includes nothing"
+  },
+  {
+   "name": "part-of-generated.mk",
+   "note": "the include born inside `$(eval …)` is runtime-generated text; this parse sees a string, so no symbol exists for the generated file"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "part_of",
+   "target": "part-of-generated.mk",
+   "note": "the include inside `$(eval …)` is runtime-generated: the edge would assert a splice this parse cannot see"
+  },
+  {
+   "type": "part_of",
+   "target": "part-of-commented.mk",
+   "note": "a commented-out include is a comment, and a comment includes nothing"
+  },
+  {
+   "type": "part_of",
+   "line_number": 19,
+   "note": "`$(shell cat x.mk)` is a command substitution that READS a file; its definitions never reach this make instance's scope, so the single-shared-scope fact part_of asserts is FALSE on this line. Pinned by line so a glob forbid cannot hide a legit edge elsewhere"
+  },
+  {
+   "type": "part_of",
+   "target": "lib$(ARCH).mk",
+   "note": "the expression-target exclusion: a path whose last segment is an expression names no file this parse can know, and an edge to an expression string would be an edge to nothing"
+  },
+  {
+   "type": "part_of",
+   "from": "DEPS",
+   "note": "a variable does not become part of the file it reads"
+  }
+ ]
+}

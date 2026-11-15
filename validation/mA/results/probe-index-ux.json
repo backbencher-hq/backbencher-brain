@@ -10,7 +10,7 @@
   "results": [
     {
       "repo": "rake",
-      "path": "$HOME/fixtures/repositories/rake",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake",
       "ok": true,
       "progressSamples": 0,
       "wasmErrors": [],
@@ -49,7 +49,7 @@
     },
     {
       "repo": "vue-core",
-      "path": "$HOME/fixtures/repositories/vue-core",
+      "path": "/home/ishaq2321/bb_tests/repositories/vue-core",
       "ok": false,
       "progressSamples": 0,
       "wasmErrors": [],
@@ -59,7 +59,7 @@
     },
     {
       "repo": "element-plus",
-      "path": "$HOME/fixtures/repositories/element-plus",
+      "path": "/home/ishaq2321/bb_tests/repositories/element-plus",
       "ok": true,
       "progressSamples": 243,
       "wasmErrors": [],
@@ -223,16 +223,16 @@
       },
       "progressFrequencyMs": 579,
       "parseErrorsLog": [
-        "2026-08-29T00:44:50.375Z | css | 106B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/select-v2.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax error (unexpected node)",
-        "2026-08-29T00:44:50.433Z | css | 4419B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/segmented.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:44:50.679Z | css | 2853B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/index.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:44:50.681Z | css | 5585B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/form-item.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:44:51.695Z | css | 6951B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/switch.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:44:52.468Z | css | 1898B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/descriptions-item.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:46:07.892Z | css | 273B | $HOME/fixtures/repositories/element-plus/docs/.vitepress/vitepress/styles/vars.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:46:10.246Z | css | 699B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/color/index.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:46:10.329Z | css | 162B | $HOME/fixtures/repositories/element-plus/packages/theme-chalk/src/mixins/config.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
-        "2026-08-29T00:46:20.905Z | css | 54B | $HOME/fixtures/repositories/element-plus/docs/.vitepress/vitepress/styles/common/index.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax error (unexpected node)"
+        "2026-08-29T00:44:50.375Z | css | 106B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/select-v2.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax error (unexpected node)",
+        "2026-08-29T00:44:50.433Z | css | 4419B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/segmented.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:44:50.679Z | css | 2853B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/index.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:44:50.681Z | css | 5585B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/form-item.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:44:51.695Z | css | 6951B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/switch.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:44:52.468Z | css | 1898B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/descriptions-item.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:46:07.892Z | css | 273B | /home/ishaq2321/bb_tests/repositories/element-plus/docs/.vitepress/vitepress/styles/vars.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:46:10.246Z | css | 699B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/color/index.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:46:10.329Z | css | 162B | /home/ishaq2321/bb_tests/repositories/element-plus/packages/theme-chalk/src/mixins/config.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing t",
+        "2026-08-29T00:46:20.905Z | css | 54B | /home/ishaq2321/bb_tests/repositories/element-plus/docs/.vitepress/vitepress/styles/common/index.scss | ENGINE_EMPTY: Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax ERROR detected. The Brain Engine is bypassing this broken node. | Syntax error (unexpected node)"
       ]
     }
   ]

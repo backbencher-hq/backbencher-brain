@@ -1,0 +1,11 @@
+{
+  "fixtureId": "typescript/inferred-return",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T3 fix: absence of an annotation is not evidence of void — unannotated bodies infer from return statements (42, x), while genuinely return-less bodies keep void. Symbol payload assertions via generic field matching.",
+  "expectSymbols": [
+    { "name": "fortyTwo", "kind": "function", "returnType": "number" },
+    { "name": "noop", "kind": "function", "returnType": "void" },
+    { "name": "named", "kind": "function", "returnType": "number" }
+  ]
+}

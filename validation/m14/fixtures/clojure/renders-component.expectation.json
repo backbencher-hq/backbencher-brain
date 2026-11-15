@@ -1,0 +1,18 @@
+{
+  "issue": "CLJ-R3",
+  "note": "THE `renders` EMISSION SITE, PINNED (R3 — the construct reaches the analyzer through EXISTING node types, so NO grammar change is made or needed). THE VOCABULARY (`src/ast/types.ts:131-140`): 'A component RENDERS another component: source = the rendering symbol, target = the rendered component. NOT `instantiates`: nothing is `new`ed.' THE CLOJURE SPELLING IS THE HICCUP/REAGENT RENDER TREE: inside a keyword-led vector (an ELEMENT), a child that is a SYMBOL, or a child VECTOR WHOSE HEAD IS A SYMBOL, is a COMPONENT CALL, and the enclosing component renders it. THE EDGE IS SAME-FILE (page and widget are both declared here) and it EXISTS ONLY WHEN THE CONSTRUCT IS READ AS NODES: before the emitter, a keyword-led vector carried no relation at all, so this fixture FAILED; it passes only because the `vec_lit`/`kwd_lit`/`sym_lit` structure is read. THE CONTROLS ARE WHAT MAKE IT RED-ABLE: `not-an-element` holds `[widget]` — a vector whose head is a SYMBOL is a VALUE, not an element, so it renders nothing; `plain-call` holds `(widget)` — that is a call, not a render; `string-mention` holds the name inside a string. A text-matching implementation would emit all three, so each of them is a separate RED.",
+  "expectSymbols": [
+    { "name": "widget", "kind": "function" },
+    { "name": "page", "kind": "function" },
+    { "name": "bare-child", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "renders", "from": "page", "target": "widget", "line_number": 7 },
+    { "type": "renders", "from": "bare-child", "target": "widget", "line_number": 10 }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "from": "not-an-element", "target": "widget" },
+    { "type": "renders", "from": "plain-call", "target": "widget" },
+    { "type": "renders", "from": "string-mention", "target": "widget" }
+  ]
+}

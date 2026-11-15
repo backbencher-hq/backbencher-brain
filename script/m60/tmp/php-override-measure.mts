@@ -20,7 +20,7 @@ const g: any = await (wts as any).Language.load(readFileSync(`${ROOT}/wasm/tree-
 const parser = new P(); parser.setLanguage(g)
 
 for (const repo of ["phpunit", "phpmyadmin"]) {
-  const dir = path.join("$HOME/fixtures/repositories", repo)
+  const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
   const files = execSync(`git ls-files -z -- '*.php'`, { cwd: dir, maxBuffer: 1 << 28 })
     .toString().split("\0").filter(Boolean).sort().map((f) => path.join(dir, f))
 

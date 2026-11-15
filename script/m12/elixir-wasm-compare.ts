@@ -7,8 +7,8 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
-const ROOT = "$HOME/mcp/backbencher-brain"
-const CORPUS = "$HOME/fixtures/repositories/elixir"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/elixir"
 const PINNED = `${ROOT}/wasm/tree-sitter-elixir.wasm`
 const NEW = "/tmp/ts-elixir-npm/package/tree-sitter-elixir.wasm"
 

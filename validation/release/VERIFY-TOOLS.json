@@ -1,0 +1,1227 @@
+{
+  "commit": "8cfff9b9cc99d360c1a60536eab5d639e779f12d",
+  "generatedAt": "2026-11-05T04:33:17.676Z",
+  "phases": [
+    {
+      "name": "build",
+      "ok": true,
+      "ms": 1794,
+      "tail": "\nnpm notice\nnpm notice New minor version of npm available! 11.12.1 -> 11.21.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.2\nnpm notice To update run: npm install -g npm@11.21.2\nnpm notice"
+    },
+    {
+      "name": "typecheck-src",
+      "ok": true,
+      "ms": 21750,
+      "tail": ""
+    },
+    {
+      "name": "script-typecheck-ratchet",
+      "ok": true,
+      "ms": 58384,
+      "tail": "script typecheck ratchet — command: tsc --noEmit -p tsconfig.scripts.json\n  files with errors: 0   errors now: 0   baseline declares: 0\nPASS — no file's error count rose, and the surface is at ZERO errors: the canary proved diagnostics were reported, so the zero is a reading and not an absence of output."
+    }
+  ],
+  "gates": [
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-analyze-docs.ts",
+      "ok": true,
+      "ms": 1966
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-analyze-e2e-corpus.ts",
+      "ok": true,
+      "ms": 101668
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-analyze-handler.ts",
+      "ok": true,
+      "ms": 579
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-analyze-modes.ts",
+      "ok": true,
+      "ms": 1981
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-adversarial.ts",
+      "ok": true,
+      "ms": 1606
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-contract.ts",
+      "ok": true,
+      "ms": 4973
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-docs.ts",
+      "ok": true,
+      "ms": 360
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-e2e-corpus.ts",
+      "ok": true,
+      "ms": 113777
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-honesty.ts",
+      "ok": true,
+      "ms": 2872
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-integration.ts",
+      "ok": true,
+      "ms": 2850
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-ask-provenance.ts",
+      "ok": true,
+      "ms": 1916
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-contract-authority.ts",
+      "ok": true,
+      "ms": 91
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-doc-docs.ts",
+      "ok": true,
+      "ms": 570
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-doc-e2e-corpus.ts",
+      "ok": true,
+      "ms": 31786
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-doc-facts.ts",
+      "ok": true,
+      "ms": 52
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-doc-modes.ts",
+      "ok": true,
+      "ms": 21873
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-atomicity.ts",
+      "ok": true,
+      "ms": 5629
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-batch.ts",
+      "ok": true,
+      "ms": 17757
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-body.ts",
+      "ok": true,
+      "ms": 39574
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-boundary.ts",
+      "ok": true,
+      "ms": 4530
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-corpus.ts",
+      "ok": true,
+      "ms": 105284
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-docs.ts",
+      "ok": true,
+      "ms": 827
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-e2e.ts",
+      "ok": true,
+      "ms": 64507
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-freshness.ts",
+      "ok": true,
+      "ms": 7179
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-honesty.ts",
+      "ok": true,
+      "ms": 64
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-integration.ts",
+      "ok": true,
+      "ms": 7600
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-mask.ts",
+      "ok": true,
+      "ms": 3666
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-rename.ts",
+      "ok": true,
+      "ms": 5701
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-edit-unit.ts",
+      "ok": true,
+      "ms": 28904
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-evidence.ts",
+      "ok": true,
+      "ms": 69
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-health-docs.ts",
+      "ok": true,
+      "ms": 303
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-health-e2e-corpus.ts",
+      "ok": true,
+      "ms": 29130
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-health-integrity.ts",
+      "ok": true,
+      "ms": 1561
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-health-mutability.ts",
+      "ok": true,
+      "ms": 2708
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-health-refresh.ts",
+      "ok": true,
+      "ms": 2517
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-health-verbose.ts",
+      "ok": true,
+      "ms": 1325
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-migrate-accuracy.ts",
+      "ok": true,
+      "ms": 1068
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-migrate-docs.ts",
+      "ok": true,
+      "ms": 342
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-migrate-e2e-corpus.ts",
+      "ok": true,
+      "ms": 19758
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-patterns-contract.ts",
+      "ok": true,
+      "ms": 3863
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-patterns-docs.ts",
+      "ok": true,
+      "ms": 435
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-patterns-e2e-corpus.ts",
+      "ok": true,
+      "ms": 130847
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-patterns-orphans.ts",
+      "ok": true,
+      "ms": 4025
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-patterns-rules.ts",
+      "ok": true,
+      "ms": 1218
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-safety-primitives.ts",
+      "ok": true,
+      "ms": 1329
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-search-corpus.ts",
+      "ok": true,
+      "ms": 113144
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-search-docs.ts",
+      "ok": true,
+      "ms": 427
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-search-e2e.ts",
+      "ok": true,
+      "ms": 9367
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-search-honesty.ts",
+      "ok": true,
+      "ms": 936
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-security-adversarial.ts",
+      "ok": true,
+      "ms": 24908
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-security-contract.ts",
+      "ok": true,
+      "ms": 369
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-security-docs.ts",
+      "ok": true,
+      "ms": 297
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-security-handler.ts",
+      "ok": true,
+      "ms": 3291
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-contract.ts",
+      "ok": true,
+      "ms": 298
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-docs.ts",
+      "ok": true,
+      "ms": 320
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-e2e-corpus.ts",
+      "ok": true,
+      "ms": 90284
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-fidelity.ts",
+      "ok": true,
+      "ms": 1297
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-honesty.ts",
+      "ok": true,
+      "ms": 1787
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-options.ts",
+      "ok": true,
+      "ms": 1643
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-owner-fold.ts",
+      "ok": true,
+      "ms": 1421
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-target-literals.ts",
+      "ok": true,
+      "ms": 1508
+    },
+    {
+      "group": "m13",
+      "runner": "bun run",
+      "script": "script/m13/verify-visualize-views.ts",
+      "ok": true,
+      "ms": 1609
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-analyze-deep.ts",
+      "ok": true,
+      "ms": 10196
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-ask-deep.ts",
+      "ok": true,
+      "ms": 22847
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-contracts.ts",
+      "ok": true,
+      "ms": 484
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-doc-deep.ts",
+      "ok": true,
+      "ms": 7404
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-edit-classification.ts",
+      "ok": true,
+      "ms": 554
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-edit-crossfile.ts",
+      "ok": true,
+      "ms": 19270
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-edit-e2e-docs.ts",
+      "ok": true,
+      "ms": 933
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-edit-mask.ts",
+      "ok": true,
+      "ms": 703
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-edit-regex.ts",
+      "ok": true,
+      "ms": 832
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-health-deep.ts",
+      "ok": true,
+      "ms": 113546
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-patterns-deep.ts",
+      "ok": true,
+      "ms": 141232
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-registry-handlers.ts",
+      "ok": true,
+      "ms": 457
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-safety-primitives.ts",
+      "ok": true,
+      "ms": 1229
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-search-complete.ts",
+      "ok": true,
+      "ms": 7841
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-security-deep.ts",
+      "ok": true,
+      "ms": 87115
+    },
+    {
+      "group": "m15",
+      "runner": "bun run",
+      "script": "script/m15/verify-visualize-migrate-deep.ts",
+      "ok": true,
+      "ms": 11379
+    },
+    {
+      "group": "m16",
+      "runner": "bun run",
+      "script": "script/m16/verify-ask-stats.ts",
+      "ok": true,
+      "ms": 3619
+    },
+    {
+      "group": "m16",
+      "runner": "bun run",
+      "script": "script/m16/verify-closure-gate.ts",
+      "ok": true,
+      "ms": 46
+    },
+    {
+      "group": "m16",
+      "runner": "bun run",
+      "script": "script/m16/verify-docs-truth.ts",
+      "ok": true,
+      "ms": 39
+    },
+    {
+      "group": "m16",
+      "runner": "bun run",
+      "script": "script/m16/verify-edit-real-repo.ts",
+      "ok": true,
+      "ms": 43244
+    },
+    {
+      "group": "m16",
+      "runner": "bun run",
+      "script": "script/m16/verify-embedding-lifecycle.ts",
+      "ok": true,
+      "ms": 2574
+    },
+    {
+      "group": "m16",
+      "runner": "bun run",
+      "script": "script/m16/verify-tool-runs.ts",
+      "ok": true,
+      "ms": 3136
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-cross-tool-parity.ts",
+      "ok": true,
+      "ms": 7370
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-doc-citations.ts",
+      "ok": true,
+      "ms": 1271
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-doc-examples-diagrams.ts",
+      "ok": true,
+      "ms": 1228
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-doc-modes.ts",
+      "ok": true,
+      "ms": 1862
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-migration-mappings.ts",
+      "ok": true,
+      "ms": 160
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-migration-methodology.ts",
+      "ok": true,
+      "ms": 174
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-migration-order.ts",
+      "ok": true,
+      "ms": 179
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-patterns-orphan-semantics.ts",
+      "ok": true,
+      "ms": 1990
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-patterns-pagination-history.ts",
+      "ok": true,
+      "ms": 2397
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-patterns-parameter-scan.ts",
+      "ok": true,
+      "ms": 1239
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-security-adversarial.ts",
+      "ok": true,
+      "ms": 1840
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-security-flow-boundary.ts",
+      "ok": true,
+      "ms": 1262
+    },
+    {
+      "group": "m20",
+      "runner": "bun run",
+      "script": "script/m20/verify-security-history.ts",
+      "ok": true,
+      "ms": 2346
+    },
+    {
+      "group": "m26",
+      "runner": "npx tsx",
+      "script": "script/m26/verify-hub-group-order.ts",
+      "ok": true,
+      "ms": 1117
+    },
+    {
+      "group": "m28",
+      "runner": "npx tsx",
+      "script": "script/m28/verify-index-portability.ts",
+      "ok": true,
+      "ms": 3543
+    },
+    {
+      "group": "m28",
+      "runner": "npx tsx",
+      "script": "script/m28/verify-project-registry-honesty.ts",
+      "ok": true,
+      "ms": 1862
+    },
+    {
+      "group": "m28",
+      "runner": "npx tsx",
+      "script": "script/m28/verify-schema-repair.ts",
+      "ok": true,
+      "ms": 1043
+    },
+    {
+      "group": "m28",
+      "runner": "npx tsx",
+      "script": "script/m28/verify-surface-parity.ts",
+      "ok": true,
+      "ms": 64183
+    },
+    {
+      "group": "m40",
+      "runner": "bun run",
+      "script": "script/m40/verify-a1-post-entry.ts",
+      "ok": true,
+      "ms": 2162
+    },
+    {
+      "group": "m40",
+      "runner": "bun run",
+      "script": "script/m40/verify-a3-write-parity.ts",
+      "ok": true,
+      "ms": 11138
+    },
+    {
+      "group": "m40",
+      "runner": "bun run",
+      "script": "script/m40/verify-a5-flag-semantics.ts",
+      "ok": true,
+      "ms": 2951
+    },
+    {
+      "group": "m40",
+      "runner": "bun run",
+      "script": "script/m40/verify-a6-health-refresh.ts",
+      "ok": true,
+      "ms": 2955
+    },
+    {
+      "group": "m40",
+      "runner": "bun run",
+      "script": "script/m40/verify-a7-cli-parity.ts",
+      "ok": true,
+      "ms": 6193
+    },
+    {
+      "group": "m40",
+      "runner": "bun run",
+      "script": "script/m40/verify-import-resolution.ts",
+      "ok": true,
+      "ms": 1333
+    },
+    {
+      "group": "m43",
+      "runner": "bun run",
+      "script": "script/m43/verify-a1-mcp-auto-refresh.ts",
+      "ok": true,
+      "ms": 8143
+    },
+    {
+      "group": "m43",
+      "runner": "bun run",
+      "script": "script/m43/verify-a2-cli-auto-refresh.ts",
+      "ok": true,
+      "ms": 10517
+    },
+    {
+      "group": "m43",
+      "runner": "bun run",
+      "script": "script/m43/verify-a3-flag-semantics.ts",
+      "ok": true,
+      "ms": 11792
+    },
+    {
+      "group": "m43",
+      "runner": "bun run",
+      "script": "script/m43/verify-arbiter-typecheck.ts",
+      "ok": true,
+      "ms": 37728
+    },
+    {
+      "group": "m43",
+      "runner": "bun run",
+      "script": "script/m43/verify-p1-index-lock.ts",
+      "ok": true,
+      "ms": 2960
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/l1-hub-smoke.ts",
+      "ok": true,
+      "ms": 13676
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-c2-edge-mutations.ts",
+      "ok": true,
+      "ms": 5545
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-d1-doc-truth.ts",
+      "ok": true,
+      "ms": 336
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-governance.ts",
+      "ok": true,
+      "ms": 66
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-h1-ghosts.ts",
+      "ok": true,
+      "ms": 151
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-l1-hub-guard.ts",
+      "ok": true,
+      "ms": 2441
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-p1-impact-unity.ts",
+      "ok": true,
+      "ms": 2815
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-p2-honesty-fields.ts",
+      "ok": true,
+      "ms": 1353
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-p3-agreement.ts",
+      "ok": true,
+      "ms": 1185
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-p4-param-matrix.ts",
+      "ok": true,
+      "ms": 70
+    },
+    {
+      "group": "m48",
+      "runner": "bun run",
+      "script": "script/m48/verify-w1-website-tools.ts",
+      "ok": true,
+      "ms": 640
+    },
+    {
+      "group": "m57",
+      "runner": "bun run",
+      "script": "script/m57/verify-t1-classifier.ts",
+      "ok": true,
+      "ms": 1271
+    },
+    {
+      "group": "m57",
+      "runner": "bun run",
+      "script": "script/m57/verify-t2-consumers.ts",
+      "ok": true,
+      "ms": 93
+    },
+    {
+      "group": "m57",
+      "runner": "bun run",
+      "script": "script/m57/verify-t3-scope-all.ts",
+      "ok": true,
+      "ms": 1298
+    },
+    {
+      "group": "m65",
+      "runner": "bun run",
+      "script": "script/m65/verify-edge-kind-scoping.ts",
+      "ok": true,
+      "ms": 1423
+    },
+    {
+      "group": "m65",
+      "runner": "bun run",
+      "script": "script/m65/verify-graph-blindspots.ts",
+      "ok": true,
+      "ms": 4066
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-mcp.ts",
+      "ok": true,
+      "ms": 2007
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-mcp-e2e.ts",
+      "ok": true,
+      "ms": 8669
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-tool-registry.ts",
+      "ok": true,
+      "ms": 629
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-public-surface.ts",
+      "ok": true,
+      "ms": 374
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-tool-docs.ts",
+      "ok": true,
+      "ms": 384
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-tool-page-claims.ts",
+      "ok": true,
+      "ms": 2235
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-integration-docs.ts",
+      "ok": true,
+      "ms": 63
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-contract-diff.ts",
+      "ok": true,
+      "ms": 437
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-contracts.ts",
+      "ok": true,
+      "ms": 9430
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-search-modes.ts",
+      "ok": true,
+      "ms": 2152
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-graph.ts",
+      "ok": true,
+      "ms": 1677
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-analyze.ts",
+      "ok": true,
+      "ms": 2125
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-patterns.ts",
+      "ok": true,
+      "ms": 2809
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-security.ts",
+      "ok": true,
+      "ms": 1761
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-edit.ts",
+      "ok": true,
+      "ms": 7196
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-health.ts",
+      "ok": true,
+      "ms": 1096
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-doc.ts",
+      "ok": true,
+      "ms": 1266
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-visualize-migrate.ts",
+      "ok": true,
+      "ms": 1334
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-tool-history.ts",
+      "ok": true,
+      "ms": 2665
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-test-intel.ts",
+      "ok": true,
+      "ms": 1120
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-test-quality.ts",
+      "ok": true,
+      "ms": 1183
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-analysis-history.ts",
+      "ok": true,
+      "ms": 1092
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-freshness.ts",
+      "ok": true,
+      "ms": 2086
+    },
+    {
+      "group": "surface",
+      "runner": "bun run",
+      "script": "script/verify-cli-surface.ts",
+      "ok": true,
+      "ms": 4503
+    },
+    {
+      "group": "languages",
+      "runner": "bun run",
+      "script": "script/verify-language-tool-matrix.ts",
+      "ok": true,
+      "ms": 11445
+    },
+    {
+      "group": "m28",
+      "runner": "bun run",
+      "script": "script/m28/verify-mcp-stdout.ts",
+      "ok": true,
+      "ms": 2283
+    }
+  ],
+  "excluded": [
+    {
+      "script": "script/m15/verify-matrix-coverage-closure.ts",
+      "reason": "requires GitHub API (gh) for issue count — network unavailable"
+    },
+    {
+      "script": "script/m20/verify-corpus-registry.ts",
+      "reason": "external corpus sidecar (intellij snapshot) not present on a clean checkout"
+    },
+    {
+      "script": "script/m20/verify-governance.ts",
+      "reason": "milestone governance stamp — refreshed in the release evidence pass"
+    },
+    {
+      "script": "script/m20/verify-real-repo-ledger.ts",
+      "reason": "instrument over external corpora (slow, corpus-dependent)"
+    },
+    {
+      "script": "script/m26/verify-external-arm-plan.ts",
+      "reason": "external corpus arm — corpus not present on a clean checkout"
+    },
+    {
+      "script": "script/m26/verify-governance.ts",
+      "reason": "milestone governance stamp — refreshed in the release evidence pass"
+    },
+    {
+      "script": "script/m40/verify-a2-bounded-post.ts",
+      "reason": "worker-crash fixture — needs the crash-injection environment"
+    },
+    {
+      "script": "script/m40/verify-a8-config.ts",
+      "reason": "worker-crash fixture — needs the crash-injection environment"
+    },
+    {
+      "script": "script/m40/verify-a9-purge.ts",
+      "reason": "declared gate for pool-worker purge API — known gap, tracked in M40 ledger"
+    },
+    {
+      "script": "script/m40/verify-closure.ts",
+      "reason": "milestone closure — run in the release checklist after the full evidence pass"
+    },
+    {
+      "script": "script/m40/verify-governance.ts",
+      "reason": "milestone governance stamp — refreshed in the release evidence pass"
+    },
+    {
+      "script": "script/m43/verify-a4-corpus.ts",
+      "reason": "index-lock corpus — needs the external corpus"
+    },
+    {
+      "script": "script/m43/verify-closure.ts",
+      "reason": "milestone closure — run in the release checklist after the full evidence pass"
+    },
+    {
+      "script": "script/m43/verify-governance.ts",
+      "reason": "milestone governance stamp — refreshed in the release evidence pass"
+    },
+    {
+      "script": "script/m48/verify-c1-corpus.ts",
+      "reason": "real-repo corpus gate — needs the five external corpora (run in the release checklist)"
+    },
+    {
+      "script": "script/m48/verify-closure.ts",
+      "reason": "milestone closure — run in the release checklist after the full evidence pass"
+    },
+    {
+      "script": "script/m55/verify-evidence-tree-clean.ts",
+      "reason": "IDE/LSP campaign gates (live editor rig) — not the public MCP tool surface"
+    },
+    {
+      "script": "script/m55/verify-governance.ts",
+      "reason": "IDE/LSP campaign gates (live editor rig) — not the public MCP tool surface"
+    },
+    {
+      "script": "script/m55/verify-hover-coverage-redteam.ts",
+      "reason": "IDE/LSP campaign gates (live editor rig) — not the public MCP tool surface"
+    },
+    {
+      "script": "script/m55/verify-hover-coverage.ts",
+      "reason": "IDE/LSP campaign gates (live editor rig) — not the public MCP tool surface"
+    },
+    {
+      "script": "script/m55/verify-tiers.ts",
+      "reason": "IDE/LSP campaign gates (live editor rig) — not the public MCP tool surface"
+    },
+    {
+      "script": "script/m55/verify-type-inference.ts",
+      "reason": "IDE/LSP campaign gates (live editor rig) — not the public MCP tool surface"
+    },
+    {
+      "script": "script/m57/verify-closure.ts",
+      "reason": "requires the M57 governance evidence (GitHub registration)"
+    },
+    {
+      "script": "script/m57/verify-governance.ts",
+      "reason": "requires GitHub API (gh) for issue registration — network unavailable"
+    },
+    {
+      "script": "script/m57/verify-t4-corpus-identity.ts",
+      "reason": "corpus identity gate — needs the recorded corpus set"
+    },
+    {
+      "script": "script/m65/verify-refresh-resolution.ts",
+      "reason": "analyzer fleet coverage (50 lanes vs FLEET-48 fixtures) — analyzer portfolio, not the tool surface"
+    },
+    {
+      "script": "script/m57/verify-t5-predicate-unity.ts",
+      "reason": "analyzer refactor policy (one shared test-shape definition across src/) — analyzer portfolio, not the tool surface"
+    }
+  ],
+  "totals": {
+    "gates": 155,
+    "failed": 0,
+    "phases": 3,
+    "failedPhases": 0
+  }
+}

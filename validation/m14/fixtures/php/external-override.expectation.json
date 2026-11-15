@@ -1,0 +1,103 @@
+{
+  "fixtureId": "php/external-override",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Local overrides require an ancestor declaration of the method. These fixtures pin the nearest declaring ancestor, no fabricated methods, and no transitive duplicate edges. Local candidates use inferred evidence at 0.85 and bounded signature compatibility, rather than compiler verification. External bases with no companion evidence produce no per-file edge. The separate project resolver establishes canonical cross-file declaration identities. Historical first-parent guesses were removed after false positives; they must not return.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "LocalMiddle",
+      "target": "LocalBase",
+      "comment": "in-file heritage still publishes, and carries the base clause's line"
+    },
+    {
+      "type": "extends",
+      "source": "LocalChain",
+      "target": "LocalMiddle",
+      "comment": "the three-level chain's own link"
+    },
+    {
+      "type": "overrides",
+      "source": "LocalMiddle.handle",
+      "target": "LocalBase.handle",
+      "meta.evidenceClass": "inferred",
+      "comment": "The local declaring ancestor is known; bounded compatibility is checked, with inferred evidence at 0.85.",
+      "confidence": 0.85,
+      "meta.signatureCompatibility": "checked"
+    },
+    {
+      "type": "overrides",
+      "source": "LocalChain.handle",
+      "target": "LocalMiddle.handle",
+      "comment": "The local declaring ancestor is known; bounded compatibility is checked, with inferred evidence at 0.85.",
+      "confidence": 0.85,
+      "meta.evidenceClass": "inferred",
+      "meta.signatureCompatibility": "checked"
+    },
+    {
+      "type": "contains",
+      "source": "LocalBase",
+      "target": "handle",
+      "comment": "containment is unaffected by any of this"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "LocalChain.notOverridden",
+      "target": "LocalBase.notOverridden",
+      "comment": "THE ROW THIS ROUND ADDED, and the half the previous revision did not test. `notOverridden` is declared on `LocalChain` and on NEITHER base, so this edge would fabricate a method that does not exist on `LocalBase`. The old file's negative half was the EXTERNAL guess, a different code path \u2014 so a rule emitting an override for every method of any class with an in-file base would have passed the whole fixture. A phantom override is worse than a missing one: it asserts a method nobody wrote."
+    },
+    {
+      "type": "overrides",
+      "source": "LocalChain.notOverridden",
+      "target": "LocalMiddle.notOverridden",
+      "comment": "same fabrication against the DECLARED base \u2014 the row a per-link rule would actually produce, so it is pinned separately"
+    },
+    {
+      "type": "overrides",
+      "source": "LocalChain.handle",
+      "target": "LocalBase.handle",
+      "comment": "TRANSITIVITY. `LocalChain extends LocalMiddle extends LocalBase`, so a walk that followed the whole chain instead of the declared link would publish this too. `LocalChain::handle` overrides `LocalMiddle::handle`, and `LocalMiddle::handle` overriding `LocalBase::handle` is a SEPARATE edge already pinned above; flattening the chain loses which class actually declares what, and `overrides` targets a METHOD of a named class, so a wrong target names a method on the wrong class."
+    },
+    {
+      "type": "overrides",
+      "source": "LocalMiddle.shared",
+      "target": "LocalBase.shared",
+      "comment": "`shared()` is on `LocalBase` but NOT redeclared by `LocalMiddle`. An override requires the SUBCLASS to declare the method; inheriting it is not overriding it."
+    },
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "ExternalBase.handle",
+      "comment": "the removed 0.5 guess, pinned absent: the base is declared in another file and AnalyzeContext.overrideCompanion is never populated in production (M37.10), so the edge cannot be verified and must not be emitted at any confidence. Measured 66.7% false when it was emitted (php-override-audit.ts)."
+    },
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "ExternalBase.handle",
+      "meta.reasonCode": "first-parent-guess",
+      "comment": "and specifically without the guess's marker, so a regression that re-added the reasonCode rather than the edge is still caught"
+    },
+    {
+      "type": "overrides",
+      "source": "AuditService.handle",
+      "target": "ExternalBase.handle",
+      "meta.evidenceClass": "inferred",
+      "comment": "and without the guess's evidence tier \u2014 `inferred` is what a guess was classified as, against `structural` for a verified override"
+    },
+    {
+      "type": "overrides",
+      "source": "LocalMiddle.handle",
+      "target": "LocalBase.handle",
+      "confidenceMax": 0.5,
+      "comment": "a VERIFIED override is never published below 0.9; a sub-0.7 edge is dropped by pool-worker, so a verified edge at 0.5 would silently vanish from the graph"
+    },
+    {
+      "type": "extends",
+      "source": "LocalBase",
+      "target": "LocalBase",
+      "comment": "a class with NO base clause gets no `extends` edge at all \u2014 not a self-loop. This is the PHPD10 rule that a qualified base whose leaf equals the declaring class keeps its qualification, and an unresolvable same-leaf base emits NOTHING: a self-extends is always a fabrication (family precedent: `new parent()` with an unresolvable base, where a wrong edge is worse than no edge). It was previously absent from this fixture, and the class with no base is the shape that a name-collapsing rule turns into a loop."
+    }
+  ]
+}

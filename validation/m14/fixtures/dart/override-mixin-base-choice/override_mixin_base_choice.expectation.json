@@ -1,0 +1,12 @@
+{
+  "fixtureId": "dart/override-mixin-base-choice/override_mixin_base_choice",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE LIBRARY DIRECTIVE — a `library` declaration with a doc comment and no code. It carries no declaration of its own, so it publishes no symbol and no relationship. It is here because the runner requires an expectation file for every source in a fixture directory, and a file that publishes nothing is a REAL shape worth pinning: the library-name node must not be mistaken for a declaration, and the analyzer's library-identity rule (`a Dart library IS its URI`) must not invent a symbol for it. The MEASURED defect this fixture's family exists for is adjacent: the library ANNOTATION (`@TestOn('vm') library annotated.lib;`) is a carrier of a `references` row, and that row's source is the library's own name — a rule the `dart/library-annotation` fixture pins on its own.",
+  "expectSymbols": [],
+  "expectRelationships": [],
+  "forbidRelationships": [
+    { "type": "contains", "source": "override_mixin_base_choice", "target": "override_mixin_base_choice", "note": "A library directive contains nothing — the module symbol is not a member of itself." },
+    { "type": "references", "source": "override_mixin_base_choice", "target": "override_mixin_base_choice", "note": "and the library does not reference itself." }
+  ]
+}

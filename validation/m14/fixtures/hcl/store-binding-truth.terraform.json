@@ -1,0 +1,270 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.mts",
+  "draw": "cb2f50aa49c8a948",
+  "repos": [
+    "terraform"
+  ],
+  "admittedFiles": 2299,
+  "filesDrawn": 2299,
+  "filesCopied": 2299,
+  "indexerEligible": 78,
+  "indexerDiscoveredPaths": 78,
+  "excludedFromTheIndexer": {
+    "testdata": 2221
+  },
+  "indexMs": 10124,
+  "indexStats": {
+    "totalFiles": 78,
+    "symbols": 706
+  },
+  "store": {
+    "brainFile": 78,
+    "brainSymbol": 706,
+    "brainRelationship": 1287
+  },
+  "perType": {
+    "contains": {
+      "edges": 1046,
+      "sourceUnbound": 0,
+      "targetUnbound": 4,
+      "bound": 1042,
+      "boundSameFile": 1010,
+      "boundOtherFile": 32,
+      "boundNameExact": 604,
+      "boundQnameExact": 604,
+      "boundNeedsLeafReduction": 434,
+      "withLine": 1046
+    },
+    "exports": {
+      "edges": 215,
+      "sourceUnbound": 0,
+      "targetUnbound": 2,
+      "bound": 213,
+      "boundSameFile": 169,
+      "boundOtherFile": 44,
+      "boundNameExact": 213,
+      "boundQnameExact": 211,
+      "boundNeedsLeafReduction": 0,
+      "withLine": 215
+    },
+    "references": {
+      "edges": 25,
+      "sourceUnbound": 0,
+      "targetUnbound": 3,
+      "bound": 22,
+      "boundSameFile": 20,
+      "boundOtherFile": 2,
+      "boundNameExact": 5,
+      "boundQnameExact": 7,
+      "boundNeedsLeafReduction": 17,
+      "withLine": 25
+    },
+    "imports": {
+      "edges": 1,
+      "sourceUnbound": 0,
+      "targetUnbound": 1,
+      "bound": 0,
+      "boundSameFile": 0,
+      "boundOtherFile": 0,
+      "boundNameExact": 0,
+      "boundQnameExact": 0,
+      "boundNeedsLeafReduction": 0,
+      "withLine": 1
+    }
+  },
+  "gateModelOverTheSameFiles": {
+    "contains": {
+      "edges": 632,
+      "resolved": 125,
+      "amb": 503,
+      "unresolved": 4,
+      "noSource": 0
+    },
+    "exports": {
+      "edges": 216,
+      "resolved": 35,
+      "amb": 179,
+      "unresolved": 2,
+      "noSource": 0
+    },
+    "references": {
+      "edges": 25,
+      "resolved": 5,
+      "amb": 2,
+      "unresolved": 18,
+      "noSource": 0
+    },
+    "imports": {
+      "edges": 1,
+      "resolved": 0,
+      "amb": 0,
+      "unresolved": 1,
+      "noSource": 0
+    }
+  },
+  "totals": {
+    "edges": 1287,
+    "bound": 1277,
+    "targetUnbound": 10,
+    "boundSameFile": 1199,
+    "boundOtherFile": 78,
+    "boundNameExact": 822,
+    "boundQnameExact": 822,
+    "boundNeedsLeafReduction": 451,
+    "sourceUnbound": 0
+  },
+  "unboundTopTargets": [
+    {
+      "type": "contains",
+      "target": "null",
+      "n": 2
+    },
+    {
+      "type": "contains",
+      "target": "terraform.required_providers.null",
+      "n": 2
+    },
+    {
+      "type": "exports",
+      "target": "null",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "tfcoremock_simple_resource.first",
+      "n": 2
+    },
+    {
+      "type": "imports",
+      "target": "./create",
+      "n": 1
+    },
+    {
+      "type": "references",
+      "target": "tfcoremock_simple_resource.base_before",
+      "n": 1
+    }
+  ],
+  "boundOtherFileSamples": [
+    {
+      "type": "contains",
+      "target": "registry.terraform.io/hashicorp/tfcoremock",
+      "src_name": ".terraform.lock",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_simple/.terraform.lock.hcl",
+      "tgt_name": "registry.terraform.io/hashicorp/tfcoremock",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_json_string_update/.terraform.lock.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "registry.terraform.io/hashicorp/tfcoremock",
+      "src_name": ".terraform.lock",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_simple/.terraform.lock.hcl",
+      "tgt_name": "registry.terraform.io/hashicorp/tfcoremock",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_json_string_update/.terraform.lock.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "tfcoremock_set.set",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/basic_set_empty/main.tf",
+      "tgt_name": "tfcoremock_set.set",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_set/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "registry.terraform.io/hashicorp/tfcoremock",
+      "src_name": ".terraform.lock",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_drift/.terraform.lock.hcl",
+      "tgt_name": "registry.terraform.io/hashicorp/tfcoremock",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_json_string_update/.terraform.lock.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "registry.terraform.io/hashicorp/tfcoremock",
+      "src_name": ".terraform.lock",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_drift/.terraform.lock.hcl",
+      "tgt_name": "registry.terraform.io/hashicorp/tfcoremock",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_json_string_update/.terraform.lock.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "tfcoremock_list.list",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/basic_list_empty/main.tf",
+      "tgt_name": "tfcoremock_list.list",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_list/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "tfcoremock_simple_resource.dependent",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_drift/main.tf",
+      "tgt_name": "tfcoremock_simple_resource.dependent",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/drift_relevant_attributes/main.tf"
+    },
+    {
+      "type": "exports",
+      "target": "tfcoremock_simple_resource.dependent",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_drift/main.tf",
+      "tgt_name": "tfcoremock_simple_resource.dependent",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/drift_relevant_attributes/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "tfcoremock_set.set",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/basic_set_null/main.tf",
+      "tgt_name": "set",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_set_empty/main.tf"
+    },
+    {
+      "type": "exports",
+      "target": "tfcoremock_set.set",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/basic_set_null/main.tf",
+      "tgt_name": "tfcoremock_set.set",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_set/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "registry.terraform.io/hashicorp/tfcoremock",
+      "src_name": ".terraform.lock",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_refresh_only/.terraform.lock.hcl",
+      "tgt_name": "registry.terraform.io/hashicorp/tfcoremock",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_json_string_update/.terraform.lock.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "registry.terraform.io/hashicorp/tfcoremock",
+      "src_name": ".terraform.lock",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_refresh_only/.terraform.lock.hcl",
+      "tgt_name": "registry.terraform.io/hashicorp/tfcoremock",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/basic_json_string_update/.terraform.lock.hcl"
+    },
+    {
+      "type": "contains",
+      "target": "tfcoremock_simple_resource.second",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_refresh_only/main.tf",
+      "tgt_name": "tfcoremock_simple_resource.second",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/moved_simple/main.tf"
+    },
+    {
+      "type": "references",
+      "target": "tfcoremock_simple_resource.second",
+      "src_name": "moved",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_refresh_only/main.tf",
+      "tgt_name": "tfcoremock_simple_resource.second",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/moved_simple/main.tf"
+    },
+    {
+      "type": "exports",
+      "target": "tfcoremock_simple_resource.second",
+      "src_name": "main",
+      "src_file": "terraform/testing/equivalence-tests/tests/moved_with_refresh_only/main.tf",
+      "tgt_name": "tfcoremock_simple_resource.second",
+      "tgt_file": "terraform/testing/equivalence-tests/tests/moved_simple/main.tf"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ indexed AST (symbols, relationships, taint, embeddings) and report staleness ins
 | `bb_ask` | Ask a natural-language question about behavior and get scored semantic matches. | no |
 | `bb_health` | Is the index complete, fresh, and healthy. | no |
 | `bb_patterns` | Find dead code, orphans, and anti-patterns. | no |
-| `bb_security` | Find taint flows and injection findings. | no |
+| `bb_security` | Generate lexical security leads from indexed source→dynamic-sink reachability (not a vulnerability scanner; requires manual validation). | no |
 | `bb_visualize` | Show the dependency overview for a whole project/file/module at once, not one symbol. | no |
 | `bb_migrate` | Plan a cross-language migration with ordering and unsupported mappings. | no |
 | `bb_analyze` | Typed per-mode analysis: callers/callees/stats/complexity/tests. | no |

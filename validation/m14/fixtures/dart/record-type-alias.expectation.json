@@ -1,0 +1,28 @@
+{
+  "fixtureId": "dart/record-type-alias",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DARTGAP3 RULED. The gap asked for `contains` edges from a `typedef` over a record type to the record's fields. Measured against the construct: a record type's fields have NO declaration names — they are positions (`$1`, `$2`) or names inside the TYPE (`start:`), exactly like a record literal's fields (DARTGAP4, ruled the same way) — so there is no member symbol for a `contains` edge to name. What IS owed and IS emitted: the typedef is published as a type symbol (`Pair`, `Named`), and the record's field TYPES are type mentions that publish `references` (`Named -> Point` through the `record_type_field` position table). The family precedent cited (typescript-contains rule 5, a type alias over an object literal is a container) is about a language whose object types DECLARE named members; `{int count}` is not a type in Dart, and the valid record-type form's field names do not denote declarations. The receiver-owner rule is pinned too: a typedef is NOT class-like to the store's resolver, so the reads of record fields carry no fabricated `owner`. Measured population: 219 record_type/record_type_field/record_type_named_field occurrences in 38 files of ProxiCall/lib (the spec's own measurement block).",
+  "expectSymbols": [
+    { "name": "Point", "kind": "class" },
+    { "name": "Pair", "kind": "type" },
+    { "name": "Named", "kind": "type" },
+    { "name": "recordAliasUse", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "$1", "note": "a positional record field is not a declaration and publishes no symbol" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "Named", "target": "Point", "meta.isTypeMention": true, "note": "THE OWED RELATIONSHIP — the record type's field TYPE mention, published through the `record_type_field` position. This is the half that makes the typedef's content visible in the type graph without inventing a contains row." },
+    { "type": "references", "source": "recordAliasUse", "target": "Pair", "meta.isTypeMention": true, "note": "the typedef used as a variable's declared type — an ordinary type mention." },
+    { "type": "references", "source": "recordAliasUse", "target": "Named", "meta.isTypeMention": true, "note": "the second typedef mention." },
+    { "type": "uses", "source": "recordAliasUse", "target": "$1", "meta.isMemberRead": true, "meta.receiverCause": "receiverMemberOutsideRun", "meta.owner": null, "note": "POSITIONAL FIELD READ — published as a member read of the typedef type; the owner channel is deliberately EMPTY because a typedef is not class-like to `member-owner-resolution` (a type it cannot accept makes the resolver withdraw the binding)." },
+    { "type": "uses", "source": "recordAliasUse", "target": "start", "meta.isMemberRead": true, "meta.receiverCause": "receiverMemberOutsideRun", "meta.owner": null, "note": "NAMED FIELD READ — same rule, same absence." }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "source": "Pair", "note": "NO CONTAINMENT — a record type has no declaration members to contain. This is the exact row DARTGAP3 asked for, forbidden because the target end would be a name no declaration carries." },
+    { "type": "contains", "source": "Named", "note": "the same for the named-field record type." },
+    { "type": "uses", "source": "recordAliasUse", "target": "$1", "meta.owner": "Pair", "note": "NO TYPEDEF OWNER — a typedef is not class-like to the resolver; owner metadata it cannot accept is the 'wrong owner is worse than none' case." },
+    { "type": "contains", "target": "$1", "note": "positional fields are not declarations, so no label may contain them." }
+  ]
+}

@@ -8,7 +8,7 @@
  * NOBODY ELSE CAN CHECK ✓✓.
  *
  * ⇒ AND THE PROBES THEMSELVES WERE NON-REPRODUCIBLE FOR A SECOND REASON ✓✓: they hard-coded
- * `const ROOT = "$HOME/mcp/backbencher-brain"` ✓✓, so they could only ever run on the
+ * `const ROOT = "/home/ishaq2321/mcp/backbencher-brain"` ✓✓, so they could only ever run on the
  * machine that wrote them ✓✓. ⇒ THIS INSTRUMENT DERIVES ITS ROOT FROM ITS OWN LOCATION ✓✓.
  *
  * ⇒ WHAT IT MEASURES ✓✓. The `uses` fix has two halves and each needs its own control:

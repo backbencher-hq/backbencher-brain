@@ -1,0 +1,12 @@
+
+SCOPED run (graphql of 46 lanes): results are printed here and NO evidence is written — the canonical validation/m14/results/M14.0.F3.json is NOT touched, and --update-baseline is refused, because either would shrink the milestone's claim to the lanes this run covered.
+PASS  graphql/declaration-lines-and-extensions
+PASS  graphql/executable-and-descriptions
+PASS  graphql/ontology-file-imports
+PASS  graphql/ontology-heritage-and-surface
+
+summary: {"graphql":{"pass":4,"fail":0}}
+(baseline gate covers only the 1 lane(s) this scoped run selected; a full run is the milestone's gate)
+fixture baseline gate: no regressions
+
+all fixtures pass

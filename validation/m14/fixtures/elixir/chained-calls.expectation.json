@@ -1,0 +1,10 @@
+{
+  "issue": "ELX-ADV X4",
+  "note": "A chained receiver call (`Mix.shell().error`) targets the METHOD leaf — never raw call syntax (148+91 corpus edges kept `()` in the identity).",
+  "expectRelationships": [
+    { "type": "calls", "from": "EC.run/0", "target": "error", "line_number": 3, "meta.callArity": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "Mix.shell().error" }
+  ]
+}

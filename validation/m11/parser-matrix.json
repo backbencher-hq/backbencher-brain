@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "syntaxEntryCount": 46,
+  "dedicatedParserCount": 43,
+  "genericFallbackCount": 3,
+  "productTargetCount": 42,
+  "runtime": {
+    "treeSitter": "web-tree-sitter@0.25.9",
+    "buildTarget": "node20"
+  },
+  "languages": [
+    {
+      "language": "bash",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-bash/tree-sitter-bash.wasm",
+      "probe": "sample.sh"
+    },
+    {
+      "language": "c",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-c/tree-sitter-c.wasm",
+      "probe": "sample.c"
+    },
+    {
+      "language": "clean",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-clean/tree-sitter-clean.wasm",
+      "probe": "sample.icl"
+    },
+    {
+      "language": "clojure",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-clojure/tree-sitter-clojure.wasm",
+      "probe": "sample.clj"
+    },
+    {
+      "language": "cpp",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-cpp/tree-sitter-cpp.wasm",
+      "probe": "sample.cpp"
+    },
+    {
+      "language": "csharp",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-c-sharp/tree-sitter-c_sharp.wasm",
+      "probe": "Sample.cs"
+    },
+    {
+      "language": "css",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-css/tree-sitter-css.wasm",
+      "probe": "sample.css"
+    },
+    {
+      "language": "dart",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-dart/tree-sitter-dart.wasm",
+      "probe": "sample.dart"
+    },
+    {
+      "language": "elixir",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-elixir/tree-sitter-elixir.wasm",
+      "probe": "sample.ex"
+    },
+    {
+      "language": "erlang",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-erlang/tree-sitter-erlang.wasm",
+      "probe": "sample.erl"
+    },
+    {
+      "language": "fsharp",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-fsharp/tree-sitter-fsharp.wasm",
+      "probe": "Sample.fs"
+    },
+    {
+      "language": "go",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-go/tree-sitter-go.wasm",
+      "probe": "sample.go"
+    },
+    {
+      "language": "graphql",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-graphql/tree-sitter-graphql.wasm",
+      "probe": "sample.graphql"
+    },
+    {
+      "language": "groovy",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-groovy/tree-sitter-groovy.wasm",
+      "probe": "Sample.groovy"
+    },
+    {
+      "language": "haskell",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-haskell/tree-sitter-haskell.wasm",
+      "probe": "sample.hs"
+    },
+    {
+      "language": "hcl",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-hcl/tree-sitter-hcl.wasm",
+      "probe": "sample.hcl"
+    },
+    {
+      "language": "html",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-html/tree-sitter-html.wasm",
+      "probe": "sample.html"
+    },
+    {
+      "language": "java",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-java/tree-sitter-java.wasm",
+      "probe": "Sample.java"
+    },
+    {
+      "language": "javascript",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-javascript/tree-sitter-javascript.wasm",
+      "probe": "sample.js"
+    },
+    {
+      "language": "json",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-json/tree-sitter-json.wasm",
+      "probe": "sample.json"
+    },
+    {
+      "language": "kotlin",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-kotlin/tree-sitter-kotlin.wasm",
+      "probe": "Sample.kt"
+    },
+    {
+      "language": "lua",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-lua/tree-sitter-lua.wasm",
+      "probe": "sample.lua"
+    },
+    {
+      "language": "make",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-make/tree-sitter-make.wasm",
+      "probe": "probe/Makefile"
+    },
+    {
+      "language": "markdown",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-markdown/tree-sitter-markdown.wasm",
+      "probe": "sample.md"
+    },
+    {
+      "language": "nim",
+      "parser": "generic",
+      "wasm": null,
+      "probe": "sample.nim"
+    },
+    {
+      "language": "objective-c",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-objc/tree-sitter-objc.wasm",
+      "probe": "Sample.m"
+    },
+    {
+      "language": "perl",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-perl/tree-sitter-perl.wasm",
+      "probe": "sample.pl"
+    },
+    {
+      "language": "php",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-php/tree-sitter-php.wasm",
+      "probe": "sample.php"
+    },
+    {
+      "language": "powershell",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-powershell/tree-sitter-powershell.wasm",
+      "probe": "sample.ps1"
+    },
+    {
+      "language": "protobuf",
+      "parser": "generic",
+      "wasm": null,
+      "probe": "sample.proto"
+    },
+    {
+      "language": "python",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-python/tree-sitter-python.wasm",
+      "probe": "sample.py"
+    },
+    {
+      "language": "r",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-r/tree-sitter-r.wasm",
+      "probe": "sample.r"
+    },
+    {
+      "language": "ruby",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-ruby/tree-sitter-ruby.wasm",
+      "probe": "sample.rb"
+    },
+    {
+      "language": "rust",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-rust/tree-sitter-rust.wasm",
+      "probe": "sample.rs"
+    },
+    {
+      "language": "scala",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-scala/tree-sitter-scala.wasm",
+      "probe": "Sample.scala"
+    },
+    {
+      "language": "sql",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-sql/tree-sitter-sql.wasm",
+      "probe": "sample.sql"
+    },
+    {
+      "language": "svelte",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-svelte/tree-sitter-svelte.wasm",
+      "probe": "sample.svelte"
+    },
+    {
+      "language": "swift",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-swift/tree-sitter-swift.wasm",
+      "probe": "sample.swift"
+    },
+    {
+      "language": "toml",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-toml/tree-sitter-toml.wasm",
+      "probe": "sample.toml"
+    },
+    {
+      "language": "tsx",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-typescript/tree-sitter-tsx.wasm",
+      "probe": "sample.tsx"
+    },
+    {
+      "language": "typescript",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-typescript/tree-sitter-typescript.wasm",
+      "probe": "sample.ts"
+    },
+    {
+      "language": "vb",
+      "parser": "generic",
+      "wasm": null,
+      "probe": "sample.vb"
+    },
+    {
+      "language": "vue",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-vue/tree-sitter-vue.wasm",
+      "probe": "sample.vue"
+    },
+    {
+      "language": "xml",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-xml/tree-sitter-xml.wasm",
+      "probe": "sample.xml"
+    },
+    {
+      "language": "yaml",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-yaml/tree-sitter-yaml.wasm",
+      "probe": "sample.yaml"
+    },
+    {
+      "language": "zig",
+      "parser": "dedicated",
+      "wasm": "tree-sitter-zig/tree-sitter-zig.wasm",
+      "probe": "sample.zig"
+    }
+  ],
+  "ambiguousExtensions": {
+    ".h": {
+      "default": "c",
+      "requiresContextFor": [
+        "cpp",
+        "objective-c"
+      ]
+    },
+    ".m": {
+      "default": "objective-c",
+      "requiresContextFor": [
+        "matlab"
+      ]
+    },
+    ".source": {
+      "default": null,
+      "requiresExplicitLanguage": true
+    }
+  }
+}

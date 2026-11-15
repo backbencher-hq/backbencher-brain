@@ -1,0 +1,29 @@
+# Ansible's `include_vars` names ANOTHER FILE: a vars file loaded into the play's scope.
+#
+# This construct was MISSED by the analyzer, and the miss was an asymmetry rather than a
+# decision: the TAG spelling `!include_vars` was in the include family from the start, while
+# the KEY spelling `include_vars:` was not in the key set, so the same Ansible construct was
+# covered in one spelling and absent in the other. The corpus found it — 25 ansible files carry
+# the key — and the open sweep over the include family (the whole admitted population, counted
+# from the TREE) decided which spellings name a file and which do not: the boolean flags
+# (`include-hidden-files: true`, `include_aggregate_mounts: true`, `include_in_metadata: true`,
+# `include_tags: true`), the environment variable `INCLUDE_DIR: ${{ github.workspace }}/…`, and
+# Helm's `import-values:` (which names VALUE PATHS between charts) are not file inclusions;
+# `include_vars:` is.
+#
+# FOUR SHAPES ARE PINNED, because the value's shape is what decides the edge:
+#   1. a plain file name                -> one import of that file
+#   2. a MAPPING with a `file:` key    -> one import of THAT file
+#   3. a FOLDED BLOCK SCALAR            -> one import of the file the CONTENT names, and the
+#                                          content is the value: the `>` indicator is on the
+#                                          node's first line and is not part of it
+#   4. a MAPPING with a `dir:` key      -> NO import, because a directory of vars is not a file
+vars:
+  - include_vars: shared/vars.yml
+  - include_vars:
+      file: shared/more.yml
+  - include_vars: >
+      shared/folded.yml
+  - include_vars:
+      dir: vars
+      with_first_found: true

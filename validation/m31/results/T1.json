@@ -1,0 +1,11 @@
+{
+  "status": "verified",
+  "currentCommit": "8f449a26e9badb54503abd55edcc6adec1b2e015",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/tool-mode-corpus.ts --check",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-11-04T01:37:39.589Z",
+  "passed": 76,
+  "failed": 0,
+  "negativeCases": 30
+}

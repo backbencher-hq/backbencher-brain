@@ -1,0 +1,79 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/assigned-in-file.sh",
+ "authoredFrom": "BD-assigned-in-file (a read name is labelled with whether this file assigns it). Authored from a corpus measurement 2026-09-27. Across 909 files the lane emitted 19,417 `uses` edges and NOTHING said whether the read name was assigned in the same file, so a consumer had to guess whether `$CACHE_ROOT` was a project variable it could not see or one the environment supplies. The field is emitted on TRUE only, matching `isShellDefined` and `isDeclaredGlobal`, so ABSENCE MEANS FALSE — which is why this fixture pins the ABSENT direction explicitly: a field only ever asserted when present would prove nothing about the case a consumer hits most often.",
+ "expectSymbols": [
+  {
+   "name": "assigned-in-file.sh",
+   "kind": "module"
+  },
+  {
+   "name": "PORT",
+   "kind": "variable",
+   "ownerName": "assigned-in-file.sh"
+  },
+  {
+   "name": "configure_port",
+   "kind": "function",
+   "ownerName": "assigned-in-file.sh"
+  },
+  {
+   "name": "greet",
+   "kind": "function",
+   "ownerName": "assigned-in-file.sh"
+  },
+  {
+   "name": "who",
+   "kind": "variable",
+   "ownerName": "greet"
+  },
+  {
+   "name": "BASE_DIR",
+   "kind": "variable",
+   "ownerName": "assigned-in-file.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "configure_port",
+   "note": "The load-bearing case. PORT is assigned at MODULE scope and read INSIDE a function, so a lookup keyed on the read's own scope cannot see it — the read's owner is `configure_port`, and the assignment's is the script. This edge is what the suffix index over `declaredSymbols` exists for.",
+   "meta.isAssignedInFile": true,
+   "target": "assigned-in-file.sh.PORT",
+   "line_number": 14
+  },
+  {
+   "type": "uses",
+   "from": "greet",
+   "note": "A function parameter, which is an assignment of a different kind again.",
+   "meta.isAssignedInFile": true,
+   "target": "greet.who",
+   "line_number": 20
+  },
+  {
+   "type": "uses",
+   "from": "assigned-in-file.sh",
+   "note": "The ABSENT direction, pinned deliberately. Nothing in this file assigns CACHE_ROOT, so the field must be missing rather than false — the same conditional-spread shape as `isShellDefined`. A fixture asserting `isAssignedInFile: false` here would be asserting a different contract, and would pass on an analyzer that always emitted the field.",
+   "meta.isAssignedInFile": null,
+   "target": "CACHE_ROOT",
+   "line_number": 24
+  },
+  {
+   "type": "uses",
+   "from": "assigned-in-file.sh",
+   "note": "Second absent case, so the direction is not pinned by a single row.",
+   "meta.isAssignedInFile": null,
+   "target": "CURRENT_USER",
+   "line_number": 25
+  },
+  {
+   "type": "uses",
+   "from": "assigned-in-file.sh",
+   "note": "Assigned and read in the same scope — the case that would have worked even before the suffix index, kept so the cross-scope case above is a genuine contrast rather than the only thing being tested.",
+   "meta.isAssignedInFile": true,
+   "target": "assigned-in-file.sh.BASE_DIR",
+   "line_number": 29
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

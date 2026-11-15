@@ -1,0 +1,220 @@
+{
+  "fixtureId": "rust/impl-target-name-surface-798",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R10 (M60 standing rule, rust #798): a relationship TARGET must be spelled the way the lane spells its own symbols \u2014 plus the one row the F14 gate added when it was extended to rust: `calls -> Self`, a KEYWORD published as a callee name (the lane refuses `Self` as a name on the read surface and resolves it on the instantiates surface, so the `calls` surface was an inconsistency, and 6 cargo rows came from `Ok(Self(name))` / `Self(ProcessEnv)`). An impl symbol is named after the TYPE it implements, and a reference/pointer/parenthesized wrapper does not change what that type is NAMED \u2014 the pre-fix rule took `typeNode.text` verbatim, so `impl ChannelChangerCommandExt for &mut ProcessBuilder` published the source TEXT `&mut ProcessBuilder` as a name: on the impl SYMBOL, on the `implements` edge's SOURCE, on each member's owner, and (through `Self`) on every `references` target inside the block. The M60 target-spelling census convicted rust for exactly this (6 `references` targets over 2 files on the 667-file draw). The differential is STRUCTURALLY BLIND to it (its truth derives from the same rule \u2014 both sides spelled the fabrication identically), so this fixture and the F14 gate are the independent evidence. Every forbid below was re-derived from HEAD's analyzer (script/m14/tmp/rust-798-fixture-dump.ts with BB_PRE_R10=1), which printed for this very file: symbols `&mut ProcessBuilder|impl`, `&'static str|impl`, `(T, U)|impl`, `[u8]|impl`; `implements|&mut ProcessBuilder|ChannelChangerCommandExt`, `implements|&'static str|IntoUrl`, `implements|(T, U)|ToTupleId`, `implements|[u8]|ToSliceId`; and `references|env|&mut ProcessBuilder`, `references|into_url|&'static str`, `references|to_tuple_id|(T, U)`, `references|to_slice_id|[u8]` (the last two wrong even in SPELLING: a target no consumer can resolve). So each forbid provably FAILS on revert, and the R10 mutant (rust/revert-impl-target-wrapper-name) exercises it. THREE RULINGS the file also pins: (1) `&'static str` is the WRAPPED primitive `str`; (2) `std::io::Error` is the QUALIFIED case and its qualification is PRESERVED on the symbol while `Self` resolves to the LEAF `Error` \u2014 a deliberate pre-existing asymmetry, because the deferred constructor filter reads in-file SYMBOL names and flattening a foreign `io::Error` to `Error` would make `Error::new()` look like a local construction (measured: it added 12 spurious `instantiates` edges on ripgrep alone); (3) a type with NO nominal name (`(T, U)`, `[u8]`) gets the family's declared synthetic `anonymous_impl` with the source spelling in `metadata.implementedType`, while `Self` resolves to ABSENCE \u2014 the R7 rule that the honest state is absence, not a placeholder, and the synthetic block name is never substituted for the type in a TARGET position. SUPERSESSION (2026-10-19, Lead decision \u00a721.11 task-36 defect 1, task-9 conditions): the impl block used to be published under the TYPE'S OWN NAME (`kind: impl`, name `ProcessBuilder`), which put a duplicate declaration next to `struct ProcessBuilder` in the project key space \u2014 `struct Foo` + `impl Foo` read as TWO declarations, so the unique-bare-name rule refused `Foo` everywhere (the measured 1,672-row instantiates artifact and same-file ambiguity across instantiates/exports/references/uses). The block is a CONTAINER, not a declaration of the type: its published identity is now the distinct `<Type>::r#impl`, its members are owned by the NOMINAL type (checked by the `contains` rows below), and the `implements` edge keeps the type as its SOURCE. R10's naming contract is therefore observable at exactly these surfaces and the duplicate identities are now FORBIDDEN explicitly rather than being part of the symbol surface.",
+  "expectSymbols": [
+    {
+      "name": "ProcessBuilder",
+      "kind": "struct"
+    },
+    {
+      "name": "ProcessBuilder::r#impl",
+      "kind": "impl",
+      "comment": "R10a: named after the TYPE, not the wrapper `&mut ProcessBuilder`"
+    },
+    {
+      "name": "str::r#impl",
+      "kind": "impl",
+      "comment": "R10b: the wrapped primitive's own name"
+    },
+    {
+      "name": "std::io::Error::r#impl",
+      "kind": "impl",
+      "comment": "R10c: qualification PRESERVED (the deferred ctor filter reads in-file symbol names)"
+    },
+    {
+      "name": "anonymous_impl",
+      "kind": "impl",
+      "meta.implementedType": "(T, U)",
+      "comment": "R10d: a tuple has no nominal name; the declared synthetic names the BLOCK and the source spelling rides metadata"
+    },
+    {
+      "name": "anonymous_impl",
+      "kind": "impl",
+      "meta.implementedType": "[u8]",
+      "comment": "R10d: same for a slice"
+    }
+  ],
+  "expectUniqueIds": [
+    {
+      "name": "anonymous_impl",
+      "kind": "impl",
+      "comment": "RSD3: the two synthetic-named impl blocks still get DISTINCT ids (id-keyed consumers would drop one)"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "ProcessBuilder",
+      "target": "ChannelChangerCommandExt",
+      "comment": "R10a: the edge's SOURCE is the impl symbol's published name"
+    },
+    {
+      "type": "implements",
+      "from": "str",
+      "target": "IntoUrl",
+      "comment": "R10b"
+    },
+    {
+      "type": "implements",
+      "from": "std::io::Error",
+      "target": "MyFrom",
+      "comment": "R10c: the qualified spelling is what the lane publishes, so it is what the edge says"
+    },
+    {
+      "type": "implements",
+      "from": "anonymous_impl",
+      "target": "ToTupleId",
+      "comment": "R10d"
+    },
+    {
+      "type": "implements",
+      "from": "anonymous_impl",
+      "target": "ToSliceId",
+      "comment": "R10d"
+    },
+    {
+      "type": "contains",
+      "from": "ProcessBuilder",
+      "target": "env",
+      "comment": "the member's OWNER is the type's name too \u2014 the same root, one surface further"
+    },
+    {
+      "type": "contains",
+      "from": "str",
+      "target": "into_url"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_impl",
+      "target": "to_slice_id"
+    },
+    {
+      "type": "references",
+      "from": "env",
+      "target": "ProcessBuilder",
+      "meta.relationshipType": "declared_type",
+      "comment": "R10a: `-> Self` resolves to the TYPE's name, never the wrapper text the census convicted"
+    },
+    {
+      "type": "references",
+      "from": "into_url",
+      "target": "str",
+      "meta.relationshipType": "declared_type",
+      "comment": "R10b"
+    },
+    {
+      "type": "references",
+      "from": "my_from",
+      "target": "Error",
+      "meta.relationshipType": "declared_type",
+      "comment": "R10c: a references TARGET is a LEAF (#419-B) \u2014 the pre-fix rule already did this and it is unchanged"
+    },
+    {
+      "type": "calls",
+      "from": "wrap_new",
+      "target": "Wrap",
+      "comment": "R10e: `Self(0)` calls the enclosing impl type's constructor, so the callee's NAME is `Wrap` \u2014 `Self` is a keyword and is never published as a target on any surface"
+    },
+    {
+      "type": "instantiates",
+      "target": "Wrap",
+      "comment": "R10e: the same construct, one label over (D2's contract, unchanged)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "&mut ProcessBuilder",
+      "comment": "the exact pre-fix conviction (5 of the 6 census rows)"
+    },
+    {
+      "type": "references",
+      "target": "&'static str",
+      "comment": "the pre-fix wrapped-primitive target"
+    },
+    {
+      "type": "references",
+      "target": "(T, U)",
+      "comment": "a tuple is not a name \u2014 and the synthetic block name is not the type either"
+    },
+    {
+      "type": "references",
+      "target": "[u8]",
+      "comment": "a slice is not a name (R7: the honest state is ABSENCE, so nothing is emitted)"
+    },
+    {
+      "type": "references",
+      "target": "anonymous_impl",
+      "comment": "the declared synthetic names the impl BLOCK; substituting it for the TYPE in a target position would be a fabrication in the other direction"
+    },
+    {
+      "type": "implements",
+      "from": "&mut ProcessBuilder",
+      "comment": "the pre-fix edge SOURCE"
+    },
+    {
+      "type": "implements",
+      "from": "&'static str",
+      "comment": "the pre-fix edge SOURCE"
+    },
+    {
+      "type": "implements",
+      "from": "[u8]",
+      "comment": "the pre-fix edge SOURCE"
+    },
+    {
+      "type": "implements",
+      "from": "(T, U)",
+      "comment": "the pre-fix edge SOURCE"
+    },
+    {
+      "type": "references",
+      "target": "io::Error",
+      "comment": "the module-qualified spelling is not what `Self` resolves to \u2014 the leaf is"
+    },
+    {
+      "type": "calls",
+      "target": "Self",
+      "comment": "R10e: `Self` is a KEYWORD, never a symbol name \u2014 the lane refuses it as a name on the read surface (`handleIdentifierRead`) and resolves it on the instantiates surface (D2), so it must not be a `calls` target either. Found by the F14 gate when it was extended to rust (6 rows on cargo: `Ok(Self(name))`, `Self(ProcessEnv)`)"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "&mut ProcessBuilder",
+      "kind": "impl",
+      "comment": "the pre-fix impl NAME"
+    },
+    {
+      "name": "&'static str",
+      "kind": "impl",
+      "comment": "the pre-fix impl NAME"
+    },
+    {
+      "name": "[u8]",
+      "kind": "impl",
+      "comment": "the pre-fix impl NAME"
+    },
+    {
+      "name": "(T, U)",
+      "kind": "impl",
+      "comment": "the pre-fix impl NAME"
+    },
+    {
+      "name": "ProcessBuilder",
+      "kind": "impl",
+      "comment": "SUPERSEDED duplicate declaration identity (was R10a's expectation): the block is a container with the distinct `<Type>::r#impl` identity \u2014 publishing it under the type name is the task-36 defect"
+    },
+    {
+      "name": "str",
+      "kind": "impl",
+      "comment": "SUPERSEDED duplicate declaration identity (R10b)"
+    },
+    {
+      "name": "std::io::Error",
+      "kind": "impl",
+      "comment": "SUPERSEDED duplicate declaration identity (R10c)"
+    }
+  ]
+}

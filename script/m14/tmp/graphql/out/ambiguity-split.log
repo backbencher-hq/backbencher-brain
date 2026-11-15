@@ -1,0 +1,337 @@
+ambiguity split — graphql
+corpus: 1905 admitted files (discovery identical to ontology-coverage-gate)
+[INFO] [07:21:18] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [07:21:18] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65uz9oplch"}
+[INFO] [07:21:18] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65uz9r80nf"}
+[INFO] [07:21:18] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65uz9tl11d"}
+[INFO] [07:21:18] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65uz9lwajc"}
+[INFO] [07:21:22] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65v0x7kq6x"}
+[INFO] [07:21:27] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65v3g3yblr"}
+[INFO] [07:21:27] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65v3g6d5y6"}
+[INFO] [07:21:27] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65v3g9wuyq"}
+[INFO] [07:21:36] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_341779_65v7h7uy98"}
+walk: 1905 newly walked, 0 already done, 0 skipped bad, of 1905 admitted (fresh=true)
+
+── ALL admitted files: 1905 files walked ──
+
+  [kind rule]  156763 edges
+  type          edges     amb  unres  unresSpec  unresPath  unresOther  self  empty
+  ----------------------------------------------------------------------------
+  calls             0   (does not fire)
+  uses         49268    6223  18727        4586        7163        6978   145     0
+  contains     42704       0      0           0           0           0     0     0
+  imports        170       0    170           0         167           3     0     0
+  references   47775    6187    157           0           0         157     0     0
+  exports      10968    2224      0           0           0           0     0     0
+  extends           0   (does not fire)
+  implements    1710     332     12           0           0          12     4     0
+  overrides     4168       0      0           0           0           0     0     0
+  instantiates      0   (does not fire)
+  ----------------------------------------------------------------------------
+  ambiguous NAMES split (first match, mutually exclusive):
+    B1 INTRA-FILE             32 names     509 edges   lane-owned
+    B2 CROSS-MODULE-KIND     276 names   14601 edges   partly lane-owned
+    B3 NAME-NOT-IDENTIFIER     0 names       0 edges   published-name contract
+    every B1 name (lane-repairable — one file, one name, two kinds, so there is exactly one right answer):
+          2 edges  created_at                   decls= 70 files=1 kinds=enum_member,property byKind={"property":68,"enum_member":2}
+         74 edges  ArtistId                     decls=  8 files=1 kinds=enum_member,property byKind={"property":6,"enum_member":2}
+         11 edges  cars                         decls=  7 files=1 kinds=class,property byKind={"class":2,"property":5}
+          4 edges  cars_aggregate               decls=  6 files=1 kinds=class,property byKind={"class":2,"property":4}
+          2 edges  edits                        decls=  6 files=1 kinds=class,property byKind={"property":4,"class":2}
+        144 edges  Album                        decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+        182 edges  AlbumId                      decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          3 edges  Album_aggregate              decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          3 edges  Artist_aggregate             decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          3 edges  City_aggregate               decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          6 edges  CustomerId                   decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          3 edges  Customer_aggregate           decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          1 edges  Fax                          decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          5 edges  FirstName                    decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          3 edges  Label_aggregate              decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          5 edges  LastName                     decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+         13 edges  Restaurant                   decls=  4 files=1 kinds=class,property byKind={"property":2,"class":2}
+          4 edges  bigquery_sample_sample_table decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          3 edges  bigquery_sample_sample_table_aggregate decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          3 edges  people_aggregate             decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+          3 edges  C5                           decls=  3 files=1 kinds=class,property byKind={"class":2,"property":1}
+          4 edges  GroupInstances               decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+          3 edges  Groups                       decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+          4 edges  bwr_GroupInstances           decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+          3 edges  bwr_Groups                   decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+          3 edges  bwr_TimeSeries               decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+          2 edges  edited_pages                 decls=  3 files=1 kinds=class,property byKind={"class":2,"property":1}
+          2 edges  editors                      decls=  3 files=1 kinds=class,property byKind={"class":2,"property":1}
+          2 edges  new_pages                    decls=  3 files=1 kinds=class,property byKind={"class":2,"property":1}
+          2 edges  new_registered_users         decls=  3 files=1 kinds=class,property byKind={"class":2,"property":1}
+          4 edges  snake_case_type              decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+          3 edges  test_GroupInstances          decls=  3 files=1 kinds=class,property byKind={"property":1,"class":2}
+
+  [store rule]  156763 edges
+  type          edges     amb  unres  unresSpec  unresPath  unresOther  self  empty
+  ----------------------------------------------------------------------------
+  calls             0   (does not fire)
+  uses         49268   20197  18727        4586        7163        6978   145     0
+  contains     42704   17999      0           0           0           0     0     0
+  imports        170       0    170           0         167           3     0     0
+  references   47775   39265    157           0           0         157     0     0
+  exports      10968    6721      0           0           0           0     0     0
+  extends           0   (does not fire)
+  implements    1710    1221     12           0           0          12     4     0
+  overrides     4168    2265      0           0           0           0     0     0
+  instantiates      0   (does not fire)
+  ----------------------------------------------------------------------------
+  ambiguous NAMES split (first match, mutually exclusive):
+    B1 INTRA-FILE             74 names     827 edges   lane-owned
+    B2 CROSS-MODULE-KIND     254 names   13727 edges   partly lane-owned
+    B3 NAME-NOT-IDENTIFIER  6566 names   73262 edges   published-name contract
+    every B1 name (lane-repairable — one file, one name, two kinds, so there is exactly one right answer):
+          2 edges  created_at                   decls= 70 files=1 kinds=enum_member,property byKind={"property":68,"enum_member":2}
+          5 edges  workspaceId                  decls= 43 files=1 kinds=property byKind={"property":43}
+          4 edges  api                          decls= 25 files=1 kinds=property byKind={"property":25}
+          2 edges  changes                      decls= 24 files=1 kinds=property byKind={"property":24}
+          2 edges  total_count                  decls= 20 files=1 kinds=property byKind={"property":20}
+          6 edges  providerId                   decls= 15 files=1 kinds=property byKind={"property":15}
+          1 edges  daily                        decls= 14 files=1 kinds=enum_member byKind={"enum_member":14}
+          1 edges  requestId                    decls= 12 files=1 kinds=property byKind={"property":12}
+          1 edges  displayValue                 decls= 11 files=1 kinds=property byKind={"property":11}
+        192 edges  isPinned                     decls= 10 files=1 kinds=property byKind={"property":10}
+          1 edges  workspace                    decls= 10 files=1 kinds=property byKind={"property":10}
+         74 edges  ArtistId                     decls=  8 files=1 kinds=enum_member,property byKind={"property":6,"enum_member":2}
+         24 edges  accountId                    decls=  8 files=1 kinds=property byKind={"property":8}
+          4 edges  handle                       decls=  7 files=1 kinds=property byKind={"property":7}
+          2 edges  shortName                    decls=  7 files=1 kinds=property byKind={"property":7}
+          4 edges  appliedDirectives            decls=  6 files=1 kinds=property byKind={"property":6}
+          1 edges  instruction                  decls=  6 files=1 kinds=property byKind={"property":6}
+          3 edges  mcpFeatureCollection         decls=  6 files=1 kinds=property byKind={"property":6}
+          3 edges  openApiCollection            decls=  6 files=1 kinds=property byKind={"property":6}
+          2 edges  clientVersion                decls=  5 files=1 kinds=property byKind={"property":5}
+          1 edges  expense                      decls=  5 files=1 kinds=property byKind={"property":5}
+          9 edges  line                         decls=  5 files=1 kinds=property byKind={"property":5}
+        182 edges  AlbumId                      decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          6 edges  CustomerId                   decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  Fax                          decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          5 edges  FirstName                    decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          5 edges  LastName                     decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  all_access                   decls=  4 files=1 kinds=enum_member byKind={"enum_member":4}
+          2 edges  entry                        decls=  4 files=1 kinds=property byKind={"property":4}
+          2 edges  next                         decls=  4 files=1 kinds=property byKind={"property":4}
+          1 edges  publishedTo                  decls=  4 files=1 kinds=property byKind={"property":4}
+          2 edges  related                      decls=  4 files=1 kinds=property byKind={"property":4}
+          3 edges  $episode                     decls=  3 files=1 kinds=variable byKind={"variable":3}
+          1 edges  FUSION_CONFIGURATION         decls=  3 files=1 kinds=enum_member byKind={"enum_member":3}
+          4 edges  asset_identifier             decls=  3 files=1 kinds=property byKind={"property":3}
+          4 edges  domain                       decls=  3 files=1 kinds=property byKind={"property":3}
+          2 edges  emailAddress                 decls=  3 files=1 kinds=property byKind={"property":3}
+        115 edges  first_name                   decls=  3 files=1 kinds=property byKind={"property":3}
+         37 edges  last_name                    decls=  3 files=1 kinds=property byKind={"property":3}
+          1 edges  mcpFeatureCollectionVersion  decls=  3 files=1 kinds=property byKind={"property":3}
+         42 edges  medium                       decls=  3 files=1 kinds=enum_member byKind={"enum_member":3}
+          2 edges  mockSchema                   decls=  3 files=1 kinds=property byKind={"property":3}
+          1 edges  openApiCollectionVersion     decls=  3 files=1 kinds=property byKind={"property":3}
+          3 edges  profile_picture              decls=  3 files=1 kinds=property byKind={"property":3}
+          2 edges  $email                       decls=  2 files=1 kinds=variable byKind={"variable":2}
+          5 edges  Id                           decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  ObjectDef.d                  decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  ObjectDefTwo.d               decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  allowBreakingSchemaChanges   decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  asset_type                   decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  cacheControlMergeBehavior    decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  enableGlobalObjectIdentification decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  excludeByTag                 decls=  2 files=1 kinds=property byKind={"property":2}
+          3 edges  family                       decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  match                        decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  max_severity                 decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  mcpFeatureCollections        decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  month                        decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  nodeResolution               decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  open                         decls=  2 files=1 kinds=enum_member byKind={"enum_member":2}
+          1 edges  openApiCollections           decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  phones                       decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  publishedVersions            decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  rec                          decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  removeUnreferencedDefinitions decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  reputation                   decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  schemaRegistry               decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  secret                       decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  skill                        decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  stages                       decls=  2 files=1 kinds=property byKind={"property":2}
+          5 edges  subField                     decls=  2 files=1 kinds=property byKind={"property":2}
+          2 edges  tagMergeBehavior             decls=  2 files=1 kinds=property byKind={"property":2}
+          8 edges  teamId                       decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  treatDangerousAsBreaking     decls=  2 files=1 kinds=property byKind={"property":2}
+    top B3 by edge weight (one kind, N declaring types — the bucket the kind rule cannot see):
+       12669 edges  String                   decls=    4 files=   2 kinds=type
+        5340 edges  Int                      decls=    6 files=   3 kinds=type
+        3194 edges  Boolean                  decls=    4 files=   2 kinds=type
+        1468 edges  DateTime                 decls=   48 files=  24 kinds=type
+        1216 edges  Float                    decls=    4 files=   2 kinds=type
+         627 edges  Node                     decls=   90 files=  45 kinds=interface
+         624 edges  SortEnumType             decls=   88 files=  44 kinds=enum
+         561 edges  Node.id                  decls=   44 files=  44 kinds=property
+    top unresolved names that are NOT spec vocabulary and NOT path-shaped:
+         198 edges  isEditable
+         124 edges  JiraIssueField
+         124 edges  JiraIssueFieldConfiguration
+         124 edges  JiraUserIssueFieldConfiguration
+         109 edges  Type
+         103 edges  author_id
+          99 edges  TrackId
+          81 edges  AuthorMany
+          68 edges  isSelected
+          58 edges  @md
+
+── deterministic stride slice (stride 4): 477 files walked ──
+
+  [kind rule]  28453 edges
+  type          edges     amb  unres  unresSpec  unresPath  unresOther  self  empty
+  ----------------------------------------------------------------------------
+  calls             0   (does not fire)
+  uses          4487     828    564           9          50         505     8     0
+  contains      9269       0      0           0           0           0     0     0
+  imports         53       0     53           0          52           1     0     0
+  references   10455    1328     50           0           0          50     0     0
+  exports       2581     517      0           0           0           0     0     0
+  extends           0   (does not fire)
+  implements     444      80      0           0           0           0     2     0
+  overrides     1164       0      0           0           0           0     0     0
+  instantiates      0   (does not fire)
+  ----------------------------------------------------------------------------
+  ambiguous NAMES split (first match, mutually exclusive):
+    B1 INTRA-FILE              6 names     112 edges   lane-owned
+    B2 CROSS-MODULE-KIND     125 names    2649 edges   partly lane-owned
+    B3 NAME-NOT-IDENTIFIER     0 names       0 edges   published-name contract
+    every B1 name (lane-repairable — one file, one name, two kinds, so there is exactly one right answer):
+         18 edges  ArtistId                     decls=  8 files=1 kinds=enum_member,property byKind={"property":6,"enum_member":2}
+         34 edges  Album                        decls=  4 files=1 kinds=class,property byKind={"class":2,"property":2}
+         56 edges  AlbumId                      decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          2 edges  CustomerId                   decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  FirstName                    decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  LastName                     decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+
+  [store rule]  28453 edges
+  type          edges     amb  unres  unresSpec  unresPath  unresOther  self  empty
+  ----------------------------------------------------------------------------
+  calls             0   (does not fire)
+  uses          4487    3502    564           9          50         505     8     0
+  contains      9269    5744      0           0           0           0     0     0
+  imports         53       0     53           0          52           1     0     0
+  references   10455    9461     50           0           0          50     0     0
+  exports       2581    1975      0           0           0           0     0     0
+  extends           0   (does not fire)
+  implements     444     381      0           0           0           0     2     0
+  overrides     1164     754      0           0           0           0     0     0
+  instantiates      0   (does not fire)
+  ----------------------------------------------------------------------------
+  ambiguous NAMES split (first match, mutually exclusive):
+    B1 INTRA-FILE             21 names     130 edges   lane-owned
+    B2 CROSS-MODULE-KIND     112 names    2606 edges   partly lane-owned
+    B3 NAME-NOT-IDENTIFIER  5287 names   19091 edges   published-name contract
+    every B1 name (lane-repairable — one file, one name, two kinds, so there is exactly one right answer):
+          1 edges  api                          decls= 25 files=1 kinds=property byKind={"property":25}
+          1 edges  changes                      decls= 24 files=1 kinds=property byKind={"property":24}
+         18 edges  ArtistId                     decls=  8 files=1 kinds=enum_member,property byKind={"property":6,"enum_member":2}
+          1 edges  line                         decls=  5 files=1 kinds=property byKind={"property":5}
+         56 edges  AlbumId                      decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          2 edges  CustomerId                   decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  FirstName                    decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  LastName                     decls=  4 files=1 kinds=enum_member,property byKind={"property":3,"enum_member":1}
+          1 edges  entry                        decls=  4 files=1 kinds=property byKind={"property":4}
+          3 edges  $episode                     decls=  3 files=1 kinds=variable byKind={"variable":3}
+          1 edges  FUSION_CONFIGURATION         decls=  3 files=1 kinds=enum_member byKind={"enum_member":3}
+          1 edges  emailAddress                 decls=  3 files=1 kinds=property byKind={"property":3}
+         27 edges  first_name                   decls=  3 files=1 kinds=property byKind={"property":3}
+          8 edges  last_name                    decls=  3 files=1 kinds=property byKind={"property":3}
+          1 edges  openApiCollectionVersion     decls=  3 files=1 kinds=property byKind={"property":3}
+          2 edges  $email                       decls=  2 files=1 kinds=variable byKind={"variable":2}
+          1 edges  Id                           decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  family                       decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  month                        decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  publishedVersions            decls=  2 files=1 kinds=property byKind={"property":2}
+          1 edges  secret                       decls=  2 files=1 kinds=property byKind={"property":2}
+    top B3 by edge weight (one kind, N declaring types — the bucket the kind rule cannot see):
+        2986 edges  String                   decls=    4 files=   2 kinds=type
+        1077 edges  Int                      decls=    6 files=   3 kinds=type
+         827 edges  Boolean                  decls=    4 files=   2 kinds=type
+         238 edges  DateTime                 decls=   48 files=  24 kinds=type
+         235 edges  SortEnumType             decls=   88 files=  44 kinds=enum
+         215 edges  Node                     decls=   90 files=  45 kinds=interface
+         192 edges  Node.id                  decls=   44 files=  44 kinds=property
+         190 edges  @join__field             decls=   20 files=  10 kinds=function
+    top unresolved names that are NOT spec vocabulary and NOT path-shaped:
+          37 edges  Type
+          23 edges  author_id
+          23 edges  TrackId
+          19 edges  AuthorMany
+          17 edges  Tracks
+          15 edges  @md
+          13 edges  movie_id
+          12 edges  story
+          10 edges  EVENTS
+          10 edges  Asc
+
+  UNRESOLVED TARGETS, BY CAUSE (ALL admitted files, 1905 files):
+  type          edges    S1spec   S2inText  S3outOfCorpus  S4pathShaped   S2 share
+  ----------------------------------------------------------------------------
+  calls        (does not fire)
+  uses         18727     4586       503          6475          7163      2.7%
+      top S2 — USAGE-ONLY names. NOT a lane defect: see the header and decl-inventory.mts (0 dropped declarations).
+          124  JiraIssueField
+           58  Tracks
+           27  story
+           27  _min
+           27  _max
+           25  _count
+           24  staff
+           21  Desc
+  contains     (does not fire)
+  imports        170        0         3             0           167      1.8%
+      top S2 — USAGE-ONLY names. NOT a lane defect: see the header and decl-inventory.mts (0 dropped declarations).
+            1  shared
+            1  @b-schema
+            1  c-graphql
+  references     157        0       114            43             0     72.6%
+      top S2 — USAGE-ONLY names. NOT a lane defect: see the header and decl-inventory.mts (0 dropped declarations).
+          109  Type
+            2  NameQuery
+            2  input
+            1  InstitutionInput
+  exports      (does not fire)
+  extends      (does not fire)
+  implements      12        0         0            12             0      0.0%
+  overrides    (does not fire)
+  instantiates (does not fire)
+  ----------------------------------------------------------------------------
+  TOTAL unresolved 19066: S4_pathShaped=7330  S3_outOfCorpus=6530  S1_specVocabulary=4586  S2_presentInCorpusText=620
+
+  UNRESOLVED TARGETS, BY CAUSE (stride slice (477 files), 477 files):
+  type          edges    S1spec   S2inText  S3outOfCorpus  S4pathShaped   S2 share
+  ----------------------------------------------------------------------------
+  calls        (does not fire)
+  uses           564        9        89           416            50     15.8%
+      top S2 — USAGE-ONLY names. NOT a lane defect: see the header and decl-inventory.mts (0 dropped declarations).
+           17  Tracks
+           12  story
+            7  Articles
+            6  _min
+            6  _max
+            5  _count
+            5  Desc
+            4  staff
+  contains     (does not fire)
+  imports         53        0         1             0            52      1.9%
+      top S2 — USAGE-ONLY names. NOT a lane defect: see the header and decl-inventory.mts (0 dropped declarations).
+            1  @b-schema
+  references      50        0        39            11             0     78.0%
+      top S2 — USAGE-ONLY names. NOT a lane defect: see the header and decl-inventory.mts (0 dropped declarations).
+           37  Type
+            1  NameQuery
+            1  InstitutionInput
+  exports      (does not fire)
+  extends      (does not fire)
+  implements   (does not fire)
+  overrides    (does not fire)
+  instantiates (does not fire)
+  ----------------------------------------------------------------------------
+  TOTAL unresolved 667: S3_outOfCorpus=427  S2_presentInCorpusText=129  S4_pathShaped=102  S1_specVocabulary=9
+
+(written to script/m14/tmp/graphql/out/ambiguity-split.json)

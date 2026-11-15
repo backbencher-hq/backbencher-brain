@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/getter-sol3.sol",
+  "authoredFrom": "SOL-3 — the public state-variable getter. Authored 2026-09-30 from the analyzer's measured output. This fixture exists because the lane's FIRST decision about this construct was falsified by measurement rather than argued.",
+  "note": "THE DECISION AND ITS REVERSAL. `uint256 public balance;` makes the compiler synthesise a `balance()` getter that appears nowhere in the source. The first draft recorded the fact in the symbol's `metadata` and published nothing, on the reasoning that a second symbol named `balance` would collide invisibly with the state variable. Measurement killed it: `parseFile` returns every symbol with `metadata: undefined`, because pool-worker.ts drops the whole object at the worker boundary — the same seam that cost the PowerShell lane its `is_static = 0` and its `annotations = null`. So 'record it in metadata' was a decision the store never received, which is structurally the same failure as a pin record claiming 8 patches against bytes containing 7. What ships: the getter is a real symbol named with its EXTERNAL SIGNATURE, `balance()`, which a Solidity identifier cannot collide with because it cannot contain `(`. `hidden` and `secret` are internal and private and get NO getter — the count below is what makes that visible.",
+  "expectSymbols": [
+    { "name": "getter-sol3.sol", "kind": "module" },
+    { "name": "Vault", "kind": "class", "ownerName": "getter-sol3.sol" },
+    { "name": "balance", "kind": "property", "ownerName": "Vault", "meta.getterSynthesised": true },
+    { "name": "balance()", "kind": "method", "ownerName": "Vault", "meta.isSynthesisedGetter": true, "meta.getterFor": "balance" },
+    { "name": "hidden", "kind": "property", "ownerName": "Vault" },
+    { "name": "secret", "kind": "property", "ownerName": "Vault" },
+    { "name": "owner", "kind": "property", "ownerName": "Vault", "meta.getterSynthesised": true },
+    { "name": "owner()", "kind": "method", "ownerName": "Vault", "meta.isSynthesisedGetter": true, "meta.getterFor": "owner" },
+    { "name": "total", "kind": "method", "ownerName": "Vault" }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "balance",
+      "kind": "method",
+      "comment": "THE SHAPE THE FIRST DRAFT AVOIDED, forbidden to pin the shape that replaced it. Publishing a method named `balance` alongside the property named `balance` gives two rows that both resolve and that nobody can tell apart, and `bb_graph` would answer a question about which one. The published getter is named `balance()`."
+    }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Vault", "target": "balance", "line_number": 5, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Vault", "target": "balance()", "line_number": 5, "comment": "The getter is CONTAINED by the contract at the variable's declaration line, so it appears in the contract's surface at the position a reader expects rather than at the end of the member list.", "meta.evidenceClass": "structural" },
+    { "type": "references", "from": "balance", "target": "balance()", "line_number": 5, "comment": "The pair is a WALK, not two adjacent rows: without this edge a graph query from the state variable cannot reach its getter, and the getter is a leaf of the call graph (a public getter has no in-repo caller unless the repo calls it), so nothing else would connect them.", "meta.isGetterFor": true, "meta.getterOfVariable": "balance", "meta.evidenceClass": "usage_contextual" },
+    { "type": "contains", "from": "Vault", "target": "hidden", "line_number": 6, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Vault", "target": "secret", "line_number": 7, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Vault", "target": "owner", "line_number": 8, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Vault", "target": "owner()", "line_number": 8, "meta.evidenceClass": "structural" },
+    { "type": "references", "from": "owner", "target": "owner()", "line_number": 8, "meta.isGetterFor": true, "meta.getterOfVariable": "owner", "meta.evidenceClass": "usage_contextual" },
+    { "type": "contains", "from": "Vault", "target": "total", "line_number": 10, "meta.evidenceClass": "structural" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Vault", "target": "hidden()", "comment": "`uint256 internal hidden` gets NO getter. Solidity synthesises a getter only for `public` state variables, so the count below (2, not 4) is what proves the rule reads visibility rather than 'every state variable'." },
+    { "type": "contains", "from": "Vault", "target": "secret()", "comment": "As above for the private variable." },
+    { "type": "references", "from": "hidden", "target": "hidden()", "comment": "No getter to link to, so no edge." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "references", "from": "balance", "target": "balance()", "equals": 1 },
+    { "type": "references", "from": "owner", "target": "owner()", "equals": 1 }
+  ]
+}

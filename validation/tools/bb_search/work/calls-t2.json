@@ -1,0 +1,8 @@
+[
+ {"label":"symbols.named","args":{"query":"searchSymbols"}},
+ {"label":"symbols.broad","args":{"query":"search"}},
+ {"label":"content.default","args":{"mode":"content","query":"serialize cache entry"}},
+ {"label":"symbol.default","args":{"mode":"symbol","symbolName":"getProjectId"}},
+ {"label":"file.default","args":{"mode":"file","filePath":"src/mcp/server.ts"}},
+ {"label":"regex.option","args":{"query":"^get.*Cache","regex":true}}
+]

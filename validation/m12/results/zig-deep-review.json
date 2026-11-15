@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M12/M14",
+  "kind": "zig_deep_review_evidence",
+  "generatedAt": "2026-09-29T01:54:39.400Z",
+  "analyzer": "src/ast/real-zig-analyzer.ts",
+  "corpus": {
+    "root": "/home/sano/ishaq/bb_tests/repositories",
+    "repos": [
+      "zig",
+      "zls",
+      "ghostty"
+    ],
+    "revisions": {
+      "zig": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "zls": "0ea69abdd8f50d81989c00b6a3b9cf8ced7f9522",
+      "ghostty": "b40acce58dcf77df52231c3798ea58e924647c89"
+    },
+    "filesMeasured": 450,
+    "sampleNote": "deterministic stride sample, at most 150 files per repository, from the sorted corpus file list"
+  },
+  "grammarCensus": {
+    "namedNodeTypes": 85,
+    "anonymousTokenTypes": 117,
+    "fieldNames": 16,
+    "filesWithParseError": 13,
+    "parseErrorRatePct": 2.89,
+    "instrument": "script/m14/tmp/zigw-census.ts (same walk, sampled)",
+    "topNamedNodeTypes": [
+      [
+        "identifier",
+        185137
+      ],
+      [
+        "field_expression",
+        75766
+      ],
+      [
+        "call_expression",
+        26239
+      ],
+      [
+        "comment",
+        22007
+      ],
+      [
+        "variable_declaration",
+        18022
+      ],
+      [
+        "expression_statement",
+        14433
+      ],
+      [
+        "string",
+        11507
+      ],
+      [
+        "string_content",
+        11507
+      ],
+      [
+        "assignment_expression",
+        10988
+      ],
+      [
+        "integer",
+        10024
+      ],
+      [
+        "block",
+        9070
+      ],
+      [
+        "builtin_type",
+        8940
+      ],
+      [
+        "initializer_list",
+        7933
+      ],
+      [
+        "anonymous_struct_initializer",
+        7598
+      ],
+      [
+        "try_expression",
+        7230
+      ],
+      [
+        "parameter",
+        6380
+      ],
+      [
+        "builtin_function",
+        6369
+      ],
+      [
+        "builtin_identifier",
+        6369
+      ],
+      [
+        "arguments",
+        6369
+      ],
+      [
+        "binary_expression",
+        6104
+      ]
+    ],
+    "fieldsSeen": [
+      [
+        "alternative",
+        245
+      ],
+      [
+        "argument",
+        3173
+      ],
+      [
+        "body",
+        7198
+      ],
+      [
+        "condition",
+        3962
+      ],
+      [
+        "error",
+        370
+      ],
+      [
+        "function",
+        26239
+      ],
+      [
+        "index",
+        1489
+      ],
+      [
+        "left",
+        17762
+      ],
+      [
+        "member",
+        75766
+      ],
+      [
+        "name",
+        14026
+      ],
+      [
+        "object",
+        58681
+      ],
+      [
+        "ok",
+        1613
+      ],
+      [
+        "operator",
+        20265
+      ],
+      [
+        "right",
+        17514
+      ],
+      [
+        "sentinel",
+        298
+      ],
+      [
+        "type",
+        15565
+      ]
+    ]
+  },
+  "symbolKindDispatch": {
+    "note": "RHS node type x name case -> the kind the analyzer published, AFTER the Z11 fix. The pre-fix cells are in reviews/zig/master-review.md and script/m14/tmp/zigw-kinds.ts.",
+    "cells": [
+      [
+        "builtin_function|lower|MISSING",
+        1399
+      ],
+      [
+        "field_expression|UPPER|type",
+        810
+      ],
+      [
+        "field_expression|lower|constant",
+        530
+      ],
+      [
+        "struct_declaration|UPPER|struct",
+        483
+      ],
+      [
+        "call_expression|lower|constant",
+        257
+      ],
+      [
+        "enum_declaration|UPPER|enum",
+        210
+      ],
+      [
+        "builtin_function|UPPER|MISSING",
+        194
+      ],
+      [
+        "string|lower|constant",
+        124
+      ],
+      [
+        "builtin_function|UPPER|type",
+        123
+      ],
+      [
+        "struct_declaration|lower|struct",
+        117
+      ],
+      [
+        "builtin_function|lower|constant",
+        69
+      ],
+      [
+        "call_expression|UPPER|type",
+        52
+      ],
+      [
+        "opaque_declaration|UPPER|type",
+        47
+      ],
+      [
+        "union_declaration|UPPER|union",
+        39
+      ],
+      [
+        "binary_expression|UPPER|constant",
+        36
+      ],
+      [
+        "struct_declaration|lower|property+struct",
+        35
+      ],
+      [
+        "identifier|UPPER|type",
+        30
+      ],
+      [
+        "field_expression|lower|variable",
+        27
+      ],
+      [
+        "integer|lower|constant",
+        25
+      ],
+      [
+        "unary_expression|lower|constant",
+        24
+      ],
+      [
+        "integer|lower|variable",
+        23
+      ],
+      [
+        "error_set_declaration|UPPER|enum",
+        22
+      ],
+      [
+        "multiline_string|lower|constant",
+        22
+      ],
+      [
+        "anonymous_struct_initializer|lower|constant",
+        21
+      ],
+      [
+        "struct_initializer|lower|constant",
+        15
+      ],
+      [
+        "binary_expression|lower|constant",
+        13
+      ],
+      [
+        "switch_expression|lower|constant",
+        13
+      ],
+      [
+        "if_expression|UPPER|type",
+        12
+      ],
+      [
+        "float|lower|constant",
+        11
+      ],
+      [
+        "identifier|lower|constant",
+        11
+      ],
+      [
+        "builtin_type|UPPER|type",
+        9
+      ],
+      [
+        "builtin_function|lower|enum_member",
+        7
+      ],
+      [
+        "builtin_type|lower|type",
+        7
+      ],
+      [
+        "float|lower|constant+enum_member",
+        7
+      ],
+      [
+        "labeled_type_expression|lower|constant",
+        6
+      ],
+      [
+        "field_expression|lower|constant+property",
+        5
+      ],
+      [
+        "builtin_function|lower|property",
+        5
+      ],
+      [
+        "switch_expression|UPPER|type",
+        5
+      ],
+      [
+        "anonymous_struct_initializer|lower|constant+enum_member",
+        5
+      ],
+      [
+        "nullable_type|lower|type",
+        4
+      ]
+    ],
+    "cellsMeasured": 87
+  },
+  "declaredTypeAudit": {
+    "note": "The reference-class audit (Z14). Case 1 is the real analyzer against the independent oracle; case 2 is a pre-fix leaf transcription against the same oracle and exists to prove the audit can convict (M14 §5.7).",
+    "truthEdges": 4557,
+    "declaredTypeTruth": 2921,
+    "case1": {
+      "missing": 0,
+      "unexplained": 0
+    },
+    "case2PreFix": {
+      "missing": 1489,
+      "unexplained": 746
+    },
+    "verdict": "case 1 clean; case 2 convicts",
+    "instrument": "script/m14/tmp/zigw-oracle-check.ts (same derivation, sampled)"
+  },
+  "quotedIdentifiers": {
+    "note": "Z18: the removed junk-strip could only fire on a quoted identifier, and where it fired it corrupted the name. The count below is over emitted `references` targets.",
+    "quotedTargets": 0,
+    "targetsTheRemovedRegexWouldHaveMangled": 0,
+    "examples": []
+  },
+  "totals": {
+    "symbols": 10083,
+    "relationships": 39424
+  },
+  "limitations": [
+    "The kind dispatch still rests on the NAME's case for six two-sided RHS forms (identifier, field_expression, call_expression, if_expression, switch_expression, struct_initializer, parenthesized_expression, builtin_function) — counted in script/m14/spec/zig-completeness.json as ZIG.GAP.4.",
+    "A construction in a value position with no type annotation (`Point{ … }`) publishes no edge; the family alternative is `instantiates`, which ZIG.D.1 rules out for Zig. Counted as ZIG.GAP.3.",
+    "The labeled TYPE form of a labeled expression does not parse in the pinned grammar, so the kind rule for that node type is a measured shape, not a grammar fact (ZIG.GAP.5).",
+    "Z10 stands: an if/while capture bound into the enclosing frame suppresses a same-named read in the ELSE arm. Both sides behave identically and the shape needs a file value colliding with a capture name to be observable.",
+    "Coverage in the differential matches on (label, last-segment target), so a truth row can be covered by an unrelated edge sharing its leaf; BB_F5_STRICT=1 re-matches as written and should be read before any claim about declared-type PRECISION.",
+    "The canonical M14.0.F5 artifact is emitted by the ceremony sweep; this wave changed the lane's compared label set, so the committed artifact describes the previous comparison until it is re-emitted."
+  ]
+}

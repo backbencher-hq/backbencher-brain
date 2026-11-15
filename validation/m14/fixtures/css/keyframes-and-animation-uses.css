@@ -1,0 +1,22 @@
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.fade {
+  animation-name: spin;
+  animation-duration: 2s;
+}
+
+.undeclared {
+  animation: notInThisFile 1s;
+}

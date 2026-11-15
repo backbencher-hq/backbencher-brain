@@ -358,7 +358,7 @@ if (runName === null) {
   //
   // This gate already documents, in its own limitations list:
   //   "The frames leg depends on the declared EXTERNAL fixture
-  //    ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display
+  //    (/home/ishaq2321/bb-demo-hub), its owner index in ~/.bb, and the display
   //    tooling — by owner decision the fixture is not vendored into the repo, so
   //    on a machine without it the leg is BLOCKED-WITH-REASON, never green."
   //
@@ -954,7 +954,7 @@ const result = {
   ],
   failures,
   limitations: [
-    "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
+    "The frames leg depends on the declared EXTERNAL fixture (/home/ishaq2321/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
     "The protocol declares a PINNED VS Code 1.85.0 from .vscode-test; that pin is not present on this machine, so the session runs the system `code` and records its exact version in the evidence. The pin's comparability guarantee is therefore declared but not honored here — recorded, not hidden.",
     "The flow DRIVING is keyboard-deterministic (`code -g`, the editor's hover chord, the extension's contributed commands through the palette BY ID — see docs/m55/FRAME-FINDINGS.md F9: a palette TITLE is not an identifier, and `>` + an id ranks unrelated commands first, both of which were caught by reading the frames back). The filing rig additionally pixel-clicked the hover card's action links; that path is not re-driven here, and the card's actions are asserted from the probe's card text plus the component gate V1-action-args instead.",
     "Pixel thresholds (card-size, changed-pixel floors, text-row floors) are declared constants tuned to this display size (1920x1080 @ zoom 0); a different screen size invalidates the frame reads and the gate says so rather than scaling silently.",

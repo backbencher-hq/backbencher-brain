@@ -1,0 +1,45 @@
+{
+  "fixtureId": "php/procedural-enum",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Procedural extraction, enum interfaces, actual WordPress registrar calls, and anonymous class guard. Hook registration still invokes the named registrar; it does not assert invocation of the callback.",
+  "expectSymbols": [
+    { "name": "Labeled", "kind": "interface" },
+    { "name": "label", "kind": "method", "ownerName": "Labeled" },
+    { "name": "Tagged", "kind": "interface" },
+    { "name": "tags", "kind": "method", "ownerName": "Tagged" },
+    { "name": "Status", "kind": "enum" },
+    { "name": "Active", "kind": "enum_member", "ownerName": "Status" },
+    { "name": "Pending", "kind": "enum_member", "ownerName": "Status" },
+    { "name": "label", "kind": "method", "ownerName": "Status" },
+    { "name": "tags", "kind": "method", "ownerName": "Status" },
+    { "name": "Application", "kind": "class" },
+    { "name": "boot", "kind": "method", "ownerName": "Application" },
+    { "name": "cleanup_app", "kind": "function" },
+    { "name": "boot", "kind": "function" },
+    { "name": "decorate", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "handle", "kind": "method" }
+  ],
+  "expectRelationships": [
+    {"type": "calls", "source": "global", "target": "add_action", "meta.phpFunctionReference": true, "meta.functionCandidates": ["add_action"]},
+    {"type": "calls", "source": "global", "target": "add_filter", "meta.phpFunctionReference": true, "meta.functionCandidates": ["add_filter"]},
+    { "type": "implements", "source": "Status", "target": "Labeled", "meta.evidenceClass": "structural", "meta.isEnumImplements": true },
+    { "type": "implements", "source": "Status", "target": "Tagged", "meta.evidenceClass": "structural", "meta.isEnumImplements": true },
+    { "type": "instantiates", "source": "global", "target": "Application", "meta.evidenceClass": "structural" },
+    { "type": "calls", "source": "global", "target": "boot" },
+    { "type": "calls", "source": "global", "target": "cleanup_app", "note": "REPLACES `calls(global -> register_shutdown_function)` (2026-10-05). PHP_BUILTINS became php-src-derived and php-src declares `register_shutdown_function`, so that edge is filtered. Same pinned property — a bare-FUNCTION call at PROGRAM SCOPE attributed to `global`, defect class (1) PROCEDURAL DISCOVERY — now witnessed on a callee this file declares." },
+    { "type": "calls", "source": "global", "target": "handle" },
+    { "type": "contains", "source": "Status", "target": "Active" },
+    { "type": "contains", "source": "Status", "target": "Pending" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "instantiates", "from": "global", "target": "Application", "equals": 2 },
+    { "type": "calls", "from": "global", "target": "boot", "equals": 2 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "register_shutdown_function", "note": "2026-10-05: the call site is still at procedural-enum.php:62 and php-src DECLARES `register_shutdown_function`, so PHP_BUILTINS filters it. This forbid row is what keeps that pinned after the expectRelationships row had to go, and it witnesses that PHP_BUILTINS is php-src-DERIVED: a hand-written list that had lost the name would emit the edge and fail here." },
+    { "type": "calls", "from": "handle", "target": "handle" }
+  ]
+}

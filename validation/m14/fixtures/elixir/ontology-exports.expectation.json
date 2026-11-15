@@ -1,0 +1,120 @@
+{
+  "issue": "EX-EX6",
+  "note": "EX-EX6: `exports` is Elixir's public API surface, and Elixir writes it with the SAME KEYWORD as everything else - there is no `export` statement, which is why a grammar inventory cannot see it (the json lane reached the same conclusion for a Node manifest's exports/main/bin keys and emitted on that reasoning). The gate is `visibility`: def/defmacro/defdelegate/defguard and @type/@opaque are exported; defp/defmacrop/defguardp and @typep are not. `@doc false` is DOCUMENTATION, not privacy, so ExpSurface.Other.documented_away IS exported - the pin that stops `exports` from degenerating into 'has a docstring'. Struct FIELDS are not exports (a field is reached through the struct's own functions and through `uses`), the MODULE is never exported from itself (EX-L3's self-loop rule), quoted code is data, and a file-level .exs declaration has no owning module so nothing is exported from it. The edge also carries `meta.evidenceClass` and the fixture pins it: M14-HONESTY-CONTRACT \u00a74.1 requires a machine-readable reason code, and a mutant that drops it (`elixir/evidence-class-dropped`) must not survive on a payload nobody asserts.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "new",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "mac",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "is_thing",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "delegated",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "t",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "handle",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface.Nested",
+      "target": "inner",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface.Other",
+      "target": "documented_away",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "internal"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "priv_mac"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "is_priv"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "secret"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "id",
+      "note": "a struct FIELD is not an export"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "ExpSurface",
+      "note": "EX-L3: no X -> X structural no-op"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface",
+      "target": "injected",
+      "note": "quoted code is DATA (ELXD22) \u2014 the injected def is not a member here"
+    },
+    {
+      "type": "exports",
+      "from": "ExpSurface.Nested",
+      "target": "hidden"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "secret",
+      "kind": "type",
+      "ownerName": "ExpSurface",
+      "visibility": "private"
+    },
+    {
+      "name": "t",
+      "kind": "type",
+      "ownerName": "ExpSurface",
+      "visibility": "public"
+    },
+    {
+      "name": "handle",
+      "kind": "type",
+      "ownerName": "ExpSurface",
+      "visibility": "public"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

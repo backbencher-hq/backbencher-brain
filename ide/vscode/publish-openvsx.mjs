@@ -22,7 +22,7 @@ import path from "node:path"
 // does not exist. Every existsSync() below then answered about a path nobody can
 // cd into, and the gate reported:
 //
-//   VSIX not found at $HOME/Documents/Default%20Project/ishaq/...
+//   VSIX not found at /Users/sano/Documents/Default%20Project/ishaq/...
 //
 // which reads like a missing build artifact rather than a missing decode. The
 // same defect is present in ~100 other scripts; script/m62/verify-path-encoding.ts

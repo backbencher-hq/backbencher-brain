@@ -1,0 +1,71 @@
+{
+  "checks": [
+    {
+      "description": "ELXD1: substitutes the remote delegate target for the declared local function name",
+      "detail": "0 -> 1",
+      "id": "mutation-elixir-delegate-remote-name-as-local",
+      "status": "pass"
+    },
+    {
+      "description": "ELXD1: drops calls to the locally declared delegate after incorrect declaration-set resolution",
+      "detail": "0 -> 1",
+      "id": "mutation-elixir-delegate-local-call-drop",
+      "status": "pass"
+    },
+    {
+      "description": "ELXD1: merges a delegate with a distinct same-arity function named like its remote target",
+      "detail": "0 -> 1",
+      "id": "mutation-elixir-delegate-remote-head-merge",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "4a4ae5666e3fcd9bd99a3db199aa453ab9db37a0",
+  "committedAt": "2026-09-17T03:42:52+02:00",
+  "data": {
+    "summary": {
+      "caught": 3,
+      "mutantsRun": 3,
+      "survived": 0
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F4",
+  "layers": [
+    "fixtures",
+    "mutation"
+  ],
+  "limitations": [
+    {
+      "description": "mutants wrap analyzer output rather than rewriting analyzer source; equivalent at the suite level but not a compiler-level injection"
+    },
+    {
+      "description": "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start"
+    }
+  ],
+  "mutationLog": [
+    {
+      "caughtBy": "elixir/delegate-local-identity",
+      "detail": "symbol-identity-corruption: 0 -> 1 fixture failures",
+      "injectedAt": "2026-09-17T20:54:10.980Z",
+      "mutant": "elixir/delegate-remote-name-as-local"
+    },
+    {
+      "caughtBy": "elixir/delegate-local-identity",
+      "detail": "relationship-loss: 0 -> 1 fixture failures",
+      "injectedAt": "2026-09-17T20:54:10.997Z",
+      "mutant": "elixir/delegate-local-call-drop"
+    },
+    {
+      "caughtBy": "elixir/delegate-local-identity",
+      "detail": "symbol-identity-corruption: 0 -> 1 fixture failures",
+      "injectedAt": "2026-09-17T20:54:11.004Z",
+      "mutant": "elixir/delegate-remote-head-merge"
+    }
+  ],
+  "regeneratedAt": "2026-09-17T20:54:11.083Z",
+  "regeneratedAtCommit": "4a4ae5666e3fcd9bd99a3db199aa453ab9db37a0",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Mutation-testing harness"
+}

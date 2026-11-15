@@ -1,0 +1,144 @@
+{
+ "fixtureId": "xml/references-source-is-the-declarer",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 round 10, the third and last instance of one defect: an edge whose SOURCE is a name no document declares. `extends` had it on 438 of 438 corpus edges and `calls` on 495 of 548 — both FIXED, both by the same rule, `ownerName` is the element's own symbol and that symbol is its DECLARED name when the vocabulary writes one on `name=` and its TAG TEXT when it does not. `references` had it on 1,066 of 10,411 and the previous round REPORTED it rather than fixing it, on the stated ground that \"is this `name` a declaration or a reference?\" has no general answer in XML. That ground was half right, and the half that was wrong is the branch this fixture pins.\n\nThe question the earlier round could not answer was never \"is `name` a declaration\" — the DECLARATION_VOCABULARIES table answers that, and it already did. It was \"who is the source when the carrier has no name\", and there the answer was already computed and thrown away: the walk tracks `nearestNamedDeclaration` for `base=` and had no reason to look at it here. So the rule is two lines, and this file exists because a two-line rule with two branches needs BOTH pinned plus the fallback, or half of it can be reverted without turning anything red.\n\nBRANCH 1, line 46/47 — `<xs:element ref=\"comment\"/>` and `<xs:element ref=\"shipTo\"/>` inside `<xs:complexType name=\"PurchaseOrderType\">`. The carrier has no name of its own, so `ownerName` was the tag text `xs:element` and the edge said `xs:element -> comment`: a type CONSTRUCTOR used where a DECLARER belongs. The ref is a reference made by PurchaseOrderType's content model. Verbatim from the corpus, FSharp.Data/docs/data/po.xsd, this exact edge was the round's worked example.\n\nBRANCH 2, lines 37/41/49 — `<xs:element name=\"shipTo\" type=\"AddressType\"/>`, `<xs:element name=\"street\" type=\"xs:string\"/>` and `<xs:attribute name=\"placed\" type=\"xs:date\"/>`. The carrier HAS a name, so the reference belongs to that declaration: `shipTo -> AddressType`. This is the branch that makes the fix more than a walk upward. `shipTo` sits inside the same `<xs:schema>` as AddressType and PurchaseOrderType, so a rule that always took the nearest named ancestor would re-base a CORRECT edge onto the wrong declarer while looking right on branch 1 — and on this file that mistake produces `PurchaseOrderType -> AddressType`, a claim no document makes. The forbid half pins it.\n\nBRANCH 3, line 55 — `<xsl:if>&gt;</xsl:if>` inside `<xsl:template name=\"row\">`. An entity USE in content is a `references` edge, and its owner was the enclosing element, so it said `xsl:if -> gt`. `xsl:if` is an instruction, not an entity; `&gt;` is written by `row`. Same defect, third role, and it is in the file because the first implementation of this fix touched only the attribute pass and left 158 of the 1,066 behind, of which this was the largest class.\n\nBRANCH 4, line 61 — `<xsl:if>&lt;</xsl:if>` inside `<xsl:template match=\"/\">`. XSLT 1.0 §5.4 gives a template dispatched by `match=` no `name` at all, so nothing in scope declares it and a per-file analyzer has no honest alternative to the enclosing element. The edge is kept as `xsl:if -> lt`. This row exists so the FALLBACK is pinned rather than assumed good: unlike `extends`, which has no fallback and refuses instead, `references` is emitted for carriers in every vocabulary — Spring, SVG, WSDL, DocBook, arbitrary application XML — and most of them have no named ancestor, so dropping the fallback would delete real edges from the highest-volume type in the lane. What the fallback cannot do is fabricate: it is the value that was there before, so the worst it can do is preserve the old defect class, which is why 111 edges still carry a vocabulary tag and are counted rather than explained away.\n\nONE ROW ABOVE NAMES A PUBLISHED SYMBOL AND SAYS SO. `xs:element` is still published, because CONTAINMENT genuinely nests `<xs:element>` inside `<xs:sequence>` and a consumer asking \"what is in this sequence\" is entitled to the answer. A symbol may be published for a structural reason and still be the wrong endpoint for a reference, so the fixture forbids the EDGE and not the symbol — the first draft of this file forbade both and the harness caught it, which is the harness doing its job. And `comment` is recorded `resolvable: unresolved`, not `in-document`: nothing in this file declares an element called `comment`, so the edge is a real citation of a component the file does not satisfy. That is the fourth resolution class and it is not a defect here; the defect the branch fixes is the SOURCE, which the `PurchaseOrderType` on the row is already answering correctly.",
+ "expectSymbols": [
+  {
+   "name": "AddressType",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "shipTo",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "PurchaseOrderType",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "placed",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "street",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "row",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "PurchaseOrderType",
+   "target": "comment",
+   "line_number": 46,
+   "meta.role": "attribute_qname_reference",
+   "meta.resolvable": "unresolved"
+  },
+  {
+   "type": "references",
+   "from": "PurchaseOrderType",
+   "target": "xs:schema.shipTo",
+   "line_number": 47,
+   "meta.role": "attribute_qname_reference",
+   "meta.resolvable": "in-document"
+  },
+  {
+   "type": "references",
+   "from": "shipTo",
+   "target": "xs:schema.AddressType",
+   "line_number": 41,
+   "meta.role": "attribute_qname_reference",
+   "meta.resolvable": "in-document"
+  },
+  {
+   "type": "references",
+   "from": "street",
+   "target": "string",
+   "line_number": 37,
+   "meta.role": "attribute_qname_reference",
+   "meta.resolvable": "builtin",
+   "meta.qname": "xs:string"
+  },
+  {
+   "type": "references",
+   "from": "placed",
+   "target": "date",
+   "line_number": 49,
+   "meta.role": "attribute_qname_reference",
+   "meta.resolvable": "builtin",
+   "meta.qname": "xs:date"
+  },
+  {
+   "type": "references",
+   "from": "row",
+   "target": "gt",
+   "line_number": 55,
+   "meta.role": "entity_reference",
+   "meta.resolvable": "builtin"
+  },
+  {
+   "type": "references",
+   "from": "xsl:if",
+   "target": "lt",
+   "line_number": 61,
+   "meta.role": "entity_reference",
+   "meta.resolvable": "builtin"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "xs:element",
+   "target": "comment",
+   "note": "branch 1 reverted. `xs:element` is the XSD vocabulary's word for a type CONSTRUCTOR and no document declares an entity by that name; this is the exact edge measured at 1,066 of 10,411 corpus references edges, verbatim from FSharp.Data/docs/data/po.xsd"
+  },
+  {
+   "type": "references",
+   "from": "xs:element",
+   "target": "shipTo",
+   "note": "branch 1 reverted, second site, so a guard keyed on one target name cannot pass"
+  },
+  {
+   "type": "references",
+   "from": "PurchaseOrderType",
+   "target": "AddressType",
+   "note": "branch 2 violated: the declarer is `shipTo`, which is the element that has the type. Attributing it to the nearest named ancestor instead would be a second fabricated endpoint on a currently-correct edge, and it is the failure mode of the shortcut this fix was written to avoid"
+  },
+  {
+   "type": "references",
+   "from": "xs:schema",
+   "target": "AddressType",
+   "note": "branch 2 violated in the other direction — a top-level walk-up that stops at the schema. No document says the schema has the type; the element named shipTo does"
+  },
+  {
+   "type": "references",
+   "from": "xsl:if",
+   "target": "gt",
+   "note": "branch 3 reverted: the entity use inside template `row` is written by `row`, and `xsl:if` is an instruction. This row is what the first version of the fix left behind — it fixed the attribute pass and not the entity pass, and 158 vocabulary-tag sources survived that"
+  },
+  {
+   "type": "references",
+   "from": "xs:schema",
+   "target": "comment",
+   "note": "the whole point of branch 1 in one row: `PurchaseOrderType` is the type whose content model cites `comment`, and the schema is not an entity at all"
+  }
+ ],
+ "forbidSymbols": [],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

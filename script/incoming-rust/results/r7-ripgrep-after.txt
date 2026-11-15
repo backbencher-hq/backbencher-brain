@@ -5,8 +5,8 @@
 [INFO] [22:54:03] [ast-engine] language parser loaded {"language":"rust","wasmPath":"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_946834_4978rk0pj"}
 [INFO] [22:54:03] [ast-engine] language parser loaded {"language":"rust","wasmPath":"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_946834_4979ins0h"}
 [INFO] [22:54:03] [ast-engine] language parser loaded {"language":"rust","wasmPath":"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_946834_496w5nwm8"}
-[ERROR] [22:57:21] [ast-engine] analyzer timeout - forcefully aborting {"filePath":"$HOME/fixtures/repositories/ripgrep/crates/core/flags/defs.rs"}
-[WARN] [22:57:21] [ast-engine] analyzer timeout, returning basic parse result {"filePath":"$HOME/fixtures/repositories/ripgrep/crates/core/flags/defs.rs","error":"Analyzer timeout for $HOME/fixtures/repositories/ripgrep/crates/core/flags/defs.rs"}
+[ERROR] [22:57:21] [ast-engine] analyzer timeout - forcefully aborting {"filePath":"/home/ishaq2321/bb_tests/repositories/ripgrep/crates/core/flags/defs.rs"}
+[WARN] [22:57:21] [ast-engine] analyzer timeout, returning basic parse result {"filePath":"/home/ishaq2321/bb_tests/repositories/ripgrep/crates/core/flags/defs.rs","error":"Analyzer timeout for /home/ishaq2321/bb_tests/repositories/ripgrep/crates/core/flags/defs.rs"}
 R7 audit — 110 files (1857 KB) in [ripgrep]
   population: files = every path `git ls-files` reports for the corpus repo whose detected language is rust; derived, not hand-written
   symbols 4016 · empty symbol names 0 · empty/unknown symbol kinds 0 · parse failures 0

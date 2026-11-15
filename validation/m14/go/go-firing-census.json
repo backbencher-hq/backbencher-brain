@@ -1,0 +1,58 @@
+{
+  "tool": "validation/m14/go/go-firing-census.ts",
+  "lane": "go",
+  "subject": "src/ast/real-go-analyzer.ts",
+  "subjectCommit": "unrecorded",
+  "corpus": {
+    "root": "/tmp/x",
+    "allGoFiles": 0,
+    "libraryGoFiles": 0,
+    "testGoFiles": 0,
+    "sampled": 0
+  },
+  "productionPath": "ASTEngine.parseFile -> parseWithTimeout -> getParser(go) -> getAnalyzer(go) -> RealGoAnalyzer.analyze",
+  "firedCheckScriptUsed": "reimplemented; script/m14/firing-check.mjs hardcodes the main checkout path and samples 12 files",
+  "result": {
+    "label": "go-stdlib stride sample",
+    "corpusRoot": "/tmp/x",
+    "wanted": 30,
+    "filesOffered": 0,
+    "filesParsed": 0,
+    "filesCrashed": 0,
+    "crashSamples": [],
+    "totalSymbols": 0,
+    "totalRelationships": 0,
+    "wallMs": 0,
+    "enumValues": [
+      "calls",
+      "extends",
+      "implements",
+      "uses",
+      "brain_import",
+      "exports",
+      "contains",
+      "references",
+      "overrides",
+      "instantiates"
+    ],
+    "firedCount": 0,
+    "fired": [],
+    "silentEnumTypes": [
+      "calls",
+      "extends",
+      "implements",
+      "uses",
+      "brain_import",
+      "exports",
+      "contains",
+      "references",
+      "overrides",
+      "instantiates"
+    ],
+    "offEnumTypesProduced": [],
+    "unknownOffEnumTypes": [],
+    "distinctPackagesCovered": 0,
+    "tallies": {},
+    "perFile": []
+  }
+}

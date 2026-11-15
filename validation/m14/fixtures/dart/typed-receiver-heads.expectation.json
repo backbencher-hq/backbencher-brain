@@ -1,0 +1,141 @@
+{
+  "fixtureId": "dart/typed-receiver-heads",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS THE TYPE THE SOURCE WRITES on the two declaration forms the receiver-cut pricing found untyped, both measured through the production path before the fix (.tmp-probe/dartgate/typed-head-probe.mts): an ANONYMOUS CLOSURE's own parameter list and a TYPED for-in variable. Why the closure list was missed is a grammar fact, not a heuristic gap: tree-sitter-dart writes a closure as `function_expression parameters: (formal_parameter_list …) body: (function_expression_body …)`, so the body's PREVIOUS NAMED SIBLING IS the parameter list — the traversal was handing it over all along — and `extractParameters` then searched for a `formal_parameter_list` CHILD inside the node it was given, found none, and returned no parameters. The identical method parameter published `Element.poke` while the closure parameter published a bare `poke` carrying `receiverCause: receiverTypeUnknown`. `collectDartLocalTypes` had no `for_loop_parts` branch at all, so `for (Element e in xs)` bound the name and never read the type next to it. Both reads are now of a type the SOURCE writes: nothing here infers one, and the shapes that name no type are pinned as DECLINES (an untyped closure parameter, an untyped `var` for-in, and a Dart 3 pattern binding — the last is DARTGAP1's bucket and the type written INSIDE the record pattern must not start typing the pattern's names). The C-style `for` is guarded off by construction: its `for_loop_parts` has init/condition/update fields and no name/value pair, which is what the rule requires before it reads anything.",
+  "expectSymbols": [
+    { "name": "typed-receiver-heads", "kind": "module" },
+    { "name": "Element", "kind": "class" },
+    { "name": "id", "kind": "property", "ownerName": "Element" },
+    { "name": "poke", "kind": "method", "ownerName": "Element" },
+    { "name": "make", "kind": "function", "scope": "" },
+    { "name": "sink", "kind": "function", "scope": "" },
+    { "name": "methodParam", "kind": "function", "scope": "" },
+    { "name": "closures", "kind": "function", "scope": "" },
+    { "name": "loops", "kind": "function", "scope": "" },
+    { "name": "controls", "kind": "function", "scope": "" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "methodParam",
+      "target": "Element.poke",
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "case A, CONTROL — a METHOD parameter was already typed before this change (the signature sibling carries the list, and `extractParameters` was handed a signature). It is pinned so a fix that started reading closure lists cannot be confused with a fix that changed method parameters."
+    },
+    {
+      "type": "calls",
+      "from": "closures",
+      "target": "Element.poke",
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "case B, THE FIX (block body). Before: `calls -> poke` with `receiverCause: receiverTypeUnknown`. The row's SOURCE is the enclosing named function: a closure is not a call context (the family contract publishes no locals as sources), which is why the pin is `from: closures` and not the closure itself."
+    },
+    {
+      "type": "uses",
+      "from": "closures",
+      "target": "Element.id",
+      "meta.qualifier": "head",
+      "meta.receiverCause": null,
+      "note": "case B, second half — a member READ through the closure parameter. Before, this was a bare `id` with `receiverCause: receiverTypeUnknown`; the `knownQualifier: head` marker is the same one a local var's typed read carries."
+    },
+    {
+      "type": "references",
+      "from": "closures",
+      "target": "Element",
+      "meta.receiverCause": null,
+      "note": "the closure parameter's declared TYPE is a type MENTION and was already published before this change — the fix moved the BINDING's type, and this row states that the reference pass was not the thing that was missing."
+    },
+    {
+      "type": "calls",
+      "from": "loops",
+      "target": "Element.poke",
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "case D, THE SECOND FIX — a TYPED for-in variable. Before: bare `poke` + `receiverTypeUnknown`. The fixture writes all three spellings the grammar gives it (`Element e`, `final Element e`, `await for (final Element e …)`) and the count below pins that they emit ONE row, because that is what a rule that reads the source should do at three sites."
+    },
+    {
+      "type": "uses",
+      "from": "closures",
+      "target": "closures\u0000element",
+      "note": "case B, the binding itself: a closure parameter is still published as a BINDING (`BINDING_SEP`, U+0000) and never as a declaration target. The fix gave the binding a TYPE; it did not give the family a new local symbol."
+    },
+    {
+      "type": "uses",
+      "from": "controls",
+      "target": "id",
+      "meta.receiverCause": "receiverTypeUnknown",
+      "note": "case F, CONTROL — an UNTYPED closure parameter `(element) => element.id`. Nothing in the source names its type, so the read STAYS bare with the typing-gap cause. This is the pin that stops the fix from turning 'a closure parameter exists' into 'a closure parameter has a type'."
+    },
+    {
+      "type": "calls",
+      "from": "controls",
+      "target": "poke",
+      "meta.receiverCause": "receiverTypeUnknown",
+      "note": "cases G and H, CONTROL — an untyped `var` for-in and a Dart 3 pattern binding, both of which must stay bare. The pattern case is the sharper one: a type IS written inside `(int n, Element element)`, and reading it would type a binding DARTGAP1 re-scoped by measurement rather than by this rule."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "closures",
+      "target": "poke",
+      "note": "the SUPERSEDED shape for a typed closure parameter, forbidden so the old decline and the new spelling cannot both be live in one run"
+    },
+    {
+      "type": "uses",
+      "from": "closures",
+      "target": "id",
+      "note": "the same, for the read: a typed closure parameter must never leave a bare `id` behind"
+    },
+    {
+      "type": "calls",
+      "from": "loops",
+      "target": "poke",
+      "note": "the superseded shape for a typed for-in variable (all three of its spellings)"
+    },
+    {
+      "type": "calls",
+      "from": "controls",
+      "target": "Element.poke",
+      "note": "the controls must NOT acquire a type: this is the row that would move if the rule ever read a `var` loop variable or a record pattern's inner type"
+    },
+    {
+      "type": "uses",
+      "from": "controls",
+      "target": "Element.id",
+      "note": "the same for an untyped closure parameter's member read"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "loops",
+      "target": "Element.poke",
+      "equals": 1,
+      "note": "THREE typed loop variables (two for-in, one await-for) at lines 53-61 emit ONE row: DARTD7 keeps the first row per `type|source|target|confidence` key. Pinned because the dedupe is the reason this file cannot be read as 'only one loop was fixed'."
+    },
+    {
+      "type": "uses",
+      "from": "closures",
+      "target": "Element.id",
+      "equals": 1,
+      "note": "the block closure's read (line 43) and the EXPRESSION-bodied closure's read (line 48) collapse to one row for the same reason — so this count is also the assertion that the expression body was fixed too, because the pre-fix shape (`uses closures -> id`) is forbidden separately."
+    },
+    {
+      "type": "calls",
+      "from": "controls",
+      "target": "poke",
+      "equals": 1,
+      "note": "the untyped for-in (line 70) and the pattern binding (line 76) emit ONE bare row between them: two declines, one deduped row."
+    },
+    {
+      "type": "calls",
+      "from": "closures",
+      "target": "sink",
+      "equals": 1,
+      "note": "two `sink(...)` call sites in one function, one row — the dedupe pin, independent of the receiver work"
+    }
+  ]
+}

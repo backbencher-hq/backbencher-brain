@@ -1,0 +1,33 @@
+{
+  "expectSymbols": [
+    { "name": "QuotedFields", "kind": "module" },
+    { "name": "QuotedFields", "kind": "struct", "ownerName": "QuotedFields" },
+    { "name": "alpha", "kind": "property", "ownerName": "QuotedFields", "meta.isStructField": true },
+    { "name": "beta", "kind": "property", "ownerName": "QuotedFields" },
+    { "name": "QuotedOnly", "kind": "module" },
+    { "name": "QuotedOnly", "kind": "struct", "ownerName": "QuotedOnly" },
+    { "name": "gamma", "kind": "property", "ownerName": "QuotedOnly" }
+  ],
+  "expectSymbolCount": [
+    { "name": "QuotedFields", "kind": "struct", "equals": 1 },
+    { "name": "alpha", "kind": "property", "ownerName": "QuotedFields", "equals": 1 },
+    { "name": "gamma", "kind": "property", "ownerName": "QuotedOnly", "equals": 1 }
+  ],
+  "forbidSymbols": [
+    { "name": "\"alpha\"" },
+    { "name": "alpha:" }
+  ],
+  "expectExports": [
+    { "name": "QuotedFields", "kind": "module" },
+    { "name": "QuotedOnly", "kind": "module" }
+  ],
+  "forbidExports": [
+    { "name": "QuotedFields", "kind": "struct" },
+    { "name": "QuotedOnly", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "QuotedFields", "target": "alpha" },
+    { "type": "contains", "from": "QuotedFields", "target": "beta" },
+    { "type": "contains", "from": "QuotedOnly", "target": "gamma" }
+  ]
+}

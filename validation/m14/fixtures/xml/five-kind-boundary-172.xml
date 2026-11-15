@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+  THE FIVE-KIND BOUNDARY (task-172). This document exercises every ontology kind the xml
+  analyzer publishes - `uses`, `calls`, `overrides` - and the expectation FORBIDS
+  `instantiates`, a kind the analyzer has no emission site for at all.
+
+  WHY THIS FIXTURE EXISTS. `completeness-inventory.ts` section B reported
+  "EMITTED but absent from requiredKinds: instantiates" for this lane. The claim was an
+  INSTRUMENT artifact: section B parses every non-.json file in this directory, including
+  the 33 helper instruments (*.mts probes), so the TYPESCRIPT analyzer's `instantiates`
+  edges were billed to xml. `grep -c RelationshipType.Instantiates src/ast/real-xml-analyzer.ts`
+  is 0. This fixture is the durable negative: a document rich enough to produce every kind
+  xml DOES emit, with an explicit forbid on the one it cannot.
+-->
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+  <!-- TWO TEMPLATES WITH THE SAME match AND mode: XSLT 1.0 s5.5 says the LAST one runs,
+       which is the only override this language has. Both are DERIVED identities. -->
+  <xsl:template match="*" mode="dup">
+    <xsl:value-of select="'first'"/>
+  </xsl:template>
+  <xsl:template match="*" mode="dup">
+    <xsl:call-template name="render"/>
+  </xsl:template>
+  <!-- A NAMED TEMPLATE INVOKED BY NAME, declared in this same document (XSLT 1.0 s6). -->
+  <xsl:template name="render">
+    <xsl:call-template name="render"/>
+  </xsl:template>
+  <!-- A NAMESPACE-PREFIX USE of the binding the root's own xmlns:xsl writes. -->
+  <xsl:template match="item">
+    <xsl:copy-of select="."/>
+  </xsl:template>
+</xsl:stylesheet>

@@ -1,0 +1,204 @@
+{
+  "fixtureId": "kotlin/uses-gates",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "K2 (M60 kotlin deep review, 2026-09-27): the five `uses` classes, and — the load-bearing half — every gate that SUPPRESSES one. 1,758 edges on the primary corpus came from five emission sites that no oracle derived, so nothing compared them. A fixture that pins only EMISSIONS cannot catch a rule that starts publishing too much, and that is the direction all three real defects went: the data-class certainty violation (bfad17e9), the init-block local given ownerName = its class (aa6a2beb), and the delegation-argument fabrication. Each of those publishes a NEW edge, so each is caught by a forbid here, not by an expect. Gate A (the member whitelist) and gate B (local bindings shadow members) do not cover for each other: gate B only walks function/lambda/ctor scopes, so a read in a class-level position — an init block, a superclass delegation — is caught by gate A or by nothing. The forbids for `scratch` and `argument` are that fact made permanent. `scratch` and `opening` are asserted as symbols WITHOUT an owner: a local IS a real symbol, it simply is not a member, and the M60 defect was in the owner field rather than in extraction — so pinning the kind alone would not have caught it. The forbids below do.",
+  "expectSymbols": [
+    {
+      "name": "Counter",
+      "kind": "class"
+    },
+    {
+      "name": "seed",
+      "kind": "property"
+    },
+    {
+      "name": "label",
+      "kind": "property"
+    },
+    {
+      "name": "shout",
+      "kind": "property"
+    },
+    {
+      "name": "hush",
+      "kind": "function"
+    },
+    {
+      "name": "Delegating",
+      "kind": "class"
+    },
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "kept",
+      "kind": "property"
+    },
+    {
+      "name": "Shade",
+      "kind": "enum"
+    },
+    {
+      "name": "LIGHT",
+      "kind": "enum_member"
+    },
+    {
+      "name": "DARK",
+      "kind": "enum_member"
+    },
+    {
+      "name": "WithCompanion",
+      "kind": "class"
+    },
+    {
+      "name": "shared",
+      "kind": "property"
+    },
+    {
+      "name": "scratch",
+      "kind": "property"
+    },
+    {
+      "name": "opening",
+      "kind": "property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "shout",
+      "target": "String",
+      "note": "extension receiver on a PROPERTY"
+    },
+    {
+      "type": "uses",
+      "from": "hush",
+      "target": "String",
+      "note": "extension receiver on a FUNCTION"
+    },
+    {
+      "type": "uses",
+      "from": "fire",
+      "target": "async",
+      "note": "QUALIFIED coroutine dispatcher: scope.async — the callee is a navigation_expression, not a bare identifier"
+    },
+    {
+      "type": "uses",
+      "from": "firstTag",
+      "target": "tags",
+      "note": "indexing READ: the receiver's name, never the text `tags[0]`"
+    },
+    {
+      "type": "uses",
+      "from": "labelLength",
+      "target": "label.length",
+      "note": "chained index: the whole dotted SPINE survives, call parens and the trailing index do not"
+    },
+    {
+      "type": "uses",
+      "from": "labelLength",
+      "target": "label",
+      "note": "the chain base is also a bare member read — a distinct, legitimate edge"
+    },
+    {
+      "type": "uses",
+      "from": "labelAgain",
+      "target": "label",
+      "note": "bare member read: the property read that used to publish nothing"
+    },
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "label",
+      "note": "string-template read: kotlin's grammar exposes a real interpolated_identifier"
+    },
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "seed",
+      "note": "second template read, deduped per (source,target)"
+    },
+    {
+      "type": "uses",
+      "from": "seedTwice",
+      "target": "seed",
+      "note": "a constructor `val` IS a member and is readable from the body"
+    },
+    {
+      "type": "uses",
+      "from": "Counter",
+      "target": "label",
+      "note": "a REAL member read inside an init block still publishes"
+    },
+    {
+      "type": "uses",
+      "from": "Counter",
+      "target": "seed",
+      "note": "ditto"
+    },
+    {
+      "type": "uses",
+      "from": "Shade",
+      "target": "LIGHT",
+      "note": "an enum entry is a member (enum_class_body, not class_body)"
+    },
+    {
+      "type": "uses",
+      "from": "Shade",
+      "target": "DARK",
+      "note": "enum entry, referenced from the body"
+    },
+    {
+      "type": "uses",
+      "from": "readable",
+      "target": "LIGHT",
+      "note": "enum entry, referenced from inside a method"
+    },
+    {
+      "type": "uses",
+      "from": "readCompanion",
+      "target": "shared",
+      "note": "a companion's members ARE the owner's: companion_object is not an object_declaration, so owner resolution walks past it to the class"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "writeFirstTag",
+      "target": "tags",
+      "note": "an indexing WRITE is not a read: `=` and `op=` both parse as `assignment` whose first named child is the lhs, so the gate is by SPAN, never by text"
+    },
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "seed",
+      "note": "gate B: a local bound in the function's scope shadows the member; without it `val seed = 99` fabricates a read of the property it shadows"
+    },
+    {
+      "type": "uses",
+      "from": "Counter",
+      "target": "scratch",
+      "note": "an init-block LOCAL is not a member. THE M60 DEFECT (aa6a2beb): the walk carried the class down through `anonymous_initializer`, so this local was given ownerName = Counter and published this edge plus a phantom `contains`"
+    },
+    {
+      "type": "contains",
+      "from": "Counter",
+      "target": "scratch",
+      "note": "the same wrong owner published a phantom containment — the java pass closed that shape as JD-J13"
+    },
+    {
+      "type": "uses",
+      "from": "Delegating",
+      "target": "argument",
+      "note": "a constructor ARGUMENT is not a member. The delegation hangs off the class itself, so gate B's walk breaks at the class and can never reach a scope to find the name bound; only the val/var `binding_pattern_kind` makes a parameter a member"
+    },
+    {
+      "type": "uses",
+      "from": "NotAMember",
+      "target": "elsewhere",
+      "note": "not a declared member of the enclosing type: gate A"
+    }
+  ]
+}

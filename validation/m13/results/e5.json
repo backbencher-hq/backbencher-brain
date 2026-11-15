@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.10",
+  "code": "E5",
+  "tool": "bb_edit",
+  "title": "bb_edit: cross-file caller freshness (fail loud, no silent partial)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "fresh caller: refactor succeeds",
+      "pass": true,
+      "detail": "[\"/tmp/bb-e5-fresh-AT1kEe/src/target.ts\",\"/tmp/bb-e5-fresh-AT1kEe/src/caller.ts\"]"
+    },
+    {
+      "name": "fresh caller: declaration renamed",
+      "pass": true,
+      "detail": "export function renamedTarget(): number { return 1 }\n"
+    },
+    {
+      "name": "fresh caller: call site renamed",
+      "pass": true,
+      "detail": "import { renamedTarget } from \"./target\"\nexport function caller(): number { return renamedTarget() }\n\n"
+    },
+    {
+      "name": "shrunk caller file aborts (no silent skip) [negative: not fresh]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "shrunk caller: declaration NOT renamed (no partial)",
+      "pass": true,
+      "detail": "export function target(): number { return 1 }\n"
+    },
+    {
+      "name": "grown caller file aborts [negative: not fresh]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "grown caller: declaration NOT renamed",
+      "pass": true,
+      "detail": "export function target(): number { return 1 }\n"
+    },
+    {
+      "name": "missing caller file aborts [negative: not fresh]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "missing caller: declaration NOT renamed",
+      "pass": true,
+      "detail": "export function target(): number { return 1 }\n"
+    },
+    {
+      "name": "one stale caller among several aborts the whole refactor [negative: not fresh]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "multi: declaration NOT renamed",
+      "pass": true,
+      "detail": "export function target(): number { return 1 }\n"
+    },
+    {
+      "name": "multi: fresh caller1 NOT renamed (no partial across files)",
+      "pass": true,
+      "detail": "import { target } from \"./target\"\nexport function caller1(): number { return target() }\n\n"
+    },
+    {
+      "name": "out-of-bounds caller span aborts (never silently clamped/skipped) [negative: caller span out of bounds]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "span: declaration NOT renamed",
+      "pass": true,
+      "detail": "export function target(): number { return 1 }\n"
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  },
+  "decisions": {
+    "freshnessSource": "brain_file.file_hash (SHA-256 16-hex) vs on-disk content, checked via assertFreshFiles on every caller fileId before any rename",
+    "spanGuard": "each caller byte span is validated to lie inside the current file; a corrupt/out-of-bounds span throws instead of being silently clamped/skipped",
+    "atomicAbort": "planEdit resolves the full plan (freshness + spans) before executeEdit writes anything, so a stale caller aborts with zero writes"
+  },
+  "limitations": [
+    "allowStaleIndex only bypasses the declaration file's freshness gate; caller freshness is always enforced (safer, never a silent partial rename).",
+    "Cross-file import specifiers are not renamed (imports live in brain_import, not calls/references) — unchanged from E2, tracked separately."
+  ],
+  "generatedAt": "2026-11-05T04:11:58.098Z"
+}

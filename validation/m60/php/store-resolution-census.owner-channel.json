@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-09T17:25:59.925Z",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "entryPoint": "parseFile (src/ast/pool-worker.ts) -> storeResults (src/ast/parallel-indexer.ts)",
   "admittedFiles": 5094,
   "filesInFrame": 1500,

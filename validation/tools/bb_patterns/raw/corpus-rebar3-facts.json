@@ -1,0 +1,44 @@
+{
+  "tier": "CORPUS-rebar3",
+  "projectDir": "/home/ishaq2321/bb_tests/repositories/rebar3",
+  "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/rebar3",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/rebar3/projects/f542cf36820e749046766ff9bede22e70d5990e7/brain.db",
+  "exists": true,
+  "index": {
+    "files": 303,
+    "symbols": 7012,
+    "relationships": 38143,
+    "frameworkFiles": 301,
+    "analysisRuns": 0
+  },
+  "dbBefore": {
+    "db": {
+      "bytes": 152543232,
+      "mtime": "2026-11-02T04:19:35.334Z"
+    },
+    "wal": {
+      "bytes": 38283072,
+      "mtime": "2026-11-02T04:19:39.693Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-02T04:19:35.651Z"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "bytes": 152543232,
+      "mtime": "2026-11-02T04:19:35.334Z"
+    },
+    "wal": {
+      "bytes": 38283072,
+      "mtime": "2026-11-02T04:19:39.693Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-02T04:19:46.718Z"
+    }
+  },
+  "generatedAt": "2026-11-02T04:19:46.756Z"
+}

@@ -25,7 +25,7 @@
  *      comment saying `# TODO: implement Foo` must not convict a ruling.
  *
  * The secondary corpus (CPython's own stdlib) is used ONLY for constructs that are
- * rare in `fixtures`, and every row it contributes is labelled `stdlib`, because a
+ * rare in `bb_tests`, and every row it contributes is labelled `stdlib`, because a
  * number from outside the pinned corpus is a different measurement and must not be
  * silently merged with one that is.
  *
@@ -36,11 +36,11 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const STDLIB = process.env.BB_PY_STDLIB ?? "/usr/lib/python3.10"
 const MAX_BYTES = 512 * 1024
 
-type Src = { corpus: "fixtures" | "stdlib"; repo: string; rel: string; abs: string; text: string }
+type Src = { corpus: "bb_tests" | "stdlib"; repo: string; rel: string; abs: string; text: string }
 
 // ---------------------------------------------------------------- corpus
 function corpusFiles(): Src[] {
@@ -60,7 +60,7 @@ function corpusFiles(): Src[] {
       let text: string
       try { if (statSync(abs).size > MAX_BYTES) continue; text = readFileSync(abs, "utf8") } catch { continue }
       if (detectLanguageFromPath(abs, text) !== "python") continue
-      out.push({ corpus: "fixtures", repo: e, rel, abs, text })
+      out.push({ corpus: "bb_tests", repo: e, rel, abs, text })
     }
   }
   return out
@@ -100,21 +100,21 @@ const parser = new WSP()
 parser.setLanguage(await WSL.load(readFileSync(path.join(process.cwd(), "wasm", "tree-sitter-python.wasm"))))
 
 // ---------------------------------------------------------------- buckets
-type Bucket = { corpus: "fixtures" | "stdlib"; files: Set<string>; examples: string[] }
+type Bucket = { corpus: "bb_tests" | "stdlib"; files: Set<string>; examples: string[] }
 const buckets = new Map<string, Bucket>()
-function b(key: string, corpus: "fixtures" | "stdlib", label: string) {
+function b(key: string, corpus: "bb_tests" | "stdlib", label: string) {
   const k = `${corpus}::${key}`
   const row = buckets.get(k) ?? { corpus, files: new Set<string>(), examples: [] }
   row.files.add(label.split(" @ ")[0]!)
   if (row.examples.length < 3) row.examples.push(label)
   buckets.set(k, row)
 }
-function count(key: string, corpus: "fixtures" | "stdlib") {
+function count(key: string, corpus: "bb_tests" | "stdlib") {
   return buckets.get(`${corpus}::${key}`)?.files.size ?? 0
 }
 
 // ---------------------------------------------------------------- INSTRUMENT A
-const nodeTypesByCorpus: Record<string, Set<string>> = { fixtures: new Set(), stdlib: new Set() }
+const nodeTypesByCorpus: Record<string, Set<string>> = { bb_tests: new Set(), stdlib: new Set() }
 const nodeTypeCounts = new Map<string, number>()
 
 // ---------------------------------------------------------------- INSTRUMENT B
@@ -261,11 +261,11 @@ for (const k of keys) {
 }
 
 console.log("python construct probes")
-console.log(`fixtures corpus: ${bb.length} .py files   cpython stdlib: ${sl.length} .py files\n`)
+console.log(`bb_tests corpus: ${bb.length} .py files   cpython stdlib: ${sl.length} .py files\n`)
 
 console.log("INSTRUMENT A — grammar node types the parser actually produces:")
-console.log(`  fixtures: ${nodeTypesByCorpus.fixtures.size}   stdlib: ${nodeTypesByCorpus.stdlib.size}   union: ${new Set([...nodeTypesByCorpus.fixtures, ...nodeTypesByCorpus.stdlib]).size}`)
-const union = new Set([...nodeTypesByCorpus.fixtures, ...nodeTypesByCorpus.stdlib])
+console.log(`  bb_tests: ${nodeTypesByCorpus.bb_tests.size}   stdlib: ${nodeTypesByCorpus.stdlib.size}   union: ${new Set([...nodeTypesByCorpus.bb_tests, ...nodeTypesByCorpus.stdlib]).size}`)
+const union = new Set([...nodeTypesByCorpus.bb_tests, ...nodeTypesByCorpus.stdlib])
 for (const t of ["implements_clause", "implements", "interface_declaration", "super_interfaces", "superclass", "extends_interfaces", "extends_clause", "class_heritage", "protocol_declaration", "abstract_class_definition"]) {
   console.log(`  ${t.padEnd(28)} ${union.has(t) ? "PRESENT" : "absent"}`)
 }
@@ -281,11 +281,11 @@ if (jsonOut) {
   const { writeFileSync } = await import("node:fs")
   writeFileSync(jsonOut, JSON.stringify({
     corpus: {
-      fixtures: { root: CR, files: bb.length },
+      bb_tests: { root: CR, files: bb.length },
       stdlib: { root: STDLIB, files: sl.length },
     },
     instrumentA: {
-      nodeTypeCount: { fixtures: nodeTypesByCorpus.fixtures.size, stdlib: nodeTypesByCorpus.stdlib.size, union: union.size },
+      nodeTypeCount: { bb_tests: nodeTypesByCorpus.bb_tests.size, stdlib: nodeTypesByCorpus.stdlib.size, union: union.size },
       types: [...union].sort(),
       absentInterfaces: ["implements_clause", "interface_declaration", "super_interfaces", "superclass", "extends_interfaces", "extends_clause", "class_heritage", "protocol_declaration"].filter((t) => !union.has(t)),
     },

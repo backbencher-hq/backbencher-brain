@@ -1,0 +1,12 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the derived calls oracle: `push` discarded any edge whose `from` was empty, on the reasonable-sounding grounds that a relationship needs two ends. That silently deleted 43 calls across the corpus, and because the discard was silent each affected file read as a coverage gap rather than as a bug - the worst being test_cl_format.clj:611 `(foo 3.14159)` inside a `(simple-tests ...)` block, where the owner chain ran out and the edge was built and then thrown away. An edge with no attributable owner is still a real call. The fallback is not an invention: it is the analyzer's own C8 rule that a call outside any function attributes to the namespace IN FORCE, the load-time context that actually invokes it - and where there is no `ns` form, Clojure's own default namespace, which the analyzer spells `user`. Reproduced by the smallest possible file, a fixture with no `ns` at all, because a file with no namespace is the whole of the bug and is not contrived: scratch files, REPL pastes and scripts routinely omit one. Pinning the `user` half matters specifically - stopping the chain at the namespace in force, which is the obvious fix, still drops every call in a file with no `ns`.",
+  "expectSymbols": [
+    { "name": "before-ns", "kind": "function" },
+    { "name": "after-ns", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "user", "target": "before-ns", "line_number": 21 },
+    { "type": "calls", "from": "user", "target": "after-ns", "line_number": 25 }
+  ]
+}

@@ -1,6 +1,6 @@
 // KOTLIN FIRING CHECK — script/m14/firing-check-v2.mjs with ONE line changed.
 //
-// Why it exists: the shared script hard-codes REPO = "$HOME/backbencher-brain",
+// Why it exists: the shared script hard-codes REPO = "/home/ishaq2321/backbencher-brain",
 // so a lane agent working in a worktree cannot measure ITS OWN analyzer with it — every
 // number it printed was the main checkout's code. `BB_REPO` now selects the checkout,
 // which is the only difference; `diff` against the shared script with that one
@@ -11,7 +11,7 @@
 // for an unmatched lane.
 //
 // Reproduce the one-line claim:
-//   diff <(sed 's|process.env.BB_REPO ?? "$HOME/backbencher-brain"|"$HOME/backbencher-brain"|' script/m14/kotlin-firing-check.mjs) script/m14/firing-check-v2.mjs
+//   diff <(sed 's|process.env.BB_REPO ?? "/home/ishaq2321/backbencher-brain"|"/home/ishaq2321/backbencher-brain"|' script/m14/kotlin-firing-check.mjs) script/m14/firing-check-v2.mjs
 //
 // Run against this worktree's analyzer:
 //   BB_REPO=$PWD NFILES=200 bun run script/m14/kotlin-firing-check.mjs KOTLIN
@@ -54,8 +54,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
-const REPO = process.env.BB_REPO ?? "$HOME/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const REPO = process.env.BB_REPO ?? "/home/ishaq2321/backbencher-brain"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

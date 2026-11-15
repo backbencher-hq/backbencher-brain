@@ -1,0 +1,20 @@
+{
+  "issue": "M15.X4",
+  "code": "X4",
+  "tool": "bb_security",
+  "title": "measured time complexity",
+  "verified": true,
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "positives": 2,
+  "negatives": 0,
+  "negativePassed": 0,
+  "skipped": [],
+  "generatedAt": "2026-09-30T23:14:00.884Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T23:14:00.884Z",
+    "contentSha256": "ddae1f9a9cff836b1025c4c0359f37f2d3c2657524d1670fa02f9400f5490ee5"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "tally": {
+    "A": 429,
+    "B": 136,
+    "C": 243,
+    "strictA": 429,
+    "strictB": 136,
+    "strictC": 243,
+    "none": 1083,
+    "cAmbiguous": 243
+  },
+  "perRepo": {
+    "cloogle.org": {
+      "A": 0,
+      "B": 6,
+      "C": 1
+    },
+    "eastwood": {
+      "A": 0,
+      "B": 61,
+      "C": 93
+    },
+    "clean-stdlib": {
+      "A": 192,
+      "B": 0,
+      "C": 0
+    },
+    "Prelude": {
+      "A": 80,
+      "B": 0,
+      "C": 0
+    },
+    "Clyde": {
+      "A": 157,
+      "B": 69,
+      "C": 149
+    }
+  },
+  "examples": {
+    "A": [
+      "StdArray.dcl:3 tgt=_SystemArray:* candidate=_SystemArray.icl declaresModule=true",
+      "StdBool.dcl:8 tgt=StdOverloaded:* candidate=StdOverloaded.icl declaresModule=true",
+      "StdBool.icl:8 tgt=StdOverloaded:* candidate=StdOverloaded.icl declaresModule=true",
+      "StdChar.dcl:8 tgt=StdOverloaded:* candidate=StdOverloaded.icl declaresModule=true",
+      "StdChar.icl:8 tgt=StdOverloaded:* candidate=StdOverloaded.icl declaresModule=true",
+      "StdChar.icl:8 tgt=StdBool:* candidate=StdBool.icl declaresModule=true",
+      "StdChar.icl:8 tgt=StdInt:* candidate=StdInt.icl declaresModule=true",
+      "StdChar.icl:8 tgt=StdClass:* candidate=StdClass.icl declaresModule=true",
+      "StdCharList.icl:8 tgt=StdList:* candidate=StdList.icl declaresModule=true",
+      "StdCharList.icl:8 tgt=StdInt:* candidate=StdInt.icl declaresModule=true",
+      "StdCharList.icl:8 tgt=StdChar:* candidate=StdChar.icl declaresModule=true",
+      "StdClass.dcl:8 tgt=StdOverloaded:* candidate=StdOverloaded.icl declaresModule=true"
+    ],
+    "B": [
+      "backend/CloogleServer.icl:41 tgt=Util.SimpleTCPServer:* candidate=backend/Util/SimpleTCPServer.icl declaresModule=true",
+      "backend/CloogleServer.icl:42 tgt=Util.Cache:* candidate=backend/Util/Cache.icl declaresModule=true",
+      "backend/CloogleServer.icl:43 tgt=Util.Memory:* candidate=backend/Util/Memory.icl declaresModule=true",
+      "backend/builddb.icl:34 tgt=Builtin.ABC:* candidate=backend/Builtin/ABC.icl declaresModule=true",
+      "backend/builddb.icl:35 tgt=Builtin.Predef:* candidate=backend/Builtin/Predef.icl declaresModule=true",
+      "backend/builddb.icl:36 tgt=Builtin.Syntax:* candidate=backend/Builtin/Syntax.icl declaresModule=true",
+      "src/languageServer/Config.dcl:11 tgt=Symbol:SymbolMaps candidate=src/languageServer/Symbol.icl declaresModule=true",
+      "src/languageServer/Config.dcl:11 tgt=Symbol:SymbolMap candidate=src/languageServer/Symbol.icl declaresModule=true",
+      "src/languageServer/Config.dcl:11 tgt=Symbol:SymbolInfo candidate=src/languageServer/Symbol.icl declaresModule=true",
+      "src/languageServer/Config.dcl:11 tgt=Symbol:Symbol candidate=src/languageServer/Symbol.icl declaresModule=true",
+      "src/languageServer/Config.icl:20 tgt=Constants:* candidate=src/languageServer/Constants.icl declaresModule=true",
+      "src/languageServer/Config.icl:21 tgt=LockFile:* candidate=src/languageServer/LockFile.icl declaresModule=true"
+    ],
+    "C": [
+      "backend/Builtin/Syntax.icl:18 tgt=Builtin.Predef:* candidate=backend/Builtin/Predef.icl declaresModule=true",
+      "src/languageServer/Compiler.dcl:6 tgt=Diagnostic:Diagnostic candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:18 tgt=Diagnostic:Diagnostic candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:18 tgt=Diagnostic:DiagnosticSource candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:18 tgt=Diagnostic:DiagnosticSeverity candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:18 tgt=Diagnostic:CharacterRange candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:19 tgt=Diagnostic:Position candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:20 tgt=Diagnostic:* candidate=src/sharedUtil/Diagnostic.icl declaresModule=true",
+      "src/languageServer/Compiler.icl:21 tgt=Range:* candidate=src/sharedUtil/Range.icl declaresModule=true",
+      "src/languageServer/EastwoodCleanLanguageServer.icl:17 tgt=Linter:runPassesFile candidate=src/linter/Linter.icl declaresModule=true",
+      "src/languageServer/EastwoodCleanLanguageServer.icl:17 tgt=Linter:Configuration candidate=src/linter/Linter.icl declaresModule=true",
+      "src/languageServer/EastwoodCleanLanguageServer.icl:17 tgt=Linter:defaultConfiguration candidate=src/linter/Linter.icl declaresModule=true"
+    ],
+    "none": [
+      "backend/Builtin/ABC.dcl:3 tgt=Cloogle.DB:ABCInstructionEntry candidate=-",
+      "backend/Builtin/ABC.icl:3 tgt=_SystemArray:* candidate=-",
+      "backend/Builtin/ABC.icl:4 tgt=StdList:* candidate=-",
+      "backend/Builtin/ABC.icl:5 tgt=StdMisc:* candidate=-",
+      "backend/Builtin/ABC.icl:7 tgt=Text:* candidate=-",
+      "backend/Builtin/ABC.icl:9 tgt=Cloogle.API:* candidate=-",
+      "backend/Builtin/ABC.icl:10 tgt=Cloogle.DB:* candidate=-",
+      "backend/Builtin/Predef.dcl:3 tgt=Cloogle.DB:FunctionEntry candidate=-",
+      "backend/Builtin/Predef.dcl:3 tgt=Cloogle.DB:ClassEntry candidate=-",
+      "backend/Builtin/Predef.dcl:3 tgt=Cloogle.DB:TypeDefEntry candidate=-",
+      "backend/Builtin/Predef.dcl:4 tgt=Cloogle.DB:CleanLangReportLocation candidate=-",
+      "backend/Builtin/Predef.icl:3 tgt=StdBool:* candidate=-"
+    ]
+  }
+}

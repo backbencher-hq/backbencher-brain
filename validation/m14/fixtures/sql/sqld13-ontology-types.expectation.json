@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld13-ontology-types.sql",
+  "authoredFrom": "M60 ontology workstream, 2026-10-03. Every shape is transcribed from real corpus text and the expectation counts come from validation/m14/fixtures/sql/construct-probe.json and ontology-census.json over the 1,460-file census (BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories). Measured: 143 `psql_meta_command` nodes of which 22 are `\\ir`/`\\i` with a literal filename across 6 files and 0 with a psql variable; 666 OR REPLACE declarations of which 15 replace a declaration in the SAME file; 20 same-kind re-declarations WITHOUT OR REPLACE (excluded on purpose, PostgreSQL rejects those); 6 phantom columns named `LIKE` in 2 files. The `\\ir` forms are verbatim from postgrest/test/io/fixtures/load.sql, the OR REPLACE function pair is the shape of postgrest/test/io/fixtures/schema.sql, the function-and-trigger twin is hasura-engine/server/src-rsr/migrations/10_to_11.sql lines 7 and 25, the composite-type construction is hasura-engine/v3/crates/engine/tests/db_definition.sql's `ROW(3421, NULL)::institution_songs`, and the LIKE clause is verbatim from proxicall/database/migrations/20260613_coms_p13_4_data_retention.sql. Section 5 (`CREATE EXTENSION`) is measured from the same census: 27 `module` symbols, one per `create_extension` declaration, of which the analyzer published none as an edge before this round.",
+  "comment": "The forbid rows are the substance of this fixture, not the expect rows. Each of the three new emissions is a place where the obvious implementation publishes something false: an `imports` edge for every psql meta-command (121 of the 143 nodes are `\\echo`/`\\set`/`\\gexec`, which name no file), an `overrides` edge for any name a file declares twice (Hasura's `CREATE FUNCTION hdb_catalog.f()` and `CREATE TRIGGER f` are two different objects sharing a name), and an `instantiates` edge for any cast to a named type (`x::my_enum` converts a value that already exists, and a DECLARED type is not itself a construction site). The phantom `LIKE` column is pinned from both sides: the keyword as an UNQUOTED column name is forbidden while a QUOTED `\"like\"` column is required, because a text-only guard would delete the quoted one and that is the shape a legal column actually takes.",
+  "expectPatterns": [
+    "psql Script Include"
+  ],
+  "expectSymbols": [
+    {
+      "name": "d13_pair",
+      "kind": "type",
+      "meta.type": "custom_type"
+    },
+    {
+      "name": "d13_never_built",
+      "kind": "type",
+      "meta.type": "custom_type"
+    },
+    {
+      "name": "d13_holder",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d13_archive",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d13_quoted",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "like",
+      "kind": "property",
+      "ownerName": "d13_quoted",
+      "meta.sqlType": "integer"
+    },
+    {
+      "name": "d13_twin",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "d13_twin",
+      "kind": "function",
+      "meta.isTrigger": true
+    },
+    {
+      "name": "d13_replace_view",
+      "kind": "class",
+      "meta.type": "view"
+    },
+    {
+      "name": "d13_only_once",
+      "kind": "function"
+    },
+    {
+      "name": "d13_uuid_ossp",
+      "kind": "module",
+      "meta.type": "extension"
+    },
+    {
+      "name": "d13_postgis",
+      "kind": "module"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "LIKE"
+    },
+    {
+      "name": "INHERIT"
+    },
+    {
+      "name": "echo"
+    },
+    {
+      "name": "d13_var"
+    },
+    {
+      "name": "d13_script_var"
+    },
+    {
+      "name": "d13_no_suffix"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "LIKE",
+      "equals": 0
+    },
+    {
+      "name": "like",
+      "equals": 1
+    },
+    {
+      "name": "d13_replace_me",
+      "equals": 2
+    },
+    {
+      "name": "d13_only_once",
+      "equals": 1
+    },
+    {
+      "name": "d13_twin",
+      "equals": 2
+    },
+    {
+      "name": "d13_never_built",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_base_schema.sql",
+      "meta.includeKind": "ir",
+      "meta.relativeToScript": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "./d13_extra_columns.sql",
+      "meta.includeKind": "i",
+      "meta.relativeToScript": false
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "../shared/d13_common.sql",
+      "meta.includeKind": "ir"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_replace_me",
+      "meta.orReplace": true,
+      "meta.priorLine": 36,
+      "meta.replacementLine": 37,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_replace_view",
+      "meta.orReplace": true
+    },
+    {
+      "type": "instantiates",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_pair",
+      "meta.construction": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "d13_quoted",
+      "target": "sqld13-ontology-types.sql::d13_quoted.like"
+    },
+    {
+      "type": "calls",
+      "from": "d13_twin",
+      "target": "d13_only_once",
+      "meta.triggerAction": true
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_uuid_ossp",
+      "meta.extensionInstall": true,
+      "meta.external": true,
+      "meta.fileDependency": false,
+      "meta.scope": "database",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_postgis",
+      "meta.extensionInstall": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_var"
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": ":d13_script_var"
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_no_suffix"
+    },
+    {
+      "type": "imports",
+      "from": "sqld13-ontology-types.sql",
+      "target": "this is a message, not a dependency"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_only_once"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_twin"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_holder"
+    },
+    {
+      "type": "instantiates",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_holder"
+    },
+    {
+      "type": "instantiates",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_never_built"
+    },
+    {
+      "type": "instantiates",
+      "from": "sqld13-ontology-types.sql",
+      "target": "integer"
+    },
+    {
+      "type": "contains",
+      "from": "d13_archive",
+      "target": "sqld13-ontology-types.sql::d13_archive.LIKE"
+    },
+    {
+      "type": "contains",
+      "from": "d13_archive",
+      "target": "sqld13-ontology-types.sql::d13_archive.d13_holder"
+    },
+    {
+      "type": "overrides",
+      "from": "sqld13-ontology-types.sql",
+      "target": "d13_overloaded"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "imports",
+      "equals": 5,
+      "note": "3 psql file includes + 2 CREATE EXTENSION installs. Both are `imports` and both are `external`-free/true respectively; the count is split by metadata because the two mechanisms answer different questions."
+    },
+    {
+      "type": "overrides",
+      "equals": 2
+    },
+    {
+      "type": "instantiates",
+      "equals": 1
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "d13_base_schema.sql",
+      "importType": "sql_import",
+      "lineNumber": 11,
+      "isExternal": false
+    },
+    {
+      "module": "./d13_extra_columns.sql",
+      "importType": "sql_import",
+      "lineNumber": 12
+    },
+    {
+      "module": "../shared/d13_common.sql",
+      "importType": "sql_import",
+      "lineNumber": 13
+    },
+    {
+      "module": "d13_uuid_ossp",
+      "importType": "sql_extension",
+      "isExternal": true
+    },
+    {
+      "module": "d13_postgis",
+      "importType": "sql_extension",
+      "isExternal": true
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "d13_var"
+    },
+    {
+      "module": ":d13_script_var"
+    },
+    {
+      "module": "d13_no_suffix"
+    }
+  ],
+  "note": "`importType: sql_import` is not decoration. src/ast/pool-worker.ts already names five lanes that declare their own import type and lists `sql` among them, so shared machinery is reading a value this lane never produced; a psql include is what it is for. The `line_number` key is one of four spellings the worker accepts (range.startLine, line, line_number, lineNumber) and is written explicitly because the worker's own comment records that every import in every language once arrived at the store with `line: 0`. `expectSymbolCount` on `d13_twin` equals 2 is the same-name-different-kind pin: a table and a trigger, which is why the analyzer counts them as two symbols and must not count them as a redefinition."
+}

@@ -1,0 +1,85 @@
+{
+  "fixtureId": "javascript/decorator-arguments-not-decorates",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the boundary of the canonical `decorates` edge (RelationshipType.Decorates, landed in src/ast/types.ts df5a03eb2): one row per decorator, source = the decorated declaration, target = the DECORATOR name leaf, line = the decorator's own line — never a row for a name used as the decorator's ARGUMENT. `@inject(make())` emits decorates method -> inject at line 19 and NOTHING for `make` (no decorates row, no calls row: the call/read walks suppress decorator position whole). DISCRIMINATION is built in so a too-broad rule fails instead of passing: `pool = make()` in the field INITIALIZER is a genuine call from the class and must survive, and `return make` in the method body is a genuine read — decorator position is positional, not 'anything near an @'. The parameter-decorator position is NOT covered because ECMAScript decorators (and this grammar) have no parameter decorators: there is no syntax to emit from.",
+  "expectSymbols": [
+    {
+      "name": "inject",
+      "kind": "function"
+    },
+    {
+      "name": "make",
+      "kind": "function"
+    },
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Widget"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "inject",
+      "line_number": 19,
+      "comment": "the decorator's own line, not the method's (20)"
+    },
+    {
+      "type": "calls",
+      "from": "Widget",
+      "target": "make",
+      "line_number": 24,
+      "comment": "DISCRIMINATION: the field INITIALIZER's genuine call (line 24) survives the decorator-position rule"
+    },
+    {
+      "type": "uses",
+      "from": "method",
+      "target": "make",
+      "comment": "DISCRIMINATION: the method BODY's read survives"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "make",
+      "comment": "a decorator's ARGUMENT is not a decorator"
+    },
+    {
+      "type": "calls",
+      "from": "method",
+      "target": "make",
+      "comment": "the decorator's argument call is decorator position, not a call by the method"
+    },
+    {
+      "type": "calls",
+      "from": "Widget",
+      "target": "inject",
+      "comment": "the decorator invocation is not a call by the decorated class"
+    },
+    {
+      "type": "references",
+      "from": "method",
+      "target": "inject",
+      "comment": "the pre-2026-10-18 spelling: decorators are `decorates`, not generic references"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "inject",
+      "line_number": 20,
+      "comment": "the near-miss: borrowing the DECLARATION's line for the decorates edge"
+    }
+  ]
+}

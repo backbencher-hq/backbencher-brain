@@ -1,0 +1,47 @@
+{
+ "issue": "F5-CERT",
+ "note": "CLJ-D48 derived the analyzer's `activeFunction` rule INSIDE the type-relation derivation, and `instantiates` was still reading `walk`'s owner - a different question - which disagreed on 299 edges. One language fact, two derivations, two answers: the same lesson as the four alias tables, and the reason the pre-pass now lives at module scope where the next derivation can find it. These are the four positions that settle it. `defn` takes its own name. A PROXY OR DEFTYPE METHOD is a function form and owns its body. A `def` creates a VAR, not a function, so there is no active function and the constructor is attributed to the NAMESPACE - which is why the fallback here is `nsAt` and not `walk`'s owner. An ANONYMOUS FUNCTION is owned by its GENERATED name `lambda_<row>_<col>`: I first wrote the form name `fn`, inferring that from one core.clj sample, and this fixture refuted it on the first run - `(def via-fn (fn [] (java.util.HashMap.)))` publishes `lambda_17_12`. One sample is not the evidence, and I have now been wrong about `fn`, about `loop`/`case`, and about a proxy superclass in this same file, each time by generalising from the first example that looked like a rule. After this: implements 100.00% and extends 100.00% with 0 missed and 0 fabricated, and instantiates 87.45% -> 99.33%.",
+ "expectSymbols": [
+  {
+   "name": "via-defn",
+   "kind": "function"
+  },
+  {
+   "name": "via-def",
+   "kind": "variable"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "instantiates",
+   "from": "via-defn",
+   "target": "java.util.ArrayList",
+   "line_number": 13
+  },
+  {
+   "type": "instantiates",
+   "from": "lambda_17_12",
+   "target": "java.util.HashMap",
+   "line_number": 18
+  },
+  {
+   "type": "extends",
+   "from": "clj.fixture.activefn",
+   "target": "Runnable",
+   "line_number": 21,
+   "meta.evidenceClass": "inferred"
+  },
+  {
+   "type": "instantiates",
+   "from": "run",
+   "target": "java.util.concurrent.atomic.AtomicLong",
+   "line_number": 22
+  },
+  {
+   "type": "instantiates",
+   "from": "clj.fixture.activefn",
+   "target": "java.io.StringReader",
+   "line_number": 26
+  }
+ ]
+}

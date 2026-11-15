@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Framework and scores</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/app.js"></script>
+</head>
+<body>
+  <!-- FRAMEWORK DETECTION. The pre-fix analyzer published `Targeted/ID-Styling`
+       into `detectedFrameworks` whenever ANY element carried an `id` — it is a
+       CSS technique, not a framework, it appears once in the whole repository,
+       and it fired on 88.5% of corpus files. M60.R8's runtime probe has seven OO
+       lanes and never reached html, so nothing could see it. A real framework is
+       a real signal; an id attribute is not. -->
+  <header id="site-header">
+    <h1 id="title">Heading levels in order</h1>
+    <h3 id="skips-a-level">This one skips h2</h3>
+  </header>
+
+  <main id="main">
+    <section id="s1"><h2 id="h2a">Sub</h2></section>
+    <img id="logo" src="/assets/logo.png" alt="logo">
+    <img id="noalt" src="/assets/noalt.png">
+    <form id="form" action="/api/x">
+      <label id="labelled" for="withlabel">Labelled</label>
+      <input id="withlabel" name="a" type="text">
+      <input id="unlabelled" name="b" type="text">
+    </form>
+    <template id="tpl"><p id="frag">fragment</p></template>
+    <my-element id="custom" is="my-element"></my-element>
+  </main>
+</body>
+</html>

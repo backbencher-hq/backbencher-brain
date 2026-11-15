@@ -1,0 +1,35 @@
+{
+  "issue": "M60 relationship-ontology wave — CLJ-D59 (`nil` is a type)",
+  "note": "`(extend-protocol P nil (m [_] …))` extends P to `nil`, and `nil` parses as a `nil_lit` rather than a `sym_lit`. The method-impl owner reader walked back for a `sym_lit`, skipped the `nil_lit`, and landed on the protocol head — so the method was attributed to the protocol it implements. Measured over the 633-file corpus that published `overrides P.m -> P.m`, 8 self-edges and 4.30% of the type, and it also cost the `implements nil -> P` edge and the `contains` edge entirely. `(satisfies? P nil)` is true, so `nil` is a real dispatch target: the endpoints are facts about the source. The `nil` endpoints name no var the file interns, which is the same position `String` and `java.util.Date` already hold and is declared as a limitation rather than hidden.",
+  "expectRelationships": [
+    { "type": "overrides", "from": "nil.m", "target": "P.m" },
+    { "type": "overrides", "from": "nil.n", "target": "Q.n" },
+    { "type": "overrides", "from": "java.util.Date.m", "target": "P.m" },
+    { "type": "overrides", "from": "Tagged.n", "target": "Q.n" },
+    { "type": "implements", "from": "Tagged", "target": "Q" },
+    { "type": "implements", "from": "nil", "target": "P" },
+    { "type": "implements", "from": "nil", "target": "Q" },
+    { "type": "implements", "from": "java.util.Date", "target": "P" },
+    { "type": "contains", "from": "nil", "target": "m" },
+    { "type": "contains", "from": "nil", "target": "n" },
+    { "type": "contains", "from": "Tagged", "target": "n" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "P.m", "target": "P.m" },
+    { "type": "overrides", "from": "Q.n", "target": "Q.n" },
+    { "type": "overrides", "from": "nil.m", "target": "nil.m" },
+    { "type": "overrides", "from": "P.n", "target": "Q.n" },
+    { "type": "overrides", "from": "nil.m", "target": "Q.n" },
+    { "type": "implements", "from": "P", "target": "P" },
+    { "type": "contains", "from": "P", "target": "n" },
+    { "type": "contains", "from": "Q", "target": "m" },
+    { "type": "overrides", "from": "^{:doc \"decorated\"}Tagged.n", "target": "Q.n" }
+  ],
+  "expectSymbols": [
+    { "name": "m", "ownerName": "nil", "scope": "clj.fixture.nil-type.nil" },
+    { "name": "n", "ownerName": "nil", "scope": "clj.fixture.nil-type.nil" },
+    { "name": "m", "ownerName": "java.util.Date", "scope": "clj.fixture.nil-type.java.util.Date" },
+    { "name": "Tagged", "ownerName": "clj.fixture.nil-type", "scope": "clj.fixture.nil-type" },
+    { "name": "n", "ownerName": "Tagged", "scope": "clj.fixture.nil-type.Tagged" }
+  ]
+}

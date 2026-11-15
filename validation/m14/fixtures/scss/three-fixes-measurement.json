@@ -1,0 +1,64 @@
+{
+  "instrument": "THE THREE BLOCKERS, FIXED AND MEASURED \u2014 and the mechanism, once working, DEGRADES the lane",
+  "at": "2026-10-11T22:50:00-04:00",
+  "fixes": {
+    "1_extraction": {
+      "what": "`indexTree` has always accepted a `fileName` parameter and NEVER USED IT, while BOTH callers omitted it \u2014 and the SCSS spec's own comment said the module name 'is the file's basename (handled by the caller via file path)'. Added `DeclarationSpec.nameFromFile`, made the type branch fall back to the file's basename when the resolved name is empty and the spec opts in, passed the path at both call sites, and set `nameFromFile: true` in the SCSS spec. Absent the flag every other language reads byte-for-byte what it read.",
+      "acceptance": "`typeMembers['functions.scss'] size: 12` and `symbolNames` now carries `functions.scss`, `bulmaStringToNumber`, `bulmaEnoughContrast`, \u2026 \u2014 it was `[]` before. THE LEAD'S ACCEPTANCE TEST MET: non-empty for the 12-function file."
+    },
+    "2_serialization": {
+      "what": "`__closedMembers` was attached at runtime (`:983`) and NOT carried by `SerializedProjectIndex`, so every deserialized index \u2014 the worker's and the gate's \u2014 had it `undefined` and `resolveModuleImports` returned at its first guard. Added the field to the payload and the rebuild on deserialize, AND made `serializeProjectIndex` attach it via `buildResolutionTables` when absent: the indexer's path (`buildProjectIndexFromDisk` -> serialize) never called that, so fixing the payload alone would have carried an empty map.",
+      "acceptance": "round-tripped `__closedMembers present? true`, size 3, `functions.scss -> [bulmaStringToNumber, bulmaEnoughContrast, bulmaColorBrightness, \u2026]`.",
+      "andTheInstrument": "`roundTripProjectIndex` checked every DECLARED field and this one is attached at runtime, so the transport test passed while the field was lost. It now checks `__closedMembers` too \u2014 a test that enumerates the fields it knows about cannot see a field nobody declared."
+    },
+    "3_matching": {
+      "what": "the resolver matched `@use` SPECIFIERS against index type names with `typeName.endsWith('/' + modulePath)`. A specifier is a path and the index names a module by its basename. Now matched by basename with Sass conventions normalised on BOTH sides (leading `_`, `.scss/.sass/.css`), reading `typeMembers` (declared) with `__closedMembers` (inherited) on top, and the emitted edge carries the import statement's own line instead of a fabricated `0`.",
+      "count": "over the whole corpus, of **225** namespaced `@use`/`@forward` specifiers: **the old rule reached 0 \u00b7 the new rule reaches 123**. (8 repos' indexes still come back empty \u2014 a residual gap, stated rather than hidden.)"
+    }
+  },
+  "theMechanismNowWorksAndItsEffectIsNegative": {
+    "builtIndexArm_beforeThreeFixes": {
+      "exports": "4,048 edges \u00b7 resolved 3,065 \u00b7 amb 983",
+      "TOTAL": "30,426 \u00b7 resolved 20,567 \u00b7 amb 2,566 \u00b7 unresolved 452 \u00b7 extOK 6,841"
+    },
+    "builtIndexArm_afterThreeFixes": {
+      "exports": "**7,254 edges** \u00b7 resolved 3,089 \u00b7 **amb 4,165**",
+      "TOTAL": "**33,632** \u00b7 resolved 20,591 \u00b7 **amb 5,748** \u00b7 unresolved 452 \u00b7 **extOK 6,841**"
+    },
+    "reading": "the mechanism emits **+3,206 `exports` edges, of which +3,182 are AMBIGUOUS** \u2014 the lane's residual rises 2,566 -> 5,748. It does not add resolved edges: resolved 20,567 -> 20,591 (+24). THE CAUSE IS THE QUALIFIED NAME: every importing file emits `ns.member` (e.g. `cv.bulmaStringToNumber`) and pushes a symbol of that name, so a module imported by N files produces N declarations of the same name and the gate reads them as collisions.",
+    "nextFixShape": "the delegate already has the mechanism for exactly this \u2014 `publishFileScopedIdentities` gives same-named symbols file-scoped qualified names (`file::name`, `file#2::name`). The emitted member symbols/edges need the same treatment on the edge side, or the resolver should not emit per-file member edges at all."
+  },
+  "regressionDetector": {
+    "extOK": "**6,841 -> 6,841, UNCHANGED** \u2014 the Lead's stop condition was not triggered. imports extOK 3,108 and references extOK 3,733 are individually unchanged too."
+  },
+  "cssControl": {
+    "verdict": "0 of 6 columns differ (exit 0) \u2014 the verified neighbour is unmoved by all three fixes."
+  },
+  "otherColumns": "references, imports, extends, calls, overrides, uses, contains: ALL IDENTICAL between the before and after arms. Only `exports` moved.",
+  "fixtures": "scss `{\"pass\":13,\"fail\":0}` \u00b7 css `{\"pass\":22,\"fail\":0}` \u00b7 both 'all fixtures pass'",
+  "gates": [
+    {
+      "cmd": "npx tsx script/m14/incoming-gate.ts scss scss 0 --index (after the fixes)",
+      "exit": 1
+    },
+    {
+      "cmd": "npx tsx script/m14/residual-gate.ts --lane css (after the fixes)",
+      "exit": 0
+    },
+    {
+      "cmd": "npx tsc --noEmit",
+      "exit": 0
+    },
+    {
+      "cmd": "npm run audit:script-typecheck",
+      "exit": "PASS, baseline 0"
+    }
+  ],
+  "raw": [
+    "scss-gate-built-index.txt (before)",
+    "scss-gate-built-index-fixed.txt (after)",
+    "css-gate-after-index-fixes.txt",
+    "index-shape-probe.mts",
+    "specifier-match-count.mts"
+  ]
+}

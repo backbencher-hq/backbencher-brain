@@ -1,5 +1,14 @@
 // script/m20/verify-security-flow-boundary.ts — flow evidence and the endpoint-resolution boundary.
 //
+// M72 PATH DECLARATION — THIS GATE PINS THE RETIRED (ROLLBACK) TOKEN ENGINE'S
+// STATE MACHINE. It seeds `brain_taint_flow` directly (the default pipeline no
+// longer writes it), so it does not depend on the indexer's security stage; it
+// asserts the archived engine's endpoint-resolution/state precedence rules that
+// the M72 lead store replaces. The default lead contract is gated by
+// script/m13/verify-security-{handler,adversarial}.ts and
+// script/m20/verify-security-history.ts; the M72 store/engine gates live in
+// script/m72/**.
+//
 // Two failure modes this suite pins:
 //
 //  1. THE COVERAGE COULD VANISH SILENTLY. All 7 substantive assertions lived
@@ -14,7 +23,7 @@
 //     reported a ratio that overstated the coverage. The harness counts every
 //     assertion once and keeps positives and negatives in separate buckets.
 //
-// The 8 hardcoded `$HOME/...` paths in sibling verifiers are not
+// The 8 hardcoded `/home/ishaq2321/...` paths in sibling verifiers are not
 // used here: this suite is hermetic.
 //
 // Run: npx tsx script/m20/verify-security-flow-boundary.ts

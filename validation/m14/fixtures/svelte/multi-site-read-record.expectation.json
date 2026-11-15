@@ -1,0 +1,91 @@
+{
+  "fixtureId": "svelte/multi-site-read-record",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the graph contract this lane already holds (ONE edge per `type|source|target`) plus the measurement that made the projection lossy: the grammar-derived oracle counts a name read at more than one site over the 6,439-file corpus as 2,218 names in 2,354 files, 4,273 sites. The `line_number` pins assert the pre-existing convention — the LAST collected site — is unchanged, and the `meta.templateReadLines` pins assert the new list. Line pins read off the post-fix run and checked against the fixture's text.",
+  "rationale": "JOB 2 of the svelte ontology pass. The collection map was `Map<string, number>`, so `out.set(word, line)` overwrote and every read site but the last was unrecoverable from the payload. That is a lossy PROJECTION rather than a wrong edge — every claimed line is a real read site — which is why no gate saw it: a differential compares one edge per pair, and the edge was right. The fix records every site in `metadata.templateReadLines` and leaves `line_number` and `confidence` exactly as they were, so no field a shared payload baseline pins moves. `snapped` and `promise` are the single-site controls: a rule that invented sites would show up there.",
+  "expectSymbols": [
+    {
+      "name": "rows"
+    },
+    {
+      "name": "total"
+    },
+    {
+      "name": "promise"
+    },
+    {
+      "name": "greeting"
+    },
+    {
+      "name": "name"
+    },
+    {
+      "name": "snapped"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "total",
+      "line_number": 39,
+      "meta.isTemplateExpression": true,
+      "meta.templateReadSites": [
+        37,
+        38,
+        39
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "greeting",
+      "line_number": 46,
+      "meta.templateReadSites": [
+        45,
+        46
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "name",
+      "line_number": 46,
+      "meta.templateReadSites": [
+        45,
+        46
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "snapped",
+      "line_number": 48,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "promise",
+      "line_number": 41,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "total",
+      "line_number": 37,
+      "comment": "`line_number` keeps the LAST collected site, exactly as before this change. Moving it to the first would be a payload-baseline change, not a fix, and the migration is deliberately not taken."
+    },
+    {
+      "type": "uses",
+      "target": "value",
+      "comment": "`{#await promise then value}` — `value` is the then-BINDING, a template-local; only the promise expression publishes"
+    },
+    {
+      "type": "uses",
+      "target": "rows",
+      "comment": "declared and never read in the template; the control that the fixture is not publishing reads for every symbol it sees"
+    }
+  ]
+}

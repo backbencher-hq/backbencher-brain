@@ -1,0 +1,190 @@
+{
+  "fixtureId": "kotlin/ontology-imports-exports",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the two ontology types the lane did not emit (docs/analyzers/ONTOLOGY-WORKSTREAM.md, JOB 2). `imports` and `exports` were both 0 edges on 300 tracked corpus files while `ParseResult.imports` held 4,470 rows and `ParseResult.exports` held thousands: the dependency and the public-API surface existed as data and never as graph edges. Every pin here is derived from the RULE in docs/analyzers/kotlin.md, not from observed output. IMPORTS: source is the declaring package so `source + \".\" + target` is the dotted path an `exports` edge publishes; confidence 0.9 with a reasonCode because the path is read off the grammar but never resolved; the three kotlin import forms are NAMED because a consumer cannot infer them from a trailing `.*` the grammar keeps out of the identifier text. EXPORTS: six clauses \u2014 top-level only, not lexically local, public only, not synthesized, not a script, and the file must name a package. `Annotated` is the regression pin for a real defect found while measuring: tree-sitter-kotlin starts a declaration node at its `modifiers` while the symbol reports the NAME's row, so a rule keyed on the node's start row dropped 922 of 2,059 eligible exports on a 1,500-file corpus window \u2014 every annotated declaration, which in that corpus is most of them.",
+  "expectSymbols": [
+    {
+      "name": "Published",
+      "kind": "class"
+    },
+    {
+      "name": "ExplicitlyPublic",
+      "kind": "class"
+    },
+    {
+      "name": "Record",
+      "kind": "class"
+    },
+    {
+      "name": "topLevelHelper",
+      "kind": "function"
+    },
+    {
+      "name": "Annotated",
+      "kind": "class"
+    },
+    {
+      "name": "withLocals",
+      "kind": "function"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "java.util.List",
+      "isNamespaceImport": false
+    },
+    {
+      "module": "java.util.concurrent",
+      "isNamespaceImport": true
+    },
+    {
+      "module": "kotlin.collections.MutableList",
+      "isNamespaceImport": false,
+      "meta.alias": "AliasList"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "Published",
+      "target": "java.util.List",
+      "meta.importShape": "imported_declaration",
+      "meta.relationshipType": "imported_declaration",
+      "meta.isWildcard": false,
+      "meta.evidenceClass": "import_based",
+      "meta.reasonCode": "declared-import-path",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "imports",
+      "from": "Published",
+      "target": "java.util.concurrent",
+      "meta.importShape": "imported_package_wildcard",
+      "meta.relationshipType": "imported_package_wildcard",
+      "meta.isWildcard": true,
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "imports",
+      "from": "Published",
+      "target": "kotlin.collections.MutableList",
+      "meta.importShape": "imported_declaration_aliased",
+      "meta.alias": "AliasList",
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "exports",
+      "from": "Published",
+      "target": "Published",
+      "meta.relationshipType": "exported_declaration",
+      "meta.visibility": "public",
+      "meta.dottedName": "com.acme.ontology.Published",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "Published",
+      "target": "ExplicitlyPublic",
+      "meta.dottedName": "com.acme.ontology.ExplicitlyPublic",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "Published",
+      "target": "Record",
+      "meta.kind": "class",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "Published",
+      "target": "topLevelHelper",
+      "meta.kind": "function",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "Published",
+      "target": "Annotated",
+      "meta.dottedName": "com.acme.ontology.Annotated",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "Published",
+      "target": "withLocals",
+      "meta.kind": "function",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "ModuleScoped",
+      "note": "clause 3: `internal` is MODULE-visible in kotlin, so another module cannot import this name; publishing it would assert a reachability the language denies. Measured: 1,719 such declarations excluded on a 1,500-file window."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "FileScoped",
+      "note": "clause 3: `private` at top level is file-scoped."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "member",
+      "note": "clause 1: a member is reached through its container and membership is already published as `contains`."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "localHelper",
+      "note": "clause 2: declared inside a function body, so it has no ownerName in this analyzer and satisfies the naive top-level test while being callable from one lexical scope. Measured: 148 of 2,809 ownerless public symbols on a 1,500-file window are local, and the pre-existing ExportInfo loop published every one."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "LocalClass",
+      "note": "clause 2, the class case: a local class is named by no import."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "localValue",
+      "note": "clause 2: a local property is not module API."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "component1",
+      "note": "clause 4: a data class's componentN/copy/equals are synthesized by the compiler and written nowhere (`metadata.isPhantom`)."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "target": "copy",
+      "note": "clause 4, same synthesized family."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ctx",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    }
+  ],
+  "authoredNote": " [TASK-9 KOTLIN4 SUPERSESSION 2026-10-19: the imports/exports SOURCE contract is the file identity \u2014 primary top-level type when the file declares one, else the compilation-unit base name (fleet defect fix: the package-identity export channel is REMOVED because the store's defensive filter drops package-named export sources, and package-sourced imports are replaced by identity-sourced rows). Targets/metadata/coverage are preserved; the superseded package/root source spellings are now FORBIDDEN, so the re-pin strengthens rather than weakens the pins.]"
+}

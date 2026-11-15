@@ -1,0 +1,36 @@
+{
+  "comment": "The DERIVED half of the cross-file override pair, and the file that proves cross-file override resolution. `ExtDerived`'s base `ExtBase` and the `render` it overrides are BOTH declared in extbase.nim \u2014 a sibling module this file never sees. The `overrides` edge below is therefore only derivable from the project's override companion index; without one the analyzer correctly publishes nothing, and the differential seam is where the pair is exercised together. The receiver-qualified label is what makes the edge addressable: `ExtDerived.render` and `ExtBase.render` are different methods that share a name.",
+  "expectSymbols": [
+    {
+      "name": "ExtDerived",
+      "kind": "class"
+    },
+    {
+      "name": "extra",
+      "kind": "property"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "ExtDerived"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "ExtDerived",
+      "target": "ExtBase",
+      "comment": "the base is named in the source even though it lives in another module"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ExtBase",
+      "kind": "class",
+      "comment": "the NEGATIVE twin of the extends row above, and the two are one decision: `ExtBase` is IMPORTED, not declared here, so it is not a declaration SITE in this file and must not become a symbol \u2014 while the `extends ExtDerived -> ExtBase` edge is still correct, because the base NAME is written in the source. A symbol row and an edge row for the same name pull in opposite directions here, and pinning both directions is what stops a 'helpful' fix that promotes every imported name to a local declaration"
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "fixtureId": "svelte/object-key-not-a-read",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the Svelte/JavaScript rule that an object literal's `key` field is a WRITE and its `value` is a READ, from the grammar's own shape (probed: an attribute expression value is `expression > svelte_raw_text`, and a quoted attribute value wraps the same `expression`), and from the oracle that found the defect — it derives the read set from a REAL parse of each fragment, where a `pair`'s `key` field is not a read. Line pins and `meta.templateReadLines` read off the post-fix run and checked against the fixture's text: shorthand 47, computed key 50, ternaries 53/54, nested ternary 57, spread 60, receiver 66. The ARRAY pins carry the key assertions — the graph contract is ONE edge per `type|source|target`, so `foo` is published once at its LAST site and the list is the only place its other sites are stated; `[47,54,66]` therefore proves that line 43 (`{{ foo: true }}`, a key) is NOT a read site, which a `line_number` forbid could not have proved.",
+  "rationale": "JOB 2 of the svelte ontology pass. Three read-site rules in one fixture because all three are decisions the character walker has to earn. (1) An object-literal KEY is not a read: 49 edges in 38 of the 6,439 corpus files named a key the template never reads, and the worst of them resolved — `chart-pie-stacked.svelte` published `tooltip` because the same file declares `{#snippet tooltip()}`. (2) The key rule has to be TERNARY-AWARE or it eats real reads, because `? :` and `: ` are the same character: lines 53, 54 and 57 pin that both ternary arms publish. (3) A SPREAD argument is a read: `[...foo]` was suppressed by the receiver-only dot rule because the token before `foo` is a dot — runtime-legacy/samples/array-literal-spread-deopt published nothing for `foo`. The forbids pin the three shapes a widened rule would get wrong: an object key, a computed-key word, and a member leaf.",
+  "expectSymbols": [
+    {
+      "name": "foo"
+    },
+    {
+      "name": "bar"
+    },
+    {
+      "name": "month"
+    },
+    {
+      "name": "k"
+    },
+    {
+      "name": "v"
+    },
+    {
+      "name": "alpha"
+    },
+    {
+      "name": "beta"
+    },
+    {
+      "name": "list"
+    },
+    {
+      "name": "rows"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "foo",
+      "line_number": 66,
+      "meta.isTemplateExpression": true,
+      "meta.templateReadSites": [
+        47,
+        54,
+        66
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "bar",
+      "line_number": 54,
+      "meta.templateReadSites": [
+        47,
+        54
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "k",
+      "line_number": 50,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "v",
+      "line_number": 50,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "cond",
+      "line_number": 57,
+      "meta.templateReadSites": [
+        53,
+        54,
+        57
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "alpha",
+      "line_number": 57,
+      "meta.templateReadSites": [
+        53,
+        57
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "beta",
+      "line_number": 57,
+      "meta.templateReadSites": [
+        53,
+        57
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "list",
+      "line_number": 60,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "rows",
+      "line_number": 63,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "month",
+      "comment": "`{{ month: \"january\" }}` on 44 and `{{ month: cond ? alpha : beta }}` on 57 — `month` is the KEY of a written property in both. Publishing it is the false read this fixture exists for; the corpus's worst case RESOLVED, because chart-pie-stacked.svelte declares `{#snippet tooltip()}` and so published `uses -> tooltip` off a Recharts config key."
+    },
+    {
+      "type": "uses",
+      "target": "length",
+      "comment": "`rows.length` on 63 — a member LEAF on a member is not a component-level read; the collector's dot rule skips it and must keep skipping it"
+    },
+    {
+      "type": "uses",
+      "target": "toFixed",
+      "comment": "same dot rule on 66"
+    },
+    {
+      "type": "uses",
+      "target": "item",
+      "comment": "the `{#each [...list] as item}` BINDING is a template-local; only the collection `list` publishes. The spread fix widened the READ side and must not widen the binding side."
+    }
+  ]
+}

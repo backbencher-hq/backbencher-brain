@@ -13,10 +13,10 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
 
 const FILES = [
-  "$HOME/fixtures/repositories/Exposed/exposed-json/src/test/kotlin/org/jetbrains/exposed/v1/json/JsonTestsData.kt",
+  "/home/ishaq2321/bb_tests/repositories/Exposed/exposed-json/src/test/kotlin/org/jetbrains/exposed/v1/json/JsonTestsData.kt",
 ]
 
 async function check(file: string): Promise<{ phantoms: number; edges: number; wrongLine: number; noLine: number }> {

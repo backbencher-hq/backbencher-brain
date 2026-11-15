@@ -1,0 +1,15 @@
+{
+  "fixtureId": "go/imports-recovered",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS GOD10. An import block left unterminated does not parse into a degraded `import_declaration` — the grammar emits a BARE `ERROR` node holding the specs directly (ERROR \"import (\" > import_spec, import_spec, ERROR \"var _ =\"), so a pass keyed on the import_declaration wrapper loses the entire block. That this is a defect rather than a ruling is GO16's existing decision: recovery must not swallow a declaration the tree can still see. An import path is not a value read out of a recovery the way a composite literal or a call receiver is (the GO15/GO17 distinction the go lane applies to construction and call edges) — it is a string literal the grammar handed back whole, and a dependency graph that loses it because a LATER line lacked a paren is wrong in a way no reader can detect. The FORBID row is the half that matters: without it, a pass that published NO import edge for a recovered block would pass this fixture, which is exactly the defect. Found by the round-7 `imports` shapes probe (case `import-in-error-region`), whose control half is what makes it a finding — 0 corpus instances across 6,836 files, so no full-extent read can see it, and the surface had no oracle at all before this round. Lines read back from live emission with script/m14/tmp/god9-dump.ts, never predicted.",
+  "expectRelationships": [
+    { "type": "imports", "from": "gofixture", "target": "net/url", "line_number": 24, "meta.isGoImportDep": true },
+    { "type": "imports", "from": "gofixture", "target": "io/ioutil", "line_number": 25, "meta.isGoImportDep": true }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "gofixture", "target": "import (" },
+    { "type": "imports", "from": "gofixture", "target": "url" },
+    { "type": "imports", "from": "gofixture", "target": "ioutil" }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/export-quoted-shape-bd11.sh",
+ "authoredFrom": "BD11. The quoted assignment `export \"NAME=value\"` arrives from the grammar as ONE `string` node with no `variable_assignment` and no `variable_name` beneath it, so the declaration extractor — which read only those two shapes — produced no symbol, no `exports` edge and no diagnostic for it. MEASURED corpus-wide before the fix (`probe-bash-silent-types.mts --corpus`, 2,962 .sh/.bash files): 1,628 export sites in 507 files, 1,602 of them statically nameable, and 1,598 edges — a deficit of exactly 4, the 4 sites of this shape. The computed-name site is pinned in the NEGATIVE direction: a name assembled from an expansion is not a name, so no `exports` edge may exist for it, and the `uses` read of `ucname` must survive instead.",
+ "expectSymbols": [
+  {
+   "name": "export-quoted-shape-bd11.sh",
+   "kind": "module"
+  },
+  {
+   "name": "QUOTED_STATIC",
+   "kind": "constant",
+   "ownerName": "export-quoted-shape-bd11.sh"
+  },
+  {
+   "name": "QUOTED_BARE",
+   "kind": "constant",
+   "ownerName": "export-quoted-shape-bd11.sh"
+  },
+  {
+   "name": "PLAIN_UNQUOTED",
+   "kind": "constant",
+   "ownerName": "export-quoted-shape-bd11.sh"
+  },
+  {
+   "name": "ucname",
+   "kind": "variable",
+   "ownerName": "export-quoted-shape-bd11.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "export-quoted-shape-bd11.sh",
+   "target": "export-quoted-shape-bd11.sh.QUOTED_STATIC",
+   "line_number": 17,
+   "meta.exportForm": "variable"
+  },
+  {
+   "type": "exports",
+   "from": "export-quoted-shape-bd11.sh",
+   "target": "export-quoted-shape-bd11.sh.QUOTED_BARE",
+   "line_number": 20,
+   "meta.exportForm": "variable"
+  },
+  {
+   "type": "exports",
+   "from": "export-quoted-shape-bd11.sh",
+   "target": "export-quoted-shape-bd11.sh.PLAIN_UNQUOTED",
+   "line_number": 23,
+   "meta.exportForm": "variable"
+  },
+  {
+   "type": "contains",
+   "from": "export-quoted-shape-bd11.sh",
+   "target": "QUOTED_STATIC",
+   "line_number": 17
+  },
+  {
+   "type": "contains",
+   "from": "export-quoted-shape-bd11.sh",
+   "target": "QUOTED_BARE",
+   "line_number": 20
+  },
+  {
+   "type": "uses",
+   "from": "export-quoted-shape-bd11.sh",
+   "target": "export-quoted-shape-bd11.sh.ucname",
+   "line_number": 27
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "_${ucname}_COMPLETE"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "_${ucname}_COMPLETE=bash_source"
+  },
+  {
+   "type": "contains",
+   "target": "_${ucname}_COMPLETE"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "exports",
+   "equals": 3
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

@@ -1,0 +1,26 @@
+{
+  "fixtureId": "csharp/literal-callee-recovery",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The LITERAL-CALLEE fabrication, found by the M59.A7 (#825) depth draw and not by reading the analyzer: the 900-file powershell draw (bun script/m14/differential.ts --repo powershell --sample 900) reported exactly one unexplained edge — `calls StartSSHProcess -> false` at src/System.Management.Automation/engine/remoting/common/RunspaceConnectionInfo.cs:2331, a line that assigns a boolean literal. Cause, measured with script/m14/tmp/cs-u2331-probe.ts and reproduced minimally with script/m14/tmp/cs-literal-callee-hunt.ts: after ONE missing semicolon (`… = false` then `return …(...)`), the grammar's error recovery parses the literal and the far-away argument list as ONE invocation_expression, so the node carrying the callee is a `boolean_literal`. The target hygiene at the time checked the target STRING (a keyword set, an identifier-shape check, a builtin set) and `false` is a well-formed identifier to a string check. The rule is now structural: a call's callee must be a NAMING node (identifier or generic_name). The fixture is an ERROR fixture on purpose — the shape cannot exist in a well-formed file — and it carries a LEGAL CONTROL (the same code WITH the semicolon) whose calls must still be emitted, so the fix cannot degenerate into `drop calls near error nodes`. Measured here: Damaged emits no call to the literal, and Legal still emits `calls Legal -> StartSSHProcessImpl` (line 44) and `calls Legal -> GetDirectoryName` (line 41).",
+  "expectSymbols": [
+    { "name": "LiteralCallee", "kind": "class" },
+    { "name": "Damaged", "kind": "method", "ownerName": "LiteralCallee" },
+    { "name": "Legal", "kind": "method", "ownerName": "LiteralCallee" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Legal", "target": "StartSSHProcessImpl", "line_number": 44, "comment": "the control: a real call next to the damaged one is still emitted (no blanket suppression)" },
+    { "type": "calls", "from": "Legal", "target": "GetDirectoryName", "line_number": 41 },
+    { "type": "calls", "from": "Damaged", "target": "GetDirectoryName", "line_number": 32, "comment": "the damaged method is not silenced wholesale either — only the junk callee is refused" },
+    { "type": "instantiates", "from": "Damaged", "target": "System.Diagnostics.ProcessStartInfo", "line_number": 31 },
+    { "type": "instantiates", "from": "Legal", "target": "System.Diagnostics.ProcessStartInfo", "line_number": 40 },
+    { "type": "contains", "from": "LiteralCallee", "target": "Damaged", "line_number": 29 },
+    { "type": "contains", "from": "LiteralCallee", "target": "Legal", "line_number": 38 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "false", "note": "the pre-fix fabrication, measured on the real corpus file (RunspaceConnectionInfo.cs:2331) and reproduced here: a boolean literal as a callee names nothing, so it is not a call" },
+    { "type": "calls", "target": "true", "note": "the same class on the other boolean literal" },
+    { "type": "calls", "target": "null", "note": "the same class on the null literal" },
+    { "type": "calls", "from": "Damaged", "target": "false", "line_number": 34, "note": "the exact pre-fix edge on this fixture's line 34 — the `= false` assignment the error recovery turned into a callee" }
+  ]
+}

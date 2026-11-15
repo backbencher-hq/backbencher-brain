@@ -1,0 +1,126 @@
+{
+  "fixtureId": "m60-anon-name-collision",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "M60. Written from the rule, not from observed output: an anonymous class is named by a structure of its supertype, and a second anonymous class of the SAME supertype in the same file takes #2 rather than colliding. The rule follows the lane's existing per-file `given_N` counter convention (real-scala-analyzer.ts givenCounter), so the naming is rename-stable under upstream line insertions.",
+  "rationale": "402 of 18,446 scala3 files declared a duplicate anonymous name (517 collisions over 3,330 anonymous symbols). The cost was a merged graph node: CheckCaptures.scala declares four distinct anonymous_TypeTraverser classes and published all their members under one owner, 7 of 8 contains rows attributed to the wrong class, and `traverse` appearing four times under one owner collapsing to a single row after the harness's (label, target) dedupe. The first occurrence keeps the bare name so every existing pin still holds; only the collision takes a suffix. The negative half matters as much as the positive: a fourth anonymous_Runnable must not be numbered #1 again, and a DIFFERENT supertype must not be pushed to #2 by a same-supertype neighbour.",
+  "expectSymbols": [
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "Site",
+      "comment": "the FIRST `new Runnable` keeps the bare name, so existing pins such as `anonymous_Runnable -> run` still hold"
+    },
+    {
+      "name": "anonymous_Runnable#2",
+      "kind": "class",
+      "ownerName": "Site",
+      "comment": "the second `new Runnable` is DISAMBIGUATED rather than merged into the first node"
+    },
+    {
+      "name": "anonymous_Runnable#3",
+      "kind": "class",
+      "ownerName": "Site",
+      "comment": "the third, numbered in source order"
+    },
+    {
+      "name": "anonymous_Other",
+      "kind": "class",
+      "ownerName": "Site",
+      "comment": "a DIFFERENT supertype is a different name and is NOT numbered against the same-supertype neighbours"
+    },
+    {
+      "name": "run",
+      "ownerName": "anonymous_Runnable"
+    },
+    {
+      "name": "extra",
+      "ownerName": "anonymous_Runnable#2"
+    },
+    {
+      "name": "other",
+      "ownerName": "anonymous_Runnable#3"
+    },
+    {
+      "name": "call",
+      "ownerName": "anonymous_Other"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Site",
+      "target": "anonymous_Runnable",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "run",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "Site",
+      "target": "anonymous_Runnable#2",
+      "line_number": 27
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable#2",
+      "target": "extra",
+      "line_number": 27
+    },
+    {
+      "type": "contains",
+      "from": "Site",
+      "target": "anonymous_Runnable#3",
+      "line_number": 28
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable#3",
+      "target": "other",
+      "line_number": 28
+    },
+    {
+      "type": "contains",
+      "from": "Site",
+      "target": "anonymous_Other",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Other",
+      "target": "call",
+      "line_number": 31
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "anonymous_Runnable#4",
+      "comment": "there are three anonymous Runnables in this file; a fourth would mean the counter is not per-file"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "extra",
+      "comment": "THE COLLISION DEFECT: `extra` belongs to the SECOND anonymous class. Attributing it to the first is the merged-node bug that cost 402 corpus files their graph shape."
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "other",
+      "comment": "same defect, third class"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Other",
+      "target": "call",
+      "line_number": 26,
+      "comment": "a different supertype must not be renumbered by a same-supertype neighbour, so this class stays bare"
+    }
+  ]
+}

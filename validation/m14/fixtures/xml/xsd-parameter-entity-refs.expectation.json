@@ -1,0 +1,59 @@
+{
+  "fixtureId": "xml/xsd-parameter-entity-refs",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M18 (PEReference round). A parameter entity reference is a USE, and all 24 corpus sites were producing no edge. `%defroot;` is how a DTD pulls in another DTD — the same fact `entity_external_id` already records for `<!ENTITY % pe SYSTEM \"common.dtd\">`, reached by reference instead of by ExternalID, and recorded only for the ExternalID form. The owner is the DOCTYPE'S OWN NAME, because a parameter reference in the internal subset has no element above it: the X7 shape, a claim the document makes dropped for want of anywhere to attach it. Three shapes, and the third is here because its discriminator from the second is ONE CHARACTER. Shape 1 is a parameter reference in the internal subset. Shape 2 is `%name;` inside an entity's replacement text, owned by the DECLARING ENTITY. Shape 3 is `% name 'replacement'` — the parameter-entity VALUE form, which names nothing and must produce no edge; libxml2's corpus holds both `%xx;` and `% zz '&#60;'`, and a rule accepting either would invent names out of literal percent signs. The replacement-text shape is written the way `result/valid/index.xml` writes it, because a first draft butted the reference against markup, which the grammar parses under an ERROR — and pinning an owner for a node the parser could not read would be pinning a fiction.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "outer",
+      "target": "inner",
+      "line_number": 43,
+      "meta.role": "parameter_entity_reference",
+      "meta.resolvable": "in-document",
+      "meta.isParameterEntity": true,
+      "note": "Shape 2: the owner is the DECLARING ENTITY, not the DOCTYPE and not an element — `outer` cannot be expanded without `inner`. The first version asked the PEReference node itself for an `EntityValue` CHILD, which a reference never has, so the test was always false and libxml2's index.xml published `NewsML -> global-attributes` when the owner should have been the entity using it."
+    },
+    {
+      "type": "references",
+      "from": "root",
+      "target": "outer",
+      "line_number": 48,
+      "meta.role": "parameter_entity_reference",
+      "meta.resolvable": "in-document",
+      "meta.isParameterEntity": true,
+      "note": "Shape 1: owner is the DOCTYPE's own name, because this reference sits in the internal subset with no element above it."
+    },
+    {
+      "type": "references",
+      "from": "root",
+      "target": "neverDeclared",
+      "line_number": 49,
+      "meta.role": "parameter_entity_reference",
+      "meta.resolvable": "unresolved",
+      "meta.danglingEntityReference": true,
+      "note": "An undeclared parameter entity is RECORDED and labelled rather than refused — the same ruling as X13 for a bare type reference, and the same reason: refusing it is what makes the claim invisible. There is no builtin form for a parameter entity (there is no `%lt;`), so the answer is binary and copying EntityRef's three-way label here would be a fiction."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "zz",
+      "note": "Shape 3: `% zz '&#60;'` is the parameter-entity VALUE form and names nothing. The corpus contains it beside real references precisely so that a rule accepting any `%…;` would be caught — the semicolon is the discriminator."
+    },
+    {
+      "type": "references",
+      "from": "inner",
+      "target": "outer",
+      "note": "direction: `outer` uses `inner`, never the reverse."
+    }
+  ],
+  "expectSymbols": [
+    { "name": "inner", "meta.isDtdParameterEntity": true },
+    { "name": "outer", "meta.isDtdParameterEntity": true }
+  ],
+  "forbidSymbols": [
+    { "name": "zz", "note": "the value form's first token is not a parameter entity name, so nothing may be published for it." },
+    { "name": "neverDeclared", "note": "a USE is not a DECLARATION: the reference is recorded, the target symbol is not." }
+  ]
+}

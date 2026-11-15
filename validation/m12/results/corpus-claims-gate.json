@@ -1,0 +1,2091 @@
+{
+  "gate": "m12-corpus-claims",
+  "issue": "#834",
+  "checkedAt": "2026-09-30T03:37:19.857Z",
+  "languagesChecked": 42,
+  "hardFailures": [
+    "H1 r: manifest claims grammarErrorFiles=0 but artifact measures undefined",
+    "H5 lua: manifest claims corpusSymbols=6746 but lua-corpus-errors.json (mode=full-corpus, 199 files) measures 3724",
+    "H5 lua: manifest claims corpusRelationships=12032 but lua-corpus-errors.json (mode=full-corpus, 199 files) measures 7025",
+    "H1 sql: manifest claims grammarErrorFiles=318 but artifact measures 256",
+    "H1 graphql: manifest claims grammarErrorFiles=1 but artifact measures 0",
+    "H7 lua: the artifact was measured at corpus luvit@a63febcb9108, which NO manifest candidate declares (luarocks@665f160b(clean)) — the manifest does not declare the draw its own evidence came from",
+    "H7 sql: the artifact was measured at corpus ?@1f3e35673453, which NO manifest candidate declares (proxicall@3b6ebd40(dirty)) — the manifest does not declare the draw its own evidence came from",
+    "H7 xml: the artifact was measured at corpus ?@334007a8b562, which NO manifest candidate declares (grails_core@a83f8748(clean)) — the manifest does not declare the draw its own evidence came from",
+    "H7 hcl: the artifact was measured at corpus ?@db4eef44f5bb, which NO manifest candidate declares (terraform@2e1710bf(clean)) — the manifest does not declare the draw its own evidence came from",
+    "H7 graphql: the artifact was measured at corpus ?@ee5ce41d4b68, which NO manifest candidate declares (graphql_js@9c245018(clean)) — the manifest does not declare the draw its own evidence came from"
+  ],
+  "remainderLanguages": [],
+  "remainderIssue": null,
+  "unbackedClaims": [
+    {
+      "language": "java",
+      "claim": "corpusSymbols",
+      "value": 7812
+    },
+    {
+      "language": "java",
+      "claim": "corpusRelationships",
+      "value": 30483
+    },
+    {
+      "language": "kotlin",
+      "claim": "corpusSymbols",
+      "value": 11286
+    },
+    {
+      "language": "kotlin",
+      "claim": "corpusRelationships",
+      "value": 43364
+    },
+    {
+      "language": "clojure",
+      "claim": "corpusSymbols",
+      "value": 4450
+    },
+    {
+      "language": "clojure",
+      "claim": "corpusRelationships",
+      "value": 8708
+    },
+    {
+      "language": "scala",
+      "claim": "corpusSymbols",
+      "value": 25008
+    },
+    {
+      "language": "scala",
+      "claim": "corpusRelationships",
+      "value": 79260
+    },
+    {
+      "language": "groovy",
+      "claim": "corpusSymbols",
+      "value": 2953
+    },
+    {
+      "language": "groovy",
+      "claim": "corpusRelationships",
+      "value": 14053
+    },
+    {
+      "language": "csharp",
+      "claim": "corpusSymbols",
+      "value": 4451
+    },
+    {
+      "language": "csharp",
+      "claim": "corpusRelationships",
+      "value": 17563
+    },
+    {
+      "language": "fsharp",
+      "claim": "corpusSymbols",
+      "value": 36901
+    },
+    {
+      "language": "fsharp",
+      "claim": "corpusRelationships",
+      "value": 128401
+    },
+    {
+      "language": "typescript",
+      "claim": "corpusSymbols",
+      "value": 26513
+    },
+    {
+      "language": "typescript",
+      "claim": "corpusRelationships",
+      "value": 100594
+    },
+    {
+      "language": "javascript",
+      "claim": "corpusSymbols",
+      "value": 2935
+    },
+    {
+      "language": "javascript",
+      "claim": "corpusRelationships",
+      "value": 17483
+    },
+    {
+      "language": "dart",
+      "claim": "corpusSymbols",
+      "value": 23952
+    },
+    {
+      "language": "dart",
+      "claim": "corpusRelationships",
+      "value": 88098
+    },
+    {
+      "language": "vue",
+      "claim": "corpusSymbols",
+      "value": 2033
+    },
+    {
+      "language": "vue",
+      "claim": "corpusRelationships",
+      "value": 8532
+    },
+    {
+      "language": "svelte",
+      "claim": "corpusSymbols",
+      "value": 913
+    },
+    {
+      "language": "svelte",
+      "claim": "corpusRelationships",
+      "value": 655
+    },
+    {
+      "language": "html",
+      "claim": "corpusSymbols",
+      "value": 251
+    },
+    {
+      "language": "html",
+      "claim": "corpusRelationships",
+      "value": 41
+    },
+    {
+      "language": "c",
+      "claim": "corpusSymbols",
+      "value": 3692
+    },
+    {
+      "language": "c",
+      "claim": "corpusRelationships",
+      "value": 14593
+    },
+    {
+      "language": "cpp",
+      "claim": "corpusSymbols",
+      "value": 9765
+    },
+    {
+      "language": "cpp",
+      "claim": "corpusRelationships",
+      "value": 31909
+    },
+    {
+      "language": "rust",
+      "claim": "corpusSymbols",
+      "value": 11634
+    },
+    {
+      "language": "rust",
+      "claim": "corpusRelationships",
+      "value": 80199
+    },
+    {
+      "language": "zig",
+      "claim": "corpusSymbols",
+      "value": 29771
+    },
+    {
+      "language": "zig",
+      "claim": "corpusRelationships",
+      "value": 16559
+    },
+    {
+      "language": "swift",
+      "claim": "corpusSymbols",
+      "value": 13464
+    },
+    {
+      "language": "swift",
+      "claim": "corpusRelationships",
+      "value": 31189
+    },
+    {
+      "language": "go",
+      "claim": "corpusSymbols",
+      "value": 7157
+    },
+    {
+      "language": "go",
+      "claim": "corpusRelationships",
+      "value": 28187
+    },
+    {
+      "language": "elixir",
+      "claim": "corpusSymbols",
+      "value": 7704
+    },
+    {
+      "language": "elixir",
+      "claim": "corpusRelationships",
+      "value": 23777
+    },
+    {
+      "language": "erlang",
+      "claim": "corpusSymbols",
+      "value": 5400
+    },
+    {
+      "language": "erlang",
+      "claim": "corpusRelationships",
+      "value": 19207
+    },
+    {
+      "language": "haskell",
+      "claim": "corpusSymbols",
+      "value": 17828
+    },
+    {
+      "language": "haskell",
+      "claim": "corpusRelationships",
+      "value": 34755
+    },
+    {
+      "language": "clean",
+      "claim": "corpusSymbols",
+      "value": 1307
+    },
+    {
+      "language": "clean",
+      "claim": "corpusRelationships",
+      "value": 1416
+    },
+    {
+      "language": "python",
+      "claim": "corpusSymbols",
+      "value": 15558
+    },
+    {
+      "language": "python",
+      "claim": "corpusRelationships",
+      "value": 30901
+    },
+    {
+      "language": "php",
+      "claim": "corpusSymbols",
+      "value": 3073
+    },
+    {
+      "language": "php",
+      "claim": "corpusRelationships",
+      "value": 4276
+    },
+    {
+      "language": "perl",
+      "claim": "corpusSymbols",
+      "value": 1681
+    },
+    {
+      "language": "perl",
+      "claim": "corpusRelationships",
+      "value": 5991
+    },
+    {
+      "language": "r",
+      "claim": "corpusSymbols",
+      "value": 3509
+    },
+    {
+      "language": "r",
+      "claim": "corpusRelationships",
+      "value": 6127
+    },
+    {
+      "language": "ruby",
+      "claim": "corpusSymbols",
+      "value": 1309
+    },
+    {
+      "language": "ruby",
+      "claim": "corpusRelationships",
+      "value": 6524
+    },
+    {
+      "language": "sql",
+      "claim": "corpusSymbols",
+      "value": 3039
+    },
+    {
+      "language": "sql",
+      "claim": "corpusRelationships",
+      "value": 4181
+    },
+    {
+      "language": "json",
+      "claim": "corpusSymbols",
+      "value": 69512
+    },
+    {
+      "language": "json",
+      "claim": "corpusRelationships",
+      "value": 70074
+    },
+    {
+      "language": "xml",
+      "claim": "corpusSymbols",
+      "value": 6195
+    },
+    {
+      "language": "xml",
+      "claim": "corpusRelationships",
+      "value": 2388
+    },
+    {
+      "language": "hcl",
+      "claim": "corpusSymbols",
+      "value": 14226
+    },
+    {
+      "language": "hcl",
+      "claim": "corpusRelationships",
+      "value": 10667
+    },
+    {
+      "language": "graphql",
+      "claim": "corpusSymbols",
+      "value": 3251
+    },
+    {
+      "language": "graphql",
+      "claim": "corpusRelationships",
+      "value": 6042
+    },
+    {
+      "language": "bash",
+      "claim": "corpusSymbols",
+      "value": 674
+    },
+    {
+      "language": "bash",
+      "claim": "corpusRelationships",
+      "value": 1311
+    },
+    {
+      "language": "powershell",
+      "claim": "corpusSymbols",
+      "value": 460
+    },
+    {
+      "language": "powershell",
+      "claim": "corpusRelationships",
+      "value": 590
+    },
+    {
+      "language": "make",
+      "claim": "corpusSymbols",
+      "value": 273
+    },
+    {
+      "language": "make",
+      "claim": "corpusRelationships",
+      "value": 518
+    },
+    {
+      "language": "markdown",
+      "claim": "corpusSymbols",
+      "value": 6673
+    },
+    {
+      "language": "markdown",
+      "claim": "corpusRelationships",
+      "value": 9112
+    }
+  ],
+  "corpusCandidates": [
+    {
+      "language": "java",
+      "candidate": "intellij_community@cfda6881(dirty)",
+      "repo": "intellij_community",
+      "sha": "cfda6881",
+      "state": "dirty",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "kotlin",
+      "candidate": "intellij_community@cfda6881(dirty)",
+      "repo": "intellij_community",
+      "sha": "cfda6881",
+      "state": "dirty",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "clojure",
+      "candidate": "clojure@2cea6925(clean)",
+      "repo": "clojure",
+      "sha": "2cea6925",
+      "state": "clean",
+      "head": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+      "at": "/home/ishaq2321/bb_tests/repositories/clojure",
+      "status": "at-head"
+    },
+    {
+      "language": "scala",
+      "candidate": "intellij_community@cfda6881(dirty)",
+      "repo": "intellij_community",
+      "sha": "cfda6881",
+      "state": "dirty",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "scala",
+      "candidate": "scala3@18df09c0(clean)",
+      "repo": "scala3",
+      "sha": "18df09c0",
+      "state": "clean",
+      "head": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+      "at": "/home/ishaq2321/bb_tests/repositories/scala3",
+      "status": "at-head"
+    },
+    {
+      "language": "groovy",
+      "candidate": "grails_core@a83f8748(clean)",
+      "repo": "grails_core",
+      "sha": "a83f8748",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "csharp",
+      "candidate": "roslyn@73241b4b(clean)",
+      "repo": "roslyn",
+      "sha": "73241b4b",
+      "state": "clean",
+      "head": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+      "at": "/home/ishaq2321/roslyn",
+      "status": "at-head"
+    },
+    {
+      "language": "csharp",
+      "candidate": "fsharp@22a8a5dc(clean)",
+      "repo": "fsharp",
+      "sha": "22a8a5dc",
+      "state": "clean",
+      "head": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "at": "/home/ishaq2321/bb_tests/repositories/fsharp",
+      "status": "at-head"
+    },
+    {
+      "language": "csharp",
+      "candidate": "powershell@91ce9844(clean)",
+      "repo": "powershell",
+      "sha": "91ce9844",
+      "state": "clean",
+      "head": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+      "at": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "status": "at-head"
+    },
+    {
+      "language": "fsharp",
+      "candidate": "fsharp@22a8a5dc(clean)",
+      "repo": "fsharp",
+      "sha": "22a8a5dc",
+      "state": "clean",
+      "head": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "at": "/home/ishaq2321/bb_tests/repositories/fsharp",
+      "status": "at-head"
+    },
+    {
+      "language": "typescript",
+      "candidate": "typescript@b465fdbf(clean)",
+      "repo": "typescript",
+      "sha": "b465fdbf",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "typescript",
+      "candidate": "vscode@46ed260b(dirty)",
+      "repo": "vscode",
+      "sha": "46ed260b",
+      "state": "dirty",
+      "head": "44617f8e9a1e7293ce4b6bc86773e6c38509ffe5",
+      "at": "/home/ishaq2321/vscode",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "typescript",
+      "candidate": "proxicall@383e603e(dirty)",
+      "repo": "proxicall",
+      "sha": "383e603e",
+      "state": "dirty",
+      "head": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "at": "/home/ishaq2321/bb_tests/repositories/proxicall",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "typescript",
+      "candidate": "graphql_js@9c245018(clean)",
+      "repo": "graphql_js",
+      "sha": "9c245018",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "typescript",
+      "candidate": "vue_core@f8975657(clean)",
+      "repo": "vue_core",
+      "sha": "f8975657",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "javascript",
+      "candidate": "svelte@26786e92(clean)",
+      "repo": "svelte",
+      "sha": "26786e92",
+      "state": "clean",
+      "head": "26786e92985842a6d563c67049a43bc5857bf792",
+      "at": "/home/ishaq2321/bb_tests/repositories/svelte",
+      "status": "at-head"
+    },
+    {
+      "language": "javascript",
+      "candidate": "graphql_js@9c245018(clean)",
+      "repo": "graphql_js",
+      "sha": "9c245018",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "javascript",
+      "candidate": "vue_core@f8975657(clean)",
+      "repo": "vue_core",
+      "sha": "f8975657",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "javascript",
+      "candidate": "typescript@b465fdbf(clean)",
+      "repo": "typescript",
+      "sha": "b465fdbf",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "dart",
+      "candidate": "flutter@68dc5cf4(dirty)",
+      "repo": "flutter",
+      "sha": "68dc5cf4",
+      "state": "dirty",
+      "head": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
+      "at": "/home/ishaq2321/flutter",
+      "status": "at-head"
+    },
+    {
+      "language": "dart",
+      "candidate": "proxicall@383e603e(dirty)",
+      "repo": "proxicall",
+      "sha": "383e603e",
+      "state": "dirty",
+      "head": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "at": "/home/ishaq2321/bb_tests/repositories/proxicall",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "dart",
+      "candidate": "dart-http@92b20d12(clean)",
+      "repo": "dart-http",
+      "sha": "92b20d12",
+      "state": "clean",
+      "head": "92b20d125ffc972d38ca2f790504297a3ca87443",
+      "at": "/home/ishaq2321/bb_tests/repositories/dart-http",
+      "status": "at-head"
+    },
+    {
+      "language": "vue",
+      "candidate": "vue_core@f8975657(clean)",
+      "repo": "vue_core",
+      "sha": "f8975657",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "vue",
+      "candidate": "element-plus@1b45ace0(clean)",
+      "repo": "element-plus",
+      "sha": "1b45ace0",
+      "state": "clean",
+      "head": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+      "at": "/home/ishaq2321/bb_tests/repositories/element-plus",
+      "status": "at-head"
+    },
+    {
+      "language": "svelte",
+      "candidate": "svelte@26786e92(clean)",
+      "repo": "svelte",
+      "sha": "26786e92",
+      "state": "clean",
+      "head": "26786e92985842a6d563c67049a43bc5857bf792",
+      "at": "/home/ishaq2321/bb_tests/repositories/svelte",
+      "status": "at-head"
+    },
+    {
+      "language": "html",
+      "candidate": "vscode@46ed260b(dirty)",
+      "repo": "vscode",
+      "sha": "46ed260b",
+      "state": "dirty",
+      "head": "44617f8e9a1e7293ce4b6bc86773e6c38509ffe5",
+      "at": "/home/ishaq2321/vscode",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "html",
+      "candidate": "intellij_community@cfda6881(dirty)",
+      "repo": "intellij_community",
+      "sha": "cfda6881",
+      "state": "dirty",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "html",
+      "candidate": "svelte@26786e92(clean)",
+      "repo": "svelte",
+      "sha": "26786e92",
+      "state": "clean",
+      "head": "26786e92985842a6d563c67049a43bc5857bf792",
+      "at": "/home/ishaq2321/bb_tests/repositories/svelte",
+      "status": "at-head"
+    },
+    {
+      "language": "css",
+      "candidate": "vscode@46ed260b(dirty)",
+      "repo": "vscode",
+      "sha": "46ed260b",
+      "state": "dirty",
+      "head": "44617f8e9a1e7293ce4b6bc86773e6c38509ffe5",
+      "at": "/home/ishaq2321/vscode",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "css",
+      "candidate": "svelte@26786e92(clean)",
+      "repo": "svelte",
+      "sha": "26786e92",
+      "state": "clean",
+      "head": "26786e92985842a6d563c67049a43bc5857bf792",
+      "at": "/home/ishaq2321/bb_tests/repositories/svelte",
+      "status": "at-head"
+    },
+    {
+      "language": "scss",
+      "candidate": "element-plus@1b45ace0(clean)",
+      "repo": "element-plus",
+      "sha": "1b45ace0",
+      "state": "clean",
+      "head": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+      "at": "/home/ishaq2321/bb_tests/repositories/element-plus",
+      "status": "at-head"
+    },
+    {
+      "language": "c",
+      "candidate": "flutter@68dc5cf4(dirty)",
+      "repo": "flutter",
+      "sha": "68dc5cf4",
+      "state": "dirty",
+      "head": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
+      "at": "/home/ishaq2321/flutter",
+      "status": "at-head"
+    },
+    {
+      "language": "c",
+      "candidate": "swift_nio@ec51fff0(clean)",
+      "repo": "swift_nio",
+      "sha": "ec51fff0",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "c",
+      "candidate": "zig@738d2be9(clean)",
+      "repo": "zig",
+      "sha": "738d2be9",
+      "state": "clean",
+      "head": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "at": "/home/ishaq2321/bb_tests/repositories/zig",
+      "status": "at-head"
+    },
+    {
+      "language": "c",
+      "candidate": "cython@51a460b7(clean)",
+      "repo": "cython",
+      "sha": "51a460b7",
+      "state": "clean",
+      "head": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+      "at": "/home/ishaq2321/bb_tests/repositories/cython",
+      "status": "at-head"
+    },
+    {
+      "language": "c",
+      "candidate": "jq@41b8edfe(clean)",
+      "repo": "jq",
+      "sha": "41b8edfe",
+      "state": "clean",
+      "head": "41b8edfe5437fcd25a072081c05f9f770f9e9b85",
+      "at": "/home/ishaq2321/bb_tests/repositories/jq",
+      "status": "at-head"
+    },
+    {
+      "language": "cpp",
+      "candidate": "flutter@68dc5cf4(dirty)",
+      "repo": "flutter",
+      "sha": "68dc5cf4",
+      "state": "dirty",
+      "head": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
+      "at": "/home/ishaq2321/flutter",
+      "status": "at-head"
+    },
+    {
+      "language": "cpp",
+      "candidate": "zig@738d2be9(clean)",
+      "repo": "zig",
+      "sha": "738d2be9",
+      "state": "clean",
+      "head": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "at": "/home/ishaq2321/bb_tests/repositories/zig",
+      "status": "at-head"
+    },
+    {
+      "language": "cpp",
+      "candidate": "dplyr@d5e94e7f(clean)",
+      "repo": "dplyr",
+      "sha": "d5e94e7f",
+      "state": "clean",
+      "head": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
+      "at": "/home/ishaq2321/bb_tests/repositories/dplyr",
+      "status": "at-head"
+    },
+    {
+      "language": "rust",
+      "candidate": "cargo@94faf917(clean)",
+      "repo": "cargo",
+      "sha": "94faf917",
+      "state": "clean",
+      "head": "94faf9175f010e171466841c77e38b47d9503ac8",
+      "at": "/home/ishaq2321/bb_tests/repositories/cargo",
+      "status": "at-head"
+    },
+    {
+      "language": "objective-c",
+      "candidate": "sdwebimage@c3ad5e1a(clean)",
+      "repo": "sdwebimage",
+      "sha": "c3ad5e1a",
+      "state": "clean",
+      "head": "c3ad5e1a9bf55c9b76d4c362430b5fcded96c502",
+      "at": "/home/ishaq2321/bb_tests/repositories/sdwebimage",
+      "status": "at-head"
+    },
+    {
+      "language": "objective-c",
+      "candidate": "afnetworking@d9f589cc(clean)",
+      "repo": "afnetworking",
+      "sha": "d9f589cc",
+      "state": "clean",
+      "head": "d9f589cc2c1fe9d55eb5eea00558010afea7a41e",
+      "at": "/home/ishaq2321/bb_tests/repositories/afnetworking",
+      "status": "at-head"
+    },
+    {
+      "language": "objective-c",
+      "candidate": "clyde@8fec41dd(clean)",
+      "repo": "clyde",
+      "sha": "8fec41dd",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "zig",
+      "candidate": "zig@738d2be9(clean)",
+      "repo": "zig",
+      "sha": "738d2be9",
+      "state": "clean",
+      "head": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "at": "/home/ishaq2321/bb_tests/repositories/zig",
+      "status": "at-head"
+    },
+    {
+      "language": "swift",
+      "candidate": "swift_nio@ec51fff0(clean)",
+      "repo": "swift_nio",
+      "sha": "ec51fff0",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "swift",
+      "candidate": "alamofire@0455bfb6(clean)",
+      "repo": "alamofire",
+      "sha": "0455bfb6",
+      "state": "clean",
+      "head": "0455bfb650893e86ad07ace16e5f2d36dadf46f4",
+      "at": "/home/ishaq2321/bb_tests/repositories/alamofire",
+      "status": "at-head"
+    },
+    {
+      "language": "go",
+      "candidate": "go_tools@bf54bcd2(clean)",
+      "repo": "go_tools",
+      "sha": "bf54bcd2",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "go",
+      "candidate": "terraform@2e1710bf(clean)",
+      "repo": "terraform",
+      "sha": "2e1710bf",
+      "state": "clean",
+      "head": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+      "at": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "status": "at-head"
+    },
+    {
+      "language": "elixir",
+      "candidate": "elixir@024beb1b(clean)",
+      "repo": "elixir",
+      "sha": "024beb1b",
+      "state": "clean",
+      "head": "024beb1bfcca0a24e859b2586059dd803a086615",
+      "at": "/home/ishaq2321/bb_tests/repositories/elixir",
+      "status": "at-head"
+    },
+    {
+      "language": "erlang",
+      "candidate": "rebar3@0c947d3b(clean)",
+      "repo": "rebar3",
+      "sha": "0c947d3b",
+      "state": "clean",
+      "head": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
+      "at": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "status": "at-head"
+    },
+    {
+      "language": "erlang",
+      "candidate": "otp@9e84d463(clean)",
+      "repo": "otp",
+      "sha": "9e84d463",
+      "state": "clean",
+      "head": "9e84d463ac3d79520c1e972da89701178b587919",
+      "at": "/home/ishaq2321/bb_tests/repositories/otp",
+      "status": "at-head"
+    },
+    {
+      "language": "haskell",
+      "candidate": "cabal@670955a4(clean)",
+      "repo": "cabal",
+      "sha": "670955a4",
+      "state": "clean",
+      "head": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+      "at": "/home/ishaq2321/bb_tests/repositories/cabal",
+      "status": "at-head"
+    },
+    {
+      "language": "clean",
+      "candidate": "clean_stdlib@6971a8af(clean)",
+      "repo": "clean_stdlib",
+      "sha": "6971a8af",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "clean",
+      "candidate": "tree_sitter_clean@302fb5d0(clean)",
+      "status": "grammar-pin-not-a-corpus"
+    },
+    {
+      "language": "python",
+      "candidate": "proxicall@383e603e(dirty)",
+      "repo": "proxicall",
+      "sha": "383e603e",
+      "state": "dirty",
+      "head": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "at": "/home/ishaq2321/bb_tests/repositories/proxicall",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "python",
+      "candidate": "intellij_community@cfda6881(dirty)",
+      "repo": "intellij_community",
+      "sha": "cfda6881",
+      "state": "dirty",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "python",
+      "candidate": "cython@51a460b7(clean)",
+      "repo": "cython",
+      "sha": "51a460b7",
+      "state": "clean",
+      "head": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+      "at": "/home/ishaq2321/bb_tests/repositories/cython",
+      "status": "at-head"
+    },
+    {
+      "language": "python",
+      "candidate": "proxicall@7163d975(dirty)",
+      "repo": "proxicall",
+      "sha": "7163d975",
+      "state": "dirty",
+      "head": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "at": "/home/ishaq2321/bb_tests/repositories/proxicall",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "php",
+      "candidate": "phpunit@c8d6921f(clean)",
+      "repo": "phpunit",
+      "sha": "c8d6921f",
+      "state": "clean",
+      "head": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+      "at": "/home/ishaq2321/bb_tests/repositories/phpunit",
+      "status": "at-head"
+    },
+    {
+      "language": "perl",
+      "candidate": "mojo@93f59174(clean)",
+      "repo": "mojo",
+      "sha": "93f59174",
+      "state": "clean",
+      "head": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+      "at": "/home/ishaq2321/bb_tests/repositories/mojo",
+      "status": "at-head"
+    },
+    {
+      "language": "r",
+      "candidate": "dplyr@d5e94e7f(clean)",
+      "repo": "dplyr",
+      "sha": "d5e94e7f",
+      "state": "clean",
+      "head": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
+      "at": "/home/ishaq2321/bb_tests/repositories/dplyr",
+      "status": "at-head"
+    },
+    {
+      "language": "lua",
+      "candidate": "luarocks@665f160b(clean)",
+      "repo": "luarocks",
+      "sha": "665f160b",
+      "state": "clean",
+      "head": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
+      "at": "/home/ishaq2321/bb_tests/repositories/luarocks",
+      "status": "at-head"
+    },
+    {
+      "language": "ruby",
+      "candidate": "rake@dd5e851d(clean)",
+      "repo": "rake",
+      "sha": "dd5e851d",
+      "state": "clean",
+      "head": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+      "at": "/home/ishaq2321/bb_tests/repositories/rake",
+      "status": "at-head"
+    },
+    {
+      "language": "sql",
+      "candidate": "proxicall@3b6ebd40(dirty)",
+      "repo": "proxicall",
+      "sha": "3b6ebd40",
+      "state": "dirty",
+      "head": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "at": "/home/ishaq2321/bb_tests/repositories/proxicall",
+      "status": "at-head"
+    },
+    {
+      "language": "json",
+      "candidate": "vscode@46ed260b(dirty)",
+      "repo": "vscode",
+      "sha": "46ed260b",
+      "state": "dirty",
+      "head": "44617f8e9a1e7293ce4b6bc86773e6c38509ffe5",
+      "at": "/home/ishaq2321/vscode",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "json",
+      "candidate": "flutter@68dc5cf4(dirty)",
+      "repo": "flutter",
+      "sha": "68dc5cf4",
+      "state": "dirty",
+      "head": "68dc5cf4e76472eeb6162c33138550dc821fd5ae",
+      "at": "/home/ishaq2321/flutter",
+      "status": "at-head"
+    },
+    {
+      "language": "json",
+      "candidate": "roslyn@73241b4b(clean)",
+      "repo": "roslyn",
+      "sha": "73241b4b",
+      "state": "clean",
+      "head": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+      "at": "/home/ishaq2321/roslyn",
+      "status": "at-head"
+    },
+    {
+      "language": "xml",
+      "candidate": "grails_core@a83f8748(clean)",
+      "repo": "grails_core",
+      "sha": "a83f8748",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "yaml",
+      "candidate": "ansible@7ec731bf(clean)",
+      "repo": "ansible",
+      "sha": "7ec731bf",
+      "state": "clean",
+      "head": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+      "at": "/home/ishaq2321/bb_tests/repositories/ansible",
+      "status": "at-head"
+    },
+    {
+      "language": "yaml",
+      "candidate": "docker@4359a27c(clean)",
+      "repo": "docker",
+      "sha": "4359a27c",
+      "state": "clean",
+      "head": "4359a27c23a6218a8a25b136ecfa580cfc48c366",
+      "at": "/home/ishaq2321/bb_tests/repositories/docker",
+      "status": "at-head"
+    },
+    {
+      "language": "yaml",
+      "candidate": "gh_cli@9b031151(clean)",
+      "repo": "gh_cli",
+      "sha": "9b031151",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "yaml",
+      "candidate": "grails_core@a83f8748(clean)",
+      "repo": "grails_core",
+      "sha": "a83f8748",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "yaml",
+      "candidate": "helm@d31cd699(clean)",
+      "repo": "helm",
+      "sha": "d31cd699",
+      "state": "clean",
+      "head": "d31cd6992fc7858922de6ebe5984a06fd6aa0b80",
+      "at": "/home/ishaq2321/bb_tests/repositories/helm",
+      "status": "at-head"
+    },
+    {
+      "language": "yaml",
+      "candidate": "kubernetes@dfd7b93a(clean)",
+      "repo": "kubernetes",
+      "sha": "dfd7b93a",
+      "state": "clean",
+      "head": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+      "at": "/home/ishaq2321/bb_tests/repositories/kubernetes",
+      "status": "at-head"
+    },
+    {
+      "language": "yaml",
+      "candidate": "openapi_spec@447c479c(clean)",
+      "repo": "openapi_spec",
+      "sha": "447c479c",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "yaml",
+      "candidate": "pyyaml_include@fc096668(clean)",
+      "repo": "pyyaml_include",
+      "sha": "fc096668",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "yaml",
+      "candidate": "terraform@2e1710bf(clean)",
+      "repo": "terraform",
+      "sha": "2e1710bf",
+      "state": "clean",
+      "head": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+      "at": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "status": "at-head"
+    },
+    {
+      "language": "hcl",
+      "candidate": "terraform@2e1710bf(clean)",
+      "repo": "terraform",
+      "sha": "2e1710bf",
+      "state": "clean",
+      "head": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+      "at": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "status": "at-head"
+    },
+    {
+      "language": "graphql",
+      "candidate": "graphql_js@9c245018(clean)",
+      "repo": "graphql_js",
+      "sha": "9c245018",
+      "state": "clean",
+      "status": "repo-not-located"
+    },
+    {
+      "language": "bash",
+      "candidate": "proxicall@383e603e(dirty)",
+      "repo": "proxicall",
+      "sha": "383e603e",
+      "state": "dirty",
+      "head": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "at": "/home/ishaq2321/bb_tests/repositories/proxicall",
+      "status": "resolves-historical"
+    },
+    {
+      "language": "bash",
+      "candidate": "fsharp@22a8a5dc(clean)",
+      "repo": "fsharp",
+      "sha": "22a8a5dc",
+      "state": "clean",
+      "head": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "at": "/home/ishaq2321/bb_tests/repositories/fsharp",
+      "status": "at-head"
+    },
+    {
+      "language": "powershell",
+      "candidate": "roslyn@73241b4b(clean)",
+      "repo": "roslyn",
+      "sha": "73241b4b",
+      "state": "clean",
+      "head": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+      "at": "/home/ishaq2321/roslyn",
+      "status": "at-head"
+    },
+    {
+      "language": "powershell",
+      "candidate": "powershell@91ce9844(clean)",
+      "repo": "powershell",
+      "sha": "91ce9844",
+      "state": "clean",
+      "head": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+      "at": "/home/ishaq2321/bb_tests/repositories/powershell",
+      "status": "at-head"
+    },
+    {
+      "language": "make",
+      "candidate": "elixir@024beb1(clean)",
+      "repo": "elixir",
+      "sha": "024beb1",
+      "state": "clean",
+      "head": "024beb1bfcca0a24e859b2586059dd803a086615",
+      "at": "/home/ishaq2321/bb_tests/repositories/elixir",
+      "status": "at-head"
+    },
+    {
+      "language": "make",
+      "candidate": "cabal@670955a(clean)",
+      "repo": "cabal",
+      "sha": "670955a",
+      "state": "clean",
+      "head": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+      "at": "/home/ishaq2321/bb_tests/repositories/cabal",
+      "status": "at-head"
+    },
+    {
+      "language": "make",
+      "candidate": "luarocks@665f160(clean)",
+      "repo": "luarocks",
+      "sha": "665f160",
+      "state": "clean",
+      "head": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
+      "at": "/home/ishaq2321/bb_tests/repositories/luarocks",
+      "status": "at-head"
+    },
+    {
+      "language": "make",
+      "candidate": "terraform@2e1710b(clean)",
+      "repo": "terraform",
+      "sha": "2e1710b",
+      "state": "clean",
+      "head": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+      "at": "/home/ishaq2321/bb_tests/repositories/terraform",
+      "status": "at-head"
+    },
+    {
+      "language": "make",
+      "candidate": "cython@51a460b(clean)",
+      "repo": "cython",
+      "sha": "51a460b",
+      "state": "clean",
+      "head": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+      "at": "/home/ishaq2321/bb_tests/repositories/cython",
+      "status": "at-head"
+    },
+    {
+      "language": "make",
+      "candidate": "tree-sitter-clean@58729d3(clean)",
+      "repo": "tree-sitter-clean",
+      "sha": "58729d3",
+      "state": "clean",
+      "head": "58729d3b3e27ab5a7093eaaa62b10008a170dc2a",
+      "at": "/home/ishaq2321/bb_tests/repositories/tree-sitter-clean",
+      "status": "at-head"
+    },
+    {
+      "language": "markdown",
+      "candidate": "scala3@18df09c(clean)",
+      "repo": "scala3",
+      "sha": "18df09c",
+      "state": "clean",
+      "head": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+      "at": "/home/ishaq2321/bb_tests/repositories/scala3",
+      "status": "at-head"
+    }
+  ],
+  "corpusIdentities": [
+    {
+      "language": "java",
+      "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+      "manifestPin": "intellij_community@cfda6881(dirty)",
+      "status": "pass"
+    },
+    {
+      "language": "kotlin",
+      "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+      "manifestPin": "intellij_community@cfda6881(dirty)",
+      "status": "pass"
+    },
+    {
+      "language": "clojure",
+      "revision": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+      "manifestPin": "clojure@2cea6925(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "scala",
+      "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+      "manifestPin": "scala3@18df09c0(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "groovy",
+      "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+      "manifestPin": "grails_core@a83f8748(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "csharp",
+      "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+      "manifestPin": "roslyn@73241b4b(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "fsharp",
+      "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "manifestPin": "fsharp@22a8a5dc(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "typescript",
+      "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+      "manifestPin": "typescript@b465fdbf(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "javascript",
+      "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+      "manifestPin": "svelte@26786e92(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "dart",
+      "revision": "92b20d125ffc972d38ca2f790504297a3ca87443",
+      "manifestPin": "dart-http@92b20d12(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "vue",
+      "revision": "f8975657d7451d8e4291406427e6a8ae5e50c8d5",
+      "manifestPin": "vue_core@f8975657(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "svelte",
+      "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+      "manifestPin": "svelte@26786e92(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "html",
+      "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+      "manifestPin": "svelte@26786e92(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "css",
+      "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+      "manifestPin": "svelte@26786e92(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "scss",
+      "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+      "manifestPin": "element-plus@1b45ace0(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "c",
+      "revision": "41b8edfe5437fcd25a072081c05f9f770f9e9b85",
+      "manifestPin": "jq@41b8edfe(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "cpp",
+      "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "manifestPin": "zig@738d2be9(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "rust",
+      "revision": "94faf9175f010e171466841c77e38b47d9503ac8",
+      "manifestPin": "cargo@94faf917(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "objective-c",
+      "revisions": [
+        "sdwebimage",
+        "afnetworking",
+        "Clyde"
+      ],
+      "mapKey": "corpusRevision",
+      "status": "union-pinned"
+    },
+    {
+      "language": "zig",
+      "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "manifestPin": "zig@738d2be9(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "swift",
+      "revision": "0455bfb650893e86ad07ace16e5f2d36dadf46f4",
+      "manifestPin": "alamofire@0455bfb6(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "go",
+      "revision": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
+      "manifestPin": "go_tools@bf54bcd2(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "elixir",
+      "revision": "024beb1bfcca0a24e859b2586059dd803a086615",
+      "manifestPin": "elixir@024beb1b(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "erlang",
+      "revision": "9e84d463ac3d79520c1e972da89701178b587919",
+      "manifestPin": "otp@9e84d463(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "haskell",
+      "revision": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+      "manifestPin": "cabal@670955a4(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "clean",
+      "revision": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
+      "manifestPin": "clean_stdlib@6971a8af(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "python",
+      "revision": "7163d97547375f8dcedb95c878983a58bc266c74",
+      "manifestPin": "proxicall@7163d975(dirty)",
+      "status": "pass"
+    },
+    {
+      "language": "php",
+      "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+      "manifestPin": "phpunit@c8d6921f(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "perl",
+      "revision": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+      "manifestPin": "mojo@93f59174(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "r",
+      "status": "artifact-pins-no-corpus"
+    },
+    {
+      "language": "lua",
+      "revision": "a63febcb9108ed8b49c5bf7ea316a808441d6740",
+      "manifestPin": null,
+      "status": "no-matching-manifest-pin"
+    },
+    {
+      "language": "ruby",
+      "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+      "manifestPin": "rake@dd5e851d(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "sql",
+      "revision": "1f3e3567345399798e0436515565e64e62fac5a7",
+      "manifestPin": null,
+      "status": "no-matching-manifest-pin"
+    },
+    {
+      "language": "json",
+      "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+      "manifestPin": "roslyn@73241b4b(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "xml",
+      "revision": "334007a8b5622a3c428c009ef1e19569ce9135d9",
+      "manifestPin": null,
+      "status": "no-matching-manifest-pin"
+    },
+    {
+      "language": "yaml",
+      "revision": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+      "manifestPin": "kubernetes@dfd7b93a(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "hcl",
+      "revision": "db4eef44f5bbd39a115f939304279caee7cf9b12",
+      "manifestPin": null,
+      "status": "no-matching-manifest-pin"
+    },
+    {
+      "language": "graphql",
+      "revision": "ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea",
+      "manifestPin": null,
+      "status": "no-matching-manifest-pin"
+    },
+    {
+      "language": "bash",
+      "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+      "manifestPin": "fsharp@22a8a5dc(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "powershell",
+      "revision": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+      "manifestPin": "powershell@91ce9844(clean)",
+      "status": "pass"
+    },
+    {
+      "language": "make",
+      "revisions": [
+        "terraform",
+        "tf-aws-components",
+        "consul",
+        "boundary",
+        "luvit",
+        "kong",
+        "vault",
+        "nomad",
+        "waypoint",
+        "packer",
+        "terragrunt",
+        "Matrix",
+        "torrentinim"
+      ],
+      "mapKey": "revisions",
+      "status": "union-pinned"
+    },
+    {
+      "language": "markdown",
+      "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+      "manifestPin": "scala3@18df09c(clean)",
+      "status": "pass"
+    }
+  ],
+  "knownGaps": {
+    "candidateRepoNotCloned": [
+      "c:swift_nio",
+      "clean:clean_stdlib",
+      "go:go_tools",
+      "graphql:graphql_js",
+      "groovy:grails_core",
+      "html:intellij_community",
+      "java:intellij_community",
+      "javascript:graphql_js",
+      "javascript:typescript",
+      "javascript:vue_core",
+      "kotlin:intellij_community",
+      "objective-c:clyde",
+      "python:intellij_community",
+      "scala:intellij_community",
+      "swift:swift_nio",
+      "typescript:graphql_js",
+      "typescript:typescript",
+      "typescript:vue_core",
+      "vue:vue_core",
+      "xml:grails_core",
+      "yaml:gh_cli",
+      "yaml:grails_core",
+      "yaml:openapi_spec",
+      "yaml:pyyaml_include"
+    ],
+    "artifactPinsNoCorpusRevision": [
+      "r"
+    ]
+  },
+  "checked": [
+    {
+      "language": "java",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 7812,
+        "manifestRelationships": 30483,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "kotlin",
+      "manifest": 8,
+      "artifact": 8,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 11286,
+        "manifestRelationships": 43364,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "clojure",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 4450,
+        "manifestRelationships": 8708,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "scala",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 25008,
+        "manifestRelationships": 79260,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "groovy",
+      "manifest": 133,
+      "artifact": 133,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 2953,
+        "manifestRelationships": 14053,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "csharp",
+      "manifest": 10,
+      "artifact": 10,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 4451,
+        "manifestRelationships": 17563,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "fsharp",
+      "manifest": 82,
+      "artifact": 82,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 36901,
+        "manifestRelationships": 128401,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "typescript",
+      "manifest": 5,
+      "artifact": 5,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 26513,
+        "manifestRelationships": 100594,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "javascript",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 2935,
+        "manifestRelationships": 17483,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "dart",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 23952,
+        "manifestRelationships": 88098,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "vue",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 2033,
+        "manifestRelationships": 8532,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "svelte",
+      "manifest": 12,
+      "artifact": 12,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 913,
+        "manifestRelationships": 655,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "html",
+      "manifest": 8,
+      "artifact": 8,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 251,
+        "manifestRelationships": 41,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "css",
+      "manifest": 13,
+      "artifact": 13,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 788,
+        "manifestRelationships": 125,
+        "artifactSymbols": 788,
+        "artifactRelationships": 125,
+        "source": "css-corpus-errors.json (mode=full-corpus, 186 files)"
+      }
+    },
+    {
+      "language": "scss",
+      "manifest": 72,
+      "artifact": 72,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 1402,
+        "manifestRelationships": 803,
+        "artifactSymbols": 1402,
+        "artifactRelationships": 803,
+        "source": "scss-corpus-errors.json (mode=full-corpus, 160 files)"
+      }
+    },
+    {
+      "language": "c",
+      "manifest": 20,
+      "artifact": 20,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 3692,
+        "manifestRelationships": 14593,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "cpp",
+      "manifest": 133,
+      "artifact": 133,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 9765,
+        "manifestRelationships": 31909,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "rust",
+      "manifest": 24,
+      "artifact": 24,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 11634,
+        "manifestRelationships": 80199,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "objective-c",
+      "manifest": 36,
+      "artifact": 36,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 5095,
+        "manifestRelationships": 24114,
+        "artifactSymbols": 5095,
+        "artifactRelationships": 24114,
+        "source": "objective-c-corpus-errors.json (mode=undefined, undefined files)"
+      }
+    },
+    {
+      "language": "zig",
+      "manifest": 8,
+      "artifact": 8,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 29771,
+        "manifestRelationships": 16559,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "swift",
+      "manifest": 10,
+      "artifact": 10,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 13464,
+        "manifestRelationships": 31189,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "go",
+      "manifest": 5,
+      "artifact": 5,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 7157,
+        "manifestRelationships": 28187,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "elixir",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 7704,
+        "manifestRelationships": 23777,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "erlang",
+      "manifest": 12,
+      "artifact": 12,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 5400,
+        "manifestRelationships": 19207,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "haskell",
+      "manifest": 2,
+      "artifact": 2,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 17828,
+        "manifestRelationships": 34755,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "clean",
+      "manifest": 1,
+      "artifact": 1,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 1307,
+        "manifestRelationships": 1416,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "python",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 15558,
+        "manifestRelationships": 30901,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "php",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 3073,
+        "manifestRelationships": 4276,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "perl",
+      "manifest": 4,
+      "artifact": 4,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 1681,
+        "manifestRelationships": 5991,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "r",
+      "manifest": 0,
+      "agreement": false,
+      "volume": {
+        "manifestSymbols": 3509,
+        "manifestRelationships": 6127,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "lua",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 6746,
+        "manifestRelationships": 12032,
+        "artifactSymbols": 3724,
+        "artifactRelationships": 7025,
+        "source": "lua-corpus-errors.json (mode=full-corpus, 199 files)"
+      }
+    },
+    {
+      "language": "ruby",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 1309,
+        "manifestRelationships": 6524,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "sql",
+      "manifest": 318,
+      "artifact": 256,
+      "agreement": false,
+      "volume": {
+        "manifestSymbols": 3039,
+        "manifestRelationships": 4181,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "json",
+      "manifest": 3,
+      "artifact": 3,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 69512,
+        "manifestRelationships": 70074,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "xml",
+      "manifest": 0,
+      "artifact": 0,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 6195,
+        "manifestRelationships": 2388,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "yaml",
+      "manifest": 52,
+      "artifact": 52,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 275765,
+        "manifestRelationships": 284381,
+        "artifactSymbols": 275765,
+        "artifactRelationships": 284381,
+        "source": "yaml-corpus-errors.json (mode=undefined, undefined files)"
+      }
+    },
+    {
+      "language": "hcl",
+      "manifest": 4,
+      "artifact": 4,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 14226,
+        "manifestRelationships": 10667,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "graphql",
+      "manifest": 1,
+      "artifact": 0,
+      "agreement": false,
+      "volume": {
+        "manifestSymbols": 3251,
+        "manifestRelationships": 6042,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "bash",
+      "manifest": 2,
+      "artifact": 2,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 674,
+        "manifestRelationships": 1311,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "powershell",
+      "manifest": 182,
+      "artifact": 182,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 460,
+        "manifestRelationships": 590,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "make",
+      "manifest": null,
+      "artifact": 0,
+      "agreement": false,
+      "volume": {
+        "manifestSymbols": 273,
+        "manifestRelationships": 518,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    },
+    {
+      "language": "markdown",
+      "manifest": 4,
+      "artifact": 4,
+      "agreement": true,
+      "volume": {
+        "manifestSymbols": 6673,
+        "manifestRelationships": 9112,
+        "artifactSymbols": null,
+        "artifactRelationships": null,
+        "source": null
+      }
+    }
+  ],
+  "passed": false,
+  "policy": "Every manifest grammarErrorFiles claim must agree with its measured artifact (H1), limit-map entries must carry reasons and be backed by the measurement (H2/H3), no artifact may declare pass while recording unexpected errors or crashes (H4), every corpusSymbols/corpusRelationships claim must agree with the artifact that carries those counts (H5), every candidate pin must name a commit that EXISTS in the named repository (H6), and every artifact-s own corpusRevision must match the manifest pin for that corpus (H7). A volume claim with NO artifact behind it is reported in `unbackedClaims` — named, never counted as agreed. Languages without artifacts are the registered remainder R1 — named here, never smoothed — and the gate goes green with them only while the tracker still carries the follow-up that owns them."
+}

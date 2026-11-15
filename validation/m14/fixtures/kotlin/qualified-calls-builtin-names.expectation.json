@@ -1,0 +1,17 @@
+{
+  "fixtureId": "kotlin/qualified-calls-builtin-names",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.1 isKotlinBuiltin fix: user methods whose names CONTAIN builtin words (get/put/run/map) must survive into symbol.qualified_calls. The old substring filter emptied qualified_calls entirely (runtime-proven).",
+  "expectSymbols": [
+    { "name": "Repo", "kind": "class" },
+    { "name": "work" },
+    { "name": "getUserById" },
+    { "name": "runMigration" },
+    { "name": "putUserData" },
+    { "name": "mapInto" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "work", "includes": ["getUserById", "runMigration", "putUserData", "mapInto"] }
+  ]
+}

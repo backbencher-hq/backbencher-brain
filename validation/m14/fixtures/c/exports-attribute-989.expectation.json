@@ -1,0 +1,120 @@
+{
+  "fixtureId": "c/exports-attribute-989",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#989. Pins `exports` from the ATTRIBUTE spelling of an export boundary, and the refusal of an attribute's internal syntax as a CALL. `exports` fired 0 times on the C lane's own primary corpus (sqlite, 348 C-routed files) while the construct was present in 223 of them -- 59 sites carrying the attribute on the declaration, 164 using a macro the same file defines to an export attribute (measured by script/m14/tmp/c-ontology/export-shapes.ts and export-macro-prefix.ts). The analyzer read five project-convention macro NAMES and nothing else, and a hardcoded list cannot grow without a code change (#963 measured that cost: three codebases, 1,519 markers, zero edges). The edge keeps #963's forced shape: SOURCE = the declared NAME, TARGET = the marker AS WRITTEN. The seven controls are the substance of the fixture -- an EMPTY macro definition, the NEGATIVE `visibility(\"hidden\")` attribute, a real `malloc(...)` call beside an `__attribute__((malloc))`, a macro body that merely mentions `__declspec`, an attribute inside a string literal, and a self-referential marker. A fixture that asserted only the seven working cases would pass a rule that published `exports` for every attribute and every macro prefix in the file.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "attr_leading",
+      "target": "__declspec(dllexport)",
+      "line_number": 66,
+      "comment": "Form A, leading: the MSVC declspecifier before the return type. The shape sqlite writes 55 times on its loadable-extension entry points (`sqlite/ext/fts3/fts3.c:6216` and siblings)."
+    },
+    {
+      "type": "exports",
+      "from": "attr_gnu_trailing",
+      "target": "__attribute__((visibility(\"default\")))",
+      "line_number": 67,
+      "comment": "Form A, TRAILING: the attribute sits INSIDE the function_declarator, so the marker is two levels down from the declaration. This is the only trailing spelling the grammar models as a declaration -- `int f(void) __declspec(dllexport);` parses as an ERROR holding a `call_expression`, which is why the target here is the GNU spelling and the MSVC trailing position is pinned under forbidRelationships as a declared grammar limit."
+    },
+    {
+      "type": "exports",
+      "from": "attr_gnu_prefix",
+      "target": "__attribute__((visibility(\"default\")))",
+      "line_number": 68,
+      "comment": "Form A, GNU prefix: the ELF boundary, and the spelling the shared ontology gate's own json `exports` ruling insisted on -- a grammar cannot see a CONVENTION, and an attribute is grammar-level."
+    },
+    {
+      "type": "exports",
+      "from": "attr_with_extern",
+      "target": "__declspec(dllexport)",
+      "line_number": 69,
+      "comment": "Form A with a storage class in front: `extern __declspec(dllexport) int f(void)`. The marker is not the declaration's first child, so a rule that only read `namedChild(0)` would miss it -- the same shape that made #963's `namedChild(0)` test find nothing."
+    },
+    {
+      "type": "exports",
+      "from": "attr_on_definition",
+      "target": "__declspec(dllexport)",
+      "line_number": 74,
+      "comment": "Form A on a DEFINITION. The declaration case never sees a definition, so this needed its own call site in the `function_definition` branch; without it 55 of the 59 corpus sites stay invisible."
+    },
+    {
+      "type": "exports",
+      "from": "cmpp_malloc",
+      "target": "CMPP_EXPORT",
+      "line_number": 79,
+      "comment": "Form B, the marker is a macro THIS FILE defines to an export attribute. Not C-D2 expansion: nothing is expanded, and the fact used is that the file's own replacement list is the attribute. Carries 161 of the 164 corpus Form B sites (sqlite/ext/wasm/libcmpp.c)."
+    },
+    {
+      "type": "exports",
+      "from": "wasm_reset",
+      "target": "WASM_EXPORT",
+      "line_number": 80,
+      "comment": "Form B, the GNU spelling behind a macro (`#define WASM_EXPORT __attribute__((used, visibility(\"default\")))`). `used` in the replacement list must not stop the match, and `visibility(\"default\")` must be found inside a list that also carries other attributes."
+    },
+    {
+      "type": "calls",
+      "from": "attr_not_an_export",
+      "target": "malloc",
+      "line_number": 62,
+      "comment": "CONTROL 3, and it is the control that keeps the refusal structural. `malloc` is both a real libc function and a GCC attribute name, so a NAME-keyed refusal would delete this genuine call. The rule requires the call to sit INSIDE an attribute node, and this one does not."
+    },
+    {
+      "type": "exports",
+      "from": "single_platform_marker",
+      "target": "SINGLE_PLATFORM_EXPORT",
+      "line_number": 145,
+      "comment": "CONTROL 7's positive half: a marker with ONE definition that says export. It shares every lexical property of PLATFORM_EXPORT and differs only in agreeing with itself, so a rule that refused both would satisfy CONTROL 7's negative half while losing the construct."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "attr_hidden",
+      "comment": "CONTROL 2, the negative attribute. `visibility(\"hidden\")` is the SAME attribute with the opposite polarity, so an unbounded 'does this mention visibility' test would publish an export boundary the file explicitly denies. The rule requires `default` inside the visibility argument list."
+    },
+    {
+      "type": "exports",
+      "from": "SQLITE_API",
+      "comment": "CONTROL 1, an EMPTY macro definition. sqlite's own `src/sqlite.h.in:75` is `#ifndef SQLITE_API / #define SQLITE_API / #endif` -- a user-overridable hook that says nothing about visibility. A rule that accepted an empty replacement list would publish an export boundary the file never states. (Also the fixture's own `#define SQLITE_API` at line 42, which is used by nothing here, so the target of any edge would be a name with no declaration to attach to.)"
+    },
+    {
+      "type": "exports",
+      "from": "attr_macro_body",
+      "comment": "CONTROL 4: `#define LOOKS_LIKE_EXPORT(x) __declspec` mentions a declspecifier as a macro ARGUMENT and expands to nothing that marks a boundary. A rule that looked for the spelling anywhere in the replacement list would fire here."
+    },
+    {
+      "type": "exports",
+      "from": "attr_in_string",
+      "comment": "CONTROL 5: the spelling sits inside a string literal. It is text, and this lane does not read text to manufacture an edge (CGD16's literal-only contract, #963's ruling that a target must resolve)."
+    },
+    {
+      "type": "exports",
+      "from": "attr_selfref_decl",
+      "comment": "CONTROL 6, #963's self-reference trap restated for the attribute forms: the exported NAME can never BE the marker. `SELFREF_EXPORT SELFREF_EXPORT attr_selfref_decl(void)` has the marker twice in front of the name, and recovery can hand the declarator walk the `macro_specifier` itself."
+    },
+    {
+      "type": "exports",
+      "from": "__declspec",
+      "comment": "The marker naming itself. Same class as #963's `exports CURL_EXTERN -> CURL_EXTERN`."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "__declspec",
+      "comment": "#989's other half, and the reason this fixture is not only about `exports`. `int attr_leading(void)`'s `__declspec(dllexport)` used to publish `calls global -> __declspec`: a declspecifier is a MODIFIER, not a callable, and the target resolves to nothing. Invisible on the production path because `src/ast/engine.ts` blanks every `__declspec(...)` before the parser runs -- which is exactly why it would have shipped as a production false edge the moment that blanking was repaired."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "visibility",
+      "comment": "The same fabrication from the GNU spelling: `__attribute__((visibility(\"default\")))` parses its argument as a `call_expression` inside the `attribute_specifier`, and the callee ladder saw an `identifier` and published a call. Measured 57 such edges over the C-routed corpus (script/m14/tmp/c-ontology/attribute-call-fabrication.ts)."
+    },
+    {
+      "type": "exports",
+      "from": "platform_marker",
+      "comment": "CONTROL 7, the measured case. libcmpp.c defines CMPP_EXPORT four times -- `extern __declspec(dllexport)`, `extern __declspec(dllimport)`, `extern`, `extern` -- in mutually exclusive platform arms. Only one survives preprocessing, so which spelling is in effect depends on the build's -D set (C-D2). Keyed on the FIRST definition the analyzer would refuse 161 real markers; keyed on ANY it would publish 161 edges false for every non-Windows build. The export boundary holds only where EVERY spelling agrees."
+    }
+  ]
+}

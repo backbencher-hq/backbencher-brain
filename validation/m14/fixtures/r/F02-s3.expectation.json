@@ -1,0 +1,90 @@
+{
+  "fixtureId": "r/F02-s3",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "R has no `class` keyword and no interface keyword: an S3 method IS a function whose NAME contains a dot, and `print.myclass <- function(x, ...)` is the whole registration mechanism. So `implements` in R is a naming convention and NOTHING else -- the generic is not declared in the file, the dispatch happens inside `UseMethod`, and no amount of reading the file proves the generic exists. The confidence is pinned at exactly 0.8 (M14 requires a sub-1.0 edge to carry a reason code; it is `s3_dotted_name_convention`) and the fixture forbids a 1.0 edge so the heuristic cannot quietly promote itself. `[.myclass` is here because the prefix is `[`: the separator is the FIRST dot and the generic is an operator name, so a rule that takes the last dot segment, or that requires an identifier prefix, gets this wrong. `not_a_method` is the negative that makes the dotted-name rule a rule: a name with no interior dot implements nothing, and an `implements` edge from a name to ITSELF is the shape a naive prefix rule produces.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "print.myclass",
+      "kind": "method"
+    },
+    {
+      "name": "summary.myclass",
+      "kind": "method"
+    },
+    {
+      "name": "[.myclass",
+      "kind": "method"
+    },
+    {
+      "name": "not_a_method",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "print.myclass",
+      "target": "print",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8
+    },
+    {
+      "type": "implements",
+      "from": "summary.myclass",
+      "target": "summary",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8
+    },
+    {
+      "type": "implements",
+      "from": "[.myclass",
+      "target": "[",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8
+    },
+    {
+      "type": "calls",
+      "from": "print.myclass",
+      "target": "cat",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "summary.myclass",
+      "target": "helper_one",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "print",
+      "kind": "function"
+    },
+    {
+      "name": "summary",
+      "kind": "function"
+    },
+    {
+      "name": "[",
+      "kind": "function"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "not_a_method",
+      "target": "not_a_method"
+    },
+    {
+      "type": "implements",
+      "from": "not_a_method"
+    },
+    {
+      "type": "contains",
+      "from": "print",
+      "target": "print.myclass"
+    }
+  ]
+}

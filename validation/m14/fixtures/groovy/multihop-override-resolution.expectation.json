@@ -1,0 +1,50 @@
+{
+  "fixtureId": "groovy/multihop-override-resolution",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.21 #610 groovy: pins JD19 (family lesson from java) AND JD18 (family lesson from java/scala). JD19: overrides through a NON-declaring ancestor (BlackVal extends Black extends Node, Black declares no val) resolve at conf 1.0 to the true ancestor Node.val; the pre-fix BFS fell through to the pass-3 first-parent guess, fabricating BlackVal.val -> Black.val at 0.5 (forbidden). JD18: an anonymous inner class body (new Runnable() {...}) declares an anonymous_Runnable Class symbol owned by Tree whose members attribute to the anonymous type (contains anonymous_Runnable->run); the pre-fix leak attributed run to Tree (forbidden).",
+  "expectSymbols": [
+    {
+      "name": "anonymous_Runnable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Tree",
+      "target": "anonymous_Runnable"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "run"
+    },
+    {
+      "type": "overrides",
+      "from": "BlackVal.val",
+      "target": "val",
+      "confidenceMin": 0.9,
+      "meta.overriddenOwner": "Node"
+    },
+    {
+      "type": "overrides",
+      "from": "BlackBranch.left",
+      "target": "left",
+      "confidenceMin": 0.9,
+      "meta.overriddenOwner": "Node"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "BlackVal.val",
+      "target": "val",
+      "meta.overriddenOwner": "Black"
+    },
+    {
+      "type": "contains",
+      "from": "Tree",
+      "target": "run"
+    }
+  ]
+}

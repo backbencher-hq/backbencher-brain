@@ -1,0 +1,28 @@
+{
+  "issue": "M41.D1",
+  "code": "D1",
+  "milestone": "M41",
+  "status": "verified",
+  "checks": 18,
+  "passed": 18,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m41/verify-design.ts",
+  "evidenceFile": "D1.json",
+  "generatedAt": "2026-11-09T14:39:59.058Z",
+  "screenshots": [
+    "validation/m41/results/D1-evidence/01-home.png",
+    "validation/m41/results/D1-evidence/02-tools.png",
+    "validation/m41/results/D1-evidence/03-docs.png",
+    "validation/m41/results/D1-evidence/04-install.png",
+    "validation/m41/results/D1-evidence/05-faq.png",
+    "validation/m41/results/D1-evidence/06-troubleshooting.png",
+    "validation/m41/results/D1-evidence/07-contact.png"
+  ],
+  "ownerApproval": "Owner approved the warm-dark editorial direction and the full-site execution in review.",
+  "limitations": [
+    "Visual quality is asserted by screenshots plus owner review, not by pixel heuristics.",
+    "The identity vocabulary scan covers UI source (app/components) by design; tool accent data and the tailwind violet alias are excluded intentionally."
+  ]
+}

@@ -543,7 +543,7 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
     statusItem.tooltip = message
     statusItem.command = "bbLsp.showStatusPanel"
     void window.showErrorMessage(message, "Show docs").then((choice) => {
-      if (choice === "Show docs") void commands.executeCommand("vscode.open", "https://github.com/backbencher-hq/backbencher-brain")
+      if (choice === "Show docs") void commands.executeCommand("vscode.open", "https://github.com/ishaq2321/backbencher-brain")
     })
     report.activationMs = Date.now() - startedAt
     report.withinBudget = report.activationMs <= budgetMs

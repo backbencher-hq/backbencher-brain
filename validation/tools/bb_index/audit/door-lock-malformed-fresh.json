@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/vendor-fixture",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "startedAt": "2026-11-03T00:59:53.367Z",
+  "cases": [
+    {
+      "label": "file mode",
+      "arguments": {
+        "path": "src/main.ts"
+      },
+      "isError": true,
+      "text": "bb_index mode=file refused: another index run is already active for this project (no readable pid, kind=index); the lock file names no process, so nothing can be proven to be running. Remove it by hand: rm /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata/projects/069354f5b81f8d1bc3ca023fb4083087b59e40bf/.index.lock",
+      "ms": 37
+    }
+  ],
+  "stderr": "",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1227,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project whose derived phases should be re-run. REQUIRED in every mode, and for mode=post it is checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T01:00:09.788Z"
+}

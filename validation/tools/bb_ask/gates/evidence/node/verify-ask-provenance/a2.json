@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.24",
+  "code": "A2",
+  "tool": "bb_ask",
+  "title": "bb_ask: provenance, confidence kind and declared bounds per route",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "audit: every provenance builder sets an evidenceClass",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "audit: confidenceKind is part of the result contract",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "audit: bounds are part of the result contract",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "audit: exact aggregates declare the index snapshot",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "audit: semantic answers are labelled as interpretation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "audit: fallback declares it is a fallback, not semantic evidence",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "aggregate: answer count matches the indexed DB exactly",
+      "pass": true,
+      "detail": "answer=There are 2 symbols in this project actual=2"
+    },
+    {
+      "name": "aggregate: provenance class is indexed",
+      "pass": true,
+      "detail": "indexed"
+    },
+    {
+      "name": "aggregate: confidence kind is exact-aggregate",
+      "pass": true,
+      "detail": "exact-aggregate"
+    },
+    {
+      "name": "aggregate: bounds are declared",
+      "pass": true,
+      "detail": "{\"returned\":0,\"totalMatches\":null,\"truncated\":false}"
+    },
+    {
+      "name": "aggregate: index snapshot is reported (or explicitly unavailable)",
+      "pass": true,
+      "detail": "{\"updatedAt\":1793737402000,\"ageMs\":822,\"lastFullIndex\":1793737402812,\"lastIncrementalIndex\":null}"
+    },
+    {
+      "name": "no-match: answer says it could not find anything (no fabricated claim) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "I couldn't find a specific answer or matching code to your query in the brain database. Nothing in the index matched — t"
+    },
+    {
+      "name": "no-match: zero sources (no invented citations) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "sources=0"
+    },
+    {
+      "name": "no-match: provenance class is unknown",
+      "pass": true,
+      "detail": "unknown"
+    },
+    {
+      "name": "no-match: confidence is the declared low floor, not a confident guess",
+      "pass": true,
+      "detail": "0.1/declared-floor"
+    },
+    {
+      "name": "no-match: bounds declare zero returned and no truncation",
+      "pass": true,
+      "detail": "{\"returned\":0,\"totalMatches\":0,\"truncated\":false}"
+    },
+    {
+      "name": "retrieval: route-specific provenance class",
+      "pass": true,
+      "detail": "semantic_candidate"
+    },
+    {
+      "name": "retrieval: answer labels itself search results, not a verified answer",
+      "pass": true,
+      "detail": "Note: this ranking does not distinguish its top results — 1 other symbol(s) scored within the same margin of the best. T"
+    },
+    {
+      "name": "retrieval: comparison facts are present (model-space coverage)",
+      "pass": true,
+      "detail": "{\"comparable\":{\"embedded\":2,\"symbols\":2,\"ratio\":1},\"library\":{\"embedded\":2,\"symbols\":2,\"ratio\":1}}"
+    },
+    {
+      "name": "retrieval: scan facts are present",
+      "pass": true,
+      "detail": "{\"scanned\":2,\"cap\":20000}"
+    },
+    {
+      "name": "retrieval: bounds are declared",
+      "pass": true,
+      "detail": "{\"returned\":2,\"totalMatches\":2,\"truncated\":false}"
+    },
+    {
+      "name": "non-discriminative: confidence is capped and kind-labelled",
+      "pass": true,
+      "detail": "0.4/non-discriminative"
+    },
+    {
+      "name": "non-discriminative: handler publishes no numeric confidence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "confidence: not a measurement (capped, because the ranking cannot separate its top results)"
+    },
+    {
+      "name": "handler: provenance block is always present",
+      "pass": true,
+      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-03T20:23:22.000Z (1 s"
+    },
+    {
+      "name": "handler: bounds block is always present",
+      "pass": true,
+      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-03T20:23:22.000Z (1 s"
+    },
+    {
+      "name": "handler: aggregate answer carries no 'no matches' footer [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-03T20:23:22.000Z (1 s ago); these counts describe the indexed"
+    },
+    {
+      "name": "handler: no-match response carries an unknown class with unknowns [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "answer: I couldn't find a specific answer or matching code to your query in the brain database. Nothing in the index matched — that is a statement about the index, not proof that t"
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0
+  },
+  "decisions": {
+    "classes": "indexed (exact aggregate), semantic_candidate (vector or lexical retrieval, labelled not-a-verified-answer), unknown (no-match and no-index routes)",
+    "noMatch": "a no-match answer is an explicit unknown with zero sources; nothing is invented",
+    "confidence": "a non-discriminative ranking publishes NO numeric confidence; the handler says 'not a measurement' in words instead",
+    "bounds": "every answer carries returned/totalMatches/truncated bounds"
+  },
+  "limitations": [
+    "Embedding availability is runtime-dependent; the vector path is asserted when it answers and the lexical path when it does not."
+  ],
+  "generatedAt": "2026-11-03T20:23:22.850Z"
+}

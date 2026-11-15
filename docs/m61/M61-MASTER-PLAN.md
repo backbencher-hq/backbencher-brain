@@ -68,14 +68,14 @@ And the two structural holes that remain open at HEAD `eec76d37`:
 
 | # | Code | Title | Acceptance (summary) |
 |---|------|-------|----------------------|
-| [#842](https://github.com/backbencher-hq/backbencher-brain/issues/842) | V1 | Evidence sealing library + adoption in the IDE-lane gates | one write path, sha256 seal, seal-vs-content check in G1-class gates, mutants prove tamper/clobber detection |
-| [#843](https://github.com/backbencher-hq/backbencher-brain/issues/843) | V2 | Gate serialization lock | declared lock per results dir, bounded wait, loud refusal, concurrent-run mutant |
-| [#844](https://github.com/backbencher-hq/backbencher-brain/issues/844) | V3 | Reproducibility auditor | re-executes recorded commands of a sampled evidence set, diffs, blocked-with-reason on missing runtime |
-| [#845](https://github.com/backbencher-hq/backbencher-brain/issues/845) | V4 | Verifier lint | every gate declares outputs/inputs/mutants; lint fails gates without can-fail proofs |
-| [#846](https://github.com/backbencher-hq/backbencher-brain/issues/846) | V5 | Claim pins | README/website/docs numbers re-derived from evidence; byte-gated regeneration |
-| [#847](https://github.com/backbencher-hq/backbencher-brain/issues/847) | V6 | Bug-class extinction pack | permanent mutants for every historical verifier-bug class in their gates |
-| [#848](https://github.com/backbencher-hq/backbencher-brain/issues/848) | G1 | Governance | master plan authority, machine ledger, closure gate, bar re-audit |
-| [#849](https://github.com/backbencher-hq/backbencher-brain/issues/849) | X1 | Program-closure audit | M61 + full-lane re-audit at HEAD |
+| [#842](https://github.com/ishaq2321/backbencher-brain/issues/842) | V1 | Evidence sealing library + adoption in the IDE-lane gates | one write path, sha256 seal, seal-vs-content check in G1-class gates, mutants prove tamper/clobber detection |
+| [#843](https://github.com/ishaq2321/backbencher-brain/issues/843) | V2 | Gate serialization lock | declared lock per results dir, bounded wait, loud refusal, concurrent-run mutant |
+| [#844](https://github.com/ishaq2321/backbencher-brain/issues/844) | V3 | Reproducibility auditor | re-executes recorded commands of a sampled evidence set, diffs, blocked-with-reason on missing runtime |
+| [#845](https://github.com/ishaq2321/backbencher-brain/issues/845) | V4 | Verifier lint | every gate declares outputs/inputs/mutants; lint fails gates without can-fail proofs |
+| [#846](https://github.com/ishaq2321/backbencher-brain/issues/846) | V5 | Claim pins | README/website/docs numbers re-derived from evidence; byte-gated regeneration |
+| [#847](https://github.com/ishaq2321/backbencher-brain/issues/847) | V6 | Bug-class extinction pack | permanent mutants for every historical verifier-bug class in their gates |
+| [#848](https://github.com/ishaq2321/backbencher-brain/issues/848) | G1 | Governance | master plan authority, machine ledger, closure gate, bar re-audit |
+| [#849](https://github.com/ishaq2321/backbencher-brain/issues/849) | X1 | Program-closure audit | M61 + full-lane re-audit at HEAD |
 
 ## Review record (2026-09-15, fresh-eyes pass before work began)
 

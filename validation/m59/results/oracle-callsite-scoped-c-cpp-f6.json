@@ -1,0 +1,329 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-23T16:51:03.528Z",
+  "atCommit": "1cf8cd034d25886888a77234d9dd148ae57adb1b",
+  "treeModifiedInputs": 49,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 6,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    },
+    "resolutionSelfTest": {
+      "selfNewIsUncheckable": true,
+      "selfClassNewIsUncheckable": true,
+      "bareNewIsUncheckable": true,
+      "wrongLineStillFails": true,
+      "unmarkedClaimIsNotExcused": true,
+      "writtenReceiverIsNotExcused": true
+    }
+  },
+  "mutation": {
+    "file": "c:zig/bootstrap.c",
+    "token": "h",
+    "trueLine": 1,
+    "trueLineConsistent": true,
+    "mutatedLine": 5,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "c": {
+      "files": 6,
+      "rels": 239,
+      "withLine": 239,
+      "noLine": 0,
+      "consistent": 239,
+      "inconsistent": 0,
+      "notCheckable": 0
+    },
+    "cpp": {
+      "files": 6,
+      "rels": 839,
+      "withLine": 839,
+      "noLine": 0,
+      "consistent": 835,
+      "inconsistent": 0,
+      "notCheckable": 4
+    }
+  },
+  "sampleHash": {
+    "c": "f098c04308b6",
+    "cpp": "319373793591"
+  },
+  "samplePins": {
+    "c": [
+      {
+        "file": "zig/bootstrap.c",
+        "contentSha": "681e595ba00d"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.c",
+        "contentSha": "b577a6bc86e7"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/winmain.c",
+        "contentSha": "4ced0e7ce706"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wmain.c",
+        "contentSha": "f4c22a61a3ed"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wwinmain.c",
+        "contentSha": "0354c71a7753"
+      },
+      {
+        "file": "zig/tools/macos-headers.c",
+        "contentSha": "08347aa58dcb"
+      }
+    ],
+    "cpp": [
+      {
+        "file": "zig/src/zig_clang_cc1_main.cpp",
+        "contentSha": "66f2c46a579d"
+      },
+      {
+        "file": "zig/src/zig_clang_cc1as_main.cpp",
+        "contentSha": "ce79ba2aabbe"
+      },
+      {
+        "file": "zig/src/zig_clang_driver.cpp",
+        "contentSha": "26a8152eeab6"
+      },
+      {
+        "file": "zig/test/standalone/c_compiler/test.cpp",
+        "contentSha": "6c78f5f879ef"
+      },
+      {
+        "file": "zig/test/standalone/libcxx/mt_doit.cpp",
+        "contentSha": "ae743f9b62bb"
+      },
+      {
+        "file": "zig/test/standalone/libcxx/st_doit.cpp",
+        "contentSha": "5e87ce479ea0"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "c": {
+      "prev": null,
+      "now": "f098c04308b6",
+      "same": false
+    },
+    "cpp": {
+      "prev": null,
+      "now": "319373793591",
+      "same": false
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "c": [
+      {
+        "file": "zig/bootstrap.c",
+        "language": "c",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.c",
+        "language": "c",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/winmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wwinmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/macos-headers.c",
+        "language": "c",
+        "rels": 181,
+        "withLine": 181,
+        "noLine": 0,
+        "consistent": 181,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ],
+    "cpp": [
+      {
+        "file": "zig/src/zig_clang_cc1_main.cpp",
+        "language": "cpp",
+        "rels": 184,
+        "withLine": 184,
+        "noLine": 0,
+        "consistent": 184,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/src/zig_clang_cc1as_main.cpp",
+        "language": "cpp",
+        "rels": 406,
+        "withLine": 406,
+        "noLine": 0,
+        "consistent": 405,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 196,
+            "sourceLine": "AssemblerInvocation() {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/src/zig_clang_driver.cpp",
+        "language": "cpp",
+        "rels": 213,
+        "withLine": 213,
+        "noLine": 0,
+        "consistent": 212,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "",
+            "claimedLine": 32,
+            "sourceLine": "#include \"llvm/Config/llvm-config.h\" // for LLVM_ON_UNIX",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/test/standalone/c_compiler/test.cpp",
+        "language": "cpp",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 22,
+            "sourceLine": "CTest(int val) : m_val(val) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 35,
+            "sourceLine": "GlobalConstructorTest(int val) : m_val(val) {};",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/test/standalone/libcxx/mt_doit.cpp",
+        "language": "cpp",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/libcxx/st_doit.cpp",
+        "language": "cpp",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

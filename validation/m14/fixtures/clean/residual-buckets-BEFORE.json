@@ -1,0 +1,50 @@
+{
+  "population": {
+    "parsed": 312,
+    "admitted": 312,
+    "failed": 0
+  },
+  "outcomes": {
+    "unresolved": 4677,
+    "resolved": 15070,
+    "ambDeclOnly": 7564,
+    "ambBoth": 2999,
+    "externalVerified": 429
+  },
+  "unresolved": {
+    "references  ·  bare name declared in ANOTHER project": 1796,
+    "references  ·  bare name declared NOWHERE in the corpus": 744,
+    "imports  ·  whole-module import, module NOT in project": 669,
+    "imports  ·  from-import item, module NOT in project": 435,
+    "references  ·  qualified name, nothing in corpus names it": 319,
+    "imports  ·  from-import item, module IS in project": 196,
+    "imports  ·  whole-module import, module IS in project": 162,
+    "references  ·  qualified name, owner+leaf absent from project, leaf in corpus": 121,
+    "references  ·  qualified name, owner absent but LEAF is in project": 79,
+    "references  ·  qualified name, owner IS in project": 62,
+    "calls  ·  qualified name, nothing in corpus names it": 42,
+    "calls  ·  qualified name, owner+leaf absent from project, leaf in corpus": 18,
+    "calls  ·  qualified name, owner absent but LEAF is in project": 14,
+    "implements  ·  bare name declared NOWHERE in the corpus": 11,
+    "implements  ·  bare name declared in ANOTHER project": 8,
+    "calls  ·  qualified name, owner IS in project": 1
+  },
+  "ambiguous": {
+    "references  ·  bare name declared in ANOTHER project": 4197,
+    "exports  ·  bare name declared in ANOTHER project": 3291,
+    "calls  ·  bare name declared in ANOTHER project": 999,
+    "implements  ·  bare name declared in ANOTHER project": 630,
+    "uses  ·  bare name declared in ANOTHER project": 432,
+    "overrides  ·  qualified name, owner IS in project": 304,
+    "calls  ·  qualified name, owner IS in project": 289,
+    "references  ·  qualified name, nothing in corpus names it": 118,
+    "references  ·  qualified name, owner absent but LEAF is in project": 73,
+    "references  ·  qualified name, owner IS in project": 54,
+    "exports  ·  qualified name, nothing in corpus names it": 48,
+    "instantiates  ·  bare name declared in ANOTHER project": 42,
+    "exports  ·  qualified name, owner IS in project": 40,
+    "exports  ·  qualified name, owner absent but LEAF is in project": 36,
+    "exports  ·  qualified name, owner+leaf absent from project, leaf in corpus": 6,
+    "references  ·  qualified name, owner+leaf absent from project, leaf in corpus": 4
+  }
+}

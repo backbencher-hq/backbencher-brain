@@ -1,0 +1,94 @@
+{
+  "fixtureId": "css/import-specifier-names-its-target",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "One `imports` edge had its two ends spelled by two different rules. The SOURCE is the file's last path segment (`lastPathSegment(filePath)`), and the TARGET was the specifier verbatim, so `styles/layout.css` was published while every stylesheet symbol in the store is named `layout.css` \u2014 a name the store can never join. MEASURED over the 600-file window, 58 `imports` edges (`validation/m14/measurements/css-import-specifier-names.json`), 11 named a file that exists under the basename with that basename unique in its own repo, and all 11 were unreachable. The fix routes the target through the same last-segment rule the source already uses, but ONLY when the last segment carries a stylesheet extension, because the same 58-edge population contains three shapes that are not stylesheets: 10 URL edges (no file anywhere \u2014 reducing `https://fonts.googleapis.com/css?family=Lato:400,400i` to `Lato:400,400i` would bind to an unrelated same-named file), 24 bare package names (`tailwindcss`, which DOES collide with a real file in this corpus, so recovering it resolves to the wrong thing), and 1 package subpath (`@fontsource-variable/figtree/index.css`). Each exclusion has a `forbidRelationships` entry below, because a fixture that only asserts the recoveries passes just as happily on an implementation that reduces every specifier \u2014 the fabrication is in the same code path as the fix, and only the negative half distinguishes them. The `importSpecifier` metadata key preserves the verbatim specifier on every edge, including the recovered ones, so the written form stays inspectable and nothing is lost by publishing the short name. CONTRACT REPIN (2026-10-25): `part_of` is now emitted for the PLAIN FILE FORM of `@import` in the css family \u2014 exactly one named child of type `string_value`, no `.css` suffix, no protocol URL, no `sass:`/`data:` scheme. Sass/Less fold that form in at compile time, so it is a source inclusion (`part_of`, `partRole:\"library\"`), not a stylesheet load. Every other form keeps `imports`: `url(...)` (the child is a call_expression), a media query (a SECOND named child), a `.css` specifier, and any protocol URL. This is a LABEL MOVE \u2014 source, target, line and the project-file claim are unchanged.",
+  "knownLimitation": "A basename held by more than one stylesheet in the same repo is published under the basename and stays ambiguous \u2014 MEASURED 12 edges over 2 names in this window, reported as `relative-ambiguous-basename` in `css-import-specifier-names.json`. The store binds a target by name (`resolveTargetStmt` is `WHERE project_id = ? AND name = ?`) with a same-file preference and no cross-file tiebreak, so two same-named stylesheets in one project are genuinely undecidable from the name alone. Inventing a disambiguating spelling here would be a second naming convention that no consumer knows to read. Uniqueness is therefore measured PER REPO in the census rather than corpus-wide, because one `project_id` is one repository and `layout.css` appearing in two unrelated repos of this 199-repo corpus is not an ambiguity in either.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "import-specifier-names-its-target.css",
+      "target": "layout.css",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "imports",
+      "from": "import-specifier-names-its-target.css",
+      "target": "theme.css",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "imports",
+      "from": "import-specifier-names-its-target.css",
+      "target": "sibling.css",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "part_of",
+      "from": "import-specifier-names-its-target.css",
+      "target": "other.scss",
+      "meta.isCssImport": true,
+      "meta.partRole": "library",
+      "meta.isCssPartImport": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "imports",
+      "from": "import-specifier-names-its-target.css",
+      "target": "wrapped.css",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "imports",
+      "from": "import-specifier-names-its-target.css",
+      "target": "https://fonts.googleapis.com/css?family=Lato:400,400i"
+    },
+    {
+      "type": "part_of",
+      "from": "import-specifier-names-its-target.css",
+      "target": "tailwindcss",
+      "meta.partRole": "library",
+      "meta.isCssPartImport": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "imports",
+      "from": "import-specifier-names-its-target.css",
+      "target": "@fontsource-variable/figtree/index.css"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "styles/layout.css"
+    },
+    {
+      "type": "imports",
+      "target": "./nested/deep/theme.css"
+    },
+    {
+      "type": "imports",
+      "target": "../parent/other.scss"
+    },
+    {
+      "type": "imports",
+      "target": "Lato:400,400i"
+    },
+    {
+      "type": "imports",
+      "target": "figtree/index.css"
+    },
+    {
+      "type": "imports",
+      "target": "index.css"
+    },
+    {
+      "type": "imports",
+      "target": "tailwindcss"
+    },
+    {
+      "type": "imports",
+      "target": "../parent/other.scss"
+    }
+  ]
+}

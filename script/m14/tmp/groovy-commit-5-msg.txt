@@ -1,0 +1,29 @@
+groovy: the arm's merge, the census's merge, and the spec writer that fills the spec from them
+
+THE ARM IS MEASURED IN FIVE DISJOINT SLICES, and the two merges are the lane's own:
+`script/m14/groovy-arm-merge.ts` sums the incoming-gate's own TABLE 1 over the slices and CHECKS
+the closure to add up exactly, and `script/m14/groovy-census-merge.ts` sums the lane's census
+(counts SUM, the trait-name sets UNION) over the same slices. The slices are slices of the GATE'S
+OWN SORTED ADMITTED LIST, so they are disjoint and cover the population exactly — and BOTH merges
+CHECK that claim from the instrument's own printed bounds rather than asserting it: the slices must
+abut, start at 0, and reach the admitted total the instrument itself reports.
+
+THE BIAS IS STATED WITH THE NUMBERS, NOT BOUNDED BY ASSERTION. The EDGE BUCKETS are the
+population's: every admitted file is measured exactly once and an edge is a per-file fact. The
+RESOLUTION BUCKETS are the chunked measurement's, and `resolved` is BIASED UP — the resolution
+scope is PER PROJECT and a repository longer than one slice STRADDLES a slice boundary, so the
+split half cannot see the collisions in the other half, and a collision that is INVISIBLE makes
+the name read UNIQUE and the edge RESOLVE. The gate says so in its own population line, which
+every slice prints. A number without its bias is a claim about nothing.
+
+script/m14/groovy-spec-writer.ts WRITES the spec from the measurements rather than being
+hand-maintained, so the spec cannot drift from the numbers the coverage-block gate arbitrates:
+it reads the node-type census, the merged census and the merged closure, and it substitutes the
+counts into the citation templates (script/m14/tmp/groovy-citations/*.txt) through
+`{{PLACEHOLDER}}` slots. The three rulings' prose and the counts in them therefore come from ONE
+source, and a stale count in the prose is impossible.
+
+The lane's census grew the TRAIT-NAME output the mixes_in ruling needs (the names are a SET over
+the population, so the merge unions them while the counts sum), and the small-slot runner
+(script/m14/tmp/groovy-arm-run.sh) waits for the slot, runs the five slices of the gate and the
+five slices of the census, and RELEASES — nothing is ever forced.

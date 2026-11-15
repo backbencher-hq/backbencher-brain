@@ -1,0 +1,18 @@
+{
+  "fixtureId": "groovy/indexing-write-gate",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37 #597 KAD1 regression guard: dedicated write-only shapes. Pre-fix the array_access collector emitted `uses xs` for the WRITE `xs[i] = 5` (the old array-access-uses fixture pinned that as 'Groovy semantics'; the KAD1 family contract gates assignment-LHS spans — java JAD1 / kotlin KAD1). Both `=` and `op=` parse as assignment_expression with the LHS as first named child (probe-verified); reads still emit.",
+  "expectSymbols": [
+    { "name": "WriteGate", "kind": "class" },
+    { "name": "xs", "kind": "property" },
+    { "name": "store", "kind": "method" },
+    { "name": "load", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "target": "xs", "meta.isArrayAccess": true, "comment": "the READ inside load() emits" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "store", "comment": "KAD1: the pure-write method store() (xs[0] = 5; xs[1] += 2) must emit NO uses edges at all" }
+  ]
+}

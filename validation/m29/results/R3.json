@@ -20,7 +20,7 @@
       "inOrderP95Ms": 14.677773999999772,
       "responseBytes": 3774
     },
-    "serverStderrTail": "[INFO] [03:01:48] [ast-engine] tree-sitter core initialized {\"wasmFile\":\"$HOME/mcp/backbencher-brain/.tools/tmp/bb-ts-core.wasm\"}\n[INFO] [03:01:48] [ast-engine] language grammar allocated {\"language\":\"typescript\"}\n[INFO] [03:01:48] [ast-engine] language parser loaded {\"language\":\"typescript\",\"wasmPath\":\"$HOME/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm\"}\n[bb_lsp] freshness: watching {\n  projectPath: '$HOME/mcp/backbencher-brain/.tools/m29-giant-corpus',\n  debounceMs: 300\n}\n",
+    "serverStderrTail": "[INFO] [03:01:48] [ast-engine] tree-sitter core initialized {\"wasmFile\":\"/home/ishaq2321/mcp/backbencher-brain/.tools/tmp/bb-ts-core.wasm\"}\n[INFO] [03:01:48] [ast-engine] language grammar allocated {\"language\":\"typescript\"}\n[INFO] [03:01:48] [ast-engine] language parser loaded {\"language\":\"typescript\",\"wasmPath\":\"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm\"}\n[bb_lsp] freshness: watching {\n  projectPath: '/home/ishaq2321/mcp/backbencher-brain/.tools/m29-giant-corpus',\n  debounceMs: 300\n}\n",
     "serverLevel": {
       "regime": "server-level warm p95 over 40 iterations (M25 stdio transport, one-library rule)",
       "target": "src/ts/p0/helper_0.ts",

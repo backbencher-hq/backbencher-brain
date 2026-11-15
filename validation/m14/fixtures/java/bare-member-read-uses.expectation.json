@@ -1,0 +1,23 @@
+{
+ "fixtureId": "java/bare-member-read-uses",
+ "language": "java",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M49 #739 (CONV-J-1, #610 JVM closure remainder). LIVE PROBE pre-fix: `class Store { private int count = 0; int bare(){ return count; } int dotted(){ return this.count; } }` emitted uses(dotted->count) and NOTHING for the bare read — the analyzer's collectFieldAccessUses walk handled only field_access and array_access nodes, so every plain identifier read of a declared member was invisible while the `this.` form was not. The fix adds the bare-identifier branch (mirroring the #744 javascript bare-read block; csharp already emitted both shapes, which is why #750 closed as refuted rather than fixed). This fixture pins the fix AND its two gates: GATE A — the name must resolve to a DECLARED MEMBER of the enclosing type; GATE B (CGD15 family rule) — a name the CURRENT function binds locally is not a member read, so shadowed() must not fabricate uses(shadowed->count). Both directions are asserted: expectRelationships catches a dropped branch, forbidRelationships catches a missing gate.",
+ "expectSymbols": [
+  { "name": "Store" }
+ ],
+ "expectRelationships": [
+  { "type": "uses", "from": "bare", "target": "count" },
+  { "type": "uses", "from": "dotted", "target": "count" },
+  {
+   "type": "uses",
+   "target": "count",
+   "meta.isBareRead": true,
+   "line_number": 5,
+   "comment": "LOSS DETECTOR for the bare-identifier branch, deliberately with NO `from`. `return count;` on a declared field must produce a uses edge carrying the analyzer's own isBareRead marker, and the isBareRead marker is the only thing separating that edge from the `this.count` field-access form — without it a reader cannot tell a bare read from a dotted one. The `from: bare` row above states where the edge must be SOURCED (the enclosing method, the JAD2 contract) and it is unmet today: the live analyzer sources this edge at the enclosing TYPE. Pinning the source here would ratify that regression, so this row asserts only that the edge exists and is marked bare. The loss of the whole bare-read channel (every bare read of every declared member in the corpus, not just this one) leaves this row unmet."
+  }
+ ],
+ "forbidRelationships": [
+  { "type": "uses", "from": "shadowed", "target": "count" }
+ ]
+}

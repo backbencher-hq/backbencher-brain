@@ -1,0 +1,79 @@
+{
+  "instrument": "scss S1 \u2014 the repairable-looking slice, measured, and it is a DOCUMENTED deliberate omission in the shared analyzer",
+  "at": "2026-10-11T15:40:00-04:00",
+  "population": "whole admitted scss population, 4,433 files / 25 repos, ONE RUN",
+  "result": {
+    "S1": 13,
+    "S2": 1838,
+    "S3": 8,
+    "NO_DECLARATION": 452,
+    "note": "S1/S2/S3 use the lane's own vocabulary (docs/analyzers/scss.md): S1 = every declaration of the name is in the edge's OWN file; S2 = >1 file, one kind (the published-name contract); S3 = >1 file, >1 kind.",
+    "S1_is_all_contains": true
+  },
+  "theThirteen": {
+    "one_cause": "ALL 13 carry NO `line_number`, and each target has exactly TWO same-named declarations in its own file \u2014 measured: `main .body .callout div` at lines 430 & 584 \u00b7 `header .logo a img` at 136 & 366 \u00b7 `footer .footer-social ul` at 250 & 398 \u00b7 `.listing .children a, .listing .no-children a` at 284 & 804 \u00b7 `.listing .no-children a` at 301 & 689 \u00b7 `.workspace-switcher__error-state svg` at 71 & 79.",
+    "why_no_line_is_the_whole_cause": "the analyzer's OWN disambiguation rule (Rule 2b, `real-css-analyzer.ts:1329-1337`) picks among same-named candidates by the edge's line: `const line = typeof rel.line_number === \"number\" ? rel.line_number : null; if (line === null) continue`. With no line it declines, the bare name stands, and the gate reads the edge as ambiguous-by-declaration. The rule works \u2014 it is why these are the ONLY 13 of 2,322 residual edges in this class.",
+    "and_the_omission_is_deliberate": "`real-css-analyzer.ts:2212-2217`: `const composedName = collapseWhitespace(asWritten) !== selectorText; const nameLine = composedName ? {} : { line_number: selectorLine }`, with the stated reason two lines above \u2014 \"A name the line does not write gets NO line ... never checkable rather than silently unaccused, and never a claim that accuses a correct edge.\" The 13 targets are exactly COMPOSED names: the string is assembled from nested selectors, so no single source line writes it."
+  },
+  "verdict": {
+    "isItLaneRepairable": "NO \u2014 the emission is in `src/ast/real-css-analyzer.ts` (shared, and css is one of the four VERIFIED lanes), and this lane's analyzer emits no `contains` edges at all (verified by grep: `real-scss-analyzer.ts` has no containment emission).",
+    "isItADefectOrAChoice": "a documented choice with a real cost: the omission keeps the analyzer from accusing a correct edge, and its price is that a COMPOSED name declared twice in one file cannot be disambiguated. The gate's `contains` rows show the convention the rest of the lane follows \u2014 intended 4,019 of 4,019 means own file AND own line \u2014 so these 13 are the exception, not the rule.",
+    "handOverShape": "if the omission is to be closed, the line to write is the CONTAINED RULE's own start line (the convention every other containment edge in this lane follows), not `selectorLine` \u2014 `selectorLine` is the line of the selector text, which for a composed name is the WRONG line and is precisely what the comment refuses to assert. That requires the emission site to know the contained rule's node, which the Lead should confirm before anyone lands it.",
+    "falsifier": "for each of the 13: if the edge carried the contained rule's own start line, Rule 2b would find exactly ONE covering candidate (the two same-named rules sit at distinct, non-overlapping lines in all six cases) and the edge would become determinate. Measurable in one run after the emission is fixed; the count to drive to 0 is 13."
+  },
+  "raw": [
+    "validation/m14/fixtures/scss/residual-causes.json (scoping + scopingExamples)",
+    ".tmp-scss/s1rule.mts output: total 13 \u00b7 noLine 13 \u00b7 coversZero 0 \u00b7 coversTwoOrMore 0 \u00b7 disambiguatedAlready 0"
+  ],
+  "sixCaseLineMeasurement": {
+    "question": "is `selectorLine` (= lineOf(selectorsNode), :2192) already the contained rule's own start line, or is a different line needed? The Lead asked for this measurement before any edit.",
+    "method": "parsed the six files, found every rule_set at the two symbol start lines, and compared the selectors node's start row with the symbol's own start row",
+    "result": "**12 of 12 rules: selectorLine === the symbol's own start line** \u2014 `.callout div` 430, `div` 584, `img` 136, `.logo a img` 366, `ul` 250, `footer .footer-social ul` 398, `a` 284, `.children a, .no-children a` 804, `.no-children a` 301, `a` 689, `svg` 71, `.workspace-switcher__error-state svg` 79.",
+    "conclusion": "the refusal at :2217 was OVER-CONSERVATIVE, not protective: the line it withheld is the right one, and the fix is to STOP REFUSING rather than to invent a different line. The comment's concern ('a name the line does not write') is about a consumer that asks whether the NAME is written there; `contains` is not that consumer \u2014 its edge line IS the target symbol's own start line (`LINE_IS_TARGET_LINE`)."
+  },
+  "landedFix": {
+    "file": "src/ast/real-css-analyzer.ts",
+    "change": "`const nameLine = composedName ? {} : { line_number: selectorLine }` -> `const nameLine = { line_number: selectorLine }`, with the 12/12 measurement and the reasoning in the comment. `isSynthesizedName`/`asWrittenSelector` still ride the metadata, so the provenance the old comment protected is untouched.",
+    "authorization": "Lead-authorized with three conditions (write the right line; the six-case acceptance; css's own row re-measured whole-population before and after)"
+  },
+  "acceptance": {
+    "scssS1": {
+      "before": 13,
+      "after": 0
+    },
+    "scssS3": {
+      "before": 8,
+      "after": 0,
+      "note": "the same lift also settled the 8 S3 edges \u2014 21 `contains` edges became determinate, and `contains` no longer appears in this lane's residual at all"
+    },
+    "scssResidualByShapeAfter": {
+      "S2": 1838,
+      "NO-DECLARATION": 452,
+      "S1": 0,
+      "S3": 0
+    },
+    "cssRow": {
+      "run": "whole population, 1,228 css files, 487,844 edges, ONE RUN each side (11m19s before)",
+      "unchanged": [
+        "references",
+        "imports",
+        "uses",
+        "overrides",
+        "TOTAL",
+        "residual (260, 0.1%)",
+        "extFAIL 0",
+        "bindFAIL 0",
+        "causeFAIL 0"
+      ],
+      "moved": {
+        "contains.intended": "162,087 -> 167,508 (+5,421)",
+        "explanation": "exactly the mechanism: those composed-name containment edges now carry a line that IS their target's start line, so the gate's own-file-AND-own-line test counts them. The RESIDUAL row is unchanged; only the intent column moved."
+      }
+    },
+    "fixtures": {
+      "scss": "{\"scss\":{\"pass\":13,\"fail\":0}}",
+      "css": "{\"css\":{\"pass\":22,\"fail\":0}}",
+      "both": "no regressions \u00b7 all fixtures pass"
+    }
+  }
+}

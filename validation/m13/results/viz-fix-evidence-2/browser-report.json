@@ -1,0 +1,1072 @@
+[
+ {
+  "name": "01-raw-graph",
+  "what": "standalone Architecture Map (full panels)",
+  "url": "raw-graph.html",
+  "kind": "raw",
+  "shots": [
+   "01-raw-graph-t5s.png",
+   "01-raw-graph-after-fit.png",
+   "01-raw-graph-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Architecture Map",
+    "__view": "graph",
+    "hud": "ABSENT",
+    "legend": "ABSENT",
+    "search": {
+     "display": "flex",
+     "box": [
+      1298,
+      14,
+      288,
+      55
+     ],
+     "text": ""
+    },
+    "detail": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "✕"
+    },
+    "shown": {
+     "display": "block",
+     "box": [
+      508,
+      956,
+      585,
+      31
+     ],
+     "text": "showing 200 of 200 nodes and 420 of 437 edges — the heaviest 420 drawn at this zoom, zoom in for the rest"
+    },
+    "progress": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "laying out… 100%"
+    },
+    "stats": "ABSENT",
+    "side": "ABSENT",
+    "map": "ABSENT",
+    "path": "ABSENT",
+    "world": "ABSENT",
+    "zoomstate": "ABSENT",
+    "mapbtn": "ABSENT",
+    "fitbtn": "ABSENT",
+    "savebtn": "ABSENT",
+    "kind-rows": "ABSENT",
+    "g-dir": "ABSENT",
+    "g-lang": "ABSENT",
+    "q": {
+     "display": "block",
+     "box": [
+      1310,
+      24,
+      210,
+      35
+     ],
+     "text": ""
+    }
+   },
+   "rawCanvas": {
+    "size": [
+     1600,
+     1000
+    ],
+    "painted": 4861,
+    "sampled": 16495,
+    "ratio": 0.2947
+   },
+   "studio": null
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": "showing 200 of 200 nodes and 420 of 437 edges — the heaviest 420 drawn at this zoom, zoom in for the rest",
+   "after": "showing 200 of 200 nodes and 420 of 437 edges — the heaviest 420 drawn at this zoom, zoom in for the rest",
+   "display": "block"
+  },
+  "paintProbe": {
+   "zoomstateText": "ABSENT",
+   "zoomstateClass": "ABSENT",
+   "zoomstateShown": "ABSENT",
+   "worldBox": "ABSENT",
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "ABSENT",
+   "svgGroups": 0
+  }
+ },
+ {
+  "name": "02-raw-codemap",
+  "what": "standalone code map",
+  "url": "raw-codemap.html",
+  "kind": "raw",
+  "shots": [
+   "02-raw-codemap-t5s.png",
+   "02-raw-codemap-after-fit.png",
+   "02-raw-codemap-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Code Map",
+    "__view": "codemap",
+    "hud": {
+     "display": "block",
+     "box": [
+      16,
+      16,
+      290,
+      208
+     ],
+     "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 122 files 11 directories 171 symbols 21.6k lines spanned nothing excluded — this "
+    },
+    "legend": {
+     "display": "block",
+     "box": [
+      16,
+      377,
+      290,
+      346
+     ],
+     "text": "SYMBOL KINDS constant 63 property 61 function 46 method 14 variable 6 interface 5 enum_member 2 class 1 type 1 enum 1 READING IT gap = code between sy"
+    },
+    "search": {
+     "display": "flex",
+     "box": [
+      16,
+      305,
+      290,
+      60
+     ],
+     "text": ""
+    },
+    "detail": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "✕"
+    },
+    "shown": "ABSENT",
+    "progress": "ABSENT",
+    "stats": {
+     "display": "grid",
+     "box": [
+      16,
+      85,
+      290,
+      84
+     ],
+     "text": "122 files 11 directories 171 symbols 21.6k lines spanned"
+    },
+    "side": {
+     "display": "flex",
+     "box": [
+      0,
+      0,
+      322,
+      1000
+     ],
+     "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 122 files 11 directories 171 symbols 21.6k lines spanned nothing excluded — this "
+    },
+    "map": {
+     "display": "block",
+     "box": [
+      322,
+      0,
+      1278,
+      1000
+     ],
+     "text": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26"
+    },
+    "path": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": ""
+    },
+    "world": {
+     "display": "block",
+     "box": [
+      337,
+      12,
+      1247,
+      976
+     ],
+     "text": "src 17.5k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts real-powershell-analyzer.ts cs-deep-26"
+    },
+    "zoomstate": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "whole map · scroll to zoom in"
+    },
+    "mapbtn": {
+     "display": "block",
+     "box": [
+      1512,
+      14,
+      74,
+      31
+     ],
+     "text": "save as…"
+    },
+    "fitbtn": "ABSENT",
+    "savebtn": "ABSENT",
+    "kind-rows": {
+     "display": "block",
+     "box": [
+      16,
+      416,
+      290,
+      207
+     ],
+     "text": "constant 63 property 61 function 46 method 14 variable 6 interface 5 enum_member 2 class 1 type 1 enum 1"
+    },
+    "g-dir": {
+     "display": "block",
+     "box": [
+      84,
+      247,
+      81,
+      36
+     ],
+     "text": "directory"
+    },
+    "g-lang": {
+     "display": "block",
+     "box": [
+      170,
+      247,
+      83,
+      36
+     ],
+     "text": "language"
+    },
+    "q": {
+     "display": "block",
+     "box": [
+      27,
+      316,
+      260,
+      38
+     ],
+     "text": ""
+    }
+   },
+   "rawCanvas": null,
+   "studio": null
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": null,
+   "after": null,
+   "display": null
+  },
+  "paintProbe": {
+   "zoomstateText": "whole map · scroll to zoom in",
+   "zoomstateClass": "",
+   "zoomstateShown": "none",
+   "worldBox": [
+    337,
+    12,
+    1247,
+    976
+   ],
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "122 files 11 directories 171 symbols 21.6k lines spanned",
+   "svgGroups": 0
+  }
+ },
+ {
+  "name": "03-raw-class",
+  "what": "standalone UML class diagram",
+  "url": "raw-class.html",
+  "kind": "raw",
+  "shots": [
+   "03-raw-class-t5s.png",
+   "03-raw-class-after-fit.png",
+   "03-raw-class-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Class Diagram",
+    "__view": "class",
+    "hud": {
+     "display": "block",
+     "box": [
+      16,
+      16,
+      360,
+      247
+     ],
+     "text": "Class Diagram bb_visualize · types and relationships the index actually stores 23 types drawn 23 relationships drawn 257991 symbols in scope 177 types"
+    },
+    "legend": {
+     "display": "block",
+     "box": [
+      16,
+      484,
+      360,
+      500
+     ],
+     "text": "RELATIONSHIPS fit all implements 20 instantiates 2 contains 1 IN EACH BOX () method :: field or property = enum member from the index's own containmen"
+    },
+    "search": "ABSENT",
+    "detail": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "✕"
+    },
+    "shown": "ABSENT",
+    "progress": "ABSENT",
+    "stats": {
+     "display": "grid",
+     "box": [
+      35,
+      102,
+      322,
+      63
+     ],
+     "text": "23 types drawn 23 relationships drawn 257991 symbols in scope"
+    },
+    "side": "ABSENT",
+    "map": "ABSENT",
+    "path": "ABSENT",
+    "world": "ABSENT",
+    "zoomstate": "ABSENT",
+    "mapbtn": "ABSENT",
+    "fitbtn": "ABSENT",
+    "savebtn": {
+     "display": "block",
+     "box": [
+      1511,
+      14,
+      75,
+      21
+     ],
+     "text": "save as…"
+    },
+    "kind-rows": "ABSENT",
+    "g-dir": "ABSENT",
+    "g-lang": "ABSENT",
+    "q": "ABSENT"
+   },
+   "rawCanvas": null,
+   "studio": null
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": null,
+   "after": null,
+   "display": null
+  },
+  "paintProbe": {
+   "zoomstateText": "ABSENT",
+   "zoomstateClass": "ABSENT",
+   "zoomstateShown": "ABSENT",
+   "worldBox": "ABSENT",
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "23 types drawn 23 relationships drawn 257991 symbols in scope",
+   "svgGroups": 1
+  }
+ },
+ {
+  "name": "04-raw-graph-module",
+  "what": "scoped map, scope=module target=src/mcp",
+  "url": "raw-graph-module.html",
+  "kind": "raw",
+  "shots": [
+   "04-raw-graph-module-t5s.png",
+   "04-raw-graph-module-after-fit.png",
+   "04-raw-graph-module-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Architecture Map",
+    "__view": "graph",
+    "hud": "ABSENT",
+    "legend": "ABSENT",
+    "search": {
+     "display": "flex",
+     "box": [
+      1298,
+      14,
+      288,
+      55
+     ],
+     "text": ""
+    },
+    "detail": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "✕"
+    },
+    "shown": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "showing 15 of 200 nodes and 151 of 216 edges — zoom in, or click a node to focus"
+    },
+    "progress": {
+     "display": "none",
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "text": "laying out… 100%"
+    },
+    "stats": "ABSENT",
+    "side": "ABSENT",
+    "map": "ABSENT",
+    "path": "ABSENT",
+    "world": "ABSENT",
+    "zoomstate": "ABSENT",
+    "mapbtn": "ABSENT",
+    "fitbtn": "ABSENT",
+    "savebtn": "ABSENT",
+    "kind-rows": "ABSENT",
+    "g-dir": "ABSENT",
+    "g-lang": "ABSENT",
+    "q": {
+     "display": "block",
+     "box": [
+      1310,
+      24,
+      210,
+      35
+     ],
+     "text": ""
+    }
+   },
+   "rawCanvas": {
+    "size": [
+     1600,
+     1000
+    ],
+    "painted": 8783,
+    "sampled": 16495,
+    "ratio": 0.5325
+   },
+   "studio": null
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": "showing 15 of 200 nodes and 151 of 216 edges — zoom in, or click a node to focus",
+   "after": "showing 15 of 200 nodes and 151 of 216 edges — zoom in, or click a node to focus",
+   "display": "none"
+  },
+  "paintProbe": {
+   "zoomstateText": "ABSENT",
+   "zoomstateClass": "ABSENT",
+   "zoomstateShown": "ABSENT",
+   "worldBox": "ABSENT",
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "ABSENT",
+   "svgGroups": 0
+  }
+ },
+ {
+  "name": "05-studio-default",
+  "what": "studio html, no view asked for",
+  "url": "studio-default.html",
+  "kind": "studio",
+  "shots": [
+   "05-studio-default-t5s.png",
+   "05-studio-default-after-fit.png",
+   "05-studio-default-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Visualizer",
+    "__view": null,
+    "hud": "ABSENT",
+    "legend": "ABSENT",
+    "search": "ABSENT",
+    "detail": "ABSENT",
+    "shown": "ABSENT",
+    "progress": "ABSENT",
+    "stats": "ABSENT",
+    "side": {
+     "display": "block",
+     "box": [
+      0,
+      0,
+      336,
+      1000
+     ],
+     "text": "BB / VISUALIZE Architecture Map bb_visualize · self-contained · no network MODE ◎ Graph ▦ Code map ◇ UML ON SCREEN nodes 200 of 200·edges 437 of 437 D"
+    },
+    "map": "ABSENT",
+    "path": "ABSENT",
+    "world": "ABSENT",
+    "zoomstate": "ABSENT",
+    "mapbtn": "ABSENT",
+    "fitbtn": "ABSENT",
+    "savebtn": "ABSENT",
+    "kind-rows": "ABSENT",
+    "g-dir": "ABSENT",
+    "g-lang": "ABSENT",
+    "q": "ABSENT"
+   },
+   "rawCanvas": null,
+   "studio": {
+    "activeTab": [
+     "graph"
+    ],
+    "status": "Graph view loaded",
+    "frame": {
+     "__title": "Backbencher Architecture Map",
+     "__view": "graph",
+     "hud": "ABSENT",
+     "legend": "ABSENT",
+     "search": {
+      "display": "flex",
+      "box": [
+       962,
+       14,
+       288,
+       55
+      ],
+      "text": ""
+     },
+     "detail": {
+      "display": "none",
+      "box": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "text": "✕"
+     },
+     "shown": {
+      "display": "block",
+      "box": [
+       340,
+       956,
+       585,
+       31
+      ],
+      "text": "showing 200 of 200 nodes and 260 of 437 edges — the heaviest 260 drawn at this zoom, zoom in for the rest"
+     },
+     "progress": {
+      "display": "none",
+      "box": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "text": "laying out… 100%"
+     },
+     "stats": "ABSENT",
+     "side": "ABSENT",
+     "map": "ABSENT",
+     "path": "ABSENT",
+     "world": "ABSENT",
+     "zoomstate": "ABSENT",
+     "mapbtn": "ABSENT",
+     "fitbtn": "ABSENT",
+     "savebtn": "ABSENT",
+     "kind-rows": "ABSENT",
+     "g-dir": "ABSENT",
+     "g-lang": "ABSENT",
+     "q": {
+      "display": "block",
+      "box": [
+       974,
+       24,
+       210,
+       35
+      ],
+      "text": ""
+     }
+    },
+    "canvas": {
+     "size": [
+      1264,
+      1000
+     ],
+     "painted": 3745,
+     "sampled": 13031,
+     "ratio": 0.2874
+    }
+   }
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": "showing 200 of 200 nodes and 260 of 437 edges — the heaviest 260 drawn at this zoom, zoom in for the rest",
+   "after": "showing 200 of 200 nodes and 260 of 437 edges — the heaviest 260 drawn at this zoom, zoom in for the rest",
+   "display": "block"
+  },
+  "paintProbe": {
+   "zoomstateText": "ABSENT",
+   "zoomstateClass": "ABSENT",
+   "zoomstateShown": "ABSENT",
+   "worldBox": "ABSENT",
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "ABSENT",
+   "svgGroups": 0
+  }
+ },
+ {
+  "name": "06-studio-codemap-requested",
+  "what": "studio html, view=codemap REQUESTED",
+  "url": "studio-codemap-requested.html",
+  "kind": "studio",
+  "shots": [
+   "06-studio-codemap-requested-t5s.png",
+   "06-studio-codemap-requested-after-fit.png",
+   "06-studio-codemap-requested-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Visualizer",
+    "__view": null,
+    "hud": "ABSENT",
+    "legend": "ABSENT",
+    "search": "ABSENT",
+    "detail": "ABSENT",
+    "shown": "ABSENT",
+    "progress": "ABSENT",
+    "stats": "ABSENT",
+    "side": {
+     "display": "block",
+     "box": [
+      0,
+      0,
+      336,
+      1000
+     ],
+     "text": "BB / VISUALIZE Code map bb_visualize · self-contained · no network MODE ◎ Graph ▦ Code map ◇ UML ON SCREEN — DATA This view still paints its own panel"
+    },
+    "map": "ABSENT",
+    "path": "ABSENT",
+    "world": "ABSENT",
+    "zoomstate": "ABSENT",
+    "mapbtn": "ABSENT",
+    "fitbtn": "ABSENT",
+    "savebtn": "ABSENT",
+    "kind-rows": "ABSENT",
+    "g-dir": "ABSENT",
+    "g-lang": "ABSENT",
+    "q": "ABSENT"
+   },
+   "rawCanvas": null,
+   "studio": {
+    "activeTab": [
+     "codemap"
+    ],
+    "status": "Code map view loaded",
+    "frame": {
+     "__title": "Backbencher Code Map",
+     "__view": "codemap",
+     "hud": {
+      "display": "block",
+      "box": [
+       16,
+       16,
+       290,
+       208
+      ],
+      "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 100 files 11 directories 156 symbols 26.6k lines spanned nothing excluded — this "
+     },
+     "legend": {
+      "display": "block",
+      "box": [
+       16,
+       377,
+       290,
+       346
+      ],
+      "text": "SYMBOL KINDS constant 63 property 61 function 46 method 14 variable 6 interface 5 enum_member 2 class 1 type 1 enum 1 READING IT gap = code between sy"
+     },
+     "search": {
+      "display": "flex",
+      "box": [
+       16,
+       305,
+       290,
+       60
+      ],
+      "text": ""
+     },
+     "detail": {
+      "display": "none",
+      "box": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "text": "✕"
+     },
+     "shown": "ABSENT",
+     "progress": "ABSENT",
+     "stats": {
+      "display": "grid",
+      "box": [
+       16,
+       85,
+       290,
+       84
+      ],
+      "text": "100 files 11 directories 156 symbols 26.6k lines spanned"
+     },
+     "side": {
+      "display": "flex",
+      "box": [
+       0,
+       0,
+       322,
+       1000
+      ],
+      "text": "Code Map bb_visualize · one rectangle per SYMBOL, sized by its lines 100 files 11 directories 156 symbols 26.6k lines spanned nothing excluded — this "
+     },
+     "map": {
+      "display": "block",
+      "box": [
+       322,
+       0,
+       942,
+       1000
+      ],
+      "text": "src 17.5k lines script 4k lines validation 2.1k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts "
+     },
+     "path": {
+      "display": "none",
+      "box": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "text": ""
+     },
+     "world": {
+      "display": "block",
+      "box": [
+       334,
+       13,
+       918,
+       975
+      ],
+      "text": "src 17.5k lines script 4k lines validation 2.1k lines real-cpp-analyzer.ts real-clojure-analyzer.ts real-fsharp-analyzer.ts real-solidity-analyzer.ts "
+     },
+     "zoomstate": {
+      "display": "none",
+      "box": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "text": "whole map · scroll to zoom in"
+     },
+     "mapbtn": {
+      "display": "block",
+      "box": [
+       1176,
+       14,
+       74,
+       31
+      ],
+      "text": "save as…"
+     },
+     "fitbtn": "ABSENT",
+     "savebtn": "ABSENT",
+     "kind-rows": {
+      "display": "block",
+      "box": [
+       16,
+       416,
+       290,
+       207
+      ],
+      "text": "constant 63 property 61 function 46 method 14 variable 6 interface 5 enum_member 2 class 1 type 1 enum 1"
+     },
+     "g-dir": {
+      "display": "block",
+      "box": [
+       84,
+       247,
+       81,
+       36
+      ],
+      "text": "directory"
+     },
+     "g-lang": {
+      "display": "block",
+      "box": [
+       170,
+       247,
+       83,
+       36
+      ],
+      "text": "language"
+     },
+     "q": {
+      "display": "block",
+      "box": [
+       27,
+       316,
+       260,
+       38
+      ],
+      "text": ""
+     }
+    },
+    "canvas": null
+   }
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": null,
+   "after": null,
+   "display": null
+  },
+  "paintProbe": {
+   "zoomstateText": "whole map · scroll to zoom in",
+   "zoomstateClass": "",
+   "zoomstateShown": "none",
+   "worldBox": [
+    334,
+    13,
+    918,
+    975
+   ],
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "100 files 11 directories 156 symbols 26.6k lines spanned",
+   "svgGroups": 0
+  }
+ },
+ {
+  "name": "07-studio-class-requested",
+  "what": "studio html, view=class REQUESTED",
+  "url": "studio-class-requested.html",
+  "kind": "studio",
+  "shots": [
+   "07-studio-class-requested-t5s.png",
+   "07-studio-class-requested-after-fit.png",
+   "07-studio-class-requested-t11s.png"
+  ],
+  "errors": [],
+  "diagnostics": {
+   "raw": {
+    "__title": "Backbencher Visualizer",
+    "__view": null,
+    "hud": "ABSENT",
+    "legend": "ABSENT",
+    "search": "ABSENT",
+    "detail": "ABSENT",
+    "shown": "ABSENT",
+    "progress": "ABSENT",
+    "stats": "ABSENT",
+    "side": {
+     "display": "block",
+     "box": [
+      0,
+      0,
+      336,
+      1000
+     ],
+     "text": "BB / VISUALIZE UML / Class diagram bb_visualize · self-contained · no network MODE ◎ Graph ▦ Code map ◇ UML ON SCREEN — DATA This view still paints it"
+    },
+    "map": "ABSENT",
+    "path": "ABSENT",
+    "world": "ABSENT",
+    "zoomstate": "ABSENT",
+    "mapbtn": "ABSENT",
+    "fitbtn": "ABSENT",
+    "savebtn": "ABSENT",
+    "kind-rows": "ABSENT",
+    "g-dir": "ABSENT",
+    "g-lang": "ABSENT",
+    "q": "ABSENT"
+   },
+   "rawCanvas": null,
+   "studio": {
+    "activeTab": [
+     "class"
+    ],
+    "status": "UML view loaded",
+    "frame": {
+     "__title": "Backbencher Class Diagram",
+     "__view": "class",
+     "hud": {
+      "display": "block",
+      "box": [
+       16,
+       16,
+       360,
+       247
+      ],
+      "text": "Class Diagram bb_visualize · types and relationships the index actually stores 23 types drawn 23 relationships drawn 257991 symbols in scope 177 types"
+     },
+     "legend": {
+      "display": "block",
+      "box": [
+       16,
+       484,
+       360,
+       500
+      ],
+      "text": "RELATIONSHIPS fit all implements 20 instantiates 2 contains 1 IN EACH BOX () method :: field or property = enum member from the index's own containmen"
+     },
+     "search": "ABSENT",
+     "detail": {
+      "display": "none",
+      "box": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "text": "✕"
+     },
+     "shown": "ABSENT",
+     "progress": "ABSENT",
+     "stats": {
+      "display": "grid",
+      "box": [
+       35,
+       102,
+       322,
+       63
+      ],
+      "text": "23 types drawn 23 relationships drawn 257991 symbols in scope"
+     },
+     "side": "ABSENT",
+     "map": "ABSENT",
+     "path": "ABSENT",
+     "world": "ABSENT",
+     "zoomstate": "ABSENT",
+     "mapbtn": "ABSENT",
+     "fitbtn": "ABSENT",
+     "savebtn": {
+      "display": "block",
+      "box": [
+       1175,
+       14,
+       75,
+       21
+      ],
+      "text": "save as…"
+     },
+     "kind-rows": "ABSENT",
+     "g-dir": "ABSENT",
+     "g-lang": "ABSENT",
+     "q": "ABSENT"
+    },
+    "canvas": null
+   }
+  },
+  "fitProbe": {
+   "hasButton": false,
+   "before": null,
+   "after": null,
+   "display": null
+  },
+  "paintProbe": {
+   "zoomstateText": "ABSENT",
+   "zoomstateClass": "ABSENT",
+   "zoomstateShown": "ABSENT",
+   "worldBox": "ABSENT",
+   "detailDisplay": "none",
+   "detailBox": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "detailText": "✕",
+   "statsText": "23 types drawn 23 relationships drawn 257991 symbols in scope",
+   "svgGroups": 1
+  }
+ }
+]

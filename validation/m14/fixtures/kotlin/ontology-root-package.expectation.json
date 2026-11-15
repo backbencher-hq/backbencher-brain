@@ -1,0 +1,106 @@
+{
+  "fixtureId": "kotlin/ontology-root-package",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS clause 6 of the `exports` rule \u2014 the ONE clause that is not a kotlin language rule \u2014 in both directions, so it cannot be quietly dropped. `exports.source` IS the declaring package, and the root package has no name to publish it under, so a package-less file's public top-level declarations get no `exports` edge even though kotlin (unlike java, JLS 7.4.2) does not forbid importing from the unnamed package. Declaring that as a limitation rather than hiding it behind a placeholder source is the point: emitting `source: \"root\"` would put a fabricated symbol name into bb_graph for a quarter of the corpus population. The same file pins the `imports` side's `\"root\"` fallback, which is java's convention and the one already published by kotlin's import-`references` edge, so the two labels cannot silently disagree about what a package-less file is called.",
+  "expectSymbols": [
+    {
+      "name": "RootPackageClass",
+      "kind": "class"
+    },
+    {
+      "name": "rootPackageHelper",
+      "kind": "function"
+    },
+    {
+      "name": "rootPackageUses",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "RootPackageClass",
+      "target": "java.util.List",
+      "meta.rootPackageFile": true,
+      "meta.importShape": "imported_declaration",
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9,
+      "note": "the package-less fallback for an IMPORTS source: a dependency still exists and dropping the edge would lose a real fact, so it is published under the same `\"root\"` convention java uses."
+    },
+    {
+      "type": "references",
+      "from": "RootPackageClass",
+      "target": "java.util.List",
+      "meta.evidenceClass": "import_based",
+      "confidenceMin": 0.9
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "RootPackageClass",
+      "note": "clause 6: the edge's source would have to be the package, and the root package has no name. Publishing it under `root` would fabricate the symbol name `root` in the graph; java's own exports rule refuses the same case for the mirror-image reason (JLS 7.4.2). Declared as a limitation in the lane doc WITH its measured cost: 693 of 2,613 top-level ownerless public declarations on a 1,500-file window."
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "rootPackageHelper",
+      "note": "clause 6, the function case."
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "rootPackageInternal",
+      "note": "clauses 3 AND 6: `internal` is module-scoped, and the file names no package either."
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "RootPackagePrivate",
+      "note": "clauses 3 AND 6: `private` at top level is file-scoped."
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "rootPackageUses",
+      "note": "clause 6, a function that also takes an imported type: the import is published on the `imports` label, so the dependency is not lost by declining the export."
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ctx",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "RootPackageClass",
+      "note": "ParseResult.exports still lists it. The LIST and the EDGE deliberately differ on clause 6 \u2014 a package-less file still has exportable names \u2014 and the lane doc states the difference rather than making the two silently disagree. The locality and script clauses apply to both."
+    },
+    {
+      "name": "rootPackageHelper"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "RootPackageInternal",
+      "note": "clause 3 applies to the list too: it was publishing 1,719 `internal` and 657 `private` declarations per 1,500-file window before this wave, along with 148 LOCAL declarations that no module can import."
+    },
+    {
+      "name": "RootPackagePrivate",
+      "note": "clause 3, `private` at top level."
+    }
+  ],
+  "authoredNote": " [TASK-9 KOTLIN4 SUPERSESSION 2026-10-19: the imports/exports SOURCE contract is the file identity \u2014 primary top-level type when the file declares one, else the compilation-unit base name (fleet defect fix: the package-identity export channel is REMOVED because the store's defensive filter drops package-named export sources, and package-sourced imports are replaced by identity-sourced rows). Targets/metadata/coverage are preserved; the superseded package/root source spellings are now FORBIDDEN, so the re-pin strengthens rather than weakens the pins.]"
+}

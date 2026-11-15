@@ -1,0 +1,115 @@
+{
+  "fixtureId": "c/instantiates-allocated-type-962",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #962, which restores a relationship the analyzer had removed, and corrects its TARGET. The M12 C truth defines the relationship C-specifically -- 'instantiates = allocator calls (malloc/calloc/realloc family -- C-specific allocation semantic' -- and pins `rel:Module.c:instantiates:buffer_create:malloc`, noting that 'the calls + instantiates pair is intentional: call graph fact + allocation'. The analyzer published no `instantiates` at all; its removal note read 'malloc allocates BYTES, not a named type - an Instantiates edge to the literal malloc could never resolve to a type symbol and was pure noise'. That reasoning is CORRECT ABOUT THE TARGET and wrong about the consequence. Measured across all 25 M12 truths that pin an `instantiates` edge, the target is always a TYPE: `Point`, `HashMap`, `List`, `Dictionary`, `User`, `UserService`, `MemoryStorage`, `Shape`. C's `-> malloc` was the only non-type target in the family, and it could never resolve to a type symbol -- which is the defect, not a reason to drop the relationship. So the relationship is restored and the TARGET changed: C states the produced type in the cast and in `sizeof`, and both are read because they disagree in practice about which carries it. The target must be a type the file DECLARES, since an `instantiates` edge has to resolve. THREE defects were found and fixed while authoring this, each of which would have shipped a half-working implementation: (1) only the `type_identifier` case was read, so `(struct Buf *)` -- a `type_descriptor` around a `struct_specifier`, whose descriptor text is 'struct Buf *' WITH the keyword and pointer -- never matched a declared-type set; (2) `sizeof_expression` has no `argument` FIELD in this grammar, its operand is `namedChild(0)`, so every allocation carrying its type only in `sizeof` produced no edge; (3) an `elaborated_specifier` node type was carried over from Java/TypeScript and does not exist in tree-sitter-c -- the F1 grammar oracle caught that literal on the first run, which is exactly the finding it exists to make. The negatives are the substance of the ruling: an untyped allocation and a cast to an undeclared type must publish NOTHING, because there is no type to instantiate and an edge to a name the file does not declare is the `-> malloc` defect with a different spelling.",
+  "expectSymbols": [
+    {
+      "name": "Buf",
+      "kind": "struct"
+    },
+    {
+      "name": "Node",
+      "kind": "struct"
+    },
+    {
+      "name": "buf_alloc",
+      "kind": "function"
+    },
+    {
+      "name": "node_alloc",
+      "kind": "function"
+    },
+    {
+      "name": "buf_grow",
+      "kind": "function"
+    },
+    {
+      "name": "node_pair",
+      "kind": "function"
+    },
+    {
+      "name": "untyped_alloc",
+      "kind": "function"
+    },
+    {
+      "name": "buf_copy",
+      "kind": "function"
+    },
+    {
+      "name": "dup",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "buf_alloc",
+      "target": "Buf",
+      "note": "#962, THE PINNED ROW. The type is in BOTH the cast and the sizeof; the cast is read first. A TYPE target, unlike the truth's original `-> malloc`, which was the only non-type target in a 25-language family."
+    },
+    {
+      "type": "instantiates",
+      "from": "node_alloc",
+      "target": "Node",
+      "note": "The sizeof-ONLY spelling: `struct Node *nd = malloc(sizeof(struct Node));` has no cast at all. This row is why the sizeof path exists, and it is the row that caught defect (2) -- `sizeof_expression` has no `argument` field in this grammar."
+    },
+    {
+      "type": "instantiates",
+      "from": "buf_grow",
+      "target": "Buf",
+      "note": "The cast-ONLY spelling, and the `realloc` family: `(struct Buf *)realloc(old, sizeof(struct Buf))` -- the argument is the OLD pointer, so `sizeof` names the new block's size, not the type. The cast is what carries the type."
+    },
+    {
+      "type": "calls",
+      "from": "buf_alloc",
+      "target": "malloc",
+      "note": "CONTROL: the `calls` edge the truth says is the intentional pair. Both edges describe one statement from two angles -- the call graph fact and the allocation semantic -- and neither replaces the other."
+    },
+    {
+      "type": "instantiates",
+      "from": "buf_copy",
+      "target": "Buf",
+      "note": "CONTROL: an allocation inside a function that also frees. `free` is not an instantiation and publishes no `instantiates` edge; the malloc still does."
+    },
+    {
+      "type": "instantiates",
+      "from": "node_pair",
+      "target": "Node",
+      "note": "DEDUP CONTROL. `node_pair` calls `malloc(sizeof(struct Node))` TWICE on two lines, and publishes exactly ONE edge: the family contract is one edge per (source, target) PAIR -- a line is not a site, the same rule `uses` and `calls` follow. The companion `expectRelationshipCount` pins the total at 1, so a change that keyed the dedup per line would publish two and fail THERE rather than here."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "untyped_alloc",
+      "target": "void",
+      "note": "THE NEGATIVE THAT MATTERS MOST. `void *raw = malloc(n);` allocates bytes and instantiates NO type, so there is no edge. The `calls` edge and `metadata.usesMalloc` already record the allocation. An `instantiates` edge here would name something that is not a type -- the original defect."
+    },
+    {
+      "type": "instantiates",
+      "from": "untyped_alloc",
+      "target": "malloc",
+      "note": "REGRESSION ROW for the defect #962 corrects. This is the truth's original target. Publishing it would satisfy a truth row that is itself wrong -- the only non-type target among 25 languages."
+    },
+    {
+      "type": "instantiates",
+      "from": "dup",
+      "target": "char",
+      "note": "`strdup(s)` allocates, and this file declares no `char`-named type, so no edge. The allocator family is malloc/calloc/realloc; strdup is not on it, and publishing an edge to a type nothing declares is the defect."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "counter",
+      "note": "CARRIED FROM #961's fixture as a control that this ruling must not disturb: a function-local VARIABLE is still not a symbol. C-D1 was right about that part and only that part."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "instantiates",
+      "equals": 5,
+      "note": "buf_alloc, node_alloc, buf_grow, node_pair, buf_copy. The per-function pair dedup is what makes node_pair's two allocations one edge; a per-line key would make this 6."
+    }
+  ]
+}

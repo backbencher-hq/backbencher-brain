@@ -1,0 +1,619 @@
+{
+  "instrument": "validation/m14/fixtures/sql/ontology-census.mts",
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpusRepos": 141,
+  "admittedFilesTotal": 1945,
+  "excluded": [
+    "duckdb/extension/tpcds/dsdgen/queries/83.sql"
+  ],
+  "exclusionReason": "src/ast/engine.ts:1411 answers a 120s synchronous parser.parse() hang with process.exit(1), so one file kills any parseFile-based walk. See the exclusion block above; the count of admitted files actually measured is admittedFilesTotal.",
+  "sampledFiles": 1945,
+  "sampling": "all admitted files",
+  "sizeCapBytes": 524288,
+  "parsed": 1945,
+  "parseFailures": 0,
+  "filesYieldingNoSymbolsAndNoRelationships": 56,
+  "filesWithSymbols": 951,
+  "filesWithRelationships": 1850,
+  "symbols": 18322,
+  "relationships": 30690,
+  "distinctSymbolNames": 7696,
+  "emptyNamedSymbols": 0,
+  "emptyNamedSymbolFiles": [],
+  "unknownEndpoints": 0,
+  "unknownEndpointExamples": [],
+  "symbolKinds": [
+    {
+      "kind": "property",
+      "n": 9896,
+      "firstFile": "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql"
+    },
+    {
+      "kind": "constant",
+      "n": 3728,
+      "firstFile": "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql"
+    },
+    {
+      "kind": "class",
+      "n": 2312,
+      "firstFile": "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql"
+    },
+    {
+      "kind": "function",
+      "n": 2258,
+      "firstFile": "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql"
+    },
+    {
+      "kind": "namespace",
+      "n": 75,
+      "firstFile": "duckdb/data/parquet-testing/malloy-smaller/schema.sql"
+    },
+    {
+      "kind": "module",
+      "n": 30,
+      "firstFile": "boundary/internal/db/schema/migrations/oss/postgres/0/60_wh_domain_types.up.sql"
+    },
+    {
+      "kind": "type",
+      "n": 23,
+      "firstFile": "duckdb/benchmark/recursive_cte/aoc2022/load/day19.sql"
+    }
+  ],
+  "nonOntologyRelationshipTypes": [],
+  "perType": {
+    "calls": {
+      "edges": 3827,
+      "files": [
+        "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/01_domain_types.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/08_servers.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/11_auth_token.up.sql"
+      ],
+      "examples": [
+        "version_column->log_migration_version",
+        "update_version_column->pg_trigger_depth",
+        "update_time_column->update_time_column",
+        "default_create_time_column->default_create_time",
+        "immutable_columns->immutable_columns",
+        "update_time_column->update_time_column"
+      ],
+      "sourceGlobal": 931,
+      "sourceResolved": 2896,
+      "targetResolvedIntraFile": 1542,
+      "targetResolvedCorpusWide": 3013,
+      "targetLabelledExternal": 7,
+      "targetUnresolved": 807,
+      "resolutionIntraFilePct": 40.29,
+      "resolutionCorpusWidePct": 78.73,
+      "confidence": {
+        "1": 3827
+      },
+      "evidenceClass": {
+        "usage_contextual": 3381,
+        "reference_qualified": 446
+      },
+      "metadataRoles": {
+        "evidenceClass,triggerAction": 733,
+        "evidenceClass,external": 1,
+        "evidenceClass": 2647,
+        "evidenceClass,external,qualified": 195,
+        "evidenceClass,qualified": 177,
+        "evidenceClass,qualified,triggerAction": 72,
+        "evidenceClass,external,qualified,triggerAction": 2
+      },
+      "topUnresolvedNames": [
+        [
+          "finish",
+          153
+        ],
+        [
+          "read_parquet",
+          57
+        ],
+        [
+          "uuid_generate_v1mc",
+          37
+        ],
+        [
+          "wh_time_key",
+          36
+        ],
+        [
+          "read_csv",
+          36
+        ],
+        [
+          "wh_date_key",
+          35
+        ],
+        [
+          "collect_tap",
+          28
+        ],
+        [
+          "has_index",
+          25
+        ],
+        [
+          "has_function",
+          20
+        ],
+        [
+          "has_trigger",
+          19
+        ],
+        [
+          "volatility_is",
+          18
+        ],
+        [
+          "has_view",
+          15
+        ]
+      ]
+    },
+    "uses": {
+      "edges": 9017,
+      "files": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-gradle-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-migrations/src/main/kotlin/org/example/migrations/V2__Add_primary_key.sql",
+        "boundary/internal/clientcache/internal/db/schema_reset.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/three/1/01_add_table.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/two/0/02_initial.up.sql",
+        "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql"
+      ],
+      "examples": [
+        "global->USERS",
+        "global->USERS",
+        "global->USERS",
+        "global->sqlite_master",
+        "global->tree",
+        "global->two"
+      ],
+      "sourceGlobal": 6222,
+      "sourceResolved": 2795,
+      "targetResolvedIntraFile": 2958,
+      "targetResolvedCorpusWide": 8081,
+      "targetLabelledExternal": 273,
+      "targetUnresolved": 663,
+      "resolutionIntraFilePct": 32.8,
+      "resolutionCorpusWidePct": 89.62,
+      "confidence": {
+        "1": 9017
+      },
+      "evidenceClass": {
+        "usage_contextual": 7209,
+        "reference_qualified": 1808
+      },
+      "metadataRoles": {
+        "evidenceClass,operation,tableReference": 2302,
+        "evidenceClass,operations,tableReference": 172,
+        "evidenceClass,tableReference": 4215,
+        "evidenceClass,operation,operations,tableReference": 360,
+        "evidenceClass,external,qualified,tableReference": 144,
+        "evidenceClass,external,tableReference": 159,
+        "evidenceClass,qualified,tableReference": 1232,
+        "evidenceClass,operation,qualified,tableReference": 365,
+        "evidenceClass,operations,qualified,tableReference": 30,
+        "evidenceClass,operation,operations,qualified,tableReference": 35,
+        "evidenceClass,external,operation,tableReference": 1,
+        "evidenceClass,external,operation,qualified,tableReference": 2
+      },
+      "topUnresolvedNames": [
+        [
+          "lineitem",
+          39
+        ],
+        [
+          "tpopber",
+          34
+        ],
+        [
+          "popber",
+          29
+        ],
+        [
+          "credential_vault_library_username_password_mapping_override",
+          23
+        ],
+        [
+          "supplier",
+          23
+        ],
+        [
+          "nation",
+          21
+        ],
+        [
+          "tpopkontr",
+          21
+        ],
+        [
+          "credential_vault_generic_library",
+          15
+        ],
+        [
+          "partsupp",
+          13
+        ],
+        [
+          "pop_status_werte",
+          12
+        ],
+        [
+          "credential_vault_generic_library_username_password_mapping_ovrd",
+          11
+        ],
+        [
+          "credential_vault_generic_library_ssh_private_key_mapping_ovrd",
+          11
+        ]
+      ]
+    },
+    "contains": {
+      "edges": 11786,
+      "files": [
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/h2/V20260720132157__CREATE_TABLE_CITIES.sql",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/h2/V20260720132158__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/src/main/resources/schema.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-gradle-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135257__CREATE_TABLE_CITIES.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/duplicate-versions/0/01_initial.up.sql"
+      ],
+      "examples": [
+        "users->id",
+        "users->name",
+        "users->email",
+        "CITIES->ID",
+        "CITIES->name",
+        "USERS->ID"
+      ],
+      "sourceGlobal": 0,
+      "sourceResolved": 11750,
+      "targetResolvedIntraFile": 11785,
+      "targetResolvedCorpusWide": 11785,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 1,
+      "resolutionIntraFilePct": 99.99,
+      "resolutionCorpusWidePct": 99.99,
+      "confidence": {
+        "1": 11786
+      },
+      "evidenceClass": {
+        "structural": 11786
+      },
+      "metadataRoles": {
+        "evidenceClass": 11780,
+        "evidenceClass,external": 6
+      },
+      "topUnresolvedNames": [
+        [
+          "program",
+          1
+        ]
+      ]
+    },
+    "imports": {
+      "edges": 52,
+      "files": [
+        "boundary/internal/db/schema/migrations/oss/postgres/0/60_wh_domain_types.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/71/06_iam_history.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/85/01_citext_extension.up.sql",
+        "hasura-engine/server/src-rsr/migrations/1_to_2.sql",
+        "postgrest/test/io/fixtures/load.sql",
+        "postgrest/test/io/fixtures/big_schema.sql",
+        "postgrest/test/load/fixtures.sql",
+        "postgrest/test/observability/fixtures/load.sql"
+      ],
+      "examples": [
+        "global->pgcrypto",
+        "global->btree_gist",
+        "global->citext",
+        "global->pgcrypto",
+        "global->../../orioledb.sql",
+        "global->database.sql"
+      ],
+      "sourceGlobal": 52,
+      "sourceResolved": 0,
+      "targetResolvedIntraFile": 30,
+      "targetResolvedCorpusWide": 30,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 22,
+      "resolutionIntraFilePct": 57.69,
+      "resolutionCorpusWidePct": 57.69,
+      "confidence": {
+        "1": 52
+      },
+      "evidenceClass": {
+        "import_based": 52
+      },
+      "metadataRoles": {
+        "evidenceClass,extensionInstall,external,fileDependency,line,scope": 30,
+        "evidenceClass,fileDependency,includeKind,line,psqlInclude,relativeToScript": 22
+      },
+      "topUnresolvedNames": [
+        [
+          "../../orioledb.sql",
+          4
+        ],
+        [
+          "database.sql",
+          3
+        ],
+        [
+          "roles.sql",
+          3
+        ],
+        [
+          "schema.sql",
+          3
+        ],
+        [
+          "privileges.sql",
+          3
+        ],
+        [
+          "db_config.sql",
+          1
+        ],
+        [
+          "../orioledb.sql",
+          1
+        ],
+        [
+          "../spec/fixtures/load.sql",
+          1
+        ],
+        [
+          "jwt.sql",
+          1
+        ],
+        [
+          "jsonschema.sql",
+          1
+        ],
+        [
+          "data.sql",
+          1
+        ]
+      ]
+    },
+    "references": {
+      "edges": 5965,
+      "files": [
+        "boundary/internal/clientcache/internal/db/schema.sql",
+        "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/01_domain_types.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/08_servers.up.sql"
+      ],
+      "examples": [
+        "schema_version_one_row->schema_version",
+        "global->log_migration",
+        "global->log_migration_version",
+        "version_column->log_migration",
+        "global->update_time_column",
+        "global->default_create_time"
+      ],
+      "sourceGlobal": 1139,
+      "sourceResolved": 4826,
+      "targetResolvedIntraFile": 4141,
+      "targetResolvedCorpusWide": 5861,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 104,
+      "resolutionIntraFilePct": 69.42,
+      "resolutionCorpusWidePct": 98.26,
+      "confidence": {
+        "1": 5965
+      },
+      "evidenceClass": {
+        "structural": 5965
+      },
+      "metadataRoles": {
+        "dependency,evidenceClass,indexOn": 1443,
+        "documented,evidenceClass,operation": 779,
+        "evidenceClass,triggerTarget": 1079,
+        "column,constraint,evidenceClass": 480,
+        "constraint,evidenceClass": 145,
+        "evidenceClass,operation,privilege": 112,
+        "column,documented,evidenceClass,operation": 107,
+        "evidenceClass,operation,operations,privilege": 126,
+        "evidenceClass,policyOn": 1679,
+        "documented,evidenceClass,operation,operations": 9,
+        "evidenceClass,external,operation,privilege": 6
+      },
+      "topUnresolvedNames": [
+        [
+          "connection_queue_votes",
+          15
+        ],
+        [
+          "tpopkontr",
+          11
+        ],
+        [
+          "business_rules",
+          9
+        ],
+        [
+          "popmassnber",
+          7
+        ],
+        [
+          "popber",
+          6
+        ],
+        [
+          "tpopber",
+          6
+        ],
+        [
+          "credential_vault_generic_library",
+          5
+        ],
+        [
+          "pop_status_werte",
+          5
+        ],
+        [
+          "usermessage",
+          4
+        ],
+        [
+          "tpop_apberrelevant_werte",
+          4
+        ],
+        [
+          "tpop_entwicklung_werte",
+          4
+        ],
+        [
+          "credential_vault_generic_library_ssh_private_key_mapping_ovrd",
+          3
+        ]
+      ]
+    },
+    "exports": {
+      "edges": 0,
+      "files": [],
+      "examples": [],
+      "sourceGlobal": 0,
+      "sourceResolved": 0,
+      "targetResolvedIntraFile": 0,
+      "targetResolvedCorpusWide": 0,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 0,
+      "resolutionIntraFilePct": null,
+      "resolutionCorpusWidePct": null,
+      "confidence": {},
+      "evidenceClass": {},
+      "metadataRoles": {},
+      "topUnresolvedNames": []
+    },
+    "extends": {
+      "edges": 0,
+      "files": [],
+      "examples": [],
+      "sourceGlobal": 0,
+      "sourceResolved": 0,
+      "targetResolvedIntraFile": 0,
+      "targetResolvedCorpusWide": 0,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 0,
+      "resolutionIntraFilePct": null,
+      "resolutionCorpusWidePct": null,
+      "confidence": {},
+      "evidenceClass": {},
+      "metadataRoles": {},
+      "topUnresolvedNames": []
+    },
+    "implements": {
+      "edges": 0,
+      "files": [],
+      "examples": [],
+      "sourceGlobal": 0,
+      "sourceResolved": 0,
+      "targetResolvedIntraFile": 0,
+      "targetResolvedCorpusWide": 0,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 0,
+      "resolutionIntraFilePct": null,
+      "resolutionCorpusWidePct": null,
+      "confidence": {},
+      "evidenceClass": {},
+      "metadataRoles": {},
+      "topUnresolvedNames": []
+    },
+    "overrides": {
+      "edges": 22,
+      "files": [
+        "postgrest/test/io/fixtures/big_schema.sql",
+        "postgrest/test/io/fixtures/schema.sql",
+        "postgrest/test/spec/fixtures/schema.sql",
+        "proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql"
+      ],
+      "examples": [
+        "global->v_exportevab_beob",
+        "global->v_qk_apber_ohnejahr",
+        "global->v_qk_feldkontr_ohnezaehlung",
+        "global->v_qk_freiwkontr_ohnezaehlung",
+        "global->mult_them",
+        "global->infinite_recursion"
+      ],
+      "sourceGlobal": 22,
+      "sourceResolved": 0,
+      "targetResolvedIntraFile": 22,
+      "targetResolvedCorpusWide": 22,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 0,
+      "resolutionIntraFilePct": 100,
+      "resolutionCorpusWidePct": 100,
+      "confidence": {
+        "1": 22
+      },
+      "evidenceClass": {
+        "structural": 22
+      },
+      "metadataRoles": {
+        "evidenceClass,orReplace,priorLine,redefinition,replacementLine,scope": 22
+      },
+      "topUnresolvedNames": []
+    },
+    "instantiates": {
+      "edges": 21,
+      "files": [
+        "boundary/internal/db/sqltest/tests/wh/auth_token/insert.sql",
+        "boundary/internal/db/sqltest/tests/wh/auth_token/update.sql",
+        "boundary/internal/db/sqltest/tests/wh/credential_dimension_views/source.sql",
+        "boundary/internal/db/sqltest/tests/wh/credential_dimension_views/target.sql",
+        "boundary/internal/db/sqltest/tests/wh/host_dimension_views/source.sql",
+        "boundary/internal/db/sqltest/tests/wh/host_dimension_views/target.sql",
+        "boundary/internal/db/sqltest/tests/wh/user_dimension_views/source.sql",
+        "boundary/internal/db/sqltest/tests/wh/user_dimension_views/target.sql"
+      ],
+      "examples": [
+        "global->wh_auth_token_accumulating_fact",
+        "global->wh_auth_token_accumulating_fact",
+        "global->whx_credential_dimension_source",
+        "global->whx_credential_dimension_target",
+        "global->whx_host_dimension_source",
+        "global->whx_host_dimension_target"
+      ],
+      "sourceGlobal": 17,
+      "sourceResolved": 4,
+      "targetResolvedIntraFile": 11,
+      "targetResolvedCorpusWide": 19,
+      "targetLabelledExternal": 0,
+      "targetUnresolved": 2,
+      "resolutionIntraFilePct": 52.38,
+      "resolutionCorpusWidePct": 90.48,
+      "confidence": {
+        "1": 21
+      },
+      "evidenceClass": {
+        "structural": 21
+      },
+      "metadataRoles": {
+        "construction,constructor,evidenceClass,operation": 21
+      },
+      "topUnresolvedNames": [
+        [
+          "composite_domain",
+          2
+        ]
+      ]
+    }
+  }
+}

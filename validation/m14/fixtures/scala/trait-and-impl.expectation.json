@@ -1,0 +1,14 @@
+{
+  "fixtureId": "scala/trait-and-impl",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Scala 2/3: trait declared with params + generic; class extends it. Repo must be an interface-like symbol; UserRepo extends Repo (implements semantics map to extends-of-trait).",
+  "expectSymbols": [
+    { "name": "Repo" },
+    { "name": "UserRepo" },
+    { "name": "find" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "UserRepo", "targetEndsWith": "Repo" }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c2-edge-mutations.ts",
+  "evidenceFile": "C2.json",
+  "generatedAt": "2026-11-05T04:31:48.376Z",
+  "passed": 73,
+  "failed": 0,
+  "negativeCases": 3,
+  "failures": [],
+  "fixture": {
+    "files": [
+      "src/mod.ts",
+      "src/index.ts"
+    ],
+    "dataDir": "temp-private",
+    "indexSeconds": 0.75
+  },
+  "rejections": [
+    {
+      "tool": "bb_search",
+      "label": "unknown mode rejected"
+    },
+    {
+      "tool": "bb_analyze",
+      "label": "unknown mode rejected"
+    },
+    {
+      "tool": "bb_visualize",
+      "label": "unknown scope rejected"
+    },
+    {
+      "tool": "bb_visualize",
+      "label": "symbol scope missing target rejected"
+    },
+    {
+      "tool": "bb_patterns",
+      "label": "unknown scope rejected"
+    },
+    {
+      "tool": "bb_doc",
+      "label": "unknown mode rejected"
+    },
+    {
+      "tool": "bb_edit",
+      "label": "unknown mode rejected"
+    },
+    {
+      "tool": "bb_edit",
+      "label": "update without symbolName rejected"
+    },
+    {
+      "tool": "bb_index",
+      "label": "missing path rejected"
+    },
+    {
+      "tool": "bb_index",
+      "label": "unknown mode rejected (no silent dir fallback)"
+    },
+    {
+      "tool": "bb_graph",
+      "label": "missing symbol rejected"
+    },
+    {
+      "tool": "bb_graph",
+      "label": "maxDepth out of range rejected"
+    },
+    {
+      "tool": "bb_graph",
+      "label": "negative maxDepth rejected"
+    },
+    {
+      "tool": "bb_impact",
+      "label": "missing symbol rejected"
+    },
+    {
+      "tool": "bb_cross_language",
+      "label": "missing symbol rejected"
+    },
+    {
+      "tool": "bb_annotate",
+      "label": "empty body rejected"
+    },
+    {
+      "tool": "bb_annotate",
+      "label": "body over the declared limit rejected"
+    },
+    {
+      "tool": "bb_annotations",
+      "label": "limit out of range rejected"
+    },
+    {
+      "tool": "bb_annotations",
+      "label": "limit above declared max rejected"
+    }
+  ],
+  "summary": {
+    "rowsTested": 40,
+    "toolsCovered": 16
+  }
+}

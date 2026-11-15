@@ -1,0 +1,43 @@
+@use 'sass:map' as map;
+
+// A module-level variable: `@use` on this file binds it.
+$brand: #f00;
+
+// A `!default` on a name ALREADY assigned does not replace it — Sass skips the
+// assignment, so this is not an override and must not become an edge.
+$brand: #0f0 !default;
+
+// Private by Sass's own `-`/`_` rule: `@use` does NOT expose it.
+$_internal: 1;
+
+// Public, and it reads a public one.
+$computed: map.get($tokens, 'brand');
+
+@mixin button($bg: #fff) {
+  background: $bg;
+}
+
+@function double($n) {
+  @return $n * 2;
+}
+
+// Local to the rule: not a module member.
+.card {
+  $local: 1;
+  @include button($brand);
+  width: double(4px);
+  height: $local;
+}
+
+// `!global` reaches past this scope and reassigns the module-level `$brand`.
+@mixin probe() {
+  $brand: #00f !global;
+  color: $brand;
+}
+
+// A `!global` assignment of a name this file never assigned at the top level
+// CREATES a global; it replaces nothing, so it gets no edge.
+@mixin create() {
+  $invented: 1 !global;
+  border-color: $invented;
+}

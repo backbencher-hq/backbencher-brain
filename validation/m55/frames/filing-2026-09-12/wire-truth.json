@@ -1,7 +1,7 @@
 {
  "hover_greetAll": {
   "contents": {
-   "value": "```\npublic method greetAll([{\"name\":\"names\",\"type\":\"string[]\",\"isOptional\":false}]) → string[]\n```\n\n**greetAll** — method, 3 usages\n\nevidence: structural\n\n**connected**: calls [greet](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_\n\n**usages**\n1. [Greeter — greeter.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n2. [greet — greeter.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greetAll%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greetAll%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greetAll%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([$HOME/bb-demo-hub/src/greeter.ts:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D))_",
+   "value": "```\npublic method greetAll([{\"name\":\"names\",\"type\":\"string[]\",\"isOptional\":false}]) → string[]\n```\n\n**greetAll** — method, 3 usages\n\nevidence: structural\n\n**connected**: calls [greet](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_\n\n**usages**\n1. [Greeter — greeter.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n2. [greet — greeter.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greetAll%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greetAll%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greetAll%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/home/ishaq2321/bb-demo-hub/src/greeter.ts:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D))_",
    "kind": "markdown"
   },
   "range": {
@@ -44,7 +44,7 @@
     "annotationSection": "",
     "stale": false,
     "freshnessStatus": "fresh",
-    "filePath": "$HOME/bb-demo-hub/src/greeter.ts",
+    "filePath": "/home/ishaq2321/bb-demo-hub/src/greeter.ts",
     "lineStart": 15,
     "lineEnd": 17
    }
@@ -52,7 +52,7 @@
  },
  "hover_greet_at_callsite": {
   "contents": {
-   "value": "```\npublic method greet([{\"name\":\"name\",\"type\":\"string\",\"isOptional\":false}]) → string\n```\n\n**greet** — method, 6 usages\n\nevidence: indexed, structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fapp.ts%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D), [greetAll](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D), [describe](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Freport.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n**usages**\n1. [Greeter — greeter.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n2. [main — app.ts:6](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fapp.ts%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\n3. [greetAll — greeter.ts:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D)\n+3 more — [show all usages](command:bb.showAllUsages?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A11%2C%22character%22%3A17%2C%22symbol%22%3A%22greet%22%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n**cross-language** (from stored index rows only):\n- calls into json via name-resolution — inferred (confidence 0.85)\n\n_source: bb index ([$HOME/bb-demo-hub/src/greeter.ts:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D))_",
+   "value": "```\npublic method greet([{\"name\":\"name\",\"type\":\"string\",\"isOptional\":false}]) → string\n```\n\n**greet** — method, 6 usages\n\nevidence: indexed, structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fapp.ts%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D), [greetAll](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D), [describe](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Freport.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n**usages**\n1. [Greeter — greeter.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n2. [main — app.ts:6](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fapp.ts%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\n3. [greetAll — greeter.ts:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D)\n+3 more — [show all usages](command:bb.showAllUsages?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A11%2C%22character%22%3A17%2C%22symbol%22%3A%22greet%22%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n**cross-language** (from stored index rows only):\n- calls into json via name-resolution — inferred (confidence 0.85)\n\n_source: bb index ([/home/ishaq2321/bb-demo-hub/src/greeter.ts:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbb-demo-hub%2Fsrc%2Fgreeter.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D))_",
    "kind": "markdown"
   },
   "range": {
@@ -96,7 +96,7 @@
     "annotationSection": "",
     "stale": false,
     "freshnessStatus": "fresh",
-    "filePath": "$HOME/bb-demo-hub/src/greeter.ts",
+    "filePath": "/home/ishaq2321/bb-demo-hub/src/greeter.ts",
     "lineStart": 11,
     "lineEnd": 13
    }
@@ -773,14 +773,14 @@
    "through": "owning-declaration",
    "memberName": "constructor",
    "ownerName": "Store",
-   "memberFile": "$HOME/bb-demo-hub/src/store.ts"
+   "memberFile": "/home/ishaq2321/bb-demo-hub/src/store.ts"
   }
  },
  "prepare_greetAll": [
   {
    "name": "greetAll",
    "kind": 6,
-   "uri": "file://$HOME/bb-demo-hub/src/greeter.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/greeter.ts",
    "range": {
     "start": {
      "line": 14,
@@ -813,7 +813,7 @@
    "to": {
     "name": "greet",
     "kind": 6,
-    "uri": "file://$HOME/bb-demo-hub/src/greeter.ts",
+    "uri": "file:///home/ishaq2321/bb-demo-hub/src/greeter.ts",
     "range": {
      "start": {
       "line": 10,
@@ -900,7 +900,7 @@
   {
    "name": "get",
    "kind": 6,
-   "uri": "file://$HOME/bb-demo-hub/src/store.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/store.ts",
    "range": {
     "start": {
      "line": 9,
@@ -932,7 +932,7 @@
    "from": {
     "name": "main",
     "kind": 12,
-    "uri": "file://$HOME/bb-demo-hub/src/app.ts",
+    "uri": "file:///home/ishaq2321/bb-demo-hub/src/app.ts",
     "range": {
      "start": {
       "line": 5,
@@ -975,7 +975,7 @@
    "from": {
     "name": "get",
     "kind": 6,
-    "uri": "file://$HOME/bb-demo-hub/src/store.ts",
+    "uri": "file:///home/ishaq2321/bb-demo-hub/src/store.ts",
     "range": {
      "start": {
       "line": 9,
@@ -1020,7 +1020,7 @@
    "to": {
     "name": "get",
     "kind": 6,
-    "uri": "file://$HOME/bb-demo-hub/src/store.ts",
+    "uri": "file:///home/ishaq2321/bb-demo-hub/src/store.ts",
     "range": {
      "start": {
       "line": 9,
@@ -1066,7 +1066,7 @@
  },
  "references_greet": [
   {
-   "uri": "file://$HOME/bb-demo-hub/src/greeter.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/greeter.ts",
    "range": {
     "start": {
      "line": 3,
@@ -1079,7 +1079,7 @@
    }
   },
   {
-   "uri": "file://$HOME/bb-demo-hub/src/store.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/store.ts",
    "range": {
     "start": {
      "line": 1,
@@ -1092,7 +1092,7 @@
    }
   },
   {
-   "uri": "file://$HOME/bb-demo-hub/src/store.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/store.ts",
    "range": {
     "start": {
      "line": 9,
@@ -1105,7 +1105,7 @@
    }
   },
   {
-   "uri": "file://$HOME/bb-demo-hub/src/greeter.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/greeter.ts",
    "range": {
     "start": {
      "line": 10,
@@ -1118,7 +1118,7 @@
    }
   },
   {
-   "uri": "file://$HOME/bb-demo-hub/src/render.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/render.ts",
    "range": {
     "start": {
      "line": 5,
@@ -1131,7 +1131,7 @@
    }
   },
   {
-   "uri": "file://$HOME/bb-demo-hub/src/store.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/store.ts",
    "range": {
     "start": {
      "line": 13,
@@ -1144,7 +1144,7 @@
    }
   },
   {
-   "uri": "file://$HOME/bb-demo-hub/src/app.ts",
+   "uri": "file:///home/ishaq2321/bb-demo-hub/src/app.ts",
    "range": {
     "start": {
      "line": 5,

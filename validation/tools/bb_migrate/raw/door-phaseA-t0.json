@@ -1,0 +1,403 @@
+{
+ "at": "2026-11-02T04:23:39.441Z",
+ "fixture": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata",
+ "initAndListMs": 879,
+ "results": [
+  {
+   "id": "tools-list",
+   "toolCount": 16,
+   "present": true,
+   "description": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks",
+   "params": [
+    "symbolName",
+    "symbolNames",
+    "paths",
+    "symbolIds",
+    "targetLanguage",
+    "format"
+   ],
+   "required": [
+    "targetLanguage"
+   ],
+   "formatEnum": [
+    "text",
+    "json"
+   ],
+   "serverInfo": {
+    "name": "backbencher-brain",
+    "version": "0.3.0"
+   }
+  },
+  {
+   "id": "success-single-text",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 239,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "migration target: python",
+     "dependency order: basePrice (partial)",
+     "methodology: base=4h relationships=2h missing-mappings=0h"
+    ]
+   }
+  },
+  {
+   "id": "success-single-json",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 22,
+   "rpcError": null,
+   "summary": {
+    "plans": 1,
+    "unsupported": 0,
+    "unsupportedReasons": [],
+    "dependencyOrder": [
+     "basePrice"
+    ],
+    "orderingStatus": "partial",
+    "waves": [
+     [
+      "basePrice"
+     ]
+    ],
+    "truncation": {
+     "truncated": false,
+     "requested": 1,
+     "returned": 1
+    },
+    "freshness": {
+     "fresh": 1,
+     "stale": 0,
+     "missing": 0,
+     "mode": "complete"
+    },
+    "methodology": {
+     "baseHours": 4,
+     "relationshipHours": 2,
+     "missingMappingHours": 0,
+     "rates": {
+      "baseHoursPerComponent": 4,
+      "relationshipHoursPerEdge": 2,
+      "hoursPerUnmappedLibrary": 6
+     }
+    },
+    "effort": {
+     "totalHours": 6,
+     "perPlanSumHours": 6,
+     "sharedRelationshipHours": 0,
+     "reconciliation": "per-plan effort sums to the methodology total"
+    },
+    "planSymbols": [
+     {
+      "name": "basePrice",
+      "source": "javascript",
+      "target": "python",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "success-alias-symbolName",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 81,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "migration target: go",
+     "dependency order: basePrice (partial)",
+     "methodology: base=4h relationships=2h missing-mappings=0h"
+    ]
+   }
+  },
+  {
+   "id": "success-batch",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 78,
+   "rpcError": null,
+   "summary": {
+    "plans": 2,
+    "unsupported": 0,
+    "unsupportedReasons": [],
+    "dependencyOrder": [
+     "applyDiscount",
+     "basePrice"
+    ],
+    "orderingStatus": "partial",
+    "waves": [
+     [
+      "applyDiscount",
+      "basePrice"
+     ]
+    ],
+    "truncation": {
+     "truncated": false,
+     "requested": 2,
+     "returned": 2
+    },
+    "freshness": {
+     "fresh": 1,
+     "stale": 0,
+     "missing": 0,
+     "mode": "complete"
+    },
+    "methodology": {
+     "baseHours": 8,
+     "relationshipHours": 4,
+     "missingMappingHours": 0,
+     "rates": {
+      "baseHoursPerComponent": 4,
+      "relationshipHoursPerEdge": 2,
+      "hoursPerUnmappedLibrary": 6
+     }
+    },
+    "effort": {
+     "totalHours": 12,
+     "perPlanSumHours": 12,
+     "sharedRelationshipHours": 0,
+     "reconciliation": "per-plan effort sums to the methodology total"
+    },
+    "planSymbols": [
+     {
+      "name": "basePrice",
+      "source": "javascript",
+      "target": "ruby",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     },
+     {
+      "name": "applyDiscount",
+      "source": "javascript",
+      "target": "ruby",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "success-union-name-and-path",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 148,
+   "rpcError": null,
+   "summary": {
+    "plans": 2,
+    "unsupported": 0,
+    "unsupportedReasons": [],
+    "dependencyOrder": [
+     "applyDiscount",
+     "basePrice"
+    ],
+    "orderingStatus": "partial",
+    "waves": [
+     [
+      "applyDiscount",
+      "basePrice"
+     ]
+    ],
+    "truncation": {
+     "truncated": false,
+     "requested": 2,
+     "returned": 2
+    },
+    "freshness": {
+     "fresh": 1,
+     "stale": 0,
+     "missing": 0,
+     "mode": "complete"
+    },
+    "methodology": {
+     "baseHours": 8,
+     "relationshipHours": 4,
+     "missingMappingHours": 0,
+     "rates": {
+      "baseHoursPerComponent": 4,
+      "relationshipHoursPerEdge": 2,
+      "hoursPerUnmappedLibrary": 6
+     }
+    },
+    "effort": {
+     "totalHours": 12,
+     "perPlanSumHours": 12,
+     "sharedRelationshipHours": 0,
+     "reconciliation": "per-plan effort sums to the methodology total"
+    },
+    "planSymbols": [
+     {
+      "name": "basePrice",
+      "source": "javascript",
+      "target": "python",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     },
+     {
+      "name": "applyDiscount",
+      "source": "javascript",
+      "target": "python",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "refuse-missing-targetLanguage",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 21,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "error: bb_migrate: missing required option: targetLanguage"
+    ]
+   }
+  },
+  {
+   "id": "refuse-missing-subject",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 25,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+    ]
+   }
+  },
+  {
+   "id": "refuse-unknown-option",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 15,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "error: bb_migrate: unknown or irrelevant options: bogusOption — accepted options: symbolName, symbolNames, paths, symbolIds, targetLanguage, format"
+    ]
+   }
+  },
+  {
+   "id": "refuse-invalid-format-enum",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 12,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "error: bb_migrate: format must be one of: text, json"
+    ]
+   }
+  },
+  {
+   "id": "refuse-path-escapes-project",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 51,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "bb_migrate: no indexed file matches \"../outside\". Paths are project-relative; check the spelling against the project root."
+    ]
+   }
+  },
+  {
+   "id": "refuse-bogus-symbol-id",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 47,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "bb_migrate: no indexed symbol carries the id(s) \"sym_does_not_exist\". Ids come from an earlier result's plans or from an ambiguity refusal's candidates."
+    ]
+   }
+  },
+  {
+   "id": "refuse-blank-symbolName",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 13,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+    ]
+   }
+  },
+  {
+   "id": "refuse-same-language",
+   "expected": "refusal",
+   "outcome": "success",
+   "verdict": "FAIL",
+   "ms": 42,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "migration target: javascript",
+     "dependency order: none (no-edges)",
+     "methodology: base=0h relationships=0h missing-mappings=0h"
+    ]
+   }
+  },
+  {
+   "id": "edge-unknown-target-language",
+   "expected": "refusal",
+   "outcome": "success",
+   "verdict": "FAIL",
+   "ms": 46,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "migration target: cobol",
+     "dependency order: none (no-edges)",
+     "methodology: base=0h relationships=0h missing-mappings=0h"
+    ]
+   }
+  },
+  {
+   "id": "edge-blank-name-in-array",
+   "expected": "refusal",
+   "outcome": "success",
+   "verdict": "FAIL",
+   "ms": 25,
+   "rpcError": null,
+   "summary": {
+    "textHead": [
+     "migration target: python",
+     "dependency order: none (no-edges)",
+     "methodology: base=0h relationships=0h missing-mappings=0h"
+    ]
+   }
+  },
+  {
+   "id": "wire-hygiene",
+   "nonJsonStdout": [],
+   "stderrTail": [
+    ""
+   ]
+  }
+ ]
+}

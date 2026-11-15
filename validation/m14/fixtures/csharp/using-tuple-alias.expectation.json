@@ -1,0 +1,129 @@
+{
+  "fixtureId": "csharp/using-tuple-alias",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "A TUPLE-typed using alias, plus the malformed directive that made the same position publish its own ALIAS. `using Named = (Type ContainerType, string FieldName);` declares a dependency on a tuple TYPE, and a tuple type's identity is its element TYPES — `(Type ContainerType, string FieldName)` and `(Type, string)` are the same type and the element names are only labels this declaration gives them. The raw text therefore published two names that are not part of the type, in the one position whose contract says the published value is a NAME (the D3 rule, which already strips a generic alias's arguments and already strips element names from a tuple ARGUMENT). FOUND BY AN INDEPENDENT DERIVATION rather than by a failing fixture: cs-ont-08 disagreed with the analyzer on exactly ONE row out of 2,185 imports over 800 aspnetcore `src` files — src/Components/Endpoints/src/Forms/ClientValidationCache.cs:17, analyzer `(Type ContainerType,string FieldName)` — so both the corpus measurement and the direction of the fix come from a source neither side authored. `Named` and `Unnamed` are the SAME type written two ways and must publish ONE string; that pair is the pin. `OneElement` is the second half: `(string Only)` is not a C# type at all (there is no one-element tuple), the grammar parks `= (string Only)` in an ERROR node, the `=` stops being a direct child so the alias form is undetectable — and the analyzer then published the ALIAS `OneElement` as the dependency with `importKind: namespace`, which is the CSD7/R1 fabrication this lane has already paid for once. An unparsed directive now publishes nothing AND reports a ParseError, because the skip also skips the child walk where ERROR nodes become warnings: with the skip alone, measured `errors: []` on a file whose directive did not parse. `Generic` is the control that the pre-existing D3 rule still holds — arguments stripped off the module and published as their own `references` rows, never welded in — and it is also why `string` is pinned by its ABSENCE there: a predefined type contributes nothing (the grammar's own tag), so `Dictionary<string, Widget>` publishes `Widget` and not `string`.",
+  "expectImports": [
+    {
+      "module": "System"
+    },
+    {
+      "module": "System.Collections.Generic"
+    },
+    {
+      "module": "System.Text",
+      "note": "`using Plain = System.Text;` — the plain alias form, unchanged"
+    },
+    {
+      "module": "System.Collections.Generic.Dictionary",
+      "note": "D3: the arguments are NOT welded onto the module; they become their own `references` rows"
+    },
+    {
+      "module": "(Type,string)",
+      "note": "`using Named = (Type ContainerType, string FieldName);` — element NAMES dropped, because they are not part of the tuple type"
+    },
+    {
+      "module": "(int,System.Collections.Generic.List)",
+      "note": "a qualified element keeps its path: the rule strips element names, not namespaces"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "(Type,string)",
+      "line_number": 29,
+      "meta.importKind": "alias",
+      "meta.evidenceClass": "import_based",
+      "note": "THE PIN. Pre-fix this target was `(Type ContainerType,string FieldName)`."
+    },
+    {
+      "type": "imports",
+      "target": "(Type,string)",
+      "line_number": 30,
+      "meta.importKind": "alias",
+      "note": "and the SAME string for the tuple written without element names — one type, one name, which is the property the pre-fix value could not hold"
+    },
+    {
+      "type": "imports",
+      "target": "(int,System.Collections.Generic.List)",
+      "line_number": 31,
+      "meta.importKind": "alias"
+    },
+    {
+      "type": "imports",
+      "target": "System.Collections.Generic.Dictionary",
+      "line_number": 28,
+      "meta.importKind": "alias",
+      "meta.isUsingAlias": true,
+      "meta.usingAlias": "Generic"
+    },
+    {
+      "type": "references",
+      "target": "Widget",
+      "meta.relationshipType": "using_type_argument"
+    },
+    {
+      "type": "references",
+      "target": "Widget",
+      "meta.relationshipType": "using_type_argument",
+      "meta.evidenceClass": "reference_qualified",
+      "note": "D3's half: the arguments are dependencies in their own right and are published beside the module edge. `reference_qualified`, NOT `import_based` — an argument is a TYPE reference, not a namespace import. `string` is deliberately absent: a predefined type contributes nothing (the grammar's own tag), which is why `Dictionary<string, Widget>` publishes `Widget` and not `string`."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Widget",
+      "equals": 1
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "Named",
+      "note": "THE FABRICATION THIS FIXTURE EXISTS FOR. A directive that did not parse must not publish its own alias as the dependency. C# has no one-element tuple, so `(string Only)` cannot be a target; the analyzer published `OneElement` — a name the file imports nothing from."
+    },
+    {
+      "module": "OneElement",
+      "note": "same row, stated by its published spelling"
+    },
+    {
+      "module": "(Type ContainerType,string FieldName)",
+      "note": "the pre-fix spelling: element names welded onto the module"
+    },
+    {
+      "module": "(Type ContainerType, string FieldName)",
+      "note": "and the un-normalised spelling of it, which is the raw source text — pinned because the first draft of this instrument's own truth derived exactly this string and disagreed with the analyzer on it"
+    },
+    {
+      "module": "System.Collections.Generic.Dictionary<string,Widget>",
+      "note": "the module edge never carries its arguments (D3)"
+    },
+    {
+      "module": "Unnamed",
+      "note": "the second alias, same rule"
+    }
+  ],
+  "expectErrors": [
+    {
+      "severity": "warning",
+      "startLine": 32,
+      "note": "THE DIRECTIVE THAT DID NOT PARSE IS REPORTED, not silently skipped. `using OneElement = (string Only);` is line 32 and there is no C# one-element tuple, so the grammar parks `= (string Only)` in an ERROR node. The skip that avoids publishing the alias also skips the child walk where ERROR nodes become ParseError warnings, so with the skip alone this file reported `errors: []` — a silent parse failure. Pinning the error is what makes 'publish nothing' an honest silence rather than a lost row."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "OneElement",
+      "note": "and on the RELATIONSHIP side, which is what the graph reads"
+    },
+    {
+      "type": "imports",
+      "target": "OneElement",
+      "meta.importKind": "namespace",
+      "note": "pinned WITH its wrong `importKind`, because publishing a type alias under the namespace kind is the specific false claim; a forbid that names only the target would be satisfied by any re-labelling that still published the alias"
+    },
+    {
+      "type": "imports",
+      "target": "(Type ContainerType,string FieldName)"
+    }
+  ]
+}

@@ -1,0 +1,746 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-fsharp-corpus-census",
+  "generatedAt": "2026-09-26T02:25:51.839Z",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories/fsharp",
+    "roots": [
+      "/tmp/fsharp-census/shard-2.txt"
+    ],
+    "files": 1326,
+    "discovered": 1326,
+    "repoRevision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "dirty": false
+  },
+  "note": "First honest corpus measurement of the fsharp lane (no differential lane exists: fsharp is in neither LANGS nor the oracle table of script/m14/differential.ts). Measures exit distribution, symbol kinds, relationship types, dangling endpoints (edge endpoint naming no symbol of the file) and path-valued endpoints. Not an oracle comparison — a census.",
+  "totals": {
+    "symbols": 12714,
+    "relationships": 30642,
+    "danglingSource": 184,
+    "danglingTarget": 19169,
+    "qualifiedSourceMismatches": 61,
+    "pathEndpoints": 0,
+    "parseErrorsOrHasError": 176,
+    "analyzerThrew": 0
+  },
+  "symbolKinds": {
+    "enum": 273,
+    "enum_member": 507,
+    "namespace": 247,
+    "module": 1140,
+    "function": 5814,
+    "variable": 2014,
+    "property": 779,
+    "method": 751,
+    "type": 252,
+    "class": 774,
+    "constructor": 87,
+    "interface": 76
+  },
+  "relationshipTypes": {
+    "contains": 9273,
+    "references": 1221,
+    "calls": 19854,
+    "implements": 124,
+    "extends": 97,
+    "instantiates": 11,
+    "overrides": 62
+  },
+  "topDanglingNames": [
+    {
+      "name": "Line",
+      "count": 3302
+    },
+    {
+      "name": "Col",
+      "count": 3282
+    },
+    {
+      "name": "FSharp",
+      "count": 1461
+    },
+    {
+      "name": "Error",
+      "count": 1128
+    },
+    {
+      "name": "Fsx",
+      "count": 684
+    },
+    {
+      "name": "withDiagnostics",
+      "count": 639
+    },
+    {
+      "name": "Warning",
+      "count": 503
+    },
+    {
+      "name": "withOptions",
+      "count": 357
+    },
+    {
+      "name": "withReferences",
+      "count": 253
+    },
+    {
+      "name": "Xunit",
+      "count": 246
+    },
+    {
+      "name": "FSharp.Test.Compiler",
+      "count": 231
+    },
+    {
+      "name": "withSingleDiagnostic",
+      "count": 225
+    },
+    {
+      "name": "withName",
+      "count": 224
+    },
+    {
+      "name": "System",
+      "count": 203
+    },
+    {
+      "name": "withLangVersion",
+      "count": 171
+    },
+    {
+      "name": "singleNegTest",
+      "count": 152
+    },
+    {
+      "name": "withErrorCode",
+      "count": 149
+    },
+    {
+      "name": "withNoWarn",
+      "count": 140
+    },
+    {
+      "name": "verifyIL",
+      "count": 129
+    },
+    {
+      "name": "FSharp.Test",
+      "count": 121
+    },
+    {
+      "name": "sourceFile",
+      "count": 120
+    },
+    {
+      "name": "Equal",
+      "count": 112
+    },
+    {
+      "name": "get",
+      "count": 108
+    },
+    {
+      "name": "singleTestBuildAndRun",
+      "count": 107
+    },
+    {
+      "name": "withDiagnosticMessageMatches",
+      "count": 105
+    },
+    {
+      "name": "CSharp",
+      "count": 102
+    },
+    {
+      "name": "True",
+      "count": 98
+    },
+    {
+      "name": "withAdditionalSourceFile",
+      "count": 89
+    },
+    {
+      "name": "Create",
+      "count": 88
+    },
+    {
+      "name": "sprintf",
+      "count": 88
+    },
+    {
+      "name": "failwith",
+      "count": 86
+    },
+    {
+      "name": "map",
+      "count": 83
+    },
+    {
+      "name": "WriteLine",
+      "count": 76
+    },
+    {
+      "name": "uint32",
+      "count": 76
+    },
+    {
+      "name": "verify",
+      "count": 74
+    },
+    {
+      "name": "checkFile",
+      "count": 74
+    },
+    {
+      "name": "Fsi",
+      "count": 72
+    },
+    {
+      "name": "verifyILContains",
+      "count": 68
+    },
+    {
+      "name": "hash",
+      "count": 68
+    },
+    {
+      "name": "FsFromPath",
+      "count": 63
+    }
+  ],
+  "qualifiedSourceNames": [
+    {
+      "name": "C2.Blah",
+      "count": 3
+    },
+    {
+      "name": "CTest.S1",
+      "count": 2
+    },
+    {
+      "name": "CTest.S2",
+      "count": 2
+    },
+    {
+      "name": "CTest.S3",
+      "count": 2
+    },
+    {
+      "name": "CTest.G1",
+      "count": 2
+    },
+    {
+      "name": "CTest.G2",
+      "count": 2
+    },
+    {
+      "name": "CTest.G3",
+      "count": 2
+    },
+    {
+      "name": "T.Equals",
+      "count": 2
+    },
+    {
+      "name": "T.GetHashCode",
+      "count": 2
+    },
+    {
+      "name": "MyCollection.ToString",
+      "count": 1
+    },
+    {
+      "name": "MyCollection.GetHashCode",
+      "count": 1
+    },
+    {
+      "name": "MyCollection.Equals",
+      "count": 1
+    },
+    {
+      "name": "MyStructDU.ToString",
+      "count": 1
+    },
+    {
+      "name": "V.TestBase",
+      "count": 1
+    },
+    {
+      "name": "V.TetSecuritySafeCritical",
+      "count": 1
+    },
+    {
+      "name": "LoadClosureTestShim.FileExistsShim",
+      "count": 1
+    },
+    {
+      "name": "LoadClosureTestShim.GetFullPathShim",
+      "count": 1
+    },
+    {
+      "name": "LoadClosureTestShim.OpenFileForReadShim",
+      "count": 1
+    },
+    {
+      "name": "Key.Equals",
+      "count": 1
+    },
+    {
+      "name": "Key.GetHashCode",
+      "count": 1
+    },
+    {
+      "name": "ToStringClass.ToString",
+      "count": 1
+    },
+    {
+      "name": "ToStringStruct.ToString",
+      "count": 1
+    },
+    {
+      "name": "Global.ToString",
+      "count": 1
+    },
+    {
+      "name": "AbstractType.ToString",
+      "count": 1
+    },
+    {
+      "name": "MyStringUnion.GetHashCode",
+      "count": 1
+    },
+    {
+      "name": "MyStringUnion.Equals",
+      "count": 1
+    },
+    {
+      "name": "MyUnion.ToString",
+      "count": 1
+    },
+    {
+      "name": "MyStructUnion.ToString",
+      "count": 1
+    },
+    {
+      "name": "MyRecord.ToString",
+      "count": 1
+    },
+    {
+      "name": "MyStructRecord.ToString",
+      "count": 1
+    }
+  ],
+  "pathEndpointNames": [],
+  "buckets": {
+    "tests": {
+      "files": 1326,
+      "errorFiles": 176,
+      "symbols": 12714,
+      "relationships": 30642
+    }
+  },
+  "worstFiles": [
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/RecordSpreadsTests.fs",
+      "dangling": 1180,
+      "total": 1349
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/ObsoleteAttributeCheckingTests.fs",
+      "dangling": 1080,
+      "total": 1160
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/Nullness/NullableReferenceTypesTests.fs",
+      "dangling": 895,
+      "total": 1055
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/ActivePatternArgCountMismatchTest.fs",
+      "dangling": 555,
+      "total": 703
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/ComputationExpressionTests.fs",
+      "dangling": 553,
+      "total": 659
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionTypes.fs",
+      "dangling": 447,
+      "total": 516
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/FSharpChecker/TransparentCompiler.fs",
+      "dangling": 433,
+      "total": 566
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/FixedBindings/FixedBindings.fs",
+      "dangling": 403,
+      "total": 437
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/ClassesTests.fs",
+      "dangling": 371,
+      "total": 411
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/SequenceExpressions/SequenceExpressionTests.fs",
+      "dangling": 343,
+      "total": 383
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Signatures/TestCasesForGenerationRoundTrip/libtest.fsx",
+      "dangling": 339,
+      "total": 931
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Miscellaneous/XmlDocInclude.fs",
+      "dangling": 322,
+      "total": 456
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/InteractiveSession/Misc.fs",
+      "dangling": 314,
+      "total": 450
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Signatures/TestCasesForGenerationRoundTrip/array.fsx",
+      "dangling": 289,
+      "total": 608
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/ErrorOnInvalidDeclsInTypeDefinitions.fs",
+      "dangling": 287,
+      "total": 354
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/TypeMismatchTests.fs",
+      "dangling": 282,
+      "total": 315
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/FSharpChecker/FindReferences.fs",
+      "dangling": 278,
+      "total": 440
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/StaticClassTests.fs",
+      "dangling": 244,
+      "total": 272
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "dangling": 227,
+      "total": 291
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/UnionCasePatternMatchingErrors.fs",
+      "dangling": 227,
+      "total": 245
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Signatures/TestCasesForGenerationRoundTrip/members_basics.fs",
+      "dangling": 206,
+      "total": 1292
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/AbbreviationTests.fs",
+      "dangling": 194,
+      "total": 205
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/FSharpChecker/SemanticClassificationRegressions.fs",
+      "dangling": 186,
+      "total": 256
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/UnitsOfMeasure/Diagnostics/Diagnostics.fs",
+      "dangling": 173,
+      "total": 214
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Debugger/MatchEndSequencePoint.fs",
+      "dangling": 168,
+      "total": 176
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/resources/tests/Conformance/TypesAndTypeConstraints/CheckingSyntacticTypes/E_Regression02.fs",
+      "dangling": 167,
+      "total": 258
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/NameIsBoundMultipleTimesTests.fs",
+      "dangling": 165,
+      "total": 185
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Miscellaneous/MigratedTypeCheckTests.fs",
+      "dangling": 163,
+      "total": 322
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/UnitOfMeasureTests.fs",
+      "dangling": 156,
+      "total": 171
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/ExtendedDiagnosticDataTests.fs",
+      "dangling": 145,
+      "total": 226
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/SuggestionsTests.fs",
+      "dangling": 141,
+      "total": 161
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/InterpolatedStringsTests.fs",
+      "dangling": 141,
+      "total": 182
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Miscellaneous/MigratedCoreTests.fs",
+      "dangling": 141,
+      "total": 280
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Signatures/TypeTests.fs",
+      "dangling": 137,
+      "total": 174
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/ExtensionMethodTests.fs",
+      "dangling": 135,
+      "total": 164
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Language/DotLambdaTests.fs",
+      "dangling": 134,
+      "total": 159
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/ErrorMessages/WarnExpressionTests.fs",
+      "dangling": 133,
+      "total": 157
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Import/ImportTests.fs",
+      "dangling": 128,
+      "total": 158
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/UnitsOfMeasure/TypeChecker/TypeChecker.fs",
+      "dangling": 123,
+      "total": 140
+    },
+    {
+      "file": "tests/FSharp.Compiler.ComponentTests/EmittedIL/DebugInlineAsCall.fs",
+      "dangling": 122,
+      "total": 194
+    }
+  ],
+  "samples": [
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "references",
+      "source": "Conformance.Types",
+      "target": "Xunit",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "references",
+      "source": "Conformance.Types",
+      "target": "FSharp.Test.Compiler",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``Union struct can share fields with equal name and type``",
+      "target": "verifyOutput",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``Union struct can share fields with equal name and type``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 1``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 2``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 3``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 4``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 5``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 6``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 7``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 8``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 9``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "withDiagnostics",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Fsx",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Error",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Error",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Col",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Line",
+      "line": null
+    },
+    {
+      "class": "dangling-target",
+      "file": "tests/FSharp.Compiler.ComponentTests/Conformance/Types/UnionTypes/UnionStructTypes.fs",
+      "type": "calls",
+      "source": "``If a union type has more than one case and is a struct, field must be given unique name 10 - v7``",
+      "target": "Col",
+      "line": null
+    }
+  ]
+}

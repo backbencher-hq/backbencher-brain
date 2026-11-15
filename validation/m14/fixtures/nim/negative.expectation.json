@@ -1,0 +1,117 @@
+{
+  "comment": "NIM negative fixture. Every construct is legal Nim (Nim 2.2.12 `nim check`, 0 errors) and every one must SUPPRESS output. The positive fixture proves the analyzer emits what exists; this proves it does NOT emit what does not.",
+  "expectSymbols": [
+    {
+      "name": "TopConst",
+      "kind": "constant"
+    },
+    {
+      "name": "TopLet",
+      "kind": "variable"
+    },
+    {
+      "name": "TopVar",
+      "kind": "variable"
+    },
+    {
+      "name": "Host",
+      "kind": "struct"
+    },
+    {
+      "name": "field",
+      "kind": "property",
+      "ownerName": "Host"
+    },
+    {
+      "name": "suppressed",
+      "kind": "function"
+    },
+    {
+      "name": "usesExternal",
+      "kind": "function",
+      "comment": "calls a symbol declared in extmod.nim \u2014 a legal cross-file call"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "a",
+      "comment": "parameter \u2014 not a symbol"
+    },
+    {
+      "name": "b",
+      "comment": "parameter \u2014 not a symbol"
+    },
+    {
+      "name": "localOne",
+      "comment": "function-local `let` \u2014 not a symbol"
+    },
+    {
+      "name": "localTwo",
+      "comment": "function-local `var` \u2014 not a symbol"
+    },
+    {
+      "name": "localThree",
+      "comment": "function-local `const` \u2014 not a symbol"
+    },
+    {
+      "name": "idx",
+      "comment": "for-loop variable \u2014 not a symbol"
+    },
+    {
+      "name": "err",
+      "comment": "`except \u2026 as err` binding \u2014 not a symbol"
+    },
+    {
+      "name": "anon",
+      "comment": "a proc literal is not a named symbol"
+    },
+    {
+      "name": "q",
+      "comment": "a proc literal's parameter \u2014 not a symbol"
+    },
+    {
+      "name": "v",
+      "comment": "function-local \u2014 not a symbol"
+    },
+    {
+      "name": "UndeclaredType",
+      "comment": "a type named only in a signature is not a declaration in this file"
+    },
+    {
+      "name": "neverDeclared",
+      "kind": "function",
+      "comment": "a METHOD is dispatched dynamically, but it is still a `method_declaration` node \u2014 it IS a symbol (positive control; listed here only to document that the analyzer must not treat a method's unknown receiver type as a reason to drop the declaration)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "echo",
+      "comment": "Nim builtin"
+    },
+    {
+      "type": "calls",
+      "target": "inc",
+      "comment": "Nim builtin"
+    },
+    {
+      "type": "calls",
+      "target": "discard",
+      "comment": "keyword"
+    },
+    {
+      "type": "calls",
+      "from": "suppressed",
+      "target": "q",
+      "comment": "a proc literal's parameter is not a call target"
+    },
+    {
+      "type": "instantiates",
+      "target": "anon",
+      "comment": "a proc literal is not a constructed type"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

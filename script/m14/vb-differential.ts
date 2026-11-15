@@ -36,7 +36,7 @@ import { getParser } from "../../src/ast/engine"
 import { default as RealVbAnalyzer } from "../../src/ast/real-vb-analyzer"
 import { deriveVbTruth, VB_ORACLE_LABELS } from "./vb-truth-oracle"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.env.VB_CORPUS ?? "roslyn-vb"
 const DIR = join(CORPUS_ROOT, REPO)
 const LIMIT = Number(process.env.VB_NFILES ?? 200)

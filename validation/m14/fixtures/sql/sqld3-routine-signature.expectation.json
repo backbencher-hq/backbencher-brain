@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld3-routine-signature.sql",
+  "authoredFrom": "SQLD3 (M60 SQL wave, 2026-09-26). Authored from the grammar's own layout, probed by bb_tests/sql/probe/field-introspection.mts ('function argument w/ custom type', 'function returns shapes'): function_argument has no `type` field, only `custom_type`, so a builtin type is positional \u2014 the child after the name \u2014 and `keyword_in`/`keyword_out`/`keyword_inout` sit BEFORE the name. Return types are the span after keyword_returns up to function_body or function_language. Expectations written from that probe, not from the analyzer's output.",
+  "comment": "Every type string is the source's own spelling (read out of the node text), so `int[]` and `numeric(10,2)` and `timestamp with time zone` pin spacing too. The `direction` rows are the regression pin for the fabricated `type: \"IN\"`.",
+  "expectSymbols": [
+    {
+      "name": "d3_signature",
+      "kind": "function",
+      "meta.functionName": "d3_signature"
+    },
+    {
+      "name": "d3_setof",
+      "kind": "function"
+    },
+    {
+      "name": "d3_returns_table",
+      "kind": "function",
+      "meta.returnsTable": true
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "d3_signature",
+      "parameters": [
+        {
+          "name": "a",
+          "type": "integer"
+        },
+        {
+          "name": "b",
+          "type": "my_schema.my_type"
+        },
+        {
+          "name": "c",
+          "type": "int[]"
+        },
+        {
+          "name": "d",
+          "type": "numeric(10,2)",
+          "isOptional": true
+        },
+        {
+          "name": "e",
+          "type": "bigint",
+          "direction": "in"
+        },
+        {
+          "name": "f",
+          "type": "text",
+          "direction": "out"
+        },
+        {
+          "name": "g",
+          "type": "timestamptz",
+          "direction": "inout"
+        }
+      ]
+    },
+    {
+      "symbol": "d3_returns_table",
+      "parameters": [
+        {
+          "name": "p",
+          "type": "integer"
+        },
+        {
+          "name": "out_a",
+          "type": "int",
+          "direction": "out"
+        },
+        {
+          "name": "out_b",
+          "type": "text",
+          "direction": "out"
+        }
+      ]
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "d3_signature",
+      "types": [
+        "IN",
+        "OUT",
+        "INOUT"
+      ]
+    },
+    {
+      "symbol": "d3_signature",
+      "names": [
+        "DEFAULT",
+        "7"
+      ]
+    }
+  ],
+  "note": "`forbidParameters.types` is the channel that catches the mode keyword being read as a type \u2014 an expect-only pin passes unchanged when `a`'s type is `IN` instead of `integer`, because the pin never looks at the value it should not have."
+}

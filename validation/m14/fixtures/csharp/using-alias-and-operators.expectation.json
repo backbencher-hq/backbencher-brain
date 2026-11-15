@@ -1,0 +1,52 @@
+{
+  "fixtureId": "csharp/using-alias-and-operators",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The csharp lane's three surviving R1 (no regex) sites. The plan's R1 row says the honest test of the analyzer's `no AST path` claim is to PROBE the grammar, and both probes said the claim was false: an `operator_declaration` carries the operator token as an anonymous child with the FIELD `operator` (`checked` is a separate anonymous sibling) and a `conversion_operator_declaration` carries the target in the FIELD `type`; a using directive carries the alias in the FIELD `name` with the target as the first named child after the anonymous `=`. Each regex was ALSO wrong in a way text cannot repair. (1) `/using\\s+([\\w.]+)\\s*=/` cannot tell alias from target — in `using A = B.C;` and `using A = Plain;` the two positions hold the same shape — and MEASURED (`script/m14/tmp/cs-using-alias-probe.ts`) `using Alias = Plain;` published `module: \"Alias\"`: the alias as the module, with the real target `Plain` named nowhere in the payload, so the dependency edge pointed at a name no namespace is imported from. Now `module: \"Plain\"` with `usingAlias: \"Alias\"`, and this fixture forbids a references edge to either alias spelling. (2) `/\\boperator\\s+(checked\\s+)?([^\\s(]+)/` stops at the first `(`, so a conversion target written with a space before the parenthesis was TRUNCATED (`implicit C` for `implicit operator C<T>(...)`) — pinned here by the Spaced class, whose name is the canonical `implicit Box<Plain>`, with the truncated and the spacing-carrying spellings both forbidden. The controls are load-bearing: a plain `using Json;` and `using System.Text;` must not be read as alias forms, and every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`), because the whole lane's expectations name these symbols.",
+  "expectSymbols": [
+    { "name": "Plain", "kind": "class", "ownerName": "R1Pin" },
+    { "name": "Box", "kind": "class", "ownerName": "R1Pin" },
+    { "name": "Nick", "kind": "class", "ownerName": "R1Pin" },
+    { "name": "Spaced", "kind": "class", "ownerName": "R1Pin" },
+    { "name": "implicit int", "kind": "method", "ownerName": "Nick" },
+    { "name": "explicit int", "kind": "method", "ownerName": "Nick" },
+    { "name": "explicit Box<Plain>", "kind": "method", "ownerName": "Nick" },
+    { "name": "operator +", "kind": "method", "ownerName": "Nick" },
+    { "name": "operator checked +", "kind": "method", "ownerName": "Nick" },
+    { "name": "operator true", "kind": "method", "ownerName": "Nick" },
+    { "name": "operator false", "kind": "method", "ownerName": "Nick" },
+    { "name": "operator ==", "kind": "method", "ownerName": "Nick" },
+    { "name": "operator !=", "kind": "method", "ownerName": "Nick" },
+    { "name": "implicit Box<Plain>", "kind": "method", "ownerName": "Spaced" }
+  ],
+  "expectImports": [
+    { "module": "System.Text", "comment": "plain dotted control: no alias form" },
+    { "module": "Json", "comment": "plain single-identifier control — must NOT be read as an alias directive" },
+    { "module": "Plain", "comment": "`using Alias = Plain;` — the TARGET, not the alias (pre-R1 this published \"Alias\")" },
+    { "module": "System.Text.Json.JsonSerializerOptions", "comment": "`using Config = …;` — qualified target" },
+    { "module": "System.Math", "comment": "`using static System.Math;` — the static form is a plain directive in this grammar" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "target": "Plain", "line_number": 30, "meta.usingAlias": "Alias", "meta.isUsingAlias": true, "note": "the alias is published as metadata and the TARGET as the module/dependency — the two roles are distinguishable now" },
+    { "type": "references", "target": "System.Text.Json.JsonSerializerOptions", "line_number": 31, "meta.usingAlias": "Config", "meta.isUsingAlias": true },
+    { "type": "references", "target": "System.Text", "line_number": 28 },
+    { "type": "references", "target": "Json", "line_number": 29, "note": "plain single-identifier using: no alias metadata may appear on it" },
+    { "type": "references", "target": "System.Math", "line_number": 32 },
+    { "type": "contains", "from": "Nick", "target": "operator checked +", "note": "a checked operator is a distinct member from its unchecked twin" },
+    { "type": "contains", "from": "Nick", "target": "implicit int", "note": "the IDENTITY COLLISION pin: `implicit operator int` and `explicit operator int` are two members of ONE type, and both published as the same name (`operator int`) while the conversion pattern was dead" },
+    { "type": "contains", "from": "Nick", "target": "explicit int", "note": "the twin that used to collide with it" },
+    { "type": "contains", "from": "Nick", "target": "operator ==" },
+    { "type": "contains", "from": "Nick", "target": "operator !=" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "Alias", "note": "the pre-R1 fabrication: the ALIAS published as the imported module name" },
+    { "type": "references", "target": "Config", "note": "the same class on the qualified form" }
+  ],
+  "forbidSymbols": [
+    { "name": "operator int", "note": "the DEAD-BRANCH name the old conversion pattern produced for BOTH directions, because it expected `operator implicit …` (the wrong token order) and fell through to the generic fallback" },
+    { "name": "implicit Box", "note": "the pre-R1 TRUNCATION: the regex stopped at the first `(`, so a spaced generic target lost everything from `<` on" },
+    { "name": "implicit Box < Plain >", "note": "the layout-carrying spelling — a name is the name, never its spacing" },
+    { "name": "operator", "note": "the collapsed identity: every overload named literally `operator` (CSD3's class), which the field-based read must not reintroduce" },
+    { "name": "operator checked", "note": "a `checked` modifier with no operator token behind it is not an identity" }
+  ]
+}

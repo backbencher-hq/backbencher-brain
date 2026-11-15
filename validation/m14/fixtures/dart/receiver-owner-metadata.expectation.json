@@ -1,0 +1,206 @@
+{
+  "fixtureId": "dart/receiver-owner-metadata",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RECEIVER OWNERSHIP (Lead contract, replacing the earlier `ownerType` proposal): the store resolves calls/uses rows through `metadata.owner` — src/ast/member-owner-resolution.ts `claimOwnerCarryingTargets` + `resolveMemberTargetsByOwner`, called from both resolution paths in src/ast/parallel-indexer.ts. It requires exactly one CLASS-LIKE owner (class|interface|trait|enum; a dart mixin/extension is not class-like to that rule), filters member candidates by kind, walks the owner's ancestors via brain_symbol.super_types, and WITHDRAWS the row's name binding when the owner cannot verify — which is why a WRONG owner is worse than none and why this fixture pins the two absences as hard as the four presences. The four evidence classes are the receiver contract's: `param` (signature parameter type), `field` (the symbol pass's fieldTypeByField), `annotation` (a local/for-in binding with a written type), `assignment` (a local whose type comes from its initializer construction). The emission is ADDITIVE: the target spelling is byte-identical to HEAD; only metadata is added. The `useExternal` case is the one that matters most for resolution — `HttpClient` is written in the signature but declared nowhere in this file, so the target is the spelled `HttpClient.close` carrying `baseBeyondRunScope`, and the owner channel is the half a store can act on when the in-file key space cannot.",
+  "expectSymbols": [
+    {
+      "name": "Repo",
+      "kind": "class"
+    },
+    {
+      "name": "load",
+      "kind": "method",
+      "ownerName": "Repo"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Repo"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "repo",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "SelfRead",
+      "kind": "class"
+    },
+    {
+      "name": "useParam",
+      "kind": "function"
+    },
+    {
+      "name": "useAnnotated",
+      "kind": "function"
+    },
+    {
+      "name": "useAssigned",
+      "kind": "function"
+    },
+    {
+      "name": "useExternal",
+      "kind": "function"
+    },
+    {
+      "name": "useUnknown",
+      "kind": "function"
+    },
+    {
+      "name": "makeThing",
+      "kind": "function"
+    },
+    {
+      "name": "Coord",
+      "kind": "type",
+      "note": "a typedef is a published TYPE symbol — and NOT class-like to the owner rule"
+    },
+    {
+      "name": "Loggy",
+      "kind": "mixin"
+    },
+    {
+      "name": "NonClassRecv",
+      "kind": "class"
+    },
+    {
+      "name": "coord",
+      "kind": "property",
+      "ownerName": "NonClassRecv"
+    },
+    {
+      "name": "loggy",
+      "kind": "property",
+      "ownerName": "NonClassRecv"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "useParam",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "param",
+      "note": "EVIDENCE 1 — PARAM: `void useParam(Repo r) { r.load(); }`. The type is written in the signature; the owner channel states it and the evidence class says WHERE the answer came from. Target unchanged (Repo.load)."
+    },
+    {
+      "type": "uses",
+      "source": "useParam",
+      "target": "Repo.count",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "param",
+      "note": "EVIDENCE 1 on the READ arm (`r.count`) — the same evidence covers calls and member reads; a request that only wired one arm would pass the calls pin and fail this one."
+    },
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "field",
+      "note": "EVIDENCE 2 — FIELD: `Holder.repo` is declared `final Repo repo`, so a read of `repo.load()` inside Holder knows the receiver's type from the field's own declaration. The `run` source is the enclosing method's own name (only one `run` is annotated here)."
+    },
+    {
+      "type": "uses",
+      "source": "run",
+      "target": "Repo.count",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "field",
+      "note": "EVIDENCE 2 on the READ arm."
+    },
+    {
+      "type": "calls",
+      "source": "useAnnotated",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "annotation",
+      "note": "EVIDENCE 3 — ANNOTATION: `final Repo r2 = Repo();` writes the type. Distinct from the assignment case below on purpose: the two are different evidence classes and a consumer must be able to tell a WRITTEN type from a CONSTRUCTED one."
+    },
+    {
+      "type": "calls",
+      "source": "useAssigned",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "assignment",
+      "note": "EVIDENCE 4 — ASSIGNMENT: `final r3 = Repo();` names no type; the type comes from the initializer's construction. The owner is still EXACT (a construction names its class), but the evidence class says the source did not write the type."
+    },
+    {
+      "type": "calls",
+      "source": "useExternal",
+      "target": "HttpClient.close",
+      "meta.owner": "HttpClient",
+      "meta.ownerEvidence": "param",
+      "meta.baseBeyondRunScope": "HttpClient",
+      "note": "THE RESOLUTION CASE — `HttpClient` is a parameter type declared NOWHERE in this fixture, so the in-file walk cuts the row to its spelled form with the `baseBeyondRunScope` claim. The owner channel is the piece a project resolver can act on: the type name is written in the source, so `owner` is exact even though the type's declaration is not in this run. Both halves are pinned — the claim AND the owner — because a fix that added the owner by dropping the claim would launder a spelling into an exemption."
+    },
+    {
+      "type": "uses",
+      "source": "run",
+      "target": "x",
+      "meta.isMemberRead": true,
+      "meta.receiverCause": "receiverMemberOutsideRun",
+      "meta.owner": null,
+      "note": "TYPEDEF RECEIVER — `coord.x` where coord's type is the typedef `Coord`. The type IS statically known, but a typedef is not class-like to the store's resolver, so NO owner is emitted: an owner it cannot accept makes the resolver withdraw the row's binding. The cut (receiverMemberOutsideRun) is the honest state."
+    },
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "Loggy.logIt",
+      "note": "MIXIN RECEIVER — the call target still spells the mixin owner (`Loggy.logIt`) because visibleTypes includes the in-file mixin, but `metadata.owner` is absent for the same reason. The target spelling and the owner channel are different questions."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "SelfRead.helper",
+      "meta.owner": "SelfRead",
+      "note": "NO OWNER FOR `this` RECEIVERS: the target spelling already names the owner, and \"the enclosing class\" is not one of the four evidence classes. A fix that attached owner to every row with a determinate receiver would pass the four positive pins and fail here."
+    },
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "SelfRead.helper",
+      "meta.ownerEvidence": "annotation",
+      "note": "and not with a borrowed evidence class either — this is the same wrong row spelled differently, because the evidence class alone would be a claim about HOW a type was known that the source never says."
+    },
+    {
+      "type": "calls",
+      "source": "useUnknown",
+      "target": "go",
+      "meta.owner": "Object",
+      "note": "NO INFERENCE: `final x = makeThing(); x.go();` — the initializer is a CALL, not a construction, so nothing at the site names x's type. The `makeThing` return type is not read back through the call, and asserting `Object` would be the guess the contract forbids. The row keeps its bare leaf and its receiver cut."
+    },
+    {
+      "type": "calls",
+      "source": "useUnknown",
+      "target": "go",
+      "meta.ownerEvidence": "assignment",
+      "note": "and no evidence class without an owner — the pair travels together or not at all."
+    },
+    {
+      "type": "calls",
+      "source": "useParam",
+      "target": "Repo.load",
+      "meta.owner": "r",
+      "note": "THE ALIAS IS NOT THE OWNER: `Repo` is the published type name; `r` is the value's name. The store looks the owner up as a class-like declaration, so a value name would make every owner-carrying row decline."
+    },
+    {
+      "type": "uses",
+      "target": "x",
+      "meta.owner": "Coord",
+      "note": "NO OWNER FOR A TYPEDEF — the resolver accepts only class|interface|trait|enum; a typedef owner would be declined AND withdraw the name binding."
+    },
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "Loggy.logIt",
+      "meta.owner": "Loggy",
+      "note": "NO OWNER FOR A MIXIN — same rule; a mixin is not class-like to member-owner-resolution."
+    }
+  ]
+}

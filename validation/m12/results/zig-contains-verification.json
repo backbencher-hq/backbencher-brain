@@ -1,0 +1,25 @@
+{
+  "files": 3000,
+  "derivedPairs": 85860,
+  "totals": {
+    "agree": 84377,
+    "phantom": 0,
+    "missing": 0,
+    "collision": 1483
+  },
+  "verdict": "clean",
+  "phantomSamples": [],
+  "missingSamples": [],
+  "collisionSamples": [
+    "ghostty/src/Surface.zig  contains Link -> action  published 2x at lines 355,4381",
+    "ghostty/src/apprt/action.zig  contains C -> key  published 2x at lines 38,471",
+    "ghostty/src/apprt/action.zig  contains C -> value  published 3x at lines 39,472,874",
+    "ghostty/src/apprt/action.zig  contains C -> len  published 3x at lines 643,710,980",
+    "ghostty/src/apprt/action.zig  contains C -> url  published 2x at lines 709,979",
+    "ghostty/src/apprt/action.zig  contains C -> title  published 2x at lines 758,808",
+    "ghostty/src/apprt/embedded.zig  contains Options -> userdata  published 2x at lines 43,469",
+    "ghostty/src/apprt/embedded.zig  contains KeyEvent -> action  published 2x at lines 105,1475",
+    "ghostty/src/apprt/embedded.zig  contains KeyEvent -> mods  published 2x at lines 106,1476",
+    "ghostty/src/apprt/embedded.zig  contains KeyEvent -> consumed_mods  published 2x at lines 107,1477"
+  ]
+}

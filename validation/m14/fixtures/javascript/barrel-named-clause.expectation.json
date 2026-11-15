@@ -1,0 +1,17 @@
+{
+  "fixtureId": "javascript/barrel-named-clause",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Named re-export clauses recorded a synthetic import with EMPTY items - the re-exported names were lost. Items must carry alias||name per specifier.",
+  "expectSymbols": [],
+  "expectImports": [
+    {
+      "module": "./m",
+      "items": [
+        "alpha",
+        "beta"
+      ],
+      "meta.reExport": true
+    }
+  ]
+}

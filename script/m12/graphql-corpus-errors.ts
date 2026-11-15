@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import { writeFileSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const corpus = process.argv[2] || "$HOME/fixtures/repositories/graphql-js"
+const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/graphql-js"
 const revision = execFileSync("git", ["-C", corpus, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
 const relative = execFileSync("git", ["-C", corpus, "ls-files", "*.graphql", "*.graphqls", "*.gql"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
@@ -57,7 +57,7 @@ const result = {
   crashes,
   passed: unexpectedErrors.length === 0 && crashes.length === 0,
   corpusSize:
-    "2 tracked files, and that is NOT a corpus. graphql-js ships exactly two .graphql files at this revision: benchmark/github-schema.graphql (the real GitHub public schema, 20,367 lines, 3,242 symbols) and benchmark/kitchen-sink.graphql (a 65-line torture test that is deliberately invalid in places). A 2-file sample is why this artifact was never evidence about recall on real schemas, and the deep review measured the real shape on 47 files across four repositories instead (fixtures/graphql/out/corpus-sweep.json, 91.08% in-file relationship resolvability, 0 phantoms, 12/12 extension members, 0 crashes). This artifact is kept because it is the m12 production-path audit and it is the only place the ENGINE's error reporting is measured for this lane; it is not evidence of coverage.",
+    "2 tracked files, and that is NOT a corpus. graphql-js ships exactly two .graphql files at this revision: benchmark/github-schema.graphql (the real GitHub public schema, 20,367 lines, 3,242 symbols) and benchmark/kitchen-sink.graphql (a 65-line torture test that is deliberately invalid in places). A 2-file sample is why this artifact was never evidence about recall on real schemas, and the deep review measured the real shape on 47 files across four repositories instead (bb_tests/graphql/out/corpus-sweep.json, 91.08% in-file relationship resolvability, 0 phantoms, 12/12 extension members, 0 crashes). This artifact is kept because it is the m12 production-path audit and it is the only place the ENGINE's error reporting is measured for this lane; it is not evidence of coverage.",
   policy:
     "Every tracked .graphql file in graphql-js@ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea is audited through the production parseFile pipeline with 0 crashes and 0 unexpected error rows. Both files now parse CLEANLY: the GitHub public schema with 0 errors, and kitchen-sink.graphql with 0 errors as well, because the two grammar-level limitations this artifact used to name — a directive on a variable definition and an escaped triple-quote inside a block string — are fixed in the vendored grammar (grammars/tree-sitter-graphql/port.py FIX 4, plus upstream's own variable_definition fix). The 113-construct specification battery replaces this file as the guard against grammar regressions. The corpus is still only 2 files; see corpusSize.",
 }

@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "yul-function-definition",
+  "why": "grammar.js:459 — `function id ( params ) -> results BLOCK`. OpenZeppelin inlines its assembly rather than defining Yul functions.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "yul_function_definition",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/dynamic-import-qualified",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T8 fix: dynamic import() is a module dependency, never a call — the relationship walk already skipped it, but the qualified_calls payload leaked 'import' into symbol call lists. Uses the notIncludes absence pattern.",
+  "expectSymbols": [
+    { "name": "load", "kind": "function" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "load", "notIncludes": ["import"] }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "dynamic-import-qualified", "target": "dynamic-import-qualified\u0000./lazy:*", "meta.localBinding": true }
+  ]
+}

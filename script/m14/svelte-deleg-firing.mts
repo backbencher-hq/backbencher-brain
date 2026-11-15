@@ -55,7 +55,7 @@ import { fileURLToPath } from "node:url"
 const RelationshipType = ASTEngine.RelationshipType
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 /** The ten distinct string values of the enum (aliases collapse). */
 const ALL_TYPES = [...new Set(Object.values(RelationshipType))] as string[]

@@ -1,0 +1,39 @@
+{
+  "issue": "M32.X1",
+  "code": "X1",
+  "milestone": "M32",
+  "status": "verified",
+  "checks": 64,
+  "passed": 64,
+  "failed": 0,
+  "negativeCases": 6,
+  "milestoneTotals": {
+    "checks": 172,
+    "passed": 172,
+    "mutants": 15,
+    "survived": 0
+  },
+  "githubIssues": {
+    "G1": 561,
+    "SM1": 562,
+    "S1": 563,
+    "S2": 564,
+    "S3": 565,
+    "H1": 566,
+    "X1": 567
+  },
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "verifierCommand": "npx tsx script/m32/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-09-04T02:54:46.433Z",
+  "limitations": [
+    "Closure audit reads machine-emitted evidence and the ledger; it does not re-run the six verifiers (those are gated separately in npm run verify and re-run at closure).",
+    "Evidence-freshness check requires the evidence commit to be an ancestor of HEAD at audit time; the closure commits that pin the evidence land after the evidence commit by design (house pattern).",
+    "GitHub issue numbers are enforced against the values filed at milestone-32 creation time; if issues are renumbered on GitHub, EXPECTED_ISSUES here and the ledger must be updated together."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.470Z",
+    "contentSha256": "f0c5720a74672a390aa85fefdeb5e4adc72480e11475a6186f551275f70299e3"
+  }
+}

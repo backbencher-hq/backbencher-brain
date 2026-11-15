@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.27",
+  "code": "A5",
+  "tool": "bb_ask",
+  "title": "bb_ask: e2e (source MCP + source CLI) and real-repo corpus",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "CLI (source entry): stats answer carries provenance, bounds and the count",
+      "pass": true,
+      "detail": "answer: There are 1 symbols in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-03T20:23:34.000Z (2 s ago); these counts describe the index"
+    },
+    {
+      "name": "CLI (source entry): empty query rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask requires a non-empty query\n"
+    },
+    {
+      "name": "MCP (source entry): answer carries provenance and bounds",
+      "pass": true,
+      "detail": "answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer th"
+    },
+    {
+      "name": "MCP (source entry): empty query rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_ask requires a non-empty query"
+    },
+    {
+      "name": "corpus: repository corpus is present on this machine",
+      "pass": true,
+      "detail": "/home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): stat answer matches indexed count exactly",
+      "pass": true,
+      "detail": "answer=There are 496 symbols in this project db=496"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): stat answer carries provenance, bounds and snapshot",
+      "pass": true,
+      "detail": "indexed"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): semantic answer carries a provenance class",
+      "pass": true,
+      "detail": "semantic_candidate"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): semantic answer declares its bounds",
+      "pass": true,
+      "detail": "{\"returned\":5,\"totalMatches\":0,\"truncated\":false}"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): every source resolves to a real file on disk",
+      "pass": true,
+      "detail": "[{\"file\":\"application.rb\",\"line\":208,\"context\":\"standard_exception_handling\"},{\"file\":\"promise.rb\",\"line\":42,\"context\":\""
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): no fabricated count in a non-aggregate answer [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the "
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): stat answer matches indexed count exactly",
+      "pass": true,
+      "detail": "answer=There are 8,057 symbols in this project db=8057"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): stat answer carries provenance, bounds and snapshot",
+      "pass": true,
+      "detail": "indexed"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): semantic answer carries a provenance class",
+      "pass": true,
+      "detail": "semantic_candidate"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): semantic answer declares its bounds",
+      "pass": true,
+      "detail": "{\"returned\":5,\"totalMatches\":5,\"truncated\":false}"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): every source resolves to a real file on disk",
+      "pass": true,
+      "detail": "[{\"file\":\"execution/incremental/Queue.ts\",\"line\":232,\"context\":\"_release\"},{\"file\":\"execution/incremental/Queue.ts\",\"lin"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): no fabricated count in a non-aggregate answer [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Note: this ranking does not distinguish its top results — 3 other symbol(s) scored within the same m"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): stat answer matches indexed count exactly",
+      "pass": true,
+      "detail": "answer=There are 4,832 symbols in this project db=4832"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): stat answer carries provenance, bounds and snapshot",
+      "pass": true,
+      "detail": "indexed"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): semantic answer carries a provenance class",
+      "pass": true,
+      "detail": "semantic_candidate"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): semantic answer declares its bounds",
+      "pass": true,
+      "detail": "{\"returned\":1,\"totalMatches\":1,\"truncated\":false}"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): every source resolves to a real file on disk",
+      "pass": true,
+      "detail": "[{\"file\":\"rebar/src/rebar_compiler_dag.erl\",\"line\":163,\"context\":\"in_edges\"}]"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): no fabricated count in a non-aggregate answer [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Note: only 2,594 of 4,832 indexed symbols (54%) have embeddings in the space this query was compared"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): stat answer matches indexed count exactly",
+      "pass": true,
+      "detail": "answer=There are 3,303 symbols in this project db=3303"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): stat answer carries provenance, bounds and snapshot",
+      "pass": true,
+      "detail": "indexed"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): semantic answer carries a provenance class",
+      "pass": true,
+      "detail": "semantic_candidate"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): semantic answer declares its bounds",
+      "pass": true,
+      "detail": "{\"returned\":5,\"totalMatches\":0,\"truncated\":false}"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): every source resolves to a real file on disk",
+      "pass": true,
+      "detail": "[{\"file\":\"asmdecl/asmdecl.go\",\"line\":153,\"context\":\"run\"},{\"file\":\"hostport/hostport.go\",\"line\":51,\"context\":\"run\"},{\"fi"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): no fabricated count in a non-aggregate answer [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the "
+    }
+  ],
+  "negativeCases": 6,
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0
+  },
+  "decisions": {
+    "transports": "CLI via `node --import tsx src/cli/index.ts tool bb_ask`; MCP via the real StdioClientTransport into src/mcp/server.ts (or verify-ask-stdio-entry.ts under node)",
+    "corpus": "one small sub-directory per major language family (Ruby, TypeScript, Erlang, Go)",
+    "antiFabrication": "stat answers are checked against the DB count exactly; sources must resolve to real files",
+    "envelope": "both transports must return provenance AND declared bounds"
+  },
+  "limitations": [
+    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is the corpus lane.",
+    "A sub-directory with no resolvable symbols is skipped (recorded, not failed)."
+  ],
+  "generatedAt": "2026-11-03T20:25:10.526Z"
+}

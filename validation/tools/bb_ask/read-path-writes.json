@@ -1,0 +1,45 @@
+{
+  "fixture": "(temp dir)",
+  "projectId": "05e8e545ffdcb6ead279ff23bc51eb9f2be71d8e",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata-rw",
+  "readPathHandleReadonly": false,
+  "legacyRowsNulledBySetup": 24,
+  "nullBlobsBefore": 24,
+  "answerMs": 59.41,
+  "answerFirstChars": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from embeddings.\nNote: th",
+  "retrievalMethod": "keyword-fallback",
+  "nullBlobsAfter": 24,
+  "readPathPromotedBlobs": false,
+  "files": {
+    "before": {
+      "db": {
+        "size": 557056,
+        "mtimeMs": 1793571138798.4604
+      },
+      "wal": null,
+      "shm": null
+    },
+    "after": {
+      "db": {
+        "size": 557056,
+        "mtimeMs": 1793571138798.4604
+      },
+      "wal": {
+        "size": 164832,
+        "mtimeMs": 1793571139155.4658
+      },
+      "shm": {
+        "size": 32768,
+        "mtimeMs": 1793571139124.4653
+      }
+    },
+    "walMoved": true,
+    "dbMoved": false
+  },
+  "readonlyHandleGuard": {
+    "roNullBefore": 24,
+    "roNullAfter": 24,
+    "promoted": false
+  },
+  "generatedAt": "2026-11-01T22:12:24.973Z"
+}

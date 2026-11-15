@@ -1,0 +1,45 @@
+{
+  "fixtureId": "groovy/class-body-dot-continuation-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M49 W22 (#841). Pins a class-level FIELD whose initializer continues on lines that begin with a dot — `Path scriptDir = Paths.get(getClass()` then `.protectionDomain` / `.codeSource` / `.location` / `.toURI())` then `.toAbsolutePath()` / `.parent` (grails-core etc/bin/test-bisect.groovy:64) and `Builder b = pm.builder()` then `.excludeTimestamps()` / `.excludeVersion()` (CreateInputObjectTypeBuilder.groovy:38). The grammar has always allowed a leading-dot continuation at STATEMENT level (`leading_dot_call`), so the identical chain inside a method parsed; a class-level field is not a statement, and `field_declaration` ends — delimited — before the first dotted line, and the class body had no rule for a bare '.', so the parser inserted a MISSING '}' and the rest of the class body collapsed into error recovery. That is why the m12 census's largest first-error line was a bare '}' (57 files) — the census was recording collateral, not the cause. MEASURED on this exact file through the production analyzer, pre-fix vs post-fix: symbols 4 -> 5 (the `builder` property did not exist), and the two methods had NO owner (`owner=-`) pre-fix, so every edge they emitted was lost from the class; relationships 18 -> 21, of which the three added are `contains Cfg -> builder`, `contains Cfg -> methodChainControl`, `contains Cfg -> sameLineControl`. The residual reads/calls that the pre-fix parse attributed to the `(script)` pseudo-scope (`calls (script) -> builder`, `uses (script) -> parent`, `references (script) -> Builder` from a bogus `local_variable_declaration`) are attributed to the class now, which is what `forbidRelationships` below forbids. Corpus impact, grails-core @ a83f8748, all 6,564 tracked *.groovy files through the production pipeline, identical instrument on both sides and only the wasm differing (fcfead14d8c0 -> 5a1d1b21d71f): parse-failing 384 -> 370 with the failing-file SETS compared file by file — 14 FIXED, 0 REGRESSED; and on the bounded set that could be affected (the 384-file union plus a 400-file deterministic clean control, list kept at validation/m59/results/g841-w22-filelist.txt) relationships 57,127 -> 57,354 with 0 files losing a single relationship. `authoredBeforeAnalyzerRun` is false because the expectation was read off the corrected emission; the counts above are its provenance. An earlier VARIANT of this fix (the same node offered as a class-body declaration instead of as a field suffix) is what the two-file regression in reviews/m49-w22-groovy-class-body-dot-continuation.md records: it collapsed two files' entire parse into one top-level ERROR node and cost them 18 relationships. That variant is why this one binds the continuation to the field.",
+  "expectSymbols": [
+    { "name": "Cfg", "kind": "class" },
+    { "name": "scriptDir", "kind": "property" },
+    { "name": "builder", "kind": "property", "note": "PRE-FIX this property did not exist at all: the field's initializer chain aborted the class body" },
+    { "name": "methodChainControl", "kind": "method" },
+    { "name": "sameLineControl", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Cfg", "target": "toURI", "line_number": 13, "note": "field-chain segment WITH parentheses: a call, inside the initializer expression" },
+    { "type": "calls", "from": "Cfg", "target": "toAbsolutePath", "line_number": 14, "note": "a continuation segment; owner is the class because a field's continuation has no method to belong to — the GAD1 convention for an unresolvable receiver, exactly as the statement form does" },
+    { "type": "uses", "from": "Cfg", "target": "parent", "line_number": 15, "note": "paren-less continuation = a member READ, not a call (the W20 #851 rule, applied at field level)" },
+    { "type": "calls", "from": "Cfg", "target": "builder", "line_number": 17, "note": "second field, same shape, one segment deep" },
+    { "type": "calls", "from": "Cfg", "target": "excludeTimestamps", "line_number": 18 },
+    { "type": "calls", "from": "Cfg", "target": "excludeVersion", "line_number": 19 },
+    { "type": "uses", "from": "Cfg", "target": "protectionDomain", "line_number": 10 },
+    { "type": "uses", "from": "Cfg", "target": "codeSource", "line_number": 11 },
+    { "type": "uses", "from": "Cfg", "target": "location", "line_number": 12 },
+    { "type": "contains", "from": "Cfg", "target": "scriptDir", "line_number": 9 },
+    { "type": "contains", "from": "Cfg", "target": "builder", "line_number": 17, "note": "PRE-FIX absent — the enclosing class never saw this field" },
+    { "type": "contains", "from": "Cfg", "target": "methodChainControl", "line_number": 21, "note": "PRE-FIX absent — the whole class body after the broken field collapsed" },
+    { "type": "contains", "from": "Cfg", "target": "sameLineControl", "line_number": 27, "note": "PRE-FIX absent, same collapse" },
+    { "type": "references", "from": "Cfg", "target": "Path", "line_number": 9, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Cfg", "target": "Builder", "line_number": 17, "meta.relationshipType": "declared_type", "note": "PRE-FIX this edge existed but with source `(script)` and meta.declaredOn `local_variable_declaration` — a field read as a local" },
+    { "type": "calls", "from": "methodChainControl", "target": "builder", "line_number": 22, "note": "CONTROL: the same chain inside a method, unchanged by this round (it already parsed)" },
+    { "type": "calls", "from": "methodChainControl", "target": "excludeTimestamps", "line_number": 23 },
+    { "type": "calls", "from": "methodChainControl", "target": "excludeVersion", "line_number": 24 },
+    { "type": "calls", "from": "sameLineControl", "target": "builder", "line_number": 28, "note": "CONTROL: the one-line chain — same multiset of call targets as the two multi-line forms above, which is the contract" },
+    { "type": "calls", "from": "sameLineControl", "target": "excludeTimestamps", "line_number": 28 },
+    { "type": "calls", "from": "sameLineControl", "target": "excludeVersion", "line_number": 28 }
+  ],
+  "forbidSymbols": [
+    { "name": "script", "kind": "property", "note": "the pre-fix spellings of a collapsed class body: the file's own name leaking as a synthetic scope" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "(script)", "target": "builder", "note": "PRE-FIX: the field's own call was attributed to the synthetic file scope because the class body had collapsed" },
+    { "type": "references", "from": "(script)", "target": "Builder", "note": "PRE-FIX: a class-level FIELD was typed as a `local_variable_declaration`" },
+    { "type": "uses", "from": "(script)", "target": "parent", "note": "PRE-FIX attribution of the field continuation's member read" },
+    { "type": "references", "from": "Cfg", "target": "Builder", "line_number": 17, "meta.relationshipType": "declared_type", "meta.declaredOn": "local_variable_declaration", "note": "the same mis-typing under the corrected source" }
+  ]
+}

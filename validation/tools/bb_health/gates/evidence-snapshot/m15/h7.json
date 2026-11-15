@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H7",
+  "code": "H7",
+  "tool": "bb_health",
+  "title": "evidence + gate + closure",
+  "verified": true,
+  "checks": 6,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-08-23T17:16:38.889Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.336Z",
+    "contentSha256": "7ec2db87373890d693e488e8ee2e1e0d6634623184f04323ec8d58c321394d99"
+  }
+}

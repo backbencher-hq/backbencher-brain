@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H5",
+  "code": "H5",
+  "tool": "bb_health",
+  "title": "real-repo e2e (zig/src)",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:16:38.885Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.336Z",
+    "contentSha256": "e92f42106b9b9fd7392f689aa1e18a05d5556217e911cd0215ef83e8789954f6"
+  }
+}

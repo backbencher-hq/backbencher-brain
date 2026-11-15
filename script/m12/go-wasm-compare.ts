@@ -5,7 +5,7 @@ import { statSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const REPO = "$HOME/fixtures/repositories/go-tools"
+const REPO = "/home/ishaq2321/bb_tests/repositories/go-tools"
 const ROOT = process.cwd()
 const NEW_WASM = "/tmp/ts-go-npm/package/tree-sitter-go.wasm"
 

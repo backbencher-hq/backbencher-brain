@@ -1,0 +1,22 @@
+{
+  "fixtureId": "svelte/each-shadow-collision",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "S5 (#419): a template-LOCAL binding whose name collides with a SAME-NAMED MEMBER must shadow it. Here `{#each rows as row}` binds `row`, `{#each nested as group} {#each group.children as item}` binds inner `item`, and `{@const total = r.id}` binds `total` — all three names are ALSO member functions. The template body reads the LOCAL binding, so NO `uses` edge to the member `row`/`item`/`total` may be emitted. Only the collection expressions (`rows`, `nested`) are member uses. (The wave's template-member-uses fixture never exercised a real collision, so this shadow rule shipped unproven at the actual bug class — the vue V4 lesson.)",
+  "expectSymbols": [
+    { "name": "rows", "kind": "constant" },
+    { "name": "nested", "kind": "constant" },
+    { "name": "row", "kind": "function" },
+    { "name": "item", "kind": "function" },
+    { "name": "total", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "each-shadow-collision", "target": "rows", "meta.isTemplateExpression": true },
+    { "type": "uses", "from": "each-shadow-collision", "target": "nested", "meta.isTemplateExpression": true }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "each-shadow-collision", "target": "row", "meta.isTemplateExpression": true },
+    { "type": "uses", "from": "each-shadow-collision", "target": "item", "meta.isTemplateExpression": true },
+    { "type": "uses", "from": "each-shadow-collision", "target": "total", "meta.isTemplateExpression": true }
+  ]
+}

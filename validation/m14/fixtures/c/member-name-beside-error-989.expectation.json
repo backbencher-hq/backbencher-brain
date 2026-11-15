@@ -1,0 +1,23 @@
+{
+  "fixtureId": "c/member-name-beside-error-989",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #989's `contains` fix, found by the lane's clang oracle on the corpus this lane owns -- the first independent-parser reading of `contains` on sqlite. `contains-vs-clang.ts --dir sqlite/src` reported 33 records / 421 members at 98.34% with 7 MISSED and 8 PHANTOM, and the two classes were the same seven lines: `char *(SQLITE_CDECL*mprintf)(const char*,...);` at src/sqlite3ext.h:112. C's parenthesis rule puts the member name inside a calling-convention macro's argument, the grammar cannot place the token, and recovery parks it in an ERROR BESIDE the real declarator. The member walk used `namedChild(0)`, which descends into the ERROR and returns the macro's own name -- so the phantom took the member's place rather than accompanying it. #916-C had already fixed the SYMBOL path for the identical shape; the member path kept `namedChild(0)`. Result: 421/421 = 100.00%, 0 missed, 1 phantom remaining and that one is this lane's declared conditional-arm superset (#957). The four CfxPlain function-pointer shapes are the controls: #928/#947's battery, which a fix that read anything but the ERROR-ness of the name child would move.",
+  "expectRelationships": [
+    { "type": "contains", "from": "CfxApi", "target": "mprintf", "comment": "THE PINNED ROW. The real member, which the ERROR sibling had displaced." },
+    { "type": "contains", "from": "CfxApi", "target": "test_control", "comment": "The same shape a second time, because one instance is a coincidence and two is a rule." },
+    { "type": "contains", "from": "CfxPlain", "target": "plain", "comment": "CONTROL: the ordinary function-pointer member. #928/#947's battery; an over-broad fix that skipped non-ERROR children indiscriminately would lose this." },
+    { "type": "contains", "from": "CfxPlain", "target": "fns", "comment": "CONTROL: an array of function pointers, the shape most likely to be broken by a declarator-walk change." },
+    { "type": "contains", "from": "CfxPlain", "target": "value" },
+    { "type": "contains", "from": "CfxPlain", "target": "name" },
+    { "type": "contains", "from": "CfxOrdinary", "target": "count" },
+    { "type": "contains", "from": "CfxOrdinary", "target": "ratio" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "CfxApi", "target": "CFX_CDECL", "comment": "THE PHANTOM. The macro's own name, which no C declaration in this file gives to any member -- the #928/#985 family. 7 of these on sqlite's `sqlite3_api_routines` before the fix." },
+    { "type": "contains", "from": "CfxPlain", "target": "plain_unused", "comment": "CONTROL that a name absent from the file cannot appear. Present so a mutant that publishes a synthesized member cannot pass by matching only the positives." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "equals": 8, "note": "2 (CfxApi) + 4 (CfxPlain) + 2 (CfxOrdinary). A count, so a mutant that publishes the macro name IN ADDITION to the real member fails here as well as through its forbid row -- which is the shape the old defect had before the fix reached it." }
+  ]
+}

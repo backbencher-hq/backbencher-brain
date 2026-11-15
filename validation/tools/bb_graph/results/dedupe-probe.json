@@ -1,0 +1,11 @@
+{
+  "callers": 2,
+  "matchedMembers": [
+    "a",
+    "b"
+  ],
+  "spellingVariantsCollapsed": 0,
+  "cascadeRepeatsCollapsed": 0,
+  "exactCallers": 0,
+  "cascadedCallers": 2
+}

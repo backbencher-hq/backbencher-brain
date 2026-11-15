@@ -1,0 +1,27 @@
+{
+  "fixtureId": "groovy/value-position-types-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS the #841 round-5 grammar addition: a parameterized or array type in VALUE position. The grammar had no such production at all, so eight constructs across five positions were ERRORs, and recovery did not stop at the construct — it swallowed the enclosing class, which is why the load-bearing pin here is forbidErrors (the class must survive) rather than any single relationship. The eight forms and their evidence: `@Scaffold(Foo<User>)`, `@Scaffold(List<String>)`, `@Scaffold(value = Foo<User>)`, `Class c = Foo<User>`, `Class c = String[]`, `register(Foo<User>)`, `[k: Foo<User>]`, `Foo<User> == null`. EVERY one was judged by BOTH parsers (our grammar must reject it, real Groovy 3.0.24 must accept it); one candidate, `@Scaffold(com.example.Foo<User>)`, was rejected by BOTH and was therefore DISCARDED as not-a-gap, which is what stops this fixture from pinning a construct the language itself disowns — see reviews/m59-841-assert-comma-separator.md §7b. Also note the counter-example this round killed: a regex census flagged 19 corpus files on `as Foo<Bar>`, but the `as` operator already parses, so those were co-occurrence and NOT causation. Corpus consequence at the rebuilt wasm (grails-core @ a83f8748, whole tracked corpus, production parseFile pipeline): 300 -> 272 error files, 28 fixed, 0 regressed, 0 crashes, 0 pipeline mismatches; the residual split by the language itself moves 249 gaps -> 221 gaps with the 51-file scaffolding policy decision unchanged. NOTE: authored AFTER the analyzer run, from script/m14/tmp/g841-fixture-dump.ts (authoredBeforeAnalyzerRun is therefore false, stated rather than claimed true); the load-bearing property is the parse-clean consequence plus the mutation pin, not the ordering of authorship.",
+  "forbidErrors": [{}],
+  "expectSymbols": [
+    { "name": "ValuePositionTypes841", "kind": "class" },
+    { "name": "annotationArg", "kind": "property" },
+    { "name": "assignmentRhs", "kind": "property" },
+    { "name": "arrayValue", "kind": "property" },
+    { "name": "register", "kind": "method" },
+    { "name": "callArgument", "kind": "method" },
+    { "name": "mapValue", "kind": "method" },
+    { "name": "comparison", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "annotationArg" },
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "assignmentRhs" },
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "arrayValue" },
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "register" },
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "callArgument" },
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "mapValue" },
+    { "type": "contains", "source": "ValuePositionTypes841", "target": "comparison" },
+    { "type": "calls", "source": "callArgument", "target": "register" }
+  ]
+}

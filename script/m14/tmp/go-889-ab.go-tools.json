@@ -1,0 +1,63 @@
+{
+ "repo": "/home/ishaq2321/bb_tests/repositories/go-tools",
+ "files": 1931,
+ "filesChanged": 1570,
+ "symbolsAdded": 329,
+ "symbolsAddedByKind": {
+  "property": 329
+ },
+ "groupedFieldSymbolsAdded": 127,
+ "embeddedFieldSymbolsAdded": 202,
+ "symbolsRemoved": 5,
+ "relationshipsAdded": 23489,
+ "relationshipsRemoved": 23003,
+ "relAddedByLabel": {
+  "imports": 10618,
+  "references": 12264,
+  "extends": 29,
+  "contains": 576,
+  "calls": 2
+ },
+ "relRemovedByLabel": {
+  "references": 22954,
+  "extends": 29,
+  "contains": 5,
+  "instantiates": 15
+ },
+ "relAddedByRelationshipType": {
+  "imports/-": 10618,
+  "references/declared_type": 11141,
+  "extends/go_struct_embedding": 29,
+  "contains/-": 576,
+  "references/return_type": 1123,
+  "calls/go_package_scope_call": 2
+ },
+ "relRemovedByRelationshipType": {
+  "references/-": 10618,
+  "references/declared_type": 11207,
+  "extends/go_struct_embedding": 29,
+  "references/return_type": 1129,
+  "contains/-": 5,
+  "instantiates/go_composite_literal_construction": 15
+ },
+ "relAddedWithRawTarget": {
+  "imports": 3968
+ },
+ "relRemovedWithRawTarget": {
+  "references": 16294,
+  "extends": 29
+ },
+ "relAddedByClass": {
+  "imports/other": 10618,
+  "references/other": 12114,
+  "extends/other": 2,
+  "contains/newTarget": 512,
+  "contains/other": 10,
+  "extends/newTarget": 25,
+  "references/newTarget": 121,
+  "contains/newSource": 54,
+  "references/newSource": 29,
+  "calls/other": 2,
+  "extends/newSource": 2
+ }
+}

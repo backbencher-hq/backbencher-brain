@@ -1,0 +1,66 @@
+{
+  "issue": "M56.D2 — Design Pass (#786)",
+  "code": "D2",
+  "milestone": "m56",
+  "status": "verified",
+  "checks": 43,
+  "passed": 43,
+  "failed": 0,
+  "negativeCases": 10,
+  "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
+  "verifierCommand": "npx tsx script/m56/verify-design.ts",
+  "evidenceFile": "D2.json",
+  "generatedAt": "2026-11-08T02:53:48.693Z",
+  "ownerApproval": "pending — the owner has not yet given the visual review (the site is built, screenshot-verified and awaiting review as of 2026-11-07). D2 reads this line and writes it into its evidence; X1 refuses a closure whose design gate has no recorded approval state.",
+  "contrastFloors": {
+    "floor": 4.5,
+    "referenceBackground": "#1e1710",
+    "backgrounds": [
+      "#0e0a07",
+      "#16110b",
+      "#1e1710"
+    ],
+    "tokens": [
+      {
+        "token": "--ink",
+        "hex": "#f1e9dd",
+        "ratio": 14.71
+      },
+      {
+        "token": "--ink-2",
+        "hex": "#d9cdbc",
+        "ratio": 11.31
+      },
+      {
+        "token": "--body",
+        "hex": "#c2b5a2",
+        "ratio": 8.8
+      },
+      {
+        "token": "--muted",
+        "hex": "#9a8f7d",
+        "ratio": 5.57
+      },
+      {
+        "token": "--faint",
+        "hex": "#8f8472",
+        "ratio": 4.82
+      }
+    ]
+  },
+  "summary": [
+    "18 distinct literal text colours checked against #1e1710",
+    "no alpha-faded text classes; no cool-grey palette classes",
+    "global :focus-visible ring plus the console-index label ring",
+    "7 animations, all guarded by reduced-motion",
+    "4 shared ui primitives; 0 local twins; 0 dead component modules",
+    "4 built pages checked for cool-grey output and the focus rule in built CSS"
+  ],
+  "limitations": [
+    "Contrast is computed on declared colours (tokens and literal classes), not on rendered pixels — a parent opacity or blend mode could still reduce effective contrast; no such utility is used in site source (alpha text classes are refused).",
+    "Large-text exceptions (3:1 for ≥24px) are not used: this site applies the 4.5:1 floor to every text colour, which is stricter.",
+    "Photographic media (the verified session stills on /editors) is exempt: it is real captured product pixels, not styled text.",
+    "Owner visual approval is required before this issue closes; the gate proves legibility mechanics, not taste."
+  ],
+  "failures": []
+}

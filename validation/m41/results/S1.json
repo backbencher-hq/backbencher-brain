@@ -1,0 +1,24 @@
+{
+  "issue": "M41.S1",
+  "code": "S1",
+  "milestone": "M41",
+  "status": "verified",
+  "checks": 67,
+  "passed": 67,
+  "failed": 0,
+  "negativeCases": 11,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m41/verify-seo.ts",
+  "evidenceFile": "S1.json",
+  "generatedAt": "2026-11-09T14:43:09.551Z",
+  "sitemapUrls": 59,
+  "realRoutes": 63,
+  "requiredRoutes": 11,
+  "faqQuestions": 21,
+  "limitations": [
+    "Keyword checks verify presence in rendered content; ranking outcomes are S2 (search-engine onboarding) scope and depend on external engines.",
+    "The canonical-removal mutant rebuilds the site three times total; a broken build aborts the mutant proof.",
+    "Structured data covers SoftwareApplication (/) and FAQPage (/faq); other schema.org types are simply not claimed, not falsified.",
+    "Routes are discovered from website/src/app by directory layout, so a page Next.js would not serve as a static route is still counted as one; the required-route contract list must name any page added, and that onboarding is a deliberate edit to this verifier."
+  ]
+}

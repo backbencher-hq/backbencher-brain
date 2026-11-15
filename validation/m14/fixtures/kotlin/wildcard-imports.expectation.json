@@ -1,0 +1,13 @@
+{
+  "fixtureId": "kotlin/wildcard-imports",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The pinned wasm serializes 'import kotlinx.coroutines.*' as identifier='kotlinx.coroutines' PLUS a sibling wildcard_import node - the identifier text never contains '.*'. Wildcard imports must be flagged isNamespaceImport=true with items=['*']; aliased imports keep their alias item.",
+  "expectSymbols": [
+    { "name": "WildcardUser", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "kotlinx.coroutines", "isNamespaceImport": true, "items": ["*"] },
+    { "module": "java.util.List", "isNamespaceImport": false }
+  ]
+}

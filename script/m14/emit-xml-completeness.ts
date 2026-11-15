@@ -53,7 +53,7 @@ const spec = {
       "REPAIR 2 (xml/grammar.js, _intSubset): `repeat(choice($._markupdecl, $.conditionalSect, $._DeclSep))` over a named `_intSubsetItem`, plus a `conditionalSect` rule. Upstream could not reach a conditional section from an internal subset at ANY version measured — 0.5.0-0.6.x declare `conditionalSect` in the `dtd` grammar and inline it, but `_intSubset` referenced `$._markupdecl`, which does not include it; 0.7.0 does not declare it in the `xml` grammar at all. The failure wrapped the `doctypedecl` in an ERROR, the parser took a LATER `Name` as the DTD's name, and the analyzer published a Type symbol literally called `INCLUDE`.",
     ],
     patchAdmissibility:
-      "8,888 corpus files / 6.69M nodes, ERROR and MISSING counted per file: 31 files repaired, 2 moved, 8,855 unchanged, corpus MISSING nodes 32 -> 10. BOTH movements are adjudicated by measurement in fixtures/xml/out/regression-adjudication.json: one is a standalone `.dtd` (root ERROR under every build, so never in the wired surface; upstream's separate `dtd` grammar parses it with 0 ERROR nodes) and the other is libxml2's own fuzzer-regression directory, kept by the project precisely because those files must not parse.",
+      "8,888 corpus files / 6.69M nodes, ERROR and MISSING counted per file: 31 files repaired, 2 moved, 8,855 unchanged, corpus MISSING nodes 32 -> 10. BOTH movements are adjudicated by measurement in bb_tests/xml/out/regression-adjudication.json: one is a standalone `.dtd` (root ERROR under every build, so never in the wired surface; upstream's separate `dtd` grammar parses it with 0 ERROR nodes) and the other is libxml2's own fuzzer-regression directory, kept by the project precisely because those files must not parse.",
     wiredSha256: "2425a26e77dce87d7157f89b2e39920c67436a672263827dea3516210f93b1c8",
     vendoredSource: "grammars/tree-sitter-xml",
     gate: "bun script/m14/verify-grammar-pins.ts (lane xml)",
@@ -74,7 +74,7 @@ const spec = {
     missingNodes: 9,
     routedFileTypesExercised: ["xml", "xsd", "dtd", "xsl", "xslt", "svg", "rng"],
     routedButDeclaredNegative: "dtd — exercised through 4 declared negative controls, because a standalone `.dtd` is not representable by the xml grammar (see grammarPin.patchAdmissibility and the notApplicable entry below).",
-    manifest: "fixtures/xml/repositories/MANIFEST.json",
+    manifest: "bb_tests/xml/repositories/MANIFEST.json",
   },
   handled_verified: {
     _rule: "the analyzer reads this node to produce a symbol, a relationship, an import, or a metadata value; each is pinned by a fixture in validation/m14/fixtures/xml, except where corpus.grammarTypesNotObserved says no corpus example exists",
@@ -182,8 +182,8 @@ const spec = {
     mutants: "bun script/m14/mutate-analyzer.ts (9, all caught, was 0)",
     corpusErrors: "script/m12/xml-corpus-errors.ts (revision-pinned manifest + declared negative controls)",
     corpusMeasure: "script/m12/xml-corpus-measure.ts (same manifest; the two gates previously disagreed on the same files)",
-    referenceAgreement: "fixtures/xml/probes/grammar-verdict-vs-reference.mts (16/16 against Python expat — a conforming implementation this repository does not own)",
-    reproducibility: "bash fixtures/xml/run-all.sh [--full]",
+    referenceAgreement: "bb_tests/xml/probes/grammar-verdict-vs-reference.mts (16/16 against Python expat — a conforming implementation this repository does not own)",
+    reproducibility: "bash bb_tests/xml/run-all.sh [--full]",
   },
   knownGateGaps: [],
   // Sections E and F are NOT closed, and this note used to say they were. The
@@ -246,7 +246,7 @@ const spec = {
     measured: "4 independent cold-pool draws: 25/60/100/40 files, covered 100%, MISSING=0, unexplained=0 in every one",
   },
   review: "reviews/xml/master-review.md",
-  artifacts: "fixtures/xml/out/*.json, fixtures/xml/repositories/MANIFEST.json",
+  artifacts: "bb_tests/xml/out/*.json, bb_tests/xml/repositories/MANIFEST.json",
 }
 
 fs.mkdirSync(path.join(ROOT, "script/m14/spec"), { recursive: true })

@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/extended-part-of.erl",
+  "authoredFrom": "ER-D46 (2026-10-23), authored from the part_of CONTRACT in src/ast/types.ts + validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md §2.4, before running the analyzer on this source. The construct: `-include(\"x.hrl\")` / `-include_lib(\"kernel/…\")` is FILE INCLUSION — the header is spliced into this module's single compilation scope, cannot be compiled as a unit of its own, and imports nothing — which is the vocabulary's `part_of` (the same construct php's include/require and fsharp's #load were relabelled to). Direction is the directive's own: source = the file carrying the directive, target = the path as written, and `metadata.partRole` is MANDATORY on every row: \"library\" here because this file is the including library and names the part. The negative half is the point: the old `references` rows must NOT survive the relabel, an include must NOT be published as `imports` (that is `-import`'s label, ER-D41), and the `-import` module must NOT become a `part_of`. Four directives are exercised — the two legal forms, a SPLIT directive (the line-contract: the path STRING's line, not the keyword's), and an include inside a conditional-compilation region.",
+  "expectSymbols": [
+    {
+      "name": "extended_part_of",
+      "kind": "module"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "extended_part_of",
+      "meta.arity": 1
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "local.hrl",
+      "isExternal": false,
+      "importType": "include",
+      "line": 6
+    },
+    {
+      "module": "kernel/include/file.hrl",
+      "isExternal": true,
+      "importType": "include_lib",
+      "line": 7
+    },
+    {
+      "module": "split_name.hrl",
+      "isExternal": false,
+      "importType": "include",
+      "line": 11
+    },
+    {
+      "module": "extra.hrl",
+      "isExternal": false,
+      "importType": "include",
+      "line": 15
+    },
+    {
+      "module": "lists",
+      "isExternal": true,
+      "importType": "named",
+      "line": 18
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "extended_part_of",
+      "target": "local.hrl",
+      "line_number": 6,
+      "meta.partRole": "library",
+      "meta.isInclude": true,
+      "meta.isFileInclusion": true,
+      "meta.evidenceClass": "import_based",
+      "note": "plain -include: the directive IS the syntax, so confidence 1.0 and the import_based tier follow the construct (ER-D46)"
+    },
+    {
+      "type": "part_of",
+      "from": "extended_part_of",
+      "target": "kernel/include/file.hrl",
+      "line_number": 7,
+      "meta.partRole": "library",
+      "meta.isLibInclude": true,
+      "meta.isFileInclusion": true,
+      "meta.evidenceClass": "import_based",
+      "note": "-include_lib: same part_of relation; the code-path/external classification lives on the ImportInfo entry (ER-D20) and does not change the relation"
+    },
+    {
+      "type": "part_of",
+      "from": "extended_part_of",
+      "target": "split_name.hrl",
+      "line_number": 11,
+      "meta.partRole": "library",
+      "meta.isInclude": true,
+      "note": "M59 #825 line contract: the path STRING's line (11), never the -include keyword's line (10)"
+    },
+    {
+      "type": "part_of",
+      "from": "extended_part_of",
+      "target": "extra.hrl",
+      "line_number": 15,
+      "meta.partRole": "library",
+      "meta.isInclude": true,
+      "note": "an include inside -ifdef is still a top-level form in this grammar (pp_ifdef is a leaf sibling), so it is still one part_of row"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "extended_part_of",
+      "target": "local.hrl",
+      "note": "ER-D46 negative half: no references row for an include at any line"
+    },
+    {
+      "type": "references",
+      "from": "extended_part_of",
+      "target": "kernel/include/file.hrl",
+      "note": "ER-D46 negative half, include_lib form"
+    },
+    {
+      "type": "references",
+      "from": "extended_part_of",
+      "target": "split_name.hrl"
+    },
+    {
+      "type": "references",
+      "from": "extended_part_of",
+      "target": "extra.hrl"
+    },
+    {
+      "type": "imports",
+      "from": "extended_part_of",
+      "target": "local.hrl",
+      "note": "ER-D46: an include is NOT an import; the imports label belongs to -import (ER-D41)"
+    },
+    {
+      "type": "imports",
+      "from": "extended_part_of",
+      "target": "kernel/include/file.hrl"
+    },
+    {
+      "type": "part_of",
+      "from": "extended_part_of",
+      "target": "lists",
+      "note": "the -import module is a name import, never a file inclusion — `part_of` must not be borrowed for it"
+    },
+    {
+      "type": "extends",
+      "note": "ER-D46 negative control: a file inclusion is not inheritance. TYPE-ONLY, the strongest form — no extends edge may exist in this file, whatever its endpoints, which is what catches the `ontology/extends-from-include` mutant after the label moved to part_of."
+    },
+    {
+      "type": "overrides",
+      "note": "ER-D46 negative control: an include does not redefine a member (overrides is ruled grammar-absence for Erlang; see the spec)."
+    }
+  ]
+}

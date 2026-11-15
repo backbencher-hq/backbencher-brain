@@ -1,0 +1,181 @@
+{
+ "tier": "t1",
+ "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+ "dir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata",
+ "measuredAt": "2026-11-02T00:21:24.951Z",
+ "loadAverage": [
+  4.74,
+  3.79,
+  6.73
+ ],
+ "index": {
+  "counts": {
+   "files": 97,
+   "symbols": 3512,
+   "relationships": 17068
+  },
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+  "dbMtimeMs": 1793578354727
+ },
+ "firstCall": {
+  "args": {
+   "symbolNames": [
+    "analyze"
+   ],
+   "targetLanguage": "python"
+  },
+  "ms": 207.6,
+  "isError": false
+ },
+ "shapes": {
+  "singleText": {
+   "args": {
+    "symbolNames": [
+     "analyze"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    18.6,
+    17.8,
+    19.7,
+    20.3,
+    24
+   ],
+   "p50Ms": 19.7,
+   "p95Ms": 24,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: none (no-edges)"
+   ]
+  },
+  "singleJson": {
+   "args": {
+    "symbolNames": [
+     "analyze"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "samplesMs": [
+    19.7,
+    17.9,
+    17.4,
+    16.6,
+    22.9
+   ],
+   "p50Ms": 17.9,
+   "p95Ms": 22.9,
+   "lastIsError": false,
+   "lastPlans": 0,
+   "lastTextHead": [
+    "{",
+    "  \"targetLanguage\": \"python\","
+   ]
+  },
+  "twelveNames": {
+   "args": {
+    "symbolNames": [
+     "analyze",
+     "prepare",
+     "getUnifiedHealth",
+     "generateDocumentation",
+     "extractExpressionRelationships",
+     "detectOrphans",
+     "generateMigrationPlans",
+     "traverseGraph",
+     "all",
+     "planEdit",
+     "get",
+     "enrichRelationships"
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    102.2,
+    101.4,
+    95.3,
+    71.8,
+    90.7
+   ],
+   "p50Ms": 95.3,
+   "p95Ms": 102.2,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: detectOrphans -> enrichRelationships -> extractExpressionRelationships -> generateDocumentation -> generateMigrationPlans -> getUnifiedHealth -> planEdit -> traverseGraph (partial)"
+   ]
+  },
+  "cohort": {
+   "args": {
+    "paths": [
+     "."
+    ],
+    "targetLanguage": "python"
+   },
+   "samplesMs": [
+    74.1,
+    88.7,
+    73.3,
+    68.8,
+    71.4
+   ],
+   "p50Ms": 73.3,
+   "p95Ms": 88.7,
+   "lastIsError": false,
+   "lastPlans": null,
+   "lastTextHead": [
+    "migration target: python",
+    "dependency order: BOOLEAN_NODES -> CALLABLE_NODES -> ENGINE_CONFIDENCE_FLOOR -> ENGINE_DECL_TYPES -> EVIDENCE_TIERS -> IMPORT_KINDS -> LegendTier -> EvidenceTier -> LiteralKind -> MAX_WITNESS_BYTES -> NUMBER_NODES -> REFERENCE_QUALIFIED_KINDS -> RETURN_NODES -> STRING_NODES -> STRUCTURAL_FLOOR -> STRUCTURAL_KINDS -> TIER_RANK -> TypeProvenance -> UNCLAIMED_STORE_LABELS -> USAGE_CONTEXT_KINDS -> WithheldReason -> author_class -> authors -> body -> byte_end -> byte_start -> character -> confidence -> corroborated -> count -> end -> endLine -> escapeAnnotationText -> evidenceClassOf -> evidenceTier -> filePath -> file_id -> formatAnnotationTime -> id -> isDeclaredTier -> classifyTier -> kind -> label -> AnnotationBadge -> badgeMatchesNode -> language -> line -> HighlightRequest -> line_end -> line_start -> metadata -> name -> SymbolRow -> nodeType -> orderTiers -> primaryTier -> provenance -> reason -> relationship_type -> StoredTierRow -> classifyStoredRow -> returnExpressionsSeen -> returnKinds -> return_type -> source_symbol_id -> stale -> staleness -> start -> HighlightRange -> highlights -> startLine -> WitnessSummary -> storedProvenanceUnknown -> stripCommentMarkup -> docCommentFor -> symbol -> HighlightResult -> symbolTierSet -> symbol_name -> symbol_path -> symbol_type -> TypeSurfaceSymbol -> target_symbol_id -> EdgeRow -> documentHighlight -> text -> time_created -> time_updated -> tool_identity -> AnnotationRow -> annotationBadge -> annotationHoverSection -> withheld -> withheldText -> witness -> TypeLine (partial)"
+   ]
+  }
+ },
+ "dbState": {
+  "before": {
+   "db": {
+    "size": 52379648,
+    "mtimeMs": 1793578354727
+   },
+   "-wal": {
+    "size": 0,
+    "mtimeMs": 1793578883051
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793578883052
+   }
+  },
+  "afterFirstCall": {
+   "db": {
+    "size": 52379648,
+    "mtimeMs": 1793578354727
+   },
+   "-wal": {
+    "size": 98912,
+    "mtimeMs": 1793578883490
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793578883394
+   }
+  },
+  "after": {
+   "db": {
+    "size": 52379648,
+    "mtimeMs": 1793578354727
+   },
+   "-wal": {
+    "size": 2768672,
+    "mtimeMs": 1793578884941
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793578883394
+   }
+  }
+ }
+}

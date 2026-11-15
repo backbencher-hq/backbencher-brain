@@ -1,0 +1,111 @@
+{
+  "comment": "`<object archive>` — the OTHER resource an object needs. Found by script/m14/verify-carrier-census.ts as an UNREVIEWED (tag@attr) pair: 4 occurrences in 2 corpus documents, 3 of them real URLs, measured over 1,699 documents. A carrier nobody has ruled is a carrier nobody has decided about, so the census asking is the whole value of a third-party instrument. The specification defines `archive` as a SPACE-separated list of URIs, so it takes the `valueList: \"space\"` shape `<a ping>` already uses and one row per URL.",
+  "expectSymbols": [
+    {
+      "name": "object-archive-carrier",
+      "kind": "module"
+    },
+    {
+      "name": "archive-single",
+      "kind": "class"
+    },
+    {
+      "name": "archive-list",
+      "kind": "class"
+    },
+    {
+      "name": "archive-empty",
+      "kind": "class"
+    },
+    {
+      "name": "archive-blank",
+      "kind": "class"
+    },
+    {
+      "name": "archive-no-data",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "The single-URL form, on the element that declares it. An addressable element owns its own resources — the same rule `img@src` follows — so the edge does not source from an ancestor.",
+      "type": "uses",
+      "from": "archive-single",
+      "target": "/shockwave.cab",
+      "meta.resourceType": "object-archive",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "comment": "`data` and `archive` are INDEPENDENT: both are read, and an object that declares both publishes both dependencies.",
+      "type": "uses",
+      "from": "archive-single",
+      "target": "/movie.swf",
+      "meta.resourceType": "object"
+    },
+    {
+      "comment": "SPACE-separated with no descriptor and no comma, so it takes the `valueList: \"space\"` split rather than the `srcset` candidate split — one row per URL, which is what distinguishes it from a comma-separated list.",
+      "type": "uses",
+      "from": "archive-list",
+      "target": "/lib-one.jar",
+      "meta.resourceType": "object-archive"
+    },
+    {
+      "type": "uses",
+      "from": "archive-list",
+      "target": "/lib-two.jar",
+      "meta.resourceType": "object-archive"
+    },
+    {
+      "comment": "An object with no `data` still imports its archive. Gating the archive rule on `data` would be an invented dependency between two independent attributes, and the corpus value `\"~/Person/John Doe \"` is one of the occurrences that motivated the rule.",
+      "type": "uses",
+      "from": "archive-no-data",
+      "target": "/standalone.jar",
+      "meta.resourceType": "object-archive"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "An empty `archive` names nothing.",
+      "from": "archive-empty"
+    },
+    {
+      "comment": "A whitespace-only `archive` names nothing.",
+      "from": "archive-blank"
+    },
+    {
+      "comment": "NOT a `srcset` candidate split: `/lib-one.jar 1x, /lib-two.jar 2x` would be two rows, but the archive list carries NO descriptors, so the whole token is the URL and a descriptor-bearing spelling must not be invented from it. A mutant that reuses the srcset path fails here because it would publish the candidate WITH its descriptor.",
+      "target": "/lib-one.jar 1x"
+    }
+  ],
+  "expectImports": [
+    {
+      "comment": "The import MIRROR. A `uses` edge says the document depends on this URL; an `imports[]` row says the same fact in the channel parallel-indexer persists to the brain_import TABLE, which is where every other lane's module dependency lives. The lane doc's contract is that a fetched project-relative module is mirrored, so an object archive is mirrored too. This pin exists because mutant #4 (drop `import: true`) emitted a correct `uses` edge and still passed 13/13 fixtures: the edge was right and the DEPENDENCY RECORD was gone, and nothing said so.",
+      "module": "/shockwave.cab",
+      "meta.isHtmlResource": true,
+      "meta.resourceType": "object-archive"
+    },
+    {
+      "module": "/lib-one.jar",
+      "meta.resourceType": "object-archive"
+    },
+    {
+      "module": "/lib-two.jar",
+      "meta.resourceType": "object-archive"
+    },
+    {
+      "module": "/standalone.jar",
+      "meta.resourceType": "object-archive"
+    },
+    {
+      "comment": "`data` is mirrored too, so the two channels agree on both dependencies of one object.",
+      "module": "/movie.swf",
+      "meta.resourceType": "object"
+    }
+  ],
+  "forbidImports": [
+    {
+      "comment": "An empty `archive` mirrors nothing — the graph edge and the import row must agree, and a row without an edge is a dependency of nothing.",
+      "module": ""
+    }
+  ]
+}

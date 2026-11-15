@@ -1,0 +1,19 @@
+verify-health	0	14622	HEALTH VERIFICATION: PASS 
+m13-mutability	1	14756	  FAIL: runtime: plain health call performs ZERO index mutation [negative] changed=true H1: KNOWN-GAP (9/11 passed, 2 negatives) 
+m13-verbose	0	8291	H2: VERIFIED (14/14 passed, 2 negatives) 
+m13-integrity	1	8742	  FAIL: docs: embedding coverage labeled as stored state, not quality missing label H3: KNOWN-GAP (18/19 passed, 2 negatives) 
+m13-refresh	1	15537	  FAIL: failure: formatted report labels the refresh failed project: /tmp/bb-health-refresh-fail-Cf88te H4: KNOWN-GAP (8/12 passed, 5 negatives) 
+m13-e2e	0	73606	H5: VERIFIED (26/26 passed, 1 negative) 
+m13-docs	1	912	  FAIL: evidence: h4.json exists, validates, verified known-gap H6: KNOWN-GAP (23/27 passed, 2 negatives) 
+m15-deep	0	197032	H7: KNOWN-GAP (7/6 passed, 2 negatives) H8: VERIFIED (5/5 passed, 0 negatives) 
+m40-a6	0	28248	A6 health-refresh: 17 passed, 0 failed, 3 negatives 
+m51-a2	0	30710	A2: 11/11 passed, 0 failed → validation/m51/results/A2.json (sealed 6107a1ea652f) 
+m64-sample-coverage	0	50599	PASS  the sample is spread across the whole ordering (10 buckets of 50) — per-bucket 48,48,45,59,55,50,54,48,43,50 (expected ~50 each; a prefix would give 500,0,0,0,0,0,0,0,0,0) ALL PASS 
+m64-refresh-integrity	0	19529	PASS  a second incremental pass over an unchanged tree processes ~0 files — processedFiles=20 derivedPass=skipped-unchanged ALL PASS 
+m64-coverage-partial	1	43018	  FAIL: the shape change is declared in the schema description return persisted analysis history (default false). CHANGES THE OUTPUT SHAPE: this mode answers with a JSON object { heal H64b: KNOWN-GAP (53/54 passed, 6 negatives) 
+m64-freshness-reasons	0	71833	H64r: VERIFIED (29/29 passed, 2 negatives) 
+m64-actionability	0	58922	H64a: VERIFIED (48/48 passed, 7 negatives) 
+m64-unindexed	0	50284	H64c: VERIFIED (35/35 passed, 3 negatives) 
+m64-paths	0	30796	H64d: VERIFIED (39/39 passed, 3 negatives) 
+m64-embed-scan	1	48551	  FAIL: the report is still correct at that scale byLanguage symbols total=0 vs 8000 indexed — a fast query that returns the wrong number is worse than a slow one H64f: KNOWN-GAP (11/14 passed, 2 negatives) 
+m64-wire	0	3658	H64e: VERIFIED (42/42 passed, 6 negatives) 

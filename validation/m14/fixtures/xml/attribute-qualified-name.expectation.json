@@ -1,0 +1,169 @@
+{
+  "fixtureId": "xml/attribute-qualified-name",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": false,
+  "provenance": "The rows below were written from the grammar contract and from reading the publishing call site (`src/ast/real-xml-analyzer.ts:2283-2352`), then verified. The identity property the fixture exists for — `qualifiedName = ownerName + '.' + name` — is NOT asserted here: `qualifiedName` is absent from `run-fixtures.ts`'s CONSTRAINT_KEY_ALLOWLIST, so a row carrying it could not be enforced. It is asserted instead by the lane-owned property checks in `ontology-mutants.mts`, which run the real analyzer on this same file. That gap is filed as a §8 item.",
+  "rationale": "The smallest document that has the collision: the same local attribute name on two elements with DIFFERENT tag names, which the store cannot tell apart when both are published under one bare name. WHAT THE SHARED MATCHER CAN PIN is the edge set, and the edge set is where the collision is visible without `qualifiedName`: three `contains` edges named `-> fill`, from three different sources. `path -> fill`, `use -> fill` and `g -> fill` are three distinct declarations of three distinct attributes, and a reverse walk asking 'what contains `fill`' is choosing between them using nothing but the name. Pinning the three source/target pairs keeps that legible in a fixture the shared runner can execute.\n\nLINE 20 is the namespace half. `xmlns:pfx` is published by the SAME call site — `:2283` makes `SymbolKind.Namespace` where it makes `SymbolKind.Property` — so a fix that qualified attributes but not namespace declarations would pass every `fill` row here and leave 1,002 measured symbols still bare. The namespace row is therefore not a second example of the same case; it is the control that says the fix is one site and not two.\n\nLINE 20's `width` is the control in the OTHER direction, and it is the row a too-narrow fix fails. `svg/@width` occurs exactly once in this document, so a rule that qualified only attributes seen twice — the shape the census measurement tempts you into, since the motivation was 4,627 declarations named `fill` — would leave `width` bare while passing everything else. Qualification is a property of being OWNED, not of being repeated.\n\nWHAT THIS FIXTURE DOES NOT SETTLE, stated here rather than left for a reader to assume: line 22 and line 26 are two DIFFERENT `<path>` elements that both publish `path.fill`. After the fix they still collide, because they have the same owner NAME. Qualification separates declarations whose owners differ; it cannot separate two instances of the same tag, and no per-symbol edit can — the distinguishing information is the element's ancestry and position, which is not in the published name. `qualifiedName-population.mts` measures what that residual is (d1StillAmbiguous), and the analyzer comment at `:2313` says so rather than claiming the collision is gone. HOW THE TWO `<path>` DECLARATIONS ARE PINNED, which corrects an earlier draft of this file rather than adding a new claim: that draft asserted a SECOND `path -> fill` edge at line 26, and the row can never be matched by any implementation. Edge identity in this graph is `source|type|target` — a property of the schema, pinned by `xml/edge-collapse` — so two declarations of one pair share ONE edge and `line_number` is the FIRST occurrence. The row is replaced by an assertion that the single `path -> fill` edge carries `occurrences: 2` and `lines: [22, 26]`, which is strictly stronger than the row it replaces: it fails if either declaration is dropped from the edge, and it fails if a second edge is emitted for a pair the graph cannot represent twice. Measured on the real analyzer through parseFile: `occurrences 2, lines [22,26]`.",
+  "expectSymbols": [
+    {
+      "name": "svg",
+      "kind": "class"
+    },
+    {
+      "name": "defs",
+      "kind": "class"
+    },
+    {
+      "name": "g",
+      "kind": "class"
+    },
+    {
+      "name": "path",
+      "kind": "class"
+    },
+    {
+      "name": "use",
+      "kind": "class"
+    },
+    {
+      "name": "pfx",
+      "kind": "namespace",
+      "ownerName": "svg",
+      "meta.isXmlNamespace": true
+    },
+    {
+      "name": "width",
+      "kind": "property",
+      "ownerName": "svg",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "height",
+      "kind": "property",
+      "ownerName": "svg",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "path",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "fill",
+      "kind": "property",
+      "ownerName": "path",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "stroke",
+      "kind": "property",
+      "ownerName": "path",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "fill",
+      "kind": "property",
+      "ownerName": "use",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "fill",
+      "kind": "property",
+      "ownerName": "g",
+      "meta.isXmlAttribute": true
+    },
+    {
+      "name": "transform",
+      "kind": "property",
+      "ownerName": "g",
+      "meta.isXmlAttribute": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "svg",
+      "target": "pfx",
+      "line_number": 20,
+      "meta.role": "xml_namespace"
+    },
+    {
+      "type": "contains",
+      "from": "svg",
+      "target": "width",
+      "line_number": 20,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "svg",
+      "target": "height",
+      "line_number": 20,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "path",
+      "target": "id",
+      "line_number": 22,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "path",
+      "target": "fill",
+      "line_number": 22,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "path",
+      "target": "stroke",
+      "line_number": 22,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "use",
+      "target": "fill",
+      "line_number": 23,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "g",
+      "target": "fill",
+      "line_number": 25,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "g",
+      "target": "transform",
+      "line_number": 25,
+      "meta.role": "xml_attribute"
+    },
+    {
+      "type": "contains",
+      "from": "path",
+      "target": "fill",
+      "line_number": 22,
+      "meta.role": "xml_attribute",
+      "meta.occurrences": 2,
+      "meta.lines": [
+        22,
+        26
+      ]
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "defs",
+      "target": "fill",
+      "comment": "`<defs>` groups `<path>` and `<use>` and owns no attribute of its own. An edge here would mean containment was read off proximity instead of the element the attribute is written on, which is the M60.R10 defect class in a new costume."
+    }
+  ],
+  "expectNoParseErrors": true
+}

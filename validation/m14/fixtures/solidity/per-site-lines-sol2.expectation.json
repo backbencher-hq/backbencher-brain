@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/per-site-lines-sol2.sol",
+  "authoredFrom": "SOL-2 — every relationship carries a POSITIVE line, and the line is PART OF THE EDGE'S IDENTITY. Authored 2026-09-30 from the analyzer's measured output. The lane standard is `line=12029/12029 (100%) unknownTargets=0`, and the ratio is a completeness check on the EMIT PATH rather than a quality score: the analyzer's single `addRel` helper refuses a non-positive line, so an emit path that could produce a null could not be checked at all.",
+  "note": "`helper()` is called at line 8 from `one` and at line 15 from `two`. Those are TWO call sites of ONE callee and must be TWO rows: the store resolves a containment edge BY the line it carries, and a per-set key that ignored the line would swallow every site but the first. This fixture is also where `counter()` appears — the SOL-3 synthesised getter — so the getter decision and the per-site decision are pinned in the same file.",
+  "expectSymbols": [
+    { "name": "per-site-lines-sol2.sol", "kind": "module" },
+    { "name": "Sites", "kind": "class", "ownerName": "per-site-lines-sol2.sol" },
+    { "name": "counter", "kind": "property", "ownerName": "Sites" },
+    { "name": "counter()", "kind": "method", "ownerName": "Sites", "meta.isSynthesisedGetter": true },
+    { "name": "one", "kind": "method", "ownerName": "Sites" },
+    { "name": "helper", "kind": "method", "ownerName": "Sites" },
+    { "name": "two", "kind": "method", "ownerName": "Sites" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Sites", "target": "counter", "line_number": 5, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Sites", "target": "one", "line_number": 7, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Sites", "target": "helper", "line_number": 12, "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "Sites", "target": "two", "line_number": 14, "meta.evidenceClass": "structural" },
+    {
+      "type": "calls",
+      "from": "one",
+      "target": "helper",
+      "line_number": 8,
+      "comment": "SITE 1 of 2. The `line_number` is part of the relationship's identity, so this row and the one below are distinct rows rather than one row with whichever line was seen first.",
+      "meta.isSolidityCall": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "two",
+      "target": "helper",
+      "line_number": 15,
+      "comment": "SITE 2 of 2 — the row a per-set dedupe key would have swallowed.",
+      "meta.isSolidityCall": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    { "type": "uses", "from": "one", "target": "counter", "line_number": 8, "meta.isVariableReference": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "from": "one", "target": "counter", "line_number": 9, "comment": "A SECOND read of the same variable on a different line is a second row, for the same reason as the call sites. Three of the four `uses -> counter` rows are separated only by line.", "meta.isVariableReference": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "from": "two", "target": "counter", "line_number": 15, "meta.isVariableReference": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "from": "two", "target": "counter", "line_number": 16, "meta.isVariableReference": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "references", "from": "counter", "target": "counter()", "line_number": 5, "comment": "SOL-3: the synthesised getter, published under its real external name and linked to the variable it reads. A Solidity identifier cannot contain `(`, so `counter()` cannot collide with the state variable `counter`.", "meta.isGetterFor": true, "meta.getterOfVariable": "counter", "meta.evidenceClass": "usage_contextual" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "Sites", "target": "helper", "comment": "A call attributed to the CONTRACT instead of the calling function. SOL-13: the frame's scope is the function, so `bb_graph helper` must report `one` and `two` as callers. Attributing to the contract would make a contract's incoming edges its methods', which is the #879 defect PowerShell PS3 measured as a dead end in both directions." },
+    { "type": "calls", "from": "helper", "target": "helper", "comment": "A self-edge from the callee." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "from": "one", "target": "helper", "equals": 1, "comment": "One call site per function. A dedupe key WITHOUT the line would still produce one row here, so this count alone does not discriminate — the two `expectRelationships` rows above, which differ ONLY by `line_number`, are what pin per-site identity." },
+    { "type": "calls", "from": "two", "target": "helper", "equals": 1 }
+  ]
+}

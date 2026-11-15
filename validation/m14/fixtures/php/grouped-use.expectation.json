@@ -1,0 +1,32 @@
+{
+  "fixtureId": "php/grouped-use",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M12.PHP-GROUPED-USE. `use C\\{D, E as F};` produced NO import and NO `imports` edge, because the analyzer only looked for a `namespace_use_clause` among a declaration's DIRECT children while the grouped form nests them inside a `namespace_use_group` (with the prefix in a sibling `namespace_name`). Grouped use is the idiomatic modern form and it occurs ZERO times in both php corpora, which is why a full-corpus differential run over 4,139 files reported 100% coverage while missing it: the corpora cannot detect a construct they do not contain, and derivePhpEdges had the same blind spot, so both sides agreed on an absence. This fixture is the construct matrix doing the work a corpus cannot. Members are pinned QUALIFIED (App\\Models\\Post, not a bare Post) because that is the FQN PHP binds, and a bare leaf would collide across groups. The plain `use App\\Models\\User;` form is pinned too, so the fix cannot regress the case that already worked.",
+  "expectSymbols": [
+    { "name": "M12\\GroupedUse", "kind": "namespace" },
+    { "name": "Runner", "kind": "interface" },
+    { "name": "run", "kind": "method", "ownerName": "Runner" },
+    { "name": "Dispatcher", "kind": "class" },
+    { "name": "run", "kind": "method", "ownerName": "Dispatcher" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "source": "global", "target": "App\\Models\\User" },
+    { "type": "imports", "source": "global", "target": "App\\Models\\Post" },
+    { "type": "imports", "source": "global", "target": "App\\Models\\Comment" },
+    { "type": "imports", "source": "global", "target": "App\\Support\\slugify" },
+    { "type": "imports", "source": "global", "target": "App\\Support\\MAX_DEPTH" },
+    { "type": "imports", "source": "global", "target": "Vendor\\Pkg\\Alpha" },
+    { "type": "imports", "source": "global", "target": "Vendor\\Pkg\\Beta" },
+    { "type": "implements", "source": "Dispatcher", "target": "Runner" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "Post", "note": "a grouped member must be QUALIFIED by the group prefix; a bare leaf would collide with every other group in a real codebase" },
+    { "type": "imports", "target": "Comment" },
+    { "type": "imports", "target": "slugify" },
+    { "type": "imports", "target": "MAX_DEPTH" },
+    { "type": "imports", "target": "Alpha" },
+    { "type": "imports", "target": "Beta" },
+    { "type": "imports", "target": "Vendor\\Pkg\\A", "note": "the `as A` alias belongs on ImportInfo.items, not on the relationship target; the target is the bound FQN" }
+  ]
+}

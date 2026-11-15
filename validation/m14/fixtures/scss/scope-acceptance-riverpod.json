@@ -1,0 +1,53 @@
+{
+  "repo": "riverpod",
+  "files": 13,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 93,
+        "total": 93
+      },
+      "references": {
+        "unresolved": 29,
+        "resolved": 8,
+        "total": 37
+      },
+      "exports": {
+        "resolved": 4,
+        "total": 4
+      },
+      "imports": {
+        "unresolved": 10,
+        "total": 10
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 93,
+        "total": 93
+      },
+      "references": {
+        "unresolved": 29,
+        "resolved": 8,
+        "total": 37
+      },
+      "exports": {
+        "resolved": 4,
+        "total": 4
+      },
+      "imports": {
+        "unresolved": 10,
+        "total": 10
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 7,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 97,
+    "falseBindings": 0
+  }
+}

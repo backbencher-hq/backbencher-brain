@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.37",
+  "code": "P3",
+  "tool": "bb_patterns",
+  "title": "bb_patterns: orphan detection across languages (false-positive negatives)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "orphans (typescript): called symbol 'usedAlpha' is NEVER flagged (false-positive guard) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "flagged: callerTs,orphanTs"
+    },
+    {
+      "name": "orphans (typescript): unreferenced 'orphanTs' IS flagged (positive beyond TS/Py)",
+      "pass": true,
+      "detail": "flagged: callerTs,orphanTs"
+    },
+    {
+      "name": "orphans (typescript): findings carry evidence",
+      "pass": true,
+      "detail": "evidence-less finding"
+    },
+    {
+      "name": "orphans (typescript): same-file calls edges are NOT labeled cross-file (is_cross_file honesty)",
+      "pass": true,
+      "detail": "same-file calls marked cross-file: 0"
+    },
+    {
+      "name": "orphans (python): called symbol 'used_alpha' is NEVER flagged (false-positive guard) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "flagged: caller_py,orphan_py"
+    },
+    {
+      "name": "orphans (python): unreferenced 'orphan_py' IS flagged (positive beyond TS/Py)",
+      "pass": true,
+      "detail": "flagged: caller_py,orphan_py"
+    },
+    {
+      "name": "orphans (python): findings carry evidence",
+      "pass": true,
+      "detail": "evidence-less finding"
+    },
+    {
+      "name": "orphans (python): same-file calls edges are NOT labeled cross-file (is_cross_file honesty)",
+      "pass": true,
+      "detail": "same-file calls marked cross-file: 0"
+    },
+    {
+      "name": "orphans (ruby): called symbol 'used_alpha' is NEVER flagged (false-positive guard) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "flagged: block_user_rb,local_user_rb,assignment_user_rb,caller_rb,orphan_rb"
+    },
+    {
+      "name": "orphans (ruby): unreferenced 'orphan_rb' IS flagged (positive beyond TS/Py)",
+      "pass": true,
+      "detail": "flagged: block_user_rb,local_user_rb,assignment_user_rb,caller_rb,orphan_rb"
+    },
+    {
+      "name": "orphans (ruby): findings carry evidence",
+      "pass": true,
+      "detail": "evidence-less finding"
+    },
+    {
+      "name": "orphans (ruby): same-file calls edges are NOT labeled cross-file (is_cross_file honesty)",
+      "pass": true,
+      "detail": "same-file calls marked cross-file: 0"
+    },
+    {
+      "name": "orphans (ruby): locals and block params are NOT emitted as call targets (scope semantics)",
+      "pass": true,
+      "detail": "local/block-param call targets: 0"
+    },
+    {
+      "name": "orphans (ruby): assignment RHS bare call is indexed (AST scope distinction)",
+      "pass": true,
+      "detail": "assignment RHS calls: 1"
+    },
+    {
+      "name": "orphans (go): called symbol 'usedAlpha' is NEVER flagged (false-positive guard) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "flagged: callerGo,orphanGo"
+    },
+    {
+      "name": "orphans (go): unreferenced 'orphanGo' IS flagged (positive beyond TS/Py)",
+      "pass": true,
+      "detail": "flagged: callerGo,orphanGo"
+    },
+    {
+      "name": "orphans (go): findings carry evidence",
+      "pass": true,
+      "detail": "evidence-less finding"
+    },
+    {
+      "name": "orphans (go): same-file calls edges are NOT labeled cross-file (is_cross_file honesty)",
+      "pass": true,
+      "detail": "same-file calls marked cross-file: 0"
+    },
+    {
+      "name": "orphans (java): called symbol 'usedAlpha' is NEVER flagged (false-positive guard) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "flagged: App,callerJava,orphanJava"
+    },
+    {
+      "name": "orphans (java): unreferenced 'orphanJava' IS flagged (positive beyond TS/Py)",
+      "pass": true,
+      "detail": "flagged: App,callerJava,orphanJava"
+    },
+    {
+      "name": "orphans (java): findings carry evidence",
+      "pass": true,
+      "detail": "evidence-less finding"
+    },
+    {
+      "name": "orphans (java): same-file calls edges are NOT labeled cross-file (is_cross_file honesty)",
+      "pass": true,
+      "detail": "same-file calls marked cross-file: 0"
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 22,
+    "passed": 22,
+    "failed": 0
+  },
+  "decisions": {
+    "negative": "a called symbol must never be flagged — this is the false-positive guard, asserted per language",
+    "positive": "an unreferenced symbol must be flagged — beyond TS/Python (Ruby, Go, Java, Python)",
+    "entryPoints": "fixture names avoid the built-in entry-point exclusions so the real detector path is exercised"
+  },
+  "limitations": [
+    "Orphan detection is static index evidence; dynamic dispatch/reflection remains a documented limitation of the detector itself."
+  ],
+  "generatedAt": "2026-11-05T04:16:02.020Z"
+}

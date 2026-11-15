@@ -1,0 +1,38 @@
+{
+  "note": "Third-party .proto corpora for the protobuf lane. NOT tracked in this repository — they are cloned protobuf-dominant repositories, so they are the one input a reader must fetch. Every entry pins an exact revision and the sparse paths that were checked out, and every probe that reads them records the revision it used, so a missing corpus is a fetch instruction rather than a mystery. Four corpora, per reviews/LANE-AUDIT-FORMULA.md's corpus-breadth dimension: the language's own reference implementation, the Google API schemas (which extend the well-known option types across files), the gRPC interop schemas (which are service- and streaming-heavy), and etcd (a proto2 real-world system). One repository's idioms are not the language, and no two of these four share a style. Stage them under `PB_CORPORA` (default /home/ishaq2321/bb_tests/protobuf/repos) as <name>/ checkouts with .git intact so the revision can be re-verified.",
+  "stage": "for each entry: git init && git remote add origin <url> && git fetch --depth 1 origin <rev> && git sparse-checkout init --cone && git sparse-checkout set <paths> && git checkout FETCH_HEAD",
+  "corpora": [
+    {
+      "name": "pb-reference",
+      "role": "The language's OWN reference implementation, and the strongest correctness corpus available. descriptor.proto is the file every protobuf tool reads, and the C++ test suite carries the constructs real schemas only rarely use — proto2 groups, MessageSet, editions features, parenthesised option names. A gap that hides here is a gap in the language itself. This corpus is also where the one RULED construct lives, so it is the corpus that justifies the ruling.",
+      "url": "https://github.com/protocolbuffers/protobuf",
+      "rev": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
+      "paths": ["src/google/protobuf"],
+      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-reference"
+    },
+    {
+      "name": "pb-googleapis",
+      "role": "The canonical Google API schemas, and the corpus that exercises `extend` hardest: these files add custom options to google.protobuf.FieldOptions, MethodOptions, MessageOptions and ServiceOptions, so the extension-ownership path (members emitted onto the EXTENDED type with metadata.viaExtension, across file boundaries) is under real load rather than being demonstrated by one synthetic fixture.",
+      "url": "https://github.com/googleapis/googleapis",
+      "rev": "9c085b2eb8a4c9996418d4268ade3fb9c708021d",
+      "paths": ["google/api", "google/rpc", "google/type", "google/longrunning", "google/logging", "google/iam", "google/cloud/location"],
+      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-googleapis"
+    },
+    {
+      "name": "pb-grpc",
+      "role": "gRPC's own interop and example schemas. Service- and streaming-heavy, so it is the corpus that proves an rpc's request and response are told apart by position — the grammar gives both the same node type and no field name — and that `stream` is read off the tree. Imports the well-known types heavily, so cross-file resolution gets exercised.",
+      "url": "https://github.com/grpc/grpc",
+      "rev": "9702cf9442503f54c61d200e36534483b4bdebe8",
+      "paths": ["examples", "interop", "src/proto"],
+      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-grpc"
+    },
+    {
+      "name": "pb-etcd",
+      "role": "A real-world proto2 system (etcd's raft and kv schemas). Small but deliberately different: strict proto2 with `optional` labels throughout, no editions, no streaming. It is the corpus that would expose an analyzer that only understood proto3 conventions.",
+      "url": "https://github.com/etcd-io/etcd",
+      "rev": "7583cc6e7e2756bb4166d646fe48d2fa1863b4b6",
+      "paths": ["api", "server"],
+      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-etcd"
+    }
+  ]
+}

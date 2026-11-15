@@ -1,0 +1,243 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "98767876c9fad1892a0ada1e23678c670c4e2682cfddadbe8c617540ab128724",
+    "sealedAt": "2026-11-06T05:17:39.000Z"
+  },
+  "checks": [
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: otp)",
+      "filesScanned": 60,
+      "id": "corpus-census-html",
+      "repo": "otp",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: grails-core)",
+      "filesScanned": 60,
+      "id": "corpus-census-java",
+      "repo": "grails-core",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: grails-core)",
+      "filesScanned": 60,
+      "id": "corpus-census-groovy",
+      "repo": "grails-core",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: Exposed)",
+      "filesScanned": 60,
+      "id": "corpus-census-kotlin",
+      "repo": "Exposed",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: scala3)",
+      "filesScanned": 60,
+      "id": "corpus-census-scala",
+      "repo": "scala3",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: vue-core)",
+      "filesScanned": 60,
+      "id": "corpus-census-typescript",
+      "repo": "vue-core",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 53 real corpus files is classified in the spec (blind spots: 0; corpus: grails-core)",
+      "filesScanned": 53,
+      "id": "corpus-census-javascript",
+      "repo": "grails-core",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: element-plus)",
+      "filesScanned": 60,
+      "id": "corpus-census-vue",
+      "repo": "element-plus",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: svelte)",
+      "filesScanned": 60,
+      "id": "corpus-census-svelte",
+      "repo": "svelte",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: svelte)",
+      "filesScanned": 60,
+      "id": "corpus-census-css",
+      "repo": "svelte",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: element-plus)",
+      "filesScanned": 60,
+      "id": "corpus-census-scss",
+      "repo": "element-plus",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: sqlite)",
+      "filesScanned": 60,
+      "id": "corpus-census-c",
+      "repo": "sqlite",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: fmt)",
+      "filesScanned": 60,
+      "id": "corpus-census-cpp",
+      "repo": "fmt",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: ripgrep)",
+      "filesScanned": 60,
+      "id": "corpus-census-rust",
+      "repo": "ripgrep",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: go-tools)",
+      "filesScanned": 60,
+      "id": "corpus-census-go",
+      "repo": "go-tools",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: zig)",
+      "filesScanned": 60,
+      "id": "corpus-census-zig",
+      "repo": "zig",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: powershell)",
+      "filesScanned": 60,
+      "id": "corpus-census-csharp",
+      "repo": "powershell",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: proxicall)",
+      "filesScanned": 60,
+      "id": "corpus-census-dart",
+      "repo": "proxicall",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: swift-nio)",
+      "filesScanned": 60,
+      "id": "corpus-census-swift",
+      "repo": "swift-nio",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: sdwebimage)",
+      "filesScanned": 60,
+      "id": "corpus-census-objc",
+      "repo": "sdwebimage",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: phpunit)",
+      "filesScanned": 60,
+      "id": "corpus-census-php",
+      "repo": "phpunit",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: rake)",
+      "filesScanned": 60,
+      "id": "corpus-census-ruby",
+      "repo": "rake",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: cython)",
+      "filesScanned": 60,
+      "id": "corpus-census-python",
+      "repo": "cython",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: cabal)",
+      "filesScanned": 60,
+      "id": "corpus-census-haskell",
+      "repo": "cabal",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: rebar3)",
+      "filesScanned": 60,
+      "id": "corpus-census-erlang",
+      "repo": "rebar3",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: elixir)",
+      "filesScanned": 60,
+      "id": "corpus-census-elixir",
+      "repo": "elixir",
+      "status": "pass"
+    },
+    {
+      "blindSpots": 0,
+      "description": "every parse-tree node type occurring in 60 real corpus files is classified in the spec (blind spots: 0; corpus: clojure)",
+      "filesScanned": 60,
+      "id": "corpus-census-clojure",
+      "repo": "clojure",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "committedAt": "2026-11-06T00:17:39-05:00",
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F8",
+  "layers": [
+    "census"
+  ],
+  "limitations": [
+    {
+      "description": "Census samples up to 60 files per language from the F5 corpus repo; rare shapes outside the sample are caught by future corpus rotations and F9 probes"
+    }
+  ],
+  "regeneratedAt": "2026-11-06T00:17:39-05:00",
+  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Corpus-census gate: real-corpus parse-tree types must be classified in the spec (haskell blind-spot detector, permanent)"
+}

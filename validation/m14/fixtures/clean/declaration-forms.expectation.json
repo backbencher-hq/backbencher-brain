@@ -1,0 +1,636 @@
+{
+  "comment": "The Clean-specific DECLARATION FORMS the pinned grammar has and no earlier clean fixture reached. The four pre-existing clean fixtures could not have caught any of them, because none of these node types occurs in their parse trees \u2014 which is what the F6 spec->fixture coverage gate exists to detect. Measured corpus sizes, every one of which published NOTHING before this round: macro_definition 583, special_member 507, class_context 474, generic_case_definition 52, derive_declaration 43, foreign_export 41, fixity_declaration 17, generic_declaration 11. Written the way this grammar accepts it, with the generic forms taken from clean-stdlib/StdGeneric.{dcl,icl} and the special/foreign/fixity forms from Clyde/Cocoa, so the fixture is real Clean rather than an invention. Every expectation key used here is one script/m14/run-fixtures.ts actually implements.",
+  "expectSymbols": [
+    {
+      "name": "Sized",
+      "kind": "interface",
+      "ownerName": "CleanDeclForms",
+      "qualifiedName": "CleanDeclForms.Sized",
+      "comment": "class_declaration \u2014 AND THE MODULE-QUALIFIED IDENTITY (2026-10-29). A module-level symbol carries `Module.name` so the incoming gate can read a `.dcl`/`.icl` pair as ONE declaration (its `--binding-collapse` requires a non-empty qualifiedName that differs from the bare name; the store's file-scope fallback `qualifiedName = name` is not a qualification). MEASURED on the 312-file arm: references ambiguous 1,808 -> 1,011, exports 40 -> 12, 1,287 keys collapsed. A revert is caught HERE and by clean/module-level-qualified-name-dropped."
+    },
+    {
+      "name": "sizeOf",
+      "kind": "method",
+      "ownerName": "Sized",
+      "qualifiedName": null,
+      "comment": "the CLASS MEMBER carries NO module-level qualifiedName \u2014 the control for the row above. A member's identity is its OWNER's (`Sized.sizeOf`, which `pool-worker.ts:1228` derives from `scope` at the store boundary, and which is the spelling `overrides`/`implements` endpoints are written in), so the module-qualification pass runs one level ABOVE it. `null` pins the ABSENT form: a revert that qualified EVERY symbol, members included, would fail here."
+    },
+    {
+      "name": "sizeOf",
+      "kind": "method",
+      "ownerName": "Sized",
+      "comment": "class_member -> type_signature, an ABSTRACT member: the class declares it and nothing here defines it"
+    },
+    {
+      "name": "MaxBound",
+      "kind": "macro",
+      "ownerName": "CleanDeclForms",
+      "qualifiedName": "CleanDeclForms.MaxBound",
+      "comment": "macro_definition with a `constructor` name node \u2014 the kind is `macro` (the kind the store already has for Rust macro_rules!), and a macro IS in the export surface"
+    },
+    {
+      "name": "<*>",
+      "kind": "macro",
+      "ownerName": "CleanDeclForms",
+      "comment": "macro_definition with a `parenthesized_name` name node \u2014 the second of the four name shapes the grammar allows. declarationName's comma/brace test is what stops the grammar's mis-shape for a PATTERN (`(<*>, <>)`) from publishing a name no source declares."
+    },
+    {
+      "name": "bimap",
+      "kind": "interface",
+      "ownerName": "CleanDeclForms",
+      "comment": "generic_declaration \u2014 a class over TYPES rather than values, so an `interface` carrying generic parameters"
+    },
+    {
+      "name": "bimap",
+      "kind": "function",
+      "ownerName": "CleanDeclForms",
+      "comment": "generic_case_definition \u2014 the THIRD shape that defines a callable. The two bimap{|\u2026|} case equations merge into one function symbol with the case kinds recorded; the merge key carries the OWNER, so the generic's Interface and its case function stay two symbols instead of the definition overwriting the interface."
+    },
+    {
+      "name": "Int::instance",
+      "kind": "impl",
+      "ownerName": "CleanDeclForms",
+      "comment": "instance Sized Int \u2014 the container is NAMESPACED under its target (`<target>::instance`, the Rust lane's `<target>::impl`), not named after it. TWO instances in this file target `Int` (L62 plain, L156 constrained by `{#}`) and they are two containers with this one name at two lines; `expectSymbolCount` below pins that neither overwrites the other."
+    },
+    {
+      "name": "sizeOf",
+      "kind": "method",
+      "ownerName": "Int",
+      "comment": "the INSTANCE's own member, a separate symbol from the class member because the merge key carries the owner"
+    },
+    {
+      "name": "sizedOf",
+      "kind": "function",
+      "ownerName": "CleanDeclForms",
+      "comment": "a signature carrying a `special` block"
+    },
+    {
+      "name": "strlen",
+      "kind": "function",
+      "ownerName": "CleanDeclForms",
+      "comment": "foreign_export \u2014 a real callable and an explicit export"
+    },
+    {
+      "name": "withLocals",
+      "kind": "function",
+      "ownerName": "CleanDeclForms"
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "ownerName": "withLocals",
+      "comment": "a `with` BLOCK binder, owned by the frame that encloses it"
+    },
+    {
+      "name": "whereLocals",
+      "kind": "function",
+      "ownerName": "CleanDeclForms"
+    },
+    {
+      "name": "delta",
+      "kind": "function",
+      "ownerName": "whereLocals",
+      "comment": "a `where` BLOCK binder declared by a local SIGNATURE; the signature's types join to the definition on the same frame+owner key, which is why delta carries returnType=!Int"
+    },
+    {
+      "name": "bump",
+      "kind": "function",
+      "ownerName": "whereLocals",
+      "comment": "the second binder in the same `where` block"
+    },
+    {
+      "name": "Wrapper",
+      "kind": "type",
+      "ownerName": "CleanDeclForms"
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "ownerName": "Wrapper"
+    },
+    {
+      "name": "tag",
+      "kind": "property",
+      "ownerName": "Wrapper"
+    },
+    {
+      "name": "readInner",
+      "kind": "function",
+      "ownerName": "CleanDeclForms"
+    },
+    {
+      "name": "rewriteTag",
+      "kind": "function",
+      "ownerName": "CleanDeclForms"
+    },
+    {
+      "name": "leadingExport",
+      "kind": "function",
+      "ownerName": "CleanDeclForms",
+      "comment": "`foreign export` BEFORE its definition \u2014 the common `.icl` order. ONE symbol, anchored at the definition (L130), with the export SITE kept as `metadata.foreignExportLine` = L128 rather than lost when the range moved."
+    },
+    {
+      "name": "trailingExport",
+      "kind": "function",
+      "ownerName": "CleanDeclForms",
+      "comment": "`foreign export` AFTER its definition \u2014 legal in a `.dcl`, and the case the first implementation got wrong: the early `return` for an existing symbol dropped the export whole, so the function lost its FFI marker. Anchored at the definition (L133), `foreignExportLine` = L134."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "bimap",
+      "equals": 2,
+      "comment": "the generic (Interface) and its case function (Function) share a name because in Clean they are the same entity at two levels"
+    },
+    {
+      "name": "sizeOf",
+      "equals": 2,
+      "comment": "the class member and the instance member"
+    },
+    {
+      "name": "Int::instance",
+      "equals": 2,
+      "comment": "TWO instances target `Int` here \u2014 `instance Sized Int` (L62) and `instance Sized {#} Int` (L156) \u2014 and each publishes its own container. The merge key carries the line, so a mutant that keyed containers on the name alone would collapse them into one and fail here."
+    },
+    {
+      "name": "leadingExport",
+      "equals": 1,
+      "comment": "the `foreign export`, the signature and the definition are ONE function symbol, so `equals: 1` \u2014 a second row here would mean the merge broke"
+    },
+    {
+      "name": "trailingExport",
+      "equals": 1,
+      "comment": "same for the late-export order: one symbol, not two"
+    }
+  ],
+  "expectTypeParameters": [
+    {
+      "symbol": "bimap",
+      "exact": [
+        "a",
+        "b"
+      ],
+      "comment": "`generic bimap a b | bimap b a :: .a -> .b` \u2014 the two `parameter` field type variables, and `exact` so a mutant that duplicates or appends a name fails"
+    }
+  ],
+  "expectReturnType": [
+    {
+      "symbol": "delta",
+      "ownerName": "whereLocals",
+      "returnType": "!Int",
+      "comment": "the where-local's OWN signature `delta :: !Int` gives the local a result type"
+    },
+    {
+      "symbol": "sizedOf",
+      "returnType": "!Int"
+    },
+    {
+      "symbol": "readInner",
+      "returnType": "!Int"
+    },
+    {
+      "symbol": "rewriteTag",
+      "returnType": "!Wrapper"
+    },
+    {
+      "symbol": "sizeOf",
+      "ownerName": "Sized",
+      "returnType": "!Int",
+      "comment": "the CLASS member's signature `sizeOf :: a -> !Int` gives the abstract Method a result type"
+    },
+    {
+      "symbol": "withLocals",
+      "returnType": "!Int"
+    },
+    {
+      "symbol": "whereLocals",
+      "returnType": "!Int"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "rewriteTag",
+      "ownerName": "CleanDeclForms",
+      "parameters": [
+        {
+          "name": "w",
+          "type": "!Wrapper"
+        },
+        {
+          "name": "s",
+          "type": "!String"
+        }
+      ],
+      "comment": "`rewriteTag :: !Wrapper !String -> !Wrapper` \u2014 the domain's two `argument` types paired with the definition's two `pattern` fields POSITIONALLY. One pattern field is one parameter: a destructuring pattern would be one parameter of a tuple type, not several."
+    },
+    {
+      "symbol": "readInner",
+      "parameters": [
+        {
+          "name": "w",
+          "type": "!Wrapper"
+        }
+      ]
+    },
+    {
+      "symbol": "sizedOf",
+      "parameters": [
+        {
+          "name": "n",
+          "type": "!Int"
+        }
+      ]
+    },
+    {
+      "symbol": "delta",
+      "ownerName": "whereLocals",
+      "parameters": []
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "helper",
+      "visibility": "local",
+      "comment": "a `with` binder is `local`"
+    },
+    {
+      "symbol": "delta",
+      "visibility": "local",
+      "comment": "a `where` binder is `local`"
+    },
+    {
+      "symbol": "bump",
+      "visibility": "local"
+    },
+    {
+      "symbol": "withLocals",
+      "visibility": "public",
+      "comment": "and the frame that owns them stays public \u2014 the local exclusion does not leak upward"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Sized",
+      "kind": "interface"
+    },
+    {
+      "name": "MaxBound",
+      "kind": "macro",
+      "comment": "CHANGED KIND: a macro is exported. A Clean module-level macro is part of the module's interface like anything else, and the export list previously had no `macro` member at all because the analyzer published no macros."
+    },
+    {
+      "name": "<*>",
+      "kind": "macro"
+    },
+    {
+      "name": "bimap",
+      "kind": "interface"
+    },
+    {
+      "name": "sizedOf",
+      "kind": "function"
+    },
+    {
+      "name": "strlen",
+      "kind": "function",
+      "comment": "an explicit `foreign export` is exported"
+    },
+    {
+      "name": "readInner",
+      "kind": "function"
+    },
+    {
+      "name": "rewriteTag",
+      "kind": "function"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "helper",
+      "kind": "function",
+      "comment": "a `with` binder is not part of the module's surface (M11.11 \u00a72) \u2014 the exclusion is now stated in emitExports rather than being a side effect of the symbol not existing"
+    },
+    {
+      "name": "delta",
+      "kind": "function",
+      "comment": "a `where` binder is not part of the module's surface"
+    },
+    {
+      "name": "bump",
+      "kind": "function"
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "comment": "a record FIELD is not a module-level name; its membership rides `contains`"
+    },
+    {
+      "name": "Int",
+      "kind": "class",
+      "comment": "CHANGED: `instance Sized Int` used to put `Int` in this module's export surface \u2014 a phantom export of a StdEnv type. The container is `Int::instance` of kind `impl` now, which is not exportable."
+    },
+    {
+      "name": "Int::instance",
+      "kind": "impl",
+      "comment": "an implementation is not part of a module's interface"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "a",
+      "comment": "a class's or generic's type parameter is a binding, not a symbol"
+    },
+    {
+      "name": "Ord",
+      "comment": "an imported class named by a context is not a symbol of this file"
+    },
+    {
+      "name": "a",
+      "comment": "a POLYMORPHIC instance publishes no symbol either. `instance Sized {!} a` and `instance List [] a where` are real declarations, but naming their Class symbol after the type variable would put `a` in the symbol table \u2014 the same collision the row above forbids for a class's own type parameter. Their members are owned by the CLASS instead, so `contains` still resolves."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "Sized",
+      "target": "Ord",
+      "line_number": 32,
+      "meta.relationshipType": "class_context",
+      "comment": "CHANGED: a class's SUPERCLASS CONTEXT is a reference to the class it constrains on. `class Sized a | Ord a` \u2014 spec gap CL-G3, 474 corpus sites, every one of which published nothing before. The line is the CONTEXT node's own line."
+    },
+    {
+      "type": "implements",
+      "from": "Int",
+      "target": "Sized",
+      "line_number": 62,
+      "comment": "the instance edge, on the class NAME node's line (M59 #825: for an implements edge the class name is the name-bearing node)  TIER: `structural` \u2014 `instance Sized Int` names a class declared in THIS file, so the instance is a structural fact rather than a reference to an imported class",
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true
+    },
+    {
+      "type": "implements",
+      "from": "PAIR",
+      "target": "bimap",
+      "line_number": 58,
+      "meta.isDerive": true,
+      "comment": "CHANGED: `derive bimap PAIR` is the same shape as an instance \u2014 an implementation of a class AT a type \u2014 so it is an `implements` edge from the derived type to the generic, on the generic name's line. All 43 corpus sites published nothing before."
+    },
+    {
+      "type": "references",
+      "from": "CleanDeclForms",
+      "target": "Int",
+      "line_number": 71,
+      "meta.relationshipType": "special_type",
+      "comment": "CHANGED: a `special` block declares the TYPES the enclosing callable is specialised for, not a new NAME \u2014 the variable is the signature's own type parameter. One `references` edge per special type, on the TYPE's own line. 507 special_member corpus sites published nothing before."
+    },
+    {
+      "type": "references",
+      "from": "CleanDeclForms",
+      "target": "Real",
+      "line_number": 71,
+      "meta.relationshipType": "special_type"
+    },
+    {
+      "type": "contains",
+      "from": "CleanDeclForms",
+      "target": "MaxBound",
+      "line_number": 38
+    },
+    {
+      "type": "contains",
+      "from": "CleanDeclForms",
+      "target": "<*>",
+      "line_number": 44
+    },
+    {
+      "type": "contains",
+      "from": "CleanDeclForms",
+      "target": "bimap",
+      "line_number": 52,
+      "comment": "the generic CASE function is contained by the module on its own line \u2014 line 52, the FIRST of the two `bimap{|\u2026|}` case equations, because the clauses are alternative definitions of one symbol and the symbol is anchored where the function BEGINS (its range ends at line 53). Pinning 53 pinned last-write-wins on a keyed map, which put `isBid` on the wrong line in the M12 differential until it was fixed."
+    },
+    {
+      "type": "calls",
+      "from": "withLocals",
+      "target": "withLocals.helper",
+      "line_number": 99,
+      "comment": "a `with` block's binder is reachable as a call target by its SCOPED identity \u2014 the resolution walks the scope stack, so a local is only ever a target from inside its own scope  TIER: `reference_qualified` \u2014 the target is a QUALIFIED identity (`<frame>.<name>`), so it is identified by reference rather than being a bare binding; the `usage_contextual` default is pinned by `reportTwice` in expression-shapes",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.targetIsInFile": true
+    },
+    {
+      "type": "contains",
+      "from": "withLocals",
+      "target": "helper",
+      "line_number": 101
+    },
+    {
+      "type": "contains",
+      "from": "whereLocals",
+      "target": "delta",
+      "line_number": 109
+    },
+    {
+      "type": "contains",
+      "from": "whereLocals",
+      "target": "bump",
+      "line_number": 110
+    },
+    {
+      "type": "uses",
+      "from": "readInner",
+      "target": "inner",
+      "line_number": 117,
+      "comment": "CHANGED: `w.inner` is a record FIELD READ and the field is declared by this file, so the edge is provable rather than inferred"
+    },
+    {
+      "type": "uses",
+      "from": "rewriteTag",
+      "target": "tag",
+      "line_number": 120,
+      "comment": "CHANGED: `{ w & tag = s }` is a record UPDATE; the field name is read from the `update_field` node rather than by zipping the parallel `field`/`value` field lists"
+    },
+    {
+      "type": "references",
+      "from": "inner",
+      "target": "Int",
+      "line_number": 114,
+      "comment": "a record FIELD's declared type is a reference from the field"
+    },
+    {
+      "type": "exports",
+      "from": "CleanDeclForms",
+      "target": "MaxBound",
+      "line_number": 38,
+      "comment": "a macro is in the export surface, and the edge says so on the macro's own line"
+    },
+    {
+      "type": "exports",
+      "from": "CleanDeclForms",
+      "target": "strlen",
+      "line_number": 76,
+      "comment": "an explicit `foreign export` is in the export surface"
+    },
+    {
+      "type": "implements",
+      "from": "a",
+      "target": "Sized",
+      "line_number": 157,
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true,
+      "comment": "instance Sized {!} a \u2014 the constraint `{!}` names NO type, so the target is the type VARIABLE `a`. The first-argument rule named this instance `{!}`; the `namedChild(0)` rule named it whatever the brace node's first child was."
+    },
+    {
+      "type": "implements",
+      "from": "Real",
+      "target": "Sized",
+      "line_number": 158,
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true,
+      "comment": "instance Sized {32#} Real \u2014 the constraint carries a LEVEL (32) as well as a type, and the first-argument rule named this instance `32`. An `array_type` holding both is the shape that forced the walk to be structural rather than positional."
+    },
+    {
+      "type": "implements",
+      "from": "Char",
+      "target": "Sized",
+      "line_number": 159,
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true,
+      "comment": "instance Sized {#Char} \u2014 a SINGLE argument that is a type, not a constraint: `{#Char}` has a `dotted_type` child where `{#}` and `{!}` have none. This is the case a `text.startsWith('{')` test gets wrong."
+    },
+    {
+      "type": "implements",
+      "from": "Int",
+      "target": "Sized",
+      "line_number": 156,
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true,
+      "comment": "instance Sized {#} Int \u2014 the plain constrained case, and the one the shared F5 oracle's differential caught: it derives `implements Int -> Array` from clean-stdlib's `_SystemArray.dcl` and the analyzer was emitting `implements {#} -> Array`."
+    },
+    {
+      "type": "implements",
+      "from": "a",
+      "target": "Sized",
+      "line_number": 157,
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true,
+      "meta.isPolymorphicInstance": true,
+      "comment": "`instance Sized {!} a` is POLYMORPHIC \u2014 its target is the type variable `a` \u2014 so it emits this `implements` edge but publishes NO Class symbol: a symbol named `a` would collide with the spec's rule that a type parameter is a BINDING, which `forbidSymbols` already pins. `meta.isPolymorphicInstance` is what says why this edge has no symbol at its source, and the tier stays `structural` because the class IS declared in this file \u2014 the tier answers how the class is known, and a variable target does not weaken that."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Sized",
+      "target": "a",
+      "comment": "a class's type parameter is not a symbol and not a member"
+    },
+    {
+      "type": "references",
+      "from": "bimap",
+      "target": "bimap",
+      "comment": "a generic's own context (`generic bimap a b | bimap b a`) is SELF-REFERENTIAL and a symbol cannot reference itself; the context is recorded in the symbol's `genericContext` metadata instead"
+    },
+    {
+      "type": "instantiates",
+      "from": "sizedOf",
+      "target": "Int",
+      "comment": "`special a=Int` is a TYPE REFERENCE, not a construction: no `Int` value is built"
+    },
+    {
+      "type": "calls",
+      "from": "bimap",
+      "target": "bimap",
+      "comment": "the two `bimap{|\u2026|}` case equations are two CASES of one function, not a self-call"
+    },
+    {
+      "type": "uses",
+      "from": "readInner",
+      "target": "w",
+      "comment": "the FP pin: the RECEIVER of a field access is a value, not a field"
+    },
+    {
+      "type": "uses",
+      "from": "readInner",
+      "target": "cfg",
+      "comment": "a parameter name is not a record field"
+    },
+    {
+      "type": "references",
+      "from": "bimap",
+      "target": "a",
+      "comment": "a generic's parameter is a BINDING, not a type reference"
+    },
+    {
+      "type": "contains",
+      "from": "Sized",
+      "target": "bimap",
+      "comment": "a class owns its members, not the generics declared beside it"
+    },
+    {
+      "type": "implements",
+      "from": "{#}",
+      "target": "Sized",
+      "comment": "THE MISNAMING, pinned as forbidden: a bare uniqueness constraint is not an instance's target type. Also forbidden are `32` (a constraint LEVEL), `{}` and `{!}` \u2014 all four were emitted by earlier versions of `instanceTargetName`."
+    },
+    {
+      "type": "implements",
+      "from": "32",
+      "target": "Sized",
+      "comment": "a constraint LEVEL is not a type; `{32#}` has a `number` child and a `dotted_type` child, and only the latter names a type"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "CleanDeclForms",
+      "target": "Int",
+      "equals": 1,
+      "comment": "the `special` block's `Int` is ONE edge. `Int` also appears in `sizedOf`'s own signature, but that is a different SOURCE, and dedupe is keyed source|type|target|line"
+    },
+    {
+      "type": "exports",
+      "from": "CleanDeclForms",
+      "target": "bimap",
+      "equals": 1,
+      "comment": "the generic and its case function share a name; the name-keyed export dedupe emits one edge, and which of the two symbols it names is decided by first-wins \u2014 pinned so the number cannot silently change"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "patterns": [
+        "Standard Environment",
+        "Class Contexts",
+        "Type Classes",
+        "Macros",
+        "Generics",
+        "Specialised Members",
+        "Foreign Function Interface",
+        "Operator Fixity Declarations",
+        "Algebraic Data Types",
+        "Record Types",
+        "Record Updates"
+      ],
+      "hasTypeInference": true,
+      "analysisVersion": "12.0.0-clean-ast-complete",
+      "comment": "the full pattern set this fixture's constructs mark \u2014 the round's whole point is that these eleven marks existed for 583 + 507 + 474 + 52 + 43 + 41 + 17 + 11 corpus sites that carried no mark at all"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ],
+  "expectSymbolMetadata": [
+    {
+      "symbol": "leadingExport",
+      "isForeignExport": true,
+      "foreignExportLine": 128,
+      "comment": "the FFI claim is per-LINE like every other one the analyzer makes, so the export site is recorded even though the symbol's range is the definition's"
+    },
+    {
+      "symbol": "trailingExport",
+      "isForeignExport": true,
+      "foreignExportLine": 134,
+      "comment": "a LATE `foreign export` flags the existing symbol instead of being dropped; `foreignExportLine` is the first export line seen, so a file that exports the same name twice does not move the recorded site"
+    }
+  ]
+}

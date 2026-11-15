@@ -1,0 +1,24 @@
+{
+  "fixtureId": "javascript/payload-docs",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b docstring payloads: JSDoc lands on BOTH class and method symbols. Declared limitation recorded separately: javascript does NOT emit qualified_calls (#383 pending decision - implement or accept absence per-language).",
+  "expectSymbols": [
+    {
+      "name": "Svc"
+    },
+    {
+      "name": "work"
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "Svc",
+      "minCount": 1
+    },
+    {
+      "symbol": "work",
+      "minCount": 1
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+  docs                     no corpus dir
+  example                  no corpus dir
+  generate                 no corpus dir
+  gql-genqlient             112 corpus files  strong 1098  fieldish 1816
+  gql-gqlgen                143 corpus files  strong 335  fieldish 531
+  gql-graphql-eslint         47 corpus files  strong 93  fieldish 112
+  gql-graphql-mesh          130 corpus files  strong 368  fieldish 826
+  gql-graphql-platform      724 corpus files  strong 12336  fieldish 19749
+  gql-graphql-tools         238 corpus files  strong 403  fieldish 1578
+  gql-ruby                   23 corpus files  strong 352  fieldish 704
+  hasura-engine             407 corpus files  strong 244  fieldish 706
+  internal                 no corpus dir
+NO DB docs
+NO DB example
+NO DB generate
+NO DB internal
+
+=== population: 78293 relationships, 18789 target-unresolved, 3772 source-unresolved ===
+  contains      38824 edges  target-un     36  source-un      0
+  references    22087 edges  target-un  13048  source-un      0
+  uses          10745 edges  target-un   5639  source-un    399
+  exports        3307 edges  target-un      0  source-un   3307
+  overrides      2524 edges  target-un      0  source-un      0
+  implements      740 edges  target-un      0  source-un      0
+  imports          66 edges  target-un     66  source-un     66
+
+=== do unresolved endpoints resolve against brain_file (the #910 fileLevel contract)? ===
+  unresolved endpoints matching an indexed file: 3307
+  unresolved endpoints matching no indexed file: 18855
+
+=== imports: 66 edges, targets ["./fragments/bar-fragment.gql","./fragments/foo-fragment.gql","./user-fields.graphql","../import-all/b.graphql","../import-all/c.graphql","./1.model.graphql"] ... ===
+  target shapes (non-alnum stripped): [["//",14],["/",41],["",11]]
+  imports SOURCE present in brain_file as relative_path: 0/66
+  imports TARGET present in brain_file raw:               0/66
+  imports TARGET present in brain_file as basename:       0/66
+  imports TARGET present after dirname(src)+target:      0/66
+
+  imports TARGET exists in the repo's FULL corpus by basename: 64/66
+  imports TARGET exists in the repo's FULL corpus by dirname(src)+target: 0/66
+  targets absent from the full corpus by basename (these would be FABRICATED paths):
+  gql-graphql-tools      a.graphql                          -> @b-schema                          joined @b-schema
+  gql-graphql-tools      a.graphql                          -> shared                             joined shared
+  joined misses (target, and the joined path that was not in brain_file):
+  gql-graphql-eslint     invalid-query-default.gql          -> ./fragments/bar-fragment.gql       joined fragments/bar-fragment.gql
+  gql-graphql-eslint     valid-query-default.gql            -> ./fragments/foo-fragment.gql       joined fragments/foo-fragment.gql
+  gql-graphql-eslint     test-directives-with-import.graphql -> ./user-fields.graphql              joined user-fields.graphql
+  gql-graphql-tools      a.graphql                          -> ../import-all/b.graphql            joined ../import-all/b.graphql
+  gql-graphql-tools      b.graphql                          -> ../import-all/c.graphql            joined ../import-all/c.graphql
+  gql-graphql-tools      1.mutation.graphql                 -> ./1.model.graphql                  joined 1.model.graphql
+  gql-graphql-tools      index.graphql                      -> ./1.mutation.graphql               joined 1.mutation.graphql
+  gql-graphql-tools      index.graphql                      -> ./1.query.graphql                  joined 1.query.graphql
+  gql-graphql-tools      index.graphql                      -> ./1/index.graphql                  joined 1/index.graphql
+  gql-graphql-tools      10.mutation.graphql                -> ./10.model.graphql                 joined 10.model.graphql
+  gql-graphql-tools      index.graphql                      -> ./10.mutation.graphql              joined 10.mutation.graphql
+  gql-graphql-tools      index.graphql                      -> ./10.query.graphql                 joined 10.query.graphql
+
+=== dotted unresolved targets: 1316 distinct ===
+  final segment absent       1121 edges
+  gql-graphql-eslint     ./fragments/bar-fragment.gql                   n=   1 suffix published in project: no
+  gql-graphql-eslint     ./fragments/foo-fragment.gql                   n=   1 suffix published in project: no
+  gql-graphql-eslint     ./user-fields.graphql                          n=   1 suffix published in project: no
+  gql-graphql-eslint     Picture.uri                                    n=   1 suffix published in project: no
+  gql-graphql-eslint     Picture.width                                  n=   1 suffix published in project: no
+  gql-graphql-mesh       CustomerResourceCustomerList.data              n=   1 suffix published in project: no
+  gql-graphql-mesh       ForecastDay.data                               n=   1 suffix published in project: no
+  gql-graphql-mesh       Location.managingOrganization                  n=   1 suffix published in project: no
+  gql-graphql-platform   Cat.isPurring                                  n=   7 suffix published in project: no
+  gql-graphql-platform   JiraAffectedServicesField.affectedServices     n=   1 suffix published in project: no
+  gql-graphql-platform   JiraAffectedServicesField.selectedAffectedServicesConnection n=   1 suffix published in project: no
+  gql-graphql-platform   JiraAssetField.selectedAssetsConnection        n=   1 suffix published in project: no
+  final segment fieldish      793 edges
+  gql-genqlient          Query.me                                       n=   1 suffix published in project: no
+  gql-gqlgen             RecursiveInputSlice.self                       n=   2 suffix published in project: no
+  gql-graphql-eslint     Picture.height                                 n=   1 suffix published in project: no
+  gql-graphql-mesh       Error.code                                     n=   1 suffix published in project: no
+  gql-graphql-mesh       Error.message                                  n=   1 suffix published in project: YES(1)
+  gql-graphql-mesh       ForecastDay.city_name                          n=   1 suffix published in project: no
+  gql-graphql-mesh       ForecastDay.country_code                       n=   1 suffix published in project: no
+  gql-graphql-mesh       ForecastDay.state_code                         n=   1 suffix published in project: no
+  gql-graphql-mesh       Location.address                               n=   1 suffix published in project: no
+  gql-graphql-mesh       Patient.address                                n=   2 suffix published in project: no
+  gql-graphql-mesh       Patient.gender                                 n=   2 suffix published in project: no
+  gql-graphql-mesh       Query.me                                       n=   3 suffix published in project: no
+  final segment strong          8 edges
+  gql-graphql-platform   __Type.possibleTypes                           n=   2 suffix published in project: no
+  hasura-engine          __InputValue.type                              n=   6 suffix published in project: no
+  edges whose dotted final segment IS published in that project: 129
+  edges whose dotted whole string is published: 0
+
+=== bare, not spec, unresolved: 1121 distinct targets, 3568 edges ===
+  fieldish     2171 edges
+  gql-graphql-eslint     a                              n=   1
+  gql-graphql-eslint     foo                            n=   3
+  gql-graphql-eslint     profilePicture                 n=   1
+  gql-graphql-mesh       @composeDirective              n=   3
+  gql-graphql-mesh       @external                      n=  12
+  gql-graphql-mesh       @key                           n=  14
+  gql-graphql-mesh       @live                          n=   1
+  gql-graphql-mesh       @provides                      n=   2
+  gql-graphql-mesh       @requires                      n=   2
+  gql-graphql-mesh       @resolveTo                     n=   1
+  gql-graphql-mesh       @shareable                     n=   2
+  gql-graphql-mesh       @stream                        n=   1
+  gql-graphql-mesh       AddIntegerResult               n=   1
+  gql-graphql-mesh       Address                        n=   1
+  absent       1296 edges
+  gql-graphql-eslint     Bar                            n=   1
+  gql-graphql-eslint     DoesNotExist                   n=   1
+  gql-graphql-eslint     Foo                            n=   2
+  gql-graphql-eslint     Picture                        n=   1
+  gql-graphql-eslint     friends                        n=   1
+  gql-graphql-eslint     isViewerFriend                 n=   1
+  gql-graphql-mesh       @md                            n=  58
+  gql-graphql-mesh       @withAdditionalProperties      n=   4
+  gql-graphql-mesh       AddressInfo                    n=   1
+  gql-graphql-mesh       ApiPopulation                  n=   2
+  gql-graphql-mesh       CountryInfoService_CountryInfoService_CountryInfoServiceSoap_ListOfLanguagesByName n=   1
+  gql-graphql-mesh       CustomerResourceCustomerList   n=   1
+  gql-graphql-mesh       DRAMA                          n=   1
+  gql-graphql-mesh       Error                          n=   2
+  strong        101 edges
+  gql-graphql-mesh       link                           n=   1
+  gql-graphql-platform   Cat                            n=   7
+  gql-graphql-platform   Character                      n=   9
+  gql-graphql-platform   FriendsConnection              n=   3
+  gql-graphql-platform   Pet                            n=   7
+  gql-graphql-platform   Starship                       n=   1
+  gql-graphql-platform   uuid                           n=   2
+  gql-graphql-tools      Bar                            n=   2
+  hasura-engine          type                           n=  69
+
+=== neither spec nor a bare type name: 36 distinct targets, 66 edges ===
+  gql-graphql-platform   $any                                           n=2
+  gql-graphql-platform   $base64String                                  n=2
+  gql-graphql-platform   $boolean                                       n=2
+  gql-graphql-platform   $byte                                          n=2
+  gql-graphql-platform   $date                                          n=2
+  gql-graphql-platform   $dateTime                                      n=2
+  gql-graphql-platform   $decimal                                       n=2
+  gql-graphql-platform   $duration                                      n=2
+  gql-graphql-platform   $durationDotNet                                n=1
+  gql-graphql-platform   $enum                                          n=2
+  gql-graphql-platform   $float                                         n=2
+  gql-graphql-platform   $id                                            n=2
+  gql-graphql-platform   $int                                           n=2
+  gql-graphql-platform   $list                                          n=3
+  gql-graphql-platform   $listWithNullDefault                           n=1
+  gql-graphql-platform   $localDate                                     n=2
+  gql-graphql-platform   $localDateTime                                 n=2
+  gql-graphql-platform   $localTime                                     n=2
+  gql-graphql-platform   $long                                          n=2
+  gql-graphql-platform   $nullDefault                                   n=1
+  gql-graphql-platform   $object                                        n=3
+  gql-graphql-platform   $objectWithNullDefault                         n=1
+  gql-graphql-platform   $objectWithOneOfField                          n=1
+  gql-graphql-platform   $oneOf                                         n=1
+  gql-graphql-platform   $oneOfList                                     n=1
+  gql-graphql-platform   $short                                         n=2
+  gql-graphql-platform   $string                                        n=2
+  gql-graphql-platform   $unknown                                       n=2
+  gql-graphql-platform   $unsignedByte                                  n=2
+  gql-graphql-platform   $unsignedInt                                   n=2

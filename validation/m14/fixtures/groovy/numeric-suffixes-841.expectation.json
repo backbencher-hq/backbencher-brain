@@ -1,0 +1,22 @@
+{
+  "fixtureId": "groovy/numeric-suffixes-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS #841 round 8: Groovy's NUMERIC SUFFIXES. Java's inherited `decimal_integer_literal` allows only `l`/`L`, so every other suffix Groovy permits fell into ERROR and recovery swallowed the enclosing class — hence forbidErrors is the load-bearing assertion, exactly as in the other #841 grammar pins. Both suffix sets are MEASURED against real Groovy 3.0.24 (`script/m14/tmp/groovy-parse-oracle.groovy`), not guessed, and the two sets DIFFER: an integer accepts l L g G i I d D f F (all ten), a decimal accepts only g G d D f F — `1.25l` and `1.25i` are refused by the language itself and are therefore still refused by the grammar. That asymmetry is the reason for measuring rather than adding `[a-z]`. Overlap was deliberately avoided: `g`/`G` was added to the dot-bearing arms of `decimal_floating_point_literal` only, because `5G` is a legal INTEGER and adding it to the dotless arms would make the two literal rules match identical text. Corpus consequence at the rebuilt wasm (grails-core @ a83f8748, whole tracked corpus, production parseFile pipeline), both steps run corpus-A/B-FIRST per reviews/m59-841-assert-comma-separator.md 7h: integer suffixes 269 -> 267 (2 fixed, 0 regressed) and decimal `G` 267 -> 266 (1 fixed, 0 regressed); crashes 0, pipeline mismatches 0 throughout. NOTE: authoredBeforeAnalyzerRun is false — the expectation was authored from live emission via script/m14/tmp/g841-fixture-dump.ts.",
+  "forbidErrors": [{}],
+  "expectSymbols": [
+    { "name": "NumericSuffixes841", "kind": "class" },
+    { "name": "bigInteger", "kind": "method" },
+    { "name": "longForm", "kind": "method" },
+    { "name": "bigDecimal", "kind": "method" },
+    { "name": "doubleForm", "kind": "method" },
+    { "name": "floatForm", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "NumericSuffixes841", "target": "bigInteger" },
+    { "type": "contains", "source": "NumericSuffixes841", "target": "longForm" },
+    { "type": "contains", "source": "NumericSuffixes841", "target": "bigDecimal" },
+    { "type": "contains", "source": "NumericSuffixes841", "target": "doubleForm" },
+    { "type": "contains", "source": "NumericSuffixes841", "target": "floatForm" }
+  ]
+}

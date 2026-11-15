@@ -1,0 +1,44 @@
+{
+  "issue": "CLJ-D62 / CLJ-D62b",
+  "note": "THE `exports` RELATIONSHIP. The construct exists, the analyzer already computed every name in it, and no EDGE said so — `ParseResult.exports` carried 6,972 rows over 695 corpus files while the relationship channel published none, and the surfaces that answer 'what does this module expose' read `exports` rows out of brain_relationship (src/lsp/graph_request.ts:273's `relationship_type IN ('imports','exports')`; graph_usages.ts:134-146's file-level classifier, which THROWS on any other type rather than dropping it). WHY A GRAMMAR INVENTORY FINDS NOTHING HERE, AND WHY THAT IS CORRECT: Clojure has no `export` keyword. A namespace's public vars ARE its exports, `(require '[lib])` is what makes them reachable, and `^:private` is the only thing that withdraws one — the construct is the ABSENCE of private, which no node inventory can express. Measured semantically over the same 695 files: 5,516 public and 746 private namespace-level definitions. THE EDGE IS `namespace -> exported name`, the shape bash, zig, javascript and powershell publish, so the consumer's file-level grouping works unchanged; the source is the same `currentNamespace` every other namespace-level edge uses, so the import side and the export side cannot drift. THREE ROWS ARE DELIBERATELY NOT PUBLISHED, each with its own number from the 695-file run: (1) the NAMESPACE EXPORTS ITSELF — 699 rows, one per `ns`/`in-ns` form plus the implicit `user` (695 files, 4 of them carrying two `ns` forms), excluded because a namespace does not export itself and the row would duplicate the `contains` edge the same fact already produces (CLJ-D60's relationship twin); (2) a name that is not a symbol this file publishes — 0, so the dangling-edge guard cost nothing; (3) a duplicate name — 8 rows. 6,043 public rows - 699 - 8 = 5,336 edges in 546 files, every one resolving at BOTH ends (src and tgt dangling 0.00%), confidence 1.00, evidenceClass `structural`, 0 self-loops, 0 edges without a line. CLJ-D62b WAS FOUND BY WRITING THIS FIXTURE, NOT BY THE CENSUS: `exports[]` itself carries PRIVATE rows — 929 of them in 130 files — because its first loop correctly skips anything not public and its second loop then re-appends whatever the walk pushed. This file's header documents the field as 'ns-level PUBLIC symbols', so the list and its own documentation disagreed before this edge existed. It matters here and not only as tidiness: `classifyFileLevel` drops every `exports` relationship row into an exports section and has NO visibility column to filter on, so a private var on that row is published to every consumer as an export of the module — false in Clojure, where a private var cannot be reached by `refer` from another namespace. The edge therefore filters on visibility, and the LIST defect is left in place and reported to the master because changing the published export surface is a store-contract decision, not a lane's to make quietly.",
+  "expectSymbols": [
+    { "name": "clj.fixture.exports", "kind": "module" },
+    { "name": "public-fn", "kind": "function" },
+    { "name": "public-var", "kind": "variable" },
+    { "name": "PublicRec", "kind": "class" },
+    { "name": "PublicProto", "kind": "interface" },
+    { "name": "public-mm", "kind": "function" },
+    { "name": "lone-spec", "kind": "interface" },
+    { "name": "private-suffix", "kind": "function" },
+    { "name": "private-meta", "kind": "function" },
+    { "name": "private-var", "kind": "variable" },
+    { "name": "forward-declared", "kind": "function" },
+    { "name": "both-a-spec-and-a-fn", "kind": "function" },
+    { "name": "overloaded", "kind": "function" },
+    { "name": "WithMembers", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-fn", "line_number": 13 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-var", "line_number": 14 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "PublicRec", "line_number": 15 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "PublicProto", "line_number": 16 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-mm", "line_number": 17 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": ":clj.fixture.exports/tagged", "line_number": 18 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "lone-spec", "line_number": 19 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "forward-declared", "line_number": 33 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "both-a-spec-and-a-fn", "line_number": 38 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "overloaded", "line_number": 41 },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "WithMembers", "line_number": 44 }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "private-suffix" },
+    { "type": "exports", "target": "private-meta" },
+    { "type": "exports", "target": "private-var" },
+    { "type": "exports", "target": "clj.fixture.exports" },
+    { "type": "exports", "target": "pm" },
+    { "type": "exports", "target": "field" },
+    { "type": "exports", "target": "toString" },
+    { "type": "exports", "target": "a" },
+    { "type": "exports", "target": "b" }
+  ]
+}

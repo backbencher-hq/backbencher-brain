@@ -1,0 +1,541 @@
+[
+  {
+    "id": "basic-leaf",
+    "isError": false,
+    "payload": {
+      "shownCount": 6,
+      "totalCountIfKnown": 6,
+      "directCount": 3,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 2,
+      "engineTruncationReason": null,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 4000
+      },
+      "rule": {
+        "relationshipTypes": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements"
+        ],
+        "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+        "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+        "maxDepth": 5
+      },
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": null
+      },
+      "cascade": {
+        "exact": 6,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "rootMatch": {
+        "requested": "leaf",
+        "via": "exact",
+        "nameMatches": 1
+      },
+      "resolution": {
+        "through": "direct"
+      },
+      "viaCounts": {
+        "exact": 6,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "depths": [
+        0,
+        1,
+        2
+      ],
+      "distinctDeps": 6,
+      "freshness": {
+        "fresh": 4,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null
+    }
+  },
+  {
+    "id": "basic-class-cascade",
+    "isError": false,
+    "payload": {
+      "shownCount": 1,
+      "totalCountIfKnown": 1,
+      "directCount": 1,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 0,
+      "engineTruncationReason": null,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 4000
+      },
+      "rule": {
+        "relationshipTypes": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements"
+        ],
+        "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+        "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+        "maxDepth": 5
+      },
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": null
+      },
+      "cascade": {
+        "exact": 0,
+        "member": 1,
+        "rangeFolded": 0
+      },
+      "rootMatch": {
+        "requested": "Service",
+        "via": "exact",
+        "nameMatches": 1
+      },
+      "resolution": {
+        "through": "direct"
+      },
+      "viaCounts": {
+        "exact": 0,
+        "member": 1,
+        "rangeFolded": 0
+      },
+      "depths": [
+        0
+      ],
+      "distinctDeps": 1,
+      "freshness": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null
+    }
+  },
+  {
+    "id": "alias-target",
+    "isError": true,
+    "textHead": "bb_impact requires symbol"
+  },
+  {
+    "id": "alias-symbolName",
+    "isError": true,
+    "textHead": "bb_impact requires symbol"
+  },
+  {
+    "id": "alias-query",
+    "isError": true,
+    "textHead": "bb_impact requires symbol"
+  },
+  {
+    "id": "reltypes-empty",
+    "isError": true,
+    "payload": null,
+    "sameShownAsDefault": false,
+    "textHead": "bb_impact: bb/impact: relationshipTypes must name at least one relationship kind — an empty list matches nothing and would be silently re-read as the engine's default"
+  },
+  {
+    "id": "reltypes-all-kinds",
+    "isError": false,
+    "payload": {
+      "shownCount": 1,
+      "totalCountIfKnown": 1,
+      "directCount": 1,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 0,
+      "engineTruncationReason": null,
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 4000
+      },
+      "rule": {
+        "relationshipTypes": [
+          "contains",
+          "uses",
+          "references",
+          "imports",
+          "exports",
+          "calls",
+          "instantiates",
+          "extends",
+          "implements"
+        ],
+        "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+        "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+        "maxDepth": 5
+      },
+      "countVerification": {
+        "ran": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": null
+      },
+      "cascade": {
+        "exact": 0,
+        "member": 1,
+        "rangeFolded": 0
+      },
+      "rootMatch": {
+        "requested": "Service",
+        "via": "exact",
+        "nameMatches": 1
+      },
+      "resolution": {
+        "through": "direct"
+      },
+      "viaCounts": {
+        "exact": 0,
+        "member": 1,
+        "rangeFolded": 0
+      },
+      "depths": [
+        0
+      ],
+      "distinctDeps": 1,
+      "freshness": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null
+    }
+  },
+  {
+    "id": "unknown-symbol",
+    "isError": true,
+    "text": "bb_impact: bb/impact: symbol 'no_such_symbol_bb_impact_audit' not found — no impact set exists (declared error; run `bb index` or check the name)"
+  },
+  {
+    "id": "budget-250",
+    "isError": false,
+    "payload": {
+      "shownCount": 200,
+      "totalCountIfKnown": 250,
+      "directCount": 250,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+caller-budget-exhausted",
+      "reproducible": true,
+      "depthReached": 0,
+      "engineTruncationReason": "caller-site-limit+caller-budget-exhausted",
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 4000
+      },
+      "rule": {
+        "relationshipTypes": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements"
+        ],
+        "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+        "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+        "maxDepth": 5
+      },
+      "countVerification": {
+        "ran": true,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "cascade": {
+        "exact": 200,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "rootMatch": {
+        "requested": "target250",
+        "via": "exact",
+        "nameMatches": 1
+      },
+      "resolution": {
+        "through": "direct"
+      },
+      "viaCounts": {
+        "exact": 200,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "depths": [
+        0
+      ],
+      "distinctDeps": 200,
+      "freshness": {
+        "fresh": 1,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null
+    }
+  },
+  {
+    "id": "budget-boundary-200",
+    "isError": false,
+    "payload": {
+      "shownCount": 200,
+      "totalCountIfKnown": 200,
+      "directCount": 200,
+      "truncated": false,
+      "truncationReason": null,
+      "reproducible": true,
+      "depthReached": 0,
+      "engineTruncationReason": "caller-site-limit+caller-budget-exhausted",
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 4000
+      },
+      "rule": {
+        "relationshipTypes": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements"
+        ],
+        "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+        "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+        "maxDepth": 5
+      },
+      "countVerification": {
+        "ran": true,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": true
+      },
+      "cascade": {
+        "exact": 200,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "rootMatch": {
+        "requested": "target200",
+        "via": "exact",
+        "nameMatches": 1
+      },
+      "resolution": {
+        "through": "direct"
+      },
+      "viaCounts": {
+        "exact": 200,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "depths": [
+        0
+      ],
+      "distinctDeps": 200,
+      "freshness": {
+        "fresh": 3,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null
+    },
+    "totalEqualsShown": true
+  },
+  {
+    "id": "depth-7-hop",
+    "isError": false,
+    "payload": {
+      "shownCount": 5,
+      "totalCountIfKnown": 5,
+      "directCount": 1,
+      "truncated": true,
+      "truncationReason": "traversal: caller-depth-cap-reached",
+      "reproducible": true,
+      "depthReached": 4,
+      "engineTruncationReason": "caller-depth-cap-reached",
+      "budget": {
+        "maxNodes": 200,
+        "maxDepth": 5,
+        "totalScanCeiling": 50000,
+        "totalExpansionCeiling": 2000,
+        "totalTimeCeilingMs": 4000
+      },
+      "rule": {
+        "relationshipTypes": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements"
+        ],
+        "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+        "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+        "maxDepth": 5
+      },
+      "countVerification": {
+        "ran": true,
+        "timedOut": false,
+        "boundarySuspect": true,
+        "complete": false
+      },
+      "cascade": {
+        "exact": 5,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "rootMatch": {
+        "requested": "hop0",
+        "via": "exact",
+        "nameMatches": 1
+      },
+      "resolution": {
+        "through": "direct"
+      },
+      "viaCounts": {
+        "exact": 5,
+        "member": 0,
+        "rangeFolded": 0
+      },
+      "depths": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "distinctDeps": 5,
+      "freshness": {
+        "fresh": 6,
+        "stale": 0,
+        "missing": 0
+      },
+      "rootStale": false,
+      "autoRefresh": null
+    },
+    "names": [
+      "hop1@0",
+      "hop2@1",
+      "hop3@2",
+      "hop4@3",
+      "hop5@4"
+    ]
+  },
+  {
+    "id": "determinism",
+    "equal": true
+  },
+  {
+    "id": "twin-agreement",
+    "rows": [
+      {
+        "symbol": "leaf",
+        "equal": true,
+        "comp": {
+          "shown": 6,
+          "total": 6,
+          "truncated": false,
+          "reason": null
+        },
+        "wire": {
+          "shown": 6,
+          "total": 6,
+          "truncated": false,
+          "reason": null
+        },
+        "mcp": {
+          "shown": 6,
+          "total": 6,
+          "truncated": false,
+          "reason": null
+        }
+      },
+      {
+        "symbol": "Service",
+        "equal": true,
+        "comp": {
+          "shown": 1,
+          "total": 1,
+          "truncated": false,
+          "reason": null
+        },
+        "wire": {
+          "shown": 1,
+          "total": 1,
+          "truncated": false,
+          "reason": null
+        },
+        "mcp": {
+          "shown": 1,
+          "total": 1,
+          "truncated": false,
+          "reason": null
+        }
+      },
+      {
+        "symbol": "b1",
+        "equal": true,
+        "comp": {
+          "shown": 2,
+          "total": 2,
+          "truncated": false,
+          "reason": null
+        },
+        "wire": {
+          "shown": 2,
+          "total": 2,
+          "truncated": false,
+          "reason": null
+        },
+        "mcp": {
+          "shown": 2,
+          "total": 2,
+          "truncated": false,
+          "reason": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "refresh-clean",
+    "defaultFreshness": {
+      "fresh": 4,
+      "stale": 0,
+      "missing": 0
+    },
+    "optOutFreshness": {
+      "fresh": 4,
+      "stale": 0,
+      "missing": 0
+    },
+    "equal": true,
+    "defaultAutoRefresh": null,
+    "optOutAutoRefresh": null
+  }
+]

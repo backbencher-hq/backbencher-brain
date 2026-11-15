@@ -27,7 +27,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const SENTINEL = "bbSentinelDeclaredNowhere_9f3a1c7e"
 
 /** Per-language declaration shapes. A shape here is a way the language DECLARES a name; a mention is

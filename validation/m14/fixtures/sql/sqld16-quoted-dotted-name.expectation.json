@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld16-quoted-dotted-name.sql",
+  "authoredFrom": "M60 SQL wave, pass 11, 2026-10-05. The confusion is a real corpus shape, not a hypothetical: `vault.decrypted_secrets` appears as a bare Supabase reference in ProxiCall @e36979cb6 (database/migrations/20260131_pms_c7_1_bank_accounts.sql), so `vault` was already in the platform-schema set, and the quoted spelling of a project table whose own name begins `vault.` then inherited that label. The three spellings and the two-leaf `parts.length === 1` guard were read off the parse tree with validation/m14/fixtures/sql/tmp/tree.mts, not off the text.",
+  "comment": "This fixture pins a PARSE FACT through its consequence. One leaf versus two is what decides whether a dot is a schema separator, and the grammar decides that, not a string test. The positive half asserts `meta.quotedName` on the quoted-whole rows; the negative half forbids `meta.external=platform` on exactly those rows. Both halves are needed and they fail independently: the positive catches a flag that stopped being set (the node-type version of the computation, which measured 0 of 8 edges changed), and the negative catches the label arriving by another route. Asserting only the negative would pass against a classifier that did nothing at all; asserting only the positive would pass against a classifier that computes the flag and ignores it.",
+  "expectSymbols": [
+    { "name": "vault.secret", "kind": "class", "note": "THE HEADLINE DECLARATION. A quoted dotted name publishes as ONE class symbol whose name keeps the dot, and it is the resolution target for the `uses` row below. If the analyzer split this name on the dot it would publish `secret`, and the positive row would have no target to bind to." },
+    { "name": "id", "kind": "property", "ownerName": "vault.secret" },
+    { "name": "note", "kind": "property", "ownerName": "vault.secret" },
+    { "name": "v_quoted_whole", "kind": "class" },
+    { "name": "v_unqualified", "kind": "class" },
+    { "name": "v_two_quoted_parts", "kind": "class" },
+    { "name": "v_benign_dotted", "kind": "class" }
+  ],
+  "expectSymbolCount": [
+    { "name": "vault.secret", "kind": "class", "equals": 1, "note": "Exactly one class symbol for the dotted name — this pins DEDUPE. The same quoted reference appears in case 1 and, as the target, again in case 5's neighbourhood; a second class named `vault.secret` would mean the analyzer published one declaration per reference." },
+    { "name": "global", "equals": 0, "note": "`global` is the analyzer's synthetic SOURCE label on relationship edges, never a published symbol. Asserted at zero so a future change that publishes it as a symbol is caught here rather than inflating every lane's symbol counts. The three CREATE FUNCTION bodies in this file publish NO symbols at all, which is a separate and already-documented grammar limitation (multi-dollar-quote files collapse to an ERROR root — see docs/analyzers/sql.md, root-is-error limitation). An earlier draft of this expectation claimed those three collapsed into ONE `global` symbol; measured through parseFile, it is zero, and the claim was withdrawn." }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "v_quoted_whole",
+      "target": "vault.secret",
+      "meta.quotedName": true,
+      "note": "THE POSITIVE CASE. `FROM \"vault.secret\"` is ONE identifier, so the dot is part of the table's name. The edge targets the whole name and carries no `qualified`."
+    },
+    {
+      "type": "calls",
+      "from": "sqld16-quoted-dotted-name.sql",
+      "target": "vault.decrypt",
+      "meta.quotedName": true,
+      "note": "The same parse fact on the `calls` site. `SELECT \"vault.decrypt\"()` names one function called vault.decrypt."
+    },
+    {
+      "type": "uses",
+      "from": "v_benign_dotted",
+      "target": "sales.total",
+      "meta.quotedName": true,
+      "note": "A quoted dotted name with a benign prefix. Asserted so the fixture cannot be satisfied by a classifier that treats EVERY quoted dot as a schema — `sales` is not in the platform set, so this row would keep no label either way and pins only the carrier."
+    },
+    {
+      "type": "uses",
+      "from": "v_unqualified",
+      "target": "unknown_table_zz",
+      "meta.external": "platform",
+      "meta.qualified": "vault.unknown_table_zz",
+      "note": "NEGATIVE CASE 1 — the same text unquoted IS schema-qualified, so the platform label is correct. A mutant that simply deletes the platform branch would fail here, which is what stops this fixture from being satisfied by blanket distrust of dotted names."
+    },
+    {
+      "type": "uses",
+      "from": "v_two_quoted_parts",
+      "target": "unknown_table_zz",
+      "meta.external": "platform",
+      "meta.qualified": "vault.unknown_table_zz",
+      "note": "NEGATIVE CASE 2 — the boundary. Quoted on BOTH sides but two leaves, so it is genuinely qualified and the label stands. This row is what makes `parts.length === 1` load-bearing: a fix that only asked 'is it quoted' would drop the label here and be wrong."
+    },
+    {
+      "type": "calls",
+      "from": "sqld16-quoted-dotted-name.sql",
+      "target": "unknown_fn_zz",
+      "meta.external": "platform",
+      "meta.qualified": "vault.unknown_fn_zz",
+      "note": "NEGATIVE CASE 3 — the same distinction on the `calls` site, unquoted."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "sqld16-quoted-dotted-name.sql",
+      "target": "unknown_fn_zz",
+      "equals": 1,
+      "note": "Two functions call the same qualified name, and this file publishes ONE edge. The duplicate is deduped because both spellings reduce to the same (source, target, type) triple. Pinned because the count is 1 for a reason a later reader would otherwise have to rediscover: it is not that one function lost its edge."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "v_quoted_whole",
+      "target": "vault.secret",
+      "meta.external": "platform",
+      "note": "THE PIN THAT CATCHES THE MUTANT. `vault.secret` is declared in THIS file, so labelling it a hosted-platform object asserts something about the file that is false in it. Measured: 3 of the 8 relationships in this file fail this row when the quotedName carrier is removed."
+    },
+    {
+      "type": "calls",
+      "from": "sqld16-quoted-dotted-name.sql",
+      "target": "vault.decrypt",
+      "meta.external": "platform",
+      "note": "Same, on the calls site."
+    },
+    {
+      "type": "uses",
+      "from": "v_benign_dotted",
+      "target": "sales.total",
+      "meta.external": "platform",
+      "note": "`sales.total` is a plain project name. This forbids the OPPOSITE over-correction, where a fix stops splitting on dots for quoted names that never had a platform prefix."
+    }
+  ]
+}

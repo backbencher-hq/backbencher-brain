@@ -5,12 +5,12 @@
 process.env.BB_EMBEDDING_BATCH_LIMIT = "0"
 
 const repositories = [
-  { id: "cargo", path: "$HOME/fixtures/repositories/cargo", extensions: [".rs"] },
-  { id: "zig", path: "$HOME/fixtures/repositories/zig", extensions: [".zig"] },
-  { id: "swift_nio", path: "$HOME/fixtures/repositories/swift-nio", extensions: [".c"] },
-  { id: "dplyr", path: "$HOME/fixtures/repositories/dplyr", extensions: [".cpp", ".cc", ".cxx", ".h", ".hpp"] },
-  { id: "cython", path: "$HOME/fixtures/repositories/cython", extensions: [".c", ".h"] },
-  { id: "clyde", path: "$HOME/fixtures/repositories/Clyde", extensions: [".m", ".mm", ".h"] },
+  { id: "cargo", path: "/home/ishaq2321/bb_tests/repositories/cargo", extensions: [".rs"] },
+  { id: "zig", path: "/home/ishaq2321/bb_tests/repositories/zig", extensions: [".zig"] },
+  { id: "swift_nio", path: "/home/ishaq2321/bb_tests/repositories/swift-nio", extensions: [".c"] },
+  { id: "dplyr", path: "/home/ishaq2321/bb_tests/repositories/dplyr", extensions: [".cpp", ".cc", ".cxx", ".h", ".hpp"] },
+  { id: "cython", path: "/home/ishaq2321/bb_tests/repositories/cython", extensions: [".c", ".h"] },
+  { id: "clyde", path: "/home/ishaq2321/bb_tests/repositories/Clyde", extensions: [".m", ".mm", ".h"] },
 ]
 
 // Optional CLI arg: `bun script/m11-systems-corpus.ts cargo` runs one repo,

@@ -1,0 +1,36 @@
+{
+  "fixtureId": "protobuf/declaration-lines",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M59 (#825, #861) line contract for protobuf, which is the one property of a range that every reader of a symbol list depends on and that no other protobuf instrument checked. protobuf had NO fixture lane at all, so nothing pinned any of its ranges. In a schema language the natural way to document a declaration is a `//` comment directly above it, and a range that anchors on the file's first token would put every documented message, field and enum value on its comment's line — the same defect the GraphQL lane measured at 94% of its symbols and the same defect M59/#861 names for decorated declarations. protobuf is arguably MORE exposed than most languages here, because proto3 files routinely carry a doc comment on nearly every field. Expectations are derived by reading this source and the language's declaration forms, not from an analyzer run, and the specific claim under test is that the line recorded is the line that contains the declaration's own name — never the comment's, and never the line of an enclosing block. Fixture 2 (`payload-and-ontology`) covers the symbol and relationship contract, so this one stays narrow on purpose: it is the only fixture here whose whole subject is WHERE a range starts.",
+  "expectSymbols": [
+    { "name": "lines", "kind": "namespace", "note": "the package; its range starts on `package lines;`" },
+    { "name": "User", "kind": "class", "note": "a message is a class" },
+    { "name": "name", "kind": "property", "note": "a field is a property of the message" },
+    { "name": "Role", "kind": "enum" },
+    { "name": "USER", "kind": "enum_member", "note": "an enum value is a member of the enum" },
+    { "name": "ADMIN", "kind": "enum_member" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "lines", "startLine": 2, "note": "the `package` line" },
+    { "symbol": "User", "startLine": 5, "note": "the `message User` line. The doc comment is on 4, so a range anchored on the file's first token — or on the comment — would report 4." },
+    { "symbol": "name", "startLine": 7, "note": "the `string name = 1;` line. The doc comment is on 6." },
+    { "symbol": "Role", "startLine": 11, "note": "the `enum Role {` line. The doc comment is on 10." },
+    { "symbol": "USER", "startLine": 13, "note": "the `USER = 0;` line, INSIDE the enum body. The doc comment is on 12. This is the case that a range computed from the enum's own start would get wrong, and it is why the value's line is asserted separately from the enum's." },
+    { "symbol": "ADMIN", "startLine": 14, "note": "the second enum value, one line after the first; a reader that attributed both to the enum's line would pass the first and fail here." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "lines", "target": "lines.User", "line_number": 5 },
+    { "type": "contains", "from": "lines.User", "target": "lines.User.name", "line_number": 7 },
+    { "type": "contains", "from": "lines", "target": "lines.Role", "line_number": 11 },
+    { "type": "contains", "from": "lines.Role", "target": "lines.Role.USER", "line_number": 13 },
+    { "type": "contains", "from": "lines.Role", "target": "lines.Role.ADMIN", "line_number": 14 }
+  ],
+  "expectRelationshipCount": [{ "type": "contains", "from": "lines.Role", "target": "lines.Role.ADMIN", "equals": 1 }],
+  "forbidRelationships": [
+    { "type": "references", "from": "lines.User", "target": "string", "note": "`string` is a scalar KEYWORD, not a type declaration. Protobuf has no `string` type to point at, so a uses edge here would be a reference to something that does not exist. The analyzer's rule is that a `type` node with no `message_or_enum_type` child is a scalar and produces no edge." }
+  ],
+  "forbidSymbols": [
+    { "name": "A user record.", "note": "a doc comment is not a declaration. An analyzer that treated a comment as a name would publish it as a symbol; the comment carries the USER's documentation and belongs to the user, not to a symbol of its own." }
+  ]
+}

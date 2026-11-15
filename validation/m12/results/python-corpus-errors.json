@@ -1,6 +1,6 @@
 {
   "analyzer": "python",
-  "corpus": "$HOME/fixtures/repositories/proxicall",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/proxicall",
   "corpusRepo": "proxicall",
   "revision": "7163d97547375f8dcedb95c878983a58bc266c74",
   "extensions": [

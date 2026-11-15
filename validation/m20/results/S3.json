@@ -1,0 +1,27 @@
+{
+  "issue": "M20.S3",
+  "code": "S3",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 39,
+  "passed": 39,
+  "failed": 0,
+  "negativeCases": 7,
+  "negativePassed": 7,
+  "currentCommit": "8d8c9c97769c126ed54c13ce9d246ed9c99b010b",
+  "sourceFingerprint": "667264e01d1025cd715b16bca0c748f0e6ba65a0ed5cb32143084ee058980a93",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m20/verify-security-history.ts",
+  "evidenceFile": "S3.json",
+  "generatedAt": "2026-11-14T21:08:31.024Z",
+  "skipped": [],
+  "limitations": [
+    "Deterministic fixture-level history matrix over the M72 store; real-repository history parity is covered by the m17 corpus verifiers.",
+    "The M72 store currently emits only lead/candidate states; the old confirmed/mitigated history states are retired with the token engine and are not asserted here."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:08:31.025Z",
+    "contentSha256": "a24fe1a13d556d4649658e93dfd3fcc0e91fa879dafb42a6b39e903438aa2ce7"
+  }
+}

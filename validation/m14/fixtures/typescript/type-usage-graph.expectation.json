@@ -1,0 +1,55 @@
+{
+  "fixtureId": "typescript/type-usage-graph",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph: interface members, class fields, params, return types, typed locals, as-casts and instanceof checks each emit References; primitives and builtin wrappers excluded from names. SCD7 (M37 #599 pre-wave): one `Map<String, Foo>` annotation emits exactly ONE references String \u2014 the type_annotation case covers nested args (java/kotlin family contract); the type_argument re-emit inside annotations is gated.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "Foo",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Baz",
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "target": "Map",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Baz",
+      "meta.relationshipType": "cast_target"
+    },
+    {
+      "type": "references",
+      "target": "Qux",
+      "meta.relationshipType": "instanceof_check"
+    },
+    {
+      "type": "instantiates",
+      "target": "Foo"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "number"
+    },
+    {
+      "type": "references",
+      "target": "null"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "local",
+      "target": "String",
+      "equals": 1
+    }
+  ]
+}

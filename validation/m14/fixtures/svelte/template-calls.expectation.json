@@ -1,0 +1,20 @@
+{
+  "fixtureId": "svelte/template-calls",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.21 #611 template-calls contract (F5 lane findings): the template pass emits calls the embedded-script trees cannot express — on:click={inc} bare-identifier handlers, on:submit={() => save()} first-call-target-in-arrow, on:click={box.open} dotted-member callable leaf, {@render row(it)} snippet renders. Sv2 #736-D4: dotted render targets resolve to the callable leaf ({@render helpers.row(1)} -> row, never helpers), consistent with the on: leaf rule; the F5 oracle mirrors the leaf rule. Pre-fix: on:/render calls were pinned by no fixture and the svelte-repo lane reported 7 unexplained + 4 missing.",
+  "expectSymbols": [
+    { "name": "inc" },
+    { "name": "save" },
+    { "name": "count" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "inc", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "target": "save", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "target": "open", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "target": "row", "meta.evidenceClass": "usage_contextual" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "template-calls", "target": "helpers" }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "fixtureId": "javascript/local-binding-claims",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the LOCAL-BINDING claim class (contract validation/m14/verification/JAVASCRIPT-LOCAL-BINDING-CONTRACT.md): a name the file binds lexically is published with the family separator spelling `${edge.source}\\u0000${name}` plus metadata.localBinding, which the arbiter verifies as a SPELLING (gate bindOK column, never merged into resolved). Positive shapes: parameter read, const read, nested function-declaration call, local function-expression call, `new` of a locally bound class expression, `instanceof` over a local type, catch binding, `var` hoisted out of a block, destructured parameter names. NEGATIVE CONTROLS: a MODULE-SCOPE declaration (`moduleConstant`) is a published symbol and must stay bare (the edge may resolve); an IMPORT binding (`importedThing`) and a `require(...)` binding (`fsMod`) belong to the imported-binding seam class and must NOT be claimed as local bindings. The forbid list pins the bare spelling of every claimed row, so dropping the separator is a red suite, not a silent regression. The prefix is the analyzer's OWN edge source (method or enclosing function), matching the family convention php/dart/java use.",
+  "expectSymbols": [
+    {
+      "name": "outer",
+      "kind": "function"
+    },
+    {
+      "name": "readsParam",
+      "kind": "function"
+    },
+    {
+      "name": "moduleConstant",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "outer",
+      "target": "outer\u0000count",
+      "meta.localBinding": true,
+      "comment": "read of a const in the enclosing function"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000helper",
+      "meta.localBinding": true,
+      "comment": "call of a nested function declaration"
+    },
+    {
+      "type": "uses",
+      "from": "readsParam",
+      "target": "readsParam\u0000param",
+      "meta.localBinding": true
+    },
+    {
+      "type": "uses",
+      "from": "destructured",
+      "target": "destructured\u0000alpha",
+      "meta.localBinding": true
+    },
+    {
+      "type": "uses",
+      "from": "destructured",
+      "target": "destructured\u0000renamed",
+      "meta.localBinding": true,
+      "comment": "{ beta: renamed } binds renamed"
+    },
+    {
+      "type": "calls",
+      "from": "callSite",
+      "target": "callSite\u0000fn",
+      "meta.localBinding": true
+    },
+    {
+      "type": "instantiates",
+      "from": "instantiateSite",
+      "target": "instantiateSite\u0000Local",
+      "meta.localBinding": true
+    },
+    {
+      "type": "references",
+      "from": "instanceofSite",
+      "target": "instanceofSite\u0000LocalType",
+      "meta.localBinding": true
+    },
+    {
+      "type": "uses",
+      "from": "catches",
+      "target": "catches\u0000err",
+      "meta.localBinding": true,
+      "comment": "catch parameter"
+    },
+    {
+      "type": "uses",
+      "from": "varHoist",
+      "target": "varHoist\u0000hoisted",
+      "meta.localBinding": true,
+      "comment": "var hoists out of the block, still a function-scope binding"
+    },
+    {
+      "type": "uses",
+      "from": "method",
+      "target": "method\u0000local",
+      "meta.localBinding": true,
+      "comment": "method body binding, source is the enclosing METHOD"
+    },
+    {
+      "type": "uses",
+      "from": "readsModule",
+      "target": "moduleConstant",
+      "comment": "NEGATIVE: module-scope declaration is a published symbol -> bare, no claim"
+    },
+    {
+      "type": "uses",
+      "from": "readsImport",
+      "target": "importedThing",
+      "comment": "NEGATIVE: import binding belongs to the seam class"
+    },
+    {
+      "type": "uses",
+      "from": "readsRequire",
+      "target": "fsMod",
+      "comment": "NEGATIVE: require() binding is a module binding, seam class"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "outer",
+      "target": "count",
+      "comment": "the bare spelling must be gone for a claimed binding read"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "helper",
+      "comment": "bare spelling gone for a claimed local call"
+    },
+    {
+      "type": "uses",
+      "from": "readsParam",
+      "target": "param"
+    },
+    {
+      "type": "calls",
+      "from": "callSite",
+      "target": "fn"
+    },
+    {
+      "type": "instantiates",
+      "from": "instantiateSite",
+      "target": "Local"
+    },
+    {
+      "type": "references",
+      "from": "instanceofSite",
+      "target": "LocalType"
+    },
+    {
+      "type": "uses",
+      "from": "readsModule",
+      "target": "moduleConstant",
+      "meta.localBinding": true,
+      "comment": "a published module-scope symbol must never be claimed as a binding"
+    },
+    {
+      "type": "uses",
+      "from": "readsImport",
+      "target": "importedThing",
+      "meta.localBinding": true,
+      "comment": "import bindings are the seam class, not local bindings"
+    },
+    {
+      "type": "uses",
+      "from": "readsRequire",
+      "target": "fsMod",
+      "meta.localBinding": true,
+      "comment": "require() bindings are the seam class, not local bindings"
+    }
+  ]
+}

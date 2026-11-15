@@ -1,0 +1,92 @@
+{
+  "issue": "ELX-EXPORTS",
+  "note": "`uses` measured GAP -> implemented. `use Mod` is Elixir's mixin application (Mod.__using__/1 runs inside the using module and injects code into it) \u2014 the same claim dart records for `class A extends B with M1, M2` with metadata isMixin. Measured: 509 `use` sites in 324 of 559 corpus files -> 504 `uses` edges in 321 files, 504/504 sources resolving. It is NOT a relabelling of `references`: both edges are emitted from the same directive, because the module dependency is a separate true statement (517 corpus sites would have been deleted with it). The member-read reading of `uses` (the dominant family definition: dart/c/erlang/clean/clojure use it for `x.field`) was measured and REFUSED for Elixir \u2014 a member read carries no type on the receiver, so the target would be a bare field name resolving by coincidence. Falsifier: mutant elixir/uses-self-loop, elixir/uses-drops-references, elixir/uses-group-collapsed.",
+  "expectSymbols": [
+    {
+      "name": "UsesMixin",
+      "kind": "module"
+    },
+    {
+      "name": "UsesSelf",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "UsesMixin.Genserverish",
+      "line_number": 11,
+      "meta.isMixin": true,
+      "meta.via": "use",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "UsesMixin.Other",
+      "line_number": 12,
+      "meta.isMixin": true
+    },
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "UsesMixin.Grouped",
+      "line_number": 13,
+      "meta.isMixin": true
+    },
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "UsesMixin.AlsoGrouped",
+      "line_number": 13,
+      "meta.isMixin": true
+    },
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "GenServer",
+      "line_number": 14,
+      "meta.isMixin": true
+    },
+    {
+      "type": "references",
+      "from": "UsesMixin",
+      "target": "UsesMixin.Genserverish",
+      "line_number": 11
+    },
+    {
+      "type": "references",
+      "from": "UsesMixin",
+      "target": "GenServer",
+      "line_number": 14
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "UsesSelf",
+      "target": "UsesSelf"
+    },
+    {
+      "type": "references",
+      "from": "UsesSelf",
+      "target": "UsesSelf"
+    },
+    {
+      "type": "mixes_in",
+      "target": "UsesMixin.{Grouped"
+    },
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "UsesMixin.{Grouped, AlsoGrouped}"
+    },
+    {
+      "type": "mixes_in",
+      "from": "UsesMixin",
+      "target": "UsesMixin.Genserverish",
+      "line_number": 12
+    }
+  ]
+}

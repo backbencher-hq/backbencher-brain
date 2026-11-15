@@ -1,0 +1,90 @@
+{
+  "checks": [
+    {
+      "description": "no file becomes newly damaged",
+      "detail": "fixed=0 newly=0 improved=0 worse=0",
+      "id": "F11.G1",
+      "status": "pass"
+    },
+    {
+      "description": "every file clean under the pinned grammar keeps a byte-identical s-expression",
+      "detail": "28 clean file(s) checked, 0 difference(s)",
+      "id": "F11.G2",
+      "status": "pass"
+    },
+    {
+      "description": "the analyzer loses no symbol name, qualifier or (label,target) pair",
+      "detail": "vanished=0 qualifier-changed=0 lost=0 added=[symbols 0, pairs 0]",
+      "id": "F11.G3",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L3",
+  "commit": "231a11f4f8b9e45bd5a7a987b88e0ebbc5384d28",
+  "committedAt": "2026-09-22T20:13:46-04:00",
+  "corpusPins": {
+    "fmt": "e27cc20bd93a4e280fb9268d41cd131069a9c73f"
+  },
+  "data": {
+    "admissible": true,
+    "candidate": "f11-control-cpp.wasm",
+    "g1": {
+      "errorLinesCand": 419,
+      "errorLinesPinned": 419,
+      "filesCandDamaged": 19,
+      "filesPinnedDamaged": 19,
+      "fixed": 0,
+      "improved": 0,
+      "kindChange": 0,
+      "missingCand": 114,
+      "missingPinned": 114,
+      "newlyDamaged": 0,
+      "sitesCand": 279,
+      "sitesPinned": 279,
+      "worse": 0
+    },
+    "g2": {
+      "cleanChecked": 28,
+      "identityBreaks": 0
+    },
+    "g3": {
+      "filesChanged": 0,
+      "lost": 0,
+      "pairsAdded": 0,
+      "pairsRemoved": 0,
+      "qualifierChanged": 0,
+      "reAttributed": 0,
+      "symAdded": 0,
+      "symRemoved": 0,
+      "vanished": 0
+    },
+    "lang": "cpp",
+    "reasons": [],
+    "repos": [
+      "fmt"
+    ],
+    "sample": 400
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F11",
+  "layers": [
+    "grammar",
+    "analyzer",
+    "corpus"
+  ],
+  "limitations": [
+    {
+      "description": "G3 measures the designated corpora at the gate's sample cap, not every repo the product will see.",
+      "justification": "the sample is the same deterministic draw F10 pins, so a regression inside the draw is caught and the digest makes the set reproducible"
+    },
+    {
+      "description": "The gate decides admissibility of an artifact; it does not re-pin F10 floors or fixtures, which stay the wave's own commit.",
+      "justification": "separation of measurement from adoption"
+    }
+  ],
+  "regeneratedAt": "2026-09-23T00:26:46.506Z",
+  "regeneratedAtCommit": "231a11f4f8b9e45bd5a7a987b88e0ebbc5384d28",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Grammar-leaf admissibility gate — cpp candidate f11-control-cpp.wasm"
+}

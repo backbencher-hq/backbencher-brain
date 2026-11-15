@@ -1,0 +1,79 @@
+{
+  "fixtureId": "scala/wildcard-is-not-a-name",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 runtime half, the class a corpus-wide name lookup CANNOT see. script/m14/tmp/scala-r7-runtime-probe.ts answers 'is this punctuation-shaped name declared anywhere in the corpus?' and over the full 9,353-file draw it answers YES for every one of the 5,778 punctuation-shaped endpoints \u2014 which is CORRECT and useless for this case, because `_` is 'declared' by `val _ = readNameRef()` (src/compiler/scala/tools/nasty/AttributeUnpickler.scala:36, a DISCARDING val that names nothing) and `-`/`+`/`*` are declared as operator methods (Double.scala:149 `def -(x: Byte): Double`). So the instrument that decides this class is scala-placeholder-fragment-probe.ts, which asks whether the endpoint is written as a WHOLE TOKEN where the edge points, and it finds 15 sites over the whole corpus: 9 `uses -> _` from an interpolated `$_` wildcard, and 6 `references -> -` / `-> +` / `-> *` from the Scala 3 PLACEHOLDER type (`val fnMinusPlus1: -_ => +_`, test/files/pos/variant-placeholders-future.scala:7), which the pinned grammar splits into type_identifier('-') + identifier('_') so a type-name walker publishes the operator character on its own. Both name a symbol no source spells. The positive controls are in this same file: an ESCAPED `-_` is a real type alias and must still be published, and an ordinary interpolated identifier must still be a `uses` edge \u2014 a guard that cannot tell those from the placeholder is not a guard.",
+  "expectSymbols": [
+    {
+      "name": "WildcardNames",
+      "kind": "module"
+    },
+    {
+      "name": "-_",
+      "kind": "type"
+    },
+    {
+      "name": "escapedAlias",
+      "kind": "constant",
+      "ownerName": "WildcardNames"
+    },
+    {
+      "name": "interpolate",
+      "kind": "method",
+      "ownerName": "WildcardNames"
+    },
+    {
+      "name": "interpolateRealName",
+      "kind": "method",
+      "ownerName": "WildcardNames"
+    },
+    {
+      "name": "ShortName",
+      "kind": "module"
+    },
+    {
+      "name": "interpolateShortName",
+      "kind": "method",
+      "ownerName": "ShortName"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "-_",
+      "note": "the ESCAPED alias `-_` IS a declared name (quoting is what distinguishes it from the placeholder) and its use must survive the fragment guard"
+    },
+    {
+      "type": "uses",
+      "target": "name",
+      "note": "positive control: `s\"[$name]\"` interpolates an ordinary identifier and must stay a `uses` edge"
+    },
+    {
+      "type": "uses",
+      "target": "a",
+      "note": "the over-broad-guard control: `s\"[$a]\"` interpolates a ONE-CHARACTER parameter, and a guard written as `id.text.length !== 1` drops it"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "-",
+      "note": "`val contravariant: -_ => +_` is a PLACEHOLDER (contravariant + inferred), parsed as type_identifier('-') + identifier('_'); publishing `-` names a type no file declares"
+    },
+    {
+      "type": "references",
+      "target": "+",
+      "note": "the covariant half of the same placeholder (`+_`)"
+    },
+    {
+      "type": "references",
+      "target": "*",
+      "note": "`vararg: -_*` \u2014 the repeated-parameter placeholder publishes its `*` as a type name"
+    },
+    {
+      "type": "uses",
+      "target": "_",
+      "note": "`s\"\\\\*{$_}\"` interpolates the WILDCARD; `_` is never a declaration name in any Scala position, so the honest state is absence (R7)"
+    }
+  ]
+}

@@ -2,18 +2,18 @@
 // script/m14/firing-check-v2.mjs, for ONE reason.
 //
 // WHY A COPY EXISTS. `firing-check-v2.mjs` hardcodes
-// `const REPO = "$HOME/backbencher-brain"`, so it loads the analyzer
+// `const REPO = "/home/ishaq2321/backbencher-brain"`, so it loads the analyzer
 // from the MAIN checkout. A lane works in its own worktree, so the instrument run
 // against the branch measures the branch's ANALYZER only after this copy. It is a
 // byte-for-byte copy with two edits and no others:
 //
-//     -const REPO = "$HOME/backbencher-brain"
+//     -const REPO = "/home/ishaq2321/backbencher-brain"
 //     +const REPO = process.env.BB_FIRING_REPO ?? resolve(import.meta.dirname, "../..")
 //
 //     -import { join } from "node:path"
 //     +import { join, resolve } from "node:path"
 //
-// Verify with `diff`: `diff <(cat $HOME/backbencher-brain/script/m14/firing-check-v2.mjs) <(sed -e <the two edits> script/m60/objc-firing-check-lane.mjs)`
+// Verify with `diff`: `diff <(cat /home/ishaq2321/backbencher-brain/script/m14/firing-check-v2.mjs) <(sed -e <the two edits> script/m60/objc-firing-check-lane.mjs)`
 // must print nothing. The LANE table, the sampling, the vocabulary and both
 // channel reports are the shared instrument's, untouched — this file changes
 // where the code under test is read from and nothing about what is concluded.
@@ -65,7 +65,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
 
 const REPO = process.env.BB_FIRING_REPO ?? resolve(import.meta.dirname, "../..")
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

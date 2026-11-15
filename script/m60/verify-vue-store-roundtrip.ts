@@ -42,8 +42,8 @@ const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url))
 const FILES = [
   `${REPO}/validation/m14/fixtures/vue/with-defaults-propagation.vue`,
   `${REPO}/validation/m14/fixtures/vue/options-setup-method.vue`,
-  "$HOME/fixtures/repositories/element-plus/packages/components/skeleton/src/skeleton-item.vue",
-  "$HOME/fixtures/repositories/element-plus/packages/components/cascader-panel/src/menu.vue",
+  "/home/ishaq2321/bb_tests/repositories/element-plus/packages/components/skeleton/src/skeleton-item.vue",
+  "/home/ishaq2321/bb_tests/repositories/element-plus/packages/components/cascader-panel/src/menu.vue",
 ]
 
 const failures: string[] = []

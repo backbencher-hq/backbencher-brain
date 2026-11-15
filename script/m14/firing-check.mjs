@@ -8,13 +8,13 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { extensionsFor } from "./language-extensions.ts"
 // Resolved from THIS file's location, not hardcoded. It was
-// "$HOME/backbencher-brain", which does not exist on this laptop
-// ($HOME/mcp/backbencher-brain) — so the instrument the programme mandates for
+// "/home/ishaq2321/backbencher-brain", which does not exist on this laptop
+// (/home/ishaq2321/mcp/backbencher-brain) — so the instrument the programme mandates for
 // coverage claims could not run here at all, and every laptop-B lane number came from
 // source derivation instead. 57 scripts in this tree carry the same hardcoded path;
 // this one is fixed because it is the arbiter. Override with BB_REPO if ever needed.
 const REPO = process.env.BB_REPO || join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))))
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 
 const LANES = {
   RUST:        ["rust", "real-rust-analyzer", "ripgrep"],
@@ -46,7 +46,7 @@ const LANES = {
   // so every B lane's coverage number came from source derivation while this instrument
   // (the only one that answers "does it FIRE") could not run for them at all.
   //
-  // Corpus chosen by MEASUREMENT, not by name: one pass over fixtures/repositories
+  // Corpus chosen by MEASUREMENT, not by name: one pass over bb_tests/repositories
   // (199 repos, 371,015 files) picking the repo holding the most files of the lane's
   // extensions. The number after each entry is that count. `clean` is the one thin lane
   // (109 files in Clyde, 74 in clean-stdlib) — measured, not assumed.

@@ -1,0 +1,65 @@
+{
+  "fixtureId": "r/F15-dotdot",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "`..1` is R's reference to an enclosing function's first argument and the grammar gives it its OWN token -- a `dots` node, not an identifier -- so a reader that requires `identifier` cannot see it, and a reader that accepts any dot-token splits `..2dge` in half. Both names are real declarations and both are pinned. This fixture's comment used to cite `R 4.4.3 accepts '..2dge <- 1; ls()'` as its evidence, and `ls()` is the WRONG ORACLE for a dot-prefixed name: `ls()` hides those by default, so it reports nothing for a binding R unambiguously makes. On R 4.6.1 `ls(env)` is empty, `ls(env, all.names = TRUE)` is `\"..2dge\"`, and `exists(\"..2dge\")` is TRUE. `from`, `..1` and `..2` are forbidden as file-level bindings: the first is a parameter, the other two are argument references that exist only during a call. The lesson the fixture now carries is that an oracle can be wrong in the SAME direction as the analyzer and the two agree, which is the limitation `oracle-r.ts` states about itself.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "..2dge",
+      "kind": "function"
+    },
+    {
+      "name": "..foo",
+      "kind": "function"
+    },
+    {
+      "name": "uses_dot_one",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "..2dge"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "..foo"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "uses_dot_one"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "..1",
+      "kind": "variable"
+    },
+    {
+      "name": "..2",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "..1"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "..2"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "from"
+    }
+  ]
+}

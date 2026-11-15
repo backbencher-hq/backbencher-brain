@@ -1,0 +1,114 @@
+{
+  "fixtureId": "rust/qualified-calls-ownership",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RSD1/RSD3/RSD4 pins (2026-09-05, cargo+ripgrep census): (1) qualified_calls used to be keyed by BARE method name in a qcByFunction map \u2014 Alpha.run and Beta.run shared one payload (410 buckets / 749 excess entries across the corpus); each method must now carry ONLY its own body's calls. (2) `struct Alpha` + multiple `impl Alpha` blocks all produced symbol id 'Alpha' (2,852 duplicates in 271 files) \u2014 ids must be unique per declaration. (3) macro invocations are real call sites (calls edges exist) but never reached the payload \u2014 a format!-only method must carry `macro:format`. SUPERSESSION (2026-10-19, Lead decision \u00a721.11 task-36 defect 1, task-9 conditions): impl symbols used to be named `Alpha` (ids Alpha#2/#3), i.e. a duplicate declaration of the struct. The impl block is a CONTAINER with the distinct identity `Alpha::r#impl`; the three blocks still get three DISTINCT ids (Alpha::r#impl, Alpha::r#impl#2, Alpha::r#impl#3), which is exactly the RSD3 intent this fixture exists for \u2014 the duplicate NAME identity is now forbidden.",
+  "expectSymbols": [
+    {
+      "name": "Alpha",
+      "kind": "struct",
+      "comment": "the struct declaration keeps the canonical plain id"
+    },
+    {
+      "name": "Alpha::r#impl",
+      "kind": "impl",
+      "id": "Alpha::r#impl",
+      "comment": "first impl block: distinct CONTAINER identity, disambiguated, not merged into the struct"
+    },
+    {
+      "name": "Alpha::r#impl",
+      "kind": "impl",
+      "id": "Alpha::r#impl#2",
+      "comment": "second impl block of the same type is a distinct container"
+    },
+    {
+      "name": "Alpha::r#impl",
+      "kind": "impl",
+      "id": "Alpha::r#impl#3",
+      "comment": "third impl block, still distinct"
+    },
+    {
+      "name": "Beta::r#impl",
+      "kind": "impl",
+      "id": "Beta::r#impl"
+    }
+  ],
+  "expectUniqueIds": [
+    {
+      "name": "Alpha",
+      "comment": "struct + 2 impl blocks -> 3 distinct ids"
+    },
+    {
+      "name": "Beta",
+      "comment": "struct + 1 impl block -> 2 distinct ids"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "first_char",
+      "target": "name",
+      "comment": "RSD5 positive: a pure field READ emits uses"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "set_name",
+      "target": "name",
+      "comment": "RSD5: assignment-LHS field WRITE must NOT emit uses"
+    },
+    {
+      "type": "uses",
+      "source": "bump_count",
+      "target": "count",
+      "comment": "RSD5: compound-assignment (+=) field WRITE must NOT emit uses"
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "run",
+      "ownerName": "Alpha",
+      "includes": [
+        "self.alpha_one",
+        "self.alpha_two"
+      ],
+      "notIncludes": [
+        "self.beta_only"
+      ],
+      "comment": "RSD1: Alpha.run must NOT carry Beta.run's call"
+    },
+    {
+      "symbol": "run",
+      "ownerName": "Beta",
+      "includes": [
+        "self.beta_only"
+      ],
+      "notIncludes": [
+        "self.alpha_one",
+        "self.alpha_two"
+      ],
+      "comment": "RSD1: Beta.run must NOT carry Alpha.run's calls"
+    },
+    {
+      "symbol": "second",
+      "ownerName": "Alpha",
+      "includes": [
+        "macro:format"
+      ],
+      "comment": "RSD4: macro invocations belong in the payload (macro:name vocabulary)"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Alpha",
+      "kind": "impl",
+      "comment": "SUPERSEDED duplicate declaration identity: the impl container must not be published under the struct's name"
+    },
+    {
+      "name": "Beta",
+      "kind": "impl",
+      "comment": "SUPERSEDED duplicate declaration identity"
+    }
+  ]
+}

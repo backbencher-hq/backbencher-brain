@@ -1,0 +1,1157 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-04T01:36:59.329Z",
+  "environment": {
+    "embeddingProvider": "local-fallback (API keys deliberately absent)",
+    "fixtureLanguages": [
+      "typescript",
+      "python",
+      "java",
+      "ruby",
+      "vue"
+    ],
+    "dispatchPath": "validateToolArguments -> handler (server.ts sequence)"
+  },
+  "validInvocations": 42,
+  "negativeInvocations": 30,
+  "corpus": {
+    "bb_search.symbols": {
+      "kind": "text",
+      "textHead": "User [interface] src/user-service.ts:1 (typescript)\ndeleteUser [function] src/user-service.ts:5 (typescript)\nfindUser [function] src/user-service.ts:2 (typescri"
+    },
+    "bb_search.content": {
+      "kind": "json-object",
+      "keys": [
+        "bodyCoverage",
+        "freshCount",
+        "freshness",
+        "matchMode",
+        "pageStaleCount",
+        "query",
+        "results",
+        "returned",
+        "searchMode",
+        "staleCount",
+        "total",
+        "truncated"
+      ],
+      "scalars": {
+        "searchMode": "content",
+        "query": "invoice",
+        "total": 2,
+        "returned": 2,
+        "staleCount": 0,
+        "freshCount": 2,
+        "pageStaleCount": 0,
+        "truncated": false,
+        "matchMode": "phrase"
+      },
+      "arrayItemKeys": {
+        "results": [
+          "_relevance",
+          "column",
+          "complexity",
+          "context",
+          "file",
+          "fileId",
+          "language",
+          "line",
+          "matchType",
+          "snippet",
+          "symbolName",
+          "symbolType"
+        ]
+      }
+    },
+    "bb_search.symbol": {
+      "kind": "json-object",
+      "keys": [
+        "found",
+        "freshness",
+        "matches",
+        "returned",
+        "totalMatches",
+        "truncated"
+      ],
+      "scalars": {
+        "found": true,
+        "totalMatches": 1,
+        "returned": 1,
+        "truncated": false
+      },
+      "arrayItemKeys": {
+        "matches": [
+          "byteEnd",
+          "byteStart",
+          "fileId",
+          "id",
+          "language",
+          "lineStart",
+          "name",
+          "relativePath",
+          "stale",
+          "symbolType"
+        ]
+      }
+    },
+    "bb_search.file": {
+      "kind": "json-object",
+      "keys": [
+        "content",
+        "contentLength",
+        "file",
+        "fileId",
+        "freshness",
+        "language",
+        "searchMode",
+        "stale",
+        "totalMatches",
+        "truncated"
+      ],
+      "scalars": {
+        "searchMode": "file",
+        "file": "src/user-service.ts",
+        "fileId": "<SHA1>:src/user-service.ts",
+        "language": "typescript",
+        "content": "export interface User { id: number; name: string }\nexport function findUser(users: User[], id: number): User | undefined {\n  return users.find((u) => u.id === id)\n}\nexport function deleteUser(users: User[], id: number): boolean {\n  const before = users.length\n  const kept = users.filter((u) => u.id !== id)\n  users.length = 0\n  users.push(...kept)\n  return users.length < before\n}\n",
+        "contentLength": 382,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": false
+      },
+      "arrayItemKeys": {}
+    },
+    "bb_ask.answer": {
+      "kind": "text",
+      "textHead": "answer: Note: this ranking does not distinguish its top results — 5 other symbol(s) scored within the same margin of the best. The similarity numbers below sepa"
+    },
+    "bb_health.status": {
+      "kind": "text",
+      "textHead": "project: <TMP>\nprojectId: <SHA1>\nfiles=6 symbols=20 relationships=31 imports=0 syntaxErrors=0\nfreshness: 6"
+    },
+    "bb_health.refresh": {
+      "kind": "text",
+      "textHead": "project: <TMP>\nprojectId: <SHA1>\nfiles=6 symbols=20 relationships=31 imports=0 syntaxErrors=0\nfreshness: 6"
+    },
+    "bb_patterns.orphaned": {
+      "kind": "text",
+      "textHead": "orphaned code (17 found):\n  orphaned_class Cart — src/cart.rb:1 (70%)\n  orphaned_function deleteUser — src/user-service.ts:5 (70%)\n  orphaned_class Invoice — sr"
+    },
+    "bb_patterns.all": {
+      "kind": "text",
+      "textHead": "patterns (19 found):\n  [info] orphaned_class @ src/billing.py:1 (70%)\n  [info] orphaned_function @ src/billing.py:8 (70%)\n  [info] orphaned_class @ src/cart.rb:"
+    },
+    "bb_security.findings": {
+      "kind": "text",
+      "textHead": "security: 0 critical / 0 high / 0 medium / 0 low (0 resolved flows, 0 unvalidated sources, 0 mitigated)\n  no findings with both endpoints resolved\n[scan: 0 tain"
+    },
+    "bb_visualize.project": {
+      "kind": "json-object",
+      "keys": [
+        "absenceNote",
+        "considered",
+        "declaredAbsent",
+        "excluded",
+        "format",
+        "freshness",
+        "layout",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "totalNodesAvailable",
+        "truncation",
+        "view"
+      ],
+      "scalars": {
+        "scope": "project",
+        "target": null,
+        "format": "json",
+        "view": "graph",
+        "layout": "regions",
+        "declaredAbsent": false,
+        "absenceNote": null,
+        "totalNodesAvailable": 20
+      },
+      "arrayItemKeys": {
+        "nodes": [
+          "filePath",
+          "gravity",
+          "group",
+          "id",
+          "line",
+          "lineEnd",
+          "name",
+          "qualifiedName",
+          "stale",
+          "type",
+          "val"
+        ],
+        "links": [
+          "color",
+          "confidence",
+          "crossFile",
+          "crossLanguage",
+          "label",
+          "line",
+          "occurrences",
+          "rowId",
+          "rowIds",
+          "source",
+          "stale",
+          "target",
+          "type"
+        ]
+      }
+    },
+    "bb_visualize.file": {
+      "kind": "json-object",
+      "keys": [
+        "absenceNote",
+        "considered",
+        "declaredAbsent",
+        "excluded",
+        "format",
+        "freshness",
+        "layout",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "totalNodesAvailable",
+        "truncation",
+        "view"
+      ],
+      "scalars": {
+        "scope": "file",
+        "target": "src/user-service.ts",
+        "format": "json",
+        "view": "graph",
+        "layout": "regions",
+        "declaredAbsent": false,
+        "absenceNote": null,
+        "totalNodesAvailable": 5
+      },
+      "arrayItemKeys": {
+        "nodes": [
+          "filePath",
+          "gravity",
+          "group",
+          "id",
+          "line",
+          "lineEnd",
+          "name",
+          "qualifiedName",
+          "stale",
+          "type",
+          "val"
+        ],
+        "links": [
+          "color",
+          "confidence",
+          "crossFile",
+          "crossLanguage",
+          "label",
+          "line",
+          "occurrences",
+          "rowId",
+          "rowIds",
+          "source",
+          "stale",
+          "target",
+          "type"
+        ]
+      }
+    },
+    "bb_visualize.symbol": {
+      "kind": "json-object",
+      "keys": [
+        "absenceNote",
+        "considered",
+        "declaredAbsent",
+        "excluded",
+        "format",
+        "freshness",
+        "layout",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "totalNodesAvailable",
+        "truncation",
+        "view"
+      ],
+      "scalars": {
+        "scope": "symbol",
+        "target": "findUser",
+        "format": "json",
+        "view": "graph",
+        "layout": "regions",
+        "declaredAbsent": false,
+        "absenceNote": null,
+        "totalNodesAvailable": 1
+      },
+      "arrayItemKeys": {
+        "nodes": [
+          "filePath",
+          "gravity",
+          "group",
+          "id",
+          "line",
+          "lineEnd",
+          "name",
+          "qualifiedName",
+          "stale",
+          "type",
+          "val"
+        ]
+      }
+    },
+    "bb_visualize.module": {
+      "kind": "json-object",
+      "keys": [
+        "absenceNote",
+        "considered",
+        "declaredAbsent",
+        "excluded",
+        "format",
+        "freshness",
+        "layout",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "totalNodesAvailable",
+        "truncation",
+        "view"
+      ],
+      "scalars": {
+        "scope": "module",
+        "target": "src",
+        "format": "json",
+        "view": "graph",
+        "layout": "regions",
+        "declaredAbsent": false,
+        "absenceNote": null,
+        "totalNodesAvailable": 19
+      },
+      "arrayItemKeys": {
+        "nodes": [
+          "filePath",
+          "gravity",
+          "group",
+          "id",
+          "line",
+          "lineEnd",
+          "name",
+          "qualifiedName",
+          "stale",
+          "type",
+          "val"
+        ],
+        "links": [
+          "color",
+          "confidence",
+          "crossFile",
+          "crossLanguage",
+          "label",
+          "line",
+          "occurrences",
+          "rowId",
+          "rowIds",
+          "source",
+          "stale",
+          "target",
+          "type"
+        ]
+      }
+    },
+    "bb_visualize.feature": {
+      "kind": "json-object",
+      "keys": [
+        "absenceNote",
+        "considered",
+        "declaredAbsent",
+        "excluded",
+        "format",
+        "freshness",
+        "layout",
+        "links",
+        "nodes",
+        "provenance",
+        "scope",
+        "target",
+        "totalNodesAvailable",
+        "truncation",
+        "view"
+      ],
+      "scalars": {
+        "scope": "feature",
+        "target": "billing",
+        "format": "json",
+        "view": "graph",
+        "layout": "regions",
+        "declaredAbsent": false,
+        "absenceNote": null,
+        "totalNodesAvailable": 1
+      },
+      "arrayItemKeys": {
+        "nodes": [
+          "filePath",
+          "gravity",
+          "group",
+          "id",
+          "line",
+          "lineEnd",
+          "name",
+          "qualifiedName",
+          "stale",
+          "type",
+          "val"
+        ],
+        "links": [
+          "color",
+          "confidence",
+          "crossFile",
+          "crossLanguage",
+          "label",
+          "line",
+          "matchedMembers",
+          "occurrences",
+          "ownerCascade",
+          "rowId",
+          "rowIds",
+          "source",
+          "stale",
+          "target",
+          "type"
+        ]
+      }
+    },
+    "bb_migrate.plan": {
+      "kind": "text",
+      "textHead": "migration target: python\ndependency order: findUser (partial)\nmethodology: base=4h relationships=4h missing-mappings=0h\n  charged edges by kind (one flat 2h rat"
+    },
+    "bb_analyze.callers": {
+      "kind": "json-object",
+      "keys": [
+        "callees",
+        "callers",
+        "found",
+        "freshness",
+        "mode",
+        "nodes",
+        "provenance",
+        "root",
+        "rootCandidates",
+        "rootMatch",
+        "summary",
+        "target"
+      ],
+      "scalars": {
+        "rootCandidates": 1,
+        "rootMatch": "exact",
+        "mode": "callers",
+        "target": "deleteUser",
+        "found": true
+      },
+      "arrayItemKeys": {}
+    },
+    "bb_analyze.callees": {
+      "kind": "json-object",
+      "keys": [
+        "callees",
+        "callers",
+        "found",
+        "freshness",
+        "mode",
+        "nodes",
+        "provenance",
+        "root",
+        "rootCandidates",
+        "rootMatch",
+        "summary",
+        "target"
+      ],
+      "scalars": {
+        "rootCandidates": 1,
+        "rootMatch": "exact",
+        "mode": "callees",
+        "target": "deleteUser",
+        "found": true
+      },
+      "arrayItemKeys": {
+        "callees": [
+          "callSite",
+          "confidence",
+          "depth",
+          "from",
+          "isCrossLanguage",
+          "metadata",
+          "relationshipType",
+          "rowId",
+          "sourceMatch",
+          "targetBasis",
+          "to"
+        ]
+      }
+    },
+    "bb_analyze.trace": {
+      "kind": "json-object",
+      "keys": [
+        "callees",
+        "callers",
+        "found",
+        "freshness",
+        "mode",
+        "nodes",
+        "provenance",
+        "root",
+        "rootCandidates",
+        "rootMatch",
+        "summary",
+        "target"
+      ],
+      "scalars": {
+        "rootCandidates": 1,
+        "rootMatch": "exact",
+        "mode": "trace",
+        "target": "deleteUser",
+        "found": true
+      },
+      "arrayItemKeys": {
+        "callees": [
+          "callSite",
+          "confidence",
+          "depth",
+          "from",
+          "isCrossLanguage",
+          "metadata",
+          "relationshipType",
+          "rowId",
+          "sourceMatch",
+          "targetBasis",
+          "to"
+        ]
+      }
+    },
+    "bb_analyze.dependencies": {
+      "kind": "json-object",
+      "keys": [
+        "dependencies",
+        "freshness",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {},
+      "arrayItemKeys": {
+        "dependencies": [
+          "dependencies",
+          "dependenciesTotal",
+          "dependenciesTruncated",
+          "dependents",
+          "dependentsTotal",
+          "dependentsTruncated",
+          "file",
+          "fileId",
+          "score",
+          "stale",
+          "unresolvedSpecifiers"
+        ]
+      }
+    },
+    "bb_analyze.stats": {
+      "kind": "json-object",
+      "keys": [
+        "avgComplexity",
+        "avgFileSize",
+        "avgFileSizeUnit",
+        "callEdges",
+        "couplingRelationshipTypes",
+        "files",
+        "freshness",
+        "languages",
+        "linesOfCode",
+        "productionFiles",
+        "projectId",
+        "provenance",
+        "relationships",
+        "symbols",
+        "symbolsWithComplexity",
+        "testFiles"
+      ],
+      "scalars": {
+        "files": 6,
+        "linesOfCode": 52,
+        "avgFileSize": 185.5,
+        "avgFileSizeUnit": "bytes",
+        "symbols": 20,
+        "symbolsWithComplexity": 20,
+        "avgComplexity": 1,
+        "relationships": 31,
+        "callEdges": 14,
+        "testFiles": 0,
+        "productionFiles": 6,
+        "projectId": "<SHA1>"
+      },
+      "arrayItemKeys": {
+        "languages": [
+          "files",
+          "language",
+          "linesOfCode",
+          "symbols"
+        ]
+      }
+    },
+    "bb_analyze.complexity": {
+      "kind": "json-object",
+      "keys": [
+        "breakdown",
+        "breakdownReturned",
+        "breakdownTruncated",
+        "couplingRelationshipTypes",
+        "filesInScope",
+        "filesMatchingScope",
+        "freshness",
+        "metrics",
+        "provenance",
+        "scope",
+        "symbolCount",
+        "target"
+      ],
+      "scalars": {
+        "target": "entire project",
+        "scope": "project",
+        "symbolCount": 20,
+        "breakdownReturned": 20,
+        "breakdownTruncated": false,
+        "filesInScope": 6,
+        "filesMatchingScope": 6
+      },
+      "arrayItemKeys": {
+        "breakdown": [
+          "complexity",
+          "file",
+          "line",
+          "name",
+          "stale",
+          "type"
+        ]
+      }
+    },
+    "bb_analyze.impact": {
+      "kind": "json-object",
+      "keys": [
+        "affectedFiles",
+        "crossLanguageFiles",
+        "depthCap",
+        "depthReached",
+        "directSymbols",
+        "found",
+        "freshness",
+        "nodeBudget",
+        "provenance",
+        "riskLevel",
+        "root",
+        "scope",
+        "source",
+        "target",
+        "totalSymbols",
+        "totalSymbolsIfKnown",
+        "transitiveFiles",
+        "truncated",
+        "truncationReason",
+        "unresolvedEdges"
+      ],
+      "scalars": {
+        "target": "findUser",
+        "found": true,
+        "scope": "transitive",
+        "directSymbols": 0,
+        "transitiveFiles": 0,
+        "crossLanguageFiles": 0,
+        "unresolvedEdges": 0,
+        "riskLevel": "low",
+        "truncated": false,
+        "truncationReason": null,
+        "depthCap": 5,
+        "nodeBudget": 200,
+        "depthReached": 0,
+        "totalSymbols": 0,
+        "totalSymbolsIfKnown": 0,
+        "source": "impact@lsp-canonical (computeImpact)"
+      },
+      "arrayItemKeys": {}
+    },
+    "bb_analyze.test_mapping": {
+      "kind": "json-object",
+      "keys": [
+        "entries",
+        "freshness",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {},
+      "arrayItemKeys": {
+        "entries": [
+          "complexity",
+          "file",
+          "gravity",
+          "line",
+          "links",
+          "linksTruncated",
+          "name",
+          "stale",
+          "strongestEvidence",
+          "symbolId",
+          "symbolType"
+        ]
+      }
+    },
+    "bb_analyze.test_gaps": {
+      "kind": "json-object",
+      "keys": [
+        "freshness",
+        "gaps",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {},
+      "arrayItemKeys": {
+        "gaps": [
+          "category",
+          "complexity",
+          "file",
+          "gravity",
+          "line",
+          "name",
+          "recommendation",
+          "riskScore",
+          "stale",
+          "symbolId",
+          "symbolType"
+        ]
+      }
+    },
+    "bb_analyze.test_impact": {
+      "kind": "json-object",
+      "keys": [
+        "affectedTestFiles",
+        "directTests",
+        "found",
+        "freshness",
+        "indirectTests",
+        "provenance",
+        "runtimeCoverage",
+        "summary",
+        "target",
+        "truncated",
+        "truncationReason"
+      ],
+      "scalars": {
+        "target": "findUser",
+        "found": true,
+        "truncated": false,
+        "truncationReason": null
+      },
+      "arrayItemKeys": {}
+    },
+    "bb_analyze.test_quality": {
+      "kind": "json-object",
+      "keys": [
+        "aggregate",
+        "files",
+        "freshness",
+        "provenance",
+        "summary"
+      ],
+      "scalars": {},
+      "arrayItemKeys": {}
+    },
+    "bb_doc.symbol": {
+      "kind": "text",
+      "textHead": "# symbol: findUser\n\n1 file(s) and 1 symbol(s) in scope, 10 cited claim(s) across 5 section(s) from 6 source(s). No indexed evidence was found for: Tests.\n\n## AP"
+    },
+    "bb_doc.file": {
+      "kind": "text",
+      "textHead": "# file: src/billing.py\n\n1 file(s) and 3 symbol(s) in scope, 7 cited claim(s) across 4 section(s) from 7 source(s). No indexed evidence was found for: Risks.\n\n##"
+    },
+    "bb_doc.module": {
+      "kind": "text",
+      "textHead": "# module: src\n\n5 file(s) and 19 symbol(s) in scope, 62 cited claim(s) across 4 section(s) from 80 source(s).\n\n## Purpose\n\n5 claims, 5 read directly from the ind"
+    },
+    "bb_doc.feature": {
+      "kind": "text",
+      "textHead": "# feature: billing\n\n1 file(s) and 1 symbol(s) in scope, 7 cited claim(s) across 4 section(s) from 3 source(s). No indexed evidence was found for: Test coverage."
+    },
+    "bb_doc.api": {
+      "kind": "text",
+      "textHead": "# api documentation\n\n6 file(s) and 0 symbol(s) in scope, 0 cited claim(s) across 5 section(s) from 6 source(s). No indexed evidence was found for: Endpoints, In"
+    },
+    "bb_doc.project": {
+      "kind": "text",
+      "textHead": "# project documentation\n\n6 file(s) and 20 symbol(s) in scope, 67 cited claim(s) across 5 section(s) from 64 source(s). No indexed evidence was found for: Risks."
+    },
+    "bb_doc.coverage": {
+      "kind": "text",
+      "textHead": "# coverage documentation\n\n6 file(s) and 20 symbol(s) in scope, 22 cited claim(s) across 4 section(s) from 60 source(s).\n\n## Documented\n\n3 claims, 3 read directl"
+    },
+    "bb_edit.write": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "derived",
+        "dryRun",
+        "envelope",
+        "formatted",
+        "formatting",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "write",
+        "dryRun": false,
+        "formatted": false,
+        "validated": true,
+        "reindexed": true
+      },
+      "arrayItemKeys": {
+        "changes": [
+          "after",
+          "before",
+          "path"
+        ],
+        "formatting": [
+          "formatter",
+          "ok",
+          "path",
+          "ran",
+          "reason"
+        ]
+      }
+    },
+    "bb_edit.update": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "envelope",
+        "formatted",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "update",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      },
+      "arrayItemKeys": {
+        "changes": [
+          "after",
+          "before",
+          "path"
+        ]
+      }
+    },
+    "bb_edit.insert": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "envelope",
+        "formatted",
+        "mode",
+        "reindexed",
+        "validated"
+      ],
+      "scalars": {
+        "mode": "insert",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      },
+      "arrayItemKeys": {
+        "changes": [
+          "after",
+          "before",
+          "path"
+        ]
+      }
+    },
+    "bb_edit.delete": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "envelope",
+        "formatted",
+        "importPruning",
+        "mode",
+        "reindexed",
+        "validated",
+        "warnings"
+      ],
+      "scalars": {
+        "mode": "delete",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      },
+      "arrayItemKeys": {
+        "changes": [
+          "after",
+          "before",
+          "path"
+        ]
+      }
+    },
+    "bb_edit.refactor": {
+      "kind": "json-object",
+      "keys": [
+        "changes",
+        "dryRun",
+        "envelope",
+        "formatted",
+        "mode",
+        "reindexed",
+        "summary",
+        "validated",
+        "warnings"
+      ],
+      "scalars": {
+        "mode": "refactor",
+        "dryRun": true,
+        "formatted": false,
+        "validated": false,
+        "reindexed": false
+      },
+      "arrayItemKeys": {
+        "changes": [
+          "after",
+          "before",
+          "path"
+        ]
+      }
+    },
+    "bb_index.file": {
+      "kind": "json-object",
+      "keys": [
+        "declined",
+        "deleted",
+        "derived",
+        "errors",
+        "indexed",
+        "mode",
+        "outcome",
+        "path",
+        "reason",
+        "skipped",
+        "unchanged",
+        "walCheckpointed"
+      ],
+      "scalars": {
+        "mode": "file",
+        "path": "gen/agent-fresh.ts",
+        "indexed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": 0,
+        "declined": 1,
+        "skipped": 0,
+        "outcome": "no-op",
+        "reason": "1 file(s) hold nothing the indexer extracts (the extension is not one this indexer parses)",
+        "walCheckpointed": false
+      },
+      "arrayItemKeys": {}
+    },
+    "bb_index.auto": {
+      "kind": "json-object",
+      "keys": [
+        "declined",
+        "deleted",
+        "derived",
+        "errors",
+        "indexed",
+        "mode",
+        "outcome",
+        "path",
+        "reason",
+        "skipped",
+        "unchanged",
+        "walCheckpointed"
+      ],
+      "scalars": {
+        "mode": "file",
+        "path": "gen/agent-fresh.ts",
+        "indexed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": 0,
+        "declined": 1,
+        "skipped": 0,
+        "outcome": "no-op",
+        "reason": "1 file(s) hold nothing the indexer extracts (the extension is not one this indexer parses)",
+        "walCheckpointed": false
+      },
+      "arrayItemKeys": {}
+    },
+    "bb_index.dir": {
+      "kind": "json-object",
+      "keys": [
+        "candidates",
+        "deleted",
+        "errors",
+        "mode",
+        "outcome",
+        "path",
+        "processed",
+        "reason",
+        "unchanged"
+      ],
+      "scalars": {
+        "mode": "dir",
+        "path": "src",
+        "candidates": 0,
+        "processed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": true,
+        "outcome": "no-op",
+        "reason": "no change detected under the requested directory (mtime+size comparison; the walk applies the indexer's own skip rules)"
+      },
+      "arrayItemKeys": {}
+    }
+  },
+  "negatives": {
+    "bb_search.missing-query": {
+      "isError": true,
+      "head": "error: bb_search symbols mode requires a non-empty query"
+    },
+    "bb_search.unindexed-file": {
+      "isError": true,
+      "head": "bb_search mode=file: not found: nope.ts"
+    },
+    "bb_ask.empty-query": {
+      "isError": true,
+      "head": "error: bb_ask requires a non-empty query"
+    },
+    "bb_ask.missing-query": {
+      "isError": true,
+      "head": "error: bb_ask: missing required option: query"
+    },
+    "bb_health.unknown-option": {
+      "isError": true,
+      "head": "error: bb_health: unknown or irrelevant options: refreshMode — accepted options: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity"
+    },
+    "bb_health.bad-sample": {
+      "isError": true,
+      "head": "error: bb_health: sampleSize must be non-negative"
+    },
+    "bb_patterns.bad-scope": {
+      "isError": true,
+      "head": "error: bb_patterns: scope must be one of: orphaned, all"
+    },
+    "bb_patterns.bad-confidence": {
+      "isError": true,
+      "head": "error: bb_patterns: confidenceThreshold must be between 0 and 1"
+    },
+    "bb_security.unknown-option": {
+      "isError": true,
+      "head": "error: bb_security: unknown or irrelevant options: scanMode — accepted options: history, recordRun, limit"
+    },
+    "bb_security.bad-history-limit": {
+      "isError": true,
+      "head": "error: bb_security: limit must be non-negative"
+    },
+    "bb_visualize.bad-scope": {
+      "isError": true,
+      "head": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    "bb_visualize.missing-target": {
+      "isError": true,
+      "head": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    "bb_migrate.missing-language": {
+      "isError": true,
+      "head": "error: bb_migrate: missing required option: targetLanguage"
+    },
+    "bb_migrate.missing-symbols": {
+      "isError": true,
+      "head": "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+    },
+    "bb_analyze.bad-mode": {
+      "isError": true,
+      "head": "error: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality"
+    },
+    "bb_analyze.missing-target": {
+      "isError": true,
+      "head": "bb_analyze callers requires a non-empty target"
+    },
+    "bb_doc.bad-mode": {
+      "isError": true,
+      "head": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+    },
+    "bb_doc.missing-target": {
+      "isError": true,
+      "head": "bb_doc symbol mode requires target"
+    },
+    "bb_edit.bad-mode": {
+      "isError": true,
+      "head": "error: bb_edit: mode must be one of: write, update, insert, delete, refactor, batch"
+    },
+    "bb_edit.path-escape": {
+      "isError": true,
+      "head": "{\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"path escapes project root: ../outside.ts (via /tmp)\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": true,\n"
+    },
+    "bb_index.missing-path": {
+      "isError": true,
+      "head": "error: bb_index: missing required option: path"
+    },
+    "bb_index.missing-file": {
+      "isError": true,
+      "head": "bb_index: no such path: <TMP>"
+    },
+    "bb_graph.missing-symbol": {
+      "isError": true,
+      "head": "error: bb_graph: missing required option: symbol"
+    },
+    "bb_graph.bad-depth": {
+      "isError": true,
+      "head": "bb_graph maxDepth must be a whole number between 1 and 10"
+    },
+    "bb_impact.missing-symbol": {
+      "isError": true,
+      "head": "error: bb_impact: missing required option: symbol"
+    },
+    "bb_cross_language.missing-symbol": {
+      "isError": true,
+      "head": "error: bb_cross_language: missing required option: symbol"
+    },
+    "bb_annotate.missing-symbol": {
+      "isError": true,
+      "head": "error: bb_annotate: missing required option: symbol"
+    },
+    "bb_annotate.empty-body": {
+      "isError": true,
+      "head": "bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op"
+    },
+    "bb_annotate.over-limit-body": {
+      "isError": true,
+      "head": "bb_annotate: body exceeds the declared limit of 2000 chars (got 2001) — declared refusal, not silent truncation"
+    },
+    "bb_annotations.bad-limit": {
+      "isError": true,
+      "head": "bb_annotations: limit must be a number between 1 and 200"
+    }
+  }
+}

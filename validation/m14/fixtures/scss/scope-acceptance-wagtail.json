@@ -1,0 +1,73 @@
+{
+  "repo": "wagtail",
+  "files": 133,
+  "partition": {
+    "before": {
+      "contains": {
+        "resolved": 979,
+        "total": 979
+      },
+      "references": {
+        "resolved": 220,
+        "unresolved": 49,
+        "ambDeclOnly": 36,
+        "total": 305
+      },
+      "exports": {
+        "resolved": 122,
+        "ambDeclOnly": 6,
+        "total": 128
+      },
+      "calls": {
+        "resolved": 13,
+        "total": 13
+      },
+      "overrides": {
+        "resolved": 6,
+        "total": 6
+      },
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      }
+    },
+    "after": {
+      "contains": {
+        "resolved": 979,
+        "total": 979
+      },
+      "references": {
+        "resolved": 256,
+        "unresolved": 49,
+        "total": 305
+      },
+      "exports": {
+        "resolved": 128,
+        "total": 128
+      },
+      "calls": {
+        "resolved": 13,
+        "total": 13
+      },
+      "overrides": {
+        "resolved": 6,
+        "total": 6
+      },
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 33,
+    "before": {
+      "ambDeclOnly": 42
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 1368,
+    "falseBindings": 0
+  }
+}

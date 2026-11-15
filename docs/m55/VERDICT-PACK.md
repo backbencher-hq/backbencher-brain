@@ -17,15 +17,15 @@ behind them, and the verdict line at the end stays for the owner to write.
 
 | Issue | GitHub | Evidence | Status | Passed | Mutants |
 |---|---|---|---|---|---|
-| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) | `G1.json` | verified | 14 | — |
-| T1 | [#770](https://github.com/backbencher-hq/backbencher-brain/issues/770) | `T1.json` | verified | 38 | 5/5 |
-| T2 | [#771](https://github.com/backbencher-hq/backbencher-brain/issues/771) | `T2.json` | verified | 64 | 9/9 |
-| T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) | `T3.json` | verified | 92 | — |
-| T4 | [#774](https://github.com/backbencher-hq/backbencher-brain/issues/774) | `T4.json` | verified | 67 | — |
-| T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 70 | — |
-| P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) | `P1.json` | verified | 25 | 4/4 |
-| V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | verified | 55 | 14/14 |
-| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 40 | — |
+| G1 | [#773](https://github.com/ishaq2321/backbencher-brain/issues/773) | `G1.json` | verified | 14 | — |
+| T1 | [#770](https://github.com/ishaq2321/backbencher-brain/issues/770) | `T1.json` | verified | 38 | 5/5 |
+| T2 | [#771](https://github.com/ishaq2321/backbencher-brain/issues/771) | `T2.json` | verified | 64 | 9/9 |
+| T3 | [#772](https://github.com/ishaq2321/backbencher-brain/issues/772) | `T3.json` | verified | 92 | — |
+| T4 | [#774](https://github.com/ishaq2321/backbencher-brain/issues/774) | `T4.json` | verified | 67 | — |
+| T5 | [#775](https://github.com/ishaq2321/backbencher-brain/issues/775) | `T5.json` | verified | 70 | — |
+| P1 | [#776](https://github.com/ishaq2321/backbencher-brain/issues/776) | `P1.json` | verified | 25 | 4/4 |
+| V1 | [#777](https://github.com/ishaq2321/backbencher-brain/issues/777) | `V1.json` | verified | 55 | 14/14 |
+| X1 | [#778](https://github.com/ishaq2321/backbencher-brain/issues/778) | `X1.json` | known-gap | 40 | — |
 
 ## 2. Every claim, and the frame behind it
 

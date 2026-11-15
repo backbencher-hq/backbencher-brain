@@ -1,0 +1,93 @@
+{
+  "fixtureId": "haskell/decorates-th-splices",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS `decorates` FROM DECLARATION-POSITION TEMPLATE HASKELL SPLICES — the construct that makes this label implementable in a language whose attributes are otherwise passive metadata. Template Haskell runs code at COMPILE TIME: `$(makeLenses ''Widget)` applies the function `makeLenses` to the named declaration `Widget`, and `makeLenses` GENERATES accessor declarations for it, so the declaration carries a decorator in the vocabulary's sense (`decorates`: a decorator is applied to a declaration). THE DISCRIMINATOR IS THE QUOTED DECLARATION, NEVER THE HEAD: TH decorators are LIBRARY functions (`makeLenses` from Control.Lens.TH, `deriveJSON` from Data.Aeson.TH) — requiring the head to be declared in-file would exclude the construct — so the test is a `th_quoted_name` argument naming a declaration THIS file declares. Both splice forms parse as `top_splice` (grammar-confirmed before this file was written): `$(makeLenses ''Widget)` is top_splice -> splice -> parens -> apply(variable, th_quoted_name), and the bare `makePrisms ''Gadget` is top_splice -> apply. THE DIRECTION: source = the enclosing module scope, target = the decorated DECLARATION's own symbol; the decorator name is external and unresolvable, so it rides in `metadata.decoratorName` and NO edge is emitted to it (an edge to a name nothing declares is a claim the index cannot answer). FIRE: (1) module scope -> Widget, decoratorName makeLenses, line 57; (2) module scope -> Gadget, decoratorName makePrisms, line 60. FORBID, each the failure the discriminator could plausibly make: (A) a plain application `makeLenses n` in a function body is an `apply`, not a declaration splice — no decorates from `compute`; (B) `$(makeLenses ''ForeignRecord)` quotes a declaration this file does NOT declare — no decorates whose target is ForeignRecord, because this file cannot own that declaration; (C) `$(do pure [])` is a declaration-position splice with NO callable head (a generator) — no decorates at all beyond the two fire rows, pinned by an exact count; (D) `INSTANCE_CLUMP_1(Widget)` is a C-preprocessor macro line the grammar parses as a bare top-level expression splice — callable-shaped head, no quoted declaration, no decorates. The exact count (2) is the pin that keeps C and D silent, and the forbid rows name B and A by their own endpoints so a regression cannot hide behind the count.",
+  "expectSymbols": [
+    { "name": "DecoratesSplices", "kind": "module", "comment": "the module scope the decorates rows are sourced from" },
+    { "name": "Widget", "kind": "type", "comment": "the declaration $(makeLenses ''Widget) decorates" },
+    { "name": "Widget", "kind": "constructor", "ownerName": "Widget", "comment": "the record constructor" },
+    { "name": "Gadget", "kind": "type", "comment": "the declaration makePrisms ''Gadget decorates" },
+    { "name": "compute", "kind": "function", "comment": "the plain-application negative's enclosing callable" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "source": "DecoratesSplices",
+      "target": "Widget",
+      "line_number": 57,
+      "meta.decoratorName": "makeLenses",
+      "meta.isTemplateHaskell": true,
+      "meta.evidenceClass": "structural",
+      "comment": "FIRE 1 — the $( ... ) form. Source is the module scope, target is the DECORATED declaration, and the imported decorator's name is metadata rather than a dangling endpoint."
+    },
+    {
+      "type": "decorates",
+      "source": "DecoratesSplices",
+      "target": "Gadget",
+      "line_number": 60,
+      "meta.decoratorName": "makePrisms",
+      "comment": "FIRE 2 — the BARE declaration form `makePrisms ''Gadget` (no `$`), which parses as top_splice -> apply. Pinning both forms keeps the rule from depending on the dollar spelling."
+    },
+    {
+      "type": "exports",
+      "source": "DecoratesSplices",
+      "target": "Widget",
+      "comment": "the explicit export list; the export invariant requires it to resolve"
+    },
+    {
+      "type": "contains",
+      "source": "DecoratesSplices",
+      "target": "Widget",
+      "comment": "module owns the decorated declaration — the target of both decorates rows is a symbol this file declares"
+    },
+    {
+      "type": "imports",
+      "source": "DecoratesSplices",
+      "target": "Foreign.LensTH",
+      "meta.evidenceClass": "import_based",
+      "comment": "the decorator names are imported library functions — the shape that makes the head test wrong and the quote test right"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "decorates",
+      "equals": 2,
+      "comment": "EXACTLY the two fire rows. This is the pin that keeps FORBID (C) `$(do pure [])` and FORBID (D) the CPP-macro splice silent: neither has a quoted declaration, so neither may add a row. It also keeps a future over-eager rule (one that fires on every splice) from passing on the two positive rows alone."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "source": "compute",
+      "comment": "FORBID (A) — `compute n = makeLenses n` is a plain APPLICATION of the same TH function to a VALUE. It is an apply node inside a function body, not a declaration-position top_splice, so it is not a decoration. A rule keyed on the decorator NAME instead of the node type would emit this."
+    },
+    {
+      "type": "decorates",
+      "target": "ForeignRecord",
+      "comment": "FORBID (B) — `$(makeLenses ''ForeignRecord)` quotes a declaration this file does NOT declare. The quoted name must resolve against THIS file's module-scope declarations; a row here would source an edge from a declaration the file does not own."
+    },
+    {
+      "type": "decorates",
+      "target": "makeLenses",
+      "comment": "the decorator is EXTERNAL. An edge to it would assert a target nothing in this file declares — the claim the index cannot answer. The name belongs in metadata.decoratorName."
+    },
+    {
+      "type": "decorates",
+      "target": "makePrisms",
+      "comment": "as above, for the bare-form decorator"
+    },
+    {
+      "type": "decorates",
+      "target": "pure",
+      "comment": "FORBID (C) — `$(do pure [])` runs at compile time but applies no callable to a named declaration. `pure` is a head inside a do block, not a decorator applied to a declaration."
+    }
+  ],
+  "forbidSymbols": [
+    { "name": "makeLenses", "comment": "an imported decorator is NOT declared here, so it must not become a symbol of this file" },
+    { "name": "makePrisms", "comment": "as above" },
+    { "name": "ForeignRecord", "comment": "FORBID (B): a quoted name that is not declared here must not become a symbol" },
+    { "name": "$(makeLenses ''Widget)", "comment": "the raw splice text is not a name" },
+    { "name": "''Widget", "comment": "the quoted spelling (with its ticks) is not the declaration's name; the declaration is `Widget`" }
+  ]
+}

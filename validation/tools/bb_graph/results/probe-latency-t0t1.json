@@ -1,0 +1,58 @@
+{
+  "probe": "bb_graph door",
+  "section": "latency-t0t1",
+  "at": "2026-11-01T23:25:28.377Z",
+  "project": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": null,
+  "dbPath": "/home/ishaq2321/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbBefore": {
+    "db": 1793557000480,
+    "-wal": null,
+    "-shm": null
+  },
+  "tiers": [
+    {
+      "tier": "T0",
+      "fixture": "test/fixtures/polyglot",
+      "symbol": "basePrice",
+      "ok": true,
+      "indexMs": 1029,
+      "samplesMs": [
+        57.52,
+        14.9,
+        11.68,
+        25.23,
+        24.24
+      ],
+      "p50": 24.24,
+      "p95": 57.52,
+      "bytes": 6671,
+      "edges": 3
+    },
+    {
+      "tier": "T1",
+      "fixture": ".perf-fixtures/bb-scale/n100",
+      "symbol": "prepare",
+      "ok": true,
+      "indexMs": 2787,
+      "samplesMs": [
+        372.86,
+        313.44,
+        284.81,
+        244.5,
+        234.1
+      ],
+      "p50": 284.81,
+      "p95": 372.86,
+      "bytes": 353197,
+      "edges": 331
+    }
+  ],
+  "dbAfter": {
+    "db": 1793557000480,
+    "-wal": null,
+    "-shm": null
+  },
+  "dbUnchanged": true
+}

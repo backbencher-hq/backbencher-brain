@@ -1,0 +1,9 @@
+{
+  "fixtureId": "vue/decorated-default",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the deeper-review D3 fix: leading decorators no longer blind the structural default-export check — methods keep component ownership (and Contains edges) instead of surfacing ownerless through the JS fallback.",
+  "expectSymbols": [
+    { "name": "go", "kind": "method", "ownerName": "decorated-default" }
+  ]
+}

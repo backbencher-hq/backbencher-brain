@@ -1,11 +1,11 @@
 // script/m43/verify-a4-corpus.ts — M43.A4 (#660)
-// SYSTEM-LEVEL corpus on REAL repositories from $HOME/fixtures/.
+// SYSTEM-LEVEL corpus on REAL repositories from /home/ishaq2321/bb_tests/.
 // Proves the whole M43 invariant sentence end-to-end: an edit outside bb_edit
 // is repaired inline by the next read within budget (declared); over budget
 // the read declines honestly; concurrent readers never corrupt or crash while
 // an indexer holds the P1 lock — they answer declared-stale or normally.
 //
-// Scenarios (each on its own COPY of a real repo — the shared fixtures
+// Scenarios (each on its own COPY of a real repo — the shared bb_tests
 // checkouts are never modified):
 //   S1 edit -> read -> auto-repair reflected + declared (real rake, class Task)
 //   S2 budget exceeded on real code -> honest decline; within budget -> repair
@@ -26,21 +26,21 @@ const RESULTS_DIR = path.join(ROOT, "validation/m43/results")
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
 // Per-repo corpus paths were built on the literal foreign root
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
 const RAKE_REPO = `${CORPUS_BASE}/rake`
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
@@ -124,7 +124,7 @@ async function main() {
   // then FAIL the gate. Read AFTER the env deletions at module top.
   const MUTATE_SKIP_S5 = process.env.BB_M43_MUTATE_A4_SKIP_S5 === "1"
   const { getProjectId } = await import(path.join(ROOT, "src/cli/index"))
-  if (!existsSync(RAKE_REPO)) throw new Error(`rake corpus repo not found at ${RAKE_REPO} (fixtures not cloned on this machine?)`)
+  if (!existsSync(RAKE_REPO)) throw new Error(`rake corpus repo not found at ${RAKE_REPO} (bb_tests not cloned on this machine?)`)
 
   // ── S1: edit outside bb_edit -> read -> auto-repair reflected + declared ──
   beginScenario("S1-edit-reflect")

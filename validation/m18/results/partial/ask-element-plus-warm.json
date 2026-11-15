@@ -1,0 +1,63 @@
+{
+  "mode": "warm",
+  "data": {
+    "tag": "element-plus",
+    "cold": false,
+    "embeddings": 1809,
+    "flushCompleted": false,
+    "rows": [
+      {
+        "id": "ep-a1",
+        "query": "tree component data model",
+        "negative": false,
+        "gold": "TreeStore",
+        "hit": false,
+        "confidence": 0.42,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "RenderContentContext",
+          "TreeComponentProps",
+          "RootTreeType",
+          "handleNodeClick",
+          "TreeNodeOptions"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: packages/components/tree/src/tree.type.ts (Line 76) ---\n[interface] RenderCont",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "ep-s1",
+        "query": "ElCheckboxButton",
+        "negative": false,
+        "gold": "ElCheckboxButton",
+        "hit": false,
+        "confidence": 0.41,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "checkbox-button",
+          "checkbox-group",
+          "checkbox",
+          "checkbox",
+          "code_block.diff"
+        ],
+        "answerExcerpt": "Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: packages/components/checkbox/src/checkbox-button.vue (Line 1) ---\n[class] chec",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": false
+      },
+      {
+        "id": "ep-n1",
+        "query": "quantum lattice simulation",
+        "negative": true,
+        "gold": null,
+        "hit": null,
+        "confidence": 0.1,
+        "evidenceClass": "unknown",
+        "sourceContexts": [],
+        "answerExcerpt": "I couldn't find a specific answer or matching code to your query in the brain database.",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": true
+      }
+    ]
+  },
+  "generatedAt": "2026-08-24T23:57:19.447Z"
+}

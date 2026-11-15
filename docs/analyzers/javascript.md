@@ -57,7 +57,7 @@ has been run since they landed.
 | --- | --- | --- | --- | --- |
 | calls | **EMITTED** | svelte 31,940 / 3,371 files; lodash 12,555 / 47; ts corpus 64,557 / 6,516 | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; `console.*` leaf methods filtered; `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered. **A member call whose receiver type the file STATES carries `metadata.owner` = that type, plus `metadata.ownerEvidence` ∈ {new, assignment, this, jsdoc}** — the STORE channel (`src/ast/member-owner-resolution.ts`, `claimOwnerCarryingTargets` + `resolveMemberTargetsByOwner`, read by BOTH resolution paths in `parallel-indexer.ts`) that binds the member inside the owner. The four proofs: `new` (`const c = new Widget()`), `assignment` (`this.x = new Widget()`, `x = new W()`, class field `x = new Widget()`), `this` (`this.m()` inside a class DECLARATION — a class expression names no class-like symbol here, and a plain function's dynamic `this` gets nothing) and `jsdoc` (`/** @type {Widget} */` on a declarator, a scoped `@param {Widget} w`, or the constructor-parameter propagation `this.dep = dep`). A wrong owner is worse than none: the store WITHDRAWS the name binding for an owner-carrying row and then declines. **Coverage cap-50 triage (2026-10-18): 4 of 921 member-receiver calls (0.4%) — new 2, assignment 1, jsdoc 1**; the sample contains no class-declaration `this`-call (every `this.*` call there is a dynamic-`this` callback). Host-global claims: see "External claims" below. MEASURED END-TO-END through the production index (`indexProjectParallel`): with two classes Foo and Bar each declaring `run()`, `c.run()` bound to **Bar.run** (the alphabetically-first WRONG declaration) without the metadata and to **Foo.run** (the intended one) with it — the only place in this lane where a store channel has been shown to change a resolution. Controls pinned by `javascript/receiver-owner-from-new`: a non-`new` initialiser (`const d = make()`) states no type and carries no owner, and two different constructors for one name are refused, not guessed | 0.9 |
 | extends | **EMITTED** | svelte 15 / 14; ts corpus 3,575 / 1,031; **lodash 0** (ES5 has no `class`) | `class_heritage` → base class leaf name | 1.0 |
-| implements | **RULED** — the language has no `implements` clause. **Six instruments, two of them new this round and decisive** — see "What was RULED" | 0 emitted on every corpus | — | — |
+| implements | **EMITTED** (2026-11-13) — via **JSDoc `@implements`**, the only way JavaScript states conformance. The earlier RULED verdict is **SUPERSEDED**: its six instruments correctly proved the language has no `implements` CLAUSE and no analyzer path emitted the label, but neither asked how JS code states the relationship. Measured in real production code: `svelte/.../compile_diagnostic.js` carries `@typedef {{…}} ICompileDiagnostic` then `@implements {ICompileDiagnostic}` on `export class CompileDiagnostic` | svelte 600-file draw: truth **1** / analyzer **1** / covered **1** / FABRIC **0** | the JSDoc block preceding a `class_declaration`; text-scan (no regex); forms `{IFoo}`, bare `IFoo`, `{Iterable<T>}`→`Iterable`, `{A\|B}`→both, `{ns.IFoo}`→leaf. Source = the class, target = the interface name, `viaJSDoc: true`, resolved later by the store exactly as a base is | 1.0 |
 | instantiates | **EMITTED** | svelte 140 / 72; lodash 586 / 21; ts corpus 6,415 / 1,264 | `new_expression` → constructor leaf name; 55 global runtime constructors filtered (`JS_GLOBAL_CONSTRUCTORS`) | 0.95 |
 | imports | **EMITTED** | svelte 7,120 / 3,317; lodash 78 / 27; ts corpus 12,842 / 2,030 | ESM `import_statement` → per item. **A LOCAL relative/absolute module's NAMED specifier targets the DECLARED name** (`import { draw as render } from "./lib"` → `draw`), because the local binding is a name in THIS file and publishing it lets the store's name pass attach the row to an unrelated same-named declaration (measured: it bound `Widget.render`). The local binding is kept in `imports[]` and `metadata.declaredName`. **A LOCAL DEFAULT specifier keeps `<module>:<binding>`** (`import Def from "./lib"` → `./lib:Def`) so the module-aware resolver can reach the target module's default export; it resolves (`Def → Main`) through the wired `resolveImportTargets`. **A namespace specifier keeps `<module>:*`**. An EXTERNAL specifier keeps `<specifier>:<binding>`. **A named re-export now publishes ONE row per written member** (`export { readFile as read } from "fs"` → `fs:readFile` at 1.0 with `metadata {isReExport, declaredName, exportedAs}`), and `export *` / `export * as ns` / `export {}` keep `<module>:*` at 0.6, marked `unresolved`, discriminated by `metadata.starForm` (`all` vs `namespace`). Re-export and `exports` rows are sourced at the family sentinel `(file)` with `metadata.fileLevel`, not the module basename (a basename is a legal identifier; 155 of the first 250 admitted files declare a symbol equal to their module name — `visitors/Attribute.js` → `function Attribute`). **DEBT, stated: the differential's import oracle still spells the OLD contract and is master-owned — see Open finding §5** | 1.0 named/default, 0.6 for a `*` leaf (JD-J12: `*` names no symbol) |
 | exports | **EMITTED** | svelte 4,856 / 3,404; lodash 60 / 12; ts corpus 26,043 / 3,148 | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { … }` (object keys), `exports.x = …` → exported name. **Source is `(file)` + `metadata.fileLevel`.** **The export record's own metadata is carried through** (`{isDefault, ...item.metadata}`), so a NAMED default declaration's row carries `metadata.localName` (`export default class Main` → `localName: "Main"`); `loadImportInputs` uses it to recover the declaration, which is what lets `import Def from "./lib"` resolve to `Main` (JSD53, m40 JD2.4) | 1.0 |
@@ -168,7 +168,7 @@ measurement it rests on, and each says what the instrument cannot see.
 | exports | 1,966 | 1,965 | 1,965 | 1 | **1** | 0 |
 | references | 22 | 17 | 22 | 0 | 0 | 0 |
 | imports | 2,715 | 2,715 | 2,714 | 1 | **1** | 0 |
-| implements | 0 | 0 | 0 | 0 | — | — |
+| implements | 1 | 1 | 1 | 0 | 0 | 0 |
 
 **218 of the 225 MISSING rows on this draw are rows `pool-worker`'s noise filter
 deletes, not disagreements between the analyzer and the oracle.** The previous
@@ -296,7 +296,7 @@ Full table and reasoning in "What was RULED" below. The two decisive additions t
 
 | Type | Verdict | The measurement |
 | --- | --- | --- |
-| implements | **RULED** — JavaScript has no `implements` clause, and the pinned grammar cannot express one | **Six instruments, two of them new and decisive this round.** (A1) The grammar package's OWN `node-types.json`: `tree-sitter-javascript@0.23.1` declares **118** named types and the only supertype-shaped names are `class_heritage` and `super` — no `implements_clause`, no `interface_declaration`. (A2) **The probe is shown to fire:** the same scan over the sibling `tree-sitter-typescript` returns **183** named types including `implements_clause`, `interface_declaration` and `abstract_class_declaration`, so A1 is measuring the grammar and not failing to look. (B/C) Parse-tree count on the corpora: 18 / 0 / 4,428 `class_heritage` clauses on svelte / lodash / ts; the only anonymous token under one is `extends` at a 1:1 ratio (18/18, 0/0, 4,428/4,428); `implements` token **0** everywhere; multi-named-child clauses 0 / 0 / **97**, and **all 97 contain an ERROR node**. (D) JSDoc `@implements`: 1 / 0 / 45 occurrences. (E) **Counterfactual, new:** `class A implements B { }` parses to `(class_declaration name (ERROR …) body)` — **no `class_heritage` at all**; `class A extends B implements C { }` puts only `B` under `class_heritage` and leaves `implements C` an ERROR sibling; `class A extends B, C { }` yields `class_heritage (ERROR (identifier)) (identifier)`. (F) **Resolvability, new:** of the tags instrument D found, **0 name a type declared as a symbol anywhere in the corpus** — svelte's single tag names `ICompileDiagnostic`, which is declared in `packages/svelte/src/compiler/types/index.d.ts`, a TypeScript declaration file; the ts corpus's 45 name types no JavaScript file declares. Falsifier: **a `class_heritage` with more than one named child and no ERROR in it**, or a supertype-shaped node type in A1. Full text and reasoning: `script/m14/spec/javascript-completeness.json` JSD33, JSD38, JSD39, JSD40 |
+| implements | **SUPERSEDED — NOW EMITTED (2026-11-13) via JSDoc `@implements`.** The verdict below is retained because it is CORRECT about the clause and it is the proof that no clause route exists — but the clause is not the only expressible path, because JavaScript states conformance in a COMMENT. **The falsifier it named was "a `class_heritage` with more than one named child and no ERROR in it, or a supertype-shaped node type in A1"; neither was found, and neither is needed — the JSDoc route introduces no grammar node at all.** Instrument (D) was the live lead the verdict did not follow: `@implements` 1 / 0 / 45 occurrences, and svelte's single occurrence is a real `.js` production file. Instrument (F) argued those tags name no symbol — true of the JS analyzer's per-file symbol table, and beside the point for the EDGE: `extends` likewise publishes a base name it cannot resolve, and the store resolves it later. Full verification: `validation/m14/verification/JAVASCRIPT-IMPLEMENTS-JSDOC.md`. Original clause evidence: **Six instruments, two of them new and decisive this round.** (A1) The grammar package's OWN `node-types.json`: `tree-sitter-javascript@0.23.1` declares **118** named types and the only supertype-shaped names are `class_heritage` and `super` — no `implements_clause`, no `interface_declaration`. (A2) **The probe is shown to fire:** the same scan over the sibling `tree-sitter-typescript` returns **183** named types including `implements_clause`, `interface_declaration` and `abstract_class_declaration`, so A1 is measuring the grammar and not failing to look. (B/C) Parse-tree count on the corpora: 18 / 0 / 4,428 `class_heritage` clauses on svelte / lodash / ts; the only anonymous token under one is `extends` at a 1:1 ratio (18/18, 0/0, 4,428/4,428); `implements` token **0** everywhere; multi-named-child clauses 0 / 0 / **97**, and **all 97 contain an ERROR node**. (D) JSDoc `@implements`: 1 / 0 / 45 occurrences. (E) **Counterfactual, new:** `class A implements B { }` parses to `(class_declaration name (ERROR …) body)` — **no `class_heritage` at all**; `class A extends B implements C { }` puts only `B` under `class_heritage` and leaves `implements C` an ERROR sibling; `class A extends B, C { }` yields `class_heritage (ERROR (identifier)) (identifier)`. (F) **Resolvability, new:** of the tags instrument D found, **0 name a type declared as a symbol anywhere in the corpus** — svelte's single tag names `ICompileDiagnostic`, which is declared in `packages/svelte/src/compiler/types/index.d.ts`, a TypeScript declaration file; the ts corpus's 45 name types no JavaScript file declares. Falsifier: **a `class_heritage` with more than one named child and no ERROR in it**, or a supertype-shaped node type in A1. Full text and reasoning: `script/m14/spec/javascript-completeness.json` JSD33, JSD38, JSD39, JSD40 |
 
 **Why (D) does not overturn the ruling, argued rather than asserted.** A JSDoc
 tag is the one place the JavaScript ecosystem spells the word, so it deserves an
@@ -357,6 +357,53 @@ it — which `validation/m60/symbol-sentinel-register.json` records as measured 
 csharp only.
 
 ---
+
+## The receiver-owner and source-attribution campaign (2026-11-12 / 11-13)
+
+Four defects in the two dimensions the label/target instruments cannot see — `metadata.owner`
+(the receiver-typing evidence the store's owner pass reads) and the row's `source` — found,
+fixed and verified, with the full evidence in
+`validation/m14/verification/JAVASCRIPT-OWNER-CHANNEL-AUDIT.md`.
+
+| # | defect | class | fixed |
+|---|---|---|---|
+| 1 | `this.<field>` types were keyed by FIELD NAME, so a second class's read inherited the first class's type | wrong owner, bound by the store | yes — class-keyed with an inherited-field walk up `extends` |
+| 2 | every segment of a multi-segment member READ carried the chain ROOT's owner | wrong owner on segments past the head | yes — each segment carries its own receiver |
+| 3 | a `#private` field's owner was never published (the write arms refused `private_property_identifier`) | lost owner | yes — all three property spellings accepted |
+| 4 | a named `function_expression` did not rebind the `uses` walk's source, so reads inside it were charged to the OUTER function | wrong source | yes — parity with the calls walk's `resolveCurrent` |
+
+**Why 1 and 4 survived every gate the lane owned.** `differential.ts` matches on
+`label + normTarget` and never on source or owner; the per-label oracle agreement does the same;
+and `verify-js-source-attribution.ts` asserts only the NULL-source class. Both dimensions were
+outside the whole instrument set. That is the lesson of this round, and it is why three new
+instruments are now committed:
+
+| instrument | what it measures |
+|---|---|
+| `script/m14/javascript-chain-owner-census.ts` | the depth A/B for finding 2 — depth 1 owned rows must be IDENTICAL before and after (1757 = 1757), depth ≥ 2 is where an owner is removed |
+| `script/m14/javascript-field-owner-census.ts` | class-scoped `this.<f>` writes vs reads, tree-only so it cannot inherit the defect it measures |
+| `script/m14/javascript-source-attribution-census.ts` | replays `resolveCurrent` over the tree to ask whether each row's source is a name that rule can produce at that line |
+| `script/m14/javascript-target-validity-census.ts` | the R7 class the empty-endpoint guard does not cover |
+
+**Current state, measured.** Targets: **0 invalid endpoints on 70,157 rows** (svelte / lodash /
+bootstrap). Sources: **0 unattributed** on the `calls`+`uses` rows of four corpora (svelte 2,776 /
+bootstrap 38,601 / lodash 23,489 / proxicall 36,877). The zeros are measured, not blind: injecting a
+defect into the analyzer moved the target census from 0 to 109 and the source census off zero, and
+the analyzer was restored byte-identical each time.
+
+**Every census needed correcting before it was allowed to report**, and the corrections are the
+substance rather than a footnote — the first cut of the target census reported 178+71+3,228+116
+"defects" that were all legal (`imports` `<module>:<item>`, module-stem sources, reserved-word
+PROPERTY names, the default export), and the first cut of the source census reported 676
+"unattributed" rows that were all the module name on a line inside an unrelated `const`, or a local
+arrow function the symbol table does not publish. Both are in the audit page, with the rule that
+replaced each one. The pattern is this lane's standing rule firing again: **read the node type, do
+not re-decide from the text.**
+
+**One thing is deliberately NOT fixed:** with the owner correctly withheld, the store's name-ranking
+pass still binds a project-unique member name by name, so a wrong EDGE can survive on the graph even
+though the analyzer no longer makes the false CLAIM. That is a policy question about
+`parallel-indexer.ts` covering all 50 lanes, measured and named in the audit page.
 
 ## Open findings, measured, not fixed here
 

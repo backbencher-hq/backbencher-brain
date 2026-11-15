@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/decorator-exact",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T2+T4 fixes: decorator matching is EXACT after Mapping-strip (@GetMapping hits, @PostConstruct and @Getter never match despite sharing prefixes), and path-less mappings emit no path (bare @Get() claimed root /). Requires forbidApiContractPaths.",
+  "expectSymbols": [
+    { "name": "Svc", "kind": "class" }
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "go", "equals": "/go" }
+  ],
+  "forbidApiContractPaths": [
+    { "symbol": "init" },
+    { "symbol": "bare" }
+  ]
+}

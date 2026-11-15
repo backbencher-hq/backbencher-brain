@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSLT 1.0 §6 Named Templates, quoted verbatim in the expectation file:
+
+    "An xsl:call-template element invokes a template by name; it has a required
+     name attribute that identifies the template to be invoked."
+
+  Two calls, one dispatch, one refusal. The dispatch is the sibling that must NOT
+  become a call: XSLT 1.0 §5.4 gives xsl:apply-templates no name attribute at all,
+  and §6 says the template's name "does not affect whether the template is invoked
+  by an xsl:apply-templates element". The refusal is a call whose target this file
+  does not declare. And the two calls are MUTUAL, because a template invoking itself
+  is ordinary XSLT and a self-edge guard would have dropped it.
+-->
+<xsl:stylesheet version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:template name="outer" match="/">
+    <xsl:call-template name="inner"/>
+    <xsl:apply-templates name="viaapply" select="item"/>
+    <xsl:call-template name="elsewhere"/>
+  </xsl:template>
+  <xsl:template name="inner">
+    <p>inner</p>
+    <xsl:call-template name="outer"/>
+  </xsl:template>
+  <xsl:template name="viaapply">
+    <p>viaapply</p>
+  </xsl:template>
+  <xsl:template name="loop">
+    <xsl:call-template name="loop"/>
+  </xsl:template>
+</xsl:stylesheet>

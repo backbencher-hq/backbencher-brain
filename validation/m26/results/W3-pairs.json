@@ -139,7 +139,7 @@
     }
   ],
   "machineReality": {
-    "dir": "$HOME/.bb/projects",
+    "dir": "/home/ishaq2321/.bb/projects",
     "present": true,
     "scanned": 949,
     "skipped": 31

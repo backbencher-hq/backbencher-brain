@@ -1,0 +1,5040 @@
+{
+  "meta": {
+    "instrument": "merge-arm-slices.ts",
+    "population": {
+      "parsed": 23237,
+      "corpusTotal": 23237,
+      "admitted": 23237,
+      "string": "parsed=23237/23237 admitted=23237 exts=(slices' own) index=(slices' own)"
+    },
+    "slices": [
+      {
+        "file": "chunk-0.txt",
+        "range": [
+          0,
+          2000
+        ],
+        "parsed": 2000,
+        "edges": 421761
+      },
+      {
+        "file": "chunk-2000.txt",
+        "range": [
+          2000,
+          4000
+        ],
+        "parsed": 2000,
+        "edges": 169928
+      },
+      {
+        "file": "chunk-4000.txt",
+        "range": [
+          4000,
+          6000
+        ],
+        "parsed": 2000,
+        "edges": 284663
+      },
+      {
+        "file": "chunk-6000.txt",
+        "range": [
+          6000,
+          6500
+        ],
+        "parsed": 500,
+        "edges": 55023
+      },
+      {
+        "file": "chunk-6500.txt",
+        "range": [
+          6500,
+          6550
+        ],
+        "parsed": 50,
+        "edges": 1090
+      },
+      {
+        "file": "chunk-6550.txt",
+        "range": [
+          6550,
+          6600
+        ],
+        "parsed": 50,
+        "edges": 1359
+      },
+      {
+        "file": "chunk-6600.txt",
+        "range": [
+          6600,
+          6650
+        ],
+        "parsed": 50,
+        "edges": 1113
+      },
+      {
+        "file": "chunk-6650.txt",
+        "range": [
+          6650,
+          6700
+        ],
+        "parsed": 50,
+        "edges": 12725
+      },
+      {
+        "file": "chunk-6700.txt",
+        "range": [
+          6700,
+          6750
+        ],
+        "parsed": 50,
+        "edges": 15806
+      },
+      {
+        "file": "chunk-6750.txt",
+        "range": [
+          6750,
+          6760
+        ],
+        "parsed": 10,
+        "edges": 493
+      },
+      {
+        "file": "chunk-6760.txt",
+        "range": [
+          6760,
+          6770
+        ],
+        "parsed": 10,
+        "edges": 1324
+      },
+      {
+        "file": "chunk-6770.txt",
+        "range": [
+          6770,
+          6772
+        ],
+        "parsed": 2,
+        "edges": 11
+      },
+      {
+        "file": "chunk-6772.txt",
+        "range": [
+          6772,
+          6773
+        ],
+        "parsed": 1,
+        "edges": 12
+      },
+      {
+        "file": "chunk-6774.txt",
+        "range": [
+          6774,
+          6776
+        ],
+        "parsed": 2,
+        "edges": 1845
+      },
+      {
+        "file": "chunk-6776.txt",
+        "range": [
+          6776,
+          6778
+        ],
+        "parsed": 2,
+        "edges": 0
+      },
+      {
+        "file": "chunk-6778.txt",
+        "range": [
+          6778,
+          6780
+        ],
+        "parsed": 2,
+        "edges": 0
+      },
+      {
+        "file": "chunk-6780.txt",
+        "range": [
+          6780,
+          6790
+        ],
+        "parsed": 10,
+        "edges": 619
+      },
+      {
+        "file": "chunk-6790.txt",
+        "range": [
+          6790,
+          6800
+        ],
+        "parsed": 10,
+        "edges": 1818
+      },
+      {
+        "file": "chunk-6800.txt",
+        "range": [
+          6800,
+          6810
+        ],
+        "parsed": 10,
+        "edges": 4755
+      },
+      {
+        "file": "chunk-6810.txt",
+        "range": [
+          6810,
+          6820
+        ],
+        "parsed": 10,
+        "edges": 540
+      },
+      {
+        "file": "chunk-6820.txt",
+        "range": [
+          6820,
+          6830
+        ],
+        "parsed": 10,
+        "edges": 425
+      },
+      {
+        "file": "chunk-6830.txt",
+        "range": [
+          6830,
+          6840
+        ],
+        "parsed": 10,
+        "edges": 108
+      },
+      {
+        "file": "chunk-6840.txt",
+        "range": [
+          6840,
+          6850
+        ],
+        "parsed": 10,
+        "edges": 224
+      },
+      {
+        "file": "chunk-6850.txt",
+        "range": [
+          6850,
+          6860
+        ],
+        "parsed": 10,
+        "edges": 61
+      },
+      {
+        "file": "chunk-6860.txt",
+        "range": [
+          6860,
+          6870
+        ],
+        "parsed": 10,
+        "edges": 56
+      },
+      {
+        "file": "chunk-6870.txt",
+        "range": [
+          6870,
+          6880
+        ],
+        "parsed": 10,
+        "edges": 128
+      },
+      {
+        "file": "chunk-6880.txt",
+        "range": [
+          6880,
+          6890
+        ],
+        "parsed": 10,
+        "edges": 731
+      },
+      {
+        "file": "chunk-6890.txt",
+        "range": [
+          6890,
+          6900
+        ],
+        "parsed": 10,
+        "edges": 281
+      },
+      {
+        "file": "chunk-6900.txt",
+        "range": [
+          6900,
+          6910
+        ],
+        "parsed": 10,
+        "edges": 148
+      },
+      {
+        "file": "chunk-6910.txt",
+        "range": [
+          6910,
+          6920
+        ],
+        "parsed": 10,
+        "edges": 380
+      },
+      {
+        "file": "chunk-6920.txt",
+        "range": [
+          6920,
+          6930
+        ],
+        "parsed": 10,
+        "edges": 100
+      },
+      {
+        "file": "chunk-6930.txt",
+        "range": [
+          6930,
+          6940
+        ],
+        "parsed": 10,
+        "edges": 72
+      },
+      {
+        "file": "chunk-6940.txt",
+        "range": [
+          6940,
+          6950
+        ],
+        "parsed": 10,
+        "edges": 37
+      },
+      {
+        "file": "chunk-6950.txt",
+        "range": [
+          6950,
+          6960
+        ],
+        "parsed": 10,
+        "edges": 67
+      },
+      {
+        "file": "chunk-6960.txt",
+        "range": [
+          6960,
+          6970
+        ],
+        "parsed": 10,
+        "edges": 69
+      },
+      {
+        "file": "chunk-6970.txt",
+        "range": [
+          6970,
+          6980
+        ],
+        "parsed": 10,
+        "edges": 96
+      },
+      {
+        "file": "chunk-6980.txt",
+        "range": [
+          6980,
+          6990
+        ],
+        "parsed": 10,
+        "edges": 51
+      },
+      {
+        "file": "chunk-6990.txt",
+        "range": [
+          6990,
+          7000
+        ],
+        "parsed": 10,
+        "edges": 97
+      },
+      {
+        "file": "chunk-7000.txt",
+        "range": [
+          7000,
+          7010
+        ],
+        "parsed": 10,
+        "edges": 61
+      },
+      {
+        "file": "chunk-7010.txt",
+        "range": [
+          7010,
+          7020
+        ],
+        "parsed": 10,
+        "edges": 120
+      },
+      {
+        "file": "chunk-7020.txt",
+        "range": [
+          7020,
+          7030
+        ],
+        "parsed": 10,
+        "edges": 91
+      },
+      {
+        "file": "chunk-7030.txt",
+        "range": [
+          7030,
+          7040
+        ],
+        "parsed": 10,
+        "edges": 34
+      },
+      {
+        "file": "chunk-7040.txt",
+        "range": [
+          7040,
+          7050
+        ],
+        "parsed": 10,
+        "edges": 85
+      },
+      {
+        "file": "chunk-7050.txt",
+        "range": [
+          7050,
+          7060
+        ],
+        "parsed": 10,
+        "edges": 147
+      },
+      {
+        "file": "chunk-7060.txt",
+        "range": [
+          7060,
+          7070
+        ],
+        "parsed": 10,
+        "edges": 124
+      },
+      {
+        "file": "chunk-7070.txt",
+        "range": [
+          7070,
+          7080
+        ],
+        "parsed": 10,
+        "edges": 33
+      },
+      {
+        "file": "chunk-7080.txt",
+        "range": [
+          7080,
+          7090
+        ],
+        "parsed": 10,
+        "edges": 23
+      },
+      {
+        "file": "chunk-7090.txt",
+        "range": [
+          7090,
+          7100
+        ],
+        "parsed": 10,
+        "edges": 46
+      },
+      {
+        "file": "chunk-7100.txt",
+        "range": [
+          7100,
+          7110
+        ],
+        "parsed": 10,
+        "edges": 64
+      },
+      {
+        "file": "chunk-7110.txt",
+        "range": [
+          7110,
+          7120
+        ],
+        "parsed": 10,
+        "edges": 66
+      },
+      {
+        "file": "chunk-7120.txt",
+        "range": [
+          7120,
+          7130
+        ],
+        "parsed": 10,
+        "edges": 175
+      },
+      {
+        "file": "chunk-7130.txt",
+        "range": [
+          7130,
+          7140
+        ],
+        "parsed": 10,
+        "edges": 56
+      },
+      {
+        "file": "chunk-7140.txt",
+        "range": [
+          7140,
+          7150
+        ],
+        "parsed": 10,
+        "edges": 80
+      },
+      {
+        "file": "chunk-7150.txt",
+        "range": [
+          7150,
+          7160
+        ],
+        "parsed": 10,
+        "edges": 58
+      },
+      {
+        "file": "chunk-7160.txt",
+        "range": [
+          7160,
+          7170
+        ],
+        "parsed": 10,
+        "edges": 72
+      },
+      {
+        "file": "chunk-7170.txt",
+        "range": [
+          7170,
+          7180
+        ],
+        "parsed": 10,
+        "edges": 2385
+      },
+      {
+        "file": "chunk-7180.txt",
+        "range": [
+          7180,
+          7190
+        ],
+        "parsed": 10,
+        "edges": 779
+      },
+      {
+        "file": "chunk-7190.txt",
+        "range": [
+          7190,
+          7200
+        ],
+        "parsed": 10,
+        "edges": 307
+      },
+      {
+        "file": "chunk-7200.txt",
+        "range": [
+          7200,
+          7210
+        ],
+        "parsed": 10,
+        "edges": 1425
+      },
+      {
+        "file": "chunk-7210.txt",
+        "range": [
+          7210,
+          7220
+        ],
+        "parsed": 10,
+        "edges": 9308
+      },
+      {
+        "file": "chunk-7220.txt",
+        "range": [
+          7220,
+          7230
+        ],
+        "parsed": 10,
+        "edges": 6334
+      },
+      {
+        "file": "chunk-7230.txt",
+        "range": [
+          7230,
+          7240
+        ],
+        "parsed": 10,
+        "edges": 12
+      },
+      {
+        "file": "chunk-7240.txt",
+        "range": [
+          7240,
+          7250
+        ],
+        "parsed": 10,
+        "edges": 130
+      },
+      {
+        "file": "chunk-7250.txt",
+        "range": [
+          7250,
+          7260
+        ],
+        "parsed": 10,
+        "edges": 3734
+      },
+      {
+        "file": "chunk-7260.txt",
+        "range": [
+          7260,
+          7270
+        ],
+        "parsed": 10,
+        "edges": 6414
+      },
+      {
+        "file": "chunk-7270.txt",
+        "range": [
+          7270,
+          7280
+        ],
+        "parsed": 10,
+        "edges": 3744
+      },
+      {
+        "file": "chunk-7280.txt",
+        "range": [
+          7280,
+          7290
+        ],
+        "parsed": 10,
+        "edges": 6366
+      },
+      {
+        "file": "chunk-7290.txt",
+        "range": [
+          7290,
+          7300
+        ],
+        "parsed": 10,
+        "edges": 2450
+      },
+      {
+        "file": "chunk-7300.txt",
+        "range": [
+          7300,
+          7310
+        ],
+        "parsed": 10,
+        "edges": 3391
+      },
+      {
+        "file": "chunk-7310.txt",
+        "range": [
+          7310,
+          7320
+        ],
+        "parsed": 10,
+        "edges": 2929
+      },
+      {
+        "file": "chunk-7320.txt",
+        "range": [
+          7320,
+          7330
+        ],
+        "parsed": 10,
+        "edges": 838
+      },
+      {
+        "file": "chunk-7330.txt",
+        "range": [
+          7330,
+          7340
+        ],
+        "parsed": 10,
+        "edges": 896
+      },
+      {
+        "file": "chunk-7340.txt",
+        "range": [
+          7340,
+          7350
+        ],
+        "parsed": 10,
+        "edges": 738
+      },
+      {
+        "file": "chunk-7350.txt",
+        "range": [
+          7350,
+          7360
+        ],
+        "parsed": 10,
+        "edges": 697
+      },
+      {
+        "file": "chunk-7360.txt",
+        "range": [
+          7360,
+          7370
+        ],
+        "parsed": 10,
+        "edges": 87
+      },
+      {
+        "file": "chunk-7370.txt",
+        "range": [
+          7370,
+          7380
+        ],
+        "parsed": 10,
+        "edges": 428
+      },
+      {
+        "file": "chunk-7380.txt",
+        "range": [
+          7380,
+          7390
+        ],
+        "parsed": 10,
+        "edges": 70
+      },
+      {
+        "file": "chunk-7390.txt",
+        "range": [
+          7390,
+          7400
+        ],
+        "parsed": 10,
+        "edges": 93
+      },
+      {
+        "file": "chunk-7400.txt",
+        "range": [
+          7400,
+          7410
+        ],
+        "parsed": 10,
+        "edges": 104
+      },
+      {
+        "file": "chunk-7410.txt",
+        "range": [
+          7410,
+          7420
+        ],
+        "parsed": 10,
+        "edges": 2886
+      },
+      {
+        "file": "chunk-7420.txt",
+        "range": [
+          7420,
+          7430
+        ],
+        "parsed": 10,
+        "edges": 25
+      },
+      {
+        "file": "chunk-7430.txt",
+        "range": [
+          7430,
+          7440
+        ],
+        "parsed": 10,
+        "edges": 3064
+      },
+      {
+        "file": "chunk-7440.txt",
+        "range": [
+          7440,
+          7450
+        ],
+        "parsed": 10,
+        "edges": 3931
+      },
+      {
+        "file": "chunk-7450.txt",
+        "range": [
+          7450,
+          7460
+        ],
+        "parsed": 10,
+        "edges": 2299
+      },
+      {
+        "file": "chunk-7460.txt",
+        "range": [
+          7460,
+          7470
+        ],
+        "parsed": 10,
+        "edges": 630
+      },
+      {
+        "file": "chunk-7470.txt",
+        "range": [
+          7470,
+          7480
+        ],
+        "parsed": 10,
+        "edges": 2458
+      },
+      {
+        "file": "chunk-7480.txt",
+        "range": [
+          7480,
+          7490
+        ],
+        "parsed": 10,
+        "edges": 2877
+      },
+      {
+        "file": "chunk-7490.txt",
+        "range": [
+          7490,
+          7500
+        ],
+        "parsed": 10,
+        "edges": 780
+      },
+      {
+        "file": "chunk-7500.txt",
+        "range": [
+          7500,
+          7510
+        ],
+        "parsed": 10,
+        "edges": 1619
+      },
+      {
+        "file": "chunk-7510.txt",
+        "range": [
+          7510,
+          7520
+        ],
+        "parsed": 10,
+        "edges": 2262
+      },
+      {
+        "file": "chunk-7520.txt",
+        "range": [
+          7520,
+          7530
+        ],
+        "parsed": 10,
+        "edges": 2028
+      },
+      {
+        "file": "chunk-7530.txt",
+        "range": [
+          7530,
+          7540
+        ],
+        "parsed": 10,
+        "edges": 2324
+      },
+      {
+        "file": "chunk-7540.txt",
+        "range": [
+          7540,
+          7550
+        ],
+        "parsed": 10,
+        "edges": 1450
+      },
+      {
+        "file": "chunk-7550.txt",
+        "range": [
+          7550,
+          7560
+        ],
+        "parsed": 10,
+        "edges": 1808
+      },
+      {
+        "file": "chunk-7560.txt",
+        "range": [
+          7560,
+          7570
+        ],
+        "parsed": 10,
+        "edges": 9330
+      },
+      {
+        "file": "chunk-7570.txt",
+        "range": [
+          7570,
+          7580
+        ],
+        "parsed": 10,
+        "edges": 2443
+      },
+      {
+        "file": "chunk-7580.txt",
+        "range": [
+          7580,
+          7590
+        ],
+        "parsed": 10,
+        "edges": 4162
+      },
+      {
+        "file": "chunk-7590.txt",
+        "range": [
+          7590,
+          7600
+        ],
+        "parsed": 10,
+        "edges": 10593
+      },
+      {
+        "file": "chunk-7600.txt",
+        "range": [
+          7600,
+          7610
+        ],
+        "parsed": 10,
+        "edges": 317
+      },
+      {
+        "file": "chunk-7610.txt",
+        "range": [
+          7610,
+          7620
+        ],
+        "parsed": 10,
+        "edges": 771
+      },
+      {
+        "file": "chunk-7620.txt",
+        "range": [
+          7620,
+          7630
+        ],
+        "parsed": 10,
+        "edges": 484
+      },
+      {
+        "file": "chunk-7630.txt",
+        "range": [
+          7630,
+          7640
+        ],
+        "parsed": 10,
+        "edges": 483
+      },
+      {
+        "file": "chunk-7640.txt",
+        "range": [
+          7640,
+          7650
+        ],
+        "parsed": 10,
+        "edges": 424
+      },
+      {
+        "file": "chunk-7650.txt",
+        "range": [
+          7650,
+          7660
+        ],
+        "parsed": 10,
+        "edges": 1862
+      },
+      {
+        "file": "chunk-7660.txt",
+        "range": [
+          7660,
+          7670
+        ],
+        "parsed": 10,
+        "edges": 2275
+      },
+      {
+        "file": "chunk-7670.txt",
+        "range": [
+          7670,
+          7680
+        ],
+        "parsed": 10,
+        "edges": 1266
+      },
+      {
+        "file": "chunk-7680.txt",
+        "range": [
+          7680,
+          7690
+        ],
+        "parsed": 10,
+        "edges": 1685
+      },
+      {
+        "file": "chunk-7690.txt",
+        "range": [
+          7690,
+          7700
+        ],
+        "parsed": 10,
+        "edges": 8033
+      },
+      {
+        "file": "chunk-7700.txt",
+        "range": [
+          7700,
+          7710
+        ],
+        "parsed": 10,
+        "edges": 1927
+      },
+      {
+        "file": "chunk-7710.txt",
+        "range": [
+          7710,
+          7720
+        ],
+        "parsed": 10,
+        "edges": 2908
+      },
+      {
+        "file": "chunk-7720.txt",
+        "range": [
+          7720,
+          7730
+        ],
+        "parsed": 10,
+        "edges": 8168
+      },
+      {
+        "file": "chunk-7730.txt",
+        "range": [
+          7730,
+          7740
+        ],
+        "parsed": 10,
+        "edges": 1088
+      },
+      {
+        "file": "chunk-7740.txt",
+        "range": [
+          7740,
+          7750
+        ],
+        "parsed": 10,
+        "edges": 279
+      },
+      {
+        "file": "chunk-7750.txt",
+        "range": [
+          7750,
+          7760
+        ],
+        "parsed": 10,
+        "edges": 1016
+      },
+      {
+        "file": "chunk-7760.txt",
+        "range": [
+          7760,
+          7770
+        ],
+        "parsed": 10,
+        "edges": 185
+      },
+      {
+        "file": "chunk-7770.txt",
+        "range": [
+          7770,
+          7780
+        ],
+        "parsed": 10,
+        "edges": 455
+      },
+      {
+        "file": "chunk-7780.txt",
+        "range": [
+          7780,
+          7790
+        ],
+        "parsed": 10,
+        "edges": 391
+      },
+      {
+        "file": "chunk-7790.txt",
+        "range": [
+          7790,
+          7800
+        ],
+        "parsed": 10,
+        "edges": 448
+      },
+      {
+        "file": "chunk-7800.txt",
+        "range": [
+          7800,
+          7810
+        ],
+        "parsed": 10,
+        "edges": 490
+      },
+      {
+        "file": "chunk-7810.txt",
+        "range": [
+          7810,
+          7820
+        ],
+        "parsed": 10,
+        "edges": 1736
+      },
+      {
+        "file": "chunk-7820.txt",
+        "range": [
+          7820,
+          7830
+        ],
+        "parsed": 10,
+        "edges": 949
+      },
+      {
+        "file": "chunk-7830.txt",
+        "range": [
+          7830,
+          7840
+        ],
+        "parsed": 10,
+        "edges": 140
+      },
+      {
+        "file": "chunk-7840.txt",
+        "range": [
+          7840,
+          7850
+        ],
+        "parsed": 10,
+        "edges": 376
+      },
+      {
+        "file": "chunk-7850.txt",
+        "range": [
+          7850,
+          7860
+        ],
+        "parsed": 10,
+        "edges": 81
+      },
+      {
+        "file": "chunk-7860.txt",
+        "range": [
+          7860,
+          7870
+        ],
+        "parsed": 10,
+        "edges": 4312
+      },
+      {
+        "file": "chunk-7870.txt",
+        "range": [
+          7870,
+          7880
+        ],
+        "parsed": 10,
+        "edges": 307
+      },
+      {
+        "file": "chunk-7880.txt",
+        "range": [
+          7880,
+          7890
+        ],
+        "parsed": 10,
+        "edges": 290
+      },
+      {
+        "file": "chunk-7890.txt",
+        "range": [
+          7890,
+          7900
+        ],
+        "parsed": 10,
+        "edges": 161
+      },
+      {
+        "file": "chunk-7900.txt",
+        "range": [
+          7900,
+          7910
+        ],
+        "parsed": 10,
+        "edges": 235
+      },
+      {
+        "file": "chunk-7910.txt",
+        "range": [
+          7910,
+          7920
+        ],
+        "parsed": 10,
+        "edges": 76
+      },
+      {
+        "file": "chunk-7920.txt",
+        "range": [
+          7920,
+          7930
+        ],
+        "parsed": 10,
+        "edges": 52
+      },
+      {
+        "file": "chunk-7930.txt",
+        "range": [
+          7930,
+          7940
+        ],
+        "parsed": 10,
+        "edges": 65
+      },
+      {
+        "file": "chunk-7940.txt",
+        "range": [
+          7940,
+          7950
+        ],
+        "parsed": 10,
+        "edges": 70
+      },
+      {
+        "file": "chunk-7950.txt",
+        "range": [
+          7950,
+          7960
+        ],
+        "parsed": 10,
+        "edges": 135
+      },
+      {
+        "file": "chunk-7960.txt",
+        "range": [
+          7960,
+          7970
+        ],
+        "parsed": 10,
+        "edges": 11
+      },
+      {
+        "file": "chunk-7970.txt",
+        "range": [
+          7970,
+          7980
+        ],
+        "parsed": 10,
+        "edges": 73
+      },
+      {
+        "file": "chunk-7980.txt",
+        "range": [
+          7980,
+          7990
+        ],
+        "parsed": 10,
+        "edges": 207
+      },
+      {
+        "file": "chunk-7990.txt",
+        "range": [
+          7990,
+          8000
+        ],
+        "parsed": 10,
+        "edges": 26744
+      },
+      {
+        "file": "chunk-8000.txt",
+        "range": [
+          8000,
+          8010
+        ],
+        "parsed": 10,
+        "edges": 39030
+      },
+      {
+        "file": "chunk-8010.txt",
+        "range": [
+          8010,
+          8020
+        ],
+        "parsed": 10,
+        "edges": 965
+      },
+      {
+        "file": "chunk-8020.txt",
+        "range": [
+          8020,
+          8030
+        ],
+        "parsed": 10,
+        "edges": 323
+      },
+      {
+        "file": "chunk-8030.txt",
+        "range": [
+          8030,
+          8040
+        ],
+        "parsed": 10,
+        "edges": 478
+      },
+      {
+        "file": "chunk-8040.txt",
+        "range": [
+          8040,
+          8050
+        ],
+        "parsed": 10,
+        "edges": 470
+      },
+      {
+        "file": "chunk-8050.txt",
+        "range": [
+          8050,
+          8060
+        ],
+        "parsed": 10,
+        "edges": 407
+      },
+      {
+        "file": "chunk-8060.txt",
+        "range": [
+          8060,
+          8070
+        ],
+        "parsed": 10,
+        "edges": 433
+      },
+      {
+        "file": "chunk-8070.txt",
+        "range": [
+          8070,
+          8080
+        ],
+        "parsed": 10,
+        "edges": 413
+      },
+      {
+        "file": "chunk-8080.txt",
+        "range": [
+          8080,
+          8090
+        ],
+        "parsed": 10,
+        "edges": 334
+      },
+      {
+        "file": "chunk-8090.txt",
+        "range": [
+          8090,
+          8100
+        ],
+        "parsed": 10,
+        "edges": 954
+      },
+      {
+        "file": "chunk-8100.txt",
+        "range": [
+          8100,
+          8110
+        ],
+        "parsed": 10,
+        "edges": 239
+      },
+      {
+        "file": "chunk-8110.txt",
+        "range": [
+          8110,
+          8120
+        ],
+        "parsed": 10,
+        "edges": 1555
+      },
+      {
+        "file": "chunk-8120.txt",
+        "range": [
+          8120,
+          8130
+        ],
+        "parsed": 10,
+        "edges": 2209
+      },
+      {
+        "file": "chunk-8130.txt",
+        "range": [
+          8130,
+          8140
+        ],
+        "parsed": 10,
+        "edges": 3046
+      },
+      {
+        "file": "chunk-8140.txt",
+        "range": [
+          8140,
+          8150
+        ],
+        "parsed": 10,
+        "edges": 4329
+      },
+      {
+        "file": "chunk-8150.txt",
+        "range": [
+          8150,
+          8160
+        ],
+        "parsed": 10,
+        "edges": 1083
+      },
+      {
+        "file": "chunk-8160.txt",
+        "range": [
+          8160,
+          8170
+        ],
+        "parsed": 10,
+        "edges": 1466
+      },
+      {
+        "file": "chunk-8170.txt",
+        "range": [
+          8170,
+          8180
+        ],
+        "parsed": 10,
+        "edges": 2447
+      },
+      {
+        "file": "chunk-8180.txt",
+        "range": [
+          8180,
+          8190
+        ],
+        "parsed": 10,
+        "edges": 3041
+      },
+      {
+        "file": "chunk-8190.txt",
+        "range": [
+          8190,
+          8200
+        ],
+        "parsed": 10,
+        "edges": 478
+      },
+      {
+        "file": "chunk-8200.txt",
+        "range": [
+          8200,
+          8210
+        ],
+        "parsed": 10,
+        "edges": 907
+      },
+      {
+        "file": "chunk-8210.txt",
+        "range": [
+          8210,
+          8220
+        ],
+        "parsed": 10,
+        "edges": 542
+      },
+      {
+        "file": "chunk-8220.txt",
+        "range": [
+          8220,
+          8230
+        ],
+        "parsed": 10,
+        "edges": 1086
+      },
+      {
+        "file": "chunk-8230.txt",
+        "range": [
+          8230,
+          8240
+        ],
+        "parsed": 10,
+        "edges": 607
+      },
+      {
+        "file": "chunk-8240.txt",
+        "range": [
+          8240,
+          8250
+        ],
+        "parsed": 10,
+        "edges": 401
+      },
+      {
+        "file": "chunk-8250.txt",
+        "range": [
+          8250,
+          8260
+        ],
+        "parsed": 10,
+        "edges": 1149
+      },
+      {
+        "file": "chunk-8260.txt",
+        "range": [
+          8260,
+          8270
+        ],
+        "parsed": 10,
+        "edges": 1352
+      },
+      {
+        "file": "chunk-8270.txt",
+        "range": [
+          8270,
+          8280
+        ],
+        "parsed": 10,
+        "edges": 1097
+      },
+      {
+        "file": "chunk-8280.txt",
+        "range": [
+          8280,
+          8290
+        ],
+        "parsed": 10,
+        "edges": 1960
+      },
+      {
+        "file": "chunk-8290.txt",
+        "range": [
+          8290,
+          8300
+        ],
+        "parsed": 10,
+        "edges": 1536
+      },
+      {
+        "file": "chunk-8300.txt",
+        "range": [
+          8300,
+          8310
+        ],
+        "parsed": 10,
+        "edges": 1154
+      },
+      {
+        "file": "chunk-8310.txt",
+        "range": [
+          8310,
+          8320
+        ],
+        "parsed": 10,
+        "edges": 840
+      },
+      {
+        "file": "chunk-8320.txt",
+        "range": [
+          8320,
+          8330
+        ],
+        "parsed": 10,
+        "edges": 1145
+      },
+      {
+        "file": "chunk-8330.txt",
+        "range": [
+          8330,
+          8340
+        ],
+        "parsed": 10,
+        "edges": 740
+      },
+      {
+        "file": "chunk-8340.txt",
+        "range": [
+          8340,
+          8350
+        ],
+        "parsed": 10,
+        "edges": 737
+      },
+      {
+        "file": "chunk-8350.txt",
+        "range": [
+          8350,
+          8360
+        ],
+        "parsed": 10,
+        "edges": 594
+      },
+      {
+        "file": "chunk-8360.txt",
+        "range": [
+          8360,
+          8370
+        ],
+        "parsed": 10,
+        "edges": 1239
+      },
+      {
+        "file": "chunk-8370.txt",
+        "range": [
+          8370,
+          8380
+        ],
+        "parsed": 10,
+        "edges": 758
+      },
+      {
+        "file": "chunk-8380.txt",
+        "range": [
+          8380,
+          8390
+        ],
+        "parsed": 10,
+        "edges": 957
+      },
+      {
+        "file": "chunk-8390.txt",
+        "range": [
+          8390,
+          8400
+        ],
+        "parsed": 10,
+        "edges": 3799
+      },
+      {
+        "file": "chunk-8400.txt",
+        "range": [
+          8400,
+          8410
+        ],
+        "parsed": 10,
+        "edges": 3976
+      },
+      {
+        "file": "chunk-8410.txt",
+        "range": [
+          8410,
+          8420
+        ],
+        "parsed": 10,
+        "edges": 678
+      },
+      {
+        "file": "chunk-8420.txt",
+        "range": [
+          8420,
+          8430
+        ],
+        "parsed": 10,
+        "edges": 1094
+      },
+      {
+        "file": "chunk-8430.txt",
+        "range": [
+          8430,
+          8440
+        ],
+        "parsed": 10,
+        "edges": 450
+      },
+      {
+        "file": "chunk-8440.txt",
+        "range": [
+          8440,
+          8450
+        ],
+        "parsed": 10,
+        "edges": 523
+      },
+      {
+        "file": "chunk-8450.txt",
+        "range": [
+          8450,
+          8460
+        ],
+        "parsed": 10,
+        "edges": 861
+      },
+      {
+        "file": "chunk-8460.txt",
+        "range": [
+          8460,
+          8470
+        ],
+        "parsed": 10,
+        "edges": 829
+      },
+      {
+        "file": "chunk-8470.txt",
+        "range": [
+          8470,
+          8480
+        ],
+        "parsed": 10,
+        "edges": 400
+      },
+      {
+        "file": "chunk-8480.txt",
+        "range": [
+          8480,
+          8490
+        ],
+        "parsed": 10,
+        "edges": 764
+      },
+      {
+        "file": "chunk-8490.txt",
+        "range": [
+          8490,
+          8500
+        ],
+        "parsed": 10,
+        "edges": 14098
+      },
+      {
+        "file": "chunk-8500.txt",
+        "range": [
+          8500,
+          8510
+        ],
+        "parsed": 10,
+        "edges": 8534
+      },
+      {
+        "file": "chunk-8510.txt",
+        "range": [
+          8510,
+          8520
+        ],
+        "parsed": 10,
+        "edges": 2364
+      },
+      {
+        "file": "chunk-8520.txt",
+        "range": [
+          8520,
+          8530
+        ],
+        "parsed": 10,
+        "edges": 3533
+      },
+      {
+        "file": "chunk-8530.txt",
+        "range": [
+          8530,
+          8540
+        ],
+        "parsed": 10,
+        "edges": 4183
+      },
+      {
+        "file": "chunk-8540.txt",
+        "range": [
+          8540,
+          8550
+        ],
+        "parsed": 10,
+        "edges": 3025
+      },
+      {
+        "file": "chunk-8550.txt",
+        "range": [
+          8550,
+          8560
+        ],
+        "parsed": 10,
+        "edges": 767
+      },
+      {
+        "file": "chunk-8560.txt",
+        "range": [
+          8560,
+          8570
+        ],
+        "parsed": 10,
+        "edges": 2340
+      },
+      {
+        "file": "chunk-8570.txt",
+        "range": [
+          8570,
+          8580
+        ],
+        "parsed": 10,
+        "edges": 1716
+      },
+      {
+        "file": "chunk-8580.txt",
+        "range": [
+          8580,
+          8590
+        ],
+        "parsed": 10,
+        "edges": 1780
+      },
+      {
+        "file": "chunk-8590.txt",
+        "range": [
+          8590,
+          8600
+        ],
+        "parsed": 10,
+        "edges": 2910
+      },
+      {
+        "file": "chunk-8600.txt",
+        "range": [
+          8600,
+          8610
+        ],
+        "parsed": 10,
+        "edges": 2594
+      },
+      {
+        "file": "chunk-8610.txt",
+        "range": [
+          8610,
+          8620
+        ],
+        "parsed": 10,
+        "edges": 2165
+      },
+      {
+        "file": "chunk-8620.txt",
+        "range": [
+          8620,
+          8630
+        ],
+        "parsed": 10,
+        "edges": 2988
+      },
+      {
+        "file": "chunk-8630.txt",
+        "range": [
+          8630,
+          8640
+        ],
+        "parsed": 10,
+        "edges": 3117
+      },
+      {
+        "file": "chunk-8640.txt",
+        "range": [
+          8640,
+          8650
+        ],
+        "parsed": 10,
+        "edges": 3635
+      },
+      {
+        "file": "chunk-8650.txt",
+        "range": [
+          8650,
+          8660
+        ],
+        "parsed": 10,
+        "edges": 2131
+      },
+      {
+        "file": "chunk-8660.txt",
+        "range": [
+          8660,
+          8670
+        ],
+        "parsed": 10,
+        "edges": 1420
+      },
+      {
+        "file": "chunk-8670.txt",
+        "range": [
+          8670,
+          8680
+        ],
+        "parsed": 10,
+        "edges": 3226
+      },
+      {
+        "file": "chunk-8680.txt",
+        "range": [
+          8680,
+          8690
+        ],
+        "parsed": 10,
+        "edges": 5402
+      },
+      {
+        "file": "chunk-8690.txt",
+        "range": [
+          8690,
+          8700
+        ],
+        "parsed": 10,
+        "edges": 3535
+      },
+      {
+        "file": "chunk-8700.txt",
+        "range": [
+          8700,
+          8710
+        ],
+        "parsed": 10,
+        "edges": 1810
+      },
+      {
+        "file": "chunk-8710.txt",
+        "range": [
+          8710,
+          8720
+        ],
+        "parsed": 10,
+        "edges": 737
+      },
+      {
+        "file": "chunk-8720.txt",
+        "range": [
+          8720,
+          8730
+        ],
+        "parsed": 10,
+        "edges": 9422
+      },
+      {
+        "file": "chunk-8730.txt",
+        "range": [
+          8730,
+          8740
+        ],
+        "parsed": 10,
+        "edges": 5112
+      },
+      {
+        "file": "chunk-8740.txt",
+        "range": [
+          8740,
+          8750
+        ],
+        "parsed": 10,
+        "edges": 1205
+      },
+      {
+        "file": "chunk-8750.txt",
+        "range": [
+          8750,
+          8760
+        ],
+        "parsed": 10,
+        "edges": 2743
+      },
+      {
+        "file": "chunk-8760.txt",
+        "range": [
+          8760,
+          8770
+        ],
+        "parsed": 10,
+        "edges": 3803
+      },
+      {
+        "file": "chunk-8770.txt",
+        "range": [
+          8770,
+          8780
+        ],
+        "parsed": 10,
+        "edges": 3640
+      },
+      {
+        "file": "chunk-8780.txt",
+        "range": [
+          8780,
+          8790
+        ],
+        "parsed": 10,
+        "edges": 2889
+      },
+      {
+        "file": "chunk-8790.txt",
+        "range": [
+          8790,
+          8800
+        ],
+        "parsed": 10,
+        "edges": 1737
+      },
+      {
+        "file": "chunk-8800.txt",
+        "range": [
+          8800,
+          8810
+        ],
+        "parsed": 10,
+        "edges": 2122
+      },
+      {
+        "file": "chunk-8810.txt",
+        "range": [
+          8810,
+          8820
+        ],
+        "parsed": 10,
+        "edges": 1283
+      },
+      {
+        "file": "chunk-8820.txt",
+        "range": [
+          8820,
+          8830
+        ],
+        "parsed": 10,
+        "edges": 1825
+      },
+      {
+        "file": "chunk-8830.txt",
+        "range": [
+          8830,
+          8840
+        ],
+        "parsed": 10,
+        "edges": 739
+      },
+      {
+        "file": "chunk-8840.txt",
+        "range": [
+          8840,
+          8850
+        ],
+        "parsed": 10,
+        "edges": 1209
+      },
+      {
+        "file": "chunk-8850.txt",
+        "range": [
+          8850,
+          8860
+        ],
+        "parsed": 10,
+        "edges": 1182
+      },
+      {
+        "file": "chunk-8860.txt",
+        "range": [
+          8860,
+          8870
+        ],
+        "parsed": 10,
+        "edges": 1424
+      },
+      {
+        "file": "chunk-8870.txt",
+        "range": [
+          8870,
+          8880
+        ],
+        "parsed": 10,
+        "edges": 631
+      },
+      {
+        "file": "chunk-8880.txt",
+        "range": [
+          8880,
+          8890
+        ],
+        "parsed": 10,
+        "edges": 1571
+      },
+      {
+        "file": "chunk-8890.txt",
+        "range": [
+          8890,
+          8900
+        ],
+        "parsed": 10,
+        "edges": 581
+      },
+      {
+        "file": "chunk-8900.txt",
+        "range": [
+          8900,
+          8910
+        ],
+        "parsed": 10,
+        "edges": 701
+      },
+      {
+        "file": "chunk-8910.txt",
+        "range": [
+          8910,
+          8920
+        ],
+        "parsed": 10,
+        "edges": 458
+      },
+      {
+        "file": "chunk-8920.txt",
+        "range": [
+          8920,
+          8930
+        ],
+        "parsed": 10,
+        "edges": 3481
+      },
+      {
+        "file": "chunk-8930.txt",
+        "range": [
+          8930,
+          8940
+        ],
+        "parsed": 10,
+        "edges": 75
+      },
+      {
+        "file": "chunk-8940.txt",
+        "range": [
+          8940,
+          8950
+        ],
+        "parsed": 10,
+        "edges": 1520
+      },
+      {
+        "file": "chunk-8950.txt",
+        "range": [
+          8950,
+          8960
+        ],
+        "parsed": 10,
+        "edges": 1040
+      },
+      {
+        "file": "chunk-8960.txt",
+        "range": [
+          8960,
+          8970
+        ],
+        "parsed": 10,
+        "edges": 1160
+      },
+      {
+        "file": "chunk-8970.txt",
+        "range": [
+          8970,
+          8980
+        ],
+        "parsed": 10,
+        "edges": 771
+      },
+      {
+        "file": "chunk-8980.txt",
+        "range": [
+          8980,
+          8990
+        ],
+        "parsed": 10,
+        "edges": 732
+      },
+      {
+        "file": "chunk-8990.txt",
+        "range": [
+          8990,
+          9000
+        ],
+        "parsed": 10,
+        "edges": 731
+      },
+      {
+        "file": "chunk-9000.txt",
+        "range": [
+          9000,
+          9010
+        ],
+        "parsed": 10,
+        "edges": 255
+      },
+      {
+        "file": "chunk-9010.txt",
+        "range": [
+          9010,
+          9020
+        ],
+        "parsed": 10,
+        "edges": 3457
+      },
+      {
+        "file": "chunk-9020.txt",
+        "range": [
+          9020,
+          9030
+        ],
+        "parsed": 10,
+        "edges": 1594
+      },
+      {
+        "file": "chunk-9030.txt",
+        "range": [
+          9030,
+          9040
+        ],
+        "parsed": 10,
+        "edges": 1687
+      },
+      {
+        "file": "chunk-9040.txt",
+        "range": [
+          9040,
+          9050
+        ],
+        "parsed": 10,
+        "edges": 1120
+      },
+      {
+        "file": "chunk-9050.txt",
+        "range": [
+          9050,
+          9060
+        ],
+        "parsed": 10,
+        "edges": 1136
+      },
+      {
+        "file": "chunk-9060.txt",
+        "range": [
+          9060,
+          9070
+        ],
+        "parsed": 10,
+        "edges": 1115
+      },
+      {
+        "file": "chunk-9070.txt",
+        "range": [
+          9070,
+          9080
+        ],
+        "parsed": 10,
+        "edges": 753
+      },
+      {
+        "file": "chunk-9080.txt",
+        "range": [
+          9080,
+          9090
+        ],
+        "parsed": 10,
+        "edges": 1079
+      },
+      {
+        "file": "chunk-9090.txt",
+        "range": [
+          9090,
+          9100
+        ],
+        "parsed": 10,
+        "edges": 1983
+      },
+      {
+        "file": "chunk-9100.txt",
+        "range": [
+          9100,
+          9110
+        ],
+        "parsed": 10,
+        "edges": 460
+      },
+      {
+        "file": "chunk-9110.txt",
+        "range": [
+          9110,
+          9120
+        ],
+        "parsed": 10,
+        "edges": 285
+      },
+      {
+        "file": "chunk-9120.txt",
+        "range": [
+          9120,
+          9130
+        ],
+        "parsed": 10,
+        "edges": 609
+      },
+      {
+        "file": "chunk-9130.txt",
+        "range": [
+          9130,
+          9140
+        ],
+        "parsed": 10,
+        "edges": 610
+      },
+      {
+        "file": "chunk-9140.txt",
+        "range": [
+          9140,
+          9150
+        ],
+        "parsed": 10,
+        "edges": 2278
+      },
+      {
+        "file": "chunk-9150.txt",
+        "range": [
+          9150,
+          9160
+        ],
+        "parsed": 10,
+        "edges": 838
+      },
+      {
+        "file": "chunk-9160.txt",
+        "range": [
+          9160,
+          9170
+        ],
+        "parsed": 10,
+        "edges": 1385
+      },
+      {
+        "file": "chunk-9170.txt",
+        "range": [
+          9170,
+          9180
+        ],
+        "parsed": 10,
+        "edges": 800
+      },
+      {
+        "file": "chunk-9180.txt",
+        "range": [
+          9180,
+          9190
+        ],
+        "parsed": 10,
+        "edges": 772
+      },
+      {
+        "file": "chunk-9190.txt",
+        "range": [
+          9190,
+          9200
+        ],
+        "parsed": 10,
+        "edges": 1095
+      },
+      {
+        "file": "chunk-9200.txt",
+        "range": [
+          9200,
+          9210
+        ],
+        "parsed": 10,
+        "edges": 519
+      },
+      {
+        "file": "chunk-9210.txt",
+        "range": [
+          9210,
+          9220
+        ],
+        "parsed": 10,
+        "edges": 1466
+      },
+      {
+        "file": "chunk-9220.txt",
+        "range": [
+          9220,
+          9230
+        ],
+        "parsed": 10,
+        "edges": 683
+      },
+      {
+        "file": "chunk-9230.txt",
+        "range": [
+          9230,
+          9240
+        ],
+        "parsed": 10,
+        "edges": 662
+      },
+      {
+        "file": "chunk-9240.txt",
+        "range": [
+          9240,
+          9250
+        ],
+        "parsed": 10,
+        "edges": 443
+      },
+      {
+        "file": "chunk-9250.txt",
+        "range": [
+          9250,
+          9260
+        ],
+        "parsed": 10,
+        "edges": 975
+      },
+      {
+        "file": "chunk-9260.txt",
+        "range": [
+          9260,
+          9270
+        ],
+        "parsed": 10,
+        "edges": 1222
+      },
+      {
+        "file": "chunk-9270.txt",
+        "range": [
+          9270,
+          9280
+        ],
+        "parsed": 10,
+        "edges": 948
+      },
+      {
+        "file": "chunk-9280.txt",
+        "range": [
+          9280,
+          9290
+        ],
+        "parsed": 10,
+        "edges": 1618
+      },
+      {
+        "file": "chunk-9290.txt",
+        "range": [
+          9290,
+          9300
+        ],
+        "parsed": 10,
+        "edges": 352
+      },
+      {
+        "file": "chunk-9300.txt",
+        "range": [
+          9300,
+          9310
+        ],
+        "parsed": 10,
+        "edges": 209
+      },
+      {
+        "file": "chunk-9310.txt",
+        "range": [
+          9310,
+          9320
+        ],
+        "parsed": 10,
+        "edges": 615
+      },
+      {
+        "file": "chunk-9320.txt",
+        "range": [
+          9320,
+          9330
+        ],
+        "parsed": 10,
+        "edges": 515
+      },
+      {
+        "file": "chunk-9330.txt",
+        "range": [
+          9330,
+          9340
+        ],
+        "parsed": 10,
+        "edges": 676
+      },
+      {
+        "file": "chunk-9340.txt",
+        "range": [
+          9340,
+          9350
+        ],
+        "parsed": 10,
+        "edges": 404
+      },
+      {
+        "file": "chunk-9350.txt",
+        "range": [
+          9350,
+          9360
+        ],
+        "parsed": 10,
+        "edges": 336
+      },
+      {
+        "file": "chunk-9360.txt",
+        "range": [
+          9360,
+          9370
+        ],
+        "parsed": 10,
+        "edges": 469
+      },
+      {
+        "file": "chunk-9370.txt",
+        "range": [
+          9370,
+          9380
+        ],
+        "parsed": 10,
+        "edges": 335
+      },
+      {
+        "file": "chunk-9380.txt",
+        "range": [
+          9380,
+          9390
+        ],
+        "parsed": 10,
+        "edges": 254
+      },
+      {
+        "file": "chunk-9390.txt",
+        "range": [
+          9390,
+          9400
+        ],
+        "parsed": 10,
+        "edges": 119
+      },
+      {
+        "file": "chunk-9400.txt",
+        "range": [
+          9400,
+          9410
+        ],
+        "parsed": 10,
+        "edges": 475
+      },
+      {
+        "file": "chunk-9410.txt",
+        "range": [
+          9410,
+          9420
+        ],
+        "parsed": 10,
+        "edges": 1220
+      },
+      {
+        "file": "chunk-9420.txt",
+        "range": [
+          9420,
+          9430
+        ],
+        "parsed": 10,
+        "edges": 856
+      },
+      {
+        "file": "chunk-9430.txt",
+        "range": [
+          9430,
+          9440
+        ],
+        "parsed": 10,
+        "edges": 555
+      },
+      {
+        "file": "chunk-9440.txt",
+        "range": [
+          9440,
+          9450
+        ],
+        "parsed": 10,
+        "edges": 290
+      },
+      {
+        "file": "chunk-9450.txt",
+        "range": [
+          9450,
+          9460
+        ],
+        "parsed": 10,
+        "edges": 240
+      },
+      {
+        "file": "chunk-9460.txt",
+        "range": [
+          9460,
+          9470
+        ],
+        "parsed": 10,
+        "edges": 468
+      },
+      {
+        "file": "chunk-9470.txt",
+        "range": [
+          9470,
+          9480
+        ],
+        "parsed": 10,
+        "edges": 569
+      },
+      {
+        "file": "chunk-9480.txt",
+        "range": [
+          9480,
+          9490
+        ],
+        "parsed": 10,
+        "edges": 1118
+      },
+      {
+        "file": "chunk-9490.txt",
+        "range": [
+          9490,
+          9500
+        ],
+        "parsed": 10,
+        "edges": 1740
+      },
+      {
+        "file": "chunk-9500.txt",
+        "range": [
+          9500,
+          9510
+        ],
+        "parsed": 10,
+        "edges": 918
+      },
+      {
+        "file": "chunk-9510.txt",
+        "range": [
+          9510,
+          9520
+        ],
+        "parsed": 10,
+        "edges": 595
+      },
+      {
+        "file": "chunk-9520.txt",
+        "range": [
+          9520,
+          9530
+        ],
+        "parsed": 10,
+        "edges": 1003
+      },
+      {
+        "file": "chunk-9530.txt",
+        "range": [
+          9530,
+          9540
+        ],
+        "parsed": 10,
+        "edges": 319
+      },
+      {
+        "file": "chunk-9540.txt",
+        "range": [
+          9540,
+          9550
+        ],
+        "parsed": 10,
+        "edges": 435
+      },
+      {
+        "file": "chunk-9550.txt",
+        "range": [
+          9550,
+          9560
+        ],
+        "parsed": 10,
+        "edges": 362
+      },
+      {
+        "file": "chunk-9560.txt",
+        "range": [
+          9560,
+          9570
+        ],
+        "parsed": 10,
+        "edges": 26
+      },
+      {
+        "file": "chunk-9570.txt",
+        "range": [
+          9570,
+          9580
+        ],
+        "parsed": 10,
+        "edges": 1071
+      },
+      {
+        "file": "chunk-9580.txt",
+        "range": [
+          9580,
+          9590
+        ],
+        "parsed": 10,
+        "edges": 686
+      },
+      {
+        "file": "chunk-9590.txt",
+        "range": [
+          9590,
+          9600
+        ],
+        "parsed": 10,
+        "edges": 556
+      },
+      {
+        "file": "chunk-9600.txt",
+        "range": [
+          9600,
+          9610
+        ],
+        "parsed": 10,
+        "edges": 722
+      },
+      {
+        "file": "chunk-9610.txt",
+        "range": [
+          9610,
+          9620
+        ],
+        "parsed": 10,
+        "edges": 471
+      },
+      {
+        "file": "chunk-9620.txt",
+        "range": [
+          9620,
+          9630
+        ],
+        "parsed": 10,
+        "edges": 891
+      },
+      {
+        "file": "chunk-9630.txt",
+        "range": [
+          9630,
+          9640
+        ],
+        "parsed": 10,
+        "edges": 821
+      },
+      {
+        "file": "chunk-9640.txt",
+        "range": [
+          9640,
+          9650
+        ],
+        "parsed": 10,
+        "edges": 1057
+      },
+      {
+        "file": "chunk-9650.txt",
+        "range": [
+          9650,
+          9660
+        ],
+        "parsed": 10,
+        "edges": 626
+      },
+      {
+        "file": "chunk-9660.txt",
+        "range": [
+          9660,
+          9670
+        ],
+        "parsed": 10,
+        "edges": 225
+      },
+      {
+        "file": "chunk-9670.txt",
+        "range": [
+          9670,
+          9680
+        ],
+        "parsed": 10,
+        "edges": 1084
+      },
+      {
+        "file": "chunk-9680.txt",
+        "range": [
+          9680,
+          9690
+        ],
+        "parsed": 10,
+        "edges": 2008
+      },
+      {
+        "file": "chunk-9690.txt",
+        "range": [
+          9690,
+          9700
+        ],
+        "parsed": 10,
+        "edges": 788
+      },
+      {
+        "file": "chunk-9700.txt",
+        "range": [
+          9700,
+          9710
+        ],
+        "parsed": 10,
+        "edges": 475
+      },
+      {
+        "file": "chunk-9710.txt",
+        "range": [
+          9710,
+          9720
+        ],
+        "parsed": 10,
+        "edges": 381
+      },
+      {
+        "file": "chunk-9720.txt",
+        "range": [
+          9720,
+          9730
+        ],
+        "parsed": 10,
+        "edges": 870
+      },
+      {
+        "file": "chunk-9730.txt",
+        "range": [
+          9730,
+          9740
+        ],
+        "parsed": 10,
+        "edges": 379
+      },
+      {
+        "file": "chunk-9740.txt",
+        "range": [
+          9740,
+          9750
+        ],
+        "parsed": 10,
+        "edges": 798
+      },
+      {
+        "file": "chunk-9750.txt",
+        "range": [
+          9750,
+          9760
+        ],
+        "parsed": 10,
+        "edges": 347
+      },
+      {
+        "file": "chunk-9760.txt",
+        "range": [
+          9760,
+          9770
+        ],
+        "parsed": 10,
+        "edges": 324
+      },
+      {
+        "file": "chunk-9770.txt",
+        "range": [
+          9770,
+          9780
+        ],
+        "parsed": 10,
+        "edges": 637
+      },
+      {
+        "file": "chunk-9780.txt",
+        "range": [
+          9780,
+          9790
+        ],
+        "parsed": 10,
+        "edges": 569
+      },
+      {
+        "file": "chunk-9790.txt",
+        "range": [
+          9790,
+          9800
+        ],
+        "parsed": 10,
+        "edges": 1896
+      },
+      {
+        "file": "chunk-9800.txt",
+        "range": [
+          9800,
+          9810
+        ],
+        "parsed": 10,
+        "edges": 2076
+      },
+      {
+        "file": "chunk-9810.txt",
+        "range": [
+          9810,
+          9820
+        ],
+        "parsed": 10,
+        "edges": 910
+      },
+      {
+        "file": "chunk-9820.txt",
+        "range": [
+          9820,
+          9830
+        ],
+        "parsed": 10,
+        "edges": 719
+      },
+      {
+        "file": "chunk-9830.txt",
+        "range": [
+          9830,
+          9840
+        ],
+        "parsed": 10,
+        "edges": 1828
+      },
+      {
+        "file": "chunk-9840.txt",
+        "range": [
+          9840,
+          9850
+        ],
+        "parsed": 10,
+        "edges": 700
+      },
+      {
+        "file": "chunk-9850.txt",
+        "range": [
+          9850,
+          9860
+        ],
+        "parsed": 10,
+        "edges": 805
+      },
+      {
+        "file": "chunk-9860.txt",
+        "range": [
+          9860,
+          9870
+        ],
+        "parsed": 10,
+        "edges": 2046
+      },
+      {
+        "file": "chunk-9870.txt",
+        "range": [
+          9870,
+          9880
+        ],
+        "parsed": 10,
+        "edges": 877
+      },
+      {
+        "file": "chunk-9880.txt",
+        "range": [
+          9880,
+          9890
+        ],
+        "parsed": 10,
+        "edges": 910
+      },
+      {
+        "file": "chunk-9890.txt",
+        "range": [
+          9890,
+          9900
+        ],
+        "parsed": 10,
+        "edges": 394
+      },
+      {
+        "file": "chunk-9900.txt",
+        "range": [
+          9900,
+          9910
+        ],
+        "parsed": 10,
+        "edges": 712
+      },
+      {
+        "file": "chunk-9910.txt",
+        "range": [
+          9910,
+          9920
+        ],
+        "parsed": 10,
+        "edges": 685
+      },
+      {
+        "file": "chunk-9920.txt",
+        "range": [
+          9920,
+          9930
+        ],
+        "parsed": 10,
+        "edges": 551
+      },
+      {
+        "file": "chunk-9930.txt",
+        "range": [
+          9930,
+          9940
+        ],
+        "parsed": 10,
+        "edges": 442
+      },
+      {
+        "file": "chunk-9940.txt",
+        "range": [
+          9940,
+          9950
+        ],
+        "parsed": 10,
+        "edges": 1295
+      },
+      {
+        "file": "chunk-9950.txt",
+        "range": [
+          9950,
+          9960
+        ],
+        "parsed": 10,
+        "edges": 558
+      },
+      {
+        "file": "chunk-9960.txt",
+        "range": [
+          9960,
+          9970
+        ],
+        "parsed": 10,
+        "edges": 812
+      },
+      {
+        "file": "chunk-9970.txt",
+        "range": [
+          9970,
+          9980
+        ],
+        "parsed": 10,
+        "edges": 881
+      },
+      {
+        "file": "chunk-9980.txt",
+        "range": [
+          9980,
+          9990
+        ],
+        "parsed": 10,
+        "edges": 652
+      },
+      {
+        "file": "chunk-9990.txt",
+        "range": [
+          9990,
+          10000
+        ],
+        "parsed": 10,
+        "edges": 1100
+      },
+      {
+        "file": "chunk-10000.txt",
+        "range": [
+          10000,
+          10010
+        ],
+        "parsed": 10,
+        "edges": 522
+      },
+      {
+        "file": "chunk-10010.txt",
+        "range": [
+          10010,
+          10020
+        ],
+        "parsed": 10,
+        "edges": 422
+      },
+      {
+        "file": "chunk-10020.txt",
+        "range": [
+          10020,
+          10030
+        ],
+        "parsed": 10,
+        "edges": 2650
+      },
+      {
+        "file": "chunk-10030.txt",
+        "range": [
+          10030,
+          10040
+        ],
+        "parsed": 10,
+        "edges": 2420
+      },
+      {
+        "file": "chunk-10040.txt",
+        "range": [
+          10040,
+          10050
+        ],
+        "parsed": 10,
+        "edges": 140
+      },
+      {
+        "file": "chunk-10050.txt",
+        "range": [
+          10050,
+          10060
+        ],
+        "parsed": 10,
+        "edges": 143
+      },
+      {
+        "file": "chunk-10060.txt",
+        "range": [
+          10060,
+          10070
+        ],
+        "parsed": 10,
+        "edges": 130
+      },
+      {
+        "file": "chunk-10070.txt",
+        "range": [
+          10070,
+          10080
+        ],
+        "parsed": 10,
+        "edges": 449
+      },
+      {
+        "file": "chunk-10080.txt",
+        "range": [
+          10080,
+          10090
+        ],
+        "parsed": 10,
+        "edges": 1765
+      },
+      {
+        "file": "chunk-10090.txt",
+        "range": [
+          10090,
+          10100
+        ],
+        "parsed": 10,
+        "edges": 864
+      },
+      {
+        "file": "chunk-10100.txt",
+        "range": [
+          10100,
+          10110
+        ],
+        "parsed": 10,
+        "edges": 317
+      },
+      {
+        "file": "chunk-10110.txt",
+        "range": [
+          10110,
+          10120
+        ],
+        "parsed": 10,
+        "edges": 366
+      },
+      {
+        "file": "chunk-10120.txt",
+        "range": [
+          10120,
+          10130
+        ],
+        "parsed": 10,
+        "edges": 513
+      },
+      {
+        "file": "chunk-10130.txt",
+        "range": [
+          10130,
+          10140
+        ],
+        "parsed": 10,
+        "edges": 287
+      },
+      {
+        "file": "chunk-10140.txt",
+        "range": [
+          10140,
+          10150
+        ],
+        "parsed": 10,
+        "edges": 350
+      },
+      {
+        "file": "chunk-10150.txt",
+        "range": [
+          10150,
+          10160
+        ],
+        "parsed": 10,
+        "edges": 644
+      },
+      {
+        "file": "chunk-10160.txt",
+        "range": [
+          10160,
+          10170
+        ],
+        "parsed": 10,
+        "edges": 1395
+      },
+      {
+        "file": "chunk-10170.txt",
+        "range": [
+          10170,
+          10180
+        ],
+        "parsed": 10,
+        "edges": 1920
+      },
+      {
+        "file": "chunk-10180.txt",
+        "range": [
+          10180,
+          10190
+        ],
+        "parsed": 10,
+        "edges": 533
+      },
+      {
+        "file": "chunk-10190.txt",
+        "range": [
+          10190,
+          10200
+        ],
+        "parsed": 10,
+        "edges": 952
+      },
+      {
+        "file": "chunk-10200.txt",
+        "range": [
+          10200,
+          10210
+        ],
+        "parsed": 10,
+        "edges": 579
+      },
+      {
+        "file": "chunk-10210.txt",
+        "range": [
+          10210,
+          10220
+        ],
+        "parsed": 10,
+        "edges": 856
+      },
+      {
+        "file": "chunk-10220.txt",
+        "range": [
+          10220,
+          10230
+        ],
+        "parsed": 10,
+        "edges": 1311
+      },
+      {
+        "file": "chunk-10230.txt",
+        "range": [
+          10230,
+          10240
+        ],
+        "parsed": 10,
+        "edges": 426
+      },
+      {
+        "file": "chunk-10240.txt",
+        "range": [
+          10240,
+          10250
+        ],
+        "parsed": 10,
+        "edges": 224
+      },
+      {
+        "file": "chunk-10250.txt",
+        "range": [
+          10250,
+          10260
+        ],
+        "parsed": 10,
+        "edges": 216
+      },
+      {
+        "file": "chunk-10260.txt",
+        "range": [
+          10260,
+          10270
+        ],
+        "parsed": 10,
+        "edges": 92
+      },
+      {
+        "file": "chunk-10270.txt",
+        "range": [
+          10270,
+          10280
+        ],
+        "parsed": 10,
+        "edges": 393
+      },
+      {
+        "file": "chunk-10280.txt",
+        "range": [
+          10280,
+          10290
+        ],
+        "parsed": 10,
+        "edges": 568
+      },
+      {
+        "file": "chunk-10290.txt",
+        "range": [
+          10290,
+          10300
+        ],
+        "parsed": 10,
+        "edges": 441
+      },
+      {
+        "file": "chunk-10300.txt",
+        "range": [
+          10300,
+          10310
+        ],
+        "parsed": 10,
+        "edges": 662
+      },
+      {
+        "file": "chunk-10310.txt",
+        "range": [
+          10310,
+          10320
+        ],
+        "parsed": 10,
+        "edges": 150
+      },
+      {
+        "file": "chunk-10320.txt",
+        "range": [
+          10320,
+          10330
+        ],
+        "parsed": 10,
+        "edges": 231
+      },
+      {
+        "file": "chunk-10330.txt",
+        "range": [
+          10330,
+          10340
+        ],
+        "parsed": 10,
+        "edges": 273
+      },
+      {
+        "file": "chunk-10340.txt",
+        "range": [
+          10340,
+          10350
+        ],
+        "parsed": 10,
+        "edges": 492
+      },
+      {
+        "file": "chunk-10350.txt",
+        "range": [
+          10350,
+          10360
+        ],
+        "parsed": 10,
+        "edges": 231
+      },
+      {
+        "file": "chunk-10360.txt",
+        "range": [
+          10360,
+          10370
+        ],
+        "parsed": 10,
+        "edges": 598
+      },
+      {
+        "file": "chunk-10370.txt",
+        "range": [
+          10370,
+          10380
+        ],
+        "parsed": 10,
+        "edges": 75
+      },
+      {
+        "file": "chunk-10380.txt",
+        "range": [
+          10380,
+          10390
+        ],
+        "parsed": 10,
+        "edges": 596
+      },
+      {
+        "file": "chunk-10390.txt",
+        "range": [
+          10390,
+          10400
+        ],
+        "parsed": 10,
+        "edges": 250
+      },
+      {
+        "file": "chunk-10400.txt",
+        "range": [
+          10400,
+          10410
+        ],
+        "parsed": 10,
+        "edges": 166
+      },
+      {
+        "file": "chunk-10410.txt",
+        "range": [
+          10410,
+          10420
+        ],
+        "parsed": 10,
+        "edges": 351
+      },
+      {
+        "file": "chunk-10420.txt",
+        "range": [
+          10420,
+          10430
+        ],
+        "parsed": 10,
+        "edges": 100
+      },
+      {
+        "file": "chunk-10430.txt",
+        "range": [
+          10430,
+          10440
+        ],
+        "parsed": 10,
+        "edges": 305
+      },
+      {
+        "file": "chunk-10440.txt",
+        "range": [
+          10440,
+          10450
+        ],
+        "parsed": 10,
+        "edges": 145
+      },
+      {
+        "file": "chunk-10450.txt",
+        "range": [
+          10450,
+          10460
+        ],
+        "parsed": 10,
+        "edges": 137
+      },
+      {
+        "file": "chunk-10460.txt",
+        "range": [
+          10460,
+          10470
+        ],
+        "parsed": 10,
+        "edges": 215
+      },
+      {
+        "file": "chunk-10470.txt",
+        "range": [
+          10470,
+          10480
+        ],
+        "parsed": 10,
+        "edges": 1706
+      },
+      {
+        "file": "chunk-10480.txt",
+        "range": [
+          10480,
+          10490
+        ],
+        "parsed": 10,
+        "edges": 294
+      },
+      {
+        "file": "chunk-10490.txt",
+        "range": [
+          10490,
+          10500
+        ],
+        "parsed": 10,
+        "edges": 295
+      },
+      {
+        "file": "chunk-10500.txt",
+        "range": [
+          10500,
+          10510
+        ],
+        "parsed": 10,
+        "edges": 444
+      },
+      {
+        "file": "chunk-10510.txt",
+        "range": [
+          10510,
+          10520
+        ],
+        "parsed": 10,
+        "edges": 330
+      },
+      {
+        "file": "chunk-10520.txt",
+        "range": [
+          10520,
+          10530
+        ],
+        "parsed": 10,
+        "edges": 278
+      },
+      {
+        "file": "chunk-10530.txt",
+        "range": [
+          10530,
+          10540
+        ],
+        "parsed": 10,
+        "edges": 228
+      },
+      {
+        "file": "chunk-10540.txt",
+        "range": [
+          10540,
+          10550
+        ],
+        "parsed": 10,
+        "edges": 371
+      },
+      {
+        "file": "chunk-10550.txt",
+        "range": [
+          10550,
+          10560
+        ],
+        "parsed": 10,
+        "edges": 358
+      },
+      {
+        "file": "chunk-10560.txt",
+        "range": [
+          10560,
+          10570
+        ],
+        "parsed": 10,
+        "edges": 76
+      },
+      {
+        "file": "chunk-10570.txt",
+        "range": [
+          10570,
+          10580
+        ],
+        "parsed": 10,
+        "edges": 91
+      },
+      {
+        "file": "chunk-10580.txt",
+        "range": [
+          10580,
+          10590
+        ],
+        "parsed": 10,
+        "edges": 63
+      },
+      {
+        "file": "chunk-10590.txt",
+        "range": [
+          10590,
+          10600
+        ],
+        "parsed": 10,
+        "edges": 85
+      },
+      {
+        "file": "chunk-10600.txt",
+        "range": [
+          10600,
+          10610
+        ],
+        "parsed": 10,
+        "edges": 264
+      },
+      {
+        "file": "chunk-10610.txt",
+        "range": [
+          10610,
+          10620
+        ],
+        "parsed": 10,
+        "edges": 762
+      },
+      {
+        "file": "chunk-10620.txt",
+        "range": [
+          10620,
+          10630
+        ],
+        "parsed": 10,
+        "edges": 1046
+      },
+      {
+        "file": "chunk-10630.txt",
+        "range": [
+          10630,
+          10640
+        ],
+        "parsed": 10,
+        "edges": 213
+      },
+      {
+        "file": "chunk-10640.txt",
+        "range": [
+          10640,
+          10650
+        ],
+        "parsed": 10,
+        "edges": 438
+      },
+      {
+        "file": "chunk-10650.txt",
+        "range": [
+          10650,
+          10660
+        ],
+        "parsed": 10,
+        "edges": 387
+      },
+      {
+        "file": "chunk-10660.txt",
+        "range": [
+          10660,
+          10670
+        ],
+        "parsed": 10,
+        "edges": 252
+      },
+      {
+        "file": "chunk-10670.txt",
+        "range": [
+          10670,
+          10680
+        ],
+        "parsed": 10,
+        "edges": 1018
+      },
+      {
+        "file": "chunk-10680.txt",
+        "range": [
+          10680,
+          10690
+        ],
+        "parsed": 10,
+        "edges": 282
+      },
+      {
+        "file": "chunk-10690.txt",
+        "range": [
+          10690,
+          10700
+        ],
+        "parsed": 10,
+        "edges": 117
+      },
+      {
+        "file": "chunk-10700.txt",
+        "range": [
+          10700,
+          10710
+        ],
+        "parsed": 10,
+        "edges": 2262
+      },
+      {
+        "file": "chunk-10710.txt",
+        "range": [
+          10710,
+          10720
+        ],
+        "parsed": 10,
+        "edges": 271
+      },
+      {
+        "file": "chunk-10720.txt",
+        "range": [
+          10720,
+          10730
+        ],
+        "parsed": 10,
+        "edges": 1675
+      },
+      {
+        "file": "chunk-10730.txt",
+        "range": [
+          10730,
+          10740
+        ],
+        "parsed": 10,
+        "edges": 4
+      },
+      {
+        "file": "chunk-10740.txt",
+        "range": [
+          10740,
+          10750
+        ],
+        "parsed": 10,
+        "edges": 36
+      },
+      {
+        "file": "chunk-10750.txt",
+        "range": [
+          10750,
+          10760
+        ],
+        "parsed": 10,
+        "edges": 1435
+      },
+      {
+        "file": "chunk-10760.txt",
+        "range": [
+          10760,
+          10770
+        ],
+        "parsed": 10,
+        "edges": 40
+      },
+      {
+        "file": "chunk-10770.txt",
+        "range": [
+          10770,
+          10780
+        ],
+        "parsed": 10,
+        "edges": 160
+      },
+      {
+        "file": "chunk-10780.txt",
+        "range": [
+          10780,
+          10790
+        ],
+        "parsed": 10,
+        "edges": 216
+      },
+      {
+        "file": "chunk-10790.txt",
+        "range": [
+          10790,
+          10800
+        ],
+        "parsed": 10,
+        "edges": 156
+      },
+      {
+        "file": "chunk-10800.txt",
+        "range": [
+          10800,
+          10810
+        ],
+        "parsed": 10,
+        "edges": 5757
+      },
+      {
+        "file": "chunk-10810.txt",
+        "range": [
+          10810,
+          10820
+        ],
+        "parsed": 10,
+        "edges": 79
+      },
+      {
+        "file": "chunk-10820.txt",
+        "range": [
+          10820,
+          10830
+        ],
+        "parsed": 10,
+        "edges": 114
+      },
+      {
+        "file": "chunk-10830.txt",
+        "range": [
+          10830,
+          10840
+        ],
+        "parsed": 10,
+        "edges": 13
+      },
+      {
+        "file": "chunk-10840.txt",
+        "range": [
+          10840,
+          10850
+        ],
+        "parsed": 10,
+        "edges": 11
+      },
+      {
+        "file": "chunk-10850.txt",
+        "range": [
+          10850,
+          10860
+        ],
+        "parsed": 10,
+        "edges": 5
+      },
+      {
+        "file": "chunk-10860.txt",
+        "range": [
+          10860,
+          10870
+        ],
+        "parsed": 10,
+        "edges": 10
+      },
+      {
+        "file": "chunk-10870.txt",
+        "range": [
+          10870,
+          10880
+        ],
+        "parsed": 10,
+        "edges": 285
+      },
+      {
+        "file": "chunk-10880.txt",
+        "range": [
+          10880,
+          10890
+        ],
+        "parsed": 10,
+        "edges": 184
+      },
+      {
+        "file": "chunk-10890.txt",
+        "range": [
+          10890,
+          10900
+        ],
+        "parsed": 10,
+        "edges": 74
+      },
+      {
+        "file": "chunk-10900.txt",
+        "range": [
+          10900,
+          10910
+        ],
+        "parsed": 10,
+        "edges": 65
+      },
+      {
+        "file": "chunk-10910.txt",
+        "range": [
+          10910,
+          10920
+        ],
+        "parsed": 10,
+        "edges": 7
+      },
+      {
+        "file": "chunk-10920.txt",
+        "range": [
+          10920,
+          10930
+        ],
+        "parsed": 10,
+        "edges": 238
+      },
+      {
+        "file": "chunk-10930.txt",
+        "range": [
+          10930,
+          10940
+        ],
+        "parsed": 10,
+        "edges": 251
+      },
+      {
+        "file": "chunk-10940.txt",
+        "range": [
+          10940,
+          10950
+        ],
+        "parsed": 10,
+        "edges": 291
+      },
+      {
+        "file": "chunk-10950.txt",
+        "range": [
+          10950,
+          10960
+        ],
+        "parsed": 10,
+        "edges": 157
+      },
+      {
+        "file": "chunk-10960.txt",
+        "range": [
+          10960,
+          10970
+        ],
+        "parsed": 10,
+        "edges": 298
+      },
+      {
+        "file": "chunk-10970.txt",
+        "range": [
+          10970,
+          10980
+        ],
+        "parsed": 10,
+        "edges": 289
+      },
+      {
+        "file": "chunk-10980.txt",
+        "range": [
+          10980,
+          10990
+        ],
+        "parsed": 10,
+        "edges": 754
+      },
+      {
+        "file": "chunk-10990.txt",
+        "range": [
+          10990,
+          11000
+        ],
+        "parsed": 10,
+        "edges": 324
+      },
+      {
+        "file": "chunk-11000.txt",
+        "range": [
+          11000,
+          11010
+        ],
+        "parsed": 10,
+        "edges": 187
+      },
+      {
+        "file": "chunk-11010.txt",
+        "range": [
+          11010,
+          11020
+        ],
+        "parsed": 10,
+        "edges": 398
+      },
+      {
+        "file": "chunk-11020.txt",
+        "range": [
+          11020,
+          11030
+        ],
+        "parsed": 10,
+        "edges": 221
+      },
+      {
+        "file": "chunk-11030.txt",
+        "range": [
+          11030,
+          11040
+        ],
+        "parsed": 10,
+        "edges": 837
+      },
+      {
+        "file": "chunk-11040.txt",
+        "range": [
+          11040,
+          11050
+        ],
+        "parsed": 10,
+        "edges": 715
+      },
+      {
+        "file": "chunk-11050.txt",
+        "range": [
+          11050,
+          11060
+        ],
+        "parsed": 10,
+        "edges": 357
+      },
+      {
+        "file": "chunk-11060.txt",
+        "range": [
+          11060,
+          11070
+        ],
+        "parsed": 10,
+        "edges": 358
+      },
+      {
+        "file": "chunk-11070.txt",
+        "range": [
+          11070,
+          11080
+        ],
+        "parsed": 10,
+        "edges": 305
+      },
+      {
+        "file": "chunk-11080.txt",
+        "range": [
+          11080,
+          11090
+        ],
+        "parsed": 10,
+        "edges": 383
+      },
+      {
+        "file": "chunk-11090.txt",
+        "range": [
+          11090,
+          11100
+        ],
+        "parsed": 10,
+        "edges": 399
+      },
+      {
+        "file": "chunk-11100.txt",
+        "range": [
+          11100,
+          11110
+        ],
+        "parsed": 10,
+        "edges": 138
+      },
+      {
+        "file": "chunk-11110.txt",
+        "range": [
+          11110,
+          11120
+        ],
+        "parsed": 10,
+        "edges": 518
+      },
+      {
+        "file": "chunk-11120.txt",
+        "range": [
+          11120,
+          11130
+        ],
+        "parsed": 10,
+        "edges": 294
+      },
+      {
+        "file": "chunk-11130.txt",
+        "range": [
+          11130,
+          11140
+        ],
+        "parsed": 10,
+        "edges": 121
+      },
+      {
+        "file": "chunk-11140.txt",
+        "range": [
+          11140,
+          11150
+        ],
+        "parsed": 10,
+        "edges": 106
+      },
+      {
+        "file": "chunk-11150.txt",
+        "range": [
+          11150,
+          11160
+        ],
+        "parsed": 10,
+        "edges": 173
+      },
+      {
+        "file": "chunk-11160.txt",
+        "range": [
+          11160,
+          11170
+        ],
+        "parsed": 10,
+        "edges": 50
+      },
+      {
+        "file": "chunk-11170.txt",
+        "range": [
+          11170,
+          11180
+        ],
+        "parsed": 10,
+        "edges": 139
+      },
+      {
+        "file": "chunk-11180.txt",
+        "range": [
+          11180,
+          11190
+        ],
+        "parsed": 10,
+        "edges": 402
+      },
+      {
+        "file": "chunk-11190.txt",
+        "range": [
+          11190,
+          11200
+        ],
+        "parsed": 10,
+        "edges": 222
+      },
+      {
+        "file": "chunk-11200.txt",
+        "range": [
+          11200,
+          11210
+        ],
+        "parsed": 10,
+        "edges": 1669
+      },
+      {
+        "file": "chunk-11210.txt",
+        "range": [
+          11210,
+          11220
+        ],
+        "parsed": 10,
+        "edges": 152
+      },
+      {
+        "file": "chunk-11220.txt",
+        "range": [
+          11220,
+          11230
+        ],
+        "parsed": 10,
+        "edges": 467
+      },
+      {
+        "file": "chunk-11230.txt",
+        "range": [
+          11230,
+          11240
+        ],
+        "parsed": 10,
+        "edges": 147
+      },
+      {
+        "file": "chunk-11240.txt",
+        "range": [
+          11240,
+          11250
+        ],
+        "parsed": 10,
+        "edges": 98
+      },
+      {
+        "file": "chunk-11250.txt",
+        "range": [
+          11250,
+          11260
+        ],
+        "parsed": 10,
+        "edges": 130
+      },
+      {
+        "file": "chunk-11260.txt",
+        "range": [
+          11260,
+          11270
+        ],
+        "parsed": 10,
+        "edges": 148
+      },
+      {
+        "file": "chunk-11270.txt",
+        "range": [
+          11270,
+          11280
+        ],
+        "parsed": 10,
+        "edges": 2690
+      },
+      {
+        "file": "chunk-11280.txt",
+        "range": [
+          11280,
+          11290
+        ],
+        "parsed": 10,
+        "edges": 194
+      },
+      {
+        "file": "chunk-11290.txt",
+        "range": [
+          11290,
+          11300
+        ],
+        "parsed": 10,
+        "edges": 41
+      },
+      {
+        "file": "chunk-11300.txt",
+        "range": [
+          11300,
+          11310
+        ],
+        "parsed": 10,
+        "edges": 140
+      },
+      {
+        "file": "chunk-11310.txt",
+        "range": [
+          11310,
+          11320
+        ],
+        "parsed": 10,
+        "edges": 224
+      },
+      {
+        "file": "chunk-11320.txt",
+        "range": [
+          11320,
+          11330
+        ],
+        "parsed": 10,
+        "edges": 216
+      },
+      {
+        "file": "chunk-11330.txt",
+        "range": [
+          11330,
+          11340
+        ],
+        "parsed": 10,
+        "edges": 248
+      },
+      {
+        "file": "chunk-11340.txt",
+        "range": [
+          11340,
+          11350
+        ],
+        "parsed": 10,
+        "edges": 201
+      },
+      {
+        "file": "chunk-11350.txt",
+        "range": [
+          11350,
+          11360
+        ],
+        "parsed": 10,
+        "edges": 165
+      },
+      {
+        "file": "chunk-11360.txt",
+        "range": [
+          11360,
+          11370
+        ],
+        "parsed": 10,
+        "edges": 116
+      },
+      {
+        "file": "chunk-11370.txt",
+        "range": [
+          11370,
+          11380
+        ],
+        "parsed": 10,
+        "edges": 76
+      },
+      {
+        "file": "chunk-11380.txt",
+        "range": [
+          11380,
+          11390
+        ],
+        "parsed": 10,
+        "edges": 198
+      },
+      {
+        "file": "chunk-11390.txt",
+        "range": [
+          11390,
+          11400
+        ],
+        "parsed": 10,
+        "edges": 305
+      },
+      {
+        "file": "chunk-11400.txt",
+        "range": [
+          11400,
+          11410
+        ],
+        "parsed": 10,
+        "edges": 193
+      },
+      {
+        "file": "chunk-11410.txt",
+        "range": [
+          11410,
+          11420
+        ],
+        "parsed": 10,
+        "edges": 190
+      },
+      {
+        "file": "chunk-11420.txt",
+        "range": [
+          11420,
+          11430
+        ],
+        "parsed": 10,
+        "edges": 220
+      },
+      {
+        "file": "chunk-11430.txt",
+        "range": [
+          11430,
+          11440
+        ],
+        "parsed": 10,
+        "edges": 125
+      },
+      {
+        "file": "chunk-11440.txt",
+        "range": [
+          11440,
+          11450
+        ],
+        "parsed": 10,
+        "edges": 114
+      },
+      {
+        "file": "chunk-11450.txt",
+        "range": [
+          11450,
+          11460
+        ],
+        "parsed": 10,
+        "edges": 324
+      },
+      {
+        "file": "chunk-11460.txt",
+        "range": [
+          11460,
+          11470
+        ],
+        "parsed": 10,
+        "edges": 183
+      },
+      {
+        "file": "chunk-11470.txt",
+        "range": [
+          11470,
+          11480
+        ],
+        "parsed": 10,
+        "edges": 179
+      },
+      {
+        "file": "chunk-11480.txt",
+        "range": [
+          11480,
+          11490
+        ],
+        "parsed": 10,
+        "edges": 1216
+      },
+      {
+        "file": "chunk-11490.txt",
+        "range": [
+          11490,
+          11500
+        ],
+        "parsed": 10,
+        "edges": 479
+      },
+      {
+        "file": "chunk-11500.txt",
+        "range": [
+          11500,
+          11510
+        ],
+        "parsed": 10,
+        "edges": 409
+      },
+      {
+        "file": "chunk-11510.txt",
+        "range": [
+          11510,
+          11520
+        ],
+        "parsed": 10,
+        "edges": 184
+      },
+      {
+        "file": "chunk-11520.txt",
+        "range": [
+          11520,
+          11530
+        ],
+        "parsed": 10,
+        "edges": 83
+      },
+      {
+        "file": "chunk-11530.txt",
+        "range": [
+          11530,
+          11540
+        ],
+        "parsed": 10,
+        "edges": 23
+      },
+      {
+        "file": "chunk-11540.txt",
+        "range": [
+          11540,
+          11550
+        ],
+        "parsed": 10,
+        "edges": 29
+      },
+      {
+        "file": "chunk-11550.txt",
+        "range": [
+          11550,
+          11560
+        ],
+        "parsed": 10,
+        "edges": 3445
+      },
+      {
+        "file": "chunk-11560.txt",
+        "range": [
+          11560,
+          11570
+        ],
+        "parsed": 10,
+        "edges": 205
+      },
+      {
+        "file": "chunk-11570.txt",
+        "range": [
+          11570,
+          11580
+        ],
+        "parsed": 10,
+        "edges": 674
+      },
+      {
+        "file": "chunk-11580.txt",
+        "range": [
+          11580,
+          11590
+        ],
+        "parsed": 10,
+        "edges": 1144
+      },
+      {
+        "file": "chunk-11590.txt",
+        "range": [
+          11590,
+          11600
+        ],
+        "parsed": 10,
+        "edges": 4462
+      },
+      {
+        "file": "chunk-11600.txt",
+        "range": [
+          11600,
+          11610
+        ],
+        "parsed": 10,
+        "edges": 1881
+      },
+      {
+        "file": "chunk-11610.txt",
+        "range": [
+          11610,
+          11620
+        ],
+        "parsed": 10,
+        "edges": 3679
+      },
+      {
+        "file": "chunk-11620.txt",
+        "range": [
+          11620,
+          11630
+        ],
+        "parsed": 10,
+        "edges": 341
+      },
+      {
+        "file": "chunk-11630.txt",
+        "range": [
+          11630,
+          11640
+        ],
+        "parsed": 10,
+        "edges": 292
+      },
+      {
+        "file": "chunk-11640.txt",
+        "range": [
+          11640,
+          11650
+        ],
+        "parsed": 10,
+        "edges": 859
+      },
+      {
+        "file": "chunk-11650.txt",
+        "range": [
+          11650,
+          11660
+        ],
+        "parsed": 10,
+        "edges": 303
+      },
+      {
+        "file": "chunk-11660.txt",
+        "range": [
+          11660,
+          11670
+        ],
+        "parsed": 10,
+        "edges": 1582
+      },
+      {
+        "file": "chunk-11670.txt",
+        "range": [
+          11670,
+          11680
+        ],
+        "parsed": 10,
+        "edges": 1790
+      },
+      {
+        "file": "chunk-11680.txt",
+        "range": [
+          11680,
+          11690
+        ],
+        "parsed": 10,
+        "edges": 581
+      },
+      {
+        "file": "chunk-11690.txt",
+        "range": [
+          11690,
+          11700
+        ],
+        "parsed": 10,
+        "edges": 1125
+      },
+      {
+        "file": "chunk-11700.txt",
+        "range": [
+          11700,
+          11710
+        ],
+        "parsed": 10,
+        "edges": 430
+      },
+      {
+        "file": "chunk-11710.txt",
+        "range": [
+          11710,
+          11720
+        ],
+        "parsed": 10,
+        "edges": 428
+      },
+      {
+        "file": "chunk-11720.txt",
+        "range": [
+          11720,
+          11730
+        ],
+        "parsed": 10,
+        "edges": 163
+      },
+      {
+        "file": "chunk-11730.txt",
+        "range": [
+          11730,
+          11740
+        ],
+        "parsed": 10,
+        "edges": 498
+      },
+      {
+        "file": "chunk-11740.txt",
+        "range": [
+          11740,
+          11750
+        ],
+        "parsed": 10,
+        "edges": 1778
+      },
+      {
+        "file": "chunk-11750.txt",
+        "range": [
+          11750,
+          11760
+        ],
+        "parsed": 10,
+        "edges": 1831
+      },
+      {
+        "file": "chunk-11760.txt",
+        "range": [
+          11760,
+          11770
+        ],
+        "parsed": 10,
+        "edges": 21
+      },
+      {
+        "file": "chunk-11770.txt",
+        "range": [
+          11770,
+          11780
+        ],
+        "parsed": 10,
+        "edges": 140
+      },
+      {
+        "file": "chunk-11780.txt",
+        "range": [
+          11780,
+          12080
+        ],
+        "parsed": 300,
+        "edges": 3461
+      },
+      {
+        "file": "chunk-12080.txt",
+        "range": [
+          12080,
+          12380
+        ],
+        "parsed": 300,
+        "edges": 4115
+      },
+      {
+        "file": "chunk-12380.txt",
+        "range": [
+          12380,
+          12680
+        ],
+        "parsed": 300,
+        "edges": 21479
+      },
+      {
+        "file": "chunk-12680.txt",
+        "range": [
+          12680,
+          12980
+        ],
+        "parsed": 300,
+        "edges": 11605
+      },
+      {
+        "file": "chunk-12980.txt",
+        "range": [
+          12980,
+          13280
+        ],
+        "parsed": 300,
+        "edges": 19771
+      },
+      {
+        "file": "chunk-13280.txt",
+        "range": [
+          13280,
+          13580
+        ],
+        "parsed": 300,
+        "edges": 14292
+      },
+      {
+        "file": "chunk-13580.txt",
+        "range": [
+          13580,
+          13880
+        ],
+        "parsed": 300,
+        "edges": 34586
+      },
+      {
+        "file": "chunk-13880.txt",
+        "range": [
+          13880,
+          14180
+        ],
+        "parsed": 300,
+        "edges": 73151
+      },
+      {
+        "file": "chunk-14180.txt",
+        "range": [
+          14180,
+          14480
+        ],
+        "parsed": 300,
+        "edges": 56741
+      },
+      {
+        "file": "chunk-14480.txt",
+        "range": [
+          14480,
+          14780
+        ],
+        "parsed": 300,
+        "edges": 68314
+      },
+      {
+        "file": "chunk-14780.txt",
+        "range": [
+          14780,
+          15080
+        ],
+        "parsed": 300,
+        "edges": 62226
+      },
+      {
+        "file": "chunk-15080.txt",
+        "range": [
+          15080,
+          15380
+        ],
+        "parsed": 300,
+        "edges": 85056
+      },
+      {
+        "file": "chunk-15380.txt",
+        "range": [
+          15380,
+          15680
+        ],
+        "parsed": 300,
+        "edges": 12843
+      },
+      {
+        "file": "chunk-15680.txt",
+        "range": [
+          15680,
+          15980
+        ],
+        "parsed": 300,
+        "edges": 19291
+      },
+      {
+        "file": "chunk-15980.txt",
+        "range": [
+          15980,
+          16280
+        ],
+        "parsed": 300,
+        "edges": 14385
+      },
+      {
+        "file": "chunk-16280.txt",
+        "range": [
+          16280,
+          16580
+        ],
+        "parsed": 300,
+        "edges": 13579
+      },
+      {
+        "file": "chunk-16580.txt",
+        "range": [
+          16580,
+          16880
+        ],
+        "parsed": 300,
+        "edges": 17924
+      },
+      {
+        "file": "chunk-16880.txt",
+        "range": [
+          16880,
+          17180
+        ],
+        "parsed": 300,
+        "edges": 6392
+      },
+      {
+        "file": "chunk-17180.txt",
+        "range": [
+          17180,
+          17480
+        ],
+        "parsed": 300,
+        "edges": 5609
+      },
+      {
+        "file": "chunk-17480.txt",
+        "range": [
+          17480,
+          17780
+        ],
+        "parsed": 300,
+        "edges": 4834
+      },
+      {
+        "file": "chunk-17780.txt",
+        "range": [
+          17780,
+          18080
+        ],
+        "parsed": 300,
+        "edges": 8354
+      },
+      {
+        "file": "chunk-18080.txt",
+        "range": [
+          18080,
+          18380
+        ],
+        "parsed": 300,
+        "edges": 6395
+      },
+      {
+        "file": "chunk-18380.txt",
+        "range": [
+          18380,
+          18680
+        ],
+        "parsed": 300,
+        "edges": 11229
+      },
+      {
+        "file": "chunk-18680.txt",
+        "range": [
+          18680,
+          18980
+        ],
+        "parsed": 300,
+        "edges": 7184
+      },
+      {
+        "file": "chunk-18980.txt",
+        "range": [
+          18980,
+          19280
+        ],
+        "parsed": 300,
+        "edges": 9190
+      },
+      {
+        "file": "chunk-19280.txt",
+        "range": [
+          19280,
+          19580
+        ],
+        "parsed": 300,
+        "edges": 3266
+      },
+      {
+        "file": "chunk-19580.txt",
+        "range": [
+          19580,
+          19880
+        ],
+        "parsed": 300,
+        "edges": 4352
+      },
+      {
+        "file": "chunk-19880.txt",
+        "range": [
+          19880,
+          20180
+        ],
+        "parsed": 300,
+        "edges": 4683
+      },
+      {
+        "file": "chunk-20180.txt",
+        "range": [
+          20180,
+          20480
+        ],
+        "parsed": 300,
+        "edges": 3758
+      },
+      {
+        "file": "chunk-20480.txt",
+        "range": [
+          20480,
+          20780
+        ],
+        "parsed": 300,
+        "edges": 4341
+      },
+      {
+        "file": "chunk-20780.txt",
+        "range": [
+          20780,
+          21080
+        ],
+        "parsed": 300,
+        "edges": 2855
+      },
+      {
+        "file": "chunk-21080.txt",
+        "range": [
+          21080,
+          21380
+        ],
+        "parsed": 300,
+        "edges": 2684
+      },
+      {
+        "file": "chunk-21380.txt",
+        "range": [
+          21380,
+          21680
+        ],
+        "parsed": 300,
+        "edges": 3181
+      },
+      {
+        "file": "chunk-21680.txt",
+        "range": [
+          21680,
+          21980
+        ],
+        "parsed": 300,
+        "edges": 8186
+      },
+      {
+        "file": "chunk-21980.txt",
+        "range": [
+          21980,
+          22280
+        ],
+        "parsed": 300,
+        "edges": 14415
+      },
+      {
+        "file": "chunk-22280.txt",
+        "range": [
+          22280,
+          22580
+        ],
+        "parsed": 300,
+        "edges": 10681
+      },
+      {
+        "file": "chunk-22580.txt",
+        "range": [
+          22580,
+          22880
+        ],
+        "parsed": 300,
+        "edges": 9710
+      },
+      {
+        "file": "chunk-22880.txt",
+        "range": [
+          22880,
+          23180
+        ],
+        "parsed": 300,
+        "edges": 36552
+      },
+      {
+        "file": "chunk-23180.txt",
+        "range": [
+          23180,
+          23237
+        ],
+        "parsed": 57,
+        "edges": 9444
+      }
+    ],
+    "incompleteIgnored": [],
+    "tilingRule": "every slice's parsed equals its claimed width; the union is contiguous from 0 with no overlap and no shortfall; mixed widths are legitimate",
+    "closureRule": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges"
+  },
+  "closure": {
+    "excluded": [
+      {
+        "range": [
+          6773,
+          6774
+        ],
+        "file": "ghostty/pkg/fontconfig/override/fc-genericfamily/fcgenericfamily.h",
+        "record": "validation/m14/measurements/cpp-named-exclusion-fcgenericfamily.json",
+        "disposition": "EXCLUDED FROM THE TILING as ONE named, counted file: 1 of 23,237 (0.004 percent). The analyzer is exonerated by the phase counters above (parse 81 percent, analyze 19 percent, both hot helpers linear); the GATE's own per-file path adds several hundred seconds on THIS file alone, which is the Lead instrument's cost and not the lane's. Every other offset in the population is tiled and the merge records this as the closure's single declared exclusion."
+      }
+    ],
+    "edges": 2279970,
+    "resolved": 1334397,
+    "collRes": 0,
+    "ambDecl": 398428,
+    "ambKind": 0,
+    "unresolved": 545230,
+    "extOK": 1913,
+    "extPending": 0,
+    "extFAIL": 0,
+    "bindOK": 2,
+    "bindPending": 0,
+    "bindFAIL": 0,
+    "causeOK": 0,
+    "causeFAIL": 0,
+    "sum": 2279970,
+    "exact": true
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "fixtureId": "cpp/specifier-qualified-name-962",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D7 (#962): a specifier's name arrives as a `qualified_identifier` and the analyzer read names only from a DIRECT `type_identifier` child (`findChild` does not descend), so the class published as `anonymous` — the analyzer's own no-name sentinel, which makes the row not merely wrong but ambiguous. 48 sites over 1,722 real C++ files. Found by asking the question the six existing classes do not ask: all six are FABRICATION-shaped (too much output), and the M14 differential compares the analyzer against an oracle written from the same reading of the same grammar, so a MISSING declaration is invisible to it by construction. `script/cpp-review/loss-census.ts` asks the complement and found this. TWO ARMS, because the C++ grammar is not the same in both. ARM A: a class/struct DOES have a qualified name (an explicit specialization, `template <> struct fmt::formatter<T> : formatter<U> { … }`), so the rule is CPPD1's leaf — measured 26 sites, and the class was publishing as `anonymous` with its members owned by `anonymous` next to correctly-named siblings. ARM B: an enum has NO qualified name in C++ (`enum class ns::E` is not valid; you write `namespace ns { enum class E; }`), so a qualified path in an enum's name slot is a C++23 `[[=attr]]` the recovery displaced — measured 22 sites, and it cost THREE things at fmt/test/enum-test.cc:24: the enum as `anonymous`, a phantom `variable \"color\"` taking the name, and every enumerator lost. THIS FIXTURE ALSO RECORDS A DEFECT THE FIX ITSELF HAD: the first cut tested the name field's TYPE (requiring `qualified_identifier`), which catches the qualified attribute spelling `[[=fmt::as_identifiers]]` and MISSES the unqualified `[[=as_identifiers]]`, where the grammar hands over a bare `type_identifier` — and it then published `enum as_identifiers` while `color` went out as a phantom variable. Both spellings, plus the explicit-underlying-type shape, are pinned below, and the rule was rewritten to read the evidence both share (a bare `identifier` in the enclosing declaration's `init_declarator`, starting after the enum node ends) rather than the attribute's spelling. NOT CLAIMED: the enumerators stay lost — the `enum_specifier` node ends before `{ red, green, blue }`, so the grammar never produced them, and recovering them would mean re-parsing source text, which this analyzer's contract forbids. The `enum { buffer_size = 512 }` control is what makes the forbids meaningful: if the fix had simply stopped publishing `anonymous` for enums, that line would go missing and the gate would trade a fabrication for a loss.",
+  "expectSymbols": [
+    { "name": "outer", "kind": "namespace" },
+    { "name": "formatter", "kind": "class", "note": "ARM A, the primary template — the control that was already correct." },
+    { "name": "format", "kind": "method" },
+    { "name": "color", "kind": "enum", "note": "ARM B, unqualified attribute. Was `enum anonymous` + `variable color`." },
+    { "name": "unscoped_color", "kind": "enum" },
+    { "name": "qualified_attr_enum", "kind": "enum", "note": "ARM B, QUALIFIED attribute — the spelling the first cut of the fix missed entirely." },
+    { "name": "fixed_underlying", "kind": "enum", "note": "ARM B with `: unsigned char`; the enum node also ends before the base, so the recovery has more to swallow. Real corpus: fmt/test/enum-test.cc:27." },
+    { "name": "buffer_size", "kind": "enum_member" },
+    { "name": "plain_enum", "kind": "enum", "note": "a named enum with NO attribute: the shape that already worked, pinned so the attribute rule cannot be over-broad." },
+    { "name": "one", "kind": "enum_member" },
+    { "name": "two", "kind": "enum_member" },
+    { "name": "red_value", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "outer", "target": "formatter", "note": "ARM A: the qualified specialization owns its name, and the control at line 49 owns the same name — one edge, because D3's one-edge-per-pair rule is in force." },
+    { "type": "contains", "from": "formatter", "target": "format", "note": "the members of the qualified specialization are owned by the CORRECT class, not by `anonymous`. This is the edge that was wrong: before the fix the qualified one published `class anonymous` + `method format owner=anonymous`." },
+    { "type": "contains", "from": "outer", "target": "color" },
+    { "type": "contains", "from": "outer", "target": "qualified_attr_enum" },
+    { "type": "contains", "from": "outer", "target": "fixed_underlying" },
+    { "type": "contains", "from": "outer", "target": "plain_enum" },
+    { "type": "contains", "from": "outer", "target": "buffer_size", "note": "CORRECTED by ONTOLOGY/D19: was `contains anonymous -> buffer_size`. The enumerator of an unnamed enum is a member of the ENCLOSING scope for containment purposes, so the enclosing namespace is the correct owner and a resolvable one. See the `anonymous`/`kind: enum` row for the measurement that retired the argument this fixture used to make." }
+  ],
+  "forbidSymbols": [
+    { "name": "as_identifiers", "kind": "enum", "note": "D7 ARM B: the ATTRIBUTE is not a name, in either spelling. The qualified one arrives as a `qualified_identifier` in the name field and the unqualified one as a bare `type_identifier`; a rule that tests only the first publishes this." },
+    { "name": "color", "kind": "variable", "note": "D7 ARM B's phantom: the recovery displaced the enum's name into the declaration's `init_declarator`, and the declaration branch published it as a file-scope variable as well. One enum, two symbols, one of them a fabrication." },
+    { "name": "unscoped_color", "kind": "variable" },
+    { "name": "qualified_attr_enum", "kind": "variable" },
+    { "name": "fixed_underlying", "kind": "variable" },
+    { "name": "outer::as_identifiers", "kind": "enum" },
+    { "name": "anonymous", "kind": "class", "note": "D7 ARM A: a class published under the no-name SENTINEL is not merely wrong but ambiguous with it. `anonymous` must mean 'the source did not name this', never 'the analyzer could not read the name'." },
+    { "name": "anonymous", "kind": "enum", "meta.isAbstract": null, "note": "SUPERSEDED by ONTOLOGY/D19 — this row used to REQUIRE `enum anonymous` and is now a forbid. The rationale below argued that refusing to publish an unnamed enum would trade a fabrication for a LOSS, because `enum { buffer_size = 512 }`'s enumerator would go missing. That argument was testable and it is FALSE: the enumerator does not depend on the enum's symbol. `buffer_size` is still published as an `enum_member` and its containment edge now reads `contains outer -> buffer_size` instead of `contains anonymous -> buffer_size`. Measured over the two pinned C++ corpora, the sentinel stood for 133 symbols (92 namespaces, 39 classes/structs/unions, 2 enums) over 65 files and 1,611 relationship rows, so the loss the rationale feared was 1 row in this fixture against 1,611 rows of a name 92 unrelated scopes shared. The row is kept, with `kind: enum` and a null metadata probe, so the file still states that no enum publishes under the sentinel." }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "outer", "target": "as_identifiers", "note": "the attribute must never enter the graph as a member of the namespace." },
+    { "type": "contains", "from": "anonymous", "target": "format", "note": "D7 ARM A's edge, and D19's: before the fix the qualified specialization's member was owned by `anonymous`, and under the D7 rule alone `contains formatter -> format` still had to be asserted to prove the RIGHT owner won. Two defects, one wrong edge, and the second was invisible to the first fix — which is the whole reason both rows are here." },
+    {"type": "contains", "from": "anonymous", "target": "formatter::format", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

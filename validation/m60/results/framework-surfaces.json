@@ -1,0 +1,1190 @@
+{
+  "gate": "M60.R8",
+  "at": "2026-09-27T15:48:27.309Z",
+  "method": "tree-sitter walk over src/ast/real-*-analyzer.ts. The family contract's metadata keys are declared (framework, detectedFrameworks, frameworkPatterns) and the capability key (hasFrameworkIntelligence); every other determination is structural — which bindings a file publishes under a contract key, which member reads feed them (one hop), which write operator is applied to an accumulator, which same-file constant containers exist, which guards terminate, and which name literals write a framework. Comments are not string nodes, so prose cannot be counted; `unclassified` is a reported shape, never a silent drop.",
+  "files": 42,
+  "occurrences": 107,
+  "violations": 21,
+  "bindingsExamined": 53,
+  "parseErrors": [],
+  "unexamined": [],
+  "byShape": {
+    "append-write": 24,
+    "name-divergence": 2,
+    "dominated-trigger": 32,
+    "missing-contract-key": 19,
+    "deduped-write": 25,
+    "replace-write": 3,
+    "deduped-guard": 2
+  },
+  "byVerdict": {
+    "reported": 56,
+    "violation": 21,
+    "safe": 30
+  },
+  "byLanguage": {
+    "bash": {
+      "violations": 1,
+      "safe": 0,
+      "reported": 3,
+      "publishesContract": true
+    },
+    "clojure": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "cpp": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "csharp": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 5,
+      "publishesContract": true
+    },
+    "css": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "elixir": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 3,
+      "publishesContract": true
+    },
+    "erlang": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "fsharp": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "graphql": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "groovy": {
+      "violations": 1,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "haskell": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "hcl": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "html": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "java": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "javascript": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 3,
+      "publishesContract": true
+    },
+    "json": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 9,
+      "publishesContract": true
+    },
+    "nim": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "objective-c": {
+      "violations": 0,
+      "safe": 4,
+      "reported": 5,
+      "publishesContract": true
+    },
+    "perl": {
+      "violations": 1,
+      "safe": 6,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "php": {
+      "violations": 0,
+      "safe": 9,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "powershell": {
+      "violations": 0,
+      "safe": 6,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "r": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "ruby": {
+      "violations": 0,
+      "safe": 4,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "rust": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 2,
+      "publishesContract": true
+    },
+    "scala": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "sql": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "svelte": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 3,
+      "publishesContract": true
+    },
+    "swift": {
+      "violations": 0,
+      "safe": 1,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "typescript": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "vue": {
+      "violations": 0,
+      "safe": 0,
+      "reported": 1,
+      "publishesContract": true
+    },
+    "yaml": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 0,
+      "publishesContract": true
+    },
+    "zig": {
+      "violations": 2,
+      "safe": 0,
+      "reported": 0,
+      "publishesContract": true
+    }
+  },
+  "scope": "a file is IN SCOPE when it publishes detectedFrameworks or frameworkPatterns, or makes a capability claim; a framework-only scalar label is out of scope. `unexamined` lists files that name a contract key while publishing none the classifier can read — the gate refuses to adjudicate on those rather than reading them as clean",
+  "selfTests": {
+    "cases": 27,
+    "passed": 27,
+    "failures": []
+  },
+  "sites": [
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "line": 766,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Docker/Kubernetes\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "line": 767,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Cloud Native\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "line": 256,
+      "shape": "name-divergence",
+      "key": "Bash ⊂ Bash Script",
+      "statement": "frameworkPatterns: [{ framework: \"Bash\", patterns: patternsArray }]",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-bash-analyzer.ts",
+      "lang": "bash",
+      "line": 436,
+      "shape": "dominated-trigger",
+      "key": "DECLARATION_KEYWORDS.has(keyword) ⟹ keyword === \"local\"",
+      "statement": "{ emit(vn.text, this.nodeToRange(child)) if (keyword === \"local\" && parentFn) { // positional $1..$9 defaults (local x=$1) also record parameters const valueNode = child.namedChild(1) this.collectPosi",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "lang": "clojure",
+      "line": 1350,
+      "shape": "append-write",
+      "key": "frameworksArray",
+      "statement": "frameworksArray.push(f)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "lang": "cpp",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "lang": "cpp",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "line": 1587,
+      "shape": "dominated-trigger",
+      "key": "CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"identifier\"",
+      "statement": "{ const child = paramList.child(i) if (!child) continue const childType = child.type if (childType === \"params\") { inParamsForm = true paramsTypeNode = null continue } if (childType === \"parameter\") {",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "line": 1587,
+      "shape": "dominated-trigger",
+      "key": "CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"generic_name\"",
+      "statement": "{ const child = paramList.child(i) if (!child) continue const childType = child.type if (childType === \"params\") { inParamsForm = true paramsTypeNode = null continue } if (childType === \"parameter\") {",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "line": 1587,
+      "shape": "dominated-trigger",
+      "key": "CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"qualified_name\"",
+      "statement": "{ const child = paramList.child(i) if (!child) continue const childType = child.type if (childType === \"params\") { inParamsForm = true paramsTypeNode = null continue } if (childType === \"parameter\") {",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "line": 2523,
+      "shape": "dominated-trigger",
+      "key": "potentialTargetFqn: repeated condition",
+      "statement": "{ const parent = queue.shift()! if (seen.has(parent)) continue seen.add(parent) const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}` if (symbolMap.has(potentialTargetFqn)) { targ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "line": 2723,
+      "shape": "dominated-trigger",
+      "key": "name: repeated condition",
+      "statement": "{ depth++ const cur = queue.shift()! if (seen.has(cur)) continue seen.add(cur) const mm = membersByOwner.get(cur) ?? membersByOwner.get(leafOf(cur)) if (mm && mm.has(name)) return true for (const b of",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-css-analyzer.ts",
+      "lang": "css",
+      "line": 231,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(f)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-css-analyzer.ts",
+      "lang": "css",
+      "line": 243,
+      "shape": "append-write",
+      "key": "frameworkPatterns",
+      "statement": "frameworkPatterns.push({ framework: frameworks[i], patterns: [{ type: \"usage\", detected: true, description: `${frameworks[i]} usage detected` }], })",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "line": 443,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(f)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "line": 450,
+      "shape": "append-write",
+      "key": "frameworkPatterns",
+      "statement": "frameworkPatterns.push({ framework: frameworks[i], patterns: [{ type: \"usage\", detected: true, description: `${frameworks[i]} usage detected` }] })",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "line": 814,
+      "shape": "dominated-trigger",
+      "key": "t: repeated condition",
+      "statement": "{ if (SPECIAL_FORMS.has(t)) return true if (KERNEL_FUNCTIONS.has(t)) return true if (this.isInQuotedCode(node)) return true if (this.isInAttribute(node)) return true if (this.isDefHead(node)) return t",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-erlang-analyzer.ts",
+      "lang": "erlang",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-erlang-analyzer.ts",
+      "lang": "erlang",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "line": 732,
+      "shape": "dominated-trigger",
+      "key": "leaf: repeated condition",
+      "statement": "{ if (FSHARP_CONSOLE_BUILTINS.has(call)) return true if (OBJECT_LEAF_METHODS.has(leaf)) return true if (call === \"Console.WriteLine\" || call.startsWith(\"Console.\")) return true return false }",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "line": 733,
+      "shape": "dominated-trigger",
+      "key": "FSHARP_CONSOLE_BUILTINS.has(call) ⟹ call === \"Console.WriteLine\"",
+      "statement": "{ if (FSHARP_CONSOLE_BUILTINS.has(call)) return true if (OBJECT_LEAF_METHODS.has(leaf)) return true if (call === \"Console.WriteLine\" || call.startsWith(\"Console.\")) return true return false }",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-fsharp-analyzer.ts",
+      "lang": "fsharp",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-graphql-analyzer.ts",
+      "lang": "graphql",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-graphql-analyzer.ts",
+      "lang": "graphql",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "lang": "groovy",
+      "line": 1127,
+      "shape": "dominated-trigger",
+      "key": "potential: repeated condition",
+      "statement": "{ // Pass 1 is the IN-FILE hierarchy pass: a candidate that is not a // class declared in this file cannot supply an in-file target. // Measured at 200-file depth on grails-core (FindAllByFinder.groov",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "lang": "groovy",
+      "line": 1872,
+      "shape": "dominated-trigger",
+      "key": "root: repeated condition",
+      "statement": "{ if (GROOVY_BUILTINS.has(call)) return true // Prefix-based stdlib filtering: first segment identifies the class/package. const firstDot = call.indexOf(\".\") const root = firstDot > 0 ? call.slice(0, ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "lang": "groovy",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks, framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-haskell-analyzer.ts",
+      "lang": "haskell",
+      "line": 250,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(f)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-haskell-analyzer.ts",
+      "lang": "haskell",
+      "line": 260,
+      "shape": "append-write",
+      "key": "frameworkPatterns",
+      "statement": "frameworkPatterns.push({ framework: frameworks[i], patterns: [{ type: \"usage\", detected: true, description: `${frameworks[i]} usage detected` }], })",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-hcl-analyzer.ts",
+      "lang": "hcl",
+      "line": 452,
+      "shape": "dominated-trigger",
+      "key": "blockType: repeated condition",
+      "statement": "{ if (TYPE_NAME_BLOCKS.has(blockType)) { if (labels.length >= 2) return `${labels[0]}.${labels[1]}` if (labels.length === 1) return `${labels[0]}` return blockType } if (SINGLE_LABEL_BLOCKS.has(blockT",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-html-analyzer.ts",
+      "lang": "html",
+      "line": 379,
+      "shape": "append-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.push(f)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "line": 1370,
+      "shape": "append-write",
+      "key": "finalFrameworks",
+      "statement": "finalFrameworks.push(k)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "line": 1386,
+      "shape": "append-write",
+      "key": "finalFrameworks",
+      "statement": "finalFrameworks.push(\"spring_core\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "lang": "javascript",
+      "line": 1023,
+      "shape": "append-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.push(\"React\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "lang": "javascript",
+      "line": 1024,
+      "shape": "append-write",
+      "key": "detectedPatterns",
+      "statement": "detectedPatterns.push(\"JSX Components\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "lang": "javascript",
+      "line": 1366,
+      "shape": "dominated-trigger",
+      "key": "targetName: repeated condition",
+      "statement": "{ if (targetName === \"super\") return true if (JS_CONSOLE_BUILTINS.has(fullCallee || \"\")) return true const trimmed = stripWhitespace(fullCallee || \"\") if (JS_CONSOLE_BUILTINS.has(trimmed)) return true",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 421,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"npm/Node.js\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 422,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Composer/PHP\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 423,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"TypeScript\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 424,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"OpenAPI/Swagger\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 425,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"JSON Schema\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 426,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"AWS CloudFormation\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 427,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"React\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 428,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Vue.js\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "line": 429,
+      "shape": "append-write",
+      "key": "frameworks",
+      "statement": "frameworks.push(\"Next.js\")",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-nim-analyzer.ts",
+      "lang": "nim",
+      "line": 1465,
+      "shape": "dominated-trigger",
+      "key": "leaf: repeated condition",
+      "statement": "{ if (site.type !== \"identifier\") return const leaf = site.text if (!leaf) return if (NIM_BUILTIN_TYPES.indexOf(leaf) !== -1) return if (genericParamNames.has(leaf)) return if (fileTypes.has(leaf) && ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-nim-analyzer.ts",
+      "lang": "nim",
+      "line": 1467,
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ if (site.type !== \"identifier\") return const leaf = site.text if (!leaf) return if (NIM_BUILTIN_TYPES.indexOf(leaf) !== -1) return if (genericParamNames.has(leaf)) return if (fileTypes.has(leaf) && ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-nim-analyzer.ts",
+      "lang": "nim",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-nim-analyzer.ts",
+      "lang": "nim",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 245,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"UIKit\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 246,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Foundation\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 247,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"AppKit\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 248,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Cocoa\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 193,
+      "shape": "dominated-trigger",
+      "key": "name: repeated condition",
+      "statement": "{ for (let bi = blockFrameStack.length - 1; bi >= 0; bi--) { if (blockFrameStack[bi].has(name)) return true } if (valueFrame && valueFrame.has(name)) return true const cm = classMembers.get(owner) if ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 194,
+      "shape": "dominated-trigger",
+      "key": "name: repeated condition",
+      "statement": "{ for (let bi = blockFrameStack.length - 1; bi >= 0; bi--) { if (blockFrameStack[bi].has(name)) return true } if (valueFrame && valueFrame.has(name)) return true const cm = classMembers.get(owner) if ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 197,
+      "shape": "dominated-trigger",
+      "key": "name: repeated condition",
+      "statement": "{ for (let bi = blockFrameStack.length - 1; bi >= 0; bi--) { if (blockFrameStack[bi].has(name)) return true } if (valueFrame && valueFrame.has(name)) return true const cm = classMembers.get(owner) if ",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 751,
+      "shape": "dominated-trigger",
+      "key": "BARE_READ_SKIP.has(ktext) ⟹ ktext === \"self\"",
+      "statement": "{ // Receiver position: self/super are implicit, never reads. if (ktext === \"self\" || ktext === \"super\") continue }",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-objective-c-analyzer.ts",
+      "lang": "objective-c",
+      "line": 751,
+      "shape": "dominated-trigger",
+      "key": "BARE_READ_SKIP.has(ktext) ⟹ ktext === \"super\"",
+      "statement": "{ // Receiver position: self/super are implicit, never reads. if (ktext === \"self\" || ktext === \"super\") continue }",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 374,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Perl 5.38 core OO\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 488,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Compile-time Constants\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 500,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(module === \"Mojo::Base\" ? \"Mojolicious\" : \"Moose/Moo OOP\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 511,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Moose/Moo OOP\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 611,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Moose/Moo OOP\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 627,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Moose/Moo OOP\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "line": 762,
+      "shape": "name-divergence",
+      "key": "Perl ⊂ Perl 5.38 core OO",
+      "statement": "frameworkPatterns: [...patterns].map((pattern) => ({ framework: \"Perl\", patterns: [{ type: \"usage\", detected: true, description: pattern }] }))",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 676,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"PHPUnit\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 1362,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"WordPress\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2361,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Laravel\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2362,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Symfony\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2363,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"WordPress\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2364,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Magento\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2365,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Drupal\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2366,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"PHPUnit\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "lang": "php",
+      "line": 2367,
+      "shape": "deduped-write",
+      "key": "detectedFrameworks",
+      "statement": "detectedFrameworks.add(\"Doctrine\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 212,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Azure Az Module\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 214,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Azure AD / MSOnline\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 218,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Exchange Online\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 222,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"SharePoint PnP\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 224,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"Active Directory\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 226,
+      "shape": "deduped-write",
+      "key": "frameworks",
+      "statement": "frameworks.add(\"VMware / Hyper-V\")",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-powershell-analyzer.ts",
+      "lang": "powershell",
+      "line": 68,
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ const raw = name.trim() if (raw === \"\") return // Scope-qualified automatic references ($global:, $script:) are never // local declarations. if (raw.startsWith(\"$global:\") || raw.startsWith(\"$script",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-r-analyzer.ts",
+      "lang": "r",
+      "line": 412,
+      "shape": "dominated-trigger",
+      "key": "operator: repeated condition",
+      "statement": "{ const operator = node.childForFieldName(\"operator\")?.text if (operator === undefined) return { target: null, value: null } const lhs = node.childForFieldName(\"lhs\") const rhs = node.childForFieldNam",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "line": 1863,
+      "shape": "replace-write",
+      "key": "metadata.detectedFrameworks",
+      "statement": "detected = (metadata.detectedFrameworks ??= [])",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "line": 1864,
+      "shape": "deduped-guard",
+      "key": "metadata.detectedFrameworks",
+      "statement": "detected.push(name)",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "line": 1867,
+      "shape": "replace-write",
+      "key": "metadata.frameworkPatterns",
+      "statement": "patterns = (metadata.frameworkPatterns ??= [])",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "line": 1868,
+      "shape": "deduped-guard",
+      "key": "metadata.frameworkPatterns",
+      "statement": "patterns.push({ framework: name, patterns: [pattern] })",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "line": 1517,
+      "shape": "dominated-trigger",
+      "key": "methodName: repeated condition",
+      "statement": "{ const methodNode = node.childForFieldName(\"method\") if (!methodNode) return const methodName = methodNode.text if (!methodName) return // --- Extract receiver (identifier before the method name) ---",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "lang": "ruby",
+      "line": 1520,
+      "shape": "dominated-trigger",
+      "key": "RUBY_BUILTINS.has(methodName) ⟹ methodName === \"class\"",
+      "statement": "{ const methodNode = node.childForFieldName(\"method\") if (!methodNode) return const methodName = methodNode.text if (!methodName) return // --- Extract receiver (identifier before the method name) ---",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-rust-analyzer.ts",
+      "lang": "rust",
+      "line": 622,
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ let target = leafNode.text if (!target || target === \"Self\") { const resolved = this.enclosingImplType(leafNode) if (!resolved) return target = resolved } if (gparams.has(target)) return const key =",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-rust-analyzer.ts",
+      "lang": "rust",
+      "line": 1687,
+      "shape": "dominated-trigger",
+      "key": "nm: repeated condition",
+      "statement": "{ const owners = valueOwners.get(nm) if (!owners) return useImported.has(nm) if (owners.has(\"\")) return true if (useImported.has(nm)) return true for (const m of fnMods) if (owners.has(m)) return true",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "line": 433,
+      "shape": "append-write",
+      "key": "metadata.detectedFrameworks",
+      "statement": "metadata.detectedFrameworks!.push(fw)",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-sql-analyzer.ts",
+      "lang": "sql",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-sql-analyzer.ts",
+      "lang": "sql",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-svelte-analyzer.ts",
+      "lang": "svelte",
+      "line": 585,
+      "shape": "dominated-trigger",
+      "key": "tgt: repeated condition",
+      "statement": "{ const tgt = (r.target ?? \"\") as string if (SVELTE_RUNES.has(tgt)) continue // module-block exports are module API, not component members if (r.type === ASTEngine.RelationshipType.Contains && isModul",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-svelte-analyzer.ts",
+      "lang": "svelte",
+      "line": 593,
+      "shape": "dominated-trigger",
+      "key": "tgt: repeated condition",
+      "statement": "{ const tgt = (r.target ?? \"\") as string if (SVELTE_RUNES.has(tgt)) continue // module-block exports are module API, not component members if (r.type === ASTEngine.RelationshipType.Contains && isModul",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-svelte-analyzer.ts",
+      "lang": "svelte",
+      "line": 692,
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ // Svelte store auto-subscription: `{$store}` reads the VALUE of the // `store` member (`$:` rules don't apply in markup). A single-`$` // name that matches no member resolves through the sigil to a",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-swift-analyzer.ts",
+      "lang": "swift",
+      "line": 517,
+      "shape": "replace-write",
+      "key": "metadata.detectedFrameworks",
+      "statement": "metadata.detectedFrameworks = emittedFrameworks",
+      "verdict": "safe"
+    },
+    {
+      "file": "real-swift-analyzer.ts",
+      "lang": "swift",
+      "line": 1526,
+      "shape": "dominated-trigger",
+      "key": "potentialTargetFqn: repeated condition",
+      "statement": "{ const parentName = queue.shift()! if (seen.has(parentName)) continue seen.add(parentName) const potentialTargetFqn = `${parentName}.${task.methodName}` if (symbolMap.has(potentialTargetFqn)) { targe",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "line": 5563,
+      "shape": "dominated-trigger",
+      "key": "targetName: repeated condition",
+      "statement": "{ if (targetName === \"super\") return true // Full expression match first: console.log, console.warn, ... if (TS_CONSOLE_BUILTINS.has(fullCallee || \"\")) return true // console.* accessed via optional c",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-vue-analyzer.ts",
+      "lang": "vue",
+      "line": 484,
+      "shape": "dominated-trigger",
+      "key": "key: repeated condition",
+      "statement": "{ if (!memberNames.has(name)) continue const key = `${moduleName}:${name}` if (seenUses.has(key)) continue seenUses.add(key) relationships.push({ source: moduleName, target: name, type: ASTEngine.Rela",
+      "verdict": "reported"
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "lang": "yaml",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "framework (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key framework",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "lang": "yaml",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: detectedFrameworks)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "lang": "zig",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "detectedFrameworks (published: framework)",
+      "statement": "metadata omits the contract key detectedFrameworks",
+      "verdict": "violation"
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "lang": "zig",
+      "line": 1,
+      "shape": "missing-contract-key",
+      "key": "frameworkPatterns (published: framework)",
+      "statement": "metadata omits the contract key frameworkPatterns",
+      "verdict": "violation"
+    }
+  ]
+}

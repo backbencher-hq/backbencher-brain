@@ -1,0 +1,27 @@
+{
+  "fixtureId": "swift/single-letter-construction",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SWIFTD17 (OO family closure #613 family sweep): bare capitalized calls are constructions (instantiates ONLY) regardless of name length — the inherited `length > 1` carve-out mislabeled single-letter constructions (`struct E: Error` / `E()`, 15 sites in swift-nio corpus tests) as calls on BOTH sides (F5-blind shared defect). Single capital letters are reserved for types in Swift naming rules, never free functions, so length carries no disambiguating information.",
+  "expectSymbols": [
+    { "name": "E", "kind": "struct" },
+    { "name": "Kit", "kind": "class" },
+    { "name": "Engine", "kind": "class" },
+    { "name": "makeFailedFuture", "kind": "method" },
+    { "name": "go", "kind": "method" },
+    { "name": "lower", "kind": "method" },
+    { "name": "describe", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "source": "run", "target": "E" },
+    { "type": "instantiates", "source": "go", "target": "E" },
+    { "type": "instantiates", "source": "go", "target": "Kit" },
+    { "type": "calls", "source": "go", "target": "makeFailedFuture" },
+    { "type": "calls", "source": "lower", "target": "describe" },
+    { "type": "implements", "source": "E", "target": "Error" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "source": "run", "target": "E", "comment": "SWIFTD17: single-letter E() is construction, never a calls edge" },
+    { "type": "calls", "source": "go", "target": "E", "comment": "SWIFTD17: E() argument construction must stay instantiates" }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "fixtureId": "typescript/calls-callee-shape-reduction",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "VERIFY_TS / M14 JAD2-class. `calls` reduces a callee to a LEAF NAME by contract, and the pre-fix reducer took `callee.text` and filtered it with a DENYLIST of bad text (newline, backtick, `${`, brace-equals, >100 chars). A denylist enumerates the garbage someone has already seen. Measured over 32,672 call_expression nodes on 400 git-tracked corpus files the grammar produces TEN callee shapes — identifier 18,529, member_expression 14,030, parenthesized_expression 51, import 22, non_null_expression 11, super 10, await_expression 8, call_expression 6, subscript_expression 3, unary_expression 2 — and the two the reducer did not understand published their raw text as the target. Corpus evidence, pre-fix: `calls activate -> \"!context.globalState.get\"` (packages/vscode-typescript/src/extension.ts) and `calls watchFile -> \"ensureDynamicPollingWatchFile()\"` (tsc/testdata/fixtures/compiler/sys.ts), each alongside the CORRECT edge because the callee is a NAMED child and the recursion reaches it. Fix: calleeLeafName(), an ALLOWLIST that reduces through the decorator wrappers (non_null, parenthesized, unary, await, as, satisfies, type_assertion) and returns null for every shape that names nothing. A shape the grammar adds later now publishes nothing rather than publishing its text. Mutants: typescript/calls-callee-raw-text, typescript/calls-callee-no-reduction.",
+  "expectSymbols": [
+    { "name": "readNegated", "kind": "function" },
+    { "name": "runNonNull", "kind": "function" },
+    { "name": "runParen", "kind": "function" },
+    { "name": "runIIFE", "kind": "function" },
+    { "name": "runAwait", "kind": "function" },
+    { "name": "runAnonymousBody", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "readNegated", "target": "get" },
+    { "type": "calls", "from": "runNonNull", "target": "run" },
+    { "type": "calls", "from": "runNonNull", "target": "maybe" },
+    { "type": "calls", "from": "runParen", "target": "readNegated" },
+    { "type": "calls", "from": "runIIFE", "target": "factory" },
+    { "type": "calls", "from": "runAwait", "target": "fetchIt" },
+    { "type": "calls", "from": "runAnonymousBody", "target": "get" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "!state.get" },
+    { "type": "calls", "target": "state.get" },
+    { "type": "calls", "target": "factory()" },
+    { "type": "calls", "target": "(readNegated)" },
+    { "type": "calls", "target": "await fetchIt" },
+    { "type": "calls", "target": "maybe()!" },
+    { "type": "calls", "target": "maybe().run" },
+    { "type": "calls", "target": "function ()" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "target": "factory", "equals": 1 },
+    { "type": "calls", "target": "fetchIt", "equals": 1 },
+    { "type": "calls", "target": "readNegated", "equals": 1 },
+    { "type": "calls", "target": "get", "equals": 2 }
+  ]
+}

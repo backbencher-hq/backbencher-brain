@@ -1,0 +1,195 @@
+{
+  "issue": "M15.XP",
+  "code": "XP",
+  "tool": "bb_security",
+  "title": "fix-differential precision (retired detector; strict M72 contract)",
+  "verified": true,
+  "checks": 49,
+  "passed": 49,
+  "failed": 0,
+  "positives": 38,
+  "negatives": 11,
+  "negativePassed": 11,
+  "path": "rollback: BB_SECURITY_LEGACY=1 (brain_taint_flow); default Phase-1 engine measured by script/m72/**",
+  "method": "fix-differential oracle: index a known-vulnerable file and its real fix; a finding that survives the fix did not track the vulnerability",
+  "baseline": {
+    "measuredAt": "2026-09-30",
+    "strictSince": "M72",
+    "fixtures": 8,
+    "minDetectedVulnerable": 8,
+    "maxPersistedFraction": 0
+  },
+  "measured": {
+    "fixtures": 8,
+    "detectedVulnerableFixture": 8,
+    "trackedItsFix": 1,
+    "cleanFixedFixture": 0,
+    "findingsInVulnerableFiles": 9,
+    "findingsThatDisappearedOnFix": 2,
+    "findingsThatPersistedOnFix": 7,
+    "persistedFraction": 0.7777777777777778
+  },
+  "strictPassed": false,
+  "knownGaps": [
+    {
+      "id": "m15.precision.persisted-through-fix",
+      "label": "NO finding may survive its own security fix (strict, contract maximum 0)",
+      "reason": "the gate is measuring the RETIRED token detector (BB_SECURITY_LEGACY=1 rollback path); the Phase-1 spec engine that excludes sanitized/parameterized sinks is measured by script/m72/** (gates-matrix), and the retired detector is still reachable for one release",
+      "evidence": "validation/m15/results/xp1.json (this run: measured.persistedFraction, perFixture persisted counts) + docs/m72-security-rebuild/PLAN.md §2",
+      "observed": "7/9 findings persisted through their fix (77.8%)"
+    }
+  ],
+  "perFixture": [
+    {
+      "id": "ts-sqli-concat",
+      "language": "typescript",
+      "vuln": "sql_injection",
+      "before": [
+        "sql_injection|handler.ts|confirmed"
+      ],
+      "after": [
+        "sql_injection|handler.ts|confirmed"
+      ],
+      "disappeared": [],
+      "persisted": [
+        "sql_injection|handler.ts|confirmed"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "ts-cmdi-exec",
+      "language": "typescript",
+      "vuln": "command_injection",
+      "before": [
+        "code_injection|runner.ts|confirmed",
+        "command_injection|runner.ts|confirmed"
+      ],
+      "after": [
+        "command_injection|runner.ts|confirmed"
+      ],
+      "disappeared": [
+        "code_injection|runner.ts|confirmed"
+      ],
+      "persisted": [
+        "command_injection|runner.ts|confirmed"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "ts-xss-innerhtml",
+      "language": "typescript",
+      "vuln": "xss",
+      "before": [
+        "xss|view.ts|confirmed"
+      ],
+      "after": [
+        "unresolved|view.ts|source_only"
+      ],
+      "disappeared": [
+        "xss|view.ts|confirmed"
+      ],
+      "persisted": [],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "py-sqli-execute",
+      "language": "python",
+      "vuln": "sql_injection",
+      "before": [
+        "sql_injection|view.py|unresolved"
+      ],
+      "after": [
+        "sql_injection|view.py|unresolved"
+      ],
+      "disappeared": [],
+      "persisted": [
+        "sql_injection|view.py|unresolved"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "py-cmdi-system",
+      "language": "python",
+      "vuln": "command_injection",
+      "before": [
+        "command_injection|runner.py|unresolved"
+      ],
+      "after": [
+        "command_injection|runner.py|unresolved"
+      ],
+      "disappeared": [],
+      "persisted": [
+        "command_injection|runner.py|unresolved"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "go-cmdi-command",
+      "language": "go",
+      "vuln": "command_injection",
+      "before": [
+        "command_injection|runner.go|unresolved"
+      ],
+      "after": [
+        "command_injection|runner.go|unresolved"
+      ],
+      "disappeared": [],
+      "persisted": [
+        "command_injection|runner.go|unresolved"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "java-sqli-execquery",
+      "language": "java",
+      "vuln": "sql_injection",
+      "before": [
+        "sql_injection|Dao.java|confirmed"
+      ],
+      "after": [
+        "sql_injection|Dao.java|confirmed"
+      ],
+      "disappeared": [],
+      "persisted": [
+        "sql_injection|Dao.java|confirmed"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    },
+    {
+      "id": "rb-cmdi-system",
+      "language": "ruby",
+      "vuln": "command_injection",
+      "before": [
+        "command_injection|runner.rb|confirmed"
+      ],
+      "after": [
+        "command_injection|runner.rb|confirmed"
+      ],
+      "disappeared": [],
+      "persisted": [
+        "command_injection|runner.rb|confirmed"
+      ],
+      "detectedVulnerable": true,
+      "cleanFixed": false
+    }
+  ],
+  "limitations": [
+    "RECALL IS NOT MEASURED. `detectedVulnerableFixture` is a floor (every fixture must produce at least one finding), not a score; a detector that reported nothing would fail it rather than score well.",
+    "The eight fixtures are patterns chosen by the author, not a sample of real-world vulnerabilities. This number is a REGRESSION BASELINE and must never be published as a detection rate.",
+    "The fixed variants are written to be clean, so any finding in one is a suspected false positive for that class. A second real vulnerability in a 'fixed' body would be mislabelled; none is known, but the fixtures are small enough to check by reading.",
+    "The measurement runs the RETIRED token detector under BB_SECURITY_LEGACY=1; the Phase-1 spec engine's precision is measured by script/m72/**, not re-derived here."
+  ],
+  "generatedAt": "2026-11-14T21:08:08.789Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:08:08.790Z",
+    "contentSha256": "3e925eb70de505b9ad854cacc8d36c8a77056fe73937aa8b6bb707d9fd096ae3"
+  }
+}

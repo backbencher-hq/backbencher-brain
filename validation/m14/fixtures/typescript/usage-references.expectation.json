@@ -1,0 +1,51 @@
+{
+  "fixtureId": "typescript/usage-references",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The usage pass read a symbolNames map that was never populated - References and type-Uses edges were structurally impossible on every file. With the map fed from extracted symbols, type annotations must produce an edge to the named type (greet->User, main->User) and identifier usage must produce References (main->raw). CHANGED by DERIV_TS 2026-10-03: the type-annotation rows are pinned as `references`, not `uses`. This fixture and `typescript/type-usage-graph` pinned the SAME mention under BOTH labels - `uses greet->User` here and `references greet->User` there - so the double-emission this lane's own TSD18/TSD28 rulings forbid for a template read was pinned by the test suite for a type read. Six independent reasons decide the survivor, and the third is decisive: on 200 tracked files of microsoft/TypeScript `references` carried 9,445 type-position rows and `uses` 733, and `uses` additionally requires the name to be an extracted symbol, so keeping `uses` would DELETE 8,712 rows while keeping `references` deletes only duplicates. The forbid rows below are the regression pin: the duplicate must not come back.",
+  "expectSymbols": [
+    {
+      "name": "User",
+      "kind": "interface"
+    },
+    {
+      "name": "greet"
+    },
+    {
+      "name": "main"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "fromEndsWith": "greet",
+      "target": "User",
+      "note": "PIN CORRECTED 2026-10-17: a parameter annotation IS a use of the type."
+    },
+    {
+      "type": "uses",
+      "fromEndsWith": "main",
+      "target": "User",
+      "note": "PIN CORRECTED 2026-10-17: same construct, the other function."
+    },
+    {
+      "type": "references",
+      "fromEndsWith": "main",
+      "target": "raw"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "fromEndsWith": "greet",
+      "target": "User",
+      "note": "PIN CORRECTED 2026-10-17: the duplicate references row must NOT exist (was: forbid `uses`)."
+    },
+    {
+      "type": "references",
+      "fromEndsWith": "main",
+      "target": "User",
+      "note": "same, for main."
+    }
+  ]
+}

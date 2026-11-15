@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/fragment-file-scope-er3.erl",
+  "authoredFrom": "ER-D32's edge half, found by the full-corpus dual lens on otp/lib/stdlib/test/epp_SUITE_data/mac2.erl. Ownership already fell back to the file path, but `currentSource` — which every file-scope edge reads its source from — fell back to the module name alone, and a module-less file has none. So the edge's source was undefined and pushRel dropped it silently: no error, no counter. The analyzer published four macro constants and their four `contains` edges, so it asserted the macros exist, and published nothing asserting they are used. Lines read off this file.",
+  "expectSymbols": [
+    {
+      "name": "ONE",
+      "kind": "constant",
+      "meta.isMacro": true
+    },
+    {
+      "name": "TWO",
+      "kind": "constant",
+      "meta.isMacro": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "ONE",
+      "meta.context": "macro use",
+      "line_number": 20,
+      "note": "a file-scope macro USE in a file with no module and no function: the source is the file path, the same fallback ownership uses"
+    },
+    {
+      "type": "references",
+      "target": "TWO",
+      "meta.context": "macro use",
+      "line_number": 20
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "ONE",
+      "line_number": 17,
+      "note": "the `-define` line is where the macro is DECLARED; the use is on the expression below"
+    },
+    {
+      "type": "references",
+      "target": "TWO",
+      "line_number": 18,
+      "note": "ditto"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "fragment_file_scope_er3",
+      "note": "no module is fabricated from the filename"
+    }
+  ]
+}

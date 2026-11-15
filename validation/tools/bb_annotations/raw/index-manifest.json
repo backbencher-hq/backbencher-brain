@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata",
+  "builtAt": "2026-11-02T04:28:12.879Z",
+  "tiers": {
+    "T0": {
+      "workspace": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+      "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+      "dbBytes": 4096,
+      "dbMtimeMs": 1793593692950.985,
+      "indexMs": 15774,
+      "counts": {
+        "files": 5,
+        "symbols": 13,
+        "relationships": 26,
+        "annotations": 0
+      },
+      "qualifiedNameExamples": [
+        {
+          "name": "total",
+          "qualified_name": "checkout.total"
+        },
+        {
+          "name": "Inventory",
+          "qualified_name": "com.demo.Inventory"
+        },
+        {
+          "name": "getStock",
+          "qualified_name": "com.demo.Inventory.getStock"
+        },
+        {
+          "name": "restock",
+          "qualified_name": "com.demo.Inventory.restock"
+        }
+      ],
+      "filePathColumns": [
+        {
+          "relative_path": "README.md",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot/README.md"
+        },
+        {
+          "relative_path": "ts-js/src/checkout.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot/ts-js/src/checkout.ts"
+        },
+        {
+          "relative_path": "ts-js/src/pricing.js",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot/ts-js/src/pricing.js"
+        },
+        {
+          "relative_path": "java-scala/src/main/java/com/demo/Inventory.java",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot/java-scala/src/main/java/com/demo/Inventory.java"
+        }
+      ]
+    },
+    "T1": {
+      "workspace": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+      "dbBytes": 47071232,
+      "dbMtimeMs": 1793593750764.5884,
+      "indexMs": 42712,
+      "counts": {
+        "files": 97,
+        "symbols": 3512,
+        "relationships": 17068,
+        "annotations": 0
+      },
+      "qualifiedNameExamples": [
+        {
+          "name": "ProjectTable",
+          "qualified_name": "t0043_project.sql.ProjectTable"
+        },
+        {
+          "name": "ProjectID",
+          "qualified_name": "t0044_schema.ProjectID"
+        },
+        {
+          "name": "ProjectID",
+          "qualified_name": "t0044_schema.ProjectID"
+        },
+        {
+          "name": "Instance",
+          "qualified_name": "t0045_instance.Instance"
+        },
+        {
+          "name": "provide",
+          "qualified_name": "t0045_instance.Instance.provide"
+        },
+        {
+          "name": "directory",
+          "qualified_name": "t0045_instance.Instance.directory"
+        },
+        {
+          "name": "publishSafe",
+          "qualified_name": "Bus.publishSafe"
+        },
+        {
+          "name": "publish",
+          "qualified_name": "Bus.publish"
+        }
+      ],
+      "filePathColumns": [
+        {
+          "relative_path": "t0043_project.sql.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100/t0043_project.sql.ts"
+        },
+        {
+          "relative_path": "t0044_schema.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100/t0044_schema.ts"
+        },
+        {
+          "relative_path": "t0045_instance.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100/t0045_instance.ts"
+        },
+        {
+          "relative_path": "t0046_bus.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100/t0046_bus.ts"
+        }
+      ]
+    },
+    "probe": {
+      "workspace": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture",
+      "projectId": "e6ed52d398a5575a083816f5b4097ad5e013df2e",
+      "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/e6ed52d398a5575a083816f5b4097ad5e013df2e/brain.db",
+      "dbBytes": 4096,
+      "dbMtimeMs": 1793593751414.595,
+      "indexMs": 4350,
+      "counts": {
+        "files": 3,
+        "symbols": 10,
+        "relationships": 12,
+        "annotations": 0
+      },
+      "qualifiedNameExamples": [
+        {
+          "name": "Widget",
+          "qualified_name": "alpha.Widget"
+        },
+        {
+          "name": "render",
+          "qualified_name": "Widget.render"
+        },
+        {
+          "name": "layout",
+          "qualified_name": "Widget.layout"
+        },
+        {
+          "name": "buildThing",
+          "qualified_name": "alpha.buildThing"
+        },
+        {
+          "name": "duplicate",
+          "qualified_name": "alpha.duplicate"
+        },
+        {
+          "name": "Gadget",
+          "qualified_name": "beta.Gadget"
+        },
+        {
+          "name": "duplicate",
+          "qualified_name": "beta.duplicate"
+        },
+        {
+          "name": "render",
+          "qualified_name": "Gadget.render"
+        }
+      ],
+      "filePathColumns": [
+        {
+          "relative_path": "src/alpha.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture/src/alpha.ts"
+        },
+        {
+          "relative_path": "src/beta.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture/src/beta.ts"
+        },
+        {
+          "relative_path": "src/gamma.ts",
+          "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture/src/gamma.ts"
+        }
+      ]
+    }
+  }
+}

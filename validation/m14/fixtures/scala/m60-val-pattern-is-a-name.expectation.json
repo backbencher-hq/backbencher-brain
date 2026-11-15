@@ -1,0 +1,39 @@
+{
+  "fixtureId": "scala/m60-val-pattern-is-a-name",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the M60/S12 ruling; lines recorded from the post-fix run. Every defect row PUBLISHED an edge carrying a pattern's source text, so the forbid rows are the assertions that can fail on them — an emission-only fixture cannot.",
+  "rationale": "M60/S12 — a `val` / `var` definition's PATTERN is a name only when it is a name. The analyzer refused exactly one destructuring shape (`tuple_pattern`, S1.19, on the reasoning that a destructured field is 'a run-time VALUE shape ... there is no single symbol to name them') and published the other four verbatim as the symbol name: `State(queue, size)`, `selfRef :: regularRef`, `vdef @ Node(_, tpt)`, `_`, and — the shape the corpora actually reach at class/object level — the Scala 3 symbolic-value string pattern, measured at semanticdb/Scala3.scala:187-188 where the published name was `s\"${RootPackageName @ _}/\"`. None of those is spellable by a reference, so none can be joined to anything. The census that makes the list exhaustive rather than a guess is script/m14/tmp/scala-val-pattern-census.ts: scala3's 15,216 val/var definitions are identifier 14704 / tuple_pattern 375 / case_class_pattern 91 / infix_pattern 23 / capture_pattern 10 / identifiers 8 / operator_identifier 3 / interpolated_string_expression 2; cats-effect's 3,577 are identifier 3396 / tuple_pattern 123 / wildcard 54 / case_class_pattern 4. So the NAME shapes are `identifier`, `identifiers` and `operator_identifier`. This was a SHARED BLIND SPOT — deriveScalaContainsTruth returned the same four rows, so the differential could not see it.",
+  "expectSymbols": [
+    { "name": "K", "kind": "class" },
+    { "name": "ok", "ownerName": "K", "comment": "control: an identifier pattern is a name" },
+    { "name": "A", "ownerName": "K", "comment": "control: `val A, B = 2` declares TWO names (M60 #924)" },
+    { "name": "B", "ownerName": "K" },
+    { "name": "Op", "ownerName": "K", "comment": "control: an operator-SHAPED name is still a name. An operator_identifier METHOD (`def !>`) is likewise a name — 62 such names on the 400-file scala3 draw and 13 on cats-effect, every one adjudicated and none garbage." },
+    { "name": "O", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Node", "target": "constructor" },
+    { "type": "contains", "from": "Node", "target": "lhs" },
+    { "type": "contains", "from": "K", "target": "ok", "line_number": 19 },
+    { "type": "contains", "from": "K", "target": "A", "line_number": 20 },
+    { "type": "contains", "from": "K", "target": "B", "line_number": 20 },
+    { "type": "contains", "from": "K", "target": "Op", "line_number": 21 }
+  ],
+  "forbidSymbols": [
+    { "name": "State(queue, size)", "comment": "THE DEFECT: a case_class_pattern published as a name" },
+    { "name": "selfRef :: regularRef", "comment": "THE DEFECT: an infix_pattern published as a name" },
+    { "name": "vdef @ Node(_, tpt)", "comment": "THE DEFECT: a capture_pattern published as a name" },
+    { "name": "_", "comment": "THE DEFECT: a wildcard published as a name" },
+    { "name": "s\"${RootPackageName @ _}/\"", "comment": "THE DEFECT, and the shape the corpora reach: a symbolic-value string pattern published as a name (semanticdb/Scala3.scala:187-188)" },
+    { "name": "(a, b)", "comment": "S1.19's tuple_pattern refusal, kept in the fixture so the fifth shape cannot come back" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "K", "target": "State(queue, size)", "comment": "each of these five published a `contains` edge carrying a pattern's text — 2 on a 400-file scala3 draw, and all five reachable at class or object level" },
+    { "type": "contains", "from": "K", "target": "selfRef :: regularRef" },
+    { "type": "contains", "from": "K", "target": "vdef @ Node(_, tpt)" },
+    { "type": "contains", "from": "K", "target": "_" },
+    { "type": "contains", "from": "O", "target": "s\"${RootPackageName @ _}/\"" },
+    { "type": "contains", "from": "O", "target": "(a, b)" }
+  ]
+}

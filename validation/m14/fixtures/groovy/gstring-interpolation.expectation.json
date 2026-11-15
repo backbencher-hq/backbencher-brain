@@ -1,0 +1,10 @@
+{
+  "fixtureId": "groovy/gstring-interpolation",
+  "authoredBeforeAnalyzerRun": true,
+  "language": "groovy",
+  "rationale": "GString interpolation contains real expressions (user.name, count) that must not corrupt parsing or produce garbage symbols.",
+  "expectSymbols": [
+    { "name": "Notifier", "kind": "class" },
+    { "name": "template" }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "fixtureId": "ruby/mixes-in-modules",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins RUBY-D1 (ALL-OUT-OF-ALL phase 2): `include`/`prepend`/`extend` are MODULE MIXIN COMPOSITION and publish canonical `mixes_in`, not `implements` and not `extends`. Ruby's grammar has no interface/conformance construct (implements is ruled NOT APPLICABLE) and `extend M` composes M into the singleton class rather than inheriting from it; the canonical vocabulary has exactly one value for mixin composition, and Dart's `with` is the measured population of the same value. The family's previous adaptation (include/prepend -> implements, extend -> extends) is RELABELLED at the unchanged construct sites: the three positives pin the three spellings, `meta.mixinType` pins which keyword produced the edge, the dynamic control pins the constant-only refusal, and the superclass control proves `class Child < Base` stays `extends`. The relabel delta is measured (implements 6 fixture edges -> 0, extends loses the one extend-mixin row, mixes_in gains all seven) rather than smoothed.",
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "MixedThing",
+      "target": "ComparableLike",
+      "meta.mixinType": "include",
+      "comment": "THE include PIN: composition, target is the module as written."
+    },
+    {
+      "type": "mixes_in",
+      "from": "MixedThing",
+      "target": "PrependedHelpers",
+      "meta.mixinType": "prepend",
+      "comment": "THE prepend PIN: same composition value, role recorded — a consumer must be able to tell prepend from include (prepend changes method precedence, it is not inheritance)."
+    },
+    {
+      "type": "mixes_in",
+      "from": "MixedThing",
+      "target": "SingletonHelpers",
+      "meta.mixinType": "extend",
+      "comment": "THE extend PIN: composition into the SINGLETON class — the previous adaptation called this `extends`, which claimed superclass inheritance that does not exist."
+    },
+    {
+      "type": "extends",
+      "from": "MixedThing",
+      "target": "BaseThing",
+      "comment": "SUPERCLASS CONTROL: `<` stays `extends`; the relabel must not eat inheritance."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "comment": "implements is RULED NOT APPLICABLE for Ruby: a mixin is composition, not conformance. Any implements edge from this file is the old adaptation leaking back. THIS ROW PINS THE SPELLING CONTRACT AND NOT ONLY THE RELATIONSHIP (Lead ruling L-2026-10-21-07): the `implements` SPELLING is the old name for a `mixes_in` row, so forbidding the type forbids that re-spelling — a forbid that pinned only 'no relationship' would let a mutant re-spell `mixes_in` as `implements` and pass."
+    },
+    {
+      "type": "extends",
+      "from": "MixedThing",
+      "target": "SingletonHelpers",
+      "comment": "THE RELABEL REFUSAL: an `extend` must never reappear as superclass inheritance. This row pins the SPELLING as well as the relationship: the same source/target PAIR is legal as a `mixes_in` row with meta.mixinType=extend and illegal as an `extends` row, so the pair is refused in ONE spelling and required in the other — a mutant that swapped the two would break this row."
+    },
+    {
+      "type": "mixes_in",
+      "target": "mixin_module",
+      "comment": "THE DYNAMIC CONTROL: a lower-case/variable mixin argument is unknowable statically and publishes nothing (rake file_list.rb's fabricated `implements:pattern` is the measured precedent)."
+    },
+    {
+      "type": "mixes_in",
+      "from": "MixedThing",
+      "target": "ComparableLike",
+      "meta.mixinType": "prepend",
+      "comment": "THE SPELLING CONTRACT FOR THE KEYWORD (L-2026-10-21-07): the include row must be spelled meta.mixinType=include and NOT any other keyword. A forbid that pinned only the relationship (type+from+target, with no meta key) would NOT catch a mutant that re-spelled the keyword — it would still be a `mixes_in` row from MixedThing to ComparableLike, so a relationship-only forbid would pass it. Pinning the meta key in the FORBID is what makes the keyword part of the contract: the row is legal in exactly one spelling and forbidden in every other."
+    },
+    {
+      "type": "mixes_in",
+      "from": "MixedThing",
+      "target": "PrependedHelpers",
+      "meta.mixinType": "include",
+      "comment": "THE SPELLING CONTRACT, THE OTHER WAY: the prepend row must be spelled meta.mixinType=prepend. Together with the row above, EVERY keyword is forbidden in every position but its own — so a mutant that swapped include and prepend, or that re-spelled either one, is caught by the forbids and not only by the positives."
+    },
+    {
+      "type": "mixes_in",
+      "from": "MixedThing",
+      "target": "SingletonHelpers",
+      "meta.mixinType": "include",
+      "comment": "THE EXTEND ROW'S SPELLING: the extend composition must be spelled meta.mixinType=extend. A mutant that re-spelled `extend M` as `include M` — the same relationship, the same target, a different keyword — passes every positive row only if it also moved the positives; the forbid rows here pin the keyword in all three positions, so the contract is checked in the negative direction too."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "mixes_in",
+      "equals": 3,
+      "note": "include + prepend + extend, one each. The count makes a superset fix fail: a mutant that published the dynamic control, or re-published extends as mixes_in, fails here even if the three positives still matched."
+    }
+  ]
+}

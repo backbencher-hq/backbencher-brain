@@ -1,0 +1,193 @@
+{
+  "fixtureId": "rust/use-list-imports",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the use-list import module/items contract (#261 wave 3, found 2026-08-28): pre-fix `use std::io::{Read, Write as W}` stored module=\"std::io::{Read, Write as W}\" with comma-split garbage items, violating the family contract (JS/Java: module = path prefix, items = local bindings). Alias-aware: `Write as W` binds W. Wildcard imports emit items=[\"*\"]. RSD6 pins (2026-09-05): a NESTED group `use std::{env, io, path::{Path, PathBuf}}` binds Path/PathBuf (65 such declarations dropped them across cargo+ripgrep) and stays a single std row; a TOP-LEVEL group `use {std::sync::Arc, ...}` has no shared prefix — each binding becomes its OWN row with its full module path (pre-fix fabricated module 'Read, File'; 28 declarations). Not covered by the differential oracle (imports are fixture-gated only), so these pins are the sole regression guards. RUST-D25 adds the ABSOLUTE path forms: `use ::libc::c_int;` published module `libc::libc::c_int` because a leading-`::` scoped_identifier has no `path` field and the namedChild(0) fallback used the name as its own prefix. The doubled segment is forbidden here so the regression cannot return silently. RUST-D27 adds a MULTI-LINE top-level group: every row used to take the range of the whole `use` declaration, so all three pointed at the `use {` line, which bears none of the three paths. The three pins below name the FULL range object because that is the only falsifiable form of a line assertion — the html #888 precedent is that identity comparison makes a range pin silently unmatchable, and an unmatchable pin proves nothing. RUST-D29: a comment or stray separator inside a use tree is not a module path. The collector's fallback accepted ANY node and published its raw text, so `use {a ,, b}` published module `,` and `use {/* c */ Foo}` published the comment. Narrowing that fallback to path-bearing nodes then broke `crate::foo::{...}`, whose path field is a `crate` NODE rather than an identifier, and the module became `::foo` — the narrower rule CREATED the second defect, on the same run, which is why the forbids below pin both halves rather than trusting either.",
+  "expectSymbols": [],
+  "expectImports": [
+    {
+      "module": "std::io",
+      "items": [
+        "Read",
+        "W"
+      ]
+    },
+    {
+      "module": "crate::foo",
+      "items": [
+        "bar",
+        "B"
+      ]
+    },
+    {
+      "module": "super::util",
+      "items": [
+        "*"
+      ]
+    },
+    {
+      "module": "std::collections::HashMap",
+      "items": [
+        "HashMap"
+      ]
+    },
+    {
+      "module": "serde",
+      "items": [
+        "*"
+      ],
+      "meta.externalCrate": true
+    },
+    {
+      "module": "std",
+      "items": [
+        "env",
+        "io",
+        "Path",
+        "PathBuf"
+      ],
+      "comment": "RSD6a: nested-group leaves are bound, module stays the outer prefix"
+    },
+    {
+      "module": "std::sync::Arc",
+      "items": [
+        "Arc"
+      ],
+      "comment": "RSD6b: top-level group -> one row per binding"
+    },
+    {
+      "module": "std::time::Duration",
+      "items": [
+        "Duration"
+      ]
+    },
+    {
+      "module": "::libc::c_int",
+      "items": [
+        "c_int"
+      ]
+    },
+    {
+      "module": "::a::b::c",
+      "items": [
+        "c"
+      ]
+    },
+    {
+      "module": "aho_corasick::AhoCorasick",
+      "items": [
+        "AhoCorasick"
+      ],
+      "range": {
+        "startLine": 22,
+        "startColumn": 5,
+        "endLine": 22,
+        "endColumn": 30,
+        "startIndex": 1113,
+        "endIndex": 1138
+      },
+      "comment": "RUST-D27: line 22 is the path itself, not the `use {` on line 20"
+    },
+    {
+      "module": "bstr",
+      "items": [
+        "B",
+        "ByteSlice"
+      ],
+      "range": {
+        "startLine": 23,
+        "startColumn": 5,
+        "endLine": 23,
+        "endColumn": 25,
+        "startIndex": 1144,
+        "endIndex": 1164
+      },
+      "comment": "RUST-D27: the group binds the inner leaves; the range is the whole bstr::{B, ByteSlice} path"
+    },
+    {
+      "module": "regex_automata",
+      "items": [
+        "regex_automata"
+      ],
+      "range": {
+        "startLine": 24,
+        "startColumn": 5,
+        "endLine": 24,
+        "endColumn": 19,
+        "startIndex": 1170,
+        "endIndex": 1184
+      },
+      "comment": "RUST-D27: line 24"
+    },
+    {
+      "module": "alpha",
+      "items": [
+        "alpha"
+      ],
+      "comment": "RUST-D29: a comment next to a real binding is not itself one"
+    },
+    {
+      "module": "beta",
+      "items": [
+        "beta"
+      ]
+    },
+    {
+      "module": "gamma",
+      "items": [
+        "gamma"
+      ],
+      "comment": "RUST-D29: survives the stray separator"
+    },
+    {
+      "module": "delta",
+      "items": [
+        "delta"
+      ]
+    },
+    {
+      "module": "crate::baz",
+      "items": [
+        "Q",
+        "Quux"
+      ],
+      "comment": "RUST-D29: crate is a path ROOT node; narrowing the fallback must not lose the prefix"
+    },
+    {
+      "module": "super::sibling::Sib",
+      "items": [
+        "Sib"
+      ],
+      "comment": "RUST-D29: super is a path ROOT node. Module is the full path INCLUDING the leaf, per the convention every other row in this fixture follows — my first pin wrote the prefix alone and the fixture was right to reject it."
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "std::io::{Read, Write as W}"
+    },
+    {
+      "module": "Read, File",
+      "comment": "RSD6b: the fabricated joined-items module must never return"
+    },
+    {
+      "module": "libc::libc::c_int",
+      "comment": "RUST-D25: a leading :: must not be read as a path segment and doubled"
+    },
+    {
+      "module": "a::a::b::c",
+      "comment": "RUST-D25: same defect one segment deeper"
+    },
+    {
+      "module": ",",
+      "comment": "RUST-D29: a separator is not a module"
+    },
+    {
+      "module": "/* leading */",
+      "comment": "RUST-D29: a comment is not a module"
+    },
+    {
+      "module": "::baz",
+      "comment": "RUST-D29: the crate prefix was lost, leaving a leading :: — the narrower rule's own regression"
+    }
+  ]
+}

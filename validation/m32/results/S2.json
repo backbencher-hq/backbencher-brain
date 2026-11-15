@@ -1,0 +1,47 @@
+{
+  "status": "verified",
+  "milestone": "M32",
+  "issue": "S2",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m32/verify-doctor.ts",
+  "evidenceFile": "S2.json",
+  "generatedAt": "2026-11-15T04:11:30.553Z",
+  "passed": 44,
+  "failed": 0,
+  "negativeCases": 7,
+  "mutants": [
+    {
+      "name": "no-config check removed",
+      "caught": true
+    },
+    {
+      "name": "mismatch fix command weakened (index . instead of --force)",
+      "caught": true
+    },
+    {
+      "name": "severity swapped: mismatch reported as warn only",
+      "caught": true
+    },
+    {
+      "name": "stored-model comparison inverted (mismatch reported as match)",
+      "caught": true
+    },
+    {
+      "name": "unreadable index silently treated as empty",
+      "caught": true
+    },
+    {
+      "name": "stored-vectors-without-config finding removed",
+      "caught": true
+    },
+    {
+      "name": "permission warning removed",
+      "caught": true
+    }
+  ],
+  "limitations": [
+    "Mismatch fixtures use planted storedModels at function level; A8 additionally produces genuine local-vector rows via the M16 lifecycle path (indexProjectParallel + flushBackgroundEmbeddings).",
+    "Doctor never contacts providers; 'never-validated key' appears as no-index/info plus setup advice rather than a network probe.",
+    "Binary section covers unconfigured and warn-only states end-to-end; a full mismatch journey on the binary requires a real indexed DB with a diverged config and is covered at function level (A5/A8)."
+  ]
+}

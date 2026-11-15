@@ -1,0 +1,610 @@
+{
+  "fixtureId": "scala/m60-contains-owner-model",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the M60/S1 owner model; spellings and lines recorded from the post-fix run. The scope rule is a SUPPRESSION rule, so `forbidRelationships` carries most of the assertion: 14 of the 31 pinned rows are rows that must NOT be published. A symbol constraint is matched field-for-field against the published symbol object, which carries `range` and not `line`, so no expectSymbols row may use `line` — the line is pinned on the RELATIONSHIP instead, where line_number is a real constraint. Relationship rows do carry line_number.",
+  "rationale": "M60/S1 — the whole `contains` model in one file, because the label's correctness is a conjunction and each conjunct had been broken independently. OWNER: a member belongs to its NEAREST enclosing owner, and an owner is a type (class/object/trait/enum), a method, a `given`, or an anonymous class. A val is not an owner; neither is an `extension`. SCOPE: a `val`/`var` inside a FUNCTION SCOPE — a method OR a LAMBDA — is not extracted, and the scope is cleared by the next type, `given`-independent, or anonymous class. The lambda clause is what the previous oracle missed: a val's nearest OWNER can be a class while a lambda still gates it, and that was all 56 of cats-effect's unexplained test-suite rows (`ticked(\"..\") { implicit t => val r0 = ... }` parses as block > lambda_expression > val_definition). NAME: read the `name:` FIELD, never the first identifier child — the latter published `Names contains x`, a method's parameter. Measured: MISSING=0 and UNEXPLAINED=0 on all 457 cats-effect files and a 400-file scala3 draw (23,081 truth edges).",
+  "expectSymbols": [
+    {
+      "name": "m",
+      "ownerName": "Locals",
+      "comment": "(1) a METHOD owns its local definitions"
+    },
+    {
+      "name": "Alias",
+      "kind": "type",
+      "ownerName": "m",
+      "comment": "a local type alias is a member of the method — the name is a type_identifier, which the old `firstNamedOf(identifier)` read could not see at all"
+    },
+    {
+      "name": "Nested",
+      "ownerName": "m"
+    },
+    {
+      "name": "q",
+      "ownerName": "Nested",
+      "comment": "a local CLASS clears the method scope, so its member publishes"
+    },
+    {
+      "name": "AlsoNested",
+      "kind": "module",
+      "ownerName": "m"
+    },
+    {
+      "name": "r",
+      "ownerName": "AlsoNested"
+    },
+    {
+      "name": "anonymous_Runnable",
+      "ownerName": "m"
+    },
+    {
+      "name": "publishedInBlock",
+      "ownerName": "Scopes",
+      "comment": "(3) a val in a BARE BLOCK in a class body IS published — nothing on the path is a scope boundary. This is the declared approximation, SDJ-3: the val is block-local, not API."
+    },
+    {
+      "name": "anonInsideMethod",
+      "ownerName": "Scopes"
+    },
+    {
+      "name": "anonymous_Runnable#2",
+      "ownerName": "anonInsideMethod",
+      "comment": "(4) an anonymous class inside a METHOD is owned by the method, and DISAMBIGUATED: this is the second `new Runnable` in the file (M60; 402 scala3 files collided this way)"
+    },
+    {
+      "name": "field",
+      "ownerName": "anonymous_Runnable#2",
+      "comment": "and it CLEARS the scope: this val publishes even though a method encloses it"
+    },
+    {
+      "name": "anonymous_Runnable#3",
+      "ownerName": "Scopes",
+      "comment": "the third `new Runnable` in the file"
+    },
+    {
+      "name": "field",
+      "ownerName": "anonymous_Runnable#3"
+    },
+    {
+      "name": "memberLambda",
+      "ownerName": "Scopes",
+      "comment": "(5) the lambda's own val is a member of the class"
+    },
+    {
+      "name": "!>",
+      "ownerName": "Names",
+      "comment": "(6) an operator method's name is an operator_identifier"
+    },
+    {
+      "name": "++",
+      "ownerName": "Names"
+    },
+    {
+      "name": "Alias",
+      "kind": "type",
+      "ownerName": "Names"
+    },
+    {
+      "name": "m",
+      "ownerName": "TraitWithParams",
+      "comment": "(7) a TRAIT publishes NEITHER a constructor nor its parameters — handleTrait has no class_parameters path"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Plain"
+    },
+    {
+      "name": "b",
+      "ownerName": "Plain",
+      "comment": "a plain class publishes only its val/var parameters"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Case1"
+    },
+    {
+      "name": "a",
+      "ownerName": "Case1",
+      "comment": "a CASE CLASS publishes EVERY parameter as a field, val or not"
+    },
+    {
+      "name": "c",
+      "ownerName": "Case1"
+    },
+    {
+      "name": "m",
+      "ownerName": "NoParens",
+      "comment": "a class with no parameter list publishes no constructor"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Colour"
+    },
+    {
+      "name": "rgb",
+      "ownerName": "Colour"
+    },
+    {
+      "name": "Red",
+      "kind": "enum_member",
+      "ownerName": "Colour",
+      "comment": "(8) an enum's CASES are members"
+    },
+    {
+      "name": "Green",
+      "kind": "enum_member",
+      "ownerName": "Colour"
+    },
+    {
+      "name": "Custom",
+      "kind": "enum_member",
+      "ownerName": "Colour"
+    },
+    {
+      "name": "hex",
+      "ownerName": "Colour"
+    },
+    {
+      "name": "name",
+      "ownerName": "Service",
+      "comment": "(9) a trait's ABSTRACT fields are members; they arrive as val_declaration with a `name:` field and NO `pattern:`, so reading only `pattern` found none of them"
+    },
+    {
+      "name": "count",
+      "ownerName": "Service"
+    },
+    {
+      "name": "Id",
+      "kind": "type",
+      "ownerName": "Service"
+    },
+    {
+      "name": "given_1",
+      "ownerName": "Instances",
+      "comment": "(10) an anonymous given is named from a per-file counter"
+    },
+    {
+      "name": "cmp",
+      "ownerName": "given_1"
+    },
+    {
+      "name": "namedOrd",
+      "ownerName": "Instances"
+    },
+    {
+      "name": "cmp",
+      "ownerName": "namedOrd"
+    },
+    {
+      "name": "given_2",
+      "ownerName": "Instances"
+    },
+    {
+      "name": "localInsideGiven",
+      "ownerName": "given_2",
+      "comment": "a val in a given's body at OBJECT level publishes — but see forbidRelationships: the same val inside a METHOD does not"
+    },
+    {
+      "name": "anonymous_Ord",
+      "ownerName": "given_2",
+      "comment": "a given is an OWNER, so the anonymous class in its body belongs to the given, not to the enclosing object"
+    },
+    {
+      "name": "given_3",
+      "ownerName": "scoped"
+    },
+    {
+      "name": "cmp",
+      "ownerName": "given_3"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Locals",
+      "target": "m"
+    },
+    {
+      "type": "contains",
+      "from": "m",
+      "target": "local"
+    },
+    {
+      "type": "contains",
+      "from": "m",
+      "target": "Alias"
+    },
+    {
+      "type": "contains",
+      "from": "m",
+      "target": "Nested"
+    },
+    {
+      "type": "contains",
+      "from": "Nested",
+      "target": "q"
+    },
+    {
+      "type": "contains",
+      "from": "m",
+      "target": "AlsoNested"
+    },
+    {
+      "type": "contains",
+      "from": "AlsoNested",
+      "target": "r"
+    },
+    {
+      "type": "contains",
+      "from": "m",
+      "target": "anonymous_Runnable"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "run"
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "inMethod",
+      "line_number": 24
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "inLambda",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "publishedInBlock",
+      "line_number": 30
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "anonInsideMethod",
+      "line_number": 34
+    },
+    {
+      "type": "contains",
+      "from": "anonInsideMethod",
+      "target": "anonymous_Runnable#2",
+      "line_number": 34
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable#2",
+      "target": "field",
+      "line_number": 34
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "anonInsideLambda",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "anonymous_Runnable#3",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable#3",
+      "target": "field",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "memberLambda",
+      "line_number": 39
+    },
+    {
+      "type": "contains",
+      "from": "Names",
+      "target": "!>",
+      "line_number": 46
+    },
+    {
+      "type": "contains",
+      "from": "Names",
+      "target": "++",
+      "line_number": 47
+    },
+    {
+      "type": "contains",
+      "from": "Names",
+      "target": "Alias",
+      "line_number": 48
+    },
+    {
+      "type": "contains",
+      "from": "TraitWithParams",
+      "target": "m",
+      "line_number": 54
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "constructor",
+      "line_number": 55
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "b",
+      "line_number": 55
+    },
+    {
+      "type": "contains",
+      "from": "Case1",
+      "target": "constructor",
+      "line_number": 56
+    },
+    {
+      "type": "contains",
+      "from": "Case1",
+      "target": "a",
+      "line_number": 56
+    },
+    {
+      "type": "contains",
+      "from": "NoParens",
+      "target": "m",
+      "line_number": 57
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "constructor",
+      "line_number": 61
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "rgb",
+      "line_number": 61
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "Red",
+      "line_number": 62
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "Green",
+      "line_number": 62
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "Custom",
+      "line_number": 63
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "hex",
+      "line_number": 64
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "save",
+      "line_number": 70
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "name",
+      "line_number": 71
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "count",
+      "line_number": 72
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "Id",
+      "line_number": 73
+    },
+    {
+      "type": "contains",
+      "from": "Instances",
+      "target": "given_1",
+      "line_number": 80
+    },
+    {
+      "type": "contains",
+      "from": "given_1",
+      "target": "cmp",
+      "line_number": 80
+    },
+    {
+      "type": "contains",
+      "from": "Instances",
+      "target": "namedOrd",
+      "line_number": 81
+    },
+    {
+      "type": "contains",
+      "from": "namedOrd",
+      "target": "cmp",
+      "line_number": 81
+    },
+    {
+      "type": "contains",
+      "from": "Instances",
+      "target": "given_2",
+      "line_number": 82
+    },
+    {
+      "type": "contains",
+      "from": "given_2",
+      "target": "localInsideGiven",
+      "line_number": 82
+    },
+    {
+      "type": "contains",
+      "from": "given_2",
+      "target": "anonymous_Ord",
+      "line_number": 82
+    },
+    {
+      "type": "contains",
+      "from": "Instances",
+      "target": "scoped",
+      "line_number": 83
+    },
+    {
+      "type": "contains",
+      "from": "scoped",
+      "target": "given_3",
+      "line_number": 83
+    },
+    {
+      "type": "contains",
+      "from": "given_3",
+      "target": "cmp",
+      "line_number": 83
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "hidden",
+      "comment": "the scope rule is a SUPPRESSION: a val inside a method, inside a lambda, or in a lambda ARGUMENT block is not extracted"
+    },
+    {
+      "name": "x",
+      "comment": "reading the first identifier child instead of the `name:` field published the method's PARAMETER as a name"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "TraitWithParams",
+      "comment": "a trait publishes no constructor — deriving one here was an oracle fabrication"
+    },
+    {
+      "name": "a",
+      "ownerName": "Plain",
+      "comment": "a plain class's non-val parameter is not a field"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "hidden",
+      "comment": "(2) a val directly in a method body"
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "hidden",
+      "line_number": 26,
+      "comment": "(2) a val inside a LAMBDA in a class body — the lambda is a scope boundary but NOT an owner, so the val's nearest owner is the class and only the scope rule hides it"
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "hidden",
+      "line_number": 27,
+      "comment": "(2) the lambda ARGUMENT BLOCK shape — `block > lambda_expression > val_definition`, which is every cats-effect test-suite row"
+    },
+    {
+      "type": "contains",
+      "from": "Scopes",
+      "target": "hidden",
+      "line_number": 40,
+      "comment": "(5) a lambda nested in a lambda"
+    },
+    {
+      "type": "contains",
+      "from": "m",
+      "target": "other",
+      "comment": "THE NAME DEFECT: `def !>(other: Names)` published `m contains other` — the parameter"
+    },
+    {
+      "type": "contains",
+      "from": "Names",
+      "target": "x",
+      "comment": "same defect, `def !>`"
+    },
+    {
+      "type": "contains",
+      "from": "Names",
+      "target": "other",
+      "comment": "same defect, `def ++`"
+    },
+    {
+      "type": "contains",
+      "from": "Names",
+      "target": "A",
+      "comment": "a type alias's name is a type_identifier, so the identifier-only read dropped the row entirely"
+    },
+    {
+      "type": "contains",
+      "from": "TraitWithParams",
+      "target": "constructor",
+      "comment": "a trait publishes no constructor"
+    },
+    {
+      "type": "contains",
+      "from": "TraitWithParams",
+      "target": "a",
+      "comment": "nor its parameters"
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "a",
+      "comment": "a plain class publishes only val/var parameters"
+    },
+    {
+      "type": "contains",
+      "from": "NoParens",
+      "target": "constructor",
+      "comment": "a class with no parameter list publishes no constructor"
+    },
+    {
+      "type": "contains",
+      "from": "Colour",
+      "target": "Custom",
+      "line_number": 61,
+      "comment": "the enum case is at line 63"
+    },
+    {
+      "type": "contains",
+      "from": "Instances",
+      "target": "anonymous_Ord",
+      "comment": "THE OWNER DEFECT: a given is an owner, so the anonymous class belongs to given_2 — attributing it to the enclosing object was an oracle fabrication"
+    },
+    {
+      "type": "contains",
+      "from": "given_3",
+      "target": "localInsideGiven",
+      "comment": "a given does NOT clear the function scope: the same val that publishes at object level is dropped inside a method (handleVariable's ancestor scan breaks on class/trait/object/enum and an anonymous class body, not on a given). Measured as 1 row in 23,081 on a 400-file scala3 draw; recorded as SDJ-3."
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable#2",
+      "target": "field",
+      "line_number": 35,
+      "comment": "THE COLLISION DEFECT: the line-35 field belongs to the THIRD anonymous class, so attributing it to the second is the merged-node bug. If this edge reappears the disambiguation regressed."
+    }
+  ]
+}

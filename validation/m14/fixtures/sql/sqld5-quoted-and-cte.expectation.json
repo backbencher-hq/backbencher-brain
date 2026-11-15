@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld5-quoted-and-cte.sql",
+  "authoredFrom": "SQLD5 (M60 SQL wave, 2026-09-26). Quoting measured by bb_tests/sql/probe/grammar-gaps.mts (cases quoted-ident / backtick-ident / bracket-ident) and column-name loss by probe/field-introspection.mts: the grammar's name field for a QUOTED identifier is a `literal`, not an `identifier`, and the column reader's identifierTypes set did not include it \u2014 so `(\"Id\" int)` produced no column symbol at all, silently. CTE scoping measured by the same probe (case cte-outer-real-table): `WITH x AS (\u2026) SELECT * FROM x JOIN public.x` emitted zero relationships. The nested-CTE-body scoping defect was measured by `script/m12/verify-analyzer.ts sql` against the same 84 facts: 1 false positive, `FP rel:Queries.sql:uses:global:recent_users`, precision 0.988. Giving the sweep the CTE scope of the statement it descends into takes it to precision 1.000 / 0 FP.",
+  "comment": "The quoted COLUMN is the load-bearing row: it is the symbol that was silently absent, and an expect-only fixture for the table would have passed while it was missing.",
+  "expectSymbols": [
+    {
+      "name": "D5Table",
+      "kind": "class",
+      "meta.type": "table",
+      "meta.qualifiedName": "D5Schema.D5Table"
+    },
+    {
+      "name": "D5Id",
+      "kind": "property",
+      "ownerName": "D5Table"
+    },
+    {
+      "name": "d5col",
+      "kind": "property",
+      "ownerName": "D5Table"
+    },
+    {
+      "name": "v_d5",
+      "kind": "class",
+      "meta.type": "view"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "\"D5Table\""
+    },
+    {
+      "name": "\"`d5col`\""
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "v_d5",
+      "target": "D5Table"
+    },
+    {
+      "type": "uses",
+      "from": "sqld5-quoted-and-cte.sql",
+      "target": "d5_cte"
+    },
+    {
+      "type": "uses",
+      "from": "sqld5-quoted-and-cte.sql",
+      "target": "d5_real",
+      "note": "`s.d5_real` from the JOIN. It shares the SHAPE of the phantom with nothing: a qualified reference whose leaf is a declared real table. Publishing it is the positive half of the pair - the fix must suppress the CTE body reference without suppressing this."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "sqld5-quoted-and-cte.sql",
+      "target": "\"D5Table\""
+    },
+    {
+      "type": "uses",
+      "from": "sqld5-quoted-and-cte.sql",
+      "target": "d5_first",
+      "note": "The nested-CTE-body shape. `d5_first` IS a CTE, so no table by that name exists and no `uses` edge to it may exist from anywhere in this file - including from inside `d5_second`'s own body, which the declaration sweep dispatches as a separate `statement`. Before the scope fix the sweep published `uses global->d5_first` from that body while the outer SELECT's `d5_second` was suppressed correctly by the same guard."
+    }
+  ],
+  "note": "`uses global->d5_cte` is present BECAUSE of `s.d5_cte` \u2014 the bare `d5_cte` is the CTE and is suppressed, the qualified one is a real table. Both have leaf `d5_cte`, so the edge existing at all is the assertion: before the fix the file emitted no relationship whatsoever."
+}

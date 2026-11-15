@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Dotted.name.json",
+  "authoredFrom": "BD-array-identity, the dotted-filename case, and the fixture that actually exercises it. A TOP-LEVEL array in a file whose name contains a dot: the array is named by the module (`Dotted.name`), so the element is `Dotted.name[0]`. Taking the last dot-segment of the item PATH instead gives `name[0]` - and the first version of this fixture put the array NESTED under a key, where the array is named `warnings` and the dotted module never enters it. The fixture did not test what its own note claimed, and a mutant survived against it. A dotted filename is ordinary (tsconfig.build.json, every *.svelte.*.json), and this class was the largest genuinely-unresolvable source mass in the corpus before it was fixed. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "Dotted.name[0]",
+      "kind": "class",
+      "ownerName": "Dotted.name"
+    },
+    {
+      "name": "code",
+      "kind": "property",
+      "ownerName": "Dotted.name[0]"
+    },
+    {
+      "name": "Dotted.name",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Dotted.name",
+      "target": "Dotted.name[0]",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Dotted.name[0]",
+      "target": "Dotted.name[0].code",
+      "line_number": 2
+    }
+  ]
+}

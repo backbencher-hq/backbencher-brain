@@ -1,0 +1,3079 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-20T20:58:21.242Z",
+  "atCommit": "184151487159ebda96d6d0fcecf3ef11069b6756",
+  "treeModifiedInputs": 38,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "svelte:svelte/packages/svelte/tests/validator/samples/const-tag-readonly-1/input.svelte",
+    "token": "array",
+    "trueLine": 2,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "svelte": {
+      "files": 200,
+      "rels": 301,
+      "withLine": 301,
+      "noLine": 0,
+      "consistent": 293,
+      "inconsistent": 0,
+      "notCheckable": 8
+    }
+  },
+  "sampleHash": {
+    "svelte": "9229b290c8a1"
+  },
+  "samplePins": {
+    "svelte": [
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/const-tag-readonly-1/input.svelte",
+        "contentSha": "2a6ef8a19275"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/const-tag-readonly-2/input.svelte",
+        "contentSha": "324234e79bb6"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/contenteditable-dynamic/input.svelte",
+        "contentSha": "475dadd14613"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/contenteditable-missing/input.svelte",
+        "contentSha": "07e9cd7a555d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-1/input.svelte",
+        "contentSha": "5e44a55e489d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-2/input.svelte",
+        "contentSha": "5d4af2ffbf2d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-3/input.svelte",
+        "contentSha": "f9256b46e2f2"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-4/input.svelte",
+        "contentSha": "fb7bcfb6ffd3"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-2/input.svelte",
+        "contentSha": "df6204e3a0e4"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-3/input.svelte",
+        "contentSha": "71704f5f3b20"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-4/input.svelte",
+        "contentSha": "e6aa117caae5"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-5/input.svelte",
+        "contentSha": "5bedc804d09f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-6/input.svelte",
+        "contentSha": "77b90c2c7890"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement/input.svelte",
+        "contentSha": "0e13e3c0d58e"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-2/input.svelte",
+        "contentSha": "a144384ce56b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-3/input.svelte",
+        "contentSha": "7aea6e957b42"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-4/input.svelte",
+        "contentSha": "dabff0cf7113"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-5/input.svelte",
+        "contentSha": "fa98128fa501"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-6/input.svelte",
+        "contentSha": "520996dafcb6"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-list/input.svelte",
+        "contentSha": "117ecf3519d0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector/input.svelte",
+        "contentSha": "e209fbf13937"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-type-selector-placement/input.svelte",
+        "contentSha": "45eff9ac82eb"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-mismatched-quotes/input.svelte",
+        "contentSha": "53acff4da9bc"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/custom-element-props-identifier-props-option/input.svelte",
+        "contentSha": "a3c53893e357"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/custom-element-props-identifier-rest/input.svelte",
+        "contentSha": "402f335f2c18"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/custom-element-props-identifier/input.svelte",
+        "contentSha": "1fab068052fa"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/debug-invalid-args/input.svelte",
+        "contentSha": "7069a8cf26c4"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-already-declared/input.svelte",
+        "contentSha": "d6f977353009"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-invalid-function/input.svelte",
+        "contentSha": "d36b919e2fef"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-invalid-type-2/input.svelte",
+        "contentSha": "a45d2fee2a92"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-invalid-type/input.svelte",
+        "contentSha": "86414341927f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-legacy-mode/input.svelte",
+        "contentSha": "121dab303a70"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-maybe-runes/input.svelte",
+        "contentSha": "67327041ecdc"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-state-referenced-locally/input.svelte",
+        "contentSha": "712b5161254a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-anonymous-class/input.svelte",
+        "contentSha": "02b3c77f0a04"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-anonymous-function/input.svelte",
+        "contentSha": "4eba84a6fb7a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-indirect/input.svelte",
+        "contentSha": "5eed3d182361"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-module/input.svelte",
+        "contentSha": "fff913aed2c9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export/input.svelte",
+        "contentSha": "948357129414"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/directive-non-expression/input.svelte",
+        "contentSha": "5adb2c70455f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/document-binding-invalid-dimensions/input.svelte",
+        "contentSha": "aca321e827b1"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-dollar-global-in-markup/input.svelte",
+        "contentSha": "7ed4d057ed75"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-dollar-global-in-script/input.svelte",
+        "contentSha": "fe1baa9f9ba9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-global-in-markup/input.svelte",
+        "contentSha": "6709d9da0b2d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-global-in-script/input.svelte",
+        "contentSha": "def725f5afb9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dynamic-element-invalid-tag/input.svelte",
+        "contentSha": "e6eb7383bf57"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dynamic-element-missing-tag/input.svelte",
+        "contentSha": "7646be093241"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dynamic-element-this/input.svelte",
+        "contentSha": "8e946b8659a4"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-destructured-object-rest-comma-after/input.svelte",
+        "contentSha": "cc17268098af"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-invalid-context-destructured-object/input.svelte",
+        "contentSha": "e38725af5bab"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-invalid-context-destructured/input.svelte",
+        "contentSha": "3e617245f262"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-invalid-context/input.svelte",
+        "contentSha": "7c8bf24a8718"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-multiple-children/input.svelte",
+        "contentSha": "1ca3c671f02d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/empty-block/input.svelte",
+        "contentSha": "97b55af2d17a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/error-mode-warn/input.svelte",
+        "contentSha": "5fa7d8dc569f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-attribute/input.svelte",
+        "contentSha": "0f9c3f334ba6"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-modifiers-invalid-nonpassive/input.svelte",
+        "contentSha": "53f620feb7b0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-modifiers-invalid-passive/input.svelte",
+        "contentSha": "083f82e5b365"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-modifiers-invalid/input.svelte",
+        "contentSha": "a9670288ae74"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/export-let-unused-svelte-component/input.svelte",
+        "contentSha": "c7683c7979d1"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/export-not-defined-module-with-source/input.svelte",
+        "contentSha": "c3fef999f6e0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/general-siblings-combinator-in-custom-element-selects-slot-fallback/input.svelte",
+        "contentSha": "4df27358f5c3"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/global-event-reference/input.svelte",
+        "contentSha": "69036a415232"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/html-block-in-attribute/input.svelte",
+        "contentSha": "728e863e3256"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/html-block-in-textarea/input.svelte",
+        "contentSha": "9daef1e5c23b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/if-block-whitespace-legacy/input.svelte",
+        "contentSha": "79930cffec93"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/if-block-whitespace-runes/input.svelte",
+        "contentSha": "60d403f33e96"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warning-compiler-option/input.svelte",
+        "contentSha": "b5d23f9ae957"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warning-dash-backwards-compat/input.svelte",
+        "contentSha": "e4c5078c6fac"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warning/input.svelte",
+        "contentSha": "717bd20d2494"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings-cumulative/input.svelte",
+        "contentSha": "debda25f7986"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings-newline/input.svelte",
+        "contentSha": "b6fde1cce1cd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings-stacked/input.svelte",
+        "contentSha": "b0f5567d5783"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings/input.svelte",
+        "contentSha": "920799109262"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal-attribute-character/input.svelte",
+        "contentSha": "f7ee6e98a536"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal-variable-declaration/input.svelte",
+        "contentSha": "5d6b55e69a5e"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal_spread_element-document/input.svelte",
+        "contentSha": "66dedcb58338"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal_spread_element-window/input.svelte",
+        "contentSha": "fc6370cd67dd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/implicitly-closed-by-parent/input.svelte",
+        "contentSha": "e1e70347bfd0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/implicitly-closed-by-sibling/input.svelte",
+        "contentSha": "d4f0b0b9fb36"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/import-meta/input.svelte",
+        "contentSha": "07a2be28e3c7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-2/input.svelte",
+        "contentSha": "f013d1d705d5"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-3/input.svelte",
+        "contentSha": "16c45134d894"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-4/input.svelte",
+        "contentSha": "3b533f2e4b5e"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-5/input.svelte",
+        "contentSha": "dad2b5727243"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class/input.svelte",
+        "contentSha": "0c56417568da"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-empty-css-declaration/input.svelte",
+        "contentSha": "ce9f9a3f18ae"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-2/input.svelte",
+        "contentSha": "6bb51984f805"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-3/input.svelte",
+        "contentSha": "b5d7120332e5"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-4/input.svelte",
+        "contentSha": "bfd9ac608811"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-5/input.svelte",
+        "contentSha": "5b1389b6a0c0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-6/input.svelte",
+        "contentSha": "c045721c9776"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-7/input.svelte",
+        "contentSha": "bc8a790a98fb"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-8/input.svelte",
+        "contentSha": "29d80314d01e"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-template/input.svelte",
+        "contentSha": "bfb64e408dcd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement/input.svelte",
+        "contentSha": "87a92a6224d2"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-self-closing-tag/input.svelte",
+        "contentSha": "5819edcd0859"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/js-scope-catch-clause/input.svelte",
+        "contentSha": "b9c7d4349b14"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/let-directive/input.svelte",
+        "contentSha": "213d11e031b4"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/logic-block-in-attribute/input.svelte",
+        "contentSha": "ceca754c9e52"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/logic-block-in-textarea/input.svelte",
+        "contentSha": "d3dab4477b21"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/module-script-reactive-declaration/input.svelte",
+        "contentSha": "3e17d82d49cd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/multiple-script-default-context/input.svelte",
+        "contentSha": "86308281583b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/multiple-script-module-context/input.svelte",
+        "contentSha": "18eb04d9de9f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/multiple-var-same-name/input.svelte",
+        "contentSha": "70fa9bedbb11"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/mutate-derived-private-field/input.svelte",
+        "contentSha": "510bd5933727"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/namespace-invalid/input.svelte",
+        "contentSha": "bc450ce9b981"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/namespace-non-literal/input.svelte",
+        "contentSha": "782db3a14201"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/no-missing-declarations-for-same-node-let-variable/input.svelte",
+        "contentSha": "32be0f60047c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/no-runes-mode/input.svelte",
+        "contentSha": "1b7ff79a4b49"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/non-empty-block-dev/input.svelte",
+        "contentSha": "6c27f06ca262"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/non-invalid-node-placement-if-snippet/input.svelte",
+        "contentSha": "920e065b5703"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-declaration-cyclical/input.svelte",
+        "contentSha": "434d66cd06f1"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-declaration-non-top-level/input.svelte",
+        "contentSha": "2ff0a529353c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-module-const-variable/input.svelte",
+        "contentSha": "8fc1245f4c48"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-module-variable-2/input.svelte",
+        "contentSha": "ff4937bd893a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-module-variable/input.svelte",
+        "contentSha": "4d06cca5de4c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-statement-non-reactive-self-declaration/input.svelte",
+        "contentSha": "796d0355cb80"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reassign-derived-private-public-field/input.svelte",
+        "contentSha": "c7849d112e55"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding-2/input.svelte",
+        "contentSha": "138774655dd3"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding-3/input.svelte",
+        "contentSha": "cb7207cff1fd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding-nested-rest/input.svelte",
+        "contentSha": "0f77510e0a0a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding/input.svelte",
+        "contentSha": "2e9f3434ac98"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-derived-by/input.svelte",
+        "contentSha": "24955b14265a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-derived/input.svelte",
+        "contentSha": "1bf73e92c56d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-state-raw/input.svelte",
+        "contentSha": "9da816729ffa"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-state/input.svelte",
+        "contentSha": "6781410495f1"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-legacy-syntax-warnings-2/input.svelte",
+        "contentSha": "1ade8784825c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-legacy-syntax-warnings/input.svelte",
+        "contentSha": "7c1fd3976b4a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-referenced-nonstate-2/input.svelte",
+        "contentSha": "c69e28e98a5e"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-referenced-nonstate-bind-this/input.svelte",
+        "contentSha": "f88f0eb9673f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-referenced-nonstate/input.svelte",
+        "contentSha": "373b5c516469"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-context-module-legacy/input.svelte",
+        "contentSha": "6aefc0d4ec7f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-context-module-runes-deprecated/input.svelte",
+        "contentSha": "5cb79815154f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-invalid-context/input.svelte",
+        "contentSha": "4638949e445f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-invalid-spread-attribute/input.svelte",
+        "contentSha": "60f883876aa0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-unknown-attribute/input.svelte",
+        "contentSha": "a9f003e9ce6f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/security-anchor-rel-noreferer/input.svelte",
+        "contentSha": "d8b984a01773"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/select-multiple/input.svelte",
+        "contentSha": "fd5411117d85"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/siblings-combinator-in-custom-element-selects-slot-fallback/input.svelte",
+        "contentSha": "5a9e13a52e79"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/silence-warnings-2/input.svelte",
+        "contentSha": "d40cb57c85ad"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/silence-warnings/input.svelte",
+        "contentSha": "b9634e6b99bd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-attribute-component/input.svelte",
+        "contentSha": "1e3b772dff78"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-attribute-invalid/input.svelte",
+        "contentSha": "154117cc245a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-warning-ignore/input.svelte",
+        "contentSha": "b767bbf3ac9f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-warning/input.svelte",
+        "contentSha": "49927ba901da"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-warning2/input.svelte",
+        "contentSha": "723c1a7af9c7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/snippet-already-declared/input.svelte",
+        "contentSha": "99731560b700"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/snippet-shadowing-prop/input.svelte",
+        "contentSha": "685d5c84eb48"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/snippet-whitespace-ok/input.svelte",
+        "contentSha": "78e3242ded47"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/state-referenced-locally-props-identifier/input.svelte",
+        "contentSha": "7f6f5ca78dff"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/state-referenced-locally-types/input.svelte",
+        "contentSha": "f085969796b7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/static-state-reference/input.svelte",
+        "contentSha": "2e1f74e88913"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/store-looking-like-rune/input.svelte",
+        "contentSha": "b064ccb60a46"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/store-rune-conflic-from-props/input.svelte",
+        "contentSha": "73355192370f"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/store-runes-conflict/input.svelte",
+        "contentSha": "7090caaf0288"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/style-directive-modifiers-invalid/input.svelte",
+        "contentSha": "b97319d66c5a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/style-directive-valid-reference/input.svelte",
+        "contentSha": "cce570f3d088"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-component-deprecated/input.svelte",
+        "contentSha": "fa27875e7b04"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-fragment-placement-2/input.svelte",
+        "contentSha": "41c2f8933756"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-fragment-placement/input.svelte",
+        "contentSha": "f4351692a682"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-head-attributes/input.svelte",
+        "contentSha": "a181d00ce6ff"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-export-let-unused/input.svelte",
+        "contentSha": "08ad2dc4bc75"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-non-reactive-update/input.svelte",
+        "contentSha": "44e0045b9803"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-self-deprecated/input.svelte",
+        "contentSha": "f38ed5f74fb9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svg-child-component-declared-namespace/input.svelte",
+        "contentSha": "abec114de0b9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-missing/input.svelte",
+        "contentSha": "8b286f5c664c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-true/input.svelte",
+        "contentSha": "8b286f5c664c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-emoji/input.svelte",
+        "contentSha": "4e2f1dd66f31"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-hyphen/input.svelte",
+        "contentSha": "ff8eff9f4fd7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-invalid/input.svelte",
+        "contentSha": "66e9b7808624"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-non-string/input.svelte",
+        "contentSha": "1b18a35e8d86"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-reserved/input.svelte",
+        "contentSha": "42eebe9dabee"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/textarea-value-children/input.svelte",
+        "contentSha": "662e27925353"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-attributes/input.svelte",
+        "contentSha": "1e64eab57dbc"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-children/input.svelte",
+        "contentSha": "ba9653f100d0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in-transition/input.svelte",
+        "contentSha": "e80e15a5ceaf"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in/input.svelte",
+        "contentSha": "cf726c72fd49"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out-transition/input.svelte",
+        "contentSha": "5d1ab8d646dc"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out/input.svelte",
+        "contentSha": "3409f3692270"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-in/input.svelte",
+        "contentSha": "b62f10a77a48"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-out/input.svelte",
+        "contentSha": "9e36049994de"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition/input.svelte",
+        "contentSha": "fc39cef15d89"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-on-component/input.svelte",
+        "contentSha": "93ba1462d8c8"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-accessor/input.svelte",
+        "contentSha": "4651476b2d7b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-decorator/input.svelte",
+        "contentSha": "a3dcaa8268e4"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-enum/input.svelte",
+        "contentSha": "12670addaade"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier-readonly/input.svelte",
+        "contentSha": "0262b1ef295d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier/input.svelte",
+        "contentSha": "b84315016f31"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-namespace/input.svelte",
+        "contentSha": "4bf1279c9de7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unknown-code/input.svelte",
+        "contentSha": "6a0eb716d1ca"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables-each/input.svelte",
+        "contentSha": "288671a55739"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables/input.svelte",
+        "contentSha": "3771bd95c200"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/use-the-platform/input.svelte",
+        "contentSha": "dfa818361f8b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/valid-reactive-vars/input.svelte",
+        "contentSha": "1d60819fb530"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-dimensions/input.svelte",
+        "contentSha": "2498f1896310"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-innerwidth/input.svelte",
+        "contentSha": "29a11cebbf5a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid/input.svelte",
+        "contentSha": "373d9a6666bd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-online/input.svelte",
+        "contentSha": "fe9a732df674"
+      },
+      {
+        "file": "svelte/playgrounds/sandbox/scripts/main.template.svelte",
+        "contentSha": "28ab7a0d063b"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "svelte": {
+      "prev": null,
+      "now": "9229b290c8a1",
+      "same": false
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "svelte": [
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/const-tag-readonly-1/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/const-tag-readonly-2/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/contenteditable-dynamic/input.svelte",
+        "language": "svelte",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/contenteditable-missing/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-1/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-2/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-3/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-combinator-selector-4/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-2/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-3/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-4/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-5/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement-6/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-placement/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-2/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-3/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-4/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-5/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-6/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector-list/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-global-selector/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-invalid-type-selector-placement/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/css-mismatched-quotes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/custom-element-props-identifier-props-option/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/custom-element-props-identifier-rest/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/custom-element-props-identifier/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/debug-invalid-args/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-already-declared/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-invalid-function/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-invalid-type-2/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-invalid-type/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-legacy-mode/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-maybe-runes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/declaration-tag-state-referenced-locally/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-anonymous-class/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-anonymous-function/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-indirect/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export-module/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/default-export/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/directive-non-expression/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/document-binding-invalid-dimensions/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-dollar-global-in-markup/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-dollar-global-in-script/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-global-in-markup/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dollar-global-in-script/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dynamic-element-invalid-tag/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dynamic-element-missing-tag/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/dynamic-element-this/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-destructured-object-rest-comma-after/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-invalid-context-destructured-object/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-invalid-context-destructured/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-invalid-context/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/each-block-multiple-children/input.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/empty-block/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/error-mode-warn/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-attribute/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-modifiers-invalid-nonpassive/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-modifiers-invalid-passive/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/event-modifiers-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/export-let-unused-svelte-component/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/export-not-defined-module-with-source/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/general-siblings-combinator-in-custom-element-selects-slot-fallback/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/global-event-reference/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/html-block-in-attribute/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/html-block-in-textarea/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/if-block-whitespace-legacy/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/if-block-whitespace-runes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warning-compiler-option/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warning-dash-backwards-compat/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warning/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings-cumulative/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings-newline/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings-stacked/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ignore-warnings/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal-attribute-character/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal-variable-declaration/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal_spread_element-document/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/illegal_spread_element-window/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/implicitly-closed-by-parent/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/implicitly-closed-by-sibling/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/import-meta/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-2/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-3/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-4/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class-5/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/inline-new-class/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-empty-css-declaration/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-2/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-3/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-4/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-5/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-6/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-7/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-8/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement-template/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-node-placement/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/invalid-self-closing-tag/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/js-scope-catch-clause/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/let-directive/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/logic-block-in-attribute/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/logic-block-in-textarea/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/module-script-reactive-declaration/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/multiple-script-default-context/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/multiple-script-module-context/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/multiple-var-same-name/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/mutate-derived-private-field/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/namespace-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/namespace-non-literal/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/no-missing-declarations-for-same-node-let-variable/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/no-runes-mode/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/non-empty-block-dev/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/non-invalid-node-placement-if-snippet/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-declaration-cyclical/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-declaration-non-top-level/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-module-const-variable/input.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-module-variable-2/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-module-variable/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reactive-statement-non-reactive-self-declaration/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/reassign-derived-private-public-field/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding-2/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding-3/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding-nested-rest/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rest-eachblock-binding/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-derived-by/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-derived/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-state-raw/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/rune-invalid-spread-state/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-legacy-syntax-warnings-2/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-legacy-syntax-warnings/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-referenced-nonstate-2/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-referenced-nonstate-bind-this/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/runes-referenced-nonstate/input.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-context-module-legacy/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-context-module-runes-deprecated/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-invalid-context/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-invalid-spread-attribute/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/script-unknown-attribute/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/security-anchor-rel-noreferer/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/select-multiple/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/siblings-combinator-in-custom-element-selects-slot-fallback/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/silence-warnings-2/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/silence-warnings/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-attribute-component/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-attribute-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-warning-ignore/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-warning/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/slot-warning2/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/snippet-already-declared/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/snippet-shadowing-prop/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/snippet-whitespace-ok/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/state-referenced-locally-props-identifier/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/state-referenced-locally-types/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/static-state-reference/input.svelte",
+        "language": "svelte",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/store-looking-like-rune/input.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/store-rune-conflic-from-props/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/store-runes-conflict/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/style-directive-modifiers-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/style-directive-valid-reference/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-component-deprecated/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-fragment-placement-2/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-fragment-placement/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-head-attributes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-export-let-unused/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-non-reactive-update/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-self-deprecated/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svg-child-component-declared-namespace/input.svelte",
+        "language": "svelte",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-missing/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-true/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-emoji/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-hyphen/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-non-string/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-reserved/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/textarea-value-children/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-attributes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-children/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in-transition/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out-transition/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-in/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-out/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-on-component/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-accessor/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-decorator/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-enum/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier-readonly/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-namespace/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unknown-code/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables-each/input.svelte",
+        "language": "svelte",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables/input.svelte",
+        "language": "svelte",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/use-the-platform/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/valid-reactive-vars/input.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-dimensions/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-innerwidth/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-online/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/playgrounds/sandbox/scripts/main.template.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

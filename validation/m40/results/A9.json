@@ -1,0 +1,28 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a9-purge.ts",
+  "evidenceFile": "A9.json",
+  "generatedAt": "2026-09-05T18:54:56.125Z",
+  "passed": 57,
+  "failed": 0,
+  "negativeCases": 4,
+  "purged": [
+    "BB_QUIET (phantom env var — written, never read)",
+    "setQuiet (util/log.ts + tool/brain-log.ts — zero callers)"
+  ],
+  "markedInternal": [
+    "flushBackgroundEmbeddings",
+    "backgroundEmbedMetrics",
+    "excludePatterns option"
+  ],
+  "quarantine": [
+    "BB_M35_SKIP_FRESHNESS now requires BB_TEST_HOOKS=1"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.487Z",
+    "contentSha256": "ed4ea8d7d15e96342c24e2c7a2b97122b6e816a8b43d5a329fed557c1a66224d"
+  }
+}

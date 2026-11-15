@@ -1,0 +1,139 @@
+{
+  "fixtureId": "cpp/bare-value-reads",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CP1 (#736 cpp wave): the analyzer emitted NO bare-identifier edges at all (`return g;` produced zero relationships) while the oracle audited only calls/member reads \u2014 a both-sides blind spot. Every bare identifier naming a file-visible VALUE is now a Uses edge with C-family discipline: locals/params shadow (h shadows g_var), member reads resolve in member functions (bump reads count), namespace members resolve inside their namespace or via using-directives (x), callbacks read as values (target_fn), enumerators read in case labels (RED), explicit-template callees stay calls-only (ident, no uses). Static free functions are private (HC1/CP3 parity). M60/#924: the CP7 pin below names the method `step`, not `Inner::step` — the qualified spelling was the outer-segment name read, not a contract.",
+  "expectSymbols": [
+    {
+      "name": "g_counter",
+      "kind": "variable"
+    },
+    {
+      "name": "f",
+      "kind": "function"
+    },
+    {
+      "name": "bump",
+      "kind": "method"
+    },
+    {
+      "name": "hidden_helper",
+      "kind": "function"
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "hidden_helper",
+      "visibility": "private"
+    },
+    {
+      "symbol": "shown_caller",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "f",
+      "target": "g_var"
+    },
+    {
+      "type": "uses",
+      "from": "bump",
+      "target": "count"
+    },
+    {
+      "type": "uses",
+      "from": "getx",
+      "target": "x"
+    },
+    {
+      "type": "uses",
+      "from": "use_ns",
+      "target": "x"
+    },
+    {
+      "type": "uses",
+      "from": "use_ns",
+      "target": "g_counter"
+    },
+    {
+      "type": "uses",
+      "from": "reg",
+      "target": "target_fn"
+    },
+    {
+      "type": "uses",
+      "from": "use_enum",
+      "target": "RED"
+    },
+    {
+      "type": "uses",
+      "from": "use_tmpl",
+      "target": "g_counter"
+    },
+    {
+      "type": "calls",
+      "from": "use_tmpl",
+      "target": "ident"
+    },
+    {
+      "type": "calls",
+      "from": "shown_caller",
+      "target": "hidden_helper"
+    },
+    {
+      "type": "uses",
+      "from": "add",
+      "target": "total",
+      "comment": "CP5: out-of-line member read resolves through Foo"
+    },
+    {
+      "type": "uses",
+      "from": "step",
+      "target": "n",
+      "comment": "CP7: nested out-of-line resolves through the innermost class. #924 changed the SOURCE spelling only: the old name `Inner::step` was the outer qid's last segment read as a name (the same read that published `string to_string` from a misplaced return type), so it carried the owner inline. The method's name is `step` and its owner is `Inner` — which is exactly the innermost-class resolution this pin has always been about, and the target (`n`) is unchanged."
+    },
+    {
+      "type": "uses",
+      "from": "destructure",
+      "target": "g_alpha",
+      "comment": "CP6: bindings suppress only the bound names; other globals still read"
+    },
+    {
+      "type": "uses",
+      "from": "Config",
+      "target": "LIMIT",
+      "comment": "CP8: NSDMI value reads"
+    },
+    {
+      "type": "uses",
+      "from": "Level",
+      "target": "LIMIT",
+      "comment": "CP8: enumerator value reads"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "h",
+      "target": "g_var"
+    },
+    {
+      "type": "uses",
+      "from": "use_tmpl",
+      "target": "ident"
+    },
+    {
+      "type": "uses",
+      "from": "destructure",
+      "target": "a",
+      "comment": "CP6: structured binding declares, never reads (a collides with the file value)"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "hidden_helper"
+    }
+  ]
+}

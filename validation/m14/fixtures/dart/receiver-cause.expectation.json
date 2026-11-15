@@ -1,0 +1,104 @@
+{
+  "fixtureId": "dart/receiver-cause",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "correction_2026_10_10": "CASE B2 IS NO LONGER A DECLINE. The cut was metadata only when this fixture was written ('no row added or removed, no confidence moved'), and that is still true of the cut; what changed on 2026-10-10 is the TARGET of one row, because the census priced the spelling the cut was written to justify and the lane adopted it. `ExternalThing.make()` — a capitalized head whose type this file does not declare — now publishes `ExternalThing.make` carrying `baseBeyondRunScope: ExternalThing` instead of the bare leaf `make`, and the row count is unchanged (still one call). `receiverCause: null` on that row is the assertion that a spelled row carries the CLAIM and not a cut cause: the two are mutually exclusive by construction, because the cut labels rows that stayed bare.",
+  "rationale": "THE RECEIVER AVAILABILITY CUT, pinned. The roadmap's next measurement is the decomposition of the edges whose target stayed a BARE MEMBER NAME, because the three answers lead to three different pieces of work: the receiver's type is not visible in this run (an index question), the type is visible and the member's DECLARING type is not (a different index question), or there is no owner name at the site at all (`dynamic`, an untyped parameter, a call result, an index expression) — which is bucket 3's true population, the only one of the three that no amount of indexing moves. The fourth case exists because the cut was WRONG without it: a bare callee falls back to LIBRARY scope in Dart, so `configure()` inside a class whose chain does not declare `configure` names a top-level declaration whose own spelling IS the bare name. The first version of this marker filed that row under `receiverMemberOutsideRun`, i.e. it reported a superclass outside the run for a function declared in the same file — caught by reading the dump rather than by trusting the design. The cut is produced INSIDE `qualifiedTarget`, at the branch that decides, rather than by a census that re-asks the question: two copies of one rule are two rules, and the copy a census used would be the one that drifted. On the rows that STAYED bare it is metadata only — no row added or removed, no confidence moved — which is what the control below pins: a resolved row carries NO `receiverCause` at all. The one row whose target moved (case B2, see correction_2026_10_10) moved by the ADOPTED SPELLING, not by the cut.",
+  "expectSymbols": [
+    { "name": "receiver-cause", "kind": "module" },
+    { "name": "Base", "kind": "class" },
+    { "name": "shared", "kind": "method", "ownerName": "Base" },
+    { "name": "Child", "kind": "class" },
+    { "name": "own", "kind": "property", "ownerName": "Child" },
+    { "name": "missingMember", "kind": "method", "ownerName": "Child" },
+    { "name": "unseenType", "kind": "method", "ownerName": "Child" },
+    { "name": "typeOutsideRun", "kind": "method", "ownerName": "Child" },
+    { "name": "unnamedHead", "kind": "method", "ownerName": "Child" },
+    { "name": "resolved", "kind": "method", "ownerName": "Child" },
+    { "name": "configure", "kind": "function", "scope": "" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "missingMember",
+      "target": "vanish",
+      "meta.receiverCause": "receiverMemberOutsideRun",
+      "meta.baseBeyondRunScope": null,
+      "note": "case A — `Child` is visible in this file and declares no `vanish`, and the name is not a library-scope declaration either, so the type that declares it is outside the run. NOT spelled by the 2026-10-10 change, deliberately: the project cannot declare `Child.vanish` because `Child` is declared here without it, so a spelling would convert an ambiguity into a certain non-resolution. `baseBeyondRunScope: null` pins that the two branches stay apart."
+    },
+    {
+      "type": "calls",
+      "from": "unseenType",
+      "target": "frob",
+      "meta.receiverCause": "receiverTypeUnknown",
+      "meta.receiverType": null,
+      "note": "case B — THE CASE THE FIRST DRAFT MISCLASSIFIED. The head `ext` is a VALUE whose declared type this run did not resolve, so the head TEXT was being used as if it were a type and the row was reported as `receiverTypeOutsideRun`. The dump caught it (`receiverType: \"ext\"`, a lowercase receiver). No spelling at this site reaches a declaration — this is the receiver-typing gap, and counting it as a spelling loss in the census written to choose between the two would have picked the wrong work. The `receiverType: null` pin holds the distinction: an unknown receiver records no type name."
+    },
+    {
+      "type": "calls",
+      "from": "typeOutsideRun",
+      "target": "ExternalThing.make",
+      "meta.qualifier": "chain",
+      "meta.baseBeyondRunScope": "ExternalThing",
+      "meta.receiverCause": null,
+      "note": "case B2 — a CAPITALIZED head: the type's NAME is written in the source (`ExternalThing.make()`), so the target names it even though no member table here can confirm it. This is the SPELLING loss the cut was produced to size, and as of 2026-10-10 the lane ACTS on it: the row is spelled and carries the declared cause, which the gate reads only where the target names nothing. `receiverCause: null` states the mutual exclusion."
+    },
+    {
+      "type": "calls",
+      "from": "unnamedHead",
+      "target": "finish",
+      "meta.receiverCause": "receiverUnnamed",
+      "note": "case C — the head is a CALL (`configure().finish()`), so there is no owner name at the site and no receiver type to know; this is bucket 3's population"
+    },
+    {
+      "type": "calls",
+      "from": "unnamedHead",
+      "target": "configure",
+      "meta.receiverCause": "libraryScopeCallee",
+      "note": "case D — the refinement the first draft got wrong: `configure` IS declared at library scope in this very file, so the bare spelling is CORRECT and this is not a receiver problem. A cut without this case reports a superclass outside the run for a same-file function"
+    },
+    {
+      "type": "calls",
+      "from": "resolved",
+      "target": "Base.shared",
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "case E, control — the base is in this file, so the target is qualified and the row must carry NO cause"
+    },
+    {
+      "type": "uses",
+      "from": "resolved",
+      "target": "Child.own",
+      "meta.qualifier": "enclosing",
+      "meta.receiverCause": null,
+      "note": "case E, second half — a bare read of a member the enclosing class declares resolves to the published spelling"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "missingMember",
+      "target": "receiverMemberOutsideRun",
+      "note": "the cause is a METADATA VALUE, never a target — a cut that leaked into the target would publish a name no declaration carries"
+    },
+    {
+      "type": "calls",
+      "from": "typeOutsideRun",
+      "target": "make",
+      "note": "2026-10-10 — the superseded bare-leaf shape for case B2. Forbidden so the spelling and the old decline cannot both be live."
+    },
+    {
+      "type": "uses",
+      "from": "unseenType",
+      "target": "ext.frob",
+      "note": "an untyped local is a BINDING (`unseenType#ext`), and the member call through it must stay the bare leaf rather than inventing the local's name as an owner"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "equals": 6,
+      "note": "FOUR rows that stayed bare — one per cut case (A `vanish`, B `frob`, C `finish`, D `configure`) — plus the resolved control (E `Base.shared`) plus the SPELLED case B2 row (`ExternalThing.make`) = 6. Counted exactly because the cut itself is supposed to be metadata only: a cut that added or removed rows would move this number, and the 2026-10-10 spelling moved a TARGET without moving it."
+    }
+  ]
+}

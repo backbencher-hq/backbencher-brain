@@ -1,0 +1,118 @@
+{
+  "tool": "powershell-grammar-ab",
+  "lane": "powershell",
+  "issue": "#278",
+  "generatedBy": "script/m60/powershell-grammar-ab.ts",
+  "candidate": {
+    "label": "tree-sitter-powershell@0.26.4 (source rebuilt byte-identical to the published prebuild)",
+    "path": "/tmp/opencode/tree-sitter-powershell.wasm",
+    "sha256": "796124137f0500e59713fd9dccda6812ff73d25f22e33430b1c5af6e132efa5e",
+    "bytes": 1088467
+  },
+  "wired": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-powershell.wasm",
+    "sha256": "1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154",
+    "bytes": 983236
+  },
+  "method": "Corpora: the production (non-test) tracked .ps1/.psm1/.psd1 files of powershell and ansible, drawn by a hash of `repo/relative-path` (unbiased, reproducible) with the digest recorded per repo so a re-run that drew a different set says so rather than being compared. `powershell`' test/ tree is excluded because it is parser-error TEST DATA, not a corpus. Damage is measured with a parser loaded directly from the wasm under test, so it is the GRAMMAR's number and no analyzer decision can move it. Q3 (no collateral) is the deciding question and is checked as a file SET, not a spot check. Q4 compares the node-type multiset over each corpus. Q5 is the id-order digest from M49 W19, because a rebuild's sha256 is not a function of its source across toolchain versions. --rebuild answers Q1: whether the vendored source reproduces the WIRED behaviour, without which no patch on that source is attributable to the wired grammar.",
+  "q1_reproduce": {
+    "rebuildSha256": "bc2acd469711047e0e8a03eb43e36341675b529143d7562b7892f9a1227bf572",
+    "bytes": 1076214,
+    "byteIdenticalToWired": false,
+    "idOrderMatchesWired": true,
+    "typeSetMatchesWired": true,
+    "fieldsMatchWired": true,
+    "namedSurfaceMatchesWired": true,
+    "verdict": "the vendored source rebuilds to the wired wasm's id order and type set: patching THIS source is patching the wired grammar"
+  },
+  "q4_shapeDelta": {
+    "candidateOnlyTypes": [
+      "'",
+      "_string_literal_immediate",
+      "_string_literal_immediate_token1"
+    ],
+    "wiredOnlyTypes": [],
+    "namedCandidateOnly": [
+      "'"
+    ],
+    "namedWiredOnly": [],
+    "fieldSetMatches": true,
+    "idOrderMatches": false,
+    "corpusMultisetDelta": [
+      {
+        "repo": "powershell",
+        "deltas": [],
+        "deltaCount": 0
+      },
+      {
+        "repo": "ansible",
+        "deltas": [
+          {
+            "type": "ERROR",
+            "wired": 93,
+            "next": 91
+          },
+          {
+            "type": "'",
+            "wired": 0,
+            "next": 2
+          }
+        ],
+        "deltaCount": 2
+      }
+    ]
+  },
+  "q2_netWin": [
+    {
+      "repo": "powershell",
+      "files": 49,
+      "drawDigest": "79bea463a8b4d0b1033847c522223d601ffbb191abe88107c46f6c425bf5b8b2",
+      "wired": {
+        "damaged": 16,
+        "err": 138,
+        "missing": 15
+      },
+      "candidate": {
+        "damaged": 16,
+        "err": 138,
+        "missing": 15
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    },
+    {
+      "repo": "ansible",
+      "files": 24,
+      "drawDigest": "9659980cd43799161f714a2db8b18542298b03c8394ef429c6eb9986c1bb76cf",
+      "wired": {
+        "damaged": 15,
+        "err": 93,
+        "missing": 32
+      },
+      "candidate": {
+        "damaged": 15,
+        "err": 91,
+        "missing": 32
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    }
+  ],
+  "q3_collateral": [
+    {
+      "repo": "powershell",
+      "brokeFiles": [],
+      "count": 0
+    },
+    {
+      "repo": "ansible",
+      "brokeFiles": [],
+      "count": 0
+    }
+  ],
+  "verdict": "no collateral; read q2_netWin for the net effect"
+}

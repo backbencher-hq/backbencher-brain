@@ -1,11 +1,11 @@
 analyzer class: RealVueAnalyzer
 has extractSfcScriptBlocks: function
 
-=== vuejs: 11 .vue files (population: every .vue under $HOME/fixtures/repositories/vuejs, readdir walk, sorted, no signal filter) ===
+=== vuejs: 11 .vue files (population: every .vue under /home/ishaq2321/bb_tests/repositories/vuejs, readdir walk, sorted, no signal filter) ===
 [INFO] [00:08:45] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
 [INFO] [00:08:45] [ast-engine] language parser loaded {"language":"vue","wasmPath":"/tmp/bb-wasm_tree-sitter-vue_tree-sitter-vue.wasm_959552_5vii2q"}
-[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm"}
-[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"$HOME/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm"}
+[INFO] [00:08:45] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
   ok: A=11 B=11 C=11   threw: A=0 B=0 C=0
   A no-ctx     rel=    10 imports[]=    0 symbols=   11  instantiates
                instantiates:10

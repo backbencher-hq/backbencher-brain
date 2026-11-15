@@ -19,7 +19,7 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine, getParser } from "../../src/ast/engine"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (process.env.BB_REPOS ?? "vuejs,vue-element-admin,element-plus").split(",")
 const MAX = 1024 * 1024
 

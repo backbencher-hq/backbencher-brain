@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/call-resolution-sol15.sol",
+  "authoredFrom": "SOL-15 \u2014 call-edge resolution. Authored 2026-09-30 from the analyzer's measured output.",
+  "note": "This fixture exists because THE CORPUS CANNOT TEST IT. Every `calls` edge used to be emitted from the callee NAME alone, with no statement of whether that name is a symbol at all, and the surface census reported 1,786 targets 'resolving to no declared symbol' as one undifferentiated class. SOL-15 gives every `calls` edge a `calleeKind`. Measured over 389 files and 3,878 edges, the kinds that actually RESOLVE something \u2014 `localFunction` and `inheritedMember` \u2014 are ZERO, because OpenZeppelin is modularised so thoroughly that nearly every call leaves the file it is written in. So the interesting half of the classifier had no row anywhere in the repository, and it was WRONG in a way no corpus row could have caught: the first version tested the member CLOSURE, which already contains the inherited members, so an inherited call classified as `localFunction` and `inheritedMember` could never fire. Three bugs surfaced only because this file exists: (1) that closure-order bug; (2) `calleeObject` was read from the `expression` WRAPPER around the callee rather than the callee itself, so all 269 namespace builtins classified as `external` \u2014 a classification silently measuring nothing; (3) `top().owner` inside a function body is the FUNCTION (SOL-13), not the contract, so the owner had to come from a marked type frame. A fourth, found while writing this fixture: the `revert_statement` case had NEVER fired at all \u2014 it tested `namedChild(0).type === \"identifier\"` but the grammar puts an `expression` wrapper there for every spelling, so custom errors never reached the graph as calls at all. A FIFTH bug surfaced while extending this fixture: the `using_alias` case had never fired for any input. It is the same signature as the `revert_statement` dead branch and was found by the same instrument \u2014 a per-case emit census over the 389-file corpus, which is why the census was worth building rather than reading the code. SOL-20 added `qualified_calls`. `abi.` and `type.` receivers are excluded because they are LANGUAGE NAMESPACES rather than calls on an object \u2014 putting `abi.encode` beside `Helpers.twice` in one list would destroy the distinction a reader of this field most needs \u2014 while `super.f()` is kept, since `super.supportsInterface` says something the bare name cannot. That reuses the `namespaceBuiltin` split SOL-15 already draws rather than inventing a second judgement about the same question.",
+  "expectSymbols": [
+    {
+      "name": "Helpers",
+      "kind": "class"
+    },
+    {
+      "name": "twice",
+      "kind": "method",
+      "ownerName": "Helpers"
+    },
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "inheritedFn",
+      "kind": "method",
+      "ownerName": "Base"
+    },
+    {
+      "name": "Boom",
+      "kind": "type"
+    },
+    {
+      "name": "Child",
+      "kind": "class"
+    },
+    {
+      "name": "localFn",
+      "kind": "method",
+      "ownerName": "Child"
+    },
+    {
+      "name": "everything",
+      "kind": "method",
+      "ownerName": "Child"
+    },
+    {
+      "name": "boom",
+      "kind": "method",
+      "ownerName": "Child"
+    },
+    {
+      "name": "everything",
+      "kind": "method",
+      "ownerName": "Child",
+      "qualified_calls": [
+        "Helpers.twice"
+      ],
+      "comment": "SOL-20. `qualified_calls` is the field the TypeScript lane populates and this one left unset \u2014 the qualified call expressions a symbol MAKES. Derived from the callee OBJECT the analyzer already reads for SOL-15, accumulated on the frame that owns the code and deduplicated when the frame closes. Note `uint256(1).twice()` is NOT here: its receiver is a call expression, not an identifier, so there is no object name to qualify with \u2014 which is the honest limit of this field, not a gap in it."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "localFn",
+      "meta.calleeKind": "localFunction",
+      "meta.calleeOwner": "Child",
+      "comment": "Declared directly on the enclosing type."
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "inheritedFn",
+      "meta.calleeKind": "inheritedMember",
+      "meta.calleeOwner": "Child",
+      "comment": "Declared on `Base`, reached through `contract Child is Base`. This row is the whole point of the fixture: it is the branch that was unreachable before, because the classifier tested the closure \u2014 which contains inherited members \u2014 and so reported `localFunction` for it."
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "twice",
+      "meta.calleeKind": "inFileTypeMember",
+      "comment": "A member of another in-file type, reached through `using Helpers for uint256`. Named `inFileTypeMember` and NOT `libraryFunction` because a receiver can equally be a contract or a struct, and calling it 'library' would state something the tree does not say."
+    },
+    {
+      "type": "calls",
+      "source": "boom",
+      "target": "Boom",
+      "meta.calleeKind": "errorRevert",
+      "comment": "A custom error is a call. Before SOL-15 this edge did not exist for ANY input: the `revert_statement` case tested `namedChild(0).type === \"identifier\"` and the grammar reports `expression` there for `revert Boom(1)`, `revert Solo` and `revert(\"x\")` alike."
+    },
+    {
+      "type": "extends",
+      "source": "Child",
+      "target": "Base"
+    },
+    {
+      "type": "references",
+      "source": "Child",
+      "target": "Helpers",
+      "meta.isUsingDirectiveTarget": true
+    },
+    {
+      "type": "references",
+      "source": "call-resolution-sol15.sol",
+      "target": "isTriple",
+      "meta.isUsingAliasFunction": true,
+      "comment": "SOL-16's audit find. The `using_alias` case had NEVER FIRED: it searched for DIRECT `identifier` children while the grammar nests the name as `using_alias (user_defined_type (identifier)) (user_definable_operator)`, so the loop body never ran and the corpus's 4 nodes produced 0 edges. Two fixture-authoring traps, both recorded because either would have made this row unassertable rather than wrong: the aliased name is BARE (`using {isTriple as ==}`), since `using {Helpers.isTriple as ==}` parses as ERROR in this grammar; and the qualified form silently aimed the edge at the LIBRARY, which is already covered by the `using_directive` row above \u2014 the one name this construct exists to record is the function being aliased."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "localFn",
+      "meta.calleeKind": "inheritedMember",
+      "comment": "`localFn` is declared on `Child` itself. A classifier that reported it as inherited would be wrong about the simplest case there is, and the pin makes that a gate rather than a reading."
+    },
+    {
+      "type": "calls",
+      "source": "everything",
+      "target": "inheritedFn",
+      "meta.calleeKind": "localFunction",
+      "comment": "The exact regression this fixture was written for. `inheritedFn` IS in `Child`'s closure, so a closure-first classifier calls it local; 0 corpus rows would have noticed."
+    },
+    {
+      "type": "calls",
+      "source": "boom",
+      "target": "Boom",
+      "meta.calleeKind": "external",
+      "comment": "A custom error is declared IN THIS FILE, so calling it is not an external target however much its argument list looks like a call."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "equals": 6,
+      "comment": "Six calls, each a DIFFERENT `calleeKind`: localFunction, inheritedMember, inFileTypeMember (twice \u2014 once via `using for`, once as `Helpers.twice`), errorRevert, and namespaceBuiltin. The count alone would pass a classifier that got every one wrong but still found six rows."
+    },
+    {
+      "type": "contains",
+      "equals": 11,
+      "comment": "One per declaration, module included: Helpers twice tripled isTriple Base inheritedFn Boom Child localFn everything boom = 12 names, of which 11 are contained by an owner."
+    },
+    {
+      "type": "uses",
+      "equals": 5,
+      "comment": "`twice`'s parameter `x`, `tripled`'s parameter `x`, `isTriple`'s parameter `x`, `Boom` read in the revert statement, and `uint256` read by the aliased `using` target."
+    },
+    {
+      "type": "exports",
+      "equals": 4,
+      "comment": "Helpers, Base, Boom, Child \u2014 the four file-scope type declarations (SOL-12)."
+    },
+    {
+      "type": "extends",
+      "equals": 1,
+      "comment": "The `using Helpers for uint256` directive."
+    },
+    {
+      "type": "references",
+      "equals": 2,
+      "comment": "BOTH the `using_directive` (naming the library `Helpers`) and the aliased `using_alias` (naming the function `isTriple`). They are different names and different rows, which is the whole point of the construct."
+    }
+  ]
+}

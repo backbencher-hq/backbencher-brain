@@ -18,9 +18,17 @@
 // section writes a sealed record; the exit code is non-zero if ANY assertion in
 // ANY section failed.
 //
+// M72 PATH DECLARATION — X1-X5, X7 AND X8 PIN THE RETIRED (ROLLBACK) TOKEN ENGINE.
+// The Phase-1 default pipeline runs the per-language spec engine and persists
+// leads into `brain_security_flow`; the old token detector is rollback-only under
+// `BB_SECURITY_LEGACY=1` (src/intelligence/security/rebuild/store.ts). Those
+// sections assert the retired engine's classification matrix, so this file sets
+// the rollback switch before indexing. X6 asserts the DEFAULT (M72) answer
+// contract instead, by seeding the spec-engine store directly.
+//
 // Run: npx tsx script/m15/verify-security-deep.ts   (bun run … also works)
 // Exit: non-zero if any assertion failed.
-// Optional env: BB_SECURITY_CORPUS_ROOT (a fixtures/repositories dir, or its
+// Optional env: BB_SECURITY_CORPUS_ROOT (a bb_tests/repositories dir, or its
 // parent) — when absent the corpus legs record `skipped`, not `failed`.
 
 import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync } from "node:fs"
@@ -35,6 +43,7 @@ import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { validateToolArguments } from "../../src/mcp/tool-validation"
 import { TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { SecurityHarness, positiveCount, auditForAutoPass } from "./security-harness"
+import { SECURITY_BANNER, checkSecurityAnswerContract } from "../m72/lib/security-answer-contract"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -43,6 +52,8 @@ const RESULTS_DIR = path.join(ROOT_DIR, "validation/m15/results")
 // sandboxes, the live user index elsewhere).
 if (!process.env.BB_DATA_DIR) process.env.BB_DATA_DIR = path.join(ROOT_DIR, "validation", "tools", "bb_security", "bbdata")
 process.env.BB_NO_AUTO_REFRESH = "1"
+// Rollback switch: X1-X5/X7/X8 assert the retired token engine's contract.
+process.env.BB_SECURITY_LEGACY = "1"
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
 const h = new SecurityHarness()
@@ -69,9 +80,9 @@ function emit(code: string, issue: string, title: string, file: string, extra: R
 function resolveCorpusRoot(): string | null {
   const candidates = [
     process.env.BB_SECURITY_CORPUS_ROOT,
-    "$HOME/fixtures/repositories",
-    path.join(process.env.HOME ?? "", "fixtures", "repositories"),
-    path.join(ROOT_DIR, "fixtures", "repositories"),
+    "/home/ishaq2321/bb_tests/repositories",
+    path.join(process.env.HOME ?? "", "bb_tests", "repositories"),
+    path.join(ROOT_DIR, "bb_tests", "repositories"),
   ].filter((c): c is string => !!c)
   for (const c of candidates) if (existsSync(c)) return c
   return null
@@ -394,8 +405,8 @@ emit("X4", "M15.X4", "measured time complexity", "x4.json")
     // with verified:false AND stripped its bbSeal, then let X7 fail on the
     // rewritten file — while the process still exited 0. An absent corpus is
     // not a defect in bb_security.
-    const searched = [process.env.BB_SECURITY_CORPUS_ROOT, "$HOME/fixtures/repositories", path.join(process.env.HOME ?? "", "fixtures", "repositories"), path.join(ROOT_DIR, "fixtures", "repositories")].filter(Boolean)
-    skipped.push({ code: "X5", reason: `no corpus found. Set BB_SECURITY_CORPUS_ROOT to a fixtures/repositories directory. Searched: ${searched.join(", ")}. This is an environment gap, not a tool defect.` })
+    const searched = [process.env.BB_SECURITY_CORPUS_ROOT, "/home/ishaq2321/bb_tests/repositories", path.join(process.env.HOME ?? "", "bb_tests", "repositories"), path.join(ROOT_DIR, "bb_tests", "repositories")].filter(Boolean)
+    skipped.push({ code: "X5", reason: `no corpus found. Set BB_SECURITY_CORPUS_ROOT to a bb_tests/repositories directory. Searched: ${searched.join(", ")}. This is an environment gap, not a tool defect.` })
     console.log(`  SKIP X5: no corpus root; set BB_SECURITY_CORPUS_ROOT (searched: ${searched.join(", ")})`)
   } else {
     const projectId = getProjectId(corpus)
@@ -422,80 +433,107 @@ emit("X4", "M15.X4", "measured time complexity", "x4.json")
 emit("X5", "M15.X5", "real-repository scan (optional corpus)", "x5.json")
 
 // ═══════════════════════════════════════════════════════════════════════════
-// X6 — handler output: the text the agent actually reads
+// X6 — the DEFAULT (M72) handler answer contract + docs honesty
+//
+// X1-X5/X7/X8 pin the retired engine. THIS section is the answer an agent reads on
+// the default path, so it seeds the spec-engine store directly (the per-language
+// detection coverage is the script/m72/** per-language gates) and asserts the M72
+// lead contract, pagination, recordRun census, history page and argument refusals.
 // ═══════════════════════════════════════════════════════════════════════════
 {
-  h.sectionHeader("X6", "MCP handler output contract")
+  h.sectionHeader("X6", "M72 handler answer contract + docs honesty")
   const { root, projectId } = await indexFixture({
     "app.ts": "import { Client } from 'pg'\nconst c = new Client()\nexport function f(u: string) { return c.query(u) }\n",
   })
+  const savedLegacy = process.env.BB_SECURITY_LEGACY
   try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const fileRow = raw.prepare("SELECT id FROM brain_file WHERE project_id = ? LIMIT 1").get(projectId) as { id: string }
+    const symRow = raw.prepare("SELECT id FROM brain_symbol WHERE project_id = ? AND name = 'f' LIMIT 1").get(projectId) as { id: string } | undefined
+    const now = Date.now()
+    const seed = raw.prepare(
+      `INSERT OR REPLACE INTO brain_security_flow
+        (id, project_id, file_id, source_symbol_id, sink_symbol_id, vulnerability_type, severity,
+         state, tier, rule_id, source_line, sink_line, evidence, time_created, time_updated)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    )
+    const seeded = [
+      { vulnerability: "sql_injection", severity: "high", rule: "typescript.sql.query" },
+      { vulnerability: "command_injection", severity: "critical", rule: "typescript.cmd.child_process" },
+    ]
+    seeded.forEach((row, i) => {
+      seed.run(`sec:x6:${i}`, projectId, fileRow.id, symRow?.id ?? null, symRow?.id ?? null, row.vulnerability, row.severity, "lead", "leads", row.rule, 1, i + 2, JSON.stringify({ ruleId: row.rule, vulnerability: row.vulnerability, severity: row.severity, source: { line: 1 }, sink: { line: i + 2 }, reachPath: ["probe.reach"] }), now, now)
+    })
+
+    // The default path is what this section asserts.
+    delete process.env.BB_SECURITY_LEGACY
     const handlers = createToolHandlers()
     h.require("X6: the handler is registered", typeof handlers.bb_security === "function", "createToolHandlers().bb_security")
     const ctx = { projectPath: root, projectId }
     const out = await handlers.bb_security({}, ctx)
-    h.nk("X6: a live scan is not an error result", out.isError !== true, JSON.stringify(out.content?.[0]?.text?.slice(0, 200)))
+    h.nk("X6: a live read is not an error result", out.isError !== true, JSON.stringify(out.content?.[0]?.text?.slice(0, 200)))
     const text = out.content[0]!.text
-    h.ck("X6: the headline reports the five severity buckets", /security: \d+ critical \/ \d+ high \/ \d+ medium \/ \d+ low/.test(text), firstMatch(text, /^security:.*$/m))
-    h.ck("X6: the headline separates resolved flows from unvalidated sources", /resolved flows/.test(text) && /unvalidated sources/.test(text), firstMatch(text, /^security:.*$/m))
-    h.ck("X6: a [scan: …] census line is always present", /\[scan: \d+ taint flow\(s\) indexed → \d+ finding\(s\)/.test(text), firstMatch(text, /\[scan:[^\n]*/))
-    h.ck("X6: the census line names how many are shown", /showing \d+ finding\(s\)/.test(text), firstMatch(text, /\[scan:[^\n]*/))
-    h.ck("X6: the census line names the unvalidated-observation count when present", !/unvalidated observations/.test(text) || /unvalidated observation\(s\)/.test(text), firstMatch(text, /\[scan:[^\n]*/))
-    h.ck("X6: findings render a real file:line, never a bare '?'", !/@ \?/.test(text), firstMatch(text, /@ \?.*/) ?? "clean")
-    h.ck("X6: a finding line names its source and sink type", / <- \S+ -> \S+/.test(text) || !/\[(critical|high)\]/.test(text), firstMatch(text, /^ {2}\[.*$/m))
-    h.ck("X6: no observation is hardcoded to [info]", !/\[info\] unvalidated/.test(text), firstMatch(text, /\[info\].*/) ?? "clean")
+    const lines = text.split("\n")
+    h.ck("X6: line 1 is the honesty banner", lines[0] === SECURITY_BANNER, JSON.stringify(lines[0]?.slice(0, 120)))
+    const contract = checkSecurityAnswerContract({ tier: "leads", language: "typescript", text, expected: { leadLanguages: 1, unsupportedLanguages: [] } })
+    h.ck("X6: the answer satisfies the canonical M72 lead contract", contract.ok, contract.failures.join("; ") || "clean")
+    h.ck("X6: the head reports the stored-lead census", /^security leads: 2 stored lead\(s\)$/m.test(text), lines.find((l) => l.startsWith("security leads:")) ?? "missing head")
+    h.ck("X6: the page is declared (showing/of/offset/page size/tier)", /^\[leads: showing 2 of 2; offset 0; page size 50; tier=leads\]$/m.test(text), lines.find((l) => l.startsWith("[leads:")) ?? "missing page")
+    h.ck("X6: leads render with the demoted grade labels", /^ {2}\[exec\] lead: command injection @ app\.ts:\d+/m.test(text) && /^ {2}\[high\] lead: sql injection @ app\.ts:\d+/m.test(text), lines.filter((l) => /\] lead:/.test(l)).join(" | "))
+    h.ck("X6: every lead line names its rule and source line", (text.match(/\] lead: /g) ?? []).length === 2 && (text.match(/<- source:\d+; rule=/g) ?? []).length === 2, lines.filter((l) => /\] lead:/.test(l)).join(" | "))
+    h.nk("X6: no stored lead is rendered with a bare '?' location", !/@ \?/m.test(text) && !/<unknown file>/.test(text), lines.find((l) => /@ \?/.test(l)) ?? "clean")
+    // Offset past the end is an empty PAGE, not an empty project.
+    const past = (await handlers.bb_security({ offset: 5 }, ctx)).content[0]!.text
+    h.ck("X6: an offset past the end declares the empty page", /^\[leads: showing 0 of 2; offset 5; page size 50; tier=leads\]$/m.test(past), past.split("\n").find((l) => l.startsWith("[leads:")) ?? "missing page")
+    h.nk("X6: the empty page does not claim the project has no leads", !/none stored for this project/.test(past), past.slice(0, 160))
 
     // Determinism of the rendered text across repeated calls.
     const again = await handlers.bb_security({}, ctx)
     h.ck("X6: two identical calls render identical text", again.content[0]!.text === text, "handler output is not deterministic")
 
-    // recordRun + history round trip.
+    // recordRun + history round trip on the default path.
     const rec = await handlers.bb_security({ recordRun: true }, ctx)
     h.ck("X6: recordRun reports a recorded run", rec.content[0]!.text.includes("recorded run"), firstMatch(rec.content[0]!.text, /recorded run[^\n]*/))
-    h.ck("X6: recordRun still shows the census line", /\[scan:/.test(rec.content[0]!.text), firstMatch(rec.content[0]!.text, /\[scan:[^\n]*/))
+    h.ck("X6: recordRun states the persisted lead census", /^2 leads recorded$/m.test(rec.content[0]!.text), firstMatch(rec.content[0]!.text, /leads recorded/))
     const hist = await handlers.bb_security({ history: true }, ctx)
     const parsed = JSON.parse(hist.content[0]!.text)
-    h.ck("X6: history returns a completed run", parsed.runs.length === 1 && parsed.runs[0].status === "completed", `runs=${JSON.stringify(parsed.runs?.map((r: any) => r.status))}`)
-    h.ck("X6: history findings carry evidence (not an empty array)", parsed.findings.length > 0 && parsed.findings.every((f: any) => Array.isArray(f.evidence) && f.evidence.length > 0), `n=${parsed.findings.length} evidence=${JSON.stringify(parsed.findings?.[0]?.evidence)}`)
-    h.ck("X6: history findings carry a calibrated confidence", parsed.findings.every((f: any) => typeof f.confidence === "number"), `confidences=${JSON.stringify(parsed.findings?.map((f: any) => f.confidence))}`)
-    h.nk("X6: history never contains an observation row", parsed.findings.every((f: any) => f.rule !== "unresolved"), `rules=${[...new Set(parsed.findings?.map((f: any) => f.rule))].join(",")}`)
-    h.nk("X6: history never contains an unknown-severity row", parsed.findings.every((f: any) => f.severity !== "unknown"), `severities=${[...new Set(parsed.findings?.map((f: any) => f.severity))].join(",")}`)
+    h.ck("X6: history returns a completed run", parsed.runs.length === 1 && parsed.runs[0].status === "completed" && parsed.runs[0].findingCount === 2, `runs=${JSON.stringify(parsed.runs?.map((r: any) => r.findingCount))}`)
+    h.ck("X6: history persisted both store leads", parsed.findings.length === 2, `n=${parsed.findings.length}`)
+    h.ck("X6: history findings name the M72 engine and the static evidence class", parsed.findings.every((f: any) => f.engine === "m72-security-spec" && f.evidenceClass === "static_finding"), JSON.stringify(parsed.findings.map((f: any) => `${f.engine}/${f.evidenceClass}`)))
+    h.ck("X6: history findings carry security-lead evidence and a lead limitation", parsed.findings.every((f: any) => Array.isArray(f.evidence) && f.evidence.some((e: any) => e.kind === "security_lead") && (f.limitations ?? []).some((l: string) => /lexical lead/i.test(l))), JSON.stringify(parsed.findings?.[0]?.evidence))
+    h.ck("X6: history findings carry a location", parsed.findings.every((f: any) => typeof f.location === "string" && f.location.includes(":")), JSON.stringify(parsed.findings.map((f: any) => f.location)))
+    h.nk("X6: history never contains a retired-engine finding", parsed.findings.every((f: any) => f.engine !== "taint@intelligence"), JSON.stringify([...new Set(parsed.findings.map((f: any) => f.engine))]))
+    h.nk("X6: history never contains an unknown-severity row", parsed.findings.every((f: any) => f.severity !== "unknown"), JSON.stringify([...new Set(parsed.findings.map((f: any) => f.severity))]))
 
-    // Argument validation is enforced at the BOUNDARY, before the handler runs,
-    // so it is asserted against `validateToolArguments` rather than against the
-    // handler (which would simply be handed a bad limit and coerce it).
+    // Argument validation enforced at the handler boundary (the schema cannot
+    // express integer/offset semantics).
+    let rejectedLimit = ""
+    try { await handlers.bb_security({ limit: 0 }, ctx) } catch (e: any) { rejectedLimit = e?.message ?? String(e) }
+    h.ck("X6: a zero limit is rejected (positive integer)", rejectedLimit.includes("positive integer"), rejectedLimit || "no error thrown")
+    let rejectedFractional = ""
+    try { await handlers.bb_security({ limit: 2.5 }, ctx) } catch (e: any) { rejectedFractional = e?.message ?? String(e) }
+    h.ck("X6: a fractional limit is rejected (it would be a fractional page size)", rejectedFractional.includes("positive integer"), rejectedFractional || "no error thrown")
+    let rejectedOffset = ""
+    try { await handlers.bb_security({ history: true, offset: 1 }, ctx) } catch (e: any) { rejectedOffset = e?.message ?? String(e) }
+    h.ck("X6: offset with history is rejected (offset is live-page only)", rejectedOffset.includes("offset does not apply"), rejectedOffset || "no error thrown")
+
+    // Unknown options are rejected by the shared boundary validator, and the
+    // accepted set is named.
     const descriptor = TOOL_DESCRIPTORS.find((d) => d.name === "bb_security")!
     h.require("X6: bb_security has a registry descriptor", !!descriptor)
     if (descriptor) {
       h.ck("X6: the descriptor is a read tool", descriptor.mutability === "read", `mutability=${descriptor.mutability}`)
-      let rejectedNegative = ""
-      try {
-        validateToolArguments(descriptor, { history: true, limit: -1 })
-      } catch (e: any) {
-        rejectedNegative = e?.message ?? String(e)
-      }
-      h.ck("X6: a negative history limit is rejected at the boundary", rejectedNegative.includes("non-negative"), rejectedNegative || "no error thrown")
       let rejectedUnknown = ""
-      try {
-        validateToolArguments(descriptor, { findingsOnly: true })
-      } catch (e: any) {
-        rejectedUnknown = e?.message ?? String(e)
-      }
+      try { validateToolArguments(descriptor, { findingsOnly: true }) } catch (e: any) { rejectedUnknown = e?.message ?? String(e) }
       h.ck("X6: an unknown option is rejected and the accepted set is named", rejectedUnknown.includes("unknown or irrelevant options") && rejectedUnknown.includes("recordRun"), rejectedUnknown || "no error thrown")
-      let rejectedFractional = ""
-      try {
-        validateToolArguments(descriptor, { history: true, limit: 2.5 })
-      } catch (e: any) {
-        rejectedFractional = e?.message ?? String(e)
-      }
-      h.ck("X6: a fractional history limit is rejected (it would reach SQLite as a float bound)", rejectedFractional.includes("whole number"), rejectedFractional || "no error thrown")
     }
   } catch (e: any) {
     h.ck("X6: section completed without throwing", false, (e?.message || String(e)).slice(0, 200))
   } finally {
+    if (savedLegacy === undefined) delete process.env.BB_SECURITY_LEGACY
+    else process.env.BB_SECURITY_LEGACY = savedLegacy
     cleanup(root, projectId)
   }
-
   h.release()
 
   // Registry / doc honesty — asserted against the live descriptor object and both
@@ -516,18 +554,23 @@ emit("X5", "M15.X5", "real-repository scan (optional corpus)", "x5.json")
     h.ck("X6: the registry marks flow/summary/hotspots as planned, not executable", JSON.stringify(registryDescriptor.plannedModes) === JSON.stringify(["flow", "summary", "hotspots"]), `plannedModes=${JSON.stringify(registryDescriptor.plannedModes)}`)
     h.nk("X6: the registry does not declare a planned mode as executable", !(registryDescriptor.modes ?? []).some((mode) => ["flow", "summary", "hotspots"].includes(mode)), `modes=${JSON.stringify(registryDescriptor.modes)}`)
     h.nk("X6: the description claims no secret detection", !/hardcoded secret/i.test(registryDescriptor.description), "no writer emits any secret vulnerability type")
+    h.ck("X6: the description declares the lead-generator framing and the no-dataflow limit", /lead generator/i.test(registryDescriptor.description) && /does NOT perform data-flow analysis/.test(registryDescriptor.description), registryDescriptor.description.slice(0, 140))
+    h.ck("X6: the schema documents the live page size and offset (not just history limit)", /live lead page size/.test(JSON.stringify(registryDescriptor.inputSchema)) && /offset/.test(JSON.stringify(registryDescriptor.inputSchema)), JSON.stringify(Object.keys((registryDescriptor.inputSchema as any).properties ?? {})))
   }
-  h.ck("X6: the generated tool doc exists and describes taint", doc.includes("taint"))
+  h.ck("X6: the generated tool doc exists and describes the lead contract", /LEXICAL TOKEN CO-OCCURRENCE/.test(doc) && /lead generator/i.test(doc), "the generated page must carry the demoted claim")
   h.ck("X6: the tool doc marks the planned modes as not executable", doc.includes("not executable"))
-  h.ck("X6: the tool doc states the history-only meaning of limit", /history run limit/.test(doc))
+  h.ck("X6: the tool doc states the live-page/history meaning of limit", /live lead page size/.test(doc) && /history run limit/.test(doc))
   h.ck("X6: the reference doc states the one executable mode", /One executable mode/.test(ref), "docs/BB_SECURITY.md must state the single executable mode")
   h.ck("X6: the reference doc names what the tool does NOT detect", /does NOT detect/.test(ref))
-  h.ck("X6: the handler still routes through the strict engine adapter", hnd.includes("analyzeSecurityAcrossLanguages"))
-  h.ck("X6: the engine reads brain_taint_flow and classifies the four states", impl.includes("brain_taint_flow") && /"source_only"[\s\S]{0,200}?"unresolved"[\s\S]{0,200}?"mitigated"[\s\S]{0,200}?"confirmed"/.test(impl))
-  h.ck("X6: the engine normalizes severity at the boundary", impl.includes("normalizeSeverity"))
-  h.ck("X6: the engine orders its read for determinism", impl.includes("ORDER BY t.id"))
+  h.ck("X6: the handler reads the M72 store (the retired table is rollback-only)", hnd.includes("readSecurityFlows") && hnd.includes('from "../../../intelligence/security/rebuild/store"'), "default read path must come from the spec-engine store")
+  h.ck("X6: the handler prints the registry's tier declaration rather than a copied one", hnd.includes("formatSecurityTierDeclaration()"), "tier line must come from the registry")
+  h.ck("X6: the handler renders stored leads as leads, never findings", /\[\$\{gradeLabel\(row\.severity\)\}\] lead:/.test(hnd) && !/\] finding:/.test(hnd), "lead label template")
+  h.ck("X6: the retired engine branch is gated by the explicit rollback switch", hnd.includes("BB_SECURITY_LEGACY"), "the retired read/record path must be opt-in")
+  h.ck("X6: the archived engine reads brain_taint_flow and classifies the four states", impl.includes("brain_taint_flow") && /"source_only"[\s\S]{0,200}?"unresolved"[\s\S]{0,200}?"mitigated"[\s\S]{0,200}?"confirmed"/.test(impl))
+  h.ck("X6: the archived engine normalizes severity at the boundary", impl.includes("normalizeSeverity"))
+  h.ck("X6: the archived engine orders its read for determinism", impl.includes("ORDER BY t.id"))
 }
-emit("X6", "M15.X6", "handler output + docs honesty", "x6.json")
+emit("X6", "M15.X6", "handler answer contract + docs honesty", "x6.json")
 
 // ═══════════════════════════════════════════════════════════════════════════
 // X7 — non-TypeScript languages (the axis every prior fixture skipped)

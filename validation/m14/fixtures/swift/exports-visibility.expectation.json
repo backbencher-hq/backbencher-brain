@@ -1,0 +1,311 @@
+{
+  "fixtureId": "swift/exports-visibility",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the swift `exports` surface (DERIV_EXPORTS_SWIFT4). Swift has no export KEYWORD; its export construct is ACCESS CONTROL, which the pinned grammar reduces to `modifiers > visibility_modifier` on declarations and on imports. Corpus measurement over the derived 24,386-file population (stride 8, 3,048 files) finds 28 `public import`, 29 `@_exported import`, 1,189 `public` nominals in 441 files, 5,073 `public` members in 667 files and 62 `open` nominals \u2014 so RULED was available and would have been wrong. Pins five shapes: (1) public/open on a FILE-SCOPE declaration is an export; (2) internal/private are not; (3) a public MEMBER of an internal type is NOT a module export, because Swift caps a member's access at its container's; (4) a re-exporting import (`public import`, `@_exported import`) is an export IN ADDITION to the `references` edge the same import already produces; (5) `public extension Array` does not export `Array` \u2014 it makes the extension's MEMBERS public, and Array is the stdlib's declaration. The source is the file's own leaf name (`exports-visibility`), the family spelling for a module-level edge endpoint (typescript moduleLeafName(), go packageName, python moduleName), NOT the literal `root` this analyzer uses for `references` \u2014 `root` is in parallel-indexer's SYMBOL_NAME_DENYLIST so an edge sourced there can never bind to a stored symbol, while an `exports` TARGET is a declaration in this very file and does bind. The `Decorated` export additionally pins the M59.A7 LINE rule: its declaration node starts on the `@available(...)` attribute's line (71) and its NAME node is on line 73, so the edge must carry 73 \u2014 a line a reader can check against the source \u2014 and never the decorator's. Mutant SW-EXP-14 injects exactly that substitution and must die on it.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "interface",
+      "visibility": "public"
+    },
+    {
+      "name": "Widget",
+      "kind": "struct",
+      "visibility": "public"
+    },
+    {
+      "name": "Mode",
+      "kind": "enum",
+      "visibility": "public"
+    },
+    {
+      "name": "Service",
+      "kind": "class",
+      "visibility": "open"
+    },
+    {
+      "name": "Hidden",
+      "kind": "class",
+      "visibility": "internal"
+    },
+    {
+      "name": "Secret",
+      "kind": "struct",
+      "visibility": "private"
+    },
+    {
+      "name": "bootstrap",
+      "kind": "function",
+      "visibility": "public"
+    },
+    {
+      "name": "globalSeed",
+      "kind": "variable",
+      "visibility": "public"
+    },
+    {
+      "name": "Handle",
+      "kind": "type",
+      "visibility": "public"
+    },
+    {
+      "name": "internalHelper",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "notAnExport",
+      "kind": "method",
+      "ownerName": "Hidden"
+    },
+    {
+      "name": "Decorated",
+      "kind": "class",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "WinSDK",
+      "meta.exportForm": "public_import",
+      "meta.evidenceClass": "import_based",
+      "line_number": 31
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Utils",
+      "meta.exportForm": "underscored_exported_import",
+      "meta.evidenceClass": "import_based",
+      "line_number": 32
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Shape",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 34
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Widget",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 38
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Mode",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 43
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Handle",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 47
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "bootstrap",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 49
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "globalSeed",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 51
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Service",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "open",
+      "meta.evidenceClass": "structural",
+      "line_number": 53
+    },
+    {
+      "type": "exports",
+      "source": "exports-visibility",
+      "target": "Decorated",
+      "meta.exportForm": "visibility_modifier",
+      "meta.accessLevel": "public",
+      "meta.evidenceClass": "structural",
+      "line_number": 73,
+      "note": "M59.A7 line contract: the DECLARATION node starts on the @available attribute's line (71); the NAME node is on 73, so the edge must carry 73 and never the decorator's."
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "WinSDK"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Utils"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "ArgumentParser.ExpressibleByArgument"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "Hidden",
+      "comment": "an `internal class` is the ABSENCE of an export, not one"
+    },
+    {
+      "type": "exports",
+      "target": "Secret",
+      "comment": "a `private struct` is the ABSENCE of an export, not one"
+    },
+    {
+      "type": "exports",
+      "target": "Array",
+      "comment": "`public extension Array` makes the extension's MEMBERS public; Array is the stdlib's declaration, not this module's export"
+    },
+    {
+      "type": "exports",
+      "target": "notAnExport",
+      "comment": "a public MEMBER of an internal type exports nothing \u2014 Swift caps a member's access at its container's, and the member is reachable through contains Hidden -> notAnExport"
+    },
+    {
+      "type": "exports",
+      "target": "internalHelper",
+      "comment": "not public, and nested in a type \u2014 never a module-level export"
+    },
+    {
+      "type": "exports",
+      "target": "stableUnique",
+      "comment": "a member of a public extension is not a module-level export either"
+    },
+    {
+      "type": "exports",
+      "target": "Foundation",
+      "comment": "a PLAIN `import Foundation` is a dependency (references), not a re-export \u2014 only `public import` / `@_exported import` export"
+    },
+    {
+      "type": "exports",
+      "target": "ArgumentParser.ExpressibleByArgument",
+      "comment": "plain import, not a re-export"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "Shape",
+      "comment": "the exports source is the file's leaf name, never the `root` literal \u2014 `root` is in parallel-indexer's SYMBOL_NAME_DENYLIST so an edge sourced there can never bind to a stored symbol"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "WinSDK",
+      "type": "module"
+    },
+    {
+      "name": "Utils",
+      "type": "module"
+    },
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "Widget",
+      "kind": "struct"
+    },
+    {
+      "name": "Mode",
+      "kind": "enum"
+    },
+    {
+      "name": "Handle",
+      "kind": "type"
+    },
+    {
+      "name": "bootstrap",
+      "kind": "function"
+    },
+    {
+      "name": "globalSeed",
+      "kind": "variable"
+    },
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "Decorated",
+      "kind": "class"
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "Shape",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Widget",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Mode",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Service",
+      "visibility": "open"
+    },
+    {
+      "symbol": "Hidden",
+      "visibility": "internal"
+    },
+    {
+      "symbol": "Secret",
+      "visibility": "private"
+    },
+    {
+      "symbol": "bootstrap",
+      "visibility": "public"
+    },
+    {
+      "symbol": "globalSeed",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Handle",
+      "visibility": "public"
+    },
+    {
+      "symbol": "Decorated",
+      "visibility": "public"
+    }
+  ]
+}

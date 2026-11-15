@@ -1,0 +1,19 @@
+{
+  "fixtureId": "matlab/class-and-methods",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins MATLAB class inheritance, properties, constructor-like methods, containment, and field access evidence.",
+  "expectSymbols": [
+    { "name": "Report", "kind": "class" },
+    { "name": "Data", "kind": "property", "ownerName": "Report" },
+    { "name": "Report", "kind": "constructor", "ownerName": "Report" },
+    { "name": "total", "kind": "method", "ownerName": "Report" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Report", "target": "BaseReport" },
+    { "type": "contains", "from": "Report", "target": "Data" },
+    { "type": "contains", "from": "Report", "target": "total" },
+    { "type": "uses", "from": "total", "target": "obj", "meta.construct": "field_receiver" },
+    { "type": "uses", "from": "total", "target": "Data", "meta.construct": "field_member" }
+  ]
+}

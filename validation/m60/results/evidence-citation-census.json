@@ -1,0 +1,600 @@
+{
+  "instrument": "m60-evidence-citation-census",
+  "question": "Does every repo path a pin record cites actually exist?",
+  "scope": "existence only — a present artifact is not judged for currency; that belongs to its producer. Resolved against the repo root AND the lane's vendored source dir, because a citation like src/parser.c is lane-relative.",
+  "totals": {
+    "lanesWithCitations": 24,
+    "lanesChecked": 24,
+    "citations": 181,
+    "missing": 60,
+    "lanesWithMissing": 17
+  },
+  "breakdown": {
+    "externalEvidenceTree": {
+      "count": 39,
+      "note": "paths under bb_tests/, which does not exist in this repository — the corpora live at an external /home/ishaq2321/bb_tests/repositories. A claim resting on one of these cannot be opened or re-run by a reader of this repo.",
+      "sample": [
+        {
+          "lane": "c",
+          "path": "bb_tests/c/grammar/pristine-tree-sitter-c-0.24.1.wasm"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/REVIEW.md"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/out/extraction-ab.json"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/out/grammar-ab.json"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/out/grammar-gaps.json"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/probe/extraction-ab.mts"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/probe/grammar-ab.mts"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/probe/grammar-gaps.mts"
+        },
+        {
+          "lane": "graphql",
+          "path": "bb_tests/graphql/run-all.sh"
+        }
+      ]
+    },
+    "generatedNotVendoredByDesign": {
+      "count": 18,
+      "note": "generated grammar artifacts each record excludes from vendoring in its notVendored field. Citing them in prose while excluding them from the record is an inconsistency, not a dishonesty, so they are counted separately rather than as findings."
+    },
+    "other": {
+      "count": 3,
+      "paths": [
+        {
+          "lane": "clean",
+          "path": "src/scanner.c"
+        },
+        {
+          "lane": "objective-c",
+          "path": "grammars/tree-sitter-objc/src/parser.c"
+        },
+        {
+          "lane": "protobuf",
+          "path": "reviews/protobuf/master-review.md"
+        }
+      ]
+    }
+  },
+  "worstFirst": [
+    {
+      "lane": "graphql",
+      "missing": 9,
+      "of": 17,
+      "patchCount": 6
+    },
+    {
+      "lane": "vb",
+      "missing": 8,
+      "of": 15,
+      "patchCount": 18
+    },
+    {
+      "lane": "xml",
+      "missing": 8,
+      "of": 13,
+      "patchCount": 2
+    },
+    {
+      "lane": "protobuf",
+      "missing": 5,
+      "of": 5,
+      "patchCount": 9
+    },
+    {
+      "lane": "sql",
+      "missing": 5,
+      "of": 9,
+      "patchCount": 4
+    },
+    {
+      "lane": "perl",
+      "missing": 4,
+      "of": 6,
+      "patchCount": 0
+    },
+    {
+      "lane": "c",
+      "missing": 3,
+      "of": 10,
+      "patchCount": 2
+    },
+    {
+      "lane": "clean",
+      "missing": 3,
+      "of": 4,
+      "patchCount": 0
+    },
+    {
+      "lane": "make",
+      "missing": 3,
+      "of": 8,
+      "patchCount": 2
+    },
+    {
+      "lane": "nim",
+      "missing": 3,
+      "of": 11,
+      "patchCount": 0
+    },
+    {
+      "lane": "markdown",
+      "missing": 2,
+      "of": 6,
+      "patchCount": 0
+    },
+    {
+      "lane": "objective-c",
+      "missing": 2,
+      "of": 11,
+      "patchCount": 4
+    },
+    {
+      "lane": "elixir",
+      "missing": 1,
+      "of": 4,
+      "patchCount": 0
+    },
+    {
+      "lane": "haskell",
+      "missing": 1,
+      "of": 3,
+      "patchCount": 0
+    },
+    {
+      "lane": "hcl",
+      "missing": 1,
+      "of": 6,
+      "patchCount": 0
+    },
+    {
+      "lane": "powershell",
+      "missing": 1,
+      "of": 15,
+      "patchCount": 8
+    },
+    {
+      "lane": "yaml",
+      "missing": 1,
+      "of": 6,
+      "patchCount": 0
+    }
+  ],
+  "rows": [
+    {
+      "lane": "graphql",
+      "cites": 17,
+      "present": [
+        "docs/analyzers/graphql.md",
+        "grammars/tree-sitter-graphql/README.md",
+        "grammars/tree-sitter-graphql/grammar.upstream.js",
+        "grammars/tree-sitter-graphql/port.py",
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/parser.c",
+        "validation/m12/results/graphql-corpus-errors.json"
+      ],
+      "missing": [
+        "bb_tests/graphql/REVIEW.md",
+        "bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
+        "bb_tests/graphql/out/extraction-ab.json",
+        "bb_tests/graphql/out/grammar-ab.json",
+        "bb_tests/graphql/out/grammar-gaps.json",
+        "bb_tests/graphql/probe/extraction-ab.mts",
+        "bb_tests/graphql/probe/grammar-ab.mts",
+        "bb_tests/graphql/probe/grammar-gaps.mts",
+        "bb_tests/graphql/run-all.sh"
+      ],
+      "empty": [],
+      "patchCount": 6
+    },
+    {
+      "lane": "vb",
+      "cites": 15,
+      "present": [
+        "grammars/tree-sitter-vbnet/PIN.md",
+        "reviews/vb/master-review.md",
+        "script/m14/verify-grammar-pins.ts",
+        "src/ast/engine.ts",
+        "src/grammar.json",
+        "src/node-types.json",
+        "validation/m60/results/LCM.json"
+      ],
+      "missing": [
+        "bb_tests/grammar-repro/grammar-gate.sh",
+        "bb_tests/probes/defect-census.ts",
+        "bb_tests/probes/grammar-bakeoff.ts",
+        "bb_tests/probes/grammar-baseline.ts",
+        "bb_tests/probes/vb-source.ts",
+        "bb_tests/validation/grammar-floor.json",
+        "bb_tests/validation/history/reading-02-confirm.json",
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 18
+    },
+    {
+      "lane": "xml",
+      "cites": 13,
+      "present": [
+        "docs/analyzers/xml.md",
+        "grammars/tree-sitter-xml/PIN.md",
+        "reviews/xml/master-review.md",
+        "validation/m12/results/xml-corpus-errors.json",
+        "validation/m12/results/xml-shape-safety.json"
+      ],
+      "missing": [
+        "bb_tests/xml/out/grammar-ab.json",
+        "bb_tests/xml/out/grammar-conformance.json",
+        "bb_tests/xml/out/grammar-corpus-ab.json",
+        "bb_tests/xml/out/grammar-surface.json",
+        "bb_tests/xml/out/pi-rootcause.json",
+        "bb_tests/xml/out/regression-adjudication.json",
+        "bb_tests/xml/out/tree-shapes.txt",
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 2
+    },
+    {
+      "lane": "protobuf",
+      "cites": 5,
+      "present": [],
+      "missing": [
+        "bb_tests/protobuf/out/extraction-ab.json",
+        "bb_tests/protobuf/out/grammar-ab.json",
+        "bb_tests/protobuf/out/grammar-census.json",
+        "bb_tests/protobuf/out/grammar-gaps.json",
+        "reviews/protobuf/master-review.md"
+      ],
+      "empty": [],
+      "patchCount": 9
+    },
+    {
+      "lane": "sql",
+      "cites": 9,
+      "present": [
+        "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+        "script/m14/spec/sql-completeness.json",
+        "script/m60/measure-grammar-recovery.ts",
+        "validation/m60/sql/v3-rejection.json"
+      ],
+      "missing": [
+        "bb_tests/sql/REVIEW.md",
+        "bb_tests/sql/probe/grammar-ab.mts",
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 4
+    },
+    {
+      "lane": "perl",
+      "cites": 6,
+      "present": [
+        "reviews/perl/master-review.md",
+        "validation/m12/corpus-manifest.json"
+      ],
+      "missing": [
+        "bb_tests/perl/out/forward-compat-detail.json",
+        "bb_tests/perl/out/grammar-ab.json",
+        "bb_tests/perl/out/grammar-pin-survey.json",
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "c",
+      "cites": 10,
+      "present": [
+        "grammars/tree-sitter-c/PIN.md",
+        "script/m14/tmp/c-audit/c-grammar-pin.ts",
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/parser.c",
+        "validation/m14/results/c-grammar-pin.json",
+        "validation/m14/results/wasm-provenance-census.json"
+      ],
+      "missing": [
+        "bb_tests/c/grammar/pristine-tree-sitter-c-0.24.1.wasm",
+        "queries/highlights.scm",
+        "queries/tags.scm"
+      ],
+      "empty": [],
+      "patchCount": 2
+    },
+    {
+      "lane": "clean",
+      "cites": 4,
+      "present": [
+        "reviews/m60-clean-grammar-127-adjudication.md"
+      ],
+      "missing": [
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/scanner.c"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "make",
+      "cites": 8,
+      "present": [
+        "grammars/tree-sitter-make/PIN.md",
+        "grammars/tree-sitter-make/ab/pristine-make.wasm",
+        "reviews/make/master-review.md",
+        "script/m14/tmp/make/grammar-ab.mts",
+        "src/parser.c"
+      ],
+      "missing": [
+        "bb_tests/make/out/grammar-ab-product.json",
+        "bb_tests/make/out/grammar-ab.json",
+        "bb_tests/make/out/grammar-conformance.json"
+      ],
+      "empty": [],
+      "patchCount": 2
+    },
+    {
+      "lane": "nim",
+      "cites": 11,
+      "present": [
+        "docs/analyzers/nim.md",
+        "grammars/tree-sitter-nim/PIN.md",
+        "queries/highlights.scm",
+        "src/grammar.json",
+        "src/node-types.json",
+        "validation/m12/results/nim-corpus-complexity.json",
+        "validation/m12/results/nim-corpus-errors.json",
+        "validation/m14/grammar-pins.json"
+      ],
+      "missing": [
+        "bb_tests/nim/grammar/ab-run.sh",
+        "bb_tests/nim/matrix/check-matrix.sh",
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "markdown",
+      "cites": 6,
+      "present": [
+        "docs/analyzers/markdown.md",
+        "script/m60/find-grammar-provenance.ts",
+        "validation/m14/grammar-audit-baseline.json",
+        "validation/m60/results/G-PROVENANCE.json"
+      ],
+      "missing": [
+        "src/grammar.json",
+        "src/node-types.json"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "objective-c",
+      "cites": 11,
+      "present": [
+        "grammars/tree-sitter-objc/PIN.md",
+        "script/m60/objc-grammar-provenance.ts",
+        "src/grammar.json",
+        "src/node-types.json",
+        "validation/m60/results/objc-census.json",
+        "validation/m60/results/objc-enum-loss.json",
+        "validation/m60/results/objc-grammar-provenance.json",
+        "validation/m60/results/objc-mutant-check.json",
+        "validation/m60/results/objc-wasm-ab.json"
+      ],
+      "missing": [
+        "grammars/tree-sitter-objc/src/parser.c",
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 4
+    },
+    {
+      "lane": "elixir",
+      "cites": 4,
+      "present": [
+        "script/m14/tmp/elixir-grammar-token-probe.ts",
+        "validation/m14/results/elixir-grammar-ab.json",
+        "validation/m14/results/family-grammar-fingerprints.json"
+      ],
+      "missing": [
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "haskell",
+      "cites": 3,
+      "present": [
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "validation/m14/results/wasm-provenance-census.json"
+      ],
+      "missing": [
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "hcl",
+      "cites": 6,
+      "present": [
+        "grammars/tree-sitter-hcl/PIN.md",
+        "reviews/hcl/master-review.md",
+        "src/node-types.json",
+        "src/parser.c",
+        "validation/m60/grammar-survey.json"
+      ],
+      "missing": [
+        "bb_tests/hcl/out/grammar-conformance.json"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "powershell",
+      "cites": 15,
+      "present": [
+        "reviews/powershell/grammar-worklist.md",
+        "reviews/powershell/resolution.md",
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/parser.c",
+        "src/scanner.c",
+        "validation/m14/results/M14.0.F11.powershell.json",
+        "validation/m60/results/powershell-g5-g3-adjudication.txt",
+        "validation/m60/results/powershell-g5c-g3-adjudication.txt",
+        "validation/m60/results/powershell-grammar-g1-ab.json",
+        "validation/m60/results/powershell-grammar-g5b-ab.json",
+        "validation/m60/results/powershell-grammar-g5c-ab.json",
+        "validation/m60/results/powershell-grammar-upgrade-ab.json",
+        "validation/m60/results/powershell-surface.json"
+      ],
+      "missing": [
+        "queries/highlights.scm"
+      ],
+      "empty": [],
+      "patchCount": 8
+    },
+    {
+      "lane": "yaml",
+      "cites": 6,
+      "present": [
+        "docs/analyzers/yaml.md",
+        "reviews/yaml/research-and-plan.md",
+        "script/m14/spec/yaml-completeness.json",
+        "script/m14/verify-grammar-leaves.ts",
+        "validation/m60/grammar-survey.json"
+      ],
+      "missing": [
+        "src/parser.c"
+      ],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "clojure",
+      "cites": 3,
+      "present": [
+        "validation/m12/results/clojure-differential.json",
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "validation/m14/results/wasm-provenance-census.json"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "cpp",
+      "cites": 9,
+      "present": [
+        "docs/analyzers/cpp.md",
+        "script/cpp-review/grammar-provenance.ts",
+        "script/m12/cpp-node-types-compare.ts",
+        "script/m12/cpp-wasm-compare.ts",
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/parser.c",
+        "src/scanner.c",
+        "validation/m14/results/cpp-defect-register.json"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 3
+    },
+    {
+      "lane": "css",
+      "cites": 5,
+      "present": [
+        "reviews/m49-css-review.md",
+        "src/parser.c",
+        "validation/m14/results/css-grammar-ab-url-float.json",
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "validation/m14/results/wasm-provenance-census.json"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 2
+    },
+    {
+      "lane": "erlang",
+      "cites": 2,
+      "present": [
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "validation/m14/results/wasm-provenance-census.json"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "fsharp",
+      "cites": 4,
+      "present": [
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "validation/m14/results/fsharp-corpus-census.json",
+        "validation/m14/results/fsharp-grammar-ab.json",
+        "validation/m14/results/fsharp-pin-evidence.json"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 5
+    },
+    {
+      "lane": "json",
+      "cites": 1,
+      "present": [
+        "src/ast/engine.ts"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 0
+    },
+    {
+      "lane": "scss",
+      "cites": 8,
+      "present": [
+        "reviews/m49-css-review.md",
+        "script/m14/tmp/scss-grammar-ab.ts",
+        "src/grammar.json",
+        "src/node-types.json",
+        "src/parser.c",
+        "src/scanner.c",
+        "validation/m14/results/scss-grammar-ab.json",
+        "validation/m14/results/wasm-provenance-census.json"
+      ],
+      "missing": [],
+      "empty": [],
+      "patchCount": 3
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "comment": "HTML ONTOLOGY \u2014 the IDREF class: the lane's THIRD natively-owned relationship type, and the six types it still does not own, each pinned as a forbids rather than asserted in prose. Measured before it was written (validation/m14/probes/html/construct-probe.mts \u00a71, 1,185 git-tracked documents / 24 repositories): 19 sites, 19 ID tokens, 17 resolvable. A non-zero count is a GAP and not a ruling, which is the same test that overturned `overrides`. The `forbidRelationships` block is the other half of that: a lane that emits none of calls/exports/extends/implements/overrides/instantiates must PIN that, because a differential whose oracle also omits them reports 100% coverage with the omission in its own truth \u2014 the shared-premise lesson the lane's own doc records for the bare-`#` hole.",
+  "expectSymbols": [
+    {
+      "name": "idref-references",
+      "kind": "module"
+    },
+    {
+      "name": "panel",
+      "kind": "class",
+      "meta.identityAttribute": "id"
+    },
+    {
+      "name": "panel#2",
+      "kind": "class",
+      "meta.duplicateId": true,
+      "meta.duplicateOf": "panel"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "panel",
+      "target": "hdr",
+      "line_number": 41,
+      "confidence": 1.0,
+      "meta.isIdref": true,
+      "meta.idrefKind": "aria-labelledby",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "panel",
+      "target": "desc",
+      "line_number": 41,
+      "meta.idrefKind": "aria-labelledby"
+    },
+    {
+      "type": "references",
+      "from": "panel",
+      "target": "desc",
+      "line_number": 41,
+      "meta.idrefKind": "aria-describedby"
+    },
+    {
+      "type": "references",
+      "from": "panel",
+      "target": "desc",
+      "line_number": 41,
+      "meta.idrefKind": "aria-details"
+    },
+    {
+      "type": "references",
+      "from": "email",
+      "target": "desc",
+      "line_number": 44,
+      "meta.idrefKind": "aria-errormessage"
+    },
+    {
+      "type": "references",
+      "from": "email",
+      "target": "panel",
+      "line_number": 44,
+      "meta.idrefKind": "aria-controls",
+      "meta.ambiguousTarget": true
+    },
+    {
+      "type": "references",
+      "from": "email",
+      "target": "signup",
+      "line_number": 44,
+      "meta.idrefKind": "form-owner"
+    },
+    {
+      "type": "references",
+      "from": "email",
+      "target": "choices",
+      "line_number": 44,
+      "meta.idrefKind": "datalist"
+    },
+    {
+      "type": "references",
+      "from": "owned",
+      "target": "panel",
+      "line_number": 47,
+      "meta.idrefKind": "aria-owns"
+    },
+    {
+      "type": "references",
+      "from": "next",
+      "target": "panel",
+      "line_number": 48,
+      "meta.idrefKind": "aria-flowto"
+    },
+    {
+      "type": "references",
+      "from": "active-host",
+      "target": "desc",
+      "line_number": 49,
+      "meta.idrefKind": "aria-activedescendant"
+    },
+    {
+      "type": "references",
+      "from": "sum",
+      "target": "email",
+      "line_number": 50,
+      "meta.idrefKind": "output-for"
+    },
+    {
+      "type": "references",
+      "from": "c1",
+      "target": "c2",
+      "line_number": 55,
+      "meta.idrefKind": "table-header"
+    },
+    {
+      "type": "references",
+      "from": "d1",
+      "target": "c1",
+      "line_number": 59,
+      "meta.idrefKind": "table-header"
+    },
+    {
+      "comment": "The anchor itself, positively pinned as `uses` with isInternalAnchor \u2014 a >=1 match, so the forbid above is what carries the real weight.",
+      "type": "uses",
+      "from": "idref-references",
+      "target": "panel",
+      "line_number": 70,
+      "meta.isInternalAnchor": true,
+      "meta.ambiguousTarget": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "An ID token that names no element in this document is NOT a reference and emits nothing. `aria-controls=\"panel missing-one\"` on line 44 is the site; publishing `missing-one` would be a placeholder endpoint in the shape standing rule R7 forbids, and it is the same rule `<label for>` already follows.",
+      "type": "references",
+      "target": "missing-one"
+    },
+    {
+      "comment": "`headers` is a table-header reference on `td`/`th` ONLY, per the HTML content model. A `headers` attribute on a `<div>` is not a reference, so the tag-scoped row must not read as a wildcard.",
+      "from": "not-a-cell",
+      "type": "references"
+    },
+    {
+      "comment": "An in-document ANCHOR is `uses`, NOT `references`. `<a href=\"#panel\">` is a navigation carrier in `RESOURCE_RULES` and the lane's ratified label for it is `uses`; `deriveHtmlEdges` derives it as `uses`, so relabelling it would make the differential report the lane's most obviously correct class as MISSING. Pinned as a forbid on the `references` reading so the two classes cannot be silently merged.",
+      "from": "idref-references",
+      "target": "panel",
+      "type": "references"
+    },
+    {
+      "comment": "NATIVE RULINGS, pinned. `calls`: the pinned tree-sitter-html grammar produces 28 distinct node types across the corpus and NONE is an invocation; the 3,742 `call_expression` nodes all live in inline blocks and belong to the JS delegate, which the seam stamps. A `<form action>` is a navigation the BROWSER performs, which is exactly why it is `uses`.",
+      "type": "calls"
+    },
+    {
+      "comment": "`exports`: markup has no module surface \u2014 0 of 2 export-ish node types in the grammar, and 0 `export_statement` across 359 inline blocks. The rows an html file DOES publish in this channel are the CSS delegate's and carry `htmlEmbedded`/`embeddedLang`; see html/inline-embedded-code.",
+      "type": "exports"
+    },
+    {
+      "comment": "`extends` / `implements`: 0 heritage clauses across 9 classes in 359 inline blocks, and no type-declaration node in the html grammar at all.",
+      "type": "extends"
+    },
+    {
+      "type": "implements"
+    },
+    {
+      "comment": "`overrides`: the falsifiable form is ONE class declaring ONE method name TWICE, not \"is there a method\". Measured 0 over 9 classes / 67 methods / 359 inline blocks. `method_definition` alone (172 corpus-wide) proves nothing, which is why the probe counts duplicates.",
+      "type": "overrides"
+    },
+    {
+      "comment": "`instantiates`: html has no constructor. 204 `new_expression` nodes across the corpus are all inside inline blocks and are the JS delegate's to filter \u2014 it drops the browser globals and keeps 48. The tempting native reading, a kebab-case tag instantiating its custom element definition, is measured at 419 tag instances of which 399 (95.2%) end in an all-digit segment and are compiler code-dump placeholders (`comment-1`, `declaration-12`), not custom elements; the remaining ~20 would be `instantiates` rows in the differential's ALWAYS-COMPARED head that no oracle derives, i.e. fabrication by definition.",
+      "type": "instantiates"
+    }
+  ]
+}

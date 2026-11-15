@@ -1,0 +1,9 @@
+[
+ {"label":"file.big","args":{"mode":"file","filePath":"src/big.ts"}},
+ {"label":"file.symlinkEscape","args":{"mode":"file","filePath":"src/escape-link.txt"}},
+ {"label":"file.stale.remediation","args":{"mode":"file","filePath":"src/stale.ts"}},
+ {"label":"symbols.stale.declinedLine","args":{"query":"staleHost"}},
+ {"label":"content.staleBlock","args":{"mode":"content","query":"staleHost"}},
+ {"label":"symbol.missingIsSuccess","args":{"mode":"symbol","symbolName":"zzzNoSuch"}},
+ {"label":"file.deletedNotIndexed","args":{"mode":"file","filePath":"src/deleted.ts"}}
+]

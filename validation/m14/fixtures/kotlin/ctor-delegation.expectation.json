@@ -1,0 +1,22 @@
+{
+  "fixtureId": "kotlin/ctor-delegation",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "The K2 rows (the delegation edges exist, target the literal keyword, confidence 1.0) were authored before the analyzer ran. The SOURCE row was RE-PINNED on 2026-10-05 by DERIV_EXPORTS_KOT4, and the change of mind is recorded in the rationale rather than quietly applied: the original expectation said `from: \"constructor\"`, which is the placeholder the M14 #419 K11 rule was written to remove. The fixture had pinned the defect, so the rule stayed half-implemented for a wave.",
+  "rationale": "PINS the K2 gap: secondary-constructor delegation — super(...) and this(...) — is a call edge from the constructor. super/this are UNNAMED keyword children of constructor_delegation_call, so the receiver is read from node text; the target is the literal keyword (never guessed to a parent type, per the java G2 ruling). Confidence 1.0: delegation is structural syntax. DERIV_EXPORTS_KOT4 re-pinned the SOURCE from the literal `constructor` to the owning class `Derived`, and the forbid row below is what keeps the placeholder from coming back: `secondary_constructor`'s parent is the class_body, not the class_declaration, so the K11 rule's own implementation (`node.parent` -> name) silently failed for every secondary constructor in the corpus — measured at 60 edges over 405 files attributed to a symbol spelled `constructor`, which no Kotlin source can declare. The forbid row is the half that matters: without it the expectation alone would still have passed on the old behaviour if the edge had also been emitted with the class name.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Derived", "kind": "class" }
+  ],
+  "expectSymbolCount": [
+    { "name": "Derived", "kind": "constructor", "equals": 3, "comment": "one primary + two secondary constructors share the class name by the java C3 family convention; overload distinctness rides the parameters payload, not the name. Pinned so a change here is visible rather than silent" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "Derived", "target": "super", "meta.relationshipType": "constructor_invocation", "meta.constructorReceiver": "super", "confidenceMin": 1.0, "line_number": 4, "comment": "the delegation belongs to the CLASS that declares it, which is what M14 #419 K11 says and what the implementation did not do for secondary constructors" },
+    { "type": "calls", "from": "Derived", "target": "this", "meta.relationshipType": "constructor_invocation", "meta.constructorReceiver": "this", "confidenceMin": 1.0, "line_number": 6 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "constructor", "comment": "the measured pre-fix source for every secondary-constructor delegation in the corpus: a name no Kotlin file can declare. 60 such endpoints over a 405-file census" },
+    { "type": "calls", "from": "", "comment": "and the R7 form of the same hole — the delegation is real, but a constructor of an unnamed (ERROR-recovered) class has no declarer to attribute to, so nothing is published" }
+  ]
+}

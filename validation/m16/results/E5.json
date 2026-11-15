@@ -1,0 +1,24 @@
+{
+  "issue": "(cross-language field-aware classification)",
+  "code": "E5",
+  "tool": "bb_edit",
+  "title": "E5",
+  "verified": true,
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 0,
+  "runLog": {
+    "validated": true,
+    "reindexed": true,
+    "warnings": [
+      "refactor target → targetP: 2 site(s) across 1 file(s)",
+      "refactor target: 1 cross-file edge(s) to this symbol have no source symbol in the index; 0 importing file(s) were covered through brain_import, and a call site in a file that does not import the declaration module is not reachable by this rename"
+    ],
+    "summary": {
+      "renamedFiles": 1,
+      "renamedSites": 2
+    }
+  },
+  "generatedAt": "2026-11-05T04:28:01.149Z"
+}

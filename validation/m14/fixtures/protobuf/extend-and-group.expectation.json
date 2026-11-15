@@ -1,0 +1,294 @@
+{
+  "fixtureId": "protobuf/extend-and-group",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the three proto2 constructs this analyzer had NO fixture for, and each of them is a place where a plausible analyzer fabricates something. (1) `extend Foo { \u2026 }` adds members to a type this file does not declare, so the block is NOT a declaration: minting a symbol for it produces a phantom type that then becomes the source of a fabricated containment edge and a second, disagreeing copy of a type that already has an owner in the file that declares it. The file carries both shapes \u2014 an extend of a type declared in the SAME file, and the corpus's real shape, an extend of the well-known `google.protobuf.MessageOptions` from an imported file. (2) A proto2 `group` declares a nested type AND a field of the same name in one declaration, so on a bare `owner.name` id the two collide and the `uses` edge that should run field-to-type loops a symbol onto itself. (3) `reserved` and `extensions` are facts about the SCHEMA rather than about a declaration \u2014 a retired field number is what makes a migration audit possible \u2014 so they attach to the owning message's metadata rather than becoming symbols or edges. PASS 2: two rows now require `meta.viaExtension` on the EDGE. It was on the symbol only, so the analyzer's own header claim that the edge carries it was false and a consumer reading the edge could not tell an extension field from a declared one.",
+  "expectSymbols": [
+    {
+      "name": "ext.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Container",
+      "kind": "class",
+      "ownerName": "ext.v1",
+      "meta.id": "ext.v1.Container",
+      "meta.reserved": [
+        {
+          "name": "old_name"
+        },
+        {
+          "name": "older_name"
+        },
+        {
+          "range": "4"
+        },
+        {
+          "range": "5"
+        },
+        {
+          "range": "9 to 11"
+        }
+      ],
+      "meta.extensions": [
+        {
+          "range": "100 to 199"
+        }
+      ],
+      "note": "reserved numbers AND reserved names, plus the open extension range, on the message that declares them. These are facts about the SCHEMA rather than about a declaration \u2014 a retired field number is what makes a migration audit possible \u2014 so they attach to the owning message's metadata rather than becoming symbols or edges."
+    },
+    {
+      "name": "base",
+      "kind": "property",
+      "ownerName": "ext.v1.Container"
+    },
+    {
+      "name": "extra",
+      "kind": "property",
+      "ownerName": "ext.v1.Container",
+      "meta.viaExtension": true,
+      "note": "declared inside `extend Container`, but a MEMBER of Container: the field number lives in Container's own space"
+    },
+    {
+      "name": "counts",
+      "kind": "property",
+      "ownerName": "ext.v1.Container",
+      "meta.viaExtension": true
+    },
+    {
+      "name": "audit_ticket",
+      "kind": "property",
+      "ownerName": "google.protobuf.MessageOptions",
+      "meta.viaExtension": true,
+      "note": "the extended type is not declared in this file, so the member's owner is the name as written"
+    },
+    {
+      "name": "Result",
+      "kind": "class",
+      "ownerName": "ext.v1.Envelope",
+      "meta.id": "ext.v1.Envelope.Result",
+      "meta.isGroupType": true,
+      "note": "the group's TYPE, on the plain dotted id"
+    },
+    {
+      "name": "Result",
+      "kind": "property",
+      "ownerName": "ext.v1.Envelope",
+      "meta.id": "ext.v1.Envelope.Result#property",
+      "meta.isGroup": true,
+      "note": "the group's FIELD. Two declarations, one name, one owner \u2014 so the ids must differ, and `#` cannot occur in a protobuf identifier, which makes it a disambiguator no real name can forge"
+    },
+    {
+      "name": "url",
+      "kind": "property",
+      "ownerName": "ext.v1.Envelope.Result"
+    },
+    {
+      "name": "code",
+      "kind": "property",
+      "ownerName": "ext.v1.Envelope.Result"
+    },
+    {
+      "name": "note",
+      "kind": "property",
+      "ownerName": "ext.v1.Envelope"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Result",
+      "equals": 2,
+      "note": "the group declares a type and a field under one name. Exactly two, with two different kinds."
+    },
+    {
+      "name": "Container",
+      "equals": 1,
+      "note": "exactly ONE Container. The `extend Container` block is not a second declaration of it; a phantom block symbol is the defect this row exists to catch."
+    },
+    {
+      "name": "MessageOptions",
+      "equals": 0,
+      "note": "the well-known type is extended but NOT declared here \u2014 its declaration lives in descriptor.proto."
+    },
+    {
+      "name": "extra",
+      "equals": 1
+    },
+    {
+      "name": "audit_ticket",
+      "equals": 1
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Container",
+      "startLine": 7
+    },
+    {
+      "symbol": "extra",
+      "startLine": 19
+    },
+    {
+      "symbol": "counts",
+      "startLine": 20
+    },
+    {
+      "symbol": "audit_ticket",
+      "startLine": 29
+    },
+    {
+      "symbol": "Result",
+      "kind": "class",
+      "startLine": 36
+    },
+    {
+      "symbol": "url",
+      "startLine": 37
+    },
+    {
+      "symbol": "note",
+      "startLine": 41
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "ext.v1.Container",
+      "target": "ext.v1.Container.base",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Container",
+      "target": "ext.v1.extra",
+      "line_number": 19,
+      "note": "the extension's field is contained by the EXTENDED type, not by the block: `contains` means membership, and the block has none of its own The EDGE carries `viaExtension` as well as the symbol: before pass 2 it was set on the symbol only, so a consumer reading this edge could not tell a field added by `extend Container` in THIS file from one declared in Container's own body. Measured over the corpus before the change: 0 of the extension-derived `contains` edges carried it. This row plus the `google.protobuf.MessageOptions` row are what makes the flag un-droppable \u2014 an analyzer that stamps `viaExtension` on every edge fails the plain-field rows in payload-and-ontology. REVISED pass 21: the EDGE still runs from the EXTENDEE \u2014 `contains` is membership and membership did not change \u2014 but the TARGET is named the way `protoc` names it. The pre-pass-21 target was `ext.v1.Container.extra`, a name no compiler defines, and it merged distinct extensions: `protoc` ACCEPTS a compilation unit holding both `unittest_features.proto:32` (`test = 9999` in package `pb`) and `unittest_custom_features.proto:14` (`test = 9995` in package `custom_features`), which is only possible because they are two symbols. This analyzer published both as `google.protobuf.FeatureSet.test`. PROTOC ADJUDICATION (grpc_tools.protoc, libprotoc 35.1, run on this fixture): the descriptor's extension full_name is the block's OWN enclosing declaration chain plus the member's name, and the extendee is a SEPARATE descriptor field. The extendee is never part of the name.",
+      "meta.viaExtension": true
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Container",
+      "target": "ext.v1.counts",
+      "line_number": 20,
+      "note": " REVISED pass 21: the EDGE still runs from the EXTENDEE \u2014 `contains` is membership and membership did not change \u2014 but the TARGET is named the way `protoc` names it. The pre-pass-21 target was `ext.v1.Container.counts`, a name no compiler defines, and it merged distinct extensions: `protoc` ACCEPTS a compilation unit holding both `unittest_features.proto:32` (`test = 9999` in package `pb`) and `unittest_custom_features.proto:14` (`test = 9995` in package `custom_features`), which is only possible because they are two symbols. This analyzer published both as `google.protobuf.FeatureSet.test`. PROTOC ADJUDICATION (grpc_tools.protoc, libprotoc 35.1, run on this fixture): the descriptor's extension full_name is the block's OWN enclosing declaration chain plus the member's name, and the extendee is a SEPARATE descriptor field. The extendee is never part of the name."
+    },
+    {
+      "type": "contains",
+      "from": "google.protobuf.MessageOptions",
+      "target": "ext.v1.audit_ticket",
+      "line_number": 29,
+      "meta.viaExtension": true,
+      "note": "the extended type is not declared in this file, so the member's owner is the name as written \u2014 and the EDGE says it arrived by extension, which is the only thing distinguishing it from a field of MessageOptions REVISED pass 21: the EDGE still runs from the EXTENDEE \u2014 `contains` is membership and membership did not change \u2014 but the TARGET is named the way `protoc` names it. The pre-pass-21 target was `google.protobuf.MessageOptions.audit_ticket`, a name no compiler defines, and it merged distinct extensions: `protoc` ACCEPTS a compilation unit holding both `unittest_features.proto:32` (`test = 9999` in package `pb`) and `unittest_custom_features.proto:14` (`test = 9995` in package `custom_features`), which is only possible because they are two symbols. This analyzer published both as `google.protobuf.FeatureSet.test`. PROTOC ADJUDICATION (grpc_tools.protoc, libprotoc 35.1, run on this fixture): the descriptor's extension full_name is the block's OWN enclosing declaration chain plus the member's name, and the extendee is a SEPARATE descriptor field. The extendee is never part of the name."
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Envelope",
+      "target": "ext.v1.Envelope.Result",
+      "line_number": 36,
+      "meta.member": "groupType"
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Envelope",
+      "target": "ext.v1.Envelope.Result#property",
+      "line_number": 36,
+      "meta.member": "field"
+    },
+    {
+      "type": "references",
+      "from": "ext.v1.Envelope.Result#property",
+      "target": "ext.v1.Envelope.Result",
+      "line_number": 36,
+      "meta.role": "groupType",
+      "confidenceMin": 0.9,
+      "note": "the group's FIELD references the group's TYPE. Reading this edge the other way round, or collapsing both onto one id, is the self-loop the `#` disambiguator exists to prevent."
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Envelope.Result",
+      "target": "ext.v1.Envelope.Result.url",
+      "line_number": 37
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Envelope.Result",
+      "target": "ext.v1.Envelope.Result.code",
+      "line_number": 38
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Envelope",
+      "target": "ext.v1.Envelope.note",
+      "line_number": 41
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "ext.v1.Envelope.Result#property",
+      "target": "ext.v1.Envelope.Result",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "ext.v1.Envelope.Result",
+      "target": "ext.v1.Envelope.Result",
+      "note": "DELIBERATELY absent: the group's self-edge. It is the exact shape produced when the type and the field share one id, and a self-edge here is a symbol pointing at itself \u2014 which reads as a recursive type and poisons every graph consumer downstream."
+    },
+    {
+      "type": "extends",
+      "from": "ext.v1.Envelope.Result#property",
+      "target": "ext.v1.Envelope.Result",
+      "note": "protobuf has NO inheritance. `extend Foo` adds fields to Foo; it does not make anything a subclass, so an `extends` edge here would invent a language feature that does not exist."
+    },
+    {
+      "type": "implements",
+      "from": "ext.v1.Envelope.Result",
+      "target": "ext.v1.Envelope.Result",
+      "note": "same reason: there is no interface to satisfy in proto2."
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Container",
+      "target": "ext.v1.Container.extra",
+      "meta.viaExtension": true,
+      "note": "THE pass-21 pre-fix target, forbidden explicitly. The extendee is the SOURCE of this edge and must never be the TARGET: `protoc` reads this member's extension name as `ext.v1.extra`. A forbidden row rather than only an absent requirement, so a regression that rebuilt the member id from the extendee fails here even though the edge it emits still looks like membership."
+    },
+    {
+      "type": "contains",
+      "from": "ext.v1.Container",
+      "target": "ext.v1.Container.counts",
+      "meta.viaExtension": true,
+      "note": "THE pass-21 pre-fix target, forbidden explicitly. The extendee is the SOURCE of this edge and must never be the TARGET: `protoc` reads this member's extension name as `ext.v1.counts`. A forbidden row rather than only an absent requirement, so a regression that rebuilt the member id from the extendee fails here even though the edge it emits still looks like membership."
+    },
+    {
+      "type": "contains",
+      "from": "google.protobuf.MessageOptions",
+      "target": "google.protobuf.MessageOptions.audit_ticket",
+      "meta.viaExtension": true,
+      "note": "THE pass-21 pre-fix target, forbidden explicitly. The extendee is the SOURCE of this edge and must never be the TARGET: `protoc` reads this member's extension name as `ext.v1.audit_ticket`. A forbidden row rather than only an absent requirement, so a regression that rebuilt the member id from the extendee fails here even though the edge it emits still looks like membership."
+    },
+    {
+      "type": "uses",
+      "from": "ext.v1.Envelope.Result#property",
+      "target": "ext.v1.Envelope.Result",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "MessageOptions",
+      "note": "the extended well-known type is a reference target, not a declaration of this file. Its members point at it; this file does not define it."
+    },
+    {
+      "name": "google.protobuf.MessageOptions",
+      "note": "same at the qualified spelling \u2014 a relationship endpoint, not a symbol."
+    },
+    {
+      "name": "extend",
+      "note": "the block is not a named entity at all: `extend` is a keyword and the block's target is the name that matters."
+    }
+  ]
+}

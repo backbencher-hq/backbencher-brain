@@ -1,0 +1,285 @@
+{
+  "instrument": "CAUSE 1 \u2014 THE `imports` SPLIT, per lane, in the gate's own columns, with the external half RULED",
+  "at": "2026-10-12T19:32:00-04:00",
+  "theRuling": "`imports` should target the DECLARATION where the project has one, and carry the module in metadata; the EXTERNAL half is a boundary to be ruled with a measured count. This record delivers the split and prices the local half; it does NOT land a fix, and says why.",
+  "lanes": {
+    "java": {
+      "population": {
+        "admitted": 1942,
+        "parsed": 1942,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "grails-core"
+        ]
+      },
+      "importsEdges": 33734,
+      "shapes": {
+        "moduleName": 33734
+      },
+      "theSplit": {
+        "LOCAL": 8730,
+        "EXTERNAL": 25004
+      },
+      "asEmitted": {
+        "LOCAL": {
+          "unresolved": 8730
+        },
+        "EXTERNAL": {
+          "unresolved": 25004
+        }
+      },
+      "ceiling_onTheLeaf": {
+        "LOCAL": {
+          "resolved": 7594,
+          "ambBoth": 324,
+          "ambDeclOnly": 812
+        },
+        "EXTERNAL": {
+          "resolved": 1968,
+          "unresolved": 22556,
+          "ambDeclOnly": 426,
+          "ambBoth": 54
+        }
+      },
+      "packagePrefixHeuristic": {
+        "trueLocal": 7210,
+        "falseLocal": 1378,
+        "missedLocal": 1520,
+        "trueExternal": 23626,
+        "precision": 0.8395,
+        "recall": 0.8259
+      }
+    },
+    "groovy": {
+      "population": {
+        "admitted": 693,
+        "parsed": 693,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "geb"
+        ]
+      },
+      "importsEdges": 4040,
+      "shapes": {
+        "moduleName": 4040
+      },
+      "theSplit": {
+        "LOCAL": 1988,
+        "EXTERNAL": 2052
+      },
+      "asEmitted": {
+        "LOCAL": {
+          "unresolved": 1988
+        },
+        "EXTERNAL": {
+          "unresolved": 2052
+        }
+      },
+      "ceiling_onTheLeaf": {
+        "LOCAL": {
+          "resolved": 1808,
+          "ambDeclOnly": 180
+        },
+        "EXTERNAL": {
+          "unresolved": 1968,
+          "resolved": 42,
+          "ambDeclOnly": 28,
+          "ambBoth": 14
+        }
+      },
+      "packagePrefixHeuristic": {
+        "trueLocal": 428,
+        "falseLocal": 48,
+        "missedLocal": 1560,
+        "trueExternal": 2004,
+        "precision": 0.8992,
+        "recall": 0.2153
+      }
+    },
+    "python": {
+      "population": {
+        "admitted": 4344,
+        "parsed": 4344,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "gql-saleor"
+        ]
+      },
+      "importsEdges": 36207,
+      "shapes": {
+        "includePath": 3447,
+        "colon": 32760
+      },
+      "theSplit": {
+        "LOCAL": 24313,
+        "EXTERNAL": 11894
+      },
+      "asEmitted": {
+        "LOCAL": {
+          "ambBoth": 1810,
+          "ambDeclOnly": 4841,
+          "resolved": 16868,
+          "unresolved": 794
+        },
+        "EXTERNAL": {
+          "unresolved": 11894
+        }
+      },
+      "ceiling_onTheLeaf": {
+        "LOCAL": {
+          "ambBoth": 1810,
+          "ambDeclOnly": 4841,
+          "resolved": 16868,
+          "unresolved": 794
+        },
+        "EXTERNAL": {
+          "unresolved": 10455,
+          "ambDeclOnly": 537,
+          "ambBoth": 23,
+          "resolved": 879
+        }
+      }
+    },
+    "cpp": {
+      "population": {
+        "admitted": 497,
+        "parsed": 497,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "nlohmann-json"
+        ]
+      },
+      "importsEdges": 1918,
+      "shapes": {
+        "colon": 1918
+      },
+      "theSplit": {
+        "LOCAL": 0,
+        "EXTERNAL": 1918
+      },
+      "asEmitted": {
+        "LOCAL": {},
+        "EXTERNAL": {
+          "unresolved": 1828,
+          "resolved": 12,
+          "ambBoth": 51,
+          "ambDeclOnly": 27
+        }
+      },
+      "ceiling_onTheLeaf": {
+        "LOCAL": {},
+        "EXTERNAL": {
+          "unresolved": 1828,
+          "resolved": 12,
+          "ambBoth": 51,
+          "ambDeclOnly": 27
+        }
+      }
+    },
+    "c": {
+      "population": {
+        "admitted": 785,
+        "parsed": 785,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "redis"
+        ]
+      },
+      "importsEdges": 3200,
+      "shapes": {
+        "colon": 3200
+      },
+      "theSplit": {
+        "LOCAL": 40,
+        "EXTERNAL": 3160
+      },
+      "asEmitted": {
+        "LOCAL": {
+          "unresolved": 40
+        },
+        "EXTERNAL": {
+          "unresolved": 3160
+        }
+      },
+      "ceiling_onTheLeaf": {
+        "LOCAL": {
+          "unresolved": 40
+        },
+        "EXTERNAL": {
+          "unresolved": 3160
+        }
+      }
+    }
+  },
+  "theDeliverable_splitAndCeiling": {
+    "java_grails-core_1942files": {
+      "importsEdges": 33734,
+      "LOCAL": 8730,
+      "EXTERNAL": 25004,
+      "LOCAL_ceiling": "**7,594 resolved \u00b7 812 ambDeclOnly \u00b7 324 ambBoth \u00b7 0 unresolved**",
+      "EXTERNAL_ruled": "25,004 unresolved at 0% and CORRECTLY so \u2014 but the leaf spelling would bind **1,968** of them to project-local same-named types: FALSE BINDINGS, the evidence for why the external half must stay as emitted."
+    },
+    "groovy_geb_693files": {
+      "importsEdges": 4040,
+      "LOCAL": 1988,
+      "EXTERNAL": 2052,
+      "LOCAL_ceiling": "**1,808 resolved \u00b7 180 ambDeclOnly \u00b7 0 unresolved**",
+      "EXTERNAL_ruled": "2,052 unresolved; the leaf would bind 84 falsely."
+    },
+    "python_gql-saleor_4344files": {
+      "importsEdges": 36207,
+      "LOCAL": 24313,
+      "EXTERNAL": 11894,
+      "LOCAL_asEmitted": "**resolved 16,868 (69%) \u00b7 ambBoth 1,810 \u00b7 ambDeclOnly 4,841 \u00b7 unresolved 794**",
+      "note": "THE LOCAL HALF HERE IS ALREADY FIXED \u2014 this is the arm after the colon-lane change landed earlier today (bare item for a relative specifier + `module` in metadata). It is quoted as the POST-fix state, not as a ceiling.",
+      "EXTERNAL_ruled": "11,894 unresolved; the leaf would bind 879 falsely."
+    },
+    "cpp_nlohmann-json_497files": {
+      "importsEdges": 1918,
+      "LOCAL": 0,
+      "EXTERNAL": 1918,
+      "reading": "an include names a FILE, not a declaration: the leaf ceiling is 12 of 1,918. THE INCLUDE-PATH SHAPE IS A BOUNDARY, and it has no local half to move."
+    },
+    "c_redis_785files": {
+      "importsEdges": 3200,
+      "LOCAL": 40,
+      "EXTERNAL": 3160,
+      "reading": "the 40 locals are relative includes (`../hiredis.h`); the leaf ceiling is 0 of 40 \u2014 an include path resolves to a FILE, and no declaration is named by it. BOUNDARY."
+    }
+  },
+  "THE_BLOCKER_MEASURED": {
+    "statement": "The path-based locality truth above is NOT available at emission. The analyzer has no project file list, and the syntactic rule it CAN compute \u2014 the import sharing its first two name segments with the importing file's own package \u2014 was measured against the truth:",
+    "java": {
+      "trueLocal": 7210,
+      "falseLocal": 1378,
+      "missedLocal": 1520,
+      "trueExternal": 23626,
+      "precision": 0.8395,
+      "recall": 0.8259
+    },
+    "groovy": {
+      "trueLocal": 428,
+      "falseLocal": 48,
+      "missedLocal": 1560,
+      "trueExternal": 2004,
+      "precision": 0.8992,
+      "recall": 0.2153
+    },
+    "whyThatStopsTheFix": "**A fix must not bind an external edge to a same-named local symbol \u2014 that is the false-binding guard.** At precision 0.84 the java rule would re-spell **1,378 truly-external imports**; at recall 0.22 the groovy rule would move only **428 of 1,988** true locals. Neither half of the guard is satisfiable from syntax.",
+    "theShapeOfTheRemedy": "give the emission the project's own declarations \u2014 the mechanism ALREADY EXISTS and was built for scss today: `ctx.projectIndex` + a `JAVA_DECLARATION_SPEC` + `.java`/`.groovy` added to `PROJECT_INDEX_EXTENSIONS` + a gate entry. Then locality is a lookup, not a heuristic, and the target can be the leaf exactly when the project declares it. That is a wiring change with a spec, not a one-line re-spelling \u2014 and it is the same work that took scss from unreachable to fixed this afternoon."
+  },
+  "units": "ONE REPOSITORY PER LANE, walked COMPLETELY (no stride): java grails-core 1,942 files \u00b7 groovy geb 693 (grails-core's 7,018-file groovy walk was KILLED at its 700 s timeout and is reported as KILLED, not as a reading) \u00b7 python gql-saleor 4,344 \u00b7 cpp nlohmann-json 497 \u00b7 c redis 785. The split is a property of the population walked and is NOT scaled from javascript.",
+  "raw": [
+    "imports-split-java.json",
+    "imports-split-groovy.json",
+    "imports-split-python.json",
+    "imports-split-cpp.json",
+    "imports-split-c.json",
+    "lane-imports-split.mts"
+  ]
+}

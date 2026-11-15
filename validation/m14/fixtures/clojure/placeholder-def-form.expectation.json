@@ -1,0 +1,21 @@
+{
+  "issue": "M60 relationship-ontology wave — CLJ-D57 (R7 placeholder endpoints)",
+  "note": "A def-family form with NO NAME — or with a LITERAL in name position — defines nothing, so it may publish no symbol, no `contains` edge and no `exports` edge. `(s/defn)` in clj-kondo's `corpus/schema/defs.clj` published a symbol literally called `unknown` plus a `contains` edge into it, and CLJ-D53's `exports` edge inherited the same name: two edges whose endpoint was a placeholder literal, found by the ontology census at `contains 1 placeholder / exports 1 placeholder` over 633 corpus files. The symbol itself was already dropped further downstream by `keepSymbol`'s UNIVERSAL denylist in `src/ast/pool-worker.ts`, which is why the production symbol table looked clean while two edges did not — a filter that reaches symbols and not edges. CLJ-D35 ruled the same way for `(s/fdef 1 :args)`. The control at the bottom is what makes the sweep falsifiable: a form that DOES name something must still declare it, or `drop every nameless def` would satisfy every forbid below.",
+  "expectSymbols": [
+    { "name": "clj.fixture.placeholder-def", "kind": "module" },
+    { "name": "real-fn" }
+  ],
+  "forbidSymbols": [
+    { "name": "unknown" },
+    { "name": "1" },
+    { "name": "2" },
+    { "name": "" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "unknown" },
+    { "type": "exports", "target": "unknown" },
+    { "type": "contains", "target": "1" },
+    { "type": "exports", "target": "1" },
+    { "type": "calls", "target": "unknown" }
+  ]
+}

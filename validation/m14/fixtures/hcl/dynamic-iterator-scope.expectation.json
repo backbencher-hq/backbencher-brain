@@ -1,0 +1,33 @@
+{
+  "fixtureId": "hcl/dynamic-iterator-scope",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the fixture source. The forbid set is the point of this fixture: each entry is a block-local that must never become an edge.",
+  "rationale": "H7 (reviews/hcl/master-review.md). A `dynamic` block binds a loop local exactly as a `for`-intro does, and pre-fix only `for_intro` identifiers were tracked, so the local was published as a reference to a symbol that does not exist. Two forms, both pinned here: the explicit `iterator = r`, and — the one the first fix still missed, caught by this fixture — the DEFAULT, where Terraform names the local after the block's OWN LABEL, so `dynamic \"egress\"` binds `egress`. Corpus measurement: `dynamic` occurs 360 times.",
+  "expectSymbols": [
+    { "name": "aws_security_group.web", "kind": "class" },
+    { "name": "dynamic.ingress", "kind": "class" },
+    { "name": "dynamic.egress", "kind": "class" },
+    { "name": "content", "kind": "class" },
+    { "name": "locals", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "aws_security_group.web.dynamic.ingress", "target": "var.rules", "line_number": 7 },
+    { "type": "references", "from": "aws_security_group.web.dynamic.egress", "target": "var.egress_rules", "line_number": 18 },
+    { "type": "references", "from": "aws_security_group.web", "target": "var.vpc_id", "line_number": 25 },
+    { "type": "references", "from": "locals", "target": "var.subnets", "line_number": 30 },
+    { "type": "contains", "from": "aws_security_group.web.dynamic.ingress.content", "target": "aws_security_group.web.dynamic.ingress.content.cidr_blocks", "line_number": 10 },
+    { "type": "contains", "from": "aws_security_group.web.dynamic.egress.content", "target": "aws_security_group.web.dynamic.egress.content.cidr_blocks", "line_number": 20 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "r.cidr", "note": "`iterator = r` block-local — pre-fix shape, a false edge to a symbol that does not exist" },
+    { "type": "references", "target": "r.port", "note": "same block-local, second use" },
+    { "type": "references", "target": "egress.cidr", "note": "the DEFAULT iterator: with no `iterator` attribute Terraform names the local after the block's own label. This is the shape the first fix still emitted." },
+    { "type": "references", "target": "s.id", "note": "for-expression loop variable" },
+    { "type": "references", "target": "ingress.cidr", "note": "no such reference exists in the fixture" }
+  ],
+  "forbidSymbols": [
+    { "name": "r" },
+    { "name": "egress.cidr" }
+  ]
+}

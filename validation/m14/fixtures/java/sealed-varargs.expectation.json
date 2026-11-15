@@ -1,0 +1,18 @@
+{
+  "fixtureId": "java/sealed-varargs",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Three grammar-exposed features must not silently vanish: (1) permits clause — sealed class emits directional parent-to-child edges to permitted subtypes with relationshipType=permits; subtypes must NOT appear in the sealed class's inheritance parents. (2) varargs method parameter (String... labels) appears in the parameter list typed as String[] per JVM erasure convention used by the ERROR-recovery path. (3) the sealed hierarchy still emits normal inheritance edges from subclasses.",
+  "expectSymbols": [
+    { "name": "Shape", "kind": "class" },
+    { "name": "Circle", "kind": "class" },
+    { "name": "Square", "kind": "class" },
+    { "name": "describe" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "target": "Circle", "meta.relationshipType": "permits" },
+    { "type": "references", "target": "Square", "meta.relationshipType": "permits" },
+    { "type": "extends", "fromEndsWith": "Circle", "target": "Shape" },
+    { "type": "extends", "fromEndsWith": "Square", "target": "Shape" }
+  ]
+}

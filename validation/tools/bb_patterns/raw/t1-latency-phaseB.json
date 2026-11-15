@@ -1,0 +1,233 @@
+{
+  "tier": "T1",
+  "projectDir": ".perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+  "route": "handler (source door): createToolHandlers().bb_patterns — the same handler src/mcp/server.ts calls",
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "protocol": "warm: one excluded warmup per shape, then five measured calls; p50/p95 over the five; BB_NO_AUTO_REFRESH=1",
+  "indexBefore": {
+    "db": {
+      "bytes": 52342784,
+      "mtime": "2026-11-02T04:13:24.775Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-03T04:17:09.605Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-03T05:13:56.222Z"
+    }
+  },
+  "shapes": [
+    {
+      "shape": "default-all",
+      "args": {},
+      "warmupMs": 2651.39,
+      "warmupChars": 1493,
+      "runs": [
+        {
+          "ms": 1877.33,
+          "cpuMs": 572,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1493,
+            "lines": 22
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 834.19,
+          "cpuMs": 409,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1493,
+            "lines": 22
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 632.46,
+          "cpuMs": 511,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1493,
+            "lines": 22
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 531.67,
+          "cpuMs": 433,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1493,
+            "lines": 22
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 438.94,
+          "cpuMs": 525,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1493,
+            "lines": 22
+          },
+          "dbUnchanged": true
+        }
+      ],
+      "p50Ms": 632.46,
+      "p95Ms": 1877.33,
+      "maxMs": 1877.33,
+      "minMs": 438.94,
+      "medianOfRuns": [
+        438.94,
+        531.67,
+        632.46,
+        834.19,
+        1877.33
+      ],
+      "isError": false
+    },
+    {
+      "shape": "orphaned",
+      "args": {
+        "scope": "orphaned"
+      },
+      "warmupMs": 684.07,
+      "warmupChars": 1902,
+      "runs": [
+        {
+          "ms": 1537.29,
+          "cpuMs": 516,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1902,
+            "lines": 25
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 772.93,
+          "cpuMs": 607,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1902,
+            "lines": 25
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 534.09,
+          "cpuMs": 532,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1902,
+            "lines": 25
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 580.51,
+          "cpuMs": 404,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1902,
+            "lines": 25
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 1532.33,
+          "cpuMs": 421,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 1902,
+            "lines": 25
+          },
+          "dbUnchanged": true
+        }
+      ],
+      "p50Ms": 772.93,
+      "p95Ms": 1537.29,
+      "maxMs": 1537.29,
+      "minMs": 534.09,
+      "medianOfRuns": [
+        534.09,
+        580.51,
+        772.93,
+        1532.33,
+        1537.29
+      ],
+      "isError": false
+    }
+  ],
+  "generatedAt": "2026-11-03T16:11:46.343Z",
+  "indexAfter": {
+    "db": {
+      "bytes": 52342784,
+      "mtime": "2026-11-02T04:13:24.775Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-03T04:17:09.605Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-03T16:11:46.355Z"
+    }
+  },
+  "readMovedIndex": false,
+  "shmMoved": true,
+  "cpuMs": {
+    "default-all": [
+      572,
+      409,
+      511,
+      433,
+      525
+    ],
+    "orphaned": [
+      516,
+      607,
+      532,
+      404,
+      421
+    ]
+  }
+}

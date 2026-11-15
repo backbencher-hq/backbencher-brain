@@ -1,0 +1,21 @@
+{
+  "fixtureId": "vue/prop-default-factory-calls",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 #762 + W2 (#769) (vue-element-admin MarkdownEditor/index.vue). #762 pinned member calls inside Options-API prop-default() factory bodies with a SINGLE factory — assertions that pass with or without the sibling-object collision — and closed as 'verified already-fixed' while the corpus file stayed broken. Re-authored to the CORPUS SHAPE: two `default()` factories in sibling prop objects plus plain `default:` data members. Pre-W2 the JS dedup slot `module:default` was shared across every object literal of the module, so the last factory won, the earlier body was dead-spanned and its random/toFixed calls vanished; the lane's own truth oracle derived them (MARKDOWNEDITOR MISSING={toFixed,random}). Contract: sibling containers never collide, so BOTH factories' bodies emit.",
+  "expectRelationships": [
+    { "type": "calls", "target": "random", "note": "id factory: Math.random() — the LOST call pre-fix" },
+    { "type": "calls", "target": "toFixed", "note": "id factory: (.toFixed(0)) — the LOST call pre-fix" },
+    { "type": "calls", "target": "propHelper", "note": "options factory (the last factory — it survived pre-fix, so it is the control)" },
+    { "type": "calls", "target": "helper", "note": "control: methods body unchanged" }
+  ],
+  "expectSymbols": [
+    { "name": "value", "kind": "property", "note": "plain data default" },
+    { "name": "id", "kind": "property", "note": "prop with factory default" },
+    { "name": "options", "kind": "property", "note": "second prop with factory default" },
+    { "name": "mode", "kind": "property" },
+    { "name": "height", "kind": "property" },
+    { "name": "ping", "kind": "method", "note": "control method" }
+  ],
+  "forbidRelationships": []
+}

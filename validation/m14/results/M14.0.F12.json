@@ -1,0 +1,106 @@
+{
+  "checks": [
+    {
+      "description": "every byte offset shared with a raw parse of the same bytes has the same row",
+      "detail": "13 file(s) compared against a raw parse of the same bytes; multi-line-attribute files in the sample: 13",
+      "id": "F12.V1",
+      "status": "pass"
+    },
+    {
+      "description": "the blanked text keeps the input's byte length",
+      "detail": "blanked text keeps the input's byte length on all 13 file(s)",
+      "id": "F12.V2",
+      "status": "pass"
+    },
+    {
+      "description": "the pre-fix blanking is DETECTED by V1 (the gate can fail on its own defect)",
+      "detail": "the pre-fix blanking is detected on 13 file(s)",
+      "id": "F12.V3",
+      "status": "pass"
+    },
+    {
+      "description": "the sample contains at least one file with a MULTI-LINE attribute",
+      "detail": "the sample contains 13 file(s) with a MULTI-LINE attribute — without one this gate has nothing to check",
+      "id": "F12.V0",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L3",
+  "commit": "d07c684aceea73a451b60e2b647e883e2bf2e1dd",
+  "committedAt": "2026-09-23T12:56:14-04:00",
+  "corpusPins": {
+    "fmt": "e27cc20bd93a4e280fb9268d41cd131069a9c73f",
+    "jq": "41b8edfe5437fcd25a072081c05f9f770f9e9b85",
+    "sqlite": "86a15af2b148c655bfd352162d04c6756399f4ea",
+    "zig": "738d2be9d6b6ef3ff3559130c05159ef53336224"
+  },
+  "data": {
+    "failures": [],
+    "fixture": "validation/m14/fixtures/cpp/multiline-attribute-line-base-920.cpp",
+    "multilineFiles": 13,
+    "runLog": {
+      "console": [
+        {
+          "detail": "13 file(s) compared against a raw parse of the same bytes; multi-line-attribute files in the sample: 13",
+          "id": "V1-row-preservation",
+          "pass": true
+        },
+        {
+          "detail": "blanked text keeps the input's byte length on all 13 file(s)",
+          "id": "V2-byte-preservation",
+          "pass": true
+        },
+        {
+          "detail": "the pre-fix blanking is detected on 13 file(s)",
+          "id": "V3-mutation-self-test",
+          "pass": true
+        },
+        {
+          "detail": "the sample contains 13 file(s) with a MULTI-LINE attribute — without one this gate has nothing to check",
+          "id": "V0-class-present",
+          "pass": true
+        }
+      ],
+      "samples": [
+        "validation/m14/fixtures/cpp/multiline-attribute-line-base-920.cpp",
+        "../../bb_tests/repositories/zig/lib/include/amxavx512intrin.h",
+        "../../bb_tests/repositories/zig/lib/include/amxbf16transposeintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/amxcomplextransposeintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/amxfp16transposeintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/amxmovrstransposeintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/amxtf32transposeintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/arm_acle.h",
+        "../../bb_tests/repositories/zig/lib/include/avx10_2_512bf16intrin.h",
+        "../../bb_tests/repositories/zig/lib/include/avx10_2_512convertintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/avx10_2_512niintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/avx10_2_512satcvtdsintrin.h",
+        "../../bb_tests/repositories/zig/lib/include/avx10_2bf16intrin.h"
+      ]
+    },
+    "samplesChecked": 13,
+    "v3Caught": 13,
+    "v3Vacuous": 0
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F12",
+  "layers": [
+    "engine",
+    "analyzer",
+    "corpus"
+  ],
+  "limitations": [
+    {
+      "description": "The sample is the gate's deterministic draw (the fixture plus the first N corpus files that carry a multi-line attribute), not every file the product will see.",
+      "justification": "the class is decided by the engine's own regexes, so a file carrying the shape anywhere in a checked corpus file is caught; the sample list is printed and stored in the artifact"
+    },
+    {
+      "description": "Row agreement is checked on the cpp grammar; the c branch of the same preprocessing is identical code but is not parsed with the c wasm here.",
+      "justification": "the blanking is guarded by `language === \"c\" || language === \"cpp\"` and both patterns are in that one guarded block, so the two share the code path; V3 is the check that binds"
+    }
+  ],
+  "regeneratedAt": "2026-09-23T17:32:06.576Z",
+  "regeneratedAtCommit": "d07c684aceea73a451b60e2b647e883e2bf2e1dd",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Engine row preservation — C/C++ preprocessing must not move a row"
+}

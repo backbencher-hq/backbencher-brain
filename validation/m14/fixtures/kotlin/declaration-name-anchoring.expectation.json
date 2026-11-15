@@ -1,0 +1,59 @@
+{
+  "fixtureId": "kotlin/declaration-name-anchoring",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Every number here is the line the NAME is written on, readable off the source: annotation 16 / class 17, @JvmField 18 / flagged 19, /** doc */ 21 / documented 22, class header 25 / its parameter 26, class 29 / bare `constructor()` 30. The pins were written from the ruling and then confirmed against the analyzer.",
+  "rePinnedNote": "RE-PINNED and EXTENDED on 2026-10-10 (M60 kotlin fold), after the file had been written once from the ruling and the analyzer was made to agree. Writing it found a REAL defect rather than confirming the code: `findNameNode` scanned only DIRECT named children of a declaration, and a `property_declaration`'s children are `binding_pattern_kind` (the `val`/`var` word, a NAMED node in this grammar) plus `variable_declaration`, which holds the name — so every class-body property was anchored on the binding KEYWORD's column (5) instead of its name's (9). The `flagged` pin above was 5 when it was first written; it is 9 now because the analyzer changed, which is the opposite of a pin being bent to fit. The same file gained the receiver-extension shape for the same reason after `script/m14/lanes/jvm-rulings-mutants.mts` measured that removing the name read changes 7,126 symbol rows over 1,200 corpus files — the read is load-bearing, so it needed a pin that can fail.",
+  "rationale": "M60 (2026-10-10). Both JVM-family rulings were ALREADY implemented in this lane, and the A/B measured that rather than assuming it: `script/m14/lanes/jvm-rulings-ab.mts` reports kotlin's constructor name census at 1,978 symbols / 1,852 distinct names / **0 named the literal `constructor`** over a 1,500-file slice of the 82,222-file kotlin corpora, and its declaration anchor is read from `findNameNode` (the kotlin grammar exposes NO `name` field — measured, 0 name-field nodes over kotlinx-coroutines's 1,039 files — so a field-based A/B is not even expressible here). What was MISSING was a pin that can fail: K2 below (drop the `findNameNode` read) survived the whole kotlin lane before this fixture existed. The fixture is the family's shape, matching scala/declaration-name-anchoring and java/declaration-lines-825, and it is the pin for the two shapes the analyzer's own comments name as the ones it was written for: a MEMBER behind an annotation and a doc comment, and a WRAPPED class header — `private data class SuspendedObject(` on 25 with `val transaction: Int` on 26 is Exposed SpringTransactionManager.kt's shape, where the class symbol claimed the parameter's line (measured 94 vs 93 there). The two forbid rows are that pre-fix behaviour, both recorded in this lane's own measurements: the class anchored on its parameter's line, and a secondary constructor anchored on its bare `constructor(` keyword line (9 such rows on Exposed ResultRow.kt/Table.kt/ColumnType.kt).",
+  "expectSymbols": [
+    { "name": "Annotated", "kind": "class", "comment": "the fixture's negative control for ruling 2: the @Deprecated above it is on 16 and is not the class's line" },
+    { "name": "flagged", "kind": "property", "ownerName": "Annotated" },
+    { "name": "documented", "kind": "method", "ownerName": "Annotated" },
+    { "name": "SuspendedObject", "kind": "class" },
+    { "name": "SuspendedObject", "kind": "constructor", "ownerName": "SuspendedObject", "comment": "ruling 1 (M37.21 C3): the primary constructor carries the CLASS name, not the literal `constructor`" },
+    { "name": "transaction", "kind": "property", "ownerName": "SuspendedObject", "comment": "the wrapped header's val parameter is still a property ON ITS OWN LINE (26) — the row that keeps the class's line from being read as the member's" },
+    { "name": "Derived", "kind": "class" },
+    { "name": "Derived", "kind": "constructor", "ownerName": "Derived", "comment": "one primary + two secondary constructors, all three named after the class; `ctor-delegation` pins the count, this pins the identity" },
+    { "name": "Base", "kind": "class" },
+    { "name": "Properties", "kind": "class" },
+    { "name": "plain", "kind": "property", "ownerName": "Properties", "comment": "THIRD SHAPE: a class-body property, whose name is one level down inside `variable_declaration`. Before this round the symbol was anchored on the `val` keyword's column (5) — same line, so nothing else could see it" },
+    { "name": "SmartPrinter", "kind": "class" },
+    { "name": "printCopyright", "kind": "method", "ownerName": "SmartPrinter" },
+    { "name": "generate", "kind": "function", "comment": "FOURTH SHAPE: an extension function with a RECEIVER. `fun SmartPrinter.generate(` writes two names on one line and only one of them is this declaration's" }
+  ],
+  "expectSymbolCount": [
+    { "name": "Derived", "kind": "constructor", "equals": 3, "comment": "the overloads share the class name and are distinguished by their parameter payloads — the kotlin convention the C3 ruling chose" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "Annotated", "startLine": 17, "startColumn": 7, "comment": "pre-fix shape: 16, the `@Deprecated` line — measured on a 300-file real java sample as 25 of 93 symbols before the M59 fix, the same contract" },
+    { "symbol": "flagged", "ownerName": "Annotated", "startLine": 19, "startColumn": 9, "comment": "the property NAME's column; pre-fix this was 5, the `val` KEYWORD — the symbol was anchored on the binding keyword because a `property_declaration`'s name is not one of its own children (it is inside `variable_declaration`), so the name scan found nothing and the positional fallback returned `binding_pattern_kind`" },
+    { "symbol": "documented", "ownerName": "Annotated", "startLine": 22, "startColumn": 9 },
+    { "symbol": "SuspendedObject", "startLine": 25, "startColumn": 20 },
+    { "symbol": "SuspendedObject", "ownerName": "SuspendedObject", "startLine": 25, "startColumn": 20 },
+    { "symbol": "Derived", "startLine": 29, "startColumn": 7 },
+    { "symbol": "Base", "startLine": 34, "startColumn": 12 },
+    { "symbol": "Properties", "startLine": 41, "startColumn": 7 },
+    { "symbol": "plain", "ownerName": "Properties", "startLine": 42, "startColumn": 9, "comment": "pre-fix: 5 — the `val` keyword, which is not the name `plain`. Measured over 1,200 files of the 82,222-file kotlin corpora: 7,126 symbol rows carry a different column when the name read is removed, and the class-body-property and class-parameter halves are exactly this shape" },
+    { "symbol": "printCopyright", "ownerName": "SmartPrinter", "startLine": 49, "startColumn": 9 },
+    { "symbol": "generate", "startLine": 52, "startColumn": 26, "comment": "pre-fix: 20 — the RECEIVER `SmartPrinter`, which is a name but not this declaration's" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Annotated", "target": "flagged", "line_number": 19 },
+    { "type": "contains", "from": "Annotated", "target": "documented", "line_number": 22 },
+    { "type": "contains", "from": "SuspendedObject", "target": "SuspendedObject", "line_number": 25 },
+    { "type": "contains", "from": "SuspendedObject", "target": "transaction", "line_number": 26 },
+    { "type": "contains", "from": "Derived", "target": "Derived", "line_number": 29 },
+    { "type": "extends", "from": "Derived", "target": "Base", "line_number": 29 },
+    { "type": "calls", "from": "Derived", "target": "super", "meta.relationshipType": "constructor_invocation", "line_number": 30 },
+    { "type": "calls", "from": "Derived", "target": "this", "meta.relationshipType": "constructor_invocation", "line_number": 31 },
+    { "type": "contains", "from": "Properties", "target": "plain", "line_number": 42, "comment": "the positive control for the third shape: the LINE was always right, which is why the defect needed a column pin to be visible" },
+    { "type": "contains", "from": "SmartPrinter", "target": "printCopyright", "line_number": 49 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "SuspendedObject", "target": "SuspendedObject", "line_number": 26, "comment": "PRE-FIX (measured on Exposed SpringTransactionManager.kt: the class symbol claimed 94, the constructor PARAMETER's line, where the name is written on 93): a wrapped header anchored on its parameter list instead of its name" },
+    { "type": "contains", "from": "Derived", "target": "Derived", "line_number": 30, "comment": "PRE-FIX (measured on Exposed ResultRow.kt/Table.kt/ColumnType.kt — 9 rows): a secondary constructor anchored on its bare `constructor(` keyword line, which carries no name" },
+    { "type": "contains", "from": "Annotated", "target": "flagged", "line_number": 18, "comment": "the `@JvmField` line: an annotation is not where the declaration is written" },
+    { "type": "contains", "from": "Annotated", "target": "documented", "line_number": 21, "comment": "the `/** doc */` line: a comment is text about the declaration, never the declaration" },
+    { "type": "calls", "from": "constructor", "comment": "the retired literal as a source, the shape the K11 rename removed (60 corpus edges over 405 files)" }
+  ]
+}

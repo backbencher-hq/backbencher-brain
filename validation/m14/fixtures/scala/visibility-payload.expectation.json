@@ -1,0 +1,20 @@
+{
+  "fixtureId": "scala/visibility-payload",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Matrix 1b visibility payload (section C). Scala visibility modifiers are explicit keywords: public (default), private, protected — each member carries the modifier it declares; unmodified members are public.",
+  "expectSymbols": [
+    { "name": "Vis", "kind": "class" },
+    { "name": "pub", "kind": "constant", "ownerName": "Vis" },
+    { "name": "priv", "kind": "constant", "ownerName": "Vis" },
+    { "name": "prot", "ownerName": "Vis" },
+    { "name": "plain", "ownerName": "Vis" },
+    { "name": "Hidden", "kind": "module" }
+  ],
+  "expectVisibility": [
+    { "symbol": "pub", "visibility": "public" },
+    { "symbol": "priv", "visibility": "private" },
+    { "symbol": "prot", "visibility": "protected" },
+    { "symbol": "plain", "visibility": "public" }
+  ]
+}

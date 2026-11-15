@@ -1,0 +1,31 @@
+{
+  "fixtureId": "php/framework-order",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60.R8 (#934) — the framework ORDER contract, which php never had. The lane published `[...detectedFrameworks]`, a Set's INSERTION order, so `metadata.framework` — the primary pick — was decided by whichever marker happened to fire first in the FILE. That is python's defect verbatim: R8's register records python's second caught mutant as 'the emitted order following import order instead of the marker table', swift and objective-c carry SWIFT_FRAMEWORK_ORDER / OBJC_FRAMEWORK_ORDER, and csharp's CS_FRAMEWORK_ORDER is the rule python's own header cites. php's row never named it because that row already carried a different debt (the two dead markers, #931) and a lane's row can only hold what someone measured. This file `use`s Symfony BEFORE Illuminate on purpose, so document order is the INVERSE of the table order: the pre-fix reading was [\"Symfony\",\"Laravel\"] with Symfony primary, and the pinned reading is [\"Laravel\",\"Symfony\"] with Laravel primary. The sibling php/framework-surface-pins could not hold this rule — its namespace fires Laravel first, so both orders agree there. The array is pinned exactly (not as a must-include list) because ORDER is the whole contract; forbidFrameworks is the negative half.",
+  "expectSymbols": [
+    { "name": "SyncCommand", "kind": "class" },
+    { "name": "handle", "kind": "method", "ownerName": "SyncCommand" }
+  ],
+  "expectFrameworks": ["Laravel", "Symfony"],
+  "expectPrimaryFramework": ["Laravel"],
+  "forbidFrameworks": ["PHPUnit", "WordPress", "Magento", "Drupal", "Doctrine"],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": ["Laravel", "Symfony"],
+      "comment": "TABLE order, not document order — Symfony's marker fires first in this file (`use Symfony\\...` @ line 21) and Laravel's second (`use Illuminate\\...` @ line 22), and the published list is the inverse of that. This is the pin the mutant php/framework-order-document reverses."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "SyncCommand",
+      "target": "Command",
+      "comment": "the base clause is still published as written; ordering the framework list must not disturb the heritage edge"
+    }
+  ],
+  "expectImports": [
+    { "module": "Symfony\\Component\\Console\\Command\\Command" },
+    { "module": "Illuminate\\Support\\Facades\\DB" }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "fixture": "bash/trap-handler-bd3.sh",
+  "authoredFrom": "BD3 (a signal is not code). Authored from a probe 2026-09-26. Pre-wave the trap emitter produced `calls: INT -> log \"WARN\" interrupted\"` — a signal as the caller and an entire command string as the callee. Both of those shapes are FORBIDDEN here, and both were pinned as TRUTH in validation/m12/ground-truth/bash.json before this wave, which is why that truth file is amended in the same commit.",
+  "expectSymbols": [
+    {
+      "name": "trap-handler-bd3.sh",
+      "kind": "module"
+    },
+    {
+      "name": "log",
+      "kind": "function",
+      "ownerName": "trap-handler-bd3.sh"
+    },
+    {
+      "name": "cleanup",
+      "kind": "function",
+      "ownerName": "trap-handler-bd3.sh"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "trap-handler-bd3.sh",
+      "target": "log",
+      "line_number": 14,
+      "meta.viaTrap": true,
+      "meta.isTrapHandler": true
+    },
+    {
+      "type": "calls",
+      "from": "trap-handler-bd3.sh",
+      "target": "cleanup",
+      "line_number": 15,
+      "meta.viaTrap": true,
+      "meta.isTrapHandler": true
+    },
+    {
+      "type": "calls",
+      "from": "trap-handler-bd3.sh",
+      "target": "notify",
+      "line_number": 16,
+      "meta.viaTrap": true,
+      "meta.isTrapHandler": true
+    },
+    {
+      "type": "calls",
+      "from": "trap-handler-bd3.sh",
+      "target": "cleanup",
+      "line_number": 16,
+      "meta.viaTrap": true,
+      "meta.isTrapHandler": true
+    },
+    {
+      "type": "contains",
+      "from": "trap-handler-bd3.sh",
+      "target": "log",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "trap-handler-bd3.sh",
+      "target": "cleanup",
+      "line_number": 10
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "INT",
+      "target": "log"
+    },
+    {
+      "type": "calls",
+      "from": "TERM",
+      "target": "notify"
+    },
+    {
+      "type": "calls",
+      "from": "EXIT",
+      "target": "cleanup"
+    },
+    {
+      "type": "calls",
+      "target": "log \"WARN\" interrupted"
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "uses",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "imports",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "log",
+      "parameters": [
+        {
+          "name": "1",
+          "type": "any"
+        }
+      ]
+    }
+  ]
+}

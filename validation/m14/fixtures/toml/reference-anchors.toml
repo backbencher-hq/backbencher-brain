@@ -1,0 +1,55 @@
+# THE `references` EDGE'S SOURCE MUST BE A NODE.
+#
+# Every alias edge this analyzer emits used to be spelled
+# `libraries.<lib>.version.ref` — a name built by appending the alias key's path to
+# the key that owns the inline table. No such symbol is ever published: an inline
+# table's keys are recorded as `inlineKeys` METADATA on the owning symbol, not as
+# symbols of their own. Measured over the corpus, 167 of 167 emitted edges carried a
+# source that bound to ZERO symbols in their own file, against 167 of 167 targets
+# binding to exactly one.
+#
+# An edge whose source binds to nothing is unreachable by every incoming query:
+# `traceCallers` JOINs `brain_symbol` on `source_symbol_id`, so the row is dropped
+# before the traversal sees it. `bb_graph direction=callers` on the owning key could
+# not find it, and `bb_impact` could not reason over it, while the differential called
+# the lane 100% covered — because the differential compares SPELLINGS, and both sides
+# spelled the same phantom.
+#
+# The anchor is the OWNING KEY, which is a published symbol, and the specificity the
+# phantom name carried now travels in `metadata.aliasKeyPath`.
+
+[versions]
+groovy = "4.0.26"
+kotlin = "2.0.0"
+
+[libraries]
+groovy-bom = { module = "org.apache.groovy:groovy-bom", version.ref = "groovy" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+
+# A commented key, and a commented ALIAS. A comment is a NAMED child of the pair, so
+# "the last named child" returns the comment and not the value. That made every
+# commented key invisible to scalar detection, and dropped its alias with it — 4 of
+# the corpus's 167 aliases sit on a commented line. Both are pinned here because the
+# oracle carried the same defect independently and the differential caught it as an
+# UNEXPLAINED `references` row.
+[versions]
+detekt = "1.23.8" # When upgrading, also upgrade in detekt.yml
+plugins.detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+# An alias naming a final segment declared TWICE has no single right answer, so NO
+# edge is emitted. `dup` is declared here and under `[other]`, and picking one would
+# be a guess no downstream consumer could falsify.
+[versions]
+dup = "1.0.0"
+
+[other]
+dup = "2.0.0"
+
+[libraries]
+ambiguous = { version.ref = "dup" }
+
+# A `ref` key whose value names nothing this document declares is not a reference.
+# `version.ref = "absent"` is a string, and emitting an edge to it would fabricate a
+# target.
+[libraries]
+dangling = { module = "org.example:thing", version.ref = "absent" }

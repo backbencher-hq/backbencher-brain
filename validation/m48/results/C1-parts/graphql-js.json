@@ -1,0 +1,256 @@
+{
+  "repo": "graphql-js",
+  "indexSeconds": 78.425,
+  "fileCount": 564,
+  "negatives": 1,
+  "perTool": {
+    "bb_search": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"mode\":\"file\",\"filePath\":\"src/__testUtils__/expectJSON.ts\",\"query\":\"src/__testUtils__/expectJSON.ts\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"src/__testUtils__/expectJSON.ts\",\"fileId\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts\",\"language\":\"ty"
+    },
+    "bb_health": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 42,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/graphql-js\\nprojectId: 18b0d5567b84edcae6dec4bfcc1faf8ac965e01e\\nfiles=564 symbols=13620 relationships=61917 imp"
+    },
+    "bb_ask": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 158,
+      "args": "{\"query\":\"what does toDeepEqual do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 20 other symbol(s) scored within the same margin of the best. The similarity numbers below se"
+    },
+    "bb_patterns": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 554,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (385 found):\\n  orphaned_function Footer — website/theme.config.tsx:46 (70%)\\n  orphaned_function requirePublicApiExports — resources/eslint-inte"
+    },
+    "bb_security": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 32,
+      "args": "{}",
+      "outHead": "\"security: 284 critical / 105 high / 0 medium / 0 low / 111 unknown (199 resolved flows, 301 unvalidated sources, 0 mitigated)\\n  [critical] Command injection ("
+    },
+    "bb_visualize": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 47,
+      "args": "{\"scope\":\"symbol\",\"target\":\"toDeepEqual\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"toDeepEqual\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUt"
+    },
+    "bb_migrate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 107,
+      "args": "{\"symbolName\":\"toDeepEqual\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"toDeepEqual\",\"symbolId\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:toDeepEqual:"
+    },
+    "bb_analyze": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 40,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":564,\"linesOfCode\":147306,\"avgFileSize\":7545.63475177305,\"avgFileSizeUnit\":\"bytes\",\"symbols\":13620,\"symbolsWithComplexity\":13620,\"avgComplexity\":1.35389"
+    },
+    "bb_doc": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 61,
+      "args": "{\"mode\":\"symbol\",\"target\":\"toDeepEqual\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: toDeepEqual\\n\\n1 file(s) and 1 symbol(s) in scope, 20 cited claim(s) across 5 section(s) from 17 source(s).\\n\\n## API\\n\\n1 claim, 1 read directly fro"
+    },
+    "bb_edit": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 77,
+      "args": "{\"mode\":\"update\",\"filePath\":\"src/__testUtils__/expectJSON.ts\",\"symbolName\":\"toDeepEqual\",\"newContent\":\"export function toDeepEqual(): void { /* m48 c1 dry-run */ }\",\"dryRun\":true,\"format\":false}",
+      "outHead": "{\"mode\":\"update\",\"dryRun\":true,\"changes\":[{\"path\":\"/home/ishaq2321/bb_tests/repositories/graphql-js/src/__testUtils__/expectJSON.ts\",\"before\":\"import { expect }"
+    },
+    "bb_index": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 10,
+      "args": "{\"path\":\"src/__testUtils__/expectJSON.ts\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"src/__testUtils__/expectJSON.ts\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"no"
+    },
+    "bb_graph": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 464,
+      "args": "{\"symbol\":\"toDeepEqual\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"toDeepEqual\",\"root\":{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:toDeepEqual:36\",\"name\":\"toDeepEqual\",\"symbolType\""
+    },
+    "bb_impact": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 94,
+      "args": "{\"symbol\":\"toDeepEqual\"}",
+      "outHead": "{\"symbol\":\"toDeepEqual\",\"root\":{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:toDeepEqual:36\",\"name\":\"toDeepEqual\",\"file\":\"src/"
+    },
+    "bb_cross_language": {
+      "ok": true,
+      "declaredAbsent": true,
+      "ms": 4,
+      "args": "{\"symbol\":\"toDeepEqual\"}",
+      "outHead": "{\"symbol\":\"toDeepEqual\",\"language\":\"typescript\",\"languages\":[\"typescript\"],\"copies\":[{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
+    },
+    "bb_annotate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"symbol\":\"expectJSON\",\"body\":\"m48 c1 corpus note (graphql-js)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-db15b718d92f54ec0cc5b902df7d670c1959ff8955845fa7fc04322efdfd6f41\",\"symbol_name\":\"expectJSON\",\"symbol_path\":null,\"author"
+    },
+    "bb_annotations": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 29,
+      "args": "{\"symbol\":\"expectJSON\"}",
+      "outHead": "{\"symbol\":\"expectJSON\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-db15b7"
+    }
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_search",
+      "repo": "graphql-js",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "toDeepEqual [method] src/__testUtils__/expectJSON.ts:36 (typescript)\n[match-set] searchMode=symbols  rows=0"
+    },
+    {
+      "tool": "bb_search",
+      "repo": "graphql-js",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/__testUtils__/expectJSON.ts\",\n  \"fileId\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965"
+    },
+    {
+      "tool": "bb_health",
+      "repo": "graphql-js",
+      "label": "health.files == SQL count (564)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/graphql-js\nprojectId: 18b0d5567b84edcae6dec4bfcc1faf8ac965e01e\nfiles=564 "
+    },
+    {
+      "tool": "bb_ask",
+      "repo": "graphql-js",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 20 other symbol(s) scored within t"
+    },
+    {
+      "tool": "bb_patterns",
+      "repo": "graphql-js",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (385 found):\n  orphaned_function Footer — website/theme.config.tsx:46 (70%)\n  orphaned"
+    },
+    {
+      "tool": "bb_security",
+      "repo": "graphql-js",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 284 critical / 105 high / 0 medium / 0 low / 111 unknown (199 resolved flows, 301 unvalida"
+    },
+    {
+      "tool": "bb_visualize",
+      "repo": "graphql-js",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"toDeepEqual\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes"
+    },
+    {
+      "tool": "bb_migrate",
+      "repo": "graphql-js",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"toDeepEqual\",\n      \"symbolId"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "graphql-js",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:to"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "graphql-js",
+      "label": "analyze stats.files == SQL count (564)",
+      "pass": true,
+      "detail": "out files=564 sql=564"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "graphql-js",
+      "label": "analyze stats.symbols == SQL count (13620)",
+      "pass": true,
+      "detail": "out symbols=13620 sql=13620"
+    },
+    {
+      "tool": "bb_doc",
+      "repo": "graphql-js",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: toDeepEqual\n\n1 file(s) and 1 symbol(s) in scope, 20 cited claim(s) across 5 section(s) fro"
+    },
+    {
+      "tool": "bb_edit",
+      "repo": "graphql-js",
+      "label": "dry-run leaves file untouched",
+      "pass": true,
+      "detail": "before=08bf8b18 after=08bf8b18"
+    },
+    {
+      "tool": "bb_index",
+      "repo": "graphql-js",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"src/__testUtils__/expectJSON.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"uncha"
+    },
+    {
+      "tool": "bb_graph",
+      "repo": "graphql-js",
+      "label": "graph root == toDeepEqual",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"toDeepEqual\",\n  \"root\": {\n    \"id\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
+    },
+    {
+      "tool": "bb_impact",
+      "repo": "graphql-js",
+      "label": "impact root == toDeepEqual",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"toDeepEqual\",\n  \"root\": {\n    \"id\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
+    },
+    {
+      "tool": "bb_cross_language",
+      "repo": "graphql-js",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"toDeepEqual\",\n  \"language\": \"typescript\",\n  \"languages\": [\n    \"typescript\"\n  ],\n  \"c"
+    },
+    {
+      "tool": "bb_annotate",
+      "repo": "graphql-js",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-26fb575e6a543d8447e276b869b47d5cf53f9f2aa3c19"
+    },
+    {
+      "tool": "bb_annotations",
+      "repo": "graphql-js",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"expectJSON\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": f"
+    }
+  ],
+  "failures": []
+}

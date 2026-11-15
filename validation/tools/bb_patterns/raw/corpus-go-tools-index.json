@@ -1,0 +1,8 @@
+{
+  "fixtureDir": "/home/ishaq2321/bb_tests/repositories/go-tools",
+  "projectId": "f58244847d810aee6ece4959e595d1c704e7f3ec",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/go-tools",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/go-tools/projects/f58244847d810aee6ece4959e595d1c704e7f3ec/brain.db",
+  "indexMs": 368028,
+  "generatedAt": "2026-11-02T04:26:07.800Z"
+}

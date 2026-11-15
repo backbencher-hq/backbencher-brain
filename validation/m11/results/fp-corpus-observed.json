@@ -1,0 +1,133 @@
+{
+  "timestamp": "2026-08-12T23:11:57.639Z",
+  "repositories": [
+    {
+      "id": "elixir",
+      "path": "/home/ishaq2321/bb_tests/repositories/elixir",
+      "discoveryMs": 192.34646800000002,
+      "candidateFiles": 616,
+      "projectId": "a0e74040fb5c01a56dabd69d78711044402b104e",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/a0e74040fb5c01a56dabd69d78711044402b104e/brain.db",
+      "before": {
+        "files": 0,
+        "symbols": 0
+      },
+      "index": {
+        "wallMs": 192415,
+        "userCpuMs": 38303,
+        "systemCpuMs": 10574,
+        "peakRssMB": 175,
+        "stats": {
+          "totalFiles": 616,
+          "processedFiles": 616,
+          "successFiles": 616,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 11189,
+          "relationshipsFound": 78569,
+          "importsFound": 910
+        }
+      },
+      "after": {
+        "files": 616,
+        "symbols": 11189,
+        "relationships": 78569,
+        "imports": 910
+      },
+      "dbSizeBytes": 164962304,
+      "throughput": {
+        "filesPerSec": 3.2,
+        "symbolsPerSec": 58.2,
+        "relationshipsPerSec": 408.3
+      }
+    },
+    {
+      "id": "cabal",
+      "path": "/home/ishaq2321/bb_tests/repositories/cabal",
+      "discoveryMs": 741.276505,
+      "candidateFiles": 2152,
+      "projectId": "dfe578092dcdd808b83bcd4c4784a5da09fb2a0b",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/dfe578092dcdd808b83bcd4c4784a5da09fb2a0b/brain.db",
+      "before": {
+        "files": 0,
+        "symbols": 0
+      },
+      "index": {
+        "wallMs": 141001,
+        "userCpuMs": 36407,
+        "systemCpuMs": 9046,
+        "peakRssMB": 219,
+        "stats": {
+          "totalFiles": 2140,
+          "processedFiles": 2140,
+          "successFiles": 2140,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 19137,
+          "relationshipsFound": 89620,
+          "importsFound": 14647
+        }
+      },
+      "after": {
+        "files": 2140,
+        "symbols": 19137,
+        "relationships": 89620,
+        "imports": 14647
+      },
+      "dbSizeBytes": 210497536,
+      "throughput": {
+        "filesPerSec": 15.2,
+        "symbolsPerSec": 135.7,
+        "relationshipsPerSec": 635.6
+      }
+    },
+    {
+      "id": "rebar3",
+      "path": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "discoveryMs": 127.96837200000002,
+      "candidateFiles": 269,
+      "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/f542cf36820e749046766ff9bede22e70d5990e7/brain.db",
+      "before": {
+        "files": 269,
+        "symbols": 5753
+      },
+      "index": {
+        "wallMs": 62632,
+        "userCpuMs": 6194,
+        "systemCpuMs": 2874,
+        "peakRssMB": 109,
+        "stats": {
+          "totalFiles": 269,
+          "processedFiles": 269,
+          "successFiles": 269,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 5753,
+          "relationshipsFound": 8780,
+          "importsFound": 2381
+        }
+      },
+      "after": {
+        "files": 269,
+        "symbols": 5753,
+        "relationships": 8780,
+        "imports": 2381
+      },
+      "dbSizeBytes": 35213312,
+      "throughput": {
+        "filesPerSec": 4.3,
+        "symbolsPerSec": 91.9,
+        "relationshipsPerSec": 140.2
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.804Z",
+    "contentSha256": "5898d6f9538001399f4ef09f588a59bf87b14b899308b8fd055545c68fb25ae7"
+  }
+}

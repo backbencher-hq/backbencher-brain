@@ -1,0 +1,100 @@
+{
+  "fixtureId": "svelte/handler-param-shadow",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the Svelte 5 rule that an event handler's arrow parameters bind in the TEMPLATE scope (they are not component members), and from the corpus file the defect was measured on — packages/svelte/tests/compiler-errors/samples/store-template-expression-scope/main.svelte, whose handler is `on:click={(store) => { $store = … }}` over a component that declares `const store = writable()`. Line pins read off the post-fix run and checked against the fixture's text. The graph contract is ONE edge per `type|source|target`, so `payload` is published once at its LAST site (42) and `meta.templateReadLines` is where the earlier site (38) is stated; the `[36]` array on `store` is what proves line 42's handler was not silenced by the parameter bound on line 36.",
+  "rationale": "JOB 2 of the svelte ontology pass. A handler's own arrow parameters were read as component members, which publishes a DANGLING endpoint: nothing in the template scope declares them. Exactly 1 corpus edge in 6,439 files, and it is not a position — the shadow set is widened per EXPRESSION and never per block, so it cannot leak into a sibling, which line 46 pins (`after` is a parameter on line 44 and a real read on line 46). The opposite failure is pinned too: a fix that shadowed the whole handler expression would also silence the `$store` read on line 36, which is the read that actually resolves to a member. And a bare `on:click={save}` has no arrow at all, so it stays BOTH a call target and a read of the member it names.",
+  "expectSymbols": [
+    {
+      "name": "store"
+    },
+    {
+      "name": "save"
+    },
+    {
+      "name": "data"
+    },
+    {
+      "name": "evt"
+    },
+    {
+      "name": "payload"
+    },
+    {
+      "name": "after"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "store",
+      "line_number": 36,
+      "meta.isTemplateExpression": true,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "payload",
+      "line_number": 42,
+      "meta.templateReadSites": [
+        38,
+        42
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "save",
+      "line_number": 44,
+      "meta.templateReadSites": [
+        40,
+        44
+      ],
+      "comment": "re-spelled 2026-10-20: the analyzer publishes this site list under `templateReadSites` (the same sites, the same order); only the KEY changed. Measured against ASTEngine.parseFile — the pinned line and every other pinned field already matched."
+    },
+    {
+      "type": "uses",
+      "target": "after",
+      "line_number": 46,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "calls",
+      "target": "save",
+      "line_number": 40,
+      "meta.context": "Svelte event directive on:click"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "evt",
+      "comment": "`(evt) => { payload = evt }` — `evt` is the arrow's own parameter. Before this change the analyzer published `uses -> evt`, an endpoint that resolves to nothing."
+    },
+    {
+      "type": "uses",
+      "target": "data",
+      "comment": "`({ data }) => { payload = data }` — a DESTRUCTURED parameter binds `data`, so the body read on line 42 names the template-local, not the script's `let data = 3`. A first version of the parameter scan took the first word of the pattern instead of its binding position and published this."
+    },
+    {
+      "type": "calls",
+      "target": "evt",
+      "comment": "a parameter is not a call target: `(evt) => { payload = evt }` invokes nothing"
+    },
+    {
+      "type": "calls",
+      "target": "store",
+      "comment": "`{ $store = 1 }` is an assignment, not an invocation"
+    },
+    {
+      "type": "calls",
+      "target": "payload",
+      "comment": "same: `payload = evt` assigns"
+    },
+    {
+      "type": "calls",
+      "target": "after",
+      "comment": "same: `save = after` assigns"
+    }
+  ]
+}

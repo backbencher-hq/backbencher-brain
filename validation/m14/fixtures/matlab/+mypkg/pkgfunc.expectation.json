@@ -1,0 +1,17 @@
+{
+  "fixtureId": "matlab/+mypkg/pkgfunc",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins the folder-namespace facts about a `+pkg/` file, which have NO textual construct in the grammar: the file's declaration is a PART OF the `mypkg` package (derived from the path the analyzer is handed), and the file is its own module, so it EXPORTS its primary declaration under the module-qualified name `mypkg.pkgfunc`. The module name and the declaration name differ by the package prefix, which is what makes the export row informative; a flat file whose module name equals its declaration would publish an X->X row and so publishes none (pinned by the forbid row on the flat fixtures' module identity).",
+  "expectSymbols": [
+    { "name": "pkgfunc", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "part_of", "from": "pkgfunc", "target": "mypkg", "meta.partRole": "part" },
+    { "type": "exports", "from": "mypkg.pkgfunc", "target": "pkgfunc" }
+  ],
+  "forbidRelationships": [
+    { "type": "part_of", "from": "pkgfunc", "target": "matlab" },
+    { "type": "exports", "from": "pkgfunc", "target": "pkgfunc" }
+  ]
+}

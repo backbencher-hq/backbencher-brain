@@ -1,0 +1,49 @@
+// J: the function-scope boundary — what RESETS it.
+package p
+class K { def m(): Any = { class In { val q = 1 }; 1 } }
+---
+// J2: val inside a lambda inside a def
+package p
+class K { def m(): Any = { val f = (x: Int) => { val y = x; y }; 1 } }
+---
+// J3: lambda in a CLASS body — the outer val is a member, the inner is not
+package p
+class K { val f = (x: Int) => { val y = x; y } }
+---
+// J4: local object inside a def, with a val
+package p
+class K { def m(): Any = { object O { val q = 1 }; O } }
+---
+// J5: local enum-like: a type alias inside a def with a val in a lambda
+package p
+class K { def m(): Any = { val a = (1 to 3).map(i => { val t = i; t }); a } }
+---
+// J6: anonymous class inside a lambda inside a class body
+package p
+class K { val f = (x: Int) => { new R { val q = x } } }
+class R
+---
+// J7: given inside a def, with a val in its body
+package p
+class K { def m(): Any = { given g: Ord[Int] with { def c = 0 }; 1 } }
+trait Ord[A]
+---
+// J8: a nested lambda (lambda inside lambda) in a class body
+package p
+class K { val f = (x: Int) => (y: Int) => { val z = x + y; z } }
+---
+// J9: `val` directly in a lambda's own single-expression body (no block)
+package p
+class K { val f = (x: Int) => x + 1 }
+---
+// J10: do-while / while bodies in a class body
+package p
+class K { { var i = 0; while (i < 3) { val t = i; i = t + 1 } } }
+---
+// J11: a lambda used as a function argument, not a block
+package p
+class K { testUnit("x")(x => { val q = x; q }) }
+---
+// J12: `case` class inside a lambda inside a class body
+package p
+class K { val f = (x: Int) => { case class In(val a: Int); In(x) } }

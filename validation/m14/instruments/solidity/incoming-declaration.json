@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "lang": "solidity",
+    "instrument": "npx tsx script/m14/incoming-gate.ts --json solidity sol 0 --index",
+    "generator": "script/m14/arm-declaration.ts — transcribes the arm's own per-type buckets and REFUSES a sample, a non-whole population, a broken external split or a closure that does not sum",
+    "sample": 421,
+    "corpusTotal": 421,
+    "corpusRepos": 2,
+    "parsed": 421,
+    "population": "parsed=421/421 admitted=421 exts=sol index=yes",
+    "metric": "edges counted once per (source, type, target, line) by the analyzer; buckets counted on the SAME edge in the SAME loop",
+    "analyzer": "src/ast/real-solidity-analyzer.ts",
+    "analyzerDigest": "sha256:f4c684d3fe89b3dcaa1b263e2efe578bfd5161791425a61689f28e37cd36fff7",
+    "arm": "validation/m14/measurements/solidity-gate-whole-2026-10-28-namespace.json",
+    "indexArm": true,
+    "armVerdict": "FAIL",
+    "armReason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 3105 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  1757 ambiguous + 1348 unresolved of 35099 edges, resolved against the file's OWN PROJECT (production's scope)",
+    "instrumentSelfTest": {
+      "ok": true,
+      "failures": []
+    },
+    "absentFiles": 0,
+    "overCapFiles": 0,
+    "sizeCapBytes": 1048576
+  },
+  "causeRulings": {},
+  "causeRulingsNote": "EMPTY BECAUSE NO EDGE CARRIES A DECLARED CAUSE: the arm's cause columns read causeDeclared 0 and the residual is dispositioned by the WALL classes it does not name. An empty map here means 'the analyzer declares no cause that would need a ruling', which the completion gate reads as clause 3 SATISFIED — not as a missing section.",
+  "types": {
+    "calls": {
+      "edges": 6590,
+      "resolved": 4467,
+      "external": 150,
+      "ambiguous": 924,
+      "otherUnresolved": 1049,
+      "unclassed": 0,
+      "_ambKind": 203,
+      "_collRes": 0
+    },
+    "uses": {
+      "edges": 17880,
+      "resolved": 8087,
+      "external": 0,
+      "ambiguous": 783,
+      "otherUnresolved": 9010,
+      "unclassed": 0,
+      "_ambKind": 634,
+      "_collRes": 0
+    },
+    "contains": {
+      "edges": 6531,
+      "resolved": 6531,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 3491
+    },
+    "imports": {
+      "edges": 932,
+      "resolved": 0,
+      "external": 798,
+      "ambiguous": 0,
+      "otherUnresolved": 134,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "references": {
+      "edges": 1452,
+      "resolved": 1380,
+      "external": 0,
+      "ambiguous": 33,
+      "otherUnresolved": 39,
+      "unclassed": 0,
+      "_ambKind": 7,
+      "_collRes": 0
+    },
+    "exports": {
+      "edges": 526,
+      "resolved": 526,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "extends": {
+      "edges": 488,
+      "resolved": 450,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 38,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "implements": {
+      "edges": 107,
+      "resolved": 107,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "overrides": {
+      "edges": 423,
+      "resolved": 422,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 1,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "instantiates": {
+      "edges": 26,
+      "resolved": 26,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "decorates": {
+      "edges": 144,
+      "resolved": 127,
+      "external": 0,
+      "ambiguous": 17,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    }
+  },
+  "resolution_caveats": {
+    "buckets": "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ARM'S ELEVEN TERMS, NOT THE ELEVEN TERMS: external = externalVerified + externalUnverified, and otherUnresolved carries unresolved + externalRefuted + the binding and cause columns. Every row's buckets sum to its edge count and `unclassed` is 0 by construction — the generator REFUSES to write a row that does not close.",
+    "indexYes": "THE RESOLUTION SCOPE IS PER PROJECT (index=yes): `projectIndexesFor` builds SOLIDITY_DECLARATION_SPEC and the analyzer CONSUMES it (SOL-21). `resolved` therefore means production's own project-scoped binding, and `kindUnresolved` rows are labelled per edge rather than guessed.",
+    "collResSubset": "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: a resolved edge whose target had MORE THAN ONE declaration, so production's own-file tie-break chose the row. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so the resolved column is a FLOOR on correct resolution.",
+    "ambKindSubset": "`amb(kind)` IS A SUBSET OF `amb(decl)` and is never added to any bucket.",
+    "externalIsAClaim": "EXTERNAL IS A CLAIM, NOT A RESOLUTION: the verified half is confirmed by the project's declarations, the unverified half no check can reach, and the refuted half is charged to otherUnresolved and to clause 4.",
+    "mixesIn": "`mixes_in` PUBLISHES ZERO ROWS AND THAT IS A RULING, NOT A BLIND SPOT — AND THE STRONGEST FORM OF THAT RULING ON THIS FLEET: `using L for T` WAS published as `mixes_in` for part of 2026-10-27 (27 rows over this whole population, all resolved) and the emission was WITHDRAWN the same day, because the vocabulary's mixin ENTERS the composing type's supertype chain (PHP trait `use`, Go embedding) and this directive adds no member to T — the composing actor is the SCOPE, not the type, so the vetoed row also named the wrong source. The construct is counted rather than dropped: 124 `using_directive` sites in 76 files = 27 with a declared host and one library + 54 `for *` + 39 primitive host + 4 braced function sets, and 0 of the 27 adds a member to the host. The 27 `references` rows to the same libraries remain, so no dependency was lost, and validation/m14/fixtures/solidity/using-directive-is-not-a-mix-in.sol forbids the value on ALL FIVE forms including the two that were published.",
+    "ruledTypes": "`renders`, `part_of` AND `mixes_in` PUBLISH ZERO ROWS AND EACH IS A RULING: `renders` has 0 component symbol kinds in the vocabulary and no component model (nearest: new_expression, already `instantiates`); `part_of` is grammar-absence because a Solidity import creates its own module scope and imports SYMBOLS, where a part shares one scope and imports nothing; `mixes_in` is ontological, with an emission tried and withdrawn. All three carry counts and falsifiers in script/m14/spec/solidity-completeness.json."
+  }
+}

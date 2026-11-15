@@ -1,0 +1,18 @@
+{
+  "analyzer": "graphql",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  "revision": "ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea",
+  "perFile": {
+    "benchmark/github-schema.graphql": {
+      "symbols": 3242,
+      "relationships": 6379,
+      "errors": 0
+    },
+    "benchmark/kitchen-sink.graphql": {
+      "symbols": 9,
+      "relationships": 39,
+      "errors": 0
+    }
+  },
+  "crashes": []
+}

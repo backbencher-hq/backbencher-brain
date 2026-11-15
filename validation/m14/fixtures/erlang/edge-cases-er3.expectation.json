@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/edge-cases-er3.erl",
+  "authoredFrom": "Erlang semantics plus three corpus adjudications, before this fixture's F3 run. (1) A QUALIFIED type keeps its module: `-record(opts, {env :: cowboy_middleware:env()})` names ONE type, `cowboy_middleware:env` — emitting the bare module atom as a second type name produced 876 stray edges over the 150-file census draw, every one a module masquerading as a type. (2) A module that both DECLARES a callback and DEFINES it (a behaviour with a default implementation; otp/lib/tftp/src/tftp_logger.erl is the corpus witness) yields ONE symbol whose kind is the DEFINITION and whose line is the definition's — the pre-ER3 order dependence left it a Method on the `-callback` line, because the contract is written first. (3) `?MODULE() -> …` is a real function head whose expansion is this module's own atom: the OTP test-suite idiom, 79 corpus sites, each of which previously produced NO symbol at all.",
+  "expectSymbols": [
+    { "name": "edge_cases_er3", "kind": "module" },
+    { "name": "logger", "kind": "function", "ownerName": "edge_cases_er3", "meta.arity": 2, "meta.isCallback": true, "meta.definedHere": true, "note": "declared as a callback AND defined: ONE symbol, and the DEFINITION decides the kind" },
+    { "name": "edge_cases_er3", "kind": "function", "ownerName": "edge_cases_er3", "meta.arity": 0, "meta.isMacroHead": true, "note": "?MODULE() expands to this module's own name" },
+    { "name": "opts", "kind": "struct", "ownerName": "edge_cases_er3" },
+    { "name": "env", "kind": "property", "ownerName": "opts" },
+    { "name": "n", "kind": "property", "ownerName": "opts" }
+  ],
+  "expectSymbolCount": [
+    { "name": "logger", "kind": "method", "equals": 0, "note": "the pre-ER3 order dependence left a Method here, because the -callback line comes first" },
+    { "name": "logger", "kind": "function", "equals": 1 },
+    { "name": "edge_cases_er3", "kind": "function", "equals": 1 }
+  ],
+  "expectExports": [
+    { "name": "logger", "arity": 2 },
+    { "name": "edge_cases_er3", "arity": 0, "note": "-export([?MODULE/0]) resolves to this module's own name; the fa's name child is a macro_call_expr, not an atom" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "edge_cases_er3", "target": "my_behaviour", "line_number": 9 },
+    { "type": "references", "from": "logger", "target": "io:format", "meta.context": "type reference", "line_number": 13, "note": "a callback's signature names types, qualified ones included" },
+    { "type": "references", "from": "opts", "target": "cowboy_middleware:env", "meta.context": "type reference", "line_number": 14, "note": "ER-D31: the qualification is the type's name" },
+    { "type": "references", "from": "opts", "target": "non_neg_integer", "meta.context": "type reference", "line_number": 14 },
+    { "type": "calls", "from": "logger", "target": "io:format", "meta.callArity": 2, "line_number": 17 },
+    { "type": "calls", "from": "edge_cases_er3", "target": "logger", "meta.callArity": 2, "line_number": 20, "note": "the ?MODULE() function's body attributes to the resolved function name" },
+    { "type": "contains", "from": "edge_cases_er3", "target": "logger", "line_number": 16, "note": "the DEFINITION's line, not the -callback line on 13" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "opts", "target": "cowboy_middleware", "note": "the module atom of a qualified type is not a second type name" },
+    { "type": "references", "from": "opts", "target": "env" },
+    { "type": "contains", "from": "edge_cases_er3", "target": "logger", "line_number": 13, "note": "the -callback line is metadata (callbackLine), not the symbol's line" },
+    { "type": "calls", "from": "edge_cases_er3", "target": "edge_cases_er3" }
+  ],
+  "forbidSymbols": [{ "name": "Format" }, { "name": "Args" }, { "name": "Fun" }]
+}

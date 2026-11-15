@@ -1,0 +1,98 @@
+{
+ "fixtureId": "perl/package-block-scope",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "M14 line-contract pins on `contains`, added 2026-10-02. Every `line_number` below was transcribed from the NUMBERED source .pm file and then confirmed against one analyzer run, so the analyzer agrees with the source rather than defining it. This lane previously asserted `contains` MEMBERSHIP ONLY -- no row anywhere named a line -- which is why the two mutants `perl/contains-line-is-absent` (strips the field) and `perl/contains-line-at-declaration-start` (shifts it by +1) both SURVIVED at (0 -> 0): the transform touched a channel no fixture read. `core-oo-class-role` already said so in prose -- its `Point->sum` row carried the note that the old `line_number: null` sentinel \"asserted ignorance about a line written in the file\", and the numeric replacement it asked for was never written. Dropping the pin is not dropping the contract: the M60 line contract applies to `contains` as it does to every other label. Each row resolved to exactly ONE actual edge, so each value below is the only line that edge has and no value was inferred.",
+ "rationale": "The BLOCK form of `package` does not leak past its closing brace; only the STATEMENT form does. Proved by EXECUTING perl 5.34, not by reading the grammar: with `package Outer { }` followed by a sibling sub, `__PACKAGE__` is `main`. The pre-review analyzer set the lexical package on the statement's own state object, so `after_block` was emitted as a method of `Outer` and a `contains Outer -> after_block` edge asserted an ownership no source line supports. Both forms live in one file on purpose: the block form leaves the package alone (line 4) and the statement form changes it (line 5), and a fixture that pinned only one of them could not tell a correct implementation from one that never tracks the package at all.",
+ "expectSymbols": [
+  {
+   "name": "Outer",
+   "kind": "class"
+  },
+  {
+   "name": "in_outer",
+   "kind": "method",
+   "ownerName": "Outer"
+  },
+  {
+   "name": "after_block",
+   "kind": "function"
+  },
+  {
+   "name": "Second",
+   "kind": "class"
+  },
+  {
+   "name": "in_second",
+   "kind": "method",
+   "ownerName": "Second"
+  }
+ ],
+ "expectSymbolRanges": [
+  {
+   "symbol": "Outer",
+   "startLine": 1,
+   "endLine": 1
+  },
+  {
+   "symbol": "in_outer",
+   "startLine": 2,
+   "endLine": 2
+  },
+  {
+   "symbol": "after_block",
+   "startLine": 4,
+   "endLine": 4
+  },
+  {
+   "symbol": "Second",
+   "startLine": 5,
+   "endLine": 5
+  },
+  {
+   "symbol": "in_second",
+   "startLine": 6,
+   "endLine": 6
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "type": "contains",
+   "from": "Outer",
+   "target": "in_outer",
+   "line_number": 2,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "contains",
+   "from": "Second",
+   "target": "in_second",
+   "line_number": 6,
+   "meta.evidenceClass": "structural",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "Outer",
+   "target": "after_block",
+   "note": "pre-fix shape: the block form's package leaked to the following sibling, so a file-scope sub was owned by the block's package"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "after_block",
+   "ownerName": "Outer",
+   "note": "pre-fix shape: `after_block` was a method of Outer; perl 5.34 reports __PACKAGE__ as main after the block"
+  }
+ ],
+ "expectMetadata": [
+  {
+   "comment": "file-scope ownership is the point of this fixture",
+   "linesOfCode": 8
+  }
+ ]
+}

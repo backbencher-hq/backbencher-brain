@@ -26,7 +26,7 @@ import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const REPO = "$HOME/fixtures/repositories/cabal"
+const REPO = "/home/ishaq2321/bb_tests/repositories/cabal"
 const DATA = "/tmp/m21r3-verify-" + Date.now()
 const RESULTS = path.join(ROOT, "validation", "m21", "results")
 

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "fixture": "julia/method-redefinition-overrides.jl",
+  "authoredFrom": "M60 julia ontology lane. The analyzer's own file header DECLINED `overrides` on the grounds that julia has multiple dispatch rather than overriding. That ruling is sound for the case it names — two methods of the same name with different signatures are different methods, both live, neither replacing the other — and it does not cover the case julia actually has. Julia's method table holds exactly one entry per (name, signature) pair, so a second declaration of the SAME pair REPLACES the first; julia itself says so, printing `WARNING: Method definition f(Int) in module Main at line 12 overwritten at line 40` under `--warn-overwrite=yes`. The differential could not convict the omission because the julia oracle region also omits `overrides`: two independent walkers that both say nothing agree perfectly. `script/m14/ontology-coverage-gate.ts`'s header records the bash instance of exactly this failure (BD8b, 174 redefinitions across 57 files). Measurements are in `docs/analyzers/julia.md` and are reproducible with `npx tsx validation/m14/fixtures/julia/census.ts`.",
+  "expectSymbols": [
+    {
+      "name": "Registry",
+      "kind": "module"
+    },
+    {
+      "name": "only_once",
+      "kind": "function",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "area",
+      "kind": "function",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "label",
+      "kind": "function",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "guarded",
+      "kind": "function",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "bounded",
+      "kind": "function",
+      "ownerName": "Registry"
+    },
+    {
+      "name": "tuple_to_assignments",
+      "kind": "function"
+    },
+    {
+      "name": "wrap",
+      "kind": "function",
+      "ownerName": "tuple_to_assignments"
+    },
+    {
+      "name": "other",
+      "kind": "function"
+    },
+    {
+      "name": "toplevel_only",
+      "kind": "function"
+    },
+    {
+      "name": "First",
+      "kind": "module"
+    },
+    {
+      "name": "same",
+      "kind": "function",
+      "ownerName": "First"
+    },
+    {
+      "name": "Second",
+      "kind": "module"
+    },
+    {
+      "name": "same",
+      "kind": "function",
+      "ownerName": "Second"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Registry",
+      "target": "area",
+      "line_number": 35,
+      "meta.replacesLine": 31,
+      "meta.signature": "(r::Float64)",
+      "meta.redefinition": true,
+      "meta.via": "identical_signature_redefinition",
+      "meta.evidenceClass": "structural",
+      "note": "The load-bearing row, long declaration form. Line 35 replaces line 31: both are `area(r::Float64)`, and julia's method table holds one entry per (name, signature), so the second definition displaces the first. `replacesLine` names the displaced site explicitly because both `contains` rows for `Registry -> area` collapse into ONE row under this lane's relationship dedup key (`type|source->target`, no line) — a difference from the bash lane, whose key includes the line and which therefore keeps both. The collapsed pair is reported in the lane doc as an observation, not changed here, because widening the key would grow every `contains` edge in every julia payload and that is a shared payload-budget decision."
+    },
+    {
+      "type": "overrides",
+      "from": "Registry",
+      "target": "label",
+      "line_number": 42,
+      "meta.replacesLine": 41,
+      "meta.signature": "()",
+      "meta.redefinition": true,
+      "meta.evidenceClass": "structural",
+      "note": "The SHORT declaration form, which is the form the corpus prefers. A pre-pass that read only `function ... end` would miss most real redefinitions, so `declarationSiteOf` reads both `function_definition` and the assignment whose left-hand side is the call. Line 42 (`label() = \"meter\"`) replaces line 41 (`label() = \"unit\"`)."
+    },
+    {
+      "type": "overrides",
+      "from": "Registry",
+      "target": "bounded",
+      "line_number": 85,
+      "meta.replacesLine": 80,
+      "meta.signature": "(x)|where bounded(x) where {T<:SignedInt}",
+      "meta.redefinition": true,
+      "meta.evidenceClass": "structural",
+      "note": "THE `where` HALF OF THE KEY, and the pair of rows either side of it is what makes it a test. Line 85 replaces line 80 — both `bounded(x) where {T<:SignedInt}` — while the `bounded(x) where {T<:UnsignedInt}` between them at line 82 must produce NO edge, because julia keys the method table on the fully-specialised signature and a different type-variable bound is a different method. The key was originally taken from the callable AFTER `unwrapWhere`, which discarded the clause because it hangs off the assignment's LEFT-HAND SIDE rather than the call; three corpus pairs collided and each was a false edge — julia/base/checked.jl:138-139 (`{T<:SignedInt}` vs `{T<:UnsignedInt}`), julia/base/math.jl:834 and :838 (`{T<:AbstractFloat}` vs `{T<:IEEEFloat}`), julia/test/testhelpers/Furlongs.jl:21-22 (`where {p,q}` vs `where {T,p,q}`). The signature string therefore repeats the callable text (`(x)|where bounded(x) where {T<:SignedInt}`); it is redundant, not wrong, and it is metadata a reader can act on rather than a key anything is hashed against."
+    },
+    {
+      "type": "overrides",
+      "from": "Registry",
+      "target": "area",
+      "line_number": 35,
+      "meta.evidenceClass": "structural",
+      "note": "The confidence contract, pinned as a value rather than asserted in prose: the edge is published at 1.0 and tiered `structural`, so it is never counted as a heuristic. Two declaration signatures in one file that compare equal is a parse fact, not an inference."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "only_once",
+      "note": "THE CONTROL, asserted with the runner's `forbidRelationships` rather than with a metadata key that does not exist. `only_once` is declared once, so no `overrides` edge may name it. If the analyzer ever emits the edge for every declaration, this row fires."
+    },
+    {
+      "type": "overrides",
+      "target": "guarded",
+      "note": "THE POSITION GUARD, and the row that caught a live defect. `guarded` is declared twice with an identical signature, but each declaration is the right operand of `ok && …`, so exactly one branch runs and neither replaces the other. The first version of `isUnconditionalPosition` read the right operand at named-child index 1; the operator is a NAMED child in this grammar, so the operand list is [left, operator, right] and the read never matched — and this row was published. It is the corpus's only `&&`-guarded method definition: 11,549 `&&` binary_expressions over 971 admitted files, exactly 1 with a declaration node on the right (`julia/JuliaSyntax/src/core/parse_stream.jl:316`, `VERSION < v\"1.11.0-DEV.753\" && function ParseStream(io::IOBuffer; version=VERSION)`)."
+    },
+    {
+      "type": "overrides",
+      "target": "bounded",
+      "meta.signature": "(x)",
+      "note": "THE `where`-CLAUSE FORBID, and the reason it is pinned on `meta.signature` rather than on the name. `bounded` DOES have one legitimate `overrides` edge (line 85 over line 80), so a forbid row keyed on the target alone would contradict the positive row above and the runner would report one against the other. The pre-fix `methodSignatureKey` returned the ARGUMENT LIST ALONE for a `where`-form short declaration, so the fabricated edge for the `{T<:UnsignedInt}` declaration at line 82 carries `meta.signature === \"(x)\"` while the correct edge carries `\"(x)|where bounded(x) where {T<:SignedInt}\"`. Pinning the exact string is what makes the two distinguishable — and it is the reason this defect was catchable at all rather than being a difference only a human reading the output would see. Caught by the mutant `julia/overrides-drops-where-clause`."
+    },
+    {
+      "type": "overrides",
+      "target": "wrap",
+      "note": "THE LOCAL-BINDING REFUSAL, and the row that convicted 14 fabricated edges. `wrap(asgn) = …` is declared twice with an identical signature — once inside `tuple_to_assignments`, once inside `other` — and inside a function body a short-form definition binds a LOCAL variable holding a closure. It adds no method and displaces nothing, so no `overrides` edge may exist for either. Two corpus shapes produced exactly this edge before the fix: `julia/JuliaLowering/src/desugaring.jl` (lines 153 and 324, `wrap(asgn)`) and `julia/base/range.jl` (lines 488 and 496, `throwbool(r)` inside two inner constructors of `OneTo`). The pre-pass keyed on (scope, name, signature); before the fix it keyed on (name, signature), so the two closures in different functions collided. Measured ancestor counts over the 971 admitted files — 41 `let_statement`, 29 `function_definition`, 3 `macro_definition`, 3 `do_clause` — so the guard is a predicate the grammar reaches rather than a dead branch."
+    },
+    {
+      "type": "overrides",
+      "target": "toplevel_only",
+      "note": "THE SCOPE REFUSAL, which covers 71.9% of the corpus rather than a corner of it. `toplevel_only` is a genuine redefinition at file scope, and no `overrides` edge is published for it because there is no DECLARED symbol to name as the source. `global` is this repo's documented synthetic scope (GLOBAL_SCOPE in src/ast/real-julia-analyzer.ts) and an edge sourced from it resolves to nothing — the same dangling identity this lane's `contains` case already declines to invent. Publishing `global -overrides-> toplevel_only` would have made this the largest `overrides` bucket in the corpus and the least resolvable one."
+    },
+    {
+      "type": "overrides",
+      "from": "area",
+      "target": "area",
+      "note": "THE SELF-LOOP REFUSAL, asserted because the self-loop shape is the most literally accurate one available and this codebase has ruled it out three times: src/ast/real-php-analyzer.ts:2496 ('a self-loop is always fabrication'), src/lsp/rich_hover.ts:222 ('Degenerate self-loop rows are not connections and not usages: skip them'), and src/intelligence/patterns/orphans.ts:818, which lists a self-loop `overrides` row under REFUSED EVIDENCE and cites the rake `listen` regression it caused. A replacement's two endpoints ARE the same symbol, so the source is the enclosing declared scope instead."
+    },
+    {
+      "type": "overrides",
+      "target": "same",
+      "note": "THE SCOPE-LINE FORBID, for two modules that share a NAME. `same(x) = 1` is declared once in `module First` and once in `module Second`; Julia treats those as two modules with two method tables, so neither replaces the other and no `overrides` edge may exist. The corpus shape is `julia/test/deprecation_exec.jl`, which declares `module Src` at line 325 inside `DeprecatedReexportTest` and again at line 358 inside `DeprecatedShadowTest`, each holding a `newg() = 1` — keyed on the module name alone those are one method and the second reads as replacing the first. The key therefore carries the scope's own declaration line. The subtle half is pinned here because a fixture with one module cannot see it: the scope NAME propagated down the pre-pass while its LINE reset to 0 at every frame, so every key came out `name@0` and the fix appeared to do nothing. The corpus is what found that, which is the argument for a census rather than only fixtures."
+    }
+  ],
+  "notes": [
+    "`area(r::Int) = r * r` at line 48 is the case the original ruling was RIGHT about and is pinned here as a positive/negative pair: same name, DIFFERENT signature, so it is a new method rather than a replacement. No `overrides` edge may exist for it, which the `target: only_once` forbid row cannot express — hence the signature being part of the key rather than the name alone.",
+    "`metadata.evidenceClass` is asserted on the `overrides` rows because the lane's `classifyEvidenceTier` had NO arm for the type: it read `contains`, `imports`/`exports`/`references`, `calls`/`uses`/`instantiates` and `extends`/`implements`, and an unlisted type falls through with no tier at all. A census over 120 corpus files found the consequence — 6 of 6 `overrides` edges carried `<none>`, so every consumer that groups relationships by tier counted them as unclassified."
+  ]
+}

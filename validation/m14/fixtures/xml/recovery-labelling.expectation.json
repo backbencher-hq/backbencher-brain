@@ -1,0 +1,41 @@
+{
+  "fixtureId": "xml/recovery-labelling",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding X4. The shipped contract check `malformed XML creates no recovery symbols` was a FIXTURE ACCIDENT: `Negative.xml` is an unterminated element, so the grammar produces no `element` node for the analyzer to publish, and the check passed for a reason that had nothing to do with the analyzer's policy. On the real corpus the pre-fix analyzer emitted 27,228 symbols from 177 files it simultaneously reported as erroneous, and nothing on any of those symbols said so \u2014 a consumer could not tell a clean reading from a recovery-shaped one. Suppressing them would be wrong: a 90 %-parseable vendor template is 5,000 lines of real declarations and must stay visible. So they are LABELLED instead: every symbol and every edge from a file with an ERROR or MISSING node carries `metadata.syntaxErrors: true`, and a clean file's symbols must NOT carry it (which is the half that keeps the flag from becoming noise). This fixture is the `##` header form found 100 % of the time in the corpus \u2014 177 of 177 erroneous routed files are vendor templates whose first line is not XML. Lines: `root` 2, `child` 2, `flag` 2. The error ASSERTION cannot be made in this lane: script/m14/run-fixtures.ts calls analyzer.analyze() directly, and the analyzer's own `errors` array is empty BY DESIGN because ASTEngine.parseFile collects tree errors centrally so the warning is emitted exactly once. The error half is pinned in script/m12/xml-contract-probe.ts (`a file with a grammar error reports it`), which goes through the engine.",
+  "expectSymbols": [
+    {
+      "name": "root",
+      "kind": "class",
+      "meta.syntaxErrors": true
+    },
+    {
+      "name": "child",
+      "kind": "class",
+      "ownerName": "root",
+      "meta.syntaxErrors": true
+    },
+    {
+      "name": "flag",
+      "kind": "property",
+      "ownerName": "child",
+      "meta.syntaxErrors": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "root",
+      "target": "child",
+      "line_number": 2,
+      "meta.syntaxErrors": true
+    },
+    {
+      "type": "contains",
+      "from": "child",
+      "target": "flag",
+      "line_number": 2,
+      "meta.syntaxErrors": true
+    }
+  ]
+}

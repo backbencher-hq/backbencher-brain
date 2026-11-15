@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Invalid.json",
+  "authoredFrom": "A file the grammar cannot read must still surface its errors and still yield its module, so a consumer can attribute the failure to a file rather than losing it. Errors are engine-owned and the analyzer never duplicates them.",
+  "expectSymbols": [
+    {
+      "name": "Invalid",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": []
+}

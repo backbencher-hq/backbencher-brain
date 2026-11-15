@@ -1,0 +1,277 @@
+{
+  "comment": "`&` and `,` are the same separator in a `| class context, spelled two ways, and the analyzer read only one. The proof they are one construct is the child shape, identical with the token swapped: `| == a` -> `!| operator_compare type_variable` against `| == a & UList a` -> `!| operator_compare type_variable !& constructor type_variable` (clean-stdlib/StdOverloadedList.dcl:5,8). So `readClassContext` published the first conjunct of an `&`-joined context and dropped the rest — missing edges, not a missing label. Measured (validation/m14/fixtures/clean/ampersand-context-probe.mts): 1,995 class_context nodes at WIDE, 365 carrying an `&`, and the dropped conjuncts split 249 that would ADD a row against 264 that name a class already published on that same line (`| toReal a & toReal b & toReal c`, Clyde/Clyde/timeprofile.icl:337); at TRACKED the split is 62 / 47. The 264 are not a doubling, and the reason is `pushRel`'s key rather than a judgement made here: it collapses on `source|type|target|line`. Measured as an A/B on TRACKED (references-duplicate-probe.mts), `,`-only gives 10,049 edges / 9,570 distinct groups / 387 groups with more than one, and `,`-and-`&` gives 10,108 / 9,629 / 387 — the duplicate count identical per discriminator, so the fix adds 59 edges and 59 new groups and changes nothing about duplication. The label stays `references` for the reason given in instance-member-signature-context: a dictionary requirement is a type the member needs, not a supertype.",
+  "expectSymbols": [
+    {
+      "name": "ampersand_context",
+      "kind": "module"
+    },
+    {
+      "name": "Eq",
+      "kind": "interface",
+      "comment": "a class_declaration publishes as an Interface"
+    },
+    {
+      "name": "eq",
+      "kind": "method",
+      "ownerName": "Eq"
+    },
+    {
+      "name": "Ord",
+      "kind": "interface"
+    },
+    {
+      "name": "cmp",
+      "kind": "method",
+      "ownerName": "Ord"
+    },
+    {
+      "name": "Size",
+      "kind": "interface"
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Size"
+    },
+    {
+      "name": "both",
+      "kind": "function",
+      "comment": "`&` joining two DIFFERENT classes: the two-conjunct case"
+    },
+    {
+      "name": "three",
+      "kind": "function",
+      "comment": "a three-way `&` chain, whose MIDDLE conjunct is the discriminating row"
+    },
+    {
+      "name": "comma",
+      "kind": "function",
+      "comment": "the `,` spelling of `both`'s own constraints: the control that must keep reading"
+    },
+    {
+      "name": "single",
+      "kind": "function",
+      "comment": "no separator at all: a reader that reset on every unnamed child would break here"
+    },
+    {
+      "name": "overloaded",
+      "kind": "function",
+      "comment": "an OPERATOR class in the first conjunct position, `| == Int & Ord Int`"
+    },
+    {
+      "name": "nested",
+      "kind": "function",
+      "comment": "owns the where-local that carries an `&` context, so the fix is not scoped to module level"
+    },
+    {
+      "name": "local",
+      "kind": "function",
+      "comment": "the where-local binding: `local :: !Int -> Bool | Eq Int & Size Int`"
+    },
+    {
+      "name": "Int::instance",
+      "kind": "impl",
+      "comment": "the instance container, NAMESPACED under its target (`<target>::instance`). It used to be named `Int` \u2014 a declaration of a StdEnv type in a file that only implements a class for it. The `references` row below is still SOURCED from `Int`, because the source of an instance's edges is the nominal target and not the container."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "both",
+      "target": "Ord",
+      "line_number": 47,
+      "comment": "THE TARGET ROW. `both :: !Int !Int -> Bool | Eq Int & Ord Int` published only `Eq` before the fix; `Ord` is the conjunct the `,`-only reader dropped"
+    },
+    {
+      "type": "references",
+      "from": "both",
+      "target": "Eq",
+      "line_number": 47,
+      "comment": "the conjunct that was always read. Kept so a regression that drops the FIRST conjunct is caught here as well as the second"
+    },
+    {
+      "type": "references",
+      "from": "three",
+      "target": "Ord",
+      "line_number": 52,
+      "comment": "the MIDDLE conjunct of `| Eq Int & Ord Int & Size Int`. A reader that kept only the first conjunct and a reader that kept only the last BOTH miss this row, which is what makes it the discriminating case rather than another copy of line 36"
+    },
+    {
+      "type": "references",
+      "from": "three",
+      "target": "Size",
+      "line_number": 52,
+      "comment": "the third conjunct, to pin the chain is read to its end and not truncated at two"
+    },
+    {
+      "type": "references",
+      "from": "overloaded",
+      "target": "==",
+      "line_number": 68,
+      "comment": "`constraintName` reads an `operator_compare` leaf as a class name; this row keeps the operator path alive in FIRST position"
+    },
+    {
+      "type": "references",
+      "from": "overloaded",
+      "target": "Ord",
+      "line_number": 68,
+      "comment": "the conjunct AFTER an operator class. `| == Int & Ord Int` is the corpus shape from StdOverloadedList.dcl:8, and it is the row that would break if the separator reset were keyed on the class name rather than on the child"
+    },
+    {
+      "type": "references",
+      "from": "local",
+      "target": "Size",
+      "line_number": 75,
+      "comment": "a where-LOCAL signature inside a function body, joined by `&`: one scope deeper than module level"
+    },
+    {
+      "type": "references",
+      "target": "Size",
+      "line_number": 81,
+      "comment": "the INSTANCE's own context, `instance Ord Int | Eq Int & Size Int`, anchored on the instance line and sourced from the instance target `Int`"
+    },
+    {
+      "type": "references",
+      "from": "cmp",
+      "target": "Size",
+      "line_number": 83,
+      "comment": "an INSTANCE MEMBER's own signature joined by `&`. This is the scope pass 4 fixed for `,`; the `&` spelling reached the same code by the same route and has to survive the same per-node signature index"
+    },
+    {
+      "type": "references",
+      "from": "comma",
+      "target": "Ord",
+      "line_number": 58,
+      "comment": "THE CONTROL. `comma :: !Int !Int -> Bool | Eq Int, Ord Int` is `both`'s own constraint pair in the spelling that was always read. If this row disappears the `,` path regressed, which the `&` rows alone cannot detect"
+    },
+    {
+      "type": "references",
+      "from": "single",
+      "target": "Eq",
+      "line_number": 63,
+      "comment": "THE CONTROL with no separator: `single :: !Int -> Bool | Eq Int`. An implementation that reset `expectName` on every unnamed child — including the leading `|` — would republish `Eq` from the wrong child or stop reading single-constraint contexts entirely"
+    },
+    {
+      "type": "references",
+      "from": "three",
+      "target": "Bool",
+      "line_number": 52,
+      "comment": "a `declared_type` from the same signature, to show the context fix did not disturb type reading on the same line"
+    },
+    {
+      "type": "references",
+      "from": "repeated",
+      "target": "Ord",
+      "line_number": 96,
+      "comment": "THE REPEATED-CONJUNCT ROW. `repeated :: !Int !Int -> Bool | Ord Int & Ord Int & Size Int` names `Ord` twice in three conjuncts. `pushRel` collapses on `source|type|target|line`, so this is ONE edge, not two — and the corpus shape is real: 264 conjuncts at WIDE and 47 at TRACKED name a class already published on their line (`| toReal a & toReal b & toReal c`, Clyde/Clyde/timeprofile.icl:337)"
+    },
+    {
+      "type": "references",
+      "from": "repeated",
+      "target": "Size",
+      "line_number": 96,
+      "comment": "the third conjunct, proving a repeated conjunct does not stop the chain being read to its end. A reader that stopped at the first repeat would publish `Ord` and lose `Size`"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "repeated",
+      "target": "Ord",
+      "equals": 1,
+      "comment": "THE DEDUPE ROW. Three conjuncts, two distinct classes, and `Ord` appears twice — so exactly 1 edge. A per-conjunct publisher gives 2 and fails here. This is the duplicate-vs-multiplicity question the previous round left open, pinned as a number"
+    },
+    {
+      "type": "references",
+      "from": "repeated",
+      "target": "Size",
+      "equals": 1,
+      "comment": "the same signature's second distinct class, also exactly 1"
+    },
+    {
+      "type": "references",
+      "from": "three",
+      "target": "Ord",
+      "equals": 1,
+      "comment": "exactly one. A `&`-aware reader that also counted the separator token as a constraint, or that walked the context twice, would publish 2"
+    },
+    {
+      "type": "references",
+      "from": "both",
+      "target": "Ord",
+      "equals": 1,
+      "comment": "exactly one. The duplicate-vs-multiplicity case measured 0 times in 2,181 files, so no correct implementation may produce 2 here — and this row is what would catch one that did"
+    },
+    {
+      "type": "references",
+      "from": "comma",
+      "target": "Ord",
+      "equals": 1,
+      "comment": "the `,` spelling stays at one edge per conjunct, so the two spellings are counted by the same rule rather than one of them being special-cased into doubling"
+    },
+    {
+      "type": "references",
+      "from": "single",
+      "target": "Eq",
+      "equals": 1,
+      "comment": "a one-conjunct context publishes exactly one edge. Resetting on every unnamed child would make the leading `|` start a second conjunct and double this"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "single",
+      "target": "Ord",
+      "comment": "the negative control: `single :: !Int -> Bool | Eq Int` constrains on one class. An edge to `Ord` would be an invented constraint, and inventing a constraint is the same class of error as dropping one"
+    },
+    {
+      "type": "references",
+      "from": "comma",
+      "target": "Size",
+      "comment": "`comma` names two classes. `Size` is in no context on that line, so nothing may be invented for it"
+    },
+    {
+      "type": "references",
+      "from": "both",
+      "target": "Size",
+      "comment": "`both`'s context is `Eq Int & Ord Int`. `Size` belongs to `three` and to the instance, and a reader that leaked a context across signatures would publish it here"
+    },
+    {
+      "type": "extends",
+      "comment": "the ruled type. Nothing in this file may produce one — see script/m14/clean-ruled.ts. A dictionary requirement is not a supertype relation, and joining two of them with `&` does not make one"
+    },
+    {
+      "type": "implements",
+      "from": "both",
+      "comment": "`implements` belongs to the INSTANCE (`Int -> Ord`), never to a function whose signature carries a constraint"
+    },
+    {
+      "type": "implements",
+      "from": "cmp",
+      "comment": "an instance MEMBER is not the instance. `implements` for this file is the `Int -> Ord` row at line 70 and nothing else"
+    },
+    {
+      "type": "calls",
+      "from": "three",
+      "target": "Eq",
+      "comment": "naming a class in a type position is a reference, not a call. The one call `three` makes is `size` at line 42"
+    },
+    {
+      "type": "instantiates",
+      "from": "both",
+      "comment": "a dictionary requirement is a reference to a class, never a construction of one"
+    },
+    {
+      "type": "overrides",
+      "from": "three",
+      "comment": "`overrides` pairs a member with its class's member of the same name. `three` is a function, not a member, and this file's only overrides are the instance member at lines 72 and 73"
+    },
+    {
+      "type": "contains",
+      "from": "Eq",
+      "target": "Ord",
+      "comment": "two sibling classes are not nested. `contains` here is module->class and class->member only"
+    }
+  ],
+  "forbidErrors": []
+}

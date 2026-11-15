@@ -1,0 +1,339 @@
+{
+  "fixtureId": "csharp/interface-member-implementation",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "C923 (#923): the member-level interface-implementation contract. Before this fixture the lane published NO edge between a member and the interface member it satisfies, in either form \u2014 and C# requires no keyword to satisfy an interface, so the `override`-modifier machinery could not see either one. The fixture is authored against the family's five-lane precedent for the label (`overrides M -> I.m`, measured in java/kotlin/typescript/dart/python by script/m14/tmp/c923-family-member-edge-probe.ts): IMPLICIT (`Implicit : IThingEx`, no keyword written) and EXPLICIT (`void IThing.Reset()`, the interface written in the declaration \u2014 published even when the interface is not declared anywhere, `IExternalThing`). CHAIN crosses an interface's own base list (IThingEx : IThing), which is why the ancestor lookup had to be fixed to see a raw-named base (measured gap: Chain.GetName was missing while Chain.Extra was present). HIDDEN pins the refusal a base class's own implementation creates (`new`-hidden member does not claim the slot), UNRELATED pins that a same-named member of a type implementing nothing never licenses an edge even when the interface is declared in the same file, EXTERNAL pins the unknowable-contract refusal for the implicit form, and HELPER pins that an unrelated member of a CONFORMING type publishes nothing. Events appear in all three forms (field-like implicit, field-like hidden/implementing, and the accessor form, which is the only explicit-event form C# allows) because the first run of this fixture exposed that neither event branch collected a contract at all.",
+  "expectSymbols": [
+    {
+      "name": "IThing",
+      "kind": "interface"
+    },
+    {
+      "name": "IThingEx",
+      "kind": "interface"
+    },
+    {
+      "name": "Implicit",
+      "kind": "class"
+    },
+    {
+      "name": "Explicit",
+      "kind": "class"
+    },
+    {
+      "name": "Chain",
+      "kind": "class"
+    },
+    {
+      "name": "Hidden",
+      "kind": "class"
+    },
+    {
+      "name": "Unrelated",
+      "kind": "class"
+    },
+    {
+      "name": "GetName",
+      "kind": "method"
+    },
+    {
+      "name": "Count",
+      "kind": "property"
+    },
+    {
+      "name": "Changed",
+      "kind": "event"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.GetName",
+      "target": "GetName"
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.Count",
+      "target": "Count"
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.Reset",
+      "target": "Reset"
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.Changed",
+      "target": "Changed"
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.GetName",
+      "target": "GetName"
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Count",
+      "target": "Count"
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Reset",
+      "target": "Reset"
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Changed",
+      "target": "Changed"
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Extra",
+      "target": "Extra"
+    },
+    {
+      "type": "overrides",
+      "from": "Chain.GetName",
+      "target": "GetName"
+    },
+    {
+      "type": "overrides",
+      "from": "Chain.Extra",
+      "target": "Extra"
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.GetName",
+      "target": "GetName"
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.Count",
+      "target": "Count"
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.Reset",
+      "target": "Reset"
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.Changed",
+      "target": "Changed"
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.GetName",
+      "target": "GetName"
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Count",
+      "target": "Count"
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Reset",
+      "target": "Reset"
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Changed",
+      "target": "Changed"
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Run",
+      "target": "Run"
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesBase.Label",
+      "target": "Label"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.GetName",
+      "target": "GetName",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.Count",
+      "target": "Count",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.Reset",
+      "target": "Reset",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitEarlier.Changed",
+      "target": "Changed",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.GetName",
+      "target": "GetName",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Count",
+      "target": "Count",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Reset",
+      "target": "Reset",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Changed",
+      "target": "Changed",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Extra",
+      "target": "Extra",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Chain.GetName",
+      "target": "GetName",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Chain.Extra",
+      "target": "Extra",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.GetName",
+      "target": "GetName",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.Count",
+      "target": "Count",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.Reset",
+      "target": "Reset",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Middle.Changed",
+      "target": "Changed",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.GetName",
+      "target": "GetName",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Count",
+      "target": "Count",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Reset",
+      "target": "Reset",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Changed",
+      "target": "Changed",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.Run",
+      "target": "Run",
+      "equals": 1
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesBase.Label",
+      "target": "Label",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Unrelated.GetName",
+      "target": "GetName",
+      "note": "name matching alone: the type implements nothing, and the very interface declaring GetName is in this file \u2014 the fabrication the contract must never produce"
+    },
+    {
+      "type": "overrides",
+      "from": "Unrelated.Reset",
+      "target": "Reset",
+      "note": "the same refusal for the void member"
+    },
+    {
+      "type": "overrides",
+      "from": "Hidden.GetName",
+      "target": "GetName",
+      "note": "the base class Middle already fills the slot; a `new`-hidden member is not the interface implementation"
+    },
+    {
+      "type": "overrides",
+      "from": "Implicit.Helper",
+      "target": "Helper",
+      "note": "no interface declares Helper \u2014 a member of a CONFORMING type is still not an implementation"
+    },
+    {
+      "type": "overrides",
+      "from": "ExternalContract.Run",
+      "target": "Run",
+      "note": "implicit form against an interface the file never declares: the contract is unknowable here, so the honest answer is no edge"
+    },
+    {
+      "type": "overrides",
+      "from": "Unrelated.GetName",
+      "target": "IThing.GetName",
+      "note": "THE OWNER-QUALIFIED SPELLING OF THE SAME REFUSAL, and the pin that kills the surviving mutant csharp/interface-member-conforming-dropped (2026-10-21): that mutant re-adds the C923 over-reach rows with the target spelled `IThing.GetName` instead of `GetName`, and the bare-spelling forbids above cannot see it - so the fabrication was invisible and the mutant SURVIVED the whole battery. The pre-C923 analyzer spelled this row exactly this way, so the spelling is the defect's own signature, not an invented one."
+    },
+    {
+      "type": "overrides",
+      "from": "Unrelated.Reset",
+      "target": "IThing.Reset",
+      "note": "the same owner-qualified spelling of the void-member refusal"
+    },
+    {
+      "type": "overrides",
+      "from": "Hidden.GetName",
+      "target": "IThing.GetName",
+      "note": "the owner-qualified spelling of the base-class-fills-the-slot refusal"
+    },
+    {
+      "type": "overrides",
+      "from": "Explicit.GetName",
+      "target": "IThing.GetName",
+      "note": "THE TARGET-SPELLING CONTRACT, pinned on a CONFORMING member: the interface-implementation edge names the DECLARED MEMBER (`GetName`), never the owner-qualified member (`IThing.GetName`) - the fleet-wide 'the target is the DECLARED MEMBER, not Owner.member' fix (45b879423). A conforming member may have ONE such edge, in ONE spelling."
+    }
+  ]
+}

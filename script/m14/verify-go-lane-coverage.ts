@@ -31,8 +31,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 /** The repository root, resolved from THIS FILE's own location rather than
- *  hardcoded. It was `"$HOME/mcp/backbencher-brain"`, a path that does
- *  not exist on this machine — the checkout is `$HOME/backbencher-brain`
+ *  hardcoded. It was `"/home/ishaq2321/mcp/backbencher-brain"`, a path that does
+ *  not exist on this machine — the checkout is `/home/ishaq2321/backbencher-brain`
  *  — so every `fs.readFileSync(path.join(ROOT, ...))` in this gate threw ENOENT
  *  and the lane's own coverage gate could not run at all. A gate that cannot run
  *  reports nothing, and nothing reads as nothing failing. The same shape as the

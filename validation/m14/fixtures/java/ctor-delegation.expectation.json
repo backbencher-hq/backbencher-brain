@@ -1,0 +1,17 @@
+{
+  "fixtureId": "java/ctor-delegation",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419 G2: explicit constructor invocation (JLS 8.8.7) — super(...), this(...), and qualified Receiver.super(...) — is an explicit call edge and must be visible. Authored from semantics before observing analyzer run; proven failing pre-fix (G2), now pinned so it cannot regress. M37.21 C3: constructor symbols carry their CLASS NAME (CtorDelegation, not the old colliding literal 'constructor') so distinct classes' ctors and their overloads stay distinguishable.",
+  "expectSymbols": [
+    { "name": "CtorDelegation", "kind": "class" },
+    { "name": "CtorDelegation", "kind": "constructor" },
+    { "name": "Inner", "kind": "constructor" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "sourceEndsWith": "CtorDelegation", "target": "super" },
+    { "type": "calls", "sourceEndsWith": "CtorDelegation", "target": "this" },
+    { "type": "calls", "sourceEndsWith": "Inner", "target": "super" },
+    { "type": "calls", "meta.relationshipType": "constructor_invocation" }
+  ]
+}

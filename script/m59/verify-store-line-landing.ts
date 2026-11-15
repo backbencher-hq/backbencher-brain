@@ -22,7 +22,7 @@ const EMPTY = mkdtempSync(path.join(tmpdir(), "m59-data-"))
 process.env.BB_DATA_DIR = EMPTY
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const TARGET_REPO = process.argv[2] ?? "$HOME/fixtures/repositories/cats-effect"
+const TARGET_REPO = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/cats-effect"
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")

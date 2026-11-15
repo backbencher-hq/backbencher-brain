@@ -1,0 +1,15 @@
+{
+  "expectSymbols": [
+    { "name": "Branchy", "kind": "module" },
+    { "name": "add", "kind": "function", "ownerName": "Branchy" },
+    { "name": "plain", "kind": "function", "ownerName": "Branchy" }
+  ],
+  "expectComplexity": [
+    { "symbol": "Branchy", "equals": 3 },
+    { "symbol": "add", "ownerName": "Branchy", "equals": 2 },
+    { "symbol": "plain", "ownerName": "Branchy", "equals": 1 }
+  ],
+  "expectExports": [
+    { "name": "Branchy", "kind": "module" }
+  ]
+}

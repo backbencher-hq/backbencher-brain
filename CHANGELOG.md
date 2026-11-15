@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.1.4 — the security tool reports leads it can defend
+
+Owner-facing release. Every claim below was verified on a clean worktree at the
+release commit, not on a working tree that carried unfinished language work.
+
+- **`bb_security` is a lead generator, not a vulnerability scanner.** It reports
+  lexical source→sink token pairs over the indexed symbols, and the description,
+  docs and answers all say so. A lead is stored when a source expression reaches a
+  dynamic sink argument in the same symbol, with the rule id, the source and sink
+  lines and the assignment reach path. Parameterized, constant-argument,
+  comment-only and test-file cases are excluded. What it does not do is stated in
+  the tool description and the docs: no data-flow analysis, no cross-symbol
+  propagation, no sanitizer modelling, no proof of exploitability. Leads require
+  manual validation.
+- **Unsupported languages are declared, never a clean zero.** A project written in
+  JSON, YAML, SQL or any language with no executable source model now answers with
+  "not scanned by bb_security (no executable source model): …" instead of a
+  confident-looking empty result. The tier registry is the source of truth, and the
+  declaration is per project, read from the files that were actually indexed.
+- **The retired token cross-product is replaced, not deleted silently.** The M72
+  spec engine writes `brain_security_flow`; the legacy `brain_taint_flow` writer
+  runs only under `BB_SECURITY_LEGACY=1` for one release. A pre-M72 row can no
+  longer be re-presented as a lead.
+- **Live leads are paginated and declared.** `limit` is a live page size (default
+  50, max 200) and `offset` pages live leads only; the answer states the page, the
+  page size and the declared total, so a page is never mistaken for the whole set.
+  `history` keeps its own bounded run page.
+- **JavaScript: the receiver-owner and source-attribution work.** A named function
+  expression rebinds the uses walk's source; receiver types are scoped to the class
+  that declares them; emitted endpoints are real names (measured zero invalid on
+  70,157 rows); the `implements` clause is proven grammar-fixable and measured, not
+  wired; census artifacts behind the receiver-owner audit tables are tracked.
+- **Go: source attribution through closures, func literals and package vars.** A
+  channel read in a package-scope closure belongs to the closure's variable; a
+  func-typed package var is a call target and its calls were being dropped; the
+  `references` edge attributes through a func literal to the owning package var;
+  package-scope `instantiates` attributes to the declaration rather than `global`;
+  the inherited const type (GO39) and package-scope func-type var (GO40) defects
+  are fixed; the dangling-source table is split by resolver because 6,723 was two
+  measurements.
+- **PowerShell: the type reader tests the argument node, not its text.** A
+  `New-Object` dynamic type name is decided by the argument node, because the
+  grammar wraps a bare `$t` and a single-quoted `'\$literalType'` identically and
+  only the interpolated form carries a `variable` node. Preference variables and
+  property symbols are filtered from `contains`; `New-Object` no longer publishes a
+  `calls` edge to itself; Verb-Noun cmdlet calls are not user functions.
+- **`project-stats` counts symbols per file.** `COUNT(s.id)` over a `LEFT JOIN`
+  counted the language row once per symbol, and one row for a file with no
+  symbols. The subquery counts per file first.
+- **Release gates.** `prepack` and `prepublishOnly` run the dist-integrity check;
+  the packaged-install gate packs the tarball, installs it into a temp prefix, runs
+  `--version`, runs a real index asserting the summary/path/run lines, and
+  `bb setup reset`. Docs and website build clean.
+
+Evidence for this build: `npm test`, the three security gates (52/52, 58/58, 22/22),
+`verify:fast` (22/22 gates), the full fixture corpus, the website typecheck and
+build, and the packaged-tarball smoke.
+
 ## 0.1.3 — UX overhaul
 
 Owner-facing release. Everything below was verified on the packaged tarball before

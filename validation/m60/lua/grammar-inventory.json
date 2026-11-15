@@ -4,7 +4,7 @@
   "at": "2026-10-03T19:36:02.294Z",
   "commit": "6825053b87c80e0c24de822535bac5acf268e8b7",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "repos": 141,
     "filesParsed": 3250,
     "capPerRepo": 100000

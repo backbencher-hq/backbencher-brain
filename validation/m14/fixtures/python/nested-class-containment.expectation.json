@@ -1,0 +1,79 @@
+{
+ "fixtureId": "python/nested-class-containment",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A class nested in a class body is a MEMBER of it: `Outer.Inner` resolves in Python with no lookup machinery, so the nesting is containment. This is the first genuine ANALYZER defect the independent oracle found \u2014 66 `contains` edges across 24 corpus files that the tree supports and the lane did not emit, including `_Multipart._Part` in urllib/parse.py. Nothing else had seen it, because `contains` is derived from `ownerName` and a nested class had none. The two positive rows are the fix; the forbid row is the half that is easy to get wrong in the eager direction, since a class written inside a METHOD is a LOCAL of that method \u2014 `Outer.Deep` does not resolve, so publishing that edge would add a name to the outer class's surface that the source does not give it. A fix that only added the containment would pass both positive rows and fail this one, which is the point of writing it. The `ownerName` row is load-bearing outside this lane: the indexer keys `nameToSymbol` on `${scope || ownerName}.${name}` as well as `name`, so a nested class with an owner resolves its own `overrides` sources exactly rather than falling back to a first-wins leaf lookup \u2014 the dependency `python/owner-name-stripped` exercises, and the one the retracted PY-3 turned out to rest on.",
+ "expectSymbols": [
+  {
+   "name": "Inner",
+   "kind": "class",
+   "ownerName": "Outer",
+   "note": "the member a nested class now is. Before the fix this symbol existed with NO owner, so no `contains` was derived for it and the class was unreachable from its parent"
+  },
+  {
+   "name": "Local",
+   "kind": "class",
+   "note": "a class in a METHOD: still a symbol, and still ownerless. `Outer.Local` does not resolve in Python, so it must not acquire an owner"
+  },
+  {
+   "name": "AlsoLocal",
+   "kind": "class",
+   "note": "a class in a plain function: same rule, one scope down"
+  },
+  {
+   "name": "Sibling",
+   "kind": "class",
+   "note": "a module-level class is ownerless \u2014 Python has no module declaration, which is the scripting-family contract"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Outer",
+   "target": "Inner",
+   "line_number": 29,
+   "note": "THE FIX. A class written in a class body is a member of that class"
+  },
+  {
+   "type": "contains",
+   "from": "Inner",
+   "target": "attribute",
+   "line_number": 32,
+   "note": "the nested class's own members belong to the nested class, not one level up"
+  },
+  {
+   "type": "contains",
+   "from": "Inner",
+   "target": "method",
+   "line_number": 34
+  },
+  {
+   "type": "contains",
+   "from": "Outer",
+   "target": "outer_method",
+   "line_number": 37
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "Outer",
+   "target": "Local",
+   "note": "THE BOUNDARY. `Local` is declared inside `outer_method`, so it is a local of that method and `Outer.Local` does not resolve. The fix keys on `currentClass && !currentFunction` precisely so this edge is not published; a fix that only added containment would pass every positive row and fail here"
+  },
+  {
+   "type": "contains",
+   "from": "Sibling",
+   "target": "Local"
+  },
+  {
+   "type": "contains",
+   "from": "AlsoLocal",
+   "target": "Local"
+  }
+ ],
+ "_seamNote": {
+  "what": "Class nesting is containment one level down and locality everywhere else. A `class` written in a class body gets `ownerName`; a `class` written in a method body or a function body does not.",
+  "why": "The reachable/not-reachable line is Python's own, not a convention chosen here: `Outer.Inner` resolves through the class body's namespace, and a name bound in a method's body is gone when the method returns. Publishing the second as a member of the first would make the outer class's surface larger than the language's, and a graph that overstates a surface is worse than one that understates it \u2014 an overstatement sends a reader to a name that cannot be resolved, while an understatement is visible as a gap. Entering a class clears `currentFunction` and entering a function sets it, so the two cases are distinguishable during the single walk with no extra state, and the guard is one clause rather than a stack."
+ }
+}

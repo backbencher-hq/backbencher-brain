@@ -1,0 +1,196 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/case-arm-pattern-not-a-command.sh",
+ "authoredFrom": "M60 round-3 adversarial probe, 2026-10-03. Authored from a corpus measurement, not from reading the analyzer. `validation/m14/fixtures/bash/guard-f-bash-imports.mts` over 400 and then 1,200 hash-ordered corpus files asked which already-emitted edges a command whose `command_name` is immediately followed by a damaged `)` sits on. Three predicates were measured: F1 (any direct ERROR/missing child with text `)`), F2 (the child immediately AFTER `command_name` is ERROR/missing and begins with `)`) and F3 (any direct ERROR/missing child, which is the already-rejected guard E). On 400 files, and unchanged on 1,200, F2 removes 5 edges in 1 file with ZERO real calls among them: 3 fabricated `calls` edges naming the gimme arm patterns binary/git/auto, and 2 fabricated `imports`/`references` edges to `_try_existing`. F3 removes 20, of which 15 are real `kube::log::status` calls in kubernetes/test/e2e_node/gubernator.sh, which is why guard E was rejected in pass 1 \u2014 so the cost of narrowing is a measurement, not an argument. F1 was measured and REJECTED: `guard-f-soundness.mts` asks it about 39 node shapes and it fires on `awk one two ) three`, valid bash where `)` is an ordinary word argument, which would delete a real call. F2 fires on 0 of those 39. The POSIX fact the guard rests on is that a `)` can never immediately follow a command NAME in valid bash: `(cmd)` puts the `)` on the subshell as a sibling of the whole command, and `echo )` puts it after an argument. Only a terminator the grammar could not place lands there. The reason this region was worth a sixth guard when pass 2 declined to close the `calls` half of it: the `source` arm's PATTERN is the word `source`, so that arm reaches the `source`/`.` branch and published `imports` and `references` edges to a shell FUNCTION defined at kubernetes/third_party/gimme/gimme:414 \u2014 a fabricated module dependency, the type bb_migrate and bb_impact read, and invisible to the shared differential because deriveBashEdges pushes both labels for the same construct. Seven positive expectations pin the guard's scope: a real `source ./lib.sh` and `. ./other.sh` keep their dependency edges (the guard sits directly above that branch), `awk one two ) three` is F1's counterexample and must keep its call, `V=2 kube::log::status` is the shape guard E lost 15 real calls to, `/usr/bin/true` proves a normally-parsed case arm keeps its body, and the two lines after the defective construct prove a real command on the same damaged region keeps its edge. `calls -> *` is the one residual this region keeps: it arrives with no damage on it at all, so no structural guard can reach it, and it is carried as a named residual rather than closed with a blacklist on the literal character `*`. SUPERSEDED by BD16: a `source`/`.` inclusion is `part_of`, not `imports` \u2014 the rows moved, the facts did not (target = the part's module symbol, path in metadata.partPath). The two imports rows became two part_of rows; every references row is UNCHANGED and stays.",
+ "expectSymbols": [
+  {
+   "name": "case-arm-pattern-not-a-command.sh",
+   "kind": "module"
+  },
+  {
+   "name": "_try_existing",
+   "kind": "function"
+  },
+  {
+   "name": "_try_binary",
+   "kind": "function"
+  },
+  {
+   "name": "_try_source",
+   "kind": "function"
+  },
+  {
+   "name": "_try_git",
+   "kind": "function"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "./lib.sh",
+   "line_number": 55,
+   "confidenceMin": 1
+  },
+  {
+   "type": "references",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "./other.sh",
+   "line_number": 56,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "awk",
+   "line_number": 67,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "::log::status",
+   "line_number": 72,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "/usr/bin/true",
+   "line_number": 82,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "_try_existing",
+   "line_number": 87,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "_try_git",
+   "line_number": 88,
+   "confidenceMin": 1
+  },
+  {
+   "type": "part_of",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "lib.sh",
+   "line_number": 55,
+   "meta.partRole": "library",
+   "meta.partPath": "./lib.sh",
+   "meta.partSymbol": "lib.sh"
+  },
+  {
+   "type": "part_of",
+   "from": "case-arm-pattern-not-a-command.sh",
+   "target": "other.sh",
+   "line_number": 56,
+   "meta.partRole": "library",
+   "meta.partPath": "./other.sh",
+   "meta.partSymbol": "other.sh"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "binary"
+  },
+  {
+   "type": "calls",
+   "target": "source"
+  },
+  {
+   "type": "calls",
+   "target": "git"
+  },
+  {
+   "type": "calls",
+   "target": "auto"
+  },
+  {
+   "type": "calls",
+   "target": "in"
+  },
+  {
+   "type": "imports",
+   "target": "_try_existing"
+  },
+  {
+   "type": "references",
+   "target": "_try_existing"
+  },
+  {
+   "type": "imports",
+   "target": "binary"
+  },
+  {
+   "type": "references",
+   "target": "binary"
+  },
+  {
+   "type": "imports",
+   "target": "auto"
+  },
+  {
+   "type": "references",
+   "target": "auto"
+  },
+  {
+   "type": "imports",
+   "target": "git"
+  },
+  {
+   "type": "references",
+   "target": "git"
+  },
+  {
+   "type": "imports",
+   "target": "_try_source"
+  },
+  {
+   "type": "references",
+   "target": "_try_source"
+  },
+  {
+   "type": "imports",
+   "target": "_try_git"
+  },
+  {
+   "type": "references",
+   "target": "_try_git"
+  },
+  {
+   "type": "imports",
+   "target": "_try_binary"
+  },
+  {
+   "type": "references",
+   "target": "_try_binary"
+  },
+  {
+   "type": "imports",
+   "target": "./lib.sh",
+   "note": "BD16 relabel: a source inclusion is part_of."
+  },
+  {
+   "type": "imports",
+   "target": "./other.sh",
+   "note": "BD16 relabel forbid."
+  },
+  {
+   "type": "part_of",
+   "target": "_try_existing",
+   "note": "the F1 fabrication the guard exists to stop, now on the new label too: a case-arm PATTERN is not a source command, so no part_of row may name the function the damaged region read back."
+  },
+  {
+   "type": "part_of",
+   "target": "./lib.sh",
+   "note": "the target is the SYMBOL, never the path."
+  }
+ ],
+ "_supersededBy": "case-arm-pattern-not-a-command.expectation.json",
+ "_supersedeReason": "The two imports rows became two part_of rows; every references row is UNCHANGED and stays."
+}

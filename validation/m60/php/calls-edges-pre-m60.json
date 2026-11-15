@@ -1,0 +1,12 @@
+{
+  "instrument": "validation/m60/php/ambiguity-split.json @ 0b6a2b203",
+  "why": "The ONLY committed record of the `calls` edge count BEFORE src/ast/php-internal-symbols.ts replaced the 218-name hand-written PHP_BUILTINS with the derived php-src union. builtin-calls-probe.mts reads this so the reconciliation it prints against a site count is not reconciled against a number typed into the probe.",
+  "commit": "0b6a2b203",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedFiles": 5094,
+  "sampleFiles": 5094,
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "callsEdges": 107611,
+  "totalEdges": 354776,
+  "extract": "git show 0b6a2b203:validation/m60/php/ambiguity-split.json -> .perType.calls.edges"
+}

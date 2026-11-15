@@ -1,0 +1,160 @@
+{
+  "checks": [
+    {
+      "description": "parse-success floor for Clyde:clean: 15.596% of 109 files carry an ERROR node or a MISSING token (floor unpinned)",
+      "detail": "files=109 ERROR=16 MISSING=4 either=17 damaged-lines median=3 max=81 digest=5a098308ffd09f07 verdict=unpinned",
+      "id": "M14.0.F10.Clyde:clean",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for clean-stdlib:clean: 1.351% of 74 files carry an ERROR node or a MISSING token (floor unpinned)",
+      "detail": "files=74 ERROR=1 MISSING=1 either=1 damaged-lines median=16 max=16 digest=191a8a3276090a11 verdict=unpinned",
+      "id": "M14.0.F10.clean-stdlib:clean",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "dea4738741c67426e3415105acfe7656aec71f1d",
+  "committedAt": "2026-09-25T15:35:41-04:00",
+  "corpusPins": {
+    "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+    "clean-stdlib": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff"
+  },
+  "data": {
+    "atCommit": "dea4738741c67426e3415105acfe7656aec71f1d",
+    "baseline": "validation/m14/parse-success-baseline.json",
+    "failures": 0,
+    "improved": 0,
+    "method": "files routed by the pipeline's detectLanguageFromPath, ordered by a hash of their relative path and capped deterministically; each lane parsed in its own child process with a fresh module; ERROR nodes and MISSING tokens counted separately; the rate compared against a pinned per-lane floor whose sample digest must match",
+    "rows": [
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "Clyde": {
+            "errorFiles": 7,
+            "files": 36
+          },
+          "Cocoa": {
+            "errorFiles": 0,
+            "files": 22
+          },
+          "cleantools": {
+            "errorFiles": 9,
+            "files": 50
+          }
+        },
+        "candidateCount": 109,
+        "capped": false,
+        "eitherFiles": 17,
+        "eitherPct": 15.596,
+        "emptyFiles": 0,
+        "errPct": 14.679,
+        "errorFiles": 16,
+        "errorLines": 131,
+        "errorLinesMax": 81,
+        "errorLinesMedian": 3,
+        "exts": {
+          "dcl": {
+            "errorFiles": 1,
+            "files": 54
+          },
+          "icl": {
+            "errorFiles": 15,
+            "files": 55
+          }
+        },
+        "files": 109,
+        "lane": "Clyde:clean",
+        "lang": "clean",
+        "missPct": 3.67,
+        "missingFiles": 4,
+        "pinnedEitherPct": null,
+        "repo": "Clyde",
+        "repoPin": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+        "sampleDigest": "5a098308ffd09f07",
+        "sampleLimit": 400,
+        "verdict": "unpinned",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 1,
+            "files": 65
+          },
+          "StdEnv 64 Changed Files": {
+            "errorFiles": 0,
+            "files": 9
+          }
+        },
+        "candidateCount": 74,
+        "capped": false,
+        "eitherFiles": 1,
+        "eitherPct": 1.351,
+        "emptyFiles": 3,
+        "errPct": 1.351,
+        "errorFiles": 1,
+        "errorLines": 16,
+        "errorLinesMax": 16,
+        "errorLinesMedian": 16,
+        "exts": {
+          "dcl": {
+            "errorFiles": 0,
+            "files": 38
+          },
+          "icl": {
+            "errorFiles": 1,
+            "files": 36
+          }
+        },
+        "files": 74,
+        "lane": "clean-stdlib:clean",
+        "lang": "clean",
+        "missPct": 1.351,
+        "missingFiles": 1,
+        "pinnedEitherPct": null,
+        "repo": "clean-stdlib",
+        "repoPin": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
+        "sampleDigest": "191a8a3276090a11",
+        "sampleLimit": 400,
+        "verdict": "unpinned",
+        "which": "second"
+      }
+    ],
+    "sampleLimit": 400,
+    "treeModifiedInputs": 1,
+    "verdict": "pass"
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F10.clean",
+  "layers": [
+    "corpus routing (the pipeline's own detectLanguageFromPath, including the .h sniff)",
+    "pinned grammar per lane (wasm), one fresh module per lane in its own child process",
+    "per-lane floors in validation/m14/parse-success-baseline.json, sample-digest pinned"
+  ],
+  "limitations": [
+    {
+      "description": "This measures the GRAMMAR's surface, not recovery quality: symbols flow through an ERROR region, so a high rate and a zero rate can both be 'no symbol loss' — that is why F5 stays green and why this gate exists separately."
+    },
+    {
+      "description": "The corpora are local checkouts; each lane records its repo pin so a moved corpus is visible beside its floor."
+    },
+    {
+      "description": "A lane whose candidate set changed reports sample-moved and is NOT compared — the honest state, not a pass. The gate exits 2 in that case."
+    },
+    {
+      "description": "The rate is the full production-routed surface, so the c figure includes plain C headers and the cpp figure includes the headers production sniffs as C++. The per-extension split is recorded beside every row so these reconcile with the .c-only census in reviews/m49-w17-parse-success-census.md."
+    },
+    {
+      "description": "LANE-SCOPED artifact: this run measured 2 lane(s) (Clyde:clean, clean-stdlib:clean), not the whole lane set. Its floors describe those lanes only and must not be read as the canonical M14.0.F10 claim; the canonical artifact carries every pinned lane. These floors are not yet in validation/m14/parse-success-baseline.json, which is only rewritten by an unscoped --update-baseline."
+    }
+  ],
+  "regeneratedAt": "2026-09-25T19:36:43.105Z",
+  "regeneratedAtCommit": "dea4738741c67426e3415105acfe7656aec71f1d",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "corpus parse-success floor, LANE-SCOPED (clean) — NOT the canonical whole-set claim"
+}

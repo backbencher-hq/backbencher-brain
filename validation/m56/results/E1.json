@@ -1,0 +1,37 @@
+{
+  "issue": "M56.E1",
+  "code": "E1",
+  "milestone": "M56",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "negativeCases": 7,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m56/verify-editors-page.ts",
+  "evidenceFile": "E1.json",
+  "generatedAt": "2026-11-09T14:43:40.788Z",
+  "generatedArtifact": "website/src/data/editors.generated.ts",
+  "rendered": {
+    "route": "/editors",
+    "build": "built now",
+    "stills": 4,
+    "editors": 4
+  },
+  "summary": {
+    "launchLanguages": 52,
+    "shippedClaimSources": 3,
+    "ledgerRows": 52,
+    "editorRuns": 4,
+    "osLegs": 3,
+    "exclusions": 3,
+    "declaredDrift": 0,
+    "integrations": 4
+  },
+  "limitations": [
+    "Rendered checks reuse website/.next when it is newer than every site source, and rebuild otherwise; a fresh checkout always rebuilds.",
+    "The M29 precision ledger is consumed as an artifact (validation/m29/results/PRECISION-LEDGER.json); this gate does not re-run the M29 wave fixtures.",
+    "The VSIX is a gitignored build artifact, so the page reports the packaging record and the install command instead of pinning a file hash that every rebuild would change.",
+    "N2 checks the cross-check predicate on tampered bytes rather than rewriting the file, because the generator check (N1) already covers the write path."
+  ]
+}

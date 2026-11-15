@@ -1,0 +1,154 @@
+{
+  "comment": "HTML ONTOLOGY \u2014 a document may supply ANY string as a tag name, an attribute name, a `<link rel>` token or an `id`, and every vocabulary in this analyzer is keyed by one. On a plain object literal such a lookup answers `Object.prototype[key]`, and the caller cannot tell that from a real entry. MEASURED on the corpus (validation/m14/probes/html/construct-probe.mts \u00a74, 1,185 git-tracked documents / 24 repositories): 1 document reaches it \u2014 `csharp-sample/extensions/copilot/src/platform/parser/test/node/fixtures/chatSetup.ts.getStructure.html`, a TypeScript code-dump with `<CONSTRUCTOR>` at line 174 \u2014 and `RESOURCE_RULES[\"constructor\"]` is the `Object` FUNCTION, so `rules.length` is 1, `rules[0]` is undefined and the loop dereferences `undefined.attr`. Production `parseFile` reports \"analyzer timeout, returning basic parse result\" and that 88,229-byte document publishes ZERO symbols, ZERO relationships and no metadata. This fixture reproduces the tag verbatim so the pin and the corpus finding are the same input. The metadata pins are the load-bearing half: a crash is loud, and the four TRUTHINESS tables fail SILENTLY \u2014 `SEMANTIC_ELEMENTS[\"tostring\"]` and friends are truthy, so seven elements were counted as landmarks, controls and form elements with no error anywhere.",
+  "expectSymbols": [
+    {
+      "name": "prototype-safe-names",
+      "kind": "module"
+    },
+    {
+      "name": "c1",
+      "kind": "class",
+      "meta.tagName": "constructor",
+      "meta.isAddressable": true
+    },
+    {
+      "name": "c2",
+      "kind": "class",
+      "meta.tagName": "tostring",
+      "meta.isSemantic": false,
+      "meta.isInteractive": false,
+      "meta.isForm": false
+    },
+    {
+      "name": "c3",
+      "kind": "class",
+      "meta.tagName": "valueof",
+      "meta.isSemantic": false,
+      "meta.isInteractive": false,
+      "meta.isForm": false
+    },
+    {
+      "name": "c4",
+      "kind": "class",
+      "meta.tagName": "hasownproperty"
+    },
+    {
+      "name": "c5",
+      "kind": "class",
+      "meta.tagName": "isprototypeof"
+    },
+    {
+      "name": "c6",
+      "kind": "class",
+      "meta.tagName": "propertyisenumerable"
+    },
+    {
+      "name": "c7",
+      "kind": "class",
+      "meta.tagName": "tolocalestring",
+      "meta.isSemantic": false
+    },
+    {
+      "comment": "THE HANDLE-MAP HALF. `id=\"__proto__\"` is a legal handle. On a plain object `obj[\"__proto__\"] = v` writes the PROTOTYPE instead of a key, so `handleToSymbol[\"__proto__\"]` answered `Object.prototype` and the duplicate-suffix walk started from `Object.prototype`. Here it is an ordinary handle: a symbol named `__proto__`, a duplicate allocated as `__proto__#2`, and an anchor that resolves to the FIRST declaration \u2014 which is what getElementById returns \u2014 with metadata.ambiguousTarget saying a choice was made.",
+      "name": "__proto__",
+      "kind": "class",
+      "meta.tagName": "div"
+    },
+    {
+      "name": "__proto__#2",
+      "kind": "class",
+      "meta.duplicateId": true,
+      "meta.duplicateOf": "__proto__"
+    },
+    {
+      "name": "tail",
+      "kind": "class",
+      "meta.tagName": "p"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "The walk did not stop at `<constructor>`: its `<a href>` still publishes a resource edge, which is exactly what the crashing loop destroyed for the whole corpus document.",
+      "type": "uses",
+      "from": "c1",
+      "target": "/from-constructor",
+      "line_number": 47,
+      "meta.resourceType": "navigation"
+    },
+    {
+      "type": "contains",
+      "from": "prototype-safe-names",
+      "target": "c1",
+      "line_number": 47
+    },
+    {
+      "type": "contains",
+      "from": "prototype-safe-names",
+      "target": "tail",
+      "line_number": 62
+    },
+    {
+      "type": "uses",
+      "from": "prototype-safe-names",
+      "target": "__proto__",
+      "line_number": 60,
+      "meta.isInternalAnchor": true,
+      "meta.ambiguousTarget": true
+    },
+    {
+      "comment": "The two lookup tables that still fire on a legal document are unaffected: `<link rel=stylesheet>` and `<param name=src>`.",
+      "type": "uses",
+      "from": "prototype-safe-names",
+      "target": "/p.css",
+      "line_number": 41,
+      "meta.resourceType": "stylesheet",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "uses",
+      "from": "src",
+      "target": "/p.swf",
+      "line_number": 42,
+      "meta.resourceType": "param"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "comment": "The truthiness tables' whole output, compared by exact JSON, so a regression that restores ONE prototype fails a number rather than nothing. Pre-fix these read semanticCount 7 / interactiveCount 7 / formElementCount 3 where the truth is 0 / 2 / 0 \u2014 and nothing anywhere reported an error.",
+      "elementCount": 18
+    },
+    {
+      "comment": "`internalLinkCount` 1 is the single `<a href>` in the document; `externalLinkCount` 0 is the scheme contract holding on a document full of odd names.",
+      "documentMetrics": {
+        "totalElements": 18,
+        "semanticCount": 0,
+        "interactiveCount": 2,
+        "formElementCount": 0,
+        "ariaCount": 0,
+        "headingCount": 0,
+        "headingLevelSkips": 0,
+        "imgCount": 0,
+        "imgWithAltCount": 0,
+        "iframeWithoutLoadingCount": 0,
+        "labelWithoutForCount": 0,
+        "inputWithoutLabelCount": 0,
+        "customElementCount": 0,
+        "templateFragmentCount": 0,
+        "baseHrefCount": 0,
+        "externalLinkCount": 0,
+        "internalLinkCount": 1
+      }
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "A tag with no resource rule emits nothing. Pre-fix `RESOURCE_RULES[\"constructor\"]` was the `Object` function, `rules.length` was its arity and the loop threw on `undefined.attr`; the forbid cannot express that, which is why the fixture pins the SURVIVING edges above and the metadata counts below instead.",
+      "from": "c1",
+      "target": "constructor"
+    },
+    {
+      "comment": "No edge to the literal text of a handle that resolved nowhere \u2014 standing rule R7. `__proto__` resolved, so it is a symbol; nothing named `#__proto__` may appear.",
+      "target": "#__proto__"
+    }
+  ]
+}

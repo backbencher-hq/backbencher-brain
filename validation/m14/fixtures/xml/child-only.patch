@@ -1,0 +1,16 @@
+diff --git a/src/ast/parallel-indexer.ts b/src/ast/parallel-indexer.ts
+index 6f4bd3d12..22b55de19 100644
+--- a/src/ast/parallel-indexer.ts
++++ b/src/ast/parallel-indexer.ts
+@@ -3969,7 +3969,10 @@ export async function storeResults(
+             if (ownerSymbolId && symbol.kind !== ASTEngine.SymbolKind.Instance) {
+                // Dedup: skip if the engine already generated a contains for this (owner, child) pair
+                const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
+-               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
++               // A/B ARM 1 (child-only, set regex): reduce the CHILD with the build site's own
++               // regex and leave the owner regex untouched.
++               const childLeaf = String(symbol.name).replace(/^.*:([^:]+):?\d*$/, "$1")
++               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${childLeaf}`)
+                if (!alreadyHasContains) {
+                  const fileCount = (fileRelCounters.get(fileId) || 0) + 1
+                  fileRelCounters.set(fileId, fileCount)

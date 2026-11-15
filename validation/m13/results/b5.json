@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.05",
+  "code": "B5",
+  "tool": "baseline",
+  "title": "Corpus mapping: pinned repos -> tools/languages + gap register",
+  "verifiedState": "verified",
+  "layers": [
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "at least the 29 pinned repositories enumerated",
+      "pass": true,
+      "detail": "got 48"
+    },
+    {
+      "name": "total corpus files scanned",
+      "pass": true,
+      "detail": "total=418252"
+    },
+    {
+      "name": "gap register enumerates zero-coverage languages",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "gap register flags thin coverage (<50 files)",
+      "pass": true,
+      "detail": "kotlin, vue, r, graphql"
+    },
+    {
+      "name": "unknown-extension files are recorded (not silently dropped)",
+      "pass": true,
+      "detail": "180471 files across 839 extensions"
+    },
+    {
+      "name": "no language outside the 41 is silently mapped",
+      "pass": true,
+      "detail": "unknown extensions: 839"
+    },
+    {
+      "name": "unsupported language (.mojo) is not mapped to a supported analyzer [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "at least 40 of 41 languages have at least one corpus file",
+      "pass": true,
+      "detail": "41/41"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0
+  },
+  "decisions": {
+    "detection": "file-extension mapping (honest proxy; actual analyzer coverage is measured per analyzer issue)",
+    "honesty": "unknown-extension files and unsupported languages are recorded, never silently mapped",
+    "thresholds": "zero coverage = 0 files; thin coverage = 1..49 files",
+    "zeroCoverage": [],
+    "thinCoverage": [
+      "kotlin",
+      "vue",
+      "r",
+      "graphql"
+    ],
+    "coveredCount": 41
+  },
+  "limitations": [
+    "Extension mapping approximates language presence; it does not prove an analyzer parses those files correctly.",
+    "Downloading gap-closing repos is a follow-on action; this issue records the gap register and recommendations."
+  ],
+  "generatedAt": "2026-10-11T19:05:00.532Z"
+}

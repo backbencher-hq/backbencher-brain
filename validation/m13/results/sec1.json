@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.40",
+  "code": "Sec1",
+  "tool": "bb_security",
+  "title": "bb_security: contract + mode resolution (findings only)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "sec: bb_security is in the tool registry",
+      "pass": true,
+      "detail": "missing from PUBLIC_TOOL_DESCRIPTORS"
+    },
+    {
+      "name": "sec: executable modes are exactly [findings]",
+      "pass": true,
+      "detail": "got [\"findings\"]"
+    },
+    {
+      "name": "sec: plannedModes includes flow",
+      "pass": true,
+      "detail": "plannedModes=[\"flow\",\"summary\",\"hotspots\"]"
+    },
+    {
+      "name": "sec: plannedModes includes summary",
+      "pass": true,
+      "detail": "plannedModes=[\"flow\",\"summary\",\"hotspots\"]"
+    },
+    {
+      "name": "sec: plannedModes includes hotspots",
+      "pass": true,
+      "detail": "plannedModes=[\"flow\",\"summary\",\"hotspots\"]"
+    },
+    {
+      "name": "sec: flow is NOT in executable modes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "modes=[\"findings\"]"
+    },
+    {
+      "name": "sec: summary is NOT in executable modes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "modes=[\"findings\"]"
+    },
+    {
+      "name": "sec: hotspots is NOT in executable modes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "modes=[\"findings\"]"
+    },
+    {
+      "name": "sec: description does not advertise a planned mode as executable",
+      "pass": true,
+      "detail": "desc=Lexical security lead generator over the indexed source-to-sink token pairs: SQL injection, XSS, com"
+    },
+    {
+      "name": "sec: handler does not route a flow command [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "flow routing found in handler.ts"
+    },
+    {
+      "name": "sec: handler does not route a summary command [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary routing found in handler.ts"
+    },
+    {
+      "name": "sec: handler does not route a hotspots command [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "hotspots routing found in handler.ts"
+    },
+    {
+      "name": "sec: handler routes findings (the only executable mode)",
+      "pass": true,
+      "detail": "missing engine call"
+    },
+    {
+      "name": "sec: the handler opens the index at all",
+      "pass": true,
+      "detail": "no getRawInstance call"
+    },
+    {
+      "name": "sec: every handler open is read-only [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "sec: the taint engine opens the index at all",
+      "pass": true,
+      "detail": "no getRawInstance call in taint.ts"
+    },
+    {
+      "name": "sec: every engine open is read-only [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "sec: docs/tools/bb_security.md exists",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "sec: doc description matches registry",
+      "pass": true,
+      "detail": "\"Lexical security lead generator over the indexed source-to-sink token pairs: SQL injection, XSS, com\""
+    },
+    {
+      "name": "sec: doc modes = findings only",
+      "pass": true,
+      "detail": "mode line mismatch"
+    },
+    {
+      "name": "sec: doc planned modes labeled honestly",
+      "pass": true,
+      "detail": "planned modes mislabeled"
+    },
+    {
+      "name": "sec: doc does not mention a planned mode as executable",
+      "pass": true,
+      "detail": "aspirational mode mentioned as executable"
+    },
+    {
+      "name": "sec: doc category matches registry",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec: doc mutability = read",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sec: generator verify mode passes (bb_security page byte-fresh)",
+      "pass": true,
+      "detail": "exit=0"
+    },
+    {
+      "name": "sec: contracts file documents the planned-mode split",
+      "pass": true,
+      "detail": "contract note missing"
+    },
+    {
+      "name": "sec: contracts file has NO hardcoded executable mode list for flow/summary/hotspots [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale mode claim found"
+    },
+    {
+      "name": "sec: this contract gate is wired into the verify chain",
+      "pass": true,
+      "detail": "present"
+    }
+  ],
+  "negativeCases": 9,
+  "summary": {
+    "total": 28,
+    "passed": 28,
+    "failed": 0
+  },
+  "decisions": {
+    "executableModes": "exactly [\"findings\"] — flow/summary/hotspots are planned, not executable",
+    "modeDrift": "no code path in the handler module, registry, or generated page routes flow/summary/hotspots as executable",
+    "plannedModes": "flow, summary, hotspots must be in plannedModes (advertised honestly) not in executable modes"
+  },
+  "limitations": [
+    "This verifier enforces the contract boundary only; the security findings themselves are verified by the m15/m20 security suites.",
+    "The docs/tools/bb_security.md byte-freshness is proven by the generator verify mode for THIS tool."
+  ],
+  "generatedAt": "2026-11-14T00:13:12.024Z"
+}

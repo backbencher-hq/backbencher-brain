@@ -3,7 +3,7 @@
 // WHY THIS FILE EXISTS: script/m14/firing-check-v2.mjs is MASTER-owned and its
 // LANES table has no python entry. MEASURED 2026-10-05:
 //
-//   $ cd $HOME/backbencher-brain
+//   $ cd /home/ishaq2321/backbencher-brain
 //   $ NFILES=200 bun script/m14/firing-check-v2.mjs VERIFY_PY10
 //   FIRING-CHECK v2: no lane matches "VERIFY_PY10".
 //   REAL EXIT=2
@@ -24,7 +24,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join, relative } from "node:path"
 
 const REPO = process.env.BB_REPO || "/tmp/opencode/wt/VERIFY_PY10"
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const EXTS = [".py", ".pyi"]
 const SKIP_DIRS = new Set([

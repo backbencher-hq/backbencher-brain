@@ -1,0 +1,191 @@
+{
+  "checks": [
+    {
+      "description": "THIS lane's own analyzer and spec are this commit's",
+      "detail": "1 of this lane's own input(s) differ from head 22386a7c5e: src/ast/real-swift-analyzer.ts",
+      "id": "differential-lane-code-inputs",
+      "status": "fail"
+    },
+    {
+      "description": "the SHARED oracle/harness that produced these rows is this commit's",
+      "detail": "1 shared harness file(s) differ from head 22386a7c5e: script/m14/differential.ts — the harness is shared by every lane, so this can be another lane's uncommitted work and is NOT evidence about this lane's rows",
+      "id": "differential-harness-code-inputs",
+      "status": "fail"
+    },
+    {
+      "description": "swift: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=2959 covered=2959 (100%) MISSING=0 | analyzer-edges=2857 unexplained=0 (0%) heuristic=0 hash=feec30b10637921a",
+      "id": "differential-swift",
+      "status": "pass"
+    },
+    {
+      "description": "alamofire:swift: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=3632 covered=3632 (100%) MISSING=0 | analyzer-edges=3336 unexplained=0 (0%) heuristic=0 hash=fc5543c87e7b06b7",
+      "id": "differential-alamofire:swift",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "22386a7c5ea9003a06ad584779918400922c5c1d",
+  "committedAt": "2026-10-11T15:45:18-04:00",
+  "corpusPins": {
+    "alamofire": "bda9ed57d72988a3a2ada33d824583541f86eac6",
+    "swift-nio": "d09ffc8ad6437bc278897279e33150d8e39ee3d5"
+  },
+  "data": {
+    "codeInputs": {
+      "clean": false,
+      "dirty": [
+        "package.json",
+        "script/m14/differential.ts",
+        "src/ast/pool-worker.ts",
+        "src/ast/real-cpp-analyzer.ts",
+        "src/ast/real-elixir-analyzer.ts",
+        "src/ast/real-groovy-analyzer.ts",
+        "src/ast/real-html-analyzer.ts",
+        "src/ast/real-java-analyzer.ts",
+        "src/ast/real-kotlin-analyzer.ts",
+        "src/ast/real-scala-analyzer.ts",
+        "src/ast/real-svelte-analyzer.ts",
+        "src/ast/real-swift-analyzer.ts",
+        "src/ast/real-vue-analyzer.ts"
+      ],
+      "head": "22386a7c5ea9003a06ad584779918400922c5c1d",
+      "laneDirt": [
+        "src/ast/real-swift-analyzer.ts"
+      ],
+      "otherDirt": [
+        "package.json",
+        "src/ast/pool-worker.ts",
+        "src/ast/real-cpp-analyzer.ts",
+        "src/ast/real-elixir-analyzer.ts",
+        "src/ast/real-groovy-analyzer.ts",
+        "src/ast/real-html-analyzer.ts",
+        "src/ast/real-java-analyzer.ts",
+        "src/ast/real-kotlin-analyzer.ts",
+        "src/ast/real-scala-analyzer.ts",
+        "src/ast/real-svelte-analyzer.ts",
+        "src/ast/real-vue-analyzer.ts"
+      ],
+      "ownInputs": [
+        "src/ast/real-swift-analyzer.ts",
+        "script/m14/spec/swift-completeness.json"
+      ],
+      "sharedDirt": [
+        "script/m14/differential.ts"
+      ],
+      "sharedInputs": [
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts"
+      ]
+    },
+    "report": {
+      "swift": {
+        "analyzerEdges": 2857,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 2959,
+        "explainableByTree": 2857,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 84.1,
+          "loadAvg1": 7.22,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 1032.4,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "feec30b10637921a",
+        "samples": [],
+        "treeTruthEdges": 2959,
+        "unexplainedInAnalyzer": 0
+      }
+    },
+    "samplingRule": "seeded 60 files/language, scoped to swift",
+    "scope": "swift",
+    "scoped": true,
+    "secondCorpus": {
+      "mapping": {
+        "c": "jq",
+        "clean": "clean-stdlib",
+        "clojure": "clj-kondo",
+        "cpp": "nlohmann-json",
+        "csharp": "fsharp",
+        "css": "grails-core",
+        "dart": "dart-http",
+        "elixir": "phoenix",
+        "erlang": "otp",
+        "go": "terraform",
+        "groovy": "geb",
+        "haskell": "hledger",
+        "html": "sqlite",
+        "java": "clojure",
+        "javascript": "lodash",
+        "kotlin": "kotlinx-coroutines",
+        "markdown": "kubernetes",
+        "objc": "afnetworking",
+        "php": "phpmyadmin",
+        "powershell": "ansible",
+        "python": "requests",
+        "ruby": "rack",
+        "rust": "cargo",
+        "scala": "cats-effect",
+        "svelte": "shadcn-svelte",
+        "swift": "alamofire",
+        "toml": "ripgrep",
+        "typescript": "element-plus",
+        "vue": "vue-element-admin",
+        "yaml": "ansible",
+        "zig": "zls"
+      },
+      "report": {
+        "alamofire:swift": {
+          "analyzerEdges": 3336,
+          "coveragePct": 100,
+          "coveredByAnalyzer": 3632,
+          "explainableByTree": 3336,
+          "fabricationPct": 0,
+          "filesSampled": 60,
+          "heuristicUnexplained": 0,
+          "missingInAnalyzer": 0,
+          "perf": {
+            "avgMsPerFile": 125.5,
+            "loadAvg1": 10.26,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 1648.7,
+            "samplesTimed": 60
+          },
+          "sampleSetHash": "fc5543c87e7b06b7",
+          "samples": [],
+          "treeTruthEdges": 3632,
+          "unexplainedInAnalyzer": 0
+        }
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5.swift",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "LANE-SCOPED artifact: this run measured 2 lane(s) (swift, alamofire:swift), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane."
+    },
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "the code-input check is scoped to this lane's producers (src/ast/real-swift-analyzer.ts, script/m14/spec/swift-completeness.json, script/m14/differential.ts, script/m14/evidence-harness.ts); 11 OTHER measured input(s) are dirty in this checkout from other lanes (package.json, src/ast/pool-worker.ts, src/ast/real-cpp-analyzer.ts, src/ast/real-elixir-analyzer.ts, src/ast/real-groovy-analyzer.ts, src/ast/real-html-analyzer.ts, …) and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts"
+    }
+  ],
+  "regeneratedAt": "2026-10-11T20:26:17.294Z",
+  "regeneratedAtCommit": "22386a7c5ea9003a06ad584779918400922c5c1d",
+  "runtime": "node v26.3.0",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness, LANE-SCOPED (swift: swift, alamofire:swift) — NOT the canonical 43-language claim"
+}

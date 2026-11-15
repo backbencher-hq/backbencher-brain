@@ -1,0 +1,33 @@
+{
+  "fixtureId": "javascript/empty-endpoints-refused",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 (runtime half), CLEAN input. Standing rule R7: when a fallback has nothing truthful to say the honest state is ABSENCE, not an empty string. Measured before the fix over 13,202 admitted corpus files and 356,490 emitted edges: 2,037 rows carried an empty source or target, every one of them from tree-sitter's error recovery producing a zero-length node. This fixture is the clean half of the pin. Every construct here is valid JavaScript, so NOTHING in this file should produce an empty endpoint under any grammar recovery; the six forbid rows state that as an invariant over all six relationship types the fix touched, and the expect rows state the edges around them, so a guard written as 'drop everything' fails here instead of passing vacuously. The recovery-damaged shapes are exercised by javascript/recovery-empty-node-endpoints. THE EXPORTS SOURCE IS `(file)`: a module surface IS the file, and a module basename is a legal JavaScript identifier the store would resolve BY NAME (this ecosystem itself writes `visitors/Attribute.js` declaring `function Attribute`), so the family sentinel is used instead; `metadata.fileLevel` makes the store record the project-relative path.",
+  "expectSymbols": [
+    { "name": "Store", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Store" },
+    { "name": "bump", "kind": "method", "ownerName": "Store" },
+    { "name": "store", "kind": "constant" },
+    { "name": "describe", "kind": "function" },
+    { "name": "run", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "run", "target": "describe" },
+    { "type": "calls", "from": "run", "target": "bump", "note": "the leaf of store.bump(by) — the receiver is named by a uses row instead" },
+    { "type": "instantiates", "from": "empty-endpoints-refused", "target": "Store" },
+    { "type": "contains", "from": "Store", "target": "bump" },
+    { "type": "uses", "from": "bump", "target": "count", "note": "this.count — the receiver is excluded as a keyword, the segment is the read" },
+    { "type": "uses", "from": "describe", "target": "label", "note": "member-chain segment of item.label" },
+    { "type": "uses", "from": "describe", "target": "store", "note": "chain ROOT of store.count" },
+    { "type": "uses", "from": "run", "target": "store", "note": "bare read of the module-scope binding" },
+    { "type": "exports", "from": "(file)", "target": "run" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "", "note": "an empty SOURCE names nothing — pre-fix `method ?? owner ?? moduleName` kept a zero-length method name and published 7 such rows" },
+    { "type": "uses", "target": "", "note": "an empty TARGET names nothing — pre-fix, 1,934 bare reads of a zero-length `identifier` node" },
+    { "type": "calls", "target": "", "note": "an empty callee name is not a call target — pre-fix, 3 rows on a recovery-damaged callee" },
+    { "type": "exports", "target": "", "note": "an empty CJS surface segment is not an exported name — pre-fix, 1 row on `exports. = 1`" },
+    { "type": "instantiates", "target": "", "note": "the constructor-name guard, stated as an invariant" },
+    { "type": "references", "target": "", "note": "the decorator/instanceof reference guard, stated as an invariant" }
+  ]
+}

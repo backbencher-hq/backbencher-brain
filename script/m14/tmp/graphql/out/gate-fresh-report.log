@@ -1,0 +1,33 @@
+ontology coverage gate — graphql
+corpus: 1905 admitted files
+
+[INFO] [08:21:55] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675dtmd23p"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675dta6cl4"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675dtwn7ha"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675du5hxno"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675duebq5n"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675duxw86o"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675dverbw3"}
+[INFO] [08:21:55] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675dsjdy70"}
+[INFO] [08:22:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675jv28633"}
+[INFO] [08:22:28] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_675t6yfy4c"}
+[INFO] [08:22:45] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_6760qjslv5"}
+[INFO] [08:22:45] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_6760qojwvh"}
+[INFO] [08:22:45] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_920270_6760quv20l"}
+walk: 1905/1905 files (100.0%)  newly walked 1905, resumed 0
+
+type          status            detail
+------------------------------------------------------------------------------------------------------------------------
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 57 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
+uses          EMITTED           49,268 edges in 4+ files, e.g. gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql, gql-absinthe/test/support/fixtures/language/kitchen-sink.graphql
+contains      EMITTED           42,704 edges in 4+ files, e.g. gql-absinthe/test/support/fixtures/import_sdl_binary_fn.graphql, gql-absinthe/test/support/fixtures/import_sdl_path_option.graphql
+imports       EMITTED           170 edges in 4+ files, e.g. gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query-default.gql, gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query-default.gql
+references    EMITTED           47,775 edges in 4+ files, e.g. gql-absinthe/test/support/fixtures/import_sdl_binary_fn.graphql, gql-absinthe/test/support/fixtures/import_sdl_path_option.graphql
+exports       EMITTED           10,968 edges in 4+ files, e.g. gql-absinthe/test/support/fixtures/import_sdl_binary_fn.graphql, gql-absinthe/test/support/fixtures/import_sdl_path_option.graphql
+extends       RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
+implements    EMITTED           1,710 edges in 4+ files, e.g. gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql, gql-federation/internals-js/src/__tests__/supergraphSdl.graphql
+overrides     EMITTED           4,168 edges in 4+ files, e.g. gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql, gql-federation/internals-js/src/__tests__/supergraphSdl.graphql
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 57 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
+------------------------------------------------------------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0

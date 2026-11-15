@@ -1,0 +1,23 @@
+migration target: python
+dependency order: buildSchema (partial)
+methodology: base=4h relationships=34h missing-mappings=0h
+  charged edges by kind (one flat 2h rate, uncalibrated): calls 11=22h (65%), references 4=8h (24%), uses 2=4h (12%)
+total effort: 38h (per-plan effort sums to the methodology total)
+cohort: 1 plan(s) across 1 file(s)
+scope: 0 of 502 integration points (0.0%) are inside this request; 502 belong to components that were not asked for, so these plans alone are NOT a complete migration
+per file: graphql-js/utilities/buildASTSchema.ts (1 sym, 38h)
+per wave: wave 1 = 1 sym, 38h
+waves: 1[buildSchema]
+cohort languages: 1 typescript [1 processed: 1 planned]
+truncated: false (1/1; 0 duplicate, 0 over the 100-symbol cap)
+evidence: 8 production integration point(s), 9 test, 0 crossing a language boundary, 4 structural (containment/export, not charged), 485 with an unresolvable endpoint (not charged); 17 carry a line
+unresolved dependencies: buildSchema -> assumeValidSDL, buildSchema -> buildASTSchema, buildSchema -> buildASTSchema, buildSchema -> BuildSchemaOptions, buildSchema -> GraphQLSchema, buildSchema -> parse, buildSchema -> ParseOptions, buildSchema -> Source
+
+buildSchema: typescript -> python  [graphql-js/utilities/buildASTSchema.ts]
+effort=38h complexity=5/10 risk=High
+  why: High coupling: 17 resolvable integration points (8 production, 9 test).
+  why: 4 structural relationships (containment or export) recorded but not charged; only integration points are billed.
+  why: 485 indexed relationships have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.
+  why: Library dependencies are UNKNOWN, not empty: the index does not record the imports this component performs. Resolve them before estimating.
+  library dependencies UNKNOWN: the index holds no external import rows for this file (not the same as 'none')
+  evidence: 8 production + 9 test integration points, 4 structural, 485 unresolvable

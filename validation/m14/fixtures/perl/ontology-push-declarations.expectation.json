@@ -1,0 +1,119 @@
+{
+ "fixtureId": "perl/ontology-push-declarations",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "PERL-ONTOLOGY part 3 (2026-10-03). Perl builds TWO of its declarations with `push` rather than with `=`, and the lane read only the assignment spelling: `our @EXPORT_OK = qw(a)` and `our @ISA = (...)`. Corpus measurement: 11 `push @EXPORT*` sites in 8 files and 9 real `push @ISA` sites carrying 10 base names, over 5,913 files. Every construct is on a line of its own and every refusal is the mistake the construct invites.",
+ "rationale": "`exports` and `extends` were both EMITTED before this fixture and both were reading ONE of perl's two spellings, which is why no gate moved: the label count was non-zero and every count a reader would check was the count of the spelling the lane happened to read. The inheritance half is worse than a missing edge — `packageBases` is what the OVERRIDE resolver reads, so a class that inherits by pushing had no base for `overrides` to resolve against either, and the `overrides` first-parent guess was silently skipped for it. The rule here is the ROLE, not the shape: the left element must be an `array` node whose varname IS the Exporter or ISA array, and the pushed values must be LITERALS. A rule written from the shape (`push`, then harvest words) publishes all three of the refusal rows as declarations — `push @EXPORT_OK, @Other::EXPORT_OK` is a NAME READ, `push @ISA, @Other::ISA` is a name read on the inheritance label, and `push \\@ISA, __FILE__` is a magic token. The qualified forms are pinned because perl5's own tree writes them (`push @UNIVERSAL::ISA, '...'` in Attribute::Handlers, `push @CPAN::Shell::ISA, 'CPAN::WAIT'` in CPAN, `push @version::ISA, \"...\"` in MakeMaker): a qualified `@Foo::ISA` belongs to `Foo`, which is what the varname says and NOT to the package the file happens to be in.",
+ "expectSymbols": [
+  {
+   "name": "assigned",
+   "kind": "function"
+  },
+  {
+   "name": "pushed_three",
+   "kind": "function"
+  },
+  {
+   "name": "Ontology::Push",
+   "kind": "class"
+  },
+  {
+   "name": "own",
+   "kind": "method",
+   "ownerName": "Ontology::Push"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "assigned",
+   "line_number": 20,
+   "meta.reasonCode": "exporter-array-declaration",
+   "meta.evidenceClass": "import_based",
+   "note": "the ASSIGNMENT spelling, kept beside the push forms so the two rules stay separable: same label, same confidence, DIFFERENT reasonCode. A label census that cannot tell them apart cannot say which one a rule reads."
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "pushed_one",
+   "line_number": 21,
+   "meta.reasonCode": "exporter-array-push",
+   "meta.evidenceClass": "import_based",
+   "note": "`push @EXPORT_OK, qw(pushed_one pushed_two)` — the Exporter's other declaration API. Before this rule a module's exported API was silently half of what it is: the assignment half only."
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "pushed_two",
+   "line_number": 21,
+   "meta.reasonCode": "exporter-array-push",
+   "meta.evidenceClass": "import_based",
+   "note": "the SECOND name of the same word list. `wordValues` returns every word, so a `push` of `qw(a b)` cannot publish only the first — the same defect the bare-`extends` fix had in `with qw(RoleA RoleB)`."
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "pushed_three",
+   "line_number": 22,
+   "meta.reasonCode": "exporter-array-push",
+   "meta.evidenceClass": "import_based",
+   "note": "the FAT-COMMA spelling `push @EXPORT => qw{...}`, which perl5's own Test2::Tools::Spec writes at lines 19-20. `=>` auto-quotes its left operand, so the argument list is the same list; a rule that treats a top-level `=>` as a KEY/VALUE SPECIFICATION — right for `with 'Role' => {...}` and for `use`, wrong here — would read the array as a SLOT name and drop both names."
+  },
+  {
+   "type": "extends",
+   "from": "global",
+   "target": "Base",
+   "line_number": 24,
+   "meta.reasonCode": "isa-array-push",
+   "meta.evidenceClass": "structural",
+   "note": "`push @ISA, 'Ontology::Base', 'Exporter'` — inheritance by push. It routes through `addBase`, not a direct emit, for the reason the bare-`extends` fix gives: `packageBases` is what the OVERRIDE resolver reads, so an inheritance edge published by a route the resolver cannot see leaves `overrides` one hop short. The target is the LEAF (`Base`), the lane's convention for `extends`."
+  },
+  {
+   "type": "extends",
+   "from": "global",
+   "target": "Exporter",
+   "line_number": 24,
+   "meta.reasonCode": "isa-array-push",
+   "meta.evidenceClass": "structural",
+   "note": "the SECOND base of the same push, and it is a real inheritance edge: perl5's DB_File.pm:202 writes `push @ISA, qw(Tie::Hash Exporter)` for exactly this reason."
+  },
+  {
+   "type": "extends",
+   "from": "Ontology::Push",
+   "target": "Second",
+   "line_number": 27,
+   "meta.reasonCode": "isa-array-push",
+   "meta.evidenceClass": "structural",
+   "note": "the QUALIFIED form `push @Ontology::Push::ISA => 'Ontology::Second'`. The owner is the package in the varname, and the `package` BLOCK form is what proves the lexical package is inside the braces (it does not leak past the closing brace)."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "Ontology::Other::EXPORT_OK",
+   "note": "line 23 `push @EXPORT_OK, @Ontology::Other::EXPORT_OK` pushes a NAME READ, not names. The right edge for it is `uses`, and the file really does produce that: publishing it as `exports` would put a VARIABLE in an exported API."
+  },
+  {
+   "type": "extends",
+   "target": "Ontology::Other::ISA",
+   "note": "line 28 `push @ISA, @Ontology::Other::ISA` — the same shape on the inheritance label. A pushed variable names no class."
+  },
+  {
+   "type": "extends",
+   "target": "Second",
+   "from": "global",
+   "note": "line 27 again, from the other direction: the qualified `@Ontology::Push::ISA` belongs to `Ontology::Push`, so the base must not land on the file-scope `global` owner. The two owners differ only because the push is inside the `package` BLOCK; attributing it to `global` would invent an inheritance edge for `main`."
+  },
+  {
+   "type": "extends",
+   "target": "ISA",
+   "note": "line 29 `push \\@ISA, __FILE__` is a REF push of a magic token: the argument is a SCALAR ref to @ISA and the value is the current FILE's name. No class is named, so no inheritance edge."
+  },
+  {
+   "type": "extends",
+   "target": "FILE",
+   "note": "line 29 again: `__FILE__` is not a base class of anything. `__FILE__` as an `extends`/`instantiates` target is exactly the fabrication the magic-token rule exists for."
+  }
+ ]
+}

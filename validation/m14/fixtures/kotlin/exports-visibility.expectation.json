@@ -1,0 +1,126 @@
+{
+  "fixtureId": "kotlin/exports-visibility",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DERIV_EXPORTS_KOT4. Kotlin has NO `export` keyword \u2014 measured, not asserted: script/m14/kotlin-exports-probe.ts enumerated 260 distinct node types over 782 code-bearing corpus files and not one expresses an export declaration. What the language DOES have is a visibility surface (1,173 visibility_modifier nodes in the same 782 files; private 721, public 279, internal 134, protected 39) plus a public-by-default rule. So the export surface is a derivable fact about the file, and the analyzer already computed it into the `exports[]` channel \u2014 which NO consumer reads (parallel-indexer only knows `relType === \"exports\"` on a relationship row). This fixture pins the edges on the channel the store reads, and pins the exclusions: `internal` is module-visible rather than consumer-visible, a member is reachable through its owner rather than exported as a name of its own, and `via` distinguishes a written `public` from the implicit default so a consumer can tell which fact decided it. The source is `(file)` with metadata.fileLevel (the M60/#910 contract); a package name was rejected because the store's own defensive export filter drops a lowercase dotted source, so every such edge would be deleted at insert time.",
+  "expectSymbols": [
+    {
+      "name": "Published",
+      "kind": "class"
+    },
+    {
+      "name": "ModuleOnly",
+      "kind": "class"
+    },
+    {
+      "name": "FileLocal",
+      "kind": "class"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "explicitPublic",
+      "kind": "property"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Published",
+      "visibility": "public"
+    },
+    {
+      "name": "helper",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Published",
+      "meta.via": "explicit-public",
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1,
+      "line_number": 9
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "AlsoPublished",
+      "meta.via": "default-public",
+      "meta.fileLevel": true,
+      "line_number": 11,
+      "comment": "no modifier at all: kotlin's default visibility is public, and `via` must say so rather than claim an explicit one"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "explicitPublic",
+      "meta.via": "explicit-public",
+      "line_number": 31
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "helper",
+      "meta.fileLevel": true,
+      "comment": "a top-level FUNCTION is on the file's surface, not only types"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "topLevelValue",
+      "meta.fileLevel": true,
+      "comment": "a top-level PROPERTY is too"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "Singleton",
+      "meta.fileLevel": true,
+      "comment": "an `object` declaration is a top-level name"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "WithMember",
+      "meta.fileLevel": true,
+      "comment": "the CLASS exports; its member does not, and the next forbid row is the half that proves it"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "ModuleOnly",
+      "comment": "`internal` is a published API of THIS module, not something a consumer of the module can name (KAD-MR3 K1)"
+    },
+    {
+      "type": "exports",
+      "target": "FileLocal",
+      "comment": "`private` leaves the file entirely"
+    },
+    {
+      "type": "exports",
+      "target": "member",
+      "comment": "a member is reachable THROUGH WithMember; membership rides contains, so exporting the name would double-count it"
+    },
+    {
+      "type": "exports",
+      "target": "visible",
+      "comment": "same, for a public member of an exported class"
+    },
+    {
+      "type": "exports",
+      "target": "hidden",
+      "comment": "and a private member is excluded twice over"
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.exports",
+      "comment": "the source is the FILE. an edge whose source is the package name is dropped by the store's own defensive export filter (parallel-indexer.ts:3453), so it would read as emitted at zero rows stored \u2014 the one spelling of this edge that cannot survive the store is therefore not the one to emit"
+    }
+  ]
+}

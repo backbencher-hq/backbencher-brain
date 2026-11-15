@@ -1,0 +1,55 @@
+{
+  "fixtureId": "php/member-identity",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The store's FIRST target-resolution strategy is an EXACT `qualified_name` match, and its index (`SELECT qualified_name, MIN(id) ... GROUP BY qualified_name`) hands a duplicated qualified name to whichever row sorts first. php published no qualified name for a member, so that index was a NAME index and the first strategy was really 'the alphabetically first declaration of this name anywhere in the project'. Measured on the four-file store gate (validation/m14/fixtures/php/owner-resolution-gate.mts): `$this->persist()` written in GammaStore was stored RESOLVED against AlphaStore::persist, and a read off an unknowable local variable resolved to a real class. Every row below is therefore about IDENTITY, and the fixture declares the same member names under several owners so nothing but the qualified spelling separates them. The `forbidSymbols` rows are the pre-fix state stated as an absence — the mutant that reverts this change deletes the field rather than corrupting it, so the unqualified form is what must not be reachable, not merely what must not be preferred.",
+  "expectSymbols": [
+    { "name": "Persister", "kind": "interface" },
+    { "name": "LogsPersist", "kind": "trait" },
+    { "name": "AlphaStore", "kind": "class" },
+    { "name": "BetaStore", "kind": "class" },
+    { "name": "Level", "kind": "enum" },
+
+    { "name": "persist", "kind": "method", "ownerName": "Persister", "qualifiedName": "Persister.persist" },
+    { "name": "persist", "kind": "method", "ownerName": "LogsPersist", "qualifiedName": "LogsPersist.persist" },
+    { "name": "persist", "kind": "method", "ownerName": "AlphaStore", "qualifiedName": "AlphaStore.persist" },
+    { "name": "persist", "kind": "method", "ownerName": "BetaStore", "qualifiedName": "BetaStore.persist" },
+    { "name": "describe", "kind": "method", "ownerName": "AlphaStore", "qualifiedName": "AlphaStore.describe" },
+    { "name": "describe", "kind": "method", "ownerName": "BetaStore", "qualifiedName": "BetaStore.describe" },
+    { "name": "label", "kind": "method", "ownerName": "Level", "qualifiedName": "Level.label" },
+
+    { "name": "LIMIT", "kind": "constant", "ownerName": "AlphaStore", "qualifiedName": "AlphaStore.LIMIT" },
+    { "name": "name", "kind": "property", "ownerName": "AlphaStore", "qualifiedName": "AlphaStore.name" },
+    { "name": "Low", "kind": "enum_member", "ownerName": "Level", "qualifiedName": "Level.Low" },
+
+    { "name": "helperFn", "kind": "function", "qualifiedName": null, "meta.fqn": "Fixture\\MemberId\\helperFn",
+      "note": "the deliberate omission: an owner that is a NAMESPACE already has php's own identity in `metadata.fqn`, and a dotted second spelling for one declaration is the aliasing this rule removes" }
+  ],
+  "expectSymbolCount": [
+    { "name": "persist", "equals": 4,
+      "note": "one declaration per OWNER: the same member name under four class-like owners is four distinct declarations, and a rule that merged them by name would be the same defect this fixture exists for" },
+    { "name": "describe", "equals": 2 }
+  ],
+  "forbidSymbols": [
+    { "name": "persist", "ownerName": "AlphaStore", "qualifiedName": null },
+    { "name": "persist", "ownerName": "BetaStore", "qualifiedName": null },
+    { "name": "persist", "ownerName": "Persister", "qualifiedName": null },
+    { "name": "persist", "ownerName": "LogsPersist", "qualifiedName": null },
+    { "name": "describe", "ownerName": "AlphaStore", "qualifiedName": null },
+    { "name": "label", "ownerName": "Level", "qualifiedName": null },
+    { "name": "LIMIT", "ownerName": "AlphaStore", "qualifiedName": null },
+    { "name": "Low", "ownerName": "Level", "qualifiedName": null },
+    { "name": "helperFn", "qualifiedNameEndsWith": "helperFn",
+      "note": "a namespace-owned declaration must not acquire a qualified name the store would then match member targets against" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "source": "AlphaStore", "target": "Persister" },
+    { "type": "implements", "source": "BetaStore", "target": "Persister" },
+    { "type": "contains", "source": "AlphaStore", "target": "persist" },
+    { "type": "contains", "source": "BetaStore", "target": "persist" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "source": "AlphaStore.persist", "target": "Persister.persist",
+      "note": "implementing an interface method is NOT an override under this analyzer's rule (same-file base, and `php-overrides.ts` derives none here either, cross-checked 2/2 with 0 MISSING). Stated as an absence so that adopting the other rule is a DECISION that turns this row red, not a silent widening of the label" }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "instrument": "xml `calls` ruling \u2014 clause 1 of the four-clause bar, every ambiguous edge enumerated",
+  "at": "2026-10-10T13:45:00-04:00",
+  "population": {
+    "extensions": [
+      "xml",
+      "xsd",
+      "dtd",
+      "svg",
+      "xsl",
+      "xslt",
+      "rng"
+    ],
+    "admitted": 11552,
+    "walked": 11552,
+    "parsed": 11552,
+    "failed": 0,
+    "degraded": 0
+  },
+  "counts": {
+    "callsEdges": 402,
+    "ambiguous": 279,
+    "resolvedOrOther": 123,
+    "outcomeByAnalyzerClass": {
+      "ambDeclOnly|in-document": 261,
+      "resolved|in-document": 123,
+      "ambBoth|in-document": 18
+    },
+    "distinctFiles": 29,
+    "distinctCallees": 139,
+    "declarationsInOwnFileDistribution": {
+      "1": 279
+    },
+    "maxProjectWideDeclarationsOfOneCallee": 4187,
+    "crossKindSubset": 18
+  },
+  "ruling": {
+    "cause": "IN-DOCUMENT NAME COLLISION, and nothing else: every one of the 279 is the analyzer's class `in-document` (261 ambDeclOnly + 18 ambBoth), `twin` 0 and `noDecl` 0 confirm nothing is wrong-file or dangling.",
+    "whyDeterminate": "The resolver ranks the edge's OWN FILE ahead of everything else (`resolveTargetStmt` / I13: declaration, same-file, same-language, id), and EVERY ONE of the 279 has a declaration of the callee in its own file \u2014 the distribution is exactly 1 in-file declaration for all 279, including all 18 cross-kind edges (whose second kind lives in another file). A collision the own file settles does not reach the tie-break.",
+    "falsifier": "an ambiguous `calls` edge with declarationsInOwnFile === 0 would falsify determinacy-by-own-file-preference. MEASURED: 0 of 279. The probe prints the falsifier as a count and lists every counterexample in full (there are none).",
+    "notClaimed": "This is a MODEL-level ruling. It does not claim the store binds these edges to the own-file declaration \u2014 see the counter-evidence below."
+  },
+  "counterEvidenceKeptOpen": {
+    "store": "On libxslt the store probe measured `calls` bound 400/400 with boundSameFile 262 and **boundOtherFile 138 (34.5%)** \u2014 cross-file bindings that own-file preference should have prevented, on a type whose callees the analyzer only emits when the document declares them.",
+    "whyItIsNotResolvedHere": "This is the same store-side question as the order-dependence finding (2f2a5bb1f): the eager insert-time resolver decides with whatever the table holds when the batch runs. The determinism probe independently measured `calls` as 17 of the rows that differ between the eager and deferred arms. So the model says determinate and the store demonstrably binds elsewhere on a third of one repository's calls \u2014 the store-side split (json-lane's generalization, which the Lead is routing) is what would settle it.",
+    "falsifierForTheStoreSide": "a store probe per calls edge reporting intended / sameFileOffLine / arbitraryTwin / unbound, as json-lane is building for `contains`."
+  },
+  "effectOnTheCompletionPackage": {
+    "clause1": "MET for `calls`: named cause, count 279, ruling with a falsifier checked at 0 counterexamples, full list committed in calls-ambiguity.json.",
+    "clause4": "PARTIALLY REDUCED: the line test is still N/A for calls, but the own-file test answers determinacy for its 279 edges; the remaining clause-4 shortfall is references 3,445 + extends 346 + overrides 2 = 3,793, and the same enumeration can be pointed at those three types.",
+    "verdict_unchanged": "still NOT complete \u2014 clause 3's 12-edge policy refusal and clause 4's 3,793 edges remain, plus the store-side inconsistency above."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "issue": "M15.A8",
+  "code": "A8",
+  "tool": "bb_ask",
+  "title": "evidence + gate (self-audit, no auto-pass)",
+  "verified": true,
+  "checks": 7,
+  "passed": 9,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-08-23T18:29:42.701Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.331Z",
+    "contentSha256": "bb2cbd6abaa22a39aaf65fac5587b97ca39125982c058de312c5374472ede352"
+  }
+}

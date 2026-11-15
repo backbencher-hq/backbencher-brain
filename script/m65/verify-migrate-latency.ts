@@ -95,7 +95,7 @@ async function main(): Promise<void> {
   check(
     "migrate latency: both corpus fixtures are present",
     repoPresent,
-    repoPresent ? `${FIXTURES.map((f) => f.id).join(", ")} under ${corpus}` : optionalCorpusMissingMessage("fixtures corpus", "BB_CORPUS_ROOT"),
+    repoPresent ? `${FIXTURES.map((f) => f.id).join(", ")} under ${corpus}` : optionalCorpusMissingMessage("bb_tests corpus", "BB_CORPUS_ROOT"),
   )
   // The block is DECLARED and the verdict still exits on the normal path: an
   // optional corpus that is absent records that fact, it does not pass silently and

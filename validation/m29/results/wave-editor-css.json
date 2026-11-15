@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -31,7 +31,7 @@
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 23,\n      line = 2\n    },\n    start = {\n      character = 0,\n      line = 2\n    }\n  },\n  uri = \"file://$HOMEh",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 23,\n      line = 2\n    },\n    start = {\n      character = 0,\n      line = 2\n    }\n  },\n  uri = \"file:///home/ish",
       "name": "S6: definition resolves",
       "ok": true
     },
@@ -65,7 +65,7 @@
           "line": 2
         }
       },
-      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+      "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
     },
     "documentSymbol": [
       {
@@ -321,7 +321,7 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\npublic variable --brand-color\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**--brand-color** — variable, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, import_based\n\n**connected**: referenced by [.card-title](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D), [.card](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [.card-title — main.css:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n2. [.card — main.css:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [:root](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A0%2C%22character%22%3A47%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css:3](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D))_"
+        "value": "```\npublic variable --brand-color\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**--brand-color** — variable, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, import_based\n\n**connected**: referenced by [.card-title](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D), [.card](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [.card-title — main.css:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n2. [.card — main.css:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [:root](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A0%2C%22character%22%3A47%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css:3](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D))_"
       },
       "data": {
         "provenance": {
@@ -348,7 +348,7 @@
             "structural",
             "import_based"
           ],
-          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css",
           "freshnessStatus": "fresh",
           "indexedFileCount": 2,
           "lineEnd": 3,
@@ -402,7 +402,7 @@
             "line": 14
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
       },
       {
         "range": {
@@ -415,7 +415,7 @@
             "line": 7
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
       },
       {
         "range": {
@@ -428,7 +428,7 @@
             "line": 2
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
       }
     ],
     "workspaceAbsence": []

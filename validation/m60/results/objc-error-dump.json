@@ -1,0 +1,2318 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C ERROR/MISSING node shape census",
+  "generatedAt": "2026-09-30T03:23:08.511Z",
+  "method": "walk the wired tree-sitter-objc wasm over the router universe (329 files) and record every ERROR/MISSING node with its span, own text, parent chain and source context",
+  "why": "470 ERROR nodes is a count, not a diagnosis. A shape that the vendored grammar can be taught is a fix; a shape upstream cannot disambiguate is a documented bound. Only the node text tells them apart.",
+  "totalErrorNodes": 158,
+  "distinctShapes": 6,
+  "shapes": [
+    {
+      "shape": "unclassified",
+      "errorNodes": 117,
+      "files": 13,
+      "examples": [
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 347,
+          "text": "- (void)viewDidMoveToSuperview",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 362,
+          "text": "- (void)viewDidMoveToWindow",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 377,
+          "text": "- (void)setAlphaValue:(CGFloat)alphaValue",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDImageCache.h",
+          "line": 43,
+          "text": "= 1 << 4",
+          "parents": []
+        }
+      ]
+    },
+    {
+      "shape": "objc-at-declaration",
+      "errorNodes": 31,
+      "files": 3,
+      "examples": [
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 627,
+          "text": "@end",
+          "parents": []
+        },
+        {
+          "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+          "line": 106,
+          "text": "@implementation AFURLSessionManagerTaskDelegate",
+          "parents": []
+        },
+        {
+          "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+          "line": 317,
+          "text": "@end",
+          "parents": []
+        },
+        {
+          "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+          "line": 343,
+          "text": "@interface",
+          "parents": []
+        }
+      ]
+    },
+    {
+      "shape": "preprocessor-conditional",
+      "errorNodes": 5,
+      "files": 2,
+      "examples": [
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 11,
+          "text": "#if SD_UIKIT || SD_MAC",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 350,
+          "text": "#endif",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 365,
+          "text": "#endif",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+          "line": 380,
+          "text": "#endif",
+          "parents": []
+        }
+      ]
+    },
+    {
+      "shape": "availability-macro-call",
+      "errorNodes": 2,
+      "files": 2,
+      "examples": [
+        {
+          "file": "sdwebimage/SDWebImage/Core/SDWebImageTransition.h",
+          "line": 59,
+          "text": "API_UNAVAILABLE(ios, tvos, watchos)",
+          "parents": []
+        },
+        {
+          "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageTransition.h",
+          "line": 59,
+          "text": "API_UNAVAILABLE(ios, tvos, watchos)",
+          "parents": []
+        }
+      ]
+    },
+    {
+      "shape": "bare-macro-line",
+      "errorNodes": 2,
+      "files": 1,
+      "examples": [
+        {
+          "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+          "line": 98,
+          "text": "AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos(10));",
+          "parents": []
+        },
+        {
+          "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+          "line": 855,
+          "text": "AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos(10)) {",
+          "parents": []
+        }
+      ]
+    },
+    {
+      "shape": "brace-body",
+      "errorNodes": 1,
+      "files": 1,
+      "examples": [
+        {
+          "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+          "line": 1102,
+          "text": "{",
+          "parents": []
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 11,
+      "spanLines": 619,
+      "bytes": 18021,
+      "text": "#if SD_UIKIT || SD_MAC\n\n#import \"UIImage+Metadata.h\"\n#import \"NSImage+Compatibility.h\"\n#import \"SDInternalMacros.h\"\n#import \"objc/runtime.h\"\n\n// A wrapper to implements the transformer on animated image, like tint color\n@interface SDAnimatedImageFrameProvider : NSObject <SDAnimatedImageProvider>\n@property (nonatomic, strong) id<SDAnimatedImageProvider> provider;\n@property (nonatomic, strong) id<SD…[+17621B]",
+      "textFirstLine": "#if SD_UIKIT || SD_MAC",
+      "parents": [],
+      "contextBefore": [
+        "#import \"SDAnimatedImageView.h\"",
+        ""
+      ],
+      "contextAfter": [
+        "#endif",
+        ""
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 347,
+      "spanLines": 1,
+      "bytes": 30,
+      "text": "- (void)viewDidMoveToSuperview",
+      "textFirstLine": "- (void)viewDidMoveToSuperview",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "- (void)viewDidMoveToSuperview",
+        "#else"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 350,
+      "spanLines": 1,
+      "bytes": 6,
+      "text": "#endif",
+      "textFirstLine": "#endif",
+      "parents": [],
+      "contextBefore": [
+        "#else",
+        "- (void)didMoveToSuperview"
+      ],
+      "contextAfter": [
+        "#endif",
+        "{"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 362,
+      "spanLines": 1,
+      "bytes": 27,
+      "text": "- (void)viewDidMoveToWindow",
+      "textFirstLine": "- (void)viewDidMoveToWindow",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "- (void)viewDidMoveToWindow",
+        "#else"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 365,
+      "spanLines": 1,
+      "bytes": 6,
+      "text": "#endif",
+      "textFirstLine": "#endif",
+      "parents": [],
+      "contextBefore": [
+        "#else",
+        "- (void)didMoveToWindow"
+      ],
+      "contextAfter": [
+        "#endif",
+        "{"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 377,
+      "spanLines": 1,
+      "bytes": 41,
+      "text": "- (void)setAlphaValue:(CGFloat)alphaValue",
+      "textFirstLine": "- (void)setAlphaValue:(CGFloat)alphaValue",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "- (void)setAlphaValue:(CGFloat)alphaValue",
+        "#else"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 380,
+      "spanLines": 1,
+      "bytes": 6,
+      "text": "#endif",
+      "textFirstLine": "#endif",
+      "parents": [],
+      "contextBefore": [
+        "#else",
+        "- (void)setAlpha:(CGFloat)alpha"
+      ],
+      "contextAfter": [
+        "#endif",
+        "{"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDAnimatedImageView.m",
+      "kind": "ERROR",
+      "line": 627,
+      "spanLines": 1,
+      "bytes": 4,
+      "text": "@end",
+      "textFirstLine": "@end",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        ""
+      ],
+      "contextAfter": [
+        "@end",
+        ""
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCache.h",
+      "kind": "ERROR",
+      "line": 43,
+      "spanLines": 1,
+      "bytes": 8,
+      "text": "= 1 << 4",
+      "textFirstLine": "= 1 << 4",
+      "parents": [],
+      "contextBefore": [
+        "     * @deprecated Deprecated in v5.17.0, if you don't want force-decode, pass [.imageForceDecodePolicy] = SDImageForceD",
+        "     */"
+      ],
+      "contextAfter": [
+        "    SDImageCacheAvoidDecodeImage API_DEPRECATED(\"Use SDWebImageContextImageForceDecodePolicy instead\", macos(10.10, 10.1",
+        "    /**"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageCoderHelper.m",
+      "kind": "ERROR",
+      "line": 64,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ":",
+      "textFirstLine": ":",
+      "parents": [],
+      "contextBefore": [
+        "    static BOOL supportsHardware = NO;",
+        "    dispatch_once(&onceToken, ^{"
+      ],
+      "contextAfter": [
+        "        SEL DeviceInfoSelector = SD_SEL_SPI(deviceInfoForKey:);",
+        "        NSString *HEVCDecoder8bitSupported = @\"N8lZxRgC7lfdRS3dRLn+Ag\";"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.m",
+      "kind": "ERROR",
+      "line": 40,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "image",
+      "textFirstLine": "image",
+      "parents": [],
+      "contextBefore": [
+        "// This strip the un-wanted CGImageProperty, like the internal CGImageSourceRef in iOS 15+",
+        "// However, CGImageCreateCopy still keep those CGImageProperty, not suit for our use case"
+      ],
+      "contextAfter": [
+        "static CGImageRef __nullable SDCGImageCreateMutableCopy(CGImageRef cg_nullable image, CGBitmapInfo bitmapInfo) {",
+        "    if (!image) return nil;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.m",
+      "kind": "ERROR",
+      "line": 56,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "image",
+      "textFirstLine": "image",
+      "parents": [],
+      "contextBefore": [
+        "}",
+        ""
+      ],
+      "contextAfter": [
+        "static inline BOOL SDCGImageIs8Bit(CGImageRef cg_nullable image) {",
+        "    return CGImageGetBitsPerComponent(image) == 8;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDImageIOAnimatedCoder.m",
+      "kind": "ERROR",
+      "line": 60,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "image",
+      "textFirstLine": "image",
+      "parents": [],
+      "contextBefore": [
+        "}",
+        ""
+      ],
+      "contextAfter": [
+        "static inline CGImageRef __nullable SDCGImageCreateCopy(CGImageRef cg_nullable image) {",
+        "    if (!image) return nil;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageDownloader.h",
+      "kind": "ERROR",
+      "line": 80,
+      "spanLines": 1,
+      "bytes": 8,
+      "text": "= 1 << 9",
+      "textFirstLine": "= 1 << 9",
+      "parents": [],
+      "contextBefore": [
+        "     * @deprecated Deprecated in v5.17.0, if you don't want force-decode, pass [.imageForceDecodePolicy] = SDImageForceD",
+        "     */"
+      ],
+      "contextAfter": [
+        "    SDWebImageDownloaderAvoidDecodeImage API_DEPRECATED(\"Use SDWebImageContextImageForceDecodePolicy instead\", macos(10.",
+        "    "
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/SDWebImageTransition.h",
+      "kind": "ERROR",
+      "line": 59,
+      "spanLines": 1,
+      "bytes": 35,
+      "text": "API_UNAVAILABLE(ios, tvos, watchos)",
+      "textFirstLine": "API_UNAVAILABLE(ios, tvos, watchos)",
+      "parents": [],
+      "contextBefore": [
+        " The timing function used for all animations within this transition animation (macOS).",
+        " */"
+      ],
+      "contextAfter": [
+        "@property (nonatomic, strong, nullable) CAMediaTimingFunction *timingFunction API_UNAVAILABLE(ios, tvos, watchos) API_DE",
+        "/**"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 308,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "[",
+      "textFirstLine": "[",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if SD_UIKIT"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[UIButton class]]) {",
+        "        UIButton *button = (UIButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 308,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ":",
+      "textFirstLine": ":",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if SD_UIKIT"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[UIButton class]]) {",
+        "        UIButton *button = (UIButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 308,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "class",
+      "textFirstLine": "class",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if SD_UIKIT"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[UIButton class]]) {",
+        "        UIButton *button = (UIButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 308,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "]",
+      "textFirstLine": "]",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if SD_UIKIT"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[UIButton class]]) {",
+        "        UIButton *button = (UIButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 316,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "[",
+      "textFirstLine": "[",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[NSButton class]]) {",
+        "        NSButton *button = (NSButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 316,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ":",
+      "textFirstLine": ":",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[NSButton class]]) {",
+        "        NSButton *button = (NSButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 316,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "class",
+      "textFirstLine": "class",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[NSButton class]]) {",
+        "        NSButton *button = (NSButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/Core/UIView+WebCache.m",
+      "kind": "ERROR",
+      "line": 316,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "]",
+      "textFirstLine": "]",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "#if SD_MAC"
+      ],
+      "contextAfter": [
+        "    else if ([view isKindOfClass:[NSButton class]]) {",
+        "        NSButton *button = (NSButton *)view;"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDImageCache.h",
+      "kind": "ERROR",
+      "line": 43,
+      "spanLines": 1,
+      "bytes": 8,
+      "text": "= 1 << 4",
+      "textFirstLine": "= 1 << 4",
+      "parents": [],
+      "contextBefore": [
+        "     * @deprecated Deprecated in v5.17.0, if you don't want force-decode, pass [.imageForceDecodePolicy] = SDImageForceD",
+        "     */"
+      ],
+      "contextAfter": [
+        "    SDImageCacheAvoidDecodeImage API_DEPRECATED(\"Use SDWebImageContextImageForceDecodePolicy instead\", macos(10.10, 10.1",
+        "    /**"
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageDownloader.h",
+      "kind": "ERROR",
+      "line": 80,
+      "spanLines": 1,
+      "bytes": 8,
+      "text": "= 1 << 9",
+      "textFirstLine": "= 1 << 9",
+      "parents": [],
+      "contextBefore": [
+        "     * @deprecated Deprecated in v5.17.0, if you don't want force-decode, pass [.imageForceDecodePolicy] = SDImageForceD",
+        "     */"
+      ],
+      "contextAfter": [
+        "    SDWebImageDownloaderAvoidDecodeImage API_DEPRECATED(\"Use SDWebImageContextImageForceDecodePolicy instead\", macos(10.",
+        "    "
+      ]
+    },
+    {
+      "file": "sdwebimage/SDWebImage/include/SDWebImage/SDWebImageTransition.h",
+      "kind": "ERROR",
+      "line": 59,
+      "spanLines": 1,
+      "bytes": 35,
+      "text": "API_UNAVAILABLE(ios, tvos, watchos)",
+      "textFirstLine": "API_UNAVAILABLE(ios, tvos, watchos)",
+      "parents": [],
+      "contextBefore": [
+        " The timing function used for all animations within this transition animation (macOS).",
+        " */"
+      ],
+      "contextAfter": [
+        "@property (nonatomic, strong, nullable) CAMediaTimingFunction *timingFunction API_UNAVAILABLE(ios, tvos, watchos) API_DE",
+        "/**"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.m",
+      "kind": "ERROR",
+      "line": 63,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "(",
+      "textFirstLine": "(",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if\tTARGET_OS_IPHONE"
+      ],
+      "contextAfter": [
+        "    else if ((flags & kSCNetworkReachabilityFlagsIsWWAN) != 0) {",
+        "        status = AFNetworkReachabilityStatusReachableViaWWAN;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.m",
+      "kind": "ERROR",
+      "line": 63,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "&",
+      "textFirstLine": "&",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if\tTARGET_OS_IPHONE"
+      ],
+      "contextAfter": [
+        "    else if ((flags & kSCNetworkReachabilityFlagsIsWWAN) != 0) {",
+        "        status = AFNetworkReachabilityStatusReachableViaWWAN;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFNetworkReachabilityManager.m",
+      "kind": "ERROR",
+      "line": 63,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "!= 0)",
+      "textFirstLine": "!= 0)",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "#if\tTARGET_OS_IPHONE"
+      ],
+      "contextAfter": [
+        "    else if ((flags & kSCNetworkReachabilityFlagsIsWWAN) != 0) {",
+        "        status = AFNetworkReachabilityStatusReachableViaWWAN;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLResponseSerialization.h",
+      "kind": "ERROR",
+      "line": 30,
+      "spanLines": 1,
+      "bytes": 2,
+      "text": "id",
+      "textFirstLine": "id",
+      "parents": [],
+      "contextBefore": [
+        " Recursively removes `NSNull` values from a JSON object.",
+        "*/"
+      ],
+      "contextAfter": [
+        "FOUNDATION_EXPORT id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingOptions readingOptions);",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 62,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "^",
+      "textFirstLine": "^",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef void (^AFURLSessionDidBecomeInvalidBlock)(NSURLSession *session, NSError *error);"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionDidReceiveAuthenticationChallengeBlock)(NSURLSession *session",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 62,
+      "spanLines": 1,
+      "bytes": 12,
+      "text": "NSURLSession",
+      "textFirstLine": "NSURLSession",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef void (^AFURLSessionDidBecomeInvalidBlock)(NSURLSession *session, NSError *error);"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionDidReceiveAuthenticationChallengeBlock)(NSURLSession *session",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 62,
+      "spanLines": 1,
+      "bytes": 28,
+      "text": "NSURLAuthenticationChallenge",
+      "textFirstLine": "NSURLAuthenticationChallenge",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef void (^AFURLSessionDidBecomeInvalidBlock)(NSURLSession *session, NSError *error);"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionDidReceiveAuthenticationChallengeBlock)(NSURLSession *session",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 62,
+      "spanLines": 1,
+      "bytes": 31,
+      "text": "* __autoreleasing *credential);",
+      "textFirstLine": "* __autoreleasing *credential);",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef void (^AFURLSessionDidBecomeInvalidBlock)(NSURLSession *session, NSError *error);"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionDidReceiveAuthenticationChallengeBlock)(NSURLSession *session",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 65,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "^",
+      "textFirstLine": "^",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef NSURLRequest * (^AFURLSessionTaskWillPerformHTTPRedirectionBlock)(NSURLSession *session, NSURLSessionTask *task,"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionTaskDidReceiveAuthenticationChallengeBlock)(NSURLSession *ses",
+        "typedef id (^AFURLSessionTaskAuthenticationChallengeBlock)(NSURLSession *session, NSURLSessionTask *task, NSURLAuthentic"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 65,
+      "spanLines": 1,
+      "bytes": 12,
+      "text": "NSURLSession",
+      "textFirstLine": "NSURLSession",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef NSURLRequest * (^AFURLSessionTaskWillPerformHTTPRedirectionBlock)(NSURLSession *session, NSURLSessionTask *task,"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionTaskDidReceiveAuthenticationChallengeBlock)(NSURLSession *ses",
+        "typedef id (^AFURLSessionTaskAuthenticationChallengeBlock)(NSURLSession *session, NSURLSessionTask *task, NSURLAuthentic"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 65,
+      "spanLines": 1,
+      "bytes": 16,
+      "text": "NSURLSessionTask",
+      "textFirstLine": "NSURLSessionTask",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef NSURLRequest * (^AFURLSessionTaskWillPerformHTTPRedirectionBlock)(NSURLSession *session, NSURLSessionTask *task,"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionTaskDidReceiveAuthenticationChallengeBlock)(NSURLSession *ses",
+        "typedef id (^AFURLSessionTaskAuthenticationChallengeBlock)(NSURLSession *session, NSURLSessionTask *task, NSURLAuthentic"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 65,
+      "spanLines": 1,
+      "bytes": 28,
+      "text": "NSURLAuthenticationChallenge",
+      "textFirstLine": "NSURLAuthenticationChallenge",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef NSURLRequest * (^AFURLSessionTaskWillPerformHTTPRedirectionBlock)(NSURLSession *session, NSURLSessionTask *task,"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionTaskDidReceiveAuthenticationChallengeBlock)(NSURLSession *ses",
+        "typedef id (^AFURLSessionTaskAuthenticationChallengeBlock)(NSURLSession *session, NSURLSessionTask *task, NSURLAuthentic"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 65,
+      "spanLines": 1,
+      "bytes": 31,
+      "text": "* __autoreleasing *credential);",
+      "textFirstLine": "* __autoreleasing *credential);",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "typedef NSURLRequest * (^AFURLSessionTaskWillPerformHTTPRedirectionBlock)(NSURLSession *session, NSURLSessionTask *task,"
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionAuthChallengeDisposition (^AFURLSessionTaskDidReceiveAuthenticationChallengeBlock)(NSURLSession *ses",
+        "typedef id (^AFURLSessionTaskAuthenticationChallengeBlock)(NSURLSession *session, NSURLSessionTask *task, NSURLAuthentic"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 76,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "^",
+      "textFirstLine": "^",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        ""
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionResponseDisposition (^AFURLSessionDataTaskDidReceiveResponseBlock)(NSURLSession *session, NSURLSessi",
+        "typedef void (^AFURLSessionDataTaskDidBecomeDownloadTaskBlock)(NSURLSession *session, NSURLSessionDataTask *dataTask, NS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 76,
+      "spanLines": 1,
+      "bytes": 12,
+      "text": "NSURLSession",
+      "textFirstLine": "NSURLSession",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        ""
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionResponseDisposition (^AFURLSessionDataTaskDidReceiveResponseBlock)(NSURLSession *session, NSURLSessi",
+        "typedef void (^AFURLSessionDataTaskDidBecomeDownloadTaskBlock)(NSURLSession *session, NSURLSessionDataTask *dataTask, NS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 76,
+      "spanLines": 1,
+      "bytes": 20,
+      "text": "NSURLSessionDataTask",
+      "textFirstLine": "NSURLSessionDataTask",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        ""
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionResponseDisposition (^AFURLSessionDataTaskDidReceiveResponseBlock)(NSURLSession *session, NSURLSessi",
+        "typedef void (^AFURLSessionDataTaskDidBecomeDownloadTaskBlock)(NSURLSession *session, NSURLSessionDataTask *dataTask, NS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 76,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ")",
+      "textFirstLine": ")",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        ""
+      ],
+      "contextAfter": [
+        "typedef NSURLSessionResponseDisposition (^AFURLSessionDataTaskDidReceiveResponseBlock)(NSURLSession *session, NSURLSessi",
+        "typedef void (^AFURLSessionDataTaskDidBecomeDownloadTaskBlock)(NSURLSession *session, NSURLSessionDataTask *dataTask, NS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 98,
+      "spanLines": 1,
+      "bytes": 63,
+      "text": "AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos(10));",
+      "textFirstLine": "AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos(10));",
+      "parents": [],
+      "contextBefore": [
+        "@property (nonatomic, copy) NSURL *downloadFileURL;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (nonatomic, strong) NSURLSessionTaskMetrics *sessionTaskMetrics AF_API_AVAILABLE(ios(10), macosx(10.12), watch",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 106,
+      "spanLines": 1169,
+      "bytes": 49290,
+      "text": "@implementation AFURLSessionManagerTaskDelegate\n\n- (instancetype)initWithTask:(NSURLSessionTask *)task {\n    self = [super init];\n    if (!self) {\n        return nil;\n    }\n    \n    _mutableData = [NSMutableData data];\n    _uploadProgress = [[NSProgress alloc] initWithParent:nil userInfo:nil];\n    _downloadProgress = [[NSProgress alloc] initWithParent:nil userInfo:nil];\n    \n    __weak __typeof__(…[+48890B]",
+      "textFirstLine": "@implementation AFURLSessionManagerTaskDelegate",
+      "parents": [],
+      "contextBefore": [
+        "@end",
+        ""
+      ],
+      "contextAfter": [
+        "@end",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 252,
+      "spanLines": 1,
+      "bytes": 43,
+      "text": "10), macosx(10.12), watchos(3), tvos(10)) {",
+      "textFirstLine": "10), macosx(10.12), watchos(3), tvos(10)) {",
+      "parents": [],
+      "contextBefore": [
+        "- (void)URLSession:(NSURLSession *)session",
+        "              task:(NSURLSessionTask *)task"
+      ],
+      "contextAfter": [
+        "didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos(",
+        "    self.sessionTaskMetrics = metrics;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 253,
+      "spanLines": 7,
+      "bytes": 123,
+      "text": ".sessionTaskMetrics = metrics;\n}\n#endif\n\n#pragma mark - NSURLSessionDataDelegate\n\n- (void)URLSession:(__unused NSURLSession",
+      "textFirstLine": ".sessionTaskMetrics = metrics;",
+      "parents": [],
+      "contextBefore": [
+        "              task:(NSURLSessionTask *)task",
+        "didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos("
+      ],
+      "contextAfter": [
+        "- (void)URLSession:(__unused NSURLSession *)session",
+        "          dataTask:(__unused NSURLSessionDataTask *)dataTask"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 259,
+      "spanLines": 1,
+      "bytes": 12,
+      "text": "URLSession:(",
+      "textFirstLine": "URLSession:(",
+      "parents": [],
+      "contextBefore": [
+        "#pragma mark - NSURLSessionDataDelegate",
+        ""
+      ],
+      "contextAfter": [
+        "- (void)URLSession:(__unused NSURLSession *)session",
+        "          dataTask:(__unused NSURLSessionDataTask *)dataTask"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 259,
+      "spanLines": 2,
+      "bytes": 28,
+      "text": "session\n          dataTask:(",
+      "textFirstLine": "session",
+      "parents": [],
+      "contextBefore": [
+        "#pragma mark - NSURLSessionDataDelegate",
+        ""
+      ],
+      "contextAfter": [
+        "          dataTask:(__unused NSURLSessionDataTask *)dataTask",
+        "    didReceiveData:(NSData *)data"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 260,
+      "spanLines": 1,
+      "bytes": 20,
+      "text": "NSURLSessionDataTask",
+      "textFirstLine": "NSURLSessionDataTask",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "- (void)URLSession:(__unused NSURLSession *)session"
+      ],
+      "contextAfter": [
+        "          dataTask:(__unused NSURLSessionDataTask *)dataTask",
+        "    didReceiveData:(NSData *)data"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 260,
+      "spanLines": 4,
+      "bytes": 71,
+      "text": "dataTask\n    didReceiveData:(NSData *)data\n{\n    self.downloadProgress.",
+      "textFirstLine": "dataTask",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "- (void)URLSession:(__unused NSURLSession *)session"
+      ],
+      "contextAfter": [
+        "    self.downloadProgress.totalUnitCount = dataTask.countOfBytesExpectedToReceive;",
+        "    self.downloadProgress.completedUnitCount = dataTask.countOfBytesReceived;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 264,
+      "spanLines": 1,
+      "bytes": 18,
+      "text": ".downloadProgress.",
+      "textFirstLine": ".downloadProgress.",
+      "parents": [],
+      "contextBefore": [
+        "{",
+        "    self.downloadProgress.totalUnitCount = dataTask.countOfBytesExpectedToReceive;"
+      ],
+      "contextAfter": [
+        "    self.downloadProgress.completedUnitCount = dataTask.countOfBytesReceived;",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 266,
+      "spanLines": 1,
+      "bytes": 6,
+      "text": "[self.",
+      "textFirstLine": "[self.",
+      "parents": [],
+      "contextBefore": [
+        "    self.downloadProgress.completedUnitCount = dataTask.countOfBytesReceived;",
+        ""
+      ],
+      "contextAfter": [
+        "    [self.mutableData appendData:data];",
+        "}"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 266,
+      "spanLines": 1,
+      "bytes": 6,
+      "text": ":data]",
+      "textFirstLine": ":data]",
+      "parents": [],
+      "contextBefore": [
+        "    self.downloadProgress.completedUnitCount = dataTask.countOfBytesReceived;",
+        ""
+      ],
+      "contextAfter": [
+        "    [self.mutableData appendData:data];",
+        "}"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 267,
+      "spanLines": 6,
+      "bytes": 183,
+      "text": "}\n\n- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task\n   didSendBodyData:(int64_t)bytesSent\n    totalBytesSent:(int64_t)totalBytesSent\ntotalBytesExpectedToSend:(",
+      "textFirstLine": "}",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "    [self.mutableData appendData:data];"
+      ],
+      "contextAfter": [
+        "totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend{",
+        "    "
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 269,
+      "spanLines": 1,
+      "bytes": 65,
+      "text": ")URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task",
+      "textFirstLine": ")URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task",
+      "parents": [],
+      "contextBefore": [
+        "}",
+        ""
+      ],
+      "contextAfter": [
+        "- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task",
+        "   didSendBodyData:(int64_t)bytesSent"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 270,
+      "spanLines": 1,
+      "bytes": 10,
+      "text": ")bytesSent",
+      "textFirstLine": ")bytesSent",
+      "parents": [],
+      "contextBefore": [
+        "",
+        "- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task"
+      ],
+      "contextAfter": [
+        "   didSendBodyData:(int64_t)bytesSent",
+        "    totalBytesSent:(int64_t)totalBytesSent"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 271,
+      "spanLines": 1,
+      "bytes": 15,
+      "text": ")totalBytesSent",
+      "textFirstLine": ")totalBytesSent",
+      "parents": [],
+      "contextBefore": [
+        "- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task",
+        "   didSendBodyData:(int64_t)bytesSent"
+      ],
+      "contextAfter": [
+        "    totalBytesSent:(int64_t)totalBytesSent",
+        "totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend{"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 272,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ")",
+      "textFirstLine": ")",
+      "parents": [],
+      "contextBefore": [
+        "   didSendBodyData:(int64_t)bytesSent",
+        "    totalBytesSent:(int64_t)totalBytesSent"
+      ],
+      "contextAfter": [
+        "totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend{",
+        "    "
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 317,
+      "spanLines": 1,
+      "bytes": 4,
+      "text": "@end",
+      "textFirstLine": "@end",
+      "parents": [],
+      "contextBefore": [
+        "}",
+        ""
+      ],
+      "contextAfter": [
+        "@end",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 343,
+      "spanLines": 1,
+      "bytes": 10,
+      "text": "@interface",
+      "textFirstLine": "@interface",
+      "parents": [],
+      "contextBefore": [
+        "static NSString * const AFNSURLSessionTaskDidSuspendNotification = @\"com.alamofire.networking.nsurlsessiontask.suspend\";",
+        ""
+      ],
+      "contextAfter": [
+        "@interface _AFURLSessionTaskSwizzling : NSObject",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 343,
+      "spanLines": 5,
+      "bytes": 33,
+      "text": ": NSObject\n\n@end\n\n@implementation",
+      "textFirstLine": ": NSObject",
+      "parents": [],
+      "contextBefore": [
+        "static NSString * const AFNSURLSessionTaskDidSuspendNotification = @\"com.alamofire.networking.nsurlsessiontask.suspend\";",
+        ""
+      ],
+      "contextAfter": [
+        "@implementation _AFURLSessionTaskSwizzling",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 444,
+      "spanLines": 1,
+      "bytes": 4,
+      "text": "@end",
+      "textFirstLine": "@end",
+      "parents": [],
+      "contextBefore": [
+        "    }",
+        "}"
+      ],
+      "contextAfter": [
+        "@end",
+        ""
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 448,
+      "spanLines": 1,
+      "bytes": 10,
+      "text": "@interface",
+      "textFirstLine": "@interface",
+      "parents": [],
+      "contextBefore": [
+        "#pragma mark -",
+        ""
+      ],
+      "contextAfter": [
+        "@interface AFURLSessionManager ()",
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 448,
+      "spanLines": 2,
+      "bytes": 3,
+      "text": ")\n@",
+      "textFirstLine": ")",
+      "parents": [],
+      "contextBefore": [
+        "#pragma mark -",
+        ""
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;",
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 450,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@interface AFURLSessionManager ()",
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;",
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 450,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@interface AFURLSessionManager ()",
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;",
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 450,
+      "spanLines": 1,
+      "bytes": 24,
+      "text": "strong) NSOperationQueue",
+      "textFirstLine": "strong) NSOperationQueue",
+      "parents": [],
+      "contextBefore": [
+        "@interface AFURLSessionManager ()",
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;",
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 451,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;",
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;",
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 451,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;",
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;",
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 451,
+      "spanLines": 1,
+      "bytes": 20,
+      "text": "strong) NSURLSession",
+      "textFirstLine": "strong) NSURLSession",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;",
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;",
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 452,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;",
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;",
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 452,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;",
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;",
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 452,
+      "spanLines": 1,
+      "bytes": 27,
+      "text": "strong) NSMutableDictionary",
+      "textFirstLine": "strong) NSMutableDictionary",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;",
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;",
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 453,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;",
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;"
+      ],
+      "contextAfter": [
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;",
+        "@property (readwrite, nonatomic, strong) NSLock *lock;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 453,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;",
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;"
+      ],
+      "contextAfter": [
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;",
+        "@property (readwrite, nonatomic, strong) NSLock *lock;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 453,
+      "spanLines": 1,
+      "bytes": 14,
+      "text": "copy) NSString",
+      "textFirstLine": "copy) NSString",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSURLSession *session;",
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;"
+      ],
+      "contextAfter": [
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;",
+        "@property (readwrite, nonatomic, strong) NSLock *lock;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 454,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;",
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSLock *lock;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 454,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;",
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSLock *lock;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 454,
+      "spanLines": 1,
+      "bytes": 14,
+      "text": "strong) NSLock",
+      "textFirstLine": "strong) NSLock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;",
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, strong) NSLock *lock;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 455,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;",
+        "@property (readwrite, nonatomic, strong) NSLock *lock;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 455,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;",
+        "@property (readwrite, nonatomic, strong) NSLock *lock;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 455,
+      "spanLines": 1,
+      "bytes": 39,
+      "text": "copy) AFURLSessionDidBecomeInvalidBlock",
+      "textFirstLine": "copy) AFURLSessionDidBecomeInvalidBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;",
+        "@property (readwrite, nonatomic, strong) NSLock *lock;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 456,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSLock *lock;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 456,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSLock *lock;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 456,
+      "spanLines": 1,
+      "bytes": 56,
+      "text": "copy) AFURLSessionDidReceiveAuthenticationChallengeBlock",
+      "textFirstLine": "copy) AFURLSessionDidReceiveAuthenticationChallengeBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, strong) NSLock *lock;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 457,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 457,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 457,
+      "spanLines": 1,
+      "bytes": 100,
+      "text": "copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgroundURLSession",
+      "textFirstLine": "copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgroundURLSession",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 458,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 458,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 458,
+      "spanLines": 1,
+      "bytes": 53,
+      "text": "copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock",
+      "textFirstLine": "copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticatio",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 459,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 459,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 459,
+      "spanLines": 1,
+      "bytes": 50,
+      "text": "copy) AFURLSessionTaskAuthenticationChallengeBlock",
+      "textFirstLine": "copy) AFURLSessionTaskAuthenticationChallengeBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgro",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 460,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 460,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 460,
+      "spanLines": 1,
+      "bytes": 44,
+      "text": "copy) AFURLSessionTaskNeedNewBodyStreamBlock",
+      "textFirstLine": "copy) AFURLSessionTaskNeedNewBodyStreamBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskWillPerformHTTPRedirectionBlock taskWillPerformHTTPRedirection;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 461,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 461,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 461,
+      "spanLines": 1,
+      "bytes": 42,
+      "text": "copy) AFURLSessionTaskDidSendBodyDataBlock",
+      "textFirstLine": "copy) AFURLSessionTaskDidSendBodyDataBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskAuthenticationChallengeBlock authenticationChallengeHandler;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 462,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 462,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 462,
+      "spanLines": 1,
+      "bytes": 38,
+      "text": "copy) AFURLSessionTaskDidCompleteBlock",
+      "textFirstLine": "copy) AFURLSessionTaskDidCompleteBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskNeedNewBodyStreamBlock taskNeedNewBodyStream;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidSendBodyDataBlock taskDidSendBodyData;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 84,
+      "text": "copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics",
+      "textFirstLine": "copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 3,
+      "text": "(10",
+      "textFirstLine": "(10",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 5,
+      "text": "10.12",
+      "textFirstLine": "10.12",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": "3",
+      "textFirstLine": "3",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 2,
+      "text": "10",
+      "textFirstLine": "10",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 464,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ")",
+      "textFirstLine": ")",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidCompleteBlock taskDidComplete;",
+        "#if AF_CAN_INCLUDE_SESSION_TASK_METRICS"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 466,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 466,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 466,
+      "spanLines": 1,
+      "bytes": 49,
+      "text": "copy) AFURLSessionDataTaskDidReceiveResponseBlock",
+      "textFirstLine": "copy) AFURLSessionDataTaskDidReceiveResponseBlock",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionTaskDidFinishCollectingMetricsBlock taskDidFinishCollectingMetrics AF",
+        "#endif"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 467,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveDataBlock dataTaskDidReceiveData;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 467,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveDataBlock dataTaskDidReceiveData;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 467,
+      "spanLines": 1,
+      "bytes": 52,
+      "text": "copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock",
+      "textFirstLine": "copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock",
+      "parents": [],
+      "contextBefore": [
+        "#endif",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveDataBlock dataTaskDidReceiveData;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 468,
+      "spanLines": 1,
+      "bytes": 11,
+      "text": "@property (",
+      "textFirstLine": "@property (",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveDataBlock dataTaskDidReceiveData;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskWillCacheResponseBlock dataTaskWillCacheResponse;"
+      ]
+    },
+    {
+      "file": "afnetworking/AFNetworking/AFURLSessionManager.m",
+      "kind": "ERROR",
+      "line": 468,
+      "spanLines": 1,
+      "bytes": 1,
+      "text": ",",
+      "textFirstLine": ",",
+      "parents": [],
+      "contextBefore": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveResponseBlock dataTaskDidReceiveResponse;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidBecomeDownloadTaskBlock dataTaskDidBecomeDownloadTask;"
+      ],
+      "contextAfter": [
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskDidReceiveDataBlock dataTaskDidReceiveData;",
+        "@property (readwrite, nonatomic, copy) AFURLSessionDataTaskWillCacheResponseBlock dataTaskWillCacheResponse;"
+      ]
+    }
+  ]
+}

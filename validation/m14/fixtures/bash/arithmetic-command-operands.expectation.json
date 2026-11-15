@@ -1,0 +1,213 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/arithmetic-command-operands.sh",
+ "authoredFrom": "Round 8. `docs/analyzers/bash.md` limitation 7 recorded that the dispatch covered `$(( … ))`, `for (( … ))` and `((i++))` — the last only because its operand happens to be a `postfix_expression` — and NOT the plain `(( … ))` form, which the pinned grammar holds in a `compound_statement`. So `((count < limit))` named two project variables and the graph mentioned neither. The delta was derived BEFORE the analyzer was touched (`probe-bash-arithmetic-operands.mts`: 89 arithmetic compound_statements in 32 of the 400 hash-ordered corpus files, 126 operand name nodes, 115 distinct (target,line) pairs, 45 already published and 70 not), and the census then measured uses 7,786 -> 7,856 — the 70. On THIS fixture the same measurement is 4 `uses` edges before and 12 after. The pre-fix analyzer fails this expectation, so the rows pin the gap rather than the fix.",
+ "expectSymbols": [
+  {
+   "name": "arithmetic-command-operands.sh",
+   "kind": "module"
+  },
+  {
+   "name": "count",
+   "kind": "variable",
+   "ownerName": "arithmetic-command-operands.sh"
+  },
+  {
+   "name": "limit",
+   "kind": "variable",
+   "ownerName": "arithmetic-command-operands.sh"
+  },
+  {
+   "name": "arr",
+   "kind": "variable",
+   "ownerName": "arithmetic-command-operands.sh",
+   "meta.isArray": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 45,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.limit",
+   "line_number": 45,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 46,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 47,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.arr",
+   "line_number": 48,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 48,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 49,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.limit",
+   "line_number": 49,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 52,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 54,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.limit",
+   "line_number": 54,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 55,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual",
+   "note": "the `echo \"$count\"` inside the then-BLOCK — published by the string-expansion dispatch, NOT by the compound_statement branch. It is listed so the count row below can prove the block contributed nothing extra."
+  },
+  {
+   "type": "contains",
+   "from": "arithmetic-command-operands.sh",
+   "target": "count",
+   "line_number": 41
+  },
+  {
+   "type": "contains",
+   "from": "arithmetic-command-operands.sh",
+   "target": "limit",
+   "line_number": 42
+  },
+  {
+   "type": "contains",
+   "from": "arithmetic-command-operands.sh",
+   "target": "arr",
+   "line_number": 43
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "count",
+   "note": "an arithmetic operand is not a command; `((count++))` must never publish a call. The pre-round-2 analyzer did exactly that on `((x))` and this row is the standing pin for it."
+  },
+  {
+   "type": "calls",
+   "target": "limit"
+  },
+  {
+   "type": "calls",
+   "target": "arr"
+  },
+  {
+   "type": "uses",
+   "target": "arr[0]",
+   "note": "the subscript's own text is not a variable name; the READ is the base name `arr`."
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "uses",
+   "target": "arithmetic-command-operands.sh.count",
+   "equals": 8,
+   "note": "lines 45,46,47,48,49,52,54,55"
+  },
+  {
+   "type": "uses",
+   "target": "arithmetic-command-operands.sh.limit",
+   "equals": 3,
+   "note": "lines 45,49,54"
+  },
+  {
+   "type": "uses",
+   "target": "arithmetic-command-operands.sh.arr",
+   "equals": 1,
+   "note": "line 48"
+  },
+  {
+   "type": "uses",
+   "target": "arithmetic-command-operands.sh.count",
+   "line_number": 52,
+   "equals": 1,
+   "note": "`(( count++ )); (( count++ ))` is TWO statements naming ONE variable on ONE line, and `addRel`'s key carries no statement identity, so it is ONE edge. This is the row the lane's own prediction probe contradicted first — it counted 72 candidates against a measured 70 — and the probe now dedupes per FILE for this reason. | RETARGETED 2026-10-11 to the FILE-SCOPED spelling: the analyzer now reaches the declaration this file holds (`bindingInEffect`), so all 8 `uses -> count` edges are spelled `<scope>::count`; this row still pins ONE edge at line 52 for two statements, which is what it was written for."
+  },
+  {
+   "type": "calls",
+   "equals": 0,
+   "note": "the whole file runs no command at all: every construct in it is arithmetic or an `echo` inside a block the `(( … ))` predicate excludes."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

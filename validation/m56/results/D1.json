@@ -1,0 +1,32 @@
+{
+  "issue": "M56.D1",
+  "code": "D1",
+  "milestone": "M56",
+  "status": "verified",
+  "checks": 54,
+  "passed": 54,
+  "failed": 0,
+  "negativeCases": 9,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m56/verify-docs-completeness.ts",
+  "evidenceFile": "D1.json",
+  "generatedAt": "2026-11-09T14:45:02.583Z",
+  "generatedArtifact": "website/src/data/docs.generated.ts",
+  "rendered": {
+    "surface": "/docs",
+    "build": "reused existing build"
+  },
+  "summary": {
+    "sections": 11,
+    "cliCommands": 14,
+    "cliFlags": 37,
+    "skipDirs": 11,
+    "derivedPhases": 6,
+    "envVars": 3
+  },
+  "limitations": [
+    "The CLI reference is generated from the CLI's own help text, read from source through script/m56/cli-probe.ts (running src/cli/index.ts directly is a no-op under Node because import.meta.main is Bun-only).",
+    "The CLI's own example lines are not rendered on the site: `bb index --help` ships the example `bb index import --db <path>`, which uses a flag the command does not declare. The reference therefore states the commands and flags, and points at `bb --help` for examples; the CLI-side example is recorded as a product defect to fix, not published.",
+    "Rendered checks reuse website/.next when it is newer than the docs page and the generated facts, and rebuild otherwise. N5 is a synthetic rendered probe and N4 is a real source mutation; no end-to-end rebuild mutant runs here (M41.T2 already proves that class for the built site)."
+  ]
+}

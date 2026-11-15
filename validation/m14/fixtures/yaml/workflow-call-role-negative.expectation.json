@@ -1,0 +1,26 @@
+{
+ "fixtureId": "yaml/workflow-call-role-negative",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The file-shape gate, measured. This document carries the two key names a workflow carries — top-level `jobs`, and a job-level `uses:` naming a reusable workflow — and declares neither `on:` nor the `.github/workflows` path, so the shape index does not prove it is a workflow. Since `jobs.<id>.uses` is defined by GitHub Actions and by nothing else in YAML, the edge is withheld and reported as an unproven reference with a sub-1.0 confidence and a reason code, rather than promoted to a `calls` edge that names a caller which may not exist. The forbid half is the assertion that matters: no `calls` edge is emitted here.",
+ "forbidFrameworks": [
+  "GitHub Actions"
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "workflow-call-role-negative.jobs.release.uses",
+   "target": "acme/infra/.github/workflows/deploy.yml@v3",
+   "confidenceMax": 0.8,
+   "meta.relationshipType": "yaml_workflow_call_unverified",
+   "meta.resolved": false,
+   "meta.unresolvedReason": "file-shape-is-not-a-github-workflow",
+   "meta.confidenceReason": "shape-not-workflow"
+  }
+ ]
+}

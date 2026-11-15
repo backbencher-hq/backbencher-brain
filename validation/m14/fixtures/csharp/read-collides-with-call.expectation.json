@@ -1,0 +1,185 @@
+{
+  "fixtureId": "csharp/read-collides-with-call",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two fabrications in the `uses` class, both found by WRITING THE TRUTH SIDE of that class (this round's differential work) and letting it name the rows the analyzer was not publishing. An oracle that agrees with the lane cannot find these; only a second derivation can. EXPECTATIONS TRANSCRIBED FROM A MEASUREMENT \u2014 script/m14/tmp/cs-fixture-measure.ts prints the fixed analyzer's whole payload for this file and these rows are that print, so a pin cannot encode the mistake twice.\n\nCS-D6 \u2014 A READ DROPPED BECAUSE SOMETHING ELSE IN THE FUNCTION IS CALLED BY THE SAME NAME. The field-access `uses` pass carried a guard keyed on `${source}->${target}` with NO SITE: `if (!seen.has(key) && !emittedCalls.has(...))`. Its stated purpose was to avoid duplicating a `calls` edge for a member access in callee position, but `isCallee` already does that STRUCTURALLY, by comparing the member-access span against the invocation's `function` field. The name-keyed guard was therefore a coarser duplicate of a precise rule, and it deleted real reads. Measured on 150 real roslyn files: 4 occurrences, one class \u2014 `_options.X.Severity == ReportDiagnostic.Suppress` (a read) dropped because `context.ReportDiagnostic(diagnostic)` is CALLED in the same function; `properties.ContainsKey(K.Negate)` dropped because `generator.Negate(\u2026)` is CALLED in the same function; `declarationDeclarators.Count` dropped because `b.Count()` is CALLED beside it. In C# a static member and a method call can share a name, so this is a real shape and not a pathological one. After the fix the field-access truth reconciles 3,894 / 3,894 with 0 either way over 200 files, and the fix is held to its own claim from the other side too: the PRE-FIX analyzer is materialised from git and run over this same fixture (script/m14/tmp/cs-prefix-run.ts), and all four claims read ABSENT or PRESENT exactly as claimed \u2014 the two CS-D6 reads absent, both CS-D7 self-reads present. A fixture whose expectations also hold under the pre-fix output proves nothing, so that direction is measured too.\n\nCS-D7 \u2014 A DECLARED TYPE PUBLISHED AS A READ, IN TWO POSITIONS. The bare-identifier pass gated an entity's name by \"the FIRST direct identifier child\", which is two different things for two different declarations. A FIELD's type is not a direct child at all \u2014 the grammar nests it (`field_declaration > variable_declaration [type, variable_declarator]`) \u2014 so `public Widget Widget;` published `uses Collides -> Widget` on its own declaration line. And for a PROPERTY the first direct identifier is the TYPE, so the gate took the type and let the property's own NAME through, and `public Widget Widget { get; set; }` published `uses Widget -> Widget`. Both now read the grammar's own `name` / `type` FIELDS. Nothing is lost: the declared-type reference graph already publishes these names (`references Collides -> Widget` at lines 127 and 131 below), so R9 owns the type position and this pass stops claiming it. The reads that resolve in both cases resolve precisely BECAUSE the type name collides with a member of the same class, and the shadowing frame cannot help \u2014 the shadow and the read are the same identifier.\n\nTHE CONTROLS ARE THE POINT. Both fixes are subtractive, so over-application is the failure mode and each control is the shape a too-broad fix would break: a member access that IS the callee still publishes NO `uses` (`CallOnly` and `ReadAndCall` differ only in that one fact); a null-conditional call `other?.Report?.ToString()` publishes the RECEIVER read and not the callee; an assignment LHS is a write while its RHS reads; and a read with no same-named call in the function still publishes, which is the twin the whole fixture exists for.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "ReadAndCallSameName",
+      "target": "Count",
+      "line_number": 103,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CS-D6, THE CORPUS SHAPE: a read of `.Count` on one receiver beside a CALL to a `Count` method that lives on ANOTHER type. Pre-fix this edge was ABSENT (proved by running the pre-fix analyzer over this same fixture: script/m14/tmp/cs-prefix-run.ts), because the guard was keyed on the NAME"
+    },
+    {
+      "type": "calls",
+      "from": "ReadAndCallSameName",
+      "target": "Count",
+      "line_number": 103,
+      "comment": "the call, on the same line \u2014 the two differ only in callee-vs-read, which is the whole claim"
+    },
+    {
+      "type": "uses",
+      "from": "ReadAndCallMember",
+      "target": "Report",
+      "line_number": 109,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CS-D6, the member form: a read of `this.Report` beside a call to a same-named static. Pre-fix ABSENT"
+    },
+    {
+      "type": "calls",
+      "from": "ReadAndCallMember",
+      "target": "Report",
+      "line_number": 110
+    },
+    {
+      "type": "uses",
+      "from": "ReadAndCallNegate",
+      "target": "Negate",
+      "line_number": 86,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CS-D6: a qualified read of another receiver's member beside a call to a same-named static. Pre-fix ABSENT"
+    },
+    {
+      "type": "calls",
+      "from": "ReadAndCallNegate",
+      "target": "Negate",
+      "line_number": 87
+    },
+    {
+      "type": "uses",
+      "from": "CallOnly",
+      "target": "Negate",
+      "line_number": 128,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CS-D6 + CONTROL in one row: the read of `other.Negate` publishes even though `Registry.Negate(\u2026)` is called in the same function \u2014 the callee gate is about the member-access NODE, never the name. Pre-fix ABSENT"
+    },
+    {
+      "type": "calls",
+      "from": "CallOnly",
+      "target": "Negate",
+      "line_number": 128
+    },
+    {
+      "type": "uses",
+      "from": "ReadAndCallBothSides",
+      "target": "Count",
+      "line_number": 93,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CONTROL: the same member read on BOTH sides of an expression, with NO call to that name anywhere \u2014 published before the fix and published after, so the fix is precise rather than subtractive"
+    },
+    {
+      "type": "uses",
+      "from": "ReadOnly",
+      "target": "Value",
+      "line_number": 118,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CONTROL: a read with no same-named call in the function"
+    },
+    {
+      "type": "uses",
+      "from": "NullConditional",
+      "target": "Report",
+      "line_number": 136,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CSD4's 2-level shape: `other?.Report` is a genuine READ (it is the receiver of `?.ToString`), while `ToString` is the callee and publishes no uses"
+    },
+    {
+      "type": "uses",
+      "from": "NullConditional",
+      "target": "Negate",
+      "line_number": 135,
+      "meta.relationshipType": "csharp_field_access"
+    },
+    {
+      "type": "uses",
+      "from": "WriteAndRead",
+      "target": "Count",
+      "line_number": 144,
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CONTROL: the RHS of an assignment reads (SCD1)"
+    },
+    {
+      "type": "references",
+      "from": "Collides",
+      "target": "Widget",
+      "line_number": 149,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "field_declaration",
+      "comment": "CS-D7: the FIELD's declared type is published HERE, by the declared-type graph, which is the position that owns it \u2014 which is exactly why the bare-identifier pass may stop claiming it. Pre-fix this name ALSO appeared as a `uses` from `Collides`"
+    },
+    {
+      "type": "references",
+      "from": "Collides",
+      "target": "Widget",
+      "line_number": 153,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration",
+      "comment": "CS-D7: the PROPERTY's declared type, same position"
+    },
+    {
+      "type": "uses",
+      "from": "ReadWidget",
+      "target": "Widget",
+      "line_number": 196,
+      "meta.relationshipType": "identifier_usage",
+      "comment": "CS-D8 CONTROL: the same member read as a VALUE while a parameter of that same TYPE is in scope. This MUST publish. It is the row that makes the three forbidden rows below observable: without a real read to contrast against, a fix that simply stopped publishing these names would pass, trading a published type for a missing read"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "WriteAndRead",
+      "target": "Flag",
+      "note": "CONTROL: an assignment LHS is a WRITE (SCD1) \u2014 the twin of the RHS read above"
+    },
+    {
+      "type": "uses",
+      "target": "ToString",
+      "note": "CONTROL: a callee publishes no `uses`. Pre-fix this fixture did not reach that case, so it is pinned now: if the callee gate were removed along with the name-keyed guard, these three rows would appear"
+    },
+    {
+      "type": "uses",
+      "from": "CallOnly",
+      "target": "Report",
+      "note": "CONTROL: nothing in CallOnly reads a member named Report"
+    },
+    {
+      "type": "uses",
+      "from": "Collides",
+      "target": "Widget",
+      "note": "CS-D7: a field's declared TYPE is not a read of the field. Pre-fix this edge existed, stamped on the field's own declaration line (proved against the pre-fix analyzer)"
+    },
+    {
+      "type": "uses",
+      "from": "Widget",
+      "target": "Widget",
+      "note": "CS-D7: a property's own NAME is not a read of itself. Pre-fix this edge existed (proved against the pre-fix analyzer)"
+    },
+    {
+      "type": "uses",
+      "from": "TakesGadget",
+      "target": "Gadget",
+      "line_number": 178,
+      "meta.relationshipType": "identifier_usage",
+      "note": "CS-D8, METHOD PARAMETER TYPE: `Gadget` is a declared type in a signature, not a value read. Pre-fix this row existed (proved against the pre-fix analyzer), stamped on the signature line with the enclosing method as its source -- which made a type look like a read inside the method"
+    },
+    {
+      "type": "uses",
+      "from": "TakesDoodadInLambda",
+      "target": "Doodad",
+      "line_number": 184,
+      "meta.relationshipType": "identifier_usage",
+      "note": "CS-D8, LAMBDA PARAMETER TYPE: the third shape that carries a `type` field, found by the same corpus sweep as the other two (cs-deep-33)"
+    },
+    {
+      "type": "uses",
+      "from": "PrimaryCtorTakesSprocket",
+      "target": "Sprocket",
+      "line_number": 212,
+      "meta.relationshipType": "identifier_usage",
+      "note": "CS-D8, PRIMARY-CONSTRUCTOR PARAMETER TYPE: the shape D7's rule could not see, because a primary-constructor parameter is not a `variable_declaration`. Its parameter list hangs off the TYPE DECLARATION, so no callable encloses it and the row's source fell back to the class"
+    }
+  ]
+}

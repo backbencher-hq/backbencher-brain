@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/abstract-class",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Abstract class inheritance: Square extends Shape2; abstract + concrete methods extracted.",
+  "expectSymbols": [
+    { "name": "Shape2" },
+    { "name": "Square" },
+    { "name": "area" },
+    { "name": "describe" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Square", "targetEndsWith": "Shape2" }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/arity-distinct-calls.erl",
+  "authoredFrom": "Erlang call-site arity contract (ER-D2, #880 obligation 4) authored from the pinned grammar's call/expr_args shape (probed 2026-09-18) before this fixture's F3 run: a call's arity is its expr_args named-children count (comments excluded) - the same counter as a clause head - and f/1 vs f/2 call sites are DISTINCT edges (metadata.callArity); remote targets keep module qualification (ER-D1: io:format/1 and io:format/2 are distinct edges; a bare leaf would conflate every module's reply). ER-D44 (2026-10-04): the four range pins on this fixture were read off the PINNED GRAMMAR's own `fun_decl` extents for this file, not off analyzer output \u2014 `fun_decl` [685,698) and [699,720) and [755,803) against `function_clause` [685,697) and [699,719) and [755,802) \u2014 and the lane's own verify-erlang-identity.ts asserted the same fact independently and failed before the fix.",
+  "expectSymbols": [
+    {
+      "name": "arity_distinct_calls",
+      "kind": "module"
+    },
+    {
+      "name": "go",
+      "kind": "function",
+      "ownerName": "arity_distinct_calls",
+      "meta.arity": 0
+    },
+    {
+      "name": "pick",
+      "kind": "function",
+      "ownerName": "arity_distinct_calls",
+      "meta.arity": 1,
+      "startLine": 18,
+      "endLine": 18,
+      "endColumn": 14,
+      "note": "ER-D44: the range is the grammar's `fun_decl`, so it ends ON the clause-terminating `.`. Read off the pinned grammar for this file: fun_decl [685,698) / function_clause [685,697) \u2014 so the pre-fix endColumn was 13 and source.slice(startIndex, endIndex) returned the symbol's own text with its final character missing. endIndex is tree-sitter's EXCLUSIVE end and nodeToRange publishes it unchanged, so the index pins belong here too but `run-fixtures.ts`'s CONSTRAINT_KEY_ALLOWLIST does not name startIndex/endIndex, so they are recorded as this note rather than as constraints (reported, not fixed)."
+    },
+    {
+      "name": "pick",
+      "kind": "function",
+      "ownerName": "arity_distinct_calls",
+      "meta.arity": 2,
+      "startLine": 19,
+      "endLine": 19,
+      "endColumn": 22,
+      "note": "ER-D44: the range is the grammar's `fun_decl`, so it ends ON the clause-terminating `.`. Read off the pinned grammar for this file: fun_decl [699,720) / function_clause [699,719) \u2014 so the pre-fix endColumn was 21 and source.slice(startIndex, endIndex) returned the symbol's own text with its final character missing. endIndex is tree-sitter's EXCLUSIVE end and nodeToRange publishes it unchanged, so the index pins belong here too but `run-fixtures.ts`'s CONSTRAINT_KEY_ALLOWLIST does not name startIndex/endIndex, so they are recorded as this note rather than as constraints (reported, not fixed)."
+    },
+    {
+      "name": "fold",
+      "kind": "function",
+      "ownerName": "arity_distinct_calls",
+      "meta.arity": 2
+    },
+    {
+      "name": "fold",
+      "kind": "function",
+      "ownerName": "arity_distinct_calls",
+      "meta.arity": 3,
+      "startLine": 21,
+      "endLine": 21,
+      "endColumn": 49,
+      "note": "ER-D44: the range is the grammar's `fun_decl`, so it ends ON the clause-terminating `.`. Read off the pinned grammar for this file: fun_decl [755,803) / function_clause [755,802) \u2014 so the pre-fix endColumn was 48 and source.slice(startIndex, endIndex) returned the symbol's own text with its final character missing. endIndex is tree-sitter's EXCLUSIVE end and nodeToRange publishes it unchanged, so the index pins belong here too but `run-fixtures.ts`'s CONSTRAINT_KEY_ALLOWLIST does not name startIndex/endIndex, so they are recorded as this note rather than as constraints (reported, not fixed)."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "pick",
+      "kind": "function",
+      "equals": 2
+    },
+    {
+      "name": "fold",
+      "kind": "function",
+      "equals": 2
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "go",
+      "arity": 0
+    },
+    {
+      "name": "pick",
+      "arity": 1
+    },
+    {
+      "name": "pick",
+      "arity": 2
+    },
+    {
+      "name": "fold",
+      "arity": 2
+    },
+    {
+      "name": "fold",
+      "arity": 3
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "pick",
+      "meta.context": "local function call",
+      "meta.callArity": 1,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "pick",
+      "meta.context": "local function call",
+      "meta.callArity": 2,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "io:format",
+      "meta.context": "remote function call",
+      "meta.callArity": 1,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "io:format",
+      "meta.context": "remote function call",
+      "meta.callArity": 2,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "fold",
+      "meta.context": "local function call",
+      "meta.callArity": 2,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "fold",
+      "target": "fold",
+      "meta.context": "local function call",
+      "meta.callArity": 3,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "fold",
+      "target": "lists:foldl",
+      "meta.context": "remote function call",
+      "meta.callArity": 3,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "contains",
+      "from": "arity_distinct_calls",
+      "target": "go",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "format"
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "pick",
+      "meta.callArity": 3
+    }
+  ]
+}

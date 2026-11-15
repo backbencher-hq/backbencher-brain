@@ -1,0 +1,22 @@
+{
+  "issue": "CLJ-D32",
+  "note": "STATIC interop is a MEMBER ACCESS, not a call to a function named `Class/.member`. It used to fall through to the generic-call branch and produce `f -[calls]-> String/.toUpperCase` — an edge whose target is not a symbol in the file, is not an export, and is in no `contains`: a dangling relationship, the one thing the \"all extracted, resolved and emitted\" contract exists to prevent. Invisible to F5 by construction, because the `calls` truth derives calls, the analyzer emitted a call, and the two agreed perfectly on an edge that pointed at nothing. TWO edges, because the static form carries one fact the instance form does not: WHICH CLASS — `(.method obj)` gets it from the receiver. THREE spellings exist and the fixture is what found the second one missing (`java.io.File./getName` was still emitting a dangling `calls -> java.io.File./getName`, a dot BEFORE the slash). The third, `String/toUpperCase`, is deliberately left as a CALL: it is identical in shape to `str/join` and `clojure.string/trim`, so promoting it would fabricate a member access for every namespace-qualified call in the corpus. The instance form keeps its single edge, which is exactly what makes the static form's second edge meaningful, and `Class.` with a trailing dot stays a constructor `instantiates`.",
+  "expectRelationships": [
+    { "type": "uses", "from": "static-call", "target": "toUpperCase", "line_number": 18 },
+    { "type": "uses", "from": "static-call", "target": "String", "line_number": 18 },
+    { "type": "uses", "from": "static-with-args", "target": "parseInt", "line_number": 21 },
+    { "type": "uses", "from": "static-with-args", "target": "Integer", "line_number": 21 },
+    { "type": "uses", "from": "static-qualified", "target": "getName", "line_number": 25 },
+    { "type": "uses", "from": "static-qualified", "target": "java.io.File", "line_number": 25 },
+    { "type": "calls", "from": "namespaced-call", "target": "str/join", "line_number": 30 },
+    { "type": "uses", "from": "instance-call", "target": "toUpperCase", "line_number": 36 },
+    { "type": "instantiates", "from": "ctor", "target": "java.io.File", "line_number": 40 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "String/.toUpperCase" },
+    { "type": "calls", "target": "Integer/.parseInt" },
+    { "type": "calls", "target": "java.io.File./getName" },
+    { "type": "uses", "from": "instance-call", "target": "s" },
+    { "type": "uses", "from": "static-call", "target": "java.lang.String" }
+  ]
+}

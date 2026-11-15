@@ -1,0 +1,53 @@
+// F: the last open details before the oracle rewrite.
+package p
+trait T1(val a: Int) { def m = 1 }
+trait T2 { def m = 1 }
+class T3(val a: Int) { def m = 1 }
+object O1(val a: Int)
+given g1[A](x: A): Ord[A] with { def compare(a: A, b: A) = 0 }
+trait Ord[A]
+---
+// F2: case class / case object / enum case param shapes
+package p
+case class Q(a: Int, val b: Int, var c: Int)
+case object CO { val x = 1 }
+enum E(a: Int, val b: Int) { case X, Y; case Z(v: Int) }
+---
+// F3: given type params, anonymous given counter interleaving
+package p
+object O {
+  given anonA: Ord[Int] with { def cmp = 0 }
+  given Ord[String] with { def cmp = 0 }
+  given anonB: Ord[Char] with { def cmp = 0 }
+}
+trait Ord[A]
+---
+// F4: a given whose name is an operator
+package p
+object O { given + : Ord[Int] with { def cmp = 0 } }
+trait Ord[A]
+---
+// F5: val with a modifiers-only prefix, and `lazy val`, and `implicit val`
+package p
+class K { final lazy val a = 1; implicit val b: Int = 2; private val c = 3; @deprecated val d = 4 }
+---
+// F6: nested type_definition inside a class inside a def
+package p
+class K { def m(): Any = { class In { type T = Int }; 1 } }
+---
+// F7: a `def` with no body (abstract) inside a class vs a trait
+package p
+class K { def m(): Int }
+trait T { def m(): Int; val v: Int }
+---
+// F8: extension method owners at several depths
+package p
+object O {
+  extension (s: String) {
+    def a = 1
+    def b = 2
+  }
+  class C {
+    extension (s: String) { def c = 3 }
+  }
+}

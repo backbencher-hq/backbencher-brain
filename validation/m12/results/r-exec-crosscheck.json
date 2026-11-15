@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_exec_crosscheck",
+  "why": "the headline 8,798 comes from A alone, and A could be consistently wrong about R's SEMANTICS the same way a fixture suite written beside the analyzer can be. It cannot be wrong about the grammar.",
+  "present": true,
+  "method": {
+    "A": "R's parse() builds the AST; a walk over it collects file-level names. Independent of the ANALYZER (R's parser, not tree-sitter); NOT independent of the author.",
+    "B": "the file is EVALUATED in a fresh environment and the environment is asked what it holds. No walk and no binding rules, so independent of both the analyzer and the author -- but only where the file can be evaluated in isolation.",
+    "why": "the headline 8,798 comes from A alone, and A could be consistently wrong about R's SEMANTICS the same way a fixture suite written beside the analyzer can be. It cannot be wrong about the grammar."
+  },
+  "totals": {
+    "filesTotal": 1174,
+    "methodAFiles": 993,
+    "methodBFiles": 321,
+    "filesBoth": 321,
+    "filesAgreeing": 321,
+    "filesDisagreeing": 0,
+    "namesOnlyInA": 0,
+    "namesOnlyInB": 0,
+    "crosscheckCoverage": 0.2734
+  },
+  "disagreements": [],
+  "verdict": "AGREE on all 321 files both methods can answer (27.3% of the corpus); Method A is corroborated from a second direction where corroboration is possible",
+  "foundByThisCheck": [
+    "a quoted assignment target (`\"%+replace%\" <- ...`) published no symbol, though R binds the name; ggplot2 writes this form at R/theme-current.R:130",
+    "a statically dead `if (FALSE)` branch published declarations R never makes; the R-oracle's walk descended in too, so the two agreed and precision stayed at 1.0",
+    "a top-level `rm()` left the removed helper published: 59 names across the pinned corpora"
+  ],
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T22:00:48.923Z",
+    "contentSha256": "bfd9fad0d75befebbb5797663334fa31e4c7646b2db992d4a7c58c4285054617"
+  }
+}

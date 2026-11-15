@@ -1,0 +1,61 @@
+{
+  "tier": "T1",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+  "migration": {
+    "ms": 505.46,
+    "dbBefore": {
+      "bytes": 52342784,
+      "mtime": "2026-11-02T04:13:24.775Z"
+    },
+    "dbAfter": {
+      "bytes": 52342784,
+      "mtime": "2026-11-02T04:13:24.775Z"
+    },
+    "wrote": false
+  },
+  "schema": {
+    "evidenceClass": {
+      "name": "evidence_class",
+      "type": "TEXT",
+      "hidden": 2
+    },
+    "coverIndex": {
+      "name": "brain_rel_pattern_cover_idx",
+      "unique": 0,
+      "origin": "c"
+    },
+    "indexes": [
+      "brain_rel_pattern_cover_idx",
+      "brain_rel_source_cross_idx",
+      "brain_rel_target_cross_idx",
+      "brain_rel_cross_lang_idx",
+      "brain_rel_target_type_idx",
+      "brain_rel_proj_type_idx",
+      "brain_rel_proj_source_idx",
+      "brain_rel_proj_target_idx",
+      "brain_rel_target_ext_idx",
+      "brain_rel_cross_file_idx",
+      "brain_rel_confidence_idx",
+      "brain_rel_proj_type_target_idx",
+      "brain_rel_source_type_idx",
+      "brain_rel_type_idx",
+      "brain_rel_target_idx",
+      "brain_rel_source_idx",
+      "brain_rel_project_idx",
+      "sqlite_autoindex_brain_relationship_1"
+    ]
+  },
+  "plans": {
+    "usedIncoming": [
+      "SEARCH r USING INDEX brain_rel_pattern_cover_idx (project_id=? AND relationship_type=? AND target_symbol_id>?)",
+      "USE TEMP B-TREE FOR GROUP BY"
+    ],
+    "distinctTarget": [
+      "SEARCH r USING INDEX brain_rel_pattern_cover_idx (project_id=? AND relationship_type=? AND target_symbol_id>?)",
+      "USE TEMP B-TREE FOR DISTINCT"
+    ]
+  },
+  "inferredRows": 0,
+  "generatedAt": "2026-11-03T16:37:40.358Z"
+}

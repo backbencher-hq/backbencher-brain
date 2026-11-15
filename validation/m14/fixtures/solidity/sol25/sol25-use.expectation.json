@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/sol25/sol25-use.sol",
+  "authoredFrom": "SOL-25 — member resolution: receiver-typed members and implicit-`this` inherited calls, WITH the project index. Authored 2026-10-28 from the analyzer's measured output on this directory.",
+  "note": "This subdirectory is a project: `sol25-lib.sol` declares two libraries that both declare `shared`, and two contracts that both declare `inherited`. The four POSITIVE rows show the two mechanisms (`receiverTypedMember`, `inheritedMemberQualified`); the three NEGATIVE rows are the guards, and each is a row the pass must leave alone: a name ONE type declares (the bare spelling already resolves), a declarer that is the enclosing type's OWN override, and a receiver name declared with TWO types in one file. A fixture that only pinned the rewrites would pass a pass that rewrote everything.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "viaMember",
+      "target": "Lib.shared",
+      "meta.calleeKind": "receiverTypedMember",
+      "meta.receiverType": "Lib",
+      "meta.ownerType": "Lib",
+      "comment": "The receiver is declared `Lib.T`; `Lib` declares `shared` and `Lib2` declares it too, so the bare name is ambiguous project-wide and the declared type determines the declarer. The target is the declaration's own qualifiedName, which is what the arbiter's key space carries."
+    },
+    {
+      "type": "calls",
+      "source": "viaStored",
+      "target": "Lib.shared",
+      "meta.calleeKind": "receiverTypedMember",
+      "meta.receiverType": "Lib",
+      "comment": "Same evidence through a STATE variable, not a parameter — the declared-type map covers both."
+    },
+    {
+      "type": "calls",
+      "source": "viaThis",
+      "target": "BaseA.inherited",
+      "meta.calleeKind": "inheritedMemberQualified",
+      "meta.ownerType": "BaseA",
+      "comment": "A BARE callee. `inherited` is declared by BaseA and BaseZ, so the name collides; Child's inheritance closure names BaseA as the one declarer. This row also pins the classifier fix: before it, a bare call whose name any sibling type declared was labelled `inFileTypeMember` and never reached the cross-file branch."
+    },
+    {
+      "type": "calls",
+      "source": "viaThis",
+      "target": "unique",
+      "meta.calleeKind": "crossFileInheritedMember",
+      "comment": "CONTROL — `unique` is declared by ONE project type, so the bare spelling already names one declaration. The pass must not rewrite it: a qualified spelling can collide where the bare one did not."
+    },
+    {
+      "type": "calls",
+      "source": "callOwn",
+      "target": "inherited",
+      "meta.calleeKind": "localFunction",
+      "comment": "NEGATIVE — `Both` overrides `inherited` itself, so the declarer IS the enclosing type. There is no ancestor to qualify to, and the row keeps its bare target."
+    },
+    {
+      "type": "calls",
+      "source": "viaDup",
+      "target": "shared",
+      "meta.calleeKind": "projectMemberCandidate",
+      "comment": "NEGATIVE — the name `dup` is declared with `Lib.T` (state) and `Lib2.T` (parameter) in this one file. The receiver's type is not a fact about the site, so the target stays bare: a candidate is not a resolution."
+    },
+    {
+      "type": "calls",
+      "source": "viaStatic",
+      "target": "LibMath.min",
+      "meta.calleeKind": "libraryStaticCall",
+      "meta.ownerType": "LibMath",
+      "comment": "The call site itself spells the library; the object has ONE project declaration and its closure declares `min`, so the qualified target is what the source says."
+    },
+    {
+      "type": "calls",
+      "source": "viaShadowed",
+      "target": "Lib2.shared",
+      "meta.calleeKind": "receiverTypedMember",
+      "meta.receiverType": "Lib2",
+      "comment": "NEGATIVE for the static rule and POSITIVE for the receiver rule in one row: a state variable named `Lib` shadows the library, so the object is a VALUE. The static branch must not fire (it would have published `Lib.shared`, naming a library the call does not use) and the receiver branch resolves the declared type instead."
+    },
+    {
+      "type": "calls",
+      "source": "viaContainer",
+      "target": "Lib.shared",
+      "meta.calleeKind": "receiverTypedMember",
+      "meta.receiverType": "Lib",
+      "comment": "The receiver is an ELEMENT of a mapping (`mapping(bytes32 => Lib.T) _byKey`), so there is no declared variable to type — the container's VALUE TYPE names it. `calleeObject` is empty on this shape (the object is `_byKey[k]`), so the container name travels as `calleeObjectBase`."
+    },
+    {
+      "type": "calls",
+      "source": "viaConversion",
+      "target": "IThing.ping",
+      "meta.calleeKind": "receiverTypedMember",
+      "meta.receiverType": "IThing",
+      "comment": "The source states the receiver's type: `IThing(a).ping(1)`. The grammar fills no `function` field for a conversion, so the type is read as the call's FIRST named child — the field-only read returned \"\" and left these rows unresolved."
+    },
+    {
+      "type": "decorates",
+      "source": "viaModifier",
+      "target": "BaseA.onlyBoss",
+      "meta.modifierResolution": "inherited-member",
+      "meta.ownerType": "BaseA",
+      "comment": "An applied modifier declared on a base in ANOTHER file, with the same name declared by a second type: the enclosing type's closure names BaseA, and the qualified spelling is one key. The edge now carries `decoratesOwner`, which it had no field for before."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "viaThis",
+      "target": "inherited",
+      "comment": "The implicit-`this` row must NOT keep its bare spelling — that is the whole movement."
+    },
+    {
+      "type": "calls",
+      "source": "viaDup",
+      "target": "Lib.shared",
+      "comment": "The two-type receiver must not be resolved to EITHER candidate."
+    },
+    {
+      "type": "calls",
+      "source": "viaDup",
+      "target": "Lib2.shared",
+      "comment": "…including the one whose name the parameter's declared type heads."
+    },
+    {
+      "type": "calls",
+      "source": "callOwn",
+      "target": "BaseA.inherited",
+      "comment": "An override call must not be qualified to an ancestor — it names the enclosing type's own declaration."
+    },
+    {
+      "type": "calls",
+      "source": "viaThis",
+      "target": "BaseA.unique",
+      "comment": "The single-declarer control must not be rewritten at all."
+    },
+    {
+      "type": "calls",
+      "source": "viaStatic",
+      "target": "min",
+      "comment": "The static call must not keep its bare spelling."
+    },
+    {
+      "type": "calls",
+      "source": "viaShadowed",
+      "target": "Lib.shared",
+      "comment": "A shadowing VALUE must not be read as the library of the same name."
+    },
+    {
+      "type": "calls",
+      "source": "viaContainer",
+      "target": "shared",
+      "comment": "An indexed element must not keep the bare member spelling."
+    },
+    {
+      "type": "calls",
+      "source": "viaConversion",
+      "target": "ping",
+      "comment": "A conversion receiver's member must not keep the bare spelling: the type is written in the call."
+    },
+    {
+      "type": "decorates",
+      "source": "viaModifier",
+      "target": "onlyBoss",
+      "comment": "The inherited modifier must not keep its bare spelling."
+    }
+  ]
+}

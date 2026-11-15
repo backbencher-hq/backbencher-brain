@@ -1,0 +1,144 @@
+{
+  "fixtureId": "svelte/directive-carriers",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Pins the DIRECTIVE CARRIER SPACE, which was entirely unimplemented and had NO declared ruling anywhere \u2014 zero mentions in the completeness spec and zero in the analyzer. Found by the census's carrier dimension, not by any comparison: the F5 oracle is silent here too, so the differential reports MISSING=0 and the lane reads clean. Measured corpus weight of the silent carriers was roughly 2,049 occurrences \u2014 more than double the `on:` carriers that did work \u2014 including `bind:value` at 581, the single most common attribute interaction in the corpus. THE STRUCTURAL POINT, which is why a node-type census could never have found it: section A classifies GRAMMAR NODE TYPES, and `attribute` was already marked handled_verified. Eight unexamined directive families were hiding INSIDE a node type the gate had blessed. A 'handled' type can contain an unexamined space, and no node-type gate sees that. THREE FAMILIES, THREE OBLIGATIONS, and the split is the ruling. READS A MEMBER -> `uses` at 0.95, on the S1 argument: `bind:value={bound}`, `bind:this={element}`, `class:active={isActive}`, `style:color={tint}`. INVOKED BY THE FRAMEWORK -> `calls` at 0.85, on the D8 argument: `use:doAction`, `use:doTooltip`, `transition:doSlide`, `in:doFly`, `out:doFade`, `animate:doFlip`. Their previous silence was an internal INCONSISTENCY, not a position \u2014 `on:click` emitted `calls` because the framework calls the name, and Svelte calls an action on mount and a transition on state change by the same mechanism. DECLARES, DOES NOT READ -> silent: `let:item` names a slot prop the component ACCEPTS, so there is no member read to publish, and this is the one silent carrier that was right all along. THE TAILWIND ROW IS THE OVER-SUPPRESSION GUARD, and it is the one that matters most. `md:grid-cols-2`, `dark:bg-background` and `after:absolute` have exactly the `prefix:value` shape of a Svelte directive and live INSIDE a quoted `class` value; a rule matching the shape rather than the carrier space would publish all of them, which is the same failure the bare-leaf rune fix had \u2014 it swallowed `$my.eager` and `$my.pending` \u2014 and it is why the census asserts in both directions. The plain `style=\"color:red\"` is there for the same reason: `color` is a CSS property, not a directive. Note `after:*` is absent from the corpus carrier set entirely once quoted values are stripped: it was never a Svelte directive. TWO ROWS WORTH READING TWICE. `uses -> params` at L24 and `uses -> timing` at L26 are the action's and the transition's PARAMETER objects \u2014 Svelte evaluates those expressions in the template, so the reads are real, and they are separate from the `calls` edges to the same directives, which name the callable rather than its argument. And `uses -> doClick` at L35 alongside `calls -> doClick` at L30: the handler is both invoked and read, and the dedupe keeps both because they are different relationship types.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "bound",
+      "line_number": 20,
+      "comment": "bind:value \u2014 the single most common carrier in the corpus (581 occurrences) and previously silent"
+    },
+    {
+      "type": "uses",
+      "target": "element",
+      "line_number": 21,
+      "comment": "bind:this"
+    },
+    {
+      "type": "uses",
+      "target": "isActive",
+      "line_number": 22,
+      "comment": "class:active"
+    },
+    {
+      "type": "uses",
+      "target": "tint",
+      "line_number": 23,
+      "comment": "style:color \u2014 a CSS property NAME carrying a member read, which is a different thing from a `style=\"color:red\"` literal"
+    },
+    {
+      "type": "uses",
+      "target": "params",
+      "line_number": 24,
+      "comment": "the ACTION PARAMETER object: Svelte evaluates it in the template, so the read is real, and it is separate from the `calls` edge to the same directive"
+    },
+    {
+      "type": "uses",
+      "target": "timing",
+      "line_number": 26,
+      "comment": "the TRANSITION's parameter object, likewise"
+    },
+    {
+      "type": "calls",
+      "target": "doAction",
+      "line_number": 24,
+      "comment": "use: with a value \u2014 the target is the directive's own name, written in the attribute NAME, so the line is the attribute's"
+    },
+    {
+      "type": "calls",
+      "target": "doTooltip",
+      "line_number": 25,
+      "comment": "use: with NO value at all \u2014 the valueless form is the common one and must still be a call site"
+    },
+    {
+      "type": "calls",
+      "target": "doSlide",
+      "line_number": 26,
+      "comment": "transition:"
+    },
+    {
+      "type": "calls",
+      "target": "doFly",
+      "line_number": 27,
+      "comment": "in:"
+    },
+    {
+      "type": "calls",
+      "target": "doFade",
+      "line_number": 28,
+      "comment": "out:"
+    },
+    {
+      "type": "calls",
+      "target": "doFlip",
+      "line_number": 29,
+      "comment": "animate:"
+    },
+    {
+      "type": "calls",
+      "target": "doClick",
+      "line_number": 30,
+      "comment": "on: \u2014 the pre-existing D8 edge, pinned so the new carrier pass cannot have displaced it"
+    },
+    {
+      "type": "uses",
+      "target": "doClick",
+      "line_number": 35,
+      "comment": "the same handler is also READ on a component tag, and the dedupe keeps both edges because they are different relationship types"
+    },
+    {
+      "type": "renders",
+      "target": "Child",
+      "line_number": 35
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "grid-cols-2",
+      "comment": "`md:grid-cols-2` is a Tailwind token inside a quoted class value. It has the exact `prefix:value` shape of a directive \u2014 the over-suppression this whole fixture guards"
+    },
+    {
+      "type": "uses",
+      "target": "bg-background",
+      "comment": "`dark:bg-background`, same shape, same reason"
+    },
+    {
+      "type": "uses",
+      "target": "absolute",
+      "comment": "`after:absolute` \u2014 worth naming because `after:` is NOT a Svelte directive at all and is absent from the corpus carrier set once quoted values are stripped"
+    },
+    {
+      "type": "uses",
+      "target": "red",
+      "comment": "`style=\"color:red\"` is a plain CSS literal. `color` is a property name here, not a directive prefix"
+    },
+    {
+      "type": "uses",
+      "target": "item",
+      "comment": "`let:item` DECLARES a slot prop the component accepts; it is not a read of a member, and this is the one silent carrier that was always right"
+    },
+    {
+      "type": "calls",
+      "target": "item",
+      "comment": "and it is not a call either"
+    },
+    {
+      "type": "calls",
+      "target": "value",
+      "comment": "`bind:value`'s `value` is a binding NAME, not a callable"
+    },
+    {
+      "type": "calls",
+      "target": "color",
+      "comment": "`style:color`'s `color` is a CSS property, not a transition function"
+    },
+    {
+      "type": "calls",
+      "target": "active",
+      "comment": "`class:active`'s `active` is a class name"
+    }
+  ]
+}

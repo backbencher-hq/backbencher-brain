@@ -1,0 +1,91 @@
+{
+  "fixtureId": "go/override-promotion",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Ontology workstream 2026-10-02, `overrides` was a GAP for go. MEASURED: script/m14/tmp/go-ontology-census.ts probes B2 (same-file promotion) and B3 (same-package promotion) over go-stdlib + cobra — non-zero, so the construct occurs and the analyzer was reading it and discarding it. Pins the SOURCE spelling (`Receiver.Method`, the family's) and the name-bearing TARGET rule of the #924 name-surface round: a relationship target is the promoted method's NAME alone (`Report`), with the pair it displaced carried in `meta.targetQualified` (`Shape.Report`) and `meta.embedder` — the qualified spelling was source text on a name-bearing surface and the gate G1 flags it. The sub-1.0 confidence with its contract-§4 reason code, and the NAME-only match that is Go's selector rule. The forbids carry as much weight as the expectations: a PROMOTED-but-not-shadowed method, a method the embedded type does not have, a type that embeds nothing, and a method on an unrelated receiver all must produce no `overrides` edge.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "struct"
+    },
+    {
+      "name": "Wrapper",
+      "kind": "struct"
+    },
+    {
+      "name": "Report",
+      "kind": "method"
+    },
+    {
+      "name": "Counter",
+      "kind": "struct"
+    },
+    {
+      "name": "Level",
+      "kind": "type"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "source": "Wrapper.Report",
+      "target": "Report",
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "promoted-method-shadowed-by-outer-declaration",
+      "comment": "same signature: a substitutable override of the promoted method",
+      "meta.targetQualified": "Shape.Report",
+      "meta.embedder": "Shape"
+    },
+    {
+      "type": "overrides",
+      "source": "Wrapper.Name",
+      "target": "Name",
+      "meta.relationshipType": "go_method_promotion_shadowing",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "DIFFERENT signature: legal Go, and `w.Name()` still selects Wrapper's, so the name-only match is the fact",
+      "meta.targetQualified": "Shape.Name",
+      "meta.embedder": "Shape"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Wrapper",
+      "target": "Shape",
+      "meta.relationshipType": "go_struct_embedding"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "Wrapper.Area",
+      "comment": "promoted but never shadowed — nothing to override"
+    },
+    {
+      "type": "overrides",
+      "source": "Wrapper.Unrelated",
+      "comment": "Shape declares no Unrelated method"
+    },
+    {
+      "type": "overrides",
+      "source": "Counter.Report",
+      "comment": "Counter embeds nothing, so no method is promoted onto it"
+    },
+    {
+      "type": "overrides",
+      "source": "Level.Report",
+      "comment": "Level has no receiver embedding at all"
+    },
+    {
+      "type": "overrides",
+      "source": "Shape.Report",
+      "comment": "a type does not override itself"
+    },
+    {
+      "type": "overrides",
+      "source": "Wrapper.Report",
+      "target": "Report",
+      "meta.targetQualified": "Wrapper.Report",
+      "comment": "self-edge: the shadowing declaration cannot be its own promoted target; only the qualified pair makes it expressible now that the target is a NAME"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+[
+  {"label":"unchanged file call 1","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"unchanged file call 2","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"unchanged file call 3","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"unchanged file call 4","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"unchanged file call 5","arguments":{"path":"src/agent-fresh.ts"}}
+]

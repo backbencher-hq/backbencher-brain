@@ -1,0 +1,18 @@
+{
+  "fixtureId": "dart/library-annotation",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A LIBRARY ANNOTATION is a THIRD annotation position, probed on the pinned grammar: `@TestOn('vm') library annotated.lib;` parses the annotation as a CHILD of `library_name`, BEFORE the dotted library name — unlike the class-level CHILD form (`annotation` inside `class_definition`) and the class-body SIBLING form. The annotated declaration is the library itself, and this lane publishes a module symbol for every file, so the annotation's source is that symbol's name: the DECLARED library name (`annotated.lib`) when the directive has one, else the file-stem convention the module node uses for an implicit/unnamed library. Without this case the library-level annotation published nothing at all: the child-carrier reader had no `library_name` branch, so the type mention never reached the relationship channel.",
+  "expectSymbols": [
+    { "name": "annotated.lib", "kind": "module" },
+    { "name": "libraryBody", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "annotated.lib", "target": "TestOn", "confidenceMin": 0.95, "meta.relationshipType": "annotation", "meta.isAnnotation": true, "meta.annotatedKind": "library_annotation", "note": "THE NEW ROW — a library annotation attributes to the module symbol, whose name is the declared library name. `annotatedKind: library_annotation` says the annotated declaration is the library, which no other carrier kind can express." }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "source": "library-annotation", "target": "TestOn", "note": "THE STEM IS NOT THE SOURCE WHEN A NAME IS DECLARED — this library declares `annotated.lib`, so the module symbol (and therefore the edge source) is that name, not the file stem. A carrier reader that always used the stem would pass the symbol expectation and fail here." },
+    { "type": "references", "source": "annotated.lib", "target": "argument", "note": "the annotation's ARGUMENT is a value (`'vm'`), not a type — its string literal must not become a row, and it is the reason the target is the `name` field." },
+    { "type": "uses", "source": "annotated.lib", "target": "TestOn", "note": "an annotation is a TYPE MENTION (`references`), never a value read." }
+  ]
+}

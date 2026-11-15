@@ -1,0 +1,136 @@
+{
+  "fixtureId": "scss/module-exports-and-global-overrides",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two ontology types this lane had no verdict for, pinned together because they are the same claim seen from two sides: what a Sass module OFFERS, and what one binding REPLACES. A `.scss` file IS a Sass module — `@use './theme'` loads any stylesheet and exposes its top-level variables, mixins and functions — so a module's public surface is a graph fact and not a naming convention, and the edges are what make `@use 'a', 'b'` answerable. `exports` is therefore pinned with its BOTH-ends-resolve property: the source is the file's own module symbol and the target is a symbol the file publishes, so no edge names a member of another file. Sass's PRIVATE-MEMBER rule is pinned as a FORBIDDEN row because it is the only thing stopping the table from being 'every top-level symbol': `-`/`_` marks a member private to its module and `@use` does not expose it, so an export edge to one would claim a contract the language does not offer. `$local` is the second forbidden row and it is the SCOPE half of the same rule: an assignment inside a rule body is a local, not a member. `overrides` is pinned at its narrowest honest width, and the two exclusions beside it are the measurement: a `!default` on an already-assigned name is SKIPPED by Sass rather than applied (`$brand: #0f0 !default` after `$brand: #f00`), so it replaces nothing and gets no edge; a `!global` assignment of a name the file never assigned at the top level CREATES a global rather than replacing one, so `$invented` gets no edge either. Those two `forbidRelationships` rows are what stop a later widening of this class from being free. The `overridesLine` pin is the same provenance discipline the `line_number` pins carry: an override whose prior declaration line is dropped connects two versions of one binding with nothing to tell them apart.",
+  "expectSymbols": [
+    {
+      "name": "module-exports-and-global-overrides.scss",
+      "kind": "module"
+    },
+    {
+      "name": "$brand",
+      "kind": "variable",
+      "meta.isScssVariable": true
+    },
+    {
+      "name": "$computed",
+      "kind": "variable"
+    },
+    {
+      "name": "@mixin button",
+      "kind": "function"
+    },
+    {
+      "name": "@function double",
+      "kind": "function"
+    },
+    {
+      "name": "$local",
+      "kind": "variable"
+    },
+    {
+      "name": "$invented",
+      "kind": "variable",
+      "meta.scssFlagGlobal": true
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "$brand",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "module-exports-and-global-overrides.scss",
+      "equals": 1,
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "module-exports-and-global-overrides.scss",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$brand",
+      "meta.isScssModuleMember": true,
+      "line_number": 4
+    },
+    {
+      "type": "exports",
+      "from": "module-exports-and-global-overrides.scss",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$computed",
+      "meta.isScssModuleMember": true,
+      "line_number": 14
+    },
+    {
+      "type": "exports",
+      "from": "module-exports-and-global-overrides.scss",
+      "target": "fixtures/scss/module-exports-and-global-overrides::@mixin button",
+      "meta.isScssModuleMember": true,
+      "line_number": 16
+    },
+    {
+      "type": "exports",
+      "from": "module-exports-and-global-overrides.scss",
+      "target": "fixtures/scss/module-exports-and-global-overrides::@function double",
+      "meta.isScssModuleMember": true,
+      "line_number": 20
+    },
+    {
+      "type": "exports",
+      "from": "module-exports-and-global-overrides.scss",
+      "target": "fixtures/scss/module-exports-and-global-overrides::@mixin probe",
+      "meta.isScssModuleMember": true,
+      "line_number": 33
+    },
+    {
+      "type": "exports",
+      "from": "module-exports-and-global-overrides.scss",
+      "target": "fixtures/scss/module-exports-and-global-overrides::@mixin create",
+      "meta.isScssModuleMember": true,
+      "line_number": 40
+    },
+    {
+      "type": "overrides",
+      "from": "@mixin probe",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$brand",
+      "meta.isScssGlobalOverride": true,
+      "meta.overridesLine": 4,
+      "line_number": 34
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "$_internal"
+    },
+    {
+      "type": "exports",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$local"
+    },
+    {
+      "type": "exports",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$invented"
+    },
+    {
+      "type": "overrides",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$computed"
+    },
+    {
+      "type": "overrides",
+      "target": "fixtures/scss/module-exports-and-global-overrides::$invented"
+    },
+    {
+      "type": "overrides",
+      "source": "$brand"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "scssModuleName": "module-exports-and-global-overrides.scss"
+    },
+    {
+      "scssDialect": true
+    }
+  ]
+}

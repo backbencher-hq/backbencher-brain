@@ -1,0 +1,30 @@
+{
+  "issue": "M21.C3",
+  "code": "C3",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 13,
+  "passed": 13,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-harness.ts",
+  "evidenceFile": "C3.json",
+  "generatedAt": "2026-09-01T13:56:25.291Z",
+  "auditedFiles": [
+    "script/m20/benchmark-tool-latency.ts",
+    "script/m20/diagnose-index-phases.ts",
+    "script/m21/verify-corpus.ts",
+    "script/m21/verify-governance.ts"
+  ],
+  "limitations": [
+    "This is a harness-integrity audit; it does not prove that production indexing is fast or that every external command can be forcibly cancelled.",
+    "A JavaScript promise timeout does not cancel an already-running operation; subprocess-level isolation remains required for hard cancellation."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.381Z",
+    "contentSha256": "36df804b9335086d13e11e3c1e0871d416a8fbe584e0e913066d9b92b1321fc9"
+  }
+}

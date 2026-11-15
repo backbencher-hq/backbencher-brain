@@ -1,0 +1,17 @@
+{
+  "fixtureId": "java/method-ref-receiver-names",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPORTS_JAVA2 (M14 ontology), Part 1 question 5. JLS 15.13 lets the receiver of `X::m` be ANY expression, and a real corpus writes them: measured on java-lib's 3,275 files, 15 emitted `references` endpoints were source text rather than names — a parenthesised call with its arguments (`newArrayList(v3(), v4())`), a chained call (`MultimapBuilder.linkedHashKeys().arrayListValues()`) and a STRING LITERAL (`\"com.google.common.\"::length`, whose CONTENTS would have landed in the graph). None can join to a symbol. The contract pinned here: publish the receiver when a base name is derivable from a NAME-BEARING node, publish NOTHING when it is an expression. `ImmutableList.Builder::add` is the case that keeps the lane honest — the grammar spells a qualified receiver `field_access`, not `scoped_type_identifier`, and an over-narrow whitelist drops 68 VALID rows while looking like it removed 15 invalid ones. `this.field::hashCode` is the case that keeps it honest in the other direction: a `this` link is refused, because `this` names the enclosing instance rather than a type. Two mutants in this lane's history are pinned by these rows — a chain walk that tested `!cur` for failure rejected every chain (68 rows lost), and a text fallback inside the base-name extractor put `this.field` back.",
+  "expectRelationships": [
+    { "type": "references", "source": "namedReceivers", "target": "Widget", "meta.relationshipType": "method_reference_receiver" },
+    { "type": "references", "source": "namedReceivers", "target": "java.util.Map.Entry", "meta.relationshipType": "method_reference_receiver" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "Widget.create()", "comment": "an EXPRESSION receiver has no name: `Widget.create()::hashCode` writes a call, so no receiver edge may be published" },
+    { "type": "references", "target": "list().get(0)", "comment": "same: a chained call is not a name" },
+    { "type": "references", "target": "com.google.common.", "comment": "a STRING LITERAL's contents are not a name; reading it here is exactly what the tree walk exists to prevent" },
+    { "type": "references", "target": "this.field", "comment": "a `this` link names the enclosing instance, not a type — refused link by link, not only when the whole name is the keyword" },
+    { "type": "references", "target": "hashCode", "comment": "the METHOD side of a method reference is a `calls` target, never a `references` receiver" }
+  ]
+}

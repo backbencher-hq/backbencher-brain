@@ -1,0 +1,73 @@
+{
+  "issue": "EX-EX7",
+  "note": "All four directives were published as `references`, which is the label for a dependency that has no import statement \u2014 and the store's `imports` binding, which 16 analyzers emit and this one did not, never saw one. `import` IS the language word for the ontology word, and ERLANG made the identical correction for `-import(lists, [map/2])` on the neighbouring BEAM language (ERD41). The other three keep `references` and the family contract they were written for: `use` injects a module's code, `require` permits its macros to expand, `alias` renames a module \u2014 none brings a name into unqualified scope. Both directions are pinned (an import is not a reference, a use is not an import) because a move that emits BOTH labels would satisfy either assertion. The `:only` call-resolution rule (ELXD17) is unchanged: `thing(x)` still resolves through `import Onto.Narrow, only: [thing: 1]`. `meta.evidenceClass` distinguishes `import_directive` from `module_directive`, so the reason a dependency edge exists is a queryable number and not a vibe (honesty \u00a74.3).",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "OntoDirectives",
+      "target": "Onto.Helper",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "OntoDirectives",
+      "target": "Onto.Narrow",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "references",
+      "from": "OntoDirectives",
+      "target": "Onto.Framework",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "OntoDirectives",
+      "target": "Onto.Alias",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "OntoDirectives",
+      "target": "Onto.Macros",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "calls",
+      "from": "OntoDirectives.run/1",
+      "target": "Onto.Narrow.thing",
+      "meta.evidenceClass": "reference_qualified",
+      "note": "the emission was an unqualified local call; the post-walk :only-import resolution named the remote target, and the reason code is re-stated to match the published edge (honesty \u00a74.1)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "OntoHeadDirective.import/2",
+      "target": "module",
+      "note": "EX-EX13: `defmacro import(module, opts)` is a declaration head, not an import statement \u2014 the target would be the macro's own parameter name, which is not a module and is never a stored symbol"
+    },
+    {
+      "type": "references",
+      "from": "OntoHeadDirective.require/1",
+      "target": "module",
+      "note": "EX-EX13: the same shape for `defmacro require(module)`"
+    },
+    {
+      "type": "imports",
+      "from": "OntoDirectives",
+      "target": "Onto.Framework"
+    },
+    {
+      "type": "imports",
+      "from": "OntoDirectives",
+      "target": "Onto.Alias"
+    },
+    {
+      "type": "imports",
+      "from": "OntoDirectives",
+      "target": "Onto.Macros"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

@@ -1,0 +1,13 @@
+{
+  "fixtureId": "dart/import-resolution-sibling",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Exists to be the TARGET of `import-resolution.dart`'s relative and bare imports, so the identity claim has both ends in one run: this file's library node publishes its project-relative path, and the importer's edge names that same string. Without a real sibling, the pair could only pin the SHAPE of the importer's target and not that anything answers to it — the difference between 'an edge names a path' and 'the path resolves', which is the whole question this round is about. `import-identity-pairing.ts` asserts the two ends against each other.",
+  "expectSymbols": [
+    { "name": "import-resolution-sibling", "kind": "module" },
+    { "name": "ImportResolutionSibling", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "ImportResolutionSibling", "target": "ImportResolutionSibling.helper", "meta.evidenceClass": "structural", "note": "2026-10-08: the member's PUBLISHED spelling (`Owner.member`), not its bare name" }
+  ]
+}

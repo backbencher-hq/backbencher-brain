@@ -1,0 +1,34 @@
+{
+  "issue": "A4",
+  "note": "A4 (task-35 Part B): `(declare …)` is a forward declaration, not a definition (CLJ-D23), so it has NO contains edge (and no export). Before this fix contains published the declared name (25 rows whole population). Two-direction: a declared-then-DEFINED var keeps its containment from the defining form (fwd, defined at line 8), and the unfulfilled declare (*x*) publishes nothing.",
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "fixture.declare-containing",
+      "target": "fwd",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "fixture.declare-containing",
+      "target": "real",
+      "line_number": 10
+    },
+    {
+      "type": "exports",
+      "from": "fixture.declare-containing",
+      "target": "fwd",
+      "line_number": 8
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "*x*"
+    },
+    {
+      "type": "exports",
+      "target": "*x*"
+    }
+  ]
+}

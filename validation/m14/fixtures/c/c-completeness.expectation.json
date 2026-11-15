@@ -1,0 +1,70 @@
+{
+  "fixtureId": "c/c-completeness",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins C calls, uses, references, exports, imports, and distinct evidence tiers for the systems analyzer completeness gate. SCD1 (M37 #599): assignment-LHS field writes (q->value = / +=) are writes, not reads \u2014 set_value must emit no uses to value. M60/#910: the include is pinned as the first-class `imports` kind with its import_based tier.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "value"
+    },
+    {
+      "type": "uses",
+      "target": "value",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "references",
+      "target": "Point",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "exports",
+      "target": "EXPORT_SYMBOL",
+      "meta.evidenceClass": "structural",
+      "comment": "#963: the marker macro AS WRITTEN. The pre-#963 edge targeted a synthesised constant 'KERNEL_EXPORT' that appears in no source file anywhere -- a fabricated target of the same class #962 removed from `instantiates` (-> malloc). `metadata.exportMacro` already recorded the real marker; the target is now that same macro, so a consumer can resolve it. Source token `compute` (the macro's first argument) is unchanged, which is what the oracle verifies."
+    },
+    {
+      "type": "imports",
+      "target": "stdlib.h",
+      "meta.relationshipType": "include_dependency"
+    },
+    {
+      "type": "imports",
+      "target": "stdlib.h",
+      "meta.isImport": true
+    },
+    {
+      "type": "imports",
+      "target": "stdlib.h",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "uses",
+      "from": "set_value",
+      "target": "value",
+      "note": "#960: A WRITE IS A `uses`. SCD1/CGD1 excluded assignment targets on the grounds that a write is 'never a read'; the exclusion is withdrawn. The analyzer was already inconsistent with itself -- `p->f++` published while the semantically identical `p->f += 1` did not, purely because the grammar folds compound-assign into `assignment_expression` and `++` is an `update_expression`. The pinned M12 truth requires this edge (`uses:buffer_create:capacity` for `buf->capacity = clamp(...)`), and with both branches fixed the truth's not-produced count is 0. The edge is NOT relabelled a read: the ontology has no `writes` kind, so before this change the fact was an ABSENCE, unrepresented anywhere in the graph."
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "compute",
+      "equals": 2
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "compute",
+      "includes": [
+        "n"
+      ]
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "set_value",
+      "kind": "function"
+    }
+  ],
+  "forbidRelationships": []
+}

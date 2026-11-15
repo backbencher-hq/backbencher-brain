@@ -1,0 +1,36 @@
+{
+  "fixtureId": "typescript/heritage-parameterized-leaves",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M14 IMPORTS_ENUM gap 1. `implements I<T>` published SOURCE TEXT as the edge endpoint and the production path then deleted the edge. The grammar puts a generic's type arguments in a SIBLING FIELD under `extends_clause` but NESTED inside a `generic_type` under `implements_clause`, and `extractClassHeritage` only skipped a `type_arguments` CHILD — correct for extends, never firing for implements. Measured on the pinned wasm: `extends B<T>` is `(extends_clause value: (identifier) type_arguments: (type_arguments ...))` and `implements I<T>` is `(implements_clause (generic_type name: (type_identifier) type_arguments: (type_arguments ...)))`. Corpus site: packages/typescript/src/api/node/node.generated.ts:41 (`class RemoteNodeList extends Array<RemoteNode> implements NodeArray<RemoteNode>`). WHY NO GATE CAUGHT IT is the part this fixture exists to keep: the differential's normTarget strips type arguments on BOTH sides, so truth `implements:A->I` and analyzer `implements:A->I<T>` compared equal. A normaliser applied to both sides hides precisely the defect it normalises away. Corpus probe (script/m14/ts-construct-probe.ts): implements-parameterized 0 of 2 leaf-sites covered before the fix, 2 of 2 after. Every grammar shape is pinned, and so are the two ABSTENTIONS that keep the leaf rule from over-reaching: a predefined constraint names no symbol, and a type-parameter's own name is a binding.",
+  "expectSymbols": [
+    { "name": "Shape", "kind": "interface" },
+    { "name": "Circle", "kind": "class" },
+    { "name": "Both", "kind": "class" },
+    { "name": "Qualified", "kind": "class" },
+    { "name": "Plain", "kind": "class" },
+    { "name": "Derived", "kind": "class" },
+    { "name": "Bigger", "kind": "interface" },
+    { "name": "widen", "kind": "function" },
+    { "name": "shrink", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Circle", "target": "Shape", "line_number": 36, "note": "THE GAIN. Pre-fix this edge's target was the string \"Shape<number>\" — source text, an endpoint no consumer can navigate to — and pool-worker's angle-bracket filter deleted it before the index, so the production path published NOTHING here" },
+    { "type": "implements", "from": "Both", "target": "Shape", "line_number": 43, "note": "one edge per parameterised interface on the clause, so this row appears TWICE with the same endpoints — two clauses, two facts" },
+    { "type": "implements", "from": "Qualified", "target": "Shape", "line_number": 50, "note": "a QUALIFIED parameterised interface: the target is the LEAF (TSD4), not `Ns.Shape` and certainly not `Ns.Shape<number>`" },
+    { "type": "implements", "from": "Plain", "target": "Shape", "line_number": 57, "note": "the control: an unparameterized interface is unchanged" },
+    { "type": "implements", "from": "Derived", "target": "Shape", "line_number": 66, "note": "both clauses parameterised in one declaration" },
+    { "type": "extends", "from": "Derived", "target": "Shape", "line_number": 66, "note": "the extends arm already stripped correctly (sibling-field shape). Pinned so the two clauses cannot drift apart again" },
+    { "type": "extends", "from": "Bigger", "target": "Shape", "line_number": 73, "note": "interface heritage with a parameterised base (extends_type_clause nests generic_type the way implements does)" },
+    { "type": "references", "from": "shrink", "target": "Shape", "line_number": 83, "note": "M14 IMPORTS_ENUM gap 4: `<T extends Shape<number>>` names Shape, and the constraint was the ONLY place it was named. Pre-fix the pass emitted `references shrink -> T` (the binding) and nothing for the constraint" }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "from": "Circle", "target": "Shape<number>", "note": "THE DEFECT. A `type_arguments` sibling skip cannot catch this shape, so the whole generic_type text reached the target" },
+    { "type": "implements", "from": "Circle", "target": "number", "note": "the type ARGUMENT is not an implemented interface. Emitting it would be the `type_arguments` fabrication the extends branch's own comment warns about" },
+    { "type": "implements", "from": "Qualified", "target": "Ns.Shape", "note": "heritage targets are LEAVES (TSD4/TSD3). A dotted target is an endpoint the leaf-identity contract exists to prevent" },
+    { "type": "extends", "from": "Derived", "target": "Shape<number>", "note": "the extends arm's own regression: sibling-field shape plus the shared leaf rule" },
+    { "type": "references", "from": "widen", "target": "string", "note": "a PREDEFINED constraint names no project symbol — the same PRIMITIVES exclusion the declared-type pass already applies to a `const x: string`" },
+    { "type": "references", "from": "shrink", "target": "Shape<number>", "note": "the constraint's target is the leaf too; the reference pass reduces through the type node rather than taking raw text" },
+    { "type": "implements", "from": "Circle", "target": "Shape", "line_number": null, "note": "every implements edge carries the interface NAME's line (M59.A7). The line belongs to the name, never to the construct that contains it" }
+  ]
+}

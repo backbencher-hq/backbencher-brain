@@ -1,0 +1,75 @@
+{
+ "fixtureId": "xml/xsd-included-reference",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 XML deep review, finding X13. A bare reference this document does not satisfy is a REAL claim — the document says this element's type is that name — and it was being DROPPED, which is the defect this review has been closing throughout: a claim the graph cannot see. Three corpus cases are indistinguishable from inside one file. `vdv-first5_0.xsd` includes a file declaring its OWN `date` at line 32, and `type=\"date\"` must be that type and not XSD's built-in of the same name. `calculator.xsd` writes `type=\"xsd:int\"` with NO `xmlns:xsd` declared anywhere, which is a malformed reference and must be refused, not reported as a cross-file one. And a bare `int` under an XSD default namespace is plainly the built-in. So the bare-built-in rule makes the second confidently WRONG, and the blanket refusal makes the first and third unresolvable for no stated reason. The resolution is a FOURTH resolvability class — `unresolved`, alongside in-document, builtin and external — carrying `ambiguousWithBuiltin` when the name is ALSO a built-in, which is exactly the case where a consumer must not guess either way. The target symbol is still NOT published, so this adds an edge and never a phantom declaration. Measured over the corpus: 413 such edges across 59 files, 103 of them flagged ambiguous, and the most frequent unresolved targets are custom OOXML types (`CT_Color` 20, `CT_OfficeArtExtensionList` 17, `ST_Coordinate32` 12) that live in included schema files. `CT_Local` is declared here and resolves in-document; `tns:CT_Remote` names a namespace this document neither declares nor imports and is refused, as `xml/xsd-external-reference` already pins; `nope:int` uses an undeclared prefix and is refused because a name in no namespace is not a cross-file reference at all. One predicate note, because it was a bug in this fix before it was a comment in it: \"bare\" must be tested on the PREFIX, not on `binding === undefined`, because a prefixed value whose prefix is bound nowhere also has no binding — and that mistake is what made `type=\"xsd:int\"` come out as an unresolved bare reference before it was caught. The same conflation made the corpus oracle's bare-built-in test wrong — it asked whether the VALUE had a namespace instead of whether it had a prefix — and the mistake is worth naming twice because it survived being spotted once, in a different file, on the same question.",
+ "expectSymbols": [
+  {
+   "name": "CT_Local",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "present",
+   "kind": "class",
+   "meta.isVocabDeclaration": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "shadow",
+   "target": "CT_Shadow",
+   "line_number": 19,
+   "meta.resolvable": "unresolved",
+   "meta.qname": "CT_Shadow"
+  },
+  {
+   "type": "references",
+   "from": "ambiguous",
+   "target": "string",
+   "line_number": 20,
+   "meta.resolvable": "unresolved",
+   "meta.ambiguousWithBuiltin": true,
+   "meta.qname": "string"
+  },
+  {
+   "type": "references",
+   "from": "present",
+   "target": "xs:schema.CT_Local",
+   "line_number": 21,
+   "meta.resolvable": "in-document",
+   "meta.qname": "CT_Local"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "malformed",
+   "target": "int",
+   "note": "`nope:int` uses a prefix this document never declares, so the name resolves to nothing at all — a MALFORMED reference rather than a cross-file one. Refusing it is correct, and reporting it `unresolved` would describe a broken document as a merely-incomplete one. (`xs:int`, the spelling that first suggested this case, is declared on this schema and IS the built-in — which is why the prefix is `nope` here and why the file's own `xs:` cannot be the example.)"
+  },
+  {
+   "type": "references",
+   "from": "external",
+   "target": "CT_Remote",
+   "note": "`tns` is declared but never imported, so no file this document reaches declares `CT_Remote`. X13 added a class; it did not remove the rule that a name nothing supports must not enter the graph as a reference."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "CT_Shadow",
+   "note": "declared in shared-types.xsd, NOT here. Publishing it locally would be the M60.R10 lie: a consumer would resolve the reference to a symbol with no declaration behind it, which is worse than an edge that admits it does not know."
+  },
+  {
+   "name": "CT_Remote",
+   "note": "same, and additionally in a namespace this document does not import"
+  },
+  {
+   "name": "int",
+   "note": "the malformed reference must not leave a symbol behind either, and note the schema's own `xs:` prefix DOES resolve `int` as a built-in — the refusal is about the undeclared prefix, not about the name"
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

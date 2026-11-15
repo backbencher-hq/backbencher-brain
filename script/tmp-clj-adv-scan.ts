@@ -19,8 +19,8 @@ const walkDir = (d: string) => {
     else if (/\.(clj|cljs|cljc)$/.test(e.name)) files.push(fp)
   }
 }
-walkDir("$HOME/fixtures/repositories/clojure")
-walkDir("$HOME/fixtures/repositories/clj-kondo")
+walkDir("/home/ishaq2321/bb_tests/repositories/clojure")
+walkDir("/home/ishaq2321/bb_tests/repositories/clj-kondo")
 
 const symName = (nd: any): string => {
   if (!nd) return ""

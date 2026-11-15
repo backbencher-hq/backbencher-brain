@@ -34,8 +34,8 @@ function runCli(args: string[], timeoutSec = 180): string {
 }
 
 const corpora = [
-  { tag: "rake (Ruby)", src: "$HOME/fixtures/repositories/rake" },
-  { tag: "lodash (JS)", src: "$HOME/fixtures/repositories/lodash" },
+  { tag: "rake (Ruby)", src: "/home/ishaq2321/bb_tests/repositories/rake" },
+  { tag: "lodash (JS)", src: "/home/ishaq2321/bb_tests/repositories/lodash" },
 ]
 
 async function indexAndCheck(tag: string, dir: string, expectSourceOnly: boolean) {
@@ -44,7 +44,19 @@ async function indexAndCheck(tag: string, dir: string, expectSourceOnly: boolean
   try {
     cpSync(dir, tmp, { recursive: true })
     pid = getProjectId(tmp)
-    await indexProjectParallel(pid, tmp, {})
+    // M72: the corpus "test bites" assertions are about the retired token
+    // cross-product's observation rows (source-only/unresolved), which the default
+    // path no longer writes. Index with the legacy writer enabled so this gate
+    // measures the adapter it was written for; the default-path contract (no
+    // retired rows; leads in brain_security_flow) is covered by script/m72/*.
+    const priorLegacyEnv = process.env.BB_SECURITY_LEGACY
+    process.env.BB_SECURITY_LEGACY = "1"
+    try {
+      await indexProjectParallel(pid, tmp, {})
+    } finally {
+      if (priorLegacyEnv === undefined) delete process.env.BB_SECURITY_LEGACY
+      else process.env.BB_SECURITY_LEGACY = priorLegacyEnv
+    }
     await flushBackgroundEmbeddings(pid)
 
     const { analyzeTaintFlows } = await import("../../src/intelligence/security/taint")

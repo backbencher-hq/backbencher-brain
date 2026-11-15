@@ -1,0 +1,20 @@
+{
+  "fixtureId": "javascript/qc-prototype-attribution",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "qualified_calls collector missed the X.prototype.m assignment rule that extractCallRelationships already had - calls inside prototype method bodies left the symbol payload empty.",
+  "expectSymbols": [
+    {
+      "name": "fetch",
+      "kind": "method"
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "fetch",
+      "includes": [
+        "http.get"
+      ]
+    }
+  ]
+}

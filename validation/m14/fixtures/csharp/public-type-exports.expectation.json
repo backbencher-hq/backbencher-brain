@@ -1,0 +1,238 @@
+{
+  "fixtureId": "csharp/public-type-exports",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60 CS3. `exports` was the one relationship type this lane was silent on that C# HAS a construct for: the `public` accessibility modifier on a top-level type. The construct was measured before the rule was written (validation/m14/fixtures/csharp/probe-cs3-exports-construct.ts, instrument B on the parse tree): 275 public top-level types in 400 aspnetcore files, 340 in 400 vbnet-samples files, and ZERO in 300 roslyn files, because dotnet/roslyn is a compiler whose implementation types are 303 of 333 `internal`. That roslyn zero is why this fixture cannot rest on a corpus rule and is pinned instead. Every forbidden row is a real C# shape that must not reach the graph, and one of them (`NestedPublic`) is a REGRESSION row: the first version of the rule read ownerKind === Namespace ? ownerName : global, which accepted a nested public type and published it as a global-scope export, 24 fabricated rows on aspnetcore against 275 real ones \u2014 a count that matched a plausible number while the set was wrong. `authoredBeforeAnalyzerRun` is false for this fixture, honestly: the pins were re-derived from the analyzer's own emission after the rule was fixed, which is this lane's stated method and is recorded rather than glossed. The rule is stated in src/ast/real-csharp-analyzer.ts at the `exports` emission site. Runner keys used here are only those script/m14/run-fixtures.ts supports: expectSymbols / expectRelationships / expectSymbolCount / expectRelationshipCount / forbidSymbols / forbidRelationships, with meta.<key> on a relationship constraint. Comment and note keys are documentation and are exempt from matching, which is why each row can state what it convicts. FILE ORDER NOTE: the first version of the fixture placed the global-scope declarations AFTER `namespace Probe.Scoped;`, and a file-scoped namespace covers every declaration that follows it, so the analyzer emitted 10 edges and NONE of them used the `global` source \u2014 which read as a dead global-scope branch and was not one. The fixture had never produced a global-scope declaration. The global cases now come first, which is also the only order C# permits.\nROUND-2 CONTRACT CORRECTION (task-37 STEP 3): the export relationship now carries `source: root` and the FULLY-QUALIFIED name (csharp/import-export-edges + csharp/export-arity-collision pin the corrected contract; this fixture was the older bare-name/namespace-source spelling and was updated by measurement, not relaxed). The export PAYLOAD names above were already the assembly-scoped spelling rule and are unchanged.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Block.PublicInBlockNamespace",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.visibility": "public",
+      "comment": "positive control: public + top level + block namespace. evidenceClass structural because both halves of the claim are written in the file \u2014 the `public` keyword and the name; without the classifyEvidenceTier branch this read usage_contextual, the class calls/uses carry because the BINDING they denote is not written.",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicInFileScopedNamespace",
+      "meta.exportForm": "public_top_level_type",
+      "comment": "the SAME fact spelled the other way C# spells a namespace: `namespace N;` makes the type declarations SIBLINGS of the namespace node, so the owner comes from the file-scoped side variable rather than from a tree ancestor. Both forms must agree.",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "PublicAtGlobalScope",
+      "meta.exportForm": "public_top_level_type",
+      "comment": "top-level public with no namespace: no owner symbol exists, so the lane's file-scope source is used \u2014 the same source CS-B1 uses for a top-level `calls` edge. `global` is the FILE, not a placeholder; rule R7 bans the literal `unknown`, which appears nowhere.",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicEnum",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicStruct",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicInterface",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicDelegate",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicRecord",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.PublicRecordStruct",
+      "comment": "the other four top-level type kinds plus both record forms, so a fix that narrowed the kind set cannot pass. `record struct` differs from `record` by an unnamed token (see csharp/record-struct-kind).",
+      "meta.evidenceClass": "structural",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    },
+    {
+      "type": "contains",
+      "from": "Probe.Block",
+      "target": "PublicInBlockNamespace",
+      "comment": "UNTOUCHED-BY-DESIGN: contains must be unaffected by the new loop"
+    },
+    {
+      "type": "contains",
+      "from": "PublicInBlockNamespace",
+      "target": "PublicMethod"
+    },
+    {
+      "type": "contains",
+      "from": "Container",
+      "target": "NestedPublic"
+    },
+    {
+      "type": "contains",
+      "from": "Container",
+      "target": "PublicTopLevelMethod"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "target": "Probe.Scoped.Container",
+      "meta.evidenceClass": "structural",
+      "comment": "Container is public and top level INSIDE the file-scoped namespace, so it is exported with that namespace as source. It is the tenth edge and was missing from the first pin set, which is why the count said 9 and the run said 10 \u2014 the pin was wrong, not the analyzer.",
+      "meta.relationshipType": "assembly_public_surface",
+      "meta.arity": 0
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "exports",
+      "equals": 10,
+      "comment": "exactly ten: five global-scope top-level public declarations (PublicAtGlobalScope and the four NOT-exported controls are excluded), one under the block namespace, six under the file-scoped namespace (PublicInFileScopedNamespace, Container, PublicEnum, PublicStruct, PublicInterface, PublicDelegate, PublicRecord, PublicRecordStruct). A rule that also took nested public types, or public members, or internal / no-modifier / file-scoped types exceeds this; a rule that took only class kinds falls short."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "InternalTopLevel",
+      "comment": "dotnet/roslyn is 303 of 333 `internal` top-level types and 0 `public`. A rule equating 'top-level type' with 'exported' fabricates 302 edges on that corpus. THIS IS THE ROW CORPUS SHAPE MAKES LOAD-BEARING."
+    },
+    {
+      "type": "exports",
+      "target": "NoModifierTopLevel",
+      "comment": "C#'s default accessibility for a top-level type declaration is `internal`. Requiring the literal `public` gets this right without needing a default; requiring 'not private' would not."
+    },
+    {
+      "type": "exports",
+      "target": "FileScopedType",
+      "comment": "`file` is C# 11 file-only visibility; extractVisibility maps it to `private` (CS-B4), which the literal-`public` requirement excludes."
+    },
+    {
+      "type": "exports",
+      "target": "PrivateTopLevel"
+    },
+    {
+      "type": "exports",
+      "target": "NestedPublic",
+      "comment": "REGRESSION ROW. A nested public type is reached through its outer type, which `contains` already carries, and its export PATH (Container.NestedPublic) is not expressible as a target without inventing a qualified name. The pre-fix rule emitted it with source `global`."
+    },
+    {
+      "type": "exports",
+      "target": "NestedInternalInPublicType",
+      "comment": "a nested type is judged on its OWN modifier, not on its container's"
+    },
+    {
+      "type": "exports",
+      "target": "PublicMethodInInternalType",
+      "comment": "a public member of an internal type is not on the assembly's surface. Convicts a rule that reads member modifiers without asking who owns them."
+    },
+    {
+      "type": "exports",
+      "target": "PublicTopLevelMethod",
+      "comment": "public MEMBERS are not exports. The R3 population (every public type AND every public member) was counted at 1,986 edges on aspnetcore against R1's 275 and rejected: it is `contains` again with a modifier attached, and member visibility already rides brain_symbol.visibility."
+    },
+    {
+      "type": "exports",
+      "target": "InternalMethod"
+    },
+    {
+      "type": "exports",
+      "target": "PublicMethod"
+    },
+    {
+      "type": "exports",
+      "target": "InternalContainer"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "Probe.Block",
+      "kind": "namespace"
+    },
+    {
+      "name": "Probe.Scoped",
+      "kind": "namespace"
+    },
+    {
+      "name": "PublicInBlockNamespace",
+      "kind": "class",
+      "ownerName": "Probe.Block",
+      "ownerKind": "namespace",
+      "visibility": "public"
+    },
+    {
+      "name": "PublicInFileScopedNamespace",
+      "kind": "class",
+      "ownerName": "Probe.Scoped",
+      "ownerKind": "namespace",
+      "visibility": "public"
+    },
+    {
+      "name": "PublicAtGlobalScope",
+      "kind": "class",
+      "visibility": "public",
+      "comment": "no ownerName and no ownerKind, which is what the global-scope branch of the rule keys on"
+    },
+    {
+      "name": "InternalTopLevel",
+      "kind": "class",
+      "visibility": "internal"
+    },
+    {
+      "name": "FileScopedType",
+      "kind": "class",
+      "visibility": "private",
+      "comment": "CS-B4: `file` maps to private"
+    },
+    {
+      "name": "PublicRecordStruct",
+      "kind": "struct",
+      "visibility": "public",
+      "meta.isStruct": true
+    },
+    {
+      "name": "PublicRecord",
+      "kind": "class",
+      "visibility": "public",
+      "meta.isRecord": true
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "PublicInBlockNamespace",
+      "kind": "class",
+      "equals": 1,
+      "comment": "the new edge runs one loop after `contains` and reuses its owner derivation and its name-bearing line, so `contains` must be untouched by the addition"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ import { detectOrphans } from "../../src/intelligence/patterns/orphans"
 import { detectIndexRules } from "../../src/intelligence/patterns/rules"
 import { PatternBrainTools } from "../../src/ast/tools"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
 const pid = getProjectId(ROOT) as any
 
 const COMPLEXITY_THRESHOLD = 15
@@ -142,8 +142,8 @@ async function main() {
     digest,
   }
   const fs = await import("node:fs")
-  fs.mkdirSync("$HOME/mcp/backbencher-brain/validation/m50/results", { recursive: true })
-  const file = "$HOME/mcp/backbencher-brain/validation/m50/results/A2-pattern-phases.json"
+  fs.mkdirSync("/home/ishaq2321/mcp/backbencher-brain/validation/m50/results", { recursive: true })
+  const file = "/home/ishaq2321/mcp/backbencher-brain/validation/m50/results/A2-pattern-phases.json"
   const prev = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null
   const digestMatch = prev?.digest ? prev.digest === out.digest : null
   fs.writeFileSync(file, JSON.stringify({ ...out, prevDigestMatch: digestMatch }, null, 2) + "\n")

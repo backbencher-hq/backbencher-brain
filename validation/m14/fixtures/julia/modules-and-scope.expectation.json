@@ -1,0 +1,96 @@
+{
+  "fixtureId": "julia/modules-and-scope",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the file-scope facts this language has and most do not. (1) A Julia file need NOT open a module \u2014 measured over 295 corpus files, 71.9% have no module block \u2014 and top-level code in such a file is ordinary executable code (`label(Counter(1))`, `println(...)`), so its calls are attributed to the file scope rather than dropped. 46 module-less corpus files emitted ZERO call edges before this was fixed, holding 8,478 `call_expression`s between them. (2) `using X` and `import Base: show` are imports. (3) A QUALIFIED declaration (`Base.show(io, c) = \u2026`) extends another module's function, and the qualified path is the IDENTITY of the binding \u2014 the symbol is `Base.show`, not `show`. Measured: collapsing a qualified name to its last segment invents merges; 72 bare segments in 400 corpus files are reachable by more than one distinct path, `parse` alone being `Meta.parse`/`Base.parse`/`TOML.parse`/`Dates.parse`. (4) `mutable struct` is still a class, and its field is still owned by it. CORRECTION, after the gate ran: the self-call forbid was written as `{type: calls, target: label}`, which also forbids every OTHER caller of `label` \u2014 and `total = label(Counter(1))` at file scope legitimately calls it, so the forbid rejected a correct edge. Forbidding by TARGET alone cannot express 'no self-call'; it needs the source too. That mistake is the reason this fixture's file-scope assertion is worth keeping: the gate distinguished an over-broad expectation from a real defect instead of just failing. The last four assertions exist because the M14 completeness inventory's section B reported `uses` and `references` as relationship kinds the language produces but no fixture PINS, and section D reported 0 evidence tiers pinned. Both are the same failure: the lane emitted those edges, and nothing asserted one. Pinning a tier alongside each kind is also what makes a later reclassification \u2014 turning structural ownership into a usage guess, say \u2014 a gate failure rather than a silent drift. TARGET KEY SHAPE, 2026-10-09: a `contains` target is now the OWNER-QUALIFIED key the member symbol publishes as its `qualifiedName` (`Counter.value`), not the bare `value`. The ownership FACT each row asserts is unchanged and every row's SOURCE is unchanged; what changed is that the target key can name exactly one declaration. The bare name could not: `contains` read 7,162 of 14,329 edges ambiguous at PROJECT scope, and the gate indexed 0 qualified aliases for this lane, because the analyzer knew the owner (it is the edge's own source) and published no key that used it. This is a measured key-shape change, not an expectation relaxed to match output: no row's source moved and no row was added or removed. The F5 differential matches on the target's LAST SEGMENT (`normTarget`), so `script/m14/oracles/julia-contains.ts`, which derives bare member names from the tree, still matches every row.",
+  "expectSymbols": [
+    {
+      "name": "Counter",
+      "kind": "class"
+    },
+    {
+      "name": "value",
+      "kind": "property",
+      "ownerName": "Counter"
+    },
+    {
+      "name": "bump!",
+      "kind": "function"
+    },
+    {
+      "name": "label",
+      "kind": "function"
+    },
+    {
+      "name": "Base.show",
+      "kind": "function"
+    },
+    {
+      "name": "DEFAULT_SCALE",
+      "kind": "constant"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "LinearAlgebra"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Counter",
+      "target": "Counter.value"
+    },
+    {
+      "type": "calls",
+      "source": "label",
+      "target": "string"
+    },
+    {
+      "type": "calls",
+      "source": "Base.show",
+      "target": "print"
+    },
+    {
+      "type": "calls",
+      "source": "global",
+      "target": "println"
+    },
+    {
+      "type": "uses",
+      "source": "label",
+      "target": "value",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "references",
+      "source": "label",
+      "target": "Counter",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "references",
+      "source": "label",
+      "target": "String",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "contains",
+      "source": "Counter",
+      "target": "Counter.value",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "bump!",
+      "target": "bump!"
+    },
+    {
+      "type": "calls",
+      "source": "label",
+      "target": "label"
+    }
+  ]
+}

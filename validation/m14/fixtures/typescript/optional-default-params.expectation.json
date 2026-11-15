@@ -1,0 +1,10 @@
+{
+  "fixtureId": "typescript/optional-default-params",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Optional (?) and default-valued parameters extract with correct optionality.",
+  "expectSymbols": [
+    { "name": "Api" },
+    { "name": "request" }
+  ]
+}

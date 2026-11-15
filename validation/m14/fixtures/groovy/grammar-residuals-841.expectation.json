@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/grammar-residuals-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #841 grammar round: typed for-in with `def`, slashy string literal /…/, spread-map argument `*:`, one-line class-body field, and one-line try/catch block tails (bare expression/return/throw without DELIMITER) — every statement here was an ERROR/MISSING region before the grammar round (census: 115→88 failing files of 400, MISSING ; 60→12). The fixture pins the ANALYZER-VISIBLE consequence: symbols and calls inside those statements must exist. Parse-tree internals are deliberately not pinned so the pin survives grammar refactors; the parse-clean property itself is pinned by F9's parse-success census and by mutant groovy/grammar-residual-call-drop.",
+  "expectSymbols": [
+    { "name": "RetrySpec", "kind": "class" },
+    { "name": "limiter", "kind": "property" },
+    { "name": "deployAll", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "deployAll", "target": "deploy" },
+    { "type": "calls", "source": "deployAll", "target": "attempt" },
+    { "type": "calls", "source": "deployAll", "target": "log" },
+    { "type": "contains", "source": "RetrySpec", "target": "limiter" }
+  ]
+}

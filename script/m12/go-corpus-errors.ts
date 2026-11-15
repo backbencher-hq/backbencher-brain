@@ -6,7 +6,7 @@ import { readdirSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CORPUS = "$HOME/fixtures/repositories/go-tools"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/go-tools"
 
 function collectGoFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

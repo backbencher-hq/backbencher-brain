@@ -1,0 +1,123 @@
+{
+  "fixtureId": "groovy/exports-publication-edge",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JOB 2, the `exports` RELATIONSHIP type, which was absent from the analyzer while ParseResult.exports already carried the surface and nothing in src/ read that array back - the consumer that wants it, src/ast/import-resolution.ts:404-419, reads brain_relationship rows with relationship_type = 'exports'. Expected values are read off the WRITTEN SOURCE above (package line 1; trait line 3; enum line 7; class line 12; nested class line 13; top-level method line 18), not off an analyzer run.\n\nGROOVY HAS NO EXPORT CONSTRUCT, AND THAT IS MEASURED NOT ARGUMENTED. Over the full corpus the pinned wasm produces 266 distinct node types and none of them contains \"export\"; the grammar's file-scope anonymous-token vocabulary is empty, so `export` and `open` are not even tokens; there is no JPMS-style `module` declaration to read an `exports` clause from. What Groovy HAS is a convention: a top-level type in a .groovy compilation unit is importable by any other compilation unit on the classpath. The convention IS the surface, so this edge publishes what the convention publishes.\n\nTHE SET IS TYPES ONLY, and the forbids below are the whole point of the fixture. `import foo.Bar.baz` does not compile in Groovy, because a top-level `def baz() {}` in a .groovy file is a method of the SCRIPT CLASS, not an importable unit - so `topLevelHelper` must not export. A NESTED type is not importable either (`import foo.Service.Helper` is not legal), so `Helper` must not export. The membership of those two rides `contains`, which trait-exports and anon-exports already pin.\n\nTHE SOURCE IS THE PACKAGE, on the go lane's measured precedent (real-go-analyzer.ts:456, `source: packageName`), because the package is what owns a top-level type in Groovy and it is a name no declaration in the file carries - so parallel-indexer leaves source_symbol_id NULL, which is the shape src/lsp/graph_usages.ts classifyFileLevel requires for a file-level row.\n\nCONFIDENCE 1.0 with no `reasonCode`: Groovy has no package-private, so a top-level type is importable unless it says otherwise, and the corpus measures 0 private and 0 protected top-level types. The non-public arm exists in the analyzer because the GRAMMAR admits the modifier, and it is measured at 0 occurrences here rather than described as working - exports-no-package pins the refusal arm's counter instead. RE-PIN 2026-10-22: the `topLevelHelper` FORBID is replaced by an EXPECTATION of the same edge - the M49 exports convergence (reviews/jvm-closure-audit.md:27, user-approved) settled exports = importable units = top-level types AND top-level functions, the live kotlin analyzer is measured publishing a top-level function, and in Groovy a top-level `def helper() {}` is a method of the SCRIPT CLASS that an importer binds with `import static <pkg>.<Script>.<method>`. The forbid encoded the pre-convergence set. Everything else in this fixture is unchanged: the nested type is still not importable, the members are still not importable, the exporter is still the package, and the package-less sentinel still does not stand in for a declared package. The `forbidExports` entry for `topLevelHelper` is re-pinned the same way and for the same reason: the exports ARRAY (ParseResult.exports) keeps the M49 top-level-unit rule, and that rule is \"importable units: top-level types AND top-level functions\" (reviews/jvm-closure-audit.md:27, user-approved). The array now carries `topLevelHelper`, so the forbid becomes an expectation - the SAME strengthening the relationship channel got, not a weakening: the name must be PRESENT in the array, where before the row asserted its absence.",
+  "expectSymbols": [
+    {
+      "name": "Audited",
+      "kind": "interface"
+    },
+    {
+      "name": "Level",
+      "kind": "enum"
+    },
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "Helper",
+      "kind": "class"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Audited"
+    },
+    {
+      "name": "Level"
+    },
+    {
+      "name": "Service"
+    },
+    {
+      "name": "topLevelHelper"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "Helper"
+    },
+    {
+      "name": "isAudited"
+    },
+    {
+      "name": "help"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "exportsWithNoPackage": 0,
+      "comment": "this file declares a package, so nothing was declined"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "com.acme.exp",
+      "target": "Audited",
+      "line_number": 3,
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.exp",
+      "target": "Level",
+      "line_number": 7,
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.exp",
+      "target": "Service",
+      "line_number": 12,
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.exp",
+      "target": "topLevelHelper",
+      "line_number": 18,
+      "meta.relationshipType": "groovy_exportable_unit",
+      "meta.exportForm": "public_top_level_function",
+      "meta.isGroovyExport": true,
+      "meta.kind": "method",
+      "meta.dottedName": "com.acme.exp.topLevelHelper",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0,
+      "comment": "RE-PIN 2026-10-22, the SET. This row was a FORBID with the note \"a top-level def method is a method of the SCRIPT CLASS, not an importable unit\" - the PRE-convergence \"types only\" set. The M49 exports convergence (reviews/jvm-closure-audit.md:27, user-approved) settled the set as \"importable units: top-level types AND top-level functions\", because \"kotlin/scala also export top-level functions (`fun topLevelUtil()` -> exports [\"topLevelUtil\",\"Svc\"], probe-pinned)\", and the LIVE kotlin analyzer is measured doing it (script/m14/groovy-family-exports-probe.ts: kotlin exports[Publisher->scriptHelper] {kind: function}). In Groovy the same is true and for a sharper reason: a top-level `def helper() {}` in a packaged compilation unit is a method of the SCRIPT CLASS, and an importer binds it with `import static <pkg>.<Script>.<method>`, so the name IS reachable from another file. The forbid is replaced by this expectation - COVERAGE IS NOT WEAKENED, it is STRENGTHENED: the edge must EXIST, with its form, its kind and its dotted name, where before the row only asserted its absence."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "Helper",
+      "note": "a nested type is not importable: `import foo.Service.Helper` does not compile"
+    },
+    {
+      "type": "exports",
+      "target": "isAudited"
+    },
+    {
+      "type": "exports",
+      "target": "help"
+    },
+    {
+      "type": "exports",
+      "source": "Service",
+      "note": "the exporter is the package; sourcing at the type would resolve source_symbol_id and lose the file-level row"
+    },
+    {
+      "type": "exports",
+      "source": "(script)",
+      "note": "this file declares a package"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "fixtureId": "java/import-edges",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the imports relationship kind (#419 section B — previously unpinned in ANY java fixture, so a regression that deleted the import edge would be silent). Java semantics (JLS 7.5): each import declaration produces a dependency on the imported module; single imports carry the full dotted target (java.util.List, never the truncated java.util), wildcard imports (Map.*) carry the parent module with isWildcard, static imports (static java.util.Collections.sort) carry the full static member path. The edge is emitted as references with meta.isJavaImport (the taxonomy in Matrix 1c: imports persist to brain_import + reference edges). Evidence tier per the shared taxonomy: import-derived edges are import_based (matching groovy); java emitted reference_qualified because the classifier only recognized isGroovyImport/isImport — fixed 2026-08-26.",
+  "expectSymbols": [
+    { "name": "Importer", "kind": "class" },
+    { "name": "run" },
+    { "name": "items" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "Importer", "target": "java.util.List", "meta.isJavaImport": true, "meta.isWildcard": false, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 },
+    { "type": "references", "source": "Importer", "target": "java.util.Map", "meta.isJavaImport": true, "meta.isWildcard": true, "meta.evidenceClass": "import_based" },
+    { "type": "references", "source": "Importer", "target": "java.util.Collections.sort", "meta.isJavaImport": true, "meta.isStatic": true, "meta.evidenceClass": "import_based" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "java.util", "meta.isJavaImport": true }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "open-readwrite",
+  "before": {
+    "db": {
+      "exists": true,
+      "size": 946176,
+      "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+    },
+    "wal": {
+      "exists": true,
+      "size": 57712,
+      "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+    },
+    "schemaVersion": 1335
+  },
+  "after": {
+    "db": {
+      "exists": true,
+      "size": 946176,
+      "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+    },
+    "wal": {
+      "exists": true,
+      "size": 57712,
+      "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+    },
+    "schemaVersion": 1335
+  },
+  "ms": 46,
+  "notes": [
+    "read-write open; 39 symbols read"
+  ],
+  "unchanged": true
+}

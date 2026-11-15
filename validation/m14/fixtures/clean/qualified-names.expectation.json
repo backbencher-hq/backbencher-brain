@@ -1,0 +1,211 @@
+{
+  "comment": "The qualified-name forms, BOTH of them. `expression-shapes.icl` pins the ALIAS form (`M.lookupOne`), and it was the lane's only qualified-name coverage until now. Measured over the 320-file Clean universe, the pinned grammar emits `qualified_identifier` \u2014 the node that alias form desugars to \u2014 exactly TWICE, and both sites are this repository's own fixtures. The form real Clean code uses is `single_quoted_name`: 233 corpus sites, 87 of them in application-head position, and the pre-round analyzer named the node type NOWHERE. So the lane's only test exercised a form no Clean codebase contains and the form every Clean codebase uses had no test. This fixture is the corpus form, taken from eastwood/src/linter/EastwoodLint.icl. The two bugs this fixture pins are both real and both were found by writing it: (1) the quote in a Clean qualified name wraps the MODULE, not the whole name \u2014 the corpus spells `'Data.Error'.Ok`, and a normalizer that removed one leading `'` and required one trailing `'` returned null for all 78 corpus heads while the branch looked live; (2) a qualified name in TYPE position is a different node entirely (`single_quoted_name` under `strict_type`/`type_application`, 39 corpus sites) and needs its own case in the type-reference reader.",
+  "expectSymbols": [
+    {
+      "name": "okOr",
+      "kind": "function",
+      "ownerName": "CleanQualifiedNames"
+    },
+    {
+      "name": "Config",
+      "kind": "type"
+    },
+    {
+      "name": "diagnostic",
+      "kind": "property",
+      "ownerName": "Config"
+    },
+    {
+      "name": "severityOf",
+      "kind": "function"
+    },
+    {
+      "name": "classify",
+      "kind": "function"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "okOr",
+      "kind": "function"
+    },
+    {
+      "name": "Config",
+      "kind": "type"
+    },
+    {
+      "name": "severityOf",
+      "kind": "function"
+    },
+    {
+      "name": "classify",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "okOr",
+      "target": "Data.Error.Ok",
+      "meta.isQualifiedCall": true,
+      "line_number": 49,
+      "comment": "THE corpus form. The source spells `'Data.Error'.Ok`; the target is the same name with its quote characters dropped, so the target is the name a symbol in the imported file would carry. The qualifier `Data.Error` is recorded in the edge metadata rather than being re-parsed out of the target.  TIER: `reference_qualified` \u2014 the `'Data.Error'.Ok` spelling, quote-stripped: the target is identified by the source's own qualified reference, and `Data.Error` is not declared here",
+      "meta.evidenceClass": "reference_qualified",
+      "meta.targetIsInFile": false
+    },
+    {
+      "type": "calls",
+      "from": "okOr",
+      "target": "Data.Error.Error",
+      "meta.isQualifiedCall": true,
+      "line_number": 50
+    },
+    {
+      "type": "calls",
+      "from": "classify",
+      "target": "Data.Error.isError",
+      "meta.isQualifiedCall": true,
+      "line_number": 59,
+      "comment": "three qualified calls in one expression, each a separate edge on its own line"
+    },
+    {
+      "type": "references",
+      "from": "okOr",
+      "target": "Data.Error.MaybeError",
+      "line_number": 47,
+      "comment": "A qualified TYPE in signature position. It is a `single_quoted_name` under the result type \u2014 a different node from the expression-position one and a different code path \u2014 and without its own case in the type-reference reader the reference was lost. 39 corpus sites (`strict_type` 24, `type_application` 9, `type_function` 6, `question_type` 3, `list_type` 2)."
+    },
+    {
+      "type": "imports",
+      "from": "CleanQualifiedNames",
+      "target": "Data.Error:Functor",
+      "line_number": 45,
+      "comment": "CHANGED: the SELECTIVE import item list. `from Data.Error import instance Functor (MaybeError a)` names exactly one thing, and the edge says `Data.Error:Functor` \u2014 the `<module>:<item>` form src/ast/import-resolution.ts joins against the exporting file's export surface. Before this round every import edge was `<module>:*`, which is the form that can never resolve. 943 items over 367 corpus imports reached nothing."
+    },
+    {
+      "type": "imports",
+      "from": "CleanQualifiedNames",
+      "target": "Data.Error:*",
+      "line_number": 44,
+      "comment": "a whole-module import takes the wildcard, which the resolver documents as legitimately unresolved: a namespace has no single target symbol"
+    },
+    {
+      "type": "uses",
+      "from": "severityOf",
+      "target": "diagnostic",
+      "line_number": 55,
+      "comment": "`cfg.diagnostic` is a record field read and the field is declared by this file  TIER: `structural` \u2014 a record field this file declares, read through a `field_access` \u2014 structural, and in-file by construction (the lane emits no `uses` edge to a field it cannot prove)",
+      "meta.evidenceClass": "structural",
+      "meta.targetIsInFile": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "okOr",
+      "target": "'Data.Error'.Ok",
+      "comment": "the quote characters are dropped: the target is the name the imported file's symbol carries, not the source's spelling"
+    },
+    {
+      "type": "references",
+      "from": "okOr",
+      "target": "Data.Error",
+      "comment": "the module part of a qualified name is not itself a type reference \u2014 the whole qualified name is"
+    },
+    {
+      "type": "instantiates",
+      "from": "okOr",
+      "target": "Data.Error.Ok",
+      "comment": "a qualified CONSTRUCTOR in body position is a construction, not a call. This file does not declare `Ok` (it imports it), and the lane's rule is that an uppercase applied name no declaration in this file explains emits NO edge \u2014 measured, only 19.3% of that population is a data constructor and the rest are Clean uppercase FUNCTIONS, macros and types. So the correct reading of `'Data.Error'.Ok msg` in a single file is silence, and the `calls` row above is about the FUNCTION position, not this one."
+    },
+    {
+      "type": "uses",
+      "from": "severityOf",
+      "target": "cfg",
+      "comment": "the receiver is a value, not a field"
+    },
+    {
+      "type": "contains",
+      "from": "okOr",
+      "target": "Data.Error.Ok",
+      "comment": "an imported symbol is never contained by the importing module"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "Data.Error",
+      "meta.isQualified": true,
+      "items": [],
+      "comment": "`import qualified Data.Error` \u2014 a whole-module qualified import: isQualified lives in the import's METADATA, and its item list is empty, so the wildcard edge is the record"
+    },
+    {
+      "module": "Data.Error",
+      "items": [
+        "Functor"
+      ],
+      "comment": "`from Data.Error import instance Functor (MaybeError a)` \u2014 the SELECTIVE item list. Before this round every import carried `items: []`, which is the 943-item hole the `<module>:<item>` edge is written for."
+    },
+    {
+      "module": "StdEnv",
+      "comment": "a plain whole-module import"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ],
+  "expectReturnType": [
+    {
+      "symbol": "okOr",
+      "returnType": "'Data.Error'.MaybeError String",
+      "comment": "the RESULT type keeps the module qualification the source spells, because the qualified name is the type's identity"
+    },
+    {
+      "symbol": "severityOf",
+      "returnType": "!String"
+    },
+    {
+      "symbol": "classify",
+      "returnType": "!String"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "okOr",
+      "parameters": [
+        {
+          "name": "flag",
+          "type": "!Bool"
+        },
+        {
+          "name": "msg",
+          "type": "!String"
+        }
+      ]
+    },
+    {
+      "symbol": "severityOf",
+      "parameters": [
+        {
+          "name": "cfg",
+          "type": "!Config"
+        }
+      ]
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "okOr",
+      "includes": [
+        "Data.Error.Ok",
+        "Data.Error.Error"
+      ],
+      "comment": "the `qualified_calls` COLUMN carries the same fact as the edges, for product search. It was empty for every Clean symbol in existence before this round because no Clean symbol emitted a qualified call."
+    },
+    {
+      "symbol": "classify",
+      "includes": [
+        "Data.Error.isError"
+      ]
+    }
+  ]
+}

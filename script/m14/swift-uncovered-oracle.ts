@@ -59,7 +59,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = "validation/m14/tmp/swift-uncovered-oracle.json"
 
 // The SAME draw the lane's census uses, so the two instruments' numbers are

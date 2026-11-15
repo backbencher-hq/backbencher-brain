@@ -1,0 +1,698 @@
+{
+ "schemaVersion": 1,
+ "kind": "m60-functional-family-surface",
+ "generatedAt": "2026-09-26T16:50:29.248Z",
+ "basis": "script/m14/tmp/functional-family-surface.ts — one ruler for all six family lanes over their pinned corpus repos (per-lane cap recorded per row). `relationshipTypes` is what the analyzer actually emits; `relationshipTypesAbsent` is measured against the engine's ten names (calls, references, contains, instantiates, implements, extends, overrides, uses, imports, exports). `endpointTotals` classifies every edge END: `symbol` = the name is a symbol in the same file, `scoped` = head is a function/method symbol and the rest is a qualified/lexical suffix (lane-local scoping), `qualified` = dotted/colon-qualified target whose head is not a file callable (module/import call), `externalLeaf` = bare name that is no entity in the file (imported/Prelude/builtin leaf), `empty` = empty endpoint. `endpointEndsResolved` counts symbol+scoped; `endpointResolvedStrict` counts symbol only.",
+ "lanes": [
+  {
+   "lane": "haskell",
+   "roots": [
+    "hledger",
+    "cabal"
+   ],
+   "filesSampled": 1200,
+   "cap": 1200,
+   "parseThrows": 0,
+   "filesWithErrorNodes": 5,
+   "symbols": 17854,
+   "symbolsWithPositiveLine": 17854,
+   "relationships": 51279,
+   "edgesWithPositiveLine": 51279,
+   "edgeLineShare": 1,
+   "symbolKinds": {
+    "function": 6810,
+    "constructor": 3446,
+    "property": 2217,
+    "class": 1876,
+    "method": 1683,
+    "type": 982,
+    "module": 800,
+    "interface": 40
+   },
+   "relationshipTypes": {
+    "contains": 16073,
+    "calls": 14900,
+    "references": 9270,
+    "instantiates": 7398,
+    "implements": 3617,
+    "extends": 21
+   },
+   "relationshipTypesAbsent": [
+    "overrides",
+    "uses",
+    "imports",
+    "exports"
+   ],
+   "endpointTotals": {
+    "symbol": 66640,
+    "scoped": 12395,
+    "qualified": 13461,
+    "externalLeaf": 9538,
+    "empty": 524
+   },
+   "endpointSource": {
+    "symbol": 42181,
+    "scoped": 8572,
+    "qualified": 0,
+    "externalLeaf": 2,
+    "empty": 524
+   },
+   "endpointTarget": {
+    "symbol": 24459,
+    "scoped": 3823,
+    "qualified": 13461,
+    "externalLeaf": 9536,
+    "empty": 0
+   },
+   "byTypeResolution": {
+    "contains": {
+     "srcR": 16073,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 16073,
+     "tgtQ": 0,
+     "tgtX": 0
+    },
+    "calls": {
+     "srcR": 14900,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 10366,
+     "tgtQ": 4517,
+     "tgtX": 17
+    },
+    "instantiates": {
+     "srcR": 7398,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 1646,
+     "tgtQ": 218,
+     "tgtX": 5534
+    },
+    "references": {
+     "srcR": 8746,
+     "srcQ": 0,
+     "srcX": 524,
+     "tgtR": 2,
+     "tgtQ": 8719,
+     "tgtX": 549
+    },
+    "implements": {
+     "srcR": 3615,
+     "srcQ": 0,
+     "srcX": 2,
+     "tgtR": 193,
+     "tgtQ": 3,
+     "tgtX": 3421
+    },
+    "extends": {
+     "srcR": 21,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 2,
+     "tgtQ": 4,
+     "tgtX": 15
+    }
+   },
+   "sourceResolvedShare": 0.9897,
+   "targetResolvedShare": 0.5515,
+   "targetStrictSymbolShare": 0.477,
+   "elapsedSeconds": 29.3
+  },
+  {
+   "lane": "elixir",
+   "roots": [
+    "elixir"
+   ],
+   "filesSampled": 559,
+   "cap": 1200,
+   "parseThrows": 0,
+   "filesWithErrorNodes": 0,
+   "symbols": 10609,
+   "symbolsWithPositiveLine": 10609,
+   "relationships": 59601,
+   "edgesWithPositiveLine": 59601,
+   "edgeLineShare": 1,
+   "symbolKinds": {
+    "function": 7389,
+    "module": 1171,
+    "type": 559,
+    "property": 474,
+    "macro": 452,
+    "method": 251,
+    "struct": 173,
+    "class": 118,
+    "interface": 22
+   },
+   "relationshipTypes": {
+    "calls": 48158,
+    "contains": 9639,
+    "references": 918,
+    "instantiates": 696,
+    "implements": 190
+   },
+   "relationshipTypesAbsent": [
+    "extends",
+    "overrides",
+    "uses",
+    "imports",
+    "exports"
+   ],
+   "endpointTotals": {
+    "symbol": 61993,
+    "scoped": 0,
+    "qualified": 55722,
+    "externalLeaf": 1487,
+    "empty": 0
+   },
+   "endpointSource": {
+    "symbol": 34901,
+    "scoped": 0,
+    "qualified": 24060,
+    "externalLeaf": 640,
+    "empty": 0
+   },
+   "endpointTarget": {
+    "symbol": 27092,
+    "scoped": 0,
+    "qualified": 31662,
+    "externalLeaf": 847,
+    "empty": 0
+   },
+   "byTypeResolution": {
+    "calls": {
+     "srcR": 23698,
+     "srcQ": 23850,
+     "srcX": 610,
+     "tgtR": 17004,
+     "tgtQ": 30918,
+     "tgtX": 236
+    },
+    "contains": {
+     "srcR": 9637,
+     "srcQ": 2,
+     "srcX": 0,
+     "tgtR": 9639,
+     "tgtQ": 0,
+     "tgtX": 0
+    },
+    "references": {
+     "srcR": 875,
+     "srcQ": 13,
+     "srcX": 30,
+     "tgtR": 58,
+     "tgtQ": 633,
+     "tgtX": 227
+    },
+    "instantiates": {
+     "srcR": 501,
+     "srcQ": 195,
+     "srcX": 0,
+     "tgtR": 302,
+     "tgtQ": 73,
+     "tgtX": 321
+    },
+    "implements": {
+     "srcR": 190,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 89,
+     "tgtQ": 38,
+     "tgtX": 63
+    }
+   },
+   "sourceResolvedShare": 0.5856,
+   "targetResolvedShare": 0.4546,
+   "targetStrictSymbolShare": 0.4546,
+   "elapsedSeconds": 46.3
+  },
+  {
+   "lane": "erlang",
+   "roots": [
+    "otp",
+    "rebar3"
+   ],
+   "filesSampled": 1200,
+   "cap": 1200,
+   "parseThrows": 0,
+   "filesWithErrorNodes": 64,
+   "symbols": 40026,
+   "symbolsWithPositiveLine": 40026,
+   "relationships": 194624,
+   "edgesWithPositiveLine": 194624,
+   "edgeLineShare": 1,
+   "symbolKinds": {
+    "function": 32997,
+    "property": 2534,
+    "constant": 1482,
+    "module": 1199,
+    "type": 1048,
+    "struct": 670,
+    "method": 96
+   },
+   "relationshipTypes": {
+    "calls": 106889,
+    "contains": 38801,
+    "references": 29186,
+    "uses": 12329,
+    "instantiates": 7376,
+    "implements": 43
+   },
+   "relationshipTypesAbsent": [
+    "extends",
+    "overrides",
+    "imports",
+    "exports"
+   ],
+   "endpointTotals": {
+    "symbol": 324976,
+    "scoped": 386,
+    "qualified": 43690,
+    "externalLeaf": 20196,
+    "empty": 0
+   },
+   "endpointSource": {
+    "symbol": 194624,
+    "scoped": 0,
+    "qualified": 0,
+    "externalLeaf": 0,
+    "empty": 0
+   },
+   "endpointTarget": {
+    "symbol": 130352,
+    "scoped": 386,
+    "qualified": 43690,
+    "externalLeaf": 20196,
+    "empty": 0
+   },
+   "byTypeResolution": {
+    "calls": {
+     "srcR": 106889,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 64604,
+     "tgtQ": 42285,
+     "tgtX": 0
+    },
+    "contains": {
+     "srcR": 38801,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 38801,
+     "tgtQ": 0,
+     "tgtX": 0
+    },
+    "references": {
+     "srcR": 29186,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 18053,
+     "tgtQ": 1405,
+     "tgtX": 9728
+    },
+    "uses": {
+     "srcR": 12329,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 6871,
+     "tgtQ": 0,
+     "tgtX": 5458
+    },
+    "instantiates": {
+     "srcR": 7376,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 2409,
+     "tgtQ": 0,
+     "tgtX": 4967
+    },
+    "implements": {
+     "srcR": 43,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 0,
+     "tgtQ": 0,
+     "tgtX": 43
+    }
+   },
+   "sourceResolvedShare": 1,
+   "targetResolvedShare": 0.6717,
+   "targetStrictSymbolShare": 0.6698,
+   "elapsedSeconds": 48.4
+  },
+  {
+   "lane": "clojure",
+   "roots": [
+    "clj-kondo",
+    "clojure"
+   ],
+   "filesSampled": 585,
+   "cap": 1200,
+   "parseThrows": 0,
+   "filesWithErrorNodes": 2,
+   "symbols": 9485,
+   "symbolsWithPositiveLine": 9485,
+   "relationships": 35119,
+   "edgesWithPositiveLine": 35119,
+   "edgeLineShare": 1,
+   "symbolKinds": {
+    "function": 7573,
+    "variable": 771,
+    "module": 576,
+    "property": 361,
+    "class": 133,
+    "interface": 71
+   },
+   "relationshipTypes": {
+    "calls": 20028,
+    "contains": 5964,
+    "references": 5594,
+    "uses": 2291,
+    "instantiates": 927,
+    "implements": 276,
+    "extends": 39
+   },
+   "relationshipTypesAbsent": [
+    "overrides",
+    "imports",
+    "exports"
+   ],
+   "endpointTotals": {
+    "symbol": 45272,
+    "scoped": 1,
+    "qualified": 14411,
+    "externalLeaf": 10554,
+    "empty": 0
+   },
+   "endpointSource": {
+    "symbol": 34006,
+    "scoped": 0,
+    "qualified": 84,
+    "externalLeaf": 1029,
+    "empty": 0
+   },
+   "endpointTarget": {
+    "symbol": 11266,
+    "scoped": 1,
+    "qualified": 14327,
+    "externalLeaf": 9525,
+    "empty": 0
+   },
+   "byTypeResolution": {
+    "calls": {
+     "srcR": 19384,
+     "srcQ": 0,
+     "srcX": 644,
+     "tgtR": 4672,
+     "tgtQ": 8867,
+     "tgtX": 6489
+    },
+    "contains": {
+     "srcR": 5872,
+     "srcQ": 43,
+     "srcX": 49,
+     "tgtR": 5964,
+     "tgtQ": 0,
+     "tgtX": 0
+    },
+    "references": {
+     "srcR": 5371,
+     "srcQ": 0,
+     "srcX": 223,
+     "tgtR": 40,
+     "tgtQ": 5114,
+     "tgtX": 440
+    },
+    "uses": {
+     "srcR": 2239,
+     "srcQ": 0,
+     "srcX": 52,
+     "tgtR": 321,
+     "tgtQ": 0,
+     "tgtX": 1970
+    },
+    "instantiates": {
+     "srcR": 903,
+     "srcQ": 0,
+     "srcX": 24,
+     "tgtR": 193,
+     "tgtQ": 228,
+     "tgtX": 506
+    },
+    "implements": {
+     "srcR": 198,
+     "srcQ": 41,
+     "srcX": 37,
+     "tgtR": 76,
+     "tgtQ": 104,
+     "tgtX": 96
+    },
+    "extends": {
+     "srcR": 39,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 1,
+     "tgtQ": 14,
+     "tgtX": 24
+    }
+   },
+   "sourceResolvedShare": 0.9683,
+   "targetResolvedShare": 0.3208,
+   "targetStrictSymbolShare": 0.3208,
+   "elapsedSeconds": 23.7
+  },
+  {
+   "lane": "clean",
+   "roots": [
+    "clean-stdlib",
+    "Clyde"
+   ],
+   "filesSampled": 183,
+   "cap": 1200,
+   "parseThrows": 0,
+   "filesWithErrorNodes": 18,
+   "symbols": 5138,
+   "symbolsWithPositiveLine": 5138,
+   "relationships": 8493,
+   "edgesWithPositiveLine": 8493,
+   "edgeLineShare": 1,
+   "symbolKinds": {
+    "function": 2836,
+    "type": 447,
+    "property": 408,
+    "class": 403,
+    "method": 373,
+    "constructor": 334,
+    "module": 180,
+    "interface": 157
+   },
+   "relationshipTypes": {
+    "contains": 4762,
+    "instantiates": 1371,
+    "calls": 1228,
+    "references": 729,
+    "implements": 403
+   },
+   "relationshipTypesAbsent": [
+    "extends",
+    "overrides",
+    "uses",
+    "imports",
+    "exports"
+   ],
+   "endpointTotals": {
+    "symbol": 15461,
+    "scoped": 0,
+    "qualified": 201,
+    "externalLeaf": 1324,
+    "empty": 0
+   },
+   "endpointSource": {
+    "symbol": 8493,
+    "scoped": 0,
+    "qualified": 0,
+    "externalLeaf": 0,
+    "empty": 0
+   },
+   "endpointTarget": {
+    "symbol": 6968,
+    "scoped": 0,
+    "qualified": 201,
+    "externalLeaf": 1324,
+    "empty": 0
+   },
+   "byTypeResolution": {
+    "contains": {
+     "srcR": 4762,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 4762,
+     "tgtQ": 0,
+     "tgtX": 0
+    },
+    "calls": {
+     "srcR": 1228,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 1224,
+     "tgtQ": 0,
+     "tgtX": 4
+    },
+    "instantiates": {
+     "srcR": 1371,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 747,
+     "tgtQ": 0,
+     "tgtX": 624
+    },
+    "references": {
+     "srcR": 729,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 1,
+     "tgtQ": 201,
+     "tgtX": 527
+    },
+    "implements": {
+     "srcR": 403,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 234,
+     "tgtQ": 0,
+     "tgtX": 169
+    }
+   },
+   "sourceResolvedShare": 1,
+   "targetResolvedShare": 0.8204,
+   "targetStrictSymbolShare": 0.8204,
+   "elapsedSeconds": 5.8
+  },
+  {
+   "lane": "fsharp",
+   "roots": [
+    "fsharp"
+   ],
+   "filesSampled": 1200,
+   "cap": 1200,
+   "parseThrows": 0,
+   "filesWithErrorNodes": 191,
+   "symbols": 51998,
+   "symbolsWithPositiveLine": 51998,
+   "relationships": 167974,
+   "edgesWithPositiveLine": 0,
+   "edgeLineShare": 0,
+   "symbolKinds": {
+    "function": 11947,
+    "property": 9724,
+    "method": 9256,
+    "variable": 7794,
+    "enum_member": 6130,
+    "class": 3015,
+    "enum": 1552,
+    "module": 1322,
+    "type": 420,
+    "namespace": 419,
+    "interface": 279,
+    "constructor": 140
+   },
+   "relationshipTypes": {
+    "calls": 113109,
+    "contains": 47978,
+    "references": 4634,
+    "overrides": 1244,
+    "implements": 515,
+    "extends": 411,
+    "instantiates": 83
+   },
+   "relationshipTypesAbsent": [
+    "uses",
+    "imports",
+    "exports"
+   ],
+   "endpointTotals": {
+    "symbol": 252827,
+    "scoped": 5,
+    "qualified": 6432,
+    "externalLeaf": 76684,
+    "empty": 0
+   },
+   "endpointSource": {
+    "symbol": 166420,
+    "scoped": 5,
+    "qualified": 1462,
+    "externalLeaf": 87,
+    "empty": 0
+   },
+   "endpointTarget": {
+    "symbol": 86407,
+    "scoped": 0,
+    "qualified": 4970,
+    "externalLeaf": 76597,
+    "empty": 0
+   },
+   "byTypeResolution": {
+    "calls": {
+     "srcR": 113109,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 37552,
+     "tgtQ": 0,
+     "tgtX": 75557
+    },
+    "contains": {
+     "srcR": 47978,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 47978,
+     "tgtQ": 0,
+     "tgtX": 0
+    },
+    "references": {
+     "srcR": 4317,
+     "srcQ": 230,
+     "srcX": 87,
+     "tgtR": 134,
+     "tgtQ": 4030,
+     "tgtX": 470
+    },
+    "implements": {
+     "srcR": 515,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 164,
+     "tgtQ": 24,
+     "tgtX": 327
+    },
+    "extends": {
+     "srcR": 411,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 119,
+     "tgtQ": 49,
+     "tgtX": 243
+    },
+    "overrides": {
+     "srcR": 12,
+     "srcQ": 1232,
+     "srcX": 0,
+     "tgtR": 377,
+     "tgtQ": 867,
+     "tgtX": 0
+    },
+    "instantiates": {
+     "srcR": 83,
+     "srcQ": 0,
+     "srcX": 0,
+     "tgtR": 83,
+     "tgtQ": 0,
+     "tgtX": 0
+    }
+   },
+   "sourceResolvedShare": 0.9908,
+   "targetResolvedShare": 0.5144,
+   "targetStrictSymbolShare": 0.5144,
+   "elapsedSeconds": 188
+  }
+ ]
+}

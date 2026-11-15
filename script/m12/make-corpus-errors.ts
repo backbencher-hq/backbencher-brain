@@ -63,7 +63,7 @@ for (const f of files) {
 // this gate went RED, because the recorded residual no longer matched the
 // measurement. A pin that can only report "no worse" is not a pin.
 //
-// Pre-patch (fixtures/make/out/grammar-ab.json): boundary/Makefile 8 ERROR nodes
+// Pre-patch (bb_tests/make/out/grammar-ab.json): boundary/Makefile 8 ERROR nodes
 // (target-scoped `target: export VAR = value`, spec gap MAKE-G3) and vault/Makefile
 // 1 ERROR node (`$$($(GO_CMD) list … | grep -v vendor/)`, spec gap MAKE-G4). Both
 // are fixed by the two grammar patches in grammars/tree-sitter-make.
@@ -100,7 +100,7 @@ const result = {
     // measurement. A pin that can only report "no worse" is not a pin. This
     // one failed on an improvement, which is the behaviour worth keeping.
     //
-    // Pre-patch, for the record (fixtures/make/out/grammar-ab.json):
+    // Pre-patch, for the record (bb_tests/make/out/grammar-ab.json):
     //   boundary/Makefile  8 ERROR nodes  target-scoped `target: export VAR = value`  (was spec gap MAKE-G3)
     //   vault/Makefile     1 ERROR node   `$$($(GO_CMD) list … | grep -v vendor/)`      (was spec gap MAKE-G4)
     // Both are FIXED by the two grammar patches in grammars/tree-sitter-make,

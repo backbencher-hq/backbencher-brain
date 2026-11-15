@@ -1,0 +1,476 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/all-kinds-sol.sol",
+  "authoredFrom": "The ontology. Every relationship kind the universal ontology declares, exercised in ONE file so that no kind can be implemented and ungated. Authored 2026-09-30 from the analyzer's measured output. The sibling lanes learned this the hard way: PowerShell's `implements` was emitted by live code with ZERO fixture rows and ZERO mutants, so deleting the loop that produced it would have left every gate in the repository green.",
+  "note": "The ten kinds are calls, extends, implements, instantiates, uses, references, contains, overrides, exports, imports. `imports` IS NOW ITS OWN KIND — and this note previously said the opposite. The earlier text read: “`imports` has NO construct in Solidity and is modelled as an import-annotated `references` edge (`metadata.import: true`) … the exclusion is written down rather than left as a silence.” That was the settled convention until SOL-? landed the emission site: the analyzer now mints ONE `imports` edge per import PATH (`src/ast/real-solidity-analyzer.ts:2714`, target = the specifier, `metadata.import: true` + `importPath`), because a dependency is on a FILE, not a name — the braced form names two things and earns ONE dependency, which the count pin below asserts. The `references` rows are kept: a named import is BOTH a file dependency and a name reference, and the two are different facts. Measured whole population (`firing-check.ts --files 1000000 solidity`, 421/421 files, 0 degraded): imports 932, and the section-B inventory row now reports it as EMITTED while the contract row omits it — the pin below is the fixture half of that fix. `extends` and `implements` are both present but on DIFFERENT declarations: `Feed is IFeed` resolves to `implements` because `IFeed` is an `interface_declaration` in this file (SOL-5), and `Feeder`'s `Math`-style contract base is not here, so the `extends` row is carried by `extends` on the interface row below being ABSENT — see the count.",
+  "expectSymbols": [
+    {
+      "name": "all-kinds-sol.sol",
+      "kind": "module"
+    },
+    {
+      "name": "IFeed",
+      "kind": "interface",
+      "ownerName": "all-kinds-sol.sol"
+    },
+    {
+      "name": "latest",
+      "kind": "method",
+      "ownerName": "IFeed"
+    },
+    {
+      "name": "Math",
+      "kind": "class",
+      "ownerName": "all-kinds-sol.sol"
+    },
+    {
+      "name": "add",
+      "kind": "method",
+      "ownerName": "Math"
+    },
+    {
+      "name": "Feed",
+      "kind": "class",
+      "ownerName": "all-kinds-sol.sol"
+    },
+    {
+      "name": "Stale",
+      "kind": "type",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "Updated",
+      "kind": "event",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "current",
+      "kind": "property",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "oracle",
+      "kind": "property",
+      "ownerName": "Feed",
+      "meta.getterSynthesised": true
+    },
+    {
+      "name": "oracle()",
+      "kind": "method",
+      "ownerName": "Feed",
+      "meta.isSynthesisedGetter": true
+    },
+    {
+      "name": "impl",
+      "kind": "property",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "onlyOracle",
+      "kind": "method",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "latest",
+      "kind": "method",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "push",
+      "kind": "method",
+      "ownerName": "Feed"
+    },
+    {
+      "name": "receive",
+      "kind": "method",
+      "ownerName": "Feed",
+      "meta.isFallbackOrReceive": true
+    },
+    {
+      "name": "fallback",
+      "kind": "method",
+      "ownerName": "Feed",
+      "meta.isFallbackOrReceive": true
+    },
+    {
+      "name": "Feeder",
+      "kind": "class",
+      "ownerName": "all-kinds-sol.sol"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "Feeder"
+    },
+    {
+      "name": "report",
+      "kind": "method",
+      "ownerName": "Feeder"
+    },
+    {
+      "name": "useThis",
+      "kind": "method",
+      "ownerName": "Feeder"
+    },
+    {
+      "name": "S",
+      "kind": "struct",
+      "ownerName": "Feeder"
+    },
+    {
+      "name": "a",
+      "kind": "property",
+      "ownerName": "S"
+    },
+    {
+      "name": "b",
+      "kind": "property",
+      "ownerName": "S"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "require",
+      "comment": "SOL-7b. `require(ok, \"no\")` parses EXACTLY like a call to a user function named `require` — the grammar cannot tell an engine builtin from a project function at a call site — so no hasError-keyed gate in this repo can see a fabricated `calls -> require`. It is refused from a declared list derived by parsing each builtin, and the refusal is COUNTED."
+    },
+    {
+      "name": "SafeMath",
+      "comment": "`using SafeMath for uint256;` names a LIBRARY, not a declaration in this file. The `using_directive` produces a `references` edge to it and no symbol — a reference is not a declaration, and publishing one would create a symbol no source in this file declares."
+    },
+    {
+      "name": "global",
+      "comment": "SOL-1. See module-owner-sol1."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Feed",
+      "target": "IFeed",
+      "line_number": 17,
+      "comment": "SOL-5. `Feed is IFeed` resolves to `implements` because `IFeed` is an `interface_declaration` in THIS file. Solidity has ONE heritage construct — there is no `interface` keyword in the heritage list — so the tree does not say which kind each ancestor is, and the distinction has to come from the ancestor's own declaration. This row and the count below are the whole SOL-5 contract: a rule that emitted `extends` for everything would fail the type and the count.",
+      "meta.isSolidityInheritance": true,
+      "meta.interfaceResolvedInFile": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "IFeed",
+      "target": "latest",
+      "line_number": 9,
+      "comment": "An interface's function declaration, with no body. A bodiless signature is still a `function_definition` in this grammar and is a real member.",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "latest",
+      "target": "IFeed",
+      "line_number": 32,
+      "comment": "SOL-11. Solidity HAS the keyword: `override` settles WHICH bases, and here no explicit list was given so the base comes from the contract header. The TARGET — the same-named member inside that base — is located by MATCHING, so the tier is `inferred` and not `structural`. When the base is not in the same file NO edge is emitted at all; 386 of 394 corpus cases are that shape and the count is reported as `overridesUnresolved` rather than fabricated.",
+      "meta.overridesMember": "latest",
+      "meta.baseType": "IFeed",
+      "meta.baseFromContractHeader": true,
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "instantiates",
+      "from": "push",
+      "target": "Feeder",
+      "line_number": 37,
+      "comment": "`new Feeder(v)`. The `user_defined_type` is NOT a direct child of `new_expression` — grammar.js nests it in a `type_name` first — so reading direct children returned null and this kind emitted NOTHING on a file that contains the expression. Measured: 0 `instantiates` across the whole 6-file probe set before the fix, and 1 over the 389-file corpus after.",
+      "meta.isNewExpression": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "Math",
+      "target": "SafeMath",
+      "line_number": 13,
+      "comment": "A `using_directive`'s target. `type_alias` carries the library name; it is a REFERENCE to a declaration elsewhere, not a declaration here. Tier usage_contextual — the tree settles which node holds it but nothing says it is a dependency.",
+      "meta.isUsingDirectiveTarget": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "decorates",
+      "from": "push",
+      "target": "onlyOracle",
+      "line_number": 36,
+      "comment": "A MODIFIER APPLICATION DECORATES the declaration it is applied to. The tree cannot tell `onlyOracle` (a modifier) from `Base(1)` (a base-constructor call): both are `modifier_invocation` with a field-less identifier child, so the discriminator is RESOLUTION — this target resolves to the `modifier_definition` two declarations above, so the row is `decorates` (source = the decorated function, target = the modifier). A base-constructor target would stay `calls`. Replacing the pre-relabel `calls` pin: one site, one label.",
+      "meta.isModifierInvocation": true,
+      "meta.isAppliedModifier": true,
+      "meta.modifierResolution": "in-file",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "push",
+      "target": "Updated",
+      "line_number": 40,
+      "comment": "AN EVENT EMISSION IS NOT A call_expression. `emit Transfer(...)` is an `emit_statement` with a `name:` field, and 168 of them exist in the corpus — a callee pass over `call_expression` alone would publish ZERO event edges for the entire language. `emit Evt{anonymous: true}(…)` additionally wraps the name in a `struct_expression`, which SOL-9's resolver handles.",
+      "meta.isEventEmission": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "from": "push",
+      "target": "latest",
+      "line_number": 41,
+      "comment": "`this.latest()` — a call THROUGH a global object. SOL-7 silences a global's member READ, because `msg.sender` names no project member; a call through `this` is different, because `latest` IS a project function and `this.f()` is exactly how Solidity reaches one. The exemption is what stops SOL-7 from deleting real call edges.",
+      "meta.isSolidityCall": true,
+      "meta.isMemberCall": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "Feed",
+      "target": "Feeder",
+      "line_number": 23,
+      "comment": "A DECLARED TYPE mention — `Feeder impl;`. Distinct from the `instantiates` edge on the same type: one is the static type of a variable, the other is a construction.",
+      "meta.isTypeReference": true,
+      "meta.typeReferenceSite": "type_name",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "onlyOracle",
+      "target": "oracle",
+      "line_number": 28,
+      "comment": "SOL-7 in its positive form: `msg.sender == oracle` reads `oracle`, a real member, while `msg.sender` itself is silent. One of the two sides of the rule, in one expression.",
+      "meta.isVariableReference": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "constructor",
+      "line_number": 25,
+      "comment": "SOL-4. `constructor_definition` has NO `name:` field — but unlike PowerShell's `Deployment(...)`, Solidity writes the literal keyword, so the name is READ off the first token rather than synthesised and the line is the real name line with no null-line handling. PowerShell needed a null line for its synthesised name; this lane does not.",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "receive",
+      "line_number": 45,
+      "comment": "SOL-4. `receive` and `fallback` share ONE grammar rule (fallback_receive_definition); the leading keyword token splits them. Two contracts can each have one, so the dedupe key's owner keeps them distinct.",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "fallback",
+      "line_number": 46,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "Stale",
+      "line_number": 18,
+      "comment": "A custom error is a named, declared, ABI-visible entity with its own parameter list. `Type` is the kind that says 'a named type-ish declaration' without claiming it is a class; recorded as a decision in the F9 spec rather than an accident of convenience. 221 exist in the corpus.",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Feed",
+      "target": "Updated",
+      "line_number": 19,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "all-kinds-sol.sol",
+      "target": "IFeed",
+      "line_number": 8,
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "all-kinds-sol.sol",
+      "target": "Math",
+      "line_number": 12,
+      "comment": "A LIBRARY is part of the compilation unit's surface like any other top-level declaration.",
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "all-kinds-sol.sol",
+      "target": "Feed",
+      "line_number": 17,
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "all-kinds-sol.sol",
+      "target": "Feeder",
+      "line_number": 49,
+      "meta.isCompilationUnitSurface": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "from": "all-kinds-sol.sol",
+      "target": "IERC20",
+      "line_number": 4,
+      "comment": "IMPORTS, KIND 1 of 3. `import {IERC20} from \"./IERC20.sol\"` — a braced named import. The grammar puts NO name in `import_name` for a braced list, so every identifier inside the braces is read positionally; publishing one edge per imported NAME is what makes the import a graph edge rather than a file reference.",
+      "meta.import": true,
+      "meta.importPath": "./IERC20.sol",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "references",
+      "from": "all-kinds-sol.sol",
+      "target": "Utils",
+      "line_number": 5,
+      "comment": "IMPORTS, KIND 2 of 3. `import * as Utils from \"./Utils.sol\"` — a namespace import. MEASURED BEFORE THE FIX: this form produced NO edge while the braced form produced one per name, so two import statements yielded one edge. The edge names the LOCAL BINDING, which is the only name the importing file can use.",
+      "meta.import": true,
+      "meta.importPath": "./Utils.sol",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "references",
+      "from": "oracle",
+      "target": "oracle()",
+      "line_number": 22,
+      "meta.isGetterFor": true,
+      "meta.getterOfVariable": "oracle",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "imports",
+      "from": "all-kinds-sol.sol",
+      "target": "./IERC20.sol",
+      "line_number": 4,
+      "meta.import": true,
+      "meta.importPath": "./IERC20.sol",
+      "comment": "IMPORTS ROW 1 — the braced form. ONE edge for the PATH, not one per imported name: `import {IERC20} from \"./IERC20.sol\"` names one thing here but would name N in a larger list, and a dependency is on a file. The `references` row above pins the NAME half; this row pins the FILE half."
+    },
+    {
+      "type": "imports",
+      "from": "all-kinds-sol.sol",
+      "target": "./Utils.sol",
+      "line_number": 5,
+      "meta.import": true,
+      "meta.importPath": "./Utils.sol",
+      "meta.isNamespaceImport": true,
+      "comment": "IMPORTS ROW 2 — namespace form: `import * as Utils from \"./Utils.sol\"`. The local binding `Utils` is the only name the importing file can use, so the `references` edge names Utils while the imports edge names the path."
+    },
+    {
+      "type": "imports",
+      "from": "all-kinds-sol.sol",
+      "target": "./Bare.sol",
+      "line_number": 6,
+      "meta.import": true,
+      "meta.importPath": "./Bare.sol",
+      "comment": "IMPORTS ROW 3 — the bare form `import \"./Bare.sol\";`. It contributes no `references` NAME edge (nothing is named) but IS a file dependency, which is why the imports kind exists at all."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Feed",
+      "target": "IFeed",
+      "line_number": 17,
+      "comment": "SOL-5. `IFeed` is an interface declared in this file, so `Feed is IFeed` is `implements` and NOT `extends`. This forbid row is the one that makes the kind decision real: a rule that emitted `extends` for every heritage edge would still pass the `contains` and `exports` rows and fail only here."
+    },
+    {
+      "type": "calls",
+      "from": "onlyOracle",
+      "target": "require",
+      "line_number": 28,
+      "comment": "SOL-7b. An engine builtin published as a graph fact about a function that does not exist."
+    },
+    {
+      "type": "uses",
+      "from": "onlyOracle",
+      "target": "sender",
+      "line_number": 28,
+      "comment": "SOL-7. `msg.sender` — the measured residue of the naive member-read pass, now silent. Present as an `expectRelationships` row above with the same shape so the difference is visible: the row above documents what the rule DOES emit for a real member (`oracle`), this row forbids what it must not."
+    },
+    {
+      "type": "uses",
+      "from": "onlyOracle",
+      "target": "msg",
+      "line_number": 28,
+      "comment": "SOL-7. The global itself, in read position."
+    },
+    {
+      "type": "references",
+      "from": "all-kinds-sol.sol",
+      "target": "imports",
+      "comment": "The `imports` KIND does not exist as an edge in this product: imports are modelled as import-annotated `references`, and this file's three imports are pinned as three `references` rows plus `expectImports`. A separate kind would be a second representation of one fact."
+    },
+    {
+      "type": "references",
+      "from": "all-kinds-sol.sol",
+      "target": "./Bare.sol",
+      "comment": "IMPORTS, KIND 3 of 3, and the boundary rather than an omission. `import \"./Bare.sol\";` binds NO local name - there is nothing an edge could name. Its fact lives in the `imports` payload (pinned by expectImports below), and an EDGE would have to target the string `./Bare.sol`, which the analyzer's own F9 gate refuses because a target carrying `/` names no stored symbol. Inventing a file-level edge convention for one construct would be a second representation of one fact. This forbid row is why the `references` count is 4 and not 5: three-of-four named imports plus the using directive plus the getter link, with the bare import present as an imports row and absent as an edge."
+    },
+    {
+      "type": "calls",
+      "from": "push",
+      "target": "onlyOracle",
+      "line_number": 36,
+      "comment": "THE RELABEL'S OWN FORBID ROW. An applied modifier that resolves to its `modifier_definition` is `decorates`, never `calls` — this row is what makes a revert of the label move go red, and what makes a widening that emits BOTH edges go red too."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "implements",
+      "equals": 1,
+      "comment": "Exactly one, and it is the interface. The count is what distinguishes 'resolves interfaces' from 'resolves everything', because the individual row already passes under an `extends`-only rule."
+    },
+    {
+      "type": "extends",
+      "equals": 0,
+      "comment": "ZERO, and deliberately: every heritage edge in this file names an interface, and none names a contract. So the kind is IMPLEMENTED and GATED elsewhere — `extends` is the corpus's largest inheritance bucket at 537 rows over 389 files, and this file pins that the two kinds are told apart rather than merged."
+    },
+    {
+      "type": "overrides",
+      "equals": 1,
+      "comment": "One override, from `Feed.latest` to `IFeed`. The other overridable member in the file — `push` — carries no `override` keyword and so must NOT produce an edge; a rule that inferred overrides from virtuality alone would emit one and fail here."
+    },
+    {
+      "type": "instantiates",
+      "equals": 1
+    },
+    {
+      "type": "exports",
+      "equals": 4,
+      "comment": "The four top-level type declarations: interface, library, contract, contract. Structs, enums, events and errors declared at FILE scope would also count; this file declares those inside contracts, which is where OpenZeppelin puts them."
+    },
+    {
+      "type": "references",
+      "equals": 4,
+      "comment": "Four: two named imports, the `using SafeMath` directive, and the `oracle -> oracle()` getter link. The bare `import \"./Bare.sol\";` deliberately contributes NO edge - it binds no name, and the only string available to name is a path the F9 gate refuses - so this count is what distinguishes three import forms HANDLED from three import forms INVENTED."
+    },
+    {
+      "type": "imports",
+      "equals": 3,
+      "comment": "THREE, one per declared path — and the number is the pin that distinguishes per-PATH from per-NAME emission. A per-name loop would emit 4 here (IERC20 + Utils + the namespace binding + nothing for bare) and inflate the type by the size of every braced list on a real corpus."
+    }
+  ],
+  "expectImports": [
+    {
+      "source": "./IERC20.sol",
+      "imported": "IERC20"
+    },
+    {
+      "source": "./Utils.sol",
+      "imported": "Utils"
+    },
+    {
+      "source": "./Bare.sol",
+      "imported": "./Bare.sol",
+      "isDefault": true
+    }
+  ]
+}

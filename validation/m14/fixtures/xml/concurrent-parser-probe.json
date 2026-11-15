@@ -1,0 +1,91 @@
+{
+  "probe": "concurrent-parser-probe",
+  "claimLevel": "L1",
+  "productionEntryPoint": "src/ast/pool-worker.ts parseFile",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "observedFailingPaths": [
+    "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/autoprefixer.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/viadeo-square.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/unlink.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/solid/star-half-alt.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-6.5.2-web/svgs/solid/book.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-6.5.2-web/svgs/solid/book-quran.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-6.5.2-web/svgs/solid/book-skull.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-6.5.2-web/svgs/solid/book-tanakh.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-6.5.2-web/svgs/solid/heart-circle-bolt.svg",
+    "bulma/docs/assets/vendor/fontawesome-free-6.5.2-web/svgs/solid/square-root-alt.svg"
+  ],
+  "observedFailingPathsPresent": 4,
+  "observedFailingPathsInInputSet": 4,
+  "observedFailingPathBytes": [
+    459,
+    1065,
+    1254,
+    802
+  ],
+  "inputSet": {
+    "discovered": 603,
+    "cap": 600,
+    "deterministic": "repositories sorted, then paths sorted",
+    "minBytes": 14,
+    "maxBytes": 469277,
+    "totalBytes": 4030508
+  },
+  "levels": {
+    "serial": {
+      "concurrency": 1,
+      "files": 603,
+      "parsed": 603,
+      "threw": 0,
+      "traps": 0,
+      "recoveryLabels": 20,
+      "symbols": 36852,
+      "relationships": 8452,
+      "trapSamples": [],
+      "recoverySamples": [
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)"
+      ]
+    },
+    "concurrent": {
+      "concurrency": 8,
+      "files": 603,
+      "parsed": 603,
+      "threw": 0,
+      "traps": 0,
+      "recoveryLabels": 20,
+      "symbols": 36852,
+      "relationships": 8452,
+      "trapSamples": [],
+      "recoverySamples": [
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)",
+        "AnyFeed.xml: Syntax error (unexpected node)"
+      ]
+    }
+  },
+  "grade": "INCONCLUSIVE",
+  "reading": "no wasm trap at either level, so this run establishes nothing about the engine — which is what a contention-induced fault looks like on a host with memory to spare",
+  "candidateMechanism": "src/ast/engine.ts getParser caches ONE Parser per language and parseFile calls parser.parse() on it; TSParser is stateful, so concurrent calls on one instance are undefined behaviour, and the parseCount>=500 eviction deletes that instance while siblings may still hold it inside parse()",
+  "limitations": [
+    "does not control host memory pressure, so it cannot separate parser reentrancy from machine-wide exhaustion; it establishes only that the fault tracks concurrency",
+    "the previously-observed failing-path list is transcribed from earlier runs, so it is a set of candidates rather than a census of every file that trips the diagnostic",
+    "an INCONCLUSIVE grade is a real outcome of this probe and must be reported as one, not as a pass",
+    "src/ast/engine.ts is supervisor-owned; this probe characterises the defect and does not fix it"
+  ]
+}

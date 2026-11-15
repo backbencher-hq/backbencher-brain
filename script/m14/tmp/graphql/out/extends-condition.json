@@ -1,0 +1,96 @@
+{
+ "kind": "m60-extends-condition-probe",
+ "producedBy": "script/m14/tmp/graphql/probe/extends-condition.mts",
+ "entryPoint": "grammar walk replicating real-graphql-analyzer.ts:314-344 exactly",
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "admittedFiles": 1905,
+ "documentsWithParseErrorsOrMissingNodes": 142,
+ "buckets": {
+  "all_implements_clauses": {
+   "occurrences": 3330,
+   "files": 163,
+   "examples": [
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: Foo implements Bar line 15",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: Foo implements Baz line 15",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: Foo implements Bar line 15",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Book implements Product line 37",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Car implements Vehicle line 62",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Furniture implements Product line 84",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: ProductDetailsBook implements ProductDetails line 177",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: ProductDetailsFurniture implements ProductDetails line 182"
+   ]
+  },
+  "extends_condition_met": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "extends_supertype_object": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "extends_supertype_union_or_scalar": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "extends_owner_declares_no_field": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "extends_supertype_declared_only_as_an_extension": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "extends_supertype_ambiguous_kind_here": {
+   "occurrences": 0,
+   "files": 0,
+   "examples": []
+  },
+  "implements_supertype_is_interface_here": {
+   "occurrences": 3225,
+   "files": 147,
+   "examples": [
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: Foo implements Bar line 15",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: Foo implements Bar line 15",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Book implements Product line 37",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Car implements Vehicle line 62",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Furniture implements Product line 84",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: ProductDetailsBook implements ProductDetails line 177",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: ProductDetailsFurniture implements ProductDetails line 182",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql: Van implements Vehicle line 265"
+   ]
+  },
+  "extend_type_of_a_type_declared_in_this_document": {
+   "occurrences": 76,
+   "files": 13,
+   "examples": [
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Class Foo",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Class Foo",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Interface Bar",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Interface Bar",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Type Feed",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Type Feed",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Type CustomScalar",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql: extend Enum Site"
+   ]
+  },
+  "extend_type_of_a_type_declared_elsewhere": {
+   "occurrences": 176,
+   "files": 153,
+   "examples": [
+    "gql-gqlgen/_examples/type-system-extension/schemas/enum-extension.graphql: extend Enum State",
+    "gql-gqlgen/_examples/type-system-extension/schemas/input-object-extension.graphql: extend Class TodoInput",
+    "gql-gqlgen/_examples/type-system-extension/schemas/interface-extension.graphql: extend Interface Node",
+    "gql-gqlgen/_examples/type-system-extension/schemas/object-extension.graphql: extend Class Todo",
+    "gql-gqlgen/_examples/type-system-extension/schemas/scalar-extension.graphql: extend Type ID",
+    "gql-gqlgen/_examples/type-system-extension/schemas/schema-extension.graphql: extend Class MyQuery",
+    "gql-gqlgen/_examples/type-system-extension/schemas/type-extension.graphql: extend Class Todo",
+    "gql-gqlgen/_examples/type-system-extension/schemas/union-extension.graphql: extend Type Data"
+   ]
+  }
+ }
+}

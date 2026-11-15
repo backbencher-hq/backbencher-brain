@@ -1,0 +1,84 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1.json",
+  "generatedAt": "2026-11-04T05:55:38.535Z",
+  "passed": 95,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "report": {
+    "repos": [
+      {
+        "repo": "rake",
+        "dir": "/home/ishaq2321/bb_tests/repositories/rake",
+        "files": 109,
+        "seconds": 10.123
+      },
+      {
+        "repo": "ripgrep",
+        "dir": "/home/ishaq2321/bb_tests/repositories/ripgrep",
+        "files": 161,
+        "seconds": 28.184
+      },
+      {
+        "repo": "graphql-js",
+        "dir": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+        "files": 564,
+        "seconds": 81.06
+      },
+      {
+        "repo": "tree-sitter-clean",
+        "dir": "/home/ishaq2321/bb_tests/repositories/tree-sitter-clean",
+        "files": 33,
+        "seconds": 11.516
+      },
+      {
+        "repo": "lodash",
+        "dir": "/home/ishaq2321/bb_tests/repositories/lodash",
+        "files": 76,
+        "seconds": 33.419
+      }
+    ],
+    "tools": [
+      "bb_analyze",
+      "bb_annotate",
+      "bb_annotations",
+      "bb_ask",
+      "bb_cross_language",
+      "bb_doc",
+      "bb_edit",
+      "bb_graph",
+      "bb_health",
+      "bb_impact",
+      "bb_index",
+      "bb_migrate",
+      "bb_patterns",
+      "bb_search",
+      "bb_security",
+      "bb_visualize"
+    ],
+    "totalSeconds": 164.315
+  },
+  "toolCoverage": [
+    "bb_analyze",
+    "bb_annotate",
+    "bb_annotations",
+    "bb_ask",
+    "bb_cross_language",
+    "bb_doc",
+    "bb_edit",
+    "bb_graph",
+    "bb_health",
+    "bb_impact",
+    "bb_index",
+    "bb_migrate",
+    "bb_patterns",
+    "bb_search",
+    "bb_security",
+    "bb_visualize"
+  ],
+  "toolsCovered": 16
+}

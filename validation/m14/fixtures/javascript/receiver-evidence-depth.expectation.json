@@ -1,0 +1,61 @@
+{
+  "fixtureId": "javascript/receiver-evidence-depth",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the two NEW static receiver-typing evidence classes on the store's EXISTING metadata.owner + metadata.ownerEvidence channel (no new channel). class-static: `Service.create()` / `Service.STATIC_MEMBER` where Service is a PROGRAM-scope class DECLARATION whose members are published symbols -> owner Service, evidence class-static; a PARAMETER that shadows the class name must get NO owner (the positional check refuses). this-alias: `const self = this` inside a class declaration's method -> self's type is the enclosing class, evidence this-alias; a plain function's `this` is dynamic and a class EXPRESSION's class is not a published symbol, so both must get NOTHING (the forbid rows pin that a wrong owner fails the suite). The negative controls are the point: a wrong owner is worse than none because the store withdraws the name binding for an owner-carrying row and then declines.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "class" },
+    { "name": "Pool", "kind": "class" },
+    { "name": "create", "kind": "method" },
+    { "name": "dispatch", "kind": "method" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useStatic",
+      "target": "create",
+      "meta.owner": "Service",
+      "meta.ownerEvidence": "class-static",
+      "comment": "static class receiver: the class declaration's members are published symbols"
+    },
+    {
+      "type": "uses",
+      "from": "useStatic",
+      "target": "STATIC_MEMBER",
+      "meta.owner": "Service",
+      "meta.ownerEvidence": "class-static",
+      "comment": "the same proof on a member READ (uses segment), not only a call"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "dispatch",
+      "meta.owner": "Pool",
+      "meta.ownerEvidence": "this-alias",
+      "comment": "const self = this inside a class declaration's method"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "shadowed",
+      "target": "create",
+      "meta.owner": "Service",
+      "comment": "NEGATIVE: the parameter named Service shadows the class — a class-static owner here would be a guess"
+    },
+    {
+      "type": "calls",
+      "from": "plainDynamic",
+      "target": "anything",
+      "meta.owner": "Pool",
+      "comment": "NEGATIVE: a plain function's this is dynamic"
+    },
+    {
+      "type": "calls",
+      "from": "inner",
+      "target": "anything",
+      "meta.owner": "Nested",
+      "comment": "NEGATIVE: a nested PLAIN function inside a method rebinds this — an alias there is not the class"
+    }
+  ]
+}

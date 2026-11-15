@@ -1,0 +1,5 @@
+# The negative twin: a string that merely STARTS with `#` is not a pointer. Before the
+# narrowing, any such value became a reference.
+note: "# just a hash"
+real: "#/a/b"
+alsoNot: "# anchor style"

@@ -37,7 +37,7 @@ import { createHash } from "node:crypto"
 import { readFileSync, writeFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (process.env.BB_JAVA_REPOS ?? "java-lib,java-sample").split(",").map((s) => s.trim()).filter(Boolean)
 const OUT = process.argv[2] ?? ""
 const MAX = Number(process.argv[3] ?? "0") || Infinity

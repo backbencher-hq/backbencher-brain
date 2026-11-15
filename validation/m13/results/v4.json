@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.47",
+  "code": "V4",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: honesty + docs + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "docs: description matches",
+      "pass": true,
+      "detail": "Scoped dependency and architecture visualization: one bounded projection over th"
+    },
+    {
+      "name": "docs: modes = scopes only",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: format separate from modes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: defaults match",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: category = analysis",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: mutability = read",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: requiresIndex = true",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: generator verify passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "evidence: v1.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v2.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v3.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v5.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v6.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v7.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v8.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: v9.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "gate: verify-visualize-contract wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-fidelity wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-e2e-corpus wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-options wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-target-literals wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-views wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-owner-fold wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-visualize-honesty wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: tampered doc rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "tampered but accepted"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 25,
+    "passed": 25,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tool-registry.ts + script/verify-tool-docs.ts",
+    "releaseGate": "V1-V7 verifiers wired + B3 evidence validator"
+  },
+  "limitations": [
+    "Covers bb_visualize only."
+  ],
+  "generatedAt": "2026-11-05T04:18:37.965Z"
+}

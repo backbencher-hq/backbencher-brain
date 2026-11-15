@@ -1,0 +1,308 @@
+{
+  "door": "mcp-stdio-source",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_analyze/work/behaviour",
+  "results": [
+    {
+      "id": "listTools",
+      "present": true,
+      "modes": [
+        "callers",
+        "callees",
+        "trace",
+        "dependencies",
+        "stats",
+        "complexity",
+        "impact",
+        "test_mapping",
+        "test_gaps",
+        "test_impact",
+        "test_quality"
+      ],
+      "required": [
+        "mode"
+      ]
+    },
+    {
+      "id": "success:stats",
+      "args": {
+        "mode": "stats"
+      },
+      "isError": false,
+      "bytes": 1986,
+      "summary": null
+    },
+    {
+      "id": "success:callers",
+      "args": {
+        "mode": "callers",
+        "target": "hub"
+      },
+      "isError": false,
+      "bytes": 30813,
+      "found": true,
+      "summary": {
+        "totalCallers": 95,
+        "totalCallees": 0,
+        "maxDepthReached": 1,
+        "maxDepth": 3,
+        "timeBudgetMs": 2000,
+        "timeBudgetExhausted": false,
+        "noiseFiltered": {
+          "callers": 0,
+          "callees": 0
+        },
+        "unattributed": {
+          "callers": 4,
+          "callees": 0
+        },
+        "crossLanguageExcluded": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageEdges": 0,
+        "truncated": false,
+        "truncationReasons": [],
+        "filterNarrowed": false,
+        "filterReason": null,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "totalEdgeLimitReached": false,
+        "cappedQueries": 0,
+        "callersIfUncapped": null,
+        "calleesIfUncapped": null,
+        "totalsAreLowerBounds": false,
+        "exactCallers": 63,
+        "cascadedCallers": 0,
+        "exactCallees": 0,
+        "cascadedCallees": 0,
+        "deeperCallers": 32,
+        "deeperCallees": 0,
+        "callerBudget": 50,
+        "calleeBudget": 50,
+        "callerBudgetExhausted": false,
+        "calleeBudgetExhausted": false,
+        "edgesByType": {
+          "calls": 32,
+          "imports": 31,
+          "exports": 31,
+          "contains": 1
+        },
+        "relationshipTypesUsed": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "edgeKindPriority": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements",
+          "mixes_in",
+          "renders",
+          "overrides",
+          "decorates",
+          "uses",
+          "references",
+          "imports",
+          "exports",
+          "contains",
+          "part_of"
+        ],
+        "edgesInBothDirections": 0,
+        "dedupedAtToolLayer": {
+          "cascadeRepeatsCollapsed": 1,
+          "spellingVariantsCollapsed": 0
+        },
+        "returnedCallers": 25,
+        "returnedCallees": 0,
+        "pageEdgeLimit": 25,
+        "pageTruncated": true
+      }
+    },
+    {
+      "id": "success:complexity-dir",
+      "args": {
+        "mode": "complexity",
+        "target": "src/util"
+      },
+      "isError": false,
+      "bytes": 2076,
+      "summary": null
+    },
+    {
+      "id": "refusal:limit0",
+      "args": {
+        "mode": "dependencies",
+        "limit": 0
+      },
+      "isError": true,
+      "bytes": 130,
+      "summary": null,
+      "text": "bb_analyze dependencies: limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer"
+    },
+    {
+      "id": "refusal:unknown-option",
+      "args": {
+        "mode": "stats",
+        "verbose": true
+      },
+      "isError": true,
+      "bytes": 155,
+      "summary": null,
+      "text": "error: bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases accepted: symbol, symbolName, query)"
+    },
+    {
+      "id": "refusal:limit-on-stats",
+      "args": {
+        "mode": "stats",
+        "limit": 5
+      },
+      "isError": true,
+      "bytes": 183,
+      "summary": null,
+      "text": "bb_analyze stats: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality) — refusing it rather than ignoring it"
+    },
+    {
+      "id": "refusal:missing-mode",
+      "args": {},
+      "isError": true,
+      "bytes": 48,
+      "summary": null,
+      "text": "error: bb_analyze: missing required option: mode"
+    },
+    {
+      "id": "refusal:unknown-mode",
+      "args": {
+        "mode": "coupling"
+      },
+      "isError": true,
+      "bytes": 156,
+      "summary": null,
+      "text": "error: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality"
+    },
+    {
+      "id": "bounds:test_quality-limit1",
+      "args": {
+        "mode": "test_quality",
+        "limit": 1
+      },
+      "isError": false,
+      "bytes": 6647,
+      "summary": {
+        "filesWithContent": 3,
+        "filesUnknown": 0,
+        "unsupportedDimensionCount": 10
+      }
+    },
+    {
+      "id": "alias:symbol",
+      "args": {
+        "mode": "callers",
+        "symbol": "hub"
+      },
+      "isError": false,
+      "bytes": 30813,
+      "found": true,
+      "summary": {
+        "totalCallers": 95,
+        "totalCallees": 0,
+        "maxDepthReached": 1,
+        "maxDepth": 3,
+        "timeBudgetMs": 2000,
+        "timeBudgetExhausted": false,
+        "noiseFiltered": {
+          "callers": 0,
+          "callees": 0
+        },
+        "unattributed": {
+          "callers": 4,
+          "callees": 0
+        },
+        "crossLanguageExcluded": {
+          "callers": 0,
+          "callees": 0
+        },
+        "crossLanguageEdges": 0,
+        "truncated": false,
+        "truncationReasons": [],
+        "filterNarrowed": false,
+        "filterReason": null,
+        "edgeLimit": 200,
+        "maxEdges": 1000,
+        "totalEdgeLimitReached": false,
+        "cappedQueries": 0,
+        "callersIfUncapped": null,
+        "calleesIfUncapped": null,
+        "totalsAreLowerBounds": false,
+        "exactCallers": 63,
+        "cascadedCallers": 0,
+        "exactCallees": 0,
+        "cascadedCallees": 0,
+        "deeperCallers": 32,
+        "deeperCallees": 0,
+        "callerBudget": 50,
+        "calleeBudget": 50,
+        "callerBudgetExhausted": false,
+        "calleeBudgetExhausted": false,
+        "edgesByType": {
+          "calls": 32,
+          "imports": 31,
+          "exports": 31,
+          "contains": 1
+        },
+        "relationshipTypesUsed": [
+          "calls",
+          "extends",
+          "implements",
+          "uses",
+          "instantiates",
+          "overrides",
+          "contains",
+          "references",
+          "imports",
+          "exports",
+          "decorates",
+          "renders",
+          "mixes_in",
+          "part_of"
+        ],
+        "edgeKindPriority": [
+          "calls",
+          "instantiates",
+          "extends",
+          "implements",
+          "mixes_in",
+          "renders",
+          "overrides",
+          "decorates",
+          "uses",
+          "references",
+          "imports",
+          "exports",
+          "contains",
+          "part_of"
+        ],
+        "edgesInBothDirections": 0,
+        "dedupedAtToolLayer": {
+          "cascadeRepeatsCollapsed": 1,
+          "spellingVariantsCollapsed": 0
+        },
+        "returnedCallers": 25,
+        "returnedCallees": 0,
+        "pageEdgeLimit": 25,
+        "pageTruncated": true
+      }
+    }
+  ]
+}

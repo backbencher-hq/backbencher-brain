@@ -1,0 +1,48 @@
+{
+  "fixtureId": "r/F18-direction-and-s7",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS TWO MISLABELS the lane oracle found, and RECORDS a shared-machinery loss as a checked fact rather than a hole. (1) `overrides` ran BASE -> member, so the edge asserted that the class being overridden is the thing doing the overriding. The direction is not this lane's preference: real-kotlin-analyzer.ts:537 emits `${ownerName}.${s.name}` -> `${parent}.${s.name}`, real-java-analyzer.ts:1866 emits the overriding task's FQN -> the overridden FQN, and script/m60/objc-line-truth.ts:77 says \"an override's line is the overriding declaration\". Three classes declare `render` so the target alone cannot disambiguate, and the chain GrandChild2 -> Child2 -> Base2 pins that the edge names the IMMEDIATE base's member, not the root's: the metadata carries `overridingMember` and `overriddenMember` qualified because a bare `render` target resolves to four published symbols in this file. (2) `@export` on an S7 class binding pushed the DECLARED class name, so `class_logical <- new_base_class(\"logical\")` produced `exports global -> logical` and no `exports global -> class_logical` -- while the symbol layer, eleven lines above in the same handler, published BOTH names and linked them with an `s7_class_binding` edge, so the graph asserted both that `logical` was not the export and that it was. S7's own roxygen-generated NAMESPACE settles it: `export(class_logical)` at S7/NAMESPACE:66, 25 `export(class_*)` lines, and `export(logical)`/`export(double)`/`export(integer)` appear ZERO times. (3) `` `S7_data<-` `` is a real R name -- R binds it, a package exports it, and roxygen2 quotes it in NAMESPACE exactly because it is not a bare identifier (`export(\"S7_data<-\")` at S7/NAMESPACE:35). The analyzer emits its `contains` and `exports` edges and production `parseFile` deletes both, because src/ast/pool-worker.ts:594 blocks a target leaf matching /[{}`<>\\n\\r\\t]/. That filter is shared machinery and is NOT edited here, so the loss is pinned in `knownProductionLoss`, which asserts the edge is in `analyze()`, is NOT in `parseFile()`, and names the rule. Corpus cost of the same rule, measured over 2,058 files: 299 relationships and 17 symbols deleted, of which `[<-` 19, `[[<-` 16, `$<-` 12, `diag<-` 6, `names<-` 6 -- see validation/m14/fixtures/r/prod-filter-delta.ts.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "Base2", "kind": "class" },
+    { "name": "Child2", "kind": "class" },
+    { "name": "GrandChild2", "kind": "class" },
+    { "name": "Other2", "kind": "class" },
+    { "name": "render", "kind": "method", "ownerName": "Child2" },
+    { "name": "render", "kind": "method", "ownerName": "GrandChild2" },
+    { "name": "logical", "kind": "class" },
+    { "name": "class_logical", "kind": "variable" },
+    { "name": "S7_data<-", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Child2", "target": "Base2", "confidenceMin": 1.0 },
+    { "type": "extends", "from": "GrandChild2", "target": "Child2", "confidenceMin": 1.0 },
+    { "type": "overrides", "from": "Child2", "target": "render", "confidenceMin": 0.95 },
+    { "type": "overrides", "from": "GrandChild2", "target": "render", "confidenceMin": 0.95 },
+    { "type": "overrides", "from": "Child2", "target": "render", "confidenceMin": 0.95,
+      "meta.overridingMember": "Child2$render", "meta.overriddenMember": "Base2$render", "meta.overriddenClass": "Base2" },
+    { "type": "overrides", "from": "GrandChild2", "target": "render", "confidenceMin": 0.95,
+      "meta.overridingMember": "GrandChild2$render", "meta.overriddenMember": "Child2$render", "meta.overriddenClass": "Child2" },
+    { "type": "exports", "from": "global", "target": "class_logical", "confidenceMin": 1.0 },
+    { "type": "exports", "from": "global", "target": "class_double", "confidenceMin": 1.0 },
+    { "type": "references", "from": "class_logical", "target": "logical", "confidenceMin": 1.0 }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Base2", "target": "render" },
+    { "type": "overrides", "from": "GrandChild2", "target": "Base2" },
+    { "type": "overrides", "from": "Other2", "target": "render" },
+    { "type": "exports", "from": "global", "target": "logical" },
+    { "type": "exports", "from": "global", "target": "double" }
+  ],
+  "knownProductionLoss": [
+    {
+      "relationship": { "type": "exports", "from": "global", "target": "S7_data<-" },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:594 -- filterNoiseRelationships blocks a target leaf matching /[{}`<>\\n\\r\\t]/. `<-` is not punctuation in an R name; it is half of a replacement function's name. Workstream section 8: reported, not edited."
+    },
+    {
+      "relationship": { "type": "contains", "from": "global", "target": "S7_data<-" },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:594 -- same rule, same target. Measured over 2,058 corpus files: 158 `contains` edges deleted, 19 of them to `[<-`, 16 to `[[<-`, 12 to `$<-`."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "javascript/receiver-binding-scope",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Typed sibling bindings keep their own receiver facts. An untyped local or parameter hides the module binding.",
+  "expectRelationships": [
+    { "type": "calls", "from": "moduleReceiver", "target": "run", "meta.owner": "Outer" },
+    { "type": "calls", "from": "knownLocal", "target": "run", "meta.owner": "Other" },
+    { "type": "calls", "from": "unknownParameter", "target": "run", "meta.owner": null },
+    { "type": "calls", "from": "unknownLocal", "target": "run", "meta.owner": null }
+  ]
+}

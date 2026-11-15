@@ -1,0 +1,6 @@
+{
+  "name": "fixture-package",
+  "exports": { ".": "./index.js", "./sub": "./src/sub.js" },
+  "main": "index.js",
+  "scripts": { "build": "npm run clean && tsc", "clean": "rm -rf dist" }
+}

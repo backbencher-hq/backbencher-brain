@@ -1,0 +1,13 @@
+[
+  { "class": "Constraint", "class_type": "type", "members": [{ "id": 100, "name": "type", "type": "ConstraintType" }] },
+  { "class": "NotNullConstraint", "base": "Constraint", "constructor": ["index"] },
+  { "class": "CheckConstraint", "base": "Constraint", "constructor": ["expression"] },
+  { "class": "ForeignKeyConstraint", "base": "Constraint", "enum": "FOREIGN_KEY" },
+  {
+    "members": [
+      { "id": 200, "name": "info", "type": "AlterInfo*", "base": "ParseInfo" },
+      { "id": 201, "name": "table", "type": "TableRef", "base": "ParseInfo" }
+    ]
+  },
+  { "class": "Dangling", "base": "ParseInfo" }
+]

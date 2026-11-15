@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <!-- The parser CANNOT read `<<<>>`. tree-sitter wraps it in an ERROR node, and
+       the analyzer's obligation is threefold and all three are pinned below:
+       report it, bypass it, and keep publishing everything around it. -->
+  <div id="around"><<<>></div>
+  <div id="after">still here</div>
+  <a id="unterminated" href="/orders">
+</body>

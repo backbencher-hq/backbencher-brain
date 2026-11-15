@@ -1,0 +1,805 @@
+// src/lsp/hover.ts — M24.L2: hover over the persisted index.
+//
+// The only hover implementation for bb_lsp. Reads brain_symbol +
+// brain_relationship and produces an LSP hover whose content states what the
+// data is, how much to trust it, and whether it is stale — the differentiator
+// claim: "the only hover that states how much to trust itself" (issue #491).
+//
+// Complement stance (IDE Honesty Contract §7): the hover is labeled as coming
+// from the bb index; it never pretends to be compiler-grade semantics.
+//
+// Declared guarantees (gated by script/m24/verify-hover.ts):
+//   G1 content:     hover at an indexed symbol returns name, signature,
+//                   usage count, and evidence tier(s) of its edges
+//   G2 consistency: usage count agrees with a direct count of
+//                   brain_relationship rows for the same symbol
+//   G3 honesty:     symbol not in index → declared "not indexed" hover,
+//                   never a fabricated entry
+//   G4 positions:   position resolution via the P1 component ONLY
+//                   (no inline conversion — contract §5). Lane 6: this claim
+//                   was FALSE at `findSymbolAtPosition` until this wave — the
+//                   line was converted inline in the SQL argument list
+//                   (`position.line + 1`) two lines under this very comment.
+//                   A gate that reads a comment is not a gate; the claim is now
+//                   asserted at the SOURCE level (a planted `line + 1` must
+//                   fail) by script/m24/verify-hover.ts.
+//   G5 freshness:   stale file (hash differs from disk) → stale marker on
+//                   the hover, per the freshness gate (P2)
+//   G6 latency:     p95 warm hover under the 50 ms budget on the fixture
+//                   workspace (contract §3) — measured, machine-recorded, as a
+//                   p95 over the full sample set. The pre-lane check was a p95
+//                   over 100 samples with the fixture double, which is a real
+//                   p95; the M42 sibling gate's MEAN over 40 is not, and it is
+//                   named as such in that gate's own limitations.
+//   G7 absence:     a non-launch language returns a declared-absent envelope
+//                   naming the language AND the launch set, with no data —
+//                   asserted structurally at the component layer (not by a
+//                   substring), because a substring check cannot tell a
+//                   declared absence from prose that happens to say "launch".
+//   G8 resilience:  ONE unresolvable stored row must not fail the whole hover
+//                   (lane 6: measured 71/4000 symbols on a real index throwing
+//                   PositionError out of the collector, which the server turns
+//                   into a rejected LSP request — the editor then silently
+//                   falls back to its native hover and the user sees NOTHING).
+//
+// Declared limitations:
+//   - index-sourced only; no compiler-backed types (complement stance)
+//   - evidence tiers describe relationship data quality, not symbol truth
+//
+// Run: imported by src/lsp/server.ts (registered as textDocument/hover in L2)
+
+import { readFileSync } from "node:fs"
+import type { CoreDatabase } from "../brain/database"
+import { checkFileFreshness } from "../brain/freshness"
+import {
+  createPositionMapper,
+  PositionError,
+  resolveRowByteColumns,
+  type IndexPosition,
+  type LspPosition,
+  type PositionConverter,
+} from "./positions"
+import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
+import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
+import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
+import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
+import { parseForSafety } from "../ast/safety-primitives"
+import { docCommentFor } from "./doc_comment"
+import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
+import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
+
+/** The launch set, its membership test, and the path→language map live in
+ *  the single-owner module (M29.R2: one owner; the set was duplicated here
+ *  and in server.ts — a drift hazard the wave found). */
+import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_languages"
+export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
+
+/** Evidence tiers for relationship data, per the evidence class vocabulary.
+ *  M55.T5: the hover tier is derived by the SINGLE owner
+ *  (src/lsp/evidence_tier.ts) — the same rule the W4 legend and the hub row
+ *  chips use. Before T5 this file carried its own copy of the rule whose
+ *  legacy coarse map answered "indexed" for `imports`/`references`/`uses`
+ *  while the same stored row rendered `import_based`/`usage_contextual` in
+ *  the hub and the legend declared a five-tier vocabulary with no "indexed"
+ *  in it (found live by the T5 step-zero wire probe; see the owner's header).
+ *  Rationale for the structural set and the 0.7 floor is the F7 fixture
+ *  script/m29/r5-tier-fixture.ts: the pre-R5 map had 10 entries and dumped
+ *  parser-deterministic facts (contains, instantiates, exports) into
+ *  "inferred" — measured 42.5% of giant-corpus relationships downgraded.
+ *  The vocabulary/derivation are drift-gated by script/m55/verify-tiers.ts
+ *  and script/m29/verify-precision-improvements.ts (F6, retargeted to the
+ *  owner when the rule moved). */
+export type { EvidenceTier } from "./evidence_tier"
+
+export interface SymbolHoverData {
+  name: string
+  qualifiedName: string | null
+  symbolType: string
+  signature: string
+  /** M55.T4 (§14 Truth Rule 4): the STORED structured parameters, typed and
+   *  unrendered — the wire keeps the machine data while the rendered signature
+   *  is human text (a client that wants the structured form reads this, never
+   *  the markdown). null when the index stores no structured list (declared
+   *  absence); an empty array is a callable with zero parameters. */
+  parameters: Array<{ name: string; type: string | null; isOptional: boolean; defaultValue: string | null; isRest: boolean }> | null
+  usageCount: number
+  /**
+   * How many files this project's index covers — the denominator for
+   * `usageCount`. Null when it could not be measured; the renderer then says the
+   * scope is unknown rather than implying one it does not know.
+   */
+  indexedFileCount: number | null
+  evidenceTiers: EvidenceTier[]
+  /** M26.W3: pre-rendered cross-language section — empty string when the
+   *  index stores no cross-language rows for this symbol (the hover then
+   *  renders NO cross-language text at all: absence declared in docs). */
+  crossLanguageSection: string
+  /** M28.A2: pre-rendered annotation section — empty string when the index
+   *  stores no annotations for this symbol (same declared-absence contract
+   *  as the cross-language section above). Author-labeled by the
+   *  annotation_ui owner; an agent note never reads as index fact (D-6). */
+  annotationSection: string
+  stale: boolean
+  freshnessStatus: "fresh" | "stale" | "missing"
+  filePath: string
+  lineStart: number | null
+  lineEnd: number | null
+  /** M42.H2: LSP location of the declaration (definition link); null when
+   *  the range is not resolvable — the footnote then stays plain text. */
+  definition: { line: number; character: number } | null
+  /** M42.H2: pre-rendered connected-summary line — empty string when no
+   *  connection facts exist (declared absence, never a placeholder). */
+  connectedSection: string
+  /** M42.H2: pre-rendered usages section — empty string when no usage
+   *  sites exist (declared absence). */
+  usagesSection: string
+  /** Owner-decided ("show all the relationships, not just contains"): the
+   *  DECLARATION CONTAINMENT section — the rows `relations.ts` deliberately
+   *  excludes from the usage vocabulary (`contains`, `exports`), rendered in
+   *  their own labelled block. Empty string when the symbol neither declares
+   *  nor is declared by anything (declared absence). It is a separate section
+   *  rather than a loosened usage list precisely so the usage law stays intact. */
+  containmentSection: string
+  /** M42.H4: pre-rendered hover-actions row (open in graph / impact /
+   *  call hierarchy) — empty string when the symbol identity (declaration
+   *  location) is not resolvable: no actions without a clickable target
+   *  (§12.1 nothing unclickable). */
+  actionsSection: string
+  /** M55.T6: the type's PROVENANCE, decided by the one owner
+   *  (src/lsp/type_inference_surface.ts). Exactly one of `stored` /
+   *  `inferred` / `unknown` — the pre-T6 hover showed `brain_symbol.return_type`
+   *  with no statement of whether the analyzer read it from an explicit
+   *  annotation or inferred it, so a developer could not tell a declared type
+   *  from a guess. `confidence` is non-null iff `inferred`; `unknown` is the
+   *  declared marker, never a guess (§15.4). */
+  typeLine: TypeLine
+  /** M24.L9: the declaration's own doc comment, or "" when none is adjacent. */
+  docComment: string
+}
+
+export interface HoverRequest {
+  /** absolute file path */
+  filePath: string
+  /** LSP position (0-based line, 0-based UTF-16 character) */
+  position: LspPosition
+}
+
+export interface HoverResult {
+  /** null when nothing is hoverable — declared absence, never fabricated */
+  contents: {
+    value: string
+    kind: "markdown"
+  } | null
+  range: { start: LspPosition; end: LspPosition } | null
+  data: SymbolHoverData | null
+  /** machine-readable honesty block, always present */
+  provenance: {
+    source: "bb_index"
+    evidenceClass: EvidenceTier | "stale"
+    engine: string
+    limitations: string[]
+    stale: boolean
+  }
+}
+
+interface SymbolRow {
+  id: string
+  name: string
+  qualified_name: string | null
+  symbol_type: string
+  line_start: number | null
+  line_end: number | null
+  byte_start: number | null
+  byte_end: number | null
+  return_type: string | null
+  parameters: string | null
+  visibility: string | null
+  file_id: string
+}
+
+interface FileRow {
+  id: string
+  path: string
+  /** The index's own spelling of the file. Annotations are written against
+   *  this (or the absolute `path`), so the hover matches both. */
+  relative_path: string
+  language: string | null
+}
+
+// M55.T4 (issue #772): the signature renderer moved to its ONE owner,
+// src/lsp/signature.ts. The pre-M55 version interpolated the stored
+// `parameters` column verbatim, so the card rendered the analyzer's raw JSON
+// (`method greetAll([{"name":"names","type":"string[]",...}])`). Every
+// surface that renders a signature now calls the owner with the symbol's
+// language; nothing in the LSP lane interpolates `parameters` directly
+// (asserted at source level by script/m55/verify-signatures.ts).
+export { renderSignature, renderParameterList, UNRESOLVED_TYPE } from "./signature"
+
+/**
+ * Resolve the LSP position to an index position via the P1 component and
+ * find the symbol whose indexed range contains it. Returns null when the
+ * position is outside every indexed symbol (honest absence).
+ */
+const SYMBOL_ROW_SELECT = `s.id, s.name, s.qualified_name, s.symbol_type, s.line_start, s.line_end,
+            s.byte_start, s.byte_end, s.return_type, s.parameters, s.visibility, s.file_id,
+            f.id AS f_id, f.path, f.relative_path, f.language`
+
+export function findSymbolAtPosition(
+  raw: CoreDatabase,
+  filePath: string,
+  position: LspPosition,
+  mapper?: PositionConverter,
+): { symbol: SymbolRow; file: FileRow } | null {
+  // Single index query: symbols in this file whose line range could contain
+  // the requested line.
+  //
+  // Lane 6 (#the CC1 rule, §5.1): the line conversion goes through the P1
+  // component. It used to be `position.line + 1` written inline in the SQL
+  // argument list while the comment two lines above claimed "Position
+  // conversion happens ONLY via P1" — a claim the same function contradicted,
+  // which is how an off-by-one survives a gate that reads the comment. The
+  // arithmetic happened to be right for a 0-based line and was wrong for
+  // everything P1 owns: a line past the end of the file resolved to an index
+  // line that does not exist, and the mapper's declared PositionError (the
+  // contract's "never guess, fail" rule) could not be raised at all.
+  //
+  // `mapper` is the caller's already-built PositionMapper for this file (the
+  // hover reads the file once for the occurrence path and hands it over). When
+  // absent, one is built from the file's own text — the conversion is still
+  // P1's, never inline arithmetic.
+  let line1: number
+  if (mapper !== undefined) {
+    try {
+      line1 = mapper.lspToIndex(position).line
+    } catch (error) {
+      // A position past the last line of the file is IMPOSSIBLE, not
+      // not-indexed: declared absence (§13.10), and the distinction is the
+      // whole reason the conversion has an owner.
+      if (error instanceof PositionError) return null
+      throw error
+    }
+  } else {
+    let content: string
+    try {
+      content = readFileSync(filePath, "utf8")
+    } catch {
+      return null
+    }
+    try {
+      line1 = createPositionMapper(content).lspToIndex(position).line
+    } catch (error) {
+      if (error instanceof PositionError) return null
+      throw error
+    }
+  }
+
+  const rows = raw
+    .prepare(
+      `SELECT ${SYMBOL_ROW_SELECT}
+       FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+       WHERE f.path = ? AND s.line_start IS NOT NULL AND s.line_end IS NOT NULL
+         AND s.line_start <= ? AND s.line_end >= ?`,
+    )
+    .all(filePath, line1, line1) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
+
+  if (rows.length === 0) return null
+
+  // Prefer the innermost symbol (smallest range) containing the position.
+  let best: { symbol: SymbolRow; file: FileRow } | null = null
+  let bestWidth = Number.MAX_SAFE_INTEGER
+  for (const row of rows) {
+    const width = (row.line_end ?? 0) - (row.line_start ?? 0)
+    if (width < bestWidth) {
+      bestWidth = width
+      best = {
+        symbol: row,
+        file: { id: row.f_id, path: row.path, relative_path: (row as { relative_path?: string }).relative_path ?? "", language: row.language },
+      }
+    }
+  }
+  return best
+}
+
+/** Occurrence-first resolution (owner test, 2026-09-05): when the cursor sits
+ *  ON an identifier (a call site `g.greet()`, a member read `this.items`, a
+ *  cross-file reference), resolve that identifier to ITS declaration — the
+ *  enclosing-symbol fallback alone made hovering a call inside a function
+ *  body show the FUNCTION (main) instead of the callee. Resolution order
+ *  mirrors document highlight's proven rule: unique same-file declaration,
+ *  else unique workspace declaration, else null (declared ambiguity — the
+ *  caller then falls back to the enclosing symbol). Parses only the file at
+ *  the cursor via the shared safety machinery; comments/strings excluded. */
+/**
+ * How many files this project's index covers, or null when it could not be
+ * measured.
+ *
+ * Null is NOT rendered as 0. A project whose file count cannot be read is not a
+ * project with no files; "in 0 indexed files" would be a second invented zero on
+ * the very line that exists to stop invented zeros.
+ */
+function indexedFileCountFor(raw: any, fileId: string | null | undefined): number | null {
+  if (fileId === null || fileId === undefined || fileId === "") return null
+  try {
+    // The SAME project-from-file derivation the annotation query above uses
+    // (`project_id = (SELECT project_id FROM brain_file WHERE id = ?)`), so the
+    // scope is measured over exactly the project this symbol belongs to and the
+    // two cannot drift. An earlier revision read `file.project_id`, which the
+    // local FileRow does not carry — so it silently measured nothing and the
+    // hover rendered "indexed scope unknown" on every symbol, which is honest and
+    // useless.
+    const row = raw
+      .prepare("SELECT count(*) AS c FROM brain_file WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?)")
+      .get(fileId) as { c?: number } | undefined
+    const n = Number(row?.c)
+    return Number.isFinite(n) ? n : null
+  } catch {
+    return null
+  }
+}
+
+export async function resolveOccurrenceSymbol(
+  raw: CoreDatabase,
+  filePath: string,
+  position: LspPosition,
+): Promise<{ symbol: SymbolRow; file: FileRow; occurrence: { startLine: number; startColumn: number; endColumn: number }; mapper: PositionConverter; docComment: string } | null> {
+  let content: string
+  try {
+    content = readFileSync(filePath, "utf8")
+  } catch {
+    return null
+  }
+  const mapper = createPositionMapper(content)
+  let indexPos
+  try {
+    indexPos = mapper.lspToIndex({ line: position.line, character: position.character })
+  } catch (e) {
+    if (e instanceof PositionError) return null
+    throw e
+  }
+  let safety: Awaited<ReturnType<typeof parseForSafety>>
+  try {
+    safety = await parseForSafety(filePath, content)
+  } catch {
+    // Unparseable/unsupported file: honest degradation to the enclosing-
+    // symbol model — hover must never reject over a parse failure.
+    return null
+  }
+  const cursorOcc = safety.occurrences.find(
+    (o) => o.startLine === indexPos.line && o.startColumn <= indexPos.column && indexPos.column < o.endColumn,
+  )
+  if (!cursorOcc) return null
+  const sameFile = raw
+    .prepare(`SELECT ${SYMBOL_ROW_SELECT} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE f.path = ? AND s.name = ?`)
+    .all(filePath, cursorOcc.text) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
+  let rows = sameFile
+  if (sameFile.length === 0) {
+    const workspace = raw
+      .prepare(`SELECT ${SYMBOL_ROW_SELECT} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.name = ?`)
+      .all(cursorOcc.text) as Array<SymbolRow & { f_id: string; path: string; language: string | null }>
+    rows = workspace
+  }
+  if (rows.length !== 1) return null // declared ambiguity or unknown name → enclosing fallback
+  const row = rows[0]!
+  return {
+    symbol: row,
+    file: { id: row.f_id, path: row.path, relative_path: (row as { relative_path?: string }).relative_path ?? "", language: row.language },
+    occurrence: { startLine: cursorOcc.startLine, startColumn: cursorOcc.startColumn, endColumn: cursorOcc.endColumn },
+    // Lane 6: the mapper for THIS file's text, handed back so the containing-
+    // symbol fallback can convert its line through the same owner without a
+    // second read. Two P1 mappers over the same bytes would be two answers to
+    // the same question, which is the drift §5.1 exists to prevent.
+    mapper,
+    // M24.L9: the declaration's own documentation, read from the comment sites
+    // this parse already produced. Attached to the DECLARATION, not to the
+    // cursor: a doc describes the symbol, and the cursor is often a use of it.
+    docComment: docCommentFor(safety.commentSites, row.line_start),
+  }
+}
+
+/** Count usages of a symbol (M55.T3: the vocabulary's usage-site count).
+ *
+ * History: this counted EVERY row touching the symbol — both directions,
+ * including the owning declaration and callees, undeduplicated by location.
+ * On the demo index that made `greet` read "6 usages" while its list rendered
+ * 6 rows (one of them its class) and the graph reported 3 callers; `greetAll`
+ * read a usage it did not have while its caller set was empty. The count now
+ * comes from src/lsp/relations.ts — the same rule, in SQL (independent of the
+ * row materialization the hover list uses; the M55.T3 gate asserts the two
+ * agree on a real index). */
+export function countUsages(raw: CoreDatabase, symbolId: string): number {
+  return countUsageSites(raw, symbolId)
+}
+
+/** Collect the symbol's evidence tiers across its stored relationships.
+ *
+ *  M55.T5: the derivation AND the ordering are the owner's
+ *  (src/lsp/evidence_tier.ts) — this function only fetches the rows and
+ *  hands them over. The pre-T5 version derived locally and returned
+ *  `[...tiers].sort()`, an ALPHABETICAL order that made `indexed` the
+ *  reported primary of any symbol that also carried structural evidence.
+ *
+ *  M29.R3 scale fix kept: UNION rewrite (see countUsages) — same tier set,
+ *  two indexed probes instead of one full scan. */
+export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceTier[] {
+  const rows = raw
+    .prepare(
+      "SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE source_symbol_id = ?",
+    )
+    .all(symbolId, symbolId) as StoredTierRow[]
+  return orderTiers(rows.map(classifyStoredRow))
+}
+
+/** Format the hover markdown, including the honesty block. */
+export function formatHoverMarkdown(data: SymbolHoverData): string {
+  const lines: string[] = []
+  lines.push(`\`\`\`\n${data.signature}\n\`\`\``)
+  // M55.T6: the type line, rendered by its single owner. Placed DIRECTLY UNDER
+  // the signature so the two cannot be read as unrelated facts, and it states
+  // its own provenance: `inferred` carries the engine's confidence, `stored`
+  // declares that the index records no origin, `unknown` is the declared
+  // marker with the reason. §15.4 human text is human — this is a sentence, not
+  // a serialization.
+  // M24.L9: the author's own words about the symbol, rendered directly UNDER the
+  // signature — the same position IntelliJ and rustdoc put it, so the prose and
+  // the declaration read as one fact about one thing rather than as two
+  // disconnected blocks.
+  //
+  // Rendered only when a comment is ADJACENT to the declaration (doc_comment.ts
+  // decides). An absent doc contributes NO line: no empty section, no
+  // placeholder. "This symbol has no documentation" is itself information, and a
+  // blank heading would render it as an omission to be filled in later rather
+  // than as the fact it is.
+  if (data.docComment.length > 0) {
+    lines.push(data.docComment)
+    lines.push("")
+  }
+  lines.push(renderTypeLine(data.typeLine))
+  // M55.T3: the count line declares what was counted, so a reader (and the
+  // references surface, which legitimately answers a wider question when the
+  // client asks for the declaration too) can never read two numbers as a
+  // disagreement. Zero is stated, never omitted: a symbol with no stored
+  // references reads "0 usages", not silence (§14 Truth Rule 1).
+  lines.push(
+    `**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"}${
+      data.indexedFileCount === null
+        ? " (indexed scope unknown — this count is bounded by something not measured)"
+        : ` in ${data.indexedFileCount} indexed file${data.indexedFileCount === 1 ? "" : "s"}`
+    } _(${USAGE_SITE_FILTER_LABEL})_`,
+  )
+  if (data.evidenceTiers.length > 0) {
+    lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)
+  } else {
+    lines.push("evidence: none (no indexed relationships)")
+  }
+  // M42.H2: the rich sections. Empty strings render nothing — declared
+  // absence (no connection facts / no usage sites) is never fabricated.
+  if (data.connectedSection && data.connectedSection.length > 0) {
+    lines.push(data.connectedSection)
+  }
+  if (data.usagesSection && data.usagesSection.length > 0) {
+    lines.push(data.usagesSection)
+  }
+  // The declaration-containment block, AFTER the usages section and in its own
+  // labelled header. Order matters for the negative test: a reader (and the
+  // gate) meets the usages list first, so a `contains` row can only ever be read
+  // as the containment it is.
+  if (data.containmentSection && data.containmentSection.length > 0) {
+    lines.push(data.containmentSection)
+  }
+  // M42.H4: the actions row — the hover is the entry point to the deep
+  // surfaces (graph, impact, call hierarchy). Empty row renders nothing
+  // (declared absence: no symbol identity, no actions to offer).
+  if (data.actionsSection && data.actionsSection.length > 0) {
+    lines.push(data.actionsSection)
+  }
+  // M26.W3: cross-language facts ONLY from stored rows (is_cross_language = 1).
+  // An empty section renders nothing — a pair with no stored rows states
+  // nothing cross-language in the UI; absence is declared in docs, not faked
+  // (issue #511; mutation-gated: a fabricated fact fails the W3 suite).
+  if (data.crossLanguageSection && data.crossLanguageSection.length > 0) {
+    lines.push(data.crossLanguageSection)
+  }
+  // M28.A2: agent/human annotations, author-labeled. Empty section renders
+  // nothing — declared absence, never a placeholder (same law as W3 above).
+  if (data.annotationSection && data.annotationSection.length > 0) {
+    lines.push(data.annotationSection)
+  }
+  if (data.stale) {
+    lines.push(`⚠️ **stale** — file changed since indexing (${data.freshnessStatus})`)
+  }
+  // M42.H2: the source footnote is the definition link — its target is the
+  // hovered symbol's own indexed location (nothing unclickable, §12.1).
+  if (data.definition !== null) {
+    lines.push(definitionLink(data.filePath, data.definition.line, data.definition.character))
+  } else {
+    lines.push(`_source: bb index (${data.filePath}:${data.lineStart ?? "?"})_`)
+  }
+  return lines.join("\n\n")
+}
+
+export interface HoverDeps {
+  /** injectable clock for latency measurement (tests) */
+  now?: () => number
+}
+
+/**
+ * The hover handler. Reads through the persisted index; every response
+ * carries the honesty block. Never fabricates: no symbol at the position →
+ * contents null with provenance explaining why.
+ */
+export async function hover(
+  raw: CoreDatabase,
+  request: HoverRequest,
+  deps: HoverDeps = {},
+): Promise<HoverResult> {
+  const startedAt = (deps.now ?? Date.now)()
+  const language = languageForPath(request.filePath)
+
+  // Declared-absent languages: not an error, an honest limitation.
+  if (!isLaunchLanguage(language)) {
+    return {
+      contents: null,
+      range: null,
+      data: null,
+      provenance: {
+        source: "bb_index",
+        evidenceClass: "unknown",
+        engine: "bb_lsp hover@m24.l2",
+        limitations: [
+          language === null
+            ? "file type not in the launch language set"
+            : `${language} is not a launch language (launch: ${LAUNCH_LANGUAGES.join(", ")})`,
+        ],
+        stale: false,
+      },
+    }
+  }
+
+  // Occurrence-first (call sites / member reads resolve to the referenced
+  // declaration); the containing-symbol model stays as the fallback for
+  // positions that are not on a resolvable identifier.
+  //
+  // ONE file read feeds both resolvers (lane 6): `resolveOccurrenceSymbol`
+  // already reads the file and builds a P1 mapper for the file at the cursor,
+  // and `findSymbolAtPosition` now takes that mapper instead of re-reading and
+  // re-deriving the line conversion. Before this the fallback path did its own
+  // read AND its own inline `line + 1`.
+  const occurrence = await resolveOccurrenceSymbol(raw, request.filePath, request.position)
+  const containing = findSymbolAtPosition(raw, request.filePath, request.position, occurrence?.mapper)
+  const found = occurrence ?? containing
+  if (!found) {
+    return {
+      contents: null,
+      range: null,
+      data: null,
+      provenance: {
+        source: "bb_index",
+        evidenceClass: "unknown",
+        engine: "bb_lsp hover@m24.l2",
+        limitations: ["no indexed symbol at this position (not indexed)"],
+        stale: false,
+      },
+    }
+  }
+
+  const { symbol, file } = found
+  const freshness = checkFileFreshness(raw, file.id)
+  const freshnessStatus = freshness?.status ?? "missing"
+  const stale = freshnessStatus !== "fresh"
+
+  const tiers = evidenceTiersFor(raw, symbol.id)
+  // M42.H2: usage sites = the L3 references row set, resolved through the
+  // navigation location owner. Used for the connected summary, the top-3
+  // usage links AND the count (one collection, three renderings).
+  const sites = richSitesForSymbol(raw, symbol.id)
+  // M55.T3 (§14 Truth Rule 1): the count IS this array's length — the number
+  // of rows the usages list can show (the `+N more` rest included, since the
+  // list is capped at MAX_USAGE_LINKS and reports the remainder). The
+  // vocabulary filter (declaration/callee exclusion) lives in relations.ts;
+  // it is applied once here, and the section renders the same filtered array.
+  const usageSiteRows = usageSitesOf(sites)
+  const usageCount = usageSiteRows.length
+  // M24.L8: THE SCOPE THE COUNT WAS MEASURED OVER. A usage count is only
+  // meaningful beside what was searched, and a zero is the case that misleads:
+  // the owner hovered `formatAddress` and read "0 usages", which is TRUE of the
+  // index (201 files, all of `src/`) and FALSE of the repository, where the
+  // function is called 5 times in `script/`. Nothing was wrong with the number;
+  // the sentence made a local measurement read as a global claim.
+  //
+  // The count stays — §14 Truth Rule 1 requires the zero to be stated rather
+  // than omitted, and that is right. What was missing is the bound. The
+  // qualifier is shown for EVERY count, not only for zero: a qualifier that
+  // appeared only on the zero would imply the non-zero counts were global, which
+  // is the same mistake in the other direction.
+  const indexedFileCount = indexedFileCountFor(raw, file.id)
+  // M26.W3: per-pair cross-language facts from stored rows only.
+  const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
+  // M28.A2: annotation rows for this symbol, rendered by the single owner.
+  // Project scoped via the symbol's file row (hover has no projectId param).
+  //
+  // Scoped to THIS FILE's copy of the name, plus name-level notes. It used to
+  // select on symbol_name alone, so a note an agent attached to one file's
+  // `force` was rendered under every other file's `force` too — the index holds
+  // one symbol per (file, name, line), so a name measured on a real corpus in 8
+  // files rendered one file's opinion as if it described the file under the
+  // cursor. Name-level notes (written with no path) still show, because they
+  // are about the name and apply wherever it appears.
+  //
+  // Both path spellings are matched: the index stores `relative_path`, and an
+  // agent annotating with the absolute path it was just handed would otherwise
+  // have its note silently invisible here.
+  //
+  // The name predicate matches BOTH name forms: the symbol's own name AND its
+  // qualified name. It used to match only `name`, so a note an agent attached to
+  // a qualified name — what it reads in source, and what the index publishes for
+  // 27% of symbols — matched nothing. Measured on a real corpus, 1046 of 1046
+  // qualified-name notes were stored, readable, reported as surfacing, and never
+  // displayed. This is the same predicate annotationReachability() measures, so
+  // the write door's surfacing claim and this read cannot drift apart again.
+  const annotationRows = raw.prepare(
+    "SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND (symbol_name = ? OR symbol_name = ?) AND (symbol_path IS NULL OR symbol_path = ? OR symbol_path = ?) ORDER BY time_updated DESC, id",
+  ).all(file.id, symbol.name, symbol.qualified_name, file.relative_path, file.path) as AnnotationRow[]
+  const annotationSection = annotationHoverSection(annotationRows)
+
+  // The definition location (declaration of the hovered symbol) is the hover
+  // response RANGE, resolved through the P1 component below; it is computed
+  // BEFORE the data object so the footnote can carry it as the definition
+  // link (M42.H2 §12.1: the source footnote must navigate).
+  let range: HoverResult["range"] = null
+  if (symbol.line_start !== null && symbol.line_end !== null && symbol.byte_start !== null && symbol.byte_end !== null) {
+    try {
+      const sourceText = readFileSync(file.path, "utf8")
+      const startCol = resolveRowByteColumns(sourceText, symbol.line_start, symbol.byte_start)
+      const endCol = resolveRowByteColumns(sourceText, symbol.line_end, symbol.byte_end)
+      if (startCol === null || endCol === null) {
+        // Impossible coordinates: omit the range, keep the honest content.
+      } else {
+        const mapper = createPositionMapper(sourceText)
+        const indexRange = {
+          start: { line: startCol.line, column: startCol.column } satisfies IndexPosition,
+          end: { line: endCol.line, column: endCol.column } satisfies IndexPosition,
+        }
+        range = mapper.indexRangeToLsp(indexRange)
+      }
+    } catch (error) {
+      if (!(error instanceof PositionError)) throw error
+      // Unreadable file or impossible positions: omit the range honestly,
+      // keep the hover content.
+    }
+  }
+
+  // Response range: when the cursor sat on an identifier that resolved to a
+  // declaration OUTSIDE the containing range (a call site or member read),
+  // highlight the identifier AT THE CURSOR — not the remote declaration.
+  // Falls back to null (no decoration) on any impossible coordinate; the
+  // decl range stays the definition/actions anchor below.
+  // "Jumped" = resolved through an occurrence to a declaration that does NOT
+  // contain the cursor (call site / member read / cross-file reference).
+  const jumped = occurrence !== null && (containing === null || containing.symbol.id !== symbol.id)
+  let responseRange = range
+  if (jumped) {
+    try {
+      const sourceText = readFileSync(request.filePath, "utf8")
+      const startCol = resolveRowByteColumns(sourceText, occurrence.occurrence.startLine, occurrence.occurrence.startColumn)
+      const endCol = resolveRowByteColumns(sourceText, occurrence.occurrence.startLine, occurrence.occurrence.endColumn)
+      if (startCol !== null && endCol !== null) {
+        const cursorMapper = createPositionMapper(sourceText)
+        responseRange = cursorMapper.indexRangeToLsp({
+          start: { line: startCol.line, column: startCol.column } satisfies IndexPosition,
+          end: { line: endCol.line, column: endCol.column } satisfies IndexPosition,
+        })
+      }
+    } catch (error) {
+      if (!(error instanceof PositionError)) throw error
+      responseRange = null
+    }
+  }
+
+  // M55.T6: the type's provenance, decided by the facade. It runs AFTER the
+  // freshness check above so the line can carry the file's staleness (§4.3),
+  // and it never throws out of the hover: a facade failure degrades to the
+  // declared unknown marker, because a hover that rejects over a type is the
+  // M42.H2 defect class all over again (one unresolvable row must not fail the
+  // whole card).
+  let typeLine: TypeLine
+  try {
+    const typeSource = readFileSync(file.path, "utf8")
+    typeLine = (
+      await resolveTypeLine(
+        file.path,
+        typeSource,
+        {
+          name: symbol.name,
+          symbol_type: symbol.symbol_type,
+          return_type: symbol.return_type,
+          line_start: symbol.line_start,
+          line_end: symbol.line_end,
+          language: file.language,
+        },
+        symbol.return_type,
+      )
+    ).line
+    typeLine.stale = stale
+  } catch {
+    typeLine = {
+      provenance: "unknown",
+      text: UNRESOLVED_TYPE,
+      confidence: null,
+      reason: "the type could not be resolved; the hover renders the declared marker",
+      withheld: "parse-failed",
+      withheldText: null,
+      storedProvenanceUnknown: false,
+      stale,
+      witness: null,
+    }
+  }
+
+  const data: SymbolHoverData = {
+    name: symbol.name,
+    qualifiedName: symbol.qualified_name,
+    symbolType: symbol.symbol_type,
+    signature: renderSignature(symbol, file.language),
+    // M55.T4: structured data stays structured (see the field's declaration).
+    parameters: (() => {
+      const parsed = parseParameters(symbol.parameters)
+      if (parsed.shape === "empty") return []
+      if (parsed.shape !== "list") return null
+      return parsed.entries.map((e) => ({
+        name: e.name,
+        type: e.type ?? null,
+        isOptional: e.isOptional === true,
+        defaultValue: e.defaultValue ?? null,
+        isRest: e.isRest === true,
+      }))
+    })(),
+    usageCount,
+    indexedFileCount,
+    evidenceTiers: tiers,
+    // M42.H2: rich sections composed from stored relationship rows.
+    connectedSection: connectedSummarySection(connectedGroups(sites)),
+    usagesSection: usagesSection(usageSiteRows, usageCount, symbol.name, file.path, request.position.line, request.position.character),
+    // The declaration-containment rows come from the SAME collected array the
+    // usage list and the connected summary read (one collection, three
+    // renderings), so a containment count can never disagree with a usage count
+    // about the same rows.
+    containmentSection: containmentSection(sites),
+    // LSP definition location (range.start) when resolvable; null otherwise
+    // (the footnote then renders the plain location — still honest).
+    definition: range === null ? null : { line: range.start.line, character: range.start.character },
+    // M42.H4: the actions row targets the same resolved declaration (the
+    // actions carry the server-resolved symbol identity — issue #652).
+    actionsSection:
+      range === null ? "" : actionsSection(symbol.name, file.path, range.start.line, range.start.character),
+    crossLanguageSection: crossSection,
+    annotationSection,
+    stale,
+    freshnessStatus,
+    filePath: file.path,
+    lineStart: symbol.line_start,
+    lineEnd: symbol.line_end,
+    typeLine,
+    docComment: occurrence?.docComment ?? "",
+  }
+
+  const elapsed = (deps.now ?? Date.now)() - startedAt
+  void elapsed // latency measured by the verifier; kept for symmetry
+
+  return {
+    contents: { value: formatHoverMarkdown(data), kind: "markdown" },
+    range: responseRange,
+    data,
+    provenance: {
+      source: "bb_index",
+      // M55.T5: the primary is the STRONGEST tier the symbol carries, by the
+      // declared rank — a member of `tiers` by construction, so the primary
+      // can never disagree with the tier list it headlines.
+      evidenceClass: stale ? "stale" : primaryTier(tiers),
+      engine: "bb_lsp hover@m24.l2",
+      limitations: [
+        "index-sourced; no compiler-backed types (complement stance)",
+      ],
+      stale,
+    },
+  }
+}

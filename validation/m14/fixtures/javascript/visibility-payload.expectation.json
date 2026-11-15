@@ -1,0 +1,18 @@
+{
+  "fixtureId": "javascript/visibility-payload",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the visibility payload matrix row (section C). ECMAScript class semantics: #-prefixed members are class-private, everything else is public. RE-PINNED by the M49 W15 #813 ruling (owner: 'the symbol keeps the declared name'): private members are named with their declared `#` spelling (the old '(stripped to clean names)' contract is superseded), and the forbidden name is now the STRIPPED one — an edge that targets `#secret` cannot resolve to a symbol called `secret`. Pre-fix at the original wave: no javascript fixture pinned visibility via the expectVisibility key.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "class" },
+    { "name": "#secret", "kind": "method", "ownerName": "Service", "visibility": "private" },
+    { "name": "publicMethod", "kind": "method", "ownerName": "Service", "visibility": "public" }
+  ],
+  "expectVisibility": [
+    { "symbol": "#secret", "visibility": "private" },
+    { "symbol": "publicMethod", "visibility": "public" }
+  ],
+  "forbidSymbols": [
+    { "name": "secret" }
+  ]
+}

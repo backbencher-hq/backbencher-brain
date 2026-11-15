@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a1-post-entry.ts",
+  "generatedAt": "2026-11-05T04:29:53.444Z",
+  "passed": 28,
+  "failed": 0,
+  "negativeCases": 3,
+  "mutation": "not-run (control)",
+  "failures": []
+}

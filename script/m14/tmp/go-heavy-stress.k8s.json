@@ -1,0 +1,249 @@
+{
+ "repo": "/home/ishaq2321/bb_tests/go-stress/kubernetes",
+ "pin": "90777f0b13827dcae8301137ea64f699f3449dbc",
+ "corpus": {
+  "goFiles": 17848,
+  "nonVendorGoFiles": 13488,
+  "nonVendorLoc": 3930854,
+  "vendorGoFiles": 4360,
+  "modules": 39,
+  "vendorDirs": 2,
+  "filesOver500Loc": 2199,
+  "buildTagFiles": 2462,
+  "cgoFiles": 13,
+  "genericDeclFiles": 111
+ },
+ "chunks": {
+  "a": {
+   "grammar": {
+    "filesRead": 4500,
+    "erroredFiles": 73,
+    "errorRegions": 824,
+    "errorRegionsSpanningDecl": 7,
+    "swallowedDeclLines": 7
+   },
+   "analyzer": {
+    "filesRead": 4500,
+    "throws": 0,
+    "symbols": 95873,
+    "nameBearingTargets": 534297,
+    "targetViolations": [],
+    "symbolViolations": [],
+    "prefixSpellings": 272179,
+    "prefixViolations": 263890,
+    "gatedEdges": 245884,
+    "droppedEdges": 324081,
+    "droppedByLabel": {
+     "uses": 133014,
+     "imports": 35668,
+     "references": 106186,
+     "contains": 49213
+    },
+    "edgesByLabel": {
+     "calls": 194545,
+     "uses": 133014,
+     "imports": 35668,
+     "references": 106186,
+     "instantiates": 48933,
+     "contains": 49213,
+     "extends": 2128,
+     "implements": 278
+    }
+   }
+  },
+  "b": {
+   "grammar": {
+    "filesRead": 4500,
+    "erroredFiles": 7,
+    "errorRegions": 194,
+    "errorRegionsSpanningDecl": 0,
+    "swallowedDeclLines": 0
+   },
+   "analyzer": {
+    "filesRead": 4500,
+    "throws": 0,
+    "symbols": 69475,
+    "nameBearingTargets": 277542,
+    "targetViolations": [],
+    "symbolViolations": [],
+    "prefixSpellings": 121013,
+    "prefixViolations": 114740,
+    "gatedEdges": 114384,
+    "droppedEdges": 187531,
+    "droppedByLabel": {
+     "uses": 57359,
+     "contains": 38972,
+     "references": 66827,
+     "imports": 24373
+    },
+    "edgesByLabel": {
+     "uses": 57359,
+     "contains": 38972,
+     "references": 66827,
+     "calls": 87223,
+     "imports": 24373,
+     "instantiates": 23710,
+     "extends": 2606,
+     "implements": 845
+    }
+   }
+  },
+  "c": {
+   "grammar": {
+    "filesRead": 4488,
+    "erroredFiles": 64,
+    "errorRegions": 955,
+    "errorRegionsSpanningDecl": 4,
+    "swallowedDeclLines": 4
+   },
+   "analyzer": {
+    "filesRead": 4488,
+    "throws": 0,
+    "symbols": 59297,
+    "nameBearingTargets": 316785,
+    "targetViolations": [],
+    "symbolViolations": [],
+    "prefixSpellings": 158695,
+    "prefixViolations": 149581,
+    "gatedEdges": 151594,
+    "droppedEdges": 198846,
+    "droppedByLabel": {
+     "uses": 79837,
+     "contains": 27125,
+     "references": 58229,
+     "imports": 33655
+    },
+    "edgesByLabel": {
+     "implements": 354,
+     "calls": 122632,
+     "instantiates": 27454,
+     "uses": 79837,
+     "contains": 27125,
+     "references": 58229,
+     "extends": 1154,
+     "imports": 33655
+    }
+   }
+  }
+ },
+ "totals": {
+  "filesRead": 13488,
+  "erroredFiles": 144,
+  "errorRegions": 1973,
+  "errorRegionsSpanningDecl": 11,
+  "swallowedDeclLines": 11,
+  "throws": 0,
+  "symbols": 224645,
+  "nameBearingTargets": 1128624,
+  "prefixSpellings": 551887,
+  "prefixViolations": 528211,
+  "gatedEdges": 511862,
+  "droppedEdges": 710458,
+  "droppedByLabel": {
+   "uses": 270210,
+   "imports": 93696,
+   "references": 231242,
+   "contains": 115310
+  },
+  "edgesByLabel": {
+   "calls": 404400,
+   "uses": 270210,
+   "imports": 93696,
+   "references": 231242,
+   "instantiates": 100097,
+   "contains": 115310,
+   "extends": 5888,
+   "implements": 1477
+  }
+ },
+ "coverage": [
+  "  selected 4500, read 4500, skipped: read 0 / parse 0 / no-root 0",
+  "  selected 4500, read 4500, skipped: read 0 / parse 0 / no-root 0",
+  "  selected 4488, read 4488, skipped: read 0 / parse 0 / no-root 0"
+ ],
+ "note": "filesRead is the corpus' non-vendor .go file count; the three chunks each report their own coverage line (selected == read, 0 skips). The corpus was read in INDEX RANGES because a single process traps (`Aborted()`) after ~10,000 parses even with the parser re-fetched per file: measured, a single-process run parsed 10,609 files cleanly and then hit 68+ consecutive traps.",
+ "differential": {
+  "tool": "script/m14/tmp/go-799-surface.ts --from/--to (per-file parser, skips accounted)",
+  "before": {
+   "missing": 738,
+   "unexplained": 557,
+   "byLabel": {
+    "missing": {
+     "extends": 648,
+     "implements": 90
+    },
+    "unexplained": {
+     "extends": 557
+    }
+   }
+  },
+  "after": {
+   "missing": 90,
+   "unexplained": 0,
+   "byLabel": {
+    "missing": {
+     "implements": 90
+    },
+    "unexplained": {}
+   }
+  },
+  "chunks": {
+   "0-4500": {
+    "read": 4500,
+    "skips": 0,
+    "missing": {
+     "before": 15,
+     "after": 12
+    },
+    "unexplained": {
+     "before": 2,
+     "after": 0
+    }
+   },
+   "4500-9000": {
+    "read": 4500,
+    "skips": 0,
+    "missing": {
+     "before": 614,
+     "after": 54
+    },
+    "unexplained": {
+     "before": 484,
+     "after": 0
+    }
+   },
+   "9000-13488": {
+    "read": 4488,
+    "skips": 0,
+    "missing": {
+     "before": 109,
+     "after": 24
+    },
+    "unexplained": {
+     "before": 71,
+     "after": 0
+    }
+   }
+  },
+  "cause": "the ORACLE named an embedded INSTANTIATED GENERIC by lastSegment(raw text), whose last dot lands inside the type arguments (`listers.ResourceIndexer[*crv1.Example]` -> `Example]`); the analyzer names the leaf of the base type. Fixed by goEmbeddedLeaf in differential.ts (both oracle places), pinned by F9-PROBE-GO-EMBED-GENERIC (executed negative blocks the battery).",
+  "unmoved": {
+   "go-tools": {
+    "files": 1931,
+    "read": 1931,
+    "truth": 30700,
+    "analyzer": 30361,
+    "missing": 10,
+    "unexplained": 2
+   },
+   "terraform": {
+    "files": 1993,
+    "read": 1993,
+    "truth": 40927,
+    "analyzer": 40692,
+    "missing": 22,
+    "unexplained": 0
+   },
+   "pinnedF5Draw": "differential --repo terraform --sample 60: files=60 truth=1228 covered=1228 (100%) MISSING=0 analyzer-edges=1216 unexplained=0 hash=9a180149e3bb955d"
+  }
+ }
+}

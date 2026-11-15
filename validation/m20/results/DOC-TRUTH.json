@@ -1,0 +1,21 @@
+{
+  "issue": "M20.DOC-TRUTH",
+  "code": "DOC-TRUTH",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 128,
+  "passed": 128,
+  "failed": 0,
+  "negativeCases": 29,
+  "currentCommit": "2e88195ffc3cdd801d709d1ea504685d3afea9e7",
+  "sourceFingerprint": "5ff20da8f86be854936d18a0995efe2608d3741168dc66d936decc2c207e19cf",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-doc-truth.ts",
+  "corpusCompanion": "bb_tests/bb_doc/verify-corpus.ts (real repositories, real runtime)",
+  "evidenceFile": "DOC-TRUTH.json",
+  "generatedAt": "2026-11-04T04:04:15.463Z",
+  "limitations": [
+    "Fixture-level truth/self-consistency gate; the same predicate set runs against real indexed repositories by bb_tests/bb_doc/verify-corpus.ts.",
+    "api mode's surface is planted in the fixture (a file the index marks net_http with an exported symbol) rather than drawn from a real HTTP project; the negative half removes the attribution and proves the mode then claims nothing."
+  ]
+}

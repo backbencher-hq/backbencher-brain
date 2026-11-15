@@ -49,7 +49,7 @@ async function main() {
   }
 
   // ── 2. Real-repo e2e (rake, Ruby) ───────────────────────────────────────
-  const src = "$HOME/fixtures/repositories/rake"
+  const src = "/home/ishaq2321/bb_tests/repositories/rake"
   let liveFindings = 0, unresolvedSources = 0, histFindings = 0, badHistory = -1
   console.log("── S1.2  real-repo e2e: " + src + " ──")
   if (!existsSync(src)) {
@@ -60,7 +60,18 @@ async function main() {
     try {
       cpSync(src, tmp, { recursive: true })
       pid = getProjectId(tmp)
-      await indexProjectParallel(pid, tmp, {})
+      // M72: source-only observation rows are a retired-token-writer behaviour
+      // (BB_SECURITY_LEGACY=1 only). This gate asserts the legacy adapter's
+      // classification, so it indexes with that writer enabled; default-path
+      // behaviour is asserted by script/m72/*.
+      const priorLegacyEnv = process.env.BB_SECURITY_LEGACY
+      process.env.BB_SECURITY_LEGACY = "1"
+      try {
+        await indexProjectParallel(pid, tmp, {})
+      } finally {
+        if (priorLegacyEnv === undefined) delete process.env.BB_SECURITY_LEGACY
+        else process.env.BB_SECURITY_LEGACY = priorLegacyEnv
+      }
       await flushBackgroundEmbeddings(pid)
 
       const { analyzeTaintFlows } = await import("../../src/intelligence/security/taint")

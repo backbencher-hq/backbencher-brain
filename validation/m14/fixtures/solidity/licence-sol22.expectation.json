@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/licence-sol22.sol",
+  "authoredFrom": "SOL-22 \u2014 the licence. Authored 2026-09-30 from the analyzer's measured output. Corpus coverage 0 -> 389 of 389 files (100%), identifiers MIT and BSD-3-Clause.",
+  "note": "A LICENCE is a FILE-level statement, so it belongs to the module symbol and to nothing below it \u2014 `f()` and `Licensed` carry none, and that is pinned rather than left to inference. It is read from the file's FIRST comment run only: a licence buried on line 400 is a remark that happens to contain the word, and a rule that scanned the whole file would report one for files that do not declare it.",
+  "expectSymbols": [
+    {
+      "name": "licence-sol22.sol",
+      "kind": "module",
+      "license": "MIT",
+      "comment": "SOL-22. This is the row the feature exists for."
+    },
+    {
+      "name": "Licensed",
+      "kind": "class",
+      "license": null
+    },
+    {
+      "name": "f",
+      "kind": "method",
+      "ownerName": "Licensed",
+      "license": null
+    }
+  ]
+}

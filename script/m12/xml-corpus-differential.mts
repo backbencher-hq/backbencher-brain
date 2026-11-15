@@ -3,7 +3,7 @@
  *
  * WHY IT MOVED. This probe produced `validation/m12/results/xml-differential.json`,
  * which IS version-controlled and which the analyzer doc cites — but the probe
- * itself lived in a sibling worktree at `fixtures/xml/probes/`, which is not a clone
+ * itself lived in a sibling worktree at `bb_tests/xml/probes/`, which is not a clone
  * target. So the EVIDENCE was in the repository and the INSTRUMENT that produced it
  * was not: a fresh checkout could read the number and had no way to re-derive it,
  * and the number quoted in the docs described a build that no longer existed. That
@@ -51,7 +51,7 @@ const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..") // 
 import { Parser, Language } from "web-tree-sitter"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPOS = process.env.XML_CORPUS_ROOT ?? "$HOME/fixtures/xml/repos"
+const REPOS = process.env.XML_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/xml/repos"
 const OUT_DEFAULT = process.env.XML_DIFF_OUT ?? join(ROOT_HERE, "..", "validation", "m12", "results")
 const EXTS = (process.env.XML_EXTS || "*.xml *.xsd *.dtd").split(/\s+/).filter(Boolean)
 const LIMIT = Number(process.env.XML_LIMIT || "0")

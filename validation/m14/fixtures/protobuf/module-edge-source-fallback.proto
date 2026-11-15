@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+// NO `package` declaration, on purpose. This file is the fallback arm of the
+// module-edge source rule, and the arm had no fixture until pass 16: every other
+// protobuf fixture declares a package, so a suite built only from those would pass
+// an analyzer that read `pkg` unconditionally and published an edge whose SOURCE
+// was the empty string. It would also pass one that had never changed at all. Only
+// a file with no package tells the two apart.
+//
+// The corpus makes this arm small and real: 11 of 821 files declare no package, and
+// 5 of the 1,561 `imports` edges come from them. Measured by
+// `script/m14/protobuf-module-edge-sources.mts`.
+
+import "google/protobuf/timestamp.proto";
+
+// A message whose OWNER is the empty namespace, so the ids below carry no package
+// prefix. That is the shape the corpus's 11 package-less files have.
+message Orphan {
+  google.protobuf.Timestamp at = 1;
+  string label = 2;
+}

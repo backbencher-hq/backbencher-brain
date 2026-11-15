@@ -1,0 +1,9 @@
+type Product {
+  id: ID!
+  title: String!
+}
+
+type Query {
+  product(id: ID!): Product
+  broken:
+}

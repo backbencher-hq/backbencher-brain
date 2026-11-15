@@ -1,0 +1,29 @@
+{
+  "fixtureId": "javascript/import-alias-binding",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "TWO SPELLINGS, TWO FACTS. `import { alpha as beta }` BINDS `beta` locally \u2014 the alias is the local binding (family convention alias||name), and `imports[]` must carry it or the store records a name the file never writes (brain_import.imported_as). The RELATIONSHIP, by contrast, names the symbol in the SOURCE module, which is `alpha`: publishing `beta` as the edge target lets the store's name pass attach the row to any same-named declaration, including one in a different file (measured: an aliased import bound to an unrelated method of the same name). So expectImports pins `beta` and expectRelationships pins `alpha`; the forbid row makes the split falsifiable.",
+  "expectSymbols": [],
+  "expectImports": [
+    {
+      "module": "./m",
+      "items": [
+        "beta"
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "alpha",
+      "note": "the DECLARED member the edge refers to"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "beta",
+      "note": "the local binding is not a symbol in the source module"
+    }
+  ]
+}

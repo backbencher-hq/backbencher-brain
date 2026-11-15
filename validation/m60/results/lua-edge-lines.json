@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-edge-lines",
+  "title": "M60 lua LUA-01 — every lua relationship carries the line of its name-bearing node",
+  "at": "2026-10-04T00:43:11.689Z",
+  "analyzer": "src/ast/real-lua-analyzer.ts",
+  "rationale": "LUA-01: 0 of 15 lua relationships carried any line field while java emitted line_number:2 through the identical pipeline, so the M60 matrix reads lua `lines: n/a`. The rule is M59 (#825)'s, not invented here: the line is where the NAME is written, not where the enclosing node starts. The multi-line call in the fixture is the falsifier — a whole-line implementation passes every other row and fails it.",
+  "fixture": {
+    "lines.lua": "-- fixture: every relationship kind, and the multi-line call that breaks\n-- a whole-line implementation of the rule\nlocal helper = function() return 1 end\nfunction caller()\n  helper()\n  local obj = {}\n  obj\n    .method()\nend\nlocal Account = {}\nsetmetatable(Account, AccountMeta)\nAccountMeta = {}\nfunction Account:new() end\nfunction Account:make()\n  local inst = Account:new()\n  return inst\nend\nlocal mod = require(\"some.module\")\nreturn mod\n"
+  },
+  "derivedLines": {
+    "helperCall": 5,
+    "methodCall": 8,
+    "objLine": 7,
+    "setmetatable": 11,
+    "accountNew": 15,
+    "requireCall": 18,
+    "helperDecl": 3
+  },
+  "expected": [
+    {
+      "type": "calls",
+      "source": "caller",
+      "target": "helper",
+      "line": 5
+    },
+    {
+      "type": "calls",
+      "source": "caller",
+      "target": "method",
+      "line": 8
+    },
+    {
+      "type": "extends",
+      "source": "Account",
+      "target": "AccountMeta",
+      "line": 11
+    },
+    {
+      "type": "instantiates",
+      "source": "Account:make",
+      "target": "Account",
+      "line": 15
+    },
+    {
+      "type": "imports",
+      "source": "global",
+      "target": "some.module",
+      "line": 18
+    },
+    {
+      "type": "contains",
+      "source": "caller",
+      "target": "obj",
+      "line": 6
+    }
+  ],
+  "observed": [
+    {
+      "type": "calls",
+      "source": "caller",
+      "target": "helper",
+      "line": 5
+    },
+    {
+      "type": "calls",
+      "source": "caller",
+      "target": "method",
+      "line": 8
+    },
+    {
+      "type": "calls",
+      "source": "global",
+      "target": "setmetatable",
+      "line": 11
+    },
+    {
+      "type": "extends",
+      "source": "Account",
+      "target": "AccountMeta",
+      "line": 11
+    },
+    {
+      "type": "uses",
+      "source": "global",
+      "target": "Account",
+      "line": 11
+    },
+    {
+      "type": "uses",
+      "source": "global",
+      "target": "AccountMeta",
+      "line": 11
+    },
+    {
+      "type": "calls",
+      "source": "Account:make",
+      "target": "new",
+      "line": 15
+    },
+    {
+      "type": "instantiates",
+      "source": "Account:make",
+      "target": "Account",
+      "line": 15
+    },
+    {
+      "type": "uses",
+      "source": "Account:make",
+      "target": "inst",
+      "line": 16
+    },
+    {
+      "type": "imports",
+      "source": "global",
+      "target": "some.module",
+      "line": 18
+    },
+    {
+      "type": "exports",
+      "source": "global",
+      "target": "mod",
+      "line": 19
+    },
+    {
+      "type": "uses",
+      "source": "global",
+      "target": "mod",
+      "line": 19
+    },
+    {
+      "type": "contains",
+      "source": "global",
+      "target": "helper",
+      "line": 3
+    },
+    {
+      "type": "contains",
+      "source": "global",
+      "target": "caller",
+      "line": 4
+    },
+    {
+      "type": "contains",
+      "source": "caller",
+      "target": "obj",
+      "line": 6
+    },
+    {
+      "type": "contains",
+      "source": "global",
+      "target": "Account",
+      "line": 10
+    },
+    {
+      "type": "contains",
+      "source": "global",
+      "target": "AccountMeta",
+      "line": 12
+    },
+    {
+      "type": "contains",
+      "source": "Account",
+      "target": "new",
+      "line": 13
+    },
+    {
+      "type": "contains",
+      "source": "Account",
+      "target": "make",
+      "line": 14
+    },
+    {
+      "type": "contains",
+      "source": "make",
+      "target": "inst",
+      "line": 15
+    },
+    {
+      "type": "contains",
+      "source": "global",
+      "target": "mod",
+      "line": 18
+    }
+  ],
+  "checks": [
+    {
+      "name": "the multi-line call is a real trap in this fixture (callee line != receiver line)",
+      "pass": true,
+      "detail": "receiver L7, callee L8"
+    },
+    {
+      "name": "every emitted relationship carries a line",
+      "pass": true,
+      "detail": "21/21 carry a line; missing: none"
+    },
+    {
+      "name": "every predicted edge carries the line of its name-bearing node",
+      "pass": true,
+      "detail": "6/6 correct"
+    },
+    {
+      "name": "the multi-line call is NOT reported at the receiver's line",
+      "pass": true,
+      "detail": "reported L8, receiver is L7"
+    },
+    {
+      "name": "each contains edge agrees with its symbol's declaration line",
+      "pass": true,
+      "detail": "all agree"
+    },
+    {
+      "name": "the unmutated analyzer passes every expectation",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "every planted regression is caught",
+      "pass": true,
+      "detail": "5/5"
+    }
+  ],
+  "mutants": {
+    "caught": 5,
+    "total": 5,
+    "detail": [
+      {
+        "name": "the line is not emitted at all (the pre-fix state)",
+        "caught": true,
+        "failures": [
+          "edge with no line: calls caller->helper",
+          "edge with no line: calls caller->method"
+        ]
+      },
+      {
+        "name": "whole-line: the receiver's line instead of the callee's",
+        "caught": true,
+        "failures": [
+          "calls caller->method expected L8 got L7"
+        ]
+      },
+      {
+        "name": "off-by-one: a 0-based line",
+        "caught": true,
+        "failures": [
+          "calls caller->helper expected L5 got L4",
+          "calls caller->method expected L8 got L7"
+        ]
+      },
+      {
+        "name": "LUA-13 again: a multi-line snippet as the target (filtered away downstream)",
+        "caught": true,
+        "failures": [
+          "calls caller->method expected L8 got NO EDGE/LINE"
+        ]
+      },
+      {
+        "name": "a contains edge disagrees with its symbol's line",
+        "caught": true,
+        "failures": [
+          "contains caller->obj expected L6 got L99",
+          "contains caller->obj edge L99 vs symbol L6"
+        ]
+      }
+    ],
+    "method": "OUTPUT mutation, not source mutation. The engine caches analyzer modules, so editing the source after first import has no effect: the first draft of this suite planted 4/4 regressions and caught 0/4 because every mutant re-measured the unmutated analyzer. Output mutation also tests the right thing — the legs are about what the pipeline emits, not how the source is spelled — and matches how script/m60/verify-910-c-includes.ts mutates index rows."
+  },
+  "passed": true,
+  "status": "pass",
+  "limitations": [
+    "Expected lines are hand-authored, then re-derived at run time by locating the callee's line in the fixture text so a fixture edit cannot silently invalidate an expectation. A systematic misreading of the M59 contract would still pass.",
+    "The gate covers five relationship kinds. A NEW kind the analyzer starts emitting is caught by the 'every emitted relationship carries a line' leg, but has no expected line until one is added here.",
+    "Output mutation proves the verification logic can fail. It does NOT prove the analyzer source produces the right output for any mutant, because the engine caches the module — a source-level mutation test would need one fresh process per mutant, and is owed."
+  ]
+}

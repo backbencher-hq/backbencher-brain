@@ -1,0 +1,110 @@
+{
+  "fixtureId": "java/type-parameter-bounds",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "TYPE-PARAMETER BOUNDS (owner ruling 2026-10-18, Java-only constructs item: 'type-parameter bounds'). JLS 4.4: a bound names a type, so `class Bounds<T extends Number & Comparable<T>>` MENTIONS Number and Comparable. The lane emitted NOTHING for bounds before this site: probe pre-fix produced 2 references for the whole file (the import mention only) and zero for Number/Comparable/Serializable/Exception/CharSequence. `script/m14/spec/java-completeness.json` G6 had ruled bounds a declared LIMITATION ('bounds are rarely load-bearing'); the owner's complete-surface ruling makes that ruling obsolete, and the emission uses the label the ten already have - a bound is a type mention, so `references` with metadata.relationshipType 'type_parameter_bound', NOT a new relationship kind. `boundFor` records WHICH type parameter is constrained, because three parameters would otherwise look like three unrelated references. Authored from Java semantics before the fix; covers a class bounded by an INTERFACE with a self-referential generic argument, a second class-level parameter, a METHOD-level parameter (JLS 4.4 applies to methods the same way), a record's parameters, and an interface (JLS 9.4's type parameter) with a fully-qualified bound. One edge per bound TYPE (a bound is a type list); the `T` inside Comparable<T> is published too because the declared-type walk already publishes generic arguments - one consistency rule, not two.",
+  "expectSymbols": [
+    {
+      "name": "TypeParameterBounds",
+      "kind": "class"
+    },
+    {
+      "name": "bounded"
+    },
+    {
+      "name": "Pair",
+      "kind": "class"
+    },
+    {
+      "name": "Listener",
+      "kind": "interface"
+    },
+    {
+      "name": "on"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "TypeParameterBounds",
+      "target": "Number",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "T",
+      "line_number": 5,
+      "confidenceMin": 0.95
+    },
+    {
+      "type": "references",
+      "source": "TypeParameterBounds",
+      "target": "Comparable",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "T",
+      "line_number": 5,
+      "confidenceMin": 0.95
+    },
+    {
+      "type": "references",
+      "source": "TypeParameterBounds",
+      "target": "Serializable",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "U",
+      "line_number": 5,
+      "confidenceMin": 0.95
+    },
+    {
+      "type": "references",
+      "source": "bounded",
+      "target": "Exception",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "V",
+      "line_number": 6,
+      "confidenceMin": 0.95
+    },
+    {
+      "type": "references",
+      "source": "Pair",
+      "target": "CharSequence",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "A",
+      "line_number": 9,
+      "confidenceMin": 0.95
+    },
+    {
+      "type": "references",
+      "source": "Pair",
+      "target": "Number",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "B",
+      "line_number": 9,
+      "confidenceMin": 0.95
+    },
+    {
+      "type": "references",
+      "source": "Listener",
+      "target": "java.io.IOException",
+      "meta.relationshipType": "type_parameter_bound",
+      "meta.boundFor": "E",
+      "line_number": 12,
+      "confidenceMin": 0.95
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "extends",
+      "comment": "`extends` is a keyword inside a bound, not a type; the error-recovery shape this forbids"
+    },
+    {
+      "type": "references",
+      "target": "Number & Comparable",
+      "comment": "a bound LIST is one edge per type, never the clause text"
+    },
+    {
+      "type": "references",
+      "source": "Listener",
+      "target": "IOException",
+      "meta.relationshipType": "type_parameter_bound",
+      "comment": "the file wrote java.io.IOException, so the target keeps the written path (the truncation rule the throws fixture also pins)"
+    }
+  ]
+}

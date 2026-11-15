@@ -1,0 +1,15 @@
+{
+  "probe": "M57.T3-scope-all",
+  "issue": 791,
+  "milestone": "M57",
+  "at": "2026-11-05T04:31:59.906Z",
+  "commit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "checks": 17,
+  "passed": 17,
+  "failed": 0,
+  "fixture": {
+    "symbols": 14
+  },
+  "verifierCommand": "bun run script/m57/verify-t3-scope-all.ts",
+  "status": "verified"
+}

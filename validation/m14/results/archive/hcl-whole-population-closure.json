@@ -1,0 +1,376 @@
+{
+  "meta": {
+    "instrument": "merge-arm-slices.ts",
+    "population": {
+      "parsed": 11139,
+      "corpusTotal": 11139,
+      "admitted": 11139,
+      "string": "parsed=11139/11139 admitted=11139 exts=(slices' own) index=(slices' own)"
+    },
+    "slices": [
+      {
+        "file": "offset-0.txt",
+        "range": [
+          0,
+          300
+        ],
+        "parsed": 300,
+        "edges": 15367
+      },
+      {
+        "file": "offset-300.txt",
+        "range": [
+          300,
+          600
+        ],
+        "parsed": 300,
+        "edges": 5467
+      },
+      {
+        "file": "offset-600.txt",
+        "range": [
+          600,
+          900
+        ],
+        "parsed": 300,
+        "edges": 9512
+      },
+      {
+        "file": "offset-900.txt",
+        "range": [
+          900,
+          1200
+        ],
+        "parsed": 300,
+        "edges": 12279
+      },
+      {
+        "file": "offset-1200.txt",
+        "range": [
+          1200,
+          1500
+        ],
+        "parsed": 300,
+        "edges": 14598
+      },
+      {
+        "file": "offset-1500.txt",
+        "range": [
+          1500,
+          1800
+        ],
+        "parsed": 300,
+        "edges": 14428
+      },
+      {
+        "file": "offset-1800.txt",
+        "range": [
+          1800,
+          2100
+        ],
+        "parsed": 300,
+        "edges": 17688
+      },
+      {
+        "file": "offset-2100.txt",
+        "range": [
+          2100,
+          2400
+        ],
+        "parsed": 300,
+        "edges": 16074
+      },
+      {
+        "file": "offset-2400.txt",
+        "range": [
+          2400,
+          2700
+        ],
+        "parsed": 300,
+        "edges": 14706
+      },
+      {
+        "file": "offset-2700.txt",
+        "range": [
+          2700,
+          3000
+        ],
+        "parsed": 300,
+        "edges": 9413
+      },
+      {
+        "file": "offset-3000.txt",
+        "range": [
+          3000,
+          3300
+        ],
+        "parsed": 300,
+        "edges": 2039
+      },
+      {
+        "file": "offset-3300.txt",
+        "range": [
+          3300,
+          3600
+        ],
+        "parsed": 300,
+        "edges": 3325
+      },
+      {
+        "file": "offset-3600.txt",
+        "range": [
+          3600,
+          3900
+        ],
+        "parsed": 300,
+        "edges": 3603
+      },
+      {
+        "file": "offset-3900.txt",
+        "range": [
+          3900,
+          4200
+        ],
+        "parsed": 300,
+        "edges": 3174
+      },
+      {
+        "file": "offset-4200.txt",
+        "range": [
+          4200,
+          4500
+        ],
+        "parsed": 300,
+        "edges": 4832
+      },
+      {
+        "file": "offset-4500.txt",
+        "range": [
+          4500,
+          4800
+        ],
+        "parsed": 300,
+        "edges": 2793
+      },
+      {
+        "file": "offset-4800.txt",
+        "range": [
+          4800,
+          5100
+        ],
+        "parsed": 300,
+        "edges": 2590
+      },
+      {
+        "file": "offset-5100.txt",
+        "range": [
+          5100,
+          5400
+        ],
+        "parsed": 300,
+        "edges": 4713
+      },
+      {
+        "file": "offset-5400.txt",
+        "range": [
+          5400,
+          5700
+        ],
+        "parsed": 300,
+        "edges": 1679
+      },
+      {
+        "file": "offset-5700.txt",
+        "range": [
+          5700,
+          6000
+        ],
+        "parsed": 300,
+        "edges": 1808
+      },
+      {
+        "file": "offset-6000.txt",
+        "range": [
+          6000,
+          6300
+        ],
+        "parsed": 300,
+        "edges": 1341
+      },
+      {
+        "file": "offset-6300.txt",
+        "range": [
+          6300,
+          6600
+        ],
+        "parsed": 300,
+        "edges": 1401
+      },
+      {
+        "file": "offset-6600.txt",
+        "range": [
+          6600,
+          6900
+        ],
+        "parsed": 300,
+        "edges": 1572
+      },
+      {
+        "file": "offset-6900.txt",
+        "range": [
+          6900,
+          7200
+        ],
+        "parsed": 300,
+        "edges": 1211
+      },
+      {
+        "file": "offset-7200.txt",
+        "range": [
+          7200,
+          7500
+        ],
+        "parsed": 300,
+        "edges": 1954
+      },
+      {
+        "file": "offset-7500.txt",
+        "range": [
+          7500,
+          7800
+        ],
+        "parsed": 300,
+        "edges": 1967
+      },
+      {
+        "file": "offset-7800.txt",
+        "range": [
+          7800,
+          8100
+        ],
+        "parsed": 300,
+        "edges": 2306
+      },
+      {
+        "file": "offset-8100.txt",
+        "range": [
+          8100,
+          8400
+        ],
+        "parsed": 300,
+        "edges": 2316
+      },
+      {
+        "file": "offset-8400.txt",
+        "range": [
+          8400,
+          8700
+        ],
+        "parsed": 300,
+        "edges": 9785
+      },
+      {
+        "file": "offset-8700.txt",
+        "range": [
+          8700,
+          9000
+        ],
+        "parsed": 300,
+        "edges": 14884
+      },
+      {
+        "file": "offset-9000.txt",
+        "range": [
+          9000,
+          9300
+        ],
+        "parsed": 300,
+        "edges": 14340
+      },
+      {
+        "file": "offset-9300.txt",
+        "range": [
+          9300,
+          9600
+        ],
+        "parsed": 300,
+        "edges": 17676
+      },
+      {
+        "file": "offset-9600.txt",
+        "range": [
+          9600,
+          9900
+        ],
+        "parsed": 300,
+        "edges": 16173
+      },
+      {
+        "file": "offset-9900.txt",
+        "range": [
+          9900,
+          10200
+        ],
+        "parsed": 300,
+        "edges": 14710
+      },
+      {
+        "file": "offset-10200.txt",
+        "range": [
+          10200,
+          10500
+        ],
+        "parsed": 300,
+        "edges": 9759
+      },
+      {
+        "file": "offset-10500.txt",
+        "range": [
+          10500,
+          10800
+        ],
+        "parsed": 300,
+        "edges": 21580
+      },
+      {
+        "file": "offset-10800.txt",
+        "range": [
+          10800,
+          11100
+        ],
+        "parsed": 300,
+        "edges": 14262
+      },
+      {
+        "file": "offset-11100.txt",
+        "range": [
+          11100,
+          11139
+        ],
+        "parsed": 39,
+        "edges": 423
+      }
+    ],
+    "incompleteIgnored": [],
+    "tilingRule": "every slice's parsed equals its claimed width; the union is contiguous from 0 with no overlap and no shortfall; mixed widths are legitimate",
+    "closureRule": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges"
+  },
+  "closure": {
+    "edges": 307748,
+    "resolved": 237106,
+    "collRes": 115643,
+    "ambDecl": 7586,
+    "ambKind": 187,
+    "unresolved": 59914,
+    "extOK": 3142,
+    "extPending": 0,
+    "extFAIL": 0,
+    "bindOK": 0,
+    "bindPending": 0,
+    "bindFAIL": 0,
+    "causeOK": 0,
+    "causeFAIL": 0,
+    "sum": 307748,
+    "exact": true
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "fixtureId": "javascript/generator-and-named-class-expression",
+  "rationale": "X10 + X11 (2026-09-28). Both defects were invisible to the differential because the ORACLE shares the analyzer's premise in the first case and derives nothing for the second, and invisible to the mutation gate because mutate-analyzer.ts does not parse at all (ledger G18). The only thing that found them was probing declaration forms the construct census had DISPOSED but never PROBED \u2014 a declared disposition reads as coverage and is coverage of nothing until a probe asks the analyzer. Every kind below is measured from the analyzer's output after the fix; the generator rows are the X10 assertion (all four function-valued binding shapes now agree on Function) and the contains rows are the X11 assertion (the owner is always a name the symbol table carries). `D` stays a Constant rather than becoming a Class: that is design_decision 30, pinned here so a later change to it has to be deliberate.",
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "D",
+      "target": "ownMethod"
+    },
+    {
+      "type": "contains",
+      "from": "E",
+      "target": "anonMethod"
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "declaredMethod"
+    },
+    {
+      "type": "calls",
+      "from": "ownMethod",
+      "target": "helper",
+      "note": "the substantive half of X11: a member of a NAMED class expression is owned by the binding, so the edges inside its body are attributed to the member. Asserted with a real call rather than a note, because the pre-fix owner (`Inner`) was a name no symbol carried, and a member whose owner resolves to nothing is how a body's edges get dropped. The anonymous form is pinned beside it so the two cannot drift apart again."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "declaredGen",
+      "kind": "function",
+      "equals": 1
+    },
+    {
+      "name": "genExpr",
+      "kind": "function",
+      "equals": 1,
+      "note": "X10: was constant before the generator_function fix"
+    },
+    {
+      "name": "asyncGenExpr",
+      "kind": "function",
+      "equals": 1,
+      "note": "X10, async generator expression"
+    },
+    {
+      "name": "plainExpr",
+      "kind": "function",
+      "equals": 1
+    },
+    {
+      "name": "arrowExpr",
+      "kind": "function",
+      "equals": 1
+    },
+    {
+      "name": "D",
+      "kind": "constant",
+      "equals": 1,
+      "note": "design_decision 30: a class expression emits no Class symbol; the binding is its identity"
+    },
+    {
+      "name": "E",
+      "kind": "constant",
+      "equals": 1
+    },
+    {
+      "name": "Plain",
+      "kind": "class",
+      "equals": 1
+    },
+    {
+      "name": "ownMethod",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "anonMethod",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "declaredMethod",
+      "kind": "method",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Inner",
+      "target": "ownMethod",
+      "note": "X11: `Inner` is the class expression's own name and NO symbol carries it. The pre-fix edge pointed here, so the containment edge named a node the graph does not contain. Kept as a forbid rather than simply unpinned because the failure mode is invisible in aggregate: the edge count is unchanged either way, so only an explicit forbid catches the owner moving back to a dangling name."
+    }
+  ]
+}

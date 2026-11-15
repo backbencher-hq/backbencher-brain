@@ -1,0 +1,24 @@
+{
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "DefaultsRemote.fetch/2",
+      "target": "Builder.build_opts"
+    },
+    {
+      "type": "calls",
+      "from": "DefaultsLocal.fetch/2",
+      "target": "build_opts"
+    },
+    {
+      "type": "calls",
+      "from": "DefaultsRemote.fetch/2",
+      "target": "request"
+    },
+    {
+      "type": "calls",
+      "from": "DefaultsLocal.fetch/2",
+      "target": "request"
+    }
+  ]
+}

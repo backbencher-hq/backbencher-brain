@@ -1,0 +1,625 @@
+{
+  "gate": "M60.R7",
+  "at": "2026-09-27T15:48:36.219Z",
+  "method": "tree-sitter walk over src/ast/real-*-analyzer.ts; every string literal matching the marker rule is classified by its parent node's type and field (or-fallback, ternary-branch, bare-return, bare-assign, property-value, union-member, type-position, compare, unclassified). Comments are not string nodes, so prose cannot be counted; `unclassified` is a reported shape, never a silent drop.",
+  "markerRule": "^(<|\\()?unknown(\\)|>)?$ (case-insensitive)",
+  "files": 42,
+  "occurrences": 60,
+  "violations": 45,
+  "parseErrors": [],
+  "byShape": {
+    "ternary-branch": 6,
+    "or-fallback": 14,
+    "bare-assign": 2,
+    "compare": 12,
+    "bare-return": 5,
+    "unclassified": 2,
+    "union-member": 1,
+    "property-value": 18
+  },
+  "byVerdict": {
+    "violation": 45,
+    "compare": 12,
+    "unclassified": 2,
+    "declared-state": 1
+  },
+  "byLanguage": {
+    "c": {
+      "violations": 3,
+      "declared": 0,
+      "other": 0
+    },
+    "clojure": {
+      "violations": 6,
+      "declared": 0,
+      "other": 0
+    },
+    "elixir": {
+      "violations": 6,
+      "declared": 3,
+      "other": 0
+    },
+    "java": {
+      "violations": 4,
+      "declared": 0,
+      "other": 0
+    },
+    "json": {
+      "violations": 2,
+      "declared": 0,
+      "other": 0
+    },
+    "perl": {
+      "violations": 1,
+      "declared": 0,
+      "other": 0
+    },
+    "scala": {
+      "violations": 1,
+      "declared": 1,
+      "other": 0
+    },
+    "sql": {
+      "violations": 0,
+      "declared": 0,
+      "other": 1
+    },
+    "typescript": {
+      "violations": 21,
+      "declared": 5,
+      "other": 1
+    },
+    "yaml": {
+      "violations": 1,
+      "declared": 4,
+      "other": 0
+    }
+  },
+  "selfTests": {
+    "cases": 15,
+    "passed": 15,
+    "failures": []
+  },
+  "sites": [
+    {
+      "file": "real-c-analyzer.ts",
+      "line": 1989,
+      "marker": "unknown",
+      "shape": "ternary-branch",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name: pDeclNode ? pDeclNode.text : \"unknown\""
+    },
+    {
+      "file": "real-c-analyzer.ts",
+      "line": 2098,
+      "marker": "unknown",
+      "shape": "ternary-branch",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: typeNode ? typeNode.text : \"unknown\""
+    },
+    {
+      "file": "real-c-analyzer.ts",
+      "line": 2215,
+      "marker": "unknown",
+      "shape": "ternary-branch",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: typeNode ? typeNode.text : \"unknown\""
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "line": 822,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = symName(node.namedChild(1)) || \"unknown\""
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "line": 854,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = symName(node.namedChild(1)) || \"unknown\""
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "line": 886,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = symName(node.namedChild(1)) || \"unknown\""
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "line": 910,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = symName(node.namedChild(1)) || \"unknown\""
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "line": 1009,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = symName(node.namedChild(1)) || \"unknown\""
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "line": 1020,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "multiName",
+      "statement": "multiName = symName(node.namedChild(1)) || \"unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 962,
+      "marker": "Unknown",
+      "shape": "ternary-branch",
+      "verdict": "violation",
+      "key": "protocol",
+      "statement": "protocol = aliases.length > 0 && aliases[0] ? this.resolveAlias(aliases[0].text, ctx) : \"Unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 963,
+      "marker": "Unknown",
+      "shape": "bare-assign",
+      "verdict": "violation",
+      "key": "forType",
+      "statement": "forType = \"Unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 986,
+      "marker": "Unknown",
+      "shape": "ternary-branch",
+      "verdict": "violation",
+      "key": "forType",
+      "statement": "forType = forTypeList.length > 0 ? forTypeList[0] : \"Unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 1001,
+      "marker": "Unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": "implName",
+      "statement": "implName = forTypeAlias && forTypeAlias !== \"Unknown\" ? forTypeAlias : (currentScope ? currentScope.name : protocol)"
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 1028,
+      "marker": "Unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (t && t !== \"Unknown\" && t !== protocol) this.pushRel(ctx, t, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, el.startPosition.row + 1)"
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 1103,
+      "marker": "Unknown",
+      "shape": "bare-assign",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = \"Unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 1151,
+      "marker": "Unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = actualCall.childCount > 1 ? actualCall.child(1)?.text || \"Unknown\" : \"Unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 1151,
+      "marker": "Unknown",
+      "shape": "ternary-branch",
+      "verdict": "violation",
+      "key": "name",
+      "statement": "name = actualCall.childCount > 1 ? actualCall.child(1)?.text || \"Unknown\" : \"Unknown\""
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "line": 1226,
+      "marker": "Unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (defType === \"defdelegate\" && name !== \"Unknown\") { let toMod = \"\" let asName = \"\" let toLine = node.startPosition.row + 1 const dscan: Node[] = [node] while (dscan.length > 0) { const x = dscan.po"
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "line": 536,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": null,
+      "statement": "sigParams += parameters[i].type || \"unknown\""
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "line": 1606,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": null,
+      "statement": "((p) => p.type || \"unknown\")"
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "line": 2646,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: (spreadType || \"unknown\") + \"[]\""
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "line": 2673,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "typeGuess",
+      "statement": "typeGuess = stripJavaAnnotations(typeGuess).split(\"...\").join(\"[]\").trim() || \"unknown\""
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "line": 369,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": null,
+      "statement": "return version?.returnType || \"unknown\""
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "line": 472,
+      "marker": "unknown",
+      "shape": "bare-return",
+      "verdict": "violation",
+      "key": null,
+      "statement": "return \"unknown\""
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "line": 879,
+      "marker": "unknown",
+      "shape": "bare-return",
+      "verdict": "violation",
+      "key": null,
+      "statement": "return \"unknown\""
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 454,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": null,
+      "statement": "(p.type || \"unknown\")"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 2386,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (typeName && typeName !== \"unknown\") { relationships.push({ source: sourceName, target: typeName, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, line_number: typeNode.startPosition"
+    },
+    {
+      "file": "real-sql-analyzer.ts",
+      "line": 62,
+      "marker": "unknown",
+      "shape": "unclassified",
+      "verdict": "unclassified",
+      "key": "array",
+      "statement": "[ \"all\", \"alter\", \"analyze\", \"and\", \"any\", \"array\", \"as\", \"asc\", \"at\", \"authorization\", \"begin\", \"between\", \"both\", \"by\", \"cascade\", \"case\", \"cast\", \"check\", \"collate\", \"column\", \"comment\", \"commit\", "
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 809,
+      "marker": "unknown",
+      "shape": "union-member",
+      "verdict": "declared-state",
+      "key": null,
+      "statement": ": \"explicit\" | \"inferred\" | \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 839,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (usage.type !== \"unknown\") { if (id) this.inferredTypes.set(id, usage) return usage }"
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 851,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 851,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 866,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 866,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 939,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 939,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 955,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 955,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 958,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 958,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1083,
+      "marker": "unknown",
+      "shape": "bare-return",
+      "verdict": "violation",
+      "key": null,
+      "statement": "return \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1091,
+      "marker": "unknown",
+      "shape": "bare-return",
+      "verdict": "violation",
+      "key": null,
+      "statement": "return \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1184,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1184,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1242,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1253,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1253,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1305,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1308,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "type",
+      "statement": "type: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 1308,
+      "marker": "unknown",
+      "shape": "property-value",
+      "verdict": "violation",
+      "key": "source",
+      "statement": "source: \"unknown\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 2477,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": "inner",
+      "statement": "inner = info.type !== \"unknown\" ? info.type : \"void\""
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 2486,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": "returnType",
+      "statement": "returnType = typeInfo.type !== \"unknown\" ? typeInfo.type : undefined"
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 2852,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": "returnType",
+      "statement": "returnType = typeInfo.type !== \"unknown\" ? typeInfo.type : undefined"
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 2900,
+      "marker": "unknown",
+      "shape": "unclassified",
+      "verdict": "unclassified",
+      "key": "array",
+      "statement": "[\"string\", \"number\", \"boolean\", \"any\", \"unknown\", \"never\", \"void\", \"object\", \"symbol\", \"bigint\", \"undefined\", \"null\"]"
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "line": 3168,
+      "marker": "unknown",
+      "shape": "or-fallback",
+      "verdict": "violation",
+      "key": "returnType",
+      "statement": "returnType: valueType || \"unknown\""
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "line": 549,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (nested !== \"unknown\") return nested"
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "line": 564,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (nested !== \"unknown\") return nested"
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "line": 579,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (nested !== \"unknown\") return nested"
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "line": 590,
+      "marker": "unknown",
+      "shape": "compare",
+      "verdict": "compare",
+      "key": null,
+      "statement": "if (nested !== \"unknown\") return nested"
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "line": 592,
+      "marker": "unknown",
+      "shape": "bare-return",
+      "verdict": "violation",
+      "key": null,
+      "statement": "return \"unknown\""
+    }
+  ]
+}

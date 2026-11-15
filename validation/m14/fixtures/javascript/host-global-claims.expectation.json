@@ -1,0 +1,136 @@
+{
+  "fixtureId": "javascript/host-global-claims",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the JS external-claim pass (2026-10-18, handoff §8.5): an edge may be marked isExternalTarget about a host platform name ONLY from the CLOSED CITED vocabulary (HOST_GLOBALS 57 entries + memberChainClaim, both in src/ast/js-builtin-prototypes.ts). Two proofs: (1) the bare name is a cited global (parseInt, JSON, document, window, Date, Error); (2) the receiver CHAIN'S ROOT is one (document.getElementById, window.addEventListener, JSON.stringify, and the deep chain location-free document.body.dataset.theme whose segments inherit the root document). Two negative controls: a LOCAL binding's member call (negative(local) -> local.getElementById) and a name the FILE declares (shadowed() -> function setTimeout) must get NO claim. The marker is additive — it rewrites no target, adds no edge, and cannot move an edge out of unresolved by itself; incoming-gate.ts's extOK column is where it is counted, beside (never merged into) resolved. The bound-name refusal is FILE-WIDE by design (over-collecting can only refuse a claim, never make one), which is why the positive bare-name proof uses `parseInt` while `shadowed`'s own `function setTimeout` is the negative control.",
+  "expectSymbols": [
+    {
+      "name": "probe",
+      "kind": "function"
+    },
+    {
+      "name": "negative",
+      "kind": "function"
+    },
+    {
+      "name": "shadowed",
+      "kind": "function"
+    },
+    {
+      "name": "ProbeError",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "probe",
+      "target": "getElementById",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-member",
+      "meta.externalReceiver": "document"
+    },
+    {
+      "type": "calls",
+      "from": "probe",
+      "target": "addEventListener",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-member",
+      "meta.externalReceiver": "window"
+    },
+    {
+      "type": "calls",
+      "from": "probe",
+      "target": "stringify",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-member",
+      "meta.externalReceiver": "JSON"
+    },
+    {
+      "type": "calls",
+      "from": "probe",
+      "target": "parseInt",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-bare"
+    },
+    {
+      "type": "uses",
+      "from": "probe",
+      "target": "document",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-bare"
+    },
+    {
+      "type": "uses",
+      "from": "probe",
+      "target": "window",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-bare"
+    },
+    {
+      "type": "uses",
+      "from": "probe",
+      "target": "JSON",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-bare"
+    },
+    {
+      "type": "uses",
+      "from": "probe",
+      "target": "body",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-member",
+      "meta.externalReceiver": "document"
+    },
+    {
+      "type": "uses",
+      "from": "probe",
+      "target": "dataset",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-member",
+      "meta.externalReceiver": "document"
+    },
+    {
+      "type": "uses",
+      "from": "probe",
+      "target": "theme",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-member",
+      "meta.externalReceiver": "document"
+    },
+    {
+      "type": "references",
+      "from": "probe",
+      "target": "Date",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-type"
+    },
+    {
+      "type": "extends",
+      "from": "ProbeError",
+      "target": "Error",
+      "meta.isExternalTarget": true,
+      "meta.externalReason": "host-global-base"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "negative",
+      "target": "getElementById",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "calls",
+      "from": "shadowed",
+      "target": "setTimeout",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "uses",
+      "from": "negative",
+      "target": "local",
+      "meta.isExternalTarget": true
+    }
+  ]
+}

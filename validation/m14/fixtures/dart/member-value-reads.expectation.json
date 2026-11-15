@@ -1,0 +1,308 @@
+{
+  "fixtureId": "dart/member-value-reads",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "correction_2026_10_08": "THE SOURCE'S OWN QUALIFIER IS KEPT. Two rows here moved from the bare leaf to the published qualified name, and both moved because the SOURCE spells the owner: `C.create()` and `C.total` were emitted as `create` and `total`. The analyzer now writes a qualified target only when it can point at the declaration it names — the owner must be a type the file publishes AND must declare the member (or the project index must say so) — so this is a sharpening, not a guess. Verified by re-running this fixture: `other.count` (a parameter receiver, type unread) is still the bare `count`, which is the control that the rewrite is not blanket-qualifying every member read.",
+  "correction_2026_10_10": "THE RECEIVER-TYPE SPELLING, and the DT-A CONVENTION IT DELIBERATELY SUPERSEDES. DT-A pinned 'an unknown cross-file `X.y()` stays a leaf call', because the leaf was the only thing the analyzer could name; the census then priced the alternative against the gate's own key space (calls: +12,845 ambiguous rows resolve, 2,748 resolved rows stop being resolvable; uses: +29,638 and 2,564 — four repositories, dart-sdk still running) and the decision was made to spell: a bare member whose receiver's type name the run can NAME (`X.y()`, `a?.bump()` and a local with an explicit type alike) now publishes `<Type>.<member>` and carries `baseBeyondRunScope: <Type>`, the declared cause that says the run could not look the owner up. The claim can never raise a resolution — the gate reads it only where the target names nothing — so the four rows below that changed are a SHARPENING plus an honest bucket-3 reason, not an exemption. What did NOT change is the control that matters: `other.count` (a parameter whose type this pass does not read) is still the bare `count` with `receiverTypeUnknown`, which is the pin that the spelling is not blanket-qualifying every member read. THE UN-DEDUP is recorded here too: `uses useAll -> A.count` is a NEW row, because in the pre-fix state it collided on (source, type, target) with the untyped `count` read and only one of the two survived; naming the owner makes them two different edges, and the fixture now pins both.",
+  "rationale": "First Dart review wave: DT-A named construction wins over dangling leaf calls (in-file knowledge; statics and cross-file X.y() stay calls), DT-B heritage aliases resolve (on/with), DT-C redirect targets resolve, DT-D super()/this() initializer redirections instantiate, DT-F member reads (qualified selectors, cascade getters, subscript bases, interpolation). Every pin probe-verified against both the analyzer and the deriveDartEdges oracle before pinning; lanes confirm the pair agrees on corpora.",
+  "expectSymbols": [
+    {
+      "name": "M",
+      "kind": "mixin"
+    },
+    {
+      "name": "C",
+      "kind": "class"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "C"
+    },
+    {
+      "name": "total",
+      "kind": "property",
+      "ownerName": "C"
+    },
+    {
+      "name": "create",
+      "kind": "method",
+      "ownerName": "C"
+    },
+    {
+      "name": "useAll",
+      "kind": "method",
+      "ownerName": "C"
+    },
+    {
+      "name": "writeOnly",
+      "kind": "method",
+      "ownerName": "C"
+    },
+    {
+      "name": "B",
+      "kind": "class"
+    },
+    {
+      "name": "UsesStatic",
+      "kind": "class"
+    },
+    {
+      "name": "m",
+      "kind": "method",
+      "ownerName": "UsesStatic"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "M",
+      "target": "Base",
+      "meta.isMixinOn": true,
+      "comment": "DT-B: mixin on-base resolves the alias. 2026-10-18 — publishes `references` with isMixinOn now, NOT extends: an `on` clause constrains the host, it inherits nothing."
+    },
+    {
+      "type": "extends",
+      "source": "C",
+      "target": "Smart",
+      "comment": "DT-B: superclass resolves the alias"
+    },
+    {
+      "type": "implements",
+      "source": "C",
+      "target": "Iface",
+      "comment": "DT-B: interfaces resolve the alias"
+    },
+    {
+      "type": "mixes_in",
+      "source": "C",
+      "target": "Mixin",
+      "comment": "DT-B: with-clause resolves the alias. 2026-10-18 — canonical `mixes_in`, replacing the `uses{isMixin:true}` row."
+    },
+    {
+      "type": "instantiates",
+      "source": "C",
+      "target": "Impl",
+      "comment": "DT-C: redirect target resolves the alias"
+    },
+    {
+      "type": "extends",
+      "source": "B",
+      "target": "A"
+    },
+    {
+      "type": "instantiates",
+      "source": "create",
+      "target": "C",
+      "comment": "expression-bodied factory constructs"
+    },
+    {
+      "type": "instantiates",
+      "source": "useAll",
+      "target": "C",
+      "comment": "DT-A: C.named() and C.named tear-off build C"
+    },
+    {
+      "type": "instantiates",
+      "source": "useAll",
+      "target": "Foo",
+      "comment": "DT-A: prefix-qualified pri.Foo() builds Foo"
+    },
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "C.create",
+      "comment": "DT-A: static C.create() stays a call, and the target now carries the qualifier the SOURCE wrote. Sharpened 2026-10-08 (see correction_2026_10_08): the bare leaf `create` was the only spelling the analyzer kept, and `C.create` is the published symbol (method, ownerName C)."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "count",
+      "meta.receiverCause": "receiverTypeUnknown",
+      "meta.baseBeyondRunScope": null,
+      "comment": "DT-F + THE BOUNDARY, 2026-10-10: `other.count` — the receiver is a parameter whose type this pass does not read, so no type name exists at the site, no spelling is available, and the row keeps the bare leaf with the cut's own reason. `meta.baseBeyondRunScope: null` is the pin that catches a spelling which overruns into lowercase heads."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "A.count",
+      "meta.isMemberRead": true,
+      "meta.qualifier": "head",
+      "meta.baseBeyondRunScope": "A",
+      "comment": "NEW 2026-10-10 (see correction_2026_10_10): `a.count`, whose receiver's type IS named. In the pre-fix state this row collided with the untyped `count` read above on (source, type, target) and only one survived; the spelling makes them distinct edges, so the fixture pins both — one bare-with-unknown-receiver, one spelled-with-a-claim."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "C.total",
+      "comment": "DT-F: static C.total reads — qualified 2026-10-08: `total` is declared by C, so the target names the declaration instead of the leaf."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "xs",
+      "comment": "DT-F: subscript base reads"
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "m",
+      "comment": "DT-F: subscript base reads"
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "useAll\u0000y",
+      "meta.isInterpolationRead": true,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "DT-F: interpolation $y reads — AND y IS A LOCAL (`var y = this.count;`), so the row is the family's BINDING spelling. The bare `y` was the pre-fix shape: the interpolation arm was not consulting the enclosing function's bindings, so a local read was published as a DECLARATION's spelling — which the store resolves by name against whatever single declaration happens to carry it (the local-read-phantom failure, reached through a different door). MEASURED on proxicall's whole project: 2,777 such rows (`uses -> _temp0`, the intl pluralization the Flutter gen-l10n tooling emits)."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "useAll\u0000w",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "`w` is a local (`var w = other.count + x;`) and its READ is a binding. The interpolation arm ALSO read it, and the pre-fix shape published a BARE `w` beside this row — a duplicate whose bare spelling the store could resolve to an unrelated declaration. The bare row is forbidden below; this binding row is the truth."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "useAll\u0000other",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "comment": "`other` is a PARAMETER, so it is a binding too, and the interpolation `'$other.count'` read it. The pre-fix shape published a BARE `other` beside this row — same duplicate, same risk. The bare row is forbidden below."
+    },
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "add"
+    },
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "clear"
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "length",
+      "comment": "DT-F: cascade getter reads"
+    },
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "maybeValue"
+    },
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "A.bump",
+      "meta.qualifier": "chain",
+      "meta.baseBeyondRunScope": "A",
+      "comment": "conditional a?.bump() invokes bump — SPELLED 2026-10-10. The receiver's type is named, so the target carries it and the claim records that no member table in this run could confirm it. The bare `bump`, pinned here since DT-F, is now FORBIDDEN below: it is the shape this change exists to replace."
+    },
+    {
+      "type": "uses",
+      "source": "writeOnly",
+      "target": "xs",
+      "comment": "DT-F: subscript base reads on write statements"
+    },
+    {
+      "type": "instantiates",
+      "source": "constructor",
+      "target": "A",
+      "comment": "DT-D: super() and super.named() build A"
+    },
+    {
+      "type": "instantiates",
+      "source": "constructor",
+      "target": "B",
+      "comment": "DT-D: this.named() redirects to B"
+    },
+    {
+      "type": "calls",
+      "source": "m",
+      "target": "X.y",
+      "meta.qualifier": "chain",
+      "meta.baseBeyondRunScope": "X",
+      "comment": "DT-A, DELIBERATELY SUPERSEDED 2026-10-10. This row pinned 'an unknown cross-file X.y() stays a leaf call'; it now names the owner, with the claim that the run could not look `X` up. The old shape (`target: y`) is forbidden below so the convention change cannot revert silently."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "named",
+      "comment": "DT-A: named-ctor invocation is construction, never a dangling leaf call"
+    },
+    {
+      "type": "calls",
+      "source": "m",
+      "target": "y",
+      "comment": "THE SUPERSEDED DT-A SHAPE, 2026-10-10 — the leaf call for a named receiver type. Forbidden so the spelling and the leaf convention cannot both be live."
+    },
+    {
+      "type": "calls",
+      "source": "useAll",
+      "target": "bump",
+      "comment": "the other superseded leaf shape (the cascade receiver), same reason"
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "A.count",
+      "meta.baseBeyondRunScope": null,
+      "comment": "NEW 2026-10-10 — a spelled row MUST carry the claim that makes it honest. A spelling whose non-resolution is unmarked is the one outcome the design exists to prevent: the gate would charge it to the lane as a plainer gap than the ambiguity it replaced."
+    },
+    {
+      "type": "extends",
+      "source": "M",
+      "target": "_i1",
+      "comment": "DT-B: import aliases are never heritage targets"
+    },
+    {
+      "type": "mixes_in",
+      "source": "C",
+      "target": "_i2",
+      "comment": "DT-B: import aliases are never mixin targets (relabelled with the clause, 2026-10-18)"
+    },
+    {
+      "type": "uses",
+      "source": "C",
+      "target": "Mixin",
+      "comment": "THE SUPERSEDED LABEL — a with-clause is no longer a `uses` row. Forbidden so a relabel that adds mixes_in without removing the old row cannot pass."
+    },
+    {
+      "type": "instantiates",
+      "source": "C",
+      "target": "_i1",
+      "comment": "DT-C: import aliases are never redirect targets"
+    },
+    {
+      "type": "uses",
+      "source": "writeOnly",
+      "target": "slot",
+      "comment": "DT-F: plain-= writes (member and cascade) never read"
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "y",
+      "note": "THE PRE-FIX INTERPOLATION SHAPE, forbidden: a local read inside `'$y'` published as a bare name. The bare spelling is a DECLARATION's spelling, and the store's bare-name rule admits a bare name declared exactly once in the project — so a local named `y` could bind to an unrelated declaration named `y`."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "w",
+      "note": "the same pre-fix shape for the `${}` form."
+    },
+    {
+      "type": "uses",
+      "source": "useAll",
+      "target": "other",
+      "note": "the same pre-fix shape for the receiver inside an interpolation — a parameter read as a bare name."
+    }
+  ]
+}

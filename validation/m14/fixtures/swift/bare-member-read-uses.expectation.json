@@ -1,0 +1,30 @@
+{
+ "fixtureId": "swift/bare-member-read-uses",
+ "language": "swift",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M49 #754 (CONV-SW-1). LIVE PROBE pre-fix: `class Store { var count = 0; func bare() -> Int { return count }; func dotted() -> Int { return self.count } }` emitted uses(dotted->count) and NOTHING for the bare read — the analyzer's only Uses emission was the self-rooted navigation helper, so every plain identifier read of a declared member was invisible while the `self.` form was not. The fix adds a bare-read pass mirroring java #739 / dart #752, and the real corpus lane then exposed two further contracts this fixture pins. (1) EXTENSION SCOPES: an `extension Foo` carries its name under `user_type`, so the shallow child search left the declaration nameless and every bare read inside every extension was dropped — nio FileType / IPv4Header / EventLoop / ByteBuffer all lost edges this way, and Swift puts a large share of its members in extensions. (2) VALUE SCOPES (CGD15): a `let` bound inside a computed property or a closure is a LOCAL, not a member (nio EventLoop `fullNS`, TestUtils `ipv6Loopback`). Both directions are asserted: expectRelationships catches a dropped branch, forbidRelationships catches a missing gate — the write LHS, the shadowing local, the computed-property local, the implicit member expression (`.fast`, whose base is inferred, not Store) and the argument label (`group:`, which names a parameter, not the member `group`).",
+ "expectSymbols": [
+  { "name": "Store" },
+  { "name": "count", "ownerName": "Store" },
+  { "name": "total", "ownerName": "Store" },
+  { "name": "bare", "ownerName": "Store" },
+  { "name": "extBare", "ownerName": "Store" },
+  { "name": "Mode" }
+ ],
+ "expectRelationships": [
+  { "type": "uses", "source": "bare", "target": "count", "comment": "#754: bare member read now emits" },
+  { "type": "uses", "source": "dotted", "target": "count", "comment": "existing self-rooted read unchanged" },
+  { "type": "uses", "source": "plus", "target": "count", "comment": "#754: bare read inside an additive expression" },
+  { "type": "uses", "source": "plus", "target": "total", "comment": "#754: second bare read in the same expression" },
+  { "type": "uses", "source": "extBare", "target": "total", "comment": "corpus finding: bare read inside an EXTENSION now emits" },
+  { "type": "uses", "source": "Store", "target": "count", "comment": "computed property: bare member read (source falls back to the type)" }
+ ],
+ "forbidRelationships": [
+  { "type": "uses", "source": "zero", "target": "count", "comment": "GATE: assignment LHS is a write, never a read" },
+  { "type": "uses", "source": "shadowed", "target": "count", "comment": "GATE B (CGD15): a local the function binds is not a member read" },
+  { "type": "uses", "source": "computed", "target": "local", "comment": "GATE B: a computed property's `let` is a local, not a member" },
+  { "type": "uses", "source": "pick", "target": "fast", "comment": "GATE: `.fast` is an implicit member (inferred base), not a read of Store.fast" },
+  { "type": "uses", "source": "label", "target": "group", "comment": "GATE: `group:` is an argument label, not a read of the member `group`" },
+  { "type": "uses", "source": "Store", "target": "local", "comment": "GATE A: a local name is not a declared member, so it never emits" }
+ ]
+}

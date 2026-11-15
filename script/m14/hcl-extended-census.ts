@@ -13,7 +13,7 @@
  * `include` block, so the emitted `part_of` rows are counted rather than predicted.
  *
  * POPULATION (the campaign's rule — it must be the gate's own): git-tracked `.tf` / `.tfvars` /
- * `.hcl` / `.tofu` under `BB_CORPUS_ROOT` (default `$HOME/fixtures/repositories`),
+ * `.hcl` / `.tofu` under `BB_CORPUS_ROOT` (default `/home/ishaq2321/bb_tests/repositories`),
  * under the engine's own 1 MiB admission cap. The same rule `incoming-gate.ts` applies for the
  * lane's router table `tf,hcl,tfvars,tofu`, which is why the count here (9,329 files / 16 repos)
  * is the number the whole-population arm must reproduce.
@@ -41,7 +41,7 @@ import { execFileSync } from "node:child_process"
 import * as path from "node:path"
 
 const ROOT = path.resolve(new URL("../../", import.meta.url).pathname)
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const SIZE_CAP = 1024 * 1024
 const EXTENSIONS = [".tf", ".tfvars", ".hcl", ".tofu"]
 const OUT = process.env.BB_HCL_EXT_OUT ?? path.join(ROOT, "validation/m14/fixtures/hcl/extended-census.current.json")

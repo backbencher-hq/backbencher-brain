@@ -1,0 +1,33 @@
+{
+  "fixtureId": "hcl/object-key-not-reference",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run and checked against the fixture source.",
+  "rationale": "H8 (reviews/hcl/master-review.md) — a latent defect, recorded as a robustness fix. The pre-filter paired a NAMED-child index with `fieldNameForChild`, which indexes over ALL children including anonymous tokens: for an `object_elem` shaped `[key, \"=\", val]` it returns \"key\", null, \"val\" at indices 0/1/2, so the loop (which probes 0 and 1) asked about the `=` token and applied the answer to `val`. Both outcomes were RIGHT, purely because every `object_elem` happens to have that shape — index 0 is always the key, and index 1 is never a second key. One token before the key and the key would be walked as a reference while the value was dropped. The fix reads the grammar's own `childForFieldName(\"val\")`. This fixture pins all six key spellings the grammar admits (bare, quoted, parenthesised, nested, computed, and inside a tuple) so a change of shape cannot pass unnoticed.",
+  "expectSymbols": [
+    { "name": "locals", "kind": "module" },
+    { "name": "plain", "kind": "property" },
+    { "name": "quoted", "kind": "property" },
+    { "name": "paren", "kind": "property" },
+    { "name": "nested", "kind": "property" },
+    { "name": "computed", "kind": "property" },
+    { "name": "listy", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "locals", "target": "var.a", "line_number": 6 },
+    { "type": "references", "from": "locals", "target": "var.b", "line_number": 6 },
+    { "type": "references", "from": "locals", "target": "var.c", "line_number": 7 },
+    { "type": "references", "from": "locals", "target": "var.e", "line_number": 8 },
+    { "type": "references", "from": "locals", "target": "var.f", "line_number": 9 },
+    { "type": "references", "from": "locals", "target": "var.h", "line_number": 10 },
+    { "type": "references", "from": "locals", "target": "var.i", "line_number": 11 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "var.d", "note": "`(var.d)` is the KEY of `paren` — a data key, not a reference. Emitting it is the pre-fix shape the false index pairing would produce." },
+    { "type": "references", "target": "var.g", "note": "`(format(\"%s\", var.g))` is the KEY of `computed` — the value `var.h` is the reference, and it IS emitted (see expectRelationships)" },
+    { "type": "references", "target": "alpha" },
+    { "type": "references", "target": "beta" },
+    { "type": "references", "target": "inner_key" },
+    { "type": "references", "target": "list_key" }
+  ]
+}

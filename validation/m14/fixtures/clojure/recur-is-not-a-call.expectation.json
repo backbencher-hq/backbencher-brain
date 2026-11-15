@@ -1,0 +1,14 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the derived calls oracle: 18 of the unexplained edges in clojure/core.clj were `lambda_83_6 -> lambda_83_6` on lines whose head is `(recur …)`. The analyzer pushed `calls: f -> f` with `isRecursion: true` on every recur. `recur` names no var and invokes nothing - it is a special form that transfers control to the enclosing fn/loop - and `lambda_83_6` is a GENERATED name for an anonymous function, so the target cannot be navigated at all. Removing the edge took the unexplained count 189 -> 104 and the analyzer's edge count 3237 -> 3144. Recursion is a real fact and stays on the symbol's metadata, which nothing reads today - a separate dead-capability finding, left visible rather than papered over. Pins: no self-edge for the recur-based function, metadata still set, and the ordinary direct self-call still published so the fix cannot be satisfied by dropping self-edges wholesale.",
+  "expectSymbols": [
+    { "name": "sum-to", "kind": "function" },
+    { "name": "fact", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "fact", "target": "fact", "line_number": 20 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "sum-to", "target": "sum-to" }
+  ]
+}

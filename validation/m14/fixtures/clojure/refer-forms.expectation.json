@@ -1,0 +1,19 @@
+{
+  "issue": "M49 W24 CLJ-MR2",
+  "note": "`:refer` names resolve unqualified calls through the refer table (U1-class finding, the elixir ELXD17 sibling): `(:require [lib :refer [name]])` CONFIRMS the target, so the call edge names `lib/name` instead of the bare dangling identity. Resolution runs POST-WALK so a LOCAL def of the same name wins (Clojure's ns mapping — `parse-edn` is defn'd in-file, so both its call sites keep the bare local identity and the qualified form is forbidden). Covers the three emission shapes: generic call, thread step (arity-adjusted), #() shorthand. Names are deliberately non-core — core-builtin names (`replace`, `join`, …) are suppressed before resolution and would pin nothing.",
+  "expectRelationships": [
+    { "type": "calls", "from": "rewrite", "target": "clj.fixture.util/rewrite-text", "line_number": 6, "meta.callArity": 3 },
+    { "type": "calls", "from": "combine", "target": "clj.fixture.more/combine-sets", "line_number": 7, "meta.callArity": 2 },
+    { "type": "calls", "from": "thread-join", "target": "clj.fixture.util/join-all", "line_number": 8, "meta.callArity": 2 },
+    { "type": "calls", "target": "clj.fixture.util/rewrite-text", "line_number": 9, "meta.callArity": 3 },
+    { "type": "calls", "from": "parse", "target": "parse-edn", "line_number": 10 },
+    { "type": "calls", "from": "local-wins", "target": "parse-edn", "line_number": 12 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "rewrite", "target": "rewrite-text" },
+    { "type": "calls", "from": "combine", "target": "combine-sets" },
+    { "type": "calls", "from": "thread-join", "target": "join-all" },
+    { "type": "calls", "from": "parse", "target": "clj.fixture.edge/parse-edn" },
+    { "type": "calls", "from": "local-wins", "target": "clj.fixture.edge/parse-edn" }
+  ]
+}

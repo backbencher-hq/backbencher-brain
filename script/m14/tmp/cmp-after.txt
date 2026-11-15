@@ -1,0 +1,233 @@
+  qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 9 row(s) asked · namespace branch: 0 of 0 row(s) asked (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)
+incoming gate — groovy
+corpus root: /home/ishaq2321/bb_tests/repositories (the DEFAULT)
+population: 2000 parsed of 2000 sampled (corpus has 8102 .groovy,gvy,gradle files across 8 repos; CHUNK)
+population: ★ THIS RUN IS A CHUNK, NOT A POPULATION — admitted files [0, 2000) of 8102, and 2000 of them were measured.
+population: the chunk is a SLICE of the admitted set, not a stride of it, so it is DISJOINT from a chunk at another offset and the chunks COVER the population when walked from offset 0.
+population: admitted extensions = .groovy, .gvy, .gradle (SOURCE: the CALLER'S ARGUMENT (an explicit set — deliberate, and the table's set is printed beside it)) (the ROUTER'S ONE TABLE says: .groovy, .gvy, .gradle — SAME as this run) (3 spellings) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 8102 for THIS lane in THIS run — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).
+project index: USED — 0 repo index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one). Passed as { projectIndex } exactly as `pool-worker.ts` parse_batch does. INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, cross-file base resolution and the widened type-visibility gate are measured. THE GATE'S PROJECT-INDEX POPULATION is clojure, cpp, dart, fsharp, java, javascript, protobuf, python, ruby, scss, solidity, typescript (the languages `INDEX_SPECS` can build an index for). For those, this population IS production's; for every other language the analyzer is parsed with NO context and behaves as this run's --index-less arm does, so its counts are not comparable to a --index-less run. Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.
+excluded from that population: 3 tracked-but-absent/unreadable + 0 over the 1 MB cap  — above the cap the engine extracts structurally, not as an analyzer
+parse failures: 0   degraded (regex fallback): 0
+endpoint keys indexed: name + 0 qualifiedName alias(es). A lane that publishes a file-scoped qualified name and targets that path is measured, not missed.
+empty results: 1 file(s) hold NO CONTENT AT ALL (0 bytes or whitespace). The run missed nothing, the population is COMPLETE, and these are NOT a defect.
+empty results: 7 file(s) hold CONTENT AND RETURNED NOTHING. **THIS COUNTER CANNOT TELL WHICH OF THREE THINGS THEY ARE**: content that cannot declare anything (comments, blank bodies — population COMPLETE), a genuine parse failure or timeout (a HOLE in it), or a file the analyzer declined. Do NOT report them as a hole without reading them.
+    ????? /home/ishaq2321/bb_tests/repositories/dart-http/pkgs/ok_http/android/settings.gradle
+    ????? /home/ishaq2321/bb_tests/repositories/geb/buildSrc/src/main/groovy/geb.coordinates.gradle
+    ????? /home/ishaq2321/bb_tests/repositories/geb/module/geb-core/src/test/groovy/GebConfigBothScriptAndClass.groovy
+    ????? /home/ishaq2321/bb_tests/repositories/geb/module/geb-core/src/test/groovy/GebConfigClassOnly.groovy
+    ????? /home/ishaq2321/bb_tests/repositories/grails-core/gradle-bootstrap/settings.gradle
+ambiguous is counted by DECLARATION here. The kind-count is shown beside it because the fleet's earlier number used it, and the two differ by two orders of magnitude.
+SAMPLE, NOT POPULATION: 2000 of 8102 files. A stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose collision lives in an unsampled file of the same repository reads unique here. Run with maxFiles 0 for a number about the corpus.
+resolution scope: PER PROJECT (the repository a file belongs to) — production's scope. `parallel-indexer.resolveRelationships` fills `target_symbol_id` only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1 (`_res_name.cnt = 1`, `WHERE s.project_id = ?`). A name that collides with a declaration in ANOTHER project is not ambiguous to production and is not counted as ambiguous here.
+
+TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+----------------------------------------------------------------------------------------------------------------------------------------------------
+calls         42080    9160      0         16900      3726       16020       0       0       0        0        0       0         0        0
+uses          9407     2048      0         3095       1268       4264        0       0       0        0        0       0         0        0
+contains      12088    12088     8778      0          0          0           0       0       0        0        0       0         0        0
+imports       20456    0         0         0          0          462         19920   74      0        0        0       0         0        0
+references    27157    2564      0         1481       722        23112       0       0       0        0        0       0         0        0
+exports       2874     2874      0         0          0          0           0       0       0        0        0       0         0        0
+extends       1584     710       0         235        87         639         0       0       0        0        0       0         0        0
+implements    711      269       0         116        8          326         0       0       0        0        0       0         0        0
+overrides     1662     1662      0         0          0          0           0       0       0        0        0       0         0        0
+instantiates  6655     1762      0         1346       834        3547        0       0       0        0        0       0         0        0
+decorates     5056     109       0         171        36         4776        0       0       0        0        0       0         0        0
+renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0
+part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+---------------------------------------------------------------------------------------------
+TOTAL         129730   33246     8778      23344      6681       53146       19920   74      0        0        0       0         0        0
+collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane
+bindOK = a target SPELLED as a binding (`<callable>\u0000<binding>`), which no declaration can answer · bind? = a separator with nothing after it · bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane
+causeOK = bucket 3: the target names nothing here and the edge DECLARED why (a base beyond the run's reach), so it is stated rather than claimed — NEVER folded into resolved · causeFAIL = a declared cause whose own reason does not check out, counted against the lane
+amb(kind) is a SUBSET of amb(decl), printed beside it for comparison: resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = the edge count, exactly.
+separator tripwire: 0 published key(s) contain `\u0000` of 129730 edges measured (0 required: a declaration name carrying it would make a binding claim unfalsifiable)
+    of those 19920 verified: 19920 by owner lookup in the key space, 0 against the project's own pubspec files + file list
+EDGES A MARKER SET EXPLAINS — NOT-RESOLVED, PLUS BINDINGS (diagnostic, PER PROJECT scope, up to 5 marker sets per type ordered by amb+unresolved, then any binding-bearing set):
+type          metadata KEYS on the edge                           resolved  amb      unres    extClaim  binding  cause
+--------------------------------------------------------------------------------------------------------------------------
+groovyCallExpression                                8667      15262    14087    0         0        0
+groovyCallExpression+relationshipType               427       1364     1434     0         0        0
+relationshipType                                    66        274      499      0         0        0
+isFieldAccess                                       1846      2969     3932     0         0        0
+isArrayAccess                                       60        40       248      0         0        0
+isInterpolationRead                                 142       86       84       0         0        0
+isGroovyImport+isImport+isStatic+relationshipType   0         0        150      114       0        0
+fileLevel+isGroovyImport+isStatic+relationshipType  0         0        150      114       0        0
+isGroovyImport+isImport+isWildcard+relationshipType  0         0        60       0         0        0
+fileLevel+isGroovyImport+isWildcard+relationshipType  0         0        60       0         0        0
+isGroovyImport+isImport+relationshipType            0         0        21       9852      0        0
+  ⋯ OMITTED   1 further marker set(s) NOT printed above           0         0        21       9868      0        0
+                ^ add these to the rows above or the type will not
+declaredOn+relationshipType                         2564      1481     12882    0         0        0
+isGroovyImport                                      0         0        9873     0         0        0
+isGroovyImport+isStatic                             0         0        264      0         0        0
+isGroovyImport+isWildcard                           0         0        60       0         0        0
+hasAlias+isGroovyImport                             0         0        16       0         0        0
+  ⋯ OMITTED   2 further marker set(s) NOT printed above           0         0        17       0         0        0
+                ^ add these to the rows above or the type will not
+relationshipType                                    710       235      639      0         0        0
+relationshipType                                    269       116      326      0         0        0
+isNew+relationshipType                              1762      1346     3547     0         0        0
+decoratorLine+isDecorator+isGroovyDecorator         108       171      4775     0         0        0
+isDecorator+isGroovyDecorator                       1         0        1        0         0        0
+--------------------------------------------------------------------------------------------------------------------------
+extClaim = a claim on this marker set the project VERIFIED or that no check can reach · binding = edges on this marker set SPELLED as a binding · cause = edges on this marker set whose analyzer DECLARED why it could not reach the base (bucket 3; never a resolution, and its own column so it cannot be mistaken for one). Grouped by KEY only: a value would split one marker into a signature per symbol it names.
+
+TABLE 2 — PER CORPUS (one pooled key space; NOT the verdict's scope, shown because every earlier dart number in this programme was measured this way):
+type          edges    resolved  amb(decl)  unresolved  extFAIL
+-----------------------------------------------------------------
+calls         42080    5698      22485      13897       0
+uses          9407     1201      4327       3879        0
+contains      12088    12088     0          0           0
+imports       20456    0         0          462         0
+references    27157    2033      2245       22879       0
+exports       2874     1837      1037       0           0
+extends       1584     695       252        637         0
+implements    711      265       124        322         0
+overrides     1662     179       1483       0           0
+instantiates  6655     974       2134       3547        0
+decorates     5056     109       220        4727        0
+renders       0        0         0          0           0
+mixes_in      0        0         0          0           0
+part_of       0        0         0          0           0
+-----------------------------------------------------------------
+TOTAL         129730   25079     34307      50350       0
+
+BINDING INTENT — the EXACT test beside the count model's upper bound (resolvedAmongCollision):
+  intended = a declaration in the edge's OWN FILE ON the edge's own line answers to the target
+  (exact only where the edge line IS the target symbol's line: contains, exports.)
+  For every other type the edge line is the READ SITE, so a same-file row is sameFileUnproven —
+  not wrong and not right; arbitraryTwin is the file-crossing class in both cases.
+  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget
+  calls         42080    0         5555             22628                    13897            0
+  uses          9407     0         1239             4289                     3879             0
+  contains      12088    12088     0                0                        0                0
+  imports       20456    0         0                0                        20456            0
+  references    27157    0         980              3298                     22879            0
+  exports       2874     2874      0                0                        0                0
+  extends       1584     0         46               901                      637              0
+  implements    711      0         23               366                      322              0
+  overrides     1662     0         1662             0                        0                0
+  instantiates  6655     0         1266             1842                     3547             0
+  decorates     5056     0         2                327                      4727             0
+  TOTAL         129730   14962     10773            33651                    70344            0
+  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges.
+  COLUMN NAMES SPELL THE MEANING, because a previous name cost a lane 45,967 edges of
+  false alarm: sameFileUnproven = the OWN FILE declares it (line inconclusive here);
+  arbitraryTwin = the OWN FILE DECLARES NOTHING and another file does — THIS is the
+  own-file-absent class; nothingAnywhere = NO FILE IN THE RUN declares it, which is NOT
+  the same question and is two orders of magnitude smaller on nim's calls row.
+  validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts — its
+  own-file+own-line column is this class read off brain_relationship.target_symbol_id.
+CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying
+share, BY CLAIM KIND: 0 of this lane's 23344 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.
+    (none of this lane's 23344 ambiguous edge(s) carries a claim — NONE OF 23344, not zero of
+     a zero. A MEASURED zero of the claim-carrying class, not an absent lane.)
+  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH
+  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than
+  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column.
+
+CLAIM-CARRYING RESOLVED EDGES — the tie-break's DISCARDED claims, recorded because they were
+DROPPED. A claim that arrived on a row the OWN FILE already answered is now RECORDED, and it
+moved no count: 0 of this lane's 33246 resolved edge(s) carry a claim the
+tie-break settled — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.
+    (none of this lane's 33246 resolved edge(s) carries a claim the tie-break settled — a
+     MEASURED zero of the class, not an absent block.)
+  A CLAIM IS NOT A RESOLUTION, AND A DISCARDED CLAIM IS NOT A DEFECT: the tie-break IS production's
+  own rule (the own file's declaration is the answer), so the claim is refuted rather than applied.
+  It is counted here so that "how many claim-carrying edges did the name model settle" is READABLE.
+
+AMBIGUOUS / UNRESOLVED TARGETS (worklist; counts sampled per type — don't read a type's absence here as a zero, read TABLE 1):
+  calls
+    amb  of                                         4 declarations  [method]
+    amb  apply                                      6 declarations  [method]
+    amb  create                                     9 declarations  [method]
+    amb  add                                        10 declarations  [method]
+    unres  plugins
+    unres  id
+    unres  version
+    unres  repositories
+    ^ amb: showing 4 of 25 collected + **12286 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **15199 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  uses
+    amb  test                                       2 declarations  [method|property]
+    amb  name                                       4 declarations  [property]
+    amb  parent                                     8 declarations  [method]
+    amb  version                                    2 declarations  [property]
+    unres  android
+    unres  VERSION_11
+    unres  java
+    unres  cronetHttpNoPlay
+    ^ amb: showing 4 of 25 collected + **2159 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **4045 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  imports
+    unres  java.lang.Runtime.getRuntime
+    unres  configuration.InlineConfigurationLoader
+    unres  com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOut
+    unres  javax.net.ssl
+    ^ amb: showing 0 of 0 collected · unres: showing 4 of 25 collected + **350 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  references
+    amb  ManualsExtension                           2 declarations  [class|constructor]
+    amb  BaseExtension                              2 declarations  [class|constructor]
+    amb  Configuration                              3 declarations  [class|constructor]
+    amb  CallbackHttpServer                         3 declarations  [class|constructor]
+    unres  versionName
+    unres  java.nio.file.Paths
+    unres  builtBy
+    unres  org.gebish.gradle.BaseExtension
+    ^ amb: showing 4 of 25 collected + **1115 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **19627 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  extends
+    amb  GebSpec                                    2 declarations  [class]
+    amb  DefaultNavigator                           2 declarations  [class|constructor]
+    amb  BrowserSpec                                3 declarations  [class|constructor]
+    amb  CloudBrowsersExtension                     2 declarations  [class|constructor]
+    unres  Sync
+    unres  InlineMacroProcessor
+    unres  geb.Browser
+    unres  Specification
+    ^ amb: showing 4 of 25 collected + **153 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **191 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  implements
+    amb  ApplicationCommand                         2 declarations  [interface]
+    amb  GrailsApplicationCommand                   2 declarations  [interface]
+    amb  Controller                                 2 declarations  [class|interface]
+    amb  Named                                      4 declarations  [class|interface]
+    unres  Plugin
+    unres  Comparable
+    unres  ExtensionRegistry
+    unres  HttpServerFilter
+    ^ amb: showing 4 of 7 collected · unres: showing 4 of 25 collected + **219 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  instantiates
+    amb  SystemPropertiesCommandLineArgumentProvide 2 declarations  [class|constructor]
+    amb  CallbackHttpServer                         3 declarations  [class|constructor]
+    amb  Browser                                    6 declarations  [class|constructor]
+    amb  BindingUpdater                             2 declarations  [class|constructor]
+    unres  String
+    unres  Properties
+    unres  FileInputStream
+    unres  IllegalStateException
+    ^ amb: showing 4 of 25 collected + **1245 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **3023 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  decorates
+    amb  Test                                       2 declarations  [class]
+    amb  Bean                                       2 declarations  [class]
+    amb  Builder                                    4 declarations  [class|interface]
+    unres  Override
+    unres  CompileStatic
+    unres  Shared
+    unres  SuppressWarnings
+    ^ amb: showing 3 of 3 collected · unres: showing 4 of 25 collected + **1621 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+
+VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 76490 ambiguous/unresolved + 0 refuted claim(s) + 74 claim(s) no check can reach (ext? 74, bind? 0)  --  23344 ambiguous + 53146 unresolved of 129730 edges, resolved against the file's OWN PROJECT (production's scope); 74 external claim(s) unverifiable (19920 verified + 74 unverifiable external)
+  clause 1 FAIL — every edge resolves, or carries a claim the project verifies
+           76490 ambiguous/unresolved + 0 refuted claim(s) + 74 claim(s) no check can reach (ext? 74, bind? 0)
+  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count
+           no edge carries a declared cause (residual 76490)
+  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER
+           no declared cause carries a count, so there is nothing to rule
+  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0
+           extFAIL 0 · bindFAIL 0 · causeFAIL 0
+  (the same edges under the pooled corpus key space: 34307 ambiguous + 50350 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)
+instrument self-test: PASS (control fired)
+
+Scope of a PASS: this population, this analyzer digest, resolution only. It does NOT
+say the edges point at the RIGHT declaration — that is differential.ts's question.

@@ -1,0 +1,65 @@
+{
+  "comment": "RESOURCE COVERAGE. A rule TABLE, not a branch chain: the pre-fix analyzer handled ten tag names in an if/else-if chain, and every carrier nobody thought of in that chain did not exist. Eight produced nothing — object[data], embed[src], track[src], input[type=image][src], iframe[src], svg use/image[href], source[srcset] — verified one document at a time. The negative half carries the weight here: it is what a missing carrier looks like.",
+  "expectSymbols": [
+    { "name": "resource-carriers", "kind": "module" },
+    { "name": "obj", "kind": "class" },
+    { "name": "emb", "kind": "class" },
+    { "name": "vid", "kind": "class" },
+    { "name": "trk", "kind": "class" },
+    { "name": "imgbtn", "kind": "class" },
+    { "name": "fr", "kind": "class" },
+    { "name": "frm", "kind": "class" },
+    { "name": "sprite", "kind": "class" },
+    { "name": "use1", "kind": "class" },
+    { "name": "use2", "kind": "class" },
+    { "name": "imgsvg", "kind": "class" },
+    { "name": "p-quality", "kind": "class" },
+    { "name": "l-pre", "kind": "class" },
+    { "name": "l-dns", "kind": "class" },
+    { "name": "deep-src", "kind": "class" },
+    { "name": "base", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "obj", "target": "/assets/embed.json", "line_number": 10, "meta.resourceType": "object" },
+    { "type": "uses", "from": "emb", "target": "/assets/plugin.swf", "line_number": 11, "meta.resourceType": "embed" },
+    { "type": "uses", "from": "vid", "target": "/assets/clip.mp4", "line_number": 12, "meta.resourceType": "video" },
+    { "type": "uses", "from": "vid", "target": "/assets/poster.jpg", "line_number": 12, "meta.resourceType": "video-poster" },
+    { "type": "uses", "from": "trk", "target": "/assets/clip.en.vtt", "line_number": 13, "meta.resourceType": "track" },
+    { "type": "uses", "from": "imgbtn", "target": "/assets/button.png", "line_number": 15, "meta.resourceType": "input-image" },
+    { "type": "uses", "from": "fr", "target": "/pages/embed.html", "line_number": 16, "meta.resourceType": "iframe" },
+    { "type": "uses", "from": "frm", "target": "/pages/legacy.html", "line_number": 17, "meta.resourceType": "frame" },
+
+    { "type": "uses", "from": "use1", "target": "icon", "line_number": 28, "meta.isInternalAnchor": true, "meta.evidenceClass": "structural" },
+    { "type": "uses", "from": "use2", "target": "sprite.svg#icon", "line_number": 29, "meta.resourceType": "svg-use" },
+    { "type": "uses", "from": "imgsvg", "target": "/assets/hero.svg", "line_number": 30, "meta.resourceType": "svg-image" },
+
+    { "type": "uses", "from": "p-movie", "target": "/assets/movie-real.swf", "line_number": 36, "meta.resourceType": "param" },
+
+    { "type": "uses", "from": "l-icon", "target": "/favicon.ico", "line_number": 45, "meta.resourceType": "icon" },
+    { "type": "uses", "from": "l-manifest", "target": "/app.webmanifest", "line_number": 48, "meta.resourceType": "manifest" },
+    { "type": "uses", "from": "l-preload", "target": "/assets/font.woff2", "line_number": 49, "meta.resourceType": "preload" },
+
+    { "type": "uses", "from": "deep-src", "target": "/assets/deep.mp4", "line_number": 57, "meta.resourceType": "media-source" },
+    { "type": "uses", "from": "pic-src", "target": "/assets/one.webp", "line_number": 61, "meta.resourceType": "img-srcset" },
+    { "type": "uses", "from": "pic-img", "target": "/assets/one.jpg", "line_number": 62, "meta.resourceType": "img" },
+
+    { "type": "contains", "from": "wrapped", "target": "deep-src", "line_number": 57, "meta.isDOMHierarchy": true }
+  ],
+  "forbidRelationships": [
+    { "comment": "rel=preconnect / dns-prefetch name a HOST for a connection warm-up and fetch nothing. The pre-fix analyzer mirrored them into imports, so the index claimed a dependency on a URL that is deliberately never requested.", "from": "l-pre" },
+    { "from": "l-pre", "target": "https://cdn.example.com" },
+    { "from": "l-dns" },
+    { "from": "l-dns", "target": "//fonts.example.net" },
+    { "comment": "<base href> rewrites relative resolution — architecturally load-bearing, but it fetches nothing. A document metric, not a graph edge.", "from": "base" },
+    { "from": "base", "target": "/app/" },
+    { "comment": "param value is a resource only for a resource-bearing name; quality=high is a plain value.", "from": "p-quality", "target": "high" },
+    { "comment": "A resolved fragment resolves to the SYMBOL, never to the written text.", "target": "#icon" },
+    { "comment": "A viewBox is a coordinate system, not a resource.", "target": "0 0 24 24" }
+  ],
+  "forbidImports": [
+    { "module": "https://cdn.example.com" },
+    { "module": "//fonts.example.net" },
+    { "module": "/app/" },
+    { "module": "high" }
+  ]
+}

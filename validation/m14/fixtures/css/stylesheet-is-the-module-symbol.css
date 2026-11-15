@@ -1,0 +1,23 @@
+/* The stylesheet is a module, and it has a node.
+
+   `@import` is CSS's only module-level dependency: it names another stylesheet as an
+   external resource. The edge therefore has a source — THIS file — and before the
+   stylesheet-module symbol the source string named no symbol in the file, so the store
+   recorded the edge as arriving from outside the indexed graph when its source was the
+   file the reader was already looking at.
+
+   Nothing here depends on the import resolving. `normalize.css` is deliberately not a
+   file in this fixture directory: the TARGET of an `@import` is an external specifier
+   and `target_external` is the correct record for it. What this fixture pins is the
+   other end. */
+@import url("normalize.css");
+
+:root {
+	--brand: #3355ff;
+	--brand-contrast: #ffffff;
+}
+
+.button {
+	color: var(--brand);
+	background: var(--brand-contrast);
+}

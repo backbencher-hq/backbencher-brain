@@ -1,0 +1,24 @@
+{
+ "fixtureId": "cpp/template-declarator-name-612",
+ "language": "cpp",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "M37.19 (#612) family deep differential. The cpp lane's FULL EXTENT (fmt, 73 files — the whole corpus) reported 7 covered reads that were false on BOTH sides at once: the DECLARED NAME of a template-wrapped declarator read as a use of itself. `template <> constexpr auto num_bits<native_int128>() -> int` puts the defined name inside `template_function`, so the leftmost-declarator rule (which gates on the node's direct parent) classified it as a read — the analyzer emitted `uses detail -> num_bits` and the F5 oracle derived the same edge, so the lane's counts read 100%/0/0 with 7 fabricated pairs inside them. Sites: fmt format.h:411 (num_bits), :1158 (digits10), printf.h:62 (find), test/gtest/gtest/gtest.h:4071 (GenerateNamesRecursively), test/fuzzing/one-arg.cc:15 (from_repr), test/fuzzing/fuzzer-common.h:49 (assign_from_buf), test/format-impl-test.cc:172 (run_double_tests). The rule lives in `templateWrappedDeclaratorName` (src/ast/real-cpp-analyzer.ts), exported so the F5 oracle imports it instead of re-implementing it. MEASURED ON THIS EXACT FILE through the production entry, only real-cpp-analyzer.ts differing (HEAD vs the fix): edges 9 -> 8, the single removed edge being `uses detail -> bits_of @39` (the specialization's own name, from the `template <>` line — not from the primary template at :32, which the generic rule already covered), while `calls use_bits -> bits_of` (the callee leaf belongs to the calls branch) and `uses read_through_size -> kBufferSize` (a genuine size-expression read — the shape the first cut of this rule over-suppressed on the corpus) both SURVIVE. Symbols are unchanged on both sides: the specialization still publishes `function:bits_of`. The narrowness argument is why the third shape matters: a blanket 'anything under a declarator surface is a declaration' rule would have killed the array-size read.",
+ "expectSymbols": [
+  { "name": "bits_of", "kind": "function", "comment": "the primary template at :32" },
+  { "name": "kBufferSize", "kind": "variable" },
+  { "name": "shared_counter", "kind": "variable" },
+  { "name": "use_bits", "kind": "function" },
+  { "name": "read_through_size", "kind": "function" },
+  { "name": "detail", "kind": "namespace" }
+ ],
+ "expectRelationships": [
+  { "type": "calls", "from": "use_bits", "target": "bits_of", "comment": "CONTROL: a CALL of the same template stays a call — the callee leaf is not silence and not a read" },
+  { "type": "uses", "from": "read_through_size", "target": "kBufferSize", "line_number": 65, "comment": "CONTROL (narrowness): a genuine read in an array-size expression survives — the corpus shape the rule must never swallow" },
+  { "type": "uses", "from": "read_through_size", "target": "shared_counter", "line_number": 66, "comment": "CONTROL: a bare value read survives" },
+  { "type": "contains", "from": "detail", "target": "bits_of", "comment": "the specialization still declares an entity (membership rides Contains)" }
+ ],
+ "forbidRelationships": [
+  { "type": "uses", "target": "bits_of", "comment": "CPPD15/CPPD16: the declared name of an explicit specialization is a DECLARATION POSITION — neither `uses detail -> bits_of` nor any other source may publish a read of it. This is the pin the corpus found: reverting the climb in `templateWrappedDeclaratorName` re-emits `uses detail -> bits_of @39` and this fixture fails." },
+    {"type": "uses", "target": "detail::bits_of", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

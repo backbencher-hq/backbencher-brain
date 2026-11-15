@@ -1,0 +1,80 @@
+{
+  "fixtureId": "python/object-base-guess-refused",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PY-33. `object` is the CLOSED root of the python class hierarchy \u2014 `dir(object)` is 23 names on CPython 3.10.12 and every class inherits them whether or not it writes `object` in its base list \u2014 so it is the one external base whose members are knowable without reading a module. A first-parent guess that names `object` is therefore a CHECKABLE claim, and for a method `object` does not have it is a false statement carrying confidence 0.5. Measured on python-codesql (184 files) by script/m14/python-guess-accuracy.ts, which imports each guessed base and asks `hasattr(base, method)` on the interpreter: before the fix 41 guessed edges resolved to TRUE 1 / FALSE 23 / UNKNOWN 17, accuracy 4.2% over decided edges, and 17 of the 23 FALSE were `object.<method>` \u2014 one per method of a unittest.TestCase subclass whose only base is `object`. After: 24 guessed edges, TRUE 1 / FALSE 6 / UNKNOWN 17. The lane's own differential cannot see this class of defect and the reason is worth recording in the fixture: it reports every guess as `refuted`, but a refutation by a ONE-FILE oracle is vacuous for a base this file never read \u2014 the oracle's tree does not contain the base, so it disagrees whether the edge is true or false. The verdict came from CPython, not from the count. Two boundaries are pinned so the fix cannot be over-applied: `DunderOwner.__str__` KEEPS its `object.__str__` guess because `object` really does declare `__str__`, and `External.handle` KEEPS its guess because `ExternalBase` is genuinely unreadable from this file \u2014 deleting the whole tier is not this lane's decision (PY-7 is a cross-lane family contract) and a fix that did it would pass every forbid in this file while losing true edges.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Plain",
+      "target": "object"
+    },
+    {
+      "type": "extends",
+      "source": "DunderOwner",
+      "target": "object"
+    },
+    {
+      "type": "overrides",
+      "source": "DunderOwner.__str__",
+      "target": "__str__",
+      "meta.reasonCode": "first-parent-guess",
+      "note": "BOUNDARY, the one that keeps the fix honest: `object` DOES declare `__str__`, so the external tier still applies to it. A fix that refused every `object` guess would pass the forbid below and lose this edge"
+    },
+    {
+      "type": "overrides",
+      "source": "External.handle",
+      "target": "handle",
+      "meta.reasonCode": "first-parent-guess",
+      "note": "BOUNDARY, the other side: an unreadable base that is not `object` keeps the family's 0.5 tier unchanged. The fix is narrow on purpose"
+    },
+    {
+      "type": "contains",
+      "source": "Plain",
+      "target": "describe",
+      "note": "the member edge the class really does declare, so the fix is not 'emit nothing for these classes'"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "Plain.describe",
+      "target": "describe",
+      "note": "THE DEFECT. `object` has no `describe` \u2014 CPython's `hasattr(object, 'describe')` is False \u2014 so this edge was a false statement at 0.5, one per method of every `class X(object)` in the corpus"
+    },
+    {
+      "type": "overrides",
+      "source": "Plain.__init__",
+      "target": "__init__",
+      "confidenceMax": 0.5,
+      "note": "`__init__` is the one `object` member the analyzer already claims as a FACT at 0.95 (`reasonCode: object-init-universal`), so a second 0.5 edge naming the same pair would be a duplicate claim at the wrong confidence. Pinned because the two rules sit eleven lines apart in the same method"
+    },
+    {
+      "type": "overrides",
+      "source": "DunderOwner.__str__",
+      "target": "__str__",
+      "confidenceMin": 0.7,
+      "note": "the surviving `object` guess must stay at the family's 0.5, not be promoted on the strength of `object` being knowable"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "describe",
+      "ownerName": "Plain",
+      "kind": "method",
+      "note": "the method whose `object` guess is refused (L22). Declared here so the forbid is about a real declaration rather than about a name the file never mentions"
+    },
+    {
+      "name": "__str__",
+      "ownerName": "DunderOwner",
+      "kind": "method",
+      "note": "the method whose `object` guess SURVIVES (L28)"
+    },
+    {
+      "name": "handle",
+      "ownerName": "External",
+      "kind": "method",
+      "note": "the method whose external-base guess is untouched (L34)"
+    }
+  ]
+}

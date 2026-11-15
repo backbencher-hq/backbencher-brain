@@ -1,0 +1,105 @@
+{
+  "issue": "M60 clojure deep round — CLJ-D21/D5c/D6/D8",
+  "note": "The ns-clause and declaration surfaces, each measured on the corpora before the fix. D5: `:only` is `:refer`'s legacy twin and its name list is a LIST — `(:use [clojure.java.browse :only (browse-url)])`, 16 sites in the clojure corpus alone — so it registered no refer name and every call dangled. D5c: the libspec guard looked only at a LIST parent, so a name list nested in a VECTOR spec walked as CODE and fabricated a top-level call; once D5 taught the handler to read `:only` that fabrication acquired a lib (`ns -[calls]-> clj.java.browse/browse-up`, isTopLevel). D6: `(declare a b)` interns a var, but `declare` is a core form, so it produced no symbol and no edge AND its names were not in-file declarations — 68 sites — leaving every later call with nothing to resolve to. D8: `:rename {old new}` was a declared limitation (F17); measured at 7 sites in clj-kondo and closed. The pairing is POSITIONAL — a map literal alternates key/value, so the NEW name is the ODD child; reading both would make the unbound `old` name resolve, which is the shadowing `:rename` exists to prevent. `uses-rename -> rewrite-text` is therefore pinned as a BARE dangling target: Clojure really does unbind that name, so a call to it is a genuine unresolved var and the analyzer must not invent a lib for it.",
+  "expectSymbols": [
+    {
+      "name": "collect-rows",
+      "kind": "variable"
+    },
+    {
+      "name": "normalize-rows",
+      "kind": "variable"
+    },
+    {
+      "name": "mutually-recursive"
+    },
+    {
+      "name": "uses-only"
+    },
+    {
+      "name": "uses-rename"
+    },
+    {
+      "name": "collect-then-call"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "clj.fixture.librules",
+      "target": "clj.fixture.legacy"
+    },
+    {
+      "type": "references",
+      "from": "clj.fixture.librules",
+      "target": "clj.fixture.renamed"
+    },
+    {
+      "type": "calls",
+      "from": "uses-only",
+      "target": "clj.fixture.legacy/browse-up",
+      "line_number": 37
+    },
+    {
+      "type": "calls",
+      "from": "uses-only",
+      "target": "clj.fixture.legacy/format-node",
+      "line_number": 38
+    },
+    {
+      "type": "calls",
+      "from": "uses-rename",
+      "target": "clj.fixture.renamed/retype",
+      "line_number": 41
+    },
+    {
+      "type": "calls",
+      "from": "collect-then-call",
+      "target": "normalize-rows",
+      "line_number": 45
+    },
+    {
+      "type": "calls",
+      "from": "collect-then-call",
+      "target": "collect-rows",
+      "line_number": 45
+    },
+    {
+      "type": "contains",
+      "from": "clj.fixture.librules",
+      "target": "collect-rows"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "clj.fixture.librules",
+      "target": "clj.fixture.legacy/browse-up"
+    },
+    {
+      "type": "calls",
+      "from": "clj.fixture.librules",
+      "target": "browse-up"
+    },
+    {
+      "type": "calls",
+      "from": "clj.fixture.librules",
+      "target": "format-node"
+    },
+    {
+      "type": "calls",
+      "from": "uses-rename",
+      "target": "clj.fixture.renamed/rewrite-text"
+    },
+    {
+      "type": "calls",
+      "from": "uses-only",
+      "target": "browse-up"
+    },
+    {
+      "type": "calls",
+      "from": "uses-only",
+      "target": "format-node"
+    }
+  ]
+}

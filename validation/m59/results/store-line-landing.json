@@ -3,7 +3,7 @@
   "at": "2026-09-19T03:14:36.081Z",
   "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
   "treeModifiedInputs": 52,
-  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "repo": "/home/ishaq2321/bb_tests/repositories/cats-effect",
   "tempDataDir": "/tmp/m59-data-0y5qqw",
   "indexStats": {
     "files": 404,

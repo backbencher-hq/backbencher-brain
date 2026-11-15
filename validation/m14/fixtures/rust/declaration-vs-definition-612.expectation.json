@@ -1,0 +1,42 @@
+{
+  "fixtureId": "rust/declaration-vs-definition-612",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M37.19 (#612) store-phase. The rust grammar already distinguishes a body-bearing function from a body-less one in the NODE TYPE the walk switches on — `function_item` vs `function_signature_item` — and line 192 of real-rust-analyzer.ts handled BOTH in one branch. The distinction was used only to decide scope; nothing was published, so an `extern \"C\" { fn f(); }` FFI declaration emitted a `function` symbol indistinguishable from the definition that implements it in another file, and name resolution could pick the declaration. Only the published fact was missing, so the fix adds `metadata.isDeclaration` to the same createSymbol metadata the branch already builds — no new walk, no new node test. MEASURED ON THIS EXACT FILE by dumping the analyzer output through the fixture harness' own loader (wasm/tree-sitter-rust.wasm, RealRustAnalyzer): ffi_decl:16 isDeclaration=true, Runnable::sig_only:20 isDeclaration=true, body_fn:23-25 ABSENT, Runnable:19-21 ABSENT (the trait itself is not a function declaration). Two-sided on purpose: a rule that marked every function fails the `forbidSymbols` half.",
+  "expectSymbols": [
+    {
+      "name": "ffi_decl",
+      "kind": "function",
+      "meta.isDeclaration": true,
+      "comment": "`extern \"C\" { fn ffi_decl() -> i32; }` — a body-less FFI declaration. This is the shape that can compete with a definition in another file."
+    },
+    {
+      "name": "sig_only",
+      "kind": "method",
+      "ownerName": "Runnable",
+      "meta.isDeclaration": true,
+      "comment": "a trait method signature — also a `function_signature_item`, also body-less"
+    },
+    {
+      "name": "body_fn",
+      "kind": "function",
+      "comment": "a plain `pub fn` with a body (`function_item`)"
+    },
+    {
+      "name": "Runnable",
+      "kind": "trait"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "body_fn",
+      "meta.isDeclaration": true,
+      "comment": "NEGATIVE HALF: a `function_item` is a DEFINITION. Marking every function, or keying the flag off `isMethod`, fails this entry."
+    },
+    {
+      "name": "Runnable",
+      "meta.isDeclaration": true,
+      "comment": "NEGATIVE HALF: the trait container is not a function declaration — the flag must stay on the functions."
+    }
+  ]
+}

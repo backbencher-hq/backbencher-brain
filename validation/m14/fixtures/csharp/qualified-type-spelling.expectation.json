@@ -1,0 +1,83 @@
+{
+  "fixtureId": "csharp/qualified-type-spelling",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The alias qualifier (`global::`) is not part of a name. This lane publishes the FULL dotted path for a type target, so a source file that writes `global::A.B` must publish the same target as the twin that writes `A.B` — and before this round it published the qualifier instead. Measured on BOTH pinned corpora, over all 76 files containing `::` (script/m14/tmp/cs-alias-qualifier-census.ts): 146 rows carried the qualifier — 49 `instantiates`, 2 `extends`, and 95 ATTRIBUTE names in the decorator payload — and the row-level before/after is exact: 146 rows removed, 146 added, every removed row a twin of an added row at the same file+type+line with only the qualifier stripped, 0 unexplained and 0 fabricated (script/m14/tmp/cs-alias-row-dump.ts; decorator rows are dumped UNFILTERED because a filter on `::` hides the post-fix spelling and makes the reconciliation unverifiable). R10 independently moved on the same change (`sep=1 unruled=instantiates|:` before, `sep=0 unruled=-` after), and the differential's csharp lane is byte-identical before and after at full corpus extent (fsharp: 243 files, 12,886/12,886, MISSING=0, unexplained=0, same file-set hash `4d0e5ba230a7b27f`). The corpora exercise only creation, heritage and attributes, so the REST of this fixture comes from probing every type-name position the language has (script/m14/tmp/cs-alias-position-battery.ts, -battery2.ts, -battery3.ts, -battery4.ts, cs-alias-single-segment-probe.ts), which is how it came to cover the four positions a corpus measurement cannot see — the using directive's module, the target-typed `new()` resolved from a qualified declared type, the conversion OPERATOR's name (a SYMBOL name, which never passes through the type-name cleaning the relationship targets do), and the plain `using global::System;` form — plus three positions where the shape published NOTHING AT ALL rather than the wrong spelling: explicit `new global::Root()`, a method return type, and an indexer's return type. Those three share one root cause: a hardcoded node list omitting `alias_qualified_name`, the node the pinned grammar gives a `global::`-qualified name with a SINGLE segment (it is wrapped in a `qualified_name` only when a dot follows the qualifier). The corpora contain 550 multi-segment occurrences and 0 single-segment ones, so no draw could ever have seen it; the fixture is the only instrument that can hold those positions. EVERY row here is written TWICE — qualified and unqualified — so the expected spelling is read off the twin rather than asserted by hand. SOURCE-SPELLING CORRECTION 2026-10-02: the type-level edges are pinned with the BARE type name as the relationship source (`Widget`, `Shape`, `Qualified`), not the namespace-qualified one (`Pin.Widget`, `Acme.Domain.Shape`, `Probe.Qualified`) these rows used to name. The analyzer publishes the bare name, and the hand-audited truth agrees: validation/m12/ground-truth/csharp.json (truthSource=manual_audit) records type-level rows with bare sourceIds such as `BaseService -> BaseService {extends}` and `BaseService -> IRepository {implements}`. The qualified spelling was a pin that could never match, which is why this fixture was RED. Only the source LABEL changed: the edge type, target, line_number and every `meta.*` constraint are untouched, and the `forbid` rows that carried the qualified spelling were vacuous before (no edge ever had that source) and are now ACTIVE. Mutant csharp/drop-implements-edge and csharp/iface-base-extends-fabrication were unobservable for exactly this reason.",
+  "expectSymbols": [
+    { "name": "Probe", "kind": "namespace" },
+    { "name": "Base", "kind": "class", "ownerName": "Probe" },
+    { "name": "Qualified", "kind": "class", "ownerName": "Probe", "comment": "heritage written with the qualifier" },
+    { "name": "PlainQualified", "kind": "class", "ownerName": "Probe", "comment": "the twin" },
+    { "name": "PlainAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "AliasAttributed", "kind": "class", "ownerName": "Probe", "comment": "the attribute is written `[global::System.Serializable]` here and plain on its twin — 95 rows of this position exist in the pinned corpora" },
+    { "name": "Conversions", "kind": "class", "ownerName": "Probe" },
+    { "name": "implicit PlainQualified", "kind": "method", "ownerName": "Conversions", "meta.isConversionOperator": true },
+    { "name": "implicit Probe.PlainQualified", "kind": "method", "ownerName": "Conversions", "meta.isConversionOperator": true, "comment": "the qualified twin: pre-fix this SYMBOL name read `implicit global::Probe.PlainQualified` — no declared-type cleaning touches a symbol name" },
+    { "name": "Bodies", "kind": "class", "ownerName": "Probe" },
+    { "name": "QualifiedNew", "kind": "method", "ownerName": "Bodies" },
+    { "name": "PlainNew", "kind": "method", "ownerName": "Bodies" },
+    { "name": "SpacedNew", "kind": "method", "ownerName": "Bodies" },
+    { "name": "PlainDeclared", "kind": "method", "ownerName": "Bodies" },
+    { "name": "QualifiedDeclared", "kind": "method", "ownerName": "Bodies" },
+    { "name": "ExternalAliasNew", "kind": "method", "ownerName": "Bodies" },
+    { "name": "global", "kind": "property", "ownerName": "Bodies", "comment": "control: `global` is a legal identifier, and the rule keys on `::`, never on the word" },
+    { "name": "ReadGlobal", "kind": "method", "ownerName": "Bodies" },
+    { "name": "Root", "kind": "class", "ownerName": "Probe", "comment": "the single-segment alias shapes' type" },
+    { "name": "GlobalShapes", "kind": "class", "ownerName": "Probe" },
+    { "name": "New", "kind": "method", "ownerName": "GlobalShapes" },
+    { "name": "Ret", "kind": "method", "ownerName": "GlobalShapes" },
+    { "name": "this", "kind": "property", "ownerName": "GlobalShapes", "comment": "the indexer: its return type is one of the three positions that published NOTHING for the alias shape" },
+    { "name": "PlainRet", "kind": "method", "ownerName": "GlobalShapes" }
+  ],
+  "expectImports": [
+    { "module": "System.Text.StringBuilder", "comment": "BOTH `using PlainBuilder = System.Text.StringBuilder;` and `using AliasedBuilder = global::System.Text.StringBuilder;` publish this one module — the pair is the pin" },
+    { "module": "System.Math", "comment": "`using static System.Math;` and `using static global::System.Math;` — the same pair on the static form" },
+    { "module": "System", "comment": "`using System;` and `using global::System;` — the PLAIN form with a single-segment qualifier, which published no import at all before the fix" }
+  ],
+  "expectDecorators": [
+    { "symbol": "PlainAttributed", "contains": "System.Serializable" },
+    { "symbol": "AliasAttributed", "contains": "System.Serializable", "comment": "the qualified attribute publishes the same name as its twin" }
+  ],
+  "forbidDecorators": [
+    { "contains": "global::", "comment": "no decorator anywhere may carry the qualifier — the pin `expectDecorators` structurally could not make, because the pre-fix spelling contains the post-fix one" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "target": "System.Text.StringBuilder", "line_number": 38, "note": "`using PlainBuilder = System.Text.StringBuilder;`" },
+    { "type": "references", "target": "System.Text.StringBuilder", "line_number": 39, "note": "`using AliasedBuilder = global::System.Text.StringBuilder;` — the qualified alias twin" },
+    { "type": "references", "target": "System.Math", "line_number": 40 },
+    { "type": "references", "target": "System.Math", "line_number": 41, "note": "the `using static global::System.Math;` twin" },
+    { "type": "references", "target": "System", "line_number": 42, "note": "`using System;`" },
+    { "type": "references", "target": "System", "line_number": 43, "note": "`using global::System;` — the plain form whose name node is the single-segment alias shape; pre-fix this line published NOTHING" },
+    { "type": "extends", "from": "Qualified", "target": "Probe.Base", "line_number": 49, "note": "`class Qualified : global::Probe.Base` — the qualifier is removed and the FULL PATH is kept" },
+    { "type": "extends", "from": "PlainQualified", "target": "Probe.Base", "line_number": 51, "note": "its twin: identical target after the fix" },
+    { "type": "instantiates", "from": "QualifiedNew", "target": "System.Text.StringBuilder", "line_number": 68, "note": "explicit `new global::System.Text.StringBuilder()`" },
+    { "type": "instantiates", "from": "PlainNew", "target": "System.Text.StringBuilder", "line_number": 70, "note": "its twin" },
+    { "type": "instantiates", "from": "SpacedNew", "target": "System.Text.StringBuilder", "line_number": 74, "note": "`new global :: System.Text.StringBuilder()` — whitespace on both sides of `::` is legal and the qualifier comes off all the same (the rule is a char scan, not an exact-text match)" },
+    { "type": "instantiates", "from": "PlainDeclared", "target": "System.Text.StringBuilder", "line_number": 78, "note": "target-typed `new()` resolved from `System.Text.StringBuilder plain`" },
+    { "type": "instantiates", "from": "QualifiedDeclared", "target": "System.Text.StringBuilder", "line_number": 84, "note": "the qualified twin: pre-fix this position published `global::System.Text.StringBuilder`, and its declared type cleans through a different function than the creation target does" },
+    { "type": "instantiates", "from": "ExternalAliasNew", "target": "Sql::Data", "line_number": 89, "note": "RULED BOUNDARY, pinned as such: an `extern alias` qualifier is published as written. Only `global` is stripped, because any other head names a binding this lane does not resolve — removing it would publish a namespace the source never wrote. Shape occurs 0 times in either pinned corpus" },
+    { "type": "instantiates", "from": "New", "target": "Root", "line_number": 104, "note": "`new global::Root()` — a single-segment alias, which published NO edge at all before the fix (the node list omitted `alias_qualified_name`)" },
+    { "type": "references", "from": "Ret", "target": "Root", "line_number": 106, "note": "method return type written with the single-segment qualifier: also silent before the fix" },
+    { "type": "references", "from": "GlobalShapes", "target": "Root", "line_number": 108, "note": "the INDEXER's return type, same fix (an indexer's dependency is attributed to the enclosing type, the family convention)" },
+    { "type": "references", "from": "PlainRet", "target": "Root", "line_number": 110, "note": "its plain twin" },
+    { "type": "contains", "from": "Conversions", "target": "implicit Probe.PlainQualified", "note": "the conversion operator's SYMBOL name, qualifier-free" },
+    { "type": "uses", "from": "ReadGlobal", "target": "global", "line_number": 94, "note": "control: the identifier `global` is still published as `global` — a rule that keyed on the word instead of `::` would blank this" }
+  ],
+  "forbidRelationships": [
+    { "target": "global::System.Text.StringBuilder", "note": "the pre-fix spelling in every position that used it here (alias directive, explicit new, target-typed new)" },
+    { "target": "global::System.Math", "note": "the pre-fix spelling on the static-using form" },
+    { "target": "global::System", "note": "the pre-fix spelling on the plain-using form" },
+    { "target": "global::Probe.Base", "note": "the pre-fix heritage spelling — 2 of the 146 corpus rows were exactly this" },
+    { "target": "global::Probe.PlainQualified", "note": "the same class on the conversion-operator position" },
+    { "target": "global::Root", "note": "the single-segment spelling on the creation, return and indexer positions" },
+    { "target": "global :: System.Text.StringBuilder", "note": "the spacing-carrying spelling: a name is the name, never its layout" },
+    { "type": "instantiates", "target": "StringBuilder", "note": "the OVER-COLLAPSE direction, scoped by label: this lane publishes the full dotted path for a qualified target, so a fix that took the last segment would break the lane's own contract. Scoped because the R9 declared-type rows in this same file ARE leaves by their own convention (`references PlainDeclared -> StringBuilder`), so forbidding the bare leaf globally would forbid correct behaviour" },
+    { "type": "extends", "target": "Base", "note": "same over-collapse on heritage: `global::Probe.Base` must become `Probe.Base` and never `Base`" },
+    { "type": "instantiates", "target": "Data", "note": "the OTHER over-reach: stripping a non-`global` alias qualifier (see the `Sql::Data` boundary pin above)" }
+  ],
+  "forbidSymbols": [
+    { "name": "implicit global::Probe.PlainQualified", "note": "the pre-fix conversion-operator name" },
+    { "name": "global::Probe.PlainQualified", "note": "the same name without its `implicit` head — the collapse a fix that stripped the modifier would produce" },
+    { "name": "implicit Probe" , "note": "the over-collapse of the operator name: the target is the whole written path minus the qualifier, never its first or last segment alone" }
+  ]
+}

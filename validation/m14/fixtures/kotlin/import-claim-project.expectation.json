@@ -1,0 +1,13 @@
+{
+  "fixtureId": "kotlin/import-claim-project",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "IMPORTED-BINDING CLAIM (task-40) \u2014 flag-gated `BB_KOTLIN_IMPORT_CLAIM=1`, DEFAULT OFF (off arm byte-identical: no claim metadata is added). NEGATIVE fixture: a PROJECT import (`com.acme.util.helper`) is outside the reserved external-root allowlist \u2014 no evidence and no claim (claiming it would launder a project-resolvable name). The on-state assertions live in the lane-owned probe `script/m14/kotlin-import-claim-probe.ts` (the shared fixture runner cannot set the flag); this expectation pins the DEFAULT-OFF edge surface.",
+  "expectSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "com.acme.util.helper"
+    }
+  ]
+}

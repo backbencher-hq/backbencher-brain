@@ -24,7 +24,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/yaml-family-census.json")
 const CENSUS = path.join(ROOT, "script/m12/yaml-corpus-errors.ts")
 

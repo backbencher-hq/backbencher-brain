@@ -1,0 +1,16 @@
+{
+  "fixtureId": "python/dataclass-decorator-binding",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Only a decorator bound to dataclasses.dataclass at class definition can establish dataclass field evidence.",
+  "expectRelationships": [
+    { "type": "calls", "from": "module_alias", "target": "send", "meta.owner": "Payload", "meta.ownerEvidence": "field" },
+    { "type": "calls", "from": "item_alias", "target": "send", "meta.owner": "Payload", "meta.ownerEvidence": "field" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "qualified_namesake", "target": "send", "meta.ownerEvidence": "field" },
+    { "type": "calls", "from": "imported_namesake", "target": "send", "meta.ownerEvidence": "field" },
+    { "type": "calls", "from": "before_import", "target": "send", "meta.ownerEvidence": "field" },
+    { "type": "calls", "from": "after_rebinding", "target": "send", "meta.ownerEvidence": "field" }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "issue": "M20.S2",
+  "code": "S2",
+  "milestone": "M20",
+  "status": "known-gap",
+  "checks": 58,
+  "passed": 58,
+  "failed": 0,
+  "negativeCases": 15,
+  "negativePassed": 15,
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "sourceFingerprint": "667264e01d1025cd715b16bca0c748f0e6ba65a0ed5cb32143084ee058980a93",
+  "workingTreeRelevantChanges": [
+    "docs/BB_SECURITY.md",
+    "docs/tools/bb_security.md",
+    "script/m15/verify-security-deep.ts",
+    "script/m15/verify-security-precision.ts",
+    "script/m15/verify-security-regressions.ts",
+    "script/m20/verify-security-adversarial.ts",
+    "script/m20/verify-security-flow-boundary.ts",
+    "script/m20/verify-security-history.ts",
+    "src/ast/parallel-indexer.ts",
+    "src/brain/schema-ddl.ts",
+    "src/mcp/tools/bb_security/descriptor.ts",
+    "src/mcp/tools/bb_security/handler.ts"
+  ],
+  "verifierCommand": "npx tsx script/m20/verify-security-adversarial.ts",
+  "evidenceFile": "S2.json",
+  "generatedAt": "2026-11-15T04:01:24.727Z",
+  "limitations": [
+    "Policy matrix and real-behavior fixtures cover classification, calibration, dedup, filters, and mutation response; they do not prove real-world taint recall.",
+    "Real-repository security coverage is measured by the m15 corpus leg and validation/tools/bb_security/REAL-CORPUS.json; template-literal XSS and cross-symbol Python CMDi remain analyzer blind spots documented in docs/BB_SECURITY.md."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-15T04:01:24.728Z",
+    "contentSha256": "f0bf1f9a739fa494b57054679266b67fcea89c14cd494f20911b8da63ea540fe"
+  }
+}

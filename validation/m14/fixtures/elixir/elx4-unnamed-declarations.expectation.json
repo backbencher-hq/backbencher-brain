@@ -1,0 +1,16 @@
+{
+  "issue": "ELX4 — a declaration whose name cannot be read",
+  "note": "`def unquote(name)(x)` names its function at RUNTIME, so no static name exists. The SYMBOL is published (the declaration is real) and marked `metadata.unresolvedName`, but NO edge is published for it: an edge whose endpoint is the analyzer's `Unknown` placeholder is R7's fabrication class, and 19 such `contains -> Unknown` edges existed on the corpus at HEAD. `defmodule :\"foo/bar\"` is not a module name at all (kernel_test.exs:924 is a test asserting Elixir REJECTS it), so it publishes no module and its body is not walked.",
+  "expectSymbols": [
+    { "name": "Unknown", "kind": "function" },
+    { "name": "ELX4.UnnamedDyn", "kind": "module" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "Unknown" },
+    { "type": "exports", "target": "Unknown" }
+  ],
+  "forbidSymbols": [
+    { "name": "ELX4.BadModuleName.:\"foo/bar\", do: :ok" },
+    { "name": "ELX4.BadModuleName.foo/bar" }
+  ]
+}

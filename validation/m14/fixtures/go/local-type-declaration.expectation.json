@@ -1,0 +1,44 @@
+{
+  "fixtureId": "go/local-type-declaration",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS GO38 in BOTH directions, because the fix moved a gate and the gate's other half is what a future editor would break. LocalsAreNotSymbols (C# M12.07 / Swift M12.21) excludes a function-local var/const; the family's stated exception is nim's, in its own analyzer header — 'THE ONE EXCEPTION IS AN OBJECT/ENUM/FIELD DECLARATION, WHICH IS A SYMBOL BECAUSE THE OBJECT OWNS IT.' A local type owns its fields, so the type is a declaration and the fields are members. PRE-FIX the walk `continue`d on every function and method and never reached a local type at all, and the silence was NOT neutral: `extractDeclaredTypeRefs` already walks bodies and already attributed a local type's field types to that type, so the lane published `references Local -> Host` with `Local` absent from its own symbol table — a relationship whose SOURCE named nothing. Found by the round-6 `contains` truth (`go-round6-contains-truth.ts`), which derives membership from the DECLARATION side of the tree so an unpublished type is a MISSING row rather than invisible on both sides; 22 such memberships in 200 go-tools files (0.07% of the surface, which is why a 60-file draw could not see it). The FORBID rows are the other half of the contract: publishing everything in a body would satisfy the expect rows too, so without them this fixture cannot tell the fix from its opposite. All values read from the real emission by `script/m14/tmp/go-round5-fixture-dump.ts`-style probing after the fix, never predicted.",
+  "expectSymbols": [
+    { "name": "Local", "kind": "struct" },
+    { "name": "H", "kind": "property", "ownerName": "Local" },
+    { "name": "N", "kind": "property", "ownerName": "Local" },
+    { "name": "Nested", "kind": "struct" },
+    { "name": "Q", "kind": "property", "ownerName": "Nested" },
+    { "name": "InIf", "kind": "struct" },
+    { "name": "A", "kind": "property", "ownerName": "InIf" },
+    { "name": "InFor", "kind": "struct" },
+    { "name": "B", "kind": "property", "ownerName": "InFor" },
+    { "name": "RealType", "kind": "struct" },
+    { "name": "R", "kind": "property", "ownerName": "RealType" },
+    { "name": "Host", "kind": "struct" },
+    { "name": "Z", "kind": "property", "ownerName": "Host" }
+  ],
+  "forbidSymbols": [
+    { "name": "localVar" },
+    { "name": "localConst" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "Host", "target": "Z", "line_number": 25 },
+    { "type": "contains", "source": "Local", "target": "H", "line_number": 32 },
+    { "type": "contains", "source": "Local", "target": "N", "line_number": 33 },
+    { "type": "contains", "source": "Nested", "target": "Q", "line_number": 41 },
+    { "type": "contains", "source": "InIf", "target": "A", "line_number": 50 },
+    { "type": "contains", "source": "InFor", "target": "B", "line_number": 54 },
+    { "type": "contains", "source": "RealType", "target": "R", "line_number": 68 },
+    { "type": "references", "source": "Local", "target": "Host", "meta.relationshipType": "declared_type", "line_number": 32 },
+    { "type": "references", "source": "Nested", "target": "Host", "meta.relationshipType": "declared_type", "line_number": 41 },
+    { "type": "references", "source": "InIf", "target": "Host", "meta.relationshipType": "declared_type", "line_number": 50 },
+    { "type": "references", "source": "InFor", "target": "Host", "meta.relationshipType": "declared_type", "line_number": 54 },
+    { "type": "references", "source": "RealType", "target": "Host", "meta.relationshipType": "declared_type", "line_number": 68 },
+    { "type": "references", "source": "localsStayLocal", "target": "RealType", "meta.relationshipType": "declared_type", "line_number": 69 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "source": "localtype", "target": "localVar" },
+    { "type": "contains", "source": "localsStayLocal", "target": "localVar" }
+  ]
+}

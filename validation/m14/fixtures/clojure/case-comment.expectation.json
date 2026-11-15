@@ -1,0 +1,20 @@
+{
+  "issue": "CLJ-D36",
+  "note": "The `case` CONSTANT POSITION parity is computed over EXECUTABLE CHILDREN ONLY. A `comment` is a named child, so one comment inside a `case` shifts every later index by one — and then a real BODY lands on an even index and is skipped as if it were an unevaluated constant, taking every relationship inside it with it. metabase/dev/src/dev/kondo_ratchet.clj:343 is the proof: its `case` has TEN named children because of one `;;` at index 6, so the body at index 8 — `(do (when … (.charAt sb (inc i)) …))` — was dropped and the `uses` edges at 348-349 vanished from the graph. Two edges in one file is a small loss; the rule is wrong for every `case` in every corpus holding a comment, and it was invisible because the differential mirror had the IDENTICAL bug — both sides agreed on a body that neither one walked. Two wrong implementations of one rule is not a check. The fix NARROWED the parity, it did not remove it: `with-comment` and `without-comment` must now emit the same three edges, a list-shaped DEFAULT is still an expression (W23), and a list in a genuine constant position is still a group of unevaluated constants and is still skipped (F7).",
+  "expectRelationships": [
+    { "type": "calls", "from": "with-comment", "target": "helper-b", "line_number": 23 },
+    { "type": "calls", "from": "with-comment", "target": "helper-c", "line_number": 24 },
+    { "type": "calls", "from": "with-comment", "target": "helper-default", "line_number": 25 },
+    { "type": "calls", "from": "without-comment", "target": "helper-b", "line_number": 31 },
+    { "type": "calls", "from": "without-comment", "target": "helper-c", "line_number": 32 },
+    { "type": "calls", "from": "without-comment", "target": "helper-default", "line_number": 33 },
+    { "type": "calls", "from": "list-default", "target": "helper-default", "line_number": 39 },
+    { "type": "calls", "from": "constant-group", "target": "helper-group", "line_number": 46 },
+    { "type": "calls", "from": "constant-group", "target": "helper-z", "line_number": 47 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "a" },
+    { "type": "calls", "target": "b" },
+    { "type": "calls", "target": "c" }
+  ]
+}

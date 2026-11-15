@@ -1,0 +1,17 @@
+// The editions header and the three import modifiers. `import option` is the
+// editions FEATURE import and needs the grammar patch this lane carries.
+edition = "2023";
+
+package imp.v1;
+
+import public "common/v1/types.proto";
+import weak "legacy/v1/old.proto";
+import "plain/v1/plain.proto";
+import option "features/v1/validation.proto";
+
+option java_package = "com.example.imp.v1";
+option go_package = "example.com/imp/v1";
+
+message Holder {
+  string value = 1;
+}

@@ -1,0 +1,12 @@
+{
+  "issue": "M16.D1 (all docs ↔ code dual-anchor)",
+  "code": "D1",
+  "tool": "docs",
+  "title": "D1",
+  "verified": true,
+  "checks": 14,
+  "passed": 14,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:27:27.276Z"
+}

@@ -1,0 +1,47 @@
+{
+  "fixtureId": "c/exports-assertion-macro-992",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #992: a marker CALL's argument is a NAME or nothing. Measured on the WHOLE admitted .c population (c-emission-census.ts --cap=0: 5,022/5,022 files, 39 repos, 291 exports edges) — 7 exports edges carried marker `static_assert` and every SOURCE was the assertion's condition expression (redis/src/util.c:63 `UINTPTR_MAX == …`, ext buckts offsetof comparisons, crccombine sizeof comparisons). Redis defines `#define static_assert(expr, lit) extern char __static_assert_failure[(expr) ? 1:-1]`, so the replacement opens with `extern`, the #989 agreement rule makes the macro a linkage marker, and the CALL branch read its first ARGUMENT as the exported name. The guard: only a BARE IDENTIFIER can be a declared name, so an expression argument publishes nothing (false edges rank above missing). The two positives are the controls that keep the call branch alive: a kernel-convention EXPORT_SYMBOL call whose argument IS a name, and a userspace `extern` marker used as a declaration prefix.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "kernel_exported",
+      "target": "EXPORT_SYMBOL",
+      "comment": "CONTROL A: the kernel call spelling whose first argument is a BARE IDENTIFIER — this is a real exported name and must keep publishing. A fix that simply disabled the call branch for file-defined/extern markers would lose this row."
+    },
+    {
+      "type": "exports",
+      "from": "true_export",
+      "target": "PUBLIC_API",
+      "meta.relationshipType": "module_export",
+      "comment": "CONTROL B: the userspace spelling — a macro the file defines to `extern`, used as a declaration PREFIX. A fix that refused every marker whose replacement opens with `extern` would lose this row."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "static_assert",
+      "comment": "THE FALSE CLASS. The marker is a compile-time-assertion macro, not an export boundary; no source may publish an edge targeting it. 7 such rows on the whole admitted population before the guard."
+    },
+    {
+      "type": "exports",
+      "from": "sizeof(long) == 8",
+      "target": "static_assert",
+      "comment": "THE EXACT MEASURED ROW: the condition expression itself, published as if it were a declared name."
+    },
+    {
+      "type": "exports",
+      "from": "1 + 1 == 2",
+      "target": "static_assert",
+      "comment": "A second instance, because one is a coincidence and two is a rule; it also covers the non-identifier literal shape."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "exports",
+      "equals": 2,
+      "note": "CONTROL A + CONTROL B only. A mutant that re-admits expression sources fails the count even if the forbid rows were somehow matched by another row, and a mutant that disables the call branch loses CONTROL A."
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+{
+  "fixtureId": "protobuf/absolute-and-scope-resolution",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS protobuf's NAME RESOLUTION contract, which is the one rule in this analyzer that can silently point an edge at a type that exists in no file. The specification says a relative type name resolves from the INNERMOST enclosing scope outward, and that a leading dot makes the name ABSOLUTE. The file is built around a shape that is legal protobuf and that no other fixture in this lane has: a top-level `Inner` AND a nested `Outer.Inner`, so a resolver that starts its walk at the outermost scope, or that compares only the last dot segment, lands on a real-but-wrong symbol and passes every other row in the suite. Also pins the two fallback shapes, which are decided rather than guessed: an unqualified name not declared here resolves WITHIN the package by specification (`scope.v1.Imported`), while a dotted name not declared here falls back AS WRITTEN (`google.protobuf.Timestamp`) because protobuf writes multi-segment type names fully qualified in practice. Both fallbacks are the analyzer's declared boundary and are asserted here so a later change to them cannot pass unnoticed.",
+  "expectSymbols": [
+    {
+      "name": "scope.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Inner",
+      "kind": "class",
+      "ownerName": "scope.v1",
+      "meta.id": "scope.v1.Inner",
+      "note": "the TOP-LEVEL Inner. It exists so the nested one has something to be confused with."
+    },
+    {
+      "name": "Outer",
+      "kind": "class",
+      "ownerName": "scope.v1"
+    },
+    {
+      "name": "Inner",
+      "kind": "class",
+      "ownerName": "scope.v1.Outer",
+      "meta.id": "scope.v1.Outer.Inner",
+      "note": "the NESTED Inner: a distinct declaration from the top-level one, in the same file"
+    },
+    {
+      "name": "Deepest",
+      "kind": "class",
+      "ownerName": "scope.v1.Outer"
+    },
+    {
+      "name": "Refs",
+      "kind": "class",
+      "ownerName": "scope.v1"
+    },
+    {
+      "name": "top",
+      "kind": "property"
+    },
+    {
+      "name": "nested",
+      "kind": "property"
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "ownerName": "scope.v1.Outer"
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "ownerName": "scope.v1.Outer.Deepest"
+    },
+    {
+      "name": "Inner",
+      "kind": "class",
+      "ownerName": "scope.v1",
+      "meta.id": "scope.v1.Inner",
+      "note": "qualifiedName carries the RESOLVED id, not the bare name, and it is carried on BOTH channels a consumer can reach. `s.qualifiedName` is the one the product reads: it survives pool-worker's symbol projection (metadata.id does not) and becomes brain_symbol.qualified_name, the column resolveRelationships strategy 1 matches a relationship's target against. `metadata.qualifiedName` is the one a fixture can assert, because run-fixtures.ts's CONSTRAINT_KEY_ALLOWLIST carries no `qualifiedName` key. Measured end to end through the real indexer and the real store over 40 reference .proto files (script/m14/tmp/protobuf/probe/store-binding.mts, two runs each): with qualified_name equal to the bare name, 0 of 3,075 analyzer edges were provably the declaration they named; with it equal to the id, 2,977 of 3,075 are (96.81%).",
+      "meta.qualifiedName": "scope.v1.Inner"
+    },
+    {
+      "name": "Inner",
+      "kind": "class",
+      "ownerName": "scope.v1.Outer",
+      "meta.id": "scope.v1.Outer.Inner",
+      "note": "the SAME NAME, a second declaration, and the two qualifiedNames differ. This is the disambiguator a bare-name qualifiedName cannot carry, and it is what bb_impact needs: storeResults recovers a symbol's name by stripping the fileId prefix, so two same-named declarations in one file are separable only by their qualified spelling.",
+      "meta.qualifiedName": "scope.v1.Outer.Inner"
+    },
+    {
+      "name": "top",
+      "kind": "property",
+      "ownerName": "scope.v1.Inner",
+      "note": "a FIELD, not only a type. A member is the endpoint of most `contains` edges, so a fix that published ids for types and left members bare would have moved nothing the graph actually walks.",
+      "meta.qualifiedName": "scope.v1.Inner.top"
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "ownerName": "scope.v1.Outer",
+      "note": "a field whose NAME equals the type it names (`scope.v1.Outer.Inner`). Both ids are published and both are distinct, which is what keeps the `uses` edge off the self-edge shape forbidRelationships asserts below.",
+      "meta.qualifiedName": "scope.v1.Outer.inner"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "Inner",
+      "equals": 3,
+      "note": "exactly THREE declarations named Inner, and the third is the point of this file: the top-level TYPE (scope.v1.Inner), the NESTED type (scope.v1.Outer.Inner), and the shadowing FIELD (scope.v1.SelfNamed.Inner) whose name equals the type it names. A fourth would mean a type was published twice; two would mean the shadowing field was dropped, and the self-edge it used to produce would be back."
+    },
+    {
+      "name": "Inner",
+      "ownerName": "scope.v1.SelfNamed",
+      "equals": 1,
+      "note": "the shadowing field. Exactly one, published under the plain id \u2014 the type it names is a DIFFERENT declaration and must not be merged with it."
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Inner",
+      "ownerName": "scope.v1",
+      "startLine": 10
+    },
+    {
+      "symbol": "Outer",
+      "startLine": 14
+    },
+    {
+      "symbol": "Inner",
+      "ownerName": "scope.v1.Outer",
+      "startLine": 19
+    },
+    {
+      "symbol": "Deepest",
+      "startLine": 24
+    },
+    {
+      "symbol": "Refs",
+      "startLine": 30
+    },
+    {
+      "symbol": "SelfNamed",
+      "startLine": 57
+    },
+    {
+      "symbol": "Shadow",
+      "startLine": 62
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "scope.v1",
+      "target": "scope.v1.Inner",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1",
+      "target": "scope.v1.Outer",
+      "line_number": 14
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1.Outer",
+      "target": "scope.v1.Outer.Inner",
+      "line_number": 19
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1.Outer",
+      "target": "scope.v1.Outer.Deepest",
+      "line_number": 24
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1.Outer.Deepest",
+      "target": "scope.v1.Outer.Deepest.inner",
+      "line_number": 25
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Outer.inner",
+      "target": "scope.v1.Outer.Inner",
+      "line_number": 17,
+      "confidenceMin": 0.9,
+      "note": "THE scope-walk row. Written `Inner`, inside `Outer`, and `Outer` itself declares an `Inner`, so the innermost scope wins: scope.v1.Outer.Inner. Landing on the top-level scope.v1.Inner instead is the defect the scope chain exists to prevent, and a top-level `Inner` IS declared in this file so the wrong answer is a real symbol rather than a dangling name \u2014 which is what makes it hard to notice."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Outer.Deepest.inner",
+      "target": "scope.v1.Outer.Inner",
+      "line_number": 25,
+      "confidenceMin": 0.9,
+      "note": "the same spelling one scope deeper, so a resolver that checked only the IMMEDIATE parent would miss it and fall through to the top level"
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.qualified",
+      "target": "scope.v1.Outer.Inner",
+      "line_number": 31,
+      "note": "fully qualified from the top level with NO leading dot, and still the global spelling. The package is scope.v1, so a prefixing resolver produces scope.v1.scope.v1.Outer.Inner."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.toplevel",
+      "target": "scope.v1.Inner",
+      "line_number": 32,
+      "note": "the CONTROL for the two rows above: a bare `Inner` at file scope, where no enclosing scope declares one, so the top-level declaration is correct. Without this row an analyzer that always answered `Outer.Inner` would pass."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.absolute",
+      "target": "other.v1.Thing",
+      "line_number": 36,
+      "confidenceMin": 0.9,
+      "note": "THE absolute row. `.other.v1.Thing` names the global type whatever the enclosing package is, so the target is other.v1.Thing and NOT scope.v1.other.v1.Thing. This is a different rule from the dotted-fallback row below and fails independently."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.imported",
+      "target": "scope.v1.Imported",
+      "line_number": 40,
+      "note": "unqualified and not declared here: protobuf resolves such a name WITHIN the package by specification, so scope.v1.Imported is the correct target even though this file does not declare it"
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.stamped",
+      "target": "google.protobuf.Timestamp",
+      "line_number": 44,
+      "note": "dotted and not declared here: falls back AS WRITTEN, because a multi-segment type name is written fully qualified in practice. Prefixing the package produces scope.v1.google.protobuf.Timestamp, a name in no file."
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1",
+      "target": "scope.v1.SelfNamed",
+      "line_number": 57
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1.SelfNamed",
+      "target": "scope.v1.SelfNamed.Inner",
+      "line_number": 58
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.SelfNamed.Inner",
+      "target": "scope.v1.Inner",
+      "line_number": 58,
+      "confidenceMin": 0.9,
+      "note": "THE shadowing row, and a regression guard for a defect this lane measured and fixed. The field is NAMED `Inner` and its type is the top-level `Inner`, so the innermost scope candidate `scope.v1.SelfNamed.Inner` is the FIELD ITSELF \u2014 published moments before this edge is emitted. Resolving against every declaration answered the reference with the field and produced `scope.v1.SelfNamed.Inner -> scope.v1.SelfNamed.Inner`. The walk continues outward to the real type because only TYPES are in the resolution namespace. Measured before the fix: 9 such self-edges over 606 corpus files."
+    },
+    {
+      "type": "contains",
+      "from": "scope.v1.SelfNamed",
+      "target": "scope.v1.SelfNamed.shadow",
+      "line_number": 59
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.SelfNamed.shadow",
+      "target": "scope.v1.Shadow",
+      "line_number": 59,
+      "confidenceMin": 0.9,
+      "note": "the CONTROL for the row above, with NO name collision: same resolver, same depth, nothing to shadow. A fix that simply stopped resolving relative names inside a message scope would pass the shadowing row and fail this one."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "scope.v1.SelfNamed.Inner",
+      "target": "scope.v1.SelfNamed.Inner",
+      "note": "DELIBERATELY absent: the self-edge, and the exact shape of the 9 corpus defects. A field and a type colliding on one id is how a fabricated edge is born \u2014 bb_graph, bb_impact and bb_migrate would each read this as a field whose type is itself."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Outer.inner",
+      "target": "scope.v1.Inner",
+      "note": "DELIBERATELY absent. The top-level `Inner` is a real declaration in this file, so this edge would resolve and read as plausible \u2014 which is exactly why it has to be forbidden explicitly. It is the wrong answer: the innermost enclosing scope that declares the name is `Outer`."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Outer.Deepest.inner",
+      "target": "scope.v1.Inner",
+      "note": "same wrong answer one scope deeper"
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.absolute",
+      "target": "scope.v1.other.v1.Thing",
+      "note": "the package-prefixed reading of a leading dot. The dot is what forbids it."
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.qualified",
+      "target": "scope.v1.scope.v1.Outer.Inner",
+      "note": "the package applied to an already-qualified name"
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.stamped",
+      "target": "scope.v1.google.protobuf.Timestamp",
+      "note": "the package applied to a dotted fallback"
+    },
+    {
+      "type": "references",
+      "from": "scope.v1.Refs.toplevel",
+      "target": "scope.v1.Outer.Inner",
+      "note": "and the mirror image of the forbid above: a file-scope bare `Inner` must NOT reach into a nested scope. Pinning only the positive row would let an over-eager scope walk pass."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Outer.inner",
+      "target": "scope.v1.Outer.Inner",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Outer.Deepest.inner",
+      "target": "scope.v1.Outer.Inner",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Refs.qualified",
+      "target": "scope.v1.Outer.Inner",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Refs.toplevel",
+      "target": "scope.v1.Inner",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Refs.absolute",
+      "target": "other.v1.Thing",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Refs.imported",
+      "target": "scope.v1.Imported",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.Refs.stamped",
+      "target": "google.protobuf.Timestamp",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.SelfNamed.Inner",
+      "target": "scope.v1.Inner",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "scope.v1.SelfNamed.shadow",
+      "target": "scope.v1.Shadow",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Thing",
+      "note": "`.other.v1.Thing` is a reference target, not a declaration of this file."
+    },
+    {
+      "name": "Imported",
+      "note": "referenced and resolvable within the package, but declared in another file. Publishing it here would duplicate the declaration that lives there."
+    },
+    {
+      "name": "Timestamp",
+      "note": "an imported well-known type: a reference, not a symbol of this file."
+    }
+  ]
+}

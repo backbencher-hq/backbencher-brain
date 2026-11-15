@@ -1,0 +1,18 @@
+# A duplicate mapping key is a REPLACEMENT, and the analyzer already gives the two
+# entries two identities (`root.child` and `root.child#2`) because one shared id made
+# every relationship endpoint ambiguous. That disambiguation is what makes an
+# `overrides` edge possible at all: an edge needs two endpoints, and without it both
+# endpoints would be the same path.
+#
+# The two entries are a parse FACT. "The later one replaces the earlier" is loader
+# behaviour, not a grammar guarantee — YAML 1.2 leaves duplicate mapping keys
+# undefined, mainstream loaders take the last value, and GitHub Actions rejects the
+# file outright. So the edge carries confidence 0.8 with a reason code, and
+# evidenceClass `inferred`, while `resolved` is true because both endpoints are
+# symbols of this file. Certainty about the pair and uncertainty about the semantics
+# are two different facts and the metadata records both.
+root:
+  child: 1
+  child: 2
+  third: 3
+  child: 4

@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.17",
+  "code": "E12",
+  "tool": "bb_edit",
+  "title": "bb_edit: docs + evidence + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "docs: bb_edit.md exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: category matches registry",
+      "pass": true,
+      "detail": "registry=operations"
+    },
+    {
+      "name": "docs: mutability matches registry",
+      "pass": true,
+      "detail": "registry=write"
+    },
+    {
+      "name": "docs: requiresIndex matches registry",
+      "pass": true,
+      "detail": "registry=true"
+    },
+    {
+      "name": "docs: modes line matches registry",
+      "pass": true,
+      "detail": "registry=`write`, `update`, `insert`, `delete`, `refactor`, `batch`"
+    },
+    {
+      "name": "docs: defaults match registry",
+      "pass": true,
+      "detail": "registry={\"dryRun\":false,\"format\":true,\"force\":false}"
+    },
+    {
+      "name": "docs: every input property is documented",
+      "pass": true,
+      "detail": "15 props"
+    },
+    {
+      "name": "docs: required=['mode'] is documented",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: every mode in the schema enum appears in the generated page",
+      "pass": true,
+      "detail": "6 modes: write,update,insert,delete,refactor,batch"
+    },
+    {
+      "name": "docs: the Contract line carries the per-mode index exemption",
+      "pass": true,
+      "detail": "registry indexFreeModes=[write]"
+    },
+    {
+      "name": "docs: the exemption states what the exempt mode does NOT resolve",
+      "pass": true,
+      "detail": "- Requires index: `true` (except `write`, which needs no index at all: it plans from the request and the disk, resolves "
+    },
+    {
+      "name": "docs: the write accepted set is rendered from EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": "`write` → `mode`, `dryRun`, `filePath`, `content`, `newContent`, `format`, `overwrite`"
+    },
+    {
+      "name": "docs: the update accepted set is rendered from EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": "`update` → `mode`, `dryRun`, `filePath`, `symbolName`, `lineStart`, `content`, `newContent`, `format`"
+    },
+    {
+      "name": "docs: the insert accepted set is rendered from EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": "`insert` → `mode`, `dryRun`, `filePath`, `targetSymbolName`, `position`, `lineStart`, `content`, `newContent`, `format`"
+    },
+    {
+      "name": "docs: the delete accepted set is rendered from EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": "`delete` → `mode`, `dryRun`, `filePath`, `symbolName`, `lineStart`, `force`, `format`"
+    },
+    {
+      "name": "docs: the refactor accepted set is rendered from EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": "`refactor` → `mode`, `dryRun`, `filePath`, `symbolName`, `lineStart`, `newName`, `format`"
+    },
+    {
+      "name": "docs: the batch accepted set is rendered from EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": "`batch` → `mode`, `dryRun`, `edits`, `files`, `format`"
+    },
+    {
+      "name": "docs: the mode-contract bullet no longer describes a known gap",
+      "pass": true,
+      "detail": "the page still describes the rejection as omitting the accepted set"
+    },
+    {
+      "name": "hand page: docs/BB_EDIT.md exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "hand page: the Per-Mode Arguments section is present",
+      "pass": true,
+      "detail": "35 lines"
+    },
+    {
+      "name": "hand page: every mode's accepted set matches EDIT_OPTIONS_BY_MODE",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "hand page: `insert` position optionality matches the schema",
+      "pass": true,
+      "detail": "page still says position is required after the schema stopped"
+    },
+    {
+      "name": "hand page: the `content` alias is documented for the modes that accept it",
+      "pass": true,
+      "detail": "update/insert required-field sentences do not name the alias"
+    },
+    {
+      "name": "hand page: states the write guard and all three states of `overwrite`",
+      "pass": true,
+      "detail": "the hand-written page does not state the guard"
+    },
+    {
+      "name": "hand page: says the guard is evaluated at PLAN time (a dry run reports it)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "hand page: states the plan-to-commit pre-image check",
+      "pass": true,
+      "detail": "the pre-image check is not documented on the hand-written page"
+    },
+    {
+      "name": "hand page: documents `batch` as a mode with its two shapes",
+      "pass": true,
+      "detail": "the batch mode is not documented on the hand-written page"
+    },
+    {
+      "name": "hand page: states that a refusal in any entry writes nothing",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "hand page: states the duplicate-target refusal and the way forward",
+      "pass": true,
+      "detail": "the two-entries-one-file rule is not on the page"
+    },
+    {
+      "name": "hand page: documents the per-file envelope and all six fields",
+      "pass": true,
+      "detail": "the envelope fields are not on the page"
+    },
+    {
+      "name": "hand page: states the entry cap from the engine constant (200)",
+      "pass": true,
+      "detail": "engine MAX_BATCH_EDITS=200"
+    },
+    {
+      "name": "hand page: states that `batch` needs an index while `write` does not",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "hand page: states the import-cleanup scope and the declared skip",
+      "pass": true,
+      "detail": "the import-pruning contract is not on the page"
+    },
+    {
+      "name": "hand page: states the protected-path refusal",
+      "pass": true,
+      "detail": "the protected-path policy is not on the page"
+    },
+    {
+      "name": "hand page: states both rename refusals (existing name, same name)",
+      "pass": true,
+      "detail": "the rename refusals are not on the page"
+    },
+    {
+      "name": "hand page: a plan-stage refusal carries the EMPTY envelope, declared",
+      "pass": true,
+      "detail": "the plan-stage envelope is not on the page"
+    },
+    {
+      "name": "hand page: states the formatter line-ending repair and its declared field",
+      "pass": true,
+      "detail": "the line-ending repair is not on the page"
+    },
+    {
+      "name": "hand page: states that reindexed is measured, not asserted",
+      "pass": true,
+      "detail": "the measured-reindex contract is not on the page"
+    },
+    {
+      "name": "hand page: states the measured commit cost and the client timeout ceiling",
+      "pass": true,
+      "detail": "the measured commit cost is not on the page"
+    },
+    {
+      "name": "docs: the generated page carries the import-pruning limitation and its declaration",
+      "pass": true,
+      "detail": "the generated page does not state the import-pruning scope"
+    },
+    {
+      "name": "docs: the generated page carries the protected-path refusal",
+      "pass": true,
+      "detail": "the generated page does not state the protected-path policy"
+    },
+    {
+      "name": "docs: the generated page carries the measured commit cost",
+      "pass": true,
+      "detail": "the generated page does not state the measured commit cost"
+    },
+    {
+      "name": "docs: generator verify mode passes for bb_edit (bb_edit.md byte-fresh) — bun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "evidence: e1.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e2.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e3.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e4.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e5.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e6.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e7.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e8.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e9.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e10.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e11.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: e13.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: all 12 E-issues claim verified with negatives",
+      "pass": true,
+      "detail": "E1:33neg E2:21neg E3:88neg E4:9neg E5:5neg E6:1neg E7:25neg E8:1neg E9:14neg E10:3neg E11:1neg E13:19neg"
+    },
+    {
+      "name": "gate: verify-edit-boundary.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-boundary.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-rename.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-rename.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-mask.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-mask.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-body.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-body.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-freshness.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-freshness.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-atomicity.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-atomicity.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-unit.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-unit.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-integration.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-integration.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-e2e.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-e2e.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-corpus.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-corpus.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-honesty.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-honesty.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-batch.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-edit-batch.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: evidence validator (B3) is part of the gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: tampered doc (failed>0, no negatives) cannot claim verified [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary.failed 3 != actual 0; negativeCases 0 is less than 33 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
+    },
+    {
+      "name": "gate: removing any single E-verifier breaks the gate [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "all verifiers still present"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 83,
+    "passed": 83,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tool-registry.ts + script/verify-tool-docs.ts (curated doc) are the single source; docs/tools/bb_edit.md is a generated artifact",
+    "releaseGate": "verify-quality-gate.ts (the E1-E12 verifiers wired) + verify-evidence.ts B3 invariant (verified requires failed=0 AND negativeCases>=1); proven by tamper test",
+    "evidenceInputs": "validation/m13/results/e1..e11.json plus e13.json (batch) must all exist, validate, and claim verified for bb_edit to be release-eligible"
+  },
+  "limitations": [
+    "Docs byte-freshness is proven by the generator's own verify mode SCOPED to bb_edit, not by a duplicated render.",
+    "This gate covers bb_edit only; every other tool has its own verifier.",
+    "The hand-page checks are phrase-level: they prove the page STATES each contract and that the enumerations it must match (the accepted sets, the entry cap) come from the enforcing constants, not that every sentence on the page is checked."
+  ],
+  "generatedAt": "2026-11-05T04:10:46.424Z"
+}

@@ -1,0 +1,30 @@
+{
+  "fixtureId": "c/complexity-and-payloads",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "T1 complexity contract (canonical shape = 5: if+for+&&+ternary+1), #383 qualified_calls payload attached to the enclosing function, JSDoc-style comments, and the synthetic symbols+relationships complexity fake removed (fifth analyzer cured).",
+  "expectSymbols": [
+    {
+      "name": "compute",
+      "kind": "function"
+    },
+    {
+      "name": "runner",
+      "kind": "function"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "compute",
+      "equals": 5
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "runner",
+      "includes": [
+        "compute"
+      ]
+    }
+  ]
+}

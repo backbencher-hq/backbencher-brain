@@ -1,0 +1,142 @@
+{
+  "fixtureId": "java/exported-types",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SUPERSEDED BEHAVIOUR UPDATED 2026-10-18 (Lead ruling task-9, per-fixture adjudication): the analyzer behaviour this fixture was RED against is ADJUDICATED CORRECT \u2014 it is pinned by a PASSING sibling fixture and by the emission site's own measured rationale \u2014 so the expectation is updated to the current contract rather than the analyzer reverted. WHAT WAS SUPERSEDED AND WHY: the `exported_type` relationshipType was superseded by `java_exportable_unit` when the export edge was folded into ONE post-pass (M60 java fold; a second site emitted the same package->type key twice), and the FORBID on package-private exports was superseded by the measured 0.6 tier: JLS 7.6 makes a public type importable from another package while a package-private one is reachable only inside its own package (JLS 6.6.1), so the package-private row is published at 0.6 with reasonCode instead of being withheld. Both are pinned by the PASSING sibling java/exports-public-top-level-types (expects public_top_level_type 1.0 AND package_private_top_level_type with confidenceMax 0.6 + reasonCode). COVERAGE IS NOT WEAKENED: the four package-private FORBIDS are replaced by four explicit 0.6-tier EXPECTATIONS (a stronger pin \u2014 the wrong tier or a missing reasonCode fails), the nested/member forbids remain, the fixture's invalid line 13 (`class PackagePrivateRecord(int id)`) is corrected to a real record so that form is covered instead of error-recovered, and expectNoParseErrors now pins a clean parse.",
+  "expectSymbols": [
+    {
+      "name": "Published",
+      "kind": "class"
+    },
+    {
+      "name": "PublishedRecord",
+      "kind": "class"
+    },
+    {
+      "name": "PublishedEnum",
+      "kind": "enum"
+    },
+    {
+      "name": "PublishedAnnotation"
+    },
+    {
+      "name": "PackagePrivateRecord",
+      "kind": "class"
+    },
+    {
+      "name": "Outer"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "Published",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isJavaExport": true,
+      "meta.kind": "class",
+      "meta.dottedName": "com.acme.pub.Published",
+      "meta.evidenceClass": "structural",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PublishedRecord",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isJavaExport": true,
+      "meta.dottedName": "com.acme.pub.PublishedRecord",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PublishedEnum",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isJavaExport": true,
+      "meta.kind": "enum",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PublishedAnnotation",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "public_top_level_type",
+      "meta.isJavaExport": true,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PackagePrivate",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "package_private_top_level_type",
+      "meta.reasonCode": "package_private_top_level_type",
+      "confidenceMax": 0.6
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PackagePrivateRecord",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "package_private_top_level_type",
+      "meta.reasonCode": "package_private_top_level_type",
+      "confidenceMax": 0.6
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PackagePrivateEnum",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "package_private_top_level_type",
+      "meta.reasonCode": "package_private_top_level_type",
+      "confidenceMax": 0.6
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "PackagePrivateAnnotation",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "package_private_top_level_type",
+      "meta.reasonCode": "package_private_top_level_type",
+      "confidenceMax": 0.6
+    },
+    {
+      "type": "exports",
+      "source": "com.acme.pub",
+      "target": "Outer",
+      "meta.relationshipType": "java_exportable_unit",
+      "meta.exportForm": "package_private_top_level_type",
+      "meta.reasonCode": "package_private_top_level_type",
+      "confidenceMax": 0.6
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "NestedPublic",
+      "comment": "a nested type's container is its owner; membership is contains (JAD3) \u2014 unchanged by this update"
+    },
+    {
+      "type": "exports",
+      "target": "NestedHidden",
+      "comment": "same"
+    },
+    {
+      "type": "exports",
+      "target": "Published.open",
+      "comment": "a member METHOD is not an importable unit; only top-level types are exports (JAD3) \u2014 unchanged by this update"
+    },
+    {
+      "type": "exports",
+      "target": "Published",
+      "meta.exportForm": "package_private_top_level_type",
+      "comment": "the 1.0 public tier is NOT the 0.6 tier: mis-tiering a public type is now a failure"
+    }
+  ],
+  "expectNoParseErrors": true
+}

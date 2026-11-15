@@ -1,6 +1,6 @@
 # M10 Final Evidence Audit
 
-Issue: [#115](https://github.com/backbencher-hq/backbencher-brain/issues/115)
+Issue: [#115](https://github.com/ishaq2321/backbencher-brain/issues/115)
 
 Date: 2026-08-10
 

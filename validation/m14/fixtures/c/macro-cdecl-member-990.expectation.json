@@ -1,0 +1,45 @@
+{
+  "fixtureId": "c/macro-cdecl-member-990",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The member-name walk for struct and union fields descended into an ERROR node and published a CALLING-CONVENTION MACRO as a member, while MISSING the real member beside it. Found by JOB 1 question 4 against clang 14 (`contains-vs-clang.ts --dir <sqlite>/src --max-files 120`: 33 records / 421 members judged, 414 agreed = 98.34%) and BOTH halves of the defect were in one struct. sqlite src/sqlite3ext.h:112 `char *(SQLITE_CDECL*mprintf)(const char*,...);` parses as `parenthesized_declarator( ERROR(field_identifier SQLITE_CDECL), pointer_declarator( declarator: field_identifier mprintf ) )`. `parenthesized_declarator` carries no `declarator` FIELD, so the walk fell to `namedChild(0)`, which is the ERROR, and returned the macro: PHANTOM `contains sqlite3_api_routines -> SQLITE_CDECL` x7 AND MISSED `mprintf`, `xsnprintf`, `test_control`, `db_config`, `log`, `vtab_config`, `str_appendf` x7. Reporting only the phantom count would have understated the defect by half, so this fixture asserts BOTH directions. `getIdentifierFromDeclarator` has carried this exact rule since #916-C ('a parenthesized declarator can hold an ERROR child BESIDE the real declarator ... namedChild(0) descends into that ERROR and RETURNS THE MACRO'S NAME'); #990 is that same defect in the two INLINE copies of the walk inside the struct and union extractors, which were never routed through it. Expectation lines were read off the FIXED analyzer and cross-checked against the parse and clang; the analyzer blob they describe is named in the commit.",
+  "expectSymbols": [
+    { "name": "mprintf", "kind": "property", "ownerName": "c990_routines", "note": "THE PINNED ROW: the real member, which the walk missed while publishing the macro" },
+    { "name": "ufn", "kind": "property", "ownerName": "c990_u", "note": "the UNION arm of the same walk -- #990 changes both copies because they were two copies of one defect" },
+    { "name": "plain_cb", "kind": "property", "ownerName": "c990_routines", "note": "CONTROL: `void *(*plain_cb)(void *, int)` -- the four genuine function-pointer shapes #947's parenthesisation rule keeps" },
+    { "name": "returns_int", "kind": "property", "ownerName": "c990_routines" },
+    { "name": "void_cb", "kind": "property", "ownerName": "c990_routines" },
+    { "name": "array_of_cb", "kind": "property", "ownerName": "c990_routines", "note": "CONTROL: `void *(*array_of_cb[3])(void)` -- a function-pointer ARRAY" },
+    { "name": "cb_returning_cb", "kind": "property", "ownerName": "c990_routines", "note": "CONTROL: `void (*(*cb_returning_cb)(int))(void)` -- a pointer to a function returning a pointer to a function" },
+    { "name": "lines", "kind": "property", "ownerName": "c990_macro_typed", "note": "CONTROL: #985's shape -- a macro in TYPE position beside a real declarator. The member is `lines`; the macro's own name must not be published beside it." },
+    { "name": "plain_member", "kind": "property", "ownerName": "c990_plain", "note": "CONTROL: an ordinary member, so a fix that over-reaches (skipping any non-identifier child, or dropping the walk's first step) fails as a MISSING row rather than passing silently" },
+    { "name": "named_member", "kind": "property", "ownerName": "c990_plain" },
+    { "name": "arr", "kind": "property", "ownerName": "c990_plain" },
+    { "name": "a", "kind": "property", "ownerName": "c990_macro_generated" },
+    { "name": "b", "kind": "property", "ownerName": "c990_macro_generated", "note": "CONTROL: #928's shape -- `C990_CALLBACK(closing);` declares no member the parse can name, so the field is SILENT. #928's rule is unchanged by #990 and this row proves it: a fix that read past the ERROR to the macro argument would invent `closing`." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "c990_routines", "target": "n", "line_number": 33 },
+    { "type": "contains", "from": "c990_routines", "target": "mprintf", "line_number": 34, "note": "THE PINNED EDGE, positive direction. Its ABSENCE was the miss clang saw; the edge that used to be published here was `c990_routines -> C990_CDECL`." },
+    { "type": "contains", "from": "c990_routines", "target": "plain_cb", "line_number": 35 },
+    { "type": "contains", "from": "c990_routines", "target": "returns_int", "line_number": 36 },
+    { "type": "contains", "from": "c990_routines", "target": "void_cb", "line_number": 37 },
+    { "type": "contains", "from": "c990_routines", "target": "array_of_cb", "line_number": 38 },
+    { "type": "contains", "from": "c990_routines", "target": "cb_returning_cb", "line_number": 39 },
+    { "type": "contains", "from": "c990_macro_typed", "target": "lines", "line_number": 58, "note": "CONTROL: #985's rule still holds beside the new one" },
+    { "type": "contains", "from": "c990_plain", "target": "plain_member", "line_number": 65 },
+    { "type": "contains", "from": "c990_plain", "target": "named_member", "line_number": 66 },
+    { "type": "contains", "from": "c990_plain", "target": "arr", "line_number": 67 },
+    { "type": "contains", "from": "c990_macro_generated", "target": "a", "line_number": 49 },
+    { "type": "contains", "from": "c990_macro_generated", "target": "b", "line_number": 51 },
+    { "type": "contains", "from": "c990_u", "target": "i", "line_number": 74 },
+    { "type": "contains", "from": "c990_u", "target": "ufn", "line_number": 75, "note": "the union copy of the walk" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "c990_routines", "target": "C990_CDECL", "note": "THE PINNED FORBID, negative direction. `C990_CDECL` is a MACRO and is expanded to nothing; no C declaration in this file gives it to any member. This is the phantom clang reported 7 times on sqlite's `sqlite3_api_routines`, and the fixture DEFINES the macro in-file so the walk cannot be excused by cross-file lookup." },
+    { "type": "contains", "from": "c990_u", "target": "C990_CDECL", "note": "the same phantom on the union arm -- a fix applied to only one of the two walks fails here" },
+    { "type": "contains", "from": "c990_macro_typed", "target": "C990_ARRAY_T", "note": "CONTROL: #985's phantom. A macro in TYPE position is a type, not a member." },
+    { "type": "contains", "from": "c990_macro_generated", "target": "closing", "note": "CONTROL: #928's refusal. `C990_CALLBACK(closing);` -- whether the macro's parameter lands in name position is a property of its REPLACEMENT list, which is C-D2. A fix that read the macro argument would invent this edge." },
+    { "type": "contains", "from": "c990_macro_generated", "target": "C990_CALLBACK", "note": "CONTROL: the other half of #928 -- the macro's OWN name must never be published as a member. This is the defect #928 was written for and it survived a later wave (#981 republished it 5x in curl's `cf_h2_proxy.c`)." }
+  ]
+}

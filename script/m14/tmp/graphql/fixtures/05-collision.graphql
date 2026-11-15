@@ -1,0 +1,8 @@
+# Two facts on ONE line that differ only in role: the return type of `f` and the
+# type of its argument are both `Int`, written on the same line. Deduplicating on
+# (source, type, target) alone — which this analyzer used to do — drops one of
+# them silently.
+type Same {
+  f(x: Int): Int
+  g(x: Int, y: Int = 1): Int
+}

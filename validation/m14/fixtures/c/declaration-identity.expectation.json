@@ -1,0 +1,131 @@
+{
+  "fixtureId": "c/declaration-identity",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Holy-C second review (#736 wave): one TU = one entity per file-scope name. HC1: a `static` prototype is private API (the prototype branch hardcoded public, leaking statics into visibility + exports while static DEFINITIONS are private). HC2: tentative definitions (`int tally` x2), extern-style redeclarations and prototype+definition pairs each emitted one symbol PER OCCURRENCE (prototype+definition even double-exported — the duplicate is caught by the harness-global export-uniqueness invariant); the post-pass merges to the definition else first occurrence, scoped/owned symbols and cross-kind collisions untouched. HC3: K&R parameter names parse as bare identifiers and were dropped from the params payload (reads were already correct via the K&R declaration locals path). Deepest review: HC6 — prototype parameter names (`libfn(int count)`) polluted the file-scope declaredNames pre-pass, fabricating a dangling `uses main->count` for the later read (forbidden here; the oracle's isFunctionLocal already excluded parameter ancestry).",
+  "expectSymbols": [
+    {
+      "name": "hidden",
+      "kind": "function",
+      "meta.isDeclaration": true
+    },
+    {
+      "name": "libfn",
+      "kind": "function",
+      "meta.isDeclaration": true
+    },
+    {
+      "name": "shown",
+      "kind": "function"
+    },
+    {
+      "name": "tally",
+      "kind": "variable"
+    },
+    {
+      "name": "add",
+      "kind": "function"
+    },
+    {
+      "name": "main",
+      "kind": "function"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "shown",
+      "meta.isDeclaration": true,
+      "comment": "#612 both directions: `int shown(int x);` and its definition merge to the ONE kept entity, and the definition is not a declaration. A rule that marked every function would fail here while still passing the two expectSymbols above."
+    },
+    {
+      "name": "add",
+      "meta.isDeclaration": true,
+      "comment": "#612 both directions: a K&R definition with no prototype anywhere is a DEFINITION."
+    },
+    {
+      "name": "main",
+      "meta.isDeclaration": true,
+      "comment": "#612 both directions: a plain definition is a DEFINITION."
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "hidden",
+      "visibility": "private"
+    },
+    {
+      "symbol": "shown",
+      "visibility": "public"
+    },
+    {
+      "symbol": "tally",
+      "visibility": "public"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "tally",
+      "kind": "variable",
+      "equals": 1
+    },
+    {
+      "name": "shown",
+      "kind": "function",
+      "equals": 1
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "shown"
+    },
+    {
+      "name": "tally"
+    },
+    {
+      "name": "add"
+    },
+    {
+      "name": "main"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "hidden"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "add",
+      "parameters": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ]
+    },
+    {
+      "symbol": "shown",
+      "parameters": [
+        {
+          "name": "x"
+        }
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "main",
+      "target": "shown"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "main",
+      "target": "count"
+    }
+  ]
+}

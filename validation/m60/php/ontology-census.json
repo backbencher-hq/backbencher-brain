@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-04T00:19:24.474Z",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "sampling": "whole admitted corpus (no sampling)",
   "workers": 3,
   "filesAdmitted": 4642,

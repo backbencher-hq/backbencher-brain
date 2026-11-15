@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-11-01T19:07:08.877Z",
+  "subject": "workspace reference large index (.bb-data, 11,440 files / ~3.4 GB)",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-breakdown.ts",
+  "loadAverage": [
+    24.01,
+    27.87,
+    24.74
+  ],
+  "rows": [
+    {
+      "label": "control-count-files",
+      "ms": 21.3,
+      "value": {
+        "n": 6452
+      }
+    },
+    {
+      "label": "control-count-symbols",
+      "ms": 837.4,
+      "value": {
+        "n": 310423
+      }
+    },
+    {
+      "label": "control-name-equality",
+      "ms": 5.8,
+      "value": {
+        "n": 1
+      }
+    },
+    {
+      "label": "control-file-map-scan",
+      "ms": 326.4,
+      "value": "6452"
+    },
+    {
+      "label": "component-computeImpact",
+      "ms": 42093.5,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false
+      }
+    },
+    {
+      "label": "wire-handleImpactRequest",
+      "ms": 32529.6,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false
+      }
+    },
+    {
+      "label": "handler-full-call",
+      "ms": 30185.3,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false
+      }
+    },
+    {
+      "label": "handler-full-call-warm2",
+      "ms": 89290.4,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false
+      }
+    },
+    {
+      "label": "component-hub-named",
+      "ms": 74606.1,
+      "value": {
+        "shown": 17,
+        "total": 17,
+        "truncated": false
+      }
+    }
+  ]
+}

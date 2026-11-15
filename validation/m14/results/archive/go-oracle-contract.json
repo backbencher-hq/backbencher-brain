@@ -1,0 +1,20 @@
+{
+  "files": 400,
+  "sampleOf": 50589,
+  "labels": {
+    "exports": {
+      "analyzer": 2400,
+      "truth": 2400,
+      "agreed": 2400,
+      "missing": [],
+      "unexplained": []
+    },
+    "overrides": {
+      "analyzer": 2,
+      "truth": 2,
+      "agreed": 2,
+      "missing": [],
+      "unexplained": []
+    }
+  }
+}

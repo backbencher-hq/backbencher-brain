@@ -1,0 +1,25 @@
+{
+  "fixtureId": "groovy/anonymous-field-member",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49/M37 #866: a FIELD member declared inside an anonymous class body (new Runnable() { int field = target() }) is a symbol owned by the ANONYMOUS type, and the call made from its initialiser is attributed to that type. groovy already honoured this (measured alongside java in script/m14/tmp/anon-member-symbol-census.ts); the fixture pins it so the family contract is stated by every language that satisfies it. The `local` control pins the OTHER half of the same boundary: a method-local is not a project symbol. Call lines are pinned because the `local` call in build() is legitimately attributed to build.",
+  "expectSymbols": [
+    { "name": "AnonField", "kind": "class" },
+    { "name": "anonymous_Runnable", "kind": "class" },
+    { "name": "field", "kind": "property", "ownerName": "anonymous_Runnable", "comment": "#866 contract 1: the anon body's field is a symbol owned by the anon type" },
+    { "name": "run", "kind": "method", "ownerName": "anonymous_Runnable" }
+  ],
+  "forbidSymbols": [
+    { "name": "local", "comment": "#866 control: a method-local is not a project symbol" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "anonymous_Runnable", "target": "field", "line_number": 14 },
+    { "type": "contains", "from": "anonymous_Runnable", "target": "run", "line_number": 15 },
+    { "type": "calls", "from": "anonymous_Runnable", "target": "target", "line_number": 14, "comment": "#866 contract 2: the initialiser call belongs to the anon type, at the call's own line" },
+    { "type": "calls", "from": "build", "target": "target", "line_number": 12, "comment": "control: the method-LOCAL's call IS attributed to build" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "build", "target": "target", "line_number": 14, "comment": "the field initialiser's call must NOT flatten onto the enclosing method" },
+    { "type": "contains", "from": "AnonField", "target": "field", "comment": "JD18 leak direction: members of an anonymous body never attribute to the enclosing type" }
+  ]
+}

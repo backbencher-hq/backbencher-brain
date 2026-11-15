@@ -1,0 +1,528 @@
+{
+  "tool": "bb_patterns",
+  "door": "MCP stdio (source server via validation/tools/bb_patterns/work/node-server-entry.ts -> src/mcp/server.ts)",
+  "env": {
+    "BB_DATA_DIR": "per-corpus lane dir",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": "1"
+  },
+  "reposRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpus": [
+    {
+      "name": "graphql-js",
+      "status": "measured",
+      "population": {
+        "files": 564,
+        "symbols": 13620,
+        "relationships": 61917,
+        "frameworkFiles": 429,
+        "analysisRuns": 0
+      },
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "readCases": [
+        {
+          "label": "orphaned-default",
+          "args": {
+            "scope": "orphaned"
+          },
+          "isError": false,
+          "ms": 7161.18,
+          "chars": 2503,
+          "census": "385 | 385 orphan candidate(s) (orphaned_function=226 orphaned_file=114 orphaned_class=45); showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "orphaned code (385 found):"
+        },
+        {
+          "label": "all-default",
+          "args": {},
+          "isError": false,
+          "ms": 2212.89,
+          "chars": 1615,
+          "census": "546 | 546 finding(s) across orphaned_function=226 orphaned_file=114 god-class=66 high-complexity-function=49 orphaned_class=45 long-parameter-list=31 framework-detected=15; showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "patterns (546 found):"
+        },
+        {
+          "label": "all-limit-100",
+          "args": {
+            "limit": 100
+          },
+          "isError": false,
+          "ms": 2174.87,
+          "chars": 7323,
+          "census": "546 | 546 finding(s) across orphaned_function=226 orphaned_file=114 god-class=66 high-complexity-function=49 orphaned_class=45 long-parameter-list=31 framework-detected=15; showing 100 — raise `limit` to see more (maximum 500)",
+          "rows": 100,
+          "head": "patterns (546 found):"
+        },
+        {
+          "label": "history-read",
+          "args": {
+            "history": true,
+            "limit": 5
+          },
+          "isError": false,
+          "ms": 71.73,
+          "chars": 388051,
+          "census": "? | ",
+          "rows": 0,
+          "head": "{"
+        }
+      ],
+      "readsMovedDbOrWal": false,
+      "readIndexBefore": {
+        "db": {
+          "bytes": 180097024,
+          "mtime": "2026-11-03T05:20:33.903Z"
+        },
+        "wal": "absent-or-empty"
+      },
+      "readIndexAfter": {
+        "db": {
+          "bytes": 180097024,
+          "mtime": "2026-11-03T05:20:33.903Z"
+        },
+        "wal": "absent-or-empty"
+      },
+      "readFailure": null,
+      "writeCase": {
+        "label": "orphaned-recordRun",
+        "args": {
+          "scope": "orphaned",
+          "recordRun": true
+        },
+        "isError": false,
+        "ms": 2458.22,
+        "chars": 2597,
+        "census": "385 | 385 orphan candidate(s) (orphaned_function=226 orphaned_file=114 orphaned_class=45); showing 20 — raise `limit` to see more (maximum 500)",
+        "rows": 20,
+        "head": "orphaned code (385 found, 384 recorded) recorded run 074ac7d0-f578-47f7-b2ad-6087fd506c8c: new=0 repeated=384 resolved=0"
+      },
+      "writeCaseWroteIndex": true,
+      "writeIndexBefore": {
+        "db": {
+          "bytes": 180097024,
+          "mtime": "2026-11-03T05:20:33.903Z"
+        },
+        "wal": "absent-or-empty"
+      },
+      "writeIndexAfter": {
+        "db": {
+          "bytes": 180097024,
+          "mtime": "2026-11-03T05:20:33.903Z"
+        },
+        "wal": "{\"bytes\":1462632,\"mtime\":\"2026-11-03T05:28:13.356Z\"}"
+      },
+      "writeFailure": null
+    },
+    {
+      "name": "rake",
+      "status": "measured",
+      "population": {
+        "files": 109,
+        "symbols": 1593,
+        "relationships": 9075,
+        "frameworkFiles": 9,
+        "analysisRuns": 0
+      },
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "readCases": [
+        {
+          "label": "orphaned-default",
+          "args": {
+            "scope": "orphaned"
+          },
+          "isError": false,
+          "ms": 665.32,
+          "chars": 1866,
+          "census": "102 | 102 orphan candidate(s) (orphaned_function=84 orphaned_class=9 orphaned_file=9); showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "orphaned code (102 found):"
+        },
+        {
+          "label": "all-default",
+          "args": {},
+          "isError": false,
+          "ms": 269.26,
+          "chars": 1405,
+          "census": "130 | 130 finding(s) across orphaned_function=84 god-class=26 orphaned_class=9 orphaned_file=9 framework-detected=2; showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "patterns (130 found):"
+        },
+        {
+          "label": "all-limit-100",
+          "args": {
+            "limit": 100
+          },
+          "isError": false,
+          "ms": 266.34,
+          "chars": 6265,
+          "census": "130 | 130 finding(s) across orphaned_function=84 god-class=26 orphaned_class=9 orphaned_file=9 framework-detected=2; showing 100 — raise `limit` to see more (maximum 500)",
+          "rows": 100,
+          "head": "patterns (130 found):"
+        },
+        {
+          "label": "history-read",
+          "args": {
+            "history": true,
+            "limit": 5
+          },
+          "isError": false,
+          "ms": 47.07,
+          "chars": 227672,
+          "census": "? | ",
+          "rows": 0,
+          "head": "{"
+        }
+      ],
+      "readsMovedDbOrWal": false,
+      "readIndexBefore": {
+        "db": {
+          "bytes": 35016704,
+          "mtime": "2026-11-03T05:20:50.013Z"
+        },
+        "wal": "absent-or-empty"
+      },
+      "readIndexAfter": {
+        "db": {
+          "bytes": 35016704,
+          "mtime": "2026-11-03T05:20:50.013Z"
+        },
+        "wal": "absent-or-empty"
+      },
+      "readFailure": null,
+      "writeCase": {
+        "label": "orphaned-recordRun",
+        "args": {
+          "scope": "orphaned",
+          "recordRun": true
+        },
+        "isError": false,
+        "ms": 388.23,
+        "chars": 1960,
+        "census": "102 | 102 orphan candidate(s) (orphaned_function=84 orphaned_class=9 orphaned_file=9); showing 20 — raise `limit` to see more (maximum 500)",
+        "rows": 20,
+        "head": "orphaned code (102 found, 102 recorded) recorded run 476e578e-3d57-4a12-866c-cf58468108d0: new=0 repeated=102 resolved=0"
+      },
+      "writeCaseWroteIndex": true,
+      "writeIndexBefore": {
+        "db": {
+          "bytes": 35016704,
+          "mtime": "2026-11-03T05:20:50.013Z"
+        },
+        "wal": "absent-or-empty"
+      },
+      "writeIndexAfter": {
+        "db": {
+          "bytes": 35016704,
+          "mtime": "2026-11-03T05:20:50.013Z"
+        },
+        "wal": "{\"bytes\":486192,\"mtime\":\"2026-11-03T05:28:17.214Z\"}"
+      },
+      "writeFailure": null
+    },
+    {
+      "name": "rebar3",
+      "status": "measured",
+      "population": {
+        "files": 303,
+        "symbols": 7012,
+        "relationships": 38143,
+        "frameworkFiles": 301,
+        "analysisRuns": 0
+      },
+      "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+      "readCases": [
+        {
+          "label": "orphaned-default",
+          "args": {
+            "scope": "orphaned"
+          },
+          "isError": false,
+          "ms": 4407.12,
+          "chars": 2156,
+          "census": "877 | 877 orphan candidate(s) (orphaned_function=809 orphaned_file=66 orphaned_class=2); showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "orphaned code (877 found):"
+        },
+        {
+          "label": "all-default",
+          "args": {},
+          "isError": false,
+          "ms": 1318.72,
+          "chars": 1958,
+          "census": "1213 | 1213 finding(s) across orphaned_function=809 high-complexity-function=242 long-parameter-list=77 orphaned_file=66 framework-detected=10 god-class=7 orphaned_class=2; showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "patterns (1213 found):"
+        },
+        {
+          "label": "all-limit-100",
+          "args": {
+            "limit": 100
+          },
+          "isError": false,
+          "ms": 1225.45,
+          "chars": 8901,
+          "census": "1213 | 1213 finding(s) across orphaned_function=809 high-complexity-function=242 long-parameter-list=77 orphaned_file=66 framework-detected=10 god-class=7 orphaned_class=2; showing 100 — raise `limit` to see more (maximum 500)",
+          "rows": 100,
+          "head": "patterns (1213 found):"
+        },
+        {
+          "label": "history-read",
+          "args": {
+            "history": true,
+            "limit": 5
+          },
+          "isError": false,
+          "ms": 61.39,
+          "chars": 451132,
+          "census": "? | ",
+          "rows": 0,
+          "head": "{"
+        }
+      ],
+      "readsMovedDbOrWal": false,
+      "readIndexBefore": {
+        "db": {
+          "bytes": 158330880,
+          "mtime": "2026-11-03T05:21:31.894Z"
+        },
+        "wal": "{\"bytes\":38283072,\"mtime\":\"2026-11-03T05:21:31.616Z\"}"
+      },
+      "readIndexAfter": {
+        "db": {
+          "bytes": 158330880,
+          "mtime": "2026-11-03T05:21:31.894Z"
+        },
+        "wal": "{\"bytes\":38283072,\"mtime\":\"2026-11-03T05:21:31.616Z\"}"
+      },
+      "readFailure": null,
+      "writeCase": {
+        "label": "orphaned-recordRun",
+        "args": {
+          "scope": "orphaned",
+          "recordRun": true
+        },
+        "isError": false,
+        "ms": 1724.4,
+        "chars": 2250,
+        "census": "877 | 877 orphan candidate(s) (orphaned_function=809 orphaned_file=66 orphaned_class=2); showing 20 — raise `limit` to see more (maximum 500)",
+        "rows": 20,
+        "head": "orphaned code (877 found, 877 recorded) recorded run 49283365-6330-4dcf-9a5a-7bd06e4f4799: new=0 repeated=877 resolved=0"
+      },
+      "writeCaseWroteIndex": true,
+      "writeIndexBefore": {
+        "db": {
+          "bytes": 158330880,
+          "mtime": "2026-11-03T05:21:31.894Z"
+        },
+        "wal": "{\"bytes\":38283072,\"mtime\":\"2026-11-03T05:21:31.616Z\"}"
+      },
+      "writeIndexAfter": {
+        "db": {
+          "bytes": 158330880,
+          "mtime": "2026-11-03T05:28:27.736Z"
+        },
+        "wal": "{\"bytes\":38283072,\"mtime\":\"2026-11-03T05:28:28.086Z\"}"
+      },
+      "writeFailure": null
+    },
+    {
+      "name": "go-tools",
+      "status": "measured",
+      "population": {
+        "files": 2017,
+        "symbols": 32726,
+        "relationships": 147112,
+        "frameworkFiles": 114,
+        "analysisRuns": 0
+      },
+      "projectId": "f58244847d810aee6ece4959e595d1c704e7f3ec",
+      "readCases": [
+        {
+          "label": "orphaned-default",
+          "args": {
+            "scope": "orphaned"
+          },
+          "isError": false,
+          "ms": 12151.22,
+          "chars": 2139,
+          "census": "4777 | 4777 orphan candidate(s) (orphaned_function=3772 orphaned_file=731 orphaned_class=274); showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "orphaned code (4777 found):"
+        },
+        {
+          "label": "all-default",
+          "args": {},
+          "isError": false,
+          "ms": 8035.06,
+          "chars": 1865,
+          "census": "5681 | 5681 finding(s) across orphaned_function=3772 orphaned_file=731 high-complexity-function=684 orphaned_class=274 god-class=200 long-parameter-list=10 framework-detected=10; showing 20 — raise `limit` to see more (maximum 500)",
+          "rows": 20,
+          "head": "patterns (5681 found):"
+        },
+        {
+          "label": "all-limit-100",
+          "args": {
+            "limit": 100
+          },
+          "isError": false,
+          "ms": 7414.78,
+          "chars": 7626,
+          "census": "5681 | 5681 finding(s) across orphaned_function=3772 orphaned_file=731 high-complexity-function=684 orphaned_class=274 god-class=200 long-parameter-list=10 framework-detected=10; showing 100 — raise `limit` to see more (maximum 500)",
+          "rows": 100,
+          "head": "patterns (5681 found):"
+        },
+        {
+          "label": "history-read",
+          "args": {
+            "history": true,
+            "limit": 5
+          },
+          "isError": false,
+          "ms": 12.33,
+          "chars": 265,
+          "census": "? | ",
+          "rows": 0,
+          "head": "{"
+        }
+      ],
+      "readsMovedDbOrWal": false,
+      "readIndexBefore": {
+        "db": {
+          "bytes": 581640192,
+          "mtime": "2026-11-02T04:32:36.580Z"
+        },
+        "wal": "{\"bytes\":178334232,\"mtime\":\"2026-11-02T04:32:37.164Z\"}"
+      },
+      "readIndexAfter": {
+        "db": {
+          "bytes": 581640192,
+          "mtime": "2026-11-02T04:32:36.580Z"
+        },
+        "wal": "{\"bytes\":178334232,\"mtime\":\"2026-11-02T04:32:37.164Z\"}"
+      },
+      "readFailure": null,
+      "writeCase": {
+        "label": "orphaned-recordRun",
+        "args": {
+          "scope": "orphaned",
+          "recordRun": true
+        },
+        "isError": false,
+        "ms": 22183.82,
+        "chars": 2235,
+        "census": "4777 | 4777 orphan candidate(s) (orphaned_function=3772 orphaned_file=731 orphaned_class=274); showing 20 — raise `limit` to see more (maximum 500)",
+        "rows": 20,
+        "head": "orphaned code (4777 found, 4725 recorded) recorded run e889b4e6-9d40-449b-9a1a-4be4155ebf24: new=4725 repeated=0 resolved=0"
+      },
+      "writeCaseWroteIndex": true,
+      "writeIndexBefore": {
+        "db": {
+          "bytes": 581640192,
+          "mtime": "2026-11-02T04:32:36.580Z"
+        },
+        "wal": "{\"bytes\":178334232,\"mtime\":\"2026-11-02T04:32:37.164Z\"}"
+      },
+      "writeIndexAfter": {
+        "db": {
+          "bytes": 601403392,
+          "mtime": "2026-11-03T05:29:20.041Z"
+        },
+        "wal": "{\"bytes\":178334232,\"mtime\":\"2026-11-03T05:29:19.846Z\"}"
+      },
+      "writeFailure": null
+    },
+    {
+      "name": "zig",
+      "status": "blocked",
+      "reason": "index incomplete when the door was run"
+    }
+  ],
+  "refusals": [
+    {
+      "label": "refuse-invalid-scope",
+      "args": {
+        "scope": "quality"
+      },
+      "isError": true,
+      "ms": 10.68,
+      "chars": 55,
+      "census": "? | ",
+      "rows": 0,
+      "head": "error: bb_patterns: scope must be one of: orphaned, all"
+    },
+    {
+      "label": "refuse-unknown-option",
+      "args": {
+        "foo": true
+      },
+      "isError": true,
+      "ms": 4.65,
+      "chars": 184,
+      "census": "? | ",
+      "rows": 0,
+      "head": "error: bb_patterns: unknown or irrelevant options: foo — accepted options: scope, limit, includeOrphaned, includeFramework, includeAntiPatterns, confidenceThreshold, history, recordRun"
+    },
+    {
+      "label": "refuse-limit-above-maximum",
+      "args": {
+        "limit": 10000000
+      },
+      "isError": true,
+      "ms": 8.49,
+      "chars": 224,
+      "census": "? | …",
+      "rows": 0,
+      "head": "bb_patterns: limit 10000000 exceeds the maximum page size 500 — this tool answers one bounded page. The answer's [scan: …] line names the full census and the per-rule breakdown, so a smaller page stil"
+    },
+    {
+      "label": "refuse-threshold-out-of-range",
+      "args": {
+        "confidenceThreshold": 2
+      },
+      "isError": true,
+      "ms": 5.28,
+      "chars": 63,
+      "census": "? | ",
+      "rows": 0,
+      "head": "error: bb_patterns: confidenceThreshold must be between 0 and 1"
+    },
+    {
+      "label": "refuse-missing-index",
+      "args": {},
+      "isError": true,
+      "ms": 12.09,
+      "chars": 114,
+      "census": "? | ",
+      "rows": 0,
+      "head": "No index found for /tmp/bb-patterns-door-unindexed-N27HNz. Run: bb index \"/tmp/bb-patterns-door-unindexed-N27HNz\"."
+    }
+  ],
+  "promotionFixture": {
+    "fixture": {
+      "files": 131,
+      "orphanCandidates": 130,
+      "godClasses": 60,
+      "frameworkFiles": 1
+    },
+    "result": [
+      {
+        "label": "promotion-default",
+        "isError": false,
+        "ms": 57.12,
+        "census": "1102 | 1102 finding(s) across orphaned_function=850 orphaned_file=131 orphaned_class=60 god-class=60 framework-detected=1; showing 20 — raise `limit` to see more (maximum 500)",
+        "rows": 20,
+        "hasOrphanRow": true,
+        "hasFrameworkRow": true,
+        "hasGodClassRow": true,
+        "sample": [
+          "  [warning] god-class @ src/wide.ts:29 (80%)",
+          "  [warning] god-class @ src/wide.ts:43 (80%)",
+          "  [warning] god-class @ src/wide.ts:57 (80%)"
+        ]
+      }
+    ],
+    "readsMovedDbOrWal": false
+  },
+  "generatedAt": "2026-11-03T16:07:22.554Z"
+}

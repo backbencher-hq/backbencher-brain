@@ -1,0 +1,36 @@
+{
+  "fixtureId": "cpp/qualified-declarator-name-924",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60/#924, the cpp row's SECOND name-surface class, landed from the census's own files and measured over the two pinned cpp corpora (script/m14/tmp/c924-adjudicate.ts: 570 files, 17,426 symbols). 825 of the 848 whitespace-bearing symbol names are the DELIBERATE #919 macro-heading contract (metadata.expandedFrom === 'macro-heading'); 52 were neither, and 33 of those are ONE grammar mechanism reproduced here: when a macro stands where the return type begins, the cpp grammar cannot place the type and rejoins it to the declarator as extra qualifier segments separated by WHITESPACE ONLY — the qid's `::` separator slot carries a `::` token with EMPTY text (emitted evidence: script/m14/tmp/c924-qid-shape.ts). The old rule read the OUTER qid's last segment as the name and the segment above it as the owner, so fmt/os.h:122 published `system_error vwindows_error` owned by a class `system_error` and json.hpp:5263 published `string to_string` owned by `string`. MEASURED A/B against HEAD over both corpora (script/m14/tmp/c924qid-ab.ts, same tree, both implementations): non-macro whitespace names 52 -> 19 (the 19 remaining are `operator` spellings, intrinsic to the language), 152 symbols moved from `method` to `function` — they were members of a phantom class that does not exist — 2 constructors became correctly detectable, 5 genuine qualified declarators dropped their inlined owner from the NAME while keeping the owner (SocketWriter::MakeConnection -> MakeConnection in SocketWriter), symbol count identical (17,391 -> 17,391), nameLine identical (0 changed: the #921 contract is untouched), and the whole edge delta is the rename itself propagating to the edges' endpoints (106 contains + 1 uses lost, 33 contains + 1 uses added, every pair matching by target and line). The rule is exported (`qualifiedDeclaratorLeaf`) and the F5 oracle imports it rather than copying it (#916), so this fixture — not the differential — is the independent gate for the class. **Reverting mutant: `cpp/qualified-declarator-name-glue`** (mutate-analyzer.ts) restores the outer-segment read; this fixture is the only one that catches it.",
+  "expectSymbols": [
+    { "name": "vwindows_error", "kind": "function", "ownerName": "json_literals", "meta.nameLine": 18, "comment": "the real os.h:122 site: a two-segment return type rejoined by whitespace. The name is the deepest segment (the only one a real `::` would have joined)." },
+    { "name": "to_string", "kind": "function", "ownerName": "json_literals", "meta.nameLine": 22, "comment": "json.hpp:5263 — the same glue across a line break, as a DEFINITION. `meta.nameLine` 22 is the line the NAME is written on, which is the #921 contract the fix must not disturb." },
+    { "name": "get_elements", "kind": "function", "ownerName": "json_literals", "comment": "input_adapters.hpp:464 — the macro stands between a single-segment type and the name." },
+    { "name": "GetTimeInMillis", "kind": "function", "ownerName": "json_literals", "comment": "gtest.h:498 — the NAME was already clean here, and the OWNER was still a phantom (`TimeInMillis`): the two halves of the defect are independent, so a name-only fix would pass a name-only fixture." },
+    { "name": "MakeConnection", "kind": "method", "ownerName": "SocketWriter", "comment": "a GENUINE qualified declarator: the join is a real `::` token, so the owner survives and the name is bare (the qualified form `SocketWriter::MakeConnection` was the old output)." },
+    { "name": "method", "kind": "method", "ownerName": "Sub", "comment": "nested namespace qualification, same rule." },
+    { "name": "operator<<", "kind": "function", "ownerName": "json_literals", "meta.isOperatorOverload": true, "comment": "an operator's spelling carries a space by language rule — kept exactly as written, and flagged as an overload." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "json_literals", "target": "vwindows_error", "line_number": 18, "comment": "the containment edge names the child by its real name, on the line the name is written." },
+    { "type": "contains", "from": "json_literals", "target": "to_string", "line_number": 22, "comment": "the declaration spans lines 21-22; the edge's row is the NAME's line, not the declaration's first line." },
+    { "type": "contains", "from": "json_literals", "target": "get_elements", "line_number": 29 },
+    { "type": "contains", "from": "SocketWriter", "target": "MakeConnection", "comment": "the genuine owner relationship is unchanged by the fix." },
+    { "type": "contains", "from": "Sub", "target": "method" }
+  ],
+  "forbidSymbols": [
+    { "name": "system_error vwindows_error", "note": "PRE-FIX: the return type's tail read as part of the name." },
+    { "name": "string to_string", "note": "PRE-FIX: the same glue in the two-segment form." },
+    { "name": "size_t get_elements", "note": "PRE-FIX: the macro-between-type-and-name form." },
+    { "name": "SocketWriter::MakeConnection", "note": "PRE-FIX: a genuine owner inlined into the name instead of being the owner." },
+    { "name": "GetTimeInMillis", "ownerName": "TimeInMillis", "note": "PRE-FIX: the phantom OWNER of a clean name — the half a name-only assertion cannot see." },
+    { "name": "vwindows_error", "ownerName": "system_error", "note": "PRE-FIX: the phantom owner in its two-segment form." },
+    { "name": "operator <<", "note": "the operator's own spelling has no space (`operator<<`); the spaced form belongs to the `operator <<` overload spelling elsewhere and must not appear from this source." }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "system_error", "target": "system_error vwindows_error", "note": "PRE-FIX: containment published against a class that does not exist, naming a name no consumer can resolve." },
+    { "type": "contains", "from": "timeinmillis", "target": "GetTimeInMillis", "note": "PRE-FIX: the phantom owner seen from the edge side." },
+    {"type": "contains", "from": "timeinmillis", "target": "json_literals::GetTimeInMillis", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

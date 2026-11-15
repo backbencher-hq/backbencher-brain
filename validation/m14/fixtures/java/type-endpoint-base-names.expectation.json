@@ -1,0 +1,87 @@
+{
+  "fixtureId": "java/type-endpoint-base-names",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPORTS_JAVA2 (M14 ontology), Part 1 question 5. A `scoped_type_identifier` carries its scope as a NESTED NODE, so `node.text` is source text rather than a name: `Red<String>.Yellow`, `java.util.@Nullable Optional`, `LinkedHashMultimap<String, Integer>.ValueSet`, and a cast target of `@Nullable V[]`. Measured on java-lib's 3,275 files, 145 emitted endpoints carried a character no Java declaration's name can contain, in exactly these shapes. The fix is ONE node walk (`javaTypeBaseName`) shared by `declared_type`, `cast_target`/`instanceof_check`/`class_literal`/`record_pattern` and `extends`/`implements`, because a string slice cannot do it: the generic arguments and the type-use annotation sit on OPPOSITE sides of the name. A type ARGUMENT is a separate reference with its own site in a PLAIN declaration (`List<Object> f` references Object too), and those rows are untouched by this fix \u2014 the fixture pins `V` from `@Nullable V[]` and `Widget` from the cast to prove it. DECLARED LIMITATION, measured here and not papered over: the type arguments of a generic SCOPE are NOT published separately. `collectJavaTypeNames` returns at a `scoped_type_identifier` rather than descending into the scope's `type_arguments`, so `LinkedHashMultimap<String, Integer>.ValueSet` yields `LinkedHashMultimap.ValueSet` alone and the String/Integer rows are absent. That is a coverage gap, not a spelling defect, and closing it would ADD edges rather than repair endpoints, so it is registered rather than fixed here. Two of these rows exist to make a MUTANT die rather than to describe new behaviour: the `Widget[]` forbid is the only reachable path to `javaTypeBaseName`'s array_type branch (a cast's own bracket-strip masks it), and the `Red` forbid is the under-reach direction the `Map.Entry` forbid does not cover.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "Red.Yellow",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "java.util.Optional",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Map.Entry",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Spliterator.OfInt",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "LinkedHashMultimap.ValueSet",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "Widget",
+      "meta.relationshipType": "cast_target",
+      "source": "castTargets"
+    },
+    {
+      "type": "references",
+      "target": "Widget",
+      "meta.relationshipType": "class_literal",
+      "source": "arrayClassLiteral"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "Red<String>.Yellow",
+      "comment": "type ARGUMENTS are not part of the type's name; a generic scope is a nested generic_type node"
+    },
+    {
+      "type": "references",
+      "target": "java.util.@Nullable Optional",
+      "comment": "a type-use annotation annotates a type, it is not part of the type's name (JLS 9.7.4)"
+    },
+    {
+      "type": "references",
+      "target": "LinkedHashMultimap<String, Integer>.ValueSet",
+      "comment": "same as Red<String>.Yellow: arguments off the scope, comma and all"
+    },
+    {
+      "type": "references",
+      "target": "@Nullable V[]",
+      "comment": "a cast target names the ELEMENT type: the brackets are a shape and the annotation is not a name"
+    },
+    {
+      "type": "references",
+      "target": "V[]",
+      "comment": "the brackets come off with the annotation"
+    },
+    {
+      "type": "references",
+      "target": "Map",
+      "comment": "an over-stripped name: `Map.Entry` is already a name and must not be truncated to its first segment"
+    },
+    {
+      "type": "references",
+      "target": "Widget[]",
+      "comment": "a class literal over an array names the ELEMENT type; the brackets are a shape, not a name. Also the shape that proves javaTypeBaseName's array_type branch is reachable rather than dead code"
+    },
+    {
+      "type": "references",
+      "target": "Red",
+      "comment": "an under-reaching walk: the qualified name is `Red.Yellow`, not its first segment. Paired with the Map.Entry row, which pins the over-strip direction"
+    }
+  ]
+}

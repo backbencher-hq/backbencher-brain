@@ -1,0 +1,13 @@
+{
+  "fixtureId": "javascript/closures-hoisting",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Hoisted function declarations: earlyCall defined after its call site still resolves both symbols and the call edge (JS function hoisting semantics).",
+  "expectSymbols": [
+    { "name": "earlyCall" },
+    { "name": "inner" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "earlyCall", "targetEndsWith": "inner" }
+  ]
+}

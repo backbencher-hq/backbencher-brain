@@ -1,0 +1,26 @@
+{
+  "fixtureId": "scala/anonymous-field-member",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #866 pre-declared contract (java/groovy already satisfied it; scala was measured to drop the member). The expectation was recorded from the post-fix run only to get the spelling of kind/owner and the exact call lines right — the contract itself is the issue's, not the run's.",
+  "rationale": "M49/M37 #866: `val field` inside `new Runnable { ... }` was dropped entirely — handleVariable's ancestor scan breaks only on class_definition/trait_definition/object_definition/enum_definition, and an anonymous body's `template_body` is not one of them, so the scan reached the enclosing `def` and reclassified the member as a function-local. It is now emitted with ownerName=anonymous_Runnable (kind `constant`, scala's existing val/var kind convention at class level too — see handleVariable: `val` is Constant in this language regardless of scope, so the kind here is the language's own convention and NOT part of the #866 divergence). The initialiser's call attribution was already correct in scala and is pinned so the two halves cannot drift apart. The `local` control pins the OTHER half of the same boundary: a method-local is not a project symbol. Call lines are pinned because the `local` call in build() is legitimately attributed to build.",
+  "expectSymbols": [
+    { "name": "AnonField", "kind": "class" },
+    { "name": "anonymous_Runnable", "kind": "class" },
+    { "name": "field", "kind": "constant", "ownerName": "anonymous_Runnable", "comment": "#866 contract 1 (was absent before the fix); `constant` is scala's kind for val, class-level or not" },
+    { "name": "run", "kind": "method", "ownerName": "anonymous_Runnable" }
+  ],
+  "forbidSymbols": [
+    { "name": "local", "comment": "#866 control: a method-local is not a project symbol" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "anonymous_Runnable", "target": "field", "line_number": 15 },
+    { "type": "contains", "from": "anonymous_Runnable", "target": "run", "line_number": 16 },
+    { "type": "calls", "from": "anonymous_Runnable", "target": "target", "line_number": 15, "comment": "#866 contract 2: already correct before the fix — pinned so it cannot regress" },
+    { "type": "calls", "from": "build", "target": "target", "line_number": 13, "comment": "control: the method-LOCAL's call IS attributed to build" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "build", "target": "target", "line_number": 15, "comment": "the field initialiser's call must NOT flatten onto the enclosing method" },
+    { "type": "contains", "from": "AnonField", "target": "field", "comment": "JD18 leak direction: members of an anonymous body never attribute to the enclosing type" }
+  ]
+}

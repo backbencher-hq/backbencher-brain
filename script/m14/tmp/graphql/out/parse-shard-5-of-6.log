@@ -1,0 +1,3 @@
+[INFO] [19:41:22] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:41:22] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_2858533_5qz2b1840z"}
+parse shard 5/6: 305 of 1905 admitted files, 14500 symbols, 28153 ontology relationships, 0 crashed

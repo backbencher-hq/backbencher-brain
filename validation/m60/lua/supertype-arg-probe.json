@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_supertype_arg_probe",
+  "at": "2026-10-03T19:05:39.730Z",
+  "commit": "210504a128e60bdade1c334fad02c0cf7b27e84e",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "filesParsed": 3250,
+    "sampling": "every tracked *.lua, sorted, no cap"
+  },
+  "grammarWasm": "wasm/tree-sitter-lua.wasm",
+  "instrument": "B:parse-tree-count, role-resolved: the supertype argument's POSITION is read from the callee's own `parameters` node, then the argument at that slot is required to be an identifier. No positional guess, no text match.",
+  "question": "does the corpus write a supertype as an ARGUMENT to a locally-defined factory, and the analyzer not read it?",
+  "factoriesWithSupertypeRoleParameter": {
+    "count": 13,
+    "list": [
+      "kong/kong/api/routes/plugins.lua:post_plugin(_, _, _, parent)",
+      "kong/kong/api/routes/plugins.lua:patch_plugin(self, db, _, parent)",
+      "kong/spec/helpers/perf/charts.lua:on_test_start(element, parent, status, debug)",
+      "kong/spec/helpers/perf/charts.lua:on_test_end(element, parent, status, debug)",
+      "luarocks/vendor/argparse.lua:class(prototype, properties, parent)",
+      "luvit/deps/require.lua:moduleRequire(base, name)",
+      "nvim-cmp/lua/cmp/config/mapping.lua:merge_keymaps(base, override)",
+      "nvim-lspconfig/scripts/gen_annotations.lua:is_required_field(parent, field, child)",
+      "snacks.nvim/lua/snacks/layout.lua:_each(widget, parent)",
+      "snacks.nvim/lua/snacks/notifier.lua:dim(value, min, max, parent)",
+      "snacks.nvim/lua/snacks/picker/source/lsp/init.lua:add(result, parent)",
+      "snacks.nvim/lua/snacks/picker/source/treesitter.lua:add(match, parent, depth)",
+      "snacks.nvim/lua/snacks/picker/source/vim.lua:add(entries, parent)"
+    ]
+  },
+  "writtenSupertypeArguments": {
+    "occurrences": 7,
+    "files": 5,
+    "byCallee": [
+      {
+        "callee": "add",
+        "occurrences": 3,
+        "files": 2
+      },
+      {
+        "callee": "class",
+        "occurrences": 2,
+        "files": 1
+      },
+      {
+        "callee": "is_required_field",
+        "occurrences": 1,
+        "files": 1
+      },
+      {
+        "callee": "_each",
+        "occurrences": 1,
+        "files": 1
+      }
+    ],
+    "hits": [
+      {
+        "file": "luarocks/vendor/argparse.lua",
+        "line": 277,
+        "callee": "class",
+        "slot": 2,
+        "param": "parent",
+        "arg": "Parser",
+        "ownLine": 302
+      },
+      {
+        "file": "luarocks/vendor/argparse.lua",
+        "line": 328,
+        "callee": "class",
+        "slot": 2,
+        "param": "parent",
+        "arg": "Argument",
+        "ownLine": 351
+      },
+      {
+        "file": "nvim-lspconfig/scripts/gen_annotations.lua",
+        "line": 329,
+        "callee": "is_required_field",
+        "slot": 0,
+        "param": "parent",
+        "arg": "prop",
+        "ownLine": 329
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/layout.lua",
+        "line": 186,
+        "callee": "_each",
+        "slot": 1,
+        "param": "parent",
+        "arg": "widget",
+        "ownLine": 186
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/picker/source/lsp/init.lua",
+        "line": 379,
+        "callee": "add",
+        "slot": 1,
+        "param": "parent",
+        "arg": "parent",
+        "ownLine": 379
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/picker/source/lsp/init.lua",
+        "line": 387,
+        "callee": "add",
+        "slot": 1,
+        "param": "parent",
+        "arg": "root",
+        "ownLine": 387
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/picker/source/treesitter.lua",
+        "line": 185,
+        "callee": "add",
+        "slot": 1,
+        "param": "parent",
+        "arg": "root",
+        "ownLine": 185
+      }
+    ]
+  },
+  "roleSlotPresentButNotAName": {
+    "occurrences": 13,
+    "note": "the factory declares a supertype parameter and the call site does not pass a name there — a class with no parent, or a non-literal. Reported so the count above is not read as 'every call has a parent'.",
+    "examples": [
+      "luarocks/vendor/argparse.lua:249: class(...) arg3=absent",
+      "luarocks/vendor/argparse.lua:304: class(...) arg3=absent",
+      "luarocks/vendor/argparse.lua:1644: class(...) arg3=absent",
+      "luarocks/vendor/argparse.lua:1797: class(...) arg3=absent",
+      "luvit/deps/require.lua:268: moduleRequire(...) arg1=dot_index_expression",
+      "nvim-cmp/lua/cmp/config/mapping.lua:37: merge_keymaps(...) arg1=binary_expression",
+      "nvim-cmp/lua/cmp/config/mapping.lua:75: merge_keymaps(...) arg1=binary_expression",
+      "snacks.nvim/lua/snacks/layout.lua:192: _each(...) arg2=absent",
+      "snacks.nvim/lua/snacks/notifier.lua:593: dim(...) arg4=dot_index_expression",
+      "snacks.nvim/lua/snacks/notifier.lua:604: dim(...) arg4=dot_index_expression",
+      "snacks.nvim/lua/snacks/picker/source/treesitter.lua:173: add(...) arg2=binary_expression",
+      "snacks.nvim/lua/snacks/picker/source/vim.lua:459: add(...) arg2=binary_expression"
+    ]
+  },
+  "comparisonWithThePositionalGuess": {
+    "oldProbeReadArgumentIndex": 2,
+    "oldProbeCountOfNameArguments": 0,
+    "roleResolvedCount": 7,
+    "whyTheyDiffer": "the old probe read the SECOND argument of every `class(...)` call. argparse's convention puts the parent in the THIRD, because the callee declares `class(prototype, properties, parent)`. The old number is 0 and it was reported as evidence that no written supertype exists."
+  },
+  "overturnCondition": "0 written supertype arguments resolved by role. A non-zero count of any call whose callee declares a parent/super/base parameter and passes a NAME there is a finding about `extends` coverage."
+}

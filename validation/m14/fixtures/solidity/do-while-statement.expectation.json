@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "do-while-statement",
+  "why": "grammar.js:645 — `do BLOCK while (expr);`. OpenZeppelin writes `while` loops, not `do`.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "do_while_statement",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

@@ -1,0 +1,183 @@
+{
+  "population": {
+    "filelist": "validation/m14/fixtures/sql/residual-full-filelist.txt",
+    "sampledFiles": 1964,
+    "parsed": 1964,
+    "failed": 0,
+    "repos": 20,
+    "unsampledFilesParsed": 0,
+    "cap": "none (whole filelist)"
+  },
+  "totals": {
+    "edges": 31297,
+    "unresolved": 1820,
+    "resolved": 19549,
+    "refuted": 0
+  },
+  "buckets": {
+    "absentEverywhere": 1656,
+    "extKind:informationSchema": 88,
+    "queryLocalBinding-textHint": 55,
+    "extKind:platform": 15,
+    "extKind:implicitSchema": 6
+  },
+  "bucketByType": {
+    "uses": {
+      "absentEverywhere": 579,
+      "extKind:informationSchema": 88,
+      "queryLocalBinding-textHint": 53,
+      "extKind:platform": 14
+    },
+    "references": {
+      "absentEverywhere": 65,
+      "extKind:implicitSchema": 6
+    },
+    "calls": {
+      "absentEverywhere": 1004,
+      "queryLocalBinding-textHint": 2,
+      "extKind:platform": 1
+    },
+    "imports": {
+      "absentEverywhere": 6
+    },
+    "instantiates": {
+      "absentEverywhere": 2
+    }
+  },
+  "samples": {
+    "uses|absentEverywhere": [
+      "boundary/internal/clientcache/internal/db/schema_reset.sql:? -> sqlite_master",
+      "boundary/internal/db/schema/internal/edition/testdata/three/1/01_add_table.up.sql:? -> tree",
+      "boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql:? -> credential_vault_generic_library_username_password_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql:? -> credential_vault_generic_library_ssh_private_key_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql:? -> credential_vault_generic_library_usern_pass_domain_mapping_ovrd",
+      "boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql:? -> credential_vault_generic_library",
+      "boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql:? -> credential_vault_generic_library_hst",
+      "boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql:? -> credential_vault_generic_library"
+    ],
+    "references|absentEverywhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql:? -> credential_vault_generic_library_mapping_override",
+      "boundary/internal/db/schema/migrations/oss/postgres/36/01_vault_library_map_username_password.up.sql:? -> credential_vault_library_username_password_mapping_override",
+      "boundary/internal/db/schema/migrations/oss/postgres/65/01_ldap.up.sql:? -> auth_ldap_group_entry_search",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_hst",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_deleted",
+      "boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql:? -> credential_vault_generic_library_mapping_override"
+    ],
+    "calls|absentEverywhere": [
+      "boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql:? -> wh_date_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql:? -> wh_time_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql:? -> wh_date_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql:? -> wh_time_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql:? -> wh_date_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql:? -> wh_time_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/16/01_wh_credential_dimension.up.sql:? -> wh_dim_key",
+      "boundary/internal/db/schema/migrations/oss/postgres/16/01_wh_credential_dimension.up.sql:? -> wh_dim_key"
+    ],
+    "uses|extKind:informationSchema": [
+      "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql:? -> constraint_column_usage (qualified information_schema.constraint_column_usage) [external informationSchema]",
+      "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql:? -> referential_constraints (qualified information_schema.referential_constraints) [external informationSchema]",
+      "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql:? -> key_column_usage (qualified information_schema.key_column_usage) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/13_to_14.sql:? -> tables (qualified information_schema.tables) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/13_to_14.sql:? -> columns (qualified information_schema.columns) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/13_to_14.sql:? -> table_constraints (qualified information_schema.table_constraints) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/13_to_14.sql:? -> views (qualified information_schema.views) [external informationSchema]",
+      "hasura-engine/server/src-rsr/migrations/13_to_14.sql:? -> tables (qualified information_schema.tables) [external informationSchema]"
+    ],
+    "uses|queryLocalBinding-textHint": [
+      "duckdb/benchmark/aoc24/queries/day04.sql:? -> part1",
+      "duckdb/benchmark/aoc24/queries/day04.sql:? -> part2",
+      "duckdb/benchmark/aoc24/queries/day06.sql:? -> part1",
+      "duckdb/benchmark/aoc24/queries/day09.sql:? -> part1",
+      "duckdb/benchmark/aoc24/queries/day09.sql:? -> part2",
+      "duckdb/benchmark/aoc24/queries/day09.sql:? -> tmp",
+      "duckdb/benchmark/aoc24/queries/day09.sql:? -> placenext",
+      "duckdb/benchmark/aoc24/queries/day09.sql:? -> nextfree"
+    ],
+    "calls|queryLocalBinding-textHint": [
+      "duckdb/benchmark/recursive_cte/aoc2022/load/day23.sql:? -> aoc2022_day23_v2",
+      "proxicall/database/archive/2026/20260131_pms_exchange_rates.sql:? -> x"
+    ],
+    "imports|absentEverywhere": [
+      "postgrest/test/io/fixtures/big_schema.sql:? -> ../../orioledb.sql",
+      "postgrest/test/io/fixtures/load.sql:? -> ../../orioledb.sql",
+      "postgrest/test/load/fixtures.sql:? -> ../orioledb.sql",
+      "postgrest/test/observability/fixtures/load.sql:? -> ../../orioledb.sql",
+      "postgrest/test/pgbench/fixtures.sql:? -> ../spec/fixtures/load.sql",
+      "postgrest/test/spec/fixtures/load.sql:? -> ../../orioledb.sql"
+    ],
+    "instantiates|absentEverywhere": [
+      "postgrest/test/spec/fixtures/schema.sql:? -> composite_domain",
+      "postgrest/test/spec/fixtures/schema.sql:? -> composite_domain"
+    ],
+    "uses|extKind:platform": [
+      "proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain_v2.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain_v2.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260131_pms_balance_integrity_checksums.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260131_pms_balance_integrity_checksums.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260131_pms_c7_1_bank_accounts.sql:? -> decrypted_secrets (qualified vault.decrypted_secrets) [external platform]",
+      "proxicall/database/archive/2026/20260131_pms_c7_1_bank_accounts.sql:? -> secrets (qualified vault.secrets) [external platform]"
+    ],
+    "references|extKind:implicitSchema": [
+      "proxicall/database/verify_m95_2988_conversation_core.sql:? -> public [external implicitSchema]",
+      "proxicall/database/verify_m95_2989_safety_core.sql:? -> public [external implicitSchema]",
+      "proxicall/database/verify_m95_3003_inbox_grants.sql:? -> public [external implicitSchema]",
+      "proxicall/database/verify_m95_3004_report_flow.sql:? -> public [external implicitSchema]",
+      "proxicall/database/verify_m95_3005_blocks.sql:? -> public [external implicitSchema]",
+      "proxicall/database/verify_m95_3025_business_reports_rls.sql:? -> public [external implicitSchema]"
+    ],
+    "calls|extKind:platform": [
+      "proxicall/supabase/migrations/20260804020000_fix_vault_api_functions.sql:? -> create_secret (qualified vault.create_secret) [external platform]"
+    ]
+  },
+  "perType": {
+    "contains": {
+      "edges": 12132,
+      "resolved": 12132
+    },
+    "uses": {
+      "edges": 9160,
+      "ambDeclOnly": 3229,
+      "unresolved": 734,
+      "resolved": 4560,
+      "ambBoth": 353,
+      "externalVerified": 284
+    },
+    "references": {
+      "edges": 6015,
+      "resolved": 2346,
+      "ambDeclOnly": 3542,
+      "ambBoth": 56,
+      "unresolved": 71
+    },
+    "calls": {
+      "edges": 3908,
+      "resolved": 484,
+      "externalVerified": 6,
+      "ambDeclOnly": 2370,
+      "unresolved": 1007,
+      "ambBoth": 41
+    },
+    "imports": {
+      "edges": 53,
+      "resolved": 16,
+      "unresolved": 6,
+      "ambDeclOnly": 30,
+      "ambBoth": 1
+    },
+    "instantiates": {
+      "edges": 21,
+      "resolved": 11,
+      "ambDeclOnly": 6,
+      "ambBoth": 2,
+      "unresolved": 2
+    },
+    "overrides": {
+      "edges": 8,
+      "ambDeclOnly": 8
+    }
+  }
+}

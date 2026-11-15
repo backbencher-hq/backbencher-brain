@@ -30,7 +30,7 @@ for (const type of [
 const parser = await ASTEngine.getParser("powershell")
 const observed = new Set<string>()
 const files = readdirSync("validation/m12/fixtures/powershell").filter((file) => /\.(ps1|psm1|psd1)$/i.test(file)).sort()
-const corpus = "$HOME/fixtures/repositories/powershell"
+const corpus = "/home/ishaq2321/bb_tests/repositories/powershell"
 const corpusFiles = execFileSync("git", ["-C", corpus, "ls-files", "*.ps1", "*.psm1", "*.psd1"], { encoding: "utf8" }).trim().split("\n").filter(Boolean).sort()
 const inputs = files.map((file) => readFileSync(`validation/m12/fixtures/powershell/${file}`, "utf8"))
 for (const file of corpusFiles.slice(0, 553)) inputs.push(execFileSync("git", ["-C", corpus, "show", `HEAD:${file}`], { encoding: "utf8" }))

@@ -1,0 +1,20 @@
+{
+  "fixtureId": "svelte/onclick-handler-lines",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Master review (recall): Svelte 5 `onclick` attributes emit calls edges like `on:` — intrinsic tags only. On a component `onclick` is a prop (never a call); `once`/`only` are never events. Pre-fix emitted nothing (round-trip verified).",
+  "expectSymbols": [
+    { "name": "save" },
+    { "name": "del" },
+    { "name": "focus" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "save", "line_number": 14 },
+    { "type": "calls", "target": "del", "line_number": 15 },
+    { "type": "calls", "target": "focus", "line_number": 18 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "save", "line_number": 16, "note": "component `onclick` is a prop, never a call — guards fabrication" },
+    { "type": "calls", "target": "preventDefault", "note": "member call (event.preventDefault) — #898 free-identifier rule: member-call property names are never handlers; the receiver resolution is a different, not-yet-built lane" }
+  ]
+}

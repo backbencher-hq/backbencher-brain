@@ -126,7 +126,7 @@
       "verdict": "A REAL DEFECT IN THE UPSTREAM FILE, COMMITTED"
     }
   ],
-  "manifest": "$HOME/fixtures/xml/repositories/MANIFEST.json",
+  "manifest": "/home/ishaq2321/bb_tests/xml/repositories/MANIFEST.json",
   "manifestPresent": true,
   "complexityPolicy": "single iterative AST traversal per file; attribute and relationship insertion are O(1) per emitted node, with a Set-based relationship dedupe"
 }

@@ -1,0 +1,12 @@
+@function double($n) {
+  @return $n * 2;
+}
+
+@mixin outer($arg) {
+  @include double($arg);
+  @include not-declared-here(1);
+}
+
+.a {
+  width: double(4px);
+}

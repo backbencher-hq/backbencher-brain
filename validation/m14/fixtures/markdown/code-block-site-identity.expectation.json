@@ -1,0 +1,126 @@
+{
+ "fixtureId": "markdown/code-block-site-identity",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A fenced code block is a SITE, not a declaration. The lane keyed `code_block.<lang>` by `owner + name`, so the second block of one language under one heading collapsed into the first and lost its `contains` edge with it. Measured on the lane's pinned corpus (scala3@18df09c0, 738 tracked .md files): 1,584 of 3,742 fenced code blocks were erased this way, in 406 of 738 files, worst case docs/_spec/05-classes-and-objects.md at 79 sites -> 24 symbols. The lane read clean because every fixture it had ever seen held at most one block of a given language under a given heading, which is the one shape that cannot fail. expectSymbolCount is the assertion that fires: `equals: 2` on the two-block owner is what a site-keyed lane satisfies and a name-keyed lane cannot. UPDATED after the repeat-site RESOLUTION fix, and the reason this fixture had to change is the same reason the defect survived the round that introduced it: the fixture asserted that two blocks under one heading produced two symbols with the SAME name, and the edge assertions only ever named a first occurrence. So a repeat's edge — the one that said `code_block.scala#2` — was never asserted, and the symbol side was asserted to be WRONG (two symbols sharing one name) in exactly the place the fix corrected. Measured across 120 scala3 markdown files: 529 of 1,843 relationships (28.7%) named a symbol the file did not declare, every one a repeated site, because the edge said the suffixed spelling and the symbol published the bare text. The store resolves an endpoint by symbol NAME, so those ends degraded to external. expectSymbolCount now pins one symbol per site and the `#2` name, and the repeat edge is asserted. The forbid rows are the regression this fix could plausibly introduce: numbering that leaks across owners, so the third block — a first occurrence under a DIFFERENT heading — must not be read as a continuation of the first owner's sequence.",
+ "expectSymbolCount": [
+  {
+   "name": "code_block.scala",
+   "ownerName": "Two blocks of one language under one heading",
+   "equals": 1
+  },
+  {
+   "name": "code_block.scala#2",
+   "ownerName": "Two blocks of one language under one heading",
+   "equals": 1
+  },
+  {
+   "name": "code_block.scala",
+   "ownerName": "A third, in a different section",
+   "equals": 1
+  },
+  {
+   "name": "code_block.bash",
+   "ownerName": "And one of another language",
+   "equals": 1
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "code_block.scala",
+   "kind": "function",
+   "ownerName": "Two blocks of one language under one heading",
+   "meta.isMarkdownCodeBlock": true,
+   "meta.language": "scala",
+   "meta.nodeType": "fenced_code_block"
+  },
+  {
+   "name": "code_block.bash",
+   "kind": "function",
+   "ownerName": "And one of another language",
+   "meta.isMarkdownCodeBlock": true,
+   "meta.language": "bash",
+   "meta.nodeType": "fenced_code_block"
+  },
+  {
+   "name": "code_block.scala#2",
+   "kind": "function",
+   "ownerName": "Two blocks of one language under one heading",
+   "meta.isMarkdownCodeBlock": true,
+   "meta.language": "scala",
+   "meta.nodeType": "fenced_code_block",
+   "meta.isRepeatedSite": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Two blocks of one language under one heading",
+   "target": "code_block.scala",
+   "meta.role": "code_block_under_heading",
+   "line_number": 5
+  },
+  {
+   "type": "contains",
+   "from": "Two blocks of one language under one heading",
+   "target": "code_block.scala#2",
+   "meta.role": "code_block_under_heading",
+   "line_number": 11
+  },
+  {
+   "type": "contains",
+   "from": "A third, in a different section",
+   "target": "code_block.scala",
+   "meta.role": "code_block_under_heading",
+   "line_number": 17
+  },
+  {
+   "type": "contains",
+   "from": "And one of another language",
+   "target": "code_block.bash",
+   "meta.role": "code_block_under_heading",
+   "line_number": 23
+  }
+ ],
+ "_measuredOnTheLaneCorpus": {
+  "note": "the number this fixture exists to make falsifiable, re-derivable with the same corpus",
+  "corpus": "scala3@18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+  "taggedFenceSites": 3742,
+  "codeBlockSymbolsBefore": 2158,
+  "erased": 1584,
+  "filesAffected": 406,
+  "filesTotal": 738,
+  "worstCase": {
+   "file": "docs/_spec/05-classes-and-objects.md",
+   "sites": 79,
+   "symbols": 24
+  }
+ },
+ "_seamNote": {
+  "what": "Per-site identity is now also the PUBLISHED name, not only the id. A repeat publishes `code_block.scala#2` and a first occurrence publishes `code_block.scala`, so a relationship endpoint is always a name the file declares and the store's name-keyed resolution can find it.",
+  "why": "The alternative — keeping the bare name and letting the edge carry the suffix — was measured and rejected: 28.7% of this lane's relationships named a symbol that did not exist, and the indexer degrades an unresolvable same-file endpoint to an external edge rather than a dangling id. The diff could not see it, because the independent oracle derives the same suffixed spelling, so both sides agreed on a name neither published. Two implementations sharing a convention is not evidence that the convention resolves to anything.",
+  "notAsserted": "`meta.isDeclaration` is deliberately absent: this lane declares nothing, and a key that no fixture and no census reads is exactly what the allowlist is for not carrying."
+ },
+ "forbidRelationships": [
+  {
+   "from": "Two blocks of one language under one heading",
+   "target": "code_block.bash"
+  },
+  {
+   "from": "A third, in a different section",
+   "target": "code_block.scala#2"
+  },
+  {
+   "from": "And one of another language",
+   "target": "code_block.bash#2"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "code_block.scala#3"
+  },
+  {
+   "name": "Two blocks of one language under one heading.code_block.scala"
+  }
+ ]
+}

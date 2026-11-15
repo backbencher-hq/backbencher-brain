@@ -1,0 +1,86 @@
+{
+ "_comment": [
+  "EXACT CORPUS REVISIONS every Clojure measurement in this repository was taken against.",
+  "",
+  "WHY THIS FILE EXISTS. The corpora live outside the repository, under",
+  "$BB_CORPUS_ROOT/repositories (default /home/sano/ishaq/bb_tests/repositories), as plain",
+  "git checkouts of UPSTREAM projects. Nothing else in the tree recorded which revision",
+  "was in use: clj-kondo's SHA appeared in three files by accident, and the other three",
+  "appeared nowhere. A fresh clone of `clojure/clojure` yields master, not ec0ae17, so",
+  "every gate number in validation/ and every F5/F7 figure becomes irreproducible the",
+  "moment that directory is recreated without these pins.",
+  "",
+  "Recorded during the pre-erasure sweep, when the corpus directory was about to be",
+  "deleted. This is the last commit that can still observe the checkouts."
+ ],
+ "recordedAt": "2026-10-02",
+ "corpora": {
+  "clojure": {
+   "remote": "https://github.com/clojure/clojure.git",
+   "revision": "ec0ae1787a688684185e755d53f6d9cb9693f571",
+   "shortRevision": "ec0ae17",
+   "branch": "master",
+   "commitDate": "2026-09-26T12:52:28-05:00",
+   "clojureFiles": 143,
+   "role": "primary small corpus; every CLJ-Dxx ruling and both enforced-gate corpora",
+   "restore": "git clone https://github.com/clojure/clojure.git && git -C clojure checkout ec0ae1787a688684185e755d53f6d9cb9693f571"
+  },
+  "clj-kondo": {
+   "remote": "https://github.com/clj-kondo/clj-kondo.git",
+   "revision": "703a44ccdc8c4d1d0b52d1a887d7b077a87610c5",
+   "shortRevision": "703a44c",
+   "branch": "master",
+   "commitDate": "2026-09-17T20:05:18+02:00",
+   "clojureFiles": 503,
+   "role": "small corpus; the only SHA that was already recorded elsewhere in the tree",
+   "restore": "git clone https://github.com/clj-kondo/clj-kondo.git && git -C clj-kondo checkout 703a44ccdc8c4d1d0b52d1a887d7b077a87610c5"
+  },
+  "core.async": {
+   "remote": "https://github.com/clojure/core.async.git",
+   "revision": "8e6e382d9eefaa3054bfa3834d4e6dbc413cbe2b",
+   "shortRevision": "8e6e382",
+   "branch": "master",
+   "commitDate": "2026-06-12T09:30:01-05:00",
+   "clojureFiles": 50,
+   "role": "small corpus; the F5 calls shard",
+   "restore": "git clone https://github.com/clojure/core.async.git && git -C core.async checkout 8e6e382d9eefaa3054bfa3834d4e6dbc413cbe2b"
+  },
+  "metabase": {
+   "remote": "https://github.com/metabase/metabase.git",
+   "revision": "176d0682e28ab55933b8a3d05ae95c19f7a6a2e6",
+   "shortRevision": "176d0682",
+   "branch": "master",
+   "commitDate": "2026-09-28T13:18:46+08:00",
+   "clojureFiles": 4334,
+   "role": "large corpus; the second half of every enforced-class gate, and M60",
+   "restore": "git clone https://github.com/metabase/metabase.git && git -C metabase checkout 176d0682e28ab55933b8a3d05ae95c19f7a6a2e6"
+  },
+  "P3D-Legacy": {
+   "remote": "https://github.com/P3D-Legacy/P3D-Legacy.git",
+   "revision": "e9342bb651fb7284e33e8a41d1406b21fb9646f3",
+   "shortRevision": "e9342bb",
+   "branch": "master",
+   "commitDate": "2026-10-08T19:16:33+02:00",
+   "vbFiles": 1880,
+   "role": "vb primary corpus (the historical P3D-Legacy: 1,880 .vb files, the largest VB.NET corpus in the fleet)",
+   "restore": "git clone --depth 1 https://github.com/P3D-Legacy/P3D-Legacy.git P3D-Legacy  # then record `git rev-parse HEAD` and the .vb count; the corpus is 785 MB on disk",
+   "measuredAt": "2026-11-01 round 8 (this host; cloned shallow at the HEAD above because the historical checkout was absent)"
+  },
+  "DISMTools": {
+   "remote": "https://github.com/CodingWonders/DISMTools.git",
+   "revision": "dc802e665c964bbc86dc800775e7d0826cd82d58",
+   "shortRevision": "dc802e6",
+   "branch": "main",
+   "commitDate": "2026-10-30T07:21:31+01:00",
+   "vbFiles": 500,
+   "role": "vb second corpus (VB.NET WPF/console application: dependencies, events, overrides and interface implementations in ordinary application shape)",
+   "restore": "git clone --depth 1 https://github.com/CodingWonders/DISMTools.git DISMTools  # then record `git rev-parse HEAD` and the .vb count",
+   "measuredAt": "2026-11-01 round 8 (this host; cloned shallow at the HEAD above because the historical checkout was absent)"
+  }
+ },
+ "caveats": [
+  "The F5 gate enforces per-repo FILE FLOORS (clojure 143, clj-kondo 444, core.async 46, metabase 4253) and exits 3 on a truncated corpus. Those floors were measured against these revisions; a different revision may trip them, and that is the intended behaviour rather than a false alarm.",
+  "File counts here are CLOJURE files only (clj/cljc/cljs/edn). The gate's floor counts differ because it counts what the analyzer actually parses.",
+  "No Clojure corpus pin existed before this file. If a later lane changes a revision, this file must change with it or every historical figure becomes ambiguous."
+ ]
+}

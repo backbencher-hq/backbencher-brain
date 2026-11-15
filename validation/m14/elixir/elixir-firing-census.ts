@@ -71,7 +71,7 @@ const ALL_TYPES = TYPES_PROD
 // checked so a lane cannot look complete by inventing a type name.
 const KNOWN_OFF_ENUM = new Set(["imports", "import", "depends", "dependson"])
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const CORPUS_DIRS = (process.env.ELIXIR_CORPUS_DIRS ?? "elixir,otp").split(",")
 const EXTS = [".ex", ".exs"]
 const WANT = Number(process.argv[2] || 0) // 0 == the whole corpus

@@ -1,0 +1,15 @@
+{
+  "issue": "CLJ-D35",
+  "note": "A SPEC FORM NAMES A VAR, so its argument must be a NAME. `(s/fdef 1 :args)` — a clj-kondo corpus fixture for reader recovery — published a symbol literally called `1`, with a `contains` edge `spec-syntax->1` beside it. A symbol named after a literal is not a var and nothing can ever resolve it, so it is a placeholder identity in a table whose whole contract is that every name in it is referable; the malformed form now falls through to the generic-call branch, which records the spec expression's own call relationships and nothing else. CLJ-D26 also holds here: a keyword spec name is auto-resolved by the reader, so `::email` is published as `:current-ns/email` rather than the literal `::email`, which had left the spec with no resolvable identity any other file could reference. And CLJ-D33 holds here too: the `contains` edge for an annotated var points at its `defn`, not at the `s/fdef`.",
+  "expectRelationships": [
+    { "type": "contains", "from": "clj.fixture.specname", "target": ":clj.fixture.specname/email", "line_number": 14 },
+    { "type": "contains", "from": "clj.fixture.specname", "target": "plain-spec", "line_number": 17 },
+    { "type": "contains", "from": "clj.fixture.specname", "target": "target-var", "line_number": 25 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "1" },
+    { "type": "contains", "target": "string-name" },
+    { "type": "contains", "target": "::email" },
+    { "type": "contains", "from": "clj.fixture.specname", "target": "target-var", "line_number": 21 }
+  ]
+}

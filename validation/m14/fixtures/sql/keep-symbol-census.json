@@ -1,0 +1,29 @@
+{
+  "instrument": "validation/m14/fixtures/sql/keep-symbol-census.mts",
+  "entryPoint": "RealSqlAnalyzer.analyze + pool-worker keepSymbol",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedFiles": 1946,
+  "symbolsEmitted": 18325,
+  "droppedTotal": 3,
+  "droppedPct": 0.016,
+  "dropped": [
+    {
+      "n": 2,
+      "kind": "function",
+      "name": "root",
+      "examples": [
+        "postgrest/test/io/fixtures/schema.sql",
+        "postgrest/test/spec/fixtures/schema.sql"
+      ]
+    },
+    {
+      "n": 1,
+      "kind": "property",
+      "name": "program",
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql"
+      ]
+    }
+  ],
+  "finding": "SQL-G13 in script/m14/spec/sql-completeness.json. src/ast/pool-worker.ts is shared machinery; filed, not edited."
+}

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.01",
+  "code": "B1",
+  "tool": "baseline",
+  "title": "Contract authority: single executable-registry source of truth",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "derived contract is single-source (names match registry in order)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no tool has plannedModes that overlap executable modes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "aspirational modes are planned-only, never executable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "generated artifact (docs/data/public-tools.json) matches registry",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "CURRENT_MCP_TOOL_CONTRACTS export removed from tool-contracts.ts",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TARGET_TOOL_CONTRACTS export removed from tool-contracts.ts",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no hand-maintained tool-contract array remains",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mutability is a single value (registry === derived === artifact)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "exactly three tools declare planned modes (bb_ask, bb_patterns, bb_security)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "registry validator rejects planned/executable mode overlap [negative: planned modes overlap executable modes]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "registry validator rejects duplicate planned modes [negative: duplicate planned modes]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "decisions": {
+    "authority": "src/mcp/tool-registry.ts (TOOL_DESCRIPTORS / deriveToolContracts())",
+    "bb_health_mutability": "read (refresh/force are documented, opt-in index mutations; 'index' in TARGET was the drift)",
+    "bb_visualize_modes": "project,file,module,symbol,feature (scope) + text,json,html (format); TARGET omitted module/text/json/html and was stale",
+    "plannedModes": {
+      "bb_ask": [
+        "explain",
+        "feature"
+      ],
+      "bb_patterns": [
+        "quality",
+        "architecture"
+      ],
+      "bb_security": [
+        "flow",
+        "summary",
+        "hotspots"
+      ]
+    }
+  },
+  "limitations": [
+    "Proves registry/derived/artifact agreement and planned-mode honesty; runtime agreement is asserted by verify-contracts.ts via live MCP listTools.",
+    "plannedModes marks roadmap items, not implemented capabilities; each still requires its own implementation issue before it may move into modes."
+  ],
+  "generatedAt": "2026-11-05T04:06:58.565Z"
+}

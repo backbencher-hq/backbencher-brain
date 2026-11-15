@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "fixture": "adversarial-discovery-lifecycle",
+  "projectId": "220b0c982b357699e08e6e405af4a880454dd495",
+  "operationMeasurements": [
+    {
+      "name": "cold_index",
+      "wallTimeMs": 1126.01861,
+      "userCpuMs": 187.838,
+      "systemCpuMs": 61.422,
+      "peakRssBytes": 72638464,
+      "rssDeltaBytes": 10997760,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    },
+    {
+      "name": "incremental",
+      "wallTimeMs": 736.458566,
+      "userCpuMs": 53.222,
+      "systemCpuMs": 24.003,
+      "peakRssBytes": 73707520,
+      "rssDeltaBytes": 806912,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    },
+    {
+      "name": "deletion",
+      "wallTimeMs": 14.043474,
+      "userCpuMs": 10.838,
+      "systemCpuMs": 1.068,
+      "peakRssBytes": 73969664,
+      "rssDeltaBytes": 262144,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    },
+    {
+      "name": "rename",
+      "wallTimeMs": 677.725027,
+      "userCpuMs": 59.044,
+      "systemCpuMs": 30.068,
+      "peakRssBytes": 79450112,
+      "rssDeltaBytes": 2322432,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "indexedPaths": [
+    "/tmp/bb-m11-lifecycle-SDCYe1/.github/workflows/build.yml",
+    "/tmp/bb-m11-lifecycle-SDCYe1/.vscode/settings.json",
+    "/tmp/bb-m11-lifecycle-SDCYe1/src/keep.ts",
+    "/tmp/bb-m11-lifecycle-SDCYe1/src/types.pyi"
+  ],
+  "finalPaths": [
+    "/tmp/bb-m11-lifecycle-SDCYe1/.github/workflows/build.yml",
+    "/tmp/bb-m11-lifecycle-SDCYe1/.vscode/settings.json",
+    "/tmp/bb-m11-lifecycle-SDCYe1/src/rename-new.ts",
+    "/tmp/bb-m11-lifecycle-SDCYe1/src/types.pyi"
+  ],
+  "fileCountBeforeUpdate": 4,
+  "fileCountAfterUpdate": 4,
+  "invariants": {
+    "canonicalProjectIdentity": true,
+    "separateProcessRestart": true,
+    "symlinkEscapeExcluded": true,
+    "nestedRepositoryExcluded": true,
+    "generatedAndDependencyDirectoriesExcluded": true,
+    "usefulHiddenConfigurationIncluded": true,
+    "staleDeletionReconciled": true,
+    "renameReconciled": true,
+    "concurrentIndexIntegrity": true
+  },
+  "limitations": [
+    "This fixture validates universal lifecycle invariants, not language analyzer correctness."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.813Z",
+    "contentSha256": "77b4c306cf9fb057a1c2942f9476abf0a9f4cf1ae708fbac7805393b143fc529"
+  }
+}

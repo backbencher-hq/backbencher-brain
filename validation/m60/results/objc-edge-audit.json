@@ -1,0 +1,6820 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C relationship truth and completeness audit",
+  "generatedAt": "2026-09-30T03:23:38.672Z",
+  "method": "every file the router admits across 3 pinned repos (NO sampling). Three independent questions, each answered from a different arbiter. PHANTOM/UNRESOLVED: every edge's target is looked up in the analyzer's own symbols for that file, then in a source-side set of names the file actually declares or defines, then against a system-name pattern — so an edge is called unresolved only when nothing in the file, the symbol table or a system namespace accounts for it. SILENT: source-side construct counts (message sends, selector keywords, allocations, protocol declarations and conformances, superclass refs, properties, synthesised ivars, methods, C functions, imports) are counted from comment- and string-stripped text and compared against what the analyzer bound. FAMILY: the two managed-OO conformance types are read off a real file to see whether a consumer can separate them.",
+  "why": "a symbol count and a clean ERROR count say nothing about whether an edge is TRUE or whether a construct is MISSING. The lane had 8 corpus-backed relationship types and 24,114 edges and no measurement of either.",
+  "files": 329,
+  "crashedFiles": 0,
+  "totalEdges": 24114,
+  "byType": {
+    "uses": 9473,
+    "calls": 8309,
+    "contains": 3895,
+    "references": 916,
+    "overrides": 621,
+    "instantiates": 519,
+    "extends": 255,
+    "implements": 126
+  },
+  "families": [
+    {
+      "type": "uses",
+      "edges": 9473,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 9473,
+        "selectorOrModulePath": 0,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.m:23 application:didFinishLaunchingWithOptions:->resourcePath",
+        "Examples/SDWebImage Demo/AppDelegate.m:25 application:didFinishLaunchingWithOptions:->lastPathComponent",
+        "Examples/SDWebImage Demo/AppDelegate.m:25 application:didFinishLaunchingWithOptions:->key"
+      ]
+    },
+    {
+      "type": "calls",
+      "edges": 8309,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 4310,
+        "selectorOrModulePath": 3999,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.m:23 application:didFinishLaunchingWithOptions:->stringByAppendingPathComponent:",
+        "Examples/SDWebImage Demo/AppDelegate.m:23 application:didFinishLaunchingWithOptions:->mainBundle",
+        "Examples/SDWebImage Demo/AppDelegate.m:24 application:didFinishLaunchingWithOptions:->sharedImageCache"
+      ]
+    },
+    {
+      "type": "contains",
+      "edges": 3895,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 2286,
+        "selectorOrModulePath": 1609,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.h:13 AppDelegate->window",
+        "Examples/SDWebImage Demo/AppDelegate.h:15 AppDelegate->navigationController",
+        "Examples/SDWebImage Demo/AppDelegate.m:20 AppDelegate->application:didFinishLaunchingWithOptions:"
+      ]
+    },
+    {
+      "type": "references",
+      "edges": 916,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 0,
+        "selectorOrModulePath": 916,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.h:9 root->UIKit/UIKit.h",
+        "Examples/SDWebImage Demo/AppDelegate.m:9 root->AppDelegate.h",
+        "Examples/SDWebImage Demo/AppDelegate.m:10 root->MasterViewController.h"
+      ]
+    },
+    {
+      "type": "overrides",
+      "edges": 621,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 506,
+        "selectorOrModulePath": 115,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/MasterViewController.m:22 MyCustomTableViewCell.initWithStyle:reuseIdentifier:->UITableViewCell.initWithStyle:reuseIdentifier:",
+        "SDWebImage/Core/SDAnimatedImage.h:28 SDAnimatedImage.initWithData:scale:options:->UIImage.initWithData:scale:options:",
+        "SDWebImage/Core/SDAnimatedImage.h:38 SDAnimatedImage.initWithAnimatedCoder:scale:->UIImage.initWithAnimatedCoder:scale:"
+      ]
+    },
+    {
+      "type": "instantiates",
+      "edges": 519,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 519,
+        "selectorOrModulePath": 0,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.m:41 application:didFinishLaunchingWithOptions:->UIWindow",
+        "Examples/SDWebImage Demo/AppDelegate.m:44 application:didFinishLaunchingWithOptions:->MasterViewController",
+        "Examples/SDWebImage Demo/AppDelegate.m:45 application:didFinishLaunchingWithOptions:->UINavigationController"
+      ]
+    },
+    {
+      "type": "extends",
+      "edges": 255,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 255,
+        "selectorOrModulePath": 0,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.h:11 AppDelegate->UIResponder",
+        "Examples/SDWebImage Demo/DetailViewController.h:11 DetailViewController->UIViewController",
+        "Examples/SDWebImage Demo/MasterViewController.h:11 MasterViewController->UITableViewController"
+      ]
+    },
+    {
+      "type": "implements",
+      "edges": 126,
+      "lineCoverage": 100,
+      "evidenceCoverage": 100,
+      "targetResolution": {
+        "presentInFileAsAName": 126,
+        "selectorOrModulePath": 0,
+        "FABRICATED": 0,
+        "resolvedPct": 100,
+        "note": "selectorOrModulePath counts three shapes that cannot be resolved by a name lookup and must not be counted as failures: SELECTOR targets (`alloc`), QUALIFIED SUPERCLASS MEMBERS (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the subclass file by definition, which is what an override IS), and PATH targets (`Foundation/Foundation.h`, `SDWebImageCompat.h` — a `w+` token can never match a name containing a dot)."
+      },
+      "examples": [
+        "Examples/SDWebImage Demo/AppDelegate.h:11 AppDelegate->UIApplicationDelegate",
+        "Examples/SDWebImage OSX Demo/AppDelegate.h:11 AppDelegate->NSApplicationDelegate",
+        "Examples/SDWebImage TV Demo/AppDelegate.h:11 AppDelegate->UIApplicationDelegate"
+      ]
+    }
+  ],
+  "payloadInvariants": {
+    "edgesWithNoLine": 0,
+    "edgesWithNoEvidenceClass": 0,
+    "samplesNoLine": [],
+    "samplesNoEvidence": []
+  },
+  "targetResolution": {
+    "note": "A FABRICATED target is a name the emitting file never contains — not a symbol, not a token, not a path. That is a real phantom: a consumer routing on the edge has nothing to aim at. The first version of this audit instead asked whether the target was DECLARED in the file, omitted block parameters from the declaration set, and reported 55.6% of all edges as unresolved when the top case (`uses -> image`) was a block parameter read one line after its declaration. Scoped honestly: this catches fabrication, and does NOT judge whether an edge means what a reader would want.",
+    "distinctFabricatedTargets": 0,
+    "totalFabricatedEdges": 0,
+    "shareOfEdges": 0,
+    "top": []
+  },
+  "completeness": {
+    "note": "source-side construct counts vs analyzer output. A construct with a large source count and ~0 bound edges is a SILENT construct; the ratio is the signal and it is deliberately not turned into a verdict, because the two sides count different things (a message send inside an ERROR region is in the source count and cannot be in the edge set).",
+    "sourceCounts": {
+      "messageSends": 6358,
+      "selectorKeywords": 7241,
+      "allocCalls": 510,
+      "protocolsDeclared": 49,
+      "protocolConformances": 109,
+      "superclassRefs": 83,
+      "propertiesDeclared": 971,
+      "ivarsDeclared": 22,
+      "methodsDefined": 1680,
+      "cFunctionsDefined": 141,
+      "imports": 918,
+      "classInterfaces": 369,
+      "classImplementations": 209
+    },
+    "analyzerBound": {
+      "calls": 8309,
+      "instantiates": 519,
+      "implements": 126,
+      "extends": 255,
+      "contains": 3895,
+      "references": 916,
+      "overrides": 621,
+      "uses": 9473
+    },
+    "ratios": {
+      "callsPerMessageSend": 1.307,
+      "instantiatesPerAlloc": 1.018,
+      "implementsPerConformance": 1.156,
+      "extendsPerSuperclassRef": 3.072,
+      "referencesPerImport": 0.998
+    }
+  },
+  "familySeparation": {
+    "checked": true,
+    "probe": "SDImageCache.h",
+    "implements": {
+      "source": "SDImageCacheToken",
+      "target": "SDWebImageOperation",
+      "metadata": {
+        "objcSpecific": true,
+        "isProtocol": true,
+        "evidenceClass": "structural"
+      }
+    },
+    "extends": {
+      "source": "SDImageCacheToken",
+      "target": "NSObject",
+      "metadata": {
+        "objcSpecific": true,
+        "evidenceClass": "structural"
+      }
+    },
+    "distinguishableWithoutMetadata": true
+  },
+  "rows": [
+    {
+      "file": "Examples/SDWebImage Demo/AppDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 5
+    },
+    {
+      "file": "Examples/SDWebImage Demo/AppDelegate.m",
+      "source": {
+        "messageSends": 15,
+        "selectorKeywords": 1,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 2,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 7,
+      "edges": 34
+    },
+    {
+      "file": "Examples/SDWebImage Demo/DetailViewController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 3
+    },
+    {
+      "file": "Examples/SDWebImage Demo/DetailViewController.m",
+      "source": {
+        "messageSends": 12,
+        "selectorKeywords": 21,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 8,
+      "edges": 43
+    },
+    {
+      "file": "Examples/SDWebImage Demo/MasterViewController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 2
+    },
+    {
+      "file": "Examples/SDWebImage Demo/MasterViewController.m",
+      "source": {
+        "messageSends": 26,
+        "selectorKeywords": 26,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 12,
+      "edges": 89
+    },
+    {
+      "file": "Examples/SDWebImage Demo/main.m",
+      "source": {
+        "messageSends": 1,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 7
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/AppDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 4
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/AppDelegate.m",
+      "source": {
+        "messageSends": 10,
+        "selectorKeywords": 5,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 4,
+      "edges": 15
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/ViewController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 2
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/ViewController.m",
+      "source": {
+        "messageSends": 29,
+        "selectorKeywords": 31,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 7,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 14,
+      "edges": 70
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/WindowController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 2
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/WindowController.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 1,
+      "edges": 1
+    },
+    {
+      "file": "Examples/SDWebImage OSX Demo/main.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 4
+    },
+    {
+      "file": "Examples/SDWebImage TV Demo/AppDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 4
+    },
+    {
+      "file": "Examples/SDWebImage TV Demo/AppDelegate.m",
+      "source": {
+        "messageSends": 6,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 8,
+      "edges": 12
+    },
+    {
+      "file": "Examples/SDWebImage TV Demo/ViewController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 2
+    },
+    {
+      "file": "Examples/SDWebImage TV Demo/ViewController.m",
+      "source": {
+        "messageSends": 6,
+        "selectorKeywords": 8,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 8,
+      "edges": 16
+    },
+    {
+      "file": "Examples/SDWebImage TV Demo/main.m",
+      "source": {
+        "messageSends": 1,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 7
+    },
+    {
+      "file": "Examples/SDWebImage Watch Demo Extension/ExtensionDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 3
+    },
+    {
+      "file": "Examples/SDWebImage Watch Demo Extension/ExtensionDelegate.m",
+      "source": {
+        "messageSends": 6,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 4,
+      "edges": 9
+    },
+    {
+      "file": "Examples/SDWebImage Watch Demo Extension/InterfaceController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 3
+    },
+    {
+      "file": "Examples/SDWebImage Watch Demo Extension/InterfaceController.m",
+      "source": {
+        "messageSends": 14,
+        "selectorKeywords": 14,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 39
+    },
+    {
+      "file": "Examples/SDWebImage Watch Demo Extension/NotificationController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 3
+    },
+    {
+      "file": "Examples/SDWebImage Watch Demo Extension/NotificationController.m",
+      "source": {
+        "messageSends": 3,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 5,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/Core/NSButton+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 18,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 23,
+      "edges": 24
+    },
+    {
+      "file": "SDWebImage/Core/NSButton+WebCache.m",
+      "source": {
+        "messageSends": 25,
+        "selectorKeywords": 102,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 18,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 23,
+      "edges": 130
+    },
+    {
+      "file": "SDWebImage/Core/NSData+ImageContentType.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 17,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/Core/NSData+ImageContentType.m",
+      "source": {
+        "messageSends": 17,
+        "selectorKeywords": 16,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 4,
+      "edges": 29
+    },
+    {
+      "file": "SDWebImage/Core/NSImage+Compatibility.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/Core/NSImage+Compatibility.m",
+      "source": {
+        "messageSends": 17,
+        "selectorKeywords": 19,
+        "allocCalls": 5,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 7,
+      "edges": 85
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImage.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 7,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 20,
+      "edges": 36
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImage.m",
+      "source": {
+        "messageSends": 76,
+        "selectorKeywords": 101,
+        "allocCalls": 7,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 23,
+        "cFunctionsDefined": 1,
+        "imports": 11,
+        "classInterfaces": 1,
+        "classImplementations": 4
+      },
+      "symbols": 46,
+      "edges": 279
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImagePlayer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 25,
+      "edges": 27
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImagePlayer.m",
+      "source": {
+        "messageSends": 41,
+        "selectorKeywords": 24,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 11,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 34,
+      "edges": 157
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageRep.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageRep.m",
+      "source": {
+        "messageSends": 26,
+        "selectorKeywords": 40,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 50
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 11
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageView+WebCache.m",
+      "source": {
+        "messageSends": 13,
+        "selectorKeywords": 49,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 61
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageView.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 15,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 20
+    },
+    {
+      "file": "SDWebImage/Core/SDAnimatedImageView.m",
+      "source": {
+        "messageSends": 68,
+        "selectorKeywords": 31,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 9,
+        "ivarsDeclared": 0,
+        "methodsDefined": 22,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 3,
+        "classImplementations": 2
+      },
+      "symbols": 61,
+      "edges": 212
+    },
+    {
+      "file": "SDWebImage/Core/SDCallbackQueue.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 15,
+      "edges": 15
+    },
+    {
+      "file": "SDWebImage/Core/SDCallbackQueue.m",
+      "source": {
+        "messageSends": 4,
+        "selectorKeywords": 0,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 2,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 11,
+      "edges": 54
+    },
+    {
+      "file": "SDWebImage/Core/SDDiskCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 18,
+      "edges": 19
+    },
+    {
+      "file": "SDWebImage/Core/SDDiskCache.m",
+      "source": {
+        "messageSends": 73,
+        "selectorKeywords": 111,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 2,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 24,
+      "edges": 201
+    },
+    {
+      "file": "SDWebImage/Core/SDGraphicsImageRenderer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 16
+    },
+    {
+      "file": "SDWebImage/Core/SDGraphicsImageRenderer.m",
+      "source": {
+        "messageSends": 11,
+        "selectorKeywords": 4,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 3,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 18,
+      "edges": 72
+    },
+    {
+      "file": "SDWebImage/Core/SDImageAPNGCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Core/SDImageAPNGCoder.m",
+      "source": {
+        "messageSends": 1,
+        "selectorKeywords": 0,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 17
+    },
+    {
+      "file": "SDWebImage/Core/SDImageAWebPCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Core/SDImageAWebPCoder.m",
+      "source": {
+        "messageSends": 5,
+        "selectorKeywords": 4,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 17,
+      "edges": 32
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 31,
+        "cFunctionsDefined": 1,
+        "imports": 7,
+        "classInterfaces": 3,
+        "classImplementations": 0
+      },
+      "symbols": 55,
+      "edges": 62
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCache.m",
+      "source": {
+        "messageSends": 124,
+        "selectorKeywords": 194,
+        "allocCalls": 8,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 9,
+        "ivarsDeclared": 0,
+        "methodsDefined": 51,
+        "cFunctionsDefined": 1,
+        "imports": 11,
+        "classInterfaces": 2,
+        "classImplementations": 3
+      },
+      "symbols": 77,
+      "edges": 501
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCacheConfig.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 17,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 23,
+      "edges": 25
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCacheConfig.m",
+      "source": {
+        "messageSends": 5,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 18
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCacheDefine.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 25
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCacheDefine.m",
+      "source": {
+        "messageSends": 45,
+        "selectorKeywords": 9,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 3,
+        "imports": 8,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 64
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCachesManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 7,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 15,
+      "edges": 17
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCachesManager.m",
+      "source": {
+        "messageSends": 74,
+        "selectorKeywords": 209,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 20,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 27,
+      "edges": 317
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 4,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 12,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 39,
+      "edges": 24
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCoder.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 17,
+      "edges": 1
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCoderHelper.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 18,
+        "cFunctionsDefined": 4,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 38,
+      "edges": 38
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCoderHelper.m",
+      "source": {
+        "messageSends": 74,
+        "selectorKeywords": 76,
+        "allocCalls": 10,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 22,
+        "cFunctionsDefined": 8,
+        "imports": 16,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 42,
+      "edges": 486
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCodersManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/Core/SDImageCodersManager.m",
+      "source": {
+        "messageSends": 21,
+        "selectorKeywords": 25,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 15,
+      "edges": 89
+    },
+    {
+      "file": "SDWebImage/Core/SDImageFrame.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/Core/SDImageFrame.m",
+      "source": {
+        "messageSends": 2,
+        "selectorKeywords": 0,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/SDImageGIFCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Core/SDImageGIFCoder.m",
+      "source": {
+        "messageSends": 1,
+        "selectorKeywords": 0,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 17
+    },
+    {
+      "file": "SDWebImage/Core/SDImageGraphics.m",
+      "source": {
+        "messageSends": 10,
+        "selectorKeywords": 3,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 6,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 61
+    },
+    {
+      "file": "SDWebImage/Core/SDImageHEICCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Core/SDImageHEICCoder.m",
+      "source": {
+        "messageSends": 7,
+        "selectorKeywords": 6,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 18,
+      "edges": 33
+    },
+    {
+      "file": "SDWebImage/Core/SDImageIOAnimatedCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/SDImageIOAnimatedCoder.m",
+      "source": {
+        "messageSends": 120,
+        "selectorKeywords": 108,
+        "allocCalls": 6,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 20,
+        "cFunctionsDefined": 5,
+        "imports": 12,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 67,
+      "edges": 560
+    },
+    {
+      "file": "SDWebImage/Core/SDImageIOCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/Core/SDImageIOCoder.m",
+      "source": {
+        "messageSends": 50,
+        "selectorKeywords": 29,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 8,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 28,
+      "edges": 224
+    },
+    {
+      "file": "SDWebImage/Core/SDImageLoader.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 18
+    },
+    {
+      "file": "SDWebImage/Core/SDImageLoader.m",
+      "source": {
+        "messageSends": 31,
+        "selectorKeywords": 22,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 3,
+        "imports": 9,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 6,
+      "edges": 86
+    },
+    {
+      "file": "SDWebImage/Core/SDImageLoadersManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/Core/SDImageLoadersManager.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 26,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 14,
+      "edges": 77
+    },
+    {
+      "file": "SDWebImage/Core/SDImageTransformer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 2,
+        "superclassRefs": 2,
+        "propertiesDeclared": 20,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 10,
+        "classImplementations": 0
+      },
+      "symbols": 62,
+      "edges": 64
+    },
+    {
+      "file": "SDWebImage/Core/SDImageTransformer.m",
+      "source": {
+        "messageSends": 41,
+        "selectorKeywords": 45,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 17,
+        "ivarsDeclared": 0,
+        "methodsDefined": 21,
+        "cFunctionsDefined": 2,
+        "imports": 4,
+        "classInterfaces": 9,
+        "classImplementations": 10
+      },
+      "symbols": 71,
+      "edges": 189
+    },
+    {
+      "file": "SDWebImage/Core/SDMemoryCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 2,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 19
+    },
+    {
+      "file": "SDWebImage/Core/SDMemoryCache.m",
+      "source": {
+        "messageSends": 26,
+        "selectorKeywords": 33,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 16,
+      "edges": 87
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageCacheKeyFilter.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 8,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageCacheKeyFilter.m",
+      "source": {
+        "messageSends": 2,
+        "selectorKeywords": 0,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageCacheSerializer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 8,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageCacheSerializer.m",
+      "source": {
+        "messageSends": 2,
+        "selectorKeywords": 0,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 15
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageCompat.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 0,
+      "edges": 1
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDefine.m",
+      "source": {
+        "messageSends": 20,
+        "selectorKeywords": 17,
+        "allocCalls": 6,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 3,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 31,
+      "edges": 61
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloader.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 9,
+        "classInterfaces": 3,
+        "classImplementations": 0
+      },
+      "symbols": 44,
+      "edges": 47
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloader.m",
+      "source": {
+        "messageSends": 126,
+        "selectorKeywords": 158,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 11,
+        "ivarsDeclared": 0,
+        "methodsDefined": 28,
+        "cFunctionsDefined": 0,
+        "imports": 8,
+        "classInterfaces": 2,
+        "classImplementations": 3
+      },
+      "symbols": 62,
+      "edges": 352
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderConfig.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 18
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderConfig.m",
+      "source": {
+        "messageSends": 7,
+        "selectorKeywords": 4,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 25
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderDecryptor.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 10
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderDecryptor.m",
+      "source": {
+        "messageSends": 3,
+        "selectorKeywords": 1,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 8,
+      "edges": 23
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 18,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 18,
+      "edges": 29
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderOperation.m",
+      "source": {
+        "messageSends": 104,
+        "selectorKeywords": 130,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 25,
+        "ivarsDeclared": 2,
+        "methodsDefined": 20,
+        "cFunctionsDefined": 0,
+        "imports": 7,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 56,
+      "edges": 365
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderRequestModifier.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 13,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderRequestModifier.m",
+      "source": {
+        "messageSends": 12,
+        "selectorKeywords": 12,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 11,
+      "edges": 33
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderResponseModifier.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 13,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageDownloaderResponseModifier.m",
+      "source": {
+        "messageSends": 12,
+        "selectorKeywords": 11,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 11,
+      "edges": 39
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageError.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 1
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageIndicator.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 2,
+        "superclassRefs": 2,
+        "propertiesDeclared": 13,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 4,
+        "classImplementations": 0
+      },
+      "symbols": 19,
+      "edges": 20
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageIndicator.m",
+      "source": {
+        "messageSends": 39,
+        "selectorKeywords": 18,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 2,
+        "classImplementations": 4
+      },
+      "symbols": 25,
+      "edges": 87
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 14,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 8,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 28,
+      "edges": 37
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageManager.m",
+      "source": {
+        "messageSends": 140,
+        "selectorKeywords": 383,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 21,
+        "cFunctionsDefined": 0,
+        "imports": 8,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 46,
+      "edges": 402
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageOperation.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 1,
+      "edges": 1
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageOptionsProcessor.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 14,
+      "edges": 16
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageOptionsProcessor.m",
+      "source": {
+        "messageSends": 3,
+        "selectorKeywords": 0,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 11,
+      "edges": 21
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImagePrefetcher.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 19,
+      "edges": 22
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImagePrefetcher.m",
+      "source": {
+        "messageSends": 42,
+        "selectorKeywords": 46,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 13,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 3,
+        "classImplementations": 2
+      },
+      "symbols": 46,
+      "edges": 203
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageTransition.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 14,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 38,
+      "edges": 37
+    },
+    {
+      "file": "SDWebImage/Core/SDWebImageTransition.m",
+      "source": {
+        "messageSends": 27,
+        "selectorKeywords": 12,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 2,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 2
+      },
+      "symbols": 19,
+      "edges": 54
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 24,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 27,
+      "edges": 28
+    },
+    {
+      "file": "SDWebImage/Core/UIButton+WebCache.m",
+      "source": {
+        "messageSends": 36,
+        "selectorKeywords": 122,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 24,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 27,
+      "edges": 176
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+ExtendedCacheData.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 3
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+ExtendedCacheData.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 3,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+ForceDecode.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+ForceDecode.m",
+      "source": {
+        "messageSends": 4,
+        "selectorKeywords": 5,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 21
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+GIF.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 2
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+GIF.m",
+      "source": {
+        "messageSends": 1,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+MemoryCacheCost.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 2
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+MemoryCacheCost.m",
+      "source": {
+        "messageSends": 2,
+        "selectorKeywords": 1,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 1,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 4,
+      "edges": 23
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+Metadata.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 10,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 11,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+Metadata.m",
+      "source": {
+        "messageSends": 33,
+        "selectorKeywords": 43,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 16,
+      "edges": 144
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+MultiFormat.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 8,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+MultiFormat.m",
+      "source": {
+        "messageSends": 10,
+        "selectorKeywords": 15,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 8,
+      "edges": 48
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+Transform.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 2,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 23,
+      "edges": 20
+    },
+    {
+      "file": "SDWebImage/Core/UIImage+Transform.m",
+      "source": {
+        "messageSends": 101,
+        "selectorKeywords": 123,
+        "allocCalls": 22,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 12,
+        "cFunctionsDefined": 5,
+        "imports": 8,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 18,
+      "edges": 434
+    },
+    {
+      "file": "SDWebImage/Core/UIImageView+HighlightedWebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 11
+    },
+    {
+      "file": "SDWebImage/Core/UIImageView+HighlightedWebCache.m",
+      "source": {
+        "messageSends": 12,
+        "selectorKeywords": 35,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 57
+    },
+    {
+      "file": "SDWebImage/Core/UIImageView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 12,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/Core/UIImageView+WebCache.m",
+      "source": {
+        "messageSends": 11,
+        "selectorKeywords": 51,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 12,
+      "edges": 63
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 7,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 19
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCache.m",
+      "source": {
+        "messageSends": 62,
+        "selectorKeywords": 94,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 8,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 20,
+      "edges": 204
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCacheOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCacheOperation.m",
+      "source": {
+        "messageSends": 12,
+        "selectorKeywords": 7,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 7,
+      "edges": 42
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCacheState.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/Core/UIView+WebCacheState.m",
+      "source": {
+        "messageSends": 4,
+        "selectorKeywords": 1,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 2
+      },
+      "symbols": 7,
+      "edges": 24
+    },
+    {
+      "file": "SDWebImage/Private/NSBezierPath+SDRoundedCorners.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 3
+    },
+    {
+      "file": "SDWebImage/Private/NSBezierPath+SDRoundedCorners.m",
+      "source": {
+        "messageSends": 7,
+        "selectorKeywords": 13,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 2,
+      "edges": 28
+    },
+    {
+      "file": "SDWebImage/Private/SDAssociatedObject.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/Private/SDAsyncBlockOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/Private/SDAsyncBlockOperation.m",
+      "source": {
+        "messageSends": 7,
+        "selectorKeywords": 4,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 2,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 11,
+      "edges": 33
+    },
+    {
+      "file": "SDWebImage/Private/SDDeviceHelper.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 6,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/Private/SDDeviceHelper.m",
+      "source": {
+        "messageSends": 9,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 34
+    },
+    {
+      "file": "SDWebImage/Private/SDDisplayLink.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 12
+    },
+    {
+      "file": "SDWebImage/Private/SDDisplayLink.m",
+      "source": {
+        "messageSends": 21,
+        "selectorKeywords": 32,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 9,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 1,
+        "imports": 5,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 20,
+      "edges": 107
+    },
+    {
+      "file": "SDWebImage/Private/SDFileAttributeHelper.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 6,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/Private/SDFileAttributeHelper.m",
+      "source": {
+        "messageSends": 32,
+        "selectorKeywords": 26,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 88
+    },
+    {
+      "file": "SDWebImage/Private/SDImageAssetManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 6,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/Private/SDImageAssetManager.m",
+      "source": {
+        "messageSends": 17,
+        "selectorKeywords": 18,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 1,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 71
+    },
+    {
+      "file": "SDWebImage/Private/SDImageCachesManagerOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 10
+    },
+    {
+      "file": "SDWebImage/Private/SDImageCachesManagerOperation.m",
+      "source": {
+        "messageSends": 9,
+        "selectorKeywords": 6,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 4,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 12,
+      "edges": 38
+    },
+    {
+      "file": "SDWebImage/Private/SDImageFramePool.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 11,
+      "edges": 14
+    },
+    {
+      "file": "SDWebImage/Private/SDImageFramePool.m",
+      "source": {
+        "messageSends": 16,
+        "selectorKeywords": 12,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 21,
+      "edges": 82
+    },
+    {
+      "file": "SDWebImage/Private/SDImageIOAnimatedCoderInternal.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 6,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/Private/SDInternalMacros.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 2,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Private/SDWeakProxy.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/Private/SDWeakProxy.m",
+      "source": {
+        "messageSends": 13,
+        "selectorKeywords": 7,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 17,
+      "edges": 40
+    },
+    {
+      "file": "SDWebImage/Private/UIColor+SDHexString.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 2
+    },
+    {
+      "file": "SDWebImage/Private/UIColor+SDHexString.m",
+      "source": {
+        "messageSends": 5,
+        "selectorKeywords": 13,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 2,
+      "edges": 11
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/NSButton+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 18,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 23,
+      "edges": 24
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/NSData+ImageContentType.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 17,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/NSImage+Compatibility.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDAnimatedImage.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 7,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 20,
+      "edges": 36
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDAnimatedImagePlayer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 25,
+      "edges": 27
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDAnimatedImageRep.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDAnimatedImageView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 11
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDAnimatedImageView.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 15,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 20
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDCallbackQueue.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 15,
+      "edges": 15
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDDiskCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 18,
+      "edges": 19
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDGraphicsImageRenderer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 16
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageAPNGCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageAWebPCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 31,
+        "cFunctionsDefined": 1,
+        "imports": 7,
+        "classInterfaces": 3,
+        "classImplementations": 0
+      },
+      "symbols": 55,
+      "edges": 62
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCacheConfig.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 17,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 23,
+      "edges": 25
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCacheDefine.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 5,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 25
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCachesManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 7,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 15,
+      "edges": 17
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 4,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 12,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 39,
+      "edges": 24
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCoderHelper.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 18,
+        "cFunctionsDefined": 4,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 38,
+      "edges": 38
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageCodersManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageFrame.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageGIFCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageHEICCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageIOAnimatedCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageIOCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageLoader.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 18
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageLoadersManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 7
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDImageTransformer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 2,
+        "superclassRefs": 2,
+        "propertiesDeclared": 20,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 10,
+        "classImplementations": 0
+      },
+      "symbols": 62,
+      "edges": 64
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDMemoryCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 2,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 19
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageCacheKeyFilter.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 8,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageCacheSerializer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 8,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageDownloader.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 9,
+        "classInterfaces": 3,
+        "classImplementations": 0
+      },
+      "symbols": 44,
+      "edges": 47
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageDownloaderConfig.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 18
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageDownloaderDecryptor.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 10
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageDownloaderOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 18,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 18,
+      "edges": 29
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageDownloaderRequestModifier.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 13,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageDownloaderResponseModifier.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 13,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageIndicator.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 2,
+        "superclassRefs": 2,
+        "propertiesDeclared": 13,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 4,
+        "classImplementations": 0
+      },
+      "symbols": 19,
+      "edges": 20
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 14,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 8,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 28,
+      "edges": 37
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageOptionsProcessor.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 14,
+      "edges": 16
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImagePrefetcher.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 19,
+      "edges": 22
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/SDWebImageTransition.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 14,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 38,
+      "edges": 37
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIButton+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 24,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 27,
+      "edges": 28
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+ExtendedCacheData.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 3
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+ForceDecode.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 5
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+GIF.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 2
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+MemoryCacheCost.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 2
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+Metadata.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 10,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 11,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+MultiFormat.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 8,
+      "edges": 9
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImage+Transform.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 11,
+        "cFunctionsDefined": 2,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 23,
+      "edges": 20
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImageView+HighlightedWebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 11
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIImageView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 12,
+      "edges": 13
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 7,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 19
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIView+WebCacheOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 5,
+      "edges": 6
+    },
+    {
+      "file": "SDWebImage/include/SDWebImage/UIView+WebCacheState.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 8
+    },
+    {
+      "file": "SDWebImageMapKit/MapKit/MKAnnotationView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 11
+    },
+    {
+      "file": "SDWebImageMapKit/MapKit/MKAnnotationView+WebCache.m",
+      "source": {
+        "messageSends": 9,
+        "selectorKeywords": 45,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 55
+    },
+    {
+      "file": "SDWebImageMapKit/include/SDWebImageMapKit/MKAnnotationView+WebCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 10,
+      "edges": 11
+    },
+    {
+      "file": "Tests/Tests/SDAnimatedImageTest.m",
+      "source": {
+        "messageSends": 232,
+        "selectorKeywords": 164,
+        "allocCalls": 25,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 4,
+        "classImplementations": 2
+      },
+      "symbols": 52,
+      "edges": 754
+    },
+    {
+      "file": "Tests/Tests/SDCategoriesTests.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 21,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 60
+    },
+    {
+      "file": "Tests/Tests/SDImageCacheTests.m",
+      "source": {
+        "messageSends": 381,
+        "selectorKeywords": 269,
+        "allocCalls": 35,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 2,
+        "classImplementations": 1
+      },
+      "symbols": 61,
+      "edges": 982
+    },
+    {
+      "file": "Tests/Tests/SDImageCoderTests.m",
+      "source": {
+        "messageSends": 187,
+        "selectorKeywords": 257,
+        "allocCalls": 22,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 44,
+      "edges": 870
+    },
+    {
+      "file": "Tests/Tests/SDImageTransformerTests.m",
+      "source": {
+        "messageSends": 157,
+        "selectorKeywords": 180,
+        "allocCalls": 23,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 2,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 38,
+      "edges": 506
+    },
+    {
+      "file": "Tests/Tests/SDMockFileManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 4
+    },
+    {
+      "file": "Tests/Tests/SDMockFileManager.m",
+      "source": {
+        "messageSends": 3,
+        "selectorKeywords": 6,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 4,
+      "edges": 14
+    },
+    {
+      "file": "Tests/Tests/SDTestCase.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 12,
+      "edges": 10
+    },
+    {
+      "file": "Tests/Tests/SDTestCase.m",
+      "source": {
+        "messageSends": 7,
+        "selectorKeywords": 4,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 12,
+      "edges": 32
+    },
+    {
+      "file": "Tests/Tests/SDUtilsTests.m",
+      "source": {
+        "messageSends": 62,
+        "selectorKeywords": 78,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 12,
+      "edges": 192
+    },
+    {
+      "file": "Tests/Tests/SDWebCacheCategoriesTests.m",
+      "source": {
+        "messageSends": 205,
+        "selectorKeywords": 274,
+        "allocCalls": 37,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 29,
+      "edges": 628
+    },
+    {
+      "file": "Tests/Tests/SDWebImageDownloaderTests.m",
+      "source": {
+        "messageSends": 282,
+        "selectorKeywords": 267,
+        "allocCalls": 28,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 3,
+        "classImplementations": 1
+      },
+      "symbols": 42,
+      "edges": 808
+    },
+    {
+      "file": "Tests/Tests/SDWebImageManagerTests.m",
+      "source": {
+        "messageSends": 210,
+        "selectorKeywords": 235,
+        "allocCalls": 22,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 26,
+      "edges": 677
+    },
+    {
+      "file": "Tests/Tests/SDWebImagePrefetcherTests.m",
+      "source": {
+        "messageSends": 36,
+        "selectorKeywords": 19,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 2,
+        "classImplementations": 1
+      },
+      "symbols": 16,
+      "edges": 154
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 3,
+        "superclassRefs": 3,
+        "propertiesDeclared": 9,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 3,
+        "classImplementations": 0
+      },
+      "symbols": 13,
+      "edges": 19
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestCache.m",
+      "source": {
+        "messageSends": 64,
+        "selectorKeywords": 97,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 21,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 3
+      },
+      "symbols": 32,
+      "edges": 203
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestCoder.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 4
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestCoder.m",
+      "source": {
+        "messageSends": 6,
+        "selectorKeywords": 3,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 27
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestDownloadOperation.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 6
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestDownloadOperation.m",
+      "source": {
+        "messageSends": 13,
+        "selectorKeywords": 15,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 2,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 13,
+      "edges": 40
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestLoader.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 5
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestLoader.m",
+      "source": {
+        "messageSends": 7,
+        "selectorKeywords": 12,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 8,
+      "edges": 47
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestTransformer.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 3
+    },
+    {
+      "file": "Tests/Tests/SDWebImageTestTransformer.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 3,
+      "edges": 4
+    },
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 33
+    },
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.m",
+      "source": {
+        "messageSends": 56,
+        "selectorKeywords": 106,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 17,
+        "cFunctionsDefined": 0,
+        "imports": 13,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 24,
+      "edges": 212
+    },
+    {
+      "file": "AFNetworking/AFNetworkReachabilityManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 24,
+      "edges": 22
+    },
+    {
+      "file": "AFNetworking/AFNetworkReachabilityManager.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 12,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 6,
+        "imports": 6,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 30,
+      "edges": 114
+    },
+    {
+      "file": "AFNetworking/AFSecurityPolicy.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 1,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 1,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 14,
+      "edges": 17
+    },
+    {
+      "file": "AFNetworking/AFSecurityPolicy.m",
+      "source": {
+        "messageSends": 41,
+        "selectorKeywords": 39,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 6,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 22,
+      "edges": 162
+    },
+    {
+      "file": "AFNetworking/AFURLRequestSerialization.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 3,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 12,
+        "ivarsDeclared": 0,
+        "methodsDefined": 17,
+        "cFunctionsDefined": 1,
+        "imports": 4,
+        "classInterfaces": 3,
+        "classImplementations": 0
+      },
+      "symbols": 44,
+      "edges": 44
+    },
+    {
+      "file": "AFNetworking/AFURLRequestSerialization.m",
+      "source": {
+        "messageSends": 276,
+        "selectorKeywords": 224,
+        "allocCalls": 14,
+        "protocolsDeclared": 0,
+        "protocolConformances": 2,
+        "superclassRefs": 2,
+        "propertiesDeclared": 34,
+        "ivarsDeclared": 3,
+        "methodsDefined": 60,
+        "cFunctionsDefined": 10,
+        "imports": 3,
+        "classInterfaces": 9,
+        "classImplementations": 7
+      },
+      "symbols": 151,
+      "edges": 721
+    },
+    {
+      "file": "AFNetworking/AFURLResponseSerialization.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 10,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 7,
+        "classImplementations": 0
+      },
+      "symbols": 32,
+      "edges": 37
+    },
+    {
+      "file": "AFNetworking/AFURLResponseSerialization.m",
+      "source": {
+        "messageSends": 133,
+        "selectorKeywords": 122,
+        "allocCalls": 18,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 32,
+        "cFunctionsDefined": 5,
+        "imports": 7,
+        "classInterfaces": 2,
+        "classImplementations": 8
+      },
+      "symbols": 66,
+      "edges": 293
+    },
+    {
+      "file": "AFNetworking/AFURLSessionManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 6,
+        "superclassRefs": 1,
+        "propertiesDeclared": 11,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 6,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 50,
+      "edges": 54
+    },
+    {
+      "file": "AFNetworking/AFURLSessionManager.m",
+      "source": {
+        "messageSends": 162,
+        "selectorKeywords": 156,
+        "allocCalls": 8,
+        "protocolsDeclared": 0,
+        "protocolConformances": 3,
+        "superclassRefs": 1,
+        "propertiesDeclared": 32,
+        "ivarsDeclared": 0,
+        "methodsDefined": 54,
+        "cFunctionsDefined": 4,
+        "imports": 2,
+        "classInterfaces": 3,
+        "classImplementations": 3
+      },
+      "symbols": 133,
+      "edges": 546
+    },
+    {
+      "file": "Example/Classes/Models/Post.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 8
+    },
+    {
+      "file": "Example/Classes/Models/Post.m",
+      "source": {
+        "messageSends": 19,
+        "selectorKeywords": 16,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 2
+      },
+      "symbols": 7,
+      "edges": 41
+    },
+    {
+      "file": "Example/Classes/Models/User.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 7
+    },
+    {
+      "file": "Example/Classes/Models/User.m",
+      "source": {
+        "messageSends": 12,
+        "selectorKeywords": 13,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 12,
+      "edges": 26
+    },
+    {
+      "file": "Example/Classes/Networking Extensions/AFAppDotNetAPIClient.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 4
+    },
+    {
+      "file": "Example/Classes/Networking Extensions/AFAppDotNetAPIClient.m",
+      "source": {
+        "messageSends": 3,
+        "selectorKeywords": 2,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 3,
+      "edges": 10
+    },
+    {
+      "file": "Example/Today Extension Example/TodayViewController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 2
+    },
+    {
+      "file": "Example/Today Extension Example/TodayViewController.m",
+      "source": {
+        "messageSends": 15,
+        "selectorKeywords": 10,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 12,
+      "edges": 51
+    },
+    {
+      "file": "Example/iOS Example/AppDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 5
+    },
+    {
+      "file": "Example/iOS Example/AppDelegate.m",
+      "source": {
+        "messageSends": 10,
+        "selectorKeywords": 1,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 2,
+      "edges": 24
+    },
+    {
+      "file": "Example/iOS Example/Controllers/GlobalTimelineViewController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 2
+    },
+    {
+      "file": "Example/iOS Example/Controllers/GlobalTimelineViewController.m",
+      "source": {
+        "messageSends": 11,
+        "selectorKeywords": 12,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 52
+    },
+    {
+      "file": "Example/iOS Example/Views/PostTableViewCell.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 5
+    },
+    {
+      "file": "Example/iOS Example/Views/PostTableViewCell.m",
+      "source": {
+        "messageSends": 9,
+        "selectorKeywords": 12,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 46
+    },
+    {
+      "file": "Example/macOS Example/AppDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 6
+    },
+    {
+      "file": "Example/macOS Example/AppDelegate.m",
+      "source": {
+        "messageSends": 10,
+        "selectorKeywords": 5,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 3,
+      "edges": 30
+    },
+    {
+      "file": "Example/macOS Example/main.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 4
+    },
+    {
+      "file": "Example/main.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 8
+    },
+    {
+      "file": "Example/watchOS Example Extension/ExtensionDelegate.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 3
+    },
+    {
+      "file": "Example/watchOS Example Extension/ExtensionDelegate.m",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 4,
+      "edges": 4
+    },
+    {
+      "file": "Example/watchOS Example Extension/InterfaceController.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 1,
+      "edges": 3
+    },
+    {
+      "file": "Example/watchOS Example Extension/InterfaceController.m",
+      "source": {
+        "messageSends": 3,
+        "selectorKeywords": 1,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 5,
+      "edges": 8
+    },
+    {
+      "file": "Tests/Tests/AFAutoPurgingImageCacheTests.m",
+      "source": {
+        "messageSends": 76,
+        "selectorKeywords": 104,
+        "allocCalls": 14,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 21,
+      "edges": 250
+    },
+    {
+      "file": "Tests/Tests/AFCompoundResponseSerializerTests.m",
+      "source": {
+        "messageSends": 25,
+        "selectorKeywords": 17,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 6,
+      "edges": 71
+    },
+    {
+      "file": "Tests/Tests/AFHTTPRequestSerializationTests.m",
+      "source": {
+        "messageSends": 57,
+        "selectorKeywords": 80,
+        "allocCalls": 1,
+        "protocolsDeclared": 1,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 13,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 3,
+        "classImplementations": 1
+      },
+      "symbols": 36,
+      "edges": 219
+    },
+    {
+      "file": "Tests/Tests/AFHTTPResponseSerializationTests.m",
+      "source": {
+        "messageSends": 20,
+        "selectorKeywords": 30,
+        "allocCalls": 5,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 103
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "source": {
+        "messageSends": 177,
+        "selectorKeywords": 240,
+        "allocCalls": 11,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 2,
+        "classImplementations": 1
+      },
+      "symbols": 47,
+      "edges": 569
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "source": {
+        "messageSends": 119,
+        "selectorKeywords": 119,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 30,
+      "edges": 360
+    },
+    {
+      "file": "Tests/Tests/AFImageResponseSerializerTests.m",
+      "source": {
+        "messageSends": 13,
+        "selectorKeywords": 10,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 5,
+      "edges": 61
+    },
+    {
+      "file": "Tests/Tests/AFJSONSerializationTests.m",
+      "source": {
+        "messageSends": 47,
+        "selectorKeywords": 62,
+        "allocCalls": 13,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 3,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 23,
+      "edges": 226
+    },
+    {
+      "file": "Tests/Tests/AFNetworkActivityManagerTests.m",
+      "source": {
+        "messageSends": 40,
+        "selectorKeywords": 45,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 92
+    },
+    {
+      "file": "Tests/Tests/AFNetworkReachabilityManagerTests.m",
+      "source": {
+        "messageSends": 23,
+        "selectorKeywords": 15,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 16,
+      "edges": 85
+    },
+    {
+      "file": "Tests/Tests/AFPropertyListRequestSerializerTests.m",
+      "source": {
+        "messageSends": 4,
+        "selectorKeywords": 8,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 5,
+      "edges": 28
+    },
+    {
+      "file": "Tests/Tests/AFPropertyListResponseSerializerTests.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 25,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 8,
+      "edges": 78
+    },
+    {
+      "file": "Tests/Tests/AFSecurityPolicyTests.m",
+      "source": {
+        "messageSends": 149,
+        "selectorKeywords": 187,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 10,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 57,
+      "edges": 554
+    },
+    {
+      "file": "Tests/Tests/AFTestCase.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 11,
+      "edges": 17
+    },
+    {
+      "file": "Tests/Tests/AFTestCase.m",
+      "source": {
+        "messageSends": 15,
+        "selectorKeywords": 15,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 1,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 13,
+      "edges": 54
+    },
+    {
+      "file": "Tests/Tests/AFUIActivityIndicatorViewTests.m",
+      "source": {
+        "messageSends": 30,
+        "selectorKeywords": 30,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 71
+    },
+    {
+      "file": "Tests/Tests/AFUIButtonTests.m",
+      "source": {
+        "messageSends": 23,
+        "selectorKeywords": 28,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 11,
+      "edges": 70
+    },
+    {
+      "file": "Tests/Tests/AFUIImageViewTests.m",
+      "source": {
+        "messageSends": 37,
+        "selectorKeywords": 38,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 15,
+      "edges": 126
+    },
+    {
+      "file": "Tests/Tests/AFUIRefreshControlTests.m",
+      "source": {
+        "messageSends": 29,
+        "selectorKeywords": 30,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 71
+    },
+    {
+      "file": "Tests/Tests/AFURLSessionManagerTests.m",
+      "source": {
+        "messageSends": 140,
+        "selectorKeywords": 120,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 2,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 47,
+      "edges": 417
+    },
+    {
+      "file": "Tests/Tests/AFWKWebViewTests.m",
+      "source": {
+        "messageSends": 26,
+        "selectorKeywords": 35,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 6,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 13,
+      "edges": 90
+    },
+    {
+      "file": "Tests/Tests/AFXMLDocumentResponseSerializerTests.m",
+      "source": {
+        "messageSends": 16,
+        "selectorKeywords": 22,
+        "allocCalls": 5,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 84
+    },
+    {
+      "file": "Tests/Tests/AFXMLParserResponseSerializerTests.m",
+      "source": {
+        "messageSends": 14,
+        "selectorKeywords": 18,
+        "allocCalls": 4,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 1,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 9,
+      "edges": 70
+    },
+    {
+      "file": "UIKit+AFNetworking/AFAutoPurgingImageCache.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 2,
+        "protocolConformances": 1,
+        "superclassRefs": 1,
+        "propertiesDeclared": 3,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 20
+    },
+    {
+      "file": "UIKit+AFNetworking/AFAutoPurgingImageCache.m",
+      "source": {
+        "messageSends": 27,
+        "selectorKeywords": 20,
+        "allocCalls": 3,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 8,
+        "ivarsDeclared": 0,
+        "methodsDefined": 10,
+        "cFunctionsDefined": 0,
+        "imports": 2,
+        "classInterfaces": 2,
+        "classImplementations": 2
+      },
+      "symbols": 27,
+      "edges": 124
+    },
+    {
+      "file": "UIKit+AFNetworking/AFImageDownloader.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 1,
+        "imports": 4,
+        "classInterfaces": 2,
+        "classImplementations": 0
+      },
+      "symbols": 16,
+      "edges": 20
+    },
+    {
+      "file": "UIKit+AFNetworking/AFImageDownloader.m",
+      "source": {
+        "messageSends": 68,
+        "selectorKeywords": 50,
+        "allocCalls": 12,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 13,
+        "ivarsDeclared": 0,
+        "methodsDefined": 15,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 3,
+        "classImplementations": 4
+      },
+      "symbols": 42,
+      "edges": 236
+    },
+    {
+      "file": "UIKit+AFNetworking/AFNetworkActivityIndicatorManager.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 0,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 3
+    },
+    {
+      "file": "UIKit+AFNetworking/AFNetworkActivityIndicatorManager.m",
+      "source": {
+        "messageSends": 38,
+        "selectorKeywords": 19,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 7,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 2,
+        "imports": 2,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 36,
+      "edges": 114
+    },
+    {
+      "file": "UIKit+AFNetworking/UIActivityIndicatorView+AFNetworking.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 4
+    },
+    {
+      "file": "UIKit+AFNetworking/UIActivityIndicatorView+AFNetworking.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 30,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 10,
+      "edges": 41
+    },
+    {
+      "file": "UIKit+AFNetworking/UIButton+AFNetworking.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 9,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 11,
+      "edges": 13
+    },
+    {
+      "file": "UIKit+AFNetworking/UIButton+AFNetworking.m",
+      "source": {
+        "messageSends": 49,
+        "selectorKeywords": 80,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 15,
+        "cFunctionsDefined": 2,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 20,
+      "edges": 154
+    },
+    {
+      "file": "UIKit+AFNetworking/UIImageView+AFNetworking.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 4,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 7,
+      "edges": 9
+    },
+    {
+      "file": "UIKit+AFNetworking/UIImageView+AFNetworking.m",
+      "source": {
+        "messageSends": 22,
+        "selectorKeywords": 21,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 6,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 13,
+      "edges": 72
+    },
+    {
+      "file": "UIKit+AFNetworking/UIProgressView+AFNetworking.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 3,
+      "edges": 5
+    },
+    {
+      "file": "UIKit+AFNetworking/UIProgressView+AFNetworking.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 29,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 10,
+      "edges": 48
+    },
+    {
+      "file": "UIKit+AFNetworking/UIRefreshControl+AFNetworking.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 2,
+      "edges": 4
+    },
+    {
+      "file": "UIKit+AFNetworking/UIRefreshControl+AFNetworking.m",
+      "source": {
+        "messageSends": 18,
+        "selectorKeywords": 30,
+        "allocCalls": 1,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 10,
+      "edges": 41
+    },
+    {
+      "file": "UIKit+AFNetworking/WKWebView+AFNetworking.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 2,
+        "cFunctionsDefined": 0,
+        "imports": 4,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 7
+    },
+    {
+      "file": "UIKit+AFNetworking/WKWebView+AFNetworking.m",
+      "source": {
+        "messageSends": 15,
+        "selectorKeywords": 26,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 5,
+        "classInterfaces": 1,
+        "classImplementations": 2
+      },
+      "symbols": 11,
+      "edges": 82
+    },
+    {
+      "file": "NSTextView+JSDExtensions.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 5,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 9,
+      "edges": 9
+    },
+    {
+      "file": "NSTextView+JSDExtensions.m",
+      "source": {
+        "messageSends": 63,
+        "selectorKeywords": 30,
+        "allocCalls": 2,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 8,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 19,
+      "edges": 133
+    },
+    {
+      "file": "NSWindow+DvA.m",
+      "source": {
+        "messageSends": 48,
+        "selectorKeywords": 43,
+        "allocCalls": 8,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 7,
+        "cFunctionsDefined": 1,
+        "imports": 4,
+        "classInterfaces": 3,
+        "classImplementations": 3
+      },
+      "symbols": 17,
+      "edges": 93
+    },
+    {
+      "file": "NoodleLineNumberMarker.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 1,
+        "ivarsDeclared": 0,
+        "methodsDefined": 1,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 4,
+      "edges": 6
+    },
+    {
+      "file": "NoodleLineNumberMarker.m",
+      "source": {
+        "messageSends": 9,
+        "selectorKeywords": 12,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 0,
+        "methodsDefined": 5,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 0,
+        "classImplementations": 1
+      },
+      "symbols": 7,
+      "edges": 28
+    },
+    {
+      "file": "NoodleLineNumberView.h",
+      "source": {
+        "messageSends": 0,
+        "selectorKeywords": 0,
+        "allocCalls": 0,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 4,
+        "ivarsDeclared": 0,
+        "methodsDefined": 3,
+        "cFunctionsDefined": 0,
+        "imports": 1,
+        "classInterfaces": 1,
+        "classImplementations": 0
+      },
+      "symbols": 15,
+      "edges": 19
+    },
+    {
+      "file": "NoodleLineNumberView.m",
+      "source": {
+        "messageSends": 92,
+        "selectorKeywords": 84,
+        "allocCalls": 5,
+        "protocolsDeclared": 0,
+        "protocolConformances": 0,
+        "superclassRefs": 0,
+        "propertiesDeclared": 0,
+        "ivarsDeclared": 4,
+        "methodsDefined": 15,
+        "cFunctionsDefined": 0,
+        "imports": 3,
+        "classInterfaces": 1,
+        "classImplementations": 1
+      },
+      "symbols": 25,
+      "edges": 235
+    }
+  ],
+  "verdict": "payload complete: 24,114 edges, all with a line and an evidenceClass. 8 relationship families, every one corpus-backed. 0 distinct FABRICATED target name(s) (0% of edges) — names the emitting file does not contain."
+}

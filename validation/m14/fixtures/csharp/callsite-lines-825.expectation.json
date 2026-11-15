@@ -1,0 +1,529 @@
+{
+  "fixtureId": "csharp/callsite-lines-825",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59.A7 (#825) line round for the csharp lane. Every expected line is the line where the edge's TARGET is written, and the four traps this lane actually has are each pinned twice \u2014 once as the correct claim and once as the pre-fix shape in `forbidRelationships`. MEASURED (not reasoned) with script/m14/tmp/cs-line-shapes.ts and script/m14/tmp/cs-825-measure.ts, and on a 200-file corpus draw through script/m59/oracle-callsite.ts: BEFORE this round the lane emitted NO line at all (23,924 relationships, withLine 0). After stamping all twelve emit sites: 23,924 withLine, 23,558 consistent, 366 notCheckable, and 653 INCONSISTENT \u2014 every one of them a `contains` edge claiming the DECLARATION's start line, which for an attributed or wrapped declaration is a line the member's name is not written on (e.g. `[Parameter]` above the property, 4 of the samples). That is a defect the line round itself can introduce, and it is fixed structurally: `contains` is now stamped from the declaration's NAME node, and a declaration whose SYMBOL name the source never writes (a constructor named `constructor`, a destructor named `Finalize`) takes NO line \u2014 the state java's synthesised members and kotlin's data-class phantoms take, and the state the oracle's own phantom rule calls correct. AFTER: 23,924 relationships, 23,558 withLine, 23,558 consistent, 0 INCONSISTENT, 0 notCheckable, 366 noLine (all synthesised constructor names \u2014 disclosed, counted, and pinned here as `line_number: null`). SOURCE-SPELLING CORRECTION 2026-10-02: the type-level edges are pinned with the BARE type name as the relationship source (`Widget`, `Shape`, `Qualified`), not the namespace-qualified one (`Pin.Widget`, `Acme.Domain.Shape`, `Probe.Qualified`) these rows used to name. The analyzer publishes the bare name, and the hand-audited truth agrees: validation/m12/ground-truth/csharp.json (truthSource=manual_audit) records type-level rows with bare sourceIds such as `BaseService -> BaseService {extends}` and `BaseService -> IRepository {implements}`. The qualified spelling was a pin that could never match, which is why this fixture was RED. Only the source LABEL changed: the edge type, target, line_number and every `meta.*` constraint are untouched, and the `forbid` rows that carried the qualified spelling were vacuous before (no edge ever had that source) and are now ACTIVE. Mutant csharp/drop-implements-edge and csharp/iface-base-extends-fabrication were unobservable for exactly this reason.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class",
+      "ownerName": "Pin"
+    },
+    {
+      "name": "Base",
+      "kind": "class",
+      "ownerName": "Pin"
+    },
+    {
+      "name": "IShape",
+      "kind": "interface",
+      "ownerName": "Pin"
+    },
+    {
+      "name": "Fill",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "Greet",
+      "kind": "method",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "_stale",
+      "kind": "property",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "Finalize",
+      "kind": "method",
+      "ownerName": "Widget"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Widget",
+      "startLine": 42
+    },
+    {
+      "symbol": "_stale",
+      "startLine": 53
+    },
+    {
+      "symbol": "Fill",
+      "startLine": 83
+    },
+    {
+      "symbol": "helper",
+      "startLine": 49
+    },
+    {
+      "symbol": "_a",
+      "startLine": 56
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "IShape",
+      "target": "System.Collections.Generic",
+      "line_number": 20
+    },
+    {
+      "type": "references",
+      "from": "IShape",
+      "target": "System.Text.Json.JsonSerializerOptions",
+      "line_number": 21,
+      "comment": "the ALIAS form: `using Config = \u2026` writes the alias first, so the qualified target's own node is the site"
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "Widget",
+      "line_number": 43,
+      "comment": "the class declaration starts at its ATTRIBUTE (42); the name is written at 43"
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "IShape",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "IShape",
+      "target": "Area",
+      "line_number": 27
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "Base",
+      "line_number": 30
+    },
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "Greet",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "Item",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "Helper",
+      "line_number": 37
+    },
+    {
+      "type": "contains",
+      "from": "Helper",
+      "target": "Strip",
+      "line_number": 39
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "_items",
+      "line_number": 47
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "helper",
+      "line_number": 49
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Limit",
+      "line_number": 51
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "_stale",
+      "line_number": 54,
+      "comment": "the attribute is on 53 and the name on 54: the symbol RANGE starts at 53 (pinned above), and the containment line must NOT"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "_a",
+      "line_number": 56,
+      "comment": "multi-declarator field: two symbols share the field_declaration's range, so the site map is keyed by name as well as start index"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "_b",
+      "line_number": 56
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "this",
+      "line_number": 73,
+      "comment": "an indexer's symbol is named `this` \u2014 an ANONYMOUS grammar token, found by node type"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Area",
+      "line_number": 75
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Greet",
+      "line_number": 78,
+      "comment": "attribute on 77, name on 78"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Fill",
+      "line_number": 84,
+      "comment": "WRAPPED signature: the declaration opens at 83 (`public void`) and the name is written at 84"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "constructor",
+      "line_number": null,
+      "comment": "synthesised name \u2014 the source writes `Widget()`, never `constructor`, so no line can be its site"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Finalize",
+      "line_number": null,
+      "comment": "synthesised name \u2014 a destructor is written `~Widget()`"
+    },
+    {
+      "type": "extends",
+      "from": "Widget",
+      "target": "Base",
+      "line_number": 44,
+      "comment": "WRAPPED base list: the declaration opens at 43 and the `:` is at 44; the base type's own node is the site"
+    },
+    {
+      "type": "implements",
+      "from": "Widget",
+      "target": "IShape",
+      "line_number": 45
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "base",
+      "line_number": 66,
+      "comment": "WRAPPED initializer: the node starts at the `:` on 65 and `base` is an ANONYMOUS child written at 66"
+    },
+    {
+      "type": "instantiates",
+      "from": "Fill",
+      "target": "Item",
+      "line_number": 87,
+      "comment": "WRAPPED `new`: the node opens at `new` on 86, the constructed type is written at 87"
+    },
+    {
+      "type": "instantiates",
+      "from": "Fill",
+      "target": "List",
+      "line_number": 88,
+      "comment": "written receiver"
+    },
+    {
+      "type": "instantiates",
+      "from": "Fill",
+      "target": "List",
+      "line_number": 89,
+      "comment": "target-typed `new()`: the target is written in the DECLARATION, one line above the `new()` on 90"
+    },
+    {
+      "type": "instantiates",
+      "from": "constructor",
+      "target": "List",
+      "line_number": 47,
+      "comment": "target-typed `new()` in the ASSIGNMENT form: `_items = new();` writes no type at all \u2014 the resolved target is written on the member's declaration (47), which is a different line AND a different subtree"
+    },
+    {
+      "type": "instantiates",
+      "from": "Greet",
+      "target": "List",
+      "line_number": 47
+    },
+    {
+      "type": "calls",
+      "from": "Fill",
+      "target": "Strip",
+      "line_number": 92,
+      "comment": "WRAPPED chain: the invocation node starts at the receiver on 91, the callee leaf is written at 92"
+    },
+    {
+      "type": "uses",
+      "from": "Fill",
+      "target": "helper",
+      "line_number": 91
+    },
+    {
+      "type": "uses",
+      "from": "Fill",
+      "target": "_items",
+      "line_number": 93
+    },
+    {
+      "type": "uses",
+      "from": "Fill",
+      "target": "Count",
+      "line_number": 94,
+      "comment": "the member-access NAME field, not the node (which starts at 93)"
+    },
+    {
+      "type": "uses",
+      "from": "Fill",
+      "target": "Limit",
+      "line_number": 96,
+      "comment": "bare-identifier read: the identifier node is on 96, the `return` that encloses it on 95"
+    },
+    {
+      "type": "overrides",
+      "from": "Widget.Greet",
+      "target": "Greet",
+      "line_number": 78,
+      "comment": "the overriding declaration's NAME node \u2014 its attribute is on 77"
+    },
+    {
+      "type": "references",
+      "from": "IShape",
+      "target": "System.Text",
+      "line_number": 106,
+      "comment": "WRAPPED qualified name: the name opens on 105 and its last segment is written on 106"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "target": "System.IDisposable",
+      "line_number": 110,
+      "comment": "wrapped qualified BASE: the name opens on 109 and `IDisposable` is written on 110"
+    },
+    {
+      "type": "extends",
+      "from": "WrappedChild",
+      "target": "Pin.Base",
+      "line_number": 117,
+      "comment": "the same shape on the extends path, resolved through the qualified-name leaf (in-file `Base` is a class)"
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "Wrapped",
+      "line_number": 108
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "WrappedChild",
+      "line_number": 115
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "Dispose",
+      "line_number": 112
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "_stale",
+      "line_number": 53,
+      "note": "pre-fix shape: the symbol range's start line \u2014 the ATTRIBUTE's line, which does not carry `_stale`"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Greet",
+      "line_number": 77,
+      "note": "pre-fix shape: the attribute's line"
+    },
+    {
+      "type": "contains",
+      "from": "Pin",
+      "target": "Widget",
+      "line_number": 42,
+      "note": "pre-fix shape: the attributed class declaration's start line"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Fill",
+      "line_number": 83,
+      "note": "pre-fix shape: the wrapped signature's FIRST line, which names only the return type"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "constructor",
+      "line_number": 58,
+      "note": "pre-fix shape: a synthesised member claiming an enclosing declaration's line (measured: 366 of these on a 200-file draw, 16 of them behind an attribute exactly like this one)"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "constructor",
+      "line_number": 59,
+      "note": "same, the second constructor's declaration line"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Finalize",
+      "line_number": 69,
+      "note": "pre-fix shape: `~Widget()` claims the declaration line for a name the file never writes \u2014 the one shape a token check convicts outright"
+    },
+    {
+      "type": "extends",
+      "from": "Widget",
+      "target": "Base",
+      "line_number": 43,
+      "note": "pre-fix shape: the class line / the `:` line \u2014 the base type's own line is 44"
+    },
+    {
+      "type": "implements",
+      "from": "Widget",
+      "target": "IShape",
+      "line_number": 43,
+      "note": "pre-fix shape: the declaration's start line"
+    },
+    {
+      "type": "implements",
+      "from": "Widget",
+      "target": "IShape",
+      "line_number": 44,
+      "note": "pre-fix shape: the base_list node's start line (the `:` belongs to the FIRST base's line)"
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "base",
+      "line_number": 65,
+      "note": "pre-fix shape: the initializer node's start line \u2014 the lone `:`"
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "base",
+      "line_number": 64,
+      "note": "pre-fix shape: the constructor declaration's line"
+    },
+    {
+      "type": "instantiates",
+      "from": "Fill",
+      "target": "Item",
+      "line_number": 86,
+      "note": "pre-fix shape: the object_creation node's start line (`new`)"
+    },
+    {
+      "type": "instantiates",
+      "from": "Fill",
+      "target": "List",
+      "line_number": 90,
+      "note": "pre-fix shape: the `new()` line for a target-typed new whose type is written on 89"
+    },
+    {
+      "type": "instantiates",
+      "from": "constructor",
+      "target": "List",
+      "line_number": 61,
+      "note": "pre-fix shape: the ASSIGNMENT's line, where the target name is not written at all"
+    },
+    {
+      "type": "instantiates",
+      "from": "Greet",
+      "target": "List",
+      "line_number": 80,
+      "note": "same, from the override's body"
+    },
+    {
+      "type": "calls",
+      "from": "Fill",
+      "target": "Strip",
+      "line_number": 91,
+      "note": "pre-fix shape: the RECEIVER's line \u2014 an invocation node starts at its receiver"
+    },
+    {
+      "type": "uses",
+      "from": "Fill",
+      "target": "Count",
+      "line_number": 93,
+      "note": "pre-fix shape: the member_access node's start line (the receiver's)"
+    },
+    {
+      "type": "uses",
+      "from": "Fill",
+      "target": "Limit",
+      "line_number": 95,
+      "note": "pre-fix shape: the enclosing statement (`return`) rather than the identifier that names the target"
+    },
+    {
+      "type": "overrides",
+      "from": "Widget.Greet",
+      "target": "Greet",
+      "line_number": 77,
+      "note": "pre-fix shape: the attribute's line"
+    },
+    {
+      "type": "references",
+      "from": "IShape",
+      "target": "System.Text.Json.JsonSerializerOptions",
+      "line_number": 22,
+      "note": "no line above the file's last using statement may be claimed"
+    },
+    {
+      "type": "references",
+      "from": "IShape",
+      "target": "System.Text",
+      "line_number": 105,
+      "note": "pre-fix shape: the qualified_name node's start line, which names only the namespace root"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "target": "System.IDisposable",
+      "line_number": 109,
+      "note": "pre-fix shape: the wrapped base's FIRST line"
+    },
+    {
+      "type": "extends",
+      "from": "WrappedChild",
+      "target": "Pin.Base",
+      "line_number": 116,
+      "note": "pre-fix shape: the wrapped base's first line"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "target": "System.\n            IDisposable",
+      "note": "pre-fix shape: the base TARGET kept the layout, newline included, so the target was not a type name at all \u2014 and it disagreed with the differential's cleaned truth (the ruby D3 class, found here by probing the same shape)"
+    },
+    {
+      "type": "extends",
+      "from": "WrappedChild",
+      "target": "Pin.\n            Base",
+      "note": "the same whitespace leak on the extends path"
+    },
+    {
+      "type": "references",
+      "from": "IShape",
+      "target": "System\n        .Text",
+      "note": "the same leak into an import's module/target: a namespace name is never written with a newline in it"
+    }
+  ]
+}

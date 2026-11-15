@@ -1,0 +1,12 @@
+{
+  "fixtureId": "java/complexity-parity",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: cyclomatic complexity = 1 + decisions; decisions = if + for + ternary + && = 4, so f must be exactly 5. The previous per-method calculator had DEAD cases n.type === '&&'/'||' (&&/|| are operator fields inside binary_expression, not node types) so short-circuit operators never counted; the file-level counter also lacked the +1 base and missed enhanced_for and operators.",
+  "expectSymbols": [
+    { "name": "f", "kind": "method" }
+  ],
+  "expectComplexity": [
+    { "symbol": "f", "equals": 5 }
+  ]
+}

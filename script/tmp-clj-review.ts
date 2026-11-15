@@ -97,7 +97,7 @@ function walk(dir: string, acc: string[] = []): string[] {
   }
   return acc
 }
-const files = walk("$HOME/fixtures/repositories/clojure").slice(0, 250)
+const files = walk("/home/ishaq2321/bb_tests/repositories/clojure").slice(0, 250)
 let rels = 0, lined = 0, docstrings = 0, calls = 0, slashImplements = 0
 const slashSamples: string[] = []
 const t0 = performance.now()

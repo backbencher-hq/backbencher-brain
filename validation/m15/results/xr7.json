@@ -1,0 +1,19 @@
+{
+  "issue": "M15.XR",
+  "code": "xr7",
+  "tool": "bb_security",
+  "verified": true,
+  "checks": 143,
+  "passed": 143,
+  "failed": 0,
+  "positives": 120,
+  "negatives": 23,
+  "negativePassed": 23,
+  "defect": "precision",
+  "generatedAt": "2026-11-14T21:07:33.790Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:07:33.790Z",
+    "contentSha256": "e03e9516d8004baf9b3aedd190559a55cd6416a18a8805d6b6b13e67236c9243"
+  }
+}

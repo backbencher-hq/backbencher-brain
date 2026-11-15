@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M60 X8: the `xml` prefix is bound by the Namespaces specification itself and
+     CANNOT be declared — `xmlns:xml=...` is an error, and no real document writes
+     it. So a resolver that reads only declarations can never resolve it, and
+     every `ref="xml:lang"` in the corpus was being refused. This file therefore
+     declares NO xmlns:xml on purpose: adding one would make the fixture pass
+     against the broken analyzer, which is the trap this shape is built to avoid.
+     The XSD prefix here is `xs`, not `xsd`, so a fixture that also normalised
+     prefixes would fail rather than pass. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:example:doc">
+  <xs:element name="para">
+    <xs:complexType>
+      <xs:attribute ref="xml:lang"/>
+      <xs:attribute ref="xml:space"/>
+      <xs:attribute ref="xml:base"/>
+      <xs:attribute ref="xml:id"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

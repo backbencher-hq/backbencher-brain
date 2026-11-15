@@ -1,0 +1,83 @@
+{
+ "fixtureId": "python/import-alias-is-published-as-a-binding",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-D13: BOTH halves now. Round 7 (lane-side): the resolution verdict's `references` (1,332) and `extends` (105) UNEXPLAINED targets are dominated by alias-bound routes — `t.Callable`, `t.Self`, `t.Protocol`, `nn.Module` — where `t`/`nn` is a name the file bound with `as` and the module's real name is nowhere on the edge; the analyzer parsed the alias all along and published it on no relation, and for `from X import Z as W` it lost the binding one layer deeper, recording only the imported `Z`. It rode the edge as `metadata.importedAs`. Round 17 (store half): the ROW the worker projects now carries the binding too — the from-import publishes `itemBindings` per item and the projection emits `alias`, so `brain_import.imported_as` receives `OD` for `from collections import OrderedDict as OD` instead of staying NULL for every language (the projection dropped `alias` while the indexer read `imp.alias ?? imp.localName`, so neither key ever existed on the AST path). The `expectImports` rows below are the FALSIFIER for the round-17 publication — they are what catches the mutant that removes it, since the standalone seam pin is not part of this battery. The plain imports are the control in both channels: `importedAs` must not be invented on the edge where the bound name is already the imported name, and `itemBindings` must stay EMPTY on such a row.",
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "typing:*",
+   "meta.importedAs": "t",
+   "note": "`import typing as t` — the namespace binding `t` is what the file's `t.Callable` routes name"
+  },
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "sys:*",
+   "meta.importedAs": "system",
+   "note": "the same shape, different spelling, so the rule is not keyed on one alias"
+  },
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "collections:OrderedDict",
+   "meta.importedAs": "OD",
+   "note": "THE FROM-IMPORT CASE: `from collections import OrderedDict as OD` binds `OD`, and before round 7 the item list carried only the IMPORTED name — the bound name appeared on no edge at all"
+  },
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "typing:Protocol",
+   "note": "the un-aliased item is still published as an edge (the control's positive row)"
+  },
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "os:*",
+   "note": "the un-aliased namespace import still emits its edge"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "collections",
+   "items": ["OrderedDict"],
+   "itemBindings": [{"name": "OrderedDict", "as": "OD"}],
+   "note": "ROUND 17's falsifier: the from-import ROW carries the bound name per item, which is what `src/ast/pool-worker.ts` now projects into `alias` and `src/ast/parallel-indexer.ts` writes into `brain_import.imported_as`. Whole-array equality on `itemBindings` (the matcher compares arrays by sorted JSON) means this row also fails if a SECOND, invented binding appears here."
+  },
+  {
+   "module": "dataclasses",
+   "items": ["dataclass", "field"],
+   "itemBindings": [{"name": "field", "as": "dataclass_field"}],
+   "note": "WHY THE BINDING RIDES THE ITEM AND NOT THE ROW: one statement binds two names and only the SECOND is aliased, so a single row-level `alias` cannot express it (and `alias` on the row is exactly what the pre-round-17 design would have had to invent). `items` keeps the IMPORTED names — `field`, never `dataclass_field` — because those are what the `module:item` edge target spells and what the resolution verdict counts."
+  },
+  {
+   "module": "typing",
+   "items": ["Protocol"],
+   "itemBindings": [],
+   "note": "THE CONTROL, over-claim direction: an un-aliased item must leave `itemBindings` EMPTY — a binding that merely repeats the imported name is noise a store consumer has to filter, and `null`/absent and `[]` are the same statement here."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "os:*",
+   "meta.importedAs": "os",
+   "note": "OVER-CLAIM DIRECTION: `import os` binds `os`, which is already the imported name the target spells — publishing it would be noise, not a fact"
+  },
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "typing:Protocol",
+   "meta.importedAs": "Protocol",
+   "note": "the same for an un-aliased from-import item"
+  },
+  {
+   "type": "imports",
+   "from": "import_alias_is_published_as_a_binding",
+   "target": "collections:OD",
+   "note": "the LOSS DIRECTION, pinned as a forbid: the edge must name the IMPORTED name (`collections:OrderedDict`), never the bound alias, because `OD` is not a module attribute any file declares"
+  }
+ ]
+}

@@ -41,7 +41,7 @@ import { fileURLToPath } from "url"
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, "..", "..")
-const DEFAULT_REPOS = process.env.XML_CORPUS_ROOT ?? "$HOME/fixtures/xml/repos"
+const DEFAULT_REPOS = process.env.XML_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/xml/repos"
 const MAX_BYTES = Number(process.env.XML_MAX_BYTES ?? 2_000_000)
 const EXTS = new Set([".xml", ".xsd", ".dtd", ".xsl", ".xslt", ".svg", ".rng"])
 

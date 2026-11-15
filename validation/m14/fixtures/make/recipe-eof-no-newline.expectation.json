@@ -1,0 +1,62 @@
+{
+  "fixtureId": "make/recipe-eof-no-newline",
+  "language": "make",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number 26 transcribed from the numbered source and then checked against a run. The file's LAST line is the recipe line and there is no trailing newline after it -- that is the case under test, and `ends with newline: false` is verified by the probe, not assumed.",
+  "rationale": "MAKE-G5, partially closed. Upstream ends every recipe line with a MANDATORY newline token, so a recipe line that is the LAST thing in a file -- with no newline after it, which GNU Make 4.3 runs without complaint (verified) -- became an ERROR node and the line was lost. The fix is a third external token, RECIPE_EOL, emitted ZERO-WIDTH by the scanner when `lookahead == 0`: the scanner is the only component that can observe end of input. A newline still lexes as the internal NL, so the token can never match a real character. This fixture exists because `expectNoParseErrors` is what makes it a real test -- tree-sitter error recovery would produce the expected symbol regardless, so an earlier version of this lane's recipeprefix fixture passed on a visibly broken grammar, and the same would have happened here. No prerequisite on purpose: a bare-word prerequisite is published as `uses`, which is a separate question from this one and not something this patch measured.",
+  "expectSymbols": [
+    {
+      "name": "recipe-eof-no-newline.mk",
+      "kind": "module"
+    },
+    {
+      "name": "build",
+      "kind": "function"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "build",
+      "equals": 1,
+      "note": "exactly one target: the recipe line must not be mistaken for one, which is what happens when the line is dropped and the text is recovered as a name"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "recipe-eof-no-newline.mk",
+      "target": "build",
+      "line_number": 26
+    },
+    {
+      "type": "exports",
+      "from": "recipe-eof-no-newline.mk",
+      "target": "build",
+      "line_number": 26
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "gcc -o build",
+      "note": "the recipe's shell text. Before the fix the trailing recipe line was dropped and its text was recovered as a name; a symbol here is exactly that failure"
+    },
+    {
+      "name": "gcc",
+      "note": "same, in the degenerate case where only the first word survives recovery"
+    },
+    {
+      "name": "RECIPEPREFIX",
+      "note": "the directive configures HOW recipe lines begin; it declares no buildable object"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "build",
+      "target": "gcc -o build",
+      "type": "uses",
+      "note": "a recipe's own command is never a symbol the analyzer can use or depend on. Before the fix this line was lost, and the recovery invented it as a reference -- which is how a build file acquires a dependency on a command it does not have"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 to the lane's own DECLARED GAP, not to a passing feature. docs/analyzers/make.md MAKE-G2 says verbatim: `.RECIPEPREFIX = >` is not modelled. 0 corpus occurrences, which is not the same claim as no risk. A coverage gap`. The vendored patched grammar that WOULD lex it exists (grammars/tree-sitter-make/recipeprefix/: grammar.patch, scanner.c, grammar.with-recipeprefix.js, README.md, all byte-pinned in validation/m14/grammar-pins.json), but the pinned `wasm/tree-sitter-make.wasm` (sha ca3da9c9\u2026) is NOT built from it: measured, a `>`-prefixed recipe line lands in ERROR/MISSING nodes. These two fixtures were written for the patched grammar; they therefore pinned a feature the shipped parser does not have. Re-baselined to the gap's MEASURED behaviour instead of deleted: the error count is pinned, and the rows the recovery DOES produce stay expected. Wiring the patch is a parser decision for the Lead, not a fixture change. FURTHER: `expectNoParseErrors` is set to FALSE rather than removed \u2014 the field is the tree's ERROR/MISSING census, and the gap's measured damage on this fixture (2 / 6 nodes) is recorded in this note and in the docs' MAKE-G2 row. The analyzer's own `errors` channel is empty for this lane, so `expectErrorCount` cannot carry the pin.",
+  "expectNoParseErrors": false
+}

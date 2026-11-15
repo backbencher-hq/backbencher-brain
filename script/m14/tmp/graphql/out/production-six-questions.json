@@ -1,0 +1,639 @@
+{
+ "generatedAt": "2026-10-05T20:13:06.862Z",
+ "entryPoint": "parseFile (src/ast/pool-worker.ts) — NOT analyze()",
+ "population": {
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedFiles": 1905,
+  "filesParsed": 1905,
+  "filesWithParseError": 0,
+  "admissionRule": "git ls-files, size <= 512 KB, detectLanguageFromPath === graphql — identical to ontology-coverage-gate.ts",
+  "repos": [
+   {
+    "repo": "gql-graphql-platform",
+    "files": 717
+   },
+   {
+    "repo": "hasura-engine",
+    "files": 407
+   },
+   {
+    "repo": "gql-graphql-tools",
+    "files": 238
+   },
+   {
+    "repo": "gql-gqlgen",
+    "files": 143
+   },
+   {
+    "repo": "gql-graphql-mesh",
+    "files": 130
+   },
+   {
+    "repo": "gql-genqlient",
+    "files": 111
+   },
+   {
+    "repo": "gql-graphql-eslint",
+    "files": 47
+   },
+   {
+    "repo": "gql-ruby",
+    "files": 23
+   },
+   {
+    "repo": "gql-graphql",
+    "files": 19
+   },
+   {
+    "repo": "gql-graphql-dotnet",
+    "files": 14
+   },
+   {
+    "repo": "gql-sangria",
+    "files": 11
+   },
+   {
+    "repo": "graphql-java",
+    "files": 9
+   },
+   {
+    "repo": "gql-absinthe",
+    "files": 8
+   },
+   {
+    "repo": "gql-federation",
+    "files": 5
+   },
+   {
+    "repo": "gql-graphql-yoga",
+    "files": 5
+   },
+   {
+    "repo": "gql-graphql-core",
+    "files": 4
+   },
+   {
+    "repo": "gql-graphql-php",
+    "files": 4
+   },
+   {
+    "repo": "redwood",
+    "files": 4
+   },
+   {
+    "repo": "graphql-js",
+    "files": 2
+   },
+   {
+    "repo": "graphql-js-full",
+    "files": 2
+   },
+   {
+    "repo": "nvim-treesitter",
+    "files": 1
+   },
+   {
+    "repo": "shopify-api-js",
+    "files": 1
+   }
+  ]
+ },
+ "totals": {
+  "symbols": 91429,
+  "relationships": 156696,
+  "filesWithZeroRelationships": 69,
+  "projectDistinctNames": 49904,
+  "projectUniquelyNamedSymbols": 43954
+ },
+ "kinds": {
+  "property": 38938,
+  "method": 37449,
+  "class": 7739,
+  "enum_member": 3746,
+  "type": 912,
+  "enum": 829,
+  "function": 596,
+  "namespace": 456,
+  "interface": 424,
+  "variable": 340
+ },
+ "emptyNameOrQualifiedName": {},
+ "relationshipTypesOutsideTheTen": {},
+ "parseErrors": [],
+ "determinism": {
+  "sliceFiles": 60,
+  "identical": 60,
+  "differing": 0,
+  "diffs": [],
+  "question": "does production parseFile return the same relationships for the same bytes twice, sequentially, with no pool contention?"
+ },
+ "types": [
+  {
+   "type": "calls",
+   "count": 0,
+   "distinctFiles": 0,
+   "filesSampledForNames": [],
+   "roles": {},
+   "confidence": {
+    "measuredEdges": 0,
+    "mean": null,
+    "below_0_7": 0,
+    "below_0_7_pct": null,
+    "histogram": {}
+   },
+   "resolution": {
+    "bothEndpointsInFile": 0,
+    "bothEndpointsInFile_pct": null,
+    "bothEndpointsProjectScope": 0,
+    "bothEndpointsProjectScope_pct": null,
+    "bothEndpointsIncludingSpecVocabulary": 0,
+    "bothEndpointsIncludingSpecVocabulary_pct": null,
+    "endpointBuckets": {},
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": []
+  },
+  {
+   "type": "uses",
+   "count": 49258,
+   "distinctFiles": 1433,
+   "filesSampledForNames": [
+    "gql-absinthe/test/support/fixtures/language/kitchen-sink.graphql",
+    "gql-absinthe/priv/graphql/introspection.graphql",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql",
+    "gql-federation/query-planner-js/src/__tests__/features/autofrag/supergraphSdl.graphql"
+   ],
+   "roles": {
+    "field_selection": 36749,
+    "directive_application": 3264,
+    "fragment_spread": 2431,
+    "union_member": 1739,
+    "enum_value_reference": 1398,
+    "inline_fragment_type_condition": 1316,
+    "fragment_type_condition": 1161,
+    "variable_reference": 761,
+    "root_operation_type": 439
+   },
+   "confidence": {
+    "measuredEdges": 49258,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 49258
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 7811,
+    "bothEndpointsInFile_pct": 15.86,
+    "bothEndpointsProjectScope": 8514,
+    "bothEndpointsProjectScope_pct": 17.28,
+    "bothEndpointsIncludingSpecVocabulary": 20831,
+    "bothEndpointsIncludingSpecVocabulary_pct": 42.29,
+    "endpointBuckets": {
+     "inFile": 57068,
+     "dangling": 15044,
+     "ambiguous": 13384,
+     "specVocabulary": 12317,
+     "uniqueBare": 703
+    },
+    "danglingSamples": [
+     "tgt: $site -[uses]-> Site.MOBILE",
+     "tgt: queryName -[uses]-> User.field2",
+     "tgt: likeStory -[uses]-> story",
+     "tgt: StoryLikeSubscription -[uses]-> storyLikeSubscribe",
+     "tgt: StoryLikeSubscription -[uses]-> story",
+     "tgt: StoryLikeSubscription -[uses]-> likers",
+     "tgt: StoryLikeSubscription -[uses]-> likeSentence",
+     "tgt: frag -[uses]-> Friend.foo",
+     "tgt: frag -[uses]-> $size",
+     "tgt: frag -[uses]-> $b",
+     "tgt: kitchen-sink::operation_0 -[uses]-> unnamed",
+     "tgt: schema.mutation -[uses]-> MutationType",
+     "tgt: Foo -[uses]-> @onType",
+     "tgt: Feed -[uses]-> Story",
+     "tgt: Feed -[uses]-> Advert",
+     "tgt: schema.subscription -[uses]-> SubscriptionType",
+     "tgt: ConflictingSelections::operation_0 -[uses]-> OnePossibleConcreteType.subField",
+     "tgt: F -[uses]-> T.f",
+     "tgt: StructOptionOnObject -[uses]-> MyObject.g",
+     "tgt: myBadQuery -[uses]-> $varMissingDollar",
+     "tgt: MyQuery -[uses]-> myOtherField",
+     "tgt: MyFragment -[uses]-> MyType.myFragmentField",
+     "tgt: UnusedFragment -[uses]-> MyType.myFragmentField",
+     "tgt: NestedFragment -[uses]-> MyType.myOtherFragmentField",
+     "tgt: MyMutation -[uses]-> myOtherField",
+     "tgt: ComplexInlineFragments -[uses]-> Topic.schoolGrade",
+     "tgt: ComplexInlineFragments -[uses]-> Content.name",
+     "tgt: ComplexInlineFragments -[uses]-> Article.text",
+     "tgt: ComplexInlineFragments -[uses]-> HasDuration.duration",
+     "tgt: ComplexInlineFragments -[uses]-> Article.name",
+     "tgt: ComplexInlineFragments -[uses]-> Content.id",
+     "tgt: ComplexInlineFragments -[uses]-> Article.thumbnail",
+     "tgt: ComplexInlineFragments -[uses]-> Video.thumbnail",
+     "tgt: ComplexInlineFragments -[uses]-> Topic.children",
+     "tgt: ComplexInlineFragments -[uses]-> Article.parent",
+     "tgt: ComplexInlineFragments -[uses]-> Content.parent",
+     "tgt: InnerQueryFragment -[uses]-> Query.randomItem",
+     "tgt: InnerQueryFragment -[uses]-> Query.randomLeaf",
+     "tgt: VideoFields -[uses]-> Video.id",
+     "tgt: VideoFields -[uses]-> Video.name"
+    ],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 3,
+   "samples": [
+    "$site -[uses]-> Site.MOBILE",
+    "queryName -[uses]-> node",
+    "queryName -[uses]-> id"
+   ]
+  },
+  {
+   "type": "contains",
+   "count": 42684,
+   "distinctFiles": 978,
+   "filesSampledForNames": [
+    "gql-absinthe/test/support/fixtures/fake_definition.graphql",
+    "gql-absinthe/test/support/fixtures/import_sdl_path_option.graphql",
+    "gql-absinthe/test/support/fixtures/import_sdl_path_option_fn.graphql",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql"
+   ],
+   "roles": {
+    "contains": 42684
+   },
+   "confidence": {
+    "measuredEdges": 42684,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 42684
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 42684,
+    "bothEndpointsInFile_pct": 100,
+    "bothEndpointsProjectScope": 42684,
+    "bothEndpointsProjectScope_pct": 100,
+    "bothEndpointsIncludingSpecVocabulary": 42684,
+    "bothEndpointsIncludingSpecVocabulary_pct": 100,
+    "endpointBuckets": {
+     "inFile": 85368
+    },
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": [
+    "fake__Locale -[contains]-> fake__Locale.az",
+    "fake__Locale -[contains]-> fake__Locale.cz",
+    "fake__Locale -[contains]-> fake__Locale.de"
+   ]
+  },
+  {
+   "type": "imports",
+   "count": 170,
+   "distinctFiles": 131,
+   "filesSampledForNames": [
+    "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query-default.gql",
+    "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/invalid-query.gql",
+    "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query-default.gql",
+    "gql-graphql-eslint/packages/plugin/__tests__/mocks/import-fragments/valid-query.gql"
+   ],
+   "roles": {
+    "imports": 170
+   },
+   "confidence": {
+    "measuredEdges": 170,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 170
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 0,
+    "bothEndpointsInFile_pct": 0,
+    "bothEndpointsProjectScope": 0,
+    "bothEndpointsProjectScope_pct": 0,
+    "bothEndpointsIncludingSpecVocabulary": 0,
+    "bothEndpointsIncludingSpecVocabulary_pct": 0,
+    "endpointBuckets": {
+     "fileName": 340
+    },
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count",
+    "note": "a symbol-set oracle reports this type 0% by construction — the target is a FILE. The meaningful rate is onDisk below."
+   },
+   "onDisk": {
+    "edges": 170,
+    "wellFormed": 170,
+    "base": "the importing file's own directory — column 5 of the triple buffer",
+    "namedFileExists": 156,
+    "namedFileMissing": 14,
+    "targetUnresolvable": 0,
+    "resolves_pct": 91.76,
+    "sameTargetsAgainstRepoRoot": 0,
+    "repoRootBasePct": 0,
+    "baseNote": "the repo-root row is the base this probe used until it was corrected; `b.graphql` and `c.graphql` are siblings under gql-graphql-tools/packages/import/tests/documents/import-test/default/, so the repo root is the wrong base by construction",
+    "missingSamples": [
+     "a.graphql -> shared (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/global/shared)",
+     "a.graphql -> graphql-import-test/b.graphql (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/import-module/graphql-import-test/b.graphql)",
+     "a.graphql -> /b.graphql (resolved /b.graphql)",
+     "b.graphql -> @circular/a.graphql (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/@circular/a.graphql)",
+     "a.graphql -> @circular/b.graphql (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/@circular/b.graphql)",
+     "a.graphql -> @b-schema (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/exact/@b-schema)"
+    ]
+   },
+   "unknownEndpoints": 0,
+   "samples": [
+    "invalid-query-default.gql -[imports]-> ./fragments/bar-fragment.gql",
+    "invalid-query.gql -[imports]-> ./fragments/bar-fragment.gql",
+    "valid-query-default.gql -[imports]-> ./fragments/foo-fragment.gql"
+   ]
+  },
+  {
+   "type": "references",
+   "count": 47750,
+   "distinctFiles": 1136,
+   "filesSampledForNames": [
+    "gql-absinthe/test/support/fixtures/language/kitchen-sink.graphql",
+    "gql-absinthe/test/support/fixtures/fake_definition.graphql",
+    "gql-absinthe/test/support/fixtures/import_sdl_path_option.graphql",
+    "gql-absinthe/test/support/fixtures/import_sdl_path_option_fn.graphql"
+   ],
+   "roles": {
+    "field_return_type": 23658,
+    "input_field_type": 14839,
+    "field_argument_type": 8013,
+    "directive_argument_type": 900,
+    "variable_type": 340
+   },
+   "confidence": {
+    "measuredEdges": 47750,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 47750
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 21381,
+    "bothEndpointsInFile_pct": 44.78,
+    "bothEndpointsProjectScope": 21479,
+    "bothEndpointsProjectScope_pct": 44.98,
+    "bothEndpointsIncludingSpecVocabulary": 47327,
+    "bothEndpointsIncludingSpecVocabulary_pct": 99.11,
+    "endpointBuckets": {
+     "inFile": 69131,
+     "specVocabulary": 25848,
+     "ambiguous": 266,
+     "dangling": 157,
+     "uniqueBare": 98
+    },
+    "danglingSamples": [
+     "tgt: $foo -[references]-> ComplexType",
+     "tgt: $input -[references]-> StoryLikeSubscribeInput",
+     "tgt: Foo.one -[references]-> Type",
+     "tgt: Foo.two -[references]-> Type",
+     "tgt: Foo.six -[references]-> Type",
+     "tgt: Foo.seven -[references]-> Type",
+     "tgt: AnnotatedObject.annotatedField -[references]-> Type",
+     "tgt: Bar.one -[references]-> Type",
+     "tgt: AnnotatedInterface.annotatedField -[references]-> Type",
+     "tgt: Bar.two -[references]-> Type",
+     "tgt: AnnotatedInput.annotatedField -[references]-> Type",
+     "tgt: Query.g -[references]-> Bogus",
+     "tgt: $sortBy -[references]-> SortOrder",
+     "tgt: Foo.eight -[references]-> Type",
+     "tgt: Baz.one -[references]-> Type",
+     "tgt: Baz.two -[references]-> Type",
+     "tgt: Case.population -[references]-> ApiPopulation",
+     "tgt: Stat.population -[references]-> ApiPopulation",
+     "tgt: Query.enum -[references]-> MyEnum",
+     "tgt: @foo -[references]-> efg",
+     "tgt: A.second -[references]-> Shared",
+     "tgt: $var2 -[references]-> InputObject1399",
+     "tgt: $var3 -[references]-> InputObject50",
+     "tgt: $var5 -[references]-> Enum308",
+     "tgt: $name_filter -[references]-> NameQuery",
+     "tgt: $institution_input -[references]-> InstitutionInput",
+     "tgt: $actor_name_filter -[references]-> NameQuery",
+     "tgt: $order_by -[references]-> AuthorOrderBy",
+     "tgt: $where_input -[references]-> AuthorFilter",
+     "tgt: $id -[references]-> int4",
+     "tgt: $yes_no -[references]-> YesNo",
+     "tgt: $gameID -[references]-> smallint",
+     "tgt: $var -[references]-> input"
+    ],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": [
+    "$foo -[references]-> ComplexType",
+    "$site -[references]-> Site",
+    "$input -[references]-> StoryLikeSubscribeInput"
+   ]
+  },
+  {
+   "type": "exports",
+   "count": 10956,
+   "distinctFiles": 1034,
+   "filesSampledForNames": [
+    "gql-absinthe/test/support/fixtures/fake_definition.graphql",
+    "gql-absinthe/test/support/fixtures/import_sdl_path_option.graphql",
+    "gql-absinthe/test/support/fixtures/import_sdl_path_option_fn.graphql",
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql"
+   ],
+   "roles": {
+    "exports": 10956
+   },
+   "confidence": {
+    "measuredEdges": 10956,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 10956
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 10956,
+    "bothEndpointsInFile_pct": 100,
+    "bothEndpointsProjectScope": 10956,
+    "bothEndpointsProjectScope_pct": 100,
+    "bothEndpointsIncludingSpecVocabulary": 10956,
+    "bothEndpointsIncludingSpecVocabulary_pct": 100,
+    "endpointBuckets": {
+     "inFile": 21912
+    },
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count",
+    "note": "source is the sentinel `(file)`, counted as bound by design"
+   },
+   "unknownEndpoints": 0,
+   "samples": [
+    "(file) -[exports]-> fake__Locale",
+    "(file) -[exports]-> fake__Types",
+    "(file) -[exports]-> fake__imageCategory"
+   ]
+  },
+  {
+   "type": "extends",
+   "count": 0,
+   "distinctFiles": 0,
+   "filesSampledForNames": [],
+   "roles": {},
+   "confidence": {
+    "measuredEdges": 0,
+    "mean": null,
+    "below_0_7": 0,
+    "below_0_7_pct": null,
+    "histogram": {}
+   },
+   "resolution": {
+    "bothEndpointsInFile": 0,
+    "bothEndpointsInFile_pct": null,
+    "bothEndpointsProjectScope": 0,
+    "bothEndpointsProjectScope_pct": null,
+    "bothEndpointsIncludingSpecVocabulary": 0,
+    "bothEndpointsIncludingSpecVocabulary_pct": null,
+    "endpointBuckets": {},
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": []
+  },
+  {
+   "type": "implements",
+   "count": 1710,
+   "distinctFiles": 163,
+   "filesSampledForNames": [
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql",
+    "gql-federation/query-planner-js/src/__tests__/features/autofrag/supergraphSdl.graphql",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql",
+    "gql-federation/query-planner-js/src/__tests__/features/basic/supergraphSdl.graphql"
+   ],
+   "roles": {
+    "implements": 1710
+   },
+   "confidence": {
+    "measuredEdges": 1710,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 1710
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 1654,
+    "bothEndpointsInFile_pct": 96.73,
+    "bothEndpointsProjectScope": 1663,
+    "bothEndpointsProjectScope_pct": 97.25,
+    "bothEndpointsIncludingSpecVocabulary": 1663,
+    "bothEndpointsIncludingSpecVocabulary_pct": 97.25,
+    "endpointBuckets": {
+     "inFile": 3364,
+     "ambiguous": 35,
+     "dangling": 12,
+     "uniqueBare": 9
+    },
+    "danglingSamples": [
+     "tgt: Foo -[implements]-> InterfaceOne",
+     "tgt: Foo -[implements]-> InterfaceTwo",
+     "tgt: Foo -[implements]-> InterfaceThree",
+     "tgt: Foo -[implements]-> InterfaceFour",
+     "tgt: Foo -[implements]-> InterfaceFive",
+     "tgt: Foo -[implements]-> InterfaceSix"
+    ],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": [
+    "Foo -[implements]-> Bar",
+    "Foo -[implements]-> Baz",
+    "IFaceImpl1 -[implements]-> IFace"
+   ]
+  },
+  {
+   "type": "overrides",
+   "count": 4168,
+   "distinctFiles": 147,
+   "filesSampledForNames": [
+    "gql-absinthe/test/support/fixtures/language/schema-kitchen-sink.graphql",
+    "gql-federation/query-planner-js/src/__tests__/features/autofrag/supergraphSdl.graphql",
+    "gql-federation/internals-js/src/__tests__/supergraphSdl.graphql",
+    "gql-federation/query-planner-js/src/__tests__/features/basic/supergraphSdl.graphql"
+   ],
+   "roles": {
+    "interface_member_supplied": 4168
+   },
+   "confidence": {
+    "measuredEdges": 4168,
+    "mean": 1,
+    "below_0_7": 0,
+    "below_0_7_pct": 0,
+    "histogram": {
+     "1.0": 4168
+    }
+   },
+   "resolution": {
+    "bothEndpointsInFile": 4168,
+    "bothEndpointsInFile_pct": 100,
+    "bothEndpointsProjectScope": 4168,
+    "bothEndpointsProjectScope_pct": 100,
+    "bothEndpointsIncludingSpecVocabulary": 4168,
+    "bothEndpointsIncludingSpecVocabulary_pct": 100,
+    "endpointBuckets": {
+     "inFile": 8336
+    },
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": [
+    "Foo.one -[overrides]-> Bar.one",
+    "Foo.two -[overrides]-> Bar.two",
+    "Foo.four -[overrides]-> Bar.four"
+   ]
+  },
+  {
+   "type": "instantiates",
+   "count": 0,
+   "distinctFiles": 0,
+   "filesSampledForNames": [],
+   "roles": {},
+   "confidence": {
+    "measuredEdges": 0,
+    "mean": null,
+    "below_0_7": 0,
+    "below_0_7_pct": null,
+    "histogram": {}
+   },
+   "resolution": {
+    "bothEndpointsInFile": 0,
+    "bothEndpointsInFile_pct": null,
+    "bothEndpointsProjectScope": 0,
+    "bothEndpointsProjectScope_pct": null,
+    "bothEndpointsIncludingSpecVocabulary": 0,
+    "bothEndpointsIncludingSpecVocabulary_pct": null,
+    "endpointBuckets": {},
+    "danglingSamples": [],
+    "endpointBucketNote": "every endpoint of every edge of this type, counted once each; buckets sum to 2x count"
+   },
+   "unknownEndpoints": 0,
+   "samples": []
+  }
+ ],
+ "definitions": {
+  "bothEndpointsInFile": "both endpoints bind to a name or qualifiedName in the SAME file's symbol set",
+  "bothEndpointsProjectScope": "each endpoint binds in its own file, or is a bare name exactly ONE project symbol carries — the store's own bare-name fallback",
+  "below_0_7": "the contract requires heuristic edges to be countable; the gate does not separate them, this does"
+ }
+}

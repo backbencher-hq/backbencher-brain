@@ -1,0 +1,102 @@
+{
+  "fixtureId": "c/function-local-type-959",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Documents an OPEN RULING, not a claim that the current behaviour is right. CGD20 (real-c-analyzer.ts:1512) reads 'CGD20: function-local struct definitions are execution artifacts (C-D1) -- no scope, no symbol, no field registration' and skips any struct/union/enum specifier inside a function. Measured over the three declared corpora: 20 function-local named types carrying 65 members, across 15 files, and NONE published -- 7 in redis (41 members), 12 in curl (23), 1 in libgit2 (1). Chasing the last two `contains` misses from contains-vs-clang.ts, which were listpack.c:1920's `struct pick`, turned up the class rather than an instance. The instances that make the ruling matter are USED, not decoration: deps/jemalloc/test/unit/malloc_io.c:14 `struct test_s` (input, expected_remainder, base, expected_errno, expected_errno_name, expected_x -- 4 references), src/ebuckets.c:2230 `struct TestParams` (the parameter table for the benchmark below it), and deps/jemalloc/src/ctl.c:990 `struct container_s`. 'Execution artifact' does not survive contact with C: a struct definition emits no code. The LOCAL VARIABLE is the execution artifact; the struct is a compile-time type definition whose type the block merely limits the VISIBILITY of. Under the current rule a consumer cannot answer how big the type is or who reads its members, and that answer is fully determined at compile time. THE SHARPEST EVIDENCE IS IN THIS LANE'S OWN OUTPUT: the payload already publishes `uses local_type_in_use -> index` and `uses local_type_in_use -> order` -- edges to members of a type it declines to declare. Those are dangling in the strict sense: the source of the use is a function, the target is a member of an undeclared type, and the only way a consumer can resolve `index` is the declaration CGD20 suppressed. A lane that declines to publish a type is not consistent about declining to publish uses OF it. A first pass also counted two curl types as published (`mime.c:1689 struct ContentType`, `cf-socket.c:251 struct tcp_keepalive`); re-checked, that was a MEMBER name coinciding with the type name -- 0 of 20 are published. NOT FIXED HERE because CGD20 is not a C-local slip: it is mirrored at three sites in the shared script/m14/differential.ts and cited by name in the cpp lane's documentation, so un-mirroring it changes what the oracle expects in every lane that has a function-local type. That is a contract change with an owner, and this fixture is the evidence for the ruling rather than a substitute for it.\n\n#961 SETTLES THE OPEN RULING, and this fixture now pins the settled behaviour. It was written deliberately with the disputed row in NEITHER expectRelationships NOR forbidRelationships, because a fixture that hard-codes an open question is worse than one that states it. The question is now answered: a function-local type is published, QUALIFIED by its enclosing function -- `local_type_in_use.pick`, `local_union_and_enum.pick`, `local_union_and_enum.LOCAL_A` -- because 3 of the corpus's 20 local type names collide with a file-scope type (`transfer`, `entry`, `clar_counter`) and the bare name would produce two symbols with one name. The qualification also fixes the member leak CGD20 was papering over, since the members are owned by a real symbol rather than a placeholder.",
+  "expectSymbols": [
+    {
+      "name": "file_scope",
+      "kind": "struct"
+    },
+    {
+      "name": "alias_anon",
+      "kind": "struct"
+    },
+    {
+      "name": "local_type_in_use",
+      "kind": "function"
+    },
+    {
+      "name": "local_union_and_enum",
+      "kind": "function"
+    },
+    {
+      "name": "local_typedef_ok",
+      "kind": "function"
+    },
+    {
+      "name": "local_variable_is_not_a_symbol",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "file_scope",
+      "target": "width",
+      "note": "CONTROL: a file-scope struct's members are published, so the measurement above isolates the FUNCTION-LOCAL case and is not the extractor failing generally."
+    },
+    {
+      "type": "contains",
+      "from": "file_scope",
+      "target": "height",
+      "note": "CONTROL, second member."
+    },
+    {
+      "type": "contains",
+      "from": "alias_anon",
+      "target": "x",
+      "note": "CONTROL: a typedef'd ANONYMOUS struct is published under its alias (#952), so an unnamed local type is a separate question from an unnamed FILE-SCOPE one."
+    },
+    {
+      "type": "uses",
+      "from": "local_type_in_use",
+      "target": "index",
+      "note": "THE EVIDENCE ROW. The payload publishes a use of a member of a type CGD20 declines to declare. Either the type is a real type and belongs in the graph, or this edge is dangling -- and both cannot be right at once. This row is what makes the ruling decidable rather than stylistic."
+    },
+    {
+      "type": "uses",
+      "from": "local_type_in_use",
+      "target": "order",
+      "note": "THE EVIDENCE ROW, second member: `picks[0].order`."
+    },
+    {
+      "type": "uses",
+      "from": "local_union_and_enum",
+      "target": "as_int",
+      "note": "Same shape for a local UNION arm. The ruling has to cover all three spellings -- struct, union, enum -- or the class is only half fixed."
+    },
+    {
+      "type": "uses",
+      "from": "local_variable_is_not_a_symbol",
+      "target": "width",
+      "note": "CONTROL: a function-local VARIABLE is not a symbol and this edge is to a FILE-SCOPE member, so C-D1 is right about the part it was actually reasoning about. Whatever the ruling, this row must not move."
+    },
+    {
+      "type": "contains",
+      "from": "local_type_in_use.pick",
+      "target": "index",
+      "note": "#961: SETTLED, and this row was written to assert NEITHER way while the question was open. A function-local type is a compile-time type and is published, qualified by its enclosing function -- so the edge is `contains local_type_in_use.pick -> index`, and this row now pins it. The `uses local_type_in_use -> index` row above, present since before the ruling, is the evidence that made the ruling decidable: the payload was already publishing a use of a member of a type it refused to declare."
+    },
+    {
+      "type": "contains",
+      "from": "local_type_in_use.pick",
+      "target": "order",
+      "note": "#961: the second member of the qualified local struct. The owner is FUNCTION-QUALIFIED, not the bare tag `pick` -- three of the corpus's local type names collide with a file-scope type, so the bare name would produce two symbols with one name."
+    },
+    {
+      "type": "contains",
+      "from": "local_union_and_enum.anonymous_union",
+      "target": "as_int",
+      "note": "#961: a local UNION, qualified the same way. The source says `union { int as_int; float as_float; } value;` -- an ANONYMOUS union held by a named local variable, so there is no source name to carry the identity and the qualifier is what supplies it. The first draft of this wave fixed struct and enum and missed union, leaving this arm published as the placeholder `anonymous_union`; this row is named per-arm precisely so a two-thirds ruling fails here instead of shipping."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "counter",
+      "note": "CONTROL: `int counter = 0;` inside a block names no symbol. C-D1's reasoning about local VARIABLES is correct and is not what is in question; only type DEFINITIONS are."
+    }
+  ]
+}

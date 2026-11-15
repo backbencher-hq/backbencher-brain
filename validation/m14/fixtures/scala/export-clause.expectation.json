@@ -1,0 +1,166 @@
+{
+  "fixtureId": "scala/export-clause",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `exports` relationship for scala, the type the lane handover recorded as silent. It was a GAP, not an absence: a whole-population census (script/m14/tmp/scala3-ontology-census.ts, 18,965 .scala files, directory walk) counted `export_declaration` at 277 nodes in 158 files, so the language HAS the construct and the analyzer was not reading it. A prose ruling ('Scala has no export construct, visibility modifiers do the work') would have been wrong on 277 measured nodes. Every shape the corpus exercises is pinned here, because the first version of the rule reconstructed only 90 of 277: a declaration-level rule that emits 8 clean edges and drops 187 wildcards and selector lists reads green. SHAPES PINNED \u2014 (1) selector list `export Inner.{cancel, isCancelled}` gives one edge PER selector at the selector's OWN line; (2) `as` renames on export, so `export Inner.cancel as stop` publishes `stop`, not `cancel`, and carries exportedAs; (3) a plain qualified name `export Base.fromInt` publishes the LEAF `fromInt`, with the qualifier in metadata.exportFrom and NOT glued into the target (a dotted target names no symbol in the graph); (4) a WILDCARD `export Inner._` names no member, so the edge names the qualifier's scope at confidence 0.7 with reasonCode export-wildcard \u2014 publishing a member name there would be fabricated, and dropping it entirely would lose 133 of the 277 real declarations; (5) a TOP-LEVEL export clause has no enclosing declaration (39 of the 277 are one) and is sourced at the file-scope sentinel `(script)`, never at a fabricated type name. FORBIDS pin the two failure modes a positional rule produces: no edge whose target is the whole written expression, and no edge carrying the `Inner.` qualifier glued onto the leaf. Line accuracy is pinned per edge because #825 made it load-bearing everywhere else in this analyzer and a multi-line selector list is where it breaks. SIXTH SHAPE, added after a corpus defect: a `_`/`*` selector INSIDE a selector list. `export printUnit.{status => _, _}` means \"status, and everything else on printUnit\"; the first version of the rule published `Copier exports *` at confidence 1.0, and `*` is not a legal Scala identifier, so that edge had an endpoint nothing could ever resolve \u2014 the same class as the `unknown` placeholder banned by rule R7 (validation/m60/ledger.json), reached by a different route. The `Partial` object below pins the correct pair: a named `cancel` AND a 0.7 wildcard on the qualifier, and NO target spelled `*` or `_`.",
+  "expectSymbols": [
+    {
+      "name": "Inner",
+      "kind": "module"
+    },
+    {
+      "name": "Outer",
+      "kind": "module"
+    },
+    {
+      "name": "Renaming",
+      "kind": "module"
+    },
+    {
+      "name": "Everything",
+      "kind": "module"
+    },
+    {
+      "name": "Selector",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "Outer",
+      "target": "cancel",
+      "confidence": 1.0,
+      "line_number": 16,
+      "meta.isExportClause": true,
+      "meta.exportKind": "named",
+      "meta.exportFrom": "Inner",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "Outer",
+      "target": "isCancelled",
+      "confidence": 1.0,
+      "line_number": 16,
+      "meta.isExportClause": true,
+      "meta.exportKind": "named",
+      "meta.exportFrom": "Inner"
+    },
+    {
+      "type": "exports",
+      "from": "Renaming",
+      "target": "stop",
+      "confidence": 1.0,
+      "line_number": 20,
+      "meta.isExportClause": true,
+      "meta.exportKind": "renamed",
+      "meta.exportFrom": "Inner",
+      "meta.exportedAs": "stop"
+    },
+    {
+      "type": "exports",
+      "from": "Renaming",
+      "target": "fromInt",
+      "confidence": 1.0,
+      "line_number": 21,
+      "meta.isExportClause": true,
+      "meta.exportKind": "named",
+      "meta.exportFrom": "Base"
+    },
+    {
+      "type": "exports",
+      "from": "Everything",
+      "target": "Inner",
+      "confidence": 0.7,
+      "line_number": 25,
+      "meta.isExportClause": true,
+      "meta.isWildcard": true,
+      "meta.reasonCode": "export-wildcard",
+      "meta.exportKind": "all_members"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "hidden",
+      "confidence": 1.0,
+      "line_number": 29,
+      "meta.isExportClause": true,
+      "meta.exportFrom": "Inner"
+    },
+    {
+      "type": "exports",
+      "from": "(file)",
+      "target": "isCancelled",
+      "confidence": 1.0,
+      "line_number": 32,
+      "meta.isExportClause": true,
+      "meta.exportFrom": "Inner"
+    },
+    {
+      "type": "exports",
+      "from": "Selector",
+      "target": "b",
+      "confidence": 1.0,
+      "line_number": 35,
+      "meta.isExportClause": true,
+      "meta.exportKind": "renamed",
+      "meta.exportFrom": "Inner"
+    },
+    {
+      "type": "exports",
+      "from": "Partial",
+      "target": "cancel",
+      "confidence": 1.0,
+      "meta.isExportClause": true,
+      "meta.exportKind": "named",
+      "meta.exportFrom": "Inner"
+    },
+    {
+      "type": "exports",
+      "from": "Partial",
+      "target": "Inner",
+      "confidence": 0.7,
+      "meta.isWildcard": true,
+      "meta.reasonCode": "export-wildcard",
+      "meta.exportKind": "all_members"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "Inner.cancel"
+    },
+    {
+      "type": "exports",
+      "target": "Inner.{cancel, isCancelled}"
+    },
+    {
+      "type": "exports",
+      "from": "Outer",
+      "target": "hidden"
+    },
+    {
+      "type": "exports",
+      "target": ""
+    },
+    {
+      "type": "exports",
+      "from": "Everything",
+      "target": "cancel"
+    },
+    {
+      "type": "exports",
+      "target": "*"
+    },
+    {
+      "type": "exports",
+      "target": "_"
+    },
+    {
+      "type": "exports",
+      "from": "(script)",
+      "note": "STALE-PIN ADJUDICATION (task-9, fleet sentinel ruling 2026-10-19): the top-level export clause is a FILE-as-a-unit construct and sources at FILE_MODULE `(file)`; `(script)` is the statement-scope sentinel and must never name a file. This forbid is the strengthened half of the re-pin."
+    }
+  ]
+}

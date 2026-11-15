@@ -1,0 +1,162 @@
+{
+  "fixtureId": "java/receiver-owner-type",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RECEIVER TYPING PAYLOAD (Lead/owner contract 2026-10-18): Java is statically typed, so a call's receiver has a DECLARED type written in the file (field / formal parameter / local variable / a method's return type). The calls edge publishes the bare leaf (`paint`, `clear`) and loses that owner, which is why 828 of 855 unresolved calls at cap 50 are bare member leaves. This fixture pins the ADDITIVE half the lane owns: metadata.owner = the declared type name as written, metadata.ownerEvidence in {field,param,local,return} = WHICH declaration stated it. It also pins the SAME payload on a READS edge (the store channel resolves member rows for uses too): `paramWidget.width` emits `readCase -> width` with owner Widget/param, because a read's target is the member leaf and nothing else names its owner. It pins NO target change (JD20's bare-leaf contract and the differential oracle must be untouched), which is why every expectation here is a `calls` row whose target is still the leaf. Authored from Java semantics before observing the fix. Four positive cases, one per evidence class, each a different declaration form: a field (also via `this.field`), a formal parameter (also a single-type-IMPORTED parameter, which is how most receivers are written: `List` not `java.util.List`), a local variable (declared in the same block), and a method return type (`w.self().paint()`). Three negatives, because the metadata must not guess: a CLASS-QUALIFIED static call (`Helper.help()` \u2014 the receiver already names its owner, so owner would be a second spelling of a fact the call expression has), an INHERITED field (`inheritedWidget` \u2014 declared in the base type, which this file does not state), and a chain through an untyped receiver is covered by the inherited case. A consumer that trusts owner must get NULL, not a guess, exactly where the file is silent. DEPTH UPDATE 2026-10-19: the implicit-this READ (this.fieldWidget) is no longer refused \u2014 the depth campaign's `this` evidence class publishes the enclosing type as the declaring type, so its old forbid became a positive expectation at the same line. The class-qualified static call (`Helper.help()`) and the inherited field (`inheritedWidget`) refusals are UNCHANGED and still forbidded.",
+  "expectSymbols": [
+    {
+      "name": "ReceiverOwnerType",
+      "kind": "class"
+    },
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "paint"
+    },
+    {
+      "name": "self"
+    },
+    {
+      "name": "Helper"
+    },
+    {
+      "name": "fieldCase"
+    },
+    {
+      "name": "paramCase"
+    },
+    {
+      "name": "localCase"
+    },
+    {
+      "name": "returnCase"
+    },
+    {
+      "name": "importedParamCase"
+    },
+    {
+      "name": "thisFieldCase"
+    },
+    {
+      "name": "unknownCase"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "fieldCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "field",
+      "line_number": 25
+    },
+    {
+      "type": "calls",
+      "source": "paramCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "param",
+      "line_number": 29
+    },
+    {
+      "type": "calls",
+      "source": "localCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "local",
+      "line_number": 34
+    },
+    {
+      "type": "calls",
+      "source": "returnCase",
+      "target": "self",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "param",
+      "line_number": 38
+    },
+    {
+      "type": "calls",
+      "source": "returnCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "return",
+      "line_number": 38
+    },
+    {
+      "type": "calls",
+      "source": "importedParamCase",
+      "target": "clear",
+      "meta.owner": "List",
+      "meta.ownerEvidence": "param",
+      "line_number": 46
+    },
+    {
+      "type": "calls",
+      "source": "thisFieldCase",
+      "target": "paint",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "field",
+      "line_number": 55
+    },
+    {
+      "type": "calls",
+      "source": "unknownCase",
+      "target": "toString",
+      "meta.owner": "Object",
+      "meta.ownerEvidence": "param",
+      "line_number": 59
+    },
+    {
+      "type": "uses",
+      "source": "readCase",
+      "target": "width",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "param",
+      "line_number": 50
+    },
+    {
+      "type": "uses",
+      "source": "thisFieldCase",
+      "target": "fieldWidget",
+      "meta.owner": "ReceiverOwnerType",
+      "meta.ownerEvidence": "this",
+      "line_number": 55,
+      "comment": "DEPTH CAMPAIGN 2026-10-19: an implicit-`this` READ's declaring type is the enclosing type. This row was a FORBID under the 2026-10-18 contract (which refused implicit this); the campaign supersedes it with the same static evidence the calls classes use, and the read is now pinned POSITIVELY at the same line so losing it fails."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "help",
+      "meta.owner": "Helper",
+      "comment": "a class-qualified static call's receiver already names its owner; a second owner spelling of it is the redundancy this forbid pins out"
+    },
+    {
+      "type": "calls",
+      "target": "help",
+      "meta.ownerEvidence": "local",
+      "comment": "the static-call receiver is a TYPE, never a local"
+    },
+    {
+      "type": "calls",
+      "target": "paint",
+      "meta.owner": "Base",
+      "comment": "inheritedWidget is declared in the base type, which this file does not state: the only honest owner for it is NONE"
+    },
+    {
+      "type": "calls",
+      "source": "inheritedFieldCase",
+      "target": "paint",
+      "meta.ownerEvidence": "field",
+      "comment": "same rule from the evidence angle: an inherited field cannot supply field evidence this file does not contain"
+    },
+    {
+      "type": "calls",
+      "target": "clear",
+      "meta.owner": "java.util.List",
+      "comment": "the receiver was WRITTEN `List` through a single-type import, so the payload carries the written name, not a reconstructed FQN"
+    }
+  ]
+}

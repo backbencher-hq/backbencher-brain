@@ -1,0 +1,8 @@
+[
+ {"label":"content.refreshFalseOnStale","args":{"mode":"content","query":"staleTwoHost","refresh":false}},
+ {"label":"file.staleNoAutoRefresh","args":{"mode":"file","filePath":"src/stale2.ts"}},
+ {"label":"symbol.refreshFalseOnStale","args":{"mode":"symbol","symbolName":"staleTwoHost","refresh":false}},
+ {"label":"symbols.defaultAutoRefresh","args":{"query":"staleTwoHost"}},
+ {"label":"content.defaultAfterRefresh","args":{"mode":"content","query":"staleTwoHost"}},
+ {"label":"file.afterRefresh","args":{"mode":"file","filePath":"src/stale2.ts"}}
+]

@@ -1,0 +1,87 @@
+{
+  "fixtureId": "javascript/export-claim-cjs",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the CommonJS surface evidence forms on exports rows AND the file-local declaration guard. Markers: `exports = {...}` members -> `exports-object`; `module.exports = {...}` members -> `module-exports-object`; deep member writes -> `deep-member-assignment`. NEGATIVE (the guard): `helper` and `declaredName` are DECLARED IN THIS FILE and also written on module.exports — their rows must carry NO moduleExports marker (the claim exists only where no declaration answers the name; the name model resolves them honestly, and an emitted claim would be refuted by the arbiter, measured as 7 refuted rows and resolved 407->400 before this guard). `module.exports = function(){}` is a CJS default VALUE, not an ES default export: no defaultExportForm marker. NOTE the guard also suppresses an OBJECT-LITERAL METHOD name (`run`): this analyzer symbolizes object-literal method names, so the same test the arbiter applies (a project declaration answers the name) is knowable in the file — those rows are left unmarked and the name model resolves them. That narrows the moduleExports claim population (honest: an emitted claim would be refuted). A VALUE REBIND (`exports = outsideValue`) is NOT claimable: it replaces the surface value and does not create a property named after the value — the measured instance was require.js:908 `exports = factory`, the ONE refuted row of the final arm (form `exports-binding` was outside the arbiter's documented five-form set AND the claim itself was semantically false).",
+  "expectSymbols": [
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "declaredName",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "x",
+      "meta.moduleExportsForm": "exports-object",
+      "meta.moduleExportsProperty": "x"
+    },
+    {
+      "type": "exports",
+      "target": "plain",
+      "meta.moduleExportsForm": "module-exports-object"
+    },
+    {
+      "type": "exports",
+      "target": "run",
+      "meta.moduleExportsForm": null,
+      "comment": "object-literal METHOD name is symbolized by this analyzer -> FILE-DECLARED -> unmarked"
+    },
+    {
+      "type": "exports",
+      "target": "deep",
+      "meta.moduleExportsForm": "deep-member-assignment",
+      "meta.moduleExportsProperty": "deep"
+    },
+    {
+      "type": "exports",
+      "target": "helper",
+      "meta.moduleExportsForm": null,
+      "comment": "FILE-DECLARED name: unmarked, bare, resolvable"
+    },
+    {
+      "type": "exports",
+      "target": "declaredName",
+      "meta.moduleExportsForm": null,
+      "comment": "FILE-DECLARED name: unmarked"
+    },
+    {
+      "type": "exports",
+      "target": "default",
+      "meta.defaultExportForm": null,
+      "comment": "CJS default VALUE is not an ES default-export claim"
+    },
+    {
+      "type": "exports",
+      "target": "outsideValue",
+      "meta.moduleExportsForm": null,
+      "comment": "VALUE REBIND is not a property claim (the final arm's one refuted row: require.js:908 exports=factory)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "helper",
+      "meta.moduleExportsForm": "module-exports-object"
+    },
+    {
+      "type": "exports",
+      "target": "declaredName",
+      "meta.moduleExportsForm": "module-exports-object"
+    },
+    {
+      "type": "exports",
+      "target": "run",
+      "meta.moduleExportsForm": "module-exports-object"
+    },
+    {
+      "type": "exports",
+      "target": "outsideValue",
+      "meta.moduleExportsForm": "exports-binding"
+    }
+  ]
+}

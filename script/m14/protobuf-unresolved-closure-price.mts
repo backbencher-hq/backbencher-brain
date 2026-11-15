@@ -64,7 +64,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const NUM = argv.find((a) => /^[0-9]+$/.test(a)) ?? "842"
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : "/tmp/opencode/pb/unresolved-closure-price.json"

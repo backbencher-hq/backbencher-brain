@@ -1,0 +1,22 @@
+{
+  "fixtureId": "go/framework-detection",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS framework detection from canonical import paths (M37 #604 RSD7 lesson: framework truth is differential-invisible, so it must be fixture-gated). Asserts the EXACT detected set [gin, net_http, gorilla_mux, grpc] — no extra frameworks, no false positives from fmt (stdlib non-framework). Also pins the constructor calls + composite-literal instantiates inside the fixture so relationship emission stays correct alongside.",
+  "expectFrameworks": ["gin", "net_http", "gorilla_mux", "grpc"],
+  "expectSymbols": [
+    { "name": "newRouter", "kind": "function", "visibility": "private" },
+    { "name": "newGin", "kind": "function", "visibility": "private" },
+    { "name": "newServer", "kind": "function", "visibility": "private" },
+    { "name": "main", "kind": "function", "visibility": "private" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "newRouter", "target": "NewRouter" },
+    { "type": "calls", "source": "newGin", "target": "New" },
+    { "type": "calls", "source": "main", "target": "newServer" },
+    { "type": "instantiates", "source": "newServer", "target": "Server" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "newServer", "target": "Addr" }
+  ]
+}

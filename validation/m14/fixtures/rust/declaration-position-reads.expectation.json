@@ -1,0 +1,58 @@
+{
+  "issue": "RUST-MR — a declaration's name is not a read (trait method signature + fn-pointer type parameter)",
+  "note": "Pre-fix, both shapes published a `uses` edge for a name that only declares. The trait method case produced a SELF-EDGE (`uses current_dir -> current_dir`) whenever the name also resolved. Controls: the impl's DEFINITION of the same method and a real parameter reading a file const both keep publishing, so the guards cannot pass by suppressing reads wholesale. SHAPE 2b (added after the full-extent run): a trait method SIGNATURE's parameter declares too — `collectFunctionBindings` collects `function_item` only, so a bodiless signature has no bound-name set and its parameter names reached the read sweep (cargo/src/compiler/mod.rs:142-143, found at full extent over 2,598 files and not by the 550-file sample).",
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Real",
+      "target": "Builder"
+    },
+    {
+      "type": "uses",
+      "from": "current_dir",
+      "target": "SCHEMA",
+      "line_number": 50
+    },
+    {
+      "type": "contains",
+      "from": "Builder",
+      "target": "current_dir",
+      "line_number": 30
+    },
+    {
+      "type": "contains",
+      "from": "Real",
+      "target": "env",
+      "line_number": 53
+    },
+    {
+      "type": "contains",
+      "from": "Runner",
+      "target": "exec"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "current_dir",
+      "target": "current_dir"
+    },
+    {
+      "type": "uses",
+      "from": "env",
+      "target": "env"
+    },
+    {
+      "type": "uses",
+      "target": "schema"
+    },
+    {
+      "type": "uses",
+      "target": "flag"
+    },
+    {
+      "type": "uses",
+      "target": "on_stdout_line"
+    }
+  ]
+}

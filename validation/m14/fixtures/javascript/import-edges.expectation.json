@@ -1,0 +1,49 @@
+{
+  "fixtureId": "javascript/import-edges",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the imports relationship kind + its evidence tier (section B + D, gap J1). ECMAScript module semantics: import { a } from './m' produces a dependency on the module. All import forms — default, named, namespace, and CJS require — must carry the import_based tier. Pre-fix the classifier had no 'imports' branch (TS T1 / JVM K8 finding), so every dependency edge fell to usage_contextual.\n\nTHE NAMED TARGET IS THE DECLARED NAME, NOT THE LOCAL BINDING. `import { b as c }` refers to `b`; `c` is a name in THIS file. Publishing the local binding as the edge target attached the row to whatever declaration shared that spelling — measured on a two-file fixture with `draw as render` beside `class Widget { render() {} }`: the import bound to `Widget.render`, a wrong binding. The local binding is not lost: `imports[]` carries it (javascript/import-alias-binding pins `beta`), and `metadata.declaredName` carries the source name. Only a NAMED specifier moves; a DEFAULT import keeps `<module>:<binding>` because its local binding names no declaration (the module exports `default`, which is in the symbol denylist) and the module-aware resolver is the only route to the default export; a namespace import keeps `<module>:*`.",
+  "expectSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "./m:def",
+      "meta.evidenceClass": "import_based",
+      "note": "DEFAULT import: the local binding names no declaration (`default` is in the symbol denylist), so the row keeps the module-qualified spelling and the module-aware resolver reaches the target module's default export"
+    },
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "a",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "b",
+      "meta.evidenceClass": "import_based",
+      "note": "`{ b as c }` — the DECLARED member; the local binding `c` is pinned by import-alias-binding's imports[] row and forbidden below"
+    },
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "./m3:*",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "./cjs:*",
+      "meta.evidenceClass": "import_based"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "import-edges",
+      "target": "c",
+      "note": "the LOCAL BINDING must not be the edge target — that spelling is what the store's name pass can attach to a same-named declaration in another file"
+    }
+  ]
+}

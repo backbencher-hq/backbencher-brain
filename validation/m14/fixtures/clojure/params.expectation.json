@@ -1,0 +1,20 @@
+{
+  "issue": "CLJ1",
+  "note": "C10/C11: extractParams reads THE parameter vector (first direct vec_lit), not every vec child. `leaky` pins the body-vector leak by forbidding y/z (pre-fix output was [x, y, z]); `rest-args` pins `&` never becoming a parameter name (pre-fix: [\"&\",\"args\"]); `destructured` pins bindings resolved through map/vector destructuring (:keys, :as, {x :x}, nested [c d]); `multi` pins multi-arity clause collection.",
+  "expectSymbols": [
+    { "name": "rest-args", "kind": "function" },
+    { "name": "leaky", "kind": "function" },
+    { "name": "destructured", "kind": "function" },
+    { "name": "multi", "kind": "function" }
+  ],
+  "expectParameters": [
+    { "symbol": "rest-args", "parameters": [{ "name": "args" }] },
+    { "symbol": "leaky", "parameters": [{ "name": "x" }] },
+    { "symbol": "destructured", "parameters": [{ "name": "a" }, { "name": "b" }, { "name": "m" }, { "name": "x" }, { "name": "c" }, { "name": "d" }] },
+    { "symbol": "multi", "parameters": [{ "name": "x" }, { "name": "y" }] }
+  ],
+  "forbidParameters": [
+    { "symbol": "rest-args", "names": ["&"] },
+    { "symbol": "leaky", "names": ["y", "z"] }
+  ]
+}

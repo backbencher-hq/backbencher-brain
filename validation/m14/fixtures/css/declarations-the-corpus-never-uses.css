@@ -1,0 +1,14 @@
+@counter-style thumbs { system: cyclic; symbols: "X"; suffix: " "; }
+@custom-media --narrow (max-width: 400px);
+@custom-media --wide (min-width: 900px);
+@font-feature-values Body Text {
+  @styleset { nice: 12; }
+}
+@font-face { font-family: "Body Text"; src: url(body.woff2); font-feature-settings: "nice" }
+@scope (.card) to (.content) {
+  .card { color: red; }
+}
+ul { list-style: thumbs; }
+@media (--narrow) { .a { color: red; } }
+@media (--wide) { .b { color: blue; } }
+.badge { font-feature-settings: "nice"; }

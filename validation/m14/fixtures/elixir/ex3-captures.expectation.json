@@ -1,0 +1,18 @@
+{
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Caps.run/0",
+      "target": "double",
+      "line_number": 2,
+      "meta.callArity": 1
+    },
+    {
+      "type": "calls",
+      "from": "Caps.remote/0",
+      "target": "Caps.double",
+      "line_number": 3,
+      "meta.callArity": 1
+    }
+  ]
+}

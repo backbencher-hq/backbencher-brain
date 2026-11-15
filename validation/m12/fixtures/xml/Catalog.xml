@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?catalog-processing?>
+<catalog xmlns="urn:catalog" xmlns:book="urn:book" version="1">
+  <book:book id="b1" available="true">
+    <book:title>AST Guide</book:title>
+    <book:author name="Ada" />
+  </book:book>
+</catalog>

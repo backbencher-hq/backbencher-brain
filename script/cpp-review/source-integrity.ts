@@ -95,10 +95,73 @@ function checkControlBytes(buf: Buffer): Finding[] {
  * both blind spots are recorded as the `d6-ignores` self-test arms rather than papered
  * over — a detector that cannot be quoted as stronger than it is would be a second
  * honesty problem in a gate written to prevent one.
+ *
+ * ★ M65 — THIS COPY WAS NOT HELD TO THE ALGORITHM, AND THE DIVERGENCE WAS MEASURED.
+ * The scanner below used to split the file into lines and match a `/…/` run on EVERY
+ * line, comments included. The original STRIPS block comments, line comments and string
+ * literals first — its own comment says "COMMENTS ARE NOT CODE, and a line scanner that
+ * cannot tell the difference reports the same false positive twice over", and it was
+ * written for exactly this failure ("two one-line doc comments ... took D6 from
+ * 0 to 2 in a file that contains no regex at all"). So the copy was stricter than the
+ * rule it restates, and it fired on prose: the analyzer's own comment at line 114
+ * documents the regex it REMOVED (written there as a `replace` call over a character
+ * class), and the gate reported that documentation as a live regex literal.
+ *
+ * MEASURED at M65, both algorithms over the same bytes of `real-cpp-analyzer.ts`:
+ *   register D6 (strips comments+strings)  -> 0 findings   <- the analyzer's zero-regex claim is TRUE
+ *   this gate, before this fix (line-only) -> 3 findings   at lines 1, 114 and 197
+ * The three are comment prose. The gate exited 1 while `docs/analyzers/cpp.md` recorded
+ * it as "PASS, 0 findings, 0 blind assertions".
+ *
+ * (This comment deliberately never writes a slash-star or star-slash pair outside the
+ * delimiters: the same inattentive prose that hid the original defect would close this
+ * block early, which is exactly how the first attempt at this fix failed to compile.)
+ *
+ * The character walk below is the register's own, so the two cannot drift again: strip
+ * block comments, strip line comments, copy string/template literals verbatim (so a `/`
+ * inside one is not code), then apply the original's position rule to what remains.
  */
+function stripCommentsAndStrings(text: string): string[] {
+  const out: string[] = []
+  let inBlock = false
+  for (const raw of text.split("\n")) {
+    let code = ""
+    let j = 0
+    while (j < raw.length) {
+      if (inBlock) {
+        if (raw.charCodeAt(j) === 42 && raw.charCodeAt(j + 1) === 47) { inBlock = false; j += 2; continue }
+        j++
+        continue
+      }
+      const c0 = raw.charCodeAt(j)
+      const c1 = raw.charCodeAt(j + 1)
+      if (c0 === 47 && c1 === 47) break            // `//` to end of line
+      if (c0 === 47 && c1 === 42) { inBlock = true; j += 2; continue }   // `/*`
+      if (c0 === 34 || c0 === 39 || c0 === 96) {   // " ' ` — copy verbatim so a `/` inside is not code
+        const q = raw[j]
+        code += q; j++
+        while (j < raw.length) {
+          if (raw.charCodeAt(j) === 92) { code += raw[j] + (raw[j + 1] ?? ""); j += 2; continue }
+          code += raw[j]
+          if (raw[j] === q) { j++; break }
+          j++
+        }
+        continue
+      }
+      code += raw[j]; j++
+    }
+    out.push(code)
+  }
+  return out
+}
+
 function checkRegexLiterals(text: string): Finding[] {
   const out: Finding[] = []
-  text.split("\n").forEach((l, i) => {
+  const lines = stripCommentsAndStrings(text)
+  lines.forEach((l, i) => {
+    // A line that is now empty was comment-only, or was inside a block comment: it contributes
+    // nothing, which is the original's rule rather than an extra one.
+    if (!l.trim()) return
     const m = l.match(/\/(?:[^/\\\n]|\\.)+\/[gimsuy]*/g)
     if (!m) return
     for (const mm of m) {
@@ -163,7 +226,10 @@ async function main() {
 
   // ---- SELF-TEST: the gate must be able to fail, on each assertion separately.
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cpp-src-integrity-"))
-  const selfTest: Array<{ name: string; injected: boolean; findings: number; expectedFound?: boolean; why?: string }> = []
+  // `baseline`/`delta` are carried because the expectation is a DELTA over the file's own findings,
+  // not an absolute count (M65) — an arm that asserts `0` is an assertion about the baseline and
+  // can never pass on a file that already has a finding.
+  const selfTest: Array<{ name: string; injected: boolean; findings: number; baseline?: number; delta?: number; expectedFound?: boolean; why?: string }> = []
   try {
     const injections: Array<{ name: string; make: (t: string) => string; expectFound?: boolean; why?: string }> = [
       { name: "one raw NUL byte (the D24 revert)", make: (t) => t.replace("const relKey = `${_owner}\\u0000${s.name}`", "const relKey = `${_owner}\u0000${s.name}`") },
@@ -172,15 +238,21 @@ async function main() {
       { name: "a RegExp construction", make: (t) => `${t}\nconst R = new RegExp("a" + "b")\n` },
       { name: "an unbalanced brace (a TS parse error)", make: (t) => `${t}\nfunction unclosed( {\n` },
       {
-        name: "d6-blind-spot: a ONE-LINE doc comment reads as a literal",
+        // ★ M65: THIS ARM'S EXPECTATION WAS INVERTED WITH THE SCANNER. It used to expect the
+        // one-line doc comment to BE reported (that was D6's blind spot, faithfully copied). The
+        // register's D6 strips comments, so after this fix the comment is correctly NOT reported,
+        // and the arm now pins the STRIP: a `/** … */` line must add no finding. It is kept as the
+        // control that would catch a regression back to a line-only scanner.
+        name: "d6-strip: a ONE-LINE doc comment adds no finding (comments are not code)",
         make: (t) => `${t}\n/** a one-line doc comment */\n`,
-        why: "This is D6's measured blind spot, and it is a LIMITATION rather than a licence: D6 is a character test, not a parse, so a slash-delimited run anywhere — inside a comment, inside a string — counts when the preceding non-space character is in its position set. Two of the three D6 findings the ontology batches introduced were exactly this (a one-line doc comment, and a grammar rule quoted verbatim out of the fork's grammar.js), and both were closed by WORDING rather than by weakening the detector.",
+        expectFound: false,
+        why: "The register's D6 strips block comments, line comments and string literals before scanning — its own comment says 'COMMENTS ARE NOT CODE, and a line scanner that cannot tell the difference reports the same false positive twice over'. A copy that matches on raw lines is stricter than the rule it restates, and it fired on real prose: the analyzer's comment at line 114 documents the regex it REMOVED. This arm is the control that would catch a regression back to the line-only scanner.",
       },
       {
-        name: "d6-blind-spot: a literal that only ever appears as a STRING is not counted",
+        name: "d6-strip: a literal that only ever appears as a STRING is not counted",
         make: (t) => `${t}\nconst PATTERN = "[a-z]"\n`,
         expectFound: false,
-        why: "The other half of the same limitation, recorded so this gate is never quoted as stronger than it is: D6's position set does not include `=`, so a regular expression that appears only as a string is invisible to it. `new RegExp` and a bare `RegExp(` call are counted separately for that reason, and that count is 0 in this file.",
+        why: "The other half of the same rule, recorded so this gate is never quoted as stronger than it is: a regular expression that appears only as a string literal is not a regex literal, so the strip removes it. `new RegExp` and a bare `RegExp(` call are counted separately for that reason, and that count is 0 in this file.",
       },
     ]
     for (const inj of injections) {
@@ -190,7 +262,14 @@ async function main() {
         continue
       }
       const f = await inspect(mutated)
-      selfTest.push({ name: inj.name, injected: true, findings: f.length, expectedFound: inj.expectFound !== false, why: inj.why })
+      // ★ M65: THE EXPECTATION IS A DELTA, NOT AN ABSOLUTE. The `expectedFound: false` arm used to
+      // assert `findings === 0`, which is an assertion about the BASELINE rather than about the
+      // injection — so on any file that already has a finding (this one had 3, all comment prose the
+      // old scanner flagged) the arm could never pass, and a permanently red self-test certifies
+      // nothing. The arm's real claim is "this injection adds NO finding", which is
+      // `findings === baselineFindings`, and that is what is now asserted. `delta` is carried so the
+      // receipt shows what the injection actually did.
+      selfTest.push({ name: inj.name, injected: true, findings: f.length, baseline: findings.length, delta: f.length - findings.length, expectedFound: inj.expectFound !== false, why: inj.why })
       fs.writeFileSync(path.join(tmp, "probe.ts"), mutated)
     }
   } finally {
@@ -206,9 +285,12 @@ async function main() {
   let blind = 0
   for (const s of selfTest) {
     const want = s.expectedFound !== false
-    const ok = s.injected && (want ? s.findings > 0 : s.findings === 0)
+    // A positive arm must ADD a finding over the baseline; a negative arm must add NONE. Both are
+    // deltas, so neither is hostage to whatever the file already contains (M65).
+    const ok = s.injected && (want ? (s.delta ?? s.findings) > 0 : (s.delta ?? s.findings) === 0)
     if (!ok) blind++
-    console.log(`  ${ok ? "PASS" : "FAIL"}  ${s.name} — injected=${s.injected} findings=${s.findings} expectedFound=${want}`)
+    const delta = s.delta === undefined ? "" : ` delta=${s.delta > 0 ? "+" : ""}${s.delta} (baseline ${s.baseline})`
+    console.log(`  ${ok ? "PASS" : "FAIL"}  ${s.name} — injected=${s.injected} findings=${s.findings}${delta} expectedFound=${want}`)
     if (s.why) console.log(`      why:   ${s.why}`)
   }
 

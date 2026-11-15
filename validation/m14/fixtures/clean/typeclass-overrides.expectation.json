@@ -1,0 +1,113 @@
+{
+  "comment": "Clean has no `override` keyword; it has typeclasses. `class Show a where show ::` declares `show` ABSTRACT and `instance Show Thing where show t = ...` supplies it, so at type `Thing` the compiler selects the instance's `show` in place of the class's. That is the relation the F# lane reads off the `override` keyword (real-fsharp-analyzer.ts:656-669) and the Haskell lane's doc records as `overrides T.m -> C.m` (haskell.md:57). Clean has no keyword to probe, so the pairing is derived from two `name` fields. Measured before the branch existed: 1,036 instance members across 78 classes at the 2,181-file corpus (`script/m14/clean-extends-overrides-probe.ts`, instrument B1), so the type was a GAP and not an absence. The guard is IN-FILE — `Forbidden` below is the negative half: an instance for an IMPORTED class emits no `overrides`, because the edge claims this member implements THAT CLASS MEMBER and an un-read declaration is not a claim the analyzer may make.",
+  "expectSymbols": [
+    {
+      "name": "Show",
+      "kind": "interface",
+      "comment": "a class_declaration publishes as an Interface"
+    },
+    {
+      "name": "show",
+      "kind": "method",
+      "ownerName": "Show",
+      "comment": "the class member — ABSTRACT, no body"
+    },
+    {
+      "name": "Thing::instance",
+      "kind": "impl",
+      "comment": "the instance container, NAMESPACED under its target (`<target>::instance`, the Rust lane's `<target>::impl`). It used to be named exactly `Thing`, which made this file a second DECLARATION of `Thing` — a phantom, and the reason 366 `references` rows on the 312-file population were ambiguous. The members below keep the NOMINAL owner, so every edge endpoint is unchanged."
+    },
+    {
+      "name": "show",
+      "kind": "method",
+      "ownerName": "Thing",
+      "comment": "the instance member that supplies Show.show"
+    },
+    {
+      "name": "Int::instance",
+      "kind": "impl",
+      "comment": "`instance Show Int` — the container is `Int::instance`, and its member is still owned by `Int`"
+    },
+    {
+      "name": "show",
+      "kind": "method",
+      "ownerName": "Int"
+    },
+    {
+      "name": "Bool::instance",
+      "kind": "impl"
+    },
+    {
+      "name": "size",
+      "kind": "method",
+      "ownerName": "Bool",
+      "comment": "`size` is NOT a Show member, so this instance member overrides nothing"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Thing.show",
+      "target": "Show.show",
+      "line_number": 43,
+      "comment": "instance-member -> class-member, QUALIFIED on both sides, on the member's OWN name line (M59.O2)"
+    },
+    {
+      "type": "overrides",
+      "from": "Int.show",
+      "target": "Show.show",
+      "line_number": 46,
+      "comment": "two instances of one class: two edges at two lines. A per-set dedupe keyed on source|type|target would keep one and fail the other"
+    },
+    {
+      "type": "implements",
+      "from": "Thing",
+      "target": "Show",
+      "line_number": 42,
+      "comment": "the instance-level edge, unchanged: `overrides` is the MEMBER refinement of it, not a replacement"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "Thing.show",
+      "target": "Show.show",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Bool.size",
+      "comment": "`size` is not in Show's member set, so this instance member overrides NOTHING — the edge would name a class member that does not exist"
+    },
+    {
+      "type": "overrides",
+      "target": "Show.size",
+      "comment": "the mirror of the above: no edge may point at a class member the class does not declare"
+    },
+    {
+      "type": "overrides",
+      "from": "Show.show",
+      "comment": "the direction is instance-member -> class-member, never the reverse: the class member is abstract and overrides nothing"
+    },
+    {
+      "type": "overrides",
+      "from": "show",
+      "comment": "endpoints are QUALIFIED. A bare `show` collides with the module-level `show` in every consumer, so an unqualified edge is a different defect and is forbidden too"
+    },
+    {
+      "type": "overrides",
+      "from": "Sized.size",
+      "comment": "SELF-EDGE REFUSAL. `instance Sized a` publishes no symbol of its own (its target is the type VARIABLE `a`), so its members are attributed to the CLASS and `instanceType === className`. The composed endpoints would be identical and the edge would read `Sized.size -> Sized.size` — a declaration overriding itself. Measured on the corpus before this guard: 60 such self-edges, every one from a polymorphic instance of a locally-declared class (`instance List [] a where _cons …` in clean-stdlib/_SystemStrictLists.icl)."
+    },
+    {
+      "type": "overrides",
+      "target": "Sized.size",
+      "comment": "the mirror of the above: the class member `Sized.size` is abstract and overrides nothing in either direction"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

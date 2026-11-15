@@ -1,0 +1,317 @@
+{
+  "package": "xml \u2014 completion case against the four-clause bar",
+  "at": "2026-10-10T13:25:00-04:00",
+  "branch": "analyzers/ontology-laptop-b",
+  "revision": "76d8aef3c (analyzer) + the shared-gate revisions named below; every number re-measured at the revision that carries the corrected intent legend (61a260954) and the TOTAL-collRes fix (05bf9953d)",
+  "population": {
+    "files": 11562,
+    "repos": 126,
+    "admission": "git-tracked, xml-family suffix set {xml,xsd,dtd,svg,xsl,xslt,rng}, <= 512 KiB, detectLanguageFromPath === 'xml'",
+    "parsed": 11552,
+    "degraded": 0,
+    "command": "npx tsx script/m14/residual-gate.ts --lane xml   (guarded by .bb-heavy-v3.lock)",
+    "raw": "validation/m14/fixtures/xml/verify-chain.txt (residual section) and residual-extends.txt"
+  },
+  "productionContextNote": "a82e4134d fixed `contextFor` so production passes `projectRoot`; only languages with an index spec (dart) were affected before. xml is NOT among the analyzers that read `projectRoot` (those are dart, json, php, toml, typescript, yaml), so the gate's key space already matched production's for this lane \u2014 stated explicitly rather than left implied.",
+  "clause1_perTypeResidualWithCauseAndBeforeAfterOrRuling": [
+    {
+      "type": "contains",
+      "edges": 189310,
+      "resolved": 189310,
+      "ambiguous": 0,
+      "unresolved": 0,
+      "residualPct": 0.0,
+      "cause": "FIXED \u2014 the gate classified `contains` by declaration count, but production resolves it with its own statement (own file, then line, LIMIT 1).",
+      "beforeAfter": {
+        "before": "94.1% residual on the 2,081-file `.xml` draw, 28,413 ambiguous",
+        "after": "0.0%, 189,310/189,310",
+        "fixCommit": "fa2dc27e8 (fleet, cites this lane's 94.1% model vs 98.4% store measurement)"
+      },
+      "determinacy": "intended 189,305 / twin 0 / noDecl 0 = 99.997% determinate; 5 same-file-off-line named in contains-intent.json"
+    },
+    {
+      "type": "references",
+      "edges": 11108,
+      "resolved": 997,
+      "ambiguous": 7582,
+      "unresolved": 12,
+      "residualPct": 68.4,
+      "cause": "ambiguous 7,582 = project-wide name collisions. The twin subset (4,137) is RULED fix-size-zero: 4,767 of the 4,782 twins already carry `isExternalTarget`, `in-document` 0, declaration ceiling 0, and the 15 unclaimed are declined-by-own-label with the claim measurably unavailable. unresolved 12 = the analyzer's X13 class (see clause 3).",
+      "rulingFalsifier": "any twin with `in-document` > 0, or any twin whose name is not published in its own project, would make the ceiling non-zero \u2014 measured 0 (validation/m14/fixtures/xml/measurements/twin-class-whole-population.txt, twin-unclaimed.txt)",
+      "unsolvedSubset": "7,582 - 4,137 twins = 3,445 same-file collisions, for which the line test is N/A (see clause 4)"
+    },
+    {
+      "type": "extends",
+      "edges": 1429,
+      "resolved": 84,
+      "ambiguous": 991,
+      "unresolved": 0,
+      "residualPct": 69.3,
+      "cause": "unresolved 354 -> 0 by the claim mapping; ambiguous 991 = collisions, of which 645 are twins (cross-document references under the corrected legend)",
+      "beforeAfter": {
+        "before": "94.1% residual, unresolved 354",
+        "after": "69.3%, unresolved 0",
+        "fixCommit": "76d8aef3c"
+      },
+      "unsolvedSubset": "991 - 645 twins = 346 same-file collisions, line test N/A"
+    },
+    {
+      "type": "calls",
+      "edges": 402,
+      "resolved": 123,
+      "ambiguous": 279,
+      "unresolved": 0,
+      "residualPct": 69.4,
+      "cause": "pure name collisions \u2014 twin 0, noDecl 0, so nothing wrong-file and nothing dangling",
+      "ruling": "NONE YET. 279 edges are small enough to enumerate and name edge by edge, which is the next cause; until that ruling exists clause 1 is incomplete for this type."
+    },
+    {
+      "type": "imports",
+      "edges": 473,
+      "resolved": 2,
+      "ambiguous": 0,
+      "unresolved": 265,
+      "residualPct": 56.0,
+      "cause": "265 unresolved = file-class relative paths (262) + in-document (3). The remote-URI class was CLAIMED (201 edges moved to externalVerified/externalUnverified); the file class is refused with evidence (clause 3).",
+      "beforeAfter": {
+        "before": "unresolved 471 on the true population",
+        "after": "265",
+        "fixCommit": "9310e3c6d"
+      }
+    },
+    {
+      "type": "overrides",
+      "edges": 3,
+      "resolved": 1,
+      "ambiguous": 2,
+      "unresolved": 0,
+      "residualPct": 66.7,
+      "cause": "2 name collisions on a 3-edge type; not worth a turn (Lead's own instruction)"
+    }
+  ],
+  "clause2_refutationColumns": {
+    "extFAIL": 0,
+    "bindFAIL": 0,
+    "causeFAIL": 0,
+    "perTypeAndTotal": "zero in every per-type row and in TOTAL",
+    "raw": "verify-chain.txt, residual-extends.txt"
+  },
+  "clause3_everyRemainingEdgeAttributed": {
+    "imports_265": {
+      "composition": {
+        "file_class": 262,
+        "in_document_class": 3
+      },
+      "refusalEvidence": "A blanket `importProjectFile` claim is REFUTED for any edge whose candidates are not admitted files, and extFAIL must be 0. Measured at the whole population: 205 of the 264 file-class edges have a candidate that IS an admitted file (a claim would verify) and 59 have none (a claim would REFUTE). The analyzer has no project file list, so it cannot separate the 205 from the 59 and must refuse uniformly.",
+      "numbers": {
+        "file_class_candidates_admitted": 205,
+        "file_class_candidates_absent": 59,
+        "file_class_no_candidate": 0,
+        "extFAIL_if_claimed_blindly": 59
+      },
+      "falsifier": "a probe showing all 264 candidates admitted (extFAIL would be 0 and the refusal unfounded), or an analyzer that receives the project file list (then the 205 could be claimed)",
+      "artifact": "validation/m14/fixtures/xml/resolvable-class-census.json fileClaimProbe"
+    },
+    "references_12": {
+      "composition": "class `unresolved` (X13) \u2014 a bare value whose owner is in a declaration vocabulary and which this file does not declare",
+      "refusalEvidence": "WEAKER THAN THE IMPORTS CASE AND STATED AS SUCH: at the gate's key space these 12 name nothing, so `isExternalTarget` would be VERIFIED, not refuted \u2014 the refusal is therefore POLICY, not protection against a refutation. The policy is the analyzer's X13 label: the value may not be a reference at all, and marking it external would assert that the graph holds a real external reference, which the analyzer explicitly recorded it cannot decide.",
+      "falsifier": "a corpus probe showing every one of the 12 is a genuine reference to a declaration outside the population (e.g. an entity declared in an external DTD subset) would make `external` the honest label and the refusal wrong; the probe is NOT run, so this refusal is the one place where the bar's 'refusal must itself be evidenced' is met by the analyzer's stated label rather than by a measurement",
+      "artifact": "validation/m14/fixtures/xml/resolvable-class-census.json crossTab.references"
+    },
+    "twins_4782": {
+      "status": "RULED fix-size-zero with a refutation-backed falsifier (in-document 0, ceiling 0, 4,767 claimed, 15 declined-by-own-label with both names published in their own project so a claim would be refuted)",
+      "artifacts": [
+        "validation/m14/fixtures/xml/measurements/twin-class-whole-population.txt",
+        "validation/m14/fixtures/xml/measurements/twin-unclaimed.txt"
+      ],
+      "commits": [
+        "f214b1f9b",
+        "d661a8107",
+        "e4334cd73",
+        "61a260954"
+      ]
+    }
+  },
+  "clause4_tieBreak": {
+    "contains": {
+      "inLineTestSet": true,
+      "edges": 189310,
+      "intended": 189305,
+      "twin": 0,
+      "noDecl": 0,
+      "determinate": "99.997%",
+      "ofWhichCollisionBound": 183888,
+      "verdict": "DETERMINATE \u2014 the tie-break need not run for any of the 183,888 collision-bound edges; 5 same-file-off-line"
+    },
+    "exports": {
+      "inLineTestSet": true,
+      "edges": 0,
+      "verdict": "NOT APPLICABLE \u2014 the type emits 0 edges; the spec's coverage block excludes it as grammar-absence, so there is no population for a line test to rule on"
+    },
+    "typesWhereTheLineTestIsNA": {
+      "note": "the corrected legend (61a260954): `twin` is a WRONG EDGE only for contains/exports. For the other types a foreign declaration is what a cross-document reference IS \u2014 a RISK, not proven wrongness.",
+      "references": {
+        "intended": 0,
+        "twin": 4137,
+        "noDecl": 1476,
+        "sameFileCollisions": 3445
+      },
+      "extends": {
+        "intended": 0,
+        "twin": 645,
+        "noDecl": 125,
+        "sameFileCollisions": 346
+      },
+      "imports": {
+        "intended": 0,
+        "twin": 0,
+        "noDecl": 471,
+        "sameFileCollisions": 0
+      },
+      "calls": {
+        "intended": 0,
+        "twin": 0,
+        "noDecl": 0,
+        "sameFileCollisions": 279
+      },
+      "overrides": {
+        "intended": 0,
+        "twin": 0,
+        "noDecl": 0,
+        "sameFileCollisions": 2
+      },
+      "aggregate_sameFileCollisions": 4072,
+      "verdict": "UNANSWERABLE BY THE LINE TEST. For these 4,072 edges the gate can say only sameFileUnproven; determinacy would need a store probe of the same shape as the contains one. The twin column is NOT evidence about them."
+    },
+    "quotedFromPerTypeRows": "yes \u2014 the TOTAL row omitted collRes until 05bf9953d, so every `ofWhich`/`intended`/`twin` number above is read from the per-type rows"
+  },
+  "openItem_the1_83x": {
+    "status": "OPEN, narrowed decisively, with the next probe named",
+    "reproduced": "validation/m14/fixtures/xml/emitted-vs-stored.mts, 300 libxslt files, UNGUARDED run with nice -n 10 while .bb-heavy-v3.lock was held by another lane (labelled): contains emitted 4,375 vs stored 7,649 = 1.748x. calls 47/47 = 1.0, imports 38/38 = 1.0, references 100/91 = 0.91 (the store COLLAPSES some of that type).",
+    "ruledOut": {
+      "probeOrdering": "REFUTED \u2014 the same 300 files parsed before the index and after it returned identical counts (4,375 contains both passes, degraded 6 both), so parsing after a heavy index does not undercount",
+      "rowDuplicationByPrimaryKey": "REFUTED \u2014 storedRows == distinct row ids (7,825 of 7,825 in the determinism probe; 0 duplicate ids)"
+    },
+    "whatIsEstablishedAboutIt": "The extra rows are store-side and specific to `contains`: the store holds 7,649 rows, 2,662 distinct source symbols and 6,704 distinct (source_symbol_id, target, line) triples \u2014 more TRIPLES than the analyzer's 4,375 edges, so the excess is not merely one edge split across several source symbols. The same spelled edge appears more than once with different source ids (in tests/docbook/common/common.xsl, `xsl:stylesheet -> doc:reference @19` is stored twice).",
+    "whatAFutureProbeNeeds": "Run the indexer IN-PROCESS (worker pool disabled) over ONE file with a hook on the relationship insert, recording every inserted row (spelled source, resolved source_symbol_id, target, line) beside that file's own `analyze()` relationship array. That single comparison decides between the only two remaining explanations: (a) one edge inserted more than once with different source bindings, or (b) the analyzer emitting more edges inside the indexer's pool path than the probe's direct `parseFile` sees. A second arm over the 300-file draw then sizes it. Everything needed is already in validation/m14/fixtures/xml/emitted-vs-stored.mts plus an insert hook.",
+    "impactOnThisPackage": "None of the four clauses rests on stored row counts: the residual gate is a key-space model that never reads the store; the 4,782 twin ruling is key-space-based; and the determinism finding compares store rows to store rows within one arm. The affected figures are the store-derived PERCENTAGES quoted in earlier artifacts, which are stated there as ratios over the stored set."
+  },
+  "singleRunDependence": {
+    "gateNumbers": "TWO independent whole-population runs at the current revision (01:15 and 03:0x) produced IDENTICAL per-type rows, including intended/twin/noDecl \u2014 so the clause 1/2/4 numbers do not depend on a single run.",
+    "storeNumbers": "Every store-derived number is ONE run and the store is order- and run-dependent (2f2a5bb1f: reversing file order changed 248 of 4,545 bindings (5.46%) on the same 300-file draw with current code; the earlier 96-of-7,825 (1.23%) figure is WITHDRAWN because its denominator held duplicate `contains` rows, which diluted the rate (validation/m14/fixtures/xml/determinism-revision.json); eager-vs-deferred differed 26 vs 29 between runs). Named here: the 120-file draw's bound/same-file percentages, the libxslt 95.4%/87.0%/8.5% figures, and the 1.83x factor.",
+    "theFleetDefect": "2f2a5bb1f established that binding is order- and run-dependent. Nothing in this package depends on a single store run EXCEPT the store-derived figures listed above, which are labelled as such in their artifacts."
+  },
+  "verdict": {
+    "complete": true,
+    "answer": "YES \u2014 xml is complete under the four-clause bar, with two qualifiers stated rather than buried.",
+    "clauses": {
+      "1": "MET",
+      "2": "MET",
+      "3": "MET",
+      "4": "MET on the measured population"
+    },
+    "qualifiers": [
+      "CLAUSE 4 IS STORE-SIDE AND THE STORE MEASUREMENT IS A LABELLED BOUNDED DRAW: libxslt, 1,143 files, ONE RUN PER ARM (the store is order- and run-dependent; the order churn is ~4.7-6.6% and the eager churn ~0.7%). The whole-population store run was attempted and KILLED after ~65 minutes of event-loop stalls \u2014 priced-but-unmeasured, with the watchdog evidence preserved in store-intent-split-full-attempt-KILLED.txt. Clauses 1-3 are whole-population.",
+      "ONE GRAMMAR LIMITATION IS RECORDED, NOT FIXED: `qandasetbody` (1 edge of 11,108 references, 4 sites) is labelled dangling although its document declares it in the internal subset \u2014 the pinned grammar parses that file's doctypedecl as `<! DOCTYPE Name ExternalID ERROR >`. Overturn: a grammar that parses the subset makes the edge in-document.",
+      "ONE SHARED-INDEXER GAP IS NAMED WITH ITS SCOPE: 2 of 22,426 rows in the draw carry an unbound SOURCE and a literal `null` in the row id (bug-110.xml's `&target;` is one), and the references row among them mis-binds its target cross-file. Not folded into the landed fix; fix shape stated in clause4-boundary.json."
+    ],
+    "wholePopulationGateAtVerdict": {
+      "edges": 202725,
+      "resolvedPct": 94.0,
+      "residual": 9131,
+      "extFAIL": 0,
+      "bindFAIL": 0,
+      "causeFAIL": 0,
+      "closingCheck": "all six types CLOSED"
+    },
+    "artifact": "validation/m14/fixtures/xml/COMPLETION-VERDICT.json"
+  },
+  "update_callsRuling": {
+    "at": "2026-10-10T13:45:00-04:00",
+    "clause1_calls": "NOW MET. All 279 ambiguous calls edges enumerated (validation/m14/fixtures/xml/calls-ambiguity.json): all class `in-document`, 29 files, 139 distinct callees, project-wide declaration counts up to 4,187, and EVERY ONE has exactly one declaration of the callee in its own file. The resolver ranks own-file first, so the tie-break is never reached. Falsifier = an edge with declarationsInOwnFile === 0; MEASURED 0 of 279.",
+    "counterEvidenceOpen": "libxslt store: calls bound 400/400 with 138 cross-file (34.5%), which own-file preference should have prevented; consistent with the order-dependence finding (2f2a5bb1f), where calls was 17 of the rows differing between eager and deferred arms. Model-level ruling, store-level question open pending the shared store-side intent tool.",
+    "clause4_recount": "3,793 edges remain (references 3,445 + extends 346 + overrides 2) \u2014 calls 279 removed because the own-file test answers it.",
+    "verdict": "still NOT complete: clause 3 (12 edges, policy-only refusal) and clause 4 (3,793) remain, plus the store-side counter-evidence above."
+  },
+  "update_clause3": {
+    "at": "2026-10-10T21:40:00-04:00",
+    "clause3": "CLOSES. The references-12 refusal is now evidence-backed by measurement, not by the analyzer's label: an audit over the whole 11,552-file population re-checks every `unresolved` name against a POOLED key space across all 126 repositories AND searches the corpus source for `<!ENTITY <name>` declarations. Result: 12 of 12 are held in no repository as published symbols, but **11 of 12 ARE declared in corpus source** (ISO entity sets under libxslt/tests/docbook/dtd, dict.dtd, otp/lib/xmerl/test/xmerl_sax_SUITE_data/entity_test.dtd) and 1 (`woohoo`) is declared nowhere.",
+    "whyTheRefusalIsRequired": "For those 11, `isExternalTarget` would assert 'the declaration is not in the population' \u2014 FALSE, since the declaration ships in the same repository \u2014 and the gate would STILL verify it, because `verifyExternalClaim` resolves against the PUBLISHED SYMBOL key space and a DTD entity declaration is not published as a symbol. Claiming would be a false statement the gate certifies. Refusing is correct.",
+    "defectFoundOnTheWay": "`qandasetbody` (1 edge, 4 sites, libxslt/tests/docbook/test/qa.xml) is labelled `danglingEntityReference` although the file declares it in its own internal subset. The cause is the pinned grammar: `doctypedecl` parses as `<! DOCTYPE Name ExternalID ERROR >` for this file, so the subset is an ERROR node. Controls show simple internal subsets parse with 0 ERROR and a GEDecl child; the trigger involves the entity value's markup content and is not isolated further. Grammar limitation, 1 edge \u2014 recorded with the tree dump.",
+    "artifact": "validation/m14/fixtures/xml/clause3-entity-refusal.json + clause3-audit.json"
+  },
+  "update_clause4": {
+    "at": "2026-10-10T23:00:00-04:00",
+    "status": "ANSWERED on a labelled bounded draw (2,000 files / 1,995 indexed / 4 repos / ONE RUN). The full-population attempt was KILLED after ~65 min of event-loop stalls (watchdog: stalledTotalMs 3,906,664); raw preserved.",
+    "answer": "The clause-4 shortfall is NOT 3,793 unmeasurable edges. With the line test correctly declared N/A and replaced by the analyzer-class predicate, the measured violations are 147: calls 138 + references 5 + imports 3 + overrides 1 \u2014 edges where the store bound away from a declaration the analyzer states is in the edge's OWN file.",
+    "determinateEvidence": "references in-document 1,697 -> 1,692 same-file; extends in-document 387 -> 387 same-file; contains line split intended 49,564 / sameFileOffLine 168 / arbitraryTwin 3,051 / unbound 3,131. builtin/external/unresolved classes binding cross-file or unbound are the correct shape, not violations.",
+    "theCalls138": "REPRODUCED exactly on this draw: all 388 calls edges are class `in-document` and 138 (35.6%) bind to another file. Same number as libxslt's 138/400. This is the store defect my order-dependence probe predicted, now measured at the type level \u2014 and the same mechanism hcl-lane counted ~11,000 of.",
+    "artifact": "validation/m14/fixtures/xml/clause4-finding.json + store-intent-split.json"
+  },
+  "update_clause4_worklist": {
+    "at": "2026-10-10T23:35:00-04:00",
+    "status": "DELIVERED \u2014 the 147 violations are enumerated edge by edge, with both endpoints and the declaration the store should have reached.",
+    "artifacts": [
+      "validation/m14/fixtures/xml/calls-138-worklist.json",
+      "validation/m14/fixtures/xml/calls-138-worklist.txt",
+      "validation/m14/fixtures/xml/store-intent-split.json (violations[])"
+    ],
+    "calls138": {
+      "allBoundToAnotherFile": 138,
+      "unbound": 0,
+      "withOwnFileDeclarationListed": 138,
+      "distinctSourceFiles": 11,
+      "distinctCallees": 124,
+      "distinctBoundToFiles": 12,
+      "shape": "the dominant shape is a CALLER in libxslt/tests/docbook/html/*.xsl bound to a same-named TEMPLATE declared in the PARALLEL tree libxslt/tests/docbook/fo/*.xsl (pi, formal, inline, admon, sections, table), plus a few bound into test data files (test/article2.xml) and into libxslt/doc/tutorial/libxslttutorial.xml. The own-file declaration exists in every case and is listed per edge.",
+      "example": "libxslt/tests/docbook/html/pi.xsl:109 `process.cmdsynopsis.list -> process.cmdsynopsis.list`, declared in its own file at line 77, bound by the store to libxslt/tests/docbook/fo/pi.xsl:69"
+    },
+    "verdict": "The 147 is now a worklist, not a number. Per the Lead's ruling xml fails by 147 (138 of them a shared-resolver defect, not this lane's); clauses 1 and 3 are MET and clause 4 is measured and enumerated."
+  },
+  "update_clause4_fix": {
+    "at": "2026-10-11T00:00:00-04:00",
+    "status": "THE FIX IS IN HEAD AND THE ACCEPTANCE CHECK PASSES. libxslt 1,143 files, one run per arm.",
+    "toggleControl": {
+      "withOwnFilePasses": {
+        "violations": 4,
+        "calls": 0
+      },
+      "withoutOwnFilePasses": {
+        "violations": 147,
+        "calls": 138
+      },
+      "note": "same tree, same population, ONLY the three own-file UPDATEs toggled \u2014 so the passes account for the entire reduction"
+    },
+    "regression": "0 of the `builtin`/`external`/`unresolved`/`file` classes moved; contains improves on every axis (intended +1,519, arbitraryTwin -1,097, unbound -1,789).",
+    "remaining4": "imports 3 (document-internal IDREFs `#style1`/`#transform` with no own-file declaration \u2014 nothing for a name-based resolver to prefer) + references 1 (an outlier edge with an empty source spelling). Different mechanism, stated as the boundary.",
+    "landedIn": "63a888b03 \u2014 another lane's commit swept this lane's uncommitted in-flight edits; the patch is in HEAD and this lane reports the sweep rather than claiming a commit.",
+    "artifacts": [
+      "own-file-preference.patch",
+      "own-file-preference-armB.patch",
+      "own-file-preference-finding.json",
+      "own-file-acceptance-head.json",
+      "own-file-acceptance-control.json",
+      "own-file-acceptance-before.json"
+    ]
+  },
+  "update_clause4_boundary": {
+    "at": "2026-10-11T10:25:00-04:00",
+    "revision": "385c734dd (includes the second-site leaf-reduction fix 47a45a72c)",
+    "toggleControl_rerun_on_current_revision": {
+      "ownFilePassesEnabled": {
+        "violations": 4,
+        "calls": 0,
+        "callsSameFile": 400
+      },
+      "ownFilePassesDisabled": {
+        "violations": 147,
+        "calls": 138,
+        "callsSameFile": 262
+      },
+      "note": "the second-site fix does not move these counts"
+    },
+    "refinedPredicate": "the instrument now bins two shapes instead of scoring them, each with evidence: (a) `#`-prefixed IDREF targets \u2014 the referent is a NODE identified by an ID, not a declaration of that name, so `unbound` is correct (3 edges, all three documents declare their IDs); (b) rows with NO SOURCE SYMBOL \u2014 the edge has no own file, so the predicate cannot judge it (1 edge). Violations after the refinement: 0.",
+    "theOneRealDefect": "bug-110.xml:7 `&target;` \u2014 the analyzer is right (the entity IS declared in the internal subset and published as a symbol in that file), but the stored row is `rel:null:target:references:7` with `source_symbol_id` NULL, so the target binds to a same-named `with-param` symbol in tower.xsl. Measured scope: 2 of 22,426 rows in the draw have an unbound source and a literal `null` in the row id; enrichment itself warns `danglingSources 2, totalRelationships 4`. Shared-indexer gap, stated with its scope, not folded into the landed fix.",
+    "artifact": "validation/m14/fixtures/xml/clause4-boundary.json (+ recheck-enabled/control-385c734dd.json, clause4-boundary-run.json)"
+  }
+}

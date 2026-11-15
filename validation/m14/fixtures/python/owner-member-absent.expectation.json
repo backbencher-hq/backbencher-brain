@@ -1,0 +1,16 @@
+{
+  "fixtureId": "python/owner-member-absent",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D7 DEPTH (charter §18.32) — the `ownerMemberAbsent` claim, INDEXED ARM ONLY and FAIL-CLOSED. A calls/uses row carrying metadata.owner is one whose receiver type is PROVEN; the production owner channel DECLINED it because no member of the target name is declared under that owner. 'Owner declares no member (inheritance-closed)' is a fact the project index can verify, so it becomes a CLAIM — never a resolution — read by the arbiter only where the name model has nothing (decls===0). PYTHON_DECLARATION_SPEC HAS a baseResolver, so the absence test is inheritance-closed: `inherited_method` (declared on Base) is UNMARKED, only `missing_method` (absent from Widget+Base) is claimable. The documented limitation is that ancestors are matched by LEAF name and an ancestor the project declares but the index cannot resolve as a class makes the lane WITHHOLD the claim rather than risk a refutation (a refuted claim is a clause-4 failure). The nested claim object cannot be asserted here (the fixture runner compares meta values with ===), so it is asserted by the executable probe owner-member-absent.mts, which also pins the two fail-closed controls: without a complete project index, or without BB_PY_OWNER_MEMBER_ABSENT=1, NO claim may appear (the no-index arm is then byte-identical).",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Widget", "kind": "class" },
+    { "name": "absent_member", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "missing_method", "note": "present; the claim's {owner, member} object is asserted by the probe" },
+    { "type": "calls", "target": "inherited_method", "note": "present and UNMARKED (inherited member declared on Base)" },
+    { "type": "calls", "target": "direct_method", "note": "present and UNMARKED (declared on Widget)" }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "fixtureId": "css/keyframes-redefinition-overrides",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "`overrides` is the one type CSS was emitting nothing for and the language DOES have. Measured over the whole admitted corpus (1,114 files, 61 repos; validation/m14/census/css-overrides-split.ts): 146 adjacent same-name second declarations of a `@keyframes` in one file, of which 142 are a VENDOR-PREFIXED PAIR and 4 are genuine same-keyword redefinitions (hasura-engine/.../GraphiQL.css `@keyframes rotation` at L1534 and L2214, plus `v-modal-in`, `v-modal-out` and `progress` in vue-element-admin). So the type is a GAP on 4 occurrences and a FABRICATION on the other 142, and one fixture has to pin both halves or it pins neither: `fade` is declared twice with the same keyword and must produce an `overrides` edge naming the block it kills, `slide` is declared under two different keywords and must produce NONE. A lane that got this wrong in the first direction would add 142 fabricated edges to a corpus of 1,114 files; in the second it would ship the type with no evidence. The `@property` pair is the third case: the Properties & Values API's re-registration rule, 0 corpus occurrences, pinned here because a measured zero is a fact about the corpus and not about the construct — the same standing answer this lane gave `@counter-style`/`@custom-media`/`@font-feature-values`. The `overrides` edge's two ends are the same string by construction (the lane publishes one symbol per name, and a selector/name is an identity rather than a per-occurrence row), so the payload is the LINE PAIR: `line_number` is the superseding declaration and `supersedesLine` is the one it kills. That is why the pins below assert `supersedesLine` and not just the type.",
+  "expectSymbols": [
+    {
+      "name": "fade",
+      "kind": "function"
+    },
+    {
+      "name": "slide",
+      "kind": "function"
+    },
+    {
+      "name": "--brand",
+      "kind": "variable"
+    },
+    {
+      "name": ".spinner",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "fade",
+      "equals": 1,
+      "kind": "function"
+    },
+    {
+      "name": "slide",
+      "equals": 1,
+      "kind": "function"
+    },
+    {
+      "name": "--brand",
+      "equals": 1,
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "source": "fade",
+      "target": "fixtures/css/keyframes-redefinition-overrides::fade",
+      "line_number": 22,
+      "meta.evidenceClass": "structural",
+      "meta.isKeyframesRedefinition": true,
+      "meta.supersedesLine": 17,
+      "meta.distinctSites": true
+    },
+    {
+      "type": "overrides",
+      "source": "--brand",
+      "target": "fixtures/css/keyframes-redefinition-overrides::--brand",
+      "line_number": 43,
+      "meta.evidenceClass": "structural",
+      "meta.isPropertyReregistration": true,
+      "meta.supersedesLine": 37,
+      "meta.distinctSites": true
+    },
+    {
+      "type": "uses",
+      "source": ".spinner",
+      "target": "fixtures/css/keyframes-redefinition-overrides::fade"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "slide",
+      "target": "fixtures/css/keyframes-redefinition-overrides::slide"
+    },
+    {
+      "type": "overrides",
+      "target": "fixtures/css/keyframes-redefinition-overrides::fade",
+      "line_number": 17
+    },
+    {
+      "type": "overrides",
+      "target": "fixtures/css/keyframes-redefinition-overrides::slide"
+    },
+    {
+      "type": "extends",
+      "source": "fade",
+      "target": "fixtures/css/keyframes-redefinition-overrides::fade"
+    },
+    {
+      "type": "calls",
+      "source": ".spinner",
+      "target": "fixtures/css/keyframes-redefinition-overrides::fade"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

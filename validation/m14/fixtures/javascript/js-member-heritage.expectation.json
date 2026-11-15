@@ -1,0 +1,28 @@
+{
+  "fixtureId": "javascript/js-member-heritage",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "class_heritage bases may be member_expressions (extends Lib.Base). The old extraction matched only identifier children - every qualified heritage edge was silently dropped.",
+  "expectSymbols": [
+    {
+      "name": "Child",
+      "kind": "class"
+    },
+    {
+      "name": "Sub",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Child",
+      "target": "Base"
+    },
+    {
+      "type": "extends",
+      "from": "Sub",
+      "target": "Lib.Base"
+    }
+  ]
+}

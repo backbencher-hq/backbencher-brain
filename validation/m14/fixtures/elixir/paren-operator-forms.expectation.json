@@ -1,0 +1,85 @@
+{
+  "issue": "EX-A15",
+  "note": "The id/placeholder audit (`script/m14/tmp/elixir-id-integrity.ts`) re-measured EX-D9's claim \u2014 'a visible `Unknown` placeholder is never a missed STATIC NAME' \u2014 over 559 files / 10,745 symbols of the elixir repo, four corpora after the claim was made. Result: 20 `Unknown` symbols, 19 of them genuinely dynamic (`def unquote(name)(\u2026)`, `def unquote(:\"weirdly named/fun-\")`, ExUnit's `unquote(:\"property is true\")`), and **exactly ONE a missed static name**: `defmacro (..)`, Kernel's own zero-arity range operator (elixir/lib/elixir/lib/kernel.ex:4347). The grammar shapes that name as `arguments > block > operator_identifier`, which no signature branch recognised, so the definition fell through to the EX-D9 placeholder \u2014 and a second parenthesized operator in the same module MERGED into the same placeholder row (both arity 0), so one real definition was invisible and one row stood for two. Fix: the operator token is statically nameable, so it is named, with the parameter list read from the sibling `arguments` node when the form carries one (`def (op)(a, b)` is an ERROR node in this grammar but its argument list is readable) and a single `operand` when it does not. A genuinely dynamic name stays `Unknown` \u2014 pinned in the FORBID half below, because a placeholder is a claim and the fixture must say where it is still allowed. The placeholder is pinned POSITIVELY here (exactly one, a function, owned by the module): the pre-fix state published `defmacro (..)` as a placeholder MACRO and let a second parenthesized operator merge into the same row, so the count and the kind are the pins, not the name's absence.",
+  "expectSymbols": [
+    {
+      "name": "..",
+      "kind": "macro",
+      "ownerName": "ParenOp",
+      "meta.arity": 1
+    },
+    {
+      "name": "---",
+      "kind": "macro",
+      "ownerName": "ParenOp",
+      "meta.arity": 2
+    },
+    {
+      "name": "++",
+      "kind": "function",
+      "ownerName": "ParenOp",
+      "meta.arity": 2
+    },
+    {
+      "name": "Unknown",
+      "kind": "function",
+      "ownerName": "ParenOp",
+      "meta.arity": 1,
+      "note": "the genuinely dynamic name keeps the EX-D9 placeholder"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "..",
+      "kind": "macro",
+      "ownerName": "ParenOp",
+      "equals": 1
+    },
+    {
+      "name": "---",
+      "kind": "macro",
+      "ownerName": "ParenOp",
+      "equals": 1
+    },
+    {
+      "name": "Unknown",
+      "equals": 1,
+      "note": "EXACTLY one placeholder: a second parenthesized operator merging into it is the pre-fix state"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "---",
+      "ownerName": "ParenOp",
+      "parameters": [
+        {
+          "name": "left"
+        },
+        {
+          "name": "right"
+        }
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "ParenOp",
+      "target": "..",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "ParenOp",
+      "target": "---",
+      "line_number": 15
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Unknown",
+      "kind": "macro",
+      "note": "the pre-fix state: `defmacro (..)` fell through to the placeholder as a MACRO"
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": ".bb-data",
+  "loadavg": [
+    10.84,
+    10.4,
+    9.35
+  ],
+  "benchmarks": [
+    {
+      "label": "count-usage-rows",
+      "ms": 771.59,
+      "rows": 1,
+      "first": {
+        "c": 432162
+      }
+    },
+    {
+      "label": "usage-anchored",
+      "ms": 685.34,
+      "rows": 1,
+      "first": {
+        "c": 251847
+      }
+    },
+    {
+      "label": "usage-anchored-conf07",
+      "ms": 1745.41,
+      "rows": 1,
+      "first": {
+        "c": 251422
+      }
+    },
+    {
+      "label": "inferred-via-json_extract",
+      "ms": 2064.93,
+      "rows": 1,
+      "first": {
+        "c": 7
+      }
+    },
+    {
+      "label": "inferred-via-instr",
+      "ms": 1613.73,
+      "rows": 1,
+      "first": {
+        "c": 7
+      }
+    },
+    {
+      "label": "inferred-via-instr-spaced",
+      "ms": 1698.42,
+      "rows": 1,
+      "first": {
+        "c": 0
+      }
+    },
+    {
+      "label": "clean-via-json_extract",
+      "ms": 2657.05,
+      "rows": 1,
+      "first": {
+        "c": 249920
+      }
+    },
+    {
+      "label": "clean-via-instr",
+      "ms": 2002.99,
+      "rows": 1,
+      "first": {
+        "c": 249920
+      }
+    },
+    {
+      "label": "distinct-target-instr",
+      "ms": 5065.41,
+      "rows": 36477,
+      "first": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.agents/skills/reverse-engineer-anything/references/android-applications.md:.agents/skills/reverse-engineer-anything/references/android-applications.md:1"
+      }
+    },
+    {
+      "label": "distinct-target-json",
+      "ms": 1817.63,
+      "rows": 36209,
+      "first": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.agents/skills/reverse-engineer-anything/references/android-applications.md:.agents/skills/reverse-engineer-anything/references/android-applications.md:1"
+      }
+    },
+    {
+      "label": "all-symbol-id-file",
+      "ms": 480.64,
+      "rows": 310423,
+      "first": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:tsconfig.gates-wide.superseded-e7c9819f4.json:compilerOptions:3",
+        "file_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:tsconfig.gates-wide.superseded-e7c9819f4.json"
+      }
+    },
+    {
+      "label": "all-symbols-fileId",
+      "ms": 426.14,
+      "rows": 310423,
+      "first": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:tsconfig.gates-wide.superseded-e7c9819f4.json:compilerOptions:3",
+        "file_id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:tsconfig.gates-wide.superseded-e7c9819f4.json"
+      }
+    }
+  ],
+  "metadataSamples": [
+    {
+      "metadata": "{\"calleeExpression\":\"[\\\"inferred\\\", \\\"unknown\\\"].includes\",\"line\":137,\"evidenceClass\":\"usage_contextual\"}"
+    },
+    {
+      "metadata": "{\"calleeExpression\":\"[\\\"resolved\\\", \\\"inferred\\\", \\\"unknown\\\", \\\"unsupported\\\"].includes\",\"line\":58,\"evidenceClass\":\"usage_contextual\"}"
+    },
+    {
+      "metadata": "{\"linkText\":\"https://github.com/morluto/rea/blob/main/docs/firmware-analysis.md\",\"linkDestination\":\"https://github.com/morluto/rea/blob/main/docs/firmware-analysis.md\",\"isExternal\":true,\"externalScheme\":\"https\",\"targetKind\":\"externalUri\",\"evidenceClass\":\"reference_qualified\",\"layerFlow\":\"core→unresolved\",\"criticality\":\"low\",\"frequency\":\"one_of_0\",\"role\":\"consumer\",\"inferredAt\":1792520464047}"
+    },
+    {
+      "metadata": "{\"linkText\":\"https://github.com/morluto/rea/blob/main/docs/web-network-captures.md\",\"linkDestination\":\"https://github.com/morluto/rea/blob/main/docs/web-network-captures.md\",\"isExternal\":true,\"externalScheme\":\"https\",\"targetKind\":\"externalUri\",\"evidenceClass\":\"reference_qualified\",\"layerFlow\":\"core→unresolved\",\"criticality\":\"low\",\"frequency\":\"one_of_0\",\"role\":\"consumer\",\"inferredAt\":1792520464047}"
+    },
+    {
+      "metadata": "{\"linkText\":\"https://github.com/morluto/rea/blob/main/docs/evm-bytecode.md\",\"linkDestination\":\"https://github.com/morluto/rea/blob/main/docs/evm-bytecode.md\",\"isExternal\":true,\"externalScheme\":\"https\",\"targetKind\":\"externalUri\",\"evidenceClass\":\"reference_qualified\",\"layerFlow\":\"core→unresolved\",\"criticality\":\"low\",\"frequency\":\"one_of_0\",\"role\":\"consumer\",\"inferredAt\":1792520464047}"
+    }
+  ],
+  "plans": {
+    "usedIds": [
+      {
+        "id": 4,
+        "parent": 0,
+        "notused": 218,
+        "detail": "SEARCH brain_relationship USING INDEX brain_rel_proj_target_idx (project_id=? AND target_symbol_id>?)"
+      }
+    ],
+    "inferredInstr": [
+      {
+        "id": 3,
+        "parent": 0,
+        "notused": 212,
+        "detail": "SCAN brain_relationship"
+      }
+    ]
+  },
+  "generatedAt": "2026-11-03T00:50:26.795Z"
+}

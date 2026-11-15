@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "m12-differential-result.schema.json",
+  "title": "M11 differential validation result",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "truthSource", "passing", "intentionalFailure", "measurements"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"type": "string"},
+    "truthSource": {"type": "string"},
+    "passing": {"type": "object"},
+    "intentionalFailure": {"type": "object"},
+    "measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "wallTimeMs", "userCpuMs", "systemCpuMs", "peakRssBytes", "rssDeltaBytes", "databaseBytes", "files", "symbols", "relationships", "filesPerSecond", "symbolsPerSecond", "relationshipsPerSecond"]
+      }
+    },
+    "note": {"type": "string"}
+  },
+  "additionalProperties": false
+}

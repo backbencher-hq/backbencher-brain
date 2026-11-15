@@ -1,0 +1,161 @@
+{
+ "fixtureId": "objc/macro-prefixed-declaration",
+ "language": "objc",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 objc grammar wave (#743's class, objc half). A BARE macro invocation line at file scope immediately before an Objective-C declaration is the shape of every Apple header: `NS_ASSUME_NONNULL_BEGIN` .. `NS_ASSUME_NONNULL_END` wrapped around the `@interface` it guards. MEASURED over the two pinned corpora (sdwebimage + afnetworking, 322 objc-routed files: 153 .m + 169 .h) under the committed grammar: 63 files parsed with ERROR nodes, 11 headers lost real symbols, 122 symbols total — AFHTTPSessionManager.h analysed to 0 of its 37 declared symbols (79 ERROR/MISSING nodes), SDAnimatedImage.h to 0 of 10 (33), SDImageFramePool.h to 0 of 12 (15). The mechanism is NOT the macro definitions and NOT conditional compilation: `#if`/`#ifdef`-wrapped declarations parsed correctly both before and after, while the NS_ASSUME_NONNULL prologue alone did not. The bare identifier is read as the first specifier of a `declaration` that cannot continue — `@interface` is neither a declarator nor a type — so `@interface Foo :` is swallowed into an ERROR INSIDE that declaration and the rest of the file degrades into expression statements. The wreckage also published PHANTOMS: `variable NSObject` (the lost superclass), `variable void` (a method's return type), `variable provider`/`url`/`headers` (parameter names), `variable forDomain` (a selector keyword part), `variable NS_ASSUME_NONNULL_END`. The landed rule is `macro_prefixed_objc_declaration: prec(-1, seq(alias($.identifier, $.macro_specifier), choice(class_interface, class_declaration, class_implementation, protocol_declaration, protocol_forward_declaration)))`, added to `_top_level_item`. The decorated item must be an `@`-declaration, which no identifier can begin, so the alternative has NO competitor and the generator demanded NO conflict entry — the criterion the c rule was narrowed to after measurement. `prec(-1)` is load-bearing: raising it was BUILT AND REFUSED on measurement (`Add a conflict for these rules: type_specifier, macro_prefixed_objc_declaration`), because a bare identifier can be absorbed by `declaration` as a lone specifier closed by a MISSING `;` — the same wall the cpp half hit. That leaves one residue, fixed in the analyzer instead: two macro lines STACKED with no declaration between them (`NS_ASSUME_NONNULL_END` then the next macro, which is how a header closes one nullability region and opens another) merge into ONE `declaration` whose specifier identifiers were published as phantom variables. The analyzer now refuses an unterminated declaration (`isUnterminatedDeclaration`), and this fixture pins that refusal with the `PROTOCOL_MACRO` and `NS_ASSUME_NONNULL_END` zero-counts and the `variable NS_ASSUME_NONNULL_END` forbid. Note the `Provider`/`interface` kind: `@protocol` is published as `SymbolKind.Interface` with `metadata.isProtocol` (family convention — csharp `interface`, java `interface`), and this expectation was CORRECTED to that after the first run, not the analyzer. This fixture fails on the committed wasm (every `expectSymbols` entry below is absent, replaced by the phantom `variable NSObject`) and passes on the new one. A/B on the corpus, analyzer output diffed edge by edge rather than through the differential (whose oracle walks the same damaged tree and therefore cannot tell a removed phantom from a lost edge): 315 of 322 files byte-identical, 0 files worsened, 0 clean files perturbed, ERROR/MISSING nodes 795 -> 582, symbols 4693 -> 4770 (-36/+113), relationships 23229 -> 23379 (-8/+158), and all 36 symbol disappearances classified as 7 keyword/macro phantoms, 24 kind corrections (variable -> property) and 5 parameter/selector phantoms: REAL LOSSES 0, relationship losses 0. NOT inherited from the c half: this repo's vendored tree-sitter-c carries the #743 `macro_prefixed_type_specifier`, and generating objc against it FAILS (`Unresolved conflict: '^' identifier identifier . '<'` — `NSArray<NSString *>` against `A B` read as macro-decorated type), so objc still builds against upstream tree-sitter-c 0.24.1; inheriting the c fix for objc is its own wave.",
+ "expectSymbols": [
+  {
+   "name": "DecoratedPool",
+   "kind": "class"
+  },
+  {
+   "name": "maxBufferCount",
+   "kind": "property",
+   "ownerName": "DecoratedPool"
+  },
+  {
+   "name": "registerProvider:",
+   "kind": "method",
+   "ownerName": "DecoratedPool"
+  },
+  {
+   "name": "initWithBaseURL:",
+   "kind": "method",
+   "ownerName": "DecoratedPool"
+  },
+  {
+   "name": "Annotated",
+   "kind": "class"
+  },
+  {
+   "name": "prefetchFrameAtIndex:",
+   "kind": "method",
+   "ownerName": "Annotated"
+  },
+  {
+   "name": "Provider",
+   "kind": "interface"
+  },
+  {
+   "name": "provide",
+   "kind": "method",
+   "ownerName": "Provider"
+  },
+  {
+   "name": "Plain",
+   "kind": "class"
+  },
+  {
+   "name": "work",
+   "kind": "method",
+   "ownerName": "Plain"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "NS_ASSUME_NONNULL_BEGIN",
+   "equals": 0
+  },
+  {
+   "name": "NS_ASSUME_NONNULL_END",
+   "equals": 0
+  },
+  {
+   "name": "API_EXPORT",
+   "equals": 0
+  },
+  {
+   "name": "PROTOCOL_MACRO",
+   "equals": 0
+  },
+  {
+   "name": "CLASS_MACRO",
+   "equals": 0
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "source": "DecoratedPool",
+   "target": "NSObject"
+  },
+  {
+   "type": "contains",
+   "source": "DecoratedPool",
+   "target": "maxBufferCount"
+  },
+  {
+   "type": "contains",
+   "source": "DecoratedPool",
+   "target": "registerProvider:"
+  },
+  {
+   "type": "contains",
+   "source": "DecoratedPool",
+   "target": "initWithBaseURL:"
+  },
+  {
+   "type": "extends",
+   "source": "Annotated",
+   "target": "NSString"
+  },
+  {
+   "type": "contains",
+   "source": "Annotated",
+   "target": "prefetchFrameAtIndex:"
+  },
+  {
+   "type": "contains",
+   "source": "Provider",
+   "target": "provide"
+  },
+  {
+   "type": "extends",
+   "source": "Plain",
+   "target": "NSObject"
+  },
+  {
+   "type": "contains",
+   "source": "Plain",
+   "target": "work"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "NSObject",
+   "kind": "variable"
+  },
+  {
+   "name": "void",
+   "kind": "variable"
+  },
+  {
+   "name": "provider",
+   "kind": "variable"
+  },
+  {
+   "name": "url",
+   "kind": "variable"
+  },
+  {
+   "name": "maxBufferCount",
+   "kind": "variable"
+  },
+  {
+   "name": "prefetchFrameAtIndex",
+   "kind": "variable"
+  },
+  {
+   "name": "NS_ASSUME_NONNULL_END",
+   "kind": "variable"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "comment": "the lost superclass published as a member of the class it inherits from — the phantom `contains` the destroyed @interface produced",
+   "type": "contains",
+   "source": "DecoratedPool",
+   "target": "NSObject"
+  }
+ ]
+}

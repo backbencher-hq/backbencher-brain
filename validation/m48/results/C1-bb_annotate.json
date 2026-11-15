@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_annotate.json",
+  "generatedAt": "2026-11-04T05:55:38.533Z",
+  "tools": [
+    "bb_annotate"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"rake\",\"body\":\"m48 c1 corpus note (rake)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-67d423c5472b1156183c20e0d325e5a8eab7dee31c4a1a2638b60fde0a9141e4\",\"symbol_name\":\"rake\",\"symbol_path\":null,\"author_class"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"parse_low_raw\",\"body\":\"m48 c1 corpus note (ripgrep)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-a31a596ebcb2cc45a3f195c6290d6a2bcb9f8a68e8fb88e887e7d71fc6030bff\",\"symbol_name\":\"parse_low_raw\",\"symbol_path\":null,\"aut"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"symbol\":\"expectJSON\",\"body\":\"m48 c1 corpus note (graphql-js)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-db15b718d92f54ec0cc5b902df7d670c1959ff8955845fa7fc04322efdfd6f41\",\"symbol_name\":\"expectJSON\",\"symbol_path\":null,\"author"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"layoutBlockMembers\",\"body\":\"m48 c1 corpus note (tree-sitter-clean)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-f95c8b4506a72df6dbfe49cd41901fb215f7a49a09cbc260fc1975c6d6581dfe\",\"symbol_name\":\"layoutBlockMembers\",\"symbol_path\":null"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1,
+      "args": "{\"symbol\":\"module\",\"body\":\"m48 c1 corpus note (lodash)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-04a0c0d30bca79614dc1cb78b491ae122014d7f2ea72fdf28ffe39320e9f99cc\",\"symbol_name\":\"module\",\"symbol_path\":null,\"author_cla"
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-03c57ba71f67b19c29f98fdc353c5ca893e1d3d0260d6"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-a98c84313dd6734ebd4eeb67c8ea49b5dd5baf4a3ef5b"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-26fb575e6a543d8447e276b869b47d5cf53f9f2aa3c19"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-2dcef94d025591e61da7f9e645f6898efeab5bcf8d93f"
+    },
+    {
+      "repo": "lodash",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-9ff9a1592fc44a35c54e151dad8e86e59823c36d6fb2f"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_annotate"
+    ]
+  }
+}

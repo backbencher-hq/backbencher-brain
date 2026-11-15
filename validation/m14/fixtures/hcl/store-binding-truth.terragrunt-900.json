@@ -1,0 +1,384 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.mts",
+  "draw": "e48ba2ee2e81daea",
+  "repos": [
+    "terragrunt"
+  ],
+  "admittedFiles": 3399,
+  "filesDrawn": 900,
+  "filesCopied": 900,
+  "indexerEligible": 894,
+  "indexerDiscoveredPaths": 894,
+  "excludedFromTheIndexer": {
+    "testdata": 5,
+    "test": 1
+  },
+  "indexMs": 17210,
+  "indexStats": {
+    "totalFiles": 894,
+    "symbols": 4389
+  },
+  "store": {
+    "brainFile": 894,
+    "brainSymbol": 4389,
+    "brainRelationship": 7609
+  },
+  "perType": {
+    "contains": {
+      "edges": 5728,
+      "sourceUnbound": 0,
+      "targetUnbound": 30,
+      "bound": 5698,
+      "boundSameFile": 5429,
+      "boundOtherFile": 269,
+      "boundNameExact": 3419,
+      "boundQnameExact": 3413,
+      "boundNeedsLeafReduction": 2206,
+      "withLine": 5728,
+      "boundSameFileSameLine": 5417,
+      "boundSameFileOffLine": 12,
+      "boundOtherFileSameLine": 160,
+      "boundOtherFileOffLine": 109
+    },
+    "exports": {
+      "edges": 1273,
+      "sourceUnbound": 0,
+      "targetUnbound": 1,
+      "bound": 1272,
+      "boundSameFile": 1075,
+      "boundOtherFile": 197,
+      "boundNameExact": 1272,
+      "boundQnameExact": 1272,
+      "boundNeedsLeafReduction": 0,
+      "withLine": 1273,
+      "boundSameFileSameLine": 1075,
+      "boundSameFileOffLine": 0,
+      "boundOtherFileSameLine": 139,
+      "boundOtherFileOffLine": 58
+    },
+    "references": {
+      "edges": 566,
+      "sourceUnbound": 0,
+      "targetUnbound": 63,
+      "bound": 503,
+      "boundSameFile": 272,
+      "boundOtherFile": 231,
+      "boundNameExact": 16,
+      "boundQnameExact": 52,
+      "boundNeedsLeafReduction": 487,
+      "withLine": 566,
+      "boundSameFileSameLine": 32,
+      "boundSameFileOffLine": 240,
+      "boundOtherFileSameLine": 9,
+      "boundOtherFileOffLine": 222
+    },
+    "uses": {
+      "edges": 28,
+      "sourceUnbound": 0,
+      "targetUnbound": 2,
+      "bound": 26,
+      "boundSameFile": 0,
+      "boundOtherFile": 26,
+      "boundNameExact": 0,
+      "boundQnameExact": 0,
+      "boundNeedsLeafReduction": 26,
+      "withLine": 28,
+      "boundSameFileSameLine": 0,
+      "boundSameFileOffLine": 0,
+      "boundOtherFileSameLine": 0,
+      "boundOtherFileOffLine": 26
+    },
+    "imports": {
+      "edges": 14,
+      "sourceUnbound": 0,
+      "targetUnbound": 14,
+      "bound": 0,
+      "boundSameFile": 0,
+      "boundOtherFile": 0,
+      "boundNameExact": 0,
+      "boundQnameExact": 0,
+      "boundNeedsLeafReduction": 0,
+      "withLine": 14,
+      "boundSameFileSameLine": 0,
+      "boundSameFileOffLine": 0,
+      "boundOtherFileSameLine": 0,
+      "boundOtherFileOffLine": 0
+    }
+  },
+  "gateModelOverTheSameFiles": {
+    "contains": {
+      "edges": 3551,
+      "resolved": 889,
+      "amb": 2632,
+      "unresolved": 30,
+      "noSource": 0
+    },
+    "exports": {
+      "edges": 1340,
+      "resolved": 252,
+      "amb": 1087,
+      "unresolved": 1,
+      "noSource": 0
+    },
+    "references": {
+      "edges": 566,
+      "resolved": 11,
+      "amb": 41,
+      "unresolved": 514,
+      "noSource": 0
+    },
+    "uses": {
+      "edges": 28,
+      "resolved": 0,
+      "amb": 0,
+      "unresolved": 28,
+      "noSource": 0
+    },
+    "imports": {
+      "edges": 14,
+      "resolved": 0,
+      "amb": 0,
+      "unresolved": 14,
+      "noSource": 0
+    }
+  },
+  "totals": {
+    "edges": 7609,
+    "bound": 7499,
+    "targetUnbound": 110,
+    "boundSameFile": 6776,
+    "boundOtherFile": 723,
+    "boundNameExact": 4707,
+    "boundQnameExact": 4737,
+    "boundNeedsLeafReduction": 2719,
+    "sourceUnbound": 0,
+    "boundSameFileSameLine": 6524,
+    "boundSameFileOffLine": 252,
+    "boundOtherFileSameLine": 308,
+    "boundOtherFileOffLine": 415
+  },
+  "unboundTopTargets": [
+    {
+      "type": "contains",
+      "target": "terraform.required_providers.null",
+      "n": 28
+    },
+    {
+      "type": "references",
+      "target": "values.project",
+      "n": 5
+    },
+    {
+      "type": "references",
+      "target": "local.common.locals.stack_dir",
+      "n": 4
+    },
+    {
+      "type": "references",
+      "target": "data.aws_caller_identity.current.account_id",
+      "n": 3
+    },
+    {
+      "type": "imports",
+      "target": "../catalog/modules/best_cat",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "aws_lambda_function_url.main.function_url",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "dependency.hello_world.outputs.rendered_template",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "dependency.other.outputs.secrets.test_provider_token",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "dependency.source.outputs.the_answer",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "local.bar.locals.original_terragrunt_dir",
+      "n": 2
+    },
+    {
+      "type": "references",
+      "target": "triggers.large_data",
+      "n": 2
+    },
+    {
+      "type": "uses",
+      "target": "count.index",
+      "n": 2
+    },
+    {
+      "type": "contains",
+      "target": "null",
+      "n": 1
+    },
+    {
+      "type": "contains",
+      "target": "terraform.extra_arguments.custom_vars.arguments",
+      "n": 1
+    },
+    {
+      "type": "exports",
+      "target": "null",
+      "n": 1
+    },
+    {
+      "type": "imports",
+      "target": "../../catalog/modules/best_cat",
+      "n": 1
+    },
+    {
+      "type": "imports",
+      "target": "../ddb",
+      "n": 1
+    },
+    {
+      "type": "imports",
+      "target": "../iam",
+      "n": 1
+    },
+    {
+      "type": "imports",
+      "target": "../lambda",
+      "n": 1
+    },
+    {
+      "type": "imports",
+      "target": "../s3",
+      "n": 1
+    }
+  ],
+  "boundOtherFileSamples": [
+    {
+      "type": "contains",
+      "target": "registry.opentofu.org/hashicorp/aws",
+      "src_name": ".terraform.lock",
+      "src_file": "terragrunt/test/fixtures/aws-provider-patch/.terraform.lock.hcl",
+      "tgt_name": "registry.opentofu.org/hashicorp/aws",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/live/.terraform.lock.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "registry.opentofu.org/hashicorp/aws",
+      "src_name": ".terraform.lock",
+      "src_file": "terragrunt/test/fixtures/aws-provider-patch/.terraform.lock.hcl",
+      "tgt_name": "registry.opentofu.org/hashicorp/aws",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/live/.terraform.lock.hcl"
+    },
+    {
+      "type": "contains",
+      "target": "terraform.backend.gcs",
+      "src_name": "terraform",
+      "src_file": "terragrunt/test/fixtures/gcs/main.tf",
+      "tgt_name": "backend.gcs",
+      "tgt_file": "terragrunt/test/fixtures/gcs-no-prefix/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "null_resource.test",
+      "src_name": "main",
+      "src_file": "terragrunt/test/fixtures/gcs/main.tf",
+      "tgt_name": "test",
+      "tgt_file": "terragrunt/test/fixtures/env-vars-block/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "null_resource.test.provisioner.local-exec",
+      "src_name": "null_resource.test",
+      "src_file": "terragrunt/test/fixtures/gcs/main.tf",
+      "tgt_name": "provisioner.local-exec",
+      "tgt_file": "terragrunt/test/fixtures/download/hello-world/main.tf"
+    },
+    {
+      "type": "exports",
+      "target": "null_resource.test",
+      "src_name": "main",
+      "src_file": "terragrunt/test/fixtures/gcs/main.tf",
+      "tgt_name": "null_resource.test",
+      "tgt_file": "terragrunt/test/fixtures/download/hello-world/main.tf"
+    },
+    {
+      "type": "contains",
+      "target": "include.root",
+      "src_name": "terragrunt",
+      "src_file": "terragrunt/test/fixtures/render-json-regression/terragrunt.hcl",
+      "tgt_name": "include.root",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/dev/terragrunt.hcl"
+    },
+    {
+      "type": "contains",
+      "target": "generate.provider",
+      "src_name": "terragrunt",
+      "src_file": "terragrunt/test/fixtures/render-json-regression/terragrunt.hcl",
+      "tgt_name": "generate.provider",
+      "tgt_file": "terragrunt/test/fixtures/codegen/mutable-generate/unit-a/terragrunt.hcl"
+    },
+    {
+      "type": "references",
+      "target": "dependency.baz.outputs.baz",
+      "src_name": "terragrunt",
+      "src_file": "terragrunt/test/fixtures/render-json-regression/terragrunt.hcl",
+      "tgt_name": "baz",
+      "tgt_file": "terragrunt/test/fixtures/exec-cmd-tf-path/dep/main.tf"
+    },
+    {
+      "type": "exports",
+      "target": "include.root",
+      "src_name": "terragrunt",
+      "src_file": "terragrunt/test/fixtures/render-json-regression/terragrunt.hcl",
+      "tgt_name": "include.root",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/dev/terragrunt.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "generate.provider",
+      "src_name": "terragrunt",
+      "src_file": "terragrunt/test/fixtures/render-json-regression/terragrunt.hcl",
+      "tgt_name": "generate.provider",
+      "tgt_file": "terragrunt/test/fixtures/codegen/mutable-generate/unit-a/terragrunt.hcl"
+    },
+    {
+      "type": "contains",
+      "target": "generate.provider",
+      "src_name": "generate.provider",
+      "src_file": "terragrunt/test/fixtures/render-json-with-encryption/root.hcl",
+      "tgt_name": "generate.provider",
+      "tgt_file": "terragrunt/test/fixtures/codegen/mutable-generate/unit-a/terragrunt.hcl"
+    },
+    {
+      "type": "exports",
+      "target": "generate.provider",
+      "src_name": "generate.provider",
+      "src_file": "terragrunt/test/fixtures/render-json-with-encryption/root.hcl",
+      "tgt_name": "generate.provider",
+      "tgt_file": "terragrunt/test/fixtures/codegen/mutable-generate/unit-a/terragrunt.hcl"
+    },
+    {
+      "type": "references",
+      "target": "feature.key_prefix.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/s3-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/ddb/outputs.tf"
+    },
+    {
+      "type": "references",
+      "target": "feature.disable_versioning.value",
+      "src_name": "remote_state",
+      "src_file": "terragrunt/test/fixtures/s3-backend/common.hcl",
+      "tgt_name": "value",
+      "tgt_file": "terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/ddb/outputs.tf"
+    }
+  ]
+}

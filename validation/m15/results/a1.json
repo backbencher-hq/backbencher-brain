@@ -1,0 +1,12 @@
+{
+  "issue": "bb_ask classification and aggregate routing",
+  "code": "A1",
+  "tool": "bb_ask",
+  "title": "classification — stat routing + cross-language + honesty guard",
+  "verified": true,
+  "checks": 7,
+  "passed": 9,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:20:30.245Z"
+}

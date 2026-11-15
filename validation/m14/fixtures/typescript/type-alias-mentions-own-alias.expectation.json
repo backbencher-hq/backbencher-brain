@@ -1,0 +1,124 @@
+{
+  "fixtureId": "typescript/type-alias-mentions-own-alias",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a type mention inside a TYPE ALIAS is owned by that alias, and \u2014 the defect this fixture exists for \u2014 that no `references` edge is ever sourced to a symbol named `global`. `extractDeclaredTypeRefs` walks up from a type mention to find the declaration that owns it, and used to answer the literal string `global` when the walk found none. A type alias is a declaration and a symbol, and it was absent from that walk's list, so `type AutoIndexState = { index: IndexDetection }` produced a SECOND row beside the correct `AutoIndexState->IndexDetection` the main reference pass had already emitted: the same edge twice, disagreeing about its owner. Measured over 700 tracked files, 212 such rows, and `global` was never once a real symbol in any of them, so every one was unresolvable at the source end \u2014 a consumer asking what `global` references has no node to ask about. The main pass had already recorded 163 of the mentions correctly; 62 named a target no declaration in the file owned (`Error` and other builtins), dangling at BOTH ends; the last 3 sit in files that do not parse, where ownership is not recoverable. The repair has two halves and the second is what makes the first safe: widening the walk alone turned 212 wrong-source duplicates into 212 RIGHT-source duplicates, because two passes cover type mentions and neither could see the other's rows. The pass now resolves the owner properly AND consults the shared relationship array before publishing, which also removed 409 pre-existing duplicate rows corpus-wide.",
+  "expectSymbols": [
+    {
+      "name": "IndexDetection",
+      "kind": "interface"
+    },
+    {
+      "name": "ScaleEstimate",
+      "kind": "interface"
+    },
+    {
+      "name": "RunnerResult",
+      "kind": "type"
+    },
+    {
+      "name": "AutoIndexState",
+      "kind": "type"
+    },
+    {
+      "name": "IndexRunner",
+      "kind": "type"
+    },
+    {
+      "name": "Registry",
+      "kind": "class"
+    },
+    {
+      "name": "detect",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "AutoIndexState",
+      "target": "IndexDetection",
+      "note": "THE PIN. The alias owns the mentions its body makes. This edge was ALREADY emitted by the main reference pass before the fix \u2014 what the defect added beside it was the same edge with `global` in the source column."
+    },
+    {
+      "type": "references",
+      "from": "AutoIndexState",
+      "target": "ScaleEstimate"
+    },
+    {
+      "type": "references",
+      "from": "RunnerResult",
+      "target": "AbortSignal",
+      "note": "A mention nested inside a tuple in a rest type inside a type literal \u2014 the deepest shape in the fixture, and one that reached the walk's fallback most often in the corpus."
+    },
+    {
+      "type": "references",
+      "from": "IndexRunner",
+      "target": "RunnerResult"
+    },
+    {
+      "type": "references",
+      "from": "IndexRunner",
+      "target": "Promise",
+      "note": "A builtin mentioned from inside an alias. The target has no declaration in this file, so this edge is unresolvable at the TARGET end \u2014 a separate, recorded question, and not what this fixture adjudicates. It is pinned because the fix must not delete mentions while removing the fabricated source."
+    },
+    {
+      "type": "uses",
+      "from": "Registry",
+      "target": "IndexDetection",
+      "note": "PIN CORRECTED 2026-10-17: expected as `uses`; the duplicate `references` row is forbidden."
+    },
+    {
+      "type": "uses",
+      "from": "detect",
+      "target": "IndexDetection",
+      "note": "PIN CORRECTED 2026-10-17: expected as `uses`; the duplicate `references` row is forbidden."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "global",
+      "target": "IndexDetection",
+      "note": "THE PIN THAT NAMES THE DEFECT. `global` is not a symbol in this file \u2014 or in any of the 700 files measured, 0 cases \u2014 so this edge cannot be resolved at the source end by any consumer. A fabricated source is not a weaker claim than silence; it is a wrong one."
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "ScaleEstimate"
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "AbortSignal"
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "Promise"
+    },
+    {
+      "type": "references",
+      "from": "global",
+      "target": "RunnerResult"
+    },
+    {
+      "type": "references",
+      "from": "IndexRunner",
+      "target": "IndexDetection",
+      "note": "A cross-alias mention that this file does not make. Pinned so that a widened owner walk cannot over-attribute: the fixture must fail if ownership is resolved to a declaration that does not lexically contain the mention."
+    },
+    {
+      "type": "references",
+      "from": "Registry",
+      "target": "IndexDetection",
+      "note": "PIN CORRECTED 2026-10-17: the duplicate references row for the same mention must NOT exist."
+    },
+    {
+      "type": "references",
+      "from": "detect",
+      "target": "IndexDetection",
+      "note": "PIN CORRECTED 2026-10-17: the duplicate references row for the same mention must NOT exist."
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "_purpose": "The yaml lane's SPACE ATTESTATION for script/m14/ontology-coverage-gate.ts. A ruling that certifies ABSENCE must say WHICH SPACES its probe enumerated, and this file is where the yaml lane says it — because yaml is a key-bearing language (the wired grammar's entire field surface is `key` and `value`) where a construct spelled as a mapping KEY is invisible to a node-type inventory. Every pointer below is read by the gate against `artefact`; a pointer that does not resolve, or a declared number the artefact contradicts, turns the ruling RULED-UNJUSTIFIED instead of RULED-SOUND. Without this file the gate printed, over the whole admitted population: `ontology coverage gate — no RULING SOURCE for yaml. Refusing to report`.",
+  "lane": "yaml",
+  "instrument": "validation/m14/fixtures/yaml/ontology-census.ts",
+  "artefact": "validation/m14/fixtures/yaml/ontology-census.json",
+  "spacesProbed": ["node-types", "block-types", "attribute-keys"],
+  "spaceEvidence": {
+    "nodeTypes": { "pointer": ["grammarInventory", "namedTypes"], "observed": 36 },
+    "blockTypes": { "pointer": ["treeCensus", "distinctBlockTypes"], "observed": 4 },
+    "attributeKeys": { "pointer": ["treeCensus", "distinctAttributeKeys"], "observed": 18368 }
+  },
+  "rulings": {
+    "implements": {
+      "spaces": ["node-types", "block-types", "attribute-keys"],
+      "constructSites": 0,
+      "pointer": ["implementsSites"],
+      "note": "The grammar declares 36 named types and NONE is a declaration of any kind — 0 of the 7 declaration-shaped node types sought (`class_declaration`, `interface_declaration`, `declaration`, `type_declaration`, `extends_clause`, `implements_clause`, `base_class_clause`) is produced by the wired 301-type grammar. That is instrument A on the vocabulary. The key space was probed SECOND, because a YAML construct is normally written as a mapping KEY and a vocabulary cannot see one: 3,845 distinct top-level keys and 18,368 distinct attribute keys over 296,009 key sites, and the 329 keys a conformance keyword (`implements`/`interface`/`protocol`/`trait`/`impl`/`conforms`/`satisfies`) is spelled with are counted and excluded as DATA rather than conformance — a keyword key is a construct SITE only when the document ALSO declares a type for the relation to name, and yaml has no type-declaration construct at all, so the site count is 0 by measurement. See the artefact's candidateWordPopulations."
+    },
+    "instantiates": {
+      "spaces": ["node-types", "block-types", "attribute-keys"],
+      "constructSites": 0,
+      "pointer": ["instantiatesSites"],
+      "note": "0 of the 5 construction-shaped node types sought (`new_expression`, `object_creation`, `constructor_call`, `class_instance`, `instance`) is in the wired grammar's 36 named types, and the inventory contains no construction form of any kind — the named nodes are containers, scalars, anchor, alias, tag, document, stream and the punctuation tokens. Measured from the key space as well, and excluded by the same rule as `implements`: the 14 keys a construction keyword (`new`/`instantiate`/`newinstance`/`create`/`construct`/`clone`) is spelled with are config DATA (`create: true` in a manifest, `create: x.yml` in a task), not construction, and a keyword key is a SITE only when a type is declared to instantiate — which the grammar cannot express. A $ref into `components.schemas` is a REFERENCE to a definition (emitted as `references`), not a construction of a value.",
+      "declined": "PyYAML's `!!python/object:` family would be a real counter-example (it builds an instance) and does NOT occur in this corpus; `!!python/name:` occurs, and it NAMES a Python attribute rather than constructing one."
+    }
+  }
+}

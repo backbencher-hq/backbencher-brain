@@ -1,0 +1,133 @@
+{
+  "fixtureId": "yaml/config-extends-key",
+  "language": "yaml",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "CONFIGURATION INHERITANCE — the `extends:` key. `extends` on a YAML mapping is the same relation the merge key carries, written the other way round: this thing inherits that thing's configuration. These dialects say it with a KEY, and the key's VALUE SHAPE says what the base is. MEASURED over the admitted population the key occurs 80 times in five shapes — `extends: .hidden-job` 33 (GitLab CI, a sibling key in the same file), `extends: {file: F, service: S}` 17 (Docker Compose, a service in another file), `extends: {template: T}` 15 (Azure Pipelines, a template file), `extends: name` 8 (yamllint, a config of another tool), `extends: {service: S}` 6 (Docker Compose, a sibling service in the same file). THE CONTRAST THAT KEEPS THE RULING HONEST: the same sweep found the other supertype-candidate keys in the corpus — `implements` 59, `inherits` 38, `base` 30, `superclass` 2 — and none of them names a YAML supertype clause; they are Dart plugin lists in Flutter pubspecs, pnpm-lock entries, and Ansible filter-plugin bases. `extends:` is the only one whose value names another thing whose CONFIGURATION is inherited. FIVE SHAPES ARE PINNED, because the shape is what decides the claim: a sibling-dot name and a sibling `service:` resolve to a SYMBOL in this file; a `{file:, service:}` and a `{template:}` name a FILE, which is the target the project can check — the base's name rides in the metadata because the analyzer analyses one file at a time and cannot name another file's symbols — and the file is READ, so an `imports` edge is published for it as well; a bare name is a config of another tool that this document does not declare, so the edge says exactly that. `authoredBeforeAnalyzerRun` is false because the expectation was written from that corpus measurement and from the analyzer's output on the same construct.",
+  "expectSymbols": [
+    {
+      "name": ".base",
+      "kind": "class"
+    },
+    {
+      "name": "job-a",
+      "kind": "class"
+    },
+    {
+      "name": "services",
+      "kind": "class"
+    },
+    {
+      "name": "db",
+      "kind": "class"
+    },
+    {
+      "name": "db-replica",
+      "kind": "class"
+    },
+    {
+      "name": "cache.redis",
+      "kind": "class"
+    },
+    {
+      "name": "cache-replica",
+      "kind": "class"
+    },
+    {
+      "name": "lint-folded",
+      "kind": "class"
+    },
+    {
+      "name": "lint-literal",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "config-extends-key.job-a",
+      "target": "config-extends-key..base",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": true,
+      "line_number": 37
+    },
+    {
+      "type": "extends",
+      "from": "config-extends-key.services.db-replica",
+      "target": "config-extends-key.services.db",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": true,
+      "line_number": 44
+    },
+    {
+      "type": "extends",
+      "from": "config-extends-key.services.cache-replica",
+      "target": "config-extends-key.services.cache.redis",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": true,
+      "line_number": 53
+    },
+    {
+      "type": "extends",
+      "from": "config-extends-key.api",
+      "target": "docker-compose/databases.yaml",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": false,
+      "line_number": 57
+    },
+    {
+      "type": "imports",
+      "from": "config-extends-key.api",
+      "target": "docker-compose/databases.yaml",
+      "meta.relationshipType": "yaml_extends_file",
+      "meta.evidenceClass": "import_based",
+      "line_number": 57
+    },
+    {
+      "type": "extends",
+      "from": "config-extends-key.pipeline",
+      "target": "azure-pipelines/MicroBuild.yml",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": false,
+      "line_number": 62
+    },
+    {
+      "type": "imports",
+      "from": "config-extends-key.pipeline",
+      "target": "azure-pipelines/MicroBuild.yml",
+      "meta.relationshipType": "yaml_extends_file",
+      "meta.evidenceClass": "import_based",
+      "line_number": 62
+    },
+    {
+      "type": "extends",
+      "from": "config-extends-key.lint",
+      "target": "default",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": false,
+      "line_number": 66
+    },
+    {
+      "type": "extends",
+      "from": "config-extends-key.lint-folded",
+      "target": "default",
+      "meta.relationshipType": "yaml_config_extends",
+      "meta.evidenceClass": "structural",
+      "meta.resolved": false,
+      "line_number": 73
+    }
+  ],
+  "_theFalsifier": "A corpus site where `extends:` names something that is NOT a configuration base — a version, a label, a metric. The measured population has five shapes and every one of them names a base, so the falsifier is a sixth shape with a different meaning. The 91 filesystem-level `extends:` sites that are NOT in the admitted population (the ESLint `.eslintrc.yml` files under `node_modules`) are exactly the kind of site this rule would have to reject: ESLint's `extends: eslint:recommended` names a config preset of another tool, which the bare-name shape already covers as an external config name rather than as a YAML base.",
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "config-extends-key.lint-literal",
+      "meta.relationshipType": "yaml_config_extends"
+    }
+  ]
+}

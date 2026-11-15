@@ -1,0 +1,24 @@
+{
+  "fixtureId": "swift/case-pattern-recovery",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SW-D21 (#938, swift lane, full extent 554 files of swift-nio): a switch-case PATTERN with an associated value does not reduce in the pinned grammar — `case .websocket(let channel):` recovers as a call_expression whose callee navigation STARTS AT THE `case` KEYWORD (`simple_identifier \"case\"` + navigation_suffix + a call_suffix holding `let` and an ERROR). The pre-fix code took the leaf and published `calls -> websocket` / `calls -> notUpgraded`: the ONLY analyzer edges on the full-extent draw with no truth counterpart (3 rows over Client.swift/Server.swift, 1 red draw). The fix reads the reserved keyword off the token (never source text) and returns silently. The positive half pins that the fix is not a blanket suppression: the real call in `handle` (`consume(channel)`) and the genuinely different site sharing the leaf name (`UpgradeResult.websocket(1)` -> enum construction) both still have to be emitted.",
+  "expectSymbols": [
+    { "name": "UpgradeResult", "kind": "enum" },
+    { "name": "websocket", "kind": "enum_member", "ownerName": "UpgradeResult" },
+    { "name": "notUpgraded", "kind": "enum_member", "ownerName": "UpgradeResult" },
+    { "name": "SocketServer", "kind": "class" },
+    { "name": "handle", "kind": "method", "ownerName": "SocketServer" },
+    { "name": "consume", "kind": "method", "ownerName": "SocketServer" },
+    { "name": "build", "kind": "method", "ownerName": "SocketServer" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "handle", "target": "consume", "note": "the real call inside the recovered case body — the keyword gate must not silence genuine calls in the same switch" },
+    { "type": "instantiates", "source": "build", "target": "UpgradeResult", "meta.isEnumConstruction": true, "note": "`UpgradeResult.websocket(1)` — the enum construction whose leaf name the fabricated edges borrowed" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "source": "handle", "target": "websocket", "comment": "#938: the case PATTERN must never be published as a call" },
+    { "type": "calls", "source": "handle", "target": "notUpgraded", "comment": "#938: neither pattern spelling may fabricate a call" },
+    { "type": "instantiates", "source": "handle", "target": "websocket", "comment": "#938: a pattern is not construction either — `case` is a reserved keyword, not a type name" }
+  ]
+}

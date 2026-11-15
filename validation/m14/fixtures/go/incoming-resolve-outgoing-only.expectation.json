@@ -1,0 +1,316 @@
+{
+  "fixtureId": "go/incoming-resolve-outgoing-only",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE OUTGOING-ONLY CONTRACT, which had no fixture at all. Every edge this analyzer emits is outgoing from the file being analysed, and the tempting 'improvement' is to emit the reverse edge too -- which would DOUBLE the graph and make every reversed row a fabricated relationship: `calls Describe -> ToUpper` read backwards is not a call, it is a caller. A fabricated edge is counted as `unexplained` by the differential and poisons bb_graph, bb_impact and bb_migrate. So the FORBID half below is the contract: each of the ten types present in this one file, with its endpoints SWAPPED, must not exist. The measured support for the ruling is in validation/m14/go/go-incoming-resolve.ts: the analyzer imports 2 modules and 0 of them touch the filesystem, ParseResult declares 9 fields and 0 of them is an inbound channel, and brain_relationship has 16 columns and no inbound table -- `src/lsp/impact.ts:530` and `graph-engine.ts:684` both answer 'who points at me' with a WHERE clause on r.target_symbol_id. MUTANT: validation/m14/go/go-incoming-mutants.ts `go/incoming-reverse-edge-added` adds a reverse-edge pass and this fixture must fail; `go/incoming-contains-owner-swapped` swaps the contains endpoints and must fail. THE FILE IS ALSO THE COMPACT FORM OF THE 10/10 VERDICT: all ten relationship types fire on it, and one name, `Describe`, is declared FOUR times -- a method on Base, a method on Wrapper, a method on Printer and a package-scope function -- so the AMBIGUOUS resolution class is demonstrated inside a single file, with no cross-package reasoning needed to see it. `Label` is a struct field on two structs and at no package scope, so it is the VIA-OWNER class; `ToUpper` is a declaration go-stdlib contains and this fixture's directory does not, so it is the UNRESOLVABLE class and it is expected rather than a defect. Every relationship row below was read back from live production emission with a dump over ASTEngine.parseFile, never predicted; the four `Describe` symbols were confirmed to be four distinct declarations by the same dump.",
+  "expectSymbols": [
+    {
+      "name": "incomingresolve",
+      "kind": "module"
+    },
+    {
+      "name": "Base",
+      "kind": "struct"
+    },
+    {
+      "name": "Payload",
+      "kind": "property",
+      "ownerName": "Base"
+    },
+    {
+      "name": "Wrapper",
+      "kind": "struct"
+    },
+    {
+      "name": "Label",
+      "kind": "property",
+      "ownerName": "Wrapper"
+    },
+    {
+      "name": "Describe",
+      "kind": "function"
+    },
+    {
+      "name": "Writer",
+      "kind": "interface"
+    },
+    {
+      "name": "Write",
+      "kind": "method",
+      "ownerName": "Writer"
+    },
+    {
+      "name": "Printer",
+      "kind": "struct"
+    },
+    {
+      "name": "Writer",
+      "kind": "property",
+      "ownerName": "Printer"
+    },
+    {
+      "name": "Label",
+      "kind": "property",
+      "ownerName": "Printer"
+    },
+    {
+      "name": "buffer",
+      "kind": "property",
+      "ownerName": "Printer",
+      "visibility": "private"
+    },
+    {
+      "name": "NewPrinter",
+      "kind": "function"
+    },
+    {
+      "name": "Describe",
+      "kind": "method",
+      "ownerName": "Base"
+    },
+    {
+      "name": "Describe",
+      "kind": "method",
+      "ownerName": "Wrapper"
+    },
+    {
+      "name": "Describe",
+      "kind": "method",
+      "ownerName": "Printer"
+    },
+    {
+      "name": "Describe2",
+      "kind": "function"
+    },
+    {
+      "name": "Describe2",
+      "kind": "method",
+      "ownerName": "Printer"
+    },
+    {
+      "name": "Sink",
+      "kind": "struct"
+    },
+    {
+      "name": "Label",
+      "kind": "property",
+      "ownerName": "Sink"
+    },
+    {
+      "name": "Write",
+      "kind": "method",
+      "ownerName": "Sink"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Wrapper",
+      "target": "Base",
+      "confidence": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapper",
+      "target": "Label",
+      "confidence": 1
+    },
+    {
+      "type": "contains",
+      "from": "Writer",
+      "target": "Write",
+      "confidence": 1
+    },
+    {
+      "type": "contains",
+      "from": "Sink",
+      "target": "Write",
+      "confidence": 1
+    },
+    {
+      "type": "mixes_in",
+      "from": "Wrapper",
+      "target": "Base",
+      "confidence": 0.8,
+      "meta.embeddedStruct": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Printer",
+      "target": "Writer",
+      "confidence": 0.8
+    },
+    {
+      "type": "implements",
+      "from": "Sink",
+      "target": "Writer",
+      "confidence": 1,
+      "meta.isImplicit": true
+    },
+    {
+      "type": "overrides",
+      "from": "Wrapper.Describe",
+      "target": "Describe",
+      "confidence": 0.95,
+      "meta.reasonCode": "promoted-method-shadowed-by-outer-declaration",
+      "meta.promotedAtDepth": 1,
+      "meta.targetQualified": "Base.Describe",
+      "meta.embedder": "Base"
+    },
+    {
+      "type": "exports",
+      "from": "incomingresolve",
+      "target": "Describe",
+      "confidence": 1,
+      "meta.symbolKind": "function"
+    },
+    {
+      "type": "exports",
+      "from": "incomingresolve",
+      "target": "Writer",
+      "confidence": 1,
+      "meta.symbolKind": "interface"
+    },
+    {
+      "type": "imports",
+      "from": "incomingresolve",
+      "target": "strings",
+      "confidence": 0.9,
+      "meta.isGoImportDep": true
+    },
+    {
+      "type": "calls",
+      "from": "Describe",
+      "target": "ToUpper",
+      "confidence": 0.8,
+      "meta.callExpression": "strings.ToUpper",
+      "meta.isPackageQualified": true
+    },
+    {
+      "type": "uses",
+      "from": "Describe",
+      "target": "Label",
+      "confidence": 0.7,
+      "meta.selectorExpression": "Describe.Label"
+    },
+    {
+      "type": "references",
+      "from": "NewPrinter",
+      "target": "Printer",
+      "confidence": 0.95,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "Write",
+      "target": "Sink",
+      "confidence": 0.95
+    },
+    {
+      "type": "instantiates",
+      "from": "NewPrinter",
+      "target": "Printer",
+      "confidence": 0.8,
+      "meta.isConstructor": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Label",
+      "target": "Wrapper"
+    },
+    {
+      "type": "contains",
+      "from": "Payload",
+      "target": "Base"
+    },
+    {
+      "type": "contains",
+      "from": "Write",
+      "target": "Writer"
+    },
+    {
+      "type": "contains",
+      "from": "Describe",
+      "target": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Base",
+      "target": "Wrapper"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Writer",
+      "target": "Printer"
+    },
+    {
+      "type": "implements",
+      "from": "Writer",
+      "target": "Sink"
+    },
+    {
+      "type": "overrides",
+      "from": "Base.Describe",
+      "target": "Describe",
+      "meta.targetQualified": "Wrapper.Describe"
+    },
+    {
+      "type": "exports",
+      "from": "Describe",
+      "target": "incomingresolve"
+    },
+    {
+      "type": "exports",
+      "from": "NewPrinter",
+      "target": "incomingresolve"
+    },
+    {
+      "type": "imports",
+      "from": "strings",
+      "target": "incomingresolve"
+    },
+    {
+      "type": "calls",
+      "from": "ToUpper",
+      "target": "Describe"
+    },
+    {
+      "type": "calls",
+      "from": "Base.Describe",
+      "target": "Wrapper.Describe"
+    },
+    {
+      "type": "uses",
+      "from": "Label",
+      "target": "Describe"
+    },
+    {
+      "type": "uses",
+      "from": "Payload",
+      "target": "Describe"
+    },
+    {
+      "type": "references",
+      "from": "Base",
+      "target": "Wrapper"
+    },
+    {
+      "type": "references",
+      "from": "Printer",
+      "target": "NewPrinter"
+    },
+    {
+      "type": "instantiates",
+      "from": "Printer",
+      "target": "NewPrinter"
+    },
+    {
+      "type": "instantiates",
+      "from": "ToUpper",
+      "target": "Describe"
+    }
+  ]
+}

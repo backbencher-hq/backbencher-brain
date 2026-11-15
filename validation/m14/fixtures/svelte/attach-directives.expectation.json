@@ -1,0 +1,19 @@
+{
+  "fixtureId": "svelte/attach-directives",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Adversarial round on the M12 svelte census residual: {@attach handler} parses as a stable ERROR shape in the pinned grammar and the analyzer emitted nothing for it (measured pre-fix, round-trip in script/m14/tmp/web-adv-svelte.ts). Now identifier and call forms emit calls edges at the handler's own line, on intrinsic AND component tags; the arrow-param form emits nothing (no fabrication).",
+  "expectSymbols": [
+    { "name": "arrow" },
+    { "name": "makeAttach" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "myAttachment", "line_number": 9 },
+    { "type": "calls", "target": "arrow", "line_number": 11 },
+    { "type": "calls", "target": "makeAttach", "line_number": 12 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "node", "note": "arrow-param form has no call target — no fabrication" },
+    { "type": "calls", "target": "attach", "note": "the ERROR[attach] keyword token must never become a target" }
+  ]
+}

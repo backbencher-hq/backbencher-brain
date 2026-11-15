@@ -1,0 +1,35 @@
+{
+  "expectSymbols": [
+    {
+      "name": "plain",
+      "kind": "type",
+      "meta.isTypeSpec": true
+    },
+    {
+      "name": "t",
+      "kind": "type",
+      "meta.isTypeSpec": true
+    },
+    {
+      "name": "pt",
+      "kind": "type",
+      "meta.isTypeSpec": true
+    },
+    {
+      "name": "o",
+      "kind": "type",
+      "meta.isTypeSpec": true
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "b",
+      "kind": "type"
+    },
+    {
+      "name": "c",
+      "kind": "type"
+    }
+  ],
+  "note": " EX-PAYLOAD pin (2026-09-28): every @type/@typep/@opaque symbol carries `meta.isTypeSpec` (mutant elixir/type-spec-marker-dropped survived before this)."
+}

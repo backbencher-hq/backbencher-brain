@@ -1,0 +1,147 @@
+{
+  "fixtureId": "rust/trait-override",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "INCOMING_RUST. `overrides` was RULED on prose \u2014 'Rust trait impls are captured as implements' \u2014 and the ontology gate exists because a prose justification survived a whole wave and was wrong: the lane's corpus measurement found 252 `implements` edges over 44 files of ripgrep plus 107 in-file trait-implementation sites, so the construct is common and the language states it. Rust has no `override` keyword: `impl Trait for Type { fn m() }` REPLACES the trait's `m` for that type, and the author's writing of both ends IS the assertion, so nothing is inferred. (1) The two confidence tiers are the contract, not a detail: `local-trait-signature` at 1.0 means both ends are facts read out of THIS file (pinned on TWO traits, `Local` and `Foreign`, so a rule that only handled the first trait in a file would fail rather than pass), `cross-file-trait-signature` at 0.85 means the trait is not declared here and the target joins only once the whole project is indexed \u2014 a thresholded consumer must not treat it as ground truth. `Drop::drop` and `Read::read` are both pinned because they are the shapes a real corpus is made of, and `Read` is the one that proves the 0.85 tier is reachable rather than dead. (2) The negative half decides whether the label means anything: `only_in_impl` is a method `Local` does NOT declare, so the impl ADDS one and publishing `overrides` for it would put the label on an edge that is not an override. (3) An INHERENT impl (`impl Widget { fn inherent }`) publishes nothing \u2014 there is no trait, so nothing is displaced. This is the half a name-based rule gets wrong, and the R10/D30 precedent is that a rule which cannot see the `for` clause invents edges. (4) A QUALIFIED trait reference (`std::fmt::Display`) targets the LEAF `Display`, matching the lane's own `implements` leaf-target contract (#419-B) and the family's name-surface rule: a path prefix is not a dependency, the type is. (5) `implements` rows are pinned at confidenceMin 1 here because the lane measured 252 of 252 with NO confidence field at all \u2014 the absence was invisible from inside the analyzer because classifyEvidenceTier defaults a missing value to 1. (6) The `calls` confidence pin is here rather than in the payload fixture for a reason this file can show: the pre-round edge published NO confidence at all (17,083 of 17,083 rows on this lane's corpus), `classifyEvidenceTier` defaults a missing value to 1 so the evidence tier read correct, and no fixture asserted the field \u2014 so removing it passed every gate in the repository. A `confidenceMin` pin on ONE `calls` row is the whole fix and costs one line. (7) Two `calls` confidence pins, one per emission site: a `call_expression` callee and a `macro_invocation` name are separate emission sites with separate `confidence` fields, and a single pin covered whichever one the mutant did not touch \u2014 the first version of the lane mutant dropped the call-expression field and SURVIVED, which is the fixture-gap report the honesty contract asks for rather than a reason to weaken the pin. SUPERSESSION (2026-10-19, Lead decision \u00a721.11 + task-9): this fixture previously carried TWO forbids that contradicted its own expects \u2014 `{target:'handle'}` and `{source:'Widget.handle',target:'handle'}` both match the CORRECT owner-qualified override row the expects require, so the fixture could never pass and the forbid was pinning the wrong shape. Resolved IN FAVOUR OF THE EXPECT (the trait-override contract wins; the same decision makes foreign/cross-file overrides real relationships). Coverage is not weakened: the two stale forbids are REPLACED by the shapes they were trying to describe \u2014 a BARE method name as the source (a method leaf does not say WHICH type's) and the REVERSED direction (trait/source -> implementing type).",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Local",
+      "kind": "trait"
+    },
+    {
+      "name": "Foreign",
+      "kind": "trait"
+    },
+    {
+      "name": "Widget",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "source": "Widget.handle",
+      "target": "handle",
+      "confidenceMin": 1,
+      "meta.reasonCode": "local-trait-signature",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.with_default",
+      "target": "with_default",
+      "confidenceMin": 1,
+      "comment": "a trait method with a DEFAULT BODY is still a declaration an impl replaces"
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.drive",
+      "target": "drive",
+      "confidenceMin": 1,
+      "confidenceMax": 1,
+      "meta.reasonCode": "local-trait-signature",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.drop",
+      "target": "drop",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.85
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.fmt",
+      "target": "fmt",
+      "comment": "a qualified trait reference targets the LEAF, like implements"
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "Local",
+      "confidenceMin": 1,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "Foreign",
+      "confidenceMin": 1
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "Drop",
+      "confidenceMin": 1
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "Display",
+      "confidenceMin": 1
+    },
+    {
+      "type": "calls",
+      "target": "write",
+      "confidenceMin": 1,
+      "comment": "calls published NO confidence at all: 17,083 of 17,083 rows on this lane's corpus"
+    },
+    {
+      "type": "references",
+      "target": "Formatter",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "Local",
+      "target": "handle"
+    },
+    {
+      "type": "overrides",
+      "source": "Socket.read",
+      "target": "read",
+      "confidenceMin": 0.85,
+      "confidenceMax": 0.85,
+      "meta.reasonCode": "cross-file-trait-signature",
+      "comment": "the trait is NOT declared in this file"
+    },
+    {
+      "type": "calls",
+      "target": "Ok",
+      "confidenceMin": 1,
+      "comment": "a FUNCTION call's confidence, not the macro edge's \u2014 the two are separate emission sites and a lane mutant that dropped one of them left the other pinned, so both are pinned by name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "Widget.only_in_impl",
+      "comment": "Local does not declare it: the impl ADDS a method, which is not an override"
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.inherent",
+      "comment": "an inherent impl has no trait, so nothing is displaced"
+    },
+    {
+      "type": "overrides",
+      "target": "global"
+    },
+    {
+      "type": "overrides",
+      "target": ""
+    },
+    {
+      "type": "overrides",
+      "source": "handle",
+      "comment": "REPLACED the stale `{target:handle}` forbid (which matched the correct owner-qualified row): the honest negative is a BARE method source \u2014 a method leaf does not say WHICH type's, so it is not answerable for an incoming query"
+    },
+    {
+      "type": "overrides",
+      "source": "Local",
+      "target": "Widget",
+      "comment": "REPLACED the stale `{source:Widget.handle,target:handle}` forbid: the direction is derived -> base, never the reverse"
+    }
+  ]
+}

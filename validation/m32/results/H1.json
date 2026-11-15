@@ -1,0 +1,39 @@
+{
+  "status": "verified",
+  "milestone": "M32",
+  "issue": "H1",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m32/verify-honesty-docs.ts",
+  "evidenceFile": "H1.json",
+  "generatedAt": "2026-11-15T04:11:49.441Z",
+  "passed": 39,
+  "failed": 0,
+  "negativeCases": 5,
+  "docMutants": [
+    {
+      "name": "fingerprint form paraphrased (full key hinted)",
+      "caught": true
+    },
+    {
+      "name": "permissions-only rule weakened",
+      "caught": true
+    },
+    {
+      "name": "prompt-once claim removed",
+      "caught": true
+    },
+    {
+      "name": "doctor fix command paraphrased (bb index . instead of --force)",
+      "caught": true
+    },
+    {
+      "name": "fix applied header dropped",
+      "caught": true
+    }
+  ],
+  "limitations": [
+    "Verbatim checks pin the strings the M32 CLIs emit at the pinned commit; a future intentional CLI copy change must update both code and docs together or this gate fails (by design).",
+    "Banned-vocabulary lint is scoped to M32-relevant lines (setup/doctor/embedding claims), not the whole README — pre-existing governance quotes elsewhere are outside M32's claim surface.",
+    "Binary cross-check asserts output shape (headers, findings, precedence line) on a fresh fixture; full output-text equality is covered by S1/S2/S3 verifiers."
+  ]
+}

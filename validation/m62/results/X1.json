@@ -1,0 +1,119 @@
+{
+  "issue": "M62.X1",
+  "code": "X1",
+  "milestone": "M62",
+  "status": "known-gap",
+  "checks": 33,
+  "passed": 26,
+  "failed": 7,
+  "realFailed": 7,
+  "negativeCases": 10,
+  "mutantsCaught": 0,
+  "mutantsTotal": 0,
+  "currentCommit": "c963bb3a86002ca4160c0e162a4ce5c327ebf416",
+  "sourceFingerprint": "e8d4bb0353f12398316366732dd13612b400c320b44c949eec49a32ed9a11924",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m62/verify-closure.ts",
+    "docs/m62/LINE-ADDRESS.md",
+    "docs/m62/M62-MASTER-PLAN.md",
+    "src/brain/database.ts",
+    "src/intelligence/graph/graph-engine.ts",
+    "src/lsp/hover.ts",
+    "src/mcp/tool-handlers.ts",
+    "script/m62/a1-fixture.ts",
+    "script/m62/governance_core.ts"
+  ],
+  "verifierCommand": "npx tsx script/m62/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-10-17T17:40:47.084Z",
+  "schemaVersion": 1,
+  "chain": [
+    {
+      "code": "A1",
+      "ok": true,
+      "last": "A1: VERIFIED (76/76 passed, 9/9 mutants caught)"
+    },
+    {
+      "code": "A2",
+      "ok": true,
+      "last": "A2: VERIFIED (33/33 passed, 8/8 mutants caught)"
+    },
+    {
+      "code": "A3",
+      "ok": true,
+      "last": "A3: VERIFIED (26/26 passed, 2/2 mutants caught)"
+    },
+    {
+      "code": "D1",
+      "ok": true,
+      "last": "D1: VERIFIED (5/5 passed)"
+    }
+  ],
+  "lane": [
+    {
+      "name": "m24 (The Server)",
+      "findings": [
+        "19 lane file(s) changed since it ran: src/intelligence/visualization/visualization-engine.ts, src/mcp/tool-handlers.ts, script/m24/verify-navigation.ts (uncommitted)"
+      ]
+    },
+    {
+      "name": "m26 (The Graph)",
+      "findings": [
+        "the record is known-gap, not verified",
+        "26 lane file(s) changed since it ran: script/m26/verify-closure.ts, script/m26/verify-external-arm-plan.ts, script/m42/verify-closure.ts"
+      ]
+    },
+    {
+      "name": "m42 (The Interactive Hover)",
+      "findings": [
+        "the record is known-gap, not verified",
+        "17 lane file(s) changed since it ran: script/m24/verify-navigation.ts (uncommitted), script/m42/verify-highlight.ts (uncommitted), script/m55/verify-closure.ts (uncommitted)"
+      ]
+    },
+    {
+      "name": "m44 (The Understandable Hub)",
+      "findings": [
+        "the record is known-gap, not verified",
+        "17 lane file(s) changed since it ran: script/m24/verify-navigation.ts (uncommitted), script/m42/verify-highlight.ts (uncommitted), script/m55/verify-closure.ts (uncommitted)"
+      ]
+    },
+    {
+      "name": "m55 (The Hub That Tells the Truth)",
+      "findings": [
+        "the record is known-gap, not verified",
+        "17 lane file(s) changed since it ran: script/m24/verify-navigation.ts (uncommitted), script/m42/verify-highlight.ts (uncommitted), script/m55/verify-closure.ts (uncommitted)"
+      ]
+    },
+    {
+      "name": "m61 (Verifier Truth)",
+      "findings": [
+        "the record is known-gap, not verified",
+        "18 lane file(s) changed since it ran: src/intelligence/visualization/visualization-engine.ts, script/m24/verify-navigation.ts (uncommitted), script/m42/verify-highlight.ts (uncommitted)"
+      ]
+    }
+  ],
+  "ledgerStatus": "open",
+  "packDriftChecked": true,
+  "artifacts": [
+    "validation/m62/results/SPOT-CHECK-PACK.md",
+    "validation/m62/results/KNOWN-GAPS.md"
+  ],
+  "laws": [
+    "R1 the M62 chain re-executes",
+    "R2 every entry is the projection of a sealed record",
+    "R3 every lane bar is verified and fresh by relevance",
+    "R4 the address invariants hold through the real engine",
+    "R5 the packs are generated, never hand-written"
+  ],
+  "limitations": [
+    "The lane bars are re-read (verified + fresh by relevance); each lane's own closure gate re-earns its bar, which this audit requires rather than re-runs.",
+    "Per-language real-line coverage remains M59's claim; this audit re-checks the consumption contract only.",
+    "The pack drift rule binds from the second run (the first run creates the pack)."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T17:40:47.090Z",
+    "contentSha256": "22176fe83edb96e1231f6d3a51fd074441687fe67d7cac406d8dfc37d6c2cfd3"
+  }
+}

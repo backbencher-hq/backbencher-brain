@@ -11,7 +11,7 @@ import { statSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve("script/m50", "../..")
-const REPO = "$HOME/mcp/backbencher-brain"
+const REPO = "/home/ishaq2321/mcp/backbencher-brain"
 const BUDGET = Number(process.argv[2] || 60_000)
 
 async function main() {

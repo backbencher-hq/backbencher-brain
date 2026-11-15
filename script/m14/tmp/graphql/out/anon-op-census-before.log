@@ -1,0 +1,15 @@
+=== anonymous-operation census [BEFORE] ===
+files 750   symbols 24305   relationships 60364
+symbols the store discards by design (/^(anonymous|anon|unnamed)[_-]/): 66
+relationships sourced from one of them: 836
+  by type: {"uses":836}
+all relationship types: {"contains":19412,"exports":4248,"implements":740,"imports":136,"overrides":2524,"references":22120,"uses":11184}
+distinct symbol names 8005; names appearing in >1 emission 2628
+  id x757
+  clientMutationId x408
+  name x298
+  node x236
+  createdAt x228
+  Query x221
+  pageInfo x186
+  edges x185

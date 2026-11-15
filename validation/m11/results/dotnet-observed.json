@@ -1,0 +1,367 @@
+{
+  "schemaVersion": 1,
+  "fixtureLanguage": "dotnet",
+  "projectId": "a88dec8834d91d0f7968c084b109a7e89f1c93c5",
+  "metrics": {
+    "wallMs": 3048.223348,
+    "cpuMs": 395.892,
+    "peakRssBytes": 79826944,
+    "databaseBytes": 1085440,
+    "filesPerSecond": 0.9841798508525826,
+    "symbolsPerSecond": 11.810158210230991,
+    "relationshipsPerSecond": 34.774354730124585
+  },
+  "files": [
+    {
+      "path": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "language": "fsharp"
+    },
+    {
+      "path": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.Part2.cs",
+      "language": "csharp"
+    },
+    {
+      "path": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "language": "csharp"
+    }
+  ],
+  "symbols": [
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Example.Domain",
+      "kind": "namespace",
+      "start_line": 1,
+      "end_line": 19
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "CustomerModule",
+      "kind": "module",
+      "start_line": 5,
+      "end_line": 19
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Status",
+      "kind": "enum",
+      "start_line": 6,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Active",
+      "kind": "enum_member",
+      "start_line": 7,
+      "end_line": 7
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Inactive",
+      "kind": "enum_member",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Customer",
+      "kind": "class",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Id",
+      "kind": "property",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Name",
+      "kind": "property",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Repository",
+      "kind": "interface",
+      "start_line": 12,
+      "end_line": 14
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Get",
+      "kind": "method",
+      "start_line": 13,
+      "end_line": 13
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "Save",
+      "kind": "method",
+      "start_line": 14,
+      "end_line": 14
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "format",
+      "kind": "function",
+      "start_line": 16,
+      "end_line": 16
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "findById",
+      "kind": "function",
+      "start_line": 17,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerModule.fs",
+      "name": "createAsync",
+      "kind": "function",
+      "start_line": 19,
+      "end_line": 19
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.Part2.cs",
+      "name": "Example.Domain",
+      "kind": "namespace",
+      "start_line": 4,
+      "end_line": 12
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.Part2.cs",
+      "name": "CustomerService",
+      "kind": "class",
+      "start_line": 6,
+      "end_line": 12
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.Part2.cs",
+      "name": "FindAll",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 11
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Example.Domain",
+      "kind": "namespace",
+      "start_line": 6,
+      "end_line": 37
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "CustomerService",
+      "kind": "class",
+      "start_line": 8,
+      "end_line": 19
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "customers",
+      "kind": "property",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "CustomerCreated",
+      "kind": "event",
+      "start_line": 11,
+      "end_line": 11
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 13,
+      "end_line": 13
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 14,
+      "end_line": 14
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Get",
+      "kind": "method",
+      "start_line": 16,
+      "end_line": 16
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "GetAsync",
+      "kind": "method",
+      "start_line": 17,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Add",
+      "kind": "method",
+      "start_line": 18,
+      "end_line": 18
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "ICustomerService",
+      "kind": "interface",
+      "start_line": 21,
+      "end_line": 25
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Get",
+      "kind": "method",
+      "start_line": 23,
+      "end_line": 23
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Add",
+      "kind": "method",
+      "start_line": 24,
+      "end_line": 24
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Customer",
+      "kind": "class",
+      "start_line": 27,
+      "end_line": 30
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Id",
+      "kind": "property",
+      "start_line": 27,
+      "end_line": 27
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Name",
+      "kind": "property",
+      "start_line": 27,
+      "end_line": 27
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "DisplayName",
+      "kind": "property",
+      "start_line": 29,
+      "end_line": 29
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "CustomerFilter",
+      "kind": "delegate",
+      "start_line": 32,
+      "end_line": 32
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "CustomerExtensions",
+      "kind": "class",
+      "start_line": 34,
+      "end_line": 37
+    },
+    {
+      "file": "/tmp/bb-m11-dotnet-probe-101309/CustomerService.cs",
+      "name": "Filter",
+      "kind": "method",
+      "start_line": 36,
+      "end_line": 36
+    }
+  ],
+  "imports": [
+    {
+      "import_path": "System",
+      "imported_name": "System",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "System",
+      "imported_name": "System",
+      "imported_as": null,
+      "import_type": "default",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "System.Collections.Generic",
+      "imported_name": "System.Collections.Generic",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "System.Collections.Generic",
+      "imported_name": "System.Collections.Generic",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "System.Linq",
+      "imported_name": "System.Linq",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "System.Linq",
+      "imported_name": "System.Linq",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "System.Threading.Tasks",
+      "imported_name": "System.Threading.Tasks",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "calls",
+      "count": 11
+    },
+    {
+      "relationship_type": "contains",
+      "count": 32
+    },
+    {
+      "relationship_type": "implements",
+      "count": 1
+    },
+    {
+      "relationship_type": "references",
+      "count": 55
+    },
+    {
+      "relationship_type": "uses",
+      "count": 7
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.803Z",
+    "contentSha256": "871f94dd337fe08eb0c176fd20d3babd95a297775668471915c65af73f876676"
+  }
+}

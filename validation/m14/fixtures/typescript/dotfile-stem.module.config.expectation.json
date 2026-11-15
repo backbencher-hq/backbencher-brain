@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/dotfile-stem.module.config",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE CONTROL for module-leaf-declaration-file.d (VERIFY_TS10). Leaf identity is `basename` minus the LAST extension: `dotfile-stem.module.config.ts` publishes `dotfile-stem.module.config`. Only a DECLARATION file's `.d` is part of the extension rather than of the name. The NAME is the assertion and it had to be chosen to make the two rules distinguishable — the first version of this fixture was `module-leaf-dotfile-stem.ts`, whose only dots belong to the extension, so a mutant cutting at the FIRST dot returned the identical string and this control passed under it (measured: the mutant run reported 93 pass / 0 fail with the control still green). A control that cannot tell the two rules apart is not a control.",
+  "expectRelationships": [
+    { "type": "imports", "from": "dotfile-stem.module.config", "target": "unocss:defineConfig", "note": "the leaf keeps every interior dot: basename minus the LAST extension" },
+    { "type": "exports", "from": "dotfile-stem.module.config", "target": "presetName" },
+    { "type": "calls", "from": "dotfile-stem.module.config", "target": "defineConfig", "note": "CONTROL: the call edge names the module too and is affected the same way" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "from": "dotfile-stem", "target": "unocss:defineConfig", "note": "over-stripping: cutting at the FIRST dot would name the module `dotfile-stem`" },
+    { "type": "exports", "from": "dotfile-stem", "target": "presetName", "note": "over-stripping, exports channel" },
+    { "type": "calls", "from": "dotfile-stem", "target": "defineConfig", "note": "over-stripping, calls channel" }
+  ]
+}

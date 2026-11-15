@@ -1,0 +1,71 @@
+{
+ "fixtureId": "css/keyframes-and-animation-uses",
+ "language": "css",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "`uses` is the class the ontology work shrank from 34,727 edges at 6.0% resolution to 26 at 100%, so the small number is the point: every `uses` edge in this lane has both endpoints resolvable. Three cases are pinned \u2014 a forward reference (declared after use), a separate `animation-name` property, and a name this file does NOT declare. The last one is the one that matters: an animation can legitimately come from another stylesheet, and inventing an endpoint for it is the `global` phantom this lane already removed once.",
+ "expectSymbols": [
+  {
+   "name": ".spinner",
+   "kind": "class"
+  },
+  {
+   "name": "spin",
+   "kind": "function"
+  },
+  {
+   "name": ".fade",
+   "kind": "class"
+  },
+  {
+   "name": ".undeclared",
+   "kind": "class"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "target": "fixtures/css/keyframes-and-animation-uses::spin",
+   "line_number": 2,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.isAnimationRef": true
+  },
+  {
+   "type": "uses",
+   "target": "fixtures/css/keyframes-and-animation-uses::spin",
+   "meta.evidenceClass": "usage_contextual",
+   "meta.isAnimationRef": true
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "notInThisFile"
+  },
+  {
+   "type": "contains",
+   "target": "opacity"
+  },
+  {
+   "type": "uses",
+   "target": "from"
+  },
+  {
+   "type": "uses",
+   "target": "to"
+  },
+  {
+   "name": "@keyframes spin"
+  },
+  {
+   "name": "spin",
+   "kind": "module"
+  },
+  {
+   "type": "overrides",
+   "source": "spin",
+   "target": "fixtures/css/keyframes-and-animation-uses::spin",
+   "comment": "a @keyframes name is not an override of itself; the dropped-vendor-discriminator mutant emits this self row"
+  }
+ ],
+ "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

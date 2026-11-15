@@ -1,0 +1,54 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/unbound-read-published.sh",
+ "authoredFrom": "Round-21 measurement, 2026-10-05. Asserts `meta.variableDeclaredInFile` on `uses` edges. 602 of this lane's unresolved edges are `uses` edges whose name no file in a 600-file window declares, and the row said nothing about why. The field is named for the index it derives from — `declSites` holds variables, aliases and locals and NEVER functions — which is why case 4 below is the reason it is not called `declaredInFile`. SCOPE: a read inside a function is attributed to the FUNCTION, not the file (case 3's `from` is `boundary_fixture_reader`), and the post-walk `targetResolution` IS reachable here, so case 3 pins the new field alongside the walk it must not contradict.",
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "unbound-read-published.sh",
+   "target": "BOUNDARY_FIXTURE_UNDECLARED",
+   "meta.variableDeclaredInFile": false,
+   "meta.isVariableReference": true,
+   "confidenceMin": 0.8
+  },
+  {
+   "type": "uses",
+   "from": "unbound-read-published.sh",
+   "target": "unbound-read-published.sh.BOUNDARY_FIXTURE_SINGLE",
+   "meta.variableDeclaredInFile": true,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "uses",
+   "from": "boundary_fixture_reader",
+   "target": "boundary_fixture_reader.BOUNDARY_FIXTURE_TWICE",
+   "meta.variableDeclaredInFile": true,
+   "meta.targetResolution": "innermostScope",
+   "line_number": 29
+  },
+  {
+   "type": "uses",
+   "from": "unbound-read-published.sh",
+   "target": "BOUNDARY_FIXTURE_ONLY_A_FUNCTION",
+   "meta.variableDeclaredInFile": false
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "note": "The field must never be published as the string 'false'. It is a boolean fact, and a consumer testing truthiness would read the string as true, which inverts the row.",
+   "type": "uses",
+   "from": "unbound-read-published.sh",
+   "target": "BOUNDARY_FIXTURE_UNDECLARED",
+   "meta.variableDeclaredInFile": "false"
+  },
+  {
+   "note": "`isExternal` would be a false claim here and on 101 measured edges: a whole-corpus pass over 3,748 tracked bash files found real declarations for DEFAULT_REQUIRED_SERVICES, HOME, CASE_DIR, CLUSTER and XDS_TARGET, which a single-file analyzer cannot see. This row keeps a later round from adding it back as a shortcut to a readable column.",
+   "type": "uses",
+   "from": "unbound-read-published.sh",
+   "target": "BOUNDARY_FIXTURE_UNDECLARED",
+   "meta.isExternal": true
+  }
+ ],
+ "expectNoParseErrors": true,
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

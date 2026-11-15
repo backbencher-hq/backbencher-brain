@@ -1,0 +1,10 @@
+[
+ {"label":"noindex.symbols","args":{"query":"anything"}},
+ {"label":"symbols.limitHuge","args":{"query":"pagedSymbol","limit":100000}},
+ {"label":"symbols.exactCaseVariant","args":{"query":"HANDLEREQUEST","exact":true}},
+ {"label":"symbols.exactAndRegex","args":{"query":"^handle.*","regex":true,"exact":true}},
+ {"label":"symbols.regexCaseSensitive","args":{"query":"^HANDLE","regex":true,"caseSensitive":true}},
+ {"label":"symbols.regexUnicode","args":{"query":"^UNICODE_Σ","regex":true}},
+ {"label":"content.termsInfo","args":{"mode":"content","query":"how does handle request work"}},
+ {"label":"symbols.astral","args":{"query":"\ud83d\ude00"}}
+]

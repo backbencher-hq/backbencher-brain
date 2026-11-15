@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "luvit",
+  "sample": null,
+  "filesDrawn": 199,
+  "parseErrorFiles": 0,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 7236,
+    "observedEdges": 7236,
+    "missing": 0,
+    "missingFromAnalyzer": [],
+    "exportsDirectPath": {
+      "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+      "filesProbed": 150,
+      "truth": 186,
+      "hit": 186,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 150,
+        "checks": 300
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 150,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 150,
+        "distinctValues": 7,
+        "values": [
+          70,
+          75,
+          80,
+          85,
+          90,
+          95,
+          100
+        ],
+        "mean": 82.333,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 150,
+      "totalDisclosures": 16
+    },
+    "relationshipsDirectPath": {
+      "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+      "filesProbed": 150,
+      "truth": 5931,
+      "hit": 5931,
+      "missed": 0,
+      "spurious": 0,
+      "loopCoincidenceExempted": 0,
+      "loopCoincidenceSample": [],
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "pipelineDiscardEvidence": {
+      "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+      "filesProbed": 150,
+      "cap": 150,
+      "provenDiscarded": [],
+      "observedOnBothSides": [
+        "calls",
+        "contains",
+        "exports",
+        "extends",
+        "imports",
+        "instantiates"
+      ]
+    },
+    "missingByPipelineDiscard": {
+      "total": 0,
+      "byLabel": [],
+      "labelsAbsentFromPipeline": []
+    },
+    "missingByPipelineNoiseFilter": 0,
+    "noiseTargetsHit": [],
+    "unexplained": 0,
+    "lineChecked": 7236,
+    "lineExact": 7236,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 3398,
+      "observed": 3398,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "contains": {
+      "truth": 3056,
+      "observed": 3056,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "extends": {
+      "truth": 9,
+      "observed": 9,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "instantiates": {
+      "truth": 33,
+      "observed": 33,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 554,
+      "observed": 554,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    "exports": {
+      "truth": 186,
+      "observed": 187,
+      "missing": 0,
+      "unexplained": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "missingByShape": [],
+  "unexplainedByShape": [],
+  "analyzerAttributableSample": [],
+  "analyzerAttributableUnexplainedSample": [],
+  "missingSample": [],
+  "unexplainedSample": [],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": false
+  },
+  "hardFailures": false,
+  "status": "pass"
+}

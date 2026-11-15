@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.50",
+  "code": "M3",
+  "tool": "bb_migrate",
+  "title": "bb_migrate: honesty + docs + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "docs: description matches the registry",
+      "pass": true,
+      "detail": "Read-only single or batch migration planning with dependency order, explicit eff"
+    },
+    {
+      "name": "docs: modes = plan",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: format separate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: defaults match",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: staleness section does not promise auto-refresh",
+      "pass": true,
+      "detail": "## Staleness "
+    },
+    {
+      "name": "docs: staleness section does not offer a refresh=false option",
+      "pass": true,
+      "detail": "no refresh option exists"
+    },
+    {
+      "name": "docs: single-page generator passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "evidence: m1.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: m2.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "gate: M1 wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: B3 evidence wired",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: M3 not in gate before own wiring [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "self-check"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "registry + verify-tool-docs",
+    "evidenceInputs": "m1,m2.json verified"
+  },
+  "limitations": [
+    "Covers bb_migrate only."
+  ],
+  "generatedAt": "2026-11-05T04:13:23.116Z"
+}

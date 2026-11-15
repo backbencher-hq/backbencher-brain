@@ -43,7 +43,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const REPOS = ["grails-core", "docker", "ansible", "kubernetes", "terraform", "openapi-spec", "helm", "gh-cli"]
 const OUT = path.join(ROOT, "validation/m60/results/yaml-partial-damage.json")
 const ORACLE = path.join(ROOT, "script/m14/tmp/yaml-f5-ranges.py")

@@ -43,7 +43,7 @@ import { fileURLToPath } from "node:url"
 import { dirname as _d, resolve as _r } from "node:path"
 const HERE = _d(fileURLToPath(import.meta.url))
 const REPO = _r(HERE, "../../../..")
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

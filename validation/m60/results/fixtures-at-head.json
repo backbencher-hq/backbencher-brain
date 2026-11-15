@@ -1,0 +1,157 @@
+{
+  "at": "2026-09-29T02:56:44.725Z",
+  "source": "script/m14/run-fixtures.ts (canonical, all lanes) — log /tmp/fxF.log",
+  "commit": "0f1d42dbc37db3ec958ef12f5e2b3bb433102c82",
+  "rawLog": "/tmp/fxF.log",
+  "summary": {
+    "clojure": {
+      "pass": 36,
+      "fail": 0
+    },
+    "javascript": {
+      "pass": 67,
+      "fail": 0
+    },
+    "vue": {
+      "pass": 32,
+      "fail": 0
+    },
+    "svelte": {
+      "pass": 37,
+      "fail": 0
+    },
+    "typescript": {
+      "pass": 84,
+      "fail": 0
+    },
+    "java": {
+      "pass": 48,
+      "fail": 0
+    },
+    "groovy": {
+      "pass": 73,
+      "fail": 0
+    },
+    "kotlin": {
+      "pass": 46,
+      "fail": 0
+    },
+    "scala": {
+      "pass": 54,
+      "fail": 0
+    },
+    "c": {
+      "pass": 18,
+      "fail": 0
+    },
+    "cpp": {
+      "pass": 22,
+      "fail": 0
+    },
+    "rust": {
+      "pass": 18,
+      "fail": 0
+    },
+    "python": {
+      "pass": 8,
+      "fail": 0
+    },
+    "go": {
+      "pass": 12,
+      "fail": 0
+    },
+    "zig": {
+      "pass": 4,
+      "fail": 0
+    },
+    "csharp": {
+      "pass": 15,
+      "fail": 0
+    },
+    "dart": {
+      "pass": 11,
+      "fail": 0
+    },
+    "swift": {
+      "pass": 16,
+      "fail": 0
+    },
+    "objc": {
+      "pass": 8,
+      "fail": 0
+    },
+    "php": {
+      "pass": 16,
+      "fail": 0
+    },
+    "ruby": {
+      "pass": 8,
+      "fail": 0
+    },
+    "haskell": {
+      "pass": 1,
+      "fail": 0
+    },
+    "elixir": {
+      "pass": 56,
+      "fail": 0
+    },
+    "yaml": {
+      "pass": 28,
+      "fail": 0
+    },
+    "xml": {
+      "pass": 1,
+      "fail": 0
+    },
+    "erlang": {
+      "pass": 10,
+      "fail": 0
+    },
+    "clean": {
+      "pass": 8,
+      "fail": 0
+    },
+    "html": {
+      "pass": 12,
+      "fail": 0
+    },
+    "toml": {
+      "pass": 6,
+      "fail": 0
+    },
+    "css": {
+      "pass": 10,
+      "fail": 0
+    },
+    "markdown": {
+      "pass": 8,
+      "fail": 0
+    },
+    "scss": {
+      "pass": 9,
+      "fail": 0
+    },
+    "bash": {
+      "pass": 17,
+      "fail": 0
+    },
+    "json": {
+      "pass": 7,
+      "fail": 0
+    },
+    "powershell": {
+      "pass": 12,
+      "fail": 0
+    }
+  },
+  "untrackedFixtures": {
+    "typescript": 1
+  },
+  "runnerTotal": 819,
+  "totalFailures": 0,
+  "committedFixtureFailures": {},
+  "untrackedFixtureFailures": {},
+  "failures": [],
+  "rule": "COMMITTED evidence only: `summary` counts the fixtures whose expectation file is tracked by git at the time of the run, and every untracked (in-flight) fixture is disclosed in `untrackedFixtures` instead of counted (#899 — a failing fixture whose expectation file is not tracked is in-flight lane work, not milestone evidence; the same applies to a passing one, which is the count a reader would otherwise mistake for stable)"
+}

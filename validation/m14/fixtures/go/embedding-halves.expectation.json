@@ -1,0 +1,37 @@
+{
+  "fixtureId": "go/embedding-halves",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE EMBEDDING CONTRACT'S TWO HALVES, PINNED APART. `type T struct{ E }` is implementation COMPOSITION with no declared supertype (E's methods are promoted into T's method set; there is no single base, no inheritance clause, no conformance declared) — the `mixes_in` member's own definition — so the STRUCT half is `mixes_in`; `type I interface { J }` composes NO implementation (an interface has none) and is the fleet's interface-inheritance rule (java interface extends interface, rust trait supertrait) — so the INTERFACE half stays `extends`. BOTH HALVES ARE COUNTED, and the relabel is 1:1: confidence 0.8, evidenceClass `inferred` (derived from that confidence) and the `go_struct_embedding` construct id are UNCHANGED, so the row moves label and nothing else. The forbid entries are the defect's own signature: the struct half published as `extends` (the pre-relabel spelling) and the interface half published as `mixes_in` (the over-reach in the other direction); the raw-text embedded spelling `Pair[int, string]` is forbidden under BOTH labels because #889 fixed the leaf rule that made it possible. The pointer and generic embeds are both present because `*Pair[int, string]` is embedded as a POINTER to a generic instantiation and its field name is still the leaf `Pair`.",
+  "expectSymbols": [
+    { "name": "Inner", "kind": "struct" },
+    { "name": "Pair", "kind": "struct" },
+    { "name": "Holder", "kind": "struct" },
+    { "name": "Reader", "kind": "interface" },
+    { "name": "Closer", "kind": "interface" },
+    { "name": "ReadCloser", "kind": "interface" },
+    { "name": "I", "kind": "property", "ownerName": "Inner" },
+    { "name": "First", "kind": "property", "ownerName": "Pair" },
+    { "name": "Second", "kind": "property", "ownerName": "Pair" },
+    { "name": "Inner", "kind": "property", "ownerName": "Holder" },
+    { "name": "Pair", "kind": "property", "ownerName": "Holder" },
+    { "name": "A", "kind": "property", "ownerName": "Holder" }
+  ],
+  "expectRelationships": [
+    { "type": "mixes_in", "from": "Holder", "target": "Inner", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_struct_embedding", "meta.isMixin": true },
+    { "type": "mixes_in", "from": "Holder", "target": "Pair", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_struct_embedding", "meta.isMixin": true },
+    { "type": "extends", "from": "ReadCloser", "target": "Reader", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_interface_embedding" },
+    { "type": "extends", "from": "ReadCloser", "target": "Closer", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_interface_embedding" },
+    { "type": "contains", "from": "Holder", "target": "Inner" },
+    { "type": "contains", "from": "Holder", "target": "Pair" },
+    { "type": "contains", "from": "Holder", "target": "A" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "Holder", "target": "Inner" },
+    { "type": "extends", "from": "Holder", "target": "Pair" },
+    { "type": "mixes_in", "from": "ReadCloser", "target": "Reader" },
+    { "type": "mixes_in", "from": "ReadCloser", "target": "Closer" },
+    { "type": "mixes_in", "from": "Holder", "target": "Pair[int, string]" },
+    { "type": "extends", "from": "Holder", "target": "Pair[int, string]" }
+  ]
+}

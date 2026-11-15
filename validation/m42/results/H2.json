@@ -98,7 +98,7 @@
         "command": "bb.openUsage",
         "block": "connected",
         "label": "main",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
         "inReferencesSet": true,
         "storedRow": {
           "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:main:13:render:calls:15",
@@ -110,7 +110,7 @@
         "command": "bb.openUsage",
         "block": "connected",
         "label": "main — Main2.java:6",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
         "inReferencesSet": true,
         "storedRow": {
           "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
@@ -122,7 +122,7 @@
         "command": "bb.openUsage",
         "block": "usages",
         "label": "main — App.java:15",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
         "inReferencesSet": true,
         "storedRow": {
           "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:main:13:render:calls:15",
@@ -134,7 +134,7 @@
         "command": "bb.openUsage",
         "block": "usages",
         "label": "main — Main2.java:6",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
         "inReferencesSet": true,
         "storedRow": {
           "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
@@ -146,7 +146,7 @@
         "command": "bb.openUsage",
         "block": "contained",
         "label": "Greeter",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6",
         "inReferencesSet": false,
         "storedRow": {
           "id": "af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:rel:af0f2ee1dc5880ec8a53b6ae23bd73bca661d023:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
@@ -158,7 +158,7 @@
         "command": "bb.openGraph",
         "block": "actions",
         "label": "Open in graph",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       },
@@ -166,7 +166,7 @@
         "command": "bb.openImpact",
         "block": "actions",
         "label": "Impact analysis",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       },
@@ -174,15 +174,15 @@
         "command": "bb.showCallHierarchy",
         "block": "actions",
         "label": "Call hierarchy",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       },
       {
         "command": "bb.openDefinition",
         "block": "footnote",
-        "label": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
-        "target": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
+        "label": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
+        "target": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:18",
         "inReferencesSet": false,
         "storedRow": null
       }
@@ -230,7 +230,7 @@
     "planned": 9
   },
   "fixture": {
-    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"

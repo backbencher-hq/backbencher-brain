@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-13T02:46:18.386Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "tag": "svelte",
+  "admittedFiles": 3383,
+  "sampledFiles": 800,
+  "parseCleanFiles": 800,
+  "totals": {
+    "files": 800,
+    "fieldSites": 6,
+    "fieldsTypedInManyClasses": 0,
+    "crossClassReads": 0,
+    "conflictReads": 0,
+    "correctReads": 0
+  },
+  "note": "crossClassReads counts member calls on `this.<f>` whose file types `<f>` in a class OTHER than the one the call sits in. The analyzer keys field types by FIELD NAME alone (collectLocalReceiverTypes -> fieldTypes), so such a call carries the OTHER class as metadata.owner. If that class declares the member, the store binds the edge to it — a wrong resolution. conflictReads counts calls on a field typed two ways in one file: the owner is withdrawn, so the row is safe but unresolved.",
+  "examples": []
+}

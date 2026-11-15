@@ -1,0 +1,188 @@
+{
+  "runtime": null,
+  "results": {
+    "dart.wasm": {
+      "ok": true
+    },
+    "tree-sitter-bash.wasm": {
+      "ok": true
+    },
+    "tree-sitter-c.wasm": {
+      "ok": true
+    },
+    "tree-sitter-c_sharp.wasm": {
+      "ok": true
+    },
+    "tree-sitter-clean.wasm": {
+      "ok": true
+    },
+    "tree-sitter-clojure.wasm": {
+      "ok": true
+    },
+    "tree-sitter-core_schema.wasm": {
+      "ok": true
+    },
+    "tree-sitter-cpp.wasm": {
+      "ok": true
+    },
+    "tree-sitter-css.wasm": {
+      "ok": true
+    },
+    "tree-sitter-dart.wasm": {
+      "ok": true
+    },
+    "tree-sitter-elisp.wasm": {
+      "ok": true
+    },
+    "tree-sitter-elixir.wasm": {
+      "ok": true
+    },
+    "tree-sitter-elm.wasm": {
+      "ok": true
+    },
+    "tree-sitter-embedded_template.wasm": {
+      "ok": true
+    },
+    "tree-sitter-erlang.wasm": {
+      "ok": true
+    },
+    "tree-sitter-fsharp.wasm": {
+      "ok": true
+    },
+    "tree-sitter-fsharp_signature.wasm": {
+      "ok": true
+    },
+    "tree-sitter-go.wasm": {
+      "ok": true
+    },
+    "tree-sitter-graphql.wasm": {
+      "ok": true
+    },
+    "tree-sitter-groovy.wasm": {
+      "ok": true
+    },
+    "tree-sitter-haskell.wasm": {
+      "ok": true
+    },
+    "tree-sitter-hcl.wasm": {
+      "ok": true
+    },
+    "tree-sitter-html.wasm": {
+      "ok": true
+    },
+    "tree-sitter-java.wasm": {
+      "ok": true
+    },
+    "tree-sitter-javascript.wasm": {
+      "ok": true
+    },
+    "tree-sitter-json.wasm": {
+      "ok": true
+    },
+    "tree-sitter-json_schema.wasm": {
+      "ok": true
+    },
+    "tree-sitter-kotlin.wasm": {
+      "ok": true
+    },
+    "tree-sitter-lua.wasm": {
+      "ok": true
+    },
+    "tree-sitter-make.wasm": {
+      "ok": true
+    },
+    "tree-sitter-markdown.wasm": {
+      "ok": true
+    },
+    "tree-sitter-markdown_inline.wasm": {
+      "ok": true
+    },
+    "tree-sitter-objc.wasm": {
+      "ok": true
+    },
+    "tree-sitter-ocaml.wasm": {
+      "ok": true
+    },
+    "tree-sitter-perl.wasm": {
+      "ok": true
+    },
+    "tree-sitter-php.wasm": {
+      "ok": true
+    },
+    "tree-sitter-php_only.wasm": {
+      "ok": true
+    },
+    "tree-sitter-powershell.wasm": {
+      "ok": true
+    },
+    "tree-sitter-python.wasm": {
+      "ok": true
+    },
+    "tree-sitter-ql.wasm": {
+      "ok": true
+    },
+    "tree-sitter-r.wasm": {
+      "ok": true
+    },
+    "tree-sitter-rescript.wasm": {
+      "ok": true
+    },
+    "tree-sitter-ruby.wasm": {
+      "ok": true
+    },
+    "tree-sitter-rust.wasm": {
+      "ok": true
+    },
+    "tree-sitter-scala.wasm": {
+      "ok": true
+    },
+    "tree-sitter-solidity.wasm": {
+      "ok": true
+    },
+    "tree-sitter-sql.wasm": {
+      "ok": true
+    },
+    "tree-sitter-svelte.wasm": {
+      "ok": true
+    },
+    "tree-sitter-swift.wasm": {
+      "ok": true
+    },
+    "tree-sitter-systemrdl.wasm": {
+      "ok": true
+    },
+    "tree-sitter-terraform.wasm": {
+      "ok": true
+    },
+    "tree-sitter-tlaplus.wasm": {
+      "ok": true
+    },
+    "tree-sitter-toml.wasm": {
+      "ok": true
+    },
+    "tree-sitter-tsx.wasm": {
+      "ok": true
+    },
+    "tree-sitter-typescript.wasm": {
+      "ok": true
+    },
+    "tree-sitter-vue.wasm": {
+      "ok": true
+    },
+    "tree-sitter-xml.wasm": {
+      "ok": true
+    },
+    "tree-sitter-yaml.wasm": {
+      "ok": true
+    },
+    "tree-sitter-zig.wasm": {
+      "ok": true
+    },
+    "tsx.wasm": {
+      "ok": true
+    },
+    "typescript.wasm": {
+      "ok": true
+    }
+  }
+}

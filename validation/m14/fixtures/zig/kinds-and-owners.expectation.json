@@ -1,0 +1,401 @@
+{
+  "fixtureId": "zig/kinds-and-owners",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Z11/Z12/Z19 (deep review, 2026-09-28). Three classes the previous wave could not see, each measured corpus-wide over the three pinned zig repos (3,839 files) with script/m14/tmp/zigw-kinds.ts and script/m14/tmp/zigw-remaining.ts. (1) Z11 KIND: the dispatch decided a declaration's kind from a five-node value list and then from the NAME's case, which published a bit-shift as a `type` (838 corpus sites), a negation as a `type` (39), a tuple literal as a `type` (22+4), and a type alias to a builtin as a `constant` (440, of which 160 upper-case). A node type that can be a type makes the declaration a Type; one that cannot makes it a value; only the genuinely two-sided forms keep the name heuristic, which is the pinned `pub const B = A` contract. (2) Z12 OWNER: `opaque {}` is a container in Zig — no fields, but real declarations. The walk did not recognise it, so every `pub fn` inside came out as a free file-scope Function with no `scope`, no `ownerName` and no `contains` edge: 123 opaque containers, 352 declarations. (3) Z19 BODY: a labeled block is an EXECUTABLE body (`break :label` leaves it), and its comptime locals are execution artifacts by the analyzer's own ZGD3 rule — but the rule was written on the two node types that usually wrap a block, so a labeled block was a hole. 70 symbols inside 35 block-shaped declarations over 400 files, 27 of them `contains` edges attributing a block local to the container TWO levels above where it was written (`Action contains key_fields` for a local of a `cvalue: { … }` block inside an enum). Every expectation below is derived from the Zig language rules; the counts are measurements, not inputs. Z21 (added 2026-09-28 after the executable-body A/B surfaced the residual): a container declaration is only recognised as a container when it is a declaration's RIGHT-HAND SIDE, so the same node reached as an EXPRESSION — an `if`/`switch` branch, a struct literal in a prune, a struct type inside a `nullable_type`/`array_type` — established none. Its declarations were then published as members of whatever enclosed them: the payload of a union variant became a member of the UNION, and two variants declaring the same field produced two symbols under ONE (owner, name) identity, which the runner's RSD3 rule calls out as a class that silently conflates distinct declarations. Measured over 900 corpus files: 693 expression-position containers, 412 symbols inside them, 379 of them mis-owned. A/B over 800 files: 422 symbols and 311 relationships (308 `contains`, 3 `uses`) removed with 0 added. Z22 (2026-09-28, found by the ownership verifier rather than by any gate): a container declared inside an executable body is a LOCAL type, and the walk handed its declarations to the enclosing container - `const Local = struct { pub fn helper(v: T) void }` inside a method of `Host` published `helper` as a Method owned by `Host`. The class is invisible to the differential BY CONSTRUCTION: the coverage match is `label + normTarget(target)` and the source is not part of the key, so an edge that keeps its member name and changes owner still reads as covered. That is why this lane now carries script/m14/tmp/zigw-ownership.ts, whose key IS the owner. (4) Z26 (wave 3, 2026-09-29): a `function_signature` is a function-pointer TYPE with no `declarator` field, and minting a symbol from it published a method named after whatever identifier came first under the node — the return type (`contains Sort -> ComparisonResult`) or a qualified segment of a parameter type (`contains Options -> apprt`). Found by the new `contains` gate (script/m14/tmp/zigw-contains.ts), NOT by the ownership verifier, whose derivation reproduced the same first-identifier rule and therefore agreed with the bug: a mirror that reproduces the defect it exists to convict is self-agreeing. The gate is bidirectional, so it also asks the question the verifier could not — is a justifiable owner MISSING? (5) Z28 (wave 3, 2026-09-29): the container-field extraction required `length < 50` and dropped 14 real field declarations out of 27,004 in 1,200 corpus files. The field name now comes from the grammar's own `name` FIELD, read only when it is an identifier — an unnamed `extern struct` member hands over a TYPE there, and the first version of the change published four fields named after their own type (`usize`, `isize`, `c_short`, `c_int`) in one zls file, 31 fabricated `contains` edges. Two gates, two directions: the length test was a LOSS (only a `should be published` oracle sees it) and the type-blind field read was a FABRICATION (only the `contains` gate sees it), and the same line produced both. (6) Z29 (wave 3, 2026-09-29): the same LHS predicate was wrong in THREE places — twice in the differential's truth (Z24, Z25) and then in the analyzer — and the analyzer's own `isWriteLhs`, 600 lines away, already had the correct form (node identity against the first named child). A predicate that decides 'write or read' deserves one implementation, not three spellings: the fix made the two analyzer sites call the same rule, and the fixture pins the READ side that no count of published symbols could show. Z46 (wave 10): the blank identifier was refused in BOTH the binding and the function branch. `const _ = 42;` is a discard and must mint nothing; `pub fn _()` is a real callable name. Conflating them left the analyzer publishing a `calls` edge to a function it had declined to declare — a dangling edge. Pinned on both sides, because the contract is the distinction.",
+  "expectSymbols": [
+    {
+      "name": "SHIFT",
+      "kind": "constant",
+      "comment": "Z11: `1 << 10` is a value; pre-fix kind=type"
+    },
+    {
+      "name": "MASK",
+      "kind": "constant",
+      "comment": "Z11: `~@as(u32, 0)` is a value"
+    },
+    {
+      "name": "NEG",
+      "kind": "constant",
+      "comment": "Z11: `-1` is a value"
+    },
+    {
+      "name": "Tuple",
+      "kind": "constant",
+      "comment": "Z11: an anonymous tuple literal is a value"
+    },
+    {
+      "name": "TUPLE",
+      "kind": "constant",
+      "comment": "Z11: an upper-case name does not make a tuple a type"
+    },
+    {
+      "name": "NAMES",
+      "kind": "constant",
+      "comment": "Z11: `[_]u8{ 1, 2, 3 }` is an array VALUE; pre-fix kind=type"
+    },
+    {
+      "name": "Pos",
+      "kind": "type",
+      "comment": "Z11: `const Pos = c_long;` is a type alias; pre-fix kind=constant"
+    },
+    {
+      "name": "Id",
+      "kind": "type",
+      "comment": "Z11: `const Id = u32;` is a type alias"
+    },
+    {
+      "name": "Buf",
+      "kind": "type",
+      "comment": "Z11: `const Buf = []const u8;` is a type alias"
+    },
+    {
+      "name": "Opt",
+      "kind": "type",
+      "comment": "Z11: `const Opt = ?*Pos;` is a type alias"
+    },
+    {
+      "name": "small",
+      "kind": "type",
+      "comment": "Z11: the node type decides, not the case — `const small = u8;` is still a type"
+    },
+    {
+      "name": "ALIAS",
+      "kind": "type",
+      "comment": "Z11c: the pinned two-sided rule survives — `const ALIAS = Pos;` is a type"
+    },
+    {
+      "name": "Implements",
+      "kind": "type",
+      "comment": "Z11d: an array OF TYPES is the one `struct_initializer` that is a type"
+    },
+    {
+      "name": "Handle",
+      "kind": "type",
+      "comment": "Z12: an opaque type is published as `type` (the shared SymbolKind has no Opaque member) AND acts as a container"
+    },
+    {
+      "name": "create",
+      "kind": "method",
+      "ownerName": "Handle",
+      "scope": "Handle",
+      "comment": "Z12: pre-fix a free file-scope `function` with no owner"
+    },
+    {
+      "name": "destroy",
+      "kind": "method",
+      "ownerName": "Handle",
+      "scope": "Handle",
+      "comment": "Z12"
+    },
+    {
+      "name": "tag",
+      "kind": "constant",
+      "ownerName": "Handle",
+      "scope": "Handle",
+      "comment": "Z12: a constant declared inside an opaque type is owned by it"
+    },
+    {
+      "name": "Labeled",
+      "kind": "constant",
+      "comment": "Z19: a labeled block yields a value; pre-fix kind=type (and then its locals leaked as symbols)"
+    },
+    {
+      "name": "Packed",
+      "kind": "constant",
+      "comment": "Z19: same, with a for-loop body inside"
+    },
+    {
+      "name": "reader",
+      "kind": "function"
+    },
+    {
+      "name": "Payload",
+      "kind": "union",
+      "comment": "Z21: a union whose variants carry an ANONYMOUS payload struct"
+    },
+    {
+      "name": "native",
+      "kind": "property",
+      "ownerName": "Payload",
+      "returnType": "struct {\n        libc: u8,\n        framework: u8,\n    }",
+      "comment": "Z21: the variant itself IS a member of the union, and its declared type is the anonymous payload as written"
+    },
+    {
+      "name": "cross",
+      "kind": "property",
+      "ownerName": "Payload"
+    },
+    {
+      "name": "Conditional",
+      "kind": "type",
+      "comment": "Z21: `if (cond) Payload else struct { pub inline fn helper() void {} }` is a conditional TYPE"
+    },
+    {
+      "name": "Pruned",
+      "kind": "type",
+      "comment": "Z21: a switch PRUNE whose arms are function references"
+    },
+    {
+      "name": "Host",
+      "kind": "struct",
+      "comment": "Z22: the enclosing container IS a symbol and keeps its own members; only the local type's are suppressed"
+    },
+    {
+      "name": "sortWith",
+      "kind": "method",
+      "note": "the real method on the struct is still published — the fix removes the two fictions, not the class"
+    },
+    {
+      "name": "less",
+      "kind": "property",
+      "note": "the field is a real declaration; only the function TYPE inside it stops minting symbols"
+    },
+    {
+      "name": "supports_workspace_did_change_configuration_dynamic_registration",
+      "kind": "property",
+      "note": "Z28: a 74-character field name is a name, not junk — pre-fix this declaration was dropped by a `length < 50` test"
+    },
+    {
+      "name": "short_name",
+      "kind": "property",
+      "note": "Z28: the same struct still publishes its short-named field, so the cap change is not a widening"
+    },
+    {
+      "name": "field_assignment_rhs",
+      "kind": "constant",
+      "note": "Z29: the file-scope constant the RHS reads"
+    },
+    {
+      "name": "apply",
+      "kind": "method",
+      "note": "Z29: the function whose body performs the field assignment"
+    },
+    {
+      "name": "_",
+      "kind": "function",
+      "visibility": "public",
+      "note": "Z46: a DECLARED `_` is a real function — the gettext convention. The blanket blank-identifier refusal was applied to the function branch as well as the binding branch, which cost ghostty's i18n entry point its symbol while still publishing calls to it"
+    },
+    {
+      "name": "callsTheBlankFn",
+      "kind": "function",
+      "note": "Z46: the caller, so the `calls -> _` edge has a declared target to resolve to"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "scratch",
+      "comment": "Z19: a comptime local of a labeled block is an execution artifact, not a file-scope symbol"
+    },
+    {
+      "name": "total",
+      "comment": "Z19: same, one level deeper (inside the labeled block)"
+    },
+    {
+      "name": "step",
+      "comment": "Z19: same, inside the for-loop body inside the labeled block"
+    },
+    {
+      "name": "i",
+      "comment": "Z19: a for payload capture declares nothing"
+    },
+    {
+      "name": "libc",
+      "comment": "Z21: a field of an ANONYMOUS payload struct has no container identity — pre-fix it was published as a member of the union, and with two variants declaring it, TWICE under one identity (ghostty/pkg/apple-sdk/build.zig lines 19 and 25)"
+    },
+    {
+      "name": "framework",
+      "comment": "Z21: same class"
+    },
+    {
+      "name": "helper",
+      "comment": "Z21: a `pub fn` inside an anonymous struct in an `if` branch is not a file-scope function (the sibling ruling: a struct returned by a generic function)"
+    },
+    {
+      "name": "assert",
+      "comment": "Z21: a `pub fn` inside a struct literal in a switch prune is not a file-scope function"
+    },
+    {
+      "name": "helper",
+      "comment": "Z22: a member of a container declared inside an executable body is not a member of the enclosing container, and has no identity of its own"
+    },
+    {
+      "name": "limit",
+      "comment": "Z22: same class, a const member"
+    },
+    {
+      "name": "ComparisonResult",
+      "note": "Z26: a function-pointer TYPE's return type must never be published as a method name (pre-fix: `contains Sort -> ComparisonResult`, a method that does not exist)"
+    },
+    {
+      "name": "Order",
+      "note": "Z26: same class, a function-pointer type in a parameter position (`comptime cmp: ?*const fn (x: u8) callconv(.c) Order`)"
+    },
+    {
+      "name": "apprt",
+      "note": "Z26: a qualified segment inside a function-pointer type's parameters read as a method name"
+    },
+    {
+      "name": "_",
+      "kind": "variable",
+      "note": "Z46: `const _ = 42;` is a DISCARD and must mint nothing — the other half of the distinction, and the half Z8 already got right"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Handle",
+      "target": "Handle.create",
+      "line_number": 44,
+      "meta.relationshipType": "zig_ownership",
+      "note": "Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for."
+    },
+    {
+      "type": "contains",
+      "source": "Handle",
+      "target": "Handle.destroy",
+      "line_number": 45
+    },
+    {
+      "type": "contains",
+      "source": "Handle",
+      "target": "Handle.tag",
+      "line_number": 46
+    },
+    {
+      "type": "uses",
+      "source": "reader",
+      "target": "SHIFT",
+      "meta.relationshipType": "identifier_usage",
+      "line_number": 73,
+      "comment": "Z11: a value constant resolves as a bare read — a `type` would not have resolved at all"
+    },
+    {
+      "type": "uses",
+      "source": "reader",
+      "target": "NAMES",
+      "meta.relationshipType": "identifier_usage",
+      "line_number": 74
+    },
+    {
+      "type": "uses",
+      "source": "reader",
+      "target": "Labeled",
+      "meta.relationshipType": "identifier_usage",
+      "line_number": 75,
+      "comment": "Z19: the labeled-block value is readable; pre-fix it was a type and this read did not exist"
+    },
+    {
+      "type": "uses",
+      "source": "reader",
+      "target": "Packed",
+      "meta.relationshipType": "identifier_usage",
+      "line_number": 76
+    },
+    {
+      "type": "contains",
+      "source": "Payload",
+      "target": "Payload.native",
+      "line_number": 90,
+      "comment": "Z21: real containment — the variant is the union's own field",
+      "meta.relationshipType": "zig_ownership",
+      "note": "Z44: the reason code is part of the edge's contract, not decoration. Four of the seven classes carried one and three did not, and those three were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for."
+    },
+    {
+      "type": "contains",
+      "source": "Payload",
+      "target": "Payload.cross",
+      "line_number": 94
+    },
+    {
+      "type": "uses",
+      "source": "(global)",
+      "target": "os",
+      "line_number": 99,
+      "comment": "Z21: the reads inside and around an anonymous container are NOT suppressed — only its declarations are"
+    },
+    {
+      "type": "uses",
+      "source": "(global)",
+      "target": "assert",
+      "line_number": 104
+    },
+    {
+      "type": "contains",
+      "source": "limits",
+      "target": "limits.apply",
+      "note": "Z29: the method is the assignment's container"
+    },
+    {
+      "type": "uses",
+      "target": "field_assignment_rhs",
+      "note": "Z29: the RHS of a field assignment is a READ of a file-scope constant; pre-fix the analyzer published no `uses` for it because the LHS test matched the value"
+    },
+    {
+      "type": "calls",
+      "source": "callsTheBlankFn",
+      "target": "_",
+      "meta.relationshipType": "zig_function_call",
+      "note": "Z46: the edge that was dangling before the fix"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "scratch",
+      "comment": "Z19: the fabricated `Action contains key_fields` shape — a block local must never be attributed to the enclosing container"
+    },
+    {
+      "type": "contains",
+      "target": "total"
+    },
+    {
+      "type": "contains",
+      "target": "step"
+    },
+    {
+      "type": "contains",
+      "source": "Payload",
+      "target": "libc",
+      "comment": "Z21: the fabricated ownership — a payload field is not a member of the union"
+    },
+    {
+      "type": "contains",
+      "source": "Payload",
+      "target": "framework"
+    },
+    {
+      "type": "contains",
+      "target": "helper",
+      "comment": "Z21: no containment for a declaration inside an anonymous container"
+    },
+    {
+      "type": "contains",
+      "target": "assert"
+    },
+    {
+      "type": "contains",
+      "source": "Host",
+      "target": "helper",
+      "comment": "Z22: the fabricated ownership this class produced"
+    },
+    {
+      "type": "contains",
+      "source": "Host",
+      "target": "limit"
+    },
+    {
+      "type": "contains",
+      "source": "Sort",
+      "target": "ComparisonResult",
+      "note": "Z26: a function-pointer type owns nothing and declares nothing"
+    },
+    {
+      "type": "contains",
+      "source": "Sort",
+      "target": "Order",
+      "note": "Z26: same, from the parameter position"
+    }
+  ]
+}

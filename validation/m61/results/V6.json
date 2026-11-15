@@ -1,0 +1,69 @@
+{
+  "issue": "M61.V6 bug-class extinction pack (issue #847)",
+  "code": "V6",
+  "milestone": "M61",
+  "status": "known-gap",
+  "checks": 22,
+  "passed": 19,
+  "failed": 3,
+  "realFailed": 3,
+  "failures": [
+    "E1: tdz-dynamic-import is extinct (mutant present, traced, wired, proven) — tdz-dynamic-import: script/m61/verify-lint.ts's record declares failed checks — the mutant gate is not green",
+    "E1: concurrent-clobber is extinct (mutant present, traced, wired, proven) — concurrent-clobber: script/m61/verify-lock.ts's record declares failed checks — the mutant gate is not green",
+    "E1: on-demand-gate-rot is extinct (mutant present, traced, wired, proven) — on-demand-gate-rot: script/m61/verify-lint.ts's record declares failed checks — the mutant gate is not green"
+  ],
+  "checksList": [
+    "ok: E0: manifest declares schemaVersion 1",
+    "ok: E0: manifest is the M61 annex (issue #847)",
+    "ok: E0: every class entry is structurally valid and lane-scoped",
+    "ok: E0: every required class id is declared",
+    "FAIL: E1: tdz-dynamic-import is extinct (mutant present, traced, wired, proven) — tdz-dynamic-import: script/m61/verify-lint.ts's record declares failed checks — the mutant gate is not green",
+    "ok: E1: silent-capability-cap is extinct (mutant present, traced, wired, proven)",
+    "ok: E1: self-staling-byte-gated-doc is extinct (mutant present, traced, wired, proven)",
+    "FAIL: E1: concurrent-clobber is extinct (mutant present, traced, wired, proven) — concurrent-clobber: script/m61/verify-lock.ts's record declares failed checks — the mutant gate is not green",
+    "ok: E1: unsealed-evidence-trust is extinct (mutant present, traced, wired, proven)",
+    "FAIL: E1: on-demand-gate-rot is extinct (mutant present, traced, wired, proven) — on-demand-gate-rot: script/m61/verify-lint.ts's record declares failed checks — the mutant gate is not green",
+    "ok: E3: an extinct class produces no findings",
+    "ok: E3: the core flags a MISSING mutant",
+    "ok: E3: the core flags an UNTRACED mutant",
+    "ok: E3: the core flags an UNWIRED mutant gate",
+    "ok: E3: the core flags a proof-less record",
+    "ok: E3: the core flags an UNSIGNED (unsealed) record",
+    "ok: E3: the core flags a RED mutant gate",
+    "ok: M: presence-blind",
+    "ok: M: trace-blind",
+    "ok: M: wiring-blind",
+    "ok: M: record-blind",
+    "ok: R: this verifier's own evidence is a sealed record"
+  ],
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "verifierCommand": "npx tsx script/m61/verify-extinction.ts",
+  "evidenceFile": "V6.json",
+  "generatedAt": "2026-11-09T10:40:04.815Z",
+  "classes": [
+    "tdz-dynamic-import",
+    "silent-capability-cap",
+    "self-staling-byte-gated-doc",
+    "concurrent-clobber",
+    "unsealed-evidence-trust",
+    "on-demand-gate-rot"
+  ],
+  "requiredClasses": [
+    "tdz-dynamic-import",
+    "silent-capability-cap",
+    "self-staling-byte-gated-doc",
+    "concurrent-clobber",
+    "unsealed-evidence-trust",
+    "on-demand-gate-rot"
+  ],
+  "limitations": [
+    "Presence is a source fact: this gate proves the mutant exists, is traced, is wired, and that its owner's sealed record shows it ran. It does not re-execute every owner (two of them are heavy measurement gates) — re-execution is the lane ladder's and X1's job.",
+    "The pack is a census of DECLARED classes. A verifier bug class nobody declared is invisible here; the declaration is reviewed at the milestone gate (G1).",
+    "Tier membership is read from the declared command lists, not from a run — a tier that nothing executes is caught by G1's closure audit, not here."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:40:04.815Z",
+    "contentSha256": "9076dcba02fa45ed7718987af6648d7d250b09a0b69c51e68bdacdd5564bd723"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "probe": "M59 #887 freeze localization",
+  "milestone": "M59",
+  "issue": 887,
+  "date": "2026-09-18",
+  "head": "e024766d",
+  "verdict": "#887 REPRODUCES, but NOT as filed: the freeze is inside the sweep instrument's own source-scan step, not in any tool call. The mechanism is NOT established.",
+
+  "reproduced": {
+    "command": "npx tsx script/m59/matrix-tool-language.ts --langs=kotlin --files=150 --out=/tmp/887f.json",
+    "observations": [
+      { "run": "b (scala,kotlin 150)", "result": "timeout 540 -> exit 124, real 9m0.323s, user 0m0.840s, sys 0m0.314s" },
+      { "run": "f (kotlin only 150)", "result": "timeout 420 -> exit 124, real 7m0.025s, user 0m0.876s, sys 0m0.158s" },
+      { "run": "g/i/j/k/l/m (instrumented copies)", "result": "same freeze point every time: scans=377, steps=13" }
+    ],
+    "determinism": "scans=377 and steps=13 were identical across 6 instrumented runs; the sweep stops at cell 3 (callee `forEach`)"
+  },
+
+  "localization": {
+    "method": "throwaway copy (script/m59/tmp-matrix-diag.ts) with a heartbeat, per-step logs and per-file logs; the canonical script/m59/matrix-tool-language.ts was never modified",
+    "last_logged_line": "[scan-read-ok] exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt",
+    "next_statement": "for (const l of calledLines(src, c.name)) realCallLines.push({ rel, line: l })",
+    "conclusion": "the freeze is between the successful read of the 78th slice file and the instrument's own calledLines() predicate",
+    "calledLines_is_pure": "true — indexOf + char tests only; no I/O, no regex, no child process, no await"
+  },
+
+  "product_tool_path_REFUTED_as_cause": {
+    "probe": "script/m59/probe-inproc-block.ts (same walk as the matrix, same slice, same process that just indexed)",
+    "runs": [
+      { "config": "kotlin 40 files", "result": "0 blocked of 5 names; calls 4-12ms" },
+      { "config": "kotlin 150 files", "result": "0 blocked of 8 names; calls 5-33ms" },
+      { "config": "scala+kotlin 150 files (two languages, one process)", "result": "0 blocked of 16 calls; 7-57ms" }
+    ],
+    "significance": "the two handlers the matrix calls (bb_graph, bb_analyze) answer in milliseconds for the same callee on the same slice in the same process — so '#887 tool calls block for minutes' is not supported"
+  },
+
+  "frozen_process_state": {
+    "sample_integrity": "FIRST samples targeted the wrong PID (pgrep|head -1 matched stale processes whose own heartbeat interval kept them alive forever). Only the launches that captured the parent PID at start are trustworthy.",
+    "cpu": "0% of a core (measured over 6-8s via /proc/PID/stat utime+stime, all threads)",
+    "wchan": "inconsistent between samples: ep_poll (event loop idle) and anon_pipe_read (blocking pipe read)",
+    "honest_note": "the inconsistency is not resolved; neither reading is sufficient and no mechanism is claimed"
+  },
+
+  "separate_product_facing_observation": {
+    "finding": "an indexer forked worker remains alive and RUNNING at high CPU after the index run reports completion",
+    "evidence": "run m, during the freeze and with no kill issued beforehand: parent 244744 (bin/tsx, 0 CPU, 43s etime) and its child 244755 (node --require tsx, state R, 00:00:31 CPU at 43s etime ~= 72% of a core); the index had reported 'kotlin - Exposed: 150 files indexed in ~14-20s' well before",
+    "status": "OBSERVED, not yet root-caused; deserves its own issue (worker lifecycle / leaked pool worker)"
+  },
+
+  "retracted_this_round": [
+    "TRIGGER IS TWO LANGUAGES IN ONE PROCESS - refuted: kotlin alone at 150 files freezes identically",
+    "'user 0.84s proves the process did no CPU work' - unreliable: a worker orphaned by the harness kill escapes bash time accounting (a worker with 2m52s CPU was observed surviving)",
+    "'runaway orphan worker is a product defect' - at least partly a harness artifact, since kill -9 on the parent orphans the fork",
+    "'blocked in anon_pipe_read' - sampled the wrong PID at least once; cannot be stated as fact",
+    "a [scan] log patch temporarily deleted 'const src = linesOf(rel)' and produced a ReferenceError, i.e. a self-inflicted false hang",
+    "pkill -f <pattern> matched this session's own shell and killed the command - never used again"
+  ],
+
+  "no_change_claimed": "No fix is proposed or claimed: the mechanism is not established, and an instrument that hangs must first be made incapable of hanging silently (watchdog + per-step and per-cell bounds), which is the recommended next action."
+}

@@ -65,7 +65,7 @@ const collect = (dir: string, repo: string, onlyVue: boolean) => {
     files.push({ repo, dir, rel, abs, text })
   }
 }
-for (const e of REPOS) collect(path.join(process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories", e), e, true)
+for (const e of REPOS) collect(path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e), e, true)
 for (const d of EXTRA) collect(d, path.basename(d), true)
 files.sort((a, b) => (a.repo + "/" + a.rel < b.repo + "/" + b.rel ? -1 : 1))
 console.log(`vue overrides probe — ${files.length} .vue files from ${[...new Set(files.map((f) => f.repo))].join(",")}`)

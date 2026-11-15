@@ -1,0 +1,120 @@
+{
+  "fixtureId": "vue/script-relations",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. Section B (#419): pin every relationship kind vue emits. Script-side kinds (extends, overrides, calls, references, uses, contains, exports, imports) flow through the JS/TS sub-analyzer merge; instantiates comes from the template pass. Pre-fix: only instantiates was pinned by any vue fixture.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Derived",
+      "kind": "class"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Derived"
+    },
+    {
+      "name": "read",
+      "kind": "function"
+    },
+    {
+      "name": "api",
+      "kind": "constant"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "./helper"
+    },
+    {
+      "module": "./widget.vue"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "api"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.render",
+      "target": "Base.render"
+    },
+    {
+      "type": "calls",
+      "from": "main",
+      "target": "read"
+    },
+    {
+      "type": "calls",
+      "from": "main",
+      "target": "helper"
+    },
+    {
+      "type": "references",
+      "from": "main",
+      "target": "read"
+    },
+    {
+      "type": "exports",
+      "from": "script-relations",
+      "target": "api",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "from": "useField",
+      "target": "value",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "render",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "Derived",
+      "target": "render",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "imports",
+      "from": "script-relations",
+      "target": "./helper:helper",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "renders",
+      "from": "script-relations",
+      "target": "Widget",
+      "meta.isComponentUsage": true
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "render",
+      "equals": 1
+    },
+    {
+      "type": "contains",
+      "from": "Derived",
+      "target": "render",
+      "equals": 1
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "fixtureId": "java/import-flag-node-types",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "EXPORTS_JAVA2 (M14 ontology). Pins that the `isStatic` and `isWildcard` flags are read from the GRAMMAR'S NODE TYPES — an unnamed `static` child and a named `asterisk` child of `import_declaration` — and not by searching the declaration's text, which is what the code did before (`node.text.indexOf(\"static \") !== -1` and `node.text.indexOf(\".*\") !== -1`). Both text forms are substring searches, so a search is falsified by a NAME that contains the flag word, which is what this fixture is built from: `com.acme.staticish.Constants` contains `static`, and `com.acme.dotted.Helper` sits in a package whose name contains a dot. A text search over the declaration's own text cannot tell `import static X.Y;` (a static member import, JLS 7.5.3) from `import com.acme.staticish.Constants;` (an ordinary single-type import, JLS 7.5.1), and cannot tell `import java.util.Map.*;` (type-on-demand, 7.5.2) from an import of a dotted name. The node-type read distinguishes all four. Measured: with the text search restored (mutants I3 and I8) these four rows change label, and this fixture is what kills them — before the pins below existed both mutants SURVIVED, which is recorded rather than glossed. The `forbid` rows are the under-reach direction and matter as much as the expect rows: a text search over the target alone would also flag a package whose own name carries the word, so both halves have to be pinned or only the obvious direction is covered.",
+  "expectSymbols": [
+    { "name": "FlagProbes", "kind": "class" },
+    { "name": "run" },
+    { "name": "items" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "com.acme.staticish.Constants", "meta.relationshipType": "single_type_import", "meta.isStatic": false, "meta.isWildcard": false, "comment": "the PACKAGE NAME contains `static`; it is not a static import. A text search over the declaration reports `static ` here." },
+    { "type": "imports", "target": "com.acme.dotted.Helper", "meta.relationshipType": "single_type_import", "meta.isStatic": false, "meta.isWildcard": false, "comment": "a dotted name is not a wildcard; the `.*` search fires on any dot-adjacent-star, and this target has dots and no star" },
+    { "type": "imports", "target": "java.util.List", "meta.relationshipType": "single_type_import", "meta.isStatic": false, "meta.isWildcard": false },
+    { "type": "imports", "target": "java.util.Collections.sort", "meta.relationshipType": "static_member_import", "meta.isStatic": true, "meta.isWildcard": false, "comment": "JLS 7.5.3 — the one real static import, and the only row that may carry isStatic" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "com.acme.staticish.Constants", "meta.relationshipType": "static_member_import", "comment": "the reverse direction: a static import must never be labelled single_type, or the JLS 7.5.1 and 7.5.3 forms become indistinguishable downstream" },
+    { "type": "imports", "target": "com.acme.staticish.Constants", "meta.isStatic": true, "comment": "R7-adjacent: no import in this file writes a `static` modifier except the last one, so this flag must be false here whatever the spelling of the target" },
+    { "type": "imports", "target": "com.acme.dotted.Helper", "meta.isWildcard": true, "comment": "a dotted package is not a type-on-demand import; the `asterisk` child is absent from this declaration and that is the only evidence that counts" },
+    { "type": "imports", "target": "java.util.Collections.sort", "meta.isWildcard": true, "comment": "a static member import is not also a type-on-demand import; the two modifiers are independent JLS sections (7.5.2 and 7.5.3)" }
+  ]
+}

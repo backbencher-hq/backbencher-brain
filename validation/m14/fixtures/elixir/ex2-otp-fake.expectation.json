@@ -1,0 +1,24 @@
+{
+  "expectSymbols": [
+    {
+      "name": "FakeOtp",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "FakeOtp",
+      "target": "MyApp.SupervisorTree"
+    },
+    {
+      "type": "references",
+      "from": "FakeOtp",
+      "target": "MyApp.GenServerPool"
+    }
+  ],
+  "forbidPatterns": [
+    "Supervision Trees",
+    "Actor Model (OTP)"
+  ]
+}

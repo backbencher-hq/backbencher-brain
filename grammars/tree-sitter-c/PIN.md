@@ -11,7 +11,7 @@ This directory is the **source of record** for the C grammar the product loads.
 | repository | `tree-sitter/tree-sitter-c` |
 | version | `0.24.1` (npm `tree-sitter-c@0.24.1`; `package.json` and `tree-sitter.json` are byte-identical to the tarball's) |
 | license | MIT (`LICENSE`) |
-| upstream tarball | `npm pack tree-sitter-c@0.24.1` — kept for the A/B at `$HOME/ishaq/fixtures/c/grammar/` |
+| upstream tarball | `npm pack tree-sitter-c@0.24.1` — kept for the A/B at `/home/sano/ishaq/bb_tests/c/grammar/` |
 
 ## The prior question, and why it had to be asked first
 
@@ -128,7 +128,7 @@ work, because the vendored tree carried no `node-types.json`/`grammar.json` pair
 | `prebuilds/` | platform `.node` binaries; not parser source. |
 | `queries/highlights.scm`, `queries/tags.scm` | editor queries; the engine does not load them. |
 | `README.md` | upstream's readme; no check reads it. |
-| the 0.24.1 tarball's own wasm | kept **outside** the repository, at `$HOME/ishaq/fixtures/c/grammar/pristine-tree-sitter-c-0.24.1.wasm`, so the A/B can use a build this repo has decided against without the repo pinning it. `SHA256SUMS.txt` sits beside it. |
+| the 0.24.1 tarball's own wasm | kept **outside** the repository, at `/home/sano/ishaq/bb_tests/c/grammar/pristine-tree-sitter-c-0.24.1.wasm`, so the A/B can use a build this repo has decided against without the repo pinning it. `SHA256SUMS.txt` sits beside it. |
 
 ## Reproducing
 
@@ -150,7 +150,7 @@ a different sha256 for the same grammar — which is the point above, not a prob
 
 ## Kept for the A/B
 
-`$HOME/ishaq/fixtures/c/grammar/` holds `pristine-tree-sitter-c-0.24.1.wasm`,
+`/home/sano/ishaq/bb_tests/c/grammar/` holds `pristine-tree-sitter-c-0.24.1.wasm`,
 `rebuilt-patched.wasm`, `patched-grammar.js.snapshot`, both `node-types.json`
 files, and `SHA256SUMS.txt`, so the comparison survives the network copy
 disappearing and the vendored tree changing.

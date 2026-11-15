@@ -1,0 +1,442 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.61",
+  "code": "V7",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: view fidelity — text names it, html mounts it, panels survive",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "text: names view=graph",
+      "pass": true,
+      "detail": "graph: 2 nodes, 2 links | scope: project | view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gra"
+    },
+    {
+      "name": "text: view=grid is refused, not answered as the graph [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize draws only the dependency graph: unknown view \"grid\". Omit view or pass view \"graph\"."
+    },
+    {
+      "name": "text: view=orbit is refused, not answered as the graph [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize draws only the dependency graph: unknown view \"orbit\". Omit view or pass view \"graph\"."
+    },
+    {
+      "name": "json: view=graph",
+      "pass": true,
+      "detail": "graph"
+    },
+    {
+      "name": "html: the payload holds the one graph slot",
+      "pass": true,
+      "detail": "[\"graph\"]"
+    },
+    {
+      "name": "html: the graph slot holds a document that declares itself graph",
+      "pass": true,
+      "detail": "graph"
+    },
+    {
+      "name": "html: the graph is the view mounted",
+      "pass": true,
+      "detail": "mount(\"graph\")"
+    },
+    {
+      "name": "html: and it is the only view mounted",
+      "pass": true,
+      "detail": "mount(\"graph\")"
+    },
+    {
+      "name": "html: the status line names the mounted view by the label the page uses",
+      "pass": true,
+      "detail": "status missing"
+    },
+    {
+      "name": "studio: no rule hides the census or the encoding key [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "studio: the sidebar carries the census",
+      "pass": true,
+      "detail": "no #census in the shell"
+    },
+    {
+      "name": "studio: and the encoding key",
+      "pass": true,
+      "detail": "no #encoding in the shell"
+    },
+    {
+      "name": "studio: and the filters beside the graph",
+      "pass": true,
+      "detail": "no #filters in the shell"
+    },
+    {
+      "name": "map: publishes its census to the mount",
+      "pass": true,
+      "detail": "no census API"
+    },
+    {
+      "name": "map: publishes the encoding key",
+      "pass": true,
+      "detail": "no encoding API"
+    },
+    {
+      "name": "map: publishes the filters",
+      "pass": true,
+      "detail": "no filters API"
+    },
+    {
+      "name": "studio: the sidebar is built from the mounted document's API",
+      "pass": true,
+      "detail": "no api() in the shell"
+    },
+    {
+      "name": "studio: the style branch reads the document's own declaration",
+      "pass": true,
+      "detail": "no documentView()"
+    },
+    {
+      "name": "studio: the style branch no longer branches on the mounted tab [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "still branching on frame.dataset.mode"
+    },
+    {
+      "name": "studio: no synthetic input on load [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the studio still dispatches an event"
+    },
+    {
+      "name": "map: the fit frames every visible node",
+      "pass": true,
+      "detail": "no fitAll() over visible nodes"
+    },
+    {
+      "name": "studio: and the sidebar calls it",
+      "pass": true,
+      "detail": "no fit wiring in the shell"
+    },
+    {
+      "name": "map: every node carries the region it was grouped into",
+      "pass": true,
+      "detail": "no region published on nodes"
+    },
+    {
+      "name": "map: a region is a DIRECTORY, not a file",
+      "pass": true,
+      "detail": "no directory rule"
+    },
+    {
+      "name": "map: a directory of fewer than three symbols folds into its parent",
+      "pass": true,
+      "detail": "no fold rule"
+    },
+    {
+      "name": "map: regions are drawn as named pods",
+      "pass": true,
+      "detail": "no pod drawing"
+    },
+    {
+      "name": "map: the Modules filter is a real group with real counts",
+      "pass": true,
+      "detail": "no Modules filter group"
+    },
+    {
+      "name": "map: and it gates the drawn nodes",
+      "pass": true,
+      "detail": "the Modules filter does not gate anything"
+    },
+    {
+      "name": "map: the layout pulls members toward their region's anchor",
+      "pass": true,
+      "detail": "no anchor pull"
+    },
+    {
+      "name": "map: region positions come from the anchors, shapes from the simulation",
+      "pass": true,
+      "detail": "no anchored placement"
+    },
+    {
+      "name": "map: coincident members are spread, so every symbol is drawn",
+      "pass": true,
+      "detail": "no de-overlap pass"
+    },
+    {
+      "name": "map: the edge cap is heaviest-first and the readout names it",
+      "pass": true,
+      "detail": "no edge budget"
+    },
+    {
+      "name": "map: an edge's alpha falls off with its on-screen span",
+      "pass": true,
+      "detail": "no span weighting"
+    },
+    {
+      "name": "map: cross-region edges are bundled per region pair at the overview",
+      "pass": true,
+      "detail": "no bundling"
+    },
+    {
+      "name": "map: the bundle is keyed on the pair, not on one edge",
+      "pass": true,
+      "detail": "no pair key"
+    },
+    {
+      "name": "map: with a cap that is named rather than silent",
+      "pass": true,
+      "detail": "no cap"
+    },
+    {
+      "name": "map: the readout reconciles the canvas with the census",
+      "pass": true,
+      "detail": "no summary sentence"
+    },
+    {
+      "name": "map: and the readout fires whenever it is bundling [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the summary can be invisible"
+    },
+    {
+      "name": "map: a link is pickable and opens both regions",
+      "pass": true,
+      "detail": "no link interaction"
+    },
+    {
+      "name": "map: the detail panel answers for a link",
+      "pass": true,
+      "detail": "no link detail"
+    },
+    {
+      "name": "map: the encoding key shows the dotted line",
+      "pass": true,
+      "detail": "no encoding row"
+    },
+    {
+      "name": "map: the summary is published to the mount",
+      "pass": true,
+      "detail": "no summary in state()"
+    },
+    {
+      "name": "studio: the live line is built from the rows the VIEW publishes",
+      "pass": true,
+      "detail": "the shell still composes the line itself"
+    },
+    {
+      "name": "map: and the graph's reconciliation is one of its rows",
+      "pass": true,
+      "detail": "the reconciliation is gone"
+    },
+    {
+      "name": "map: the rows carry the census counts",
+      "pass": true,
+      "detail": "the counts are not published"
+    },
+    {
+      "name": "map: the links being drawn are published, with their geometry",
+      "pass": true,
+      "detail": "no links() API"
+    },
+    {
+      "name": "map: a selected link names the two regions it joins",
+      "pass": true,
+      "detail": "selected link is unnamed"
+    },
+    {
+      "name": "map: focus follows the selection, not the pointer",
+      "pass": true,
+      "detail": "hover still focuses"
+    },
+    {
+      "name": "map: the pointer no longer enters focus mode [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "focusSet still reads hover"
+    },
+    {
+      "name": "map: a hovered node's edges are drawn as themselves",
+      "pass": true,
+      "detail": "hover cannot answer what a node connects to"
+    },
+    {
+      "name": "map: `node types` counts distinct types",
+      "pass": true,
+      "detail": "census expression not found"
+    },
+    {
+      "name": "map: `node types` is not .length of a count (the row never rendered) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "map: the languages row uses the same function",
+      "pass": true,
+      "detail": "languages row missing"
+    },
+    {
+      "name": "map: the census rows carry the count through to the sidebar",
+      "pass": true,
+      "detail": "census row wiring not found"
+    },
+    {
+      "name": "map: the document declares its own layout, as it declares its view",
+      "pass": true,
+      "detail": "no data-bb-layout on <html>"
+    },
+    {
+      "name": "map: the renderer reads that declaration, not a mount option",
+      "pass": true,
+      "detail": "the layout is not read from the document"
+    },
+    {
+      "name": "map: regions and force are the two arrangements",
+      "pass": true,
+      "detail": "no layout fork"
+    },
+    {
+      "name": "html: layout=force ships a document that declares force",
+      "pass": true,
+      "detail": "the force slot does not declare itself"
+    },
+    {
+      "name": "html: and it is not the region document again [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "text: the graph view names the layout it will draw",
+      "pass": true,
+      "detail": "the text reply never names a layout"
+    },
+    {
+      "name": "text: and names the other one when it is asked for",
+      "pass": true,
+      "detail": "layout=force is not named"
+    },
+    {
+      "name": "json: the layout rides the answer",
+      "pass": true,
+      "detail": "no layout in json"
+    },
+    {
+      "name": "json: layout=force is carried too",
+      "pass": true,
+      "detail": "layout=force lost in json"
+    },
+    {
+      "name": "map: the force layout seeds the whole graph, not per region",
+      "pass": true,
+      "detail": "no global seed"
+    },
+    {
+      "name": "map: the anchor pull belongs to the region layout only",
+      "pass": true,
+      "detail": "the anchor pull is not gated"
+    },
+    {
+      "name": "map: the force layout publishes the simulation's own positions",
+      "pass": true,
+      "detail": "no force placement"
+    },
+    {
+      "name": "map: no pods are drawn there",
+      "pass": true,
+      "detail": "pods are not gated"
+    },
+    {
+      "name": "map: the encoding key explains only the marks the layout draws",
+      "pass": true,
+      "detail": "the key still describes the other layout's marks"
+    },
+    {
+      "name": "map: both arrangements are published, with what each draws",
+      "pass": true,
+      "detail": "no layouts() API"
+    },
+    {
+      "name": "map: switching restarts the simulation rather than reusing positions",
+      "pass": true,
+      "detail": "no restart"
+    },
+    {
+      "name": "studio: the switch is in the sidebar and it calls the view",
+      "pass": true,
+      "detail": "no layout switch in the shell"
+    },
+    {
+      "name": "studio: a view with no second arrangement shows no switch",
+      "pass": true,
+      "detail": "the switch is always shown"
+    },
+    {
+      "name": "map: collapsing is its own control",
+      "pass": true,
+      "detail": "collapseEl.onclick = function () { setPanel({ collapsed: !panelCollapsed }); };"
+    },
+    {
+      "name": "map: and it does not clear the selection [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "map: the X is the control that clears",
+      "pass": true,
+      "detail": "getElementById(\"dclose\").onclick = function () { det.classList.remove(\"on\"); document.body.classList.remove(\"detail-open\"); sel = null; draw(); };"
+    },
+    {
+      "name": "map: a collapsed box still names what is picked",
+      "pass": true,
+      "detail": "a collapsed box cannot say what it hides"
+    },
+    {
+      "name": "map: the box docks to either side",
+      "pass": true,
+      "detail": "no dock rule"
+    },
+    {
+      "name": "map: and a drag across the middle of the frame moves it",
+      "pass": true,
+      "detail": "no drag-to-dock"
+    },
+    {
+      "name": "map: its state is published, not only painted",
+      "pass": true,
+      "detail": "no panel state on the API"
+    }
+  ],
+  "negativeCases": 10,
+  "summary": {
+    "total": 79,
+    "passed": 79,
+    "failed": 0
+  },
+  "decisions": {
+    "slots": "the payload holds the one graph slot, asserted from the embedded payload",
+    "mounting": "the mounted view is the graph, asserted on the studio's own mount() call",
+    "refusal": "unknown view values are refused rather than answered as the graph",
+    "selfDescribing": "every renderer document declares data-bb-view on its <html>, and the studio reads that (not the tab)",
+    "panels": "no rule hides #hud/#legend; the census expression is the count itself, not `.length` of a count",
+    "regions": "nodes are grouped by their DIRECTORY (a directory of fewer than three symbols folds into its parent), anchored per region, and drawn as named pods; the Modules filter reads the same grouping, and the nodes carry it",
+    "edges": "an aggregate picture draws the heaviest edges up to a zoom-dependent cap and says so, and an edge's alpha falls off with its on-screen span",
+    "layouts": "the graph has TWO arrangements — the directory map and the plain force graph — the document declares which one it draws (data-bb-layout, read back by the renderer), both are published with what each draws, the reply names the one it will draw, and switching restarts the simulation instead of reusing the other layout's positions",
+    "panel": "collapsing the picked-item box hides it and KEEPS the selection (clearing is the X's job alone), the box docks to either side by control or by dragging its heading, and a collapsed box still names what it is hiding"
+  },
+  "limitations": [
+    "No DOM/browser dependency exists in this repository, so the studio is asserted structurally HERE; the pixels and the interactions are now a gate of their own — script/m13/verify-visualize-browser.ts (M13.64 / V10), run as `npm run verify:viz-browser`, which drives the artifact over CDP in a real chromium without adding a browser dependency to this repository.",
+    "Interaction (drag, hover, tab switching) is not exercised by THIS file; the layout switch, the collapse/dock behaviour and the drag belong to V10 (script/m13/verify-visualize-browser.ts), and the screenshots that show them are in validation/m13/results/viz-layout-panel."
+  ],
+  "generatedAt": "2026-11-05T04:20:17.495Z"
+}

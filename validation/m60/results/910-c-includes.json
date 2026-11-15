@@ -1,0 +1,44 @@
+{
+  "issue": "M60/#910",
+  "title": "c includes are first-class imports, and the usages file-level section answers the file's own dependencies",
+  "status": "verified",
+  "checks": 8,
+  "passed": 8,
+  "failed": 0,
+  "failures": [],
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "5acb2f7ba2a11e3951e75d3e38916efa9c20cea6",
+  "verifierCommand": "npx tsx script/m60/verify-910-c-includes.ts",
+  "evidenceFile": "910-c-includes.json",
+  "generatedAt": "2026-09-22T03:36:18.928Z",
+  "fixture": {
+    "files": [
+      "util.h",
+      "util.c",
+      "main.c",
+      "mod.ts",
+      "use.ts"
+    ],
+    "expectedDeps": {
+      "main.c": [
+        "stdio.h",
+        "util.h"
+      ],
+      "util.c": [
+        "util.h"
+      ],
+      "use.ts": []
+    },
+    "expectedExternal": {
+      "stdio.h": 1,
+      "util.h": 0
+    },
+    "control": "use.ts imports a module leaf, so the outgoing (path-keyed) read must not fire for it"
+  },
+  "limitations": [
+    "The INCOMING direction for c headers (\"who includes this file\") is not served: the stored specifier is the path as WRITTEN in the includer (\"util.h\") while the viewed file is a project path (\"src/util.h\"), so an exact match is impossible and a basename match would be a guess. Named here rather than shipped.",
+    "brain_import.is_external now carries the analyzer's classification; a dependency the analyzer does not classify stays 0 (unknown is not external).",
+    "Pool discovery was observed coming back short once in ~6 runs (the two .ts files missing while the .c files indexed), which is a harness fault and is re-driven up to 3 times by index(); the root cause is not established."
+  ]
+}

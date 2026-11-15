@@ -1,0 +1,206 @@
+{
+  "fixtureId": "powershell/name-context-psd14",
+  "language": "powershell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PSD14 — FOUR SHAPES WHOSE NAME IS NOT A DECLARATION, AND ONE THAT NEEDED RESOLVING. MEASURED over the whole admitted population (1,181 files / 30 repos, production `parseFile`, A/B by analyzer digest) the lane carried 60 claims the project REFUTED, and every one was one of these shapes: a native program named with its extension (17), a runtime-variable path (13), a quoted member name containing a dot (2), a type the file compiles with `Add-Type` (3), and a type literal inside a `using namespace` directive (22, all in one file). Each rule below is a BOUNDARY, so each has a twin that must keep the behaviour it had: the program rule refuses a program under a directory (a path is not a bare name), the quoted-member rule leaves an UNQUOTED member alone, the `using namespace` expansion refuses a root that is a child of `System` (the implicit-`System.` reading governs those), and the `Add-Type` table does not swallow a framework type in the same file. MEASURED EFFECT, clause 4: extFAIL 60 → 0, with the price stated rather than hidden — 185 claims withdrawn (123 runtime paths + 62 types the file creates) and 20 refuted claims turned into verified path claims.",
+  "expectSymbols": [
+    {
+      "name": "name-context-psd14.ps1",
+      "kind": "module"
+    },
+    {
+      "name": "Invoke-Native",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Invoke-ToolPath",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Invoke-Script",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Get-MemberKey",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Get-MemberValue",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Get-TypeName",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Get-FrameworkType",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "New-Gadget",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "New-Uri",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    },
+    {
+      "name": "Get-Gadget",
+      "kind": "function",
+      "ownerName": "name-context-psd14.ps1"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Invoke-Native",
+      "target": "whoami.exe",
+      "line_number": 42,
+      "meta.sourcePathClaim": [
+        "whoami.exe"
+      ],
+      "meta.isExternalTarget": null,
+      "comment": "THE POSITIVE ROW. A program name is a FILE, so the only claim that can answer it is the source-path claim — nothing the project admits resolves to this written string. The OWNER claim (`whoami`) must be absent: the arbiter would ask whether the project declares that name, and any function or variable of that spelling would REFUTE a statement that was never about it. MEASURED as 17 whole-population refutations before this row existed."
+    },
+    {
+      "type": "calls",
+      "from": "Invoke-ToolPath",
+      "target": ".\\tools\\whoami.exe",
+      "line_number": 48,
+      "meta.sourcePathClaim": null,
+      "meta.isExternalTarget": null,
+      "comment": "THE PROGRAM RULE'S TWIN. The same program under a directory is a relative PATH: the project may ship that file, the analyzer does not know the project root, and the arbiter's path branch refuses it — a claim no check can reach. So the row carries NO claim in either direction. MEASURED: the four population rows of this shape all read `externalUnverified`, which is why the relative-path refusal was widened to program and assembly spellings in the same change."
+    },
+    {
+      "type": "imports",
+      "from": "Import-Ci",
+      "target": "$PSScriptRoot/../modules/Ci.psm1",
+      "line_number": 62,
+      "meta.sourcePathClaim": null,
+      "meta.isExternalTarget": null,
+      "comment": "THE RUNTIME-VARIABLE PATH. `$PSScriptRoot` is the file's own directory, and the analyzer does not know the project root, so neither polarity of 'is this file in the project' is its to assert. Before this rule the row carried the source-path claim, whose candidate list includes the BASENAME — MEASURED: it refuted 13 population rows on any repo that has a file of that name, and VERIFIED 123 more, which is how the claim's incoherence showed. The row keeps its `imports`/`references` edges and publishes no externality claim in either direction."
+    },
+    {
+      "type": "uses",
+      "from": "Get-MemberKey",
+      "target": "pr.number",
+      "line_number": 68,
+      "meta.isQuotedMemberName": true,
+      "meta.isExternalTarget": null,
+      "meta.noDeclarationInFile": true,
+      "comment": "THE QUOTED MEMBER NAME. `$build.triggerInfo.'pr.number'` names ONE property; the dot is punctuation in data, not a qualifier. Before this rule the qualified reading fired, the arbiter asked about `pr`, and the project — which declares a VARIABLE of that spelling — REFUTED the claim. The row keeps its name and its `noDeclarationInFile` fact and publishes no name claim. MEASURED: 2 rows."
+    },
+    {
+      "type": "uses",
+      "from": "Get-MemberValue",
+      "target": "connection",
+      "line_number": 74,
+      "meta.isExternalTarget": null,
+      "comment": "THE QUOTED-MEMBER TWIN. An UNQUOTED member name is a bare name with no dot and no data punctuation; the fixture pins that the new rule is about the QUOTES and not about member reads, which would have withheld 40 verified rows the same pass earns."
+    },
+    {
+      "type": "uses",
+      "from": "Get-TypeName",
+      "target": "System.Management.Automation.Language.VariableExpressionAst",
+      "line_number": 79,
+      "meta.isTypeReference": true,
+      "meta.viaUsingNamespace": "System.Management.Automation",
+      "meta.typeSpellingAsWritten": "Language.VariableExpressionAst",
+      "meta.languageNamespace": [
+        "System"
+      ],
+      "comment": "THE RESOLVED ROW. `about_Using`: a type name inside `using namespace U` is tried under U, so `[Language.VariableExpressionAst]` IS the type the same file spells out in full elsewhere. The expansion is what the ENGINE does, not a guess: it fires only when `<U>.<root>` is a DOCUMENTED nested namespace (here `System.Management.Automation.Language`), and it publishes both the expansion and the spelling the source wrote, so a reader can see the step. MEASURED: 22 refuted rows became verified claims, and the target is identical to the explicit spelling's, so the two spellings of one type no longer disagree in the graph."
+    },
+    {
+      "type": "instantiates",
+      "from": "Get-FrameworkType",
+      "target": "Text.StringBuilder",
+      "line_number": 85,
+      "meta.dotNetNew": true,
+      "meta.viaUsingNamespace": null,
+      "comment": "THE USING-EXPANSION TWIN. `Text` IS a documented child namespace of `System`, so PowerShell's implicit-`System.` reading governs the name and the prefix must NOT retarget it to `System.Management.Automation.Text.StringBuilder`. This is the guard that keeps the expansion from swallowing every dotted literal in a file that happens to have a `using` directive."
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Gadget",
+      "target": "Contoso.Helpers.Gadget",
+      "line_number": 90,
+      "meta.dotNetNew": true,
+      "meta.isExternalTarget": null,
+      "meta.sourcePathClaim": null,
+      "comment": "THE TYPE THE FILE COMPILES. The C# body above declares `namespace Contoso.Helpers` / `public class Gadget`, so this type exists only when the script runs; no project declaration table can own it, and a claim that asked the project's owner question about `Contoso` is a statement about a name the row does not contain. The claim is withheld and the class is named in the lane's wall table. MEASURED: 3 refuted rows of this shape (the third names a type created through a here-string in a variable and an `Add-Type` in a remote scriptblock), and 62 verified claims withdrawn by the same rule because those types are ALSO file-created."
+    },
+    {
+      "type": "instantiates",
+      "from": "New-Uri",
+      "target": "System.Uri",
+      "line_number": 96,
+      "meta.dotNetNew": true,
+      "meta.languageNamespace": [
+        "System"
+      ],
+      "meta.isExternalTarget": null,
+      "comment": "THE ADD-TYPE TWIN. A framework type in a file that compiles something still carries its namespace claim: the runtime-type table is keyed on the NAMES the C# body declares, not on 'this file calls Add-Type'."
+    },
+    {
+      "type": "calls",
+      "from": "Get-Gadget",
+      "target": "Contoso.Helpers.Gadget.Create",
+      "line_number": 104,
+      "meta.staticMemberCall": true,
+      "meta.isExternalTarget": null,
+      "comment": "THE COMPILED-TYPE CALL. `[Contoso.Helpers.Gadget]::Create()` targets `Contoso.Helpers.Gadget.Create`, whose OWNER is the type this file compiles. The dependency is internal to the file, so no externality reading may attach. MEASURED: publishing the type as a declaration made 33 population claims of this shape read `externalRefuted` — the arbiter's owner question finds the type — which is why the reading is withheld while the publication waits on the arbiter's type-aware owner rule."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "Invoke-Native",
+      "target": "whoami.exe",
+      "meta.isExternalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE. Publishing the owner claim on a program name is the exact defect this rule removes: the arbiter answers it about `whoami`, and a project symbol of that spelling refutes a true statement about a file."
+    },
+    {
+      "type": "uses",
+      "source": "Get-MemberKey",
+      "target": "pr.number",
+      "meta.isExternalTarget": true,
+      "comment": "second false-claim negative: the quoted key must not regain a name claim."
+    },
+    {
+      "type": "uses",
+      "source": "Get-TypeName",
+      "target": "Language.VariableExpressionAst",
+      "comment": "THE UNEXPANDED NEGATIVE. The spelling as written is not the target any more: it is the shape whose owner question the project refutes. This row goes red if the expansion is reverted."
+    },
+    {
+      "type": "instantiates",
+      "source": "New-Gadget",
+      "target": "Contoso.Helpers.Gadget",
+      "meta.externalTarget": true,
+      "comment": "THE RUNTIME-TYPE NEGATIVE: the file's own compiled type must not carry an externality reading."
+    },
+    {
+      "type": "instantiates",
+      "source": "Get-FrameworkType",
+      "target": "System.Management.Automation.Text.StringBuilder",
+      "comment": "THE OVER-EXPANSION NEGATIVE. If the using prefix were applied without the documented-namespace table, `Text.StringBuilder` would become a name that exists nowhere. This row makes that mistake red."
+    },
+    {
+      "type": "calls",
+      "source": "Get-Gadget",
+      "target": "Contoso.Helpers.Gadget.Create",
+      "meta.externalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE for the compiled-type call: marking it external is the shape that refuted 33 rows."
+    }
+  ]
+}

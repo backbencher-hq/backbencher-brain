@@ -1,0 +1,33 @@
+{
+  "fixtureId": "xml/lines-825",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off lines-825.xml. xml was the only analyzer besides scala that already emitted a line (27 of 27 relationships on the M59 coverage probe) — and it had NO fixture lane at all, so nothing pinned the contract and nothing could catch a regression in it. This is the first xml fixture in the repo, added with the lane. What it pins: an element's line is where the element opens (config 2, database 7, pool 10, security:realm 12); an attribute's line is where the ATTRIBUTE is written (xmlns 3, xmlns:sec 4, name 5, mode 6, host 8, port 9, size 10, ref 12) — never the enclosing element's line, which is what a naive implementation produces for a start tag split across lines; and the default-namespace edge, whose target is the SYNTHESISED name `default` (the default namespace has no written prefix), is checked in the M59 oracle against the written attribute name the analyzer now carries in its metadata. The forbid entries are those enclosing-element positions.",
+  "expectSymbols": [
+    { "name": "config", "kind": "class" },
+    { "name": "database", "kind": "class" },
+    { "name": "pool", "kind": "class" },
+    { "name": "security:realm", "kind": "class" },
+    { "name": "default", "kind": "namespace", "ownerName": "config" },
+    { "name": "host", "kind": "property", "ownerName": "database" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "config", "target": "default", "line_number": 3 },
+    { "type": "contains", "from": "config", "target": "sec", "line_number": 4 },
+    { "type": "contains", "from": "config", "target": "name", "line_number": 5 },
+    { "type": "contains", "from": "config", "target": "mode", "line_number": 6 },
+    { "type": "contains", "from": "config", "target": "database", "line_number": 7 },
+    { "type": "contains", "from": "database", "target": "host", "line_number": 8 },
+    { "type": "contains", "from": "database", "target": "port", "line_number": 9 },
+    { "type": "contains", "from": "database", "target": "pool", "line_number": 10 },
+    { "type": "contains", "from": "pool", "target": "size", "line_number": 10 },
+    { "type": "contains", "from": "config", "target": "security:realm", "line_number": 12 },
+    { "type": "contains", "from": "security:realm", "target": "ref", "line_number": 12 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "config", "target": "default", "line_number": 2, "note": "the enclosing element's own line; the `xmlns` attribute is written on 3" },
+    { "type": "contains", "from": "config", "target": "name", "line_number": 2, "note": "same: `name=\"root\"` is written on 5, not on the `<config` line" },
+    { "type": "contains", "from": "database", "target": "host", "line_number": 7, "note": "`host` is written on 8, not on the `<database` line" },
+    { "type": "contains", "from": "pool", "target": "size", "line_number": 7, "note": "guards the SELF-CLOSING tag case: the size attribute is written on 10 and the <pool/> tag is its own line; an implementation that stamps an attribute with the PARENT element's line (7, where <database opens) must fail" }
+  ]
+}

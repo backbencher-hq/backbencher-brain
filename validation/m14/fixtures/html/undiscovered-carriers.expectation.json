@@ -1,0 +1,158 @@
+{
+  "comment": "CARRIERS THE TABLE DID NOT KNOW. Every row here was invisible to the differential, because `deriveHtmlEdges` and the analyzer shared one carrier list: independently written derivation over a SHARED PREMISE. A differential cannot catch a shared premise, and `otp`/`sqlite` contain none of these constructs, so 100% coverage never had to confront them. A census of 4,035 real files for URL-bearing (tag, attr) pairs found them; see script/m14/verify-carrier-census.ts.",
+  "expectSymbols": [
+    {
+      "name": "undiscovered-carriers",
+      "kind": "module"
+    },
+    {
+      "name": "pinged",
+      "kind": "class"
+    },
+    {
+      "name": "ping-empty",
+      "kind": "class"
+    },
+    {
+      "name": "ping-blank",
+      "kind": "class"
+    },
+    {
+      "name": "quoted",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "The refresh PRAGMA is a NAVIGATION the browser performs \u2014 the same class as a form action, so `uses` and never `calls`. 40 occurrences across 26 files of one corpus, and absent from both tables until the census looked for it.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/redirected",
+      "meta.resourceType": "meta-refresh",
+      "meta.isNavigation": true
+    },
+    {
+      "comment": "`http-equiv` is matched case-insensitively and `url=` needs no space after the `;` \u2014 both are how it is written in practice.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/upper-no-space",
+      "meta.resourceType": "meta-refresh"
+    },
+    {
+      "comment": "The destination is frequently a character reference, and the content is DECODED before it is parsed. A decode is not length-preserving, so parsing the raw text and indexing it with decoded offsets once published `quot;/entity-quoted&quot` as a path.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/entity-quoted",
+      "meta.resourceType": "meta-refresh"
+    },
+    {
+      "comment": "A later refresh after a bare interval is still a refresh; the `;` split takes the FIRST statement's shape and the url is read from the remainder.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/after-a-bare-interval",
+      "meta.resourceType": "meta-refresh"
+    },
+    {
+      "comment": "Exactly ONE decode: `&amp;` becomes `&` once. A second pass would collapse `&amp;amp;` two levels, so the decode is owned by one caller and the other is told it already happened.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/amp?x=1&y=2",
+      "meta.resourceType": "meta-refresh"
+    },
+    {
+      "comment": "SVG2 spells a script's source `href`, not `src`. Keyed on the tag and not the namespace, which is safe because an HTML `<script>` has no `href` to read.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/svg-script.js",
+      "meta.resourceType": "svg-script"
+    },
+    {
+      "comment": "`feImage` pulls an image into the filter RESULT \u2014 a fetch like any other. The tag is lowercased by the walker, so the key is `feimage`.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/filter.png",
+      "meta.resourceType": "svg-filter-image"
+    },
+    {
+      "comment": "The legacy `xlink:href` spelling reaches the same rule; the attribute map is already lowercased.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/legacy-filter.png",
+      "meta.resourceType": "svg-filter-image"
+    },
+    {
+      "comment": "`ping` is whitespace-separated with no descriptor, so it takes a list, not a `srcset` candidate split \u2014 one row per URL, and it is a FETCH rather than a navigation because the browser requests it and the user never goes there.",
+      "type": "uses",
+      "from": "pinged",
+      "target": "/analytics/a",
+      "meta.resourceType": "ping"
+    },
+    {
+      "type": "uses",
+      "from": "pinged",
+      "target": "/analytics/b",
+      "meta.resourceType": "ping"
+    },
+    {
+      "comment": "A citation is a written reference out of the document, so it is an edge \u2014 graded `usage_contextual` rather than inheriting `import_based`, because the tier classifier reads that field and a citation is not a structural fetch.",
+      "type": "uses",
+      "from": "quoted",
+      "target": "/sources/spec",
+      "meta.resourceType": "citation",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/sources/other",
+      "meta.resourceType": "citation"
+    },
+    {
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/sources/removed",
+      "meta.resourceType": "citation"
+    },
+    {
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/sources/added",
+      "meta.resourceType": "citation"
+    },
+    {
+      "comment": "Deprecated in HTML5 and still fetched by every shipping browser, so the dependency is real; the `legacy-` resourceType says so at the edge.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/tile.png",
+      "meta.resourceType": "legacy-background"
+    },
+    {
+      "comment": "THE MEASURED GAP (carrier census, 2026-10-28): the legacy `background` attribute's owners are body, table, td and th, and this lane emitted only the first two. A corpus document carries a real `td@background` image that no table claimed, so the edge the browser fetches was absent from the graph.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/cell.png",
+      "meta.resourceType": "legacy-background"
+    },
+    {
+      "comment": "THE SIBLING CELL, added in the same commit. `th` differs from `td` in nothing the legacy `background` attribute is concerned with, so pinning one and not the other would pin the corpus rather than the construct.",
+      "type": "uses",
+      "from": "undiscovered-carriers",
+      "target": "/head.png",
+      "meta.resourceType": "legacy-background"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "`charset` is not `refresh`, so `content` is free text and never a URL. The `http-equiv` gate is what stops a description or a charset string from becoming an edge to a sentence.",
+      "target": "/NOT-a-refresh"
+    },
+    {
+      "comment": "`content=\"5\"` is a bare interval: it reloads THIS document, which names nothing new. Emitting an edge here would point the document at itself.",
+      "target": "undiscovered-carriers"
+    },
+    {
+      "comment": "An empty `ping` lists no URLs.",
+      "target": ""
+    }
+  ]
+}

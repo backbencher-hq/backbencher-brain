@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "purpose": "M61 stale-seal refreshes: every record whose bbSeal envelope had to be recomputed because a producer rewrote its content after sealing. A row here is the written reason for that refresh — old digest, new digest, why, when. Written only by script/m61/refresh-stale-seals.ts and script/m61/seal_register.ts, and CHECKED by script/m61/verify-seal-audit.ts (each row's newDigest must equal the file's current seal, so the register cannot outlive the fact it records).",
+  "entries": [
+    {
+      "path": "validation/m12/results/c-complexity.json",
+      "oldDigest": "41a777abf8b524c0e42a924051b0ec244baa11e5698740746679fb1c583b4661",
+      "newDigest": "45f3fcf2ba3f8e038675ccea6736ac4e6ed95c00ec28134505e2b8d6664f34e4",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.179Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m12/results/clean-complexity.json",
+      "oldDigest": "5254b006e83595dfb3ae30c08564c174d479d79e992e0b0bb6f0174db8ffe8d5",
+      "newDigest": "92af9593365a94c4ff55211b6ee99108d16d53a6f186622ed2d9b6faee4f3862",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.183Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m12/results/cpp-complexity.json",
+      "oldDigest": "0736b3c32e068e5ff2538fe0eadbc316aad226c280330dccb86619d5f2418245",
+      "newDigest": "5b2cf3bf20fa9cd29444c0426e06bd0c46f1e7750fe82e1e1faed4bfa0097571",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.186Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m12/results/css-complexity.json",
+      "oldDigest": "e540c4023ddda45b59951f858623a119dd99bf4df49942143234274485f15e1d",
+      "newDigest": "38a6aa02389b549f44869ea1a4d00a47be854a76105b141c82c5fe5903392479",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.189Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m12/results/groovy-complexity.json",
+      "oldDigest": "152f7df640db29172c019ffceaa0f3b108f6925d2c5bfb07db41a1f4041c9c5b",
+      "newDigest": "ca725c8714af046ae4491359df5f14acb550a3987a3c6e579941cec0f5c1c147",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.191Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": false
+    },
+    {
+      "path": "validation/m12/results/markdown-corpus-complexity.json",
+      "oldDigest": "d30a5eac4018ae7fef5383b8caffc94136497f700295f94d8f1400f414b66608",
+      "newDigest": "36eded9aed87116f02fa9c31594d617ba067bd024921f02ff0c96d6ea781cc69",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.195Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m12/results/markdown-corpus-shapes.json",
+      "oldDigest": "83c52d4ce500e94aa815c0fae74c4b503290224ab65ad087c835551c2e41299b",
+      "newDigest": "58d913f7a2bb36965c2f317fa5de7914f599ca9ce8e6d6c4d455da062afc20c7",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.213Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m12/results/yaml-shape-safety.json",
+      "oldDigest": "723fcd77c231b753292f0994a2b05b83bca3bfa409e6f8d0e2845852629ef07e",
+      "newDigest": "2709da3761d3210f9fbbc2ee7cd3b4be4ba87a803636808e626600150d69efd9",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.216Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m14/results/M14.0.SPEC.json",
+      "oldDigest": "85dd5cef29282957489a823de814c41e85392767dffd854412cef0f4e3c06a13",
+      "newDigest": "f18e8e15a956ad65ac4e2b215fe2f7bb62ca293866bf13813c70e7b5418d5cf2",
+      "why": "producer re-run 2026-10-12 after the differential-floor recovery: five lanes' sections E and F stopped being unattributable absences. The floor rows merge 16075a5a1 dropped are recovered as EVIDENCE (`recovered` in validation/m14/differential-baseline.json) with their cause in `unmeasured`, so a red row now names why (no oracle block in this tree / corpus not checked out / measured but not pinned), and a new `section-e-lane-registered` row asserts each lane's corpus declaration in differential.ts - the invariant that merge deleted six of. Lane failures: 10 -> 10, and every one of the ten is now a failure with a recorded cause; the registration row is green for all 26 lanes. | re-emitted again 2026-10-12 after the harness's seal-time and regeneratedAt became COMMIT-time: a wall-clock stamp inside the sealed content made two emissions differ (F2's determinism probe caught it, and it had read `pass` for two days only because F2's committed artifact predated sealing). | a lane re-measure re-emitted this record through the M14 evidence harness while the harness still stamped raw JSON, which dropped the envelope the M61 migration had sealed; the harness now seals (script/m14/evidence-harness.ts), so this restores the envelope over the committed content. Every field preserved; the record is the M14 completeness spec (issue #419).",
+      "at": "2026-10-17T14:42:43.690Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m17/results/S1.json",
+      "oldDigest": "d73f136f848a794d0f9d106266457537f8701835acec673aa21412251b0a0960",
+      "newDigest": "bffc71ec1f110bec1774bbd42a175720fd81febe711b60ffde971fd074cfa618",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.237Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m17/results/S2.json",
+      "oldDigest": "b0497225169f7734936e2763957ca22131905a2249cf38b57ccbbac066a3fbff",
+      "newDigest": "b30de31543fad33a269e9454e7ebe6b49339f63b6af51adde1a347245254c985",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.239Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m21/results/D2.json",
+      "oldDigest": "cadd9ff532a4d2443fec68090b26da3022307a6f6aa92357a81bbe70d532620d",
+      "newDigest": "f0990f226ed16d4cbe6d40ffb9b1db4c6cbc0b2243e423f367d8a73b6c2009af",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit RE-SEALED 2026-10-12 by the shared evidence-writer repair: this gate stamped RAW JSON, so every re-run dropped the envelope this row names (measured after the M54.X1 closure gate re-ran these gates live: seal=None against the registered digest). The writer now goes through `writeSealed`; the verdict is unchanged. | the owning gate re-ran on this tree (2026-10-17 ledger-truth pass) and moved content and seal together; the row moves with the seal it names, the verdict is unchanged",
+      "at": "2026-10-17T14:42:33.724Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m21/results/R2.json",
+      "oldDigest": "7c82d5156051d2f6a129fa93607b7d29ae040642fa40497a463d9b00bd1637d5",
+      "newDigest": "d71b5f29be3a2196d4a1e7446fa340d651b92759c86064d60ab1ac93239ded96",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit RE-SEALED 2026-10-12 by the shared evidence-writer repair: this gate stamped RAW JSON, so every re-run dropped the envelope this row names (measured after the M54.X1 closure gate re-ran these gates live: seal=None against the registered digest). The writer now goes through `writeSealed`; the verdict is unchanged (this record is a KNOWN-GAP and is sealed like any other — the seal is about the bytes, not the verdict).",
+      "at": "2026-10-12T15:07:06.494537Z",
+      "tool": "script/m21/verify-postprocessing-passes.ts (writeSealed) + register row updated",
+      "envelopeOnly": false
+    },
+    {
+      "path": "validation/m21/results/manifest.json",
+      "oldDigest": "998064570ecd6ee174af1e1f0abab6a92ec0d977ba67a782fe06270c399396ad",
+      "newDigest": "40ce3320bc44d05b8509300a4a5ea950b376994efd22aab07ddd086ca8818706",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | the lane's ledger sync (script/m41/sync-ledger.ts / script/m21/sync-manifest.ts) stamped raw JSON and carried the previous envelope forward, so new bytes sat under an old seal — M61.A1's A2 measured all three (sealed 2026-10-08, rewritten since). Both sync helpers now write through writeSealed; this records the repair of the envelopes already on disk. Content is untouched. | the ledger was re-projected from its records by script/m61/project-lane-ledgers.ts (and by the lane's own sync helper), which writes through writeSealed: content and seal moved together, so the row moves with the seal it names. Verdicts unchanged. | m21 ledger re-synced from its evidence files by script/m21/sync-manifest.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m21 ledger re-synced from its evidence files by script/m21/sync-manifest.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged",
+      "at": "2026-10-17T16:31:49.474Z",
+      "tool": "script/m61/seal_register.ts (reRecordRegisterRow)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m40/results/A2.json",
+      "oldDigest": "54b5651a7aae5d1f4b08e6a7e3b8eee0ab05e7f9bb076e94f11a4839279a953d",
+      "newDigest": "709b6139648dfd462b6c681abb540e793b883beb8f184feeae3403f031b9c462",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | RE-RECORDED 2026-10-12 by the M14.JS inbound-edge round: the gate rewrote its own evidence, so the recorded digest moved with it (this is the refresh the register row must name, not a stale seal); re-earned again at 2026-10-12T13:05:09.946Z when the gate's evidence gained the bounded telemetry and its check list (same verdict, 26 checks / 0 failed), and this row moved with the seal it names. RE-RECORDED 2026-10-12 by the M14.JS J12 round: the bounded pass now runs the full pass's resolution rules in the full pass's order (name strategies, the `<module>:<item>` resolver, then the binding pass), scoped to the files the run re-stored, so the gate re-ran and its evidence gained the new telemetry (`resolvedStoredEdges: 2`) with the same verdict (26 checks / 0 failed, bounded=969ms vs full=28833ms); the recorded digest moved with the seal it names. | the owning gate re-ran on this tree (2026-10-17 ledger-truth pass) and moved content and seal together; the row moves with the seal it names, the verdict is unchanged",
+      "at": "2026-10-17T14:42:33.725Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m41/results/manifest.json",
+      "oldDigest": "6df82bc4aa3117370d42888371b7f4a8021130017eb156ed1e9658e9018d618b",
+      "newDigest": "6515fee1b74f7ae37dbcc4e1205f9884a6857c855827ca7cc8d0bc290e70aa25",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | the lane's ledger sync (script/m41/sync-ledger.ts / script/m21/sync-manifest.ts) stamped raw JSON and carried the previous envelope forward, so new bytes sat under an old seal — M61.A1's A2 measured all three (sealed 2026-10-08, rewritten since). Both sync helpers now write through writeSealed; this records the repair of the envelopes already on disk. Content is untouched. | the ledger was re-projected from its records by script/m61/project-lane-ledgers.ts (and by the lane's own sync helper), which writes through writeSealed: content and seal moved together, so the row moves with the seal it names. Verdicts unchanged. | m41 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m41 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m41 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m41 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m41 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged",
+      "at": "2026-11-09T14:45:33.663Z",
+      "tool": "script/m61/seal_register.ts (reRecordRegisterRow)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m48/results/G1.json",
+      "oldDigest": "426fbd2563cdad0f65138d65821ee9456b6d3b86ce70631505f14c9d7f2fad16",
+      "newDigest": "740bb5f11e3e447f2fdaa073c08d500461d0dbb8389f4be48ad432ddb96556ed",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit",
+      "at": "2026-10-08T00:38:12.253Z",
+      "tool": "script/m61/refresh-stale-seals.ts",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m48/results/P2.json",
+      "oldDigest": "35a4c22241b6c4a23e4678bf07990ff3945b53ab5372e34e1f6413a824d39f08",
+      "newDigest": "8fffbf67a27f6a0471902e6834e97d505139cb7bd311c6e9915b69340eec1e5c",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | the owning gate re-ran on this tree (2026-10-17 ledger-truth pass) and moved content and seal together; the row moves with the seal it names, the verdict is unchanged",
+      "at": "2026-10-17T14:42:33.725Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m48/results/W1.json",
+      "oldDigest": "15fe98e3f4e0ed6546bc674900b27c57a521c4f0ea0b3623fec9979c275b4c3a",
+      "newDigest": "83857f935ce0ba42afe07586cac69a463c4ec8559a415885c90ac861348f9616",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | the owning gate re-ran on this tree (2026-10-17 ledger-truth pass) and moved content and seal together; the row moves with the seal it names, the verdict is unchanged",
+      "at": "2026-10-17T14:42:33.725Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m51/results/A1.json",
+      "oldDigest": "ebe039fd1f38133116d34d6c1eea478d631d6aab5302ce0163fbe4d9d1b6f258",
+      "newDigest": "7ffff98c2403acfa3e41a444bb492a0e414fbcf82d35b8e5252a957705645989",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit RE-SEALED 2026-10-12 by the M51 evidence-writer repair: the gate that owns this record stamped RAW JSON (writeFileSync), so every re-run dropped the envelope this register names — A2's seal was already ABSENT and M61.A1's own audit was failing on it, and a run of A1 in the same session left its seal absent too. Both writers now go through `writeSealed` (script/lib/evidence.ts, the one write path M15.XR6 asserts), so a re-record moves the digest WITH the content; this row moved to the digest that run produced, same verdicts (A1 10/10, A2 11/11). | the lane's own gates re-ran in the 2026-10-17 verification pass and moved content and seal together (m51's A1/A2 writers already go through writeSealed; m54's P2 likewise); the row moves with the seal it names",
+      "at": "2026-10-17T14:52:11.110Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m51/results/A2.json",
+      "oldDigest": "48c078ea3ad5f29bb9b6cb913570eabfa1c7fe1933facace1970bc5d8f62fb6b",
+      "newDigest": "61c3c76cdceb365a4365513c5cc1755ef05ece33d80fd41ee992c1b6a44101b0",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit RE-SEALED 2026-10-12 by the M51 evidence-writer repair: the gate that owns this record stamped RAW JSON (writeFileSync), so every re-run dropped the envelope this register names — A2's seal was already ABSENT and M61.A1's own audit was failing on it, and a run of A1 in the same session left its seal absent too. Both writers now go through `writeSealed` (script/lib/evidence.ts, the one write path M15.XR6 asserts), so a re-record moves the digest WITH the content; this row moved to the digest that run produced, same verdicts (A1 10/10, A2 11/11). | the lane's own gates re-ran in the 2026-10-17 verification pass and moved content and seal together (m51's A1/A2 writers already go through writeSealed; m54's P2 likewise); the row moves with the seal it names",
+      "at": "2026-10-17T14:52:11.112Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m54/results/P1.json",
+      "oldDigest": "db8cec457d62111b74b30f82706a5785d17026803ca64693e3bbe7a3315d0404",
+      "newDigest": "c816ca3d5ec17bb4a94c1a82d3b7ac1facdb31d73eed0a5738d8234ead7cbcba",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | script/m54/verify-p1-fk.ts stamped RAW JSON, so its every run dropped the envelope the M61 migration had sealed; the writer now goes through writeSealed (fixed 2026-10-17) and this restores the envelope over the committed content. Every field preserved; verdict unchanged.",
+      "at": "2026-10-17T14:52:14.752Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m54/results/P2.json",
+      "oldDigest": "984deb7890b6d178c2d74bafb7f58c801d7f6dc86387049a472ffbe45816dc73",
+      "newDigest": "3f91c65e558d9239d2901471ace046869fd7b53e67f99cc3adc236574cd8261e",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit RE-SEALED 2026-10-12 by the shared evidence-writer repair: this gate stamped RAW JSON, so every re-run dropped the envelope this row names (measured after the M54.X1 closure gate re-ran these gates live: seal=None against the registered digest). The writer now goes through `writeSealed`; the verdict is unchanged. | the lane's own gates re-ran in the 2026-10-17 verification pass and moved content and seal together (m51's A1/A2 writers already go through writeSealed; m54's P2 likewise); the row moves with the seal it names",
+      "at": "2026-10-17T14:52:11.112Z",
+      "tool": "script/m61/refresh-stale-seals.ts (--re-record)",
+      "envelopeOnly": true
+    },
+    {
+      "path": "validation/m56/results/manifest.json",
+      "oldDigest": "61f6070bd555535903f77ef115c0dc88cb1edb356f45d265301afb9c9cd1960b",
+      "newDigest": "4ec33eb47986aeac585d3797cb58987995d1ef48613acadb53d097ed687e4d84",
+      "why": "sealed 2026-09-14T23:42:47-48Z by the one-shot M61 migration, then rewritten by the owning lane's own producer (a re-measure or a lineage re-stamp) which carried the old envelope forward; found by the repo-wide seal audit M61.A1, each record's content values are unchanged (the tool round-trips every write through the trusted read) and the refresh is re-verified by the audit | the lane's ledger sync (script/m41/sync-ledger.ts / script/m21/sync-manifest.ts) stamped raw JSON and carried the previous envelope forward, so new bytes sat under an old seal — M61.A1's A2 measured all three (sealed 2026-10-08, rewritten since). Both sync helpers now write through writeSealed; this records the repair of the envelopes already on disk. Content is untouched. | the ledger was re-projected from its records by script/m61/project-lane-ledgers.ts (and by the lane's own sync helper), which writes through writeSealed: content and seal moved together, so the row moves with the seal it names. Verdicts unchanged. | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged | m56 ledger re-synced from its evidence files by script/m41/sync-ledger.ts, which writes through writeSealed: content and seal moved together; verdicts unchanged",
+      "at": "2026-11-09T14:45:34.284Z",
+      "tool": "script/m61/seal_register.ts (reRecordRegisterRow)",
+      "envelopeOnly": true
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "fixtureId": "css/declarations-the-corpus-never-uses",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Each of these at-rules DECLARES a named, referable thing, so each publishes a symbol and each use of it is an edge whose BOTH endpoints resolve — the same both-ends-must-resolve rule the chain, animation and font-family edges follow. `@custom-media` publishes the bare `--ident` and NOT `@custom-media --narrow (max-width: 400px)`, for the same reason `@property` publishes `--brand` and not `@property --brand`: the name is the referable part, the condition is its value. That also means a `@custom-media` symbol and a registered `@property` symbol are the same SHAPE, so each carries a metadata marker saying which construct declared it. `@font-feature-settings` is emitted ONLY inside a `@font-face`: a rule-level one is legal CSS, but which family's feature it names depends on the cascade, and emitting an edge there would invent an endpoint for something this lane cannot see — so the rule-level use in this fixture is deliberately the forbidden one.",
+  "expectSymbols": [
+    {
+      "name": "@counter-style thumbs",
+      "kind": "variable",
+      "meta.isCounterStyleDeclaration": true
+    },
+    {
+      "name": "--narrow",
+      "kind": "variable",
+      "meta.isCustomMediaDeclaration": true
+    },
+    {
+      "name": "--wide",
+      "kind": "variable",
+      "meta.isCustomMediaDeclaration": true
+    },
+    {
+      "name": "@font-feature-values Body Text",
+      "kind": "variable",
+      "meta.isFontFeatureValuesDeclaration": true
+    },
+    {
+      "name": "@font-face Body Text",
+      "kind": "variable"
+    },
+    {
+      "name": "@scope (.card) to (.content)",
+      "kind": "module"
+    },
+    {
+      "name": "ul",
+      "kind": "type"
+    },
+    {
+      "name": "@media (--narrow)",
+      "kind": "module"
+    },
+    {
+      "name": "@media (--wide)",
+      "kind": "module"
+    },
+    {
+      "name": ".a",
+      "kind": "class"
+    },
+    {
+      "name": ".b",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "@counter-style thumbs",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "--narrow",
+      "equals": 1,
+      "kind": "variable"
+    },
+    {
+      "name": "@font-feature-values Body Text",
+      "equals": 1,
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "ul",
+      "target": "fixtures/css/declarations-the-corpus-never-uses::@counter-style thumbs",
+      "meta.isCounterStyleRef": true
+    },
+    {
+      "type": "references",
+      "from": "@media (--narrow)",
+      "target": "fixtures/css/declarations-the-corpus-never-uses::--narrow",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "references",
+      "from": "@media (--wide)",
+      "target": "fixtures/css/declarations-the-corpus-never-uses::--wide",
+      "meta.isCustomMediaRef": true
+    },
+    {
+      "type": "uses",
+      "from": "@font-face Body Text",
+      "target": "fixtures/css/declarations-the-corpus-never-uses::@font-feature-values Body Text",
+      "meta.isFontFeatureValuesRef": true
+    },
+    {
+      "type": "contains",
+      "from": "@scope (.card) to (.content)",
+      "target": "fixtures/css/declarations-the-corpus-never-uses::.card",
+      "meta.isScopeScope": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "@custom-media --narrow (max-width: 400px)"
+    },
+    {
+      "name": "@font-feature-values @styleset"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": ".badge",
+      "target": "fixtures/css/declarations-the-corpus-never-uses::@font-feature-values Body Text"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

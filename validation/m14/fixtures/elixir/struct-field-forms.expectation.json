@@ -1,0 +1,143 @@
+{
+  "expectSymbols": [
+    {
+      "name": "StructFields",
+      "kind": "module"
+    },
+    {
+      "name": "StructFields",
+      "kind": "struct",
+      "ownerName": "StructFields"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "StructFields",
+      "meta.isStructField": true
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "ownerName": "StructFields"
+    },
+    {
+      "name": "email",
+      "kind": "property",
+      "ownerName": "StructFields"
+    },
+    {
+      "name": "alpha",
+      "kind": "property",
+      "ownerName": "KeywordFields"
+    },
+    {
+      "name": "file",
+      "kind": "property",
+      "ownerName": "MixedFields"
+    },
+    {
+      "name": "params",
+      "kind": "property",
+      "ownerName": "MixedFields"
+    },
+    {
+      "name": "tags",
+      "kind": "property",
+      "ownerName": "MixedFields"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "StructFields",
+      "equals": 1
+    },
+    {
+      "name": "StructFields",
+      "kind": "struct",
+      "equals": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "not_a_field"
+    },
+    {
+      "name": "not_a_property"
+    },
+    {
+      "name": ":id"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "StructFields",
+      "kind": "module"
+    },
+    {
+      "name": "KeywordFields",
+      "kind": "module"
+    },
+    {
+      "name": "MixedFields",
+      "kind": "module"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "StructFields",
+      "kind": "struct"
+    },
+    {
+      "name": "KeywordFields",
+      "kind": "struct"
+    },
+    {
+      "name": "MixedFields",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "StructFields",
+      "target": "id"
+    },
+    {
+      "type": "contains",
+      "from": "StructFields",
+      "target": "name"
+    },
+    {
+      "type": "contains",
+      "from": "StructFields",
+      "target": "email"
+    },
+    {
+      "type": "contains",
+      "from": "KeywordFields",
+      "target": "alpha"
+    },
+    {
+      "type": "contains",
+      "from": "MixedFields",
+      "target": "file"
+    },
+    {
+      "type": "contains",
+      "from": "MixedFields",
+      "target": "params"
+    },
+    {
+      "type": "contains",
+      "from": "MixedFields",
+      "target": "tags"
+    },
+    {
+      "type": "instantiates",
+      "from": "StructFields.build/0",
+      "target": "StructFields"
+    }
+  ]
+}

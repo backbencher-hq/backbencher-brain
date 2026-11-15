@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.53",
+  "code": "An3",
+  "tool": "bb_analyze",
+  "title": "bb_analyze: e2e over MCP and CLI source doors + real-repo corpus",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "CLI callers: answers through the source door",
+      "pass": true,
+      "detail": "len=5797"
+    },
+    {
+      "name": "CLI callers: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:b:2\",\n    \"name\": \"b\",\n"
+    },
+    {
+      "name": "CLI callees: answers through the source door",
+      "pass": true,
+      "detail": "len=5797"
+    },
+    {
+      "name": "CLI callees: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n    \"name\": \"a\",\n"
+    },
+    {
+      "name": "CLI trace: answers through the source door",
+      "pass": true,
+      "detail": "len=5795"
+    },
+    {
+      "name": "CLI trace: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n    \"name\": \"a\",\n"
+    },
+    {
+      "name": "CLI dependencies: answers through the source door",
+      "pass": true,
+      "detail": "len=1868"
+    },
+    {
+      "name": "CLI dependencies: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/app.ts\",\n      \"fileId\": \"bca2e5c66bcbbe951bca0bf63d2"
+    },
+    {
+      "name": "CLI stats: answers through the source door",
+      "pass": true,
+      "detail": "len=1570"
+    },
+    {
+      "name": "CLI stats: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"files\": 2,\n  \"linesOfCode\": 2,\n  \"avgFileSize\": 78,\n  \"avgFileSizeUnit\": \"bytes\",\n  \"symbols\": "
+    },
+    {
+      "name": "CLI complexity: answers through the source door",
+      "pass": true,
+      "detail": "len=1875"
+    },
+    {
+      "name": "CLI complexity: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"target\": \"src\",\n  \"scope\": \"file\",\n  \"metrics\": {\n    \"cyclomaticAvg\": {\n      \"value\": 1,\n    "
+    },
+    {
+      "name": "CLI impact: answers through the source door",
+      "pass": true,
+      "detail": "len=1384"
+    },
+    {
+      "name": "CLI impact: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"target\": \"a\",\n  \"found\": true,\n  \"root\": {\n    \"name\": \"a\",\n    \"symbolType\": \"function\",\n    \""
+    },
+    {
+      "name": "CLI test_mapping: answers through the source door",
+      "pass": true,
+      "detail": "len=2021"
+    },
+    {
+      "name": "CLI test_mapping: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n"
+    },
+    {
+      "name": "CLI test_gaps: answers through the source door",
+      "pass": true,
+      "detail": "len=1770"
+    },
+    {
+      "name": "CLI test_gaps: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n   "
+    },
+    {
+      "name": "CLI test_impact: answers through the source door",
+      "pass": true,
+      "detail": "len=1183"
+    },
+    {
+      "name": "CLI test_impact: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"target\": \"a\",\n  \"found\": true,\n  \"directTests\": [],\n  \"indirectTests\": [],\n  \"affectedTestFiles"
+    },
+    {
+      "name": "CLI test_quality: answers through the source door",
+      "pass": true,
+      "detail": "len=2917"
+    },
+    {
+      "name": "CLI test_quality: JSON answer",
+      "pass": true,
+      "detail": "{\n  \"files\": [\n    {\n      \"relativePath\": \"test/app.test.ts\",\n      \"overall\": 0.044444444444444446"
+    },
+    {
+      "name": "CLI: a refused call exits non-zero [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "exit=1"
+    },
+    {
+      "name": "CLI: the refusal names the rule [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_analyze dependencies: limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a rea"
+    },
+    {
+      "name": "MCP: bb_analyze is advertised",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "MCP: the advertised schema carries all 11 modes",
+      "pass": true,
+      "detail": "11"
+    },
+    {
+      "name": "MCP callers: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:b:2\",\n    \"name\": \"b\",\n    \"symbolType\": \"f"
+    },
+    {
+      "name": "MCP callees: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n    \"name\": \"a\",\n    \"symbolType\": \"f"
+    },
+    {
+      "name": "MCP trace: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n    \"name\": \"a\",\n    \"symbolType\": \"f"
+    },
+    {
+      "name": "MCP dependencies: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/app.ts\",\n      \"fileId\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/ap"
+    },
+    {
+      "name": "MCP stats: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"files\": 2,\n  \"linesOfCode\": 2,\n  \"avgFileSize\": 78,\n  \"avgFileSizeUnit\": \"bytes\",\n  \"symbols\": 2,\n  \"symbolsWithCom"
+    },
+    {
+      "name": "MCP complexity: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"target\": \"src\",\n  \"scope\": \"file\",\n  \"metrics\": {\n    \"cyclomaticAvg\": {\n      \"value\": 1,\n      \"available\": true\n"
+    },
+    {
+      "name": "MCP impact: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"target\": \"a\",\n  \"found\": true,\n  \"root\": {\n    \"name\": \"a\",\n    \"symbolType\": \"function\",\n    \"file\": \"src/app.ts\","
+    },
+    {
+      "name": "MCP test_mapping: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n      \"name\": \"a\",\n "
+    },
+    {
+      "name": "MCP test_gaps: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"bca2e5c66bcbbe951bca0bf63d2a8ee3d6de883a:src/app.ts:a:1\",\n      \"name\": \"a\",\n    "
+    },
+    {
+      "name": "MCP test_impact: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"target\": \"a\",\n  \"found\": true,\n  \"directTests\": [],\n  \"indirectTests\": [],\n  \"affectedTestFiles\": [],\n  \"truncated\""
+    },
+    {
+      "name": "MCP test_quality: answers with JSON and isError=false",
+      "pass": true,
+      "detail": "{\n  \"files\": [\n    {\n      \"relativePath\": \"test/app.test.ts\",\n      \"overall\": 0.044444444444444446,\n      \"dimensions\""
+    },
+    {
+      "name": "MCP: a refused call carries isError:true [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "\"bb_analyze callers requires a non-empty target\""
+    },
+    {
+      "name": "corpus rake stats: answers on a real repo",
+      "pass": true,
+      "detail": "len=1623"
+    },
+    {
+      "name": "corpus rake complexity: answers on a real repo",
+      "pass": true,
+      "detail": "len=4855"
+    },
+    {
+      "name": "corpus graphql-js stats: answers on a real repo",
+      "pass": true,
+      "detail": "len=1751"
+    },
+    {
+      "name": "corpus graphql-js complexity: answers on a real repo",
+      "pass": true,
+      "detail": "len=5280"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0
+  },
+  "decisions": {
+    "transports": "MCP stdio + CLI, both from the source tree",
+    "corpus": "rake (Ruby), graphql-js (TypeScript)"
+  },
+  "limitations": [
+    "Small sub-directory per repo."
+  ],
+  "generatedAt": "2026-11-05T04:04:47.381Z"
+}

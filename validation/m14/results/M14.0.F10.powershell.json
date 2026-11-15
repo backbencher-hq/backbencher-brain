@@ -1,0 +1,126 @@
+{
+  "checks": [
+    {
+      "description": "parse-success floor for powershell:powershell: 20% of 400 files carry an ERROR node or a MISSING token (floor unpinned)",
+      "detail": "files=400 ERROR=64 MISSING=35 either=80 damaged-lines median=3 max=36 digest=e02350a52cd37f94 verdict=unpinned",
+      "id": "M14.0.F10.powershell:powershell",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "63b8b07c5d1a8ba6b39678fa00f5c95304ea600a",
+  "committedAt": "2026-10-08T09:16:30-04:00",
+  "corpusPins": {
+    "powershell": "caeff5e8a57953a414a50fe014a6670797b6770b"
+  },
+  "data": {
+    "atCommit": "63b8b07c5d1a8ba6b39678fa00f5c95304ea600a",
+    "baseline": "validation/m14/parse-success-baseline.json",
+    "failures": 0,
+    "improved": 0,
+    "method": "files routed by the pipeline's detectLanguageFromPath, ordered by a hash of their relative path and capped deterministically; each lane parsed in its own child process with a fresh module; ERROR nodes and MISSING tokens counted separately; the rate compared against a pinned per-lane floor whose sample digest must match",
+    "rows": [
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 1,
+            "files": 3
+          },
+          ".pipelines": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 13
+          },
+          "test": {
+            "errorFiles": 59,
+            "files": 363
+          },
+          "tools": {
+            "errorFiles": 3,
+            "files": 19
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 80,
+        "eitherPct": 20,
+        "emptyFiles": 0,
+        "errPct": 16,
+        "errorFiles": 64,
+        "errorLines": 355,
+        "errorLinesMax": 36,
+        "errorLinesMedian": 3,
+        "exts": {
+          "ps1": {
+            "errorFiles": 61,
+            "files": 343
+          },
+          "psd1": {
+            "errorFiles": 0,
+            "files": 33
+          },
+          "psm1": {
+            "errorFiles": 3,
+            "files": 24
+          }
+        },
+        "files": 400,
+        "lane": "powershell:powershell",
+        "lang": "powershell",
+        "missPct": 8.75,
+        "missingFiles": 35,
+        "pinnedEitherPct": null,
+        "repo": "powershell",
+        "repoPin": "caeff5e8a57953a414a50fe014a6670797b6770b",
+        "sampleDigest": "e02350a52cd37f94",
+        "sampleLimit": 400,
+        "verdict": "unpinned",
+        "which": "primary"
+      },
+      {
+        "lane": "ansible:powershell",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      }
+    ],
+    "sampleLimit": 400,
+    "treeModifiedInputs": 0,
+    "verdict": "pass"
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F10.powershell",
+  "layers": [
+    "corpus routing (the pipeline's own detectLanguageFromPath, including the .h sniff)",
+    "pinned grammar per lane (wasm), one fresh module per lane in its own child process",
+    "per-lane floors in validation/m14/parse-success-baseline.json, sample-digest pinned"
+  ],
+  "limitations": [
+    {
+      "description": "This measures the GRAMMAR's surface, not recovery quality: symbols flow through an ERROR region, so a high rate and a zero rate can both be 'no symbol loss' — that is why F5 stays green and why this gate exists separately."
+    },
+    {
+      "description": "The corpora are local checkouts; each lane records its repo pin so a moved corpus is visible beside its floor."
+    },
+    {
+      "description": "A lane whose candidate set changed reports sample-moved and is NOT compared — the honest state, not a pass. The gate exits 2 in that case."
+    },
+    {
+      "description": "The rate is the full production-routed surface, so the c figure includes plain C headers and the cpp figure includes the headers production sniffs as C++. The per-extension split is recorded beside every row so these reconcile with the .c-only census in reviews/m49-w17-parse-success-census.md."
+    },
+    {
+      "description": "LANE-SCOPED artifact: this run measured 1 lane(s) (powershell:powershell), not the whole lane set. Its floors describe those lanes only and must not be read as the canonical M14.0.F10 claim; the canonical artifact carries every pinned lane. These floors are not yet in validation/m14/parse-success-baseline.json, which is only rewritten by an unscoped --update-baseline."
+    }
+  ],
+  "regeneratedAt": "2026-10-08T13:17:20.934Z",
+  "regeneratedAtCommit": "63b8b07c5d1a8ba6b39678fa00f5c95304ea600a",
+  "runtime": "node v26.3.0",
+  "schemaVersion": 2,
+  "title": "corpus parse-success floor, LANE-SCOPED (powershell) — NOT the canonical whole-set claim"
+}

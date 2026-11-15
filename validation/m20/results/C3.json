@@ -1,0 +1,20 @@
+{
+  "issue": "M20.C3",
+  "code": "C3",
+  "milestone": "M20",
+  "status": "known-gap",
+  "checks": 21,
+  "passed": 19,
+  "failed": 2,
+  "negativeCases": 2,
+  "currentCommit": "4cda8178afb1d46b76e5f3127abc5bcfc1f4b46d",
+  "sourceFingerprint": "116450a6177c98419c34bb8818d6db8cfa10aafa8f563941b57e5ea3696d0c4c",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-closure-C3.ts",
+  "evidenceFile": "C3.json",
+  "generatedAt": "2026-11-04T04:41:19.420Z",
+  "limitations": [
+    "Closure audit reads persisted tool evidence; it does not re-run tool verifiers.",
+    "Analyzer (M14) correctness itself is owned by the co-agent milestone and is only declared as a documented dependency, not independently re-verified here."
+  ]
+}

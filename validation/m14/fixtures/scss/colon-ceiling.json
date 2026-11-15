@@ -1,0 +1,223 @@
+{
+  "instrument": "THE `imports` COLON \u2014 the CEILING in the gate's own columns, split LOCAL vs EXTERNAL, with the dot clause counted",
+  "at": "2026-10-12T15:15:00-04:00",
+  "corpusConstruction": "ONE PROJECT PER REPOSITORY, no merging: every file is parsed with `projectRoot` set to its own repo and the key space is built per repo \u2014 the gate's own scope and production's. r-lane's merge artifact (13 repos into one scratch project, inflating cross-repo collisions) is structurally absent here.",
+  "coverage": "COMPLETE-PER-REPO, and declared: a whole-population run of a large lane exceeded 25 minutes and was KILLED (typescript, exit 124), so each lane is measured over one complete repository, chosen as one of its largest. The walk within each repo is exhaustive \u2014 no stride sample \u2014 so the ceiling is unbiased for the projects it covers and is NOT a claim about the whole lane.",
+  "lanes": {
+    "typescript": {
+      "population": {
+        "admitted": 1256,
+        "parsed": 1256,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "redwood"
+        ],
+        "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+      },
+      "colonEdges": 5810,
+      "targetAsIs": {
+        "LOCAL": {
+          "unresolved": 2457
+        },
+        "EXTERNAL": {
+          "unresolved": 3353
+        }
+      },
+      "targetBareItemName": {
+        "LOCAL": {
+          "ambBoth": 390,
+          "ambDeclOnly": 195,
+          "resolved": 1389,
+          "unresolved": 483
+        },
+        "EXTERNAL": {
+          "resolved": 432,
+          "ambBoth": 645,
+          "ambDeclOnly": 164,
+          "unresolved": 2112
+        },
+        "ALL": {
+          "resolved": 1821,
+          "ambBoth": 1035,
+          "ambDeclOnly": 359,
+          "unresolved": 2595
+        }
+      },
+      "dotInModuleHalf": {
+        "LOCAL": 1774,
+        "EXTERNAL": 56,
+        "ofColonEdges": 5810
+      },
+      "bothClauses": {
+        "note": "colon is present on EVERY edge counted here (it is the selection rule); a dot in the module half is the second clause",
+        "dotAndColon_LOCAL": 1774,
+        "dotAndColon_EXTERNAL": 56
+      }
+    },
+    "javascript": {
+      "population": {
+        "admitted": 1278,
+        "parsed": 1278,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "consul"
+        ],
+        "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+      },
+      "colonEdges": 3444,
+      "targetAsIs": {
+        "LOCAL": {
+          "unresolved": 1065
+        },
+        "EXTERNAL": {
+          "unresolved": 2379
+        }
+      },
+      "targetBareItemName": {
+        "LOCAL": {
+          "unresolved": 652,
+          "resolved": 197,
+          "ambDeclOnly": 108,
+          "ambBoth": 108
+        },
+        "EXTERNAL": {
+          "unresolved": 1537,
+          "resolved": 276,
+          "ambBoth": 206,
+          "ambDeclOnly": 360
+        },
+        "ALL": {
+          "unresolved": 2189,
+          "resolved": 473,
+          "ambBoth": 314,
+          "ambDeclOnly": 468
+        }
+      },
+      "dotInModuleHalf": {
+        "LOCAL": 320,
+        "EXTERNAL": 6,
+        "ofColonEdges": 3444
+      },
+      "bothClauses": {
+        "note": "colon is present on EVERY edge counted here (it is the selection rule); a dot in the module half is the second clause",
+        "dotAndColon_LOCAL": 320,
+        "dotAndColon_EXTERNAL": 6
+      }
+    },
+    "java": {
+      "population": {
+        "admitted": 1942,
+        "parsed": 1942,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "grails-core"
+        ],
+        "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+      },
+      "colonEdges": 0,
+      "targetAsIs": {
+        "LOCAL": {},
+        "EXTERNAL": {}
+      },
+      "targetBareItemName": {
+        "LOCAL": {},
+        "EXTERNAL": {},
+        "ALL": {}
+      },
+      "dotInModuleHalf": {
+        "LOCAL": 0,
+        "EXTERNAL": 0,
+        "ofColonEdges": 0
+      },
+      "bothClauses": {
+        "note": "colon is present on EVERY edge counted here (it is the selection rule); a dot in the module half is the second clause",
+        "dotAndColon_LOCAL": 0,
+        "dotAndColon_EXTERNAL": 0
+      }
+    },
+    "python": {
+      "population": {
+        "admitted": 165,
+        "parsed": 165,
+        "failed": 0,
+        "repos": 1,
+        "repoFilter": [
+          "pb-grpc"
+        ],
+        "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+      },
+      "colonEdges": 844,
+      "targetAsIs": {
+        "LOCAL": {
+          "unresolved": 132
+        },
+        "EXTERNAL": {
+          "unresolved": 712
+        }
+      },
+      "targetBareItemName": {
+        "LOCAL": {
+          "unresolved": 127,
+          "resolved": 5
+        },
+        "EXTERNAL": {
+          "unresolved": 676,
+          "ambDeclOnly": 31,
+          "resolved": 5
+        },
+        "ALL": {
+          "unresolved": 803,
+          "ambDeclOnly": 31,
+          "resolved": 10
+        }
+      },
+      "dotInModuleHalf": {
+        "LOCAL": 0,
+        "EXTERNAL": 207,
+        "ofColonEdges": 844
+      },
+      "bothClauses": {
+        "note": "colon is present on EVERY edge counted here (it is the selection rule); a dot in the module half is the second clause",
+        "dotAndColon_LOCAL": 0,
+        "dotAndColon_EXTERNAL": 207
+      }
+    }
+  },
+  "theFindings": {
+    "1_theLaneCountIsTHREE_notFour": "**java is NOT a colon lane.** `src/ast/real-java-analyzer.ts:600` and `:658` emit `target: moduleName` \u2014 a bare module name like `java.util.List`, no colon \u2014 and `grails-core` measures **0 colon edges across 1,942 java files**. The colon emission is confirmed in typescript, javascript and python. Java's `imports` zero has a DIFFERENT cause and must not be priced with this change.",
+    "2_theGateChangeIsINERT_measuredNotArgued": "the AS-IS classification is **100% `unresolved`** in every lane (ts LOCAL 2,457 + EXTERNAL 3,353 \u00b7 js 1,065 + 2,379 \u00b7 py 132 + 712) and **ZERO `externalUnverified`** \u2014 these edges carry no external claim, so `pathLikeTarget`/`verifyExternalClaim` never runs for them, and even relaxed there is no declaration of `mod:item` in the key space to find. **A gate-only change moves nothing.**",
+    "3_theCeiling_whichIsTheNumberThatMatters": {
+      "typescript_redwood": {
+        "LOCAL": "1,389 resolved \u00b7 195 ambDeclOnly \u00b7 390 ambBoth \u00b7 483 unresolved (of 2,457)",
+        "EXTERNAL": "432 resolved \u00b7 164 ambDeclOnly \u00b7 645 ambBoth \u00b7 2,112 unresolved (of 3,353)"
+      },
+      "javascript_consul": {
+        "LOCAL": "197 resolved \u00b7 108 ambDeclOnly \u00b7 108 ambBoth \u00b7 652 unresolved (of 1,065)",
+        "EXTERNAL": "276 resolved \u00b7 360 ambDeclOnly \u00b7 206 ambBoth \u00b7 1,537 unresolved (of 2,379)"
+      },
+      "python_pb-grpc": {
+        "LOCAL": "5 resolved \u00b7 0 ambiguous \u00b7 127 unresolved (of 132)",
+        "EXTERNAL": "5 resolved \u00b7 31 ambDeclOnly \u00b7 676 unresolved (of 712)"
+      }
+    },
+    "4_quoteBOTHColumns_asYouRequired": "the change does NOT buy `resolved` alone: ts LOCAL is **1,389 resolved | 585 ambiguous | 483 unresolved**, js LOCAL **197 | 216 | 652**, py LOCAL **5 | 0 | 127**. A resolved-only acceptance test would score the js and py movements as nearly nothing while ambiguity moved \u2014 r-lane's warning, applied.",
+    "5_theExternalHalf_whereTheChangeWouldBeWRONG": "**432 ts + 276 js + 5 py EXTERNAL items would `resolve`** to a project-local symbol that merely shares the name \u2014 a FALSE binding, not a fix. The emission change must therefore be **LOCAL-ONLY** (external modules keep their current spelling or an external marker). This is the measurement behind the Lead's split: `unverified` for an external module is CORRECT and must stay.",
+    "6_theDotClause_quantified": "`_i13_pick` requires no dot AND no colon, so a COLON-only fix would leave every edge whose MODULE half carries a dot still refused: **ts 1,774 LOCAL + 56 EXTERNAL \u00b7 js 320 + 6 \u00b7 py 0 + 207**. A bare ITEM name carries neither a dot nor a colon, so it satisfies both clauses \u2014 which is why the emission change is the candidate that survives and a colon-only gate or pass fix does not."
+  },
+  "pricing": {
+    "candidateA_changeTheEmission_toBareItemName_LOCALonly": "SURVIVES. Ceiling above; both columns quoted; external half excluded because it would create false bindings (measured 432/276/5).",
+    "candidateB_changeTheGATE_pathLikeTarget": "INERT at the gate level by measurement (100% unresolved, 0 external claims, nothing to resolve). r-lane's pass evidence adds a second, independent reason: `_i13_pick` refuses a colon-bearing target inside the pass (`parallel-indexer.ts:4484-4485`), so the gate change alone was never sufficient either.",
+    "candidateC_changeBOTH": "the only combination that could move the LOCAL half \u2014 and it is candidate A plus a gate relaxation that A makes unnecessary (a bare bare name is not path-like), so **A alone is the one that survives**."
+  },
+  "note": "javascript's `overrides` cross-file branch (`real-javascript-analyzer.ts:1540-1655`, `reasonCode: \"first-parent-guess\"`, confidence 0.5, `evidenceClass: inferred`, without checking that the base declares the member) is left alone per the Lead's instruction \u2014 noted, not touched.",
+  "raw": [
+    "colon-ceiling-typescript.json",
+    "colon-ceiling-javascript.json",
+    "colon-ceiling-java.json",
+    "colon-ceiling-python.json",
+    "lane-colon-ceiling.mts"
+  ]
+}

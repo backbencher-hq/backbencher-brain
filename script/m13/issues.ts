@@ -12,7 +12,7 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-const REPO = "backbencher-hq/backbencher-brain"
+const REPO = "ishaq2321/backbencher-brain"
 const MILESTONE_TITLE = "M13: Tool Trust Rebuild"
 const MILESTONE_DESC = "Tool-by-tool trust rebuild: contract authority, honest AST behavior, mutation safety, adversarial tests, real-repo corpus evidence, and release gates for the ten public tools. Scope is the tool surface; analyzer-family honesty is the follow-on program (M14+)."
 const LABEL_NAME = "m13-tool-trust"
@@ -107,7 +107,7 @@ const ISSUES: Issue[] = [
   },
   { id: "M13.05", code: "B5", tool: "baseline", priority: "p1-high",
     title: "Corpus mapping: 29 pinned repos -> tools/languages + gap register",
-    goal: "Map the 29 repos under ~/fixtures/repositories to the tools and languages each actually exercises; record gaps; pin the minimum additional repos to close measured gaps.",
+    goal: "Map the 29 repos under ~/bb_tests/repositories to the tools and languages each actually exercises; record gaps; pin the minimum additional repos to close measured gaps.",
     acceptance: [
       "Produce a checked-in tool x repository coverage matrix",
       "Record, per tool, which languages have zero real-repo coverage",

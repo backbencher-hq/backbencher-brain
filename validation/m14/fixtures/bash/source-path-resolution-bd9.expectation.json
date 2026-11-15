@@ -1,0 +1,179 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/source-path-resolution-bd9.sh",
+ "authoredFrom": "BD9 (a source path is reported as the shell will read it; a dynamic one is labelled). Authored from a probe 2026-09-26. 16 of the lane's 23 pre-wave import edges were `source $scriptroot/tools.sh` \u2014 a target no symbol can ever have. Dropping dynamic edges was considered and refused (it would delete 70% of the import graph), so they are kept and LABELLED `resolution: dynamic`; the fixture pins one of each so the label cannot silently become `literal` or vice versa. SUPERSEDED by BD16: a `source`/`.` inclusion is `part_of`, not `imports` \u2014 the rows moved, the facts did not (target = the part's module symbol, path in metadata.partPath). The four imports rows became four part_of rows; every references row is UNCHANGED and stays.",
+ "expectSymbols": [
+  {
+   "name": "source-path-resolution-bd9.sh",
+   "kind": "module"
+  },
+  {
+   "name": "scriptroot",
+   "kind": "variable",
+   "ownerName": "source-path-resolution-bd9.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "./sibling.sh",
+   "line_number": 25,
+   "meta.resolution": "literal",
+   "meta.evidenceClass": "import_based"
+  },
+  {
+   "type": "references",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "$scriptroot/helper.sh",
+   "line_number": 26,
+   "meta.resolution": "dynamic",
+   "meta.evidenceClass": "import_based"
+  },
+  {
+   "type": "uses",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "source-path-resolution-bd9.sh.scriptroot",
+   "line_number": 26
+  },
+  {
+   "type": "references",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "./also-sibling.sh",
+   "line_number": 27,
+   "meta.resolution": "literal",
+   "meta.evidenceClass": "import_based"
+  },
+  {
+   "type": "references",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "$(dirname $0)/next-to-me.sh",
+   "line_number": 28,
+   "meta.resolution": "dynamic",
+   "meta.evidenceClass": "import_based"
+  },
+  {
+   "type": "calls",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "dirname",
+   "line_number": 28
+  },
+  {
+   "type": "contains",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "scriptroot",
+   "line_number": 24
+  },
+  {
+   "type": "part_of",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "sibling.sh",
+   "line_number": 25,
+   "meta.partRole": "library",
+   "meta.partPath": "./sibling.sh",
+   "meta.partSymbol": "sibling.sh",
+   "meta.resolution": "literal"
+  },
+  {
+   "type": "part_of",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "helper.sh",
+   "line_number": 26,
+   "meta.partRole": "library",
+   "meta.partPath": "$scriptroot/helper.sh",
+   "meta.partSymbol": "helper.sh",
+   "meta.resolution": "dynamic"
+  },
+  {
+   "type": "part_of",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "also-sibling.sh",
+   "line_number": 27,
+   "meta.partRole": "library",
+   "meta.partPath": "./also-sibling.sh",
+   "meta.partSymbol": "also-sibling.sh",
+   "meta.resolution": "literal"
+  },
+  {
+   "type": "part_of",
+   "from": "source-path-resolution-bd9.sh",
+   "target": "next-to-me.sh",
+   "line_number": 28,
+   "meta.partRole": "library",
+   "meta.partPath": "$(dirname $0)/next-to-me.sh",
+   "meta.partSymbol": "next-to-me.sh",
+   "meta.resolution": "dynamic"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "./sibling.sh",
+   "meta.resolution": "dynamic"
+  },
+  {
+   "type": "imports",
+   "target": "fixtures/bash/sibling.sh"
+  },
+  {
+   "type": "imports",
+   "target": "\"$(dirname \"$0\")/next-to-me.sh\""
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  },
+  {
+   "type": "imports",
+   "target": "./sibling.sh",
+   "note": "BD16 relabel: a source inclusion is part_of; the imports row must not come back."
+  },
+  {
+   "type": "imports",
+   "target": "$scriptroot/helper.sh",
+   "note": "BD16 relabel forbid."
+  },
+  {
+   "type": "imports",
+   "target": "./also-sibling.sh",
+   "note": "BD16 relabel forbid."
+  },
+  {
+   "type": "imports",
+   "target": "$(dirname $0)/next-to-me.sh",
+   "note": "BD16 relabel forbid."
+  },
+  {
+   "type": "part_of",
+   "target": "./sibling.sh",
+   "note": "the target is the SYMBOL, never the path (0-of-4,612 rule)."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` \u2014 the alias `pool-worker.ts:1175` derives as `${scope}.${name}` \u2014 because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling.",
+ "_supersededBy": "source-path-resolution-bd9.expectation.json",
+ "_supersedeReason": "The four imports rows became four part_of rows; every references row is UNCHANGED and stays."
+}

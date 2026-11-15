@@ -26,12 +26,12 @@ import sys
 # `python3 port.py` always reads upstream and rewrites grammar.js from scratch,
 # which makes the patch reviewable as a diff and makes a re-run idempotent
 # instead of a "the anchor is already gone" failure.
-UPSTREAM = "$HOME/backbencher-brain/grammars/tree-sitter-graphql/grammar.upstream.js"
-SRC = "$HOME/backbencher-brain/grammars/tree-sitter-graphql/grammar.js"
+UPSTREAM = "/home/ishaq2321/backbencher-brain/grammars/tree-sitter-graphql/grammar.upstream.js"
+SRC = "/home/ishaq2321/backbencher-brain/grammars/tree-sitter-graphql/grammar.js"
 
 # snake_case rule -> the exact name the vendored wasm exposes.
 # Derived from `language.nodeTypeForId` over wasm/tree-sitter-graphql.wasm
-# (recorded in fixtures/graphql/out/grammar-census.json -> grammarDeclaredTypes).
+# (recorded in bb_tests/graphql/out/grammar-census.json -> grammarDeclaredTypes).
 RENAME = {
     "document": "Document",
     "definition": "Definition",
@@ -148,7 +148,7 @@ def rename(src: str) -> str:
 # ---------------------------------------------------------------------------
 # Upstream bug fixes. Each one is a construct the GraphQL specification defines
 # that upstream `main` rejects; each is measured by
-# fixtures/graphql/probe/grammar-gaps.mts.
+# bb_tests/graphql/probe/grammar-gaps.mts.
 # ---------------------------------------------------------------------------
 FIXES = [
     # FIX 1 — `extend schema { query: Q mutation: M }`

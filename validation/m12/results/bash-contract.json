@@ -1,0 +1,192 @@
+{
+  "analyzer": "bash",
+  "checks": [
+    {
+      "name": "log function",
+      "pass": true,
+      "detail": "log() defined"
+    },
+    {
+      "name": "get_backend function",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "param $1 of build-args fn",
+      "pass": true,
+      "detail": "log receives $1"
+    },
+    {
+      "name": "$0 excluded from params",
+      "pass": true,
+      "detail": "$0 is the script name, never a parameter"
+    },
+    {
+      "name": "deploy receives two params",
+      "pass": true,
+      "detail": "deploy has no positional refs"
+    },
+    {
+      "name": "local level owned by log",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "local message owned by log",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "local env owned by get_backend",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "array backends declared",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "global APP_DIR unowned",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "reassignment deduped",
+      "pass": true,
+      "detail": "count reassigned in loop but declared once"
+    },
+    {
+      "name": "trap INT edge",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "trap TERM edge",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "command substitution call",
+      "pass": true,
+      "detail": "$(get_backend prod)"
+    },
+    {
+      "name": "command substitution date call",
+      "pass": true,
+      "detail": "$(date -u ...)"
+    },
+    {
+      "name": "export constant",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "readonly constant",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "alias symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "source import",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "source reference",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "external call docker",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "external call ssh",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pipeline curl+bash",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "builtin echo not called",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "sudo not called",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uses var expansion",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uses array expansion",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uses subscript base",
+      "pass": true,
+      "detail": "${names[@]}"
+    },
+    {
+      "name": "no global marker symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no script marker symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no $cmd substitution symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no ENV_ phantom symbols",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "negative reports syntax error",
+      "pass": true,
+      "detail": "unterminated string must surface"
+    },
+    {
+      "name": "negative keeps valid symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "negative recovery edge documented",
+      "pass": true,
+      "detail": "recovery artifact is explicit, not hidden"
+    },
+    {
+      "name": "analyzer source has no regex literals",
+      "pass": true,
+      "detail": "ctor=0 methodUses=0"
+    }
+  ],
+  "passed": true,
+  "total": 36,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.830Z",
+    "contentSha256": "86550f412798a53e220a541e57dff2b408813652ed21c25c4f211b19a2c8c61f"
+  }
+}

@@ -2,7 +2,7 @@
   "tool": "lua-ambiguity-split",
   "commit": "3a12c01188a4bfefdbc5c6952b313ca8eabf400e",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "method": "git ls-files '*.lua' per repo, sorted, no cap (deterministic, not random)",
     "filesDrawn": 3252,
     "repos": {
@@ -32,8 +32,8 @@
   "production": {
     "filesParsed": 3250,
     "parseFailures": [
-      "pb-reference/lua/test_upb.lua: ENOENT: no such file or directory, stat '$HOME/fixtures/repositories/pb-reference/lua/test_upb.lua'",
-      "pb-reference/lua/upb.lua: ENOENT: no such file or directory, stat '$HOME/fixtures/repositories/pb-reference/lua/upb.lua'"
+      "pb-reference/lua/test_upb.lua: ENOENT: no such file or directory, stat '/home/ishaq2321/bb_tests/repositories/pb-reference/lua/test_upb.lua'",
+      "pb-reference/lua/upb.lua: ENOENT: no such file or directory, stat '/home/ishaq2321/bb_tests/repositories/pb-reference/lua/upb.lua'"
     ],
     "symbols": 83906,
     "emptyNames": 0,

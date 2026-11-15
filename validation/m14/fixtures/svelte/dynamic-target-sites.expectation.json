@@ -1,0 +1,62 @@
+{
+  "fixtureId": "svelte/dynamic-target-sites",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written AFTER the fix, and honestly labelled: the RULE is the Svelte 5 language's \u2014 `<svelte:component this={X}>` and `<svelte:element this={X}>` each name a dynamic component reference, so a name written at N sites is N references \u2014 plus the corpus measurement quoted in the fixture header. The line pins were read off the post-fix run and each checked against the fixture's own text: `Widget` is written on 25, 26, 27 and 33; `Panel` on 30.",
+  "rationale": "A lossy PROJECTION, not a wrong edge, which is why no gate saw it. The dynamic-target map was `Map<name, line>`, so a name written twice published one edge at the second line and the first site was unrecoverable from the payload. Measured over the 6,439-file corpus: 125 bare-identifier `this={X}` sites in 73 files, 11 of which write one name at more than one site, 36 sites collapsed. `line_number` keeps the LAST site (33 for `Widget`, not 25) so no shared payload baseline moves; the whole set travels in `metadata.dynamicTargetLines`.",
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "target": "Widget",
+      "line_number": 33,
+      "meta.dynamicTargetLines": [
+        25,
+        26,
+        27,
+        33
+      ]
+    },
+    {
+      "type": "renders",
+      "target": "Panel",
+      "line_number": 30,
+      "meta.dynamicTargetLines": [
+        30
+      ]
+    },
+    {
+      "type": "imports",
+      "target": "./Widget.svelte:Widget"
+    },
+    {
+      "type": "imports",
+      "target": "./Panel.svelte:Panel"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "target": "Widget",
+      "line_number": 25,
+      "comment": "`line_number` keeps the LAST site, so an edge at the FIRST site cannot appear. This row is what makes that a pinned property rather than an accident: a change that moved `line_number` to the first site would look like an improvement and would break every consumer that reads it."
+    },
+    {
+      "type": "renders",
+      "target": "Widget",
+      "line_number": 26,
+      "comment": "same \u2014 the middle sites are recorded, never claimed as the edge's line"
+    },
+    {
+      "type": "renders",
+      "target": "Widget",
+      "line_number": 27,
+      "comment": "same"
+    },
+    {
+      "type": "renders",
+      "target": "Panel",
+      "line_number": 31,
+      "comment": "there is no site on 31; a wrong line would be a past-the-tag claim"
+    }
+  ]
+}

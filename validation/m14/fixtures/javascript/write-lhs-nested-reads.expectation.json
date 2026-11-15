@@ -1,0 +1,74 @@
+{
+  "fixtureId": "javascript/write-lhs-nested-reads",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W1 (#768): (1) the write-LHS suppression used `continue` inside a stack walk that pushes children at the loop tail, so the whole statement subtree was skipped — reads nested in the LHS were silently lost (`document.getElementById(id).style.display = v` dropped the read of `id`; `store.inner.limit = v` dropped `store`/`inner`). The code comment claimed the opposite ('inner segments of a chained write stay reads'). (2) The chain head was emitted as raw node text, so a call-rooted chain fabricated a non-symbol target `uses -> document.getElementById(id)`. Both are now suppressed per-node instead of per-subtree, and the head is emitted only when it is an identifier. Missed by every fixture until the #760 cold-pool rotation surfaced them on grails-core (MISSING=7) and lodash (MISSING=26).",
+  "expectSymbols": [
+    {
+      "name": "bump",
+      "kind": "function"
+    },
+    {
+      "name": "dom",
+      "kind": "function"
+    },
+    {
+      "name": "augmented",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "bump",
+      "target": "store"
+    },
+    {
+      "type": "uses",
+      "from": "bump",
+      "target": "inner"
+    },
+    {
+      "type": "uses",
+      "from": "bump",
+      "target": "bump\u0000delta",
+      "meta.bareRead": true
+    },
+    {
+      "type": "uses",
+      "from": "dom",
+      "target": "style"
+    },
+    {
+      "type": "uses",
+      "from": "dom",
+      "target": "dom\u0000id",
+      "meta.bareRead": true
+    },
+    {
+      "type": "calls",
+      "from": "dom",
+      "target": "getElementById"
+    },
+    {
+      "type": "uses",
+      "from": "augmented",
+      "target": "augmented\u0000step",
+      "meta.bareRead": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "limit"
+    },
+    {
+      "type": "uses",
+      "target": "display"
+    },
+    {
+      "type": "uses",
+      "targetEndsWith": "getElementById(id)"
+    }
+  ]
+}

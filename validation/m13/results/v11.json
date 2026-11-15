@@ -1,0 +1,600 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.65",
+  "code": "V11",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: the code map publishes what the sidebar renders",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "the document carries its own payload",
+      "pass": true,
+      "detail": "8 symbols"
+    },
+    {
+      "name": "the document paints no panel of its own (sidebar, legend, census, group toggle, save button, path pill) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "and no rule reaches for one either [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a rule for a removed panel survives"
+    },
+    {
+      "name": "the map fills its own frame",
+      "pass": true,
+      "detail": "the map does not own the frame"
+    },
+    {
+      "name": "the search, the readout and the picked-item box are the four overlays",
+      "pass": true,
+      "detail": "an overlay is missing"
+    },
+    {
+      "name": "the document publishes window.__bbView",
+      "pass": true,
+      "detail": "no API on the window"
+    },
+    {
+      "name": "it says which view it is",
+      "pass": true,
+      "detail": "codemap/Symbol map"
+    },
+    {
+      "name": "and it does not call itself a code map in the title [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Symbol map"
+    },
+    {
+      "name": "every port the sidebar renders is published",
+      "pass": true,
+      "detail": "all present"
+    },
+    {
+      "name": "and the instruction line is the VIEW's, published as a hint",
+      "pass": true,
+      "detail": "scroll to zoom · drag to pan · double-click a file to fill t"
+    },
+    {
+      "name": "a view can still write its own file out",
+      "pass": true,
+      "detail": "no self-save port"
+    },
+    {
+      "name": "and the save control is NOT in the picture [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a save button still floats over the map"
+    },
+    {
+      "name": "the census counts the payload's own files",
+      "pass": true,
+      "detail": "3 vs 3"
+    },
+    {
+      "name": "and its symbols",
+      "pass": true,
+      "detail": "8 vs 8"
+    },
+    {
+      "name": "and the lines they span",
+      "pass": true,
+      "detail": "[{\"label\":\"files\",\"value\":3,\"warn\":false},{\"label\":\"symbols\",\"value\":8,\"warn\":false},{\"label\":\"lines spanned\",\"value\":\"12\",\"warn\":false}]"
+    },
+    {
+      "name": "the group row is named for the arrangement on screen",
+      "pass": true,
+      "detail": "files,symbols,lines spanned,directories,excluded as noise,cut by the node budget,largest 8 symbols"
+    },
+    {
+      "name": "and the census states what the noise filter removed",
+      "pass": true,
+      "detail": "1 symbol(s) excluded as noise by vendor — this is not the whole project"
+    },
+    {
+      "name": "the exclusion note is not a bare count [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the note does not name the pattern"
+    },
+    {
+      "name": "and the census says the noise row is a caveat",
+      "pass": true,
+      "detail": "{\"label\":\"excluded as noise\",\"value\":1,\"warn\":true}"
+    },
+    {
+      "name": "a cut node set is a row in the census",
+      "pass": true,
+      "detail": "{\"row\":{\"label\":\"cut by the node budget\",\"value\":8,\"warn\":true},\"available\":9,\"shown\":1}"
+    },
+    {
+      "name": "and it is not reported as a complete map [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"label\":\"cut by the node budget\",\"value\":8,\"warn\":true}"
+    },
+    {
+      "name": "the Languages are the payload's own field",
+      "pass": true,
+      "detail": "python,typescript vs python,typescript"
+    },
+    {
+      "name": "and never the placeholder a field the projection does not carry would produce [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "python,typescript"
+    },
+    {
+      "name": "the fixture really does carry a second language",
+      "pass": true,
+      "detail": "python,typescript"
+    },
+    {
+      "name": "the projection's field WINS when the two disagree",
+      "pass": true,
+      "detail": "[{\"value\":\"python\",\"count\":1,\"color\":\"#fbbf24\"}]"
+    },
+    {
+      "name": "the fallback is not consulted over it [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[{\"value\":\"python\",\"count\":1,\"color\":\"#fbbf24\"}]"
+    },
+    {
+      "name": "every symbol kind is a legend row",
+      "pass": true,
+      "detail": "4 rows"
+    },
+    {
+      "name": "the legend counts every symbol exactly once",
+      "pass": true,
+      "detail": "8 vs 8"
+    },
+    {
+      "name": "and each row carries the colour the map paints it",
+      "pass": true,
+      "detail": "[{\"value\":\"function\",\"count\":3,\"color\":\"#5eead4\"},{\"value\":\"class\",\"count\":2,\"color\":\"#a78bfa\"}]"
+    },
+    {
+      "name": "the filters offer the kinds and the languages",
+      "pass": true,
+      "detail": "kinds,languages"
+    },
+    {
+      "name": "the key covers the area, the gap, staleness and the search",
+      "pass": true,
+      "detail": "area = the lines a symbol spans | fill = symbol kind — functions cyan, methods blue, types violet, values amber (see Sym"
+    },
+    {
+      "name": "and it reports a muted band only with its count",
+      "pass": true,
+      "detail": "area = the lines a symbol spans | fill = symbol kind — functions cyan, methods blue, types violet, values amber (see Symbol kinds) | gap = the code between symbols, drawn at its true size | amber = stale since index (none in this scope) | white outline = matches the search (nothing typed yet) | muted = hidden by a filter (nothing hidden)"
+    },
+    {
+      "name": "it also says what a fill means",
+      "pass": true,
+      "detail": "area = the lines a symbol spans | fill = symbol kind — functions cyan, methods blue, types violet, values amber (see Symbol kinds) | gap = the code between symbols, drawn at its true size | amber = stale since index (none in this scope) | white outline = matches the search (nothing typed yet) | muted = hidden by a filter (nothing hidden)"
+    },
+    {
+      "name": "hiding a kind is reported, not silent",
+      "pass": true,
+      "detail": "{\"muted\":3,\"total\":8}"
+    },
+    {
+      "name": "the census keeps every symbol (a filter is a display decision) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"label\":\"symbols\",\"value\":8,\"warn\":false}"
+    },
+    {
+      "name": "and the data port keeps every one of them",
+      "pass": true,
+      "detail": "8 vs 8"
+    },
+    {
+      "name": "with the muted ones telling the truth about themselves [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "no node is marked either way"
+    },
+    {
+      "name": "the live line carries the caveat",
+      "pass": true,
+      "detail": "[{\"label\":\"symbols\",\"value\":\"5 of 8\",\"warn\":false},{\"label\":\"files\",\"value\":\"3 in 2 directories\",\"warn\":false},{\"label\":\"stripe detail\",\"value\":\"every symbol drawn on its own\",\"warn\":false},{\"label\":\"names\",\"value\":\"2 files · 6 symbols\",\"warn\":true},{\"label\":\"\",\"value\":\"3 muted by a filter\",\"warn\":true},{\"label\":\"zoom\",\"value\":\"80%\",\"warn\":false}]"
+    },
+    {
+      "name": "the census adds a muted row",
+      "pass": true,
+      "detail": "files,symbols,lines spanned,directories,excluded as noise,cut by the node budget,muted by a filter,largest 8 symbols"
+    },
+    {
+      "name": "and the key now names the count",
+      "pass": true,
+      "detail": "area = the lines a symbol spans | fill = symbol kind — functions cyan, methods blue, types violet, values amber (see Symbol kinds) | gap = the code between symbols, drawn at its true size | amber = stale since index (none in this scope) | white outline = matches the search (nothing typed yet) | muted = hidden by a filter (3 bands, counted anyway)"
+    },
+    {
+      "name": "and the picture itself is muted rather than holed",
+      "pass": true,
+      "detail": "no muted band was painted"
+    },
+    {
+      "name": "the census is not short a row either [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "8"
+    },
+    {
+      "name": "show everything puts them back",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "both arrangements are published with what each draws",
+      "pass": true,
+      "detail": "[\"Directories\",\"Languages\"]"
+    },
+    {
+      "name": "the map opens on directories",
+      "pass": true,
+      "detail": "dir"
+    },
+    {
+      "name": "the directory arrangement names directories",
+      "pass": true,
+      "detail": "lib  7 lines | src  5 lines"
+    },
+    {
+      "name": "switching to languages re-lays the map out",
+      "pass": true,
+      "detail": "[\"files\",\"symbols\",\"lines spanned\",\"languages\",\"excluded as noise\",\"cut by the node budget\",\"largest 8 symbols\"]"
+    },
+    {
+      "name": "and the group count is the number of languages, not of directories",
+      "pass": true,
+      "detail": "2 vs 2 languages (was 2 directories)"
+    },
+    {
+      "name": "the language arrangement names languages",
+      "pass": true,
+      "detail": "python  7 lines | typescript  5 lines"
+    },
+    {
+      "name": "and it is not the same arrangement under a different name [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "lib  7 lines|src  5 lines -> python  7 lines|typescript  5 lines"
+    },
+    {
+      "name": "and the choice goes back",
+      "pass": true,
+      "detail": "dir"
+    },
+    {
+      "name": "the map drew a file cell to click",
+      "pass": true,
+      "detail": "no file cell in the world"
+    },
+    {
+      "name": "the map registers its own click handler",
+      "pass": true,
+      "detail": "no click listener on the map"
+    },
+    {
+      "name": "and the document does not pick on every click [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a document-level pick handler survives"
+    },
+    {
+      "name": "and symbol bands inside it",
+      "pass": true,
+      "detail": "3 bands"
+    },
+    {
+      "name": "clicking a cell picks it",
+      "pass": true,
+      "detail": "beta"
+    },
+    {
+      "name": "and the box says what it is about",
+      "pass": true,
+      "detail": "{\"collapsed\":false,\"visible\":true,\"title\":\"beta · function · src/b.ts:1\"}"
+    },
+    {
+      "name": "collapsing hides the box and keeps the pick",
+      "pass": true,
+      "detail": "{\"panel\":{\"collapsed\":true,\"visible\":true,\"title\":\"beta · function · src/b.ts:1\"},\"selected\":\"beta\"}"
+    },
+    {
+      "name": "and the heading still names it [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "beta · function · src/b.ts:1"
+    },
+    {
+      "name": "expanding it again changes nothing else",
+      "pass": true,
+      "detail": "{\"collapsed\":false,\"visible\":true,\"title\":\"beta · function · src/b.ts:1\"}"
+    },
+    {
+      "name": "the X is the control that clears",
+      "pass": true,
+      "detail": "no close handler"
+    },
+    {
+      "name": "and it does clear",
+      "pass": true,
+      "detail": "{\"selected\":null,\"panel\":{\"collapsed\":false,\"visible\":false,\"title\":\"beta · function · src/b.ts:1\"}}"
+    },
+    {
+      "name": "the map registers its own wheel handler",
+      "pass": true,
+      "detail": "no wheel listener on the map"
+    },
+    {
+      "name": "at the fit the readout says the whole map is on screen, and stays out of the way",
+      "pass": true,
+      "detail": "{\"text\":\"whole map · scroll to zoom in\",\"cls\":\"\",\"fitZoom\":0.8}"
+    },
+    {
+      "name": "a wheel gesture zooms the map and the readout names the scale it reached",
+      "pass": true,
+      "detail": "{\"fitZoom\":0.8,\"zoomed\":3.376556653597243,\"text\":\"338% · drag to pan, scroll to zoom\",\"cls\":\"on\"}"
+    },
+    {
+      "name": "so a reader zoomed into a corner is not told they are looking at everything [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"text\":\"338% · drag to pan, scroll to zoom\",\"zoomed\":3.376556653597243}"
+    },
+    {
+      "name": "and fitting it again puts the readout back to the whole map",
+      "pass": true,
+      "detail": "{\"text\":\"whole map · scroll to zoom in\",\"cls\":\"\"}"
+    },
+    {
+      "name": "the live line counts what the frame holds",
+      "pass": true,
+      "detail": "[\"symbols\",\"files\",\"stripe detail\",\"names\",\"zoom\"]"
+    },
+    {
+      "name": "in the code map's own words, not the graph's [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"symbols\",\"files\",\"stripe detail\",\"names\",\"zoom\"]"
+    },
+    {
+      "name": "typing in the search reports the matches",
+      "pass": true,
+      "detail": "[{\"label\":\"symbols\",\"value\":\"8 of 8\",\"warn\":false},{\"label\":\"files\",\"value\":\"3 in 2 directories\",\"warn\":false},{\"label\":\"stripe detail\",\"value\":\"every symbol drawn on its own\",\"warn\":false},{\"label\":\"names\",\"value\":\"2 files · 6 symbols\",\"warn\":true},{\"label\":\"matches\",\"value\":1,\"warn\":false},{\"label\":\"zoom\",\"value\":\"80%\",\"warn\":false}]"
+    },
+    {
+      "name": "and the box over the map carries the same count",
+      "pass": true,
+      "detail": "1 match"
+    },
+    {
+      "name": "the readout is the view's, so the shell cannot disagree with it [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "0.8"
+    },
+    {
+      "name": "every node carries the fields the sidebar's CSV writes",
+      "pass": true,
+      "detail": "id,name,type,group,filePath,line,lineEnd,qualifiedName,gravity,stale"
+    },
+    {
+      "name": "the language rides `group`, the field the whole tool reads",
+      "pass": true,
+      "detail": "typescript"
+    },
+    {
+      "name": "the map states that it has no edges, rather than omitting the key",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "and the port still identifies the view it came from",
+      "pass": true,
+      "detail": "codemap/project"
+    },
+    {
+      "name": "the shell renders the rows the VIEW publishes",
+      "pass": true,
+      "detail": "the shell still builds the line itself"
+    },
+    {
+      "name": "and does not know what a region link is [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "graph vocabulary survives in the shell's code"
+    },
+    {
+      "name": "the instruction line comes from the view too",
+      "pass": true,
+      "detail": "the shell does not read the view's hint"
+    },
+    {
+      "name": "and the graph's sentence is not the shell's any more [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the shell still holds the graph's instruction sentence"
+    },
+    {
+      "name": "the downloads are switched per PORT, not per view",
+      "pass": true,
+      "detail": "no per-port decision"
+    },
+    {
+      "name": "so a view with no edges cannot hand out an empty CSV [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the edges button is not explained"
+    },
+    {
+      "name": "and the fallback note names the view it is about",
+      "pass": true,
+      "detail": "the note does not name the view"
+    },
+    {
+      "name": "the graph view publishes the same rows",
+      "pass": true,
+      "detail": "the graph does not publish rows"
+    },
+    {
+      "name": "and the reconciliation moved into the graph's own row",
+      "pass": true,
+      "detail": "the sentence is gone"
+    },
+    {
+      "name": "a file whose every stripe is under the floor is drawn as ONE element",
+      "pass": true,
+      "detail": "1 elements"
+    },
+    {
+      "name": "and it fills its cell rather than sitting at a sub-pixel height",
+      "pass": true,
+      "detail": "position:absolute;left:0;top:0;width:100%;height:100%;background:linear-gradient(to bottom,#fb923c 0.000% 0.111%,#1e2130"
+    },
+    {
+      "name": "it carries the kinds as slices, in source order, at their line proportions",
+      "pass": true,
+      "detail": "position:absolute;left:0;top:0;width:100%;height:100%;background:linear-gradient(to bottom,#fb923c 0.000% 0.111%,#1e2130 0.111% 0.334%,#5eead4 0.334% 0.445%,#1e2130 0.445% 0.668%,#fb923c 0.668% 0.780%"
+    },
+    {
+      "name": "and the code BETWEEN the symbols is a slice of it too, not a hole",
+      "pass": true,
+      "detail": "position:absolute;left:0;top:0;width:100%;height:100%;background:linear-gradient(to bottom,#fb923c 0.000% 0.111%,#1e2130 0.111% 0.334%,#5eead4 0.334% 0.445%,#1e2130 0.445% 0.668%,#fb923c 0.668% 0.780%"
+    },
+    {
+      "name": "so a reader is not shown 300 invisible smears [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a sub-pixel stripe is still painted"
+    },
+    {
+      "name": "the fold is published with the frame, not left to be discovered",
+      "pass": true,
+      "detail": "{\"minStripePx\":2,\"zoom\":0.7868852459016393,\"bucket\":0,\"stripesDrawn\":25,\"gapBands\":21,\"drawnElements\":54,\"foldedSymbols\":362,\"foldedFiles\":9,\"compositionStrips\":8,\"named\":28,\"namedFiles\":5,\"namedSymbols\":23,\"unnamedSmall\":8,\"unnamedBudget\":2}"
+    },
+    {
+      "name": "and the published element count is the drawn element count",
+      "pass": true,
+      "detail": "{\"minStripePx\":2,\"zoom\":0.7868852459016393,\"bucket\":0,\"stripesDrawn\":25,\"gapBands\":21,\"drawnElements\":54,\"foldedSymbols\":362,\"foldedFiles\":9,\"compositionStrips\":8,\"named\":28,\"namedFiles\":5,\"namedSymbols\":23,\"unnamedSmall\":8,\"unnamedBudget\":2}"
+    },
+    {
+      "name": "every element inside a file cell is a stripe, a gap or a strip",
+      "pass": true,
+      "detail": "98 elements vs 54 claimed"
+    },
+    {
+      "name": "the threshold it folded at is published too, so the number can be read",
+      "pass": true,
+      "detail": "{\"min\":2,\"zoom\":0.7868852459016393}"
+    },
+    {
+      "name": "a file with one enormous method is still drawn as stripes",
+      "pass": true,
+      "detail": "2 elements"
+    },
+    {
+      "name": "and the enormous method is NAMED in the picture",
+      "pass": true,
+      "detail": "[\"BigAnalyzer.analyze\"]"
+    },
+    {
+      "name": "with its own name beside its cell's name, not on top of it [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"sym\":\"BigAnalyzer.analyze\",\"file\":\"big.ts\",\"overlap\":false}"
+    },
+    {
+      "name": "and the cell still names itself",
+      "pass": true,
+      "detail": "[\"big.ts\"]"
+    },
+    {
+      "name": "every drawn name has room for the whole string",
+      "pass": true,
+      "detail": "[\"big.ts\",\"BigAnalyzer.analyze\",\"peer2.ts\",\"peer3.ts\"]"
+    },
+    {
+      "name": "so no name in the artifact is a truncated one [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a truncated name is in the world"
+    },
+    {
+      "name": "the readout says what was folded, and how many files became one bar",
+      "pass": true,
+      "detail": "[{\"label\":\"symbols\",\"value\":\"387 of 387\",\"warn\":false},{\"label\":\"files\",\"value\":\"13 in 1 directory\",\"warn\":false},{\"label\":\"stripe detail\",\"value\":\"362 of 387 folded · 8 file(s) as one composition strip (zoom in)\",\"warn\":true},{\"label\":\"names\",\"value\":\"5 files · 23 symbols · 8 with no room for a name\",\"warn\":true},{\"label\":\"zoom\",\"value\":\"79%\",\"warn\":false}]"
+    },
+    {
+      "name": "and says it as a caveat rather than as a fact about the code",
+      "pass": true,
+      "detail": "{\"label\":\"stripe detail\",\"value\":\"362 of 387 folded · 8 file(s) as one composition strip (zoom in)\",\"warn\":true}"
+    },
+    {
+      "name": "the encoding key gains the mark the picture actually has",
+      "pass": true,
+      "detail": "[{\"swatch\":\"bar\",\"color\":\"#5eead4\",\"text\":\"a strip = 362 symbol(s) whose own stripes fall under 2px at this zoom — each slice is as tall as the lines its kind spans, in source order\"}]"
+    },
+    {
+      "name": "the readout also counts the names it could NOT print",
+      "pass": true,
+      "detail": "[{\"label\":\"names\",\"value\":\"5 files · 23 symbols · 8 with no room for a name\",\"warn\":true}]"
+    },
+    {
+      "name": "a picture the data made concentrated says so",
+      "pass": true,
+      "detail": "[{\"label\":\"files\",\"value\":13,\"warn\":false},{\"label\":\"symbols\",\"value\":387,\"warn\":false},{\"label\":\"lines spanned\",\"value\":\"12.3k\",\"warn\":false},{\"label\":\"directory\",\"value\":1,\"warn\":false},{\"label\":\"largest 20 symbols\",\"value\":\"80% of the drawn area\",\"warn\":true}]"
+    },
+    {
+      "name": "and a picture that is not concentrated does not get it [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[{\"label\":\"files\",\"value\":10,\"warn\":false},{\"label\":\"symbols\",\"value\":200,\"warn\":false},{\"label\":\"lines spanned\",\"value\":\"200\",\"warn\":false},{\"label\":\"directory\",\"value\":1,\"warn\":false}]"
+    },
+    {
+      "name": "every file cell is edged, so two same-kind files cannot merge into one field",
+      "pass": true,
+      "detail": "13 of 13"
+    }
+  ],
+  "negativeCases": 24,
+  "summary": {
+    "total": 107,
+    "passed": 107,
+    "failed": 0
+  },
+  "decisions": {
+    "chrome": "the document draws the map, the search, the readout that changes and the picked-item box; the census, the kinds, the chips, the layout choice and the download controls are published on window.__bbView and drawn by the one sidebar",
+    "language": "the language of a file is the projection's own field (group), with `language` honoured only as a fallback, so the grouping, the legend and the picked-item box cannot name two different languages for one symbol",
+    "filters": "a filtered band is MUTED rather than removed: a treemap's areas ARE the line spans, so removing one would leave a hole where code demonstrably is. Muted bands stay counted, searchable and in the data port",
+    "budget": "both cuts — the noise filter's exclusions and the node budget's — are rows in the census rather than discoveries",
+    "lod": "a file whose every stripe would fall under MIN_STRIPE_PX at the zoom being drawn is drawn as ONE composition strip, as tall as its cell, whose slices are the lines each kind spans AND the code between them in source order — so the area contract and the muted tone survive the fold, and the count is published rather than implied",
+    "readability": "readability is judged by a symbol's HONEST share of its cell (span / the file's lines), never by the floored height it is drawn at: the floor is a drawing device, and judging by it made the answer depend on the cell's shape rather than the file's density",
+    "labels": "a name is printed only when it fits WHOLE — measured with a canvas where one exists, with a documented per-character fallback under the stub — largest area first, each kind capped at half the budget, and a stripe that starts under its cell's header moves its name down instead of losing it",
+    "concentration": "the census names the share of drawn area held by the largest 20 symbols when it is 25% or more, because a reader looking at a one-colour picture is owed the reason: over src/ the answer is that 93.7% of the spanned lines in scope are functions and methods, and one method spans 3,500 of its file's 6,183 lines",
+    "layout": "the file layout divides by the file's LAST LINE and positions by absolute line numbers; before this pass it divided by the sum of the symbols' spans while positioning by line numbers, so 8 of 92 files over src/ drew more content than their cell could hold (real-cpp-analyzer.ts drew 7,760 units into 3,513) and every gap band was painted under the band that followed it",
+    "stub": "the gate executes the emitted script against a stub DOM resolved from the document's own markup: an id the document no longer carries resolves to null, so a regression that paints into a removed panel fails loudly"
+  },
+  "limitations": [
+    "The stub DOM is not a browser: layout is not computed (a rect is parsed from the element's own inline style), so this gate proves what the artifact PUBLISHES and DRAWS DECLARES, not where the pixels land. The pixels are V10's job (script/m13/verify-visualize-browser.ts, run as `npm run verify:viz-browser`).",
+    "One fixture (2 TypeScript files, 1 Python file, 1 vendored path) plus two hand-built payloads for the cases a fixture cannot produce: a symbol whose `group` and `language` disagree, and a node budget that cuts.",
+    "The screenshot evidence for the composed sidebar of the graph view lives in validation/m13/results/viz-layout-panel; the code map's own composed page is asserted structurally here and its document behaviourally.",
+    "OUT OF SCOPE, named here because a fixture hit it: squarify's row placement can give one file a cell TALLER than the world it is laid into (measured with two files whose line counts are 30:1 apart: a 62x1,951px cell inside a 1,220px world), so content can hang below the frame. The density assertions therefore use a twelve-file fixture and a 900x600 viewport, where the same payload reproduces the density a reader complains about instead of an artefact of the row placement.",
+    "The pixels are still not read here: this gate proves what the artifact DRAWS and PUBLISHES (element counts, gradients, label boxes from inline styles), not where they land. Label clipping measured on screen, and the zoom-settle redraw, belong to V10 (script/m13/verify-visualize-browser.ts)."
+  ],
+  "generatedAt": "2026-10-17T18:16:09.272Z"
+}

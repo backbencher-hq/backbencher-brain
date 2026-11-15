@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "leg": "REAL CORPUS index facts (part 1 of 2)",
+  "measuredAt": "2026-11-03T16:28:04.191Z",
+  "currentCommit": "03acfe5cb68d390c8add3b52240a6b5e569f85d7",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/real-corpus-index.mts",
+  "corpora": {
+    "graphql-js": {
+      "workspace": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real/projects/18b0d5567b84edcae6dec4bfcc1faf8ac965e01e/brain.db",
+        "bytes": 173420544,
+        "mtimeMs": 1793723490525.897
+      },
+      "indexCommand": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real npx tsx <real-corpus-index.mts> -> indexProjectParallel(\"/home/ishaq2321/bb_tests/repositories/graphql-js\")",
+      "indexMs": 211687,
+      "population": {
+        "files": 564,
+        "symbols": 13620,
+        "relationships": 61917,
+        "annotations": 0,
+        "languages": [
+          {
+            "l": "typescript",
+            "n": 413
+          },
+          {
+            "l": "javascript",
+            "n": 77
+          },
+          {
+            "l": "json",
+            "n": 42
+          },
+          {
+            "l": "markdown",
+            "n": 12
+          },
+          {
+            "l": "yaml",
+            "n": 7
+          },
+          {
+            "l": "xml",
+            "n": 6
+          },
+          {
+            "l": "tsx",
+            "n": 4
+          },
+          {
+            "l": "graphql",
+            "n": 2
+          },
+          {
+            "l": "css",
+            "n": 1
+          }
+        ]
+      },
+      "codeLanguage": "typescript",
+      "secondNameFormRows": 8225,
+      "subject": {
+        "name": "git",
+        "qualified": "utils.git",
+        "symbol_type": "function",
+        "line": 87,
+        "relative_path": "resources/utils.ts",
+        "language": "typescript"
+      },
+      "plain": {
+        "name": "result",
+        "n": 570
+      }
+    },
+    "rake": {
+      "workspace": "/home/ishaq2321/bb_tests/repositories/rake",
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real/projects/132aab0103080d56a8ce5ef28cf2034710b21a80/brain.db",
+        "bytes": 25718784,
+        "mtimeMs": 1793723532835.2812
+      },
+      "indexCommand": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real npx tsx <real-corpus-index.mts> -> indexProjectParallel(\"/home/ishaq2321/bb_tests/repositories/rake\")",
+      "indexMs": 37413,
+      "population": {
+        "files": 109,
+        "symbols": 1593,
+        "relationships": 9075,
+        "annotations": 0,
+        "languages": [
+          {
+            "l": "ruby",
+            "n": 97
+          },
+          {
+            "l": "yaml",
+            "n": 9
+          },
+          {
+            "l": "c",
+            "n": 3
+          }
+        ]
+      },
+      "codeLanguage": "ruby",
+      "secondNameFormRows": 2,
+      "subject": {
+        "name": "NameSpace",
+        "qualified": "Rake::NameSpace",
+        "symbol_type": "class",
+        "line": 6,
+        "relative_path": "lib/rake/name_space.rb",
+        "language": "ruby"
+      },
+      "plain": {
+        "name": "Rake",
+        "n": 39
+      }
+    },
+    "rebar3": {
+      "workspace": "/home/ishaq2321/bb_tests/repositories/rebar3",
+      "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real/projects/f542cf36820e749046766ff9bede22e70d5990e7/brain.db",
+        "bytes": 121270272,
+        "mtimeMs": 1793723610669.988
+      },
+      "indexCommand": "BB_NO_AUTO_REFRESH=1 BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata-real npx tsx <real-corpus-index.mts> -> indexProjectParallel(\"/home/ishaq2321/bb_tests/repositories/rebar3\")",
+      "indexMs": 79466,
+      "population": {
+        "files": 303,
+        "symbols": 7012,
+        "relationships": 38143,
+        "annotations": 0,
+        "languages": [
+          {
+            "l": "erlang",
+            "n": 266
+          },
+          {
+            "l": "markdown",
+            "n": 18
+          },
+          {
+            "l": "bash",
+            "n": 9
+          },
+          {
+            "l": "yaml",
+            "n": 6
+          },
+          {
+            "l": "make",
+            "n": 2
+          },
+          {
+            "l": "elixir",
+            "n": 1
+          },
+          {
+            "l": "powershell",
+            "n": 1
+          }
+        ]
+      },
+      "codeLanguage": "erlang",
+      "secondNameFormRows": 0,
+      "subject": null,
+      "plain": {
+        "name": "format_error",
+        "n": 75
+      }
+    }
+  }
+}

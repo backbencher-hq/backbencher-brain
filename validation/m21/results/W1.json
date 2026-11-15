@@ -1,0 +1,60 @@
+{
+  "issue": "M21.W1",
+  "code": "W1",
+  "milestone": "M21",
+  "status": "known-gap",
+  "checks": 42,
+  "passed": 39,
+  "failed": 3,
+  "negativeCases": 7,
+  "currentCommit": "b091ee4936984c1ee2bb81b7c7e90901a0faa657",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-w1-worker-lifecycle.ts",
+  "evidenceFile": "W1.json",
+  "generatedAt": "2026-10-09T16:12:55.787Z",
+  "corpus": {
+    "kind": "deterministic-fixtures-plus-real-repository",
+    "fixtureFiles": 6,
+    "realRepository": "/home/ishaq2321/bb_tests/repositories/rake"
+  },
+  "fixtures": {
+    "normal": {
+      "successFiles": 3,
+      "workerCount": 1,
+      "startupFailures": 0,
+      "poisonFiles": 0
+    },
+    "timeout": {
+      "timeoutFiles": 4,
+      "errorFiles": 2,
+      "retries": 12,
+      "poisonFiles": 0
+    },
+    "poison": {
+      "poisonFiles": 4,
+      "errorFiles": 6
+    },
+    "startup": {
+      "startupFailures": 0,
+      "errorFiles": 0
+    }
+  },
+  "realRepo": {
+    "successFiles": 109,
+    "errorFiles": 0,
+    "timeoutFiles": 0,
+    "totalFiles": 109,
+    "mode": "worker-pool",
+    "workerCount": 7,
+    "startupFailures": 0,
+    "poisonFiles": 0,
+    "retries": 0
+  },
+  "limitations": [
+    "Fixture timings are wall-clock and depend on worker startup (WASM registry load) plus the fork probe; they prove lifecycle accounting and boundedness, not throughput.",
+    "M40.A8: the fixture hooks (BB_WORKER_CRASH_ON_BATCH, BB_WORKER_DELAY_*) are quarantined behind BB_TEST_HOOKS=1; this gate sets the opt-in explicitly for each hook-using fixture so a stray env var cannot crash a production index.",
+    "The timeout fixture relies on BB_FILE_TIMEOUT_MS + BB_WORKER_DELAY_PARSE_MS debug hooks (env-gated, zero default effect) to make the master-side timeout deterministic.",
+    "The startup fixture relies on BB_WORKER_STARTUP_TIMEOUT_MS + BB_WORKER_DELAY_READY_MS debug hooks; the 700ms watchdog value is fixture-only, the production default is 30s.",
+    "Poison accounting counts batches dropped when a worker dies before file_start; a worker that dies mid-file is accounted as a timeout, not a poison pill."
+  ]
+}

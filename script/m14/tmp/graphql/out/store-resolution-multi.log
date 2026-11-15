@@ -1,0 +1,74 @@
+  gql-genqlient              files    4  symbols   7004  rel   22859  types 6
+  gql-gqlgen                 files  110  symbols   1625  rel    4118  types 6
+  gql-graphql-eslint         files   47  symbols    757  rel    2016  types 5
+  gql-graphql-mesh           files  130  symbols   2050  rel    6611  types 6
+  gql-graphql-platform       files  150  symbols   2758  rel   10668  types 6
+  gql-graphql-tools          files  150  symbols   6745  rel   20195  types 7
+  gql-ruby                   files   23  symbols   2511  rel    7870  types 6
+  hasura-engine              files  136  symbols    753  rel    3956  types 4
+
+=== population ===
+repos indexed 8   files 750   symbols 24203   relationships 78293
+per-repo file cap 150; files offered but not indexed 155
+every brain_relationship row in every one of these projects — no sampling within a project
+
+=== per type, target resolution (the end that binds to a symbol) ===
+type                 edges   tgt_unres   pct      src_unres
+contains             38824          36    99.91%           0
+references           22087       13048    40.92%           0
+uses                 10745        5639    47.52%         399
+exports               3307           0   100.00%        3307
+overrides             2524           0   100.00%           0
+implements             740           0   100.00%           0
+imports                 66          66     0.00%          66
+TOTAL                78293       18789    76.00%
+
+=== unresolved TARGETS, classified ===
+spec built-in scalar                 13067 edges   5 distinct
+      String
+      Int
+      ID
+      Float
+      Boolean
+bare, not spec                        3634 edges   1122 distinct
+      Zip
+      xsmall
+      workspaceId
+      workingHoursPerDay
+      workingDaysPerWeek
+      withStuffInside
+      withNullableVariables
+      withNonNullableVariables
+dotted                                1922 edges   1302 distinct
+      with-nested-fragment.gql
+      Viewer.me
+      User.posts
+      User.__typename
+      UpdateUserPasswordPayload.me
+      UpdateUserLufthansaAccountPayload.me
+      UpdateUserEmailPayload.me
+      UpdateMePayload.me
+spec built-in directive                139 edges   4 distinct
+      @specifiedBy
+      @skip
+      @include
+      @deprecated
+spec introspection                      27 edges   2 distinct
+      __Type
+      __InputValue
+
+=== unresolved SOURCES, classified ===
+file path (fileLevel contract)        3373 edges   315 distinct
+      1.mutation.graphql
+      10.mutation.graphql
+      2.mutation.graphql
+      3.mutation.graphql
+      4.mutation.graphql
+      5.mutation.graphql
+symbol-shaped, unresolved              399 edges   12 distinct
+      ID
+      anonymous_operation_0
+      anonymous_operation_107
+      anonymous_operation_1247
+      anonymous_operation_1285
+      anonymous_operation_1782

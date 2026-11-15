@@ -1,0 +1,19 @@
+{
+  "issue": "M20.D3",
+  "code": "D3",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 10,
+  "passed": 10,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "5ff20da8f86be854936d18a0995efe2608d3741168dc66d936decc2c207e19cf",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-doc-examples-diagrams.ts",
+  "evidenceFile": "D3.json",
+  "generatedAt": "2026-11-05T04:28:26.072Z",
+  "limitations": [
+    "Fixture-level examples/diagrams honesty and tamper response; real-repository documentation coverage is owned by M20.X2."
+  ]
+}

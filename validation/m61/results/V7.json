@@ -1,0 +1,141 @@
+{
+  "issue": "M61.V7 ledger truth",
+  "code": "V7",
+  "milestone": "M61",
+  "status": "verified",
+  "checks": 24,
+  "passed": 24,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 15,
+  "mutantsTotal": 15,
+  "mutantsCaught": 15,
+  "mutantRecords": [
+    {
+      "name": "M1: only the verified-over-non-verified pair is an OVERclaim; a planned-over-verified pair is not drift at all",
+      "caught": true
+    },
+    {
+      "name": "M2: an underclaim (ledger says less than its record) is reported, and labelled as an underclaim",
+      "caught": true
+    },
+    {
+      "name": "M3: a drift finding names both values and the direction",
+      "caught": true
+    },
+    {
+      "name": "M4: projecting a known-gap record over a verified entry rewrites the status AND the counts",
+      "caught": true
+    },
+    {
+      "name": "M4b: a count the record does not report is DROPPED from the projection, not left as the ledger's stale value",
+      "caught": true
+    },
+    {
+      "name": "M4c: the drop rule keeps the projection a fixpoint (the second pass over the same records heals nothing)",
+      "caught": true
+    },
+    {
+      "name": "M10: the projection detector recognises all three real shapes (direct import, the shared wiring, an in-gate projection) and rejects an import that is never applied plus a write that never projects",
+      "caught": true
+    },
+    {
+      "name": "M4d: a count nested under `verdict` (or under a `negatives` object) is READ, and a top-level count wins over a nested one of the same name",
+      "caught": true
+    },
+    {
+      "name": "M4e: the can-fail rule accepts either proof shape, rejects an unproven `verified`, does not accuse a `known-gap`, and rejects a partially-caught mutant set",
+      "caught": true
+    },
+    {
+      "name": "M5: a missing/untrusted record is reported, never projected to verified",
+      "caught": true
+    },
+    {
+      "name": "M6: a record carrying no status is reported as unprojectable",
+      "caught": true
+    },
+    {
+      "name": "M7: a blocked entry with no reason is hollow, and one with a reason is not",
+      "caught": true
+    },
+    {
+      "name": "M8: the non-verified reason is read from blockedReason / reason / limitations / failures / details alike (and a numeric failures is not a reason)",
+      "caught": true
+    },
+    {
+      "name": "M9: the projection is a fixpoint (a second projection over the same records changes nothing)",
+      "caught": true
+    },
+    {
+      "name": "M10: a REAL planted drift (verified entry over a known-gap record, closed over an unverified entry) is caught by the live census",
+      "caught": true
+    }
+  ],
+  "currentCommit": "94493a5fd06a6347974de521918ac8ed35b65bdb",
+  "verifierCommand": "npx tsx script/m61/verify-ledger-truth.ts",
+  "evidenceFile": "V7.json",
+  "generatedAt": "2026-10-17T16:32:55.092Z",
+  "census": {
+    "lanesWithManifest": 24,
+    "claimLedgers": 21,
+    "nonClaimLedgersExcluded": [
+      "m17",
+      "m18",
+      "m19"
+    ],
+    "entries": 183,
+    "trustedRecords": 127,
+    "projection": {
+      "projected": [
+        "m24",
+        "m25",
+        "m29",
+        "m42",
+        "m44",
+        "m45",
+        "m55",
+        "m61"
+      ],
+      "inScopeNotProjected": [],
+      "outOfScopeResidual": [
+        "m20",
+        "m21",
+        "m26",
+        "m27",
+        "m28",
+        "m30",
+        "m32",
+        "m33",
+        "m34",
+        "m36",
+        "m41",
+        "m56",
+        "m62"
+      ]
+    }
+  },
+  "ledgerDrift": {
+    "overclaims": [],
+    "underclaims": [
+      "m24.L3: ledger=known-gap record=verified (L3.json) [underclaim]"
+    ],
+    "total": 1
+  },
+  "closureHonesty": {
+    "hollowEntries": [],
+    "closedOverUnverified": [],
+    "statusNotMechanical": []
+  },
+  "limitations": [
+    "The drift census reads `status` from each record through the trusted sealed read. A record whose seal does not verify is counted as UNTRUSTED and excluded from the drift count rather than being assumed to agree with the ledger — an unverifiable record is a separate finding, not a pass.",
+    "This gate reports and enforces; it does not rewrite a lane's ledger. The projection is each lane's own governance gate's job (script/m61/ledger_projection.ts is the shared rule they import), and a record is never edited to match a ledger — IDE Honesty Contract §8.4 makes the record the authority.",
+    "The platform census (G5) asserts that each editor/fork/OS leg is EITHER verified with a pinned run and a stated reason, OR blocked with a reason recorded. It cannot assert that a blocked reason is TRUTHFUL — that is the owner's spot-check (contract §8.5).",
+    "Lane closure remains the owner's verdict. This gate proves no lane can read `closed` over unverified work; it never declares a milestone achieved."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T16:32:55.092Z",
+    "contentSha256": "3d0067af42c866df76db7b0b4b1dbb980d2306876c88a9df66c2f29331cee996"
+  }
+}

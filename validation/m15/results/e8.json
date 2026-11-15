@@ -1,0 +1,12 @@
+{
+  "issue": "M15.E8",
+  "code": "E8",
+  "tool": "bb_edit",
+  "title": "evidence + gate",
+  "verified": true,
+  "checks": 8,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:21:18.248Z"
+}

@@ -1,0 +1,23 @@
+{
+  "fixtureId": "groovy/ctor-field-split-lines",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#841 round 16 turned this fixture from a recovery-shape pin into a correct-contract pin. Penalising the grammar's TYPELESS field branch (prec.dynamic(-1)) removed the absorbed-field misparse this fixture was measured on — the absorb and the `def`-named-field split are the same ambiguity — so: (1) the previously swallowed real field `distance` now has a symbol (the fixture's own documented 'known residual, deliberately unpinned' is closed); (2) the constructor now parses as `constructor_declaration` and the analyzer emits kind `constructor` (java/kotlin family parity), still at its NAME's line 19 — the M59 (#825) contract that the name owns the line, not the field. The forbid entries keep the pre-fix shapes pinned so the misparse cannot silently return.",
+  "expectSymbols": [
+    { "name": "Split", "kind": "class" },
+    { "name": "distance", "kind": "property", "ownerName": "Split" },
+    { "name": "Split", "kind": "constructor", "ownerName": "Split" },
+    { "name": "valueOf", "ownerName": "Split" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Split", "target": "distance", "line_number": 14, "meta.isContained": true },
+    { "type": "contains", "from": "Split", "target": "Split", "line_number": 19, "meta.isContained": true },
+    { "type": "contains", "from": "Split", "target": "valueOf", "line_number": 23, "meta.isContained": true }
+  ],
+  "forbidSymbols": [
+    { "name": "Split", "kind": "property", "note": "pre-fix: phantom field from the `static Split valueOf` header prefix" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Split", "target": "Split", "line_number": 14, "note": "pre-fix: the absorbed field's line; the name Split is written on 19" }
+  ]
+}

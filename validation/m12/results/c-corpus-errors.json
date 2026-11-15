@@ -1,0 +1,329 @@
+{
+  "analyzer": "c",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/jq",
+  "corpusRepo": "jq",
+  "revision": "41b8edfe5437fcd25a072081c05f9f770f9e9b85",
+  "extensions": [
+    "*.c"
+  ],
+  "mode": "full-corpus",
+  "trackedFilesInCorpus": 45,
+  "measuredFiles": 45,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 20,
+  "cleanFiles": 25,
+  "missingNodeFiles": 12,
+  "errorNodeFiles": 17,
+  "errorRates": {
+    "any": 44.4,
+    "missing": 26.7,
+    "error": 37.8
+  },
+  "grammarErrorFiles": 20,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 21175,
+  "missingTokens": {
+    ";": 123,
+    "#endif": 15,
+    "identifier": 3,
+    "}": 2,
+    ")": 1,
+    ",": 1
+  },
+  "errorLineSignatures": {
+    "#ID": 18,
+    "#ID ID": 15,
+    "}": 13,
+    "ID": 12,
+    "#ID ID(ID) ID(ID ## ID, ID #ID, 3),": 4,
+    "} // ID": 4,
+    "ID ID* ID, ID ID* ID, ID ID *ID){": 3,
+    "ID { // ID ID ID": 3,
+    "0, 0, 0, {.ID = ID}": 2,
+    "ID =": 2,
+    "ID {": 2,
+    ") {": 2,
+    "ID ID *ID;": 2,
+    "ID[] = { 1ID, 1ID };": 2,
+    "ID[] = { 1ID, 1ID, 1ID };": 2,
+    "ID[] = { 1ID, 1ID, 1ID, 1ID, 1ID };": 2,
+    "#ID ID(ID) \\": 2,
+    "ID (ID ID *,": 2,
+    "ID (ID ID ID;)": 2,
+    "(*ID)++;": 2,
+    "ID ID(ID) { // ID ID ID": 2,
+    "ID,": 1,
+    "ID ID ID(ID ID) {": 1,
+    "ID ID { ID ID* ID; ID ID; };": 1,
+    "};": 1,
+    "ID = ID(ID, ID(ID(ID), ID(ID)), ID(ID, ID(ID)));": 1,
+    "ID ID(ID ID) {": 1,
+    "ID ID = {": 1,
+    "ID ID ID(ID ID,": 1,
+    "/****************************************************************": 1,
+    "ID ID (!ID->ID[0] && ID->ID <= 1)": 1,
+    "ID ? ID + (ID + (ID-1) - 1 + 1) :": 1,
+    "+ ID": 1,
+    "|| (ID(&ID) & ID) <= (2*ID+1)*ID": 1,
+    "ID (ID.ID || ID(&ID) || ID(&ID) & ID": 1,
+    "ID ID (ID >= -ID) {": 1,
+    "ID (ID <= ID": 1,
+    "ID ID *ID, *ID, *ID;": 1,
+    "ID = *(ID ID ID **)ID + 2;": 1,
+    "ID((ID*)ID, (ID ID*)ID);": 1
+  },
+  "firstErrorLineSignatures": {
+    "#ID ID": 4,
+    "ID,": 1,
+    "ID = ID(ID, ID(ID(ID), ID(ID)), ID(ID, ID(ID)));": 1,
+    "ID ID(ID ID) {": 1,
+    "/****************************************************************": 1,
+    "ID": 1,
+    "ID ID ID(ID ID*, ID ID *, ...) ID(2, 3);": 1,
+    "#ID ID(ID) \\": 1,
+    "ID = ID (ID *,": 1,
+    "ID ID ID(ID ID *ID, ID *ID,": 1,
+    "ID ID ID[ID]=": 1,
+    "/* ------------------------------------------------------------------ ": 1
+  },
+  "errorFileList": [
+    {
+      "file": "src/builtin.c",
+      "nodes": 17,
+      "missingTokens": [
+        "}",
+        ";"
+      ],
+      "errorNodes": 10,
+      "firstRow": 2142,
+      "firstKind": "ERROR",
+      "firstLine": "'\\0',",
+      "pipelineErrors": 27
+    },
+    {
+      "file": "src/bytecode.c",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 23,
+      "firstKind": "ERROR",
+      "firstLine": "#include \"opcode_list.h\"",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/compile.c",
+      "nodes": 1,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 804,
+      "firstKind": "MISSING ;",
+      "firstLine": "jv_object_keys_foreach(all_vars, key) {",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/execute.c",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 1225,
+      "firstKind": "ERROR",
+      "firstLine": "r = jv_object_set(r, jv_object_get(jv_copy(v), jv_copy(kk)), jv_object_get(v, jv_copy(vk)));",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/jq_test.c",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 519,
+      "firstKind": "ERROR",
+      "firstLine": "#ifdef HAVE_PTHREAD",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/jv.c",
+      "nodes": 15,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 8,
+      "firstRow": 673,
+      "firstKind": "ERROR",
+      "firstLine": "jv jv_number(double x) {",
+      "pipelineErrors": 23
+    },
+    {
+      "file": "src/jv_aux.c",
+      "nodes": 6,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 682,
+      "firstKind": "MISSING ;",
+      "firstLine": "jv_array_foreach(keys_a, i, key) {",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "src/jv_dtoa.c",
+      "nodes": 114,
+      "missingTokens": [
+        ";",
+        "#endif",
+        ")",
+        ",",
+        "identifier"
+      ],
+      "errorNodes": 68,
+      "firstRow": 2,
+      "firstKind": "ERROR",
+      "firstLine": "/****************************************************************",
+      "pipelineErrors": 121
+    },
+    {
+      "file": "src/jv_dtoa_tsd.c",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 29,
+      "firstKind": "ERROR",
+      "firstLine": "static",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/jv_parse.c",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 765,
+      "firstKind": "ERROR",
+      "firstLine": "static jv make_error(struct jv_parser*, const char *, ...) JV_PRINTF_LIKE(2, 3);",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/jv_print.c",
+      "nodes": 7,
+      "missingTokens": [
+        "}",
+        "#endif",
+        ";"
+      ],
+      "errorNodes": 4,
+      "firstRow": 443,
+      "firstKind": "MISSING }",
+      "firstLine": "}",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "src/lexer.c",
+      "nodes": 118,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 61,
+      "firstRow": 2317,
+      "firstKind": "ERROR",
+      "firstLine": "#define yyless(n) \\",
+      "pipelineErrors": 111
+    },
+    {
+      "file": "src/linker.c",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 176,
+      "firstKind": "MISSING ;",
+      "firstLine": "jv_array_foreach(search, i, spath) {",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "src/main.c",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 271,
+      "firstKind": "ERROR",
+      "firstLine": "#ifdef WIN32",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "src/parser.c",
+      "nodes": 25,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 20,
+      "firstRow": 3980,
+      "firstKind": "ERROR",
+      "firstLine": "yymsg = YY_CAST (char *,",
+      "pipelineErrors": 45
+    },
+    {
+      "file": "src/util.c",
+      "nodes": 6,
+      "missingTokens": [
+        "#endif",
+        ";"
+      ],
+      "errorNodes": 4,
+      "firstRow": 40,
+      "firstKind": "ERROR",
+      "firstLine": "#ifdef HAVE_ALLOCA_H",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "vendor/decNumber/decBasic.c",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 3787,
+      "firstKind": "ERROR",
+      "firstLine": "static uInt decToInt32(const decFloat *df, decContext *set,",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "vendor/decNumber/decCommon.c",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 220,
+      "firstKind": "ERROR",
+      "firstLine": "static uByte allnines[DECPMAX]=",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "vendor/decNumber/decNumber.c",
+      "nodes": 24,
+      "missingTokens": [
+        "#endif",
+        ";"
+      ],
+      "errorNodes": 17,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "/* ------------------------------------------------------------------ */",
+      "pipelineErrors": 41
+    },
+    {
+      "file": "vendor/decNumber/decimal64.c",
+      "nodes": 2,
+      "missingTokens": [
+        "#endif"
+      ],
+      "errorNodes": 1,
+      "firstRow": 810,
+      "firstKind": "MISSING #endif",
+      "firstLine": "if (cut==DECDPUN) {*uout=out; if (out) {last=uout; out=0;} uout++; cut=0;}",
+      "pipelineErrors": 3
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

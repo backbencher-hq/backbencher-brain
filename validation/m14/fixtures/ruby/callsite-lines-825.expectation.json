@@ -1,0 +1,49 @@
+{
+  "fixtureId": "ruby/callsite-lines-825",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59.A7 (#825) line round for the ruby lane, plus the three defects this round's independent oracle exposed. LINES: every expected line is the line where the edge's TARGET is written — a chain wrapped one call per line pins that the stamp is the CALLEE's node and not the receiver's (`strip` on 36, `upper` on 37, receiver `helper` on 35), and a WRAPPED superclass pins that `extends` rides the base type's node (29) and never the `superclass` node, which starts at `<` on 28. SEMANTICS, both found by measurement rather than reasoning: (1) a VARIABLE receiver names no class, so `@factory.new` on 39 is the member call `new` — it used to be emitted as `instantiates Widget` on that line, a class name no source line supports, and the F5 truth derivation mirrored the same fallback so the differential could not see it; (2) `self.new` on 41 IS an instantiation of the enclosing class, and says so (meta.resolvedTarget=enclosing-class) so the M59 oracle can classify the missing name rather than convict the correct line. MEASURED BEFORE/AFTER at 200 files through the M59 oracle: 22,844 relationships, 0 noLine, 23 INCONSISTENT (20 instantiates + 3 overrides naming a `Struct.new(...)` expression) BEFORE; 22,841 relationships, 0 noLine, 0 INCONSISTENT AFTER — the 23 decompose exactly: 19 claims became the marked uncheckable-by-token class, 1 became a truthful calls:new, 3 phantom edges are gone.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class", "ownerName": "Pin" },
+    { "name": "Wide", "kind": "class", "ownerName": "Pin" },
+    { "name": "Widget", "kind": "class", "ownerName": "Pin" },
+    { "name": "assemble", "kind": "method", "ownerName": "Widget" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "Widget", "startLine": 28 },
+    { "symbol": "assemble", "startLine": 34 }
+  ],
+  "expectRelationships": [
+    { "type": "references", "target": "json", "line_number": 11 },
+    { "type": "contains", "from": "Pin", "target": "Wide", "line_number": 22 },
+    { "type": "contains", "from": "Wide", "target": "each", "line_number": 23 },
+    { "type": "contains", "from": "Pin", "target": "Widget", "line_number": 28 },
+    { "type": "contains", "from": "Widget", "target": "greet", "line_number": 30 },
+    { "type": "contains", "from": "Widget", "target": "assemble", "line_number": 34 },
+    { "type": "extends", "from": "Widget", "target": "Base", "line_number": 29, "comment": "the base type's own line: the declaration opens at 28, the name `Base` is written at 29" },
+    { "type": "overrides", "from": "Widget.greet", "target": "Base.greet", "line_number": 30, "confidenceMin": 0.95, "comment": "in-file verified: Base.greet is declared at 15, so this is a structural override and not a first-parent guess" },
+    { "type": "calls", "from": "assemble", "target": "strip", "line_number": 36 },
+    { "type": "calls", "from": "assemble", "target": "upper", "line_number": 37 },
+    { "type": "calls", "from": "assemble", "target": "count", "line_number": 38 },
+    { "type": "uses", "from": "assemble", "target": "@repo", "line_number": 38 },
+    { "type": "calls", "from": "assemble", "target": "new", "line_number": 39, "comment": "variable receiver: a member call, and the only honest reading — `@factory` holds an unknown class" },
+    { "type": "uses", "from": "assemble", "target": "@factory", "line_number": 39 },
+    { "type": "instantiates", "from": "assemble", "target": "Part", "line_number": 40, "comment": "written receiver: the class name IS on the line, so no marker" },
+    { "type": "instantiates", "from": "assemble", "target": "Widget", "line_number": 41, "meta.resolvedTarget": "enclosing-class", "comment": "self.new constructs the enclosing class; the name is implied, and the marker says so" },
+    { "type": "calls", "from": "Widget", "target": "old_assemble", "line_number": 42 }
+  ],
+  "forbidRelationships": [
+    { "type": "mixes_in", "from": "Widget", "target": "Comparable", "line_number": 43, "meta.mixinType": "include", "note": "THE PRE-FIX PIN, AND IT WAS PINNING A DEFECT. This row was AUTHORED as the RUBY-D1 positive: `include Comparable` is mixin composition, not implements. MEASURED against the whole admitted population on 2026-10-21, that reading was WRONG for THIS SITE: line 43 is INSIDE `def assemble` — a plain instance method — so `self` is an INSTANCE, `include` is not Module#include at all, and the mixin never enters Widget's ancestor chain. The published edge `Widget mixes_in Comparable` claimed a composition of the class that does not happen. IT IS NOW A FORBID ROW, and the reason it moved is the MEASUREMENT (127 of 543 published rows were impostors), not a re-reading of the file. The pin's own subject — that `include` is composition and not `implements` — is kept in the `mixin-discriminator` fixture, where the site IS a class body." },
+    { "type": "calls", "from": "assemble", "target": "strip", "line_number": 35, "note": "pre-fix shape: the RECEIVER's line (`helper` on 35) — a call node starts at its receiver, so the callee must be stamped from the method field" },
+    { "type": "calls", "from": "assemble", "target": "upper", "line_number": 35, "note": "pre-fix shape: the receiver's line" },
+    { "type": "extends", "from": "Widget", "target": "Base", "line_number": 28, "note": "pre-fix shape: the `superclass` node's line — that node starts at `<`, one line above the type it names" },
+    { "type": "extends", "from": "Widget", "target": "\n    Base", "note": "pre-fix shape: the base text kept the whitespace between `<` and the name, so the target was not the class name at all (and `metadata.superClass` carried the newline too)" },
+    { "type": "overrides", "from": "Widget.greet", "target": "\n    Base.greet", "note": "the same whitespace leak into the override target, which also made the in-file override unverifiable and downgraded it to a first-parent guess" },
+    { "type": "overrides", "from": "Widget.greet", "target": "Base.greet", "confidenceMax": 0.5, "note": "pre-fix shape: the DOWNGRADED guess for a base that is declared in this very file" },
+    { "type": "overrides", "from": "Widget.assemble", "note": "phantom: `Base` declares no `assemble`, so once the base resolves this guess must not be emitted at all" },
+    { "type": "instantiates", "from": "assemble", "target": "Widget", "line_number": 39, "note": "pre-fix fabrication: `@factory.new` claimed to construct the ENCLOSING class, a name the line does not support" },
+    { "type": "extends", "from": "Wide", "note": "`class Wide < Struct.new(:a, :b)` has no base NAME; an extends to the expression must never appear" },
+    { "type": "overrides", "from": "Wide.each", "note": "same: no base class exists for a dynamic superclass, so no override can be claimed from its method set" },
+    { "type": "overrides", "from": "Wide.each", "targetEndsWith": ".each", "note": "the pre-fix spelling: the expression text used AS a base class name" }
+  ]
+}

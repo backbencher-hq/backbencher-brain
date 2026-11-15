@@ -1,0 +1,43 @@
+{
+  "repo": "/home/ishaq2321/intellij-community",
+  "totalSlices": 10,
+  "machine": {
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "slices": [],
+  "partialBatches": [
+    {
+      "ok": true,
+      "slice": 0,
+      "totalSlices": 10,
+      "candidateFiles": 8306,
+      "eligibleFiles": 8301,
+      "filesInSlice": 8301,
+      "batchSize": 1000,
+      "batchCount": 9,
+      "batchIndex": 0,
+      "batches": [
+        {
+          "batch": 0,
+          "files": 1000,
+          "wallMs": 1216877,
+          "successFiles": 1000,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0
+        }
+      ],
+      "wallMs": 1216877,
+      "wallSec": 1217,
+      "deferredFinalization": true,
+      "totalSymbols": 1071964,
+      "totalRels": 3519557
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.368Z",
+    "contentSha256": "504368641cab1bf1d8b3de0b0333540f92a469062d7ea082bd3edc7200f33b21"
+  }
+}

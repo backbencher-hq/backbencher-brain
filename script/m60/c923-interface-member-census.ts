@@ -44,7 +44,7 @@ import path from "node:path"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const WASM_DIR = path.join(ROOT, "wasm")
 const OUT = path.join(ROOT, "validation", "m60", "results", "c923-interface-members.json")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 
 const EMIT = process.argv.includes("--emit")
 /** Full-extent mode: every .cs file in both pinned corpora, not just the pinned draw. */

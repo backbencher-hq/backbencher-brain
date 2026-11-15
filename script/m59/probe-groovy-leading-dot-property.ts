@@ -5,7 +5,7 @@
 // property read fabricates a CALL to a property name.
 import * as path from "path"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
 
 const SAME_LINE = `class A {
     String label

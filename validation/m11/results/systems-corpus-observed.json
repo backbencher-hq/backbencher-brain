@@ -1,0 +1,256 @@
+{
+  "timestamp": "2026-08-12T21:38:24.151Z",
+  "repositories": [
+    {
+      "id": "cargo",
+      "path": "/home/ishaq2321/bb_tests/repositories/cargo",
+      "discoveryMs": 52.058823999999994,
+      "candidateFiles": 1330,
+      "projectId": "0b1e358a0ebfebdd3f234f21e962c630a4eab13d",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/0b1e358a0ebfebdd3f234f21e962c630a4eab13d/brain.db",
+      "before": {
+        "files": 0,
+        "symbols": 0
+      },
+      "index": {
+        "wallMs": 38612,
+        "userCpuMs": 24404,
+        "systemCpuMs": 7348,
+        "peakRssMB": 203,
+        "stats": {
+          "totalFiles": 1328,
+          "processedFiles": 1328,
+          "successFiles": 1328,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 16088,
+          "relationshipsFound": 91741,
+          "importsFound": 9062
+        }
+      },
+      "after": {
+        "files": 1328,
+        "symbols": 16088,
+        "relationships": 91741,
+        "imports": 9054
+      },
+      "dbSizeBytes": 208146432,
+      "throughput": {
+        "filesPerSec": 34.4,
+        "symbolsPerSec": 416.7,
+        "relationshipsPerSec": 2376
+      }
+    },
+    {
+      "id": "dplyr",
+      "path": "/home/ishaq2321/bb_tests/repositories/dplyr",
+      "discoveryMs": 14.014339000000007,
+      "candidateFiles": 14,
+      "projectId": "5dcc713eb6974976169d94eb38427875519de2cd",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/5dcc713eb6974976169d94eb38427875519de2cd/brain.db",
+      "before": {
+        "files": 14,
+        "symbols": 212
+      },
+      "index": {
+        "wallMs": 1213,
+        "userCpuMs": 181,
+        "systemCpuMs": 55,
+        "peakRssMB": 77,
+        "stats": {
+          "totalFiles": 14,
+          "processedFiles": 14,
+          "successFiles": 14,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 212,
+          "relationshipsFound": 648,
+          "importsFound": 1
+        }
+      },
+      "after": {
+        "files": 14,
+        "symbols": 212,
+        "relationships": 648,
+        "imports": 1
+      },
+      "dbSizeBytes": 1679360,
+      "throughput": {
+        "filesPerSec": 11.5,
+        "symbolsPerSec": 174.8,
+        "relationshipsPerSec": 534.3
+      }
+    },
+    {
+      "id": "cython",
+      "path": "/home/ishaq2321/bb_tests/repositories/cython",
+      "discoveryMs": 29.023546000000003,
+      "candidateFiles": 95,
+      "projectId": "d994546fa45347683efe8c8cffff0833f9319566",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/d994546fa45347683efe8c8cffff0833f9319566/brain.db",
+      "before": {
+        "files": 95,
+        "symbols": 3191
+      },
+      "index": {
+        "wallMs": 9104,
+        "userCpuMs": 4516,
+        "systemCpuMs": 654,
+        "peakRssMB": 216,
+        "stats": {
+          "totalFiles": 95,
+          "processedFiles": 95,
+          "successFiles": 95,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 3191,
+          "relationshipsFound": 3387,
+          "importsFound": 50
+        }
+      },
+      "after": {
+        "files": 95,
+        "symbols": 3191,
+        "relationships": 3387,
+        "imports": 50
+      },
+      "dbSizeBytes": 12451840,
+      "throughput": {
+        "filesPerSec": 10.4,
+        "symbolsPerSec": 350.5,
+        "relationshipsPerSec": 372
+      }
+    },
+    {
+      "id": "swift_nio",
+      "path": "/home/ishaq2321/bb_tests/repositories/swift-nio",
+      "discoveryMs": 36.395966,
+      "candidateFiles": 21,
+      "projectId": "6b53c449a4d12efd58471b0262a7de92e08979f7",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/6b53c449a4d12efd58471b0262a7de92e08979f7/brain.db",
+      "before": {
+        "files": 21,
+        "symbols": 753
+      },
+      "index": {
+        "wallMs": 4710,
+        "userCpuMs": 2548,
+        "systemCpuMs": 275,
+        "peakRssMB": 260,
+        "stats": {
+          "totalFiles": 21,
+          "processedFiles": 21,
+          "successFiles": 21,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 753,
+          "relationshipsFound": 901,
+          "importsFound": 111
+        }
+      },
+      "after": {
+        "files": 21,
+        "symbols": 753,
+        "relationships": 901,
+        "imports": 111
+      },
+      "dbSizeBytes": 3268608,
+      "throughput": {
+        "filesPerSec": 4.5,
+        "symbolsPerSec": 159.9,
+        "relationshipsPerSec": 191.3
+      }
+    },
+    {
+      "id": "clyde",
+      "path": "/home/ishaq2321/bb_tests/repositories/Clyde",
+      "discoveryMs": 10.305627000000001,
+      "candidateFiles": 7,
+      "projectId": "2aa4aed912cfb098978d0b9d007f8d68d60ed686",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/2aa4aed912cfb098978d0b9d007f8d68d60ed686/brain.db",
+      "before": {
+        "files": 7,
+        "symbols": 100
+      },
+      "index": {
+        "wallMs": 818,
+        "userCpuMs": 181,
+        "systemCpuMs": 47,
+        "peakRssMB": 72,
+        "stats": {
+          "totalFiles": 7,
+          "processedFiles": 7,
+          "successFiles": 7,
+          "errorFiles": 0,
+          "timeoutFiles": 0,
+          "skippedFiles": 0,
+          "symbolsExtracted": 100,
+          "relationshipsFound": 244,
+          "importsFound": 14
+        }
+      },
+      "after": {
+        "files": 7,
+        "symbols": 100,
+        "relationships": 244,
+        "imports": 14
+      },
+      "dbSizeBytes": 901120,
+      "throughput": {
+        "filesPerSec": 8.6,
+        "symbolsPerSec": 122.3,
+        "relationshipsPerSec": 298.4
+      }
+    },
+    {
+      "id": "zig",
+      "path": "/home/ishaq2321/bb_tests/repositories/zig",
+      "discoveryMs": 89.050453,
+      "candidateFiles": 2950,
+      "projectId": "a49d61f6788f4fad582b2bb386eb7e6e37bc69dd",
+      "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/a49d61f6788f4fad582b2bb386eb7e6e37bc69dd/brain.db",
+      "before": {
+        "files": 2950,
+        "symbols": 164506
+      },
+      "index": {
+        "wallMs": 211205,
+        "userCpuMs": 157601,
+        "systemCpuMs": 39651,
+        "peakRssMB": 287,
+        "stats": {
+          "totalFiles": 2950,
+          "processedFiles": 2950,
+          "successFiles": 2949,
+          "errorFiles": 0,
+          "timeoutFiles": 1,
+          "skippedFiles": 0,
+          "symbolsExtracted": 164506,
+          "relationshipsFound": 102494,
+          "importsFound": 4407
+        }
+      },
+      "after": {
+        "files": 2950,
+        "symbols": 164506,
+        "relationships": 102494,
+        "imports": 4407
+      },
+      "dbSizeBytes": 413245440,
+      "throughput": {
+        "filesPerSec": 14,
+        "symbolsPerSec": 778.9,
+        "relationshipsPerSec": 485.3
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.819Z",
+    "contentSha256": "36283303fa40a4620e619c6170bddd6f624b699dea912d53568131c8097a25e5"
+  }
+}

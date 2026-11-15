@@ -37,7 +37,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSy
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "$HOME/fixtures/repositories/Exposed"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/Exposed"
 const OUT = path.join(ROOT, "validation/m59/results/predicate-loop.json")
 const MATRIX = path.join(ROOT, "script/m59/matrix-tool-language.ts")
 const CAP = Number(process.argv.find((a) => a.startsWith("--files="))?.split("=")[1] ?? 150)

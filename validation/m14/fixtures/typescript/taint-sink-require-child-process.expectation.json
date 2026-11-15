@@ -1,0 +1,17 @@
+{
+  "fixtureId": "typescript/taint-sink-require-child-process",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the CommonJS form of the child_process signal. The taint sink rule's evidence that a bare `exec` is Node's own shell — rather than the project's own function of the same name — was read only off an `import_statement` or an `import ... = require(...)` clause. `const { execFileSync } = require(\"child_process\")` is the same fact in a different spelling, and the signal scan had no case for a CALL, so the evidence never arrived and the sink was never recorded. This is a false NEGATIVE, and the more costly direction: no sink means no flow can be traced into that call, so `bb_security` cannot report a real command injection there at all. Measured before the fix over the tracked corpus: 24 files, 27 missing sink records, 0 records wrongly present, 0 lost — every missing record a bare exec-family call in a file that genuinely requires child_process. The exclusion is pinned separately in `taint-sink-require-not-loader`, because the signals are per-FILE and a negative cannot be observed in a file that also has a real require.",
+  "expectSymbols": [
+    { "name": "headSha", "kind": "function" }
+  ],
+  "expectTaintSinks": [
+    {
+      "symbol": "headSha",
+      "includes": ["execFileSync(\"git\", [\"rev-parse\", \"HEAD\"], { cwd: root, encoding: \"utf8\" })"],
+      "includesVuln": ["command_injection"],
+      "note": "TRUE POSITIVE, and the reason the defect mattered: a bare execFileSync whose only evidence is this file's `require(\"child_process\")`. Pre-fix this symbol carried no taintSinks at all, so no user input reaching `root` could ever be reported as command injection here."
+    }
+  ]
+}

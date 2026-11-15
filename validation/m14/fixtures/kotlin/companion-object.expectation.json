@@ -1,0 +1,11 @@
+{
+  "fixtureId": "kotlin/companion-object",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "companion object members belong to the enclosing class's static surface; at minimum they must be extracted as symbols.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "class" },
+    { "name": "ID" },
+    { "name": "create" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "fixtureId": "cpp/override-signature-aware",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SIGNATURE-AWARE overrides: a same-name DIFFERENT-parameter method is C++ NAME-HIDING, not virtual dispatch - emitting Overrides for it was a false positive. Only matching signatures resolve; unrelated methods (write) never do.",
+  "expectSymbols": [
+    {
+      "name": "Logger",
+      "kind": "class"
+    },
+    {
+      "name": "FileLogger",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "FileLogger",
+      "target": "Logger"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "log",
+      "meta.overriddenOwner": "Logger"
+    },
+    {"type": "overrides", "target": "Logger::log", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "target": "FileLogger::log", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

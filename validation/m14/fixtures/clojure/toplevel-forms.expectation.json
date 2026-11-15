@@ -1,0 +1,23 @@
+{
+  "issue": "CLJ1",
+  "note": "C7: top-level directive forms after the ns are parsed like ns clauses — `(require '[clojure.string :as s])` registers the alias (the s/join call resolves to clojure.string/join and the raw `s/join` target is forbidden), `(import '(java.util Date))` records the class import. Also pins the (:import [pkg Cls…]) vector form: items are the CLASSES (Date/UUID), not the package wildcard.",
+  "expectSymbols": [
+    { "name": "go", "kind": "function" },
+    { "name": "mk", "kind": "function" }
+  ],
+  "expectImports": [
+    { "module": "clojure.set", "items": ["set"] },
+    { "module": "java.time", "items": ["Instant"] },
+    { "module": "clojure.string", "items": ["s"] },
+    { "module": "java.util", "items": ["Date"] }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "go", "target": "clojure.string/join", "line_number": 8 },
+    { "type": "instantiates", "from": "mk", "target": "Date", "line_number": 9 },
+    { "type": "references", "target": "clojure.string", "line_number": 5 },
+    { "type": "references", "target": "java.util", "line_number": 6 }
+  ],
+  "forbidRelationships": [
+    { "target": "s/join" }
+  ]
+}

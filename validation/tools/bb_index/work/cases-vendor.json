@@ -1,0 +1,5 @@
+[
+  {"label":"dir root after edit (vendor tree: walk skips vendor, discovery indexed it)","setup":{"write":{"path":"src/main.ts","content":"import { formatVendored } from \"./vendor/format\"\nexport function MAIN_FN(x: number): number {\n  return formatVendored(x) + 1\n}\n"}},"arguments":{"path":".","mode":"dir"}},
+  {"label":"dir root again (settled)","arguments":{"path":".","mode":"dir"}},
+  {"label":"dir src/ subdir after edit in src/vendor (walk skips vendor)","setup":{"write":{"path":"src/vendor/format.ts","content":"export function formatVendored(x: number): string {\n  return `v=${x}`\n}\n"}},"arguments":{"path":"src","mode":"dir"}}
+]

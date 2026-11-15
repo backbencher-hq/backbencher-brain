@@ -1,0 +1,61 @@
+{
+ "fixtureId": "python/class-dunder-all-is-not-exports",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-24. Two defects with OPPOSITE signs in one construct, which is why they survived a full review cycle together and why only one of them was ever reported. A class body may assign `__all__` — cython's `Cython/Shadow.py` does exactly that inside `CythonDotParallel` at L786 — and `__all__` is the MODULE's export contract: `from x import *` reads the module binding and looks nowhere else. The lane read the assignment wherever it found it, so it published `exports Shadow -> parallel/prange/threadid`, a public surface the author never wrote. Separately it published no `contains` for it either, because the `__all__` branch returned before reaching the class-member path — and `__all__` in a class body IS a real member, present in that class's `__dict__`. So the class-body `__all__` simultaneously produced three false `exports` edges and withheld one true `contains` edge. The `contains` half is what the differential caught, as the last remaining `missing` row corpus-wide. The `exports` half it could NOT catch: my independent oracle derived exports from any `__all__` assignment, carrying the same unstated assumption, so the two agreed on a false fact and the report came back clean at 96 agreed exports, 0 missing, 0 unexplained. A differential finds disagreement; it cannot find a shared blind spot, because agreement between two derivations of mine is only evidence if something outside both checks the assumption. CPython does, and the rule it states is one sentence: `import *` consults the module's `__all__`. So the forbid rows here are pinned on THAT semantic, not on the code path that implements it, and the reason they exist is a process failure as much as a code one. The two boundary rows protect against the obvious over-correction in both directions. A FUNCTION-LOCAL `__all__` is a local and publishes nothing. A module-level `__all__` inside `if __name__ == \"__main__\":` is still module scope and does publish, because `if` opens no scope: a fix that gated on column 0, or on 'not inside any control-flow construct', or on 'not inside any scope-creating node except if', would silently drop `entry_point`. Both are real python and both are one line away from the fix.",
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Namespace",
+   "target": "__all__",
+   "line_number": 37,
+   "note": "THE EDGE THAT WAS MISSING. `__all__` in a class body is in that class's `__dict__` like any other assignment, so it is a member. The pre-fix `__all__` branch returned before the class-member path, so the graph said the class had no `__all__` at all. This is the corpus row the differential reported: `contains CythonDotParallel -> __all__` at Shadow.py"
+  },
+  {
+   "type": "contains",
+   "from": "Namespace",
+   "target": "go",
+   "line_number": 39,
+   "note": "the ordinary method on the same class, pinned so the kind requirement cannot be satisfied by narrowing to some other shape and so the class-member path is provably still reached after the `__all__` fallthrough"
+  },
+  {
+   "type": "exports",
+   "from": "class_dunder_all_is_not_exports",
+   "target": "entry_point",
+   "line_number": 53,
+   "note": "THE BOUNDARY. Module scope inside `if __name__ == \"__main__\":` — `if` opens no scope, so this is a genuine export declaration and must keep its edge. This is the row that fails first if the scope gate is written as 'not nested inside anything'"
+  },
+  {
+   "type": "exports",
+   "from": "class_dunder_all_is_not_exports",
+   "target": "Namespace",
+   "line_number": 55,
+   "note": "the plainest module-level `__all__` in the file, pinned so a class-body gate cannot be implemented by suppressing exports wholesale"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "from": "class_dunder_all_is_not_exports",
+   "target": "alpha",
+   "note": "THE DEFECT, first of the three corpus edges. `alpha` is inside `Namespace.__all__`, so it is a member of `Namespace`. Nothing about it is a module public surface: `from class_dunder_all_is_not_exports import *` does not bind it. The pre-fix lane emitted `exports ... -> alpha` at 1.0 with a `list_item` form, i.e. a confident claim about a surface the author never wrote"
+  },
+  {
+   "type": "exports",
+   "from": "class_dunder_all_is_not_exports",
+   "target": "beta",
+   "note": "the same defect on the second name of the same assignment, so a fix cannot special-case the first element of the literal"
+  },
+  {
+   "type": "exports",
+   "from": "class_dunder_all_is_not_exports",
+   "target": "local_only",
+   "note": "a FUNCTION-LOCAL `__all__` is a local variable and never an export contract, at any scope nesting. Included because the fix gates on scope, and this is the case that distinguishes 'inside a function' from 'inside a class' — a gate that only tracked classes would still publish this one"
+  }
+ ],
+ "_seamNote": {
+  "what": "The seam is `if (name === \"__all__\" && !ctx.currentClass && !ctx.currentFunction)` in `processAssignment`.",
+  "howToBreak": "Drop either scope disjunct. Deleting `!ctx.currentClass` restores the three false exports and the fixture fails on a forbid row. Deleting `!ctx.currentFunction` publishes `local_only` and fails on the third forbid row.",
+  "theOtherSide": "The oracle needed the same gate (`nested === 0` in `walkExports`) and got it independently wrong first. An oracle that agrees with the analyzer on a wrong rule is worse than no oracle, because it converts a false edge into a green report — which is exactly what happened here across the whole corpus before this fixture existed."
+ }
+}

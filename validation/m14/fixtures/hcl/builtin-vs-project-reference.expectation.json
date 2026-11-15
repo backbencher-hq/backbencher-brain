@@ -1,0 +1,222 @@
+{
+  "fixtureId": "hcl/builtin-vs-project-reference",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run through the production entry (ASTEngine.parseFile) and checked line by line against the fixture source. Each row was also checked to name the thing it claims: a `uses` row names a language builtin, a `references` row names a declaration. First transcription put `data.aws_ami.chosen.id` on 40 (a comment line) and gave `local.devices` the resource as its source; re-read against the numbered source it is line 42, and the `for_each` belongs to the `dynamic` block, so its source is the block's own path. All `from` values are the owning block's qualified path, which is what the analyzer emits. Added rows transcribed from a measured run: the function-call block sits at lines 68-70, and a `uses` edge for a builtin passed as a call argument (`each.key` inside `merge(...)`) confirms the label follows the reference ROOT regardless of syntactic position.",
+  "rationale": "The BUILTIN / PROJECT reference split, and therefore the relationship LABEL. HCL's reference roots divide exactly the way the house precedent divides them at real-sql-analyzer.ts:1569 \u2014 a target in a GLOBAL namespace is `uses`, a project symbol is `references`. `count`/`each`/`self`/`path`/`terraform` resolve to nothing in the index, because no file can declare them; `var`/`local`/`module`/`data` and the `<type>.<name>` family all resolve to declarations. Publishing both classes as `references` asserted a declaration that does not exist, which is precisely the unexplained edge the lane's own rules forbid. Measured over the 9,079-file corpus: 2,029 edges, 4.6% of all references, led by `path.module` (506), `each.key` (325), `each.value` (285) and `count.index` (214). The corpus differential now checks the LABEL as well as the target, and reports `mislabelled: 0` \u2014 a builtin published as `references`, or a project address published as `uses`, fails the lane rather than being tolerated because the target happens to match.",
+  "expectSymbols": [
+    {
+      "name": "name",
+      "kind": "variable"
+    },
+    {
+      "name": "aws_ami.chosen",
+      "kind": "class"
+    },
+    {
+      "name": "aws_instance.web",
+      "kind": "class"
+    },
+    {
+      "name": "dynamic.ebs_block_device",
+      "kind": "class"
+    },
+    {
+      "name": "locals#2",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "aws_instance.web",
+      "target": "count.index",
+      "line_number": 34,
+      "meta.evidenceClass": "builtin_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "aws_instance.web",
+      "target": "self.id",
+      "line_number": 35,
+      "meta.evidenceClass": "builtin_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "aws_instance.web",
+      "target": "path.module",
+      "line_number": 35,
+      "meta.evidenceClass": "builtin_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "aws_instance.web",
+      "target": "each.key",
+      "line_number": 36,
+      "meta.evidenceClass": "builtin_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "aws_instance.web",
+      "target": "each.value",
+      "line_number": 36,
+      "meta.evidenceClass": "builtin_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "aws_instance.web",
+      "target": "terraform.workspace",
+      "line_number": 37,
+      "meta.evidenceClass": "builtin_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "aws_instance.web.dynamic.ebs_block_device.content",
+      "target": "count.index",
+      "line_number": 49,
+      "meta.evidenceClass": "builtin_qualified",
+      "note": "the SAME builtin read from a nested `content` block, which must also be `uses` \u2014 the label follows the reference root, not the depth"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "var.name",
+      "line_number": 34,
+      "meta.evidenceClass": "reference_qualified",
+      "note": "a project address and a builtin on the SAME line: `Name = \"${var.name}-${count.index}\"`. The fixture fails if the two classes are ever collapsed together."
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "data.aws_ami.chosen.id",
+      "line_number": 42,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web.dynamic.ebs_block_device",
+      "target": "local.devices",
+      "line_number": 45,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "aws_instance.web",
+      "target": "local.full",
+      "line_number": 53,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "locals#2",
+      "target": "local.devices",
+      "line_number": 68,
+      "meta.evidenceClass": "reference_qualified",
+      "note": "`ids = toset([for d in local.devices : d])` \u2014 the reference read INSIDE a function call is published even though the CALL is not. The two are different facts and the analyzer keeps both straight."
+    },
+    {
+      "type": "references",
+      "from": "locals#2",
+      "target": "local.merged_map",
+      "line_number": 69,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "references",
+      "from": "locals#2",
+      "target": "local.devices",
+      "line_number": 70,
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "uses",
+      "from": "locals#2",
+      "target": "each.key",
+      "line_number": 70,
+      "meta.evidenceClass": "builtin_qualified",
+      "note": "a builtin read as a function ARGUMENT \u2014 still `uses`, never a call target"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "count.index",
+      "note": "the pre-split shape: a builtin published as `references` claims a declaration named count.index, which no file can contain"
+    },
+    {
+      "type": "references",
+      "target": "path.module",
+      "note": "same, 506 corpus edges"
+    },
+    {
+      "type": "references",
+      "target": "each.key",
+      "note": "same, 325 corpus edges"
+    },
+    {
+      "type": "references",
+      "target": "each.value",
+      "note": "same, 285 corpus edges"
+    },
+    {
+      "type": "references",
+      "target": "self.id",
+      "note": "same"
+    },
+    {
+      "type": "references",
+      "target": "terraform.workspace",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "var.name",
+      "note": "the inverse error: a PROJECT address published as `uses` claims it is a global, which is how a real declaration gets demoted out of the reference graph"
+    },
+    {
+      "type": "uses",
+      "target": "data.aws_ami.chosen.id",
+      "note": "the inverse error"
+    },
+    {
+      "type": "uses",
+      "target": "local.devices",
+      "note": "the inverse error"
+    },
+    {
+      "type": "references",
+      "target": "dev.value.name",
+      "note": "`iterator = dev` is a block-local"
+    },
+    {
+      "type": "calls",
+      "target": "toset",
+      "note": "`calls` is NOT APPLICABLE to HCL, on measurement: 0 of its 64 node types declare a function, and across 12,977 function_call nodes in 9,079 files not one callee resolves to a declared symbol"
+    },
+    {
+      "type": "uses",
+      "target": "local.full",
+      "note": "the inverse error on a `depends_on` read: a project address published as `uses` demotes a real declaration out of the reference graph"
+    },
+    {
+      "type": "calls",
+      "target": "merge",
+      "note": "the `calls` ruling, on measurement rather than assumption: 0 of HCL's 64 node types declare a function, and 0 of 12,977 corpus function_call nodes resolve to a declared symbol. Every callee is a Terraform global, so a `calls` edge is 100% dangling."
+    },
+    {
+      "type": "calls",
+      "target": "toset",
+      "note": "same"
+    },
+    {
+      "type": "calls",
+      "target": "lookup",
+      "note": "same"
+    },
+    {
+      "type": "calls",
+      "target": "each.key",
+      "note": "`each.key` inside `merge(...)` is a builtin READ, not a call \u2014 and it is published as `uses`, never as a call target"
+    }
+  ]
+}

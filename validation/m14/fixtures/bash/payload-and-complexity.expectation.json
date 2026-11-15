@@ -1,0 +1,80 @@
+{
+ "fixtureId": "bash/payload-and-complexity",
+ "language": "bash",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Payload matrix row 1b for bash. The lane publishes `metadata.cyclomaticComplexity` and `metadata.complexity`; neither was pinned, so a change to either could not be distinguished from extraction drift. The counter's own rule is also part of the contract: it counts one per decision point — if/for/while/case_item/elif_clause/test_command, plus `binary_expression` for a compound [[ ]] condition, plus `c_style_for_statement` for a `for ((…))` head — over a base of 1. The `c_style_for_statement` term is the one this wave ADDED, and it is pinned here because the pre-wave counter would have read one lower for any file with an arithmetic for-loop. Two payload facts are DISCLOSED rather than pinned, because the lane does not publish them and a pin for a field nothing emits is decoration: `expectEvidenceTier` is absent (no bash edge carries `metadata.evidenceClass`), and no per-symbol complexity is claimed for a variable — only a scope owner (the script module or a function) carries `complexity`, because a `local` cannot itself contain a decision point and giving it the enclosing function's number is the same error as giving a variable a class's method count. setup reads 8 = 1 base + 7 decision points (while, its binary_expression, if, its test_command, and two case_item arms). The evidence TIERS are pinned here as well, because the lane published relationships with no tier at all: a lexical containment, a `source` dependency and a variable read were indistinguishable to every consumer. Three classes are asserted and two are deliberately ABSENT — nothing in this lane is `inferred` and nothing is `reference_qualified`, and the absence is the point: bash has no qualified names to disambiguate and the analyzer guesses nothing it cannot see, which is what makes those two tiers mean something when they are missing.",
+ "expectSymbols": [
+  {
+   "name": "setup",
+   "kind": "function"
+  },
+  {
+   "name": "LIMIT",
+   "kind": "constant"
+  },
+  {
+   "name": "payload-and-complexity.sh",
+   "kind": "module"
+  }
+ ],
+ "expectComplexity": [
+  {
+   "symbol": "setup",
+   "equals": 8
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "setup",
+   "target": "setup.count",
+   "line_number": 24,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "setup",
+   "target": "setup.x",
+   "line_number": 27,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "calls",
+   "from": "payload-and-complexity.sh",
+   "target": "setup",
+   "line_number": 37,
+   "meta.evidenceClass": "structural",
+   "meta.isFunctionCall": true,
+   "meta.isExternalCommand": false
+  },
+  {
+   "type": "contains",
+   "from": "payload-and-complexity.sh",
+   "target": "LIMIT",
+   "line_number": 17,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "payload-and-complexity.sh",
+   "target": "setup",
+   "line_number": 19,
+   "meta.evidenceClass": "structural"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "meta.evidenceClass": "inferred"
+  },
+  {
+   "type": "uses",
+   "meta.evidenceClass": "inferred"
+  },
+  {
+   "type": "calls",
+   "meta.evidenceClass": "reference_qualified"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

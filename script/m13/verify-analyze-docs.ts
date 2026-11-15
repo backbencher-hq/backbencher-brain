@@ -10,9 +10,9 @@
 //   (b) checked `doc.includes(JSON.stringify(defaults))`, which pinned the page
 //   to a descriptor value that was itself wrong (a single `limit: 20` default
 //   no mode used), and (c) never looked at the claims that had gone stale — a
-//   citation of `fixtures/analyze/latency-gate.sh`, a path that exists nowhere
-//   on this machine (checked: ./fixtures and $HOME/fixtures/analyze both absent;
-//   $HOME/fixtures/repositories exists and is a corpus, not a test directory).
+//   citation of `bb_tests/analyze/latency-gate.sh`, a path that exists nowhere
+//   on this machine (checked: ./bb_tests and $HOME/bb_tests/analyze both absent;
+//   $HOME/bb_tests/repositories exists and is a corpus, not a test directory).
 //   A docs gate must fail when a page cites a command that cannot run.
 // WHERE ITS EVIDENCE LIVES — validation/m13/results/an4.json.
 // EDIT TOGETHER WHEN THIS FILE CHANGES — script/tool-docs/curation/bb_analyze.ts,
@@ -60,9 +60,9 @@ if (registry) {
 }
 
 // A page that cites a test command must cite one that exists in THIS repo.
-const citationHits = doc.match(/fixtures\//g) ?? []
-harness.negative("page cites no unrunnable fixtures path", citationHits.length === 0, citationHits.join(","))
-harness.negative("curation cites no unrunnable fixtures path", (curation.match(/fixtures\//g) ?? []).length === 0, (curation.match(/fixtures\/[^\s"`]*/g) ?? []).join(","))
+const citationHits = doc.match(/bb_tests\//g) ?? []
+harness.negative("page cites no unrunnable bb_tests path", citationHits.length === 0, citationHits.join(","))
+harness.negative("curation cites no unrunnable bb_tests path", (curation.match(/bb_tests\//g) ?? []).length === 0, (curation.match(/bb_tests\/[^\s"`]*/g) ?? []).join(","))
 harness.check("page documents the test_impact declared bound", /test_impact/.test(doc) && /timeBudget/.test(doc), "")
 harness.check("page documents that test_quality limit bounds rows", /test_quality/.test(doc) && /returned/.test(doc), "")
 harness.check("page documents the complexity breakdown bound", /breakdownReturned|breakdownTruncated/.test(doc), "")

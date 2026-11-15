@@ -1,0 +1,60 @@
+{
+  "fixtureId": "lua/export-edges",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60 LUA-42 (`exports` as a relationship) and LUA-43 (`evidenceClass` on every edge), authored from the module-surface and evidence-tier contracts. Before this, `exports` was 0 edges over 3,250 corpus files while the same code path published 5,167 export NAMES into `result.exports` \u2014 the surface was recorded as a list and invisible to the graph, so `bb_graph` could not answer 'what does this module export'. The edge's SOURCE is the file's global scope, which is this analyzer's existing convention rather than an invention: `imports` and a file-scope `calls` edge are already sourced from `global` (addImport, processCall). A Lua chunk has no module symbol, and inventing one from the filename would fabricate a symbol no source contains. Confidence 1.0 / `structural`, because both halves of the claim are written in the file: a chunk-scope `return` names this name. That is the difference from `uses`/`references`, where the name is written but the BINDING it denotes is not, which is why only those two carry 0.9. The `return \"literal\"` line is the fabrication guard: a value is not a name, and naming it would publish a surface no source declares.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "greet",
+      "line_number": 41,
+      "confidenceMin": 0.99,
+      "confidenceMax": 1.0,
+      "meta.relationshipType": "lua_module_return",
+      "meta.evidenceClass": "structural",
+      "comment": "LUA-42: the chunk-scope `return` names `greet`, so the module publishes it"
+    },
+    {
+      "type": "exports",
+      "from": "global",
+      "target": "farewell",
+      "line_number": 42,
+      "meta.evidenceClass": "structural",
+      "comment": "the second member of the same surface"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "literal",
+      "comment": "`return \"literal\"` (L23) is a VALUE. `extractExport` already records it in `ctx.unpublishedSurface` as shape `value-literal`, and an edge would have to invent a name to carry it."
+    },
+    {
+      "type": "exports",
+      "from": "M",
+      "comment": "the SOURCE is the file's global scope. `M` is a table in this file, not a module, and Lua chunks are not modules \u2014 sourcing the edge at `M` would assert a module identity the language does not have."
+    },
+    {
+      "type": "exports",
+      "target": "export-edges",
+      "comment": "no symbol is ever named after the FILE. A Lua chunk has no module symbol; deriving one from the filename would fabricate a symbol that no source contains, and it would then be a target of a fabricated edge."
+    }
+  ],
+  "expectEvidenceClassOnEveryRelationship": true,
+  "evidenceClassRationale": "LUA-43: measured before the change, 119,606 of 119,606 lua relationships carried NO `evidenceClass` at all, so the honesty contract \u00a74 requirement \u2014 a machine-readable reason code beside every confidence below 1.0 \u2014 had nothing to point at. The mapping is the css family's (real-css-analyzer.ts:737), applied per type: `structural` for both endpoints being nodes this parse saw, `usage_contextual` for a link resting on a NAME in a value position (`uses`), `import_based` for an endpoint that may be declared OUTSIDE this tree (`imports`, `references`).",
+  "expectEvidenceClasses": {
+    "uses": "usage_contextual",
+    "references": "import_based",
+    "exports": "structural",
+    "contains": "structural"
+  },
+  "evidenceClassesAssertedElsewhere": "This fixture produces no `calls`, `extends`, `overrides` or `imports` edge, so their tiers are NOT asserted here rather than asserted vacuously: `calls`/`contains` are pinned by lua/edge-lines and lua/closure-scope, `overrides` by lua/override-shapes, and `extends` by the corpus probe B6 plus the lua_metatable shape. A fixture that listed a type it does not produce would report green while checking nothing, which is why the runner treats a missing type as a FAILURE and says so.",
+  "wave2Amendment": {
+    "amendedBy": "m60 wave-2 adversarial pass (analyzer/LUA)",
+    "whatChanged": "added `local shared` / `local offset` and a body that reads them, so the file has a genuine BARE-NAME read; updated the two `exports` line numbers from 27/28 to 41/42 to match the committed file.",
+    "why": "M60 LUA-47 stopped a qualified access's FIELD from reaching `uses`. The only `uses` edges this fixture had were `M.greet` and `M.farewell` inside the return, which are fields, so the fix removed both and left `expectEvidenceClasses.uses` with no site to assert on. script/m60/run-lua-fixtures.ts:155 refuses a tier assertion it cannot check rather than skipping it, and that refusal is why a real bare read was added instead of deleting the `uses` expectation.",
+    "honesty": "`authoredBeforeAnalyzerRun` is now false and is stated as false. The original rows were authored before the analyzer ran; these two line numbers were re-derived from the committed file after the wave-2 change and are NOT an independent prediction of it.",
+    "unchanged": "every forbid row and the `exports` confidence bounds are carried over verbatim; nothing was weakened to make the suite pass."
+  }
+}

@@ -1,0 +1,1 @@
+{"gate":"m15-patterns-deep","command":"bun run script/m15/verify-patterns-deep.ts","exitCode":0,"durationMs":246559,"log":"validation/tools/bb_patterns/gates/logs/m15-patterns-deep.log","recordedAt":"2026-11-03T16:17:36Z"}

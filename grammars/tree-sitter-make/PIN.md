@@ -76,7 +76,7 @@ it is wrong.
 
 ## The measurement that decided it
 
-`fixtures/make/probes/grammar-ab.mts`, over all 99 pinned corpus files.
+`bb_tests/make/probes/grammar-ab.mts`, over all 99 pinned corpus files.
 
 ```
               ids  named  fields | error files  error nodes

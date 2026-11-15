@@ -1,0 +1,136 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/type-accelerator-psd12.ps1",
+ "authoredFrom": "PSD12 \u2014 A TYPE ACCELERATOR NAMES A FRAMEWORK TYPE, AND THE ROW NOW SAYS SO. `[string]::IsNullOrWhiteSpace($x)` is `System.String.IsNullOrWhiteSpace`; `[guid]::NewGuid()` is `System.Guid.NewGuid`. The analyzer knew only the written spelling, so it published `calls -> string.IsNullOrWhiteSpace` with `ownerMemberAbsent {owner: \"string\"}` \u2014 a claim whose owner NO admitted file declares, which the arbiter can therefore only answer UNVERIFIED. MEASURED over the whole population before the change: 2,256 `ownerMemberAbsent` rows in `ext?`, the largest single class in that column; the claim was false in its own terms (it asserts the owner is published).\n\nTHE RESOLVED NAME IS A CITATION, NOT A GUESS. The two sources are documented and closed: PowerShell's type-accelerator table (about_Type_Accelerators) and, for the names that are not accelerators, the runtime's own type resolution \u2014 the implicit `System.` attempt and the loaded-assembly search \u2014 applied to the framework types this population names. Every entry maps to a type whose namespace-qualified name the .NET API browser states. A literal the table does NOT carry is left exactly as it was, deliberately: `[Path]` has no documented resolution (`System.Path` does not exist, and the assembly search can answer more than one `Path`), so inventing `System.Path` would be a false row \u2014 row 4 is that twin.\n\nWHY THE TARGET AND NOT A NEW CLAIM. The row's target is a NAME, and the name it currently carries is not the thing it names. `[System.Math]::Max` already published `System.Math.Max` (PS-B22's `Type.Member` shape), so an accelerator row published as `System.String.IsNullOrWhiteSpace` is the SAME shape rather than a new vocabulary \u2014 and its root is a documented namespace, which the existing namespace claim certifies with the list as its evidence (`languageNamespace: [\"System\"]`). No new claim kind, no arbiter change.\n\nTHE SHADOW TWIN IS THE GUARD. PowerShell class lookup is case-insensitive, so `class Regex` in this file wins over `[regex]`: row 3 must bind in-file and must NOT be rewritten. Writing it found a real defect in the pre-existing check \u2014 `classMembers.get(staticType)` was an EXACT key read, so `[counter]::Add()` missed `class Counter` and would now have been rewritten to a framework type. The lookup is folded, and row 3 fails if it is not.",
+ "expectSymbols": [
+  {
+   "name": "type-accelerator-psd12.ps1",
+   "kind": "module",
+   "comment": "The file is the module (PS1) and the `from` of every row below."
+  },
+  {
+   "name": "Regex",
+   "kind": "class",
+   "ownerName": "type-accelerator-psd12.ps1",
+   "comment": "THE SHADOW DECLARATION. Its spelling collides with an accelerator on purpose: the file's own class is what `[Regex]::Pattern()` calls."
+  },
+  {
+   "name": "Pattern",
+   "kind": "method",
+   "ownerName": "Regex",
+   "comment": "The member the shadow call binds to. If the accelerator table won, the call would target `System.Text.RegularExpressions.Regex.Pattern` and this row would have no caller."
+  },
+  {
+   "name": "Counter",
+   "kind": "class",
+   "ownerName": "type-accelerator-psd12.ps1",
+   "comment": "The declaration whose spelling wins: the call site writes `[counter]`, the class is `Counter`, and PowerShell treats them as one name."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "type-accelerator-psd12.ps1",
+   "target": "System.String.IsNullOrWhiteSpace",
+   "line_number": 22,
+   "meta.staticType": "string",
+   "meta.staticTypeResolved": "System.String",
+   "meta.typeAccelerator": "string",
+   "meta.languageNamespace": [
+    "System"
+   ],
+   "comment": "THE POSITIVE THE CHANGE EXISTS FOR. The written literal is kept in `typeAccelerator` (the evidence a reviewer needs to re-derive the row), the resolved type is in `staticTypeResolved`, and the target is the name the call actually reaches. The namespace claim is what the arbiter verifies \u2014 before this, the row carried a claim about `string` that nothing in the project could answer."
+  },
+  {
+   "type": "calls",
+   "from": "type-accelerator-psd12.ps1",
+   "target": "System.Guid.NewGuid",
+   "line_number": 25,
+   "meta.staticTypeResolved": "System.Guid",
+   "meta.languageNamespace": [
+    "System"
+   ],
+   "comment": "A second entry, so a table that happened to special-case one alias cannot pass. `guid` is a documented accelerator for `System.Guid`."
+  },
+  {
+   "type": "calls",
+   "from": "type-accelerator-psd12.ps1",
+   "target": "Regex.Pattern",
+   "line_number": 34,
+   "meta.staticType": "Regex",
+   "meta.staticTypeResolved": null,
+   "meta.languageNamespace": null,
+   "comment": "THE SHADOW TWIN. `class Regex` is declared eight lines above, so the literal names THIS FILE's class; PowerShell's class lookup does not care about the accelerator and neither may the analyzer. The row must stay in-file: no resolved type, no namespace claim."
+  },
+  {
+   "type": "calls",
+   "from": "type-accelerator-psd12.ps1",
+   "target": "Path.Combine",
+   "line_number": 38,
+   "meta.staticType": "Path",
+   "meta.staticTypeResolved": null,
+   "meta.ownerMemberAbsent": {
+    "owner": "Path",
+    "member": "Combine"
+   },
+   "comment": "THE UNDOCUMENTED-RESOLUTION TWIN. `System.Path` does not exist and the loaded-assembly search can answer more than one type named `Path`, so the analyzer may not invent a name for it. The row keeps exactly the treatment it had, which is the proof that the table moves only what it can cite."
+  },
+  {
+   "type": "calls",
+   "from": "type-accelerator-psd12.ps1",
+   "target": "IO.Path.GetFullPath",
+   "line_number": 42,
+   "meta.staticType": "IO.Path",
+   "meta.externalTarget": true,
+   "meta.externalVia": "qualified",
+   "comment": "THE SECOND HALF, and the shape 1,038 population rows moved with: a DOTTED literal names `System.IO.Path` through the implicit-`System.` rule, and no published symbol can be keyed by a dotted name \u2014 class names cannot contain `.` and every variable/function/parameter is stored bare. The generic externality reading is therefore a question the project can answer, and it answers by finding nothing."
+  },
+  {
+   "type": "calls",
+   "from": "type-accelerator-psd12.ps1",
+   "target": "Counter.Zero",
+   "line_number": 52,
+   "meta.staticType": "counter",
+   "meta.staticTypeResolved": null,
+   "meta.languageNamespace": null,
+   "comment": "THE DECLARED-SPELLING ROW. Two separate defects fail here and only here: an exact-key class lookup (which misses `counter` vs `Counter` entirely) and a target built from the LITERAL (`counter.Zero`), which the store cannot bind because the class method's qualified name is `Counter.Zero`. MEASURED over the population: six rows are exactly this shape and they moved from `ext?`/`unresolved` to RESOLVED when the declaration's spelling was published."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "System.Text.RegularExpressions.Regex.Pattern",
+   "comment": "The accelerator table must never shadow a class this file declares."
+  },
+  {
+   "type": "calls",
+   "target": "System.Path.Combine",
+   "comment": "An invented resolution. The table carries ONLY documented types; `System.Path` is not one."
+  },
+  {
+   "type": "calls",
+   "target": "string.IsNullOrWhiteSpace",
+   "comment": "The pre-fix spelling. Keeping it would keep the `ownerMemberAbsent` claim whose owner no file declares."
+  },
+  {
+   "type": "calls",
+   "target": "System.String.IsNullOrWhiteSpace",
+   "meta.ownerMemberAbsent": {
+    "owner": "string",
+    "member": "IsNullOrWhiteSpace"
+   },
+   "comment": "The two claim shapes are alternatives, never companions: a row that names the framework type cannot also claim an absent member of a type the project does not declare."
+  },
+  {
+   "type": "calls",
+   "target": "counter.Zero",
+   "comment": "The literal spelling of a declaration this file carries. The store's qualified name is the declaration's, so this target can only be an unresolvable duplicate of a call that resolves."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "equals": 16,
+   "comment": "The whole file: 6 `calls` (rows 1-6) and 10 `contains` (the module holds `blank`, `id`, `Regex`, `local`, `combined`, `full`, `Counter` and `zero`; `Regex` holds `Pattern` and `Counter` holds `Zero`). The count matters because two of the passes REWRITE a target rather than adding or dropping a row \u2014 an implementation that published both spellings would satisfy every expect row and fail here."
+  }
+ ]
+}

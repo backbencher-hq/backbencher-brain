@@ -43,5 +43,5 @@
     "src/cmd/compile/internal/riscv64/gsubr.go:13 ginsnop -> Prog (result node type pointer_type)"
   ],
   "sampleSize": 200,
-  "corpusRoot": "$HOME/fixtures/repositories/go-stdlib"
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories/go-stdlib"
 }

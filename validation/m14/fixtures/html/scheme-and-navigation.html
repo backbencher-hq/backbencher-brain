@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <!-- SCHEME CONTRACT. A hyperlink is not a code dependency. The pre-fix
+       analyzer emitted a `uses` edge for every `<a href>` it did not filter, so a
+       page linking to fifty external sites published fifty graph edges that the
+       enrichment pass then scored for architectural criticality — and the
+       differential could not tell a CDN dependency from a hyperlink. Its filter
+       was a bare `startsWith("javascript:")`, so it was case-sensitive,
+       whitespace-sensitive, and present ONLY in the `<a>` branch: a
+       `<form action="javascript:…">` emitted a `calls` edge and an `imports` row
+       for one. -->
+  <a id="ext-abs" href="https://example.com/page">absolute cross-origin</a>
+  <a id="ext-proto" href="//cdn.example.net/asset">protocol-relative</a>
+  <a id="ext-mail" href="mailto:someone@example.com">mail</a>
+  <a id="ext-tel" href="tel:+15550100">telephone</a>
+  <a id="ext-js" href="javascript:void(0)">javascript, spelled plainly</a>
+  <a id="ext-js-case" href="JavaScript:alert(1)">javascript, capitalised</a>
+  <a id="ext-js-ws" href=" javascript:alert(2)">javascript, leading space</a>
+  <a id="ext-js-ent" href="&#106;avascript:alert(3)">javascript, numeric reference</a>
+  <a id="ext-js-ent2" href="&#0000106;avascript:alert(4)">javascript, zero-padded reference</a>
+  <a id="ext-data" href="data:text/plain;base64,SGVsbG8=">inline data</a>
+
+  <!-- A BARE `#` is the HTML idiom for "no destination" — a valid URL referring to
+       the top of this document. There is no target to name, and an edge to the
+       literal text `#` is a node that is neither a symbol nor a file. This one was
+       reintroduced by the #288 rewrite and caught by re-auditing the M12 Negative
+       fixture's documented contract ("`javascript:` and empty `#` anchors emit
+       nothing") against live output — a hand audit finding what no automated gate
+       could, because the M12 ground truth still described the old contract. -->
+  <a id="bare-hash" href="#">no destination</a>
+  <a id="empty-href" href="">also none</a>
+  <a id="real-hash" href="/real/path">a real target</a>
+
+  <!-- An in-project navigation IS a dependency and stays. -->
+  <a id="nav-orders" href="/orders">relative path</a>
+  <a id="nav-sibling" href="details.html">sibling document</a>
+
+  <!-- A form endpoint is a dependency too, and it is NOT a call: `Calls` claims
+       "this symbol invokes that symbol", which is false for a URL. The pre-fix
+       analyzer used `Calls` for it, and `calls` was the only relationship type it
+       emitted besides `uses`/`contains` — so the html lane's entire call graph
+       was URLs. -->
+  <form id="search" action="/api/search" method="get">
+    <input id="q" name="q" type="search">
+  </form>
+  <form id="js-form" action="javascript:submit()">
+    <button id="go" type="submit">Go</button>
+  </form>
+  <button id="override" type="submit" formaction="/api/override">Override</button>
+  <input id="img-submit" type="image" src="/assets/go.png" alt="Go" formaction="/api/image">
+
+  <!-- `formaction` is a form endpoint ONLY on a submitting control: a plain
+       `<button formaction=…>` inside no form, and a non-submitting input, are
+       not endpoints at all. -->
+  <input id="plain-input" type="text" name="t" formaction="/api/never">
+
+  <!-- Unknown character references must survive VERBATIM. A URL is a URL the
+       author wrote; dropping half of it because it contained an unrecognised
+       `&…;` would silently invent a different resource. -->
+  <a id="odd-ref" href="/search?a=1&notarealentity;=2">unrecognised reference</a>
+  <a id="no-semi" href="/search?a=1&amp=2">reference without its semicolon</a>
+  <a id="prose-amp" href="/search?q=R&D">a bare ampersand</a>
+</body>
+</html>

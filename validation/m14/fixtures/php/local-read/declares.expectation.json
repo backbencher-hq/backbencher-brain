@@ -1,0 +1,20 @@
+{
+ "fixtureId": "php/local-read/declares",
+ "language": "php",
+ "authoredBeforeAnalyzerRun": false,
+ "authoredNote": "Transcribed from a measured run against this file. The DECLARING half of the two-file local-read fixture; see `reads.expectation.json` for the property the pair exists for.",
+ "rationale": "Exists so the collision is REAL rather than hypothetical. Its content is deliberately the most ordinary shape available — two classes, two fields, common English names — because the defect needed no unusual input: it needed only that some declaration in the project carry the local's name exactly once. Under the bare-name rule that was the entire requirement for the store to bind a function's own `$counter` to `Telemetry::$counter`, a field of a class in a file the reader never names. `reads.expectation.json`'s forbid rows are statements about THIS file's declarations.",
+ "expectSymbols": [
+  { "name": "Fixture\\LocalRead", "kind": "namespace" },
+  { "name": "Telemetry", "kind": "class", "ownerName": "Fixture\\LocalRead" },
+  { "name": "counter", "kind": "property", "ownerName": "Telemetry" },
+  { "name": "Report", "kind": "class", "ownerName": "Fixture\\LocalRead" },
+  { "name": "summary", "kind": "property", "ownerName": "Report" }
+ ],
+ "expectRelationships": [
+  { "type": "contains", "from": "Fixture\\LocalRead", "target": "Telemetry", "line_number": 12 },
+  { "type": "contains", "from": "Telemetry", "target": "counter", "line_number": 14, "comment": "the declaration the sibling's local read used to bind to" },
+  { "type": "contains", "from": "Fixture\\LocalRead", "target": "Report", "line_number": 17 },
+  { "type": "contains", "from": "Report", "target": "summary", "line_number": 19, "comment": "the second collision, reached through the subscript-base arm" }
+ ]
+}

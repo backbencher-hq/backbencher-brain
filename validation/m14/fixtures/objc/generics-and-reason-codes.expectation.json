@@ -1,0 +1,152 @@
+{
+  "fixtureId": "objc/generics-and-reason-codes",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "OC-ONT-6 + OC-ONT-7. (1) Objective-C spells lightweight generics and protocol adoption with ONE token sequence: in `@interface Cache <KeyType, ObjectType> : Store <KeyType, ObjectType> <CacheProtocol>` the first list is this class's TYPE PARAMETERS, the second is the superclass's TYPE ARGUMENTS and only the third is an adoption list. The pinned grammar emits `parameterized_arguments` for all three, and reading every one as an adoption list published `implements Cache -> KeyType` / `-> ObjectType` — 7 fabricated edges over the 322 admitted corpus files (11 member slots before per-file dedup), against 100 real protocol lists of which zero names a type parameter. A class EXTENSION re-declares the same type parameters in front of its `()`, and a CATEGORY's genuine protocol list sits after its `(` — the two positions are mirror images, so the rule is positional and both cases are pinned here. (2) Honesty §4.1 requires a machine-readable reason code on every relationship below confidence 1.0. The lane shipped 18,794 such rows with a number and no code (8,077 calls / 9,307 uses / 902 references / 508 instantiates); each producer now names what is unresolved about its own row. `contains`/`exports`/`extends`/`implements` sit at 1.0 and must carry no code. OC-E BINDING SPELLING (family contract, DARTD8; `BINDING_SEP` + `metadata.localBinding`, src/ast/types.ts:190). A unit-local read names a binding, not a declaration: the store publishes no parameters or locals, so the bare name could never be answered, and where a same-named declaration existed elsewhere in the project the read was bound to THAT declaration. The pin below is the spelling the analyzer actually emits, read off `binding-spelling-dump.ts`. Pre-change copy preserved as `generics-and-reason-codes.expectation.superseded-fb93f6f18.json`.",
+  "expectSymbols": [
+    { "name": "Cache", "kind": "class" },
+    { "name": "Box", "kind": "class" },
+    { "name": "Plain", "kind": "class" },
+    { "name": "key", "kind": "property", "ownerName": "Cache" },
+    { "name": "value", "kind": "property", "ownerName": "Cache" },
+    { "name": "hits", "kind": "property", "ownerName": "Cache" },
+    { "name": "payload", "kind": "property", "ownerName": "Box" },
+    { "name": "valueForKey:", "kind": "method", "ownerName": "Cache" },
+    { "name": "plainValue", "kind": "method", "ownerName": "Plain" },
+    { "name": "trimmed", "kind": "method", "ownerName": "Plain" },
+    { "name": "internalConstant", "kind": "variable" }
+  ],
+  "forbidSymbols": [
+    { "name": "KeyType", "kind": "class", "comment": "a lightweight-generic TYPE PARAMETER is not a type declaration this lane mints" },
+    { "name": "ObjectType", "kind": "class", "comment": "same" },
+    { "name": "ValueType", "kind": "class", "comment": "same" },
+    { "name": "Trim", "kind": "class", "comment": "a category label is metadata, never a symbol (OC-B)" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Cache",
+      "target": "Store",
+      "line_number": 44,
+      "meta.evidenceClass": "structural",
+      "comment": "the superclass is unaffected by generics: `Store` is the identifier after `:` and the type-argument list that follows it is not a name"
+    },
+    {
+      "type": "implements",
+      "source": "Cache",
+      "target": "CacheProtocol",
+      "line_number": 44,
+      "meta.isProtocol": true,
+      "meta.evidenceClass": "structural",
+      "comment": "the THIRD list is the adoption list; this is the edge the pre-fix rule got right and the one it must keep"
+    },
+    {
+      "type": "implements",
+      "source": "Plain",
+      "target": "NSCopying",
+      "line_number": 61,
+      "meta.isProtocol": true,
+      "comment": "the ordinary shape: no generics anywhere, so the single list after `:` is the adoption list"
+    },
+    {
+      "type": "implements",
+      "source": "Plain",
+      "target": "NSFastEnumeration",
+      "line_number": 67,
+      "meta.isProtocol": true,
+      "meta.isCategoryProtocol": true,
+      "comment": "a CATEGORY's genuine protocol list sits AFTER its `(` — the mirror image of the extension's type parameters, so the rule cannot be position-only"
+    },
+    {
+      "type": "extends",
+      "source": "Box",
+      "target": "NSObject",
+      "line_number": 56,
+      "comment": "a generic class that adopts nothing still extends its superclass"
+    },
+    {
+      "type": "calls",
+      "source": "valueForKey:",
+      "target": "stringWithFormat:",
+      "meta.reasonCode": "dynamic-dispatch-selector",
+      "comment": "honesty §4.1: a message send is below 1.0 because it names a SELECTOR and the objc runtime decides which class implements it"
+    },
+    {
+      "type": "calls",
+      "source": "valueForKey:",
+      "target": "errorWithDomain:code:userInfo:",
+      "meta.reasonCode": "dynamic-dispatch-selector"
+    },
+    {
+      "type": "calls",
+      "source": "valueForKey:",
+      "target": "dispatch_once",
+      "meta.reasonCode": "callee-not-resolved-in-unit",
+      "comment": "a C call carries a DIFFERENT code from a message send: the callee name is exact, but this translation unit does not define it and the grammar cannot tell a function from a macro"
+    },
+    {
+      "type": "instantiates",
+      "source": "valueForKey:",
+      "target": "NSMutableDictionary",
+      "meta.reasonCode": "allocator-receiver-not-cross-file-checked"
+    },
+    {
+      "type": "instantiates",
+      "source": "plainValue",
+      "target": "Cache",
+      "meta.reasonCode": "allocator-receiver-not-cross-file-checked"
+    },
+    {
+      "type": "uses",
+      "source": "valueForKey:",
+      "target": "valueForKey:\u0000name",
+      "meta.localBinding": true,
+      "meta.reasonCode": "value-read-by-scope-inference",
+      "comment": "a read is exact; what the row infers is WHICH binding the name denotes, so the code says that"
+    },
+    {
+      "type": "uses",
+      "source": "plainValue",
+      "target": "plainValue\u0000width",
+      "meta.localBinding": true,
+      "meta.reasonCode": "value-read-by-scope-inference"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "line_number": 39,
+      "meta.reasonCode": "include-target-not-resolved",
+      "comment": "the include directive is exact; whether `<UIKit/UIKit.h>` names a file in this repository is not checked and for a system framework never can be"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "CacheProtocol.h",
+      "line_number": 40,
+      "meta.fileLevel": true,
+      "comment": "`imports` is at 1.0 — it is the directive itself — so it must carry NO reasonCode; the 0.9 `references` twin is the row that does"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "target": "KeyType",
+      "comment": "OC-ONT-6, the pre-fix defect: this class's own TYPE PARAMETER is not a protocol. 7 fabricated edges corpus-wide, 2 of them on this one declaration"
+    },
+    { "type": "implements", "target": "ObjectType", "comment": "same" },
+    { "type": "implements", "target": "ValueType", "comment": "same — `Box<ValueType>` adopts nothing at all" },
+    {
+      "type": "implements",
+      "source": "Cache",
+      "target": "Store",
+      "comment": "the superclass is `extends`, never `implements`; a class that both extends and adopts a same-named type is the shape this forbids"
+    },
+    {
+      "type": "exports",
+      "target": "internalConstant",
+      "comment": "a file-scope `static` has internal linkage (C99 6.2.2p5) and is not an export — pinned by objc/linkage-and-imports too"
+    }
+  ],
+  "expectNoParseErrors": true
+}

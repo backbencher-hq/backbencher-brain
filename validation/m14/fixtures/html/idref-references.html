@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  HTML ONTOLOGY — THE IDREF CLASS, the lane's THIRD natively-owned relationship
+  type. Measured before it was written, because a ruling is only reachable with a
+  number (validation/m14/probes/html/construct-probe.mts §1, over 1,185 git-tracked
+  html documents in 24 repositories): 19 sites carrying 19 ID tokens, of which 17
+  resolve to an element in the same document. Three carriers carry all of them —
+  aria-labelledby 6, aria-describedby 6, aria-controls 4 — plus `list` (2 sites, 1
+  resolving) and `form` (1 site, 0 resolving). Eight further attributes in the class
+  occur ZERO times, which is why the whole class is declared rather than the three
+  that happen to fire today: a census that records only today's hits is how a
+  carrier goes missing for a wave.
+
+  WHY `references` AND NOT `uses`. These attributes name an ELEMENT, not a
+  document. The browser resolves each token through getElementById and wires one
+  element's accessible name, its error message, the control it belongs to, or its
+  table-header scope to another element. `uses` in this codebase means a fetch or a
+  navigation; `references` is the address-space naming class everywhere else — css's
+  is a var() read of a name in scope, scss's a $var read, rust's and typescript's a
+  type reference. One ID LIST IS ONE EDGE PER TOKEN, so `aria-labelledby="a b"` is
+  two references and collapsing them would lose one of the two facts the attribute
+  states.
+
+  AN UNRESOLVED TOKEN EMITS NOTHING. `aria-controls="panel missing-one"` below
+  names one element that exists and one that does not; only the first becomes an
+  edge. That is the same rule `<label for>` already follows, and it is what keeps
+  this class from becoming a graph of dangling names.
+
+  EVERY CARRIER IN THE CLASS IS EXERCISED HERE, including the seven with zero
+  corpus occurrences — a fixture that only pins what the corpus happens to contain
+  is a regression test, not a measurement, and the ontology workstream's premise is
+  that the gap between those two is where `overrides` lived for a whole wave.
+-->
+<html lang="en">
+<head><title>IDREF references</title></head>
+<body>
+  <h2 id="hdr">Heading</h2>
+  <p id="desc">The long description.</p>
+
+  <!-- two tokens, two edges, both to the section that carries the attribute -->
+  <section id="panel" aria-labelledby="hdr desc" aria-describedby="desc" aria-details="desc">Panel</section>
+
+  <!-- `missing-one` resolves to nothing and MUST emit nothing -->
+  <input id="email" type="email" aria-errormessage="desc" aria-controls="panel missing-one" list="choices" form="signup">
+
+  <!-- the seven zero-occurrence carriers, one element each -->
+  <div id="owned" aria-owns="panel"></div>
+  <div id="next" aria-flowto="panel"></div>
+  <div id="active-host" aria-activedescendant="desc"></div>
+  <output id="sum" for="email"></output>
+
+  <!-- the tag-scoped carriers: `headers` is a table-header reference on td/th ONLY -->
+  <table id="grid">
+    <tr>
+      <th id="c1" headers="c2">A</th>
+      <th id="c2">B</th>
+    </tr>
+    <tr>
+      <td id="d1" headers="c1">1</td>
+    </tr>
+  </table>
+  <div id="not-a-cell" headers="c1">`headers` is not an attribute here, so this must stay silent.</div>
+
+  <datalist id="choices"><option value="alpha"></option></datalist>
+  <form id="signup"></form>
+
+  <!-- a DUPLICATE handle: `panel` is declared once here and once further down, so
+       an idref naming it resolves to the FIRST — which is what getElementById
+       returns — and says so with metadata.ambiguousTarget. -->
+  <a href="#panel">in-document anchor, still a `uses` edge</a>
+  <section id="panel">Second declaration of the same id.</section>
+</body>
+</html>

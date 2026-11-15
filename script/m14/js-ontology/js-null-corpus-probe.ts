@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs"
 import { getParser } from "../../../src/ast/engine"
 
-const file = "$HOME/fixtures/repositories/lodash/test/test.js"
+const file = "/home/ishaq2321/bb_tests/repositories/lodash/test/test.js"
 const parser = await getParser("javascript")
 const src = readFileSync(file, "utf8")
 const tree = await parser.parse(src)

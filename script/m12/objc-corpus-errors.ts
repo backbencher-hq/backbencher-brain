@@ -4,7 +4,7 @@
 // -----------------------------------------------
 // The previous version of this instrument was 43 lines, and its entire corpus was:
 //
-//     const ROOT = "$HOME/fixtures/repositories/Clyde"   // 4 .m + 3 .h
+//     const ROOT = "/home/ishaq2321/bb_tests/repositories/Clyde"   // 4 .m + 3 .h
 //     const MIN_BYTES = 256
 //
 // Seven files. It was honest about what it did — the header says "Clyde@8fec41dd, 7 .m/.h
@@ -51,7 +51,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { loadWebTreeSitter } from "../../src/util/wasm"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 // The gate in script/m12/verify-corpus-claims.ts resolves a lane's corpus artifact as
 // `validation/m12/results/${manifestAnalyzerName}-corpus-errors.json`, and this lane's manifest
 // name is `objective-c` — so `objective-c-corpus-errors.json` is the path the gate READS. The

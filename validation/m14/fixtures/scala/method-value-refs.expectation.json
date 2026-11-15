@@ -1,0 +1,18 @@
+{
+  "fixtureId": "scala/method-value-refs",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G3 gap: Foo.bar method values (Foo::bar's scala form) reference the type Foo. Scala parses Foo.bar as a field_expression whose receiver is a capitalized identifier — a type-qualified member handle, exactly like the kotlin callable_reference finding. The receiver-only rule: capitalized receiver = type reference (G3); lowercase receiver = receiver use (G8, field-uses fixture). Call positions (xs.map) are skipped — the call edge carries them.",
+  "expectSymbols": [
+    { "name": "Foo", "kind": "class" },
+    { "name": "U", "kind": "module" },
+    { "name": "apply", "ownerName": "U" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "apply", "target": "Foo", "meta.relationshipType": "method_value" },
+    { "type": "calls", "from": "apply", "targetEndsWith": "map" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "apply", "target": "map", "meta.relationshipType": "method_value", "comment": "M37 TSD6-sweep: call-position field_expression must never double-emit as a method_value reference (dead `=== n` skip class)" }
+  ]
+}

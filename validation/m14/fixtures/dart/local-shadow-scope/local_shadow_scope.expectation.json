@@ -1,0 +1,94 @@
+{
+  "fixtureId": "dart/local-shadow-scope/local_shadow_scope",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "LOCAL SHADOWING \u2014 TWO DISTINCT DECLARATIONS THAT SHARE A NAME. The Lead's condition on the interpolation fix, and it is a real one: the family's relationship dedup key was `type|source|target|confidence` and it carried NEITHER the scope NOR the line, so two reads of two DIFFERENT declarations that happen to share a name inside one function collapse into one row. A dedup that merges two distinct declarations is a RESOLUTION LOSS wearing a dedup's clothes. The spelling of a local read is `<callable>` + BINDING_SEP + `<name>` and the CALLABLE is the enclosing FUNCTION, so the shadowed read and the shadowing read spell IDENTICALLY and the key cannot tell them apart. Dart's rule is that an inner scope SHADOWS an outer binding of the same name, and the inner declaration is a DIFFERENT declaration \u2014 so two reads are two facts. THE FIX: the row carries `localBindingScope` \u2014 the innermost enclosing scope that declares the name, plus that declaration's own line, which is the DECLARATION's identity \u2014 and that identity joins the dedup key for a `localBinding` row ONLY, so the 192,761-row payload-pollution dedup is untouched. A local read's LINE would have OVER-CORRECTED (two reads of the SAME declaration at two lines are ONE relationship); the scope is the right cut, and `local-read-same-declaration` pins that other side.",
+  "expectSymbols": [
+    {
+      "name": "local_shadow_scope",
+      "kind": "module"
+    },
+    {
+      "name": "Shadowed",
+      "kind": "class"
+    },
+    {
+      "name": "f",
+      "kind": "method",
+      "ownerName": "Shadowed"
+    },
+    {
+      "name": "g",
+      "kind": "method",
+      "ownerName": "Shadowed"
+    },
+    {
+      "name": "h",
+      "kind": "method",
+      "ownerName": "Shadowed"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "f",
+      "target": "f\u0000x",
+      "line_number": 36,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE OUTER `x` \u2014 `final x = 1;` at line 35, in the method's own scope. A local read, so the family's binding spelling. The `localBindingScope` metadata carries the DECLARATION's identity (the scope's start + the declaration's line), and it is that identity \u2014 NOT the line \u2014 which joins the dedup key."
+    },
+    {
+      "type": "uses",
+      "source": "f",
+      "target": "f\u0000x",
+      "line_number": 39,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE INNER `x` \u2014 `final x = 2;` at line 38, in a nested block that SHADOWS the outer one. IT IS A DIFFERENT DECLARATION, so it is a DIFFERENT FACT and it must be a DIFFERENT ROW. BEFORE the fix this row was LOST: the two reads spell IDENTICALLY (`f` + BINDING_SEP + `x`, because the callable is the enclosing FUNCTION) and the dedup key carried no scope, so the shadowed read collapsed into the outer one. This row is the pin the Lead asked for, and it goes RED if the scope is taken out of the key."
+    },
+    {
+      "type": "uses",
+      "source": "g",
+      "target": "g\u0000x",
+      "line_number": 48,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE CONTROL \u2014 the same name `x` in a DIFFERENT method. The callable differs, so the binding spelling already separates it, and it is unaffected by the dedup key. A change that broke the callable half of the spelling would fail here."
+    },
+    {
+      "type": "uses",
+      "source": "h",
+      "target": "h\u0000x",
+      "line_number": 59,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE RESOLUTION-IDENTITY CONTROL \u2014 a THIRD declaration of the same name `x`, in a THIRD method, so the name is declared in three places in one class. The row must bind the declaration at line 58 and NOT the two others (35 and 38): a scope that resolved to a declaration of the same name in the WRONG place would still publish a row here, and a COUNT-only pin could not tell it apart from a correct one. The resolution-identity instrument (`script/m14/dart-binding-resolution-identity.ts`) reads the declaration each row binds to and asserts the exact SET, and it computes the lexical scope independently from the source text, so a row bound to the wrong same-named declaration is caught rather than merely counted."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "f",
+      "target": "f\u0000x",
+      "line_number": 35,
+      "note": "THE DECLARATION IS NOT A READ. `final x = 1;` binds the name; it does not read it. A local read's row is at the READ SITE, so no row may carry the declaration's own line."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "f",
+      "target": "f\u0000x",
+      "equals": 2,
+      "note": "TWO reads of TWO DIFFERENT declarations that share a name: the outer `x` (line 36) and the shadowing inner `x` (line 39). THE DIRECTIONS: 0 means the local reads were suppressed (the inverted collectDartLocals guard); 1 means a read was LOST (the no-scope dedup \u2014 the defect this fix recovers); 2 is correct; 3 means a read was attributed to the wrong declaration."
+    },
+    {
+      "type": "uses",
+      "from": "h",
+      "target": "h\u0000x",
+      "equals": 1,
+      "note": "ONE read of the THIRD same-named declaration (line 58), read at line 59. THE DIRECTION: 0 means the read was suppressed; 2 means the row was SPLIT \u2014 which is the over-correction the `local-read-same-declaration` fixture forbids (the LINE in the key splits two reads of ONE declaration too); 1 is correct. A row that binds the declaration at 35 or 38 instead of 58 would still count 1 here, which is why the resolution-identity instrument, not this count, carries the identity."
+    }
+  ]
+}

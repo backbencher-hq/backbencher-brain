@@ -1,0 +1,16 @@
+{
+  "fixtureId": "java/fq-jpa-entity",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FQ JPA annotations must be detected exactly like imported ones: @Entity flags the entity and @Table(name=...) supplies the mapped table name. The explicit table name from the annotation must win over the lowercased class name.",
+  "expectSymbols": [
+    { "name": "Customer", "kind": "class" },
+    { "name": "id", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "target": "customer_records", "meta.relationshipType": "mapped_table" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "target": "customer", "meta.relationshipType": "mapped_table" }
+  ]
+}

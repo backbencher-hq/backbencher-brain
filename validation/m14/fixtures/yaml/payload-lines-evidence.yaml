@@ -1,0 +1,12 @@
+# Every relationship carries a 1-based line_number on its name-bearing node, per site,
+# and an evidenceClass from the closed vocabulary. Both are asserted on EVERY edge by
+# the lane's own census; these fixtures pin the two classes that are not `structural`
+# and the sub-1.0 confidence contract.
+definitions:
+  Thing:
+    type: object
+use:
+  $ref: "#/definitions/Thing"
+missing:
+  $ref: "#/definitions/Nope"
+tagged: !!str 5

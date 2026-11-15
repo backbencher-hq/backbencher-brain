@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/external-override-sol11.sol",
+  "authoredFrom": "SOL-11 \u2014 cross-file override resolution. Authored 2026-09-30 from the analyzer's measured output. This fixture exists because the first version of this lane emitted 8 `overrides` rows across 389 corpus files and reported 386 unresolved, all of them dropped for the want of a cross-file companion index that NO production caller ever populates. The JavaScript lane hit the identical wall and answered it with a `first-parent-guess` at confidence 0.5. Solidity does not need a guess: the compiler REJECTS `override(X)` unless `X` declares the member, so the edge is the language's own invariant. 414 of the 422 emitted rows are to a base in another file, and every one of those targets resolves to a real project symbol, so the corpus agrees with the edge rather than merely permitting it.",
+  "note": "All THREE tiers are in one file, because a rule that emitted only the confident tier would pass the first row and drop 414 real edges, and a rule that emitted everything would pass the second row and fabricate the third. `Derived.handle` is a bare `override` over exactly ONE header base (0.9, `baseFromContractHeader`). `ExplicitExternal.handle` names its base EXPLICITLY and that base is declared in another file (0.75, `baseNamedByOverrideSpecifier`, `externalBase`, `reasonCode`). `TwoBases.ambiguous` is a bare `override` over TWO bases \u2014 Solidity 0.8.8+ requires an explicit list precisely when more than one base declares a member, so the keyword says one of them does and not which, and the analyzer refuses. The three functions carry DISTINCT names on purpose: when they were all `handle` the rows collapsed to one source and the forbids below could not name which contract must stay silent, which is exactly what let `solidity/ambiguous-override-emitted` survive its first run.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "source": "handle",
+      "target": "LocalBase",
+      "confidenceMin": 0.9,
+      "meta.baseFromContractHeader": true
+    },
+    {
+      "type": "overrides",
+      "source": "handle",
+      "target": "ILater",
+      "confidenceMin": 0.7,
+      "confidenceMax": 0.75,
+      "meta.externalBase": true,
+      "meta.reasonCode": "named-by-override-specifier",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "extends",
+      "source": "Derived",
+      "target": "LocalBase"
+    },
+    {
+      "type": "extends",
+      "source": "ExplicitExternal",
+      "target": "ILater"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "source": "ambiguous",
+      "target": "LocalBase",
+      "comment": "SOL-11's refusal, first half. TwoBases.ambiguous is a bare `override` over LocalBase AND ILocal, both of which declare a member here. Which one declares it is undecidable from the keyword, so NO override edge may be emitted to either base. Guessing the first base fabricates 100 rows over the 389-file corpus and is the one shape where guessing is genuinely wrong rather than merely weak."
+    },
+    {
+      "type": "overrides",
+      "source": "ambiguous",
+      "target": "ILocal",
+      "comment": "The same refusal, second half. Two forbids rather than one because a rule that picked the SECOND base would pass a fixture that only forbade the first."
+    },
+    {
+      "type": "overrides",
+      "source": "handle",
+      "target": "ILater",
+      "confidenceMin": 0.9,
+      "comment": "The external base must never be reported as VERIFIED. `ILater` is not declared in this file, so its members cannot have been read; the confidence is 0.75 precisely because the member's presence is taken from the compiler's invariant rather than from a declaration. Claiming 0.9 here is the failure the reasonCode exists to make visible."
+    },
+    {
+      "type": "overrides",
+      "source": "handle",
+      "target": "LocalBase",
+      "confidenceMax": 0.85,
+      "comment": "An in-file base resolved from the tree is 0.9. Anything at or below 0.85 means the analyzer took the external path for a base it could actually read."
+    }
+  ]
+}

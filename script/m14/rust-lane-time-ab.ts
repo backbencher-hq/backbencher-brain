@@ -5,7 +5,7 @@ import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 async function main() {
-  const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/ripgrep"
+  const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/ripgrep"
   // `../../`, not `../../../`: this file lives at script/m14/, and the third
   // level resolved to the PARENT of the repo. The committed version of this file
   // carried `../../../src/...` and died with ERR_MODULE_NOT_FOUND from its own

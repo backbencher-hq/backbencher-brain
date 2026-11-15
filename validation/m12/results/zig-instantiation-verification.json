@@ -1,0 +1,15 @@
+{
+  "files": 400,
+  "derived": {
+    "construction": 77,
+    "generic type application": 55
+  },
+  "totals": {
+    "agree": 132,
+    "missing": 0,
+    "phantom": 0,
+    "noLine": 0
+  },
+  "knownLimit": "in-file targets only; qualified/external generic applications are unmeasured and need a cross-file type index",
+  "verdict": "clean"
+}

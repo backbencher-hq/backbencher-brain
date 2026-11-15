@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-01T21:50:06.266Z",
+  "corpus": "/home/sano/ishaq/bb_tests/repositories",
+  "corpusTotal": 8528,
+  "filesParsed": 8528,
+  "totals": {
+    "extends": {
+      "n": 8258,
+      "ok": 8258,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "implements": {
+      "n": 3775,
+      "ok": 3775,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "calls": {
+      "n": 519432,
+      "ok": 519432,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "contains": {
+      "n": 74311,
+      "ok": 74311,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "overrides": {
+      "n": 36311,
+      "ok": 36311,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "uses": {
+      "n": 35320,
+      "ok": 35320,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "instantiates": {
+      "n": 17190,
+      "ok": 17190,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    },
+    "references": {
+      "n": 8335,
+      "ok": 8335,
+      "bad": 0,
+      "off": 0,
+      "wrongLine": 0
+    }
+  },
+  "samples": {}
+}

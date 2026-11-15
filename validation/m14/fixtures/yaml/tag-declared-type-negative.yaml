@@ -1,0 +1,6 @@
+# The negative twin: a plain scalar that merely CONTAINS tag-looking characters is not
+# a tag, and must produce no declared_type edge and no tag metadata. This is the half
+# that stops the tag reader from becoming a substring matcher.
+notATag: "!!str"
+quoted: '!include other.yml'
+url: https://example.com/#/not-a-pointer

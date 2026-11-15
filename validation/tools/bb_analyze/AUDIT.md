@@ -288,11 +288,11 @@ only the **type alias** (`StageId`) and **namespace** (`Registry`) → `notFound
 "not-traversable"`. Two of the four named kinds are wrong.
 
 ### D-12 · S3 · Documentation cites verification that does not exist
-`docs/BB_ANALYZE.md` line 13 says "pinned by a corpus test in `fixtures/analyze/` (308 claims)";
-its Verification section names `fixtures/analyze/analyze.test.ts` (101 claims),
-`round2.test.ts` (114), `round3.test.ts` (92) and `fixtures/analyze/latency-gate.sh`. The
-generated page's Performance paragraph names `fixtures/analyze/latency-gate.sh` too.
-`fixtures/` **does not exist in this repository** (`git ls-files | grep fixtures` → empty;
+`docs/BB_ANALYZE.md` line 13 says "pinned by a corpus test in `bb_tests/analyze/` (308 claims)";
+its Verification section names `bb_tests/analyze/analyze.test.ts` (101 claims),
+`round2.test.ts` (114), `round3.test.ts` (92) and `bb_tests/analyze/latency-gate.sh`. The
+generated page's Performance paragraph names `bb_tests/analyze/latency-gate.sh` too.
+`bb_tests/` **does not exist in this repository** (`git ls-files | grep bb_tests` → empty;
 directory absent). The commands as written cannot run. This is the single largest docs-truth
 defect of the tool: §4 of the charter requires the commands in the docs to run, and these four
 files — with a precise claim count — never do.
@@ -473,8 +473,8 @@ returned page only; project-wide modes declare `sampled` and the row-cap rule is
 
 | page / location | claim | measured | edit |
 |---|---|---|---|
-| `docs/BB_ANALYZE.md` L13 + Verification section | `fixtures/analyze/*.test.ts` (308 claims) + `latency-gate.sh` pin every claim | `fixtures/` absent from the repo; commands cannot run | replace with the real gate list (§3) and this audit's evidence paths |
-| `docs/tools/bb_analyze.md` Performance (curation) | "nine graph cases in `fixtures/analyze/latency-gate.sh` answer in under 2.4 s" | file absent; T2 `callers` measured 22.7 s, `callees` 12.4 s | remove the file reference; publish the T2 table from `LATENCY.json` |
+| `docs/BB_ANALYZE.md` L13 + Verification section | `bb_tests/analyze/*.test.ts` (308 claims) + `latency-gate.sh` pin every claim | `bb_tests/` absent from the repo; commands cannot run | replace with the real gate list (§3) and this audit's evidence paths |
+| `docs/tools/bb_analyze.md` Performance (curation) | "nine graph cases in `bb_tests/analyze/latency-gate.sh` answer in under 2.4 s" | file absent; T2 `callers` measured 22.7 s, `callees` 12.4 s | remove the file reference; publish the T2 table from `LATENCY.json` |
 | curation + generated page Performance | "1.5–26 KB for eight of the eleven modes; `dependencies` 75.9 KB on this repo's src (183 files)" | T2 (6,452 files): test_quality 73 KB, test_mapping 66 KB, dependencies 83 KB at `limit:5`, callers 33.6 KB hub | restate per mode and per corpus; name the index it was measured on |
 | descriptor `documentation.defaults` | `{limit: 20}` | 25 / 20 / 50 / 50 by mode (D-16) | real per-mode defaults |
 | `docs/BB_ANALYZE.md` "not-traversable" list | includes `constant` and `enum_member` | constant and enum root fine (`found:true`, `match:exact-any-kind`); only type alias / namespace refuse | correct the list (D-11) |
@@ -608,7 +608,7 @@ even on an idle machine and should be bounded/documented (R-3).
 | T2 `callers` 5-run | `BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 BB_REPEAT=5 npx tsx validation/tools/bb_analyze/run-one.ts '{"mode":"callers","target":"getProjectId"}'` | exceeded the 300 s per-leg limit (`timeout 300`); single call measured at 22,674 ms. Root cause profiled (D-06) but the fix is in `graph-engine.ts`, outside this lane |
 | m48 C1 corpus | `npx tsx script/m48/verify-c1-corpus.ts` with tool-local `BB_DATA_DIR` | exit 124 at 400 s (corpus indexing); not a bb_analyze-specific gate |
 | m48 P4 | `npx tsx script/m48/verify-p4-param-matrix.ts` | red on `bb_visualize`/`bb_edit` rows only (other lanes' scope) |
-| corpus legs inside m13/m15 | `resolveCorpusRoot` | **not blocked** — corpus exists at `$HOME/fixtures/repositories` (rake, graphql-js present); the legs ran |
+| corpus legs inside m13/m15 | `resolveCorpusRoot` | **not blocked** — corpus exists at `/home/ishaq2321/bb_tests/repositories` (rake, graphql-js present); the legs ran |
 | CLI/MCP legs using `dist/` | `node bin/bb tool/mcp …` | `dist/` built 2026-10-20 vs HEAD 2026-11-01 (70 newer `src/` files). Phase B must build before trusting those legs, or run the source door (`bun src/mcp/server.ts`) as `mcp-door.ts` does (R-5) |
 | regex policy gate | `script/tools/verify-regex-policy.ts` | absent (R-1) |
 
@@ -692,7 +692,7 @@ Closed, with a falsifiable gate where the defect could be gated:
 | D-09 dependencies remediation | dir scope when the page spans a prefix | audit probe `probe-bounds-freshness.json` |
 | D-10 dead fallback | removed | — |
 | D-11 not-traversable kinds | docs corrected to measured kinds (type alias/namespace refuse; constant/enum root) | `verify-analyze-docs.ts` (page/curation cite no wrong list via limitations) |
-| D-12 nonexistent verification | page/curation now cite only runnable gates; gate fails on any `fixtures/` citation | `verify-analyze-docs.ts` (red-proof: planted citation → exit 1) |
+| D-12 nonexistent verification | page/curation now cite only runnable gates; gate fails on any `bb_tests/` citation | `verify-analyze-docs.ts` (red-proof: planted citation → exit 1) |
 | D-13 phantom tools | `BB_TEST_QUALITY.md` names `bb_analyze mode=test_quality`, states the retired names | `verify-analyze-docs.ts` (phantom-tool negative) |
 | D-14/D-15 guide pages | corrected + population arithmetic added; `BB_ANALYSIS_HISTORY` states who exposes history | review |
 | D-16 descriptor defaults | real per-mode default statement; docs gate pins the real values | `verify-analyze-handler.ts`, `verify-analyze-docs.ts` |
@@ -719,6 +719,6 @@ Gate results (final, from the working tree; logs in `validation/tools/bb_analyze
 | impact unity | `npx tsx script/m48/verify-p1-impact-unity.ts` | 0 — PASS 68/0, 6 negatives. The earlier single red was the shared graph engine's same-site collapse key (fixed in the graph lane, keyed on the row's matchedId); re-verified on HEAD 55df89c3e, including "a row cap that hid no dependent is NOT a set truncation" with the engine's bound still declared |
 | m48 honesty fields | `npx tsx script/m48/verify-p2-honesty-fields.ts` | 0 — PASS 21/0, 7 negatives |
 
-Red-then-green evidence kept in `gates/`: `RED2-docs-citation.log` (planted `fixtures/` citation → exit 1, then An4 VERIFIED), `RED2-modes-page.log` (pageEdgeLimit 24 mutant → callers predicate FAIL, then An1 VERIFIED), `RED-handler-mutant.log` (descriptor missing a mode → registry consistency refusal at import, then An2 VERIFIED), and the regex suite's two real classifier failures (`assertCall` did not match `assert.equal(`, `chainedMatcher` matched no real chained matcher) before their fix.
+Red-then-green evidence kept in `gates/`: `RED2-docs-citation.log` (planted `bb_tests/` citation → exit 1, then An4 VERIFIED), `RED2-modes-page.log` (pageEdgeLimit 24 mutant → callers predicate FAIL, then An1 VERIFIED), `RED-handler-mutant.log` (descriptor missing a mode → registry consistency refusal at import, then An2 VERIFIED), and the regex suite's two real classifier failures (`assertCall` did not match `assert.equal(`, `chainedMatcher` matched no real chained matcher) before their fix.
 
 Resolved since Phase A: D-06's root cause was fixed in the shared graph engine (collapse identity, profiled evidence was handed over and the lanes converged on the same defect); P1 is green; the T2 re-measure after the rewrite and after D-20 now shows **every T2 mode inside the 5 s budget on the loaded shared host** (T0 all inside 250 ms, T1 all inside 1 s, T2 all inside 5 s — LATENCY.json). Remaining open items are the declared blocked legs only (m48 c1-corpus 400 s timeout; m48 P4 red on other lanes' rows), and the T2 numbers remain a loaded-host baseline to be re-taken when fleet activity settles, exactly as the Lead's integration rule states.

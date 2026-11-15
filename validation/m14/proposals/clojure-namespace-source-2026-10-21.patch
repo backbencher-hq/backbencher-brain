@@ -1,0 +1,143 @@
+THE CLOJURE NAMESPACE SOURCE -- ONE SOURCE, NAMED
+================================================================================
+Author: Muhammad Ishaq Khan (clojure lane).
+Target: src/ast/real-clojure-analyzer.ts  (THE LANE's OWN WRITE SCOPE).
+Apply: git apply this file, then read the landed text back.
+
+WHY THIS PATCH EXISTS -- THE PRICE IS A FUNCTION OF THE NAMESPACE SOURCE
+--------------------------------------------------------------------------------
+MEASURED, on the same tree, the same population (646 files / 3 repos), the farm
+corpus root, the same 43,324-edge population, the same join rule:
+
+  841  the join's reach under the PRODUCTION's per-file namespace
+       (`clojureFileNamespace`, src/ast/project-index.ts:1563)
+  853  the join's reach under the analyzer's PER-SYMBOL `scope`
+  854  the join's reach in the INDEX's key space
+  856  the join's reach under the PATCH's OWN namespace source -- the analyzer's
+       `(ns ...)` module symbol's name -- WHICH IS WHAT THE LANDED JOIN USES
+  994  what the GATE actually moved (the gate's own counter)
+
+THE SAME RULE, PRICED FOUR WAYS, SPREADING 15 ROWS PER SOURCE. The gate moved
+994, which is not any of the four. THE PRICE IS NOT A PROPERTY OF THE LANGUAGE
+ALONE; IT IS A PROPERTY OF (the analyzer's namespace source) x (the gate's key
+space). A CELL's JOIN PRICE NAMES ITS NAMESPACE SOURCE, and a price is not
+comparable with another lane's price until both name theirs.
+
+WHAT THIS PATCH DOES
+--------------------------------------------------------------------------------
+It makes the ANALYZER publish ONE namespace source, and it makes that source the
+PRODUCTION's own rule:
+
+  1. `let fileNamespace = ""` -- the FILE's namespace, a separate value from the
+     RUNNING `currentNamespace` (which `in-ns` moves mid-file).
+  2. `fileNamespace` is captured ONCE, at the FIRST `ns` form, and never moves.
+  3. The MODULE SYMBOL is published for the `ns` form ONLY, and carries
+     `fileNamespace` -- not `currentNamespace`.
+
+WHY THE `in-ns` MODULE SYMBOL STOPS BEING PUBLISHED
+--------------------------------------------------------------------------------
+The production's `clojureFileNamespace` matches the `ns` form ONLY. A file whose
+only namespace form is `in-ns` has NO file namespace. The landed gate's own
+comment already states the rule it wants: "A file that declares no namespace at
+all has NO entry here, and the join then answers nothing for it." Before this
+patch the analyzer published `user` for the 44 files with no namespace form and
+published the `in-ns` namespace for the 17 `in-ns` files -- so the gate's
+`nsByFile` held a namespace the production does not have. THAT IS THE SOURCE
+MISMATCH, and it is worth 15 rows on the price.
+
+CONSEQUENCE TO BE MEASURED, NOT ASSUMED
+--------------------------------------------------------------------------------
+This patch CHANGES THE ANALYZER's PUBLICATION. The price after it MUST BE
+RE-MEASURED (the gate's arm, the same population, the same root) -- the lane
+does not state a new price from this patch, because a price stated from a patch
+is a price with no instrument behind it. The lane's expectation is that the
+gate's namespace source and the production's per-file namespace become the SAME
+SOURCE, and that the 15-row source difference CLOSES. Whether it closes, and by
+how much, is the measurement.
+
+The `in-ns` namespace EFFECT on symbol scope is UNCHANGED: `currentNamespace`
+still moves on `in-ns`, so the symbols' `scope` and ownership are as they are
+today (CLJ-D31). Only the MODULE SYMBOL's publication changes.
+
+WHAT THIS PATCH DOES NOT TOUCH
+--------------------------------------------------------------------------------
+  * `script/m14/incoming-gate.ts` and `script/m14/incoming-rule.ts` -- the Lead's
+    files, untouched.
+  * `src/ast/project-index.ts` -- the production's `clojureFileNamespace` is
+    ALREADY EXPORTED and is the source this patch makes the analyzer agree with.
+    No edit there is needed for the namespaces to be one source.
+  * The 13-row analyzer publication gap -- UNFIXED, as ruled.
+
+================================================================================
+--- a/src/ast/real-clojure-analyzer.ts
++++ b/src/ast/real-clojure-analyzer.ts
+@@ -395,6 +395,11 @@
+     const patterns: Record<string, boolean> = {}
+ 
+     let currentNamespace = "user"
++  // THE FILE's NAMESPACE, by the PRODUCTION's OWN RULE (the production's
++  // `clojureFileNamespace` returns the FIRST `ns` form's name and "" when the file
++  // declares no namespace form at all). It is a SEPARATE value from
++  // `currentNamespace`, which is a RUNNING value that `in-ns` moves mid-file.
++  let fileNamespace = ""
+     // CLJ-D34: has this file DECLARED its namespace with an `ns`/`in-ns` form?
+     // A file that declares none still HAS a namespace — `user` — and saying so
+     // is what makes its exports resolvable.
+@@ -1654,6 +1659,9 @@
+             }
+           }
+           if (nsName) currentNamespace = nsName
++          // THE FILE's NAMESPACE IS CAPTURED ONCE, AT THE FIRST `ns` FORM, and never
++          // moves: `in-ns` moves the RUNNING namespace, not the file's.
++          if (formName === "ns" && fileNamespace === "") fileNamespace = nsName
+           if (formName === "ns") {
+             // F3: null-prototype reset (see the declaration).
+             namespaceAliases = Object.create(null)
+@@ -1664,18 +1672,36 @@
+             if (referSegments.length > 0) referSegments[referSegments.length - 1]!.end = node.startIndex
+             referTable = openReferSegment(node.startIndex)
+           }
+-          const modSym: ASTEngine.UniversalSymbol = {
+-            name: currentNamespace,
+-            kind: ASTEngine.SymbolKind.Module,
+-            range: this.nodeToRange(node),
+-            scope: "",
+-            visibility: "public",
+-            metadata: { clojureSpecific: true }
++          // THE MODULE SYMBOL IS THE FILE's NAMESPACE, PUBLISHED ONCE, FOR THE `ns` FORM
++          // ONLY, AND IT CARRIES THE FILE's NAMESPACE -- the PRODUCTION's own rule.
++          //
++          // WHY: the qualified-name join (the gate's `nsByFile`) is built from this symbol,
++          // and the PRICE of the join is a function of the NAMESPACE SOURCE. Two sources
++          // (this symbol's name and the production's `clojureFileNamespace`) priced the
++          // SAME rule at 856 and 841 rows on the same tree -- 15 rows per source.
++          //
++          // WHY `ns` AND NOT `in-ns`: the production's `clojureFileNamespace` matches the
++          // `ns` form only. A file whose only namespace form is `in-ns` has NO file
++          // namespace, so the join must ask nothing for it -- and the gate's own rule
++          // already says exactly that: "A file that declares no namespace at all has NO
++          // entry here, and the join then answers nothing for it."
++          //
++          // WHY THE `in-ns` MODULE SYMBOL IS NOT PUBLISHED: it carried the RUNNING
++          // namespace, which is not a file-level fact, and the gate read it as one.
++          if (formName === "ns" && fileNamespace !== "") {
++            const modSym: ASTEngine.UniversalSymbol = {
++              name: fileNamespace,
++              kind: ASTEngine.SymbolKind.Module,
++              range: this.nodeToRange(node),
++              scope: "",
++              visibility: "public",
++              metadata: { clojureSpecific: true }
++            }
++            symbols.push(modSym)
++            attachDocs(modSym, node, "always")
++            exports.push({ name: fileNamespace, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), visibility: "public" })
++            exportNamespaces.push(fileNamespace)
+           }
+-          symbols.push(modSym)
+-          attachDocs(modSym, node, "always")
+-          exports.push({ name: currentNamespace, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), visibility: "public" })
+-          exportNamespaces.push(currentNamespace)
+ 
+           // require / use / import / require-macros clauses. `refer-clojure`
+           // is NOT fed through the libspec handler (adversarial F2): its

@@ -4,7 +4,7 @@
   "at": "2026-09-11T01:53:56.523Z",
   "commit": "1a9255da6e5521678a384b5f24ef5c5813de4c3c",
   "rig": {
-    "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "dbPath": "/home/ishaq2321/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
     "dbBytes": 186888192,
     "files": 255
   },

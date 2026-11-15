@@ -1,0 +1,32 @@
+{
+  "fixtureId": "svelte/template-read-collapse",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ONTOLOGY-WORKSTREAM SVELTE3 — the PROJECTION LOSSINESS, declared instead of hidden. `templateExprNames` is a `Map<name, line>`, so a second read of one member OVERWRITES the first and the `seenUses` dedupe publishes exactly ONE `uses` edge whose `line_number` is the LAST site. Measured over shadcn-svelte's 1,878 files: 2,953 template-sourced `uses` edges, of which 979 (33.2%) name a member the template writes on more than one line, standing in for 2,106 template read sites that reach no edge at all. The edge is not FALSE — 'this template reads this member' is true — but a consumer asking WHERE reads one line and is handed the last of several, which is a wrong answer wearing a fact's clothes. This fixture pins the declared form. `count` is read on 10, 12 and 13; the edge carries `line_number: 13` (unchanged semantics, so no existing fixture moved) AND the full set. WHY ONE EDGE AND NOT THREE: a `uses` edge is a set-membership fact — the template reads this member — so three copies of it would add 2,106 edges (+7.6% of the svelte payload) to express one relationship three times, and would leave a consumer counting READS by counting EDGES, which is the projection that made this lossy in the first place. `meta.templateReadSitesCollapsed` is the machine-readable count, so a consumer that needs a read count has one and does not have to infer it. `label` is the two-site control and `inc` is the single-site control: `meta.templateReadSites: null` states that an edge with ONE site carries no extra key, which is what keeps this from becoming payload noise on all 2,953 edges.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "count",
+      "line_number": 13,
+      "meta.isTemplateExpression": true,
+      "meta.templateReadSites": [10, 12, 13],
+      "meta.templateReadSitesCollapsed": 3,
+      "comment": "three template reads, ONE edge, the full site set machine-readable. Pre-fix this edge carried line 13 and nothing else, so lines 10 and 12 were unrecoverable from the payload."
+    },
+    {
+      "type": "uses",
+      "target": "label",
+      "meta.templateReadSites": [11, 15],
+      "meta.templateReadSitesCollapsed": 2,
+      "comment": "the two-site control: the collapse is not specific to three reads"
+    },
+    {
+      "type": "uses",
+      "target": "inc",
+      "meta.isTemplateExpression": true,
+      "meta.templateReadSites": null,
+      "meta.templateReadSitesCollapsed": null,
+      "comment": "the single-site control. `null` is the run-fixtures spelling for 'this key must NOT be present', so the extra keys appear ONLY when a name is genuinely read more than once — otherwise all 2,953 corpus edges would carry a redundant array."
+    }
+  ]
+}

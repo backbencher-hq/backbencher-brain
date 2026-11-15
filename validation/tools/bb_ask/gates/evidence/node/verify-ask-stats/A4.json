@@ -1,0 +1,12 @@
+{
+  "issue": "M16.A4 (stat provenance)",
+  "code": "A4",
+  "tool": "bb_ask",
+  "title": "A4",
+  "verified": true,
+  "checks": 8,
+  "passed": 12,
+  "failed": 0,
+  "negatives": 4,
+  "generatedAt": "2026-11-03T20:25:53.051Z"
+}

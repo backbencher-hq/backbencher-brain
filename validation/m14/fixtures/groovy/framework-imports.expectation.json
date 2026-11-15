@@ -1,0 +1,15 @@
+{
+  "fixtureId": "groovy/framework-imports",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "MEASURED (grails-core corpus, top imports): grails.*/org.grails.*, spock.lang.*, org.springframework.* dominate real Groovy code. brain_file.framework_type is populated from result.framework and CONSUMED by patterns/rules.ts framework ranking - Groovy files currently get NULL, making Grails projects invisible to pattern analysis. Primary selection priority: grails > spring > hibernate/jpa > spock > junit.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "WidgetSpec", "kind": "class" }
+  ],
+  "expectFrameworks": [
+    "grails",
+    "spock"
+  ],
+  "expectPrimaryFramework": ["grails"]
+}

@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.14",
+  "code": "E9",
+  "tool": "bb_edit",
+  "title": "bb_edit: e2e (real MCP + compiled CLI, all five modes)",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "CLI write dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"write\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/written.ts\",\n      \"before\": \"\",\n      \"after\": \"export c"
+    },
+    {
+      "name": "CLI write dry-run performs zero writes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "CLI update dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/app.ts\",\n      \"before\": \"export function e2eTarget(): n"
+    },
+    {
+      "name": "CLI insert dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"insert\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/app.ts\",\n      \"before\": \"export function e2eTarget(): n"
+    },
+    {
+      "name": "CLI delete dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"delete\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/solo.ts\",\n      \"before\": \"export function solo(): numbe"
+    },
+    {
+      "name": "CLI delete dry-run leaves the file untouched",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "CLI refactor dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"refactor\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/app.ts\",\n      \"before\": \"export function e2eTarget():"
+    },
+    {
+      "name": "CLI rejects write without filePath [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_edit write mode requires filePath\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_edit --dir /tmp/bb-edi"
+    },
+    {
+      "name": "CLI rejects refactor without newName [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_edit refactor mode requires newName\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_edit --dir /tmp/bb-e"
+    },
+    {
+      "name": "CLI rejects path escape [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"path escapes project root: ../escape.ts (via /tmp)\",\n  \"rolledBack\": true,\n  \"envelope\": {\n "
+    },
+    {
+      "name": "MCP write dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"write\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/mcp-written.ts\",\n      \"before\": \"\",\n      \"after\": \"expo"
+    },
+    {
+      "name": "MCP write dry-run performs zero writes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "MCP update dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/app.ts\",\n      \"before\": \"export function e2eTarget(): n"
+    },
+    {
+      "name": "MCP insert dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"insert\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/app.ts\",\n      \"before\": \"export function e2eTarget(): n"
+    },
+    {
+      "name": "MCP delete dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"delete\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/solo.ts\",\n      \"before\": \"export function solo(): numbe"
+    },
+    {
+      "name": "MCP refactor dry-run succeeds",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"refactor\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/app.ts\",\n      \"before\": \"export function e2eTarget():"
+    },
+    {
+      "name": "MCP rejects write without filePath [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_edit write mode requires filePath"
+    },
+    {
+      "name": "MCP rejects path escape [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"path escapes project root: ../escape.ts (via /tmp)\",\n  \"rolledBack\": true,\n  \"envelope\": {\n "
+    },
+    {
+      "name": "MCP rejects unknown symbol [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"refactor\",\n  \"error\": \"symbol nonexistentSymbol not found or has no byte bounds\",\n  \"rolledBack\": true,\n  \"envel"
+    },
+    {
+      "name": "no-index wire: update is refused with the remediation and the exemption named [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true No index found for /tmp/bb-edit-e2e-noindex-2qp1ox. Run: bb index \"/tmp/bb-edit-e2e-noindex-2qp1ox\". bb_edit needs that index for `update`, `insert`, `delete`, `refactor`, `batch`;"
+    },
+    {
+      "name": "no-index wire: insert is refused with the remediation and the exemption named [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true No index found for /tmp/bb-edit-e2e-noindex-2qp1ox. Run: bb index \"/tmp/bb-edit-e2e-noindex-2qp1ox\". bb_edit needs that index for `update`, `insert`, `delete`, `refactor`, `batch`;"
+    },
+    {
+      "name": "no-index wire: delete is refused with the remediation and the exemption named [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true No index found for /tmp/bb-edit-e2e-noindex-2qp1ox. Run: bb index \"/tmp/bb-edit-e2e-noindex-2qp1ox\". bb_edit needs that index for `update`, `insert`, `delete`, `refactor`, `batch`;"
+    },
+    {
+      "name": "no-index wire: refactor is refused with the remediation and the exemption named [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true No index found for /tmp/bb-edit-e2e-noindex-2qp1ox. Run: bb index \"/tmp/bb-edit-e2e-noindex-2qp1ox\". bb_edit needs that index for `update`, `insert`, `delete`, `refactor`, `batch`;"
+    },
+    {
+      "name": "no-index wire: write reaches the engine and reports reindexed:true",
+      "pass": true,
+      "detail": "isError=false {\n  \"mode\": \"write\",\n  \"dryRun\": false,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-noindex-2qp1ox/src/created.ts\",\n      \"before\": \"\",\n      \"after\": \"export function cre"
+    },
+    {
+      "name": "no-index wire: the file exists with the requested bytes",
+      "pass": true,
+      "detail": "reading src/created.ts back from disk"
+    },
+    {
+      "name": "no-index wire: the write unblocks the symbol modes on the same project",
+      "pass": true,
+      "detail": "isError=false {\n  \"mode\": \"update\",\n  \"dryRun\": false,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-noindex-2qp1ox/src/created.ts\",\n      \"before\": \"export function created(): number { r"
+    },
+    {
+      "name": "overwrite wire: a destructive write arrives as an ERROR naming the remedy [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true {\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"write refused: it would replace src/wire-big.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least half of a file's lines (and at least 5) is treated as a probable mistake. Pass ov"
+    },
+    {
+      "name": "overwrite wire: the refusal is an envelope, not a bare string — ok:false, rolledBack:true",
+      "pass": true,
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"write refused: it would replace src/wire-big.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least half of a file's line"
+    },
+    {
+      "name": "overwrite wire: the refused write left the file byte-identical",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite wire: a dry run reports the SAME refusal (the guard is at plan time) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true {\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"write refused: it would replace src/wire-big.ts (41 lines) with 1 line(s), removing 40 lines (98%) — a write that removes at least half of a file's line"
+    },
+    {
+      "name": "overwrite wire: the same request with overwrite:true commits",
+      "pass": true,
+      "detail": "isError=false export const w0 = 0\n"
+    },
+    {
+      "name": "overwrite wire: overwrite:false refuses an existing file as create-only [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "isError=true {\n  \"ok\": false,\n  \"mode\": \"write\",\n  \"error\": \"write refused: src/wire-big.ts already exists and overwrite is false (create-only) — pass overwrite: true to replace it, or use update/insert to change "
+    },
+    {
+      "name": "overwrite wire: overwrite:false still creates when nothing is there",
+      "pass": true,
+      "detail": "isError=false {\n  \"mode\": \"write\",\n  \"dryRun\": false,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-e2e-liU3rY/src/wire-fresh.ts\",\n      \"before\": \"\",\n      \"after\": \"expo"
+    },
+    {
+      "name": "overwrite wire: a non-boolean overwrite is refused by the schema, not coerced [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_edit: overwrite must be boolean"
+    }
+  ],
+  "negativeCases": 14,
+  "summary": {
+    "total": 34,
+    "passed": 34,
+    "failed": 0
+  },
+  "decisions": {
+    "transports": "compiled CLI via `node bin/bb tool bb_edit --dir <root> --args <json>`; MCP via StdioClientTransport → src/mcp/server.ts (Bun runs server.ts directly, Node uses bin/bb mcp)",
+    "dryRun": "every positive case uses dryRun:true so no file is written; a separate check confirms the target file does NOT exist after a dry-run write",
+    "modeAwareIndexGate": "runs its own leg against the SOURCE MCP server (`--import tsx --input-type=module -e`) on a project with no index: a compiled bundle would answer about whatever it was built from, and the claim under test is the gate in the tree"
+  },
+  "limitations": [
+    "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
+    "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
+  ],
+  "generatedAt": "2026-11-05T04:11:50.882Z"
+}

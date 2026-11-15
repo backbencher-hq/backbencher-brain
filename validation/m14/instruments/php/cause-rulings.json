@@ -1,0 +1,54 @@
+{
+  "_description": "PHP'S WALL DISPOSITIONS — every unresolved row class in the whole admitted population, with a COUNT and a FALSIFIER. Authored from the arm's own --dump by script/m14/php-cause-census.ts (artifact validation/m14/measurements/php-cause-census.json, which binds the dump bytes by sha256 and CHECKS its own outcome tally against TABLE 1: unresolved 48,378 · amb(decl) 44,275 · bindOK 121,044 · extOK 11,172 — all four exact). THE FIVE RULINGS PARTITION THE 48,378 UNRESOLVED ROWS EXACTLY: 29,227 + 13,958 + 3,017 + 2,108 + 68 = 48,378.",
+  "_partitionControl": "29,227 + 13,958 + 3,017 + 2,108 + 68 = 48,378 — the unresolved total in TABLE 1. A partition that does not add up is a class list, not a disposition.",
+  "_arm": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts php php,phpt 0 --dump  (one token acquisition; see script/m14/php-arm-run.sh)",
+  "_dumpDigest": "sha256:e0404d219386e7f924d197f824f99a08027e52c42014c87ec5c30c68ab705fc4",
+  "causeRulings": {
+    "bareNameExternalEvidence": {
+      "population": "parsed=6424/6424 admitted=6424 exts=php,phpt index=no",
+      "edges": 29227,
+      "statement": "A BARE NAME unresolved from SEVERAL REPOSITORIES THAT NEITHER DECLARES is external evidence: the per-file analyzer cannot know whether a name is a vendor API or a declaration it failed to publish, but TWO independent projects that each fail to declare it is the strongest evidence the corpus can provide that the name belongs to neither. This is the fleet's external-evidence shape, and it is a CLASS, not an excuse: it is measured over the arm's own per-project dump (29,227 rows over 212 such targets; the class total 43,185 bare-name unresolved = calls 39,115 · uses 1,367 · references 1,307 · instantiates 544 · imports 459 · extends 189 · implements 182 · mixes_in 22).",
+      "falsifier": {
+        "run": "bun script/m14/php-cause-census.ts --from validation/m14/measurements/php-gate-whole-2026-10-23.txt --json validation/m14/measurements/php-cause-census.json  (the census reproduces the repo-spread split from the dump) and, for a single target: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts php php,phpt 0 --repo=<one-of-the-repos-that-report-it-unresolved> --dump",
+        "wouldFail": "ANY row in this class whose target is DECLARED IN ONE OF THE REPOSITORIES THAT REPORTS IT UNRESOLVED. The gate resolves per project, and the dump carries EVERY non-resolved row of that project — so a same-project resolution would leave no unresolved row for the target there. One such row refutes the class, and the refutation is a lookup, not a judgement."
+      }
+    },
+    "bareNameSingleRepo": {
+      "population": "parsed=6424/6424 admitted=6424 exts=php,phpt index=no",
+      "edges": 13958,
+      "statement": "A BARE NAME unresolved from exactly ONE repository is the HONEST REMAINDER: with a single project reporting it, the corpus cannot distinguish a vendor/library name from a publication miss. It is carried as a counted class rather than assumed external — the same split the lane published before the population changed, now measured on 6,424 files instead of 5,094.",
+      "falsifier": {
+        "run": "bun script/m14/php-cause-census.ts --from validation/m14/measurements/php-gate-whole-2026-10-23.txt --json validation/m14/measurements/php-cause-census.json ; for any named target: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts php php,phpt 0 --repo=<the-reporting-repo> --dump",
+        "wouldFail": "A target in this class that the reporting repo's OWN project key space declares (a qualified name in an admitted file, or a bare name with exactly one declaration in that project) — the gate resolves both, so such a target would not have been unresolved. A store-side/index-assisted instrument that binds one of these rows refutes the class for that row."
+      }
+    },
+    "qualifiedNameExternal": {
+      "population": "parsed=6424/6424 admitted=6424 exts=php,phpt index=no",
+      "edges": 3017,
+      "statement": "A BACKSLASH-QUALIFIED NAME naming no declaration in the project: 3,017 `imports` rows over 512 qualified targets, all `use Some\\Vendor\\Type;`-shaped dependencies of projects (Amp\\…, GraphQL\\…, PHPUnit\\…). MEASURED split: 689 rows / 30 targets are reported unresolved from TWO OR MORE repositories (external evidence); 2,328 rows are single-repo. The gate's first resolution strategy is an exact qualified_name match in the project, so a declared FQN would have resolved — the class is a statement about the PROJECT's declarations, not about the spelling.",
+      "falsifier": {
+        "run": "bun script/m14/php-cause-census.ts --from validation/m14/measurements/php-gate-whole-2026-10-23.txt --json validation/m14/measurements/php-cause-census.json ; the same gate command on the reporting repo",
+        "wouldFail": "A declaration whose `metadata.fqn` (the published qualified name) equals one of these targets, published by an admitted file of the reporting project. The gate's strategy 1 resolves exactly that, so one such declaration refutes the row and the tool is the same arm that produced the row."
+      }
+    },
+    "memberTargetUnknownReceiver": {
+      "population": "parsed=6424/6424 admitted=6424 exts=php,phpt index=no",
+      "edges": 2108,
+      "statement": "A DOTTED MEMBER TARGET whose receiver's TYPE one file cannot state: `$value->member` where the value's class was assigned, returned, or passed in. 2,108 rows (uses 2,105 · calls 3) over 1,092 targets, from 3 repositories. The per-file analyzer knows a receiver's class only for `$this->`, `self::`, `static::`, `parent::` and a NAMED receiver; for everything else the name cannot say which declaration is meant, and any name-keyed rule that bound these would be picking among candidates by a rule nobody chose. ⇒ THIS IS THE ONE CLASS WITH A REACHABLE FALSIFIER, because it is a statement about the ANALYZER's knowledge, not about the project.",
+      "falsifier": {
+        "run": "npx tsx validation/m14/fixtures/php/owner-resolution-gate.mts && npx tsx validation/m14/fixtures/php/tools/owner-claim-crosstab.mts ; and the receiver-owner fixture/mutants: bun run script/m14/run-fixtures.ts --lang php",
+        "wouldFail": "A row in this class whose OWN FILE publishes the receiver's CLASS (so the type IS stated in the file) — then the owner channel could have qualified the target and the row would resolve. Any such row is a MISS of the qualification rule, not a boundary. A type-resolution instrument (index-assisted) that lands and does not move this class refutes the ruling outright."
+      }
+    },
+    "partOfPathNotClaimable": {
+      "population": "parsed=6424/6424 admitted=6424 exts=php,phpt index=no",
+      "edges": 68,
+      "statement": "A `part_of` PATH TARGET THE FILE CLAIM CANNOT PLACE: 68 of 1,494 include/require rows, over 39 targets, 5 repositories, carrying NO `metadata.importProjectFile` claim (claimKind \"-\" on all 68). The claim guard (`fileClaimForTarget`) composes `__DIR__`/`__FILE__`/`dirname(__FILE__)` project-relative, refuses a path outside the project boundary, requires an admitted extension, and `statSync`s — so these 68 name something the PROJECT cannot confirm (a file that does not exist, an include that escapes the project, a non-`.php` spelling). ⇒ THE OTHER 1,422 ROWS ARE extOK: their claim WAS verified against the project's own file facts, and that verification is a DIFFERENT statement from git-tracked admission (the guard admits an on-disk file, including untracked vendor trees, and the git-tracked population does not carry those). Both numbers are published; neither contradicts the other, and neither is a resolution.",
+      "falsifier": {
+        "run": "npx tsx validation/m14/fixtures/php/tools/include-claim-crosstab.mts  (the lane's own claim cross-tab: verify / REFUTE counts) and bun script/m14/php-cause-census.ts --from validation/m14/measurements/php-gate-whole-2026-10-23.txt",
+        "wouldFail": "ANY of the 68 acquiring a VERIFIED projectFile claim on a re-run (the cross-tab's verify count moving by one refutes that row's placement here, and a REFUTE count above zero indicts the claim rule itself). If the admitted population ever carries those files, the row would move out of this class and the class shrinks."
+      }
+    }
+  },
+  "_note": "The five rulings partition the arm's 48,378 unresolved rows exactly. The AMBIGUOUS class (44,275 = ambDeclOnly 32,897 + ambBoth 11,378) is NOT a wall and is not in this file — it is published in the declaration's types block and its caveats (amb(kind) a subset of amb(decl), never added). bindOK 121,044 are the variable-read binding spellings, and extOK 11,172 are verified claims; neither is unresolved and neither is folded into resolved."
+}

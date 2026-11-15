@@ -134,7 +134,7 @@ try {
 // The self-test: a planted offender must be caught, or this gate cannot fail.
 {
   const planted = `args = [ "/opt/backbencher-brain/dist/lsp/server.js" ]`
-  const plantedHome = `args = [ "$HOME/x/dist/lsp/server.js" ]`
+  const plantedHome = `args = [ "/Users/sano/x/dist/lsp/server.js" ]`
   const caught = MACHINE_SPECIFIC.some((re) => re.test(planted))
   check(
     "self-test: a planted /opt/backbencher-brain path IS caught (the gate can fail)",

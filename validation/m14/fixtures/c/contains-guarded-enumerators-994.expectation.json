@@ -1,0 +1,14 @@
+{
+  "fixtureId": "c/contains-guarded-enumerators-994",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #994: enumerators declared inside a preprocessor arm of an enumerator list are real members. Found by the D4 jq differential draw — jq/src/jv_dtoa.c:1630-1643 declares `enum { #ifdef IEEE_Arith emax = ...; emin = ... #else emin = ...` inside a function whose whole file the parser wraps in one ERROR; the analyzer's enum loop read only DIRECT children of enumerator_list, saw the preproc_ifdef node, and published no member, so the differential read 2 MISSING rows (contains -> emax, contains -> emin). The rule added is the STRUCT-field rule the analyzer already applies to conditional members: a preprocessor arm is the same declaration under a condition. The fixture is function-local because that is the parse shape the corpus has (the same text at file scope recovers as an ERROR child instead, a different shape).",
+  "expectRelationships": [
+    { "type": "contains", "target": "unguarded_first", "comment": "CONTROL: an ordinary enumerator BEFORE the arm. A fix that replaced the loop instead of recursing would lose it." },
+    { "type": "contains", "target": "emax", "comment": "THE PINNED MEMBER from the true region of the #ifdef." },
+    { "type": "contains", "target": "emin", "comment": "THE PINNED MEMBER; declared in BOTH arms, so two occurrences are expected (see the count row)." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "equals": 4, "note": "unguarded_first + emax + emin(#ifdef arm) + emin(#else arm). The duplicate emin is intentional: both arms are declarations in the file, and the count pins that the recursion publishes the arm members rather than one merged row." }
+  ]
+}

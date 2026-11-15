@@ -59,7 +59,7 @@ const REPO_FILTER = argOf("--repo") ?? "element-plus"
 const LIMIT = Number(argOf("--limit") ?? "0")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(300 * 1024))
 const OUT = argOf("--out")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 const files: { repo: string; dir: string; rel: string; abs: string }[] = []
 for (const e of readdirSync(CR).sort()) {

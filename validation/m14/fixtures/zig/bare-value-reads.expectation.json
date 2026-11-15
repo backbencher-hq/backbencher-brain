@@ -1,0 +1,225 @@
+{
+  "fixtureId": "zig/bare-value-reads",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 zig review (Z1-Z3, 2026-09-12). Z3: bare value reads (`return Limit`) \u2014 the analyzer AND the oracle were blind to them; a read resolves only to file-scope Constant/Variable/Function/EnumMember names, is suppressed by walk-order shadowing (param `counter`, block local `Limit`, payload capture `Answer`), never fires on declaration positions, callees, member leaves or labels, and enum members resolve ONLY as value-position error leaves (`return error.Timeout`, `error.Fatal` in a switch arm) \u2014 bare enum-member names are invalid Zig, so the `Widget` return type (colliding with an enum member of `Names`) and the global `|fast|` payload must NOT emit. Forbids also pin the error-set DECLARATION-site class (`error{ Timeout, Fatal, Unused }` declares Unused; it must never read it). Z1: real per-symbol cyclomatic complexity (score=5, guard=4). Z2: 1-based error columns (the trailing stray brace is line 103, column 1). Z11 RE-PIN (2026-09-28): the `takeT -> T` row was authored under the pre-fix kind dispatch, where a `builtin_type` alias was published as a `constant`; it is re-pinned to the declared-type edge, which is the same fact under the label that names it, plus a forbid on the value read that the old kind made possible.",
+  "expectSymbols": [
+    {
+      "name": "Limit",
+      "kind": "constant"
+    },
+    {
+      "name": "Answer",
+      "kind": "constant"
+    },
+    {
+      "name": "counter",
+      "kind": "variable"
+    },
+    {
+      "name": "Mode",
+      "kind": "enum"
+    },
+    {
+      "name": "Names",
+      "kind": "enum"
+    },
+    {
+      "name": "AppError",
+      "kind": "enum"
+    },
+    {
+      "name": "Widget",
+      "kind": "struct"
+    },
+    {
+      "name": "readLimit",
+      "kind": "function"
+    },
+    {
+      "name": "score",
+      "kind": "function"
+    },
+    {
+      "name": "guard",
+      "kind": "function"
+    },
+    {
+      "name": "K",
+      "kind": "constant"
+    },
+    {
+      "name": "Clue",
+      "kind": "constant"
+    },
+    {
+      "name": "solved",
+      "kind": "constant"
+    },
+    {
+      "name": "scopeF",
+      "kind": "function"
+    },
+    {
+      "name": "Flag",
+      "kind": "constant"
+    },
+    {
+      "name": "typeField",
+      "kind": "function"
+    },
+    {
+      "name": "takeT",
+      "kind": "function"
+    },
+    {
+      "name": "withDefault",
+      "kind": "function"
+    },
+    {
+      "name": "usesLocal",
+      "kind": "function"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "score",
+      "equals": 5,
+      "comment": "Z1: 1 + if + for + while + switch (binary </> and += are NOT conditions)"
+    },
+    {
+      "symbol": "guard",
+      "equals": 4,
+      "comment": "Z1: 1 + if + `and` + `orelse`"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "readLimit",
+      "target": "Limit",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "source": "bump",
+      "target": "counter",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "source": "fail",
+      "target": "Timeout",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "error leaf in a value position (return)"
+    },
+    {
+      "type": "uses",
+      "source": "handle",
+      "target": "Fatal",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "error leaf in a switch arm (value position)"
+    },
+    {
+      "type": "uses",
+      "source": "scopeF",
+      "target": "K",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "Z6: the post-switch read is genuine \u2014 the arm capture must not leak past its arm"
+    },
+    {
+      "type": "uses",
+      "source": "scopeF",
+      "target": "Limit",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "Z6: the arm body reads the file const"
+    },
+    {
+      "type": "uses",
+      "source": "typeField",
+      "target": "Flag",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "Z7: a name appearing only in a parameter's type does not shadow the file value"
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "T",
+      "meta.relationshipType": "declared_type",
+      "comment": "Z11/Z7 (re-pinned 2026-09-28): `const T = u32;` is a TYPE ALIAS, and `fn takeT(x: T)` reads it in a TYPE position. The fact is still in the graph, under the declared-type label that names what kind of dependency it is. It is no longer a bare VALUE read, because types do not resolve as values \u2014 the same rule Z4 established for enum members at type positions ('a bare enum-member name is invalid Zig'), applied to the type side."
+    },
+    {
+      "type": "uses",
+      "source": "withDefault",
+      "target": "Def",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "Z7: a default value reads the file const"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "shadowed",
+      "target": "counter",
+      "comment": "param shadows the file-scope var"
+    },
+    {
+      "type": "uses",
+      "source": "localFirst",
+      "target": "Limit",
+      "comment": "block local shadows the file-scope const"
+    },
+    {
+      "type": "uses",
+      "source": "arm",
+      "target": "Answer",
+      "comment": "payload capture shadows the file-scope const"
+    },
+    {
+      "type": "uses",
+      "target": "Unused",
+      "comment": "error-set declaration site declares, never reads (WriteFailed class)"
+    },
+    {
+      "type": "uses",
+      "target": "Widget",
+      "comment": "enum member Widget must not resolve as a bare value at the struct type positions (return type)"
+    },
+    {
+      "type": "uses",
+      "target": "fast",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "bare enum members are invalid Zig outside error leaves; the global payload binding must not emit a BARE identifier_usage (the qualified Mode.fast member-read is a different, legitimate surface)"
+    },
+    {
+      "type": "uses",
+      "target": "Clue",
+      "comment": "Z6: a global switch-arm capture reads nothing \u2014 the capture binds in its own arm frame"
+    },
+    {
+      "type": "uses",
+      "source": "takeT",
+      "target": "T",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "Z11: a type alias read in a parameter's TYPE position is not a value read. Pre-fix `const T = u32;` was published as a `constant` (builtin_type sat in the value list) and this read was emitted as one; with T a type it is the declared-type edge above and nothing else."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "_",
+      "comment": "Z8: the blank identifier declares nothing"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "helper.zig",
+      "comment": "Z9: a function-local @import is still an import fact"
+    }
+  ],
+  "expectErrors": [
+    {
+      "startLine": 151,
+      "startColumn": 1
+    }
+  ]
+}

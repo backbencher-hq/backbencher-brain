@@ -1,0 +1,9 @@
+  [cold-pool] solidity:solidity: 60/60 fresh (rot 7, corpus 420)
+[solidity] solidity: files=60 tree-truth=3466 covered=3462 (99.9%) MISSING=4 | analyzer-edges=2709 unexplained=9 (0.3%) heuristic=0 hash=c6c13d4d903966b6 | unexplained-by-label: uses=5,references=4
+  [solidity] 4 MISSING / undefined truth — samples:
+    calls _pause -> whenNotPaused   (contracts/utils/Pausable.sol)
+    calls _unpause -> whenPaused   (contracts/utils/Pausable.sol)
+    uses supportsInterface -> IAccessControlDefaultAdminRules   (contracts/access/extensions/AccessControlDefaultAdminRules.sol)
+    uses _nullPtr -> Pointer   (contracts/utils/structs/Accumulators.sol)
+probe run (--lang solidity): measured 1 lane(s) — M14.0.F5 NOT written. The artifact belongs to the canonical 60-file, 47-language sweep; a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.
+EXIT=0

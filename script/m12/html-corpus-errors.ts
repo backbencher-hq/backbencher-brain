@@ -5,7 +5,7 @@
 import { readFileSync } from "fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO = "$HOME/fixtures/repositories/svelte"
+const REPO = "/home/ishaq2321/bb_tests/repositories/svelte"
 const SAMPLE = "validation/m12/results/html-corpus-sample.txt"
 
 async function main() {

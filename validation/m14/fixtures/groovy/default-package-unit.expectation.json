@@ -1,0 +1,19 @@
+{
+  "fixtureId": "groovy/default-package-unit",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The NEGATIVE twin of groovy/exports-publication, and the only fixture that can catch a package-blind publication rule. A Groovy type declared with NO package declaration compiles into the default (unnamed) package, and the default package has no importable name: another compilation unit cannot write `import DefaultPkg`, so a publication edge `? -> DefaultPkg` claims a reachability the language denies. The same holds for a script method in the default package. This is the java lane's JLS 7.4.2 gate applied to groovy, where it is measured rather than assumed: script/m60/groovy-construct-probe.ts counts 270 of the pinned corpus's 2,825 files with no package declaration, so a package-blind rule would fabricate on ~10% of real files. The `imports` label is unaffected by this file having no package — its source is the `(script)` sentinel there, which is the analyzer's documented no-class spelling and is what the existing groovy/import-edges contract already relies on.",
+  "expectSymbols": [
+    { "name": "DefaultPkg", "kind": "class" },
+    { "name": "shout", "kind": "method", "ownerName": "DefaultPkg" },
+    { "name": "looseHelper", "kind": "method" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "DefaultPkg" },
+    { "type": "exports", "target": "looseHelper" },
+    { "type": "exports", "target": "shout" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "DefaultPkg", "target": "shout" }
+  ]
+}

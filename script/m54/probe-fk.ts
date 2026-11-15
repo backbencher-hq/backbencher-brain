@@ -172,7 +172,7 @@ function edge(db: Database, id: string, src: string, tgt: string | null) {
   console.log(`ℹ️  bun:sqlite foreign_keys default = ${bunDefault.foreign_keys}`)
 }
 try {
-  const bin = readFileSync("$HOME/mcp/backbencher-brain/bin/bb", "utf8").split("\n").slice(0, 5).join(" | ")
+  const bin = readFileSync("/home/ishaq2321/mcp/backbencher-brain/bin/bb", "utf8").split("\n").slice(0, 5).join(" | ")
   results["runtime.bin-bb"] = bin
   console.log(`ℹ️  bin/bb header: ${bin}`)
 } catch { /* non-fatal */ }

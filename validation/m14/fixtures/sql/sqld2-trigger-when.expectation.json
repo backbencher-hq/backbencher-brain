@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld2-trigger-when.sql",
+  "authoredFrom": "SQLD2 (M60 SQL wave, 2026-09-26). The three references of a create_trigger were read as the first three object_reference nodes ANYWHERE in the subtree, measured wrong by bb_tests/sql/probe/grammar-gaps.mts case trigger-with-when-clause: a WHEN (old.a <> new.a) clause contributes two more, so the action routine resolved to `old`. Authored from the grammar's own shape (bb_tests/sql/probe/field-introspection.mts, probe 'trigger shapes'): the name is the first top-level object_reference, the table is the one after keyword_on, and the action is the last top-level one.",
+  "comment": "The forbid rows are the regression pin — an expect-only fixture passes just as happily when the edge points at `old` instead of `audit_it`.",
+  "expectSymbols": [
+    { "name": "d2_when", "kind": "function", "meta.type": "trigger", "meta.targetTable": "t", "meta.actionFunction": "audit_it" },
+    { "name": "d2_update_of", "kind": "function", "meta.type": "trigger", "meta.targetTable": "t", "meta.actionFunction": "audit_it" },
+    { "name": "d2_multi_event", "kind": "function", "meta.type": "trigger", "meta.targetTable": "t", "meta.actionFunction": "f" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "d2_when", "target": "t" },
+    { "type": "calls", "from": "d2_when", "target": "audit_it" },
+    { "type": "references", "from": "d2_update_of", "target": "t" },
+    { "type": "calls", "from": "d2_update_of", "target": "audit_it" },
+    { "type": "references", "from": "d2_multi_event", "target": "t" },
+    { "type": "calls", "from": "d2_multi_event", "target": "f" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "d2_when", "target": "old" },
+    { "type": "calls", "from": "d2_when", "target": "new" },
+    { "type": "references", "from": "d2_when", "target": "old" },
+    { "type": "references", "from": "d2_when", "target": "new" }
+  ],
+  "expectUniqueIds": [{ "name": "d2_when" }, { "name": "d2_update_of" }, { "name": "d2_multi_event" }]
+}

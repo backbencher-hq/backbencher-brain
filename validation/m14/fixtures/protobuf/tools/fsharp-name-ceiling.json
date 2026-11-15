@@ -1,0 +1,31 @@
+{
+  "_what": "FSHARP'S NAME CLAIM — THE CEILING, PRICED BEFORE ANYTHING IS BUILT. Its residue is `open System.IO`-shaped names (6,728 of 7,103 = 94.7%), a file claim reaches at most 1.7% of its imports, so the route that fits is a NAME route: reach an existing DECLARATION by key.",
+  "_instrument": "npx tsx validation/m14/fixtures/protobuf/tools/fsharp-name-ceiling.mts --files=30 --repos=8 · npx tsx script/m14/incoming-gate.ts fsharp fs,fsi,fsx 150",
+  "_populationLabel": "REPO-BOUNDED STRIDE SAMPLE: 8 repositories, 240 of their 1,767 files, 1,106 name-shaped imports. Two UNBOUNDED runs hit their 15- and 20-minute bounds and were KILLED WITH NO OUTPUT — a cost measurement, not a result — so the bound is the run's own history, printed with the answer. The gate row is a 150-of-11,807 stride.",
+  "THE_CEILING": {
+    "nameShapedImports": 1106,
+    "carriedByIndex": 316, "carriedByIndexShare": "28.6%",
+    "carriedByProjectKeySpace": 307, "carriedByProjectShare": "27.8%",
+    "carriedByEither_THE_CEILING": 447, "ceilingShare": "40.4%",
+    "externalInNeither": 659, "externalShare": "59.6%",
+    "topPrefixes": "System 380 · FSharp 129 · Deedle 85 · Microsoft 70 · FSharpPlus 55 · FSharpx 54 · Fabulous 48 · NUnit 40 · Fake 39 · Bolero 31",
+    "examplesCarried": "`Argu` (benchmarks/Argu.Benchmarks/Benchmarks.fs), `Deedle`, `FSharp.Data` — names the repository's own modules/namespaces publish."
+  },
+  "THE_GAP_IT_IMPLIES": {
+    "gateRow": "imports 555 edges · resolved 16 · amb(decl) 19 · unresolved 520 (93.7%) · extOK 0 · extFAIL 0",
+    "reading": "A ceiling of 40.4% against a resolved share of 2.9% is a real gap of about 37 percentage points on the sampled population: the names ARE published and the edges do NOT reach them. The 59.6% external (`System.*`, `Microsoft.*`, `NUnit`, NuGet libraries) are a boundary like r's packages.",
+    "theFixShape": "The analyzer consults `context.projectIndex.symbolNames` (the same instrument this lane made live for protobuf) and emits the spelling the PROJECT publishes, OR leaves the edge alone — reach an existing declaration or do not fire. The 11 refutes (`_lib/Fornax.Core.dll` exists, is not admitted) are untouched by a name route and must stay unadmitted."
+  },
+  "EARNED": [
+    "The ceiling is MEASURED: 447 of 1,106 (40.4%) name something the index or the project already carries; 316 by the FSHARP spec's own index, which means the index is not empty for this lane the way the Solidity default was for protobuf.",
+    "The gap is MEASURED and it is large: the gate's imports row reads 16 resolved against 520 unresolved on a 150-file stride.",
+    "The route is IDENTIFIED as a name route, not a file route — a file claim reaches at most 1.7% of this lane's imports.",
+    "r's cause is RULED: 760 of 787 residue (96.6%) are PACKAGE names (`library(cli)` …), packages are not in the corpus, so there is nothing to reach — a BOUNDARY with a falsifier (a corpus containing those packages).",
+    "hcl's cause is MEASURED for its owner: 84 of 88 (95.5%) name a DIRECTORY, so the arithmetic that fits is TOML's manifest-in-directory claim — reported to hcl-lane, not folded into their lane."
+  ],
+  "NOT_EARNED": [
+    "THE FIX ITSELF IS NOT BUILT. The ceiling justifies it and the shape is named, but no analyzer change was made and therefore NO before/after exists: `unresolved` vs `noDecl` separated, `bindFAIL` 0, and the 11 refutes still unadmitted are all UNMEASURED for this change. Quoting the 40.4% as an improvement would be exactly the error this lane's own protobuf work was corrected for — the 304 that was called a ceiling before r-lane's probe refuted it.",
+    "The ceiling is a REPO-BOUNDED sample (8 repos of 26), not a population: the share can move with the repositories chosen, and the four-repo difference between the index (316) and project (307) halves is not analysed.",
+    "No store run: every number here is the gate's model or a probe on the production path, and none of it is a store row."
+  ]
+}

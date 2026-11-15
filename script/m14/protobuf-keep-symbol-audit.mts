@@ -56,7 +56,7 @@ import { parseFile, keepSymbol, nameTheSymbolRule } from "../../src/ast/pool-wor
 import { RealProtobufAnalyzer } from "../../src/ast/real-protobuf-analyzer"
 import { getParser } from "./run-fixtures"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 const TYPES = [
   "calls", "uses", "contains", "imports", "references",

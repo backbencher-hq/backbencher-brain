@@ -1,0 +1,107 @@
+{
+  "fixtureId": "lua/loop-bindings",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60 LUA-48 and LUA-49, authored from the two role contracts after both defects were MEASURED, not predicted: LUA-48 is a `setmetatable(M, M)` publishing `extends M -> M`, 2 sites corpus-wide at confidence 1.0; LUA-49 is a for-clause binding that the frame never recorded, so every re-assignment of a loop variable published a `contains` edge for a declaration that never happened. Both were found by the ORACLE disagreeing with the analyzer, which is the only reason they are in this file: the fixture suite was green over both. The negative half is the load-bearing half. An implementation that published a `contains` for every assignment target and an `extends` for every `setmetatable` call would satisfy every positive row below and fail every forbid row. The positive rows at L48 and L64 are what make the fixture able to fail a fix that OVER-suppresses: `local after = 1` after a closed loop and `v = nil` after a closed file-scope loop are real declarations, and a rule that remembered a loop name forever would drop them while still satisfying every forbid row.",
+  "authoringNote": "authoredBeforeAnalyzerRun is false, and is stated as false rather than dressed up: the defects were found by measurement, the fixes were written, and these rows were then derived from the language's scoping rules and checked against the fixed analyzer. Non-vacuousness comes from the forbid half plus the mutants in script/m60/mutate-lua-bindings.ts, which reinstate LUA-48 and both halves of LUA-49 (the too-narrow fix and the over-suppressing fix) and require this suite to go red in each case.",
+  "expectSymbols": [
+    { "name": "Base", "comment": "L13 `local Base = {}` — the metatable LUA-48a extends to" },
+    { "name": "Derived", "comment": "L14 `local Derived = {}` — the table whose metatable is set" },
+    { "name": "after", "comment": "L48 `local after = 1`, AFTER a closed for-loop: a real declaration, and the row that fails an over-suppressing fix" },
+    { "name": "v", "comment": "L64 `v = nil`, after a closed FILE-SCOPE for-loop: also a real declaration. `kind` is deliberately unspecified — the point is that the symbol exists at all." }
+  ],
+  "forbidSymbols": [
+    { "name": "line", "comment": "LUA-49a: `line` is bound by `for _, line in ipairs(lines)`. A `local`? No — so no variable symbol may be declared for the RE-ASSIGNMENT at L29. This row is what a pre-fix analyzer fails." },
+    { "name": "i", "comment": "LUA-49b: same for the numeric-loop name at L34." },
+    { "name": "k", "comment": "LUA-49c: same for the first name of `for k, v in pairs(M)` at L40." }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Derived",
+      "target": "Base",
+      "line_number": 15,
+      "confidenceMin": 1,
+      "confidenceMax": 1,
+      "meta.relationshipType": "lua_metatable",
+      "meta.evidenceClass": "structural",
+      "comment": "LUA-48a: `setmetatable(Derived, Base)` with two DIFFERENT names is the metatable relation. 171 such edges on the corpus, and this row exists so the LUA-48 forbid row below cannot be satisfied by simply deleting the rule."
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "Base",
+      "line_number": 13
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "Derived",
+      "line_number": 14
+    },
+    {
+      "type": "contains",
+      "from": "scrub",
+      "target": "after",
+      "line_number": 48,
+      "comment": "LUA-49d: the loop at L39 has CLOSED, so L48 declares. A fix that put the name in `localNames` unconditionally drops this row — that is the mutant."
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "v",
+      "line_number": 64,
+      "comment": "LUA-49f: the FILE-SCOPE loop at L59 has closed, so L64 declares a file-scope name. The second row that fails an over-suppressing fix, and the one at file scope where `frame.callable` is undefined."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "M",
+      "target": "M",
+      "comment": "LUA-48b: `setmetatable(M, M)` at L17. A table is not its own base. Corpus: lazy.nvim/lua/lazy/state.lua:45 and trouble.nvim/lua/trouble/cache.lua:59 — 2 fabricated edges at confidence 1.0 before the fix."
+    },
+    {
+      "type": "contains",
+      "from": "scrub",
+      "target": "line",
+      "line_number": 29,
+      "comment": "LUA-49a: a re-assignment of a generic-for binding declares nothing. Corpus: snacks.nvim/lua/snacks/image/doc.lua:131."
+    },
+    {
+      "type": "contains",
+      "from": "scrub",
+      "target": "i",
+      "line_number": 34,
+      "comment": "LUA-49b: the numeric-for name behaves identically. Corpus: 18 `contains` edges of this shape on kong's 200-file draw."
+    },
+    {
+      "type": "contains",
+      "from": "scrub",
+      "target": "k",
+      "line_number": 40,
+      "comment": "LUA-49c: first name of the two-name generic-for."
+    },
+    {
+      "type": "contains",
+      "from": "scrub",
+      "target": "v",
+      "line_number": 41,
+      "comment": "LUA-49c: second name of the same clause. Two forbid rows for one clause on purpose — a fix that read only the first name would pass one and fail the other."
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "v",
+      "line_number": 60,
+      "comment": "LUA-49e: FILE SCOPE, where the `frame.callable` guard does not apply. `v = tostring(v)` inside `for _, v in ipairs(M)` re-assigns a real local. Corpus: kong/kong/db/schema/entities/clustering_data_planes.lua:7 (`_, v = next(v)`) and plenary.nvim/lua/plenary/scandir.lua:22 — 7 fabricated `contains` edges over the 4-repo oracle draw, all this shape."
+    }
+  ],
+  "expectEvidenceClasses": {"extends": "structural", "contains": "structural"},
+  "expectComplexity": [
+    {
+      "fileEquals": 6,
+      "comment": "SECTION C's Matrix 1b pin. `calculateCyclomaticComplexity` (real-lua-analyzer.ts:2649) publishes `metadata.cyclomaticComplexity` = 1 + if/for/while/repeat + `and`/`or` binary expressions, and NOTHING pinned it — an unpinned published number is exactly what the Matrix 1b row exists to stop. This fixture is the one where the count is explainable by hand: FOUR loops (three inside `M.scrub`, one at file scope) plus ONE `or` in `line = line:match(...) or line` = 1 + 4 + 1 = 6. Pinning it keeps the field a measured decision-point count rather than a metric name wearing a constant (the runner's own failure message records a ten-case switch that measured 1 because `switch_clause` was never named)."
+    }
+  ]
+}

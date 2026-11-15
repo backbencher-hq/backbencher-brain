@@ -1,0 +1,70 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/imports-target-classes.mts",
+  "question": "what IS an `imports` target, and does the analyzer already mark it? `imports` is the only type this analyzer emits whose target is not a symbol, and it is reported at 0 % resolution.",
+  "draw": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "fingerprint": "3bd539410d1a9189",
+    "files": 2500,
+    "perRepoCap": 400,
+    "totalCap": 2500,
+    "workers": 1,
+    "repositories": 29
+  },
+  "integrity": {
+    "parseErrs": 0,
+    "fallbackFiles": 0,
+    "filesWithErrors": 17
+  },
+  "edges": 263,
+  "distinctTargets": 84,
+  "byClass": {
+    "remote-uri": 107,
+    "relative-missing": 21,
+    "relative-file-admitted": 130,
+    "relative-file-on-disk": 2,
+    "fragment-only": 3
+  },
+  "fileAdmittedAsXml": 130,
+  "hasResolvableMarker": 263,
+  "byAnalyzerClass": {
+    "external": 107,
+    "file": 153,
+    "in-document": 3
+  },
+  "analyzerVsCorpus": {
+    "agree": {
+      "external": 107,
+      "file": 153,
+      "in-document": 3
+    },
+    "disagree": {},
+    "mismatchedExamples": []
+  },
+  "examplesByClass": {
+    "remote-uri": [
+      "assets/DifferentialEquations_Example.svg: svg -imports-> http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd",
+      "documentation-website/Writerside/cfg/build-script.xml: root -imports-> https://resources.jetbrains.com/writerside/1.0/build-script.dtd",
+      "documentation-website/Writerside/redirection-rules.xml: rules -imports-> https://helpserver.labs.jb.gg/help/schemas/mvp/redirection-rules.dtd"
+    ],
+    "relative-missing": [
+      "test/integration/targets/setup_rpm_repo/files/comps.xml: comps -imports-> comps.dtd",
+      "terraform/shared/config/core-site.xml: xml-stylesheet -imports-> configuration.xsl",
+      "lib/xmerl/test/xmerl_xsd_SUITE_data/instance.xml: xml-stylesheet -imports-> MeasDataCollection.xsl"
+    ],
+    "relative-file-admitted": [
+      "packages/loaders/soap/test/fixtures/multi-file/xsd/types.xsd: xsd:import -imports-> names.xsd",
+      "tests/REC/stand-2.7-1.xml: doc -imports-> stand-2.7-1.dtd",
+      "lib/xmerl/test/xmerl_sax_SUITE_data/entity_test_1.xml: data -imports-> entity_test.dtd"
+    ],
+    "relative-file-on-disk": [
+      "doc/tutorial/libxslttutorial.xml: CODE -imports-> libxslt_tutorial.c",
+      "lib/xmerl/test/xmerl_xsd_SUITE_data/book.xsd: xs:import -imports-> xml.xsd"
+    ],
+    "fragment-only": [
+      "tests/REC/stand-2.7-1.xml: xml-stylesheet -imports-> #style1",
+      "tests/REC/stand-2.7-2.xml: xml-stylesheet -imports-> #transform",
+      "tests/REC/stand-2.7-3.xml: xml-stylesheet -imports-> #transform"
+    ]
+  },
+  "falsifier": "if hasResolvableMarker were equal to edges, the marker exists and this probe is obsolete; if fileAdmittedAsXml were 0, a file-shaped marker would describe nothing and `external` would be the only honest class."
+}

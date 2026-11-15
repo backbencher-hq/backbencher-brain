@@ -1,0 +1,20 @@
+{
+  "fixtureId": "javascript/barrel-reexport",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Barrel re-exports are ubiquitous in JS ecosystems; `export * from` recorded NO import and NO relationship - module dependency edges were invisible. Re-export statements record a synthetic import with metadata.reExport.",
+  "expectSymbols": [],
+  "expectImports": [
+    {
+      "module": "./barrel",
+      "items": [
+        "*"
+      ],
+      "meta.reExport": true
+    },
+    {
+      "module": "./mod",
+      "meta.reExport": true
+    }
+  ]
+}

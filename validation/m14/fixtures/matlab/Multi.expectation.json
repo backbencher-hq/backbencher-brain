@@ -1,0 +1,21 @@
+{
+  "fixtureId": "matlab/Multi",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "crossFileOverride": ["Base"],
+  "rationale": "The subclass half of the cross-file overrides pin. `Multi < Base` is inheritance; `alpha` redeclares a member `Base` declares, so it is a verified override; `extra` is a new member and must NOT be an override; `shared` is declared by the base but not redeclared here, so it must not appear either. Without the companion only `Multi`'s own declarations are visible, and the honest answer for an unverifiable base is no override row at all — which is why this fixture opts in to `crossFileOverride` and the flat ones do not.",
+  "expectSymbols": [
+    { "name": "Multi", "kind": "class" },
+    { "name": "alpha", "kind": "method", "ownerName": "Multi" },
+    { "name": "extra", "kind": "method", "ownerName": "Multi" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Multi", "target": "Base" },
+    { "type": "overrides", "from": "Multi", "target": "alpha", "meta.overriddenClass": "Base" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "from": "Multi", "target": "extra" },
+    { "type": "overrides", "from": "Multi", "target": "shared" },
+    { "type": "overrides", "from": "Base" }
+  ]
+}

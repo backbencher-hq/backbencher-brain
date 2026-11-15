@@ -1,0 +1,69 @@
+// A SIBLING-package relative reference whose import path carries NO package
+// correspondence — the one shape the dotted scope walk cannot resolve, pinned so
+// the refusal is a measured property rather than an accident.
+//
+// ## The corpus shape, reproduced exactly
+//
+// `consul/proto/private/pbconfigentry/config_entry.proto` is this file with the names
+// changed, and the shape is worth stating precisely because it is not the shape
+// `protobuf/ancestor-scope-resolution` already pins:
+//
+//   config_entry.proto declares  package hashicorp.consul.internal.configentry
+//   common.proto      declares  package hashicorp.consul.internal.common
+//   config_entry.proto IMPORTS   private/pbcommon/common.proto
+//   and writes, 26 times over the corpus:
+//
+//       common.EnterpriseMeta EnterpriseMeta = 2;
+//
+// `common` and `configentry` are SIBLING packages under the shared parent
+// `hashicorp.consul.internal`, so protoc's C++ scope lookup resolves the written name at
+// level 1: `hashicorp.consul.internal.configentry.common.EnterpriseMeta` holds nothing,
+// `hashicorp.consul.internal.common.EnterpriseMeta` does. Both formulations of that walk —
+// prepending an enclosing scope, and protoc's own first-segment rule — were run against
+// each other over the whole corpus and DISAGREE ON 0 of 15 rows.
+//
+// ## Why the import path cannot decide it, which is the whole point
+//
+// `protobuf/ancestor-scope-resolution` pins the same dotted climb succeeding, and the
+// only difference between its rows and this one is the import path:
+//
+//   pinned there   import "corp/api/resources/scopes/v1/scope.proto"  → directory IS
+//                  the package path, so `corp/api/resources/scopes/v1` is real evidence
+//                  that `corp.api.resources.scopes.v1` is a package this file imports.
+//   pinned here    import "vendor/pb/scopes/v1/scope.proto"            → directory is
+//                  NOT any prefix of any package name, so it is evidence of nothing.
+//
+// consul is the second case and the reason is structural rather than incidental: the
+// import path is relative to an include root (`-I`) the analyzer is never told, so path
+// and package are independent. `resolveViaImports`' directory guard therefore declines,
+// and the name is left exactly as written.
+//
+// ## What a name-based heuristic would cost, measured
+//
+// The tempting repair is a basename rule: "the import ends in `scope.proto`, so try the
+// ancestor scope". Over the corpus's 42 unresolvable edges of this shape it resolves 26
+// and misresolves the rest — `types.Platform` is imported as `.../api/types/platform.proto`,
+// where the basename is `platform` and the declaration is `containerd.types.Platform` at
+// scope level 3, so the rule finds no evidence exactly where protoc finds the answer.
+// A rule that fixes 26 edges by guessing and is wrong on the other 16 is the fabrication
+// the brief names, so it is not written.
+//
+// PRICED: 42 edges on 12 distinct targets across 12 files, of 13,024 `uses` edges
+// (0.32%). The fix is a companion index mapping `import path -> declaring package`;
+// `src/ast/parallel-indexer.ts:1300` builds the project index for `.sol` only, so
+// protobuf is sent no context at all. See the analyzer doc's §8.
+
+syntax = "proto3";
+
+package corp.api.resources.accounts.v1;
+
+import "vendor/pb/scopes/v1/scope.proto";
+
+message Holder {
+  // THE PINNED DECLINE. protoc resolves this to
+  // `corp.api.resources.scopes.v1.ScopeInfo` at scope level 1; this analyzer emits it
+  // as written because the import path gives no evidence about any package name. It
+  // must NOT become `corp.api.resources.accounts.v1.resources.scopes.v1.ScopeInfo`
+  // either — that is the package-prefixing a mutant below has to be caught for.
+  resources.scopes.v1.ScopeInfo unresolved = 1;
+}

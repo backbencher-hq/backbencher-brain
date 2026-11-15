@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:groovy",
   "fixtureDir": "validation/m12/fixtures/groovy",
-  "corpusDir": "$HOME/fixtures/xml/repos/grails-core",
+  "corpusDir": "/home/ishaq2321/bb_tests/xml/repos/grails-core",
   "runs": [
     {
       "name": "fixtures",
@@ -36,7 +36,7 @@
         "symbolsPerSecond": 130.85,
         "relationshipsPerSecond": 644.85
       },
-      "note": "Measured over EVERY tracked .groovy file in the corpus (git ls-files '*.groovy', 7,114 files, 0 failures), single process, 20-file warm-up, $HOME/fixtures/xml/repos/grails-core. This REPLACES the 400-file 'corpus_subset' run, which is removed rather than kept: it reported 110 files/s against the full corpus's measured 14 files/s, so keeping both would have left a number 8x optimistic in the record. The gap is not the analyzer being slower on more data -- the first files parsed are the shallow modules, and grails-data-* / grails-web-* are both larger and deeper, so the subset was sampling the cheap end. Any budget read against 110 files/s is void."
+      "note": "Measured over EVERY tracked .groovy file in the corpus (git ls-files '*.groovy', 7,114 files, 0 failures), single process, 20-file warm-up, /home/ishaq2321/bb_tests/xml/repos/grails-core. This REPLACES the 400-file 'corpus_subset' run, which is removed rather than kept: it reported 110 files/s against the full corpus's measured 14 files/s, so keeping both would have left a number 8x optimistic in the record. The gap is not the analyzer being slower on more data -- the first files parsed are the shallow modules, and grails-data-* / grails-web-* are both larger and deeper, so the subset was sampling the cheap end. Any budget read against 110 files/s is void."
     }
   ],
   "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/. 'corpus_subset' was a 400-file sample and has been replaced by a full-corpus run; see runs[].note for why the two disagree.",

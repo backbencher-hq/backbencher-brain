@@ -1,0 +1,64 @@
+{
+  "fixtureId": "css/font-faces-and-registered-properties",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two omissions, found by script/m14/tmp/css-omission-audit.ts rather than by a fixture. 1) A `font-family` naming a DECLARED `@font-face` emitted nothing, while the identical `animation` -> `@keyframes` path had been emitting since the order-dependence fix — 135 corpus files declare a `font-family`, 21 declare an `@font-face`, 344 family symbols were published and NOTHING connected them. 2) A `var(--brand)` read emitted `references` to `--brand` while the only published symbol was `@property --brand`, so the read pointed at a name nothing published — a dangling endpoint in a lane whose whole chain rule is that both ends resolve. The edge is also pinned to name the DECLARATION (`@font-face Inter`) rather than the bare family, because that is the published symbol; a bare `Inter` is an endpoint that resolves to nothing.",
+  "expectSymbols": [
+    {
+      "name": "@font-face Inter",
+      "kind": "variable"
+    },
+    {
+      "name": "--brand",
+      "kind": "variable"
+    },
+    {
+      "name": ".prose",
+      "kind": "class"
+    },
+    {
+      "name": ".other",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "fixtures/css/font-faces-and-registered-properties::@font-face Inter",
+      "line_number": 14,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isFontFamilyRef": true
+    },
+    {
+      "type": "references",
+      "target": "fixtures/css/font-faces-and-registered-properties::--brand",
+      "line_number": 15,
+      "meta.evidenceClass": "import_based",
+      "meta.isVariableRef": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "@font-face NotDeclared"
+    },
+    {
+      "type": "uses",
+      "target": "NotDeclared"
+    },
+    {
+      "type": "uses",
+      "target": "serif"
+    },
+    {
+      "type": "references",
+      "target": "@property --brand"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

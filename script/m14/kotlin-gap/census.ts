@@ -22,7 +22,7 @@ import { getParser } from "../../../src/ast/engine"
 import { RelationshipType } from "../../../src/ast/types"
 import { RealKotlinAnalyzer } from "../../../src/ast/real-kotlin-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv0 = process.argv.slice(2)
 const repoIdx = argv0.indexOf("--repo")
 const REPO_DIR = repoIdx >= 0 ? argv0[repoIdx + 1] : "kotlin"

@@ -1,0 +1,348 @@
+{
+  "key": "rake",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/rake",
+  "language": "Ruby",
+  "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+  "connectMs": 4042,
+  "index": {
+    "files": 109,
+    "symbols": 1593,
+    "relationships": 9075,
+    "languages": [
+      {
+        "language": "ruby",
+        "files": 97
+      },
+      {
+        "language": "yaml",
+        "files": 9
+      },
+      {
+        "language": "c",
+        "files": 3
+      }
+    ]
+  },
+  "targets": {
+    "file": "test/test_rake_file_list.rb",
+    "module": "test",
+    "symbol": "invoke",
+    "feature": "invo",
+    "fallbackModuleFile": ".github/dependabot.yml"
+  },
+  "dbBefore": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 33218560,
+      "sha256": "46ee83717c84dbfa1b03fa394b5e19a1d72fbe884316b1ef1df9025ebe9b1861"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 8928072,
+      "sha256": "aa66dd0be140a494dbad8bc7f1620b06dc32b9fb309fa7e113f47a9d063257b6"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 33218560,
+      "sha256": "46ee83717c84dbfa1b03fa394b5e19a1d72fbe884316b1ef1df9025ebe9b1861"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 8928072,
+      "sha256": "aa66dd0be140a494dbad8bc7f1620b06dc32b9fb309fa7e113f47a9d063257b6"
+    }
+  },
+  "dbUnchanged": true,
+  "stderrTail": [
+    "[INFO] [11:16:57] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:16:57] [dependency-graph-visualizer] ✅ Graph Data Generated: 150 nodes, 366 links",
+    "[INFO] [11:16:57] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:16:57] [dependency-graph-visualizer] ✅ Graph Data Generated: 385 nodes, 866 links"
+  ],
+  "cases": [
+    {
+      "name": "project text (default)",
+      "args": {},
+      "isError": false,
+      "ms": 126,
+      "bytes": 1660,
+      "nodes": 200,
+      "links": 465,
+      "truncated": true,
+      "totalNodesAvailable": 1593,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json",
+      "args": {
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 98,
+      "bytes": 461399,
+      "nodes": 200,
+      "links": 465,
+      "truncated": true,
+      "totalNodesAvailable": 1593,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project html regions",
+      "args": {
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 121,
+      "bytes": 531901,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project html force",
+      "args": {
+        "format": "html",
+        "layout": "force"
+      },
+      "isError": false,
+      "ms": 105,
+      "bytes": 531897,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "force",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project json large budget",
+      "args": {
+        "format": "json",
+        "maxNodes": 1000,
+        "maxLinks": 20000
+      },
+      "isError": false,
+      "ms": 688,
+      "bytes": 2235087,
+      "nodes": 1000,
+      "links": 2174,
+      "truncated": true,
+      "totalNodesAvailable": 1593,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json calls only",
+      "args": {
+        "format": "json",
+        "relationshipTypes": [
+          "calls"
+        ],
+        "maxNodes": 200
+      },
+      "isError": false,
+      "ms": 109,
+      "bytes": 336535,
+      "nodes": 200,
+      "links": 306,
+      "truncated": true,
+      "totalNodesAvailable": 1593,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file text",
+      "args": {
+        "scope": "file",
+        "target": "test/test_rake_file_list.rb",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 24,
+      "bytes": 1285,
+      "nodes": 71,
+      "links": 161,
+      "truncated": false,
+      "totalNodesAvailable": 71,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file json",
+      "args": {
+        "scope": "file",
+        "target": "test/test_rake_file_list.rb",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 31,
+      "bytes": 172902,
+      "nodes": 71,
+      "links": 161,
+      "truncated": false,
+      "totalNodesAvailable": 71,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "module json",
+      "args": {
+        "scope": "module",
+        "target": "test",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 94,
+      "bytes": 476168,
+      "nodes": 200,
+      "links": 440,
+      "truncated": true,
+      "totalNodesAvailable": 807,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol text",
+      "args": {
+        "scope": "symbol",
+        "target": "invoke",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 5,
+      "bytes": 1234,
+      "nodes": 2,
+      "links": 1,
+      "truncated": false,
+      "totalNodesAvailable": 2,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol html",
+      "args": {
+        "scope": "symbol",
+        "target": "invoke",
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 13,
+      "bytes": 132724,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "feature json",
+      "args": {
+        "scope": "feature",
+        "target": "invo",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 20,
+      "bytes": 65170,
+      "nodes": 36,
+      "links": 50,
+      "truncated": false,
+      "totalNodesAvailable": 26,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json offset page 2",
+      "args": {
+        "format": "json",
+        "maxNodes": 50,
+        "offset": 50
+      },
+      "isError": false,
+      "ms": 35,
+      "bytes": 55675,
+      "nodes": 50,
+      "links": 40,
+      "truncated": true,
+      "totalNodesAvailable": 1593,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project text includeTests false",
+      "args": {
+        "format": "text",
+        "includeTests": false
+      },
+      "isError": false,
+      "ms": 54,
+      "bytes": 1599,
+      "nodes": 200,
+      "links": 463,
+      "truncated": true,
+      "totalNodesAvailable": 1593,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "unknown scope refused",
+      "args": {
+        "scope": "galaxy"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 81,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "missing target refused",
+      "args": {
+        "scope": "symbol"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 60,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "maxNodes 0 refused",
+      "args": {
+        "maxNodes": 0
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 222,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_ask",
+  "generatedAt": "2026-11-03T20:26:06.137Z",
+  "runId": "reconstructed-from-battery-clean-log",
+  "note": "Rebuilt from the recorded all-green clean-battery log after a runner merge bug overwrote the summary with a fresh one; the per-runtime exits and negative census come from that run's logs and evidence files, not from a re-run.",
+  "currentCommit": "9594a0d83f17bdba36678dad24f59b732c235038",
+  "runtimes": [
+    "bun",
+    "node"
+  ],
+  "gates": [
+    {
+      "gate": "verify-ask-contract",
+      "file": "script/m13/verify-ask-contract.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 6293,
+          "log": "gates/bun/verify-ask-contract.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 21544,
+          "log": "gates/node/verify-ask-contract.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-provenance",
+      "file": "script/m13/verify-ask-provenance.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 1385,
+          "log": "gates/bun/verify-ask-provenance.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 5728,
+          "log": "gates/node/verify-ask-provenance.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-adversarial",
+      "file": "script/m13/verify-ask-adversarial.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 2197,
+          "log": "gates/bun/verify-ask-adversarial.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 5499,
+          "log": "gates/node/verify-ask-adversarial.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-integration",
+      "file": "script/m13/verify-ask-integration.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 2564,
+          "log": "gates/bun/verify-ask-integration.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 8330,
+          "log": "gates/node/verify-ask-integration.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-honesty",
+      "file": "script/m13/verify-ask-honesty.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 2722,
+          "log": "gates/bun/verify-ask-honesty.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 9207,
+          "log": "gates/node/verify-ask-honesty.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-semantic",
+      "file": "script/verify-semantic.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 1670,
+          "log": "gates/bun/verify-semantic.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 5526,
+          "log": "gates/node/verify-semantic.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-stats",
+      "file": "script/m16/verify-ask-stats.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 4786,
+          "log": "gates/bun/verify-ask-stats.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 15641,
+          "log": "gates/node/verify-ask-stats.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-deep",
+      "file": "script/m15/verify-ask-deep.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 14772,
+          "log": "gates/bun/verify-ask-deep.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 31377,
+          "log": "gates/node/verify-ask-deep.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-e2e-corpus",
+      "file": "script/m13/verify-ask-e2e-corpus.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 104762,
+          "log": "gates/bun/verify-ask-e2e-corpus.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 103173,
+          "log": "gates/node/verify-ask-e2e-corpus.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    },
+    {
+      "gate": "verify-ask-docs",
+      "file": "script/m13/verify-ask-docs.ts",
+      "runtimes": {
+        "bun": {
+          "exit": 0,
+          "ms": 519,
+          "log": "gates/bun/verify-ask-docs.log"
+        },
+        "node": {
+          "exit": 0,
+          "ms": 2604,
+          "log": "gates/node/verify-ask-docs.log"
+        }
+      },
+      "verified": true,
+      "failed": 0
+    }
+  ],
+  "verified": true,
+  "failed": [],
+  "totalNegativeCases": 75,
+  "blockedLegs": [],
+  "mutants": {
+    "path": "validation/tools/bb_ask/mutants.json",
+    "allRed": true,
+    "count": 13,
+    "redObserved": 13
+  },
+  "finalVerification": {
+    "note": "The clean battery (10 gates x bun+node, 75 negatives) ran on this tree before two further giant-corpus-only changes in content-search.ts; the gates below were re-run individually on the final tree afterwards and are the current-tree green record.",
+    "at": "2026-11-03T20:26:06.137Z",
+    "results": [
+      {
+        "gate": "verify-ask-contract",
+        "result": "A1: VERIFIED (27/27 passed, 15 negatives)"
+      },
+      {
+        "gate": "verify-ask-provenance",
+        "result": "A2: VERIFIED (27/27 passed, 5 negatives)"
+      },
+      {
+        "gate": "verify-ask-honesty",
+        "result": "A7: VERIFIED (30/30 passed, 12 negatives)"
+      },
+      {
+        "gate": "verify-ask-e2e-corpus",
+        "result": "A5: VERIFIED (29/29 passed, 6 negatives)"
+      },
+      {
+        "gate": "verify-ask-docs",
+        "result": "A6: VERIFIED (52/52 passed, 4 negatives)"
+      },
+      {
+        "gate": "verify-ask-deep",
+        "result": "A1-A8 all VERIFIED"
+      },
+      {
+        "gate": "verify-ask-stats",
+        "result": "A1-A4 all VERIFIED"
+      },
+      {
+        "gate": "verify-semantic",
+        "result": "SEMANTIC: PASS"
+      }
+    ],
+    "crossLane": [
+      {
+        "gate": "verify-search-honesty",
+        "result": "S4: VERIFIED (21/21 passed, 4 negatives)"
+      },
+      {
+        "gate": "verify-search-docs",
+        "result": "S5: VERIFIED (24/24 passed, 2 negatives)"
+      }
+    ]
+  }
+}

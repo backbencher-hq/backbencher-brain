@@ -9,7 +9,7 @@
   "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
   "workingTreeRelevantChanges": [],
   "generatedAt": "2026-09-01T15:43:01.451Z",
-  "repo": "$HOME/fixtures/repositories/cabal",
+  "repo": "/home/ishaq2321/bb_tests/repositories/cabal",
   "dataDir": "/tmp/m21r3-verify-1788277347269",
   "passed": 22,
   "failed": 0,
@@ -83,7 +83,7 @@
     {
       "name": "R3: resume reported checkpoint",
       "pass": true,
-      "detail": "indexing $HOME/fixtures/repositories/cabal (project dfe57809…)\nresuming interrupted index (checkpoint: 70/2348 files done)\n[brain] ✓ worker "
+      "detail": "indexing /home/ishaq2321/bb_tests/repositories/cabal (project dfe57809…)\nresuming interrupted index (checkpoint: 70/2348 files done)\n[brain] ✓ worker "
     },
     {
       "name": "R3: post-resume DB readable",

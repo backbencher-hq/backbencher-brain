@@ -1,0 +1,28 @@
+{
+  "gate": "M51.A2",
+  "issue": 717,
+  "at": "2026-10-15T06:57:59.443Z",
+  "commit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+  "clean": {
+    "orphan": 0,
+    "synthetic": 0,
+    "dangling": 0,
+    "overallHealth": 100
+  },
+  "corrupted": {
+    "injectedGenuine": 12,
+    "injectedSynthetic": 1,
+    "injectedDangling": 1,
+    "injectedNullSource": 2
+  },
+  "checks": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-15T06:57:59.517Z",
+    "contentSha256": "61c3c76cdceb365a4365513c5cc1755ef05ece33d80fd41ee992c1b6a44101b0"
+  }
+}

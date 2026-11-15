@@ -1,0 +1,73 @@
+{
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": ".bb-data",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbReadonlyHandle": true,
+  "counts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "imports": 25122,
+    "embeddingRows": 32837,
+    "embeddedEntities": 32837
+  },
+  "embeddingModels": [
+    {
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "rows": 30906
+    },
+    {
+      "model": "local-word-vectors-v3",
+      "dimension": 50,
+      "rows": 1931
+    }
+  ],
+  "files": {
+    "before": {
+      "db": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "size": 3639963648,
+        "mtimeMs": 1793570974843.029,
+        "mtime": "2026-11-01T22:09:34.843Z"
+      },
+      "wal": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-wal",
+        "size": 0,
+        "mtimeMs": 1793571561980.736,
+        "mtime": "2026-11-01T22:19:21.980Z"
+      },
+      "shm": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-shm",
+        "size": 32768,
+        "mtimeMs": 1793571718511.2312,
+        "mtime": "2026-11-01T22:21:58.511Z"
+      }
+    },
+    "after": {
+      "db": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "size": 3639963648,
+        "mtimeMs": 1793570974843.029,
+        "mtime": "2026-11-01T22:09:34.843Z"
+      },
+      "wal": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-wal",
+        "size": 0,
+        "mtimeMs": 1793571561980.736,
+        "mtime": "2026-11-01T22:19:21.980Z"
+      },
+      "shm": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-shm",
+        "size": 32768,
+        "mtimeMs": 1793571784590.5256,
+        "mtime": "2026-11-01T22:23:04.590Z"
+      }
+    },
+    "dbUnchanged": true,
+    "walContentChanged": false,
+    "dbUnchangedNote": "db bytes unchanged AND no WAL frames added; a newly present 0-byte -wal and a touched -shm are connection artifacts, not writes"
+  },
+  "generatedAt": "2026-11-01T22:23:04.757Z"
+}

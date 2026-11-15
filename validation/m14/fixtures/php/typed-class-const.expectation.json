@@ -1,0 +1,154 @@
+{
+  "fixtureId": "php/typed-class-const",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PHP 8.3 TYPED CLASS CONSTANTS in the R9 declared-type graph — `const Dep X = 1;` — a position php's own code carried on its 'BOUNDARIES, DISCLOSED' list and did not handle, with nothing adjudicating the disclosure. TWO defects, one procedural and one substantive. PROCEDURAL: the spec claims `const_declaration` is `handled_verified` and carries no decision naming typed class constants, so the position was documented in a source comment and absent from the adjudication set (php has 33 design decisions; this was in none) — an unexamined claim wearing a disclosure's clothes. SUBSTANTIVE: it was never a boundary. Probe-verified against the pinned wasm, the grammar carries the type as an ordinary `type` field on the declaration (`const_declaration > const > named_type > name`, a sibling of `const_element > name`), so a class writing `const Dep X` depends on `Dep` exactly as it does writing `private Dep $f`. R9's rule is that a declaration which WRITES a type name depends on the type it names, so ruling this out would have manufactured a gap to avoid writing the case. WHY A FIXTURE AND NOT A CORPUS MEASUREMENT, and this is the part the fixture header exists to record: both pinned corpora were walked for `const_declaration` nodes carrying a `type` field — 4,463 files, 243 const_declarations, 81 of them TYPED — and every one of those 81 is a `primitive_type` (`private const string PAGE_HEADER`, `public const int VERSION`). Primitives are silent BY DESIGN, so the position is genuinely exercised 81 times; but a NAMED type, the case that actually produces an edge, occurs ZERO times. The absence of `const Dep` references therefore looked identical to correct behaviour and the full-extent differential read 100% either way. The lane's own lesson, applied to itself: 100% coverage is a statement about the corpus, not about the language — the same shape as the grouped-`use` defect that 4,139 files and 95,231 edges reported clean while missing the construct entirely. So this fixture is the ONLY evidence the position works, which is why it carries the reverting mutant `php/typed-class-const-dropped`; a pin with no mutant is a comment. EVERY shape a written type can take is here, and every SILENT case is here too, because the silent half is the half a capability fix usually gets wrong: `primitive_type` is tagged by the grammar and names no userland symbol; a constant with no type at all is the majority of real code (162 of the corpora's 243). ATTRIBUTION follows the two rules this lane inherited rather than invented: a member's dependency belongs to the enclosing TYPE (so `Contract`'s constant is `Contract -> Dep`, not a file edge), and a FILE-SCOPE typed constant has no enclosing type, so it is attributed to `global` — the same file-scope owner the read rules use when nothing encloses the position (the trait-use precedent, PHP-O1) — rather than dropped, because a written dependency is not less real for having no owner symbol. `self` resolves to the enclosing class, reusing this lane's own probe-verified `new self()` rule, and the first prototype of that rule passed the attribution source instead and published `copy -> copy`.",
+  "expectSymbols": [
+    {
+      "name": "Constants",
+      "kind": "class"
+    },
+    {
+      "name": "DEPENDENCY",
+      "kind": "constant",
+      "ownerName": "Constants",
+      "comment": "the constant whose TYPE is written — the constant itself is a symbol, the type is the dependency"
+    },
+    {
+      "name": "UNION",
+      "kind": "constant",
+      "ownerName": "Constants",
+      "comment": "one constant, TWO dependencies: each member of a written union is a dependency of its own"
+    },
+    {
+      "name": "SELF_REFERENCE",
+      "kind": "constant",
+      "ownerName": "Constants"
+    },
+    {
+      "name": "PRIMITIVE",
+      "kind": "constant",
+      "ownerName": "Constants",
+      "comment": "a PRIMITIVE-typed constant is still a constant — the type is silent, the declaration is not"
+    },
+    {
+      "name": "UNTYPED",
+      "kind": "constant",
+      "ownerName": "Constants"
+    },
+    {
+      "name": "CONTRACT_DEP",
+      "kind": "constant",
+      "ownerName": "Contract",
+      "comment": "interfaces declare constants in the same shape"
+    },
+    {
+      "name": "SHARED_DEP",
+      "kind": "constant",
+      "ownerName": "Shared",
+      "comment": "so do traits"
+    },
+    {
+      "name": "FILE_SCOPE_DEP",
+      "kind": "constant",
+      "comment": "a file-scope constant has no ownerName, but its written type is still a dependency"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "Dep",
+      "comment": "THE POSITION. `const Dep X` depends on `Dep` exactly as `private Dep $f` does, attributed to the enclosing TYPE — not to the constant and not to file scope. The two `meta.` keys are the R9 contract's metadata fields and they are what let a consumer tell a constant's dependency from a method's return: `relationshipType` separates `declared_type` from `return_type`, and `declaredOn` names the POSITION the type was written in.",
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "const_declaration"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "Opt",
+      "comment": "a `?Opt` wrapper descends: the wrapper is not the dependency, its member is"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "First",
+      "comment": "a union contributes BOTH members as separate dependencies"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "Second",
+      "comment": "the second member of the same union — a pin on one member of a two-member type would let a rule that stops at the first pass"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "Constants",
+      "comment": "`const self SELF_REFERENCE` resolves to the ENCLOSING CLASS via this lane's own probe-verified `new self()` rule. The single edge that proves relative-type resolution reached the const_declaration case at all — without it, a rule that read the raw text would publish `Constants -> self`, a target no php symbol can be named."
+    },
+    {
+      "type": "references",
+      "source": "Contract",
+      "target": "Dep",
+      "comment": "an interface's constant is attributed to the interface"
+    },
+    {
+      "type": "references",
+      "source": "Shared",
+      "target": "Dep",
+      "comment": "and a trait's to the trait"
+    },
+    {
+      "type": "references",
+      "source": "global",
+      "target": "Dep",
+      "comment": "A FILE-SCOPE typed constant has no enclosing type, and an edge still needs a source. `global` is the same file-scope owner the read rules use when nothing encloses a position (trait-use precedent, PHP-O1) — the alternative was to drop a real written dependency for the sake of a source name."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "string",
+      "comment": "a PRIMITIVE type is tagged by the grammar and names no userland symbol — `private const string X` is a dependency on nothing. The same exclusion java gets from its primitive_type node, and the single most likely wrong edge in this feature."
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "int",
+      "comment": "same, for the other primitive in the fixture"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "UNTYPED",
+      "comment": "a constant with NO type writes no type name, so it is not a dependency on its own name — the conflation a name-blind rule would make"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "DEPENDENCY",
+      "comment": "the CONSTANT's own name is not its type: `const Dep DEPENDENCY` names `Dep`, never `DEPENDENCY`. This is the conflation the `const_element > name` sibling makes possible, and it is the reason the fixture writes a type name and a constant name that are both plausible identifiers."
+    },
+    {
+      "type": "references",
+      "source": "global",
+      "target": "FILE_SCOPE_PLAIN",
+      "comment": "an UNTYPED file-scope constant writes no type, so nothing is attributed to `global` for it"
+    },
+    {
+      "type": "references",
+      "source": "Constants",
+      "target": "self",
+      "comment": "`self` names no symbol in the file: it must RESOLVE to the enclosing class (pinned above as `Constants -> Constants`) or emit nothing. Publishing the raw relative keyword is the R10 target-spelling fabrication — a target no php symbol can ever be named."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "equals": 9,
+      "comment": "EXACTLY NINE, and the count is the assertion. Constants contributes 5 (Dep, Opt, First, Second, and self->Constants), Contract 1, Shared 1, global 1 = 9, and NO primitive-typed or untyped constant may contribute. A count pin catches what per-target pins cannot: a rule that also emitted the wrapper's own name, or that re-published a constant's name, would leave every positive pin satisfied while the total moved."
+    }
+  ]
+}

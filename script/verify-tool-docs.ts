@@ -77,7 +77,7 @@ export const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string
   bb_visualize: { modes: [], surfaces: "per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness" },
   bb_migrate: { modes: ["plan"], surfaces: "per-plan `sourceFile` + `stale` flags with an up-front stale-plan notice + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON" },
   bb_patterns: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
-  bb_security: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
+  bb_security: { modes: [], surfaces: "per-lead `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
   bb_doc: { modes: [], surfaces: "`freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh" },
   // bb_ask reports per-source staleness but is NOT auto-refreshing, and it does
   // NOT emit a `freshness` envelope. Both halves matter and the generated page
@@ -151,7 +151,7 @@ export const GUIDE_LINKS: Record<string, { label: string; href: string }[]> = {
   ],
   bb_health: [{ label: "Index health and freshness", href: "../BB_HEALTH.md" }],
   bb_patterns: [{ label: "Patterns: dead code, orphans, frameworks and anti-patterns", href: "../BB_PATTERNS.md" }],
-  bb_security: [{ label: "Security: taint flows, tiers, and what is not detected", href: "../BB_SECURITY.md" }],
+  bb_security: [{ label: "Security leads: tiers, evidence, and what is not scanned", href: "../BB_SECURITY.md" }],
   bb_visualize: [{ label: "Bounded dependency maps and their declared bounds", href: "../BB_VISUALIZE.md" }],
   bb_migrate: [{ label: "Migration plans, ordering and honesty", href: "../BB_MIGRATE.md" }],
   bb_doc: [
@@ -242,7 +242,7 @@ function stalenessSection(tool: any): string {
     return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does NOT auto-refresh and has no \`refresh\` option: the flags and the envelope DESCRIBE the index as it stands, and the repair is manual — project scope → run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only); file scope → run: \`bb index --file "<file>"\` for the file the plan belongs to. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
   }
   if (tool.name === "bb_security") {
-    return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does not auto-refresh and has no \`refresh\` option: a touched finding file is marked \`[stale]\` and the footer names the MANUAL repair — run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only). Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+    return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does not auto-refresh and has no \`refresh\` option: a touched lead file is marked \`[stale]\` and the footer names the MANUAL repair — run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only). Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
   }
   if (tool.name === "bb_patterns") {
     return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does NOT auto-refresh: the per-finding flags DESCRIBE the index as it stands, nothing is reindexed to make them stale or fresh, and there is no \`refresh\` option to opt out with. When findings name stale or missing files, repair them with the manual interface: run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only). Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`

@@ -1,0 +1,159 @@
+{
+  "fixtureId": "php/declared-type-graph",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R9 (#835) — the declared-type reference graph, a family standard this lane was missing entirely (rust's R13 header: \"family standard, mirrors go/c/zig\"; measured by script/m60/declared-type-refs-census.ts). php has no generics and no type parameters, so the two name-as-type traps csharp's fixture had to pin cannot arise here; what CAN is php's own shape set — the optional/union/intersection wrappers, a qualified name whose LEAF is what every other php edge keys on, and `self`/`static`/`parent`, which name no symbol in the file and resolve through this lane's own probe-verified relative-type rule (self/static -> the enclosing CLASS, parent -> its declared base, and NOTHING when the base is not resolvable). The attribution contract is the one measured off java/kotlin/python for csharp: a property's dependency belongs to the enclosing TYPE, a parameter's / return's to the enclosing CALLABLE. Measured before the pins were written; the `self` resolution was corrected BY this fixture's first measurement (the prototype published `copy -> copy` for `function copy(): self`).",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 21,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 22,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 23,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Other",
+      "line_number": 24,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 25,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Other",
+      "line_number": 25,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "Dep",
+      "line_number": 26,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "Holder",
+      "target": "IShape",
+      "line_number": 26,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_declaration"
+    },
+    {
+      "type": "references",
+      "from": "__construct",
+      "target": "Dep",
+      "line_number": 33,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "property_promotion_parameter"
+    },
+    {
+      "type": "references",
+      "from": "build",
+      "target": "Dep",
+      "line_number": 38,
+      "meta.relationshipType": "return_type",
+      "meta.declaredOn": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "build",
+      "target": "IShape",
+      "line_number": 38,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter"
+    },
+    {
+      "type": "references",
+      "from": "build",
+      "target": "Other",
+      "line_number": 38,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter"
+    },
+    {
+      "type": "references",
+      "from": "copy",
+      "target": "Holder",
+      "line_number": 44,
+      "meta.relationshipType": "return_type",
+      "meta.declaredOn": "return_type"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "target": "string"
+    },
+    {
+      "type": "references",
+      "target": "void"
+    },
+    {
+      "type": "references",
+      "target": "mixed"
+    },
+    {
+      "type": "references",
+      "target": "self"
+    },
+    {
+      "type": "references",
+      "target": "static"
+    },
+    {
+      "type": "references",
+      "target": "parent"
+    },
+    {
+      "type": "references",
+      "target": "\\App\\Lib\\Dep"
+    },
+    {
+      "type": "references",
+      "target": "App"
+    },
+    {
+      "type": "references",
+      "target": "Lib"
+    },
+    {
+      "type": "references",
+      "from": "copy",
+      "target": "copy"
+    }
+  ]
+}

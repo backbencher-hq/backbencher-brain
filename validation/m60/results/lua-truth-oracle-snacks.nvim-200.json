@@ -1,0 +1,620 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "snacks.nvim",
+  "sample": 200,
+  "filesDrawn": 141,
+  "parseErrorFiles": 0,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 12339,
+    "observedEdges": 24474,
+    "missing": 0,
+    "missingFromAnalyzer": [],
+    "exportsDirectPath": {
+      "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+      "filesProbed": 141,
+      "truth": 129,
+      "hit": 129,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 141,
+        "checks": 282
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 141,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 141,
+        "distinctValues": 5,
+        "values": [
+          70,
+          80,
+          85,
+          90,
+          95
+        ],
+        "mean": 89.043,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 141,
+      "totalDisclosures": 1
+    },
+    "relationshipsDirectPath": {
+      "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+      "filesProbed": 141,
+      "truth": 12339,
+      "hit": 12339,
+      "missed": 0,
+      "spurious": 12135,
+      "loopCoincidenceExempted": 0,
+      "loopCoincidenceSample": [],
+      "recall": 1,
+      "precision": 0.504168,
+      "missedSample": [],
+      "spuriousSample": [
+        "references global -> \"examples\"  docs/examples/dashboard.lua",
+        "references global -> \"key\"  docs/examples/dashboard.lua",
+        "references global -> \"fn\"  docs/examples/dashboard.lua",
+        "references global -> \"git\"  docs/examples/dashboard.lua",
+        "references global -> \"ui\"  docs/examples/dashboard.lua",
+        "uses global -> \"in_git\"  docs/examples/dashboard.lua",
+        "uses global -> \"cmd\"  docs/examples/dashboard.lua",
+        "uses global -> \"cmds\"  docs/examples/dashboard.lua",
+        "uses global -> \"M\"  docs/examples/dashboard.lua",
+        "references global -> \"zen\"  docs/examples/init.lua",
+        "references global -> \"scratch\"  docs/examples/init.lua",
+        "references global -> \"notifier\"  docs/examples/init.lua",
+        "references global -> \"rename\"  docs/examples/init.lua",
+        "references global -> \"words\"  docs/examples/init.lua",
+        "references global -> \"count1\"  docs/examples/init.lua",
+        "references global -> \"v\"  docs/examples/init.lua",
+        "references global -> \"api\"  docs/examples/init.lua",
+        "references global -> \"debug\"  docs/examples/init.lua",
+        "references global -> \"fn\"  docs/examples/init.lua",
+        "references global -> \"dd\"  docs/examples/init.lua",
+        "references global -> \"toggle\"  docs/examples/init.lua",
+        "references global -> \"conceallevel\"  docs/examples/init.lua",
+        "references global -> \"o\"  docs/examples/init.lua",
+        "references global -> \"examples\"  docs/examples/picker.lua",
+        "references global -> \"picker\"  docs/examples/picker.lua"
+      ]
+    },
+    "pipelineDiscardEvidence": {
+      "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+      "filesProbed": 141,
+      "cap": 150,
+      "provenDiscarded": [],
+      "observedOnBothSides": [
+        "calls",
+        "contains",
+        "exports",
+        "imports",
+        "instantiates",
+        "overrides",
+        "references",
+        "uses"
+      ]
+    },
+    "missingByPipelineDiscard": {
+      "total": 0,
+      "byLabel": [],
+      "labelsAbsentFromPipeline": []
+    },
+    "missingByPipelineNoiseFilter": 0,
+    "noiseTargetsHit": [],
+    "unexplained": 12135,
+    "lineChecked": 12339,
+    "lineExact": 12339,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 7221,
+      "observed": 7221,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "contains": {
+      "truth": 4783,
+      "observed": 4783,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "extends": {
+      "truth": 0,
+      "observed": 0,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": null,
+      "recall": null
+    },
+    "instantiates": {
+      "truth": 36,
+      "observed": 36,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 170,
+      "observed": 170,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "exports": {
+      "truth": 129,
+      "observed": 129,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "missingByShape": [],
+  "unexplainedByShape": [
+    {
+      "shape": "references other",
+      "n": 6626
+    },
+    {
+      "shape": "uses other",
+      "n": 5505
+    },
+    {
+      "shape": "overrides other",
+      "n": 4
+    }
+  ],
+  "analyzerAttributableSample": [],
+  "analyzerAttributableUnexplainedSample": [
+    {
+      "label": "references",
+      "from": "global",
+      "target": "examples",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "key",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fn",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "git",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "ui",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "in_git",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmd",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmds",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "M",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "zen",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "scratch",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "notifier",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "rename",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "words",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "count1",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "v",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "api",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "debug",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fn",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "dd",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "toggle",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "conceallevel",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "o",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "examples",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "picker",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fn",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "opts",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "actions",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "filetype",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "bo",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "api",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "win",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "list",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "pos",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "idx",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "M",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "pow",
+      "rel": "lua/snacks/animate/easing.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "sin",
+      "rel": "lua/snacks/animate/easing.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "cos",
+      "rel": "lua/snacks/animate/easing.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "pi",
+      "rel": "lua/snacks/animate/easing.lua"
+    }
+  ],
+  "missingSample": [],
+  "unexplainedSample": [
+    {
+      "label": "references",
+      "from": "global",
+      "target": "examples",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "key",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fn",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "git",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "ui",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "in_git",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmd",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "cmds",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "M",
+      "rel": "docs/examples/dashboard.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "zen",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "scratch",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "notifier",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "rename",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "words",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "count1",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "v",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "api",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "debug",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fn",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "dd",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "toggle",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "conceallevel",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "o",
+      "rel": "docs/examples/init.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "examples",
+      "rel": "docs/examples/picker.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "picker",
+      "rel": "docs/examples/picker.lua"
+    }
+  ],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": false
+  },
+  "hardFailures": true,
+  "status": "fail"
+}

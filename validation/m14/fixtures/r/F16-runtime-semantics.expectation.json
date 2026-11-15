@@ -1,0 +1,107 @@
+{
+  "fixtureId": "r/F16-runtime-semantics",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Names R binds only if the file actually RUNS, and every expectation here was taken from R EXECUTING the file rather than from reading the analyzer -- which is the point, because a fixture authored by reading the analyzer cannot catch the analyzer's own blind spots. Three classes, all found by a red-team cross-check that evaluated each corpus file and asked R's environment what it held. (1) A QUOTED assignment target: `\"%+replace%\" <- function(e1, e2)` binds the name, and the analyzer used to require an `identifier` node so it published nothing -- ggplot2/R/theme-current.R:130 writes exactly this. (2) A STATICALLY DEAD branch declares nothing: `if (FALSE) { dead_one <- 1 }` never executes, so R binds nothing, but both the analyzer and the R-oracle's walk descended into it. The ELSE branch of a dead condition DOES run, which is why `live_alt` is pinned -- a rule that drops the whole `if` on seeing `FALSE` loses it. (3) A top-level `rm()` UNBINDS, and the shape is ordinary practice: Matrix does it in at least eight files, so `removed_helper` is forbidden even though it is defined, used, and only then removed. `inside_fn` is forbidden because it is a function local. A fixture whose assertions were all positive would miss every one of these, which is why the forbid list is the substance of the file.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "%+replace%",
+      "kind": "function"
+    },
+    {
+      "name": "plain quoted",
+      "kind": "variable"
+    },
+    {
+      "name": "backticked",
+      "kind": "variable"
+    },
+    {
+      "name": "bare",
+      "kind": "variable"
+    },
+    {
+      "name": "live_alt",
+      "kind": "variable"
+    },
+    {
+      "name": "uses_the_helper",
+      "kind": "variable"
+    },
+    {
+      "name": "after_rm",
+      "kind": "variable"
+    },
+    {
+      "name": "f",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "%+replace%"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "plain quoted"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "live_alt"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "uses_the_helper"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "after_rm"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "dead_one",
+      "kind": "variable"
+    },
+    {
+      "name": "dead_two",
+      "kind": "variable"
+    },
+    {
+      "name": "dead_three",
+      "kind": "variable"
+    },
+    {
+      "name": "removed_helper",
+      "kind": "function"
+    },
+    {
+      "name": "inside_fn",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "dead_one"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "dead_three"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "removed_helper"
+    }
+  ]
+}

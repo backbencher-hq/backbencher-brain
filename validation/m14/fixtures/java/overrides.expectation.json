@@ -1,0 +1,28 @@
+{
+  "fixtureId": "java/overrides",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the overrides relationship (previously unpinned in ANY language): Sub.speak overrides Base.speak; the overload speakLoud(String) must NOT be labelled an override. Overload speakLoud(String) must NOT be labelled an override - signature-aware behavior verified and pinned.",
+  "expectSymbols": [
+    {
+      "name": "Base"
+    },
+    {
+      "name": "Sub"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Sub.speak",
+      "targetEndsWith": "speak"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "fromEndsWith": "speakLoud",
+      "target": "speak"
+    }
+  ]
+}

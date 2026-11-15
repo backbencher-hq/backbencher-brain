@@ -1,0 +1,48 @@
+{
+  "fixtureId": "xml/dtd-public-id-names-no-file",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A `PUBLIC` identifier is not a file, and the analyzer published one as an `imports` target. `extractExternalId` read `findDirectChild(externalId, \"SystemLiteral\") ?? findDirectChild(externalId, \"PubidLiteral\")` and its notation caller reached further still — `findDirectChild(node, \"ExternalID\") || (isNotation ? findDirectChild(node, \"PublicID\") : null)` — so `<!NOTATION GIF PUBLIC \"GIF\">`, whose grammar shape is a `PublicID` node carrying a `PubidLiteral` and no system literal at all, produced the edge `GIF -imports-> GIF` at `confidence: 1` on a tier table that maps `notation_external_id` to `import_based`. Found as the ONLY `imports` edge in 11,552 corpus files with no site on the parse tree (`containment-ledger.mts` §`imports` site ledger), which is what an invented edge looks like from outside, and then confirmed by two independent counts in `public-id-census.mts`: 299 `ExternalID`/`PublicID` nodes of which 298 carry a `SystemLiteral` and 1 does not, against 469 `imports` edges of which 298 carry `externalIdKind: \"system\"` and 1 carries `\"public\"` — the same edge. The two counts agreeing to the edge is what makes the fix scoped rather than guessed. This is the class the powerShell round removed from `New-Object $type`: a value that is not a file published as an edge target. `gif` is the notation under test and `jpeg` is the CONTROL — a notation whose ExternalID does carry a system literal, so a fixture that passed by refusing every notation import would fail here. `pairs` is a second control with the `PUBLIC \"pubid\" SYSTEM \"system-literal\"` shape, which XML allows and which must still import the SYSTEM value and never the public one. `plain` is a third control on a general entity. `graphic` is an unparsed entity pointing at the public-id notation by NDATA, which is a `contains` claim and not an import, so the fixture also pins that it did not become one.",
+  "expectSymbols": [
+    { "name": "doc", "kind": "type", "meta.isDoctype": true },
+    { "name": "gif", "kind": "type", "meta.isDtdNotationDeclaration": true, "ownerName": "doc" },
+    { "name": "jpeg", "kind": "type", "meta.isDtdNotationDeclaration": true, "ownerName": "doc" },
+    { "name": "pairs", "kind": "type", "meta.isDtdNotationDeclaration": true, "ownerName": "doc" },
+    { "name": "graphic", "kind": "type", "meta.isDtdEntityDeclaration": true, "ownerName": "doc" },
+    { "name": "plain", "kind": "type", "meta.isDtdEntityDeclaration": true, "ownerName": "doc" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "jpeg", "target": "image/jpeg", "line_number": 4 },
+    { "type": "imports", "from": "pairs", "target": "-//IETF//NOTATION TIFF//EN", "line_number": 5 },
+    { "type": "imports", "from": "graphic", "target": "graphic.gif", "line_number": 6 },
+    { "type": "imports", "from": "plain", "target": "notes.ent", "line_number": 7 }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "gif",
+      "note": "THE FIX. `<!NOTATION gif PUBLIC \"GIF\">` names no file, so there is no import of any target from `gif`. Constrained on `from` alone rather than on `from`+`target` on purpose: the original defect was the target `GIF`, and a forbid row naming that target would be satisfied by an analyzer that invented a DIFFERENT one instead."
+    },
+    {
+      "type": "imports",
+      "from": "pairs",
+      "target": "-//IETF//NOTATION TIFF//EN/public",
+      "note": "`PUBLIC \"pubid\" SYSTEM \"sys\"` carries two literals and only the system one is a path; the public one must never become a target."
+    },
+    {
+      "type": "imports",
+      "from": "graphic",
+      "target": "GIF",
+      "note": "`NDATA gif` is a reference to a notation, published as `contains`. It is not an import of the notation's public identifier, and conflating the two is the same defect one level down."
+    }
+  ],
+  "expectImports": [
+    { "path": "image/jpeg", "importType": "xml-doctype" },
+    { "path": "-//IETF//NOTATION TIFF//EN", "importType": "xml-doctype" },
+    { "path": "graphic.gif", "importType": "xml-doctype" },
+    { "path": "notes.ent", "importType": "xml-doctype" }
+  ],
+  "forbidImports": [
+    { "path": "GIF", "note": "the public identifier is not a path and must not appear in `imports` at all" }
+  ]
+}

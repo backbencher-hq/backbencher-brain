@@ -1,0 +1,171 @@
+{
+  "fixtureId": "dart/receiver-element-types",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A written type argument is EVIDENCE. `for (final e in xs)` writes no type for `e`, so before this change `e.load()` published a bare leaf with receiverTypeUnknown even when `xs` was declared `List<Repo>` in the same signature — the element type is written in the source, one type argument away. The analyzer now records the element type of the container types it can read (List/Iterable/Set/Queue/Stream/Iterator/…) from the parameter's or local's own `type_arguments` child, and an UNTYPED for-in over such a variable types its loop variable for the body (receiver evidence class `annotation`: the type was WRITTEN). The inference is deliberately narrow: only a container whose element type is written, and only when the loop variable has no written type of its own. THE BOUNDARY is `dynamic`: it is the absence of a type, not a declaration, and must never become metadata.owner (the resolver would look up a class-like declaration named `dynamic` and fail) — measured before this fixture, a `dynamic d` parameter did exactly that.",
+  "expectSymbols": [
+    {
+      "name": "Repo",
+      "kind": "class"
+    },
+    {
+      "name": "load",
+      "kind": "method",
+      "ownerName": "Repo"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "Repo"
+    },
+    {
+      "name": "typedIterable",
+      "kind": "function"
+    },
+    {
+      "name": "untypedIterable",
+      "kind": "function"
+    },
+    {
+      "name": "dyn",
+      "kind": "function"
+    },
+    {
+      "name": "typedForInStillWorks",
+      "kind": "function"
+    },
+    {
+      "name": "mapViews",
+      "kind": "function"
+    },
+    {
+      "name": "pendingRepo",
+      "kind": "function"
+    },
+    {
+      "name": "awaitRepo",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "typedIterable",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "annotation",
+      "note": "THE INFERENCE, through `List<Repo> xs`: the untyped loop variable `r` is typed from the written type argument, so the call target is spelled and the owner channel states the type. Before the fix this row was `calls -> load` with receiverTypeUnknown."
+    },
+    {
+      "type": "uses",
+      "source": "typedIterable",
+      "target": "Repo.count",
+      "meta.isMemberRead": true,
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "annotation",
+      "note": "the READ arm on the inferred element type — both arms must see it."
+    },
+    {
+      "type": "uses",
+      "source": "typedIterable",
+      "target": "List.length",
+      "meta.isMemberRead": true,
+      "meta.owner": "List",
+      "meta.ownerEvidence": "param",
+      "note": "the CONTAINER's own receiver (`xs.length`): the written type is the base `List`. `List` is declared outside this file, so no kind is known here and the owner is allowed — the external-owner case the channel exists for."
+    },
+    {
+      "type": "calls",
+      "source": "typedForInStillWorks",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "annotation",
+      "note": "THE TYPED FORM still works through the existing collector (`for (final Repo r in ys)`) — the inference branch only fills types that are not already there."
+    },
+    {
+      "type": "calls",
+      "source": "mapViews",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "annotation",
+      "note": "MAP VALUES: `for (final r in byId.values)` over `Map<String, Repo> byId` types `r` from the SECOND written type argument (the value). Before this, `r.load()` was a bare leaf with receiverTypeUnknown."
+    },
+    {
+      "type": "calls",
+      "source": "awaitRepo",
+      "target": "Repo.load",
+      "meta.owner": "Repo",
+      "meta.ownerEvidence": "annotation",
+      "note": "FUTURE AWAIT: `final repo = await pending;` over `Future<Repo> pending` types `repo` from the written type argument; `repo.load()` is spelled and owned. (calls, not uses: the selector takes an argument list.)"
+    },
+    {
+      "type": "uses",
+      "source": "mapViews",
+      "target": "String.length",
+      "meta.isMemberRead": true,
+      "meta.owner": "String",
+      "meta.ownerEvidence": "annotation",
+      "note": "MAP KEYS: `for (final k in byId.keys)` over `Map<String, Repo>` types `k` from the FIRST written type argument; `k.length` is spelled `String.length`."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "typedIterable",
+      "target": "load",
+      "note": "THE PRE-FIX BARE LEAF — gone once the written element type is used."
+    },
+    {
+      "type": "uses",
+      "source": "typedIterable",
+      "target": "count",
+      "note": "the same pre-fix shape on the read arm."
+    },
+    {
+      "type": "uses",
+      "source": "untypedIterable",
+      "target": "load",
+      "meta.owner": "Repo",
+      "note": "NO INFERENCE WHERE NOTHING IS WRITTEN — `dynamic xs` writes no element type, so no owner may be guessed. (The row keeps its bare leaf + receiverTypeUnknown cut.)"
+    },
+    {
+      "type": "uses",
+      "source": "untypedIterable",
+      "target": "load",
+      "meta.owner": "dynamic",
+      "note": "and definitely not `dynamic` — the absence of a type is not a class-like owner."
+    },
+    {
+      "type": "uses",
+      "source": "dyn",
+      "target": "foo",
+      "meta.owner": "dynamic",
+      "note": "THE BOUNDARY CASE: a `dynamic` parameter must never become an owner. Measured before this fix: `d.foo` emitted exactly this row."
+    },
+    {
+      "type": "calls",
+      "source": "typedIterable",
+      "target": "Repo.load",
+      "meta.owner": "xs",
+      "note": "THE VALUE'S NAME IS NOT THE OWNER — `Repo` is the type; `xs` is the container's name."
+    },
+    {
+      "type": "calls",
+      "source": "mapViews",
+      "target": "load",
+      "note": "THE PRE-FIX BARE LEAF for the map-values loop (no receiver type)."
+    },
+    {
+      "type": "calls",
+      "source": "awaitRepo",
+      "target": "load",
+      "note": "THE PRE-FIX BARE LEAF for the awaited local (no receiver type)."
+    },
+    {
+      "type": "uses",
+      "source": "mapViews",
+      "target": "length",
+      "note": "THE PRE-FIX BARE LEAF for the map-keys loop (no receiver type; it was even mis-owned as Repo before the selector was read)."
+    }
+  ]
+}

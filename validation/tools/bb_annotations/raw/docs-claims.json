@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "tool": "bb_annotations",
+  "phase": "after Phase B fixes",
+  "purpose": "Every documented claim the tool makes, and the measured answer for it. The Phase A table (raw/phaseA-docs-claims.json) is the same audit before the fixes; rows marked fixed were false there.",
+  "sources": {
+    "descriptor": "src/mcp/tools/bb_annotations/descriptor.ts",
+    "handler": "src/mcp/tools/bb_annotations/handler.ts",
+    "curation": "script/tool-docs/curation/bb_annotations.ts",
+    "generatedPage": "docs/tools/bb_annotations.md",
+    "surfaceDoc": "docs/m28/MCP-SURFACE.md"
+  },
+  "evidence": {
+    "door": "validation/tools/bb_annotations/raw/door-annotations.json",
+    "phaseADoor": "validation/tools/bb_annotations/raw/phaseA-door-annotations.json",
+    "storePredicates": "validation/tools/bb_annotations/raw/probe-store.json",
+    "capAndPlans": "validation/tools/bb_annotations/raw/audit-store-more.json",
+    "immutability": "validation/tools/bb_annotations/raw/read-immutability.json",
+    "phaseAImmutability": "validation/tools/bb_annotations/raw/phaseA-read-immutability.json",
+    "realCorpus": "validation/tools/bb_annotations/REAL-CORPUS.json",
+    "phaseARealCorpus": "validation/tools/bb_annotations/raw/phaseA-REAL-CORPUS.json",
+    "latencyT2": "validation/tools/bb_annotations/raw/latency-T2.json",
+    "phaseALatencyT2": "validation/tools/bb_annotations/raw/phaseA-latency-T2.json",
+    "gate": "validation/tools/bb_annotations/results/GATE-read-door.json",
+    "gateRedNames": "validation/tools/bb_annotations/results/GATE-read-door-RED-names.json",
+    "gateRedTruncation": "validation/tools/bb_annotations/results/GATE-read-door-RED-truncation.json",
+    "twins": "validation/tools/bb_annotations/raw/twins-source.txt",
+    "section9": "validation/tools/bb_annotations/raw/section9-scan-postfix.txt"
+  },
+  "claims": [
+    {
+      "id": "C1",
+      "claim": "Every row carries full provenance: author class, tool identity, timestamps.",
+      "where": "descriptor.description; curation.returns",
+      "truth": true,
+      "state": "unchanged",
+      "measured": "door rows carry author_class='agent', tool_identity='bb_annotate(mcp)', time_created/time_updated (door-annotations.json R1/R11; REAL-CORPUS.json rows)."
+    },
+    {
+      "id": "C2",
+      "claim": "count is the page size, totalCountIfKnown the true total, truncated/truncationReason fire when the limit dropped rows; at the cap the reason names narrowing the filter.",
+      "where": "descriptor.description; curation.returns",
+      "truth": true,
+      "state": "strengthened (adaptive cap wording)",
+      "measured": "door R12: limit 3 -> 3/10 truncated with 'limit 3'; audit-store-more: default 50/206, cap 200/206; helper asserted by the gate ('D at the declared cap the reason stops advising an impossible limit raise')."
+    },
+    {
+      "id": "C3",
+      "claim": "A `symbol` matches notes written under either name form the index publishes, the same pair the editor hover matches (both directions).",
+      "where": "descriptor.description; curation.limitations",
+      "truth": true,
+      "state": "fixed (was FALSE in Phase A)",
+      "measured": "Phase A: R3/R4 = 0 rows (raw/phaseA-door-annotations.json). Now: R3/R4 pass in the 45/45 door matrix; raw/probe-store.json five verdicts all true incl. doorAgreesWithHover; REAL-CORPUS qualified read count 2 on graphql-js and rake (the qualified-name row is returned)."
+    },
+    {
+      "id": "C4",
+      "claim": "No annotations is a declared absence, never an error; a project with no store is absence and the read creates nothing.",
+      "where": "descriptor.description; curation.returns; page",
+      "truth": true,
+      "state": "strengthened (storeAbsent)",
+      "measured": "door A1-A5 declaredAbsent with case-specific notes; read-immutability I2 storeAbsent=true and createdEntries=[]; gate A/B/C checks."
+    },
+    {
+      "id": "C5",
+      "claim": "`path` is resolved to the index's own spelling first, so src/a.ts, ./src/a.ts and the absolute path are the same filter.",
+      "where": "descriptor.inputSchema.path; curation.limitations",
+      "truth": true,
+      "state": "unchanged",
+      "measured": "door R6/R8/R9 (4 rows each, canonical path echoed); W9/W10 canonical writes; REAL-CORPUS dot-prefixed read returns the same rows; gate G."
+    },
+    {
+      "id": "C6",
+      "claim": "A `path` without a symbol returns that file's own notes only; includeNameLevel widens it; with a symbol, name-level notes about that symbol always apply.",
+      "where": "descriptor.inputSchema.path; descriptor.inputSchema.includeNameLevel; curation.limitations",
+      "truth": true,
+      "state": "fixed (was FALSE — the two fields contradicted each other in Phase A)",
+      "measured": "door R6 (4) vs R7 (7); gate H checks (default exclusion, widening, symbol+path inclusion, flag echo)."
+    },
+    {
+      "id": "C7",
+      "claim": "limit default 50, min 1, max 200, published in the schema; outside the range is a named refusal.",
+      "where": "descriptor.inputSchema.limit (default/minimum/maximum); curation.errors",
+      "truth": true,
+      "state": "fixed (bounds were prose-only in Phase A)",
+      "measured": "generated page carries \"default\":50,\"minimum\":1,\"maximum\":200 (docs/tools/bb_annotations.md); door X1-X5 refusals; gate I; audit-store-more default/cap page sizes."
+    },
+    {
+      "id": "C8",
+      "claim": "Symbol/path options accept the caller-question vocabulary (`target`/`query` aliases of `symbol`).",
+      "where": "descriptor.inputSchema.symbol",
+      "truth": true,
+      "state": "unchanged",
+      "measured": "door A6/A7 and X7 (conflict refused); m50 param-aliases gate: 'ok P7 bb_annotations: target aliases answer like symbol'."
+    },
+    {
+      "id": "C9",
+      "claim": "Safety: read-only; the read creates no store, recreates no annotation table, and does not move the write-ahead log.",
+      "where": "curation.safety; page Safety section",
+      "truth": true,
+      "state": "fixed (was FALSE in Phase A)",
+      "measured": "read-immutability now: I1 only brain.db-shm changes (brain.db and brain.db-wal byte-identical); I2 createdEntries=[]; I3 tableAfter=false and brain.db hash unchanged; gate J asserts the same on its own store."
+    },
+    {
+      "id": "C10",
+      "claim": "Performance: symbol reads and their totals are indexed lookups; path reads scan the project's annotation rows; every shape sorts; measured numbers stated per shape.",
+      "where": "curation.performance",
+      "truth": true,
+      "state": "fixed (Phase A claim described only the symbol shape)",
+      "measured": "audit-store-more query plans (location index for symbol shapes; project index + temp B-tree for path/project shapes; 0.14 ms path, 0.34 ms project page on 206 notes)."
+    },
+    {
+      "id": "C11",
+      "claim": "Without `path`, a symbol that lives in several files returns every file's notes together.",
+      "where": "curation.limitations",
+      "truth": true,
+      "state": "unchanged",
+      "measured": "door R14 count 2 for the two-file name; REAL-CORPUS multi-file names."
+    },
+    {
+      "id": "C12",
+      "claim": "The registry declares one nominal action name (`annotate`); the tool takes no `mode` option and refuses one.",
+      "where": "curation.limitations; generated page Contract 'Modes' line",
+      "truth": true,
+      "state": "clarified (the generated 'Modes: annotate' line still reads as a mode; the limitation states the opposite)",
+      "measured": "door X6: a request carrying `mode` is refused as an unknown option; curation limitation states it. The page line is generator-rendered from descriptor.modes — changing it needs modes:[] (renders blank) or a generator change (Lead-owned). Routed."
+    },
+    {
+      "id": "C13",
+      "claim": "Staleness: output reflects the index as of the last index run; when files changed after indexing, refresh first.",
+      "where": "generated page Staleness section",
+      "truth": false,
+      "state": "routed to the Lead (generator-owned)",
+      "measured": "Annotations are stored rows; re-indexing does not change them (only symbol-name resolution can). The generator emits one remediation for every tool. Not editable from this lane."
+    },
+    {
+      "id": "C14",
+      "claim": "The hover section and graph badge render the same store this tool reads, with the same matching law.",
+      "where": "docs/m28/MCP-SURFACE.md annotations table row",
+      "truth": false,
+      "state": "partially fixed here, part routed",
+      "measured": "This door now agrees with the hover predicate (probe-store doorAgreesWithHover=true; hover source src/lsp/hover.ts:639 = name OR qualified_name). The visualization badge (src/intelligence/visualization/visualization-engine.ts:868) still matches by name only, so it misses qualified-name notes — shared code, outside this lane; routed."
+    },
+    {
+      "id": "C15",
+      "claim": "The tool's own files carry no process narration (charter §9) and no regex.",
+      "where": "handler.ts, descriptor.ts, curation file, generated page",
+      "truth": true,
+      "state": "fixed (Phase A had 9 narration lines)",
+      "measured": "raw/section9-scan-postfix.txt: 0 banned lines, 0 regex literals; regex policy gate PASS with 0 new uses."
+    }
+  ]
+}

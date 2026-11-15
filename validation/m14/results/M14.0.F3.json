@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "2039fe2e188780b06543dd27577875d697c943795df88292836505bf7cb7b60d",
-    "sealedAt": "2026-11-06T05:17:39.000Z"
+    "contentSha256": "6e1e1c161d19f4bb79aa8e46ba7f82e1e3e22bf78f288adfbf9658a9bf970260",
+    "sealedAt": "2026-11-12T19:36:23.000Z"
   },
   "checks": [
     {
@@ -31,7 +31,7 @@
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "94/94 fixtures pass",
+      "detail": "98/98 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -49,13 +49,13 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "120/120 fixtures pass",
+      "detail": "121/121 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "79/79 fixtures pass",
+      "detail": "80/80 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -97,13 +97,13 @@
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "65/65 fixtures pass",
+      "detail": "66/66 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "34/34 fixtures pass",
+      "detail": "40/40 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
@@ -157,7 +157,7 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "33/33 fixtures pass",
+      "detail": "36/36 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
@@ -169,7 +169,7 @@
     },
     {
       "description": "ruby adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-ruby",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
-  "committedAt": "2026-11-06T00:17:39-05:00",
+  "commit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "committedAt": "2026-11-12T14:36:23-05:00",
   "data": {
     "details": [
       {
@@ -1097,6 +1097,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/field-owner-class-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/generator-and-named-class-expression",
         "ok": true,
         "problems": []
@@ -1157,6 +1162,11 @@
         "problems": []
       },
       {
+        "fixture": "javascript/jsdoc-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/jsx-detection-depth",
         "ok": true,
         "problems": []
@@ -1183,6 +1193,11 @@
       },
       {
         "fixture": "javascript/member-owner-containment",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/named-function-expression-source",
         "ok": true,
         "problems": []
       },
@@ -1248,6 +1263,11 @@
       },
       {
         "fixture": "javascript/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/receiver-binding-scope",
         "ok": true,
         "problems": []
       },
@@ -2412,6 +2432,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/receiver-binding-shadow",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/receiver-owner-from-new",
         "ok": true,
         "problems": []
@@ -2658,6 +2683,11 @@
       },
       {
         "fixture": "java/fqn-instantiation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/generic-override-signatures",
         "ok": true,
         "problems": []
       },
@@ -4872,6 +4902,11 @@
         "problems": []
       },
       {
+        "fixture": "python/dataclass-decorator-binding",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/declaration-name-is-a-declaration",
         "ok": true,
         "problems": []
@@ -5152,12 +5187,32 @@
         "problems": []
       },
       {
+        "fixture": "go/callable-var",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/callee-ownership",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/callsite-lines-825",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "go/closure-channel-read",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/closure-package-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/const-inherit-type",
         "ok": true,
         "problems": []
       },
@@ -5193,6 +5248,11 @@
       },
       {
         "fixture": "go/exports-spec",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/for-scope-shadow",
         "ok": true,
         "problems": []
       },
@@ -5273,6 +5333,11 @@
       },
       {
         "fixture": "go/overrides-qualified-embed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/package-var-func-type-source",
         "ok": true,
         "problems": []
       },
@@ -6252,6 +6317,16 @@
         "problems": []
       },
       {
+        "fixture": "php/canonical-functions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/canonical-types",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/cross-file-override-base",
         "ok": true,
         "problems": []
@@ -6373,6 +6448,11 @@
       },
       {
         "fixture": "php/nullsafe-member-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/parameter-receivers",
         "ok": true,
         "problems": []
       },
@@ -6538,6 +6618,11 @@
       },
       {
         "fixture": "ruby/rack-wave-regressions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "ruby/receiver-write-is-not-local",
         "ok": true,
         "problems": []
       },
@@ -9214,7 +9299,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 34
+        "pass": 40
       },
       "graphql": {
         "fail": 0,
@@ -9238,11 +9323,11 @@
       },
       "java": {
         "fail": 0,
-        "pass": 79
+        "pass": 80
       },
       "javascript": {
         "fail": 0,
-        "pass": 94
+        "pass": 98
       },
       "json": {
         "fail": 0,
@@ -9286,7 +9371,7 @@
       },
       "php": {
         "fail": 0,
-        "pass": 33
+        "pass": 36
       },
       "powershell": {
         "fail": 0,
@@ -9298,7 +9383,7 @@
       },
       "python": {
         "fail": 0,
-        "pass": 65
+        "pass": 66
       },
       "r": {
         "fail": 0,
@@ -9306,7 +9391,7 @@
       },
       "ruby": {
         "fail": 0,
-        "pass": 13
+        "pass": 14
       },
       "rust": {
         "fail": 0,
@@ -9342,7 +9427,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 120
+        "pass": 121
       },
       "vb": {
         "fail": 0,
@@ -9383,8 +9468,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-06T00:17:39-05:00",
-  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "regeneratedAt": "2026-11-12T14:36:23-05:00",
+  "regeneratedAtCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

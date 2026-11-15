@@ -1,0 +1,285 @@
+{
+  "fixtureId": "fsharp/name-surface",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-D6 + FS-D7 (fsharp lane, 2026-09-28) \u2014 the lane's NAME surface, which nothing had measured: the completion matrix read `diff: n/a`, `fixtures: n/a` and `folder: n/a` for fsharp, so no gate asked what the analyzer called things. FS-D6: an `identifier_pattern` spans the ENTIRE left-hand side of a binding, parameters and return annotation included, and the analyzer read its text as the symbol's NAME \u2014 `let f (a: string) : string = \u2026` was published as `f (a: string) : string`. Measured: 60 such symbols per 400 real files (37 with a curried argument list, 23 with a generic argument in the return type), none joinable by a consumer; script/m14/tmp/fs019-adjudicate-loss.ts counts the removed names by the character that disqualifies them \u2014 57 by a parameter list, 16 by a generic argument, 9 by a space, 8 otherwise. The four CONTROL bindings (`plain`, `curried`, `lambdaArg`, `counter`) are here because a first draft of the fix that also redirected the plain `identifier` case regressed `let f a b = \u2026` and `let f x = \u2026`, and script/m14/tmp/fs018-compare-dumps.ts reported them as dropped symbols before that draft shipped; a fixture that only carried the defect shapes would have passed with the regression in place. FS-D7: an `object_expression` published a Class and never opened a scope for it, so in an F# SCRIPT \u2014 no namespace, no module, an empty enclosing scope \u2014 every member of every object expression came out with NO owner (elmish docs/docs/subscription.fsx lines 71/144/803/833, suave examples/WebSocket/Program.fs:181, fsharp-data HtmlNode.fs:123,206). The scope is opened under the same name the symbol is published under, so the contains edge resolves to a symbol that exists. `nested` pins the scope's extent: the inner object's member owns the INNER object, and the sibling `after` binding is not captured by it. The two `declared_type` rows on line 40 are here because the position rule that produced them is the same read FS-D6 touched: one F# line holds a parameter and a return type, and the fixture pins two DIFFERENT labels for them \u2014 a first draft called the parameter a `local_annotation`, which is a third position and was caught by dumping the emission rather than by reading the contract. NOT PINNED, and stated rather than hidden: an `active_pattern` is published under its full pattern text `(|Even|Odd|)` (617 per 400 files) and an object expression under `new <Iface>` (91 per 400 files). Both are DECIDED contracts \u2014 the first is what validation/m12/ground-truth/fsharp.json pins \u2014 and both are recorded in the lane's declared limitations rather than changed here. RE-PINNED 2026-09-28: the two `implements` targets were written as the qualified spellings `System.IDisposable` and `System.IComparable`, which is what the analyzer emitted before FS-D9. R10 \u2014 the family rule, 'a qualified type USE is published under the name the lane would publish for that type as a symbol' \u2014 publishes the LEAF, with the qualified form kept in `metadata.qualifiedType`. The lane's own truth oracle applies the rule independently, so the differential could not have agreed with the old spelling by accident. FS-D14 (the last binding) pins the object expression's interface NAME, and it is the third rule this file's `implements` rows have had. A qualified name is NESTED in this grammar \u2014 `object_expression > typed_expression > dot_expression > long_identifier_or_op > long_identifier` \u2014 so \"the first `long_identifier`\" is the first SEGMENT. The written name is the `dot_expression`'s own text and the leaf is the last identifier inside it. The first attempt at the fix read the last identifier in the whole object-expression subtree, which includes every member body; the two forbids naming `Equals` and `failwith` exist because that version passed the positive row for an unqualified name and only a QUALIFIED name with a body that mentions identifiers can tell the two apart.",
+  "expectSymbols": [
+    {
+      "name": "Fixture.Names",
+      "kind": "module"
+    },
+    {
+      "name": "takesAnnotated",
+      "kind": "function"
+    },
+    {
+      "name": "takesCurried",
+      "kind": "function"
+    },
+    {
+      "name": "takesGeneric",
+      "kind": "function"
+    },
+    {
+      "name": "hasReturnOnly",
+      "kind": "function"
+    },
+    {
+      "name": "plain",
+      "kind": "variable"
+    },
+    {
+      "name": "curried",
+      "kind": "function"
+    },
+    {
+      "name": "lambdaArg",
+      "kind": "function"
+    },
+    {
+      "name": "counter",
+      "kind": "variable"
+    },
+    {
+      "name": "ownsMembers",
+      "kind": "variable"
+    },
+    {
+      "name": "new System.IDisposable",
+      "kind": "class"
+    },
+    {
+      "name": "Dispose",
+      "kind": "method"
+    },
+    {
+      "name": "Other",
+      "kind": "property"
+    },
+    {
+      "name": "nested",
+      "kind": "variable"
+    },
+    {
+      "name": "new System.IComparable",
+      "kind": "class"
+    },
+    {
+      "name": "CompareTo",
+      "kind": "method"
+    },
+    {
+      "name": "new System.Collections.Generic.IEqualityComparer",
+      "kind": "class"
+    },
+    {
+      "name": "qualified",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.takesAnnotated",
+      "line_number": 38
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.takesCurried",
+      "line_number": 39
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.takesGeneric",
+      "line_number": 40
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.hasReturnOnly",
+      "line_number": 41
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.plain",
+      "line_number": 44
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.curried",
+      "line_number": 45
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.lambdaArg",
+      "line_number": 46
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.counter",
+      "line_number": 47
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Names.takesGeneric",
+      "target": "ResizeArray",
+      "line_number": 40,
+      "meta.relationshipType": "declared_type",
+      "meta.declaredOn": "parameter",
+      "meta.targetResolution": "external-type"
+    },
+    {
+      "type": "references",
+      "from": "Fixture.Names.takesGeneric",
+      "target": "Map",
+      "line_number": 40,
+      "meta.relationshipType": "declared_type",
+      "meta.targetResolution": "external-type",
+      "meta.declaredOn": "return_type"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.ownsMembers",
+      "line_number": 50
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.new System.IDisposable",
+      "line_number": 51
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "IDisposable",
+      "line_number": 51
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names.new System.IDisposable",
+      "target": "new System.IDisposable.Dispose",
+      "line_number": 52
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names.new System.IDisposable",
+      "target": "new System.IDisposable.Other",
+      "line_number": 53
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.nested",
+      "line_number": 55
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.new System.IComparable",
+      "line_number": 56
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names.new System.IComparable",
+      "target": "new System.IComparable.CompareTo",
+      "line_number": 56
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "Fixture.Names.new System.Collections.Generic.IEqualityComparer",
+      "line_number": 65
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "IEqualityComparer",
+      "line_number": 65
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "IComparable",
+      "line_number": 56
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "takesAnnotated (a: string) : string",
+      "note": "FS-D6: a signature is not a name. This is the exact pre-fix emission (60 such symbols per 400 corpus files)."
+    },
+    {
+      "name": "takesCurried (path: string) (processFile: string -> string) : string",
+      "note": "FS-D6, the curried form \u2014 the largest single family in the corpus census (37 of 60)."
+    },
+    {
+      "name": "takesGeneric (payload: ResizeArray<int>) : Map<string, int>",
+      "note": "FS-D6, the form carrying a generic argument (23 of 60)."
+    },
+    {
+      "name": "hasReturnOnly (a: string) : string",
+      "note": "FS-D6, the minimal reproducer: one curried parameter and a return annotation is enough."
+    },
+    {
+      "name": "a",
+      "note": "FS-D7 + the name rule together: the PARAMETER of takesAnnotated must never become a symbol, and pre-fix the identifier_pattern text made the whole left-hand side the name. A consumer that found a symbol called `a` here would be reading a parameter as a declaration."
+    },
+    {
+      "name": "payload",
+      "note": "same, for takesGeneric's parameter."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "takesGeneric",
+      "target": "ResizeArray",
+      "meta.declaredOn": "local_annotation",
+      "note": "a curried parameter is a `parameter`, not a `local_annotation`; a first draft emitted the third label here and the dump caught it. The correct row is pinned positively above."
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Names",
+      "target": "after",
+      "note": "FS-D7: the object expression's scope must NOT outlive the object expression, or the sibling binding after it is captured as its member."
+    },
+    {
+      "type": "contains",
+      "from": "new System.IComparable",
+      "target": "nested",
+      "note": "FS-D7, the other direction: the inner object's scope must not claim the enclosing binding."
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "System",
+      "note": "FS-D14: the FIRST segment of the qualified name. This is what the analyzer published before the fix, and it is the failure the corpus found \u2014 `new System.Collections.Generic.IEqualityComparer<T>` became `new System` with `implements -> System`, a target that resolves to nothing. Measured: fsharp-data StructuralInference.fs:651 and :728, fsimain.fs:54."
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "Collections",
+      "note": "FS-D14, the SECOND segment \u2014 which is what the lane's own truth side read for the same row. Two implementations independently picking DIFFERENT segments of one name is what made it obvious the name was elsewhere entirely rather than that one of them was off by a rule."
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "Equals",
+      "note": "FS-D14: the second-wrong answer. A fix that took the last identifier in the whole object-expression subtree published `implements -> x` for `member _.Equals(x, y) = failwith \"nope\"` and `-> failwith` \u2014 worse than `System`, because it then varied with the body. The name is the carrier node's business alone."
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.Names",
+      "target": "failwith",
+      "note": "FS-D14, the same second-wrong answer from the other end of the member list: a body call became the interface name."
+    }
+  ]
+}

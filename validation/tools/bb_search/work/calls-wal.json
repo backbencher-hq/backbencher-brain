@@ -1,0 +1,7 @@
+[
+ {"label":"symbols","args":{"query":"walHost"}},
+ {"label":"symbols.langFilter","args":{"query":"walHost","language":"typescript"}},
+ {"label":"content","args":{"mode":"content","query":"walHost"}},
+ {"label":"file","args":{"mode":"file","filePath":"src/a.ts"}},
+ {"label":"symbol","args":{"mode":"symbol","symbolName":"walHost"}}
+]

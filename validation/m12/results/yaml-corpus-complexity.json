@@ -1,0 +1,32 @@
+{
+  "name": "yaml-corpus-production",
+  "wallTimeMs": 4737.996237,
+  "userCpuMs": 5045.74,
+  "systemCpuMs": 512.53,
+  "peakRssBytes": 313438208,
+  "rssDeltaBytes": 205922304,
+  "databaseBytes": null,
+  "files": 273,
+  "symbols": 12210,
+  "relationships": 11739,
+  "filesPerSecond": 57.61929439033449,
+  "symbolsPerSecond": 2577.0387710841906,
+  "relationshipsPerSecond": 2477.629658784383,
+  "trackedFiles": 274,
+  "errors": 0,
+  "errorFiles": 0,
+  "crashFiles": 0,
+  "crashSamples": [],
+  "acceptanceFiles": 273,
+  "excludedFiles": [
+    "grails-profiles/base/skeleton/grails-app/conf/application.yml"
+  ],
+  "passed": true,
+  "complexityPolicy": "one production parseFile pass per acceptance file; YAML analyzer traversal and relationship dedupe are iterative O(nodes + emitted facts), with no per-symbol relationship scan",
+  "corpusPolicy": "tracked YAML/YML files from clean grails-core@a83f8748; one explicit unexpanded template is excluded and measured separately by yaml-corpus-errors.ts",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.118Z",
+    "contentSha256": "44c174cd324664b591228913a0be1b40c159a6247bb8bf51c1f906b02fe4af64"
+  }
+}

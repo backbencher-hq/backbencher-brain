@@ -1,0 +1,149 @@
+{
+  "issue": "M15.C6",
+  "code": "C6",
+  "tool": "cross-cutting",
+  "label": "C4 + C5 + C6 — matrix, coverage, closure",
+  "verified": false,
+  "checks": 10,
+  "passed": 11,
+  "failed": 3,
+  "negatives": 4,
+  "generatedAt": "2026-11-04T00:55:04.571Z",
+  "repos": {
+    "cabal": [
+      "haskell"
+    ],
+    "cargo": [
+      "rust"
+    ],
+    "clean-stdlib": [
+      "clean"
+    ],
+    "clojure": [
+      "clojure"
+    ],
+    "cloogle.org": [
+      "clean"
+    ],
+    "Clyde": [
+      "lua"
+    ],
+    "cython": [
+      "cython"
+    ],
+    "dplyr": [
+      "r"
+    ],
+    "eastwood": [
+      "clojure"
+    ],
+    "element-plus": [
+      "vue"
+    ],
+    "elixir": [
+      "elixir"
+    ],
+    "Exposed": [
+      "kotlin"
+    ],
+    "fsharp": [
+      "fsharp"
+    ],
+    "go_tools": [
+      "go"
+    ],
+    "grails-core": [
+      "groovy"
+    ],
+    "graphql-js": [
+      "javascript"
+    ],
+    "luarocks": [
+      "lua"
+    ],
+    "mojo": [
+      "mojo"
+    ],
+    "phpunit": [
+      "php"
+    ],
+    "powershell": [
+      "powershell"
+    ],
+    "Prelude": [
+      "haskell"
+    ],
+    "rake": [
+      "ruby"
+    ],
+    "rebar3": [
+      "erlang"
+    ],
+    "scala3": [
+      "scala"
+    ],
+    "svelte": [
+      "svelte"
+    ],
+    "swift-nio": [
+      "swift"
+    ],
+    "terraform": [
+      "hcl"
+    ],
+    "tree-sitter-clean": [
+      "clean"
+    ],
+    "vue-core": [
+      "vue"
+    ],
+    "zig": [
+      "zig"
+    ],
+    "TypeScript": [
+      "typescript"
+    ],
+    "vscode": [
+      "typescript"
+    ],
+    "openclaw": [
+      "rust"
+    ],
+    "paperclip": [
+      "typescript"
+    ],
+    "ProxiCall": [
+      "javascript"
+    ]
+  },
+  "languageCount": {},
+  "claimGap": [
+    "dart",
+    "nim",
+    "html",
+    "julia",
+    "protobuf",
+    "java",
+    "perl",
+    "json",
+    "matlab",
+    "vba",
+    "objective-c",
+    "python",
+    "cpp",
+    "graphql",
+    "sql",
+    "csharp",
+    "vb",
+    "bash",
+    "xml",
+    "solidity",
+    "c",
+    "toml",
+    "makefile",
+    "css",
+    "markdown",
+    "yaml",
+    "scss"
+  ]
+}

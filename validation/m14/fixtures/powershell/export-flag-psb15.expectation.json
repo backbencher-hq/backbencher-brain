@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/export-flag-psb15.psm1",
+  "authoredFrom": "PS30. Authored 2026-10-03, from `validation/m14/fixtures/powershell/pass3-probes.ts` P18 — whose stated goal was to classify the `exports` residual by flag and which instead found that NO row carried a flag at all.\n\nThe defect: `Export-ModuleMember` publishes a name under one of four flags (`-Function`, `-Variable`, `-Alias`, `-Cmdlet`) and the reader COMPUTED the flag — `if (!isFlag(flag)) continue` is a test on the very string it then discarded — but passed `leaf`, the COMMAND NAME, as `via`. So `via` was the literal `Export-ModuleMember` on every row: measured over all 1,108 admitted files through production `parseFile`, 106 of 106 `exports` rows carried `via: \"Export-ModuleMember\"` and 0 named the flag.\n\nThe four flags are not the same kind of thing, which is what makes the loss a loss rather than a redundancy: a `-Cmdlet` target is a name the file cannot declare at all, so a consumer cannot even tell whether it should go looking for it. This is the argument PS23 made for `imports` — `file -> Module` does not say which of the four declarations produced it, so `metadata.via` names the form — applied to the sibling channel, where the value was already in hand.\n\nWHY ONLY TWO OF THE FOUR FLAGS APPEAR HERE, and it is a finding rather than a gap in coverage: `script/m14/run-fixtures.ts:1419` runs a global invariant on every fixture in every language, that every export name must resolve to a TOP-LEVEL symbol, because the export list is the index's importable-unit set. PowerShell's `-Alias` and `-Cmdlet` publish names the file cannot declare — an alias is created by `New-Alias` at run time, a cmdlet comes from a module — so a module publishing an alias CANNOT be expressed as a fixture. The first draft of this file did exactly that and would have failed the lane's own gate for stating a true fact. The invariant is shared machinery and is reported, not edited. Two flags are enough to pin the rule: the fix reads the flag string and does not branch on which of the four it is, so `-Alias` and `-Cmdlet` take the same path as the two rows below.\n\nThe `expectExports` rows assert the flag on the RECORD as well as the edge, because `via` lives in both and the pre-fix state wrote it to neither in a useful form: a consumer reading `exports[]` and a consumer reading the graph had the same uninformative string.",
+  "expectExports": [
+    { "name": "Get-Setting", "meta.via": "-function", "comment": "The `-Function` flag, lowercased and dash-prefixed by the reader. Pre-fix this row read `Export-ModuleMember`, which names the command every row already shared." },
+    { "name": "Get-Other", "meta.via": "-function", "comment": "The SECOND name on the same comma-separated flag value. It shares the flag with the first, which is what makes the two rows evidence that the flag is read per declaration rather than per statement." },
+    { "name": "cacheRoot", "meta.via": "-variable", "comment": "A `-Variable` export, and the row that makes the fix falsifiable: pre-fix it was indistinguishable from the two `-Function` rows above in every field the output carried. A consumer asking \"is this module publishing a function or a variable?\" had no answer, and for `-Cmdlet` the answer decides whether the name is worth looking for at all." }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "export-flag-psb15.psm1",
+      "target": "Get-Setting",
+      "line_number": 39,
+      "meta.via": "-function",
+      "meta.viaExportModuleMember": true,
+      "meta.fileLevel": true,
+      "comment": "The edge carries the flag as well as the record. `viaExportModuleMember` and `fileLevel` are the pre-existing keys and are asserted unchanged, because a fix that rewrote the metadata object could drop either and still satisfy a `via`-only expectation.",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "from": "export-flag-psb15.psm1",
+      "target": "cacheRoot",
+      "line_number": 40,
+      "meta.via": "-variable",
+      "meta.viaExportModuleMember": true,
+      "comment": "The `-Variable` form on the edge. `fileLevel: true` is asserted as absent-by-omission here rather than as a null: `addExport` sets `fileLevel: atFileScope()`, and at module scope that is `true`, so the key is present on both rows and the differing one is the flag.",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "export-flag-psb15.psm1",
+      "target": "Get-Setting",
+      "meta.via": "Export-ModuleMember",
+      "comment": "THE PRE-FIX VALUE, stated as a forbid because a forbid is the only vocabulary that can name a value that must NOT be there. 106 of 106 corpus rows carried exactly this before PS30. This row is what a revert of the `via` argument back to `leaf` trips, and it is the only assertion in the file that distinguishes the pre-fix state from the post-fix one on the edge — every other row here passes under both."
+    },
+    {
+      "type": "exports",
+      "from": "export-flag-psb15.psm1",
+      "target": "cacheRoot",
+      "meta.via": "-function",
+      "comment": "THE OTHER DIRECTION, and the row that keeps the fix from being a constant. A change that hardcoded `via: \"-function\"` would satisfy both positive rows above and pass this file; this forbid says the flag is READ."
+    }
+  ]
+}

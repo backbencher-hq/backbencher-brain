@@ -1,0 +1,41 @@
+{
+  "instrument": "the `imports` colon — the CEILING in the gate's own columns, split by LOCAL vs EXTERNAL module",
+  "lane": "java",
+  "population": {
+    "admitted": 1942,
+    "parsed": 1942,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "grails-core"
+    ],
+    "admission": "git-tracked, <= 1 MiB, detectLanguageFromPath === lane"
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default and production's scope",
+  "colonEdges": 0,
+  "dotInModuleHalf": {
+    "LOCAL": 0,
+    "EXTERNAL": 0,
+    "ofColonEdges": 0
+  },
+  "bothClauses": {
+    "note": "colon is present on EVERY edge counted here (it is the selection rule); a dot in the module half is the second clause",
+    "dotAndColon_LOCAL": 0,
+    "dotAndColon_EXTERNAL": 0
+  },
+  "corpusConstruction": "ONE PROJECT PER REPOSITORY, no merging: each file is parsed with `projectRoot` set to its own repo and the key space is built per repo, which is the gate's own scope and production's. r-lane's hcl instrument copies 13 repos into a single scratch project, which inflates cross-repo collisions; that artifact is NOT present here and cannot be.",
+  "targetAsIs": {
+    "LOCAL": {},
+    "EXTERNAL": {}
+  },
+  "targetBareItemName": {
+    "LOCAL": {},
+    "EXTERNAL": {},
+    "ALL": {}
+  },
+  "reading": {
+    "asIs": "`classifyEdge` on the target AS EMITTED — the colon makes it path-like to the gate, and with no declaration of that spelling the outcome is `unresolved` (the lane's measured `resolves 0`).",
+    "ceiling": "`classifyEdge` on the BARE ITEM NAME, which is the emission change candidate. `resolved` here is the ceiling the change could reach; `ambDeclOnly`/`ambBoth` are edges it would NOT settle; `unresolved` are edges whose item is declared nowhere in the project.",
+    "localVsExternal": "the split that decides whether a change is a fix or a regression: an EXTERNAL module's items are legitimately outside the population, so an emission change that makes them resolve would be WRONG — their current unverified state is correct."
+  }
+}

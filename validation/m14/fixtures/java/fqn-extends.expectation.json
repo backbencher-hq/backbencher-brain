@@ -1,0 +1,12 @@
+{
+  "fixtureId": "java/fqn-extends",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CORRECTED after ground-truth verification: the Java analyzer DOES emit the extends edge for scoped_type_identifier superclasses, targeting the full dotted name. Expectation asserts edge existence (target ends with class segment); exact FQN-vs-last-segment convention is a wave M14.1 design decision, not pinned here.",
+  "expectSymbols": [
+    { "name": "Scheduler", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Scheduler", "targetEndsWith": "BaseScheduler" }
+  ]
+}

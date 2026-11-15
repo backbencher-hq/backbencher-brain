@@ -1,0 +1,15 @@
+{
+  "fixtureId": "kotlin/class-inheritance",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Kotlin uses a single ':' list: first supertype (class) = extends, rest = implements. Impl must extend Base AND implement Repo.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Repo", "kind": "interface" },
+    { "name": "Impl", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Impl", "targetEndsWith": "Base" },
+    { "type": "implements", "from": "Impl", "targetEndsWith": "Repo" }
+  ]
+}

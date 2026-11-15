@@ -1,0 +1,124 @@
+answer: Note: this ranking does not distinguish its top results — 5 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best. The confidence figure is capped for the same reason.
+
+Closest matches from the AST index for your query (search results, not a verified answer):
+
+--- File: graphql-js/type/definition.ts (Line 3900) ---
+[method] getTypes — similarity 0.711
+```
+  getTypes(): ReadonlyArray<GraphQLObjectType> {
+    if (typeof this._types === 'function') {
+      this._types = this._types();
+    }
+    return this._types;
+  }
+```
+
+--- File: rake/rake/task_manager.rb (Line 174) ---
+[method] tasks_in_scope — similarity 0.671
+```
+    def tasks_in_scope(scope)
+      prefix = scope.path
+      tasks.select { |t|
+        /^#{prefix}:/ =~ t.name
+      }
+    end
+```
+
+--- File: graphql-js/type/validate.ts (Line 889) ---
+[function] reportCycleRecursive — similarity 0.667
+```
+  function reportCycleRecursive(state: InputObjectFiniteValueState): void {
+    const inputObj = state.inputObj;
+    if (visitedTypes.has(inputObj)) {
+      return;
+    }
+
+    visitedTypes.add(inputObj);
+    fieldPathIndexByType.set(inputObj, fieldPath.length);
+
+    for (const { field, target } of state.targets) {
+      const targetState = finiteValueStates.get(target);
+      if (targetState?.hasFiniteValue !== false) {
+        continue;
+      }
+
+      const cycleIndex = fieldPathIndexByType.get(target);
+      fieldPath.push({
+        fieldStr: `${inputObj}.${field.name}`,
+        astNode: field.astNode,
+      });
+
+      if (cycleIndex === undefined) {
+        reportCycleRecursive(targetState);
+      } else {
+        const cyclePath = fieldPath.slice(cycleIndex);
+        const pathStr = cyclePath.map((p) => p.fieldStr).join(', ');
+        context.reportError(
+          `Input Object ${target} cannot be provided a finite value because it references itself through fields: ${pathStr}.`,
+          cyclePath.map((p) => p.astNode),
+        );
+```
+
+--- File: rake/rake/scope.rb (Line 11) ---
+[method] path_with_task_name — similarity 0.665
+```
+    def path_with_task_name(task_name)
+      "#{path}:#{task_name}"
+    end
+```
+
+--- File: graphql-js/execution/incremental/WorkQueue.ts (Line 446) ---
+[function] startTask — similarity 0.663
+```
+  function startTask(task: Task<T, I, G, S>): void {
+    if (taskNodes.has(task)) {
+      return;
+    }
+    taskNodes.set(task, {
+      value: undefined,
+      childStreams: [],
+    });
+    try {
+      const result = task.computation.result();
+      if (isPromise(result)) {
+        result.then(
+          (resolved) => {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            pushGraphEvent({ kind: 'TASK_SUCCESS', task, result: resolved });
+          },
+          (error: unknown) => {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            pushGraphEvent({ kind: 'TASK_FAILURE', task, error });
+          },
+        );
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        pushGraphEvent({ kind: 'TASK_SUCCESS', task, result });
+      }
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      pushGraphEvent({ kind: 'TASK_FAILURE', task, error });
+    }
+  }
+```
+
+
+— Use bb_search for precise symbol lookup: "bb_search(query='how are types defined')".
+— Use bb_search with mode="file" to read any indexed file.
+
+confidence: not a measurement (capped, because the ranking cannot separate its top results)
+
+1. graphql-js/type/definition.ts:3900
+   getTypes
+2. rake/rake/task_manager.rb:174
+   tasks_in_scope
+3. graphql-js/type/validate.ts:889
+   reportCycleRecursive
+4. rake/rake/scope.rb:11
+   path_with_task_name
+5. graphql-js/execution/incremental/WorkQueue.ts:446
+   startTask
+
+[retrieval: method=vector, queryModel=nvidia/nemotron-3-embed-1b, indexModel=nvidia/nemotron-3-embed-1b, dimension=2048, embeddingCoverage=14% (1920/13386 symbols embedded in this model space), libraryCoverage=15% (2020/13386 across all models), scanned=1920/20000, filtered=1920, candidates=1912, ranking=non-discriminative (5 within the margin of the best)]
+
+[bounds: returned=5, totalMatches=1912, truncated=true, truncationReason=limit 5 of 1912 candidates above the similarity floor]

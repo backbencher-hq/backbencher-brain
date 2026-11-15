@@ -1,0 +1,25 @@
+{
+  "comment": "Clean #884: comma-separated import_declaration carries TWO module fields; the pre-fix analyzer read only the first (childrenForFieldName was not used) and recorded the second module as its alias. This fixture pins: both modules emitted, the real as-alias preserved, the selective import carries NO alias, and every module gets a module-dependency references edge from the module symbol.",
+  "expectImports": [
+    { "module": "Alpha", "comment": "first module field of the comma-separated import" },
+    { "module": "Beta", "comment": "second module field — MISSING before the fix; was leaked into metadata.alias" },
+    { "module": "Data.Map", "meta.isQualified": true, "meta.alias": "M", "comment": "real alias preserved" },
+    { "module": "Data.List", "comment": "selective import — pre-fix recorded its own module name as a false alias" }
+  ],
+  "forbidImports": [
+    { "module": "M", "comment": "the alias must never become a module" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "M", "comment": "no dependency edge to an alias" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "ImportRegression", "target": "Alpha", "meta.isImportDependency": true, "line_number": 3, "comment": "the comma-separated import's line — both modules are imported THERE" },
+    { "type": "references", "from": "ImportRegression", "target": "Beta", "meta.isImportDependency": true, "line_number": 3, "comment": "MISSING before the fix; same line as Alpha's edge, which is what a comma-separated import means" },
+    { "type": "references", "from": "ImportRegression", "target": "Data.Map", "meta.isImportDependency": true, "line_number": 4 },
+    { "type": "references", "from": "ImportRegression", "target": "Data.List", "meta.isImportDependency": true, "line_number": 5 }
+  ],
+  "expectRelationshipCount": [
+    { "type": "references", "from": "ImportRegression", "target": "Beta", "equals": 1 }
+  ],
+  "forbidErrors": [{}]
+}

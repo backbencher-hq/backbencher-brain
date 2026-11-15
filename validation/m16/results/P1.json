@@ -1,0 +1,12 @@
+{
+  "issue": "M16.P1 (patterns orphan truth)",
+  "code": "P1",
+  "tool": "bb_patterns",
+  "title": "P1",
+  "verified": true,
+  "checks": 4,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:28:16.194Z"
+}

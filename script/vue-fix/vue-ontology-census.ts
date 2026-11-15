@@ -80,7 +80,7 @@ const REPO = argOf("--repo") ?? "vuejs"
 const MODE = argOf("--mode") ?? "prod"
 const LIMIT = Number(argOf("--limit") ?? "0")
 const OUT = argOf("--out")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(1024 * 1024))
 
 /**

@@ -1,0 +1,20 @@
+{
+  "fixtureId": "typescript/destructured-binding-lines",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up, measured on element-plus drawer.vue: every binding ranges at its own NAME line. Same rewrite fixes two latent defects: `{ renamed: local }` named the KEY (or nothing) instead of the bound VALUE, and `{ withDefault = 5 }` was dropped entirely. Pinned via expectSymbolRanges (round-trip verified).",
+  "expectSymbols": [
+    { "name": "plain", "kind": "constant" },
+    { "name": "local", "kind": "constant" },
+    { "name": "withDefault", "kind": "constant" },
+    { "name": "rest", "kind": "constant" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "plain", "startLine": 7 },
+    { "symbol": "local", "startLine": 8 },
+    { "symbol": "withDefault", "startLine": 9 },
+    { "symbol": "rest", "startLine": 10 }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": []
+}

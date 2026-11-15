@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-08T13:26:46.830Z",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "filesScanned": 5094,
   "pipelineCrossCheckFiles": 5094,
   "pipelineCrossCheckCompleted": 5094,

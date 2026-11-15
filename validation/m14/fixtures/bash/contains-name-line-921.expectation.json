@@ -1,0 +1,68 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/contains-name-line-921.sh",
+ "authoredFrom": "BD1 / M60 #921 (a containment edge names the CHILD's name line). Authored from a probe 2026-09-26. The store resolves a `contains` edge by the line it carries (parallel-indexer.ts `resolveContainsTargetStmt`), so an edge carrying the declaration node's start line resolves to the wrong row when the declaration wraps. The fixture's assignment wraps: name on 7, value on 8.",
+ "expectSymbols": [
+  {
+   "name": "contains-name-line-921.sh",
+   "kind": "module"
+  },
+  {
+   "name": "WRAPPED_NAME",
+   "kind": "variable",
+   "ownerName": "contains-name-line-921.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "contains-name-line-921.sh",
+   "target": "contains-name-line-921.sh.WRAPPED_NAME",
+   "line_number": 8,
+   "meta.isVariableReference": true
+  },
+  {
+   "type": "contains",
+   "from": "contains-name-line-921.sh",
+   "target": "WRAPPED_NAME",
+   "line_number": 7
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "contains-name-line-921.sh",
+   "target": "WRAPPED_NAME",
+   "line_number": 6
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

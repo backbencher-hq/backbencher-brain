@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/coroutine-dispatch",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Qualified coroutine dispatch (scope.launch {}, scope.async {}) is the IDIOMATIC form. Qualified calls have no direct simple_identifier child (navigation_expression wraps the callee), so first-identifier extraction misses them entirely - only the rare bare form fired. Both launch and async from an enclosing suspend function must produce coroutine_dispatch Uses edges.",
+  "expectSymbols": [
+    { "name": "CoroutineJobs", "kind": "class" },
+    { "name": "runAll" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "fromEndsWith": "runAll", "targetEndsWith": "launch", "meta.relationshipType": "coroutine_dispatch" },
+    { "type": "uses", "fromEndsWith": "runAll", "targetEndsWith": "async", "meta.relationshipType": "coroutine_dispatch" }
+  ]
+}

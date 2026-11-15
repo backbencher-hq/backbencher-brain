@@ -1,7 +1,7 @@
 {
   "note": "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence. MERGED across runs: a scoped run updates its own lanes and carries every other lane's last verdict.",
   "lanes": {
-    "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web:vba": {
+    "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web:vba": {
       "missing": 0,
       "unexplained": 12,
       "heuristic": 0,
@@ -9,7 +9,7 @@
       "pinned": false,
       "dirtyCorpus": false
     },
-    "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab:matlab": {
+    "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab:matlab": {
       "missing": 640,
       "unexplained": 93,
       "heuristic": 800,

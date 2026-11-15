@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "artifact": "grammar-adjudications",
+  "milestone": "M60",
+  "rule": "ONE fact, ONE owner, and the generated file stays generated. An adjudication RESULT is authored by a human after M14.0.F11 has run; it is recorded HERE and never written into validation/m60/grammar-survey.json, which is regenerated wholesale by script/m60/build-grammar-survey.ts. The first version of this work recorded refusals directly into the generated survey, and the next regeneration silently erased three of them — the same two-sources-one-truth defect this milestone exists to close, recreated one level up. The generator MERGES this file in, and a ruling here that matches no candidate is a hard failure rather than a silent loss.",
+  "whatBelongsHere": "A verdict (refused | admitted | superseded) with the review document that justifies it, the instrument that produced it, the measured numbers it rests on, and the screening measurement. It does NOT belong here: the lane universe, versions, upstream state, candidate discovery, or damage measurements — those are the generator's, derived from the repository and from npm/GitHub.",
+  "gate": "C6 in script/m60/verify-grammar-consistency.ts requires a non-default verdict in the survey to name a review document that exists on disk. It cannot check this file, because this file is the input to that verdict; the generator is what makes the two agree.",
+  "rulings": [
+    {
+      "lane": "sql",
+      "package": "@l1xnan/tree-sitter-sql",
+      "version": "0.4.7",
+      "verdict": "refused",
+      "ruling": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+      "instrument": "M14.0.F11 script/m14/verify-grammar-leaves.ts --lang sql",
+      "evidence": "validation/m14/results/M14.0.F11.sql.json",
+      "candidateProvenance": "built locally from @l1xnan/tree-sitter-sql 0.4.7 with tree-sitter CLI 0.26.9",
+      "corpora": {
+        "proxicall": "3b6ebd409f1b1d235776cd72d3ad0809992ed060 — 438 .sql, the OWNER'S OWN project (github.com/ishaq2321/ProxiCall)",
+        "postgrest": "64869d01da39471974e7eac29bb6dd05c3c54161 — 32 .sql, the only public Postgres DDL corpus on this box"
+      },
+      "measured": {
+        "g1": "proxicall 323->325 damaged, FIXED 0, newly damaged 2, worse 62, MISSING 115->299; postgrest sites IMPROVE 2504->2271 and MISSING 19->17 while ERROR lines worsen 10640->15440",
+        "g2": "11 of 109 clean-under-pinned files change their s-expression on proxicall; 0 differences on postgrest, which has only 3 clean files — G2's reach is proportional to how good the PINNED grammar already is",
+        "g3": "proxicall 100 symbol names VANISHED and 245 (label,target) pairs LOST; postgrest 84 and 150. The repair panel accounts for ZERO (moved 0, keyword 0, predefine 0, not-a-declaration 0) -> RESIDUE, not a diff"
+      },
+      "mechanism": {
+        "confirmed": "error-RECOVERY collapse, not a missing feature and not a rename",
+        "killed": [
+          "dollar-quote support: a six-case repro with controls shows both grammars IDENTICAL on all six (AS $$ err=1 both, empty $$ miss=1 both, DO $$ err=3 both) — a SHARED limitation, not a regression. script/m14/tmp/sql-047-repro-controls.ts",
+          "vocabulary migration: 725 -> 726 distinct node types, 1 removed, 2 added. F1 shape-safety PASSES on this candidate, so it would have kept passing while the analyzer published a third less. script/m14/tmp/sql-047-vocabulary.ts"
+        ],
+        "evidence": "both grammars' first ERROR is the same line (37, ') RETURNS BOOLEAN AS $$') and from there identifier 706->424, field 289->109, term 213->61 — the divergence is in what SURVIVES the error, not what triggers it"
+      },
+      "recovery": { "filesLosingMaterialStructure": 2, "files": 314, "medianFileDeltaPct": 0, "aggregateNamedNodesDeltaPct": -1.4, "errorsDeltaPct": 0.3, "note": "a TAIL, not a collapse: the worst file is the plpgsql-heavy 20260130_pms_c1_4_secure_rpc_functions.sql at -27.6% (3635->2632 named nodes), the same file the hand reduction reached. Median 0% and 109 files GAIN structure." }
+    },
+    {
+      "lane": "sql",
+      "package": "tree-sitter-sql-bigquery",
+      "version": "0.8.0",
+      "verdict": "refused",
+      "ruling": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+      "instrument": "M14.0.F11 script/m14/verify-grammar-leaves.ts --lang sql",
+      "evidence": "validation/m14/results/M14.0.F11.sql.json",
+      "candidateProvenance": "built from the npm tarball with tree-sitter CLI 0.26.9; the package declares NO repository, so 31 stars and a 2024-05 publish are the whole of its provenance claim",
+      "measured": {
+        "g1": "proxicall 323->423 damaged, 100 NEWLY damaged, MISSING 115->518, ERROR lines 61817->131164",
+        "g2": "ALL 109 clean-under-pinned files change their s-expression",
+        "g3": "5503 symbols VANISHED and 8412 pairs LOST, zero repaired"
+      },
+      "mechanism": {
+        "confirmed": "dialect mismatch, visible from the inside: two whole structure categories go to ZERO (members 35683->0, terms 29347->0) because a BigQuery-dialect grammar has no node types in those families"
+      },
+      "recovery": { "filesLosingMaterialStructure": 282, "files": 314, "medianFileDeltaPct": -52.9, "aggregateNamedNodesDeltaPct": -56.6, "errorsDeltaPct": 81.8, "note": "89.8% of the recovery population loses >=25% of its structure. The screen ranked this against @l1xnan by an order of magnitude BEFORE either was adjudicated (2/314 vs 282/314), which is the evidence the screen is worth running before a full A/B." }
+    },
+    {
+      "lane": "fsharp",
+      "package": "tree-sitter-fsharp",
+      "version": "0.3.12",
+      "verdict": "refused",
+      "ruling": "reviews/m60-fsharp-grammar-0312-refused.md",
+      "instrument": "M14.0.F11 script/m14/verify-grammar-leaves.ts --lang fsharp --sample 250, pre-screened by script/m60/fsharp-0312-repro-battery.ts",
+      "evidence": "validation/m14/results/M14.0.F11.fsharp.json",
+      "candidateProvenance": "the wasm shipped inside the tree-sitter-fsharp 0.3.12 npm tarball; language.version 15, the same ABI as the pinned build",
+      "battery": {
+        "source": "validation/m14/results/fsharp-error-repro.json — the triage's own 24 minimal reproducers, unmodified",
+        "cases": 24,
+        "breakingUnderPinned": 8,
+        "fixedByCandidate": 0,
+        "regressions": 0,
+        "controlsHeld": "16/16",
+        "note": "0.3.12 shipped 2026-09-12, TWELVE DAYS BEFORE this repo's own fsharp triage (commit 344f176b) named the six gaps — and closes none of them."
+      },
+      "measured": {
+        "g1": "sample 250: damaged 23->28, sites 363->456, ERROR lines 16570->17334; sample 100: 12->18, 404->1168",
+        "g2": "12 of 227 clean-under-pinned files change their s-expression (7 of 88 at sample 100)",
+        "g3": "residue=[symbols 4127, qualifier-changed 253, pairs 4576] raw=[vanished 4129 lost 4593] repaired=[moved 2, keyword 0, predefine 0, not-a-declaration 0]"
+      },
+      "confound": "This A/B is 0.3.12 against OUR PATCHED 0.3.11, so part of G3 measures the absence of our two rules (module_val_declaration, nullable_type) and not 0.3.12's own quality. The battery carries the weight instead: 0.3.12 adds nothing we would want, so there is no reason to port the patch onto it.",
+      "knownLimit": "--sample 400 does not complete: the G2 s-expression comparison dies with `call_indirect to a signature that does not match` at C._ts_node_to_string_wasm. NOT an ABI mismatch — all three wasms report language.version 15 and toString() succeeds on all three for a trivial parse. It is input-dependent: the fsharp grammar exhausts the fixed web-tree-sitter heap on the compiler's largest files, the same fragility that appears as a ts_malloc_default abort when walking the 6,627-file corpus. Future fsharp grammar decisions are gated at --sample 250 or below, with the sample stated so two runs are comparable.",
+      "recovery": { "filesLosingMaterialStructure": 0, "files": 82, "medianFileDeltaPct": 0, "aggregateNamedNodesDeltaPct": 0.7, "errorsDeltaPct": 180.6, "note": "no concentrated loss and 23 files gain; the +180% error-NODE reading is not treated as damage because for this grammar error-node count is a known-bad proxy (a previous build hid ~1,000 errors inside one 1,900-line ERROR node) while F11's per-file error-LINE figure is the usable one." }
+    },
+    {
+      "lane": "powershell",
+      "package": "tree-sitter-powershell",
+      "version": "0.26.4",
+      "verdict": "refused",
+      "ruling": "reviews/m60-powershell-grammar-0264-refused.md",
+      "instrument": "script/m60/powershell-0264-repro-battery.ts — NO F11 A/B, and the reason is the corpus",
+      "candidateProvenance": "fetched, rebuilt from source with tree-sitter CLI 0.26.9, and the rebuild reproduced the published prebuilt BYTE-FOR-BYTE (79612413..., 1,088,467 B) — so the adjudicated artifact is provably upstream's",
+      "pinnedProvenance": "wasm/tree-sitter-powershell.wasm sha256 1d30b5a2..., 983,236 B is BYTE-IDENTICAL to the npm tarball wasm of tree-sitter-powershell@0.25.10 (2025-12-08). The lane shipped its whole life with no version recorded anywhere; that debt is now closed and written into docs/analyzers/powershell.md.",
+      "whyNoF11": "The corpus cannot carry an A/B verdict. Of the PowerShell repository's 553 tracked .ps1, 182 carry grammar errors and 166 of those are the repo's OWN intentionally-invalid parser-error test fixtures (unexpectedErrorFiles: 0). G1's 'newly damaged' would fire on a file designed to fail, for either grammar. The discriminating population is the 16 named limits. F11's LANES still gained a powershell entry so a gated verdict remains available; it is simply not the right first instrument here.",
+      "battery": {
+        "cases": 24,
+        "namedLimitsReproducing": 12,
+        "controls": 9,
+        "controlsHeld": "9/9",
+        "fixed": 0,
+        "regressions": 0,
+        "stillBroken": 12,
+        "misattributedInM12Artifact": 6,
+        "note": "6 of the constructs the M12 artifact names for a file PARSE STANDALONE, so the construct recorded as that file's cause is not what breaks it — a second defect, in the evidence rather than the grammar. Those are excluded from the denominator, because counting them would inflate the limit count and flatter any candidate."
+      },
+      "recovery": { "filesLosingMaterialStructure": 0, "files": 121, "medianFileDeltaPct": 0, "aggregateNamedNodesDeltaPct": 0.1, "errorsDeltaPct": -3.3, "note": "neutral to marginally better on the broad corpus — the same 'not worse, not different' shape fsharp 0.3.12 showed. Being behind is not the problem; the newer release does not contain the constructs this lane fails on." }
+    }
+  ]
+}

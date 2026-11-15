@@ -1,0 +1,257 @@
+{
+  "fixtureId": "csharp/payload-and-complexity",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Completeness sections B/C/D for csharp: pins every required relationship kind (contains, extends, implements, instantiates, calls, uses, overrides, references/imports), the #419-D evidence tiers on those edges (structural / usage_contextual / import_based / inferred), per-symbol complexity (csharp #264 wave), parameters + visibility payloads. Re-review wave (2026-09-04) adds: constructor-initializer calls (CSD8), null-conditional invocation (CSD4), clean primary-base targets (CSD9), operator identity names (CSD3), accessor-event symbols (CSD5), switch-expression arm complexity (CSD2), assignment-form target-typed new() (CSD11), interface-only external base lists + struct bases as implements (CSD12). A regression that drops any kind, tier, or payload fails this fixture. SCD1 (M37 #599 pre-wave): `this.Name = \"\"` / `this.Name += \"!\"` are assignment-LHS writes \u2014 Reset must emit no uses/calls to Name (csharp field-access pass now gates the LHS span). SOURCE-SPELLING CORRECTION 2026-10-02: the type-level edges are pinned with the BARE type name as the relationship source (`Widget`, `Shape`, `Qualified`), not the namespace-qualified one (`Pin.Widget`, `Acme.Domain.Shape`, `Probe.Qualified`) these rows used to name. The analyzer publishes the bare name, and the hand-audited truth agrees: validation/m12/ground-truth/csharp.json (truthSource=manual_audit) records type-level rows with bare sourceIds such as `BaseService -> BaseService {extends}` and `BaseService -> IRepository {implements}`. The qualified spelling was a pin that could never match, which is why this fixture was RED. Only the source LABEL changed: the edge type, target, line_number and every `meta.*` constraint are untouched, and the `forbid` rows that carried the qualified spelling were vacuous before (no edge ever had that source) and are now ACTIVE. Mutant csharp/drop-implements-edge and csharp/iface-base-extends-fabrication were unobservable for exactly this reason.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "class"
+    },
+    {
+      "name": "Circle",
+      "kind": "class"
+    },
+    {
+      "name": "MakeCircle",
+      "kind": "method"
+    },
+    {
+      "name": "Area",
+      "kind": "property"
+    },
+    {
+      "name": "operator +",
+      "kind": "method",
+      "comment": "CSD3: operator overloads are named by identity, never the collapsed literal 'operator'"
+    },
+    {
+      "name": "implicit int",
+      "kind": "method",
+      "ownerName": "F6Point",
+      "comment": "CSD3: conversion operator named by its conversion DIRECTION and target type. CORRECTED 2026-09-22 by the R1 round (fixture csharp/using-alias-and-operators): this pin used to read `operator int`, which was not the intended name but the DEAD-BRANCH name. `convMatch` was written as /operator\\s+(implicit|explicit)\\s+\u2026/ \u2014 the wrong token ORDER, so it could never match real C# (`implicit operator int`) and every conversion operator fell through to the generic operator fallback. The consequence was an IDENTITY COLLISION: `implicit operator int` and `explicit operator int` on one type are two distinct C# members, and both were published as `operator int`. The grammar's own `type` field plus the anonymous `implicit`/`explicit` child give the direction and the target without a text parse."
+    },
+    {
+      "name": "Overflow",
+      "kind": "event",
+      "comment": "CSD5: field-like event declaration"
+    },
+    {
+      "name": "F6Overflow",
+      "kind": "event",
+      "comment": "CSD5: accessor-form event declaration (was silently dropped)"
+    },
+    {
+      "name": "Reset",
+      "kind": "method",
+      "ownerName": "Circle"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "System",
+      "meta.isImport": true,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "implements",
+      "source": "Shape",
+      "target": "IShape",
+      "meta.isImplements": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "Circle",
+      "target": "Shape",
+      "meta.isImplements": false,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "MakeCircle",
+      "target": "Describe",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "instantiates",
+      "source": "MakeCircle",
+      "target": "Circle",
+      "meta.isNew": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "source": "Circle.Describe",
+      "target": "Describe",
+      "meta.relationshipType": "method_override",
+      "meta.isCSharpOverride": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "Shape",
+      "target": "Area",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "source": "Compare",
+      "target": "Area",
+      "meta.relationshipType": "csharp_field_access",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "uses",
+      "source": "SafeCount",
+      "target": "Count",
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "CSD4: null-conditional member READ via member_binding_expression"
+    },
+    {
+      "type": "calls",
+      "source": "constructor",
+      "target": "this",
+      "meta.isConstructorInitializer": true,
+      "comment": "CSD8: `: this()` in F6Tank's secondary constructor - constructor-to-constructor call"
+    },
+    {
+      "type": "calls",
+      "source": "Handle",
+      "target": "Invoke",
+      "comment": "CSD4: null-conditional event invocation `Overflow?.Invoke(...)` is a real call"
+    },
+    {
+      "type": "implements",
+      "source": "CircleComparer",
+      "target": "IComparer",
+      "meta.isImplements": true,
+      "meta.evidenceClass": "structural",
+      "comment": "CSD12: generic external interface base is implements, never extends"
+    },
+    {
+      "type": "implements",
+      "source": "F6Tank",
+      "target": "IDisposable",
+      "meta.isImplements": true,
+      "meta.evidenceClass": "structural",
+      "comment": "CSD12: interface-only external base list - index-0 external IDisposable is implements (was a fabricated extends pre-fix)"
+    },
+    {
+      "type": "implements",
+      "source": "F6Handle",
+      "target": "IDisposable",
+      "meta.isImplements": true,
+      "meta.evidenceClass": "structural",
+      "comment": "CSD12: structs can NEVER inherit - every struct base is an interface"
+    },
+    {
+      "type": "instantiates",
+      "source": "constructor",
+      "target": "Dictionary",
+      "meta.isImplicit": true,
+      "meta.evidenceClass": "structural",
+      "comment": "CSD11: assignment-form `_cache = new();` resolves through the member-type map (was a silent no-edge)"
+    },
+    {
+      "type": "instantiates",
+      "source": "F6Tank",
+      "target": "Dictionary",
+      "meta.isImplicit": true,
+      "meta.evidenceClass": "structural",
+      "comment": "CSD11: field-initializer form still attributes to the enclosing class"
+    },
+    {
+      "type": "extends",
+      "source": "F6Derived",
+      "target": "F6Receipt",
+      "comment": "CSD9: record primary base - type name only, no argument list"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "source": "F6Derived",
+      "target": "(\"seed\", 1)",
+      "comment": "CSD9: the primary-base ARGUMENT LIST must never become an implements target"
+    },
+    {
+      "type": "extends",
+      "source": "F6Audited",
+      "target": "F6Receipt(Sku, Qty)",
+      "comment": "CSD9: no raw-text primary-base targets"
+    },
+    {
+      "type": "extends",
+      "source": "F6Tank",
+      "target": "IDisposable",
+      "comment": "CSD12: the interface-only base list must never fabricate an extends"
+    },
+    {
+      "type": "extends",
+      "source": "F6Handle",
+      "target": "IDisposable",
+      "comment": "CSD12: struct bases are never extends"
+    },
+    {
+      "type": "uses",
+      "source": "MakeCircle",
+      "target": "Describe",
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "M37 TSD6-sweep: callee member_access must NEVER leak as a field-access use (dead `fn === node` skip class \u2014 object identity never matches wrappers)"
+    },
+    {
+      "type": "uses",
+      "source": "Handle",
+      "target": "Invoke",
+      "meta.relationshipType": "csharp_field_access",
+      "comment": "M37 TSD6-sweep: null-conditional callee skip must fire \u2014 ?.Invoke() callee is a call, not a use"
+    },
+    {
+      "type": "uses",
+      "from": "Reset",
+      "target": "Name"
+    },
+    {
+      "type": "calls",
+      "from": "Reset",
+      "target": "Name"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "Describe",
+      "equals": 1
+    },
+    {
+      "symbol": "MakeCircle",
+      "equals": 1
+    },
+    {
+      "symbol": "Compare",
+      "equals": 1
+    },
+    {
+      "symbol": "Pick",
+      "equals": 4,
+      "comment": "CSD2: 3 switch-expression arms + base 1"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "Compare",
+      "count": 2
+    },
+    {
+      "symbol": "MakeCircle",
+      "count": 1
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "Circle",
+      "visibility": "public"
+    }
+  ]
+}

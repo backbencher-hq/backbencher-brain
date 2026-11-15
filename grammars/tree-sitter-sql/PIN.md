@@ -89,7 +89,7 @@ THE FIVE PATCHES THE RECORD NAMED, AND THE RECORD WAS WRONG ABOUT ITS OWN BUILD.
 | candidate | check | result |
 | --- | --- | --- |
 | `@derekstride/tree-sitter-sql@0.3.11` | `npm pack` → `tree-sitter generate` | **523 named types** — 67 short of the wired build |
-| the fork's own tree at `fixtures/sql/grammar/src` | the path the spec's provenance names | **the path no longer exists** |
+| the fork's own tree at `bb_tests/sql/grammar/src` | the path the spec's provenance names | **the path no longer exists** |
 | this repository's history | `git log --all` over every commit | only `wasm/tree-sitter-sql.wasm` was ever committed — never a source |
 | public forks of the upstream | 124 forks probed over `raw.githubusercontent.com` for `plpgsql_block` + `grant_statement` + `psql_meta_command` + `do_statement` | **none carries the vocabulary** |
 | `@l1xnan/tree-sitter-sql@0.4.7` | `npm pack` → `grammar.js` | **carries none of the 67 types** — and it is the candidate this lane already REFUSED, on three gates |
@@ -214,7 +214,7 @@ recovered — see the table in §"What was checked for the fork's source".
 ## A THIRD BUILD, AND IT IS AN UNKNOWN — NOT A RECOVERY
 
 **MEASURED 2026-10-22.** The corpus holds **two** copies of the sql wasm under
-`fixtures/replicas/`, one under `java-lane/` and one under `js-audit/`, and **BOTH are
+`bb_tests/replicas/`, one under `java-lane/` and one under `js-audit/`, and **BOTH are
 `bcb9888e…`** — that is, **neither is the wired build (`848e0812…`) and neither is the
 published build (`a755fdb9…`)**. So the corpus carries a **THIRD** sql grammar build, and
 **THIS RECORD DOES NOT KNOW WHAT IT IS.**

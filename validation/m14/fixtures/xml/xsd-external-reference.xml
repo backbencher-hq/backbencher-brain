@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:pic="http://schemas.example.org/picture"
+            targetNamespace="urn:example:catalog">
+  <!-- The reference comes BEFORE the import that gives it meaning. This is the
+       ordinary spelling: schemas are written for readers, and a reader meets the
+       usage before the declaration of what it depends on. -->
+  <xsd:element name="thumb" type="pic:CT_Thumbnail"/>
+  <xsd:attribute ref="pic:sz"/>
+  <xsd:import namespace="http://schemas.example.org/picture" schemaLocation="picture.xsd"/>
+  <xsd:import namespace="urn:example:unused" schemaLocation="unused.xsd"/>
+  <xsd:element name="orphan" type="gone:CT_Nowhere"/>
+</xsd:schema>

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "typescript/complexity-parity",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: cyclomatic complexity = 1 + decisions; decisions = if + for + ternary + && = 4, so f must be exactly 5. An else clause NEVER adds. The old symbol counter had no base AND double-counted else_clause - two errors that canceled to the right answer on this shape, hiding the defect from casual checks; shapes without else or with multiple elses diverged from every other language.",
+  "expectSymbols": [
+    { "name": "f", "kind": "function" }
+  ],
+  "expectComplexity": [
+    { "symbol": "f", "equals": 5 }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "fixtureId": "dart/extension-type",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Every line below was TRANSCRIBED from a measured run (script/m14/tmp/dt-fixture-dump.ts) and checked against the source with the claimed line's text printed under each edge: 26 is `extension type Wrapper._(Shape shape$) implements Shape {` (container, representation field and heritage all name on it), 27 is the overriding `area`, 29 `static bool isA(...)`, 32 the `Plain` header, 33 the `doubled` getter. The forbid entries are the two pre-fix shapes the probe MEASURED before the fix: top-level symbols with no owner, and the representation field's own declaration published as a read.",
+  "rationale": "M60 DARTD21 — the Dart 3 container the lane never saw, found twice independently. (1) It is registered as MISSING in the lane's own completeness spec (script/m14/spec/dart-completeness.json: \"Dart 3 extension type symbols\", node_type \"extension_type_declaration, representation_declaration\"), and the M60 shape census records the node types as UNSCANNED (validation/m60/results/unscanned-shapes.json, 169 occurrences each). (2) The #753 duplicate census over the FULL extent (2,547 files) surfaced it from the opposite direction: 132 of its 137 duplicate-name rows were extension-type MEMBERS in dart-http's generated jni/objc bindings (303 declarations in 4 pinned files) — the analyzer had no case for the container, so every member was emitted as a TOP-LEVEL symbol with owner=undefined, no `contains`, no heritage, and no enclosing type for a call (probe: dt-exttype-shape.ts, which prints the CST and the analyzer's answer side by side). The fix adds the container: a symbol (kind extension, metadata isExtensionType + the alias-free representation type), the representation field as a real property member (Dart exposes `field` on the type), the container scope so members carry ownerName/scope, and the `implements` clause through the same heritage extractor a class uses. It also had to REMOVE a fabrication its own first measurement exposed: with the container known, the representation field's declaration name was being read as a value (`uses Wrapper -> shape$` on line 26), so `representation_declaration` joined the declaration-name parent set on BOTH sides (analyzer isDartDeclNameParent and the oracle's DECL_PARENTS) — the family rule that an analyzer fix and its truth instrument move together. Reverting mutant: dart/extension-type-members-unowned.",
+  "expectSymbols": [
+    { "name": "Shape", "kind": "class" },
+    { "name": "area", "kind": "method", "ownerName": "Shape" },
+    { "name": "Wrapper", "kind": "extension" },
+    { "name": "shape$", "kind": "property", "ownerName": "Wrapper" },
+    { "name": "area", "kind": "method", "ownerName": "Wrapper" },
+    { "name": "isA", "kind": "method", "ownerName": "Wrapper" },
+    { "name": "Plain", "kind": "extension" },
+    { "name": "count$", "kind": "property", "ownerName": "Plain" },
+    { "name": "doubled", "kind": "property", "ownerName": "Plain" },
+    { "name": "Wrapped", "kind": "extension" },
+    { "name": "inner$", "kind": "property", "ownerName": "Wrapped" },
+    { "name": "area", "kind": "method", "ownerName": "Wrapped" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Wrapper",
+      "target": "Shape",
+      "meta.isImplements": true,
+      "line_number": 26,
+      "comment": "the `implements` clause written AFTER the representation declaration — heritage the container case must route to the same extractor a class uses"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapper",
+      "target": "Wrapper.shape$",
+      "line_number": 26,
+      "comment": "the representation field is a real member accessor of the type (Dart exposes `field`)"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapper",
+      "target": "Wrapper.area",
+      "line_number": 27,
+      "comment": "a method of the extension type, owned by it"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapper",
+      "target": "Wrapper.isA",
+      "line_number": 29,
+      "comment": "an extension-type member, including its `static` members"
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "Plain.count$",
+      "line_number": 32,
+      "comment": "a second container: the shape is not a one-off (303 declarations in the pinned corpus)"
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "Plain.doubled",
+      "line_number": 33,
+      "comment": "the getter of a second extension type"
+    },
+    {
+      "type": "overrides",
+      "from": "Wrapper.area",
+      "target": "Shape.area",
+      "line_number": 27,
+      "comment": "an extension type implementing an interface OVERRIDES it — the ownership the container adds is what makes this edge payable at all"
+    },
+    {
+      "type": "uses",
+      "from": "area",
+      "target": "Wrapper.shape$",
+      "meta.isBareRead": true,
+      "line_number": 27,
+      "comment": "the representation field read INSIDE a member body: the declaration is at 26, this read at 27 — the distinction the forbid below pins. Qualified 2026-10-08 (`Wrapper.shape$`): the container OWNS the field, and the qualified name is what the symbol table publishes for it."
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "Wrapped.inner$",
+      "line_number": 45,
+      "comment": "the WRAPPED representation declaration: the field is written on line 45 while the declaration node starts on line 44 — the edge names the FIELD, so it takes the field's line. On the real FFI bindings this was the lane's ONLY measured inconsistency (1 of 32,989 edges, 120-file draw) before the fix"
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "Wrapped.area",
+      "line_number": 47,
+      "comment": "the method of the wrapped container, owned by it"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "target": "Shape",
+      "meta.isImplements": true,
+      "line_number": 46,
+      "comment": "the `implements` clause written AFTER a multi-line representation declaration still routes to the class extractor"
+    },
+    {
+      "type": "uses",
+      "from": "area",
+      "target": "Wrapped.inner$",
+      "meta.isBareRead": true,
+      "line_number": 47,
+      "comment": "the wrapped container's field read inside its own member body — qualified 2026-10-08"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "isA",
+      "kind": "function",
+      "comment": "pre-fix shape (MEASURED by dt-exttype-shape.ts): the extension type had no symbol, so its members were emitted as TOP-LEVEL functions with no owner"
+    },
+    {
+      "name": "doubled",
+      "meta.isTopLevelAccessor": true,
+      "comment": "pre-fix shape: the getter leaked as a top-level accessor instead of a member of `Plain`"
+    }
+  ],
+  "correction_2026_10_08": "Two rounds touched this file. (1) The two bare representation-field READS moved to `Wrapper.shape$` / `Wrapped.inner$`. (2) The `contains` round qualified every member target to its published `Owner.member` spelling, so the seven contains rows and the two forbid rows below moved with it. The forbids keep their teeth: `forbidRelationships` matches by EXACT target equality (script/m14/run-fixtures.ts:matchConstraints), so the fabrication of (1) returns as `uses Wrapper -> Wrapper.shape$` and the phantom of (2) as `contains Wrapped -> Wrapped.inner$ @44` — leaving either forbid on the old bare spelling would have made it unfireable. The forbidden LINES (26, 44) are unchanged.",
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "Wrapper",
+      "target": "Wrapper.shape$",
+      "line_number": 26,
+      "note": "pre-fix FABRICATION found by this fix's own first measurement: the representation field's DECLARATION name read as a value (`uses Wrapper -> shape$` on the declaration line). Retargeted 2026-10-08 to the qualified spelling for the same reason the positive rows moved — a bare-read target now names its owner, so a regression returns `Wrapper.shape$`; leaving the bare form here would keep a forbid that can no longer fire."
+    },
+    {
+      "type": "contains",
+      "from": "Wrapped",
+      "target": "Wrapped.inner$",
+      "line_number": 44,
+      "note": "THE WRAPPED DECLARATION MUST NOT CLAIM THE CONTAINER'S LINE: the declaration node starts at 44 while the NAME is written at 45 — a line the named token is not written on is what M59's phantom rule exists to catch. Retargeted 2026-10-08 (bare `inner$` -> `Wrapped.inner$`) so the position guard survives the contains-qualification change; the LINE it refuses is unchanged."
+    }
+  ]
+}

@@ -1,0 +1,1828 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_hand_derived_ground_truth",
+  "derivation": "Each fact below was written by reading the R source of the fixture and applying the documented R analyzer contract. No fact was copied from analyzer output. Line numbers are 1-based and count the fixture's own lines.",
+  "fixtures": "bb_tests/fixtures",
+  "notes": [
+    "R has no block scope, so a name assigned inside a top-level for/while/repeat/if body IS a global binding in R; the analyzer emits it and this is not counted a false positive.",
+    "A function defined inside another function is an execution local, not a file-level declaration, and is not a symbol.",
+    "A `name -> value` and `value -> name` both bind `name`; `->>` is the superassignment form and binds the same way.",
+    "`::` and `:::` both name a package; the RHS field carries the bare function name in both cases.",
+    "R06-member-range: a member is written `name = value`, and the symbol's range must span the DECLARATION, starting at the name. R's own lexer puts `size` at 4:5 and `token` at 16:5 in F03-r6.R, so the previous expectation (4:12-4:14, 16:13-16:18) was the VALUE alone and did not contain the name the symbol is published under. The R-positions oracle found 833 such members across the pinned corpora, every one an R6 or R5 method. The expectation was corrected to match R, not the analyzer.",
+    "F16-runtime-semantics: every symbol here was taken from R EXECUTING the file, not from reading the analyzer. Found by a red-team cross-check that evaluated each corpus file and asked R's environment what it held; it disagreed with the R-oracle on 8 files, and the R-oracle disagreed with the analyzer's own blind spots in the SAME direction, so the differential's 1.000000 was agreement rather than verification. Three classes: a QUOTED assignment target (`\"%+replace%\" <- ...`, which ggplot2 writes at theme-current.R:130) published nothing; a statically dead `if (FALSE)` branch published declarations R never makes; a top-level `rm()` left the removed helper published. R binds 8 names and excludes dead_one, dead_two, dead_three, removed_helper and inside_fn."
+  ],
+  "files": {
+    "F01-assignments.R": {
+      "symbols": [
+        [
+          "variable",
+          "left_arrow",
+          4
+        ],
+        [
+          "variable",
+          "equals",
+          5
+        ],
+        [
+          "variable",
+          "super_left",
+          6
+        ],
+        [
+          "variable",
+          "right_from_value",
+          7
+        ],
+        [
+          "variable",
+          "super_b",
+          8
+        ],
+        [
+          "function",
+          "fn_left",
+          9
+        ],
+        [
+          "variable",
+          "deferred_name",
+          12
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "left_arrow"
+        ],
+        [
+          "contains",
+          "global",
+          "equals"
+        ],
+        [
+          "contains",
+          "global",
+          "super_left"
+        ],
+        [
+          "contains",
+          "global",
+          "right_from_value"
+        ],
+        [
+          "contains",
+          "global",
+          "super_b"
+        ],
+        [
+          "contains",
+          "global",
+          "fn_left"
+        ],
+        [
+          "contains",
+          "global",
+          "deferred_name"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "name_on_left",
+          "super_a",
+          "fn_right",
+          "deferred_name "
+        ],
+        "relationships": [],
+        "imports": []
+      },
+      "notes": [
+        "`fn_right -> function() 2` is NOT here: R 4.4.3 creates no binding for it (ls() is empty). It is asserted absent in F13.",
+        "A symbol's key is its RANGE start, so `deferred_name` is keyed at line 12 where the expression begins; the `contains` EDGE that names it is stamped line 14, where the name is written. The two are deliberately different and both are checked."
+      ],
+      "rangeAssertions": [
+        {
+          "kind": "variable",
+          "name": "deferred_name",
+          "startLine": 12,
+          "startColumn": 1,
+          "endLine": 14,
+          "endColumn": 19
+        }
+      ]
+    },
+    "F02-s3.R": {
+      "symbols": [
+        [
+          "method",
+          "print.myclass",
+          2
+        ],
+        [
+          "method",
+          "summary.myclass",
+          6
+        ],
+        [
+          "function",
+          "not_a_method",
+          10
+        ],
+        [
+          "method",
+          "[.myclass",
+          11
+        ]
+      ],
+      "relationships": [
+        [
+          "implements",
+          "print.myclass",
+          "print"
+        ],
+        [
+          "calls",
+          "print.myclass",
+          "cat"
+        ],
+        [
+          "calls",
+          "print.myclass",
+          "invisible"
+        ],
+        [
+          "implements",
+          "summary.myclass",
+          "summary"
+        ],
+        [
+          "calls",
+          "summary.myclass",
+          "helper_one"
+        ],
+        [
+          "contains",
+          "global",
+          "print.myclass"
+        ],
+        [
+          "contains",
+          "global",
+          "summary.myclass"
+        ],
+        [
+          "contains",
+          "global",
+          "not_a_method"
+        ],
+        [
+          "implements",
+          "[.myclass",
+          "["
+        ],
+        [
+          "contains",
+          "global",
+          "[.myclass"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "implements-target-not-a-symbol"
+        ],
+        "relationships": [
+          [
+            "implements",
+            "not_a_method",
+            "not_a"
+          ]
+        ],
+        "imports": []
+      }
+    },
+    "F03-r6.R": {
+      "symbols": [
+        [
+          "class",
+          "Widget",
+          2
+        ],
+        [
+          "property",
+          "size",
+          4
+        ],
+        [
+          "method",
+          "initialize",
+          5
+        ],
+        [
+          "method",
+          "grow",
+          9
+        ],
+        [
+          "method",
+          "log",
+          15
+        ],
+        [
+          "property",
+          "token",
+          16
+        ],
+        [
+          "method",
+          "doubled",
+          19
+        ]
+      ],
+      "relationships": [
+        [
+          "extends",
+          "Widget",
+          "BaseWidget"
+        ],
+        [
+          "contains",
+          "Widget",
+          "size"
+        ],
+        [
+          "contains",
+          "Widget",
+          "initialize"
+        ],
+        [
+          "contains",
+          "Widget",
+          "grow"
+        ],
+        [
+          "contains",
+          "Widget",
+          "log"
+        ],
+        [
+          "contains",
+          "Widget",
+          "token"
+        ],
+        [
+          "contains",
+          "Widget",
+          "doubled"
+        ],
+        [
+          "calls",
+          "initialize",
+          "private$log"
+        ],
+        [
+          "calls",
+          "grow",
+          "invisible"
+        ],
+        [
+          "contains",
+          "global",
+          "Widget"
+        ],
+        [
+          "imports",
+          "global",
+          "R6"
+        ]
+      ],
+      "imports": [
+        "R6"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "calls",
+            "grow",
+            "self$size"
+          ]
+        ],
+        "imports": []
+      },
+      "rangeAssertions": [
+        {
+          "kind": "property",
+          "name": "size",
+          "startLine": 4,
+          "startColumn": 5,
+          "endColumn": 14
+        },
+        {
+          "kind": "property",
+          "name": "token",
+          "startLine": 16,
+          "startColumn": 5,
+          "endColumn": 18
+        }
+      ]
+    },
+    "F04-s4.R": {
+      "symbols": [
+        [
+          "class",
+          "Vehicle",
+          2
+        ],
+        [
+          "property",
+          "wheels",
+          2
+        ],
+        [
+          "property",
+          "owner",
+          2
+        ],
+        [
+          "class",
+          "Car",
+          3
+        ],
+        [
+          "property",
+          "doors",
+          3
+        ],
+        [
+          "class",
+          "Legacy",
+          4
+        ],
+        [
+          "property",
+          "legacy_field",
+          4
+        ],
+        [
+          "function",
+          "speed",
+          5
+        ],
+        [
+          "method",
+          "speed",
+          6
+        ],
+        [
+          "method",
+          "show",
+          10
+        ],
+        [
+          "method",
+          "validity",
+          11
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Vehicle",
+          "wheels"
+        ],
+        [
+          "contains",
+          "Vehicle",
+          "owner"
+        ],
+        [
+          "extends",
+          "Car",
+          "Vehicle"
+        ],
+        [
+          "contains",
+          "Car",
+          "doors"
+        ],
+        [
+          "contains",
+          "Legacy",
+          "legacy_field"
+        ],
+        [
+          "calls",
+          "speed",
+          "standardGeneric"
+        ],
+        [
+          "contains",
+          "Vehicle",
+          "speed"
+        ],
+        [
+          "calls",
+          "speed",
+          "compute_speed"
+        ],
+        [
+          "contains",
+          "Vehicle",
+          "show"
+        ],
+        [
+          "calls",
+          "show",
+          "cat"
+        ],
+        [
+          "contains",
+          "Vehicle",
+          "validity"
+        ],
+        [
+          "contains",
+          "global",
+          "Vehicle"
+        ],
+        [
+          "contains",
+          "global",
+          "Car"
+        ],
+        [
+          "contains",
+          "global",
+          "Legacy"
+        ],
+        [
+          "contains",
+          "global",
+          "speed"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "contains",
+            "global",
+            "show"
+          ],
+          [
+            "contains",
+            "global",
+            "validity"
+          ]
+        ],
+        "imports": []
+      },
+      "rangeAssertions": [
+        {
+          "kind": "property",
+          "name": "wheels",
+          "startLine": 2,
+          "startColumn": 31,
+          "endColumn": 37
+        },
+        {
+          "kind": "property",
+          "name": "owner",
+          "startLine": 2,
+          "startColumn": 51,
+          "endColumn": 56
+        },
+        {
+          "kind": "class",
+          "name": "Vehicle",
+          "startLine": 2,
+          "startColumn": 1,
+          "endColumn": 72
+        }
+      ]
+    },
+    "F05-r5.R": {
+      "symbols": [
+        [
+          "class",
+          "Account",
+          2
+        ],
+        [
+          "property",
+          "balance",
+          3
+        ],
+        [
+          "property",
+          "owner",
+          3
+        ],
+        [
+          "method",
+          "deposit",
+          5
+        ],
+        [
+          "method",
+          "show",
+          8
+        ]
+      ],
+      "relationships": [
+        [
+          "extends",
+          "Account",
+          "Ledger"
+        ],
+        [
+          "contains",
+          "Account",
+          "balance"
+        ],
+        [
+          "contains",
+          "Account",
+          "owner"
+        ],
+        [
+          "contains",
+          "Account",
+          "deposit"
+        ],
+        [
+          "contains",
+          "Account",
+          "show"
+        ],
+        [
+          "calls",
+          "show",
+          "print"
+        ],
+        [
+          "contains",
+          "global",
+          "Account"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [],
+        "imports": []
+      }
+    },
+    "F06-s7.R": {
+      "symbols": [
+        [
+          "class",
+          "Temperature",
+          2
+        ],
+        [
+          "property",
+          "celsius",
+          4
+        ],
+        [
+          "property",
+          "scale",
+          4
+        ],
+        [
+          "method",
+          "format",
+          6
+        ],
+        [
+          "method",
+          "format",
+          13
+        ],
+        [
+          "method",
+          "show",
+          16
+        ]
+      ],
+      "relationships": [
+        [
+          "extends",
+          "Temperature",
+          "Measurement"
+        ],
+        [
+          "contains",
+          "Temperature",
+          "celsius"
+        ],
+        [
+          "contains",
+          "Temperature",
+          "scale"
+        ],
+        [
+          "contains",
+          "Temperature",
+          "format"
+        ],
+        [
+          "calls",
+          "format",
+          "paste0"
+        ],
+        [
+          "calls",
+          "format",
+          "helper_format"
+        ],
+        [
+          "contains",
+          "global",
+          "Temperature"
+        ],
+        [
+          "imports",
+          "global",
+          "S7"
+        ],
+        [
+          "contains",
+          "Reading",
+          "format"
+        ],
+        [
+          "contains",
+          "Reading",
+          "show"
+        ],
+        [
+          "calls",
+          "format",
+          "paste"
+        ],
+        [
+          "calls",
+          "show",
+          "invisible"
+        ],
+        [
+          "calls",
+          "format",
+          "as.character"
+        ]
+      ],
+      "imports": [
+        "S7"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [],
+        "imports": []
+      },
+      "rangeAssertions": [
+        {
+          "kind": "property",
+          "name": "celsius",
+          "startLine": 4,
+          "startColumn": 21,
+          "endColumn": 28
+        },
+        {
+          "kind": "property",
+          "name": "scale",
+          "startLine": 4,
+          "startColumn": 45,
+          "endColumn": 50
+        }
+      ],
+      "notes": [
+        "Two `format` methods exist: one owned by Temperature (S7::method(format, Temperature)) and one owned by Reading (S7::method(format, list(Reading, Writing))). The relationship model is name-keyed, so both `contains` edges are distinguishable by source but the two `format` symbols are only distinguishable by ownerName. That limitation is declared, not fixed here."
+      ]
+    },
+    "F07-imports.R": {
+      "symbols": [],
+      "relationships": [
+        [
+          "references",
+          "global",
+          "dplyr"
+        ],
+        [
+          "references",
+          "global",
+          "methods"
+        ],
+        [
+          "references",
+          "global",
+          "stats"
+        ],
+        [
+          "references",
+          "global",
+          "helpers.R"
+        ],
+        [
+          "references",
+          "global",
+          "code.cpp"
+        ],
+        [
+          "imports",
+          "global",
+          "dplyr"
+        ],
+        [
+          "imports",
+          "global",
+          "methods"
+        ],
+        [
+          "imports",
+          "global",
+          "stats"
+        ],
+        [
+          "imports",
+          "global",
+          "helpers.R"
+        ],
+        [
+          "imports",
+          "global",
+          "code.cpp"
+        ],
+        [
+          "imports",
+          "global",
+          "internal"
+        ]
+      ],
+      "imports": [
+        "dplyr",
+        "methods",
+        "stats",
+        "helpers.R",
+        "code.cpp",
+        "internal"
+      ],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "references",
+            "global",
+            "warn.conflicts"
+          ],
+          [
+            "references",
+            "global",
+            "character.only"
+          ]
+        ],
+        "imports": [
+          "warn.conflicts",
+          "character.only"
+        ]
+      }
+    },
+    "F08-closures.R": {
+      "symbols": [
+        [
+          "function",
+          "outer",
+          2
+        ]
+      ],
+      "relationships": [
+        [
+          "calls",
+          "outer",
+          "lapply"
+        ],
+        [
+          "calls",
+          "outer",
+          "transform_one"
+        ],
+        [
+          "calls",
+          "outer",
+          "vapply"
+        ],
+        [
+          "calls",
+          "outer",
+          "transform_two"
+        ],
+        [
+          "calls",
+          "outer",
+          "numeric"
+        ],
+        [
+          "calls",
+          "outer",
+          "tryCatch"
+        ],
+        [
+          "calls",
+          "outer",
+          "risky"
+        ],
+        [
+          "calls",
+          "outer",
+          "recover_from"
+        ],
+        [
+          "calls",
+          "outer",
+          "withCallingHandlers"
+        ],
+        [
+          "calls",
+          "outer",
+          "step"
+        ],
+        [
+          "calls",
+          "outer",
+          "note_warning"
+        ],
+        [
+          "calls",
+          "outer",
+          "local"
+        ],
+        [
+          "calls",
+          "outer",
+          "nested"
+        ],
+        [
+          "contains",
+          "global",
+          "outer"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [],
+        "imports": []
+      }
+    },
+    "F09-negative.R": {
+      "symbols": [
+        [
+          "variable",
+          "txt1",
+          4
+        ],
+        [
+          "variable",
+          "txt2",
+          5
+        ],
+        [
+          "variable",
+          "txt3",
+          6
+        ],
+        [
+          "variable",
+          "txt4",
+          7
+        ],
+        [
+          "variable",
+          "still_a_var",
+          9
+        ],
+        [
+          "variable",
+          "backtick name",
+          10
+        ],
+        [
+          "function",
+          "%op%",
+          11
+        ],
+        [
+          "function",
+          "callback",
+          12
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "txt1"
+        ],
+        [
+          "contains",
+          "global",
+          "txt2"
+        ],
+        [
+          "contains",
+          "global",
+          "txt3"
+        ],
+        [
+          "contains",
+          "global",
+          "txt4"
+        ],
+        [
+          "contains",
+          "global",
+          "still_a_var"
+        ],
+        [
+          "contains",
+          "global",
+          "backtick name"
+        ],
+        [
+          "contains",
+          "global",
+          "%op%"
+        ],
+        [
+          "contains",
+          "global",
+          "callback"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "commented_out",
+          "R6Class",
+          "evil",
+          "Fake",
+          "z",
+          "NotReal",
+          "pkg",
+          "not_a_real_import",
+          "a",
+          "b",
+          "c",
+          "y",
+          "local_only",
+          "x"
+        ],
+        "relationships": [
+          [
+            "references",
+            "global",
+            "NotReal"
+          ],
+          [
+            "references",
+            "global",
+            "pkg"
+          ]
+        ],
+        "imports": [
+          "NotReal",
+          "pkg",
+          "evil"
+        ]
+      }
+    },
+    "F10-literals.R": {
+      "symbols": [
+        [
+          "variable",
+          "hex_int",
+          2
+        ],
+        [
+          "variable",
+          "hex_exp",
+          3
+        ],
+        [
+          "variable",
+          "hex_frac",
+          4
+        ],
+        [
+          "variable",
+          "dec",
+          5
+        ],
+        [
+          "variable",
+          "dec2",
+          6
+        ],
+        [
+          "variable",
+          "lng",
+          7
+        ],
+        [
+          "variable",
+          "cplx",
+          8
+        ],
+        [
+          "variable",
+          "chr",
+          9
+        ],
+        [
+          "variable",
+          "raw",
+          10
+        ],
+        [
+          "function",
+          "missing_default",
+          11
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "hex_int"
+        ],
+        [
+          "contains",
+          "global",
+          "hex_exp"
+        ],
+        [
+          "contains",
+          "global",
+          "hex_frac"
+        ],
+        [
+          "contains",
+          "global",
+          "dec"
+        ],
+        [
+          "contains",
+          "global",
+          "dec2"
+        ],
+        [
+          "contains",
+          "global",
+          "lng"
+        ],
+        [
+          "contains",
+          "global",
+          "cplx"
+        ],
+        [
+          "contains",
+          "global",
+          "chr"
+        ],
+        [
+          "contains",
+          "global",
+          "raw"
+        ],
+        [
+          "contains",
+          "global",
+          "missing_default"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "p",
+          "P",
+          "p0",
+          "ast",
+          "x.8p",
+          "e",
+          "east"
+        ],
+        "relationships": [],
+        "imports": []
+      },
+      "noParseError": true
+    },
+    "F11-triple-colon.R": {
+      "symbols": [
+        [
+          "class",
+          "Hidden",
+          3
+        ],
+        [
+          "method",
+          "go",
+          4
+        ],
+        [
+          "class",
+          "Plain",
+          6
+        ],
+        [
+          "method",
+          "go",
+          7
+        ],
+        [
+          "class",
+          "Odd",
+          11
+        ],
+        [
+          "method",
+          "real",
+          11
+        ],
+        [
+          "function",
+          "use_it",
+          12
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Hidden",
+          "go"
+        ],
+        [
+          "calls",
+          "go",
+          "do_work"
+        ],
+        [
+          "contains",
+          "global",
+          "Hidden"
+        ],
+        [
+          "contains",
+          "Plain",
+          "go"
+        ],
+        [
+          "calls",
+          "go",
+          "do_other"
+        ],
+        [
+          "contains",
+          "global",
+          "Plain"
+        ],
+        [
+          "contains",
+          "Odd",
+          "real"
+        ],
+        [
+          "contains",
+          "global",
+          "Odd"
+        ],
+        [
+          "imports",
+          "global",
+          "R6"
+        ],
+        [
+          "contains",
+          "global",
+          "use_it"
+        ],
+        [
+          "calls",
+          "use_it",
+          "Hidden$new"
+        ],
+        [
+          "instantiates",
+          "use_it",
+          "Hidden"
+        ],
+        [
+          "calls",
+          "use_it",
+          "Plain$new"
+        ],
+        [
+          "instantiates",
+          "use_it",
+          "Plain"
+        ],
+        [
+          "calls",
+          "use_it",
+          "NotDeclaredAnywhere$new"
+        ],
+        [
+          "calls",
+          "use_it",
+          "new"
+        ],
+        [
+          "instantiates",
+          "use_it",
+          "Hidden"
+        ],
+        [
+          "calls",
+          "use_it",
+          "list"
+        ]
+      ],
+      "imports": [
+        "R6"
+      ],
+      "mustNotEmit": {
+        "symbols": [
+          "function(x) x",
+          "1"
+        ],
+        "relationships": [
+          [
+            "contains",
+            "Odd",
+            "function(x) x"
+          ],
+          [
+            "instantiates",
+            "use_it",
+            "NotDeclaredAnywhere"
+          ]
+        ],
+        "imports": []
+      }
+    },
+    "F12-edges.R": {
+      "symbols": [
+        [
+          "function",
+          "public_fn",
+          3
+        ],
+        [
+          "constant",
+          "PUBLIC_CONST",
+          7
+        ],
+        [
+          "function",
+          "private_fn",
+          10
+        ],
+        [
+          "class",
+          "Base2",
+          12
+        ],
+        [
+          "method",
+          "render",
+          12
+        ],
+        [
+          "class",
+          "Child2",
+          13
+        ],
+        [
+          "method",
+          "render",
+          13
+        ],
+        [
+          "class",
+          "Other2",
+          14
+        ],
+        [
+          "method",
+          "render",
+          14
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "Base2",
+          "render"
+        ],
+        [
+          "calls",
+          "render",
+          "base_impl"
+        ],
+        [
+          "extends",
+          "Child2",
+          "Base2"
+        ],
+        [
+          "contains",
+          "Child2",
+          "render"
+        ],
+        [
+          "calls",
+          "render",
+          "child_impl"
+        ],
+        [
+          "contains",
+          "Other2",
+          "render"
+        ],
+        [
+          "calls",
+          "render",
+          "other_impl"
+        ],
+        [
+          "exports",
+          "global",
+          "public_fn"
+        ],
+        [
+          "exports",
+          "global",
+          "PUBLIC_CONST"
+        ],
+        [
+          "overrides",
+          "Base2",
+          "render"
+        ],
+        [
+          "contains",
+          "global",
+          "public_fn"
+        ],
+        [
+          "contains",
+          "global",
+          "PUBLIC_CONST"
+        ],
+        [
+          "contains",
+          "global",
+          "private_fn"
+        ],
+        [
+          "contains",
+          "global",
+          "Base2"
+        ],
+        [
+          "contains",
+          "global",
+          "Child2"
+        ],
+        [
+          "contains",
+          "global",
+          "Other2"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [],
+        "relationships": [
+          [
+            "exports",
+            "global",
+            "private_fn"
+          ],
+          [
+            "overrides",
+            "Other2",
+            "render"
+          ]
+        ],
+        "imports": []
+      },
+      "notes": [
+        "`Other2` declares a method also named `render` but inherits nothing, so it is not an override of anything; only `Child2` shadows `Base2`.",
+        "The three `render` methods share one name, so their call edges share a source; the name-based relationship identity cannot separate same-named members of different classes. Declared as a limitation, not a fix."
+      ]
+    },
+    "F13-invalid-r.R": {
+      "symbols": [
+        [
+          "variable",
+          "valid_right",
+          9
+        ],
+        [
+          "variable",
+          "valid_super_right",
+          10
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "valid_right"
+        ],
+        [
+          "contains",
+          "global",
+          "valid_super_right"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "name_on_left",
+          "super_a",
+          "valid_fn_right"
+        ],
+        "relationships": [],
+        "imports": []
+      },
+      "notes": [
+        "Every assertion here was decided by running R 4.4.3, not by reading the tree-sitter grammar.",
+        "`name_on_left -> 6` and `super_a ->> 7`: R 4.4.3 raises \"invalid (do_set) left-hand side to assignment\". No binding, no symbol.",
+        "`function() 1 -> valid_fn_right`: R evaluates it and creates NO binding (verified: ls() is empty and the name does not exist). tree-sitter-r parses it as a function_definition whose body is the rightward assignment, so the analyzer sees a local and publishes nothing — which matches R.",
+        "`9 -> valid_right` and `10 ->> valid_super_right` DO bind, and are the only positive cases here."
+      ]
+    },
+    "F14-local-boundary.R": {
+      "symbols": [
+        [
+          "variable",
+          "inside_local",
+          3
+        ],
+        [
+          "variable",
+          "in_a_plain_block",
+          9
+        ],
+        [
+          "variable",
+          "bound_in_block",
+          10
+        ],
+        [
+          "function",
+          "wrap",
+          15
+        ],
+        [
+          "variable",
+          "bound_as_argument",
+          16
+        ],
+        [
+          "variable",
+          "bound_via_argument",
+          16
+        ],
+        [
+          "variable",
+          "bound_via_parens",
+          17
+        ],
+        [
+          "variable",
+          "vec",
+          18
+        ],
+        [
+          "variable",
+          "bound_via_subset",
+          19
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "inside_local"
+        ],
+        [
+          "contains",
+          "global",
+          "in_a_plain_block"
+        ],
+        [
+          "contains",
+          "global",
+          "bound_in_block"
+        ],
+        [
+          "contains",
+          "global",
+          "wrap"
+        ],
+        [
+          "contains",
+          "global",
+          "bound_as_argument"
+        ],
+        [
+          "contains",
+          "global",
+          "bound_via_argument"
+        ],
+        [
+          "contains",
+          "global",
+          "bound_via_parens"
+        ],
+        [
+          "contains",
+          "global",
+          "vec"
+        ],
+        [
+          "contains",
+          "global",
+          "bound_via_subset"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "trapped_by_local"
+        ],
+        "relationships": [],
+        "imports": []
+      },
+      "notes": [
+        "Every boundary decision in this fixture was decided by RUNNING R 4.4.3, not by reading the grammar.",
+        "An earlier revision treated a `subset` ancestor as a scope boundary; that is wrong and it silently dropped four real bindings in the corpora. R binds inside a subset index, inside parentheses, and as a call argument.",
+        "`in_a_plain_block` is deliberately NOT a symbol: its value is a `{ ... }` block, not a function, so it is a variable binding like any other and IS published - see the mustNotEmit list, which is where the `local` case is asserted instead."
+      ]
+    },
+    "F15-dotdot.R": {
+      "symbols": [
+        [
+          "function",
+          "..2dge",
+          3
+        ],
+        [
+          "function",
+          "..foo",
+          4
+        ],
+        [
+          "function",
+          "uses_dot_one",
+          5
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "..2dge"
+        ],
+        [
+          "contains",
+          "global",
+          "..foo"
+        ],
+        [
+          "contains",
+          "global",
+          "uses_dot_one"
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "dge",
+          "2dge",
+          "..2"
+        ],
+        "relationships": [],
+        "imports": []
+      },
+      "notes": [
+        "`..2dge` must be ONE name. The upstream grammar matched /[.][.]\\d+/ at a positive rank, so the lexer took `..2` out of it and left `dge` behind: two sibling nodes, and a declaration published under the wrong name.",
+        "`..foo` already lexed correctly upstream; it is here as a guard against a fix that over-reaches into plain dot names."
+      ]
+    },
+    "F16-runtime-semantics.R": {
+      "symbols": [
+        [
+          "function",
+          "%+replace%",
+          10
+        ],
+        [
+          "variable",
+          "plain quoted",
+          11
+        ],
+        [
+          "variable",
+          "backticked",
+          12
+        ],
+        [
+          "variable",
+          "bare",
+          13
+        ],
+        [
+          "variable",
+          "live_alt",
+          22
+        ],
+        [
+          "variable",
+          "uses_the_helper",
+          29
+        ],
+        [
+          "variable",
+          "after_rm",
+          33
+        ],
+        [
+          "function",
+          "f",
+          34
+        ]
+      ],
+      "relationships": [
+        [
+          "contains",
+          "global",
+          "%+replace%",
+          10
+        ],
+        [
+          "contains",
+          "global",
+          "plain quoted",
+          11
+        ],
+        [
+          "contains",
+          "global",
+          "backticked",
+          12
+        ],
+        [
+          "contains",
+          "global",
+          "bare",
+          13
+        ],
+        [
+          "contains",
+          "global",
+          "live_alt",
+          22
+        ],
+        [
+          "contains",
+          "global",
+          "uses_the_helper",
+          29
+        ],
+        [
+          "contains",
+          "global",
+          "after_rm",
+          33
+        ],
+        [
+          "contains",
+          "global",
+          "f",
+          34
+        ]
+      ],
+      "imports": [],
+      "mustNotEmit": {
+        "symbols": [
+          "dead_one",
+          "dead_two",
+          "dead_three",
+          "removed_helper",
+          "inside_fn"
+        ],
+        "relationships": []
+      },
+      "notes": "Expectations taken from R EXECUTING the file. mustNotEmit is the load-bearing part: a statically dead if(FALSE) branch, a top-level rm(), and a function-local are all names that must NOT appear."
+    }
+  },
+  "provenance": {
+    "committedCopy": true,
+    "note": "Committed so the differential is reproducible from the repository. The working copy lives in an unversioned scratch directory, so a result naming it was an assertion rather than evidence -- the same defect fixed for the R oracle scripts.",
+    "fixtures": [
+      {
+        "file": "F01-assignments.R",
+        "path": "validation/m14/fixtures/r/F01-assignments.R",
+        "sha256": "de0d2012750b052c1dd62fdf65bcd87f760f875a76e97681009c068096e941dd"
+      },
+      {
+        "file": "F02-s3.R",
+        "path": "validation/m14/fixtures/r/F02-s3.R",
+        "sha256": "6c7a033a3d8a03554e2e964201d2d317292319a4e75c8f3442f091676260c8a5"
+      },
+      {
+        "file": "F03-r6.R",
+        "path": "validation/m14/fixtures/r/F03-r6.R",
+        "sha256": "3a276f4530bcdc8a2b66d403f0988716389d3bdd1f5ae277bc9b77c73da0219b"
+      },
+      {
+        "file": "F04-s4.R",
+        "path": "validation/m14/fixtures/r/F04-s4.R",
+        "sha256": "ad5dc9deb78f56406ecb0ccd10f09a9178e2c957312879ec7cc30457add7706d"
+      },
+      {
+        "file": "F05-r5.R",
+        "path": "validation/m14/fixtures/r/F05-r5.R",
+        "sha256": "fc70f03ee27dfaea0f36073e787cf14e51697a9befeca277ee73ece4f369fd7e"
+      },
+      {
+        "file": "F06-s7.R",
+        "path": "validation/m14/fixtures/r/F06-s7.R",
+        "sha256": "0da9cf1bd6bed895f958ff144e8b711f4e1d8f8c6f2346099fb6a6b4eb7c3f80"
+      },
+      {
+        "file": "F07-imports.R",
+        "path": "validation/m14/fixtures/r/F07-imports.R",
+        "sha256": "62728ab64f4490f252bc16679267b6084bd39782a8e691bccc2772f245ecb4cc"
+      },
+      {
+        "file": "F08-closures.R",
+        "path": "validation/m14/fixtures/r/F08-closures.R",
+        "sha256": "7e8745d8f0b11d8a35699654ad8d8a475d8c469b55875c26fd830911f032a606"
+      },
+      {
+        "file": "F09-negative.R",
+        "path": "validation/m14/fixtures/r/F09-negative.R",
+        "sha256": "fc3113208224aa435976549cdb4903f02cff3ebb8a302be3877ef24f1ada629f"
+      },
+      {
+        "file": "F10-literals.R",
+        "path": "validation/m14/fixtures/r/F10-literals.R",
+        "sha256": "ba33eeb52b471b8862aaac5b211fa340166332022ae355dcd1d856e19e3358b9"
+      },
+      {
+        "file": "F11-triple-colon.R",
+        "path": "validation/m14/fixtures/r/F11-triple-colon.R",
+        "sha256": "84697fd86d86b172283021ebeb09adeef8e857a3f21d578e66de52448d08c5f8"
+      },
+      {
+        "file": "F12-edges.R",
+        "path": "validation/m14/fixtures/r/F12-edges.R",
+        "sha256": "fba891d091ad1f1efa01020c1fa1a1d65dd31a6f1f3a2adc366ba0208745cac0"
+      },
+      {
+        "file": "F13-invalid-r.R",
+        "path": "validation/m14/fixtures/r/F13-invalid-r.R",
+        "sha256": "e9b545536ef05f9639fe692de8f384231f1596679d94df9e74080e0dcdd9c1f8"
+      },
+      {
+        "file": "F14-local-boundary.R",
+        "path": "validation/m14/fixtures/r/F14-local-boundary.R",
+        "sha256": "32b854f58239ad1b13a5126d73031c3c0685ba7d9d9157732ccc13654ee9f3da"
+      },
+      {
+        "file": "F15-dotdot.R",
+        "path": "validation/m14/fixtures/r/F15-dotdot.R",
+        "sha256": "838530292a6d616c0c5ab8d106d5fc5e8b71ac069a778ca3498dc2e8223bcf48"
+      },
+      {
+        "file": "F16-runtime-semantics.R",
+        "path": "validation/m14/fixtures/r/F16-runtime-semantics.R",
+        "sha256": "6e4d4474ea75a3c0299c7fbd4f74a8f7f8e96fa079a997b97c4855a27e91e4e4"
+      }
+    ],
+    "source": "hand-derived from R 4.4.3 behaviour; every expectation was confirmed against R, not against the analyzer",
+    "groundTruthSha256": "a1f93f03c5c643a71198031e5fcc8b79268c8e3aac07494378251c9ea3adb995",
+    "dir": "validation/m14/fixtures/r",
+    "whyM14": "validation/m14/fixtures/<lang>/ is where script/m14/owner-spot-check.ts inventories a lane's fixtures from, so the set lives there rather than being duplicated into a second directory. Two copies of a fixture set is how they drift."
+  }
+}

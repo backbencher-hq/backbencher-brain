@@ -30,7 +30,7 @@
     {
       "step": "L3: definition resolves",
       "status": "pass",
-      "detail": "{\"uri\":\"file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c\",\"range\":{\"start\":{\"line\":11,\"character\":0},\"end\":{\"line\":13,\"c"
+      "detail": "{\"uri\":\"file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c\",\"range\":{\"start\":{\"line\":11,\"character\":0},\"end\":{\"line\":13,\"c"
     },
     {
       "step": "L3: references non-empty",

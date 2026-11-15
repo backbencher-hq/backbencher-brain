@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "tier": "T1",
+  "subject": ".perf-fixtures/bb-scale/n100",
+  "measuredAt": "2026-11-03T16:43:19.456Z",
+  "currentCommit": "e7a43f472adf17349902df31681c73513871e912",
+  "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/latency.mts --tier T1",
+  "environment": {
+    "node": "v22.22.1",
+    "cpus": 8,
+    "loadavg": "9.27 15.02 19.28 22/1748 88"
+  },
+  "database": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+    "bytes": 47165440,
+    "mtimeMs": 1793679144215.7527,
+    "population": {
+      "files": 97,
+      "symbols": 3512,
+      "relationships": 17068,
+      "annotations": 2
+    }
+  },
+  "rules": [
+    "BB_NO_AUTO_REFRESH=1",
+    "one discarded warmup call per subject",
+    "5 measured runs",
+    "p50/p95 from the measured runs",
+    "handler imported from source"
+  ],
+  "subjects": {
+    "default-project-wide": {
+      "args": {},
+      "runs": [
+        0.351,
+        0.34,
+        0.528,
+        0.372,
+        0.321
+      ],
+      "p50Ms": 0.351,
+      "p95Ms": 0.528,
+      "minMs": 0.321,
+      "maxMs": 0.528,
+      "bytes": 1035,
+      "answerShape": {
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    },
+    "another-name-absent": {
+      "args": {
+        "symbol": "bb-annotations-audit-name-that-does-not-exist"
+      },
+      "runs": [
+        0.914,
+        0.733,
+        0.715,
+        0.774,
+        0.779
+      ],
+      "p50Ms": 0.774,
+      "p95Ms": 0.914,
+      "minMs": 0.715,
+      "maxMs": 0.914,
+      "bytes": 454,
+      "answerShape": {
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "declaredAbsent": true,
+        "isError": false
+      }
+    },
+    "limit-1": {
+      "args": {
+        "limit": 1
+      },
+      "runs": [
+        0.356,
+        0.309,
+        0.283,
+        0.325,
+        1.829
+      ],
+      "p50Ms": 0.325,
+      "p95Ms": 1.829,
+      "minMs": 0.283,
+      "maxMs": 1.829,
+      "bytes": 789,
+      "answerShape": {
+        "count": 1,
+        "totalCountIfKnown": 2,
+        "truncated": true,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    },
+    "subject-symbol": {
+      "args": {
+        "symbol": "id"
+      },
+      "runs": [
+        1.213,
+        1.345,
+        1.139,
+        1.245,
+        1.526
+      ],
+      "p50Ms": 1.245,
+      "p95Ms": 1.526,
+      "minMs": 1.139,
+      "maxMs": 1.526,
+      "bytes": 1034,
+      "answerShape": {
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    },
+    "subject-path": {
+      "args": {
+        "path": "t0000_document_highlight.ts"
+      },
+      "runs": [
+        0.516,
+        0.504,
+        0.563,
+        1.01,
+        0.536
+      ],
+      "p50Ms": 0.536,
+      "p95Ms": 1.01,
+      "minMs": 0.504,
+      "maxMs": 1.01,
+      "bytes": 722,
+      "answerShape": {
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "declaredAbsent": false,
+        "isError": false
+      }
+    }
+  },
+  "absencePath": {
+    "args": {},
+    "coldCallMs": 9.171,
+    "isError": false,
+    "count": 2,
+    "totalCountIfKnown": 2,
+    "declaredAbsent": false,
+    "bytes": 1035
+  },
+  "seed": {
+    "subjectSymbol": "id",
+    "subjectPath": "t0000_document_highlight.ts",
+    "seededIds": 3,
+    "rowsAfterSeed": 2
+  },
+  "budget": {
+    "p95Ms": 1000,
+    "verdict": "within budget",
+    "rule": "campaign §6 (T0<250ms, T1<1s, read tools <5s at T2)"
+  }
+}

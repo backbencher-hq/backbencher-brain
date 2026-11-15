@@ -1,0 +1,23 @@
+{
+  "issue": "#881",
+  "note": "Head position: the first EXECUTABLE child decides the form. Authored from live emission (script/m14/tmp/clj881-dump.ts), not from memory. `(#_ignored quote (trivia-ghost))` is a quote form so trivia-ghost is data; `(^:probe meta-called)` IS an ordinary call to meta-called (metadata takes no execution position).",
+  "expectSymbols": [
+    { "name": "discard-head", "kind": "function" },
+    { "name": "discard-head-call", "kind": "function" },
+    { "name": "meta-head", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "discard-head", "target": "live-discard" },
+    { "type": "calls", "from": "discard-head-call", "target": "commented-called" },
+    { "type": "calls", "from": "discard-head-call", "target": "live-comment" },
+    { "type": "calls", "from": "meta-head", "target": "meta-called" },
+    { "type": "calls", "from": "meta-head", "target": "live-meta" }
+  ],
+  "forbidSymbols": [
+    { "name": "quoted-head" }
+  ],
+  "forbidRelationships": [
+    { "target": "trivia-ghost" },
+    { "target": "hidden" }
+  ]
+}

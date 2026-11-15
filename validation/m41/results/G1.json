@@ -1,0 +1,29 @@
+{
+  "issue": "M41.G1",
+  "code": "G1",
+  "milestone": "M41",
+  "status": "verified",
+  "checks": 32,
+  "passed": 32,
+  "failed": 0,
+  "negativeCases": 11,
+  "failures": [],
+  "trackedFilesScanned": 20891,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m41/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-11-09T14:46:04.392Z",
+  "limitations": [
+    "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design.",
+    "Key patterns match OpenRouter and NVIDIA shapes; a new provider format must be added to KEY_PATTERNS.",
+    "GitHub issue numbers are enforced exactly (milestone 41, issues 640-647); refiling requires updating REAL_ISSUE_NUMBERS and the ledger together.",
+    "Deploy-gate enforcement (Vercel wait-for-checks) is contractually declared here but proven end-to-end only in X1.",
+    "Ledger entries are compared with their evidence files by commit and check counts, not timestamps; after any verifier re-run the batch is stale until script/m41/sync-ledger.ts is re-run. Committing without re-running is the intended closure procedure.",
+    "G1's own ledger entry is excluded from the artifact comparison (this run replaces G1.json); its commit is still required to exist in history like every other entry."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T14:46:04.392Z",
+    "contentSha256": "d0e37cdd9687943a27ec31413af22af57f6864bf8d8ec9e4b78f85efae93a755"
+  }
+}

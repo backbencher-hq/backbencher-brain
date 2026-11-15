@@ -1,0 +1,184 @@
+{
+  "issue": "ELX-EXPORTS",
+  "note": "`exports` measured GAP -> implemented. Elixir has no export-list statement (the erlang lane's `-export([f/a])` has no counterpart), so the public callable surface is read off the declarations: def/defmacro/defguard/defdelegate/defexception publish, defp/defmacrop/defguardp do not. This is a DIFFERENT statement from `contains` (is a member) \u2014 it is the set another module can call as `Mod.f(...)`, which is what bb_migrate's cross-language mapping and the go/java/kotlin exports edges carry, and the only channel that reaches the store (parallel-indexer writes imports[] to brain_import and declares no brain_export table, so the 1,201 ExportInfo this analyzer already published were never persisted). Measured on 559 corpus files: 4,031 edges in 411 files, both endpoints resolving 4031/4031. Falsifier: mutant elixir/exports-private-published, elixir/exports-owner-any-kind, elixir/exports-line-wrong. Three rules are pinned by their MUTANT rather than by an expected edge, because each forbids an edge that must never exist: a member with no module owner (the .exs script shape) publishes no export surface, a non-callable member (struct field, type alias) is not an export, and a private definition is not published whatever its name says.",
+  "expectSymbols": [
+    {
+      "name": "ExportsSurface",
+      "kind": "module"
+    },
+    {
+      "name": "public_fun",
+      "kind": "function",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "private_fun",
+      "kind": "function",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "public_macro",
+      "kind": "macro",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "looks_public",
+      "kind": "macro",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "public_guard",
+      "kind": "macro",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "public_delegate",
+      "kind": "function",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "exported_field",
+      "kind": "property",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "ExportsProtocol",
+      "kind": "interface"
+    },
+    {
+      "name": "ExportsCallbackOnly",
+      "kind": "module"
+    },
+    {
+      "name": "load",
+      "kind": "function",
+      "ownerName": "ExportsCallbackOnly"
+    },
+    {
+      "name": "handle",
+      "kind": "type",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "secret",
+      "kind": "type",
+      "ownerName": "ExportsSurface"
+    },
+    {
+      "name": "script_level_fun",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "ExportsSurface",
+      "target": "public_fun",
+      "line_number": 12,
+      "meta.evidenceClass": "structural",
+      "meta.exportForm": "function"
+    },
+    {
+      "type": "exports",
+      "from": "ExportsSurface",
+      "target": "second_fun",
+      "line_number": 13
+    },
+    {
+      "type": "exports",
+      "from": "ExportsSurface",
+      "target": "public_macro",
+      "line_number": 15,
+      "meta.exportForm": "macro"
+    },
+    {
+      "type": "exports",
+      "from": "ExportsSurface",
+      "target": "public_guard",
+      "line_number": 17,
+      "meta.exportForm": "macro"
+    },
+    {
+      "type": "exports",
+      "from": "ExportsSurface",
+      "target": "public_delegate",
+      "line_number": 19
+    },
+    {
+      "type": "exports",
+      "from": "ExportsProtocol",
+      "target": "to_elixir_value",
+      "line_number": 41,
+      "meta.exportForm": "method"
+    },
+    {
+      "type": "exports",
+      "from": "BitString",
+      "target": "to_elixir_value",
+      "line_number": 45,
+      "meta.exportForm": "method"
+    },
+    {
+      "type": "exports",
+      "from": "ExportsCallbackOnly",
+      "target": "load",
+      "line_number": 51,
+      "meta.isCallbackDeclaration": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "private_fun"
+    },
+    {
+      "type": "exports",
+      "target": "private_macro"
+    },
+    {
+      "type": "exports",
+      "target": "private_guard"
+    },
+    {
+      "type": "exports",
+      "target": "looks_public"
+    },
+    {
+      "type": "exports",
+      "target": "exported_field"
+    },
+    {
+      "type": "exports",
+      "target": "ExportsSurface"
+    },
+    {
+      "type": "exports",
+      "from": "ExportsSurface",
+      "target": "public_fun",
+      "line_number": 22
+    },
+    {
+      "type": "exports",
+      "target": "contains"
+    },
+    {
+      "type": "exports",
+      "target": "secret"
+    },
+    {
+      "type": "exports",
+      "from": "script_level_fun",
+      "target": "script_level_fun"
+    },
+    {
+      "type": "exports",
+      "target": "ExportsSurface.handle"
+    },
+    {
+      "type": "exports",
+      "from": "",
+      "target": "script_level_fun"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

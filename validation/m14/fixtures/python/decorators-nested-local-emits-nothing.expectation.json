@@ -1,0 +1,24 @@
+{
+  "fixtureId": "python/decorators-nested-local-emits-nothing",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE NEGATIVE DIRECTION OF THE `decorates` EMISSION. A def inside a def is a LOCAL on this family's contract (PY-28: the analyzer publishes no symbol for it, and the main walk attributes its body to the enclosing published symbol). The Lead's ruling for decorators is that such a decorator emits NO row at all — NOT one re-attributed to the enclosing symbol — because a decorator is part of the decorated declaration's identity, not a fact about the body that contains it. The forbid row is a BARE `{type: decorates}` wildcard: ANY decorates edge in this file is a failure, which is the strongest form the schema supports and the one that catches a re-attribution implementation that would still pass a source-specific forbid. `forbidSymbols` pins the other half: `nested` must not become a symbol, because if it did the decorator would have a published declaration and the positive emission would be correct — the absence of the row and the absence of the symbol are one decision, so the fixture states both.",
+  "expectSymbols": [
+    { "name": "outer", "kind": "function" },
+    { "name": "method", "kind": "method", "ownerName": "Holder" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "outer", "startLine": 7 },
+    { "symbol": "method", "startLine": 15 }
+  ],
+  "forbidSymbols": [
+    { "name": "nested", "note": "a def inside a def is a local — no symbol, hence no decorator row" },
+    { "name": "local", "note": "the same rule one level deeper: a def inside a method body is a local" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "note": "ANY decorates edge in this file is a failure: both decorators are written on local defs that publish no symbol. This includes the re-attribution shape (`outer -> inner_deco`, `method -> inner_deco`), which is exactly what the Lead's ruling excludes."
+    }
+  ]
+}

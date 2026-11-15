@@ -1,0 +1,16 @@
+// THE `imports` / `part_of` SPLIT, PINNED IN BOTH DIRECTIONS — the label move the 14-value campaign
+// made in this lane (2026-10-23). `@import "theme"` is a SASS FILE INCLUSION: the imported file is
+// evaluated as though its contents appeared in place of the `@import` and shares this file's single
+// scope, which is the vocabulary's `part_of` ("a part shares the library's single scope, imports
+// nothing") and NOT an `imports` binding. `@import url("reset.css")` loads a STYLESHEET — a module
+// import, correctly `imports`.
+//
+// The CSS delegate parses both statements and publishes the `imports` row; this lane MOVES the
+// Sass-form row to `part_of` after the delegate's file-claim pass. The fixture pins the moved row
+// AND the row that stayed, so a relabel back to a single label cannot pass.
+@import "theme";
+@import url("reset.css");
+
+.card {
+  color: red;
+}

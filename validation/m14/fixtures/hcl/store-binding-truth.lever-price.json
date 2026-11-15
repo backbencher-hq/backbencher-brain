@@ -1,0 +1,104 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.mts \u2014 NAME-SPACE LEVER PRICE run, one store run per repository",
+  "reposBanked": [
+    "boundary",
+    "consul",
+    "docker",
+    "hasura-engine",
+    "kong",
+    "nomad",
+    "nvim-treesitter",
+    "packer",
+    "terraform",
+    "terragrunt",
+    "tflint",
+    "tfsec",
+    "vault",
+    "waypoint",
+    "yq"
+  ],
+  "reposAttempted": 16,
+  "killed": [
+    "terraform-aws-components (exit 124, timeout 900s \u2014 KILLED, not a zero; its 1,809 eligible files are NOT in these totals)"
+  ],
+  "indexerEligibleFiles": 5029,
+  "refusedByTheIndexer": 2491,
+  "storeRows": 129941,
+  "price": {
+    "scopedWouldMove": 4725,
+    "ofThoseLeafReduced": 928,
+    "alreadyBindInsideOwnFile": 107683
+  },
+  "perType": {
+    "contains": {
+      "edges": 98899,
+      "bound": 98735,
+      "targetUnbound": 164,
+      "boundOtherFile": 2462,
+      "boundNeedsLeafReduction": 42192,
+      "scopedWouldMove": 2462,
+      "scopedWouldMoveLeafReduced": 843,
+      "scopedAlreadyRight": 96273
+    },
+    "references": {
+      "edges": 17670,
+      "bound": 16192,
+      "targetUnbound": 1478,
+      "boundOtherFile": 8557,
+      "boundNeedsLeafReduction": 13537,
+      "scopedWouldMove": 678,
+      "scopedWouldMoveLeafReduced": 85,
+      "scopedAlreadyRight": 787
+    },
+    "exports": {
+      "edges": 12161,
+      "bound": 12151,
+      "targetUnbound": 10,
+      "boundOtherFile": 1561,
+      "boundNeedsLeafReduction": 0,
+      "scopedWouldMove": 1561,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 10590
+    },
+    "uses": {
+      "edges": 812,
+      "bound": 643,
+      "targetUnbound": 169,
+      "boundOtherFile": 608,
+      "boundNeedsLeafReduction": 611,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 0
+    },
+    "imports": {
+      "edges": 342,
+      "bound": 8,
+      "targetUnbound": 334,
+      "boundOtherFile": 0,
+      "boundNeedsLeafReduction": 8,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 0
+    },
+    "extends": {
+      "edges": 53,
+      "bound": 53,
+      "targetUnbound": 0,
+      "boundOtherFile": 24,
+      "boundNeedsLeafReduction": 0,
+      "scopedWouldMove": 24,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 29
+    },
+    "calls": {
+      "edges": 4,
+      "bound": 4,
+      "targetUnbound": 0,
+      "boundOtherFile": 0,
+      "boundNeedsLeafReduction": 0,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 4
+    }
+  }
+}

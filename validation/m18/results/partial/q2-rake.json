@@ -1,0 +1,241 @@
+{
+  "corpus": "rake",
+  "data": {
+    "symbols": 779,
+    "embeddingCount": 445,
+    "coverage": 0.5712451861360719,
+    "flushCompleted": true,
+    "flushMs": 15410,
+    "perModel": [
+      {
+        "m": "nvidia/nemotron-3-embed-1b:free",
+        "c": 445
+      }
+    ],
+    "rows": [
+      {
+        "id": "rake-a1",
+        "gold": "task",
+        "goldEmbeddedModels": [
+          "nvidia/nemotron-3-embed-1b:free"
+        ],
+        "runs": [
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 2,
+            "hitCount": 19,
+            "ms": 1082
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 2,
+            "hitCount": 19,
+            "ms": 796
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 2,
+            "hitCount": 19,
+            "ms": 861
+          }
+        ],
+        "median": 2,
+        "worst": 2
+      },
+      {
+        "id": "rake-a2",
+        "gold": "Application",
+        "goldEmbeddedModels": [
+          "nvidia/nemotron-3-embed-1b:free"
+        ],
+        "runs": [
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 12,
+            "hitCount": 26,
+            "ms": 811
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 12,
+            "hitCount": 26,
+            "ms": 941
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 12,
+            "hitCount": 26,
+            "ms": 858
+          }
+        ],
+        "median": 12,
+        "worst": 12
+      },
+      {
+        "id": "rake-a3",
+        "gold": "TaskArguments",
+        "goldEmbeddedModels": [
+          "nvidia/nemotron-3-embed-1b:free"
+        ],
+        "runs": [
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 8,
+            "hitCount": 41,
+            "ms": 837
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 8,
+            "hitCount": 41,
+            "ms": 783
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 8,
+            "hitCount": 41,
+            "ms": 811
+          }
+        ],
+        "median": 8,
+        "worst": 8
+      },
+      {
+        "id": "rake-s1",
+        "gold": "TaskArguments",
+        "goldEmbeddedModels": [
+          "nvidia/nemotron-3-embed-1b:free"
+        ],
+        "runs": [
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 3,
+            "hitCount": 16,
+            "ms": 802
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 3,
+            "hitCount": 16,
+            "ms": 893
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 3,
+            "hitCount": 16,
+            "ms": 928
+          }
+        ],
+        "median": 3,
+        "worst": 3
+      },
+      {
+        "id": "rake-s2",
+        "gold": "FileTask",
+        "goldEmbeddedModels": [
+          "nvidia/nemotron-3-embed-1b:free"
+        ],
+        "runs": [
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 3,
+            "hitCount": 5,
+            "ms": 913
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 3,
+            "hitCount": 5,
+            "ms": 1047
+          },
+          {
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b:free",
+            "indexModel": "nvidia/nemotron-3-embed-1b:free",
+            "rank": 3,
+            "hitCount": 5,
+            "ms": 936
+          }
+        ],
+        "median": 3,
+        "worst": 3
+      }
+    ],
+    "vectorModeQueries": 15,
+    "fallbackModeQueries": 0
+  },
+  "vecMedRanks": [
+    2,
+    12,
+    8,
+    3,
+    3
+  ],
+  "fbMedRanks": [],
+  "perQueryMeta": {
+    "rake-a1": {
+      "method": "vector",
+      "queryModel": "nvidia/nemotron-3-embed-1b:free",
+      "goldEmbeddedModels": [
+        "nvidia/nemotron-3-embed-1b:free"
+      ]
+    },
+    "rake-a2": {
+      "method": "vector",
+      "queryModel": "nvidia/nemotron-3-embed-1b:free",
+      "goldEmbeddedModels": [
+        "nvidia/nemotron-3-embed-1b:free"
+      ]
+    },
+    "rake-a3": {
+      "method": "vector",
+      "queryModel": "nvidia/nemotron-3-embed-1b:free",
+      "goldEmbeddedModels": [
+        "nvidia/nemotron-3-embed-1b:free"
+      ]
+    },
+    "rake-s1": {
+      "method": "vector",
+      "queryModel": "nvidia/nemotron-3-embed-1b:free",
+      "goldEmbeddedModels": [
+        "nvidia/nemotron-3-embed-1b:free"
+      ]
+    },
+    "rake-s2": {
+      "method": "vector",
+      "queryModel": "nvidia/nemotron-3-embed-1b:free",
+      "goldEmbeddedModels": [
+        "nvidia/nemotron-3-embed-1b:free"
+      ]
+    }
+  },
+  "generatedAt": "2026-08-24T23:33:22.415Z"
+}

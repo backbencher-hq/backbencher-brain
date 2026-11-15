@@ -1,0 +1,476 @@
+{
+  "schemaVersion": 1,
+  "gate": "m60-runtime-migration-preflight",
+  "checkedAt": "2026-09-29T05:44:57.257Z",
+  "role": "REPORT, gated for completeness and evidence. The blockers below are the OUTPUT of this gate, not its failures: a permanently-red gate over a finding is a gate that stops being run.",
+  "inputs": {
+    "stragglerMeasurement": "validation/m60/results/M60.0.runtime-stragglers.json",
+    "survey": "validation/m60/grammar-survey.json",
+    "provenance": "validation/m60/results/G-PROVENANCE.json"
+  },
+  "laneUniverse": {
+    "engineRegistryLanes": 49,
+    "surveyRows": 49,
+    "filesInWasmDir": 66,
+    "rule": "a file no lane declares is not a lane, so the migration's scope is counted in lanes and the orphans are reported separately with the bytes they waste"
+  },
+  "scope": {
+    "filesThatRefuseTheCandidateRuntime": 19,
+    "ofWhichOrphanedFilesNotALaneAtAll": 7,
+    "realLanesToMigrate": 12,
+    "ordinaryRebuildCandidates": 1,
+    "provablyNotRebuildableFromThePublishedPackage": 11,
+    "provenanceUnknownNeedsASourceRead": 0,
+    "headline": "The recorded \"20 of 55\" counted FILES. 7 of the 19 files that refuse 0.27.0 are orphaned binaries no lane loads, so the real scope is 12 lanes — and 11 of those cannot be fixed by rebuilding at all, because the package they came from publishes no grammar source."
+  },
+  "verdicts": [
+    {
+      "wasm": "tree-sitter-elisp.wasm",
+      "candidateLane": "elisp",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-embedded_template.wasm",
+      "candidateLane": "embedded_template",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-go.wasm",
+      "candidateLane": "go",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-html.wasm",
+      "candidateLane": "html",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "vendored-in-repo",
+      "evidence": "grammar-survey.json rows[html].source.rebuildable = true, and grammars/tree-sitter-html/grammar.js is TRACKED — so a rebuild works on a fresh clone, not just here (10 tracked file(s), 5 untracked)",
+      "action": "rebuild in-repo with CLI 0.26.9 from the tracked grammar source, then admit through F11"
+    },
+    {
+      "wasm": "tree-sitter-java.wasm",
+      "candidateLane": "java",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-javascript.wasm",
+      "candidateLane": "javascript",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.12 publishes 0 grammar source file(s) and 0 parser.c across 38 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-json.wasm",
+      "candidateLane": "json",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": false,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-ocaml.wasm",
+      "candidateLane": "ocaml",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-rescript.wasm",
+      "candidateLane": "rescript",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-ruby.wasm",
+      "candidateLane": "ruby",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-solidity.wasm",
+      "candidateLane": "solidity",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-swift.wasm",
+      "candidateLane": "swift",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-systemrdl.wasm",
+      "candidateLane": "systemrdl",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-tlaplus.wasm",
+      "candidateLane": "tlaplus",
+      "isDeclaredLane": false,
+      "orphanProof": {
+        "isOrphan": true,
+        "gates": {
+          "absentFromEngineRegistry": true,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": true
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "unidentified",
+      "evidence": "no provenance verdict yet — run script/m60/find-grammar-provenance.ts",
+      "action": "the source must be READ, not hashed: these bytes match nothing published, so the answer is a local or vendored build whose provenance nobody recorded"
+    },
+    {
+      "wasm": "tree-sitter-toml.wasm",
+      "candidateLane": "toml",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-tsx.wasm",
+      "candidateLane": "tsx",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": true,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-typescript.wasm",
+      "candidateLane": "typescript",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.11 publishes 0 grammar source file(s) and 0 parser.c across 37 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-vue.wasm",
+      "candidateLane": "vue",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.12 publishes 0 grammar source file(s) and 0 parser.c across 38 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    },
+    {
+      "wasm": "tree-sitter-zig.wasm",
+      "candidateLane": "zig",
+      "isDeclaredLane": true,
+      "orphanProof": {
+        "isOrphan": false,
+        "gates": {
+          "absentFromEngineRegistry": false,
+          "absentFromCorpusManifest": false,
+          "absentFromPinContract": true,
+          "noSurveyRowShipsIt": false
+        },
+        "laneSurfacesTried": [
+          "src/ast/engine.ts SUPPORTED_LANGUAGES",
+          "validation/m12/corpus-manifest.json",
+          "validation/m14/grammar-pins.json",
+          "validation/m60/grammar-survey.json (49 declared lanes)"
+        ]
+      },
+      "verdict": "upstream-sourceless",
+      "evidence": "tree-sitter-wasms@0.1.13 publishes 0 grammar source file(s) and 0 parser.c across 39 file(s) — a redistributor collection with no rebuildable source",
+      "action": "NOT rebuildable from the published package: locate the real upstream grammar, rebuild from THAT, and admit through F11. A rebuild here cannot be byte-identical, so identity is not the acceptance bar — measured behaviour is."
+    }
+  ],
+  "orphanBytes": 11140039,
+  "orphanBytesNote": "tracked binaries in wasm/ that no lane loads; they fail the candidate runtime exactly like a real straggler because the refusal is about the bytes, not about whether anything asks for them",
+  "assertions": {
+    "everyStragglerHasAVerdict": true,
+    "setMatchesTheMeasurement": true,
+    "everyOrphanIsProven": true,
+    "measurementWasSound": true
+  },
+  "hardFailures": [],
+  "passed": true,
+  "written": "validation/m60/results/M60.0.migration-preflight.json"
+}

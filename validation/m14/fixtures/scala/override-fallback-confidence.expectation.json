@@ -1,0 +1,14 @@
+{
+  "fixtureId": "scala/override-fallback-confidence",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Without a project companion index the override target is a per-file guess (first supertype); AbstractRenderer does not declare draw() anywhere in this file, so the edge is a pure guess. Guesses must carry confidence < 0.7 (patterns.ts consumer threshold) - the flat 0.9 propagated from Kotlin's pre-fix state contaminated thresholded analysis.",
+  "expectSymbols": [
+    { "name": "AbstractRenderer", "kind": "class" },
+    { "name": "ShapeRenderer", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "fromEndsWith": "ShapeRenderer.draw", "targetEndsWith": "draw", "confidenceMax": 0.55 },
+    { "type": "extends", "from": "ShapeRenderer", "targetEndsWith": "AbstractRenderer" }
+  ]
+}

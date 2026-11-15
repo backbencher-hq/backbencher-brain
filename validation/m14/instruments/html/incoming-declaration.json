@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "lang": "html",
+    "asked": "the fleet's completion gate asks whether this language is DONE: every applicable type implemented, MEASURED ON THE WHOLE ADMITTED POPULATION, correctly resolved, and every wall dispositioned with a count and a falsifier. THIS DECLARATION IS THE LANE'S ANSWER TO (B), (C) AND (D); the coverage gate answers (A).",
+    "instrument": "script/m14/incoming-gate.ts (the fleet's own arm), run in five DISJOINT slices of the sorted admitted list and merged by script/m14/html-arm-merge.ts",
+    "instrumentVersion": "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + the binding and cause buckets; the five classes below are a coarsening of those eleven, and the coarsening is CHECKED against the edge count here",
+    "sample": 8888,
+    "corpusTotal": 8888,
+    "corpusRepos": 96,
+    "parsed": 8888,
+    "degraded": 0,
+    "symlinkedDirectoriesFollowed": 182,
+    "populationRule": "GIT-TRACKED (`git ls-files` per corpus entry) · the ROUTER'S ONE EXTENSION TABLE (script/m14/language-extensions.ts), read and never copied · the engine's 1 MB cap · the same admission the gate itself uses",
+    "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds; the five classes are about the TARGET'S MATCH, and they partition the edges exactly",
+    "analyzer": "src/ast/real-html-analyzer.ts",
+    "analyzerDigest": "sha256:d57971e4d31e80ec",
+    "generated": "2026-10-22",
+    "artifacts": {
+      "closure": "validation/m14/measurements/html-arm-closure-2026-10-22.json",
+      "population": "validation/m14/measurements/html-population-2026-10-22.json",
+      "constructCensus": "validation/m14/measurements/html-extended-constructs-2026-10-22.txt",
+      "grammarNodes": "validation/m14/measurements/html-grammar-nodes.json",
+      "perSliceOutputs": "validation/m14/measurements/html-arm/"
+    },
+    "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase). The classes are siblings that partition the edges: edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last of those is checked to be 0 rather than assumed.",
+    "theBiasInThisMeasurement": "THE EDGE COUNTS ARE THE POPULATION'S, EXACTLY: every admitted file is measured exactly once across the five slices, and an edge is a per-file fact. THE RESOLUTION BUCKETS ARE THE CHUNKED MEASUREMENT'S, AND THEY CARRY A BIAS THE GATE'S OWN POPULATION LINE NAMES: \"A stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose collision lives in an unsampled file of the same repository reads unique here.\" ⇒ THE `resolved` CLASS IS BIASED UPWARD AND THE `ambiguous` AND `otherUnresolved` CLASSES ARE BIASED DOWNWARD, relative to a whole-population run in one project scope. The mechanism is a repository that STRADDLES a slice boundary: the half that is not in the slice cannot see the collisions in the other half, so a name that would be ambiguous reads unique and the edge resolves. THE STRADDLE CONTROL (script/m14/html-straddle-control.sh) MEASURES THE SIZE of the effect on one repository of this population, whole against split, over the same files — and its result is read HERE, so this note can only claim what the control has measured. THE CONTROL IS INSTRUMENTED AND NOT YET RUN — the small slot is fleet-wide and one lane at a time, so no number is claimed here. Instrument: script/m14/html-straddle-control.sh; artifact when it lands: validation/m14/measurements/html-straddle/vault-straddle.json."
+  },
+  "types": {
+    "calls": {
+      "resolved": 2922,
+      "external": 30617,
+      "ambiguous": 2003,
+      "otherUnresolved": 7586,
+      "unclassed": 0,
+      "edges": 43128
+    },
+    "extends": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 0
+    },
+    "implements": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 0
+    },
+    "uses": {
+      "resolved": 20952,
+      "external": 412747,
+      "ambiguous": 6529,
+      "otherUnresolved": 101527,
+      "unclassed": 0,
+      "edges": 541755
+    },
+    "imports": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 13,
+      "unclassed": 0,
+      "edges": 13
+    },
+    "exports": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 3,
+      "unclassed": 0,
+      "edges": 3
+    },
+    "contains": {
+      "resolved": 168818,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 168818
+    },
+    "references": {
+      "resolved": 645,
+      "external": 36,
+      "ambiguous": 4312,
+      "otherUnresolved": 150,
+      "unclassed": 0,
+      "edges": 5143
+    },
+    "overrides": {
+      "resolved": 8,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 8
+    },
+    "instantiates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 284,
+      "unclassed": 0,
+      "edges": 284
+    },
+    "decorates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 0
+    },
+    "renders": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 0
+    },
+    "mixes_in": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 0
+    },
+    "part_of": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "edges": 0
+    }
+  },
+  "causeRulings": {
+    "decorates": {
+      "population": "parsed=8888/8888 admitted=8888 exts=html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 index=no",
+      "falsifier": {
+        "run": "bash script/m14/html-arm-chunks.sh   # the whole admitted population, in five disjoint slices, merged by script/m14/html-arm-merge.ts && bun script/m14/run-fixtures.ts --lang html   # the behavioural fixture, including the planted constructs and their fired controls",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE, IN EITHER HALF. (1) If a single admitted file exercised the construct, the arm's `decorates` row would be NON-ZERO — and it reads 0 over 8,888 files. (2) If the analyzer did not publish the type, the fixture's `decorates` pin would fail — and the fixture publishes `Decorated → sealed` with `htmlEmbedded: true` and `embeddedLang: js`, and the FIRED CONTROL (delete the `@sealed` line) fails that pin and no other. (3) If the grammar could not express the construct, the census's decorator counter would be 0 over the DELEGATE's own parse — and the construct IS in the javascript/typescript grammars, which is why the seam publishes it.\n\nTHE CLAIM BEING RULED: THE ANALYZER PUBLISHES `decorates` AND NO FILE IN THE ADMITTED POPULATION EXERCISES IT.\nTHE COUNT: 0 `decorates` edges over the whole admitted population (8,888 files, the arm's own row) and 0 decorator nodes over 13,768 embedded blocks in 4,644 files (the census's own counter)."
+      }
+    },
+    "implements": {
+      "population": "parsed=8888/8888 admitted=8888 exts=html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 index=no",
+      "falsifier": {
+        "run": "bash script/m14/html-arm-chunks.sh   # the whole admitted population, in five disjoint slices, merged by script/m14/html-arm-merge.ts && bun script/m14/run-fixtures.ts --lang html   # the behavioural fixture, including the planted constructs and their fired controls",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE. (1) A non-zero `implements` row in the arm falsifies the corpus half. (2) A failing `implements` pin in the fixture falsifies the capability half — the fixture publishes `Square → Shape` with `embeddedLang: ts`, and its FIRED CONTROL (delete `implements Shape`) fails that pin and no other. (3) The census's implements-clause counter is the construct counter, and it reads 0 in 0 files.\n\nTHE CLAIM BEING RULED: THE ANALYZER PUBLISHES `implements` AND NO FILE IN THE ADMITTED POPULATION EXERCISES IT.\nTHE COUNT: 0 `implements` edges over the whole admitted population (the arm's own row) and 0 implements clauses over 13,768 embedded blocks in 4,644 files — and ONE typescript block in the whole population, so the population that could carry the construct is 1 file."
+      }
+    },
+    "renders": {
+      "population": "parsed=8888/8888 admitted=8888 exts=html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 index=no",
+      "falsifier": {
+        "run": "bash script/m14/html-arm-chunks.sh   # the whole admitted population, in five disjoint slices, merged by script/m14/html-arm-merge.ts && bun script/m14/run-fixtures.ts --lang html   # the behavioural fixture, including the planted constructs and their fired controls",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE. (1) A non-zero `renders` row in the arm falsifies the corpus half. (2) A failing `renders` pin in the fixture falsifies the capability half — the fixture publishes `Panel → Button`, and its FIRED CONTROL (delete `<Button />`) fails that pin and no other. (3) The census's jsx-element counter is the construct counter and it reads 0 in 0 files.\n\nTHE CLAIM BEING RULED: THE ANALYZER PUBLISHES `renders` AND NO FILE IN THE ADMITTED POPULATION EXERCISES IT.\nTHE COUNT: 0 `renders` edges over the whole admitted population (the arm's own row) and 0 jsx elements over 13,768 embedded blocks in 4,644 files (the census's own counter)."
+      }
+    },
+    "mixes_in": {
+      "population": "parsed=8888/8888 admitted=8888 exts=html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 index=no",
+      "falsifier": {
+        "run": "bash script/m14/html-arm-chunks.sh   # the whole admitted population, in five disjoint slices, merged by script/m14/html-arm-merge.ts && bun script/m14/run-fixtures.ts --lang html   # the behavioural fixture, including the planted constructs and their fired controls",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE. (1) A non-zero `mixes_in` row in the arm falsifies the corpus half. (2) A failing `mixes_in` pin in the fixture falsifies the capability half — the fixture publishes `Record → Timestamped`, and its FIRED CONTROL (delete `extends Timestamped(Base)`) fails that pin and no other, which is the control that proves the discriminator is a POSITION and not a name. (3) The census's `class_heritage` counter is the construct counter for the mixin shape and it reads 0 in 0 files — so the population could not carry a mixin even if it wanted to.\n\nTHE CLAIM BEING RULED: THE ANALYZER PUBLISHES `mixes_in` AND NO FILE IN THE ADMITTED POPULATION EXERCISES IT — and the population has NO CLASS HERITAGE AT ALL, which is a stronger zero than \"no mixin\".\nTHE COUNT: 0 `mixes_in` edges over the whole admitted population (the arm's own row), 0 mixin clauses over 13,768 embedded blocks in 4,644 files, AND 0 `class_heritage` clauses — the shape the mixin would take — in the same population."
+      }
+    },
+    "extends": {
+      "population": "parsed=8888/8888 admitted=8888 exts=html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 index=no",
+      "falsifier": {
+        "run": "bash script/m14/html-arm-chunks.sh   # the whole admitted population, in five disjoint slices, merged by script/m14/html-arm-merge.ts && bun script/m14/run-fixtures.ts --lang html   # the behavioural fixture, including the planted constructs and their fired controls",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE. (1) A non-zero `extends` row in the arm falsifies the corpus half. (2) A failing `extends` pin in the fixture falsifies the capability half. (3) The census's `class_heritage` counter is the construct counter — and it reads 0 in 0 files, which is the SAME counter the mixin ruling cites, because the mixin IS a class-heritage clause whose base is a call.\n\nTHE CLAIM BEING RULED: THE ANALYZER PUBLISHES `extends` AND NO FILE IN THE ADMITTED POPULATION EXERCISES IT — the class-heritage clause, the only spelling a class-extends edge can come from, is 0 clauses in 0 files over the whole population.\nTHE COUNT: 0 `extends` edges over the whole admitted population (the arm's own row) and 0 `class_heritage` clauses over 13,768 embedded blocks in 4,644 files (the census's own counter)."
+      }
+    },
+    "part_of": {
+      "population": "parsed=8888/8888 admitted=8888 exts=html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 index=no",
+      "falsifier": {
+        "run": "bun run script/m14/html-extended-construct-probe.ts --json validation/m14/measurements/html-extended-constructs-2026-10-22.json   # the construct census over the whole admitted population && bash script/m14/html-arm-chunks.sh   # the whole admitted population, in five disjoint slices, merged by script/m14/html-arm-merge.ts",
+        "wouldFail": "THIS RUN FAILS IF THE CLAIM IS FALSE. (1) If a file in the admitted population carried a REAL part — a file that shares its unit's scope, imports nothing, and cannot be resolved as its own module — the census's part-directive counter would be NON-ZERO, and the arm's `part_of` row would be non-zero. (2) If a correct implementation were merely HARD rather than unavailable, a patched grammar would publish the row on the .pug sites AND on the .html sites alike, and the 120 .html sites would be mis-published as parts — which is the falsifier of the R2 claim, stated as a count. (3) If the construct were expressible with an existing node type, the analyzer would publish it today, and the fixture's FORBIDDEN `part_of` pin would fail — and it passes.\n\nTHE CLAIM BEING RULED: RULED UNDECIDABLE — THE LADDER WAS WALKED AND THE NAMED RUNGS WERE UNAVAILABLE. THE NEAR MISS IS NAMED AND COUNTED, AND THE FALSIFIER NAMES A CONSTRUCT AN INSTRUMENT IN THE TREE COUNTS.\nTHE COUNT: 0 `part_of` edges over the whole admitted population (the arm's own row); 0 part directives over 13,768 embedded blocks in 4,644 files (the census's own counter); and 1,920 template include/extends/partial directives over 618 files, plus 379 bare-form `include`/`extends` sites over 127 files, of which 252 are in .pug (a textual, scope-sharing part) and 120 are in .html (a static-site-generator partial with its own scope) — the dialect split that makes a single grammar rule wrong for 127 of the 379."
+      }
+    }
+  },
+  "notes": [
+    "THE DECLARATION IS GENERATED by script/m14/html-declaration.ts FROM THE MEASUREMENT, and it is REWRITTEN whenever the measurement is re-run: a hand-written declaration is a claim whose numbers can drift from the measurement while its prose still reads correctly.",
+    "THE FIVE CLASSES PARTITION THE EDGES, AND THE PARTITION IS CHECKED HERE, PER TYPE AND IN TOTAL: the generator REFUSES to write a declaration whose classes do not sum to the measured edge count, and refuses one whose `unclassed` is not 0.",
+    "THE BINDING AND CAUSE BUCKETS ARE `otherUnresolved` AND NOT `unclassed`: a binding-spelled target (`<callable>:<binding>`) names no declaration, and a declared cause is stated rather than claimed — neither is an edge the instrument failed to classify.",
+    "A CEILING IS A CLAIM ABOUT WHAT IS KNOWN AND ACCEPTED, NEVER THAT THE CLASS IS FINE. Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
+    "★ THE COLLISION IS THE LANE'S OWN SHAPE, AND IT IS DISCLOSED HERE RATHER THAN LEFT IN THE TABLE. The gate's TABLE 1 prints `collRes` — of `resolved`, the targets that had MORE THAN ONE declaration, so production's tie-break chose the row — and it says the indexer measures 37,318 of 49,729 such picks as WRONG. MEASURED OVER THIS POPULATION: the collision is ENTIRELY IN `contains` — 148,544 of its 168,818 resolved edges (88.0%), and 0 in every other type. ⇒ THE HTML LANE'S `contains` EDGES ARE ELEMENT-NAME EDGES (a `div` contains a `span`), AND AN ELEMENT NAME IS NOT A UNIQUE SYMBOL WITHIN A PROJECT: every `div` in a project declares the name `div`. ⇒ SO A RESOLVED `contains` EDGE SAYS 'THERE IS A `div` IN THIS PROJECT', NOT 'THIS IS THE `div`' — and the reader of the number must know that before the number is read as a symbol-to-symbol resolution. It is a property of the LANE'S GRAMMAR, not of this corpus, and it is the lane's own to account for.",
+    "THE HTML LANE IS A CONTAINER: it has a MARKUP grammar and it merges in an embedded-script delegate's relationships verbatim (src/ast/real-html-analyzer.ts:2003). The four types it publishes through that seam (decorates, implements, renders, mixes_in) are therefore EXPRESSIBLE, and each is pinned by a behavioural fixture with a FIRED negative control; the population simply does not exercise them."
+  ]
+}

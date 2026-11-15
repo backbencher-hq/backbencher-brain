@@ -1,0 +1,28 @@
+{
+  "issue": "M41.T2",
+  "code": "T2",
+  "milestone": "M41",
+  "status": "verified",
+  "checks": 60,
+  "passed": 60,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "433b1708b125d3729bcc82e7799fc3fd77e3eceb",
+  "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
+  "evidenceFile": "T2.json",
+  "generatedAt": "2026-11-09T15:36:08.049Z",
+  "rendered": {
+    "version": "0.1.0",
+    "tools": 16,
+    "tables": 16,
+    "languages": 53,
+    "dedicatedParsers": 53,
+    "cliCommands": 14
+  },
+  "limitations": [
+    "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks.",
+    "N2 mutates the hero source and rebuilds twice; a failing site build aborts the mutant proof (build success is checked first).",
+    "N3 proves detector sensitivity on synthetic HTML; a full rebuild mutant (N2) covers the end-to-end path.",
+    "Since M56.T1 no site field is hand-typed: tool facts are generated into website/src/data/tools.generated.ts and byte-checked by docs:verify, while this gate enforces registry coverage of the generated facts and of the display-only grouping."
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "fixtureId": "protobuf/slot-and-grouping",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the two PASS-2 additions, and both are rules that can be satisfied by the wrong thing. `overrides` is the one relationship type pass 1 ruled absent while MEASURING its construct at 1, which is the falsified-ruling class ontology-coverage-gate.ts exists to catch, so the type is now emitted. What protobuf can express is not a method replacing a base but a SLOT being restated: two declarations in one message claiming the same field number. Three shapes have to be told apart and this file holds all three, because a rule stated as 'a repeated name is an override' passes on the first two and is wrong on the third. (a) Two names on one slot (`string legacy = 7; int64 modern = 7;`) is an override attempt: the later declaration states what slot 7 holds. (b) One name on one slot twice (`string dup = 3; bool dup = 3;`) is the same claim with the label repeated, and it is what the corpus's single site looks like. (c) One name on TWO slots (`string tag = 1; int64 tag = 2;`) is NOT an override: two distinct slots that share a label, and the second replaces nothing \u2014 `protoc` rejects the name collision but no slot is redefined. Row (c) is a forbid, so a rule that collapsed into 'duplicate name' fails here. The file also pins `metadata.oneof` as the oneof's RESOLVED ID rather than its bare name: `Envelope` and `Audit` each declare `oneof body`, and with the bare name every field in both groups carried the same grouping key, which merges two unrelated discriminated unions into one. Measured over the corpus before the change: 423 of 1,121 oneof fields (37.73%) sat under a bare name declared by more than one owner. `protoc` rejects (b) and (c), so this file is not a schema anything compiles \u2014 which is stated here rather than glossed, and is exactly why the corpus's only site lives in a syntax-highlighting test fixture. The analyzer describes the text; it does not run protoc.",
+  "expectSymbols": [
+    {
+      "name": "amb.v1",
+      "kind": "namespace"
+    },
+    {
+      "name": "Envelope",
+      "kind": "class",
+      "ownerName": "amb.v1"
+    },
+    {
+      "name": "body",
+      "kind": "union",
+      "ownerName": "amb.v1.Envelope",
+      "meta.id": "amb.v1.Envelope.body"
+    },
+    {
+      "name": "text",
+      "kind": "property",
+      "ownerName": "amb.v1.Envelope",
+      "meta.oneof": "amb.v1.Envelope.body",
+      "note": "the grouping key is the oneof's RESOLVED ID. Under the bare name this field and `Audit.body.actor` carried the same key `body` and a consumer grouping by it would merge two unrelated oneofs."
+    },
+    {
+      "name": "actor",
+      "kind": "property",
+      "ownerName": "amb.v1.Audit",
+      "meta.oneof": "amb.v1.Audit.body",
+      "note": "a oneof of the SAME BARE NAME as Envelope's, in a different message. The two keys differ only because the value is the resolved id; that difference is the whole assertion."
+    },
+    {
+      "name": "legacy",
+      "kind": "property",
+      "ownerName": "amb.v1.Slot",
+      "meta.fieldNumber": "7"
+    },
+    {
+      "name": "modern",
+      "kind": "property",
+      "ownerName": "amb.v1.Slot",
+      "meta.fieldNumber": "7"
+    },
+    {
+      "name": "dup",
+      "kind": "property",
+      "ownerName": "amb.v1.Alias",
+      "meta.id": "amb.v1.Alias.dup",
+      "meta.fieldNumber": "3",
+      "note": "the LATER of the two declarations of slot 3, and the one that carries the plain dotted id \u2014 the walk reaches siblings in reverse document order, so the id that needs no disambiguator goes to the last one written"
+    },
+    {
+      "name": "dup",
+      "kind": "property",
+      "ownerName": "amb.v1.Alias",
+      "meta.id": "amb.v1.Alias.dup#property",
+      "meta.fieldNumber": "3",
+      "note": "the EARLIER one. `uniqueId` keeps the ids apart, which is what lets the `overrides` edge have two distinct endpoints instead of being a self-loop"
+    },
+    {
+      "name": "tag",
+      "kind": "property",
+      "ownerName": "amb.v1.Twin",
+      "meta.id": "amb.v1.Twin.tag",
+      "meta.fieldNumber": "2",
+      "note": "same NAME, different slot. The plain id goes to `int64 tag = 2` for the reason the `dup` row gives"
+    },
+    {
+      "name": "tag",
+      "kind": "property",
+      "ownerName": "amb.v1.Twin",
+      "meta.id": "amb.v1.Twin.tag#property",
+      "meta.fieldNumber": "1",
+      "note": "same NAME, different slot. The id disambiguator applies \u2014 the two are distinct members \u2014 but no slot is restated, so there is no `overrides` edge between them. This is the negative control."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "amb.v1.Envelope",
+      "target": "amb.v1.Envelope.body",
+      "line_number": 7,
+      "meta.member": "oneof",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "amb.v1.Envelope",
+      "target": "amb.v1.Envelope.text",
+      "line_number": 8,
+      "meta.member": "field",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "contains",
+      "from": "amb.v1.Audit",
+      "target": "amb.v1.Audit.body",
+      "line_number": 17,
+      "meta.member": "oneof",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "overrides",
+      "from": "amb.v1.Slot.modern",
+      "target": "amb.v1.Slot.legacy",
+      "line_number": 27,
+      "meta.evidenceClass": "structural",
+      "meta.role": "fieldSlot",
+      "meta.fieldNumber": "7",
+      "confidenceMin": 0.9,
+      "note": "SHAPE (a): two DIFFERENT names claiming slot 7. TWO things are pinned here and neither is checkable from the endpoints alone. (1) The source is the declaration LATER IN THE FILE \u2014 the walk is a LIFO stack, so it reaches `legacy` first and a rule that used visit order would emit this edge backwards, naming the same two symbols with the same line. (2) The line is the SOURCE's line, 27 (`modern`), not the line of whichever declaration the walk happened to be adding: the first version of this rule reported the override at line 26, which is `legacy`, the declaration being overridden, and `line_number` is what bb_graph and the store's relId key on."
+    },
+    {
+      "type": "overrides",
+      "from": "amb.v1.Alias.dup",
+      "target": "amb.v1.Alias.dup#property",
+      "line_number": 36,
+      "meta.evidenceClass": "structural",
+      "meta.role": "fieldSlot",
+      "meta.fieldNumber": "3",
+      "confidenceMin": 0.9,
+      "note": "SHAPE (b): the name AND the number both repeated, which is the corpus's single site (nvim-treesitter/tests/query/highlights/proto/test.proto, message LogContent, lines 35 and 38). `protoc` rejects it. The edge states a fact about the text and both endpoints are real published symbols, so it is not fabricated \u2014 but its whole corpus support is that one syntax-highlighting fixture, which is stated here rather than left for a reader to assume otherwise."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "amb.v1.Twin.tag",
+      "target": "amb.v1.Twin.tag#property",
+      "note": "SHAPE (c), and the row that makes the rule mean something: `string tag = 1; int64 tag = 2;` repeats the NAME across two DIFFERENT slots. Nothing is restated, so the second declaration replaces nothing and there is no override. An analyzer whose test was 'a name declared twice in one scope' would emit this edge and pass shapes (a) and (b) \u2014 which is the shape pass 1's probe had, and the reason its count of 1 was a coincidence of one fixture rather than a measurement of the construct."
+    },
+    {
+      "type": "overrides",
+      "from": "amb.v1.Twin.tag#property",
+      "target": "amb.v1.Twin.tag",
+      "note": "the same absence with the direction reversed, so an edge emitted backwards for shape (c) also fails."
+    },
+    {
+      "type": "overrides",
+      "from": "amb.v1.Envelope.text",
+      "target": "amb.v1.Envelope.body",
+      "note": "`overrides` is a SLOT restatement in protobuf. There is no method to replace and no member that overrides a type, so an edge from a field to its own oneof would be a different relation wearing this label \u2014 the same conflation `contains` is forbidden from making between membership and grouping."
+    },
+    {
+      "type": "overrides",
+      "from": "amb.v1.Alias.dup",
+      "target": "amb.v1.Alias.dup",
+      "note": "a self-edge. `uniqueId`'s `#property` disambiguator exists so the two declarations of one name are distinct symbols; an edge between them must therefore have two distinct endpoints."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "dup",
+      "equals": 2,
+      "note": "TWO symbols named `dup`: a repeated name is one declaration claimed twice, and the analyzer must publish both so the override edge has an endpoint on each side. Collapsing them onto one id is what produced the 9 self-edges pass 1 fixed."
+    }
+  ]
+}

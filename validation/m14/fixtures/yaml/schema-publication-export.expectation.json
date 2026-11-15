@@ -1,0 +1,58 @@
+{
+ "fixtureId": "yaml/schema-publication-export",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "`exports` for a language with no modules. Each named definition under an OpenAPI publication container is defined once in this document and reached from other documents as `$ref: '#/components/schemas/<name>'`, which is what `exports` means in every other lane: a name this unit makes reachable to its consumers. The corpus measurement that the construct is real and not a guess: 2511 publications over 30 of 16371 admitted yaml files — 2462 under `definitions` (Swagger 2 / JSON Schema draft-4), 43 under `components.schemas`, 4 under `components.links`, 2 under `components.securitySchemes`, and 0 under the remaining OpenAPI containers. Confidence is 1.0 and evidenceClass structural because the container and the declaration are both grammar facts. Unlike every external edge in this analyzer, both endpoints are symbols of THIS file, so `resolved` is true — the one type here that binds at both ends by construction rather than by luck.",
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "schema-publication-export",
+   "target": "schema-publication-export.components.schemas.Item",
+   "meta.relationshipType": "yaml_schema_publication",
+   "meta.container": "components.schemas",
+   "meta.definitionName": "Item",
+   "meta.resolved": true,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "exports",
+   "from": "schema-publication-export",
+   "target": "schema-publication-export.components.schemas.Page",
+   "meta.definitionName": "Page"
+  },
+  {
+   "type": "exports",
+   "from": "schema-publication-export",
+   "target": "schema-publication-export.components.responses.NotFound",
+   "meta.container": "components.responses"
+  },
+  {
+   "type": "exports",
+   "from": "schema-publication-export",
+   "target": "schema-publication-export.components.securitySchemes.bearer",
+   "meta.container": "components.securitySchemes"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "schema-publication-export.info"
+  },
+  {
+   "type": "exports",
+   "target": "schema-publication-export.paths./items.get"
+  },
+  {
+   "type": "exports",
+   "target": "schema-publication-export.components"
+  },
+  {
+   "type": "exports",
+   "target": "schema-publication-export.components.schemas"
+  },
+  {
+   "type": "exports",
+   "target": "schema-publication-export.components.schemas.Item.properties.id"
+  }
+ ]
+}

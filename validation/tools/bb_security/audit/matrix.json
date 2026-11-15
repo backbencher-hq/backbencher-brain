@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-02T00:08:55.682Z",
+  "currentCommit": "f1141f464643e81e67835e8c1f81cff51f2e26e1",
+  "command": "BB_DATA_DIR=… BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_security/work/probe-matrix.ts",
+  "project": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/security-shaped",
+    "projectId": "123a8e8e4b8b59031f1e526bf1bdfa2e293b60ec",
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/sec"
+  },
+  "defaultAnswer": {
+    "findingsLine": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)",
+    "censusLine": "[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]"
+  },
+  "truncationProject": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/truncation",
+    "projectId": "8f51d3982b4f499f942d52a54c96b1555f648b0d",
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/trunc",
+    "taintFlowsIndexed": 2
+  },
+  "truncationDoor": {
+    "defaultCall": {
+      "ok": true,
+      "isError": false,
+      "payloadBytes": 259,
+      "textHead": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (wide) @ src/many.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]"
+    },
+    "recordRunCall": {
+      "ok": true,
+      "isError": false,
+      "payloadBytes": 358,
+      "textHead": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\nrecorded run: 28b7c7ce-4363-4319-8997-19b7a1fc2c22\nnew=1 repeated=0 resolved=0\n1 findings recorded\n  [critical] SQL injection (wide) @ src/many.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]"
+    },
+    "historyCall": {
+      "ok": true,
+      "isError": false,
+      "payloadBytes": 1565,
+      "runs": 1,
+      "findings": 1,
+      "findingSeverities": [
+        "critical"
+      ],
+      "findingRules": [
+        "sql_injection"
+      ]
+    }
+  },
+  "historyPolicy": {
+    "available": true,
+    "recordTextHead": "security: 2 critical / 0 high / 0 medium / 0 low / 2 unknown (3 resolved flows, 1 unvalidated sources, 1 mitigated)\nrecorded run: 55cb2ee3-7214-4d93-a66f-65e8b09cf53d\nnew=0 repeated=2 resolved=0\n3 findings recorded\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write [",
+    "historyFindings": 2,
+    "historySeverities": [
+      "critical"
+    ],
+    "historyRules": [
+      "sql_injection"
+    ],
+    "persistedUnknownSeverityRow": null
+  },
+  "staleness": {
+    "preTouch": {
+      "isError": false
+    },
+    "touchedNoRefresh": {
+      "isError": false,
+      "payloadBytes": 852,
+      "text": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write [stale]\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write [stale]\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)\n\n1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+    },
+    "touchedAutoRefreshAllowed": {
+      "isError": false,
+      "payloadBytes": 852,
+      "text": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write [stale]\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write [stale]\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)\n\n1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+    },
+    "identicalDespiteAutoRefresh": true,
+    "taintRowsAfterAutoRefreshCall": 4,
+    "dbMtimeAfterAutoRefreshCall": "2026-11-02T00:08:48.320Z"
+  },
+  "rows": [
+    {
+      "id": "default",
+      "args": {},
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1673,
+      "payloadBytes": 557,
+      "lineCount": 7,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: u",
+      "textTail": "known (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "limit-without-history",
+      "args": {
+        "limit": 3
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1447,
+      "payloadBytes": 557,
+      "lineCount": 7,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: u",
+      "textTail": "known (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "limit-zero-without-history",
+      "args": {
+        "limit": 0
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1395,
+      "payloadBytes": 557,
+      "lineCount": 7,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: u",
+      "textTail": "known (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "recordRun-false",
+      "args": {
+        "recordRun": false
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1484,
+      "payloadBytes": 557,
+      "lineCount": 7,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: u",
+      "textTail": "known (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-false",
+      "args": {
+        "history": false
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1490,
+      "payloadBytes": 557,
+      "lineCount": 7,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: u",
+      "textTail": "known (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "limit-negative",
+      "args": {
+        "limit": -1
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1504,
+      "payloadBytes": 46,
+      "lineCount": 1,
+      "textHead": "error: bb_security: limit must be non-negative",
+      "textTail": "error: bb_security: limit must be non-negative",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "limit-fractional",
+      "args": {
+        "limit": 2.5
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1563,
+      "payloadBytes": 58,
+      "lineCount": 1,
+      "textHead": "error: bb_security: limit must be a whole number (got 2.5)",
+      "textTail": "error: bb_security: limit must be a whole number (got 2.5)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "limit-string",
+      "args": {
+        "limit": "5"
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1474,
+      "payloadBytes": 40,
+      "lineCount": 1,
+      "textHead": "error: bb_security: limit must be number",
+      "textTail": "error: bb_security: limit must be number",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "limit-nan",
+      "args": {
+        "limit": null
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1487,
+      "payloadBytes": 42,
+      "lineCount": 1,
+      "textHead": "error: bb_security: limit must not be null",
+      "textTail": "error: bb_security: limit must not be null",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "unknown-option-mode",
+      "args": {
+        "mode": "findings"
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1747,
+      "payloadBytes": 103,
+      "lineCount": 1,
+      "textHead": "error: bb_security: unknown or irrelevant options: mode — accepted options: history, recordRun, limit",
+      "textTail": "error: bb_security: unknown or irrelevant options: mode — accepted options: history, recordRun, limit",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "unknown-option-severity",
+      "args": {
+        "severity": "critical"
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1774,
+      "payloadBytes": 107,
+      "lineCount": 1,
+      "textHead": "error: bb_security: unknown or irrelevant options: severity — accepted options: history, recordRun, limit",
+      "textTail": "error: bb_security: unknown or irrelevant options: severity — accepted options: history, recordRun, limit",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-not-boolean",
+      "args": {
+        "history": "yes"
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": true,
+      "durationMs": 1735,
+      "payloadBytes": 43,
+      "lineCount": 1,
+      "textHead": "error: bb_security: history must be boolean",
+      "textTail": "error: bb_security: history must be boolean",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-empty",
+      "args": {
+        "history": true
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1481,
+      "payloadBytes": 163,
+      "lineCount": 12,
+      "textHead": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "textTail": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-limit-zero",
+      "args": {
+        "history": true,
+        "limit": 0
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1605,
+      "payloadBytes": 163,
+      "lineCount": 12,
+      "textHead": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "textTail": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-limit-one",
+      "args": {
+        "history": true,
+        "limit": 1
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1798,
+      "payloadBytes": 163,
+      "lineCount": 12,
+      "textHead": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "textTail": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-plus-recordrun",
+      "args": {
+        "history": true,
+        "recordRun": true
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1522,
+      "payloadBytes": 163,
+      "lineCount": 12,
+      "textHead": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "textTail": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-huge-limit",
+      "args": {
+        "history": true,
+        "limit": 1000000000
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1391,
+      "payloadBytes": 163,
+      "lineCount": 12,
+      "textHead": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "textTail": "{\n  \"runs\": [],\n  \"findings\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "recordrun",
+      "args": {
+        "recordRun": true
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1430,
+      "payloadBytes": 626,
+      "lineCount": 10,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\nrecorded run: 76cc7db7-f756-4dc8-8808-14b90cbd5bf0\nnew=2 repeated=0 resolved=0\n2 findings recorded\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalid",
+      "textTail": " run: 76cc7db7-f756-4dc8-8808-14b90cbd5bf0\nnew=2 repeated=0 resolved=0\n2 findings recorded\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated sources (not persisted):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-after-recordrun",
+      "args": {
+        "history": true
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1378,
+      "payloadBytes": 2541,
+      "lineCount": 86,
+      "textHead": "{\n  \"runs\": [\n    {\n      \"id\": \"76cc7db7-f756-4dc8-8808-14b90cbd5bf0\",\n      \"projectId\": \"123a8e8e4b8b59031f1e526bf1bdfa2e293b60ec\",\n      \"kind\": \"security\",\n      \"status\": \"completed\",\n      \"engineVersion\": \"m10.04\",\n      \"inputHash\": \"84172a94daf1ffbef218183497fe346c7a9e02d5b4842b8efb586460b69e999a\",\n      \"startedAt\": 1793578119345,\n      \"completedAt\": 1793578119348,\n      \"findingCount\": 2,\n      \"error\": null\n    }\n  ],\n  \"findings\": [\n    {\n      \"id\": \"1e346eb8-1bcc-405e-95e9-bc647",
+      "textTail": "istics; parameterized/escaped sinks may still be reported.\"\n      ],\n      \"evidenceClass\": \"static_finding\",\n      \"engine\": \"taint@intelligence\",\n      \"engineVersion\": \"m10.04\",\n      \"firstSeenAt\": 1793578119348,\n      \"lastSeenAt\": 1793578119348,\n      \"resolvedAt\": null,\n      \"suppressedAt\": null,\n      \"mitigatedAt\": null,\n      \"occurrenceCount\": 1\n    }\n  ],\n  \"summary\": {\n    \"open\": 2,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "recordrun-repeat",
+      "args": {
+        "recordRun": true
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1440,
+      "payloadBytes": 626,
+      "lineCount": 10,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\nrecorded run: 6fe42c1f-c597-403c-9d83-1ac82be859dc\nnew=0 repeated=2 resolved=0\n2 findings recorded\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalid",
+      "textTail": " run: 6fe42c1f-c597-403c-9d83-1ac82be859dc\nnew=0 repeated=2 resolved=0\n2 findings recorded\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated sources (not persisted):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "history-after-repeat",
+      "args": {
+        "history": true
+      },
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1539,
+      "payloadBytes": 2959,
+      "lineCount": 98,
+      "textHead": "{\n  \"runs\": [\n    {\n      \"id\": \"6fe42c1f-c597-403c-9d83-1ac82be859dc\",\n      \"projectId\": \"123a8e8e4b8b59031f1e526bf1bdfa2e293b60ec\",\n      \"kind\": \"security\",\n      \"status\": \"completed\",\n      \"engineVersion\": \"m10.04\",\n      \"inputHash\": \"84172a94daf1ffbef218183497fe346c7a9e02d5b4842b8efb586460b69e999a\",\n      \"startedAt\": 1793578122251,\n      \"completedAt\": 1793578122255,\n      \"findingCount\": 2,\n      \"error\": null\n    },\n    {\n      \"id\": \"76cc7db7-f756-4dc8-8808-14b90cbd5bf0\",\n      \"pro",
+      "textTail": "istics; parameterized/escaped sinks may still be reported.\"\n      ],\n      \"evidenceClass\": \"static_finding\",\n      \"engine\": \"taint@intelligence\",\n      \"engineVersion\": \"m10.04\",\n      \"firstSeenAt\": 1793578119348,\n      \"lastSeenAt\": 1793578122255,\n      \"resolvedAt\": null,\n      \"suppressedAt\": null,\n      \"mitigatedAt\": null,\n      \"occurrenceCount\": 2\n    }\n  ],\n  \"summary\": {\n    \"open\": 2,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  }\n}",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "pre-touch",
+      "args": {},
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1448,
+      "payloadBytes": 557,
+      "lineCount": 7,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: u",
+      "textTail": "known (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "stale-no-autorefresh",
+      "args": {},
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1416,
+      "payloadBytes": 852,
+      "lineCount": 9,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write [stale]\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write [stale]\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated",
+      "textTail": "(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)\n\n1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    },
+    {
+      "id": "stale-autorefresh-allowed",
+      "args": {},
+      "door": "MCP stdio (source entry: tsx src/cli/index.ts mcp)",
+      "ok": true,
+      "isError": false,
+      "durationMs": 1452,
+      "payloadBytes": 852,
+      "lineCount": 9,
+      "textHead": "security: 2 critical / 0 high / 0 medium / 0 low / 1 unknown (2 resolved flows, 1 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write [stale]\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write [stale]\n[scan: 4 taint flow(s) indexed → 3 finding(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated",
+      "textTail": "(s); showing 2 finding(s) and 1 of 1 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [unknown] unvalidated input source: unresolved isolated @ src/pattern.py:2 (no sink reached)\n\n1 stale, 0 missing of 2 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)",
+      "stderrBytes": 0,
+      "stderrHead": ""
+    }
+  ]
+}

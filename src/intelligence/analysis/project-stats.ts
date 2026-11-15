@@ -85,16 +85,21 @@ export async function getProjectStats(projectId: ProjectID): Promise<ProjectStat
     raw
       .prepare(
         `SELECT COALESCE(NULLIF(LOWER(f.language), ''), '${UNKNOWN}') AS language,
-                COUNT(DISTINCT f.id) AS files,
+                COUNT(f.id) AS files,
                 COALESCE(SUM(f.line_count), 0) AS linesOfCode,
-                COUNT(s.id) AS symbols
+                COALESCE(SUM(s.sym_count), 0) AS symbols
          FROM brain_file f
-         LEFT JOIN brain_symbol s ON s.file_id = f.id AND s.project_id = f.project_id
+         LEFT JOIN (
+           SELECT file_id, project_id, COUNT(*) AS sym_count
+           FROM brain_symbol
+           WHERE project_id = ?
+           GROUP BY file_id, project_id
+         ) s ON s.file_id = f.id AND s.project_id = f.project_id
          WHERE f.project_id = ?
          GROUP BY language
          ORDER BY files DESC, language ASC`,
       )
-      .all(projectId) as LanguageRow[]
+      .all(projectId, projectId) as LanguageRow[]
   ).map((l) => ({ ...l, files: Number(l.files), linesOfCode: Number(l.linesOfCode), symbols: Number(l.symbols) }))
 
   return {

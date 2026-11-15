@@ -1,0 +1,62 @@
+{
+  "fixtureId": "csharp/render-host-component",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE `renders` VALUE FOR CS# (the remedy ladder's rung R3 - an EXISTING node type carries the construct, so NO grammar change is needed). The vocabulary contract (src/ast/types.ts:131-140) says a component RENDERS another component: source = the rendering symbol, target = the rendered component; it is NOT `instantiates` (the host renderer constructs the component, the source does not). In C# the component-render construct is the DYNAMIC RENDER HOST: `builder.RenderComponent<Widget>()` names the component as a TYPE ARGUMENT, and the non-generic `builder.RenderComponent(typeof(OtherWidget))` names it as a `typeof` ARGUMENT. The `invocation_expression` node type carries both, so the value is reachable as a REAL NODE - which is what this fixture proves, because the corpus itself measures ZERO such sites (the component-render construct is RAZOR's, a different language with a different grammar): the value is published as CORPUS-UNEXERCISED and the FIXTURE is its proof. NOTARENDER pins the refusal the host list creates: `RenderArgs<Widget>()` is a generic call whose type argument names a type, and that is NOT a render.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "OtherWidget",
+      "kind": "class"
+    },
+    {
+      "name": "Panel",
+      "kind": "class"
+    },
+    {
+      "name": "RenderWidget",
+      "kind": "method"
+    },
+    {
+      "name": "RenderOther",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "RenderWidget",
+      "target": "Widget"
+    },
+    {
+      "type": "renders",
+      "from": "RenderOther",
+      "target": "OtherWidget"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "renders",
+      "from": "RenderWidget",
+      "target": "Widget",
+      "equals": 1
+    },
+    {
+      "type": "renders",
+      "from": "RenderOther",
+      "target": "OtherWidget",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "from": "NotARender",
+      "target": "Widget",
+      "note": "a generic call whose type argument names a type is NOT a render: the host name is what makes the call a render, and `RenderArgs` is not a render host"
+    }
+  ]
+}

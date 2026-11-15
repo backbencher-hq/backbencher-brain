@@ -1,0 +1,215 @@
+{
+  "lang": "nim",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "files": 4555,
+  "filesByRepo": {
+    "Aporia": 12,
+    "bigints": 21,
+    "dom96-jester": 19,
+    "graphql-nim": 55,
+    "nim": 3968,
+    "nim-lang-nimble": 435,
+    "nimterop": 45
+  },
+  "symbolsPublished": 83702,
+  "distinctPublishedNames": 43346,
+  "parseFileFailures": 0,
+  "rawParseFailures": 0,
+  "targets": [
+    {
+      "type": "calls",
+      "total": 79080,
+      "local": 31170,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 0,
+      "declaredInCorpus": 45958,
+      "treeDeclaredOnly": 17,
+      "nowhere": 1935
+    },
+    {
+      "type": "uses",
+      "total": 31021,
+      "local": 30950,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 0,
+      "declaredInCorpus": 0,
+      "treeDeclaredOnly": 53,
+      "nowhere": 18
+    },
+    {
+      "type": "contains",
+      "total": 21572,
+      "local": 21539,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 0,
+      "declaredInCorpus": 0,
+      "treeDeclaredOnly": 23,
+      "nowhere": 10
+    },
+    {
+      "type": "imports",
+      "total": 9341,
+      "local": 5,
+      "synthetic": 0,
+      "moduleStem": 8284,
+      "builtin": 0,
+      "declaredInCorpus": 200,
+      "treeDeclaredOnly": 0,
+      "nowhere": 852
+    },
+    {
+      "type": "references",
+      "total": 40534,
+      "local": 18695,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 673,
+      "declaredInCorpus": 20225,
+      "treeDeclaredOnly": 0,
+      "nowhere": 941
+    },
+    {
+      "type": "exports",
+      "total": 408,
+      "local": 16,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 2,
+      "declaredInCorpus": 289,
+      "treeDeclaredOnly": 0,
+      "nowhere": 101
+    },
+    {
+      "type": "extends",
+      "total": 570,
+      "local": 404,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 0,
+      "declaredInCorpus": 162,
+      "treeDeclaredOnly": 0,
+      "nowhere": 4
+    },
+    {
+      "type": "implements",
+      "emitted": false
+    },
+    {
+      "type": "overrides",
+      "total": 48,
+      "local": 48,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 0,
+      "declaredInCorpus": 0,
+      "treeDeclaredOnly": 0,
+      "nowhere": 0
+    },
+    {
+      "type": "instantiates",
+      "total": 1985,
+      "local": 1985,
+      "synthetic": 0,
+      "moduleStem": 0,
+      "builtin": 0,
+      "declaredInCorpus": 0,
+      "treeDeclaredOnly": 0,
+      "nowhere": 0
+    }
+  ],
+  "recall": [
+    {
+      "family": "callable",
+      "onTree": 34466,
+      "published": 34443,
+      "names": 19305,
+      "unpublishedExamples": [
+        {
+          "name": "destructor",
+          "file": "nim/compiler/liftdestructors.nim:36",
+          "node": "template_declaration",
+          "text": "template destructor*(t: PType): PSym = getAttachedOp(c.g, t, attachedDestructor)"
+        },
+        {
+          "name": "destructor",
+          "file": "nim/compiler/transf.nim:819",
+          "node": "template_declaration",
+          "text": "template destructor(t: PType): PSym = getAttachedOp(c.graph, t, attachedDestruct"
+        },
+        {
+          "name": "root",
+          "file": "nim/compiler/varpartitions.nim:171",
+          "node": "proc_declaration",
+          "text": "proc root(v: var Partitions; start: int): int ="
+        },
+        {
+          "name": "sf_Assert",
+          "file": "nim/lib/std/private/schubfach.nim:19",
+          "node": "template_declaration",
+          "text": "template sf_Assert(x: untyped): untyped ="
+        },
+        {
+          "name": "constructSingle",
+          "file": "nim/lib/std/private/schubfach.nim:42",
+          "node": "proc_declaration",
+          "text": "proc constructSingle(bits: BitsType): Single ="
+        },
+        {
+          "name": "constructSingle",
+          "file": "nim/lib/std/private/schubfach.nim:45",
+          "node": "proc_declaration",
+          "text": "proc constructSingle(value: ValueType): Single ="
+        },
+        {
+          "name": "computePow10Single",
+          "file": "nim/lib/std/private/schubfach.nim:135",
+          "node": "proc_declaration",
+          "text": "proc computePow10Single(k: int32): uint64 {.inline.} ="
+        },
+        {
+          "name": "roundToOdd",
+          "file": "nim/lib/std/private/schubfach.nim:154",
+          "node": "proc_declaration",
+          "text": "proc roundToOdd(g: uint64; cp: uint32): uint32 {.inline.} ="
+        },
+        {
+          "name": "roundToOdd",
+          "file": "nim/lib/std/private/schubfach.nim:162",
+          "node": "proc_declaration",
+          "text": "proc roundToOdd(g: uint64; cpHi: uint32): uint32 {.inline.} ="
+        },
+        {
+          "name": "roundToOdd",
+          "file": "nim/lib/std/private/schubfach.nim:170",
+          "node": "proc_declaration",
+          "text": "proc roundToOdd(g: uint64; cp: uint32): uint32 {.inline.} ="
+        }
+      ]
+    },
+    {
+      "family": "type",
+      "onTree": 0,
+      "published": 0,
+      "names": 0,
+      "unpublishedExamples": []
+    },
+    {
+      "family": "enum_member",
+      "onTree": 0,
+      "published": 0,
+      "names": 0,
+      "unpublishedExamples": []
+    },
+    {
+      "family": "object_field",
+      "onTree": 0,
+      "published": 0,
+      "names": 0,
+      "unpublishedExamples": []
+    }
+  ],
+  "treeDeclaredNames": 19305
+}

@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "layout-specifier",
+  "why": "grammar.js:193 — a member of `contract_declaration`'s `repeat(choice($._class_heritage, $.layout_specifier))`, so it belongs on the contract HEADER (Solidity 0.8.29 storage layout for errors). NOT on an error, which is where the first attempt put it.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "layout_specifier",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

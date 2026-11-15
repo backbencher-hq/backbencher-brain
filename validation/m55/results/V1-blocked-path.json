@@ -19,14 +19,14 @@
     "bundleSha256": ""
   },
   "fixture": {
-    "workspace": "$HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
+    "workspace": "/home/ishaq2321/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
     "present": false,
     "contentHash": null,
     "indexedProjectDir": null
   },
   "flows": [],
   "generatedAt": "2026-11-05T05:08:43.479Z",
-  "reason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), declared fixture workspace ($HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
+  "reason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), declared fixture workspace (/home/ishaq2321/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
   "bbSeal": {
     "alg": "sha256",
     "sealedAt": "2026-11-05T05:08:43.629Z",

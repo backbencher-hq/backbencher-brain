@@ -1,0 +1,12 @@
+{
+  "issue": "M15.A7",
+  "code": "A7",
+  "tool": "bb_ask",
+  "title": "docs honesty",
+  "verified": true,
+  "checks": 11,
+  "passed": 11,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-09-29T05:44:41.813Z"
+}

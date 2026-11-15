@@ -1,0 +1,54 @@
+{
+ "fixtureId": "python/references-do-not-name-keyword-arguments",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "INCOMING_PY, round 6. The resolution verdict (script/m14/python-endpoint-resolution.ts, per-label decomposition of UNRESOLVED incoming targets) named `references` as one of four labels with an UNEXPLAINED class: 1,454 targets that no reason code, no imported root and no interpreter builtin explains. The largest single shape is `Annotated[T, Field(...)]`, the pydantic/openapi-generator idiom, where the annotation's type expression holds a CALL and the walk that derives `references` recursed into it and published an edge for every identifier it reached — including the keyword-argument NAMES (`min_length`, `strict`, `max_length`, `ge`, `le`). Those are parameter LABELS: they name no type, bind to nothing, and the edge asserts the class references a type called `min_length`, which is a FABRICATED relationship. The independent oracle carried the SAME recursion (oracles/python-truth.ts collectTypeNodes), which is why the differential read green while both sides were wrong — the mirror is the reason the fix had to land in the analyzer AND the oracle in one change. THE RULE: a `keyword_argument` node's NAME child is a label, never a type; its VALUE is still walked, because a real type can live in one (`TypeVar(\"T\", bound=Base)` keeps `Base`), so the fix is a recursion past the name rather than a refusal of the whole call — dropping the call outright would trade a fabrication for a loss. WHAT IS KEPT: the subscript head (`Annotated`) and the called class (`Field`) are names the annotation genuinely mentions, and both stay. The `forbid` rows below are what makes the rule falsifiable in the negative direction: a change that re-widens the walk to keyword names fails here rather than shipping.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "Annotated",
+   "meta.reasonCode": "annotation-type",
+   "note": "the subscript HEAD is a name the annotation mentions; it is imported from typing and stays"
+  },
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "Field",
+   "meta.reasonCode": "annotation-type",
+   "note": "the CALLED class inside the validator call is still a name the annotation mentions and is still referenced — the fix drops keyword NAMES, not the callee"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "min_length",
+   "note": "THE HEADLINE FORBID. `min_length` is the name of a keyword argument to `Field`, not a type. Before round 6 this edge existed."
+  },
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "strict",
+   "note": "`strict` is a keyword argument NAME; 80+ fabricated edges of this spelling alone were counted in the corpus."
+  },
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "max_length",
+   "note": "the third keyword NAME on the same line — all three must be gone, not just the first the walk reaches"
+  },
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "ge",
+   "note": "the second annotated attribute (`Annotated[int, Field(ge=0, le=100)]`) — the rule must hold for every annotation, not for the first one walked"
+  },
+  {
+   "type": "references",
+   "from": "Model",
+   "target": "le",
+   "note": "and its sibling keyword NAME"
+  }
+ ]
+}

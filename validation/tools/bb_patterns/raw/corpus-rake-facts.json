@@ -1,0 +1,38 @@
+{
+  "tier": "CORPUS-rake",
+  "projectDir": "/home/ishaq2321/bb_tests/repositories/rake",
+  "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/rake",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/corpus/rake/projects/132aab0103080d56a8ce5ef28cf2034710b21a80/brain.db",
+  "exists": true,
+  "index": {
+    "files": 109,
+    "symbols": 1593,
+    "relationships": 9075,
+    "frameworkFiles": 9,
+    "analysisRuns": 0
+  },
+  "dbBefore": {
+    "db": {
+      "bytes": 34570240,
+      "mtime": "2026-11-02T04:16:12.235Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "dbAfter": {
+    "db": {
+      "bytes": 34570240,
+      "mtime": "2026-11-02T04:16:12.235Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-02T04:16:25.785Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-02T04:16:25.785Z"
+    }
+  },
+  "generatedAt": "2026-11-02T04:16:25.844Z"
+}

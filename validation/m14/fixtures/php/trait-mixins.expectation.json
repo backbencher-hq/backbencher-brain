@@ -1,0 +1,129 @@
+{
+  "fixtureId": "php/trait-mixins",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE `mixes_in` RELABEL'S CONTRACT (2026-10-23, rung R3 — NO grammar change). A php trait `use` composes a trait into a type: the trait's members are flattened into the composing type, no module is imported and no binding surface is created. The ten could not spell that honestly — `uses` asserts a value READ, `imports` asserts a module binding — and the vocabulary was extended exactly for shapes of this kind (src/ast/types.ts:75-90,155-162). The fleet has already published this relabel at R3 twice with no grammar change: ruby's include/extend/prepend (real-ruby-analyzer.ts:2263-2280) and javascript's call-shaped heritage. THE RELABEL IS 1:1: source (the composing type), target (the trait's leaf), confidence (1.0), line (the trait name) and the `isTraitUse` marker all stay; only the stored TYPE changes, and the evidence tier follows the CONSTRUCT — a declaration-header grammar clause is DECLARED-STRUCTURAL, which is why these rows pin `meta.evidenceClass: \"structural\"` where they used to pin `usage_contextual`. The fixture pins the shape in both directions, because a relabel that can be silently reverted is not pinned: the six composition rows are REQUIRED as `mixes_in`, the old `uses` row for the same pair is FORBIDDEN, and the three impostors are pinned apart — a namespace import is `imports`, a closure capture is a `uses` read of the captured binding, and the adaptation block's `Named::label as private renamed` names a METHOD (an alias inside the composition directive), so neither `label` nor `renamed` may become a target of any composition row. Multi-trait `use Named, HasId;` is TWO rows (one per trait), trait-on-trait composition is a row, an enum composes a trait (php 8.1), and a QUALIFIED trait name publishes the LEAF target exactly as every other heritage/mixin target in this lane does. THE POPULATION THIS SHAPE HAS is measured by script/m14/php-population.ts --emit (whole-population trait-use census); this file is the CONTRACT and the census is the COUNT, and neither is a substitute for the other.",
+  "expectSymbols": [
+    { "name": "Named", "kind": "trait" },
+    { "name": "HasId", "kind": "trait" },
+    { "name": "Composite", "kind": "trait" },
+    { "name": "Figure", "kind": "class" },
+    { "name": "Adapted", "kind": "class" },
+    { "name": "Qualified", "kind": "class" },
+    { "name": "Consumer", "kind": "class" },
+    { "name": "Suit", "kind": "enum" },
+    { "name": "label", "kind": "method", "ownerName": "Named" },
+    { "name": "id", "kind": "method", "ownerName": "HasId" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "source": "Composite",
+      "target": "Named",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural",
+      "comment": "TRAIT COMPOSES TRAIT: `trait Composite { use Named; }`. mixes_in is not a class-only relation, and the source is the composing trait."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Figure",
+      "target": "Named",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural",
+      "comment": "MULTI-TRAIT, first of two: `use Named, HasId;` is two rows, one per trait — a single row naming the list would be a target nobody can write."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Figure",
+      "target": "HasId",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural",
+      "comment": "MULTI-TRAIT, second of two."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Adapted",
+      "target": "Named",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural",
+      "comment": "ADAPTATION FORM: `use Named { Named::label as private renamed; }` composes ONE trait, Named; the alias inside the block names a METHOD and is forbidden as a target below."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Qualified",
+      "target": "Remote",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural",
+      "comment": "QUALIFIED TRAIT NAME: `use \\Lib\\Remote;` publishes the LEAF target (`Remote`), which is the lane's heritage/mixin leaf rule; the trait need not be declared in this file — the directive is what the source writes."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Suit",
+      "target": "Named",
+      "meta.isTraitUse": true,
+      "meta.evidenceClass": "structural",
+      "comment": "AN ENUM COMPOSES A TRAIT (php 8.1): the composing type is the enum itself, not a case."
+    },
+    {
+      "type": "imports",
+      "source": "global",
+      "target": "Fixture\\Mixins\\Named",
+      "meta.relationshipType": "use_clause",
+      "comment": "IMPOSTOR 1, the positive half: a NAMESPACE import of a same-named class is `imports` and stays `imports` — the relabel moves the trait-composition class, not the import class."
+    },
+    {
+      "type": "uses",
+      "source": "capturer",
+      "target": "capturer\u0000x",
+      "comment": "IMPOSTOR 2, the positive half: `function () use ($x)` CAPTURES a value — a read of the binding (php's variable-read spelling `<source>\\u0000<binding>`), never a composition."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "mixes_in",
+      "from": "Figure",
+      "target": "Named",
+      "equals": 1,
+      "comment": "ONE row per (composing type, trait): a doubled row would mean the adaptation/sibling walk emitted twice, which the store's relId dedup would hide from every other instrument."
+    },
+    {
+      "type": "mixes_in",
+      "from": "Adapted",
+      "target": "Named",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "Figure",
+      "target": "Named",
+      "comment": "THE NEGATIVE HALF OF THE RELABEL: the exact row this fixture replaced. A revert to `uses` leaves the same edge in the same place with the same metadata and every consumer that only counts edges passes — this forbid is what makes the relabel load-bearing."
+    },
+    {
+      "type": "uses",
+      "source": "Composite",
+      "target": "Named"
+    },
+    {
+      "type": "uses",
+      "source": "Suit",
+      "target": "Named"
+    },
+    {
+      "type": "mixes_in",
+      "target": "label",
+      "comment": "IMPOSTOR: the method named inside an adaptation block (`Named::label as ...`) is a MEMBER of the trait, not a trait. A composition row to it would be a composition of a name the directive does not compose."
+    },
+    {
+      "type": "mixes_in",
+      "target": "renamed",
+      "comment": "IMPOSTOR: the ALIAS created by the adaptation block is a method name, not a trait — publishing it would invent a trait the source does not name."
+    },
+    {
+      "type": "imports",
+      "target": "Named",
+      "comment": "IMPOSTOR 1's negative half: a trait composition must never be published as a module import (the ten's OTHER dishonest spelling for this construct)."
+    }
+  ]
+}

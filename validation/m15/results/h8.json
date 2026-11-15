@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H8",
+  "code": "H8",
+  "tool": "bb_health",
+  "title": "mode coverage — status + refresh modes",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:23:13.938Z"
+}

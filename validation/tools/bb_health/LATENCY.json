@@ -4,7 +4,7 @@
   "phase": "A-baseline",
   "generatedAt": "2026-11-01T18:55:00Z",
   "checkout": {
-    "repo": "$HOME/mcp/backbencher-brain",
+    "repo": "/home/ishaq2321/mcp/backbencher-brain",
     "gitHead": "c43282e92",
     "version": "backbencher-brain 0.3.0",
     "note": "Measured after the module-per-tool split; src/mcp/tools/bb_health/{handler,descriptor}.ts and script/tool-docs/curation/bb_health.ts existed for all measurements. The shared checkout is being edited/built concurrently (brain-index-health.ts changed mid-audit); file hashes in validation/tools/bb_health/gates/file-hashes.txt pin the audited inputs."
@@ -135,7 +135,7 @@
     "claim": "default bb_health exceeded a 30 s MCP client timeout on the ~1.28M-symbol workspace index while bb_analyze stats answered",
     "servedIndexFacts": {
       "note": "The live bb MCP server in this DSH profile is started as `bin/bb mcp --dir <repo>` with NO BB_DATA_DIR, so it serves the default data dir ~/.bb, not .bb-data.",
-      "dataDir": "$HOME/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "dataDir": "/home/ishaq2321/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9",
       "brainDbBytes": 17018064896,
       "walBytes": 8732393592,
       "brainIndexStatusTotalSymbols": 1284808,

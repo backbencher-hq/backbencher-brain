@@ -14,8 +14,8 @@ import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun.main), "..", "..")
 const OUT = path.join(ROOT, "validation", "m12", "results")
-const FIX = "$HOME/fixtures/fixtures"
-const REPOS = "$HOME/fixtures/repositories"
+const FIX = "/home/ishaq2321/bb_tests/fixtures"
+const REPOS = "/home/ishaq2321/bb_tests/repositories"
 
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const P = wts.Parser ?? wts.default ?? wts
@@ -109,7 +109,7 @@ writeSealed(path.join(OUT, "r-differential.json"), {
   schemaVersion: 1,
   kind: "per_analyzer_differential:r",
   truthSource: "hand_derived",
-  truthReference: "fixtures/fixtures/ground-truth.json",
+  truthReference: "bb_tests/fixtures/ground-truth.json",
   fixtureDir: FIX,
   fixtures: Object.keys(truth.files),
   fixtureFacts: totalExpected,
@@ -153,7 +153,7 @@ const ORACLE_SHA = (() => {
   try { return createHash("sha256").update(fs.readFileSync(ORACLE_SCRIPT)).digest("hex") }
   catch { return null }
 })()
-const oracleRecordPath = process.env.BB_R_ORACLE_RECORD ?? "$HOME/fixtures/census/r-oracle-diff.json"
+const oracleRecordPath = process.env.BB_R_ORACLE_RECORD ?? "/home/ishaq2321/bb_tests/census/r-oracle-diff.json"
 let oracle: any = null
 try {
   oracle = JSON.parse(fs.readFileSync(oracleRecordPath, "utf8"))
@@ -197,7 +197,7 @@ console.log(
     ? `r-oracle-differential.json  files=${oracle.totals.compared} bindings=${oracle.totals.bindings} ` +
       `agreed=${oracle.totals.agreed} phantom=${oracle.totals.phantom} missed=${oracle.totals.missed} ` +
       `P=${oracle.totals.precision.toFixed(6)} R=${oracle.totals.recall.toFixed(6)}`
-    : `r-oracle-differential.json  ORACLE ABSENT - run fixtures/corpus/r-oracle-diff.mts first`,
+    : `r-oracle-differential.json  ORACLE ABSENT - run bb_tests/corpus/r-oracle-diff.mts first`,
 )
 if (oracle && (oracle.totals.phantom !== 0 || oracle.totals.missed !== 0)) process.exitCode = 1
 
@@ -218,7 +218,7 @@ const POSITIONS_SHA = (() => {
 let positions: any = null
 try {
   positions = JSON.parse(fs.readFileSync(
-    process.env.BB_R_POSITIONS_RECORD ?? "$HOME/fixtures/census/r-positions-oracle.json", "utf8"))
+    process.env.BB_R_POSITIONS_RECORD ?? "/home/ishaq2321/bb_tests/census/r-positions-oracle.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 const pt = positions?.totals
 writeSealed(path.join(OUT, "r-positions-oracle.json"), {
@@ -267,7 +267,7 @@ console.log(
     ? `r-positions-oracle.json    symbols=${pt.symbolsChecked} outsideRange=${pt.symbolProblems} ` +
       `edges=${pt.edgesChecked} lineMismatch=${pt.edgeProblems} spanMismatches=${pt.spanMismatches} ` +
       `vacuous=${positions.vacuousPass}`
-    : `r-positions-oracle.json    ABSENT - run fixtures/corpus/r-positions-oracle.mts first`,
+    : `r-positions-oracle.json    ABSENT - run bb_tests/corpus/r-positions-oracle.mts first`,
 )
 // A vacuous pass fails; the remaining symbol failures do NOT, and are carried above as an
 // open defect. Failing the gate on a known, bounded, documented defect would train
@@ -302,7 +302,7 @@ writeSealed(path.join(OUT, "r-fixture-set.json"), {
   fixtures: fixtureDigests,
   setSha256: createHash("sha256").update(fixtureDigests.map((d) => d.sha256).join("")).digest("hex"),
   truthSource: "hand-derived, and every expectation confirmed against R 4.4.3 rather than against the analyzer",
-  reRun: "bun run fixtures/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
+  reRun: "bun run bb_tests/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
   spotCheck: "bun run script/m14/owner-spot-check.ts --lang r --sample 4",
   currentCommit: commit,
 })
@@ -329,7 +329,7 @@ if (fixtureFiles.length === 0) {
 let crosscheck: any = null
 try {
   crosscheck = JSON.parse(fs.readFileSync(
-    process.env.BB_R_CROSSCHECK_RECORD ?? "$HOME/fixtures/census/r-exec-crosscheck.json", "utf8"))
+    process.env.BB_R_CROSSCHECK_RECORD ?? "/home/ishaq2321/bb_tests/census/r-exec-crosscheck.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 writeSealed(path.join(OUT, "r-exec-crosscheck.json"), {
   schemaVersion: 1,
@@ -351,7 +351,7 @@ console.log(
   crosscheck
     ? `r-exec-crosscheck.json      filesBoth=${crosscheck.totals.filesBoth} agreeing=${crosscheck.totals.filesAgreeing} ` +
       `disagreeing=${crosscheck.totals.filesDisagreeing} coverage=${crosscheck.totals.crosscheckCoverage}`
-    : `r-exec-crosscheck.json      ABSENT - run fixtures/corpus/r-exec-crosscheck.mts first`,
+    : `r-exec-crosscheck.json      ABSENT - run bb_tests/corpus/r-exec-crosscheck.mts first`,
 )
 // A disagreement here means the ORACLE is wrong, which invalidates the differential above.
 // A cross-check that was never run leaves the 1.000000 unverified, which is the state this
@@ -365,7 +365,7 @@ if (!crosscheck || crosscheck.totals.filesDisagreeing > 0) process.exitCode = 1
 let production: any = null
 try {
   production = JSON.parse(fs.readFileSync(
-    process.env.BB_R_PRODUCTION_RECORD ?? "$HOME/fixtures/census/r-production-path.json", "utf8"))
+    process.env.BB_R_PRODUCTION_RECORD ?? "/home/ishaq2321/bb_tests/census/r-production-path.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 writeSealed(path.join(OUT, "r-production-path.json"), {
   schemaVersion: 1,
@@ -385,7 +385,7 @@ writeSealed(path.join(OUT, "r-production-path.json"), {
   shadowCandidates: production?.shadowCandidates ?? [],
   symbolsFromPublicApi: production?.symbolsFromPublicApi ?? null,
   relationshipsFromPublicApi: production?.relationshipsFromPublicApi ?? null,
-  problems: production?.problems ?? ["THE PRODUCTION PATH WAS NOT EXERCISED; run fixtures/corpus/r-production-path.mts"],
+  problems: production?.problems ?? ["THE PRODUCTION PATH WAS NOT EXERCISED; run bb_tests/corpus/r-production-path.mts"],
   currentCommit: commit,
 })
 console.log(
@@ -393,7 +393,7 @@ console.log(
     ? `r-production-path.json       loadedShipped=${production.loadedIsShippedArtifact} ` +
       `patch1=${production.patch1HexFloatReachable} patch2=${production.patch2DotDotIdentifierReachable} ` +
       `s7Line=${production.s7BindingEdgeLine} problems=${production.problems.length}`
-    : `r-production-path.json       ABSENT - run fixtures/corpus/r-production-path.mts first`,
+    : `r-production-path.json       ABSENT - run bb_tests/corpus/r-production-path.mts first`,
 )
 // A missing, breached or broken production path is a real failure: it means the shipped
 // product does not do what the rest of this lane measured.
@@ -408,7 +408,7 @@ if (!production || production.problems.length) process.exitCode = 1
 let coverage: any = null
 try {
   coverage = JSON.parse(fs.readFileSync(
-    process.env.BB_R_CALL_COVERAGE_RECORD ?? "$HOME/fixtures/census/r-call-coverage.json", "utf8"))
+    process.env.BB_R_CALL_COVERAGE_RECORD ?? "/home/ishaq2321/bb_tests/census/r-call-coverage.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 writeSealed(path.join(OUT, "r-call-coverage.json"), {
   schemaVersion: 1,
@@ -424,7 +424,7 @@ writeSealed(path.join(OUT, "r-call-coverage.json"), {
   filesSurfacingCounters: coverage?.filesSurfacingCounters ?? null,
   perRepo: coverage?.perRepo ?? null,
   knownLimitation: coverage?.knownLimitation ?? null,
-  problems: coverage?.problems ?? ["CALL COVERAGE WAS NOT MEASURED; run fixtures/corpus/r-call-coverage.mts"],
+  problems: coverage?.problems ?? ["CALL COVERAGE WAS NOT MEASURED; run bb_tests/corpus/r-call-coverage.mts"],
   currentCommit: commit,
 })
 console.log(
@@ -432,7 +432,7 @@ console.log(
     ? `r-call-coverage.json          sites=${coverage.totals.callSites} fileScope=${coverage.totals.callSitesAtFileScope} ` +
       `edges=${coverage.totals.callsEdges} edgePerSite=${coverage.edgePerCallSite} ` +
       `unresolvedScope=${coverage.counters.unresolvedScope} problems=${coverage.problems.length}`
-    : `r-call-coverage.json          ABSENT - run fixtures/corpus/r-call-coverage.mts first`,
+    : `r-call-coverage.json          ABSENT - run bb_tests/corpus/r-call-coverage.mts first`,
 )
 // The known limitation is a recorded, bounded DESIGN decision, so it does not fail the
 // gate. The counters going dark again DOES: a completeness claim that cannot be read is
@@ -616,7 +616,7 @@ writeSealed(path.join(OUT, "r-corpus-complexity.json"), {
   },
   linearity: {
     method: "one fixed R shape at 8 geometric doublings (29 KB -> 4.3 MB); per-KiB analyzer cost compared",
-    seeAlso: "fixtures/census/complexity.json",
+    seeAlso: "bb_tests/census/complexity.json",
   },
   note:
     "Tracked .R/.r files only, production analyzer, production grammar. Regenerated by " +

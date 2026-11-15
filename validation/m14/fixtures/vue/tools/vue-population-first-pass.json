@@ -1,0 +1,65 @@
+{
+  "_treeLine": { "HEAD": "ea285170c", "treeClean": true, "note": "Four union lanes hold batches; nothing outside validation/m14/fixtures/vue/ was written by this step." },
+  "CLAUSE_1_POPULATION": {
+    "rowQuotedFromTheLeaseRun": "npx tsx script/m14/incoming-gate.ts vue vue 0 — EXIT=1, instrument self-test PASS",
+    "population": "1,155 .vue files across 6 repos, ALL present (element-plus 1,008 · vue-element-admin 131 · vue-core 11 · nvim-treesitter 3 · gql-graphql-eslint 1 · snacks.nvim 1)",
+    "verdict": "FAIL — 24,982 edges · 4,668 resolved (18.7%) · 5,499 amb(decl) · 14,815 unresolved; extFAIL/bindFAIL/causeFAIL 0",
+    "projectScopeIsTheVerdict": "the pooled figure (5,911 amb / 14,412 unresolved) is NOT quoted as the verdict — production resolves in the PROJECT scope",
+    "strideBesideIt": "stride 4,118 edges / 581 resolved / 693 amb / 2,844 unresolved (14.1%). THE SIZE WAS OFF BY 6.1x AND THE RATE WAS NOT (14.1% against 18.7%) — the fourth time this programme has measured that shape, after html's 18.2x."
+  },
+  "CLAUSE_2_PARTITION_AT_POPULATION_SCOPE": {
+    "instrument": "npx tsx validation/m14/fixtures/vue/tools/vue-population-partition.mts --files=0",
+    "rows": [
+      { "type": "calls", "edges": 7960, "myResolved": 722, "myAmb": 1271, "unresolved": 5967, "closure": "EXACT" },
+      { "type": "uses", "edges": 5319, "myResolved": 1511, "myAmb": 2760, "unresolved": 1048, "closure": "EXACT" },
+      { "type": "contains", "edges": 1469, "myResolved": 504, "myAmb": 965, "unresolved": 0, "closure": "EXACT" },
+      { "type": "imports", "edges": 3898, "myResolved": 74, "myAmb": 17, "unresolved": 3807, "closure": "EXACT" },
+      { "type": "references", "edges": 3632, "myResolved": 816, "myAmb": 1363, "unresolved": 1453, "closure": "EXACT" },
+      { "type": "instantiates", "edges": 2692, "myResolved": 67, "myAmb": 88, "unresolved": 2537, "closure": "EXACT" },
+      { "type": "exports", "edges": 2, "myResolved": 2, "myAmb": 0, "unresolved": 0, "closure": "EXACT" },
+      { "type": "extends", "edges": 10, "myResolved": 7, "myAmb": 0, "unresolved": 3, "closure": "EXACT" },
+      { "type": "TOTAL", "edges": 24982, "myResolved": 3703, "myAmb": 6464, "unresolved": 14815, "closure": "EXACT" }
+    ],
+    "THE_CROSS_CHECK_AND_ITS_LIMIT": {
+      "exact": "EDGES 24,982 and UNRESOLVED 14,815 match the gate's row EXACTLY, per type.",
+      "differs": "my resolved 3,703 / amb 6,464 against the gate's 4,668 / 5,499 — the two split-internal totals agree (10,167) and differ by exactly 965 edges.",
+      "why": "THE GATE PREFERS THE EDGE'S OWN FILE. `classifyEdge`'s legend: 'both resolvers prefer the edge's own FILE second, so a collision the own file settles uniquely is determinate.' My `declCount` model has no own-file tier, so a name with >1 declaration whose own file declares it reads AMB here and RESOLVED there.",
+      "consequence": "MY SPLIT IS AN UPPER BOUND ON amb AND A LOWER BOUND ON resolved; THE GATE'S SPLIT IS THE AUTHORITY and 4,668 / 5,499 is the number to quote. Reported as an instrument limitation, not smoothed — and it is the same shape as the fsharp lesson: a bucket measured with a simpler predicate than the resolver's."
+    }
+  },
+  "CLAUSE_3_THE_THREE_CLASSES": {
+    "isComponentUsage": {
+      "edges": 2676,
+      "stemHit_componentFileExists": 186, "stemHitShare": "7.0%",
+      "SVG_MARKUP_FABRICATED": 377, "svgShare": "14.1%",
+      "libraryComponent": 1931, "libraryShare": "72.2%",
+      "other": 182,
+      "theClaim": "`VUE_BUILTIN_TAGS` holds SEVEN entries (component · transition · transition-group · keep-alive · teleport · suspense · fragment) and names NO SVG element, so a bare `<feFlood>` inside `<svg>` is emitted as an `instantiates` edge with `isComponentUsage: true` while being MARKUP. 377 edges on the population carry that shape.",
+      "THE_FALSIFIER_I_WOULD_RUN": "add the SVG markup set to the filter and re-run the SAME population (`vue vue 0`): `instantiates` must fall by exactly the fabricated count (377 in this model; the gate's own number will differ because its per-type amb/resolved split does) and NO OTHER TYPE MAY MOVE. CONTROL, which is what makes it a test: run it once with the SVG set ADDED TO THE CODE BUT NOT WIRED INTO THE FILTER — the row must NOT move; if it does, the row is answering something other than the filter."
+    },
+    "calleeExpression": {
+      "edges": 7960,
+      "withReceiver": 3098, "thisReceiver": 383, "bare": 4862,
+      "receiverEdgesTheFileItselfProves": 0,
+      "AND_THAT_ZERO_IS_INCONCLUSIVE_RATHER_THAN_EVIDENCE": "my member-key construction (ownerName + a class-like kind) does not match how these DELEGATED TypeScript edges publish owners — the file may well prove members my key never formed. Stated as an instrument limit: a zero is evidence only of what it could have distinguished.",
+      "theSplitIsTheDeliverable": "3,098 edges have a RECEIVER the resolver can be asked about (`binding-resolution.ts` reads it out of this marker) — a BINDING question; 4,862 are BARE leaves — a MISSING-DECLARATION question. They need different work, which is why the split was worth making."
+    },
+    "moduleSpecifiers": {
+      "imports": 3898, "unresolved": 3807,
+      "note": "the largest single file-scoped class on this lane and the route the shared file-claim guard exists for; not yet priced at emission-site level for vue (the SFC delegation may spell these differently from the TS analyzer's own imports)."
+    }
+  },
+  "EARNED": [
+    "Clause 2 at population scope with closure EXACT per type and in total.",
+    "A cross-check that reproduces the gate's EDGES and UNRESOLVED exactly, per type, and whose one disagreement is explained by a named mechanism (own-file preference) rather than left as a delta.",
+    "The SVG fabrication count on the population: 377 of 2,676 component-usage edges (14.1%), with the mechanism read from the code and a falsifier plus a control specified.",
+    "The calleeExpression split on the population: 3,098 receiver vs 4,862 bare — two different problems, now counted separately."
+  ],
+  "NOT_EARNED": [
+    "NO FIX AND NO FALSIFIER RUN — the SVG falsifier above is specified, not executed.",
+    "The resolved/amb split in my table is NOT the gate's (own-file preference missing) — quoted only with the gate's numbers beside it.",
+    "The receiver arm's own-file proof came back 0 and is INCONCLUSIVE, not a clean zero.",
+    "The module-specifier class (3,807 unresolved) is counted but not priced at its emission site.",
+    "No store run; no lane verdict; the lane is NOT through the bar."
+  ]
+}

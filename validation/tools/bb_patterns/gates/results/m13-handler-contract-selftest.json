@@ -1,0 +1,1 @@
+{"gate":"m13-handler-contract-selftest","command":"bun run script/m13/verify-patterns-handler-contract.ts --self-test","exitCode":0,"mutantsCaught":6,"mutantsPlanted":6,"log":"validation/tools/bb_patterns/gates/logs/m13-handler-contract-selftest.log","recordedAt":"2026-11-03T16:17:50Z"}

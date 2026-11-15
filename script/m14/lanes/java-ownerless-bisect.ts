@@ -28,7 +28,7 @@ import { readFileSync } from "node:fs"
 import { getParser } from "../../../src/ast/engine"
 
 const FILE = process.env.PROBE_FILE ??
-  "$HOME/fixtures/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java"
+  "/home/ishaq2321/bb_tests/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java"
 
 interface Member { i: number; type: string; startLine: number; endLine: number; start: number; end: number }
 

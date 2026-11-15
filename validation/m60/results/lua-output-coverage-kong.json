@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-output-coverage",
+  "repo": "kong",
+  "files": 1309,
+  "skipped": [],
+  "parseError": [],
+  "symbols": {
+    "emitted": 51869,
+    "lost": 59,
+    "spurious": 0
+  },
+  "relationships": {
+    "emitted": 59409,
+    "lost": 0,
+    "spurious": 0
+  },
+  "exports": {
+    "emitted": 1587,
+    "lost": 0,
+    "spurious": 0
+  },
+  "imports": {
+    "emitted": 3509,
+    "lost": 0,
+    "spurious": 0
+  },
+  "lossByRule": {
+    "symbols: UNIVERSAL denylist (a keyword or a synthetic tree-sitter artifact name)": 59
+  },
+  "lossByRuleRelType": {},
+  "lossByTargetName": {},
+  "unexplained": [],
+  "spurious": [],
+  "droppedSymbolNames": {
+    "self": 55,
+    "super": 1,
+    "root": 2,
+    "unknown": 1
+  },
+  "importSample": [],
+  "totals": {
+    "directRels": 59409,
+    "pipelineRels": 59409,
+    "directSymbols": 51928,
+    "pipelineSymbols": 51869,
+    "directExports": 1587
+  },
+  "mutation": "none"
+}

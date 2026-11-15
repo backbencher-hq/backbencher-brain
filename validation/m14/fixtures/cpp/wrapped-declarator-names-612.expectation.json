@@ -1,0 +1,42 @@
+{
+ "fixtureId": "cpp/wrapped-declarator-names-612",
+ "language": "cpp",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "M37.19 (#612) family deep differential. The cpp lane's sampling universe had never included .cpp — the F5 ext string was \"cc,h\", while the product's own indexer (parallel-indexer.ts), the M12 corpus census (verify-corpus-census.ts: cc/cpp/h/hpp) and the fixture harness itself (run-fixtures.ts: ext \"cpp\") all treat .cpp as C++. Corrected, the second corpus went from 17 drawable files to 496, and its FULL EXTENT (the first .cpp-inclusive measurement this lane has ever had) reported two defects that no 200-file draw reaches. (1) MISSING=1: `tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ`, whose source is `char **Environ = environ;` at line 98 with `extern \"C\" char **environ;` at line 21 — the DECLARED NAME of a declaration was read with a SHALLOW, document-order lookup over the init_declarator's children, whose first identifier is the INITIALIZER, so the local was bound as `environ` and every read of the real `environ` was shadowed away. The same lookup (a) published no symbol at all for a declarator wrapped in more than one pointer level or in an array, and (b) published `backing` (the object a reference binds to) as the name of `int &alias = backing;`. (2) the lane's last unexplained edge: `tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299`, whose cause is the FUNCTION path's version of the same wrapper problem (CPPD17/CPPD18 below). MEASURED ON THIS EXACT FILE through the production entry, only real-cpp-analyzer.ts differing (HEAD vs the fix): symbols 16 -> 22, edges 7 -> 10. Added: variable:environ, variable:buffers, variable:counts, variable:alias, variable:handler, method:acceptParenthesized, method:acceptMacroDecorated, uses firstBuffer -> environ, uses readThroughLocal -> single, contains WrappedNames -> acceptParenthesized, contains WrappedNames -> acceptMacroDecorated. Removed: variable:backing line 28 (the reference's wrong name) and uses WrappedNames -> strict @111 (the parameter's read escaping to the file-scope enumerator). No edge is lost. Also pinned here: a function DECLARATION names a function and must publish no value symbol (declaredNotDefined is a function, never a variable) while a function POINTER is a value (handler is a variable); a parameter with a default value that shares a name with a file-scope enumerator suppresses the read (no uses -> strict, in any of the three classes); and the two WRAPPED-DECLARATOR spellings that cost a whole function scope — a parenthesized NAME (`bool (acceptParenthesized)(…)`, a clean parse) and a macro between the return type and the name with a multi-line parameter list (`JSON_HEDLEY_NON_NULL(3)` then `bool acceptMacroDecorated(…,`, which the grammar recovers as parenthesized_declarator wrapping the function_declarator with an ERROR node holding the macro argument and the return type). The corpus spelling of the second one is what lost 14 method symbols in json_v3_10_5.hpp.",
+ "expectSymbols": [
+  { "name": "environ", "kind": "variable" },
+  { "name": "buffers", "kind": "variable" },
+  { "name": "counts", "kind": "variable" },
+  { "name": "single", "kind": "variable" },
+  { "name": "backing", "kind": "variable" },
+  { "name": "alias", "kind": "variable" },
+  { "name": "handler", "kind": "variable" },
+  { "name": "firstBuffer", "kind": "function" },
+  { "name": "readThroughLocal", "kind": "function" },
+  { "name": "useArray", "kind": "function" },
+  { "name": "declaredNotDefined", "kind": "function" },
+  { "name": "policy_t", "kind": "enum" },
+  { "name": "strict", "kind": "enum_member" },
+  { "name": "Reader", "kind": "class" },
+  { "name": "parse", "kind": "method" },
+  { "name": "WrappedNames", "kind": "class" },
+  { "name": "acceptParenthesized", "kind": "method", "comment": "CPPD17: the NAME wrapped in a parenthesized_declarator (`bool (acceptParenthesized)(…)`). The declared-name lookup scanned the function_declarator's direct children only, so this method published NO symbol AND, because the caller pushes the function scope out of that same result, had NO SCOPE — which is what let its parameter's read escape outward." },
+  { "name": "acceptMacroDecorated", "kind": "method", "comment": "CPPD18: a macro between the return type and the name with a multi-line parameter list — the grammar wraps the WHOLE function_declarator in a parenthesized_declarator (corpus: JSON_HEDLEY_NON_NULL in nlohmann's json_v3_10_5.hpp, where the same shape cost 14 method symbols)." }
+ ],
+ "forbidSymbols": [
+  { "name": "declaredNotDefined", "kind": "variable", "comment": "CPPD12b: a function DECLARATION names a function; publishing it as a value is what minted variable:assert_invariant / property:JSON_ASSERT from ERROR-recovered macro statements on the corpus" }
+ ],
+ "expectRelationships": [
+  { "type": "uses", "from": "firstBuffer", "target": "environ", "comment": "CPPD12: the corpus MISSING edge — a read of a global inside a POINTER local's initializer (`char **Environ = environ;`)" },
+  { "type": "uses", "from": "readThroughLocal", "target": "single", "comment": "CPPD12: the same class without the extern \"C\" wrapper" },
+  { "type": "uses", "from": "useArray", "target": "counts", "comment": "an array declarator publishes its own name, so the read resolves" },
+  { "type": "uses", "from": "global", "target": "backing", "comment": "the reference initializer's read of `backing` (unchanged by this fix, and oracle-derived)" }
+ ],
+ "forbidRelationships": [
+  { "type": "uses", "target": "strict", "comment": "the read at `return strict;` is the PARAMETER, which shadows the file-scope enumerator `policy_t::strict` — pinned for ALL THREE classes (the plain method, the parenthesized name, the macro-wrapped declarator). Target-only on purpose: the corpus's false read at json_v3_10_5.hpp:8299 reaches the enumerator from a class-scope source, and a from-specific entry would not have caught whichever spelling mints it next. Measured at HEAD on this file: `uses WrappedNames -> strict @111`." },
+  { "type": "uses", "from": "firstBuffer", "target": "Environ", "comment": "the local is a binding, not a value read" },
+  { "type": "uses", "from": "parse", "target": "policy_t", "comment": "no read is fabricated from the shadowed parameter's type surface" },
+    {"type": "uses", "target": "policy_t::strict", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "Reader::parse", "target": "policy_t", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

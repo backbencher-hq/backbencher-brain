@@ -4,7 +4,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { measureOperation } from "../m11/differential-harness"
 
 const ROOT = process.cwd()
-const corpus = process.argv[2] || "$HOME/ProxiCall"
+const corpus = process.argv[2] || "/home/ishaq2321/ProxiCall"
 const relative = execFileSync("git", ["-C", corpus, "ls-files", "*.sql", "*.SQL", "*.psql", "*.ddl"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
 const files = relative.map((file) => `${corpus}/${file}`)

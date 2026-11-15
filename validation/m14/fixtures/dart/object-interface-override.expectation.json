@@ -1,0 +1,464 @@
+{
+  "correction_2026_10_09": "SEPARATOR CORRECTION, 2026-10-09. Every row in this file that spelled a binding `<callable>#<binding>` now spells it with `BINDING_SEP` as the family defines it \u2014 U+0000, written `\\u0000` in JSON. The character was `#` until src/ast/types.ts commit c95c8485f (\"the binding separator was `#` \u2014 a character nine lanes legitimately publish, so their claims were unverifiable\"): `#` is a real key character in other lanes (a CSS id selector, a markdown label, an HCL address), so `verifyBindingClaim` had to reject every binding claim on a run that also published one. The edges, their lines, their confidence and their metadata are UNCHANGED; only the separator character moved. Measured before this correction: `npx tsx script/m14/run-fixtures.ts --lang dart` -> {\"dart\":{\"pass\":21,\"fail\":7}}, and all 7 failures were rows whose sole difference was this character. Any `#` still visible in this file's prose is the 2026-10-08 spelling quoted as history, not the current one.",
+  "fixtureId": "dart/object-interface-override",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Dart's `Object` is the root of every class interface, so `toString`, `hashCode`, `runtimeType`, `noSuchMethod` and `operator ==` are reachable from every type in the language. That makes Object the ONE override target a per-file analyzer can name without the base's own file. Before this fixture the first-heritage-parent fallback named the parent instead: `class ProtocolException implements Exception` + `@override String toString()` published `ProtocolException.toString -> Exception.toString`, and `Exception` declares no `toString` at all — dart-sdk/sdk/lib/core/exceptions.dart publishes 17 symbols and `Exception.toString` is not one of them. Measured over 4,788 corpus files at BB_DART_CONC=1: 2,422 of 247,737 `overrides` rows (0.98%) named a target no published declaration provides, and every one of the 2,422 had that shape. The cases below pin the retarget AND its two boundaries, because a retarget with no boundary is indistinguishable from publishing an override for every `@override` in the corpus. (A,B,C) the retarget fires and `firstHeritageParent` preserves the name the old rule would have used, so no information is lost. (D,F) a member outside Object's five keeps the first heritage parent, and an in-file base that DOES declare the member is resolved by Pass 1 at 0.95 and never reaches the fallback. (E) an in-file base that does NOT declare the member refutes the fallback outright — asserted in forbidRelationships, because the retarget must not become a way to publish an edge where the analyzer has evidence against it. (G) naming `Object` explicitly is already correct and is not marked as a retarget. (H) is where the fix STOPS: an out-of-file base with a member outside Object's five has no declaration the analyzer can name, so the unverifiable first-parent target is KEPT at 0.8 with `isExternalBase` rather than replaced by an invented one. Case H is also what makes M2 constructible in the mutant battery — with only Object-interface members in the file, an over-broad `retarget everything onto Object` mutant is a no-op, and a no-op mutant passes every check. (I,J) a `calls` CALLEE can be a binding: freezed's generated `map`/`maybeMap` takes the mapping function as a formal parameter named `$default` and calls it, so `$default(_that)` is a real invocation whose target the family contract publishes no symbol for. `uses` already carried `isLocalRead` for this and `calls` carried nothing, so 138 `calls -> $default` and 50 `calls -> orElse` rows over 4,788 corpus files were indistinguishable from calls to undeclared methods. The tag is metadata only — no row added or removed, no confidence moved — and case J pins that a declared callee is NOT tagged, or the label stops meaning anything. THE OTHER HALF OF THE OBJECT RULE (2026-10-11). The retarget above is scoped to Object's five members, and the fixture has always FORBIDDEN `Banner.build -> Object.build` on the words \"a member outside Object's five must never be retargeted onto Object\" — but the FIRST-HERITAGE-PARENT fallback had no such guard, so a class that writes `extends Object` explicitly and overrides a member Object does not declare still named `Object.<member>`. `extends Object` is how a Dart file writes \"no superclass\" (Dart's root is implicit on every class), so this is not a base that can declare `length`; MEASURED, the shape is `class LineStarts extends Object with ListMixin<int> { @override int get length => ...; }` over dart-sdk, 128 rows, every one `isExternalBase`, and every one refuted on the one project whose checkout publishes `sdk/lib/core/object.dart` — the standing `128 external claim(s) REFUTED` clause of the lane's verdict. The fallback now SKIPS `Object` for a member outside its five and names the first REAL base (`extends`/`implements`/`with`, never a bare `uses` type mention), and publishes NOTHING when only Object is left. All 128 measured rows have a real base besides Object (46 `AnalysisDriverUnitIndex` through `implements idl.AnalysisDriverUnitIndex`, 9 `ListMixin`, 7 `SetMixin`, …), so the change names a true base on every one of them or drops the row where the in-file base proves it cannot be the target. Boundaries pinned: case K (the skip fires and the mixin is named), case L (nothing is published when Object is the only base), case M (a mentioned type is not a base), case N (with two real bases the FIRST clause wins, so a `mixins.last` off-by-one is caught), and case G is the boundary in the other direction — when the member IS one of Object's five, `Object` stays the base, because its interface is the one thing a per-file run can name with no evidence about the base. THE MEMBER SURFACE EXCLUDES CONSTRUCTORS (2026-10-12). `byName` in the override pass carried every symbol named `constructor`, so a subclass member with that name matched the base's constructor BY NAME and published at 0.95 — `CtorSub.constructor -> CtorBase.constructor` here, 2 rows on dart-sdk (`pkg/compiler/lib/src/universe/recorded_use.dart`), each refuted by the exposure watchdog. Constructors are not inherited and cannot be overridden, and the overrides oracle never carried them (`memberNamesOf` handles `method_signature` and `declaration` nodes only). Case O pins the removal; case P pins its BOUNDARY — a base getter called `constructor` IS a member, so the row survives and the fix cannot be an over-exclusion.",
+  "expectSymbols": [
+    {
+      "name": "ProtocolException",
+      "kind": "class"
+    },
+    {
+      "name": "ValueException",
+      "kind": "class"
+    },
+    {
+      "name": "PlainException",
+      "kind": "class"
+    },
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "Banner",
+      "kind": "class"
+    },
+    {
+      "name": "Outer",
+      "kind": "class"
+    },
+    {
+      "name": "Inner",
+      "kind": "class"
+    },
+    {
+      "name": "Direct",
+      "kind": "class"
+    },
+    {
+      "name": "Ghost",
+      "kind": "class"
+    },
+    {
+      "name": "Haunted",
+      "kind": "class"
+    },
+    {
+      "name": "toString",
+      "kind": "method",
+      "ownerName": "ProtocolException"
+    },
+    {
+      "name": "operator ==",
+      "kind": "method",
+      "ownerName": "ValueException"
+    },
+    {
+      "name": "hashCode",
+      "kind": "property",
+      "ownerName": "ValueException",
+      "note": "an overridden getter is a Property, and the retarget keys on the NAME not the kind"
+    },
+    {
+      "name": "toString",
+      "kind": "method",
+      "ownerName": "Haunted"
+    },
+    {
+      "name": "NeedsBuild",
+      "kind": "class"
+    },
+    {
+      "name": "build",
+      "kind": "method",
+      "ownerName": "NeedsBuild"
+    },
+    {
+      "name": "freezedMap",
+      "kind": "function",
+      "scope": ""
+    },
+    {
+      "name": "declaredFn",
+      "kind": "function",
+      "scope": ""
+    },
+    {
+      "name": "callsBoth",
+      "kind": "function",
+      "scope": ""
+    },
+    {
+      "name": "LineStarts",
+      "kind": "class"
+    },
+    {
+      "name": "length",
+      "kind": "property",
+      "ownerName": "LineStarts"
+    },
+    {
+      "name": "operator []",
+      "kind": "method",
+      "ownerName": "LineStarts"
+    },
+    {
+      "name": "PlainRoot",
+      "kind": "class"
+    },
+    {
+      "name": "length",
+      "kind": "property",
+      "ownerName": "PlainRoot"
+    },
+    {
+      "name": "Widgetish",
+      "kind": "class"
+    },
+    {
+      "name": "build",
+      "kind": "method",
+      "ownerName": "Widgetish"
+    },
+    {
+      "name": "MentionsOnly",
+      "kind": "class"
+    },
+    {
+      "name": "touch",
+      "kind": "method",
+      "ownerName": "MentionsOnly"
+    },
+    {
+      "name": "length",
+      "kind": "property",
+      "ownerName": "MentionsOnly"
+    },
+    {
+      "name": "MultiMix",
+      "kind": "class"
+    },
+    {
+      "name": "length",
+      "kind": "property",
+      "ownerName": "MultiMix"
+    },
+    {
+      "name": "CtorBase",
+      "kind": "class"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "CtorBase",
+      "note": "the constructor symbol is named `constructor`, which is the whole of case O: the name is what a subclass field collided with"
+    },
+    {
+      "name": "CtorSub",
+      "kind": "class"
+    },
+    {
+      "name": "constructor",
+      "kind": "property",
+      "ownerName": "CtorSub",
+      "note": "case O — a FIELD named `constructor`, legal Dart, and the symbol the fabricated edge was attributed to"
+    },
+    {
+      "name": "GetterBase",
+      "kind": "class"
+    },
+    {
+      "name": "constructor",
+      "kind": "property",
+      "ownerName": "GetterBase"
+    },
+    {
+      "name": "GetterSub",
+      "kind": "class"
+    },
+    {
+      "name": "constructor",
+      "kind": "property",
+      "ownerName": "GetterSub"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "ProtocolException",
+      "target": "Exception"
+    },
+    {
+      "type": "implements",
+      "from": "ValueException",
+      "target": "Exception"
+    },
+    {
+      "type": "implements",
+      "from": "PlainException",
+      "target": "Exception"
+    },
+    {
+      "type": "extends",
+      "from": "Banner",
+      "target": "Widget"
+    },
+    {
+      "type": "extends",
+      "from": "Inner",
+      "target": "Outer"
+    },
+    {
+      "type": "extends",
+      "from": "Direct",
+      "target": "Object"
+    },
+    {
+      "type": "extends",
+      "from": "Haunted",
+      "target": "Ghost"
+    },
+    {
+      "type": "extends",
+      "from": "LineStarts",
+      "target": "Object"
+    },
+    {
+      "type": "extends",
+      "from": "PlainRoot",
+      "target": "Object"
+    },
+    {
+      "type": "extends",
+      "from": "MentionsOnly",
+      "target": "Object"
+    },
+    {
+      "type": "extends",
+      "from": "MultiMix",
+      "target": "Object"
+    },
+    {
+      "type": "overrides",
+      "from": "ProtocolException.toString",
+      "target": "Object.toString",
+      "meta.isExternalBase": true,
+      "meta.isObjectInterfaceBase": true,
+      "meta.firstHeritageParent": "Exception",
+      "note": "case A — Exception declares no toString"
+    },
+    {
+      "type": "overrides",
+      "from": "ValueException.operator ==",
+      "target": "Object.operator ==",
+      "meta.isObjectInterfaceBase": true,
+      "meta.firstHeritageParent": "Exception",
+      "note": "case B — the member is spelled `operator ==` and the set holds that spelling"
+    },
+    {
+      "type": "overrides",
+      "from": "ValueException.hashCode",
+      "target": "Object.hashCode",
+      "meta.isObjectInterfaceBase": true,
+      "meta.firstHeritageParent": "Exception",
+      "note": "case C — a Property, not a Method"
+    },
+    {
+      "type": "overrides",
+      "from": "PlainException.toString",
+      "target": "Object.toString",
+      "meta.isObjectInterfaceBase": true,
+      "meta.firstHeritageParent": "Exception",
+      "note": "case A, second instance: the rule is per member, not per class"
+    },
+    {
+      "type": "overrides",
+      "from": "Banner.build",
+      "target": "Widget.build",
+      "note": "case D — the in-file base DECLARES the member, so Pass 1 resolves it at 0.95 and no retarget is possible"
+    },
+    {
+      "type": "overrides",
+      "from": "Inner.build",
+      "target": "Outer.build",
+      "note": "case F — `build` is outside Object's five, so the first heritage parent stands untouched"
+    },
+    {
+      "type": "overrides",
+      "from": "Direct.toString",
+      "target": "Object.toString",
+      "meta.isExternalBase": true,
+      "note": "case G — the first parent IS Object, so no retarget fires and the row is not marked"
+    },
+    {
+      "type": "overrides",
+      "from": "NeedsBuild.build",
+      "target": "UndeclaredBase.build",
+      "meta.baseBeyondRunScope": "UndeclaredBase",
+      "meta.isExternalBase": null,
+      "note": "case H — the boundary, and since 2026-10-09 the boundary between TWO DIFFERENT CLAIMS. The base is out of this file and `build` is not one of Object's five, so no declaration is nameable without the base's own file; the target is kept rather than replaced. What changed is what the row may CLAIM about it: `isExternalBase` says the PROJECT does not contain the base, and a run that was handed no project index cannot know that — MEASURED, the same claim was refuted 16,894 times on the per-file population (production's, since `parallel-indexer.ts` PROJECT_INDEX_EXTENSIONS names only `.sol`) against 93 on the index-assisted one. So the reason is stated where it is true and is its own gate column: `baseBeyondRunScope` names the base this RUN could not reach, is not an external claim, and is never folded into `resolved`. `meta.isExternalBase: null` pins the negative — the marker must not be present, or the false claim is back."
+    },
+    {
+      "type": "overrides",
+      "from": "LineStarts.length",
+      "target": "ListMixin.length",
+      "meta.baseBeyondRunScope": "ListMixin",
+      "meta.isExternalBase": null,
+      "note": "case K — `extends Object` names the language's root, which declares exactly its five members. `length` is not one of them, so `Object` is not a nameable base for this row; the fallback skips it and names the first REAL base — the `with ListMixin<int>` clause, whose BARE name is what this pass publishes for a mixin (measured: `uses LineStarts -> ListMixin {isMixin: true}`). `ListMixin` is out of this file, so the row is the 0.8 labelled guess every other out-of-file base gets, and the reason is the bucket-3 one. Measured over dart-sdk: 128 rows had the fabricated shape, every one `isExternalBase`, every one refuted on the one project whose checkout publishes `sdk/lib/core/object.dart`."
+    },
+    {
+      "type": "overrides",
+      "from": "LineStarts.operator []",
+      "target": "ListMixin.operator []",
+      "meta.baseBeyondRunScope": "ListMixin",
+      "meta.isExternalBase": null,
+      "note": "case K, second instance — the member is spelled `operator []` and the rule is on the member, not the class: one row falls through and the other does not, in the same class."
+    },
+    {
+      "type": "overrides",
+      "from": "MultiMix.length",
+      "target": "MixinA.length",
+      "meta.baseBeyondRunScope": "MixinA",
+      "meta.isExternalBase": null,
+      "note": "case N — with TWO real bases the fall-through names the FIRST, in the file's own clause order. `MixinA` and `MixinB` are both out of this file, so the row is the 0.8 labelled guess with the bucket-3 reason. This is the pin a fall-through that took the mixin list's END would fail."
+    },
+    {
+      "type": "calls",
+      "from": "freezedMap",
+      "target": "freezedMap\u0000$default",
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "case I — a callee that is a formal parameter, tagged so the row is countable as a binding rather than a declaration, and (2026-10-08) SPELLED so the store cannot resolve it: a bare `$default` would be bound to any single declaration of that name in the project (`resolveRelationships` Strategy 2, which never reads this metadata)"
+    },
+    {
+      "type": "calls",
+      "from": "callsBoth",
+      "target": "declaredFn",
+      "note": "case J — a declared callee carries NO isLocalRead. `meta.x: null` is run-fixtures' M59 convention for ABSENT, so this states the negative; the strict form could never be true for an omitted label.",
+      "meta.isLocalRead": null
+    },
+    {
+      "type": "calls",
+      "from": "callsBoth",
+      "target": "freezedMap"
+    },
+    {
+      "type": "extends",
+      "from": "CtorSub",
+      "target": "CtorBase"
+    },
+    {
+      "type": "extends",
+      "from": "GetterSub",
+      "target": "GetterBase"
+    },
+    {
+      "type": "overrides",
+      "from": "GetterSub.constructor",
+      "target": "GetterBase.constructor",
+      "note": "case P — the NAME is a member when the BASE declares it as one. Only the constructor-symbol match was the fabrication, and this row must stay or the fix would have traded a fabricated edge for a missing true one."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Haunted.toString",
+      "target": "Ghost.toString",
+      "note": "case E — the in-file base does not declare the member, so the fallback is REFUTED and no row exists"
+    },
+    {
+      "type": "overrides",
+      "from": "ProtocolException.toString",
+      "target": "Exception.toString",
+      "note": "the pre-retarget shape, pinned as forbidden so the regression cannot come back silently"
+    },
+    {
+      "type": "overrides",
+      "from": "NeedsBuild.build",
+      "target": "UndeclaredBase.build",
+      "meta.isExternalBase": true,
+      "note": "case H, negative side — the out-of-file base with a non-Object member must carry NO `isExternalBase`: that claim is about the PROJECT, and a per-file run has no evidence for it. This is the forbid that catches a future edit restoring the marker while every positive case still passes (the positive case pins `baseBeyondRunScope`, so the two together hold the pair apart)."
+    },
+    {
+      "type": "overrides",
+      "from": "NeedsBuild.build",
+      "target": "UndeclaredBase.build",
+      "meta.baseBeyondRunScope": "Object",
+      "note": "the cause's reason is CHECKED, not trusted: the stated base has to BE this edge's own owner, so a marker naming any other base than the target's owner is refuted by the gate rather than counted in bucket 3. `Object` is the convenient wrong reason and the battery's M5 mutant constructs it, which is what makes this pin firable rather than a string nothing ever produces."
+    },
+    {
+      "type": "overrides",
+      "from": "ValueException.hashCode",
+      "target": "Exception.hashCode"
+    },
+    {
+      "type": "overrides",
+      "from": "Banner.build",
+      "target": "Object.build",
+      "note": "a member outside Object's five must never be retargeted onto Object"
+    },
+    {
+      "type": "overrides",
+      "from": "NeedsBuild.build",
+      "target": "Object.build",
+      "note": "case H, negative side — pinning the boundary is what makes the over-broad M2 mutant catchable"
+    },
+    {
+      "type": "overrides",
+      "from": "LineStarts.length",
+      "target": "Object.length",
+      "note": "case K, negative side — THE PRE-FIX ROW. `extends Object with ListMixin<int>` + `@override int get length` named `Object.length`, asserting a declaration `Object` has never had. On dart-sdk that row arrived as `isExternalBase` and the gate refuted it, which is the `128 external claim(s) REFUTED` clause the fix removes. Pinned as forbidden so the regression cannot return silently, and it is what the M2 (over-retarget) mutant produces."
+    },
+    {
+      "type": "overrides",
+      "from": "LineStarts.operator []",
+      "target": "Object.operator []",
+      "note": "case K, negative side, second instance"
+    },
+    {
+      "type": "overrides",
+      "from": "PlainRoot.length",
+      "target": "Object.length",
+      "note": "case L, negative side — `extends Object` and NOTHING ELSE. There is no base left to name, so no row may exist at all: an out-of-file base may be guessed, a base whose members are KNOWN and which does not declare this one may not. This is the pin an output-only mutant cannot fire (the row is absent from the output, so no transform can produce it), which is why the battery's M7 constructs it."
+    },
+    {
+      "type": "overrides",
+      "from": "MentionsOnly.length",
+      "target": "Widgetish.length",
+      "note": "case M, negative side — a fall-through that walked every bare `uses` target would name a type the class merely MENTIONS. `Widgetish` appears in `MentionsOnly`'s parameter list and nowhere in its heritage; only `extends`/`implements`/`with` is a base."
+    },
+    {
+      "type": "overrides",
+      "from": "MultiMix.length",
+      "target": "MixinB.length",
+      "note": "case N, negative side — the SECOND mixin. `MixinB` IS a real base, so this pin is not about a wrong KIND of base but about the ORDER a fall-through must hold: first clause wins, and a `mixins.last` off-by-one lands here."
+    },
+    {
+      "type": "overrides",
+      "from": "MultiMix.length",
+      "target": "Object.length",
+      "note": "case N, negative side — the pre-fix row for the two-base class as well"
+    },
+    {
+      "type": "calls",
+      "from": "callsBoth",
+      "target": "callsBoth\u0000$default",
+      "note": "case J, negative side — `$default` is not bound in `callsBoth`, so the tag must not spread to a name that merely happens to look local. Retargeted 2026-10-08 to the spelling a spread tag would now produce: the tag and the `#` spelling travel together, so a forbid on the bare form would have watched the wrong string"
+    },
+    {
+      "type": "overrides",
+      "from": "CtorSub.constructor",
+      "target": "CtorBase.constructor",
+      "note": "case O, negative side — THE FABRICATED ROW. A subclass member named `constructor` matched the base's constructor SYMBOL by name and published at 0.95; constructors are not inheritable members. Pinned as forbidden so the regression cannot return silently, and it is one of the rows the mutant battery's M7 fabricates."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "equals": 12,
+      "note": "4 retargeted Object-interface rows + Banner.build + Inner.build + Direct.toString + the kept external-base row NeedsBuild.build + the 2 case-K fall-through rows (LineStarts.length/operator [] -> ListMixin.*) + the case-N fall-through row + the case-P row (GetterSub.constructor -> GetterBase.constructor). Case O publishes nothing: with constructors off the member surface, `CtorBase` neither exposes `constructor` nor arms the fallback for it, and the field carries no `@override`. Haunted.toString is refuted and absent, and so are all three absence rows: PlainRoot has NO base left after Object is skipped, and MentionsOnly's only other heritage-shaped relationship is a type it merely mentions."
+    }
+  ]
+}

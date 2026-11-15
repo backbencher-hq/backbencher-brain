@@ -54,7 +54,7 @@ import { ecmaStdlibNames } from "./js-source-classification"
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const STORE_JSON = arg("store-json")
-const CORPUS = arg("corpus") ?? "$HOME/fixtures/repositories/svelte"
+const CORPUS = arg("corpus") ?? "/home/ishaq2321/bb_tests/repositories/svelte"
 const INDEX_IN = arg("index-in")
 const INDEX_OUT = arg("index-out")
 

@@ -1,0 +1,57 @@
+groovy: the lane reads 11/11 — the spec, the verdict page, and the writer that keeps them true
+
+THE COVERAGE-BLOCK GATE READS THIS LANE CLEAN AT 11/11: `groovy yes 11 11 3 - -`,
+and `blocks with problems 0`. The eleven are the ten canonical types plus
+`decorates`; the three exclusions are `renders`, `part_of` and `mixes_in`, and
+each one carries a CLASS, a COUNT and a CITATION to a file that exists.
+
+THE THREE RULINGS, and what each one is a ruling ABOUT:
+
+`mixes_in` — ONTOLOGICAL, and it is a GROOVY question, not a lazy one. Groovy
+HAS traits (169 trait declarations over the admitted population) and a trait is
+applied in exactly two ways, both already published: through `implements` and
+through `extends`. There is no third form, and the parse tree is why — a trait
+application is an ordinary `super_interfaces` -> `type_list` -> `type_identifier`
+entry with no grammar-level distinction from an interface. And the tie-break that
+makes this a ruling rather than a preference is the enum's OWN contract:
+`mixes_in` exists because in Dart a mixin is neither `extends` nor `implements`
+("no conformance is declared"), and in Groovy the conformance IS declared, so the
+`implements` edge is the truthful one. A construct that is expressible in the
+same way as an already-implemented type is not a new type — it is that type,
+spelled differently.
+
+`renders` — ONTOLOGICAL, with the near miss counted in two halves: the OTHER
+DIALECT's dialect (683 Grails `.gsp` templates in grails-core DO render
+components, and the M60 #913 ruling stopped routing them to groovy because the
+Groovy grammar has no productions for them) and the IN-LANGUAGE nearest
+neighbour (the GString `template_expression` nodes, which render a VALUE, not a
+component).
+
+`part_of` — GRAMMAR-ABSENCE: the served build's 163 named node types name 0 of
+them with a `part` shape, and the `part` / `part of` token shapes are counted
+as the near miss.
+
+A type in GRAMMAR REMEDY PENDING stays in the denominator, so this lane has NO
+pending type: every type in its denominator is implemented, and the three types
+outside it are there because the language does not express them.
+
+THE CITATION TEXTS ARE FILES NOW, NOT INLINE STRINGS (script/m14/tmp/groovy-citations/),
+with the counts substituted into `{{PLACEHOLDER}}` slots by
+script/m14/groovy-spec-writer.ts — so the prose and the measurement cannot drift
+apart silently, and a citation can be read and diffed. The writer reads the
+census and the node-type inventory and writes the spec; it is the spec's
+generator, so the spec is reproducible rather than hand-maintained.
+
+script/m14/groovy-population-census.ts grew the HERITAGE BLIND-SPOT CENSUS, which
+the fleet's own probe cannot measure for this lane: script/m14/heritage-blindspot-probe.ts
+has no `groovy` entry, so it answers "groovy IS NOT CONFIGURED ... NOTHING IS
+MEASURED". The lane's census counts the shape distribution of every `superclass`
+clause and how many the analyzer's four-way direct-children lookup would miss —
+the lookup shape that produced the javascript lane's 802-clause blind spot.
+
+validation/m14/verification/GROOVY-VERDICT-2026-10-22.md is the lane's verdict
+page: the population and the rule that produces it, the four extended types, the
+three re-pins and the authority for each, the heritage blind-spot question, and
+the findings that are the LEAD's — the stale `validation/m12/ground-truth/groovy.json`
+for the whole JVM family, the java/kotlin m12 results modified at HEAD with
+nobody's change, and the missing groovy row in the firing log.

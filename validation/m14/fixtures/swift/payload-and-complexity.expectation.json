@@ -1,0 +1,71 @@
+{
+  "fixtureId": "swift/payload-and-complexity",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the swift analyzer's relationship + payload surface on real iOS-style architecture (protocol/actor/enum/class/extension): protocol contracts, actor concurrency, enum hierarchies, class inheritance, extension members, init instantiates, calls from method bodies (leaf targets), self. member reads, override edges, imports, per-symbol complexity (guard/if/switch/&&/||/ternary), and Swift's unique inheritance rule — ONLY a class can have a superclass (first base = extends), so struct/actor bases are all protocol adoptions (implements). Authored as a .swift file BEFORE the analyzer's M14 wave run; expectations reflect the verified M12.21 contract, not the analyzer's current output.",
+  "expectSymbols": [
+    { "name": "OrderRepository", "kind": "interface", "visibility": "internal" },
+    { "name": "OrderRepositoryImpl", "kind": "actor", "visibility": "internal" },
+    { "name": "apiClient", "kind": "property", "ownerName": "OrderRepositoryImpl", "visibility": "private" },
+    { "name": "OrderState", "kind": "enum", "visibility": "internal" },
+    { "name": "initial", "kind": "enum_member", "ownerName": "OrderState" },
+    { "name": "BaseStore", "kind": "class", "visibility": "internal" },
+    { "name": "OrderStore", "kind": "class", "visibility": "internal" },
+    { "name": "state", "kind": "property", "ownerName": "OrderStore" },
+    { "name": "repository", "kind": "property", "ownerName": "OrderStore", "visibility": "private" },
+    { "name": "Order", "kind": "struct", "visibility": "internal" },
+    { "name": "APIClient", "kind": "interface", "visibility": "internal" },
+    { "name": "createOrder", "kind": "method", "ownerName": "OrderRepositoryImpl" },
+    { "name": "getUserOrders", "kind": "method", "ownerName": "OrderRepositoryImpl" },
+    { "name": "prepare", "kind": "method", "ownerName": "BaseStore" },
+    { "name": "prepare", "kind": "method", "ownerName": "OrderStore" },
+    { "name": "loadOrders", "kind": "method", "ownerName": "OrderStore" },
+    { "name": "classify", "kind": "method", "ownerName": "OrderStore" },
+    { "name": "retry", "kind": "method", "ownerName": "OrderStore" },
+    { "name": "isLoaded", "kind": "property", "ownerName": "OrderState" },
+    { "name": "fromJson", "kind": "method", "ownerName": "Order" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "OrderRepositoryImpl" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "OrderStore" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "root", "target": "Foundation", "meta.evidenceClass": "import_based" },
+    { "type": "references", "source": "root", "target": "Combine", "meta.evidenceClass": "import_based" },
+    { "type": "references", "source": "root", "target": "SwiftUI", "meta.evidenceClass": "import_based" },
+    { "type": "implements", "source": "OrderRepositoryImpl", "target": "OrderRepository", "meta.isImplements": true, "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "BaseStore", "target": "ObservableObject", "meta.evidenceClass": "structural" },
+    { "type": "extends", "source": "OrderStore", "target": "BaseStore", "meta.evidenceClass": "structural" },
+    { "type": "overrides", "source": "OrderStore.prepare", "target": "BaseStore.prepare", "meta.isSwiftOverride": true, "meta.evidenceClass": "structural" },
+    { "type": "implements", "source": "Order", "target": "Equatable", "meta.isImplements": true, "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderRepository", "target": "createOrder", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderState", "target": "initial", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderStore", "target": "state", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderStore", "target": "classify", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "OrderStore", "target": "prepare", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "Order", "target": "fromJson", "meta.evidenceClass": "structural" },
+    { "type": "calls", "source": "createOrder", "target": "post", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "getUserOrders", "target": "get", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "loadOrders", "target": "getUserOrders", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "retry", "target": "loadOrders", "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "source": "createOrder", "target": "apiClient", "meta.isFieldAccess": true, "meta.evidenceClass": "usage_contextual", "note": "M49 W15 #814: source is the enclosing METHOD. Pre-ruling this edge was `OrderRepositoryImpl -> apiClient` and the type-level dedup key collapsed createOrder/getUserOrders into it" },
+    { "type": "uses", "source": "getUserOrders", "target": "apiClient", "meta.isFieldAccess": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "source": "loadOrders", "target": "repository", "meta.isFieldAccess": true, "meta.evidenceClass": "usage_contextual" },
+    { "type": "instantiates", "source": "fromJson", "target": "Order", "meta.evidenceClass": "structural" }
+  ],
+  "expectComplexity": [
+    { "symbol": "loadOrders", "min": 2, "max": 3 },
+    { "symbol": "classify", "min": 7, "max": 8 },
+    { "symbol": "retry", "equals": 1 },
+    { "symbol": "createOrder", "equals": 1 }
+  ],
+  "expectVisibility": [
+    { "symbol": "OrderRepositoryImpl", "visibility": "internal" },
+    { "symbol": "apiClient", "visibility": "private" },
+    { "symbol": "repository", "visibility": "private" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "print" },
+    { "type": "calls", "target": "defer" },
+    { "type": "calls", "target": "Order" },
+    { "type": "uses", "target": "getUserOrders" }
+  ]
+}

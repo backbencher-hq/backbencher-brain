@@ -1,0 +1,117 @@
+{
+  "comment": "THE DOCUMENT-LEVEL CONTRACT, and the fixture that three documented rulings were MISSING. Each of these was written into the spec and the doc with nothing behind them, which is exactly how a documented guarantee becomes a stale sentence. (1) A KEY WITH NO NAME. `\"\" = 1` is ACCEPTED by the grammar and names nothing: an identity needs a name, so there is no symbol and no edge. It is not an error either — the document parsed. (2) ERROR RECOVERY. `<<<<>>` is unreadable and the parser wraps it in an ERROR node. The obligation is the same three-part contract html pins: the broken region is REPORTED, it is NOT turned into a node, and the sections AROUND it still publish — which is why `before` and `after` both appear under `[t]`. A recovery that stopped the walk would publish `t` and `before` and nothing after, and the document would still look analysed. (3) A BARE KEY OUTSIDE THE ALPHABET. A Cyrillic bare key is not something the analyzer refuses: the GRAMMAR refuses it, because TOML v1.0.0 restricts bare keys to A-Za-z0-9_-. The document writes the QUOTED form, which is handled like any other quoted key — so the same document both exercises the rejection and the supported spelling. ON THE ERROR COUNT: it is pinned with `atLeast` and a structural anchor, not as an exact number, because `<<<<>>` happens to produce two NESTED ERROR nodes (an outer one spanning `<<<<>>` plus the newline and an inner one spanning `<<<<>>`), and the engine reports one diagnostic per node — so a reader sees two reports for one broken region, at the same position, with the same text. That is faithful rather than duplicated: the nodes really are two. Pinning `equals 2` would freeze an accident of this input's shape.",
+  "expectSymbols": [
+    {
+      "name": "malformed-and-rejected",
+      "kind": "module",
+      "comment": "a document with a parse error still has a module — degradation is PARTIAL, not total"
+    },
+    {
+      "name": "t",
+      "kind": "namespace",
+      "comment": "the section CONTAINING the broken region still publishes"
+    },
+    {
+      "name": "t.before",
+      "kind": "property",
+      "comment": "the key BEFORE the error"
+    },
+    {
+      "name": "t.after",
+      "kind": "property",
+      "comment": "THE KEY AFTER THE ERROR. This row is the whole point of the fixture: a walk that stopped at the recovery node would publish `t` and `t.before` and nothing else, and the file would still look analysed because the module is there."
+    },
+    {
+      "name": "\"ключ\"",
+      "kind": "namespace",
+      "comment": "a QUOTED header with a non-ASCII segment — legal, and the quotes are part of the name because the bare form is not writable"
+    },
+    {
+      "name": "\"ключ\".quoted_unicode",
+      "kind": "property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ERROR",
+      "comment": "the recovery node is a DIAGNOSTIC, not a document construct. Publishing it as a symbol would put a node in the graph that names nothing a consumer can navigate to — the unresolvable-identity class reached through a malformed file."
+    },
+    {
+      "name": "MISSING",
+      "comment": "same; and this grammar never emits one anyway (measured across twelve malformed documents)"
+    },
+    {
+      "name": "<<<<>>",
+      "comment": "the BROKEN TEXT is never a name. The analyzer reads AST nodes and never source text, and the generic AST fallback this lane replaced published exactly this — one of its 28 names on a ten-line file was the file's own contents."
+    },
+    {
+      "name": "",
+      "comment": "`\"\" = 1` names nothing: an identity needs a name. The document parsed; what it expressed has no referent."
+    },
+    {
+      "name": "\"\"",
+      "comment": "same — the quoted empty key is the same key, and neither spelling produces a node"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "malformed-and-rejected",
+      "target": "malformed-and-rejected.t",
+      "line_number": 15,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "malformed-and-rejected.t",
+      "target": "malformed-and-rejected.t.before",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "malformed-and-rejected.t",
+      "target": "malformed-and-rejected.t.after",
+      "line_number": 18,
+      "comment": "the containment edge for the key AFTER the broken region — the edge a stopping walk would not emit"
+    },
+    {
+      "type": "contains",
+      "from": "malformed-and-rejected",
+      "target": "malformed-and-rejected.\"ключ\"",
+      "line_number": 25,
+      "meta.isTableHeader": true
+    },
+    {
+      "type": "contains",
+      "from": "malformed-and-rejected.\"ключ\"",
+      "target": "malformed-and-rejected.\"ключ\".quoted_unicode",
+      "line_number": 26
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "malformed-and-rejected.t",
+      "target": "ERROR",
+      "comment": "no edge to a recovery node, for the same reason there is no symbol: the target would join to nothing."
+    }
+  ],
+  "expectErrors": [
+    {
+      "startLine": 17,
+      "startColumn": 1,
+      "message": "Syntax ERROR detected. The Brain Engine is bypassing this broken node."
+    },
+    {
+      "startLine": 17,
+      "startColumn": 1,
+      "message": "Syntax error (unexpected node)"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "atLeast": 3,
+      "comment": "`expectErrors` resolves a key on the error object as well as on its range, so the analyzer's OWN message is pinned verbatim alongside the engine's — which is the only way to require the analyzer's half of the contract rather than the engine's, since both report the same line. The malformed input yields two NESTED ERROR nodes, so the analyzer reports twice and the engine reports twice: four in total. `atLeast 3` rather than `equals 4`, because the number of ERROR nodes a document produces is the grammar's business, not a contract of this analyzer's — but the floor is set high enough that dropping the analyzer's contribution entirely fails. A mutant removes exactly those and is caught."
+    }
+  ]
+}

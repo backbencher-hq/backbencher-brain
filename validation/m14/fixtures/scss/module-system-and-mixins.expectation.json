@@ -1,0 +1,78 @@
+{
+  "fixtureId": "scss/module-system-and-mixins",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Sass's module system is the class this lane's GRAMMAR exists for. `@use 'sass:map' as map;` did not parse at all on the stock grammar — the rule was `seq('@use', $._value, ';')` and nothing else — and it was the largest residual class in the corpus at 277 error spans. Pinned together with `@include` because they are the two ends of one relationship: the declaration publishes a symbol, the use names it, and the edge is only meaningful if BOTH ends resolve. The `as` namespace is on the import because it is the part a consumer cannot recover from the module path: `@use 'sass:map' as map` and `@use 'sass:map' as m` are the same import and different graphs. `as *` deliberately publishes NO namespace symbol — there is no name to publish, and a symbol for the keyword `*` would be a name with no referent. The mixin keeps its keyword in its published name, for the reason `@font-face Inter` does in the CSS lane. Every relationship here also pins its LINE, and that is not decoration: the `line-numbers-dropped` mutant removes `line_number` from every edge, which changes no symbol and no edge COUNT, and it SURVIVED until these pins existed. Line provenance is the one class a counting gate cannot see, so it has to be asserted directly (M59/#855).",
+  "expectSymbols": [
+    {
+      "name": "map",
+      "kind": "namespace"
+    },
+    {
+      "name": "@mixin button",
+      "kind": "function"
+    },
+    {
+      "name": ".card",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "map",
+      "equals": 1,
+      "kind": "namespace"
+    },
+    {
+      "name": "@mixin button",
+      "equals": 1,
+      "kind": "function"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "@mixin button",
+      "parameters": [
+        {
+          "name": "$bg"
+        },
+        {
+          "name": "$size"
+        }
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "mixes_in",
+      "from": ".card",
+      "target": "fixtures/scss/module-system-and-mixins::@mixin button",
+      "meta.evidenceClass": "structural",
+      "meta.isScssInclude": true,
+      "meta.mixinComposition": true,
+      "line_number": 11
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "sass:map",
+      "alias": "map"
+    },
+    {
+      "module": "src/list"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "*"
+    },
+    {
+      "name": "@use sass:map as map"
+    }
+  ]
+}

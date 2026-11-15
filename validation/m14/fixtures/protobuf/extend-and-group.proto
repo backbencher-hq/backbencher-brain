@@ -1,0 +1,42 @@
+// proto2 constructs: `extend`, the `group` shorthand, and the number ranges a
+// message reserves. proto2 is the only syntax that has all three.
+syntax = "proto2";
+
+package ext.v1;
+
+message Container {
+  optional string base = 1;
+
+  // The range other files may extend, and the numbers this schema RETIRED.
+  extensions 100 to 199;
+  reserved 4, 5, 9 to 11;
+  reserved "old_name", "older_name";
+}
+
+// `extend` adds members to a type declared in ANOTHER file, so Container is
+// already declared above and the block is not a second declaration of it.
+extend Container {
+  optional string extra = 100;
+  repeated int32 counts = 101;
+}
+
+// The shape that actually occurs in the corpus: extending a WELL-KNOWN type
+// from an imported file. Nothing in this file declares
+// google.protobuf.MessageOptions, so the members' owner resolves to the name as
+// written and NO symbol for it may be published here — the declaration lives in
+// descriptor.proto, and a second one would be a phantom.
+extend google.protobuf.MessageOptions {
+  optional string audit_ticket = 5000;
+}
+
+// A `group` is a field whose type is a nested message written INLINE: it
+// declares BOTH the type `Result` and a field named `Result`, in one
+// declaration, on one field number.
+message Envelope {
+  optional group Result = 1 {
+    optional string url = 1;
+    optional int32 code = 2;
+  }
+
+  optional string note = 2;
+}

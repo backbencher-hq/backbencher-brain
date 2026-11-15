@@ -1,0 +1,14 @@
+{
+  "fixtureId": "scala/class-extends-class-and-trait",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Class extending abstract class: extends edge to Animal; speak overridden in Dog.",
+  "expectSymbols": [
+    { "name": "Animal" },
+    { "name": "Dog" },
+    { "name": "speak" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Dog", "targetEndsWith": "Animal" }
+  ]
+}

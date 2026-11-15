@@ -1,0 +1,143 @@
+{
+  "issue": "ELX-EXPORTS D1/D2/D3",
+  "note": "Three places a directive name was fabricated, each measured on 559 corpus files before the fix. D1: a directive naming an ATOM module WITH OPTIONS published the options as the module name - 15 references and 4 calls endpoints (references -> ':lists, as: R7Alias', kernel/alias_test.exs:17; calls -> ':lists, only: [append: 2].append', kernel/import_test.exs:86). D2: a TYPESPEC whose LEFT side names a function require/2, alias/1 or import/1 was read as a directive (references -> '[Path.t], require_opts', kernel/parallel_compiler.ex:278). D3: a DEFINITION HEAD named import was read as a directive (references -> '%Regex{re_pattern: re_pattern} = regex', regex.ex:296). The doc already claimed directives stay gated; no gate existed. Falsifier: mutant elixir/r7-directive-options-in-name, elixir/r7-spec-read-as-directive, elixir/r7-defhead-read-as-directive. D4 (added after the mutation A/B found a hole): a COMPUTED directive name (`alias Module.concat(A, B)`, `require Mod.Helpers.helper()`) publishes NOTHING - not the expression, not a prefix - so the option-text fallback cannot be reached by a readable argument either. The D2/D3 pins are stated twice, once with an UNREADABLE first argument and once with a STATICALLY READABLE one, because with only the unreadable form both the gate and the name extractor refuse and the fixture cannot tell which one did the work.",
+  "expectSymbols": [
+    {
+      "name": "R7DirectiveNames",
+      "kind": "module"
+    },
+    {
+      "name": "via_alias",
+      "kind": "function",
+      "ownerName": "R7DirectiveNames"
+    },
+    {
+      "name": "import",
+      "kind": "function",
+      "ownerName": "R7DirectiveNames"
+    },
+    {
+      "name": "R7UnreadableDirective",
+      "kind": "module"
+    },
+    {
+      "name": "here",
+      "kind": "function",
+      "ownerName": "R7UnreadableDirective"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": ":lists",
+      "line_number": 10
+    },
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": ":lists",
+      "line_number": 11
+    },
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": ":gen_server",
+      "line_number": 12
+    },
+    {
+      "type": "calls",
+      "from": "R7DirectiveNames.via_alias/1",
+      "target": ":lists.flatten",
+      "line_number": 15
+    },
+    {
+      "type": "contains",
+      "from": "R7UnreadableDirective",
+      "target": "here",
+      "line_number": 45
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": ":lists, as: R7Alias"
+    },
+    {
+      "type": "references",
+      "target": ":lists, except: [flatten: 1]"
+    },
+    {
+      "type": "references",
+      "target": ":gen_server, warn: false"
+    },
+    {
+      "type": "references",
+      "target": "[R7Alias.t()], keyword()"
+    },
+    {
+      "type": "references",
+      "target": "[R7Alias.alias_opt()]"
+    },
+    {
+      "type": "references",
+      "target": "%R7Alias{} = value"
+    },
+    {
+      "type": "calls",
+      "target": ":lists, as: R7Alias.flatten"
+    },
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": "import",
+      "line_number": 28
+    },
+    {
+      "type": "references",
+      "target": "Module.concat(R7UnreadableDirective, Computed)"
+    },
+    {
+      "type": "references",
+      "target": "R7UnreadableDirective.Computed"
+    },
+    {
+      "type": "references",
+      "from": "R7UnreadableDirective",
+      "target": "R7UnreadableDirective.Helpers.helper"
+    },
+    {
+      "type": "references",
+      "target": "R7Alias.t()"
+    },
+    {
+      "type": "references",
+      "target": "R7Alias.alias_opt()"
+    },
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": "R7Alias.t()"
+    },
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": ":lists",
+      "line_number": 34
+    },
+    {
+      "type": "references",
+      "from": "R7DirectiveNames",
+      "target": ":lists.other",
+      "line_number": 35
+    },
+    {
+      "type": "references",
+      "target": "R7Alias"
+    },
+    {
+      "type": "references",
+      "target": "R7Alias.other"
+    }
+  ]
+}

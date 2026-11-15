@@ -1,0 +1,13 @@
+{
+  "issue": "RUST-MR — a function-local const/static is a declaration; a function-local let is not",
+  "note": "The guard that skips declarations inside a function body covered let_declaration, const_item AND static_item, while its own comment claims only `let` is an execution artifact. Function-local const/static therefore published nothing: 43 and 22 sites in the corpus census, 0% covered, against 200/200 module-level const and 15/15 associated ones — so the spec's handled_verified claim for both node types was false at the site level. The `let` row is the load-bearing control: a local binding declares nothing outside its body, so a symbol for it would be noise, and the fixture forbids one.",
+  "expectRelationships": [
+    { "type": "contains", "from": "Thing", "target": "INNER", "line_number": 21 },
+    { "type": "contains", "from": "m", "target": "LOCAL", "line_number": 24 },
+    { "type": "contains", "from": "m", "target": "CACHED", "line_number": 25 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "bound" },
+    { "type": "contains", "from": "Global", "target": "LOCAL" }
+  ]
+}

@@ -70,7 +70,7 @@ import { appendFileSync, readFileSync, readdirSync, statSync, unlinkSync, type D
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 /** The lane's corpus root, and the sub-repos inside it. */
 const PY_CORPUS = path.join(CR, "python-corpus")

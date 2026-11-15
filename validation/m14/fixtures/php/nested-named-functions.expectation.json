@@ -1,0 +1,156 @@
+{
+  "fixtureId": "php/nested-named-functions",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE THIRD SHAPE of `DECLARED_IN_TREE_NOT_PUBLISHED`, and the only one whose cause is not damage. A named function declared inside a CALLABLE is unreachable by the symbol walk \u2014 those bodies belong to `walkBody`, which emits call/read edges and pops scope frames and never publishes symbols \u2014 while the same file keeps emitting edges SOURCED AT the nested name. Measured over all 5,094 admitted php files: exactly 25 `function_definition` nodes whose path to the program root passes through a callable, in 4 files; 22 are markdown.php's recovery casualties (published by the recovery escape, one layer up, and NOT nested functions at all), and the remaining 3 are the Slim test-helper idiom \u2014 `slim/tests/AppTest.php:1563` `function handle(...)` inside `testInvokeFunctionName`, `slim/tests/CallableResolverTest.php:30` `function testAdvancedCallable(...)` inside `setUpBeforeClass`, `slim/tests/MiddlewareDispatcherTest.php:32` `function testProcessRequest(...)` inside `setUpBeforeClass`. The last of those was found by the lane's reason census: two `references` edges from `testProcessRequest` to `ServerRequestInterface`/`RequestHandlerInterface` \u2014 edges whose SOURCE is a declaration the store did not hold. THE SHAPE IS MEASURED, NOT INVENTED, and the probe that counted it had to be corrected against the population before it could be believed: its first rule \u2014 'the declaration's parent is a `compound_statement`' \u2014 reported 250 false positives in one file, because phpunit's `src/Framework/Assert/Functions.php` guards 251 assert helpers with `if (!function_exists('assertSame')) { function assertSame(...) {...} }` at FILE level, which is NOT a scope and which the ordinary walk publishes correctly (measured: 252 symbols, 251 of them functions). MEASURED PRE-FIX STATE OF THIS FILE, recorded because a fix must be judged against a number: 6 symbols (namespace, `outerEntry`, `decorate`, class `NestedHost`, methods `registerHelper`, `useHelper`) and 10 edges, one of which \u2014 `calls outerEntry -> innerValue` at line 66 \u2014 named a declaration the file contains and the store never received. POST-FIX: 8 symbols (+`innerValue`, +`nestedHelper`, both kind `function`, owner the namespace) and 12 edges, the two new ones BOTH `contains` from the namespace \u2014 and NO other edge changed, which is the whole point of publishing from a pass that does not re-walk the nested body: that body has already been walked by the enclosing callable's `walkBody`, and re-walking it would emit every call and read inside it twice. THE REJECTED READINGS, pinned below: publishing a nested function as a METHOD of the enclosing class (a method symbol describes the shape of the tree; the source writes a `function`), and publishing it with NO owner (a top-level function in a namespaced file is owned by its namespace, and an ownerless one would make this declaration inconsistent with the `outerEntry` right above it). WHY PUBLISHING AT ALL IS RIGHT, in three measured parts: (1) PHP semantics \u2014 a named function in a body enters the GLOBAL function table when the enclosing code runs; (2) the analyzer's own model \u2014 `collectPhpFileScope` already registers every nested named function as a file-scope function VALUE, so the name is already used to resolve bare callables, and resolution without publication is exactly the divergence the orphan-endpoint round fixed; (3) family check against the pinned grammars \u2014 javascript and typescript publish a nested `function innerHelper() {}` while python and ruby do not, and PHP's semantics are the javascript ones (a Python `def` in a `def` is a local binding; a PHP `function` in a method is global). KNOWN AND NOT PINNED HERE, because it is an attribution decision rather than a coverage gap and a fixture row is a contract: `calls registerHelper -> decorate` at line 82 sits in `nestedHelper`'s body but is attributed to the enclosing method. This file records that behaviour without blessing it.",
+  "expectSymbols": [
+    {
+      "name": "Fixture\\NestedFunctions",
+      "kind": "namespace",
+      "comment": "the namespace still publishes, and is the OWNER of the two nested functions below \u2014 the row that makes the owner contract checkable rather than implied"
+    },
+    {
+      "name": "outerEntry",
+      "kind": "function",
+      "ownerName": "Fixture\\NestedFunctions",
+      "comment": "the enclosing callable, unchanged: present so this file cannot pass by publishing only the nested half"
+    },
+    {
+      "name": "decorate",
+      "kind": "function",
+      "ownerName": "Fixture\\NestedFunctions",
+      "comment": "a plain top-level function, the shape the nested ones must be CONSISTENT with"
+    },
+    {
+      "name": "NestedHost",
+      "kind": "class",
+      "comment": "the class the nested helper is installed from \u2014 deliberately the owner of `registerHelper`, and deliberately NOT the owner of `nestedHelper` (see forbidSymbols)"
+    },
+    {
+      "name": "registerHelper",
+      "kind": "method",
+      "ownerName": "NestedHost",
+      "comment": "the method whose body declares the nested function"
+    },
+    {
+      "name": "useHelper",
+      "kind": "method",
+      "ownerName": "NestedHost",
+      "comment": "the caller on the other side of the file: its `calls -> nestedHelper` edge names a declaration that, pre-fix, the store never received"
+    },
+    {
+      "name": "innerValue",
+      "kind": "function",
+      "ownerName": "Fixture\\NestedFunctions",
+      "comment": "THE ROW THAT CARRIES THE WEIGHT, first of two: a function declared inside another FUNCTION's body, published with the namespace as owner. It is declared at line 59 and called at line 66 from the same body it is written in."
+    },
+    {
+      "name": "nestedHelper",
+      "kind": "function",
+      "ownerName": "Fixture\\NestedFunctions",
+      "comment": "and the second, the Slim shape verbatim: a function declared inside a METHOD's body. `kind: function` and not `method` \u2014 a method symbol with `NestedHost` as owner is the rejected reading, pinned below."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "innerValue",
+      "equals": 1,
+      "comment": "exactly one: the ordinary walk cannot reach this declaration, so a second copy can only come from a pass that walks the nested body twice \u2014 the duplicate the fix is designed not to make"
+    },
+    {
+      "name": "nestedHelper",
+      "equals": 1,
+      "comment": "same, and this is the name at highest risk: it is also the name the owner channel could reach through `contains NestedHost` if the rejected reading were taken"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Fixture\\NestedFunctions",
+      "target": "innerValue",
+      "comment": "containment: a published name with no edge connecting it to its owner is the same divergence in the other direction. The owner is the namespace, exactly as for `outerEntry`."
+    },
+    {
+      "type": "contains",
+      "source": "Fixture\\NestedFunctions",
+      "target": "nestedHelper",
+      "comment": "same, for the Slim shape \u2014 this edge is what makes the nested function resolvable by owner from anywhere in the corpus"
+    },
+    {
+      "type": "calls",
+      "source": "outerEntry",
+      "target": "innerValue",
+      "comment": "THE EDGE THAT NAMED NOTHING BEFORE THE FIX: emitted in the pre-fix state against a declaration the store had never received \u2014 the store-vs-analyzer divergence this fixture exists for. Post-fix it resolves to exactly one declaration."
+    },
+    {
+      "type": "calls",
+      "source": "useHelper",
+      "target": "nestedHelper",
+      "comment": "and the same defect from the other side of the file: the call crosses from a real method to the nested helper, which pre-fix resolved against nothing"
+    },
+    {
+      "type": "calls",
+      "source": "nestedHelper",
+      "target": "decorate",
+      "meta.functionCandidates": [
+        "fixture\\nestedfunctions\\decorate",
+        "decorate"
+      ]
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "Fixture\\NestedFunctions",
+      "target": "innerValue",
+      "equals": 1,
+      "comment": "exactly one containment edge: the pre-fix analyzer emitted none, and a pass that published the symbol AND re-walked the declaration would emit the owner's containment twice"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture\\NestedFunctions",
+      "target": "nestedHelper",
+      "equals": 1,
+      "comment": "same"
+    },
+    {
+      "type": "calls",
+      "from": "outerEntry",
+      "target": "innerValue",
+      "equals": 1,
+      "comment": "THE DOUBLE-EMISSION PIN, and the reason this fix publishes a symbol without walking the nested body. The nested function's body has already been walked by the enclosing callable's `walkBody`; a pass that walked it again would emit this call a SECOND time under `innerValue` as source, and `expectRelationships` could not see it because it matches at least one edge. This row is what fails if the pairing is ever broken."
+    },
+    {
+      "type": "calls",
+      "from": "useHelper",
+      "target": "nestedHelper",
+      "equals": 1,
+      "comment": "same, for the cross-file-shape call"
+    },
+    {
+      "type": "calls",
+      "from": "nestedHelper",
+      "target": "decorate",
+      "equals": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "nestedHelper",
+      "ownerName": "NestedHost",
+      "comment": "THE REJECTED READING: publishing the nested function as a METHOD of the class whose method declared it. Illegal PHP (a method may only be declared in a class body), and the source writes a `function` \u2014 so the symbol must describe the source, not the enclosing scope. A `method` symbol here would also put `contains NestedHost -> nestedHelper` into the store, which is the edge a consumer would use to resolve an inherited call."
+    },
+    {
+      "name": "innerValue",
+      "ownerName": null,
+      "comment": "and the OTHER rejected reading: publishing it as a bare, ownerless global. In a namespaced file a top-level function is owned by its namespace (`outerEntry` right above it), so an ownerless `innerValue` would make two function symbols in one file follow two different ownership rules \u2014 and PHP's global table name for this function is `Fixture\\NestedFunctions\\innerValue`, not `innerValue`."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "registerHelper",
+      "target": "decorate"
+    }
+  ]
+}

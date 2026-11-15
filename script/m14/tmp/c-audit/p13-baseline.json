@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "property": "P13-macro-inventory-coverage",
+  "purpose": "Recorded floor for the C lane's P13 property: how many `#define` directives in a given corpus slice carry no macro symbol. The CLASS is real and measured -- the grammar drops or absorbs `preproc_def` nodes in several regions, so a `#define` the walk never reaches produces no symbol, its reads are unresolvable, and the member and enumerator rules that key on macro names are blind to it (redis/deps/jemalloc/include/jemalloc/internal/tsd.h: a long brace-enclosed macro body makes the region after it covered by an enclosing node's span with NO child representing it, and a whole-tree scan finds no node with a start row anywhere in 120..146).",
+  "why_a_floor_and_not_a_zero": "Minting a symbol for a directive the walk never reaches would mean reading the file's raw text, and a `#define` line inside a `/* */` block reads identically. That false-positive class was NOT measured, so publishing a symbol for it would be exactly the fabrication the M14 contract forbids. The fix that DID ship (#934) made the macro NAMES available to the member and enumerator rules; it did not close the symbol gap. So the honest shape is the same one the C-D4 differential floor uses: report the count every run, and fail only when it GROWS.",
+  "how_to_update": "bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir> --update-p13-baseline. Refused without an explicit --corpus, because a floor recorded from a different slice than the one being scored is not a floor for it.",
+  "notChecked": {
+    "/home/sano/ishaq/bb_tests/repositories/curl/lib": 44,
+    "/home/sano/ishaq/bb_tests/repositories/redis/deps/jemalloc": 28
+  }
+}

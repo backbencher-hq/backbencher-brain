@@ -1,0 +1,92 @@
+{
+  "fixtureId": "csharp/generic-name-positions",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A TYPE EXPRESSION is not a NAME. Three positions in this analyzer turn a written type into a published name, and until 2026-09-28 each had a spelling that published an expression where the position publishes a name — or published nothing at all. Every row is written TWICE, plain and qualified, so the expected spelling is read off the twin rather than asserted by hand (the discipline csharp/qualified-type-spelling established). EXPECTATIONS TRANSCRIBED FROM A MEASUREMENT, not from intent: script/m14/tmp/cs-fixture-measure.ts prints the fixed analyzer's whole payload for this file and these rows are that print, so a pin cannot encode the same mistake twice.\n\nD1 — THE DECLARED-TYPE GRAPH LOST A QUALIFIED GENERIC'S ARGUMENTS. tree-sitter-c-sharp spells `System.Collections.Generic.Dictionary<string, Widget>` as `qualified_name [ …, generic_name [ identifier, type_argument_list ] ]`, so a leaf-only walk reached the identifier and never the argument list hanging off the same `generic_name`. The plain twin `Dictionary<string, Widget>` is ONE node and took the branch that does walk the arguments. One type, two spellings, two different dependency sets — and the qualified spelling dropped the arguments, which this graph's own header calls \"the real dependency\" (java/kotlin/python/typescript all lose it; rust and java keep it, and so does csharp now). Measured: the trees and all ten spellings in script/m14/tmp/cs-deep-8-declared-type-rootcause.ts and -11-qualified-generic-probe.ts; frequency 39 occurrences in 12 of 1,500 roslyn files against 3,033 plain ones in 725 — REAL AND RARE, which is the combination that survives every depth draw. The two corpus diffs that could have caught it (script/m14/tmp/cs-deep-10-declared-type-diff.ts, 400 roslyn + 400 aspnetcore files) read 5,726/5,726 and 2,489/2,489 with 0 missing and 0 extra, because neither draw happened to contain the shape; that is recorded here as the honest scope of those measurements, not as a clean bill of health for the class.\n\nD2 — A GENERIC ATTRIBUTE PUBLISHED NO DECORATOR AT ALL. `[Marker<int>]` published `decorators: []` because the attribute-name predicate named three node types (identifier / qualified_name / alias_qualified_name) and a generic attribute's name child is a fourth (`generic_name`). And the twin that WAS named, `[System.Marker<int>]`, published the whole spelling `System.Marker<int>` — the same expression-where-a-name defect as D1, in a position C2a had already swept for the `global::` qualifier. One missing node type, two wrong answers. Frequency: 1 occurrence in 1,500 roslyn files, 13 in 1,500 aspnetcore files — `[JSMarshalAs<JSType.Number>]`, `[TestRenderMode<InteractiveServerRenderMode>]`, production code (script/m14/tmp/cs-deep-12-frequencies.ts).\n\nD3 — A `using` ALIAS NAMED A TYPE EXPRESSION. `using M = Dictionary<string, Widget>;` published `Dictionary<string,Widget>` as BOTH the `imports[].module` and the `references` target, and with a TUPLE argument it published the element NAMES too (`ImmutableDictionary<(UnusedValuePreference preference,bool isUnusedLocalAssignment,…)>` — measured on roslyn, script/m14/tmp/cs-deep-3-alias-generic.ts). A module is the thing a file imports FROM; it must be a name. Stripping the arguments is only half the fix — R9's rule says the argument is the real dependency — so each argument is published as its own `references` edge beside the module, marked `using_type_argument` and deliberately NOT marked `isUsingDirective`/`isImport`, because `classifyEvidenceTier` keys `reference_qualified` on exactly that pair and an argument is a TYPE reference, not a namespace import. Frequency: 132 occurrences in 116 of 1,500 roslyn files, 1 in 1,500 aspnetcore files.\n\nTHE CONTROLS ARE THE POINT, and they are what a \"remove the type arguments\" fix could get wrong. Each fix here strips; a fix that stripped too much would satisfy every expect below. So: a plain namespace path keeps every segment (`System.Text`, not `Text`); a qualified attribute keeps its full dotted path (`System.Marker`, not `Marker`); the plain twin of a qualified generic alias keeps the SHORT spelling the source wrote (`Dictionary`) because the import position publishes the path AS WRITTEN while the declared-type graph publishes the LEAF — two positions, two documented rules, both pinned here so neither can drift into the other; a qualified NON-generic type still publishes only its leaf in the graph (`StringBuilder`, never `System.Text.StringBuilder`); `int`/`string` stay silent wherever they are a predefined type; a bound type parameter stays silent; a tuple element's NAME is never published as a type; and a qualified generic with NO arguments is unchanged.",
+  "expectSymbols": [
+    { "name": "Probe", "kind": "namespace" },
+    { "name": "PlainAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "GenericAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "QualifiedAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "QualifiedGenericAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "AliasGenericAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "TwoGenericAttributed", "kind": "class", "ownerName": "Probe" },
+    { "name": "Widget", "kind": "class", "ownerName": "Probe" },
+    { "name": "Gadget", "kind": "class", "ownerName": "Probe" },
+    { "name": "PlainHolder", "kind": "class", "ownerName": "Probe" },
+    { "name": "QualifiedHolder", "kind": "class", "ownerName": "Probe" },
+    { "name": "Signatures", "kind": "class", "ownerName": "Probe" },
+    { "name": "Generic", "kind": "class", "ownerName": "Probe" }
+  ],
+  "expectImports": [
+    { "module": "System.Text", "comment": "CONTROL: a plain namespace path keeps every segment — a fix that collapsed modules to their last segment would fail here" },
+    { "module": "System.Text", "comment": "`using PlainPath = System.Text;` — the alias twin of the control, so the alias form cannot be read as stripping a segment" },
+    { "module": "Dictionary", "comment": "D3: `using PlainMap = Dictionary<string, Widget>;` — the module is the type's NAME. Pre-fix this was `Dictionary<string,Widget>`" },
+    { "module": "System.Collections.Generic.Dictionary", "comment": "D3: the QUALIFIED twin publishes the path AS WRITTEN, which is this position's contract (the declared-type graph publishes the leaf instead — both rules are pinned here)" },
+    { "module": "ImmutableDictionary", "comment": "D3: a TUPLE argument contributed the whole tuple text pre-fix, element names included" },
+    { "module": "System.Int32", "comment": "D3: an array target is a type, so the rank suffix is not part of the name" }
+  ],
+  "expectDecorators": [
+    { "symbol": "PlainAttributed", "contains": "Marker" },
+    { "symbol": "GenericAttributed", "contains": "Marker", "comment": "D2: pre-fix `decorators: []` — the generic_name shape was in no branch of the predicate" },
+    { "symbol": "QualifiedAttributed", "contains": "System.Marker" },
+    { "symbol": "QualifiedGenericAttributed", "contains": "System.Marker", "comment": "D2: pre-fix `System.Marker<int>` — the whole generic spelling" },
+    { "symbol": "AliasGenericAttributed", "contains": "Marker" },
+    { "symbol": "TwoGenericAttributed", "contains": "Marker" },
+    { "symbol": "TwoGenericAttributed", "contains": "Gadget" }
+  ],
+  "forbidDecorators": [
+    { "symbol": "GenericAttributed", "contains": "<", "note": "D2: a decorator payload carrying a type argument is an expression, not a name. The negative half is load-bearing: `System.Marker<int>` CONTAINS `System.Marker`, so expectDecorators alone can never fail on this revert (CSD16's exact finding)" },
+    { "symbol": "QualifiedGenericAttributed", "contains": "<" },
+    { "symbol": "AliasGenericAttributed", "contains": "<" },
+    { "symbol": "TwoGenericAttributed", "contains": "<" },
+    { "symbol": "PlainAttributed", "contains": "<" },
+    { "symbol": "QualifiedAttributed", "contains": "<" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "PlainAttributed", "target": "Dictionary", "line_number": 51, "meta.isUsingAlias": true, "meta.usingAlias": "PlainMap", "meta.evidenceClass": "import_based", "comment": "D3: the module is the NAME, and a module IS an import — the evidence class the module edge carries, pinned so the argument edge above cannot borrow it" },
+    { "type": "references", "from": "PlainAttributed", "target": "Widget", "line_number": 51, "meta.relationshipType": "using_type_argument", "meta.evidenceClass": "reference_qualified", "comment": "D3: the argument is the real dependency (R9's rule), published as its own edge — `string` is a predefined type and stays silent. The EVIDENCE CLASS is pinned because it is a real contract, not cosmetics: classifyEvidenceTier keys `reference_qualified` on exactly `!(isUsingDirective || isImport)`, so an argument copied the module edge's flags would be stamped as a namespace import" },
+    { "type": "references", "from": "PlainAttributed", "target": "System.Collections.Generic.Dictionary", "line_number": 52, "meta.isUsingAlias": true, "meta.usingAlias": "QualifiedMap" },
+    { "type": "references", "from": "PlainAttributed", "target": "Widget", "line_number": 52, "meta.relationshipType": "using_type_argument", "meta.evidenceClass": "reference_qualified", "comment": "the qualified twin publishes the SAME argument dependency as the plain one — the pair is the pin" },
+    { "type": "references", "from": "PlainAttributed", "target": "ImmutableDictionary", "line_number": 53, "meta.isUsingAlias": true, "meta.usingAlias": "PlainTuple" },
+    { "type": "references", "from": "PlainAttributed", "target": "Widget", "line_number": 53, "meta.relationshipType": "using_type_argument", "meta.evidenceClass": "reference_qualified", "comment": "D3: a tuple argument contributes its element TYPE, never the element NAME, and the two occurrences of Widget are one dependency" },
+    { "type": "references", "from": "PlainAttributed", "target": "System.Int32", "line_number": 54, "meta.isUsingAlias": true, "meta.usingAlias": "ArrayAlias" },
+
+    { "type": "references", "from": "PlainHolder", "target": "Dictionary", "line_number": 70, "meta.relationshipType": "declared_type", "meta.declaredOn": "field_declaration", "comment": "D1 CONTROL: the PLAIN twin always published base + argument" },
+    { "type": "references", "from": "PlainHolder", "target": "Widget", "line_number": 70, "meta.relationshipType": "declared_type" },
+
+    { "type": "references", "from": "QualifiedHolder", "target": "Dictionary", "line_number": 75, "meta.relationshipType": "declared_type", "meta.declaredOn": "field_declaration", "comment": "D1: the QUALIFIED twin now publishes base …" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Widget", "line_number": 75, "meta.relationshipType": "declared_type", "comment": "D1: … AND the argument. Pre-fix this line published `Dictionary` alone — the dependency the graph exists to record, silently lost because the source wrote the path out" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Dictionary", "line_number": 76, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Widget", "line_number": 76, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Gadget", "line_number": 76, "meta.relationshipType": "declared_type", "comment": "D1: two real arguments, two edges" },
+    { "type": "references", "from": "QualifiedHolder", "target": "List", "line_number": 77, "meta.relationshipType": "declared_type", "comment": "D1: a nested qualified generic recurses" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Widget", "line_number": 77, "meta.relationshipType": "declared_type", "comment": "the inner List is the same name at the same line, so it is one dependency" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Dictionary", "line_number": 78, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Widget", "line_number": 78, "meta.relationshipType": "declared_type", "comment": "D1: a TUPLE argument — the element TYPE is published, the element NAME is not (forbidden below)" },
+    { "type": "references", "from": "QualifiedHolder", "target": "Dictionary", "line_number": 79, "meta.relationshipType": "declared_type", "comment": "CONTROL: a qualified generic with NO arguments is unchanged" },
+    { "type": "references", "from": "QualifiedHolder", "target": "StringBuilder", "line_number": 80, "meta.relationshipType": "declared_type", "comment": "CONTROL: a qualified NON-generic type still publishes its LEAF — the graph's documented rule, and the reason the dotted path is forbidden below" },
+
+    { "type": "references", "from": "Takes", "target": "Dictionary", "line_number": 85, "meta.relationshipType": "declared_type", "meta.declaredOn": "parameter" },
+    { "type": "references", "from": "Takes", "target": "Widget", "line_number": 85, "meta.relationshipType": "declared_type", "comment": "D1: the parameter position too — the source is the CALLABLE" },
+    { "type": "references", "from": "Returns", "target": "Dictionary", "line_number": 86, "meta.relationshipType": "return_type" },
+    { "type": "references", "from": "Returns", "target": "Widget", "line_number": 86, "meta.relationshipType": "return_type", "comment": "D1: the return position, with the return_type marker the family shares" },
+    { "type": "references", "from": "Signatures", "target": "Dictionary", "line_number": 87, "meta.relationshipType": "declared_type", "meta.declaredOn": "property_declaration" },
+    { "type": "references", "from": "Signatures", "target": "Widget", "line_number": 87, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Generic", "target": "List", "line_number": 92, "meta.relationshipType": "declared_type", "comment": "CONTROL: a bound type parameter stays silent (R9's rule) even in the qualified spelling that used to drop its arguments" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "Dictionary<string,Widget>", "note": "D3: the pre-fix module/target — a type expression where a name belongs" },
+    { "type": "references", "target": "System.Collections.Generic.Dictionary<string,Widget>" },
+    { "type": "references", "target": "ImmutableDictionary<(Widget w,int n),Widget>", "note": "D3: the tuple spelling, element names included" },
+    { "type": "references", "target": "System.Int32[]", "note": "D3: an array rank is not part of a type's name" },
+    { "type": "references", "target": "Text", "note": "CONTROL held the other way: a namespace path keeps every segment, so `Text` alone must never appear as a module" },
+    { "type": "references", "target": "System.Text.StringBuilder", "note": "R9's leaf rule: a qualified name publishes its LEAF in the graph, never the path" },
+    { "type": "references", "target": "String", "note": "nor any intermediate segment" },
+    { "type": "references", "target": "w", "note": "D1: a tuple element's NAME is not a type — the fabrication class csharp/declared-type-graph already pins for the plain shape" },
+    { "type": "references", "target": "n", "note": "and the second element's name" },
+    { "type": "references", "target": "T", "note": "a bound type parameter is not a dependency (R9), in either spelling" },
+    { "type": "references", "target": "int", "note": "a predefined type stays silent" },
+    { "type": "references", "target": "string" }
+  ]
+}

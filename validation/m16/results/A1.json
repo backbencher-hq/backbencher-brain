@@ -1,0 +1,15 @@
+{
+  "issue": "M16.A1 (function|method union)",
+  "code": "A1",
+  "tool": "bb_ask",
+  "title": "A1",
+  "verified": true,
+  "checks": 4,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:27:24.901Z",
+  "runLog": {
+    "fixture": "ruby 2 methods + 1 module"
+  }
+}

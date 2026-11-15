@@ -1,0 +1,20 @@
+{
+  "issue": "CLJ1",
+  "note": "C5: an aliased protocol in a defrecord implements clause resolves through the ns aliases (`p/Proto` → `clj.fixture.protos/Proto`), exactly like call targets do. The forbid pins the pre-fix raw-alias target that dangled on an unregistered `p`.",
+  "expectSymbols": [
+    { "name": "Impl", "kind": "class" },
+    { "name": "px", "kind": "function" }
+  ],
+  "expectParameters": [
+    { "symbol": "px", "parameters": [{ "name": "_" }] }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Impl", "target": "clj.fixture.protos/Proto", "line_number": 5 }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "target": "p/Proto" }
+  ],
+  "expectImports": [
+    { "module": "clj.fixture.protos", "items": ["p"] }
+  ]
+}

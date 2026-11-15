@@ -1,0 +1,13 @@
+{
+  "fixtureId": "svelte/store-subscription-lines",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Master review (recall): store auto-subscription `{$count}` reads the `count` member's value — the `$` sigil resolves to a same-named member (exact matches first, `$$` never strips). Without the rule the read is silent (no edge at all). Line is where `$count` is written.",
+  "expectSymbols": [
+    { "name": "count" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "target": "count", "line_number": 13 }
+  ],
+  "forbidRelationships": []
+}

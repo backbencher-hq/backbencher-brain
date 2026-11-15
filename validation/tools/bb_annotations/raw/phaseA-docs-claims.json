@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "purpose": "Every documented claim the tool makes, and the measured answer for it. A FALSE row is a defect with the evidence that proves it false.",
+  "sources": {
+    "descriptor": "src/mcp/tools/bb_annotations/descriptor.ts",
+    "curation": "script/tool-docs/curation/bb_annotations.ts",
+    "generatedPage": "docs/tools/bb_annotations.md",
+    "surfaceDoc": "docs/m28/MCP-SURFACE.md"
+  },
+  "evidence": {
+    "door": "validation/tools/bb_annotations/raw/door-annotations.json",
+    "storePredicates": "validation/tools/bb_annotations/raw/probe-store.json",
+    "capAndPlans": "validation/tools/bb_annotations/raw/audit-store-more.json",
+    "immutability": "validation/tools/bb_annotations/raw/read-immutability.json",
+    "realCorpus": "validation/tools/bb_annotations/REAL-CORPUS.json",
+    "latencyT2": "validation/tools/bb_annotations/raw/latency-T2.json",
+    "twins": "validation/tools/bb_annotations/raw/twins-source.txt"
+  },
+  "claims": [
+    {
+      "id": "C1",
+      "claim": "Every row carries full provenance: author class, tool identity, timestamps.",
+      "where": "descriptor.description; curation.returns",
+      "truth": true,
+      "measured": "door rows carry author_class='agent', tool_identity='bb_annotate(mcp)', time_created/time_updated (door-annotations.json calls R1/R11 rows; REAL-CORPUS.json rows)."
+    },
+    {
+      "id": "C2",
+      "claim": "count is the page size, totalCountIfKnown the true total, truncated/truncationReason fire when the limit dropped rows.",
+      "where": "descriptor.description; curation.returns",
+      "truth": true,
+      "measured": "door R12: limit 3 -> count 3, totalCountIfKnown 10, truncated true, reason names 'limit 3'. audit-store-more: default -> count 50, total 206, truncated true; limit 200 -> count 200, total 206, truncated true."
+    },
+    {
+      "id": "C3",
+      "claim": "A `symbol` also matches notes written under a symbol's qualified name, the same predicate the editor uses.",
+      "where": "descriptor.description; curation.limitations; docs/tools/bb_annotations.md",
+      "truth": false,
+      "measured": "FAILS. door R3 (read key='Widget.render') count 0; R4 (key='render') count 0, while the store holds that note (probe-store.s1) and the hover predicate returns it (probe-store.s2 = 1 row). REAL-CORPUS: read by qualified name returns the SIMPLE-name note only; the qualified-name row is visible only project-wide. Handler's own comment says the set is 'simple name AND qualified name' but the SQL selects DISTINCT name only (probe-store.s4 intended set = 1 row vs s3 actual = 0)."
+    },
+    {
+      "id": "C4",
+      "claim": "No annotations is a declared absence, never an error.",
+      "where": "descriptor.description; page",
+      "truth": true,
+      "measured": "door A1 project-wide, A2 symbol, A3/A4 path, A5 symbol+path each isError=false, count 0, totalCountIfKnown 0, declaredAbsent=true with a case-specific absenceNote. REAL-CORPUS absence rows before writes are all declaredAbsent=true."
+    },
+    {
+      "id": "C5",
+      "claim": "`path` is resolved to the index's own spelling first, so src/a.ts, ./src/a.ts and the absolute path are the same note.",
+      "where": "descriptor.inputSchema.path; curation.limitations",
+      "truth": true,
+      "measured": "Read: R6 count 4, R8 (./src/alpha.ts) count 4 path 'src/alpha.ts', R9 (absolute) count 4 path 'src/alpha.ts'. Write: W9 ('./src/alpha.ts') and W10 (absolute) both store symbol_path='src/alpha.ts'. REAL-CORPUS: dot-prefixed path read returns the same rows as the plain spelling (path echoed canonical)."
+    },
+    {
+      "id": "C6",
+      "claim": "A `path` filter returns that file's copy's notes plus any name-level notes (written with no path).",
+      "where": "descriptor.inputSchema.path",
+      "truth": false,
+      "measured": "CONTRADICTS the same schema's includeNameLevel field and the curation limitation: path-only default EXCLUDES name-level notes. door R6 (no flag) = 4 file rows only; R7 (includeNameLevel true) = 7 rows including 3 name-level. REAL-CORPUS R-path = 1, R-path-name-level = 2/3."
+    },
+    {
+      "id": "C7",
+      "claim": "includeNameLevel: with `path` and no `symbol`, also return name-level notes; off by default.",
+      "where": "descriptor.inputSchema.includeNameLevel",
+      "truth": true,
+      "measured": "door R6 vs R7 (4 -> 7 rows, +3 name-level); REAL-CORPUS R-path vs R-path-name-level."
+    },
+    {
+      "id": "C8",
+      "claim": "limit: default 50, cap 200; outside 1-200 is a declared refusal.",
+      "where": "descriptor.inputSchema.limit; curation.errors",
+      "truth": true,
+      "measured": "audit-store-more defaultRead count 50 with 206 rows; capRead count 200; door X1 (0), X2 (201) refused naming 'between 1 and 200'; X3 (-1) refused 'limit must be non-negative'; X5 (1.5) refused 'must be a whole number'."
+    },
+    {
+      "id": "C9",
+      "claim": "Symbol/path options accept the caller-question vocabulary (`target`/`query` aliases of `symbol`).",
+      "where": "descriptor.inputSchema.symbol",
+      "truth": true,
+      "measured": "door A6/A7 alias calls answer as `symbol`; conflicting alias+canonical refused (X7); m50 param-aliases gate: 'ok P7 bb_annotations: target aliases answer like symbol'."
+    },
+    {
+      "id": "C10",
+      "claim": "Modes: annotate.",
+      "where": "descriptor.modes; generated page Contract section",
+      "truth": false,
+      "measured": "The tool has no `mode` option and no mode branch; validateToolArguments accepts any subset of symbol/path/limit/includeNameLevel. The declared mode names an action the schema does not expose."
+    },
+    {
+      "id": "C11",
+      "claim": "Requires index: false.",
+      "where": "descriptor.requiresIndex; page Contract section",
+      "truth": true,
+      "measured": "Matches the implementation (no index gate) — and that is exactly why the read creates a store for an unindexed project (D2/I2). The field is truthful; the behaviour behind it is the defect."
+    },
+    {
+      "id": "C12",
+      "claim": "Safety: Read-only. It does not modify source files, index data, or annotations.",
+      "where": "curation.safety; page Safety section",
+      "truth": false,
+      "measured": "FAILS. read-immutability.json: I2 a read on a never-indexed project CREATED projects/<pid>/brain.db (and the answer was declaredAbsent); I3 a read on a store whose annotation table was dropped RECREATED the table and changed brain.db's hash; I1 a read removed the -wal/-shm files (the handle is opened read-write)."
+    },
+    {
+      "id": "C13",
+      "claim": "Performance: indexed lookup by project and symbol; the declared total is one indexed COUNT.",
+      "where": "curation.performance",
+      "truth": false,
+      "measured": "PARTIALLY FALSE. audit-store-more query plans: symbol rows/count use brain_annotation_location_idx (the index named in the claim, brain_annotation_project_symbol_idx, is superseded by the newer unique location index), project-wide count uses a covering project index — but the PATH shapes use brain_annotation_project_idx, i.e. they scan every annotation row of the project (no index on symbol_path), and every shape needs 'USE TEMP B-TREE FOR ORDER BY' (no index on time_updated). The claim describes only the symbol shape."
+    },
+    {
+      "id": "C14",
+      "claim": "Without `path`, a symbol that lives in several files returns every file's notes together.",
+      "where": "curation.limitations",
+      "truth": true,
+      "measured": "door R14 ('duplicate' declared in two files) count 2; R1 ('Widget' name-level + file note) count 2."
+    },
+    {
+      "id": "C15",
+      "claim": "A path-only read no longer mixes in the whole project's name-level notes; pass includeNameLevel for the broader set.",
+      "where": "curation.limitations",
+      "truth": true,
+      "measured": "door R6 count 4 vs R7 count 7 on the same path."
+    },
+    {
+      "id": "C16",
+      "claim": "Annotation store semantics are owned by the M28 workstream.",
+      "where": "curation.limitations; generated page",
+      "truth": false,
+      "measured": "Not a technical statement; milestone narration banned by charter §9 (raw/section9-scan.txt). Replace with the real constraint."
+    },
+    {
+      "id": "C17",
+      "claim": "Staleness: output reflects the index as of the last index run; when files changed after indexing, refresh first (bb index --changed).",
+      "where": "generated page Staleness section",
+      "truth": false,
+      "measured": "MISLEADING for this tool: annotations are stored rows, not index-derived data; re-indexing does not change them. Only the symbol-name resolution half can change. The generator emits one remediation for every tool (Lead-owned generator)."
+    },
+    {
+      "id": "C18",
+      "claim": "The hover section and graph badge render the same store this tool reads.",
+      "where": "docs/m28/MCP-SURFACE.md annotations table row",
+      "truth": false,
+      "measured": "They read the same TABLE but not the same predicate: hover (src/lsp/hover.ts:639) and graph root (src/lsp/graph_request.ts:271) match symbol_name = name OR symbol_name = qualified_name, so both FIND the qualified-name note this read door misses; the visualization badge (src/intelligence/visualization/visualization-engine.ts:868) matches by name only, so it MISSES it like this door. raw/twins-source.txt + probe-store.json."
+    }
+  ]
+}

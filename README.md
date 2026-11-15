@@ -67,7 +67,7 @@ on Windows); add that directory to your `PATH`.
 ### Pin a release
 
 ```bash
-npm install -g @backbencher/brain@0.1.3
+npm install -g @backbencher/brain@0.1.4
 # or with the installer scripts:
 VERSION=0.1.0 curl -fsSL https://backbencher.cc/install.sh | bash
 ```
@@ -352,11 +352,17 @@ for the per-request-ID claim levels.
 ## Embeddings (optional)
 
 The `bb_ask` tool (and semantic search) uses embeddings. Without a configured provider, `bb` falls back to local word
-vectors — weaker by design, and labelled as such. `bb setup` offers prefilled free providers (OpenRouter,
-NVIDIA NIM), validates the key with one `/embeddings` call before saving, and writes the config `0600`.
-Changing the model or dimension requires `bb index --force`; vectors from different models or dimensions
-are never compared. The full guide, precedence rules and every `BB_EMBEDDING_*` variable are in
-[EMBEDDINGS.md](EMBEDDINGS.md) and [`docs/indexing/embeddings.md`](docs/indexing/embeddings.md).
+vectors — weaker by design, and labelled as such. `bb setup` starts from your API key: it detects the
+provider from the key, lists the embedding models that key can actually use, lets you pick one (or type a
+model id by hand), and validates the selection with one live `/embeddings` call before saving the config
+`0600`. NVIDIA NIM's free, rate-limited tier is the built-in path; OpenRouter currently lists no embedding
+models, so a custom endpoint plus a manual model id is its escape hatch. Skipping is remembered, and
+`bb setup` / `bb setup reset` change or remove the choice later. A model change is reconciled on the next
+`bb index`: stored symbols are re-embedded in place with the new model (no re-parse), and old vectors are
+replaced; `bb index --force` remains the full-rebuild path. Vectors from different models or dimensions are
+never compared. The full guide,
+precedence rules and every `BB_EMBEDDING_*` variable are in [EMBEDDINGS.md](EMBEDDINGS.md) and
+[`docs/indexing/embeddings.md`](docs/indexing/embeddings.md).
 
 The only network calls the product makes are the embedding provider you configure and the update check in
 `bb upgrade`. Your source code is never uploaded, and there is no telemetry.

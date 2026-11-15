@@ -1,0 +1,7 @@
+script/verify-health.ts	0	17065
+script/m13/verify-health-mutability.ts	1	25779
+script/m13/verify-health-verbose.ts	0	11335
+script/m13/verify-health-integrity.ts	1	14415
+script/m13/verify-health-refresh.ts	1	31628
+script/m13/verify-health-e2e-corpus.ts	1	89654
+script/m13/verify-health-docs.ts	1	960

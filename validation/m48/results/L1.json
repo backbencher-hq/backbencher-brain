@@ -1,0 +1,19 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "verifierCommand": "bun run script/m48/verify-l1-coordination.ts",
+  "evidenceFile": "L1.json",
+  "generatedAt": "2026-11-05T04:31:51.409Z",
+  "passed": 19,
+  "failed": 0,
+  "negativeCases": 2,
+  "failures": [],
+  "exercised": [
+    "docs/m48/COORDINATION.md",
+    "script/m24/lsp_harness.ts"
+  ],
+  "summary": {
+    "sharedCommitsCovered": 2,
+    "smoke": "verified"
+  }
+}

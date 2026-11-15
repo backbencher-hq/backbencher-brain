@@ -1,0 +1,197 @@
+{
+  "fixtureId": "objc/macro-wrapped-enum-and-guarded",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The two Apple idioms a plausible-looking grammar gets wrong, pinned together because each one hid the other. (1) `typedef NS_ENUM(Underlying, Name) { ... };` carries its name INSIDE the macro's arguments and has no trailing declarator — the opposite of every typedef the grammar already handled, so the body collapsed into ERROR nodes and 152 of 164 member constants across 35 declarations were invisible (7.3% recovery, measured over the router's 329-file universe). Taking the FIRST identifier instead of the LAST would name every such enum after its underlying type, so 35 enums would collide on one owner; the members' ownerName is what catches that. (2) A bare macro line above an @interface INSIDE a #if: tree-sitter-c builds a file-scope preproc_if body from _block_item, not _top_level_item, so a rule registered only in _top_level_item is unreachable inside every conditional. sdwebimage wraps most of its headers in `#if SD_UIKIT || SD_MAC`, and the ERROR node the fallthrough produced ran 101 lines to the next @end — deleting a whole class and replacing its properties with phantoms named after the property ATTRIBUTES. The forbidSymbols half is the specific wrongness that has to stay forbidden, because a swallowed class produces a plausible-looking symbol list rather than an obvious failure. Verified to FAIL on the pre-fix wasm: that build emits `type:GuardedModeManual` — a phantom named after an enum MEMBER — and loses GuardedTraits entirely. A FOURTH Apple macro shape — a bracketing `NS_ASSUME_NONNULL_BEGIN` whose successor is a `typedef` rather than an @-declaration — is deliberately ABSENT from this fixture: the only rule measured for it was order-dependent in grammar.js and could not be reproduced or pinned, so it was reverted and the residue is recorded in grammars/tree-sitter-objc/grammar.js rather than pinned as a passing expectation. (3) A trailing availability annotation — a macro CALL with nested parens, commas and a string — is unreachable by C's macro_type_specifier (`MACRO(type)`) and by attribute_specifier (`[[...]]`), and the ERROR it produced swallowed the ENCLOSING @protocol: 83 lines, one protocol, deleted, which is 66 of the lane's 285 remaining errors across the two copies of SDImageCacheDefine.h. The method NAMES are pinned rather than an error count, because a swallowed protocol yields a file with no methods in it and nothing a reader would blame on the protocol. The forbidSymbols half keeps the selector identity clean: an annotation trailing a parameter used to be read as another selector, publishing a method literally named `setDidFinishEventsForBackgroundURLSessionBlock:AF_API_UNAVAILABLE`, and a selector IS identity in Objective-C — that is a method a consumer would route calls to that does not exist.",
+  "expectSymbols": [
+    {
+      "name": "MacroGuardedView",
+      "kind": "class"
+    },
+    {
+      "name": "identifier",
+      "kind": "property",
+      "ownerName": "MacroGuardedView"
+    },
+    {
+      "name": "GuardedController",
+      "kind": "class"
+    },
+    {
+      "name": "mode",
+      "kind": "property",
+      "ownerName": "GuardedController"
+    },
+    {
+      "name": "traits",
+      "kind": "property",
+      "ownerName": "GuardedController"
+    },
+    {
+      "name": "GuardedMode",
+      "kind": "enum"
+    },
+    {
+      "name": "GuardedModeAutomatic",
+      "kind": "enum_member",
+      "ownerName": "GuardedMode"
+    },
+    {
+      "name": "GuardedModeManual",
+      "kind": "enum_member",
+      "ownerName": "GuardedMode"
+    },
+    {
+      "name": "GuardedTraits",
+      "kind": "enum"
+    },
+    {
+      "name": "GuardedTraitNone",
+      "kind": "enum_member",
+      "ownerName": "GuardedTraits"
+    },
+    {
+      "name": "GuardedTraitCache",
+      "kind": "enum_member",
+      "ownerName": "GuardedTraits"
+    },
+    {
+      "name": "GuardedTraitDisk",
+      "kind": "enum_member",
+      "ownerName": "GuardedTraits"
+    },
+    {
+      "name": "GuardedStore",
+      "kind": "interface"
+    },
+    {
+      "name": "removeImageForKey:options:",
+      "kind": "method",
+      "ownerName": "GuardedStore"
+    },
+    {
+      "name": "flushPendingWrites",
+      "kind": "method",
+      "ownerName": "GuardedStore"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "source": "MacroGuardedView",
+      "type": "extends",
+      "target": "UIView"
+    },
+    {
+      "source": "GuardedController",
+      "type": "extends",
+      "target": "NSObject"
+    },
+    {
+      "source": "MacroGuardedView",
+      "type": "contains",
+      "target": "identifier"
+    },
+    {
+      "source": "GuardedController",
+      "type": "contains",
+      "target": "mode"
+    },
+    {
+      "source": "GuardedController",
+      "type": "contains",
+      "target": "traits"
+    },
+    {
+      "source": "GuardedMode",
+      "type": "contains",
+      "target": "GuardedModeAutomatic"
+    },
+    {
+      "source": "GuardedMode",
+      "type": "contains",
+      "target": "GuardedModeManual"
+    },
+    {
+      "source": "GuardedTraits",
+      "type": "contains",
+      "target": "GuardedTraitNone"
+    },
+    {
+      "source": "GuardedTraits",
+      "type": "contains",
+      "target": "GuardedTraitCache"
+    },
+    {
+      "source": "GuardedTraits",
+      "type": "contains",
+      "target": "GuardedTraitDisk"
+    },
+    {
+      "source": "GuardedStore",
+      "type": "contains",
+      "target": "removeImageForKey:options:"
+    },
+    {
+      "source": "GuardedStore",
+      "type": "contains",
+      "target": "flushPendingWrites"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "NSInteger",
+      "kind": "enum"
+    },
+    {
+      "name": "NSUInteger",
+      "kind": "enum"
+    },
+    {
+      "name": "strong",
+      "kind": "variable"
+    },
+    {
+      "name": "copy",
+      "kind": "variable"
+    },
+    {
+      "name": "assign",
+      "kind": "variable"
+    },
+    {
+      "name": "readonly",
+      "kind": "variable"
+    },
+    {
+      "name": "GuardedModeManual",
+      "kind": "type"
+    },
+    {
+      "name": "GuardedModeAutomatic",
+      "kind": "type"
+    },
+    {
+      "name": "removeImageForKey:options:API_DEPRECATED_WITH_REPLACEMENT",
+      "kind": "method"
+    },
+    {
+      "name": "flushPendingWritesAF_API_UNAVAILABLE",
+      "kind": "method"
+    },
+    {
+      "name": "API_DEPRECATED_WITH_REPLACEMENT",
+      "kind": "method"
+    },
+    {
+      "name": "AF_API_UNAVAILABLE",
+      "kind": "method"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "source": "GuardedMode",
+      "type": "contains",
+      "target": "NSInteger"
+    }
+  ]
+}

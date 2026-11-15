@@ -1,0 +1,11 @@
+**CLOSED — every acceptance item re-derived at `12da50ee`, not remembered.**
+
+The wave's record is `reviews/dart/second-review.md` (2 fixed: DT2-A bound locals/params, DT2-B file-scope values; 2 ruled: DT2-C never-read positions, DT2-D case tests / interpolation overlap). The items that can go stale, re-measured now:
+
+- [x] **Every claim probe-verified with recorded evidence** — the review's hostile battery is the evidence, and `#752`'s gates were audited hostilely in the same pass (its forbid needed only a confidence-scoped narrowing for the new local edge; the gate intent is intact and now pinned in both directions). The lane has since added two more probe-first rulings of the same family: DARTD20 and DARTD22 (the latter was published at confidence **0.6, below the M12 claim threshold**, so it lived as `unknown` and no gate could score it — see the closure record).
+- [x] **Fixes checked against the Dart F5 lanes** — at this closure: proxicall canonical 60-file draw `hash 5d521eb201148639` (same files as the round's earlier canonical draw) `MISSING=0 unexplained=0`; dart-http canonical 60-file draw `hash 549143339f0cfaa9` `MISSING=0 unexplained=0`. At **FULL extent**: dart-http **335/335** = tree-truth 13,654/13,654 (100%), analyzer-edges 12,708, 0 unexplained; proxicall **2,211 files across five disjoint 500-file draws**, every chunk 0 missing / 0 unexplained, union 2,211/2,211 verified from the drawn-path log.
+- [x] **Fixture pins + regression mutants per fix; F3/F4 green in-session** — `dart/value-reads` (DT2-B) and the confidence-scoped `dart/bare-member-read-uses` update (DT2-A) both green; dart fixtures **11/11**, mutants **39/39 caught**.
+- [x] **Spec decisions recorded** — `script/m14/spec/dart-completeness.json` carries DT2-A/B (FIXED) and DT2-C/D (RULED).
+- [x] **reviews/dart marked complete with closure commit; onboarding board updated** — `reviews/dart/m60-closure.md` + the dart row of `reviews/onboarding.md`.
+
+One caveat the wave disclosed and this closure keeps: the lane's `uses` surface is compared at **presence** level in the differential (label + target, not source line), so an edge that moves function-to-function without changing its target is invisible to the F5 gate. The M12 audit and the fixtures carry that half.

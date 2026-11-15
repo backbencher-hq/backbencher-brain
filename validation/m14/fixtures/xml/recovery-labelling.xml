@@ -1,0 +1,2 @@
+## not well-formed XML: a vendor template header before the document element
+<root><child flag="1"/></root>

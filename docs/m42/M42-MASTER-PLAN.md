@@ -47,14 +47,14 @@ is a portal. M42 makes ours a portal — **built on data no other tool has**:
 
 | Code | Issue | Deliverable |
 |------|-------|-------------|
-| G1 | [#648](https://github.com/backbencher-hq/backbencher-brain/issues/648) Governance + v5-bar check | ledger; closure gate; M29 bar still green; Hover Interaction Rules added to the contract doc and machine-gated |
-| H1 | [#649](https://github.com/backbencher-hq/backbencher-brain/issues/649) Hoverable affordance | semantic DocumentHighlight on cursor rest; evidence: fixture-first, editor leg, mutant "highlights a non-reference" |
-| H2 | [#650](https://github.com/backbencher-hq/backbencher-brain/issues/650) Rich hover body | connected-summary, top-3 usages as clickable file:line links, "N more" → native references tree, definition link |
-| H3 | [#651](https://github.com/backbencher-hq/backbencher-brain/issues/651) LSP consumes enrichment | role/pattern/layerFlow/criticality/frequency surfaced in hover + graph edges; presence-gated; no schema change |
-| H4 | [#652](https://github.com/backbencher-hq/backbencher-brain/issues/652) Hover actions | open-in-graph, impact, call hierarchy as command URIs; honest error surface when un-indexed |
-| H5 | [#653](https://github.com/backbencher-hq/backbencher-brain/issues/653) The hub | webview list↔tree toggle, grouping by file/caller/call-tree over bb/graph; ONE renderer core, fork-banned |
-| H6 | [#654](https://github.com/backbencher-hq/backbencher-brain/issues/654) Hub → editor | versioned postMessage contract, click-to-reveal; strict CSP unchanged |
-| X1 | [#655](https://github.com/backbencher-hq/backbencher-brain/issues/655) Gate + launch bar | M42 closure gate (full-ladder audit at HEAD); launch bar executed: OS matrix via CI, OpenVSX publish, every known gap fixed or owner-waived |
+| G1 | [#648](https://github.com/ishaq2321/backbencher-brain/issues/648) Governance + v5-bar check | ledger; closure gate; M29 bar still green; Hover Interaction Rules added to the contract doc and machine-gated |
+| H1 | [#649](https://github.com/ishaq2321/backbencher-brain/issues/649) Hoverable affordance | semantic DocumentHighlight on cursor rest; evidence: fixture-first, editor leg, mutant "highlights a non-reference" |
+| H2 | [#650](https://github.com/ishaq2321/backbencher-brain/issues/650) Rich hover body | connected-summary, top-3 usages as clickable file:line links, "N more" → native references tree, definition link |
+| H3 | [#651](https://github.com/ishaq2321/backbencher-brain/issues/651) LSP consumes enrichment | role/pattern/layerFlow/criticality/frequency surfaced in hover + graph edges; presence-gated; no schema change |
+| H4 | [#652](https://github.com/ishaq2321/backbencher-brain/issues/652) Hover actions | open-in-graph, impact, call hierarchy as command URIs; honest error surface when un-indexed |
+| H5 | [#653](https://github.com/ishaq2321/backbencher-brain/issues/653) The hub | webview list↔tree toggle, grouping by file/caller/call-tree over bb/graph; ONE renderer core, fork-banned |
+| H6 | [#654](https://github.com/ishaq2321/backbencher-brain/issues/654) Hub → editor | versioned postMessage contract, click-to-reveal; strict CSP unchanged |
+| X1 | [#655](https://github.com/ishaq2321/backbencher-brain/issues/655) Gate + launch bar | M42 closure gate (full-ladder audit at HEAD); launch bar executed: OS matrix via CI, OpenVSX publish, every known gap fixed or owner-waived |
 
 Parallel tracks (not M42 issues, riding alongside):
 - **Wave 2 (zig)**: analyzer already indexes zig (probed live: functions

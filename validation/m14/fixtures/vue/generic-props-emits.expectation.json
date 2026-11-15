@@ -1,0 +1,54 @@
+{
+  "fixtureId": "vue/generic-props-emits",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "V1 (#419): defineProps/defineEmits in the standard Vue 3.3+ TYPE-LITERAL generic form defineProps<{ id: string }>() / defineEmits<{ (e: 'save'): void }>() must emit Property/Event symbols — the component's public contract. Pre-fix: only the runtime object/array form was extracted; the generic form lost all prop/event declarations.",
+  "expectSymbols": [
+    {
+      "name": "props",
+      "kind": "constant"
+    },
+    {
+      "name": "emit",
+      "kind": "constant"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "save",
+      "kind": "event",
+      "meta.isEmit": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "close",
+      "kind": "event",
+      "meta.isEmit": true,
+      "meta.isScriptSetup": true
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "generic-props-emits",
+      "target": "id",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "generic-props-emits",
+      "target": "save",
+      "meta.evidenceClass": "structural"
+    }
+  ]
+}

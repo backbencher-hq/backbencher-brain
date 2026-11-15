@@ -1,0 +1,80 @@
+warmup=12880ms
+{
+  "schemaVersion": 1,
+  "tool": "bb_health",
+  "tier": "T2",
+  "label": "workspace index at .bb-data (charter reference large tier)",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 node --import tsx validation/tools/bb_health/work/phaseA-t2.mts",
+  "runs": 5,
+  "measuredAt": "2026-11-01T18:37:27.246Z",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "projectPath": "/home/ishaq2321/mcp/backbencher-brain",
+  "counts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "imports": 25122,
+    "syntaxErrors": 100
+  },
+  "freshness": {
+    "mode": "sampled",
+    "requestedMode": "sampled",
+    "checked": 200,
+    "total": 6452,
+    "fresh": 194,
+    "stale": 6,
+    "missing": 0,
+    "reasons": {
+      "metadata-fast-path": 194,
+      "hash-match": 0,
+      "hash-differs": 6,
+      "file-gone": 0,
+      "unreadable": 0,
+      "no-row": 0
+    }
+  },
+  "wallMs": [
+    5204,
+    4692,
+    4575,
+    4338,
+    3395
+  ],
+  "p50Ms": 4575,
+  "p95Ms": 5204,
+  "minMs": 3395,
+  "maxMs": 5204,
+  "reportTiming": [
+    {
+      "totalMs": 4233,
+      "aggregatesMs": 3840,
+      "freshnessMs": 71
+    },
+    {
+      "totalMs": 3236,
+      "aggregatesMs": 2977,
+      "freshnessMs": 41
+    },
+    {
+      "totalMs": 3601,
+      "aggregatesMs": 2905,
+      "freshnessMs": 160
+    },
+    {
+      "totalMs": 3294,
+      "aggregatesMs": 2979,
+      "freshnessMs": 49
+    },
+    {
+      "totalMs": 2677,
+      "aggregatesMs": 2305,
+      "freshnessMs": 45
+    }
+  ],
+  "thisCallLine": "this call: total=2677ms (freshness=45ms aggregates=2305ms)",
+  "warnings": [
+    "warning:SYNTAX_ERRORS",
+    "warning:STALE_FILES"
+  ],
+  "textBytes": 1183
+}

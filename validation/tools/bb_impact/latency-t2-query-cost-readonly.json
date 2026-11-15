@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-01T23:05:04.432Z",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-query-cost-readonly.ts",
+  "openMode": "byte-read-only (BrainDatabase.getRawInstance(projectId,{readonly:true}))",
+  "loadAverage": [
+    30.54,
+    28.22,
+    17.77
+  ],
+  "rows": [
+    {
+      "label": "flat-A-1",
+      "ms": 9.7,
+      "value": 36
+    },
+    {
+      "label": "cascade-B-1",
+      "ms": 1.1,
+      "value": 36
+    },
+    {
+      "label": "flat-A-2",
+      "ms": 7.2,
+      "value": 36
+    },
+    {
+      "label": "cascade-B-2",
+      "ms": 1.2,
+      "value": 36
+    },
+    {
+      "label": "engine-depth-1-readonly",
+      "ms": 63,
+      "value": {
+        "callers": 36
+      }
+    },
+    {
+      "label": "engine-depth-5-readonly",
+      "ms": 39.6,
+      "value": {
+        "callers": 36
+      }
+    },
+    {
+      "label": "control-count-symbols",
+      "ms": 1590.5,
+      "value": {
+        "n": 310423
+      }
+    }
+  ]
+}

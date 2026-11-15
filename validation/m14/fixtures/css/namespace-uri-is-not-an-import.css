@@ -1,0 +1,25 @@
+/* A namespace URI is an IDENTIFIER, not a resource. CSS never dereferences it:
+   `@namespace url(...)` exists so that a prefixed type selector (`svg|a`) can be
+   compared against a namespace name. Nothing is fetched, so nothing is imported. */
+@namespace url(http://www.w3.org/1999/xhtml);
+@namespace svg url(http://www.w3.org/2000/svg);
+
+/* The one line in this file that DOES pull in an external resource. It is here so
+   the `imports` negative below is a statement about namespace URIs specifically,
+   and not about an `imports` branch that never fires at all. */
+@import url("theme.css");
+
+a {
+	color: blue;
+}
+
+/* Binds to the `svg` prefix, so it depends on the declaration that defines it. */
+svg|a {
+	color: green;
+}
+
+/* `*|a` matches an element in ANY namespace. There is no single declared
+   namespace to bind to, so it correctly publishes no dependency. */
+*|a {
+	color: red;
+}

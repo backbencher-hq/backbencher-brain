@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/dispatch-er3.erl",
+  "authoredFrom": "Erlang call semantics + the pinned grammar's remote/internal_fun/external_fun shapes, before this fixture's F3 run. `?MODULE:m()` is the idiomatic self-dispatch and the module IS known, so it resolves exactly like a module-qualified call while the `?MODULE` use itself still emits its macro reference. A fun value keeps its module qualification and is a REFERENCE, never a call. A dynamic remote (`M:dyn(1)`, `erlang:F(2)`) has no statically nameable callee: naming the bare leaf would conflate every module's `dyn`/`F`, so nothing is emitted (ER-D23).",
+  "expectSymbols": [
+    { "name": "dispatch_er3", "kind": "module" },
+    { "name": "run", "kind": "function", "ownerName": "dispatch_er3", "meta.arity": 1 },
+    { "name": "m", "kind": "function", "ownerName": "dispatch_er3", "meta.arity": 0 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "run", "target": "lists:map", "meta.callArity": 2, "line_number": 12, "note": "the remote callee LEAF's line, module-qualified per ER-D1" },
+    { "type": "references", "from": "run", "target": "erlang:is_integer", "meta.context": "fun value reference", "line_number": 12 },
+    { "type": "calls", "from": "run", "target": "dispatch_er3:m", "meta.callArity": 0, "meta.macroModule": true, "line_number": 13, "note": "the ?MODULE expansion: the module is this file's, so the call resolves exactly like a qualified one" },
+    { "type": "references", "from": "run", "target": "MODULE", "meta.context": "macro use", "line_number": 13, "note": "the ?MODULE use itself is still a macro reference" },
+    { "type": "references", "from": "run", "target": "dispatch_er3:m", "meta.context": "fun value reference", "line_number": 14 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "run", "target": "dyn", "note": "ER-D23: a dynamic remote names no callee; the bare leaf would conflate every module's dyn/1" },
+    { "type": "calls", "from": "run", "target": "F" },
+    { "type": "references", "from": "run", "target": "erlang:F" },
+    { "type": "calls", "from": "run", "target": "m", "note": "?MODULE:m() keeps the module - a bare m would conflate every module's m/0" }
+  ],
+  "forbidSymbols": [{ "name": "A" }, { "name": "B" }, { "name": "C" }, { "name": "D" }, { "name": "E" }, { "name": "M" }]
+}

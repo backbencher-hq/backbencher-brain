@@ -1,0 +1,36 @@
+{
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Lines.run/0",
+      "target": "helper",
+      "line_number": 3
+    },
+    {
+      "type": "calls",
+      "from": "Lines.run/0",
+      "target": "helper",
+      "line_number": 4
+    },
+    {
+      "type": "calls",
+      "from": "Lines.run/0",
+      "target": "pick",
+      "line_number": 5,
+      "meta.callArity": 1
+    },
+    {
+      "type": "calls",
+      "from": "Lines.run/0",
+      "target": "pick",
+      "line_number": 6,
+      "meta.callArity": 2
+    },
+    {
+      "type": "contains",
+      "from": "Lines",
+      "target": "run",
+      "line_number": 2
+    }
+  ]
+}

@@ -303,8 +303,8 @@
       "reason": "docs/data/public-tools.json and website/src/data/tools.generated.ts are a full-generator output owned by the Lead; `--only bb_doc` does not write them. verify-tool-docs / m35 / m48 / m31 tool-docs-deep fail ONLY on those two stale artifacts after this lane's descriptor changes; `npm run docs:generate` at integration clears them."
     },
     {
-      "leg": "fixtures corpus companion",
-      "reason": "fixtures/ is absent from this checkout; $HOME/fixtures/repositories holds rake, rebar3, clojure, zig but not lua, go_tools, typescript, perl5, openssl, cpython. The 500-check ten-repository companion is recorded blocked, not green."
+      "leg": "bb_tests corpus companion",
+      "reason": "bb_tests/ is absent from this checkout; /home/ishaq2321/bb_tests/repositories holds rake, rebar3, clojure, zig but not lua, go_tools, typescript, perl5, openssl, cpython. The 500-check ten-repository companion is recorded blocked, not green."
     },
     {
       "leg": "T2 inline auto-refresh",

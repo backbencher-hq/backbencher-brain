@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/dynamic-import",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS dynamic import() edges (gap T7). ECMAScript module semantics: import('./lazy') is a module dependency identical in kind to a static import. Pre-fix: the module landed in the imports array but no imports relationship edge was emitted — instead a spurious calls edge to 'import' appeared.",
+  "expectSymbols": [
+    { "name": "load", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "dynamic-import", "target": "dynamic-import\u0000./lazy:*", "meta.localBinding": true, "meta.evidenceClass": "import_based" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "load", "target": "import" }
+  ]
+}

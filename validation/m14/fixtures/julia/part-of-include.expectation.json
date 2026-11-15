@@ -1,0 +1,67 @@
+{
+  "fixtureId": "julia/part-of-include",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS `include(\"path\")` AS `part_of`, AND PINS THE THREE SHAPES THAT ARE NOT. The contract (`src/ast/types.ts`, PartOf) is a file that shares the including unit's single scope and has no module identity — Julia's `include` is exactly that: it evaluates the file INSIDE the including module. The target is the BASENAME with its extension (`part.jl`), the spelling a file's own module symbol can carry, and the written path is kept in `meta.partPath`. THREE NEGATIVES, because a rule that fires on every call is not a measurement: (1) `include(dynamic)` names a VARIABLE, so no file is named — it stays a `calls` edge to `include` with `meta.isDynamicInclude`; (2) `include(joinpath(\"src\", \"joined.jl\"))` is an EXPRESSION, not a string literal, so it also stays a call (and the inner `joinpath` call remains its own edge); (3) a module that DECLARES `include` shadows the builtin, and the planted `include = x -> x` turns the row back into a `calls` edge to the local binding with `meta.isShadowedInclude` — the conservative whole-file guard is shown firing rather than assumed unreachable. The forbid rows are the load-bearing half: no `part_of` may name `dynamic.jl`, `joined.jl` or `not-a-file.jl`, because no source text names those files as parts.",
+  "expectSymbols": [
+    { "name": "IncludeParts", "kind": "module", "comment": "the including library unit for the two top-level includes" },
+    { "name": "wraps", "kind": "function", "ownerName": "IncludeParts", "comment": "an include inside a callable: the part is still on the module's include path, and the edge's source is the callable" },
+    { "name": "Shadowed", "kind": "module", "ownerName": "IncludeParts", "comment": "the planted shadow: this module declares its own `include`" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "source": "IncludeParts",
+      "target": "part.jl",
+      "line_number": 3,
+      "meta.partRole": "library",
+      "meta.partPath": "part.jl",
+      "comment": "FIRE (1) — the plain literal path. `partRole` is mandatory on every row: this file carries the directive and names the part."
+    },
+    {
+      "type": "part_of",
+      "source": "IncludeParts",
+      "target": "nested.jl",
+      "line_number": 4,
+      "meta.partRole": "library",
+      "meta.partPath": "src/nested.jl",
+      "comment": "FIRE (2) — a path with a directory: the TARGET is the basename (a name a file symbol can carry), the written path is the evidence in `partPath`."
+    },
+    {
+      "type": "part_of",
+      "source": "wraps",
+      "target": "inner.jl",
+      "line_number": 11,
+      "meta.partRole": "library",
+      "comment": "FIRE (3) — inside a callable. The include still belongs to the enclosing module's file set; the source is the callable that executes it."
+    },
+    {
+      "type": "calls",
+      "source": "IncludeParts",
+      "target": "include",
+      "line_number": 7,
+      "meta.isDynamicInclude": true,
+      "comment": "NEGATIVE (1) read the right way — a variable path is a call to `include`, not a part edge."
+    },
+    {
+      "type": "calls",
+      "source": "IncludeParts",
+      "target": "joinpath",
+      "line_number": 8,
+      "comment": "NEGATIVE (2) — `joinpath(...)` is an expression, so the file is named by the program, not by the source. The OUTER `include` call on this line is the same (source, target) edge as line 7 and the lane's dedupe law keeps one row; the absence of a `part_of` is what the forbid row below pins."
+    },
+    {
+      "type": "calls",
+      "source": "Shadowed",
+      "target": "include",
+      "line_number": 18,
+      "meta.isShadowedInclude": true,
+      "comment": "NEGATIVE (3) — the module declares `include`, so the builtin is shadowed and the row is a call to the local binding."
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "part_of", "target": "dynamic.jl", "comment": "a variable path names no part" },
+    { "type": "part_of", "target": "joined.jl", "comment": "an expression path names no part" },
+    { "type": "part_of", "target": "not-a-file.jl", "comment": "a shadowed include is a call, not a part" }
+  ]
+}

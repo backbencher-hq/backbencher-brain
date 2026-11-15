@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "perl_corpus_tracked_complexity",
+  "corpus": "mojo",
+  "revision": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+  "trackedPerlFiles": 164,
+  "measurement": {
+    "name": "perl-corpus-tracked",
+    "wallTimeMs": 22808.004933,
+    "userCpuMs": 11369.371,
+    "systemCpuMs": 1204.78,
+    "peakRssBytes": 402657280,
+    "rssDeltaBytes": 184741888,
+    "databaseBytes": null,
+    "files": 164,
+    "symbols": 1681,
+    "relationships": 5991,
+    "filesPerSecond": 7.1904579327197045,
+    "symbolsPerSecond": 73.70219381037697,
+    "relationshipsPerSecond": 262.6709358227058,
+    "parseErrors": 9
+  },
+  "note": "Tracked .pm/.pl files only; production pool-worker parseFile path; no generated or untracked files included.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.943Z",
+    "contentSha256": "e45ddf2efacc2abb153d94ca51c4b3c9d6b7df9a1e4c1520383a33602948820d"
+  }
+}

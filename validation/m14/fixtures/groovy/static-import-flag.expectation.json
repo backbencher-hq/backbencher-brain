@@ -1,0 +1,14 @@
+{
+  "fixtureId": "groovy/static-import-flag",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave G5 gap: `static` is an anonymous grammar child, so the old named-children scan recorded every static import as non-static. Static, wildcard, and plain imports must each carry honest flags (isNamespace and isWildcard now derive from the same token scan).",
+  "expectSymbols": [
+    { "name": "Importer", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "java.util.Collections.sort", "meta.isStatic": true },
+    { "module": "java.util.Map", "meta.isWildcard": true, "meta.isStatic": false },
+    { "module": "java.util.List", "meta.isWildcard": false, "meta.isStatic": false }
+  ]
+}

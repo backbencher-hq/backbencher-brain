@@ -1,0 +1,7 @@
+{
+  "first": 1,
+  "repeated": "the earlier declaration",
+  "middle": true,
+  "repeated": "the later declaration replaces this one",
+  "last": null
+}

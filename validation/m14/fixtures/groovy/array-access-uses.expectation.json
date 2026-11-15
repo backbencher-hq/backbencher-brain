@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/array-access-uses",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37 #597 KAD1 sweep: re-authored from the pre-fix contract. Array READS (int v = xs[i]) are uses of the array expression (G1); the assignment-LHS span (xs[i] = 5, xs[i] += 2) is a WRITE and must never emit (java JAD1 / kotlin KAD1 family contract — the old rationale 'reads/writes are uses' pinned the defect). Both = and op= parse as assignment_expression with the LHS as first named child (probe-verified); gate is span-based.",
+  "expectSymbols": [
+    { "name": "ArrSvc", "kind": "class" },
+    { "name": "xs", "kind": "property" },
+    { "name": "f", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "target": "xs", "meta.isArrayAccess": true, "comment": "KAD1: the READ (int v = xs[i]) still emits" },
+    { "type": "contains", "from": "ArrSvc", "target": "xs" },
+    { "type": "contains", "from": "ArrSvc", "target": "f" }
+  ],
+  "forbidRelationships": [], "comment": "KAD1: the write `xs[i] = 5` is gated — the dedicated indexing-write-gate fixture guards the write shapes with a from:store forbid"
+}

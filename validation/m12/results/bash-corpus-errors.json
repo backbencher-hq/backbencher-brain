@@ -1,6 +1,6 @@
 {
   "analyzer": "bash",
-  "corpus": "$HOME/fixtures/repositories/fsharp",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/fsharp",
   "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
   "extensions": [
     "*.sh",

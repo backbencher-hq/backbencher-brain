@@ -1,0 +1,15 @@
+{
+  "fixtureId": "kotlin/generic-parameters",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.1 fieldless-wasm fix: class-level <T> and function-level <U> type parameters were silently lost when childForFieldName('name') returned undefined on the fieldless kotlin wasm.",
+  "expectSymbols": [
+    { "name": "Box", "kind": "class" },
+    { "name": "item" },
+    { "name": "identity" }
+  ],
+  "expectTypeParameters": [
+    { "symbol": "Box", "includes": ["T"] },
+    { "symbol": "identity", "includes": ["U"] }
+  ]
+}

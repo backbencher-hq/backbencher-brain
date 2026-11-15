@@ -1,0 +1,87 @@
+{
+  "comment": "TOML-CLAIM-SHAPES. A `path` dependency names a unit this manifest cannot be built without, and what the graph can SAY about it depends on its SHAPE. A PATH-SHAPED target ('../core', or anything with a scheme) can be checked against the project's admitted file list, so it carries a CLAIM: `importProjectFile` when an admitted file answers it, `sourcePathClaim` when none does — and the source-path claim is the INVERSE of a file claim, REFUTED the moment the project ships the file. A BARE NAME ('SubProjectB', 'dependency') has no shape to check, so the analyzer emits the edge and carries NO CLAIM AT ALL, and the edge stays `unresolved` — the honest outcome for a target nothing can check. WHY THIS FIXTURE EXISTS: the lane's five remaining unresolved `imports` edges are all bare names, and the reason they are not 'fixed' is THIS RULE. The refusal — the thing that stops a bare fixture name being promoted to a verified external, which is the fleet's laundering vector — was pinned by NO fixture, and a guard that no fixture pins is a guard a future change can remove without a red test. Both directions are pinned here: the REFUSAL (a bare name carries neither claim key) and the CLAIM (a path-shaped target carries `sourcePathClaim` and NOT `importProjectFile`). The ABSENCE is stated with the `meta.x: null` convention (M59) — 'this edge must NOT carry x' — which is the case a consumer actually hits most and which a strict `!==` could never state. The expectations are a MEASUREMENT, not a prediction: they were written from the output of `validation/m14/fixtures/toml/tools/claim-shapes-probe.mts`, which calls `analyzer.analyze(tree.rootNode, content, 'fixtures/toml/bare-name-and-claim-shapes.toml', undefined)` — the harness's OWN call for a plain toml fixture (run-fixtures.ts:1023), with no analyzeContext, so no project root and therefore no document scope: the module name is the bare stem. A probe that passed a project root would have measured a DIFFERENT key space and written an expectation the harness could never match.",
+  "expectSymbols": [
+    {
+      "name": "bare-name-and-claim-shapes",
+      "kind": "module"
+    },
+    {
+      "name": "package",
+      "kind": "namespace"
+    },
+    {
+      "name": "package.name",
+      "kind": "property"
+    },
+    {
+      "name": "package.version",
+      "kind": "property"
+    },
+    {
+      "name": "package.edition",
+      "kind": "property"
+    },
+    {
+      "name": "dependencies",
+      "kind": "namespace"
+    },
+    {
+      "name": "dependencies.SubProjectB",
+      "kind": "property",
+      "comment": "a BARE-NAME path dependency — the edge's SOURCE is this key, which is a published symbol"
+    },
+    {
+      "name": "dev-dependencies",
+      "kind": "namespace"
+    },
+    {
+      "name": "dev-dependencies.core",
+      "kind": "property"
+    },
+    {
+      "name": "lints.clippy",
+      "kind": "namespace"
+    },
+    {
+      "name": "lints.clippy.path",
+      "kind": "property",
+      "comment": "a `path` key outside any dependency section is ordinary data"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "bare-name-and-claim-shapes.dependencies.SubProjectB",
+      "target": "SubProjectB",
+      "line_number": 44,
+      "meta.isPathDependency": true,
+      "meta.dependencySection": "dependencies",
+      "meta.evidenceClass": "import_based",
+      "meta.resolvedBy": null,
+      "meta.importProjectFile": null,
+      "meta.sourcePathClaim": null,
+      "comment": "THE REFUSAL, AND THE MOST IMPORTANT ROW IN THIS FIXTURE. The target is a BARE NAME — no '/' and no scheme — so the shape rule refuses every claim and the edge carries NEITHER `importProjectFile` NOR `sourcePathClaim`. A claim that cannot be refuted is a claim that can certify anything, and the fleet's laundering vector is exactly a bare fixture name promoted to a verified external. `meta.resolvedBy: null` says the same thing about resolution: nothing resolved it, and the edge stays `unresolved` — the honest outcome for a target nothing can check. THIS IS THE CLASS OF THE LANE'S FIVE REMAINING UNRESOLVED EDGES, and the reason they are not 'fixed' is this rule rather than a missing implementation."
+    },
+    {
+      "type": "imports",
+      "from": "bare-name-and-claim-shapes.dev-dependencies.core",
+      "target": "../core",
+      "line_number": 49,
+      "meta.isPathDependency": true,
+      "meta.dependencySection": "dev-dependencies",
+      "meta.evidenceClass": "import_based",
+      "meta.resolvedBy": null,
+      "meta.sourcePathClaim": ["../core"],
+      "meta.importProjectFile": null,
+      "comment": "THE OTHER DIRECTION OF THE SAME RULE. The target IS path-shaped, so the source-path claim fires — and it is the REFUTABLE kind: a candidate in the admitted list REFUTES it and none verifies it, so shipping the file flips the claim to refuted. `meta.importProjectFile: null` says no admitted file answered this path, which is why the source-path claim is the one that carries. The pair of rows is the whole shape rule, stated in both directions."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "bare-name-and-claim-shapes.lints.clippy.path",
+      "target": "not/a/dependency",
+      "comment": "a `path` key outside any dependency section is ordinary data. The exclusion is by SECTION, not by the key's name — keying on the name is what made clippy.toml report `path×15` redefinitions. Pinned here as well as in `path-dependencies`, because the two fixtures are the two ends of the same rule: which keys ARE dependencies, and what may be CLAIMED about the ones that are."
+    }
+  ]
+}

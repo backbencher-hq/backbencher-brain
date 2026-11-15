@@ -1,0 +1,47 @@
+{
+  "issue": "EX-EX11",
+  "note": "A member's edge target must be a NAME. Two rules, both found by the lane's own second reader rather than by the shared differential (which does not audit `exports` at all for elixir): EX-EX11 routes `def unquote(x)` \u2014 a macro-GENERATED definition whose real name is computed at expansion time, and whose identifier `unquote` is reserved and can never be a member's name \u2014 to the documented EX-D9 placeholder, which the R7 guard keeps off every edge endpoint; the corpus case published `exports Date.Range -> unquote` for a callback that is really `member?/2`. EX-EX11b makes the placeholder guard case-SENSITIVE: the analyzer never writes a lowercase placeholder, and accepting one silently dropped the real public function `EExTest.Compiled.unknown/0` (eex_test.exs:29) from `contains` and `exports`. Both directions are pinned \u2014 `unquote` must not appear as an endpoint and `unknown` must \u2014 because a guard that rejected both would satisfy either assertion alone.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "OntoPlaceholder",
+      "target": "unknown",
+      "meta.evidenceClass": "structural",
+      "note": "EX-EX11b: a function genuinely named `unknown` is a public member; the lowercase spelling is not this analyzer's placeholder"
+    },
+    {
+      "type": "contains",
+      "from": "OntoPlaceholder",
+      "target": "unknown"
+    },
+    {
+      "type": "exports",
+      "from": "OntoPlaceholder",
+      "target": "named"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "OntoGenerated",
+      "target": "unquote",
+      "note": "EX-EX11: `unquote` is macro syntax, not a member name \u2014 the definition takes the EX-D9 placeholder and R7 keeps it off every edge endpoint"
+    },
+    {
+      "type": "contains",
+      "from": "OntoGenerated",
+      "target": "unquote"
+    },
+    {
+      "type": "exports",
+      "from": "OntoGenerated",
+      "target": "unquote_splicing"
+    },
+    {
+      "type": "contains",
+      "from": "OntoGenerated",
+      "target": "unquote_splicing"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

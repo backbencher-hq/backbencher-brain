@@ -1,0 +1,42 @@
+{
+  "fixtureId": "svelte/template-condition-uses",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Sv2 #736-D5: {#if cond}, {:else if cond} and {#key exp} heads carry opaque svelte_raw_text under if_start/else_if_start/key_start — no `expression` node ever visits them. Every earlier fixture masked the hole because each condition member was ALSO read elsewhere; here shown/fallback/k appear ONLY in their heads. Pure reads, no bindings (unlike each/await).",
+  "expectSymbols": [
+    {
+      "name": "shown",
+      "kind": "variable"
+    },
+    {
+      "name": "k",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "template-condition-uses",
+      "target": "shown",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-condition-uses",
+      "target": "fallback",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-condition-uses",
+      "target": "k",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-condition-uses",
+      "target": "label",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "fixtureId": "cpp/class-self-call-925",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D25, a class calling itself. `calls C -> C` sourced at a CLASS violates two rules of the language at once: [class.mem] a class body DECLARES and does not execute, so a `call_expression` at class scope is not a call; and [class.ctor] no member of a class may have the class's own name, the only such member being the constructor, which is not callable and has no body to call from. The shape arrives through the D15/D8 recovery - a macro-decorated head (`struct BENCHMARK_EXPORT CPUInfo { ... }`) hands its body over as an ERROR'd compound_statement and the constructor declaration inside it is recovered as an expression statement.\n\n  MEASURED over the 912 cpp corpus files (cpp-example, cpp-sample, fmt, googletest, nlohmann-json), by counting `calls` rows where source === target and classifying the source symbol's kind:\n\n      1,455  calls rows with source === target, before the rule\n          923  sourced at a METHOD   - real recursion, all survive\n          450  sourced at a FUNCTION - real recursion, all survive\n           80  sourced at a CLASS    - fabrications, removed\n            2  sourced at a VARIABLE - `BenchmarkReporter` at reporter.h:131, a macro-decorated head published as a variable; removed\n\n      1,373  after the rule: 82 fabrications gone, 0 real rows lost.\n\n  The control that gives the rule meaning is the METHOD recursion on line 50 and the FUNCTION recursion on line 58 of this fixture - both spell their own name as the callee, so a rule written on the callee TEXT rather than the enclosing scope's KIND would refuse them and lose 1,373 real rows. That is why the rule is stated over `parentContext.kind`.\n\n  The third control is the row a text-based rule would get wrong in the other direction: `Widget fresh;` inside `Widget::make` involves the class name as an object, not a callee. A rule that refused any mention of the class name at class scope would have nothing to refuse here at all, which is the point - the enclosing scope of a legal default-construction is the METHOD, not the class.\n\n  One row in this fixture is NOT asserted either way and is named here so nobody reads the fixture as claiming otherwise: `calls global -> DECORATE` line 41 is a MACRO INVOCATION published as a call. The corpus population is 19,212 `calls` rows with an all-caps-macro TARGET (census probe `macroSpelledTarget`) and the lane has no rule for it, because a discriminator that separates a macro invocation from a real call at six corpus sites could not be stated honestly. It is recorded, not shipped.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "run",
+      "line_number": 68,
+      "confidence": 1,
+      "note": "THE CONTROL. Real recursion from a METHOD, and the row a callee-text rule would refuse. Its presence is asserted so the rule cannot be widened to the text."
+    },
+    {
+      "type": "calls",
+      "from": "descend",
+      "target": "descend",
+      "line_number": 76,
+      "confidence": 1,
+      "note": "THE CONTROL, free-function form: 450 corpus rows are this shape."
+    },
+    {
+      "type": "contains",
+      "from": "CPUInfoAlpha",
+      "target": "constructor",
+      "line_number": 52,
+      "confidence": 1,
+      "meta.evidenceClass": "structural",
+      "note": "The constructor IS a member and IS published as one - the D5/D17 family contract normalizes the constructor to the single name `constructor`, which is also why the one-edge-per-pair rule exists for `contains` at all. Asserted so D25 cannot be 'fixed' by dropping the member instead of the call."
+    },
+    {
+      "type": "contains",
+      "from": "Runner",
+      "target": "run",
+      "line_number": 67,
+      "confidence": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "CPUInfoAlpha",
+      "target": "CPUInfoAlpha",
+      "note": "THE DEFECT, plain spelling: a constructor DECLARATION at class scope, published as a self-call."
+    },
+    {
+      "type": "calls",
+      "from": "CPUInfoBeta",
+      "target": "CPUInfoBeta",
+      "note": "the measured shape: a bare token between `struct` and the name, one line, which is what engine.ts's blanking leaves behind for every macro-decorated class in this corpus."
+    },
+    {
+      "type": "calls",
+      "from": "CPUInfoGamma",
+      "target": "CPUInfoGamma",
+      "note": "the same on `class` rather than `struct` - the rule reads the specifier kind, so both must be refused."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "CPUInfoAlpha",
+      "note": "and a class name must not become a call target from anywhere else either: a class is not callable at all."
+    }
+  ]
+}

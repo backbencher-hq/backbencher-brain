@@ -1,0 +1,48 @@
+{
+  "fixtureId": "swift/write-gate",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "SCD1 swift twin (M37 #599 pre-wave): assignment-LHS writes must never emit uses. RE-PINNED by the M49 W15 #814 ruling (owner: converge on METHOD source): every uses source below moved from the enclosing TYPE to the enclosing METHOD, and the type-level dedup key had been collapsing three genuine reads (read/mix/gluedAdditive) into one edge. The write gates are unchanged in intent and now also forbid the METHOD-sourced spellings of the nested-write leak. `self.count = 0` and `self.label = \"z\"` are pure writes (the pinned grammar parses = and += alike as `assignment`, LHS wrapped in directly_assignable_expression). The gates: pure-write forbids on BOTH (uses-anything), plus the reads in `read()`/`mix()` stay expected — proving the gate is LHS-span-scoped, not a blanket navigation suppression. Forbidden calls targets cover the family convention that write LHS also never fabricates calls. SWD1 (groovy-wave addendum): glued-receiver reads — additive (`base + self.count`) and inout (`&self.ctx`) — MUST emit uses; both were silent before the hasSelfReceiver spine fix. NESTED-CHAIN addendum (W11, F5 2026-09-12): the SCD1 gate climbed only `directly_assignable_expression`, so the middle segment of a nested LHS (`self.settings.pointee.on_body = 1`, swift-nio HTTPDecoder.swift) leaked a bogus `uses pointee` — the gate must climb the whole assignable path (navigation_expression/navigation_suffix) and still let the RHS/read path through, which `nestedRead` (`self.settings.data`) proves.",
+  "expectSymbols": [
+    { "name": "Counter", "kind": "class" },
+    { "name": "count", "kind": "property", "ownerName": "Counter" },
+    { "name": "label", "kind": "property", "ownerName": "Counter" },
+    { "name": "bump", "kind": "method", "ownerName": "Counter" },
+    { "name": "read", "kind": "method", "ownerName": "Counter" },
+    { "name": "mix", "kind": "method", "ownerName": "Counter" },
+    { "name": "Settings", "kind": "class" },
+    { "name": "Pointer", "kind": "class" },
+    { "name": "Registry", "kind": "class" },
+    { "name": "pointee", "kind": "property", "ownerName": "Settings" },
+    { "name": "on_body", "kind": "property", "ownerName": "Pointer" },
+    { "name": "data", "kind": "property", "ownerName": "Settings" },
+    { "name": "nestedWrite", "kind": "method", "ownerName": "Registry" },
+    { "name": "nestedRead", "kind": "method", "ownerName": "Registry" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "Counter", "target": "count" },
+    { "type": "contains", "source": "Counter", "target": "bump" },
+    { "type": "uses", "source": "read", "target": "count", "meta.evidenceClass": "usage_contextual", "line_number": 19, "note": "#814: source is the enclosing METHOD. Pre-ruling this was `Counter -> count`, and the type-level dedup key collapsed read/mix/gluedAdditive into ONE edge. M59.A7: line 19 is `return self.count` — the read's own site, not `func read()`'s line (18)" },
+    { "type": "uses", "source": "mix", "target": "count", "meta.evidenceClass": "usage_contextual", "line_number": 23, "note": "the RHS read in mix() — a distinct edge from read()'s now that the source is the method; line 23 is `self.count = self.count + step`, and the read is the RHS site inside it (the LHS is gated)" },
+    { "type": "uses", "source": "gluedAdditive", "target": "count", "meta.evidenceClass": "usage_contextual", "line_number": 36, "note": "SWD1 additive glued-receiver read; line 36 is `let start = base + self.count`" },
+    { "type": "uses", "source": "inoutRead", "target": "ctx", "meta.evidenceClass": "usage_contextual", "line_number": 41, "note": "SWD1 inout glued-receiver read; line 41 is `cInteropWrite(&self.ctx)`" },
+    { "type": "calls", "source": "mix", "target": "stride", "line_number": 24, "note": "M59.A7: the callee's own line (`let start = base + self.count` is 36; this call sits on 24)" },
+    { "type": "contains", "source": "Registry", "target": "nestedWrite" },
+    { "type": "uses", "source": "nestedRead", "target": "settings", "line_number": 71 },
+    { "type": "uses", "source": "nestedRead", "target": "data", "line_number": 71 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "Counter", "target": "count", "note": "#814: the TYPE-sourced spelling is now the DEFECT spelling — a read this pair would mean the source rule reverted (mutant swift/type-source-revert injects exactly this)" },
+    { "type": "uses", "source": "Counter", "target": "label" },
+    { "type": "uses", "source": "bump", "target": "count" },
+    { "type": "uses", "source": "bump", "target": "label" },
+    { "type": "uses", "source": "mix", "target": "label" },
+    { "type": "calls", "source": "bump", "target": "count" },
+    { "type": "calls", "source": "bump", "target": "label" },
+    { "type": "uses", "source": "nestedWrite", "target": "settings" },
+    { "type": "uses", "source": "nestedWrite", "target": "pointee" },
+    { "type": "uses", "source": "nestedWrite", "target": "on_body" },
+    { "type": "uses", "source": "read", "target": "count", "line_number": 18, "comment": "M59.A7 line pin: 18 is `func read() -> Int {` — the enclosing DECLARATION, not the read site (19). An edge whose line is its declaration's is not checkable against the source" },
+    { "type": "uses", "source": "mix", "target": "count", "line_number": 22, "comment": "M59.A7 line pin: 22 is `func mix(step: Int) -> Int {` — same defect spelling for mix's read" }
+  ]
+}

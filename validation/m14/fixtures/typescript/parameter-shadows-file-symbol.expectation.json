@@ -1,0 +1,113 @@
+{
+  "fixtureId": "typescript/parameter-shadows-file-symbol",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a parameter shadows a same-named file-level symbol, and \u2014 just as importantly \u2014 that it does not silence a genuine reference. A PARAMETER is the most local binding a function has: it shadows every module- and class-level name for the whole body, so a read of that name resolves to the parameter and never to the file symbol that shares it. The reference pass resolves by NAME, and it already knew the principle \u2014 `locals` holds a function's destructuring patterns and its `const`/`let` declarators \u2014 but a parameter was missing from that set. The result was a false edge in the direction that hides rather than shouts: with `interface Deps { root: string }` in the file, `function f(root: string) { return root }` published `f->root`, so the graph recorded the function as referencing an interface property it never touches. Measured: 160 of 2,880 `references` over 700 tracked files (5.6%), led by the names most likely to collide (`n`, `root`, `name`, `src`, `node`, `source`); 229 removed across a 1500-file A/B, every one of them justified as a parameter of the referencing symbol, with 0 added. All four parameter forms are pinned: a bare identifier (the broken one), a destructured parameter and a rest parameter (both already handled, because the existing pattern branch sees them \u2014 pinned so that stays true), and a parameter shadowing a FUNCTION. The three genuine references are pinned with equal weight, because the opposite mistake \u2014 seeding `locals` too eagerly \u2014 would silence real edges, and a graph that under-claims is as wrong as one that over-claims.",
+  "expectSymbols": [
+    {
+      "name": "Deps",
+      "kind": "interface"
+    },
+    {
+      "name": "byParam",
+      "kind": "function"
+    },
+    {
+      "name": "byParamShadowingFn",
+      "kind": "function"
+    },
+    {
+      "name": "byDestructuredParam",
+      "kind": "function"
+    },
+    {
+      "name": "byRestParam",
+      "kind": "function"
+    },
+    {
+      "name": "usesConst",
+      "kind": "function"
+    },
+    {
+      "name": "callsHelper",
+      "kind": "function"
+    },
+    {
+      "name": "annotates",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "usesConst",
+      "target": "root",
+      "note": "GENUINE, and the pin that makes the negatives meaningful. The module const `root` really is referenced here \u2014 there is no parameter of that name in scope \u2014 so this edge must survive. A fix that seeded `locals` with every name mentioned anywhere would pass a negatives-only fixture and quietly gut the reference graph."
+    },
+    {
+      "type": "references",
+      "from": "callsHelper",
+      "target": "helper",
+      "note": "GENUINE: a real call to a declared function."
+    },
+    {
+      "type": "calls",
+      "from": "byParamShadowingFn",
+      "target": "helper",
+      "note": "The parameter shadows the function name, and the call is still a call \u2014 only the `references` edge was wrong, not this one."
+    },
+    {
+      "type": "calls",
+      "from": "callsHelper",
+      "target": "helper"
+    },
+    {
+      "type": "uses",
+      "from": "annotates",
+      "target": "Deps",
+      "note": "GENUINE: a type annotation, which is a reference whatever else is in scope. PIN CORRECTED 2026-10-17: expected as `uses`; the duplicate `references` row is forbidden."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "byParam",
+      "target": "root",
+      "note": "THE PIN. `root` here is the function's own parameter. Pre-fix this edge existed because an interface property of the same name is declared in the file, so name-based resolution published it. Same for `byParam->name` below."
+    },
+    {
+      "type": "references",
+      "from": "byParam",
+      "target": "name"
+    },
+    {
+      "type": "references",
+      "from": "byParamShadowingFn",
+      "target": "helper",
+      "note": "A parameter shadowing a FUNCTION name: the call is to the parameter, not to the declared helper."
+    },
+    {
+      "type": "references",
+      "from": "byDestructuredParam",
+      "target": "root",
+      "note": "A destructuring parameter binds the same name. This one was already correct \u2014 the existing pattern branch sees an object_pattern inside the function \u2014 and is pinned so that it stays so."
+    },
+    {
+      "type": "references",
+      "from": "byDestructuredParam",
+      "target": "name"
+    },
+    {
+      "type": "references",
+      "from": "byRestParam",
+      "target": "source",
+      "note": "A rest parameter, likewise already handled, likewise pinned."
+    },
+    {
+      "type": "references",
+      "from": "annotates",
+      "target": "Deps",
+      "note": "PIN CORRECTED 2026-10-17: the duplicate references row for the same mention must NOT exist."
+    }
+  ]
+}

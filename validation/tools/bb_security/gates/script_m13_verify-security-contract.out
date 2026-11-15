@@ -1,0 +1,29 @@
+  ok: sec: bb_security is in the tool registry missing from PUBLIC_TOOL_DESCRIPTORS
+  ok: sec: executable modes are exactly [findings] got ["findings"]
+  ok: sec: plannedModes includes flow plannedModes=["flow","summary","hotspots"]
+  ok: sec: plannedModes includes summary plannedModes=["flow","summary","hotspots"]
+  ok: sec: plannedModes includes hotspots plannedModes=["flow","summary","hotspots"]
+  ok: sec: flow is NOT in executable modes [negative] modes=["findings"]
+  ok: sec: summary is NOT in executable modes [negative] modes=["findings"]
+  ok: sec: hotspots is NOT in executable modes [negative] modes=["findings"]
+  ok: sec: description does not advertise a planned mode as executable desc=Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injectio
+  ok: sec: handler does not route a flow command [negative] flow routing found in handler.ts
+  ok: sec: handler does not route a summary command [negative] summary routing found in handler.ts
+  ok: sec: handler does not route a hotspots command [negative] hotspots routing found in handler.ts
+  ok: sec: handler routes findings (the only executable mode) missing engine call
+  ok: sec: the handler opens the index at all no getRawInstance call
+  ok: sec: every handler open is read-only [negative]
+  ok: sec: the taint engine opens the index at all no getRawInstance call in taint.ts
+  ok: sec: every engine open is read-only [negative]
+  ok: sec: docs/tools/bb_security.md exists missing
+  ok: sec: doc description matches registry "Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injectio"
+  ok: sec: doc modes = findings only mode line mismatch
+  ok: sec: doc planned modes labeled honestly planned modes mislabeled
+  ok: sec: doc does not mention a planned mode as executable aspirational mode mentioned as executable
+  ok: sec: doc category matches registry
+  ok: sec: doc mutability = read
+  ok: sec: generator verify mode passes (bb_security page byte-fresh) exit=0
+  ok: sec: contracts file documents the planned-mode split contract note missing
+  ok: sec: contracts file has NO hardcoded executable mode list for flow/summary/hotspots [negative] stale mode claim found
+  ok: sec: this contract gate is wired into the verify chain present
+Sec1: VERIFIED (28/28 passed, 9 negatives)

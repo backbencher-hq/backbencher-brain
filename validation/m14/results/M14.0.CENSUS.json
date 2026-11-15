@@ -50,7 +50,7 @@
       "description": "looksLikeReference is deliberately generous and errs toward asking, because a false candidate costs one line of ruling while a missed carrier is an absent dependency nobody reports. The 61 pairs include presentation, framework-binding and data-* attributes ruled as non-carriers"
     },
     {
-      "description": "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES"
+      "description": "the corpus is the pinned bb_tests repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES"
     }
   ],
   "regeneratedAt": "2026-11-05T11:51:20-05:00",

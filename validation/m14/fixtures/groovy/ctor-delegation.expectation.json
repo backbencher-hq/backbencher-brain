@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/ctor-delegation",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #419 G2 gap: explicit_constructor_invocation (super(...) / this(...)) emits a Calls edge with the honest literal target (super/this) — never resolved to a guessed parent type. Groovy constructor delegation semantics (same class as java G2).",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Sub", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "super", "meta.relationshipType": "constructor_invocation" },
+    { "type": "extends", "from": "Sub", "target": "Base" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "Base", "meta.relationshipType": "constructor_invocation" }
+  ]
+}

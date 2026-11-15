@@ -35,7 +35,7 @@ const REPO = argOf("--repo") ?? "element-plus"
 const LIMIT = Number(argOf("--limit") ?? "0")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(512 * 1024))
 const OUT = argOf("--out")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 const pop = admittedTypeScriptFiles(CR, REPO, MAX_BYTES, LIMIT)
 const files = pop.all

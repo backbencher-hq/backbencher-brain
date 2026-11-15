@@ -1,0 +1,51 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by building the derived calls oracle for the clojure corpus: the suppression gate asked 'is this bare head core or locally defined?' in the wrong ORDER, so the 'this is core' early return fired before the shadow check and every call BELOW a definition of a core-named function was dropped \u2014 401 edges in clojure/core.clj, a file made almost entirely of them. The other half is the shadow TABLE: a name in def-name position inside a quote or a `#_` discard binds nothing, and a pre-pass that descends into either mints a range running to end-of-file. Pins: the call at :29, below `(defn count \u2026)`, publishes as the file's own var; the otherwise-identical call at :24, ABOVE it, does not; the quoted `(defn last \u2026)` and the discarded `(defn first \u2026)` leave the core names unshadowed.",
+  "expectSymbols": [
+    {
+      "name": "core-last",
+      "kind": "function"
+    },
+    {
+      "name": "core-first",
+      "kind": "function"
+    },
+    {
+      "name": "earlier-count",
+      "kind": "function"
+    },
+    {
+      "name": "count",
+      "kind": "function"
+    },
+    {
+      "name": "local-count",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "local-count",
+      "target": "count",
+      "line_number": 29
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "core-last",
+      "target": "last"
+    },
+    {
+      "type": "calls",
+      "from": "core-first",
+      "target": "first"
+    },
+    {
+      "type": "calls",
+      "from": "earlier-count",
+      "target": "count"
+    }
+  ]
+}

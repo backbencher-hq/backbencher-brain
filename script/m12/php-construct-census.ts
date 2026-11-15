@@ -22,8 +22,8 @@ import * as path from "node:path"
 
 const ROOT = process.cwd()
 const CORPORA = [
-  { name: "phpunit", dir: "$HOME/fixtures/repositories/phpunit" },
-  { name: "phpmyadmin", dir: "$HOME/fixtures/repositories/phpmyadmin" },
+  { name: "phpunit", dir: "/home/ishaq2321/bb_tests/repositories/phpunit" },
+  { name: "phpmyadmin", dir: "/home/ishaq2321/bb_tests/repositories/phpmyadmin" },
 ].filter((c) => existsSync(c.dir))
 
 const wts: any = await import("web-tree-sitter")

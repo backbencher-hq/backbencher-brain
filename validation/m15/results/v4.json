@@ -1,0 +1,12 @@
+{
+  "issue": "M15.V4",
+  "code": "V4",
+  "tool": "bb_visualize",
+  "title": "evidence + gate + real-repo e2e",
+  "verified": true,
+  "checks": 5,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:27:19.532Z"
+}

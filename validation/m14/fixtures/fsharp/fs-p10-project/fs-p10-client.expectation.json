@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "fixture": "fsharp/fs-p10-project/fs-p10-client.fs",
+  "authoredFrom": "FS-P16 (fsharp lane, 2026-10-09) — the project-index refinement, the CONSUMER half. Every row was read off the analyzer's measured output WITH the index supplied (`.tmp-probe/fs-p16-fixture.mts` runs this pair in BOTH directions over the same tree), never off the contract text.",
+  "note": "Without an index this file's classes are the ones `override-target.fs` already pins for the SAME-FILE case, only with nothing to contrast against: `extends Dog -> Animal` is `external-type`, `overrides Dog.Speak -> Animal.Speak` is `base-member-external`, `overrides TagBox.Tag -> ITagged.Tag` is `interface-member-external`, and `calls Use.Go -> Kennel` is `bare-external`. With the index built from the sibling file they become `in-project-type`, `base-member-in-project`, `interface-member-in-project` and `in-project-name`. The runner supplies the index because a sub-directory fixture IS a multi-file project; the no-index direction is pinned by the mutant (`project-index-refinement-ignored`), which strips the index read and must make THIS FILE FAIL, so the claim 'the index changed these classes' is gated from both sides rather than asserted once.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "Fixture.Project.Client", "kind": "module" },
+    { "name": "Dog", "kind": "class", "ownerName": "Fixture.Project.Client" },
+    { "name": "Speak", "kind": "method", "ownerName": "Dog" },
+    { "name": "TagBox", "kind": "class", "ownerName": "Fixture.Project.Client" },
+    { "name": "Tag", "kind": "method", "ownerName": "TagBox" },
+    { "name": "Use", "kind": "class", "ownerName": "Fixture.Project.Client" },
+    { "name": "Go", "kind": "method", "ownerName": "Use" },
+    { "name": "Also", "kind": "method", "ownerName": "Use" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Fixture.Project.Client.Dog",
+      "target": "Animal",
+      "confidenceMin": 1,
+      "meta.targetResolution": "in-project-type",
+      "meta.projectIndexRefined": true,
+      "comment": "THE SENTENCE THE INDEX MAKES SAYABLE. A base declared in another file of the SAME project is not an external base, and this class is what separates the two. `external-type` was the class every cross-file base carried, and it asserted externality the analyzer could not support — the file cannot see the sibling, and the project's own declaration set can."
+    },
+    {
+      "type": "overrides",
+      "source": "Dog.Speak",
+      "target": "Animal.Speak",
+      "confidenceMin": 1,
+      "meta.targetResolution": "base-member-in-project",
+      "meta.baseInProjectLacksMember": null,
+      "comment": "A cross-file OVERRIDE, and the second assertion is the one that makes the tier worth having: `baseInProjectLacksMember` is ABSENT because the sibling's `Animal` really does declare `Speak` (the index's own `typeMembers` says so). An override asserted against a project base that does not declare the member is a fabricated edge, and this is the shape in which that defect must NOT be reported."
+    },
+    {
+      "type": "implements",
+      "source": "Fixture.Project.Client.TagBox",
+      "target": "ITagged",
+      "confidenceMin": 1,
+      "meta.targetResolution": "in-project-type",
+      "meta.projectIndexRefined": true
+    },
+    {
+      "type": "overrides",
+      "source": "TagBox.Tag",
+      "target": "ITagged.Tag",
+      "confidenceMin": 1,
+      "meta.targetResolution": "interface-member-in-project",
+      "comment": "The interface half. It carries its own class because the base is an INTERFACE — and the index can only say that because the F# spec resolves an abstract-member clause to `interface` (FS-P16's kindResolver). Before it, `type ITagged = abstract member …` indexed as `class`, which is a confident wrong answer to the one question the kind exists for."
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Kennel",
+      "meta.targetResolution": "in-project-name",
+      "comment": "A BARE target the project declares. The class name is deliberately not `in-project-declaration`: the index records that a declaration with this name EXISTS, not that this edge binds to it, and naming it for the binding would be the confident wrong answer this lane's standard forbids. The `local-binding` this row used to read was a real defect — `let k = Kennel()` registered the CALLEE as the local's name, so a project type's constructor was asserted to be a call to a local binding. Pinned in `forbidRelationships` so it cannot come back."
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Best",
+      "meta.targetResolution": "receiver-value",
+      "comment": "THE NEGATIVE THAT MAKES THE RULE A RULE. `Best` IS a name the project declares (a member of the sibling's `Kennel`), so a refinement keyed on the NAME would move it. It must not move: the class describes the SPELLING — `k.Best()` is a call on a value receiver, which no index can bind — so the refinement is keyed on the CLASS, one class at a time, and this row is where a 'names anywhere in the project' shortcut fails."
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Fixture.Project.Client.Dog",
+      "meta.targetResolution": "in-file-declaration",
+      "comment": "The other half of the local-binding fix: `let d = Dog()` now resolves to this file's own published identity instead of being called a local."
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Use.Also",
+      "meta.targetResolution": "self-member"
+    },
+    {
+      "type": "references",
+      "source": "Fixture.Project.Client",
+      "target": "Fixture.Project.Domain",
+      "meta.targetResolution": "in-project-namespace",
+      "comment": "FS-P17, the SCOPE channel. In FS-P16 this row read `external-namespace` and carried a comment calling the gap a limit; the limit was the index's WIDTH, not the rule's reach — the header of the sibling file is a `named_module` node, and recording its name closes 24,215 edges on the 3,000-file draw. The class claims EXISTENCE (the project declares a name spelled like this), not that the open bound it."
+    },
+    {
+      "type": "imports",
+      "source": "Fixture.Project.Client",
+      "target": "Fixture.Project.Domain",
+      "meta.targetResolution": "in-project-namespace"
+    },
+    {
+      "type": "references",
+      "source": "Fixture.Project.Client",
+      "target": "Fixture.Project.Domain.Helpers",
+      "meta.targetResolution": "in-project-namespace",
+      "comment": "THE QUALIFIED PATH OF A NESTED MODULE, which is the half of the scope channel the first cut of FS-P17 got wrong. The name reader returned the module's OWN name (`Helpers`), so every file outside the namespace — which is who writes this path — stayed external for no reason a reader could see. Measured in the store reading: `open` of a nested module is a real population, not a corner."
+    },
+    {
+      "type": "imports",
+      "source": "Fixture.Project.Client",
+      "target": "Fixture.Project.Domain.Helpers",
+      "meta.targetResolution": "in-project-namespace"
+    },
+    {
+      "type": "calls",
+      "source": "Fixture.Project.Client.qualifiedCall",
+      "target": "Helpers.render",
+      "meta.targetResolution": "in-project-type-or-module",
+      "meta.targetQualifier": "Helpers",
+      "comment": "THE MODULE-OWNER CHANNEL, and the largest single block of the FS-P17 price (23,995 edges). The owner is a project MODULE, which `knowsType` could never settle — the index records types and members, and a module is neither. The class name already said `type-or-module`; the WIDTH is what changed."
+    },
+    {
+      "type": "calls",
+      "source": "Fixture.Project.Client.bareCall",
+      "target": "render",
+      "meta.targetResolution": "in-project-name",
+      "comment": "THE BINDING CHANNEL (16,456 edges): `render` is a module-level `let`, which is F#'s most common declaration shape and was in no index channel at all."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "Fixture.Project.Client.Dog",
+      "target": "Animal",
+      "meta.targetResolution": "external-type",
+      "comment": "The pre-refinement class. A run that ignores the index — the exact defect the mutant introduces — satisfies every positive row above except this one, which is why the forbids are the load-bearing half."
+    },
+    {
+      "type": "overrides",
+      "source": "Dog.Speak",
+      "target": "Animal.Speak",
+      "meta.targetResolution": "base-member-external"
+    },
+    {
+      "type": "overrides",
+      "source": "TagBox.Tag",
+      "target": "ITagged.Tag",
+      "meta.targetResolution": "interface-member-external"
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Kennel",
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Kennel",
+      "meta.targetResolution": "local-binding",
+      "comment": "The false class the FS-P16 local fix removes. `Kennel` is a project TYPE whose constructor is called, so nothing about this edge is a local binding; the analyzer asserted it because the declaration-left reader fell through to the first identifier of the RHS."
+    },
+    {
+      "type": "calls",
+      "source": "Use.Go",
+      "target": "Kennel",
+      "meta.targetResolution": "in-project-type",
+      "comment": "The near miss: a BARE name is refined by the project's NAME set, not its TYPE set, and a rule that used one set for both would pass every positive row above and read this name as a type. The two classes are the same sentence with a different strength of claim."
+    },
+    {
+      "type": "overrides",
+      "source": "Dog.Speak",
+      "target": "Animal.Speak",
+      "meta.isExternalTarget": true,
+      "comment": "An edge the index settled must NOT carry the external claim. Claims are what the incoming gate REFUTES when the project declares the owner, so claiming the sibling's own base would manufacture a refutation: pass 8's 484 cross-file refutations are exactly this population, and this row is the fix in one assertion."
+    },
+    {
+      "type": "extends",
+      "source": "Fixture.Project.Client.Dog",
+      "target": "Animal",
+      "meta.isExternalTarget": true
+    },
+    {
+      "type": "references",
+      "source": "Fixture.Project.Client",
+      "target": "Fixture.Project.Domain",
+      "meta.targetResolution": "external-namespace",
+      "comment": "The pre-FS-P17 class for the scope channel. Pinned from both sides for the same reason as the other pairs: a run that ignores the index satisfies the positives' absence and this row's presence."
+    },
+    {
+      "type": "calls",
+      "source": "Fixture.Project.Client.qualifiedCall",
+      "target": "Helpers.render",
+      "meta.targetResolution": "external-type-or-module"
+    },
+    {
+      "type": "calls",
+      "source": "Fixture.Project.Client.bareCall",
+      "target": "render",
+      "meta.targetResolution": "bare-external"
+    },
+    {
+      "type": "calls",
+      "source": "Fixture.Project.Client.bareCall",
+      "target": "render",
+      "meta.isExternalTarget": true,
+      "comment": "A project binding must not carry the external claim: the incoming gate REFUTES a claim whose owner the project publishes, so claiming this edge manufactures a refutation. Measured population: pass 8's 484 cross-file refutations are exactly this shape."
+    }
+  ]
+}

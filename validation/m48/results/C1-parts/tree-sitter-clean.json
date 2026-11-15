@@ -1,0 +1,256 @@
+{
+  "repo": "tree-sitter-clean",
+  "indexSeconds": 10.152,
+  "fileCount": 33,
+  "negatives": 1,
+  "perTool": {
+    "bb_search": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"mode\":\"file\",\"filePath\":\"src/scanner.c\",\"query\":\"src/scanner.c\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"src/scanner.c\",\"fileId\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c\",\"language\":\"c\",\"content\":\"#include \\\"tree_sitter/p"
+    },
+    "bb_health": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 18,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/tree-sitter-clean\\nprojectId: 235ad9d82c3da4698f454f7ec2af4bc043b36694\\nfiles=33 symbols=10617 relationships=220"
+    },
+    "bb_ask": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 219,
+      "args": "{\"query\":\"what does is_newline do?\"}",
+      "outHead": "\"answer: Note: only 193 of 10,617 indexed symbols (2%) have embeddings in the space this query was compared in, so a symbol matching your question may be absent"
+    },
+    "bb_patterns": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 77,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (49 found):\\n  orphaned_function _array__splice — src/tree_sitter/array.h:220 (70%)\\n  orphaned_function tree_sitter_clean_external_scanner_deser"
+    },
+    "bb_security": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 6,
+      "args": "{}",
+      "outHead": "\"security: 0 critical / 0 high / 0 medium / 0 low / 7 unknown (0 resolved flows, 7 unvalidated sources, 0 mitigated)\\n  no findings with both endpoints resolved"
+    },
+    "bb_visualize": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 33,
+      "args": "{\"scope\":\"symbol\",\"target\":\"is_newline\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"is_newline\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c"
+    },
+    "bb_migrate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 36,
+      "args": "{\"symbolName\":\"is_newline\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"is_newline\",\"symbolId\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"sourceFile\":\"s"
+    },
+    "bb_analyze": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 25,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":33,\"linesOfCode\":17382,\"avgFileSize\":16960.030303030304,\"avgFileSizeUnit\":\"bytes\",\"symbols\":10617,\"symbolsWithComplexity\":10617,\"avgComplexity\":1.02288"
+    },
+    "bb_doc": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 30,
+      "args": "{\"mode\":\"symbol\",\"target\":\"is_newline\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: is_newline\\n\\n1 file(s) and 1 symbol(s) in scope, 14 cited claim(s) across 5 section(s) from 10 source(s). No indexed evidence was found for: Tests.\\"
+    },
+    "bb_edit": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 124,
+      "args": "{\"mode\":\"update\",\"filePath\":\"src/scanner.c\",\"symbolName\":\"is_newline\",\"newContent\":\"export function is_newline(): void { /* m48 c1 dry-run */ }\",\"dryRun\":true,\"format\":false}",
+      "outHead": "{\"mode\":\"update\",\"dryRun\":true,\"changes\":[{\"path\":\"/home/ishaq2321/bb_tests/repositories/tree-sitter-clean/src/scanner.c\",\"before\":\"#include \\\"tree_sitter/parse"
+    },
+    "bb_index": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 56,
+      "args": "{\"path\":\"src/scanner.c\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"src/scanner.c\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothing changed: 1 f"
+    },
+    "bb_graph": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 153,
+      "args": "{\"symbol\":\"is_newline\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"is_newline\",\"root\":{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"name\":\"is_newline\",\"symbolType\":\"function\",\"file\":\""
+    },
+    "bb_impact": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 8,
+      "args": "{\"symbol\":\"is_newline\"}",
+      "outHead": "{\"symbol\":\"is_newline\",\"root\":{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"name\":\"is_newline\",\"file\":\"src/scanner.c\",\"filePath"
+    },
+    "bb_cross_language": {
+      "ok": true,
+      "declaredAbsent": true,
+      "ms": 3,
+      "args": "{\"symbol\":\"is_newline\"}",
+      "outHead": "{\"symbol\":\"is_newline\",\"language\":\"c\",\"languages\":[\"c\"],\"copies\":[{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"symbol\":\"is_new"
+    },
+    "bb_annotate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"layoutBlockMembers\",\"body\":\"m48 c1 corpus note (tree-sitter-clean)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-f95c8b4506a72df6dbfe49cd41901fb215f7a49a09cbc260fc1975c6d6581dfe\",\"symbol_name\":\"layoutBlockMembers\",\"symbol_path\":null"
+    },
+    "bb_annotations": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 23,
+      "args": "{\"symbol\":\"layoutBlockMembers\"}",
+      "outHead": "{\"symbol\":\"layoutBlockMembers\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bban"
+    }
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_search",
+      "repo": "tree-sitter-clean",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "is_newline [function] src/scanner.c:171 (c)\n[match-set] searchMode=symbols totalMatches=1 returned=1 rows=0"
+    },
+    {
+      "tool": "bb_search",
+      "repo": "tree-sitter-clean",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/scanner.c\",\n  \"fileId\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c"
+    },
+    {
+      "tool": "bb_health",
+      "repo": "tree-sitter-clean",
+      "label": "health.files == SQL count (33)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/tree-sitter-clean\nprojectId: 235ad9d82c3da4698f454f7ec2af4bc043b36694\nfil"
+    },
+    {
+      "tool": "bb_ask",
+      "repo": "tree-sitter-clean",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: only 193 of 10,617 indexed symbols (2%) have embeddings in the space this query was co"
+    },
+    {
+      "tool": "bb_patterns",
+      "repo": "tree-sitter-clean",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (49 found):\n  orphaned_function _array__splice — src/tree_sitter/array.h:220 (70%)\n  o"
+    },
+    {
+      "tool": "bb_security",
+      "repo": "tree-sitter-clean",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 0 critical / 0 high / 0 medium / 0 low / 7 unknown (0 resolved flows, 7 unvalidated source"
+    },
+    {
+      "tool": "bb_visualize",
+      "repo": "tree-sitter-clean",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"is_newline\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\""
+    },
+    {
+      "tool": "bb_migrate",
+      "repo": "tree-sitter-clean",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"is_newline\",\n      \"symbolId\""
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "tree-sitter-clean",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\n   "
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "tree-sitter-clean",
+      "label": "analyze stats.files == SQL count (33)",
+      "pass": true,
+      "detail": "out files=33 sql=33"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "tree-sitter-clean",
+      "label": "analyze stats.symbols == SQL count (10617)",
+      "pass": true,
+      "detail": "out symbols=10617 sql=10617"
+    },
+    {
+      "tool": "bb_doc",
+      "repo": "tree-sitter-clean",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: is_newline\n\n1 file(s) and 1 symbol(s) in scope, 14 cited claim(s) across 5 section(s) from"
+    },
+    {
+      "tool": "bb_edit",
+      "repo": "tree-sitter-clean",
+      "label": "dry-run leaves file untouched",
+      "pass": true,
+      "detail": "before=505290dd after=505290dd"
+    },
+    {
+      "tool": "bb_index",
+      "repo": "tree-sitter-clean",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"src/scanner.c\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"decli"
+    },
+    {
+      "tool": "bb_graph",
+      "repo": "tree-sitter-clean",
+      "label": "graph root == is_newline",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"is_newline\",\n  \"root\": {\n    \"id\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171"
+    },
+    {
+      "tool": "bb_impact",
+      "repo": "tree-sitter-clean",
+      "label": "impact root == is_newline",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"is_newline\",\n  \"root\": {\n    \"id\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171"
+    },
+    {
+      "tool": "bb_cross_language",
+      "repo": "tree-sitter-clean",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"is_newline\",\n  \"language\": \"c\",\n  \"languages\": [\n    \"c\"\n  ],\n  \"copies\": [\n    {\n   "
+    },
+    {
+      "tool": "bb_annotate",
+      "repo": "tree-sitter-clean",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-2dcef94d025591e61da7f9e645f6898efeab5bcf8d93f"
+    },
+    {
+      "tool": "bb_annotations",
+      "repo": "tree-sitter-clean",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"layoutBlockMembers\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAb"
+    }
+  ],
+  "failures": []
+}

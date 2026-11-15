@@ -1,0 +1,44 @@
+{
+  "status": "blocked",
+  "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-governance.ts",
+  "generatedAt": "2026-11-04T22:59:45.382Z",
+  "passed": 84,
+  "failed": 22,
+  "negativeCases": 2,
+  "negatives": [
+    {
+      "name": "invariant-missing",
+      "note": "PLAN without the verbatim invariant fails check 1 (proven by mutation in gate-selftest)"
+    },
+    {
+      "name": "stamp-divergence",
+      "note": "evidence files stamped at different commits fail check 5 (proven by mutation in gate-selftest)"
+    }
+  ],
+  "failures": [
+    "ledger A1: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"de5789025f9bff3a453723a97707e96aac7a2b85\"",
+    "ledger A1: evidence.passed matches on-disk file — ledger=24 disk=28",
+    "ledger A1: evidence.negativeCases matches on-disk file — ledger=1 disk=3",
+    "ledger A2: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"3002d47088ff50c4fcc2983cea51ae5081344c72\"",
+    "ledger A2: evidence.passed matches on-disk file — ledger=25 disk=27",
+    "ledger A3: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"de5789025f9bff3a453723a97707e96aac7a2b85\"",
+    "ledger A3: evidence.passed matches on-disk file — ledger=21 disk=30",
+    "ledger A3: evidence.negativeCases matches on-disk file — ledger=3 disk=5",
+    "ledger A4: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7\"",
+    "ledger A5: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"de5789025f9bff3a453723a97707e96aac7a2b85\"",
+    "ledger A6: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"de5789025f9bff3a453723a97707e96aac7a2b85\"",
+    "ledger A7: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"de5789025f9bff3a453723a97707e96aac7a2b85\"",
+    "ledger A7: evidence.passed matches on-disk file — ledger=24 disk=25",
+    "ledger A7: evidence.negativeCases matches on-disk file — ledger=5 disk=6",
+    "ledger A8: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7\"",
+    "ledger A9: evidence.currentCommit matches on-disk file — ledger=\"905be9ab4665f6f44c8fe0e347120ad04f41d52b\" disk=\"48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7\"",
+    "ledger X1: evidence.currentCommit matches on-disk file — ledger=\"d40abdb6839eeb562d91eb7f15ef03de261dae74\" disk=\"d83a10c0f8899c358b909d807b148a0dc7883f86\"",
+    "ledger X1: evidence.passed matches on-disk file — ledger=101 disk=84",
+    "ledger X1: evidence.failed matches on-disk file — ledger=1 disk=18",
+    "every M40 verifier is registered in gates-registry.json — verify-import-resolution.ts",
+    "evidence stamp agreement (content evidence at one commit) — divergent stamps: 6562cbf,48f27f0,de57890,3002d47",
+    "infra evidence stamped at HEAD or ancestor — X1.json@d83a10c"
+  ]
+}

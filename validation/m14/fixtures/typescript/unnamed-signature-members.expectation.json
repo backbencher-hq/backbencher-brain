@@ -1,0 +1,78 @@
+{
+  "fixtureId": "typescript/unnamed-signature-members",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the placeholder-name removal for UNNAMED interface members. `interface Event<T> { (listener): Disposable }` is a CALL SIGNATURE and `interface Factory { new (seed): Disposable }` is a CONSTRUCT SIGNATURE; TypeScript writes no name for either. The analyzer used to publish a Method symbol named `(call)` and a Constructor named `(new)`, which put the string `(call)` into the symbol table and `contains Event -> (call)` into the graph - an endpoint no index can join, and one name shared by every callable interface in the codebase. The forbids below are the regression pins: neither the symbol nor the edge may come back, and the named member of the same interface must still be contained.",
+  "expectSymbols": [
+    {
+      "name": "Disposable",
+      "kind": "interface"
+    },
+    {
+      "name": "Event",
+      "kind": "interface"
+    },
+    {
+      "name": "Factory",
+      "kind": "interface"
+    },
+    {
+      "name": "subscribe"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Factory",
+      "target": "tag"
+    },
+    {
+      "type": "contains",
+      "from": "Disposable",
+      "target": "dispose"
+    },
+    {
+      "type": "references",
+      "target": "Disposable"
+    },
+    {
+      "type": "uses",
+      "target": "Event",
+      "note": "PIN CORRECTED 2026-10-17: expected as `uses`; the duplicate `references` row is forbidden."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "(call)"
+    },
+    {
+      "name": "(new)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "(call)"
+    },
+    {
+      "type": "contains",
+      "target": "(new)"
+    },
+    {
+      "type": "contains",
+      "from": "Event",
+      "target": "(call)"
+    },
+    {
+      "type": "contains",
+      "from": "Factory",
+      "target": "(new)"
+    },
+    {
+      "type": "references",
+      "from": null,
+      "target": "Event",
+      "note": "PIN CORRECTED 2026-10-17: the duplicate references row for the same mention must NOT exist."
+    }
+  ]
+}

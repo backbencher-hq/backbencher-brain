@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/controller-base",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T5 fix: class-level bases compose with method routes java-style (@Controller users + @Get list = /users/list), bare method mappings inherit the base alone, and composed paths are slash-normalized.",
+  "expectSymbols": [
+    { "name": "Users", "kind": "class" }
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "findAll", "equals": "/users/list" },
+    { "symbol": "solo", "equals": "/users/solo" },
+    { "symbol": "root", "equals": "/users" }
+  ]
+}

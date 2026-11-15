@@ -1,0 +1,323 @@
+{
+ "schemaVersion": 1,
+ "fixture": "powershell/variable-reads-psa4.ps1",
+ "authoredFrom": "PS-A4 (a VARIABLE REFERENCE, in every spelling PowerShell has). Authored 2026-09-27 from the F9 completeness audit.\n\nThe audit asked a question no gate was asking: of the grammar's 152 named node types, which ones does the analyzer never name? `braced_variable`, the four `*_increment_expression` / `*_decrement_expression` types, and `expandable_here_string_literal` were all in that set. Probing them found FIVE real defects, and they share one shape — a variable read correctly in one spelling and not in another, which is invisible to every existing gate because the spelling that works is the common one.\n\nThe instrument that found them is recorded here because it is the reusable part. A line-level check over ALL 25,023 variable-reference edges in the corpora, asking whether the declared line actually contains the variable it names. It read 96.75% on the first run; after these fixes it reads 100.00% with zero residue. Each defect below was one of the residue rows, adjudicated against the source.\n\nNote on the increment/decrement forms probed during the audit: `$n++` / `++$n` still emit nothing, and that is DELIBERATE rather than an oversight — an increment of an already-declared variable is a read and a write of the SAME symbol, and the analyzer's model has no edge for 'a symbol was read and written as one operation'. Recording it here as a known gap (PS-A5) rather than leaving it to be rediscovered.\n\nSections 6 and 7 were added in the same pass: the four `*_increment_expression` / `*_decrement_expression` types and a compound assignment were the last two places a variable was read and nothing was published, and both were found by the same F9 question rather than by a report.\n\nSection 8 is a RULING, not a defect: it reverses part of PS8's guard, so it is recorded as a decision needing owner confirmation rather than as a fix. PS8's text is about DECLARATIONS (\"a scope-qualified name is never a local declaration\") and stands unchanged; the read path had been reusing that declaration guard, which silently discarded real external dependencies.",
+ "expectSymbols": [
+  {
+   "name": "variable-reads-psa4.ps1",
+   "kind": "module"
+  },
+  {
+   "name": "plain",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "braced",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1",
+   "comment": "Declared by `${braced} = 2`. The BRACED spelling is the same variable as `$braced`, and the analyzer used to store the name as `{braced}` — so the declaration and the read named two different symbols and the read dangled."
+  },
+  {
+   "name": "splatArgs",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1",
+   "comment": "Declared `$splatArgs`, READ as `@splatArgs`. Splatting is the same variable with an `@`, and the grammar models the splat as a `variable` node whose text has no sigil, so `stripDollar` left it and the read dangled."
+  },
+  {
+   "name": "A",
+   "kind": "property",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "report",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "type",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "method",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "count",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "total",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1"
+  },
+  {
+   "name": "cfg",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1",
+   "comment": "PSD18: `$script:cfg = 1` DECLARES `cfg` at the file's scope; PS8's ban still holds for env:/variable:/using:."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "variable-reads-psa4.ps1",
+   "target": "plain",
+   "line_number": 14,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "variable-reads-psa4.ps1",
+   "target": "braced",
+   "line_number": 15,
+   "comment": "The declaration's own line. If the name were `{braced}` this row's target would not match the symbol above either, which is why both halves are pinned.",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "variable-reads-psa4.ps1",
+   "target": "splatArgs",
+   "line_number": 16,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.plain",
+   "line_number": 19,
+   "meta.isVariableReference": true,
+   "comment": "THE BIGGEST OF THE FIVE. `Write-Host $plain` published the call edge and NO read at all, so every variable handed to a cmdlet was invisible in the graph while the same variable interpolated in a string was read. Passing a variable to a cmdlet is one of the commonest things PowerShell does.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.braced",
+   "line_number": 20,
+   "meta.isVariableReference": true,
+   "comment": "`${braced}` read as `braced`. The braced spelling previously produced a target of `{braced}` — a name no symbol declares and nothing can own.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.plain",
+   "line_number": 21,
+   "meta.isVariableReference": true,
+   "comment": "The parenthesised spelling.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.splatArgs",
+   "line_number": 24,
+   "meta.isVariableReference": true,
+   "comment": "`New-Item @splatArgs` reads the variable, and the `@` is dropped. `@name` and `$name` are one variable in PowerShell.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.plain",
+   "line_number": 28,
+   "meta.isVariableReference": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.braced",
+   "line_number": 28,
+   "meta.isVariableReference": true,
+   "comment": "TWO reads on ONE line, which is why the per-set edge-identity defect is separately pinned in per-site-lines-psb2 and this row exists: a fixture pinning a single line_number would not notice a dedupe that collapsed them.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "contains",
+   "from": "variable-reads-psa4.ps1",
+   "target": "report",
+   "line_number": 34,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.plain",
+   "line_number": 35,
+   "meta.isVariableReference": true,
+   "meta.isHereStringInterpolation": true,
+   "comment": "A HERE-STRING interpolates exactly as a double-quoted string does, and the node type was not in the analyzer's switch, so this read was absent while the identical text in `\"… $name …\"` was present. TWO things were wrong with it: no read at all, and — once a read was forced — the grammar gives the interpolation a span starting at the END of the previous line (`variable [6,8]-[7,8]` for a `$message` on line 7), so the edge was published one line high with the line break and the sigil inside the target: `uses -> \"\\n$message\"`. This row's LINE is the assertion: 35 is where `$plain` is written. `isHereStringInterpolation` is asserted here because the marker is the half that makes this construct independently revertible: the assignment reader used to reach the here-string first and stamp `isAssignmentRead`, so the marker was measured absent from all 115 fixture `uses` edges and its mutant could not fail. This line sits on an assignment's right-hand side, which is exactly the overlap that made it dead.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.braced",
+   "line_number": 36,
+   "meta.isVariableReference": true,
+   "meta.isHereStringInterpolation": true,
+   "meta.isBracedVariable": true,
+   "comment": "The braced spelling inside a here-string, on its own line — the second half of the off-by-one check, since one correct line and one wrong line is a different signature from both being wrong. The marker is asserted here too, and on the BRACED spelling specifically, because the two normalizations (line break, braces) travel together and a revert of either has to fail on a row that names both.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.method",
+   "line_number": 42,
+   "meta.isDynamicMethodTarget": true,
+   "meta.isVariableReference": true,
+   "comment": "A DYNAMIC method target is a VARIABLE holding a method name. `$type::$method()` published `calls -> $method`, a name no symbol can have because a variable is stored stripped — and it published it as a CALL when the source says the method is chosen at runtime.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.count",
+   "line_number": 48,
+   "meta.isCounterUpdate": true,
+   "meta.isPostfix": true,
+   "comment": "`$count++` reads its operand. All four increment/decrement types were in the F9 audit's \"the analyzer never names it\" set and every one of them emitted nothing, so `$count++` left the graph with the declaration and no read. A `uses` is the right edge and not a weaker one: the WRITE half has no edge in this lane's model, because a write to a local is not a fact the graph can express (a member write can, which is what `isMemberWrite` is for).",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.count",
+   "line_number": 49,
+   "meta.isCounterUpdate": true,
+   "meta.isPostfix": true,
+   "comment": "`$count--`",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.count",
+   "line_number": 50,
+   "meta.isCounterUpdate": true,
+   "meta.isPostfix": false,
+   "comment": "`++$count` — the PREFIX form, and the reason the operand is found with `findDescendant` rather than a direct child: the grammar nests it as `pre_increment_expression > unary_expression > variable`, so the direct lookup that found both postfix forms silently missed both prefix ones. That is the same shape of miss as `sub_expression` (PS16) and `left_assignment_expression` (PS2), both already bitten on in this lane.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.count",
+   "line_number": 51,
+   "meta.isCounterUpdate": true,
+   "meta.isPostfix": false,
+   "comment": "`--$count`",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.total",
+   "line_number": 56,
+   "meta.isCompoundAssignmentRead": true,
+   "meta.assignmentOperator": "+=",
+   "comment": "A COMPOUND assignment reads its left side: `$total += 1` is a read of `$total` AND a write to it, and the write is the declaration while the read was published nowhere. The operator is the entire distinction, which is why `=` gains no read edge — pinned by the count row below and by the two rows on this construct sharing one shape.",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.total",
+   "line_number": 57,
+   "meta.isCompoundAssignmentRead": true,
+   "meta.assignmentOperator": "-=",
+   "comment": "`$total -= 1`",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "env:TEMP",
+   "line_number": 66,
+   "meta.isScopedEnvironmentRead": true,
+   "meta.isVariableReference": true,
+   "comment": "A scope-qualified READ is an external dependency. The independent F5 oracle expects these (7 non-test sample rows, all from Sign-Package.ps1) and the reasoning agrees with it: the graph already records external dependencies — a `calls -> Write-Host` target is equally unresolvable — so `$env:TEMP` is a dependency of the same kind and dropping it loses a fact about what the script needs from its environment. The qualified name is KEPT so the target can never be confused with a project variable: nothing this lane declares carries a colon, and a scope prefix is the only thing that produces one. THIS REVERSES PART OF PS8's guard, which is why it is pinned and flagged rather than done quietly."
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "variable-reads-psa4.ps1.cfg",
+   "line_number": 68,
+   "meta.isVariableReference": true,
+   "comment": "PSD18: `$script:cfg` names `cfg` in the SCRIPT scope, so the row targets the file-scope declaration the file makes at line 67 and RESOLVES. The prefix is a scope selector, not part of the name — unlike `$env:` above, which stays external because the runtime owns it. The guard (`ownedByThisFile`) is pinned too: a target whose OWNER is a symbol this file declares must carry NO externality reading — the arbiter's owner question would otherwise ask whether the project declares the emitting FILE, which it always does (that mistake cost 51 refutations on the first cut).",
+   "meta.isScopedVariableRead": true,
+   "meta.scopeQualifier": "script",
+   "meta.isExternalTarget": null
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "IO.Path",
+   "line_number": 40,
+   "meta.isTypeReference": true,
+   "comment": "A BARE TYPE LITERAL IS A REFERENCE: `$type = [IO.Path]` is a cast with no variable operand, so the type OBJECT is the value, and PS38 publishes it as a type reference at 0.8 rather than dropping it as an unrecognised cast. `IO.Path` is not an accelerator, so the target is the spec as written."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "{braced}",
+   "comment": "DEFECT: the braced spelling as its own symbol. `${a}` and `$a` are one variable; a graph that gives one variable two names has lost the reference."
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "@splatArgs",
+   "comment": "DEFECT: the splat spelling as its own symbol. The grammar models `@name` as a `variable` node with NO sigil, so `stripDollar` did nothing to it."
+  },
+  {
+   "type": "calls",
+   "from": "variable-reads-psa4.ps1",
+   "target": "$method",
+   "comment": "DEFECT: the dynamic method target published as a call, sigil and all. Found on ConstrainedLanguageRestriction.Tests.ps1:513 by the line-level check — the last row of its residue at 100.00%."
+  },
+  {
+   "type": "contains",
+   "from": "variable-reads-psa4.ps1",
+   "target": "TEMP",
+   "comment": "DEFECT GUARD: the scope prefix must survive. `Write-Host $env:TEMP` read as plain `TEMP` would collide with a project variable of that name, which is a different symbol with a different owner. The read path strips the `$` sigil and nothing else."
+  },
+  {
+   "type": "uses",
+   "from": "variable-reads-psa4.ps1",
+   "target": "_",
+   "comment": "AUTOMATIC variables stay suppressed. `$_` is an engine-supplied binding, which is the subject PS8 actually ruled on, and no oracle asks for one. Scope-qualified reads were un-suppressed; automatic ones were not, and the difference is the ruling's own wording."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "{braced}",
+   "kind": "variable",
+   "comment": "The declaration side of the braced defect. Forbidding the SYMBOL as well as the edge is deliberate: the name reaches the graph two ways and a fixture that pinned only one would pass while the other regressed."
+  },
+  {
+   "name": "@splatArgs",
+   "kind": "variable"
+  },
+  {
+   "name": "TEMP",
+   "kind": "variable",
+   "ownerName": "variable-reads-psa4.ps1",
+   "comment": "`$env:TEMP = '/tmp'` is an ASSIGNMENT to an environment binding and declares nothing — PS8 stands. Pinned as a symbol as well as an edge, because the declaration and the read are separate code paths and a fixture that pinned only one would pass while the other regressed."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "uses",
+   "equals": 18,
+   "comment": "SEVENTEEN read sites: the three argument spellings, the splat, the two reads on line 28, the two here-string reads, the dynamic method target, the four counter updates, the two compound reads, and the two scope-qualified reads. Stated with its derivation because the runner contradicts a count written without one — which it has now done twice in this file. Raised 17 -> 18 by PS38 type-reference half: the bare `[IO.Path]` at line 40."
+  }
+ ]
+}

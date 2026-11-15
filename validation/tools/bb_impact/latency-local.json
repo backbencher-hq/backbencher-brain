@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-11-01T18:35:30.620Z",
+  "bbNoAutoRefresh": "1",
+  "command": "BB_DATA_DIR=validation/tools/bb_impact/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-local.ts",
+  "results": [
+    {
+      "tier": "T0",
+      "subject": "test/fixtures/polyglot/ts-js",
+      "indexDir": "validation/tools/bb_impact/bbdata",
+      "projectId": "f826e17249562536abb4baed253aa3d6ee40ff7c",
+      "symbol": "basePrice",
+      "calls": 5,
+      "warm": true,
+      "runsMs": [
+        52.1,
+        45.9,
+        83.8,
+        96,
+        100.8
+      ],
+      "p50Ms": 83.8,
+      "p95Ms": 100.8,
+      "outcome": {
+        "shownCount": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncatedReason": null,
+        "depthReached": 0,
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false
+        },
+        "freshness": {
+          "fresh": 2,
+          "stale": 0,
+          "missing": 0
+        },
+        "autoRefresh": null
+      }
+    },
+    {
+      "tier": "T1",
+      "subject": ".perf-fixtures/bb-scale/n100",
+      "indexDir": "validation/tools/bb_impact/bbdata",
+      "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+      "symbol": "prepare",
+      "calls": 5,
+      "warm": true,
+      "runsMs": [
+        111.1,
+        243.5,
+        185.7,
+        176.5,
+        100.8
+      ],
+      "p50Ms": 176.5,
+      "p95Ms": 243.5,
+      "outcome": {
+        "shownCount": 97,
+        "totalCountIfKnown": 145,
+        "truncated": true,
+        "truncatedReason": "traversal: caller-site-limit+caller-depth-cap-reached+caller-budget-exhausted",
+        "depthReached": 1,
+        "countVerification": {
+          "ran": true,
+          "timedOut": false,
+          "boundarySuspect": false
+        },
+        "freshness": {
+          "fresh": 27,
+          "stale": 0,
+          "missing": 0
+        },
+        "autoRefresh": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a5-flag-semantics.ts",
+  "evidenceFile": "A5.json",
+  "generatedAt": "2026-11-05T04:30:07.463Z",
+  "passed": 266,
+  "failed": 0,
+  "negativeCases": 3,
+  "combosTested": 128,
+  "legalRows": 8,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-05T04:30:07.463Z",
+    "contentSha256": "a7a5c258fe1e239c5870859ec7912784e39a2a76e34393ca213c95bba8028fb5"
+  }
+}

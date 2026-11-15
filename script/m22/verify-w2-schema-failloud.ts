@@ -91,7 +91,7 @@ async function run() {
 
   // 3. real vue-core (the originally-crashing repo) now indexes fine
   let vueOk = true
-  try { await indexProjectParallel(getProjectId("$HOME/fixtures/repositories/vue-core"), "$HOME/fixtures/repositories/vue-core", {}) } catch { vueOk = false }
+  try { await indexProjectParallel(getProjectId("/home/ishaq2321/bb_tests/repositories/vue-core"), "/home/ishaq2321/bb_tests/repositories/vue-core", {}) } catch { vueOk = false }
   check("W2 real vue-core indexes without the schema crash", vueOk)
 
   // 4a. negative: an un-migrated legacy table still throws the original error

@@ -1,0 +1,110 @@
+{
+  "fixtureId": "java/declaration-lines-825",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off declaration-lines-825.java. An annotation is a modifier, so a declaration's line is where the declaration is written: `@SuppressWarnings(\"unused\")` on 20 must not become the line of `Annotated` (21), `@Deprecated` on 23 must not become the line of `legacy` (24), and `@Override` on 26 must not become the line of the overriding `label` (27). Measured on a 300-file real java sample: 25 of 93 symbols landed on an annotation before this contract, so a tool navigating to a java symbol opened `@SuppressWarnings` instead of the class. Also pinned: each parent of a multi-line heritage list is named on its OWN line (`extends Base` on 21, `implements Marker, Serializable` on 22), containment points at the member's declaration, and an override points at the overriding declaration rather than at its annotation. The forbid entries are the pre-fix positions.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Marker",
+      "kind": "interface"
+    },
+    {
+      "name": "Annotated",
+      "kind": "class"
+    },
+    {
+      "name": "legacy",
+      "kind": "property",
+      "ownerName": "Annotated"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Annotated",
+      "startLine": 21
+    },
+    {
+      "symbol": "legacy",
+      "ownerName": "Annotated",
+      "startLine": 24
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Annotated",
+      "target": "Base",
+      "line_number": 21
+    },
+    {
+      "type": "implements",
+      "from": "Annotated",
+      "target": "Marker",
+      "line_number": 22
+    },
+    {
+      "type": "implements",
+      "from": "Annotated",
+      "target": "Serializable",
+      "line_number": 22
+    },
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "legacy",
+      "line_number": 24
+    },
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "label",
+      "line_number": 27
+    },
+    {
+      "type": "overrides",
+      "from": "Annotated.label",
+      "target": "label",
+      "line_number": 27
+    },
+    {
+      "type": "references",
+      "from": "Annotated",
+      "target": "String",
+      "line_number": 27
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "legacy",
+      "line_number": 23,
+      "note": "pre-fix: the `@Deprecated` line; `int legacy = 1;` is written on 24"
+    },
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "label",
+      "line_number": 26,
+      "note": "pre-fix: the `@Override` line; the overriding method is written on 27"
+    },
+    {
+      "type": "overrides",
+      "from": "Annotated.label",
+      "target": "label",
+      "line_number": 26,
+      "note": "pre-fix: the override was attributed to the annotation line"
+    },
+    {
+      "type": "extends",
+      "from": "Annotated",
+      "target": "Base",
+      "line_number": 20,
+      "note": "pre-fix: the class node starts at its `@SuppressWarnings`"
+    }
+  ]
+}

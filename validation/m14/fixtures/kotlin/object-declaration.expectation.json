@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/object-declaration",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "object declarations are singletons: the object is a type-like symbol, its const and function are members.",
+  "expectSymbols": [
+    { "name": "Registry" },
+    { "name": "VERSION" },
+    { "name": "register" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Registry", "targetEndsWith": "register" }
+  ]
+}

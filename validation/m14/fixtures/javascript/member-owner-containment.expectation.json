@@ -1,0 +1,14 @@
+{
+  "fixtureId": "javascript/member-owner-containment",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JD3 regression: ownerName came only from scopeOwnerName, which reports CLASS scopes, and only class_declaration pushed one — so object-literal members and class-expression members were ownerless and, because addContainmentRelationships gates on ownerName, carried NO containment edge at all. Measured 10.9% of all symbols on a 400-file production draw; the class was invisible to the differential until M60 review JD14 put `contains` into the javascript comparison set (68 MISSING rows on the first svelte draw). Contract: a member is owned by whatever the language NAMES — a const-bound object literal, a const-bound class expression, or an assignment-bound class expression. The assignment form is pinned separately because the first cut of the fix handled only the declarator form and left 20 members ownerless on the corpus. The UNNAMED form is pinned as silence: a literal passed as a call argument names nothing, so no containment edge is derivable and the analyzer must not invent an owner.",
+  "expectRelationships": [
+    { "type": "contains", "from": "api", "target": "run" },
+    { "type": "contains", "from": "K", "target": "helper" },
+    { "type": "contains", "from": "SvelteElement", "target": "attach" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "inline", "note": "a call-argument literal names nothing — emitting an owner here would be a fabricated containment edge" }
+  ]
+}

@@ -5,7 +5,7 @@
   "sweptAt": "2026-09-14T03:21:57Z",
   "replicaHead": "29a3d7a149ab06065377032e2f50b59bd7367485",
   "codeInputs": { "clean": true, "dirty": [], "head": "29a3d7a149ab06065377032e2f50b59bd7367485" },
-  "adjudicator": "fixtures/m49-work/adjudicate.py",
+  "adjudicator": "bb_tests/m49-work/adjudicate.py",
   "summary": {
     "checks": 43,
     "flagged": 8,

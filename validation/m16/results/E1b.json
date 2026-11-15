@@ -1,0 +1,23 @@
+{
+  "issue": "(class rename)",
+  "code": "E1b",
+  "tool": "bb_edit",
+  "title": "E1b",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 1,
+  "runLog": {
+    "validated": true,
+    "reindexed": true,
+    "warnings": [
+      "refactor Task → TaskRenamed: 2 site(s) across 1 file(s)"
+    ],
+    "summary": {
+      "renamedFiles": 1,
+      "renamedSites": 2
+    }
+  },
+  "generatedAt": "2026-11-05T04:27:41.465Z"
+}

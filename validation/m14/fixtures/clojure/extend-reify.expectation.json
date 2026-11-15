@@ -1,0 +1,17 @@
+{
+  "issue": "CLJ1",
+  "note": "C9: protocol-extending forms emit implements edges — extend-protocol attaches the named TYPE as source (String → Ext), reify attaches the enclosing context, and the aliased protocol inside a fn resolves (build → clj.fixture.protos/Ext). Method impls `(ex [_] …)` are DEFINITIONS, not calls: the calls→ex forbid pins the measured false positive `use-reify -[calls]-> px`.",
+  "expectSymbols": [
+    { "name": "Ext", "kind": "interface" },
+    { "name": "ex", "kind": "function" },
+    { "name": "build", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "String", "target": "Ext", "line_number": 7 },
+    { "type": "implements", "from": "clj.fixture.extend", "target": "Ext", "line_number": 10 },
+    { "type": "implements", "from": "build", "target": "clj.fixture.protos/Ext", "line_number": 14 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "ex" }
+  ]
+}

@@ -3,12 +3,12 @@
   "sides": [
     {
       "label": "wired (pre-repair)",
-      "file": "$HOME/backbencher-brain/validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm",
+      "file": "/home/ishaq2321/backbencher-brain/validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm",
       "bytes": 50008
     },
     {
       "label": "patched (M60 xml lane)",
-      "file": "$HOME/backbencher-brain/wasm/tree-sitter-xml.wasm",
+      "file": "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-xml.wasm",
       "bytes": 50255
     }
   ],

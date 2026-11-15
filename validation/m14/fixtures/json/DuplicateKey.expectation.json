@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/DuplicateKey.json",
+  "authoredFrom": "`overrides` was ruled out for this lane on a grammar inventory — the JSON grammar has no node type for a redefinition — which is the unsound question this lane has now retracted four times (`imports`, `exports`, `extends`, `calls`, all on corpus evidence). A duplicate key in one object IS a redefinition: RFC 8259 §4 says names SHOULD be unique and that a parser's behaviour on a duplicate is unpredictable, and every mainstream parser keeps the LAST one, so the second declaration replaces the first. Measured: 21 NAMED duplicate keys across 11 of 11,713 admitted files, against 120,174 occurrences of the same key in two DIFFERENT objects — which is not a redefinition and is pinned NOT to produce an edge by its companion fixture. The edge shape is the bash lane's, because both declarations share one name and one qualified path: source is the owner symbol, target the key, and `overridesLine` carries the prior line. The `meta.overridesLine` pin is what makes this fixture able to fail a mutant that emits the edge with the wrong prior line — a label-only assertion could not. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "first",
+      "kind": "property",
+      "ownerName": "DuplicateKey"
+    },
+    {
+      "name": "repeated",
+      "kind": "property",
+      "ownerName": "DuplicateKey"
+    },
+    {
+      "name": "last",
+      "kind": "property",
+      "ownerName": "DuplicateKey"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "DuplicateKey",
+      "target": "DuplicateKey.repeated",
+      "meta.overridesLine": 3,
+      "meta.redefinition": true,
+      "meta.endpoints": "qualified_path"
+    },
+    {
+      "type": "overrides",
+      "from": "DuplicateKey",
+      "target": "DuplicateKey.repeated",
+      "line_number": 5,
+      "meta.endpoints": "qualified_path"
+    },
+    {
+      "type": "contains",
+      "from": "DuplicateKey",
+      "target": "DuplicateKey.repeated"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "DuplicateKey",
+      "target": "DuplicateKey.first"
+    },
+    {
+      "type": "overrides",
+      "from": "DuplicateKey",
+      "target": "DuplicateKey.last"
+    },
+    {
+      "type": "overrides",
+      "from": "DuplicateKey",
+      "target": "DuplicateKey.middle"
+    }
+  ]
+}

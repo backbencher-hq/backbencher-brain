@@ -69,7 +69,7 @@ const ADMITTED_EXTENSIONS = [".py", ".pyi", ".pyw"]
 const SIZE_CAP = 1024 * 1024
 
 /** The corpus root: the campaign's FARM root by default, the gate's default otherwise. */
-const CORPUS_ROOT = path.resolve(process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories")
+const CORPUS_ROOT = path.resolve(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories")
 
 const argv = process.argv.slice(2)
 const WANT_GRAMMAR = argv.includes("--grammar")

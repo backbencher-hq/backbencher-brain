@@ -1,0 +1,185 @@
+{
+  "fixtureId": "typescript/generic-heritage-args",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A CLASS `implements` clause written with TYPE ARGUMENTS must publish the BASE NAME. tree-sitter-typescript 0.23.2 produces arguments as a sibling `type_arguments` node for BOTH class-extends shapes (`extends GenBase<string>` -> [type_identifier, type_arguments]; `extends ns.QBase<string>` -> [member_expression, type_arguments]) but as a SINGLE `generic_type` child for `implements Gen<string>` and for interface heritage. The analyzer's existing `type.type === 'type_arguments'` sibling skip therefore handled class extends and MISSED class implements, whose target kept its arguments. Three measured costs, each pinned below: (1) filterNoiseRelationships (src/ast/pool-worker.ts:654) drops any target whose leaf contains `<` or `>`, so production deleted these edges \u2014 raw-analyzer vs production on the same files: rxjs implements 51->43 (8 lost, 15.69%), nest 252->213 (39 lost, 15.48%), typeorm 158->127 (31 lost, 19.62%); all 78 losses were exactly this shape and nothing else, and all three read 0 after the fix. (2) The endpoint could not bind, since `Gen<string>` is not a declared name. (3) The structural OVERRIDE arm resolves its base by name, so `ifaceByName.get('Subscribable<T>')` never matched the declared `Subscribable` \u2014 on rxjs packages/observable-polyfill/src/index.ts that cost 6 overrides edges, 4 of which the oracle had already derived as MISSING truth, and that file went from 1 overrides edge to 7. The oracle already strips at the first `<` for every TYPE heritage node (differential.ts heritage collect, citing the same groovy `Cache<T>` case), so this restores lockstep rather than introducing a third spelling. The extends CONTROL is pinned because it was already correct via the sibling skip: a strip added there was mutant-tested, SURVIVED (no shape reaches it with arguments attached), and was removed rather than shipped untested. The nested-generic-arguments case pins that the strip cuts at the FIRST `<`.",
+  "expectSymbols": [
+    {
+      "name": "Gen",
+      "kind": "interface"
+    },
+    {
+      "name": "Plain",
+      "kind": "interface"
+    },
+    {
+      "name": "GenBase",
+      "kind": "class"
+    },
+    {
+      "name": "PlainBase",
+      "kind": "class"
+    },
+    {
+      "name": "SingleArg",
+      "kind": "class"
+    },
+    {
+      "name": "MixedClause",
+      "kind": "class"
+    },
+    {
+      "name": "BothHeritage",
+      "kind": "class"
+    },
+    {
+      "name": "StructuralOverride",
+      "kind": "class"
+    },
+    {
+      "name": "ExtendsGeneric",
+      "kind": "class"
+    },
+    {
+      "name": "NestedGenericArgs",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "SingleArg",
+      "target": "Gen",
+      "line_number": 52,
+      "note": "THE GAIN: `implements Gen<string>` published `Gen<string>` before, which production then deleted"
+    },
+    {
+      "type": "implements",
+      "from": "MixedClause",
+      "target": "Plain",
+      "line_number": 55,
+      "note": "the non-generic entry in a mixed clause is unchanged"
+    },
+    {
+      "type": "implements",
+      "from": "MixedClause",
+      "target": "Gen",
+      "line_number": 55,
+      "note": "THE GAIN: second entry of the same clause, arguments stripped"
+    },
+    {
+      "type": "implements",
+      "from": "BothHeritage",
+      "target": "Plain",
+      "line_number": 58
+    },
+    {
+      "type": "implements",
+      "from": "BothHeritage",
+      "target": "Gen",
+      "line_number": 58,
+      "note": "THE GAIN: generic entry on a class that also extends"
+    },
+    {
+      "type": "implements",
+      "from": "StructuralOverride",
+      "target": "Gen",
+      "line_number": 63
+    },
+    {
+      "type": "implements",
+      "from": "NestedGenericArgs",
+      "target": "Gen",
+      "line_number": 74,
+      "note": "the strip cuts at the FIRST `<`, so nested `Array<Map<string, number>>` arguments do not survive"
+    },
+    {
+      "type": "extends",
+      "from": "BothHeritage",
+      "target": "PlainBase",
+      "line_number": 58
+    },
+    {
+      "type": "extends",
+      "from": "ExtendsGeneric",
+      "target": "GenBase",
+      "line_number": 70,
+      "note": "CONTROL: generic `extends` is already correct because its arguments arrive as a SIBLING type_arguments node, which the sibling skip removes. A strip at this call site was mutant-tested and survived, so there is none."
+    },
+    {
+      "type": "overrides",
+      "from": "StructuralOverride.handled",
+      "target": "Gen.handled",
+      "line_number": 64,
+      "note": "THE CASCADE: the structural override arm looks its base up by name. With the base spelled `Gen<number>` it never matched, so this edge could not exist. Same mechanism that hid 6 edges on rxjs's observable-polyfill."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "SingleArg",
+      "target": "Gen<string>",
+      "note": "R7: the argument-bearing spelling is not a declared name, cannot bind, and is deleted by the production filter"
+    },
+    {
+      "type": "implements",
+      "from": "MixedClause",
+      "target": "Gen<number>",
+      "note": "R7: same, second entry"
+    },
+    {
+      "type": "implements",
+      "from": "BothHeritage",
+      "target": "Gen<boolean>",
+      "note": "R7: same, on a combined extends+implements clause"
+    },
+    {
+      "type": "implements",
+      "from": "NestedGenericArgs",
+      "target": "Gen<Array<Map<string, number>>>",
+      "note": "R7: an over-eager fix that only trimmed the outermost argument pair would still leave a non-name"
+    },
+    {
+      "type": "implements",
+      "from": "SingleArg",
+      "target": "string",
+      "note": "the type ARGUMENT must never be mistaken for an implemented interface"
+    },
+    {
+      "type": "implements",
+      "from": "MixedClause",
+      "target": "number",
+      "note": "same, second entry"
+    },
+    {
+      "type": "implements",
+      "from": "BothHeritage",
+      "target": "boolean",
+      "note": "same, combined clause"
+    },
+    {
+      "type": "implements",
+      "from": "NestedGenericArgs",
+      "target": "Array",
+      "note": "a nested generic argument is not an implemented interface either"
+    },
+    {
+      "type": "extends",
+      "from": "ExtendsGeneric",
+      "target": "GenBase<string>",
+      "note": "R7 control: the extends spelling was already clean via the sibling skip and must not regress to an argument-bearing target that the production filter would delete."
+    },
+    {
+      "type": "overrides",
+      "from": "StructuralOverride.handledTwice",
+      "target": "Gen.handledTwice",
+      "note": "Gen declares handledTwice but the class does not implement it \u2014 a member pairs with nothing"
+    },
+    {
+      "type": "overrides",
+      "from": "Gen.handled",
+      "target": "Gen.handled",
+      "note": "the interface must not override itself"
+    }
+  ]
+}

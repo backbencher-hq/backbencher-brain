@@ -1,0 +1,63 @@
+{
+  "expectSymbols": [
+    {
+      "name": "MultiAlias",
+      "kind": "module"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "MultiAlias"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "MultiAlias",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "MultiAlias",
+      "target": "Foo.Bar"
+    },
+    {
+      "type": "references",
+      "from": "MultiAlias",
+      "target": "Foo.Baz"
+    },
+    {
+      "type": "calls",
+      "from": "MultiAlias.run/0",
+      "target": "Foo.Bar.go"
+    },
+    {
+      "type": "calls",
+      "from": "MultiAlias.run/0",
+      "target": "Foo.Baz.go"
+    },
+    {
+      "type": "contains",
+      "from": "MultiAlias",
+      "target": "run"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "MultiAlias",
+      "target": "Foo"
+    },
+    {
+      "type": "calls",
+      "from": "MultiAlias.run/0",
+      "target": "Bar.go"
+    },
+    {
+      "type": "calls",
+      "from": "MultiAlias.run/0",
+      "target": "Baz.go"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "fixtureId": "kotlin/recovery-type-identifier",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the no-empty-endpoint rule (ONTOLOGY-WORKSTREAM definition of done: 'No unknown symbols, no empty names, no placeholder-literal edge endpoints') against a MEASURED corpus occurrence, not a hypothetical one. tree-sitter-kotlin's parse RECOVERY for `foo.bar.baz.AA.BB.<caret>CC` inserts a `type_identifier` whose text is the empty string; `collectTypeNames` read `n.text` off every type_identifier and published `references: test -> \"\"` at confidence 0.95 with a line number. Found by the strata census on bb_tests/repositories/kotlin@9b80c8ff (1 empty-target endpoint in the first 40 stratified files) and reproduced from the real file analysis/analysis-api/testData/components/resolver/singleByPsi/nestedTypes/ResolveTypeInTheEndOfType.kt. TWO claims are pinned, because a fix that dropped the whole recovery subtree would pass the first and be wrong: (1) NO relationship may carry an empty source or target, asserted as forbid rows per label because the shared runner reads only expectSymbols/expectRelationships/forbidSymbols/forbidRelationships/forbidDecorators and would silently ignore any other key; (2) the recovery NEIGHBOURS `caret`/`CC` and the intact `foo.bar.baz.AA.BB` chain are real identifiers the tree does contain, so their edges must survive. The per-edge pins cannot catch the defect on their own — an edge with no target matches no pin — which is why the forbid half is stated per label rather than left implicit.",
+  "expectRelationships": [
+    { "type": "references", "from": "test", "target": "foo", "meta.relationshipType": "declared_type", "note": "the recovery subtree is NOT dropped wholesale — `foo` is a real type_identifier either side of the broken node" },
+    { "type": "references", "from": "test", "target": "bar" },
+    { "type": "references", "from": "test", "target": "baz" },
+    { "type": "references", "from": "test", "target": "AA" },
+    { "type": "references", "from": "test", "target": "BB" },
+    { "type": "references", "from": "test", "target": "caret", "note": "`caret` is the type_projection the grammar recovered into; it is a real identifier node in the tree, so the edge is truthful even though it is not what a kotlin author meant" },
+    { "type": "references", "from": "wellFormed", "target": "Holder" },
+    { "type": "references", "from": "wellFormed", "target": "List" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "", "note": "the nameless recovery node. An edge whose endpoint is \"\" names a symbol no file contains; R7 covers this class and the ontology workstream lists it in the definition of done." },
+    { "type": "references", "source": "", "note": "same class, source side" },
+    { "type": "calls", "target": "" },
+    { "type": "calls", "source": "" },
+    { "type": "uses", "target": "" },
+    { "type": "uses", "source": "" },
+    { "type": "contains", "target": "" },
+    { "type": "contains", "source": "" },
+    { "type": "imports", "target": "" },
+    { "type": "imports", "source": "" },
+    { "type": "exports", "target": "" },
+    { "type": "exports", "source": "" },
+    { "type": "extends", "target": "" },
+    { "type": "extends", "source": "" },
+    { "type": "implements", "target": "" },
+    { "type": "implements", "source": "" },
+    { "type": "overrides", "target": "" },
+    { "type": "overrides", "source": "" },
+    { "type": "instantiates", "target": "" },
+    { "type": "instantiates", "source": "" }
+  ]
+}

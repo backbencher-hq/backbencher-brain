@@ -1,0 +1,9 @@
+{
+  "fixtureId": "vue/lifecycle-server-prefetch",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave M3 fix: the Vue 3 SSR hook serverPrefetch was missing from the lifecycle list, so such methods were invisible.",
+  "expectSymbols": [
+    { "name": "serverPrefetch", "kind": "method" }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "issue": "CLJ-EX3",
+  "note": "EDN IS DATA (Lead ruling 2026-10-20). A `.edn` file publishes NO symbols and NO relationships — the reader's lists/symbols are VALUES. The forbidden rows are every relationship type this lane emits, because the defect this pins was 15 fabricated code edges read out of EDN data (calls to clojure.test/is, shell, bar/weird-macro across clj-kondo's config.edn/bb.edn and corpus/config_dir/config.edn). The .clj twin (edn-data-rule-code.clj) proves the SAME forms keep their rows as code, so this cannot be satisfied by breaking the analyzer.",
+  "expectSymbols": [],
+  "expectRelationships": [],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "note": "a call read out of data is a fabricated code edge"
+    },
+    {
+      "type": "references",
+      "note": "a reference read out of data is a fabricated code edge"
+    },
+    {
+      "type": "contains",
+      "note": "a data file declares no symbols, so it contains nothing"
+    },
+    {
+      "type": "imports",
+      "note": "no evaluation means no module dependency"
+    },
+    {
+      "type": "exports",
+      "note": "a data file exports nothing"
+    },
+    {
+      "type": "instantiates",
+      "note": "no evaluation means no construction"
+    },
+    {
+      "type": "extends",
+      "note": "a data file has no type relations"
+    },
+    {
+      "type": "implements",
+      "note": "a data file has no type relations"
+    },
+    {
+      "type": "overrides",
+      "note": "a data file has no method implementations"
+    },
+    {
+      "type": "uses",
+      "note": "no field access without code"
+    }
+  ]
+}

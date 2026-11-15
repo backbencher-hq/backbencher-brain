@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "fixtureLanguage": "ruby",
+  "projectId": "d827f3e2aabd7becf57c075ac36e8e828047f6f1",
+  "metrics": {
+    "wallMs": 769.459495,
+    "cpuMs": 181.014,
+    "peakRssBytes": 80297984,
+    "databaseBytes": 405504,
+    "filesPerSecond": 2.599227136705877,
+    "symbolsPerSecond": 23.393044230352892,
+    "relationshipsPerSecond": 27.29188493541171
+  },
+  "files": [
+    {
+      "path": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "language": "ruby"
+    },
+    {
+      "path": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "language": "ruby"
+    }
+  ],
+  "symbols": [
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "Loggable",
+      "kind": "module",
+      "start_line": 1,
+      "end_line": 5
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "log",
+      "kind": "method",
+      "start_line": 2,
+      "end_line": 4
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "BaseService",
+      "kind": "class",
+      "start_line": 7,
+      "end_line": 17
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "store",
+      "kind": "property",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "initialize",
+      "kind": "method",
+      "start_line": 10,
+      "end_line": 12
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "format",
+      "kind": "method",
+      "start_line": 14,
+      "end_line": 16
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "User",
+      "kind": "class",
+      "start_line": 19,
+      "end_line": 26
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "id",
+      "kind": "property",
+      "start_line": 20,
+      "end_line": 20
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "name",
+      "kind": "property",
+      "start_line": 20,
+      "end_line": 20
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/base.rb",
+      "name": "initialize",
+      "kind": "method",
+      "start_line": 22,
+      "end_line": 25
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "Auth",
+      "kind": "module",
+      "start_line": 4,
+      "end_line": 8
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "check",
+      "kind": "method",
+      "start_line": 5,
+      "end_line": 7
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "UserService",
+      "kind": "class",
+      "start_line": 10,
+      "end_line": 34
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "ADMIN_PATTERN",
+      "kind": "constant",
+      "start_line": 14,
+      "end_line": 14
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "initialize",
+      "kind": "method",
+      "start_line": 16,
+      "end_line": 18
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "format",
+      "kind": "method",
+      "start_line": 20,
+      "end_line": 22
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "save",
+      "kind": "method",
+      "start_line": 24,
+      "end_line": 27
+    },
+    {
+      "file": "/tmp/bb-m11-ruby-probe-48268/service.rb",
+      "name": "validate!",
+      "kind": "method",
+      "start_line": 31,
+      "end_line": 33
+    }
+  ],
+  "imports": [
+    {
+      "import_path": "base",
+      "imported_name": "base",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    },
+    {
+      "import_path": "json",
+      "imported_name": "json",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 1,
+      "package_name": null
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "calls",
+      "count": 4
+    },
+    {
+      "relationship_type": "contains",
+      "count": 13
+    },
+    {
+      "relationship_type": "extends",
+      "count": 1
+    },
+    {
+      "relationship_type": "implements",
+      "count": 1
+    },
+    {
+      "relationship_type": "references",
+      "count": 2
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.818Z",
+    "contentSha256": "2ae9eaf7958b2346e9ef50232c1134c278712aaf1fe36bd246e2adf8dfe0bf99"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "de94e58e919ad4370f910ba7fc7b7d8dcd8e6cc8cb4ec0f311d98c7d9bd22aa3",
+    "sealedAt": "2026-11-05T16:51:20.000Z"
+  },
+  "checks": [
+    {
+      "description": "polyglot web project (ts/js/vue/svelte/css/html/json) indexed via the real CLI, all assertions pass",
+      "id": "web-cluster-e2e",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "committedAt": "2026-11-05T11:51:20-05:00",
+  "data": {
+    "failures": []
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.WC1",
+  "layers": [
+    "cluster-e2e"
+  ],
+  "limitations": [
+    {
+      "description": "covers web-embedded cluster only; other clusters built during their waves"
+    },
+    {
+      "description": "the seam languages are asserted as a LIST plus a symbol floor (a probe name for svelte, any symbol for json): this proves each language is indexed and persisted, not that every construct in it is extracted — the per-language F3 fixtures carry that"
+    }
+  ],
+  "regeneratedAt": "2026-11-05T11:51:20-05:00",
+  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "runtime": "node v22.22.1",
+  "schemaVersion": 2,
+  "title": "Web-cluster e2e gate"
+}

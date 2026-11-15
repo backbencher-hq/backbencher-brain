@@ -1,0 +1,228 @@
+{
+  "fixtureId": "objc/linkage-and-imports",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "OC-ONT wave. (1) `imports`: `#import`/`#include` is the language's only dependency declaration and was published as `references` + metadata.isObjCImport, invisible to the LSP usages file-level section which filters relationship_type='imports' with a NULL symbol endpoint on both sides. The `references` twin is kept because the F5 oracle derives `references` for preproc_include. (2) `exports`: external linkage (C99 6.2.2p5, inherited verbatim) is Objective-C's export construct; `static` is internal linkage and is NOT exported. Pre-fix, 50 file-scope function_definitions and 67 file-scope declarations carrying `static` across the pinned corpus were published visibility:\"public\". (3) `[[self alloc] init]` instantiates the RECEIVER'S OWN CLASS; pre-fix it published `instantiates <method> -> self`, 24 of 507 corpus edges (4.7%), naming the `self` keyword.",
+  "expectSymbols": [
+    {
+      "name": "WidgetLimit",
+      "kind": "variable"
+    },
+    {
+      "name": "WidgetSharedCounter",
+      "kind": "variable"
+    },
+    {
+      "name": "internalHelper",
+      "kind": "function"
+    },
+    {
+      "name": "internalConstant",
+      "kind": "variable"
+    },
+    {
+      "name": "WidgetSize",
+      "kind": "struct"
+    },
+    {
+      "name": "Serializer",
+      "kind": "class"
+    },
+    {
+      "name": "LoudSerializer",
+      "kind": "class"
+    },
+    {
+      "name": "initWithWidth:",
+      "kind": "method",
+      "ownerName": "Serializer"
+    },
+    {
+      "name": "freshSerializer",
+      "kind": "method",
+      "ownerName": "Serializer"
+    },
+    {
+      "name": "duplicate",
+      "kind": "method",
+      "ownerName": "LoudSerializer"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Foundation",
+      "kind": "class",
+      "comment": "an #import names a MODULE, never a class in this file"
+    },
+    {
+      "name": "Metrics",
+      "kind": "class",
+      "comment": "a category label is metadata, never a symbol (OC-B)"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "meta.relationshipType": "include_dependency",
+      "meta.isSystem": true,
+      "meta.isImport": true,
+      "meta.fileLevel": true,
+      "meta.module": "Foundation/Foundation.h",
+      "line_number": 46
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Widget.h",
+      "meta.relationshipType": "include_dependency",
+      "meta.isSystem": false,
+      "meta.isImport": true,
+      "meta.fileLevel": true,
+      "meta.module": "Widget.h",
+      "line_number": 47,
+      "comment": "a QUOTED include is not a system include: isSystem comes from the <...> spelling, never from the stripped path"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "meta.isObjCImport": true,
+      "line_number": 46,
+      "comment": "the audited twin is KEPT: deriveObjcEdges (F5) derives `references` for preproc_include"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "WidgetLimit",
+      "meta.relationshipType": "module_export",
+      "meta.isExport": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "WidgetSharedCounter",
+      "meta.relationshipType": "module_export",
+      "meta.isExport": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "structural",
+      "comment": "`extern` is external linkage, so it IS an export"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "Serializer",
+      "meta.relationshipType": "module_export",
+      "meta.isExport": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "LoudSerializer",
+      "meta.relationshipType": "module_export",
+      "meta.isExport": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "source": "root",
+      "target": "WidgetSize",
+      "meta.relationshipType": "module_export",
+      "meta.isExport": true,
+      "meta.fileLevel": true,
+      "meta.evidenceClass": "structural",
+      "comment": "a typedef of a struct at file scope has external linkage"
+    },
+    {
+      "type": "instantiates",
+      "source": "initWithWidth:",
+      "target": "Serializer",
+      "meta.isObjCAlloc": true,
+      "line_number": 67,
+      "comment": "`return [[self alloc] init];` — [self alloc] allocates the RECEIVER'S OWN CLASS, not a class named `self`"
+    },
+    {
+      "type": "instantiates",
+      "source": "freshSerializer",
+      "target": "Serializer",
+      "meta.isObjCAlloc": true,
+      "line_number": 70
+    },
+    {
+      "type": "instantiates",
+      "source": "duplicate",
+      "target": "Serializer",
+      "meta.isObjCAlloc": true,
+      "line_number": 84,
+      "comment": "`[[super alloc] initWithWidth:2]` names the SUPERCLASS, read from the in-file extends clause LoudSerializer -> Serializer"
+    },
+    {
+      "type": "extends",
+      "source": "LoudSerializer",
+      "target": "Serializer",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "measure",
+      "target": "internalHelper",
+      "meta.isCFunctionCall": true,
+      "comment": "the internal-linkage helper is still a real symbol and a real call target — excluding it from `exports` is not excluding it from the graph"
+    },
+    {
+      "type": "uses",
+      "source": "measure",
+      "target": "internalConstant",
+      "meta.isBareRead": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "internalHelper",
+      "comment": "static = INTERNAL linkage (C99 6.2.2p5): not visible to any translation unit that imports this file, so not exported"
+    },
+    {
+      "type": "exports",
+      "target": "internalConstant",
+      "comment": "same rule, variable shape"
+    },
+    {
+      "type": "exports",
+      "target": "Metrics",
+      "comment": "a category label is never an export (OC-B)"
+    },
+    {
+      "type": "exports",
+      "target": "NSObject",
+      "comment": "the superclass is declared ELSEWHERE; `extends` is that fact, and re-publishing it as an export of this file would be a second claim on someone else's declaration"
+    },
+    {
+      "type": "exports",
+      "target": "Foundation/Foundation.h",
+      "comment": "an imported module is a DEPENDENCY (imports/references), never something this file exports"
+    },
+    {
+      "type": "instantiates",
+      "target": "self",
+      "comment": "the pre-fix defect: `self` is the implicit receiver keyword, not a class name"
+    },
+    {
+      "type": "instantiates",
+      "target": "super",
+      "comment": "same, for the superclass receiver"
+    },
+    {
+      "type": "instantiates",
+      "source": "duplicate",
+      "target": "LoudSerializer",
+      "comment": "`[[super alloc] ...]` allocates a SUPERclass instance; naming the subclass would invert the edge"
+    }
+  ]
+}

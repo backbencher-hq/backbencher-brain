@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/instantiates-edges",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Matrix 1b instantiates relationship kind (section B — previously NO kotlin fixture asserted an Instantiates edge). Kotlin has no 'new' keyword: Widget() is a receiver-less PascalCase call_expression, classified by the construction heuristic. The tier is usage_contextual because the constructor call is identified by the PascalCase heuristic (conf 0.7), not a structural grammar clause.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "WidgetFactory", "kind": "class" },
+    { "name": "make", "ownerName": "WidgetFactory" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "make", "targetEndsWith": "Widget", "meta.evidenceClass": "usage_contextual" }
+  ]
+}

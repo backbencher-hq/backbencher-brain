@@ -1,0 +1,10 @@
+{
+  "issue": "CLJ-ADV F11",
+  "note": "Doc channel: only a CONTIGUOUS `;;` block directly above the form is its doc — a trailing comment on the previous form's line (`b`), a blank-line-separated header (`b`), and a single-`;` note (`c`) do NOT attach; the clean block on `d` does.",
+  "expectComments": [
+    { "symbol": "d", "contains": "proper block" },
+    { "symbol": "b", "notContains": "trailing" },
+    { "symbol": "b", "notContains": "separated" },
+    { "symbol": "c", "notContains": "single" }
+  ]
+}

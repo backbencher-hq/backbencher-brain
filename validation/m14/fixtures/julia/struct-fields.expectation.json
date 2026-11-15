@@ -1,0 +1,60 @@
+{
+  "fixtureId": "julia/struct-fields",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS ALL FOUR FIELD DECLARATION SHAPES, INCLUDING THE ONE THAT NEEDED A GRAMMAR PATCH. (1) `depth::Int = 1` under `Base.@kwdef` is a DEFAULTED field: the tree is an `assignment` whose left side is a `typed_expression`, not a bare `typed_expression`, and the first analyzer version read only the latter, publishing no `contains` edge. (2) `name::String = \"\"` is the second defaulted field and proves the rule is not a one-node accident. (3) `value` is a BARE field, an `identifier` directly in the struct body; the same omission class. (4) `const id::Int` is a const FIELD, Julia 1.8+ syntax with NO `=`. The vendored grammar's `const_statement` required an assignment, so this line was an ERROR node and the field was invisible — the P6 grammar patch (grammar.js, 21 files fixed and 0 broken over the whole 1,985-file corpus) makes it a `const_statement` holding a `typed_expression`. The fixture is the behavioural proof of the patch: on the old build it fails to parse cleanly and the `contains WithConst -> WithConst.id` row cannot exist. The forbid row pins that a field's TYPE is not a second field and that an inner constructor's parameter is not a field.",
+  "expectSymbols": [
+    { "name": "StructFields", "kind": "module" },
+    { "name": "Config", "kind": "class", "ownerName": "StructFields" },
+    { "name": "depth", "kind": "property", "ownerName": "Config" },
+    { "name": "name", "kind": "property", "ownerName": "Config" },
+    { "name": "Bare", "kind": "class", "ownerName": "StructFields" },
+    { "name": "value", "kind": "property", "ownerName": "Bare" },
+    { "name": "WithConst", "kind": "class", "ownerName": "StructFields" },
+    { "name": "id", "kind": "property", "ownerName": "WithConst" },
+    { "name": "Inner", "kind": "class", "ownerName": "StructFields" },
+    { "name": "x", "kind": "property", "ownerName": "Inner" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Config",
+      "target": "Config.depth",
+      "line_number": 4,
+      "comment": "FIRE (1) — defaulted field under @kwdef; the assignment's LEFT side is the typed_expression."
+    },
+    {
+      "type": "contains",
+      "source": "Config",
+      "target": "Config.name",
+      "line_number": 5,
+      "comment": "FIRE (2) — a second defaulted field, so the rule is not one node's accident."
+    },
+    {
+      "type": "contains",
+      "source": "Bare",
+      "target": "Bare.value",
+      "line_number": 9,
+      "comment": "FIRE (3) — a bare field, an identifier directly in the struct body."
+    },
+    {
+      "type": "contains",
+      "source": "WithConst",
+      "target": "WithConst.id",
+      "line_number": 13,
+      "comment": "FIRE (4) — P6's const field. This row is impossible on the pre-patch grammar: the line is an ERROR node and `id` is not a field."
+    },
+    {
+      "type": "contains",
+      "source": "Inner",
+      "target": "Inner.x",
+      "line_number": 17,
+      "comment": "A plain annotated field, present as the control for the three shapes above."
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "Config.Int", "comment": "a field's TYPE is not a member" },
+    { "type": "contains", "target": "WithConst.Int", "comment": "a const field's TYPE is not a member" },
+    { "type": "contains", "source": "Inner", "target": "Inner.x.x", "comment": "no nested member is invented from a field's own name" }
+  ]
+}

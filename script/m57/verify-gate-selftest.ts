@@ -20,7 +20,7 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const GATE_TIMEOUT = 420_000
 // The data dir of the re-indexed real DB (same shell HOME resolution the
 // receipts were stamped under).
-const REAL_DATA_DIR = process.env.BB_M57_DATA_DIR || path.join(process.env.HOME || "$HOME/.khushal_file", ".bb")
+const REAL_DATA_DIR = process.env.BB_M57_DATA_DIR || path.join(process.env.HOME || "/home/ishaq2321/.khushal_file", ".bb")
 
 interface Mutation {
   gate: string

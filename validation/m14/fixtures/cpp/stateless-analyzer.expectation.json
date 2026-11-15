@@ -1,0 +1,31 @@
+{
+  "fixtureId": "cpp/stateless-analyzer",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "STATEFULNESS (Tier-1): uses-dedup and virtual registries were stored on the analyzer INSTANCE, leaking across files under parallel indexing - an identical second file lost its Uses edges entirely. State is now per-analyze. Re-authored (M37.9): the original pinned `uses timeout` from `config.timeout = 5;` — a member WRITE that CPPD2 now correctly gates (family write-is-not-a-use contract, fmt probe xchar/chrono-test). The write in setup() must emit NO uses; the genuine READ in read() emits uses timeout (distinct sources, so the dedup key cannot mask a write leak).",
+  "expectSymbols": [
+    {
+      "name": "setup",
+      "kind": "function"
+    },
+    {
+      "name": "read",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "read",
+      "target": "timeout",
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "setup",
+      "target": "timeout"
+    }
+  ]
+}

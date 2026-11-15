@@ -1,0 +1,42 @@
+{
+  "fixtureId": "typescript/interp-uses",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS template-literal interpolation Uses (gap T3, kotlin K4 / scala G4 analog). TS semantics: `hi ${name} x${n + 1}` reads name and n — the substituted identifiers are expression usages of the enclosing function's symbols. BINDING SPELLING (2026-10-18): the interpolated PARAMETER reads are spelled `greet\\u0000name` / `greet\\u0000n` with meta.localBinding — a parameter is a name no declaration owns, so the family spelling states that; the rows still publish (this fixture's contract), only their target spelling changed. REVERTED 2026-10-18: the target is the WRITTEN name again (`param`, `name`, `n`), not the binding spelling — the differential counts a NUL-spelling as MISSING against a truth that derives the written name, so the spelling HID the row from the audit; the gate classifies the bare row honestly. UPDATED 2026-10-19 (D7 local-binding claim restored): the two parameter reads are now published with the binding spelling `greet\\u0000name` / `greet\\u0000n` + metadata.localBinding, because the imported/local binding claim kind now exists and the differential matcher strips the separator (`auditTarget`). The claim is verified by the spelling (bindOK), not resolved; the bare rows are FORBIDDEN so the same edge cannot be published twice. This supersedes the 2026-10-18 revert that kept written names while no claim kind existed.",
+  "expectSymbols": [
+    {
+      "name": "greet",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "greet\u0000name",
+      "line_number": 2,
+      "meta.evidenceClass": "usage_contextual",
+      "note": "template interpolation of a PARAMETER: re-spelled to the family binding spelling (metadata.localBinding), verified by the arbiter from the spelling — bindOK column, never resolved"
+    },
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "greet\u0000n",
+      "line_number": 2,
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "name",
+      "note": "the bare spelling must not survive: one row, re-spelled in place"
+    },
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "n"
+    }
+  ]
+}

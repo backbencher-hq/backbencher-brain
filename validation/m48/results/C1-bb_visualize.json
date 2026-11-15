@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_visualize.json",
+  "generatedAt": "2026-11-04T05:55:38.531Z",
+  "tools": [
+    "bb_visualize"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 9,
+      "args": "{\"scope\":\"symbol\",\"target\":\"join\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"join\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_poo"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 50,
+      "args": "{\"scope\":\"symbol\",\"target\":\"unwrap\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"unwrap\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 47,
+      "args": "{\"scope\":\"symbol\",\"target\":\"toDeepEqual\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"toDeepEqual\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUt"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 33,
+      "args": "{\"scope\":\"symbol\",\"target\":\"is_newline\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"is_newline\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c"
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 22,
+      "args": "{\"scope\":\"symbol\",\"target\":\"map\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"map\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\","
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"join\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n  "
+    },
+    {
+      "repo": "ripgrep",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"unwrap\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"toDeepEqual\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"is_newline\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\""
+    },
+    {
+      "repo": "lodash",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"map\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n   "
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_visualize"
+    ]
+  }
+}

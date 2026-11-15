@@ -1,0 +1,35 @@
+{
+  "fixtureId": "scala/keyword-name-is-not-a-name",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Standing rule R7: no analyzer may NAME something with a placeholder literal — a name in a name-bearing field becomes a symbol, or an edge endpoint, that does not exist in the source. JOB 1 found scala reaching that state through the PARSER rather than through a typed fallback, which is why script/m60/sentinel-census.ts cannot see it: `this` is not a string literal in the analyzer source, it arrives from childForFieldName('name').text on a `def this(...)` AUXILIARY CONSTRUCTOR, so there is nothing to register and the register correctly stays at 1 site. Measured on the full 9,353-file corpus with script/m14/tmp/scala-keyword-name-census.ts: 1,336 published endpoints in 209 files named `this`, 7 named a keyword LITERAL interpolated into a string (`s\"$null\"`), and 13 named `super` — the RECEIVER of `super.==(x)` published as the callee because the grammar spells the member an `operator_identifier` and the leaf collector read only `identifier`. The fixture is deliberately TWO-SIDED. The forbids are the R7 violations. The expects are the LEGAL names a naive reserved-word guard would destroy: an escaped identifier (`` def `return` ``) IS a declaration of a member called `return`, the grammar keeps the backticks in the name field, and M60 #924's quoting rule is what makes the published name referenceable. A first version of the keyword census listed the Scala 3 SOFT keywords and reported 265 legal published names (`end`, `using`, `inline`, `open`, `infix`, `extension`, `transparent`, `then`) as defects; Reporting.scala:909 (`case class Suppression(..., start: Int, end: Int, ...)`) disproves that, and this fixture is the regression pin for the distinction.",
+  "expectSymbols": [
+    { "name": "Keywords", "kind": "class" },
+    { "name": "return", "kind": "method", "ownerName": "Keywords", "note": "ESCAPED in source (`def \\`return\\``), published WITHOUT backticks per M60 #924 — a legal declaration, not a keyword violation" },
+    { "name": "type", "kind": "method", "ownerName": "Keywords", "note": "same" },
+    { "name": "class", "kind": "method", "ownerName": "Keywords", "note": "same" },
+    { "name": "Keywords", "kind": "module" },
+    { "name": "return", "kind": "method", "ownerName": "Keywords", "note": "the companion's own `return`; a companion shares the class NAME, so this is a second declaration under the same owner name" },
+    { "name": "Base", "kind": "class" },
+    { "name": "this", "kind": "method", "ownerName": "Base", "note": "ESCAPED (`def \\`this\\`` = 1). This is the row that proves the auxiliary-constructor guard reads the RAW name text: the grammar keeps the backticks, so `` `this` `` and the bare `this` of `def this(...)` are distinguishable and only the bare one is a constructor." },
+    { "name": "Derived", "kind": "class" },
+    { "name": "check", "kind": "method", "ownerName": "Derived" },
+    { "name": "##", "kind": "method", "ownerName": "Derived" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "check", "target": "==", "note": "the OPERATOR member reached through `super`, not the receiver (mutant scala/super-receiver-as-callee restores `calls check -> super`)" },
+    { "type": "calls", "from": "##", "target": "##", "note": "same shape on an operator-named override" },
+    { "type": "extends", "from": "Derived", "target": "Base" },
+    { "type": "overrides", "from": "Derived.##", "target": "Base.##", "note": "Base does not declare `##`, so this is the keywordless/implicit tier only if an ancestor declares it; pinned here as the tier's behaviour on an operator-named member and it must not be a `calls` row" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "super", "note": "R7 + a correctness bug: `super` is the RECEIVER of `super.==(x)`, never its callee. 13 endpoints on the corpus, all operator-named members reached through `super` (scala3 test/files/neg/t3736.scala:6-7,19-21 and t5063.scala:2)." },
+    { "type": "uses", "target": "super", "note": "same" },
+    { "type": "references", "target": "super", "note": "same" },
+    { "type": "contains", "target": "super", "note": "no declaration is named `super`" },
+    { "type": "uses", "target": "null", "note": "R7 class C: `s\"$null\"` interpolates the KEYWORD LITERAL `null`, a constant no declaration names. Measured 7 endpoints, all in scala3 test/files/neg/t5856.scala, which is a deliberate negative test of exactly this." },
+    { "type": "uses", "target": "true", "note": "same file, same shape" },
+    { "type": "uses", "target": "false", "note": "same" },
+    { "type": "contains", "target": "super", "note": "see above" }
+  ]
+}

@@ -1,0 +1,868 @@
+{
+  "generatedAt": "2026-10-01T20:47:52.236Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories"
+  ],
+  "files": 8528,
+  "nodes": 4024840,
+  "filesWithParseError": 2,
+  "grammarNodeTypes": 284,
+  "referencedNodeTypes": [
+    "#{",
+    ":",
+    "::",
+    "alias",
+    "argument_list",
+    "array_pattern",
+    "as_pattern",
+    "assignment",
+    "block",
+    "block_parameter",
+    "block_parameters",
+    "body_statement",
+    "call",
+    "case",
+    "class",
+    "class_variable",
+    "constant",
+    "defined?",
+    "destructured_parameter",
+    "do_block",
+    "element_reference",
+    "elsif",
+    "exception_variable",
+    "false",
+    "find_pattern",
+    "global_variable",
+    "hash",
+    "hash_key_symbol",
+    "hash_splat_parameter",
+    "identifier",
+    "if",
+    "if_modifier",
+    "in_clause",
+    "instance_variable",
+    "keyword_parameter",
+    "keyword_pattern",
+    "lambda_parameters",
+    "left_assignment_list",
+    "method",
+    "method_parameters",
+    "module",
+    "nil",
+    "operator_assignment",
+    "optional_parameter",
+    "program",
+    "range",
+    "rescue",
+    "rescue_modifier",
+    "scope_resolution",
+    "self",
+    "setter",
+    "simple_symbol",
+    "singleton_class",
+    "singleton_method",
+    "splat_parameter",
+    "string",
+    "super",
+    "superclass",
+    "true",
+    "unary",
+    "undef",
+    "unless",
+    "unless_modifier",
+    "until",
+    "until_modifier",
+    "while",
+    "while_modifier"
+  ],
+  "deadBranchLiterals": [
+    "unknown",
+    "root",
+    "private",
+    "protected",
+    "public",
+    "puts",
+    "print",
+    "p",
+    "pp",
+    "print_flush",
+    "putc",
+    "raise",
+    "fail",
+    "exit",
+    "abort",
+    "warn",
+    "gets",
+    "readline",
+    "readlines",
+    "rand",
+    "srand",
+    "sleep",
+    "loop",
+    "require",
+    "require_relative",
+    "load",
+    "autoload",
+    "eval",
+    "binding",
+    "local_variables",
+    "global_variables",
+    "global_variable_get",
+    "global_variable_set",
+    "caller",
+    "caller_locations",
+    "trace_var",
+    "untrace_var",
+    "public_method",
+    "private_method",
+    "protected_method",
+    "instance_method",
+    "public_instance_method",
+    "private_instance_method",
+    "respond_to",
+    "method_missing",
+    "initialize_copy",
+    "initialize_dup",
+    "initialize_clone",
+    "send",
+    "freeze",
+    "dup",
+    "clone",
+    "taint",
+    "untaint",
+    "trust",
+    "untrust",
+    "object_id",
+    "instance_variables",
+    "instance_variable_get",
+    "instance_variable_set",
+    "class_variables",
+    "class_variable_get",
+    "class_variable_set",
+    "const_get",
+    "const_set",
+    "define_singleton_method",
+    "to_s",
+    "to_i",
+    "to_f",
+    "to_a",
+    "to_h",
+    "to_proc",
+    "inspect",
+    "display",
+    "extend",
+    "include",
+    "prepend",
+    "has_many",
+    "belongs_to",
+    "has_one",
+    "has_and_belongs_to_many",
+    "default_scope",
+    "validates",
+    "validate",
+    "validates_with",
+    "validates_each",
+    "before_action",
+    "after_action",
+    "before_filter",
+    "after_filter",
+    "before_validation",
+    "after_validation",
+    "before_save",
+    "after_save",
+    "before_create",
+    "after_create",
+    "before_update",
+    "after_update",
+    "before_destroy",
+    "after_destroy",
+    "before_commit",
+    "after_commit",
+    "after_rollback",
+    "attr_reader",
+    "attr_writer",
+    "attr_accessor",
+    "alias_method",
+    "remove_method",
+    "undef_method",
+    "delegate",
+    "delegate_missing_to",
+    "event",
+    "transition",
+    "state_machine",
+    "module_function",
+    "using",
+    "ruby2_keywords",
+    "no_touching",
+    "define_method",
+    "language",
+    "metadata",
+    "warning",
+    "lit",
+    "x",
+    "attr_name",
+    "redirect_to",
+    "render",
+    "author",
+    "new",
+    "define",
+    "keyword_rest",
+    "contains",
+    "structural",
+    "imports",
+    "exports",
+    "references",
+    "import_based",
+    "calls",
+    "uses",
+    "usage_contextual",
+    "inferred",
+    "instantiates",
+    "extends",
+    "implements",
+    "overrides"
+  ],
+  "unreferencedWithOccurrences": [
+    {
+      "type": "string_content",
+      "occurrences": 257398,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 84,
+        "text": "natural"
+      }
+    },
+    {
+      "type": "comment",
+      "occurrences": 119691,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 58,
+        "text": "# \"Foo bar\" becomes \"f fo foo b ba bar\""
+      }
+    },
+    {
+      "type": "pair",
+      "occurrences": 96295,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 84,
+        "text": "analyzer: 'natural'"
+      }
+    },
+    {
+      "type": "integer",
+      "occurrences": 51314,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 69,
+        "text": "15"
+      }
+    },
+    {
+      "type": "heredoc_content",
+      "occurrences": 33500,
+      "example": {
+        "file": "mastodon/app/helpers/formatting_helper.rb",
+        "line": 4,
+        "text": "\\n    height: 1.1em;\\n    margin: -.2ex .15em .2ex;\\n    object-fit: cont"
+      }
+    },
+    {
+      "type": "heredoc_end",
+      "occurrences": 27825,
+      "example": {
+        "file": "mastodon/app/helpers/formatting_helper.rb",
+        "line": 10,
+        "text": "CSS"
+      }
+    },
+    {
+      "type": "heredoc_beginning",
+      "occurrences": 27825,
+      "example": {
+        "file": "mastodon/app/helpers/formatting_helper.rb",
+        "line": 4,
+        "text": "<<~CSS"
+      }
+    },
+    {
+      "type": "heredoc_body",
+      "occurrences": 27825,
+      "example": {
+        "file": "mastodon/app/helpers/formatting_helper.rb",
+        "line": 4,
+        "text": "\\n    height: 1.1em;\\n    margin: -.2ex .15em .2ex;\\n    object-fit: cont"
+      }
+    },
+    {
+      "type": "escape_sequence",
+      "occurrences": 26935,
+      "example": {
+        "file": "mastodon/app/controllers/concerns/async_refreshes_concern.rb",
+        "line": 9,
+        "text": "\\\""
+      }
+    },
+    {
+      "type": "binary",
+      "occurrences": 26120,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 81,
+        "text": "account.last_status_at || account.created_at"
+      }
+    },
+    {
+      "type": "block_body",
+      "occurrences": 25217,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 84,
+        "text": "field :stemmed, type: 'text', analyzer: 'natural'"
+      }
+    },
+    {
+      "type": "array",
+      "occurrences": 20541,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 83,
+        "text": "[account.username, account.domain]"
+      }
+    },
+    {
+      "type": "interpolation",
+      "occurrences": 20257,
+      "example": {
+        "file": "mastodon/app/controllers/accounts_controller.rb",
+        "line": 102,
+        "text": "#{params[:tag]}"
+      }
+    },
+    {
+      "type": "then",
+      "occurrences": 12808,
+      "example": {
+        "file": "mastodon/app/controllers/accounts_controller.rb",
+        "line": 85,
+        "text": "\\n      short_account_tag_url(@account, params[:tag], format: 'rss')"
+      }
+    },
+    {
+      "type": "bare_string",
+      "occurrences": 7048,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 61,
+        "text": "cjk_width"
+      }
+    },
+    {
+      "type": "regex",
+      "occurrences": 6384,
+      "example": {
+        "file": "mastodon/app/controllers/api/fasp/base_controller.rb",
+        "line": 6,
+        "text": "/sha-256=:(.*?):/"
+      }
+    },
+    {
+      "type": "return",
+      "occurrences": 5965,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/contexts_controller.rb",
+        "line": 73,
+        "text": "return nil"
+      }
+    },
+    {
+      "type": "else",
+      "occurrences": 4548,
+      "example": {
+        "file": "mastodon/app/controllers/accounts_controller.rb",
+        "line": 87,
+        "text": "else\\n      short_account_url(@account, format: 'rss')"
+      }
+    },
+    {
+      "type": "block_argument",
+      "occurrences": 3549,
+      "example": {
+        "file": "mastodon/app/chewy/public_statuses_index.rb",
+        "line": 64,
+        "text": "&:display_name"
+      }
+    },
+    {
+      "type": "parenthesized_statements",
+      "occurrences": 3415,
+      "example": {
+        "file": "mastodon/app/controllers/accounts_controller.rb",
+        "line": 34,
+        "text": "(authorized_fetch_mode? && signed_request_account.present?)"
+      }
+    },
+    {
+      "type": "pattern",
+      "occurrences": 2866,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/collections_controller.rb",
+        "line": 59,
+        "text": "'tags'"
+      }
+    },
+    {
+      "type": "bare_symbol",
+      "occurrences": 2616,
+      "example": {
+        "file": "mastodon/app/controllers/admin/domain_blocks_controller.rb",
+        "line": 14,
+        "text": "severity"
+      }
+    },
+    {
+      "type": "when",
+      "occurrences": 2360,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/collections_controller.rb",
+        "line": 59,
+        "text": "when 'tags'\\n      @type = :unordered"
+      }
+    },
+    {
+      "type": "string_array",
+      "occurrences": 2260,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 61,
+        "text": "%w(lowercase asciifolding cjk_width)"
+      }
+    },
+    {
+      "type": "float",
+      "occurrences": 2088,
+      "example": {
+        "file": "mastodon/app/controllers/api/v1/statuses/contexts_controller.rb",
+        "line": 51,
+        "text": "1.0"
+      }
+    },
+    {
+      "type": "conditional",
+      "occurrences": 1913,
+      "example": {
+        "file": "mastodon/app/controllers/accounts_controller.rb",
+        "line": 28,
+        "text": "params[:limit].present? ? [params[:limit].to_i, PAGE_SIZE_MAX].min : P"
+      }
+    },
+    {
+      "type": "lambda",
+      "occurrences": 1825,
+      "example": {
+        "file": "mastodon/app/chewy/accounts_index.rb",
+        "line": 84,
+        "text": "->(account) { account.searchable_text }"
+      }
+    },
+    {
+      "type": "ensure",
+      "occurrences": 1792,
+      "example": {
+        "file": "mastodon/app/controllers/admin/accounts_controller.rb",
+        "line": 30,
+        "text": "ensure\\n      redirect_to admin_accounts_path(filter_params)"
+      }
+    },
+    {
+      "type": "chained_string",
+      "occurrences": 1288,
+      "example": {
+        "file": "mastodon/app/lib/admin/system_check/media_privacy_check.rb",
+        "line": 93,
+        "text": "'/9j/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAA' \\\\n          'AAAD/2w"
+      }
+    },
+    {
+      "type": "splat_argument",
+      "occurrences": 1222,
+      "example": {
+        "file": "mastodon/app/controllers/admin/accounts_controller.rb",
+        "line": 161,
+        "text": "*AccountFilter::KEYS"
+      }
+    },
+    {
+      "type": "exceptions",
+      "occurrences": 1045,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/feature_authorizations_controller.rb",
+        "line": 26,
+        "text": "ActiveRecord::RecordNotFound, Mastodon::NotPermittedError"
+      }
+    },
+    {
+      "type": "yield",
+      "occurrences": 981,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/collections_controller.rb",
+        "line": 79,
+        "text": "yield"
+      }
+    },
+    {
+      "type": "next",
+      "occurrences": 846,
+      "example": {
+        "file": "mastodon/app/controllers/admin/email_domain_blocks_controller.rb",
+        "line": 41,
+        "text": "next"
+      }
+    },
+    {
+      "type": "hash_splat_argument",
+      "occurrences": 789,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/outboxes_controller.rb",
+        "line": 26,
+        "text": "**page_params"
+      }
+    },
+    {
+      "type": "delimited_symbol",
+      "occurrences": 744,
+      "example": {
+        "file": "mastodon/app/controllers/api/v1/accounts/credentials_controller.rb",
+        "line": 5,
+        "text": ":'write:accounts'"
+      }
+    },
+    {
+      "type": "begin",
+      "occurrences": 734,
+      "example": {
+        "file": "mastodon/app/controllers/admin/export_domain_allows_controller.rb",
+        "line": 20,
+        "text": "begin\\n        @import = Admin::Import.new(import_params)\\n        retur"
+      }
+    },
+    {
+      "type": "symbol_array",
+      "occurrences": 692,
+      "example": {
+        "file": "mastodon/app/controllers/admin/domain_blocks_controller.rb",
+        "line": 7,
+        "text": "%i(\\n      domain\\n      obfuscate\\n      private_comment\\n      public_co"
+      }
+    },
+    {
+      "type": "right_assignment_list",
+      "occurrences": 482,
+      "example": {
+        "file": "mastodon/app/lib/video_metadata_extractor.rb",
+        "line": 51,
+        "text": "@height, @width"
+      }
+    },
+    {
+      "type": "forward_parameter",
+      "occurrences": 327,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/outboxes_controller.rb",
+        "line": 44,
+        "text": "..."
+      }
+    },
+    {
+      "type": "operator",
+      "occurrences": 272,
+      "example": {
+        "file": "mastodon/app/lib/connection_pool/shared_timed_stack.rb",
+        "line": 21,
+        "text": "<<"
+      }
+    },
+    {
+      "type": "forward_argument",
+      "occurrences": 270,
+      "example": {
+        "file": "mastodon/app/controllers/activitypub/outboxes_controller.rb",
+        "line": 45,
+        "text": "..."
+      }
+    },
+    {
+      "type": "subshell",
+      "occurrences": 173,
+      "example": {
+        "file": "rails/activejob/test/support/integration/adapters/queue_classic.rb",
+        "line": 31,
+        "text": "%x{#{psql} -c 'create database \"#{db}\"'}"
+      }
+    },
+    {
+      "type": "do",
+      "occurrences": 154,
+      "example": {
+        "file": "mastodon/app/helpers/json_ld_helper.rb",
+        "line": 311,
+        "text": "\\n      items.concat(as_array(collection_page_items(collection)))\\n\\n    "
+      }
+    },
+    {
+      "type": "break",
+      "occurrences": 141,
+      "example": {
+        "file": "mastodon/app/helpers/json_ld_helper.rb",
+        "line": 315,
+        "text": "break"
+      }
+    },
+    {
+      "type": "rest_assignment",
+      "occurrences": 39,
+      "example": {
+        "file": "mastodon/app/models/notification_group.rb",
+        "line": 22,
+        "text": "*raw_pagination_data"
+      }
+    },
+    {
+      "type": "retry",
+      "occurrences": 35,
+      "example": {
+        "file": "mastodon/app/lib/activitypub/activity/create.rb",
+        "line": 506,
+        "text": "retry"
+      }
+    },
+    {
+      "type": "hash_pattern",
+      "occurrences": 17,
+      "example": {
+        "file": "rails/actionpack/test/controller/parameters/equality_test.rb",
+        "line": 75,
+        "text": "{ person: { age:, **rest } }"
+      }
+    },
+    {
+      "type": "character",
+      "occurrences": 10,
+      "example": {
+        "file": "rails/actionpack/lib/action_dispatch/journey/path/pattern.rb",
+        "line": 129,
+        "text": "?|"
+      }
+    },
+    {
+      "type": "destructured_left_assignment",
+      "occurrences": 10,
+      "example": {
+        "file": "rubocop/lib/rubocop/cop/internal_affairs/offense_location_keyword.rb",
+        "line": 26,
+        "text": "(*, keyword)"
+      }
+    },
+    {
+      "type": "case_match",
+      "occurrences": 6,
+      "example": {
+        "file": "rails/tools/rail_inspector/lib/rail_inspector/visitor/framework_default.rb",
+        "line": 95,
+        "text": "case value\\n            in Prism::ConstantPathNode\\n              value."
+      }
+    },
+    {
+      "type": "match_pattern",
+      "occurrences": 5,
+      "example": {
+        "file": "rails/actionpack/test/controller/parameters/equality_test.rb",
+        "line": 75,
+        "text": "@params => { person: { age:, **rest } }"
+      }
+    },
+    {
+      "type": "rational",
+      "occurrences": 5,
+      "example": {
+        "file": "rails/activejob/test/cases/argument_serialization_test.rb",
+        "line": 78,
+        "text": "6.123456r"
+      }
+    },
+    {
+      "type": "test_pattern",
+      "occurrences": 2,
+      "example": {
+        "file": "rails/tools/rail_inspector/lib/rail_inspector/visitor/framework_default.rb",
+        "line": 119,
+        "text": "node in Prism::CallNode[\\n                name: :respond_to?,\\n         "
+      }
+    }
+  ],
+  "unreferencedZeroOccurrence": [
+    "end",
+    "program_token1",
+    "uninterpreted",
+    "{",
+    "}",
+    "def",
+    "(",
+    ")",
+    ".",
+    "=",
+    ",",
+    "|",
+    ";",
+    "...",
+    "*",
+    "**",
+    "&",
+    "<",
+    "redo",
+    "for",
+    "in",
+    "=>",
+    "[",
+    "]",
+    "..",
+    "line",
+    "file",
+    "encoding",
+    "^",
+    "&.",
+    "+=",
+    "-=",
+    "*=",
+    "**=",
+    "/=",
+    "||=",
+    "|=",
+    "&&=",
+    "&=",
+    "%=",
+    ">>=",
+    "<<=",
+    "^=",
+    "?",
+    "and",
+    "or",
+    "||",
+    "&&",
+    "<<",
+    ">>",
+    "<=",
+    ">",
+    ">=",
+    "+",
+    "/",
+    "%",
+    "==",
+    "!=",
+    "===",
+    "<=>",
+    "=~",
+    "!~",
+    "not",
+    "!",
+    "~",
+    "-",
+    "+@",
+    "-@",
+    "~@",
+    "[]",
+    "[]=",
+    "`",
+    "i",
+    "ri",
+    "r",
+    "constant_suffix_token1",
+    "identifier_suffix_token1",
+    "string_array_token1",
+    "->",
+    "_line_break",
+    "_no_line_break",
+    "\"",
+    ":\"",
+    "%w(",
+    "%i(",
+    "_heredoc_body_start",
+    "_identifier_suffix",
+    "_constant_suffix",
+    "_short_interpolation",
+    "_statements",
+    "begin_block",
+    "end_block",
+    "_statement",
+    "_method_rest",
+    "_body_expr",
+    "_formal_parameter",
+    "_simple_formal_parameter",
+    "hash_splat_nil",
+    "_guard",
+    "if_guard",
+    "unless_guard",
+    "_pattern_top_expr_body",
+    "_array_pattern_n",
+    "_pattern_expr",
+    "_pattern_expr_alt",
+    "alternative_pattern",
+    "_array_pattern_body",
+    "_find_pattern_body",
+    "_hash_pattern_body",
+    "_hash_pattern_any_rest",
+    "_pattern_expr_basic",
+    "parenthesized_pattern",
+    "_pattern_value",
+    "_pattern_primitive",
+    "_pattern_lambda",
+    "_pattern_literal",
+    "_keyword_variable",
+    "variable_reference_pattern",
+    "expression_reference_pattern",
+    "_pattern_constant",
+    "_body_statement",
+    "_expression",
+    "_arg",
+    "_primary",
+    "_call",
+    "_chained_command_call",
+    "_argument_list_with_trailing_comma",
+    "_argument",
+    "_literal",
+    "_numeric",
+    "_simple_numeric",
+    "_mlhs",
+    "_function_identifier",
+    "_lhs",
+    "_variable",
+    "_method_name",
+    "_nonlocal_variable",
+    "_int_or_float",
+    "complex",
+    "_literal_contents",
+    "empty_statement",
+    "_terminator",
+    "_statements_repeat1",
+    "parameters_repeat1",
+    "block_parameters_repeat1",
+    "case_repeat1",
+    "case_match_repeat1",
+    "when_repeat1",
+    "_array_pattern_n_repeat1",
+    "alternative_pattern_repeat1",
+    "_hash_pattern_body_repeat1",
+    "exceptions_repeat1",
+    "_body_statement_repeat1",
+    "command_argument_list_repeat1",
+    "_mlhs_repeat1",
+    "undef_repeat1",
+    "chained_string_repeat1",
+    "string_array_repeat1",
+    "symbol_array_repeat1",
+    "heredoc_body_repeat1",
+    "hash_repeat1"
+  ]
+}

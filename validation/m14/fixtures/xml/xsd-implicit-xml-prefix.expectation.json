@@ -1,0 +1,67 @@
+{
+  "fixtureId": "xml/xsd-implicit-xml-prefix",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding X8. The `xml` and `xmlns` prefixes are bound by the Namespaces specification ITSELF, in every document, whether or not the document says so — and re-binding `xml` is an error, so a well-formed file cannot supply it. The analyzer resolved a QName's prefix only through declarations it had read, so `namespaceBindings.get(\"xml\")` was undefined in every well-formed file, the reference pass asked \"is this a built-in?\", found no namespace to test, and REFUSED the edge. 71 references across 20 corpus files went missing that way, including every `xml:lang` in docx4j's Dublin Core schemas and every `xml:id` in the Office drawing schemas. The knowledge was already present and unreachable: BUILTIN_NAMESPACE_URIS contains `http://www.w3.org/XML/1998/namespace`, and it was consulted only when a binding existed — for the one prefix the spec guarantees can never arrive with one. The file declares NO `xmlns:xml` on purpose: adding one would make this fixture pass against the BROKEN analyzer, which is exactly the trap it exists to catch. It also uses the prefix `xs` rather than `xsd`, so a fixture that quietly normalised prefixes would fail here instead of passing. All four references share one owner and each names a DIFFERENT target, so they are four edges rather than one collapsed edge, each with `occurrences: 1`. That is pinned: an analyzer that collapsed them together would lose which of `lang`/`space`/`base`/`id` was referenced where, and one that emitted a target with no `qname` would lose the prefix that makes the builtin reading correct rather than a guess.\n\nAMENDED 2026-10-04, the SOURCE of these four edges changed from `xs:attribute` to `para`, and the amendment is the point rather than a concession. `xs:attribute` is the XSD vocabulary's word for an attribute CONSTRUCTOR: no document declares an entity by that name, and an edge sourced at it names a call SITE where the reader is looking for a DECLARER — the same defect class this lane measured at 438 of 438 on `extends` and 495 of 548 on `calls`. `<xs:attribute ref=\"xml:lang\"/>` sits in `para`'s content model, so `para` is what references `lang`. The X8 pin is untouched by the amendment: what this fixture exists to catch is the analyzer REFUSING these four edges, and it still refuses nothing — all four are emitted, all four carry `resolvable: builtin`, all four carry the `xml:` prefix that makes the built-in reading correct rather than a guess, and all four still have distinct targets. A fix that dropped them would fail here.",
+  "expectSymbols": [
+    {
+      "name": "xs:attribute",
+      "kind": "class",
+      "meta.tagName": "xs:attribute"
+    },
+    {
+      "name": "para",
+      "kind": "class",
+      "meta.isVocabDeclaration": true,
+      "meta.declaredByAttribute": "name"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "para",
+      "target": "lang",
+      "line_number": 14,
+      "meta.resolvable": "builtin",
+      "meta.qname": "xml:lang"
+    },
+    {
+      "type": "references",
+      "from": "para",
+      "target": "space",
+      "line_number": 15,
+      "meta.resolvable": "builtin",
+      "meta.qname": "xml:space"
+    },
+    {
+      "type": "references",
+      "from": "para",
+      "target": "base",
+      "line_number": 16,
+      "meta.resolvable": "builtin",
+      "meta.qname": "xml:base"
+    },
+    {
+      "type": "references",
+      "from": "para",
+      "target": "id",
+      "line_number": 17,
+      "meta.resolvable": "builtin",
+      "meta.qname": "xml:id"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "xml",
+      "note": "the NAMESPACE is a namespace, not a component: publishing `xml`, `lang`, `space`, `base` or `id` as local symbols is the M60.R10 lie, and a consumer resolving a builtin reference to a phantom local symbol would find a declaration that does not exist. The edges say `resolvable: builtin` precisely so they need not."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "para",
+      "target": "xs:attribute",
+      "note": "an unresolvable prefix must not fall back to a self-reference; refusing is correct and emitting a loop is not. The `from` was re-pinned to `para` with the four edges above: a loop guard keyed on the vocabulary tag would no longer be reachable here, and this row is the only place that would notice."
+    }
+  ]
+}

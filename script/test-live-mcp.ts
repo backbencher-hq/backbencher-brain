@@ -4,7 +4,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import path from "path"
 
-const project = "$HOME/mcp/backbencher-brain"
+const project = "/home/ishaq2321/mcp/backbencher-brain"
 const dataDir = path.join(project, ".bb-data")
 
 const transport = new StdioClientTransport({

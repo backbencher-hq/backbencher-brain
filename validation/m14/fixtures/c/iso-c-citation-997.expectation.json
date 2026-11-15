@@ -1,0 +1,59 @@
+{
+  "fixtureId": "c/iso-c-citation-997",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D7 CLAIMED — ISO-C CITATION emission (task-21 follow-up). The Lead landed the citation mechanism as the existing namespace claim kind (`metadata.languageNamespace`); the C lane emits it for the `iso-c-stdlib-name` class with roots copied as a SUBSET of the committed vocabulary `ISO_C_STDLIB` (id \"iso-c-stdlib\", script/m14/citations.ts, source ISO/IEC 9899). A C standard-library name is a BARE symbol, so the claim cites exactly its target (`languageNamespace: [target]`) — a valid subset, reviewable on the edge. Emission is gated on the analyzer's existing condition that the target is NOT declared in the file, so a project-declared name can never be excused by the claim. BOTH DIRECTIONS PINNED: three positives (`strlen`, `malloc`, `memcpy` — listed, undeclared here) MUST carry the exact citation; three negatives MUST stay uncited — (a) `free`, LISTED but DECLARED in this file (the claim may never excuse a project name), (b) `strlcpy`, a BSD library name NOT in the ISO-C vocabulary (the vocabulary is the authority; a lane may not invent names into a citation), (c) `PyObject_Call`, a third-party name outside the vocabulary. The call edges themselves are unchanged — the claim is metadata on the same edge, and the arbiter treats a namespace claim as its sole authority (incoming-rule.ts `classifyEdge`), which is why the negatives are load-bearing: an over-broad emission here would convert project-declared and unlisted rows into verified-external claims. Evidence probe: script/m14/c-citation-probe.ts (contract PASSED on this fixture; prints each row's citation).",
+  "expectSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "c997_listed_strlen",
+      "target": "strlen",
+      "line_number": 23,
+      "meta.languageNamespace": ["strlen"],
+      "note": "CLAIMED positive: a listed ISO-C name, undeclared in this file, cites exactly its target."
+    },
+    {
+      "type": "calls",
+      "from": "c997_listed_malloc",
+      "target": "malloc",
+      "line_number": 27,
+      "meta.languageNamespace": ["malloc"],
+      "note": "CLAIMED positive #2."
+    },
+    {
+      "type": "calls",
+      "from": "c997_listed_memcpy",
+      "target": "memcpy",
+      "line_number": 31,
+      "meta.languageNamespace": ["memcpy"],
+      "note": "CLAIMED positive #3."
+    },
+    {
+      "type": "calls",
+      "from": "c997_samefile_free",
+      "target": "free",
+      "line_number": 40,
+      "meta.languageNamespace": null,
+      "note": "NEGATIVE (a): LISTED name but DECLARED in this file — must stay uncited; the claim can never excuse a project declaration."
+    },
+    {
+      "type": "calls",
+      "from": "c997_unlisted_library",
+      "target": "strlcpy",
+      "line_number": 45,
+      "meta.languageNamespace": null,
+      "note": "NEGATIVE (b): unlisted BSD name — the ISO-C vocabulary is the authority; no invented citation."
+    },
+    {
+      "type": "calls",
+      "from": "c997_third_party",
+      "target": "PyObject_Call",
+      "line_number": 50,
+      "meta.languageNamespace": null,
+      "note": "NEGATIVE (c): third-party name outside the vocabulary — uncited."
+    }
+  ],
+  "forbidSymbols": [],
+  "forbidRelationships": []
+}

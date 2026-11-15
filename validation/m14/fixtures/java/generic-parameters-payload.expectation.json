@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/generic-parameters-payload",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b generics payloads for java: class-level <T extends Comparable<T>> and method-level <R> genericParameters.",
+  "expectSymbols": [
+    { "name": "Store" },
+    { "name": "item" },
+    { "name": "map" }
+  ],
+  "expectTypeParameters": [
+    { "symbol": "Store", "includes": ["T"] },
+    { "symbol": "map", "includes": ["R"] }
+  ]
+}

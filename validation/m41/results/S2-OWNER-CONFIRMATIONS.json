@@ -1,0 +1,35 @@
+{
+  "issue": "M41.S2",
+  "note": "Owner attestations for actions performed in external dashboards that no agent can access. The S2 verifier fails if any entry is missing, unconfirmed, or lacks a date. Screenshots were pasted into the working session as visual corroboration; no secrets are recorded here.",
+  "confirmations": [
+    {
+      "engine": "google",
+      "property": "backbencher.cc (Domain property)",
+      "verificationMethod": "DNS TXT record google-site-verification=... added at Namecheap; Search Console reported verification success",
+      "sitemapSubmitted": "https://backbencher.cc/sitemap.xml submitted; resubmitted after production deploy so the first fetch succeeds",
+      "confirmedByOwner": true,
+      "confirmedOn": "2026-09-05"
+    },
+    {
+      "engine": "bing",
+      "property": "backbencher.cc/",
+      "verificationMethod": "Imported from Google Search Console (ownership carried over); Webmaster Tools dashboard active",
+      "sitemapSubmitted": "https://backbencher.cc/sitemap.xml submitted; status Processing at submit time, 0 errors 0 warnings",
+      "confirmedByOwner": true,
+      "confirmedOn": "2026-09-05"
+    },
+    {
+      "engine": "brave",
+      "property": "https://backbencher.cc (via sitemap URL re-fetch)",
+      "verificationMethod": "submit-url form accepted the submission (Success: Thank you for your submission)",
+      "sitemapSubmitted": "n/a — Brave has no dashboard; sitemap URL submitted through the re-fetch form",
+      "confirmedByOwner": true,
+      "confirmedOn": "2026-09-05"
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.537Z",
+    "contentSha256": "4a3199282422238dfebdf73c3ff2689d3c23a01480e84d4e22ecfe583e744597"
+  }
+}

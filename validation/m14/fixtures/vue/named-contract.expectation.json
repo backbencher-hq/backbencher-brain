@@ -1,0 +1,145 @@
+{
+  "fixtureId": "vue/named-contract",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F12 (master review 2026-09-30), the lane's Critical finding: the component contract is extracted only from INLINE literals, so defineProps<Named>(), defineEmits<Named>(), defineProps(binding) and defineEmits(binding) extract NOTHING. Measured on the restored corpus: 103 of 103 defineProps<Named>() sites lose the whole prop contract, 67 of 67 defineEmits(variable) sites lose every event, 22 of 22 defineProps(variable) \u2014 132 of the 232 corpus files that declare a contract lose ALL of it (11.5% of the corpus). Every one of the named/variable forms is resolvable on disk (97 import the type from a sibling module, 6 declare it in the same file, 0 unresolvable), so this is a shape-match, not unknowability. TWO emission shapes, each for a stated reason measured here: (A) a same-file BINDING resolves inside the SFC's own script trees, and its object-literal keys are published by nothing else, so component-owned Property/Event symbols are emitted exactly as the inline runtime form emits them. (B) a NAMED or IMPORTED declaration is an EDGE from the component to the declaring name, because the sub-analyzer already publishes that declaration's members under the DECLARATION's ownership (`contains LocalProps -> localA`) and the store's symbol key is ${fileId}:${name}:${startLine} with owner NOT in it \u2014 a component-owned copy at the same name and line was measured to SILENTLY REPLACE the declaration's own row (f12-keyproof.ts). The pre-fix analyzer emits NONE of the symbols and NONE of the edges below. The `forbidRelationships` half is the ownership pin that `forbidSymbols` cannot express: `localA`/`localB` legitimately exist as the INTERFACE's members (which the design preserves), so forbidding the NAME would forbid the correct output. What must not exist is a `contains` from the COMPONENT to them \u2014 a component-owned copy is exactly what the store key cannot hold.",
+  "expectSymbols": [
+    {
+      "name": "boundA",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "boundB",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "bound-save",
+      "kind": "event",
+      "meta.isEmit": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "bound-close",
+      "kind": "event",
+      "meta.isEmit": true,
+      "meta.isScriptSetup": true
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "boundA",
+      "startLine": 21,
+      "startColumn": 22
+    },
+    {
+      "symbol": "boundB",
+      "startLine": 21,
+      "startColumn": 38
+    },
+    {
+      "symbol": "bound-save",
+      "startLine": 22,
+      "startColumn": 21
+    },
+    {
+      "symbol": "bound-close",
+      "startLine": 22,
+      "startColumn": 35
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "RemoteProps"
+    },
+    {
+      "name": "remoteEmits"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "boundA",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "boundB"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "bound-save"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "bound-close"
+    },
+    {
+      "type": "references",
+      "from": "named-contract",
+      "target": "LocalProps",
+      "meta.isPropContract": true
+    },
+    {
+      "type": "references",
+      "from": "named-contract",
+      "target": "LocalEmits",
+      "meta.isEmitContract": true
+    },
+    {
+      "type": "references",
+      "from": "named-contract",
+      "target": "RemoteProps",
+      "meta.isPropContract": true
+    },
+    {
+      "type": "references",
+      "from": "named-contract",
+      "target": "remoteEmits",
+      "meta.isEmitContract": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "defineProps"
+    },
+    {
+      "type": "calls",
+      "target": "defineEmits"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "localA"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "localB"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "local-save"
+    },
+    {
+      "type": "contains",
+      "from": "named-contract",
+      "target": "local-close"
+    },
+    {
+      "type": "contains",
+      "from": "LocalProps",
+      "target": "localA",
+      "meta.notOwner": "named-contract"
+    }
+  ]
+}

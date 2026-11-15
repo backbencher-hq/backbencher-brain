@@ -3,9 +3,9 @@
   "governance": "Every expected answer was verified against the actual indexed symbol (name + file + line) on 2026-08-24 with the production indexer. Provenance: why the symbol is the correct answer to the query.",
   "analyzerGapsFound": [ "lodash groupBy is NOT in the fresh index (symbols assigned via createAggregator factory are not indexed by the TS analyzer) — routed to the analyzer milestone, not hidden. The content gold was replaced with chunk which resolves." ],
   "corpora": [
-    { "tag": "rake", "source": "$HOME/fixtures/repositories/rake", "languages": ["ruby"], "note": "Dependency manager source, 779 symbols" },
-    { "tag": "lodash", "source": "$HOME/fixtures/repositories/lodash", "languages": ["javascript"], "note": "Utility library source, 1048 symbols (indexed)" },
-    { "tag": "element-plus", "source": "$HOME/fixtures/repositories/element-plus", "languages": ["typescript", "vue"], "note": "Vue component library, 26k symbols — slowest corpus" }
+    { "tag": "rake", "source": "/home/ishaq2321/bb_tests/repositories/rake", "languages": ["ruby"], "note": "Dependency manager source, 779 symbols" },
+    { "tag": "lodash", "source": "/home/ishaq2321/bb_tests/repositories/lodash", "languages": ["javascript"], "note": "Utility library source, 1048 symbols (indexed)" },
+    { "tag": "element-plus", "source": "/home/ishaq2321/bb_tests/repositories/element-plus", "languages": ["typescript", "vue"], "note": "Vue component library, 26k symbols — slowest corpus" }
   ],
   "queries": [
     { "id": "rake-a1", "corpus": "rake", "mode": "ask", "query": "how do I define a new task", "expected": { "symbol": "task", "file": "lib/rake/dsl_definition.rb", "line": 59, "why": "task() in dsl_definition is the public DSL method that defines a Rake task." } },

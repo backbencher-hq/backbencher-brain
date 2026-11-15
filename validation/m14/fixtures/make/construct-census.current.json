@@ -1,0 +1,379 @@
+{
+  "instrument": "validation/m14/fixtures/make/tools/construct-census.mts",
+  "whatThisIs": "Three measurements in one pass over the whole router-admitted make population: (1) a STATIC grammar inventory of the pinned grammar's declared node types, fields and tokens, probed with each relationship type's vocabulary under a WHOLE-WORD predicate; (2) a per-type EMISSION census on the production path (`parseFile`), zeros included; (3) the `override_directive` SITE count from an AST walk, which is the denominator the emitted `overrides` edges are a deliberate subset of.",
+  "whatThisIsNot": "Not a resolution measurement. Whether each emitted edge binds to exactly one declaration is the incoming gate's question; this measures EMISSION, VOCABULARY and MEMBERSHIP.",
+  "revision": {
+    "head": "bad316c7d",
+    "measuredAt": "2026-10-11T15:32:43.457Z",
+    "hostLoad1minAtStart": "42.92",
+    "labelledAs": "whole router-admitted make population, production path, one run"
+  },
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "membership": {
+      "router": "detectLanguageFromPath(p) === 'make' — .mk/.mak/.makefile by extension, Makefile/makefile/GNUmakefile/.makefile/.gnumakefile by basename",
+      "lane-census-copy": "name ends with Makefile | .mk | .make (key-space-census.mts)",
+      "firing-check": "name ends with Makefile | .mk (firing-check.mjs LANES.MAKE ext set)",
+      "incoming-gate": "path lowercased ends with .mk | .mak | .makefile (cannot admit a bare Makefile — its own comment says so)"
+    },
+    "admittedByRule": {
+      "router": 697,
+      "lane-census-copy": 683,
+      "firing-check": 681,
+      "incoming-gate": 129
+    },
+    "admitted": 697,
+    "parsed": 697,
+    "degraded": 0,
+    "failed": 0,
+    "siteWalkFiles": 697,
+    "siteWalkFailed": 0,
+    "repos": 65,
+    "otpAdmitted": 352,
+    "membershipNote": "`admittedByRule` is the finding, not a curiosity: the same language has four different populations depending on which instrument asks. `.make` is admitted by the lane's own census copy and REFUSED by the production router; `GNUmakefile` is admitted by the router and missed by firing-check's suffix rule; a bare `Makefile` can never be admitted by the incoming gate's extension rule."
+  },
+  "grammarInventory": {
+    "source": "grammars/tree-sitter-make/src/node-types.json",
+    "whyStatic": "key-space-census.json records grammar.declaredNodeTypeCount = 0 with the note that the wasm binding exposes no node-type enumeration. This half is measurable offline, and the spec's grammarPin proves the wired wasm agrees with this file in both directions (0 missing, 0 named-only-in-wasm).",
+    "declaredNamedTypes": 44,
+    "declaredAnonymousTokens": 91,
+    "declaredFieldNames": 24,
+    "predicate": "WHOLE-WORD equality between a declared name and a vocabulary word; substring matches are candidates, never verdicts",
+    "perType": {
+      "extends": {
+        "vocabulary": [
+          "extends",
+          "extend",
+          "inherits",
+          "inherit",
+          "derives",
+          "derive",
+          "superclass",
+          "base",
+          "parent",
+          "subclass"
+        ],
+        "wholeWordMatches": [],
+        "substringCandidates": [
+          "anon:basename"
+        ],
+        "adjudication": {
+          "anon:basename": "a shell function token (`$(basename x.c)`) — it contains the letters of `base` and cannot express inheritance; this is the single candidate that made this instrument's first run report `extends PRESENT`"
+        },
+        "substringCandidatesThatMean": [],
+        "unadjudicatedCandidates": [],
+        "expressible": false,
+        "expressibleOnlyBySubstring": false
+      },
+      "implements": {
+        "vocabulary": [
+          "implements",
+          "implement",
+          "interface",
+          "protocol",
+          "conformance",
+          "satisfies",
+          "trait"
+        ],
+        "wholeWordMatches": [],
+        "substringCandidates": [],
+        "adjudication": {},
+        "substringCandidatesThatMean": [],
+        "unadjudicatedCandidates": [],
+        "expressible": false,
+        "expressibleOnlyBySubstring": false
+      },
+      "instantiates": {
+        "vocabulary": [
+          "instantiates",
+          "instantiate",
+          "new",
+          "constructor",
+          "object",
+          "class",
+          "struct",
+          "type"
+        ],
+        "wholeWordMatches": [],
+        "substringCandidates": [],
+        "adjudication": {},
+        "substringCandidatesThatMean": [],
+        "unadjudicatedCandidates": [],
+        "expressible": false,
+        "expressibleOnlyBySubstring": false
+      },
+      "overrides": {
+        "vocabulary": [
+          "overrides",
+          "override",
+          "overridden",
+          "redefine",
+          "redefinition"
+        ],
+        "wholeWordMatches": [
+          "anon:override"
+        ],
+        "substringCandidates": [
+          "node:override_directive"
+        ],
+        "adjudication": {
+          "node:override_directive": "the directive node itself — `override VAR = v`. It contains the keyword `override` rather than equalling it, and it IS the construct"
+        },
+        "substringCandidatesThatMean": [
+          "node:override_directive"
+        ],
+        "unadjudicatedCandidates": [],
+        "expressible": true,
+        "expressibleOnlyBySubstring": false
+      }
+    },
+    "control": {
+      "arm": "overrides is EXPRESSIBLE (declared token `override`)",
+      "result": "PRESENT",
+      "rule": "an inventory that cannot say PRESENT on a construct the language demonstrably has cannot be trusted to say ABSENT on one it lacks"
+    }
+  },
+  "emissions": {
+    "_unit": "edges: relationship rows returned by parseFile; files: distinct files the type fired in",
+    "productionPath": "src/ast/engine.ts parseFile (the path firing-check.mjs measures)",
+    "perType": {
+      "calls": {
+        "edges": 174,
+        "files": 25
+      },
+      "uses": {
+        "edges": 10328,
+        "files": 551
+      },
+      "contains": {
+        "edges": 11146,
+        "files": 679
+      },
+      "imports": {
+        "edges": 1210,
+        "files": 257
+      },
+      "references": {
+        "edges": 16621,
+        "files": 528
+      },
+      "exports": {
+        "edges": 5044,
+        "files": 516
+      },
+      "extends": {
+        "edges": 0,
+        "files": 0
+      },
+      "implements": {
+        "edges": 0,
+        "files": 0
+      },
+      "overrides": {
+        "edges": 3,
+        "files": 2
+      },
+      "instantiates": {
+        "edges": 0,
+        "files": 0
+      }
+    },
+    "totalEdges": 44526,
+    "otpSubset": {
+      "calls": {
+        "edges": 14,
+        "files": 2
+      },
+      "uses": {
+        "edges": 5900,
+        "files": 279
+      },
+      "contains": {
+        "edges": 3733,
+        "files": 334
+      },
+      "imports": {
+        "edges": 1165,
+        "files": 234
+      },
+      "references": {
+        "edges": 4655,
+        "files": 199
+      },
+      "exports": {
+        "edges": 1104,
+        "files": 176
+      },
+      "extends": {
+        "edges": 0,
+        "files": 0
+      },
+      "implements": {
+        "edges": 0,
+        "files": 0
+      },
+      "overrides": {
+        "edges": 2,
+        "files": 1
+      },
+      "instantiates": {
+        "edges": 0,
+        "files": 0
+      }
+    },
+    "otpNote": "otp is the lane's own LANES population (the corpus dir firing-check.mjs pins). Reported separately so a count over the lane's corpus and a count over the wider population are never averaged into one number."
+  },
+  "overridesSites": {
+    "_unit": "a SITE is one `override VAR = value` directive found by AST walk; an EDGE is emitted only where the same file declares a base at another line",
+    "sites": 5,
+    "siteFiles": 4,
+    "emittedEdges": 3,
+    "emittedEdgeFiles": 2,
+    "refusedSites": 2,
+    "refusedReason": "the `override` redefines a command-line or environment binding, which is not a symbol in the graph — the lane's original ruling, kept for exactly these sites",
+    "perSite": [
+      {
+        "file": "boundary/Makefile",
+        "line": 91,
+        "name": "LINT_DIFF_BRANCH"
+      },
+      {
+        "file": "otp/make/target.mk",
+        "line": 60,
+        "name": "TARGET"
+      },
+      {
+        "file": "otp/make/target.mk",
+        "line": 48,
+        "name": "TARGET"
+      },
+      {
+        "file": "redis/deps/xxhash/Makefile",
+        "line": 66,
+        "name": "DISPATCH"
+      },
+      {
+        "file": "tree-sitter-clean/Makefile",
+        "line": 24,
+        "name": "CFLAGS"
+      }
+    ],
+    "perEdge": [
+      {
+        "file": "otp/make/target.mk",
+        "line": 48,
+        "target": "TARGET",
+        "baseLine": 29,
+        "via": "override_directive"
+      },
+      {
+        "file": "otp/make/target.mk",
+        "line": 60,
+        "target": "TARGET",
+        "baseLine": 29,
+        "via": "override_directive"
+      },
+      {
+        "file": "redis/deps/xxhash/Makefile",
+        "line": 66,
+        "target": "DISPATCH",
+        "baseLine": 61,
+        "via": "override_directive"
+      }
+    ],
+    "refusedPerSite": [
+      {
+        "file": "boundary/Makefile",
+        "line": 91,
+        "name": "LINT_DIFF_BRANCH"
+      },
+      {
+        "file": "tree-sitter-clean/Makefile",
+        "line": 24,
+        "name": "CFLAGS"
+      }
+    ]
+  },
+  "zeroStatements": {
+    "_why": "A type that is ABSENT must be printed as a number, not inferred from a missing row (§5s). Each type is shown with the grammar verdict it rests on and the emission count beside it.",
+    "perType": {
+      "calls": {
+        "grammarExpressibleWholeWord": null,
+        "substringCandidates": [],
+        "emittedEdges": 174,
+        "emittedFiles": 25,
+        "otpEdges": 14
+      },
+      "uses": {
+        "grammarExpressibleWholeWord": null,
+        "substringCandidates": [],
+        "emittedEdges": 10328,
+        "emittedFiles": 551,
+        "otpEdges": 5900
+      },
+      "contains": {
+        "grammarExpressibleWholeWord": null,
+        "substringCandidates": [],
+        "emittedEdges": 11146,
+        "emittedFiles": 679,
+        "otpEdges": 3733
+      },
+      "imports": {
+        "grammarExpressibleWholeWord": null,
+        "substringCandidates": [],
+        "emittedEdges": 1210,
+        "emittedFiles": 257,
+        "otpEdges": 1165
+      },
+      "references": {
+        "grammarExpressibleWholeWord": null,
+        "substringCandidates": [],
+        "emittedEdges": 16621,
+        "emittedFiles": 528,
+        "otpEdges": 4655
+      },
+      "exports": {
+        "grammarExpressibleWholeWord": null,
+        "substringCandidates": [],
+        "emittedEdges": 5044,
+        "emittedFiles": 516,
+        "otpEdges": 1104
+      },
+      "extends": {
+        "grammarExpressibleWholeWord": false,
+        "substringCandidates": [
+          "anon:basename"
+        ],
+        "emittedEdges": 0,
+        "emittedFiles": 0,
+        "otpEdges": 0
+      },
+      "implements": {
+        "grammarExpressibleWholeWord": false,
+        "substringCandidates": [],
+        "emittedEdges": 0,
+        "emittedFiles": 0,
+        "otpEdges": 0
+      },
+      "overrides": {
+        "grammarExpressibleWholeWord": true,
+        "substringCandidates": [
+          "node:override_directive"
+        ],
+        "emittedEdges": 3,
+        "emittedFiles": 2,
+        "otpEdges": 2
+      },
+      "instantiates": {
+        "grammarExpressibleWholeWord": false,
+        "substringCandidates": [],
+        "emittedEdges": 0,
+        "emittedFiles": 0,
+        "otpEdges": 0
+      }
+    }
+  },
+  "degradedFiles": [],
+  "failedFiles": [],
+  "siteWalkFailedFiles": []
+}

@@ -1,0 +1,18 @@
+# The lane's CLOSED vocabulary of resolved value shapes, pinned end to end. A data
+# language has no type system to read, so the value vocabulary IS the type contract,
+# and leaving one member unpinned is how a placeholder string comes back: the M60
+# sentinel census records `return "unknown"` as this lane's one R7 violation, and the
+# fix replaced it with `untyped` — YAML's own name for a plain scalar carrying no tag.
+#
+# `danglingAnchor` is the shape that produces it: an anchor with no value.
+object:
+  a: 1
+array:
+  - 1
+string: text
+integer: 7
+float: 1.5
+boolean: true
+nullValue: ~
+danglingAnchor: &lonely
+stillAnInteger: 7

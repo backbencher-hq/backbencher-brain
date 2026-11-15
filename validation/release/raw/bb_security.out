@@ -1,0 +1,29 @@
+security: 249 critical / 145 high / 0 medium / 0 low / 106 unknown (189 resolved flows, 311 unvalidated sources, 0 mitigated)
+  [critical] SQL injection (executeQuery) @ graphql-js/execution/__tests__/abstract-test.ts:27 <- database_read -> database_write
+  [critical] SQL injection (executeQuery) @ graphql-js/execution/__tests__/errorPropagation-test.ts:30 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/errorPropagation-test.ts:44 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/errorPropagation-test.ts:62 <- database_read -> database_write
+  [critical] SQL injection (complete) @ graphql-js/execution/__tests__/lists-test.ts:580 <- database_read -> database_write
+  [critical] SQL injection (executeQuery) @ graphql-js/execution/__tests__/lists-test.ts:600 <- database_read -> database_write
+  [critical] SQL injection (executeQuery) @ graphql-js/execution/__tests__/nonnull-test.ts:115 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:247 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:252 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:378 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:439 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:545 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:575 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:611 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/nonnull-test.ts:647 <- database_read -> database_write
+  [critical] SQL injection (resultPromise) @ graphql-js/execution/__tests__/nonnull-test.ts:682 <- database_read -> database_write
+  [critical] SQL injection (executeQuery) @ graphql-js/execution/__tests__/oneof-test.ts:28 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/oneof-test.ts:101 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/oneof-test.ts:122 <- database_read -> database_write
+  [critical] SQL injection (result) @ graphql-js/execution/__tests__/oneof-test.ts:145 <- database_read -> database_write
+[scan: 678 taint flow(s) indexed → 665 finding(s) (165 beyond the cap); showing 20 finding(s) and 5 of 311 unvalidated observation(s)]
+
+unvalidated observations (leads, not confirmed exploitable paths):
+  [critical] unvalidated sink: SQL injection result @ graphql-js/__tests__/graphql-test.ts:148 (sink found; source endpoint not resolved to an indexed symbol)
+  [critical] unvalidated sink: SQL injection 'graphql:execute:rootSelectionSet' @ graphql-js/diagnostics.ts:260 (sink found; source endpoint not resolved to an indexed symbol)
+  [critical] unvalidated sink: SQL injection 'graphql:execute:variableCoercion' @ graphql-js/diagnostics.ts:258 (sink found; source endpoint not resolved to an indexed symbol)
+  [critical] unvalidated sink: SQL injection 'graphql:execute' @ graphql-js/diagnostics.ts:256 (sink found; source endpoint not resolved to an indexed symbol)
+  [critical] unvalidated sink: SQL injection execute @ graphql-js/diagnostics.ts:275 (sink found; source endpoint not resolved to an indexed symbol)

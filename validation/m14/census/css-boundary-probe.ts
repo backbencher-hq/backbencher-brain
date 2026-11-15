@@ -64,7 +64,7 @@ import { parseFile } from "../../../src/ast/pool-worker"
 import { RealCssAnalyzer } from "../../../src/ast/real-css-analyzer"
 import { loadWebTreeSitter, resolveWasmAsset } from "../../../src/util/wasm"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 type File = { repo: string; dir: string; rel: string; abs: string }
 const files: File[] = []

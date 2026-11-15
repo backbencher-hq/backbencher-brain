@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P8",
+  "code": "P8",
+  "tool": "bb_patterns",
+  "title": "mode coverage — orphaned and all",
+  "verified": true,
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:18:51.506Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.340Z",
+    "contentSha256": "761b5159b4a06da7908098fca3d86e032b2952f1d27d863811cfc6c7381474fd"
+  }
+}

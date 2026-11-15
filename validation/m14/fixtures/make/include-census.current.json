@@ -1,0 +1,3816 @@
+{
+  "instrument": "script/m14/tmp/make/include-census.mts",
+  "whatThisIs": "Include census for the part_of wall over the whole router-admitted make population: include SITES by AST walk (literal vs computed), and the part_of EMISSION's symbol-shaped targets checked against the admitted file list by basename and by written-path resolution.",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "membership": "detectLanguageFromPath(p) === 'make' over git ls-files per repo — the incoming gate's own enumeration and admission",
+    "admitted": 755,
+    "absent": 66,
+    "overCap": 0,
+    "parsed": 755,
+    "degraded": 0,
+    "failed": 0,
+    "walkFailed": 0,
+    "repos": 67
+  },
+  "includeSites": {
+    "total": 278,
+    "literal": 264,
+    "computed": 14,
+    "files": 198
+  },
+  "partOfEmission": {
+    "edges": 264,
+    "importsEdgesForCrossCheck": 1212,
+    "targetsAdmittedByBasename": 238,
+    "targetsAbsentByBasename": 26,
+    "targetsPathResolved": 231,
+    "targetsPathUnresolved": 33
+  },
+  "perSite": [
+    {
+      "file": "bash-completion/test/fixtures/make/Makefile",
+      "line": 46,
+      "written": "extra_makefile",
+      "kind": "literal"
+    },
+    {
+      "file": "bash-completion/test/fixtures/make/Makefile",
+      "line": 40,
+      "written": "sample.d",
+      "kind": "literal"
+    },
+    {
+      "file": "docker/vendor/github.com/Microsoft/hcsshim/Makefile",
+      "line": 1,
+      "written": "Makefile.bootfiles",
+      "kind": "literal"
+    },
+    {
+      "file": "docker/vendor/github.com/mistifyio/go-zfs/v4/Makefile",
+      "line": 7,
+      "written": "lint.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "docker/vendor/github.com/mistifyio/go-zfs/v4/Makefile",
+      "line": 6,
+      "written": "rules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "docker/vendor/github.com/prometheus/procfs/Makefile",
+      "line": 14,
+      "written": "Makefile.common",
+      "kind": "literal"
+    },
+    {
+      "file": "fmt/support/Android.mk",
+      "line": 14,
+      "written": "$(BUILD_STATIC_LIBRARY)",
+      "kind": "computed"
+    },
+    {
+      "file": "fmt/support/Android.mk",
+      "line": 2,
+      "written": "$(CLEAR_VARS)",
+      "kind": "computed"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 20,
+      "written": "./scripts/make/test-infrastructure.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 19,
+      "written": "./scripts/make/tests.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 18,
+      "written": "./scripts/make/run.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 17,
+      "written": "./scripts/make/repl.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 16,
+      "written": "./scripts/make/metadata-api.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 15,
+      "written": "./scripts/make/lint.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 14,
+      "written": "./scripts/make/legacy-tests.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 13,
+      "written": "./scripts/make/ghcid.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 12,
+      "written": "./scripts/make/frontend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 11,
+      "written": "./scripts/make/ci.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 10,
+      "written": "./scripts/make/build.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "kubernetes/vendor/github.com/prometheus/procfs/Makefile",
+      "line": 14,
+      "written": "Makefile.common",
+      "kind": "literal"
+    },
+    {
+      "file": "luarocks/GNUmakefile",
+      "line": 3,
+      "written": "config.unix",
+      "kind": "literal"
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 86,
+      "written": "GNUMakefile.local",
+      "kind": "literal"
+    },
+    {
+      "file": "nvm/test/fixtures/fake-source-tarball/Makefile",
+      "line": 1,
+      "written": "config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/Makefile",
+      "line": 26,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/epmd/test/Makefile",
+      "line": 26,
+      "written": "../epmd.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/etc/unix/Makefile",
+      "line": 27,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/etc/win32/Makefile",
+      "line": 26,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/lib_src/yielding_c_fun/GNUmakefile",
+      "line": 82,
+      "written": "main_target.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/erts/start_scripts/Makefile",
+      "line": 62,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/asn1/Makefile",
+      "line": 35,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/asn1/c_src/Makefile",
+      "line": 34,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/asn1/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/asn1/src/Makefile",
+      "line": 32,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/common_test/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/common_test/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/common_test/src/Makefile",
+      "line": 33,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/compiler/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/compiler/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/compiler/src/Makefile",
+      "line": 39,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/crypto/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/crypto/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/crypto/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/debugger/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/debugger/priv/Makefile",
+      "line": 27,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/debugger/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/dialyzer/Makefile",
+      "line": 37,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/dialyzer/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/dialyzer/src/Makefile",
+      "line": 35,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/asn1/Makefile",
+      "line": 11,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/inets/Makefile",
+      "line": 25,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/mnesia/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/Makefile",
+      "line": 25,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/Makefile",
+      "line": 24,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/examples/dict/GNUmakefile",
+      "line": 53,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 330,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 53,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 29,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 222,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 43,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 29,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/Makefile",
+      "line": 39,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/bin/Makefile",
+      "line": 38,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/doc/Makefile",
+      "line": 40,
+      "written": "../src/files.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/include/Makefile",
+      "line": 36,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/priv/Makefile",
+      "line": 36,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/src/Makefile",
+      "line": 58,
+      "written": "files.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/edoc/src/Makefile",
+      "line": 36,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eldap/Makefile",
+      "line": 33,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eldap/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eldap/src/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/erl_interface/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/et/Makefile",
+      "line": 31,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/et/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/et/examples/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/et/src/Makefile",
+      "line": 53,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/et/src/Makefile",
+      "line": 40,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eunit/Makefile",
+      "line": 40,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eunit/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eunit/examples/Makefile",
+      "line": 31,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/eunit/src/Makefile",
+      "line": 39,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ftp/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ftp/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ftp/src/Makefile",
+      "line": 31,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ftp/test/Makefile",
+      "line": 32,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/examples/Makefile",
+      "line": 30,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/examples/server_root/Makefile",
+      "line": 29,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/Makefile",
+      "line": 30,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/http_client/Makefile",
+      "line": 135,
+      "written": "$(DEP_FILE)",
+      "kind": "computed"
+    },
+    {
+      "file": "otp/lib/inets/src/http_client/Makefile",
+      "line": 79,
+      "written": "../inets_app/inets.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/http_client/Makefile",
+      "line": 32,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/http_lib/Makefile",
+      "line": 132,
+      "written": "$(DEP_FILE)",
+      "kind": "computed"
+    },
+    {
+      "file": "otp/lib/inets/src/http_lib/Makefile",
+      "line": 76,
+      "written": "../inets_app/inets.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/http_lib/Makefile",
+      "line": 32,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/http_server/Makefile",
+      "line": 178,
+      "written": "$(DEP_FILE)",
+      "kind": "computed"
+    },
+    {
+      "file": "otp/lib/inets/src/http_server/Makefile",
+      "line": 119,
+      "written": "../inets_app/inets.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/http_server/Makefile",
+      "line": 31,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/inets_app/Makefile",
+      "line": 159,
+      "written": "$(DEP_FILE)",
+      "kind": "computed"
+    },
+    {
+      "file": "otp/lib/inets/src/inets_app/Makefile",
+      "line": 91,
+      "written": "inets.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/src/inets_app/Makefile",
+      "line": 32,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/test/Makefile",
+      "line": 33,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/inets/test/httpd_test_data/server_root/Makefile",
+      "line": 29,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/jinterface/Makefile",
+      "line": 28,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/jinterface/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/jinterface/java_src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/jinterface/test/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/kernel/Makefile",
+      "line": 28,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/kernel/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/kernel/examples/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/kernel/src/Makefile",
+      "line": 40,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/Makefile",
+      "line": 63,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/Makefile",
+      "line": 28,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/examples/simple/Makefile",
+      "line": 51,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/examples/simple/Makefile",
+      "line": 37,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/Makefile",
+      "line": 29,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 131,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 69,
+      "written": "megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 46,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 33,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 169,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 95,
+      "written": "../app/megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 48,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 34,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 118,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 66,
+      "written": "../app/megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 46,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 33,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/flex/Makefile",
+      "line": 27,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 110,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 62,
+      "written": "../app/megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 47,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 33,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 148,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 70,
+      "written": "../app/megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 47,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 33,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 61,
+      "written": "../app/megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 46,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 33,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 84,
+      "written": "../src/app/megaco.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 56,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 29,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/mnesia/Makefile",
+      "line": 33,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/mnesia/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/mnesia/examples/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/mnesia/include/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/mnesia/src/Makefile",
+      "line": 35,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/observer/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/observer/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/observer/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/odbc/Makefile",
+      "line": 33,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/odbc/Makefile",
+      "line": 31,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/odbc/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/odbc/src/Makefile",
+      "line": 35,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/os_mon/Makefile",
+      "line": 30,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/os_mon/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/os_mon/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/parsetools/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/parsetools/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/parsetools/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/public_key/Makefile",
+      "line": 33,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/public_key/asn1/Makefile",
+      "line": 32,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/public_key/c_src/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/public_key/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/public_key/src/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/reltool/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/reltool/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/reltool/examples/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/reltool/src/Makefile",
+      "line": 44,
+      "written": "files.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/reltool/src/Makefile",
+      "line": 29,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/runtime_tools/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/runtime_tools/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/runtime_tools/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/sasl/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/sasl/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/sasl/examples/src/Makefile",
+      "line": 31,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/sasl/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/Makefile",
+      "line": 30,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/examples/Makefile",
+      "line": 30,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/examples/ex1/Makefile",
+      "line": 29,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/examples/ex2/Makefile",
+      "line": 29,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/Makefile",
+      "line": 30,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/agent/Makefile",
+      "line": 42,
+      "written": "files.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/agent/Makefile",
+      "line": 29,
+      "written": "../../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/manager/Makefile",
+      "line": 42,
+      "written": "files.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/manager/Makefile",
+      "line": 29,
+      "written": "../../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/Makefile",
+      "line": 30,
+      "written": "subdirs.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 158,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 46,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 32,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 154,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 49,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 34,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 148,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 46,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 32,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 150,
+      "written": "depend.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 46,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 32,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/test/Makefile",
+      "line": 39,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/test/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 44,
+      "written": "modules.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 30,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssh/Makefile",
+      "line": 33,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssh/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssh/examples/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssh/src/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssl/Makefile",
+      "line": 33,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssl/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssl/examples/certs/Makefile",
+      "line": 33,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssl/examples/src/Makefile",
+      "line": 31,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssl/src/Makefile",
+      "line": 31,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/ssl/test/Makefile",
+      "line": 33,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/stdlib/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/stdlib/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/stdlib/examples/Makefile",
+      "line": 34,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/stdlib/src/Makefile",
+      "line": 34,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/syntax_tools/Makefile",
+      "line": 39,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/syntax_tools/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/syntax_tools/examples/Makefile",
+      "line": 31,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/syntax_tools/src/Makefile",
+      "line": 38,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tftp/Makefile",
+      "line": 32,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tftp/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tftp/src/Makefile",
+      "line": 30,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tftp/test/Makefile",
+      "line": 32,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tools/Makefile",
+      "line": 31,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tools/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tools/emacs/Makefile",
+      "line": 27,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tools/examples/Makefile",
+      "line": 33,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/tools/src/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/Makefile",
+      "line": 24,
+      "written": "./config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/Makefile",
+      "line": 23,
+      "written": "./vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/doc/Makefile",
+      "line": 27,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/doc/Makefile",
+      "line": 22,
+      "written": "../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/Makefile",
+      "line": 24,
+      "written": "../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/Makefile",
+      "line": 23,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/demo/Makefile",
+      "line": 24,
+      "written": "../../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/demo/Makefile",
+      "line": 23,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/simple/Makefile",
+      "line": 24,
+      "written": "../../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/simple/Makefile",
+      "line": 23,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/sudoku/Makefile",
+      "line": 24,
+      "written": "../../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/examples/sudoku/Makefile",
+      "line": 23,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/src/Makefile",
+      "line": 24,
+      "written": "../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/src/Makefile",
+      "line": 23,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/test/Makefile",
+      "line": 24,
+      "written": "../config.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/wx/test/Makefile",
+      "line": 23,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/xmerl/Makefile",
+      "line": 27,
+      "written": "vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/xmerl/doc/Makefile",
+      "line": 28,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/xmerl/doc/examples/Makefile",
+      "line": 11,
+      "written": "../../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 29,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/lib/xmerl/test/Makefile",
+      "line": 29,
+      "written": "../vsn.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "otp/make/dep.mk",
+      "line": 44,
+      "written": "$(DEP_FILE)",
+      "kind": "computed"
+    },
+    {
+      "file": "pb-grpc/Makefile",
+      "line": 2424,
+      "written": "$(LIBZ_OBJS:.o=.dep)",
+      "kind": "computed"
+    },
+    {
+      "file": "pb-grpc/Makefile",
+      "line": 2382,
+      "written": "$(LIBCARES_OBJS:.o=.dep)",
+      "kind": "computed"
+    },
+    {
+      "file": "pb-grpc/Makefile",
+      "line": 2261,
+      "written": "$(LIBBORINGSSL_OBJS:.o=.dep)",
+      "kind": "computed"
+    },
+    {
+      "file": "pb-grpc/Makefile",
+      "line": 1947,
+      "written": "$(LIBGRPC_OBJS:.o=.dep)",
+      "kind": "computed"
+    },
+    {
+      "file": "pb-grpc/Makefile",
+      "line": 397,
+      "written": "cache.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "redis/Makefile",
+      "line": 26,
+      "written": "modules/manifest.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 104,
+      "written": "build/make/multiconf.make",
+      "kind": "literal"
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 6,
+      "written": "manifest.mk",
+      "kind": "literal"
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 492,
+      "written": "$(DEP)",
+      "kind": "computed"
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 422,
+      "written": "Makefile.dep",
+      "kind": "literal"
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 150,
+      "written": ".make-settings",
+      "kind": "literal"
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1170,
+      "written": ".wasmbuilds.make",
+      "kind": "literal"
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 112,
+      "written": "./config.make",
+      "kind": "literal"
+    },
+    {
+      "file": "terraform-aws-components/Makefile",
+      "line": 7,
+      "written": "$(shell curl -sSL -o .build-harness \"https://cloudposse.tools/build-harness\"; echo .build-harness)",
+      "kind": "computed"
+    },
+    {
+      "file": "terraform-aws-components/deprecated/aws/ses/Makefile",
+      "line": 1,
+      "written": ".terraform/modules/**/Makefile.ses",
+      "kind": "literal"
+    },
+    {
+      "file": "tf-aws-components/Makefile",
+      "line": 7,
+      "written": "$(shell curl -sSL -o .build-harness \"https://cloudposse.tools/build-harness\"; echo .build-harness)",
+      "kind": "computed"
+    },
+    {
+      "file": "tf-aws-components/deprecated/aws/ses/Makefile",
+      "line": 1,
+      "written": ".terraform/modules/**/Makefile.ses",
+      "kind": "literal"
+    },
+    {
+      "file": "vault/Makefile",
+      "line": 200,
+      "written": "hooks",
+      "kind": "literal"
+    },
+    {
+      "file": "yq/Makefile",
+      "line": 7,
+      "written": "Makefile.variables",
+      "kind": "literal"
+    }
+  ],
+  "perTarget": [
+    {
+      "file": "bash-completion/test/fixtures/make/Makefile",
+      "line": 40,
+      "path": "sample.d",
+      "symbol": "sample.d",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "bash-completion/test/fixtures/make/Makefile",
+      "line": 46,
+      "path": "extra_makefile",
+      "symbol": "extra_makefile",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "docker/vendor/github.com/Microsoft/hcsshim/Makefile",
+      "line": 1,
+      "path": "Makefile.bootfiles",
+      "symbol": "Makefile.bootfiles",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "docker/vendor/github.com/mistifyio/go-zfs/v4/Makefile",
+      "line": 6,
+      "path": "rules.mk",
+      "symbol": "rules.mk",
+      "admitted": true,
+      "absRel": "docker/vendor/github.com/mistifyio/go-zfs/v4/rules.mk"
+    },
+    {
+      "file": "docker/vendor/github.com/mistifyio/go-zfs/v4/Makefile",
+      "line": 7,
+      "path": "lint.mk",
+      "symbol": "lint.mk",
+      "admitted": true,
+      "absRel": "docker/vendor/github.com/mistifyio/go-zfs/v4/lint.mk"
+    },
+    {
+      "file": "docker/vendor/github.com/prometheus/procfs/Makefile",
+      "line": 14,
+      "path": "Makefile.common",
+      "symbol": "Makefile.common",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 10,
+      "path": "./scripts/make/build.mk",
+      "symbol": "build.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/build.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 11,
+      "path": "./scripts/make/ci.mk",
+      "symbol": "ci.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/ci.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 12,
+      "path": "./scripts/make/frontend.mk",
+      "symbol": "frontend.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/frontend.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 13,
+      "path": "./scripts/make/ghcid.mk",
+      "symbol": "ghcid.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/ghcid.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 14,
+      "path": "./scripts/make/legacy-tests.mk",
+      "symbol": "legacy-tests.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/legacy-tests.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 15,
+      "path": "./scripts/make/lint.mk",
+      "symbol": "lint.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/lint.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 16,
+      "path": "./scripts/make/metadata-api.mk",
+      "symbol": "metadata-api.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/metadata-api.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 17,
+      "path": "./scripts/make/repl.mk",
+      "symbol": "repl.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/repl.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 18,
+      "path": "./scripts/make/run.mk",
+      "symbol": "run.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/run.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 19,
+      "path": "./scripts/make/tests.mk",
+      "symbol": "tests.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/tests.mk"
+    },
+    {
+      "file": "hasura-engine/Makefile",
+      "line": 20,
+      "path": "./scripts/make/test-infrastructure.mk",
+      "symbol": "test-infrastructure.mk",
+      "admitted": true,
+      "absRel": "hasura-engine/scripts/make/test-infrastructure.mk"
+    },
+    {
+      "file": "kubernetes/vendor/github.com/prometheus/procfs/Makefile",
+      "line": 14,
+      "path": "Makefile.common",
+      "symbol": "Makefile.common",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "luarocks/GNUmakefile",
+      "line": 3,
+      "path": "config.unix",
+      "symbol": "config.unix",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "nomad/GNUmakefile",
+      "line": 86,
+      "path": "GNUMakefile.local",
+      "symbol": "GNUMakefile.local",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "nvm/test/fixtures/fake-source-tarball/Makefile",
+      "line": 1,
+      "path": "config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/erts/Makefile",
+      "line": 26,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/erts/vsn.mk"
+    },
+    {
+      "file": "otp/erts/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/erts/vsn.mk"
+    },
+    {
+      "file": "otp/erts/epmd/test/Makefile",
+      "line": 26,
+      "path": "../epmd.mk",
+      "symbol": "epmd.mk",
+      "admitted": true,
+      "absRel": "otp/erts/epmd/epmd.mk"
+    },
+    {
+      "file": "otp/erts/etc/unix/Makefile",
+      "line": 27,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/erts/vsn.mk"
+    },
+    {
+      "file": "otp/erts/etc/win32/Makefile",
+      "line": 26,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/erts/vsn.mk"
+    },
+    {
+      "file": "otp/erts/lib_src/yielding_c_fun/GNUmakefile",
+      "line": 82,
+      "path": "main_target.mk",
+      "symbol": "main_target.mk",
+      "admitted": true,
+      "absRel": "otp/erts/lib_src/yielding_c_fun/main_target.mk"
+    },
+    {
+      "file": "otp/erts/start_scripts/Makefile",
+      "line": 62,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/erts/vsn.mk"
+    },
+    {
+      "file": "otp/lib/asn1/Makefile",
+      "line": 35,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/asn1/vsn.mk"
+    },
+    {
+      "file": "otp/lib/asn1/c_src/Makefile",
+      "line": 34,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/asn1/vsn.mk"
+    },
+    {
+      "file": "otp/lib/asn1/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/asn1/vsn.mk"
+    },
+    {
+      "file": "otp/lib/asn1/src/Makefile",
+      "line": 32,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/asn1/vsn.mk"
+    },
+    {
+      "file": "otp/lib/common_test/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/common_test/vsn.mk"
+    },
+    {
+      "file": "otp/lib/common_test/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/common_test/vsn.mk"
+    },
+    {
+      "file": "otp/lib/common_test/src/Makefile",
+      "line": 33,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/common_test/vsn.mk"
+    },
+    {
+      "file": "otp/lib/compiler/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/compiler/vsn.mk"
+    },
+    {
+      "file": "otp/lib/compiler/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/compiler/vsn.mk"
+    },
+    {
+      "file": "otp/lib/compiler/src/Makefile",
+      "line": 39,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/compiler/vsn.mk"
+    },
+    {
+      "file": "otp/lib/crypto/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/crypto/vsn.mk"
+    },
+    {
+      "file": "otp/lib/crypto/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/crypto/vsn.mk"
+    },
+    {
+      "file": "otp/lib/crypto/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/crypto/vsn.mk"
+    },
+    {
+      "file": "otp/lib/debugger/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/debugger/vsn.mk"
+    },
+    {
+      "file": "otp/lib/debugger/priv/Makefile",
+      "line": 27,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/debugger/vsn.mk"
+    },
+    {
+      "file": "otp/lib/debugger/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/debugger/vsn.mk"
+    },
+    {
+      "file": "otp/lib/dialyzer/Makefile",
+      "line": 37,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/dialyzer/vsn.mk"
+    },
+    {
+      "file": "otp/lib/dialyzer/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/dialyzer/vsn.mk"
+    },
+    {
+      "file": "otp/lib/dialyzer/src/Makefile",
+      "line": 35,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/dialyzer/vsn.mk"
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/asn1/Makefile",
+      "line": 11,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/inets/Makefile",
+      "line": 25,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/dialyzer/test/r9c_SUITE_data/src/mnesia/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/diameter/Makefile",
+      "line": 24,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/vsn.mk"
+    },
+    {
+      "file": "otp/lib/diameter/Makefile",
+      "line": 25,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/diameter/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/vsn.mk"
+    },
+    {
+      "file": "otp/lib/diameter/examples/dict/GNUmakefile",
+      "line": 53,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 29,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/vsn.mk"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 53,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/src/modules.mk"
+    },
+    {
+      "file": "otp/lib/diameter/src/Makefile",
+      "line": 330,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 29,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/vsn.mk"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 43,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/diameter/test/modules.mk"
+    },
+    {
+      "file": "otp/lib/diameter/test/Makefile",
+      "line": 222,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/edoc/Makefile",
+      "line": 39,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/edoc/bin/Makefile",
+      "line": 38,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/edoc/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/edoc/doc/Makefile",
+      "line": 40,
+      "path": "../src/files.mk",
+      "symbol": "files.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/src/files.mk"
+    },
+    {
+      "file": "otp/lib/edoc/include/Makefile",
+      "line": 36,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/edoc/priv/Makefile",
+      "line": 36,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/edoc/src/Makefile",
+      "line": 36,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/edoc/src/Makefile",
+      "line": 58,
+      "path": "files.mk",
+      "symbol": "files.mk",
+      "admitted": true,
+      "absRel": "otp/lib/edoc/src/files.mk"
+    },
+    {
+      "file": "otp/lib/eldap/Makefile",
+      "line": 33,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eldap/vsn.mk"
+    },
+    {
+      "file": "otp/lib/eldap/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eldap/vsn.mk"
+    },
+    {
+      "file": "otp/lib/eldap/src/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eldap/vsn.mk"
+    },
+    {
+      "file": "otp/lib/erl_interface/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/erl_interface/vsn.mk"
+    },
+    {
+      "file": "otp/lib/et/Makefile",
+      "line": 31,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/et/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/et/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/et/vsn.mk"
+    },
+    {
+      "file": "otp/lib/et/examples/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/et/vsn.mk"
+    },
+    {
+      "file": "otp/lib/et/src/Makefile",
+      "line": 40,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/et/vsn.mk"
+    },
+    {
+      "file": "otp/lib/et/src/Makefile",
+      "line": 53,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/et/src/modules.mk"
+    },
+    {
+      "file": "otp/lib/eunit/Makefile",
+      "line": 40,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eunit/vsn.mk"
+    },
+    {
+      "file": "otp/lib/eunit/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eunit/vsn.mk"
+    },
+    {
+      "file": "otp/lib/eunit/examples/Makefile",
+      "line": 31,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eunit/vsn.mk"
+    },
+    {
+      "file": "otp/lib/eunit/src/Makefile",
+      "line": 39,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/eunit/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ftp/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ftp/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ftp/src/Makefile",
+      "line": 31,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ftp/test/Makefile",
+      "line": 32,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/examples/Makefile",
+      "line": 30,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/examples/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/inets/examples/server_root/Makefile",
+      "line": 29,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/Makefile",
+      "line": 30,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/src/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/http_client/Makefile",
+      "line": 32,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/http_client/Makefile",
+      "line": 79,
+      "path": "../inets_app/inets.mk",
+      "symbol": "inets.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/src/inets_app/inets.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/http_lib/Makefile",
+      "line": 32,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/http_lib/Makefile",
+      "line": 76,
+      "path": "../inets_app/inets.mk",
+      "symbol": "inets.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/src/inets_app/inets.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/http_server/Makefile",
+      "line": 31,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/http_server/Makefile",
+      "line": 119,
+      "path": "../inets_app/inets.mk",
+      "symbol": "inets.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/src/inets_app/inets.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/inets_app/Makefile",
+      "line": 32,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/src/inets_app/Makefile",
+      "line": 91,
+      "path": "inets.mk",
+      "symbol": "inets.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/src/inets_app/inets.mk"
+    },
+    {
+      "file": "otp/lib/inets/test/Makefile",
+      "line": 33,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/inets/vsn.mk"
+    },
+    {
+      "file": "otp/lib/inets/test/httpd_test_data/server_root/Makefile",
+      "line": 29,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/jinterface/Makefile",
+      "line": 28,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/jinterface/vsn.mk"
+    },
+    {
+      "file": "otp/lib/jinterface/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/jinterface/vsn.mk"
+    },
+    {
+      "file": "otp/lib/jinterface/java_src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/jinterface/vsn.mk"
+    },
+    {
+      "file": "otp/lib/jinterface/test/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/jinterface/vsn.mk"
+    },
+    {
+      "file": "otp/lib/kernel/Makefile",
+      "line": 28,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/kernel/vsn.mk"
+    },
+    {
+      "file": "otp/lib/kernel/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/kernel/vsn.mk"
+    },
+    {
+      "file": "otp/lib/kernel/examples/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/kernel/vsn.mk"
+    },
+    {
+      "file": "otp/lib/kernel/src/Makefile",
+      "line": 40,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/kernel/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/Makefile",
+      "line": 28,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/Makefile",
+      "line": 63,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/megaco/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/examples/simple/Makefile",
+      "line": 37,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/examples/simple/Makefile",
+      "line": 51,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/examples/simple/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/Makefile",
+      "line": 29,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 33,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 46,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 69,
+      "path": "megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/app/Makefile",
+      "line": 131,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/depend.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 34,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 48,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/binary/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 95,
+      "path": "../app/megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/binary/Makefile",
+      "line": 169,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/binary/depend.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 33,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 46,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/engine/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 66,
+      "path": "../app/megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/engine/Makefile",
+      "line": 118,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/engine/depend.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/flex/Makefile",
+      "line": 27,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/flex/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 33,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 47,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/tcp/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 62,
+      "path": "../app/megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/tcp/Makefile",
+      "line": 110,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/tcp/depend.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 33,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 47,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/text/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 70,
+      "path": "../app/megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/text/Makefile",
+      "line": 148,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/text/depend.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 33,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 46,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/udp/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/src/udp/Makefile",
+      "line": 61,
+      "path": "../app/megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 29,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/vsn.mk"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 56,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/test/modules.mk"
+    },
+    {
+      "file": "otp/lib/megaco/test/Makefile",
+      "line": 84,
+      "path": "../src/app/megaco.mk",
+      "symbol": "megaco.mk",
+      "admitted": true,
+      "absRel": "otp/lib/megaco/src/app/megaco.mk"
+    },
+    {
+      "file": "otp/lib/mnesia/Makefile",
+      "line": 33,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/mnesia/vsn.mk"
+    },
+    {
+      "file": "otp/lib/mnesia/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/mnesia/vsn.mk"
+    },
+    {
+      "file": "otp/lib/mnesia/examples/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/mnesia/vsn.mk"
+    },
+    {
+      "file": "otp/lib/mnesia/include/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/mnesia/vsn.mk"
+    },
+    {
+      "file": "otp/lib/mnesia/src/Makefile",
+      "line": 35,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/mnesia/vsn.mk"
+    },
+    {
+      "file": "otp/lib/observer/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/observer/vsn.mk"
+    },
+    {
+      "file": "otp/lib/observer/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/observer/vsn.mk"
+    },
+    {
+      "file": "otp/lib/observer/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/observer/vsn.mk"
+    },
+    {
+      "file": "otp/lib/odbc/Makefile",
+      "line": 31,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/odbc/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/odbc/Makefile",
+      "line": 33,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/odbc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/odbc/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/odbc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/odbc/src/Makefile",
+      "line": 35,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/odbc/vsn.mk"
+    },
+    {
+      "file": "otp/lib/os_mon/Makefile",
+      "line": 30,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/os_mon/vsn.mk"
+    },
+    {
+      "file": "otp/lib/os_mon/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/os_mon/vsn.mk"
+    },
+    {
+      "file": "otp/lib/os_mon/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/os_mon/vsn.mk"
+    },
+    {
+      "file": "otp/lib/parsetools/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/parsetools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/parsetools/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/parsetools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/parsetools/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/parsetools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/public_key/Makefile",
+      "line": 33,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/public_key/vsn.mk"
+    },
+    {
+      "file": "otp/lib/public_key/asn1/Makefile",
+      "line": 32,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/public_key/vsn.mk"
+    },
+    {
+      "file": "otp/lib/public_key/c_src/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/public_key/vsn.mk"
+    },
+    {
+      "file": "otp/lib/public_key/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/public_key/vsn.mk"
+    },
+    {
+      "file": "otp/lib/public_key/src/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/public_key/vsn.mk"
+    },
+    {
+      "file": "otp/lib/reltool/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/reltool/vsn.mk"
+    },
+    {
+      "file": "otp/lib/reltool/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/reltool/vsn.mk"
+    },
+    {
+      "file": "otp/lib/reltool/examples/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/reltool/vsn.mk"
+    },
+    {
+      "file": "otp/lib/reltool/src/Makefile",
+      "line": 29,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/reltool/vsn.mk"
+    },
+    {
+      "file": "otp/lib/reltool/src/Makefile",
+      "line": 44,
+      "path": "files.mk",
+      "symbol": "files.mk",
+      "admitted": true,
+      "absRel": "otp/lib/reltool/src/files.mk"
+    },
+    {
+      "file": "otp/lib/runtime_tools/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/runtime_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/runtime_tools/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/runtime_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/runtime_tools/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/runtime_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/sasl/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/sasl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/sasl/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/sasl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/sasl/examples/src/Makefile",
+      "line": 31,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/sasl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/sasl/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/sasl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/Makefile",
+      "line": 30,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/snmp/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/examples/Makefile",
+      "line": 30,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/examples/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/snmp/examples/ex1/Makefile",
+      "line": 29,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/examples/ex2/Makefile",
+      "line": 29,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/Makefile",
+      "line": 30,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/priv/conf/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/agent/Makefile",
+      "line": 29,
+      "path": "../../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/agent/Makefile",
+      "line": 42,
+      "path": "files.mk",
+      "symbol": "files.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/priv/conf/agent/files.mk"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/manager/Makefile",
+      "line": 29,
+      "path": "../../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/priv/conf/manager/Makefile",
+      "line": 42,
+      "path": "files.mk",
+      "symbol": "files.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/priv/conf/manager/files.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/Makefile",
+      "line": 30,
+      "path": "subdirs.mk",
+      "symbol": "subdirs.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/subdirs.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 32,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 46,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/app/modules.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/app/Makefile",
+      "line": 158,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/app/depend.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 34,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 49,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/compile/modules.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/compile/Makefile",
+      "line": 154,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/compile/depend.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 32,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 46,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/manager/modules.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/manager/Makefile",
+      "line": 148,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/manager/depend.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 32,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 46,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/misc/modules.mk"
+    },
+    {
+      "file": "otp/lib/snmp/src/misc/Makefile",
+      "line": 150,
+      "path": "depend.mk",
+      "symbol": "depend.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/src/misc/depend.mk"
+    },
+    {
+      "file": "otp/lib/snmp/test/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/test/Makefile",
+      "line": 39,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/test/modules.mk"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 30,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/snmp/test/test_config/Makefile",
+      "line": 44,
+      "path": "modules.mk",
+      "symbol": "modules.mk",
+      "admitted": true,
+      "absRel": "otp/lib/snmp/test/test_config/modules.mk"
+    },
+    {
+      "file": "otp/lib/ssh/Makefile",
+      "line": 33,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssh/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssh/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssh/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssh/examples/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssh/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssh/src/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssh/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssl/Makefile",
+      "line": 33,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssl/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssl/examples/certs/Makefile",
+      "line": 33,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssl/examples/src/Makefile",
+      "line": 31,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssl/src/Makefile",
+      "line": 31,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/ssl/test/Makefile",
+      "line": 33,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/ssl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/stdlib/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/stdlib/vsn.mk"
+    },
+    {
+      "file": "otp/lib/stdlib/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/stdlib/vsn.mk"
+    },
+    {
+      "file": "otp/lib/stdlib/examples/Makefile",
+      "line": 34,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/stdlib/vsn.mk"
+    },
+    {
+      "file": "otp/lib/stdlib/src/Makefile",
+      "line": 34,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/stdlib/vsn.mk"
+    },
+    {
+      "file": "otp/lib/syntax_tools/Makefile",
+      "line": 39,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/syntax_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/syntax_tools/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/syntax_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/syntax_tools/examples/Makefile",
+      "line": 31,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/syntax_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/syntax_tools/src/Makefile",
+      "line": 38,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/syntax_tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tftp/Makefile",
+      "line": 32,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tftp/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tftp/src/Makefile",
+      "line": 30,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tftp/test/Makefile",
+      "line": 32,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tftp/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tools/Makefile",
+      "line": 31,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tools/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tools/emacs/Makefile",
+      "line": 27,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tools/examples/Makefile",
+      "line": 33,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/tools/src/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/tools/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/Makefile",
+      "line": 23,
+      "path": "./vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/Makefile",
+      "line": 24,
+      "path": "./config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/doc/Makefile",
+      "line": 22,
+      "path": "../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/doc/Makefile",
+      "line": 27,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/examples/Makefile",
+      "line": 23,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/examples/Makefile",
+      "line": 24,
+      "path": "../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/examples/demo/Makefile",
+      "line": 23,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/examples/demo/Makefile",
+      "line": 24,
+      "path": "../../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/examples/simple/Makefile",
+      "line": 23,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/examples/simple/Makefile",
+      "line": 24,
+      "path": "../../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/examples/sudoku/Makefile",
+      "line": 23,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/examples/sudoku/Makefile",
+      "line": 24,
+      "path": "../../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/src/Makefile",
+      "line": 23,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/src/Makefile",
+      "line": 24,
+      "path": "../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/wx/test/Makefile",
+      "line": 23,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/wx/vsn.mk"
+    },
+    {
+      "file": "otp/lib/wx/test/Makefile",
+      "line": 24,
+      "path": "../config.mk",
+      "symbol": "config.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "otp/lib/xmerl/Makefile",
+      "line": 27,
+      "path": "vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/xmerl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/xmerl/doc/Makefile",
+      "line": 28,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/xmerl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/xmerl/doc/examples/Makefile",
+      "line": 11,
+      "path": "../../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/xmerl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/xmerl/src/Makefile",
+      "line": 29,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/xmerl/vsn.mk"
+    },
+    {
+      "file": "otp/lib/xmerl/test/Makefile",
+      "line": 29,
+      "path": "../vsn.mk",
+      "symbol": "vsn.mk",
+      "admitted": true,
+      "absRel": "otp/lib/xmerl/vsn.mk"
+    },
+    {
+      "file": "pb-grpc/Makefile",
+      "line": 397,
+      "path": "cache.mk",
+      "symbol": "cache.mk",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "redis/Makefile",
+      "line": 26,
+      "path": "modules/manifest.mk",
+      "symbol": "manifest.mk",
+      "admitted": true,
+      "absRel": "redis/modules/manifest.mk"
+    },
+    {
+      "file": "redis/deps/xxhash/Makefile",
+      "line": 104,
+      "path": "build/make/multiconf.make",
+      "symbol": "multiconf.make",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "redis/modules/Makefile",
+      "line": 6,
+      "path": "manifest.mk",
+      "symbol": "manifest.mk",
+      "admitted": true,
+      "absRel": "redis/modules/manifest.mk"
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 150,
+      "path": ".make-settings",
+      "symbol": ".make-settings",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "redis/src/Makefile",
+      "line": 422,
+      "path": "Makefile.dep",
+      "symbol": "Makefile.dep",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 112,
+      "path": "./config.make",
+      "symbol": "config.make",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "sqlite/ext/wasm/GNUmakefile",
+      "line": 1170,
+      "path": ".wasmbuilds.make",
+      "symbol": ".wasmbuilds.make",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "terraform-aws-components/deprecated/aws/ses/Makefile",
+      "line": 1,
+      "path": ".terraform/modules/**/Makefile.ses",
+      "symbol": "Makefile.ses",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "tf-aws-components/deprecated/aws/ses/Makefile",
+      "line": 1,
+      "path": ".terraform/modules/**/Makefile.ses",
+      "symbol": "Makefile.ses",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "vault/Makefile",
+      "line": 200,
+      "path": "hooks",
+      "symbol": "hooks",
+      "admitted": false,
+      "absRel": null
+    },
+    {
+      "file": "yq/Makefile",
+      "line": 7,
+      "path": "Makefile.variables",
+      "symbol": "Makefile.variables",
+      "admitted": false,
+      "absRel": null
+    }
+  ],
+  "failedFiles": [],
+  "walkFailedFiles": []
+}

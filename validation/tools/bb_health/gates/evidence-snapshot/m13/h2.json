@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.30",
+  "code": "H2",
+  "tool": "bb_health",
+  "title": "bb_health: wire verbose (schema -> provider -> output)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "schema: verbose is a declared boolean input",
+      "pass": true,
+      "detail": "not declared"
+    },
+    {
+      "name": "schema: verbose is documented with its effect",
+      "pass": true,
+      "detail": "undocumented"
+    },
+    {
+      "name": "handler: passes args.verbose to the provider",
+      "pass": true,
+      "detail": "not passed"
+    },
+    {
+      "name": "provider: UnifiedHealthOptions declares verbose",
+      "pass": true,
+      "detail": "not in options"
+    },
+    {
+      "name": "provider: report carries verbose and languages",
+      "pass": true,
+      "detail": "not in report"
+    },
+    {
+      "name": "formatter: prints verbose sections only when verbose=true",
+      "pass": true,
+      "detail": "verbose sections missing or no longer gated on report.verbose"
+    },
+    {
+      "name": "verbose=true: per-language breakdown present",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-verbose-DfRtdh\nprojectId: c361a139be68e8a015aa5705f78bdaf17ab65e98\nfiles=2 symbols=2 relationships=2 imports=0 syntaxErrors=0\nfreshn"
+    },
+    {
+      "name": "verbose=true: stale file names present",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-verbose-DfRtdh\nprojectId: c361a139be68e8a015aa5705f78bdaf17ab65e98\nfiles=2 symbols=2 relationships=2 imports=0 syntaxErrors=0\nfreshn"
+    },
+    {
+      "name": "verbose=true: missing file line present",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "verbose=true: report carries the language breakdown",
+      "pass": true,
+      "detail": "[{\"language\":\"typescript\",\"files\":2,\"symbols\":2}]"
+    },
+    {
+      "name": "verbose=false: NO per-language breakdown leaks [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-verbose-DfRtdh\nprojectId: c361a139be68e8a015aa5705f78bdaf17ab65e98\nfiles=2 symbols=2 relatio"
+    },
+    {
+      "name": "verbose=false: NO stale-file names leak [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-verbose-DfRtdh\nprojectId: c361a139be68e8a015aa5705f78bdaf17ab65e98\nfiles=2 symbols=2 relatio"
+    },
+    {
+      "name": "verbose=false: report still carries the standard health summary",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-verbose-DfRtdh\nprojectId: c361a139be68e8a015aa5705f7"
+    },
+    {
+      "name": "handler: verbose=true output includes the breakdown",
+      "pass": true,
+      "detail": "project: /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-health-verbose-DfRtdh\nprojectId: c361a139be68e8a015aa5705f78bdaf17ab65e98\nfiles=2 symbols=2 relatio"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  },
+  "decisions": {
+    "wiring": "registry advertises verbose; handler passes args.verbose; provider reads options.verbose into the report; formatter prints the verbose sections only when verbose=true",
+    "bidirectional": "verbose=true output contains the per-language breakdown and stale/missing file names; verbose=false output contains neither"
+  },
+  "limitations": [
+    "The stale-file name list reflects the sampled freshness check (default sampled mode), which is the advertised behavior."
+  ],
+  "generatedAt": "2026-10-01T05:28:53.420Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-01T05:29:32.308Z",
+    "contentSha256": "8b00ffe25b144333f356519e84dec808d61c9e25e099d1ec4a4a7bb9e0bba674"
+  }
+}

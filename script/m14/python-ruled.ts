@@ -96,7 +96,7 @@
  *     bun run validation/m14/fixtures/python/implements-probe.ts
  *
  * over the whole pinned population (5,365 tracked `.py`/`.pyi` in five git checkouts
- * under `fixtures/repositories/python-corpus`) plus the UNPINNED `cpython-stdlib`
+ * under `bb_tests/repositories/python-corpus`) plus the UNPINNED `cpython-stdlib`
  * directory (621 files, not a checkout) measured on separate counters. The probe walks
  * the tree-sitter tree with `node.type` and named children only — no regex — and
  * CALIBRATES itself first: `--self-test` asserts exact counts on a synthetic source

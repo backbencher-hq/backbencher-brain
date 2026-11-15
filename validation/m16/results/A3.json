@@ -1,0 +1,12 @@
+{
+  "issue": "M16.A3 (fallback honesty)",
+  "code": "A3",
+  "tool": "bb_ask",
+  "title": "A3",
+  "verified": true,
+  "checks": 2,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:27:26.441Z"
+}

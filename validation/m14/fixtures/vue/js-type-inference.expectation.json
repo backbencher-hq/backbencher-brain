@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/js-type-inference",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F7 (master review 2026-09-30), the NEGATIVE half, and the reason a one-sided fixture would not have been a gate. `hasTypeInference` must be a per-file statement about what the pipeline did: this SFC has a plain `<script>` block, which is dispatched to the JAVAScript analyzer, so no type inference was available and the honest answer is `false`. Without this fixture a mutant that flipped the hardcoded constant to `true` unconditionally would pass vue/ts-type-inference and be CAUGHT by nothing — the same lesson the M49 T6 gap records for a claim with no negative half.",
+  "expectMetadata": [
+    { "hasTypeInference": false }
+  ],
+  "expectSymbols": [
+    { "name": "plain", "kind": "constant" }
+  ]
+}

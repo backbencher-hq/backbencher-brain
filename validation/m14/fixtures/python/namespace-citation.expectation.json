@@ -1,0 +1,27 @@
+{
+  "fixtureId": "python/namespace-citation",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D7 DEPTH \u2014 THE PYTHON-STDLIB CITATION, pinned by evidence class. The Lead extended the committed registry (script/m14/citations.ts) with the `python-stdlib` vocabulary and landed the colon-aware split in the arbiter's namespaceMatchOf, so a python `module:item` import target has a checkable namespace ROOT. This fixture pins the emission: the analyzer declares the root on the edge (`metadata.languageNamespace: [root]`, vocab id `python-stdlib`, subset copied into the analyzer with the id named in the comment) ONLY where the target's root actually is one of those modules \u2014 `from typing import Union` publishes `typing:Union` and is cited. The POSITIVE row names the array exactly, because widening it is a reviewable act by the lane (property 2 of the claim design). The NEGATIVE row is the second import: `from django.db import Model` gives target `django.db:Model`, root `django` is NOT in the vocabulary, so NO citation may be emitted \u2014 and the reason this is the only negative expressible here is PROPERTY 1 of the namespace claim: the declared list is the SOLE authority, the arbiter never consults the symbol table, so a 'project declares this name' refutation cannot be expressed through this claim at all (that negative belongs to the importedName claim kind, not this fixture \u2014 it is stated here rather than faked). A citation that listed a root the target does not have is REFUTED by the arbiter (extFAIL), which is what keeps this mechanism from becoming a blanket excuse; the Lead's gate self-test controls (`pathlib:Path` verifies, `django:Model` refutes) pin the refutation side in the shared instrument.",
+  "expectSymbols": [
+    {
+      "name": "annotated",
+      "kind": "function"
+    },
+    {
+      "name": "uses_model",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "typing:Union",
+      "meta.languageNamespace": [
+        "typing"
+      ],
+      "note": "CITED ROOT: `from typing import Union` \u2014 the target root `typing` is in the python-stdlib vocabulary, so the edge declares it and the arbiter verifies the claim (extOK, verifiedBy namespace)."
+    }
+  ],
+  "expectRelationshipCount": []
+}

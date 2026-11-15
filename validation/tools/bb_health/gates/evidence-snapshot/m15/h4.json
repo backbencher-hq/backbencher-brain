@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H4",
+  "code": "H4",
+  "tool": "bb_health",
+  "title": "measured time complexity",
+  "verified": true,
+  "checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:16:17.649Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.336Z",
+    "contentSha256": "8a2037a898086b0e68c8177c8c054d1bfcacbd6aebf1ed16f3d754333ef8b4c1"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.15",
+  "code": "E10",
+  "tool": "bb_edit",
+  "title": "bb_edit: real-repo corpus dry-run (no corruption)",
+  "verifiedState": "verified",
+  "layers": [
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "corpus rake/lib/rake (Ruby): dry-run refactor plans at least one change (no silent no-op)",
+      "pass": true,
+      "detail": "symbol=Application changes=2"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): dry-run writes zero bytes (no mutation) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "changed=false"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): reindex after dry-run is consistent (no corruption)",
+      "pass": true,
+      "detail": "pre=496 post=496"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): dry-run refactor plans at least one change (no silent no-op)",
+      "pass": true,
+      "detail": "symbol=graphql changes=1"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): dry-run writes zero bytes (no mutation) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "changed=false"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): reindex after dry-run is consistent (no corruption)",
+      "pass": true,
+      "detail": "pre=8057 post=8057"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): zero-site rename refused by name (no silent no-op)",
+      "pass": true,
+      "detail": "rebar_localfs_resource_v2: refactor rebar_localfs_resource_v2 → renamedE10edcd: resolved 0 rename site(s) in 0 file(s) — the symbol was located but nothing could be renamed (this grammar may expose no identifier node for it, as"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): dry-run writes zero bytes (no mutation) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "changed=false"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): reindex after dry-run is consistent (no corruption)",
+      "pass": true,
+      "detail": "pre=4832 post=4832"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0
+  },
+  "decisions": {
+    "sample": "one small sub-directory per major language family (TS, Rust, Ruby, Scala) so indexing completes in seconds per entry — the proof is the dry-run-no-mutation + no-corruption contract, not exhaustive coverage",
+    "dryRun": "every refactor uses dryRun:true; the on-disk file content is compared byte-for-byte before vs after to prove zero writes",
+    "corruption": "symbol counts are compared pre- vs post-dry-run reindex; any divergence is a recorded failure, not hidden"
+  },
+  "limitations": [
+    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is.",
+    "A sub-directory with no resolvable symbol is skipped (recorded, not failed).",
+    "Refactor is UNAVAILABLE for Erlang: its grammar yields zero identifier occurrences, so the engine refuses by name rather than reporting a rename it cannot perform (D3/M71; measured with script/m71/diagnose-erlang-refactor.ts). The Erlang leg asserts that refusal instead of pretending the dry-run renamed something."
+  ],
+  "generatedAt": "2026-11-05T04:10:45.424Z"
+}

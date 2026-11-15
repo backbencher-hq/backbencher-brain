@@ -1,0 +1,12 @@
+{
+  "issue": "bb_ask no-regex census and page-size behaviour",
+  "code": "A2",
+  "tool": "bb_ask",
+  "title": "regex census and page-size behaviour",
+  "verified": true,
+  "checks": 6,
+  "passed": 9,
+  "failed": 0,
+  "negatives": 3,
+  "generatedAt": "2026-11-03T20:25:29.541Z"
+}

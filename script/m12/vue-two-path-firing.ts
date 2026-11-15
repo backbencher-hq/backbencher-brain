@@ -64,7 +64,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { RealVueAnalyzer } from "../../src/ast/real-vue-analyzer"
 import { RelationshipType } from "../../src/ast/types"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = process.argv[2] ?? "/tmp/vue-two-path-firing.json"
 const LIMIT = Number(process.env.BB_VUE_LIMIT ?? "0")
 

@@ -1,0 +1,201 @@
+{
+  "runtime": "node-source",
+  "status": "verified",
+  "commit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "machine": {
+    "kernel": "Linux 7.2.6-76070206-generic",
+    "kernelSource": "os.type() + os.release()",
+    "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
+    "cpuSource": "os.cpus()[0].model",
+    "ramGb": 16.6,
+    "ramSource": "os.totalmem()",
+    "node": "v24.3.0",
+    "runtime": "node-source"
+  },
+  "features": [
+    {
+      "op": "hover",
+      "p95WarmMs": 18.924876999999924,
+      "samples": 60,
+      "passed": true
+    },
+    {
+      "op": "definition",
+      "p95WarmMs": 4.296753999999964,
+      "samples": 60,
+      "passed": true
+    },
+    {
+      "op": "references",
+      "p95WarmMs": 3.007650000000467,
+      "samples": 60,
+      "passed": true
+    },
+    {
+      "op": "documentSymbol",
+      "p95WarmMs": 3.8615940000008777,
+      "samples": 60,
+      "passed": true
+    },
+    {
+      "op": "workspaceSymbol",
+      "p95WarmMs": 3.754570000000058,
+      "samples": 60,
+      "passed": true
+    },
+    {
+      "op": "prepareCallHierarchy",
+      "p95WarmMs": 3.242315000000417,
+      "samples": 60,
+      "passed": true
+    },
+    {
+      "op": "callHierarchyExpand",
+      "p95WarmMs": 4.8103130000008605,
+      "samples": 60,
+      "passed": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "L1: initialize returns capabilities",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: hover capability advertised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: definition capability advertised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: references capability advertised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: documentSymbol capability advertised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: workspaceSymbol capability advertised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: callHierarchy capability advertised",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L2: hover returns markdown contents",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L2: hover names greet",
+      "ok": true,
+      "detail": "{\"provenance\":{\"source\":\"bb_index\",\"evidenceClass\":\"stale\",\"engine\":\"bb_lsp hover@m24.l2\",\"limitations\":[\"index-sourced; no compiler-backed types (complement stance)\"],\"stale\":true},\"symbol\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"parameters\":null,\"usageCount\":1,\"unresolvedNameMatches\":{\"name\":\"greet\",\"external\":0,\"unresolved\":0,\"total\":0},\"omittedUsageRows\":{\"unresolvable\":0},\"indexedFileCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fbblsp-v1-ws-65ivpV%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D)\",\"usagesSection\":\"**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — main.ts:7 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fbblsp-v1-ws-65ivpV%2Fmain.ts%22%2C%22line%22%3A6%2C%22character%22%3A9%7D%5D)\",\"containmentSection\":\"\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fbblsp-v1-ws-65ivpV%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fbblsp-v1-ws-65ivpV%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fbblsp-v1-ws-65ivpV%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":true,\"freshnessStatus\":\"stale\",\"filePath\":\"/tmp/bblsp-v1-ws-65ivpV/main.ts\",\"lineStart\":2,\"lineEnd\":2,\"typeLine\":{\"provenance\":\"unknown\",\"text\":\"unknown\",\"confidence\":null,\"reason\":\"the engine returned no entry for this function; no type is asserted\",\"withheld\":\"no-engine-answer\",\"withheldText\":null,\"storedProvenanceUnknown\":false,\"stale\":true,\"witness\":null},\"docComment\":\"\"}}"
+    },
+    {
+      "name": "L2: hover usage count matches fixture relationship",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "L2: hover provenance labels bb index source",
+      "ok": true,
+      "detail": "{\"source\":\"bb_index\",\"evidenceClass\":\"stale\",\"engine\":\"bb_lsp hover@m24.l2\",\"limitations\":[\"index-sourced; no compiler-backed types (complement stance)\"],\"stale\":true}"
+    },
+    {
+      "name": "L2: hover declares its staleness marker",
+      "ok": true,
+      "detail": "{\"provenance\":true,\"symbol\":true}"
+    },
+    {
+      "name": "L2: hover outside index is declared absent",
+      "ok": true,
+      "detail": "null"
+    },
+    {
+      "name": "L3: definition resolves to an LSP Location",
+      "ok": true,
+      "detail": "{\"uri\":\"file:///tmp/bblsp-v1-ws-65ivpV/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
+    },
+    {
+      "name": "L3: definition location is 0-based line 1",
+      "ok": true,
+      "detail": "{\"uri\":\"file:///tmp/bblsp-v1-ws-65ivpV/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
+    },
+    {
+      "name": "L3: references returns LSP Location[]",
+      "ok": true,
+      "detail": "{\"jsonrpc\":\"2.0\",\"id\":5,\"result\":[{\"uri\":\"file:///tmp/bblsp-v1-ws-65ivpV/main.ts\",\"range\":{\"start\":{\"line\":6,\"character\":9},\"end\":{\"line\":9,\"character\":1}}},{\"uri\":\"file:///tmp/bblsp-v1-ws-65ivpV/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"en"
+    },
+    {
+      "name": "L3: definition outside index is honest empty",
+      "ok": true,
+      "detail": "{\"jsonrpc\":\"2.0\",\"id\":6,\"result\":null}"
+    },
+    {
+      "name": "L4: documentSymbol returns Greeter root (DocumentSymbol[])",
+      "ok": true,
+      "detail": "[{\"name\":\"Greeter\",\"kind\":5,\"range\":{\"start\":{\"line\":0,\"character\":6},\"end\":{\"line\":2,\"character\":1}},\"selectionRange\":{\"start\":{\"line\":0,\"character\":6},\"end\":{\"line\":0,\"character\":13}},\"children\":[{\"name\":\"greet\",\"detail\":\"Greeter.greet\",\"kind\":6,\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"li"
+    },
+    {
+      "name": "L4: documentSymbol hierarchy has greet child",
+      "ok": true,
+      "detail": "[{\"name\":\"greet\",\"detail\":\"Greeter.greet\",\"kind\":6,\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"children\":[],\"data\":{\"id\":\"sym-greet\",\"ev"
+    },
+    {
+      "name": "L4: documentSymbol range contains symbol text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L4: workspace/symbol finds greet (SymbolInformation[])",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L5: prepareCallHierarchy returns CallHierarchyItem[]",
+      "ok": true,
+      "detail": "[{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/bblsp-v1-ws-65ivpV/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"detail\":\"method gre"
+    },
+    {
+      "name": "L5: incomingCalls returns CallHierarchyIncomingCall[]",
+      "ok": true,
+      "detail": "[{\"from\":{\"name\":\"main\",\"kind\":12,\"uri\":\"file:///tmp/bblsp-v1-ws-65ivpV/main.ts\",\"range\":{\"start\":{\"line\":6,\"character\":0},\"end\":{\"line\":9,\"character\":1}},\"selectionRange\":{\"start\":{\"line\":6,\"characte"
+    },
+    {
+      "name": "L5: the fixture's caller is reported",
+      "ok": true,
+      "detail": "[\"main\"]"
+    },
+    {
+      "name": "L5: the reported call site is the invocation of greet",
+      "ok": true,
+      "detail": "[[{\"start\":{\"line\":8,\"character\":4},\"end\":{\"line\":8,\"character\":9}}]]"
+    },
+    {
+      "name": "L5: outgoingCalls returns CallHierarchyOutgoingCall[]",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "L1: shutdown returns null result",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "fixtureStats": {
+    "files": 1,
+    "symbols": 3,
+    "relationships": 1
+  }
+}

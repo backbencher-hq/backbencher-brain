@@ -1,0 +1,32 @@
+{
+  "fixtureId": "svelte/render-tag-argument-reads",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the Svelte 5 language rules for `{@render}` (the tag names a snippet and evaluates an argument list) and from the corpus files named in the fixture header; the line pins were then read off the post-fix run and each checked against the fixture's own text — `{@render row(alpha)}` on 38, the multiline list puts `beta` on 41 and `gamma` on 42, `{@render row(pick(delta))}` on 45, `{@render row(obj.eps)}` on 47.",
+  "rationale": "JOB 2 of the svelte ontology pass. `{@render tag(args)}` is a call AND an argument evaluation; the template pass scanned the opaque render-tag text for a callable name and stopped, so the argument reads were silent. Corpus measurement: 126 argumented render tags across 83 of the 6,439 .svelte files published zero reads, while the identical name in a mustache in the same file does publish one. The callee stays owned by `calls` — a `uses` at the callee would double-count one fact as two — and a member LEAF is skipped by the collector's own dot rule, so `{@render row(obj.eps)}` contributes `obj` and not `eps`. The multiline form is pinned at the IDENTIFIER's line because the naive base line claims the tag's own line, which is the M59 (#825) rule this lane already follows for every other template read. Each argument has its own member name because the collector's read map is keyed by NAME: two reads of one name collapse to the last site, so a line pin on a repeated name would assert a property this lane does not have.",
+  "expectSymbols": [
+    { "name": "alpha" },
+    { "name": "beta" },
+    { "name": "gamma" },
+    { "name": "delta" },
+    { "name": "obj" },
+    { "name": "pick" },
+    { "name": "row", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "target": "row", "meta.context": "Svelte {@render} tag" },
+    { "type": "uses", "target": "alpha", "line_number": 38, "meta.isTemplateExpression": true },
+    { "type": "uses", "target": "beta", "line_number": 41 },
+    { "type": "uses", "target": "gamma", "line_number": 42 },
+    { "type": "uses", "target": "pick", "line_number": 45 },
+    { "type": "uses", "target": "delta", "line_number": 45 },
+    { "type": "uses", "target": "obj", "line_number": 47 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "target": "eps", "comment": "a member LEAF is not a member read: `obj.eps` reads `obj`. The collector's dot rule has always skipped these; pinning it here is what stops a future widening from publishing `eps`." },
+    { "type": "uses", "target": "row", "comment": "the CALLEE belongs to the `calls` edge. A `uses` at the callee would double-count one fact as two." },
+    { "type": "uses", "target": "u", "comment": "the snippet PARAMETER is a template-local binding, never a member read — the S5 shadow case, and the control that a render-tag argument sweep did not simply read the whole fragment" },
+    { "type": "uses", "target": "beta", "line_number": 40, "comment": "the multiline argument's base line must advance to the identifier's own line (41), not stay on the tag's line — the M59 #825 rule this lane already follows for every other template read" },
+    { "type": "uses", "target": "gamma", "line_number": 41, "comment": "`gamma` is the SECOND argument; its line is 42, never the first argument's" }
+  ]
+}

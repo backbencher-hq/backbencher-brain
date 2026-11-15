@@ -1,0 +1,70 @@
+{
+  "issue": "M60 clojure deep round — CLJ-D28 (qualified names read from AST fields)",
+  "note": "A qualified symbol whose OWN NAME contains a slash. metabase calls `h2x//` — `[metabase.util.honey-sql-2 :as h2x]` plus a function named `/` — and the grammar says so structurally (`namespace: \"h2x\"`, `name: \"/\"`). The analyzer was splitting the TEXT a second time, twice and differently: `\"h2x//\".split(\"/\")` is `[\"h2x\",\"\",\"\"]` so the generic-call branch published `…honey-sql-2/`, while `resolveQualified` (slice after the first slash) published `…honey-sql-2//` — two answers for one call site inside one analyzer, with the F5 oracle mirroring only one of them. The shape is invisible to a 60-file draw (it needs a function whose name ends in a slash); the full-extent run over metabase's 4,252 Clojure files found it as 2 unexplained of 239,192 truth edges. All four emission shapes are pinned here, including the two-slash namespace `a/b` and a name of `b//`.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "clj.fixture.qualifiednames",
+      "target": "app.lib"
+    },
+    {
+      "type": "references",
+      "from": "clj.fixture.qualifiednames",
+      "target": "app.deep"
+    },
+    {
+      "type": "calls",
+      "from": "generic",
+      "target": "app.lib/join",
+      "line_number": 24
+    },
+    {
+      "type": "calls",
+      "from": "slash-named",
+      "target": "app.lib//",
+      "line_number": 25
+    },
+    {
+      "type": "calls",
+      "from": "twice-slash-named",
+      "target": "app.lib/b//",
+      "line_number": 26
+    },
+    {
+      "type": "calls",
+      "from": "threaded",
+      "target": "app.lib//",
+      "line_number": 29,
+      "meta.isThreadedStep": true
+    },
+    {
+      "type": "calls",
+      "from": "threaded",
+      "target": "app.lib/join",
+      "line_number": 29,
+      "meta.isThreadedStep": true
+    },
+    {
+      "type": "calls",
+      "target": "app.lib//",
+      "line_number": 32,
+      "meta.isAnonShorthand": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "app.lib/"
+    },
+    {
+      "type": "calls",
+      "from": "slash-named",
+      "target": "app.lib/b//"
+    },
+    {
+      "type": "calls",
+      "from": "twice-slash-named",
+      "target": "app.lib//"
+    }
+  ]
+}

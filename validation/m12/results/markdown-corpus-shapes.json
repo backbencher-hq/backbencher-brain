@@ -1,0 +1,3689 @@
+{
+  "analyzer": "markdown",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/scala3",
+  "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+  "perFile": {
+    ".github/ISSUE_TEMPLATE/bug.md": {
+      "symbols": 7,
+      "relationships": 2,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/crash.md": {
+      "symbols": 6,
+      "relationships": 2,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/feature.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/improve-error.md": {
+      "symbols": 8,
+      "relationships": 2,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/other-issue.md": {
+      "symbols": 7,
+      "relationships": 2,
+      "errors": 0
+    },
+    ".github/ISSUE_TEMPLATE/syntax-highlight.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    ".github/pull_request_template.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    ".github/workflows/issue_nightly_failed.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "AGENTS.md": {
+      "symbols": 8,
+      "relationships": 9,
+      "errors": 0
+    },
+    "CONTRIBUTING.md": {
+      "symbols": 6,
+      "relationships": 16,
+      "errors": 0
+    },
+    "LLM_POLICY.md": {
+      "symbols": 9,
+      "relationships": 3,
+      "errors": 0
+    },
+    "NOTICE.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "README.md": {
+      "symbols": 5,
+      "relationships": 11,
+      "errors": 0
+    },
+    "SECURITY.md": {
+      "symbols": 1,
+      "relationships": 2,
+      "errors": 0
+    },
+    "bench/README.md": {
+      "symbols": 0,
+      "relationships": 1,
+      "errors": 0
+    },
+    "changelogs/3.2.1-RC1.md": {
+      "symbols": 26,
+      "relationships": 97,
+      "errors": 0
+    },
+    "changelogs/3.2.1-RC2.md": {
+      "symbols": 3,
+      "relationships": 5,
+      "errors": 0
+    },
+    "changelogs/3.2.1-RC3.md": {
+      "symbols": 3,
+      "relationships": 4,
+      "errors": 0
+    },
+    "changelogs/3.2.1-RC4.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.2.1.md": {
+      "symbols": 26,
+      "relationships": 105,
+      "errors": 0
+    },
+    "changelogs/3.2.2-RC1.md": {
+      "symbols": 23,
+      "relationships": 65,
+      "errors": 0
+    },
+    "changelogs/3.2.2-RC2.md": {
+      "symbols": 3,
+      "relationships": 6,
+      "errors": 0
+    },
+    "changelogs/3.2.2.md": {
+      "symbols": 24,
+      "relationships": 71,
+      "errors": 0
+    },
+    "changelogs/3.3.0-RC1.md": {
+      "symbols": 28,
+      "relationships": 124,
+      "errors": 0
+    },
+    "changelogs/3.3.0-RC2.md": {
+      "symbols": 28,
+      "relationships": 124,
+      "errors": 0
+    },
+    "changelogs/3.3.0-RC3.md": {
+      "symbols": 3,
+      "relationships": 7,
+      "errors": 0
+    },
+    "changelogs/3.3.0-RC4.md": {
+      "symbols": 3,
+      "relationships": 18,
+      "errors": 0
+    },
+    "changelogs/3.3.0-RC5.md": {
+      "symbols": 3,
+      "relationships": 5,
+      "errors": 0
+    },
+    "changelogs/3.3.0-RC6.md": {
+      "symbols": 3,
+      "relationships": 4,
+      "errors": 0
+    },
+    "changelogs/3.3.0.md": {
+      "symbols": 30,
+      "relationships": 157,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC1.md": {
+      "symbols": 34,
+      "relationships": 172,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC2.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC3.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC4.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC5.md": {
+      "symbols": 3,
+      "relationships": 7,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC6.md": {
+      "symbols": 3,
+      "relationships": 4,
+      "errors": 0
+    },
+    "changelogs/3.3.1-RC7.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "changelogs/3.3.1.md": {
+      "symbols": 34,
+      "relationships": 161,
+      "errors": 0
+    },
+    "changelogs/3.4.0-RC1.md": {
+      "symbols": 38,
+      "relationships": 309,
+      "errors": 0
+    },
+    "changelogs/3.4.0-RC2.md": {
+      "symbols": 3,
+      "relationships": 7,
+      "errors": 0
+    },
+    "changelogs/3.4.0-RC3.md": {
+      "symbols": 3,
+      "relationships": 1,
+      "errors": 0
+    },
+    "changelogs/3.4.0-RC4.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.4.0.md": {
+      "symbols": 38,
+      "relationships": 315,
+      "errors": 0
+    },
+    "changelogs/3.4.1-RC1.md": {
+      "symbols": 27,
+      "relationships": 94,
+      "errors": 0
+    },
+    "changelogs/3.4.1-RC2.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "changelogs/3.4.1.md": {
+      "symbols": 27,
+      "relationships": 96,
+      "errors": 0
+    },
+    "changelogs/3.4.2-RC1.md": {
+      "symbols": 28,
+      "relationships": 105,
+      "errors": 0
+    },
+    "changelogs/3.4.2.md": {
+      "symbols": 28,
+      "relationships": 105,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC1.md": {
+      "symbols": 33,
+      "relationships": 143,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC2.md": {
+      "symbols": 3,
+      "relationships": 10,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC3.md": {
+      "symbols": 3,
+      "relationships": 9,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC4.md": {
+      "symbols": 3,
+      "relationships": 5,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC5.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC6.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.5.0-RC7.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.5.0.md": {
+      "symbols": 33,
+      "relationships": 165,
+      "errors": 0
+    },
+    "changelogs/3.6.3-RC1.md": {
+      "symbols": 32,
+      "relationships": 81,
+      "errors": 0
+    },
+    "changelogs/3.6.3-RC2.md": {
+      "symbols": 3,
+      "relationships": 7,
+      "errors": 0
+    },
+    "changelogs/3.6.3.md": {
+      "symbols": 33,
+      "relationships": 88,
+      "errors": 0
+    },
+    "changelogs/3.6.4-RC1.md": {
+      "symbols": 27,
+      "relationships": 64,
+      "errors": 0
+    },
+    "changelogs/3.6.4-RC2.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.6.4.md": {
+      "symbols": 27,
+      "relationships": 66,
+      "errors": 0
+    },
+    "changelogs/3.7.0-RC1.md": {
+      "symbols": 33,
+      "relationships": 150,
+      "errors": 0
+    },
+    "changelogs/3.7.0-RC2.md": {
+      "symbols": 4,
+      "relationships": 8,
+      "errors": 0
+    },
+    "changelogs/3.7.0-RC3.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "changelogs/3.7.0-RC4.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "changelogs/3.7.0.md": {
+      "symbols": 34,
+      "relationships": 159,
+      "errors": 0
+    },
+    "changelogs/3.7.1-RC1.md": {
+      "symbols": 25,
+      "relationships": 66,
+      "errors": 0
+    },
+    "changelogs/3.7.1-RC2.md": {
+      "symbols": 4,
+      "relationships": 1,
+      "errors": 0
+    },
+    "changelogs/3.7.1.md": {
+      "symbols": 28,
+      "relationships": 75,
+      "errors": 0
+    },
+    "community-build/README.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "directives-parser/README.md": {
+      "symbols": 29,
+      "relationships": 35,
+      "errors": 0
+    },
+    "docs/.ai/INDEX.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/.ai/skills/add-error-code-docs.md": {
+      "symbols": 13,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2015-10-23-dotty-compiler-bootstraps.md": {
+      "symbols": 4,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2016-01-02-new-year-resolutions.md": {
+      "symbols": 1,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2016-02-03-essence-of-scala.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2016-02-17-scaling-dot-soundness.md": {
+      "symbols": 10,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2016-05-05-multiversal-equality.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2016-12-05-implicit-function-types.md": {
+      "symbols": 29,
+      "relationships": 26,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2017-05-31-first-dotty-milestone-release.md": {
+      "symbols": 12,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2017-07-12-second-dotty-milestone-release.md": {
+      "symbols": 17,
+      "relationships": 77,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2017-09-07-third-dotty-milestone-release.md": {
+      "symbols": 14,
+      "relationships": 37,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2017-10-16-fourth-dotty-milestone-release.md": {
+      "symbols": 17,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2017-12-01-fifth-dotty-milestone-release.md": {
+      "symbols": 24,
+      "relationships": 37,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2018-03-05-seventh-dotty-milestone-release.md": {
+      "symbols": 23,
+      "relationships": 41,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2018-04-27-eighth-dotty-milestone-release.md": {
+      "symbols": 24,
+      "relationships": 39,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2018-07-06-ninth-dotty-milestone-release.md": {
+      "symbols": 23,
+      "relationships": 41,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2018-10-10-10th-dotty-milestone-release.md": {
+      "symbols": 27,
+      "relationships": 35,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2018-11-30-11th-dotty-milestone-release.md": {
+      "symbols": 24,
+      "relationships": 33,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-01-21-12th-dotty-milestone-release.md": {
+      "symbols": 21,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-03-05-13th-dotty-milestone-release.md": {
+      "symbols": 36,
+      "relationships": 62,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-04-15-14th-dotty-milestone-release.md": {
+      "symbols": 14,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-05-23-15th-dotty-milestone-release.md": {
+      "symbols": 23,
+      "relationships": 37,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md": {
+      "symbols": 24,
+      "relationships": 32,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-07-25-17th-dotty-milestone-release.md": {
+      "symbols": 10,
+      "relationships": 21,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-08-30-18th-dotty-milestone-release.md": {
+      "symbols": 28,
+      "relationships": 53,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-09-23-19th-dotty-milestone-release.md": {
+      "symbols": 23,
+      "relationships": 26,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-11-04-20th-dotty-milestone-release.md": {
+      "symbols": 21,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2019-12-20-21th-dotty-milestone-release.md": {
+      "symbols": 34,
+      "relationships": 43,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-02-05-22nd-dotty-milestone-release.md": {
+      "symbols": 27,
+      "relationships": 41,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-03-18-23rd-dotty-milestone-release.md": {
+      "symbols": 33,
+      "relationships": 36,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-04-29-24th-dotty-milestone-release.md": {
+      "symbols": 14,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-06-22-25th-dotty-milestone-release.md": {
+      "symbols": 8,
+      "relationships": 11,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-07-27-26th-dotty-milestone-release.md": {
+      "symbols": 15,
+      "relationships": 19,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-08-31-27th-dotty-milestone-release.md": {
+      "symbols": 9,
+      "relationships": 19,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-09-21-naming-schema-change.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-11-09-scala3-m1.md": {
+      "symbols": 24,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2020-12-18-scala3-m3.md": {
+      "symbols": 23,
+      "relationships": 43,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2021-02-17-scala3-rc1.md": {
+      "symbols": 23,
+      "relationships": 45,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2021-03-31-scala3-rc2.md": {
+      "symbols": 12,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2021-04-21-scala3-rc3.md": {
+      "symbols": 5,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2021-06-07-scala3.0.1-rc1-release.md": {
+      "symbols": 12,
+      "relationships": 31,
+      "errors": 0
+    },
+    "docs/_blog/_posts/2021-06-25-scala301-rc2.md": {
+      "symbols": 4,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/context.md": {
+      "symbols": 5,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/lifecycle.md": {
+      "symbols": 8,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/phases.md": {
+      "symbols": 10,
+      "relationships": 30,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/symbols.md": {
+      "symbols": 5,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/time.md": {
+      "symbols": 6,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_docs/contributing/architecture/types.md": {
+      "symbols": 12,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/contributing/community-build.md": {
+      "symbols": 7,
+      "relationships": 11,
+      "errors": 0
+    },
+    "docs/_docs/contributing/debugging/debugging.md": {
+      "symbols": 1,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/contributing/debugging/ide-debugging.md": {
+      "symbols": 21,
+      "relationships": 29,
+      "errors": 0
+    },
+    "docs/_docs/contributing/debugging/inspection.md": {
+      "symbols": 16,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_docs/contributing/debugging/other-debugging.md": {
+      "symbols": 44,
+      "relationships": 50,
+      "errors": 0
+    },
+    "docs/_docs/contributing/getting-started.md": {
+      "symbols": 19,
+      "relationships": 26,
+      "errors": 0
+    },
+    "docs/_docs/contributing/index.md": {
+      "symbols": 5,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/contributing/issues/areas.md": {
+      "symbols": 12,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_docs/contributing/issues/cause.md": {
+      "symbols": 11,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_docs/contributing/issues/diagnosing-your-issue.md": {
+      "symbols": 1,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/contributing/issues/reproduce.md": {
+      "symbols": 14,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/contributing/procedures/contributing-to-stdlib.md": {
+      "symbols": 2,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/contributing/procedures/index.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/contributing/procedures/release.md": {
+      "symbols": 12,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_docs/contributing/procedures/vulpix.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/contributing/scaladoc.md": {
+      "symbols": 15,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_docs/contributing/sending-in-a-pr.md": {
+      "symbols": 12,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_docs/contributing/setting-up-your-ide.md": {
+      "symbols": 6,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/contributing/testing.md": {
+      "symbols": 45,
+      "relationships": 46,
+      "errors": 0
+    },
+    "docs/_docs/index.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/internals/backend.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/internals/best-effort-compilation.md": {
+      "symbols": 4,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/internals/cc/alternatives-to-sealed.md": {
+      "symbols": 15,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/internals/cc/handling-invariant-vars.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/internals/cc/use-design.md": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/internals/classpaths.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/internals/contexts.md": {
+      "symbols": 6,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/internals/coverage.md": {
+      "symbols": 5,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/internals/debug-macros.md": {
+      "symbols": 7,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/internals/dotc-scalac.md": {
+      "symbols": 14,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/internals/dotty-internals-1-notes.md": {
+      "symbols": 18,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_docs/internals/exclusive-capabilities.md": {
+      "symbols": 21,
+      "relationships": 20,
+      "errors": 0
+    },
+    "docs/_docs/internals/explicit-nulls.md": {
+      "symbols": 12,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/internals/gadts.md": {
+      "symbols": 31,
+      "relationships": 25,
+      "errors": 0
+    },
+    "docs/_docs/internals/higher-kinded-v2.md": {
+      "symbols": 59,
+      "relationships": 54,
+      "errors": 0
+    },
+    "docs/_docs/internals/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/internals/overall-structure.md": {
+      "symbols": 9,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/internals/periods.md": {
+      "symbols": 3,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/internals/syntax-3.1.md": {
+      "symbols": 22,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/internals/syntax.md": {
+      "symbols": 23,
+      "relationships": 20,
+      "errors": 0
+    },
+    "docs/_docs/internals/type-system.md": {
+      "symbols": 14,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/changed-features.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/compiler-plugins.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/eta-expansion-spec.md": {
+      "symbols": 12,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/eta-expansion.md": {
+      "symbols": 5,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/implicit-conversions-spec.md": {
+      "symbols": 10,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/implicit-conversions.md": {
+      "symbols": 4,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/implicit-resolution.md": {
+      "symbols": 10,
+      "relationships": 11,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/imports.md": {
+      "symbols": 9,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/interpolation-escapes.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/lazy-vals-init.md": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/main-functions.md": {
+      "symbols": 6,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/match-syntax.md": {
+      "symbols": 6,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/numeric-literals.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/operators.md": {
+      "symbols": 15,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/overload-resolution.md": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/pattern-bindings.md": {
+      "symbols": 12,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/pattern-matching.md": {
+      "symbols": 24,
+      "relationships": 30,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/structural-types-spec.md": {
+      "symbols": 16,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/structural-types.md": {
+      "symbols": 18,
+      "relationships": 25,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/type-inference.md": {
+      "symbols": 1,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/vararg-splices.md": {
+      "symbols": 6,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/changed-features/wildcards.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/by-name-context-parameters.md": {
+      "symbols": 6,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/context-bounds.md": {
+      "symbols": 33,
+      "relationships": 32,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/context-functions-spec.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/context-functions.md": {
+      "symbols": 15,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/contextual.md": {
+      "symbols": 5,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/conversions.md": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/deferred-givens.md": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/derivation-macro.md": {
+      "symbols": 11,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/derivation.md": {
+      "symbols": 43,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/extension-methods.md": {
+      "symbols": 30,
+      "relationships": 25,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/given-imports.md": {
+      "symbols": 12,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/givens.md": {
+      "symbols": 11,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/more-givens.md": {
+      "symbols": 19,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/multiversal-equality.md": {
+      "symbols": 21,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/previous-givens.md": {
+      "symbols": 24,
+      "relationships": 19,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/relationship-implicits.md": {
+      "symbols": 34,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/right-associative-extension-methods.md": {
+      "symbols": 7,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/type-classes.md": {
+      "symbols": 30,
+      "relationships": 28,
+      "errors": 0
+    },
+    "docs/_docs/reference/contextual/using-clauses.md": {
+      "symbols": 27,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/auto-apply.md": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/class-shadowing-spec.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/class-shadowing.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/delayed-init.md": {
+      "symbols": 3,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/do-while.md": {
+      "symbols": 7,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/dropped-features.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/early-initializers.md": {
+      "symbols": 2,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/existential-types.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/limit22.md": {
+      "symbols": 1,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/macros.md": {
+      "symbols": 1,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/nonlocal-returns.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/package-objects.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/procedure-syntax.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/symlits.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/this-qualifier.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/type-projection.md": {
+      "symbols": 1,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/weak-conformance-spec.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/weak-conformance.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/wildcard-init.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/dropped-features/xml.md": {
+      "symbols": 2,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/enums/adts.md": {
+      "symbols": 17,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_docs/reference/enums/desugarEnums.md": {
+      "symbols": 27,
+      "relationships": 23,
+      "errors": 0
+    },
+    "docs/_docs/reference/enums/enums-index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/enums/enums.md": {
+      "symbols": 26,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E001.md": {
+      "symbols": 12,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E002.md": {
+      "symbols": 12,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E003.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E004.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E005.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E006.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E007.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E008.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E009.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E010.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E011.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E012.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E013.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E014.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E015.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E016.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E017.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E018.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E019.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E020.md": {
+      "symbols": 13,
+      "relationships": 11,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E021.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E022.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E023.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E024.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E025.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E026.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E027.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E028.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E029.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E030.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E031.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E032.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E033.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E034.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E035.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E036.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E037.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E038.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E039.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E040.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E041.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E042.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E043.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E044.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E045.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E046.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E047.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E048.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E049.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E050.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E051.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E052.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E053.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E054.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E055.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E056.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E057.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E058.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E059.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E060.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E061.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E062.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E063.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E064.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E065.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E066.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E067.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E068.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E069.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E070.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E071.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E072.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E073.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E074.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E075.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E076.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E077.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E078.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E079.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E080.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E081.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E082.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E083.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E084.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E085.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E086.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E087.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E088.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E089.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E090.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E091.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E092.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E093.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E094.md": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E095.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E096.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E097.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E098.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E099.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E100.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E101.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E102.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E103.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E104.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E105.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E106.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E107.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E108.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E109.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E110.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E111.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E112.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E113.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E114.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E115.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E116.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E117.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E118.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E119.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E120.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E121.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E122.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E123.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E124.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E125.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E126.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E127.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E128.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E129.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E130.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E131.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E132.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E133.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E134.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E135.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E136.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E137.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E138.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E139.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E140.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E141.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E142.md": {
+      "symbols": 10,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E143.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E144.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E145.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E146.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E147.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E148.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E149.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E150.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E151.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E152.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E153.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E154.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E155.md": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E156.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E157.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E158.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E159.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E160.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E161.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E162.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E163.md": {
+      "symbols": 10,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E164.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E165.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E166.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E167.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E168.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E169.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E170.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E171.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E172.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E173.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E174.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E175.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E176.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E177.md": {
+      "symbols": 12,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E178.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E179.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E180.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E181.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E182.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E183.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E184.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E185.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E186.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E187.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E188.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E189.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E190.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E191.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E192.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E193.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E194.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E195.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E196.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E197.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E198.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E199.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E200.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E201.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E202.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E203.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E204.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E205.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E206.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E207.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E208.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E209.md": {
+      "symbols": 12,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E210.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E211.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E212.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E213.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E214.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E215.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E216.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E217.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E218.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E219.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E220.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E221.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E222.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E223.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E224.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E225.md": {
+      "symbols": 10,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E226.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E227.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E228.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E229.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E230.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E231.md": {
+      "symbols": 9,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/E232.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/error-codes/error-codes.md": {
+      "symbols": 3,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/better-fors.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/canthrow.md": {
+      "symbols": 41,
+      "relationships": 50,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/advanced.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/basics.md": {
+      "symbols": 38,
+      "relationships": 30,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/cc.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/checked-exceptions.md": {
+      "symbols": 10,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/classes.md": {
+      "symbols": 46,
+      "relationships": 41,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/classifiers.md": {
+      "symbols": 20,
+      "relationships": 20,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/how-to-use.md": {
+      "symbols": 12,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/internals.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/mutability.md": {
+      "symbols": 52,
+      "relationships": 46,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/overview.md": {
+      "symbols": 31,
+      "relationships": 33,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/polymorphism.md": {
+      "symbols": 27,
+      "relationships": 28,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/safe.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/scoped-capabilities.md": {
+      "symbols": 48,
+      "relationships": 49,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/capture-checking/separation-checking.md": {
+      "symbols": 49,
+      "relationships": 46,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/dedented-string-literals.md": {
+      "symbols": 6,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/erased-defs-spec.md": {
+      "symbols": 4,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/erased-defs.md": {
+      "symbols": 23,
+      "relationships": 19,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/explicit-nulls.md": {
+      "symbols": 49,
+      "relationships": 57,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/fewer-braces.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/generalized-method-syntax.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/main-annotation.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/modularity.md": {
+      "symbols": 30,
+      "relationships": 28,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/named-tuples.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/named-typeargs-spec.md": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/named-typeargs.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/numeric-literals.md": {
+      "symbols": 24,
+      "relationships": 26,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/overview.md": {
+      "symbols": 5,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/package-object-values.md": {
+      "symbols": 5,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/purefuns.md": {
+      "symbols": 5,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/quoted-patterns-with-polymorphic-functions.md": {
+      "symbols": 10,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/relaxed-lambdas.md": {
+      "symbols": 18,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/runtimeChecked.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/spec-strings.md": {
+      "symbols": 15,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/sub-cases.md": {
+      "symbols": 6,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/tupled-function.md": {
+      "symbols": 7,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/experimental/typeclasses.md": {
+      "symbols": 36,
+      "relationships": 31,
+      "errors": 0
+    },
+    "docs/_docs/reference/features-classification.md": {
+      "symbols": 9,
+      "relationships": 50,
+      "errors": 0
+    },
+    "docs/_docs/reference/language-versions/binary-compatibility.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/language-versions/language-versions.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/language-versions/source-compatibility.md": {
+      "symbols": 2,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/compiletime-ops.md": {
+      "symbols": 25,
+      "relationships": 21,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/inline.md": {
+      "symbols": 31,
+      "relationships": 29,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/macros-spec.md": {
+      "symbols": 74,
+      "relationships": 67,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/macros.md": {
+      "symbols": 77,
+      "relationships": 69,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/metaprogramming.md": {
+      "symbols": 1,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/reflection.md": {
+      "symbols": 35,
+      "relationships": 41,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/simple-smp.md": {
+      "symbols": 20,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/staging.md": {
+      "symbols": 9,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/metaprogramming/tasty-inspect.md": {
+      "symbols": 9,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/dependent-function-types-spec.md": {
+      "symbols": 9,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/dependent-function-types.md": {
+      "symbols": 4,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/intersection-types-spec.md": {
+      "symbols": 11,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/intersection-types.md": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/match-types.md": {
+      "symbols": 22,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/new-types.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/polymorphic-function-types.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/type-lambdas-spec.md": {
+      "symbols": 23,
+      "relationships": 19,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/type-lambdas.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/union-types-spec.md": {
+      "symbols": 28,
+      "relationships": 26,
+      "errors": 0
+    },
+    "docs/_docs/reference/new-types/union-types.md": {
+      "symbols": 6,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/better-fors.md": {
+      "symbols": 9,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/binary-literals.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/control-syntax.md": {
+      "symbols": 3,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/creator-applications.md": {
+      "symbols": 4,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/export.md": {
+      "symbols": 20,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/generalized-method-syntax.md": {
+      "symbols": 18,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/indentation.md": {
+      "symbols": 39,
+      "relationships": 29,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/into.md": {
+      "symbols": 39,
+      "relationships": 28,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/kind-polymorphism.md": {
+      "symbols": 3,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/matchable.md": {
+      "symbols": 14,
+      "relationships": 23,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/named-tuples.md": {
+      "symbols": 39,
+      "relationships": 30,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/opaques-details.md": {
+      "symbols": 19,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/opaques.md": {
+      "symbols": 11,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/open-classes.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/other-new-features.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/parameter-untupling-spec.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/parameter-untupling.md": {
+      "symbols": 10,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/preview-defs.md": {
+      "symbols": 3,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/runtimeChecked.md": {
+      "symbols": 15,
+      "relationships": 11,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/safe-initialization.md": {
+      "symbols": 22,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/targetName.md": {
+      "symbols": 11,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/threadUnsafe-annotation.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/toplevel-definitions.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/trait-parameters.md": {
+      "symbols": 10,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/transparent-traits.md": {
+      "symbols": 8,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_docs/reference/other-new-features/type-test.md": {
+      "symbols": 16,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_docs/reference/overview.md": {
+      "symbols": 10,
+      "relationships": 59,
+      "errors": 0
+    },
+    "docs/_docs/reference/preview/overview.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_docs/reference/preview/unrolled-defs.md": {
+      "symbols": 16,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_docs/reference/soft-modifier.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_docs/reference/syntax.md": {
+      "symbols": 23,
+      "relationships": 20,
+      "errors": 0
+    },
+    "docs/_docs/release-notes-0.1.2.md": {
+      "symbols": 8,
+      "relationships": 73,
+      "errors": 0
+    },
+    "docs/_docs/release-notes/syntax-changes-0.22.md": {
+      "symbols": 16,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/01-lexical-syntax.md": {
+      "symbols": 60,
+      "relationships": 77,
+      "errors": 0
+    },
+    "docs/_spec/02-identifiers-names-and-scopes.md": {
+      "symbols": 10,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_spec/03-types.md": {
+      "symbols": 115,
+      "relationships": 170,
+      "errors": 0
+    },
+    "docs/_spec/04-basic-definitions.md": {
+      "symbols": 91,
+      "relationships": 118,
+      "errors": 0
+    },
+    "docs/_spec/05-classes-and-objects.md": {
+      "symbols": 135,
+      "relationships": 168,
+      "errors": 0
+    },
+    "docs/_spec/06-expressions.md": {
+      "symbols": 146,
+      "relationships": 213,
+      "errors": 0
+    },
+    "docs/_spec/07-implicits.md": {
+      "symbols": 39,
+      "relationships": 53,
+      "errors": 0
+    },
+    "docs/_spec/08-pattern-matching.md": {
+      "symbols": 77,
+      "relationships": 96,
+      "errors": 0
+    },
+    "docs/_spec/09-top-level-definitions.md": {
+      "symbols": 21,
+      "relationships": 20,
+      "errors": 0
+    },
+    "docs/_spec/10-xml-expressions-and-patterns.md": {
+      "symbols": 10,
+      "relationships": 11,
+      "errors": 0
+    },
+    "docs/_spec/11-annotations.md": {
+      "symbols": 16,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_spec/12-the-scala-standard-library.md": {
+      "symbols": 50,
+      "relationships": 58,
+      "errors": 0
+    },
+    "docs/_spec/13-syntax-summary.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/A1-deprecated.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/A2-scala-2-compatibility.md": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/A3-to-be-deprecated.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/changed-features/imports.md": {
+      "symbols": 9,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/changed-features/interpolation-escapes.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/changed-features/match-syntax.md": {
+      "symbols": 6,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/changed-features/operators.md": {
+      "symbols": 15,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/changed-features/wildcards.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/contextual/given-imports.md": {
+      "symbols": 12,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/auto-apply.md": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/class-shadowing.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/delayed-init.md": {
+      "symbols": 3,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/do-while.md": {
+      "symbols": 7,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/dropped-features.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/early-initializers.md": {
+      "symbols": 2,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/existential-types.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/limit22.md": {
+      "symbols": 1,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/macros.md": {
+      "symbols": 1,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/nonlocal-returns.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/procedure-syntax.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/symlits.md": {
+      "symbols": 2,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/this-qualifier.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/weak-conformance.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/dropped-features/wildcard-init.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/enums/adts.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/enums/enums-index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/enums/enums.md": {
+      "symbols": 20,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/new-types/intersection-types.md": {
+      "symbols": 5,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/new-types/type-lambdas.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/new-types/union-types.md": {
+      "symbols": 6,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/other-new-features/control-syntax.md": {
+      "symbols": 3,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/other-new-features/kind-polymorphism.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/other-new-features/opaques.md": {
+      "symbols": 14,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_spec/APPLIEDreference/other-new-features/trait-parameters.md": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_spec/README.md": {
+      "symbols": 7,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/changed-features.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/compiler-plugins.md": {
+      "symbols": 8,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/eta-expansion-spec.md": {
+      "symbols": 12,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/eta-expansion.md": {
+      "symbols": 5,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/implicit-conversions-spec.md": {
+      "symbols": 10,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/implicit-conversions.md": {
+      "symbols": 4,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/implicit-resolution.md": {
+      "symbols": 7,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/lazy-vals-init.md": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/main-functions.md": {
+      "symbols": 6,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/numeric-literals.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/overload-resolution.md": {
+      "symbols": 9,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/pattern-bindings.md": {
+      "symbols": 12,
+      "relationships": 8,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/pattern-matching.md": {
+      "symbols": 23,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/structural-types-spec.md": {
+      "symbols": 16,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/structural-types.md": {
+      "symbols": 16,
+      "relationships": 21,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/type-checking.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/type-inference.md": {
+      "symbols": 1,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/changed-features/vararg-splices.md": {
+      "symbols": 6,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/by-name-context-parameters.md": {
+      "symbols": 6,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/context-bounds.md": {
+      "symbols": 8,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/context-functions-spec.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/context-functions.md": {
+      "symbols": 14,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/contextual.md": {
+      "symbols": 5,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/conversions.md": {
+      "symbols": 7,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/derivation-macro.md": {
+      "symbols": 13,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/derivation.md": {
+      "symbols": 26,
+      "relationships": 21,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/extension-methods.md": {
+      "symbols": 30,
+      "relationships": 25,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/givens.md": {
+      "symbols": 18,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/multiversal-equality.md": {
+      "symbols": 21,
+      "relationships": 21,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/relationship-implicits.md": {
+      "symbols": 34,
+      "relationships": 34,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/right-associative-extension-methods.md": {
+      "symbols": 4,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/type-classes.md": {
+      "symbols": 32,
+      "relationships": 30,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/contextual/using-clauses.md": {
+      "symbols": 21,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/dropped-features/package-objects.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/dropped-features/type-projection.md": {
+      "symbols": 1,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/dropped-features/xml.md": {
+      "symbols": 2,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/canthrow.md": {
+      "symbols": 42,
+      "relationships": 51,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/cc.md": {
+      "symbols": 70,
+      "relationships": 57,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/erased-defs-spec.md": {
+      "symbols": 3,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/erased-defs.md": {
+      "symbols": 17,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/explicit-nulls.md": {
+      "symbols": 48,
+      "relationships": 56,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/fewer-braces.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/main-annotation.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/named-typeargs-spec.md": {
+      "symbols": 5,
+      "relationships": 4,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/named-typeargs.md": {
+      "symbols": 3,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/numeric-literals.md": {
+      "symbols": 24,
+      "relationships": 26,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/overview.md": {
+      "symbols": 4,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/experimental/tupled-function.md": {
+      "symbols": 7,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/features-classification.md": {
+      "symbols": 9,
+      "relationships": 50,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/language-versions/binary-compatibility.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/language-versions/language-versions.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/language-versions/source-compatibility.md": {
+      "symbols": 2,
+      "relationships": 12,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/compiletime-ops.md": {
+      "symbols": 26,
+      "relationships": 22,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/inline.md": {
+      "symbols": 30,
+      "relationships": 27,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/macros-spec.md": {
+      "symbols": 74,
+      "relationships": 67,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/macros.md": {
+      "symbols": 74,
+      "relationships": 66,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/metaprogramming.md": {
+      "symbols": 1,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/reflection.md": {
+      "symbols": 12,
+      "relationships": 13,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/simple-smp.md": {
+      "symbols": 20,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/staging.md": {
+      "symbols": 9,
+      "relationships": 9,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/metaprogramming/tasty-inspect.md": {
+      "symbols": 8,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/new-types/dependent-function-types-spec.md": {
+      "symbols": 9,
+      "relationships": 6,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/new-types/dependent-function-types.md": {
+      "symbols": 4,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/new-types/match-types.md": {
+      "symbols": 22,
+      "relationships": 17,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/new-types/new-types.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/new-types/polymorphic-function-types.md": {
+      "symbols": 8,
+      "relationships": 7,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/creator-applications.md": {
+      "symbols": 4,
+      "relationships": 2,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/export.md": {
+      "symbols": 19,
+      "relationships": 15,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/indentation.md": {
+      "symbols": 39,
+      "relationships": 29,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/matchable.md": {
+      "symbols": 14,
+      "relationships": 23,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/open-classes.md": {
+      "symbols": 8,
+      "relationships": 5,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/other-new-features.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/parameter-untupling-spec.md": {
+      "symbols": 13,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/parameter-untupling.md": {
+      "symbols": 10,
+      "relationships": 10,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/safe-initialization.md": {
+      "symbols": 22,
+      "relationships": 16,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/targetName.md": {
+      "symbols": 11,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/threadUnsafe-annotation.md": {
+      "symbols": 3,
+      "relationships": 3,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/transparent-traits.md": {
+      "symbols": 5,
+      "relationships": 14,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/other-new-features/type-test.md": {
+      "symbols": 16,
+      "relationships": 18,
+      "errors": 0
+    },
+    "docs/_spec/TODOreference/overview.md": {
+      "symbols": 10,
+      "relationships": 59,
+      "errors": 0
+    },
+    "docs/_spec/index.md": {
+      "symbols": 4,
+      "relationships": 3,
+      "errors": 0
+    },
+    "pkgs/README.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "pkgs/chocolatey/README.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "pkgs/msi/README.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    },
+    "project/RELEASES.md": {
+      "symbols": 7,
+      "relationships": 8,
+      "errors": 0
+    },
+    "repl/src/fansi/README.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "repl/src/pprint/README.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "repl/src/sourcecode/README.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc-testcases/docs/_docs/docs/f1.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc-testcases/docs/_docs/docs/f2.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc-testcases/docs/_docs/docs/f3.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc-testcases/docs/_docs/docs/f4.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc-testcases/docs/_docs/index.md": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "scaladoc/README.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "scaladoc/documentation/docs/design.md": {
+      "symbols": 18,
+      "relationships": 40,
+      "errors": 0
+    },
+    "scaladoc/documentation/docs/index.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "scaladoc/documentation/index.md": {
+      "symbols": 1,
+      "relationships": 1,
+      "errors": 0
+    },
+    "scaladoc/resources/dotty_res/scripts/inkuire.md": {
+      "symbols": 7,
+      "relationships": 8,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/basic/_docs/Adoc.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/basic/_docs/dir/index.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/basic/_docs/dir/nested.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/basic/_docs/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/emptyPage/_docs/hello.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noConfigEnd/_docs/hello.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noDocsIndex/_docs/Adoc.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noDocsIndex/_docs/dir/index.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noDocsIndex/_docs/dir/nested.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noDocsIndex/_docs/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noGlobalIndex/_docs/Adoc.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noGlobalIndex/_docs/dir/index.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noGlobalIndex/_docs/dir/nested.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noGlobalIndex/_docs/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noIndexes/_docs/Adoc.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noIndexes/_docs/dir/index.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/noIndexes/_docs/dir/nested.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/sidebar/_docs/directory/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/sidebar/_docs/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/Adoc.md": {
+      "symbols": 2,
+      "relationships": 5,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/dir/html.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/dir/index.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/dir/name...with..dots..md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/dir/name.with.md.and.html.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/dir/nested.md": {
+      "symbols": 2,
+      "relationships": 0,
+      "errors": 0
+    },
+    "scaladoc/test-documentations/static-links/_docs/index.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "tests/bench/transactional/results.md": {
+      "symbols": 7,
+      "relationships": 13,
+      "errors": 0
+    },
+    "tests/cmdTest-sbt-tests/README.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "tests/explicit-nulls/unsafe-common/README.md": {
+      "symbols": 0,
+      "relationships": 0,
+      "errors": 0
+    },
+    "tests/neg-custom-args/i20491/README.md": {
+      "symbols": 6,
+      "relationships": 5,
+      "errors": 0
+    },
+    "tests/neg-custom-args/missing-java-outer-dependency/README.md": {
+      "symbols": 7,
+      "relationships": 6,
+      "errors": 0
+    },
+    "tests/old-tasty-interpreter-prototype/notes.md": {
+      "symbols": 1,
+      "relationships": 0,
+      "errors": 0
+    },
+    "tests/semanticdb/todo.md": {
+      "symbols": 2,
+      "relationships": 1,
+      "errors": 0
+    }
+  },
+  "excludedFiles": [
+    "docs/_docs/contributing/cheatsheet.md",
+    "docs/_docs/reference/other-new-features/experimental-defs.md",
+    "docs/_spec/TODOreference/other-new-features/experimental-defs.md",
+    "scaladoc/test-documentations/conflicts-pages/_docs/tests/Adoc.md"
+  ],
+  "crashes": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-08T00:38:12.197Z",
+    "contentSha256": "58d913f7a2bb36965c2f317fa5de7914f599ca9ce8e6d6c4d455da062afc20c7"
+  }
+}

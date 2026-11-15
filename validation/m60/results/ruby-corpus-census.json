@@ -1,0 +1,307 @@
+{
+  "generatedAt": "2026-10-01T21:55:00.023Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories"
+  ],
+  "files": 8528,
+  "errors": 0,
+  "treeTruth": 651600,
+  "analyzerEdges": 285494,
+  "missing": 281,
+  "unexplained": 317,
+  "outsideAudited": 0,
+  "missingByLabel": {
+    "calls": 278,
+    "instantiates": 1,
+    "contains": 1,
+    "uses": 1
+  },
+  "unexplainedByLabel": {
+    "calls": 298,
+    "instantiates": 19
+  },
+  "crossFileTotal": 2574,
+  "crossFileByLabel": {
+    "calls": 1720,
+    "uses": 576,
+    "contains": 273,
+    "overrides": 5
+  },
+  "outsideByLabel": {},
+  "unexplainedExamples": {
+    "calls": [
+      {
+        "file": "mastodon/app/controllers/activitypub/contexts_controller.rb",
+        "line": 41,
+        "from": "context_presenter",
+        "target": "next_page",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/activitypub/contexts_controller.rb",
+        "line": 52,
+        "from": "items_collection_presenter",
+        "target": "page_params",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/activitypub/replies_controller.rb",
+        "line": 40,
+        "from": "replies_collection_presenter",
+        "target": "page_params",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/activitypub/replies_controller.rb",
+        "line": 43,
+        "from": "replies_collection_presenter",
+        "target": "next_page",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/admin/account_moderation_notes_controller.rb",
+        "line": 10,
+        "from": "create",
+        "target": "resource_params",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/admin/accounts_controller.rb",
+        "line": 21,
+        "from": "batch",
+        "target": "action_from_button",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/admin/accounts_controller.rb",
+        "line": 23,
+        "from": "batch",
+        "target": "filtered_accounts",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      },
+      {
+        "file": "mastodon/app/controllers/admin/collections_controller.rb",
+        "line": 23,
+        "from": "batch",
+        "target": "action_from_button",
+        "conf": 0.9,
+        "md": {
+          "bareCall": true,
+          "evidenceClass": "usage_contextual"
+        }
+      }
+    ],
+    "instantiates": [
+      {
+        "file": "mastodon/app/models/concerns/user/ldap_authenticable.rb",
+        "line": 28,
+        "from": "ldap_get_user",
+        "target": "LdapAuthenticable",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "mastodon/app/models/concerns/user/pam_authenticable.rb",
+        "line": 51,
+        "from": "pam_get_user",
+        "target": "PamAuthenticable",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actionmailer/lib/action_mailer/preview.rb",
+        "line": 89,
+        "from": "call",
+        "target": "Preview",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actionpack/lib/action_dispatch/middleware/cookies.rb",
+        "line": 323,
+        "from": "build",
+        "target": "CookieJar",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actionpack/lib/action_dispatch/testing/request_encoder.rb",
+        "line": 52,
+        "from": "register_encoder",
+        "target": "RequestEncoder",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actiontext/lib/action_text/attachables/content_attachment.rb",
+        "line": 11,
+        "from": "from_node",
+        "target": "ContentAttachment",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/actionview/lib/action_view/cache_expiry.rb",
+        "line": 7,
+        "from": "create",
+        "target": "ViewReloader",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      },
+      {
+        "file": "rails/activejob/test/support/sneakers/inline.rb",
+        "line": 10,
+        "from": "ClassMethods",
+        "target": "ClassMethods",
+        "conf": 0.9,
+        "md": {
+          "resolvedTarget": "enclosing-class",
+          "evidenceClass": "structural"
+        }
+      }
+    ]
+  },
+  "sigA": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigB": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigC": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "missingExamples": [
+    {
+      "dir": "MISSING",
+      "file": "mastodon/app/controllers/auth/sessions/security_key_options_controller.rb",
+      "label": "calls",
+      "target": "session",
+      "line": 9
+    },
+    {
+      "dir": "MISSING",
+      "file": "mastodon/app/controllers/settings/two_factor_authentication/confirmations_controller.rb",
+      "label": "calls",
+      "target": "current_user",
+      "line": 29
+    },
+    {
+      "dir": "MISSING",
+      "file": "mastodon/config/initializers/simple_form.rb",
+      "label": "calls",
+      "target": "raw_label_text",
+      "line": 18
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actioncable/lib/action_cable/channel/streams.rb",
+      "label": "calls",
+      "target": "message",
+      "line": 178
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actioncable/test/subscription_adapter/common.rb",
+      "label": "calls",
+      "target": "data",
+      "line": 30
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actioncable/test/subscription_adapter/redis_test.rb",
+      "label": "calls",
+      "target": "data",
+      "line": 47
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actioncable/test/subscription_adapter/redis_test.rb",
+      "label": "calls",
+      "target": "data",
+      "line": 66
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/actionmailer/lib/action_mailer/base.rb",
+      "label": "calls",
+      "target": "message",
+      "line": 879
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/test/cases/associations_test.rb",
+      "label": "instantiates",
+      "target": "Ship",
+      "line": 63
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/test/cases/associations_test.rb",
+      "label": "contains",
+      "target": "\"author\"",
+      "line": 798
+    },
+    {
+      "dir": "MISSING",
+      "file": "rails/activerecord/test/cases/associations_test.rb",
+      "label": "uses",
+      "target": "\"author\"",
+      "line": 798
+    }
+  ]
+}

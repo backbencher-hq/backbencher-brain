@@ -1,0 +1,111 @@
+{
+  "fixtureId": "fsharp/qualified-name-seam",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60 ontology lane, fsharp PASS 3 (2026-10-03) — FS-P3-1: the `overrides` edge's SOURCE spelling is one this lane never PUBLISHED. `overrides` is the only relationship this analyzer emits whose source it deliberately qualifies, because a bare member name is ambiguous: `type Resource() = interface System.IDisposable with override this.Dispose() = ()` emits `overrides Resource.Dispose -> IDisposable.Dispose`. Measured on the 400-file stride draw before the fix, that source matched the stored `qualifiedName` at 0 of 63 `overrides` edges. `pool-worker.ts:870` derives the stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? scope.name : name)` and this analyzer set none of the three, so `qualified_name` collapsed to the bare name for every OWNED symbol in the language — confirmed directly on Grace/src/Grace.Actors/AccessControl.Actor.fs, where the stored symbol read `name=\"OnActivateAsync\" qualifiedName=\"OnActivateAsync\" ownerName=\"AccessControlActor\"` while the edge read `source=\"AccessControlActor.OnActivateAsync\"`, 0 exact matches. That is a defect and not a cosmetic difference: `src/ast/parallel-indexer.ts` documents its own resolution strategies as \"a bare `name`, a `qualified_name` (`Owner.member`), or — for a dotted target — everything after the first `.`\", and `brain_relationship.source_external` is JOINed against `brain_symbol.qualified_name`, so an endpoint published under a different key than the symbol's own is an edge the reverse walk cannot bind — `bb_impact` on an F# member that overrides something cannot reach what overrides it, and `src/lsp/impact.ts`, which obtains reverse edges by scanning outgoing edges and matching targets, inherits the miss with no way to report it. THE FIX mints `metadata.fqn` in `publish`, the single funnel all 15 symbol-mint sites pass through, so the edge spelling and the published spelling cannot drift apart again; `metadata.fqn` is the field that formula already reads and is what the C# family sets for the same purpose. The rows here pin BOTH sides of the seam in ONE file, because pinning either alone cannot fail: the pre-fix state satisfies every `overrides` row in `override-target.expectation.json`, which is why two passes of fixtures were green over a store that could not resolve the edge. HONESTY OF AUTHORSHIP: `authoredBeforeAnalyzerRun` is FALSE, and the reason is stated rather than papered over — the `ownerName` VALUES pinned below (`Dog`, `Animal`, `Resource`, `Fixture.QualifiedNameSeam`) are properties of where the walk happens to be, not of the file's text, so they were read off one dump of this analyzer on this file before the rows were written. The INVARIANT the rows encode — `metadata.fqn === ownerName + \".\" + name` for every symbol that HAS an owner, and NO fqn minted for a symbol with no owner — is not observed-derived and is asserted owner-agnostically over the whole corpus by `validation/m14/fixtures/fsharp/store-seam-check.ts`, which is the check that does not depend on any name in this file. Two rows are negative and are the actual regression net: the `forbidSymbols` row forbids an owned `Speak` that carries NO fqn, which is exactly the pre-fix state and exactly what mutant `fsharp/drop-owner-qualified-name` reinjects.",
+  "expectSymbols": [
+    {
+      "name": "Speak",
+      "kind": "method",
+      "ownerName": "Dog",
+      "meta.fqn": "Dog.Speak",
+      "comment": "the symbol whose `overrides` SOURCE is `Dog.Speak` (line 9). The edge spelling and the published spelling, pinned in one file."
+    },
+    {
+      "name": "Speak",
+      "kind": "method",
+      "ownerName": "Animal",
+      "meta.fqn": "Animal.Speak",
+      "comment": "the OVERRIDDEN declaration. Also the `overrides` TARGET's owner segment, so the target half of the seam is pinned by the same rule."
+    },
+    {
+      "name": "Dispose",
+      "kind": "method",
+      "ownerName": "Animal",
+      "meta.fqn": "Animal.Dispose",
+      "comment": "a base-class member that is NOT the target of anything in this file. Pinned because the seam must hold for every owned member, not only the ones an edge happens to name."
+    },
+    {
+      "name": "Dispose",
+      "kind": "method",
+      "ownerName": "Resource",
+      "meta.fqn": "Resource.Dispose",
+      "comment": "the interface-implementation form (`override` inside `interface I with`), which is the shape 100% of the corpus `override this.` occurrences take."
+    },
+    {
+      "name": "Tag",
+      "kind": "method",
+      "ownerName": "Resource",
+      "meta.fqn": "Resource.Tag",
+      "comment": "an ordinary member of the same type. A rule that qualified only `override` members would pass every other row in this file and fail this one."
+    },
+    {
+      "name": "Animal",
+      "kind": "class",
+      "meta.fqn": "Fixture.QualifiedNameSeam.Animal",
+      "comment": "an owner may itself be dotted (a module), so the published name composes rather than taking only the last segment."
+    },
+    {
+      "name": "describe",
+      "kind": "variable",
+      "meta.fqn": "Fixture.QualifiedNameSeam.describe",
+      "comment": "a module-level binding: owned, and therefore qualified — the same owner-dotted composition as the classes above."
+    },
+    {
+      "name": "Fixture.QualifiedNameSeam",
+      "kind": "module",
+      "meta.fqn": null,
+      "comment": "NEGATIVE, and the row that keeps the rule from over-reaching: the file's own module has NO owner, so the lane must NOT invent one. `pool-worker.ts:870` already falls back to `name` when there is no owner, so minting an fqn here would add a field that says nothing — and a rule that qualified everything would pass all seven rows above."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Speak",
+      "ownerName": "Dog",
+      "meta.fqn": null,
+      "note": "THE REGRESSION NET, and the row the pre-fix state fails. An owned member with NO published qualified name is exactly FS-P3-1: the `overrides` edge on line 9 writes `Dog.Speak` and the store holds `Speak`, so the endpoint binds to nothing. `forbid` rather than `expect` so the assertion is that the ABSENT case cannot occur — an `expect` row for a present field cannot fail on a symbol that has no field at all."
+    },
+    {
+      "name": "Tag",
+      "ownerName": "Resource",
+      "meta.fqn": null,
+      "note": "the same absence on a member that no edge names. Pins that the seam is a property of OWNERSHIP and not of being an edge endpoint — which is the failure a targeted fix (mint fqn only where an `overrides` edge is pushed) would introduce, and which every `expect` row above would survive."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Dog.Speak",
+      "target": "Animal.Speak",
+      "line_number": 9,
+      "meta.isOverride": true,
+      "comment": "base-class override. Both endpoints are `Owner.member` spellings, so this row is UNSATISFIABLE unless the two `expectSymbols` rows above are also satisfied — which is what makes the pairing in one file worth more than either half."
+    },
+    {
+      "type": "overrides",
+      "from": "Resource.Dispose",
+      "target": "IDisposable.Dispose",
+      "line_number": 13,
+      "meta.relationshipType": "interface_member_implementation",
+      "comment": "interface-member implementation. Its SOURCE is `Resource.Dispose` — the fourth `expectSymbols` row — and its TARGET names `IDisposable`, which this file does not declare, so the target half is external by construction and only the source half is pinnable here. That asymmetry is stated rather than hidden: it is the same external-vs-never-indexed split `edge-resolution-probe.ts` counts across the corpus."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Speak",
+      "note": "the bare-source form. A regression that dropped the owner qualification from the edge source would make every one of these bind — to whichever `Speak` a name-keyed consumer found first — and the pre-fix `expectSymbols` rows would be unaffected, because they pin the SYMBOL's spelling and not the edge's. This row is the only one in the suite that can fail on that regression."
+    },
+    {
+      "type": "overrides",
+      "from": "Resource.Dispose",
+      "target": "Dispose",
+      "note": "the pre-FS-A2 answer for an `override` inside `interface I with` with no `inherit`: a member that overrides ITSELF. Already forbidden by `override-target`, repeated here because this file's rows are what a reader of the seam will check, and a forbid row that lives in only one of two fixtures is one rename away from being lost."
+    },
+    {
+      "type": "overrides",
+      "target": "unknown",
+      "note": "ledger R7: no relationship endpoint may be the literal `unknown`."
+    }
+  ]
+}

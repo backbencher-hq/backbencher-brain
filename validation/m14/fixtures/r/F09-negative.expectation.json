@@ -1,0 +1,136 @@
+{
+  "fixtureId": "r/F09-negative",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE NEGATIVE FIXTURE. Every line here is a way an analyzer can be wrong, and the substance of the file is its FORBIDS -- an expectation file of mostly negative constraints, which is the only kind that can catch a fabricated symbol. A string literal is DATA: `txt1` holds the TEXT `R6Class <- function() library(evil)`, and publishing a class named `R6Class` or an import of `evil` would be the analyzer reading a comment. The same for `txt3` (`setClass(\"Fake\", ...)` inside a string) and `txt4`. A commented-out declaration is not a declaration, and neither is a commented-out `library(NotReal)`. A function LOCAL to `callback` is not a file-level binding -- `local_only` is R's own execution semantics, not a lexical-scope guess. And the two names R allows only in backticks, `` `backtick name` `` and `` `%op%` ``, ARE published with the backticks stripped, because refusing them would drop real declarations; they are pinned as PRESENT precisely so the forbids beside them cannot be satisfied by a rule that simply stopped reading quoted names.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "txt1",
+      "kind": "variable"
+    },
+    {
+      "name": "txt2",
+      "kind": "variable"
+    },
+    {
+      "name": "txt3",
+      "kind": "variable"
+    },
+    {
+      "name": "txt4",
+      "kind": "variable"
+    },
+    {
+      "name": "still_a_var",
+      "kind": "variable"
+    },
+    {
+      "name": "backtick name",
+      "kind": "variable"
+    },
+    {
+      "name": "%op%",
+      "kind": "function"
+    },
+    {
+      "name": "callback",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "txt1"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "txt3"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "%op%"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "backtick name"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "commented_out",
+      "kind": "function"
+    },
+    {
+      "name": "R6Class",
+      "kind": "function"
+    },
+    {
+      "name": "Fake",
+      "kind": "class"
+    },
+    {
+      "name": "not_a_real_import",
+      "kind": "function"
+    },
+    {
+      "name": "NotReal",
+      "kind": "variable"
+    },
+    {
+      "name": "local_only",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "commented_out"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "R6Class"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "Fake"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "not_a_real_import"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "NotReal"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "local_only"
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "evil"
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "c"
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "not_a_real_import"
+    }
+  ]
+}

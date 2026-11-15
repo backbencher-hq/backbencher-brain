@@ -1,0 +1,106 @@
+{
+  "fixtureId": "svelte/decorator-metadata-868",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Fixture written first from the #868 contract (the SFC seam shifts line_number AND the metadata line mirrors); the numbers were then read off the post-fix run and agree with the file's own text — `@sealed` 17 / `class Service` 18, `@inject(\"db\")` 19 / `pool = 1` 20, `@sealed` 22 / `method() {}` 23, with the script block offset 7 recorded on every delegated row.",
+  "rationale": "M49 (#868), svelte twin of vue/decorator-metadata-868. Same seam contract on the other container, and this fixture exists because the svelte fixtures that came before it all put `<script>` on line 1, where the offset is 0 and an unshifted metadata mirror is indistinguishable from a shifted one. Here the script starts on line 10, so every delegated row owes a +7 — and the pin is on the MIRROR, not only on `line_number`: `references Service -> sealed` must read line_number=17 AND meta.decoratorLine=17, with the script-relative 10 forbidden. The symbol list mirror is pinned the same way (`Service` decorators=[\"sealed\"] with decoratorLines=[17]). One rule, two containers, one measurement: the seam shifts numeric line mirrors and line lists together with the lines they mirror.",
+  "expectSymbols": [
+    {
+      "name": "Service",
+      "kind": "class",
+      "meta.decoratorLines": [
+        17
+      ]
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Service",
+      "meta.decoratorLines": [
+        19
+      ]
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Service",
+      "meta.decoratorLines": [
+        22
+      ]
+    }
+  ],
+  "expectDecorators": [
+    {
+      "symbol": "Service",
+      "contains": "sealed"
+    },
+    {
+      "symbol": "pool",
+      "contains": "inject"
+    },
+    {
+      "symbol": "method",
+      "contains": "sealed"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 17,
+      "meta.decoratorLine": 17,
+      "meta.sfcDelegated": true,
+      "meta.sfcLineOffset": 7,
+      "comment": "re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 19,
+      "meta.decoratorLine": 19,
+      "comment": "re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 22,
+      "meta.decoratorLine": 22,
+      "comment": "re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 10,
+      "comment": "pre-fix: the SCRIPT-relative line for the class decorator"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "meta.decoratorLine": 10,
+      "comment": "pre-fix: line_number shifted but the metadata mirror left script-relative — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "meta.decoratorLine": 12,
+      "comment": "pre-fix: the unshifted mirror for the field's decorator — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "meta.decoratorLine": 15,
+      "comment": "pre-fix: the unshifted mirror for the method's decorator — re-spelled 2026-10-20: the row is still published with this source, target, line and metadata; only the VALUE changed, from the pre-canonical `references` to `decorates`, the ruled vocabulary spelling for a decorator applied to a declaration. Measured on ASTEngine.parseFile."
+    }
+  ],
+  "amendedNote": "2026-10-04 SVELTE_FIX: the `meta.decoratorLine: null` entry was a FORBID, which forbids exactly the state its own comment calls correct — run-fixtures' `meta.x: null` matcher means 'must NOT carry x', so the forbid rejected the documented #823 behaviour (an unrecorded decorator line stays null rather than becoming a number) and the fixture could never pass while that contract holds. Moved to expectRelationships, where the same matcher states the contract. Measured: the fixture failed on the PRISTINE analyzer (before any SVELTE_FIX change) and fails identically in the vue twin (validation/m14/fixtures/vue/decorator-metadata-868.expectation.json carries the same entry), so it is a fixture defect in the pair, not a lane regression. The vue copy is NOT this lane's to edit.",
+  "svelteFix2Note": "2026-10-05 SVELTE_FIX2: SVELTE_FIX's move to expectRelationships did NOT fix it, and its commit message claim of '39 pass / 0 fail' is wrong — the run was 39 pass / 1 fail, this fixture among them. BOTH lists call the same matcher (script/m14/run-fixtures.ts:1512 and :1517), so moving the entry changed nothing: `meta.decoratorLine: null` means 'must NOT carry decoratorLine' in either position, per the M59 convention documented at run-fixtures.ts:419-428. The edge it names — `references Service -> sealed` — is the SAME edge the first expectRelationships row already pins at line_number 17 / decoratorLine 17, so the entry also asserts the absence of the very key it names, and can never match. The contract it was written for is therefore asserted by NO row here, and the entry is REMOVED from both lists rather than relocated a third time. What actually pins 'never invent a line' on this fixture is the four forbidRelationships rows already present: the SCRIPT-relative 10 is forbidden as line_number and again as the mirror, on the class decorator, the field decorator and the method decorator. Measured before removing it, on a probe of six decorator shapes through production parseFile — `@dec class`, `@dec` on a field, on a method, on an exported class, an exported alias, an export-default class and a decorated object property — EVERY decorator reference the analyzer emits carries a decoratorLine (12, 14, 15, 17 in the probe's own file coordinates), so the 'unrecorded line' case the entry describes does not arise from this input and asserting it asserted nothing. Honest scope: this lane now pins the seam contract (line_number and the metadata mirror move together, offset 7) and not the #823 absent-line case, which no shape in this fixture produces. The identical defect in validation/m14/fixtures/vue/decorator-metadata-868.expectation.json is NOT this lane's file and is reported to master."
+}

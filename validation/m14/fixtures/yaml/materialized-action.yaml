@@ -1,0 +1,35 @@
+# A local `uses: ./D` is NOT automatically a path this project has. A step's action can be
+# materialized at run time by an EARLIER STEP of the SAME JOB that checks a repository out into
+# that directory (`with: path: D`), which is the HashiCorp CI idiom this corpus carries 10 sites
+# of. The emitted claim must name what will be at that path WHEN THE STEP RUNS, and both
+# directions are pinned below: one row that must be re-routed to the checked-out repository, and
+# the rows that must NOT be (no checkout in this job at all; a checkout AFTER the use).
+name: materialized-action
+on:
+  workflow_call:
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Security Scanner repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: hashicorp/security-scanner
+          path: security-scanner
+          ref: main
+      - name: Scan
+        uses: ./security-scanner
+        with:
+          repository: "$PWD"
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./security-scanner
+  late:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./late-action
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: hashicorp/late-action
+          path: late-action

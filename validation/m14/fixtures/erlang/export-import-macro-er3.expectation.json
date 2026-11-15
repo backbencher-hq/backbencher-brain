@@ -1,0 +1,24 @@
+{
+ "schemaVersion": 1,
+ "fixture": "erlang/export-import-macro-er3.erl",
+ "authoredFrom": "Erlang reference manual on -export/-export_type/-import, plus the store's own family precedent for each shape. Three ontology-audit findings, all found by comparing this analyzer against 25 SymbolKind values and 10 relationship values rather than by reading it: (1) ER-D39 — 8 analyzers emit kind=macro (C at real-c-analyzer.ts:3989 splits on isFunctionLikeMacro ? Macro : Constant, and lsp/identity.ts:77 already names `macro` as distinct from `constant`), yet every Erlang -define was published as `constant`, so a parameterized macro claimed to be a value; (2) ER-D40 — 16 analyzers emit an `exports` relationship and `-export([f/1])` is a public-surface declaration, but it reached the store only as ExportInfo while `contains` (membership) stood in for it, so the one label that says 'this is the interface' was stored and compared against nothing; (3) ER-D41 — 19 analyzers emit `imports` (brain_import rows, which dependencies.ts:27-28 reads precisely because resolved_symbol_id is often null), yet -import emitted only `references`, so the dependency pass could not see an Erlang import at all. Each edge is named at its own name-bearing node: the `fa` inside the export list, the module atom inside -import, per M60 #278.",
+ "expectSymbols": [
+  { "name": "export_import_macro_er3", "kind": "module" },
+  { "name": "LIMIT", "kind": "constant", "ownerName": "export_import_macro_er3", "meta.isMacro": true, "meta.isFunctionLike": false },
+  { "name": "SCALE", "kind": "macro", "ownerName": "export_import_macro_er3", "meta.isMacro": true, "meta.isFunctionLike": true, "meta.parameterCount": 1, "note": "ER-D39: takes a parameter, so it is a macro and not a constant" },
+  { "name": "state", "kind": "type", "ownerName": "export_import_macro_er3", "meta.arity": 0 },
+  { "name": "run", "kind": "function", "ownerName": "export_import_macro_er3", "meta.arity": 0 },
+  { "name": "helper", "kind": "function", "ownerName": "export_import_macro_er3", "meta.arity": 1 }
+ ],
+ "expectRelationships": [
+  { "type": "exports", "from": "export_import_macro_er3", "target": "run", "line_number": 15, "meta.exportForm": "export", "meta.arity": 0 },
+  { "type": "exports", "from": "export_import_macro_er3", "target": "helper", "line_number": 15, "meta.exportForm": "export", "meta.arity": 1 },
+  { "type": "exports", "from": "export_import_macro_er3", "target": "state", "line_number": 16, "meta.exportForm": "export_type", "meta.isTypeExport": true, "note": "-export_type exports a TYPE; the `fa` inside the attribute names it" },
+  { "type": "imports", "from": "export_import_macro_er3", "target": "lists", "line_number": 18, "meta.isModuleImport": true, "meta.isExternal": true, "note": "ER-D41: the dependency the module pass reads" },
+  { "type": "references", "from": "export_import_macro_er3", "target": "lists", "line_number": 18, "meta.isModuleImport": true, "note": "the mention, kept alongside the dependency" }
+ ],
+ "forbidRelationships": [
+  { "type": "exports", "from": "export_import_macro_er3", "target": "LIMIT", "comment": "a -define is not exported by an -export list" },
+  { "type": "exports", "from": "export_import_macro_er3", "target": "lists", "comment": "-import is not -export: an imported module is not a member of this one" }
+ ]
+}

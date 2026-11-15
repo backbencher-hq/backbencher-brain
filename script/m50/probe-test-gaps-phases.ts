@@ -14,7 +14,7 @@ import { getProjectId } from "../../src/cli/index"
 import { testGaps, testMapping } from "../../src/intelligence/testing/test-intel"
 import { AnalysisExclusions } from "../../src/ast/analysis-exclusions"
 
-const ROOT = process.env.BB_PROBE_ROOT || "$HOME/mcp/backbencher-brain"
+const ROOT = process.env.BB_PROBE_ROOT || "/home/ishaq2321/mcp/backbencher-brain"
 const OUT = `${ROOT}/validation/m50/results/A2-test-gaps-phases.json`
 const pid = getProjectId(ROOT) as any
 

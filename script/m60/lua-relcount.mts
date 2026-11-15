@@ -7,7 +7,7 @@ import { readdirSync, existsSync, statSync } from "node:fs"
 import { createHash } from "node:crypto"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const MAX = Number(process.argv.includes("--files") ? process.argv[process.argv.indexOf("--files") + 1] : 5000)
 const files: string[] = []
 for (const repo of (() => { try { return readdirSync(CR) } catch { return [] } })().sort()) {

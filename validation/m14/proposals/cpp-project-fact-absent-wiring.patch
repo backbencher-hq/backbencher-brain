@@ -1,0 +1,51 @@
+THE NEGATIVE PROJECT-FACT CLAIM'S WIRING — one field, one line of fact, in the ARBITER (the Lead's file)
+
+WHAT THIS PATCH DOES. It tells the C++ analyzer, per file, WHETHER THAT FILE HAS A GOVERNING
+MANIFEST — and nothing else. That single boolean is condition E4 of the claim's four conditions, in
+`validation/m14/verification/CPP-PROJECT-FACT-ABSENT-EMITTER.md` §2, and it is what makes a claim
+EMITTABLE (the evidence can see it) as opposed to UNVERIFIABLE (the evidence cannot).
+
+WHY THE GATE IS THE ONLY PLACE THAT CAN KNOW IT. The governing manifest of a file is the NEAREST
+ANCESTOR manifest, and the gate already computes exactly that: `projectFactDependenciesByFile` has an
+entry for a file if and only if that file has a governing manifest, because a file with no governing
+manifest gets no entry — and that absence is what the claim's rule 1 reads as UNVERIFIABLE rather
+than REFUTED. The map's KEY SET is the fact, so the fact is already in the gate's hands; this patch
+only carries it across.
+
+WHY THE ANALYZER IS TOLD EXISTENCE AND NOT NAMES. The manifest's NAMES are the claim's EVIDENCE, and
+the arbiter's rule is that a claim and its evidence must not come from the same author. Handing the
+analyzer the name set would make the analyzer the author of both. So the analyzer receives a boolean
+and the arbiter keeps the names.
+
+WHAT IT CANNOT BREAK. The field is ADDITIVE on a context object that is already cast `as any`, and
+the analyzer's emission is flag-gated (`BB_CPP_PROJECT_FACT_ABSENT=1`) and INERT without the flag, so
+with the flag off this patch changes NOTHING in any run: the analyzer does not read the field unless
+the flag is on, and the flag off is byte-identical by the analyzer's own contract.
+
+THE LEAD'S OWN FILES ARE NOT TOUCHED BY THIS PATCH — it is a patch FILE, applied by the Lead in one
+`git apply`, so the Lead remains the author of the change. Verified to apply cleanly against the
+current HEAD with `git apply --check`.
+
+--- a/script/m14/incoming-gate.ts	2026-10-21 06:27:58.072301211 -0400
++++ b/script/m14/incoming-gate.ts	2026-10-21 06:27:58.091978302 -0400
+@@ -1562,9 +1562,18 @@
+       //     gate counts — so an unrooted population would measure the defect and not the
+       //     fix, on the same input.
+       const idx = indexInfo?.byRepo.get(repoOf(f))
++      // THE NEGATIVE PROJECT-FACT CLAIM'S ONE FACT — the cpp lane's emitter statement
++      // (validation/m14/verification/CPP-PROJECT-FACT-ABSENT-EMITTER.md §2, condition E4):
++      // DOES THIS FILE HAVE A GOVERNING MANIFEST? The gate already knows: its
++      // `projectFactDependenciesByFile` map has an entry for exactly the files that do, because
++      // a file with no governing manifest gets no entry — and that absence is what makes the
++      // claim UNVERIFIABLE there rather than REFUTED. The analyzer is told EXISTENCE ONLY, never
++      // the manifest's NAMES: the names are the EVIDENCE, and a claim that carried its own
++      // evidence would put the claim and its evidence on the same author.
++      const manifestPresent = projectFacts?.get(repoOf(f))?.projectFactDependenciesByFile.has(f) === true
+       r = idx === undefined
+-        ? await parseFile(f, repoOf(f), { projectRoot: repoOf(f) } as any)
+-        : await parseFile(f, repoOf(f), { projectIndex: idx, projectRoot: repoOf(f) } as any)
++        ? await parseFile(f, repoOf(f), { projectRoot: repoOf(f), cppProjectFactManifestPresent: manifestPresent } as any)
++        : await parseFile(f, repoOf(f), { projectIndex: idx, projectRoot: repoOf(f), cppProjectFactManifestPresent: manifestPresent } as any)
+     } catch {
+       failed++
+       continue

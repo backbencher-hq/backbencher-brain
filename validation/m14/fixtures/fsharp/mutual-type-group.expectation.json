@@ -1,0 +1,48 @@
+{
+  "fixtureId": "fsharp/mutual-type-group",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "FS-P9 (fsharp lane, 2026-10-08) — A MUTUAL TYPE GROUP IS SEVERAL TYPES IN ONE NODE, and the lane read it as one. F# writes `type A = … and B = …` for types that refer to each other, and the grammar emits ONE `type_definition` holding a clause body per type (`type_abbrev_defn`, `anon_type_defn`, `record_type_defn`, `union_type_defn`, `interface_type_defn`, `enum_type_defn`, `delegate_type_defn`, and the bodyless `type_declaration`). Every name in the analyzer's type branch was read with `findDescendant(node, \"type_name\")` — the FIRST name in the whole definition — so the group was named after its first clause whichever one the source meant, and every later clause's members were published under that name. Measured on the 3,000-file draw (.tmp-probe/fs-p10-groups.mts, arm rows-pass13-meta.ndjson): 79 groups in 67 files, 182 clauses after a first, **161 of those names published nowhere** — Bolero.Html's `ElementBuilder`, `ComponentBuilder`, `ComponentWithAttrsBuilder` (their members attributed to `ConcatBuilder`), Argu's `IFunc`/`ITemplateFunc`, Deedle's `address`. THE HALF A MISSING-NAME COUNT CANNOT SEE IS THE ATTRIBUTION, and it is the worse half: `ConcatBuilder.GroupOwn` is a published symbol, so a containment edge or a call that lands on it RESOLVES, and nothing downstream can tell it names the wrong type. Every row below therefore pins an OWNER, not only a name. The four shapes are here because they reach the type branch by different arms: (1) abbreviation + class, where the pre-fix file published `GroupAbbrev` only — `GroupReal`, `GroupReal.GroupCall` and `GroupReal.GroupOwn` all attributed to the abbreviation, and the `extends` edge named `GroupAbbrev -> GroupBase`; (2) record + record, where the declared-type arm climbed from the field to the DEFINITION and took the first `type_name`, publishing the second record's field type as the first's; (3) union + union, the same defect through the DU-case arm; (4) a BODYLESS clause whose attribute is written BETWEEN the clauses — Deedle's `type Address = int64<address>` + `and [<Measure>] address`, where the `attributes` node is a direct child of the GROUP rather than of the clause it applies to, so the clause frame has to carry it by POSITION (pre-fix `groupMeasure` was published nowhere and the `uses` edge for `Measure` named `GroupAddress`). The fix is not a second copy of the type branch: each clause is pushed as a walk frame marked `asTypeUnit` and the same branch admits it, so the kind classifier, the record fields, the DU/enum cases, the interface implementations, the `extends` edges, the member scoping and the containment composition are the SAME code for a clause and for a whole definition. The forbid half is the pre-fix shape of each of those arms, spelled the way the pre-fix analyzer spelled it (fqns read off the pre-fix dump, not guessed): a forbid row must be written in the spelling a REGRESSION would emit, which is what makes it fire on the return of the rule rather than never. The two `expectRelationshipCount` pins are exact totals, because a per-row expect can only say 'at least one' and this defect's other half was a COUNT of edges that moved owner together.",
+  "expectSymbols": [
+    { "name": "Fixture.MutualType", "kind": "namespace" },
+    { "name": "GroupAbbrev", "kind": "type", "note": "clause 1 of shape (1): the abbreviation. It published pre-fix too — as the name of the WHOLE group." },
+    { "name": "GroupReal", "kind": "class", "ownerName": "Fixture.MutualType", "note": "clause 2 of shape (1): the type the pre-fix analyzer never minted at all, and whose members it published under `GroupAbbrev`." },
+    { "name": "GroupCall", "kind": "method", "ownerName": "GroupReal" },
+    { "name": "GroupOwn", "kind": "method", "ownerName": "GroupReal" },
+    { "name": "GroupRecord", "kind": "class" },
+    { "name": "GroupField", "kind": "property", "ownerName": "GroupRecord" },
+    { "name": "GroupSecondRecord", "kind": "class", "note": "shape (2): the second record. Pre-fix its field was published under `GroupRecord`." },
+    { "name": "GroupOther", "kind": "property", "ownerName": "GroupSecondRecord" },
+    { "name": "GroupUnion", "kind": "enum" },
+    { "name": "GroupCase", "kind": "enum_member", "ownerName": "GroupUnion" },
+    { "name": "GroupSecondUnion", "kind": "enum", "note": "shape (3): the second union." },
+    { "name": "GroupSecondCase", "kind": "enum_member", "ownerName": "GroupSecondUnion" },
+    { "name": "GroupAddress", "kind": "type" },
+    { "name": "groupMeasure", "kind": "type", "note": "shape (4): the bodyless `and [<Measure>] groupMeasure` clause. Pre-fix it was published NOWHERE, and the measure marker that decides its kind is an `attributes` sibling BETWEEN the clauses, not a child of the clause." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Fixture.MutualType.GroupReal", "target": "GroupReal.GroupCall", "note": "the member is contained by the type that declares it — pre-fix the parent was `Fixture.MutualType.GroupAbbrev`" },
+    { "type": "contains", "from": "Fixture.MutualType.GroupReal", "target": "GroupReal.GroupOwn" },
+    { "type": "contains", "from": "Fixture.MutualType.GroupSecondRecord", "target": "GroupSecondRecord.GroupOther" },
+    { "type": "contains", "from": "Fixture.MutualType.GroupUnion", "target": "GroupUnion.GroupCase" },
+    { "type": "contains", "from": "Fixture.MutualType.GroupSecondUnion", "target": "GroupSecondUnion.GroupSecondCase" },
+    { "type": "contains", "from": "Fixture.MutualType", "target": "Fixture.MutualType.groupMeasure", "line_number": 74, "note": "shape (4) end to end: the bodyless clause is a type this file declares and contains" },
+    { "type": "extends", "from": "Fixture.MutualType.GroupReal", "target": "GroupBase", "line_number": 49, "note": "the inherit belongs to the second clause" },
+    { "type": "references", "from": "Fixture.MutualType.GroupSecondRecord", "target": "Fixture.MutualType.GroupSecondDep", "line_number": 59, "meta.relationshipType": "declared_type", "meta.declaredOn": "record_field", "meta.targetResolution": "in-file-declaration", "note": "the record-field arm's owner: read from the RECORD CLAUSE, not from the definition's first `type_name`. A class-field annotation on the same defect class was already owner-by-position; this arm and that one answer the same question and had different answers." },
+    { "type": "references", "from": "Fixture.MutualType.GroupSecondUnion", "target": "Fixture.MutualType.GroupSecondDep", "line_number": 65, "meta.relationshipType": "declared_type", "meta.declaredOn": "union_case_payload" },
+    { "type": "references", "from": "Fixture.MutualType.GroupAbbrev", "target": "Fixture.MutualType.GroupDep", "line_number": 46, "meta.relationshipType": "declared_type", "meta.declaredOn": "type_abbreviation" },
+    { "type": "uses", "from": "Fixture.MutualType.groupMeasure", "target": "Measure", "line_number": 74, "note": "the attribute usage is read INSIDE the clause it applies to, because the clause frame carries the group's `attributes` siblings by position" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "equals": 17, "note": "exact: 3 dependency types + 8 clauses + 6 members/fields/cases. A per-row expect says 'at least one'; the pre-fix defect MOVED edges between owners rather than deleting them, and only an exact total states that" },
+    { "type": "references", "equals": 5 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Fixture.MutualType.GroupAbbrev", "target": "GroupReal.GroupCall", "note": "PRE-FIX shape (1): the class's member contained by the abbreviation — the misplaced owner, spelled the way the pre-fix analyzer spelled it" },
+    { "type": "contains", "from": "Fixture.MutualType.GroupRecord", "target": "GroupSecondRecord.GroupOther", "note": "PRE-FIX shape (2): the second record's field under the first record" },
+    { "type": "contains", "from": "Fixture.MutualType.GroupUnion", "target": "GroupUnion.GroupSecondCase", "note": "PRE-FIX shape (3): the second union's case under the first union" },
+    { "type": "extends", "from": "Fixture.MutualType.GroupAbbrev", "target": "GroupBase", "note": "PRE-FIX shape (1): the inherit edge named the first clause, because the first clause's name was the one in scope for the whole group" },
+    { "type": "references", "from": "Fixture.MutualType.GroupRecord", "target": "Fixture.MutualType.GroupSecondDep", "note": "PRE-FIX shape (2), the declared-type half: the second record's field type published as the first record's dependency. This is a DETERMINATE edge naming a declaration that is definitively not the one the annotation sits in — worse than an ambiguous target, because the wrongness is asserted" },
+    { "type": "uses", "from": "Fixture.MutualType.GroupAddress", "meta.attributeTarget": "type", "note": "PRE-FIX shape (4): the `Measure` usage attributed to the group's FIRST clause, because the attribute node was walked in the definition's scope" }
+  ]
+}

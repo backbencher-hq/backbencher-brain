@@ -1,0 +1,111 @@
+{
+  "fixtureId": "typescript/type-reference-uses-surfaces",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `uses` type-reference surface on all FOUR declaration-owned type positions, not only a function body, and pins the resolution gate that separates `uses` from `references` in both directions. The rule: the declaration that WRITES a type mention owns it, and the mention is a `uses` edge when the named type is declared in this file. `uses` has always required resolution and `references` has never required it, so `Declared` (declared here) gets both labels while `Undeclared` (not declared here) gets `references` alone — a change that dropped the gate would ADD rows here rather than merely move them, which is the direction a gate cannot fail silently in. Measured before the change on bb_tests/repositories/typescript@ed4807212 over 150 files: 718 `uses` truth rows across 50 files that the analyzer did not publish, all of them from this surface — larger than the `field` (113) and `expr` (19) terms of that label's whole disagreement combined (script/m14/typescript-oracle-agreement.ts). An enum is absent from the source because a plain enum member writes no type; an enum MEMBER with an annotation is not pinned and the doc records that as an unexercised shape rather than implying it is covered. The import at the bottom supplies the other half of the resolution gate: a mention of a type this file does NOT declare gets a `references` row and NO `uses` row, and both halves are asserted so dropping the gate is visible in either direction.",
+  "expectSymbols": [
+    {
+      "name": "Declared"
+    },
+    {
+      "name": "Undeclared"
+    },
+    {
+      "name": "Alias",
+      "kind": "type"
+    },
+    {
+      "name": "moduleScoped"
+    },
+    {
+      "name": "fromFunctionBody"
+    },
+    {
+      "name": "fromReturnType"
+    },
+    {
+      "name": "fromAnImportedType"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "Undeclared",
+      "target": "Declared",
+      "meta.declaredTypeRole": "declared_type"
+    },
+    {
+      "type": "uses",
+      "from": "Alias",
+      "target": "Declared",
+      "meta.declaredTypeRole": "type_alias"
+    },
+    {
+      "type": "uses",
+      "from": "moduleScoped",
+      "target": "Declared",
+      "meta.declaredTypeRole": "declared_type"
+    },
+    {
+      "type": "uses",
+      "from": "fromFunctionBody",
+      "target": "Undeclared",
+      "meta.isTypeReference": true
+    },
+    {
+      "type": "uses",
+      "from": "fromFunctionBody",
+      "target": "Alias",
+      "meta.isTypeReference": true
+    },
+    {
+      "type": "uses",
+      "from": "fromReturnType",
+      "target": "Undeclared",
+      "meta.isTypeReference": true
+    },
+    {
+      "type": "references",
+      "from": "Undeclared",
+      "target": "Declared",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "from": "fromAnImportedType",
+      "target": "NotInThisFile",
+      "meta.relationshipType": "declared_type"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "fromFunctionBody",
+      "target": "moduleScoped"
+    },
+    {
+      "type": "uses",
+      "from": "Declared",
+      "target": "Declared"
+    },
+    {
+      "type": "uses",
+      "from": "fromAnImportedType",
+      "target": "NotInThisFile"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "Undeclared",
+      "target": "Declared",
+      "equals": 1
+    },
+    {
+      "type": "uses",
+      "from": "Alias",
+      "target": "Declared",
+      "equals": 1
+    }
+  ]
+}

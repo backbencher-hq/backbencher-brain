@@ -1,0 +1,12 @@
+{
+  "issue": "M15.P5",
+  "code": "P5",
+  "tool": "bb_patterns",
+  "title": "real-repo e2e (rake/lib + graphql-js/src)",
+  "verified": true,
+  "checks": 3,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:25:34.301Z"
+}

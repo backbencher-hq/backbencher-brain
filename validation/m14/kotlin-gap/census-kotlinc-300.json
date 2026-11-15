@@ -1,0 +1,190 @@
+{
+ "at": "2026-10-05T00:48:02.221Z",
+ "corpus": {
+  "root": "/home/ishaq2321/bb_tests/repositories",
+  "repo": "kotlin",
+  "rev": "4e93a0a3323a27fe7064103af6eb76e54afe16eb",
+  "admittedFiles": 300,
+  "trackedKotlinFiles": 69822
+ },
+ "productionPath": "getParser -> parser.parse -> RealKotlinAnalyzer.analyze",
+ "enumValues": [
+  "brain_import",
+  "calls",
+  "contains",
+  "exports",
+  "extends",
+  "implements",
+  "instantiates",
+  "overrides",
+  "references",
+  "uses"
+ ],
+ "rows": [
+  {
+   "type": "brain_import",
+   "verdict": "SILENT",
+   "count": 0,
+   "files": 0,
+   "examples": [],
+   "confidence": {}
+  },
+  {
+   "type": "calls",
+   "verdict": "EMITTED",
+   "count": 3491,
+   "files": 205,
+   "examples": [
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:1 Global -> plugins",
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:2 Global -> id",
+    "analysis/analysis-api-fir-diagnostics/analysis-api-fir-diagnostics-generator/build.gradle.kts:3 Global -> id"
+   ],
+   "confidence": {
+    "1": 13,
+    "0.7": 3478
+   }
+  },
+  {
+   "type": "contains",
+   "verdict": "EMITTED",
+   "count": 1280,
+   "files": 184,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:19 ConeDiagnosticPointer -> create",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:34 ConeDiagnosticPointer -> restore",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:37 ConeCannotInferTypeParameterTypeDiagnosticPointer -> ConeCannotInferTypeParameterTypeDiagnosticPointer"
+   ],
+   "confidence": {
+    "1": 1179,
+    "0.6": 94,
+    "0.8": 7
+   }
+  },
+  {
+   "type": "exports",
+   "verdict": "SILENT",
+   "count": 0,
+   "files": 0,
+   "examples": [],
+   "confidence": {}
+  },
+  {
+   "type": "extends",
+   "verdict": "EMITTED",
+   "count": 111,
+   "files": 62,
+   "examples": [
+    "analysis/analysis-api-impl-base/testFixtures/org/jetbrains/kotlin/analysis/api/impl/base/test/cases/components/resolver/AbstractResolveSymbolTest.kt:29 AbstractResolveSymbolTest -> AbstractResolveByElementTest",
+    "analysis/analysis-api-impl-base/testFixtures/org/jetbrains/kotlin/analysis/api/impl/base/test/cases/components/resolver/AbstractResolveSymbolTest.kt:116 Directives -> SimpleDirectivesContainer",
+    "analysis/analysis-api-standalone/analysis-api-standalone-fir/src/org/jetbrains/kotlin/analysis/api/standalone/base/references/KaBaseSimpleNameReference.kt:28 KaBaseSimpleNameReference -> KaSimpleNameReferenceBase"
+   ],
+   "confidence": {
+    "1": 111
+   }
+  },
+  {
+   "type": "implements",
+   "verdict": "EMITTED",
+   "count": 76,
+   "files": 40,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:40 ConeCannotInferTypeParameterTypeDiagnosticPointer -> ConeDiagnosticPointer",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:53 ConeTypeVariableTypeIsNotInferredDiagnosticPointer -> ConeDiagnosticPointer",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:63 ConeUnresolvedReferenceErrorDiagnosticPointer -> ConeDiagnosticPointer"
+   ],
+   "confidence": {
+    "1": 76
+   }
+  },
+  {
+   "type": "instantiates",
+   "verdict": "EMITTED",
+   "count": 608,
+   "files": 119,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:21 create -> ConeTypeVariableTypeIsNotInferredDiagnosticPointer",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:22 create -> ConeCannotInferTypeParameterTypeDiagnosticPointer",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:23 create -> ConeUnresolvedReferenceErrorDiagnosticPointer"
+   ],
+   "confidence": {
+    "0.7": 608
+   }
+  },
+  {
+   "type": "overrides",
+   "verdict": "EMITTED",
+   "count": 162,
+   "files": 50,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:44 ConeCannotInferTypeParameterTypeDiagnosticPointer.restore -> ConeDiagnosticPointer.restore",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:57 ConeTypeVariableTypeIsNotInferredDiagnosticPointer.restore -> ConeDiagnosticPointer.restore",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:66 ConeUnresolvedReferenceErrorDiagnosticPointer.restore -> ConeDiagnosticPointer.restore"
+   ],
+   "confidence": {
+    "0.5": 135,
+    "0.9": 27
+   }
+  },
+  {
+   "type": "references",
+   "verdict": "EMITTED",
+   "count": 2851,
+   "files": 256,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:19 create -> ConeDiagnosticPointer",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:19 create -> ConeDiagnostic",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:19 create -> KaSymbolByFirBuilder"
+   ],
+   "confidence": {
+    "0.9": 731,
+    "0.95": 2120
+   }
+  },
+  {
+   "type": "uses",
+   "verdict": "EMITTED",
+   "count": 595,
+   "files": 114,
+   "examples": [
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:42 ConeCannotInferTypeParameterTypeDiagnosticPointer -> reason",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:45 restore -> typeParameterPointer",
+    "analysis/analysis-api-fir/src/org/jetbrains/kotlin/analysis/api/fir/utils/ConeDiagnosticPointer.kt:46 restore -> reason"
+   ],
+   "confidence": {
+    "0.6": 354,
+    "0.9": 241
+   }
+  }
+ ],
+ "totals": {
+  "symbols": 2486,
+  "relationships": 9174,
+  "parseFail": 0,
+  "filesWithErrors": 85,
+  "errorNodes": 945,
+  "emptyTargets": 5,
+  "placeholderTargets": 21,
+  "placeholderExamples": [
+   "compiler/ir/backend.js/src/org/jetbrains/kotlin/ir/backend/js/lower/ES6PrimaryConstructorOptimizationLowering.kt: calls constructor -> this",
+   "compiler/ir/backend.js/src/org/jetbrains/kotlin/ir/backend/js/lower/ES6PrimaryConstructorOptimizationLowering.kt: calls constructor -> this",
+   "compiler/util/src/org/jetbrains/kotlin/utils/exceptions/KotlinExceptionWithAttachments.kt: calls constructor -> super",
+   "compiler/util/src/org/jetbrains/kotlin/utils/exceptions/KotlinExceptionWithAttachments.kt: calls constructor -> super",
+   "compiler/util/src/org/jetbrains/kotlin/utils/exceptions/KotlinExceptionWithAttachments.kt: calls constructor -> super",
+   "compiler/util/src/org/jetbrains/kotlin/utils/exceptions/KotlinExceptionWithAttachments.kt: calls constructor -> super",
+   "compiler/util/src/org/jetbrains/kotlin/utils/exceptions/KotlinExceptionWithAttachments.kt: calls constructor -> super",
+   "compiler/util/src/org/jetbrains/kotlin/utils/exceptions/KotlinExceptionWithAttachments.kt: calls constructor -> super",
+   "libraries/stdlib/jvm/runtime/kotlin/UninitializedPropertyAccessException.kt: calls constructor -> super",
+   "libraries/stdlib/jvm/runtime/kotlin/UninitializedPropertyAccessException.kt: calls constructor -> super",
+   "libraries/stdlib/jvm/runtime/kotlin/UninitializedPropertyAccessException.kt: calls constructor -> super",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/stdlib/wasm/wasi/builtins/kotlin/Throwable.kt: calls Global -> constructor",
+   "libraries/tools/kotlin-stdlib-gen/src/templates/Ranges.kt: uses RangeOps -> this",
+   "native/utils/src/org/jetbrains/kotlin/konan/exec/ExecuteCommand.kt: calls constructor -> this"
+  ]
+ }
+}

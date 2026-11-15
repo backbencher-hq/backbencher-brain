@@ -1,0 +1,98 @@
+{
+  "calls": [
+    {
+      "label": "__init__",
+      "projectId": "bae03bd1d41a3a7d64e2a33f6bf113ab3b54b193",
+      "projectDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed"
+    },
+    {
+      "label": "noindex.symbols",
+      "args": {
+        "query": "anything"
+      },
+      "isError": true,
+      "ms": 222.55,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limitHuge",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 100000
+      },
+      "isError": true,
+      "ms": 94.82,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exactCaseVariant",
+      "args": {
+        "query": "HANDLEREQUEST",
+        "exact": true
+      },
+      "isError": true,
+      "ms": 71.77,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exactAndRegex",
+      "args": {
+        "query": "^handle.*",
+        "regex": true,
+        "exact": true
+      },
+      "isError": true,
+      "ms": 98.87,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regexCaseSensitive",
+      "args": {
+        "query": "^HANDLE",
+        "regex": true,
+        "caseSensitive": true
+      },
+      "isError": true,
+      "ms": 36.75,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regexUnicode",
+      "args": {
+        "query": "^UNICODE_Σ",
+        "regex": true
+      },
+      "isError": true,
+      "ms": 40.31,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "content.termsInfo",
+      "args": {
+        "mode": "content",
+        "query": "how does handle request work"
+      },
+      "isError": true,
+      "ms": 48.41,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    },
+    {
+      "label": "symbols.astral",
+      "args": {
+        "query": "😀"
+      },
+      "isError": true,
+      "ms": 41.11,
+      "text": "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/unindexed\" (or restart bb mcp after indexing).",
+      "parsed": null
+    }
+  ],
+  "serverStderr": ""
+}

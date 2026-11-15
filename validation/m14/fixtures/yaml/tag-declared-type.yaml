@@ -1,0 +1,7 @@
+# A YAML tag is the language's only type annotation, and it OVERRIDES whatever the
+# scalar's own shape would resolve to. `!!str 7` is a string; reading through the tag
+# to the integer underneath is the defect this fixture pins.
+tagged: !!str 7
+plain: 7
+verbatim: !<tag:example.com,2000:str> 9
+custom: !Widget 11

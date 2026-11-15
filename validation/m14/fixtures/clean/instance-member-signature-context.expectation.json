@@ -1,0 +1,38 @@
+{
+  "comment": "An INSTANCE member's OWN signature carries a dictionary requirement, and the analyzer was reading it and then throwing it away. The defect was not a missing branch: the declaration pass filed every signature in `ctx.signatures` under a derived STRING key, and for an instance member the two passes derived DIFFERENT strings — `|::cmp` in the declaration pass, which does not know the instance's target, against `|[!a]::cmp` in the emitting pass, which is standing in the instance's scope. The lookup missed, `applySignature` never ran, and the signature's types and its class context were discarded. 20 class_context sites at PROD published no edge at all for this reason. Both passes now index by the node's own id (`signaturesByNode`). The label stays `references`: a dictionary requirement is a type the member needs, which is what every other lane's `references` means, and re-labelling it `extends` would assert a supertype Clean does not have.",
+  "expectSymbols": [
+    { "name": "Cmp", "kind": "interface", "comment": "a class_declaration publishes as an Interface" },
+    { "name": "cmp", "kind": "method", "ownerName": "Cmp" },
+    { "name": "Size", "kind": "interface" },
+    { "name": "size", "kind": "method", "ownerName": "Size" },
+    { "name": "[!a]::instance", "kind": "impl", "comment": "the instance container, NAMESPACED under its target. The target is a strict-LIST type expression, which is why the bare form could never have been a declaration of anything: no symbol in any file is named `[!a]`. The members' owner is still `[!a]`, so the `references from [!a]` row below is unchanged." },
+    { "name": "[!a!]::instance", "kind": "impl", "comment": "a second instance of the SAME class, so `cmp` is declared twice under two owners — and the two containers are two names, because the two targets differ" },
+    { "name": "Bool::instance", "kind": "impl" },
+    { "name": "Int::instance", "kind": "impl" },
+    { "name": "moduleLevel", "kind": "function", "comment": "the module-scope control: this form has always read and must keep reading" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "cmp", "target": "Ord", "line_number": 34, "comment": "THE TARGET ROW. The instance member's own `| Ord a`, which published nothing before the per-node index" },
+    { "type": "references", "from": "cmp", "target": "Eq", "line_number": 43, "comment": "the same name under a DIFFERENT owner. A dedupe keyed on (owner,name) would keep line 34's and lose this one" },
+    { "type": "references", "from": "cmp", "target": "Ord", "line_number": 53, "comment": "a member whose context names a class declared in ANOTHER file. The edge is still true and is still `references` — dropping it is the defect; promoting it to `overrides` would be a different defect" },
+    { "type": "references", "from": "inner", "target": "Eq", "line_number": 67, "comment": "a where-LOCAL signature inside an instance member's body: the `local_binding` grandparent, one of the 6 unread sites" },
+    { "type": "references", "from": "moduleLevel", "target": "Ord", "line_number": 73, "comment": "the control in the positive direction: module scope read this before the change and must still read it" },
+    { "type": "references", "from": "[!a]", "target": "Ord", "line_number": 32, "comment": "the INSTANCE's own context, `instance_context`, which was never affected — kept so a regression in it is caught here too" },
+    { "type": "references", "from": "size", "target": "Int", "line_number": 62, "comment": "`declared_type` from the same unread signature: L62's `size` has a type and NO class context, which is the control in the negative direction" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "references", "from": "cmp", "target": "Ord", "equals": 2, "comment": "two instance members constrain on `Ord` at L34 and L53. Exactly 2 — not 1 (a dedupe would collapse them) and not 3 (the instance's own context is a different source)" },
+    { "type": "references", "from": "cmp", "target": "Eq", "equals": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "cmp", "target": "Ord", "line_number": 32, "comment": "the INSTANCE's context is anchored on the instance line and names the instance's target as source. Line 32 is `[!a] -> Ord`, and no edge may claim the member `cmp` is on that line" },
+    { "type": "references", "from": "size", "target": "Ord", "comment": "the negative control: `size :: !Int -> Int` names no class, so nothing may be invented for it. An absence that becomes an edge is a fabrication" },
+    { "type": "references", "from": "size", "target": "Eq", "comment": "the same absence, the other class" },
+    { "type": "overrides", "from": "Bool.cmp", "target": "Ord", "comment": "`Ord` is a CLASS, not a class member. The `overrides` rule pairs a member with its class's member of the same name and nothing else may borrow the type" },
+    { "type": "instantiates", "from": "cmp", "comment": "a dictionary requirement is a reference to a class, never a construction of one" },
+    { "type": "implements", "from": "cmp", "comment": "`implements` belongs to the INSTANCE (`[!a] -> Cmp`), never to a member" },
+    { "type": "calls", "from": "cmp", "comment": "naming a class in a type position is a reference, not a call" },
+    { "type": "extends", "comment": "the ruled type. Nothing in this file may produce one — see script/m14/clean-ruled.ts" }
+  ],
+  "forbidErrors": []
+}

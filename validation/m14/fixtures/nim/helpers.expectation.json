@@ -1,0 +1,7 @@
+{
+  "comment": "Support module for contract.nim's relative-import case (`import ./helpers`). Pinned so the import has a real target.",
+  "expectSymbols": [
+    { "name": "helper", "kind": "function" }
+  ],
+  "forbidErrors": [{}]
+}

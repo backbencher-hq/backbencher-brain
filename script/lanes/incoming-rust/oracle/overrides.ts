@@ -50,7 +50,7 @@ export interface RustOverridesEdge {
   target: string
 }
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 export function deriveRustTraitImplOverridesTruth(root: any): RustOverridesEdge[] {
   const out: RustOverridesEdge[] = []

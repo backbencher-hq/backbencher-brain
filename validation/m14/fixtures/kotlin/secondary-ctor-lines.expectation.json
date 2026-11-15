@@ -1,0 +1,23 @@
+{
+  "fixtureId": "kotlin/secondary-ctor-lines",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up, measured on Exposed ResultRow.kt/Table.kt. A secondary constructor carries the class name, so its range and contains edge name the CLASS-name line (10), never the `constructor`-keyword line. Braceless when-entries glue into monster call_expressions; each call edge still names its own callee's line (16/18/20). Forbid entries are the measured pre-fix lines (round-trip verified).",
+  "expectSymbols": [
+    { "name": "Register", "kind": "class" },
+    { "name": "Register", "kind": "constructor", "ownerName": "Register" },
+    { "name": "collect", "ownerName": "Register" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Register", "target": "Register", "line_number": 10, "meta.isContained": true },
+    { "type": "calls", "from": "collect", "target": "forEach", "line_number": 14 },
+    { "type": "calls", "from": "collect", "target": "add", "line_number": 16 },
+    { "type": "calls", "from": "collect", "target": "add", "line_number": 18 },
+    { "type": "calls", "from": "collect", "target": "add", "line_number": 20 },
+    { "type": "calls", "from": "collect", "target": "toString", "line_number": 18 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Register", "target": "Register", "line_number": 11, "note": "pre-fix: the `constructor`-keyword line; the name Register is written on 10" },
+    { "type": "calls", "from": "collect", "target": "add", "line_number": 17, "note": "pre-fix: the monster call's tail (next entry's condition); the callee add is written on 18" }
+  ]
+}

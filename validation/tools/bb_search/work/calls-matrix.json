@@ -1,0 +1,607 @@
+[
+ {
+  "label": "symbols.default",
+  "args": {
+   "query": "handleRequest"
+  }
+ },
+ {
+  "label": "symbols.noquery",
+  "args": {}
+ },
+ {
+  "label": "symbols.emptyquery",
+  "args": {
+   "query": ""
+  }
+ },
+ {
+  "label": "symbols.nonstring",
+  "args": {
+   "query": 42
+  }
+ },
+ {
+  "label": "symbols.trim",
+  "args": {
+   "query": "  handleRequest  "
+  }
+ },
+ {
+  "label": "symbols.prefix",
+  "args": {
+   "query": "handleReq"
+  }
+ },
+ {
+  "label": "symbols.substring",
+  "args": {
+   "query": "equest"
+  }
+ },
+ {
+  "label": "symbols.exact",
+  "args": {
+   "query": "handleRequest",
+   "exact": true
+  }
+ },
+ {
+  "label": "symbols.exact.caseInsensitiveVariant",
+  "args": {
+   "query": "handlerequest",
+   "exact": true
+  }
+ },
+ {
+  "label": "symbols.exact.caseSensitiveVariant",
+  "args": {
+   "query": "handlerequest",
+   "exact": true,
+   "caseSensitive": true
+  }
+ },
+ {
+  "label": "symbols.caseSensitive",
+  "args": {
+   "query": "handleRequest",
+   "caseSensitive": true
+  }
+ },
+ {
+  "label": "symbols.lang.upper",
+  "args": {
+   "query": "handleRequest",
+   "language": "TypeScript"
+  }
+ },
+ {
+  "label": "symbols.lang.lower",
+  "args": {
+   "query": "handleRequest",
+   "language": "typescript"
+  }
+ },
+ {
+  "label": "symbols.lang.unknown",
+  "args": {
+   "query": "handleRequest",
+   "language": "python"
+  }
+ },
+ {
+  "label": "symbols.kind.upper",
+  "args": {
+   "query": "handle",
+   "symbolKind": "Function"
+  }
+ },
+ {
+  "label": "symbols.kind.lower",
+  "args": {
+   "query": "handle",
+   "symbolKind": "function"
+  }
+ },
+ {
+  "label": "symbols.kind.unknown",
+  "args": {
+   "query": "handle",
+   "symbolKind": "bogus"
+  }
+ },
+ {
+  "label": "symbols.includeContent",
+  "args": {
+   "query": "handleRequest",
+   "includeContent": true
+  }
+ },
+ {
+  "label": "symbols.regex.valid",
+  "args": {
+   "query": "^handle.*",
+   "regex": true
+  }
+ },
+ {
+  "label": "symbols.regex.invalid",
+  "args": {
+   "query": "([unclosed",
+   "regex": true
+  }
+ },
+ {
+  "label": "symbols.regex.invalid2",
+  "args": {
+   "query": "a{2,1}",
+   "regex": true
+  }
+ },
+ {
+  "label": "symbols.regex.exactBoth",
+  "args": {
+   "query": "^handleRequest$",
+   "regex": true,
+   "exact": true
+  }
+ },
+ {
+  "label": "symbols.limit0",
+  "args": {
+   "query": "pagedSymbol",
+   "limit": 0
+  }
+ },
+ {
+  "label": "symbols.page2",
+  "args": {
+   "query": "pagedSymbol",
+   "limit": 5,
+   "offset": 5
+  }
+ },
+ {
+  "label": "symbols.offset1000",
+  "args": {
+   "query": "pagedSymbol",
+   "offset": 1000
+  }
+ },
+ {
+  "label": "symbols.limit1",
+  "args": {
+   "query": "pagedSymbol",
+   "limit": 1
+  }
+ },
+ {
+  "label": "symbols.filePath",
+  "args": {
+   "query": "handleRequest",
+   "filePath": "src/app.ts"
+  }
+ },
+ {
+  "label": "symbols.percent",
+  "args": {
+   "query": "%"
+  }
+ },
+ {
+  "label": "symbols.underscore",
+  "args": {
+   "query": "get_user"
+  }
+ },
+ {
+  "label": "symbols.unicode.lower",
+  "args": {
+   "query": "\u03c3\u03af\u03c3\u03c5\u03c6\u03bf\u03c2"
+  }
+ },
+ {
+  "label": "symbols.unicode.exactcase",
+  "args": {
+   "query": "\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3",
+   "caseSensitive": true
+  }
+ },
+ {
+  "label": "symbols.limitFractional",
+  "args": {
+   "query": "handleRequest",
+   "limit": 1.5
+  }
+ },
+ {
+  "label": "symbols.limitNegative",
+  "args": {
+   "query": "handleRequest",
+   "limit": -1
+  }
+ },
+ {
+  "label": "symbols.refreshFalse",
+  "args": {
+   "query": "handleRequest",
+   "refresh": false
+  }
+ },
+ {
+  "label": "symbols.duplicate",
+  "args": {
+   "query": "duplicateName",
+   "exact": true
+  }
+ },
+ {
+  "label": "symbols.unknownOption",
+  "args": {
+   "query": "handleRequest",
+   "bogus": 1
+  }
+ },
+ {
+  "label": "symbols.modeSymbolArgs",
+  "args": {
+   "symbolName": "handleRequest"
+  }
+ },
+ {
+  "label": "symbols.unknownMode",
+  "args": {
+   "mode": "regex",
+   "query": "handle"
+  }
+ },
+ {
+  "label": "content.default",
+  "args": {
+   "mode": "content",
+   "query": "handleRequest"
+  }
+ },
+ {
+  "label": "content.docstringPhrase",
+  "args": {
+   "mode": "content",
+   "query": "end to end"
+  }
+ },
+ {
+  "label": "content.bodyOnly",
+  "args": {
+   "mode": "content",
+   "query": "bodyOnlyNeedle"
+  }
+ },
+ {
+  "label": "content.multiWordNoPhrase",
+  "args": {
+   "mode": "content",
+   "query": "how does handle request work"
+  }
+ },
+ {
+  "label": "content.page",
+  "args": {
+   "mode": "content",
+   "query": "pagedSymbol",
+   "limit": 2,
+   "offset": 1
+  }
+ },
+ {
+  "label": "content.lang.upper",
+  "args": {
+   "mode": "content",
+   "query": "ProcessValue",
+   "language": "Go"
+  }
+ },
+ {
+  "label": "content.lang.lower",
+  "args": {
+   "mode": "content",
+   "query": "ProcessValue",
+   "language": "go"
+  }
+ },
+ {
+  "label": "content.kind.upper",
+  "args": {
+   "mode": "content",
+   "query": "ProcessValue",
+   "symbolKind": "Function"
+  }
+ },
+ {
+  "label": "content.lang.unknown",
+  "args": {
+   "mode": "content",
+   "query": "x",
+   "language": "cobol"
+  }
+ },
+ {
+  "label": "content.percent",
+  "args": {
+   "mode": "content",
+   "query": "%"
+  }
+ },
+ {
+  "label": "content.underscore",
+  "args": {
+   "mode": "content",
+   "query": "get_user"
+  }
+ },
+ {
+  "label": "content.regex",
+  "args": {
+   "mode": "content",
+   "query": "handle.*",
+   "regex": true
+  }
+ },
+ {
+  "label": "content.exact",
+  "args": {
+   "mode": "content",
+   "query": "handleRequest",
+   "exact": true
+  }
+ },
+ {
+  "label": "content.includeContent",
+  "args": {
+   "mode": "content",
+   "query": "handleRequest",
+   "includeContent": true
+  }
+ },
+ {
+  "label": "content.caseSensitive",
+  "args": {
+   "mode": "content",
+   "query": "handlerequest",
+   "caseSensitive": true
+  }
+ },
+ {
+  "label": "content.limit0",
+  "args": {
+   "mode": "content",
+   "query": "pagedSymbol",
+   "limit": 0
+  }
+ },
+ {
+  "label": "content.refreshFalse",
+  "args": {
+   "mode": "content",
+   "query": "handleRequest",
+   "refresh": false
+  }
+ },
+ {
+  "label": "content.emptyquery",
+  "args": {
+   "mode": "content",
+   "query": ""
+  }
+ },
+ {
+  "label": "content.offset",
+  "args": {
+   "mode": "content",
+   "query": "pagedSymbol",
+   "limit": 5,
+   "offset": 100
+  }
+ },
+ {
+  "label": "symbol.exact",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest"
+  }
+ },
+ {
+  "label": "symbol.queryAlias",
+  "args": {
+   "mode": "symbol",
+   "query": "handleRequest"
+  }
+ },
+ {
+  "label": "symbol.duplicate",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "duplicateName"
+  }
+ },
+ {
+  "label": "symbol.duplicate.filePath",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "duplicateName",
+   "filePath": "src/b.ts"
+  }
+ },
+ {
+  "label": "symbol.duplicate.baseName",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "duplicateName",
+   "filePath": "b.ts"
+  }
+ },
+ {
+  "label": "symbol.missing",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "noSuchSymbolAnywhere"
+  }
+ },
+ {
+  "label": "symbol.blankNameWithQuery",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "",
+   "query": "handleRequest"
+  }
+ },
+ {
+  "label": "symbol.disagree",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "query": "handleResponse"
+  }
+ },
+ {
+  "label": "symbol.limit",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "limit": 1
+  }
+ },
+ {
+  "label": "symbol.offset",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "offset": 1
+  }
+ },
+ {
+  "label": "symbol.language",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "language": "typescript"
+  }
+ },
+ {
+  "label": "symbol.includeContent",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "includeContent": true
+  }
+ },
+ {
+  "label": "symbol.stale",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "staleHost"
+  }
+ },
+ {
+  "label": "symbol.deleted",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "deletedHost"
+  }
+ },
+ {
+  "label": "symbol.refreshFalse",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "refresh": false
+  }
+ },
+ {
+  "label": "symbol.nofile",
+  "args": {
+   "mode": "symbol",
+   "symbolName": "handleRequest",
+   "filePath": "nothere.ts"
+  }
+ },
+ {
+  "label": "file.fresh",
+  "args": {
+   "mode": "file",
+   "filePath": "src/app.ts"
+  }
+ },
+ {
+  "label": "file.stale",
+  "args": {
+   "mode": "file",
+   "filePath": "src/stale.ts"
+  }
+ },
+ {
+  "label": "file.notIndexed",
+  "args": {
+   "mode": "file",
+   "filePath": "src/notindexed.ts"
+  }
+ },
+ {
+  "label": "file.missing",
+  "args": {
+   "mode": "file",
+   "filePath": "src/does-not-exist.ts"
+  }
+ },
+ {
+  "label": "file.escape",
+  "args": {
+   "mode": "file",
+   "filePath": "../escape.ts"
+  }
+ },
+ {
+  "label": "file.directory",
+  "args": {
+   "mode": "file",
+   "filePath": "src"
+  }
+ },
+ {
+  "label": "file.absolute",
+  "args": {
+   "mode": "file",
+   "filePath": "__PROJECT__/src/app.ts"
+  }
+ },
+ {
+  "label": "file.query",
+  "args": {
+   "mode": "file",
+   "filePath": "src/app.ts",
+   "query": "app"
+  }
+ },
+ {
+  "label": "file.refreshFalse",
+  "args": {
+   "mode": "file",
+   "filePath": "src/app.ts",
+   "refresh": false
+  }
+ },
+ {
+  "label": "file.limit",
+  "args": {
+   "mode": "file",
+   "filePath": "src/app.ts",
+   "limit": 5
+  }
+ },
+ {
+  "label": "file.deleted",
+  "args": {
+   "mode": "file",
+   "filePath": "src/deleted.ts"
+  }
+ }
+]

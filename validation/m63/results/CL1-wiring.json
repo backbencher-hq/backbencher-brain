@@ -1,0 +1,23 @@
+{
+  "gate": "m63/verify-cl1-cross-language.ts",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "mutantsDeclared": 16,
+  "mutantFloor": 16,
+  "liveAnchors": 16,
+  "deadAnchors": [],
+  "hoverProjectScopedQueries": 2,
+  "generatedAt": "2026-11-01T22:59:55.110Z",
+  "claimLevel": "structural — that the gate would exercise what it declares. Says nothing about the tool; a green run here means the gate is wired, and a red one means it has stopped testing something while still reporting success.",
+  "limitations": [
+    "Not run in CI alongside the full gate: the full gate needs a corpus index and takes minutes to build one, and no other milestone gate is in CI either.",
+    "Anchors are extracted from the gate's source with a pattern. The extractor is checked against MUTANT_FLOOR so that one which stops understanding the gate fails loudly rather than agreeing with it; it is not a parser.",
+    "A live anchor means the mutant would be PLANTED. Whether its probe would notice the defect it plants is the full gate's job, and only the full gate's."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-01T22:59:55.111Z",
+    "contentSha256": "c9b5cf061c5bec213c06a970b8e1c79d7575a551c80ce71ce0ee9a6549699a85"
+  }
+}

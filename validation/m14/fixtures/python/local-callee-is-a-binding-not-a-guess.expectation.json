@@ -1,0 +1,94 @@
+{
+  "fixtureId": "python/local-callee-is-a-binding-not-a-guess",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "INCOMING_PY, round 7 (PY-D14). The resolution verdict's largest UNEXPLAINED class was 4,837 `calls` edges whose callee binds to nothing the project declares, and the top names showed one cause: the callee is bound in an ENCLOSING FUNCTION's scope (a nested `def`, a pytest-injected parameter, a local assignment). This lane publishes no symbol for those (locals/params are not symbols), so the edge can never resolve at project scope \u2014 and Python's LEGB rule says that is CORRECT, because the local binding shadows any module-level name of the same spelling. The analyzer now states the fact per edge (`reasonCode: local-callee`) from a pre-pass that collects each function's own bindings. This fixture pins the positive rows, and \u2014 more importantly \u2014 the NEGATIVE ones: a module-level `def` is declared by the graph and must stay resolvable, a name a `global` statement rebinds is not a local binding, and an unbound name is not local either. The `forbid` rows fail a rule that answered from the name's shape rather than from the source's bindings, which is the direction that would hide resolution work behind a label.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000nested_helper",
+      "meta.reasonCode": "local-callee",
+      "note": "a NESTED def \u2014 the body of `outer` binds the name; this lane publishes no symbol for it, so there is no project declaration to bind to TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000injected_param",
+      "meta.reasonCode": "local-callee",
+      "note": "an injected PARAMETER \u2014 the pytest-fixture shape (`django_capture_on_commit_callbacks` is 154 edges of exactly this) TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000handler",
+      "meta.reasonCode": "local-callee",
+      "note": "a LOCAL ASSIGNMENT target \u2014 `handler = make_handler()` binds it in the function TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "module_level",
+      "meta.reasonCode": "bare-name-callee",
+      "note": "THE NEGATIVE THAT MATTERS. `module_level` IS declared by the graph at module scope, so the call must stay resolvable \u2014 labelling it local would convert a resolvable edge into a declared-unresolvable one"
+    },
+    {
+      "type": "calls",
+      "from": "writes_a_global",
+      "target": "counter",
+      "meta.reasonCode": "bare-name-callee",
+      "note": "a `global` statement rebinds `counter` elsewhere, so a write to it is NOT a local binding \u2014 the collector subtracts these"
+    },
+    {
+      "type": "calls",
+      "from": "outer_scope_probe",
+      "target": "only_inner",
+      "meta.reasonCode": "bare-name-callee",
+      "note": "SCOPE BOUNDARY: `only_inner` is bound inside the NESTED `inner`, which is its own scope \u2014 from `outer_scope_probe` the name is a global lookup, so the collector must stop at a nested function's declaration and record only its NAME"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "nested_helper",
+      "meta.reasonCode": "bare-name-callee",
+      "note": "the pre-round-7 shape: a nested def's call left with the unresolved-callee code"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "injected_param",
+      "meta.reasonCode": "bare-name-callee",
+      "note": "the pre-round-7 shape for a parameter"
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000module_level",
+      "meta.reasonCode": "local-callee",
+      "note": "THE OVER-CLAIM FORBID: a module-level declaration is NOT a function-local binding; a rule that guessed from the name's shape would land here TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "writes_a_global",
+      "target": "writes_a_global\u0000counter",
+      "meta.reasonCode": "local-callee",
+      "note": "the same over-claim through `global`: the name is bound in the function textually, but the binding is elsewhere TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "outer\u0000never_bound_anywhere",
+      "meta.reasonCode": "local-callee",
+      "note": "a name nothing binds is not local \u2014 it stays a genuine UNEXPLAINED target rather than being relabelled TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    },
+    {
+      "type": "calls",
+      "from": "outer_scope_probe",
+      "target": "outer_scope_probe\u0000only_inner",
+      "meta.reasonCode": "local-callee",
+      "note": "the SAME over-claim through scope leakage: a collector that walked into a nested function's BODY would add `only_inner` to the outer function's bindings TARGET SPELLING (2026-10-19): the local binding is published with the family BINDING_SEP spelling, so the arbiter verifies it as a CLAIM (bindOK column) instead of binding the bare name to an unrelated same-named declaration; the reason code stays `local-callee`."
+    }
+  ]
+}

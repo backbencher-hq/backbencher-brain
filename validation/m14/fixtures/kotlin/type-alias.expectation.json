@@ -1,0 +1,15 @@
+{
+  "fixtureId": "kotlin/type-alias",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the K5 gap: typealias Fn = (Int) -> String declares a type symbol Fn (kind 'type', matching the JVM-family record/typealias convention) and references its aliased types Int and String. Previously the alias was completely invisible — no symbol, no type usage.",
+  "expectSymbols": [
+    { "name": "Fn", "kind": "type", "meta.isTypeAlias": true },
+    { "name": "AliasUser", "kind": "class" },
+    { "name": "apply", "ownerName": "AliasUser" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Fn", "target": "Int", "meta.relationshipType": "type_alias" },
+    { "type": "references", "from": "Fn", "target": "String", "meta.relationshipType": "type_alias" }
+  ]
+}

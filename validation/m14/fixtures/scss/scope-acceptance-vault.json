@@ -1,0 +1,77 @@
+{
+  "repo": "vault",
+  "files": 108,
+  "partition": {
+    "before": {
+      "exports": {
+        "resolved": 71,
+        "total": 71
+      },
+      "contains": {
+        "resolved": 645,
+        "total": 645
+      },
+      "references": {
+        "unresolved": 154,
+        "resolved": 440,
+        "ambDeclOnly": 33,
+        "total": 627
+      },
+      "calls": {
+        "resolved": 7,
+        "total": 7
+      },
+      "extends": {
+        "unresolved": 7,
+        "resolved": 19,
+        "total": 26
+      },
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      }
+    },
+    "after": {
+      "exports": {
+        "resolved": 71,
+        "total": 71
+      },
+      "contains": {
+        "resolved": 645,
+        "total": 645
+      },
+      "references": {
+        "unresolved": 154,
+        "resolved": 440,
+        "ambDeclOnly": 33,
+        "total": 627
+      },
+      "calls": {
+        "resolved": 7,
+        "total": 7
+      },
+      "extends": {
+        "unresolved": 7,
+        "resolved": 19,
+        "total": 26
+      },
+      "uses": {
+        "resolved": 2,
+        "total": 2
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 48,
+    "before": {
+      "ambDeclOnly": 33
+    },
+    "after": {
+      "ambDeclOnly": 33
+    }
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 736,
+    "falseBindings": 0
+  }
+}

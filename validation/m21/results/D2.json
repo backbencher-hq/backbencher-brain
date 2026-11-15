@@ -1,0 +1,44 @@
+{
+  "issue": "M21.D2",
+  "code": "D2",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 28,
+  "passed": 28,
+  "failed": 0,
+  "negativeCases": 2,
+  "currentCommit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-sqlite-runtime-policy.ts",
+  "evidenceFile": "D2.json",
+  "generatedAt": "2026-10-15T06:57:21.035Z",
+  "policy": {
+    "journalMode": "WAL",
+    "busyTimeoutMs": 5000,
+    "synchronous": "NORMAL",
+    "appliedOnReadWriteOpensOnly": true
+  },
+  "details": {
+    "liveProbe": {
+      "journal": "wal",
+      "busyTimeout": 5000,
+      "synchronous": 1
+    },
+    "nodeProbe": {
+      "journal": "wal",
+      "busyTimeout": 5000,
+      "synchronous": 1
+    },
+    "contentionWaitMs": 809,
+    "nodeContentionWaitMs": 733
+  },
+  "limitations": [
+    "Permanent-lock fail-closed is tested with a 12s holder; the contender's SQLITE_BUSY after the 5s busy timeout is the fail-closed path.",
+    "journal_mode=WAL is read back as engaged on the live connections here; a filesystem that cannot enable WAL would degrade silently (the pragma returns the old mode without throwing), so the policy is verified on this machine, not guaranteed on exotic filesystems."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-15T06:57:21.061Z",
+    "contentSha256": "f0990f226ed16d4cbe6d40ffb9b1db4c6cbc0b2243e423f367d8a73b6c2009af"
+  }
+}

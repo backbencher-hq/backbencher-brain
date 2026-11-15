@@ -5,7 +5,7 @@
  * WHY A LANE SCRIPT AND NOT THE SHARED GATES
  *
  *   `script/m14/firing-check-v2.mjs` hardcodes `REPO =
- *   "$HOME/backbencher-brain"` (line 36) and imports both the engine
+ *   "/home/ishaq2321/backbencher-brain"` (line 36) and imports both the engine
  *   and the analyzer from there, so a lane working in a worktree CANNOT measure
  *   its own branch with it: the instrument reads the MAIN CHECKOUT's copy of
  *   `real-swift-analyzer.ts`, not this branch's. Measured fact about the shared
@@ -66,7 +66,7 @@ function isType(s: string): s is Type {
   return false
 }
 
-const corpusArg = argValue("--corpus") ?? "$HOME/fixtures/repositories/swift-corpus"
+const corpusArg = argValue("--corpus") ?? "/home/ishaq2321/bb_tests/repositories/swift-corpus"
 const limitArg = Number(argValue("--limit") ?? "400")
 const shardArg = argValue("--shard")
 const mergeMode = argv.includes("--merge")

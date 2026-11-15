@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_impact",
+  "case": "Lead T2 baseline hub case",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-hub-lead-protocol.ts",
+  "protocol": {
+    "warmupRuns": 1,
+    "measuredRuns": 3,
+    "inProcess": true,
+    "args": {
+      "symbol": "getRawInstance"
+    },
+    "budgetMs": 5000
+  },
+  "generatedAt": "2026-11-03T17:50:57.942Z",
+  "loadAverage": [
+    3.8,
+    4.14,
+    4.09
+  ],
+  "warmup": {
+    "ms": 2613.3
+  },
+  "runs": [
+    2418.6,
+    2424.3,
+    2450.1
+  ],
+  "details": [
+    {
+      "ms": 2418.6,
+      "isError": false,
+      "outputBytes": 164670,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "walkTimeBudgetMs": 1500,
+      "walkTimeExhausted": true,
+      "callDeadlineMs": 3000,
+      "walkTimeCeilingMs": 1500
+    },
+    {
+      "ms": 2424.3,
+      "isError": false,
+      "outputBytes": 164670,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "walkTimeBudgetMs": 1500,
+      "walkTimeExhausted": true,
+      "callDeadlineMs": 3000,
+      "walkTimeCeilingMs": 1500
+    },
+    {
+      "ms": 2450.1,
+      "isError": false,
+      "outputBytes": 164670,
+      "truncated": true,
+      "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+      "reproducible": false,
+      "shownCount": 174,
+      "totalCountIfKnown": 406,
+      "countVerification": {
+        "ran": true,
+        "skipped": false,
+        "timedOut": false,
+        "boundarySuspect": false,
+        "complete": false
+      },
+      "walkTimeBudgetMs": 1500,
+      "walkTimeExhausted": true,
+      "callDeadlineMs": 3000,
+      "walkTimeCeilingMs": 1500
+    }
+  ],
+  "p50Ms": 2424.3,
+  "p95Ms": 2450.1,
+  "withinBudget": true,
+  "dbBefore": {
+    "bytes": 3885883392,
+    "mtimeMs": 1793725551029.1978,
+    "sha256": "3925a6aeb03fb7831d2c8c77735d126b1daaf692a06739b852036f98d25163f6"
+  },
+  "dbAfter": {
+    "bytes": 3885883392,
+    "mtimeMs": 1793725551029.1978,
+    "sha256": "3925a6aeb03fb7831d2c8c77735d126b1daaf692a06739b852036f98d25163f6"
+  },
+  "dbUnchanged": true
+}

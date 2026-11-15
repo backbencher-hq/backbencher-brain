@@ -1,0 +1,17 @@
+{
+  "fixtureId": "cpp/package-scope/package_scope_loose",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE LOOSE HALF OF THE PACKAGE-SCOPE RULE, pinned in the flag-off state (the emission is flag-gated, so the fixture suite sees the OFF state; the ON state is pinned by script/m14/cpp-package-scope-verify.ts). THE CONVENTION IS THE POINT: the relation between a package's NAME and its include root is a CONVENTION, and it does not always hold as an equality. The namespace and the include root here are `nlohmann`, while the manifest declares the package `nlohmann_json` — so the rule needs its word-boundary-prefix half. THE CLAIM CARRIES THE MANIFEST'S OWN SPELLING (`nlohmann_json`), never the include root (`nlohmann`), so the arbiter's exact-match verification holds by construction and a claim can never refute itself: this row is the one that proves the difference matters.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "target",
+      "target": "json_size",
+      "line_number": 13,
+      "meta.qualified": "nlohmann::json_size",
+      "meta.packageScope": null,
+      "note": "the LOOSE claimed shape. With the flag ON and `nlohmann_json` declared, this row carries packageScope {package: 'nlohmann_json', name: 'json_size'} (the verifier asserts it, including that the package is the manifest's spelling and not the include root). The fixture pins the row and the absence of the claim in the default behaviour."
+    }
+  ]
+}

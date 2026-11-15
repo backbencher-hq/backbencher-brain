@@ -1,0 +1,19 @@
+{
+  "fixtureId": "groovy/fqn-extends",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CONFIRMED BUG TARGET: grammar parses dotted supertype as scoped_type_identifier; analyzer's extends predicate only checks type_identifier/generic_type/identifier, so this edge is silently dropped today. Expectation: the edge EXISTS. CONVENTION DECIDED (M14.1): dotted types keep FULL dotted names as edge targets, matching the Java analyzer; package segments are never split into separate edges.",
+  "expectSymbols": [
+    {
+      "name": "DeployStage",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "DeployStage",
+      "targetEndsWith": "BaseStage"
+    }
+  ]
+}

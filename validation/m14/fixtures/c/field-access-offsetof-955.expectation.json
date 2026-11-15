@@ -1,0 +1,82 @@
+{
+  "fixtureId": "c/field-access-offsetof-955",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins a CORRECT behaviour that had no fixture, which is how it nearly got deleted. redis/src/cluster_legacy.h:268-284 is seventeen consecutive `static_assert(offsetof(clusterMsg, <field>) == N, ...)` lines. The field name there is a bare identifier in a macro argument -- no `->`, no `.`, so the parse has no field_expression for it -- and the payload publishes `uses global -> <field>` with relationshipType `identifier_usage` and nodeType `field_identifier`, on the correct line, from file scope. The field-access adjudicator only modelled field_expression on the parse side, so all 17 read as phantom over-emissions (74 across redis/src). Deleting them would have been a defensible-looking 'fix' that removed real facts: these static assertions are how a C project pins its wire-format struct layout, and the edges are the only record that the fields are load-bearing. This is #908's failure mode one relationship type over -- there, macro-named CALLEES were nearly suppressed; here, macro-argument FIELD NAMES were. The M12 truth cannot catch either: it pins `uses` only for `a->x` field access and is silent on a field named in a macro argument. The rows below are therefore also the evidence for a truth gap worth closing.",
+  "expectSymbols": [
+    {
+      "name": "STATIC_ASSERT",
+      "kind": "macro"
+    },
+    {
+      "name": "HEADER_SIG",
+      "kind": "macro"
+    },
+    {
+      "name": "header",
+      "kind": "struct"
+    },
+    {
+      "name": "envelope",
+      "kind": "struct"
+    },
+    {
+      "name": "header_length",
+      "kind": "function"
+    },
+    {
+      "name": "header_set_count",
+      "kind": "function"
+    },
+    {
+      "name": "header_sig",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "sig",
+      "note": "THE PINNED ROW. `offsetof(struct header, sig)` at file scope. A bare field name in a macro argument is a use of that field, published from `global`. Removing this edge is the regression this fixture exists to catch."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "totlen",
+      "note": "same shape, second of the static assertions"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "payload_len",
+      "note": "same shape, on a struct NESTED in another struct"
+    },
+    {
+      "type": "uses",
+      "from": "header_length",
+      "target": "totlen",
+      "note": "the ordinary field-access read, which must keep working -- the control that the macro form is not special-cased"
+    },
+    {
+      "type": "calls",
+      "from": "header_sig",
+      "target": "HEADER_SIG",
+      "note": "A macro-wrapped field read publishes the CALL to the macro, per #908's ruling, and does NOT additionally resolve the macro BODY to the field. An earlier draft of this fixture expected `uses header_sig -> sig` as well and the run failed: expanding `((h)->sig)` to reach the field is macro-body resolution, which this lane does not perform and has no fixture requiring. The correct fact is the call alone -- the same rule as #912 in the other direction, where a call-SHAPED definition site gets no edge at all."
+    },
+    {
+      "type": "uses",
+      "from": "header_set_count",
+      "target": "count",
+      "note": "#960: A WRITE IS A `uses`. SCD1/CGD1 excluded assignment targets on the grounds that a write is 'never a read'; the exclusion is withdrawn. The analyzer was already inconsistent with itself -- `p->f++` published while the semantically identical `p->f += 1` did not, purely because the grammar folds compound-assign into `assignment_expression` and `++` is an `update_expression`. The pinned M12 truth requires this edge (`uses:buffer_create:capacity` for `buf->capacity = clamp(...)`), and with both branches fixed the truth's not-produced count is 0. The edge is NOT relabelled a read: the ontology has no `writes` kind, so before this change the fact was an ABSENCE, unrepresented anywhere in the graph."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "header_sig",
+      "target": "sig",
+      "note": "CONTROL for the macro-body limit above. `HEADER_SIG(h)` is a call to a macro; the analyzer does not expand the body, so no field `uses` edge is owed. If a future change starts publishing this, it is macro-body resolution arriving without a ruling, and this row is where it should be argued."
+    }
+  ]
+}

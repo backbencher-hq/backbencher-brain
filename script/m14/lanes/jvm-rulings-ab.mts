@@ -61,8 +61,8 @@ import { join, relative } from "node:path"
 // the second parse AND the possibility of the two sides seeing different trees.
 import { readFileSync as readWasm } from "node:fs"
 
-const REPO = process.env.BB_M14_ROOT ?? "$HOME/backbencher-brain"
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const REPO = process.env.BB_M14_ROOT ?? "/home/ishaq2321/backbencher-brain"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const CONC = Number(process.env.AB_CONC ?? 8)
 const NFILES = Number(process.env.AB_NFILES ?? 1500)
 

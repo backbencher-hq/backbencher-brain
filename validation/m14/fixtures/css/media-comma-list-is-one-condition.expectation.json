@@ -1,0 +1,78 @@
+{
+  "fixtureId": "css/media-comma-list-is-one-condition",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A comma-separated media query LIST is ONE condition, and the scope symbol must name all of it. `@media A, B { … }` applies when EITHER term matches, so a name carrying only `A` under-describes the block; and because two lists that differ only after the comma would then share a name, it is also an identity collision that folds different conditions into one scope. The pinned grammar does not wrap the list in a node — the `media_statement` children of the first block here are `@media`, `binary_query`, `,`, `keyword_query`, `block` — so a reader that takes the first query child silently drops every term after the first comma. Blocks 1 and 2 share their first term and differ only after the comma, which is what makes the collision observable rather than theoretical: under the old behaviour both published `@media screen and (min-width: 769px)`. Block 3 is a single-term query and pins that the common case is untouched. Measured over 400 corpus files / 2,827 `media_statement` nodes (validation/m14/tmp/css-media-prelude-equivalence.ts): 2,725 of 2,725 single-term queries publish a byte-identical name under the new rule and 102 of 102 comma lists change.",
+  "expectSymbols": [
+    {
+      "name": "@media screen and (min-width: 769px), print",
+      "kind": "module"
+    },
+    {
+      "name": "@media screen and (min-width: 769px), screen",
+      "kind": "module"
+    },
+    {
+      "name": "@media screen",
+      "kind": "module"
+    },
+    {
+      "name": ".tablet",
+      "kind": "class"
+    },
+    {
+      "name": ".other",
+      "kind": "class"
+    },
+    {
+      "name": ".desktop",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "@media screen and (min-width: 769px), print",
+      "equals": 1,
+      "kind": "module"
+    },
+    {
+      "name": "@media screen and (min-width: 769px), screen",
+      "equals": 1,
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "@media screen and (min-width: 769px), print",
+      "target": "fixtures/css/media-comma-list-is-one-condition::.tablet",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "source": "@media screen and (min-width: 769px), screen",
+      "target": "fixtures/css/media-comma-list-is-one-condition::.other",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    },
+    {
+      "type": "contains",
+      "source": "@media screen",
+      "target": "fixtures/css/media-comma-list-is-one-condition::.desktop",
+      "meta.evidenceClass": "structural",
+      "meta.isMediaScope": true
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "@media screen and (min-width: 769px)"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

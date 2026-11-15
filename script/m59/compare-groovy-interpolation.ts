@@ -66,7 +66,7 @@ if (cmpIdx > 0) {
 
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const REPO_NAME = arg("--repo", "grails-core")!
-const REPO = `$HOME/fixtures/repositories/${REPO_NAME}`
+const REPO = `/home/ishaq2321/bb_tests/repositories/${REPO_NAME}`
 const OUT = arg("--out", "/tmp/groovy-interp.json")!
 const LIMIT = parseInt(arg("--limit", "400")!)
 const EXTS = arg("--ext", "groovy,gradle")!.split(",")
@@ -75,7 +75,7 @@ const INTERP = /\$\{[^}]*\}|\$[A-Za-z_][A-Za-z0-9_]*/g
 
 async function main(): Promise<void> {
   const revision = execFileSync("git", ["-C", REPO, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
-  const wasmSha = createHash("sha256").update(readFileSync("$HOME/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm")).digest("hex")
+  const wasmSha = createHash("sha256").update(readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm")).digest("hex")
   let files = execFileSync("git", ["-C", REPO, "ls-files", ...EXTS.map((e) => `*.${e}`)], {
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,

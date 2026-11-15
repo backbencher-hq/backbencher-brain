@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Dashboard</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="icon" href="/favicon.ico">
+  <script src="/assets/vendor.js" defer></script>
+</head>
+<body>
+  <header id="site-header" class="header">
+    <nav aria-label="Main navigation">
+      <ul>
+        <li><a href="/orders" data-nav="orders">Orders</a></li>
+        <li><a href="/customers" data-nav="customers">Customers</a></li>
+        <li><a href="#content">Skip to content</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="content" class="main-content">
+    <section id="order-list" class="panel">
+      <h2>Recent Orders</h2>
+      <img src="/assets/logo.png" srcset="/assets/logo-480.png 480w, /assets/logo-1080.png 1080w" alt="logo">
+      <table id="orders-table">
+        <thead>
+          <tr><th>ID</th><th>Total</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr data-order="1001"><td>1001</td><td>$25.50</td><td>pending</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <aside id="sidebar" class="panel">
+      <form id="search-form" action="/search" method="get">
+        <label for="query">Query</label>
+        <input type="text" id="query" name="q" placeholder="Search orders">
+        <button type="submit">Search</button>
+      </form>
+      <video id="promo" src="/assets/promo.mp4" controls></video>
+      <audio src="/assets/alert.mp3"></audio>
+      <picture>
+        <source srcset="/assets/banner.webp" type="image/webp" media="(min-width: 800px)">
+        <source src="/assets/banner.jpg">
+        <img src="/assets/banner.jpg" alt="banner">
+      </picture>
+    </aside>
+  </main>
+
+  <footer id="page-footer" class="footer">
+    <p>&copy; 2026 OrderApp <a href="https://example.com/terms">Terms</a></p>
+  </footer>
+
+  <script>
+    const theme = "dark";
+    console.log(theme);
+  </script>
+  <style>
+    .header { display: flex; }
+  </style>
+</body>
+</html>

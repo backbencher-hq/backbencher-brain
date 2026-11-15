@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/dynamic-import",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS dynamic import() as a module dependency (gap J2, TS T7 analog). import('./lazy') is a module dependency, not a call — it must emit an imports edge (module:*) and NO spurious calls -> import edge. Pre-fix: the dynamic-import fixture documented the bug as accepted (calls->import with no import edge).",
+  "expectSymbols": [
+    { "name": "loadLazy", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "dynamic-import", "target": "./lazy:*", "meta.evidenceClass": "import_based" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "dynamic-import", "target": "import" }
+  ]
+}

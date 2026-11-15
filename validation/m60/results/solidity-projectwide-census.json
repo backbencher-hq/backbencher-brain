@@ -1,0 +1,164 @@
+{
+  "gate": "M60.solidity-projectwide-census",
+  "title": "How much of the Solidity lane's per-file ceiling is actually recoverable",
+  "at": "2026-10-01T03:22:28.432Z",
+  "commit": "ed2a4d99",
+  "loadContext": {
+    "loadAvg1": 18.67,
+    "cores": 8
+  },
+  "corpus": {
+    "repo": "/home/ishaq2321/bb_tests/repositories/solidity",
+    "rev": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
+    "files": 389,
+    "allSolidityFiles": 420
+  },
+  "draw": {
+    "method": "hash-sorted, no rotation",
+    "digest": "c1531019"
+  },
+  "question": "Of the `calls` edges this lane labels `external`, how many would resolve if the analyzer were given project-wide knowledge — and how many would not?",
+  "totals": {
+    "auditedExternalCalls": 1677,
+    "routeSum": 1677,
+    "routeSumMatchesAudited": true,
+    "distinctTargets": 450,
+    "counts": {
+      "in-file": 35,
+      "ancestor-member": 430,
+      "project-declared": 1134,
+      "external": 78
+    },
+    "projectResolvable": 1564,
+    "projectResolvablePct": "93.3%",
+    "trulyExternal": 78,
+    "trulyExternalPct": "4.7%"
+  },
+  "routes": {
+    "in-file": {
+      "counts": 35,
+      "meaning": "The target matches a symbol declared in THIS file. `calleeKind` says `external` because the callee resolver is per-file and the name collided with an unrelated declaration here — a name is not a resolution. Kept as its own verdict so the denominator equals the sum of the numerators.",
+      "recovery": "Not a cross-file problem at all: this is the per-file resolver declining a name it could not attribute. 35 rows, and the honest reading is that the CALLER is under-determined, not that the target is missing.",
+      "samples": [
+        "contracts/account/paymaster/extensions/PaymasterSigner.sol:119 PaymasterSigner.paymasterData — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/account/utils/ERC4337Utils.sol:219 ERC4337Utils.IEntryPointExtra — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/governance/extensions/GovernorStorage.sol:42 GovernorStorage.ProposalDetails — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/mocks/UpgradeableBeaconMock.sol:25 UpgradeableBeaconReentrantMock.IProxyExposed — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/utils/structs/Accumulators.sol:65 Accumulators.AccumulatorEntry — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/utils/structs/Accumulators.sol:87 Accumulators.AccumulatorEntry — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/utils/RLP.sol:290 RLP.length — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/utils/RLP.sol:314 RLP.length — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/utils/RLP.sol:356 RLP.length — declared in this file; the callee resolution is per-file and the name collided",
+        "contracts/utils/RLP.sol:436 RLP.length — declared in this file; the callee resolution is per-file and the name collided"
+      ]
+    },
+    "ancestor-member": {
+      "counts": 430,
+      "meaning": "The calling contract's inheritance closure — followed through `extends`/`implements` PROJECT-WIDE — declares a member of that name. The base is in another file; only its member list is missing.",
+      "recovery": "The cheapest route to recover: a name-to-members index over declared types plus the inheritance edges this lane already emits.",
+      "samples": [
+        "fv/harnesses/AccountHarness.sol:14 AccountHarness._fallbackHandler — ancestor AccountEIP7702WithModulesMock",
+        "contracts/mocks/docs/token/ERC721/GameItem.sol:14 GameItem._mint — ancestor ERC721URIStorage",
+        "contracts/mocks/docs/token/ERC721/GameItem.sol:15 GameItem._setTokenURI — ancestor ERC721URIStorage",
+        "contracts/token/ERC721/extensions/ERC721Consecutive.sol:127 ERC721Consecutive._increaseBalance — ancestor ERC721",
+        "contracts/utils/cryptography/signers/MultiSignerERC7913Weighted.sol:73 MultiSignerERC7913Weighted._setThreshold — ancestor MultiSignerERC7913",
+        "contracts/utils/cryptography/signers/MultiSignerERC7913Weighted.sol:80 MultiSignerERC7913Weighted.isSigner — ancestor MultiSignerERC7913",
+        "contracts/utils/cryptography/signers/MultiSignerERC7913Weighted.sol:86 MultiSignerERC7913Weighted.getSignerCount — ancestor MultiSignerERC7913",
+        "contracts/utils/cryptography/signers/MultiSignerERC7913Weighted.sol:108 MultiSignerERC7913Weighted.isSigner — ancestor MultiSignerERC7913",
+        "contracts/utils/cryptography/signers/MultiSignerERC7913Weighted.sol:108 MultiSignerERC7913Weighted.MultiSignerERC7913NonexistentSigner — ancestor MultiSignerERC7913",
+        "contracts/utils/cryptography/signers/MultiSignerERC7913Weighted.sol:186 MultiSignerERC7913Weighted.threshold — ancestor MultiSignerERC7913"
+      ]
+    },
+    "project-declared": {
+      "counts": 1134,
+      "meaning": "The name is a declared symbol, or a member of some declared type, somewhere else in the corpus. A library reached through a `using X for T` directive in another file lands here.",
+      "recovery": "Needs the same index, but attribution is weaker: the name is project-known without the call site proving WHICH type it means. The Solidity lane's own `calls` edge carries no receiver type for a free function, so this route is recoverable as a CANDIDATE and not always as a fact.",
+      "samples": [
+        "fv/harnesses/AccountHarness.sol:11 .EIP712 — a symbol declared in another file",
+        "fv/harnesses/AccountHarness.sol:22 AccountHarness.contains — a symbol declared in another file",
+        "fv/harnesses/AccountHarness.sol:26 AccountHarness.length — a symbol declared in another file",
+        "fv/harnesses/AccountHarness.sol:30 AccountHarness.at — a symbol declared in another file",
+        "fv/harnesses/AccountHarness.sol:42 AccountHarness.contains — a symbol declared in another file",
+        "fv/harnesses/AccountHarness.sol:46 AccountHarness.length — a symbol declared in another file",
+        "fv/harnesses/AccountHarness.sol:50 AccountHarness.at — a symbol declared in another file",
+        "contracts/mocks/docs/token/ERC721/GameItem.sol:10 .ERC721 — a symbol declared in another file",
+        "contracts/mocks/MultipleInheritanceInitializableMocks.sol:24 .initializer — a symbol declared in another file",
+        "contracts/mocks/MultipleInheritanceInitializableMocks.sol:29 .onlyInitializing — a symbol declared in another file"
+      ]
+    },
+    "external": {
+      "counts": 78,
+      "meaning": "No declaration anywhere in the corpus. Low-level EVM members (`x.delegatecall`, `x.staticcall`) and library free functions from packages this corpus does not contain (solady's `ShortStrings.wrap`, `TransientSlot.wrap`).",
+      "recovery": "NOT recoverable, and correctly so. This is the floor: a name no project declares is not a symbol this index can resolve, and a rule that resolved it anyway would be fabricating.",
+      "samples": [
+        "contracts/utils/SimulateCall.sol:26 SimulateCall.delegatecall — no declaration anywhere in the corpus",
+        "contracts/utils/ShortStrings.sol:57 ShortStrings.wrap — no declaration anywhere in the corpus",
+        "contracts/utils/ShortStrings.sol:78 ShortStrings.unwrap — no declaration anywhere in the corpus",
+        "contracts/utils/ShortStrings.sol:93 ShortStrings.wrap — no declaration anywhere in the corpus",
+        "contracts/utils/ShortStrings.sol:101 ShortStrings.unwrap — no declaration anywhere in the corpus",
+        "contracts/utils/ShortStrings.sol:116 ShortStrings.unwrap — no declaration anywhere in the corpus",
+        "contracts/utils/TransientSlot.sol:43 TransientSlot.wrap — no declaration anywhere in the corpus",
+        "contracts/utils/TransientSlot.sol:55 TransientSlot.wrap — no declaration anywhere in the corpus",
+        "contracts/utils/TransientSlot.sol:67 TransientSlot.wrap — no declaration anywhere in the corpus",
+        "contracts/utils/TransientSlot.sol:79 TransientSlot.wrap — no declaration anywhere in the corpus"
+      ]
+    }
+  },
+  "withIndex": {
+    "what": "The SAME analyzer, the SAME corpus, the same 389 files — with `AnalyzeContext.projectIndex` supplied. This is the end-to-end figure, as opposed to the analytic routes above, which measure what a cross-file pass COULD find.",
+    "indexStats": {
+      "files": 389,
+      "damaged": 0
+    },
+    "declaredTypes": 465,
+    "symbolNames": 2654,
+    "calleeKinds": {
+      "eventEmission": 168,
+      "errorRevert": 453,
+      "namespaceBuiltin": 269,
+      "external": 190,
+      "crossFileInheritedMember": 456,
+      "projectMemberCandidate": 1031,
+      "localFunction": 1721,
+      "inheritedMember": 7,
+      "inFileTypeMember": 5,
+      "modifierInvocation": 31
+    },
+    "stillExternal": 190,
+    "inheritanceKindsResolved": 0,
+    "delta": "Reads as the production row minus this one. `external` falls because two NEW grades appear: `crossFileInheritedMember`, where the owner's ancestors declare the name so the call SITE proves which type is meant, and `projectMemberCandidate`, where some project type declares it but WHICH is undecidable because a Solidity `calls` edge carries no receiver type for a free function.",
+    "notYetProduction": "PRODUCTION DOES NOT SUPPLY THE INDEX YET. This lane's published artifacts are the no-index row, and that is the honest headline until `parallel-indexer.ts` builds and passes one. Both rows are reported precisely so the gap between them is visible rather than assumed."
+  },
+  "topExternalTargets": [
+    "_msgSender x88",
+    "min x46",
+    "toUint x34",
+    "unsafeAccess x31",
+    "_mint x30",
+    "wrap x27",
+    "initializer x24",
+    "panic x21",
+    "readBytes32 x21",
+    "_hashTypedDataV4 x19",
+    "timestamp x18",
+    "unwrap x18",
+    "readUint256 x18",
+    "length x17",
+    "push x16",
+    "_burn x16",
+    "onlyOwner x15",
+    "IERC20 x15",
+    "onlyRole x15",
+    "emptyBytes x14"
+  ],
+  "conclusion": {
+    "headline": "93.3% of the lane's `external` call targets (1564 of 1677) are project-resolvable; 78 are not.",
+    "theCeilingIsNotSolidity": "The ceiling is an UNFILLED PARAMETER, not a language limit. `AnalyzeContext` is the repo's own hook for project-wide knowledge and fifteen sibling analyzers already read it — while no production caller populates it. The JavaScript lane's external-override fixture documents the consequence in its own header. So this number is not an indictment of Solidity support; it is the size of the prize for wiring one shared parameter that fifteen lanes are already written to accept.",
+    "whatThisDoesNotDo": "Nothing here is published as a relationship and nothing is resolved. Every row is a MEASUREMENT of what a project-wide pass would find, kept separate from the graph so a measurement can never be mistaken for a fact the index holds."
+  },
+  "limits": [
+    "Member sets are per-TYPE names, so two types declaring the same member are indistinguishable by name alone. That is why `project-declared` is credited as a CANDIDATE rather than a fact.",
+    "The inheritance closure follows `extends`/`implements` edges this lane emits. `implementsCrossFileUnresolved` is 507 corpus-wide — a base declared elsewhere may be typed `extends` where the tree would say `implements` — so some ancestor routes are UNDER-counted here.",
+    "Both passes call `parseFile` per file, so the census costs two full analyzer runs. It is a census, not a gate on the hot path."
+  ]
+}

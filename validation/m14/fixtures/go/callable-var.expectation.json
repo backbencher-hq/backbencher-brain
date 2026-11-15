@@ -1,0 +1,68 @@
+{
+  "fixtureId": "go/callable-var",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the func-typed PACKAGE-SCOPE variable as a call target, and the three shapes that must NOT be claimed. A package-level var whose declared type is a function is callable in Go (`var testChecksumHook func()` then `testChecksumHook()`), and its calls were DROPPED: `isGoPackageCallable` accepted only `SymbolKind.Function` and `SymbolKind.Method`, so a hook/override injection var resolved to nothing and published no `calls` edge — while the identical call to a `func` DECLARATION did. The `uses` pass still saw the name (the nil check beside the call), so the graph carried the reference but not the call. REAL CORPUS PATTERN, ~85 files across seven repos: terraform `internal/backend/remote-state/s3/client.go:67` declares `var testChecksumHook func()` and calls it at :109; boundary, docker, kubernetes, consul, vault and go-tools carry the same hook/override idiom. MEASURED on that witness: `calls Get -> testChecksumHook @109` is absent before the fix and present after it. THE FIX IS SHAPE-PROVEN, NEVER NAME-BASED. `extractGoVariables` sets `isGoFuncTypedVar` only when the grammar itself proves the func type — a `function_type` child (`var B func() int`) or an `expression_list` whose element is a `func_literal` (`var A = func() int {...}`) — AND the var_spec is at package scope (no function/method/func_literal ancestor). The three EXPECTED call rows are the three legal surfaces: (1) `UseLiteral -> LiteralHook @20` is a call to a var initialized from a func literal. (2) `UseTyped -> TypedHook @25` is a call to a var whose declared type is a func type. (3) `UsePlainFunc -> PlainFunc @30` is the CONTROL: a call to a plain func declaration, which must keep working unchanged. THE FOUR FORBIDDEN ROWS ARE THE OTHER HALF, and each is a shape a cheaper fix would get wrong: (a) `UseLocal -> local` is forbidden because a FUNCTION-LOCAL func var is not a package callable; a fix that dropped the package-scope test would claim it. (b) `UseNotAFunc -> NotAFunc` is forbidden because a non-func var is not callable; a fix keyed on any var would claim it. (c) `FromCall -> FromCall` is forbidden because a var initialized from a CALL RESULT is not shape-provably a func value — the initializer is a call, not a func_literal, and claiming it would assert a func-typed value the grammar never stated. (d) `UseLiteral -> PlainFunc` is forbidden because `LiteralHook` does not reference `PlainFunc`; a resolver that mismatched call targets to the wrong declaration fails here. NOT PINNED: confidence and tier (every row is 0.9/structural or the calls pass's own shape, identical for any call, so pinning them asserts nothing about the marker), and the `FromCall -> PlainFunc @51` row (owned by the package-scope call pass under GOD12, not by the callable gate under test — it is the declaration's initializer being attributed, which is correct and unchanged).",
+  "expectSymbols": [
+    { "name": "LiteralHook", "kind": "variable" },
+    { "name": "TypedHook", "kind": "variable" },
+    { "name": "Plain", "kind": "variable" },
+    { "name": "NotAFunc", "kind": "variable" },
+    { "name": "FromCall", "kind": "variable" },
+    { "name": "PlainFunc", "kind": "function" },
+    { "name": "UseLiteral", "kind": "function" },
+    { "name": "UseTyped", "kind": "function" },
+    { "name": "UsePlainFunc", "kind": "function" },
+    { "name": "UseLocal", "kind": "function" },
+    { "name": "UseNotAFunc", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "A call to a package var initialized from a func literal is a real call.",
+      "type": "calls",
+      "from": "UseLiteral",
+      "target": "LiteralHook",
+      "line_number": 20
+    },
+    {
+      "comment": "A call to a package var whose declared type is a func type is a real call.",
+      "type": "calls",
+      "from": "UseTyped",
+      "target": "TypedHook",
+      "line_number": 25
+    },
+    {
+      "comment": "CONTROL: a call to a plain func declaration keeps working unchanged.",
+      "type": "calls",
+      "from": "UsePlainFunc",
+      "target": "PlainFunc",
+      "line_number": 30
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "A FUNCTION-LOCAL func var is not a package callable. A fix that dropped the package-scope test would claim it.",
+      "type": "calls",
+      "from": "UseLocal",
+      "target": "local"
+    },
+    {
+      "comment": "A non-func var is not callable. A fix keyed on any variable kind would claim it.",
+      "type": "calls",
+      "from": "UseNotAFunc",
+      "target": "NotAFunc"
+    },
+    {
+      "comment": "A var initialized from a CALL RESULT is not shape-provably a func value; the initializer is a call, not a func_literal.",
+      "type": "calls",
+      "from": "UseNotAFunc",
+      "target": "FromCall"
+    },
+    {
+      "comment": "LiteralHook does not reference PlainFunc. A resolver that mismatched call targets to the wrong declaration fails here.",
+      "type": "calls",
+      "from": "UseLiteral",
+      "target": "PlainFunc"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "rationale": "PINS the `export default thing` evidence form: a defaulted expression that IS a plain identifier publishes form `expression` and the local binding as evidence; the target stays `default`.",
+  "expectSymbols": [
+    {
+      "name": "thing",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "default",
+      "meta.defaultExportForm": "expression",
+      "meta.defaultExportLocalName": "thing"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "thing"
+    }
+  ],
+  "fixtureId": "javascript/export-claim-default-expression",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true
+}

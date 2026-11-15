@@ -50,7 +50,7 @@ import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "n
 import * as path from "node:path"
 
 const ROOT = path.resolve(import.meta.dir, "..", "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const WANT = Number(process.argv[2] || 400)
 const STRIDE = Number(process.argv[3] || 12)
 const LABEL = process.env.PERL_PAYLOAD_LABEL ?? "current"

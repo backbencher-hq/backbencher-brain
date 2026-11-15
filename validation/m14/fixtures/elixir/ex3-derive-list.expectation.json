@@ -1,0 +1,22 @@
+{
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Deriver",
+      "target": "JSON.Encoder",
+      "line_number": 2
+    },
+    {
+      "type": "implements",
+      "from": "Deriver",
+      "target": "String.Chars",
+      "line_number": 2
+    },
+    {
+      "type": "implements",
+      "from": "DeriverOpts",
+      "target": "Collectable",
+      "line_number": 7
+    }
+  ]
+}

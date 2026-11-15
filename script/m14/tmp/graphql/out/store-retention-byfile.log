@@ -1,0 +1,41 @@
+[INFO] [14:27:12] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [14:27:12] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_515838_517hvnzq0"}
+[INFO] [14:27:33] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_515838_51h6cquv4"}
+750 indexed files re-parsed with production parseFile
+emitted 24305 symbols; brain_symbol holds 24203 rows for those same files
+
+file class                      files  emitted   stored files w/ 0 stored
+no-definition/emits-0              24        0        0                 0
+no-definition/emits-1             230      230      178                52
+no-definition/emits-2              15       30       25                 1
+no-definition/emits-3               8       24       23                 0
+no-definition/emits-4              10       40       35                 0
+no-definition/emits-5              13      315      315                 0
+with-definition/emits-0             1        0        0                 0
+with-definition/emits-1            15       15       12                 3
+with-definition/emits-2            72      144      144                 0
+with-definition/emits-3            15       45       45                 0
+with-definition/emits-4            38      152      152                 0
+with-definition/emits-5           309    23310    23274                 0
+
+files that emitted >=1 symbol and have ZERO brain_symbol rows:
+  gql-graphql-eslint examples/custom-rules/test.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "query {\n  foo\n}\n"
+  gql-graphql-eslint examples/programmatic/query.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "query {\n  user {\n    id\n    name\n    ... on User {\n      nam"
+  gql-graphql-eslint examples/graphql-config/operations/query.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "query {\n  user {\n    name\n    ...UserFields\n  }\n}\n"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/test-directives-with-import.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "#import './user-fields.graphql'\n\n# eslint-disable-next-line\n"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/import-fragments/invalid-query-default.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "#import './fragments/bar-fragment.gql'\nquery {\n  foo {\n    ."
+  gql-graphql-eslint packages/plugin/__tests__/mocks/import-fragments/invalid-query.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "#import FooFields from \"./fragments/bar-fragment.gql\"\nquery "
+  gql-graphql-eslint packages/plugin/__tests__/mocks/import-fragments/missing-import.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "{\n  foo {\n    ...FooFields\n  }\n}\n"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/import-fragments/valid-query-default.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "# Imports could have extra whitespace and double/single quot"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/import-fragments/valid-query.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "# Imports could have extra whitespace and double/single quot"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/known-fragment-names/operation-with-undefined-fragment.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "{\n  user {\n    ...DoesNotExist\n  }\n}\n"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/known-fragment-names/user.gql  hasDefinition=false emits=1 stored=0  first 60 chars: "{\n  user {\n    ...UserFields\n  }\n}\n"
+  gql-graphql-eslint packages/plugin/__tests__/mocks/using-config/nested/test.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "{\n  hello\n}\n"
+  gql-graphql-mesh examples/v1-next/auth0/example-query.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "query {\n  authInfo {\n    sub\n  }\n}\n"
+  gql-graphql-mesh examples/sqlite-chinook/example-query.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "{\n  albums(limit: 2) {\n    albumId\n    title\n    artist {\n  "
+  gql-graphql-mesh examples/auth0/example-query.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "query {\n  authInfo {\n    sub\n  }\n}\n"
+  gql-graphql-platform src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/GetWithComplexVariables.graphql  hasDefinition=false emits=2 stored=0  first 60 chars: "\"GetWithComplexVariables description\"\nquery GetWithComplexVa"
+  gql-graphql-platform src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/GetWithDefaultedVariables.graphql  hasDefinition=true emits=1 stored=0  first 60 chars: "\"GetWithDefaultedVariables description\"\nquery GetWithDefault"
+  gql-graphql-platform src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/GetWithNonNullableVariables.graphql  hasDefinition=true emits=1 stored=0  first 60 chars: "\"GetWithNonNullableVariables description\"\nquery GetWithNonNu"
+  gql-graphql-platform src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/GetWithNullableVariables.graphql  hasDefinition=true emits=1 stored=0  first 60 chars: "\"GetWithNullableVariables description\"\nquery GetWithNullable"
+  gql-graphql-platform src/HotChocolate/Core/benchmarks/Validation.Benchmarks/__resources__/large-schema-2-query.graphql  hasDefinition=false emits=1 stored=0  first 60 chars: "query {field1121 {field10 field50 {field10 field49 field50 {"

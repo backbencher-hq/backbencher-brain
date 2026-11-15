@@ -1,0 +1,712 @@
+{
+  "instrument": "markdown ambiguity split (validation/m14/fixtures/markdown/ambiguity-split.ts)",
+  "whatThisIs": "the per-type split of ambiguous edge targets into the three buckets the round brief names, from production parseFile, plus a reproduction of script/m14/incoming-check.ts's own ambiguousTargets definition on the same edge set so the two are comparable",
+  "whatThisIsNot": "script/m14/incoming-check.ts's output. That file is shared machinery (workstream §8) and was not edited; its definition is recomputed here and both numbers are reported.",
+  "analyzerSha256": "f12248fcbe1375c64347ba85cebc9e6bc30d3ca368a73777bea2fe903b6115b7",
+  "analyzerStableDuringRun": true,
+  "sample": {
+    "files": 600,
+    "admittedPopulation": 17456,
+    "order": "repo ascending, then rel ascending — the same ordering as validation/m14/fixtures/markdown/whole-corpus-census.ts, so this sample is a PREFIX of the whole-corpus population and not an independent draw",
+    "populationSha256": "1d079c4fff2092ce0e11b8090c69d8e86d6e4fba4569b6886653170f6c020781",
+    "admissionTest": "detectLanguageFromPath(abs, text) === \"markdown\", size <= 512 KB, git ls-files",
+    "limitEnv": "BB_MARKDOWN_AMBIGUITY_FILES"
+  },
+  "walk": {
+    "total": 600,
+    "alreadyDone": 0,
+    "walked": 600,
+    "skippedBad": 0,
+    "partial": false,
+    "checkpoint": "validation/m14/measurements/walk-markdown-ambiguity-600.txt"
+  },
+  "symbols": 8496,
+  "degraded": 0,
+  "parseFailures": 0,
+  "parseFailureExamples": [],
+  "edges": 12067,
+  "distinctPublishedNames": 10793,
+  "distinctDeclarations": 8496,
+  "sharedInstrumentReproduction": {
+    "definition": "target name published with more than one DISTINCT SymbolKind, file discarded — incoming-check.ts:107,176-188",
+    "ambiguous": 544,
+    "resolvableTargets": 7116,
+    "recordedInIncomingWholeTsv": 68,
+    "note": "a name published many times under ONE kind reads unambiguous to that map, so its figure and this one answer different questions; both are reported rather than reconciled by assertion"
+  },
+  "perType": {
+    "calls": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "uses": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 2,
+      "unresolved": 4951
+    },
+    "contains": {
+      "unique": 2331,
+      "sameFileMultiple": 174,
+      "crossFileOnly": 4512,
+      "unresolved": 0
+    },
+    "imports": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "references": {
+      "unique": 78,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 19,
+      "unresolved": 0
+    },
+    "exports": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "extends": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "implements": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "overrides": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    },
+    "instantiates": {
+      "unique": 0,
+      "sameFileMultiple": 0,
+      "crossFileOnly": 0,
+      "unresolved": 0
+    }
+  },
+  "ambiguitySplit": {
+    "perType": {
+      "calls": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "uses": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 2,
+        "c_sharedPublishedName": 0
+      },
+      "contains": {
+        "none": 2331,
+        "a_scopeCollisionSameFile": 174,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 4512
+      },
+      "imports": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "references": {
+        "none": 78,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 19
+      },
+      "exports": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "extends": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "implements": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "overrides": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      },
+      "instantiates": {
+        "none": 0,
+        "a_scopeCollisionSameFile": 0,
+        "b_crossFileNoScopeModel": 0,
+        "c_sharedPublishedName": 0
+      }
+    },
+    "totals": {
+      "resolvingTargets": 7116,
+      "a_scopeCollisionSameFile": 174,
+      "b_crossFileNoScopeModel": 2,
+      "c_sharedPublishedName": 4531
+    },
+    "repairableInThisAnalyzer": {
+      "buckets": [
+        "a_scopeCollisionSameFile",
+        "b_crossFileNoScopeModel"
+      ],
+      "edges": 176,
+      "note": "(c) is a fact about the published-name contract: the unique spelling IS published, as qualifiedName (src/ast/real-markdown-analyzer.ts:284), but it is not the edge's endpoint spelling"
+    }
+  },
+  "sourceDisambiguation": {
+    "of_a_scopeCollisionSameFile": 0,
+    "ofTotal": 174,
+    "test": "exactly one symbol in the edge's own file publishes the target name AND its id is the edge's source or a child of it, so (source,target) is unique although target alone is not"
+  },
+  "unresolved": {
+    "edges": 4951,
+    "distinctNames": 3918,
+    "note": "bounded, not a verdict: this index is the sample and the corpus is the admitted population; an unresolved target naming a file outside the window is not a defect",
+    "topNames": [
+      [
+        "@ref",
+        262
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/element.md",
+        30
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/navigableelement.md",
+        28
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/visualelement.md",
+        28
+      ],
+      [
+        "https://github.com/",
+        20
+      ],
+      [
+        "https://github.com/hfazai",
+        19
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/view.md/",
+        16
+      ],
+      [
+        "https://semver.org/spec/v2.0.0.html",
+        15
+      ],
+      [
+        "https://keepachangelog.com/en/1.0.0/",
+        14
+      ],
+      [
+        "https://github.com/dimension-zero",
+        13
+      ],
+      [
+        "https://reference.avaloniaui.net/api/Avalonia/AvaloniaObject/",
+        12
+      ],
+      [
+        "https://github.com/spand",
+        11
+      ],
+      [
+        "https://youtrack.jetbrains.com/issues/EXPOSED",
+        10
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/view.md",
+        9
+      ],
+      [
+        "https://github.com/JuliaDocs/Documenter.jl/issues/1590",
+        8
+      ],
+      [
+        "https://discord.com/channels/196693847965696000/1541149327701971026",
+        8
+      ],
+      [
+        "https://fabulous-dev.github.io/Fabulous/docs/",
+        8
+      ],
+      [
+        "https://fabulous-dev.github.io/Fabulous/docs/tutorials/avalonia/",
+        8
+      ],
+      [
+        "https://github.com/naftalmm",
+        7
+      ],
+      [
+        "geometry.md",
+        7
+      ],
+      [
+        "../../transform.md",
+        7
+      ],
+      [
+        "/reference/fake-tools-signtool-signoptions.html",
+        7
+      ],
+      [
+        "https://github.com/JuliaDocs/DocumenterMarkdown.jl",
+        6
+      ],
+      [
+        "https://github.com/doyaaaaaken",
+        6
+      ],
+      [
+        "https://github.com/SciML/ColPrac",
+        5
+      ],
+      [
+        "https://github.com/lure",
+        5
+      ],
+      [
+        "https://github.com/jnfeinstein",
+        5
+      ],
+      [
+        "https://github.com/fabulous-dev/Fabulous/blob/main/docs/api/maui/collections/itemsview.md",
+        5
+      ],
+      [
+        "/guide/fake-modules.html",
+        5
+      ],
+      [
+        "example-hello-world.md",
+        5
+      ],
+      [
+        "https://fluxml.ai/tutorials/",
+        5
+      ],
+      [
+        "https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet",
+        4
+      ],
+      [
+        "https://github.com/JuliaData/DataFrames.jl/pull/3055",
+        4
+      ],
+      [
+        "https://dplyr.tidyverse.org/",
+        4
+      ],
+      [
+        "https://github.com/FluxML/Flux.jl",
+        4
+      ],
+      [
+        "https://github.com/queryverse/Query.jl",
+        4
+      ],
+      [
+        "https://github.com/AlexeySoshin",
+        4
+      ],
+      [
+        "https://github.com/AliLozano",
+        4
+      ],
+      [
+        "https://github.com/t-kameyama",
+        4
+      ],
+      [
+        "https://www.docker.com/",
+        4
+      ]
+    ]
+  },
+  "topCrossFileCollisionNames": [
+    {
+      "name": "code_block.fsharp",
+      "edges": 368,
+      "files": 147,
+      "kinds": 1
+    },
+    {
+      "name": "Added",
+      "edges": 236,
+      "files": 15,
+      "kinds": 1
+    },
+    {
+      "name": "Description",
+      "edges": 184,
+      "files": 97,
+      "kinds": 2
+    },
+    {
+      "name": "code_block",
+      "edges": 177,
+      "files": 84,
+      "kinds": 1
+    },
+    {
+      "name": "Properties",
+      "edges": 168,
+      "files": 90,
+      "kinds": 2
+    },
+    {
+      "name": "Changed",
+      "edges": 156,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "Fixed",
+      "edges": 132,
+      "files": 7,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia",
+      "edges": 121,
+      "files": 43,
+      "kinds": 1
+    },
+    {
+      "name": "Properties/Description",
+      "edges": 120,
+      "files": 90,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest",
+      "edges": 109,
+      "files": 33,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.kotlin",
+      "edges": 100,
+      "files": 23,
+      "kinds": 1
+    },
+    {
+      "name": "Constructors",
+      "edges": 93,
+      "files": 61,
+      "kinds": 2
+    },
+    {
+      "name": "code_block.jldoctest#2",
+      "edges": 79,
+      "files": 28,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.fsharp#2",
+      "edges": 74,
+      "files": 41,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.bash",
+      "edges": 73,
+      "files": 35,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@docs",
+      "edges": 66,
+      "files": 45,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.shell",
+      "edges": 62,
+      "files": 33,
+      "kinds": 1
+    },
+    {
+      "name": "code_block#2",
+      "edges": 61,
+      "files": 37,
+      "kinds": 1
+    },
+    {
+      "name": "Constructors/Description",
+      "edges": 59,
+      "files": 59,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#3",
+      "edges": 54,
+      "files": 23,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia#2",
+      "edges": 52,
+      "files": 22,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.kotlin#2",
+      "edges": 52,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@meta",
+      "edges": 49,
+      "files": 44,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.markdown",
+      "edges": 48,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example",
+      "edges": 44,
+      "files": 21,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.csharp",
+      "edges": 41,
+      "files": 2,
+      "kinds": 1
+    },
+    {
+      "name": "Properties&#x20;",
+      "edges": 41,
+      "files": 41,
+      "kinds": 1
+    },
+    {
+      "name": "Constructors&#x20;",
+      "edges": 36,
+      "files": 36,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#4",
+      "edges": 34,
+      "files": 16,
+      "kinds": 1
+    },
+    {
+      "name": "Usages",
+      "edges": 34,
+      "files": 34,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@autodocs",
+      "edges": 31,
+      "files": 24,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@repl",
+      "edges": 28,
+      "files": 21,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#5",
+      "edges": 28,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "Usages&#x20;",
+      "edges": 28,
+      "files": 28,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.fsharp#3",
+      "edges": 27,
+      "files": 17,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.kotlin#3",
+      "edges": 26,
+      "files": 9,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia-repl",
+      "edges": 25,
+      "files": 16,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.julia#3",
+      "edges": 24,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example#2",
+      "edges": 24,
+      "files": 14,
+      "kinds": 1
+    },
+    {
+      "name": "Bug fixes",
+      "edges": 23,
+      "files": 2,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#6",
+      "edges": 22,
+      "files": 12,
+      "kinds": 1
+    },
+    {
+      "name": "Events&#x20;",
+      "edges": 22,
+      "files": 22,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.markdown#2",
+      "edges": 21,
+      "files": 5,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#7",
+      "edges": 20,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "Removed",
+      "edges": 18,
+      "files": 6,
+      "kinds": 1
+    },
+    {
+      "name": "code_block#3",
+      "edges": 18,
+      "files": 16,
+      "kinds": 1
+    },
+    {
+      "name": "Documentation",
+      "edges": 18,
+      "files": 18,
+      "kinds": 2
+    },
+    {
+      "name": "Build",
+      "edges": 17,
+      "files": 17,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.ini",
+      "edges": 17,
+      "files": 7,
+      "kinds": 1
+    },
+    {
+      "name": "DataFrames.jl",
+      "edges": 16,
+      "files": 3,
+      "kinds": 2
+    },
+    {
+      "name": "code_block.@example#3",
+      "edges": 16,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@contents",
+      "edges": 15,
+      "files": 9,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example#4",
+      "edges": 15,
+      "files": 11,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.xml",
+      "edges": 15,
+      "files": 8,
+      "kinds": 1
+    },
+    {
+      "name": "Run",
+      "edges": 15,
+      "files": 15,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.bash#2",
+      "edges": 14,
+      "files": 9,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.jldoctest#8",
+      "edges": 14,
+      "files": 7,
+      "kinds": 1
+    },
+    {
+      "name": "code_block.@example#5",
+      "edges": 14,
+      "files": 10,
+      "kinds": 1
+    },
+    {
+      "name": "1.0.0",
+      "edges": 13,
+      "files": 6,
+      "kinds": 2
+    },
+    {
+      "name": "code_block.kotlin#4",
+      "edges": 13,
+      "files": 5,
+      "kinds": 1
+    }
+  ],
+  "declaredLimit": "resolves by NAME. A name that a file outside this sample declares is counted unresolved, which conflates 'outside the window' with 'nowhere'. Ambiguity is keyed on name and on distinct kinds, both of which the shared harness also does, so the definitions differ and both numbers are given."
+}

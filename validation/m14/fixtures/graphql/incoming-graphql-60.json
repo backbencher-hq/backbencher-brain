@@ -1,0 +1,2507 @@
+{
+  "lang": "graphql",
+  "population": {
+    "sampled": 60,
+    "parsed": 60,
+    "failed": 0,
+    "corpusTotal": 1606,
+    "repos": 22,
+    "degraded": 0,
+    "degradedFiles": [],
+    "qualifiedNameAliases": 3770,
+    "excluded": {
+      "absent": 0,
+      "overCap": 4,
+      "overCapLargest": 6504843,
+      "sizeCapBytes": 1048576
+    }
+  },
+  "verdict": "FAIL",
+  "reason": "455 ambiguous + 2317 unresolved of 11158 edges, resolved against the file's OWN PROJECT (production's scope)",
+  "ambiguityMetric": "declarations (distinct-kind shown for comparison only)",
+  "resolutionScope": "per project (the repository a file belongs to) — parallel-indexer.resolveRelationships' scope",
+  "instrumentSelfTest": {
+    "ok": true,
+    "failures": []
+  },
+  "perType": {
+    "calls": {
+      "type": "calls",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "uses": {
+      "type": "uses",
+      "edges": 653,
+      "project": {
+        "resolved": 402,
+        "ambiguousByDecl": 51,
+        "ambiguousByKind": 0,
+        "unresolved": 200,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Query",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "id",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "User",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "count",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "@foo",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "name",
+            "declarations": 115,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 115,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 115,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 115,
+            "kinds": "property"
+          },
+          {
+            "name": "description",
+            "declarations": 6,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "__schema",
+            "type": "uses"
+          },
+          {
+            "name": "description",
+            "type": "uses"
+          },
+          {
+            "name": "queryType",
+            "type": "uses"
+          },
+          {
+            "name": "name",
+            "type": "uses"
+          },
+          {
+            "name": "mutationType",
+            "type": "uses"
+          },
+          {
+            "name": "name",
+            "type": "uses"
+          },
+          {
+            "name": "subscriptionType",
+            "type": "uses"
+          },
+          {
+            "name": "name",
+            "type": "uses"
+          },
+          {
+            "name": "types",
+            "type": "uses"
+          },
+          {
+            "name": "directives",
+            "type": "uses"
+          },
+          {
+            "name": "name",
+            "type": "uses"
+          },
+          {
+            "name": "description",
+            "type": "uses"
+          },
+          {
+            "name": "locations",
+            "type": "uses"
+          },
+          {
+            "name": "isRepeatable",
+            "type": "uses"
+          },
+          {
+            "name": "args",
+            "type": "uses"
+          },
+          {
+            "name": "__Type",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.kind",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.name",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.description",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.isOneOf",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.fields",
+            "type": "uses"
+          },
+          {
+            "name": "name",
+            "type": "uses"
+          },
+          {
+            "name": "description",
+            "type": "uses"
+          },
+          {
+            "name": "args",
+            "type": "uses"
+          },
+          {
+            "name": "type",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 383,
+        "ambiguousByDecl": 114,
+        "ambiguousByKind": 2,
+        "unresolved": 156,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "description",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "FullType",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "description",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "locations",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "InputValue",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "description",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "InputValue",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "type",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "TypeRef",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "isDeprecated",
+            "declarations": 18,
+            "kinds": "property"
+          },
+          {
+            "name": "InputValue",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "TypeRef",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "description",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "isDeprecated",
+            "declarations": 18,
+            "kinds": "property"
+          },
+          {
+            "name": "TypeRef",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "TypeRef",
+            "declarations": 2,
+            "kinds": "method"
+          },
+          {
+            "name": "kind",
+            "declarations": 43,
+            "kinds": "property"
+          },
+          {
+            "name": "name",
+            "declarations": 117,
+            "kinds": "property"
+          },
+          {
+            "name": "kind",
+            "declarations": 43,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "__schema",
+            "type": "uses"
+          },
+          {
+            "name": "queryType",
+            "type": "uses"
+          },
+          {
+            "name": "mutationType",
+            "type": "uses"
+          },
+          {
+            "name": "subscriptionType",
+            "type": "uses"
+          },
+          {
+            "name": "types",
+            "type": "uses"
+          },
+          {
+            "name": "directives",
+            "type": "uses"
+          },
+          {
+            "name": "isRepeatable",
+            "type": "uses"
+          },
+          {
+            "name": "args",
+            "type": "uses"
+          },
+          {
+            "name": "__Type",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.kind",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.name",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.description",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.isOneOf",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.fields",
+            "type": "uses"
+          },
+          {
+            "name": "args",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.inputFields",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.interfaces",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.enumValues",
+            "type": "uses"
+          },
+          {
+            "name": "__Type.possibleTypes",
+            "type": "uses"
+          },
+          {
+            "name": "__InputValue",
+            "type": "uses"
+          },
+          {
+            "name": "__InputValue.name",
+            "type": "uses"
+          },
+          {
+            "name": "__InputValue.description",
+            "type": "uses"
+          },
+          {
+            "name": "__InputValue.type",
+            "type": "uses"
+          },
+          {
+            "name": "__InputValue.defaultValue",
+            "type": "uses"
+          },
+          {
+            "name": "__Type",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "contains": {
+      "type": "contains",
+      "edges": 3757,
+      "project": {
+        "resolved": 3715,
+        "ambiguousByDecl": 42,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._service",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._entities",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "_Service.sdl",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "User.id",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._service",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._entities",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "_Service.sdl",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.hasNextPage",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.hasPreviousPage",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.startCursor",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.endCursor",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.mutation",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "Query.foo",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "Query.foo",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "Query.foo",
+            "declarations": 4,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 3708,
+        "ambiguousByDecl": 49,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "C.id",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Post.id",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._service",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._entities",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "_Service.sdl",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "User.id",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._service",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Query._entities",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "_Service.sdl",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.hasNextPage",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.hasPreviousPage",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.startCursor",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "PageInfo.endCursor",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.mutation",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "Query.foo",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "schema.query",
+            "declarations": 13,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "imports": {
+      "type": "imports",
+      "edges": 6,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 6,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "b.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "d.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "./10.model.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "c.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "./e.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "c.graphql",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 6,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "b.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "d.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "./10.model.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "c.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "./e.graphql",
+            "type": "imports"
+          },
+          {
+            "name": "c.graphql",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "references": {
+      "type": "references",
+      "edges": 4319,
+      "project": {
+        "resolved": 2025,
+        "ambiguousByDecl": 183,
+        "ambiguousByKind": 0,
+        "unresolved": 2111,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "User",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "FooSortInput",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "FooSortInput",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "SortEnumType",
+            "declarations": 3,
+            "kinds": "enum"
+          },
+          {
+            "name": "SortEnumType",
+            "declarations": 3,
+            "kinds": "enum"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "RecursiveInput",
+            "type": "references"
+          },
+          {
+            "name": "Boolean",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "Boolean",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "ID",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "ID",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "ID",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 2005,
+        "ambiguousByDecl": 204,
+        "ambiguousByKind": 11,
+        "unresolved": 2110,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Post",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "User",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "PageInfo",
+            "declarations": 2,
+            "kinds": "class"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "RecursiveInput",
+            "type": "references"
+          },
+          {
+            "name": "Boolean",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "Boolean",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "ID",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "Int",
+            "type": "references"
+          },
+          {
+            "name": "ID",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "ID",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          },
+          {
+            "name": "String",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "exports": {
+      "type": "exports",
+      "edges": 1171,
+      "project": {
+        "resolved": 1110,
+        "ambiguousByDecl": 61,
+        "ambiguousByKind": 19,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Query",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "A",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "B",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "C",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "Query",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "schema",
+            "declarations": 20,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "User",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "schema",
+            "declarations": 20,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "Query",
+            "declarations": 9,
+            "kinds": "class"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "schema",
+            "declarations": 20,
+            "kinds": "namespace|property"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 1099,
+        "ambiguousByDecl": 72,
+        "ambiguousByKind": 26,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "Subscription",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "A",
+            "declarations": 3,
+            "kinds": "class|enum_member|interface"
+          },
+          {
+            "name": "B",
+            "declarations": 3,
+            "kinds": "enum_member|interface|type"
+          },
+          {
+            "name": "C",
+            "declarations": 3,
+            "kinds": "class|enum_member|interface"
+          },
+          {
+            "name": "Post",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "schema",
+            "declarations": 21,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Transform",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "schema",
+            "declarations": 21,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          },
+          {
+            "name": "_Service",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "User",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "_Entity",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "_Any",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "@key",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "schema",
+            "declarations": 21,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "Query",
+            "declarations": 18,
+            "kinds": "class"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "extends": {
+      "type": "extends",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "implements": {
+      "type": "implements",
+      "edges": 395,
+      "project": {
+        "resolved": 333,
+        "ambiguousByDecl": 62,
+        "ambiguousByKind": 6,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "A",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "B",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "A",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "C",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "B",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "A",
+            "declarations": 2,
+            "kinds": "enum_member|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 2,
+            "kinds": "interface"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 333,
+        "ambiguousByDecl": 62,
+        "ambiguousByKind": 62,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "A",
+            "declarations": 3,
+            "kinds": "class|enum_member|interface"
+          },
+          {
+            "name": "B",
+            "declarations": 3,
+            "kinds": "enum_member|interface|type"
+          },
+          {
+            "name": "A",
+            "declarations": 3,
+            "kinds": "class|enum_member|interface"
+          },
+          {
+            "name": "C",
+            "declarations": 3,
+            "kinds": "class|enum_member|interface"
+          },
+          {
+            "name": "B",
+            "declarations": 3,
+            "kinds": "enum_member|interface|type"
+          },
+          {
+            "name": "A",
+            "declarations": 3,
+            "kinds": "class|enum_member|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          },
+          {
+            "name": "Error",
+            "declarations": 3,
+            "kinds": "class|interface"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "overrides": {
+      "type": "overrides",
+      "edges": 857,
+      "project": {
+        "resolved": 801,
+        "ambiguousByDecl": 56,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 800,
+        "ambiguousByDecl": 57,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "C.id",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "Error.message",
+            "declarations": 2,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    },
+    "instantiates": {
+      "type": "instantiates",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "pooled": {
+        "resolved": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": []
+      },
+      "marks": {}
+    }
+  },
+  "totals": {
+    "resolved": 8386,
+    "ambiguousByDecl": 455,
+    "ambiguousByKind": 25,
+    "unresolved": 2317,
+    "markedExternal": 0,
+    "externalVerified": 0,
+    "externalVerifiedByOwner": 0,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 0,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": []
+  },
+  "totalsPooled": {
+    "resolved": 8328,
+    "ambiguousByDecl": 558,
+    "ambiguousByKind": 101,
+    "unresolved": 2272,
+    "markedExternal": 0,
+    "externalVerified": 0,
+    "externalVerifiedByOwner": 0,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 0,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": []
+  }
+}

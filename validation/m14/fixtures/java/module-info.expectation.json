@@ -1,0 +1,21 @@
+{
+  "fixtureId": "java/module-info",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the JPMS (JLS 7.7) directives, which no java fixture exercised before the M60 ontology pass and which the corpus supplies in only 2 module descriptors across 3,325 files — a population small enough that a regression would be near-invisible without a fixture. JLS 7.7.1: `requires M` is a MODULE DEPENDENCY and belongs to the `imports` label, because without M this module does not compile; `requires static M` is an OPTIONAL dependency (needed at compile time, may be absent at run time) so it is demoted to 0.9 and carries the machine-readable reasonCode honesty contract §4 requires; `requires transitive M` is a plain requirement that additionally forces readability onto the module's own readers, so it stays at 1.0 — the distinction the fixture exists to hold. JLS 7.7.2: `exports P` is a PUBLICATION and carries `exports`. JLS 7.7.3: `opens P` grants reflective access at run time and publishes NOTHING, so the absence of an `exports` edge for `com.acme.platform.internal` is the point of the forbid row — deriving one would be an edge the language does not express. The SOURCE endpoint is the MODULE, not a package, because a module descriptor declares no package.",
+  "expectSymbols": [],
+  "expectRelationships": [
+    { "type": "imports", "from": "com.acme.platform", "target": "java.base", "meta.relationshipType": "module_requires", "meta.isModuleRequires": true, "meta.isStatic": false, "meta.evidenceClass": "import_based", "confidenceMin": 1.0 },
+    { "type": "imports", "from": "com.acme.platform", "target": "java.logging", "meta.relationshipType": "module_requires", "meta.isTransitive": true, "confidenceMin": 1.0 },
+    { "type": "imports", "from": "com.acme.platform", "target": "java.sql", "meta.relationshipType": "module_requires", "meta.isStatic": true, "meta.inferred": true, "meta.reasonCode": "optional-module-dependency", "confidenceMin": 0.9, "confidenceMax": 0.9 },
+    { "type": "imports", "from": "com.acme.platform", "target": "com.acme.core", "meta.relationshipType": "module_requires", "confidenceMin": 1.0 },
+    { "type": "exports", "from": "com.acme.platform", "target": "com.acme.platform.api", "meta.relationshipType": "module_exports", "meta.evidenceClass": "structural", "confidenceMin": 1.0 },
+    { "type": "exports", "from": "com.acme.platform", "target": "com.acme.platform.spi", "meta.relationshipType": "module_exports", "confidenceMin": 1.0 }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "com.acme.platform.internal" },
+    { "type": "exports", "target": "com.acme.platform", "meta.relationshipType": "module_exports" },
+    { "type": "imports", "from": "root" },
+    { "type": "imports", "source": "" }
+  ]
+}

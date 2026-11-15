@@ -1,0 +1,15 @@
+{
+  "fixtureId": "groovy/field-decorators",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Field-level annotations are THE GORM/JPA idiom (@Column on fields) but the field_declaration branch never extracted them - the previous wave fixed classes and methods and missed fields. Fields must carry decorators with short names exactly like methods and classes.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "name", "kind": "property" },
+    { "name": "legacyKey", "kind": "property" }
+  ],
+  "expectDecorators": [
+    { "symbol": "name", "contains": "Column" },
+    { "symbol": "legacyKey", "contains": "Deprecated" }
+  ]
+}

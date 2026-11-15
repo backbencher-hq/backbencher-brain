@@ -1,0 +1,74 @@
+{
+  "fixtureId": "groovy/heritage-typeargs-strip",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49.S1 #715 (geb CachingDriverFactory real-corpus shape): groovy's pinned grammar folds type args into the supertype token (`implements Cache<T>` -> text `Cache<T>`), and the pre-S1 oracle emitted the bracketed target raw \u2014 decls keys are bracket-stripped at registration, so the implements edge never matched its interface and SimpleCache.get -> Cache.get surfaced unexplained. Pins: clean heritage targets (implements Cache), nested-interface override resolution for both nested classes, and the enclosing-class method attribution.",
+  "expectSymbols": [
+    {
+      "name": "CachingDriverFactory"
+    },
+    {
+      "name": "Cache"
+    },
+    {
+      "name": "SimpleCache"
+    },
+    {
+      "name": "ThreadLocalCache"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "CachingDriverFactory",
+      "target": "DriverFactory"
+    },
+    {
+      "type": "implements",
+      "from": "SimpleCache",
+      "target": "Cache"
+    },
+    {
+      "type": "implements",
+      "from": "ThreadLocalCache",
+      "target": "Cache"
+    },
+    {
+      "type": "overrides",
+      "from": "SimpleCache.get",
+      "target": "get",
+      "meta.overriddenOwner": "Cache"
+    },
+    {
+      "type": "overrides",
+      "from": "SimpleCache.clear",
+      "target": "clear",
+      "meta.overriddenOwner": "Cache"
+    },
+    {
+      "type": "overrides",
+      "from": "ThreadLocalCache.get",
+      "target": "get",
+      "meta.overriddenOwner": "Cache"
+    },
+    {
+      "type": "overrides",
+      "from": "ThreadLocalCache.clear",
+      "target": "clear",
+      "meta.overriddenOwner": "Cache"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "SimpleCache",
+      "target": "Cache<T>"
+    },
+    {
+      "type": "implements",
+      "from": "ThreadLocalCache",
+      "target": "Cache<T>"
+    }
+  ],
+  "notes": "The forbid pins document the exact pre-S1 defect: bracketed heritage targets could never match decls keys (bracket-stripped at registration). Oracle mirror: collect() in deriveTreeEdges strips type args from every TYPE-node heritage target."
+}

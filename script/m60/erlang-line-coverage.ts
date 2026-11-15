@@ -44,7 +44,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 
 // Overridable because the corpora live under whichever home the run has; the lua
 // gate takes its repo as argv[2] for the same reason.
-const ROOT = process.env.BB_ERLANG_REPOS ?? "$HOME/ishaq/fixtures/repositories"
+const ROOT = process.env.BB_ERLANG_REPOS ?? "/home/sano/ishaq/bb_tests/repositories"
 const REPOS = [
   { name: "otp", dir: path.join(ROOT, "otp") },
   { name: "rebar3", dir: path.join(ROOT, "rebar3") },

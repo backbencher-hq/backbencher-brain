@@ -1,0 +1,81 @@
+{
+  "issue": "EX-EX3",
+  "note": "The lane ruled `uses` out on prose (\"member access on structs is a field read \u2014 no edge, fields already have contains ownership\") with no corpus measurement, while six lanes publish exactly this edge for the same construct and ERLANG \u2014 Elixir's nearest neighbour, whose records are Elixir's structs \u2014 publishes it as `uses -> <field>`. Measured: 2,157 live member reads in 177 of 568 corpus files, 1,009 of which name a field some struct in the corpus declares. The gate is a DECLARED field of the same file AND (EX-EX12) a receiver that is not bound to a MAP in the enclosing definition; four silences are pinned because each is where a guessed target could have been published: a map-key read (`opts.domain`) is the same syntax with no type information behind it, a method call is a CALL not a read, a CAPITALIZED receiver is a module reference not a field read, and a chained read takes the LEAF. `@doc`-style `contains` ownership is not a substitute for the read edge \u2014 it says who owns the field, not who reads it. `meta.evidenceClass` is pinned on the read edge for the same reason as the exports fixture.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "OntoUses.show/1",
+      "target": "name",
+      "meta.evidenceClass": "struct_field_read"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.ident/1",
+      "target": "id",
+      "meta.evidenceClass": "struct_field_read"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.literal_read/0",
+      "target": "name",
+      "meta.evidenceClass": "struct_field_read"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.chained/1",
+      "target": "name",
+      "note": "a CHAIN publishes its leaf \u2014 `u.profile.name` reads `name`",
+      "meta.evidenceClass": "struct_field_read"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.struct_bound_read/1",
+      "target": "id",
+      "note": "EX-EX12: `%Mod{} = u` binds a STRUCT, so the read through it IS a struct-field read \u2014 the map gate must not swallow it",
+      "meta.evidenceClass": "struct_field_read"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "OntoUses.map_read/1",
+      "target": "domain",
+      "note": "a MAP KEY read: no declared struct field named domain"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.map_bound_read/1",
+      "target": "id",
+      "note": "EX-EX12: the receiver is bound by `%{} = m`, so `m.id` is a MAP KEY read. `id` IS a declared struct field of this file, which is exactly why the declared-field gate alone published this edge \u2014 the corpus case is `defp from_map(%{} = datetime_map)` reading eleven map keys in calendar/datetime.ex:2063"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.method_call/1",
+      "target": "hello",
+      "note": "a CALL is a calls edge, not a read"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.module_read/0",
+      "target": "name",
+      "note": "a capitalized receiver is a module reference"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.chained/1",
+      "target": "profile",
+      "note": "a chain publishes its LEAF (`name`), and `profile` is not a declared field here"
+    },
+    {
+      "type": "uses",
+      "from": "OntoUses.tuple_read/0",
+      "target": "0"
+    },
+    {
+      "type": "calls",
+      "from": "OntoUses.literal_read/0",
+      "target": "%OntoUser{}.name",
+      "note": "R7: a struct-literal receiver is a VALUE, and a target carrying `%`/`{}` names no symbol"
+    }
+  ]
+}

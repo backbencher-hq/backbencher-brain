@@ -1,0 +1,971 @@
+{
+  "analyzer": "fsharp",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/fsharp",
+  "corpusRepo": "fsharp",
+  "revision": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+  "extensions": [
+    "*.fs",
+    "*.fsi",
+    "*.fsx"
+  ],
+  "mode": "deterministic-first-400-sorted",
+  "trackedFilesInCorpus": 6627,
+  "measuredFiles": 400,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 82,
+  "cleanFiles": 318,
+  "missingNodeFiles": 13,
+  "errorNodeFiles": 81,
+  "errorRates": {
+    "any": 20.5,
+    "missing": 3.3,
+    "error": 20.3
+  },
+  "grammarErrorFiles": 82,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 144860,
+  "missingTokens": {
+    "identifier": 9,
+    "#endif": 3,
+    "|]": 2,
+    ")": 2,
+    "}": 1
+  },
+  "errorLineSignatures": {
+    "(": 118,
+    ": 'ID));": 60,
+    "#ID": 33,
+    "ID ID": 25,
+    "ID = ID": 25,
+    "#ID !ID": 20,
+    ")": 18,
+    "| ID.ID ID": 14,
+    "| 0 -> (": 11,
+    "ID ID =": 9,
+    "[<ID>]": 8,
+    "ID ID = ID.ID": 6,
+    "ID ID = ID<ID, ID ID, ID * ID> ID": 5,
+    "ID = ID) ->": 5,
+    "ID ID ID": 5,
+    "| ID.ID ID ->": 5,
+    "#ID ID": 4,
+    "| ID = (1ID <<< 0)": 4,
+    "ID ID ID =": 4,
+    "| ID(ID = ID)": 4,
+    "ID ID: ID": 4,
+    "// ID (ID) ID ID. ID ID ID. ID ID.ID ID ID ID ID ID ID ID.": 3,
+    "| ID -> ()": 3,
+    "ID ID = (ID @ [ID])": 3,
+    "ID ID = (ID, ID) ||> ID.ID (ID ID ID -> ID ID ID.ID)": 3,
+    "[<ID; ID(ID)>] ID: ID *": 3,
+    "ID: ID *": 3,
+    "| ID(ID = ID) -> ID": 3,
+    "| ID ID ID: (ID -> ID) * ID: ID": 3,
+    "| ID ID -> ID ID": 3,
+    "| ID ID -> ID": 3,
+    "ID.ID.ID(1);": 2,
+    ": ID.ID));": 2,
+    "ID ID = 1 ID ID ID": 2,
+    "ID ID ID = ID": 2,
+    "ID ID: ID | ID =": 2,
+    "ID ID<ID:ID ID> =": 2,
+    "ID, ID": 2,
+    "ID = { ID = ID }) ]": 2,
+    "ID ID = ID(ID, ID, ID)": 2
+  },
+  "firstErrorLineSignatures": {
+    "#ID": 11,
+    "[<ID>]": 3,
+    "// ID (ID) ID ID. ID ID ID. ID ID.ID ID ID ID ID ID ID ID.": 3,
+    "ID ID": 3,
+    "ID.ID.ID(1);": 2,
+    ")": 2,
+    ": 'ID));": 2,
+    "ID ID<ID:ID ID> =": 2,
+    "ID: ID: ID | ID -> ID": 2,
+    "(*": 1,
+    "#ID ID": 1,
+    "| ID = (1ID <<< 0)": 1,
+    "ID ID = ID<ID[] | ID>(ID)": 1,
+    "ID ID: ID | ID =": 1,
+    "ID [<ID>] ID ID ID ID ID (ID, ID, ID) (ID: ID ID) (ID: ID) =": 1,
+    "| ID ID ID ID -> ()": 1,
+    "| ID ID ID ID -> ID": 1,
+    "| ID ID ID ID ID ID ->": 1,
+    "ID ID.ID &&": 1,
+    "ID (ID, ID, ID, ID, ID, ID) ]": 1,
+    "[]": 1,
+    "ID ID.ID ID () ID": 1,
+    "ID ID ID (ID: ID) ID =": 1,
+    "(* ID.ID ID ID * ID * ID * ID (* ID, ID, ID, ID *) *)": 1,
+    ": ID | ID * ID | ID =": 1,
+    "[<ID; ID(ID)>] ID: ID *": 1,
+    "//ID: ID ID -> ID": 1,
+    "ID ID ID ID.ID.ID.ID": 1,
+    "ID ID (ID: ID<ID: ID ID) : ID =": 1,
+    "ID ID: ID: ID<ID: ID ID": 1,
+    "ID ID: ID ID ID: ID ID>": 1,
+    "ID ID: ID ID ID: ID ID> =": 1,
+    "ID ID<ID>": 1,
+    "ID ID: ID: #ID ID -> ID": 1,
+    "| ID ID -> ID(ID ID)": 1,
+    "| ID.ID (ID, ID, ID, ID, ID, ID) ->": 1,
+    "||": 1,
+    "ID = ID)) ID ID ID.ID ID -> ID ID.ID": 1,
+    "| ID ID ID: ID * ID: ID": 1,
+    "ID,": 1
+  },
+  "errorFileList": [
+    {
+      "file": "buildtools/fslex/Arg.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 125,
+      "firstKind": "ERROR",
+      "firstLine": "System.Environment.Exit(1);",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "buildtools/fslex/Parsing.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 491,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "buildtools/fslex/fslexlex.fs",
+      "nodes": 10,
+      "missingTokens": [],
+      "errorNodes": 10,
+      "firstRow": 691,
+      "firstKind": "ERROR",
+      "firstLine": ")",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "buildtools/fslex/fslexpars.fs",
+      "nodes": 103,
+      "missingTokens": [
+        "|]"
+      ],
+      "errorNodes": 102,
+      "firstRow": 651,
+      "firstKind": "ERROR",
+      "firstLine": ": 'gentype_charset));",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "buildtools/fsyacc/Arg.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 125,
+      "firstKind": "ERROR",
+      "firstLine": "System.Environment.Exit(1);",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "buildtools/fsyacc/Parsing.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 491,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "buildtools/fsyacc/fsyaccast.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 923,
+      "firstKind": "ERROR",
+      "firstLine": "(*",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "buildtools/fsyacc/fsyacclex.fs",
+      "nodes": 12,
+      "missingTokens": [],
+      "errorNodes": 12,
+      "firstRow": 604,
+      "firstKind": "ERROR",
+      "firstLine": ")",
+      "pipelineErrors": 12
+    },
+    {
+      "file": "buildtools/fsyacc/fsyaccpars.fs",
+      "nodes": 85,
+      "missingTokens": [
+        "|]"
+      ],
+      "errorNodes": 84,
+      "firstRow": 534,
+      "firstKind": "ERROR",
+      "firstLine": ": 'gentype_optprec));",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "docs/release-notes/.aux/Common.fsx",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "#i \"nuget: https://api.nuget.org/v3/index.json\"",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/AbstractIL/IlxDeltaStreams.fs",
+      "nodes": 7,
+      "missingTokens": [
+        "}"
+      ],
+      "errorNodes": 6,
+      "firstRow": 291,
+      "firstKind": "MISSING }",
+      "firstLine": "}",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "src/Compiler/AbstractIL/il.fs",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 1236,
+      "firstKind": "ERROR",
+      "firstLine": "| IsReadOnlyAttribute = (1u <<< 0)",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "src/Compiler/AbstractIL/il.fsi",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 1705,
+      "firstKind": "ERROR",
+      "firstLine": "[<Sealed>]",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "src/Compiler/AbstractIL/ilread.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 229,
+      "firstKind": "ERROR",
+      "firstLine": "let weakBytes = WeakReference<byte[] | null>(null)",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/AbstractIL/ilreflect.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 700,
+      "firstKind": "ERROR",
+      "firstLine": "let res: Type | null =",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/AbstractIL/ilwrite.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 365,
+      "firstKind": "ERROR",
+      "firstLine": "type MetadataTable<'T when 'T:not null> =",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Checking/AttributeChecking.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 677,
+      "firstKind": "ERROR",
+      "firstLine": "#else",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Checking/CheckDeclarations.fs",
+      "nodes": 16,
+      "missingTokens": [
+        "#endif"
+      ],
+      "errorNodes": 15,
+      "firstRow": 5871,
+      "firstKind": "ERROR",
+      "firstLine": "and [<TailCall>] TcModuleOrNamespaceElementsNonMutRec cenv parent typeNames endm (defsSoFar, env, envAtEnd) (moreDefs: S",
+      "pipelineErrors": 16
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "nodes": 11,
+      "missingTokens": [],
+      "errorNodes": 11,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Copyright (c) Microsoft Corporation. All Rights Reserved. See License.txt in the project root for license information",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "src/Compiler/Checking/CheckRecordSyntaxHelpers.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Copyright (c) Microsoft Corporation. All Rights Reserved. See License.txt in the project root for license information",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckArrayOrListComputedExpressions.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 66,
+      "firstKind": "ERROR",
+      "firstLine": "| SimpleSemicolonSequence cenv false _ -> ()",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckComputationExpressions.fs",
+      "nodes": 17,
+      "missingTokens": [],
+      "errorNodes": 17,
+      "firstRow": 2839,
+      "firstKind": "ERROR",
+      "firstLine": "| ForEachThenJoinOrGroupJoinOrZipClause ceenv false _ -> false",
+      "pipelineErrors": 17
+    },
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+      "nodes": 128,
+      "missingTokens": [
+        ")"
+      ],
+      "errorNodes": 126,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Copyright (c) Microsoft Corporation. All Rights Reserved. See License.txt in the project root for license information",
+      "pipelineErrors": 50
+    },
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckSequenceExpressions.fs",
+      "nodes": 11,
+      "missingTokens": [],
+      "errorNodes": 11,
+      "firstRow": 478,
+      "firstKind": "ERROR",
+      "firstLine": "| SimpleSemicolonSequence cenv false _ when validateObjectSequenceOrRecordExpression ->",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "src/Compiler/Checking/MethodOverrides.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 932,
+      "firstKind": "ERROR",
+      "firstLine": "not tycon.IsProvidedGeneratedTycon &&",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Checking/NameResolution.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 1162,
+      "firstKind": "ERROR",
+      "firstLine": "LookupTypeNameInEntityMaybeHaveArity (amap, m, ad, nestedTypeName, staticResInfo, tcref) ]",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Checking/NicePrint.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 2276,
+      "firstKind": "ERROR",
+      "firstLine": "[]",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Checking/PostInferenceChecks.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 2382,
+      "firstKind": "ERROR",
+      "firstLine": "if tycon.IsProvidedGeneratedTycon then () else",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Checking/QuotationTranslator.fs",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 1237,
+      "firstKind": "ERROR",
+      "firstLine": "and ConvTyconRef cenv (tcref: TyconRef) m =",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Compiler/Checking/SignatureConformance.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 699,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Checking/import.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 878,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/CodeGen/IlxGen.fs",
+      "nodes": 4,
+      "missingTokens": [
+        "identifier"
+      ],
+      "errorNodes": 3,
+      "firstRow": 9455,
+      "firstKind": "ERROR",
+      "firstLine": "(* ILNativeType.Custom of bytes * string * string * bytes (* GUID, nativeTypeName, custMarshallerName, cookieString *) *",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Compiler/DependencyManager/AssemblyResolveHandler.fsi",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 15,
+      "firstKind": "ERROR",
+      "firstLine": "new: assemblyProbingPaths: AssemblyResolutionProbe | null -> AssemblyResolveHandler",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/DependencyManager/DependencyProvider.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 612,
+      "firstKind": "ERROR",
+      "firstLine": ": string | null * IDependencyManagerProvider | null =",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+      "nodes": 11,
+      "missingTokens": [],
+      "errorNodes": 11,
+      "firstRow": 129,
+      "firstKind": "ERROR",
+      "firstLine": "[<Optional; DefaultParameterValue(\"\")>] fileName: string *",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "src/Compiler/DependencyManager/NativeDllResolveHandler.fsi",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 15,
+      "firstKind": "ERROR",
+      "firstLine": "new: nativeProbingRoots: NativeResolutionProbe | null -> NativeDllResolveHandler",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerConfig.fs",
+      "nodes": 10,
+      "missingTokens": [],
+      "errorNodes": 10,
+      "firstRow": 815,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerConfig.fsi",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 456,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerImports.fs",
+      "nodes": 16,
+      "missingTokens": [],
+      "errorNodes": 16,
+      "firstRow": 2302,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 16
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerImports.fsi",
+      "nodes": 6,
+      "missingTokens": [],
+      "errorNodes": 6,
+      "firstRow": 155,
+      "firstKind": "ERROR",
+      "firstLine": "//new: TcImports option -> TcImports",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "src/Compiler/Driver/FxResolver.fs",
+      "nodes": 1,
+      "missingTokens": [
+        "identifier"
+      ],
+      "errorNodes": 0,
+      "firstRow": 480,
+      "firstKind": "MISSING identifier",
+      "firstLine": "| _ -> None, []",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Driver/GraphChecking/FileContentMapping.fs",
+      "nodes": 11,
+      "missingTokens": [],
+      "errorNodes": 11,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "module internal rec FSharp.Compiler.GraphChecking.FileContentMapping",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "src/Compiler/Driver/GraphChecking/Graph.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 86,
+      "firstKind": "ERROR",
+      "firstLine": "let print (graph: Graph<'Node> when 'Node: not null) : unit =",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Driver/GraphChecking/Graph.fsi",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 23,
+      "firstKind": "ERROR",
+      "firstLine": "val print: graph: Graph<'Node> -> unit when 'Node: not null",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Driver/ParseAndCheckInputs.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 1083,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Facilities/AsyncMemoize.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 182,
+      "firstKind": "ERROR",
+      "firstLine": "when 'TKey: equality and 'TVersion: equality and 'TKey: not null and 'TVersion: not null>",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Facilities/AsyncMemoize.fsi",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 43,
+      "firstKind": "ERROR",
+      "firstLine": "when 'TKey: equality and 'TVersion: equality and 'TKey: not null and 'TVersion: not null> =",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Facilities/DiagnosticResolutionHints.fsi",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 19,
+      "firstKind": "ERROR",
+      "firstLine": "interface IEnumerable<string>",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Facilities/DiagnosticsLogger.fsi",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 353,
+      "firstKind": "ERROR",
+      "firstLine": "val ReportWarnings: warns: #exn list -> unit",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "src/Compiler/Interactive/fsi.fs",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 4792,
+      "firstKind": "ERROR",
+      "firstLine": "| Some assembly -> Some(Choice2Of2 assembly)",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "src/Compiler/Interactive/fsi.fsi",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 371,
+      "firstKind": "ERROR",
+      "firstLine": "[<Sealed>]",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "src/Compiler/Optimize/LowerSequences.fs",
+      "nodes": 2,
+      "missingTokens": [
+        "identifier"
+      ],
+      "errorNodes": 1,
+      "firstRow": 419,
+      "firstKind": "ERROR",
+      "firstLine": "| Expr.Match (spBind, mExpr, pt, targets, m, ty) ->",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Service/BackgroundCompiler.fsi",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 222,
+      "firstKind": "ERROR",
+      "firstLine": "interface IBackgroundCompiler",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Service/FSharpCheckerResults.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 968,
+      "firstKind": "ERROR",
+      "firstLine": "||",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Service/FSharpParseFileResults.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 290,
+      "firstKind": "ERROR",
+      "firstLine": "argExpr = argExpr)) when rangeContainsPos argExpr.Range expressionPos -> Some funcIdent.idRange",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+      "nodes": 17,
+      "missingTokens": [],
+      "errorNodes": 17,
+      "firstRow": 573,
+      "firstKind": "ERROR",
+      "firstLine": "| FSharpProjectIdentifier of projectFileName: string * outputFileName: string",
+      "pipelineErrors": 17
+    },
+    {
+      "file": "src/Compiler/Service/IncrementalBuild.fs",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 1675,
+      "firstKind": "ERROR",
+      "firstLine": "importsInvalidatedByTypeProvider,",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "src/Compiler/Service/ItemKey.fsi",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 11,
+      "firstKind": "ERROR",
+      "firstLine": "[<Sealed>]",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "src/Compiler/Service/SemanticClassificationKey.fsi",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 20,
+      "firstKind": "ERROR",
+      "firstLine": "/// Get a read only view on the semantic classification key store",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+      "nodes": 3,
+      "missingTokens": [
+        "#endif"
+      ],
+      "errorNodes": 2,
+      "firstRow": 315,
+      "firstKind": "MISSING #endif",
+      "firstLine": "| Public -> entity.Symbol.Accessibility.IsPublic)",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "src/Compiler/Service/ServiceAssemblyContent.fsi",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 82,
+      "firstKind": "ERROR",
+      "firstLine": "interface IAssemblyContentCache",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Service/ServiceDeclarationLists.fs",
+      "nodes": 2,
+      "missingTokens": [
+        "identifier"
+      ],
+      "errorNodes": 1,
+      "firstRow": 1385,
+      "firstKind": "MISSING identifier",
+      "firstLine": "yield! methods",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/Service/ServiceErrorResolutionHints.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 7,
+      "firstKind": "ERROR",
+      "firstLine": "module ErrorResolutionHints =",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Service/SynExpr.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 60,
+      "firstKind": "ERROR",
+      "firstLine": "| OriginalNotation this, (:? OriginalNotation as OriginalNotation other) -> String.Equals(this, other, StringComparison.",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Service/SynPat.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 167,
+      "firstKind": "ERROR",
+      "firstLine": "| SynPat.Const(SynConst.Unit, _), _ -> true",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Service/TransparentCompiler.fsi",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 195,
+      "firstKind": "ERROR",
+      "firstLine": "useChangeNotifications: bool *",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+      "nodes": 20,
+      "missingTokens": [
+        "identifier"
+      ],
+      "errorNodes": 16,
+      "firstRow": 250,
+      "firstKind": "ERROR",
+      "firstLine": "interface IDisposable",
+      "pipelineErrors": 20
+    },
+    {
+      "file": "src/Compiler/Symbols/SymbolHelpers.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 136,
+      "firstKind": "ERROR",
+      "firstLine": "if tcref.IsProvided then None else",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/Symbols/Symbols.fs",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 1348,
+      "firstKind": "ERROR",
+      "firstLine": "override x.ToString() = x.CompiledName",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "src/Compiler/Symbols/Symbols.fsi",
+      "nodes": 4,
+      "missingTokens": [
+        "#endif"
+      ],
+      "errorNodes": 3,
+      "firstRow": 1284,
+      "firstKind": "MISSING #endif",
+      "firstLine": "member IsOwnNamespace: bool",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Compiler/SyntaxTree/LexFilter.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 2307,
+      "firstKind": "ERROR",
+      "firstLine": "| _ -> false) (* type X<'a when 'a : struct> *) ->",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/SyntaxTree/ParseHelpers.fs",
+      "nodes": 4,
+      "missingTokens": [],
+      "errorNodes": 4,
+      "firstRow": 542,
+      "firstKind": "ERROR",
+      "firstLine": "range = m) ->",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Compiler/SyntaxTree/UnicodeLexing.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 21,
+      "firstKind": "ERROR",
+      "firstLine": "member lexbuf.TryGetLocalData<'T when 'T: not null>(key: string) =",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/SyntaxTree/UnicodeLexing.fsi",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 14,
+      "firstKind": "ERROR",
+      "firstLine": "member TryGetLocalData<'T when 'T: not null> : key: string -> 'T option",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/TypedTree/QuotationPickler.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 252,
+      "firstKind": "ERROR",
+      "firstLine": "type Table<'T when 'T:not null> =",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypeProviders.fs",
+      "nodes": 9,
+      "missingTokens": [],
+      "errorNodes": 9,
+      "firstRow": 1186,
+      "firstKind": "ERROR",
+      "firstLine": "let _namespaceName = TryTypeMember<_, string | null>(st, name, \"Namespace\", m, FSComp.SR.invalidNamespaceForProvidedType",
+      "pipelineErrors": 9
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTree.fs",
+      "nodes": 11,
+      "missingTokens": [
+        "identifier"
+      ],
+      "errorNodes": 10,
+      "firstRow": 5867,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTree.fsi",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 4213,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTreeBasics.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 389,
+      "firstKind": "ERROR",
+      "firstLine": "| TProvidedTypeRepr _ -> true",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTreeOps.ExprConstruction.fs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 962,
+      "firstKind": "ERROR",
+      "firstLine": "| TProvidedTypeRepr info -> ProvidedTypeMetadata info",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTreeOps.Transforms.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 2669,
+      "firstKind": "ERROR",
+      "firstLine": "targets = [| TTarget(_, t0, _); TTarget(_, t1, _) |]) ->",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTreePickle.fs",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 74,
+      "firstKind": "ERROR",
+      "firstLine": "type Table<'T when 'T: not null> =",
+      "pipelineErrors": 1
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

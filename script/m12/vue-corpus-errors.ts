@@ -3,11 +3,11 @@
 // single-long-lived-parser memory exhaustion that causes spurious Abort()s.
 // Usage: bun script/m12/vue-corpus-errors.ts
 // Reads:  validation/m12/results/vue-corpus-sample.txt (relative paths into
-//         the pinned element-plus repo at $HOME/fixtures/repositories/element-plus)
+//         the pinned element-plus repo at /home/ishaq2321/bb_tests/repositories/element-plus)
 import { readFileSync } from "fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO = "$HOME/fixtures/repositories/element-plus"
+const REPO = "/home/ishaq2321/bb_tests/repositories/element-plus"
 const SAMPLE = "validation/m12/results/vue-corpus-sample.txt"
 
 async function main() {

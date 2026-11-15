@@ -1,0 +1,49 @@
+{
+  "note": "prototype of the join-order fix for D4. old = shipped SQL; new = CROSS JOIN driving from the symbol-name index. Same row set: INNER joins are commutative and every predicate (including r.project_id) is preserved.",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "generatedAt": "2026-11-01T18:54:44.827Z",
+  "subjects": {
+    "Command": {
+      "ownFacts": {
+        "oldMs": 14641.194,
+        "newMs": 26.154,
+        "rowsEqual": true,
+        "rows": 0
+      },
+      "memberFacts": {
+        "oldMs": 1214.983,
+        "newMs": 7.413,
+        "rowsEqual": true,
+        "rows": 0
+      }
+    },
+    "type": {
+      "ownFacts": {
+        "oldMs": 6908.75,
+        "newMs": 405.523,
+        "rowsEqual": true,
+        "rows": 0
+      },
+      "memberFacts": {
+        "oldMs": 2817.66,
+        "newMs": 255.81,
+        "rowsEqual": true,
+        "rows": 0
+      }
+    },
+    "file": {
+      "ownFacts": {
+        "oldMs": 4963.87,
+        "newMs": 276.312,
+        "rowsEqual": true,
+        "rows": 0
+      },
+      "memberFacts": {
+        "oldMs": 3196.681,
+        "newMs": 167.745,
+        "rowsEqual": true,
+        "rows": 0
+      }
+    }
+  }
+}

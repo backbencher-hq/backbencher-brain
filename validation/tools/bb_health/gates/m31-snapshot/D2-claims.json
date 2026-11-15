@@ -1,0 +1,467 @@
+{
+  "claims": [
+    {
+      "file": "BB_ANALYSIS_HISTORY.md",
+      "kind": "binding",
+      "claim": "doc binds to registered tool bb_security",
+      "cls": "structural",
+      "ok": true,
+      "detail": "modes=[findings]"
+    },
+    {
+      "file": "BB_ANALYZE.md",
+      "kind": "binding",
+      "claim": "doc binds to registered tool bb_analyze",
+      "cls": "structural",
+      "ok": true,
+      "detail": "modes=[callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality]"
+    },
+    {
+      "file": "BB_ASK.md",
+      "kind": "binding",
+      "claim": "doc binds to registered tool bb_ask",
+      "cls": "structural",
+      "ok": true,
+      "detail": "modes=[answer]"
+    },
+    {
+      "file": "BB_DOC.md",
+      "kind": "mutability",
+      "claim": "bb_doc mutability is read-consistent (\"read-only\")",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry mutability=read"
+    },
+    {
+      "file": "BB_DOC.md",
+      "kind": "mutability",
+      "claim": "bb_doc mutability is read-consistent (\"read-only\")",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry mutability=read"
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_doc schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "json fence classified as output/illustrative example",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no tool invocation shape matches; treated as documented output, not input"
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "json fence classified as output/illustrative example",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no tool invocation shape matches; treated as documented output, not input"
+    },
+    {
+      "file": "BB_DOC_REFERENCE.md",
+      "kind": "mutability",
+      "claim": "bb_doc mutability is read-consistent (\"Read-Only\")",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry mutability=read"
+    },
+    {
+      "file": "BB_DOC_REFERENCE.md",
+      "kind": "mutability",
+      "claim": "bb_doc mutability is read-consistent (\"does not write source files, refresh the\")",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry mutability=read"
+    },
+    {
+      "file": "BB_EDIT.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_edit schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_EDIT.md",
+      "kind": "json-fence",
+      "claim": "json fence classified as output/illustrative example",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no tool invocation shape matches; treated as documented output, not input"
+    },
+    {
+      "file": "BB_EDIT.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_edit schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_HEALTH.md",
+      "kind": "binding",
+      "claim": "doc binds to registered tool bb_health",
+      "cls": "structural",
+      "ok": true,
+      "detail": "modes=[status,refresh]"
+    },
+    {
+      "file": "BB_MIGRATE.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_migrate schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_MIGRATE.md",
+      "kind": "mutability",
+      "claim": "bb_migrate mutability is read-consistent (\"read-only\")",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry mutability=read"
+    },
+    {
+      "file": "BB_PATTERNS.md",
+      "kind": "binding",
+      "claim": "doc binds to registered tool bb_patterns",
+      "cls": "structural",
+      "ok": true,
+      "detail": "modes=[orphaned,all]"
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "mode-list",
+      "claim": "`symbols` is a real mode of bb_search",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[symbols,content,symbol,file] planned=[]"
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "mode-list",
+      "claim": "`content` is a real mode of bb_search",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[symbols,content,symbol,file] planned=[]"
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "mode-list",
+      "claim": "`symbol` is a real mode of bb_search",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[symbols,content,symbol,file] planned=[]"
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "mode-list",
+      "claim": "`file` is a real mode of bb_search",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[symbols,content,symbol,file] planned=[]"
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `query` type/enum matches schema (string)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"string\" schema=\"string\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `filePath` type/enum matches schema (string)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"string\" schema=\"string\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `mode` type/enum matches schema (string)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"`\"symbols\" \\\" schema=\"string:symbols|content|symbol|file\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `exact` type/enum matches schema (boolean)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"boolean\" schema=\"boolean\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `symbolName` type/enum matches schema (string)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"string\" schema=\"string\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `regex` type/enum matches schema (boolean)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"boolean\" schema=\"boolean\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `caseSensitive` type/enum matches schema (boolean)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"boolean\" schema=\"boolean\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `symbolKind` type/enum matches schema (string)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"string\" schema=\"string\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `language` type/enum matches schema (string)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"string\" schema=\"string\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `includeContent` type/enum matches schema (boolean)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"boolean\" schema=\"boolean\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `limit` type/enum matches schema (number)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"number\" schema=\"number\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "param-table",
+      "claim": "parameter `offset` type/enum matches schema (number)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "declared=\"number\" schema=\"number\""
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "output-fields",
+      "claim": "documented output fields ⊆ T1-observed keys (missing: none)",
+      "cls": "structural",
+      "ok": true,
+      "detail": "observed=[_relevance,byteEnd,byteStart,column,complexity,content,contentLength,context,file,fileId,freshCount,freshness,id,language...]"
+    },
+    {
+      "file": "BB_SEARCH.md",
+      "kind": "negative-claim",
+      "claim": "bb_search advertises no semantic mode",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry modes=[symbols,content,symbol,file]"
+    },
+    {
+      "file": "BB_SECURITY.md",
+      "kind": "binding",
+      "claim": "doc binds to registered tool bb_security",
+      "cls": "structural",
+      "ok": true,
+      "detail": "modes=[findings]"
+    },
+    {
+      "file": "BB_TEST_INTEL.md",
+      "kind": "binding",
+      "claim": "doc names at least one registered tool",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no public tool binding; narrative/reference page"
+    },
+    {
+      "file": "BB_TEST_QUALITY.md",
+      "kind": "binding",
+      "claim": "doc names at least one registered tool",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no public tool binding; narrative/reference page"
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_visualize schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "json-fence",
+      "claim": "invocation accepted by bb_visualize schema + runtime validator",
+      "cls": "executed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "mode-list",
+      "claim": "`project` is a real mode of bb_visualize",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[project,file,module,symbol,feature] planned=[]"
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "mode-list",
+      "claim": "`file` is a real mode of bb_visualize",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[project,file,module,symbol,feature] planned=[]"
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "mode-list",
+      "claim": "`module` is a real mode of bb_visualize",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[project,file,module,symbol,feature] planned=[]"
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "mode-list",
+      "claim": "`symbol` is a real mode of bb_visualize",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[project,file,module,symbol,feature] planned=[]"
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "mode-list",
+      "claim": "`feature` is a real mode of bb_visualize",
+      "cls": "executed",
+      "ok": true,
+      "detail": "registry modes=[project,file,module,symbol,feature] planned=[]"
+    },
+    {
+      "file": "BB_VISUALIZE.md",
+      "kind": "mutability",
+      "claim": "bb_visualize mutability is read-consistent (\"read-only\")",
+      "cls": "structural",
+      "ok": true,
+      "detail": "registry mutability=read"
+    }
+  ],
+  "unverifiable": [
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "json fence classified as output/illustrative example",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no tool invocation shape matches; treated as documented output, not input"
+    },
+    {
+      "file": "BB_DOC_EXAMPLES.md",
+      "kind": "json-fence",
+      "claim": "json fence classified as output/illustrative example",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no tool invocation shape matches; treated as documented output, not input"
+    },
+    {
+      "file": "BB_EDIT.md",
+      "kind": "json-fence",
+      "claim": "json fence classified as output/illustrative example",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no tool invocation shape matches; treated as documented output, not input"
+    },
+    {
+      "file": "BB_TEST_INTEL.md",
+      "kind": "binding",
+      "claim": "doc names at least one registered tool",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no public tool binding; narrative/reference page"
+    },
+    {
+      "file": "BB_TEST_QUALITY.md",
+      "kind": "binding",
+      "claim": "doc names at least one registered tool",
+      "cls": "unverifiable",
+      "ok": true,
+      "detail": "no public tool binding; narrative/reference page"
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.465Z",
+    "contentSha256": "31cc59d9a0e4e53dcc81fb06ed439a81ed8b3931947249bb32a9c1f7215164b1"
+  }
+}

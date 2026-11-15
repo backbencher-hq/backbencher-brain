@@ -1,0 +1,37 @@
+{
+  "issue": "A2",
+  "note": "A2 (task-35 Part B): EVERY privacy spelling binds private — defn-, ^:private, ^:private on a defmulti name, and the LEGACY #^{:private true} reader spelling on a macro and on a def. Before this fix five private declarations were exported as public. Two-direction: the public control (public-fn) keeps its export and symbol visibility 'public'.",
+  "expectSymbols": [
+    {
+      "name": "public-fn",
+      "kind": "function",
+      "visibility": "public"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "fixture.private-spellings",
+      "target": "public-fn",
+      "line_number": 11
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "hidden-multi"
+    },
+    {
+      "type": "exports",
+      "target": "hidden-fn"
+    },
+    {
+      "type": "exports",
+      "target": "hidden-macro"
+    },
+    {
+      "type": "exports",
+      "target": "hidden-var"
+    }
+  ]
+}

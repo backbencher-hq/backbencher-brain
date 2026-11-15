@@ -1,0 +1,18 @@
+{
+  "fixtureId": "kotlin/indexing-uses",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the indexing uses contract. KAD1 (M37 kotlin wave): assignment-LHS indexing is a WRITE — `xs[i] = 42` emitted a bogus uses edge for the receiver pre-fix (java gates array writes by span; kotlin had no gate; oracle derives no kotlin uses truth, so F5 could not see it). `=` and `op=` both parse as `assignment` with the LHS as first named child; the gate is span-based. The read shape (`val v = xs[i]`) still emits uses.",
+  "expectSymbols": [
+    { "name": "Indexer", "kind": "class" },
+    { "name": "read", "ownerName": "Indexer" },
+    { "name": "write", "ownerName": "Indexer" },
+    { "name": "xs", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "read", "target": "xs", "meta.evidenceClass": "usage_contextual", "comment": "KAD1: reads still emit — indexing is a read of the array reference" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "write", "target": "xs", "comment": "KAD1: assignment-LHS indexing is a WRITE — must never emit a uses edge (pre-fix leaked it)" }
+  ]
+}

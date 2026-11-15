@@ -37,7 +37,7 @@ import { execSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve((import.meta as any).dirname, "../../..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 function argOf(f: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(f)

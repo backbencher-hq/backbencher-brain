@@ -1,0 +1,136 @@
+{
+  "fixtureId": "hcl/flat-attribute-document",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Names and lines transcribed from a measured run and checked against the fixture source.",
+  "rationale": "H5 and H6 (reviews/hcl/master-review.md). A flat attribute map is a legitimate HCL document \u2014 a `*.tfvars` file is nothing else, and `language-detection.ts:47` routes `.tf`/`.tfvars`/`.tofu`/`.hcl` all to this analyzer. The attribute branch was guarded `if (key && blockPath.length > 0)`, and a top-level attribute has no enclosing block, so every one was dropped: 126 corpus files with real content produced ZERO symbols (consul's `full-config.hcl` with 30+ top-level attributes, `boundary/enos/enos.vars.hcl`, nomad's `sample2.hcl`). The second half is H6: the analyzer emitted no document root, so the containment graph was a forest with no trunk \u2014 unlike the JSON/YAML/SQL/XML convention \u2014 and every top-level item was ownerless. The root is a `module` named from the file stem, and every non-root symbol now carries an `ownerName`.",
+  "expectSymbols": [
+    {
+      "name": "flat-attribute-document",
+      "kind": "module"
+    },
+    {
+      "name": "region",
+      "kind": "property"
+    },
+    {
+      "name": "acl_master_token",
+      "kind": "property"
+    },
+    {
+      "name": "acl",
+      "kind": "property"
+    },
+    {
+      "name": "count",
+      "kind": "property"
+    },
+    {
+      "name": "list",
+      "kind": "property"
+    },
+    {
+      "name": "nested",
+      "kind": "property"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "region",
+      "startLine": 6,
+      "startColumn": 1
+    },
+    {
+      "symbol": "acl",
+      "startLine": 9,
+      "startColumn": 1
+    },
+    {
+      "symbol": "nested",
+      "startLine": 18,
+      "startColumn": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "flat-attribute-document",
+      "target": "region",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "flat-attribute-document",
+      "target": "acl_master_token",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "flat-attribute-document",
+      "target": "acl",
+      "line_number": 9
+    },
+    {
+      "type": "contains",
+      "from": "flat-attribute-document",
+      "target": "count",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "flat-attribute-document",
+      "target": "list",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "flat-attribute-document",
+      "target": "nested",
+      "line_number": 18
+    },
+    {
+      "type": "references",
+      "from": "flat-attribute-document",
+      "target": "var.not_a_reference_here",
+      "line_number": 20
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "enabled"
+    },
+    {
+      "name": "tokens"
+    },
+    {
+      "name": "master"
+    },
+    {
+      "name": "deep"
+    },
+    {
+      "name": "deeper"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "enabled",
+      "note": "object key, not a reference"
+    },
+    {
+      "type": "references",
+      "target": "tokens",
+      "note": "object key"
+    },
+    {
+      "type": "references",
+      "target": "deep"
+    },
+    {
+      "type": "references",
+      "target": "deeper"
+    }
+  ],
+  "forbidSymbolsNote": "An object literal's inner keys (enabled, tokens, master, deep, deeper) are DATA, not declarations: only the top-level attribute of a flat document is a symbol. Listed as forbidden names above."
+}

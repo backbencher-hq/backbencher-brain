@@ -1,0 +1,117 @@
+{
+  "instrument": "xml COMPLETION VERDICT",
+  "at": "2026-10-11T10:40:00-04:00",
+  "revision": "385c734dd",
+  "answer": "YES \u2014 xml is complete under the four-clause bar, with two qualifiers stated below rather than buried.",
+  "wholePopulationGate": {
+    "files": 11552,
+    "admitted": "git-tracked, xml-family suffix, <= 512 KiB, detectLanguageFromPath === 'xml'",
+    "run": "script/m14/residual-gate.ts --lane xml, current revision, ONE RUN",
+    "rows": {
+      "contains": {
+        "edges": 189310,
+        "resolved": 189310,
+        "amb": 0,
+        "unresolved": 0,
+        "residualPct": 0.0,
+        "intended": 189305,
+        "twin": 0,
+        "noDecl": 0
+      },
+      "references": {
+        "edges": 11108,
+        "resolved": 997,
+        "amb": 7582,
+        "unresolved": 12,
+        "extOK": 2517,
+        "extFail": 0,
+        "residualPct": 68.4,
+        "twin": 4137
+      },
+      "extends": {
+        "edges": 1429,
+        "resolved": 84,
+        "amb": 991,
+        "unresolved": 0,
+        "extOK": 354,
+        "residualPct": 69.3,
+        "twin": 645
+      },
+      "calls": {
+        "edges": 402,
+        "resolved": 123,
+        "amb": 279,
+        "unresolved": 0,
+        "residualPct": 69.4
+      },
+      "imports": {
+        "edges": 473,
+        "resolved": 2,
+        "amb": 0,
+        "unresolved": 265,
+        "extUnverifiable": 206,
+        "residualPct": 56.0
+      },
+      "overrides": {
+        "edges": 3,
+        "resolved": 1,
+        "amb": 2,
+        "residualPct": 66.7
+      }
+    },
+    "total": {
+      "edges": 202725,
+      "resolved": 190517,
+      "resolvedPct": 94.0,
+      "residual": 9131,
+      "extFAIL": 0,
+      "bindFAIL": 0,
+      "causeFAIL": 0,
+      "closingCheck": "all six types CLOSED \u2014 every edge in one printed bucket"
+    }
+  },
+  "clauses": {
+    "1_oneRealDeclaration": {
+      "verdict": "MET",
+      "contains": "189,310 of 189,310 resolved; intended 189,305, twin 0, noDecl 0",
+      "calls": "279 ambiguous, ALL enumerated: class `in-document`, and every one has exactly ONE declaration of the callee in its own file \u2014 the resolver's own-file rank settles them, falsifier checked at 0 of 279",
+      "references_extends_overrides": "the store-side class predicate answers these: 0 violations on the current revision (toggle control 4 vs 147), with the 4 boundary cases ruled",
+      "imports": "265 unresolved, ruled by the file-claim refutation probe (a blanket claim would REFUTE 59 times)"
+    },
+    "2_refutations": {
+      "verdict": "MET",
+      "extFAIL": 0,
+      "bindFAIL": 0,
+      "causeFAIL": 0,
+      "scope": "per type and in TOTAL, whole population"
+    },
+    "3_namedCauses": {
+      "verdict": "MET",
+      "calls_279": "cause named and counted; fixed at the store (138 -> 0 by toggle control) and ruled at the model level",
+      "references_12": "RULED: 11 of 12 declarations exist in corpus source (so an external claim would be FALSE and the gate would verify it anyway), 1 is declared nowhere",
+      "imports_265": "RULED: refutation-backed refusal (59 would-be refutations)",
+      "extends_imports_causes": "causeFAIL 0 \u2014 every declared cause verified"
+    },
+    "4_determinacy": {
+      "verdict": "MET on the measured population",
+      "contains": "whole population: intended 189,305 / twin 0 / noDecl 0; the line test applies and passes",
+      "exports": "NOT APPLICABLE \u2014 0 edges, grammar-absence, declared rather than scored",
+      "lineTestNA_types": "references/extends/calls/overrides measured with the analyzer-class predicate at the store: 0 violations on the current revision; the 4 remaining are boundary cases (3 fragment IDREFs whose documents DO declare the IDs, 1 no-source-symbol row) ruled with document-level evidence"
+    }
+  },
+  "qualifiers": [
+    "CLAUSE 4 IS STORE-SIDE AND THE STORE MEASUREMENT IS A LABELLED BOUNDED DRAW: libxslt, 1,143 files, ONE RUN PER ARM (the store is order- and run-dependent; the order churn is ~4.7-6.6% and the eager churn ~0.7%). The whole-population store run was attempted and KILLED after ~65 minutes of event-loop stalls \u2014 priced-but-unmeasured, with the watchdog evidence preserved in store-intent-split-full-attempt-KILLED.txt. Clauses 1-3 are whole-population.",
+    "ONE GRAMMAR LIMITATION IS RECORDED, NOT FIXED: `qandasetbody` (1 edge of 11,108 references, 4 sites) is labelled dangling although its document declares it in the internal subset \u2014 the pinned grammar parses that file's doctypedecl as `<! DOCTYPE Name ExternalID ERROR >`. Overturn: a grammar that parses the subset makes the edge in-document.",
+    "ONE SHARED-INDEXER GAP IS NAMED WITH ITS SCOPE: 2 of 22,426 rows in the draw carry an unbound SOURCE and a literal `null` in the row id (bug-110.xml's `&target;` is one), and the references row among them mis-binds its target cross-file. Not folded into the landed fix; fix shape stated in clause4-boundary.json."
+  ],
+  "verification": "scripts/m14 residual-gate --lane xml (whole population) \u00b7 store-intent-split.mts with BB_SIS_REPOS=libxslt (toggle control by neutering the three own-file UPDATEs with `WHERE 0 AND`) \u00b7 calls-ambiguity.mts \u00b7 clause3-audit.json \u00b7 clause4-boundary.json",
+  "raw": [
+    "verification-package.json",
+    "clause4-boundary.json",
+    "recheck-enabled-385c734dd.json",
+    "recheck-control-385c734dd.json",
+    "clause3-audit.json",
+    "calls-ruling.json",
+    "gate-verdict.txt (this run)"
+  ]
+}

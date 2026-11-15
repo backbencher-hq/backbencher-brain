@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "yul-leave",
+  "why": "grammar.js:394 — `yul_leave: 'leave'`, a bare `_yul_statement`. OpenZeppelin's 5 `yul_switch_statement`s always take a case branch.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "yul_leave",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

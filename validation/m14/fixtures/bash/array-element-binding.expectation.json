@@ -1,0 +1,147 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/array-element-binding.sh",
+ "authoredFrom": "BD12-array-element-binding. `arr[i]=v` creates the array when it does not exist, so it BINDS `arr` — a declaration in the class the analyzer already handles for `NAME=value`, a `for` loop variable (125 sites) and a `read` target (48). The pinned grammar holds that LHS one level deeper than the bare case, as `variable_assignment > subscript > variable_name`, and `extractAssignment` read only a DIRECT `variable_name` child, so the declaration published nothing. Two costs, and they are different findings: the file's own reads of the name had no declaration to resolve against, and BD11 classified every one of them as environment-supplied. Measured on the 400-file hash-order sample (production `parseFile`, 4,133 admitted / 462,809 scanned / 120 repos): 19 subscript LHS sites in 15 files, 16 distinct (file, owner, name) pairs, 5 of them unpublished, 7 of 17 reads of such a name misclassified. `probe-bash-array-element-binding.mts --base HEAD` reproduces the pre-fix population against the previous analyzer (5 unpublished, 7 misclassified); against the working tree the same probe reads 0 and 0. Against the pre-fix analyzer this fixture loses the function-scoped `COMPREPLY` symbol, its `contains` edge, `isAssignedInFile` on the line-19 read, and `targetResolution` on all three `COMPREPLY` reads.",
+ "expectSymbols": [
+  {
+   "name": "array-element-binding.sh",
+   "kind": "module"
+  },
+  {
+   "name": "NEVER_DECLARED",
+   "kind": "variable",
+   "ownerName": "array-element-binding.sh",
+   "meta.isArray": true,
+   "note": "Published ONLY by the element assignment at line 20, and the only symbol in this fixture whose `isArray` can come from nowhere else — its value is a string, so if the element-assignment arm stopped setting the flag this row reads `false`. That makes it the row that catches `bash/array-element-binding-is-array-false`, a mutant whose only casualty is a metadata claim nothing else can falsify. The only other write of `NEVER_DECLARED` in this file is the bare assignment at line 53, by which time the symbol already exists. Before the fix this file published `NEVER_DECLARED` from line 53 alone — so the reads at 19 and 21 resolved to a declaration the reader would place 34 lines later, and the flag on line 19 said the file did not assign it at all."
+  },
+  {
+   "name": "TOP_LEVEL",
+   "kind": "variable",
+   "ownerName": "array-element-binding.sh",
+   "note": "`declare -a TOP_LEVEL` at line 24 publishes it; the element assignments at 25 and 26 are re-assignments of the same (owner, name) and add nothing, exactly as a repeated `X=1` adds nothing."
+  },
+  {
+   "name": "COMPREPLY",
+   "kind": "variable",
+   "ownerName": "array-element-binding.sh",
+   "note": "`COMPREPLY=(alpha beta)` at line 33, module scope."
+  },
+  {
+   "name": "COMPREPLY",
+   "kind": "variable",
+   "ownerName": "rewrite_completion",
+   "meta.isArray": true,
+   "note": "THE ROW THIS FIX ADDS, and the half that was invisible. The file already publishes `COMPREPLY` at module scope, so adjudicating the element binding at line 37 by BARE NAME reads it as already-published and drops it — which is exactly what this lane's own probe did before it was corrected. `extractAssignment` keys on `${owner}\\u0000${name}` and bash scopes them apart, so this is a second, function-local declaration of the same name, and the round-11 `innermostScope` rule exists to attribute reads to it."
+  },
+  {
+   "name": "rewrite_completion",
+   "kind": "function",
+   "ownerName": "array-element-binding.sh"
+  },
+  {
+   "name": "i",
+   "kind": "variable",
+   "ownerName": "rewrite_completion",
+   "meta.isArray": false,
+   "note": "The contrast for the `isArray` pair: declared by `local i`, whose value node is not an `array`, so the flag is `false` here and `true` on `NEVER_DECLARED`. A fixture that asserted `true` on the array alone would pass an implementation that set it unconditionally; these two rows cannot both be satisfied by that."
+  },
+  {
+   "name": "declare_local_array",
+   "kind": "function",
+   "ownerName": "array-element-binding.sh"
+  },
+  {
+   "name": "scoped",
+   "kind": "variable",
+   "ownerName": "declare_local_array",
+   "note": "`local -a scoped` at line 45, which reaches the analyzer through `extractDeclaration` rather than `extractAssignment` — kept so the element-assignment path is a contrast and not the only thing exercised."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "scoped",
+   "ownerName": "rewrite_completion",
+   "note": "A negative row that must match nothing: `scoped` is declared only inside `declare_local_array`, so an owner-blind publication would put it here too. This is the same failure mode as the bare-name adjudication, one level up."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "array-element-binding.sh",
+   "target": "NEVER_DECLARED",
+   "line_number": 19,
+   "meta.isAssignedInFile": true,
+   "note": "A read BEFORE the file's first binding of the name, which is at line 20. BD11's contract is file-level — 'set when the file assigns the name under any owner' — so this must carry the flag, and 'use before assign' is not an excuse: the field does not claim to answer whether the name is bound YET at this line. This row and the next are the fixture's reason for existing."
+  },
+  {
+   "type": "uses",
+   "from": "array-element-binding.sh",
+   "target": "array-element-binding.sh.NEVER_DECLARED",
+   "line_number": 21,
+   "meta.isAssignedInFile": true,
+   "note": "The same name, in the same file, AFTER the binding this time. Before the fix this row carried the flag and line 19 did not — the contradiction `probe-bash-assigned-flag-order.mts` found in 37 (file, target) pairs across 25 files, reproduced in three lines. A read of a name this file never binds must still be pinned as ABSENT, so `bash/assigned-in-file` covers the negative direction and this file the positive one."
+  },
+  {
+   "type": "uses",
+   "from": "array-element-binding.sh",
+   "target": "array-element-binding.sh.TOP_LEVEL",
+   "line_number": 27,
+   "meta.isAssignedInFile": true
+  },
+  {
+   "type": "uses",
+   "from": "rewrite_completion",
+   "target": "array-element-binding.sh.COMPREPLY",
+   "line_number": 36,
+   "meta.targetResolution": "outerScope",
+   "meta.targetLine": 33,
+   "note": "The read at line 36 sees TWO declarations of `COMPREPLY` in this file — module at 33 and function at 37 — so the edge must publish which one it means. `outerScope` names the module one, because the function-local binding is declared AFTER this read. Without the fix the function-local declaration did not exist and this edge published nothing at all."
+  },
+  {
+   "type": "uses",
+   "from": "rewrite_completion",
+   "target": "rewrite_completion.COMPREPLY",
+   "line_number": 37,
+   "meta.targetResolution": "innermostScope",
+   "meta.targetLine": 37,
+   "note": "One line later the innermost scope is the function-local array at 37, and the edge says so. Two adjacent lines, two different declarations, both named: this pair is what makes the fixture a contrast rather than one row any single rule could satisfy."
+  },
+  {
+   "type": "contains",
+   "from": "array-element-binding.sh",
+   "target": "NEVER_DECLARED",
+   "line_number": 20,
+   "note": "`contains` carries the line the child's NAME is written on (BD1 / M60 #921), which for an element assignment is the assignment's own line."
+  },
+  {
+   "type": "contains",
+   "from": "array-element-binding.sh",
+   "target": "TOP_LEVEL",
+   "line_number": 24
+  },
+  {
+   "type": "contains",
+   "from": "array-element-binding.sh",
+   "target": "COMPREPLY",
+   "line_number": 33
+  },
+  {
+   "type": "contains",
+   "from": "rewrite_completion",
+   "target": "COMPREPLY",
+   "line_number": 37,
+   "note": "The second of the two `COMPREPLY` declarations, and the incoming half of the same finding. Before the fix this edge did not exist, so `bb_impact` on the function-local array found nothing and a walk to `COMPREPLY` from `rewrite_completion` reached only the module declaration."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "rewrite_completion",
+   "target": "COMPREPLY",
+   "line_number": 39,
+   "meta.targetLine": 33,
+   "note": "The read at line 39 (`${COMPREPLY[@]}`) is AFTER the function-local binding at 37, so it must resolve to 37 and NOT to the module array at 33. Asserted as a forbid because a scope-blind walk answers 33 — the exact failure mode of the round-11 `exports-resolution-inverted` mutant, which survived because its fixture asserted one row where the mutant could produce either answer. Here the positive row at 37 and this negative row are both required. This row is also VACUOUS against the pre-fix analyzer, which published no attribution for this name at all; it guards a wrong implementation of the fix, not the absence of one."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

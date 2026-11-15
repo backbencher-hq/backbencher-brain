@@ -1,0 +1,12 @@
+@use 'sass:map' as map;
+@use 'sass/list' as *;
+@forward 'src/list';
+
+@mixin button($bg: #fff, $size: 4px) {
+  background: $bg;
+  padding: $size;
+}
+
+.card {
+  @include button(#eee, 8px);
+}

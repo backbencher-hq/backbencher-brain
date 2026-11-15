@@ -1,0 +1,20 @@
+{
+  "fixtureId": "java/member-read-source",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W15 #814 (owner ruling: converge the family on METHOD source). The java analyzer sourced `this`/`super` field reads to the enclosing TYPE — the JAD2 exception, whose stated justification was the swift precedent, while every other receiver already resolved to the enclosing method. The ruling moved javascript/java/swift onto method-source (python/dart/cpp already agreed), so a member read is attributed to the method that performs it and `x calls read` + `read uses count` composes into reachability. `bump()` pins the JAD1 write gate in the same fixture: an assignment LHS is a write and must emit no uses edge at all — the old contract could not distinguish these two directions because both collapsed onto the type-sourced pair.",
+  "expectSymbols": [
+    { "name": "Store", "kind": "class" },
+    { "name": "count", "kind": "property", "ownerName": "Store" },
+    { "name": "read", "kind": "method", "ownerName": "Store" },
+    { "name": "bump", "kind": "method", "ownerName": "Store" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "Store", "target": "count" },
+    { "type": "uses", "source": "read", "target": "count", "meta.isFieldAccess": true, "note": "#814: source = the enclosing METHOD. Pre-ruling this edge was `Store -> count`, indistinguishable from the JAD1 write spelling below" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "Store", "target": "count", "note": "#814: the TYPE-sourced spelling is now the DEFECT spelling (mutant java/type-source-revert produces exactly this)" },
+    { "type": "uses", "source": "bump", "target": "count", "note": "JAD1: `this.count = 1` is a write, never a read" }
+  ]
+}

@@ -1,0 +1,1445 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C analyzer scaling: per-shape exponent, and real-corpus cost per KB",
+  "generatedAt": "2026-09-30T03:54:46.537Z",
+  "method": "each shape swept INDEPENDENTLY (methods, properties, distinct selectors, one receiver with many sends, enum members, imports) because a single size sweep varies size and symbol density together and cannot attribute a slope to either. Each shape in two variants — regular identifiers, and randomised identifiers with the same structure — because generated input is regular and a resolver that is accidentally linear on repeated structure would look quadratic here. Wall time is parse+analyze with one warm-up parse excluded; the exponent is fitted on log-log time and the per-doubling ratio is reported beside it because the ratio is what a reader can check by hand.",
+  "why": "the shared O(n^2) this repo already fixed was found on YAML and was SHARED, so it is not what this probe is looking for. It is looking for three Objective-C-specific shapes nothing has ever timed: symbol density (the highest in the corpus per byte), selector cost (a selector is not a name, and edges dedup on type|source→target), and per-file cost carrying cross-file state.",
+  "estimator": "minimum of N reps (N=7 for n<=1000, 5 above), with the mean and the min/mean spread recorded per point so a noisy measurement is visible rather than hidden",
+  "shapes": [
+    {
+      "shape": "methods",
+      "variant": "regular",
+      "fit": {
+        "exponent": 0.92,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 1.948,
+            "reliable": true
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.506,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 2.072,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 1.981,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 2.091,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.948,
+          1.506,
+          2.072,
+          1.981,
+          2.091
+        ],
+        "worstPerDoubling": 2.091,
+        "unreliablePoints": 0,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 12001,
+          "ms": 143.29,
+          "meanMs": 201.19,
+          "noiseSpread": 1.4,
+          "symbols": 126,
+          "relationships": 502
+        },
+        {
+          "n": 250,
+          "bytes": 24126,
+          "ms": 279.14,
+          "meanMs": 416.84,
+          "noiseSpread": 1.49,
+          "symbols": 251,
+          "relationships": 1002
+        },
+        {
+          "n": 500,
+          "bytes": 48376,
+          "ms": 420.32,
+          "meanMs": 525.28,
+          "noiseSpread": 1.25,
+          "symbols": 501,
+          "relationships": 2002
+        },
+        {
+          "n": 1000,
+          "bytes": 96876,
+          "ms": 870.93,
+          "meanMs": 1180.29,
+          "noiseSpread": 1.36,
+          "symbols": 1001,
+          "relationships": 4002
+        },
+        {
+          "n": 2000,
+          "bytes": 195876,
+          "ms": 1724.89,
+          "meanMs": 2229.45,
+          "noiseSpread": 1.29,
+          "symbols": 2001,
+          "relationships": 8002
+        },
+        {
+          "n": 4000,
+          "bytes": 393876,
+          "ms": 3606.91,
+          "meanMs": 4547.64,
+          "noiseSpread": 1.26,
+          "symbols": 4001,
+          "relationships": 16002
+        }
+      ]
+    },
+    {
+      "shape": "methods",
+      "variant": "shuffled",
+      "fit": {
+        "exponent": 1.003,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 1.67,
+            "reliable": true
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 2.757,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 1.568,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.038,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 2.191,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.67,
+          2.757,
+          1.568,
+          2.038,
+          2.191
+        ],
+        "worstPerDoubling": 2.757,
+        "unreliablePoints": 0,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 13488,
+          "ms": 115.86,
+          "meanMs": 188.92,
+          "noiseSpread": 1.63,
+          "symbols": 251,
+          "relationships": 627
+        },
+        {
+          "n": 250,
+          "bytes": 27085,
+          "ms": 193.52,
+          "meanMs": 215.37,
+          "noiseSpread": 1.11,
+          "symbols": 501,
+          "relationships": 1252
+        },
+        {
+          "n": 500,
+          "bytes": 54301,
+          "ms": 533.54,
+          "meanMs": 654.61,
+          "noiseSpread": 1.23,
+          "symbols": 1001,
+          "relationships": 2502
+        },
+        {
+          "n": 1000,
+          "bytes": 108759,
+          "ms": 836.37,
+          "meanMs": 1147.09,
+          "noiseSpread": 1.37,
+          "symbols": 2001,
+          "relationships": 5002
+        },
+        {
+          "n": 2000,
+          "bytes": 219634,
+          "ms": 1704.51,
+          "meanMs": 1943.59,
+          "noiseSpread": 1.14,
+          "symbols": 4001,
+          "relationships": 10002
+        },
+        {
+          "n": 4000,
+          "bytes": 441368,
+          "ms": 3734.41,
+          "meanMs": 4426.11,
+          "noiseSpread": 1.19,
+          "symbols": 8001,
+          "relationships": 20002
+        }
+      ]
+    },
+    {
+      "shape": "properties",
+      "variant": "regular",
+      "fit": {
+        "exponent": 0.848,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 3.099,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.461,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 1.408,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.05,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.843,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.461,
+          1.408,
+          2.05,
+          1.843
+        ],
+        "worstPerDoubling": 2.05,
+        "unreliablePoints": 1,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 5708,
+          "ms": 38.17,
+          "meanMs": 44.92,
+          "noiseSpread": 1.18,
+          "symbols": 126,
+          "relationships": 127
+        },
+        {
+          "n": 250,
+          "bytes": 11458,
+          "ms": 118.29,
+          "meanMs": 136.49,
+          "noiseSpread": 1.15,
+          "symbols": 251,
+          "relationships": 252
+        },
+        {
+          "n": 500,
+          "bytes": 22958,
+          "ms": 172.86,
+          "meanMs": 240.09,
+          "noiseSpread": 1.39,
+          "symbols": 501,
+          "relationships": 502
+        },
+        {
+          "n": 1000,
+          "bytes": 45958,
+          "ms": 243.47,
+          "meanMs": 413.36,
+          "noiseSpread": 1.7,
+          "symbols": 1001,
+          "relationships": 1002
+        },
+        {
+          "n": 2000,
+          "bytes": 92958,
+          "ms": 499.1,
+          "meanMs": 678.75,
+          "noiseSpread": 1.36,
+          "symbols": 2001,
+          "relationships": 2002
+        },
+        {
+          "n": 4000,
+          "bytes": 186958,
+          "ms": 919.78,
+          "meanMs": 1049.32,
+          "noiseSpread": 1.14,
+          "symbols": 4001,
+          "relationships": 4002
+        }
+      ]
+    },
+    {
+      "shape": "properties",
+      "variant": "shuffled",
+      "fit": {
+        "exponent": 1.024,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 2.503,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.418,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 2.506,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.177,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.809,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.418,
+          2.506,
+          2.177,
+          1.809
+        ],
+        "worstPerDoubling": 2.506,
+        "unreliablePoints": 1,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 6453,
+          "ms": 25.41,
+          "meanMs": 31.56,
+          "noiseSpread": 1.24,
+          "symbols": 126,
+          "relationships": 127
+        },
+        {
+          "n": 250,
+          "bytes": 12942,
+          "ms": 63.61,
+          "meanMs": 80.61,
+          "noiseSpread": 1.27,
+          "symbols": 251,
+          "relationships": 252
+        },
+        {
+          "n": 500,
+          "bytes": 25923,
+          "ms": 90.17,
+          "meanMs": 112.69,
+          "noiseSpread": 1.25,
+          "symbols": 501,
+          "relationships": 502
+        },
+        {
+          "n": 1000,
+          "bytes": 51899,
+          "ms": 225.93,
+          "meanMs": 266.63,
+          "noiseSpread": 1.18,
+          "symbols": 1001,
+          "relationships": 1002
+        },
+        {
+          "n": 2000,
+          "bytes": 104832,
+          "ms": 491.91,
+          "meanMs": 602.07,
+          "noiseSpread": 1.22,
+          "symbols": 2001,
+          "relationships": 2002
+        },
+        {
+          "n": 4000,
+          "bytes": 210706,
+          "ms": 889.66,
+          "meanMs": 935.94,
+          "noiseSpread": 1.05,
+          "symbols": 4001,
+          "relationships": 4002
+        }
+      ]
+    },
+    {
+      "shape": "distinct-selectors",
+      "variant": "regular",
+      "fit": {
+        "exponent": 0.938,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 1.979,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 2.336,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 1.618,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.039,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.655,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          2.336,
+          1.618,
+          2.039,
+          1.655
+        ],
+        "worstPerDoubling": 2.336,
+        "unreliablePoints": 1,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 4013,
+          "ms": 38.8,
+          "meanMs": 60.63,
+          "noiseSpread": 1.56,
+          "symbols": 2,
+          "relationships": 127
+        },
+        {
+          "n": 250,
+          "bytes": 8388,
+          "ms": 76.78,
+          "meanMs": 135.7,
+          "noiseSpread": 1.77,
+          "symbols": 2,
+          "relationships": 252
+        },
+        {
+          "n": 500,
+          "bytes": 17138,
+          "ms": 179.34,
+          "meanMs": 270.61,
+          "noiseSpread": 1.51,
+          "symbols": 2,
+          "relationships": 502
+        },
+        {
+          "n": 1000,
+          "bytes": 34638,
+          "ms": 290.13,
+          "meanMs": 358.75,
+          "noiseSpread": 1.24,
+          "symbols": 2,
+          "relationships": 1002
+        },
+        {
+          "n": 2000,
+          "bytes": 73638,
+          "ms": 591.65,
+          "meanMs": 713.14,
+          "noiseSpread": 1.21,
+          "symbols": 2,
+          "relationships": 2002
+        },
+        {
+          "n": 4000,
+          "bytes": 151638,
+          "ms": 979.11,
+          "meanMs": 1106.99,
+          "noiseSpread": 1.13,
+          "symbols": 2,
+          "relationships": 4002
+        }
+      ]
+    },
+    {
+      "shape": "distinct-selectors",
+      "variant": "shuffled",
+      "fit": {
+        "exponent": 0.984,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 3.838,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.501,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 1.487,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.574,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.735,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.501,
+          1.487,
+          2.574,
+          1.735
+        ],
+        "worstPerDoubling": 2.574,
+        "unreliablePoints": 1,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 4758,
+          "ms": 24.95,
+          "meanMs": 29.12,
+          "noiseSpread": 1.17,
+          "symbols": 2,
+          "relationships": 127
+        },
+        {
+          "n": 250,
+          "bytes": 9872,
+          "ms": 95.75,
+          "meanMs": 153.25,
+          "noiseSpread": 1.6,
+          "symbols": 2,
+          "relationships": 252
+        },
+        {
+          "n": 500,
+          "bytes": 20103,
+          "ms": 143.74,
+          "meanMs": 172.64,
+          "noiseSpread": 1.2,
+          "symbols": 2,
+          "relationships": 502
+        },
+        {
+          "n": 1000,
+          "bytes": 40579,
+          "ms": 213.69,
+          "meanMs": 241.67,
+          "noiseSpread": 1.13,
+          "symbols": 2,
+          "relationships": 1002
+        },
+        {
+          "n": 2000,
+          "bytes": 85512,
+          "ms": 550.14,
+          "meanMs": 692.27,
+          "noiseSpread": 1.26,
+          "symbols": 2,
+          "relationships": 2002
+        },
+        {
+          "n": 4000,
+          "bytes": 175386,
+          "ms": 954.34,
+          "meanMs": 1086.48,
+          "noiseSpread": 1.14,
+          "symbols": 2,
+          "relationships": 4002
+        }
+      ]
+    },
+    {
+      "shape": "same-receiver-many-sends",
+      "variant": "regular",
+      "fit": {
+        "exponent": 1.046,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 1.961,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 2.381,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 2.05,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 1.641,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 2.534,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          2.381,
+          2.05,
+          1.641,
+          2.534
+        ],
+        "worstPerDoubling": 2.534,
+        "unreliablePoints": 1,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 5093,
+          "ms": 44.17,
+          "meanMs": 84.01,
+          "noiseSpread": 1.9,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 250,
+          "bytes": 10218,
+          "ms": 86.62,
+          "meanMs": 99.23,
+          "noiseSpread": 1.15,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 500,
+          "bytes": 20468,
+          "ms": 206.26,
+          "meanMs": 275.09,
+          "noiseSpread": 1.33,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 1000,
+          "bytes": 40968,
+          "ms": 422.81,
+          "meanMs": 734.64,
+          "noiseSpread": 1.74,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 2000,
+          "bytes": 82968,
+          "ms": 693.85,
+          "meanMs": 988.2,
+          "noiseSpread": 1.42,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 4000,
+          "bytes": 166968,
+          "ms": 1758.11,
+          "meanMs": 2166.25,
+          "noiseSpread": 1.23,
+          "symbols": 2,
+          "relationships": 3
+        }
+      ]
+    },
+    {
+      "shape": "same-receiver-many-sends",
+      "variant": "shuffled",
+      "fit": {
+        "exponent": 1.057,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 2.13,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.959,
+            "reliable": true
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 2.036,
+            "reliable": true
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.206,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 2.115,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.959,
+          2.036,
+          2.206,
+          2.115
+        ],
+        "worstPerDoubling": 2.206,
+        "unreliablePoints": 1,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 5093,
+          "ms": 37.72,
+          "meanMs": 58.51,
+          "noiseSpread": 1.55,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 250,
+          "bytes": 10218,
+          "ms": 80.33,
+          "meanMs": 91.36,
+          "noiseSpread": 1.14,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 500,
+          "bytes": 20468,
+          "ms": 157.37,
+          "meanMs": 205.57,
+          "noiseSpread": 1.31,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 1000,
+          "bytes": 40968,
+          "ms": 320.41,
+          "meanMs": 413.84,
+          "noiseSpread": 1.29,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 2000,
+          "bytes": 82968,
+          "ms": 706.81,
+          "meanMs": 767.54,
+          "noiseSpread": 1.09,
+          "symbols": 2,
+          "relationships": 3
+        },
+        {
+          "n": 4000,
+          "bytes": 166968,
+          "ms": 1494.66,
+          "meanMs": 1688.27,
+          "noiseSpread": 1.13,
+          "symbols": 2,
+          "relationships": 3
+        }
+      ]
+    },
+    {
+      "shape": "enum-members",
+      "variant": "regular",
+      "fit": {
+        "exponent": 0.989,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 1.746,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.59,
+            "reliable": false
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 2.357,
+            "reliable": false
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 1.833,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 2.679,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.833,
+          2.679
+        ],
+        "worstPerDoubling": 2.679,
+        "unreliablePoints": 3,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 1977,
+          "ms": 9.96,
+          "meanMs": 13.63,
+          "noiseSpread": 1.37,
+          "symbols": 126,
+          "relationships": 126
+        },
+        {
+          "n": 250,
+          "bytes": 4102,
+          "ms": 17.38,
+          "meanMs": 29,
+          "noiseSpread": 1.67,
+          "symbols": 251,
+          "relationships": 251
+        },
+        {
+          "n": 500,
+          "bytes": 8352,
+          "ms": 27.63,
+          "meanMs": 51.37,
+          "noiseSpread": 1.86,
+          "symbols": 501,
+          "relationships": 501
+        },
+        {
+          "n": 1000,
+          "bytes": 16852,
+          "ms": 65.14,
+          "meanMs": 106.99,
+          "noiseSpread": 1.64,
+          "symbols": 1001,
+          "relationships": 1001
+        },
+        {
+          "n": 2000,
+          "bytes": 35852,
+          "ms": 119.39,
+          "meanMs": 172.47,
+          "noiseSpread": 1.44,
+          "symbols": 2001,
+          "relationships": 2001
+        },
+        {
+          "n": 4000,
+          "bytes": 73852,
+          "ms": 319.88,
+          "meanMs": 384.42,
+          "noiseSpread": 1.2,
+          "symbols": 4001,
+          "relationships": 4001
+        }
+      ]
+    },
+    {
+      "shape": "enum-members",
+      "variant": "shuffled",
+      "fit": {
+        "exponent": 1.003,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 2.073,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.742,
+            "reliable": false
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 3.859,
+            "reliable": false
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 1.133,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.856,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.133,
+          1.856
+        ],
+        "worstPerDoubling": 1.856,
+        "unreliablePoints": 3,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 2722,
+          "ms": 8.37,
+          "meanMs": 11.86,
+          "noiseSpread": 1.42,
+          "symbols": 126,
+          "relationships": 126
+        },
+        {
+          "n": 250,
+          "bytes": 5586,
+          "ms": 17.34,
+          "meanMs": 26.11,
+          "noiseSpread": 1.51,
+          "symbols": 251,
+          "relationships": 251
+        },
+        {
+          "n": 500,
+          "bytes": 11317,
+          "ms": 30.2,
+          "meanMs": 48.22,
+          "noiseSpread": 1.6,
+          "symbols": 501,
+          "relationships": 501
+        },
+        {
+          "n": 1000,
+          "bytes": 22793,
+          "ms": 116.57,
+          "meanMs": 136.16,
+          "noiseSpread": 1.17,
+          "symbols": 1001,
+          "relationships": 1001
+        },
+        {
+          "n": 2000,
+          "bytes": 47726,
+          "ms": 132.1,
+          "meanMs": 215.11,
+          "noiseSpread": 1.63,
+          "symbols": 2001,
+          "relationships": 2001
+        },
+        {
+          "n": 4000,
+          "bytes": 97600,
+          "ms": 245.24,
+          "meanMs": 307.74,
+          "noiseSpread": 1.25,
+          "symbols": 4001,
+          "relationships": 4001
+        }
+      ]
+    },
+    {
+      "shape": "imports",
+      "variant": "regular",
+      "fit": {
+        "exponent": 1.036,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 2.275,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 2.048,
+            "reliable": false
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 1.833,
+            "reliable": false
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 2.55,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.6,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          2.55,
+          1.6
+        ],
+        "worstPerDoubling": 2.55,
+        "unreliablePoints": 3,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 2175,
+          "ms": 6.53,
+          "meanMs": 7.04,
+          "noiseSpread": 1.08,
+          "symbols": 0,
+          "relationships": 126
+        },
+        {
+          "n": 250,
+          "bytes": 4425,
+          "ms": 14.86,
+          "meanMs": 24.46,
+          "noiseSpread": 1.65,
+          "symbols": 0,
+          "relationships": 251
+        },
+        {
+          "n": 500,
+          "bytes": 8925,
+          "ms": 30.44,
+          "meanMs": 47.39,
+          "noiseSpread": 1.56,
+          "symbols": 0,
+          "relationships": 501
+        },
+        {
+          "n": 1000,
+          "bytes": 17925,
+          "ms": 55.81,
+          "meanMs": 73.98,
+          "noiseSpread": 1.33,
+          "symbols": 0,
+          "relationships": 1001
+        },
+        {
+          "n": 2000,
+          "bytes": 36925,
+          "ms": 142.32,
+          "meanMs": 213.8,
+          "noiseSpread": 1.5,
+          "symbols": 0,
+          "relationships": 2001
+        },
+        {
+          "n": 4000,
+          "bytes": 74925,
+          "ms": 227.65,
+          "meanMs": 302.05,
+          "noiseSpread": 1.33,
+          "symbols": 0,
+          "relationships": 4001
+        }
+      ]
+    },
+    {
+      "shape": "imports",
+      "variant": "shuffled",
+      "fit": {
+        "exponent": 0.907,
+        "perDoubling": [
+          {
+            "from": 125,
+            "to": 250,
+            "ratio": 2.428,
+            "reliable": false
+          },
+          {
+            "from": 250,
+            "to": 500,
+            "ratio": 1.46,
+            "reliable": false
+          },
+          {
+            "from": 500,
+            "to": 1000,
+            "ratio": 1.876,
+            "reliable": false
+          },
+          {
+            "from": 1000,
+            "to": 2000,
+            "ratio": 1.972,
+            "reliable": true
+          },
+          {
+            "from": 2000,
+            "to": 4000,
+            "ratio": 1.988,
+            "reliable": true
+          }
+        ],
+        "reliablePerDoubling": [
+          1.972,
+          1.988
+        ],
+        "worstPerDoubling": 1.988,
+        "unreliablePoints": 3,
+        "linear": true,
+        "quadratic": false
+      },
+      "points": [
+        {
+          "n": 125,
+          "bytes": 2920,
+          "ms": 7.72,
+          "meanMs": 13.35,
+          "noiseSpread": 1.73,
+          "symbols": 0,
+          "relationships": 126
+        },
+        {
+          "n": 250,
+          "bytes": 5909,
+          "ms": 18.74,
+          "meanMs": 29.32,
+          "noiseSpread": 1.56,
+          "symbols": 0,
+          "relationships": 251
+        },
+        {
+          "n": 500,
+          "bytes": 11890,
+          "ms": 27.36,
+          "meanMs": 32.54,
+          "noiseSpread": 1.19,
+          "symbols": 0,
+          "relationships": 501
+        },
+        {
+          "n": 1000,
+          "bytes": 23866,
+          "ms": 51.32,
+          "meanMs": 62.22,
+          "noiseSpread": 1.21,
+          "symbols": 0,
+          "relationships": 1001
+        },
+        {
+          "n": 2000,
+          "bytes": 48799,
+          "ms": 101.23,
+          "meanMs": 122.92,
+          "noiseSpread": 1.21,
+          "symbols": 0,
+          "relationships": 2001
+        },
+        {
+          "n": 4000,
+          "bytes": 98673,
+          "ms": 201.24,
+          "meanMs": 249,
+          "noiseSpread": 1.24,
+          "symbols": 0,
+          "relationships": 4001
+        }
+      ]
+    }
+  ],
+  "realCorpus": {
+    "files": 28,
+    "perKb": [
+      {
+        "file": "AFNetworking/AFURLSessionManager.m",
+        "kb": 55.6,
+        "ms": 124.69,
+        "msPerKb": 2.24
+      },
+      {
+        "file": "AFNetworking/AFURLRequestSerialization.m",
+        "kb": 51.3,
+        "ms": 125.29,
+        "msPerKb": 2.44
+      },
+      {
+        "file": "AFNetworking/AFURLSessionManager.h",
+        "kb": 32.1,
+        "ms": 18.6,
+        "msPerKb": 0.58
+      },
+      {
+        "file": "AFNetworking/AFURLResponseSerialization.m",
+        "kb": 26.8,
+        "ms": 58.02,
+        "msPerKb": 2.16
+      },
+      {
+        "file": "AFNetworking/AFURLRequestSerialization.h",
+        "kb": 22.3,
+        "ms": 19.02,
+        "msPerKb": 0.85
+      },
+      {
+        "file": "AFNetworking/AFHTTPSessionManager.h",
+        "kb": 19.5,
+        "ms": 20.97,
+        "msPerKb": 1.08
+      },
+      {
+        "file": "AFNetworking/AFHTTPSessionManager.m",
+        "kb": 15.3,
+        "ms": 55.53,
+        "msPerKb": 3.62
+      },
+      {
+        "file": "AFNetworking/AFSecurityPolicy.m",
+        "kb": 12.5,
+        "ms": 52.45,
+        "msPerKb": 4.21
+      },
+      {
+        "file": "AFNetworking/AFURLResponseSerialization.h",
+        "kb": 12.3,
+        "ms": 5.38,
+        "msPerKb": 0.44
+      },
+      {
+        "file": "AFNetworking/AFNetworkReachabilityManager.m",
+        "kb": 10,
+        "ms": 34.71,
+        "msPerKb": 3.48
+      },
+      {
+        "file": "AFNetworking/AFNetworkReachabilityManager.h",
+        "kb": 8,
+        "ms": 4.89,
+        "msPerKb": 0.61
+      },
+      {
+        "file": "Examples/SDWebImage Demo/MasterViewController.m",
+        "kb": 7.7,
+        "ms": 21.1,
+        "msPerKb": 2.75
+      },
+      {
+        "file": "Examples/SDWebImage OSX Demo/ViewController.m",
+        "kb": 6.3,
+        "ms": 23.44,
+        "msPerKb": 3.72
+      },
+      {
+        "file": "AFNetworking/AFSecurityPolicy.h",
+        "kb": 5.8,
+        "ms": 2.56,
+        "msPerKb": 0.44
+      },
+      {
+        "file": "Examples/SDWebImage Demo/AppDelegate.m",
+        "kb": 3.8,
+        "ms": 7.07,
+        "msPerKb": 1.87
+      },
+      {
+        "file": "Examples/SDWebImage Demo/DetailViewController.m",
+        "kb": 3.4,
+        "ms": 12.12,
+        "msPerKb": 3.59
+      },
+      {
+        "file": "Examples/SDWebImage OSX Demo/AppDelegate.m",
+        "kb": 1.6,
+        "ms": 3.38,
+        "msPerKb": 2.07
+      },
+      {
+        "file": "Example/Classes/Models/Post.h",
+        "kb": 1.6,
+        "ms": 1.07,
+        "msPerKb": 0.68
+      }
+    ],
+    "slowest": [
+      {
+        "file": "AFNetworking/AFURLSessionManager.m",
+        "bytes": 56906,
+        "ms": 124.69,
+        "noiseSpread": 1.42,
+        "symbols": 133,
+        "rels": 546
+      },
+      {
+        "file": "AFNetworking/AFURLRequestSerialization.m",
+        "bytes": 52515,
+        "ms": 125.29,
+        "noiseSpread": 1.42,
+        "symbols": 151,
+        "rels": 721
+      },
+      {
+        "file": "AFNetworking/AFURLSessionManager.h",
+        "bytes": 32857,
+        "ms": 18.6,
+        "noiseSpread": 1.68,
+        "symbols": 50,
+        "rels": 54
+      },
+      {
+        "file": "AFNetworking/AFURLResponseSerialization.m",
+        "bytes": 27460,
+        "ms": 58.02,
+        "noiseSpread": 1.5,
+        "symbols": 66,
+        "rels": 293
+      },
+      {
+        "file": "AFNetworking/AFURLRequestSerialization.h",
+        "bytes": 22875,
+        "ms": 19.02,
+        "noiseSpread": 1.48,
+        "symbols": 44,
+        "rels": 44
+      },
+      {
+        "file": "AFNetworking/AFHTTPSessionManager.h",
+        "bytes": 19957,
+        "ms": 20.97,
+        "noiseSpread": 1.48,
+        "symbols": 16,
+        "rels": 33
+      },
+      {
+        "file": "AFNetworking/AFHTTPSessionManager.m",
+        "bytes": 15718,
+        "ms": 55.53,
+        "noiseSpread": 2.05,
+        "symbols": 24,
+        "rels": 212
+      },
+      {
+        "file": "AFNetworking/AFSecurityPolicy.m",
+        "bytes": 12772,
+        "ms": 52.45,
+        "noiseSpread": 1.28,
+        "symbols": 22,
+        "rels": 162
+      }
+    ]
+  },
+  "verdict": "no shape is quadratic. exponents: methods/regular 0.92, methods/shuffled 1.003, properties/regular 0.848, properties/shuffled 1.024, distinct-selectors/regular 0.938, distinct-selectors/shuffled 0.984, same-receiver-many-sends/regular 1.046, same-receiver-many-sends/shuffled 1.057, enum-members/regular 0.989, enum-members/shuffled 1.003, imports/regular 1.036, imports/shuffled 0.907. worst RELIABLE per-doubling (both points >=50ms) 2.757, 2.0 being the quadratic boundary; ratios below that floor are recorded but excluded, since one shape here reads 186.6 then 173.1 ms and a series that goes backwards is measuring the machine. 0 shape/variant pair(s) outside the linear band. Estimator: minimum of N, with min/mean spread recorded per point — the first run of this probe used a MEAN and reported a worst per-doubling of 5.5, which was measurement noise, not the analyzer."
+}

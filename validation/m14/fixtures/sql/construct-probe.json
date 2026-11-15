@@ -1,0 +1,4186 @@
+{
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedFiles": 1946,
+  "parsed": 1946,
+  "parseFailures": 0,
+  "grammarWasm": "wasm/tree-sitter-sql.wasm",
+  "distinctNodeTypes": 480,
+  "grammarVocabulary": [
+    {
+      "type": "identifier",
+      "n": 199322,
+      "fields": []
+    },
+    {
+      "type": ",",
+      "n": 87536,
+      "fields": []
+    },
+    {
+      "type": "object_reference",
+      "n": 80052,
+      "fields": [
+        "database",
+        "name",
+        "schema"
+      ]
+    },
+    {
+      "type": "field",
+      "n": 60259,
+      "fields": [
+        "column",
+        "expression",
+        "function",
+        "name"
+      ]
+    },
+    {
+      "type": "literal",
+      "n": 59583,
+      "fields": []
+    },
+    {
+      "type": "term",
+      "n": 51551,
+      "fields": [
+        "alias",
+        "value"
+      ]
+    },
+    {
+      "type": ")",
+      "n": 51382,
+      "fields": []
+    },
+    {
+      "type": "(",
+      "n": 51307,
+      "fields": []
+    },
+    {
+      "type": ".",
+      "n": 43887,
+      "fields": []
+    },
+    {
+      "type": "binary_expression",
+      "n": 32567,
+      "fields": [
+        "left",
+        "operator",
+        "right"
+      ]
+    },
+    {
+      "type": ";",
+      "n": 30147,
+      "fields": []
+    },
+    {
+      "type": "comment",
+      "n": 27800,
+      "fields": []
+    },
+    {
+      "type": "statement",
+      "n": 20992,
+      "fields": []
+    },
+    {
+      "type": "keyword_as",
+      "n": 20809,
+      "fields": []
+    },
+    {
+      "type": "=",
+      "n": 16566,
+      "fields": []
+    },
+    {
+      "type": "invocation",
+      "n": 16040,
+      "fields": [
+        "parameter",
+        "unit"
+      ]
+    },
+    {
+      "type": "relation",
+      "n": 11104,
+      "fields": [
+        "alias"
+      ]
+    },
+    {
+      "type": "keyword_on",
+      "n": 10883,
+      "fields": []
+    },
+    {
+      "type": "column_definition",
+      "n": 10762,
+      "fields": [
+        "custom_type",
+        "name",
+        "type"
+      ]
+    },
+    {
+      "type": "keyword_select",
+      "n": 9472,
+      "fields": []
+    },
+    {
+      "type": "select_expression",
+      "n": 9124,
+      "fields": []
+    },
+    {
+      "type": "column",
+      "n": 8893,
+      "fields": [
+        "name"
+      ]
+    },
+    {
+      "type": "keyword_null",
+      "n": 8635,
+      "fields": []
+    },
+    {
+      "type": "select",
+      "n": 8495,
+      "fields": []
+    },
+    {
+      "type": "keyword_not",
+      "n": 8357,
+      "fields": []
+    },
+    {
+      "type": "keyword_create",
+      "n": 8163,
+      "fields": []
+    },
+    {
+      "type": "keyword_and",
+      "n": 7998,
+      "fields": []
+    },
+    {
+      "type": "parenthesized_expression",
+      "n": 7926,
+      "fields": []
+    },
+    {
+      "type": "keyword_from",
+      "n": 7729,
+      "fields": []
+    },
+    {
+      "type": "ERROR",
+      "n": 7725,
+      "fields": [
+        "alias",
+        "argument",
+        "custom_type",
+        "name",
+        "parameter"
+      ]
+    },
+    {
+      "type": "keyword_text",
+      "n": 7343,
+      "fields": []
+    },
+    {
+      "type": "from",
+      "n": 6624,
+      "fields": [
+        "alias"
+      ]
+    },
+    {
+      "type": "list",
+      "n": 6166,
+      "fields": []
+    },
+    {
+      "type": "keyword_if",
+      "n": 6000,
+      "fields": []
+    },
+    {
+      "type": "cast",
+      "n": 5731,
+      "fields": [
+        "custom_type",
+        "name",
+        "parameter"
+      ]
+    },
+    {
+      "type": "keyword_where",
+      "n": 5518,
+      "fields": []
+    },
+    {
+      "type": "::",
+      "n": 5159,
+      "fields": []
+    },
+    {
+      "type": "where",
+      "n": 4953,
+      "fields": [
+        "predicate"
+      ]
+    },
+    {
+      "type": "keyword_table",
+      "n": 3985,
+      "fields": []
+    },
+    {
+      "type": "*",
+      "n": 3751,
+      "fields": []
+    },
+    {
+      "type": "keyword_end",
+      "n": 3677,
+      "fields": []
+    },
+    {
+      "type": "keyword_exists",
+      "n": 3657,
+      "fields": []
+    },
+    {
+      "type": "keyword_is",
+      "n": 3550,
+      "fields": []
+    },
+    {
+      "type": "keyword_default",
+      "n": 3263,
+      "fields": []
+    },
+    {
+      "type": "keyword_insert",
+      "n": 3037,
+      "fields": []
+    },
+    {
+      "type": "dollar_quote",
+      "n": 3018,
+      "fields": []
+    },
+    {
+      "type": "keyword_then",
+      "n": 2860,
+      "fields": []
+    },
+    {
+      "type": "keyword_into",
+      "n": 2822,
+      "fields": []
+    },
+    {
+      "type": "keyword_for",
+      "n": 2748,
+      "fields": []
+    },
+    {
+      "type": "keyword_policy",
+      "n": 2425,
+      "fields": []
+    },
+    {
+      "type": "keyword_join",
+      "n": 2341,
+      "fields": []
+    },
+    {
+      "type": "keyword_update",
+      "n": 2330,
+      "fields": []
+    },
+    {
+      "type": "int",
+      "n": 2291,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_int",
+      "n": 2291,
+      "fields": []
+    },
+    {
+      "type": "+",
+      "n": 2289,
+      "fields": []
+    },
+    {
+      "type": "keyword_or",
+      "n": 2220,
+      "fields": []
+    },
+    {
+      "type": "keyword_function",
+      "n": 2198,
+      "fields": []
+    },
+    {
+      "type": "all_fields",
+      "n": 2162,
+      "fields": []
+    },
+    {
+      "type": "insert",
+      "n": 2053,
+      "fields": []
+    },
+    {
+      "type": "keyword_values",
+      "n": 1992,
+      "fields": []
+    },
+    {
+      "type": "program",
+      "n": 1925,
+      "fields": []
+    },
+    {
+      "type": "keyword_true",
+      "n": 1906,
+      "fields": []
+    },
+    {
+      "type": "keyword_begin",
+      "n": 1873,
+      "fields": []
+    },
+    {
+      "type": "keyword_drop",
+      "n": 1857,
+      "fields": []
+    },
+    {
+      "type": "keyword_in",
+      "n": 1823,
+      "fields": []
+    },
+    {
+      "type": "keyword_false",
+      "n": 1809,
+      "fields": []
+    },
+    {
+      "type": "join",
+      "n": 1797,
+      "fields": [
+        "predicate"
+      ]
+    },
+    {
+      "type": "keyword_to",
+      "n": 1786,
+      "fields": []
+    },
+    {
+      "type": "keyword_alter",
+      "n": 1727,
+      "fields": []
+    },
+    {
+      "type": "keyword_using",
+      "n": 1701,
+      "fields": []
+    },
+    {
+      "type": "subquery",
+      "n": 1674,
+      "fields": []
+    },
+    {
+      "type": "create_policy",
+      "n": 1651,
+      "fields": []
+    },
+    {
+      "type": "keyword_key",
+      "n": 1642,
+      "fields": []
+    },
+    {
+      "type": "keyword_check",
+      "n": 1636,
+      "fields": []
+    },
+    {
+      "type": "column_definitions",
+      "n": 1578,
+      "fields": []
+    },
+    {
+      "type": "keyword_trigger",
+      "n": 1577,
+      "fields": []
+    },
+    {
+      "type": "create_table",
+      "n": 1552,
+      "fields": []
+    },
+    {
+      "type": "keyword_index",
+      "n": 1551,
+      "fields": []
+    },
+    {
+      "type": "keyword_timestamptz",
+      "n": 1541,
+      "fields": []
+    },
+    {
+      "type": "keyword_constraint",
+      "n": 1529,
+      "fields": []
+    },
+    {
+      "type": "keyword_row",
+      "n": 1527,
+      "fields": []
+    },
+    {
+      "type": "keyword_comment",
+      "n": 1521,
+      "fields": []
+    },
+    {
+      "type": "keyword_execute",
+      "n": 1502,
+      "fields": []
+    },
+    {
+      "type": "keyword_by",
+      "n": 1488,
+      "fields": []
+    },
+    {
+      "type": "index_fields",
+      "n": 1458,
+      "fields": []
+    },
+    {
+      "type": "create_index",
+      "n": 1453,
+      "fields": [
+        "column"
+      ]
+    },
+    {
+      "type": "function_argument",
+      "n": 1450,
+      "fields": [
+        "custom_type"
+      ]
+    },
+    {
+      "type": "keyword_when",
+      "n": 1436,
+      "fields": []
+    },
+    {
+      "type": "constraint",
+      "n": 1423,
+      "fields": [
+        "name"
+      ]
+    },
+    {
+      "type": "keyword_delete",
+      "n": 1411,
+      "fields": []
+    },
+    {
+      "type": "comment_statement",
+      "n": 1398,
+      "fields": []
+    },
+    {
+      "type": "function_arguments",
+      "n": 1390,
+      "fields": []
+    },
+    {
+      "type": "alter_table",
+      "n": 1388,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_if",
+      "n": 1354,
+      "fields": [
+        "condition"
+      ]
+    },
+    {
+      "type": "function_declaration",
+      "n": 1336,
+      "fields": [
+        "custom_type"
+      ]
+    },
+    {
+      "type": "bigint",
+      "n": 1334,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_bigint",
+      "n": 1334,
+      "fields": []
+    },
+    {
+      "type": "-",
+      "n": 1320,
+      "fields": []
+    },
+    {
+      "type": "op_other",
+      "n": 1312,
+      "fields": []
+    },
+    {
+      "type": "keyword_primary",
+      "n": 1261,
+      "fields": []
+    },
+    {
+      "type": "[",
+      "n": 1259,
+      "fields": []
+    },
+    {
+      "type": "keyword_cascade",
+      "n": 1245,
+      "fields": []
+    },
+    {
+      "type": "keyword_language",
+      "n": 1235,
+      "fields": []
+    },
+    {
+      "type": "keyword_returns",
+      "n": 1223,
+      "fields": []
+    },
+    {
+      "type": "]",
+      "n": 1218,
+      "fields": []
+    },
+    {
+      "type": "keyword_column",
+      "n": 1205,
+      "fields": []
+    },
+    {
+      "type": "function_language",
+      "n": 1192,
+      "fields": []
+    },
+    {
+      "type": "create_function",
+      "n": 1174,
+      "fields": [
+        "custom_type"
+      ]
+    },
+    {
+      "type": "function_body",
+      "n": 1174,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_block",
+      "n": 1170,
+      "fields": [
+        "condition"
+      ]
+    },
+    {
+      "type": "assignment",
+      "n": 1146,
+      "fields": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "type": "keyword_cast",
+      "n": 1136,
+      "fields": []
+    },
+    {
+      "type": "keyword_set",
+      "n": 1123,
+      "fields": []
+    },
+    {
+      "type": "keyword_return",
+      "n": 1106,
+      "fields": []
+    },
+    {
+      "type": "keyword_raise",
+      "n": 1103,
+      "fields": []
+    },
+    {
+      "type": "keyword_uuid",
+      "n": 1099,
+      "fields": []
+    },
+    {
+      "type": "keyword_each",
+      "n": 1098,
+      "fields": []
+    },
+    {
+      "type": "create_trigger",
+      "n": 1079,
+      "fields": [
+        "parameter"
+      ]
+    },
+    {
+      "type": "plpgsql_return",
+      "n": 1068,
+      "fields": [
+        "value"
+      ]
+    },
+    {
+      "type": "plpgsql_raise",
+      "n": 1053,
+      "fields": [
+        "argument",
+        "format",
+        "option",
+        "value"
+      ]
+    },
+    {
+      "type": "keyword_view",
+      "n": 1036,
+      "fields": []
+    },
+    {
+      "type": "ordered_columns",
+      "n": 1004,
+      "fields": []
+    },
+    {
+      "type": "keyword_exception",
+      "n": 951,
+      "fields": []
+    },
+    {
+      "type": ">",
+      "n": 934,
+      "fields": []
+    },
+    {
+      "type": "keyword_with",
+      "n": 930,
+      "fields": []
+    },
+    {
+      "type": "cte",
+      "n": 927,
+      "fields": [
+        "argument"
+      ]
+    },
+    {
+      "type": "order_target",
+      "n": 923,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_assignment",
+      "n": 904,
+      "fields": [
+        "target",
+        "value"
+      ]
+    },
+    {
+      "type": ":=",
+      "n": 888,
+      "fields": []
+    },
+    {
+      "type": "keyword_left",
+      "n": 872,
+      "fields": []
+    },
+    {
+      "type": "keyword_references",
+      "n": 841,
+      "fields": []
+    },
+    {
+      "type": "varchar",
+      "n": 835,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_varchar",
+      "n": 835,
+      "fields": []
+    },
+    {
+      "type": "create_query",
+      "n": 828,
+      "fields": []
+    },
+    {
+      "type": "keyword_replace",
+      "n": 825,
+      "fields": []
+    },
+    {
+      "type": "keyword_before",
+      "n": 814,
+      "fields": []
+    },
+    {
+      "type": "keyword_boolean",
+      "n": 789,
+      "fields": []
+    },
+    {
+      "type": "keyword_procedure",
+      "n": 776,
+      "fields": []
+    },
+    {
+      "type": "drop_policy",
+      "n": 773,
+      "fields": []
+    },
+    {
+      "type": "is_not",
+      "n": 761,
+      "fields": []
+    },
+    {
+      "type": "create_view",
+      "n": 752,
+      "fields": []
+    },
+    {
+      "type": "keyword_else",
+      "n": 744,
+      "fields": []
+    },
+    {
+      "type": "keyword_security",
+      "n": 743,
+      "fields": []
+    },
+    {
+      "type": "keyword_add",
+      "n": 740,
+      "fields": []
+    },
+    {
+      "type": "keyword_case",
+      "n": 721,
+      "fields": []
+    },
+    {
+      "type": "keyword_order",
+      "n": 713,
+      "fields": []
+    },
+    {
+      "type": "case",
+      "n": 697,
+      "fields": []
+    },
+    {
+      "type": "<",
+      "n": 662,
+      "fields": []
+    },
+    {
+      "type": "keyword_group",
+      "n": 649,
+      "fields": []
+    },
+    {
+      "type": "keyword_all",
+      "n": 646,
+      "fields": []
+    },
+    {
+      "type": "update",
+      "n": 618,
+      "fields": []
+    },
+    {
+      "type": "keyword_like",
+      "n": 618,
+      "fields": []
+    },
+    {
+      "type": "constraints",
+      "n": 610,
+      "fields": []
+    },
+    {
+      "type": "direction",
+      "n": 607,
+      "fields": []
+    },
+    {
+      "type": "transaction",
+      "n": 604,
+      "fields": []
+    },
+    {
+      "type": "keyword_unique",
+      "n": 589,
+      "fields": []
+    },
+    {
+      "type": "keyword_jsonb",
+      "n": 589,
+      "fields": []
+    },
+    {
+      "type": "keyword_distinct",
+      "n": 577,
+      "fields": []
+    },
+    {
+      "type": "keyword_desc",
+      "n": 574,
+      "fields": []
+    },
+    {
+      "type": "unary_expression",
+      "n": 547,
+      "fields": [
+        "operand",
+        "operator"
+      ]
+    },
+    {
+      "type": "order_by",
+      "n": 546,
+      "fields": []
+    },
+    {
+      "type": "group_by",
+      "n": 532,
+      "fields": []
+    },
+    {
+      "type": "keyword_declare",
+      "n": 511,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_declarations",
+      "n": 499,
+      "fields": []
+    },
+    {
+      "type": "exists",
+      "n": 498,
+      "fields": []
+    },
+    {
+      "type": "keyword_array",
+      "n": 462,
+      "fields": []
+    },
+    {
+      "type": "keyword_union",
+      "n": 453,
+      "fields": []
+    },
+    {
+      "type": "<>",
+      "n": 437,
+      "fields": []
+    },
+    {
+      "type": "keyword_do",
+      "n": 424,
+      "fields": []
+    },
+    {
+      "type": "keyword_commit",
+      "n": 417,
+      "fields": []
+    },
+    {
+      "type": ">=",
+      "n": 412,
+      "fields": []
+    },
+    {
+      "type": "keyword_enable",
+      "n": 405,
+      "fields": []
+    },
+    {
+      "type": "keyword_level",
+      "n": 404,
+      "fields": []
+    },
+    {
+      "type": "keyword_numeric",
+      "n": 394,
+      "fields": []
+    },
+    {
+      "type": "/",
+      "n": 392,
+      "fields": []
+    },
+    {
+      "type": "add_column",
+      "n": 391,
+      "fields": []
+    },
+    {
+      "type": "array",
+      "n": 386,
+      "fields": []
+    },
+    {
+      "type": "numeric",
+      "n": 373,
+      "fields": [
+        "precision",
+        "scale"
+      ]
+    },
+    {
+      "type": "keyword_definer",
+      "n": 341,
+      "fields": []
+    },
+    {
+      "type": "function_security",
+      "n": 331,
+      "fields": []
+    },
+    {
+      "type": "<=",
+      "n": 327,
+      "fields": []
+    },
+    {
+      "type": "add_constraint",
+      "n": 323,
+      "fields": []
+    },
+    {
+      "type": "keyword_perform",
+      "n": 316,
+      "fields": []
+    },
+    {
+      "type": "keyword_limit",
+      "n": 316,
+      "fields": []
+    },
+    {
+      "type": ":",
+      "n": 308,
+      "fields": []
+    },
+    {
+      "type": "keyword_float",
+      "n": 305,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_perform",
+      "n": 302,
+      "fields": [
+        "value"
+      ]
+    },
+    {
+      "type": "limit",
+      "n": 299,
+      "fields": []
+    },
+    {
+      "type": "keyword_interval",
+      "n": 297,
+      "fields": []
+    },
+    {
+      "type": "set_operation",
+      "n": 290,
+      "fields": [
+        "operation"
+      ]
+    },
+    {
+      "type": "keyword_public",
+      "n": 286,
+      "fields": []
+    },
+    {
+      "type": "keyword_foreign",
+      "n": 284,
+      "fields": []
+    },
+    {
+      "type": "keyword_grant",
+      "n": 281,
+      "fields": []
+    },
+    {
+      "type": "%",
+      "n": 274,
+      "fields": []
+    },
+    {
+      "type": "keyword_notice",
+      "n": 270,
+      "fields": []
+    },
+    {
+      "type": "keyword_after",
+      "n": 265,
+      "fields": []
+    },
+    {
+      "type": "keyword_date",
+      "n": 264,
+      "fields": []
+    },
+    {
+      "type": "keyword_between",
+      "n": 264,
+      "fields": []
+    },
+    {
+      "type": "do_statement",
+      "n": 253,
+      "fields": []
+    },
+    {
+      "type": "between_expression",
+      "n": 250,
+      "fields": [
+        "high",
+        "left",
+        "low",
+        "operator"
+      ]
+    },
+    {
+      "type": "!=",
+      "n": 244,
+      "fields": []
+    },
+    {
+      "type": "array_size_definition",
+      "n": 243,
+      "fields": []
+    },
+    {
+      "type": "grant_statement",
+      "n": 240,
+      "fields": []
+    },
+    {
+      "type": "keyword_outer",
+      "n": 236,
+      "fields": []
+    },
+    {
+      "type": "keyword_varying",
+      "n": 234,
+      "fields": []
+    },
+    {
+      "type": "float",
+      "n": 233,
+      "fields": []
+    },
+    {
+      "type": "op_unary_other",
+      "n": 231,
+      "fields": []
+    },
+    {
+      "type": "interval",
+      "n": 230,
+      "fields": []
+    },
+    {
+      "type": "keyword_name",
+      "n": 223,
+      "fields": []
+    },
+    {
+      "type": "keyword_loop",
+      "n": 219,
+      "fields": []
+    },
+    {
+      "type": "keyword_json",
+      "n": 219,
+      "fields": []
+    },
+    {
+      "type": "keyword_bytea",
+      "n": 217,
+      "fields": []
+    },
+    {
+      "type": "subscript",
+      "n": 215,
+      "fields": [
+        "expression",
+        "lower",
+        "subscript",
+        "upper"
+      ]
+    },
+    {
+      "type": "drop_table",
+      "n": 214,
+      "fields": []
+    },
+    {
+      "type": "function_volatility",
+      "n": 209,
+      "fields": []
+    },
+    {
+      "type": "keyword_role",
+      "n": 205,
+      "fields": []
+    },
+    {
+      "type": "not_like",
+      "n": 199,
+      "fields": []
+    },
+    {
+      "type": "decimal",
+      "n": 199,
+      "fields": [
+        "precision",
+        "scale"
+      ]
+    },
+    {
+      "type": "keyword_decimal",
+      "n": 199,
+      "fields": []
+    },
+    {
+      "type": "keyword_revoke",
+      "n": 195,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_execute",
+      "n": 192,
+      "fields": [
+        "query",
+        "target"
+      ]
+    },
+    {
+      "type": "keyword_rollback",
+      "n": 190,
+      "fields": []
+    },
+    {
+      "type": "revoke_statement",
+      "n": 181,
+      "fields": []
+    },
+    {
+      "type": "double",
+      "n": 180,
+      "fields": []
+    },
+    {
+      "type": "keyword_restrictive",
+      "n": 177,
+      "fields": []
+    },
+    {
+      "type": "keyword_serial",
+      "n": 176,
+      "fields": []
+    },
+    {
+      "type": "delete",
+      "n": 169,
+      "fields": []
+    },
+    {
+      "type": "keyword_double",
+      "n": 169,
+      "fields": []
+    },
+    {
+      "type": "keyword_first",
+      "n": 165,
+      "fields": []
+    },
+    {
+      "type": "keyword_truncate",
+      "n": 158,
+      "fields": []
+    },
+    {
+      "type": "keyword_btree",
+      "n": 156,
+      "fields": []
+    },
+    {
+      "type": "distinct_from",
+      "n": 155,
+      "fields": []
+    },
+    {
+      "type": "keyword_only",
+      "n": 155,
+      "fields": []
+    },
+    {
+      "type": "smallint",
+      "n": 154,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_smallint",
+      "n": 154,
+      "fields": []
+    },
+    {
+      "type": "drop_view",
+      "n": 150,
+      "fields": []
+    },
+    {
+      "type": "keyword_restrict",
+      "n": 148,
+      "fields": []
+    },
+    {
+      "type": "drop_constraint",
+      "n": 147,
+      "fields": []
+    },
+    {
+      "type": "psql_meta_command",
+      "n": 143,
+      "fields": []
+    },
+    {
+      "type": "set_statement",
+      "n": 142,
+      "fields": []
+    },
+    {
+      "type": "keyword_timestamp",
+      "n": 138,
+      "fields": []
+    },
+    {
+      "type": "alter_column",
+      "n": 137,
+      "fields": [
+        "custom_type",
+        "name",
+        "type"
+      ]
+    },
+    {
+      "type": "keyword_stable",
+      "n": 133,
+      "fields": []
+    },
+    {
+      "type": "timestamp",
+      "n": 127,
+      "fields": []
+    },
+    {
+      "type": "drop_function",
+      "n": 127,
+      "fields": []
+    },
+    {
+      "type": "keyword_conflict",
+      "n": 122,
+      "fields": []
+    },
+    {
+      "type": "table_option",
+      "n": 121,
+      "fields": [
+        "name",
+        "value"
+      ]
+    },
+    {
+      "type": "keyword_rename",
+      "n": 115,
+      "fields": []
+    },
+    {
+      "type": "keyword_recursive",
+      "n": 115,
+      "fields": []
+    },
+    {
+      "type": "char",
+      "n": 111,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_char",
+      "n": 111,
+      "fields": []
+    },
+    {
+      "type": "keyword_time",
+      "n": 107,
+      "fields": []
+    },
+    {
+      "type": "keyword_schema",
+      "n": 103,
+      "fields": []
+    },
+    {
+      "type": "not_in",
+      "n": 101,
+      "fields": []
+    },
+    {
+      "type": "keyword_oid",
+      "n": 100,
+      "fields": []
+    },
+    {
+      "type": "keyword_over",
+      "n": 100,
+      "fields": []
+    },
+    {
+      "type": "keyword_returning",
+      "n": 98,
+      "fields": []
+    },
+    {
+      "type": "keyword_filter",
+      "n": 98,
+      "fields": []
+    },
+    {
+      "type": "keyword_type",
+      "n": 96,
+      "fields": []
+    },
+    {
+      "type": "keyword_nothing",
+      "n": 96,
+      "fields": []
+    },
+    {
+      "type": "returning",
+      "n": 95,
+      "fields": []
+    },
+    {
+      "type": "window_function",
+      "n": 87,
+      "fields": []
+    },
+    {
+      "type": "filter_expression",
+      "n": 87,
+      "fields": []
+    },
+    {
+      "type": "keyword_zone",
+      "n": 85,
+      "fields": []
+    },
+    {
+      "type": "window_specification",
+      "n": 85,
+      "fields": []
+    },
+    {
+      "type": "keyword_any",
+      "n": 79,
+      "fields": []
+    },
+    {
+      "type": "keyword_inner",
+      "n": 77,
+      "fields": []
+    },
+    {
+      "type": "alter_role",
+      "n": 76,
+      "fields": [
+        "option"
+      ]
+    },
+    {
+      "type": "keyword_reset",
+      "n": 76,
+      "fields": []
+    },
+    {
+      "type": "keyword_value",
+      "n": 75,
+      "fields": []
+    },
+    {
+      "type": "marginalia",
+      "n": 75,
+      "fields": []
+    },
+    {
+      "type": "keyword_inet",
+      "n": 75,
+      "fields": []
+    },
+    {
+      "type": "rename_column",
+      "n": 75,
+      "fields": [
+        "new_name",
+        "old_name"
+      ]
+    },
+    {
+      "type": "keyword_no",
+      "n": 75,
+      "fields": []
+    },
+    {
+      "type": "keyword_of",
+      "n": 74,
+      "fields": []
+    },
+    {
+      "type": "keyword_sequence",
+      "n": 73,
+      "fields": []
+    },
+    {
+      "type": "set_configuration",
+      "n": 73,
+      "fields": [
+        "option"
+      ]
+    },
+    {
+      "type": "parameter",
+      "n": 72,
+      "fields": []
+    },
+    {
+      "type": "not_distinct_from",
+      "n": 71,
+      "fields": []
+    },
+    {
+      "type": "keyword_immutable",
+      "n": 68,
+      "fields": []
+    },
+    {
+      "type": "keyword_collate",
+      "n": 64,
+      "fields": []
+    },
+    {
+      "type": "keyword_regclass",
+      "n": 62,
+      "fields": []
+    },
+    {
+      "type": "keyword_setof",
+      "n": 60,
+      "fields": []
+    },
+    {
+      "type": "keyword_having",
+      "n": 59,
+      "fields": []
+    },
+    {
+      "type": "^",
+      "n": 58,
+      "fields": []
+    },
+    {
+      "type": "keyword_partition",
+      "n": 57,
+      "fields": []
+    },
+    {
+      "type": "reset_statement",
+      "n": 57,
+      "fields": []
+    },
+    {
+      "type": "keyword_cross",
+      "n": 56,
+      "fields": []
+    },
+    {
+      "type": "keyword_precision",
+      "n": 56,
+      "fields": []
+    },
+    {
+      "type": "keyword_copy",
+      "n": 53,
+      "fields": []
+    },
+    {
+      "type": "keyword_temp",
+      "n": 49,
+      "fields": []
+    },
+    {
+      "type": "keyword_asc",
+      "n": 48,
+      "fields": []
+    },
+    {
+      "type": "having",
+      "n": 48,
+      "fields": []
+    },
+    {
+      "type": "partition_by",
+      "n": 44,
+      "fields": []
+    },
+    {
+      "type": "keyword_bigserial",
+      "n": 43,
+      "fields": []
+    },
+    {
+      "type": "keyword_analyze",
+      "n": 42,
+      "fields": []
+    },
+    {
+      "type": "drop_index",
+      "n": 41,
+      "fields": [
+        "name"
+      ]
+    },
+    {
+      "type": "cross_join",
+      "n": 41,
+      "fields": []
+    },
+    {
+      "type": "keyword_real",
+      "n": 40,
+      "fields": []
+    },
+    {
+      "type": "keyword_nulls",
+      "n": 39,
+      "fields": []
+    },
+    {
+      "type": "rename_object",
+      "n": 36,
+      "fields": []
+    },
+    {
+      "type": "keyword_local",
+      "n": 36,
+      "fields": []
+    },
+    {
+      "type": "keyword_current_timestamp",
+      "n": 35,
+      "fields": []
+    },
+    {
+      "type": "drop_column",
+      "n": 35,
+      "fields": [
+        "name"
+      ]
+    },
+    {
+      "type": "keyword_without",
+      "n": 35,
+      "fields": []
+    },
+    {
+      "type": "keyword_start",
+      "n": 34,
+      "fields": []
+    },
+    {
+      "type": "keyword_extension",
+      "n": 34,
+      "fields": []
+    },
+    {
+      "type": "keyword_lateral",
+      "n": 34,
+      "fields": []
+    },
+    {
+      "type": "keyword_maxvalue",
+      "n": 33,
+      "fields": []
+    },
+    {
+      "type": "keyword_minvalue",
+      "n": 33,
+      "fields": []
+    },
+    {
+      "type": "create_schema",
+      "n": 33,
+      "fields": []
+    },
+    {
+      "type": "create_role",
+      "n": 33,
+      "fields": [
+        "option"
+      ]
+    },
+    {
+      "type": "create_sequence",
+      "n": 32,
+      "fields": [
+        "cache",
+        "increment",
+        "start"
+      ]
+    },
+    {
+      "type": "keyword_new",
+      "n": 31,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_loop",
+      "n": 31,
+      "fields": []
+    },
+    {
+      "type": "keyword_owned",
+      "n": 31,
+      "fields": []
+    },
+    {
+      "type": "keyword_cache",
+      "n": 31,
+      "fields": []
+    },
+    {
+      "type": "keyword_increment",
+      "n": 31,
+      "fields": []
+    },
+    {
+      "type": "create_extension",
+      "n": 30,
+      "fields": []
+    },
+    {
+      "type": "lateral_join",
+      "n": 30,
+      "fields": [
+        "alias"
+      ]
+    },
+    {
+      "type": "keyword_change",
+      "n": 30,
+      "fields": []
+    },
+    {
+      "type": "change_column",
+      "n": 29,
+      "fields": [
+        "old_name"
+      ]
+    },
+    {
+      "type": "keyword_strict",
+      "n": 28,
+      "fields": []
+    },
+    {
+      "type": "alter_sequence",
+      "n": 27,
+      "fields": []
+    },
+    {
+      "type": "values",
+      "n": 26,
+      "fields": []
+    },
+    {
+      "type": "keyword_csv",
+      "n": 26,
+      "fields": []
+    },
+    {
+      "type": "keyword_database",
+      "n": 26,
+      "fields": []
+    },
+    {
+      "type": "keyword_concurrently",
+      "n": 26,
+      "fields": []
+    },
+    {
+      "type": "keyword_initially",
+      "n": 24,
+      "fields": []
+    },
+    {
+      "type": "keyword_deferred",
+      "n": 23,
+      "fields": []
+    },
+    {
+      "type": "time",
+      "n": 23,
+      "fields": []
+    },
+    {
+      "type": "keyword_gist",
+      "n": 23,
+      "fields": []
+    },
+    {
+      "type": "create_type",
+      "n": 23,
+      "fields": []
+    },
+    {
+      "type": "keyword_datetime",
+      "n": 22,
+      "fields": []
+    },
+    {
+      "type": "keyword_right",
+      "n": 22,
+      "fields": []
+    },
+    {
+      "type": "keyword_materialized",
+      "n": 22,
+      "fields": []
+    },
+    {
+      "type": "keyword_session",
+      "n": 21,
+      "fields": []
+    },
+    {
+      "type": "keyword_generated",
+      "n": 21,
+      "fields": []
+    },
+    {
+      "type": "keyword_always",
+      "n": 20,
+      "fields": []
+    },
+    {
+      "type": "keyword_gin",
+      "n": 20,
+      "fields": []
+    },
+    {
+      "type": "function_strictness",
+      "n": 19,
+      "fields": []
+    },
+    {
+      "type": "keyword_deferrable",
+      "n": 19,
+      "fields": []
+    },
+    {
+      "type": "keyword_unsigned",
+      "n": 19,
+      "fields": []
+    },
+    {
+      "type": "keyword_rows",
+      "n": 19,
+      "fields": []
+    },
+    {
+      "type": "keyword_character",
+      "n": 19,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_for",
+      "n": 17,
+      "fields": [
+        "range",
+        "variable"
+      ]
+    },
+    {
+      "type": "keyword_string",
+      "n": 16,
+      "fields": []
+    },
+    {
+      "type": "keyword_natural",
+      "n": 16,
+      "fields": []
+    },
+    {
+      "type": "drop_schema",
+      "n": 16,
+      "fields": []
+    },
+    {
+      "type": "keyword_object_id",
+      "n": 16,
+      "fields": []
+    },
+    {
+      "type": "keyword_input",
+      "n": 15,
+      "fields": []
+    },
+    {
+      "type": "keyword_nvarchar",
+      "n": 15,
+      "fields": []
+    },
+    {
+      "type": "bang",
+      "n": 14,
+      "fields": []
+    },
+    {
+      "type": "keyword_others",
+      "n": 13,
+      "fields": []
+    },
+    {
+      "type": "keyword_volatile",
+      "n": 13,
+      "fields": []
+    },
+    {
+      "type": "keyword_header",
+      "n": 13,
+      "fields": []
+    },
+    {
+      "type": "keyword_delimiter",
+      "n": 13,
+      "fields": []
+    },
+    {
+      "type": "keyword_ordinality",
+      "n": 13,
+      "fields": []
+    },
+    {
+      "type": "keyword_off",
+      "n": 13,
+      "fields": []
+    },
+    {
+      "type": "keyword_auto_increment",
+      "n": 12,
+      "fields": []
+    },
+    {
+      "type": "keyword_cost",
+      "n": 12,
+      "fields": []
+    },
+    {
+      "type": "keyword_engine",
+      "n": 12,
+      "fields": []
+    },
+    {
+      "type": "keyword_bit",
+      "n": 12,
+      "fields": []
+    },
+    {
+      "type": "nvarchar",
+      "n": 12,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "@",
+      "n": 12,
+      "fields": []
+    },
+    {
+      "type": "keyword_instead",
+      "n": 12,
+      "fields": []
+    },
+    {
+      "type": "keyword_user",
+      "n": 11,
+      "fields": []
+    },
+    {
+      "type": "keyword_elsif",
+      "n": 11,
+      "fields": []
+    },
+    {
+      "type": "filename",
+      "n": 11,
+      "fields": []
+    },
+    {
+      "type": "keyword_last",
+      "n": 10,
+      "fields": []
+    },
+    {
+      "type": "frame_definition",
+      "n": 10,
+      "fields": [
+        "start"
+      ]
+    },
+    {
+      "type": "keyword_geometry",
+      "n": 10,
+      "fields": []
+    },
+    {
+      "type": "function_rows",
+      "n": 10,
+      "fields": []
+    },
+    {
+      "type": "keyword_old",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "function_safety",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "keyword_safe",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "keyword_parallel",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "keyword_current",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "keyword_enum",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "create_database",
+      "n": 9,
+      "fields": [
+        "name",
+        "value"
+      ]
+    },
+    {
+      "type": "..",
+      "n": 9,
+      "fields": []
+    },
+    {
+      "type": "keyword_intersect",
+      "n": 8,
+      "fields": []
+    },
+    {
+      "type": "keyword_privileges",
+      "n": 8,
+      "fields": []
+    },
+    {
+      "type": "keyword_warning",
+      "n": 7,
+      "fields": []
+    },
+    {
+      "type": "keyword_offset",
+      "n": 7,
+      "fields": []
+    },
+    {
+      "type": "bit",
+      "n": 7,
+      "fields": [
+        "precision"
+      ]
+    },
+    {
+      "type": "keyword_escape",
+      "n": 7,
+      "fields": []
+    },
+    {
+      "type": "keyword_version",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_out",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "offset",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_tables",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "table_partition",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_money",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_regnamespace",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_while",
+      "n": 6,
+      "fields": [
+        "condition"
+      ]
+    },
+    {
+      "type": "keyword_while",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_explain",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_main",
+      "n": 6,
+      "fields": []
+    },
+    {
+      "type": "keyword_valid",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "keyword_except",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "window_frame",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "keyword_preceding",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "datetimeoffset",
+      "n": 5,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_datetimeoffset",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "keyword_stdin",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "drop_role",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "keyword_similar",
+      "n": 5,
+      "fields": []
+    },
+    {
+      "type": "keyword_range",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_format",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_parquet",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_columns",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_unbounded",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "object_id",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "enum_elements",
+      "n": 4,
+      "fields": [
+        "enum_element"
+      ]
+    },
+    {
+      "type": "similar_to",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_inout",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_exit",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_action",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_show",
+      "n": 4,
+      "fields": []
+    },
+    {
+      "type": "keyword_statement",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_referencing",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "block",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "function_cost",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "alter_index",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_variadic",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_matched",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_full",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_use",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "drop_database",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_data",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_names",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_stored",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_xml",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "create_materialized_view",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_exit",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "covering_columns",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_include",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "keyword_rlike",
+      "n": 3,
+      "fields": []
+    },
+    {
+      "type": "alter_view",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "modify_column",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_modify",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "tinyint",
+      "n": 2,
+      "fields": [
+        "size"
+      ]
+    },
+    {
+      "type": "keyword_tinyint",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "window_clause",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_window",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_reverse",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "enum",
+      "n": 2,
+      "fields": [
+        "value"
+      ]
+    },
+    {
+      "type": "keyword_immediate",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_disable",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_brin",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "lateral_cross_join",
+      "n": 2,
+      "fields": [
+        "alias"
+      ]
+    },
+    {
+      "type": "keyword_some",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_separator",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_quote",
+      "n": 2,
+      "fields": []
+    },
+    {
+      "type": "keyword_vacuum",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_password",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_match",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_temporary",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_ignore",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_transaction",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_datetime2",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "change_ownership",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_owner",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_sort",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "drop_type",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "alter_database",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_regproc",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "create_procedure",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "procedure_body",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_constraints",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "plpgsql_assert",
+      "n": 1,
+      "fields": [
+        "condition",
+        "message"
+      ]
+    },
+    {
+      "type": "keyword_assert",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "refresh_materialized_view",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_refresh",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_geography",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_regtype",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_lines",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_plain",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_info",
+      "n": 1,
+      "fields": []
+    },
+    {
+      "type": "keyword_continue",
+      "n": 1,
+      "fields": []
+    }
+  ],
+  "constructCounts": {
+    "extends-like": 9,
+    "imports-error-backslash": 10,
+    "imports-file": 22,
+    "imports-node": 143,
+    "instantiates-constructed-declared-type": 22,
+    "instantiates-converted-declared-type": 4,
+    "instantiates-undeclared-type": 158,
+    "or-replace-total": 1,
+    "overrides-duplicate": 163,
+    "overrides-replace": 15
+  },
+  "constructExamples": {
+    "extends-like": [
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/migrations/20260613_coms_p13_4_data_retention.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS connection_messages_archive ( LIKE connection_messages INCL"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/migrations/20260613_coms_p13_4_data_retention.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS connection_events_archive ( LIKE connection_events INCLUDIN"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/migrations/20260613_coms_p13_4_data_retention.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS connection_sessions_archive ( LIKE connection_sessions INCL"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/migrations/20260904_m21_bve_ai_decision_check.sql",
+        "detail": "alter_table carries token LIKE — ALTER TABLE public.business_verification_events ADD CONSTRAINT business_verification_eve"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/schema.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS connection_messages_archive ( LIKE connection_messages INCL"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/schema.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS connection_events_archive ( LIKE connection_events INCLUDIN"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/schema.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS connection_sessions_archive ( LIKE connection_sessions INCL"
+      },
+      {
+        "type": "extends-like",
+        "label": "proxicall/database/schema.sql",
+        "detail": "create_table carries token LIKE — CREATE TABLE IF NOT EXISTS business_verification_events ( id BIGSERIAL PRIMARY KEY, "
+      }
+    ],
+    "overrides-duplicate": [
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "detail": "create_trigger immutable_columns: first at line 64, again at line 41; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger immutable_columns before update on oplog_ticket for each ro"
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "detail": "create_trigger default_create_time_column: first at line 60, again at line 37; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger default_create_time_column before insert on oplog_ticket fo"
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "detail": "create_trigger update_time_column: first at line 57, again at line 34; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger update_time_column before update on oplog_ticket for each r"
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "detail": "create_trigger default_create_time_column: first at line 93, again at line 73; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger default_create_time_column before insert on db_test_rental "
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "detail": "create_trigger immutable_columns: first at line 90, again at line 70; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger immutable_columns before update on db_test_rental for each "
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "detail": "create_trigger update_time_column: first at line 86, again at line 66; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger update_time_column before update on db_test_rental for each"
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "detail": "create_trigger default_create_time_column: first at line 560, again at line 534; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger default_create_time_column before insert on iam_group_role "
+      },
+      {
+        "type": "overrides-duplicate",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "detail": "create_trigger immutable_role_principal: first at line 531, again at line 522; no OR REPLACE and no intervening DROP — a duplicate declaration PostgreSQL would reject — create trigger immutable_role_principal before update on iam_user_role for"
+      }
+    ],
+    "overrides-replace": [
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/io/fixtures/schema.sql",
+        "detail": "create_function mult_them: first at line 192, again at line 184; second carries OR REPLACE (a replacement in PostgreSQL's own words) — create or replace function mult_them(a int, b int) returns int as $$ sel"
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function geo2json_trans: first at line 3467, again at line 3449; second carries OR REPLACE (a replacement in PostgreSQL's own words) — create or replace function test.geo2json_trans (state \"application/vnd.geo2+"
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function monetary: first at line 3144, again at line 3140; second carries OR REPLACE (a replacement in PostgreSQL's own words) — CREATE OR REPLACE FUNCTION monetary(json) RETURNS public.monetary AS $$ SE"
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function json: first at line 3148, again at line 3128; second carries OR REPLACE (a replacement in PostgreSQL's own words) — CREATE OR REPLACE FUNCTION \"json\"(public.unixtz) RETURNS json AS $$ SELECT"
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function unixtz: first at line 3124, again at line 3120; second carries OR REPLACE (a replacement in PostgreSQL's own words) — CREATE OR REPLACE FUNCTION unixtz(json) RETURNS public.unixtz AS $$ SELECT"
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function bytea_b64: first at line 3103, again at line 3099; second carries OR REPLACE (a replacement in PostgreSQL's own words) — CREATE OR REPLACE FUNCTION bytea_b64(json) RETURNS public.bytea_b64 AS $$ "
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function isodate: first at line 3082, again at line 3078; second carries OR REPLACE (a replacement in PostgreSQL's own words) — CREATE OR REPLACE FUNCTION isodate(json) RETURNS public.isodate AS $$ SELE"
+      },
+      {
+        "type": "overrides-replace",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "create_function color: first at line 3060, again at line 3056; second carries OR REPLACE (a replacement in PostgreSQL's own words) — CREATE OR REPLACE FUNCTION color(json) RETURNS public.color AS $$ SELECT c"
+      }
+    ],
+    "or-replace-total": [
+      {
+        "type": "or-replace-total",
+        "label": "corpus",
+        "detail": "777 OR REPLACE declarations across the corpus"
+      }
+    ],
+    "instantiates-undeclared-type": [
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/84/04_wh_auth_token_insert.up.sql",
+        "detail": "::wt_timestamp from a literal node — 'infinity'::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      },
+      {
+        "type": "instantiates-undeclared-type",
+        "label": "boundary/internal/db/schema/migrations/oss/postgres/97/03_iam_role_data_migration.up.sql",
+        "detail": "::wt_timestamp from a parenthesized_expression node — (x->>'create_time')::wt_timestamp"
+      }
+    ],
+    "instantiates-constructed-declared-type": [
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "boundary/internal/db/sqltest/tests/wh/auth_token/insert.sql",
+        "detail": "::wh_auth_token_accumulating_fact from a invocation node — row('tok___walter2', 'u_____walter', (select key from "
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "boundary/internal/db/sqltest/tests/wh/auth_token/update.sql",
+        "detail": "::wh_auth_token_accumulating_fact from a invocation node — row('tok_____cora', 'u_______cora', (select key from w"
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "::institution_songs from a invocation node — ROW(3421, NULL)::institution_songs"
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "::staff from a invocation node — ROW( 'Koen', 'Claessen', ARRAY ['Computer Science', 'Functional "
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "::pet from a list node — ('Second horse', 2) ::pet"
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "::pet from a list node — ('First horse',1) :: pet"
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "::staff from a invocation node — ROW('John','Hughes', ARRAY['Computer Science', 'Functional Progr"
+      },
+      {
+        "type": "instantiates-constructed-declared-type",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "::pet from a list node — ('Horse', 20) :: pet"
+      }
+    ],
+    "instantiates-converted-declared-type": [
+      {
+        "type": "instantiates-converted-declared-type",
+        "label": "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql",
+        "detail": "::aoc2022_day19_vec4 from a ERROR(ERROR) node — 0]::aoc2022_day19_vec4"
+      },
+      {
+        "type": "instantiates-converted-declared-type",
+        "label": "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql",
+        "detail": "::aoc2022_day19_vec4 from a ERROR(ERROR) node — 0]::aoc2022_day19_vec4"
+      },
+      {
+        "type": "instantiates-converted-declared-type",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "::enum_menagerie_type from a literal node — null::test.enum_menagerie_type"
+      },
+      {
+        "type": "instantiates-converted-declared-type",
+        "label": "postgrest/test/spec/fixtures/schema.sql",
+        "detail": "::enum_menagerie_type from a field node — val::test.enum_menagerie_type"
+      }
+    ],
+    "imports-error-backslash": [
+      {
+        "type": "imports-error-backslash",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "ERROR: \\"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "ERROR: \\"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "detail": "ERROR: \\"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "postgrest/test/io/fixtures/big_schema.sql",
+        "detail": "ERROR: \\ir ../../orioledb.sql /* This is a 2018 version of the apflora schema https://"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "postgrest/test/spec/fixtures/data.sql",
+        "detail": "ERROR: \\"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "postgrest/test/spec/fixtures/data.sql",
+        "detail": "ERROR: \\"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "sqlite/test/modeA.sql",
+        "detail": "ERROR: \\"
+      },
+      {
+        "type": "imports-error-backslash",
+        "label": "sqlite/test/modeA.sql",
+        "detail": "ERROR: \\"
+      }
+    ],
+    "imports-node": [
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/big_schema.sql",
+        "detail": "psql_meta_command: \\ir ../../orioledb.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\ir privileges.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\ir schema.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\ir roles.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\ir db_config.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\ir database.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\ir ../../orioledb.sql"
+      },
+      {
+        "type": "imports-node",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "psql_meta_command: \\set ON_ERROR_STOP on"
+      }
+    ],
+    "imports-file": [
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/big_schema.sql",
+        "detail": "\\ir ../../orioledb.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "\\ir privileges.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "\\ir schema.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "\\ir roles.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "\\ir db_config.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "\\ir database.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/io/fixtures/load.sql",
+        "detail": "\\ir ../../orioledb.sql — names another file on disk"
+      },
+      {
+        "type": "imports-file",
+        "label": "postgrest/test/load/fixtures.sql",
+        "detail": "\\ir ../orioledb.sql — names another file on disk"
+      }
+    ]
+  },
+  "castTargetFrequency": {
+    "wt_public_id": 34,
+    "char": 20,
+    "struct": 11,
+    "wh_timestamp": 10,
+    "wt_timestamp": 9,
+    "wt_bexprfilter": 7,
+    "whx_user_dimension_source": 7,
+    "text/plain": 5,
+    "wt_version": 4,
+    "wt_name": 4,
+    "wh_bytes_transmitted": 4,
+    "hugeint": 4,
+    "pet": 4,
+    "city": 4,
+    "text/xml": 4,
+    "rec_timestamp": 3,
+    "row": 3,
+    "staff": 3,
+    "wt_description": 2,
+    "wh_auth_token_accumulating_fact": 2,
+    "whx_host_dimension_source": 2,
+    "aoc2022_day19_vec4": 2,
+    "null": 2,
+    "variant": 2,
+    "institution_songs": 2,
+    "location": 2,
+    "country": 2,
+    "geometry": 2,
+    "bool": 2,
+    "application/octet-stream": 2,
+    "text/special": 2,
+    "point_2d": 2,
+    "one_nine": 2,
+    "enum_menagerie_type": 2,
+    "whx_credential_dimension_source": 1,
+    "whx_credential_dimension_target": 1,
+    "refcursor": 1,
+    "whx_host_dimension_target": 1,
+    "whx_user_dimension_target": 1,
+    "color": 1,
+    "text/html": 1,
+    "isbn": 1,
+    "image/png": 1,
+    "point_3d": 1,
+    "composite_domain": 1,
+    "projects_domain": 1
+  },
+  "castValueSideShapes": {
+    "literal": 96,
+    "invocation": 40,
+    "ERROR(ERROR)": 17,
+    "parenthesized_expression": 10,
+    "parameter": 5,
+    "field": 5,
+    "list": 4,
+    "array_size_definition": 2,
+    "binary_expression": 2,
+    "cast": 2,
+    "object_reference": 1
+  },
+  "psqlMetaCommands": {
+    "echo": 108,
+    "ir": 22,
+    "set": 8,
+    "gexec": 1,
+    "endif": 1,
+    "if": 1,
+    "gset": 1,
+    "pset": 1
+  },
+  "psqlInclude": {
+    "literalFilename": 22,
+    "variableTarget": 0,
+    "noFilenameSuffix": 0
+  },
+  "declaredTypeNames": [
+    "\"><script>alert(109);</script>",
+    "';  eval('alert(107)')",
+    "'><script>alert(106);</script>",
+    "<script>alert(105);</script>",
+    "_2588_business_employees",
+    "_2588_business_profiles",
+    "_2588_employee_shifts",
+    "_2588_shift_attendance",
+    "_2591_business_employees",
+    "_2591_business_profiles",
+    "_2591_employee_payouts",
+    "_fx",
+    "_m95_active",
+    "_m95_groups",
+    "_m95_ids",
+    "_m95_reasons",
+    "_m95_results",
+    "_p",
+    "_probe",
+    "_variable",
+    "a",
+    "acc2",
+    "account",
+    "account2",
+    "account_blocks",
+    "account_disable_history",
+    "activities",
+    "actors",
+    "ad_earnings_ledger",
+    "ad_event_dedup",
+    "ad_payouts",
+    "ad_tracking_events",
+    "ad_viewable_impressions",
+    "adaptation_notifications",
+    "addresses",
+    "admin_document_access_events",
+    "adresse",
+    "ae_eigenschaften",
+    "ae_lrdelarze",
+    "agents",
+    "aka_name",
+    "aka_title",
+    "albums",
+    "alias",
+    "alias_target",
+    "alias_target_deleted",
+    "alias_values",
+    "all_types",
+    "allcolumnsdefaultable",
+    "anon106",
+    "anon111",
+    "anon125",
+    "anon138",
+    "anon140",
+    "anon144",
+    "anon145",
+    "anon152",
+    "anon154",
+    "anon179",
+    "anon195",
+    "anon197",
+    "anon201",
+    "anon207",
+    "anon40",
+    "anon64",
+    "anon71",
+    "anon74",
+    "anon76",
+    "anon78",
+    "anon82",
+    "anon88",
+    "anon89",
+    "anon94",
+    "anon95",
+    "anon97",
+    "anon99",
+    "another_table",
+    "ans",
+    "aoc2022_day05_initial",
+    "aoc2022_day05_moves",
+    "aoc2022_day07_tree",
+    "aoc2022_day09_head",
+    "aoc2022_day11_input",
+    "aoc2022_day14_rocks",
+    "aoc2022_day16_input",
+    "aoc2022_day18_input",
+    "aoc2022_day19_vec4",
+    "aoc2022_day20_input",
+    "aoc2022_day21_monkeys",
+    "aoc2022_day22_instructions",
+    "aoc2022_day24_blizzards",
+    "aoc2022_day24_config",
+    "aoc2022_day25_values",
+    "aoc2024_day16_field",
+    "aoc2024_day20_field",
+    "ap",
+    "ap_bearbstand_werte",
+    "ap_erfbeurtkrit_werte",
+    "ap_erfkrit_werte",
+    "ap_umsetzung_werte",
+    "apart",
+    "apber",
+    "apberuebersicht",
+    "app_download_imports",
+    "app_users",
+    "application",
+    "arrays",
+    "article",
+    "article_stars",
+    "articles",
+    "artists",
+    "asql_cyk_config",
+    "asql_cyk_grammar",
+    "asql_cyk_tokens",
+    "asql_fluid_config",
+    "asql_fluid_initial",
+    "asql_marching_config",
+    "asql_marching_directions",
+    "asql_marching_map",
+    "asql_sudoku_config",
+    "asql_sudoku_puzzles",
+    "assozart",
+    "auth",
+    "auth_account",
+    "auth_ldap_account",
+    "auth_ldap_account_attribute_map",
+    "auth_ldap_account_deleted",
+    "auth_ldap_bind_credential",
+    "auth_ldap_certificate",
+    "auth_ldap_client_certificate",
+    "auth_ldap_deref_aliases",
+    "auth_ldap_deref_aliases_enm",
+    "auth_ldap_managed_group",
+    "auth_ldap_managed_group_deleted",
+    "auth_ldap_method",
+    "auth_ldap_method_deleted",
+    "auth_ldap_method_state_enm",
+    "auth_ldap_url",
+    "auth_ldap_user_entry_search",
+    "auth_managed_group",
+    "auth_method",
+    "auth_oidc_account",
+    "auth_oidc_account_claim_map",
+    "auth_oidc_account_deleted",
+    "auth_oidc_aud_claim",
+    "auth_oidc_certificate",
+    "auth_oidc_managed_group",
+    "auth_oidc_managed_group_deleted",
+    "auth_oidc_managed_group_member_account",
+    "auth_oidc_method",
+    "auth_oidc_method_deleted",
+    "auth_oidc_method_provider_type_enm",
+    "auth_oidc_method_state_enm",
+    "auth_oidc_prompt",
+    "auth_oidc_prompt_enm",
+    "auth_oidc_scope",
+    "auth_oidc_signing_alg",
+    "auth_oidc_signing_alg_enm",
+    "auth_password_account",
+    "auth_password_account_deleted",
+    "auth_password_argon2_conf",
+    "auth_password_argon2_cred",
+    "auth_password_conf",
+    "auth_password_credential",
+    "auth_password_method",
+    "auth_password_method_deleted",
+    "auth_token",
+    "auth_token_deleted",
+    "auth_token_status_enm",
+    "author",
+    "authors",
+    "authors_only",
+    "auto_incrementing_pk",
+    "awards",
+    "b",
+    "bank_accounts",
+    "bar",
+    "base_table",
+    "baz",
+    "being",
+    "being_part",
+    "beob",
+    "beob_quelle_werte",
+    "ber",
+    "bets",
+    "big",
+    "big_integers",
+    "big_projects",
+    "big_string",
+    "bit",
+    "bitchar_with_length",
+    "blacklist",
+    "bluesky",
+    "bluesky_raw",
+    "books",
+    "boundary_schema_version",
+    "brand_campaign_distributions",
+    "brand_campaigns",
+    "brand_distribution_points",
+    "brand_profiles",
+    "budget_categories",
+    "budget_expenses",
+    "business_advertisements",
+    "business_categories",
+    "business_content",
+    "business_currency_migration_drafts",
+    "business_deletion_reminder_log",
+    "business_deletion_requests",
+    "business_employees",
+    "business_inbox_grants",
+    "business_inventory_categories",
+    "business_inventory_items",
+    "business_item_promotions",
+    "business_languages",
+    "business_locations",
+    "business_notifications",
+    "business_photos",
+    "business_profiles",
+    "business_reports",
+    "business_screens",
+    "business_session_notification_preferences",
+    "business_stations",
+    "business_status_audit",
+    "business_verification_events",
+    "business_website_config",
+    "business_websites",
+    "cache_invalidations",
+    "call_center",
+    "campaign_events",
+    "capital",
+    "car_brands",
+    "car_dealers",
+    "car_model_sales",
+    "car_model_sales_202101",
+    "car_models",
+    "car_models_car_dealers",
+    "cart_items",
+    "cast_info",
+    "catalog_page",
+    "catalog_returns",
+    "catalog_sales",
+    "cats",
+    "census_last_logged",
+    "census_last_uploaded",
+    "census_metric_enm",
+    "challenge_participants",
+    "channels",
+    "char_alias",
+    "char_name",
+    "check_constraint",
+    "child_entities",
+    "children",
+    "chores",
+    "cities",
+    "city",
+    "clashing_column",
+    "client",
+    "clientinfo",
+    "clients",
+    "collision_test_table",
+    "comment",
+    "comments",
+    "comp_cast_type",
+    "company_name",
+    "company_type",
+    "competitors",
+    "complete_cast",
+    "complex",
+    "complex_items",
+    "compound_pk",
+    "compound_unique",
+    "conflict",
+    "connection_challenges",
+    "connection_countdowns",
+    "connection_events",
+    "connection_events_archive",
+    "connection_glow_sessions",
+    "connection_icebreaker_sessions",
+    "connection_media",
+    "connection_messages",
+    "connection_messages_archive",
+    "connection_mirror_sessions",
+    "connection_participants",
+    "connection_poll_votes",
+    "connection_polls",
+    "connection_queue",
+    "connection_queue_items",
+    "connection_queue_sessions",
+    "connection_reaction_events",
+    "connection_reactions",
+    "connection_retention_log",
+    "connection_session_reports",
+    "connection_sessions",
+    "connection_sessions_archive",
+    "connection_shoutouts",
+    "connection_synchronizer_sessions",
+    "connection_templates",
+    "connectsto",
+    "contact",
+    "contact_submissions",
+    "content_reports",
+    "content_translations",
+    "contract",
+    "controller_id_testing",
+    "conversation_messages",
+    "conversation_participants",
+    "conversations",
+    "cord",
+    "country",
+    "country_policies",
+    "credential",
+    "credential_dynamic",
+    "credential_library",
+    "credential_library_history_base",
+    "credential_purpose_enm",
+    "credential_static",
+    "credential_static_history_base",
+    "credential_static_json_credential",
+    "credential_static_json_credential_deleted",
+    "credential_static_json_credential_hst",
+    "credential_static_password_credential",
+    "credential_static_password_credential_deleted",
+    "credential_static_password_credential_hst",
+    "credential_static_ssh_private_key_credential",
+    "credential_static_ssh_private_key_credential_deleted",
+    "credential_static_ssh_private_key_credential_hst",
+    "credential_static_store",
+    "credential_static_store_deleted",
+    "credential_static_store_hst",
+    "credential_static_username_password_credential",
+    "credential_static_username_password_credential_deleted",
+    "credential_static_username_password_credential_hst",
+    "credential_static_username_password_domain_credential",
+    "credential_static_username_password_domain_credential_deleted",
+    "credential_static_username_password_domain_credential_hst",
+    "credential_store",
+    "credential_type_enm",
+    "credential_vault_client_certificate",
+    "credential_vault_credential",
+    "credential_vault_credential_status_enm",
+    "credential_vault_generic_library_password_mapping_override",
+    "credential_vault_http_method_enm",
+    "credential_vault_ldap_library",
+    "credential_vault_ldap_library_deleted",
+    "credential_vault_ldap_library_hst",
+    "credential_vault_library",
+    "credential_vault_library_deleted",
+    "credential_vault_library_hst",
+    "credential_vault_library_mapping_override",
+    "credential_vault_library_ssh_private_key_mapping_override",
+    "credential_vault_library_user_password_mapping_override",
+    "credential_vault_library_username_password_domain_mapping_ovrd",
+    "credential_vault_ssh_cert_key_bits_enm",
+    "credential_vault_ssh_cert_key_type_enm",
+    "credential_vault_ssh_cert_library",
+    "credential_vault_ssh_cert_library_deleted",
+    "credential_vault_ssh_cert_library_hst",
+    "credential_vault_ssh_cert_valid_key_type_key_bits",
+    "credential_vault_store",
+    "credential_vault_store_deleted",
+    "credential_vault_store_hst",
+    "credential_vault_token",
+    "credential_vault_token_status_enm",
+    "customer",
+    "customer_address",
+    "customer_demographics",
+    "data",
+    "data_exports",
+    "datarep_next_two_todos",
+    "date_dim",
+    "date_values",
+    "db_test_accessory",
+    "db_test_car",
+    "db_test_rental",
+    "db_test_scooter",
+    "db_test_scooter_accessory",
+    "db_test_user",
+    "decimal_values",
+    "defaultedprimarykey",
+    "deferrable_unique_constraint",
+    "deletion_audit",
+    "deletion_reminder_log",
+    "deletion_requests",
+    "departments",
+    "descendant",
+    "designers",
+    "directors",
+    "discovery_applications",
+    "discovery_search_log",
+    "edges",
+    "employee_invitations",
+    "employee_payouts",
+    "employee_shifts",
+    "employees",
+    "empty_string",
+    "empty_table",
+    "emptyuser",
+    "end_1",
+    "end_2",
+    "enforcement_actions",
+    "ens_notifications",
+    "entities",
+    "enum_menagerie_type",
+    "erfkrit",
+    "escap3e;",
+    "evab_typologie",
+    "event_invocation_logs",
+    "event_log",
+    "event_triggers",
+    "evil_column_names",
+    "evil_content",
+    "evil_friends",
+    "evil_friends_with_column_default",
+    "evil_table_comment",
+    "exchange_rate_history",
+    "exchange_rates",
+    "executions",
+    "factories",
+    "factory_buildings",
+    "family_tree",
+    "fav_numbers",
+    "feature",
+    "fee",
+    "files",
+    "filme",
+    "films",
+    "first",
+    "first_1",
+    "fms_discount_redemptions",
+    "fms_discounts",
+    "fms_feature_limits",
+    "fms_features",
+    "fms_invoices",
+    "fms_refund_region_policies",
+    "fms_refunds",
+    "fms_stripe_events",
+    "fms_subscriptions",
+    "fms_tier_prices",
+    "fms_tiers",
+    "fms_usage_archive",
+    "fms_usage_ledger",
+    "foo",
+    "forum",
+    "forum_person",
+    "forum_tag",
+    "fraud_flags",
+    "gemeinde",
+    "gh_issue",
+    "gh_pull",
+    "ghostbusters",
+    "grandchild_entities",
+    "group_yard",
+    "groups",
+    "has_fk",
+    "hdb_action",
+    "hdb_action_log",
+    "hdb_action_permission",
+    "hdb_allowlist",
+    "hdb_computed_field",
+    "hdb_cron_event_invocation_logs",
+    "hdb_cron_events",
+    "hdb_cron_triggers",
+    "hdb_custom_types",
+    "hdb_event_log_cleanups",
+    "hdb_function",
+    "hdb_metadata",
+    "hdb_permission",
+    "hdb_query_collection",
+    "hdb_query_template",
+    "hdb_relationship",
+    "hdb_remote_relationship",
+    "hdb_scheduled_event_invocation_logs",
+    "hdb_scheduled_events",
+    "hdb_schema_notifications",
+    "hdb_schema_update_event",
+    "hdb_source_catalog_version",
+    "hdb_table",
+    "hdb_version",
+    "hep_singlemu",
+    "hits",
+    "host",
+    "host_catalog",
+    "host_catalog_history_base",
+    "host_dns_name",
+    "host_history_base",
+    "host_ip_address",
+    "host_plugin_catalog",
+    "host_plugin_catalog_deleted",
+    "host_plugin_catalog_hst",
+    "host_plugin_catalog_secret",
+    "host_plugin_host",
+    "host_plugin_host_deleted",
+    "host_plugin_host_hst",
+    "host_plugin_set",
+    "host_plugin_set_deleted",
+    "host_plugin_set_member",
+    "host_set",
+    "host_set_preferred_endpoint",
+    "household_demographics",
+    "i2459_composite_t1",
+    "i2459_composite_t2",
+    "i2459_self_t",
+    "i2459_simple_t1",
+    "i2459_simple_t2",
+    "iam_grant",
+    "iam_grant_resource_enm",
+    "iam_group",
+    "iam_group_deleted",
+    "iam_group_member_user",
+    "iam_group_role",
+    "iam_managed_group_role",
+    "iam_role",
+    "iam_role_deleted",
+    "iam_role_global",
+    "iam_role_global_grant_scope_enm",
+    "iam_role_global_individual_org_grant_scope",
+    "iam_role_global_individual_project_grant_scope",
+    "iam_role_grant",
+    "iam_role_grant_scope",
+    "iam_role_org",
+    "iam_role_org_grant_scope_enm",
+    "iam_role_org_individual_grant_scope",
+    "iam_role_project",
+    "iam_scope",
+    "iam_scope_deleted",
+    "iam_scope_global",
+    "iam_scope_hst",
+    "iam_scope_org",
+    "iam_scope_project",
+    "iam_scope_type_enm",
+    "iam_user",
+    "iam_user_deleted",
+    "iam_user_hst",
+    "iam_user_role",
+    "idealbiotop",
+    "images",
+    "income_band",
+    "infinite_inserts",
+    "info_type",
+    "insertonly",
+    "institution",
+    "institution_songs",
+    "int_alias",
+    "integral_values",
+    "internal_job",
+    "invalid_triggers",
+    "inventory",
+    "isn_sample",
+    "item",
+    "items",
+    "items2",
+    "items3",
+    "items_with_different_col_types",
+    "janedoe",
+    "job",
+    "job_postings",
+    "job_run",
+    "job_run_status_enm",
+    "jobs",
+    "johnsmith",
+    "json",
+    "json_arr",
+    "json_table",
+    "jsonb_test",
+    "junction",
+    "jwt_token",
+    "keyword",
+    "kind_type",
+    "kms_audit_key",
+    "kms_audit_key_version",
+    "kms_collection_version",
+    "kms_data_key",
+    "kms_data_key_version",
+    "kms_data_key_version_destruction_job",
+    "kms_data_key_version_destruction_job_run",
+    "kms_database_key",
+    "kms_database_key_version",
+    "kms_oidc_key",
+    "kms_oidc_key_version",
+    "kms_oplog_collection_version",
+    "kms_oplog_data_key",
+    "kms_oplog_data_key_version",
+    "kms_oplog_key",
+    "kms_oplog_key_version",
+    "kms_oplog_root_key",
+    "kms_oplog_root_key_version",
+    "kms_oplog_schema_version",
+    "kms_root_key",
+    "kms_root_key_version",
+    "kms_schema_version",
+    "kms_session_key",
+    "kms_session_key_version",
+    "kms_token_key",
+    "kms_token_key_version",
+    "knows",
+    "label_screen",
+    "labels",
+    "lc",
+    "leak",
+    "lf",
+    "li",
+    "likes",
+    "lines",
+    "link_type",
+    "loc_test",
+    "location",
+    "location_verifications",
+    "log",
+    "log_migration",
+    "lr",
+    "lt",
+    "ltree_sample",
+    "m14_v17_probe_results",
+    "m21_3029_removed_rules_backup",
+    "managers",
+    "medium",
+    "menagerie",
+    "message",
+    "message_attachments",
+    "message_tag",
+    "messages",
+    "migrations",
+    "ml_filtering_log",
+    "mms_outbox",
+    "mms_send_events",
+    "moderation_access_log",
+    "moderation_word_filters",
+    "monitoredby",
+    "movie_analytics",
+    "movie_companies",
+    "movie_info",
+    "movie_info_idx",
+    "movie_keyword",
+    "movie_link",
+    "my_table",
+    "my_type",
+    "name",
+    "never_prepared",
+    "no_host_catalog_history",
+    "no_host_history",
+    "no_pk",
+    "nodes",
+    "nonce_type_enm",
+    "noprimarykey",
+    "not_null_constraint",
+    "notification_deliveries",
+    "nullable_integer",
+    "numeric_values",
+    "oid_test",
+    "one",
+    "one_also",
+    "only_pk",
+    "open_street_map",
+    "openapi_defaults",
+    "openapi_types",
+    "operators",
+    "oplog_entry",
+    "oplog_metadata",
+    "oplog_ticket",
+    "order_tasks",
+    "orders",
+    "organisation",
+    "organizations",
+    "page_views",
+    "pages",
+    "parents",
+    "part",
+    "pending_deposits",
+    "pending_payments",
+    "pending_withdrawals",
+    "perf_articles",
+    "person",
+    "person_company",
+    "person_email",
+    "person_info",
+    "person_language",
+    "person_tag",
+    "person_university",
+    "personnages",
+    "pet",
+    "pgrst_reserved_chars",
+    "pk_constraint",
+    "place",
+    "places",
+    "plate",
+    "plate_plan_step",
+    "player",
+    "plugin",
+    "plugin_host",
+    "plugin_host_supported",
+    "plugin_storage_supported",
+    "pma__bookmark",
+    "pma__central_columns",
+    "pma__column_info",
+    "pma__designer_settings",
+    "pma__export_templates",
+    "pma__favorite",
+    "pma__history",
+    "pma__navigationhiding",
+    "pma__pdf_pages",
+    "pma__recent",
+    "pma__relation",
+    "pma__savedsearches",
+    "pma__table_coords",
+    "pma__table_info",
+    "pma__table_uiprefs",
+    "pma__tracking",
+    "pma__userconfig",
+    "pma__usergroups",
+    "pma__users",
+    "pma_bookmark",
+    "pms_audit_log",
+    "pms_secrets",
+    "pms_security_alerts",
+    "point",
+    "point_2d",
+    "point_3d",
+    "points",
+    "policy",
+    "policy_storage_policy",
+    "policy_storage_policy_deleted",
+    "pop",
+    "post",
+    "posters",
+    "probe_log",
+    "process_categories",
+    "process_costs",
+    "process_operator",
+    "process_supervisor",
+    "processes",
+    "produce",
+    "products",
+    "products_suppliers",
+    "profiles",
+    "project_invoices",
+    "projects",
+    "projects_dump",
+    "projekt",
+    "promotion",
+    "public_consumers",
+    "public_orders",
+    "publishers",
+    "qk_pop_ohne_popber",
+    "qk_pop_ohne_popmassnber",
+    "qk_tpop_ohne_massnber",
+    "qk_tpop_ohne_tpopber",
+    "ranges",
+    "reason",
+    "recording_channel",
+    "recording_channel_ssh",
+    "recording_channel_ssh_channel_type_enm",
+    "recording_channel_ssh_session_channel",
+    "recording_channel_ssh_session_channel_program_enm",
+    "recording_channel_ssh_session_channel_program_exec",
+    "recording_channel_ssh_session_channel_program_exec_enm",
+    "recording_channel_ssh_session_channel_program_subsystem",
+    "recording_connection",
+    "recording_dynamic_credential",
+    "recording_session",
+    "recording_session_deleted",
+    "recording_session_state_enm",
+    "recording_static_credential",
+    "recovery_nonces",
+    "referrals",
+    "refund_requests",
+    "refund_reserve_ledger",
+    "region",
+    "remote_schemas",
+    "requires",
+    "reserve_accrual_gaps",
+    "reviews",
+    "role_type",
+    "rollen",
+    "route",
+    "rule_reports",
+    "run2012b_singlemu",
+    "safe_delete_items",
+    "safe_update_items",
+    "schauspieler",
+    "schedules",
+    "schema_version",
+    "scope_policy_storage_policy",
+    "screens",
+    "searchindex",
+    "second",
+    "second_1",
+    "segment",
+    "semaphore",
+    "sensor",
+    "series",
+    "server",
+    "server today",
+    "server_controller",
+    "server_tag",
+    "server_type_enm",
+    "server_worker",
+    "server_worker_api_tag",
+    "server_worker_config_tag",
+    "server_worker_deleted",
+    "server_worker_local_storage_state_state_enm",
+    "server_worker_operational_state_enm",
+    "server_worker_session_info_request",
+    "server_worker_tag",
+    "server_worker_tag_enm",
+    "server_worker_type_enm",
+    "session",
+    "session_connection",
+    "session_connection_closed_reason_enm",
+    "session_connection_state",
+    "session_connection_state_enm",
+    "session_credential",
+    "session_credential_dynamic",
+    "session_credential_static",
+    "session_delete_terminated_job",
+    "session_deleted",
+    "session_feedback",
+    "session_host_set_host",
+    "session_proxy_certificate",
+    "session_state",
+    "session_state_enm",
+    "session_target_address",
+    "session_termination_reason_enm",
+    "session_valid_state",
+    "session_worker_protocol",
+    "sessions_pending_daily_snapshot",
+    "shift_attendance",
+    "ship_mode",
+    "shop_bles",
+    "shops",
+    "simple_pk",
+    "simple_pk2",
+    "single_mu_lists",
+    "single_unique",
+    "sites",
+    "small",
+    "some_numbers",
+    "space",
+    "special ",
+    "spheres",
+    "sponsors",
+    "sqlite_stat1",
+    "src",
+    "staff",
+    "stall",
+    "state_counts",
+    "static_host",
+    "static_host_catalog",
+    "static_host_catalog_deleted",
+    "static_host_catalog_hst",
+    "static_host_deleted",
+    "static_host_hst",
+    "static_host_set",
+    "static_host_set_deleted",
+    "static_host_set_member",
+    "status",
+    "storage_bucket_credential",
+    "storage_bucket_credential_environmental",
+    "storage_bucket_credential_managed_secret",
+    "storage_plugin_storage_bucket",
+    "storage_plugin_storage_bucket_deleted",
+    "storage_plugin_storage_bucket_secret",
+    "store",
+    "store_returns",
+    "store_sales",
+    "string_values",
+    "strings",
+    "strings_temp",
+    "stripe_dispute_alerts",
+    "stripe_dispute_events",
+    "stripe_disputes",
+    "stripe_orphan_charges",
+    "stripe_payments",
+    "stripe_payouts",
+    "stripe_platform_revenue",
+    "stripe_refunds",
+    "stripe_revenue_entries",
+    "stripe_webhook_events",
+    "students",
+    "students_info",
+    "stuff",
+    "subscriptions",
+    "supervisors",
+    "suppliers",
+    "suppliers_trade_unions",
+    "support_ingest_seen",
+    "support_requests",
+    "surr_gen_default_upsert",
+    "surr_serial_upsert",
+    "switch",
+    "switchposition",
+    "sync_log",
+    "sync_metadata",
+    "t",
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "t5",
+    "t6",
+    "t7",
+    "ta",
+    "table1",
+    "table10",
+    "table11",
+    "table12",
+    "table13",
+    "table14",
+    "table15",
+    "table16",
+    "table17",
+    "table18",
+    "table19",
+    "table2",
+    "table20",
+    "table21",
+    "table22",
+    "table23",
+    "table24",
+    "table25",
+    "table26",
+    "table27",
+    "table28",
+    "table29",
+    "table3",
+    "table30",
+    "table31",
+    "table32",
+    "table33",
+    "table34",
+    "table35",
+    "table36",
+    "table37",
+    "table38",
+    "table39",
+    "table4",
+    "table40",
+    "table41",
+    "table42",
+    "table43",
+    "table44",
+    "table45",
+    "table46",
+    "table47",
+    "table48",
+    "table49",
+    "table5",
+    "table50",
+    "table6",
+    "table7",
+    "table8",
+    "table9",
+    "table_a",
+    "table_b",
+    "tag",
+    "tagclass",
+    "target",
+    "target_address",
+    "target_alias_proxy_certificate",
+    "target_alias_testing",
+    "target_credential_library",
+    "target_history_base",
+    "target_host_set",
+    "target_proxy_certificate",
+    "target_rdp",
+    "target_rdp_deleted",
+    "target_rdp_hst",
+    "target_ssh",
+    "target_ssh_deleted",
+    "target_ssh_hst",
+    "target_static_credential",
+    "target_tcp",
+    "target_tcp_deleted",
+    "tasks",
+    "tb",
+    "tbl2",
+    "tbl_w_json",
+    "template_purchases",
+    "test",
+    "test_counts_all",
+    "test_counts_current_month",
+    "test_counts_last_2_months",
+    "test_five",
+    "test_four",
+    "test_hcp_billing",
+    "test_r1",
+    "test_r1_hst",
+    "test_r2",
+    "test_t1",
+    "test_table",
+    "test_table_data",
+    "test_three",
+    "test_two",
+    "test_wh_user_id",
+    "tgt",
+    "theme_prices",
+    "theme_purchases",
+    "three",
+    "time_dim",
+    "timestamps",
+    "tiobe_pls",
+    "title",
+    "touched_files",
+    "tournaments",
+    "tpop",
+    "tpopkontr_idbiotuebereinst_werte",
+    "tpopkontr_typ_werte",
+    "tpopkontrzaehl",
+    "tpopkontrzaehl_einheit_werte",
+    "tpopkontrzaehl_methode_werte",
+    "tpopmassn",
+    "tpopmassn_erfbeurt_werte",
+    "tpopmassn_typ_werte",
+    "tpopmassnber",
+    "trackelement",
+    "trade_unions",
+    "trash",
+    "trash_details",
+    "triangles",
+    "trips",
+    "tsearch",
+    "tsearch_to_tsvector",
+    "twitter",
+    "two",
+    "unique_constraint",
+    "unit_workdays",
+    "unittest",
+    "unsafe_delete_items",
+    "unsafe_update_items",
+    "user",
+    "user_business_visits",
+    "user_connection_preferences",
+    "user_favorites",
+    "user_fcm_tokens",
+    "user_friend",
+    "user_notification_preferences",
+    "user_role_audit",
+    "user_segments",
+    "useragent",
+    "userexample",
+    "users",
+    "users_projects",
+    "users_tasks",
+    "uuid_values",
+    "verification_limits",
+    "videogames",
+    "visit_type",
+    "visits",
+    "w_or_wo_comma_names",
+    "wallet_2fa_audit_log",
+    "wallet_2fa_biometric_devices",
+    "wallet_2fa_otp_codes",
+    "wallet_2fa_rate_limits",
+    "wallet_2fa_settings",
+    "wallet_2fa_tokens",
+    "wallet_disputes",
+    "wallet_ledger",
+    "wallet_notification_preferences",
+    "wallet_refund_tracking",
+    "wallet_refunds",
+    "wallet_security_audit",
+    "wallets",
+    "warehouse",
+    "web_content",
+    "web_page",
+    "web_returns",
+    "web_sales",
+    "web_site",
+    "webhook_events",
+    "website_analytics",
+    "website_stripe_webhook_events",
+    "website_templates",
+    "well",
+    "wh_auth_token_accumulating_fact",
+    "wh_credential_dimension",
+    "wh_credential_group",
+    "wh_credential_group_membership",
+    "wh_date_dimension",
+    "wh_host_dimension",
+    "wh_network_address_dimension",
+    "wh_network_address_group",
+    "wh_network_address_group_membership",
+    "wh_session_accumulating_fact",
+    "wh_session_connection_accumulating_fact",
+    "wh_time_of_day_dimension",
+    "wh_user_dimension",
+    "whatev_jobs",
+    "whatev_projects",
+    "whatev_sites",
+    "with_pk1",
+    "with_pk2",
+    "withunique",
+    "worker_auth_authorized",
+    "worker_auth_authorized_state_enm",
+    "worker_auth_ca",
+    "worker_auth_ca_certificate",
+    "worker_auth_certificate_bundle",
+    "worker_auth_operational_indicator_enm",
+    "worker_auth_server_led_activation_token",
+    "worker_discovery_settings",
+    "worker_storage_bucket_credential_permission_type_enm",
+    "worker_storage_bucket_credential_state",
+    "worker_storage_bucket_credential_state_enm",
+    "x",
+    "x1",
+    "x_group",
+    "xmltest",
+    "yards",
+    "ziel",
+    "ziel_typ_werte",
+    "zielber",
+    "zone"
+  ],
+  "zeroProbes": [
+    {
+      "probe": "extends-inherits",
+      "occurrences": 0
+    },
+    {
+      "probe": "implements-keyword",
+      "occurrences": 0
+    },
+    {
+      "probe": "implements-node",
+      "occurrences": 0
+    },
+    {
+      "probe": "instantiates-node",
+      "occurrences": 0
+    },
+    {
+      "probe": "imports-variable",
+      "occurrences": 0
+    },
+    {
+      "probe": "imports-other",
+      "occurrences": 0
+    },
+    {
+      "probe": "exports-keyword",
+      "occurrences": 0
+    },
+    {
+      "probe": "exports-node",
+      "occurrences": 0
+    },
+    {
+      "probe": "exports-grant",
+      "occurrences": 0
+    }
+  ],
+  "overrideProbe": {
+    "overrides-replace": 15,
+    "overrides-after-drop": 0,
+    "overrides-duplicate": 163
+  }
+}

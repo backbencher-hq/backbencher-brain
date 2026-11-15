@@ -1,0 +1,182 @@
+{
+  "fixtureId": "markdown/link-target-external",
+  "language": "markdown",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A `uses` edge over a link destination used to be indistinguishable from a `uses` edge over an unresolvable local reference. Measured on the 600-file prefix of the 17,456-file admitted population (production parseFile, validation/m60/markdown/abc-before-600.json): 4,107 of 4,951 targets binding to no local declaration carry a URI scheme \u2014 3,996 https, 110 http, 1 some \u2014 so the unresolved column overstated this lane's defects by 82.9% and nothing in the output said which was which. The edge itself is correct and is KEPT: a markdown link to a website is a real use of that resource, and dropping 4,107 edges to improve a column is the opposite of the point. What changed is that the edge now carries `isExternal` and a `targetKind`. Seven behaviours are pinned because each is a place the obvious implementation is wrong. (1) The THREE-WAY split, not a boolean: `docs/guide.md` names a file in THIS repository, so marking it external is a false statement \u2014 it is a modelling gap and is counted separately. (2) A scheme of ONE character is a Windows drive path, not a URI. RFC 3986 admits `X:`, so `X:/src/lib.rs` satisfies the scheme grammar and the first implementation of this put it in the external bucket. (3) A network-path reference `//cdn.example.com/x.js` has no scheme at all and is still remote \u2014 the authority is what makes it remote. (4) The two legal WRAPPED forms are opposites, and pinning only one of them passes an implementation that gets the other wrong. `[x](<https://y>)` \u2014 CommonMark 0.31.2 \u00a74.7: the angle brackets are the enclosing syntax and NOT part of the destination, so the target is `https://y`. `[x]((https://y))` \u2014 the parentheses ARE part of the destination, because CommonMark permits unescaped parentheses inside a bare destination when balanced, so the target is `(https://y)` and the scheme scan must see THROUGH them. The angle case was found by this fixture, not by reading: the analyzer published `<https://y>`, which src/ast/pool-worker.ts:653 then deleted at the production boundary, so `analyze()` emitted the edge and `parseFile` returned zero. (5) The classification reads the DESTINATION and never the label, in both directions: the fixture carries a label that looks exactly like a URL over a relative destination, and an innocuous label over a remote one. Classifying the label is the obvious implementation because the label is the text a reader sees. (6) An autolink is external BY CONSTRUCTION \u2014 `<https://x>` and `<a@b.c>` are the two forms CommonMark defines and neither can name a local declaration \u2014 while `targetKind` still separates a URI autolink from an email autolink. (7) Nothing about the endpoint or the label moved: the target string is the destination as written and the type is still `uses`, because mutant MD-L1 relabels these in place and markdown/internal-anchor-links forbids `uses` over an in-document anchor.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "Remote schemes are external",
+      "target": "https://example.com/a",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "meta.externalScheme": "https"
+    },
+    {
+      "type": "uses",
+      "from": "Remote schemes are external",
+      "target": "http://example.com/b",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "meta.externalScheme": "http"
+    },
+    {
+      "type": "uses",
+      "from": "Remote schemes are external",
+      "target": "mailto:dev@example.com",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "meta.externalScheme": "mailto"
+    },
+    {
+      "type": "uses",
+      "from": "Remote schemes are external",
+      "target": "some:thing",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "meta.externalScheme": "some"
+    },
+    {
+      "type": "uses",
+      "from": "Remote schemes are external",
+      "target": "//cdn.example.com/x.js",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "meta.externalScheme": "network-path"
+    },
+    {
+      "type": "uses",
+      "from": "A one-character scheme is a Windows drive, not a URI",
+      "target": "X:/src/lib.rs",
+      "meta.targetKind": "repoRelativePath",
+      "meta.isExternal": false,
+      "comment": "RFC 3986 admits `X:`; a drive path is in the repository"
+    },
+    {
+      "type": "uses",
+      "from": "In-repo paths are not external",
+      "target": "./install.md",
+      "meta.targetKind": "repoRelativePath",
+      "meta.isExternal": false
+    },
+    {
+      "type": "uses",
+      "from": "In-repo paths are not external",
+      "target": "docs/guide.md",
+      "meta.targetKind": "repoRelativePath",
+      "meta.isExternal": false
+    },
+    {
+      "type": "uses",
+      "from": "In-repo paths are not external",
+      "target": "../README.md",
+      "meta.targetKind": "repoRelativePath",
+      "meta.isExternal": false
+    },
+    {
+      "type": "uses",
+      "from": "In-repo paths are not external",
+      "target": "LICENSE.txt",
+      "meta.targetKind": "repoRelativePath",
+      "meta.isExternal": false
+    },
+    {
+      "type": "uses",
+      "from": "A bare token names no place at all",
+      "target": "@ref",
+      "meta.targetKind": "bareToken",
+      "meta.isExternal": false
+    },
+    {
+      "type": "uses",
+      "from": "Autolinks are external by construction",
+      "target": "https://example.com/auto",
+      "meta.role": "markdown_autolink",
+      "meta.isExternal": true,
+      "meta.targetKind": "externalUri"
+    },
+    {
+      "type": "uses",
+      "from": "Autolinks are external by construction",
+      "target": "dev@example.com",
+      "meta.role": "markdown_autolink",
+      "meta.isExternal": true,
+      "meta.targetKind": "emailAutolink"
+    },
+    {
+      "type": "uses",
+      "from": "The classification reads the DESTINATION, never the label",
+      "target": "CHANGELOG.md",
+      "meta.targetKind": "repoRelativePath",
+      "meta.isExternal": false,
+      "comment": "the LABEL reads like a URL; the destination does not"
+    },
+    {
+      "type": "uses",
+      "from": "The classification reads the DESTINATION, never the label",
+      "target": "https://example.com/docs",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "comment": "an innocuous label over a remote destination"
+    },
+    {
+      "type": "uses",
+      "from": "Wrapped destinations: one wrapper is syntax, the other is not",
+      "target": "https://example.com/angled",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "comment": "the angle brackets are syntax, not the destination"
+    },
+    {
+      "type": "uses",
+      "from": "Wrapped destinations: one wrapper is syntax, the other is not",
+      "target": "(https://example.com/parens)",
+      "meta.targetKind": "externalUri",
+      "meta.isExternal": true,
+      "meta.externalScheme": "https",
+      "comment": "balanced parentheses ARE part of a bare destination; the target keeps them and the classifier still finds the scheme"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "target": "<https://example.com/angled>",
+      "comment": "the angle-bracket form published WITH its delimiters. Every other row here treats an unspecified field as a wildcard, so this one is target-only: the defect is the SPELLING of the endpoint, and a consumer cannot bind a target no store will ever match."
+    },
+    {
+      "target": "<docs/guide.md>",
+      "comment": "same, on a non-URI destination: it must arrive bare so it can be compared with the sibling-file targets this fixture also pins"
+    },
+    {
+      "note": "`[x](<>)` and `[x](<https://example.com/unclosed` \u2014 an empty or unclosed destination is not a link target and publishes NO `uses` edge from this section. Scoped by `type` + `from` because an unspecified field is a WILDCARD (run-fixtures.ts:1221), and a row with only a comment forbids every relationship in the file \u2014 which is what the first version of this fixture did, and it failed on the document's own top-level `contains` edge.",
+      "type": "uses",
+      "from": "An empty destination is not a link target"
+    }
+  ],
+  "_measuredOnTheLaneCorpus": {
+    "note": "the numbers the split is accountable for, from validation/m60/markdown/abc-before-600.json \u2014 600 files, a PREFIX of the 17,456 admitted population, repo-ascending then rel-ascending, production parseFile",
+    "populationSha256": "1d079c4fff2092ce0e11b8090c69d8e86d6e4fba4569b6886653170f6c020781",
+    "files": 600,
+    "symbols": 8496,
+    "edges": 12067,
+    "unresolvedTargets": 4951,
+    "externalUri": 4107,
+    "externalSchemes": {
+      "https": 3996,
+      "http": 110,
+      "some": 1
+    },
+    "repoRelativePath": 572,
+    "bareToken": 272,
+    "wrappedDestinations": 3,
+    "shareOfUnresolvedThatWasExternal": 0.829,
+    "angleBracketDestinationSites": 96,
+    "filesWithAngleBracketDestination": 33,
+    "admittedFiles": 17456,
+    "angleBracketPopulationNote": "96 sites in 33 of 17,456 admitted files, scanned with a character test over `](` + optional spaces + `<` + `>` + `)`. Includes `gh-cli/internal/attachments/testdata/references_input.md`, a corpus file whose entire purpose is this construct, and 4 copies of one GitHub issue template. Small population, stated as measured."
+  },
+  "_declaredLimitation": {
+    "what": "The marker is COUNTABLE and nothing more. No production consumer reads it: `isExternal` on analyzer metadata has no reader anywhere in src/ (the `isExternal` in src/lsp/call_hierarchy.ts and src/lsp/graph_usages.ts is a call-hierarchy concept on a different object), and the store still attempts to bind every one of these targets and records it as unresolved. So the store-side resolution rate for this lane is unchanged by this commit.",
+    "why": "src/ast/parallel-indexer.ts is shared machinery (workstream \u00a78) and is not this lane's to edit. The analyzer half is the half that can be done here, and doing it means the number is available to whoever wires the consumer.",
+    "wouldBeWrongTo": "report this as a resolution improvement. It is a bookkeeping change; the resolution rate moved 0."
+  }
+}

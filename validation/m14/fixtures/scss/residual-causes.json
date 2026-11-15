@@ -1,0 +1,223 @@
+{
+  "instrument": "scss residual causes — the WHOLE residual by type and target shape, classified with the gate's own rule module",
+  "population": {
+    "admitted": 4433,
+    "parsed": 4433,
+    "failed": 0,
+    "repos": 25,
+    "admission": "git-tracked, .scss, <= 1 MiB, detectLanguageFromPath === 'scss', sorted"
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default scope, named in its own `resolutionScope`",
+  "note": "the gate's printed worklists are CAPPED at 25 names per type, so this enumeration exists to give the real counts",
+  "perType": {
+    "imports": {
+      "edges": 3636,
+      "resolved": 231,
+      "ambiguousByDecl": 0,
+      "unresolved": 3405,
+      "claimed": 3109,
+      "claimedVerified": 3109,
+      "byShape": {
+        "MODULE-PATH": 272,
+        "URL": 10,
+        "BARE-IDENT": 15
+      },
+      "examples": {
+        "MODULE-PATH": [
+          "assets/html/scss/catppuccin.scss: bulma/utilities/all",
+          "assets/html/scss/catppuccin.scss: assets/html/scss/bulma/base/minireset::minireset.sass",
+          "assets/html/scss/catppuccin.scss: bulma/helpers/all",
+          "assets/html/scss/catppuccin.scss: assets/html/scss/bulma/base/generic::generic.sass",
+          "assets/html/scss/catppuccin.scss: bulma/elements/all"
+        ],
+        "URL": [
+          "assets/html/scss/darkly/_overrides.scss: https://fonts.googleapis.com/css?family=Lato:400,700,400italic&display=swap",
+          "docs/_sass/examples/custom.scss: https://fonts.googleapis.com/css?family=Nunito:400,700",
+          "test/ruby-sass/sass/customize.scss: https://fonts.googleapis.com/css?family=Nunito:400,700",
+          "runtime/tools/wiki/styles/style.scss: https://rsms.me/inter/inter.css",
+          "runtime/tools/wiki/styles/style.scss: https://rsms.me/inter/inter-display.css"
+        ],
+        "BARE-IDENT": [
+          "test/ruby-sass/sass/customize.scss: _all.sass",
+          "test/ruby-sass/sass/customize.scss: _all.sass",
+          "test/ruby-sass/sass/customize.scss: button.sass",
+          "test/ruby-sass/sass/customize.scss: container.sass",
+          "test/ruby-sass/sass/customize.scss: title.sass"
+        ]
+      },
+      "scoping": {
+        "NO-DECLARATION": 297
+      },
+      "resolvableCounterfactual": {
+        "checked": 272,
+        "couldHaveResolved": 10,
+        "candidates": [
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/service/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/service-instance/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/upstream/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/upstream-instance/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/exposed-path/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/lock-session/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/node/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/intention/list/table  (basename 'table' IS declared in this project)",
+          "ui/packages/consul-ui/app/styles/components.scss: consul-ui/components/consul/partition/list/table  (basename 'table' IS declared in this project)"
+        ]
+      }
+    },
+    "contains": {
+      "edges": 12531,
+      "resolved": 12531,
+      "ambiguousByDecl": 0,
+      "unresolved": 0,
+      "claimed": 0,
+      "claimedVerified": 0,
+      "byShape": {},
+      "examples": {}
+    },
+    "references": {
+      "edges": 9358,
+      "resolved": 4124,
+      "ambiguousByDecl": 1501,
+      "unresolved": 3733,
+      "claimed": 6257,
+      "claimedVerified": 6257,
+      "byShape": {
+        "BARE-IDENT": 787
+      },
+      "examples": {
+        "BARE-IDENT": [
+          "assets/html/scss/catppuccin.scss: $todo",
+          "assets/html/scss/catppuccin.scss: $compat",
+          "assets/html/scss/catppuccin.scss: $danger",
+          "assets/html/scss/catppuccin.scss: $warning",
+          "assets/html/scss/catppuccin.scss: $success"
+        ]
+      },
+      "scoping": {
+        "S2": 787
+      }
+    },
+    "exports": {
+      "edges": 4048,
+      "resolved": 3065,
+      "ambiguousByDecl": 983,
+      "unresolved": 0,
+      "claimed": 0,
+      "claimedVerified": 0,
+      "byShape": {
+        "BARE-IDENT": 983
+      },
+      "examples": {
+        "BARE-IDENT": [
+          "assets/html/scss/catppuccin.scss: $themename",
+          "assets/html/scss/catppuccin.scss: $bulmaswatch-import-font",
+          "assets/html/scss/catppuccin.scss: $body-size",
+          "assets/html/scss/catppuccin.scss: $size-6",
+          "assets/html/scss/catppuccin.scss: $size-7"
+        ]
+      },
+      "scoping": {
+        "S2": 983
+      }
+    },
+    "extends": {
+      "edges": 426,
+      "resolved": 231,
+      "ambiguousByDecl": 40,
+      "unresolved": 155,
+      "claimed": 0,
+      "claimedVerified": 0,
+      "byShape": {
+        "SELECTOR": 184,
+        "BARE-IDENT": 10,
+        "URL": 1
+      },
+      "examples": {
+        "SELECTOR": [
+          "assets/html/scss/documenter/_patches.scss: .is-dark",
+          "assets/html/scss/documenter/components/_admonition.scss: %block",
+          "assets/html/scss/documenter/components/_docstring.scss: .is-primary",
+          "assets/html/scss/documenter/components/_docstring.scss: .is-size-7",
+          "assets/html/scss/documenter/layout/_sidebar.scss: .image"
+        ],
+        "BARE-IDENT": [
+          "scss/_type.scss: h1",
+          "scss/_type.scss: h2",
+          "scss/_type.scss: h3",
+          "scss/_type.scss: h4",
+          "scss/_type.scss: h5"
+        ],
+        "URL": [
+          "ui/packages/consul-ui/app/components/consul/intention/form/fieldsets/layout.scss: Figma:"
+        ]
+      },
+      "scoping": {
+        "NO-DECLARATION": 155,
+        "S2": 40
+      }
+    },
+    "overrides": {
+      "edges": 32,
+      "resolved": 16,
+      "ambiguousByDecl": 16,
+      "unresolved": 0,
+      "claimed": 0,
+      "claimedVerified": 0,
+      "byShape": {
+        "BARE-IDENT": 16
+      },
+      "examples": {
+        "BARE-IDENT": [
+          "assets/html/scss/documenter/components/_admonition.scss: $admonition-header-background",
+          "assets/html/scss/documenter/components/_admonition.scss: $admonition-header-color",
+          "assets/html/scss/documenter/components/_admonition.scss: $admonition-border-color",
+          "assets/html/scss/documenter/components/_admonition.scss: $admonition-background",
+          "assets/html/scss/documenter/components/_admonition.scss: $admonition-body-color"
+        ]
+      },
+      "scoping": {
+        "S2": 16
+      }
+    },
+    "calls": {
+      "edges": 304,
+      "resolved": 278,
+      "ambiguousByDecl": 26,
+      "unresolved": 0,
+      "claimed": 0,
+      "claimedVerified": 0,
+      "byShape": {
+        "SELECTOR": 26
+      },
+      "examples": {
+        "SELECTOR": [
+          "scss/_functions.scss: @function divide",
+          "scss/_functions.scss: @function divide",
+          "scss/_functions.scss: @function divide",
+          "scss/_functions.scss: @function divide",
+          "scss/_functions.scss: @function divide"
+        ]
+      },
+      "scoping": {
+        "S2": 26
+      }
+    },
+    "uses": {
+      "edges": 91,
+      "resolved": 91,
+      "ambiguousByDecl": 0,
+      "unresolved": 0,
+      "claimed": 0,
+      "claimedVerified": 0,
+      "byShape": {},
+      "examples": {}
+    }
+  },
+  "totals": {
+    "MODULE-PATH": 272,
+    "URL": 11,
+    "BARE-IDENT": 1811,
+    "SELECTOR": 210
+  }
+}

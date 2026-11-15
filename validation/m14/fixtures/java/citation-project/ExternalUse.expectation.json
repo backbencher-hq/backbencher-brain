@@ -1,0 +1,46 @@
+{
+  "fixtureId": "java/citation-project/ExternalUse",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "POSITIVE half of the library-namespace citation fixture (Lead ruling 2026-10-19, vocabulary `java-platform-libraries`). The fixture runner gives java sub-directory fixtures a real project index (JAVA_DECLARATION_SPEC + complete=true, Lead commit), so the fail-closed citation channel can finally be pinned POSITIVELY in the suite: `androidx.media3.common.C` and `jakarta.servlet.Filter` are not project declarations, so the dotted module paths carry prefix citations and the bare `Filter` (single-type import under a registry root) carries a bare-symbol citation. extOK with verifiedBy=namespace, never resolved.",
+  "expectSymbols": [
+    {
+      "name": "ExternalUse",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "app",
+      "target": "androidx.media3.common.C",
+      "meta.languageNamespace": [
+        "androidx"
+      ]
+    },
+    {
+      "type": "imports",
+      "source": "app",
+      "target": "jakarta.servlet.Filter",
+      "meta.languageNamespace": [
+        "jakarta"
+      ]
+    },
+    {
+      "type": "references",
+      "source": "ExternalUse",
+      "target": "androidx.media3.common.C",
+      "meta.languageNamespace": [
+        "androidx"
+      ]
+    },
+    {
+      "type": "references",
+      "source": "ExternalUse",
+      "target": "Filter",
+      "meta.languageNamespace": [
+        "Filter"
+      ]
+    }
+  ]
+}

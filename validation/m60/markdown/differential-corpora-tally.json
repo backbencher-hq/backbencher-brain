@@ -1,0 +1,174 @@
+{
+  "instrument": "markdown differential-corpora tally (validation/m14/fixtures/markdown/differential-corpora-tally.ts)",
+  "question": "on the two corpora script/m14/differential.ts draws markdown from, which of the four types the analyzer emits can a 60-file rotating draw ever place in the COMPARED set, given the allowlist at :23392 is [\"contains\",\"uses\"]?",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpora": [
+    "scala3",
+    "kubernetes"
+  ],
+  "population": {
+    "admission": "every tracked .md/.markdown under scala3 and kubernetes — the two corpora named at script/m14/differential.ts:533 and :640",
+    "files": 1331,
+    "perRepo": {
+      "scala3": 736,
+      "kubernetes": 595
+    },
+    "method": "upper bound on any 60-file draw: a type with 0 edges here has 0 in every draw"
+  },
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "sharding": {
+    "shards": 8,
+    "concurrencyInsideShard": 8,
+    "why": "src/ast/engine.ts:1411 kills the process on a WASM trap"
+  },
+  "perRepo": {
+    "scala3": {
+      "repo": "scala3",
+      "files": 736,
+      "parsed": 736,
+      "failures": 0,
+      "degraded": 4,
+      "perType": {
+        "uses": {
+          "edges": 4819,
+          "files": 369,
+          "exampleFiles": [
+            "scala3/changelogs/3.6.4.md",
+            "scala3/changelogs/3.3.0-RC5.md",
+            "scala3/changelogs/3.7.1.md"
+          ]
+        },
+        "contains": {
+          "edges": 6342,
+          "files": 615,
+          "exampleFiles": [
+            "scala3/changelogs/3.6.4.md",
+            "scala3/changelogs/3.3.0-RC5.md",
+            "scala3/changelogs/3.7.1.md"
+          ]
+        },
+        "references": {
+          "edges": 117,
+          "files": 18,
+          "exampleFiles": [
+            "docs/_spec/12-the-scala-standard-library.md",
+            "TODOreference/experimental/explicit-nulls.md",
+            "docs/_spec/07-implicits.md"
+          ]
+        },
+        "imports": {
+          "edges": 1,
+          "files": 1,
+          "exampleFiles": [
+            "docs/_spec/index.md"
+          ]
+        }
+      }
+    },
+    "kubernetes": {
+      "repo": "kubernetes",
+      "files": 595,
+      "parsed": 595,
+      "failures": 0,
+      "degraded": 0,
+      "perType": {
+        "uses": {
+          "edges": 58401,
+          "files": 430,
+          "exampleFiles": [
+            "kubernetes/CHANGELOG/CHANGELOG-1.12.md",
+            "kubernetes/CHANGELOG/CHANGELOG-1.3.md",
+            "kubernetes/CHANGELOG/CHANGELOG-1.23.md"
+          ]
+        },
+        "contains": {
+          "edges": 22446,
+          "files": 354,
+          "exampleFiles": [
+            "kubernetes/CHANGELOG/CHANGELOG-1.12.md",
+            "kubernetes/.github/PULL_REQUEST_TEMPLATE.md",
+            "kubernetes/CHANGELOG/CHANGELOG-1.3.md"
+          ]
+        },
+        "references": {
+          "edges": 10055,
+          "files": 58,
+          "exampleFiles": [
+            "kubernetes/CHANGELOG/CHANGELOG-1.12.md",
+            "kubernetes/CHANGELOG/CHANGELOG-1.3.md",
+            "kubernetes/CHANGELOG/CHANGELOG-1.23.md"
+          ]
+        }
+      }
+    }
+  },
+  "union": {
+    "uses": {
+      "edges": 63220,
+      "files": 799
+    },
+    "contains": {
+      "edges": 28788,
+      "files": 969
+    },
+    "references": {
+      "edges": 10172,
+      "files": 76
+    },
+    "imports": {
+      "edges": 1,
+      "files": 1
+    }
+  },
+  "oracleTruth": {
+    "file": "script/m14/markdown-oracle.ts",
+    "derives": {
+      "contains": [
+        375,
+        462,
+        471,
+        503
+      ],
+      "references": [
+        530
+      ],
+      "imports": [
+        635
+      ],
+      "uses": [
+        702,
+        708,
+        729,
+        741
+      ]
+    },
+    "note": "the oracle derives all four. That is necessary but NOT sufficient: the allowlist is what puts a kind in the compared set."
+  },
+  "differentialAllowlist": {
+    "file": "script/m14/differential.ts:23392",
+    "text": "...(lang === \"markdown\" ? [\"contains\", \"uses\"] : []),",
+    "adjacentCommentClaims": "the lane emits no `imports` (markdown has no module system) and no `references` (front-matter keys are a declared boundary, not a graph)",
+    "commentIsFalse": "the lane emits imports (105 edges / 74 files) and references (16,857 edges / 1,136 files) over the whole admitted population",
+    "everAddedReferences": false,
+    "everAddedReferencesEvidence": "git log -S'lang === \"markdown\" ? [\"contains\", \"uses\", \"references\"]' -- script/m14/differential.ts returns no commit"
+  },
+  "derivationFindings": [
+    {
+      "type": "references",
+      "analyzerEdgesOnTheseCorpora": 10172,
+      "analyzerFilesOnTheseCorpora": 76,
+      "oracleDerivesTruth": true,
+      "inComparedSet": false,
+      "why": "measured NOT silent: the analyzer emits rows and the oracle derives truth, but the allowlist drops the analyzer side, so kubernetes reads 770 references rows as MISSING (logs/differential.log)"
+    },
+    {
+      "type": "imports",
+      "analyzerEdgesOnTheseCorpora": 1,
+      "analyzerFilesOnTheseCorpora": 1,
+      "oracleDerivesTruth": true,
+      "inComparedSet": false,
+      "why": "measured silent on these corpora: the analyzer emits rows here but the compared set excludes them, so a draw containing one would show unexplained/missing asymmetry rather than agreement"
+    }
+  ],
+  "verdict": "the DERIVATION count this lane publishes is 0 and the two published reasons for it are both wrong. The real position: the analyzer emits 4 types, the oracle derives 4, the allowlist compares 2, so references and imports are DERIVATION findings (2, not 0) and references has a MEASURED consequence already in the log — 770 MISSING on kubernetes. The fix is one array literal at script/m14/differential.ts:23392, a shared file, so it is reported not edited."
+}

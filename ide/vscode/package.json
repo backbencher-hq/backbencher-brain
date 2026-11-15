@@ -7,10 +7,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/backbencher-hq/backbencher-brain"
+    "url": "https://github.com/ishaq2321/backbencher-brain"
   },
-  "homepage": "https://github.com/backbencher-hq/backbencher-brain/tree/main/ide/vscode",
-  "bugs": "https://github.com/backbencher-hq/backbencher-brain/issues",
+  "homepage": "https://github.com/ishaq2321/backbencher-brain/tree/main/ide/vscode",
+  "bugs": "https://github.com/ishaq2321/backbencher-brain/issues",
   "engines": {
     "vscode": "^1.85.0"
   },

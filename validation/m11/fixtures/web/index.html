@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header id="site-header" class="header">
+    <h1>Order Dashboard</h1>
+  </header>
+
+  <nav aria-label="Main navigation">
+    <ul>
+      <li><a href="/orders" data-nav="orders">Orders</a></li>
+      <li><a href="/customers" data-nav="customers">Customers</a></li>
+      <li><a href="/settings" data-nav="settings">Settings</a></li>
+    </ul>
+  </nav>
+
+  <main id="content">
+    <section id="order-list" class="panel">
+      <h2>Recent Orders</h2>
+      <table id="orders-table">
+        <thead>
+          <tr><th>ID</th><th>Total</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr data-order="1001"><td>1001</td><td>$25.50</td><td>pending</td></tr>
+          <tr data-order="1002"><td>1002</td><td>$10.00</td><td>shipped</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <aside id="sidebar">
+      <form id="search-form" action="/search" method="get">
+        <input type="text" name="q" placeholder="Search orders">
+        <button type="submit">Search</button>
+      </form>
+    </aside>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 OrderApp</p>
+  </footer>
+</body>
+</html>

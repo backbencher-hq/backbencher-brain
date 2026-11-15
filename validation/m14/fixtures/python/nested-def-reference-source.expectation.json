@@ -1,0 +1,57 @@
+{
+ "fixtureId": "python/nested-def-reference-source",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-28 — an emitted edge whose SOURCE is not a symbol is an edge nothing can be traversed FROM, and it is the same class of defect as PY-4 (a keyword used as a scope name). Measured before the fix through the production path: 18 of 653 `references` edges on python-codesql (2.8%) and 60 of 1,252 on CPython's stdlib (4.8%) carried a source that binds to no symbol in the file — every one of them the NEAREST enclosing `function_definition` of a NESTED def, which the main walk deliberately does not publish (`if (ctx.currentFunction) break`). The forbid rows are the defect itself: each names a nested def that the pre-fix resolver published as a scope, and the harness fails if any of them appears as a `references` source. This is JOB 2's mandate — make every emitted edge resolvable — applied to the end of the edge nobody had audited, because `references` endpoints were never measured for resolution anywhere in this lane.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "source": "load",
+   "target": "DuckDBPyRelation",
+   "note": "the annotation on `nested_helper`'s PARAMETER belongs to the enclosing METHOD: entering a def inside a method is a local, and the main walk attributes its body to the method"
+  },
+  {
+   "type": "references",
+   "source": "load",
+   "target": "DuckDBPyConnection",
+   "note": "the `deeper:` annotated assignment, two defs deep, still attributed to the outermost symbol on the path"
+  },
+  {
+   "type": "references",
+   "source": "module_level",
+   "target": "DuckDBPyConnection",
+   "note": "the same shape at module scope"
+  },
+  {
+   "type": "references",
+   "source": "nested_def_reference_source",
+   "target": "DuckDBPyConnection",
+   "note": "a bare module-level annotated assignment belongs to the MODULE scope — the file stem, the same derivation `imports` uses (PY-4)"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "source": "nested_helper",
+   "target": "DuckDBPyRelation",
+   "note": "THE defect. `nested_helper` is a local of `load`; CPython cannot resolve it as `Loader.nested_helper` and the graph holds no symbol for it, so an edge sourced there has nowhere to attach."
+  },
+  {
+   "type": "references",
+   "source": "deeper",
+   "target": "DuckDBPyConnection",
+   "note": "a walrus-style NAME target is a value, never a scope"
+  },
+  {
+   "type": "references",
+   "source": "also_nested",
+   "target": "DuckDBPyConnection",
+   "note": "the module-scope instance of the same shape"
+  },
+  {
+   "type": "references",
+   "source": "global",
+   "note": "PY-4's literal, pinned again because this walk is the one that used to produce it"
+  }
+ ]
+}

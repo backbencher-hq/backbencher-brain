@@ -1,0 +1,11 @@
+{
+  "issue": "CLJ-ADV F10",
+  "note": "The data-form skip is spelling-independent: `clojure.core/quote`, an aliased `c/quote`, and `c/comment` (with `[clojure.core :as c]`) all treat their bodies as data — no calls to fab1/fab2/fab3 and no calls to the quote/comment forms themselves.",
+  "forbidRelationships": [
+    { "type": "calls", "target": "fab1" },
+    { "type": "calls", "target": "fab2" },
+    { "type": "calls", "target": "fab3" },
+    { "type": "calls", "target": "clojure.core/quote" },
+    { "type": "calls", "target": "clojure.core/comment" }
+  ]
+}

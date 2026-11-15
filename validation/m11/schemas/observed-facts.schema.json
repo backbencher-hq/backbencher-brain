@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "m11-observed-facts.schema.json",
+  "title": "M11 observed analyzer facts",
+  "type": "object",
+  "required": ["schemaVersion", "producer", "facts"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "producer": {"type": "string", "minLength": 1},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "layer", "kind", "state"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "layer": {"enum": ["source_discovery", "parser_wasm", "ast_extraction", "persistence", "relationships", "intelligence", "interface", "lifecycle"]},
+          "kind": {"type": "string", "minLength": 1},
+          "file": {"type": "string"},
+          "line": {"type": "integer", "minimum": 1},
+          "sourceId": {"type": "string"},
+          "targetId": {"type": "string"},
+          "attributes": {"type": "object"},
+          "state": {"enum": ["resolved", "inferred", "unknown", "unsupported"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

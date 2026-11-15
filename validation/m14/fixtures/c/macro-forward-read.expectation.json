@@ -1,0 +1,24 @@
+{
+  "fixtureId": "c/macro-forward-read",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#901 (M60): a value-less `#define NAME` DECLARES a file-scope name (Constant), so a read of it resolves and emits `uses` — including a read that appears ABOVE the define. Derived from the F5 truth rows on the sqlite pin (ext/misc/basexx.c `SQLITE_EXTENSION_INIT1`, src/tclsqlite.c `SQLITE_TCLAPI`) and probe-verified before authoring: the exact shape (bare identifier statement inside an #ifndef region, macro token between return type and function name) was reproduced minimally, and both real files' edges confirmed at the analyzer boundary.",
+  "expectSymbols": [
+    { "name": "M60_TRACE_FLAG", "kind": "constant" },
+    { "name": "M60_API", "kind": "constant" },
+    { "name": "m60_one", "kind": "function" },
+    { "name": "m60_two", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "M60_TRACE_FLAG",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "target": "M60_API"
+    }
+  ]
+}

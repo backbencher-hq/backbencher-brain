@@ -1,0 +1,28 @@
+{
+  "fixtureId": "dart/catch-clause-types",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CATCH-CLAUSE RECEIVER TYPING. `on MyErr catch (e)` writes the exception's type in the clause; the analyzer collected the BINDING but not the TYPE, so `e.mark()` published a bare `calls -> mark` with `receiverCause: receiverTypeUnknown` while `mark` is declared in the same file three lines up. The fix records the `on` type for every name in the clause's `catch_parameters` child (both names of `catch (e, st)`: Dart's rule is that the second parameter is the stack trace of the SAME exception), with the receiver contract's `annotation` evidence class — the source WROTE the type, so this is evidence, not inference. The untyped catch is the boundary: `catch (e)` names no type, the cut must remain, and no owner may be fabricated (a wrong owner is worse than none — the store WITHDRAWS the name binding on an owner-carrying row).",
+  "expectSymbols": [
+    { "name": "MyErr", "kind": "class" },
+    { "name": "mark", "kind": "method", "ownerName": "MyErr" },
+    { "name": "record", "kind": "method", "ownerName": "MyErr" },
+    { "name": "code", "kind": "property", "ownerName": "MyErr" },
+    { "name": "typedCatch", "kind": "function" },
+    { "name": "typedCatchWithStack", "kind": "function" },
+    { "name": "untypedCatch", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "typedCatch", "target": "MyErr.mark", "meta.owner": "MyErr", "meta.ownerEvidence": "annotation", "note": "THE FIX — the caught exception's type is the `on` clause's, so the call target is spelled and the owner channel carries the type. Before the fix this row was `calls -> mark` with `receiverCause: receiverTypeUnknown`." },
+    { "type": "uses", "source": "typedCatch", "target": "MyErr.code", "meta.isMemberRead": true, "meta.owner": "MyErr", "meta.ownerEvidence": "annotation", "note": "the READ arm on a caught exception (`e.code`) — both arms must see the type, or the fix only moves calls." },
+    { "type": "calls", "source": "typedCatchWithStack", "target": "MyErr.record", "meta.owner": "MyErr", "meta.ownerEvidence": "annotation", "note": "THE TWO-NAME FORM — `catch (e, st)` types both names with the same exception type. A fix that only typed `catch_parameters`'s FIRST identifier passes the single-name case and fails no row there; this case is what makes the loop over names load-bearing." },
+    { "type": "uses", "source": "untypedCatch", "target": "untypedCatch\u0000e", "meta.isLocalRead": true, "note": "BOUNDARY, positive side: an UNTYPED catch still binds `e`, and its reads publish the family binding spelling. The absence of a type must not remove the binding." }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "source": "typedCatch", "target": "mark", "note": "THE PRE-FIX SHAPE — the bare leaf must be gone once the written type is collected. Forbidding the exact old row is what makes this fixture able to fail." },
+    { "type": "uses", "source": "typedCatch", "target": "code", "note": "the same pre-fix shape on the read arm." },
+    { "type": "calls", "source": "typedCatch", "target": "MyErr.mark", "meta.owner": "e", "note": "THE ALIAS IS NOT THE OWNER — `MyErr` is the class-like name the store looks up; `e` is the value's name." },
+    { "type": "calls", "source": "untypedCatch", "target": "code", "meta.owner": "MyErr", "note": "NO INFERENCE FOR AN UNTYPED CATCH — `catch (e)` names no type anywhere at the site; an owner here would be the guessed type the contract forbids." },
+    { "type": "uses", "source": "typedCatch", "target": "e", "note": "a caught exception read is a BINDING read (family spelling), never a bare declaration read." }
+  ]
+}

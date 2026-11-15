@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M34",
+  "githubMilestone": 34,
+  "title": "Consumability Hardening",
+  "status": "open",
+  "authority": "docs/m34/M34-MASTER-PLAN.md",
+  "governingContract": "docs/M14-HONESTY-CONTRACT.md",
+  "updatedAt": "2026-09-03T03:06:46.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "freshTimestamp",
+      "limitations"
+    ],
+    "missingCorpusState": "blocked-or-known-gap",
+    "missingLiveKeysState": "blocked-with-reason",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "secretHygiene": {
+    "keyStorage": "not applicable to M34 (no provider keys used); .env.local remains gitignored, mode 0600",
+    "evidenceRecords": "no key material anywhere in M34 artifacts",
+    "guard": "verifier fails if any raw key pattern appears in tracked files"
+  },
+  "issueNumberPolicy": {
+    "state": "real",
+    "note": "Filed on GitHub as milestone 34: G1=#575, S1=#576, S2=#577, X1=#578. Enforced exactly by verify-governance.ts (REAL_ISSUE_NUMBERS); placeholder or unknown numbers are gate failures."
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 575,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "master plan, ledger, npm run verify wiring, banned-vocab lint",
+      "acceptanceCriteria": [
+        "master plan with explicit authority order, non-goals, and issue order",
+        "machine-readable ledger with all 4 M34 issues and real GitHub numbers",
+        "fail-closed governance verifier with negative checks",
+        "gated as a permanent part of npm run verify"
+      ],
+      "closureRequirements": [
+        "persist current gate evidence",
+        "negative checks pass",
+        "document limitations"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "afa245b381ad3674851ef364e94dd6ba045ed56f",
+        "verifierCommand": "npx tsx script/m34/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "generatedAt": "2026-09-03T03:03:36.210Z",
+        "passed": 25,
+        "failed": 0,
+        "negativeCases": 8
+      }
+    },
+    {
+      "code": "S1",
+      "githubIssue": 576,
+      "tool": "packaging",
+      "status": "verified",
+      "scope": "install-path smoke: npm pack -> real npm install into a temp prefix -> the INSTALLED bin/bb answers --help/-v/setup --help; man page lands in the prefix; no dev-only files leak into the tarball",
+      "acceptanceCriteria": [
+        "install uses the packed tarball with real runtime deps (native modules compile) — never a workspace path",
+        "installed-copy checks cover help surfaces, version parity, and the man page location",
+        "planted mutants (dev-only file leaking into the tarball, missing bin entry) are caught"
+      ],
+      "closureRequirements": [
+        "verifier with built-package checks and mutants",
+        "evidence at current commit with negative cases"
+      ],
+      "evidenceFile": "S1.json",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "afa245b381ad3674851ef364e94dd6ba045ed56f",
+        "verifierCommand": "npx tsx script/m34/verify-install-smoke.ts",
+        "evidenceFile": "S1.json",
+        "generatedAt": "2026-09-03T03:06:19.299Z",
+        "passed": 20,
+        "failed": 0,
+        "negativeCases": 3
+      }
+    },
+    {
+      "code": "S2",
+      "githubIssue": 577,
+      "tool": "gate",
+      "status": "verified",
+      "scope": "script gate: non-Latin scripts (Cyrillic, Han, Kana, Hangul, Arabic, etc.) in built-binary command output or user-facing tracked files are gate failures; explicit allowlist for legitimate product names (e.g. LÖVR)",
+      "acceptanceCriteria": [
+        "every registered command's built-binary output is scanned (not just --help: doctor, setup show, version, unknown-command paths)",
+        "user-facing tracked files (README, EMBEDDINGS, docs/, man page, CLI source strings) are scanned",
+        "planted mutants (Russian string in CLI source, Chinese string in a doc) are caught"
+      ],
+      "closureRequirements": [
+        "verifier scans both the built binary and tracked files",
+        "evidence at current commit with negative cases"
+      ],
+      "evidenceFile": "S2.json",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "afa245b381ad3674851ef364e94dd6ba045ed56f",
+        "verifierCommand": "npx tsx script/m34/verify-script-gate.ts",
+        "evidenceFile": "S2.json",
+        "generatedAt": "2026-09-03T03:06:31.814Z",
+        "passed": 35,
+        "failed": 0,
+        "negativeCases": 7
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 578,
+      "tool": "gate",
+      "status": "planned",
+      "scope": "closure gate: combined mutant audit, all gates in npm run verify, completion bar audited",
+      "acceptanceCriteria": [
+        "combined audit proves every planted M34 mutant is caught",
+        "all M34 gates present in npm run verify",
+        "completion bar audited with evidence; ledger clean"
+      ],
+      "closureRequirements": [
+        "closure evidence at current commit",
+        "all sibling issues verified or explicitly known-gap/blocked with reason",
+        "real GitHub issue numbers wired (placeholders rejected)"
+      ]
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.475Z",
+    "contentSha256": "85e7bcc82afebbe94e0a7abbf1c4db4c5ef4c8e3b4d9ec1d85a7d98b9acc3eb9"
+  }
+}

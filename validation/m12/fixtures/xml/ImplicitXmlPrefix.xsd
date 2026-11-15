@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M60 X8: the `xml` prefix is bound by the Namespaces spec itself and cannot
+     be declared, so it is deliberately absent here. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:example:x8">
+  <xs:attribute ref="xml:lang"/>
+  <xs:attribute ref="xml:space"/>
+</xs:schema>

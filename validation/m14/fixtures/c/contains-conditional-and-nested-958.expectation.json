@@ -1,0 +1,128 @@
+{
+  "fixtureId": "c/contains-conditional-and-nested-958",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins two `contains` defects that every tree-sitter-based counter in this lane reported as CLEAN, because the payload and the grammar agree with one another and that agreement is not evidence about the grammar. `contains-vs-clang.ts` judged the same edges against clang 14 -- a different parser with a different recovery strategy -- and convicted both. #957: a member inside a preprocessor CONDITION was never published. `typedef struct eventNotifier { #ifdef HAVE_EVENT_FD int efd; #else int pipefd[2]; #endif }` (redis/src/eventnotifier.h:19-25) parses with the `preproc_ifdef` as a DIRECT child of the `field_declaration_list` and no `field_declaration` at that level, so iterating named children found nothing and the struct was published with a symbol and ZERO contains edges. A member the grammar never emits as a `field_declaration` cannot be found by a probe that looks for `field_declaration` -- which is exactly why every in-lane counter missed it. #958: a member of a nested anonymous aggregate was published under a PLACEHOLDER owner, `anonymous_union.verbatim_str -> str` instead of `CallReply.val.verbatim_str -> str` (redis/src/call_reply.c:30-38), because `inlineAggregateOwnerName` asked the enclosing anonymous union for its own name and an anonymous union has only the placeholder. The correct path composes from the member that CARRIES the outer aggregate. Both arms of a conditional are published because the preprocessor is textual (C-D2): the analyzer cannot know which arm the project compiles with, and the honest superset is both -- `efd` and `pipefd` coexisting is a true statement about the two possible compilations, the same shape as the macro-mediated members #908 already requires.",
+  "expectSymbols": [
+    {
+      "name": "WIDTH",
+      "kind": "constant"
+    },
+    {
+      "name": "guarded",
+      "kind": "struct"
+    },
+    {
+      "name": "envelope",
+      "kind": "struct"
+    },
+    {
+      "name": "named_outer",
+      "kind": "struct"
+    },
+    {
+      "name": "controls",
+      "kind": "struct"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "uses_controls",
+      "kind": "function"
+    },
+    {
+      "name": "guarded_write",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "guarded",
+      "target": "primary",
+      "note": "#957: the #ifdef arm's member. A conditional member is a real member."
+    },
+    {
+      "type": "contains",
+      "from": "guarded",
+      "target": "fallback",
+      "note": "#957: the #else arm's member, published too. The preprocessor is textual (C-D2) so the honest superset is BOTH arms, and that is what makes the omission visible -- with only one arm published the payload would have looked complete."
+    },
+    {
+      "type": "contains",
+      "from": "guarded",
+      "target": "always",
+      "note": "CONTROL: the unconditional member alongside the conditional ones."
+    },
+    {
+      "type": "contains",
+      "from": "envelope",
+      "target": "body",
+      "note": "CONTROL: the anonymous union member keeps its declared name `body`, not a placeholder."
+    },
+    {
+      "type": "contains",
+      "from": "envelope.body",
+      "target": "text",
+      "note": "CONTROL: a direct member of the anonymous union."
+    },
+    {
+      "type": "contains",
+      "from": "envelope.body.verbatim",
+      "target": "text",
+      "note": "#958, THE PINNED ROW: a member of a nested anonymous struct under an anonymous union. Published as `anonymous_union.verbatim -> text` before the fix -- a PLACEHOLDER owner that names no type a consumer can resolve."
+    },
+    {
+      "type": "contains",
+      "from": "envelope.body.verbatim",
+      "target": "format",
+      "note": "#958, second half: the sibling member, which is also shadowed by the union's own `text`."
+    },
+    {
+      "type": "contains",
+      "from": "named_outer",
+      "target": "group",
+      "note": "CONTROL: a NAMED nested struct keeps its own name -- the path must not become `named_outer.<placeholder>.`"
+    },
+    {
+      "type": "contains",
+      "from": "named_outer.group",
+      "target": "inner_a",
+      "note": "CONTROL: members of a named nested struct resolve through the member name, not the enclosing struct's tag."
+    },
+    {
+      "type": "contains",
+      "from": "controls",
+      "target": "bits",
+      "note": "CONTROL: a bitfield member is still a member and must survive the conditional-member change."
+    },
+    {
+      "type": "contains",
+      "from": "controls",
+      "target": "array",
+      "note": "CONTROL: an array member."
+    },
+    {
+      "type": "calls",
+      "from": "uses_controls",
+      "target": "helper",
+      "note": "CONTROL: calls inside a function that is itself guarded by a conditional, and calls whose ARGUMENTS are field accesses of a conditional-member struct, must all survive. An earlier draft of the #957 fix keyed on the enclosing conditional and would have suppressed these; the guard belongs on the MEMBER's own declaration, not on anything the member is used from."
+    },
+    {
+      "type": "uses",
+      "from": "guarded_write",
+      "target": "primary",
+      "note": "#960: A WRITE IS A `uses`. SCD1/CGD1 excluded assignment targets on the grounds that a write is 'never a read'; the exclusion is withdrawn. The analyzer was already inconsistent with itself -- `p->f++` published while the semantically identical `p->f += 1` did not, purely because the grammar folds compound-assign into `assignment_expression` and `++` is an `update_expression`. The pinned M12 truth requires this edge (`uses:buffer_create:capacity` for `buf->capacity = clamp(...)`), and with both branches fixed the truth's not-produced count is 0. The edge is NOT relabelled a read: the ontology has no `writes` kind, so before this change the fact was an ABSENCE, unrepresented anywhere in the graph. This row was written as a `forbidRelationships` control expressly to hold the door open while the question was open; the question is now settled."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "anonymous_union.verbatim",
+      "target": "text",
+      "note": "REGRESSION ROW for #958. `anonymous_union` is a PLACEHOLDER, not a type: no symbol is named `anonymous_union`, so this edge dangles for any consumer that resolves a contains source. The correct edge is `envelope.body.verbatim -> text`."
+    }
+  ]
+}

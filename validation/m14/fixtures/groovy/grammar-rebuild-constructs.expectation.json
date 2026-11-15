@@ -1,0 +1,25 @@
+{
+  "fixtureId": "groovy/grammar-rebuild-constructs",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the #742 grammar-rebuild gain. Before the rebuild each construct below failed to parse (ERROR/MISSING recovery), so the analyzer either lost symbols or attributed edges to a broken node: untyped static field (`static mapWith = 'neo4j'`), newline-terminated `super()` delegation, Groovy `for (item in items)`, `item as String` coercion, typed closure params (`{ String n -> fn(n) }`), spread call argument (`convert(*args)`), and a newline-terminated `if (...) throw new ...`. Each assertion below is a same-file causal edge that only exists when the construct is reaching the analyzer as a real node rather than recovery text.",
+  "expectSymbols": [
+    { "name": "Rebuilt", "kind": "class" },
+    { "name": "mapWith", "kind": "property" },
+    { "name": "convert", "kind": "method" },
+    { "name": "tagged", "kind": "method" },
+    { "name": "spreadCall", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Rebuilt", "target": "mapWith" },
+    { "type": "calls", "from": "Rebuilt", "target": "super" },
+    { "type": "references", "from": "convert", "target": "String", "meta.relationshipType": "cast_type" },
+    { "type": "calls", "from": "tagged", "target": "fn" },
+    { "type": "calls", "from": "spreadCall", "target": "convert" },
+    { "type": "instantiates", "from": "spreadCall", "target": "IllegalStateException" }
+  ],
+  "forbidRelationships": [
+    { "target": "as" },
+    { "target": "in" }
+  ]
+}

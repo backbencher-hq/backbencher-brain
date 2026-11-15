@@ -1,0 +1,222 @@
+{
+  "comment": "M48 evidence ledger. Truth comes from the on-disk evidence files in validation/m48/results/ (sync-ledger pattern); entries are never hand-set to verified. All statuses start pending until their owning issue lands verifier + evidence.",
+  "milestone": 48,
+  "issues": [
+    {
+      "code": "G1",
+      "number": 695,
+      "title": "Governance: scaffold, 16-tool coverage matrix, registry, ledger, wiring",
+      "status": "verified",
+      "evidenceFile": "G1.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 34,
+        "failed": 0,
+        "negativeCases": 7,
+        "evidenceFile": "G1.json",
+        "generatedAt": "2026-11-04T05:50:08.226Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "P1",
+      "number": 696,
+      "title": "One impact calculator: bb_analyze impact == bb_impact == editor",
+      "status": "verified",
+      "evidenceFile": "P1.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 80,
+        "failed": 0,
+        "negativeCases": 6,
+        "evidenceFile": "P1.json",
+        "generatedAt": "2026-11-04T05:50:11.012Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "P2",
+      "number": 697,
+      "title": "Honesty-field audit: no hollow completeness/absence claims",
+      "status": "verified",
+      "evidenceFile": "P2.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 21,
+        "failed": 0,
+        "negativeCases": 7,
+        "evidenceFile": "P2.json",
+        "generatedAt": "2026-11-04T05:50:11.975Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "P3",
+      "number": 698,
+      "title": "Same-question agreement: cross-tool consistency corpus",
+      "status": "verified",
+      "evidenceFile": "P3.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 30,
+        "failed": 0,
+        "negativeCases": 5,
+        "evidenceFile": "P3.json",
+        "generatedAt": "2026-11-04T05:50:13.118Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "C1",
+      "number": 699,
+      "title": "Real corpus: all 16 tools executed and recorded on real repos",
+      "status": "verified",
+      "evidenceFile": "C1.json",
+      "stamp": "1c2d326a58392f46a0911fa742313b63c786098a",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+        "passed": 95,
+        "failed": 0,
+        "negativeCases": 5,
+        "evidenceFile": "C1.json",
+        "generatedAt": "2026-11-04T05:55:38.535Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "C2",
+      "number": 700,
+      "title": "Edge and mutation cases for every tool family",
+      "status": "verified",
+      "evidenceFile": "C2.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 73,
+        "failed": 0,
+        "negativeCases": 3,
+        "evidenceFile": "C2.json",
+        "generatedAt": "2026-11-04T05:50:07.816Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "D1",
+      "number": 701,
+      "title": "Tool documentation truth: cross-refs, categories, contradictions",
+      "status": "verified",
+      "evidenceFile": "D1.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 139,
+        "failed": 0,
+        "negativeCases": 4,
+        "evidenceFile": "D1.json",
+        "generatedAt": "2026-11-04T05:50:08.145Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "W1",
+      "number": 702,
+      "title": "Website-ready honest tool document",
+      "status": "verified",
+      "evidenceFile": "W1.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 132,
+        "failed": 0,
+        "negativeCases": 3,
+        "evidenceFile": "W1.json",
+        "generatedAt": "2026-11-04T05:50:13.852Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "H1",
+      "number": 703,
+      "title": "Ghost cleanup: no live artifact references a removed tool",
+      "status": "verified",
+      "evidenceFile": "H1.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 731,
+        "failed": 0,
+        "negativeCases": 5,
+        "evidenceFile": "H1.json",
+        "generatedAt": "2026-11-04T05:50:08.365Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "L1",
+      "number": 704,
+      "title": "LSP/hub lane never breaks: shared-component guard + coordination log",
+      "status": "verified",
+      "evidenceFile": "L1.json",
+      "stamp": "1c2d326a58392f46a0911fa742313b63c786098a",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+        "passed": 19,
+        "failed": 0,
+        "negativeCases": 2,
+        "evidenceFile": "L1.json",
+        "generatedAt": "2026-11-04T05:55:58.824Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "P4",
+      "number": 706,
+      "title": "Parameter & flag coverage matrix: every tool param, enum branch, CLI flag, mode",
+      "status": "verified",
+      "evidenceFile": "P4.json",
+      "stamp": "de5789025f9bff3a453723a97707e96aac7a2b85",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "de5789025f9bff3a453723a97707e96aac7a2b85",
+        "passed": 512,
+        "failed": 0,
+        "negativeCases": 2,
+        "evidenceFile": "P4.json",
+        "generatedAt": "2026-11-04T05:50:13.259Z",
+        "failures": []
+      }
+    },
+    {
+      "code": "X1",
+      "number": 705,
+      "title": "Closure gate: live re-run on a clean tree",
+      "status": "verified",
+      "evidenceFile": "X1.json",
+      "stamp": "1c2d326a58392f46a0911fa742313b63c786098a",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+        "passed": 74,
+        "failed": 0,
+        "negativeCases": 2,
+        "evidenceFile": "X1.json",
+        "generatedAt": "2026-11-04T05:55:58.852Z",
+        "failures": []
+      }
+    }
+  ]
+}

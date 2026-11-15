@@ -1,0 +1,25 @@
+{
+  "issue": "CLJ-D58",
+  "note": "`gen-class` / `gen-interface` are the COMPILE-TIME supertype spellings and were unread, so the lane's `extends` verdict rested on the belief that `proxy` was the only one. Parse-tree probe: 3 `:extends` sites and 2 `:implements` sites in clojure's own genclass tests, 0 in clj-kondo and core.async. The edge is anchored on `activeFunction ?? currentNamespace` — the CLJ-D48 rule the reify and proxy branches already use — because gen-class is a top-level directive with no enclosing function. The GENERATED class is deliberately NOT minted as a symbol: `:name a.b.Gen` is a class the AOT compiler emits, not a var this file defines, so its name rides in metadata (`genClassName`) instead. Every option shape is pinned, including the two orders (`:name` before and after `:extends`) and the missing `:name`, because a single-pass reader leaves `genClassName` off every edge of a form written `:extends` first. The `proxy` case is pinned in the same file to prove the runtime spelling is unchanged: EXTENDS the first supertype, IMPLEMENTS the rest.",
+  "expectSymbols": [
+    { "name": "clj.fixture.genclass", "kind": "module" },
+    { "name": "runtime-proxy", "kind": "function" },
+    { "name": "size", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "clj.fixture.genclass", "target": "java.util.ArrayList", "line_number": 12, "meta.genClassName": "clj.fixture.genclass.Gen1" },
+    { "type": "implements", "from": "clj.fixture.genclass", "target": "clj.fixture.genclass.Base1", "line_number": 13, "meta.genClassName": "clj.fixture.genclass.Gen1" },
+    { "type": "implements", "from": "clj.fixture.genclass", "target": "clj.fixture.genclass.Base2", "line_number": 13, "meta.genClassName": "clj.fixture.genclass.Gen1" },
+    { "type": "extends", "from": "clj.fixture.genclass", "target": "java.util.HashSet", "line_number": 16, "meta.genClassName": "clj.fixture.genclass.Gen2" },
+    { "type": "extends", "from": "clj.fixture.genclass", "target": "java.io.File", "line_number": 21 },
+    { "type": "extends", "from": "clj.fixture.genclass", "target": "clj.fixture.genclass.Parent1", "line_number": 24, "meta.genClassName": "clj.fixture.genclass.Iface1" },
+    { "type": "extends", "from": "clj.fixture.genclass", "target": "clj.fixture.genclass.Parent2", "line_number": 24, "meta.genClassName": "clj.fixture.genclass.Iface1" },
+    { "type": "extends", "from": "runtime-proxy", "target": "java.util.ArrayList", "line_number": 29, "meta.isProxy": true },
+    { "type": "implements", "from": "runtime-proxy", "target": "clj.fixture.genclass.Base1", "line_number": 29, "meta.isProxy": true }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "runtime-proxy", "target": "clj.fixture.genclass.Base1" },
+    { "type": "implements", "from": "runtime-proxy", "target": "java.util.ArrayList" },
+    { "type": "calls", "target": "gen-class" }
+  ]
+}

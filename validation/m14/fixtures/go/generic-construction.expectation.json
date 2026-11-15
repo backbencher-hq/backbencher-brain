@@ -1,0 +1,28 @@
+{
+  "fixtureId": "go/generic-construction",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "GO8 (#736 go wave): generic composite literals (`Box[int]{...}`) carry a generic_type child — neither type_identifier nor qualified_type — so no construction edge fired. Unwrapped to the base type on both sides (analyzer + oracle mirror); the const generic argument read (DefaultSize) flows through the ordinary bare-read rule.",
+  "expectSymbols": [
+    {
+      "name": "Box",
+      "kind": "struct"
+    },
+    {
+      "name": "MakeBox",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "MakeBox",
+      "target": "Box"
+    },
+    {
+      "type": "uses",
+      "from": "MakeBox",
+      "target": "DefaultSize"
+    }
+  ]
+}

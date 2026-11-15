@@ -1,0 +1,7 @@
+{
+  "fixtureId": "svelte/each-block",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "{#each} blocks with keyed and indexed forms must not crash or produce garbage symbols.",
+  "expectSymbols": []
+}

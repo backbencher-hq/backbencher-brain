@@ -1,0 +1,54 @@
+/*
+ * A SELECTOR-CHAIN TERM RESOLVES ONLY THROUGH A NAME OF THE SAME SELECTOR KIND.
+ *
+ * `real-css-analyzer.ts` emits a `contains` edge for a selector chain only where both
+ * chain leaves resolve, and its `resolves()` accepts an end through four sub-tests: the
+ * exact name, the dotted LEAF, any `:`/`.` boundary TAIL. The last two do not ask what
+ * KIND of selector the published name is, so a CLASS term `.button` is satisfied by the
+ * TYPE-selector rule `button` below — a different selector that matches different
+ * elements. MEASURED on the corpus before this fixture existed
+ * (`validation/m14/fixtures/css/single-file-dump.ts`, geb's semantic.min.css):
+ *
+ *   contains ".button" -> ".button"   [cssSpecific+isSelectorChain]
+ *   names.has(".button") = false
+ *   names.has("button")  = true       <- the type rule, elsewhere in the same stylesheet
+ *
+ * The file declares `button{overflow:visible}` and NO bare `.button` rule at all, so the
+ * edge names two things that are not declarations of that stylesheet, and it is a
+ * self-edge on top of that.
+ *
+ * `.card .title` is the CONTROL: both terms are published CLASS selectors, so the chain
+ * edge must still be emitted. A fixture that only forbids things cannot tell a fixed
+ * analyzer from one that stopped emitting chains altogether.
+ */
+button {
+  color: black;
+}
+
+.icon {
+  color: red;
+}
+
+/* `.button` is a CLASS term with no `.button` rule in this file. The only name that
+   can satisfy it is the TYPE selector `button` above, and it must not. */
+.button .icon {
+  color: blue;
+}
+
+/* A compound mixing the two kinds: `button` is published exactly, `.button` is not. */
+button.button .icon {
+  color: pink;
+}
+
+/* THE CONTROL — both terms are published class selectors. */
+.card .title {
+  color: green;
+}
+
+.card {
+  padding: 0;
+}
+
+.title {
+  margin: 0;
+}

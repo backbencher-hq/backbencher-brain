@@ -1,0 +1,64 @@
+{
+ "fixtureId": "yaml/openapi-contract",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The two shapes that genuinely ARE an API contract, and the only two this lane fills `apiContractPath` for: an OpenAPI operation and a GitHub Actions step. A YAML key is not an API surface, so the field stays absent everywhere else rather than carrying a constant -- which is why `info` and `definitions.Task` have no apiContractPath here. OpenAPI is also the lane's largest real-world shape: 54% of all corpus symbol volume comes from twelve Swagger files, and nothing read any of it before.",
+ "expectFrameworks": [
+  "OpenAPI"
+ ],
+ "expectApiContractPaths": [
+  {
+   "symbol": "get",
+   "ownerName": "openapi-contract.paths./tasks",
+   "equals": "GET /tasks"
+  },
+  {
+   "symbol": "post",
+   "ownerName": "openapi-contract.paths./tasks",
+   "equals": "POST /tasks"
+  }
+ ],
+ "forbidApiContractPaths": [
+  {
+   "symbol": "swagger"
+  },
+  {
+   "symbol": "info"
+  },
+  {
+   "symbol": "paths"
+  },
+  {
+   "symbol": "Task",
+   "ownerName": "openapi-contract.definitions"
+  },
+  {
+   "symbol": "responses",
+   "ownerName": "openapi-contract.paths./tasks.get"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

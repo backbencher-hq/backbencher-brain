@@ -1,0 +1,21 @@
+{
+  "fixtureId": "scala/type-usage-graph",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph: constructor params, val/var type clauses, function params, return types, @throws annotations, asInstanceOf and isInstanceOf targets each emit References; generics expand.",
+  "expectRelationships": [
+    { "type": "references", "target": "List", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "String", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Map", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Int", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "IOException", "meta.relationshipType": "throws_type" },
+    { "type": "references", "target": "Set", "meta.relationshipType": "return_type" },
+    { "type": "references", "target": "Vector", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Number", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "String", "meta.relationshipType": "cast_target" },
+    { "type": "references", "target": "Double", "meta.relationshipType": "instanceof_check" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "throws" }
+  ]
+}

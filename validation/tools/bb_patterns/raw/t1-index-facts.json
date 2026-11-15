@@ -1,0 +1,38 @@
+{
+  "tier": "T1",
+  "projectDir": ".perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+  "exists": true,
+  "index": {
+    "files": 97,
+    "symbols": 3512,
+    "relationships": 17068,
+    "frameworkFiles": 64,
+    "analysisRuns": 0
+  },
+  "dbBefore": {
+    "db": {
+      "bytes": 52342784,
+      "mtime": "2026-11-01T23:24:47.163Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "dbAfter": {
+    "db": {
+      "bytes": 52342784,
+      "mtime": "2026-11-01T23:24:47.163Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-01T23:25:43.644Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-01T23:25:43.645Z"
+    }
+  },
+  "generatedAt": "2026-11-01T23:25:43.721Z"
+}

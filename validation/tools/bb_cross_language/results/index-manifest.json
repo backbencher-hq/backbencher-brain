@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "dataDir": "bbdata",
+  "generatedAt": "2026-11-01T18:07:12.092Z",
+  "tiers": {
+    "T0": {
+      "workspace": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+      "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+      "indexMs": 9934,
+      "processedFiles": 5,
+      "counts": {
+        "files": 5,
+        "symbols": 13,
+        "crossRows": 5,
+        "languages": [
+          "java",
+          "javascript",
+          "markdown",
+          "scala",
+          "typescript"
+        ]
+      },
+      "pairs": [
+        {
+          "source": "scala",
+          "target": "java",
+          "n": 3
+        },
+        {
+          "source": "typescript",
+          "target": "javascript",
+          "n": 2
+        }
+      ],
+      "ownNames": [
+        {
+          "name": "restock",
+          "n": 1
+        },
+        {
+          "name": "getStock",
+          "n": 1
+        },
+        {
+          "name": "basePrice",
+          "n": 1
+        },
+        {
+          "name": "applyDiscount",
+          "n": 1
+        },
+        {
+          "name": "Inventory",
+          "n": 1
+        }
+      ],
+      "memberNames": [
+        {
+          "name": "Inventory",
+          "n": 2
+        }
+      ],
+      "quietNames": [
+        {
+          "name": "Polyglot fixtures (M26.A1, issue #615)",
+          "copies": 1
+        },
+        {
+          "name": "inventory",
+          "copies": 1
+        },
+        {
+          "name": "stock",
+          "copies": 1
+        },
+        {
+          "name": "test/fixtures/polyglot/README.md",
+          "copies": 1
+        }
+      ]
+    },
+    "T1": {
+      "workspace": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+      "indexMs": 36245,
+      "processedFiles": 97,
+      "counts": {
+        "files": 97,
+        "symbols": 3512,
+        "crossRows": 0,
+        "languages": [
+          "typescript"
+        ]
+      },
+      "pairs": [],
+      "ownNames": [],
+      "memberNames": [],
+      "quietNames": [
+        {
+          "name": "id",
+          "copies": 44
+        },
+        {
+          "name": "name",
+          "copies": 43
+        },
+        {
+          "name": "line",
+          "copies": 34
+        },
+        {
+          "name": "file",
+          "copies": 31
+        },
+        {
+          "name": "confidence",
+          "copies": 28
+        }
+      ]
+    },
+    "CL1": {
+      "subject": "elixir corpus (616 files, Elixir/Erlang, the CL1 corpus lane)",
+      "workspace": "/home/ishaq2321/bb_tests/repositories/elixir",
+      "projectId": "a0e74040fb5c01a56dabd69d78711044402b104e",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_cross_language/bbdata",
+      "indexMs": 161822,
+      "processedFiles": 692,
+      "counts": {
+        "files": 692,
+        "symbols": 14725,
+        "crossRows": 714
+      }
+    }
+  }
+}

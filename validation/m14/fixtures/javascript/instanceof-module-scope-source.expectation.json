@@ -1,0 +1,21 @@
+{
+  "fixtureId": "javascript/instanceof-module-scope-source",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 (runtime half), the `global` literal. `extractInstanceofRefs.resolveSource` returned the string \"global\" when it walked past every class_declaration / function_declaration / generator_function_declaration / method_definition / variable_declarator without finding a name — i.e. for a module-scope `if (x instanceof T)` written as a bare expression statement, which is the shape line 20 pins. \"global\" names a symbol no file in either corpus contains. Measured on REAL JavaScript, not only on recovery residue: 14 rows across lodash's 51 ES5 files and 1 on svelte. The lane's own convention for 'this read belongs to the module' is `method || owner || moduleName`, which extractExportRelationships and the uses walk already apply. The three shapes that DO have an enclosing declaration are pinned here too, because the guard must not swallow them — a fix that returned moduleName unconditionally would pass a single forbid row and lose all four rows.",
+  "expectSymbols": [
+    { "name": "tagged", "kind": "constant" },
+    { "name": "inside", "kind": "function" },
+    { "name": "Holder", "kind": "class" },
+    { "name": "matches", "kind": "method", "ownerName": "Holder" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "instanceof-module-scope-source", "target": "Widget", "meta.relationshipType": "instanceof_check", "note": "no enclosing declaration, so the MODULE names the reference — the file's own name, the convention every other emitter here uses" },
+    { "type": "references", "from": "tagged", "target": "Gadget", "meta.relationshipType": "instanceof_check", "note": "a const-bound instanceof still names the binding (gap J6)" },
+    { "type": "references", "from": "inside", "target": "Panel", "meta.relationshipType": "instanceof_check", "note": "a function-bodied instanceof names the function" },
+    { "type": "references", "from": "matches", "target": "Crate", "meta.relationshipType": "instanceof_check", "note": "a method-bodied instanceof names the method, not the class" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "global", "note": "the placeholder literal: a symbol name no file in the corpus contains — standing rule R7" }
+  ]
+}

@@ -126,7 +126,7 @@
     "caveat": "A CEILING, NOT A RESULT: the stages are rules this lane has NOT adopted, priced before anything is implemented. Every stage that would resolve by PREFERENCE changes a resolution rather than adding one, so each needs the whole-population before/after plus fixtures — and the +225 resolved edges this lane once measured from a bare-name fix were a cross-repo collision, not coverage."
   },
   "entryPoint": "parseFile (src/ast/pool-worker.ts)",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "reposScanned": 199,
   "admittedPopulation": 5094,
   "filesMeasured": 5094,

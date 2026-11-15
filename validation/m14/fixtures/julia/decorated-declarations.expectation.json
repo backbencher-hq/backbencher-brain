@@ -1,0 +1,74 @@
+{
+  "fixtureId": "julia/decorated-declarations",
+  "language": "julia",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS `decorates` FOR THE DECLARATION-POSITION MACROS AND PINS THE MACRO-CALL NEGATIVE. The contract (`src/ast/types.ts`, Decorates) is DECORATED DECLARATION -> DECORATOR, and Julia's macros are applied to the syntax they wrap, so `@inline function fast` is an application of `inline` to `fast`, not a call. Four shapes are pinned because a rule that only reads the first argument would miss three of them: (1) `Base.@kwdef mutable struct Config` puts the declaration FIRST and the macro is MODULE-QUALIFIED, so the target is the bare `kwdef` the analyzer can read from the macro identifier; (2) `@inline function fast` is the ordinary long form; (3) `@doc \"…\" function documented` puts a STRING before the declaration, which is why the rule scans the whole `macro_argument_list` rather than child 0; (4) `@inline short(x) = x` is the short form, whose declaration is an assignment whose LEFT side is a call. THE NEGATIVE IS THE LOAD-BEARING HALF: `@time fast(1)` runs a call and must stay `calls` -> `time` (with `isMacroCall`) and must never become a `decorates` row, because there is no declaration under it. The forbid row pins that absence: an implementation that started calling every macro a decorator would pass all four positive rows and fail this one.",
+  "expectSymbols": [
+    { "name": "Decorated", "kind": "module" },
+    { "name": "Config", "kind": "class", "ownerName": "Decorated" },
+    { "name": "fast", "kind": "function", "ownerName": "Decorated" },
+    { "name": "documented", "kind": "function", "ownerName": "Decorated" },
+    { "name": "short", "kind": "function", "ownerName": "Decorated" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "source": "Config",
+      "target": "kwdef",
+      "line_number": 5,
+      "meta.decoratorName": "kwdef",
+      "meta.decoratedKind": "struct_definition",
+      "meta.isMacroDecorator": true,
+      "comment": "FIRE (1) — a module-qualified macro applied to a mutable struct. The declaration is first in the argument list."
+    },
+    {
+      "type": "decorates",
+      "source": "fast",
+      "target": "inline",
+      "line_number": 9,
+      "meta.decoratorName": "inline",
+      "meta.decoratedKind": "function_definition",
+      "meta.isMacroDecorator": true,
+      "comment": "FIRE (2) — the ordinary long form; the declaration is the macro's only argument."
+    },
+    {
+      "type": "decorates",
+      "source": "documented",
+      "target": "doc",
+      "line_number": 13,
+      "meta.decoratorName": "doc",
+      "meta.decoratedKind": "function_definition",
+      "meta.isMacroDecorator": true,
+      "comment": "FIRE (3) — a docstring precedes the declaration, so a reader that only looks at the first argument misses this one."
+    },
+    {
+      "type": "decorates",
+      "source": "short",
+      "target": "inline",
+      "line_number": 17,
+      "meta.decoratorName": "inline",
+      "meta.decoratedKind": "short_function",
+      "meta.isMacroDecorator": true,
+      "comment": "FIRE (4) — the short form `short(x) = x` is an ASSIGNMENT, not a function_definition; its declaration is the assignment's left-hand call."
+    },
+    {
+      "type": "calls",
+      "source": "Decorated",
+      "target": "time",
+      "line_number": 19,
+      "meta.isMacroCall": true,
+      "comment": "NEGATIVE — `@time fast(1)` executes a call; there is no declaration to decorate, so it stays a macro call."
+    },
+    {
+      "type": "calls",
+      "source": "Decorated",
+      "target": "fast",
+      "line_number": 19,
+      "comment": "NEGATIVE — the CALL inside the macro argument is a real call to `fast` and is published as one."
+    }
+  ],
+  "forbidRelationships": [
+    { "type": "decorates", "target": "time", "comment": "a macro with no declaration argument is a call, not a decorator" },
+    { "type": "decorates", "target": "Base", "comment": "the module qualifier is not the decorator; the macro's own name is" }
+  ]
+}

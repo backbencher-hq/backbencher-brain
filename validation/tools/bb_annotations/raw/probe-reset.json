@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "action": "reset probe fixture index to zero annotations",
+  "workspace": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture",
+  "projectId": "e6ed52d398a5575a083816f5b4097ad5e013df2e",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata",
+  "indexMs": 7455,
+  "dbBytes": 4096,
+  "counts": {
+    "files": 3,
+    "symbols": 10,
+    "annotations": 0
+  },
+  "regeneratedAt": "2026-11-03T16:39:04.131Z"
+}

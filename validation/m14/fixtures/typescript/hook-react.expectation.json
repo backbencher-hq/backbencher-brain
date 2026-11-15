@@ -1,0 +1,12 @@
+{
+  "fixtureId": "typescript/hook-react",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "POSITIVE CONTROL for the T1 gate: in a real React file the check still fires (helper is not a component), with 1-based ranges (T7: the hook linter read raw 0-based rows — error on source line 3 must report line 3, matching the error-ranges convention).",
+  "expectSymbols": [
+    { "name": "Card", "kind": "function" }
+  ],
+  "expectErrors": [
+    { "startLine": 4 }
+  ]
+}

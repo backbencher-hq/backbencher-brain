@@ -22,7 +22,7 @@ const { readdirSync, existsSync } = require("node:fs")
 const path = require("node:path")
 
 const ROOT = path.resolve(__dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT || "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT || "/home/ishaq2321/bb_tests/repositories"
 const args = process.argv.slice(2)
 const JSON_MODE = args.includes("--json")
 const pos = args.filter((a) => !a.startsWith("--"))

@@ -293,6 +293,53 @@ CREATE INDEX IF NOT EXISTS brain_taint_sink_idx ON brain_taint_flow(sink_symbol_
 CREATE INDEX IF NOT EXISTS brain_taint_vuln_idx ON brain_taint_flow(vulnerability_type);
 CREATE INDEX IF NOT EXISTS brain_taint_severity_idx ON brain_taint_flow(severity);
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- M72: SPEC-DRIVEN SECURITY LEADS (the replacement store for security output)
+--
+-- One row per lead the per-language spec engine emits for a symbol: a source
+-- expression reaching a dynamic sink argument (see
+-- src/intelligence/security/rebuild/{spec-types,engine}.ts). The lead columns
+-- are the answer's vocabulary: tier says whether the producing spec is
+-- scan/leads/unsupported (the pipeline skips unsupported languages, so a
+-- stored unsupported row would be a defect, not a default), state is lead
+-- until reachability becomes a proof, and rule_id names the one spec rule the
+-- row is evidence for — a false positive is traceable to a rule, not to a token.
+--
+-- The id is STABLE AND LINE-NUMBER-FREE:
+--   sec:<projectId>:<fileId>:<ruleId>:<sinkByteStart>:<sinkByteEnd>
+-- where the byte offsets are the sink token's offsets within the symbol body, so
+-- moving a function down the file does not change the id. Stale-row control is
+-- by FILE (the writer deletes this file's rows on every store/delete before
+-- inserting), not by id arithmetic — which is what makes an edited-away lead
+-- disappear instead of surviving forever as the old token store's did.
+--
+-- brain_taint_flow above is the archived legacy store: the default pipeline no
+-- longer writes it (BB_SECURITY_LEGACY=1 re-enables the old path for rollback
+-- only), and no reader should treat its rows as current findings.
+CREATE TABLE IF NOT EXISTS brain_security_flow (
+  id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL,
+  file_id TEXT,
+  source_symbol_id TEXT,
+  sink_symbol_id TEXT,
+  vulnerability_type TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  state TEXT NOT NULL DEFAULT 'lead',
+  tier TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  source_line INTEGER,
+  sink_line INTEGER,
+  evidence TEXT,
+  time_created INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  time_updated INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+CREATE INDEX IF NOT EXISTS brain_security_project_idx ON brain_security_flow(project_id);
+CREATE INDEX IF NOT EXISTS brain_security_file_idx ON brain_security_flow(file_id);
+CREATE INDEX IF NOT EXISTS brain_security_source_idx ON brain_security_flow(source_symbol_id);
+CREATE INDEX IF NOT EXISTS brain_security_sink_idx ON brain_security_flow(sink_symbol_id);
+CREATE INDEX IF NOT EXISTS brain_security_rule_idx ON brain_security_flow(project_id, rule_id);
+CREATE INDEX IF NOT EXISTS brain_security_state_idx ON brain_security_flow(project_id, state);
+
 -- ================================================================
 -- COMPOUND & MISSING INDEXES - aligned with the drizzle schema
 -- ================================================================
@@ -398,6 +445,58 @@ CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(pr
 /** Current schema version — every freshly ensured brain database records this row. */
 export const SCHEMA_VERSION = 1
 export const SCHEMA_MIGRATION_NAME = "m13-universal-brain"
+
+/**
+ * M72: additive, idempotent DDL for the spec-engine lead store.
+ *
+ * WHY THIS IS A SEPARATE `ensure*` AND NOT ONLY A BLOCK IN `DDL` ABOVE — the same
+ * rule every additive migration in this file follows: `ensureSchemaIfNew` skips
+ * the full DDL for a PRE-EXISTING database, and every real index a user or a
+ * verifier opens is a pre-existing one. The write path calls this before it
+ * prepares the statements that name the table, and `ensureSchema` calls it for
+ * fresh databases, so there is exactly one definition of the table text.
+ */
+export const SECURITY_FLOW_DDL = `
+    CREATE TABLE IF NOT EXISTS brain_security_flow (
+      id TEXT PRIMARY KEY NOT NULL,
+      project_id TEXT NOT NULL,
+      file_id TEXT,
+      source_symbol_id TEXT,
+      sink_symbol_id TEXT,
+      vulnerability_type TEXT NOT NULL,
+      severity TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'lead',
+      tier TEXT NOT NULL,
+      rule_id TEXT NOT NULL,
+      source_line INTEGER,
+      sink_line INTEGER,
+      evidence TEXT,
+      time_created INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      time_updated INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS brain_security_project_idx ON brain_security_flow(project_id);
+    CREATE INDEX IF NOT EXISTS brain_security_file_idx ON brain_security_flow(file_id);
+    CREATE INDEX IF NOT EXISTS brain_security_source_idx ON brain_security_flow(source_symbol_id);
+    CREATE INDEX IF NOT EXISTS brain_security_sink_idx ON brain_security_flow(sink_symbol_id);
+    CREATE INDEX IF NOT EXISTS brain_security_rule_idx ON brain_security_flow(project_id, rule_id);
+    CREATE INDEX IF NOT EXISTS brain_security_state_idx ON brain_security_flow(project_id, state);
+  `
+
+/**
+ * Create the `brain_security_flow` table + its indexes if they are absent.
+ * Idempotent and additive; safe to call on every open AND before every
+ * statement preparation. Best-effort by design: a read-only handle cannot
+ * migrate (the next writable open does), and a write path that cannot create the
+ * table must not crash the whole index — the store then reports the table as
+ * uninitialized to its readers instead of inventing rows.
+ */
+export function ensureSecurityFlowTable(raw: any): void {
+  try {
+    raw.exec(SECURITY_FLOW_DDL)
+  } catch {
+    // See the contract above: absence is a state, not a failure.
+  }
+}
 
 /**
  * M28.A1 (issue #626, decision D-3/D-4): agent-authored annotations.
@@ -1033,6 +1132,10 @@ export function ensureSchema(raw: any): void {
   ensureRelationshipTargetBasisColumn(raw)
   // Pattern scan columns + covering index for databases that predate them.
   ensureRelationshipEvidenceClassColumn(raw)
+  // M72: the spec-engine security lead store (`brain_security_flow`). Additive
+  // and idempotent here too, so a fresh database guarantees it and every
+  // pre-existing one gets it the first time the write path opens.
+  ensureSecurityFlowTable(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}

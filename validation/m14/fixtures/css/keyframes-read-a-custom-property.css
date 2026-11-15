@@ -1,0 +1,46 @@
+/* A custom property read INSIDE a `@keyframes` block is a dependency of the animation.
+ *
+ * The gap this pins: `currentSelector` is set only at a `rule_set`, and a `keyframe_block`
+ * is not one, so before the fix every `var()` here produced no edge at all — 845 of them
+ * across the admitted corpus, in 265 files. The property is real and the graph did not have
+ * it: `--pico-tooltip-slide-to` is declared on the selectors above and read by the
+ * animation below, and nothing joined them.
+ *
+ * The owner is the keyframes NAME, which the analyzer already publishes as a symbol, so the
+ * edge resolves at both ends without inventing an endpoint.
+ *
+ * `.undeclared` is the control in the other direction: a `var()` of a property this file
+ * does not declare is still emitted, because the READ is the fact — the same rule the
+ * cross-file `references` edges follow. What is forbidden below is naming an OWNER that
+ * does not exist, not naming a target that is not declared.
+ */
+:root {
+  --slide-to: translate(-50%, -0.25rem);
+  --fade-op: 0.4;
+}
+
+@keyframes slide {
+  to {
+    transform: var(--slide-to);
+  }
+}
+
+@keyframes fade {
+  50% {
+    opacity: var(--fade-op);
+  }
+}
+
+@keyframes never-declared {
+  to {
+    transform: var(--absent);
+  }
+}
+
+@media screen and (min-width: 100px) {
+  @keyframes nested-in-media {
+    to {
+      opacity: var(--fade-op);
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "groovy/complexity-parity",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: cyclomatic complexity = 1 + decisions; decisions = if + for-in + ternary + && = 4, so f must be exactly 5. The old calculator counted only 'if' on this shape: its && / || cases matched NODE TYPES that do not exist (operators live inside binary_expression), for-in loops are enhanced_for_statement not for_statement, and ternary_expression was absent - measured complexity was 2. File-level metadata.complexity was the synthetic fake symbols.length + relationships.length.",
+  "expectSymbols": [
+    { "name": "f", "kind": "method" }
+  ],
+  "expectComplexity": [
+    { "symbol": "f", "equals": 5 }
+  ]
+}

@@ -1,0 +1,198 @@
+{
+  "instrument": "xml store determinism — same file set, three index orders, bindings compared structurally",
+  "repo": "terragrunt",
+  "filesRequested": 800,
+  "filesUsed": 800,
+  "admission": "git-tracked, xml-family suffix, <= 512 KiB, sorted; arms B and C use the SAME set",
+  "arms": [
+    {
+      "arm": "A",
+      "order": "sorted",
+      "projectId": "0634bdca8589",
+      "files": 800,
+      "indexMs": 51391,
+      "rows": 10124,
+      "bound": 9803,
+      "unbound": 321,
+      "distinctRowKeys": 10124,
+      "storedRows": 10124,
+      "distinctRowIds": 10124,
+      "duplicateKeysWithDifferentValue": 0,
+      "duplicateIds": 0,
+      "ambiguousExamples": [],
+      "byType": {
+        "contains": {
+          "rows": 7569,
+          "bound": 7541,
+          "unbound": 28
+        },
+        "exports": {
+          "rows": 1469,
+          "bound": 1465,
+          "unbound": 4
+        },
+        "references": {
+          "rows": 1011,
+          "bound": 792,
+          "unbound": 219
+        },
+        "imports": {
+          "rows": 42,
+          "bound": 0,
+          "unbound": 42
+        },
+        "uses": {
+          "rows": 33,
+          "bound": 5,
+          "unbound": 28
+        }
+      }
+    },
+    {
+      "arm": "B",
+      "order": "reversed",
+      "projectId": "c774cae7d602",
+      "files": 800,
+      "indexMs": 49368,
+      "rows": 10124,
+      "bound": 9803,
+      "unbound": 321,
+      "distinctRowKeys": 10124,
+      "storedRows": 10124,
+      "distinctRowIds": 10124,
+      "duplicateKeysWithDifferentValue": 0,
+      "duplicateIds": 0,
+      "ambiguousExamples": [],
+      "byType": {
+        "contains": {
+          "rows": 7569,
+          "bound": 7541,
+          "unbound": 28
+        },
+        "exports": {
+          "rows": 1469,
+          "bound": 1465,
+          "unbound": 4
+        },
+        "imports": {
+          "rows": 42,
+          "bound": 0,
+          "unbound": 42
+        },
+        "references": {
+          "rows": 1011,
+          "bound": 792,
+          "unbound": 219
+        },
+        "uses": {
+          "rows": 33,
+          "bound": 5,
+          "unbound": 28
+        }
+      }
+    },
+    {
+      "arm": "C",
+      "order": "sorted+FORCE_EAGER",
+      "projectId": "7c319396beb4",
+      "files": 800,
+      "indexMs": 55142,
+      "rows": 10124,
+      "bound": 9803,
+      "unbound": 321,
+      "distinctRowKeys": 10124,
+      "storedRows": 10124,
+      "distinctRowIds": 10124,
+      "duplicateKeysWithDifferentValue": 0,
+      "duplicateIds": 0,
+      "ambiguousExamples": [],
+      "byType": {
+        "contains": {
+          "rows": 7569,
+          "bound": 7541,
+          "unbound": 28
+        },
+        "exports": {
+          "rows": 1469,
+          "bound": 1465,
+          "unbound": 4
+        },
+        "imports": {
+          "rows": 42,
+          "bound": 0,
+          "unbound": 42
+        },
+        "references": {
+          "rows": 1011,
+          "bound": 792,
+          "unbound": 219
+        },
+        "uses": {
+          "rows": 33,
+          "bound": 5,
+          "unbound": 28
+        }
+      }
+    }
+  ],
+  "comparisons": {
+    "A_vs_B_sorted_vs_reversed": {
+      "compared": 10124,
+      "differing": 113,
+      "differingByType": {
+        "contains": 113
+      },
+      "onlyInX": 0,
+      "onlyInY": 0,
+      "examples": [
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/live/backend.tf:terraform:1:terraform.backend.s3:contains:2   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/s3.tf | s3   B=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/live/main.tf | s3",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/live/backend.tf:terraform:1:terraform.backend.s3:contains:2   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/s3.tf | s3   B=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-4-breaking-the-terralith/catalog/modules/best_cat/main.tf | s3",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-4-breaking-the-terralith/live/dev/backend.tf:terraform:1:terraform.backend.s3:contains:2   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/s3.tf | s3   B=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/catalog/modules/best_cat/main.tf | s3",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/root.hcl:generate.providers:16:generate.providers:contains:16   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/providers.tf | providers   B=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/live/root.hcl | generate.providers",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-4-breaking-the-terralith/live/prod/backend.tf:terraform:1:terraform.backend.s3:contains:2   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/s3.tf | s3   B=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/catalog/modules/best_cat/main.tf | s3"
+      ]
+    },
+    "A_vs_C_eager_vs_deferred": {
+      "compared": 10124,
+      "differing": 200,
+      "differingByType": {
+        "references": 96,
+        "exports": 99,
+        "contains": 5
+      },
+      "onlyInX": 0,
+      "onlyInY": 0,
+      "examples": [
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/iam/outputs.tf:name:1:aws_iam_role.lambda_role.name:references:2   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/iam.tf | name   C=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/iam/outputs.tf | name",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/lambda/main.tf:aws_lambda_function.main:1:var.lambda_zip_file:references:4   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/vars-required.tf | lambda_zip_file   C=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/live/main.tf | lambda_zip_file",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/lambda/main.tf:aws_lambda_function.main:1:var.lambda_zip_file:references:5   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/vars-required.tf | lambda_zip_file   C=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/live/main.tf | lambda_zip_file",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/lambda/main.tf:aws_lambda_function_url.main:23:aws_lambda_function.main.function_name:references:24   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/lambda.tf | function_name   C=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/lambda/main.tf | function_name",
+        "rel:terragrunt/docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/lambda/main.tf:main:1:aws_lambda_function.main:exports:1   A=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/lambda.tf | aws_lambda_function.main   C=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/lambda/main.tf | main"
+      ]
+    },
+    "B_vs_C": {
+      "compared": 10124,
+      "differing": 312,
+      "differingByType": {
+        "exports": 99,
+        "contains": 117,
+        "references": 96
+      },
+      "onlyInX": 0,
+      "onlyInY": 0,
+      "examples": [
+        "rel:terragrunt/test/fixtures/download/local-windows/JZwoL6Viko8bzuRvTOQFx3Jh8vs/3mU4huxMLOXOW5ZgJOFXGUFDKc8/main.tf:main:1:null_resource.test:exports:21   B=test/fixtures/azure-backend/unit1/main.tf | null_resource.test   C=test/fixtures/download/local-windows/JZwoL6Viko8bzuRvTOQFx3Jh8vs/3mU4huxMLOXOW5ZgJOFXGUFDKc8/main.tf | test",
+        "rel:terragrunt/test/fixtures/docs/03-stacks-with-local-state/live/terragrunt.stack.hcl:terragrunt.stack:1:unit.foo:contains:1   B=test/fixtures/docs/03-stacks-with-local-state/live/terragrunt.stack.hcl | unit.foo   C=test/fixtures/auth-provider-cmd/creds-for-dependency/dependency/main.tf | foo",
+        "rel:terragrunt/test/fixtures/download/hello-world/main.tf:main:1:null_resource.test:exports:21   B=test/fixtures/azure-backend/unit1/main.tf | null_resource.test   C=test/fixtures/download/hello-world/main.tf | test",
+        "rel:terragrunt/test/fixtures/download/hello-world-with-backend/main.tf:terraform:1:terraform.backend.s3:contains:3   B=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/backend.tf | backend.s3   C=docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/s3.tf | s3",
+        "rel:terragrunt/test/fixtures/download/hello-world-with-backend/main.tf:main:1:null_resource.test:exports:20   B=test/fixtures/azure-backend/unit1/main.tf | null_resource.test   C=test/fixtures/download/hello-world-with-backend/main.tf | test"
+      ]
+    }
+  },
+  "reading": {
+    "determinism": "differing === 0 and onlyInX === 0 and onlyInY === 0 means the same file set produced the same bindings under this order change — order-independent for these three arms, which is the test the hypothesis needed. Any non-zero `differing` is a store determinism defect and outranks every lane's residual.",
+    "identity": "the comparison key is the row id minus the project prefix (it embeds the source file and symbol, the line, the target and the type), and the endpoints are read from maps, NOT joined — the join fanned out on duplicated symbol rows and manufactured 482 phantom differences in the first version of this probe. `duplicateIds` reports rows sharing an id inside one arm if that ever happens.",
+    "unboundIsNotDeterminism": "A row that is unbound in one arm and bound in another counts as `differing` here, so the two questions are not confused."
+  },
+  "limits": "Three arms cannot prove determinism; they can fail to falsify it. Different concurrency, a different file set, or a partially-populated store are NOT covered."
+}

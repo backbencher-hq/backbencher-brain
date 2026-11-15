@@ -1,0 +1,311 @@
+{
+  "lang": "nim",
+  "files": 4555,
+  "parseFileFailures": 0,
+  "accentQuotedDeclarationSites": 1417,
+  "preFilter": {
+    "total": 182392,
+    "withBacktickEndpoint": 4509
+  },
+  "postFilter": {
+    "total": 181978,
+    "withBacktickEndpoint": 4143
+  },
+  "perType": {
+    "calls": {
+      "pre": 77767,
+      "post": 77536,
+      "preTick": 1572
+    },
+    "imports": {
+      "pre": 9083,
+      "post": 9065,
+      "preTick": 0
+    },
+    "contains": {
+      "pre": 21569,
+      "post": 21434,
+      "preTick": 147
+    },
+    "references": {
+      "pre": 40122,
+      "post": 40122,
+      "preTick": 1533
+    },
+    "uses": {
+      "pre": 30831,
+      "post": 30823,
+      "preTick": 1211
+    },
+    "instantiates": {
+      "pre": 1984,
+      "post": 1984,
+      "preTick": 33
+    },
+    "extends": {
+      "pre": 569,
+      "post": 569,
+      "preTick": 0
+    },
+    "exports": {
+      "pre": 418,
+      "post": 397,
+      "preTick": 12
+    },
+    "overrides": {
+      "pre": 49,
+      "post": 48,
+      "preTick": 1
+    }
+  },
+  "droppedWithBacktickEndpoint": [
+    {
+      "label": "Aporia/aporia.nim",
+      "type": "calls",
+      "src": "onDragDataReceived",
+      "tgt": "`$`"
+    },
+    {
+      "label": "dom96-jester/jester.nim",
+      "type": "contains",
+      "src": "routesEx",
+      "tgt": "`matchIdent`"
+    },
+    {
+      "label": "dom96-jester/jester.nim",
+      "type": "contains",
+      "src": "routesEx",
+      "tgt": "`errorHandlerIdent`"
+    },
+    {
+      "label": "dom96-jester/jester.nim",
+      "type": "calls",
+      "src": "`errorHandlerIdent`",
+      "tgt": "`setDefaultRespIdent`"
+    },
+    {
+      "label": "dom96-jester/jester/patterns.nim",
+      "type": "contains",
+      "src": "parsePattern",
+      "tgt": "`{}`"
+    },
+    {
+      "label": "graphql-nim/graphql.nim",
+      "type": "exports",
+      "src": "(global)",
+      "tgt": "`$`"
+    },
+    {
+      "label": "nim/compiler/ccgexprs.nim",
+      "type": "calls",
+      "src": "genMagicExpr",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/cgen.nim",
+      "type": "calls",
+      "src": "getModuleDllPath",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/cgen.nim",
+      "type": "calls",
+      "src": "mangleDynLibProc",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/commands.nim",
+      "type": "calls",
+      "src": "writeFullhelp",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/commands.nim",
+      "type": "calls",
+      "src": "writeVersionInfo",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/guards.nim",
+      "type": "contains",
+      "src": "ple",
+      "tgt": "`<=?`"
+    },
+    {
+      "label": "nim/compiler/guards.nim",
+      "type": "contains",
+      "src": "ple",
+      "tgt": "`>=?`"
+    },
+    {
+      "label": "nim/compiler/guards.nim",
+      "type": "calls",
+      "src": "ple",
+      "tgt": "`|div|`"
+    },
+    {
+      "label": "nim/compiler/idents.nim",
+      "type": "calls",
+      "src": "`==`",
+      "tgt": "`==`"
+    },
+    {
+      "label": "nim/compiler/jsgen.nim",
+      "type": "calls",
+      "src": "lineF",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/jsgen.nim",
+      "type": "calls",
+      "src": "frameCreate",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/lexer.nim",
+      "type": "calls",
+      "src": "getNumber",
+      "tgt": "`shl`"
+    },
+    {
+      "label": "nim/compiler/nimconf.nim",
+      "type": "calls",
+      "src": "parseDirective",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/nimconf.nim",
+      "type": "calls",
+      "src": "parseAssignment",
+      "tgt": "`%`"
+    },
+    {
+      "label": "nim/compiler/semfold.nim",
+      "type": "calls",
+      "src": "evalOp",
+      "tgt": "`<%`"
+    },
+    {
+      "label": "nim/compiler/semfold.nim",
+      "type": "calls",
+      "src": "evalOp",
+      "tgt": "`<=%`"
+    },
+    {
+      "label": "nim/compiler/semstmts.nim",
+      "type": "contains",
+      "src": "rec",
+      "tgt": "`name rec`"
+    },
+    {
+      "label": "nim/compiler/semstmts.nim",
+      "type": "calls",
+      "src": "`name rec`",
+      "tgt": "`name rec`"
+    },
+    {
+      "label": "nim/compiler/semstmts.nim",
+      "type": "calls",
+      "src": "rec",
+      "tgt": "`name rec`"
+    },
+    {
+      "label": "nim/compiler/sizealignoffsetimpl.nim",
+      "type": "calls",
+      "src": "computeSizeAlign",
+      "tgt": "`shl`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap1fMath",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap2fMath",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap2iMath",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap0",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap1s",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap2s",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap2si",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap1svoid",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrap2svoid",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrapDangerous1svoid",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "wrapDangerous2svoid",
+      "tgt": "`op Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "contains",
+      "src": "registerAdditionalOps",
+      "tgt": "`mod Wrapper`"
+    },
+    {
+      "label": "nim/compiler/vmops.nim",
+      "type": "calls",
+      "src": "`mod Wrapper`",
+      "tgt": "`mod`"
+    },
+    {
+      "label": "nim/lib/core/typeinfo.nim",
+      "type": "calls",
+      "src": "`[]`",
+      "tgt": "`[]`"
+    }
+  ],
+  "droppedOtherReasons": [
+    {
+      "label": "nim/tests/modules/timportas.nim",
+      "type": "imports",
+      "src": "(global)",
+      "tgt": ".. / modules / definitions"
+    }
+  ]
+}

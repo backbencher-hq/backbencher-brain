@@ -1,0 +1,705 @@
+{
+  "schemaVersion": 2,
+  "tool": "bb_annotations",
+  "measuredAt": "2026-11-03T16:46:03.787Z",
+  "currentCommit": "ba597a3be78143151500b97846995f8ce83dbb03",
+  "rules": [
+    "warm: one discarded call per subject, then 5 measured runs",
+    "BB_NO_AUTO_REFRESH=1 for every read",
+    "T0/T1 on this lane's isolated indexes; T2 on a read-only backup copy (the shared store must not be the subject of a measurement)"
+  ],
+  "budget": {
+    "T0_p95Ms": 250,
+    "T1_p95Ms": 1000,
+    "T2_read_p95Ms": 5000,
+    "source": "docs/tools-campaign/CHARTER.md §6"
+  },
+  "tiers": {
+    "T0": {
+      "subject": "test/fixtures/polyglot",
+      "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/latency.mts --tier T0",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+        "bytes": 598016,
+        "mtimeMs": 1793722773544.592,
+        "population": {
+          "files": 5,
+          "symbols": 13,
+          "relationships": 26,
+          "annotations": 2
+        }
+      },
+      "environment": {
+        "node": "v22.22.1",
+        "cpus": 8,
+        "loadavg": "9.27 15.02 19.28 9/1684 51"
+      },
+      "coldFirstCallMs": 7.614,
+      "subjects": {
+        "default-project-wide": {
+          "args": {},
+          "runs": [
+            0.492,
+            0.506,
+            0.674,
+            0.545,
+            0.438
+          ],
+          "p50Ms": 0.506,
+          "p95Ms": 0.674,
+          "bytes": 1020,
+          "answerShape": {
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "another-name-absent": {
+          "args": {
+            "symbol": "bb-annotations-audit-name-that-does-not-exist"
+          },
+          "runs": [
+            1.329,
+            0.911,
+            0.797,
+            0.852,
+            1.053
+          ],
+          "p50Ms": 0.911,
+          "p95Ms": 1.329,
+          "bytes": 454,
+          "answerShape": {
+            "count": 0,
+            "totalCountIfKnown": 0,
+            "truncated": false,
+            "declaredAbsent": true,
+            "isError": false
+          }
+        },
+        "limit-1": {
+          "args": {
+            "limit": 1
+          },
+          "runs": [
+            0.446,
+            0.412,
+            0.425,
+            0.366,
+            0.354
+          ],
+          "p50Ms": 0.412,
+          "p95Ms": 0.446,
+          "bytes": 760,
+          "answerShape": {
+            "count": 1,
+            "totalCountIfKnown": 2,
+            "truncated": true,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "subject-symbol": {
+          "args": {
+            "symbol": "Inventory"
+          },
+          "runs": [
+            0.938,
+            1.121,
+            1.072,
+            1.134,
+            7.03
+          ],
+          "p50Ms": 1.121,
+          "p95Ms": 7.03,
+          "bytes": 1026,
+          "answerShape": {
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "subject-path": {
+          "args": {
+            "path": "README.md"
+          },
+          "runs": [
+            0.65,
+            0.576,
+            0.565,
+            0.552,
+            0.527
+          ],
+          "p50Ms": 0.565,
+          "p95Ms": 0.65,
+          "bytes": 675,
+          "answerShape": {
+            "count": 1,
+            "totalCountIfKnown": 1,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        }
+      },
+      "verdict": "within budget"
+    },
+    "T1": {
+      "subject": ".perf-fixtures/bb-scale/n100",
+      "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/latency.mts --tier T1",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+        "bytes": 47165440,
+        "mtimeMs": 1793679144215.7527,
+        "population": {
+          "files": 97,
+          "symbols": 3512,
+          "relationships": 17068,
+          "annotations": 2
+        }
+      },
+      "environment": {
+        "node": "v22.22.1",
+        "cpus": 8,
+        "loadavg": "9.27 15.02 19.28 22/1748 88"
+      },
+      "coldFirstCallMs": 9.171,
+      "subjects": {
+        "default-project-wide": {
+          "args": {},
+          "runs": [
+            0.351,
+            0.34,
+            0.528,
+            0.372,
+            0.321
+          ],
+          "p50Ms": 0.351,
+          "p95Ms": 0.528,
+          "bytes": 1035,
+          "answerShape": {
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "another-name-absent": {
+          "args": {
+            "symbol": "bb-annotations-audit-name-that-does-not-exist"
+          },
+          "runs": [
+            0.914,
+            0.733,
+            0.715,
+            0.774,
+            0.779
+          ],
+          "p50Ms": 0.774,
+          "p95Ms": 0.914,
+          "bytes": 454,
+          "answerShape": {
+            "count": 0,
+            "totalCountIfKnown": 0,
+            "truncated": false,
+            "declaredAbsent": true,
+            "isError": false
+          }
+        },
+        "limit-1": {
+          "args": {
+            "limit": 1
+          },
+          "runs": [
+            0.356,
+            0.309,
+            0.283,
+            0.325,
+            1.829
+          ],
+          "p50Ms": 0.325,
+          "p95Ms": 1.829,
+          "bytes": 789,
+          "answerShape": {
+            "count": 1,
+            "totalCountIfKnown": 2,
+            "truncated": true,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "subject-symbol": {
+          "args": {
+            "symbol": "id"
+          },
+          "runs": [
+            1.213,
+            1.345,
+            1.139,
+            1.245,
+            1.526
+          ],
+          "p50Ms": 1.245,
+          "p95Ms": 1.526,
+          "bytes": 1034,
+          "answerShape": {
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "subject-path": {
+          "args": {
+            "path": "t0000_document_highlight.ts"
+          },
+          "runs": [
+            0.516,
+            0.504,
+            0.563,
+            1.01,
+            0.536
+          ],
+          "p50Ms": 0.536,
+          "p95Ms": 1.01,
+          "bytes": 722,
+          "answerShape": {
+            "count": 1,
+            "totalCountIfKnown": 1,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        }
+      },
+      "verdict": "within budget"
+    },
+    "T2": {
+      "subject": "reference large index (byte copy of .bb-data project)",
+      "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/work/latency.mts --tier T2",
+      "database": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "bytes": 3639963648,
+        "mtimeMs": 1793722817415.9397,
+        "population": {
+          "files": 6452,
+          "symbols": 310423,
+          "relationships": 820040,
+          "annotations": 2
+        }
+      },
+      "environment": {
+        "node": "v22.22.1",
+        "cpus": 8,
+        "loadavg": "10.32 14.97 19.19 16/1708 125"
+      },
+      "coldFirstCallMs": 7.158,
+      "subjects": {
+        "default-project-wide": {
+          "args": {},
+          "runs": [
+            0.447,
+            0.522,
+            0.633,
+            0.337,
+            0.3
+          ],
+          "p50Ms": 0.447,
+          "p95Ms": 0.633,
+          "bytes": 1085,
+          "answerShape": {
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "another-name-absent": {
+          "args": {
+            "symbol": "bb-annotations-audit-name-that-does-not-exist"
+          },
+          "runs": [
+            1.376,
+            0.809,
+            0.554,
+            0.551,
+            0.756
+          ],
+          "p50Ms": 0.756,
+          "p95Ms": 1.376,
+          "bytes": 454,
+          "answerShape": {
+            "count": 0,
+            "totalCountIfKnown": 0,
+            "truncated": false,
+            "declaredAbsent": true,
+            "isError": false
+          }
+        },
+        "limit-1": {
+          "args": {
+            "limit": 1
+          },
+          "runs": [
+            0.28,
+            0.266,
+            0.252,
+            0.248,
+            0.236
+          ],
+          "p50Ms": 0.252,
+          "p95Ms": 0.28,
+          "bytes": 835,
+          "answerShape": {
+            "count": 1,
+            "totalCountIfKnown": 2,
+            "truncated": true,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "subject-symbol": {
+          "args": {
+            "symbol": "type"
+          },
+          "runs": [
+            122.673,
+            109.014,
+            113.326,
+            90.052,
+            80.482
+          ],
+          "p50Ms": 109.014,
+          "p95Ms": 122.673,
+          "bytes": 1086,
+          "answerShape": {
+            "count": 2,
+            "totalCountIfKnown": 2,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        },
+        "subject-path": {
+          "args": {
+            "path": ".agents/skills/reverse-engineer-anything/SKILL.md"
+          },
+          "runs": [
+            0.923,
+            0.839,
+            0.94,
+            0.819,
+            0.878
+          ],
+          "p50Ms": 0.878,
+          "p95Ms": 0.94,
+          "bytes": 790,
+          "answerShape": {
+            "count": 1,
+            "totalCountIfKnown": 1,
+            "truncated": false,
+            "declaredAbsent": false,
+            "isError": false
+          }
+        }
+      },
+      "verdict": "within budget",
+      "coldCallVerdict": "within budget — the first default call on the reference index answers in 7.158 ms with the byte-read-only open",
+      "copy": {
+        "schemaVersion": 1,
+        "tool": "bb_annotations",
+        "purpose": "T2 reference-large-index handler measurements against a byte copy (shared store is never opened read-write)",
+        "source": {
+          "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+          "dbBytes": 3639963648,
+          "dbMtimeMs": 1793593795820.0583,
+          "walBytes": 0,
+          "walMtimeMs": 1793595035552.992,
+          "dbSha256": "2160e33de24025bec5500eb7633231c5393afa411d62cf647ce5ea3c67ba8e36"
+        },
+        "destination": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "destinationBytes": 3639963648,
+        "pages": {
+          "totalPages": 888663,
+          "remainingPages": 0
+        },
+        "copyMs": 25460,
+        "sourceCounts": {
+          "files": 6452,
+          "symbols": 310423,
+          "relationships": 820040,
+          "annotations": 0
+        },
+        "copyCounts": {
+          "files": 6452,
+          "symbols": 310423,
+          "relationships": 820040,
+          "annotations": 0
+        },
+        "equal": true,
+        "copiedAt": "2026-11-03T04:11:34.125Z",
+        "note": "read-only source connection + SQLite backup API; the copy is what every T2 measurement opens"
+      }
+    }
+  },
+  "beforeAfter": {
+    "note": "Phase A (read-write open) vs Phase B (byte-read-only open); same command, same tier definitions",
+    "T0": {
+      "coldFirstCallMs": {
+        "before": 10.097,
+        "after": 7.614
+      },
+      "defaultCall": {
+        "before": {
+          "p50Ms": 2.563,
+          "p95Ms": 2.722
+        },
+        "after": {
+          "p50Ms": 0.506,
+          "p95Ms": 0.674
+        }
+      }
+    },
+    "T1": {
+      "coldFirstCallMs": {
+        "before": 99.014,
+        "after": 9.171
+      },
+      "defaultCall": {
+        "before": {
+          "p50Ms": 2.51,
+          "p95Ms": 2.794
+        },
+        "after": {
+          "p50Ms": 0.351,
+          "p95Ms": 0.528
+        }
+      }
+    },
+    "T2": {
+      "coldFirstCallMs": {
+        "before": 17644.609,
+        "after": 7.158
+      },
+      "defaultCall": {
+        "before": {
+          "p50Ms": 2.846,
+          "p95Ms": 3.045
+        },
+        "after": {
+          "p50Ms": 0.447,
+          "p95Ms": 0.633
+        }
+      }
+    }
+  },
+  "realCorpus": {
+    "command": "BB_NO_AUTO_REFRESH=1 node validation/tools/bb_annotations/work/real-corpus-door.mjs",
+    "corpora": {
+      "graphql-js": {
+        "population": {
+          "files": 564,
+          "symbols": 13620,
+          "relationships": 61917
+        },
+        "defaultCall": {
+          "runs": [
+            27.851,
+            25.455,
+            25.191,
+            24.862,
+            24.608
+          ],
+          "p50Ms": 25.191,
+          "p95Ms": 27.851,
+          "minMs": 24.608,
+          "maxMs": 27.851,
+          "bytes": 1200
+        },
+        "qualifiedReadAfter": {
+          "applicable": true,
+          "count": 2,
+          "rows": [
+            "git@resources/utils.ts",
+            "utils.git@<null>"
+          ]
+        },
+        "qualifiedReadBefore": {
+          "applicable": true,
+          "count": 1,
+          "rows": [
+            "git@resources/utils.ts"
+          ]
+        }
+      },
+      "rake": {
+        "population": {
+          "files": 109,
+          "symbols": 1593,
+          "relationships": 9075
+        },
+        "defaultCall": {
+          "runs": [
+            37.511,
+            26.032,
+            26.25,
+            26.279,
+            30.406
+          ],
+          "p50Ms": 26.279,
+          "p95Ms": 37.511,
+          "minMs": 26.032,
+          "maxMs": 37.511,
+          "bytes": 1200
+        },
+        "qualifiedReadAfter": {
+          "applicable": true,
+          "count": 2,
+          "rows": [
+            "NameSpace@lib/rake/name_space.rb",
+            "Rake::NameSpace@<null>"
+          ]
+        },
+        "qualifiedReadBefore": {
+          "applicable": true,
+          "count": 1,
+          "rows": [
+            "NameSpace@lib/rake/name_space.rb"
+          ]
+        }
+      },
+      "rebar3": {
+        "population": {
+          "files": 303,
+          "symbols": 7012,
+          "relationships": 38143
+        },
+        "defaultCall": {
+          "runs": [
+            25.285,
+            25.791,
+            26.16,
+            25.405,
+            26.866
+          ],
+          "p50Ms": 25.791,
+          "p95Ms": 26.866,
+          "minMs": 25.285,
+          "maxMs": 26.866,
+          "bytes": 1119
+        },
+        "qualifiedReadAfter": {
+          "applicable": false
+        },
+        "qualifiedReadBefore": {
+          "applicable": false
+        }
+      }
+    }
+  },
+  "otherMeasurements": {
+    "realMcpDoorProbe": {
+      "command": "BB_NO_AUTO_REFRESH=1 node validation/tools/bb_annotations/work/mcp-door.mjs",
+      "before": {
+        "checks": 45,
+        "passed": 43,
+        "failed": 2,
+        "failedIds": [
+          "R3",
+          "R4"
+        ]
+      },
+      "after": {
+        "checks": 45,
+        "passed": 45,
+        "failed": 0,
+        "failedIds": []
+      }
+    },
+    "readImmutability": {
+      "before": {
+        "I1_changedFiles": [
+          "brain.db-shm",
+          "brain.db-wal"
+        ],
+        "I2_createdEntries": [
+          "projects/",
+          "projects/e6fdbe48259aa99f5d8b5f187a8bcb153985f6c2/",
+          "projects/e6fdbe48259aa99f5d8b5f187a8bcb153985f6c2/brain.db"
+        ],
+        "I3_changedFiles": [
+          "brain.db"
+        ],
+        "I3_tableRecreatedByRead": true
+      },
+      "after": {
+        "I1_changedFiles": [
+          "brain.db-shm"
+        ],
+        "I2_createdEntries": [],
+        "I3_changedFiles": [
+          "brain.db-shm",
+          "brain.db-wal"
+        ],
+        "I3_tableRecreatedByRead": false
+      }
+    },
+    "capFixture": {
+      "defaultRead": {
+        "isError": false,
+        "count": 50,
+        "totalCountIfKnown": 206,
+        "truncated": true,
+        "truncationReason": "limit 50 reached; 206 annotations match this query. Raise limit (max 200) or narrow the filter.",
+        "declaredAbsent": false,
+        "bytes": 17591,
+        "elapsedMs": 8.55
+      },
+      "capRead": {
+        "isError": false,
+        "count": 200,
+        "totalCountIfKnown": 206,
+        "truncated": true,
+        "truncationReason": "limit 200 reached; 206 annotations match this query. Raise limit (max 200) or narrow the filter.",
+        "declaredAbsent": false,
+        "bytes": 69245,
+        "elapsedMs": 8.723
+      },
+      "queryPlans": {
+        "projectWideRows": [
+          "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "projectWideCount": [
+          "SEARCH brain_annotation USING COVERING INDEX brain_annotation_project_idx (project_id=?)"
+        ],
+        "symbolRows": [
+          "SEARCH brain_annotation USING INDEX brain_annotation_location_idx (project_id=? AND symbol_name=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "symbolCount": [
+          "SEARCH brain_annotation USING COVERING INDEX brain_annotation_location_idx (project_id=? AND symbol_name=?)"
+        ],
+        "pathRows": [
+          "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "pathCount": [
+          "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)"
+        ],
+        "pathWithNameLevelRows": [
+          "SEARCH brain_annotation USING INDEX brain_annotation_project_idx (project_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "projectWideWallMs": 0.344,
+        "pathWallMs": 0.135
+      }
+    }
+  }
+}

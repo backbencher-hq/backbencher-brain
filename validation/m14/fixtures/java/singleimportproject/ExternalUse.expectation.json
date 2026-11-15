@@ -1,0 +1,63 @@
+{
+  "fixtureId": "java/singleimportproject/ExternalUse",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE EXTERNAL SINGLE-TYPE-IMPORT BINDING CLAIM — THE INDEXED HALF (java lane, 2026-10-20). This fixture lives in a sub-directory, so the runner gives it a real project index (JAVA_DECLARATION_SPEC, complete=true): the lane's rules are fail-closed without a COMPLETE key space, because a tie is a fact about the PROJECT. POSITIVE: `import com.vendor.ext.Tool;` binds the simple name `Tool`, and the project declares `Tool` in TWO places (ToolOwners.Tool and ToolOwners.Other.Tool), so the name-keyed resolver TIES on the name — a WALL. The imported type is outside the project (the index does not declare `com.vendor.ext.Tool`) and inside this file the import decides which `Tool` the name means (JLS 6.4.1). The import edge publishes the EVIDENCE the arbiter verifies the claim against (metadata.importedBindings + metadata.module) and the type-position edge whose target is the bound name publishes the CLAIM. NEGATIVES: (1) `com.vendor.ext.Unique` — the project declares `Unique` ONCE, so the name model RESOLVES that row and a claim there would trade a resolution for a claim: neither evidence nor claim; (2) `singleimportproject.Own` — the project owns the type, so the import is project code and must resolve through the owner/name model; (3) `Tool.make()` — a CALL whose target is a member leaf, not the bound name.",
+  "expectSymbols": [
+    { "name": "ExternalUse", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "ExternalUse",
+      "target": "com.vendor.ext.Tool",
+      "meta.importedBindings": ["Tool"],
+      "meta.module": "com.vendor.ext.Tool"
+    },
+    {
+      "type": "imports",
+      "source": "singleimportproject",
+      "target": "com.vendor.ext.Tool",
+      "meta.importedBindings": ["Tool"],
+      "meta.module": "com.vendor.ext.Tool"
+    },
+    {
+      "type": "references",
+      "source": "ExternalUse",
+      "target": "Tool",
+      "meta.importedBinding": { "specifier": "com.vendor.ext.Tool", "binding": "Tool" }
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "com.vendor.ext.Unique",
+      "meta.importedBindings": ["Unique"],
+      "comment": "the project declares Unique ONCE: the name model resolves that row, and a claim there would trade a resolution for a claim"
+    },
+    {
+      "type": "references",
+      "target": "Unique",
+      "meta.importedBinding": { "specifier": "com.vendor.ext.Unique", "binding": "Unique" },
+      "comment": "the project declares Unique ONCE: that row is a resolution and must keep it"
+    },
+    {
+      "type": "imports",
+      "target": "singleimportproject.Own",
+      "meta.importedBindings": ["Own"],
+      "comment": "the PROJECT declares this type: a project import is project code and must publish no external-import evidence"
+    },
+    {
+      "type": "references",
+      "target": "Own",
+      "meta.importedBinding": { "specifier": "singleimportproject.Own", "binding": "Own" },
+      "comment": "the PROJECT declares this type: it must resolve through the owner/name model, not be excused by a claim"
+    },
+    {
+      "type": "calls",
+      "target": "make",
+      "meta.importedBinding": { "specifier": "com.vendor.ext.Tool", "binding": "make" },
+      "comment": "a CALL target is a member leaf, not the bound name: the claim may only attach to the name the import binds"
+    }
+  ]
+}

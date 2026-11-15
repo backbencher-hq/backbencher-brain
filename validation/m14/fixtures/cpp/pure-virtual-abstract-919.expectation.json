@@ -1,0 +1,164 @@
+{
+  "fixtureId": "cpp/pure-virtual-abstract-919",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "ONTOLOGY/D23 \u2014 the flag the `implements` question is measured against was under-firing, and two separate defects produced the same symptom. (1) `= 0` reaches this grammar in TWO shapes: a direct `number_literal` child of a `field_declaration`, and one level down inside an `init_declarator`'s `value` field on a `declaration`. The old rule scanned DIRECT children only, so it saw the first shape and could not see the second \u2014 measured over the two pinned C++ corpora, 3 of 7 pure-virtual sites flagged and 4 missed. Nothing about the member SYMBOL changes with the `0`, so no symbol count and no differential could see it: what was lost is `meta.isPureVirtual` on 4 members and `meta.isAbstract` on the classes owning them, and `BenchmarkReporter` was one of the misses \u2014 the corpus's most-inherited abstract base, named by 9 of the 42 `extends` edges. (2) A macro-decorated head is recovered as a `function_definition` whose PARENT's `compound_statement` is the body, and the scope built for it carried no `symbolRef`; `isAbstract` is copied from the scope onto the class SYMBOL at scope exit, so it could not fire for a decorated head even when the member was found. `DecoratedReporter` pins that arm. The rule also now REQUIRES a `function_declarator`, which `WithZeroMember` pins in the direction that matters: `virtual int zeroMember = 0;` carries a `0` and a `virtual` and is not an interface operation, and a rule that only looks for the literal `0` cannot tell the two apart.",
+  "expectSymbols": [
+    {
+      "name": "Channel",
+      "kind": "class",
+      "meta.isAbstract": true,
+      "note": "SHAPE 1 (`= 0` a direct child) \u2014 this arm already worked, and it is the CONTROL for the arm below: a rule that read `= 0` at any depth and nothing else would pass here and fail on `Sink`."
+    },
+    {
+      "name": "Sink",
+      "kind": "class",
+      "meta.isAbstract": true,
+      "note": "SHAPE 2 (`declaration > init_declarator > value=number_literal`). THE ROW THAT FAILS PRE-D9. `Sink` has exactly one pure virtual and it is in the shape the direct-child scan could not reach, so pre-fix `meta.isAbstract` was absent and this assertion could not be satisfied by any value but `true`."
+    },
+    {
+      "name": "DecoratedReporter",
+      "kind": "class",
+      "meta.isAbstract": true,
+      "meta.macroDecoratedHead": "SINK_EXPORT",
+      "note": "D9's SECOND HALF: the same shape 2, inside a MACRO-DECORATED head. The specifier has no body of its own and the parent's `compound_statement` is the body, so the scope carried no `symbolRef` and the flag could not reach the symbol even with shape 2 fixed. `macroDecoratedHead` is pinned alongside it so the row cannot be satisfied by an ordinary class of the same name elsewhere in the file."
+    },
+    {
+      "name": "open",
+      "kind": "method",
+      "ownerName": "Channel",
+      "meta.isPureVirtual": true
+    },
+    {
+      "name": "close",
+      "kind": "method",
+      "ownerName": "Channel",
+      "meta.isPureVirtual": true
+    },
+    {
+      "name": "sync",
+      "kind": "method",
+      "ownerName": "Channel",
+      "meta.isPureVirtual": true,
+      "note": "a pure virtual with a DEFAULTED parameter. A default is not part of a signature, which is why `FileChannel::sync(int, int)` still overrides it and `cpp/pure-virtual-signature-910` still forbids the three-argument form."
+    },
+    {
+      "name": "flush",
+      "kind": "method",
+      "ownerName": "Channel",
+      "meta.isPureVirtual": false,
+      "note": "CONTROL inside the abstract class: a VIRTUAL with a body is not a pure virtual. `Channel` is abstract because of the three above, not because of this one, and a rule that treated any `virtual` member as abstract evidence would not be distinguishable from a correct one on the class row alone."
+    },
+    {
+      "name": "deliver",
+      "kind": "method",
+      "ownerName": "Sink",
+      "meta.isPureVirtual": true,
+      "note": "shape 2 on the MEMBER as well as on the class, so the two are pinned independently \u2014 a fix that set the class flag without the member flag would pass the class row and fail this one."
+    },
+    {
+      "name": "begin",
+      "kind": "method",
+      "ownerName": "DecoratedReporter",
+      "meta.isPureVirtual": true
+    },
+    {
+      "name": "DecoratedDerived",
+      "kind": "class",
+      "meta.isAbstract": null,
+      "note": "THE CONTROL FOR OVER-FIRING, and it is the one that decides whether the rule measures abstractness or measures the presence of an `override` specifier. `DecoratedDerived` overrides two pure virtuals and inherits from an abstract base, and it is NOT abstract \u2014 C++ says a class is abstract when it leaves a pure virtual UNIMPLEMENTED. Pre-D19 this row could not be written as a forbid (the analyzer published nothing about abstractness for a decorated head at all); now `meta.isAbstract: null` states that the ABSENT case is the right answer, which is the convention `meta.x: null` already uses for edges."
+    },
+    {
+      "name": "WithZeroMember",
+      "kind": "class",
+      "meta.isAbstract": null,
+      "note": "THE DECLARATOR REQUIREMENT. `virtual int zeroMember = 0;` writes a `0` and a `virtual` and is a member with an INITIALISER, not an interface operation. A rule keyed to the literal `0` calls this class abstract; the rule requires an `init_declarator`'s `declarator` (or a `declarator` field) to be a `function_declarator`. This class was accidentally right before D9 because the shape was out of the old rule's reach; the new rule reaches it and must still say no."
+    },
+    {
+      "name": "counted",
+      "kind": "method",
+      "ownerName": "WithZeroMember",
+      "meta.isPureVirtual": false,
+      "note": "a virtual WITH a body in the non-abstract class \u2014 the same control as `flush`, one class over."
+    },
+    {
+      "name": "FileChannel",
+      "kind": "class",
+      "meta.isAbstract": null
+    },
+    {
+      "name": "begin",
+      "kind": "method",
+      "ownerName": "DecoratedDerived",
+      "meta.isPureVirtual": false,
+      "note": "an `override` is not a pure virtual. C++ forbids a pure virtual from being an override (`= 0` and `override` in one declaration is ill-formed), so a rule that read the `override` specifier as abstractness evidence would be asserting something the language rules out."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "begin",
+      "kind": "method",
+      "ownerName": "DecoratedDerived",
+      "meta.isPureVirtual": true,
+      "note": "the negative twin of the row above, stated as a forbid because `expectSymbols` means '>= 1 match' and cannot say a flag must be ABSENT on its own. Together the two rows pin the flag on the same symbol in both directions, which is what makes it a regression gate rather than documentation."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "DecoratedDerived",
+      "target": "DecoratedReporter",
+      "note": "the inheritance clause on a macro-decorated head, which the grammar puts in an ERROR node. It is here because a class that is BOTH abstract and inherited is the population any `implements` reading keys on, and without this edge there is no `classBases` entry and therefore no override chain."
+    },
+    {
+      "type": "overrides",
+      "from": "DecoratedDerived::begin",
+      "target": "begin",
+      "meta.overriddenOwner": "DecoratedReporter"
+    },
+    {
+      "type": "overrides",
+      "from": "DecoratedDerived::end",
+      "target": "end",
+      "meta.overriddenOwner": "DecoratedReporter"
+    },
+    {
+      "type": "overrides",
+      "from": "FileChannel::open",
+      "target": "open",
+      "note": "the override chain THROUGH the newly-flagged abstract base: `Channel::open` has to be registered in the virtual registry for this row to exist, and the registry is keyed on the member, so this is the assertion that D9's member-level fix reaches the edge.",
+      "meta.overriddenOwner": "Channel"
+    },
+    {
+      "type": "overrides",
+      "from": "FileChannel::close",
+      "target": "close",
+      "meta.overriddenOwner": "Channel"
+    },
+    {
+      "type": "overrides",
+      "from": "FileChannel::sync",
+      "target": "sync",
+      "note": "and through a DEFAULTED parameter in the base \u2014 the default is not part of the signature, so the two-parameter derived declaration matches the three-parameter base one.",
+      "meta.overriddenOwner": "Channel"
+    },
+    {
+      "type": "overrides",
+      "from": "NullChannel::open",
+      "target": "open",
+      "note": "CONTROL: the same-signature arm, so a matcher that ignored parameter types entirely would also produce it and the `Helper` forbid below would be the only thing distinguishing the two behaviours.",
+      "meta.overriddenOwner": "Channel"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "NullChannel::Helper",
+      "target": "Helper",
+      "note": "C++ NAME HIDING, not virtual dispatch. `Helper(int)` and `Helper(int, int)` are different functions, and `Channel::Helper` is not virtual in any case. `cpp/pure-virtual-signature-910` pins the same rule from the other direction; it is repeated here because this fixture is the one that establishes `Channel` as abstract, and an abstractness-driven matcher is exactly the matcher that might resolve by name alone.",
+      "meta.overriddenOwner": "Channel"
+    },
+    {"type": "overrides", "from": "NullChannel::Helper", "target": "Channel::Helper", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "from": "NullChannel::Helper", "target": "NullChannel::Helper", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

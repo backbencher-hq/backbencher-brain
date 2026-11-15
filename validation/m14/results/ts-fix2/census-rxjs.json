@@ -1,0 +1,443 @@
+{
+  "at": "2026-10-05T12:29:27.891Z",
+  "lang": "typescript",
+  "corpusRoot": "/tmp/opencode/corpus",
+  "filesAdmitted": 771,
+  "filesParsed": 771,
+  "filesFailed": 0,
+  "filesWithRelationships": 770,
+  "totalSymbols": 33906,
+  "totalRelationships": 84542,
+  "population": {
+    "reposScanned": [
+      {
+        "repo": "rxjs",
+        "tracked": 1485,
+        "admitted": 771,
+        "declaration": 1
+      }
+    ],
+    "trackedPathsSeen": 1485,
+    "droppedOverSizeCap": 6,
+    "droppedNotThisLanguage": 708,
+    "admittedFiles": 771,
+    "admittedAmbientDeclarationFiles": 1,
+    "admittedImplementationFiles": 770,
+    "admittedTsxFiles": 0,
+    "admittedPlainTypescriptFiles": 771,
+    "servedLanguageKeys": [
+      "typescript",
+      "tsx"
+    ],
+    "sizeCapBytes": 524288,
+    "filter": "rxjs"
+  },
+  "parseErrorFiles": [],
+  "fallbackFiles": [],
+  "types": {
+    "calls": {
+      "count": 69589,
+      "files": 700,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code.component.spec.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 5306,
+      "targetResolves": 3047,
+      "bothResolve": 1148,
+      "emptyEndpoints": 0,
+      "selfLoops": 143,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 468,
+      "confidenceHistogram": {
+        "0.9": 69589
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 69589
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "announcement-bar.component.spec -> changeDays",
+        "announcement-bar.component.spec -> changeDays",
+        "announcement-bar.component.spec -> changeDays",
+        "announcement-bar.component.spec -> changeDays",
+        "announcement-bar.component.spec -> describe"
+      ]
+    },
+    "uses": {
+      "count": 1170,
+      "files": 119,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/pretty-printer.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/contributor/contributor-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/contributor/contributor-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/contributor/contributor.service.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 1170,
+      "targetResolves": 1072,
+      "bothResolve": 1072,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 21,
+      "confidenceHistogram": {
+        "0.85": 1124,
+        "0.9": 46
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 1170
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "ngOnInit -> http",
+        "ngOnInit -> logger",
+        "ngOnInit -> announcementsPath",
+        "ngOnInit -> error",
+        "ngOnInit -> message"
+      ]
+    },
+    "contains": {
+      "count": 2037,
+      "files": 278,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.component.spec.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 2037,
+      "targetResolves": 2031,
+      "bothResolve": 2031,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 10,
+      "placeholderTargetEndpoints": 31,
+      "confidenceHistogram": {
+        "1": 2037
+      },
+      "evidenceClassHistogram": {
+        "structural": 2037
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "Announcement -> imageUrl",
+        "Announcement -> message",
+        "Announcement -> linkUrl",
+        "Announcement -> startDate",
+        "Announcement -> endDate"
+      ]
+    },
+    "imports": {
+      "count": 4626,
+      "files": 738,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 142,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 4626
+      },
+      "evidenceClassHistogram": {
+        "import_based": 4626
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "announcement-bar.component.spec -> @angular/common/http/testing:HttpClientTestingModule",
+        "announcement-bar.component.spec -> @angular/common/http/testing:HttpTestingController",
+        "announcement-bar.component.spec -> @angular/core/testing:ComponentFixture",
+        "announcement-bar.component.spec -> @angular/core/testing:TestBed",
+        "announcement-bar.component.spec -> app/shared/logger.service:Logger"
+      ]
+    },
+    "references": {
+      "count": 5070,
+      "files": 446,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 4698,
+      "targetResolves": 1905,
+      "bothResolve": 1854,
+      "emptyEndpoints": 0,
+      "selfLoops": 92,
+      "placeholderSourceEndpoints": 24,
+      "placeholderTargetEndpoints": 27,
+      "confidenceHistogram": {
+        "1": 160,
+        "0.95": 3916,
+        "0.8": 994
+      },
+      "evidenceClassHistogram": {
+        "reference_qualified": 5070
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "element -> HTMLElement",
+        "fixture -> ComponentFixture",
+        "fixture -> AnnouncementBarComponent",
+        "component -> AnnouncementBarComponent",
+        "httpMock -> HttpTestingController"
+      ]
+    },
+    "exports": {
+      "count": 775,
+      "files": 269,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/app.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code.module.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 77,
+      "targetResolves": 626,
+      "bothResolve": 75,
+      "emptyEndpoints": 0,
+      "selfLoops": 64,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 775
+      },
+      "evidenceClassHistogram": {
+        "structural": 775
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "app.module -> svgIconProviders",
+        "app.module -> AppModule",
+        "announcement-bar.component -> Announcement",
+        "announcement-bar.component -> AnnouncementBarComponent",
+        "app.component -> AppComponent"
+      ]
+    },
+    "extends": {
+      "count": 69,
+      "files": 48,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/elements-loader.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/operator-decision-tree/interfaces.ts",
+        "rxjs/apps/rxjs.dev/src/app/shared/custom-icon-registry.ts",
+        "rxjs/apps/rxjs.dev/src/app/shared/reporting-error-handler.ts",
+        "rxjs/apps/rxjs.dev/src/app/shared/scroll.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/shared/toc.service.spec.ts",
+        "rxjs/apps/rxjs.dev/src/testing/doc-viewer-utils.ts",
+        "rxjs/packages/migrate/src/node.ts",
+        "rxjs/packages/migrate/src/skill-install.ts",
+        "rxjs/packages/migrate/src/types.ts",
+        "rxjs/packages/migrate/test/agent/qualification-record.ts",
+        "rxjs/packages/migrate/test/agent/seed-oracles.spec.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 69,
+      "targetResolves": 16,
+      "bothResolve": 16,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 69
+      },
+      "evidenceClassHistogram": {
+        "structural": 69
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "FakeComponentFactory -> ComponentFactory",
+        "FakeComponentFactoryResolver -> ComponentFactoryResolver",
+        "FakeModuleRef -> NgModuleRef",
+        "FakeModuleFactory -> NgModuleFactory",
+        "OperatorTreeNodeWithOptions -> OperatorTreeNode"
+      ]
+    },
+    "implements": {
+      "count": 51,
+      "files": 45,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/announcement-bar/announcement-bar.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-example.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code-tabs.module.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/contributor/contributor-list.component.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 51,
+      "targetResolves": 5,
+      "bothResolve": 5,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 51
+      },
+      "evidenceClassHistogram": {
+        "structural": 51
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "AnnouncementBarComponent -> OnInit",
+        "AppComponent -> OnInit",
+        "ApiListModule -> WithCustomElementComponent",
+        "AnnouncementBarModule -> WithCustomElementComponent",
+        "ApiListComponent -> OnInit"
+      ]
+    },
+    "overrides": {
+      "count": 26,
+      "files": 12,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/operator-decision-tree/interfaces.ts",
+        "rxjs/apps/rxjs.dev/src/app/shared/custom-icon-registry.ts",
+        "rxjs/apps/rxjs.dev/src/app/shared/reporting-error-handler.ts",
+        "rxjs/apps/rxjs.dev/src/testing/doc-viewer-utils.ts",
+        "rxjs/packages/observable-polyfill/src/index.ts",
+        "rxjs/packages/rxjs/src/async-subject.ts",
+        "rxjs/packages/rxjs/src/behavior-subject.ts",
+        "rxjs/packages/rxjs/src/connectable.ts",
+        "rxjs/packages/rxjs/src/per-subscription-subject-base.spec.ts",
+        "rxjs/packages/rxjs/src/replay-subject.ts",
+        "rxjs/packages/test/src/platform-observable.ts",
+        "rxjs/packages/test/src/types.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 0,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "0.95": 26
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 26
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "OperatorTreeNodeWithOptions.options -> OperatorTreeNode.options",
+        "CustomIconRegistry.getNamedSvgIcon -> MatIconRegistry.getNamedSvgIcon",
+        "ReportingErrorHandler.handleError -> ErrorHandler.handleError",
+        "TestDocViewerComponent.prepareTitleAndToc -> DocViewerComponent.prepareTitleAndToc",
+        "TestDocViewerComponent.render -> DocViewerComponent.render"
+      ]
+    },
+    "instantiates": {
+      "count": 1129,
+      "files": 272,
+      "fileListSample": [
+        "rxjs/apps/rxjs.dev/src/app/app.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api-list.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/api/api.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/code/code.component.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/current-location/current-location.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/element-registry.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/elements-loader.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/operator-decision-tree/operator-decision-tree.component.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/operator-decision-tree/operator-decision-tree.module.spec.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/operator-decision-tree/operator-decision-tree.service.ts",
+        "rxjs/apps/rxjs.dev/src/app/custom-elements/search/file-not-found-search.component.spec.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 311,
+      "targetResolves": 146,
+      "bothResolve": 68,
+      "emptyEndpoints": 0,
+      "selfLoops": 1,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 1129
+      },
+      "evidenceClassHistogram": {
+        "structural": 1129
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "AppComponent -> BehaviorSubject",
+        "TestApiService -> BehaviorSubject",
+        "ApiListComponent -> ReplaySubject",
+        "ApiListComponent -> SearchCriteria",
+        "ApiService -> Subject"
+      ]
+    }
+  },
+  "notEmitted": []
+}

@@ -1,0 +1,11 @@
+{
+  "issue": "CLJ-ADV F14",
+  "note": "Ctor idioms: final-segment uppercase for `->X` (so `->probe.recs.Rec` and `->p/Rec` instantiate — the old first-char test rejected them), `(ClassName. …)`, and `(new ClassName …)` all emit instantiates with alias resolution and the class name's line.",
+  "expectRelationships": [
+    { "type": "instantiates", "from": "a", "target": "probe.recs.Rec", "line_number": 4, "meta.callArity": 1 },
+    { "type": "instantiates", "from": "b", "target": "probe.recs.Rec", "line_number": 6, "meta.callArity": 1 },
+    { "type": "instantiates", "from": "c", "target": "probe.recs.Rec", "line_number": 8, "meta.callArity": 1 },
+    { "type": "instantiates", "from": "d", "target": "clj.fixture.recs/Rec", "line_number": 10, "meta.callArity": 1 },
+    { "type": "instantiates", "from": "e", "target": "clj.fixture.recs/Rec", "line_number": 12, "meta.callArity": 1 }
+  ]
+}

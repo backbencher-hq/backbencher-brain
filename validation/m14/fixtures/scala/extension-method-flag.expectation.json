@@ -1,0 +1,19 @@
+{
+  "fixtureId": "scala/extension-method-flag",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M14.1 Scala 3 extension fix: extension_definition wrappers never become parent symbols, so isExtension compared against a nonexistent field and was ALWAYS false. Now detected via ancestor chain + receiver type; emits Uses edge with isExtension marker. The line_number entries pin the M59 #825 follow-through: the receiver TYPE is written where the type node is — `extension (s: String)` names String on line 3, and the multi-line `extension (\\n  x: Bla\\n)` names Bla on line 11 — which need not be the method's line (4 / 13). The forbidRelationships entries are the pre-fix stamps (the method's declaration line), so reverting to the old stamp fails the gate instead of silently passing.",
+  "expectSymbols": [
+    { "name": "shout" },
+    { "name": "greet" },
+    { "name": "Bla" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "shout", "targetEndsWith": "String", "meta.isExtension": true, "line_number": 3 },
+    { "type": "uses", "from": "greet", "targetEndsWith": "Bla", "meta.isExtension": true, "line_number": 11 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "greet", "target": "Bla", "line_number": 13, "note": "pre-fix defect: the receiver type Bla is written on line 11 (the extension clause); the old stamp reported the method's declaration line 13" },
+    { "type": "uses", "from": "shout", "target": "String", "line_number": 4, "note": "same mechanism on the single-line case: String is named on line 3, the old stamp reported the method line 4" }
+  ]
+}

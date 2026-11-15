@@ -1,0 +1,551 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_search",
+  "status": "measured",
+  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
+  "measuredAt": "2026-11-01",
+  "environment": {
+    "host": "Linux x64",
+    "node": "v22.22.1",
+    "bun": "1.3.14",
+    "subject": "compiled artifact: `node bin/bb mcp --dir <project>` (dist rebuilt 2026-11-01T13:42 by the shared build; MCP host transport)",
+    "env": "BB_NO_AUTO_REFRESH=1 for every read; HTTP? none; fleet/other teammates running gates concurrently during measurement (recorded because it moves the tail)",
+    "warm": "one discarded warm call per call shape; then 5 measured runs in one server process",
+    "percentiles": "nearest-rank on the 5 samples"
+  },
+  "tiers": {
+    "T0-tiny": {
+      "subject": "test/fixtures/polyglot",
+      "bbDataDir": "validation/tools/bb_search/bbdata",
+      "indexing": "node bin/bb index test/fixtures/polyglot (BB_DATA_DIR=validation/tools/bb_search/bbdata)",
+      "command": "BB_LATENCY_RUNTIME=compiled BB_DATA_DIR=$PWD/validation/tools/bb_search/bbdata BB_NO_AUTO_REFRESH=1 node_modules/.bin/tsx validation/tools/bb_search/work/latency.ts T0-tiny $PWD/test/fixtures/polyglot validation/tools/bb_search/work/calls-t0.json validation/tools/bb_search/audit/latency-t0.json",
+      "budget": "default-argument calls < 250 ms (p95)",
+      "results": [
+        {
+          "label": "symbols.default",
+          "args": {
+            "query": "applyDiscount"
+          },
+          "isError": false,
+          "runs": [
+            19.23,
+            23.43,
+            16.37,
+            29.09,
+            14.25
+          ],
+          "p50": 19.23,
+          "p95": 29.09,
+          "min": 14.25,
+          "max": 29.09,
+          "warmTextHead": "applyDiscount [function] ts-js/src/pricing.js:6 (javascript)"
+        },
+        {
+          "label": "content.default",
+          "args": {
+            "mode": "content",
+            "query": "applyDiscount"
+          },
+          "isError": false,
+          "runs": [
+            53.04,
+            47.76,
+            80.82,
+            35.79,
+            49.07
+          ],
+          "p50": 49.07,
+          "p95": 80.82,
+          "min": 35.79,
+          "max": 80.82,
+          "warmTextHead": "{\n  \"searchMode\": \"content\",\n  \"query\": \"applyDiscount\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount"
+        },
+        {
+          "label": "symbol.default",
+          "args": {
+            "mode": "symbol",
+            "symbolName": "applyDiscount"
+          },
+          "isError": false,
+          "runs": [
+            96.18,
+            62.18,
+            52.3,
+            61.02,
+            60.21
+          ],
+          "p50": 61.02,
+          "p95": 96.18,
+          "min": 52.3,
+          "max": 96.18,
+          "warmTextHead": "{\n  \"matches\": [],\n  \"totalMatches\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"miss"
+        },
+        {
+          "label": "file.default",
+          "args": {
+            "mode": "file",
+            "filePath": "ts-js/src/checkout.ts"
+          },
+          "isError": false,
+          "runs": [
+            67.59,
+            31.13,
+            29.82,
+            35.46,
+            33.01
+          ],
+          "p50": 33.01,
+          "p95": 67.59,
+          "min": 29.82,
+          "max": 67.59,
+          "warmTextHead": "{\n  \"searchMode\": \"file\",\n  \"file\": \"ts-js/src/checkout.ts\",\n  \"fileId\": \"24cb6a202c39689cc13693683c490bbb9ced1f80:ts-js"
+        },
+        {
+          "label": "regex.option",
+          "args": {
+            "query": "^apply.*",
+            "regex": true
+          },
+          "isError": false,
+          "runs": [
+            2070.66,
+            2043.28,
+            2026.83,
+            2059.52,
+            2080.11
+          ],
+          "p50": 2059.52,
+          "p95": 2080.11,
+          "min": 2026.83,
+          "max": 2080.11,
+          "warmTextHead": "no results for \"^apply.*\"\nscan was cut short (time-budget) over 13 candidate rows \u2014 this is NOT a complete answer"
+        }
+      ]
+    },
+    "T1-synthetic": {
+      "subject": ".perf-fixtures/bb-scale/n100 (n100 present; no fallback to n50)",
+      "bbDataDir": "validation/tools/bb_search/bbdata",
+      "indexing": "node bin/bb index .perf-fixtures/bb-scale/n100 \u2014 62.7 s wall clock",
+      "command": "BB_LATENCY_RUNTIME=compiled BB_DATA_DIR=$PWD/validation/tools/bb_search/bbdata BB_NO_AUTO_REFRESH=1 node_modules/.bin/tsx validation/tools/bb_search/work/latency.ts T1-synthetic $PWD/.perf-fixtures/bb-scale/n100 validation/tools/bb_search/work/calls-t1.json validation/tools/bb_search/audit/latency-t1.json",
+      "budget": "default-argument calls < 1 s (p95)",
+      "results": [
+        {
+          "label": "symbols.default",
+          "args": {
+            "query": "ABSENCE"
+          },
+          "isError": false,
+          "runs": [
+            42.64,
+            42.98,
+            38.76,
+            41.21,
+            36.12
+          ],
+          "p50": 41.21,
+          "p95": 42.98,
+          "min": 36.12,
+          "max": 42.98,
+          "warmTextHead": "navigationAbsence [function] t0012_server.ts:1411 (typescript)\ndeclaredAbsenceFor [function] t0008_rich_hover.ts:296 (ty"
+        },
+        {
+          "label": "content.default",
+          "args": {
+            "mode": "content",
+            "query": "ABSENCE_LOG_TYPE"
+          },
+          "isError": false,
+          "runs": [
+            128.78,
+            90.66,
+            83.88,
+            83.89,
+            99.01
+          ],
+          "p50": 90.66,
+          "p95": 128.78,
+          "min": 83.88,
+          "max": 128.78,
+          "warmTextHead": "{\n  \"searchMode\": \"content\",\n  \"query\": \"ABSENCE_LOG_TYPE\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCo"
+        },
+        {
+          "label": "symbol.default",
+          "args": {
+            "mode": "symbol",
+            "symbolName": "ABSENCE_LOG_TYPE"
+          },
+          "isError": false,
+          "runs": [
+            23.85,
+            20.88,
+            23.68,
+            16.97,
+            18.95
+          ],
+          "p50": 20.88,
+          "p95": 23.85,
+          "min": 16.97,
+          "max": 23.85,
+          "warmTextHead": "{\n  \"matches\": [\n    {\n      \"id\": \"a7d2214d3de0ee3134c30ffd876d358c6fd6b514:t0012_server.ts:ABSENCE_LOG_TYPE:401\",\n    "
+        },
+        {
+          "label": "file.default",
+          "args": {
+            "mode": "file",
+            "filePath": "t0000_document_highlight.ts"
+          },
+          "isError": false,
+          "runs": [
+            13.97,
+            11.86,
+            9.53,
+            10.49,
+            9.92
+          ],
+          "p50": 10.49,
+          "p95": 13.97,
+          "min": 9.53,
+          "max": 13.97,
+          "warmTextHead": "{\n  \"searchMode\": \"file\",\n  \"file\": \"t0000_document_highlight.ts\",\n  \"fileId\": \"a7d2214d3de0ee3134c30ffd876d358c6fd6b514"
+        },
+        {
+          "label": "regex.option",
+          "args": {
+            "query": "^ABSENCE_",
+            "regex": true
+          },
+          "isError": false,
+          "runs": [
+            2120.86,
+            2108.63,
+            2077.47,
+            2086.51,
+            2075.92
+          ],
+          "p50": 2086.51,
+          "p95": 2120.86,
+          "min": 2075.92,
+          "max": 2120.86,
+          "warmTextHead": "no results for \"^ABSENCE_\"\nscan was cut short (time-budget) over 3512 candidate rows \u2014 this is NOT a complete answer"
+        }
+      ]
+    },
+    "T2-reference": {
+      "subject": "this workspace's existing index, BB_DATA_DIR=.bb-data",
+      "indexCensus": {
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "dbBytes": 3599962112,
+        "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      },
+      "censusDrift": "charter appendix A states 11,440 files / 1,283,638 symbols / ~3.4 GB at campaign start; the current index is 6,452 files / 310,423 symbols / 3.6 GB (index predates the split; source tree changed)",
+      "command": "BB_LATENCY_RUNTIME=compiled BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 node_modules/.bin/tsx validation/tools/bb_search/work/latency.ts T2-reference $PWD validation/tools/bb_search/work/calls-t2.json validation/tools/bb_search/audit/latency-t2.json",
+      "budget": "all read tools < 5 s (p95), 30 s client timeout",
+      "results": [
+        {
+          "label": "symbols.named",
+          "args": {
+            "query": "searchSymbols"
+          },
+          "isError": false,
+          "runs": [
+            1552.57,
+            1809.02,
+            1799.45,
+            3573.4,
+            2061.06
+          ],
+          "p50": 1809.02,
+          "p95": 3573.4,
+          "min": 1552.57,
+          "max": 3573.4,
+          "warmTextHead": "searchSymbols [function] src/intelligence/search/symbol-search.ts:104 (typescript)\nsearchSymbols [constant] script/verif"
+        },
+        {
+          "label": "symbols.broad",
+          "args": {
+            "query": "search"
+          },
+          "isError": false,
+          "runs": [
+            1801.68,
+            1989.57,
+            1985.26,
+            1748.38,
+            1817.59
+          ],
+          "p50": 1817.59,
+          "p95": 1989.57,
+          "min": 1748.38,
+          "max": 1989.57,
+          "warmTextHead": "search [function] script/m14/name-falsifier.ts:65 (typescript)\nsearch [function] script/test-stale-handle.ts:32 (typescr"
+        },
+        {
+          "label": "content.default",
+          "args": {
+            "mode": "content",
+            "query": "serialize cache entry"
+          },
+          "isError": false,
+          "runs": [
+            2225.63,
+            4754.59,
+            8824.5,
+            8083.88,
+            4342.75
+          ],
+          "p50": 4754.59,
+          "p95": 8824.5,
+          "min": 2225.63,
+          "max": 8824.5,
+          "warmTextHead": "{\n  \"searchMode\": \"content\",\n  \"query\": \"serialize cache entry\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"fr"
+        },
+        {
+          "label": "symbol.default",
+          "args": {
+            "mode": "symbol",
+            "symbolName": "getProjectId"
+          },
+          "isError": false,
+          "runs": [
+            15.09,
+            29.21,
+            20.76,
+            19.62,
+            22.53
+          ],
+          "p50": 20.76,
+          "p95": 29.21,
+          "min": 15.09,
+          "max": 29.21,
+          "warmTextHead": "{\n  \"matches\": [\n    {\n      \"id\": \"1d3d57103be91b8f9716d70199fe28a3f39245d9:script/verify-mcp-e2e.ts:getProjectId:67\",\n"
+        },
+        {
+          "label": "file.default",
+          "args": {
+            "mode": "file",
+            "filePath": "src/mcp/server.ts"
+          },
+          "isError": false,
+          "runs": [
+            31.07,
+            23.19,
+            34.8,
+            37.66,
+            22.42
+          ],
+          "p50": 31.07,
+          "p95": 37.66,
+          "min": 22.42,
+          "max": 37.66,
+          "warmTextHead": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/mcp/server.ts\",\n  \"fileId\": \"1d3d57103be91b8f9716d70199fe28a3f39245d9:src/mcp/s"
+        },
+        {
+          "label": "regex.option",
+          "args": {
+            "query": "^get.*Cache",
+            "regex": true
+          },
+          "isError": false,
+          "runs": [
+            2620.12,
+            2174.76,
+            1940.62,
+            1861.83,
+            2333.1
+          ],
+          "p50": 2174.76,
+          "p95": 2620.12,
+          "min": 1861.83,
+          "max": 2620.12,
+          "warmTextHead": "no results for \"^get.*Cache\"\nscan was cut short (scan-cap,time-budget) over 20000 candidate rows \u2014 this is NOT a complet"
+        }
+      ],
+      "note": "content mode on this index creates its FTS schema (7 tables + 3 triggers) IN THE SHARED INDEX on first read: `mode=content` is not a read-only path. Recorded because charter ground rule 5 says the shared .bb-data write path is not touched; the tool itself touched it during a mandated measurement. No repair was attempted."
+    }
+  },
+  "budgetVerdict": [
+    {
+      "tier": "T0",
+      "call": "symbols/content/symbol/file default",
+      "p95": "29-96 ms",
+      "budget": "<250 ms",
+      "verdict": "PASS"
+    },
+    {
+      "tier": "T0",
+      "call": "regex option",
+      "p95": "2080 ms (2 s time budget)",
+      "budget": "n/a (not a default call)",
+      "verdict": "BOUNDED-CUT"
+    },
+    {
+      "tier": "T1",
+      "call": "symbols/content/symbol/file default",
+      "p95": "14-129 ms",
+      "budget": "<1 s",
+      "verdict": "PASS"
+    },
+    {
+      "tier": "T1",
+      "call": "regex option",
+      "p95": "2121 ms (2 s time budget)",
+      "budget": "n/a",
+      "verdict": "BOUNDED-CUT"
+    },
+    {
+      "tier": "T2",
+      "call": "symbols.named",
+      "p95": "3573 ms",
+      "budget": "<5 s",
+      "verdict": "PASS"
+    },
+    {
+      "tier": "T2",
+      "call": "symbols.broad",
+      "p95": "1990 ms",
+      "budget": "<5 s",
+      "verdict": "PASS"
+    },
+    {
+      "tier": "T2",
+      "call": "content default (round 2, queries matching)",
+      "p95": "8824 ms",
+      "budget": "<5 s",
+      "verdict": "FAIL"
+    },
+    {
+      "tier": "T2",
+      "call": "content default (round 1)",
+      "p95": "3314 ms",
+      "budget": "<5 s",
+      "verdict": "PASS (variance: same query, load-dependent)"
+    },
+    {
+      "tier": "T2",
+      "call": "symbol/file default",
+      "p95": "29-38 ms",
+      "budget": "<5 s",
+      "verdict": "PASS"
+    },
+    {
+      "tier": "T2",
+      "call": "regex option",
+      "p95": "2620 ms, returned a declared cut scan (scan-cap / time-budget), not a match set",
+      "budget": "n/a",
+      "verdict": "BOUNDED-CUT"
+    }
+  ],
+  "round1Note": "The first T2 round used a symbol query that does not exist in this index (`handleRequest`) and a different symbol query; its raw payload was overwritten by the second round. Round 1 numbers are preserved exactly as printed in validation/tools/bb_search/audit/latency-t2-round1.json.",
+  "rawEvidence": [
+    "validation/tools/bb_search/audit/latency-t0.json",
+    "validation/tools/bb_search/audit/latency-t1.json",
+    "validation/tools/bb_search/audit/latency-t2.json",
+    "validation/tools/bb_search/audit/latency-t2-round1.json"
+  ],
+  "phaseBAfter": {
+    "measuredAt": "2026-11-01 Phase B",
+    "subject": "compiled dist via node bin/bb mcp (node v22.22.1, better-sqlite3), warm, 5 runs, BB_NO_AUTO_REFRESH=1; machine load lower than the Phase A run, so compare directionally",
+    "tiers": {
+      "T0": [
+        {
+          "call": "symbols.default",
+          "p50": 4.37,
+          "p95": 5.23
+        },
+        {
+          "call": "content.default",
+          "p50": 5.24,
+          "p95": 5.79
+        },
+        {
+          "call": "symbol.default",
+          "p50": 3.57,
+          "p95": 4.4
+        },
+        {
+          "call": "file.default",
+          "p50": 3.11,
+          "p95": 4.13
+        },
+        {
+          "call": "regex.option",
+          "p50": 556.47,
+          "p95": 666.94
+        }
+      ],
+      "T1": [
+        {
+          "call": "symbols.default",
+          "p50": 9.09,
+          "p95": 10.29
+        },
+        {
+          "call": "content.default",
+          "p50": 40.6,
+          "p95": 47.52
+        },
+        {
+          "call": "symbol.default",
+          "p50": 6.44,
+          "p95": 7.3
+        },
+        {
+          "call": "file.default",
+          "p50": 5.78,
+          "p95": 6.93
+        },
+        {
+          "call": "regex.option",
+          "p50": 577.28,
+          "p95": 583.82
+        }
+      ],
+      "T2": [
+        {
+          "call": "symbols.named",
+          "p50": 317.8,
+          "p95": 355.74
+        },
+        {
+          "call": "symbols.broad",
+          "p50": 314.7,
+          "p95": 416.86
+        },
+        {
+          "call": "content.default",
+          "p50": 577.56,
+          "p95": 601.69
+        },
+        {
+          "call": "symbol.default",
+          "p50": 7.22,
+          "p95": 7.78
+        },
+        {
+          "call": "file.default",
+          "p50": 5.44,
+          "p95": 6.07
+        },
+        {
+          "call": "regex.option",
+          "p50": 773.94,
+          "p95": 955.27
+        }
+      ]
+    },
+    "budgets": {
+      "T0_default_calls_ms": 250,
+      "T1_default_calls_ms": 1000,
+      "T2_read_tools_p95_ms": 5000,
+      "verdict": "all default calls pass on every tier; T2 content p95 601.69 ms (was 3313-8824 ms before D1)"
+    },
+    "raw": [
+      "validation/tools/bb_search/audit/latency-t0.json",
+      "validation/tools/bb_search/audit/latency-t1.json",
+      "validation/tools/bb_search/audit/latency-t2.json"
+    ],
+    "note": "the pre-fix numbers remain in this file and in REPORT.json; the raw after-run files replaced the Phase A raw payloads in place (same harness, same commands)"
+  }
+}

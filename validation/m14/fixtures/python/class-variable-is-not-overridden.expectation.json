@@ -1,0 +1,53 @@
+{
+  "fixtureId": "python/class-variable-is-not-overridden",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A CLASS VARIABLE is not a method and cannot be overridden. This is the fourth genuine ANALYZER defect the independent oracle found, and the most damaging shape of the four because it FABRICATED an edge AND marked it VERIFIED. The override check asked whether the base declared a symbol with that name, and a class variable satisfies that: `class Base: attr = None` beside `class Derived(Base): def attr(self)` published `overrides Derived.attr -> Base.attr` at 0.95 with no reasonCode, which reads as a fact and is not one \u2014 there is no method to override, and `Base.attr` is the value None. CPython is the referee: `ast` over this file reports CythonStyle's members as `code_object(var)`, `is_cyfunction(var)`, `compile(def)` and Derived's as `code_object(var)`, `CONSTANT(var)`, `compile(def)`, `is_cyfunction(def)`. Python keeps those kinds apart in the class `__dict__`, and only one of them is inheritable in the sense `overrides` describes. The corpus makes this common rather than exotic \u2014 Cython declares class state at class level, so `Cython/Compiler/Nodes.py` has `code_object = None` in FuncDefNode at L1996 and a `code_object` property in CFuncDefNode, which is how the oracle surfaced this as 20 fabricated VERIFIED edges in one file. Confidence is what makes it the worst of the four: a fabricated edge at 0.5 is visibly uncertain and a reader discounts it, while this one was fabricated at 0.95 and indistinguishable from a fact the analyzer had read. The three positives at the bottom are the other side of the line and matter as much as the forbids: a base that really does declare the method must keep its override, so a fix that stopped matching on name, or stopped matching at all, would pass every forbid in this file and lose real edges. `decorated` is a `@property` on both sides specifically because a decorated definition is the shape where a naive 'unwrap it' fix goes wrong in the other direction.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Derived.compile",
+      "target": "compile",
+      "line_number": 50,
+      "note": "THE EDGE THAT MUST SURVIVE. Both sides are real methods, so this is a genuine override and the fix must not lose it. It is the half a fix that simply stopped matching on name would drop"
+    },
+    {
+      "type": "overrides",
+      "from": "RealChild.target",
+      "target": "target",
+      "line_number": 67,
+      "note": "the plainest override in the file, pinned so the kind requirement cannot be satisfied by narrowing to some other shape"
+    },
+    {
+      "type": "overrides",
+      "from": "RealChild.decorated",
+      "target": "decorated",
+      "line_number": 71,
+      "note": "a `@property` overriding a `@property`. A decorated definition is `decorated_definition` in the tree rather than `function_definition`, so a fix that unwraps decorators must reach both sides of the pair, not one"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Derived.code_object",
+      "target": "code_object",
+      "note": "THE DEFECT. `CythonStyle.code_object = None` is a class VARIABLE. CPython's ast reports it as `code_object(var)`, there is no method on that class to override, and the pre-fix lane published this edge at 0.95 with no reasonCode \u2014 fabricated AND verified, which is the one combination a reader cannot discount"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.is_cyfunction",
+      "target": "is_cyfunction",
+      "note": "the same defect on the second member, so a fix cannot special-case one name. CythonStyle.is_cyfunction is a variable (`= False`) and Derived.is_cyfunction is a method"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.CONSTANT",
+      "target": "CONSTANT",
+      "note": "CythonStyle does not declare CONSTANT at all \u2014 Derived introduces it \u2014 so this edge has no base member to point at even before the kind question"
+    }
+  ],
+  "_seamNote": {
+    "what": "An `overrides` edge requires the BASE to declare the name AS A METHOD. A class variable, an annotated class attribute, and a method are three different members in a python class body, and only one of them is what `overrides` describes.",
+    "why": "The check that produced the defect looked for a symbol by name and owner, which is the shape that is correct for `contains` \u2014 where a class variable genuinely IS a member \u2014 and wrong for `overrides`, which is about method resolution. The distinction matters most in languages that declare class state at class level, and Cython is exactly that: every `cdef class` attribute is written as a class-level assignment, so a name-keyed check matches nearly every method in such a codebase against a variable of the same name. Confidence is the other half of why this is the worst of the four defects found: the lane labels a guess at 0.5 and says so in its metadata, so a reader can discount it, and this edge carried no such label at 0.95 \u2014 it claimed to have been read."
+  }
+}

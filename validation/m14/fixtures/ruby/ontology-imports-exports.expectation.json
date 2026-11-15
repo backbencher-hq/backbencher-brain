@@ -1,0 +1,198 @@
+{
+  "fixtureId": "ruby/ontology-imports-exports",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The two relationship types this lane did not emit, pinned on the shapes that decide them. `imports` is a GAP and not a ruling: Ruby's import IS `require`, measured at 11,928 receiverless literal-path requires + 205 autoloads over the corpus (script/m14/tmp/rb-construct-probe.ts, Instrument B on the parse tree). It rides the SAME sites as the `references` edge that already exists, so each negative `references` already carries must hold for it, which is why the interpolation and receiver forbids are here in the `imports` form as well. `exports` is also a GAP, and its shape is NOT this lane's to invent: run-fixtures.ts carries the M49 exports-family invariant (an export is an IMPORTABLE UNIT; type-owned members are refused with 'membership rides Contains'; names must be unique), so the surface is the file's TOP-LEVEL declarations. The first draft of the implementation exported every public member of every class and failed all nine ruby fixtures on both invariant clauses; this fixture is written against the ruling rather than against that draft. Each pin below can fail on its own: `require`/`require_relative`/`load`/`autoload` each produce BOTH labels, so deleting either half fails; `resolution` is `file-relative` only for `require_relative` (a path relative to the requiring file BY DEFINITION) and `load-path` for the rest ($LOAD_PATH can name a gem or a project file, so its location is unknown), so a fix that hardcoded one value for all four fails in both directions; `fileLevel: true` is what binds the IMPORTER to the file in parallel-indexer and a fix that dropped it would leave every edge naming a scope sentinel; the `exports` source is the file's own basename, since the unit of a top-level declaration is the file and nothing else names it. The load-bearing negative is `private_constant`: `Hidden = Struct.new(:b)` is a top-level type with no owner, so it IS an importable unit, and the modifier is the only thing that removes it — a plain top-level `CONSTANT = 1` would pin nothing here because this analyzer declares no symbol for one at all, so it has no name to export either way. The `exports` forbids are the invariant's three refusals: a type-owned member, a type nested in a type, and `def self.x` at file scope (whose receiver is `main`, a singleton of the loading process that no other file can reach). `contains` is pinned on the member and the nested type at the same time, because the point of the ruling is that membership is unchanged by it — a fix that moved members onto `exports` would satisfy the forbids and break these. The reopen at the end is the pin for the invariant's UNIQUENESS clause: `class TopLevel` twice in one file is ONE importable unit, so the export list names it once. The ninth mutant — an implementation that emits one export per DECLARATION — then produces TopLevel twice and the runner reports `duplicate export name(s)`.",
+  "expectSymbols": [
+    {
+      "name": "TopLevel",
+      "kind": "class"
+    },
+    {
+      "name": "TopLevelModule",
+      "kind": "module"
+    },
+    {
+      "name": "top_level_helper",
+      "kind": "function"
+    },
+    {
+      "name": "Factory",
+      "kind": "class"
+    },
+    {
+      "name": "member_method",
+      "kind": "method",
+      "ownerName": "TopLevel"
+    },
+    {
+      "name": "Nested",
+      "kind": "class",
+      "ownerName": "TopLevel"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "Global",
+      "target": "json",
+      "meta.requireMethod": "require",
+      "meta.fileLevel": true,
+      "meta.resolution": "load-path"
+    },
+    {
+      "type": "imports",
+      "source": "Global",
+      "target": "sibling/helper",
+      "meta.requireMethod": "require_relative",
+      "meta.fileLevel": true,
+      "meta.resolution": "file-relative"
+    },
+    {
+      "type": "imports",
+      "source": "Global",
+      "target": "template.erb",
+      "meta.requireMethod": "load",
+      "meta.fileLevel": true,
+      "meta.resolution": "load-path"
+    },
+    {
+      "type": "imports",
+      "source": "Global",
+      "target": "lazy/parser",
+      "meta.requireMethod": "autoload",
+      "meta.fileLevel": true,
+      "meta.resolution": "load-path"
+    },
+    {
+      "type": "references",
+      "source": "Global",
+      "target": "json"
+    },
+    {
+      "type": "references",
+      "source": "Global",
+      "target": "sibling/helper"
+    },
+    {
+      "type": "references",
+      "source": "Global",
+      "target": "template.erb"
+    },
+    {
+      "type": "references",
+      "source": "Global",
+      "target": "lazy/parser"
+    },
+    {
+      "type": "exports",
+      "source": "ontology-imports-exports",
+      "target": "TopLevel",
+      "meta.resolvedTarget": "file-unit"
+    },
+    {
+      "type": "exports",
+      "source": "ontology-imports-exports",
+      "target": "TopLevelModule",
+      "meta.resolvedTarget": "file-unit"
+    },
+    {
+      "type": "exports",
+      "source": "ontology-imports-exports",
+      "target": "top_level_helper",
+      "meta.resolvedTarget": "file-unit"
+    },
+    {
+      "type": "exports",
+      "source": "ontology-imports-exports",
+      "target": "Factory",
+      "meta.resolvedTarget": "file-unit"
+    },
+    {
+      "type": "contains",
+      "source": "TopLevel",
+      "target": "member_method"
+    },
+    {
+      "type": "contains",
+      "source": "TopLevel",
+      "target": "Nested"
+    },
+    {
+      "type": "contains",
+      "source": "TopLevelModule",
+      "target": "module_member"
+    },
+    {
+      "type": "contains",
+      "source": "TopLevel",
+      "target": "CONSTANT_INSIDE"
+    },
+    {
+      "type": "instantiates",
+      "target": "Struct"
+    },
+    {
+      "type": "contains",
+      "source": "TopLevel",
+      "target": "second_reopen_method"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "a/#{dynamic}",
+      "note": "an interpolated require path is a TEMPLATE: the file it names is computed at runtime, so neither label may carry it"
+    },
+    {
+      "type": "references",
+      "target": "a/#{dynamic}",
+      "note": "the pre-existing half of the same rule, pinned again so the pair cannot drift apart"
+    },
+    {
+      "type": "imports",
+      "target": "body-mime",
+      "note": "`x.require(...)` has a RECEIVER: it is some object's method, not a load"
+    },
+    {
+      "type": "imports",
+      "target": "",
+      "note": "the pre-fix empty-target defect (FIX-12): an expression receiver leaves `receiver` unset, so a receiver-only guard published an edge naming nothing"
+    },
+    {
+      "type": "exports",
+      "target": "member_method",
+      "note": "a type-owned member is containment, not an importable unit (M49 exports-family invariant)"
+    },
+    {
+      "type": "exports",
+      "target": "CONSTANT_INSIDE",
+      "note": "a constant inside a class is a member: the same refusal"
+    },
+    {
+      "type": "exports",
+      "target": "Nested",
+      "note": "a type nested in a type is a member of that member"
+    },
+    {
+      "type": "exports",
+      "target": "module_member",
+      "note": "a module-owned member: same refusal. Ruby's `include M` binds no name, so it is not an importable unit"
+    },
+    {
+      "type": "exports",
+      "target": "main_singleton",
+      "note": "`def self.x` at file scope is a singleton of `main`, which belongs to the loading process and is unreachable from any other file"
+    },
+    {
+      "type": "exports",
+      "target": "Hidden",
+      "note": "`private_constant :Hidden` removes the name from the surface a consumer reaches by name — 142 such sites in the corpus"
+    },
+    {
+      "type": "exports",
+      "target": "second_reopen_method",
+      "note": "a member of the REOPENED class is still a member; and because the reopen declares the same importable unit a second time, the runner's uniqueness clause is the pin on the export LIST naming it once"
+    }
+  ]
+}

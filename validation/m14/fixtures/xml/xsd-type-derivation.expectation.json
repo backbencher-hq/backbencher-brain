@@ -1,0 +1,129 @@
+{
+ "fixtureId": "xml/xsd-type-derivation",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 XML ONTOLOGY CENSUS, verdict GAP for `extends`, implemented. The census found `extends` at ZERO edges on a corpus where XSD writes the relation in the vocabulary's own name: XSD 1.0 Part 1 s3.4.2 XML Representation of ComplexType Definitions defines both `<extension base = xs:QName>` and `<restriction base = xs:QName>`, and the attribute is documented as the qualified name of the BASE TYPE. The mechanism is called type DERIVATION throughout Part 1, and both alternatives produce a subtype: extension keeps everything the base admits and adds to it, restriction narrows the content model to a subset. `extends` is the ontology's name for exactly that relation, so both emit `extends` rather than the `references` this lane gave every `base=` value — the same relabel as the `calls` finding, and for the same reason, that an edge can be real and carry the neighbouring type. The lane's own written ruling said otherwise — 'A complexType is not a subclass of another, it REFERENCES one by base — and publishing that as extends would be a category error' (script/m14/spec/xml-completeness.json, notApplicable) — and the measurement is what settled it: the construct the ruling assumed absent is written by the specification, and the corpus carries it in every schema language family present (89 of the corpus's XSD files write xs:extension, 89 write xs:restriction, across dbeaver, otp, phpunit, powershell, grails-core). Three derivations are pinned here because they take three different paths, and the third is the one that keeps the edge honest. (1) IN-DOCUMENT: `Derived` extends `Base`, declared at line 10 of this file, so the target symbol is published and the edge resolves at both ends. (2) BUILT-IN: `Code` restricts `xs:token`, so the edge is emitted carrying `resolvable: builtin` and — the assertion that matters — NO `token` symbol is published, because a built-in is not a declaration in this file and inventing one is the M60.R10 lie the reference pass already refuses. (3) UNSATISFIED: `FromElsewhere` extends `tns:Absent`, a name this document declares nowhere and imports from nowhere. The reference pass refuses exactly this shape for a prefixed value (the `xml/xsd-external-reference` fixture), and so does the derivation pass: the edge is not emitted, because per-file analysis cannot tell a missing declaration from one an `xs:include` brings in. Two things are pinned in metadata rather than left to the reader. `derivation` says which of the two it is, because a consumer asking 'what does Code extend' needs to know the answer narrows rather than widens. And `resolvable` says whether the base could be found at all, so a builtin subtype never reads as an in-document one. The source of each edge is the anonymous `xs:extension`/`xs:restriction` element rather than the derived type's name, which is this analyzer's pre-existing convention for an inline construct with no declared name. Reaching the type actually being derived walks the containment chain back up, and the two derivations differ in depth — `Derived -> xs:complexContent -> xs:extension` is two hops, `Code -> xs:restriction` is one — so both are pinned. That convention is recorded as a declared limitation rather than quietly left to be discovered.",
+ "expectSymbols": [
+  {
+   "name": "Base",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredName": "Base",
+   "meta.declarationKind": "complexType"
+  },
+  {
+   "name": "Derived",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredName": "Derived",
+   "meta.declarationKind": "complexType"
+  },
+  {
+   "name": "Code",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredName": "Code",
+   "meta.declarationKind": "simpleType"
+  },
+  {
+   "name": "FromElsewhere",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredName": "FromElsewhere",
+   "meta.declarationKind": "complexType"
+  },
+  {
+   "name": "xs:extension",
+   "kind": "class",
+   "note": "the inline derivation element IS published, as its tag, because it has no declared name of its own. It is the source of the extends edges and the target of `contains Derived -> xs:extension`, so the edge resolves at both ends without a second convention for anonymous declarations."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "from": "Derived",
+   "target": "xs:schema.Base",
+   "line_number": 17,
+   "meta.evidenceClass": "structural",
+   "meta.derivation": "extension",
+   "meta.resolvable": "in-document",
+   "note": "SOURCE CORRECTED 2026-10-04, and this is the substantive change in this fixture's history. This edge used to be asserted with `from: \"xs:restriction\"`, which is the XSD vocabulary's own word for a type CONSTRUCTOR and not a type at all. The analyzer computed an attribute's owner as the element the attribute sits on (src/ast/real-xml-analyzer.ts, `symbolName = declaredName ?? name`), and an inline `<xs:restriction>` carries no `name`, so the owner fell back to the tag text. Measured over the full 11,456-file admitted corpus that put a fabricated source on **438 of 438 `extends` edges — 100%, with zero sources a document declares** (validation/m14/fixtures/xml/derivation-accounting.mts). `extends` relates two TYPES, so its source must be the nearest ancestor that DECLARES a name. The analyzer now threads that ancestor (`nearestNamedSchemaOwner`) and the fabricated count is 0 of 1,429. The note that previously called the old source \"an anonymous inline element\" and argued the real type was reachable via `bb_graph` owner-cascade was a rationalisation: owner-cascade attributes MEMBER rows to an owner class, and `xs:restriction` is not a member of `Version` in that sense."
+  },
+  {
+   "type": "extends",
+   "from": "Code",
+   "target": "token",
+   "line_number": 25,
+   "meta.derivation": "restriction",
+   "meta.resolvable": "builtin",
+   "note": "SOURCE CORRECTED 2026-10-04, and this is the substantive change in this fixture's history. This edge used to be asserted with `from: \"xs:restriction\"`, which is the XSD vocabulary's own word for a type CONSTRUCTOR and not a type at all. The analyzer computed an attribute's owner as the element the attribute sits on (src/ast/real-xml-analyzer.ts, `symbolName = declaredName ?? name`), and an inline `<xs:restriction>` carries no `name`, so the owner fell back to the tag text. Measured over the full 11,456-file admitted corpus that put a fabricated source on **438 of 438 `extends` edges — 100%, with zero sources a document declares** (validation/m14/fixtures/xml/derivation-accounting.mts). `extends` relates two TYPES, so its source must be the nearest ancestor that DECLARES a name. The analyzer now threads that ancestor (`nearestNamedSchemaOwner`) and the fabricated count is 0 of 1,429. The note that previously called the old source \"an anonymous inline element\" and argued the real type was reachable via `bb_graph` owner-cascade was a rationalisation: owner-cascade attributes MEMBER rows to an owner class, and `xs:restriction` is not a member of `Version` in that sense."
+  },
+  {
+   "type": "contains",
+   "from": "xs:complexContent",
+   "target": "xs:extension",
+   "line_number": 17,
+   "note": "the ownership hop that names the derived type. It is TWO hops to `Derived` — `Derived -> xs:complexContent -> xs:extension` — not one, and this assertion was written expecting one and failed, which is why it is here in this exact form: the extends edge's source is an anonymous inline element, and reaching the type that is actually being derived walks the containment chain back up. `bb_graph`'s owner-cascade attributes member rows to the owner class, so the answer is reachable without a second convention for anonymous declarations. Present before the relabel and still present after it — extends is added beside contains, not in place of it."
+  },
+  {
+   "type": "contains",
+   "from": "Code",
+   "target": "xs:restriction",
+   "line_number": 25,
+   "note": "the same hop for the restriction case, and here it IS one hop because `<xs:simpleType>` has no `complexContent` wrapper. The two derivations differ in depth, which is why the fixture pins both rather than one representative shape."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "Derived",
+   "target": "Base",
+   "note": "the negative half of the relabel. An XSD derivation is `extends` (s3.4.2) and must not ALSO be a `references` edge; edge identity is source|type|target, so emitting both would put one fact under two labels and make 'does this type extend Base or merely mention it' unanswerable."
+  },
+  {
+   "type": "references",
+   "from": "Code",
+   "target": "token",
+   "note": "same negative half for the restriction case, which is the one a copied rule would leave behind: a rule that diverts `xs:extension` and forgets `xs:restriction` keeps this edge as a reference."
+  },
+  {
+   "type": "extends",
+   "from": "Derived",
+   "target": "Absent",
+   "note": "the refusal under test. `tns:Absent` is declared nowhere in this file and imported from nowhere, and from inside this file an `xs:include` could still be what supplies it — the identical ambiguity the reference pass records for bare values and refuses for prefixed ones (pinned by xml/xsd-external-reference). Publishing the edge would put a name in the graph that no file supports."
+  },
+  {
+   "type": "extends",
+   "from": "Derived",
+   "target": "tns:Base",
+   "note": "the written value is not a name: the target of a derivation is the LOCAL NAME, and the prefix rides in metadata (M60.R10, a value where a name belongs). No declaration in this file carries a colon-bearing name."
+  },
+  {
+   "type": "extends",
+   "from": "id",
+   "target": "string",
+   "note": "`type=` is a reference and stays one. s3.4.2 defines `base` as the base TYPE; `type` names the type an element's VALUE has, which is a different relation, and relabelling it would be inventing a supertype where the document states a value type."
+  },
+  {
+   "type": "extends",
+   "from": "xs:restriction",
+   "target": "int",
+   "note": "THE REGRESSION PIN for the fabricated-source defect, kept as a forbid because the wrong edge is the one that must never come back. `xs:restriction` is a schema CONSTRUCTOR, not a declared type: the document declares `Version` and declares nothing called `xs:restriction`. An `extends` edge whose source is a vocabulary tag is a name in the graph that no file supports, which is what makes a fake caller into wrong refactoring advice in bb_graph, bb_impact and bb_migrate. This row is the same pair the fixture's own expectation used to carry."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "token",
+   "note": "XSD declares `token` in Part 2, not in this file. The extends edge to it is emitted with resolvable: builtin; publishing a symbol would be a phantom declaration of a name this document never declares — the M60.R10 class, and the reference pass's existing refusal."
+  },
+  {
+   "name": "Absent",
+   "note": "the unsatisfied base: no declaration, so no symbol. Same reasoning as the edge it would have hung on."
+  },
+  {
+   "name": "tns:Base",
+   "note": "the written value, not the local name a declaration carries."
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

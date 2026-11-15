@@ -1,0 +1,27 @@
+{
+  "fixtureId": "rust/new-instantiates-target",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Foo::new() constructs Foo - the Instantiates TARGET must be the receiver TYPE ('Counter'), not the garbage literal 'new'. Also gates per-symbol cyclomatic complexity: match arms + if = decisions -> branches() = 4.",
+  "expectSymbols": [
+    {
+      "name": "Counter"
+    },
+    {
+      "name": "new",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "target": "Counter"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "branches",
+      "equals": 4
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "fixtureId": "hcl/negative-syntax-error",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Names and lines transcribed from a measured run and checked against the fixture source. Note the PINNED scope of `also_good` — see the rationale; that is the grammar's recovery, recorded so it cannot drift silently.",
+  "rationale": "The negative half of the battery. Two separate contracts meet here. (1) Syntax errors are owned by ASTEngine (tree-sitter ERROR/MISSING nodes) and are NOT re-emitted by the analyzer — the analyzer declares no errors of its own. (2) The SWALLOW CLASS (#907): a definition absorbed into a damaged enclosing region must still be emitted. `resource \"aws_s3_bucket\" \"also_good\"` on line 13 follows a block whose `bucket =` value is missing, and tree-sitter welds it INSIDE `aws_s3_bucket.broken` — so its owner is the damaged block, not the document. That is the grammar's recovery shape, not an analyzer choice, and it is pinned here deliberately: the symbol is emitted (no swallow) and its reference `var.still_reachable` is published, while the containment path records the damage faithfully. The corpus-wide measurement of the genuinely-unrecoverable class is 2 files in 9,079 (`boundary/enos/modules/docker_worker/worker-config-bsr-downstream.hcl` and `nomad/command/agent/testdata/sample1/sample2.hcl`), where a Go-template `{{…}}` expression makes the grammar emit no `block` node at all and the loss is proved by minimal reconstruction in bb_tests/hcl/out/open-questions.txt.",
+  "expectSymbols": [
+    { "name": "negative-syntax-error", "kind": "module" },
+    { "name": "aws_s3_bucket.good_one", "kind": "class" },
+    { "name": "aws_s3_bucket.broken", "kind": "class" },
+    { "name": "aws_s3_bucket.also_good", "kind": "class" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "aws_s3_bucket.good_one", "startLine": 5, "startColumn": 1 },
+    { "symbol": "aws_s3_bucket.broken", "startLine": 9, "startColumn": 1 },
+    { "symbol": "aws_s3_bucket.also_good", "startLine": 13, "startColumn": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "negative-syntax-error", "target": "aws_s3_bucket.good_one", "line_number": 5 },
+    { "type": "contains", "from": "aws_s3_bucket.broken", "target": "aws_s3_bucket.broken.aws_s3_bucket.also_good", "line_number": 13 },
+    { "type": "references", "target": "var.still_reachable", "line_number": 14 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "aws_s3_bucket.broken", "target": "collection_value", "note": "pre-fix shape: `hclValueKind` reported the outermost expression node, so a comparison read as \"operation\" — a node type that names no value kind. The fix unwraps it to binary_operation/unary_operation." }
+  ],
+  "forbidSymbols": [
+    { "name": "ERROR" },
+    { "name": "MISSING" }
+  ]
+}

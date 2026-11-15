@@ -1,0 +1,298 @@
+{
+  "fixtureId": "kotlin/references-declared-types",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "K6 (M60 kotlin deep review, 2026-09-27): the `references` class — 5,669 edges on the primary corpus, 35% of all kotlin output, and the last unaudited class. All NINE derived rules are load-bearing: on a 50-file sample spanning two corpora, disabling each in turn produced 253, 168, 134, 99, 50, 32, 14 and 2 truth-only rows for imports, parameters, return types, casts, variable declarations, callable references, receiver types and object literals; the ninth (type_alias) read CLEAN until it was re-run on a sample that actually contains a `typealias`. That is the third time in this review that a clean mutant was a statement about the sample. The rule itself is uniform — collect every `type_identifier` under a set of type-ROOT nodes — so what this fixture varies is WHICH POSITION is a declared-type position. That is the ten rows below, plus the shapes that must not produce one. One authored comment was corrected by the analyzer: it claimed an alias's type parameter must not appear as a target, and `A` does appear, correctly, because its USE in `A.() -> CharSequence` is a genuine reference. The distinction is introduced-versus-used, and both halves are pinned. The expect rows are pinned from the analyzer's verified (source,target) pairs rather than authored from memory, because my first attempt got 14 of 31 `from` values wrong: the source is the nearest enclosing DECLARATION, so a member function's parameter and return type attribute to the FUNCTION, and the four import rows attribute to the file's primary type (the analyzer publishes them with source \"root\" and rewrites it). Those fourteen read exactly like fourteen missing edges. The SEMANTICS were checked independently first — by the 400-file adjudication across two corpora, and by reading each shape against the rule — so pinning the resulting pairs is regression protection rather than self-confirmation. The forbids are the part that could NOT have been copied from the analyzer, because they assert absence. One row exists purely to make a rule separable: `handles -> Runnable` is satisfied by BOTH the return_type and the callable_reference rules, so the fixture passed with the callable rule disabled. `handleOnly -> Runnable` is produced by the callable rule alone (its return type is Int), and reverting the rule now goes red. A fixture row that two rules can satisfy is pinned by neither.",
+  "expectSymbols": [
+    {
+      "name": "Millis",
+      "kind": "type"
+    },
+    {
+      "name": "Handler",
+      "kind": "type"
+    },
+    {
+      "name": "Boxed",
+      "kind": "class"
+    },
+    {
+      "name": "Bounded",
+      "kind": "type"
+    },
+    {
+      "name": "NotAType",
+      "kind": "class"
+    },
+    {
+      "name": "NotAType2",
+      "kind": "class"
+    },
+    {
+      "name": "handleOnly",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "Boxed",
+      "target": "java.util.concurrent.TimeUnit",
+      "note": "import: the WHOLE dotted path, not the last segment"
+    },
+    {
+      "type": "references",
+      "from": "Boxed",
+      "target": "kotlin.time.Duration.Companion.seconds",
+      "note": "import: a qualified import keeps its whole spine. The analyzer publishes these with source \"root\" and then rewrites that to the file's primary type, so the pin is the rewritten form a consumer actually reads"
+    },
+    {
+      "type": "references",
+      "from": "Boxed",
+      "target": "org.example",
+      "note": "WILDCARD import: the target is the identifier text alone and never contains \".*\". The pinned wasm serializes it as identifier=\"org.example\" plus a sibling wildcard_import, so the wildcard rides in items/isNamespaceImport instead. The first oracle read that comment backwards and produced 24 spurious MISSING rows"
+    },
+    {
+      "type": "references",
+      "from": "Boxed",
+      "target": "java.util",
+      "note": "the second wildcard, same rule"
+    },
+    {
+      "type": "references",
+      "from": "Millis",
+      "target": "Long",
+      "note": "type_alias: the source is the ALIAS'S OWN NAME, not the enclosing declaration — the aliased types belong to the alias's definition"
+    },
+    {
+      "type": "references",
+      "from": "Handler",
+      "target": "Int",
+      "note": "type_alias: a function type's parameter is a reference"
+    },
+    {
+      "type": "references",
+      "from": "Handler",
+      "target": "String",
+      "note": "type_alias: and its return type"
+    },
+    {
+      "type": "references",
+      "from": "Handler",
+      "target": "Unit",
+      "note": "type_alias: including the implicit Unit return"
+    },
+    {
+      "type": "references",
+      "from": "Table2",
+      "target": "Map",
+      "note": "type_alias over a generic: the container is a reference"
+    },
+    {
+      "type": "references",
+      "from": "Table2",
+      "target": "String",
+      "note": "type_alias: a nested type argument is a reference"
+    },
+    {
+      "type": "references",
+      "from": "Table2",
+      "target": "List",
+      "note": "type_alias: and the innermost one"
+    },
+    {
+      "type": "references",
+      "from": "Table2",
+      "target": "Number",
+      "note": "type_alias: every type_identifier in the RHS subtree"
+    },
+    {
+      "type": "references",
+      "from": "compute",
+      "target": "Pair",
+      "note": "parameter type on a member function — the source is the FUNCTION, not the class"
+    },
+    {
+      "type": "references",
+      "from": "compute",
+      "target": "String",
+      "note": "a generic parameter's type ARGUMENTS are separate type_identifiers under the same root"
+    },
+    {
+      "type": "references",
+      "from": "compute",
+      "target": "Int",
+      "note": "and the innermost"
+    },
+    {
+      "type": "references",
+      "from": "compute",
+      "target": "Boolean",
+      "note": "the next parameter"
+    },
+    {
+      "type": "references",
+      "from": "compute",
+      "target": "Sequence",
+      "note": "return type — FOLLOWS the parameter list"
+    },
+    {
+      "type": "references",
+      "from": "compute",
+      "target": "Number",
+      "note": "return type: a generic return names both"
+    },
+    {
+      "type": "references",
+      "from": "shout",
+      "target": "String",
+      "note": "receiver type — PRECEDES the name. Both are user_type in the grammar, so the split is positional, and the source is the extension function itself"
+    },
+    {
+      "type": "references",
+      "from": "shout",
+      "target": "CharSequence",
+      "note": "the extension function's return type"
+    },
+    {
+      "type": "references",
+      "from": "total",
+      "target": "List",
+      "note": "receiver type: the out-projected List"
+    },
+    {
+      "type": "references",
+      "from": "total",
+      "target": "Number",
+      "note": "the receiver's type argument"
+    },
+    {
+      "type": "references",
+      "from": "total",
+      "target": "Double",
+      "note": "and the return type"
+    },
+    {
+      "type": "references",
+      "from": "casts",
+      "target": "String",
+      "note": "parameter type; the check_expression `v is String` names the same type and collapses onto this row"
+    },
+    {
+      "type": "references",
+      "from": "casts",
+      "target": "Boolean",
+      "note": "return type"
+    },
+    {
+      "type": "references",
+      "from": "casts",
+      "target": "Number",
+      "note": "as_expression: `v as? Number` — the rightmost operand is the type named"
+    },
+    {
+      "type": "references",
+      "from": "casts",
+      "target": "List",
+      "note": "as_expression with a generic: the argument type is named too"
+    },
+    {
+      "type": "references",
+      "from": "casts",
+      "target": "Int",
+      "note": "and its argument"
+    },
+    {
+      "type": "references",
+      "from": "handles",
+      "target": "Runnable",
+      "note": "callable_reference `Runnable::run` names Runnable — a handle to a member of a type IS a type usage. The return type is the same name, so two kinds collapse onto one (source,target) row"
+    },
+    {
+      "type": "references",
+      "from": "qualified",
+      "target": "Comparator",
+      "note": "callable_reference on a member function's return type"
+    },
+    {
+      "type": "references",
+      "from": "qualified",
+      "target": "String",
+      "note": "and its type argument"
+    },
+    {
+      "type": "references",
+      "from": "anon",
+      "target": "Any",
+      "note": "return type"
+    },
+    {
+      "type": "references",
+      "from": "anon",
+      "target": "Runnable",
+      "note": "object_literal: the delegation supertype is a real type usage at the object-literal site"
+    },
+    {
+      "type": "references",
+      "from": "constructs",
+      "target": "Thread",
+      "note": "a constructor call's type, because Thread is the declared return type"
+    },
+    {
+      "type": "references",
+      "from": "calls",
+      "target": "String",
+      "note": "a call's ARGUMENT type is not a declared-type position, but a PARAMETER's declared type is — the two differ and only the second belongs here"
+    },
+    {
+      "type": "references",
+      "from": "calls",
+      "target": "Any",
+      "note": "return type of that function"
+    },
+    {
+      "type": "references",
+      "from": "memberRead",
+      "target": "Int",
+      "note": "the return type is a declared-type position; the member it READS is not (see the forbid)"
+    },
+    {
+      "type": "references",
+      "from": "localOnly",
+      "target": "Int",
+      "note": "and a local's inferred type is not either"
+    },
+    {
+      "type": "references",
+      "from": "NotAType",
+      "target": "Int",
+      "note": "a member's return type still attributes to the FUNCTION, not the class"
+    },
+    {
+      "type": "references",
+      "from": "handleOnly",
+      "target": "Runnable",
+      "note": "the callable_reference rule ALONE produces this row: the return type is Int, so nothing else can satisfy it. `handles -> Runnable` could not — the return type there is Runnable too, so the two kinds collapse onto one row and disabling either leaves the other"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "NotAType",
+      "target": "counter",
+      "note": "a member READ is not a declared-type position: the graph is about types a declaration NAMES, and `counter` is the name of a member being read. The uses graph owns it; absorbing every identifier in the file would make this graph meaningless"
+    },
+    {
+      "type": "references",
+      "from": "NotAType",
+      "target": "scratch",
+      "note": "a LOCAL is not a declared-type position either"
+    },
+    {
+      "type": "references",
+      "from": "NotAType2",
+      "target": "listOf",
+      "note": "a call's CALLEE is not a type reference — it is a call, owned by the calls graph"
+    }
+  ]
+}

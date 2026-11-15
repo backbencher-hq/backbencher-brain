@@ -1,0 +1,26 @@
+syntax = "proto3";
+package demo.v1;
+
+import "google/protobuf/timestamp.proto";
+import option "google/protobuf/cpp_features.proto";
+
+option java_package = "com.example.demo";
+
+// A user of the system.
+message User {
+  string name = 1;
+  Role role = 2;
+  google.protobuf.Timestamp created = 3;
+  map<string, string> labels = 4;
+  oneof contact {
+    string email = 5;
+    string phone = 6;
+  }
+}
+
+enum Role { USER = 0; ADMIN = 1; }
+
+service Auth {
+  rpc Login(User) returns (User);
+  rpc Watch(User) returns (stream User);
+}

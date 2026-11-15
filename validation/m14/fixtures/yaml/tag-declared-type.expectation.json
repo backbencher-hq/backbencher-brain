@@ -1,0 +1,91 @@
+{
+ "fixtureId": "yaml/tag-declared-type",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A YAML tag is the language's only type annotation and it OVERRIDES the scalar's own resolution. `!!str 7` is a string; the pre-fix analyzer read through the tag to the integer underneath and reported valueType=integer for both tagged and untagged values. Four tag forms are pinned because the tag node has zero CHILDREN but is not zero-width: it carries its own text, so `!!str`, a verbatim `!<...>`, a custom `!Widget` and a plain scalar are four different readings of the same construct. Each produces a declared_type reference edge (M60 R9) naming the type the tag writes. `!Widget` deliberately does NOT override the value type: a tag outside the core vocabulary names a type this analyzer does not know, so the declared type is recorded and the value keeps its own resolution.",
+ "expectSymbols": [
+  {
+   "name": "tagged",
+   "kind": "property"
+  },
+  {
+   "name": "plain",
+   "kind": "property"
+  },
+  {
+   "name": "verbatim",
+   "kind": "property"
+  },
+  {
+   "name": "custom",
+   "kind": "property"
+  },
+  {
+   "name": "tagged",
+   "meta.valueType": "string",
+   "meta.valueTypeSource": "tag",
+   "meta.declaredType": "str",
+   "meta.tagUri": "tag:yaml.org,2002:str"
+  },
+  {
+   "name": "plain",
+   "meta.valueType": "integer",
+   "meta.valueTypeSource": "grammar",
+   "meta.declaredType": null
+  },
+  {
+   "name": "verbatim",
+   "meta.declaredType": "str",
+   "meta.tagUri": "tag:example.com,2000:str"
+  },
+  {
+   "name": "custom",
+   "meta.declaredType": "Widget",
+   "meta.valueType": "integer",
+   "meta.valueTypeSource": "grammar"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "tag-declared-type.tagged",
+   "target": "str",
+   "meta.relationshipType": "declared_type",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 4
+  },
+  {
+   "type": "references",
+   "from": "tag-declared-type.verbatim",
+   "target": "str",
+   "meta.relationshipType": "declared_type",
+   "line_number": 6
+  },
+  {
+   "type": "references",
+   "from": "tag-declared-type.custom",
+   "target": "Widget",
+   "meta.relationshipType": "declared_type",
+   "line_number": 7
+  }
+ ],
+ "expectQualifiedCalls": [
+  {
+   "symbol": "tagged",
+   "contains": "str"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   4,
+   5,
+   6,
+   7
+  ],
+  "evidenceClasses": [
+   "reference_qualified",
+   "structural"
+  ]
+ }
+}

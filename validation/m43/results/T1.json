@@ -1,0 +1,18 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-arbiter-typecheck.ts",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-11-05T04:31:26.230Z",
+  "passed": 7,
+  "failed": 0,
+  "negativeCases": 4,
+  "negativesDescription": "n1: tsc reports a type error in a temp file under script/m14/ (never a real file); n2: the verdict rejects a synthetic arbiter error line",
+  "governedSurface": [
+    "script/m14/incoming-rule.ts",
+    "script/m14/incoming-gate.ts"
+  ],
+  "laneOwnedErrorsReported": 0,
+  "laneOwnedRunBreakingReported": 0
+}

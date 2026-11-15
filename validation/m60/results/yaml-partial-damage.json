@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "find a population with PARTIAL grammar damage (the precondition for closing the grammarContainmentLoss caveat)",
+  "generatedAt": "2026-09-28T21:48:13.129Z",
+  "question": "Is there a file in the eight pinned corpora that the grammar damages somewhere but NOT from byte 0, and that PyYAML parses cleanly? Only such a file has both an independent truth and an undamaged region in which to test agreement.",
+  "conditions": [
+    "contains at least one ERROR or MISSING node",
+    "the EARLIEST damaged node starts after byte 0, so a non-empty clean prefix exists (a nested error deeper in does NOT count — the root error at byte 0 already leaves nothing undamaged)",
+    "PyYAML parses it cleanly, so there is an independent truth to compare against"
+  ],
+  "counts": {
+    "scanned": 9953,
+    "damaged": 138,
+    "earliestDamageAtZero": 130,
+    "withCleanPrefix": 8,
+    "usable": 0
+  },
+  "cleanPrefixSizes": [
+    {
+      "file": "kubernetes/test/integration/scheduler_perf/default_preemption/templates/gang-pod.yaml",
+      "cleanPrefixBytes": 474
+    },
+    {
+      "file": "helm/internal/chart/v3/loader/testdata/frobnitz_with_bom/charts/alpine/templates/alpine-pod.yaml",
+      "cleanPrefixBytes": 1
+    },
+    {
+      "file": "helm/pkg/cmd/testdata/testcharts/chart-bad-requirements/Chart.yaml",
+      "cleanPrefixBytes": 112
+    },
+    {
+      "file": "helm/pkg/cmd/testdata/testcharts/issue1979/templates/alpine-pod.yaml",
+      "cleanPrefixBytes": 633
+    },
+    {
+      "file": "helm/pkg/cmd/testdata/testcharts/chart-with-template-lib-dep/templates/deployment.yaml",
+      "cleanPrefixBytes": 1134
+    },
+    {
+      "file": "helm/pkg/cmd/testdata/testcharts/chart-with-template-lib-archive-dep/templates/deployment.yaml",
+      "cleanPrefixBytes": 1174
+    },
+    {
+      "file": "helm/pkg/cmd/testdata/testcharts/chart-with-lib-dep/templates/deployment.yaml",
+      "cleanPrefixBytes": 1231
+    },
+    {
+      "file": "helm/pkg/chart/v2/loader/testdata/frobnitz_with_bom/charts/alpine/templates/alpine-pod.yaml",
+      "cleanPrefixBytes": 1
+    }
+  ],
+  "verdict": "DEFINITIVE: NOT CLOSABLE ON THIS CORPUS. 8 file(s) have partial damage, but PyYAML cannot read any of them and their clean prefixes run 1-1231 bytes — every one is a Go template whose prefix already contains {{ }}. 130 of 138 damaged files are damaged from byte 0, and the remaining 8 have a clean prefix too small and too full of template syntax to host an agreement test. The reason is STRUCTURAL, not a sampling accident: the grammar's failure mode is \"the root node becomes an ERROR and the parse stops\", which by construction leaves no undamaged interior region anywhere in this corpus. So the `grammarContainmentLoss` caveat stands as declared, and closing it would need a corpus or a grammar that damages a file in one place while leaving another intact.",
+  "rows": []
+}

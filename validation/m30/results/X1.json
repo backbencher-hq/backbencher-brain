@@ -1,0 +1,30 @@
+{
+  "issue": "M30.X1",
+  "code": "X1",
+  "milestone": "M30",
+  "status": "verified",
+  "checks": 50,
+  "passed": 50,
+  "failed": 0,
+  "negativeCases": 5,
+  "milestoneTotals": {
+    "checks": 160,
+    "passed": 160,
+    "mutants": 34,
+    "survived": 0
+  },
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "verifierCommand": "npx tsx script/m30/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-09-02T16:16:02.270Z",
+  "limitations": [
+    "Closure audit reads machine-emitted evidence and the ledger; it does not re-run the six verifiers (those are gated separately in npm run verify and re-run at closure).",
+    "Evidence-freshness check requires the evidence commit to equal HEAD at audit time; after this evidence file is committed the recorded commit is the functional-code HEAD, matching the house pattern.",
+    "Live-key validation (S3) is evidence-recorded as verified at the last gated run; a live re-run requires BB_M30_LIVE_KEYS=1 + keys in env."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.461Z",
+    "contentSha256": "30d95570e6e5dd6b367588546cdb9e42959db6194e67a08b7c6817b156905955"
+  }
+}

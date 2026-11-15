@@ -1,0 +1,67 @@
+{
+  "generatedAt": "2026-11-01T19:10:00.688Z",
+  "loadAverage": [
+    16.98,
+    23.04,
+    23.9
+  ],
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-pinpoint.ts",
+  "rows": [
+    {
+      "label": "root-exact-name-row",
+      "ms": 1.1,
+      "value": [
+        {
+          "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/lsp/impact.ts:computeImpact:764",
+          "name": "computeImpact",
+          "t": "function",
+          "f": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/lsp/impact.ts"
+        }
+      ]
+    },
+    {
+      "label": "count-rows-targeting-name",
+      "ms": 3.8,
+      "value": {
+        "copies": 1,
+        "rows": 43
+      }
+    },
+    {
+      "label": "engine-depth-1",
+      "ms": 31398.4,
+      "value": {
+        "callers": 36,
+        "truncated": true,
+        "reason": "caller-depth-cap-reached",
+        "totalCallers": 36
+      }
+    },
+    {
+      "label": "engine-depth-5",
+      "ms": 37263.7,
+      "value": {
+        "callers": 36,
+        "truncated": false,
+        "totalCallers": 36
+      }
+    },
+    {
+      "label": "computeImpact",
+      "ms": 21690.6,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false
+      }
+    },
+    {
+      "label": "engine-depth-5-second",
+      "ms": 22416,
+      "value": {
+        "callers": 36,
+        "msNote": "repeat"
+      }
+    }
+  ]
+}

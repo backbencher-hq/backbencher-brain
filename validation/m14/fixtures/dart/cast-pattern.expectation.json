@@ -1,0 +1,30 @@
+{
+  "fixtureId": "dart/cast-pattern",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DART `cast_pattern` — the `X as T` form INSIDE A PATTERN (Dart 3 pattern grammar), which the completeness census carried as an uncovered construct type. Probed against the pinned grammar (`be07cf7`): `cast_pattern -> variable_pattern, as, type_identifier`, so the CAST TYPE is a `type_identifier` whose parent is `cast_pattern`; it occurs in a `switch_statement_case` and in an `if_case_clause` (`if (x case ...)`), and the fixture carries both positions. What this lane publishes, pinned here from a measured run: the pattern BINDING is a `uses` row binding-spelled `<callable>\\u0000<binding>` at 0.9 with `isLocalRead` + `localBinding` (DARTGAP1: a pattern binding behaves as a parameter does, published as a use with no symbol behind it) and the CAST TYPE is a `references{isTypeMention,typePosition:cast_pattern}` row at 0.95, published only when the name binds to a type THE RUN CAN SEE — which is why the fixture declares `Payload` itself (casting to `num`/`String` in a fixture that does not declare dart:core would publish nothing, and a fixture cannot tell an absent emission from a GATED one). A cast pattern is NOT a declaration: no symbol, no contains, and the member read on the bound variable (`first.size`) stays `uses{isMemberRead}` with `receiverCause:receiverTypeUnknown` because a pattern binding is not typed by this analyzer.",
+  "expectSymbols": [
+    { "name": "Payload", "kind": "class" },
+    { "name": "size", "kind": "property", "ownerName": "Payload" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Payload" },
+    { "name": "CastPatternProbe", "kind": "class" },
+    { "name": "switchForm", "kind": "method", "ownerName": "CastPatternProbe" },
+    { "name": "ifForm", "kind": "method", "ownerName": "CastPatternProbe" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "switchForm", "target": "switchForm\u0000first", "line_number": 30, "confidenceMin": 0.9, "confidenceMax": 0.9, "meta.isLocalRead": true, "meta.localBinding": true },
+    { "type": "references", "from": "switchForm", "target": "Payload", "line_number": 30, "confidenceMin": 0.95, "confidenceMax": 0.95, "meta.isTypeMention": true, "meta.typePosition": "cast_pattern" },
+    { "type": "uses", "from": "ifForm", "target": "ifForm\u0000second", "line_number": 36, "confidenceMin": 0.9, "confidenceMax": 0.9, "meta.isLocalRead": true, "meta.localBinding": true },
+    { "type": "references", "from": "ifForm", "target": "Payload", "line_number": 36, "confidenceMin": 0.95, "confidenceMax": 0.95, "meta.isTypeMention": true, "meta.typePosition": "cast_pattern" },
+    { "type": "contains", "from": "Payload", "target": "Payload.size", "line_number": 23 },
+    { "type": "contains", "from": "Payload", "target": "Payload.constructor", "line_number": 24 }
+  ],
+  "forbidSymbols": [
+    { "name": "first" },
+    { "name": "second" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "switchForm", "target": "first" },
+    { "type": "uses", "from": "ifForm", "target": "second" }
+  ]
+}

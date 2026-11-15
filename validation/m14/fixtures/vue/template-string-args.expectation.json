@@ -1,0 +1,17 @@
+{
+  "fixtureId": "vue/template-string-args",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the deeper-review D1 fix: string/template-literal contents are not identifiers — go('save') must not read 'save' as a member, while real code inside backtick interpolations (${a}) still reads. The old regex had the identical hole; the char-walk rewrite is where it closed.",
+  "expectSymbols": [
+    { "name": "go", "kind": "method" },
+    { "name": "save", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "template-string-args", "target": "go" },
+    { "type": "uses", "from": "template-string-args", "target": "a" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "template-string-args", "target": "save" }
+  ]
+}

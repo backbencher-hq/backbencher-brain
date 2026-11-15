@@ -1,0 +1,44 @@
+{
+  "fixtureId": "cpp/no-nested-function-def-961",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "D5 (#961): C++ has no nested function definition, so a `function_definition` inside a function body is ill-formed and is instead the one thing that shape genuinely is — a local variable written with direct-initialization parentheses (`T name(args);` and `T name(args) { }` are ambiguous to a parser with no symbol table, and tree-sitter-cpp resolves toward the function reading). 619 local variables were published as `function` symbols owned by the enclosing function over 554 real C++ files, so the graph's answer to 'what does this function contain' was a set of sibling functions. This was the THIRD guard of a family whose other two were already present: the field/variable branch refuses to publish inside a function (`insideFunction`), and `isMacroFunctionShape` refuses an untyped heading at file scope — neither reaches a node the grammar calls a `function_definition` that sits inside a body, which is exactly where the class lives. The second half is the CGD20 parity gap: a block-scoped `using X = Y;` / `typedef Y X;` is an execution artifact, and the C lane says so verbatim ('CGD20: function-local typedefs are execution artifacts (C-D1)') — 173 such aliases were published with the enclosing function as owner, half of them owned by a macro-heading function whose name is the literal heading text. The local VARIABLES still BIND as locals after the fix: dropping the binding would fabricate a read of an outer name of the same spelling, which `uses compute -> counter` at the end pins as the thing that must keep working.",
+  "expectSymbols": [
+    { "name": "compute", "kind": "function", "note": "the real function, unaffected." },
+    { "name": "counter", "kind": "variable" },
+    { "name": "Handle", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "note": "`Handle(int)` is a real constructor and IS published — D5's gate is on a function DEFINITION nested in a body, not on constructors." },
+    { "name": "local_type", "kind": "class", "note": "D5d, and the reason the CGD20 rule sits on the alias and is not a blanket 'nothing inside a function': a local CLASS has members, and they need an owner. The 38 legitimate function-owned symbols in the corpus are exactly these." },
+    { "name": "field", "kind": "property" },
+    { "name": "get", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "compute", "target": "compute", "note": "D5c, the control for the gate being too broad: a real recursive CALL statement is still a call edge. The gate is on the DECLARATION, never on the callee — a version that keyed on 'a call inside a function' would delete every call in the language." },
+    { "type": "calls", "from": "compute", "target": "get", "note": "a member call on a local object." },
+    { "type": "calls", "from": "compute", "target": "size" },
+    { "type": "calls", "from": "compute", "target": "empty" },
+    { "type": "uses", "from": "compute", "target": "counter", "note": "the file-scope value read still resolves — the local bindings the D5 fix adds do not over-suppress outward resolution." },
+    { "type": "contains", "from": "local_type", "target": "field", "note": "a local class's members are owned by it, which is the load-bearing reason local types are still published." },
+    { "type": "contains", "from": "local_type", "target": "get" },
+    { "type": "contains", "from": "Handle", "target": "constructor" }
+  ],
+  "forbidSymbols": [
+    { "name": "contents", "kind": "function", "note": "D5a: `std::string contents(\"…\");` is a local VARIABLE. Published as a `function` before the fix." },
+    { "name": "raw_stack", "kind": "function", "note": "`std::vector<int> raw_stack(16);` — measured as `function \"raw_stack\" owner=GTEST_LOCK_EXCLUDED_(mutex_)` on the corpora." },
+    { "name": "parent_handle", "kind": "function", "note": "measured as `function \"parent_process_handle\" owner=GetStatusFileDescriptor` (gmock-gtest-all.cc:9755)." },
+    { "name": "joined", "kind": "function" },
+    { "name": "left", "kind": "function", "note": "D5b, the multi-declarator spelling — measured as `function \"lhs\" owner=FloatingPointLE` (gmock-gtest-all.cc:3109)." },
+    { "name": "right", "kind": "function" },
+    { "name": "local_alias", "kind": "type", "note": "D5e, CGD20 parity: a block-scoped alias is an execution artifact. The C lane states the rule; the C++ lane had no guard, so `type local_alias owner=compute` was published." },
+    { "name": "local_typedef", "kind": "type", "note": "the same rule, the other C++ spelling." },
+    { "name": "la", "kind": "function" },
+    { "name": "lt2", "kind": "function" },
+    { "name": "lt", "kind": "function", "note": "`local_type lt{5};` is BRACE initialization, which the grammar does not mistake for a definition — pinned so the fix is not over-broad enough to be about parens specifically." },
+    { "name": "doubled", "kind": "function", "note": "`int doubled = compute(seed);` is a normal initialized declaration; pinned because it is the shape most at risk of being confused with a call." }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "compute", "target": "local_alias", "note": "D5e: the documented `contains` ontology is namespace→class/enum/alias, class→method/property/constructor, enum→member. `function -> block-scoped alias` is not in it." },
+    { "type": "contains", "from": "compute", "target": "contents", "note": "D5a: the direct consequence — a local variable was a 'member' of the function that declared it." },
+    { "type": "uses", "from": "compute", "target": "Handle", "note": "D5 ROSTER, found while writing this fixture: a CONSTRUCTOR is not a callable value. `Handle(int)` defines a name that spells the class, and C++ never lets you call it unqualified — `Handle h(1)` is a construction, not a call. The roster is the resolution source for bare reads, so admitting it made the class name resolvable as a value and `Handle parent_handle(7);` published `uses Handle -> Handle` at confidence 1.0 — an edge asserting the class reads itself. The test is the name against the class it is declared in, which is exactly what a constructor is." }
+  ]
+}

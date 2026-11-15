@@ -85,7 +85,7 @@ rmSync(root, { recursive: true, force: true })
 }
 
 // 3. Corpus
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 for (const [repo, subPath, family] of [["rake", "lib/rake", "Ruby"], ["graphql-js", "src", "TypeScript"], ["rebar3", "apps", "Erlang"]]) {
   const idxRoot = path.join(REPO_ROOT, repo, subPath)

@@ -1,0 +1,58 @@
+{
+ "fixtureId": "yaml/merge-sequence",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A merge key may take a SEQUENCE of anchors and each one is a separate inheritance edge. The containing object is the edge source, not the `<<` key -- a merge inherits INTO the object that contains it. Both edges resolve at confidence 1.0, and `qualified_calls` carries the merged targets on the object.",
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "from": "merge-sequence.combined",
+   "target": "merge-sequence.alpha#alpha",
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "meta.evidenceClass": "structural",
+   "line_number": 8
+  },
+  {
+   "type": "extends",
+   "from": "merge-sequence.combined",
+   "target": "merge-sequence.beta#beta",
+   "confidenceMin": 1,
+   "meta.resolved": true,
+   "line_number": 8
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "alpha",
+   "kind": "constant",
+   "equals": 1
+  },
+  {
+   "name": "beta",
+   "kind": "constant",
+   "equals": 1
+  }
+ ],
+ "expectQualifiedCalls": [
+  {
+   "symbol": "combined",
+   "contains": "merge-sequence.alpha#alpha"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

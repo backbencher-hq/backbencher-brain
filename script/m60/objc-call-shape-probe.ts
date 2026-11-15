@@ -36,7 +36,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OBJC_CORPUS = path.join(CORPUS_ROOT, "objc")
 const SEP = "\u0001"
 

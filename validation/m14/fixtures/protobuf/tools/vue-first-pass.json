@@ -1,0 +1,62 @@
+{
+  "_treeLine": {
+    "HEAD": "feb11505c",
+    "foreignUncommittedPresent": ["src/ast/real-c-analyzer.ts", "src/ast/real-julia-analyzer.ts", "src/ast/real-python-analyzer.ts", "script/m14/python-*.py", "script/m14/spec/python-completeness.json", "docs/analyzers/history/python-lane-notes.md", "docs/analyzers/LAPTOP-B-STATUS.md", "validation/m13/results/v1.json", "validation/m13/results/v2.json"],
+    "note": "Several lanes mid-edit; nothing in this lane's scope was touched by them and none of their files was read into these numbers."
+  },
+  "CLAUSE_1_POPULATION": {
+    "vuePopulation": "1,155 tracked .vue files across 6 repos, ALL 1,155 present on disk",
+    "repos": "element-plus 1,008 · vue-element-admin 131 · vue-core 11 · nvim-treesitter 3 · gql-graphql-eslint 1 · snacks.nvim 1",
+    "STATUS": "NOT EARNED — the population row is a LEASE RUN and my first attempt is reported as AMBIGUOUS, not as a result: `npx tsx script/m14/incoming-gate.ts vue vue 0` wrote parser-init lines and then no `EXIT=` line, so there is nothing to quote. Handed to the Lead with that command."
+  },
+  "CLAUSE_2_CLOSURE_ON_THE_STRIDE": {
+    "instrument": "npx tsx script/m14/incoming-gate.ts vue vue 400 (a 400-file STRIDE of the 1,155 — a LOWER BOUND for anything file-scoped)",
+    "rows": [
+      { "type": "calls", "edges": 1075, "resolved": 44, "amb": 61, "unresolved": 970 },
+      { "type": "uses", "edges": 824, "resolved": 278, "amb": 499, "unresolved": 47 },
+      { "type": "imports", "edges": 681, "resolved": 0, "amb": 0, "unresolved": 681 },
+      { "type": "references", "edges": 437, "resolved": 97, "amb": 131, "unresolved": 209 },
+      { "type": "TOTAL", "edges": 4118, "resolved": 581, "amb": 693, "unresolved": 2844 }
+    ],
+    "closure": "EXACT per type and in total: resolved + amb(decl) + unresolved + extOK(0) = edges (44+61+970=1075 · 278+499+47=824 · 0+0+681=681 · 97+131+209=437 · 581+693+2844=4118).",
+    "theThreeFailColumns": "extFAIL 0 · bindFAIL 0 · causeFAIL 0 on every row."
+  },
+  "CLAUSE_3_CLASSES_NAMED_BY_THEIR_OWN_MARKERS": {
+    "_source": "the gate's per-record metadata-keys table — the marker set on each edge, which is where HTML's residual was found too",
+    "classes": [
+      { "marker": "calleeExpression+line+sfcDelegated+sfcLineOffset", "resolved": 44, "amb": 61, "unresolved": 970, "cause": "UNNAMED — the largest single class and not yet read at its emission site" },
+      { "marker": "isComponentUsage", "resolved": 43, "amb": 2, "unresolved": 937, "cause": "NAMED — see the split below" },
+      { "marker": "module+sfcDelegated+sfcLineOffset", "resolved": 0, "amb": 0, "unresolved": 564, "cause": "module specifiers: a FILE-SCOPED class, the route the shared guard exists for" },
+      { "marker": "isTypeOnly+module+sfcDelegated+sfcLineOffset", "resolved": 0, "amb": 0, "unresolved": 112, "cause": "type-only module specifiers, same route" },
+      { "marker": "isTemplateExpression", "resolved": 267, "amb": 443, "unresolved": 0, "cause": "template identifiers (props/data): NOT unresolved at all — an AMBIGUITY class" },
+      { "marker": "relationshipType+sfcDelegated+sfcLineOffset", "resolved": 19, "amb": 46, "unresolved": 191, "cause": "unnamed" }
+    ]
+  },
+  "CLAUSE_4_THE_COMPONENT_USAGE_SPLIT": {
+    "emissionSite": "real-vue-analyzer.ts:264-290 — `instantiates` whose target is THE TAG AS WRITTEN (`<my-button/>` targets `my-button`), with `isComponentUsage: true` and `componentPath` for dotted tags",
+    "sample": "347 of 1,155 .vue files, 824 usage edges (per-repo stride; a LOWER BOUND for a file-scoped quantity)",
+    "aComponentFileWithAMatchingStemExists": 85,
+    "share": "10.3%",
+    "residue": 739,
+    "residueNamed_because_a_remainder_is_not_a_cause": {
+      "elementPlusLibraryComponents": "`el-button` 63 · `el-table` 24 · `el-table-column` 24 · `el-tag` 22 · `el-icon` 22 · `el-input` 20 · `el-select` 13 — a DEPENDENCY, not in the corpus: a BOUNDARY of the kind r's packages are",
+      "svgFilterPrimitives": "`feFlood` 13 · `feColorMatrix` 13 · `feOffset` 13 · `feGaussianBlur` 13 · `feComposite` 13 · `feBlend` 13 — SVG MARKUP, not components",
+      "svgIcon": "`svg-icon` 15 — a library component of the same boundary class"
+    },
+    "THE_POSSIBLE_DEFECT": "`VUE_BUILTIN_TAGS` holds SEVEN entries (component · transition · transition-group · keep-alive · teleport · suspense · fragment) and the file mentions no SVG element at all, so a bare `<feFlood>` inside `<svg>` is emitted as a COMPONENT USAGE. A tag that is markup cannot be a component: these edges are FABRICATED, and the class is bounded and measurable.",
+    "NOT_YET_DONE": "no fix built, no falsifier run, and the emission site of the filter condition has not been read in full — the claim above is that the SET lacks SVG entries, which is what the file shows, not yet a claim about how many edges that fabricates on the population."
+  },
+  "EARNED": [
+    "vue's stride row reproduced exactly with closure EXACT per type and in total (clause 2 on the stride).",
+    "Every unresolved class on the stride is NAMED by its own marker set, with counts — no miscellaneous bucket.",
+    "The largest marker class (`isComponentUsage`) was traced to its EMISSION SITE, which is where the tag-as-written finding comes from.",
+    "The component-usage residue was split into NAMED sub-classes (Element Plus library, SVG filter primitives, svg-icon) rather than left as a remainder, and the SVG one is a candidate FABRICATING class with a bounded fix.",
+    "The population size (1,155 files, 6 repos, all present) is measured, so the lease run's scope is known before it is spent."
+  ],
+  "NOT_EARNED": [
+    "THE POPULATION ROW: no clause-1 number exists yet, and every figure above is a stride or a 347-file sample — LOWER BOUNDS for file-scoped quantities.",
+    "The `calleeExpression` class (970 unresolved, the largest) is unnamed.",
+    "No fix built, no falsifier run, no control that can fail.",
+    "No store run."
+  ]
+}

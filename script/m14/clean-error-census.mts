@@ -66,7 +66,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const WIDE = path.join(ROOT, "script", "m14", "clean-wide-manifest.txt")
 const argv = process.argv.slice(2)
 const arg = (k: string) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : "" }
@@ -209,7 +209,7 @@ const emptyTally = (): Tally => ({
 
 function rel(p: string): string {
   const r = path.relative(CR, p)
-  return r.startsWith("..") ? path.relative("$HOME/fixtures", p) : r
+  return r.startsWith("..") ? path.relative("/home/ishaq2321/bb_tests", p) : r
 }
 
 function run(list: string[], label: string): Tally {

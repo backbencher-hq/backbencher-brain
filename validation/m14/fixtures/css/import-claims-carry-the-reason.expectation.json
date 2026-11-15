@@ -1,0 +1,54 @@
+{
+  "fixtureId": "css/import-claims-carry-the-reason",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The css gate's residual over the 400-file stride is 85 = 70 ambiguous references + 15 unresolved imports, and all 15 unresolved are `@import` specifiers carrying NO claim of any kind (`imports  importSource+importSpecifier+isCssImport` with `extClaim 0`) although the analyzer already computed the distinction. The fix publishes the reason on the arbiter's claim channel (`sourcePathClaim` for a network URL, `importProjectFile` for an existing project sibling) \u2014 but ONLY when the caller supplied `context.projectRoot`, because both claims are statements about the project's own admitted file list and an analyzer must not invent which list it is judged against. This fixture is the DEGRADED-INVOCATION pin: `run-fixtures.ts:986` calls `analyze()` with no context, so this file pins that NO claim key is invented, no target is reduced to a basename, and the verbatim `importSpecifier` survives. The positive half cannot be pinned by a flat fixture (there is no project root to name); it is asserted instead by `validation/m14/fixtures/css/import-claims-probe.ts` (which calls `analyze()` WITH a project root and hands each claim to the arbiter's own `classifyEdge`, with a control that must refute) and, authoritatively, by the gate's own after run \u2014 imports `unresolved 15 -> 0`, `extOK 2439 -> 2454`, `extFAIL 0` (`measurements/gate-css-after-400.txt`). CONTRACT REPIN (2026-10-25): `part_of` is now emitted for the PLAIN FILE FORM of `@import` in the css family \u2014 exactly one named child of type `string_value`, no `.css` suffix, no protocol URL, no `sass:`/`data:` scheme. Sass/Less fold that form in at compile time, so it is a source inclusion (`part_of`, `partRole:\"library\"`), not a stylesheet load. Every other form keeps `imports`: `url(...)` (the child is a call_expression), a media query (a SECOND named child), a `.css` specifier, and any protocol URL. This is a LABEL MOVE \u2014 source, target, line and the project-file claim are unchanged.",
+  "knownLimitation": "A flat fixture cannot exercise the claim path itself: the claim requires a caller-named project root and the fixture runner passes no context. The probe and the gate are the instruments for that half; this file pins the boundary that keeps the change inside the css lane (the html and scss analyzers delegate to this class with three arguments and must stay byte-identical).",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "import-claims-carry-the-reason.css",
+      "target": "https://fonts.googleapis.com/css?family=Lato:400,400i",
+      "meta.sourcePathClaim": null,
+      "meta.importProjectFile": null,
+      "meta.importSpecifier": "https://fonts.googleapis.com/css?family=Lato:400,400i"
+    },
+    {
+      "type": "part_of",
+      "from": "import-claims-carry-the-reason.css",
+      "target": "tailwindcss",
+      "meta.sourcePathClaim": null,
+      "meta.importProjectFile": null,
+      "meta.partRole": "library",
+      "meta.isCssPartImport": true
+    },
+    {
+      "type": "imports",
+      "from": "import-claims-carry-the-reason.css",
+      "target": "@fontsource-variable/figtree/index.css",
+      "meta.sourcePathClaim": null,
+      "meta.importProjectFile": null
+    },
+    {
+      "type": "imports",
+      "from": "import-claims-carry-the-reason.css",
+      "target": "reset.css",
+      "meta.sourcePathClaim": null,
+      "meta.importProjectFile": null
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "Lato:400,400i"
+    },
+    {
+      "type": "imports",
+      "target": "figtree/index.css"
+    },
+    {
+      "type": "imports",
+      "target": "tailwindcss"
+    }
+  ]
+}

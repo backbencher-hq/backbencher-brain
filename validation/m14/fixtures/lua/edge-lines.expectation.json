@@ -1,0 +1,62 @@
+{
+  "fixtureId": "lua/edge-lines",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-01/LUA-13/LUA-22, authored from M59 (#825)'s line rule \u2014 the line is where the NAME is written \u2014 not from the analyzer's output. The multi-line call is the falsifier: a whole-line implementation reports the RECEIVER's line and passes every other row in this file, so it is the row that distinguishes the two rules. LUA-22's forbidden row is a payload-as-a-name, the defect class M60 records for other lanes. Line numbers are MEASURED from this committed file.",
+  "expectSymbols": [
+    {
+      "name": "Account"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "caller",
+      "kind": "function"
+    },
+    {
+      "name": "dynamic",
+      "kind": "function"
+    }
+  ],
+  "forbidSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "helper",
+      "line_number": 23,
+      "comment": "a plain call sits on its own line"
+    },
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "method",
+      "line_number": 26,
+      "comment": "LUA-13: the CALLEE's line. The dot_index_expression opens on the `obj` line, so a whole-line implementation reports that instead and fails here."
+    },
+    {
+      "type": "contains",
+      "from": "caller",
+      "target": "obj",
+      "line_number": 24,
+      "comment": "a contains edge and its symbol must agree about the line"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "caller",
+      "target": "method",
+      "line_number": 25,
+      "comment": "LUA-01 pre-fix shape: the RECEIVER's line, where the method name is written nowhere"
+    },
+    {
+      "type": "calls",
+      "from": "dynamic",
+      "target": "dao[key]",
+      "comment": "LUA-22: a computed index is an expression, not a name; publishing it is a payload masquerading as a name"
+    }
+  ]
+}

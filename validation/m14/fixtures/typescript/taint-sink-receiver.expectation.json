@@ -1,0 +1,56 @@
+{
+  "fixtureId": "typescript/taint-sink-receiver",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS taint SINKS as receiver-based, the family contract (java: stmt.executeQuery; python: cursor.execute — never a bare execute()). Pre-fix the rules matched a bare name or a bare LEAF, so `re.exec(input)` (RegExp.prototype.exec), a project-local `execute(q)` and `this.spawn(cmd)` were all reported as command_injection / sql_injection. This is not a payload-only defect: parallel-indexer multiplies every taint SOURCE by every SINK in a symbol into brain_taint_flow and bb_security reports that table, so one `req.body` read beside a `.exec()` call manufactured a persisted command-injection finding. The `danger` entry is the shape that made it a security finding: same user input, but a REAL child_process sink, which must still flow. TRUE-POSITIVE retention is pinned as carefully as the fix: a bare `exec(cmd)` is a sink only because THIS file imports child_process (the AST evidence, gathered in the same single walk the React gate already paid for), the db-shaped member call, and res/fs rules which were already receiver-shaped and are untouched. This fixture also required adding the expectTaintSinks GATE itself — the sink payload had no gate at all before this wave, which is why the false positive was never checkable.",
+  "expectSymbols": [
+    { "name": "parsePattern", "kind": "function" },
+    { "name": "runJob", "kind": "function" },
+    { "name": "Runner", "kind": "class" },
+    { "name": "runShell", "kind": "function" },
+    { "name": "findUser", "kind": "function" },
+    { "name": "danger", "kind": "function" }
+  ],
+  "expectTaintSinks": [
+    {
+      "symbol": "runShell",
+      "includes": ["exec(cmd)"],
+      "includesVuln": ["command_injection"],
+      "note": "TRUE POSITIVE, and the hard one: a BARE exec-family name. It qualifies only because this file imports node:child_process — the signal the rule reads off the AST, replacing the pre-fix 'any bare exec is a shell' shortcut."
+    },
+    {
+      "symbol": "findUser",
+      "includes": ["db.query(id)"],
+      "includesVuln": ["sql_injection"],
+      "note": "TRUE POSITIVE: receiver-based database sink, unchanged by the fix"
+    },
+    {
+      "symbol": "danger",
+      "includes": ["exec(\"ls \" + req.query.dir)"],
+      "includesVuln": ["command_injection"],
+      "note": "THE POINT OF THE FIX: identical user input, but a real sink — the flow must still be reportable. The false positives were not 'too few findings', they were findings attached to the wrong code."
+    },
+    {
+      "symbol": "parsePattern",
+      "notIncludes": ["re.exec(input)"],
+      "notIncludesVuln": ["command_injection"],
+      "note": "FALSE POSITIVE 1: RegExp.prototype.exec is not a shell. Pre-fix this symbol carried a command_injection sink."
+    },
+    {
+      "symbol": "runJob",
+      "notIncludes": ["execute(q)"],
+      "notIncludesVuln": ["sql_injection"],
+      "note": "FALSE POSITIVE 2: the project's own execute()."
+    },
+    {
+      "symbol": "runIt",
+      "ownerName": "Runner",
+      "notIncludes": ["this.spawn(command)"],
+      "notIncludesVuln": ["command_injection"],
+      "note": "FALSE POSITIVE 3: the project's own spawn method — the leaf matched, the receiver did not."
+    }
+  ],
+  "expectTaintSources": [
+    { "symbol": "danger", "includes": ["req.query"] }
+  ]
+}

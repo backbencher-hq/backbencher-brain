@@ -1,0 +1,171 @@
+{
+  "instrument": "xml clause 4 \u2014 store-side determinacy for the types the line test cannot judge",
+  "at": "2026-10-10T23:00:00-04:00",
+  "runLabel": "ONE RUN, ONE INDEX. The store is order- and run-dependent (lane finding 2f2a5bb1f: reversing file order changed 248 of 4,545 bindings (5.46%) on the same 300-file draw with current code; the earlier 96-of-7,825 (1.23%) figure is WITHDRAWN because its denominator held duplicate `contains` rows, which diluted the rate (validation/m14/fixtures/xml/determinism-revision.json); eager-vs-deferred differed 26 vs 29 between runs). No figure here may be compared across runs without re-running.",
+  "population": {
+    "drawn": 2000,
+    "indexed": 1995,
+    "repos": [
+      "libxslt",
+      "dbeaver",
+      "phpunit",
+      "Fabulous"
+    ],
+    "indexMs": 1355942,
+    "labelledBounded": "BOUNDED DRAW, NOT the 11,562-file population. The full-population attempt was KILLED after ~65 minutes: the indexer's own watchdog reported `parent event loop was blocked` repeatedly with `stalledTotalMs 3,906,664`, and the store line count advanced by one in ten minutes. Preserved raw: validation/m14/fixtures/xml/store-intent-split-full-attempt-KILLED.txt"
+  },
+  "thePredicate": {
+    "lineTestTypes": [
+      "contains",
+      "exports"
+    ],
+    "lineTestNA": "references, calls, imports, overrides, extends \u2014 a line-based test is valid ONLY where the edge line IS the target symbol's line, so it is declared N/A for these and never borrowed",
+    "replacement": "the analyzer's own class: `in-document` means the declaration IS in the edge's own file, so a store row bound in ANOTHER file or bound to nothing is a VIOLATION. `builtin`/`external`/`unresolved` are reported separately and never scored."
+  },
+  "perType": {
+    "contains": {
+      "edges": 55914,
+      "bound": 52783,
+      "sameFile": 49732,
+      "otherFile": 3051,
+      "unbound": 3131,
+      "lineSplit": {
+        "intended": 49564,
+        "sameFileOffLine": 168,
+        "arbitraryTwin": 3051,
+        "unbound": 3131
+      },
+      "violations": 0,
+      "note": "line test applies: 88.6% of containment edges are intended (own file AND own line)"
+    },
+    "references": {
+      "edges": 3324,
+      "bound": 2456,
+      "sameFile": 1693,
+      "otherFile": 763,
+      "unbound": 868,
+      "violations": 5,
+      "classSplit": {
+        "in-document": {
+          "edges": 1697,
+          "sameFile": 1692,
+          "otherFile": 5,
+          "unbound": 0
+        },
+        "builtin": {
+          "edges": 1613,
+          "sameFile": 1,
+          "otherFile": 755,
+          "unbound": 857
+        },
+        "unresolved": {
+          "edges": 14,
+          "sameFile": 0,
+          "otherFile": 3,
+          "unbound": 11
+        }
+      },
+      "note": "determinate: the 1,697 `in-document` edges bind in their own file except 5. The builtin/unresolved cross-file and unbound counts are the EXPECTED shape, not violations."
+    },
+    "extends": {
+      "edges": 560,
+      "bound": 560,
+      "sameFile": 387,
+      "otherFile": 173,
+      "unbound": 0,
+      "violations": 0,
+      "classSplit": {
+        "in-document": {
+          "edges": 387,
+          "sameFile": 387,
+          "otherFile": 0
+        },
+        "builtin": {
+          "edges": 173,
+          "sameFile": 0,
+          "otherFile": 173
+        }
+      },
+      "note": "determinate: every in-document derivation base binds in its own file; every builtin base binds elsewhere, which is correct."
+    },
+    "calls": {
+      "edges": 388,
+      "bound": 388,
+      "sameFile": 250,
+      "otherFile": 138,
+      "unbound": 0,
+      "violations": 138,
+      "classSplit": {
+        "in-document": {
+          "edges": 388,
+          "sameFile": 250,
+          "otherFile": 138
+        }
+      },
+      "note": "NOT DETERMINATE. Every calls edge is class `in-document`, and 138 of 388 (35.6%) bind to a declaration in ANOTHER file \u2014 the store ignoring a declaration the analyzer states is in the edge's own file. This is the counter-evidence kept open in the `calls` ruling, now measured on a bounded draw: it REPRODUCES the 138/400 libxslt figure exactly."
+    },
+    "imports": {
+      "edges": 138,
+      "bound": 33,
+      "sameFile": 2,
+      "otherFile": 31,
+      "unbound": 105,
+      "violations": 3,
+      "classSplit": {
+        "in-document": {
+          "edges": 3,
+          "sameFile": 0,
+          "otherFile": 0,
+          "unbound": 3
+        },
+        "file": {
+          "edges": 84,
+          "sameFile": 2,
+          "otherFile": 30,
+          "unbound": 52
+        },
+        "external": {
+          "edges": 51,
+          "sameFile": 0,
+          "otherFile": 1,
+          "unbound": 50
+        }
+      },
+      "note": "the 3 `in-document` edges are document-internal hrefs (`#style1`) bound to nothing \u2014 small, but the same violation shape."
+    },
+    "overrides": {
+      "edges": 3,
+      "bound": 3,
+      "sameFile": 2,
+      "otherFile": 1,
+      "unbound": 0,
+      "violations": 1,
+      "classSplit": {
+        "in-document": {
+          "edges": 3,
+          "sameFile": 2,
+          "otherFile": 1
+        }
+      }
+    }
+  },
+  "clause4Answer": {
+    "determinate": "references 1,692 of 1,697 in-document \u00b7 extends 387 of 387 \u00b7 contains 49,564 intended of 55,914 (with 168 same-file-off-line, 3,051 arbitraryTwin, 3,131 unbound)",
+    "violations": {
+      "calls": 138,
+      "references": 5,
+      "imports": 3,
+      "overrides": 1,
+      "total": 147
+    },
+    "verdict": "the clause-4 shortfall is NOT 3,793 unmeasurable edges \u2014 it is 147 edges where the store bound away from a declaration the analyzer states is in the edge's own file, and 138 of those are ONE type (`calls`). The remaining in-document edges are determinate by the class predicate, and the builtin/external/unresolved classes binding cross-file or unbound are the correct shape rather than a defect."
+  },
+  "connectionToTheOpenStoreQuestion": {
+    "hcl": "hcl-lane counted ~11,000 cross-file bindings with no own-file declaration on its lane. Here 138 `calls` edges bind cross-file DESPITE an own-file declaration the analyzer states \u2014 the same store-side mechanism (the eager insert-time resolver deciding against a table that is not complete when the row is written), seen from the other side.",
+    "nextProbe": "a store run that logs, per row, the symbol-table size at insert time would settle the mechanism directly; the order-dependence probe (store-determinism.mts) is the existing control for it."
+  },
+  "raw": [
+    "validation/m14/fixtures/xml/store-intent-split.json",
+    "validation/m14/fixtures/xml/store-intent-split-full-attempt-KILLED.txt"
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "fixtureId": "cpp/receiver-walker-gaps",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE RECEIVER WAVE'S FOUR WALKER GAPS, PINNED AS ROWS — the shapes the closure-verifiable residual names (validation/m14/verification/CPP-RECEIVER-TYPING.md §3e, and the 7,913-row named residual the ledger carries as 'second receiver wave (closure-verifiable coverage gap) · 7,913 · ~1.1 %'). WHAT THIS FIXTURE CAN SEE AND WHAT IT CANNOT: the receiver-typing emission is flag-gated (BB_CPP_INDEX_CONSUME=1) and requires a COMPLETE project index, and the fixture suite runs WITHOUT the flag — by design, so the accepted D1–D6 behaviour stays byte-identical without it. So THIS fixture pins the ROWS, which is the half the suite can see and the half a wave must not disturb: the wave adds RECEIVER EVIDENCE (metadata.owner) to rows that are ALREADY emitted, and a fix that emitted a new row or suppressed an old one would break this fixture. The other half — the owner metadata itself — is pinned in the other direction by the dedicated red-capable control `script/m14/cpp-receiver-wave-verify.ts`, which builds a COMPLETE index over this very fixture with the shipped C++ declaration spec, runs the analyzer with the flag ON, and asserts that EVERY row on every shape's line carries the owner the index says declares the leaf; it also asserts that the flag-ON row set is IDENTICAL to the flag-OFF row set, and that no row carries an owner with the flag OFF. THE SHAPES, one per line of the ruling: a typed local declared where the analyzer's per-function written-type table does not reach it, and a member body whose class scope is not on the scope stack. The measurement that named the gaps (the control, run against this fixture before any fix) says the RANGE-FOR declarator and the MULTI-DECLARATOR'S SECOND NAME are the two the table misses, while the for-init, the C++98 if-init, the out-of-line member body and the lambda-in-a-member-body are REACHED — so the fix is aimed at a MEASURED gap and not at a guess about the grammar. THE MULTI-DECLARATOR'S TWO ROWS ARE THE POINT OF THE SHAPE: `Widget a, b;` is ONE declaration with TWO declarators, and a table that reads a single declarator per declaration gets `a` and loses `b` — which is why the verifier checks EVERY row on the line and not the first one.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class",
+      "note": "the class-like type the whole fixture turns on. It is declared in THIS file so the index built over the fixture holds it, and so the receiver evidence has a real owner to name rather than one nothing owns. THE KIND IS `class` AND NOT `struct` because that is the analyzer's DOCUMENTED C/C++ convention (docs/analyzers/cpp.md: 'classes/structs with bodies -> class'), and the lane's own oracle script/m14/cpp-truth.ts follows it: a C++ struct IS a class in the language's own type system, and the fleet has ONE class-like kind. (The C lane publishes `struct` for a C struct - a different language fact and a different lane's convention.)"
+    },
+    {
+      "name": "draw",
+      "kind": "method",
+      "ownerName": "Widget",
+      "note": "the member every shape calls. The index's inheritance-closed member view declares it, which is the condition the receiver-typing emission requires before it will name an owner. The kind is `method` because it is a class member, not a free function."
+    },
+    {
+      "name": "ok",
+      "kind": "method",
+      "ownerName": "Widget",
+      "note": "the second member, so the for-init shape's condition call has a declared leaf too - the condition of a for-init is a call site like any other."
+    },
+    {
+      "name": "forRange",
+      "kind": "function",
+      "note": "the RANGE-FOR shape: the range-for's declarator is not a `declaration` node, and the measurement says the per-function written-type table does not reach it — so this row's receiver has no owner today."
+    },
+    {
+      "name": "forInit",
+      "kind": "function",
+      "note": "the FOR-INIT shape: the for-statement's initializer IS a declaration node, and the measurement says the table REACHES it — so this shape is the control that says the fix did not have to touch it."
+    },
+    {
+      "name": "ifInit",
+      "kind": "function",
+      "note": "the C++98 IF-INIT shape: the init is an init_declarator under a condition node, and the measurement says the table reaches it in this form."
+    },
+    {
+      "name": "multiDeclarator",
+      "kind": "function",
+      "note": "the MULTI-DECLARATOR shape: one declaration, two names, and the second name is the one a single-declarator read loses."
+    },
+    {
+      "name": "outOfLine",
+      "kind": "method",
+      "ownerName": "Widget",
+      "note": "THE OUT-OF-LINE MEMBER BODY: the definition is outside the class body, and the class scope has to come from the qualified name. The measurement says the scope reaches it."
+    },
+    {
+      "name": "withLambda",
+      "kind": "method",
+      "ownerName": "Widget",
+      "note": "THE LAMBDA-CAPTURED CLASS SCOPE: a lambda inside a member body, whose own scope is not the class's. The measurement says the scope reaches it."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "forRange",
+      "target": "widgets",
+      "line_number": 14,
+      "meta.qualified": "widgets",
+      "note": "the range expression — an ordinary call site, and the row that proves the range-for's BODY is walked at all."
+    },
+    {
+      "type": "calls",
+      "from": "forRange",
+      "target": "draw",
+      "line_number": 14,
+      "meta.qualified": "w.draw",
+      "note": "THE RANGE-FOR'S RECEIVER ROW. The row is emitted today; what is missing is the receiver evidence on it, and the row must STAY exactly this row when it arrives."
+    },
+    {
+      "type": "calls",
+      "from": "forInit",
+      "target": "makeWidget",
+      "line_number": 15,
+      "meta.qualified": "makeWidget",
+      "note": "the initializer's own call site."
+    },
+    {
+      "type": "calls",
+      "from": "forInit",
+      "target": "ok",
+      "line_number": 15,
+      "meta.qualified": "w.ok",
+      "note": "the for-statement's CONDITION is a call site too, and its receiver is the same typed local."
+    },
+    {
+      "type": "calls",
+      "from": "forInit",
+      "target": "draw",
+      "line_number": 15,
+      "meta.qualified": "w.draw",
+      "note": "the body's receiver row for the for-init shape."
+    },
+    {
+      "type": "calls",
+      "from": "ifInit",
+      "target": "makeWidget",
+      "line_number": 16,
+      "meta.qualified": "makeWidget",
+      "note": "the if-statement's initializer call site."
+    },
+    {
+      "type": "calls",
+      "from": "ifInit",
+      "target": "draw",
+      "line_number": 16,
+      "meta.qualified": "w.draw",
+      "note": "the body's receiver row for the if-init shape."
+    },
+    {
+      "type": "calls",
+      "from": "multiDeclarator",
+      "target": "draw",
+      "line_number": 17,
+      "meta.qualified": "a.draw",
+      "note": "THE FIRST DECLARATOR'S ROW — and it is emitted today."
+    },
+    {
+      "type": "calls",
+      "from": "multiDeclarator",
+      "target": "draw",
+      "line_number": 17,
+      "meta.qualified": "b.draw",
+      "note": "THE SECOND DECLARATOR'S ROW — also emitted today, and also WITHOUT the receiver evidence, because the table read one declarator per declaration. Two rows with the same target and the same line and different receivers: a verifier that checked only the first row would pass a fix that fixed one name and lost the other, which is precisely the shape this case is about."
+    },
+    {
+      "type": "calls",
+      "from": "outOfLine",
+      "target": "draw",
+      "line_number": 18,
+      "meta.qualified": "draw",
+      "note": "the IMPLICIT-THIS row: an unqualified call inside an out-of-line member body, whose owner is the class the qualified name names."
+    },
+    {
+      "type": "calls",
+      "from": "withLambda",
+      "target": "draw",
+      "line_number": 19,
+      "meta.qualified": "draw",
+      "note": "the IMPLICIT-THIS row inside a LAMBDA that sits in a member body — the class scope has to survive the lambda's own scope."
+    },
+    {
+      "type": "calls",
+      "from": "withLambda",
+      "target": "l",
+      "line_number": 19,
+      "meta.qualified": "l",
+      "note": "the lambda's own call site, which is NOT a member call: its receiver is a local, and no owner may be invented for it."
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "draw",
+      "note": "the class's membership of the member the receiver evidence names."
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "ok",
+      "note": "the class's membership of the second member."
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "outOfLine",
+      "note": "the class's membership of its OUT-OF-LINE definition — the structural fact the implicit-this case relies on."
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "withLambda",
+      "note": "the class's membership of its out-of-line definition that holds a lambda."
+    }
+  ],
+  "forbidRelationships": [],
+  "forbidSymbols": []
+}

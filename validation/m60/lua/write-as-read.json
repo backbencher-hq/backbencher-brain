@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua-write-as-read",
+  "hypothesis": "a non-first assignment TARGET is published as `uses`/`references`, which is a WRITE, and where the name is also read on the RHS the read is published twice.",
+  "abFixture": {
+    "single": {
+      "source": "local a, b = 1, 2 \\n a = b \\n return a \\n ",
+      "edges": [
+        "uses:global->b@L2",
+        "exports:global->a@L3",
+        "uses:global->a@L3"
+      ],
+      "all": 5
+    },
+    "multi-swap": {
+      "source": "local a, b = 1, 2 \\n a, b = b, a \\n return a \\n ",
+      "edges": [
+        "uses:global->b@L2",
+        "uses:global->a@L2",
+        "exports:global->a@L3"
+      ],
+      "all": 5
+    },
+    "multi-write": {
+      "source": "local a, b = 1, 2 \\n a, b = 3, 4 \\n return a \\n ",
+      "edges": [
+        "exports:global->a@L3",
+        "uses:global->a@L3"
+      ],
+      "all": 4
+    },
+    "multi-member": {
+      "source": "local t = {} \\n function t.reset() end \\n t.a, t.reset = 1, 2 \\n return t \\n ",
+      "edges": [
+        "uses:t.reset->reset@L2",
+        "references:global->a@L3",
+        "uses:global->a@L3",
+        "references:global->reset@L3",
+        "uses:global->reset@L3",
+        "exports:global->t@L4",
+        "uses:global->t@L4"
+      ],
+      "all": 9
+    }
+  },
+  "corpus": {
+    "filesScanned": 3252,
+    "drawMethod": "git ls-files '*.lua' per repo, sorted, first 3252 by path",
+    "multiTargetAssignments": 0,
+    "byTargetCount": {},
+    "secondTargetIsMember": 0,
+    "filesWithMultiTarget": 0,
+    "examples": []
+  },
+  "rootErrorFiles": {
+    "count": 4,
+    "examples": [
+      {
+        "file": "kong/spec/fixtures/invalid-module.lua",
+        "spans": 1
+      },
+      {
+        "file": "nvim-treesitter/tests/indent/lua/cond.lua",
+        "spans": 1
+      },
+      {
+        "file": "nvim-treesitter/tests/indent/lua/func.lua",
+        "spans": 1
+      },
+      {
+        "file": "plenary.nvim/scripts/vararg/rotate.lua",
+        "spans": 16
+      }
+    ]
+  },
+  "writes": {
+    "assignmentStatements": 84354,
+    "targetsTotal": 84354,
+    "targetsIdentifier": 69521,
+    "targetsMember": 14833,
+    "memberTargetExamples": [
+      "docker/contrib/wireshark/memberlist.lua:41 memberlist_protocol.fields",
+      "docker/contrib/wireshark/memberlist.lua:59 memberlist_protocol.prefs.userdata_dissector",
+      "docker/contrib/wireshark/memberlist.lua:60 memberlist_protocol.prefs.ports",
+      "docker/contrib/wireshark/memberlist.lua:61 memberlist_protocol.prefs.keylog",
+      "docker/contrib/wireshark/memberlist.lua:126 pinfo.cols.protocol",
+      "docker/contrib/wireshark/memberlist.lua:240 default_settings.ports",
+      "docker/contrib/wireshark/memberlist.lua:312 suffix[hi]",
+      "docker/contrib/wireshark/memberlist.lua:313 prefix[hi]",
+      "docker/contrib/wireshark/memberlist.lua:342 suffix[hi]",
+      "docker/contrib/wireshark/memberlist.lua:343 prefix[hi]",
+      "docker/contrib/wireshark/memberlist.lua:418 elements[i]",
+      "docker/contrib/wireshark/memberlist.lua:428 elements[key]",
+      "docker/contrib/wireshark/memberlist.lua:515 decoder_functions[i]",
+      "docker/contrib/wireshark/memberlist.lua:520 decoder_functions[i]",
+      "docker/contrib/wireshark/memberlist.lua:525 decoder_functions[i]",
+      "docker/contrib/wireshark/memberlist.lua:530 decoder_functions[i]",
+      "docker/contrib/wireshark/memberlist.lua:536 decoder_functions[i]",
+      "docker/contrib/wireshark/memberlist.lua:565 values[#values + 1]",
+      "docker/contrib/wireshark/moby-networkdb.lua:23 pinfo.private[\"pb_msg_type\"]",
+      "docker/contrib/wireshark/moby-networkdb.lua:33 pinfo.private[\"pb_msg_type\"]",
+      "docker/contrib/wireshark/moby-networkdb.lua:50 pinfo.private[\"pb_msg_type\"]",
+      "kong/.ci/luacov-stats-aggregator.lua:36 loaded_stats[#loaded_stats + 1]",
+      "kong/.ci/luacov-stats-aggregator.lua:53 rel_stat_data[f_name]",
+      "kong/.ci/luacov-stats-aggregator.lua:56 luacov_runner.data",
+      "kong/autodoc/cli/data.lua:3 data.header"
+    ],
+    "memberTargetAlsoRead": 4461
+  },
+  "memberReads": {
+    "total": 199322,
+    "examples": [
+      "docker/contrib/wireshark/memberlist.lua:22 ProtoField.uint8",
+      "docker/contrib/wireshark/memberlist.lua:22 base.DEC",
+      "docker/contrib/wireshark/memberlist.lua:24 ProtoField.uint32",
+      "docker/contrib/wireshark/memberlist.lua:24 base.HEX",
+      "docker/contrib/wireshark/memberlist.lua:26 ProtoField.uint8",
+      "docker/contrib/wireshark/memberlist.lua:26 base.DEC",
+      "docker/contrib/wireshark/memberlist.lua:27 ProtoField.string",
+      "docker/contrib/wireshark/memberlist.lua:29 ProtoField.uint8",
+      "docker/contrib/wireshark/memberlist.lua:29 base.DEC",
+      "docker/contrib/wireshark/memberlist.lua:30 ProtoField.bytes"
+    ]
+  }
+}

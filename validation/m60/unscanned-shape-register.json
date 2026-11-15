@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "instrument": "script/m60/unscanned-shape-census.ts",
+    "artifact": "validation/m60/results/unscanned-shapes.json",
+    "question": "Which node types the pinned grammar PRODUCES does a lane's analyzer never name, where they occur under a parent the analyzer does read? (the inverse of F1's dead-literal register)",
+    "statuses": {
+      "open": "measured, adjudicated as a real question for the lane's owner, not yet paid",
+      "paid": "fixed; a paid entry whose shape is still present FAILS the census",
+      "exempt": "ruled not-a-finding, with the reason and the measurement; the occurrence count is a shrink-only baseline"
+    },
+    "growthRule": "a registered entry whose occurrences GREW fails the census (a new shape arrived at a known site), and a `paid` entry whose shape is still present fails",
+    "staging": {
+      "current": "an UNREGISTERED entry with >= 25 occurrences is PRINTED as a worklist, not failed on",
+      "why": "the census is new and 23 lanes' lists have not been adjudicated lane by lane; failing on unadjudicated noise would be the mirror of the 'gate that cannot fail' class this program keeps finding",
+      "next": "once every lane's list carries a ruling, UNREGISTERED becomes a hard failure — the same progression F1 took (counts-only v1, then the per-literal register that fails)",
+      "ownerToAsk": "each lane's owner; the list is in the artifact under `lanes[<lang>].scannerEdges`"
+    },
+    "ruledNoiseClasses": {
+      "keyword-token": "a single-word candidate whose text is one of the grammar's anonymous tokens (csharp `true`/`this`/`private`/`override`, kotlin `val`/`this`, typescript `string`/`number`/`any`). Ruled by the instrument itself, not by a list: see isCandidateChild. Partial by admission — javascript's grammar models `true`/`false`/`null` as NAMED nodes, so that lane's worklist keeps them.",
+      "expression-shape": "an expression node whose text happens to be name-shaped (`subscript_expression` `data_[0]`, `index_expression` `commit_id[0]`, `lookup_type` `T[K]`, `comparison_expression` `diff < 0`). These are values in the position, not names the position lost; the expression grammar is the analyzers' own concern (calls/uses passes), not a type-position gap.",
+      "container-shape": "a container or clause node (`statements`, `string_content`, `left_assignment_list`, `pattern_list`, `map_item`, `pair`, `type_qualifier`, `primitive_type`). Structural, never a declared name.",
+      "note": "these three classes are why the census's verdict is `reported`, never `convicted`: the worklist is a generator of questions, and the register is where the answers live. A lane owner may register any entry of their list as `exempt` with the measurement that justifies it."
+    }
+  },
+  "csharp:method_declaration>explicit_interface_specifier": {
+  "status": "paid",
+  "owner": "csharp",
+  "occurrences": 3,
+  "paidBy": {
+    "round": "reviews/m60-c923-interface-member-round.md",
+    "issue": "#923",
+    "at": "2026-09-23",
+    "what": "the analyzer now NAMES `explicit_interface_specifier` (RealCSharpAnalyzer.explicitInterfaceName), so the scanner edge this entry registers no longer exists — the `paid` status is claimed against a census re-run, not against intent",
+    "label": "`overrides Owner.member -> Interface.member`, the family's own five-lane precedent (java/kotlin/typescript/dart/python, measured by script/m14/tmp/c923-family-member-edge-probe.ts) — NOT the class-level `implements`, which stays a type-level edge",
+    "scope": "explicit form ALWAYS (356 members in the two corpora's full extent, 215 of them naming an interface no corpus file declares — so requiring resolution would drop 60% of a class that needs none); implicit form only where the interface is declared in the same file (231 members), because that is the only case a per-file analyzer can know the contract in; 280 cross-file members and 2,107 external-contract types are DISCLOSED as the remaining scope limit, not guessed at",
+    "evidence": "script/m60/c923-interface-member-census.ts (the boundary measurement) + script/m60/verify-c923-interface-members.ts (tree-derivation vs lane vs oracle, both directions, exact per-file reconciliation) + validation/m14/fixtures/csharp/interface-member-implementation.{cs,expectation.json} (both forms, both chains, four refusals, exact counts) + mutants csharp/interface-member-contract-dropped and csharp/interface-member-conforming-dropped, each CAUGHT by that fixture"
+  },
+    "shape": "an explicit interface implementation — `int IVsProjectFlavorCfg.get_CfgType(ref Guid, out IntPtr)`, `string ICmdletProviderSupportsHelp.GetHelpMaml(...)`. The pinned grammar gives the declaration an `explicit_interface_specifier` child (`IVsProjectFlavorCfg.`), a node type this analyzer never names.",
+    "measured": {
+      "census": "script/m60/unscanned-shape-census.ts, 64-file draw (powershell 40 + fsharp 24), 3 occurrences; the ONLY entry in csharp's worklist — every other lane's list is dominated by the ruled noise classes",
+      "probe": "script/m14/tmp/cs-explicit-interface-probe.ts",
+      "finding": "the member publishes as the bare name (`GetName`, `get_CfgType`, kind=method, owner=<class>) and NO edge records the interface member it implements: `string IThing.GetName()` produces `contains` + the class-level `implements`, nothing else. The IMPLICIT form (`public string GetName()` on a class declaring `: IThing`) publishes the same absence — so the gap is a member-level implements/overrides contract for interface members, not a shape-specific spelling bug",
+      "whyNotFixedHere": "the fix is a new member-level edge class (label choice, the written-but-possibly-external interface target, oracle mirror, fixture, mutants, differential re-run) — a round of its own, not a line in the census round. Recorded here so the census keeps it visible"
+    },
+    "adjudicationQuestion": "the family standard: java's legitimate `Monad.map -> Functor.map` shows member-level interface edges exist in the family. csharp's EXPLICIT form writes the interface in the source, so the edge is derivable without resolution (`Interface.member`); the implicit form is not derivable in a single-file analyzer. Decide whether the lane publishes the explicit subset, and under which label (`implements`, matching the class-level edge, or `overrides`, matching the method-override contract)."
+  }
+}

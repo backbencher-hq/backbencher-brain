@@ -1,0 +1,91 @@
+{
+  "fixtureId": "xml/pi-and-stylesheet",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, findings G1 and D2. A processing instruction WITH CONTENT did not parse at all before the grammar repair: `common/scanner.h`'s `advance_if_eq` is `if (!eof && lookahead==chr) advance(); else return false`, so the trailing `advance_if_eq(lexer,'\\n')` inside `scan_pi_content` \u2014 pure lookahead, already past `mark_end` \u2014 aborted the whole `_pi_content` token whenever the byte after `?>` was not a newline. `<?catalog-processing build=\"12\"?>` became an ERROR node, and with no XMLDecl present the enclosing `prolog` disappeared too. The shipped M12 contract check for PI extraction used `<?catalog-processing?>` \u2014 the ONE spelling the broken grammar handled \u2014 so the lane read green while its most common construct was unparseable; that is why this fixture exists and why coverage has to be measured on the construct rather than its nearest neighbour. The `xml-stylesheet` and `xml-model` PIs are the grammar's own external-token node types, so the `PI` branch never sees them, and their `href` is a FILE reference between two files in a project. Lines are read off the file: the PI 2, the stylesheet 3, the nested PI 5.",
+  "expectSymbols": [
+    {
+      "name": "catalog-processing",
+      "kind": "module",
+      "meta.isProcessingInstruction": true,
+      "meta.target": "catalog-processing"
+    },
+    {
+      "name": "xml-stylesheet",
+      "kind": "module",
+      "meta.pseudoInstruction": true,
+      "meta.target": "xml-stylesheet"
+    },
+    {
+      "name": "type",
+      "kind": "property",
+      "ownerName": "xml-stylesheet"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "ownerName": "xml-stylesheet"
+    },
+    {
+      "name": "render",
+      "kind": "module",
+      "ownerName": "catalog"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "xml-stylesheet",
+      "target": "type",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "xml-stylesheet",
+      "target": "title",
+      "line_number": 3
+    },
+    {
+      "type": "imports",
+      "from": "xml-stylesheet",
+      "target": "catalog.xsl",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "render",
+      "line_number": 5
+    }
+  ],
+  "expectImports": [
+    {
+      "path": "catalog.xsl",
+      "importType": "xml-stylesheet"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "xml-stylesheet",
+      "target": "title",
+      "note": "`title=\"Catalog\"` is a pseudo-ATTRIBUTE VALUE, not a path; only href is a file reference"
+    },
+    {
+      "type": "imports",
+      "from": "xml-stylesheet",
+      "target": "text/xsl",
+      "note": "`type=\"text/xsl\"` is the stylesheet's media type, not a path"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "xml",
+      "note": "`xml` is reserved: the grammar makes it an XMLDecl, and a PI target that lower-cases to it is a declaration, not an instruction"
+    },
+    {
+      "name": "xml-model",
+      "note": "this fixture has no xml-model PI; pinned in the m12 contract probe instead"
+    }
+  ]
+}

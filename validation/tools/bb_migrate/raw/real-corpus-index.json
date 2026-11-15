@@ -1,0 +1,194 @@
+{
+ "indexedAt": "2026-11-02T04:27:11.535Z",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/realdata",
+ "repos": [
+  {
+   "id": "elixir",
+   "dir": "/home/ishaq2321/bb_tests/repositories/elixir",
+   "note": "Elixir source with an Erlang-in-Elixir tree — the cross-language pair",
+   "projectId": "a0e74040fb5c01a56dabd69d78711044402b104e",
+   "indexMs": 275923,
+   "counts": {
+    "files": 692,
+    "symbols": 14725,
+    "relationships": 77697,
+    "imports": 979
+   },
+   "crossLanguageRelationships": 714,
+   "byLanguage": [
+    {
+     "language": "elixir",
+     "symbols": 10722
+    },
+    {
+     "language": "markdown",
+     "symbols": 1446
+    },
+    {
+     "language": "yaml",
+     "symbols": 1225
+    },
+    {
+     "language": "erlang",
+     "symbols": 1215
+    },
+    {
+     "language": "make",
+     "symbols": 80
+    },
+    {
+     "language": "json",
+     "symbols": 23
+    },
+    {
+     "language": "kotlin",
+     "symbols": 8
+    },
+    {
+     "language": "bash",
+     "symbols": 6
+    }
+   ]
+  },
+  {
+   "id": "rebar3",
+   "dir": "/home/ishaq2321/bb_tests/repositories/rebar3",
+   "note": "Erlang (rebar3) — erlang -> elixir is a registered route",
+   "projectId": "f542cf36820e749046766ff9bede22e70d5990e7",
+   "indexMs": 74854,
+   "counts": {
+    "files": 303,
+    "symbols": 7012,
+    "relationships": 38143,
+    "imports": 308
+   },
+   "crossLanguageRelationships": 36,
+   "byLanguage": [
+    {
+     "language": "erlang",
+     "symbols": 6247
+    },
+    {
+     "language": "yaml",
+     "symbols": 281
+    },
+    {
+     "language": "markdown",
+     "symbols": 240
+    },
+    {
+     "language": "bash",
+     "symbols": 205
+    },
+    {
+     "language": "make",
+     "symbols": 34
+    },
+    {
+     "language": "elixir",
+     "symbols": 4
+    },
+    {
+     "language": "powershell",
+     "symbols": 1
+    }
+   ]
+  },
+  {
+   "id": "clojure",
+   "dir": "/home/ishaq2321/bb_tests/repositories/clojure",
+   "note": "Clojure — clojure -> typescript is a registered route",
+   "projectId": "e7061750d7a40bd40cedb55a73ad049dd9f40a37",
+   "indexMs": 102829,
+   "counts": {
+    "files": 347,
+    "symbols": 12764,
+    "relationships": 65458,
+    "imports": 944
+   },
+   "crossLanguageRelationships": 2759,
+   "byLanguage": [
+    {
+     "language": "java",
+     "symbols": 7621
+    },
+    {
+     "language": "clojure",
+     "symbols": 3998
+    },
+    {
+     "language": "xml",
+     "symbols": 654
+    },
+    {
+     "language": "markdown",
+     "symbols": 359
+    },
+    {
+     "language": "yaml",
+     "symbols": 124
+    },
+    {
+     "language": "html",
+     "symbols": 7
+    },
+    {
+     "language": "bash",
+     "symbols": 1
+    }
+   ]
+  },
+  {
+   "id": "graphql-js",
+   "dir": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+   "note": "JavaScript — javascript -> python/ts are registered routes",
+   "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+   "indexMs": 102907,
+   "counts": {
+    "files": 564,
+    "symbols": 13620,
+    "relationships": 61917,
+    "imports": 4780
+   },
+   "crossLanguageRelationships": 980,
+   "byLanguage": [
+    {
+     "language": "typescript",
+     "symbols": 8407
+    },
+    {
+     "language": "graphql",
+     "symbols": 3251
+    },
+    {
+     "language": "yaml",
+     "symbols": 588
+    },
+    {
+     "language": "javascript",
+     "symbols": 544
+    },
+    {
+     "language": "json",
+     "symbols": 471
+    },
+    {
+     "language": "css",
+     "symbols": 147
+    },
+    {
+     "language": "xml",
+     "symbols": 112
+    },
+    {
+     "language": "markdown",
+     "symbols": 79
+    },
+    {
+     "language": "tsx",
+     "symbols": 21
+    }
+   ]
+  }
+ ]
+}

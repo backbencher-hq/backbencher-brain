@@ -23,7 +23,7 @@
     "A1-SOURCE: the served line's own text usually NAMES the callee — a rate near zero would mean the store's lines are unrelated to their rows and the differential above would be arithmetically right and semantically empty"
   ],
   "index": {
-    "path": "$HOME/.bb/projects/php-store-census-1791476878516-641485/brain.db",
+    "path": "/home/ishaq2321/.bb/projects/php-store-census-1791476878516-641485/brain.db",
     "mtime": "2026-10-08T16:30:42.331Z",
     "selectionRule": "most relationship rows (326968), ties broken by path",
     "selectionCaveat": "machine-local: these numbers describe ONE index on ONE machine. Reproducing them elsewhere needs `--db` pointed at an equivalent index. The rule is declared and deterministic (most relationship rows, ties by path) so two runs on an unchanged store read the same input — the first version of this harness picked the NEWEST index by mtime and two consecutive runs read different stores (601 checked positions vs 7), which is the §8.2 failure one level up: a byte-stable record carrying an unstable claim."

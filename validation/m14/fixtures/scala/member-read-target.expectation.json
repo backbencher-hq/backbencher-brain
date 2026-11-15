@@ -1,0 +1,24 @@
+{
+  "fixtureId": "scala/member-read-target",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Found by the M49 W15 family-parity gate (G9, construct `member-read-through-receiver`), not by any lane or per-language review: `this.count` emitted `uses read -> this` — the edge targeted the literal KEYWORD, so the member read was invisible AND the target named no symbol in the graph. The F5 lane cannot see this by construction (its comparison is site-agnostic — label+target only — and scala's lane does not compare `uses` at all). Probe-verified across 13 analyzers: java, javascript, typescript, swift, python, dart, cpp, csharp, php, go and rust all emit `<method> -> count`; scala alone emitted `<method> -> this`. Contract after the fix: a SELF receiver resolves to the member leaf; any other receiver keeps the base-variable read (reading `h.value` also reads `h`); a call callee stays a calls edge.",
+  "expectSymbols": [
+    { "name": "Store", "kind": "class" },
+    { "name": "count", "kind": "constant", "ownerName": "Store" },
+    { "name": "read", "kind": "method", "ownerName": "Store" },
+    { "name": "viaBlock", "kind": "method", "ownerName": "Store" },
+    { "name": "other", "kind": "method", "ownerName": "Store" },
+    { "name": "Holder", "kind": "class" },
+    { "name": "value", "kind": "constant", "ownerName": "Holder" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "read", "target": "count", "note": "pre-fix: `uses read -> this`" },
+    { "type": "uses", "source": "viaBlock", "target": "count", "note": "the same read through a block body" },
+    { "type": "uses", "source": "other", "target": "h", "note": "a NON-self receiver keeps the base-variable read" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "target": "this", "note": "a keyword is not a symbol — this was the defect target (mutant scala/self-target-revert reproduces it)" },
+    { "type": "uses", "target": "super" }
+  ]
+}

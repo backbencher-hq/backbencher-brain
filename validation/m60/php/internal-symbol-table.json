@@ -1,0 +1,59 @@
+{
+  "instrument": "validation/m14/fixtures/php/internal-symbol-table.mts",
+  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "phpSrc": {
+    "repo": "https://github.com/php/php-src",
+    "commit": "91b93bcce489106e4e01c392271e68c78cb9b6a4",
+    "date": "2026-10-05T20:12:24-04:00",
+    "stubFiles": 107
+  },
+  "parsed": {
+    "functions": 2389,
+    "classes": 280,
+    "constants": 3733,
+    "constructs": 92,
+    "union": 6493,
+    "namespacedDeclarationsSkipped": 140,
+    "stubParseFailures": 0
+  },
+  "keywordsFrom": "Zend/zend_language_parser.y",
+  "superglobalsDeclaredNotDerived": [
+    "GLOBALS",
+    "_SERVER",
+    "_GET",
+    "_POST",
+    "_FILES",
+    "_COOKIE",
+    "_SESSION",
+    "_REQUEST",
+    "_ENV"
+  ],
+  "coreConstantsFrom": {
+    "headers": [
+      "main/php.h",
+      "Zend/zend.h",
+      "main/php_globals.h"
+    ],
+    "linesScanned": 1053,
+    "admitted": 116,
+    "filter": "SHOUTING-CASE identifier after #define",
+    "notFromStubs": 0
+  },
+  "overlaps": {
+    "functionAndClass": 0,
+    "functionAndConstant": 0,
+    "classAndConstant": 0,
+    "functionAndConstruct": 1,
+    "classAndConstruct": 0
+  },
+  "guard": {
+    "ran": false,
+    "corpusArtifact": "validation/m60/php/ambiguity-split.json",
+    "publishedNames": 0,
+    "collisions": {}
+  },
+  "writes": {
+    "module": "src/ast/php-internal-symbols.ts",
+    "moduleBytes": 140478
+  }
+}

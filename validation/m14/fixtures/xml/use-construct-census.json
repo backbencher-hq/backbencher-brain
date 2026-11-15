@@ -1,0 +1,2665 @@
+{
+  "instrument": "use-construct-population",
+  "question": "over the admitted xml corpus, what elements and attributes carry a local name containing 'use'; which of their values name a definition the same file declares; and does each site have the declared scope a `uses` edge would need as its source?",
+  "sampling": "every admitted file",
+  "filesAdmitted": 11552,
+  "filesWalkedByTree": 11552,
+  "filesContainingAtLeastOneUseSite": 498,
+  "filesWalkedByProductionParseFile": 498,
+  "filesRejectedByProductionParseFile": 0,
+  "treeParseFailures": 0,
+  "denominatorForStoreResolution": "files containing at least one use site; the tree walk covers every walked file, production parseFile covers only these",
+  "distinctShapes": 85,
+  "totalSites": 16196,
+  "rows": [
+    {
+      "shape": "element | http://www.w3.org/2000/svg | use on http://www.w3.org/2000/svg:use",
+      "sites": 4061,
+      "files": 154,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:80"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@xlink:href on http://www.w3.org/2000/svg:use",
+      "sites": 4054,
+      "files": 150,
+      "tokens": 4054,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 4054,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "#m6bb809386a",
+        "#m2daa2affb1",
+        "#DejaVuSans-30",
+        "#m6bb809386a"
+      ],
+      "evidence": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:80"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/2001/XMLSchema | use on http://www.w3.org/2001/XMLSchema:attribute",
+      "sites": 2446,
+      "files": 87,
+      "tokens": 2446,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 21,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2425,
+      "documentResolutionPct": 0.9,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "required",
+        "required",
+        "required",
+        "required"
+      ],
+      "evidence": [
+        "FSharp.Data/docs/data/po.xsd:63",
+        "FSharp.Data/tests/FSharp.Data.Tests/Data/po.xsd:63",
+        "FSharp.Data/tests/FSharp.Data.Tests/Data/shared-types.xsd:13"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@y on http://www.w3.org/2000/svg:use",
+      "sites": 2022,
+      "files": 51,
+      "tokens": 2022,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2022,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "264.945354",
+        "15.754646",
+        "264.945354",
+        "15.754646"
+      ],
+      "evidence": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:92"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@x on http://www.w3.org/2000/svg:use",
+      "sites": 950,
+      "files": 31,
+      "tokens": 950,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 950,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "15.964646",
+        "15.964646",
+        "103.795448",
+        "103.795448"
+      ],
+      "evidence": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:92"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@width on http://www.w3.org/2000/svg:use",
+      "sites": 427,
+      "files": 62,
+      "tokens": 427,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 427,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "37.917px",
+        "600",
+        "600",
+        "600"
+      ],
+      "evidence": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/image_def.svg:6",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@height on http://www.w3.org/2000/svg:use",
+      "sites": 427,
+      "files": 62,
+      "tokens": 427,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 427,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "33.917px",
+        "300",
+        "300",
+        "300"
+      ],
+      "evidence": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/image_def.svg:6",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@transform on http://www.w3.org/2000/svg:use",
+      "sites": 329,
+      "files": 68,
+      "tokens": 857,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 857,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "matrix(1.26636 0 0 1.21929 2230 -75.7038)",
+        "matrix(1.41534 0 0 1.21834 2226 -112)",
+        "scale(0.5)",
+        "scale(0.5)"
+      ],
+      "evidence": [
+        "element-plus/docs/public/images/duohui.svg:12",
+        "element-plus/docs/public/images/duohui.svg:15",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:18"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:block",
+      "sites": 216,
+      "files": 8,
+      "tokens": 216,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 1,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 215,
+      "documentResolutionPct": 0.5,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "title-style",
+        "toc.margin.properties",
+        "toc.margin.properties",
+        "component.title.properties"
+      ],
+      "evidence": [
+        "libxslt/tests/REC/test-7.1.4.xsl:7",
+        "libxslt/tests/docbook/fo/autotoc.xsl:25",
+        "libxslt/tests/docbook/fo/autotoc.xsl:37"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):div",
+      "sites": 200,
+      "files": 1,
+      "tokens": 200,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 200,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "article.titlepage.recto.style",
+        "article.titlepage.recto.style",
+        "article.titlepage.recto.style",
+        "article.titlepage.recto.style"
+      ],
+      "evidence": [
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:87",
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:93",
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:99"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-permission on (none):uses-permission",
+      "sites": 177,
+      "files": 141,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "Fabulous/samples/avalonia/Component/CounterApp/Platform/Android/AndroidManifest.xml:3",
+        "Fabulous/samples/avalonia/Component/DrawingApp/Platform/Android/AndroidManifest.xml:3",
+        "Fabulous/samples/avalonia/Component/MultiWindow/Platform/Android/AndroidManifest.xml:3"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-permission@android:name on (none):uses-permission",
+      "sites": 177,
+      "files": 141,
+      "tokens": 177,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 177,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "android.permission.INTERNET",
+        "android.permission.INTERNET",
+        "android.permission.INTERNET",
+        "android.permission.INTERNET"
+      ],
+      "evidence": [
+        "Fabulous/samples/avalonia/Component/CounterApp/Platform/Android/AndroidManifest.xml:3",
+        "Fabulous/samples/avalonia/Component/DrawingApp/Platform/Android/AndroidManifest.xml:3",
+        "Fabulous/samples/avalonia/Component/MultiWindow/Platform/Android/AndroidManifest.xml:3"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@id on http://www.w3.org/2000/svg:use",
+      "sites": 74,
+      "files": 11,
+      "tokens": 74,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 74,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "g19-49",
+        "g19-50",
+        "g19-52",
+        "g19-53"
+      ],
+      "evidence": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:18",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:19",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:20"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@fill on http://www.w3.org/2000/svg:use",
+      "sites": 64,
+      "files": 21,
+      "tokens": 64,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 64,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "#3F96C2",
+        "url(#linearGradient-1)",
+        "#37C1E0",
+        "url(#linearGradient-1)"
+      ],
+      "evidence": [
+        "FSharpPlus/docsrc/content/img/logo-color.svg:18",
+        "FSharpPlus/docsrc/content/img/logo-color.svg:19",
+        "FSharpPlus/docsrc/content/img/logo-color.svg:22"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use on http://www.w3.org/1999/XSL/Transform:key",
+      "sites": 56,
+      "files": 25,
+      "tokens": 122,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 122,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "@name",
+        "@name",
+        "@name",
+        "@id"
+      ],
+      "evidence": [
+        "dbeaver/product/repositories/org.jkiss.dbeaver.ce.repository/siteTemplate/web/site.xsl:3",
+        "libxslt/doc/EXSLT/devhelp/devhelp2.xsl:14",
+        "libxslt/doc/devhelp/devhelp2.xsl:14"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@style on http://www.w3.org/2000/svg:use",
+      "sites": 48,
+      "files": 5,
+      "tokens": 51,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 51,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "stroke:#000000;",
+        "stroke:#000000;",
+        "stroke:#000000;",
+        "stroke:#000000;"
+      ],
+      "evidence": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:92"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-style on (none):style",
+      "sites": 46,
+      "files": 7,
+      "tokens": 46,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 46,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "def:identifier",
+        "def:string",
+        "def:keyword",
+        "def:preprocessor"
+      ],
+      "evidence": [
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml:88",
+        "Aporia/share/gtksourceview-2.0/styles/darknim.xml:100",
+        "Aporia/share/gtksourceview-2.0/styles/darknim.xml:101"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@inkscape:tiled-clone-of on http://www.w3.org/2000/svg:use",
+      "sites": 46,
+      "files": 2,
+      "tokens": 46,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 46,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "#path3006",
+        "#path3006",
+        "#path3006",
+        "#path3006"
+      ],
+      "evidence": [
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:222"
+      ]
+    },
+    {
+      "shape": "element | (none) | PossiblyUnusedReturnValue on (none):PossiblyUnusedReturnValue",
+      "sites": 36,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "phpmyadmin/psalm-baseline.xml:28",
+        "phpmyadmin/psalm-baseline.xml:586",
+        "phpmyadmin/psalm-baseline.xml:668"
+      ]
+    },
+    {
+      "shape": "element | http://schemas.microsoft.com/visio/2003/SVGExtensions/ | userDefs on http://schemas.microsoft.com/visio/2003/SVGExtensions/:userDefs",
+      "sites": 35,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "powershell/docs/community/process_diagram.svg:8",
+        "powershell/docs/community/process_diagram.svg:73",
+        "powershell/docs/community/process_diagram.svg:100"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | useURL on (none):driver",
+      "sites": 33,
+      "files": 8,
+      "tokens": 33,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 33,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "false",
+        "false",
+        "false",
+        "false"
+      ],
+      "evidence": [
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.db2/plugin.xml:438",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.dameng/plugin.xml:231",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.exasol/plugin.xml:432"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use-attribute-sets on http://www.w3.org/1999/XSL/Transform:attribute-set",
+      "sites": 33,
+      "files": 8,
+      "tokens": 33,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 31,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 93.9,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "normal.para.spacing",
+        "verbatim.properties",
+        "section.titlepage.recto.style",
+        "section.titlepage.verso.style"
+      ],
+      "evidence": [
+        "libxslt/tests/docbook/fo/param.xsl:143",
+        "libxslt/tests/docbook/fo/param.xsl:218",
+        "libxslt/tests/docbook/fo/titlepage.xsl:73"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | defaultUser on (none):driver",
+      "sites": 32,
+      "files": 16,
+      "tokens": 32,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 2,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 30,
+      "documentResolutionPct": 6.3,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "SYS",
+        "SYSDBA",
+        "admin",
+        "root"
+      ],
+      "evidence": [
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.altibase/plugin.xml:28",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.dameng/plugin.xml:231",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.denodo/plugin.xml:30"
+      ]
+    },
+    {
+      "shape": "element | (none) | userinput on (none):userinput",
+      "sites": 28,
+      "files": 7,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "libxslt/doc/tutorial2/libxslt_pipes.xml:71",
+        "libxslt/doc/tutorial2/libxslt_pipes.xml:170",
+        "libxslt/doc/tutorial2/libxslt_pipes.xml:389"
+      ]
+    },
+    {
+      "shape": "element | (none) | PossiblyUnusedMethod on (none):PossiblyUnusedMethod",
+      "sites": 20,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "phpmyadmin/psalm-baseline.xml:870",
+        "phpmyadmin/psalm-baseline.xml:875",
+        "phpmyadmin/psalm-baseline.xml:896"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@filter on http://www.w3.org/2000/svg:use",
+      "sites": 12,
+      "files": 6,
+      "tokens": 12,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 12,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "url(#filter-2)",
+        "url(#filter-4)",
+        "url(#filter-6)",
+        "url(#filter-1)"
+      ],
+      "evidence": [
+        "element-plus/docs/public/images/Module.svg:32",
+        "element-plus/docs/public/images/Module.svg:43",
+        "element-plus/docs/public/images/Module.svg:54"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:list-block",
+      "sites": 11,
+      "files": 3,
+      "tokens": 11,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 11,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "list.block.spacing",
+        "list.block.spacing",
+        "list.block.spacing",
+        "list.block.spacing"
+      ],
+      "evidence": [
+        "libxslt/tests/docbook/fo/lists.xsl:25",
+        "libxslt/tests/docbook/fo/lists.xsl:57",
+        "libxslt/tests/docbook/fo/lists.xsl:113"
+      ]
+    },
+    {
+      "shape": "element | http://schemas.microsoft.com/ado/2007/08/dataservices | ReportAbuseUrl on http://schemas.microsoft.com/ado/2007/08/dataservices:ReportAbuseUrl",
+      "sites": 10,
+      "files": 10,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "Paket/tests/Paket.Tests/NuGetOData/BenchmarkDotNet-UnknownFramework.xml:40",
+        "Paket/tests/Paket.Tests/NuGetOData/Fantomas.xml:37",
+        "Paket/tests/Paket.Tests/NuGetOData/EasyNetQ.xml:38"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@fill-opacity on http://www.w3.org/2000/svg:use",
+      "sites": 9,
+      "files": 2,
+      "tokens": 9,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 9,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "1",
+        "1",
+        "1",
+        "0.3"
+      ],
+      "evidence": [
+        "element-plus/docs/public/images/Module.svg:32",
+        "element-plus/docs/public/images/Module.svg:43",
+        "element-plus/docs/public/images/Module.svg:54"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@stroke on http://www.w3.org/2000/svg:use",
+      "sites": 7,
+      "files": 7,
+      "tokens": 7,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 7,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "blue",
+        "blue",
+        "#000",
+        "#000"
+      ],
+      "evidence": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles.svg:5",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles_def.svg:8",
+        "proxicall/website/public/flags/ke.svg:9"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@href on http://www.w3.org/2000/svg:use",
+      "sites": 6,
+      "files": 4,
+      "tokens": 6,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 6,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "#circle",
+        "#myCircle",
+        "#myCircle",
+        "#myCircle"
+      ],
+      "evidence": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/group_in_defs.svg:10",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles.svg:4",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles.svg:5"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | onmouseout on (none):A",
+      "sites": 5,
+      "files": 1,
+      "tokens": 5,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 5,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "inact('Products')",
+        "inact('Downloads')",
+        "inact('BuyNow')",
+        "inact('About')"
+      ],
+      "evidence": [
+        "libxslt/tests/XSLTMark/xslbench1.xsl:118",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:122",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:126"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | onmouseover on (none):A",
+      "sites": 5,
+      "files": 1,
+      "tokens": 5,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 5,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "act('Products')",
+        "act('Downloads')",
+        "act('BuyNow')",
+        "act('About')"
+      ],
+      "evidence": [
+        "libxslt/tests/XSLTMark/xslbench1.xsl:118",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:122",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:126"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:list-item",
+      "sites": 5,
+      "files": 3,
+      "tokens": 5,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 5,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "list.item.spacing",
+        "list.item.spacing",
+        "list.item.spacing",
+        "normal.para.spacing"
+      ],
+      "evidence": [
+        "libxslt/tests/docbook/fo/lists.xsl:38",
+        "libxslt/tests/docbook/fo/lists.xsl:66",
+        "libxslt/tests/docbook/fo/lists.xsl:123"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:basic-link",
+      "sites": 5,
+      "files": 2,
+      "tokens": 5,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 5,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "xref.properties",
+        "xref.properties",
+        "xref.properties",
+        "xref.properties"
+      ],
+      "evidence": [
+        "libxslt/tests/docbook/fo/glossary.xsl:292",
+        "libxslt/tests/docbook/fo/xref.xsl:45",
+        "libxslt/tests/docbook/fo/xref.xsl:54"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | usesCleartextTraffic on (none):application",
+      "sites": 4,
+      "files": 4,
+      "tokens": 4,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 4,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "true",
+        "true",
+        "true",
+        "true"
+      ],
+      "evidence": [
+        "dart-http/pkgs/cronet_http/example/android/app/src/main/AndroidManifest.xml:3",
+        "dart-http/pkgs/ok_http/example/android/app/src/main/AndroidManifest.xml:3",
+        "flutter-packages/packages/cross_file/cross_file/example/android/app/src/debug/AndroidManifest.xml:7"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-feature on (none):uses-feature",
+      "sites": 4,
+      "files": 4,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "flutter-packages/packages/camera/camera/example/android/app/src/main/AndroidManifest.xml:23",
+        "flutter-packages/packages/camera/camera_android/example/android/app/src/main/AndroidManifest.xml:23",
+        "flutter-packages/packages/camera/camera_android_camerax/android/src/main/AndroidManifest.xml:3"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-feature@android:name on (none):uses-feature",
+      "sites": 4,
+      "files": 4,
+      "tokens": 4,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 4,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "android.hardware.camera",
+        "android.hardware.camera",
+        "android.hardware.camera.any",
+        "android.hardware.camera"
+      ],
+      "evidence": [
+        "flutter-packages/packages/camera/camera/example/android/app/src/main/AndroidManifest.xml:23",
+        "flutter-packages/packages/camera/camera_android/example/android/app/src/main/AndroidManifest.xml:23",
+        "flutter-packages/packages/camera/camera_android_camerax/android/src/main/AndroidManifest.xml:3"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@fill-rule on http://www.w3.org/2000/svg:use",
+      "sites": 3,
+      "files": 1,
+      "tokens": 3,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 3,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "evenodd",
+        "evenodd",
+        "evenodd"
+      ],
+      "evidence": [
+        "element-plus/docs/public/images/Module.svg:33",
+        "element-plus/docs/public/images/Module.svg:44",
+        "element-plus/docs/public/images/Module.svg:55"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-feature@android:required on (none):uses-feature",
+      "sites": 3,
+      "files": 3,
+      "tokens": 3,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 3,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "true",
+        "true",
+        "false"
+      ],
+      "evidence": [
+        "flutter-packages/packages/camera/camera/example/android/app/src/main/AndroidManifest.xml:23",
+        "flutter-packages/packages/camera/camera_android/example/android/app/src/main/AndroidManifest.xml:23",
+        "flutter-packages/packages/webview_flutter/webview_flutter_android/example/android/app/src/main/AndroidManifest.xml:4"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use-attribute-sets on http://www.w3.org/1999/XSL/Transform:copy",
+      "sites": 3,
+      "files": 1,
+      "tokens": 4,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 4,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "attset1",
+        "attset2",
+        "attset1 attset2"
+      ],
+      "evidence": [
+        "libxslt/tests/XSLTMark/attsets.xsl:16",
+        "libxslt/tests/XSLTMark/attsets.xsl:22",
+        "libxslt/tests/XSLTMark/attsets.xsl:28"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):elem",
+      "sites": 3,
+      "files": 2,
+      "tokens": 4,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 3,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 75,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "att1 att2",
+        "att3",
+        "ns1:set"
+      ],
+      "evidence": [
+        "libxslt/tests/general/bug-189.xsl:5",
+        "libxslt/tests/general/bug-189.xsl:6",
+        "libxslt/tests/general/bug-190.xsl:12"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@stroke-width on http://www.w3.org/2000/svg:use",
+      "sites": 3,
+      "files": 3,
+      "tokens": 3,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 3,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "5.6",
+        "12",
+        "10"
+      ],
+      "evidence": [
+        "proxicall/website/public/flags/lk.svg:11",
+        "proxicall/website/public/flags/tc.svg:16",
+        "proxicall/website/public/flags/vi.svg:20"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | databaseUser on http://maven.apache.org/POM/4.0.0:databaseUser",
+      "sites": 2,
+      "files": 2,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml:77",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml:115"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useUpperCaseDescription on http://maven.apache.org/POM/4.0.0:useUpperCaseDescription",
+      "sites": 2,
+      "files": 2,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml:84",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml:99"
+      ]
+    },
+    {
+      "shape": "element | (none) | uservisible on (none):uservisible",
+      "sites": 2,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "ansible/test/integration/targets/setup_rpm_repo/files/comps.xml:8",
+        "ansible/test/integration/targets/setup_rpm_repo/files/comps.xml:20"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@overflow on http://www.w3.org/2000/svg:use",
+      "sites": 2,
+      "files": 1,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "visible",
+        "visible"
+      ],
+      "evidence": [
+        "grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/opensource.svg:19",
+        "grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/opensource.svg:22"
+      ]
+    },
+    {
+      "shape": "element | (none) | warehouse on (none):warehouse",
+      "sites": 2,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "libxslt/tests/XSLTMark/brutal.xml:2",
+        "libxslt/tests/XSLTMark/brutal.xml:39"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):body",
+      "sites": 2,
+      "files": 2,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "body.attrs",
+        "body.attrs"
+      ],
+      "evidence": [
+        "libxslt/tests/docbook/html/chunk-common.xsl:911",
+        "libxslt/tests/docbook/html/docbook.xsl:200"
+      ]
+    },
+    {
+      "shape": "element | (none) | mousebutton on (none):mousebutton",
+      "sites": 2,
+      "files": 2,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "libxslt/tests/docbook/test/book2.xml:470",
+        "libxslt/tests/docbook/test/condition.xml:472"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):font",
+      "sites": 2,
+      "files": 2,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 2,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "foo-dep-attribs",
+        "foo-attribs"
+      ],
+      "evidence": [
+        "libxslt/tests/general/bug-102-inc.xsl:16",
+        "libxslt/tests/general/bug-93-inc.xsl:8"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use-attribute-sets on http://www.w3.org/1999/XSL/Transform:element",
+      "sites": 2,
+      "files": 2,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 2,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "set",
+        "set1"
+      ],
+      "evidence": [
+        "libxslt/tests/general/bug-188.xsl:8",
+        "libxslt/tests/general/bug-80.xsl:13"
+      ]
+    },
+    {
+      "shape": "element | (none) | UnusedClass on (none):UnusedClass",
+      "sites": 2,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "phpmyadmin/psalm-baseline.xml:60",
+        "phpmyadmin/psalm-baseline.xml:80"
+      ]
+    },
+    {
+      "shape": "element | (none) | UnusedVariable on (none):UnusedVariable",
+      "sites": 2,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "phpmyadmin/psalm-baseline.xml:105",
+        "phpmyadmin/psalm-baseline.xml:1192"
+      ]
+    },
+    {
+      "shape": "attribute | https://getpsalm.org/schema/config | findUnusedBaselineEntry on https://getpsalm.org/schema/config:psalm",
+      "sites": 2,
+      "files": 2,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "true",
+        "true"
+      ],
+      "evidence": [
+        "phpmyadmin/psalm.xml:2",
+        "slim/psalm.xml:2"
+      ]
+    },
+    {
+      "shape": "attribute | https://getpsalm.org/schema/config | findUnusedCode on https://getpsalm.org/schema/config:psalm",
+      "sites": 2,
+      "files": 2,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "true",
+        "true"
+      ],
+      "evidence": [
+        "phpmyadmin/psalm.xml:2",
+        "slim/psalm.xml:2"
+      ]
+    },
+    {
+      "shape": "attribute | urn:oasis:names:tc:opendocument:xmlns:style:1.0 | use-optimal-row-height on urn:oasis:names:tc:opendocument:xmlns:style:1.0:table-row-properties",
+      "sites": 2,
+      "files": 1,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "true",
+        "true"
+      ],
+      "evidence": [
+        "phpmyadmin/tests/test_data/import-slim.ods.xml:100",
+        "phpmyadmin/tests/test_data/import-slim.ods.xml:103"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | UseSSL on (none):WSManListener",
+      "sites": 2,
+      "files": 1,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 2,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "False",
+        "True"
+      ],
+      "evidence": [
+        "powershell/test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/CatalogTestFile2.xml:34",
+        "powershell/test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/CatalogTestFile2.xml:41"
+      ]
+    },
+    {
+      "shape": "element | (none) | UseBuildConfiguration on (none):UseBuildConfiguration",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "FSharpx.Extras/tests/FSharpx.CSharpTests/FSharpx.CSharpTests.crunchproject.local.xml:8"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses on (none):uses",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "dbeaver/plugins/org.jkiss.dbeaver.model.ai/plugin.xml:39"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses@function on (none):uses",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "getCurrentScript"
+      ],
+      "evidence": [
+        "dbeaver/plugins/org.jkiss.dbeaver.model.ai/plugin.xml:39"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses@instructions on (none):uses",
+      "sites": 1,
+      "files": 1,
+      "tokens": 9,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 1,
+      "tokensNamingNothing": 8,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 11.1,
+      "sampleValues": [
+        "Use getCurrentScript function to get the current script text"
+      ],
+      "evidence": [
+        "dbeaver/plugins/org.jkiss.dbeaver.model.ai/plugin.xml:39"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useProjectSettings on http://maven.apache.org/POM/4.0.0:useProjectSettings",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "dbeaver/pom.xml:90"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useUIHarness on http://maven.apache.org/POM/4.0.0:useUIHarness",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "dbeaver/test/pom.xml:47"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useUIThread on http://maven.apache.org/POM/4.0.0:useUIThread",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "dbeaver/test/pom.xml:48"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-permission@android:maxSdkVersion on (none):uses-permission",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "28"
+      ],
+      "evidence": [
+        "flutter-packages/packages/camera/camera_android_camerax/android/src/main/AndroidManifest.xml:6"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-library on (none):uses-library",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/android/src/main/AndroidManifest.xml:4"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-library@android:name on (none):uses-library",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "org.apache.http.legacy"
+      ],
+      "evidence": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/android/src/main/AndroidManifest.xml:4"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-library@android:required on (none):uses-library",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "false"
+      ],
+      "evidence": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/android/src/main/AndroidManifest.xml:4"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-permission@tools:ignore on (none):uses-permission",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "CoarseFineLocation"
+      ],
+      "evidence": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/example/android/app/src/main/AndroidManifest.xml:6"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-sdk on (none):uses-sdk",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "flutter-packages/packages/quick_actions/quick_actions_android/android/src/main/AndroidManifest.xml:5"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-sdk@tools:overrideLibrary on (none):uses-sdk",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "android_libs.ub_uiautomator"
+      ],
+      "evidence": [
+        "flutter-packages/packages/quick_actions/quick_actions_android/android/src/main/AndroidManifest.xml:5"
+      ]
+    },
+    {
+      "shape": "element | (none) | usedfiles on (none):usedfiles",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "ghostty/DoxygenLayout.xml:79"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | usedfiles@visible on (none):usedfiles",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "$SHOW_USED_FILES"
+      ],
+      "evidence": [
+        "ghostty/DoxygenLayout.xml:79"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | useMap on (none):IMG",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 1,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "#FrontPageMap0"
+      ],
+      "evidence": [
+        "libxslt/tests/XSLTMark/xslbench1.xsl:101"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):b",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 1,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "att1"
+      ],
+      "evidence": [
+        "libxslt/tests/general/bug-191.xsl:4"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):bar",
+      "sites": 1,
+      "files": 1,
+      "tokens": 2,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 2,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "as1 as2"
+      ],
+      "evidence": [
+        "libxslt/tests/general/bug-217.xsl:20"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):p",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 1,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": 100,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "my-attr-set"
+      ],
+      "evidence": [
+        "libxslt/tests/general/bug-27-.xsl:9"
+      ]
+    },
+    {
+      "shape": "element | (none) | userView on (none):userView",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "libxslt/tests/general/bug-78.xml:2"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec | userLabel on http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec:managedElement",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "OMMP"
+      ],
+      "evidence": [
+        "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/instance.xml:12"
+      ]
+    },
+    {
+      "shape": "element | http://pear.php.net/dtd/package-2.0 | user on http://pear.php.net/dtd/package-2.0:user",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "pb-grpc/package.xml:9"
+      ]
+    },
+    {
+      "shape": "element | (none) | ReferenceReusedFromConfusingScope on (none):ReferenceReusedFromConfusingScope",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "phpmyadmin/psalm-baseline.xml:210"
+      ]
+    },
+    {
+      "shape": "element | (none) | UnusedProperty on (none):UnusedProperty",
+      "sites": 1,
+      "files": 1,
+      "tokens": 0,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 0,
+      "documentResolutionPct": null,
+      "storeResolutionPct": null,
+      "sampleValues": [],
+      "evidence": [
+        "phpmyadmin/psalm-baseline.xml:1223"
+      ]
+    },
+    {
+      "shape": "attribute | urn:oasis:names:tc:opendocument:xmlns:table:1.0 | use-regular-expressions on urn:oasis:names:tc:opendocument:xmlns:table:1.0:calculation-settings",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "false"
+      ],
+      "evidence": [
+        "phpmyadmin/tests/test_data/import-slim.ods.xml:177"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | user on (none):LocalAdmin",
+      "sites": 1,
+      "files": 1,
+      "tokens": 1,
+      "tokensNamingADeclaredDefinitionInTheSameFile": 0,
+      "tokensResolvableInTheAnalyzerStore": 0,
+      "tokensNamingNothing": 1,
+      "documentResolutionPct": 0,
+      "storeResolutionPct": 0,
+      "sampleValues": [
+        "root"
+      ],
+      "evidence": [
+        "powershell/test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/CatalogTestFile2.xml:5"
+      ]
+    }
+  ],
+  "scopeRows": [
+    {
+      "shape": "element | http://www.w3.org/2000/svg | use on http://www.w3.org/2000/svg:use",
+      "sites": 4061,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 4061,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43 NO-SCOPE value=",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53 NO-SCOPE value=",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:80 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@xlink:href on http://www.w3.org/2000/svg:use",
+      "sites": 4054,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 4054,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43 NO-SCOPE value=#m6bb809386a",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53 NO-SCOPE value=#m2daa2affb1",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:80 NO-SCOPE value=#DejaVuSans-30"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/2001/XMLSchema | use on http://www.w3.org/2001/XMLSchema:attribute",
+      "sites": 2446,
+      "withDeclaredScopeInScope": 2445,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 100,
+      "scopeExamples": [
+        "FSharp.Data/docs/data/po.xsd:63 scope=item value=required",
+        "FSharp.Data/tests/FSharp.Data.Tests/Data/po.xsd:63 scope=item value=required",
+        "FSharp.Data/tests/FSharp.Data.Tests/Data/shared-types.xsd:13 scope=OrderType value=required"
+      ],
+      "noScopeExamples": [
+        "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/po1_global.xsd:33 NO-SCOPE value=required"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@y on http://www.w3.org/2000/svg:use",
+      "sites": 2022,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2022,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43 NO-SCOPE value=264.945354",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53 NO-SCOPE value=15.754646",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:92 NO-SCOPE value=264.945354"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@x on http://www.w3.org/2000/svg:use",
+      "sites": 950,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 950,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43 NO-SCOPE value=15.964646",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53 NO-SCOPE value=15.964646",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:92 NO-SCOPE value=103.795448"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@width on http://www.w3.org/2000/svg:use",
+      "sites": 427,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 427,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/image_def.svg:6 NO-SCOPE value=37.917px",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203 NO-SCOPE value=600",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213 NO-SCOPE value=600"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@height on http://www.w3.org/2000/svg:use",
+      "sites": 427,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 427,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/image_def.svg:6 NO-SCOPE value=33.917px",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203 NO-SCOPE value=300",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213 NO-SCOPE value=300"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@transform on http://www.w3.org/2000/svg:use",
+      "sites": 329,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 329,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "element-plus/docs/public/images/duohui.svg:12 NO-SCOPE value=matrix(1.26636 0 0 1.21929 2230 -75.7038",
+        "element-plus/docs/public/images/duohui.svg:15 NO-SCOPE value=matrix(1.41534 0 0 1.21834 2226 -112)",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:18 NO-SCOPE value=scale(0.5)"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:block",
+      "sites": 216,
+      "withDeclaredScopeInScope": 14,
+      "withNoDeclaredScopeInScope": 202,
+      "usableSourceEndpointPct": 6.5,
+      "scopeExamples": [
+        "libxslt/tests/docbook/fo/autotoc.xsl:25 scope=division.toc value=toc.margin.properties",
+        "libxslt/tests/docbook/fo/autotoc.xsl:37 scope=component.toc value=toc.margin.properties",
+        "libxslt/tests/docbook/fo/formal.xsl:40 scope=formal.object.heading value=formal.title.properties"
+      ],
+      "noScopeExamples": [
+        "libxslt/tests/REC/test-7.1.4.xsl:7 NO-SCOPE value=title-style",
+        "libxslt/tests/docbook/fo/biblio.xsl:68 NO-SCOPE value=component.title.properties",
+        "libxslt/tests/docbook/fo/biblio.xsl:102 NO-SCOPE value=normal.para.spacing"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):div",
+      "sites": 200,
+      "withDeclaredScopeInScope": 4,
+      "withNoDeclaredScopeInScope": 196,
+      "usableSourceEndpointPct": 2,
+      "scopeExamples": [
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:892 scope=dedication.titlepage.recto value=dedication.titlepage.recto.style",
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:2385 scope=bibliography.titlepage.recto value=bibliography.titlepage.recto.style",
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:2444 scope=glossary.titlepage.recto value=glossary.titlepage.recto.style"
+      ],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:87 NO-SCOPE value=article.titlepage.recto.style",
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:93 NO-SCOPE value=article.titlepage.recto.style",
+        "libxslt/tests/docbook/html/titlepage.templates.xsl:99 NO-SCOPE value=article.titlepage.recto.style"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-permission on (none):uses-permission",
+      "sites": 177,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 177,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "Fabulous/samples/avalonia/Component/CounterApp/Platform/Android/AndroidManifest.xml:3 NO-SCOPE value=",
+        "Fabulous/samples/avalonia/Component/DrawingApp/Platform/Android/AndroidManifest.xml:3 NO-SCOPE value=",
+        "Fabulous/samples/avalonia/Component/MultiWindow/Platform/Android/AndroidManifest.xml:3 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-permission@android:name on (none):uses-permission",
+      "sites": 177,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 177,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "Fabulous/samples/avalonia/Component/CounterApp/Platform/Android/AndroidManifest.xml:3 NO-SCOPE value=android.permission.INTERNET",
+        "Fabulous/samples/avalonia/Component/DrawingApp/Platform/Android/AndroidManifest.xml:3 NO-SCOPE value=android.permission.INTERNET",
+        "Fabulous/samples/avalonia/Component/MultiWindow/Platform/Android/AndroidManifest.xml:3 NO-SCOPE value=android.permission.INTERNET"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@id on http://www.w3.org/2000/svg:use",
+      "sites": 74,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 74,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:18 NO-SCOPE value=g19-49",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:19 NO-SCOPE value=g19-50",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/equation.svg:20 NO-SCOPE value=g19-52"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@fill on http://www.w3.org/2000/svg:use",
+      "sites": 64,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 64,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "FSharpPlus/docsrc/content/img/logo-color.svg:18 NO-SCOPE value=#3F96C2",
+        "FSharpPlus/docsrc/content/img/logo-color.svg:19 NO-SCOPE value=url(#linearGradient-1)",
+        "FSharpPlus/docsrc/content/img/logo-color.svg:22 NO-SCOPE value=#37C1E0"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use on http://www.w3.org/1999/XSL/Transform:key",
+      "sites": 56,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 56,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/product/repositories/org.jkiss.dbeaver.ce.repository/siteTemplate/web/site.xsl:3 NO-SCOPE value=@name",
+        "libxslt/doc/EXSLT/devhelp/devhelp2.xsl:14 NO-SCOPE value=@name",
+        "libxslt/doc/devhelp/devhelp2.xsl:14 NO-SCOPE value=@name"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@style on http://www.w3.org/2000/svg:use",
+      "sites": 48,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 48,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:43 NO-SCOPE value=stroke:#000000;",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:53 NO-SCOPE value=stroke:#000000;",
+        "DifferentialEquations.jl/assets/DifferentialEquations_Example.svg:92 NO-SCOPE value=stroke:#000000;"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-style on (none):style",
+      "sites": 46,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 46,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "Aporia/share/gtksourceview-2.0/styles/cobalt.xml:88 NO-SCOPE value=def:identifier",
+        "Aporia/share/gtksourceview-2.0/styles/darknim.xml:100 NO-SCOPE value=def:string",
+        "Aporia/share/gtksourceview-2.0/styles/darknim.xml:101 NO-SCOPE value=def:keyword"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@inkscape:tiled-clone-of on http://www.w3.org/2000/svg:use",
+      "sites": 46,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 46,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:203 NO-SCOPE value=#path3006",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:213 NO-SCOPE value=#path3006",
+        "nlohmann-json/docs/mkdocs/docs/images/range-begin-end.svg:222 NO-SCOPE value=#path3006"
+      ]
+    },
+    {
+      "shape": "element | (none) | PossiblyUnusedReturnValue on (none):PossiblyUnusedReturnValue",
+      "sites": 36,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 36,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm-baseline.xml:28 NO-SCOPE value=",
+        "phpmyadmin/psalm-baseline.xml:586 NO-SCOPE value=",
+        "phpmyadmin/psalm-baseline.xml:668 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | http://schemas.microsoft.com/visio/2003/SVGExtensions/ | userDefs on http://schemas.microsoft.com/visio/2003/SVGExtensions/:userDefs",
+      "sites": 35,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 35,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "powershell/docs/community/process_diagram.svg:8 NO-SCOPE value=",
+        "powershell/docs/community/process_diagram.svg:73 NO-SCOPE value=",
+        "powershell/docs/community/process_diagram.svg:100 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "attribute | (none) | useURL on (none):driver",
+      "sites": 33,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 33,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.db2/plugin.xml:438 NO-SCOPE value=false",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.dameng/plugin.xml:231 NO-SCOPE value=false",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.exasol/plugin.xml:432 NO-SCOPE value=false"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use-attribute-sets on http://www.w3.org/1999/XSL/Transform:attribute-set",
+      "sites": 33,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 33,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/fo/param.xsl:143 NO-SCOPE value=normal.para.spacing",
+        "libxslt/tests/docbook/fo/param.xsl:218 NO-SCOPE value=verbatim.properties",
+        "libxslt/tests/docbook/fo/titlepage.xsl:73 NO-SCOPE value=section.titlepage.recto.style"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | defaultUser on (none):driver",
+      "sites": 32,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 32,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.altibase/plugin.xml:28 NO-SCOPE value=SYS",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.dameng/plugin.xml:231 NO-SCOPE value=SYSDBA",
+        "dbeaver/plugins/org.jkiss.dbeaver.ext.denodo/plugin.xml:30 NO-SCOPE value=admin"
+      ]
+    },
+    {
+      "shape": "element | (none) | userinput on (none):userinput",
+      "sites": 28,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 28,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/doc/tutorial2/libxslt_pipes.xml:71 NO-SCOPE value=",
+        "libxslt/doc/tutorial2/libxslt_pipes.xml:170 NO-SCOPE value=",
+        "libxslt/doc/tutorial2/libxslt_pipes.xml:389 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | (none) | PossiblyUnusedMethod on (none):PossiblyUnusedMethod",
+      "sites": 20,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 20,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm-baseline.xml:870 NO-SCOPE value=",
+        "phpmyadmin/psalm-baseline.xml:875 NO-SCOPE value=",
+        "phpmyadmin/psalm-baseline.xml:896 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@filter on http://www.w3.org/2000/svg:use",
+      "sites": 12,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 12,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "element-plus/docs/public/images/Module.svg:32 NO-SCOPE value=url(#filter-2)",
+        "element-plus/docs/public/images/Module.svg:43 NO-SCOPE value=url(#filter-4)",
+        "element-plus/docs/public/images/Module.svg:54 NO-SCOPE value=url(#filter-6)"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:list-block",
+      "sites": 11,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 11,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/fo/lists.xsl:25 NO-SCOPE value=list.block.spacing",
+        "libxslt/tests/docbook/fo/lists.xsl:57 NO-SCOPE value=list.block.spacing",
+        "libxslt/tests/docbook/fo/lists.xsl:113 NO-SCOPE value=list.block.spacing"
+      ]
+    },
+    {
+      "shape": "element | http://schemas.microsoft.com/ado/2007/08/dataservices | ReportAbuseUrl on http://schemas.microsoft.com/ado/2007/08/dataservices:ReportAbuseUrl",
+      "sites": 10,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 10,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "Paket/tests/Paket.Tests/NuGetOData/BenchmarkDotNet-UnknownFramework.xml:40 NO-SCOPE value=",
+        "Paket/tests/Paket.Tests/NuGetOData/Fantomas.xml:37 NO-SCOPE value=",
+        "Paket/tests/Paket.Tests/NuGetOData/EasyNetQ.xml:38 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@fill-opacity on http://www.w3.org/2000/svg:use",
+      "sites": 9,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 9,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "element-plus/docs/public/images/Module.svg:32 NO-SCOPE value=1",
+        "element-plus/docs/public/images/Module.svg:43 NO-SCOPE value=1",
+        "element-plus/docs/public/images/Module.svg:54 NO-SCOPE value=1"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@stroke on http://www.w3.org/2000/svg:use",
+      "sites": 7,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 7,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles.svg:5 NO-SCOPE value=blue",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles_def.svg:8 NO-SCOPE value=blue",
+        "proxicall/website/public/flags/ke.svg:9 NO-SCOPE value=#000"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@href on http://www.w3.org/2000/svg:use",
+      "sites": 6,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 6,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/group_in_defs.svg:10 NO-SCOPE value=#circle",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles.svg:4 NO-SCOPE value=#myCircle",
+        "flutter-packages/third_party/packages/flutter_svg/example/assets/simple/use_circles.svg:5 NO-SCOPE value=#myCircle"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | onmouseout on (none):A",
+      "sites": 5,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 5,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/XSLTMark/xslbench1.xsl:118 NO-SCOPE value=inact('Products')",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:122 NO-SCOPE value=inact('Downloads')",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:126 NO-SCOPE value=inact('BuyNow')"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | onmouseover on (none):A",
+      "sites": 5,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 5,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/XSLTMark/xslbench1.xsl:118 NO-SCOPE value=act('Products')",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:122 NO-SCOPE value=act('Downloads')",
+        "libxslt/tests/XSLTMark/xslbench1.xsl:126 NO-SCOPE value=act('BuyNow')"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:list-item",
+      "sites": 5,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 5,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/fo/lists.xsl:38 NO-SCOPE value=list.item.spacing",
+        "libxslt/tests/docbook/fo/lists.xsl:66 NO-SCOPE value=list.item.spacing",
+        "libxslt/tests/docbook/fo/lists.xsl:123 NO-SCOPE value=list.item.spacing"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Format | use-attribute-sets on http://www.w3.org/1999/XSL/Format:basic-link",
+      "sites": 5,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 5,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/fo/glossary.xsl:292 NO-SCOPE value=xref.properties",
+        "libxslt/tests/docbook/fo/xref.xsl:45 NO-SCOPE value=xref.properties",
+        "libxslt/tests/docbook/fo/xref.xsl:54 NO-SCOPE value=xref.properties"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | usesCleartextTraffic on (none):application",
+      "sites": 4,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 4,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dart-http/pkgs/cronet_http/example/android/app/src/main/AndroidManifest.xml:3 NO-SCOPE value=true",
+        "dart-http/pkgs/ok_http/example/android/app/src/main/AndroidManifest.xml:3 NO-SCOPE value=true",
+        "flutter-packages/packages/cross_file/cross_file/example/android/app/src/debug/AndroidManifest.xml:7 NO-SCOPE value=true"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-feature on (none):uses-feature",
+      "sites": 4,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 4,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/camera/camera/example/android/app/src/main/AndroidManifest.xml:23 NO-SCOPE value=",
+        "flutter-packages/packages/camera/camera_android/example/android/app/src/main/AndroidManifest.xml:23 NO-SCOPE value=",
+        "flutter-packages/packages/camera/camera_android_camerax/android/src/main/AndroidManifest.xml:3 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-feature@android:name on (none):uses-feature",
+      "sites": 4,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 4,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/camera/camera/example/android/app/src/main/AndroidManifest.xml:23 NO-SCOPE value=android.hardware.camera",
+        "flutter-packages/packages/camera/camera_android/example/android/app/src/main/AndroidManifest.xml:23 NO-SCOPE value=android.hardware.camera",
+        "flutter-packages/packages/camera/camera_android_camerax/android/src/main/AndroidManifest.xml:3 NO-SCOPE value=android.hardware.camera.any"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@fill-rule on http://www.w3.org/2000/svg:use",
+      "sites": 3,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 3,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "element-plus/docs/public/images/Module.svg:33 NO-SCOPE value=evenodd",
+        "element-plus/docs/public/images/Module.svg:44 NO-SCOPE value=evenodd",
+        "element-plus/docs/public/images/Module.svg:55 NO-SCOPE value=evenodd"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-feature@android:required on (none):uses-feature",
+      "sites": 3,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 3,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/camera/camera/example/android/app/src/main/AndroidManifest.xml:23 NO-SCOPE value=true",
+        "flutter-packages/packages/camera/camera_android/example/android/app/src/main/AndroidManifest.xml:23 NO-SCOPE value=true",
+        "flutter-packages/packages/webview_flutter/webview_flutter_android/example/android/app/src/main/AndroidManifest.xml:4 NO-SCOPE value=false"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use-attribute-sets on http://www.w3.org/1999/XSL/Transform:copy",
+      "sites": 3,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 3,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/XSLTMark/attsets.xsl:16 NO-SCOPE value=attset1",
+        "libxslt/tests/XSLTMark/attsets.xsl:22 NO-SCOPE value=attset2",
+        "libxslt/tests/XSLTMark/attsets.xsl:28 NO-SCOPE value=attset1 attset2"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):elem",
+      "sites": 3,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 3,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-189.xsl:5 NO-SCOPE value=att1 att2",
+        "libxslt/tests/general/bug-189.xsl:6 NO-SCOPE value=att3",
+        "libxslt/tests/general/bug-190.xsl:12 NO-SCOPE value=ns1:set"
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@stroke-width on http://www.w3.org/2000/svg:use",
+      "sites": 3,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 3,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "proxicall/website/public/flags/lk.svg:11 NO-SCOPE value=5.6",
+        "proxicall/website/public/flags/tc.svg:16 NO-SCOPE value=12",
+        "proxicall/website/public/flags/vi.svg:20 NO-SCOPE value=10"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | databaseUser on http://maven.apache.org/POM/4.0.0:databaseUser",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml:77 NO-SCOPE value=",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml:115 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useUpperCaseDescription on http://maven.apache.org/POM/4.0.0:useUpperCaseDescription",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml:84 NO-SCOPE value=",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml:99 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | (none) | uservisible on (none):uservisible",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "ansible/test/integration/targets/setup_rpm_repo/files/comps.xml:8 NO-SCOPE value=",
+        "ansible/test/integration/targets/setup_rpm_repo/files/comps.xml:20 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | http://www.w3.org/2000/svg | use@overflow on http://www.w3.org/2000/svg:use",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/opensource.svg:19 NO-SCOPE value=visible",
+        "grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/opensource.svg:22 NO-SCOPE value=visible"
+      ]
+    },
+    {
+      "shape": "element | (none) | warehouse on (none):warehouse",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/XSLTMark/brutal.xml:2 NO-SCOPE value=",
+        "libxslt/tests/XSLTMark/brutal.xml:39 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):body",
+      "sites": 2,
+      "withDeclaredScopeInScope": 1,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 50,
+      "scopeExamples": [
+        "libxslt/tests/docbook/html/chunk-common.xsl:911 scope=chunk-element-content value=body.attrs"
+      ],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/html/docbook.xsl:200 NO-SCOPE value=body.attrs"
+      ]
+    },
+    {
+      "shape": "element | (none) | mousebutton on (none):mousebutton",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/docbook/test/book2.xml:470 NO-SCOPE value=",
+        "libxslt/tests/docbook/test/condition.xml:472 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):font",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-102-inc.xsl:16 NO-SCOPE value=foo-dep-attribs",
+        "libxslt/tests/general/bug-93-inc.xsl:8 NO-SCOPE value=foo-attribs"
+      ]
+    },
+    {
+      "shape": "attribute | http://www.w3.org/1999/XSL/Transform | use-attribute-sets on http://www.w3.org/1999/XSL/Transform:element",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-188.xsl:8 NO-SCOPE value=set",
+        "libxslt/tests/general/bug-80.xsl:13 NO-SCOPE value=set1"
+      ]
+    },
+    {
+      "shape": "element | (none) | UnusedClass on (none):UnusedClass",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm-baseline.xml:60 NO-SCOPE value=",
+        "phpmyadmin/psalm-baseline.xml:80 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | (none) | UnusedVariable on (none):UnusedVariable",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm-baseline.xml:105 NO-SCOPE value=",
+        "phpmyadmin/psalm-baseline.xml:1192 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "attribute | https://getpsalm.org/schema/config | findUnusedBaselineEntry on https://getpsalm.org/schema/config:psalm",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm.xml:2 NO-SCOPE value=true",
+        "slim/psalm.xml:2 NO-SCOPE value=true"
+      ]
+    },
+    {
+      "shape": "attribute | https://getpsalm.org/schema/config | findUnusedCode on https://getpsalm.org/schema/config:psalm",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm.xml:2 NO-SCOPE value=true",
+        "slim/psalm.xml:2 NO-SCOPE value=true"
+      ]
+    },
+    {
+      "shape": "attribute | urn:oasis:names:tc:opendocument:xmlns:style:1.0 | use-optimal-row-height on urn:oasis:names:tc:opendocument:xmlns:style:1.0:table-row-properties",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/tests/test_data/import-slim.ods.xml:100 NO-SCOPE value=true",
+        "phpmyadmin/tests/test_data/import-slim.ods.xml:103 NO-SCOPE value=true"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | UseSSL on (none):WSManListener",
+      "sites": 2,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 2,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "powershell/test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/CatalogTestFile2.xml:34 NO-SCOPE value=False",
+        "powershell/test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/CatalogTestFile2.xml:41 NO-SCOPE value=True"
+      ]
+    },
+    {
+      "shape": "element | (none) | UseBuildConfiguration on (none):UseBuildConfiguration",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "FSharpx.Extras/tests/FSharpx.CSharpTests/FSharpx.CSharpTests.crunchproject.local.xml:8 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | (none) | uses on (none):uses",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.model.ai/plugin.xml:39 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses@function on (none):uses",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.model.ai/plugin.xml:39 NO-SCOPE value=getCurrentScript"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses@instructions on (none):uses",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/plugins/org.jkiss.dbeaver.model.ai/plugin.xml:39 NO-SCOPE value=Use getCurrentScript function to get the"
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useProjectSettings on http://maven.apache.org/POM/4.0.0:useProjectSettings",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/pom.xml:90 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useUIHarness on http://maven.apache.org/POM/4.0.0:useUIHarness",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/test/pom.xml:47 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | http://maven.apache.org/POM/4.0.0 | useUIThread on http://maven.apache.org/POM/4.0.0:useUIThread",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "dbeaver/test/pom.xml:48 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-permission@android:maxSdkVersion on (none):uses-permission",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/camera/camera_android_camerax/android/src/main/AndroidManifest.xml:6 NO-SCOPE value=28"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-library on (none):uses-library",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/android/src/main/AndroidManifest.xml:4 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-library@android:name on (none):uses-library",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/android/src/main/AndroidManifest.xml:4 NO-SCOPE value=org.apache.http.legacy"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-library@android:required on (none):uses-library",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/android/src/main/AndroidManifest.xml:4 NO-SCOPE value=false"
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-permission@tools:ignore on (none):uses-permission",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/google_maps_flutter/google_maps_flutter_android/example/android/app/src/main/AndroidManifest.xml:6 NO-SCOPE value=CoarseFineLocation"
+      ]
+    },
+    {
+      "shape": "element | (none) | uses-sdk on (none):uses-sdk",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/quick_actions/quick_actions_android/android/src/main/AndroidManifest.xml:5 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | uses-sdk@tools:overrideLibrary on (none):uses-sdk",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "flutter-packages/packages/quick_actions/quick_actions_android/android/src/main/AndroidManifest.xml:5 NO-SCOPE value=android_libs.ub_uiautomator"
+      ]
+    },
+    {
+      "shape": "element | (none) | usedfiles on (none):usedfiles",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "ghostty/DoxygenLayout.xml:79 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element-attribute | (none) | usedfiles@visible on (none):usedfiles",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "ghostty/DoxygenLayout.xml:79 NO-SCOPE value=$SHOW_USED_FILES"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | useMap on (none):IMG",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/XSLTMark/xslbench1.xsl:101 NO-SCOPE value=#FrontPageMap0"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):b",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-191.xsl:4 NO-SCOPE value=att1"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):bar",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-217.xsl:20 NO-SCOPE value=as1 as2"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | use-attribute-sets on (none):p",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-27-.xsl:9 NO-SCOPE value=my-attr-set"
+      ]
+    },
+    {
+      "shape": "element | (none) | userView on (none):userView",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "libxslt/tests/general/bug-78.xml:2 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "attribute | http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec | userLabel on http://www.3gpp.org/ftp/specs/archive/32_series/32.435#measCollec:managedElement",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/instance.xml:12 NO-SCOPE value=OMMP"
+      ]
+    },
+    {
+      "shape": "element | http://pear.php.net/dtd/package-2.0 | user on http://pear.php.net/dtd/package-2.0:user",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "pb-grpc/package.xml:9 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | (none) | ReferenceReusedFromConfusingScope on (none):ReferenceReusedFromConfusingScope",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm-baseline.xml:210 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "element | (none) | UnusedProperty on (none):UnusedProperty",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/psalm-baseline.xml:1223 NO-SCOPE value="
+      ]
+    },
+    {
+      "shape": "attribute | urn:oasis:names:tc:opendocument:xmlns:table:1.0 | use-regular-expressions on urn:oasis:names:tc:opendocument:xmlns:table:1.0:calculation-settings",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "phpmyadmin/tests/test_data/import-slim.ods.xml:177 NO-SCOPE value=false"
+      ]
+    },
+    {
+      "shape": "attribute | (none) | user on (none):LocalAdmin",
+      "sites": 1,
+      "withDeclaredScopeInScope": 0,
+      "withNoDeclaredScopeInScope": 1,
+      "usableSourceEndpointPct": 0,
+      "scopeExamples": [],
+      "noScopeExamples": [
+        "powershell/test/powershell/Modules/Microsoft.PowerShell.Security/TestData/CatalogTestData/CatalogTestFile2.xml:5 NO-SCOPE value=root"
+      ]
+    }
+  ]
+}

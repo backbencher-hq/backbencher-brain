@@ -1,0 +1,47 @@
+{
+  "probe": "M60 php seam trace (PHP-A-H/O1-O2 payload)",
+  "at": "2026-09-14T18:15:15.727Z",
+  "wave": "M49.PHP1 (in flight)",
+  "rowsByType": {
+    "calls": 3,
+    "contains": 8,
+    "extends": 1,
+    "overrides": 3,
+    "uses": 14
+  },
+  "lineNumber": {
+    "gt0": 0,
+    "eq0": 0,
+    "nul": 29
+  },
+  "analyzerFlagSurvival": {
+    "isMemberRead": 0,
+    "isStaticRead": 0,
+    "isConstFetch": 0,
+    "isSubscriptBase": 0,
+    "isInterpolationRead": 0,
+    "isClosureCapture": 0,
+    "isTearOff": 0,
+    "isTraitUse": 0,
+    "isNew": 0,
+    "evidenceClass": 0
+  },
+  "perSiteMultiplicity": [],
+  "symbols": {
+    "total": 14,
+    "withRange": 14,
+    "withParams": 3
+  },
+  "secondReview": {
+    "at": "2026-09-16T16:30:35.488Z",
+    "newFlags": {
+      "isLocalRead": 2,
+      "isGlobalRead": 0,
+      "isConstRead": 0
+    },
+    "usesRows": 25,
+    "lineNull": 37,
+    "lineZero": 0,
+    "verdict": "PHP2 local/global/const uses land with type/target/confidence (25 uses rows); isLocalRead survives on exactly 2 rows (global->result, global->reader \u2014 file-scope targets with no symbol rows bypass the enrichment overwrite and keep analyzer metadata + evidenceClass); all symbol-resolved rows take enrichment metadata (layerFlow/criticality/frequency/role) so isGlobalRead/isConstRead land at 0 \u2014 same F1 class filed on P1 #829; line NULL (no edge lines emitted)"
+  }
+}

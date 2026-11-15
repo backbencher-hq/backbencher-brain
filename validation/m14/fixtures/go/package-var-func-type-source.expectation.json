@@ -1,0 +1,108 @@
+{
+  "fixtureId": "go/package-var-func-type-source",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS GO40: a package-scope var/const whose declared type CONTAINS the type reference, reached without a func_literal in between. `resolveSource`'s func_literal branch reached a var_spec only by climbing THROUGH a function literal (`var R = map[string]func(){ ... }`), so a var whose declared type is a function type had no branch at all: its func type's parameter declarations walk parameter_list -> function_type -> var_spec and the walk continued straight past the var_spec to `global`. MEASURED DEFECT, proven before the fix on this exact declaration: FOUR `references` rows where the language has TWO facts. The var_spec pass published the correct `sysStat -> FileInfo @19` and `sysStat -> Header @19`, and the parameter pass published `global -> FileInfo @19` and `global -> Header @19` beside them. This is WORSE than the absent edge GO39 fixed: a consumer grouping by source sees the same fact twice, once unattributable, and cannot tell which to keep. REAL CORPUS FREQUENCY: 353 global-source rows on the go-stdlib subset alone, led by `src/archive/tar/common.go:617` — `var sysStat func(fi fs.FileInfo, h *Header, doNameLookups bool) error` — which is the same declaration shape as this fixture's subject, in the standard library itself. THE FIX IS SHAPE-PROVEN AND SCOPE-TESTED: a `var_spec`/`const_spec` reached in the walk answers its first non-blank identifier ONLY when it has no function/method/func_literal ancestor; otherwise it keeps walking so the enclosing function answers, because LocalsAreNotSymbols makes a function-local var/const not a graph node and attributing to it would trade a dangling source for an unresolvable one. THE FIVE FORBIDDEN ROWS ARE THE OTHER HALF, each a shape a cheaper fix gets wrong: (a) `global -> FileInfo` and (b) `global -> Header` are the defect itself — the duplicate unattributable edges that must not come back; (c) `global -> Header @19` pins that fixing the package-scope case must not ALSO move the blank `var _ func(*Header)` on line 30, whose `global` is honest because `_` names no graph node — a fix that returned the spec's name without the blank test would claim `_ -> Header`; (d) `localHook -> Header` is forbidden because a FUNCTION-LOCAL var is not a symbol, and a fix that returned the spec's name unconditionally would publish exactly this unresolvable source; (e) `inner -> Header` is forbidden for the same reason inside a package var's func literal, whose correct answer is the owning var `Registry`. NOT PINNED: `exports` rows (owned by the export pass, unchanged here) and confidence/tier, which are identical for any declared_type reference.",
+  "expectSymbols": [
+    { "name": "Header", "kind": "struct" },
+    { "name": "FileInfo", "kind": "struct" },
+    { "name": "sysStat", "kind": "variable" },
+    { "name": "single", "kind": "variable" },
+    { "name": "first", "kind": "variable" },
+    { "name": "second", "kind": "variable" },
+    { "name": "Registry", "kind": "variable" },
+    { "name": "UseLocal", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "The subject: the func type's first parameter type attributes to the var that declares it.",
+      "type": "references",
+      "from": "sysStat",
+      "target": "FileInfo",
+      "line_number": 19
+    },
+    {
+      "comment": "The func type's second parameter type, same declaration.",
+      "type": "references",
+      "from": "sysStat",
+      "target": "Header",
+      "line_number": 19
+    },
+    {
+      "comment": "CONTROL: a named non-func type was already correct before the fix and must stay correct.",
+      "type": "references",
+      "from": "single",
+      "target": "Header",
+      "line_number": 23
+    },
+    {
+      "comment": "CONTROL: two names, one type — each name is its own binding.",
+      "type": "references",
+      "from": "first",
+      "target": "Header",
+      "line_number": 26
+    },
+    {
+      "comment": "CONTROL: the second of the two-name declaration.",
+      "type": "references",
+      "from": "second",
+      "target": "Header",
+      "line_number": 26
+    },
+    {
+      "comment": "A blank name at package scope names no graph node, so `global` is the honest source and must STAY.",
+      "type": "references",
+      "from": "global",
+      "target": "Header",
+      "line_number": 30
+    },
+    {
+      "comment": "A function-local var attributes to the ENCLOSING FUNCTION, which is what the function_declaration branch answers.",
+      "type": "references",
+      "from": "UseLocal",
+      "target": "Header",
+      "line_number": 37
+    },
+    {
+      "comment": "A func literal owned by a package var keeps answering the owning var's name.",
+      "type": "references",
+      "from": "Registry",
+      "target": "Header",
+      "line_number": 44
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "THE DEFECT: the parameter pass's duplicate unattributable edge. The var_spec pass already publishes sysStat -> FileInfo; this one must not exist.",
+      "type": "references",
+      "from": "global",
+      "target": "FileInfo",
+      "line_number": 19
+    },
+    {
+      "comment": "THE DEFECT, second parameter of the same declaration.",
+      "type": "references",
+      "from": "global",
+      "target": "Header",
+      "line_number": 19
+    },
+    {
+      "comment": "A function-local func type must NOT attribute to the local's name. LocalsAreNotSymbols makes it no graph node, so this source could never be resolved by a consumer.",
+      "type": "references",
+      "from": "localHook",
+      "target": "Header"
+    },
+    {
+      "comment": "Same for a local inside a package var's func literal; the correct answer there is the owning var Registry.",
+      "type": "references",
+      "from": "inner",
+      "target": "Header"
+    },
+    {
+      "comment": "The blank identifier names no node. A fix that returned the spec's name without the blank test would move this row onto `_`, which resolves to nothing.",
+      "type": "references",
+      "from": "_",
+      "target": "Header"
+    }
+  ]
+}

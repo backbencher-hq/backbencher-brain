@@ -1,0 +1,32 @@
+{
+  "fixtureId": "typescript/owner-scope-shadowing",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture. The two POSITIVE rows pin BOTH `metadata.owner` and `metadata.ownerEvidence` and pin the owner of EACH function's own binding — so a fix that gives BOTH rows the same owner fails. The NEGATIVE row pins the ABSENT case (`meta.owner: null`), so a fix that invents an owner fails just as loudly as a fix that misses one.",
+  "rationale": "PINS THE SCOPE-SHADOWING FIX for the receiver-typing wall's defect component. `collectLocalReceiverTypes` records a receiver's type in ONE file-wide map and its `record()` rule drops a name whose second declaration has a different type — a rule written for shadowing WITHIN one scope, applied FILE-WIDE. Two unrelated functions that each bind `shared` therefore deleted each other's entry, and both lost their owner. MEASURED on the whole population (gql-federation/composition-js/src/merging/merge.ts): four `result` bindings with four different types (`Sources<R>`, `Sources<T>`, `FieldMergeContext`, `string`) — the first two conflict, so `record()` deletes `result` and the row `result.setOverrideWithUnknownTarget(idx)` at line 1773 carries NO owner, although `result` there is `new FieldMergeContext(sources)` and `FieldMergeContext` is a class declared in the SAME file (line 177). The fix makes the receiver's type map SCOPE-AWARE, so each function's binding is read in its own scope and the file-wide conflict disappears. The negative row keeps the fix honest: a receiver with no stated type still carries no owner.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "first",
+      "target": "widgetOnly",
+      "line_number": 37,
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "assignment"
+    },
+    {
+      "type": "calls",
+      "from": "second",
+      "target": "gadgetOnly",
+      "line_number": 42,
+      "meta.owner": "Gadget",
+      "meta.ownerEvidence": "assignment"
+    },
+    {
+      "type": "calls",
+      "from": "third",
+      "target": "anything",
+      "line_number": 49,
+      "meta.owner": null
+    }
+  ]
+}

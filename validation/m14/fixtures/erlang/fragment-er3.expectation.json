@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/fragment-er3.erl",
+  "authoredFrom": "The 400-file corpus draw found a module-less file — otp/lib/syntax_tools/examples/merl/basic_test.erl, whose -module line is COMMENTED OUT because the file is included into another module. Erlang has no way to name such a file, so the file path is the only identity available and it is what the members are owned by. Writing a module symbol for it would fabricate a module that does not exist, and dropping the members would lose four real function definitions. The analyzer chose the path; the independent oracle initially chose nothing, which lost the ownership entirely — that is the adjudication this fixture records. The fixture deliberately carries no -export: OTP's own merl fragment does (`-export([basic_fib/1])`), but pinning that here would make the fixture depend on a change in the shared fixture runner, which is committed separately. The owner fallback is the subject, and it needs no harness change.",
+  "expectSymbols": [
+    {
+      "name": "fragment_helper",
+      "kind": "function",
+      "meta.arity": 1,
+      "note": "owned by the FILE PATH: the file declares no -module, so the path is the only identity it has (ER-D32). Its -export is still a top-level, importable unit - a file-scope unit in the harness's own terms."
+    },
+    {
+      "name": "FRAGMENT_MACRO",
+      "kind": "constant",
+      "meta.isMacro": true,
+      "note": "owned by the FILE PATH too. The 400-file draw caught macros taking bare ctx.moduleName while functions/records/types/callbacks took the path fallback, so a macro in a module-less file had NO owner while the function beside it had one."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "fragment_helper",
+      "kind": "function",
+      "equals": 1
+    },
+    {
+      "name": "module",
+      "equals": 0,
+      "note": "NO module symbol: the file declares none, and inventing one would be a fabrication"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "target": "fragment_helper",
+      "note": "from the file path, the outermost container that definitely holds it"
+    },
+    {
+      "type": "contains",
+      "target": "FRAGMENT_MACRO"
+    },
+    {
+      "type": "references",
+      "target": "FRAGMENT_MACRO",
+      "meta.context": "macro use",
+      "line_number": 10
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "X",
+      "note": "a clause-head pattern binding is never a symbol"
+    },
+    {
+      "name": "fragment_er3",
+      "note": "no module is fabricated from the filename"
+    },
+    {
+      "name": "fragment-er3",
+      "note": "ditto, hyphenated form"
+    },
+    {
+      "name": "basic_test",
+      "note": "the OTP merl fragment's own commented-out module name is not invented either"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+ "fixtureId": "javascript/jsdoc-implements",
+ "language": "javascript",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PINS the `implements` label, which this lane now EMITS via JSDoc — overturning a 2026-11 ruling that called it unexpressible. That ruling measured the grammar (no implements_clause node; `implements C` parses as an ERROR sibling) and the emitted vocabulary (nothing emitted), and both measurements were correct. Neither asked how JavaScript code actually states conformance: JSDoc. `@implements {ICompileDiagnostic}` on `export class CompileDiagnostic` in svelte's compile_diagnostic.js is real production code, so the label is fixable on a code path that needs no grammar change at all. The row has PARITY WITH `extends`: source = the class, target = the interface NAME, confidence 1.0, resolved later by the store exactly as a base is, marked `viaJSDoc: true` so a consumer can tell a type-system claim from a language clause. Six shapes pin the text parser (braces, bare, generic, union, qualified, and the trailing-comment-terminator bug that made the BARE form silently emit nothing), and two negatives pin that a class implementing itself and a class with no JSDoc emit nothing.",
+ "expectSymbols": [
+  { "name": "Braced", "kind": "class" },
+  { "name": "Bare", "kind": "class" },
+  { "name": "Generic", "kind": "class" },
+  { "name": "Union", "kind": "class" },
+  { "name": "Qualified", "kind": "class" }
+ ],
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "from": "Braced",
+   "target": "IBase",
+   "meta.viaJSDoc": true,
+   "comment": "braced form: `/** @implements {IBase} */`"
+  },
+  {
+   "type": "implements",
+   "from": "Bare",
+   "target": "IBase",
+   "meta.viaJSDoc": true,
+   "comment": "bare form: `/** @implements IBase */` with NO braces — this row was SILENTLY MISSING until the comment terminator was cut from the candidate, because the bare form takes the rest of the line and therefore carried `*/`."
+  },
+  {
+   "type": "implements",
+   "from": "Generic",
+   "target": "Iterable",
+   "meta.viaJSDoc": true,
+   "comment": "generic form: `{Iterable<string>}` implements the interface `Iterable`; a type ARGUMENT is not a name."
+  },
+  {
+   "type": "implements",
+   "from": "Union",
+   "target": "ILeft",
+   "meta.viaJSDoc": true,
+   "comment": "union form: `{ILeft|IRight}` states BOTH interfaces — one row each."
+  },
+  {
+   "type": "implements",
+   "from": "Union",
+   "target": "IRight",
+   "meta.viaJSDoc": true,
+   "comment": "second half of the union."
+  },
+  {
+   "type": "implements",
+   "from": "Qualified",
+   "target": "IQualified",
+   "meta.viaJSDoc": true,
+   "comment": "qualified form: `{some.namespace.IQualified}` keeps the LEAF, the same convention `extends ns.Base` uses."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "implements",
+   "from": "SelfNamed",
+   "target": "SelfNamed",
+   "comment": "NEGATIVE: a class cannot implement itself — an edge here would point at its own declaration."
+  },
+  {
+   "type": "implements",
+   "from": "NoDoc",
+   "target": "IBase",
+   "comment": "NEGATIVE: a class with no JSDoc block emits NO implements row. Guards against a parser that leaks a neighbouring class's tag."
+  }
+ ]
+}

@@ -1,0 +1,33 @@
+{
+  "fixtureId": "typescript/owner-class-element",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines computed from `nl -ba` of the committed fixture; the positive rows pin BOTH metadata.owner and metadata.ownerEvidence, and the negative row pins the ABSENT case (`meta.owner: null`) so an over-claim fails just as loudly as a miss.",
+  "rationale": "PINS THE ELEMENT CLASS in all three proven shapes: a subscript receiver over an annotated array (`items[0].run()`), a for-of binding over that array (`for (const item of items)`), and a constructor-initialised collection (`new Array<Item>()`). All three rows carry owner `Item` and evidence `element`. Every row here is positive; the negative control for this class is the untyped-collection case pinned in the class-assignment fixture's negative row (`missing.never()`).",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useElement",
+      "target": "run",
+      "line_number": 6,
+      "meta.owner": "Item",
+      "meta.ownerEvidence": "element"
+    },
+    {
+      "type": "calls",
+      "from": "useElement",
+      "target": "run",
+      "line_number": 8,
+      "meta.owner": "Item",
+      "meta.ownerEvidence": "element"
+    },
+    {
+      "type": "calls",
+      "from": "useElementNew",
+      "target": "run",
+      "line_number": 13,
+      "meta.owner": "Item",
+      "meta.ownerEvidence": "element"
+    }
+  ]
+}

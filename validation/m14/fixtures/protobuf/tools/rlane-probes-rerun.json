@@ -1,0 +1,52 @@
+{
+  "_what": "r-lane's three protobuf probes, ADOPTED by the protobuf lane and RE-RUN on the current revision. The measurements are r-lane's; the re-run is this lane's, and where they disagree the disagreement is the finding.",
+  "_author": "r-lane produced these instruments on 2026-10-10 (22:34-23:09) together with the PROTO-D1 arm and validation/m14/verification/protobuf-*.md; the Lane reassigned protobuf to this lane on 2026-10-11 and these files were adopted rather than left untracked, because an uncommitted instrument is a number nobody can check.",
+  "_rerun": "npx tsx validation/m14/fixtures/protobuf/probe-{imports-split,uses-split,uses-tail74}.ts — output .tmp-rlane-probes-full.log, 2026-10-11",
+  "importsSplit": {
+    "population": "847 .proto files across 21 repos (the gate's own admission rule)",
+    "edges": 1574,
+    "carriedClaimCouldVerify": 1061,
+    "carriedShare": "67.4%",
+    "refutedNoAdmittedProtoUnderAnyRoot": 513,
+    "refutedShare": "32.6%",
+    "distinctRefutedTargets": 32,
+    "FINDING_AGAINST_THIS_LANE_OWN_WORK": "THIS CEILING IS 1,061 AND THE FILE CLAIM THIS LANE LANDED (f26b53674) CLOSED 304. The difference is the CANDIDATE ARITHMETIC, not the guard: the guard folds the written path against the file's own directory and the project root, while a protobuf import path is written relative to an IMPORT ROOT that may be any directory above (a vendored `google/protobuf/timestamp.proto` lives under `vendor/`). So 757 edges of a measured ceiling were left unclaimed, and the '304 is the ceiling' statement in that commit was wrong about its own subject."
+  },
+  "usesSplit": {
+    "population": "847 .proto files across 21 repos",
+    "edges": 13482,
+    "whereDeclared": {
+      "SAME-FILE-ONE": { "n": 9761, "share": "72.4%" },
+      "SAME-FILE-MULTI": { "n": 92, "share": "0.7%" },
+      "CROSS-FILE-ONLY": { "n": 2658, "share": "19.7%" },
+      "NO-CANDIDATE": { "n": 971, "share": "7.2%" }
+    },
+    "topNoCandidateTargets": {
+      "google.protobuf.Empty": 115, "google.protobuf.Any": 105, "google.protobuf.StringValue": 96,
+      "google.protobuf.Struct": 66, "google.protobuf.Duration": 62, "google.protobuf.FieldMask": 50,
+      "google.protobuf.Value": 19, "common.EnterpriseMeta": 16, "google.rpc.Status": 16,
+      "google.protobuf.UInt32Value": 14, "google.protobuf.ListValue": 10,
+      "google.protobuf.BoolValue": 9, "google.protobuf.Int64Value": 9, "common.RaftIndex": 6
+    },
+    "note": "The well-known types dominate the no-candidate class; `common.EnterpriseMeta` and `common.RaftIndex` are the CROSS-FILE-ONLY-adjacent names the INDEX_SPEC arm now reaches (19 edges across the two, part of the 38 measured at the gate)."
+  },
+  "tail74": {
+    "reachableButUnreachedBeforeTheIndex": [
+      "connect.IssuedCert (read in consul, declared in consul)",
+      "connect.CARoots (read in consul, declared in consul)",
+      "config.Config (read in consul, declared in consul)",
+      "common.QueryMeta (read in consul, declared in consul)",
+      "status.Status (read in consul, declared in consul)",
+      "NodeSpec.Availability (read in docker, declared in docker)"
+    ],
+    "nowhereAndMustNotBind": [
+      "xds.data.orca.v3.OrcaLoadReport ×2 (pb-grpc)",
+      "sls.asfd.asfd.JsonFormat (nvim-treesitter)",
+      "sls.asfd.asfd.CustomType (nvim-treesitter)",
+      "grpc.testing.duplicate.EchoRequest (pb-grpc)",
+      "grpc.testing.duplicate.EchoResponse (pb-grpc)",
+      "github.com.hashicorp.go.kms.wrapping.v2.types.BlobInfo (vault)"
+    ],
+    "crossCheckWithTheIndexLanding": "The six 'declared in X' rows are exactly what the INDEX_SPEC arm was built to reach, and the gate now measures 38 edges newly resolved (06a33afdb) with 0 of the six NOWHERE rows binding — the same split this probe names, measured two ways."
+  }
+}

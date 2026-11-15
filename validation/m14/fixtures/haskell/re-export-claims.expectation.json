@@ -1,0 +1,39 @@
+{
+  "fixtureId": "haskell/re-export-claims",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "HSA4 — A RE-EXPORT NAMES A DEPENDENCY THE MODULE DOES NOT DECLARE. An export list may name a function the module IMPORTS (`module M (intercalate)`), and the export row's target is the bare name. When no corpus file declares that name the row said nothing about where it comes from, and the class was MEASURED at 985 unresolved `exports` rows over the whole population. The claim published is the same bare `externalTarget` HSA1 uses, safe for the same reason — the arbiter consults a claim only where the name model has nothing, so a re-export of a PROJECT name keeps its resolved answer and this row can never refute it. The guard is the file's own declaration table (so a locally declared export keeps no claim) plus the module's own name. MEASURED EFFECT: unresolved 34,038 -> 33,227, verified external 27,522 -> 28,333, ambiguous unchanged, ext? unchanged at 67, refuted 0.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "ReExportClaims",
+      "target": "intercalate",
+      "line_number": 13,
+      "meta.externalTarget": true,
+      "meta.externalVia": "re-export",
+      "comment": "THE POSITIVE ROW. `intercalate` is imported from `Data.List` and re-exported; this module declares nothing of that spelling, and neither does the project, so the row now says so instead of hanging."
+    },
+    {
+      "type": "exports",
+      "from": "ReExportClaims",
+      "target": "declared",
+      "line_number": 13,
+      "meta.externalTarget": null,
+      "comment": "THE LOCAL TWIN. `declared` is exported and declared in the same module, so the claim must not appear — it would assert that the project does not declare the function two lines below."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "declared",
+      "meta.externalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE: an export of the module's own declaration is internal by construction."
+    },
+    {
+      "type": "exports",
+      "target": "intercalate",
+      "meta.externalTarget": null,
+      "comment": "THE SILENCE NEGATIVE: without the claim the row falls back to the wall it came from; this makes a revert red."
+    }
+  ]
+}

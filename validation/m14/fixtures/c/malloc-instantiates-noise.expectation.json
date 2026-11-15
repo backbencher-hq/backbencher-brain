@@ -1,0 +1,17 @@
+{
+  "fixtureId": "c/malloc-instantiates-noise",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "malloc allocates BYTES, not a named type - an Instantiates edge to the literal 'malloc' could never resolve to a type symbol and was pure noise. Allocation tracking lives in metadata/patterns instead.",
+  "expectSymbols": [
+    {
+      "name": "runner"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "target": "malloc"
+    }
+  ]
+}

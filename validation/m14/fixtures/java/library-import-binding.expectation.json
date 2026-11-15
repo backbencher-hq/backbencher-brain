@@ -1,0 +1,114 @@
+{
+  "fixtureId": "java/library-import-binding",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "IMPORTED-BINDING CLAIM for STATIC single-member imports (Lead claim kind, live 2026-10-19). The analyzer publishes the EVIDENCE on the import edge (metadata.importedBindings + metadata.module, the gate's importsByFile key/specifier) and the CLAIM on the target row (metadata.importedBinding {specifier, binding}) for EXTERNAL containers only (JVM roots + java-platform-libraries roots). Positive: `import static java.util.Collections.sort;` + unqualified `sort(xs)`. Negatives: a project static import (`com.acme.own.ProjectUtil.projectHelper` \u2014 container not external, so no evidence and no claim), a name the FILE declares (declaration shadows the import), and a RECEIVER-CARRYING call. POSITIVE CLAIM PINS: the Lead's fixture matcher now compares non-array object metadata by stable key-sorted recursive JSON, so the claim object itself is pinned for BOTH external containers (`java.util.Collections.sort` and `jakarta.persistence.Persistence.createEntityManagerFactory`); the negatives assert the ABSENCE (`meta.importedBinding: null`). The arbiter's arm verification (bindOK with bindFAIL 0) remains the authoritative end-to-end check.",
+  "expectSymbols": [
+    {
+      "name": "LibraryImportBinding",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "com.acme.imp",
+      "target": "java.util.Collections.sort",
+      "meta.importedBindings": [
+        "sort"
+      ],
+      "meta.module": "java.util.Collections",
+      "line_number": 4
+    },
+    {
+      "type": "imports",
+      "source": "LibraryImportBinding",
+      "target": "java.util.Collections.sort",
+      "meta.importedBindings": [
+        "sort"
+      ],
+      "meta.module": "java.util.Collections",
+      "line_number": 4
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.imp",
+      "target": "java.util.Arrays.asList",
+      "meta.importedBindings": [
+        "asList"
+      ],
+      "meta.module": "java.util.Arrays",
+      "line_number": 3
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.imp",
+      "target": "com.acme.own.ProjectUtil.projectHelper",
+      "meta.importedBindings": null
+    },
+    {
+      "type": "calls",
+      "source": "projectStaticCase",
+      "target": "projectHelper",
+      "meta.importedBinding": null
+    },
+    {
+      "type": "calls",
+      "source": "shadowedCase",
+      "target": "asList",
+      "meta.importedBinding": null
+    },
+    {
+      "type": "calls",
+      "source": "receiverProjectCase",
+      "target": "projectHelper",
+      "meta.importedBinding": null
+    },
+    {
+      "type": "calls",
+      "source": "positiveSortCase",
+      "target": "sort",
+      "meta.importedBinding": {
+        "specifier": "java.util.Collections",
+        "binding": "sort"
+      }
+    },
+    {
+      "type": "calls",
+      "source": "positiveJakartaCase",
+      "target": "createEntityManagerFactory",
+      "meta.importedBinding": {
+        "specifier": "jakarta.persistence.Persistence",
+        "binding": "createEntityManagerFactory"
+      }
+    },
+    {
+      "type": "imports",
+      "source": "com.acme.imp",
+      "target": "jakarta.persistence.Persistence.createEntityManagerFactory",
+      "meta.importedBindings": [
+        "createEntityManagerFactory"
+      ],
+      "meta.module": "jakarta.persistence.Persistence"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "com.acme.own.ProjectUtil.projectHelper",
+      "meta.importedBindings": [
+        "projectHelper"
+      ],
+      "comment": "a project static import is project code: it must not publish external-import evidence"
+    },
+    {
+      "type": "calls",
+      "target": "asList",
+      "meta.importedBinding": {
+        "specifier": "java.util.Arrays",
+        "binding": "asList"
+      },
+      "comment": "the file declares asList, which shadows the static import: no claim may be attached"
+    }
+  ]
+}

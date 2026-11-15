@@ -1,0 +1,10 @@
+{
+  "fixtureId": "typescript/error-ranges",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Error ranges must be 1-based like every other range in the codebase (nodeToRange convention). collectErrors and the React-hook linter read raw 0-based rows - error on source line 2 was reported as line 1.",
+  "expectSymbols": [],
+  "expectErrors": [
+    { "startLine": 2 }
+  ]
+}

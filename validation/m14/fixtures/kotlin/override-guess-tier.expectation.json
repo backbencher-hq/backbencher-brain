@@ -1,0 +1,72 @@
+{
+  "fixtureId": "kotlin/override-guess-tier",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "K7 (M60 kotlin deep review, 2026-09-27): the THIRD override-resolution tier, `first-supertype-guess` (confidence 0.5), which no kotlin fixture exercised. Reachable from a single file — the declaring ancestor only has to be absent from THIS file, which an import arranges — so the gap was in the fixture lane, not a property of the tier. The POSITIVE cases assert the guess edge and its reasonCode, so a consumer can tell a guess from a verified edge without hard-coding 0.5 as a magic number. The FORBIDS are the load-bearing half: without the `override` modifier the tier is withheld, and a same-named method with no modifier must produce nothing at either tier — guessing there fabricates an override that is really an overload. MEASURED on Exposed (250-file draw, every edge checked against a repo-wide index of types and their declared members built from all 791 .kt files): guess tier 302 edges — 105 correct, 197 WRONG = 65.2%; verified tier 103 edges — 103 correct, 0 wrong = 0.0%. Kotlin's guess tier is more than twice java's measured 30.6%, and the two are not comparable without saying why: java's denominator EXCLUDED 33 unverifiable guesses whose owner was itself outside the repo, while this measurement has no such bucket — every claimed parent resolved to a type in the repo and 0 were 'not a type at all'. The measurement cost three instrument versions, each of which produced a confidently wrong rate: 79.1% (missed constructor-invocation supertypes, the dominant kotlin form), 66.2% (missed anonymous objects as types), then 65.2% with the instrument validated. A rate is only as good as what the instrument can see. The tier STAYS — it is right about a third of the time, so suppressing it would delete 105 correct edges. What the measurement replaces is the JUSTIFICATION: the analyzer argues 0.5 sits below the consumer threshold, but the 0.7 confidenceThreshold in patterns.ts is the default for orphaned-pattern detection, not a filter on the relationship ingest path, and no confidence filter was found there. The tier's defensibility therefore rests on reasonCode and evidenceClass, which is why both are pinned.",
+  "expectSymbols": [
+    {
+      "name": "GuessesCallable",
+      "kind": "class"
+    },
+    {
+      "name": "AlsoCallable",
+      "kind": "class"
+    },
+    {
+      "name": "DeclaredHere",
+      "kind": "class"
+    },
+    {
+      "name": "VerifiesInFile",
+      "kind": "class"
+    },
+    {
+      "name": "NoOverrideModifier",
+      "kind": "class"
+    },
+    {
+      "name": "call",
+      "kind": "method"
+    },
+    {
+      "name": "handle",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "GuessesCallable.call",
+      "target": "Callable.call",
+      "confidence": 0.5,
+      "meta.reasonCode": "first-supertype-guess",
+      "meta.evidenceClass": "inferred",
+      "line_number": 53,
+      "note": "PASS 3, POSITIVE: Callable is imported, so nothing in this file declares `call` and the tier names the first supertype. The confidence and the reasonCode are BOTH asserted — a consumer must be able to tell a guess from a verified edge without hard-coding 0.5"
+    },
+    {
+      "type": "overrides",
+      "from": "VerifiesInFile.handle",
+      "target": "DeclaredHere.handle",
+      "confidence": 0.9,
+      "meta.reasonCode": "in-file-verified",
+      "meta.evidenceClass": "structural",
+      "line_number": 77,
+      "note": "PASS 1, POSITIVE: the supertype is declared IN THIS FILE, so the BFS verifies the declarer and the edge rises to 0.9. No guess is involved, and this row is what proves the two tiers are distinguishable rather than one tier that always fires"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "AlsoCallable.call",
+      "target": "Callable.call",
+      "note": "PASS 3, NEGATIVE, and the load-bearing half: no `override` modifier, so no tier fires. The gate is `kind === Method && ownerName && !isPhantom && modifiers.includes(\"override\")`. Guessing here would fabricate an override that is really an overload — java closed the same shape as a two-corpus finding"
+    },
+    {
+      "type": "overrides",
+      "from": "NoOverrideModifier.handle",
+      "target": "DeclaredHere.handle",
+      "note": "PASS 1, NEGATIVE: the in-file supertype IS declared and DOES declare `handle`, so this is the case where a guess would look correct by accident. Only the `override` modifier distinguishes it from a real override, and without the gate the edge would be published for an ordinary method that merely shares a name"
+    }
+  ]
+}

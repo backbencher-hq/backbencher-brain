@@ -23,42 +23,42 @@
     {
       "name": "CLI symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-LlSVPK/src/dup.ts\""
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"34bb5ab1a8397d8436d8523f9cb39c906db860e1:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-R6GOWN/src/dup.ts\""
     },
     {
       "name": "CLI file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"045251be801440cfa6661e23ce456446594148cc:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"34bb5ab1a8397d8436d8523f9cb39c906db860e1:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "CLI rejects empty query [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search symbols mode requires a non-empty query\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --"
+      "detail": "error: bb_search symbols mode requires a non-empty query\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_search --"
     },
     {
       "name": "CLI rejects file mode without filePath [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search file mode requires filePath\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-"
+      "detail": "error: bb_search file mode requires filePath\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-"
     },
     {
       "name": "CLI rejects unindexed file [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: file is not indexed: src/not-indexed.ts\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_searc"
+      "detail": "bb_search mode=file: file is not indexed: src/not-indexed.ts\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_searc"
     },
     {
       "name": "CLI rejects path escape [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: path escapes project root: /tmp/escape.ts\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_sea"
+      "detail": "bb_search mode=file: path escapes project root: /tmp/escape.ts\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_sea"
     },
     {
       "name": "CLI rejects non-string query [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search: query must be string\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-search"
+      "detail": "error: bb_search: query must be string\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-search"
     },
     {
       "name": "MCP symbols mode returns the symbol",
@@ -73,12 +73,12 @@
     {
       "name": "MCP symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-LlSVPK/src/dup.ts\""
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"34bb5ab1a8397d8436d8523f9cb39c906db860e1:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-R6GOWN/src/dup.ts\""
     },
     {
       "name": "MCP file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"045251be801440cfa6661e23ce456446594148cc:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"34bb5ab1a8397d8436d8523f9cb39c906db860e1:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "MCP rejects empty query [negative]",
@@ -125,7 +125,7 @@
     {
       "name": "MCP symbol mode pages over a complete match set (declared total, distinct pages)",
       "pass": true,
-      "detail": "p1={\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/dup.ts:du p2={\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/app.ts:du"
+      "detail": "p1={\n  \"matches\": [\n    {\n      \"id\": \"34bb5ab1a8397d8436d8523f9cb39c906db860e1:src/dup.ts:du p2={\n  \"matches\": [\n    {\n      \"id\": \"34bb5ab1a8397d8436d8523f9cb39c906db860e1:src/app.ts:du"
     },
     {
       "name": "MCP symbols answer declares its match set",
@@ -159,5 +159,5 @@
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
     "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
   ],
-  "generatedAt": "2026-11-04T05:38:55.062Z"
+  "generatedAt": "2026-11-05T04:18:07.510Z"
 }

@@ -35,7 +35,7 @@ import path from "node:path"
 import { execFileSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const FILES = Number(argOf("--files") ?? "400")

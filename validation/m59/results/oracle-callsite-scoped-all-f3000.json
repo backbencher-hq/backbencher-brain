@@ -1,0 +1,173 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-29T06:42:20.334Z",
+  "atCommit": "b25d6c5e41a7c5d8dc42d6c2b132b09a825b91a2",
+  "treeModifiedInputs": 7,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 3000,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true,
+      "cssNamespaceRefTakesTheSelectorLeaf": true,
+      "cssNamespaceTokenNeedsTheMarker": true,
+      "cssFontFaceUsesTakesTheFamily": true,
+      "cssFontFaceTokenNeedsTheMarker": true,
+      "cssSelectorStripsSigil": true,
+      "cssIdSelectorStripsSigil": true,
+      "cssCommaGroupTakesFirstPart": true,
+      "cssGroupFirstPartIsBare": true,
+      "cssDescendantChainTakesFirstLeaf": true,
+      "cssCombinatorChainTakesFirstLeaf": true,
+      "cssStructuralTokenIsRejected": true,
+      "cssSingleCharSelectorIsCheckable": true,
+      "cssAtKeywordTargetIsRejected": true,
+      "cssSynthesizedNameIsUncheckable": true,
+      "cssScopeEdgeUsesTheRule": true,
+      "cssNonScopeEdgeIsNotAScopeEdge": true,
+      "cssPlainEdgeIsNotAScopeEdge": true,
+      "cssLaneIsCssNamed": true,
+      "scssLaneIsCssNamed": true,
+      "svelteLaneIsNotCssNamed": true,
+      "scssCommaGroupYieldsTheFirstPart": true
+    },
+    "resolutionSelfTest": {
+      "selfNewIsUncheckable": true,
+      "selfClassNewIsUncheckable": true,
+      "bareNewIsUncheckable": true,
+      "wrongLineStillFails": true,
+      "unmarkedClaimIsNotExcused": true,
+      "writtenReceiverIsNotExcused": true
+    }
+  },
+  "mutation": null,
+  "totals": {},
+  "sampleHash": {},
+  "samplePins": {},
+  "sampleDrift": {},
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {},
+  "skipped": [
+    {
+      "lang": "java",
+      "reason": "no .java files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "kotlin",
+      "reason": "no .kt/.kts files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "scala",
+      "reason": "no .scala files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "groovy",
+      "reason": "no .groovy/.gradle files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "typescript",
+      "reason": "no .ts files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "javascript",
+      "reason": "no .js/.mjs/.cjs files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "vue",
+      "reason": "no .vue files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "svelte",
+      "reason": "no .svelte files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "c",
+      "reason": "no .c/.h files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "cpp",
+      "reason": "no .cpp/.cc/.hpp/.hh files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "rust",
+      "reason": "no .rs files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "go",
+      "reason": "no .go files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "zig",
+      "reason": "no .zig files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "csharp",
+      "reason": "no .cs files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "dart",
+      "reason": "no .dart files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "swift",
+      "reason": "no .swift files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "objc",
+      "reason": "no .m/.mm files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "php",
+      "reason": "no .php files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "ruby",
+      "reason": "no .rb files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "python",
+      "reason": "no .py files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "haskell",
+      "reason": "no .hs files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "xml",
+      "reason": "no .xml files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "css",
+      "reason": "no .css files found under /home/ishaq2321/bb_tests/repositories"
+    },
+    {
+      "lang": "scss",
+      "reason": "no .scss files found under /home/ishaq2321/bb_tests/repositories"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "fixtureId": "typescript/field-uses",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS field-access Uses + the TSD1 write gate (JAD1 class, java wave). READS of fields emit uses from the method (inc's read-modify-write, read's const). WRITES (write() { this.value = 2 }) are assignment-LHS spans — they emit NO uses edge (pre-TSD1 the write method emitted uses value, a write-as-read defect that survived every gate; the java wave's write gate now reaches TS). The update expression in inc() (++ suffix) is a read-modify-write and KEPT its uses edge (java parity: update expressions are not gated).",
+  "expectSymbols": [
+    { "name": "Handler", "kind": "class" },
+    { "name": "value", "ownerName": "Handler" },
+    { "name": "inc", "ownerName": "Handler" },
+    { "name": "read", "ownerName": "Handler" },
+    { "name": "write", "ownerName": "Handler" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "inc", "target": "value", "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "from": "read", "target": "value", "meta.evidenceClass": "usage_contextual" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "write", "target": "value" }
+  ]
+}

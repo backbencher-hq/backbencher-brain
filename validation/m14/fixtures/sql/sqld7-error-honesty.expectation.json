@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld7-error-honesty.sql",
+  "authoredFrom": "SQLD7 (M60 SQL wave, 2026-09-26). The unconditional `errors: []` return was measured by bb_tests/sql/probe/grammar-gaps.mts and probe/contract-battery.mts cases unparseable-file-reports-error / partial-parse-reports-error, both of which failed at the review baseline. The reference behaviour is the R analyzer's (the reference lane for this behaviour, real-r-analyzer.ts:92-115), which walks ERROR and isMissing nodes and records them on the analyzer's own channel with severity 'warning' — the value the indexer keys its hasSyntaxErrors report off (parallel-indexer.ts:1930).",
+  "comment": "This fixture is the pin on the honesty class. It asserts BOTH directions: the unparseable lines produce errors, and the well-formed declarations around them are still extracted — a fix that suppresses extraction to stay quiet passes the expect rows and fails the forbid rows.",
+  "expectErrors": [
+    { "severity": "warning" }
+  ],
+  "expectSymbols": [
+    { "name": "d7_ok", "kind": "class", "meta.type": "table" },
+    { "name": "id", "kind": "property", "ownerName": "d7_ok" },
+    { "name": "name", "kind": "property", "ownerName": "d7_ok" },
+    { "name": "d7_ok_idx", "kind": "constant", "meta.type": "index" },
+    { "name": "d7_ok_view", "kind": "class", "meta.type": "view" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "d7_ok_idx", "target": "d7_ok" },
+    { "type": "uses", "from": "d7_ok_view", "target": "d7_ok" }
+  ]
+}

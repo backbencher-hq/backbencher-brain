@@ -1,0 +1,9 @@
+[INFO] [21:07:29] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [21:07:29] [ast-engine] language grammar allocated {"language":"vue"}
+[INFO] [21:07:29] [ast-engine] language parser loaded {"language":"vue","wasmPath":"/tmp/bb-wasm_tree-sitter-vue_tree-sitter-vue.wasm_5_1v9g0jw"}
+[INFO] [21:07:29] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [21:07:29] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm"}
+[INFO] [21:07:50] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [21:07:50] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+Command exited with non-zero status 1
+ELAPSED 31.34 s

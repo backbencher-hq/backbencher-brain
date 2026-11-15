@@ -1,0 +1,13 @@
+{
+  "fixtureId": "javascript/esm-exports",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ESM named + default exports both yield export relationships.",
+  "expectSymbols": [
+    { "name": "helper" },
+    { "name": "DefaultThing" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "targetEndsWith": "helper" }
+  ]
+}

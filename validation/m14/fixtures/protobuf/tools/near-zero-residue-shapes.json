@@ -1,0 +1,37 @@
+{
+  "_what": "THE RESIDUE'S CAUSE ON THE THREE NEAR-ZERO LANES — fsharp, r, hcl. The fleet ceiling showed their file claim buys ~nothing (0.5% / 0.4% / 0.0%), which makes their residue 'a boundary for a DIFFERENT cause'. This names that cause per lane, with a count and a split: VERIFY / refute / residue, residue broken out BY SHAPE.",
+  "_instrument": "npx tsx validation/m14/fixtures/protobuf/tools/near-zero-residue-shapes.mts --files=60",
+  "_itIsACopy": "IT IS A COPY, NOT AN EDIT OF THOSE LANES' FILES. hcl-lane owns hcl and is mid-flight; r and fsharp have their own owners. Nothing here writes to their analyzers or specs — it reads their output through the production path (`parseFile`), as the sibling-root census did.",
+  "_populationLabel": "BOUNDED STRIDE SAMPLE of 60 files per repo per lane, printed with each lane's sample/population. Extensions from the gate's own LANES_B table.",
+  "_classifierDefectFoundAndFixed": "The first version filed ANY dotted identifier as a path with an extension, so fsharp's `System.IO`, `NUnit.Framework`, `System.Threading.Tasks` became PATH_OTHER_EXT (extensions `.IO`, `.Framework`, `.Tasks`) — 5,079 'paths' that are namespace names. A file extension now has to be KNOWN to count; an unrecognised suffix with no slash is a DOTTED_NAME. fsharp was re-run with the fix; r's 2 PATH_OTHER_EXT and hcl's 1 reclassify to DOTTED_NAME under it and every other bucket is unaffected (no dotted identifiers in them).",
+  "results": {
+    "fsharp": {
+      "population": "1,428 of 11,807 files sampled",
+      "imports": 7149, "verify": 35, "refute": 11, "residue": 7103, "residueShare": "99.4%",
+      "THE_CAUSE": "NAMESPACE AND MODULE NAMES FROM `open` — 6,728 of the 7,103 residue (94.7%): DOTTED_NAME 4,792 (`System.IO` 236, `NUnit.Framework` 177, `System.Threading.Tasks` 173, `System.Collections.Generic` 170, `System.Text` 113) plus NAME 1,936 (`System` 703, `FsUnit` 102, `Expecto` 100, `Xunit` 77, `FsCheck` 70).",
+      "theRest": "PATH_OTHER_EXT 251 — mostly `#r` BINARY references (`../../packages/NUnit/lib/net45/*.dll`, FSharpPlus bin paths); PATH_SRC_EXT 78 — real load targets (`Deedle.fsx` 12, `Library1.fs` 1); PATH_NO_EXT 45 — directory-shaped (`bin/Debug/net10.0/`, `../../bin/netstandard2.0`); URL_SCHEME 1.",
+      "refute": "11 names a file that EXISTS and is not admitted: `_lib/Fornax.Core.dll` under `docs/` — a `.dll` this lane cannot admit, so a claim would REFUTE. The admitted-extension clause's territory, measured."
+    },
+    "r": {
+      "population": "873 of 2,184 files sampled",
+      "imports": 787, "verify": 3, "refute": 24, "residue": 760, "residueShare": "96.6%",
+      "THE_CAUSE": "PACKAGE NAMES FROM `library()`/`require()` — 757 of the 760 residue (99.6%): `cli` 89, `withr` 81, `utils` 56, `rlang` 41, `Rcpp` 36, `stats` 28. These are CRAN packages, not project files.",
+      "theRest": "PATH_SRC_EXT 1 (`code.R`), PATH_OTHER_EXT 2 which the corrected classifier files as DOTTED_NAME (`ns.name`, `data.table` — both are R package names spelled with dots).",
+      "refute": "24 name a file that EXISTS and is not admitted: `.cpp` sources under `inst/examples/…` and `inst/tinytest/cpp/…` (Rcpp `sourceCpp()`), e.g. `piSugar.cpp` -> `inst/examples/Misc/piSugar.cpp`. A claim would REFUTE.",
+      "verify": "3 — the genuine `source(\"x.R\")` cases."
+    },
+    "hcl": {
+      "population": "708 of 9,329 files sampled",
+      "imports": 88, "verify": 0, "refute": 0, "residue": 88, "residueShare": "100.0%",
+      "THE_CAUSE": "MODULE SOURCES THAT NAME A DIRECTORY — 84 of the 88 residue (95.5%): `./module` 12, `./child` 7, `../../account-map/modules/iam-role` 6, `./provision-nomad` 3, `terraform-module/enforce-mfa/aws` 3, `./modules/` 2. A Terraform `module { source = ... }` names the module ROOT, and its content is the `.tf` files INSIDE it — so this is TOML'S ARITHMETIC (a manifest-in-directory claim), not a file claim.",
+      "theRest": "URL_SCHEME 2 (`git::https://github.com/cloudposse/…`) and NAME 1 (`stage`), plus 1 dotted name (`var.unknown`).",
+      "note": "0 refute: no directory target exists on disk AS A FILE, which is why the file-claim route cannot even produce a refutation here — it simply has nothing to claim."
+    }
+  },
+  "theThreeRulings": {
+    "fsharp": "Its `imports` are DECLARATION names (`open System.IO`), not files. A file claim reaches 35 + at most 123 of 7,149 (1.7%). The cause to work is the NAME one: the index exists and carries qualified names — the same instrument this lane just proved can REACH an existing declaration.",
+    "r": "Its `imports` are PACKAGE names (`library(cli)`), not files. A file claim reaches 3 + (if the extension clause were relaxed, wrongly) 24 `.cpp` files. The cause is a PACKAGE claim, and the 24 refutes are the evidence that the file route must NOT be widened to reach them.",
+    "hcl": "Its `imports` name a DIRECTORY (the module root). The arithmetic that fits is toml's — claim the manifest the directory contains — and that is a lane decision for hcl-lane, which owns the file and is mid-flight."
+  },
+  "patternWorthKeeping": "The same instrument that measured the ceiling named these three causes, and the correction of its own classifier is what stopped fsharp's namespace names from being reported as missing paths. Two of the three causes (fsharp names, r packages) are the SAME SHAPE the index work on this lane was about: a name that exists as a declaration, reached not by a path but by a key space."
+}

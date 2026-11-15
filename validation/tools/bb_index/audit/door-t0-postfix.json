@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "tool": "bb_index",
   "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
-  "fixture": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot",
-  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
   "startedAt": "2026-11-03T05:08:52.821Z",
   "cases": [
     {
@@ -40,7 +40,7 @@
         "mode": "post"
       },
       "isError": true,
-      "text": "bb_index mode=post: refusing a path outside the project. \"/etc\" resolves to /etc, which is not inside $HOME/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.",
+      "text": "bb_index mode=post: refusing a path outside the project. \"/etc\" resolves to /etc, which is not inside /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.",
       "ms": 3
     },
     {
@@ -50,7 +50,7 @@
         "mode": "post"
       },
       "isError": true,
-      "text": "bb_index mode=post: $HOME/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot/README.md is a file — mode=post re-derives the phases of the PROJECT, so `path` must be the project root or a directory inside it (pass the project path or \".\").",
+      "text": "bb_index mode=post: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot/README.md is a file — mode=post re-derives the phases of the PROJECT, so `path` must be the project root or a directory inside it (pass the project path or \".\").",
       "ms": 3
     },
     {

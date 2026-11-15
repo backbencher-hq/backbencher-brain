@@ -12,7 +12,7 @@
   },
   "measurement": {
     "scope": "PRESENCE on one purpose-built multi-language fixture indexed fresh by the real indexer. NOT per-language coverage; coverage on real repositories is not claimed (the migration spec §1 makes the same distinction about its own table).",
-    "fixtureRoot": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/agreement-workspace",
+    "fixtureRoot": "/Users/sano/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/agreement-workspace",
     "languages": [
       "groovy",
       "java",
@@ -194,7 +194,7 @@
     },
     "secondPopulation": {
       "why": "a disagreement class that exists only under a hand-written store state is not evidence that the class OCCURS. This population is indexed by the real indexer with NOTHING planted.",
-      "root": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/t2-workspace",
+      "root": "/Users/sano/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/t2-workspace",
       "rows": 9,
       "rowsCompared": 9,
       "buckets": {

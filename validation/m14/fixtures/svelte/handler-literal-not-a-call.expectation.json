@@ -1,0 +1,94 @@
+{
+  "fixtureId": "svelte/handler-literal-not-a-call",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the R7 measurement in script/m14/svelte-r7-probe.mts, after reading both corpus files by hand. Analyzer output was read only to confirm the corpus-wide count moved 12 -> 10.",
+  "rationale": "R7 (standing rule: no edge endpoint equal to a placeholder literal). `isIdentifier` accepts any word whose first character is [A-Za-z_$], so `null`, `undefined`, `true`, `false`, `NaN`, `Infinity` and `this` all passed the bare-identifier handler rule. Two real corpus files hand it exactly that \u2014 svelte/packages/svelte/tests/runtime-legacy/samples/component-events-nullish/main.svelte writes `<Widget on:click={null} {logs} />` and svelte/packages/svelte/tests/runtime-runes/samples/undefined-event-handler/main.svelte writes `<button onmouseenter={undefined}></button>` \u2014 and production parseFile emitted `calls component-events-nullish -> null` and `calls undefined-event-handler -> undefined`. That is an edge naming a VALUE where the ontology means a callable, so bb_impact would report that editing a symbol named `null` breaks a component. A differential cannot catch it: the F5 oracle mirrors the analyzer's handler rule verbatim (differential.ts's #898 closure), so both sides emitted the same wrong edge and agreed. The lane's own corpus probe is what found it. The load-bearing row is `expectRelationshipCount`: this file contains FOURTEEN carriers whose handler expression is a literal or a literal-bearing member \u2014 across all three spellings the analyzer accepts (`on:`, `onclick` on an intrinsic tag, and the framework-invoked `use:` family), in bare and dotted form \u2014 and exactly THREE that are real names, two of which dedupe to the same edge. So `equals: 2` for calls fails the moment any literal slips through, including through a spelling this fixture does not enumerate.",
+  "expectSymbols": [
+    {
+      "name": "realHandler",
+      "kind": "function"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "./Widget.svelte"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "handler-literal-not-a-call",
+      "equals": 3,
+      "note": "THE PIN. The file writes 14 carriers whose handler expression is a literal (null, undefined, true, NaN, Infinity, this, and the dotted box.null / null.open) across on:, onclick: and use:, and 3 edges that are not literal-named: realHandler (reached twice \u2014 bare, and inside an arrow body \u2014 and deduped to one), open (the dotted member leaf whose leaf is not a literal), and action. equals 3 means any literal reaching the graph makes it 4 and fails."
+    },
+    {
+      "type": "renders",
+      "from": "handler-literal-not-a-call",
+      "target": "Widget",
+      "equals": 1,
+      "note": "CONTROL: the component usage on the same line as the nullish handler is unaffected by the filter."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "handler-literal-not-a-call",
+      "target": "realHandler",
+      "confidenceMin": 0.85,
+      "comment": "CONTROL: a handler that IS a name still emits, at the on:/onclick tier. Reached twice in the file (bare, and inside an arrow body) and deduped to one edge, which is what the count above pins."
+    },
+    {
+      "type": "calls",
+      "from": "handler-literal-not-a-call",
+      "target": "open",
+      "confidenceMin": 0.85,
+      "comment": "CONTROL: a dotted member leaf whose LEAF is not a literal still emits \u2014 so the filter is on the leaf's spelling and not on the presence of a dot."
+    },
+    {
+      "type": "calls",
+      "from": "handler-literal-not-a-call",
+      "target": "action",
+      "confidenceMin": 0.85,
+      "comment": "CONTROL, and the reason the count is 3 and not 2. `use:action={null}` DOES emit `calls -> action`, and that is the lane's D12 contract for the framework-invoked carrier family rather than a survivor of this defect: the framework invokes the name written in the ATTRIBUTE NAME, and the value of its argument does not change what is invoked. `use:null` on the line above emits nothing, because there the name itself is a literal. Pinning both keeps the two questions apart \u2014 is the NAME callable-looking, and is the NAME what the framework calls \u2014 instead of letting this fixture appear to claim that a nullish argument silences a real action name, which it does not."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "null",
+      "comment": "R7: `on:click={null}` names a value. Corpus: runtime-legacy/samples/component-events-nullish/main.svelte"
+    },
+    {
+      "type": "calls",
+      "target": "undefined",
+      "comment": "R7: `onmouseenter={undefined}` names a value. Corpus: runtime-runes/samples/undefined-event-handler/main.svelte"
+    },
+    {
+      "type": "calls",
+      "target": "true",
+      "comment": "R7: a boolean is not callable"
+    },
+    {
+      "type": "calls",
+      "target": "NaN",
+      "comment": "R7: a global numeric value is not callable"
+    },
+    {
+      "type": "calls",
+      "target": "Infinity",
+      "comment": "R7: a global numeric value is not callable"
+    },
+    {
+      "type": "calls",
+      "target": "this",
+      "comment": "R7: `this` is not a name anything in scope can be called through"
+    },
+    {
+      "type": "calls",
+      "target": "false",
+      "comment": "R7: a boolean is not callable (spelled in the source only through the dotted form this file does not carry; kept so the forbid set names the whole filter)"
+    }
+  ],
+  "notes": "A first draft of this file carried `forbidTargets` and `expectNoTarget` keys. NEITHER IS A MATCHER run-fixtures.ts IMPLEMENTS, and the inertness check at run-fixtures.ts:773 only covers expectSymbols/expectRelationships/forbidSymbols/forbidRelationships/forbidDecorators \u2014 so an unknown key in an UNCHECKED section is not reported, it is silently dropped, and the fixture reads as coverage it does not have. That is the failure mode the check's own comment records ('a forbid that can never match is worse than no forbid, because it reads as coverage in the fixture file'), reached through a section the check does not visit. Both keys are gone; every assertion here is one the harness applies. What this fixture deliberately does NOT claim: that a member named `unknown` is suppressed. Two corpus files declare one \u2014 `export let unknown = 'whatever'` in css/samples/omit-scoping-attribute-class-dynamic/input.svelte and `const unknown = (node) => ...` in runtime-runes/samples/proxy-coercive-assignment-warning/main.svelte \u2014 an edge to those is faithful, and R7 is about ANALYZER-SUPPLIED placeholders rather than a source identifier that happens to collide with one. Those 10 sites stay recorded in script/m14/svelte-r7-probe.mts output and are reported, not silently dropped. `expectRelationshipCount` for calls is 3, not 2, and the third edge is `calls -> action` from `use:action={null}`: the framework-invoked carrier family keys on the directive's own name, which `action` is, so the nullish ARGUMENT does not silence it. That is a separate construct from this defect and is pinned as a control rather than suppressed, because suppressing it would be a different and larger change to the D12 ruling."
+}

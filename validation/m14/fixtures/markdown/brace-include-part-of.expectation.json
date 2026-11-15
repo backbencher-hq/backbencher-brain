@@ -1,0 +1,24 @@
+{
+ "fixtureId": "markdown/brace-include-part-of",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "_authoringNote": "Authored BEFORE the analyzer's `part_of` emission ran on this document — the rows below were written from the MEASURED grammar shape (the info string of a brace-directive fence is `fenced_code_block > info_string > language`, dumped from the pinned wasm) and the whole-population construct census (validation/m14/fixtures/markdown/measurements/extended-construct-census.json: 317 brace fences, 2 include sites — 1 splice, 1 fragment-quoted — over the admitted population), NOT from analyzer output. The forbid half is authored from the census's near-miss population: 72,469 non-brace fences, 315 non-inclusion brace directives, fragment-quoted includes.",
+ "rationale": "MD-G5. `part_of` is the file-inclusion relation: an included file's content is spliced into THIS document at render time, so it shares this document's single scope, imports nothing, and cannot be resolved as a separate unit — the dart/erlang/php/fsharp contract (src/ast/types.ts, PartOf). Markdown has a construct that does exactly that: the MyST brace-directive fence, which the pinned block grammar models as `fenced_code_block > info_string > language` with the directive name as the `language` child — AST-visible today, rung R3, no grammar change. The positive rows pin the two splice forms: `{include}` and `{literalinclude}`, both with a path argument and NO fragment option. The target is the included file's MODULE STEM (symbol-shaped — the cpp lane measured that a path target resolves 0 of 4,612 rows), with the path on the row as `meta.partPath` and `meta.partRole: \"library\"` mandatory per the vocabulary's own contract. The forbid half pins the four near misses the census counts: a fence with a LANGUAGE is code (72,469 sites); a fragment-quoted `{literalinclude} :lines:` quotes a fragment, not the file (1 site in the corpus); a markdown LINK is a reference, not an inclusion; an IMAGE is a reference to an asset; and a brace directive that is not an inclusion (`{note}` — 93 sites) is an admonition.",
+ "expectSymbolCount": [
+   {"name": "A whole-file include (splice — the `part_of` positive)", "equals": 1},
+   {"name": "A literal include of a whole file (also splice)", "equals": 1}
+ ],
+ "expectRelationships": [
+   {"type": "part_of", "from": "A whole-file include (splice — the `part_of` positive)", "target": "dest-a", "meta.role": "markdown_include_fence", "meta.directive": "include", "meta.partPath": "../../includes/partials/dest-a.md", "meta.partRole": "library", "meta.evidenceClass": "import_based", "line_number": 26},
+   {"type": "part_of", "from": "A literal include of a whole file (also splice)", "target": "dest-b", "meta.role": "markdown_include_fence", "meta.directive": "literalinclude", "meta.partPath": "../../includes/partials/dest-b.md", "meta.partRole": "library", "meta.evidenceClass": "import_based", "line_number": 31}
+ ],
+ "forbidRelationships": [
+   {"type": "part_of", "target": "print", "comment": "a fence with a LANGUAGE (```python) is CODE, not an inclusion — 72,469 of 72,786 corpus fences are this shape and an implementation that published every fence as part_of would fabricate an edge for each."},
+   {"type": "part_of", "from": "A fragment include (near miss — quotes lines, not a scope-sharing part)", "comment": "`{literalinclude} :lines: 1-10` quotes a FRAGMENT of the file rather than splicing the whole file into this document's scope. The corpus census measured this split (1 splice / 1 fragment-quoted); the fragment-quoted site is counted in metadata patterns, never published as an edge."},
+   {"type": "part_of", "target": "dest-a.md", "comment": "the TARGET must be symbol-shaped — the module stem, never the raw path. A path target resolves 0 rows (cpp measured 0 of 4,612) because the arbiter resolves target strings against symbol names."},
+   {"type": "part_of", "from": "A markdown link (near miss — a reference, not an inclusion)", "comment": "`[linked](../../includes/partials/dest-a.md)` is a `uses` edge (the file-model target), not an inclusion: a link does not splice the target's content into this document."},
+   {"type": "part_of", "from": "An image (near miss — a reference to an asset, not an inclusion)", "comment": "an image is a `uses` edge to an asset, not a scope-sharing inclusion."},
+   {"type": "part_of", "from": "A brace directive that is not an inclusion (near miss — an admonition)", "comment": "`{note}` (93 corpus sites), `{contents}` (84), `{eval-rst}` (79), `{code-block}` (20) share the brace syntax but are admonition/nav/eval nodes, not file inclusions."},
+   {"type": "part_of", "from": "Include with no argument (near miss — nothing is named)", "comment": "`{include}` with no argument names nothing; the argument must be a non-empty, path-shaped token."}
+ ]
+}

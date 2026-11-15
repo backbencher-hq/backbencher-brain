@@ -1,0 +1,74 @@
+{
+  "fixtureId": "typescript/decorator-emission",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The source was written first from the owner's fixed direction (source = decorated declaration, target = decorator name leaf, line = decorator's own line, one row per decorator, argument is NOT a row). The line numbers below are read off the fixture's own text (`nl -ba`): 24 = `@sealed`, 25 = `export class Api`, 26 = `@Get(\"/items\")`, 27 = `list()`. An earlier draft of this note quoted 7/9 from a miscounted comment block; the probe refused the expectation and the fixture text is the authority, which is why they are now numbered from `nl`.",
+  "rationale": "PINS the `decorates` relabel (vocabulary extension, 2026-10-18). Before it, extractDecoratorRelationships emitted `references` for every decorator: a row that says the decorated symbol's BODY mentions the decorator's name, which is false for `@sealed`. The expected rows are now `decorates`; the forbid rows are the three ways a relabel can go wrong — (a) the old `references` row left in place beside the new one (double emission), (b) the decorator's ARGUMENT published as if it were the decorator (target `/items`), (c) the decorator invocation published as a CALL by the class that carries it. A relabel that only added the new type would pass the positive rows and fail (a).",
+  "expectSymbols": [
+    {
+      "name": "Api",
+      "kind": "class"
+    },
+    {
+      "name": "list",
+      "kind": "method",
+      "ownerName": "Api"
+    },
+    {
+      "name": "sealed",
+      "kind": "function"
+    },
+    {
+      "name": "Get",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "Api",
+      "target": "sealed",
+      "line_number": 24,
+      "note": "source = the decorated declaration, target = the decorator's name leaf, line = the decorator's own line (the class keyword is on 8)"
+    },
+    {
+      "type": "decorates",
+      "from": "list",
+      "target": "Get",
+      "line_number": 26,
+      "note": "the argument `\"/items\"` is not the target; the member-scoped source is the method"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "Api",
+      "target": "sealed",
+      "note": "the pre-relabel spelling — a decorator is not a name mentioned in the class body"
+    },
+    {
+      "type": "references",
+      "from": "list",
+      "target": "Get",
+      "note": "the pre-relabel spelling on a member"
+    },
+    {
+      "type": "decorates",
+      "from": "list",
+      "target": "/items",
+      "note": "the decorator's ARGUMENT is not a decorates row"
+    },
+    {
+      "type": "decorates",
+      "from": "Api",
+      "target": "Get",
+      "note": "a member's decorator is attributed to the member, not to the enclosing class"
+    },
+    {
+      "type": "calls",
+      "from": "Api",
+      "target": "Get",
+      "note": "the decorator invocation is not a call by the class that carries it"
+    }
+  ]
+}

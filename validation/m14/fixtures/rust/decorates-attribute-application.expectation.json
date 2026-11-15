@@ -1,0 +1,45 @@
+{
+  "fixtureId": "rust/decorates-attribute-application",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS rust's decorates R3 emission from attribute_item (2026-10-23). csharp ruled its attributes passive and named its falsifier — a runtime callable-wrapper construct — and IN RUST THAT FALSIFIER FIRES: #[proc_macro_attribute] (cargo-test-macro lib.rs:61) takes the item and returns a replacement, and #[tokio::main] transforms the declaration. A RULING TRANSFERS ONLY WHEN ITS FALSIFIER DOES NOT FIRE IN THE NEW LANGUAGE (fleet form 16), so rust implements. BOTH classes are published and split by metadata.attributeKind — builtin_directive (derive, allow, inline: the compiler's own set, still real applications the compiler performs) and applied_callable_candidate (the qualified tokio::main path) — the nim shape one better: nim ruled the directive class away, this publishes it so a reader can discount it. The edge exists ONLY when the attribute arrives as a real attribute_item node whose next named sibling is the declaration; recovery text emits nothing and this fails. AND THE INNER-ATTRIBUTE REFUSAL IS PINNED (the rust lane's D1): `#![allow(unused)]` at the file head decorates the MODULE and has no declaration sibling, so it emits ZERO decorates rows and is COUNTED in metadata.unattributedEdges as `decorates:inner_attribute` — a class the analyzer previously did not count at all (202 inner sites over the whole population). The expectMetadata pin fails if the refusal goes silent again.",
+  "expectSymbols": [
+    { "name": "Config", "kind": "struct" },
+    { "name": "helper", "kind": "function" },
+    { "name": "fast", "kind": "function" },
+    { "name": "run", "kind": "function" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "decorates", "equals": 4 },
+    { "type": "decorates", "target": "derive", "equals": 1 },
+    { "type": "decorates", "target": "allow", "equals": 1 },
+    { "type": "decorates", "target": "inline", "equals": 1 },
+    { "type": "decorates", "target": "tokio::main", "equals": 1 },
+    { "type": "decorates", "meta.attributeKind": "builtin_directive", "equals": 3 },
+    { "type": "decorates", "meta.attributeKind": "applied_callable_candidate", "equals": 1 },
+    { "type": "decorates", "target": "dead_code", "equals": 0 },
+    { "type": "decorates", "from": "Config", "target": "derive", "equals": 1 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "Config",
+      "target": "derive",
+      "meta.attributeKind": "builtin_directive"
+    },
+    {
+      "type": "decorates",
+      "from": "run",
+      "target": "tokio::main",
+      "meta.attributeKind": "applied_callable_candidate",
+      "meta.isQualifiedPath": true
+    }
+  ],
+  "expectMetadata": [
+    {
+      "unattributedEdges": {
+        "decorates:inner_attribute": 1
+      }
+    }
+  ]
+}

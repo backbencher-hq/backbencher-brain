@@ -1,0 +1,358 @@
+{
+  "schemaVersion": 1,
+  "fixture": "validation/m11/fixtures/typescript",
+  "projectId": "59ff443a0365b58e8c2b82b0508d8972d6fdd7d4",
+  "compiler": {
+    "base.ts": [
+      "BaseService",
+      "Repository",
+      "T",
+      "format",
+      "helper",
+      "prefix",
+      "save",
+      "trim",
+      "value"
+    ],
+    "service.ts": [
+      "Admin",
+      "Audited",
+      "BaseService",
+      "Models",
+      "Repository",
+      "Role",
+      "T",
+      "User",
+      "UserService",
+      "args",
+      "createService",
+      "format",
+      "helper",
+      "id",
+      "matches",
+      "name",
+      "normalize",
+      "pattern",
+      "prefix",
+      "resolve",
+      "save",
+      "sealed",
+      "set",
+      "store",
+      "target",
+      "test",
+      "updatedAt",
+      "value"
+    ],
+    "view.tsx": [
+      "UserView",
+      "createService",
+      "data-name",
+      "format",
+      "service"
+    ],
+    "commonjs.js": [
+      "Loader",
+      "exports",
+      "load",
+      "path",
+      "resolve",
+      "value"
+    ]
+  },
+  "files": [
+    {
+      "path": "/tmp/bb-m11-tsjs-276944/base.ts",
+      "language": "typescript"
+    },
+    {
+      "path": "/tmp/bb-m11-tsjs-276944/commonjs.js",
+      "language": "javascript"
+    },
+    {
+      "path": "/tmp/bb-m11-tsjs-276944/service.ts",
+      "language": "typescript"
+    },
+    {
+      "path": "/tmp/bb-m11-tsjs-276944/view.tsx",
+      "language": "tsx"
+    }
+  ],
+  "symbols": [
+    {
+      "name": "Admin",
+      "kind": "enum_member",
+      "start_line": 6,
+      "end_line": 6
+    },
+    {
+      "name": "Audited",
+      "kind": "interface",
+      "start_line": 9,
+      "end_line": 9
+    },
+    {
+      "name": "BaseService",
+      "kind": "class",
+      "start_line": 5,
+      "end_line": 9
+    },
+    {
+      "name": "Loader",
+      "kind": "class",
+      "start_line": 3,
+      "end_line": 7
+    },
+    {
+      "name": "Models",
+      "kind": "namespace",
+      "start_line": 8,
+      "end_line": 10
+    },
+    {
+      "name": "Repository",
+      "kind": "interface",
+      "start_line": 1,
+      "end_line": 3
+    },
+    {
+      "name": "Role",
+      "kind": "enum",
+      "start_line": 6,
+      "end_line": 6
+    },
+    {
+      "name": "User",
+      "kind": "type",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "name": "User",
+      "kind": "enum_member",
+      "start_line": 6,
+      "end_line": 6
+    },
+    {
+      "name": "UserService",
+      "kind": "class",
+      "start_line": 16,
+      "end_line": 37
+    },
+    {
+      "name": "UserView",
+      "kind": "function",
+      "start_line": 3,
+      "end_line": 6
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "start_line": 20,
+      "end_line": 22
+    },
+    {
+      "name": "createService",
+      "kind": "function",
+      "start_line": 39,
+      "end_line": 42
+    },
+    {
+      "name": "format",
+      "kind": "method",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "name": "format",
+      "kind": "method",
+      "start_line": 24,
+      "end_line": 26
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "start_line": 11,
+      "end_line": 11
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "name": "load",
+      "kind": "method",
+      "start_line": 4,
+      "end_line": 6
+    },
+    {
+      "name": "matches",
+      "kind": "method",
+      "start_line": 34,
+      "end_line": 36
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "start_line": 5,
+      "end_line": 5
+    },
+    {
+      "name": "path",
+      "kind": "variable",
+      "start_line": 1,
+      "end_line": 1
+    },
+    {
+      "name": "pattern",
+      "kind": "property",
+      "start_line": 18,
+      "end_line": 18
+    },
+    {
+      "name": "prefix",
+      "kind": "property",
+      "start_line": 6,
+      "end_line": 6
+    },
+    {
+      "name": "save",
+      "kind": "method",
+      "start_line": 2,
+      "end_line": 2
+    },
+    {
+      "name": "save",
+      "kind": "method",
+      "start_line": 28,
+      "end_line": 28
+    },
+    {
+      "name": "save",
+      "kind": "method",
+      "start_line": 29,
+      "end_line": 32
+    },
+    {
+      "name": "sealed",
+      "kind": "function",
+      "start_line": 12,
+      "end_line": 14
+    },
+    {
+      "name": "service",
+      "kind": "constant",
+      "start_line": 4,
+      "end_line": 4
+    },
+    {
+      "name": "store",
+      "kind": "property",
+      "start_line": 20,
+      "end_line": 22
+    },
+    {
+      "name": "store",
+      "kind": "constant",
+      "start_line": 40,
+      "end_line": 40
+    },
+    {
+      "name": "updatedAt",
+      "kind": "property",
+      "start_line": 9,
+      "end_line": 9
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_type": "calls",
+      "count": 9
+    },
+    {
+      "relationship_type": "contains",
+      "count": 16
+    },
+    {
+      "relationship_type": "exports",
+      "count": 9
+    },
+    {
+      "relationship_type": "extends",
+      "count": 1
+    },
+    {
+      "relationship_type": "imports",
+      "count": 4
+    },
+    {
+      "relationship_type": "instantiates",
+      "count": 2
+    },
+    {
+      "relationship_type": "overrides",
+      "count": 1
+    },
+    {
+      "relationship_type": "uses",
+      "count": 1
+    }
+  ],
+  "imports": [
+    {
+      "import_path": "./base",
+      "imported_name": "BaseService",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 0,
+      "package_name": null
+    },
+    {
+      "import_path": "./base",
+      "imported_name": "Repository",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 0,
+      "package_name": null
+    },
+    {
+      "import_path": "./base",
+      "imported_name": "helper",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 0,
+      "package_name": null
+    },
+    {
+      "import_path": "./base",
+      "imported_name": "normalize",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 0,
+      "package_name": null
+    },
+    {
+      "import_path": "./service",
+      "imported_name": "createService",
+      "imported_as": null,
+      "import_type": "named",
+      "is_external": 0,
+      "package_name": null
+    },
+    {
+      "import_path": "node:path",
+      "imported_name": "*",
+      "imported_as": null,
+      "import_type": "default",
+      "is_external": 1,
+      "package_name": null
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.822Z",
+    "contentSha256": "27df963c31136767f5dbcbbb1f192771279764973c7c38b0347744489095f9fe"
+  }
+}

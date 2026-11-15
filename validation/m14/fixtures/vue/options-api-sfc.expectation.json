@@ -1,0 +1,11 @@
+{
+  "fixtureId": "vue/options-api-sfc",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Options API: default-export object members (data/computed/methods) must extract; v-for template reference to items surfaces.",
+  "expectSymbols": [
+    { "name": "LegacyList" },
+    { "name": "reload" },
+    { "name": "count" }
+  ]
+}

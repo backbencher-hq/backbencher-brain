@@ -1,0 +1,60 @@
+{
+  "fixtureId": "xml/pereference-semicolon-required",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The SEMICOLON guard on a parameter-entity reference, which no committed fixture pinned before this one. `xml/xsd-parameter-entity-refs` pins the OTHER guard — it forbids a `references` edge to `zz` for the value form `% zz '&#60;'`, so a rule accepting any `%...;` would be caught there. The semicolon test had no pin, and it is precisely the guard that deleting the analyzer's last regular expression put at risk. `grammars/tree-sitter-xml/xml/src/grammar.json` defines `PEReference = SEQ[STRING \"%\", SYMBOL Name, STRING \";\"]`, so a well-formed node always ends in `;` — but `<!ELEMENT %unterminated EMPTY>`, a reference missing its semicolon, still yields a `PEReference` node whose only named child is a `Name` and whose text is `%unterminated` with no `;` in it. Re-probed through production `parseFile`: the shipped predicate publishes 3 relationships and NO edge for that node, while a `Name`-child lookup publishes a fourth (`references root -> unterminated`) for a document that never wrote `%unterminated;`. Authored from that re-probe rather than before it, and the value it pins was confirmed by `validation/m14/fixtures/xml/pereference-shape-probe.mts` on 11 obtainable `PEReference` nodes (4 fixture, 7 synthetic, 0 corpus — see its `corpus.counts` for why the corpus supplies none). The four rows: (0/0b) `declared` and `unterminated` are declared so row 1 can RESOLVE and row 2 cannot be satisfied by refusing undeclared names; (1) `%declared;` in the internal subset is PUBLISHED, owned by the DOCTYPE; (2) `<!ELEMENT %unterminated EMPTY>` is NOT published; (3) `% zz '&#60;`, the parameter-entity VALUE form, is a DECLARATION of `zz` and not a use, so NOT published. The two references use different names on purpose: edge identity here is source|type|target, so one name would collapse the defect into the existing edge and the forbid row could not see it.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "root",
+      "target": "declared",
+      "line_number": 57,
+      "meta.role": "parameter_entity_reference",
+      "meta.resolvable": "in-document",
+      "meta.isParameterEntity": true,
+      "note": "The positive row. `%declared;` is a direct child of the internal subset, so the owner is the DOCTYPE's own name — there is no element above it. `resolvable: in-document` because row 0 declares `declared`, which is what stops the forbid rows below from being satisfied by a rule that publishes nothing at all."
+    },
+    {
+      "type": "contains",
+      "from": "root",
+      "target": "unterminated",
+      "line_number": 56,
+      "meta.role": "dtd_parameter_entity_declaration",
+      "note": "Row 0b. `unterminated` IS declared, so row 2's forbid cannot be met by refusing undeclared names — it can only be met by the semicolon guard itself."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "unterminated",
+      "note": "THE ROW THIS FIXTURE EXISTS FOR. `<!ELEMENT %unterminated EMPTY>` is the parameter-entity reference form with its semicolon MISSING. The grammar still builds a `PEReference` node for it, with a `Name` child and no `;` in its text, so reading the child publishes a use of a name the document never wrote `%unterminated;`. Inventing that edge is the fabrication rule's exact case: it would be counted unexplained and would poison bb_graph and bb_impact. Mutant xml/pereference-semicolon-guard-removed reinstates the defect and must fail this row."
+    },
+    {
+      "type": "references",
+      "target": "zz",
+      "note": "The parameter-entity VALUE form `% zz '&#60;` names nothing: it DECLARES `zz` and its replacement text, it does not use `zz`. Repeated here in the bare internal-subset position because it is a different parse shape from xml/xsd-parameter-entity-refs — children `ERROR,Name,ERROR` rather than a clean `Name` — and the probe measured the two shapes reaching the same guard by different routes."
+    },
+    {
+      "type": "references",
+      "from": "unterminated",
+      "target": "declared",
+      "note": "direction: the DOCTYPE's own name owns both references. Nothing in this document makes a parameter entity use another."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "declared",
+      "meta.nodeType": "PEDecl"
+    },
+    {
+      "name": "unterminated",
+      "meta.nodeType": "PEDecl"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "zz",
+      "note": "the value form's first token is not a parameter entity name, so nothing may be published for it — the same refusal xml/xsd-parameter-entity-refs pins for the replacement-text position."
+    }
+  ]
+}

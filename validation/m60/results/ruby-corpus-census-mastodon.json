@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-09-28T19:35:00.479Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories/mastodon",
+    "400"
+  ],
+  "files": 400,
+  "errors": 0,
+  "treeTruth": 6250,
+  "analyzerEdges": 8310,
+  "missing": 0,
+  "unexplained": 46,
+  "outsideAudited": 1411,
+  "missingByLabel": {},
+  "unexplainedByLabel": {
+    "uses": 46
+  },
+  "outsideByLabel": {
+    "contains": 1252,
+    "references": 159
+  },
+  "unexplainedExamples": {
+    "uses": [
+      {
+        "file": "app/models/account_alias.rb",
+        "line": 16,
+        "from": "AccountAlias",
+        "target": "account",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/account_pin.rb",
+        "line": 18,
+        "from": "AccountPin",
+        "target": "account",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/account_pin.rb",
+        "line": 19,
+        "from": "AccountPin",
+        "target": "target_account",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/collection_item.rb",
+        "line": 21,
+        "from": "CollectionItem",
+        "target": "collection",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/collection_item.rb",
+        "line": 22,
+        "from": "CollectionItem",
+        "target": "account",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/conversation_mute.rb",
+        "line": 13,
+        "from": "ConversationMute",
+        "target": "account",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/conversation_mute.rb",
+        "line": 14,
+        "from": "ConversationMute",
+        "target": "conversation",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "belongs_to",
+          "evidenceClass": "inferred"
+        }
+      },
+      {
+        "file": "app/models/domain_block.rb",
+        "line": 28,
+        "from": "DomainBlock",
+        "target": "accounts",
+        "conf": 0.8,
+        "md": {
+          "activerecordMacro": "has_many",
+          "evidenceClass": "inferred"
+        }
+      }
+    ]
+  },
+  "sigA": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigB": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  },
+  "sigC": {
+    "sampled": 0,
+    "files": 0,
+    "examples": []
+  }
+}

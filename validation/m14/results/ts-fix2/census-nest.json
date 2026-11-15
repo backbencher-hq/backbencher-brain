@@ -1,0 +1,436 @@
+{
+  "at": "2026-10-05T12:30:37.943Z",
+  "lang": "typescript",
+  "corpusRoot": "/tmp/opencode/corpus",
+  "filesAdmitted": 1966,
+  "filesParsed": 1966,
+  "filesFailed": 0,
+  "filesWithRelationships": 1879,
+  "totalSymbols": 19607,
+  "totalRelationships": 89937,
+  "population": {
+    "reposScanned": [
+      {
+        "repo": "nest",
+        "tracked": 2468,
+        "admitted": 1966,
+        "declaration": 0
+      }
+    ],
+    "trackedPathsSeen": 2468,
+    "droppedOverSizeCap": 1,
+    "droppedNotThisLanguage": 501,
+    "admittedFiles": 1966,
+    "admittedAmbientDeclarationFiles": 0,
+    "admittedImplementationFiles": 1966,
+    "admittedTsxFiles": 0,
+    "admittedPlainTypescriptFiles": 1966,
+    "servedLanguageKeys": [
+      "typescript",
+      "tsx"
+    ],
+    "sizeCapBytes": 524288,
+    "filter": "nest"
+  },
+  "parseErrorFiles": [],
+  "fallbackFiles": [],
+  "types": {
+    "calls": {
+      "count": 52224,
+      "files": 1240,
+      "fileListSample": [
+        "nest/integration/_support/register-local-packages.ts",
+        "nest/integration/auto-mock/test/bar.service.spec.ts",
+        "nest/integration/auto-mock/src/bar.service.ts",
+        "nest/integration/cookies/e2e/cookies.spec.ts",
+        "nest/integration/cookies/src/app.controller.ts",
+        "nest/integration/cors/e2e/express.spec.ts",
+        "nest/integration/cors/e2e/fastify.spec.ts",
+        "nest/integration/discovery/e2e/discover-by-meta.spec.ts",
+        "nest/integration/discovery/src/decorators/webhook.decorators.ts",
+        "nest/integration/discovery/src/decorators/non-applied.decorator.ts",
+        "nest/integration/discovery/src/webhooks.explorer.ts",
+        "nest/integration/file-upload/e2e/fastify.spec.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 9561,
+      "targetResolves": 4234,
+      "bothResolve": 2123,
+      "emptyEndpoints": 0,
+      "selfLoops": 337,
+      "placeholderSourceEndpoints": 6,
+      "placeholderTargetEndpoints": 1256,
+      "confidenceHistogram": {
+        "0.9": 52224
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 52224
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "register-local-packages -> join",
+        "register-local-packages -> join",
+        "register-local-packages -> join",
+        "register-local-packages -> join",
+        "register-local-packages -> join"
+      ]
+    },
+    "uses": {
+      "count": 2878,
+      "files": 494,
+      "fileListSample": [
+        "nest/integration/auto-mock/src/bar.service.ts",
+        "nest/integration/cookies/e2e/cookies.spec.ts",
+        "nest/integration/cookies/src/app.controller.ts",
+        "nest/integration/discovery/src/webhooks.explorer.ts",
+        "nest/integration/file-upload/e2e/fastify.spec.ts",
+        "nest/integration/file-upload/e2e/parity.spec.ts",
+        "nest/integration/file-upload/src/upload.module.ts",
+        "nest/integration/graceful-shutdown/e2e/fastify.spec.ts",
+        "nest/integration/graphql-code-first/src/recipes/recipes.resolver.ts",
+        "nest/integration/graphql-schema-first/src/cats/cats-request-scoped.service.ts",
+        "nest/integration/graphql-schema-first/src/cats/cats.resolvers.ts",
+        "nest/integration/graphql-schema-first/src/cats/cats.service.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 2878,
+      "targetResolves": 2587,
+      "bothResolve": 2587,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 4,
+      "placeholderTargetEndpoints": 73,
+      "confidenceHistogram": {
+        "0.85": 2714,
+        "0.9": 164
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 2878
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "bar -> foo",
+        "emulateCookieParser -> SIMULATE_PARSER_HEADER",
+        "signedWith -> value",
+        "signedWith -> secret",
+        "AppController -> httpAdapter"
+      ]
+    },
+    "contains": {
+      "count": 7384,
+      "files": 1036,
+      "fileListSample": [
+        "nest/integration/auto-mock/src/foo.service.ts",
+        "nest/integration/auto-mock/src/bar.service.ts",
+        "nest/integration/cookies/src/app.controller.ts",
+        "nest/integration/cors/src/app.controller.ts",
+        "nest/integration/discovery/src/my-webhook/cleanup.webhook.ts",
+        "nest/integration/discovery/src/webhooks.explorer.ts",
+        "nest/integration/file-upload/e2e/fastify.spec.ts",
+        "nest/integration/file-upload/src/upload-api.ts",
+        "nest/integration/discovery/src/my-webhook/flush.webhook.ts",
+        "nest/integration/file-upload/src/upload.module.ts",
+        "nest/integration/graceful-shutdown/e2e/fastify.spec.ts",
+        "nest/integration/graceful-shutdown/src/app.controller.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 7384,
+      "targetResolves": 7376,
+      "bothResolve": 7376,
+      "emptyEndpoints": 1,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 6,
+      "placeholderTargetEndpoints": 132,
+      "confidenceHistogram": {
+        "1": 7384
+      },
+      "evidenceClassHistogram": {
+        "structural": 7384
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "FooService -> foo",
+        "BarService -> constructor",
+        "BarService -> foo",
+        "BarService -> bar",
+        "AppController -> constructor"
+      ]
+    },
+    "imports": {
+      "count": 9693,
+      "files": 1706,
+      "fileListSample": [
+        "nest/integration/_support/register-local-packages.ts",
+        "nest/integration/auto-mock/test/bar.service.spec.ts",
+        "nest/integration/auto-mock/src/foo.service.ts",
+        "nest/integration/auto-mock/src/bar.service.ts",
+        "nest/integration/cookies/e2e/cookies.spec.ts",
+        "nest/integration/cookies/src/app.module.ts",
+        "nest/integration/cookies/src/app.controller.ts",
+        "nest/integration/cors/e2e/express.spec.ts",
+        "nest/integration/cors/e2e/fastify.spec.ts",
+        "nest/integration/cors/src/app.controller.ts",
+        "nest/integration/discovery/e2e/discover-by-meta.spec.ts",
+        "nest/integration/cors/src/app.module.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 25,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 9693
+      },
+      "evidenceClassHistogram": {
+        "import_based": 9693
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "register-local-packages -> path:*",
+        "register-local-packages -> module:*",
+        "bar.service.spec -> @nestjs/testing:Test",
+        "bar.service.spec -> ../src/bar.service.js:BarService",
+        "bar.service.spec -> ../src/foo.service.js:FooService"
+      ]
+    },
+    "references": {
+      "count": 12075,
+      "files": 1569,
+      "fileListSample": [
+        "nest/integration/_support/register-local-packages.ts",
+        "nest/integration/auto-mock/test/bar.service.spec.ts",
+        "nest/integration/auto-mock/src/foo.service.ts",
+        "nest/integration/auto-mock/src/bar.service.ts",
+        "nest/integration/cookies/e2e/cookies.spec.ts",
+        "nest/integration/cookies/src/app.module.ts",
+        "nest/integration/cookies/src/app.controller.ts",
+        "nest/integration/cors/e2e/express.spec.ts",
+        "nest/integration/cors/e2e/fastify.spec.ts",
+        "nest/integration/cors/src/app.controller.ts",
+        "nest/integration/discovery/e2e/discover-by-meta.spec.ts",
+        "nest/integration/cors/src/app.module.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 11579,
+      "targetResolves": 2600,
+      "bothResolve": 2556,
+      "emptyEndpoints": 1,
+      "selfLoops": 12,
+      "placeholderSourceEndpoints": 70,
+      "placeholderTargetEndpoints": 8,
+      "confidenceHistogram": {
+        "1": 2316,
+        "0.95": 8248,
+        "0.8": 1511
+      },
+      "evidenceClassHistogram": {
+        "reference_qualified": 12075
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "ResolveFilename -> NodeModule",
+        "ResolveFilename -> Record",
+        "Module -> ResolveFilename",
+        "service -> BarService",
+        "fooService -> FooService"
+      ]
+    },
+    "exports": {
+      "count": 2126,
+      "files": 1250,
+      "fileListSample": [
+        "nest/integration/auto-mock/src/foo.service.ts",
+        "nest/integration/auto-mock/src/bar.service.ts",
+        "nest/integration/cookies/src/app.module.ts",
+        "nest/integration/cookies/src/app.controller.ts",
+        "nest/integration/cors/src/app.controller.ts",
+        "nest/integration/cors/src/app.module.ts",
+        "nest/integration/discovery/src/app.module.ts",
+        "nest/integration/discovery/src/decorators/webhook.decorators.ts",
+        "nest/integration/discovery/src/decorators/non-applied.decorator.ts",
+        "nest/integration/discovery/src/my-webhook/cleanup.webhook.ts",
+        "nest/integration/discovery/src/webhooks.explorer.ts",
+        "nest/integration/discovery/src/my-webhook/my-webhook.module.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 5,
+      "targetResolves": 1976,
+      "bothResolve": 5,
+      "emptyEndpoints": 0,
+      "selfLoops": 3,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 1,
+      "confidenceHistogram": {
+        "1": 2126
+      },
+      "evidenceClassHistogram": {
+        "structural": 2126
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "foo.service -> FooService",
+        "bar.service -> BarService",
+        "app.module -> AppModule",
+        "app.controller -> AppController",
+        "app.controller -> AppController"
+      ]
+    },
+    "extends": {
+      "count": 267,
+      "files": 203,
+      "fileListSample": [
+        "nest/integration/hello-world/e2e/router-module.spec.ts",
+        "nest/integration/injector/e2e/inherited-optional.spec.ts",
+        "nest/integration/inspector/src/chat/dto/update-chat.dto.ts",
+        "nest/integration/inspector/src/database/dto/update-database.dto.ts",
+        "nest/integration/inspector/src/dogs/dto/update-dog.dto.ts",
+        "nest/integration/inspector/src/external-svc/dto/update-external-svc.dto.ts",
+        "nest/integration/inspector/src/users/dto/update-user.dto.ts",
+        "nest/integration/microservices/src/app.module.ts",
+        "nest/integration/microservices/src/grpc/grpc.controller.ts",
+        "nest/integration/microservices/src/tcp-tls/app.module.ts",
+        "nest/integration/module-utils/src/integration.module.ts",
+        "nest/integration/mongoose/src/cats/interfaces/cat.interface.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 267,
+      "targetResolves": 57,
+      "bothResolve": 57,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 267
+      },
+      "evidenceClassHistogram": {
+        "structural": 267
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "ParentController -> BaseController",
+        "ChildController -> BaseController",
+        "NoSlashController -> BaseController",
+        "FooService -> Foo()",
+        "InheritedFooService -> Foo()"
+      ]
+    },
+    "implements": {
+      "count": 252,
+      "files": 177,
+      "fileListSample": [
+        "nest/integration/graphql-code-first/src/common/filters/unauthorized.filter.ts",
+        "nest/integration/graphql-code-first/src/common/guards/auth.guard.ts",
+        "nest/integration/graphql-code-first/src/common/interceptors/data.interceptor.ts",
+        "nest/integration/graphql-schema-first/src/async-options-class.module.ts",
+        "nest/integration/graphql-schema-first/src/cats/cats.guard.ts",
+        "nest/integration/graphql-schema-first/src/config.service.ts",
+        "nest/integration/hello-world/e2e/buffer-logs.spec.ts",
+        "nest/integration/hello-world/e2e/capturing-logger.spec.ts",
+        "nest/integration/hello-world/e2e/fastify-middleware-before-init.spec.ts",
+        "nest/integration/hello-world/e2e/interceptors.spec.ts",
+        "nest/integration/hello-world/e2e/middleware-fastify.spec.ts",
+        "nest/integration/hello-world/e2e/middleware-run-match-route.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 252,
+      "targetResolves": 3,
+      "bothResolve": 3,
+      "emptyEndpoints": 0,
+      "selfLoops": 1,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "1": 252
+      },
+      "evidenceClassHistogram": {
+        "structural": 252
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "UnauthorizedFilter -> GqlExceptionFilter",
+        "AuthGuard -> CanActivate",
+        "DataInterceptor -> NestInterceptor",
+        "ConfigService -> GqlOptionsFactory",
+        "CatsGuard -> CanActivate"
+      ]
+    },
+    "overrides": {
+      "count": 18,
+      "files": 5,
+      "fileListSample": [
+        "nest/packages/common/services/logger.service.ts",
+        "nest/packages/common/test/pipes/standard-schema-validation.pipe.spec.ts",
+        "nest/packages/common/test/pipes/validation.pipe.spec.ts",
+        "nest/packages/core/test/exceptions/external-exception-filter-context.spec.ts",
+        "nest/packages/platform-fastify/interfaces/external/fastify-static-options.interface.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 0,
+      "targetResolves": 0,
+      "bothResolve": 0,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 0,
+      "confidenceHistogram": {
+        "0.95": 18
+      },
+      "evidenceClassHistogram": {
+        "usage_contextual": 18
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "Logger.error -> LoggerService.error",
+        "Logger.log -> LoggerService.log",
+        "Logger.warn -> LoggerService.warn",
+        "Logger.debug -> LoggerService.debug",
+        "Logger.verbose -> LoggerService.verbose"
+      ]
+    },
+    "instantiates": {
+      "count": 3020,
+      "files": 504,
+      "fileListSample": [
+        "nest/integration/cookies/e2e/cookies.spec.ts",
+        "nest/integration/cors/e2e/fastify.spec.ts",
+        "nest/integration/file-upload/e2e/fastify.spec.ts",
+        "nest/integration/file-upload/e2e/utils.ts",
+        "nest/integration/graceful-shutdown/e2e/express.spec.ts",
+        "nest/integration/graceful-shutdown/e2e/fastify.spec.ts",
+        "nest/integration/graphql-code-first/e2e/pipes.spec.ts",
+        "nest/integration/graphql-code-first/src/common/guards/auth.guard.ts",
+        "nest/integration/graphql-code-first/src/main.ts",
+        "nest/integration/graphql-code-first/src/recipes/recipes.resolver.ts",
+        "nest/integration/graphql-schema-first/src/cats/cats.resolvers.ts",
+        "nest/integration/hello-world/e2e/buffer-logs.spec.ts"
+      ],
+      "fileListSampleTruncatedAt": 12,
+      "srcResolves": 621,
+      "targetResolves": 309,
+      "bothResolve": 26,
+      "emptyEndpoints": 0,
+      "selfLoops": 0,
+      "placeholderSourceEndpoints": 0,
+      "placeholderTargetEndpoints": 1,
+      "confidenceHistogram": {
+        "1": 3020
+      },
+      "evidenceClassHistogram": {
+        "structural": 3020
+      },
+      "confidenceReasonHistogram": {},
+      "examples": [
+        "cookies.spec -> ExpressAdapter",
+        "cookies.spec -> FastifyAdapter",
+        "fastify.spec -> FastifyAdapter",
+        "fastify.spec -> FastifyAdapter",
+        "fastify.spec -> FastifyAdapter"
+      ]
+    }
+  },
+  "notEmitted": []
+}

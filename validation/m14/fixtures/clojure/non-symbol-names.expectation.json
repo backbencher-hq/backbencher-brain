@@ -1,0 +1,50 @@
+{
+  "issue": "A3",
+  "note": "A3 (task-35 Part B): a STRING literal or a READER-CONDITIONAL node in the name position is not an identifier; the declaration publishes NO symbol and NO edge for it. Before the fix the node's text became a published name (`\"bad docstring\"`, `#?@(…)`) with exports+contains rows. Two-direction: the well-formed `ok-name` declaration keeps its symbol, export and containment.",
+  "expectSymbols": [
+    {
+      "name": "ok-name",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "fixture.non-symbol-names",
+      "target": "ok-name",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "fixture.non-symbol-names",
+      "target": "ok-name",
+      "line_number": 10
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "contains": "bad docstring"
+    },
+    {
+      "contains": "#?@"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "contains": "bad docstring"
+    },
+    {
+      "type": "exports",
+      "contains": "#?@"
+    },
+    {
+      "type": "contains",
+      "contains": "bad docstring"
+    },
+    {
+      "type": "contains",
+      "contains": "#?@"
+    }
+  ]
+}

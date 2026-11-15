@@ -1,0 +1,9 @@
+/* An `@import` the run cannot resolve must SAY why — but ONLY when the caller has named the project
+   the claim is about. This fixture is the DEGRADED-INVOCATION pin: `run-fixtures.ts` calls
+   `analyze()` with no context, so no project root is named and NO claim may be stated.
+   The four specifiers below are the boundary; the positive half is the probe
+   (`import-claims-probe.ts`) and the gate (`measurements/gate-css-after-400.txt`). */
+@import "https://fonts.googleapis.com/css?family=Lato:400,400i";
+@import "tailwindcss";
+@import "@fontsource-variable/figtree/index.css";
+@import "vendor/reset.css";

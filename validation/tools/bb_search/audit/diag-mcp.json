@@ -1,0 +1,65 @@
+{
+  "calls": [
+    {
+      "label": "__init__",
+      "projectId": "177b289234069b91c1187e562088c9dfd5dfda33",
+      "projectDir": "/tmp/bb-diag-VqVeG0"
+    },
+    {
+      "label": "symbols",
+      "args": {
+        "query": "handleRequest"
+      },
+      "isError": false,
+      "ms": 76.48,
+      "text": "handleRequest [function] src/app.ts:1 (typescript) [STALE]\n1 of 1 results are STALE — the file changed after indexing\nauto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)",
+      "parsed": null
+    },
+    {
+      "label": "content",
+      "args": {
+        "mode": "content",
+        "query": "handleRequest"
+      },
+      "isError": false,
+      "ms": 39.74,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 1,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 1,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/app.ts\",\n      \"fileId\": \"177b289234069b91c1187e562088c9dfd5dfda33:src/app.ts\",\n      \"line\": 1,\n      \"column\": 0,\n      \"context\": \"function: handleRequest\",\n      \"symbolName\": \"handleRequest\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function handleRequest(): string { return \\\"ok\\\" }\",\n      \"complexity\": 1,\n      \"_relevance\": 1,\n      \"stale\": true\n    }\n  ],\n  \"autoRefresh\": \"auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)\"\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "handleRequest",
+        "total": 1,
+        "returned": 1,
+        "staleCount": 1,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 1,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+        },
+        "results": [
+          {
+            "file": "src/app.ts",
+            "fileId": "177b289234069b91c1187e562088c9dfd5dfda33:src/app.ts",
+            "line": 1,
+            "column": 0,
+            "context": "function: handleRequest",
+            "symbolName": "handleRequest",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function handleRequest(): string { return \"ok\" }",
+            "complexity": 1,
+            "_relevance": 1,
+            "stale": true
+          }
+        ],
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    }
+  ],
+  "serverStderr": ""
+}

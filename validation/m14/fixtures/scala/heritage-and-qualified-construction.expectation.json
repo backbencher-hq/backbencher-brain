@@ -1,0 +1,22 @@
+{
+  "fixtureId": "scala/heritage-and-qualified-construction",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49.S1 #715 pins: (1) companion-qualified construction keeps the dotted target (new TrieMapLike.MangledHashing[Int] -> instantiates TrieMapLike.MangledHashing) — the oracle's junk-truth cleanup must not be mistaken for a reason to drop real dotted constructions; (2) enum X extends Y emits heritage on BOTH sides (shared-blind-spot class: pre-S1 neither analyzer nor oracle derived enum extends); (3) transitive overrides through a non-declaring middle survive the per-occurrence oracle guard (Leaf.handle -> Base.handle through abstract Mid).",
+  "expectSymbols": [
+    { "name": "Color" },
+    { "name": "TrieMapLike" },
+    { "name": "MangledHashing" },
+    { "name": "Base" },
+    { "name": "Mid" },
+    { "name": "Leaf" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "User", "target": "TrieMapLike.MangledHashing" },
+    { "type": "extends", "from": "Color", "target": "Serializable" },
+    { "type": "extends", "from": "Mid", "target": "Base" },
+    { "type": "extends", "from": "Leaf", "target": "Mid" },
+    { "type": "overrides", "from": "Leaf.handle", "target": "Base.handle" }
+  ],
+  "notes": "The oracle mirrors every pin: generic_function callee-leaf extraction (junk-truth kill), per-occurrence companion guard (IsEq class), enum_definition heritage gate. Mutants scala/drop-companion-qualified-instantiates + scala/enum-heritage-drop must die here."
+}

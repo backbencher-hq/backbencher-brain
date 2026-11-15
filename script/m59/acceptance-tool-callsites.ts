@@ -29,7 +29,7 @@
 // Usage:
 //   npx tsx script/m59/acceptance-tool-callsites.ts                       # fresh index
 //   M59_ACCEPT_DATA=/tmp/m59-data-xxxx npx tsx ... --reuse                # reuse an index
-//   npx tsx ... --repo=$HOME/fixtures/repositories/some-repo
+//   npx tsx ... --repo=/home/ishaq2321/bb_tests/repositories/some-repo
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -52,7 +52,7 @@ process.env.BB_DATA_DIR = DATA
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const REPO_ARG = process.argv.find((a) => a.startsWith("--repo="))?.slice("--repo=".length)
-const REPO = REPO_ARG ?? "$HOME/fixtures/repositories/cats-effect"
+const REPO = REPO_ARG ?? "/home/ishaq2321/bb_tests/repositories/cats-effect"
 
 let failures = 0
 let checks = 0

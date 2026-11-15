@@ -1,0 +1,156 @@
+{
+ "fixtureId": "markdown/internal-anchor-links",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A link whose destination is only a fragment names a heading in THIS document, written as the heading's ANCHOR rather than its text, and those are different strings: this document's own heading text is `Internal anchor references` and its anchor is `#internal-anchor-references`. The lane published the heading's TEXT where a link names the ANCHOR, so the two spellings could never meet and every same-document reference was an edge to a name no symbol declared \u2014 measured over 420 corpus files, 10,174 bare fragments of which 10,158 now resolve and 16 do not exist. Six behaviours are pinned here because each is a place the obvious implementation is wrong. (1) A FORWARD reference resolves: a link may precede the heading it names, so resolution cannot happen where the link is read. (2) PUNCTUATION is dropped and spaces become hyphens, so `C++ and Rust: a Punctuation Test` is `#c-and-rust-a-punctuation-test` and not a transliteration of the symbols. (3) Two identical headings get TWO anchors, the second `#duplicate-1`, because they are two sites and collapsing them makes the second unreachable \u2014 the same rule as the site's own `#2` ordinal, keyed on the anchor rather than the site. (4) A fragment is PERCENT-DECODED before matching, so `#install%2Dnow` and `#install-now` are one heading. (5) A fragment that matches no heading is NOT published, which is the internal twin of MD-D1's ruling on undefined reference links: an edge whose endpoint no symbol declares is the defect class this round exists to remove, and a broken link does not make the endpoint real. (6) A link naming its OWN section is a self-edge and is not a containment, so it is not published. forbidRelationships pins the regression that matters most \u2014 the RAW FRAGMENT as a target, which is exactly what the lane published before and what an implementation that resolves half the cases would keep producing. MD-D6's negative half was under-pinned until this round: one broken fragment was named and the second was not, and the forward reference's raw fragment had no row at all. `markdown/internal-anchor-unresolved-kept` in the lane's own mutant harness survived on exactly that gap, which is the harness doing its job; the three rows added here are the fix, and the mutant now reads CAUGHT. MD-L1 (2026-10-03, the M60 pass-2 labelling review): every one of these rows is now `references`, not `uses`. The label is decided by what the destination NAMES. A `#fragment` names a heading this document declares, and it is the only edge class in the lane whose target binds to a published symbol \u2014 measured 1,107 of 1,107 on a 1,200-file corpus draw (`validation/m60/markdown/pass2-labelling-probe.json`, role `markdown_internal_anchor`, `targetResolved`) \u2014 while a URL or a cross-file path is named by nothing and is `uses`. css's `references` is the same shape (`var(--x)` reading a declared custom property) and the shared enum spells the class twice, `References`/`DependsOn` against `Uses`/`Dependency`. The change relabels the five rows below and adds no edge, so the fabrication class the workstream forbids is untouched; the mutants `markdown/internal-anchor-published-as-raw-fragment` and `markdown/internal-anchor-unresolved-kept` are the two spellings that must fail against the new label, and `markdown/internal-anchor-published-as-uses` is the third, added because no fixture row asserted the TYPE before and a relabel that nothing pinned is a relabel nothing checks.",
+ "expectSymbolCount": [
+  {
+   "name": "Internal anchor references",
+   "equals": 1
+  },
+  {
+   "name": "Install Now!",
+   "equals": 1
+  },
+  {
+   "name": "C++ and Rust: a Punctuation Test",
+   "equals": 1
+  },
+  {
+   "name": "Duplicate",
+   "equals": 1
+  },
+  {
+   "name": "Duplicate#2",
+   "equals": 1
+  },
+  {
+   "name": "Spaced Anchor",
+   "equals": 1
+  },
+  {
+   "name": "Anchor registry",
+   "equals": 1
+  },
+  {
+   "name": "Self reference",
+   "equals": 1
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "Internal anchor references",
+   "target": "Install Now!",
+   "meta.role": "markdown_internal_anchor",
+   "meta.linkForm": "internal_anchor",
+   "meta.anchor": "install-now",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 12
+  },
+  {
+   "type": "references",
+   "from": "Anchor registry",
+   "target": "Install Now!",
+   "meta.role": "markdown_internal_anchor",
+   "meta.anchor": "install-now",
+   "meta.linkLine": 38,
+   "line_number": 12
+  },
+  {
+   "type": "references",
+   "from": "Anchor registry",
+   "target": "C++ and Rust: a Punctuation Test",
+   "meta.role": "markdown_internal_anchor",
+   "meta.anchor": "c-and-rust-a-punctuation-test",
+   "meta.linkLine": 43,
+   "line_number": 16
+  },
+  {
+   "type": "references",
+   "from": "Anchor registry",
+   "target": "Duplicate",
+   "meta.role": "markdown_internal_anchor",
+   "meta.anchor": "duplicate",
+   "meta.linkLine": 46,
+   "line_number": 20
+  },
+  {
+   "type": "references",
+   "from": "Anchor registry",
+   "target": "Duplicate#2",
+   "meta.role": "markdown_internal_anchor",
+   "meta.anchor": "duplicate-1",
+   "meta.linkLine": 48,
+   "line_number": 24
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "Anchor registry",
+   "target": "#install-now"
+  },
+  {
+   "from": "Anchor registry",
+   "target": "#c-and-rust-a-punctuation-test"
+  },
+  {
+   "from": "Anchor registry",
+   "target": "#duplicate"
+  },
+  {
+   "from": "Anchor registry",
+   "target": "Spaced Anchor"
+  },
+  {
+   "from": "Anchor registry",
+   "target": "#spaced%20anchor"
+  },
+  {
+   "from": "Anchor registry",
+   "target": "#no-such-heading"
+  },
+  {
+   "from": "Self reference",
+   "target": "Self reference"
+  },
+  {
+   "from": "Anchor registry",
+   "target": "#also-missing",
+   "comment": "the SECOND unresolved fragment in this file, pinned for the same reason as `#no-such-heading` above. It was absent, which is why `markdown/internal-anchor-unresolved-kept` survived: the fixture pinned one broken fragment by name and the mutant published another one the fixture did not name. Both are the same construct and the same ruling, so both are pinned."
+  },
+  {
+   "from": "Internal anchor references",
+   "target": "#install-now",
+   "comment": "the FORWARD reference, unresolved the way the pre-MD-D6 code published it. The pre-fix code emitted every fragment as a `uses` edge to the raw `#fragment` text, so this row is the forward-reference instance of that revert; the `Anchor registry` rows above cover only the same-section case. Without it the mutant had a second uncovered spelling of itself."
+  },
+  {
+   "from": "Internal anchor references",
+   "target": "#internal-anchor-references",
+   "comment": "a SELF-anchor link in the H1's own section. `addRel` refuses source === target, and a self-anchor is exactly that, so it is not published. Pinned because the pre-fix code had no anchor map at all and would have emitted it."
+  },
+  {
+   "type": "uses",
+   "from": "Anchor registry",
+   "target": "Install Now!",
+   "meta.role": "markdown_internal_anchor",
+   "comment": "MD-L1's pre-relabel shape: the right endpoints under the WRONG label. `expectRelationships` above already asserts `references` for this pair, so this row is redundant unless a future change keeps the `references` edge and ALSO emits a `uses` twin \u2014 which is what a consumer would then read as two relations between one pair of sections. Pinned because the fixture asserted the target spelling and never the type, so the relabel shipped unpinned."
+  },
+  {
+   "type": "uses",
+   "from": "Anchor registry",
+   "target": "Duplicate#2",
+   "meta.role": "markdown_internal_anchor",
+   "comment": "the same revert on a REPEATED site, where the target carries the `#2` ordinal. One forbid row on a first-occurrence spelling would not catch a relabel that only the ordinaled path reverted."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "#install-now"
+  }
+ ],
+ "_seamNote": {
+  "what": "Resolution is DEFERRED to the end of the walk, not done where the link is read. A link may precede its heading, and the heading's published spelling \u2014 including the `#2` ordinal a repeat carries \u2014 is not known until the walk reaches it.",
+  "why": "The alternative is a pre-pass that re-derives every heading's identity, and a second implementation of the identity rules is the exact failure this lane has already paid for twice: the oracle and the analyzer once agreed on a name neither published, and 28.7% of the lane's relationships pointed at symbols the file did not declare. Deferring costs one array and gets the answer from the same code that published the heading. The `linkLine` metadata is what keeps the author's own location, because the edge's `line_number` is the HEADING's line \u2014 M59 #825 takes it from the node that carries the name the edge is about, and it is also the only choice that makes the endpoint resolve, since the store keys an endpoint as fileId:name:line."
+ }
+}

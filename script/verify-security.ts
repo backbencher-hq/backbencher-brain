@@ -1,5 +1,16 @@
 // script/verify-security.ts — the strict taint-flow engine, end to end.
 //
+// M72 PATH DECLARATION — THIS GATE PINS THE RETIRED (ROLLBACK) TOKEN ENGINE.
+// The Phase-1 default pipeline no longer writes `brain_taint_flow`; it runs the
+// per-language spec engine (`src/intelligence/security/rebuild/engine.ts`) and
+// persists leads into `brain_security_flow`. The old token detector is kept for
+// ONE release behind the documented rollback switch `BB_SECURITY_LEGACY=1`
+// (src/intelligence/security/rebuild/store.ts), and this file is the engine-level
+// contract gate for that rollback path, so it sets the switch before indexing.
+// The default path's store/engine/answer contract is gated by
+// script/m13/verify-security-{handler,adversarial}.ts,
+// script/m20/verify-security-history.ts and script/m72/**.
+//
 // What this verifier proves, on fixtures it builds itself:
 //   * the indexer produced taint evidence and the engine classified every row;
 //   * deduplication is a STRICT reduction on a fixture built to produce
@@ -34,6 +45,9 @@ if (!process.env.BB_DATA_DIR) {
   process.env.BB_DATA_DIR = path.join(rootDir, "validation", "tools", "bb_security", "bbdata")
 }
 process.env.BB_NO_AUTO_REFRESH = "1"
+// Rollback switch: this suite proves the retired token engine's contract, so it
+// asks the pipeline for the retired rows explicitly (never by inheriting them).
+process.env.BB_SECURITY_LEGACY = "1"
 
 const h = new SecurityHarness()
 const root = mkdtempSync(path.join(tmpdir(), "bb-security-"))

@@ -1,0 +1,1480 @@
+{
+  "generated": "2026-10-20",
+  "root": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+  "log": "validation/m14/fixtures/perl/arm-whole-2026-10-20.log",
+  "population": {
+    "parsed": 656,
+    "admitted": 656,
+    "repos": 9
+  },
+  "causeEdges": 2251,
+  "namedCauses": 182,
+  "q1_projectScope": {
+    "question": "is the base declared as a class in the edge's OWN repository?",
+    "refutedCauses": 141,
+    "refutedEdges": 2117,
+    "detail": {
+      "EventEmitter": {
+        "edges": 233,
+        "declaration": "class 'Mojo::EventEmitter' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/EventEmitter.pm:0"
+      },
+      "IOLoop": {
+        "edges": 166,
+        "declaration": "class 'Mojo::IOLoop' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop.pm:0"
+      },
+      "UserAgent": {
+        "edges": 19,
+        "declaration": "class 'Mojo::UserAgent' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent.pm:0"
+      },
+      "Users": {
+        "edges": 1,
+        "declaration": "class 'LoginApp::Model::Users' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/login/lib/LoginApp/Model/Users.pm:0"
+      },
+      "Controller": {
+        "edges": 38,
+        "declaration": "class 'Mojolicious::Controller' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Controller.pm:0"
+      },
+      "Mojo": {
+        "edges": 37,
+        "declaration": "class 'Mojo' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo.pm:0"
+      },
+      "Asset": {
+        "edges": 26,
+        "declaration": "class 'Mojo::Asset' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Asset.pm:0"
+      },
+      "File": {
+        "edges": 30,
+        "declaration": "class 'Mojo::Asset::File' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Asset/File.pm:0"
+      },
+      "Util": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Util' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Util.pm:0"
+      },
+      "Collection": {
+        "edges": 6,
+        "declaration": "class 'Mojo::Collection' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Collection.pm:0"
+      },
+      "Base": {
+        "edges": 712,
+        "declaration": "class 'Mojo::Base' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Base.pm:0"
+      },
+      "ByteStream": {
+        "edges": 8,
+        "declaration": "class 'Mojo::ByteStream' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/ByteStream.pm:0"
+      },
+      "Headers": {
+        "edges": 2,
+        "declaration": "class 'Mojo::Headers' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Headers.pm:0"
+      },
+      "Single": {
+        "edges": 7,
+        "declaration": "class 'Mojo::Content::Single' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content/Single.pm:0"
+      },
+      "Content": {
+        "edges": 20,
+        "declaration": "class 'Mojo::Content' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content.pm:0"
+      },
+      "Memory": {
+        "edges": 9,
+        "declaration": "class 'Mojo::Asset::Memory' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Asset/Memory.pm:0"
+      },
+      "MultiPart": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Content::MultiPart' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content/MultiPart.pm:0"
+      },
+      "Cookie": {
+        "edges": 6,
+        "declaration": "class 'Mojo::Cookie' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Cookie.pm:0"
+      },
+      "Date": {
+        "edges": 8,
+        "declaration": "class 'Mojo::Date' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Date.pm:0"
+      },
+      "HTML": {
+        "edges": 3,
+        "declaration": "class 'Mojo::DOM::HTML' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/DOM/HTML.pm:0"
+      },
+      "CSS": {
+        "edges": 1,
+        "declaration": "class 'Mojo::DOM::CSS' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/DOM/CSS.pm:0"
+      },
+      "Poll": {
+        "edges": 14,
+        "declaration": "class 'Mojo::Reactor::Poll' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Reactor/Poll.pm:0"
+      },
+      "Client": {
+        "edges": 7,
+        "declaration": "class 'Mojo::IOLoop::Client' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Client.pm:0"
+      },
+      "Stream": {
+        "edges": 5,
+        "declaration": "class 'Mojo::IOLoop::Stream' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Stream.pm:0"
+      },
+      "Server": {
+        "edges": 36,
+        "declaration": "class 'Mojo::IOLoop::Server' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Server.pm:0"
+      },
+      "Subprocess": {
+        "edges": 2,
+        "declaration": "class 'Mojo::IOLoop::Subprocess' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Subprocess.pm:0"
+      },
+      "TLS": {
+        "edges": 14,
+        "declaration": "class 'Mojo::IOLoop::TLS' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/TLS.pm:0"
+      },
+      "Promise": {
+        "edges": 36,
+        "declaration": "class 'Mojo::Promise' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Promise.pm:0"
+      },
+      "Exception": {
+        "edges": 9,
+        "declaration": "class 'Mojo::Exception' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Exception.pm:0"
+      },
+      "Parameters": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Parameters' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Parameters.pm:0"
+      },
+      "DOM": {
+        "edges": 6,
+        "declaration": "class 'Mojo::DOM' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/DOM.pm:0"
+      },
+      "Pointer": {
+        "edges": 6,
+        "declaration": "class 'Mojo::JSON::Pointer' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/JSON/Pointer.pm:0"
+      },
+      "Upload": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Upload' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Upload.pm:0"
+      },
+      "URL": {
+        "edges": 15,
+        "declaration": "class 'Mojo::URL' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/URL.pm:0"
+      },
+      "Message": {
+        "edges": 36,
+        "declaration": "class 'Mojo::Message' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message.pm:0"
+      },
+      "Reactor": {
+        "edges": 29,
+        "declaration": "class 'Mojo::Reactor' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Reactor.pm:0"
+      },
+      "WebSocket": {
+        "edges": 4,
+        "declaration": "class 'Mojo::Transaction::WebSocket' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction/WebSocket.pm:0"
+      },
+      "Prefork": {
+        "edges": 3,
+        "declaration": "class 'Mojo::Server::Prefork' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Prefork.pm:0"
+      },
+      "Daemon": {
+        "edges": 23,
+        "declaration": "class 'Mojo::Server::Daemon' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Daemon.pm:0"
+      },
+      "Backend": {
+        "edges": 4,
+        "declaration": "class 'Mojo::Server::Morbo::Backend' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Morbo/Backend.pm:0"
+      },
+      "Request": {
+        "edges": 45,
+        "declaration": "class 'Mojo::Cookie::Request' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Cookie/Request.pm:0"
+      },
+      "Response": {
+        "edges": 24,
+        "declaration": "class 'Mojo::Cookie::Response' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Cookie/Response.pm:0"
+      },
+      "Transaction": {
+        "edges": 38,
+        "declaration": "class 'Mojo::Transaction' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction.pm:0"
+      },
+      "Path": {
+        "edges": 3,
+        "declaration": "class 'Mojo::Path' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Path.pm:0"
+      },
+      "CookieJar": {
+        "edges": 2,
+        "declaration": "class 'Mojo::UserAgent::CookieJar' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent/CookieJar.pm:0"
+      },
+      "Proxy": {
+        "edges": 2,
+        "declaration": "class 'Mojo::UserAgent::Proxy' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent/Proxy.pm:0"
+      },
+      "Transactor": {
+        "edges": 2,
+        "declaration": "class 'Mojo::UserAgent::Transactor' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent/Transactor.pm:0"
+      },
+      "HTTP": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Transaction::HTTP' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction/HTTP.pm:0"
+      },
+      "Commands": {
+        "edges": 4,
+        "declaration": "class 'Mojolicious::Commands' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Commands.pm:0"
+      },
+      "Home": {
+        "edges": 3,
+        "declaration": "class 'Mojo::Home' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Home.pm:0"
+      },
+      "Log": {
+        "edges": 3,
+        "declaration": "class 'Mojo::Log' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Log.pm:0"
+      },
+      "Plugins": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Plugins' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugins.pm:0"
+      },
+      "Renderer": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Renderer' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Renderer.pm:0"
+      },
+      "Routes": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Routes' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Routes.pm:0"
+      },
+      "Sessions": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Sessions' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Sessions.pm:0"
+      },
+      "Static": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Static' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Static.pm:0"
+      },
+      "Types": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Types' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Types.pm:0"
+      },
+      "Validator": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Validator' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Validator.pm:0"
+      },
+      "Template": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Template' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Template.pm:0"
+      },
+      "Command": {
+        "edges": 32,
+        "declaration": "class 'Mojolicious::Command' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command.pm:0"
+      },
+      "CGI": {
+        "edges": 3,
+        "declaration": "class 'Mojo::Server::CGI' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/CGI.pm:0"
+      },
+      "PSGI": {
+        "edges": 5,
+        "declaration": "class 'Mojo::Server::PSGI' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/PSGI.pm:0"
+      },
+      "JSON": {
+        "edges": 4,
+        "declaration": "class 'Mojo::JSON' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/JSON.pm:0"
+      },
+      "Match": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Routes::Match' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Routes/Match.pm:0"
+      },
+      "Mojolicious": {
+        "edges": 3,
+        "declaration": "class 'Mojolicious' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:0"
+      },
+      "Plugin": {
+        "edges": 71,
+        "declaration": "class 'Mojolicious::Plugin' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin.pm:0"
+      },
+      "EPLRenderer": {
+        "edges": 3,
+        "declaration": "class 'Mojolicious::Plugin::EPLRenderer' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/EPLRenderer.pm:0"
+      },
+      "Config": {
+        "edges": 3,
+        "declaration": "class 'Mojolicious::Plugin::Config' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/Config.pm:0"
+      },
+      "JSONConfig": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Plugin::JSONConfig' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/JSONConfig.pm:0"
+      },
+      "Cache": {
+        "edges": 3,
+        "declaration": "class 'Mojo::Cache' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Cache.pm:0"
+      },
+      "Route": {
+        "edges": 13,
+        "declaration": "class 'Mojolicious::Routes::Route' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Routes/Route.pm:0"
+      },
+      "Pattern": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Routes::Pattern' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Routes/Pattern.pm:0"
+      },
+      "Validation": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Validator::Validation' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Validator/Validation.pm:0"
+      },
+      "Base3": {
+        "edges": 1,
+        "declaration": "class 'Mojo::BaseTest::Base3' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/lib/Mojo/BaseTest/Base3.pm:0"
+      },
+      "cgi": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Command::cgi' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/cgi.pm:0"
+      },
+      "Hypnotoad": {
+        "edges": 1,
+        "declaration": "class 'Mojo::Server::Hypnotoad' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Hypnotoad.pm:0"
+      },
+      "A": {
+        "edges": 1,
+        "declaration": "class 'Mojo::LoaderTest::A' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/lib/Mojo/LoaderTest/A.pm:0"
+      },
+      "B": {
+        "edges": 1,
+        "declaration": "class 'Mojo::LoaderTest::B' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/lib/Mojo/LoaderTest/B.pm:0"
+      },
+      "C": {
+        "edges": 1,
+        "declaration": "class 'Mojo::LoaderTest::C' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/lib/Mojo/LoaderTest/C.pm:0"
+      },
+      "F": {
+        "edges": 1,
+        "declaration": "class 'Mojo::LoaderTest::E::F' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/lib/Mojo/LoaderTest/E/F.pm:0"
+      },
+      "Morbo": {
+        "edges": 1,
+        "declaration": "class 'Mojo::Server::Morbo' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Morbo.pm:0"
+      },
+      "psgi": {
+        "edges": 2,
+        "declaration": "class 'Mojolicious::Command::psgi' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/psgi.pm:0"
+      },
+      "EV": {
+        "edges": 1,
+        "declaration": "class 'Mojo::Reactor::EV' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Reactor/EV.pm:0"
+      },
+      "Lite": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Lite' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Lite.pm:0"
+      },
+      "MojoliciousTest": {
+        "edges": 1,
+        "declaration": "class 'MojoliciousTest' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/lib/MojoliciousTest.pm:0"
+      },
+      "Bar": {
+        "edges": 1,
+        "declaration": "class 'MojoTest::X::Bar' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/exception.t:0"
+      },
+      "get": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::get' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/get.pm:0"
+      },
+      "cpanify": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::cpanify' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/cpanify.pm:0"
+      },
+      "daemon": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::daemon' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/daemon.pm:0"
+      },
+      "eval": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::eval' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/eval.pm:0"
+      },
+      "generate": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::generate' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/generate.pm:0"
+      },
+      "app": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::generate::app' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/generate/app.pm:0"
+      },
+      "dockerfile": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::generate::dockerfile' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/generate/dockerfile.pm:0"
+      },
+      "lite_app": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::generate::lite_app' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/generate/lite_app.pm:0"
+      },
+      "makefile": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::generate::makefile' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/generate/makefile.pm:0"
+      },
+      "plugin": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::generate::plugin' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/generate/plugin.pm:0"
+      },
+      "inflate": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::Author::inflate' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/inflate.pm:0"
+      },
+      "prefork": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::prefork' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/prefork.pm:0"
+      },
+      "routes": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::routes' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/routes.pm:0"
+      },
+      "version": {
+        "edges": 1,
+        "declaration": "class 'Mojolicious::Command::version' at /home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/version.pm:0"
+      },
+      "Loader": {
+        "edges": 20,
+        "declaration": "class 'Plack::Loader' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Loader.pm:0"
+      },
+      "ContentLength": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::ContentLength' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/ContentLength.pm:0"
+      },
+      "WrapCGI": {
+        "edges": 3,
+        "declaration": "class 'Plack::App::WrapCGI' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/WrapCGI.pm:0"
+      },
+      "Component": {
+        "edges": 21,
+        "declaration": "class 'Plack::Component' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Component.pm:0"
+      },
+      "MIME": {
+        "edges": 10,
+        "declaration": "class 'Plack::MIME' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/MIME.pm:0"
+      },
+      "Conditional": {
+        "edges": 2,
+        "declaration": "class 'Plack::Middleware::Conditional' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Conditional.pm:0"
+      },
+      "URLMap": {
+        "edges": 8,
+        "declaration": "class 'Plack::App::URLMap' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/URLMap.pm:0"
+      },
+      "Apache2": {
+        "edges": 2,
+        "declaration": "class 'Plack::Handler::Apache2' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Handler/Apache2.pm:0"
+      },
+      "BufferedStreaming": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::BufferedStreaming' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/BufferedStreaming.pm:0"
+      },
+      "Middleware": {
+        "edges": 62,
+        "declaration": "class 'Plack::Middleware' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware.pm:0"
+      },
+      "AccessLog": {
+        "edges": 3,
+        "declaration": "class 'Plack::Middleware::AccessLog' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/AccessLog.pm:0"
+      },
+      "LWPish": {
+        "edges": 2,
+        "declaration": "class 'Plack::LWPish' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/LWPish.pm:0"
+      },
+      "Lint": {
+        "edges": 5,
+        "declaration": "class 'Plack::Middleware::Lint' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Lint.pm:0"
+      },
+      "Timed": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::AccessLog::Timed' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/AccessLog/Timed.pm:0"
+      },
+      "Builder": {
+        "edges": 1,
+        "declaration": "class 'Plack::Builder' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Builder.pm:0"
+      },
+      "Suite": {
+        "edges": 7,
+        "declaration": "class 'Plack::Test::Suite' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Test/Suite.pm:0"
+      },
+      "LighttpdScriptNameFix": {
+        "edges": 2,
+        "declaration": "class 'Plack::Middleware::LighttpdScriptNameFix' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/LighttpdScriptNameFix.pm:0"
+      },
+      "FCGI": {
+        "edges": 2,
+        "declaration": "class 'Plack::Handler::FCGI' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Handler/FCGI.pm:0"
+      },
+      "Delayed": {
+        "edges": 1,
+        "declaration": "class 'Plack::Loader::Delayed' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Loader/Delayed.pm:0"
+      },
+      "Restarter": {
+        "edges": 2,
+        "declaration": "class 'Plack::Loader::Restarter' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Loader/Restarter.pm:0"
+      },
+      "Shotgun": {
+        "edges": 1,
+        "declaration": "class 'Plack::Loader::Shotgun' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Loader/Shotgun.pm:0"
+      },
+      "Cascade": {
+        "edges": 2,
+        "declaration": "class 'Plack::App::Cascade' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/Cascade.pm:0"
+      },
+      "CGIBin": {
+        "edges": 2,
+        "declaration": "class 'Plack::App::CGIBin' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/CGIBin.pm:0"
+      },
+      "Chunked": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::Chunked' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Chunked.pm:0"
+      },
+      "XFramework": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::XFramework' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/XFramework.pm:0"
+      },
+      "Directory": {
+        "edges": 1,
+        "declaration": "class 'Plack::App::Directory' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/Directory.pm:0"
+      },
+      "HTTPExceptions": {
+        "edges": 2,
+        "declaration": "class 'Plack::Middleware::HTTPExceptions' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/HTTPExceptions.pm:0"
+      },
+      "IIS6ScriptNameFix": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::IIS6ScriptNameFix' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/IIS6ScriptNameFix.pm:0"
+      },
+      "IIS7KeepAliveFix": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::IIS7KeepAliveFix' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/IIS7KeepAliveFix.pm:0"
+      },
+      "Log4perl": {
+        "edges": 2,
+        "declaration": "class 'Plack::Middleware::Log4perl' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Log4perl.pm:0"
+      },
+      "LogDispatch": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::LogDispatch' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/LogDispatch.pm:0"
+      },
+      "PSGIBin": {
+        "edges": 1,
+        "declaration": "class 'Plack::App::PSGIBin' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/PSGIBin.pm:0"
+      },
+      "Recursive": {
+        "edges": 5,
+        "declaration": "class 'Plack::Middleware::Recursive' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Recursive.pm:0"
+      },
+      "ForwardRequest": {
+        "edges": 2,
+        "declaration": "class 'Plack::Recursive::ForwardRequest' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Recursive.pm:0"
+      },
+      "Refresh": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::Refresh' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Refresh.pm:0"
+      },
+      "SimpleLogger": {
+        "edges": 1,
+        "declaration": "class 'Plack::Middleware::SimpleLogger' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/SimpleLogger.pm:0"
+      },
+      "StackTrace": {
+        "edges": 7,
+        "declaration": "class 'Plack::Middleware::StackTrace' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/StackTrace.pm:0"
+      },
+      "Basic": {
+        "edges": 2,
+        "declaration": "class 'Plack::Middleware::Auth::Basic' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/Auth/Basic.pm:0"
+      },
+      "Test": {
+        "edges": 1,
+        "declaration": "class 'Plack::Test' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Test.pm:0"
+      },
+      "Runner": {
+        "edges": 2,
+        "declaration": "class 'Plack::Runner' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Runner.pm:0"
+      },
+      "TempBuffer": {
+        "edges": 1,
+        "declaration": "class 'Plack::TempBuffer' at /home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/TempBuffer.pm:0"
+      }
+    }
+  },
+  "q2_analyzerScope": {
+    "question": "does the source write a QUALIFIED name with that leaf within 15 lines of the edge?",
+    "refutedCauses": 176,
+    "refutedEdges": 1153,
+    "window": 15,
+    "detail": {
+      "Context": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/FSharp.Formatting/csharp/MarkdownSharpTests/source/perl/Markdown.101.pl:109",
+        "minDistance": 0
+      },
+      "Spec": {
+        "edges": 16,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/kong/t/01-pdk/04-request/01-get_scheme.t:7",
+        "minDistance": 0
+      },
+      "EventEmitter": {
+        "edges": 22,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/chat.pl:7",
+        "minDistance": 0
+      },
+      "IOLoop": {
+        "edges": 166,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/connect-proxy.pl:10",
+        "minDistance": 0
+      },
+      "UserAgent": {
+        "edges": 27,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/entities.pl:9",
+        "minDistance": 0
+      },
+      "Users": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/login/lib/LoginApp.pm:9",
+        "minDistance": 0
+      },
+      "Controller": {
+        "edges": 21,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/login/lib/LoginApp/Controller/Login.pm:4",
+        "minDistance": 0
+      },
+      "Mojo": {
+        "edges": 37,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/examples/login/t/login.t:6",
+        "minDistance": 0
+      },
+      "Asset": {
+        "edges": 15,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Asset/File.pm:129",
+        "minDistance": 0
+      },
+      "File": {
+        "edges": 24,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Asset/Memory.pm:17",
+        "minDistance": 0
+      },
+      "Tiny": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Base.pm:15",
+        "minDistance": 0
+      },
+      "AsyncAwait": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Base.pm:20",
+        "minDistance": 0
+      },
+      "Util": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/ByteStream.pm:18",
+        "minDistance": 0
+      },
+      "Collection": {
+        "edges": 6,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/ByteStream.pm:51",
+        "minDistance": 0
+      },
+      "Base": {
+        "edges": 113,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/ByteStream.pm:45",
+        "minDistance": 0
+      },
+      "ByteStream": {
+        "edges": 8,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Collection.pm:53",
+        "minDistance": 0
+      },
+      "Headers": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content.pm:11",
+        "minDistance": 0
+      },
+      "Inflate": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content.pm:196",
+        "minDistance": 0
+      },
+      "Single": {
+        "edges": 7,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content/MultiPart.pm:136",
+        "minDistance": 0
+      },
+      "Content": {
+        "edges": 10,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content/MultiPart.pm:8",
+        "minDistance": 0
+      },
+      "Memory": {
+        "edges": 9,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content/Single.pm:7",
+        "minDistance": 0
+      },
+      "MultiPart": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Content/Single.pm:47",
+        "minDistance": 0
+      },
+      "Cookie": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Cookie/Request.pm:6",
+        "minDistance": 0
+      },
+      "Date": {
+        "edges": 8,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Cookie/Response.pm:23",
+        "minDistance": 0
+      },
+      "HTML": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/DOM.pm:59",
+        "minDistance": 0
+      },
+      "CSS": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/DOM.pm:253",
+        "minDistance": 0
+      },
+      "Temp": {
+        "edges": 6,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/File.pm:162",
+        "minDistance": 0
+      },
+      "Poll": {
+        "edges": 10,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop.pm:20",
+        "minDistance": 0
+      },
+      "Client": {
+        "edges": 7,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop.pm:50",
+        "minDistance": 0
+      },
+      "Stream": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop.pm:56",
+        "minDistance": 0
+      },
+      "Server": {
+        "edges": 20,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop.pm:107",
+        "minDistance": 0
+      },
+      "Subprocess": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop.pm:152",
+        "minDistance": 0
+      },
+      "Native": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Client.pm:13",
+        "minDistance": 0
+      },
+      "Socks": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Client.pm:19",
+        "minDistance": 0
+      },
+      "TLS": {
+        "edges": 14,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Client.pm:160",
+        "minDistance": 0
+      },
+      "IP": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Server.pm:21",
+        "minDistance": 0
+      },
+      "Promise": {
+        "edges": 36,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/Subprocess.pm:28",
+        "minDistance": 0
+      },
+      "SSL": {
+        "edges": 7,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/IOLoop/TLS.pm:9",
+        "minDistance": 0
+      },
+      "XS": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/JSON.pm:14",
+        "minDistance": 0
+      },
+      "Exception": {
+        "edges": 9,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Loader.pm:56",
+        "minDistance": 0
+      },
+      "Parameters": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message.pm:38",
+        "minDistance": 0
+      },
+      "DOM": {
+        "edges": 6,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message.pm:68",
+        "minDistance": 0
+      },
+      "Pointer": {
+        "edges": 6,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message.pm:136",
+        "minDistance": 0
+      },
+      "Upload": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message.pm:203",
+        "minDistance": 0
+      },
+      "URL": {
+        "edges": 15,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message/Request.pm:20",
+        "minDistance": 0
+      },
+      "Message": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Message/Response.pm:153",
+        "minDistance": 0
+      },
+      "Reactor": {
+        "edges": 16,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Reactor/Poll.pm:10",
+        "minDistance": 0
+      },
+      "WebSocket": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Daemon.pm:98",
+        "minDistance": 0
+      },
+      "Prefork": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Hypnotoad.pm:12",
+        "minDistance": 0
+      },
+      "Daemon": {
+        "edges": 12,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Morbo.pm:18",
+        "minDistance": 0
+      },
+      "Backend": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Server/Morbo/Backend/Poll.pm:6",
+        "minDistance": 0
+      },
+      "Request": {
+        "edges": 45,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction.pm:11",
+        "minDistance": 0
+      },
+      "Response": {
+        "edges": 24,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction.pm:12",
+        "minDistance": 0
+      },
+      "Transaction": {
+        "edges": 6,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction/HTTP.pm:6",
+        "minDistance": 0
+      },
+      "Deflate": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Transaction/WebSocket.pm:29",
+        "minDistance": 0
+      },
+      "Path": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/URL.pm:75",
+        "minDistance": 0
+      },
+      "CookieJar": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent.pm:20",
+        "minDistance": 0
+      },
+      "Proxy": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent.pm:28",
+        "minDistance": 0
+      },
+      "Transactor": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent.pm:32",
+        "minDistance": 0
+      },
+      "HTTP": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/UserAgent/Transactor.pm:135",
+        "minDistance": 0
+      },
+      "Dumper": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Util.pm:154",
+        "minDistance": 0
+      },
+      "API": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojo/Util.pm:354",
+        "minDistance": 0
+      },
+      "Commands": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:25",
+        "minDistance": 0
+      },
+      "Home": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:28",
+        "minDistance": 0
+      },
+      "Log": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:33",
+        "minDistance": 0
+      },
+      "Plugins": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:40",
+        "minDistance": 0
+      },
+      "Renderer": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:42",
+        "minDistance": 0
+      },
+      "Routes": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:43",
+        "minDistance": 0
+      },
+      "Sessions": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:53",
+        "minDistance": 0
+      },
+      "Static": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:54",
+        "minDistance": 0
+      },
+      "Types": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:55",
+        "minDistance": 0
+      },
+      "Validator": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious.pm:57",
+        "minDistance": 0
+      },
+      "Template": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command.pm:41",
+        "minDistance": 0
+      },
+      "Command": {
+        "edges": 25,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/Author/cpanify.pm:10",
+        "minDistance": 0
+      },
+      "CGI": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/cgi.pm:13",
+        "minDistance": 0
+      },
+      "PSGI": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/psgi.pm:9",
+        "minDistance": 0
+      },
+      "JSON": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Command/version.pm:16",
+        "minDistance": 0
+      },
+      "Match": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Controller.pm:17",
+        "minDistance": 0
+      },
+      "Plugin": {
+        "edges": 18,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/Config.pm:7",
+        "minDistance": 0
+      },
+      "EPLRenderer": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/EPRenderer.pm:7",
+        "minDistance": 5
+      },
+      "Config": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/JSONConfig.pm:7",
+        "minDistance": 5
+      },
+      "JSONConfig": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Plugin/NotYAMLConfig.pm:7",
+        "minDistance": 5
+      },
+      "Cache": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Renderer.pm:12",
+        "minDistance": 0
+      },
+      "Route": {
+        "edges": 4,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Routes.pm:17",
+        "minDistance": 3
+      },
+      "Pattern": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Routes/Route.pm:12",
+        "minDistance": 0
+      },
+      "Validation": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Mojolicious/Validator.pm:33",
+        "minDistance": 0
+      },
+      "More": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/lib/Test/Mojo.pm:423",
+        "minDistance": 0
+      },
+      "Base3": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/base.t:108",
+        "minDistance": 0
+      },
+      "cgi": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/cgi.t:58",
+        "minDistance": 0
+      },
+      "INET": {
+        "edges": 8,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/daemon.t:364",
+        "minDistance": 0
+      },
+      "Hypnotoad": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/hypnotoad.t:17",
+        "minDistance": 0
+      },
+      "A": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/loader.t:80",
+        "minDistance": 0
+      },
+      "B": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/loader.t:82",
+        "minDistance": 0
+      },
+      "C": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/loader.t:83",
+        "minDistance": 0
+      },
+      "F": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/loader.t:105",
+        "minDistance": 0
+      },
+      "Morbo": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/morbo.t:26",
+        "minDistance": 0
+      },
+      "psgi": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/psgi.t:106",
+        "minDistance": 0
+      },
+      "EV": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/reactor_ev.t:13",
+        "minDistance": 0
+      },
+      "Lite": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/user_agent.t:103",
+        "minDistance": 0
+      },
+      "UNIX": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojo/user_agent_unix.t:15",
+        "minDistance": 0
+      },
+      "Bar": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/app.t:78",
+        "minDistance": 0
+      },
+      "get": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:184",
+        "minDistance": 0
+      },
+      "cpanify": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:236",
+        "minDistance": 0
+      },
+      "daemon": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:267",
+        "minDistance": 0
+      },
+      "eval": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:316",
+        "minDistance": 0
+      },
+      "generate": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:348",
+        "minDistance": 0
+      },
+      "app": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:364",
+        "minDistance": 0
+      },
+      "dockerfile": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:390",
+        "minDistance": 0
+      },
+      "lite_app": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:408",
+        "minDistance": 0
+      },
+      "makefile": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:425",
+        "minDistance": 0
+      },
+      "plugin": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:442",
+        "minDistance": 0
+      },
+      "inflate": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:479",
+        "minDistance": 0
+      },
+      "prefork": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:487",
+        "minDistance": 0
+      },
+      "routes": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:542",
+        "minDistance": 0
+      },
+      "version": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/mojo/t/mojolicious/commands.t:572",
+        "minDistance": 0
+      },
+      "MakeMaker": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/Makefile.PL:84",
+        "minDistance": 0
+      },
+      "Loader": {
+        "edges": 15,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/benchmarks/ab.pl:33",
+        "minDistance": 0
+      },
+      "Connection": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/benchmarks/fcgi.pl:27",
+        "minDistance": 0
+      },
+      "HiRes": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/HTTP/Server/PSGI.pm:28",
+        "minDistance": 0
+      },
+      "ContentLength": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/HTTP/Server/PSGI.pm:113",
+        "minDistance": 0
+      },
+      "Buffered": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/HTTP/Server/PSGI.pm:163",
+        "minDistance": 0
+      },
+      "WrapCGI": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/CGIBin.pm:47",
+        "minDistance": 0
+      },
+      "Component": {
+        "edges": 11,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/Cascade.pm:8",
+        "minDistance": 2
+      },
+      "MIME": {
+        "edges": 10,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/Directory.pm:95",
+        "minDistance": 0
+      },
+      "Unix": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/File.pm:60",
+        "minDistance": 0
+      },
+      "Compile": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/App/WrapCGI.pm:86",
+        "minDistance": 0
+      },
+      "Conditional": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Builder.pm:36",
+        "minDistance": 0
+      },
+      "URLMap": {
+        "edges": 8,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Builder.pm:46",
+        "minDistance": 0
+      },
+      "Apache2": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Handler/Apache2/Registry.pm:9",
+        "minDistance": 2
+      },
+      "Handle": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Handler/FCGI.pm:61",
+        "minDistance": 0
+      },
+      "MultiValue": {
+        "edges": 6,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/LWPish.pm:22",
+        "minDistance": 0
+      },
+      "Simple": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Loader/Restarter.pm:65",
+        "minDistance": 0
+      },
+      "BufferedStreaming": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Loader/Shotgun.pm:20",
+        "minDistance": 0
+      },
+      "Compiler": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/AccessLog.pm:17",
+        "minDistance": 0
+      },
+      "Middleware": {
+        "edges": 44,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/AccessLog.pm:13",
+        "minDistance": 2
+      },
+      "AccessLog": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/AccessLog/Timed.pm:9",
+        "minDistance": 0
+      },
+      "WithLexicals": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Middleware/StackTrace.pm:14",
+        "minDistance": 0
+      },
+      "Fast": {
+        "edges": 3,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Request.pm:93",
+        "minDistance": 0
+      },
+      "Parser": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Request.pm:233",
+        "minDistance": 0
+      },
+      "TCP": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Test/Server.pm:15",
+        "minDistance": 0
+      },
+      "LWPish": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Test/Server.pm:44",
+        "minDistance": 0
+      },
+      "Lint": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/lib/Plack/Test/Suite.pm:749",
+        "minDistance": 0
+      },
+      "Timed": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/HTTP-Message-PSGI/empty_streamed_response.t:11",
+        "minDistance": 0
+      },
+      "Builder": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Builder/oo_interface.t:26",
+        "minDistance": 0
+      },
+      "Suite": {
+        "edges": 7,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Handler/apache1.t:15",
+        "minDistance": 0
+      },
+      "AsCGI": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Handler/cgi.t:23",
+        "minDistance": 0
+      },
+      "LighttpdScriptNameFix": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Handler/fcgi.t:49",
+        "minDistance": 0
+      },
+      "FCGI": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Handler/fcgi.t:59",
+        "minDistance": 0
+      },
+      "ProcManager": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Handler/fcgi.t:33",
+        "minDistance": 1
+      },
+      "Delayed": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Loader/delayed.t:18",
+        "minDistance": 0
+      },
+      "Restarter": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Loader/restarter.t:57",
+        "minDistance": 0
+      },
+      "Shotgun": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Loader/shotgun.t:13",
+        "minDistance": 0
+      },
+      "Passwd": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/auth_basic_simple.t:9",
+        "minDistance": 0
+      },
+      "Cascade": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/cascade/basic.t:8",
+        "minDistance": 0
+      },
+      "CGIBin": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/cgibin.t:10",
+        "minDistance": 0
+      },
+      "Chunked": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/chunked.t:28",
+        "minDistance": 0
+      },
+      "XFramework": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/conditional_new.t:14",
+        "minDistance": 0
+      },
+      "Directory": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/directory.t:9",
+        "minDistance": 0
+      },
+      "HTTPExceptions": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/httpexceptions.t:51",
+        "minDistance": 0
+      },
+      "IIS6ScriptNameFix": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/iis6_script_name_fix.t:54",
+        "minDistance": 0
+      },
+      "IIS7KeepAliveFix": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/iis7_keep_alive_fix.t:8",
+        "minDistance": 0
+      },
+      "Log4perl": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/log4perl-category.t:27",
+        "minDistance": 0
+      },
+      "Dispatch": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/log_dispatch.t:19",
+        "minDistance": 0
+      },
+      "Array": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/log_dispatch.t:20",
+        "minDistance": 0
+      },
+      "LogDispatch": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/log_dispatch.t:34",
+        "minDistance": 0
+      },
+      "PSGIBin": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/psgibin.t:7",
+        "minDistance": 0
+      },
+      "Recursive": {
+        "edges": 5,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/recursive/base.t:20",
+        "minDistance": 0
+      },
+      "ForwardRequest": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/recursive/throw.t:15",
+        "minDistance": 0
+      },
+      "Refresh": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/refresh-init.t:25",
+        "minDistance": 0
+      },
+      "SimpleLogger": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/simple_logger.t:18",
+        "minDistance": 0
+      },
+      "StackTrace": {
+        "edges": 7,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/stacktrace/basic.t:8",
+        "minDistance": 0
+      },
+      "Basic": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Middleware/static_env.t:16",
+        "minDistance": 0
+      },
+      "Test": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Request/headers.t:16",
+        "minDistance": 0
+      },
+      "Runner": {
+        "edges": 2,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Runner/options.t:5",
+        "minDistance": 0
+      },
+      "TempBuffer": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-TempBuffer/print.t:9",
+        "minDistance": 0
+      },
+      "Cookies": {
+        "edges": 1,
+        "sample": "/home/ishaq2321/mcp/backbencher-brain/.corpus/plack/t/Plack-Test/cookie.t:16",
+        "minDistance": 0
+      }
+    }
+  },
+  "surviving": {
+    "causes": [
+      "CalledClose",
+      "DirHandle",
+      "Exporter",
+      "URI"
+    ],
+    "edges": 29
+  }
+}

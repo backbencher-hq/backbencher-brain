@@ -9,7 +9,7 @@
  * them with the command instead of freezing a copy that could drift from the
  * artifact the differential writes at ceremony.
  *
- * Corpus: BB_CORPUS_ROOT (default $HOME/ishaq/fixtures/repositories) over
+ * Corpus: BB_CORPUS_ROOT (default /home/sano/ishaq/bb_tests/repositories) over
  * zig, zls and ghostty. Sample size is a CLI argument so the artifact says how
  * much of the corpus it measured.
  *
@@ -27,7 +27,7 @@ import { init, parser, analyzer, zigFiles, walk } from "../m14/tmp/zigw-harness"
 import { deriveZigReferenceEdges } from "../m14/zig-truth"
 
 const OUT = path.join(process.cwd(), "validation/m12/results/zig-deep-review.json")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/sano/ishaq/bb_tests/repositories"
 
 const BUILTINS: ReadonlySet<string> = new Set([
   "void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble",

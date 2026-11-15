@@ -1,0 +1,17 @@
+{
+  "fixtureId": "groovy/degraded-class-recovery-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS the #841 round-14 analyzer-side recovery. Before it: no class symbol, no contains edges, every call sourced (script), and two fabricated calls edges whose targets are parameter TYPES (`{ Project project ->` and `{ Test task ->` fold into a juxt_function_call naming the type). After: the class symbol exists on its declared line, the surviving method is owned by it, and the fabricated type-call edges are gone. The load-bearing assertions are the class symbol + the contains edge + the forbid entries; the source is valid Groovy 3.0.24 (oracle at Phases.CONVERSION: ACCEPTS) and is a reduced real corpus file whose degradation survives every single-member and brace-balanced deletion tried against it — the consequence is pinned because the construct could not be reduced to a smaller trigger (reviews/m59-841-assert-comma-separator.md §7r). Parse errors are deliberately NOT forbidden: the recovery restores ownership, not the parse.",
+  "expectSymbols": [
+    { "name": "TestTaskShardingPlugin", "kind": "class" },
+    { "name": "apply", "kind": "method", "ownerName": "TestTaskShardingPlugin" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "TestTaskShardingPlugin", "target": "apply" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "Project", "comment": "the misparse named the parameter TYPE as a callee; nothing here calls Project" },
+    { "type": "calls", "target": "Test", "comment": "same for the closure's Test parameter" }
+  ]
+}

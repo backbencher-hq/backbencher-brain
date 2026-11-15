@@ -1,0 +1,60 @@
+{
+  "fixtureId": "xml/xsd-external-reference",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding X7. A `references` edge whose prefix is bound to a namespace the document IMPORTS points at a component declared in ANOTHER FILE. The reference pass refused it, and the refusal is right for a prefix bound to nothing — recording that would put a name in the graph that no file supports, which is the M60.R10 lie. It was wrong here, because the document already says where the name lives: the `imports` edge for the same `xsd:import` names the file. Dropping the reference left the graph claiming two schemas were independent while holding an edge that said one imported the other, and it cost the corpus ~108 edges, which is what an XSD set being a GRAPH rather than a pile of files depends on. Three things are pinned, and the third is the one that keeps the fix honest. (1) The reference is emitted, marked `resolvable: \"external\"`, and carries `importedFrom` so a consumer can follow it to the declaring file instead of guessing from the namespace. (2) The reference is written BEFORE the import that gives it meaning — the ordinary spelling, because schemas are written for readers and a reader meets the usage first — so the import scan cannot resolve on the spot, which is the same forward-reference trap the candidate queue already exists to avoid one level up. (3) `gone:CT_Nowhere` names a prefix the document never imports, and MUST stay refused: without that clause this fixture would be satisfied by simply emitting every prefixed value, which is the R10 lie in the other direction. The target symbols are also pinned ABSENT — `CT_Thumbnail` and `sz` are not in this file, and publishing them locally would make a phantom symbol that no file in the set declares. Lines read off the file: thumb 8, the attribute 9, the pic import 10, the unused import 11, orphan 12.",
+  "expectSymbols": [
+    { "name": "thumb", "kind": "class", "meta.isVocabDeclaration": true },
+    { "name": "orphan", "kind": "class", "meta.isVocabDeclaration": true }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "thumb",
+      "target": "CT_Thumbnail",
+      "line_number": 8,
+      "meta.resolvable": "external",
+      "meta.importedFrom": "picture.xsd",
+      "meta.qname": "pic:CT_Thumbnail"
+    },
+    {
+      "type": "references",
+      "from": "xsd:attribute",
+      "target": "sz",
+      "line_number": 9,
+      "meta.resolvable": "external",
+      "meta.importedFrom": "picture.xsd",
+      "meta.qname": "pic:sz"
+    },
+    { "type": "imports", "from": "xsd:import", "target": "picture.xsd" },
+    { "type": "imports", "from": "xsd:import", "target": "unused.xsd" }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "CT_Thumbnail",
+      "note": "declared in picture.xsd, NOT here. A phantom local symbol is the M60.R10 lie: a consumer would resolve the reference to a symbol with no declaration behind it, which is worse than an edge that says where to look."
+    },
+    {
+      "name": "sz",
+      "note": "same: an external global attribute declaration, and publishing it locally would be a second file's component living in this file's graph"
+    },
+    {
+      "name": "CT_Nowhere",
+      "note": "`gone:` is bound to nothing this document imports or declares, so there is no file to find this in. Refusing it is the correct half of X7, and this clause is what stops the fix from degenerating into \"emit every prefixed value\"."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "orphan",
+      "target": "CT_Nowhere",
+      "note": "an unimported namespace is still refused. X7 added a THIRD resolvability class, it did not remove the rule that a name nothing supports must not enter the graph."
+    },
+    {
+      "type": "references",
+      "from": "orphan",
+      "target": "CT_Nowhere",
+      "note": "same refusal, stated against the schemaLocation of the UNUSED import: `urn:example:unused` is imported by picture.xsd's file, not by this one, and a namespace listed in this document's imports is the only thing that authorises the reference."
+    }
+  ]
+}

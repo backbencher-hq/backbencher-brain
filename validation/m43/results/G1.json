@@ -1,0 +1,24 @@
+{
+  "status": "blocked",
+  "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-governance.ts",
+  "generatedAt": "2026-11-04T22:57:40.757Z",
+  "passed": 68,
+  "failed": 2,
+  "negativeCases": 2,
+  "negatives": [
+    {
+      "name": "invariant-missing",
+      "note": "PLAN without the verbatim invariant fails check 1 (proven by mutation in gate-selftest when G1 delivers it)"
+    },
+    {
+      "name": "stamp-divergence",
+      "note": "evidence files stamped at different commits fail check 5 (proven by mutation in gate-selftest when G1 delivers it)"
+    }
+  ],
+  "failures": [
+    "evidence stamp agreement (content evidence at one commit) — divergent stamps: de57890,4aa5861,48f27f0",
+    "infra evidence stamped at HEAD or ancestor — X1.json@4d0d44a"
+  ]
+}

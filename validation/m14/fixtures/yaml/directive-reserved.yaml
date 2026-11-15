@@ -1,0 +1,6 @@
+# A reserved directive (%FOO) was removed from YAML 1.2 but is still parseable. It is
+# recorded rather than dropped, because "the grammar cannot produce it" and "nothing
+# looked for it" look identical in an output diff.
+%FOO bar baz
+---
+a: 1

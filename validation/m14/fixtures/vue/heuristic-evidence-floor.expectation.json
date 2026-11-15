@@ -1,0 +1,95 @@
+{
+  "fixtureId": "vue/heuristic-evidence-floor",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F20 (vue ontology wave). The evidence tier an emitted row may claim, and specifically the 0.7 floor the lane was not applying. Measured through the production entry over 1,151 corpus `.vue` files: 1,628 rows sit at confidence 0.6 — 1,616 `uses` field-read/bare-read rows and 12 unresolved dynamic-import/`require` rows — and every one was stored as `usage_contextual` or `import_based`, a confident class on a heuristic row. The file already carried the ladder (its `extends`/`implements`/`overrides` branch maps conf < 0.85 to `inferred`) but only for those three labels, and every delegated row of every other label fell through to the default. The floor matters downstream rather than cosmetically: src/lsp/evidence_tier.ts rule 1 states a stored legend-tier evidenceClass WINS and is 'never re-derived, never re-upgraded', so rule 2's floor ('below the floor the edge is a guess and MUST read inferred') can never fire for a stored row — the analyzer is the last place it can be applied. Expectations are pinned by value (`inferred`), and the confident template read is pinned too so a mutant that simply downgraded everything would be caught here rather than believed. The two forbids are the shape of the old defect: those rows carried `usage_contextual` / `import_based`, and a fixture that only asserted the new value would also be satisfied by an analyzer that emitted no tier at all. REPAIRED 2026-10-25 (Lead-ruled closing step): the analyzer now applies the 0.7 floor in classifyEvidenceTier before the stored-class skip — every sub-floor row stores `inferred`, delegate-produced or not — so the confident template read at 0.95 (pinned above) is the control that a blanket downgrade would break. The TARGET pins were also re-pinned to the delegate's CURRENT binding spelling (`<callable>\\u0000<binding>`), the fleet's own bindOK convention; the old bare-leaf pins predated the binding-collapse work and a target is not a spelling.",
+  "expectSymbols": [
+    {
+      "name": "HeuristicBox",
+      "kind": "class"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "ownerName": "HeuristicBox"
+    },
+    {
+      "name": "state",
+      "kind": "property",
+      "ownerName": "HeuristicBox"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "HeuristicBox",
+      "target": "title",
+      "meta.isTemplateExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "from": "HeuristicBox",
+      "target": "peek",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "uses",
+      "from": "peek",
+      "target": "value",
+      "meta.isFieldAccess": true,
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "uses",
+      "from": "peek",
+      "target": "peek\u0000source",
+      "meta.chainRoot": true,
+      "meta.evidenceClass": "inferred",
+      "meta.localBinding": true
+    },
+    {
+      "type": "uses",
+      "from": "load",
+      "target": "load\u0000mod",
+      "meta.evidenceClass": "inferred",
+      "meta.localBinding": true
+    },
+    {
+      "type": "imports",
+      "from": "HeuristicBox",
+      "target": "@/vendor/missing:*",
+      "meta.unresolved": true,
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "exports",
+      "from": "HeuristicBox",
+      "target": "default",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "peek",
+      "target": "value",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "a 0.6 field read is a guess about a property the analyzer cannot see; src/lsp/evidence_tier.ts rule 2 requires `inferred` below the 0.7 floor, and rule 1 means nothing downstream will ever correct a stored confident class"
+    },
+    {
+      "type": "uses",
+      "from": "load",
+      "target": "load\u0000mod",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "same floor, same rule — the confident class is what the pre-F20 state stored on every sub-0.7 row"
+    },
+    {
+      "type": "imports",
+      "from": "HeuristicBox",
+      "target": "@/vendor/missing:*",
+      "meta.evidenceClass": "import_based",
+      "comment": "the resolved-dynamic-import class at 0.6 is the same defect on the imports row: import_based is a LEGEND tier, so src/lsp/evidence_tier.ts rule 1 would make it final downstream and rule 2's floor could never fire. F20 measured 12 such rows; the analyzer now stores `inferred` below 0.7 whoever produced the class."
+    }
+  ]
+}

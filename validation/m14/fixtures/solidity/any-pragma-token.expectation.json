@@ -1,0 +1,9 @@
+{
+  "lane": "solidity",
+  "id": "any-pragma-token",
+  "why": "grammar.js:97 `any_pragma_token: seq(identifier, $.pragma_value)` — a pragma whose name is not `solidity`.",
+  "neverExercisedByCorpus": true,
+  "mustProduceNodeType": "any_pragma_token",
+  "reachedByProbe": true,
+  "parsesClean": true
+}

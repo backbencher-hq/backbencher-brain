@@ -1,0 +1,145 @@
+{
+ "files": [
+  "src/mcp/tools/bb_migrate/handler.ts",
+  "src/mcp/tools/bb_migrate/descriptor.ts",
+  "src/intelligence/migration/migration-engine.ts",
+  "src/intelligence/migration/migration-source.ts",
+  "src/intelligence/migration/migration-evidence.ts",
+  "src/ast/cross-language-migration-assistant.ts"
+ ],
+ "count": 22,
+ "rows": [
+  {
+   "file": "src/mcp/tools/bb_migrate/handler.ts",
+   "line": 68,
+   "kind": "literal",
+   "text": "/\\\\/g"
+  },
+  {
+   "file": "src/mcp/tools/bb_migrate/handler.ts",
+   "line": 71,
+   "kind": "literal",
+   "text": "/\\\\/g"
+  },
+  {
+   "file": "src/intelligence/migration/migration-source.ts",
+   "line": 170,
+   "kind": "literal",
+   "text": "/\\\\/g"
+  },
+  {
+   "file": "src/intelligence/migration/migration-source.ts",
+   "line": 170,
+   "kind": "literal",
+   "text": "/^\\.\\//"
+  },
+  {
+   "file": "src/intelligence/migration/migration-source.ts",
+   "line": 170,
+   "kind": "literal",
+   "text": "/\\/+$/"
+  },
+  {
+   "file": "src/intelligence/migration/migration-source.ts",
+   "line": 185,
+   "kind": "literal",
+   "text": "/[%_]/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 894,
+   "kind": "literal",
+   "text": "/[\\s-]+/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 895,
+   "kind": "literal",
+   "text": "/_/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 899,
+   "kind": "literal",
+   "text": "/_/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 929,
+   "kind": "literal",
+   "text": "/[\\s-]+/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 930,
+   "kind": "literal",
+   "text": "/_/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1150,
+   "kind": "literal",
+   "text": "/^[\"']|[\"']$/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1243,
+   "kind": "literal",
+   "text": "/^v\\d+$/"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1262,
+   "kind": "literal",
+   "text": "/^(?:java|javax|com|org|net|io)\\./"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1263,
+   "kind": "literal",
+   "text": "/[./]/"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1297,
+   "kind": "literal",
+   "text": "/node_modules\\/((?:@[^/]+\\/)?[^/]+)/"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1303,
+   "kind": "literal",
+   "text": "/(?:^|\\/)(?:tests?|spec|specs|__tests__|testing)\\/|(?:_test|_spec|\\.test|\\.spec|Test|Tests|Spec)\\.[A-Za-z0-9]+$|_(?:test|tests|spec)\\.[A-Za-z0-9]+$/"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1625,
+   "kind": "literal",
+   "text": "/(?:class|struct|interface|type|table|enum)/"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1626,
+   "kind": "literal",
+   "text": "/(?:^|[_\\-.])(?:table|schema|migration|migrate|entity|model|dao|repository|repo)(?:$|[_\\-.])/i"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1832,
+   "kind": "literal",
+   "text": "/^['\"]|['\"]$/g"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1847,
+   "kind": "literal",
+   "text": "/^node:/"
+  },
+  {
+   "file": "src/ast/cross-language-migration-assistant.ts",
+   "line": 1925,
+   "kind": "literal",
+   "text": "/^['\"]|['\"]$/g"
+  }
+ ]
+}

@@ -1,0 +1,73 @@
+{
+  "fixtureId": "css/recovered-import-shape-is-an-import",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Pass 10 reconciled the one corpus number the `imports` verdict never had to reconcile: `css-ontology-probe.ts` counts 250 `import_statement` NODES on the admitted corpus and production `parseFile` published 243 `imports` EDGES. `processImport` read only a DIRECT `string_value` / `call_expression` child, and 7 statements the pinned CSS grammar recovers into an ERROR shape carry the quoted specifier as a `string_value` node one level down \u2014 `;+@import+ERROR+binary_expression`, `;+@import+ERROR+ERROR+float_value+keyword_query` and five siblings, all of them `.sass` partials under `Documenter.jl/assets/html/scss/bulma/`. `@import \"../utilities/mixins\"` is a real fetch, so publishing nothing was a silent 7-edge miss on a type already reported EMITTED, which is the coverage-asserted-but-not-measured failure the `extends` row committed in pass 6. The fix is `findImportNameNode`: direct child first (so the 243 already published are untouched), then the first `string_value` / `call_expression` at ANY depth whose row equals the `@import` KEYWORD's own row. The line guard is the load-bearing half and this file is what pins it. ERROR recovery SWALLOWS the rest of the file into the `import_statement` node \u2014 the corpus file `bulma/elements/button.sass` spans L2..L50 and carries ELEVEN `string_value` descendants, one at L2 (the module) and ten at L47 (a `$breakpoints` map's \"mobile\", \"small\", \"normal\", ...). The `$map: ( \"a-key\": 1, \"b-key\": 2, )` block below reproduces that inside one small file: `\"a-key\"` and `\"b-key\"` are real `string_value` nodes on L16 and L17, INSIDE the `import_statement` node that spans L13..L19. A descendant search without the row guard would publish `\"a-key\"` as a module the stylesheet never imports. `forbidRelationships` refuses both, so the guard is asserted and not merely implemented. The Sass placeholder syntax and the `$map` block are in a `.css` file for one reason: they are what this grammar cannot parse, which is the only way to reach the branch. A well-formed stylesheet never gets there, and the third statement (`@import url(\"theme.css\")`) is the control that proves the direct-child path still fires alongside it. CONTRACT REPIN (2026-10-25): `part_of` is now emitted for the PLAIN FILE FORM of `@import` in the css family \u2014 exactly one named child of type `string_value`, no `.css` suffix, no protocol URL, no `sass:`/`data:` scheme. Sass/Less fold that form in at compile time, so it is a source inclusion (`part_of`, `partRole:\"library\"`), not a stylesheet load. Every other form keeps `imports`: `url(...)` (the child is a call_expression), a media query (a SECOND named child), a `.css` specifier, and any protocol URL. This is a LABEL MOVE \u2014 source, target, line and the project-file claim are unchanged.",
+  "knownLimitation": "The published module name is the specifier exactly as written, so a relative import keeps its `../` (`../utilities/mixins`) and does not resolve against the importing file's directory. That is unchanged from the 243 edges published before this fix and is why this lane's `imports` both-ends resolution rate is 0% rather than a defect count \u2014 see the `imports` row of the six-questions table. The line guard reads the `@import` KEYWORD node's row; for a statement whose keyword and specifier are split across lines by the multi-line `url(...)` form, the direct-child rule still fires first, so this fixture does not claim the recovered path handles that form.",
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "recovered-import-shape-is-an-import.css",
+      "target": "mixins",
+      "meta.evidenceClass": "structural",
+      "meta.isCssImport": true,
+      "meta.partRole": "library",
+      "meta.isCssPartImport": true
+    },
+    {
+      "type": "imports",
+      "from": "recovered-import-shape-is-an-import.css",
+      "target": "real-module.css",
+      "meta.evidenceClass": "import_based",
+      "meta.isCssImport": true
+    },
+    {
+      "type": "imports",
+      "from": "recovered-import-shape-is-an-import.css",
+      "target": "theme.css",
+      "meta.evidenceClass": "import_based",
+      "meta.isCssImport": true
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "mixins"
+    },
+    {
+      "module": "real-module.css"
+    },
+    {
+      "module": "theme.css"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "a-key"
+    },
+    {
+      "type": "imports",
+      "target": "b-key"
+    },
+    {
+      "type": "imports",
+      "target": "NOT-THE-MODULE"
+    },
+    {
+      "type": "imports",
+      "target": "\"mixins\""
+    },
+    {
+      "type": "imports",
+      "target": "\"real-module.css\""
+    },
+    {
+      "type": "imports",
+      "target": "\"theme.css\""
+    },
+    {
+      "type": "imports",
+      "target": "mixins"
+    }
+  ]
+}

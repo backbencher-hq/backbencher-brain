@@ -1,0 +1,10 @@
+{
+  "fixtureId": "svelte/store-derived",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS svelte store pattern: writable store creation, derived store from count, reset method with set() call. Store calls surface as calls relationships.",
+  "expectSymbols": [
+    { "name": "reset" }
+  ],
+  "expectRelationships": []
+}

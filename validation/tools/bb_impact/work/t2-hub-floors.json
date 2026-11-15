@@ -1,0 +1,162 @@
+{
+  "generatedAt": "2026-11-03T17:15:03.816Z",
+  "symbol": "getRawInstance",
+  "rows": [
+    {
+      "label": "engine-timeBudget-1",
+      "ms": 17.3,
+      "value": {
+        "callers": 200,
+        "timeBudgetExhausted": true,
+        "reason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+        "totalCallers": 200,
+        "callersIfUncapped": null
+      }
+    },
+    {
+      "label": "engine-timeBudget-300",
+      "ms": 595.3,
+      "value": {
+        "callers": 201,
+        "timeBudgetExhausted": true,
+        "reason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+        "totalCallers": 201,
+        "callersIfUncapped": 326
+      }
+    },
+    {
+      "label": "engine-timeBudget-600",
+      "ms": 1230.2,
+      "value": {
+        "callers": 201,
+        "timeBudgetExhausted": true,
+        "reason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+        "totalCallers": 201,
+        "callersIfUncapped": 326
+      }
+    },
+    {
+      "label": "engine-timeBudget-1000",
+      "ms": 1071.2,
+      "value": {
+        "callers": 201,
+        "timeBudgetExhausted": true,
+        "reason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+        "totalCallers": 201,
+        "callersIfUncapped": 326
+      }
+    },
+    {
+      "label": "engine-timeBudget-1500",
+      "ms": 1892.7,
+      "value": {
+        "callers": 201,
+        "timeBudgetExhausted": true,
+        "reason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+        "totalCallers": 201,
+        "callersIfUncapped": 326
+      }
+    },
+    {
+      "label": "engine-timeBudget-2500",
+      "ms": 2430.9,
+      "value": {
+        "callers": 213,
+        "timeBudgetExhausted": false,
+        "reason": "caller-site-limit+caller-budget-exhausted",
+        "totalCallers": 213,
+        "callersIfUncapped": 326
+      }
+    },
+    {
+      "label": "count-timeCeiling-1",
+      "ms": 838.4,
+      "value": {
+        "total": null,
+        "direct": 272,
+        "rowsScanned": 326,
+        "expansions": 1,
+        "timedOut": true,
+        "hitScanCeiling": true
+      }
+    },
+    {
+      "label": "count-timeCeiling-300",
+      "ms": 766,
+      "value": {
+        "total": null,
+        "direct": 272,
+        "rowsScanned": 326,
+        "expansions": 1,
+        "timedOut": true,
+        "hitScanCeiling": true
+      }
+    },
+    {
+      "label": "count-timeCeiling-600",
+      "ms": 5335.2,
+      "value": {
+        "total": null,
+        "direct": 272,
+        "rowsScanned": 463,
+        "expansions": 201,
+        "timedOut": true,
+        "hitScanCeiling": true
+      }
+    },
+    {
+      "label": "count-timeCeiling-1000",
+      "ms": 5529.7,
+      "value": {
+        "total": null,
+        "direct": 272,
+        "rowsScanned": 463,
+        "expansions": 201,
+        "timedOut": true,
+        "hitScanCeiling": true
+      }
+    },
+    {
+      "label": "count-timeCeiling-1500",
+      "ms": 5208.9,
+      "value": {
+        "total": null,
+        "direct": 272,
+        "rowsScanned": 463,
+        "expansions": 201,
+        "timedOut": true,
+        "hitScanCeiling": true
+      }
+    },
+    {
+      "label": "count-timeCeiling-2500",
+      "ms": 5056.9,
+      "value": {
+        "total": null,
+        "direct": 272,
+        "rowsScanned": 463,
+        "expansions": 201,
+        "timedOut": true,
+        "hitScanCeiling": true
+      }
+    },
+    {
+      "label": "count-default",
+      "ms": 5834.8,
+      "value": {
+        "total": null,
+        "rowsScanned": 637,
+        "expansions": 273,
+        "timedOut": true
+      }
+    },
+    {
+      "label": "engine-no-clock",
+      "ms": 2297.1,
+      "value": {
+        "callers": 213,
+        "reason": "caller-site-limit+caller-budget-exhausted"
+      }
+    }
+  ]
+}

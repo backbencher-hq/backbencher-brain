@@ -1,0 +1,1850 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "c41f3510f0f25817c39bd30e704a7a1966b583d79ebf886987c9c2cd51c1b249",
+    "sealedAt": "2026-11-13T20:34:00.000Z"
+  },
+  "checks": [
+    {
+      "description": "no Module symbol for a file, matching typescript/svelte/vue; module identity is carried by the source of every exports/imports edge. Clojure is the outlier because a namespace is a first-class value there.",
+      "id": "census-js-module-identity",
+      "status": "pass"
+    },
+    {
+      "description": "1:1123 [imports,exports,contains]; 0.95:26 [instantiates,references]; 0.9:2920 [calls]; 0.85:46 [uses/templateSub]; 0.6:3790 [imports/namespace,uses/callReceiver,uses/fieldAccess]",
+      "id": "census-js-confidence-tiers",
+      "status": "pass"
+    },
+    {
+      "description": "26/27 declared forms seen in the sample; 1 declared but not sampled (informational); 0 unclassified declaration-shaped node types",
+      "id": "census-js-declaration-dispositions",
+      "status": "pass"
+    },
+    {
+      "description": "svelte:javascript 3369/3369 (100.0%), lodash:javascript 48/48 (100.0%); nothing capped",
+      "id": "census-js-corpus-coverage",
+      "status": "pass"
+    },
+    {
+      "description": "27/27 declared forms witnessed by their own snippet; 0 phantom, 0 unwitnessed",
+      "id": "census-js-declarations-witnessed",
+      "status": "pass"
+    },
+    {
+      "description": "observed: export_statement=4532, import_statement=5675, cjs_exports=1, cjs_require=78",
+      "id": "census-js-module-space",
+      "status": "pass"
+    },
+    {
+      "description": "7 read positions declared; 11 probes recorded",
+      "id": "census-js-read-positions",
+      "status": "pass"
+    },
+    {
+      "description": "1460 distinct member bases observed; 0 undeclared leaves under reserved bases",
+      "id": "census-js-reserved-base-complete",
+      "status": "pass"
+    },
+    {
+      "description": "3 suppression probes, 0 disagreeing with the declared table",
+      "id": "census-js-builtins-suppressed",
+      "status": "pass"
+    },
+    {
+      "description": "34 global-base leaves probed: 34 are NAMED, 0 are silent. FINDING: the analyzer doc claims \"builtins filtered (console.*, Object leaf methods)\"; the console half holds (console.log publishes no calls log) and the Object half does NOT (Object.keys publishes calls keys AND uses Object). Named: Array.__svelte_cleanup, Array.call, Boolean.prototype, Boolean.toJSON, Buffer.from, Error.captureStackTrace, Error.stackTraceLimit, JSON.parse, JSON.stringify, Map.prototype, Math.E, Math.LN10, Number.MAX_VALUE, Number.isFinite, Object.apply, Object.assign, Promise.all, Promise.allSettled, Reflect.get, Reflect.getOwnPropertyDescriptor, Set.prototype, String.call, String.fromCharCode, Symbol.asyncIterator, Symbol.iterator, WeakMap.name, document.activeElement, document.addEventListener, globalThis.Buffer, globalThis.Date, process.BENCH_PROFILE_DIR, process.BENCH_SINGLE, window.Backbone, window.Event",
+      "id": "census-js-doc-builtin-claim",
+      "status": "pass"
+    },
+    {
+      "description": "4 user-namespace probes, 0 failing",
+      "id": "census-js-user-namespaces-preserved",
+      "status": "pass"
+    },
+    {
+      "description": "17 silence probes, 0 leaking",
+      "id": "census-js-noncode-and-reserved-silent",
+      "status": "pass"
+    },
+    {
+      "description": "contract gated by 4 probes (0 violating), NOT by the corpus. 104 symbols outside the containment contract. Of 103 in it: CLASS members 0/11 unplaced (0.0%), OBJECT-LITERAL methods 92/92 unplaced (100.0%). OF WHICH the defect population is 0/0: object-literal members that HAVE a binding and were not placed. The other 92/92 have NO reachable binding (export default, return value, call argument, array element) and are correctly ownerless by the analyzer's own documented contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure counted correctly-ownerless members as a gap",
+      "id": "census-js-containment-contract",
+      "status": "pass"
+    },
+    {
+      "description": "34 named-base probes across 19 bases, 0 contradicting the declared table",
+      "id": "census-js-named-bases-verified",
+      "status": "pass"
+    },
+    {
+      "description": "4 module probes (ESM + CJS), 0 failing",
+      "id": "census-js-module-probes",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "a1639eb695afd379990bd46ea01e3a40d2e9279d",
+  "committedAt": "2026-11-13T15:34:00-05:00",
+  "data": {
+    "census": "M14.0.JS-CENSUS",
+    "confidenceTiers": {
+      "dispositions": {
+        "1": "certain — syntax-directed with no ambiguity (declarations, extends, imports, exports)",
+        "0.5": "low — overrides whose base could not be resolved across files",
+        "0.6": "DECLARED HESITATION — three distinct shapes, all deliberate: call-receiver roots (X10's tier, where `calls` names only the leaf so the receiver is named by nothing else), field-access roots, and whole-module forms (namespace import, re-export, CJS require/dynamic import — a namespace binds an object, not a declaration, so there is nothing to resolve TO: JD-J12/JD2b)",
+        "0.85": "high — field-access chain segments and template substitutions",
+        "0.9": "high — call and bare-read positions",
+        "0.95": "high — pattern-directed (new_expression, instanceof)"
+      },
+      "measured": {
+        "1": {
+          "count": 1123,
+          "shapes": [
+            "imports",
+            "exports",
+            "contains",
+            "imports/reExport"
+          ]
+        },
+        "0.6": {
+          "count": 3790,
+          "shapes": [
+            "imports/namespace",
+            "uses/callReceiver",
+            "uses/fieldAccess",
+            "imports/reExport"
+          ]
+        },
+        "0.85": {
+          "count": 46,
+          "shapes": [
+            "uses/templateSub"
+          ]
+        },
+        "0.9": {
+          "count": 2920,
+          "shapes": [
+            "calls"
+          ]
+        },
+        "0.95": {
+          "count": 26,
+          "shapes": [
+            "instantiates",
+            "references"
+          ]
+        }
+      },
+      "note": "M12 reports a bare `unknown` count for anything below 0.7. These are the tiers that count feeds, measured and named, so the number is auditable rather than merely reported."
+    },
+    "counts": {
+      "declarationFormsDeclared": 27,
+      "declarationFormsPresent": 26,
+      "distinctMemberBases": 1460,
+      "distinctNodeTypes": 96,
+      "moduleForms": {
+        "cjs_exports": 1,
+        "cjs_require": 78,
+        "export_statement": 4532,
+        "import_statement": 5675
+      }
+    },
+    "coverage": {
+      "lodash:javascript": {
+        "available": 48,
+        "capped": false,
+        "fraction": 100,
+        "walked": 48
+      },
+      "svelte:javascript": {
+        "available": 3369,
+        "capped": false,
+        "fraction": 100,
+        "walked": 3369
+      }
+    },
+    "declarationWitnesses": [
+      {
+        "form": "function_declaration",
+        "snippet": "function f() {}",
+        "witnessed": true
+      },
+      {
+        "form": "generator_function_declaration",
+        "snippet": "function* g() {}",
+        "witnessed": true
+      },
+      {
+        "form": "class_declaration",
+        "snippet": "class C {}",
+        "witnessed": true
+      },
+      {
+        "form": "class",
+        "snippet": "const C = class { m() {} }",
+        "witnessed": true
+      },
+      {
+        "form": "function_expression",
+        "snippet": "const f = function () {}",
+        "witnessed": true
+      },
+      {
+        "form": "generator_function",
+        "snippet": "const g = function* () {}",
+        "witnessed": true
+      },
+      {
+        "form": "arrow_function",
+        "snippet": "const a = () => {}",
+        "witnessed": true
+      },
+      {
+        "form": "method_definition",
+        "snippet": "class C { m() {} }",
+        "witnessed": true
+      },
+      {
+        "form": "field_definition",
+        "snippet": "class C { #x = 1; y = 2 }",
+        "witnessed": true
+      },
+      {
+        "form": "variable_declarator",
+        "snippet": "const a = 1",
+        "witnessed": true
+      },
+      {
+        "form": "variable_declaration",
+        "snippet": "var a = 1",
+        "witnessed": true
+      },
+      {
+        "form": "lexical_declaration",
+        "snippet": "const a = 1",
+        "witnessed": true
+      },
+      {
+        "form": "formal_parameters",
+        "snippet": "function f(a, b = 1, ...c) {}",
+        "witnessed": true
+      },
+      {
+        "form": "rest_pattern",
+        "snippet": "function f(...c) {}",
+        "witnessed": true
+      },
+      {
+        "form": "assignment_pattern",
+        "snippet": "function f(a = 1) {}",
+        "witnessed": true
+      },
+      {
+        "form": "object_pattern",
+        "snippet": "const { a, b } = o",
+        "witnessed": true
+      },
+      {
+        "form": "array_pattern",
+        "snippet": "const [a, b] = arr",
+        "witnessed": true
+      },
+      {
+        "form": "pair_pattern",
+        "snippet": "const { a: { b } } = o",
+        "witnessed": true
+      },
+      {
+        "form": "object_assignment_pattern",
+        "snippet": "const { a = 1 } = o",
+        "witnessed": true
+      },
+      {
+        "form": "shorthand_property_identifier_pattern",
+        "snippet": "const { a } = o",
+        "witnessed": true
+      },
+      {
+        "form": "catch_clause",
+        "snippet": "try {} catch (e) {}",
+        "witnessed": true
+      },
+      {
+        "form": "for_in_statement",
+        "snippet": "for (const k in o) {}",
+        "witnessed": true
+      },
+      {
+        "form": "import_clause",
+        "snippet": "import a from \"m.js\"",
+        "witnessed": true
+      },
+      {
+        "form": "export_clause",
+        "snippet": "const a = 1; export { a }",
+        "witnessed": true
+      },
+      {
+        "form": "else_clause",
+        "snippet": "if (a) {} else {}",
+        "witnessed": true
+      },
+      {
+        "form": "finally_clause",
+        "snippet": "try {} finally {}",
+        "witnessed": true
+      },
+      {
+        "form": "regex_pattern",
+        "snippet": "const r = /x/g",
+        "witnessed": true
+      }
+    ],
+    "dispositions": {
+      "declarations": {
+        "array_pattern": "destructuring targets recorded, never symbols",
+        "arrow_function": "Function symbol only when bound to a declarator; an inline argument arrow names nothing",
+        "assignment_pattern": "default-value parameter name recorded, never a symbol",
+        "catch_clause": "the caught parameter is a binding, recorded on the owner",
+        "class": "Class symbol for a class EXPRESSION — owns members too (M49 W13)",
+        "class_declaration": "Class symbol, and the scope owner for its members",
+        "else_clause": "control-flow clause; never a symbol",
+        "export_clause": "container for export names; never a symbol",
+        "field_definition": "Property symbol; `#x` private form collapses to x",
+        "finally_clause": "control-flow clause; never a symbol",
+        "for_in_statement": "loop binding is a Variable",
+        "formal_parameters": "parameters recorded on the owner, never symbols",
+        "function_declaration": "Function symbol",
+        "function_expression": "Function symbol when named or bound to a declarator",
+        "generator_function": "Function symbol when named or bound to a declarator",
+        "generator_function_declaration": "Function symbol (generator)",
+        "import_clause": "container for import specifiers; never a symbol",
+        "lexical_declaration": "container for variable_declarator (const/let)",
+        "method_definition": "Method symbol; `constructor` key yields Constructor",
+        "object_assignment_pattern": "destructuring target, recorded not symbolized",
+        "object_pattern": "destructuring targets recorded, never symbols",
+        "pair_pattern": "destructuring targets recorded, never symbols",
+        "regex_pattern": "NOT a declaration: a regex literal is a VALUE. Its pattern text is never a symbol, never a target, and never parsed for code — which is the zero-regex contract stated as a disposition rather than as a promise. Found by gate 1, which is the only reason this row exists: the name ends in `_pattern`, so the declaration-shape heuristic flagged it, and the correct answer was to account for it rather than to widen the heuristic until it stopped asking.",
+        "rest_pattern": "rest parameter name recorded, never a symbol",
+        "shorthand_property_identifier_pattern": "destructuring target, recorded not symbolized",
+        "variable_declaration": "container for variable_declarator",
+        "variable_declarator": "Constant for const, Variable for let/var; Function when the value is a function"
+      },
+      "declaredSuppressed": {
+        "console": [
+          "log",
+          "warn",
+          "error",
+          "info",
+          "debug",
+          "trace",
+          "dir",
+          "table",
+          "time",
+          "timeEnd",
+          "group",
+          "groupCollapsed",
+          "groupEnd",
+          "count",
+          "assert",
+          "clear"
+        ]
+      },
+      "readPositions": {
+        "assignment-rhs": "uses @0.9 — the value side of `a = b`",
+        "bare-read": "uses @0.9 — `return config`, `if (flag)`",
+        "call-argument": "uses @0.9 — `fn(title)`",
+        "call-receiver": "uses @0.6 + metadata.callReceiver — the chain ROOT of a member callee",
+        "field-access": "uses @0.85 — `title.length` publishes the chain root and each segment",
+        "object-key": "no edge — a key is a name being DEFINED, not read",
+        "template-substitution": "uses @0.85 + metadata.isTemplateInterpolation"
+      },
+      "reservedBases": [
+        "console",
+        "Object",
+        "Math",
+        "JSON",
+        "globalThis",
+        "window",
+        "document",
+        "Array",
+        "String",
+        "Number",
+        "Boolean",
+        "Promise",
+        "Symbol",
+        "Map",
+        "Set",
+        "WeakMap",
+        "WeakSet",
+        "Proxy",
+        "Reflect",
+        "Error",
+        "TypeError",
+        "RangeError",
+        "process",
+        "Buffer",
+        "__dirname",
+        "__filename"
+      ],
+      "reservedKeywords": [
+        "this",
+        "super",
+        "undefined",
+        "arguments",
+        "null",
+        "true",
+        "false"
+      ]
+    },
+    "failures": [],
+    "gates": [
+      {
+        "detail": "no Module symbol for a file, matching typescript/svelte/vue; module identity is carried by the source of every exports/imports edge. Clojure is the outlier because a namespace is a first-class value there.",
+        "id": "census-js-module-identity",
+        "pass": true
+      },
+      {
+        "detail": "1:1123 [imports,exports,contains]; 0.95:26 [instantiates,references]; 0.9:2920 [calls]; 0.85:46 [uses/templateSub]; 0.6:3790 [imports/namespace,uses/callReceiver,uses/fieldAccess]",
+        "id": "census-js-confidence-tiers",
+        "pass": true
+      },
+      {
+        "detail": "26/27 declared forms seen in the sample; 1 declared but not sampled (informational); 0 unclassified declaration-shaped node types",
+        "id": "census-js-declaration-dispositions",
+        "pass": true
+      },
+      {
+        "detail": "svelte:javascript 3369/3369 (100.0%), lodash:javascript 48/48 (100.0%); nothing capped",
+        "id": "census-js-corpus-coverage",
+        "pass": true
+      },
+      {
+        "detail": "27/27 declared forms witnessed by their own snippet; 0 phantom, 0 unwitnessed",
+        "id": "census-js-declarations-witnessed",
+        "pass": true
+      },
+      {
+        "detail": "observed: export_statement=4532, import_statement=5675, cjs_exports=1, cjs_require=78",
+        "id": "census-js-module-space",
+        "pass": true
+      },
+      {
+        "detail": "7 read positions declared; 11 probes recorded",
+        "id": "census-js-read-positions",
+        "pass": true
+      },
+      {
+        "detail": "1460 distinct member bases observed; 0 undeclared leaves under reserved bases",
+        "id": "census-js-reserved-base-complete",
+        "pass": true
+      },
+      {
+        "detail": "3 suppression probes, 0 disagreeing with the declared table",
+        "id": "census-js-builtins-suppressed",
+        "pass": true
+      },
+      {
+        "detail": "34 global-base leaves probed: 34 are NAMED, 0 are silent. FINDING: the analyzer doc claims \"builtins filtered (console.*, Object leaf methods)\"; the console half holds (console.log publishes no calls log) and the Object half does NOT (Object.keys publishes calls keys AND uses Object). Named: Array.__svelte_cleanup, Array.call, Boolean.prototype, Boolean.toJSON, Buffer.from, Error.captureStackTrace, Error.stackTraceLimit, JSON.parse, JSON.stringify, Map.prototype, Math.E, Math.LN10, Number.MAX_VALUE, Number.isFinite, Object.apply, Object.assign, Promise.all, Promise.allSettled, Reflect.get, Reflect.getOwnPropertyDescriptor, Set.prototype, String.call, String.fromCharCode, Symbol.asyncIterator, Symbol.iterator, WeakMap.name, document.activeElement, document.addEventListener, globalThis.Buffer, globalThis.Date, process.BENCH_PROFILE_DIR, process.BENCH_SINGLE, window.Backbone, window.Event",
+        "id": "census-js-doc-builtin-claim",
+        "pass": true
+      },
+      {
+        "detail": "4 user-namespace probes, 0 failing",
+        "id": "census-js-user-namespaces-preserved",
+        "pass": true
+      },
+      {
+        "detail": "17 silence probes, 0 leaking",
+        "id": "census-js-noncode-and-reserved-silent",
+        "pass": true
+      },
+      {
+        "detail": "contract gated by 4 probes (0 violating), NOT by the corpus. 104 symbols outside the containment contract. Of 103 in it: CLASS members 0/11 unplaced (0.0%), OBJECT-LITERAL methods 92/92 unplaced (100.0%). OF WHICH the defect population is 0/0: object-literal members that HAVE a binding and were not placed. The other 92/92 have NO reachable binding (export default, return value, call argument, array element) and are correctly ownerless by the analyzer's own documented contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure counted correctly-ownerless members as a gap",
+        "id": "census-js-containment-contract",
+        "pass": true
+      },
+      {
+        "detail": "34 named-base probes across 19 bases, 0 contradicting the declared table",
+        "id": "census-js-named-bases-verified",
+        "pass": true
+      },
+      {
+        "detail": "4 module probes (ESM + CJS), 0 failing",
+        "id": "census-js-module-probes",
+        "pass": true
+      }
+    ],
+    "generatedAt": "2026-11-13T21:15:51.050Z",
+    "independence": "Discovery reads the CORPUS and the GRAMMAR only. Neither the analyzer's tables nor the oracle is consulted for discovery, because a construct both of them forgot cannot appear as a disagreement — that is the X1 shape. The analyzer is consulted only for the probes.",
+    "lane": "javascript",
+    "moduleIdentity": {
+      "family": "javascript / typescript / svelte / vue emit no Module symbol; only clojure does",
+      "moduleSymbolsEmitted": 0,
+      "ruling": "module identity is carried by the SOURCE of every exports/imports edge, which is the file's module name"
+    },
+    "orphanGap": {
+      "classMembers": {
+        "orphans": 0,
+        "total": 11
+      },
+      "disposition": "DECLARED AND MEASURED — not closed by this gate; closing it is a separate change with its own blast radius",
+      "excludedFromPopulation": 104,
+      "finding": "JD3 (reviews/javascript/m60-deep-review-2026-09-26.md:209, '10.9% of real symbols are ownerless') is HISTORICAL, not falsified. It diagnosed ownerName coming only from scopeOwnerName, which reported class scopes only; the analyzer now derives the owner from containerOwnerName, which handles class expressions and object literals by their binding. The defect population measured here — object-literal members WITH a reachable binding that were not placed — is 0. Members with no binding (export default, return value, call argument, array element) are correctly ownerless by the analyzer's own documented contract.",
+      "moduleScopeRoots": 104,
+      "nestedSymbols": 103,
+      "objectLiteralMethods": {
+        "orphans": 92,
+        "ruling": "0 of the BOUND members are unplaced, so the containment contract holds for this shape. The 92/92 figure counted members that have no binding at all, which the contract places outside containment by design.",
+        "total": 92,
+        "withReachableBinding": {
+          "samples": [],
+          "total": 0,
+          "unplaced": 0
+        },
+        "withoutBinding": {
+          "disposition": "correctly ownerless — no binding to name",
+          "total": 92,
+          "unplaced": 92
+        }
+      },
+      "orphans": 92,
+      "pct": 89.3,
+      "population": "class members (method/field definitions, including class expressions) and object-literal methods — the set the containment contract covers. Roots, function-locals and top-level declarations are EXCLUDED because no containment edge is claimed for them.",
+      "samples": [
+        "packages/svelte/src/compiler/phases/3-transform/server/transform-server.js ImportDeclaration:method [object-literal-method]",
+        "packages/svelte/src/compiler/phases/3-transform/server/transform-server.js ExportNamedDeclaration:method [object-literal-method]",
+        "packages/svelte/tests/hydration/samples/each-block-arg-clash/_config.js snapshot:method [object-literal-method]",
+        "packages/svelte/tests/hydration/samples/input-value-changed/_config.js test:method [object-literal-method]",
+        "packages/svelte/tests/hydration/samples/top-level-text/_config.js snapshot:method [object-literal-method]",
+        "packages/svelte/tests/hydration/samples/top-level-text/_config.js test:method [object-literal-method]"
+      ],
+      "symbolsTotal": 207
+    },
+    "probes": [
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:bare-read"
+      },
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:field-access"
+      },
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:call-receiver"
+      },
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:call-argument"
+      },
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:template-substitution"
+      },
+      {
+        "actual": "undefined",
+        "expect": "0.6",
+        "pass": false,
+        "probe": "read:call-receiver-confidence"
+      },
+      {
+        "actual": "false",
+        "expect": "true",
+        "pass": false,
+        "probe": "read:call-receiver-metadata"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "read:callee-leaf-is-call"
+      },
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:assignment-rhs"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "read:object-key-not-read"
+      },
+      {
+        "actual": "no",
+        "expect": "yes",
+        "pass": false,
+        "probe": "read:object-value-still-read"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "module:esm-import"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "module:esm-export"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "module:cjs-require"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "module:cjs-exports"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "suppress:console.log"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "suppress:console.warn"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "suppress:console.error"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Array.__svelte_cleanup"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Array.call"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Boolean.prototype"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Boolean.toJSON"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Buffer.from"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Error.captureStackTrace"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Error.stackTraceLimit"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:JSON.parse"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:JSON.stringify"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Map.prototype"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Math.E"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Math.LN10"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Number.MAX_VALUE"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Number.isFinite"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Object.apply"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Object.assign"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Promise.all"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Promise.allSettled"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Reflect.get"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Reflect.getOwnPropertyDescriptor"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Set.prototype"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:String.call"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:String.fromCharCode"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Symbol.asyncIterator"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:Symbol.iterator"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:WeakMap.name"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:document.activeElement"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:document.addEventListener"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:globalThis.Buffer"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:globalThis.Date"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:process.BENCH_PROFILE_DIR"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:process.BENCH_SINGLE"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:window.Backbone"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "notsuppressed:window.Event"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "user-preserved:cfg.zzz"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "user-preserved:helpers.zzz"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "user-preserved:opts.zzz"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "user-preserved:bag.zzz"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "contain:obj-literal-with-binding"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "contain:obj-literal-without-binding"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "contain:member-owned-by-binding"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "contain:no-dangling-owner"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:this"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:super"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:undefined"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:arguments"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:null"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:true"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "reserved:false"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:commentedOut"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:CommentedBlock"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:inAString"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:AlsoInAString"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:inTemplateText"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:inARegex"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:inHtml"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:x"
+      },
+      {
+        "actual": "no",
+        "expect": "no",
+        "pass": true,
+        "probe": "noncode:div"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "noncode:real-still-there"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Array.__svelte_cleanup"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Array.call"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Boolean.prototype"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Boolean.toJSON"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Buffer.from"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Error.captureStackTrace"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Error.stackTraceLimit"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:JSON.parse"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:JSON.stringify"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Map.prototype"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Math.E"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Math.LN10"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Number.MAX_VALUE"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Number.isFinite"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Object.apply"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Object.assign"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Promise.all"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Promise.allSettled"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Reflect.get"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Reflect.getOwnPropertyDescriptor"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Set.prototype"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:String.call"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:String.fromCharCode"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Symbol.asyncIterator"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:Symbol.iterator"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:WeakMap.name"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:document.activeElement"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:document.addEventListener"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:globalThis.Buffer"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:globalThis.Date"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:process.BENCH_PROFILE_DIR"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:process.BENCH_SINGLE"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:window.Backbone"
+      },
+      {
+        "actual": "yes",
+        "expect": "yes",
+        "pass": true,
+        "probe": "named:window.Event"
+      }
+    ],
+    "reservedBaseLeaves": {
+      "Array": {
+        "named": [
+          "__svelte_cleanup",
+          "call",
+          "from",
+          "includes",
+          "indexOf",
+          "isArray",
+          "prototype",
+          "push",
+          "slice",
+          "sort"
+        ],
+        "observed": [
+          "__svelte_cleanup",
+          "call",
+          "from",
+          "includes",
+          "indexOf",
+          "isArray",
+          "prototype",
+          "push",
+          "slice",
+          "sort"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Boolean": {
+        "named": [
+          "prototype",
+          "toJSON"
+        ],
+        "observed": [
+          "prototype",
+          "toJSON"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Buffer": {
+        "named": [
+          "from"
+        ],
+        "observed": [
+          "from"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Error": {
+        "named": [
+          "captureStackTrace",
+          "stackTraceLimit"
+        ],
+        "observed": [
+          "captureStackTrace",
+          "stackTraceLimit"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "JSON": {
+        "named": [
+          "parse",
+          "stringify"
+        ],
+        "observed": [
+          "parse",
+          "stringify"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Map": {
+        "named": [
+          "prototype"
+        ],
+        "observed": [
+          "prototype"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Math": {
+        "named": [
+          "E",
+          "LN10",
+          "LN2",
+          "LOG10E",
+          "LOG2E",
+          "PI",
+          "SQRT1_2",
+          "SQRT2",
+          "abs",
+          "acos",
+          "acosh",
+          "asin",
+          "asinh",
+          "atan",
+          "atan2",
+          "atanh",
+          "cbrt",
+          "ceil",
+          "clz32",
+          "cos",
+          "cosh",
+          "exp",
+          "expm1",
+          "f16round",
+          "floor",
+          "fround",
+          "imul",
+          "log",
+          "log10",
+          "log1p",
+          "log2",
+          "max",
+          "min",
+          "pow",
+          "random",
+          "round",
+          "sign",
+          "sin",
+          "sinh",
+          "sqrt",
+          "tan",
+          "tanh",
+          "trunc"
+        ],
+        "observed": [
+          "E",
+          "LN10",
+          "LN2",
+          "LOG10E",
+          "LOG2E",
+          "PI",
+          "SQRT1_2",
+          "SQRT2",
+          "abs",
+          "acos",
+          "acosh",
+          "asin",
+          "asinh",
+          "atan",
+          "atan2",
+          "atanh",
+          "cbrt",
+          "ceil",
+          "clz32",
+          "cos",
+          "cosh",
+          "exp",
+          "expm1",
+          "f16round",
+          "floor",
+          "fround",
+          "imul",
+          "log",
+          "log10",
+          "log1p",
+          "log2",
+          "max",
+          "min",
+          "pow",
+          "random",
+          "round",
+          "sign",
+          "sin",
+          "sinh",
+          "sqrt",
+          "tan",
+          "tanh",
+          "trunc"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Number": {
+        "named": [
+          "MAX_VALUE",
+          "isFinite",
+          "isInteger",
+          "isNaN",
+          "isSafeInteger",
+          "parseFloat",
+          "parseInt",
+          "prototype",
+          "toJSON",
+          "toString"
+        ],
+        "observed": [
+          "MAX_VALUE",
+          "isFinite",
+          "isInteger",
+          "isNaN",
+          "isSafeInteger",
+          "parseFloat",
+          "parseInt",
+          "prototype",
+          "toJSON",
+          "toString"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Object": {
+        "named": [
+          "apply",
+          "assign",
+          "call",
+          "create",
+          "defineProperties",
+          "defineProperty",
+          "entries",
+          "fromEntries",
+          "getOwnPropertyDescriptor",
+          "getOwnPropertyDescriptors",
+          "getOwnPropertyNames",
+          "getOwnPropertySymbols",
+          "getPrototypeOf",
+          "hasOwn",
+          "hasOwnProperty",
+          "is",
+          "isExtensible",
+          "keys",
+          "propertyIsEnumerable",
+          "prototype",
+          "toString",
+          "values"
+        ],
+        "observed": [
+          "apply",
+          "assign",
+          "call",
+          "create",
+          "defineProperties",
+          "defineProperty",
+          "entries",
+          "fromEntries",
+          "getOwnPropertyDescriptor",
+          "getOwnPropertyDescriptors",
+          "getOwnPropertyNames",
+          "getOwnPropertySymbols",
+          "getPrototypeOf",
+          "hasOwn",
+          "hasOwnProperty",
+          "is",
+          "isExtensible",
+          "keys",
+          "propertyIsEnumerable",
+          "prototype",
+          "toString",
+          "values"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Promise": {
+        "named": [
+          "all",
+          "reject",
+          "resolve",
+          "withResolvers"
+        ],
+        "observed": [
+          "all",
+          "reject",
+          "resolve",
+          "withResolvers"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Reflect": {
+        "named": [
+          "get",
+          "getOwnPropertyDescriptor",
+          "has",
+          "ownKeys",
+          "set"
+        ],
+        "observed": [
+          "get",
+          "getOwnPropertyDescriptor",
+          "has",
+          "ownKeys",
+          "set"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Set": {
+        "named": [
+          "prototype"
+        ],
+        "observed": [
+          "prototype"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "String": {
+        "named": [
+          "call",
+          "fromCharCode",
+          "fromCodePoint",
+          "prototype",
+          "toJSON"
+        ],
+        "observed": [
+          "call",
+          "fromCharCode",
+          "fromCodePoint",
+          "prototype",
+          "toJSON"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "Symbol": {
+        "named": [
+          "asyncIterator",
+          "iterator",
+          "prototype"
+        ],
+        "observed": [
+          "asyncIterator",
+          "iterator",
+          "prototype"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "WeakMap": {
+        "named": [
+          "name"
+        ],
+        "observed": [
+          "name"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "console": {
+        "named": [],
+        "observed": [
+          "error",
+          "group",
+          "groupCollapsed",
+          "groupEnd",
+          "log",
+          "trace",
+          "warn"
+        ],
+        "suppressed": [
+          "log",
+          "warn",
+          "error",
+          "info",
+          "debug",
+          "trace",
+          "dir",
+          "table",
+          "time",
+          "timeEnd",
+          "group",
+          "groupCollapsed",
+          "groupEnd",
+          "count",
+          "assert",
+          "clear"
+        ],
+        "undeclared": []
+      },
+      "document": {
+        "named": [
+          "activeElement",
+          "addEventListener",
+          "appendChild",
+          "baseURI",
+          "body",
+          "childNodes",
+          "createComment",
+          "createDocumentFragment",
+          "createElement",
+          "createElementNS",
+          "createTextNode",
+          "dispatchEvent",
+          "documentMode",
+          "getElementById",
+          "head",
+          "importNode",
+          "querySelector",
+          "querySelectorAll",
+          "removeChild",
+          "title"
+        ],
+        "observed": [
+          "activeElement",
+          "addEventListener",
+          "appendChild",
+          "baseURI",
+          "body",
+          "childNodes",
+          "createComment",
+          "createDocumentFragment",
+          "createElement",
+          "createElementNS",
+          "createTextNode",
+          "dispatchEvent",
+          "documentMode",
+          "getElementById",
+          "head",
+          "importNode",
+          "querySelector",
+          "querySelectorAll",
+          "removeChild",
+          "title"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "globalThis": {
+        "named": [
+          "Buffer",
+          "Date",
+          "Map",
+          "Set",
+          "URL",
+          "URLSearchParams",
+          "contentType",
+          "createPolicy",
+          "crypto",
+          "delayed",
+          "digest",
+          "document",
+          "frag",
+          "from",
+          "includes",
+          "process",
+          "subtle",
+          "trustedTypes",
+          "versions",
+          "webcontainer",
+          "window"
+        ],
+        "observed": [
+          "Buffer",
+          "Date",
+          "Map",
+          "Set",
+          "URL",
+          "URLSearchParams",
+          "contentType",
+          "createPolicy",
+          "crypto",
+          "delayed",
+          "digest",
+          "document",
+          "frag",
+          "from",
+          "includes",
+          "process",
+          "subtle",
+          "trustedTypes",
+          "versions",
+          "webcontainer",
+          "window"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "process": {
+        "named": [
+          "BENCH_PROFILE_DIR",
+          "BENCH_SINGLE",
+          "CI",
+          "FRAGMENTS",
+          "NODE_ENV",
+          "PORT",
+          "SHOULD_UPDATE_EXPECTED",
+          "SVELTE_NO_ASYNC",
+          "TMP_VAR",
+          "argv",
+          "cwd",
+          "env",
+          "execPath",
+          "exit",
+          "includes",
+          "isTTY",
+          "on",
+          "platform",
+          "slice",
+          "stderr",
+          "stdin",
+          "stdout",
+          "version",
+          "write"
+        ],
+        "observed": [
+          "BENCH_PROFILE_DIR",
+          "BENCH_SINGLE",
+          "CI",
+          "FRAGMENTS",
+          "NODE_ENV",
+          "PORT",
+          "SHOULD_UPDATE_EXPECTED",
+          "SVELTE_NO_ASYNC",
+          "TMP_VAR",
+          "argv",
+          "cwd",
+          "env",
+          "execPath",
+          "exit",
+          "includes",
+          "isTTY",
+          "on",
+          "platform",
+          "slice",
+          "stderr",
+          "stdin",
+          "stdout",
+          "version",
+          "write"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      },
+      "window": {
+        "named": [
+          "Backbone",
+          "Event",
+          "HTMLDivElement",
+          "HTMLParagraphElement",
+          "HTMLSpanElement",
+          "InputEvent",
+          "KeyboardEvent",
+          "MouseEvent",
+          "_",
+          "__svelte",
+          "activeElement",
+          "addEventListener",
+          "body",
+          "createElement",
+          "createTextNode",
+          "devicePixelRatio",
+          "dispatchEvent",
+          "document",
+          "getBoundingClientRect",
+          "getComputedStyle",
+          "getElementById",
+          "h",
+          "head",
+          "history",
+          "includes",
+          "innerHTML",
+          "innerHeight",
+          "innerWidth",
+          "location",
+          "matchMedia",
+          "name",
+          "outerHeight",
+          "outerWidth",
+          "pageYOffset",
+          "prototype",
+          "querySelector",
+          "querySelectorAll",
+          "removeEventListener",
+          "screenLeft",
+          "screenTop",
+          "scrollTo",
+          "scrollX",
+          "scrollY",
+          "setTimeout",
+          "title",
+          "ui",
+          "uid"
+        ],
+        "observed": [
+          "Backbone",
+          "Event",
+          "HTMLDivElement",
+          "HTMLParagraphElement",
+          "HTMLSpanElement",
+          "InputEvent",
+          "KeyboardEvent",
+          "MouseEvent",
+          "_",
+          "__svelte",
+          "activeElement",
+          "addEventListener",
+          "body",
+          "createElement",
+          "createTextNode",
+          "devicePixelRatio",
+          "dispatchEvent",
+          "document",
+          "getBoundingClientRect",
+          "getComputedStyle",
+          "getElementById",
+          "h",
+          "head",
+          "history",
+          "includes",
+          "innerHTML",
+          "innerHeight",
+          "innerWidth",
+          "location",
+          "matchMedia",
+          "name",
+          "outerHeight",
+          "outerWidth",
+          "pageYOffset",
+          "prototype",
+          "querySelector",
+          "querySelectorAll",
+          "removeEventListener",
+          "screenLeft",
+          "screenTop",
+          "scrollTo",
+          "scrollX",
+          "scrollY",
+          "setTimeout",
+          "title",
+          "ui",
+          "uid"
+        ],
+        "suppressed": [],
+        "undeclared": []
+      }
+    },
+    "sample": {
+      "filesWalked": {
+        "lodash:javascript": 48,
+        "svelte:javascript": 3369
+      },
+      "maxFileBytes": 400000,
+      "perCorpus": 4000,
+      "selection": "sorted, then evenly strided — deterministic and reproducible"
+    },
+    "status": "PASS"
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.JS-CENSUS",
+  "layers": [
+    "carrier-census"
+  ],
+  "limitations": [
+    "Discovery is a CORPUS SCAN with a deterministic cap, not a proof about the language: a construct no corpus file spells is invisible to this gate and is reported as not seen rather than accounted for. The cap is published in `data.sample` (files per corpus, bytes per file) so what was read is auditable, and the selection is sorted-then-strided rather than random, so a rerun over the same corpora reads the same files.",
+    "This gate consults NEITHER the analyzer's tables NOR the oracle for discovery — that is the only reason it exists, since the differential compares two readings of the specification by one author and cannot see a construct both forgot (it reported coverage while the receiver of a member call was named by nothing). It answers 'does anybody account for this construct', not 'is this construct handled correctly'; the differential and the hand-audited corpus truth answer the second question.",
+    "The declared member-base table behind the reserved-base check is derived from the sample this artifact publishes rather than curated by hand, and gate `census-js-named-bases-verified` probes a leaf of every non-console base, so the table cannot rot into asserting suppression that no longer happens. A base absent from the sample is not asserted about at all."
+  ],
+  "regeneratedAt": "2026-11-13T15:34:00-05:00",
+  "regeneratedAtCommit": "a1639eb695afd379990bd46ea01e3a40d2e9279d",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "javascript construct census — the check that consults neither the analyzer nor the oracle"
+}

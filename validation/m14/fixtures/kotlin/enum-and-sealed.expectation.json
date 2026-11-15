@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/enum-and-sealed",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "enum entries are enum members; sealed hierarchy subtypes (object/data class) are classes implementing/extends the sealed parent.",
+  "expectSymbols": [
+    { "name": "Mode", "kind": "enum" },
+    { "name": "ON" },
+    { "name": "OFF" },
+    { "name": "Result" },
+    { "name": "Success" },
+    { "name": "Error" }
+  ]
+}

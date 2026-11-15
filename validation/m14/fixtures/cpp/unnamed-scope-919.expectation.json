@@ -1,0 +1,223 @@
+{
+  "fixtureId": "cpp/unnamed-scope-919",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "ONTOLOGY/D21 + D20 — an R7 placeholder-literal endpoint, and the body-walk defect its fix exposed. C++ writes NO NAME for `namespace { … }`, `union { … } n;`, `struct { … } n;` or `enum { … };`, and the analyzer published the literal string `anonymous` for all of them: 133 symbols over 65 files across the two pinned corpora (92 namespace, 39 class/struct/union, 2 enum), carrying 1,611 relationship rows with that string as an endpoint — 537 `contains` (20 of them with it as the TARGET, which is the R7 violation outright), 882 `calls`, 191 `uses`, 1 `instantiates`. 882 `calls` rows sharing one source name means `bb_graph` on `anonymous` merged 92 unrelated scopes. Nothing is published under the sentinel now, and the members are walked with the ENCLOSING scope, which is where the language puts them ([namespace.unnamed], [class.union.anon]). D20 is the count/accessor mismatch on the decline path — `namedChildCount` bounding a `node.child(i)` index visits the `class` keyword and the `{` and never the body — which was latent until D19 made the path fire and then deleted 154 real member symbols of anonymous unions in `sqlite/src/sqliteInt.h` on the first run. The `Named`/`namedHelper` pair is the control in the other direction: a fix that simply published no namespace would pass every other row here and fail that one.",
+  "expectSymbols": [
+    {
+      "name": "fileScopeHelper",
+      "kind": "function",
+      "note": "a member of an UNNAMED namespace at file scope. Pre-fix its ownerName was the sentinel `anonymous`, shared with 91 other scopes; now it has no owner at all, because a translation unit is not a named entity and this analyzer does not invent one. The `contains` edge is therefore absent — measured and stated in the lane doc rather than papered over."
+    },
+    {
+      "name": "nestedHelper",
+      "kind": "function",
+      "ownerName": "outer",
+      "note": "an unnamed namespace NESTED in a named one. The enclosing namespace is a real, resolvable symbol, so the containment fact is preserved exactly: pre-fix the owner was the sentinel, and the edge resolved to a name 92 scopes share."
+    },
+    {
+      "name": "outer",
+      "kind": "namespace"
+    },
+    {
+      "name": "namedHelper",
+      "kind": "function",
+      "ownerName": "named",
+      "note": "CONTROL. A NAMED namespace publishes and owns as before. Without this row the fixture would also pass against an analyzer that stopped publishing namespaces altogether."
+    },
+    {
+      "name": "Packet",
+      "kind": "class"
+    },
+    {
+      "name": "onText",
+      "kind": "property",
+      "ownerName": "Packet",
+      "note": "a member of an ANONYMOUS UNION. C++ says an anonymous union's members are members of the enclosing class ([class.union.anon]), so `Packet` is the correct owner — and a resolvable one. Pre-fix the owner was the sentinel; on the first D19 run (before D20) the symbol VANISHED, which is why this row and the `onBinary` row below are the two that catch D20 in the direction that costs symbols."
+    },
+    {
+      "name": "onBinary",
+      "kind": "property",
+      "ownerName": "Packet"
+    },
+    {
+      "name": "sequence",
+      "kind": "property",
+      "ownerName": "Packet",
+      "note": "CONTROL for the union's own neighbourhood: an ordinary member either side of the anonymous one, so a rule that declined the whole struct would fail here."
+    },
+    {
+      "name": "Tagged",
+      "kind": "class"
+    },
+    {
+      "name": "kNone",
+      "kind": "enum_member",
+      "ownerName": "Tagged",
+      "note": "an ANONYMOUS ENUM's enumerator. Same argument as the union: the members belong to the enclosing class."
+    },
+    {
+      "name": "kBinary",
+      "kind": "enum_member",
+      "ownerName": "Tagged"
+    },
+    {
+      "name": "offset",
+      "kind": "property",
+      "ownerName": "Tagged",
+      "note": "a member of an ANONYMOUS STRUCT nested in an anonymous union — two unnamed levels deep, so the enclosing NAMED class is reached from both."
+    },
+    {
+      "name": "pointer",
+      "kind": "property",
+      "ownerName": "Tagged"
+    },
+    {
+      "name": "recovered",
+      "kind": "function",
+      "note": "D20, second site: a class head the D1 rule declines because its name is a KEYWORD (`class final` — not legal C++, and what the grammar's recovery produces for a damaged head). The symbol is published and its body is walked, which is only true because the decline path's accessor matches its bound."
+    },
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "MakeWidget",
+      "kind": "method",
+      "ownerName": "Widget",
+      "note": "D20, THIRD site, and the one that needs no D19 to be reachable: a function whose RETURN TYPE is a class definition. `returnTypeIsClassDefinition` declines the node and re-walks its children; through the mismatched accessor the whole BODY was skipped, so every read inside it was attributed to whatever scope happened to be open."
+    },
+    {
+      "name": "Alias",
+      "kind": "type",
+      "note": "DOCUMENTED RESIDUAL. `typedef struct { … } Alias;` gives the struct no name, so D19 declines it; the typedef alias IS published, so the declaration is not lost, but its two members get no named owner and therefore no `contains` edge. Pinned so the limitation is an ASSERTION rather than a note in a document, and so a future change that starts attributing them is caught as a deliberate behaviour change."
+    },
+    {
+      "name": "Maker",
+      "kind": "class"
+    },
+    {
+      "name": "Nested",
+      "kind": "class",
+      "ownerName": "Maker",
+      "note": "D20's THIRD SITE, the shape that trips it: a `function_definition` whose `type` FIELD is a struct specifier carrying a `field_declaration_list`. The declaration of the nested class is ordinary and is published; what the decline path governs is the FUNCTION that follows it."
+    },
+    {
+      "name": "local",
+      "kind": "property",
+      "ownerName": "Maker",
+      "note": "THE ROW THAT FAILS ON THE D20 THIRD-SITE REVERT, and it is a row about a LOCAL. `returnTypeIsClassDefinition` declines the `MakeNested` node and re-walks its children with the mismatched accessor, so the whole BODY was skipped and `int local = seed * 3;` — a function-local, which this analyzer otherwise publishes as no symbol at all — was not visited. It is published here, and owned by `Maker` rather than by a function, precisely BECAUSE the decline removes the function scope: the row documents an artifact of this path rather than claiming it is desirable, and it is the only assertion in the fixture that can fail when that one loop is reverted."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "anonymous",
+      "note": "THE R7 PIN. `anonymous` is this analyzer's own no-name SENTINEL (exported as `CPP_ANONYMOUS`) and is not a name any C++ program can contain. 133 such symbols and 1,611 endpoint-carrying rows over the two pinned corpora; 20 `contains` rows had it as the TARGET. This row is the whole of D19 in one assertion."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "anonymous",
+      "equals": 0,
+      "note": "an EXACT count, because `forbidSymbols` alone is satisfied by a symbol published under a name that merely CONTAINS the sentinel — and the pre-D19 export filter was `startsWith(\"anonymous\")`, which also excluded a real class named `anonymousCallback`. Both the presence rule and the exact count are needed."
+    },
+    {
+      "name": "length",
+      "equals": 2,
+      "note": "`Packet::length` and `Tagged::length` are two DIFFERENT members written in two different classes. A rule that collapsed anonymous-union members into one owner would merge them, and `contains Packet -> length` / `contains Tagged -> length` would stop being two facts."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "outer",
+      "target": "nestedHelper",
+      "note": "the fact D19 preserves. Pre-fix this edge's source was the sentinel."
+    },
+    {
+      "type": "contains",
+      "from": "named",
+      "target": "namedHelper"
+    },
+    {
+      "type": "contains",
+      "from": "Packet",
+      "target": "onText",
+      "note": "an anonymous union's members belong to the enclosing class. Pre-fix: `contains anonymous -> onText`, and after D19 but before D20: no edge and no symbol at all."
+    },
+    {
+      "type": "contains",
+      "from": "Packet",
+      "target": "onBinary"
+    },
+    {
+      "type": "contains",
+      "from": "Packet",
+      "target": "sequence"
+    },
+    {
+      "type": "contains",
+      "from": "Tagged",
+      "target": "kNone"
+    },
+    {
+      "type": "contains",
+      "from": "Tagged",
+      "target": "kBinary"
+    },
+    {
+      "type": "contains",
+      "from": "Tagged",
+      "target": "offset"
+    },
+    {
+      "type": "contains",
+      "from": "Tagged",
+      "target": "pointer"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "MakeWidget",
+      "note": "D20's third site: the body of a function returning a class definition. The symbol exists; this edge is what says the class owns it."
+    },
+    {
+      "type": "contains",
+      "from": "Maker",
+      "target": "Nested"
+    },
+    {
+      "type": "contains",
+      "from": "Maker",
+      "target": "local",
+      "note": "the containment edge that accompanies the row above; `contains` is emitted in the same post-loop, so a body that is not walked loses both the symbol and the edge."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "anonymous",
+      "target": "onText",
+      "note": "the placeholder-literal ENDPOINT, which is the R7 violation `forbidSymbols` cannot see: the symbol is gone but an edge could still carry the string."
+    },
+    {
+      "type": "contains",
+      "from": "Packet",
+      "target": "anonymous",
+      "note": "and from the other side — the 20 measured rows where the sentinel was the TARGET."
+    },
+    {
+      "type": "contains",
+      "from": "anonymous",
+      "target": "fileScopeHelper"
+    },
+    {"type": "contains", "from": "anonymous", "target": "Packet::onText", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Packet",
+      "startLine": 67,
+      "note": "the DECLARATION's line, pinned so the assertion is about `Packet` and not about a class of that name appearing somewhere in the file."
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "fixtureId": "rust/await-single-edge",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the awaited-call dedupe (#261 second-pass, found 2026-08-28): `do_connect(host, port).await` previously emitted TWO calls edges — a raw await edge whose target was the FULL function text (`std::net::TcpStream::connect`) plus the canonical leaf edge from handleCallExpression. One call site must produce exactly ONE calls edge, with the isAwait marker on the canonical leaf-target edge. The oracle (deriveRustEdges) derives one `calls do_connect` per site, so the duplicate was a fabrication the differential could only catch on awaited code (ripgrep corpus had none). Counts pin the dedupe (a raw await edge would add a second isAwait edge from the same source).",
+  "expectSymbols": [
+    { "name": "network", "kind": "module" },
+    { "name": "connect", "kind": "function" },
+    { "name": "do_connect", "kind": "function" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "from": "connect", "target": "do_connect", "equals": 1 },
+    { "type": "calls", "from": "connect", "meta.isAwait": true, "equals": 1 },
+    { "type": "calls", "from": "do_connect", "meta.isAwait": true, "equals": 1 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "connect",
+      "target": "do_connect",
+      "meta.isAwait": true
+    },
+    {
+      "type": "calls",
+      "from": "do_connect",
+      "target": "connect",
+      "meta.isAwait": true,
+      "meta.qualified": "std::net::TcpStream::connect"
+    },
+    {
+      "type": "calls",
+      "from": "do_connect",
+      "target": "is_ok"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+ "fixtureId": "yaml/workflow-call-role",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The `uses` key has three meanings in GitHub Actions and only the PATH decides which. At `jobs.<job>.uses` it names a reusable workflow this job INVOKES, so the edge is `calls`. At `jobs.<job>.steps[].uses` it names an action this step runs, so the edge is `imports`. The forbid half is the point: before the role was read from the path, all four sites took the imports branch and the two reusable workflows were labelled as imports of third-party actions. Confidence on the call is 1.0 because the ROLE is a parse fact \u2014 the key sits where GitHub Actions admits nothing else \u2014 while the TARGET is cross-file and so carries resolved:false rather than a fabricated bind. CORRECTION 2026-10-09, yaml lane takeover: the `call-remote` row's claim KEY was updated from `meta.isExternal: true` to `meta.remoteRef: true`, and NOTHING ELSE in this fixture changed - the role assertions, the four forbid rows and the other three expect rows are the ones authored before the run. The correction is not a fitting to output; it is a contract the mechanism deliberately upgraded, and the two claims are not equivalent: for the target `acme/infra/.github/workflows/deploy.yml@v3`, `verifyRemoteRefClaim` returns **externalVerified** while the `isExternal` route returns **externalUnverified**, a claim no check can reach, which is exactly what blocks an incoming PASS. So reverting the analyzer to satisfy the old row would fail the gate, and the old row was pinning a weaker claim than the edge can support. Verified by measurement, not inference: `bun validation/m14/fixtures/yaml/workflow-call-probe.ts` shows the edge present with an unchanged source, target, type and relationshipType, and only that one metadata key differing. The row now also pins `meta.resolved: false`, which was true before and was not asserted.",
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "workflow-call-role.jobs.call-local.uses",
+   "target": "./.github/workflows/reusable.yml",
+   "meta.relationshipType": "yaml_workflow_call",
+   "meta.isExternal": false,
+   "meta.resolved": false
+  },
+  {
+   "type": "calls",
+   "from": "workflow-call-role.jobs.call-remote.uses",
+   "target": "acme/infra/.github/workflows/deploy.yml@v3",
+   "meta.relationshipType": "yaml_workflow_call",
+   "meta.remoteRef": true,
+   "meta.resolved": false
+  },
+  {
+   "type": "imports",
+   "from": "workflow-call-role.jobs.run-steps.steps[0].uses",
+   "target": "actions/checkout@v4",
+   "meta.relationshipType": "yaml_action_use"
+  },
+  {
+   "type": "imports",
+   "from": "workflow-call-role.jobs.run-steps.steps[1].uses",
+   "target": "./local-action",
+   "meta.relationshipType": "yaml_action_use"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "./.github/workflows/reusable.yml"
+  },
+  {
+   "type": "imports",
+   "target": "acme/infra/.github/workflows/deploy.yml@v3"
+  },
+  {
+   "type": "calls",
+   "target": "actions/checkout@v4"
+  },
+  {
+   "type": "calls",
+   "target": "./local-action"
+  }
+ ]
+}

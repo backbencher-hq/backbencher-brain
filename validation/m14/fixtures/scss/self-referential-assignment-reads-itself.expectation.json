@@ -1,0 +1,49 @@
+{
+  "fixtureId": "scss/self-referential-assignment-reads-itself",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "This fixture pins ONE rule, and the rule is that a `variable` node inside a `declaration` is always a READ. The defect it guards was the read scan testing `property_name.text === variable.text` — TEXT equality used as a proxy for NODE IDENTITY — and discarding any read that matched. The proxy is safe in the case it was written for, a declaration whose left-hand side is the only variable it mentions, and wrong in a case that needs no broken parse to occur: a Sass assignment may READ the variable it assigns. `$x: $x + 1` is ordinary, valid, idiomatic Sass — it is how a `!default` is overridden — and here it parses cleanly, with zero error spans, so nothing about this fixture depends on error recovery. The read's parent IS the declaring node and the texts DO match, so the old guard discarded a real `references` edge. THE SHAPE MATTERS AND THE FIRST DRAFT OF THIS FIXTURE GOT IT WRONG: `$x: $x + 1` does not exercise the defect, because there the read's parent is the `binary_expression`, not the declaration, so the guard's `parent.type === \"declaration\"` test never fired and the fixture passed WITH the bug reintroduced. The defect needs the read to be a DIRECT child of the declaration — `$x: $x` — and that is the form pinned here. A fixture written from the prose rather than from the failing parse is a fixture that proves nothing, which is exactly what checking it caught. Measured across the corpus the guard suppressed 156 such reads and protected nothing: across 14,216 declarations the left-hand side is a `property_name` in every one of them and a `variable` in zero, so there is no shape in which the guard was doing its job. The differential's oracle carried the identical bug, which is why the pair disagreed on exactly these rows and why they surfaced as MISSING rather than as a defect either side could see. Two assertions below and they are not redundant: L4 is the read whose text equals its own declaration's left-hand side, and L5 is a read that does not. A mutant that removed the identity test outright would keep L5 and lose L4, and one that made the test text-equal-again would keep L5 and lose L4 — so L5 is the control that proves the edge is emitted for the RIGHT reason rather than because every read in a declaration is emitted.",
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "$x",
+      "kind": "variable"
+    },
+    {
+      "name": ".a",
+      "kind": "class"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "$x",
+      "equals": 1,
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": ".a",
+      "target": "fixtures/scss/self-referential-assignment-reads-itself::$x",
+      "meta.isScssVarRef": true,
+      "line_number": 4
+    },
+    {
+      "type": "references",
+      "from": ".a",
+      "target": "fixtures/scss/self-referential-assignment-reads-itself::$x",
+      "meta.isScssVarRef": true,
+      "line_number": 5
+    }
+  ],
+  "forbidSelfEdges": [
+    {
+      "why": "No edge in this fixture may have source equal to target. The self-referential assignment is a READ OF A DIFFERENT SYMBOL from the point of view of ownership — the declaration sits inside `.a`, so `.a` is the owner and `$x` the target — and an edge `.a -> .a` or `$x -> $x` here would mean ownership or resolution had collapsed. A self-edge is exactly what the old text-comparison guard was reaching for by the wrong route."
+    }
+  ]
+}

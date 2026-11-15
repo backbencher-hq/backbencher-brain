@@ -1,0 +1,45 @@
+{
+  "fixtureId": "typescript/named-class-expression-is-declaration",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE RULING that a class EXPRESSION carrying a name is a class DECLARATION. The walk had no `case \"class\"` at all, so `const K = class Inner { m(){} }` was treated as a bare bag of members and lost four things at once: the Class symbol, every containment edge for its members (containment drops an edge whose owner is not a symbol, and the member extraction attributes `m` to owner `Inner`), its `extends`/`implements` heritage, and its constructor's KIND. The twins were wrong in opposite ways on the identical construct \u2014 typescript dropped the edge, javascript emitted a DANGLING `Inner->m` \u2014 and the class-expression fixture had a `forbidRelationships` pin recording that adopting the twin's edge needed a ruling on whether a class expression should be a symbol at all. This is that ruling, and that pin is now positive. Two things are pinned deliberately AGAINST: the anonymous form, which has no name to be a symbol under and so keeps its members on the binding (`Anon contains m`), and the exact counts, because the first cut of the fix extracted every member TWICE (the class extractor and the generic descent both claimed the body, since the walker's no-descend exclusion list covered `class_declaration` but never the class EXPRESSION node type) and a >=1 relationship assertion would not have noticed.",
+  "expectSymbols": [
+    { "name": "Inner", "kind": "class", "note": "THE PIN. Pre-fix this class was invisible as a type, which is why its members' containment edge had an unjoinable owner." },
+    { "name": "m", "kind": "method", "ownerName": "Inner" },
+    { "name": "n", "kind": "method", "ownerName": "Inner" },
+    { "name": "Recur", "kind": "class", "note": "The self-reference `new Recur()` already resolved to this name pre-fix \u2014 the edge pointed at a name that was not a symbol." },
+    { "name": "again", "kind": "method", "ownerName": "Recur" },
+    { "name": "Ctor", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Ctor", "note": "Kind, not just presence: the descent path made this a Method, so a class expression's constructor disagreed with every other form. A class DECLARATION's constructor is a Constructor." },
+    { "name": "value", "kind": "property", "ownerName": "Ctor", "note": "A parameter property (`constructor(readonly value: number)`) is a declared member of the class, so it is contained by it." },
+    { "name": "Registered", "kind": "class", "note": "A class expression in ARGUMENT position is still a declaration \u2014 being passed as a value does not make it anonymous." },
+    { "name": "run", "kind": "method", "ownerName": "Registered" },
+    { "name": "m", "kind": "method", "ownerName": "Anon", "note": "THE COUNTER-CASE. An anonymous class expression has no name to be a symbol under, so its member belongs to the binding that holds the value. This is unchanged by the fix and pinned so the ruling cannot be over-applied." }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Inner", "target": "m" },
+    { "type": "contains", "from": "Inner", "target": "n" },
+    { "type": "contains", "from": "Recur", "target": "again" },
+    { "type": "contains", "from": "Ctor", "target": "constructor" },
+    { "type": "contains", "from": "Registered", "target": "run" },
+    { "type": "contains", "from": "Anon", "target": "m" },
+    { "type": "extends", "from": "Inner", "target": "Base", "note": "Heritage is clause structure; it was lost with the class and the generic oracle derives it independently." },
+    { "type": "implements", "from": "Inner", "target": "Mixin" }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "contains",
+      "from": "Inner",
+      "target": "m",
+      "equals": 1,
+      "note": "THE DUPLICATE GUARD. The first cut of this fix ran the class extractor AND the generic descent over the same body, emitting every member and every containment edge twice. `expectRelationships` is a >=1 match and would have passed; only an exact count catches it."
+    },
+    {
+      "type": "contains",
+      "from": "Ctor",
+      "target": "constructor",
+      "equals": 1,
+      "note": "Second half of the duplicate guard, on a different owner, so a fix that special-cased one class could not slip through."
+    }
+  ]
+}

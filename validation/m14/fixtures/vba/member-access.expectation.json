@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vba/member-access",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "expectSymbols": [
+    { "name": "ReadAndWrite", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "ReadAndWrite", "target": "item", "meta.construct": "member_receiver" },
+    { "type": "uses", "from": "ReadAndWrite", "target": "Name" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "fixtureId": "ruby/receiver-write-is-not-local",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A setter assignment evaluates its receiver and does not declare that receiver or the setter name as a local. Destructuring does declare its bindings.",
+  "expectRelationships": [
+    { "type": "calls", "from": "configure", "target": "options", "line_number": 7 },
+    { "type": "calls", "from": "configure", "target": "options", "line_number": 8 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "destructure", "target": "first" },
+    { "type": "calls", "from": "destructure", "target": "second" }
+  ]
+}

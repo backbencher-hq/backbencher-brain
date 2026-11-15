@@ -1,0 +1,55 @@
+{
+  "at": "2026-09-29T01:59:38.080Z",
+  "corpusTotal": 3473,
+  "filesRead": 1500,
+  "references": 2847,
+  "parseErrors": 0,
+  "byMethodShape": {
+    "require / bare": 2545,
+    "require_relative / bare": 146,
+    "require_relative / relative": 106,
+    "autoload / bare": 45,
+    "load / bare": 4,
+    "load / relative": 1
+  },
+  "hits": {
+    "inProject": 252,
+    "notInProject": 2595
+  },
+  "perMethod": {
+    "require": {
+      "n": 2545,
+      "inProject": 0
+    },
+    "require_relative": {
+      "n": 252,
+      "inProject": 252
+    },
+    "autoload": {
+      "n": 45,
+      "inProject": 0
+    },
+    "load": {
+      "n": 5,
+      "inProject": 0
+    }
+  },
+  "examples": {
+    "inProject": [
+      "action_cable.rb -> action_cable/version => actioncable/lib/action_cable/version.rb",
+      "action_cable.rb -> action_cable/deprecator => actioncable/lib/action_cable/deprecator.rb",
+      "inline_test.rb -> common => actioncable/test/subscription_adapter/common.rb",
+      "redis_test.rb -> common => actioncable/test/subscription_adapter/common.rb",
+      "redis_test.rb -> channel_prefix => actioncable/test/subscription_adapter/channel_prefix.rb",
+      "test_adapter_test.rb -> common => actioncable/test/subscription_adapter/common.rb"
+    ],
+    "external": [
+      "require \"active_support\"",
+      "require \"active_support/rails\"",
+      "require \"zeitwerk\"",
+      "require \"active_support/core_ext/object/to_param\"",
+      "require \"active_support/callbacks\"",
+      "require \"active_support/core_ext/module/redefine_method\""
+    ]
+  }
+}

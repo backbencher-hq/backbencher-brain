@@ -36,7 +36,7 @@ import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const ANALYZER = join(ROOT, "src", "ast", "real-lua-analyzer.ts")
 const EVIDENCE = join(ROOT, "validation", "m60", "results", "lua-grasped-fields.json")
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories"
 const WARMUP = join(CORPUS, "luvit", "init.lua")
 
 // ── the fixture: every construct the analyzer claims to read ─────────────────

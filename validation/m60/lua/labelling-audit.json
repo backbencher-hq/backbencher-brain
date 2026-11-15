@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_labelling_audit",
+  "at": "2026-10-03T19:54:39.627Z",
+  "commit": "6825053b87c80e0c24de822535bac5acf268e8b7",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "filesParsed": 3250,
+    "capPerRepo": 0,
+    "sampling": "every tracked *.lua, sorted, no cap"
+  },
+  "selfEdges": {
+    "calls": {
+      "occurrences": 242,
+      "files": 174,
+      "examples": [
+        "kong/autodoc/cli/generate.lua:28 write -[calls]-> write  | outfd:write(str)",
+        "kong/kong/api/arguments.lua:74 basename -[calls]-> basename  | return basename(path, \"\\\\\")",
+        "kong/kong/api/arguments.lua:124 combine_arg -[calls]-> combine_arg  | combine_arg(t, v)",
+        "kong/kong/api/arguments.lua:180 infer_value -[calls]-> infer_value  | value[i] = infer_value(item, field.elements)",
+        "kong/kong/api/arguments.lua:476 decode -[calls]-> decode  | local decoded = decoder.decode(args)",
+        "kong/kong/api/api_helpers.lua:57 key_to_path -[calls]-> key_to_path  | key_to_path(left, path)",
+        "kong/kong/clustering/config_helper.lua:66 to_sorted_string -[calls]-> to_sorted_string  | to_sorted_string(value[1], o)",
+        "kong/kong/clustering/data_plane.lua:149 send_ping -[calls]-> send_ping  | local _, err = c:send_ping(hash)",
+        "kong/kong/cmd/restart.lua:33 execute -[calls]-> execute  | start.execute(args)",
+        "kong/kong/cmd/utils/process_secrets.lua:93 encrypt -[calls]-> encrypt  | ciphertext, err = cip:encrypt(key, iv, plaintext, false, AAD)",
+        "kong/kong/cmd/utils/process_secrets.lua:125 decrypt -[calls]-> decrypt  | plaintext, err = cip:decrypt(key, iv, ciphertext, false, AAD, tag)",
+        "kong/kong/cmd/utils/tty.lua:10 isatty -[calls]-> isatty  | return ffi.C.isatty(0) == 1",
+        "kong/kong/cmd/vault.lua:65 get -[calls]-> get  | local res, err = vault.get(reference)",
+        "kong/kong/db/dao/init.lua:43 remove_nulls -[calls]-> remove_nulls  | tbl[k] = remove_nulls(v)",
+        "kong/kong/db/dao/init.lua:661 recursion_over_constraints -[calls]-> recursion_over_constraints  | recursion_over_constraints(self, row, opts, entries, constraint)",
+        "kong/kong/db/declarative/export.lua:26 convert_nulls -[calls]-> convert_nulls  | tbl[k] = convert_nulls(v, from, to)",
+        "kong/kong/db/declarative/export.lua:302 remove_nulls -[calls]-> remove_nulls  | tbl[k] = remove_nulls(v)",
+        "kong/kong/db/declarative/init.lua:65 pretty_print_error -[calls]-> pretty_print_error  | insert(out, pretty_print_error(v, k, indent .. \"  \"))",
+        "kong/kong/db/errors.lua:650 add_entity_error -[calls]-> add_entity_error  | add_entity_error(message, flattened)",
+        "kong/kong/db/errors.lua:668 add_field_error -[calls]-> add_field_error  | add_field_error(field, message, flattened)"
+      ]
+    },
+    "uses": {
+      "occurrences": 17,
+      "files": 17,
+      "examples": [
+        "kong/kong/clustering/services/sync/rpc.lua:497 sync_once_impl -[uses]-> sync_once_impl  | local ok, err = kong.timer:at(0.1, sync_once_impl, retry_count)",
+        "kong/kong/plugins/opentelemetry/logs.lua:79 log -[uses]-> log  | if Queue.can_enqueue(queue_conf, log) then",
+        "kong/kong/reports.lua:416 ping_handler -[uses]-> ping_handler  | create_timer(PING_INTERVAL, ping_handler)",
+        "kong/kong/runloop/balancer/targets.lua:307 resolve_timer_callback -[uses]-> resolve_timer_callback  | resolve_timer_running, err = ngx.timer.at(1, resolve_timer_callback)",
+        "kong/kong/runloop/balancer/upstreams.lua:250 update_balancer_state_timer -[uses]-> update_balancer_state_timer  | local _, err = timer_at(frequency, update_balancer_state_timer)",
+        "kong/kong/runloop/handler.lua:427 new_router -[uses]-> new_router  | if not new_router then",
+        "kong/spec/03-plugins/25-oauth2/03-access_spec.lua:107 refresh_token -[uses]-> refresh_token  | refresh_token    = refresh_token,",
+        "kong/spec/internal/cmd.lua:431 signal -[uses]-> signal  | return kill.kill(pid_path, signal)",
+        "luvit/deps/fs.lua:455 onChunk -[uses]-> onChunk  | return uv.fs_read(fd, 8192, pos, onChunk)",
+        "luvit/deps/http.lua:256 onData -[uses]-> onData  | socket:removeListener(\"data\", onData)",
+        "luvit/deps/repl.lua:188 onLine -[uses]-> onLine  | editor:readLine(prompt, onLine)",
+        "luvit/deps/stream/stream_core.lua:105 cleanup -[uses]-> cleanup  | source:removeListener('end', cleanup)",
+        "nvim-lspconfig/lsp/gitlab_duo.lua:239 poll -[uses]-> poll  | vim.defer_fn(poll, interval * 1000)",
+        "nvim-treesitter/lua/nvim-treesitter/install.lua:83 cb -[uses]-> cb  | next_task():await(cb)",
+        "plenary.nvim/lua/plenary/async_lib/async.lua:73 future -[uses]-> future  | return co.yield(future)",
+        "snacks.nvim/lua/snacks/gh/api.lua:349 handler -[uses]-> handler  | procs[#procs + 1] = M.comments(item, handler)",
+        "snacks.nvim/lua/snacks/util/init.lua:334 run -[uses]-> run  | return vim.schedule(run)"
+      ]
+    },
+    "contains": {
+      "occurrences": 3,
+      "files": 3,
+      "examples": [
+        "luarocks/spec/fixtures/busted_project/sum.lua:3 sum -[contains]-> sum  | function sum.sum(a, b)",
+        "luarocks/src/luarocks/tools/zip.lua:329 zip -[contains]-> zip  | function zip.zip(zipfile, ...)",
+        "luvit/examples/app/libs/stack.lua:22 stack -[contains]-> stack  | function stack.stack(...)"
+      ]
+    },
+    "imports": {
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    },
+    "references": {
+      "occurrences": 29,
+      "files": 27,
+      "examples": [
+        "kong/kong/cmd/restart.lua:21 execute -[references]-> execute  | pcall(stop.execute, args, { quiet = true })",
+        "kong/kong/llm/drivers/shared.lua:311 global -[references]-> global  | or aws_config.global.AWS_ACCESS_KEY_ID",
+        "kong/kong/plugins/file-log/handler.lua:52 log -[references]-> log  | kong.log.err(\"failed to open the file: \", ffi.string(C.strerror(errno)))",
+        "kong/kong/plugins/opentelemetry/traces.lua:179 log -[references]-> log  | kong.log.err(\"Failed to enqueue span to log server: \", err)",
+        "kong/kong/plugins/prometheus/exporter.lua:285 log -[references]-> log  | kong.log.err(\"prometheus: can not log metrics because of an initialization \"",
+        "kong/kong/plugins/tcp-log/handler.lua:26 log -[references]-> log  | kong.log.err(\"failed to connect to \", host, \":\", tostring(port), \": \", err)",
+        "kong/kong/plugins/udp-log/handler.lua:22 log -[references]-> log  | kong.log.err(\"could not connect to \", conf.host, \":\", conf.port, \": \", err)",
+        "kong/kong/runloop/log_level.lua:23 set_log_level -[references]-> set_log_level  | local ok, err = pcall(kong_log.set_log_level, level, timeout)",
+        "kong/spec/04-perf/01-rps/07-upstream_lock_regression_spec.lua:37 patch -[references]-> patch  | local pok, pret, _ = pcall(admin_client.patch, admin_client, \"/routes/1\", {",
+        "kong/spec/04-perf/02-flamegraph/07-upstream_lock_regression_spec.lua:33 patch -[references]-> patch  | local pok, pret, _ = pcall(admin_client.patch, admin_client, \"/routes/1\", {",
+        "lazy.nvim/lua/lazy/manage/task/git.lua:49 cooldown -[references]-> cooldown  | return delta < Config.options.git.cooldown",
+        "lazy.nvim/lua/lazy/view/float.lua:180 opts -[references]-> opts  | vim.bo[self.buf].bufhidden = self.opts.persistent and \"hide\" or \"wipe\"",
+        "luarocks/src/luarocks/cmd.lua:102 global -[references]-> global  | if args.global then",
+        "luarocks/vendor/dkjson.lua:244 exception -[references]-> exception  | local handler = state.exception",
+        "luvit/deps/json.lua:264 exception -[references]-> exception  | local handler = state.exception",
+        "luvit/main.lua:51 version -[references]-> version  | print('luvit version: ' .. package.version)",
+        "nvim-cmp/lua/cmp/config.lua:32 global -[references]-> global  | config.global = config.normalize(misc.merge(c, config.global))",
+        "plenary.nvim/lua/luassert/spy.lua:112 returned_with -[references]-> returned_with  | if payload and payload.returned_with then",
+        "plenary.nvim/lua/luassert/spy.lua:127 called_with -[references]-> called_with  | if payload and payload.called_with then",
+        "plenary.nvim/lua/luassert/spy.lua:147 called -[references]-> called  | if payload and type(payload) == \"table\" and payload.called then"
+      ]
+    },
+    "exports": {
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    },
+    "extends": {
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    },
+    "implements": {
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    },
+    "overrides": {
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    },
+    "instantiates": {
+      "occurrences": 0,
+      "files": 0,
+      "examples": []
+    }
+  },
+  "nonBareTargets": {
+    "calls": {
+      "occurrences": 2,
+      "files": 2,
+      "targets": {
+        "other": 2
+      },
+      "examples": [
+        "nvim-cmp/lua/cmp/vim_source.lua:46 -[calls]-> \"cmp#_method\" (other)  | return vim.fn['cmp#_method'](bridge_id, m, vim_source.to_args({ ... }))",
+        "nvim-treesitter/plugin/query_predicates.lua:33 -[calls]-> \"kind-eq\" (other)  | return predicates['kind-eq'](match, pred, false)"
+      ]
+    },
+    "uses": {
+      "occurrences": 0,
+      "files": 0,
+      "targets": {},
+      "examples": []
+    },
+    "contains": {
+      "occurrences": 0,
+      "files": 0,
+      "targets": {},
+      "examples": []
+    },
+    "imports": {
+      "occurrences": 0,
+      "files": 0,
+      "targets": {},
+      "examples": []
+    },
+    "references": {
+      "occurrences": 484,
+      "files": 184,
+      "targets": {
+        "other": 394,
+        "dotted": 90
+      },
+      "examples": [
+        "kong/kong/api/arguments.lua:363 -[references]-> \"Content-Disposition\" (other)  | local content_disposition = headers[\"Content-Disposition\"] or {}",
+        "kong/kong/api/arguments.lua:364 -[references]-> \"Content-Type\" (other)  | local content_type        = headers[\"Content-Type\"]",
+        "kong/kong/api/api_helpers.lua:246 -[references]-> \"content-type\" (other)  | local content_type = self.req.headers[\"content-type\"]",
+        "kong/kong/api/api_helpers.lua:248 -[references]-> \"content-length\" (other)  | local content_length = self.req.headers[\"content-length\"]",
+        "kong/kong/api/api_helpers.lua:302 -[references]-> \"Access-Control-Request-Headers\" (other)  | local request_allow_headers = self.req.headers[\"Access-Control-Request-Headers\"]",
+        "kong/kong/api/api_helpers.lua:311 -[references]-> \"content-type\" (other)  | local content_type = self.req.headers[\"content-type\"]",
+        "kong/kong/api/api_helpers.lua:428 -[references]-> \"Access-Control-Allow-Methods\" (other)  | [\"Allow\"] = header[\"Access-Control-Allow-Methods\"] or methods,",
+        "kong/kong/api/api_helpers.lua:430 -[references]-> \"Access-Control-Allow-Headers\" (other)  | [\"Access-Control-Allow-Headers\"] = header[\"Access-Control-Allow-Headers\"] or \"Content-Type",
+        "kong/kong/cmd/utils/prefix_handler.lua:893 -[references]-> \"$refs\" (other)  | local refs = kong_config[\"$refs\"]",
+        "kong/kong/cmd/utils/process_secrets.lua:61 -[references]-> \"$refs\" (other)  | local refs = conf[\"$refs\"]",
+        "kong/kong/conf_loader/init.lua:1106 -[references]-> \"$refs\" (other)  | local refs = purged_conf[\"$refs\"]",
+        "kong/kong/db/errors.lua:230 -[references]-> \"@entity\" (other)  | if errors[\"@entity\"] then",
+        "kong/kong/db/schema/init.lua:1244 -[references]-> \"@entity\" (other)  | if not errors[\"@entity\"] then",
+        "kong/kong/db/schema/init.lua:1903 -[references]-> \"$refs\" (other)  | local prev_refs = resolve_references and data[\"$refs\"]",
+        "kong/kong/db/schema/init.lua:2306 -[references]-> \"@entity\" (other)  | if errors[\"@entity\"] then",
+        "kong/kong/db/schema/json.lua:100 -[references]-> \"$id\" (other)  | if is_draft_4(schema.id or schema[\"$id\"])",
+        "kong/kong/db/schema/json.lua:101 -[references]-> \"$schema\" (other)  | and is_non_draft_4(input[\"$schema\"])",
+        "kong/kong/db/strategies/postgres/connector.lua:971 -[references]-> \"$refs\" (other)  | local refs = kong_config[\"$refs\"]",
+        "kong/kong/globalpatches.lua:533 -[references]-> \"kong.resty.dns.client\" (dotted)  | local client = package.loaded[\"kong.resty.dns.client\"]",
+        "kong/kong/init.lua:30 -[references]-> \"resty.core\" (dotted)  | assert(package.loaded[\"resty.core\"], \"lua-resty-core must be loaded; make \" .."
+      ]
+    },
+    "exports": {
+      "occurrences": 68,
+      "files": 27,
+      "targets": {
+        "other": 67,
+        "dotted": 1
+      },
+      "examples": [
+        "kong/kong/api/routes/cache.lua:5 -[exports]-> \"/cache/:key\" (other)  | [\"/cache/:key\"] = {",
+        "kong/kong/api/routes/cache.lua:40 -[exports]-> \"/cache\" (other)  | [\"/cache\"] = {",
+        "kong/kong/api/routes/certificates.lua:102 -[exports]-> \"/certificates/:certificates\" (other)  | [\"/certificates/:certificates\"] = {",
+        "kong/kong/api/routes/certificates.lua:120 -[exports]-> \"/certificates/:certificates/snis\" (other)  | [\"/certificates/:certificates/snis\"] = {",
+        "kong/kong/api/routes/certificates.lua:124 -[exports]-> \"/certificates/:certificates/snis/:snis\" (other)  | [\"/certificates/:certificates/snis/:snis\"] = {",
+        "kong/kong/api/routes/consumers.lua:10 -[exports]-> \"/consumers\" (other)  | [\"/consumers\"] = {",
+        "kong/kong/api/routes/clustering.lua:11 -[exports]-> \"/clustering/data-planes\" (other)  | [\"/clustering/data-planes\"] = {",
+        "kong/kong/api/routes/clustering.lua:27 -[exports]-> \"/clustering/status\" (other)  | [\"/clustering/status\"] = {",
+        "kong/kong/api/routes/config.lua:87 -[exports]-> \"/config\" (other)  | [\"/config\"] = {",
+        "kong/kong/api/routes/dns.lua:5 -[exports]-> \"/status/dns\" (other)  | [\"/status/dns\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:17 -[exports]-> \"/filter-chains\" (other)  | [\"/filter-chains\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:21 -[exports]-> \"/filter-chains/:filter_chains\" (other)  | [\"/filter-chains/:filter_chains\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:25 -[exports]-> \"/filter-chains/:filter_chains/route\" (other)  | [\"/filter-chains/:filter_chains/route\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:29 -[exports]-> \"/filter-chains/:filter_chains/service\" (other)  | [\"/filter-chains/:filter_chains/service\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:35 -[exports]-> \"/routes/:routes/filter-chains\" (other)  | [\"/routes/:routes/filter-chains\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:39 -[exports]-> \"/routes/:routes/filter-chains/:filter_chains\" (other)  | [\"/routes/:routes/filter-chains/:filter_chains\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:43 -[exports]-> \"/services/:services/filter-chains\" (other)  | [\"/services/:services/filter-chains\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:47 -[exports]-> \"/services/:services/filter-chains/:filter_chains\" (other)  | [\"/services/:services/filter-chains/:filter_chains\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:53 -[exports]-> \"/routes/:routes/filters/enabled\" (other)  | [\"/routes/:routes/filters/enabled\"] = {",
+        "kong/kong/api/routes/filter_chains.lua:57 -[exports]-> \"/routes/:routes/filters/disabled\" (other)  | [\"/routes/:routes/filters/disabled\"] = {"
+      ]
+    },
+    "extends": {
+      "occurrences": 48,
+      "files": 31,
+      "targets": {
+        "dotted": 48
+      },
+      "examples": [
+        "kong/kong/api/api_helpers.lua:171 -[extends]-> \"cjson.array_mt\" (dotted)  | setmetatable(out, cjson.array_mt)",
+        "kong/kong/clustering/rpc/callbacks.lua:20 -[extends]-> \"cjson.array_mt\" (dotted)  | setmetatable(self.capabilities_list, cjson.array_mt)",
+        "kong/kong/conf_loader/init.lua:399 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | loaded_vaults = setmetatable(vaults, conf_constants._NOP_TOSTRING_MT)",
+        "kong/kong/conf_loader/init.lua:712 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | conf.wasm_modules_parsed = setmetatable(active_filters, conf_constants._NOP_TOSTRING_MT)",
+        "kong/kong/conf_loader/init.lua:775 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | conf_constants._NOP_TOSTRING_MT)",
+        "kong/kong/conf_loader/init.lua:839 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | conf.loaded_plugins = setmetatable(plugins, conf_constants._NOP_TOSTRING_MT)",
+        "kong/kong/conf_loader/init.lua:934 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | conf.enabled_headers = setmetatable(enabled_headers, conf_constants._NOP_TOSTRING_MT)",
+        "kong/kong/conf_loader/init.lua:951 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | conf.enabled_headers_upstream = setmetatable(enabled_headers_upstream, conf_constants._NOP",
+        "kong/kong/conf_loader/init.lua:1083 -[extends]-> \"conf_constants._NOP_TOSTRING_MT\" (dotted)  | conf.pluginservers = setmetatable(pluginservers, conf_constants._NOP_TOSTRING_MT)",
+        "kong/kong/db/dao/certificates.lua:40 -[extends]-> \"cjson.array_mt\" (dotted)  | return setmetatable(name_list, cjson.array_mt)",
+        "kong/kong/db/dao/init.lua:1429 -[extends]-> \"cjson.array_mt\" (dotted)  | return setmetatable(rows, cjson.array_mt)",
+        "kong/kong/db/dao/init.lua:1443 -[extends]-> \"cjson.array_mt\" (dotted)  | return setmetatable(entities, cjson.array_mt)",
+        "kong/kong/db/dao/tags.lua:16 -[extends]-> \"cjson.array_mt\" (dotted)  | setmetatable(rows, cjson.array_mt)",
+        "kong/kong/db/schema/init.lua:1045 -[extends]-> \"cjson.array_mt\" (dotted)  | setmetatable(copy, cjson.array_mt)",
+        "kong/kong/db/schema/init.lua:1591 -[extends]-> \"cjson.array_mt\" (dotted)  | return setmetatable(array, cjson.array_mt)",
+        "kong/kong/db/schema/init.lua:1614 -[extends]-> \"cjson.array_mt\" (dotted)  | return setmetatable(set, cjson.array_mt)",
+        "kong/kong/pdk/request.lua:939 -[extends]-> \"cjson.array_mt\" (dotted)  | unnamed = setmetatable(unnamed_captures, cjson.array_mt),",
+        "kong/kong/tools/sandbox/init.lua:231 -[extends]-> \"configuration.global_mt\" (dotted)  | return assert(load(chunk, chunkname, mode, setmetatable(env, configuration.global_mt)))",
+        "kong/kong/tools/sandbox/init.lua:234 -[extends]-> \"configuration.sandbox_mt\" (dotted)  | return sb_kong(chunk, chunkname, mode, setmetatable(env, configuration.sandbox_mt))",
+        "lapis/lapis/cmd/cqueues/attached_server.lua:41 -[extends]-> \"_parent_0.__base\" (dotted)  | setmetatable(_base_0, _parent_0.__base)"
+      ]
+    },
+    "implements": {
+      "occurrences": 0,
+      "files": 0,
+      "targets": {},
+      "examples": []
+    },
+    "overrides": {
+      "occurrences": 1,
+      "files": 1,
+      "targets": {
+        "dotted": 1
+      },
+      "examples": [
+        "luarocks/vendor/compat53/module.lua:804 -[overrides]-> \"M.io.lines\" (dotted)  | function M.io.lines(fname, ...)"
+      ]
+    },
+    "instantiates": {
+      "occurrences": 0,
+      "files": 0,
+      "targets": {},
+      "examples": []
+    }
+  },
+  "placeholderLiteralEndpoints": [
+    {
+      "type": "uses",
+      "side": "target",
+      "label": "kong/kong/router/utils.lua",
+      "line": 341,
+      "sourceLine": "unknown = unknown + 1"
+    },
+    {
+      "type": "contains",
+      "side": "target",
+      "label": "kong/kong/router/utils.lua",
+      "line": 300,
+      "sourceLine": "local unknown         = 0"
+    }
+  ],
+  "reading": [
+    "A self-edge on a TYPE relation is not expressible in the language, so every one listed here is a fabricated edge. A self-edge on `calls`/`uses` is different: `local f = function() f() end` really is self-referential, and the count is reported so the two are not conflated.",
+    "`imports` is excluded from the bare check because its target is a module-path STRING by design (`kong.tools.ip`), and `exports` is included because its target is a name a chunk returns."
+  ]
+}

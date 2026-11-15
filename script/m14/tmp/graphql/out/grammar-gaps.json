@@ -1,0 +1,1137 @@
+{
+  "constructs": 113,
+  "acceptsInvalid": 0,
+  "gaps": [],
+  "rows": [
+    {
+      "id": "object-minimal",
+      "spec": "3.6",
+      "valid": true,
+      "src": "type T\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "object-no-body",
+      "spec": "3.6 FieldsDefinition optional",
+      "valid": true,
+      "src": "type T @dir\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "object-fields",
+      "spec": "3.6",
+      "valid": true,
+      "src": "type T { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "interface-minimal",
+      "spec": "3.7",
+      "valid": true,
+      "src": "interface I\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "interface-implements",
+      "spec": "3.7 (June 2018: interfaces may implement interfaces)",
+      "valid": true,
+      "src": "interface I implements J { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "interface-implements-multi",
+      "spec": "3.7",
+      "valid": true,
+      "src": "interface I implements A & B { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "interface-implements-leading-amp",
+      "spec": "3.7",
+      "valid": true,
+      "src": "interface I implements & A { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "union-minimal",
+      "spec": "3.10",
+      "valid": true,
+      "src": "union U\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "union-members",
+      "spec": "3.10",
+      "valid": true,
+      "src": "union U = A | B\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "union-leading-pipe",
+      "spec": "3.10 (leading `|` is legal)",
+      "valid": true,
+      "src": "union U = | A | B\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "enum-minimal",
+      "spec": "3.9",
+      "valid": true,
+      "src": "enum E\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "enum-values",
+      "spec": "3.9",
+      "valid": true,
+      "src": "enum E { A B }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "enum-leading-comma",
+      "spec": "3.9",
+      "valid": true,
+      "src": "enum E { A, B }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "scalar-minimal",
+      "spec": "3.5",
+      "valid": true,
+      "src": "scalar S\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "input-minimal",
+      "spec": "3.10",
+      "valid": true,
+      "src": "input I\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "input-fields",
+      "spec": "3.10",
+      "valid": true,
+      "src": "input I { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "schema-full",
+      "spec": "3.2.1",
+      "valid": true,
+      "src": "schema { query: Q mutation: M subscription: S }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "schema-query-only",
+      "spec": "3.2.1",
+      "valid": true,
+      "src": "schema { query: Q }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "directive-def",
+      "spec": "3.13",
+      "valid": true,
+      "src": "directive @a on FIELD\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "directive-def-args",
+      "spec": "3.13",
+      "valid": true,
+      "src": "directive @a(x: Int = 1, y: [String!]! = [\"a\"]) on FIELD\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "directive-def-repeatable",
+      "spec": "3.13 (June 2018)",
+      "valid": true,
+      "src": "directive @a repeatable on FIELD\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "directive-def-multi-location",
+      "spec": "3.13",
+      "valid": true,
+      "src": "directive @a on FIELD | OBJECT | QUERY\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "directive-def-leading-pipe",
+      "spec": "3.13",
+      "valid": true,
+      "src": "directive @a on | FIELD | OBJECT\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "directive-def-all-locations",
+      "spec": "3.13 (all 18 locations)",
+      "valid": true,
+      "src": "directive @a on QUERY | MUTATION | SUBSCRIPTION | FIELD | FRAGMENT_DEFINITION | FRAGMENT_SPREAD | INLINE_FRAGMENT | VARIABLE_DEFINITION | SCHEMA | SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-schema-one",
+      "spec": "3.18",
+      "valid": true,
+      "src": "extend schema { query: Q }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-schema-multi",
+      "spec": "3.18 (a schema extension may add several root types)",
+      "valid": true,
+      "src": "extend schema { query: Q mutation: M }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-schema-directives-only",
+      "spec": "3.18",
+      "valid": true,
+      "src": "extend schema @dir\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-type-fields",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend type T { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-type-implements",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend type T implements A & B { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-type-no-body",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend type T @dir\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-interface",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend interface I { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-interface-implements",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend interface I implements J { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-union",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend union U = A\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-union-no-members",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend union U @dir\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-enum",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend enum E { A }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-enum-no-values",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend enum E @dir\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-input",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend input I { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-input-no-fields",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend input I @dir\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-scalar",
+      "spec": "3.17 (extend scalar exists since June 2018)",
+      "valid": true,
+      "src": "extend scalar S\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "ext-scalar-directive",
+      "spec": "3.17",
+      "valid": true,
+      "src": "extend scalar S @specifiedBy(url: \"https://x\")\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-type",
+      "spec": "3.1",
+      "valid": true,
+      "src": "\"d\"\ntype T { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-field",
+      "spec": "3.1",
+      "valid": true,
+      "src": "type T {\n  \"d\"\n  a: Int\n}\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-block",
+      "spec": "2.9.4",
+      "valid": true,
+      "src": "\"\"\"\nd\n\"\"\"\ntype T { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-arg",
+      "spec": "3.1",
+      "valid": true,
+      "src": "type T { f(\"d\" a: Int): Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-input-field",
+      "spec": "3.1",
+      "valid": true,
+      "src": "input I { \"d\" a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-enum-value",
+      "spec": "3.1",
+      "valid": true,
+      "src": "enum E { \"d\" A }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-directive-def",
+      "spec": "3.1",
+      "valid": true,
+      "src": "\"d\"\ndirective @a on FIELD\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-on-schema",
+      "spec": "3.1",
+      "valid": true,
+      "src": "\"d\"\nschema { query: Q }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "desc-block-escaped-triple",
+      "spec": "2.9.4 (BlockString allows an escaped \\\"\"\")",
+      "valid": true,
+      "src": "\"\"\"has \\\"\"\" inside\"\"\"\ntype T { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-nonnull",
+      "spec": "3.4",
+      "valid": true,
+      "src": "type T { a: Int! }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-list",
+      "spec": "3.4",
+      "valid": true,
+      "src": "type T { a: [Int] }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-list-nonnull",
+      "spec": "3.4",
+      "valid": true,
+      "src": "type T { a: [Int!]! }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-nested-list",
+      "spec": "3.4",
+      "valid": true,
+      "src": "type T { a: [[Int!]!]! }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-int",
+      "spec": "3.10.1",
+      "valid": true,
+      "src": "input I { a: Int = 1 }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-neg-int",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: Int = -1 }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-float",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: Float = 1.5 }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-float-exp",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: Float = 1e10 }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-string",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: String = \"s\" }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-bool",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: Boolean = true }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-null",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: Int = null }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-enum",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "enum E { A }\ninput I { a: E = A }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-list",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: [Int] = [1, 2] }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-list-empty",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: [Int] = [] }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-object",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input J { x: Int }\ninput I { a: J = {x: 1} }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-object-block-string",
+      "spec": "3.5.1",
+      "valid": true,
+      "src": "input I { a: String = \"\"\"\n  blk\n  \"\"\" }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "type-default-in-arg",
+      "spec": "3.5.1: an argument may carry a default",
+      "valid": true,
+      "src": "type T { f(a: Int = 1): Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-named",
+      "spec": "3.2",
+      "valid": true,
+      "src": "query Q { a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-anonymous-shorthand",
+      "spec": "3.2.1 (shorthand)",
+      "valid": true,
+      "src": "{ a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-anonymous-keyword",
+      "spec": "3.2.1",
+      "valid": true,
+      "src": "query { a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-mutation",
+      "spec": "3.2",
+      "valid": true,
+      "src": "mutation M { a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-subscription",
+      "spec": "3.2",
+      "valid": true,
+      "src": "subscription S { a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-vars",
+      "spec": "3.2",
+      "valid": true,
+      "src": "query Q($a: Int, $b: String! = \"x\") { f }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-var-list",
+      "spec": "3.2",
+      "valid": true,
+      "src": "query Q($a: [Int!]! = [1]) { f }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-var-directive",
+      "spec": "3.2 (a variable definition may carry directives)",
+      "valid": true,
+      "src": "query Q($a: Int @dir) { f }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-trailing-comma-in-vars",
+      "spec": "3.2 (commas are insignificant)",
+      "valid": true,
+      "src": "query Q($a: Int, $b: Int,) { f }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "op-directives",
+      "spec": "3.2",
+      "valid": true,
+      "src": "query Q @a @b { f }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-alias",
+      "spec": "3.3",
+      "valid": true,
+      "src": "{ nick: name }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-args",
+      "spec": "3.3",
+      "valid": true,
+      "src": "{ f(a: 1, b: \"s\", c: true, d: null, e: ENUM, g: [1,2], h: {i: 1}, j: $v) }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-args-trailing-comma",
+      "spec": "3.3 (commas are insignificant)",
+      "valid": true,
+      "src": "{ f(a: 1,) }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-arg-var",
+      "spec": "3.3",
+      "valid": true,
+      "src": "query Q($v: Int) { f(a: $v) }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-one-directive",
+      "spec": "3.3",
+      "valid": true,
+      "src": "{ f @a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-two-directives",
+      "spec": "3.3 (directives are repeatable at any position)",
+      "valid": true,
+      "src": "{ f @a @b }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-nested",
+      "spec": "3.3",
+      "valid": true,
+      "src": "{ a { b { c } } }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "field-comma-separated",
+      "spec": "3.3 (commas are insignificant)",
+      "valid": true,
+      "src": "{ a, b, c }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "frag-spread",
+      "spec": "3.5",
+      "valid": true,
+      "src": "query Q { ...F }\nfragment F on T { a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "frag-spread-with-dir",
+      "spec": "3.5",
+      "valid": true,
+      "src": "query Q { ...F @include(if: true) }\nfragment F on T { a }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "frag-inline",
+      "spec": "3.5",
+      "valid": true,
+      "src": "{ ... on T { a } }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "frag-inline-no-type",
+      "spec": "3.5 (type condition is optional)",
+      "valid": true,
+      "src": "{ ... @skip(if: true) { a } }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "frag-inline-two-dirs",
+      "spec": "3.5",
+      "valid": true,
+      "src": "{ ... on T @a @b { a } }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "typename",
+      "spec": "2.3",
+      "valid": true,
+      "src": "{ __typename }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "multi-doc-one-file",
+      "spec": "concatenated documents",
+      "valid": true,
+      "src": "query A { a }\nquery B { b }\nfragment C on T { c }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-key",
+      "spec": "Apollo Federation",
+      "valid": true,
+      "src": "type T @key(fields: \"id\") { id: ID! }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-external",
+      "spec": "Apollo Federation",
+      "valid": true,
+      "src": "type T @external { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-requires",
+      "spec": "Apollo Federation",
+      "valid": true,
+      "src": "type T @requires(fields: \"a\") { a: Int @external }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-provides",
+      "spec": "Apollo Federation",
+      "valid": true,
+      "src": "type T @provides(fields: \"a\") { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-inherits",
+      "spec": "Apollo Federation",
+      "valid": true,
+      "src": "type T @inherits(field: \"x\") { x: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-shareable",
+      "spec": "Apollo Federation v2",
+      "valid": true,
+      "src": "type T @shareable { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "apollo-link",
+      "spec": "Apollo Federation v2",
+      "valid": true,
+      "src": "extend schema @link(url: \"https://specs.apollo.dev/federation/v2.0\", import: [\"@key\"])\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "relay-connection",
+      "spec": "Relay",
+      "valid": true,
+      "src": "type Q { things(first: Int, after: String): ThingConnection }\ntype ThingConnection { edges: [ThingEdge] pageInfo: PageInfo! }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "neo4j-cypher-directive",
+      "spec": "neo4j/graphql",
+      "valid": true,
+      "src": "type Movie @node(label: \"Movie\") { title: String @cypher(statement: \"RETURN m.title\") }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "hasura-column",
+      "spec": "Hasura",
+      "valid": true,
+      "src": "type User @table { id: uuid! @column(name: \"user_id\") }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "commas-everywhere",
+      "spec": "commas are insignificant",
+      "valid": true,
+      "src": "type T { a: Int, b: String, }\ninput I { x: Int, y: Int, }\nenum E { A, B, }\nunion U = A | B\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "bom-and-crlf",
+      "spec": "whitespace forms",
+      "valid": true,
+      "src": "﻿type T {\r\n  a: Int\r\n}\r\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "INVALID-empty-object",
+      "spec": "3.6 (FieldsDefinition is +)",
+      "valid": false,
+      "src": "type T {}\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-empty-input",
+      "spec": "3.10",
+      "valid": false,
+      "src": "input I {}\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-empty-enum",
+      "spec": "3.9",
+      "valid": false,
+      "src": "enum E {}\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-empty-schema",
+      "spec": "3.2.1",
+      "valid": false,
+      "src": "schema {}\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-hex-int",
+      "spec": "3.5.1 IntValue is -?(0|[1-9][0-9]*)",
+      "valid": false,
+      "src": "input I { a: Int = 0x1F }\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-leading-zero",
+      "spec": "3.5.1",
+      "valid": false,
+      "src": "input I { a: Int = 01 }\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-unclosed-brace",
+      "spec": "syntax",
+      "valid": false,
+      "src": "type T {\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 1,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-missing-colon",
+      "spec": "3.6",
+      "valid": false,
+      "src": "type T { a Int }\n",
+      "vendoredRejects": true,
+      "vendoredErrorNodes": 2,
+      "candidateRejects": null,
+      "verdict": "correct rejection"
+    },
+    {
+      "id": "INVALID-dup-name",
+      "spec": "3.6 (parser cannot see; validator-only)",
+      "valid": true,
+      "src": "type T { a: Int a: String }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    },
+    {
+      "id": "INVALID-reserved-type-name",
+      "spec": "3.6 (validator-only)",
+      "valid": true,
+      "src": "type String { a: Int }\n",
+      "vendoredRejects": false,
+      "vendoredErrorNodes": 0,
+      "candidateRejects": null,
+      "verdict": "ok"
+    }
+  ]
+}

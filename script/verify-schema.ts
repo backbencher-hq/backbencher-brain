@@ -36,6 +36,8 @@ const EXPECTED_TABLES = [
   "brain_taint_flow", "brain_query_cache",
   "brain_project_health", "brain_index_status", "brain_semantic_embedding",
   "brain_analysis_run", "brain_analysis_finding", "brain_analysis_occurrence",
+  // M72: the spec-engine lead store (replacement for the retired security writer)
+  "brain_security_flow",
 ]
 for (const t of EXPECTED_TABLES) check(`table ${t}`, tables.includes(t))
 
@@ -67,6 +69,9 @@ const EXPECTED_INDEXES = [
   "brain_analysis_run_kind_idx", "brain_analysis_run_started_idx",
   "brain_analysis_finding_project_idx", "brain_analysis_finding_state_idx",
   "brain_analysis_occurrence_finding_idx", "brain_analysis_occurrence_run_idx",
+  // M72 lead store indexes
+  "brain_security_project_idx", "brain_security_file_idx", "brain_security_source_idx",
+  "brain_security_sink_idx", "brain_security_rule_idx", "brain_security_state_idx",
 ]
 const missing = EXPECTED_INDEXES.filter((i) => !indexes.includes(i))
 check("all drizzle indexes created", missing.length === 0, `missing: ${missing.join(", ")}`)

@@ -1,0 +1,27 @@
+{
+ "fixtureId": "python/lambda-scope-rejects-comprehension-walrus",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PYTHON REFUSES TO COMPILE THIS CLASS BODY, so the class has no members at all. `class C: from_comp = [(r := i * 2) for i in range(3)]` raises `SyntaxError: assignment expression within a comprehension cannot be used in a class body`, because Python binds a comprehension's named expression in the ENCLOSING scope and that would bind `r` into the class \u2014 a surprising meaning it declines to give rather than grant silently. This is in its own fixture rather than folded into lambda-scope-is-not-class-scope because that file's ground truth is read out of CPython with `vars()`, and this one cannot be imported; combining them would have left the real rows resting on an opinion instead of on the interpreter. What the oracle contributed here is the SHAPE: the sibling fixture established that a binding scope between the walrus and the class body means the name is not a member, and comprehension is a binding scope by the same argument. tree-sitter is error-tolerant and parses the rejected construct anyway, so without the guard the lane published `contains C -> r` for a class that cannot be constructed. `from_comp` is kept as a positive row deliberately: it is the assigned name, the assignment is literally there in the source, and an error-tolerant parse is still entitled to report the declaration it can see. The line is `r` and only `r`.",
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "from_comp",
+   "line_number": 28,
+   "note": "KEPT on purpose. This is the assigned name and the assignment is right there in the source; an error-tolerant parse is still entitled to report a declaration it can actually see. The line the fixture draws is `r` and only `r` \u2014 a fix that suppressed the whole statement would pass the forbid below and lose a real observation"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "r",
+   "note": "THE DEFECT. `r` is a comprehension's named expression. Python refuses the class body outright, so `C.r` cannot exist; even if the class compiled, the comprehension would bind `r` in its own scope rather than in the class"
+  }
+ ],
+ "_seamNote": {
+  "what": "A class body that CPython rejects has no members. The declaration the source visibly makes is reportable; a name bound inside a comprehension in that body is not.",
+  "why": "Two different claims are easy to conflate here. That the parse is error-tolerant does not make every node in it equally trustworthy, and that Python rejected the file does not make the visible assignment disappear. The honest split is by what the source states: `from_comp = ...` states a binding of `from_comp`, and `r` states a binding of `r` inside a comprehension whose scope Python itself declines to let reach the class. Reporting the first and not the second is not a compromise between the two positions \u2014 it is the only reading under which both are correct."
+ }
+}

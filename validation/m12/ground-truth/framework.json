@@ -1,0 +1,551 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/framework-fixtures/*",
+  "facts": [
+    {
+      "id": "framework:OrderController.java:primary:spring",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "OrderController.java",
+      "attributes": { "framework": "spring" },
+      "evidence": { "authority": "manual_audit", "reference": "@RestController @Autowired @GetMapping + javax.persistence @Entity" }
+    },
+    {
+      "id": "framework:OrderController.java:detected:spring",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "OrderController.java",
+      "attributes": { "framework": "spring" },
+      "evidence": { "authority": "manual_audit", "reference": "org.springframework imports" }
+    },
+    {
+      "id": "framework:OrderController.java:detected:spring-mvc",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "OrderController.java",
+      "attributes": { "framework": "spring-mvc" },
+      "evidence": { "authority": "manual_audit", "reference": "org.springframework.web.bind.annotation (web layer)" }
+    },
+    {
+      "id": "framework:OrderController.java:detected:jpa",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "OrderController.java",
+      "attributes": { "framework": "jpa" },
+      "evidence": { "authority": "manual_audit", "reference": "javax.persistence @Entity @Table @Id" }
+    },
+    {
+      "id": "framework:Util.java:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "Util.java",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Java, no framework imports" }
+    },
+    {
+      "id": "framework:Util.java:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "Util.java",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:OrdersController.cs:primary:aspnet-core",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "OrdersController.cs",
+      "attributes": { "framework": "aspnet-core" },
+      "evidence": { "authority": "manual_audit", "reference": "Microsoft.AspNetCore.Mvc ApiController + ControllerBase" }
+    },
+    {
+      "id": "framework:OrdersController.cs:detected:aspnet-core",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "OrdersController.cs",
+      "attributes": { "framework": "aspnet-core" },
+      "evidence": { "authority": "manual_audit", "reference": "Microsoft.AspNetCore.Mvc" }
+    },
+    {
+      "id": "framework:OrdersController.cs:detected:entity-framework",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "OrdersController.cs",
+      "attributes": { "framework": "entity-framework" },
+      "evidence": { "authority": "manual_audit", "reference": "Microsoft.EntityFrameworkCore DbContext + DbSet" }
+    },
+    {
+      "id": "framework:MathUtil.cs:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "MathUtil.cs",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain C#, no framework usage" }
+    },
+    {
+      "id": "framework:MathUtil.cs:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "MathUtil.cs",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:App.ts:primary:angular",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "App.ts",
+      "attributes": { "framework": "angular" },
+      "evidence": { "authority": "manual_audit", "reference": "@angular/core import + @Component decorator" }
+    },
+    {
+      "id": "framework:App.ts:detected:angular",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "App.ts",
+      "attributes": { "framework": "angular" },
+      "evidence": { "authority": "manual_audit", "reference": "@angular/core" }
+    },
+    {
+      "id": "framework:Button.tsx:primary:react",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "Button.tsx",
+      "attributes": { "framework": "react" },
+      "evidence": { "authority": "manual_audit", "reference": "import React + useState + JSX" }
+    },
+    {
+      "id": "framework:Button.tsx:detected:react",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "Button.tsx",
+      "attributes": { "framework": "react" },
+      "evidence": { "authority": "manual_audit", "reference": "react import" }
+    },
+    {
+      "id": "framework:app.js:primary:express",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "app.js",
+      "attributes": { "framework": "express" },
+      "evidence": { "authority": "manual_audit", "reference": "const express = require('express') + app.get routes" }
+    },
+    {
+      "id": "framework:app.js:detected:express",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "app.js",
+      "attributes": { "framework": "express" },
+      "evidence": { "authority": "manual_audit", "reference": "require('express')" }
+    },
+    {
+      "id": "framework:util.js:primary:JavaScript",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "util.js",
+      "attributes": { "framework": "JavaScript" },
+      "evidence": { "authority": "manual_audit", "reference": "plain JS — language default only, no real framework" }
+    },
+    {
+      "id": "framework:util.js:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "util.js",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:server.rs:primary:actix-web",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "server.rs",
+      "attributes": { "framework": "actix-web" },
+      "evidence": { "authority": "manual_audit", "reference": "use actix_web + #[actix_web::main] + HttpServer/App" }
+    },
+    {
+      "id": "framework:server.rs:detected:actix-web",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "server.rs",
+      "attributes": { "framework": "actix-web" },
+      "evidence": { "authority": "manual_audit", "reference": "use actix_web" }
+    },
+    {
+      "id": "framework:server.rs:detected:rayon",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "server.rs",
+      "attributes": { "framework": "rayon" },
+      "evidence": { "authority": "manual_audit", "reference": "use rayon::prelude::* + par_iter" }
+    },
+    {
+      "id": "framework:util.rs:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "util.rs",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Rust, no external crates" }
+    },
+    {
+      "id": "framework:util.rs:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "util.rs",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:widget.cpp:primary:boost",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "widget.cpp",
+      "attributes": { "framework": "boost" },
+      "evidence": { "authority": "manual_audit", "reference": "#include <boost/algorithm/string.hpp> + boost::to_upper" }
+    },
+    {
+      "id": "framework:widget.cpp:detected:boost",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "widget.cpp",
+      "attributes": { "framework": "boost" },
+      "evidence": { "authority": "manual_audit", "reference": "#include <boost/algorithm/string.hpp>" }
+    },
+    {
+      "id": "framework:main.c:primary:Standard C Library",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "main.c",
+      "attributes": { "framework": "Standard C Library" },
+      "evidence": { "authority": "manual_audit", "reference": "stdio.h/stdlib.h only — standard library, no external framework" }
+    },
+    {
+      "id": "framework:main.c:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "main.c",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no external framework" }
+    },
+    {
+      "id": "framework:router.ex:primary:phoenix",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "router.ex",
+      "attributes": { "framework": "phoenix" },
+      "evidence": { "authority": "manual_audit", "reference": "use Phoenix.Router + Phoenix.LiveView.Router" }
+    },
+    {
+      "id": "framework:router.ex:detected:phoenix",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "router.ex",
+      "attributes": { "framework": "phoenix" },
+      "evidence": { "authority": "manual_audit", "reference": "use Phoenix.Router" }
+    },
+    {
+      "id": "framework:api.ex:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "api.ex",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Elixir module, no framework" }
+    },
+    {
+      "id": "framework:api.ex:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "api.ex",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:api.hs:primary:Servant",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "api.hs",
+      "attributes": { "framework": "Servant" },
+      "evidence": { "authority": "manual_audit", "reference": "import Servant + :> Get '[JSON]" }
+    },
+    {
+      "id": "framework:api.hs:detected:Servant",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "api.hs",
+      "attributes": { "framework": "Servant" },
+      "evidence": { "authority": "manual_audit", "reference": "import Servant" }
+    },
+    {
+      "id": "framework:math.hs:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "math.hs",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Haskell, no framework" }
+    },
+    {
+      "id": "framework:math.hs:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "math.hs",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:handler.clj:primary:Ring",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "handler.clj",
+      "attributes": { "framework": "Ring" },
+      "evidence": { "authority": "manual_audit", "reference": "require ring.adapter.jetty + run-jetty" }
+    },
+    {
+      "id": "framework:handler.clj:detected:Ring",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "handler.clj",
+      "attributes": { "framework": "Ring" },
+      "evidence": { "authority": "manual_audit", "reference": "ring.adapter.jetty" }
+    },
+    {
+      "id": "framework:handler.clj:detected:Compojure",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "handler.clj",
+      "attributes": { "framework": "Compojure" },
+      "evidence": { "authority": "manual_audit", "reference": "compojure.core defroutes GET" }
+    },
+    {
+      "id": "framework:core.clj:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "core.clj",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Clojure ns, no framework" }
+    },
+    {
+      "id": "framework:core.clj:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "core.clj",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:gen_server.erl:primary:otp",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "gen_server.erl",
+      "attributes": { "framework": "otp" },
+      "evidence": { "authority": "manual_audit", "reference": "-behaviour(gen_server) + gen_server:start_link" }
+    },
+    {
+      "id": "framework:gen_server.erl:detected:otp",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "gen_server.erl",
+      "attributes": { "framework": "otp" },
+      "evidence": { "authority": "manual_audit", "reference": "-behaviour(gen_server)" }
+    },
+    {
+      "id": "framework:utils.erl:primary:Erlang",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "utils.erl",
+      "attributes": { "framework": "Erlang" },
+      "evidence": { "authority": "manual_audit", "reference": "plain Erlang — language default, no OTP behaviour" }
+    },
+    {
+      "id": "framework:utils.erl:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "utils.erl",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:models.py:primary:django",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "models.py",
+      "attributes": { "framework": "django" },
+      "evidence": { "authority": "manual_audit", "reference": "from django.db import models + models.Model" }
+    },
+    {
+      "id": "framework:models.py:detected:django",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "models.py",
+      "attributes": { "framework": "django" },
+      "evidence": { "authority": "manual_audit", "reference": "django.db import" }
+    },
+    {
+      "id": "framework:helpers.py:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "helpers.py",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Python, no framework" }
+    },
+    {
+      "id": "framework:helpers.py:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "helpers.py",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:orders_controller.rb:primary:Ruby on Rails",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "orders_controller.rb",
+      "attributes": { "framework": "Ruby on Rails" },
+      "evidence": { "authority": "manual_audit", "reference": "ApplicationController + before_action + render" }
+    },
+    {
+      "id": "framework:orders_controller.rb:detected:Ruby on Rails",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "orders_controller.rb",
+      "attributes": { "framework": "Ruby on Rails" },
+      "evidence": { "authority": "manual_audit", "reference": "render + before_action" }
+    },
+    {
+      "id": "framework:calc.rb:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "calc.rb",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain Ruby, no framework" }
+    },
+    {
+      "id": "framework:calc.rb:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "calc.rb",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:User.php:primary:Laravel",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "User.php",
+      "attributes": { "framework": "Laravel" },
+      "evidence": { "authority": "manual_audit", "reference": "Illuminate\\Database\\Eloquent\\Model" }
+    },
+    {
+      "id": "framework:User.php:detected:Laravel",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "User.php",
+      "attributes": { "framework": "Laravel" },
+      "evidence": { "authority": "manual_audit", "reference": "Illuminate\\Database\\Eloquent\\Model" }
+    },
+    {
+      "id": "framework:StringUtil.php:primary:unknown",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "StringUtil.php",
+      "attributes": { "framework": "unknown" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "plain PHP namespace, no framework" }
+    },
+    {
+      "id": "framework:StringUtil.php:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "StringUtil.php",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    },
+    {
+      "id": "framework:dbt_model.sql:primary:dbt",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "dbt_model.sql",
+      "attributes": { "framework": "dbt" },
+      "evidence": { "authority": "manual_audit", "reference": "{{ config(materialized=...) }} + {{ ref }} + {{ source }}" }
+    },
+    {
+      "id": "framework:dbt_model.sql:detected:dbt",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "dbt_model.sql",
+      "attributes": { "framework": "dbt" },
+      "evidence": { "authority": "manual_audit", "reference": "Jinja dbt macros" }
+    },
+    {
+      "id": "framework:schema.sql:primary:SQL",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "schema.sql",
+      "attributes": { "framework": "SQL" },
+      "evidence": { "authority": "manual_audit", "reference": "plain SQL — language default only, no dbt" }
+    },
+    {
+      "id": "framework:schema.sql:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "schema.sql",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no dbt / no dialect" }
+    },
+    {
+      "id": "framework:main.tf:primary:HCL/Terraform",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "main.tf",
+      "attributes": { "framework": "HCL/Terraform" },
+      "evidence": { "authority": "manual_audit", "reference": "terraform block + provider + resource" }
+    },
+    {
+      "id": "framework:main.tf:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "main.tf",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "Terraform is the language — primary only" }
+    },
+    {
+      "id": "framework:deploy.sh:primary:Bash Script",
+      "layer": "intelligence",
+      "kind": "framework_primary",
+      "file": "deploy.sh",
+      "attributes": { "framework": "Bash Script" },
+      "evidence": { "authority": "manual_audit", "reference": "plain bash — language default only" }
+    },
+    {
+      "id": "framework:deploy.sh:detected:none",
+      "layer": "intelligence",
+      "kind": "framework_detected",
+      "file": "deploy.sh",
+      "attributes": { "framework": "__none__" },
+      "expectedState": "unknown",
+      "evidence": { "authority": "manual_audit", "reference": "no framework usage" }
+    }
+  ]
+}

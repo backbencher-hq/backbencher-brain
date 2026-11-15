@@ -1,0 +1,17 @@
+{
+  "fixtureId": "css/error-recovery-is-reported",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A named page selector (`@page :first`) is unreadable by the pinned grammar, and it is a DECLARED residual rather than an accident. The pin is `atLeast: 1` and not the measured count on purpose: an exact number would fail the moment the grammar learned `@page :first`, and a fixture that breaks when the lane improves is a fixture that gets deleted instead of fixed. What must stay true is that the failure is REPORTED. The positive half is that `.recovered` — a valid rule between two unreadable at-rules — is still extracted, which is what error recovery is FOR: a construct failing to parse and a construct being lost are different claims, and only the first is true here.",
+  "expectSymbols": [
+    {
+      "name": ".recovered",
+      "kind": "class"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "atLeast": 1
+    }
+  ]
+}

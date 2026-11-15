@@ -1,0 +1,9 @@
+# The negative twin: a comment on a line of its own, followed by a BLANK line and then
+# an unrelated key, documents nothing. Positional attribution must not reach across a
+# gap, or a banner becomes arbitrary documentation.
+# this banner is not about the key below
+
+name: thing
+# nor is this one
+
+other: 2

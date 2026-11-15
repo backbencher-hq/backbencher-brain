@@ -1,0 +1,87 @@
+{
+  "fixtureId": "xml/xslt-output-is-not-a-name",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding X5. The analyzer's DECLARATION_NAME_ATTRIBUTE table read `{ output: \"method\" }`, on the theory that XSLT `xsl:output` names something. It does not: `method` names the OUTPUT METHOD and nothing else. So `<xsl:output method=\"html\"/>` was published as a symbol called `html`, marked `isVocabDeclaration: true`, with `method`/`encoding`/`indent` hung off IT as its attributes, and the element's real name `xsl:output` appeared nowhere in the graph. That is the M60.R10 defect class in MIRROR IMAGE: R10 is publishing a value where a name belongs into a `contains` target, and this took a value where a name belongs and called the element it. The comment on REFERENCE_ATTRIBUTES spends two paragraphs refusing to publish `unbounded` and `Normal` as names, and then the declared-name table handed `html` to the graph in the next screen. The corpus paid 182 sites across 250 files: 92 published as `xml`, 53 as `text`, 37 as `html`. This fixture is built so the COLLISION is unavoidable rather than theoretical — the template body contains a REAL `<html>` element, so before the repair the file carried two unrelated symbols called `html`, one of them a stylesheet instruction and one of them a document element, and the `contains` edges for the output element's attributes hung off the wrong one. `method=\"html\"` was chosen over `method=\"xml\"` precisely because `html` also names a real element in this file and `xml` does not; a fixture using `xml` would have half-reproduced the defect. Lines read off the file: `xsl:output` 5, its `method` 5, the real `html` 7. The declared-name rule is still exercised here and is pinned: `xsl:template name=\"page\"` must still publish `page` as a vocabulary declaration, so the repair cannot be faked by disabling the rule.",
+  "expectSymbols": [
+    {
+      "name": "xsl:output",
+      "kind": "class",
+      "meta.nodeType": "element",
+      "meta.tagName": "xsl:output"
+    },
+    {
+      "name": "method",
+      "kind": "property",
+      "ownerName": "xsl:output"
+    },
+    {
+      "name": "encoding",
+      "kind": "property",
+      "ownerName": "xsl:output"
+    },
+    {
+      "name": "indent",
+      "kind": "property",
+      "ownerName": "xsl:output"
+    },
+    {
+      "name": "page",
+      "kind": "class",
+      "meta.isVocabDeclaration": true,
+      "meta.declaredByAttribute": "name"
+    },
+    {
+      "name": "html",
+      "kind": "class",
+      "meta.nodeType": "element",
+      "meta.tagName": "html"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "xsl:stylesheet",
+      "target": "xsl:output",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "xsl:output",
+      "target": "method",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "xsl:output",
+      "target": "encoding",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "xsl:output",
+      "target": "indent",
+      "line_number": 5
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "text",
+      "note": "an output METHOD value, never a component name; this file does not even use method=\"text\", so a symbol by this name could only be a value published as a name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "html",
+      "target": "method",
+      "note": "the defect's signature: `method` is an ATTRIBUTE OF xsl:output, so its owner is xsl:output. Before the repair it hung off the symbol named after the method value, i.e. off `html` here."
+    },
+    {
+      "type": "contains",
+      "from": "xsl:output",
+      "target": "html",
+      "note": "xsl:output does not contain the document's <html> element; they are unrelated, and the repair must not make them related"
+    }
+  ]
+}

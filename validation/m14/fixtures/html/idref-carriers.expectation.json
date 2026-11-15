@@ -1,0 +1,174 @@
+{
+  "comment": "IDREF CARRIERS — the constructor the HTML Standard defines and this analyzer did not read. An IDREF attribute names an element IN THIS DOCUMENT by its id: nothing fetches it, nothing navigates to it, and it is the same kind of fact as `<label for>` and `<a href=\"#id\">`. `<label for>` was a SPECIAL CASE in the walk, which is why every other IDREF carrier was invisible — a carrier nobody thought of in the branch simply did not exist, the same failure `RESOURCE_RULES` replaced an `if/else` chain to fix. MEASUREMENT: 1,180 corpus documents across 25 repositories, carrier list written from the Standard rather than from the analyzer's table or the differential's oracle — 41 IDREF occurrences, 39 resolving to an id the same document declares, 19 on carriers nothing read and 16 of those resolving. ADJUDICATED 2026-10-12. This file arrived carrying the SUPERSEDED spelling of the table: it demanded `uses` + `meta.idrefCarrier` + `meta.idrefList` for the IDREF class, while `html/idref-references` demands `references` + `meta.isIdref` + `meta.idrefKind` for the SAME constructs (aria-labelledby, aria-describedby, td@headers, input@form, input@list) — two pins that no analyzer can satisfy at once, which is why this one had been red since the baseline at `31b6cd908`. The tiebreak is the ontology's own meaning, not either file's prose: `uses` is this codebase's label for a FETCH or a NAVIGATION (every resource carrier, the form action, an observed hyperlink) and `references` is the address-space naming class (css `var()`, scss `$var`, a rust/typescript type reference) — an IDREF names a NODE, not a document. The analyzer implements `references` + `idrefKind`, `idref-references` argues and pins it with 14 rows, and the F5 oracle derives no IDREF rows at all, so there is no third source that could overturn it. This file therefore keeps everything it uniquely contributes — the per-carrier attribution, the LIST-vs-SINGLE distinction, the deliberately-declared `id=\"true\"`/`\"polite\"`/`\"dialog\"` sweep controls, the dangling reference, and the frozen documentMetrics — under the ratified spelling. The ONE row this file was right about and the analyzer was wrong about is the `<label for>` association's SOURCE, and that correction is shared with `html/scope-barriers-and-references` (see the last expectRelationships row).",
+  "expectSymbols": [
+    {
+      "name": "idref-carriers",
+      "kind": "module"
+    },
+    {
+      "name": "panel",
+      "kind": "class",
+      "meta.tagName": "section"
+    },
+    {
+      "name": "cell-a",
+      "kind": "class",
+      "meta.tagName": "td"
+    },
+    {
+      "name": "outside-field",
+      "kind": "class",
+      "meta.tagName": "input"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "ACCESSIBILITY IDREF, role-independent, so it is read off the element's own attribute map rather than from a per-tag row. `aria-labelledby` and `aria-describedby` on ONE start tag produce TWO edges. ROW-PER-TOKEN (the content model is a LIST) plus `meta.idrefList` saying so — the flag is what keeps a one-token list distinguishable from a genuinely single-valued carrier, since both publish exactly one row.",
+      "type": "references",
+      "from": "panel",
+      "target": "title",
+      "line_number": 28,
+      "meta.isIdref": true,
+      "meta.idrefKind": "aria-labelledby",
+      "meta.idrefList": true,
+      "meta.evidenceClass": "structural",
+      "confidence": 1.0
+    },
+    {
+      "type": "references",
+      "from": "panel",
+      "target": "hint",
+      "line_number": 28,
+      "meta.isIdref": true,
+      "meta.idrefKind": "aria-describedby",
+      "meta.idrefList": true
+    },
+    {
+      "comment": "FORWARD reference. `open-title` is declared on line 33, BELOW the dialog on line 32. HTML allows a forward IDREF and real pages rely on it; the resolver runs after the walk precisely so this resolves, which is the same reason `<label for>` is deferred.",
+      "type": "references",
+      "from": "dialog-one",
+      "target": "open-title",
+      "line_number": 32,
+      "meta.idrefKind": "aria-labelledby"
+    },
+    {
+      "comment": "SOURCE, not the nearest addressable ancestor. `warn` carries the id `aria-labelledby` names on the NEXT line. The `source` is the element that WRITES the reference, which is what `emitResource` and the in-document fragment href do — and, as of the 2026-10-12 fix, what the `<label for>` branch does too.",
+      "type": "references",
+      "from": "warn",
+      "target": "warn-title",
+      "line_number": 40,
+      "meta.idrefKind": "aria-labelledby"
+    },
+    {
+      "comment": "LIST carrier: `td headers` is a space-separated IDREF list, so one row per token — the same one-row-per-candidate rule `srcset` follows. Two tokens, two edges, both on the line the attribute is written on.",
+      "type": "references",
+      "from": "cell-a",
+      "target": "h-qty",
+      "line_number": 52,
+      "meta.idrefKind": "table-header",
+      "meta.idrefList": true
+    },
+    {
+      "type": "references",
+      "from": "cell-a",
+      "target": "h-price",
+      "line_number": 52,
+      "meta.idrefKind": "table-header",
+      "meta.idrefList": true
+    },
+    {
+      "comment": "FORM IDREF: a control that belongs to a form declared elsewhere in the document. `input@form` is not a resource and not an endpoint, so it is `references`/structural and never `imports`. SINGLE-valued per the Standard, and pinned as such: `meta.idrefList: null` means the row must NOT carry the flag, so a rule that stamped it on every carrier fails here.",
+      "type": "references",
+      "from": "outside-field",
+      "target": "outer",
+      "line_number": 59,
+      "meta.idrefKind": "form-owner",
+      "meta.idrefList": null,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "comment": "A single-valued IDREF carries NO `idrefList`, so a consumer can tell one named element from two — the same absent/present test as the row above.",
+      "type": "references",
+      "from": "browser-field",
+      "target": "browsers",
+      "line_number": 61,
+      "meta.idrefKind": "datalist",
+      "meta.idrefList": null
+    },
+    {
+      "comment": "`<label for>` STILL WORKS and still carries the flag its own fixture pins (`isLabelAssociation`, the label `html/scope-barriers-and-references` and `html/identity-addressable` also pin). It is the row this file got RIGHT and the analyzer got wrong: the SOURCE is `lbl`, the element that writes the reference and which this document gives an id, not `app`, the nearest named ancestor. The lane's own F5 oracle agrees — `deriveHtmlEdges` on this document derives `uses lbl -> named-target` — so the analyzer's label branch was changed to source the writing element, and the three rows in `scope-barriers-and-references` that ratified the old attribution were re-pinned in the same change.",
+      "type": "uses",
+      "from": "lbl",
+      "target": "named-target",
+      "line_number": 65,
+      "meta.isLabelAssociation": true,
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "NOT IDREFs, made falsifiable. `aria-hidden`, `aria-expanded`, `aria-label`, `aria-live`, `aria-haspopup`, `aria-keyshortcuts`, `aria-atomic` and `aria-value*` are tokens, booleans or prose. The document DELIBERATELY declares ids named `true`, `polite` and `dialog`, so a mutant that swept every `aria-*` attribute in would be caught here. Without those ids the same mutant was INVISIBLE — an unresolved IDREF emits nothing — which is why this file carries them. The ruling is about what the ATTRIBUTE means, not about whether a target happens to exist. BOTH labels are forbidden, because the sweep is a mistake whichever type it stamps: the ratified IDREF label is `references` and a sweep that emitted `uses` would be wrong for a second reason.",
+      "target": "true",
+      "type": "references"
+    },
+    {
+      "target": "true",
+      "type": "uses"
+    },
+    {
+      "target": "polite",
+      "type": "references"
+    },
+    {
+      "target": "polite",
+      "type": "uses"
+    },
+    {
+      "target": "0",
+      "type": "references"
+    },
+    {
+      "target": "0",
+      "type": "uses"
+    },
+    {
+      "comment": "An IDREF that names an id the document does not declare emits NOTHING, exactly as an unresolvable `<label for>` already did: there is no reference to make, and an edge to the string `never-declared` resolves to no symbol and to no file.",
+      "from": "dangling"
+    },
+    {
+      "comment": "`input@list` names a `<datalist>`, not a file. Nothing fetches it, so it is never an `imports` row.",
+      "type": "imports",
+      "from": "browser-field"
+    },
+    {
+      "comment": "A reference is not a navigation: `input@form` names a `<form>` in this document, and a `<form>` is not a document to fetch.",
+      "from": "outside-field",
+      "target": "outer",
+      "type": "calls"
+    }
+  ],
+  "expectMetadata": [
+    {
+      "comment": "THE WHOLE documentMetrics OBJECT, exactly. `run-fixtures.ts`'s `expectMetadata` matcher compares by JSON equality, so this one entry freezes all seventeen counters for this document. It is here for `labelWithoutForCount: 2` — the two labels in the markup that name nothing: one with no `for` at all, one with `for=\"\"`. `<label for>` used to be a special case whose guard was `forAttr.length > 0`, and the 2026-10-12 change touched that branch's SOURCE, not its guard, so the count is unchanged — which is exactly why it is pinned: the fix must not have moved a metric.",
+      "documentMetrics": {
+        "totalElements": 33,
+        "semanticCount": 7,
+        "interactiveCount": 11,
+        "formElementCount": 12,
+        "ariaCount": 3,
+        "headingCount": 3,
+        "headingLevelSkips": 0,
+        "imgCount": 0,
+        "imgWithAltCount": 0,
+        "iframeWithoutLoadingCount": 0,
+        "labelWithoutForCount": 2,
+        "inputWithoutLabelCount": 4,
+        "customElementCount": 0,
+        "templateFragmentCount": 0,
+        "baseHrefCount": 0,
+        "externalLinkCount": 0,
+        "internalLinkCount": 0
+      }
+    }
+  ]
+}

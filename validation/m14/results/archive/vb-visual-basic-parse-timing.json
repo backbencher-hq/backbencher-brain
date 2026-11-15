@@ -1,5 +1,5 @@
 {
-  "corpusRoot": "$HOME/fixtures/vb-corpus",
+  "corpusRoot": "/home/ishaq2321/bb_tests/vb-corpus",
   "admitted": 2658,
   "drawn": 2658,
   "slowThresholdMs": 500,

@@ -1,0 +1,14 @@
+// The message-tree contains contract: a message OWNS its fields and nested
+// messages. Two levels of nesting exercise the tree fact this file exists to
+// pin, and the package owns ONLY the top level.
+syntax = "proto3";
+
+package tree.v1;
+
+message Root {
+  message Branch {
+    message Leaf {
+      string name = 1;
+    }
+  }
+}

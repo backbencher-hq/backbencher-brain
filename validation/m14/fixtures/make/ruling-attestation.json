@@ -1,0 +1,71 @@
+{
+  "lane": "make",
+  "instrument": "validation/m14/fixtures/make/tools/key-space-census.mts",
+  "artefact": "validation/m14/fixtures/make/key-space-census.json",
+  "spacesProbed": [
+    "node-types",
+    "attribute-keys",
+    "corpus-count"
+  ],
+  "spaceEvidence": {
+    "node-types": {
+      "pointer": [
+        "corpus",
+        "distinctNodeTypes"
+      ],
+      "observed": 37
+    },
+    "attribute-keys": {
+      "pointer": [
+        "corpus",
+        "keyBindings"
+      ],
+      "observed": 2604
+    }
+  },
+  "rulings": {
+    "extends": {
+      "spaces": [
+        "node-types",
+        "attribute-keys",
+        "corpus-count"
+      ],
+      "constructSites": 0,
+      "pointer": [
+        "perType",
+        "extends",
+        "keyMatchCount"
+      ],
+      "note": "0 key matches over 743 distinct variable_assignment keys and 0 node-type matches over 37 produced types; vocabulary includes inherits/base/parent/superclass"
+    },
+    "implements": {
+      "spaces": [
+        "node-types",
+        "attribute-keys",
+        "corpus-count"
+      ],
+      "constructSites": 0,
+      "pointer": [
+        "perType",
+        "implements",
+        "keyMatchCount"
+      ],
+      "note": "0 key matches; the earlier substring test reported 4 and all four were fragments of paths and variable names (ERL_INTERFACE_LIB_DIR, network_interface_filter)"
+    },
+    "instantiates": {
+      "spaces": [
+        "node-types",
+        "attribute-keys",
+        "corpus-count"
+      ],
+      "constructSites": 0,
+      "pointer": [
+        "perType",
+        "instantiates",
+        "keyMatchCount"
+      ],
+      "note": "0 key matches; the earlier substring test reported 14 and all were fragments (EPMD_NODE_TYPE, NO_TYPE_OPT_ERL_FILES)"
+    }
+  },
+  "scope": "SCOPE: the corpus dir is `otp` (349 Makefiles). The ruling gate's OWN walk over the wider make population observed 10,029 key/value bindings over 697 files, so this attestation is a claim about its admitted population and says so. One admission rule is shared (name ends in Makefile/.mk, under the size cap) and the corpus dir is the lane's own LANES entry."
+}

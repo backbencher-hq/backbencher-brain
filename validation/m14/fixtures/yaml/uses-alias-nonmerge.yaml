@@ -1,0 +1,14 @@
+# `uses` — a NON-MERGE alias READS the value its anchor declares. This is the only
+# construct the yaml lane publishes as `uses` (real-yaml-analyzer.ts visitAlias /
+# resolveAliases: `type = alias.merge ? Extends : Uses`), and it had NO fixture pin
+# while the contract's coverage block named the kind. The merge arm is the control
+# at the bottom: `<<: *base` is INHERITANCE, so it must publish `extends` and must
+# NOT publish `uses` — the two arms are one `merge` flag apart and a rule that
+# collapsed them would pass this fixture's positive half and fail its forbid half.
+defaults: &defaults
+  retries: 3
+service:
+  settings: *defaults
+override:
+  <<: *defaults
+  replicas: 2

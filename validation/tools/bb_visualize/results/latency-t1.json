@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "tier": "t1-synthetic-n100",
+  "status": "measured",
+  "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+  "generatedAt": "2026-11-03T16:19:25.655Z",
+  "verifierCommand": "BB_DATA_DIR=validation/tools/bb_visualize/bbdata npx tsx validation/tools/bb_visualize/latency.ts t1",
+  "environment": {
+    "runtime": "v22.22.1 (node --import tsx)",
+    "host": "pop-os",
+    "loadAverageAtMeasurement": [
+      28.98,
+      24.11,
+      13.92
+    ],
+    "memory": "467 MB rss in-process",
+    "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for the whole sweep; no indexer, no write tool",
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata",
+    "measurement": "in-process handler calls after one warm call per shape; five measured warm runs per shape"
+  },
+  "referenceIndex": {
+    "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+    "projectPath": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+    "files": 97,
+    "symbols": 3512,
+    "relationships": 17068,
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 41250816,
+      "mtimeMs": 1793578676610.7363,
+      "sha256": "4ec36d60cad72bb6ee1708081954d0e9d8eb5b90dbff37eae58caa927a1c86cd"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 15025672,
+      "mtimeMs": 1793578679821.7834,
+      "sha256": "e20822241b2711ec5ca4e71311d03e930522264273530f0e8874133977bbf865"
+    },
+    "source": "COUNT(*) on brain_file / brain_symbol / brain_relationship through a read-only handle"
+  },
+  "budgets": {
+    "t0DefaultP95Ms": 250,
+    "t1DefaultP95Ms": 1000,
+    "t2DefaultP95Ms": 5000,
+    "applied": 1000,
+    "tier": "t1-synthetic-n100"
+  },
+  "summary": [
+    {
+      "variant": "default-text",
+      "args": {},
+      "p50": 186,
+      "p95": 353,
+      "min": 138,
+      "max": 353,
+      "nodes": 200,
+      "links": 465,
+      "bytes": 1676,
+      "truncated": true
+    },
+    {
+      "variant": "json",
+      "args": {
+        "format": "json"
+      },
+      "p50": 318,
+      "p95": 433,
+      "min": 128,
+      "max": 433,
+      "nodes": 200,
+      "links": 465,
+      "bytes": 565892,
+      "truncated": true
+    },
+    {
+      "variant": "html",
+      "args": {
+        "format": "html"
+      },
+      "p50": 327,
+      "p95": 583,
+      "min": 129,
+      "max": 583,
+      "nodes": 0,
+      "links": 0,
+      "bytes": 632599,
+      "truncated": false
+    },
+    {
+      "variant": "max-budget-json",
+      "args": {
+        "format": "json",
+        "maxNodes": 2000,
+        "maxLinks": 20000
+      },
+      "p50": 4231,
+      "p95": 7247,
+      "min": 2081,
+      "max": 7247,
+      "nodes": 2000,
+      "links": 6070,
+      "bytes": 5786369,
+      "truncated": true
+    },
+    {
+      "variant": "symbol-text",
+      "args": {
+        "scope": "symbol",
+        "target": "deep_lookup",
+        "format": "text"
+      },
+      "p50": 3,
+      "p95": 25,
+      "min": 3,
+      "max": 25,
+      "nodes": 0,
+      "links": 0,
+      "bytes": 1123,
+      "truncated": false
+    }
+  ],
+  "defaultP95WithinBudget": true,
+  "coldFirstCallMs": 358,
+  "coldWithinClientTimeout": true,
+  "readPath": null,
+  "raw": [
+    {
+      "variant": "default-text",
+      "ms": 246
+    },
+    {
+      "variant": "json",
+      "ms": 318
+    },
+    {
+      "variant": "html",
+      "ms": 583
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 7247
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 8
+    },
+    {
+      "variant": "default-text",
+      "ms": 151
+    },
+    {
+      "variant": "json",
+      "ms": 128
+    },
+    {
+      "variant": "html",
+      "ms": 129
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 4231
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 3
+    },
+    {
+      "variant": "default-text",
+      "ms": 186
+    },
+    {
+      "variant": "json",
+      "ms": 433
+    },
+    {
+      "variant": "html",
+      "ms": 509
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 6642
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 25
+    },
+    {
+      "variant": "default-text",
+      "ms": 353
+    },
+    {
+      "variant": "json",
+      "ms": 324
+    },
+    {
+      "variant": "html",
+      "ms": 249
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 2081
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 3
+    },
+    {
+      "variant": "default-text",
+      "ms": 138
+    },
+    {
+      "variant": "json",
+      "ms": 172
+    },
+    {
+      "variant": "html",
+      "ms": 327
+    },
+    {
+      "variant": "max-budget-json",
+      "ms": 3295
+    },
+    {
+      "variant": "symbol-text",
+      "ms": 3
+    }
+  ]
+}

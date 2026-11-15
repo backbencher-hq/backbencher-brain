@@ -1,0 +1,151 @@
+{
+  "tier": "T1",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+  "embeddingDisabled": true,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T1",
+    "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+    "validation/tools/bb_ask/t1-latency-local.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": "1",
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 112.44,
+  "warmupChars": 1282,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 200.79,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded in this model space)",
+        "libraryCoverage": "34% (1185/3512 across all models)",
+        "reason": "no-vector-above-threshold",
+        "scanned": "1185/20000",
+        "filtered": "1185",
+        "candidates": "0",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-vector-above-threshold",
+        "confidence": "0.2",
+        "chars": "2217",
+        "lines": "57"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 12.29,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded in this model space)",
+        "libraryCoverage": "34% (1185/3512 across all models)",
+        "scanned": "1185/20000",
+        "filtered": "1185",
+        "candidates": "6",
+        "ranking": "non-discriminative (2 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "6190",
+        "lines": "132"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 72.59,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded in this model space)",
+        "libraryCoverage": "34% (1185/3512 across all models)",
+        "reason": "no-vector-above-threshold",
+        "scanned": "1185/20000",
+        "filtered": "1185",
+        "candidates": "0",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-vector-above-threshold",
+        "confidence": "0.2",
+        "chars": "2397",
+        "lines": "57"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 14.68,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "local-word-vectors-v3",
+        "indexModel": "local-word-vectors-v3",
+        "dimension": "50",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded in this model space)",
+        "libraryCoverage": "34% (1185/3512 across all models)",
+        "scanned": "1185/20000",
+        "filtered": "1185",
+        "candidates": "27",
+        "ranking": "non-discriminative (2 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "8834",
+        "lines": "183"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 164.23,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "34% (1185/3512 symbols embedded in this model space)",
+        "libraryCoverage": "34% (1185/3512 across all models)",
+        "reason": "no-vector-above-threshold",
+        "scanned": "1185/20000",
+        "filtered": "1185",
+        "candidates": "0",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-vector-above-threshold",
+        "confidence": "0.2",
+        "chars": "2185",
+        "lines": "57"
+      }
+    }
+  ],
+  "exactName": null,
+  "indexFiles": {
+    "before": {
+      "db": {
+        "size": 42835968,
+        "mtimeMs": 1793572109267
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793572395205
+      }
+    },
+    "after": {
+      "db": {
+        "size": 42835968,
+        "mtimeMs": 1793572109267
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793572395205
+      }
+    },
+    "dbUnchanged": true
+  },
+  "p50": 72.59,
+  "p95": 200.79,
+  "max": 200.79,
+  "generatedAt": "2026-11-02T00:13:17.503Z"
+}

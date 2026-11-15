@@ -1,0 +1,223 @@
+{
+  "symbol": "buildSchema",
+  "root": {
+    "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+    "name": "buildSchema",
+    "file": "graphql-js/utilities/buildASTSchema.ts",
+    "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/utilities/buildASTSchema.ts",
+    "line": 150,
+    "symbolType": "function",
+    "language": "typescript"
+  },
+  "rootStale": false,
+  "rootMatch": {
+    "requested": "buildSchema",
+    "via": "exact",
+    "nameMatches": 1
+  },
+  "resolution": {
+    "through": "direct"
+  },
+  "rule": {
+    "relationshipTypes": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements"
+    ],
+    "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+    "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+    "maxDepth": 5
+  },
+  "budget": {
+    "maxNodes": 200,
+    "maxDepth": 5,
+    "totalScanCeiling": 50000,
+    "totalExpansionCeiling": 2000,
+    "totalTimeCeilingMs": 4000
+  },
+  "traversal": {
+    "depthReached": 0,
+    "engineTruncated": false,
+    "engineTruncationReason": null,
+    "edgeLimit": 200,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    }
+  },
+  "cascade": {
+    "exact": 6,
+    "member": 0,
+    "rangeFolded": 0
+  },
+  "countVerification": {
+    "ran": false,
+    "timedOut": false,
+    "boundarySuspect": false,
+    "complete": null
+  },
+  "reproducible": true,
+  "impact": [
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+      "name": "complete",
+      "file": "graphql-js/execution/__tests__/lists-test.ts",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/execution/__tests__/lists-test.ts",
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/execution/__tests__/lists-test.ts",
+        "line": 38
+      },
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36:buildSchema:calls:38",
+      "declarationLine": 36,
+      "symbolType": "function",
+      "language": "typescript",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    },
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52",
+      "name": "cycleSDL",
+      "file": "graphql-js/utilities/__tests__/buildASTSchema-test.ts",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/utilities/__tests__/buildASTSchema-test.ts",
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/buildASTSchema-test.ts",
+        "line": 53
+      },
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52:buildSchema:calls:53",
+      "declarationLine": 52,
+      "symbolType": "function",
+      "language": "typescript",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    },
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37",
+      "name": "cycleIntrospection",
+      "file": "graphql-js/utilities/__tests__/buildClientSchema-test.ts",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/utilities/__tests__/buildClientSchema-test.ts",
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/buildClientSchema-test.ts",
+        "line": 38
+      },
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37:buildSchema:calls:38",
+      "declarationLine": 37,
+      "symbolType": "function",
+      "language": "typescript",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    },
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11",
+      "name": "sortSDL",
+      "file": "graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts",
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts",
+        "line": 12
+      },
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11:buildSchema:calls:12",
+      "declarationLine": 11,
+      "symbolType": "function",
+      "language": "typescript",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    },
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33",
+      "name": "expectPrintedSchema",
+      "file": "graphql-js/utilities/__tests__/printSchema-test.ts",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/utilities/__tests__/printSchema-test.ts",
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/utilities/__tests__/printSchema-test.ts",
+        "line": 36
+      },
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33:buildSchema:calls:36",
+      "declarationLine": 33,
+      "symbolType": "function",
+      "language": "typescript",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    },
+    {
+      "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+      "name": "buildAssertion",
+      "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+      "callSite": {
+        "kind": "call-site",
+        "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+        "line": 10
+      },
+      "rowId": "6623498ebe135a8cab4c46270ea6737f1d4526e3:rel:6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9:buildSchema:calls:10",
+      "declarationLine": 9,
+      "symbolType": "function",
+      "language": "typescript",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.9,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    }
+  ],
+  "shownCount": 6,
+  "directCount": 6,
+  "totalCountIfKnown": 6,
+  "truncated": false,
+  "truncationReason": null,
+  "freshness": {
+    "fresh": 7,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

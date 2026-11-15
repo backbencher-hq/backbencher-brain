@@ -1,0 +1,1337 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_doc",
+  "generatedAt": "2026-11-01T18:43:08.786Z",
+  "env": {
+    "BB_DATA_DIR": "validation/tools/bb_doc/bbdata",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "fixture": {
+    "root": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_doc/work/fixture-JfzaHb",
+    "projectId": "bb0464717dd666977dff8da4a9171323c8df53e6",
+    "files": 5
+  },
+  "modeSummaries": {
+    "symbol": {
+      "sections": [
+        "api",
+        "behavior",
+        "dependencies",
+        "tests",
+        "limitations"
+      ],
+      "facts": 9,
+      "citations": 4,
+      "fileCitations": 2,
+      "indexCitations": 2,
+      "unknowns": 1,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 1326,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "1 file(s) and 1 symbol(s) in scope, 9 cited claim(s) across 5 section(s) from 5 source(s). No indexed evidence was found for: Tests.",
+      "bytes": 7744,
+      "ms": 49
+    },
+    "file": {
+      "sections": [
+        "overview",
+        "public-symbols",
+        "dependencies",
+        "risks"
+      ],
+      "facts": 10,
+      "citations": 10,
+      "fileCitations": 5,
+      "indexCitations": 5,
+      "unknowns": 1,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 1498,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 2,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "1 file(s) and 2 symbol(s) in scope, 10 cited claim(s) across 4 section(s) from 10 source(s).",
+      "bytes": 8832,
+      "ms": 44
+    },
+    "module": {
+      "sections": [
+        "purpose",
+        "entry-points",
+        "public-surface",
+        "module-graph"
+      ],
+      "facts": 26,
+      "citations": 26,
+      "fileCitations": 17,
+      "indexCitations": 9,
+      "unknowns": 1,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 3169,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 4,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "1 file(s) and 2 symbol(s) in scope, 26 cited claim(s) across 4 section(s) from 27 source(s).",
+      "bytes": 18293,
+      "ms": 270
+    },
+    "feature": {
+      "sections": [
+        "entry-points",
+        "flow",
+        "components",
+        "test-coverage"
+      ],
+      "facts": 27,
+      "citations": 17,
+      "fileCitations": 12,
+      "indexCitations": 5,
+      "unknowns": 16,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 3602,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 5,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "4 file(s) and 8 symbol(s) in scope, 54 cited claim(s) across 4 section(s) from 30 source(s).",
+      "bytes": 19962,
+      "ms": 560
+    },
+    "api": {
+      "sections": [
+        "endpoints",
+        "inputs-outputs",
+        "errors",
+        "examples",
+        "dependencies"
+      ],
+      "facts": 10,
+      "citations": 8,
+      "fileCitations": 5,
+      "indexCitations": 3,
+      "unknowns": 3,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 1930,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 3,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "5 file(s) and 1 symbol(s) in scope, 10 cited claim(s) across 5 section(s) from 13 source(s). No indexed evidence was found for: Errors, Examples.",
+      "bytes": 10611,
+      "ms": 137
+    },
+    "project": {
+      "sections": [
+        "architecture",
+        "inventory",
+        "risks",
+        "documentation-map",
+        "dependencies"
+      ],
+      "facts": 30,
+      "citations": 25,
+      "fileCitations": 16,
+      "indexCitations": 9,
+      "unknowns": 5,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 3755,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 3,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "5 file(s) and 13 symbol(s) in scope, 56 cited claim(s) across 5 section(s) from 47 source(s).",
+      "bytes": 21241,
+      "ms": 349
+    },
+    "coverage": {
+      "sections": [
+        "documented",
+        "undocumented",
+        "stale",
+        "unsupported"
+      ],
+      "facts": 15,
+      "citations": 16,
+      "fileCitations": 16,
+      "indexCitations": 0,
+      "unknowns": 1,
+      "passed": true,
+      "budget": {
+        "passed": true,
+        "estimatedTokens": 2406,
+        "maxTokens": 4000
+      },
+      "freshness": {
+        "fresh": 4,
+        "stale": 0,
+        "missing": 0,
+        "staleRatio": 0,
+        "mode": "complete",
+        "remediation": ""
+      },
+      "summary": "5 file(s) and 13 symbol(s) in scope, 15 cited claim(s) across 4 section(s) from 45 source(s).",
+      "bytes": 13592,
+      "ms": 163
+    }
+  },
+  "tokenObservations": [
+    {
+      "maxTokens": 1,
+      "reportedMaxTokens": 1,
+      "estimated": 1703,
+      "passed": false,
+      "wireTokens": 2342,
+      "requiredPresent": true,
+      "droppedFacts": 50
+    },
+    {
+      "maxTokens": 50,
+      "reportedMaxTokens": 50,
+      "estimated": 1705,
+      "passed": false,
+      "wireTokens": 2345,
+      "requiredPresent": true,
+      "droppedFacts": 50
+    },
+    {
+      "maxTokens": 500,
+      "reportedMaxTokens": 500,
+      "estimated": 1708,
+      "passed": false,
+      "wireTokens": 2348,
+      "requiredPresent": true,
+      "droppedFacts": 50
+    },
+    {
+      "maxTokens": 4000,
+      "reportedMaxTokens": 4000,
+      "estimated": 3755,
+      "passed": true,
+      "wireTokens": 5311,
+      "requiredPresent": true,
+      "droppedFacts": 26
+    },
+    {
+      "maxTokens": 16000,
+      "reportedMaxTokens": 16000,
+      "estimated": 5873,
+      "passed": true,
+      "wireTokens": 8357,
+      "requiredPresent": true,
+      "droppedFacts": 0
+    },
+    {
+      "maxTokens": 20000,
+      "reportedMaxTokens": 16000,
+      "estimated": 5873,
+      "passed": true,
+      "wireTokens": 8357,
+      "requiredPresent": true,
+      "droppedFacts": 0
+    },
+    {
+      "maxTokens": 0,
+      "reportedMaxTokens": 4000,
+      "estimated": 3755,
+      "passed": true,
+      "wireTokens": 5311,
+      "requiredPresent": true,
+      "droppedFacts": 26
+    }
+  ],
+  "observations": [
+    {
+      "id": "P1.symbol.declared-sections",
+      "ok": true,
+      "detail": "sections=api,behavior,dependencies,tests,limitations missing="
+    },
+    {
+      "id": "P1.symbol.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=9 uncited=0"
+    },
+    {
+      "id": "P1.symbol.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.symbol.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.symbol.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.symbol.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.symbol.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.symbol.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.symbol.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# symbol: add\\n\\n1 file(s) and 1 symbol(s) in scope, 9 cited c\" json title=symbol: add"
+    },
+    {
+      "id": "P1.symbol.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.symbol.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=2 indexCitations=2"
+    },
+    {
+      "id": "P1.symbol.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=1326 wire~1936 ratio=1.46"
+    },
+    {
+      "id": "P1.file.declared-sections",
+      "ok": true,
+      "detail": "sections=overview,public-symbols,dependencies,risks missing="
+    },
+    {
+      "id": "P1.file.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=10 uncited=0"
+    },
+    {
+      "id": "P1.file.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.file.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.file.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.file.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.file.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.file.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":2,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.file.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# file: src/lib/math.ts\\n\\n1 file(s) and 2 symbol(s) in scope,\" json title=file: src/lib/math.ts"
+    },
+    {
+      "id": "P1.file.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.file.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=5 indexCitations=5"
+    },
+    {
+      "id": "P1.file.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=1498 wire~2208 ratio=1.47"
+    },
+    {
+      "id": "P1.module.declared-sections",
+      "ok": true,
+      "detail": "sections=purpose,entry-points,public-surface,module-graph missing="
+    },
+    {
+      "id": "P1.module.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=26 uncited=0"
+    },
+    {
+      "id": "P1.module.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.module.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.module.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.module.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.module.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.module.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":4,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.module.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# module: src/lib\\n\\n1 file(s) and 2 symbol(s) in scope, 26 ci\" json title=module: src/lib"
+    },
+    {
+      "id": "P1.module.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.module.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=17 indexCitations=9"
+    },
+    {
+      "id": "P1.module.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=3169 wire~4574 ratio=1.44"
+    },
+    {
+      "id": "P1.feature.declared-sections",
+      "ok": true,
+      "detail": "sections=entry-points,flow,components,test-coverage missing="
+    },
+    {
+      "id": "P1.feature.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=27 uncited=0"
+    },
+    {
+      "id": "P1.feature.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.feature.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.feature.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.feature.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.feature.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.feature.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":5,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.feature.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# feature: add\\n\\n4 file(s) and 8 symbol(s) in scope, 54 cited\" json title=feature: add"
+    },
+    {
+      "id": "P1.feature.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.feature.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=12 indexCitations=5"
+    },
+    {
+      "id": "P1.feature.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=3602 wire~4991 ratio=1.39"
+    },
+    {
+      "id": "P1.api.declared-sections",
+      "ok": true,
+      "detail": "sections=endpoints,inputs-outputs,errors,examples,dependencies missing="
+    },
+    {
+      "id": "P1.api.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=10 uncited=0"
+    },
+    {
+      "id": "P1.api.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.api.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.api.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.api.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.api.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.api.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":3,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.api.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# api documentation\\n\\n5 file(s) and 1 symbol(s) in scope, 10 \" json title=api documentation"
+    },
+    {
+      "id": "P1.api.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.api.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=5 indexCitations=3"
+    },
+    {
+      "id": "P1.api.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=1930 wire~2653 ratio=1.37"
+    },
+    {
+      "id": "P1.project.declared-sections",
+      "ok": true,
+      "detail": "sections=architecture,inventory,risks,documentation-map,dependencies missing="
+    },
+    {
+      "id": "P1.project.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=30 uncited=0"
+    },
+    {
+      "id": "P1.project.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.project.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.project.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.project.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.project.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.project.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":3,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.project.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# project documentation\\n\\n5 file(s) and 13 symbol(s) in scope\" json title=project documentation"
+    },
+    {
+      "id": "P1.project.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.project.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=16 indexCitations=9"
+    },
+    {
+      "id": "P1.project.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=3755 wire~5311 ratio=1.41"
+    },
+    {
+      "id": "P1.coverage.declared-sections",
+      "ok": true,
+      "detail": "sections=documented,undocumented,stale,unsupported missing="
+    },
+    {
+      "id": "P1.coverage.every-non-unknown-fact-cited",
+      "ok": true,
+      "detail": "facts=15 uncited=0"
+    },
+    {
+      "id": "P1.coverage.quality-fields",
+      "ok": true,
+      "detail": "{\"factuality\":true,\"references\":true,\"completeness\":true,\"freshness\":true,\"budget\":true}"
+    },
+    {
+      "id": "P1.coverage.passed-is-conjunction",
+      "ok": true,
+      "detail": "passed=true conjunction=true"
+    },
+    {
+      "id": "P1.coverage.unknowns-name-rendered-sections",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.coverage.citations-resolve",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.coverage.citation-spans-in-file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.coverage.freshness-envelope-in-json",
+      "ok": true,
+      "detail": "{\"fresh\":4,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "id": "P1.coverage.markdown-title-matches-json",
+      "ok": true,
+      "detail": "md head=\"# coverage documentation\\n\\n5 file(s) and 13 symbol(s) in scop\" json title=coverage documentation"
+    },
+    {
+      "id": "P1.coverage.markdown-has-quality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P1.coverage.sources-section-iff-file-citations",
+      "ok": true,
+      "detail": "sources=true fileCitations=16 indexCitations=0"
+    },
+    {
+      "id": "P1.coverage.budget-estimate-vs-wire",
+      "ok": true,
+      "detail": "estimate=2406 wire~3398 ratio=1.41"
+    },
+    {
+      "id": "P2.audience.developer.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P2.audience.developer.tags",
+      "ok": true,
+      "detail": "project,developer,standard"
+    },
+    {
+      "id": "P2.audience.developer.evidence-index-optional",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P2.audience.maintainer.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies,evidence-index"
+    },
+    {
+      "id": "P2.audience.maintainer.tags",
+      "ok": true,
+      "detail": "project,maintainer,standard"
+    },
+    {
+      "id": "P2.audience.maintainer.evidence-index-optional",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies,evidence-index"
+    },
+    {
+      "id": "P2.audience.user.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P2.audience.user.tags",
+      "ok": true,
+      "detail": "project,user,standard"
+    },
+    {
+      "id": "P2.audience.user.evidence-index-optional",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P2.audience.website.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies,evidence-index"
+    },
+    {
+      "id": "P2.audience.website.tags",
+      "ok": true,
+      "detail": "project,website,standard"
+    },
+    {
+      "id": "P2.audience.website.evidence-index-optional",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies,evidence-index"
+    },
+    {
+      "id": "P2.detail.brief.per-section",
+      "ok": true,
+      "detail": "perSection=5 expected=5"
+    },
+    {
+      "id": "P2.detail.brief.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map"
+    },
+    {
+      "id": "P2.detail.brief.optional-all-edges",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map"
+    },
+    {
+      "id": "P2.detail.brief.facts-within-cap",
+      "ok": true,
+      "detail": "architecture:4,inventory:5,risks:1,documentation-map:5"
+    },
+    {
+      "id": "P2.detail.standard.per-section",
+      "ok": true,
+      "detail": "perSection=20 expected=20"
+    },
+    {
+      "id": "P2.detail.standard.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P2.detail.standard.optional-all-edges",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P2.detail.standard.facts-within-cap",
+      "ok": true,
+      "detail": "architecture:4,inventory:9,risks:1,documentation-map:6,dependencies:10"
+    },
+    {
+      "id": "P2.detail.deep.per-section",
+      "ok": true,
+      "detail": "perSection=60 expected=60"
+    },
+    {
+      "id": "P2.detail.deep.required-present",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies,all-edges"
+    },
+    {
+      "id": "P2.detail.deep.optional-all-edges",
+      "ok": true,
+      "detail": "architecture,inventory,risks,documentation-map,dependencies,all-edges"
+    },
+    {
+      "id": "P2.detail.deep.facts-within-cap",
+      "ok": true,
+      "detail": "architecture:4,inventory:9,risks:1,documentation-map:6,dependencies:6,all-edges:5"
+    },
+    {
+      "id": "P2.includeExamples.honest-unknown",
+      "ok": true,
+      "detail": "No indexed test relationship for add, and no indexed test fi | No example was emitted: an example requires a cited source s"
+    },
+    {
+      "id": "P2.includeDiagrams.honest-unknown",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "id": "P2.includeDiagrams.diagrams-empty",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "id": "P2.includeTests.false-still-includes-tests-in-symbol-mode",
+      "ok": true,
+      "detail": "off=0 on=0"
+    },
+    {
+      "id": "P2.includeTests.file-mode-observable",
+      "ok": false,
+      "detail": "overview,public-symbols,dependencies,risks"
+    },
+    {
+      "id": "P2.limit.1.observed",
+      "ok": true,
+      "detail": "perSection=1 scopeFiles-limited sections=5"
+    },
+    {
+      "id": "P2.limit.20.observed",
+      "ok": true,
+      "detail": "perSection=20 scopeFiles-limited sections=5"
+    },
+    {
+      "id": "P2.limit.100.observed",
+      "ok": true,
+      "detail": "perSection=100 scopeFiles-limited sections=5"
+    },
+    {
+      "id": "P2.limit.101.observed",
+      "ok": true,
+      "detail": "perSection=100 scopeFiles-limited sections=5"
+    },
+    {
+      "id": "P2.limit.1000.observed",
+      "ok": true,
+      "detail": "perSection=100 scopeFiles-limited sections=5"
+    },
+    {
+      "id": "P2.limit.0.observed",
+      "ok": true,
+      "detail": "perSection=1 scopeFiles-limited sections=5"
+    },
+    {
+      "id": "P2.maxTokens.1.observed",
+      "ok": true,
+      "detail": "reportedMax=1 estimate=1703 passed=false wire~2342 required=true"
+    },
+    {
+      "id": "P2.maxTokens.50.observed",
+      "ok": true,
+      "detail": "reportedMax=50 estimate=1705 passed=false wire~2345 required=true"
+    },
+    {
+      "id": "P2.maxTokens.500.observed",
+      "ok": true,
+      "detail": "reportedMax=500 estimate=1708 passed=false wire~2348 required=true"
+    },
+    {
+      "id": "P2.maxTokens.4000.observed",
+      "ok": true,
+      "detail": "reportedMax=4000 estimate=3755 passed=true wire~5311 required=true"
+    },
+    {
+      "id": "P2.maxTokens.16000.observed",
+      "ok": true,
+      "detail": "reportedMax=16000 estimate=5873 passed=true wire~8357 required=true"
+    },
+    {
+      "id": "P2.maxTokens.20000.observed",
+      "ok": true,
+      "detail": "reportedMax=16000 estimate=5873 passed=true wire~8357 required=true"
+    },
+    {
+      "id": "P2.maxTokens.0.observed",
+      "ok": true,
+      "detail": "reportedMax=4000 estimate=3755 passed=true wire~5311 required=true"
+    },
+    {
+      "id": "P3.file.src/lib/math.ts.resolves",
+      "ok": true,
+      "detail": "paths=[\"src/lib/math.ts\"]"
+    },
+    {
+      "id": "P3.file.src/lib/math.ts.absent-case-explains-five-forms",
+      "ok": true,
+      "detail": "(no explanation)"
+    },
+    {
+      "id": "P3.file../src/lib/math.ts.resolves",
+      "ok": true,
+      "detail": "paths=[\"src/lib/math.ts\"]"
+    },
+    {
+      "id": "P3.file../src/lib/math.ts.absent-case-explains-five-forms",
+      "ok": true,
+      "detail": "(no explanation)"
+    },
+    {
+      "id": "P3.file./home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_doc/work/fixture-JfzaHb/src/lib/math.ts.resolves",
+      "ok": true,
+      "detail": "paths=[\"src/lib/math.ts\"]"
+    },
+    {
+      "id": "P3.file./home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_doc/work/fixture-JfzaHb/src/lib/math.ts.absent-case-explains-five-forms",
+      "ok": true,
+      "detail": "(no explanation)"
+    },
+    {
+      "id": "P3.file.src/lib.resolves",
+      "ok": true,
+      "detail": "paths=[\"src/lib/math.ts\"]"
+    },
+    {
+      "id": "P3.file.src/lib.absent-case-explains-five-forms",
+      "ok": true,
+      "detail": "(no explanation)"
+    },
+    {
+      "id": "P3.file.math.resolves",
+      "ok": true,
+      "detail": "paths=[\"src/lib/math.ts\"]"
+    },
+    {
+      "id": "P3.file.math.absent-case-explains-five-forms",
+      "ok": true,
+      "detail": "(no explanation)"
+    },
+    {
+      "id": "P3.file.math.ts.resolves",
+      "ok": true,
+      "detail": "paths=[\"src/lib/math.ts\"]"
+    },
+    {
+      "id": "P3.file.math.ts.absent-case-explains-five-forms",
+      "ok": true,
+      "detail": "(no explanation)"
+    },
+    {
+      "id": "P3.file.no/such/file.ts.resolves",
+      "ok": false,
+      "detail": "paths=[]"
+    },
+    {
+      "id": "P3.file.no/such/file.ts.absent-case-explains-five-forms",
+      "ok": false,
+      "detail": "No indexed file matched this target, so there is nothing about it to describe."
+    },
+    {
+      "id": "P3.symbol-alias.symbol",
+      "ok": true,
+      "detail": "{\n  \"schemaVersion\": \"1\",\n  \"mode\": \"symbol\",\n  \"title\": \"symbol: add\",\n  \"summary\": \"1 file(s) and 1 symbol(s) in scope"
+    },
+    {
+      "id": "P3.symbol-alias.symbolName",
+      "ok": true,
+      "detail": "{\n  \"schemaVersion\": \"1\",\n  \"mode\": \"symbol\",\n  \"title\": \"symbol: add\",\n  \"summary\": \"1 file(s) and 1 symbol(s) in scope"
+    },
+    {
+      "id": "P3.symbol-alias.query",
+      "ok": true,
+      "detail": "{\n  \"schemaVersion\": \"1\",\n  \"mode\": \"symbol\",\n  \"title\": \"symbol: add\",\n  \"summary\": \"1 file(s) and 1 symbol(s) in scope"
+    },
+    {
+      "id": "P3.symbol-alias.conflict-refused",
+      "ok": true,
+      "detail": "error: bb_doc: target and query are aliases with different values (\"add\" vs \"main\") — pass one"
+    },
+    {
+      "id": "P3.symbol-alias.blank-does-not-satisfy-required",
+      "ok": true,
+      "detail": "bb_doc symbol mode requires target"
+    },
+    {
+      "id": "P3.module.src.purpose-facts",
+      "ok": true,
+      "detail": "sections=purpose:3,entry-points:13,public-surface:5,module-graph:7 unknowns=2"
+    },
+    {
+      "id": "P3.module.src/lib.purpose-facts",
+      "ok": true,
+      "detail": "sections=purpose:1,entry-points:13,public-surface:2,module-graph:10 unknowns=1"
+    },
+    {
+      "id": "P3.module.no/such/module.purpose-facts",
+      "ok": true,
+      "detail": "sections=purpose:0,entry-points:13,public-surface:0,module-graph:4 unknowns=3"
+    },
+    {
+      "id": "P3.feature.semantic-failure-declared",
+      "ok": false,
+      "detail": "[\"No indexed test relationship for add, and no indexed test file names it.\",\"No docstring was indexed for jobs and none is present in the comment style this \",\"No indexed test relationship for jobs, and no indexed test file names it.\",\"No docstring was indexed for build and none is present in the comment style this\",\"No indexed test relationship for build, and no indexed test file names it.\",\"No docstring was indexed for item_0 and none is present in the comment style thi\",\"No indexed test relationship for item_0, and no indexed test file names it.\",\"No indexed test relationship for render, and no indexed test file names it.\",\"No indexed test relationship for audit_login, and no indexed test file names it.\",\"No docstring was indexed for silent and none is present in the comment style thi\",\"No indexed test relationship for silent, and no indexed test file names it.\",\"4 relationship(s) name a target the index did not resolve to a symbol; those edg\",\"The per-section evidence cap is 20 at detail \\\"standard\\\", so 4 of 24 components i\",\"10 more components item(s) were dropped to stay inside the 4000-token budget.\",\"9 more entry points item(s) were dropped to stay inside the 4000-token budget.\",\"8 more flow item(s) were dropped to stay inside the 4000-token budget.\"]"
+    },
+    {
+      "id": "P3.api.planted-endpoint-found",
+      "ok": true,
+      "detail": "[\"function main() is defined in src/app.ts at lines 3-3 and is bound to the API contract /lo\"]"
+    },
+    {
+      "id": "P3.api.errors-section-explains-limit",
+      "ok": true,
+      "detail": "[\"The index has no table, column or symbol type that records a thrown, raised or returned error, so no error surface can b\"]"
+    },
+    {
+      "id": "P3.project.target-is-metadata-only",
+      "ok": true,
+      "detail": "canonicalPath=src/lib sameSummary=true"
+    },
+    {
+      "id": "P3.coverage.classifies-undocumented-as-unknown",
+      "ok": true,
+      "detail": "documented=4 undocumented=9"
+    },
+    {
+      "id": "P3.coverage.marks-python-hash-undocumented-unverified",
+      "ok": true,
+      "detail": "[\"9 symbol(s) counted as undocumented are in a language whose comment marker is \\\"#\\\", which this tool's source reader does \"]"
+    },
+    {
+      "id": "P4.missing-mode.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: missing required option: mode"
+    },
+    {
+      "id": "P4.bad-mode.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: mode must be one of: symbol, file, module, feature, api, project, coverage"
+    },
+    {
+      "id": "P4.missing-target-symbol.refused-with-isError",
+      "ok": true,
+      "detail": "bb_doc symbol mode requires target"
+    },
+    {
+      "id": "P4.missing-target-file.refused-with-isError",
+      "ok": true,
+      "detail": "bb_doc file mode requires target"
+    },
+    {
+      "id": "P4.missing-target-module.refused-with-isError",
+      "ok": true,
+      "detail": "bb_doc module mode requires target"
+    },
+    {
+      "id": "P4.missing-target-feature.refused-with-isError",
+      "ok": true,
+      "detail": "bb_doc feature mode requires target"
+    },
+    {
+      "id": "P4.bad-format.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: format must be one of: markdown, json"
+    },
+    {
+      "id": "P4.bad-audience.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: audience must be one of: developer, maintainer, user, website"
+    },
+    {
+      "id": "P4.bad-detail.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: detail must be one of: brief, standard, deep"
+    },
+    {
+      "id": "P4.bad-limit-type.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: limit must be number"
+    },
+    {
+      "id": "P4.fractional-limit.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: limit must be a whole number (got 3.7)"
+    },
+    {
+      "id": "P4.negative-limit.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: limit must be non-negative"
+    },
+    {
+      "id": "P4.unknown-option.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: unknown or irrelevant options: arbitrary — accepted options: mode, target, format, audience, detail, includeExamples, include"
+    },
+    {
+      "id": "P4.null-mode.refused-with-isError",
+      "ok": true,
+      "detail": "error: bb_doc: missing required option: mode"
+    },
+    {
+      "id": "P5.symbol.empty-not-passing",
+      "ok": true,
+      "detail": "passed=false facts=0 unknowns=6 sections=api,behavior,dependencies,tests,limitations"
+    },
+    {
+      "id": "P5.symbol.empty-explained",
+      "ok": true,
+      "detail": "unknowns=not-indexed,not-indexed,not-indexed,not-indexed,not-indexed,not-indexed"
+    },
+    {
+      "id": "P5.file.empty-not-passing",
+      "ok": true,
+      "detail": "passed=false facts=0 unknowns=5 sections=overview,public-symbols,dependencies,risks"
+    },
+    {
+      "id": "P5.file.empty-explained",
+      "ok": true,
+      "detail": "unknowns=not-indexed,not-indexed,not-indexed,not-indexed,not-indexed"
+    },
+    {
+      "id": "P5.module.empty-not-passing",
+      "ok": false,
+      "detail": "passed=true facts=2 unknowns=4 sections=purpose,entry-points,public-surface,module-graph"
+    },
+    {
+      "id": "P5.module.empty-explained",
+      "ok": true,
+      "detail": "unknowns=not-indexed,not-indexed,not-indexed,not-indexed"
+    },
+    {
+      "id": "P5.feature.empty-not-passing",
+      "ok": true,
+      "detail": "passed=false facts=0 unknowns=5 sections=entry-points,flow,components,test-coverage"
+    },
+    {
+      "id": "P5.feature.empty-explained",
+      "ok": true,
+      "detail": "unknowns=not-indexed,not-indexed,not-indexed,not-indexed,not-indexed"
+    },
+    {
+      "id": "P5.api.empty-not-passing",
+      "ok": true,
+      "detail": "passed=false facts=0 unknowns=4 sections=endpoints,inputs-outputs,errors,examples,dependencies"
+    },
+    {
+      "id": "P5.api.empty-explained",
+      "ok": false,
+      "detail": "unknowns=not-indexed,not-indexed,not-indexed,not-indexed"
+    },
+    {
+      "id": "P5.project.empty-not-passing",
+      "ok": false,
+      "detail": "passed=true facts=3 unknowns=2 sections=architecture,inventory,risks,documentation-map,dependencies"
+    },
+    {
+      "id": "P5.project.empty-explained",
+      "ok": false,
+      "detail": "unknowns=not-indexed,not-indexed"
+    },
+    {
+      "id": "P5.coverage.empty-not-passing",
+      "ok": true,
+      "detail": "passed=false facts=0 unknowns=4 sections=documented,undocumented,stale,unsupported"
+    },
+    {
+      "id": "P5.coverage.empty-explained",
+      "ok": false,
+      "detail": "unknowns=not-indexed,not-indexed,not-indexed,not-indexed"
+    },
+    {
+      "id": "P6.deterministic-except-generatedAt",
+      "ok": true,
+      "detail": "firstDiff=15068: vs "
+    },
+    {
+      "id": "P6.snapshotId-stable",
+      "ok": true,
+      "detail": "f2272cf9b82b0344e3b1c2eb54ba4ad6"
+    },
+    {
+      "id": "P7.bounds-identity",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P7.bounds-available-capped-emitted",
+      "ok": true,
+      "detail": "[{\"id\":\"architecture\",\"a\":4,\"c\":4,\"d\":0,\"e\":4},{\"id\":\"inventory\",\"a\":18,\"c\":18,\"d\":9,\"e\":9},{\"id\":\"risks\",\"a\":1,\"c\":1,\"d\":0,\"e\":1},{\"id\":\"documentation-map\",\"a\":13,\"c\":13,\"d\":7,\"e\":6},{\"id\":\"dependencies\",\"a\":24,\"c\":24,\"d\":12,\"e\":12}]"
+    },
+    {
+      "id": "P7.estimate-is-not-an-undercount",
+      "ok": false,
+      "detail": "estimate*4=15496 actualChars=21884"
+    },
+    {
+      "id": "P7.tiny-budget-unmet-not-refused",
+      "ok": true,
+      "detail": "budgetPassed=false covered=4/4 unknownReasons=not-indexed,output-budget"
+    },
+    {
+      "id": "P7.max-token-ceiling",
+      "ok": true,
+      "detail": "maxTokens=16000 estimate=6109"
+    },
+    {
+      "id": "P7.markdown-escapes-active-characters",
+      "ok": true,
+      "detail": "-  _(100%)_ Its documentation (the source file on disk) says: Renders a map for the \\*page\\*; returns a \\[pointer\\].[1]"
+    },
+    {
+      "id": "P7.absent-parameter-list-is-not-name()",
+      "ok": false,
+      "detail": "function main(…): number is defined in src/app.ts at lines 3-3; the index records no parameter list for it, so its arguments are not described here. | main is bound to the API contract /login. | main is declared public."
+    },
+    {
+      "id": "P7.coverage-symbol-bound-declared",
+      "ok": true,
+      "detail": "classified=13 indexed=13 scopeUnknown=false"
+    },
+    {
+      "id": "P7.project-documentation-map-bound-declared",
+      "ok": false,
+      "detail": "mapFacts=6 indexed=13 fileScopeUnknown=false"
+    },
+    {
+      "id": "P7.explainEmptyRequiredSections-throws",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "id": "P7.assertUnknownsNameRenderedSections-throws",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "id": "P8.reference-md-denies-refresh",
+      "ok": false,
+      "detail": "refresh the index"
+    },
+    {
+      "id": "P8.generated-page-denies-refresh",
+      "ok": true,
+      "detail": "never refreshes implicitly"
+    },
+    {
+      "id": "P8.generated-page-affirms-refresh",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "P8.bb-doc-diagram-contradiction",
+      "ok": true,
+      "detail": "both sentences present"
+    },
+    {
+      "id": "P8.examples-section-names-match-measured",
+      "ok": false,
+      "detail": "example=Signature,Dependencies,Limitations,Sources measured=API,Behavior,Dependencies,Tests,Limitations,Unknowns,Quality,Sources,Index"
+    },
+    {
+      "id": "P8.examples-project-expected-matches-declared",
+      "ok": false,
+      "detail": "example carries \"expected\": 2; declared project set has 4"
+    },
+    {
+      "id": "P8.page-error-claim-unsupported-format",
+      "ok": true,
+      "detail": "error: bb_doc: format must be one of: markdown, json"
+    },
+    {
+      "id": "P8.bb-doc-target-requirements-match",
+      "ok": true,
+      "detail": "statement present; handler enforces exactly these four"
+    },
+    {
+      "id": "P8.json-citation-shape",
+      "ok": true,
+      "detail": "{\"id\":\"symbol:src/lib/math.ts:add:2-2\",\"kind\":\"symbol\",\"path\":\"src/lib/math.ts\",\"symbol\":\"add\",\"lineStart\":2,\"lineEnd\":2,\"evidence\":\"Indexed function add\",\"freshness\":\"fresh\",\"confidence\":1}"
+    }
+  ],
+  "summary": {
+    "total": 204,
+    "failed": 15,
+    "failing": [
+      "P2.includeTests.file-mode-observable",
+      "P3.file.no/such/file.ts.resolves",
+      "P3.file.no/such/file.ts.absent-case-explains-five-forms",
+      "P3.feature.semantic-failure-declared",
+      "P5.module.empty-not-passing",
+      "P5.api.empty-explained",
+      "P5.project.empty-not-passing",
+      "P5.project.empty-explained",
+      "P5.coverage.empty-explained",
+      "P7.estimate-is-not-an-undercount",
+      "P7.absent-parameter-list-is-not-name()",
+      "P7.project-documentation-map-bound-declared",
+      "P8.reference-md-denies-refresh",
+      "P8.examples-section-names-match-measured",
+      "P8.examples-project-expected-matches-declared"
+    ]
+  }
+}

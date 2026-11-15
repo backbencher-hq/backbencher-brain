@@ -1,0 +1,310 @@
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:24] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:24] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:24] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 12ms [plan=linear largest-intermediate=3]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 7 relationships (0 patterns) in 13ms
+  Computing gravity scores...
+  ✓ gravity in 3ms
+  Analyzing taint flows & security...
+[INFO] [12:23:24] [project-health] project health computed {"projectId":"b790e2bf53ae9bd79cbb3746e9343ab039d4d3e2","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(4ms) + health(9ms)
+  ✓ health check in 6ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 3 symbols are indexed.
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: POSITIVE: SQLi findings exist (true positive) found 1 SQLi
+  ok: POSITIVE: SQLi finding has severity critical
+  ok: POSITIVE: SQLi finding carries evidence-linked flow chain max flow depth: 1
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:24] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:24] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:25] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 8ms [plan=linear largest-intermediate=3]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:25] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"05241071","danglingSources":5,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 2ms
+  Computing gravity scores...
+  ✓ gravity in 1ms
+  Analyzing taint flows & security...
+[INFO] [12:23:25] [project-health] project health computed {"projectId":"0524107119427f22345074bb6aeeaab3f82a64d0","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(3ms) + health(3ms)
+  ✓ health check in 2ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 3 symbols are indexed.
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: NEGATIVE: parameterized-SQL blind spot is truthfully documented (analyzer flags it; docs admit it) resolved SQLi=1 (analyzer limitation; docs must state it)
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:25] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:25] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:26] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 6ms [plan=linear largest-intermediate=1]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:26] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"27aae727","danglingSources":1,"totalRelationships":1}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 2ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:26] [project-health] project health computed {"projectId":"27aae7277385d5af8cf228bdd61098f9ae3e053a","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(3ms)
+  ✓ health check in 3ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: NEGATIVE: clean code produces zero findings (no false positives) [negative] total=0 findings=0
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:26] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:26] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [12:23:26] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 10ms [plan=linear largest-intermediate=2]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 8 relationships (0 patterns) in 5ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:26] [project-health] project health computed {"projectId":"81f379cc984625cacfcc759589a0f5bb34a0df3d","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(3ms) + health(3ms)
+  ✓ health check in 1ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: MITIGATED: mitigated findings exist after manual flag mitigated=1 total=1
+  ok: MITIGATED: mitigated findings carry type missing type
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:27] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:27] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [12:23:27] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 11ms [plan=linear largest-intermediate=1]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:27] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e849ed16","danglingSources":3,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:27] [project-health] project health computed {"projectId":"e849ed163f2e0e620b57e05e029f52f57c803bbd","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(2ms)
+  ✓ health check in 2ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 1 symbols are indexed.
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: NEGATIVE: Python cross-symbol CMDi produces no resolved/confirmed command-injection finding resolved CMDi=0, total CMDi incl. unresolved=0 (regex only matches per-symbol snippets)
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:27] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:27] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [12:23:27] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:28] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 12ms [plan=linear largest-intermediate=5]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:28] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"5f0772ca","danglingSources":9,"totalRelationships":9}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 1ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:28] [project-health] project health computed {"projectId":"5f0772caa6070ef0d90f14d7545f2d3b397e67b5","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+  ✓ taint(1ms) + health(3ms)
+  ✓ health check in 2ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 5 symbols are indexed.
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: X-LANG: findings exist across both languages total=3
+  ok: X-LANG: cross_language_vulnerabilities reflects mixed-language code ok
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:28] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:28] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:28] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 6ms [plan=linear largest-intermediate=1]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 2ms
+  Computing gravity scores...
+  ✓ gravity in 1ms
+  Analyzing taint flows & security...
+[INFO] [12:23:28] [project-health] project health computed {"projectId":"0b38a0559f6778f89d76ed61e1b10b4ed8f57cc7","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(2ms)
+  ✓ health check in 2ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: NEGATIVE: template-literal XSS is not overclaimed as a resolved flow (analyzer blind spot documented) resolved XSS=0 total=0
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:29] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:29] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:23:29] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 7ms [plan=linear largest-intermediate=3]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 7 relationships (0 patterns) in 3ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:23:29] [project-health] project health computed {"projectId":"ebc4c56580ad5e8c7e3e50d64775c8c98498086f","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(2ms)
+  ✓ health check in 2ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 3 symbols are indexed.
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: CLI: the source door answers exit=0 stderr=
+  ok: CLI: output includes a severity breakdown security: 1 critical / 0 high / 0 medium / 0 low / 1 unknown (0 resolved flows, 2 unvalidated sources, 0 mitigated)
+  no findings with both endpoints resolved
+[scan: 5 taint flow(s) indexed → 2 findin
+  ok: CLI: output states the census [scan: 5 taint flow(s) indexed → 2 finding(s); showing 0 finding(s) and 2 of 2 unvalidated observation(s)]
+  ok: CLI: history returns JSON {
+  "runs": [],
+  "findings": [],
+  "findingsTotal": 0,
+  "findingsShown": 0,
+  "findingsTruncated": 0,
+  "summary": {
+    "open": 0,
+    "resolved": 0,
+    "suppressed": 0,
+    "reopened": 0,
+    "mi
+  ok: CLI: an unindexed project is refused by name exit=1 out=error: No index found for /tmp/bb-sec-cli-unindexed-2X2Shw. Run: bb index "/tmp/bb-sec-cli-unindexed-2X2Shw" (or restart bb mcp after indexing).
+
+  ok: CLI: a refused read does not create an index [negative] created /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/projects/14d5f94a7372568c259264b44847839bc41ab85e/brain.db
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:31] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:31] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [12:23:31] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 6ms [plan=linear largest-intermediate=2]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 8 relationships (0 patterns) in 2ms
+  Computing gravity scores...
+  ✓ gravity in 1ms
+  Analyzing taint flows & security...
+[INFO] [12:23:31] [project-health] project health computed {"projectId":"8b571681f284b5dd37da9cdd50f513f6df16f6d4","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(1ms)
+  ✓ health check in 2ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: MCP: returns security output security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)
+  [critical] Command injection (exec_cmd) @ src/app.py:5 <- user_input -> shell_execution
+[scan:
+  ok: MCP: includes severity/type information security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)
+  [critical] Command injection (exec_cmd) @ src/app.py:5 <- user_input -> shell_execution
+[scan:
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:32] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:32] [parallel-indexer] project index built {"ext":".rb","files":43,"types":45}
+[INFO] [12:23:34] [parallel-indexer] worker pool complete {"files":43,"workers":5,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[INFO] [12:23:34] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [12:23:34] [ast-engine] language grammar allocated {"language":"ruby"}
+[INFO] [12:23:34] [ast-engine] language parser loaded {"language":"ruby","wasmPath":"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_2752_5ahcx72"}
+[INFO] [12:23:35] [parallel-indexer] override companion (ruby): 41 owners, 9 file(s) re-analyzed, 9 reapplied, 10 confirmed, 25 still a guess, 0 failed, 10 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 25 unconfirmed id(s)
+[INFO] [12:23:35] [parallel-indexer] override companion (ruby) write-back: 10 row(s) matched of 10 id(s) attempted, 0 matched NOTHING
+[INFO] [12:23:35] [parallel-indexer] override companion (ruby) census: overrides conf = 0.5=38 0.95=10 · total=48
+[INFO] [12:23:35] [parallel-indexer] override companion (ruby) CLAUSE 4 per id: 25 of 25 unconfirmed id(s) still below the floor, 0 MOVED to or above it, 0 absent from the store
+  Resolving cross-file relationships...
+  ✓ resolved in 164ms [plan=linear largest-intermediate=836]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:35] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"de84a586","danglingSources":133,"totalRelationships":1966}
+  enriching done 100%
+  ✅ Enriched 1,833 relationships (61 patterns) in 98ms
+  Computing gravity scores...
+  ✓ gravity in 10ms
+  Analyzing taint flows & security...
+[INFO] [12:23:35] [project-health] project health computed {"projectId":"de84a586248f65b25dfef746831d8f88cef7f192","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(3ms) + health(2ms)
+  ✓ health check in 10ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 7ms
+  ok: corpus rake/lib/rake (Ruby): scan completes with summary total=44
+  ok: corpus rake/lib/rake (Ruby): findings have types missing type
+  ok: corpus rake/lib/rake (Ruby): summary has severity breakdown {"total":44,"critical":19,"high":17,"medium":0,"low":0,"unknown":8,"resolved":20,"unresolvedSources":24,"sourceOnly":8,"sinkOnly":16,"mitigated":0,"crossLanguage":0,"byType":{"sql_injection":5,"comman
+  ok: corpus rake/lib/rake (Ruby): no empty-severity findings [negative] empty severity found
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:35] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:35] [parallel-indexer] project index built {"ext":".ts","files":16,"types":0}
+[INFO] [12:23:35] [parallel-indexer] project index built {"ext":".tsx","files":2,"types":0}
+[INFO] [12:23:36] [parallel-indexer] worker pool complete {"files":18,"workers":2,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 11ms [plan=linear largest-intermediate=20]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:36] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"1709dfe1","danglingSources":29,"totalRelationships":42}
+  enriching done 100%
+  ✅ Enriched 13 relationships (0 patterns) in 4ms
+  Computing gravity scores...
+  ✓ gravity in 3ms
+  Analyzing taint flows & security...
+[INFO] [12:23:36] [project-health] project health computed {"projectId":"1709dfe19d3f5faad476a61031b23fb865f4bfad","complexityScore":90,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":89,"languages":2,"bottlenecks":0}
+  ✓ taint(2ms) + health(2ms)
+  ✓ health check in 3ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: corpus graphql-js/website/pages (TypeScript): scan completes with summary total=1
+  ok: corpus graphql-js/website/pages (TypeScript): findings have types missing type
+  ok: corpus graphql-js/website/pages (TypeScript): summary has severity breakdown {"total":1,"critical":0,"high":0,"medium":0,"low":0,"unknown":1,"resolved":0,"unresolvedSources":1,"sourceOnly":1,"sinkOnly":0,"mitigated":0,"crossLanguage":0,"byType":{},"byFile":{}}
+  ok: corpus graphql-js/website/pages (TypeScript): no empty-severity findings [negative] empty severity found
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:23:36] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:23:44] [parallel-indexer] worker pool complete {"files":203,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 5802ms [plan=linear largest-intermediate=9619]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:23:50] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"27111446","danglingSources":196,"totalRelationships":28373}
+  enriching done 100%
+  ✅ Enriched 28,177 relationships (1,320 patterns) in 1269ms
+  Computing gravity scores...
+  ✓ gravity in 118ms
+  Analyzing taint flows & security...
+[INFO] [12:23:52] [project-health] project health computed {"projectId":"27111446f4c87c995644ea266ee33d943a1662a3","complexityScore":0,"maintainabilityScore":0,"techDebtScore":0,"codeQualityScore":0,"languages":3,"bottlenecks":20}
+  ✓ taint(19ms) + health(12ms)
+  ✓ health check in 97ms
+  · index health: 92% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 1ms
+  ✓ planner stats (ANALYZE) in 129ms
+  ok: corpus rebar3/apps (Erlang): scan completes with summary total=187
+  ok: corpus rebar3/apps (Erlang): findings have types missing type
+  ok: corpus rebar3/apps (Erlang): summary has severity breakdown {"total":187,"critical":5,"high":73,"medium":0,"low":0,"unknown":109,"resolved":25,"unresolvedSources":162,"sourceOnly":109,"sinkOnly":53,"mitigated":0,"crossLanguage":0,"byType":{"path_traversal":21,
+  ok: corpus rebar3/apps (Erlang): no empty-severity findings [negative] empty severity found
+Sec3: VERIFIED (31/31 passed, 5 negatives)

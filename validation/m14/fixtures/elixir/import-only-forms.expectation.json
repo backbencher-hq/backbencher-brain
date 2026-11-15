@@ -1,0 +1,131 @@
+{
+  "expectSymbols": [
+    {
+      "name": "OnlyUser",
+      "kind": "module"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "OnlyUser"
+    },
+    {
+      "name": "LastWins",
+      "kind": "module"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "LastWins"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "OnlyUser",
+      "kind": "module"
+    },
+    {
+      "name": "LastWins",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "OnlyUser",
+      "target": "Enum"
+    },
+    {
+      "type": "references",
+      "from": "OnlyUser",
+      "target": "Other"
+    },
+    {
+      "type": "calls",
+      "from": "OnlyUser.run/1",
+      "target": "Enum.map"
+    },
+    {
+      "type": "references",
+      "from": "LastWins",
+      "target": "Alpha"
+    },
+    {
+      "type": "references",
+      "from": "LastWins",
+      "target": "Beta"
+    },
+    {
+      "type": "calls",
+      "from": "LastWins.run/1",
+      "target": "Beta.go"
+    },
+    {
+      "type": "contains",
+      "from": "OnlyUser",
+      "target": "run"
+    },
+    {
+      "type": "contains",
+      "from": "LastWins",
+      "target": "run"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "Other.map"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "Alpha.go"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "map"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "go"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "Enum",
+      "source": "Enum",
+      "imported": [
+        "*"
+      ],
+      "isTypeOnly": false
+    },
+    {
+      "module": "Other",
+      "source": "Other",
+      "imported": [
+        "*"
+      ],
+      "isTypeOnly": false
+    },
+    {
+      "module": "Alpha",
+      "source": "Alpha",
+      "imported": [
+        "*"
+      ],
+      "isTypeOnly": false
+    },
+    {
+      "module": "Beta",
+      "source": "Beta",
+      "imported": [
+        "*"
+      ],
+      "isTypeOnly": false
+    }
+  ],
+  "note": " EX-PAYLOAD pin (2026-09-28): the `imports` PAYLOAD is asserted, not just the `references` edges \u2014 an import record says what was named (module + source + the `*` wildcard Elixir's bare import means) and it is the only place that fact lives (mutant elixir/imports-payload-dropped survived before this)."
+}

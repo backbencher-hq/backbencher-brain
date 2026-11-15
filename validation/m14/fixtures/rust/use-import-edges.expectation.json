@@ -1,0 +1,66 @@
+{
+  "fixtureId": "rust/use-import-edges",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RUST-D31: pins the `imports` relationship this lane never emitted. One row per SCOPE, because the source is the fact under test: a file-top-level `use` is named by the file's own rust module name (`use-import-edges` for this file, by rust's own rule that a file's module is its stem), an inline `mod`'s `use` by that module (`inner`), and a function-local `use` by that function (`scoped`). Also pins the TARGET contract: the edge names the PATH AS WRITTEN, so a simple `use std::collections::HashMap;` targets `std::collections::HashMap` and a group `use std::io::{Read, Write as W};` targets the group's prefix `std::io` \u2014 the ImportInfo row's own spelling (RUST-D10/RUST-D29), reused rather than re-derived, because a stripped prefix would be an inference the source does not make. And the group/alias contract on the edge's `items` (`Write as W` binds `W`), the 1.0 confidence (the path is written verbatim) and the `import_based` evidence tier, which is the tier every other lane's import edge carries and which the fall-through branch stamped `usage_contextual` on before. The two forbid rows are the two defects this edge class invites: a `\"global\"` source (a magic name no rust source declares) and a module path with no items resolved. SUPERSESSION (2026-10-19, Lead decision \u00a721.11 task-36 defect 3, task-9 conditions): (a) the FILE-SCOPE source is the family's declared `(file)` spelling \u2014 the M60/#910 flag the store acts on rewrites it to the project-relative path; the older expectation of the file's module NAME predates that spelled contract. (b) the edge TARGET is the MODULE the path depends on (`std::collections` for `use std::collections::HashMap`), with the bound names carried on `meta.items` \u2014 the older expectation used the full written path, which puts the BINDING into the dependency target; the module prefix is the unit the name model and the file claims price, and the group form (`std::io` + items [Read,W]) already used it. Coverage is preserved: every row still pins its scope, its bindings (alias-aware), its module target and line; the function-scope row is now real (source = the function) and `fileLevel` is never set on it. LINE PIN UPDATED (2026-10-19): the fixture header gained the supersession note above the `use` line, shifting the pinned path line; the expectation follows the source line (the pin is about which LINE the edge names, not its historic number).",
+  "expectRelationships": [
+    {
+      "comment": "file scope: source is the family's declared `(file)` spelling; the TARGET is the MODULE the path depends on \u2014 the binding `HashMap` rides meta.items (superseded the full-path expectation; see rationale)",
+      "type": "imports",
+      "from": "(file)",
+      "target": "std::collections",
+      "confidence": 1,
+      "meta.evidenceClass": "import_based",
+      "meta.relationshipType": "use_import",
+      "meta.importScope": "file",
+      "meta.items": [
+        "HashMap"
+      ]
+    },
+    {
+      "comment": "a group is ONE edge, and its target is the group's PREFIX (`std::io`), with the bound names on it (alias-aware: `Write as W` binds `W`)",
+      "type": "imports",
+      "from": "(file)",
+      "target": "std::io",
+      "meta.items": [
+        "Read",
+        "W"
+      ]
+    },
+    {
+      "comment": "module scope: an inline `mod` is a real symbol of this file, so this edge resolves at its source end",
+      "type": "imports",
+      "from": "inner",
+      "target": "crate::outer",
+      "meta.importScope": "module"
+    },
+    {
+      "comment": "function scope: a function-local `use` is a function-scoped fact",
+      "type": "imports",
+      "from": "scoped",
+      "target": "std::path",
+      "meta.importScope": "function"
+    },
+    {
+      "comment": "file scope: source is the family's declared `(file)` spelling; the TARGET is the MODULE the path depends on \u2014 the binding `HashMap` rides meta.items (superseded the full-path expectation; see rationale)",
+      "type": "imports",
+      "from": "(file)",
+      "target": "std::collections",
+      "line_number": 35
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "R7: a placeholder source names no rust declaration. zig ships `\"global\"`; css rejected it here and so does this lane.",
+      "type": "imports",
+      "from": "global"
+    },
+    {
+      "comment": "a `use` with no items carries nothing: the row contract binds a name per path, and an edge with an empty binding list asserts a module nothing was taken from",
+      "type": "imports",
+      "from": "use-import-edges",
+      "target": "std::collections::HashMap",
+      "meta.items": []
+    }
+  ]
+}

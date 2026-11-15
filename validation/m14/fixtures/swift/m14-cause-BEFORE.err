@@ -1,0 +1,4 @@
+discovered 400 of 1507 .swift files across 14 repos
+[INFO] [19:04:44] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:04:45] [ast-engine] language grammar allocated {"language":"swift"}
+[INFO] [19:04:45] [ast-engine] language parser loaded {"language":"swift","wasmPath":"/tmp/bb-wasm_tree-sitter-swift_tree-sitter-swift.wasm_3_zdjbz9"}

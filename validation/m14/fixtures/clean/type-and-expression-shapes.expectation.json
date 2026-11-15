@@ -1,0 +1,528 @@
+{
+  "comment": "The TYPE and EXPRESSION shapes the pinned grammar has and no clean fixture exercised. Every line is real Clean copied from the corpus, because the grammar's surface for these is wide and a fixture written to look right pins a mis-parse instead. The rule this fixture satisfies is F6: every node type the analyzer HANDLES must be exercised by a fixture, or the `handled_verified` claim in script/m14/spec/clean-completeness.json is a claim with nothing behind it. The 31 types it adds were exactly the ones the round's analyzer handled but nothing reached, which is how a type can be handled and unverified at once. It also pins the OPEN-SUBSET import markers, which the round's first implementation published as import targets: `class Enum (..)` parses as `class`, `constructor Enum`, `parenthesized_operator (..)`, and emitting that marker produced the target `StdClass:(..)` \u2014 a string that names no symbol in any file and can never resolve, which is the very defect the per-item import edge exists to remove. A marker is now recorded on the item it qualifies (`metadata.openItems`) and emits no edge.",
+  "expectSymbols": [
+    {
+      "name": "chainPath",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "shapes",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a signature whose RESULT is a 4-tuple of a strict type, a LIST type, an ARRAY type and a QUESTION type \u2014 the whole type spine in one node"
+    },
+    {
+      "name": "takePair",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "headOrZero",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "TWO clauses merge into one symbol, and the second is a LIST pattern"
+    },
+    {
+      "name": "firstOf",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "clamp",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "nested `if` expressions"
+    },
+    {
+      "name": "inFirstHalf",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `case` whose alternatives carry GUARD conditions"
+    },
+    {
+      "name": "squares",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a list comprehension"
+    },
+    {
+      "name": "bits",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "an ARRAY comprehension, the `{# \u2026 \\\\ n <- nibs}` form"
+    },
+    {
+      "name": "cached",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `let` expression"
+    },
+    {
+      "name": "doubled",
+      "kind": "function",
+      "ownerName": "cached",
+      "comment": "the `let` expression's OWN binder, owned by the frame that encloses it and NOT exported \u2014 the same rule as a where/with binder, and the shape the round's where-local work had to cover for `let` too"
+    },
+    {
+      "name": "strlen",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `foreign export` whose body is an inline `code { \u2026 }` machine-code block"
+    },
+    {
+      "name": "Sized2",
+      "kind": "interface",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "sizeOf2",
+      "kind": "method",
+      "ownerName": "Sized2"
+    },
+    {
+      "name": "Pair",
+      "kind": "type",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "fst",
+      "kind": "property",
+      "ownerName": "Pair"
+    },
+    {
+      "name": "snd",
+      "kind": "property",
+      "ownerName": "Pair"
+    },
+    {
+      "name": "swapPair",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "firstOfEach",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `record_pattern` (`rec` / `other` in a tuple of records) plus two `field_access` reads"
+    },
+    {
+      "name": "strictBind",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `strict_binding_pattern` (`stale=:{fresh}`) \u2014 the target AND the pattern's names are bound"
+    },
+    {
+      "name": "consPattern",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `cons_pattern` (`string :! Nil`) in a function head; two clauses merge"
+    },
+    {
+      "name": "indexUpdate",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `record_update_pattern` (`subdirs & [subdir_i]`) in a function head"
+    },
+    {
+      "name": "prod",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "returnType": "a",
+      "comment": "`prod :: !.[a] -> a` \u2014 the `operator_dot` hidden-type spelling, and a result that is a bare TYPE VARIABLE, which is a binding and therefore a `genericParameter` and never a `references` target"
+    },
+    {
+      "name": "multiplies",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "`a % b` \u2014 Clean's multiplication is `%`, and `*` is the generic `operator` node; two node types over real corpus code, so the fixture writes the one the grammar names"
+    },
+    {
+      "name": "exps",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "pipes",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "`a <|- b` \u2014 the `operator_pipe` alternative"
+    },
+    {
+      "name": "unboxedMaybe",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "`u:(?# Int)` \u2014 a `builtin_question_type` in signature position"
+    },
+    {
+      "name": "compoundOp",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "`a +++. b` \u2014 a compound `operator_dot`"
+    },
+    {
+      "name": "bareQuestion",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "`?` alone \u2014 the bare `builtin_question_type`"
+    },
+    {
+      "name": "onOff",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "`f \\`on\\` b` \u2014 a `backtick_operator` application; the backticked name is resolved against the declared set like any other callee"
+    },
+    {
+      "name": "f",
+      "kind": "function",
+      "ownerName": "onOff",
+      "comment": "the `backtick_operator`'s target, a where-local of `onOff`"
+    },
+    {
+      "name": "total",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "carries BOTH comment spellings: a leading block comment (its docstring) and a trailing `//` on the signature line (a comment, not the docstring)"
+    },
+    {
+      "name": "Pair2",
+      "kind": "type",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "Pair3",
+      "kind": "type",
+      "ownerName": "CleanTypeShapes"
+    },
+    {
+      "name": "unboxedHead",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `unboxed_pattern` (`?Just v`) in a function-head PATTERN, and a function with NO signature \u2014 so no return type and no parameters, which is the honest absence rather than a fabricated default. The unboxed BUILD spelling has no readable form in this grammar (`?Just 0` in a body is an ERROR), so only the pattern direction is pinnable."
+    },
+    {
+      "name": "strictList",
+      "kind": "function",
+      "ownerName": "CleanTypeShapes",
+      "comment": "a `strict_pattern` (`!hd`) inside a LIST pattern: the `!` is a strictness marker and the identifier under it is the bound name, so the list pattern still binds `hd` and `h`"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "headOrZero",
+      "equals": 1,
+      "comment": "two clauses, one symbol"
+    },
+    {
+      "name": "fst",
+      "equals": 1
+    }
+  ],
+  "expectReturnType": [
+    {
+      "symbol": "shapes",
+      "returnType": "(!Int, ![*Int], {# !Char}, ?Int)",
+      "comment": "the four-element tuple type is the RESULT node verbatim \u2014 a nested `type_application`/`tuple_type` spine read structurally, never reconstructed from text"
+    },
+    {
+      "symbol": "bits",
+      "returnType": "{# !Int}",
+      "comment": "an `array_type`"
+    },
+    {
+      "symbol": "squares",
+      "returnType": "![!Int]",
+      "comment": "a `list_type`"
+    },
+    {
+      "symbol": "takePair",
+      "returnType": "!Int"
+    },
+    {
+      "symbol": "swapPair",
+      "returnType": "!(Pair !String !Int)"
+    },
+    {
+      "symbol": "prod",
+      "returnType": "a",
+      "comment": "the result is a TYPE VARIABLE: recorded as a generic parameter, never as a type reference"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "shapes",
+      "parameters": [
+        {
+          "name": "n",
+          "type": "!Int"
+        }
+      ]
+    },
+    {
+      "symbol": "takePair",
+      "parameters": [
+        {
+          "name": "(a, b)",
+          "type": "(!Int, !Int)"
+        }
+      ],
+      "comment": "A destructuring pattern is ONE parameter named by its own text, not two. The round's first implementation collected the names bound INSIDE each pattern, so this published `a` and `b` as two parameters against a ONE-type domain \u2014 a positional join that paired `a` with the tuple type and then ran out. One `pattern` field is one parameter; a pattern that binds no single target is named by what the source calls that slot."
+    },
+    {
+      "symbol": "headOrZero",
+      "parameters": [
+        {
+          "name": "[x: _]",
+          "type": "![!Int]"
+        }
+      ],
+      "comment": "The LIST pattern `[x: _]` is one parameter named by its own text, and the SECOND clause's `[]` does not append a second parameter: a multi-clause definition re-states its parameter list in every clause and each clause is its own node, so the first clause wins for the name, the range and the parameters alike."
+    },
+    {
+      "symbol": "clamp",
+      "parameters": [
+        {
+          "name": "lo",
+          "type": "!Int"
+        },
+        {
+          "name": "hi",
+          "type": "!Int"
+        },
+        {
+          "name": "n",
+          "type": "!Int"
+        }
+      ]
+    },
+    {
+      "symbol": "swapPair",
+      "parameters": [
+        {
+          "name": "p",
+          "type": "!(Pair !Int !String)"
+        }
+      ]
+    },
+    {
+      "symbol": "consPattern",
+      "parameters": [
+        {
+          "name": "string :! Nil"
+        }
+      ],
+      "comment": "a `cons_pattern` head is ONE parameter named by its own text; the `_` in the second clause does not add one, because a multi-clause definition re-states its parameter list and the first clause wins"
+    },
+    {
+      "symbol": "indexUpdate",
+      "parameters": [
+        {
+          "name": "subdirs & [subdir_i]"
+        }
+      ],
+      "comment": "a `record_update_pattern` head, same rule"
+    }
+  ],
+  "expectVisibility": [
+    {
+      "symbol": "doubled",
+      "visibility": "local",
+      "comment": "a `let` binder is local, exactly as a where/with binder is"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "doubled",
+      "kind": "function"
+    },
+    {
+      "name": "fst",
+      "kind": "property",
+      "comment": "a record FIELD is not a module-level name"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "Data.Error",
+      "items": [
+        "fromOk",
+        "isError",
+        "MaybeError",
+        "Ok",
+        "fromError"
+      ],
+      "comment": "the SELECTIVE list of `from Data.Error import fromOk, isError, :: MaybeError (Ok), fromError` \u2014 five names, including the constructor the `(Ok)` subset restricts to. The order is the source order and the matcher compares the sorted set."
+    },
+    {
+      "module": "StdClass",
+      "items": [
+        "Enum",
+        "zero",
+        "Ord"
+      ],
+      "comment": "`class Enum (..), class zero(zero), class Ord (..)` \u2014 the three CLASSES. The `(..)` and `(zero)` markers publish no item: a marker names no symbol."
+    },
+    {
+      "module": "Directory",
+      "items": [
+        "FileInfo",
+        "DirError"
+      ],
+      "comment": "`::FileInfo{pi_fileInfo}, ::DirError(..)` \u2014 the two types, with both subset markers filtered"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "swapPair",
+      "target": "fst",
+      "line_number": 300,
+      "comment": "`{ fst = p.snd, snd = p.fst }` is a record CONSTRUCTION: both fields it sets are uses of fields this file declares, and both field reads inside it are the same edge kind"
+    },
+    {
+      "type": "uses",
+      "from": "swapPair",
+      "target": "snd",
+      "line_number": 300
+    },
+    {
+      "type": "imports",
+      "from": "CleanTypeShapes",
+      "target": "Data.Error:Ok",
+      "line_number": 116,
+      "comment": "the constructor a `(Ok)` subset restricts to IS an imported name, so it gets the same `<module>:<item>` edge as a plain name"
+    },
+    {
+      "type": "contains",
+      "from": "cached",
+      "target": "doubled",
+      "line_number": 80,
+      "comment": "a `let` expression's binder is owned by the frame that encloses it, on the binder's own line"
+    },
+    {
+      "type": "uses",
+      "from": "firstOfEach",
+      "target": "x",
+      "line_number": 161,
+      "comment": "`rec.x` \u2014 a record field read, and `x` is a field `Pair2` declares in THIS file, so the edge is provable"
+    },
+    {
+      "type": "uses",
+      "from": "firstOfEach",
+      "target": "p",
+      "line_number": 161
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "CleanTypeShapes",
+      "target": "StdClass:(..)",
+      "comment": "an open-subset MARKER is not an imported name: the target `(..)` exists in no file"
+    },
+    {
+      "type": "imports",
+      "from": "CleanTypeShapes",
+      "target": "Directory:{..}",
+      "comment": "a record subset marker is not an imported name"
+    },
+    {
+      "type": "references",
+      "from": "Pair",
+      "target": "a",
+      "comment": "a type VARIABLE is a binding, not a type reference. `:: Pair a b = { fst :: a, snd :: b }` is polymorphic and names no type at all; `genericParameters` is where `a` and `b` belong, and they are the reason this fixture exists \u2014 the previous round published neither."
+    },
+    {
+      "type": "references",
+      "from": "fst",
+      "target": "a",
+      "comment": "the same rule for a FIELD's declared type"
+    },
+    {
+      "type": "instantiates",
+      "from": "swapPair",
+      "target": "Pair",
+      "comment": "a record literal is not a constructor application"
+    },
+    {
+      "type": "uses",
+      "from": "swapPair",
+      "target": "p",
+      "comment": "the FP pin: the RECEIVER of a field read is a value, not a field"
+    },
+    {
+      "type": "calls",
+      "from": "clamp",
+      "target": "lo",
+      "comment": "an `if` branch's VALUE is not a call \u2014 `if (n < lo) lo \u2026` reads `lo`, it does not call it"
+    },
+    {
+      "type": "instantiates",
+      "from": "conser",
+      "target": "Nil",
+      "comment": "a cons TAIL in a pattern is a match, not a construction"
+    },
+    {
+      "type": "references",
+      "from": "prod",
+      "target": "a",
+      "comment": "a type VARIABLE in a RESULT position is a binding; it is a `genericParameters` entry and never a `references` target"
+    },
+    {
+      "type": "uses",
+      "from": "firstOfEach",
+      "target": "rec",
+      "comment": "the FP pin again: a tuple-bound name is a value, not a record field"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "swapPair",
+      "target": "fst",
+      "equals": 1,
+      "comment": "`{ fst = p.snd, snd = p.fst }` READS `fst` once and WRITES it once, on the same line. Dedupe is by source|type|target|line, so the two sites collapse to ONE edge \u2014 the same rule every other lane applies, and pinned here so a change to it cannot pass silently."
+    }
+  ],
+  "expectMetadata": [
+    {
+      "hasTypeInference": true,
+      "comment": "the signature spine this fixture walks is what makes `returnType`/`parameters` real rather than a fallback"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ],
+  "expectTypeParameters": [
+    {
+      "symbol": "prod",
+      "exact": [
+        "a"
+      ],
+      "comment": "`prod :: !.[a] -> a` binds exactly one type variable, and `exact` so a duplicated or appended name fails"
+    }
+  ],
+  "expectDocstring": [
+    {
+      "symbol": "total",
+      "contains": "This block comment belongs to `total`",
+      "comment": "a `block_comment` is a declaration's documentation when it is the LEADING comment. The trailing `//` on the same signature line is a remark about the line, not the entity, and does not become the docstring \u2014 the first implementation of the comment collector promoted it, so `initAppDelegate` was documented with `createAppDelegate`'s comment."
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "total",
+      "includes": [
+        "This block comment belongs to `total`",
+        "and this trailing remark belongs to `total` too"
+      ],
+      "comment": "BOTH spellings attach to the same symbol: the leading block comment and the trailing line comment on the signature line"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Nil",
+      "comment": "a `cons_pattern`'s tail constructor is a PATTERN, not a declaration: nothing is constructed and no symbol is published for it"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.49",
+  "code": "M2",
+  "tool": "bb_migrate",
+  "title": "bb_migrate: e2e (CLI + MCP) + corpus",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "CLI: output not empty",
+      "pass": true,
+      "detail": "1208"
+    },
+    {
+      "name": "CLI: contains effort/dependency info",
+      "pass": true,
+      "detail": "migration target: python\ndependency order: greet (no-edges)\nmethodology: base=4h relationships=0h missing-mappings=0h\nto"
+    },
+    {
+      "name": "CLI json: has plans array",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "CLI: output doesn't contain compiled code [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "no generated code"
+    },
+    {
+      "name": "MCP: returns JSON plans",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"run\",\n      \"symbolId\": \"d3d359a257522cc5ddc91d01726c42b08e17f30e:src/app.ts:run:1\",\n      \"sourceFile\": \"src/app.ts\",\n      \"sou"
+    },
+    {
+      "name": "corpus rake (Ruby): plans returned",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "corpus rebar3 (Erlang): plans returned",
+      "pass": true,
+      "detail": "0"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "decisions": {
+    "transports": "CLI + MCP stdio",
+    "corpus": "sampled from rake, rebar3"
+  },
+  "limitations": [
+    "Small sub-directory per repo."
+  ],
+  "generatedAt": "2026-11-05T04:13:42.796Z"
+}

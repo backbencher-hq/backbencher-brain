@@ -1,0 +1,19 @@
+defaults: &defaults
+  image: app:latest
+  replicas: 2
+services:
+  web:
+    <<: *defaults
+    ports:
+      - name: http
+        containerPort: 8080
+      - name: https
+        containerPort: 8443
+template: ${APP_NAME}
+---
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 2

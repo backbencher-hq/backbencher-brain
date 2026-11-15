@@ -1,0 +1,14 @@
+{
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "ImpFun.run/0",
+      "target": "Enum.map"
+    },
+    {
+      "type": "calls",
+      "from": "ImpMod.run/0",
+      "target": "Enum.map"
+    }
+  ]
+}

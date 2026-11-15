@@ -17,10 +17,10 @@
 # Liveness: use the pidfile, never `pgrep -f` (the pattern matches the checking
 # shell itself and reports a false RUNNING).
 set -u
-cd $HOME/mcp/backbencher-brain
+cd /home/ishaq2321/mcp/backbencher-brain
 echo $$ > .foreign-reds-reconcile.pid
 
-REPO=backbencher-hq/backbencher-brain
+REPO=ishaq2321/backbencher-brain
 MS_TITLE="Analyzer Lane Review — foreign-red gates (M57 convictions)"
 BODY_DIR=docs/convictions/issues
 SRC=docs/convictions/foreign-reds.md

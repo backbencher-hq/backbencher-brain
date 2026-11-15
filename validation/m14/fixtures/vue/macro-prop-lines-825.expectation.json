@@ -1,0 +1,24 @@
+{
+  "fixtureId": "vue/macro-prop-lines-825",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up, measured on element-plus split-bar.vue (72 corpus rows). Macro prop/event symbols range at their own KEY lines — the old nodeToRange(call) stamped the `defineProps({` / `defineEmits<{` line for every member. Covers the runtime object form (title/count) and the generic type-literal form (save/close/cancel). Forbid entries are the measured pre-fix lines (round-trip verified).",
+  "expectSymbols": [
+    { "name": "title", "kind": "property" },
+    { "name": "count", "kind": "property" },
+    { "name": "save", "kind": "event" },
+    { "name": "close", "kind": "event" },
+    { "name": "cancel", "kind": "event" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "target": "title", "line_number": 13 },
+    { "type": "contains", "target": "count", "line_number": 17 },
+    { "type": "contains", "target": "save", "line_number": 21 },
+    { "type": "contains", "target": "close", "line_number": 22 },
+    { "type": "contains", "target": "cancel", "line_number": 22 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "title", "line_number": 12, "note": "pre-fix: the `defineProps({` line; the key title is written on 13" },
+    { "type": "contains", "target": "save", "line_number": 19, "note": "pre-fix: the `defineEmits<{` line; the literal 'save' is written on 21" }
+  ]
+}

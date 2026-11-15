@@ -1,0 +1,28 @@
+{
+  "fixtureId": "scala/extends-single-parent",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Single-supertype form must still publish extends (no mixes_in): the ruling changes position >=1 only.",
+  "expectSymbols": [
+    {
+      "name": "Parent"
+    },
+    {
+      "name": "Child"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Child",
+      "target": "Parent"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "mixes_in",
+      "from": "Child",
+      "target": "Parent"
+    }
+  ]
+}

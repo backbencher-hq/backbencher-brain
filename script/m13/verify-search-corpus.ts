@@ -46,7 +46,7 @@ const harness = new Harness({
   ],
 })
 
-// Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see
+// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see
 // script/lib/corpus-root.ts, which is where the corpus actually lives on THIS machine.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 // The freshness probe must MODIFY an indexed file. The corpus is a shared,

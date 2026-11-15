@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/default-export-declaration-name",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins that a default export of a NAMED declaration is exported as `default`, never as the declaration's own name. ECMAScript: `export default function fragment(){}` publishes `default`; `fragment` is a local binding importers cannot reach and no export named `fragment` exists. Publishing the declaration name invented a public name that does not exist. Invisible to the differential by construction — the import edge's leaf is the local binding, so the two errors cancelled and the exports class read 100%/0/0 with oracle and analyzer sharing one mistake. Found instead by the corpus-scale import audit (15 fabricated rows on svelte). The non-default forms are asserted too, so the fix cannot be made by exporting everything as `default`.",
+  "expectRelationships": [
+    { "type": "exports", "target": "default" },
+    { "type": "exports", "target": "helper" },
+    { "type": "exports", "target": "local" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "fragment" },
+    { "type": "exports", "target": "Widget" }
+  ]
+}

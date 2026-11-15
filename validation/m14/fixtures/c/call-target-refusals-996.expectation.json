@@ -1,0 +1,71 @@
+{
+  "fixtureId": "c/call-target-refusals-996",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D7 K1 CORRECTED (charter \u00a718, task-21; arm-A measured): the call-emission gate refuses a target that can never be a declared name \u2014 a C KEYWORD \u2014 and KEEPS every other spelling. The first K1 also refused NON-IDENTIFIER spellings; the arm-A after-run proved that half wrong: of 43 withdrawn calls rows, 40 were the predicted recovery garbage but 3 were REAL name-model resolutions \u2014 calls to `$`-containing identifiers whose declarations the analyzer itself publishes (Cython's generated `__Pyx_ImportType_$cyversion`/`__Pyx_ImportFromPxd_$cyversion` in `Cython/Utility/ImportExport.c`), so the broad guard removed resolutions to enforce a spelling rule. Narrowed to KEYWORD-ONLY: a keyword cannot be declared anywhere (declaration extraction refused keywords since CGD22; corpus-wide `#define <keyword>` = 0), so the keyword half cannot withdraw a resolution; a non-identifier spelling is not disqualified, so the `$` call in this fixture is now a POSITIVE control that must keep publishing. SUBJECTS: (1) a keyword callee from macro-with-statement recovery \u2014 SuiteSparse CHOLMOD writes `DEBUG (if (cond) fn ())`, recovery published `calls ... -> if` (34 unresolved + 1 ambiguous at whole population after the class-boundary correction); (2) the OLD non-identifier subject, kept as the over-reach control. RED measured before the first guard landed (7 calls rows incl. `-> if`); the keyword row is now forbidden, the `$` row is now expected. Fixture pins BOTH directions: five controls + the `$` spelling must publish, and the keyword must not; a guard that suppresses wholesale or over-reaches fails here.",
+  "expectSymbols": [
+    {
+      "name": "c996_probe",
+      "kind": "function",
+      "note": "CONTROL: an ordinary file-local function the positive call resolves to."
+    },
+    {
+      "name": "C996_DEBUG",
+      "kind": "macro",
+      "note": "CONTROL: a file-local FUNCTION-LIKE macro \u2014 still publishes its symbol and still receives calls (#908/#991 contracts)."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "c996_positive_call",
+      "target": "c996_probe",
+      "line_number": 51,
+      "note": "POSITIVE CONTROL: an ordinary function call must keep publishing."
+    },
+    {
+      "type": "calls",
+      "from": "c996_positive_macro",
+      "target": "C996_DEBUG",
+      "line_number": 58,
+      "note": "POSITIVE CONTROL: a file-local function-like macro invocation keeps its calls edge (#908 truth contract)."
+    },
+    {
+      "type": "calls",
+      "from": "c996_keyword_recovery",
+      "target": "C996_DEBUG",
+      "line_number": 64,
+      "note": "CONTROL inside the keyword-recovery statement: the OUTER macro call survives and must not be collateral of the refusal."
+    },
+    {
+      "type": "calls",
+      "from": "c996_keyword_recovery",
+      "target": "c996_probe",
+      "line_number": 64,
+      "note": "CONTROL: the inner functions inside the recovered `if` argument still publish their own calls."
+    },
+    {
+      "type": "calls",
+      "from": "c996_keyword_recovery",
+      "target": "c996_positive_call",
+      "line_number": 64,
+      "note": "CONTROL: second inner call in the same recovered statement."
+    },
+    {
+      "type": "calls",
+      "from": "c996_nonidentifier_recovery",
+      "target": "$global_code_object_cache_find",
+      "line_number": 70,
+      "note": "OVER-REACH CONTROL (corrected boundary): a non-identifier spelling is NOT refused \u2014 the analyzer's own name model publishes such identifiers in generated templates (and some of those calls resolve), so this row must keep publishing. The first K1 refused it and withdrew 3 real resolutions at whole population."
+    }
+  ],
+  "forbidSymbols": [],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "c996_keyword_recovery",
+      "target": "if",
+      "note": "THE K1 SUBJECT: a C keyword is not a callee \u2192 refused (was published at pre-fix HEAD, measured; keyword-only rule, cannot withdraw a resolution)."
+    }
+  ]
+}

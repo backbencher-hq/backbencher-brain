@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.39",
+  "code": "P5",
+  "tool": "bb_patterns",
+  "title": "bb_patterns: honesty + docs + release gate",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "docs: bb_patterns.md exists",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: category matches registry",
+      "pass": true,
+      "detail": "registry=analysis"
+    },
+    {
+      "name": "docs: mutability matches registry",
+      "pass": true,
+      "detail": "registry=read"
+    },
+    {
+      "name": "docs: requiresIndex matches registry",
+      "pass": true,
+      "detail": "registry=true"
+    },
+    {
+      "name": "docs: modes match registry (orphaned, all)",
+      "pass": true,
+      "detail": "registry modes=[\"orphaned\",\"all\"]"
+    },
+    {
+      "name": "docs: planned modes labeled as not executable",
+      "pass": true,
+      "detail": "planned modes correctly labeled"
+    },
+    {
+      "name": "docs: defaults match registry",
+      "pass": true,
+      "detail": "registry={\"scope\":\"all\",\"limit\":20,\"includeOrphaned\":true,\"includeFramework\":true,\"includeAntiPatterns\":true,\"confidenceThreshold\":0,\"history\":false,\"recordRun\":false}"
+    },
+    {
+      "name": "docs: every input property is documented",
+      "pass": true,
+      "detail": "8 props"
+    },
+    {
+      "name": "docs: source marked as read-only",
+      "pass": true,
+      "detail": "curated Safety must state the byte-read-only contract"
+    },
+    {
+      "name": "docs: description matches registry (planned honesty)",
+      "pass": true,
+      "detail": "desc mismatch: \"Detect orphaned code, framework patterns, and anti-patterns, ranked by confidenc\" vs \"Detect orphaned code, framework patterns, and anti-patterns, ranked by confidenc\""
+    },
+    {
+      "name": "docs: generator verify mode passes (bb_patterns.md byte-fresh) — bun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "honesty: no framework_pattern_stub anywhere in source [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stub present"
+    },
+    {
+      "name": "honesty: no anti_pattern_stub anywhere in source [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stub present"
+    },
+    {
+      "name": "honesty: plannedModes includes quality + architecture",
+      "pass": true,
+      "detail": "plannedModes=[\"quality\",\"architecture\"]"
+    },
+    {
+      "name": "honesty: quality/architecture are NOT in the executable modes list [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "modes=[\"orphaned\",\"all\"]"
+    },
+    {
+      "name": "honesty: handler only routes orphaned + all (no quality/architecture)",
+      "pass": true,
+      "detail": "handler routes"
+    },
+    {
+      "name": "evidence: p1.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: p2.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: p3.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: p4.json exists, validates, verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: all 4 P-issues claim verified with negatives",
+      "pass": true,
+      "detail": "P1:4neg P2:4neg P3:5neg P4:8neg"
+    },
+    {
+      "name": "gate: verify-patterns-contract.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-contract.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-rules.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-rules.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-orphans.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-orphans.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-e2e-corpus.ts wired into quality gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: verify-patterns-e2e-corpus.ts wired into npm run verify",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: evidence validator (B3) is part of the gate",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "gate: tampered doc (failed>0, no negatives) cannot claim verified [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "summary.failed 5 != actual 0; negativeCases 0 is less than 4 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
+    },
+    {
+      "name": "gate: all P-verifiers are physically present in the gate source [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "all present"
+    }
+  ],
+  "negativeCases": 5,
+  "summary": {
+    "total": 32,
+    "passed": 32,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "src/mcp/tool-registry.ts + script/verify-tool-docs.ts (curated doc) are the single source; docs/tools/bb_patterns.md is a generated artifact",
+    "releaseGate": "verify-quality-gate.ts (P1-P4 verifiers wired) + verify-evidence.ts B3 invariant; proven by tamper test",
+    "evidenceInputs": "validation/m13/results/p1..p4.json must all exist, validate, and claim verified for bb_patterns to be release-eligible",
+    "noStubs": "framework_pattern_stub / anti_pattern_stub were removed in P2; source must contain zero references to them",
+    "plannedHonesty": "quality + architecture are planned (not executable); the registry + docs must both label them as planned"
+  },
+  "limitations": [
+    "Docs byte-freshness is proven by the generator's own verify mode, not by a duplicated render.",
+    "This gate covers bb_patterns only; other tools have their own issues in M13."
+  ],
+  "generatedAt": "2026-11-05T04:13:47.175Z"
+}

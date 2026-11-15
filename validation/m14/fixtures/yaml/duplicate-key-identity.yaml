@@ -1,0 +1,7 @@
+# Duplicate mapping keys are invalid YAML that tree-sitter recovers. Two symbols sharing
+# one id makes every relationship endpoint ambiguous, because the graph resolves
+# endpoints by qualified name while the store's own key includes the start line.
+root:
+  child: 1
+  child: 2
+  other: 3

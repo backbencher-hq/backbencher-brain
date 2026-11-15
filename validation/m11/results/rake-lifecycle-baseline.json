@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "repository": "rake",
+  "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+  "path": "/home/ishaq2321/bb_tests/repositories/rake",
+  "evidenceEligible": true,
+  "trackedFiles": 127,
+  "indexedFiles": 57,
+  "symbols": 980,
+  "relationships": 1729,
+  "cold": {
+    "name": "cold_index",
+    "wallTimeMs": 8933.998935,
+    "userCpuMs": 1275.301,
+    "systemCpuMs": 330.447,
+    "peakRssBytes": 111267840,
+    "rssDeltaBytes": 49197056,
+    "databaseBytes": 18530304,
+    "files": 57,
+    "symbols": 980,
+    "relationships": 1729,
+    "filesPerSecond": 6.3801216470594975,
+    "symbolsPerSecond": 109.69331954593522,
+    "relationshipsPerSecond": 193.53035662747143
+  },
+  "warm": {
+    "name": "warm_index",
+    "wallTimeMs": 16.392101,
+    "userCpuMs": 16.91,
+    "systemCpuMs": 5.738,
+    "peakRssBytes": 111267840,
+    "rssDeltaBytes": 262144,
+    "databaseBytes": 18530304,
+    "files": 57,
+    "symbols": 980,
+    "relationships": 1729,
+    "filesPerSecond": 3477.2845774925377,
+    "symbolsPerSecond": 59784.89273583661,
+    "relationshipsPerSecond": 105477.63218394031
+  },
+  "coldStats": {
+    "totalFiles": 57,
+    "processedFiles": 57,
+    "successFiles": 57,
+    "timeoutFiles": 0,
+    "errorFiles": 0,
+    "skippedFiles": 0,
+    "symbolsExtracted": 980,
+    "relationshipsFound": 1729,
+    "importsFound": 72,
+    "startTime": 1786402237051,
+    "errors": [],
+    "endTime": 1786402245797,
+    "filesPerSecond": 6.517265035444774
+  },
+  "warmStats": {
+    "totalFiles": 57,
+    "processedFiles": 57,
+    "successFiles": 0,
+    "timeoutFiles": 0,
+    "errorFiles": 0,
+    "skippedFiles": 57,
+    "symbolsExtracted": 980,
+    "relationshipsFound": 1729,
+    "importsFound": 0,
+    "startTime": 1786402245981,
+    "errors": [],
+    "endTime": 1786402245995
+  },
+  "limitations": [
+    "Rake is a small real-repository scale probe; it is not representative of large-corpus throughput.",
+    "Language extraction precision is evaluated in later language-specific issues."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.817Z",
+    "contentSha256": "dd098ed6e57db5972702e005a50f684b006a713841f9de6f0f32ccd8f4d85ea5"
+  }
+}

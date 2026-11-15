@@ -1,0 +1,57 @@
+{
+  "fixtureId": "csharp/field-initializer-read",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CS-D11. Pins that a const or field read in a class-level FIELD INITIALIZER is published as `uses`. The defect was oracle-side: `isEntityName` used `declaratorRole` (which answers 'is this in member SCOPE') as a proxy for 'is this the declarator's own NAME', so a declarator's initializer was classified as the declaration publishing itself and dropped. Every const/field read from a field initializer was lost on the `uses` label across all four corpora.\n\nA fixture cannot find an oracle defect \u2014 F3 asserts what the ANALYZER emits, so an analyzer with no defects at all passes every fixture while the oracle judging it lies. That blindness is structural. What this pins is the analyzer half of the contract, so the reads cannot be lost silently later.\n\nThe four shapes that already worked (constructor body x2, method body, local declaration) are pinned alongside the failing one on purpose: the fix is about declarator-vs-initializer, and an over-broad correction that starts dropping neighbouring cases is caught here rather than as a corpus regression.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "FieldInitReads",
+      "target": "MaxDepth",
+      "comment": "CS-D11: a FIELD INITIALIZER reading a const. Pre-fix this edge existed in the ANALYZER but not in the oracle \u2014 `isEntityName` classified the initializer as the declarator publishing itself. The oracle fix restores the truth side; this row pins the analyzer half so a future analyzer change cannot quietly drop it."
+    },
+    {
+      "type": "uses",
+      "from": "FieldInitReads",
+      "target": "Label",
+      "comment": "CS-D11: same shape, a second const, so a fix that special-cases one declaration cannot pass on this alone."
+    },
+    {
+      "type": "uses",
+      "from": "FieldInitReads",
+      "target": "_seed",
+      "comment": "CS-D11: a field initializer reading a FIELD rather than a const. Included because the defect was about declarator-vs-initializer, not about consts specifically \u2014 a fix scoped to consts would miss this."
+    },
+    {
+      "type": "uses",
+      "from": "constructor",
+      "target": "MaxDepth",
+      "comment": "Already worked pre-fix (a constructor body is not a declarator). Pinned so a fix that changes the scope question cannot start dropping it \u2014 the over-correction case, which is the one a narrow fixture would miss."
+    },
+    {
+      "type": "uses",
+      "from": "constructor",
+      "target": "Label",
+      "comment": "As above, second const."
+    },
+    {
+      "type": "uses",
+      "from": "ReadInBody",
+      "target": "MaxDepth",
+      "comment": "Already worked. A method body is not a declarator."
+    },
+    {
+      "type": "uses",
+      "from": "ReadInLocal",
+      "target": "MaxDepth",
+      "comment": "Already worked. A LOCAL declaration's initializer is a different node path (local_declaration_statement) and must keep working \u2014 this is the case most likely to be broken by an over-broad declarator fix."
+    },
+    {
+      "type": "uses",
+      "from": "ReadInLocal",
+      "target": "_viaCtor",
+      "comment": "Already worked, and distinct in that the target is a FIELD read inside a local initializer."
+    }
+  ],
+  "forbidRelationships": []
+}

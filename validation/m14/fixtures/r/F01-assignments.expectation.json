@@ -1,0 +1,81 @@
+{
+  "fixtureId": "r/F01-assignments",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Every VALID way R binds a top-level name, one per line, so that the operator set is a table rather than a belief. `<-` `=` `<<-` bind the LEFT; `->` `->>` bind the RIGHT; tree-sitter-r keeps all five as operators on a `binary_operator` node, so the analyzer reads the operator FIELD and picks a side rather than assuming the left. `deferred_name` is the line that makes the choice testable: the assignment spans four lines, so an edge that took the node's start line rather than the line the NAME is written on would land on line 12, and this pin cannot tell that difference -- the name is what is asserted. The forms R REJECTS live in F13, so one file cannot both assert and deny the same shape.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "left_arrow",
+      "kind": "variable"
+    },
+    {
+      "name": "equals",
+      "kind": "variable"
+    },
+    {
+      "name": "super_left",
+      "kind": "variable"
+    },
+    {
+      "name": "right_from_value",
+      "kind": "variable"
+    },
+    {
+      "name": "super_b",
+      "kind": "variable"
+    },
+    {
+      "name": "fn_left",
+      "kind": "function"
+    },
+    {
+      "name": "deferred_name",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "left_arrow"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "equals"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "super_left"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "right_from_value"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "super_b"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "fn_left"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "deferred_name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "first_arg"
+    }
+  ]
+}

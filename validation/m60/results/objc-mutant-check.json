@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Objective-C grammar-wave mutant survival",
+  "generatedAt": "2026-09-30T03:27:11.823Z",
+  "why": "script/m14/mutate-analyzer.ts does not parse at HEAD — the xml/implicit-xml-prefix-unbound entry is truncated mid-transform with an unterminated description string, so the F4 gate fails for every language before any mutant runs. The three transforms are mirrored from the registry verbatim and flagged mirroredFromRegistry:false, so this report cannot be mistaken for the real gate's verdict.",
+  "registryStatus": {
+    "file": "script/m14/mutate-analyzer.ts",
+    "parsesAtHead": false,
+    "symptom": "1894 | } — Expected \")\" but found \"}\"",
+    "cause": "xml/implicit-xml-prefix-unbound: unterminated `description`, transform body spliced with an undefined `n`",
+    "owner": "xml lane — intent not recoverable from the wreckage, reported rather than guessed"
+  },
+  "fixture": "objc/macro-wrapped-enum-and-guarded",
+  "baselinePasses": true,
+  "baselineProblems": [],
+  "mutants": 5,
+  "caught": 5,
+  "survivors": [],
+  "verdict": "all 5 grammar-wave mutants caught by the fixture; baseline clean",
+  "rows": [
+    {
+      "id": "objc/drop-macro-enum-members",
+      "defectClass": "symbol-loss",
+      "description": "the `macro_enum_arguments` name resolution is reverted: the enum body still parses, but the analyzer cannot name it, so the enum and all its members disappear",
+      "mirroredFromRegistry": false,
+      "caught": true,
+      "problems": [
+        "expected symbol not found: {\"name\":\"GuardedMode\",\"kind\":\"enum\"}",
+        "expected symbol not found: {\"name\":\"GuardedModeAutomatic\",\"kind\":\"enum_member\",\"ownerName\":\"GuardedMode\"}",
+        "expected symbol not found: {\"name\":\"GuardedModeManual\",\"kind\":\"enum_member\",\"ownerName\":\"GuardedMode\"}",
+        "expected symbol not found: {\"name\":\"GuardedTraits\",\"kind\":\"enum\"}"
+      ]
+    },
+    {
+      "id": "objc/macro-enum-name-from-first-arg",
+      "defectClass": "payload-corruption",
+      "description": "the macro form's name is taken from the FIRST argument instead of the last, so each enum is named after its underlying type and its members change owner",
+      "mirroredFromRegistry": false,
+      "caught": true,
+      "problems": [
+        "expected symbol not found: {\"name\":\"GuardedMode\",\"kind\":\"enum\"}",
+        "expected symbol not found: {\"name\":\"GuardedTraits\",\"kind\":\"enum\"}",
+        "forbidden symbol present: {\"name\":\"NSInteger\",\"kind\":\"enum\"}",
+        "forbidden symbol present: {\"name\":\"NSUInteger\",\"kind\":\"enum\"}"
+      ]
+    },
+    {
+      "id": "objc/drop-availability-annotated-protocol",
+      "defectClass": "symbol-loss",
+      "description": "the @protocol enclosing an availability-annotated method is lost with all of its methods",
+      "mirroredFromRegistry": false,
+      "caught": true,
+      "problems": [
+        "expected symbol not found: {\"name\":\"removeImageForKey:options:\",\"kind\":\"method\",\"ownerName\":\"GuardedStore\"}",
+        "expected symbol not found: {\"name\":\"flushPendingWrites\",\"kind\":\"method\",\"ownerName\":\"GuardedStore\"}",
+        "expected relationship not found: {\"source\":\"GuardedStore\",\"type\":\"contains\",\"target\":\"removeImageForKey:options:\"}",
+        "expected relationship not found: {\"source\":\"GuardedStore\",\"type\":\"contains\",\"target\":\"flushPendingWrites\"}"
+      ]
+    },
+    {
+      "id": "objc/availability-annotation-into-selector",
+      "defectClass": "payload-corruption",
+      "description": "a trailing availability annotation is read as another method selector, publishing a method that does not exist",
+      "mirroredFromRegistry": false,
+      "caught": true,
+      "problems": [
+        "expected symbol not found: {\"name\":\"flushPendingWrites\",\"kind\":\"method\",\"ownerName\":\"GuardedStore\"}",
+        "expected relationship not found: {\"source\":\"GuardedStore\",\"type\":\"contains\",\"target\":\"flushPendingWrites\"}",
+        "forbidden symbol present: {\"name\":\"flushPendingWritesAF_API_UNAVAILABLE\",\"kind\":\"method\"}"
+      ]
+    },
+    {
+      "id": "objc/drop-guarded-class-properties",
+      "defectClass": "symbol-loss",
+      "description": "the class swallowed by an unreachable macro-prefixed rule loses its properties and their contains rows",
+      "mirroredFromRegistry": false,
+      "caught": true,
+      "problems": [
+        "expected symbol not found: {\"name\":\"identifier\",\"kind\":\"property\",\"ownerName\":\"MacroGuardedView\"}",
+        "expected symbol not found: {\"name\":\"mode\",\"kind\":\"property\",\"ownerName\":\"GuardedController\"}",
+        "expected symbol not found: {\"name\":\"traits\",\"kind\":\"property\",\"ownerName\":\"GuardedController\"}",
+        "expected relationship not found: {\"source\":\"MacroGuardedView\",\"type\":\"contains\",\"target\":\"identifier\"}"
+      ]
+    }
+  ]
+}

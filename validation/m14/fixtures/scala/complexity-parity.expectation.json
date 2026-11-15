@@ -1,0 +1,12 @@
+{
+  "fixtureId": "scala/complexity-parity",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT: cyclomatic complexity = 1 + decisions; decisions = if + for + if-expression + && (infix_expression operator) = 4, so f must be exactly 5. Short-circuit operators were never counted on scala; the file-level metric also lacked the +1 base.",
+  "expectSymbols": [
+    { "name": "f", "kind": "method" }
+  ],
+  "expectComplexity": [
+    { "symbol": "f", "equals": 5 }
+  ]
+}

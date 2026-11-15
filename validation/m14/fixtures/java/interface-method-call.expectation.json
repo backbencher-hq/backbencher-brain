@@ -1,0 +1,9 @@
+{
+  "fixtureId": "java/interface-method-call",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Field method invocation yields a Calls edge from the enclosing method to the invoked name.",
+  "expectRelationships": [
+    { "type": "calls", "from": "run", "target": "execute" }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "fixtureId": "groovy/implicit-override",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave G2 gap (java JAO1 parity): @Override is a check, not a requirement \u2014 Sub.greet redeclares Base.greet with the identical signature and no annotation, so it overrides at exact-in-file confidence. Overloads never pair: Sub.nth(int, Object) against Base.nth(int) is not an override. Private same-signature members never pair (helper).",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Sub",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Sub.greet",
+      "target": "greet",
+      "confidenceMin": 1.0,
+      "meta.reasonCode": "exact-in-file",
+      "meta.overriddenOwner": "Base"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Sub.nth",
+      "target": "nth",
+      "meta.overriddenOwner": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Sub.helper",
+      "target": "helper",
+      "meta.overriddenOwner": "Base"
+    }
+  ]
+}

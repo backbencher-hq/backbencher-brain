@@ -1,0 +1,144 @@
+{
+ "label": "single-known",
+ "ms": 10962.5,
+ "isError": false,
+ "summary": {
+  "plans": 1,
+  "unsupported": 0,
+  "planNames": [
+   "generateMigrationPlans[typescript->python]"
+  ],
+  "work": {
+   "symbolsLoaded": 1,
+   "relationshipsLoaded": 195,
+   "projectSymbols": 310423,
+   "projectRelationships": 820040
+  },
+  "truncation": {
+   "truncated": false,
+   "requested": 1,
+   "returned": 1,
+   "capped": 0,
+   "deduplicated": 0,
+   "cappedNamesCount": 0
+  },
+  "effort": {
+   "totalHours": 356,
+   "perPlanSumHours": 356,
+   "sharedRelationshipHours": 0,
+   "reconciliation": "per-plan effort sums to the methodology total"
+  },
+  "orderingStatus": "partial",
+  "orderLen": 1,
+  "waves": [
+   1
+  ],
+  "scope": {
+   "integrationPoints": 194,
+   "inScope": 0,
+   "completeness": 0
+  },
+  "unsupportedReasons": [],
+  "freshness": {
+   "fresh": 1,
+   "stale": 0,
+   "missing": 0,
+   "mode": "complete"
+  },
+  "methodTotals": {
+   "base": 4,
+   "rel": 352,
+   "missH": 0,
+   "missN": 0,
+   "relCount": 176
+  }
+ }
+}
+{
+ "label": "twelve-common",
+ "ms": 6089.9,
+ "isError": false,
+ "summary": {
+  "plans": 1,
+  "unsupported": 11,
+  "planNames": [
+   "SAVE[typescript->python]"
+  ],
+  "work": {
+   "symbolsLoaded": 844,
+   "relationshipsLoaded": 46753,
+   "projectSymbols": 310423,
+   "projectRelationships": 820040
+  },
+  "truncation": {
+   "truncated": false,
+   "requested": 12,
+   "returned": 12,
+   "capped": 0,
+   "deduplicated": 0,
+   "cappedNamesCount": 0
+  },
+  "effort": {
+   "totalHours": 8,
+   "perPlanSumHours": 8,
+   "sharedRelationshipHours": 0,
+   "reconciliation": "per-plan effort sums to the methodology total"
+  },
+  "orderingStatus": "no-edges",
+  "orderLen": 1,
+  "waves": [
+   1
+  ],
+  "scope": {
+   "integrationPoints": 2,
+   "inScope": 0,
+   "completeness": 0
+  },
+  "unsupportedReasons": [
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol",
+   "ambiguous-symbol"
+  ],
+  "freshness": {
+   "fresh": 1,
+   "stale": 0,
+   "missing": 0,
+   "mode": "complete"
+  },
+  "methodTotals": {
+   "base": 4,
+   "rel": 4,
+   "missH": 0,
+   "missN": 0,
+   "relCount": 2
+  }
+ }
+}
+{
+ "label": "path-cohort",
+ "ms": 195,
+ "isError": true,
+ "summary": {
+  "textHead": [
+   "bb_migrate: no indexed file matches \"src/mcp/tools\". Paths are project-relative; check the spelling against the project root."
+  ]
+ }
+}
+{
+ "label": "path-cohort-file",
+ "ms": 178.8,
+ "isError": true,
+ "summary": {
+  "textHead": [
+   "bb_migrate: no indexed file matches \"src/mcp/tools/bb_migrate/handler.ts\". Paths are project-relative; check the spelling against the project root."
+  ]
+ }
+}

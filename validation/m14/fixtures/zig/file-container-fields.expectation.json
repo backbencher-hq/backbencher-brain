@@ -1,0 +1,171 @@
+{
+  "fixtureId": "zig/file-container-fields",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M13, from the file-local miss decomposition. Zig lets a FILE be a struct: `const Widget = @This();` followed by bare fields makes the file's top level the struct body, and the grammar states that structurally — the fields arrive as `container_field` whose DIRECT parent is `source_file`, not as a child of any `container_declaration`. The analyzer skipped every container_field with no enclosing container, on the negative contract that an anonymous container owns nothing; that contract is about a field inside an anonymous struct returned from a generic function, and a file-level field's owner is the FILE. Measured over the published 3,834-file draw through production parseFile (draw sha256:2f3545f9..., 395,805 edges): 411 of 3,834 files carry at least one, 3,324 fields in all (3,321 typed, 3 untyped), and 2,892 of those names were published NOWHERE in their own file — so each read of one was a `uses` edge naming a declaration the parser already had. This fixture pins the field, the owner it is attributed to, the ordinary named struct that must stay untouched, and the two shapes that must mint NOTHING: an untyped malformed field, and a field of a file that never binds `@This()`.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "type",
+      "note": "`const Widget = @This()` — the name the FILE gives its own container. Published before this change too; it is the owner every file-level field below hangs off."
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "note": "a file-level field, owner Widget. The shape the whole change exists for: before it, this declaration was in the parse tree and absent from the index."
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "note": "a second file-level field, so a fixture with one field cannot pass by publishing the first."
+    },
+    {
+      "name": "allocator",
+      "kind": "property",
+      "note": "a file-level field whose declared type is reached through an import binding (`std.mem.Allocator`). The type comes off the grammar's `type` FIELD, so the default value's own identifiers cannot displace it."
+    },
+    {
+      "name": "owner",
+      "kind": "property",
+      "note": "a file-level field typed `?*Nested` — an optional pointer to a container declared in this same file, so the field and its type must both resolve here."
+    },
+    {
+      "name": "Nested",
+      "kind": "struct",
+      "note": "an ORDINARY named struct in the same file, which this change must not touch."
+    },
+    {
+      "name": "inner",
+      "kind": "property",
+      "note": "a field of the ordinary named struct, owner Nested. It was published before this change; publishing it again off the file's container would be a second symbol under one name."
+    },
+    {
+      "name": "get",
+      "kind": "method",
+      "note": "a method of the ordinary named struct — the other member kind a double-publication would corrupt."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "u32",
+      "note": "the corpus's 3 untyped file-level fields are all in zig/test/cases/compile_errors/ (file_level_tuple.zig — a file-level tuple, which Zig rejects) and hold a TYPE where a name belongs. A symbol named after its own type is the fabrication the named-container branch already refuses for unnamed `extern struct` members; the file-level branch must refuse it identically."
+    },
+    {
+      "name": "_",
+      "note": "a discard is not a declaration. The named-container branch drops `_` and so does this one."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "Widget.count",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "the file's struct owns its own field. This edge is what a reverse walk from `count` needs, and it did not exist before this change."
+    },
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "Widget.name",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "a second containment, so one field cannot satisfy the fixture."
+    },
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "Widget.allocator",
+      "meta.targetScope": "file-local",
+      "note": "a file-level field whose type is an external path still gets an OWNERSHIP edge: the owner is this file's struct, and the field's target kind is decidable here."
+    },
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "Widget.owner",
+      "meta.targetScope": "file-local",
+      "note": "the optional-pointer field."
+    },
+    {
+      "type": "contains",
+      "source": "Nested",
+      "target": "Nested.inner",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "the ordinary named struct's ownership edge, unchanged by this fixture's subject."
+    },
+    {
+      "type": "contains",
+      "source": "Nested",
+      "target": "Nested.get",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "method",
+      "note": "and its method's, likewise unchanged."
+    },
+    {
+      "type": "uses",
+      "source": "bump",
+      "target": "count",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "THE row. `self.count += 1` read a declaration this file declares, and before this change the edge's targetScope was `file-external`. This is the 7.53-point rise in `uses` file-local resolution, pinned on one field read."
+    },
+    {
+      "type": "uses",
+      "source": "describe",
+      "target": "name",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "a second field read of a file-level field, so the row above cannot pass by special-casing one name."
+    },
+    {
+      "type": "uses",
+      "source": "get",
+      "target": "inner",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "the same shape on the ordinary named struct, which resolved before this change and must keep resolving — the regression half of the row."
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Widget",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "type",
+      "note": "`self: *Widget` on the file's own function: the file's container name is published and file-local, which is the same fact the ownership edges rest on."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "inner",
+      "note": "`inner` belongs to `Nested`, NOT to the file's own struct. A file-level branch that attributed fields to the nearest enclosing declaration, or that ran before the named-container branch claimed them, would emit this edge and publish `inner` twice under two owners."
+    },
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "get",
+      "note": "the method half of the same double-publication."
+    },
+    {
+      "type": "contains",
+      "source": "Nested",
+      "target": "count",
+      "note": "and the converse: a file-level field must not be attributed to a named struct that happens to be declared in the same file."
+    },
+    {
+      "type": "contains",
+      "source": "file-container-fields",
+      "target": "count",
+      "note": "the file's own basename is NOT the name of its container. `const Widget = @This()` is the only thing that names it, and inventing an owner from the path would put an edge on a symbol the analyzer never publishes — an edge the graph would assert and could not walk."
+    },
+    {
+      "type": "uses",
+      "source": "bump",
+      "target": "count",
+      "meta.targetScope": "file-external",
+      "note": "the negative counterpart to the row this fixture exists for. A forbid alone is satisfied by ANY behaviour, including dropping the edge; `targetScope: file-local` above is what makes the assertion bite, and this row is what catches a regression that flips the annotation while keeping the edge."
+    }
+  ]
+}

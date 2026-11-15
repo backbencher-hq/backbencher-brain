@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "state": "verified",
+  "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+  "corpus": {
+    "name": "graphql-js",
+    "language": "JavaScript/TypeScript",
+    "source": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+    "readOnly": true,
+    "filesOnDisk": 673
+  },
+  "dataDir": "validation/tools/bb_index/realcorpus/bbdata (isolated; never the shared .bb-data or ~/.bb)",
+  "indexCommand": "BB_DATA_DIR=validation/tools/bb_index/realcorpus/bbdata BB_EMBEDDING_DRAIN_WAIT_MS=30000 npx tsx src/cli/index.ts index /home/ishaq2321/bb_tests/repositories/graphql-js",
+  "indexPopulation": {
+    "files": 564,
+    "symbols": 13620,
+    "relationships": 61917,
+    "dbBytes": 177258496
+  },
+  "indexPopulationSource": "byte-read-only SELECT COUNT(*) on the isolated brain.db (node:sqlite readOnly)",
+  "doorCommand": "BB_DATA_DIR=… npx tsx validation/tools/bb_index/probe-mcp.ts /home/ishaq2321/bb_tests/repositories/graphql-js validation/tools/bb_index/work/cases-realcorpus.json validation/tools/bb_index/REAL-CORPUS.json",
+  "cases": [
+    {
+      "label": "real corpus: file mode on an unchanged source file (no-op path)",
+      "arguments": {
+        "path": "src/language/parser.ts"
+      },
+      "isError": false,
+      "ms": 98,
+      "answer": {
+        "mode": "file",
+        "path": "src/language/parser.ts",
+        "indexed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": 1,
+        "declined": 0,
+        "skipped": 0,
+        "outcome": "no-op",
+        "reason": "nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)",
+        "walCheckpointed": false,
+        "derived": {
+          "pass": "deferred",
+          "phases": [],
+          "repairedInEdges": 0,
+          "touchedSymbols": 0
+        }
+      }
+    },
+    {
+      "label": "real corpus: dir mode on a settled corpus",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "ms": 279,
+      "answer": {
+        "mode": "dir",
+        "path": ".",
+        "candidates": 80,
+        "processed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": 0,
+        "declined": 80,
+        "skipped": 0,
+        "outcome": "no-op",
+        "reason": "every candidate was already current in the index",
+        "walCheckpointed": false
+      }
+    },
+    {
+      "label": "REFUSE: outside-project path in a real corpus",
+      "arguments": {
+        "path": "/etc/hostname"
+      },
+      "isError": true,
+      "ms": 3,
+      "answer": "bb_index : refusing a path outside the project. \"/etc/hostname\" resolves to /etc/hostname, which is not inside /home/ishaq2321/bb_tests/repositories/graphql-js. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it."
+    },
+    {
+      "label": "REFUSE: ../ traversal in a real corpus",
+      "arguments": {
+        "path": "../other-repo/file.ts"
+      },
+      "isError": true,
+      "ms": 2,
+      "answer": "bb_index: no such path: /home/ishaq2321/bb_tests/repositories/other-repo/file.ts"
+    },
+    {
+      "label": "REFUSE: mode=post on a file path in a real corpus",
+      "arguments": {
+        "path": "src/language/parser.ts",
+        "mode": "post"
+      },
+      "isError": true,
+      "ms": 4,
+      "answer": "bb_index mode=post: /home/ishaq2321/bb_tests/repositories/graphql-js/src/language/parser.ts is a file — mode=post re-derives the phases of the PROJECT, so `path` must be the project root or a directory inside it (pass the project path or \".\")."
+    },
+    {
+      "label": "real corpus: post mode on the project root",
+      "arguments": {
+        "path": ".",
+        "mode": "post"
+      },
+      "isError": false,
+      "ms": 12742,
+      "answer": {
+        "mode": "post",
+        "path": ".",
+        "phases": [
+          {
+            "name": "relationships",
+            "ms": 8121,
+            "outcome": "ok"
+          },
+          {
+            "name": "enrichment",
+            "ms": 2272,
+            "outcome": "ok"
+          },
+          {
+            "name": "gravity",
+            "ms": 611,
+            "outcome": "ok"
+          },
+          {
+            "name": "taint",
+            "ms": 152,
+            "outcome": "ok"
+          },
+          {
+            "name": "health",
+            "ms": 166,
+            "outcome": "ok"
+          },
+          {
+            "name": "integrity",
+            "ms": 541,
+            "outcome": "ok"
+          },
+          {
+            "name": "vectorBlobs",
+            "ms": 8,
+            "outcome": "ok"
+          },
+          {
+            "name": "analyze",
+            "ms": 796,
+            "outcome": "ok"
+          }
+        ],
+        "totalMs": 12730,
+        "integrityHealth": 100
+      }
+    },
+    {
+      "label": "real corpus: dir mode on a settled corpus (eligibility-filtered walk)",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "ms": 367,
+      "answer": {
+        "mode": "dir",
+        "path": ".",
+        "candidates": 0,
+        "processed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": true,
+        "outcome": "no-op",
+        "reason": "no change detected under the requested directory (mtime+size comparison; the walk applies the indexer's own skip rules)"
+      }
+    },
+    {
+      "label": "real corpus: file mode on an unchanged source file (no-op)",
+      "arguments": {
+        "path": "src/language/parser.ts"
+      },
+      "isError": false,
+      "ms": 14,
+      "answer": {
+        "mode": "file",
+        "path": "src/language/parser.ts",
+        "indexed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "unchanged": 1,
+        "declined": 0,
+        "skipped": 0,
+        "outcome": "no-op",
+        "reason": "nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)",
+        "walCheckpointed": false,
+        "derived": {
+          "pass": "deferred",
+          "phases": [],
+          "repairedInEdges": 0,
+          "touchedSymbols": 0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "The corpus directory is a read-only mount, so the changed-file legs (edit → file/dir reindex) are measured on the isolated T0/vendor fixtures instead; on the real corpus the no-op and refusal legs run through the same door.",
+    "Two corpus files fail normal parsing during the initial index (564 files stored, 484 errors reported by the legacy pipeline counters); that is an analyzer-coverage fact of this corpus, not a bb_index result."
+  ],
+  "blockedLegs": [
+    "T2 latency: blocked for this tool by charter §6 (T2 is read-only tools only) and by the no-touch rule for the shared .bb-data index; the reference population is recorded read-only in LATENCY.json."
+  ],
+  "rawDoorEvidence": "audit/door-realcorpus.json, audit/door-realcorpus-dir.json"
+}

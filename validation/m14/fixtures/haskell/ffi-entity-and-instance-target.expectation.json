@@ -1,0 +1,287 @@
+{
+  "fixtureId": "haskell/ffi-entity-and-instance-target",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The 2026-10-03 VERIFICATION round for analyzer/HASKELL. Its predecessor round fixed the QUOTES on an FFI entity but recorded the header case as unreachable, from a count of entity NODES; the header is inside the same string literal, so no node census can see it. Re-probing the corpus produced four findings, three defects and one GAP, and this fixture pins all four plus the controls that say the fixes did not over-reach.\n\n(1) FFI HEADER. Over the 1,356 quoted FFI literals GHC writes, 391 carry a HEADER AND THE C NAME IN ONE STRING and the analyzer published the header as the symbol: `references log1pDoubleOld -> \"math.h log1p\"` (testsuite/tests/codeGen/should_run/cgrun078.hs:21), `references functionInC -> \"T15933.h function_in_c\"` (testsuite/tests/ffi/should_run/T15933.hs:8). Haskell 2010 Report F.3.2.1 `impent -> 'static' [chname] [&] [cid] | string`: in the string form the header and the entity share one literal, so the entity is the LAST whitespace-separated token.\n\n(2) FFI `&`. 42 of those literals are `&`-prefixed — Report F.3.2.1's `[&]`, meaning pass-the-address-of, not part of the spelling. `references ghc_unique_counter64 -> \"&ghc_unique_counter64\"` at compiler/GHC/Types/Unique/Supply.hs:280.\n\n(3) FFI `javascript`. Over a stride-12 draw of the corpus (1,170 files, 62 `foreign_import` nodes, script/m14/tmp/hs-verify-ffi-conv.ts) 13 of 13 `javascript` nodes bind a JAVASCRIPT BODY and not one names an entity — yet 8 SHIPPED as `references` edges, because a JS snippet contains none of the characters pool-worker.filterNoiseRelationships bans: `references js_print -> \"console.log($1)\"`, `references js_req_to_str -> \"$1.text($2)\"` (testsuite/tests/jsffi/http.hs:18-45). Under rule R7 the honest state for no-entity-named is ABSENCE, so no `references` edge is published while the declaration still publishes its symbol and its `contains` edge.\n\n(4) QUALIFIED INSTANCE TARGET — a GAP in the workstream's sense (the language HAS the construct and the analyzer was not reading it). `instance TrieMap IntMap.IntMap` parses as `type_patterns -> qualified(\"IntMap.IntMap\")`; no branch of processInstance matched, `targetType` stayed empty, and the instance SYMBOL was published under the CLASS's own name — a second symbol named `TrieMap` beside the file's own `class TrieMap` — while `implements IntMap.IntMap -> TrieMap`, an edge the language plainly expresses, was never emitted. Corpus: compiler/GHC/Data/TrieMap.hs:139, compiler/GHC/Types/Unique/DSM.hs:158.\n\nThe controls matter as much as the pins. `widget_alloc`, `wrapper`, `dynamic` and `widget_version` are name-only literals on C conventions and must be published UNCHANGED, so a mutant that made foreignEntityName return the wrong thing, return nothing, or apply the javascript branch to every convention would each break a pin rather than pass by accident. `instance Surface Widget` and `instance Surface [Int]` are the unqualified targets, pinned so the qualified branch cannot pass by naming something.\n\nA regression the fix itself introduced, and the guard for it: adding \"qualified\" to processInstance's type-SCANNING list let a later type pattern of a MULTI-PARAMETER instance hijack the target, moving 2 `implements` and 5 `overrides` edges onto the wrong type (compiler/GHC/HsToCore/Quote.hs:1239 `instance RepTV (HsBndrVis GhcRn) TH.BndrVis`, type_patterns [0]=parens [1]=qualified; compiler/GHC/ThToHs.hs:1600). The shipped rule reads POSITION — a `qualified` first pattern — which is strictly additive: every shape the pre-existing branches read is still read by them. `Convertible` below pins the multi-parameter case in both directions, and `haskell/instance-qualified-hijacks-multiparam` is the mutant.",
+  "expectSymbols": [
+    {
+      "name": "Surface.FFI",
+      "kind": "module"
+    },
+    {
+      "name": "Widget",
+      "kind": "type"
+    },
+    {
+      "name": "Widget",
+      "kind": "constructor"
+    },
+    {
+      "name": "widgetLabel",
+      "kind": "property"
+    },
+    {
+      "name": "render",
+      "kind": "function"
+    },
+    {
+      "name": "c_widgetAlloc",
+      "kind": "function"
+    },
+    {
+      "name": "c_wrap",
+      "kind": "function"
+    },
+    {
+      "name": "c_dynamic",
+      "kind": "function"
+    },
+    {
+      "name": "log1pWrapper",
+      "kind": "function"
+    },
+    {
+      "name": "c_equivalentToId",
+      "kind": "function"
+    },
+    {
+      "name": "uniqueCounter",
+      "kind": "function"
+    },
+    {
+      "name": "jsAdd",
+      "kind": "function"
+    },
+    {
+      "name": "c_widgetVersion",
+      "kind": "function"
+    },
+    {
+      "name": "Surface",
+      "kind": "interface"
+    },
+    {
+      "name": "surfaceName",
+      "kind": "method"
+    },
+    {
+      "name": "Widget",
+      "kind": "instance"
+    },
+    {
+      "name": "Store.Map",
+      "kind": "instance",
+      "comment": "the GAP: a qualified instance TARGET is named verbatim, so `instance Surface Store.Map` publishes `Store.Map` and not a second symbol named `Surface`"
+    },
+    {
+      "name": "[]",
+      "kind": "instance",
+      "comment": "the unqualified list-target CONTROL, pinned so the qualified branch cannot pass by naming something"
+    },
+    {
+      "name": "Convertible",
+      "kind": "interface"
+    },
+    {
+      "name": "convert",
+      "kind": "method",
+      "comment": "a MULTI-PARAMETER class (src dst) — this lane publishes one target, and which one is pinned below"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "c_widgetAlloc",
+      "target": "widget_alloc",
+      "line_number": 63,
+      "comment": "CONTROL: a name-only C literal is untouched by every rule below"
+    },
+    {
+      "type": "references",
+      "source": "c_wrap",
+      "target": "wrapper",
+      "line_number": 69,
+      "comment": "CONTROL: the Report's standard stdcall wrapper entity is a real entity name and must survive the javascript branch"
+    },
+    {
+      "type": "references",
+      "source": "c_dynamic",
+      "target": "dynamic",
+      "line_number": 72,
+      "comment": "CONTROL: the Report's standard ccall dynamic entity, likewise"
+    },
+    {
+      "type": "references",
+      "source": "log1pWrapper",
+      "target": "log1p",
+      "line_number": 77,
+      "comment": "FIX 1: the C entity is the last whitespace token, so the `math.h` header is not published as the symbol"
+    },
+    {
+      "type": "references",
+      "source": "c_equivalentToId",
+      "target": "equivalent_to_id",
+      "line_number": 82,
+      "comment": "FIX 1 on ccall, so the rule is not tied to one calling convention"
+    },
+    {
+      "type": "references",
+      "source": "uniqueCounter",
+      "target": "ghc_unique_counter64",
+      "line_number": 88,
+      "comment": "FIX 2: Report F.3.2.1 `[&]` stripped; the C entity is not spelled with a Haskell sigil"
+    },
+    {
+      "type": "references",
+      "source": "c_widgetVersion",
+      "target": "widget_version",
+      "line_number": 100,
+      "comment": "CONTROL: a bare word that happens to be an entity survives unchanged"
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "Surface",
+      "line_number": 113,
+      "comment": "CONTROL: an ordinary unqualified instance target"
+    },
+    {
+      "type": "overrides",
+      "source": "Widget.surfaceName",
+      "target": "Surface.surfaceName",
+      "line_number": 114,
+      "comment": "CONTROL: the instance supplies the class's method"
+    },
+    {
+      "type": "implements",
+      "source": "[]",
+      "target": "Surface",
+      "line_number": 118,
+      "comment": "CONTROL: the list target"
+    },
+    {
+      "type": "implements",
+      "source": "Store.Map",
+      "target": "Surface",
+      "line_number": 122,
+      "comment": "FIX 3: the qualified target's edge, which the language expresses and the analyzer previously could not read at all"
+    },
+    {
+      "type": "overrides",
+      "source": "Store.Map.surfaceName",
+      "target": "Surface.surfaceName",
+      "line_number": 123,
+      "comment": "FIX 3, following from the named target: the composite endpoint names the real target type"
+    },
+    {
+      "type": "contains",
+      "source": "Surface.FFI",
+      "target": "jsAdd",
+      "line_number": 95,
+      "comment": "FIX 3 withholds the `references` edge only — the javascript binding is still a real declared symbol contained by the module"
+    },
+    {
+      "type": "contains",
+      "source": "Surface.FFI",
+      "target": "uniqueCounter",
+      "line_number": 88
+    },
+    {
+      "type": "implements",
+      "source": "Text",
+      "target": "Convertible",
+      "line_number": 140,
+      "comment": "multi-parameter CONTROL: `instance Convertible [Char] Text` — the single readable pattern is the target"
+    },
+    {
+      "type": "overrides",
+      "source": "Text.convert",
+      "target": "Convertible.convert",
+      "line_number": 141
+    },
+    {
+      "type": "implements",
+      "source": "Maybe",
+      "target": "Convertible",
+      "line_number": 148,
+      "comment": "REGRESSION GUARD: `instance Convertible Widget Store.Map` — the FIRST type pattern wins. The first version of the qualified fix scanned by node TYPE, so the second (qualified) pattern hijacked the target and moved 2 `implements` + 5 `overrides` edges corpus-wide (compiler/GHC/HsToCore/Quote.hs:1239 has type_patterns [0]=parens [1]=qualified)."
+    },
+    {
+      "type": "overrides",
+      "source": "Maybe.convert",
+      "target": "Convertible.convert",
+      "line_number": 149,
+      "comment": "the composite endpoint follows the same target, so a hijack would move this too"
+    },
+    {
+      "type": "implements",
+      "source": "Maybe",
+      "target": "Convertible",
+      "line_number": 148,
+      "comment": "REGRESSION GUARD: the target is the left-spine head of the FIRST (parenthesised) pattern. A type-scan for `qualified` would publish `Store.Map` here instead — the defect that moved 2 `implements` + 5 `overrides` edges corpus-wide."
+    },
+    {
+      "type": "overrides",
+      "source": "Maybe.convert",
+      "target": "Convertible.convert",
+      "line_number": 149,
+      "comment": "the composite endpoint follows the same target, so a hijack moves this too"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "source": "log1pWrapper",
+      "target": "math.h log1p",
+      "comment": "the FIX 1 defect, verbatim from testsuite/tests/codeGen/should_run/cgrun078.hs:21 — a FILE NAME as an edge endpoint"
+    },
+    {
+      "type": "references",
+      "source": "c_equivalentToId",
+      "target": "test_error_throwing.h equivalent_to_id",
+      "comment": "the FIX 1 defect on ccall, from testsuite/tests/rts/linker/T20918.hs:8"
+    },
+    {
+      "type": "references",
+      "source": "uniqueCounter",
+      "target": "&ghc_unique_counter64",
+      "comment": "the FIX 2 defect, from compiler/GHC/Types/Unique/Supply.hs:280 — the Report's address-of sigil is not part of the entity's spelling"
+    },
+    {
+      "type": "references",
+      "source": "jsAdd",
+      "target": "function add($1, $2) { return $1 + $2; }",
+      "comment": "FIX 3: a `javascript` FFI names no entity. This shape SHIPPED 8 rows on corpus (testsuite/tests/jsffi/http.hs) because a JS snippet contains none of the characters the production noise filter bans. This forbid also catches the naive fix that applies the last-token rule to every convention, which would publish `}` instead."
+    },
+    {
+      "type": "references",
+      "source": "jsAdd",
+      "target": "}",
+      "comment": "the naive last-token-everywhere fix, stated separately because it is a DIFFERENT wrong answer and a pin that forbade only the full literal would miss it"
+    },
+    {
+      "type": "implements",
+      "source": "Surface",
+      "target": "Surface",
+      "comment": "the FIX 3 pre-state in edge form: the instance was named after the class. A self-implements row is the shape that state produces whenever the class and the unnamed target coincide."
+    },
+    {
+      "type": "contains",
+      "source": "Surface.FFI",
+      "target": "log1p",
+      "comment": "the FFI entity is an EXTERNAL symbol and must never be claimed as contained by this module — the `contains` half of FIX 1 that a mutant turning the entity into a symbol would produce"
+    },
+    {
+      "type": "implements",
+      "source": "Store.Map",
+      "target": "Convertible",
+      "comment": "the exact hijack the type-scan produced: a LATER qualified pattern must not become the target of a multi-parameter instance"
+    },
+    {
+      "type": "implements",
+      "source": "Store.Map",
+      "target": "Convertible",
+      "comment": "the exact hijack the type-scan produced on `instance Convertible (Maybe Widget) Store.Map`: a LATER qualified pattern must not become the target. This is the corpus shape — compiler/GHC/HsToCore/Quote.hs:1239 — so the fixture reproduces the defect rather than a nearby one."
+    }
+  ]
+}

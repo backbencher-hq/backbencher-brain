@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-v3-grammar-candidate-rejection",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "OBSERVATION + DECISION. Records a grammar candidate that was built, measured at three levels, and REJECTED. The wired grammar is unchanged by this decision.",
+  "date": "2026-09-27",
+  "candidate": {
+    "label": "V3",
+    "wasm": "bb_tests/sql/grammar/patched-sql-v3.wasm",
+    "bytes": 11565407,
+    "sourceDeltaVsWired": "the two hidden `alias($._dollar_quoted_string, $.dollar_quote)` alternatives removed from function_body and procedure_body. Nothing else: V2 and V3 have the SAME 786 node types and the SAME 53 fields, so the delta is invisible to the type set and the field set.",
+    "intendedEffect": "make `DO $$ ... $$` parse cleanly, on the reasoning that the external scanner emits a whole dollar-quoted body as one opaque token when the start tag is not simultaneously valid"
+  },
+  "build": {
+    "toolchain": "tree-sitter-cli from bb_tests/node_modules, same box and same toolchain that produced V2",
+    "generateWallClock": "14m12s of LR construction on a contended 8-core box; 1825MB RSS peak observed; generate requires ~2GB and there is no headroom when other sessions are resident",
+    "incident": "two orphaned `tree-sitter generate` processes from earlier attempts (one 11.8h old) were competing for the same memory and neither could finish. They were the actual cause of the repeated OOM, not a too-small box. Killing both and running exactly one generate succeeded.",
+    "trap": "`timeout 850` killed a run that needed 852s, and `cmd | tail` reported the exit code of `tail`, so the truncation looked like a clean exit. The parser table write is the last step, so a run cut short leaves grammar.json present and parser.c absent.",
+    "reproductionTest": {
+      "attempt": "Reinstated the two hidden $._dollar_quoted_string branches on the theory that the wired V2 bytes were built with them, then rebuilt.",
+      "result": "REFUTED. generate emitted a 43,568,124-byte parser.c against the wired build 43,456,567 \u2014 111,557 bytes apart.",
+      "consequence": "The exact source revision behind the wired bytes is not recoverable from the tree kept at bb_tests/sql/grammar/src. The pin therefore records sha256 + surface + provenance and does NOT claim source rebuildability; the in-place comments on both reinstated branches record the negative result so nobody repeats the test believing it is pending."
+    }
+  },
+  "measurements": {
+    "L1_treeLevel_shapes": {
+      "instrument": "bb_tests/sql/probe/grammar-ab.mts (patched vs pristine, raw parser trees)",
+      "shapesFixed": 9,
+      "shapeRegressions": 0,
+      "corpusErrorFiles": {
+        "pristine": 320,
+        "V3": 196
+      },
+      "corpusErrorNodes": {
+        "pristine": 6533,
+        "V3": 3089
+      },
+      "corpusStructuralRecall": {
+        "pristine": 0.7038,
+        "V3": 1.6027
+      },
+      "read": "at the tree level V3 is a large win, and this is the number that would have justified shipping it"
+    },
+    "L2_treeLevel_structure": {
+      "instrument": "script/m60/measure-grammar-recovery.ts --lang sql --candidate <V3> (wired V2 is the incumbent)",
+      "damagedFiles": {
+        "underWired": 256,
+        "underV3": 205
+      },
+      "damagedFileErrors": {
+        "underWired": 7331,
+        "underV3": 5384,
+        "delta": "-26.6%"
+      },
+      "filesLosingAtLeast25pctOfStructure": "49/256 (19.1%)",
+      "filesGainingStructure": 0,
+      "worstCases": [
+        {
+          "file": "proxicall/database/migrations/20260309_rls_coms_subtypes.sql",
+          "namedNodes": "2278 -> 79",
+          "delta": "-95.8%"
+        },
+        {
+          "file": "proxicall/database/verify_ledger_chain_walk_detection.sql",
+          "namedNodes": "538 -> 29",
+          "delta": "-94.6%"
+        },
+        {
+          "file": "proxicall/database/verify_counter_refund_rpc_probe.sql",
+          "namedNodes": "547 -> 30",
+          "delta": "-94.5%"
+        }
+      ],
+      "read": "the same change that removes errors removes TREE STRUCTURE, and gains structure in ZERO files. This is the signature of an opaque token swallowing text, not of a grammar that understands more. The L1 error-count improvement and the L2 structure collapse are two views of one mechanism."
+    },
+    "L2_mechanism": {
+      "file": "proxicall/database/migrations/20260309_rls_coms_subtypes.sql",
+      "note": "this migration wraps EVERY table in an indented `DO $$ ... $$` block, so it has zero line-start CREATE statements and 7 DO blocks; all of its CREATE POLICY declarations live inside those bodies",
+      "V2": {
+        "namedNodes": 2278,
+        "errors": 220,
+        "doStatements": 7,
+        "statements": 37
+      },
+      "V3": {
+        "namedNodes": 79,
+        "errors": 0,
+        "doStatements": 10,
+        "statements": 10
+      },
+      "read": "V3 reaches 0 errors by consuming 7 real DO bodies opaquely, which hides 27 of 37 statements. The declarations the migration exists to create become invisible in the tree."
+    },
+    "L3_productLevel": {
+      "instrument": "ASTEngine.parseFile over all 441 tracked SQL files in /home/ishaq2321/ProxiCall @1f3e3567, once per grammar",
+      "V2": {
+        "files": 441,
+        "symbols": 9448,
+        "relationships": 12447,
+        "analyzerErrors": 7506,
+        "errorFiles": 258
+      },
+      "V3": {
+        "files": 441,
+        "symbols": 9448,
+        "relationships": 12447,
+        "analyzerErrors": 7506,
+        "errorFiles": 258
+      },
+      "perFileSpotCheck": "on the worst collapse file, V2 and V3 both yield 10 symbols, 10 relationships and 100 analyzer errors",
+      "read": "IDENTICAL. Both the L1 gain and the L2 loss are invisible to the product.",
+      "note": "Both builds also produce IDENTICAL analyzer-level output, so the product cannot distinguish them. This is the load-bearing result: it means the grammar decision had to be made on tree-level evidence, and on that evidence the headline L1 metric and the L2 collapse are two views of the same mechanism."
+    }
+  },
+  "decision": {
+    "verdict": "REJECTED \u2014 the wired grammar stays V2 (sha256 63d46ade20c611a685ffb85924f7c9b81419a4a3d635cd62481e261b6a60a289).",
+    "reasons": [
+      "Zero product gain. V3 and V2 emit byte-identical symbols, relationships and errors over 441 corpus files, so the change cannot improve any lane metric.",
+      "Real tree cost. 49/256 damaged files lose at least 25% of their structure, up to -95.8%, and 0 files gain any.",
+      "The headline gain is an artifact of a metric. 'error files 320 -> 196' is true and is the number that would have justified shipping; it improves only because an opaque token stops the parser from reporting what it can no longer see. This is exactly the aggregate that script/m60/measure-grammar-recovery.ts exists to catch, and the reason that instrument reports a distribution rather than an aggregate.",
+      "The lane had already adjudicated the trade in the opposite direction, in writing, before this candidate existed: a body that parses into inner statements is worth more than a body without errors, because the unparseable case is already bounded by the analyzer's statement-level resync (C1/C2/C3 on 19 corpus files) whereas lost inner statements are not recoverable from the tree."
+    ],
+    "whatSurvivesFromTheExercise": [
+      "The measurement that a hidden choice branch is unreachable IN THE GRAMMAR is not the same as it having no effect. Removing the two `$._dollar_quoted_string` branches changed the generated automaton enough to change the scanner's token choice for `DO $$`, which is why the two builds differ at all. The inert branches were behaviourally load-bearing and semantically pointless at the same time.",
+      "The build is now reproducible: the two branches are reinstated in the source precisely so the wired V2 bytes are re-derivable, which is the pin contract's requirement. A pinned grammar that cannot be rebuilt from its own source is not pinned."
+    ]
+  },
+  "evidence": [
+    "bb_tests/sql/probe/grammar-ab.mts",
+    "bb_tests/sql/probe/grammar-gaps.mts",
+    "script/m60/measure-grammar-recovery.ts",
+    "bb_tests/sql/grammar/build.sh",
+    "bb_tests/sql/grammar/patched-sql-v3.wasm",
+    "bb_tests/sql/grammar/patched-sql-v2.wasm",
+    "bb_tests/sql/REVIEW.md"
+  ]
+}

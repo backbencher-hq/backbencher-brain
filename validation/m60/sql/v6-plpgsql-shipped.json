@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-v6-plpgsql-shipped",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "OBSERVATION + DECISION. The plpgsql body grammar, after the V4/V5 regression was correctly root-caused. Records the three-build sequence, including two builds that were wrong about the cause.",
+  "date": "2026-09-27",
+  "lineage": {
+    "V3": "opaque DO bodies. Rejected outright \u2014 collapsed 49 files' structure by up to -95.8% for zero product change. See v3-rejection.json.",
+    "V4": "plpgsql scaffolding, 17 rules + 16 keywords, reusing $._expression and $.statement. -36% ProxiCall error nodes, +9.4% named nodes, product byte-identical. BLOCKED: regressed the `block-declarations` contract case, battery 53/54, ERROR span a bare `;`.",
+    "V5": "restored plpgsql_block's DECLARE section and declared [$.function_body, $.plpgsql_declarations] instead of deleting the capability. Built cleanly, and FAILED THE SAME CASE IDENTICALLY (errors=1, span `;`, function_declaration=1 in all three builds). This is the useful negative result: the DECLARE section was never the cause, and V4's diagnosis \u2014 recorded in bb_tests/sql/REVIEW.md before V5 ran \u2014 was wrong.",
+    "V6": "the actual cause. Restores `optional(';')` after `END` in BOTH dollar-quoted body forms of function_body, and declares [$.plpgsql_block] for the two-adjacent-optional-terminators ambiguity."
+  },
+  "theRealCause": {
+    "statement": "While resolving the `do_statement` double-optional conflict \u2014 the build's message was `keyword_do \u2026 keyword_begin keyword_end \u2022 ';'` \u2014 I ALSO removed `optional(';')` after `END` from both dollar-quoted body forms in create-function.js. Only the do_statement rule was implicated. `END;` is legal plpgsql and is how nearly every body is written, so its terminator is required; without it a bare `;` after `END` is unparseable, which is exactly the ERROR span the contract case reported.",
+    "howItWasFound": "V5 changed the rule the V4 diagnosis blamed and the observed span did not move. A fix that does not change the observed symptom is a fix aimed somewhere else; the discriminator was comparing the ERROR span and the `function_declaration` count across all three builds rather than re-reading the diagnosis.",
+    "lesson": "When a build names a conflict for one rule, changing a different rule is collateral, not progress. And the paired lesson from the same file: an ambiguity between two rules is a reason to DECLARE the conflict, not to delete a capability \u2014 deleting plpgsql_block's DECLARE section was a regression dressed as a simplification, and deleting function_body's terminator was a second one."
+  },
+  "conflictsResolvedByMeasurement": [
+    "plpgsql_exit: optional(';') is ambiguous with the following item \u2014 every body item now consumes exactly one required ';'.",
+    "do_statement: two consecutive optional ';' (its own and plpgsql_block's); the CALLER's was removed, leaving the block's.",
+    "[$.plpgsql_block, $._plpgsql_body_item] \u2014 declared in grammar.js.",
+    "function_declaration vs a new plpgsql_declaration \u2014 the duplicate rule was deleted and the existing one reused; two rules of the same shape are unresolvable.",
+    "[$.function_body, $.plpgsql_declarations] \u2014 declared rather than resolved by deleting the DECLARE section.",
+    "[$.plpgsql_block] \u2014 declared for the two adjacent optional terminators."
+  ],
+  "shippedGrammarState": {
+    "verdict": "SHIPPED",
+    "wired": {
+      "sha256": "9d2142efde7d17205b5e662343536eba1babe1c965857e24dd4f4b253a693e20",
+      "bytes": 12130082,
+      "surface": {
+        "ids": 825,
+        "uniqueNames": 821,
+        "namedIds": 593,
+        "namedUnique": 589,
+        "anonIds": 232,
+        "anonUnique": 232,
+        "fieldCount": 62,
+        "idOrderDigest": "a58acde97583d48cd79538709da52ac6a931a484815ca06353640938bddc4fee",
+        "typeSetDigest": "f98f965bb1ee21ad8efc29051dfeab0fb7925e192cd45f97e6d9598a279aeb2f",
+        "fieldSetDigest": "6e6552aef40f6a89d1c9b34be84041f2813009ff7acced8429e3dfe41d08418b"
+      },
+      "note": "surface moved 786 -> 825 node types and 53 -> 62 fields versus V2, so unlike patches P1-P4 this one is NOT field-neutral: it adds query, condition, range, variable, target, value, option, format and argument fields."
+    },
+    "theFixThatWorked": "restoring optional(';') after END in both dollar-quoted body forms of function_body, plus declaring [$.plpgsql_block]. Verified on the exact blocking input: V2 errors=0, V4 errors=1 (span `;`), V5 errors=1 (span `;`), V6 errors=0.",
+    "payoff": {
+      "instrument": "declaration recall against a line-anchored textual floor, PostgreSQL extension corpus, 387 files <= 400 KB",
+      "functionRecall": {
+        "before": "17.6% (2,095 of 11,883)",
+        "after": "37.0% (4,394 of 11,883)",
+        "change": "+19.4 points, 2.1x"
+      },
+      "combinedRecall": {
+        "before": "17.6% (2,186)",
+        "after": "36.1% (4,485)"
+      },
+      "unchanged": {
+        "tableRecall": "4.1% (13 of 314) \u2014 NOT improved, and now the largest remaining gap",
+        "indexRecall": "33.3% (78 of 234) \u2014 mostly from the EXECUTE-literal pass, not the grammar"
+      }
+    },
+    "gates": {
+      "contractBattery": "54/54 (the case that blocked V4 and V5 now passes)",
+      "fixtureLane": "11/11, after two fixtures had their premise inverted: sqld9 and sqld10 asserted expectErrors:[{severity:warning}] because the grammar could not parse their plpgsql bodies. It now can, so they assert forbidErrors instead \u2014 a STRONGER pin (expected symbols AND zero errors) \u2014 with the change and its reason recorded in each expectation file.",
+      "mutants": "13/13 caught. One retired: sql/sweep-stops-at-a-declaration, because the shipped grammar stopped collapsing the small fixture cases that made the sweep catchable there. The pass itself is worth MORE than when the mutant was written (77 declarations across 8 ProxiCall files, 375 across 79 extension files) and is now pinned by new corpus assertions S1/S2 in script/m60/verify-sql-resync.ts. The harness grew a `retired` flag so the record stays in-file, is reported on every run, and is not silently skipped.",
+      "nodeTypeGate": "83 referenced, 0 dead, 0 unjustified",
+      "differential": "84/84 facts, precision 1.000, recall 1.000",
+      "resyncCorpusGate": "C1-C3 plus new S1-S2 all pass; the resync now fires on 5 corpus files rather than 19, because the grammar repaired much of the damage it used to need recovery for",
+      "pinContract": "13/13 lanes match, sql re-pinned to the V6 bytes",
+      "typecheck": "0 errors"
+    }
+  },
+  "honestLimits": [
+    "Not a complete plpgsql grammar: triggers, cursors, FOREACH, CASE ... END CASE, GET DIAGNOSTICS targets and dynamic-SQL target lists are absent, and a nested block with its own DECLARE relies on the declared conflict resolving in its favour.",
+    "The extension corpus's errorFiles count did not move between V2 and V4 (383 either way): the bodies that now parse are the ones that were already partly parsing, and the ones that fail still fail on constructs outside this scaffolding.",
+    "94% of the EXECUTE-wrapped DDL on that corpus is concatenated fragments whose NAME is computed at run time, so no grammar recovers it. See execute-literal-recovery.json."
+  ],
+  "evidence": [
+    "bb_tests/sql/grammar/src/grammar/statements/plpgsql.js",
+    "bb_tests/sql/grammar/src/grammar/statements/create-function.js",
+    "bb_tests/sql/grammar/src/grammar.js",
+    "bb_tests/sql/out/gen-v6b.log",
+    "bb_tests/sql/REVIEW.md section 9",
+    "validation/m60/sql/v4-plpgsql-candidate.json"
+  ],
+  "recallMetricCorrection": {
+    "date": "2026-09-27",
+    "whatWasWrong": "Both this file and v6-plpgsql-shipped.json report recall as a COUNT ratio (declarations extracted / textual declarations) and both use that to name table recall \u2014 4.1% \u2014 as the 'sharpest remaining target'. That metric measures REPETITION, not coverage, and on the PostgreSQL extension corpus it is badly misleading.",
+    "evidence": "Recounted with a comment- and string-aware ground truth, the denominators barely move (11,883 functions, 314 tables), so the earlier ground truth was not itself inflated. The problem is the METRIC. Those 314 CREATE TABLE occurrences are only SIX DISTINCT NAMES, repeated across extension upgrade scripts, and 2 of the 6 are found: 33.3% by name. The functions are 924 of 1,170 DISTINCT NAMES = 79.0%, against the 37.0% the count ratio reports. Extension files re-declare the same function in every version script, so a count ratio understates distinct-name coverage by more than a factor of two.",
+    "aConcreteInstanceOfTheEarlierTrap": "isn--1.1.sql contributes 'CREATE TABLE test' to the raw count, and that text is inside `--   create table test ( id isbn );` \u2014 a documentation example. The file contains no table and the analyzer correctly emits zero `class` symbols for it. The comment-aware recount removes such cases, and they turned out to be a small share rather than a systematic inflation.",
+    "correctedTargets": {
+      "functions": "246 of 1,170 distinct function NAMES are still missing (79.0% found). This, not tables, is the sharpest remaining gap.",
+      "tables": "4 of 6 distinct table names missing, on a total population of 6. Small in absolute terms.",
+      "filesWithZeroSymbols": "56 of 387 unchanged.",
+      "consequence": "The count-ratio metric should be retired from this lane's reporting in favour of distinct-name recall, or reported alongside it, because on versioned extension corpora the two disagree by more than 2x and point at opposite priorities."
+    }
+  }
+}

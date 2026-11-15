@@ -1,0 +1,19 @@
+{
+  "issue": "M15.XR",
+  "code": "xr4",
+  "tool": "bb_security",
+  "verified": true,
+  "checks": 69,
+  "passed": 69,
+  "failed": 0,
+  "positives": 61,
+  "negatives": 8,
+  "negativePassed": 8,
+  "defect": "A7",
+  "generatedAt": "2026-11-14T21:07:14.521Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:07:14.521Z",
+    "contentSha256": "a52ec7fc9855c9bee79b450fea0936d16d43b4aa511b47a4a258fb1cee340ea3"
+  }
+}

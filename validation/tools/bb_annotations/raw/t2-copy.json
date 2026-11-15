@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "purpose": "T2 reference-large-index handler measurements against a byte copy (shared store is never opened read-write)",
+  "source": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "dbBytes": 3639963648,
+    "dbMtimeMs": 1793593795820.0583,
+    "walBytes": 0,
+    "walMtimeMs": 1793595035552.992,
+    "dbSha256": "2160e33de24025bec5500eb7633231c5393afa411d62cf647ce5ea3c67ba8e36"
+  },
+  "destination": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "destinationBytes": 3639963648,
+  "pages": {
+    "totalPages": 888663,
+    "remainingPages": 0
+  },
+  "copyMs": 25460,
+  "sourceCounts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "annotations": 0
+  },
+  "copyCounts": {
+    "files": 6452,
+    "symbols": 310423,
+    "relationships": 820040,
+    "annotations": 0
+  },
+  "equal": true,
+  "copiedAt": "2026-11-03T04:11:34.125Z",
+  "note": "read-only source connection + SQLite backup API; the copy is what every T2 measurement opens"
+}

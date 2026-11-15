@@ -1,0 +1,9 @@
+script/verify-semantic.ts	0	8s
+script/m13/verify-ask-contract.ts	1	12s
+script/m13/verify-ask-provenance.ts	1	6s
+script/m13/verify-ask-adversarial.ts	0	7s
+script/m13/verify-ask-integration.ts	0	8s
+script/m13/verify-ask-docs.ts	1	2s
+script/m13/verify-ask-e2e-corpus.ts	1	101s
+script/m16/verify-ask-stats.ts	0	12s
+script/m15/verify-ask-deep.ts	2	34s

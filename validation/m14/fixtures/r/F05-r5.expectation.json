@@ -1,0 +1,89 @@
+{
+  "fixtureId": "r/F05-r5",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "R5 reference classes split members across TWO lists by kind, and this is the fixture that makes the split explicit. `fields = list(balance = \"numeric\", ...)` declares DATA and `methods = list(deposit = ..., ...)` declares BEHAVIOUR, so `balance` and `owner` are properties and `deposit` and `show` are methods. A rule that treats every `list()` entry as a method publishes `balance` as a callable -- the graph would then offer `Account$balance()` and a caller could be told to override a field. `balance <<- balance + amount` is a SUPERASSIGNMENT into the enclosing object: it writes a member, so it is not a `calls` edge and not a `uses` edge, and the only pin here is that `deposit` is published at all. `contains Account -> Ledger` is forbidden because `Ledger` is the BASE and an extends edge already carries that; a containment edge would assert Ledger is a member of Account, which is a different and wrong claim.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Account",
+      "kind": "class"
+    },
+    {
+      "name": "balance",
+      "kind": "property",
+      "ownerName": "Account"
+    },
+    {
+      "name": "owner",
+      "kind": "property",
+      "ownerName": "Account"
+    },
+    {
+      "name": "deposit",
+      "kind": "method",
+      "ownerName": "Account"
+    },
+    {
+      "name": "show",
+      "kind": "method",
+      "ownerName": "Account"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Account",
+      "target": "Ledger",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Account",
+      "target": "balance",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Account",
+      "target": "owner",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Account",
+      "target": "deposit",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Account",
+      "target": "show",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "show",
+      "target": "print",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Account",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Account",
+      "target": "Ledger"
+    },
+    {
+      "type": "overrides",
+      "from": "Account",
+      "target": "balance"
+    }
+  ]
+}

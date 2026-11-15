@@ -1,0 +1,107 @@
+{
+  "tier": "T0-remote-query",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+  "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+  "embeddingDisabled": false,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T0-remote-query",
+    "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+    "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-remote-query.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": null,
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 479.14,
+  "warmupChars": 322,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 175.22,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "527",
+        "lines": "7"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 169.58,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "527",
+        "lines": "7"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 189.59,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "527",
+        "lines": "7"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 180.35,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "527",
+        "lines": "7"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 166.1,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "69% (9/13 symbols embedded)",
+        "reason": "no-matching-model-embeddings",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "527",
+        "lines": "7"
+      }
+    }
+  ],
+  "p50": 175.22,
+  "p95": 189.59,
+  "max": 189.59,
+  "generatedAt": "2026-11-01T22:21:33.245Z"
+}

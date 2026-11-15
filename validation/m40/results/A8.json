@@ -1,0 +1,23 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m40/verify-a8-config.ts",
+  "evidenceFile": "A8.json",
+  "generatedAt": "2026-09-05T01:55:57.276Z",
+  "passed": 41,
+  "failed": 0,
+  "negativeCases": 20,
+  "precedenceMatrix": [
+    "env>file(default): all 3 fields",
+    "file-only: used per field",
+    "mixed env/file: per-field independent",
+    "nothing: defaults, configured=false",
+    "model-only: configured=false (base-url required)"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.487Z",
+    "contentSha256": "24ff255e5f3005026e6477732b043cd4f3bfe8f34da8c4e1e30692d88a6d2e6b"
+  }
+}

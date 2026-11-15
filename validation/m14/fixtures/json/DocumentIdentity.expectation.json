@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/DocumentIdentity.json",
+  "authoredFrom": "A `$ref` may name an IDENTITY the document declares (`$id` base URI / `$anchor` fragment) instead of a JSON Pointer into it. JSON Schema resolves that reference against the declared base and the declaration IS the object carrying the `$id`, whose qualified path this analyzer already publishes. Before the fix the raw string was published with `isExternal: true`, so the arbiter classified it `externalUnverified` (this lane's 4-edge `ext?` class on gql-graphql-mesh). The four expectRelationships pin the QUALIFIED PATH of the declaring object on each form (base identity, anchored identity, resource-relative identity, document-root identity), and the four forbidRelationships pin that the raw spelling is no longer an endpoint. Every entry is additive (`extra actual items are fine`), and forbidRelationships is the negative half: a fix that published BOTH the identity and the raw string would still fail this pin.",
+  "expectSymbols": [
+    {
+      "name": "DocumentIdentity",
+      "kind": "module"
+    },
+    {
+      "name": "PetDetails",
+      "kind": "class",
+      "ownerName": "definitions"
+    },
+    {
+      "name": "id",
+      "kind": "class",
+      "ownerName": "properties"
+    },
+    {
+      "name": "Category",
+      "kind": "class",
+      "ownerName": "definitions"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "note": "base identity: the $ref names the $id declared by the object at definitions.PetDetails",
+      "type": "references",
+      "from": "DocumentIdentity.properties.details.$ref",
+      "target": "DocumentIdentity.definitions.PetDetails",
+      "line_number": 24,
+      "confidenceMin": 1,
+      "meta.reasonCode": "json_schema_ref"
+    },
+    {
+      "note": "anchored identity: the fragment names the $anchor declared on PetDetails.properties.id",
+      "type": "references",
+      "from": "DocumentIdentity.properties.detailsId.$ref",
+      "target": "DocumentIdentity.definitions.PetDetails.properties.id",
+      "line_number": 27,
+      "confidenceMin": 1,
+      "meta.reasonCode": "json_schema_ref"
+    },
+    {
+      "note": "resource-relative identity: the $id ends with an empty fragment and the $ref does not",
+      "type": "references",
+      "from": "DocumentIdentity.properties.category.$ref",
+      "target": "DocumentIdentity.definitions.Category",
+      "line_number": 30,
+      "confidenceMin": 1,
+      "meta.reasonCode": "json_schema_ref"
+    },
+    {
+      "note": "a $ref INSIDE the PetDetails resource resolves against its own base, not the document root",
+      "type": "references",
+      "from": "DocumentIdentity.definitions.PetDetails.properties.category.$ref",
+      "target": "DocumentIdentity.definitions.Category",
+      "line_number": 13,
+      "confidenceMin": 1,
+      "meta.reasonCode": "json_schema_ref"
+    },
+    {
+      "note": "document-root identity: the $id on the root object declares the module's own identity",
+      "type": "references",
+      "from": "DocumentIdentity.properties.self.$ref",
+      "target": "DocumentIdentity",
+      "line_number": 33,
+      "confidenceMin": 1,
+      "meta.reasonCode": "json_schema_ref"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "note": "the raw identity spelling must not be an endpoint any more",
+      "type": "references",
+      "target": "/api/v31/schemas/petdetails"
+    },
+    {
+      "type": "references",
+      "target": "/api/v31/schemas/petdetails#pet_details_id"
+    },
+    {
+      "type": "references",
+      "target": "/api/v31/schemas/category"
+    },
+    {
+      "type": "references",
+      "target": "/api/v31/schemas/pets#"
+    }
+  ]
+}

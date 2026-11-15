@@ -1,0 +1,39 @@
+{
+  "fixtureId": "java/type-parameter-symbols",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JLS 4.4 — a DECLARED type variable is a declaration, so it must be a symbol. Before this fixture the analyzer read every one of them (genericParameters: [\"K\",\"V\"] on the class symbol) and emitted `references` edges TO those strings, while publishing ZERO symbols of kind `type` — so every `references -> K` named a declaration that existed nowhere in the index. Measured on the whole corpus (3,275 .java files, all parsed): 9,780 type_parameter nodes over 1,543 files; on a 250-file store slice, references->V 815 and references->K 773 rows with target_symbol_id NULL, 59.5% of all unresolved references targets. Pins: (a) one SymbolKind.Type symbol per declared variable, at every position that can declare one — class, method, nested class, interface; (b) the `contains` edge that says which declaration owns it, at confidence 1.0, on the VARIABLE's own line; (c) the existing `references` edges still fire and still name the variable. The kind is `type` because src/ast/types.ts:18 declares SymbolKind.Type, parallel-indexer's CONTAINER_TYPES_LOOKUP already treats `type` as a container, and this analyzer's own resolveEnclosingTypeScope already tests for it. The name stays BARE (`K`, not `Cache.K`) on purpose: a `references -> K` edge names `K`, so publishing the symbol qualified would leave every one of those edges unresolved again, which is the defect being fixed.",
+  "expectSymbols": [
+    { "name": "Cache", "kind": "class" },
+    { "name": "K", "kind": "type" },
+    { "name": "V", "kind": "type" },
+    { "name": "T", "kind": "type" },
+    { "name": "E", "kind": "type" },
+    { "name": "A", "kind": "type" },
+    { "name": "R", "kind": "type" }
+  ],
+  "expectTypeParameters": [
+    { "symbol": "Cache", "exact": ["K", "V"] },
+    { "symbol": "pick", "exact": ["T"] },
+    { "symbol": "Bucket", "exact": ["E"] },
+    { "symbol": "Fn", "exact": ["A", "R"] }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "Cache", "target": "K", "confidenceMin": 1, "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "Cache", "target": "V", "confidenceMin": 1 },
+    { "type": "contains", "source": "pick", "target": "T", "confidenceMin": 1 },
+    { "type": "contains", "source": "Bucket", "target": "E", "confidenceMin": 1 },
+    { "type": "contains", "source": "Fn", "target": "A", "confidenceMin": 1 },
+    { "type": "contains", "source": "Fn", "target": "R", "confidenceMin": 1 },
+    { "type": "references", "source": "Cache", "target": "K", "meta.relationshipType": "declared_type", "confidenceMin": 0.9 },
+    { "type": "references", "source": "Cache", "target": "V", "meta.relationshipType": "declared_type" },
+    { "type": "references", "source": "pick", "target": "T", "meta.relationshipType": "declared_type" },
+    { "type": "references", "source": "Bucket", "target": "E", "meta.relationshipType": "declared_type" },
+    { "type": "references", "source": "Fn", "target": "R", "meta.relationshipType": "declared_type" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "target": "K" },
+    { "type": "implements", "target": "V" },
+    { "type": "instantiates", "target": "T" }
+  ]
+}

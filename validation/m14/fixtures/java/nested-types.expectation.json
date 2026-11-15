@@ -1,0 +1,14 @@
+{
+  "fixtureId": "java/nested-types",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Nested class, its method, inner enum and enum constants must all be extracted as symbols.",
+  "expectSymbols": [
+    { "name": "Outer", "kind": "class" },
+    { "name": "Inner", "kind": "class" },
+    { "name": "ping" },
+    { "name": "Mode", "kind": "enum" },
+    { "name": "ON" },
+    { "name": "OFF" }
+  ]
+}

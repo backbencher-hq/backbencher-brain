@@ -1,0 +1,286 @@
+{
+  "instrument": "validation/m14/fixtures/make/tools/key-space-census.mts",
+  "whatThisIs": "The whole admitted Make corpus walked once, enumerating (a) every node type the grammar produces, (b) every KEY NAME bound by a `=`/`:` between two named children, and (c) for each relationship type whose construct would have to be spelled with certain words, every key name and node type that matches. It answers the question a node-type inventory alone cannot: can this corpus express `extends`, `implements` or `instantiates` as a KEY, the way docker-bake spells inheritance as `inherits`?",
+  "whatThisIsNot": "Not a firing measurement \u2014 emission is `firing-check.mjs`'s question. This measures the VOCABULARY.",
+  "population": {
+    "corpusDirs": [
+      "otp"
+    ],
+    "admitted": 349,
+    "parsed": 349,
+    "failed": 0
+  },
+  "grammar": {
+    "declaredNodeTypeCount": 0,
+    "note": "NOT MEASURED \u2014 0 is the honest value, not a count: web-tree-sitter's Language object exposes no node-type-name enumeration on this binding, so a declared-type inventory cannot be built here. The measured half is the CORPUS (37 distinct node types actually produced, 2,604 variable_assignment keys, 743 distinct key names). A ruling that needs the grammar half needs a different instrument."
+  },
+  "corpus": {
+    "distinctNodeTypes": 37,
+    "keyBindings": 2604,
+    "distinctKeyNames": 743
+  },
+  "perType": {
+    "extends": {
+      "vocabulary": [
+        "extends",
+        "extend",
+        "inherits",
+        "inherit",
+        "derives",
+        "derive",
+        "superclass",
+        "base",
+        "parent",
+        "subclass"
+      ],
+      "keyMatches": {},
+      "nodeTypeMatches": {},
+      "keyMatchCount": 0,
+      "nodeTypeMatchCount": 0,
+      "constructSites": 0
+    },
+    "implements": {
+      "vocabulary": [
+        "implements",
+        "implement",
+        "interface",
+        "protocol",
+        "conformance",
+        "satisfies",
+        "trait"
+      ],
+      "keyMatches": {},
+      "nodeTypeMatches": {},
+      "keyMatchCount": 0,
+      "nodeTypeMatchCount": 0,
+      "constructSites": 0
+    },
+    "instantiates": {
+      "vocabulary": [
+        "instantiates",
+        "instantiate",
+        "new",
+        "constructor",
+        "object",
+        "class",
+        "struct",
+        "type"
+      ],
+      "keyMatches": {},
+      "nodeTypeMatches": {},
+      "keyMatchCount": 0,
+      "nodeTypeMatchCount": 0,
+      "constructSites": 0
+    }
+  },
+  "verdict": {
+    "note": "A type is grammar-absence only when NEITHER half matches: no node type the grammar produces and no KEY name the corpus binds is a candidate spelling of its construct.",
+    "extends": "absent-both-halves",
+    "implements": "absent-both-halves",
+    "instantiates": "absent-both-halves"
+  },
+  "topKeyNames": [
+    [
+      "ERL_COMPILE_FLAGS",
+      188
+    ],
+    [
+      "VSN",
+      149
+    ],
+    [
+      "RELSYSDIR",
+      118
+    ],
+    [
+      "MODULES",
+      97
+    ],
+    [
+      "ERL_FILES",
+      93
+    ],
+    [
+      "TARGET_FILES",
+      92
+    ],
+    [
+      "EBIN",
+      76
+    ],
+    [
+      "HRL_FILES",
+      62
+    ],
+    [
+      "SUB_DIRECTORIES",
+      54
+    ],
+    [
+      "APPLICATION",
+      45
+    ],
+    [
+      "SPECIAL_TARGETS",
+      43
+    ],
+    [
+      "APP_TARGET",
+      36
+    ],
+    [
+      "APP_SRC",
+      36
+    ],
+    [
+      "APP_FILE",
+      36
+    ],
+    [
+      "APPUP_TARGET",
+      35
+    ],
+    [
+      "APPUP_SRC",
+      35
+    ],
+    [
+      "APPUP_FILE",
+      35
+    ],
+    [
+      "EMAKEFILE",
+      25
+    ],
+    [
+      "DIA_PLT_APPS",
+      25
+    ],
+    [
+      "INTERNAL_HRL_FILES",
+      24
+    ],
+    [
+      "INETS_FLAGS",
+      20
+    ],
+    [
+      "INSTALL_PROGS",
+      16
+    ],
+    [
+      "ERL_MAKE_FLAGS",
+      14
+    ],
+    [
+      "ERLC",
+      13
+    ],
+    [
+      "SNMP_FLAGS",
+      13
+    ]
+  ],
+  "topNodeTypes": [
+    [
+      "word",
+      16658
+    ],
+    [
+      "comment",
+      9745
+    ],
+    [
+      "variable_reference",
+      8477
+    ],
+    [
+      "text",
+      2755
+    ],
+    [
+      "variable_assignment",
+      2604
+    ],
+    [
+      "recipe_line",
+      1937
+    ],
+    [
+      "shell_text",
+      1937
+    ],
+    [
+      "concatenation",
+      1605
+    ],
+    [
+      "rule",
+      1558
+    ],
+    [
+      "targets",
+      1558
+    ],
+    [
+      "prerequisites",
+      973
+    ],
+    [
+      "list",
+      960
+    ],
+    [
+      "include_directive",
+      956
+    ],
+    [
+      "recipe",
+      769
+    ],
+    [
+      "automatic_variable",
+      505
+    ],
+    [
+      "substitution_reference",
+      387
+    ],
+    [
+      "makefile",
+      348
+    ],
+    [
+      "arguments",
+      266
+    ],
+    [
+      "function_call",
+      265
+    ],
+    [
+      "conditional",
+      259
+    ],
+    [
+      "ifeq_directive",
+      182
+    ],
+    [
+      "escape",
+      134
+    ],
+    [
+      "else_directive",
+      94
+    ],
+    [
+      "ERROR",
+      94
+    ],
+    [
+      "shell_command",
+      57
+    ]
+  ]
+}

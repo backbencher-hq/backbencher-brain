@@ -1,0 +1,167 @@
+{
+  "probe": "M59.A12 (#888) — declared cap and true total on real repos",
+  "at": "2026-09-17T23:56:43.589Z",
+  "command": "npx tsx script/m59/probe-cap-real-corpus.ts --files=150",
+  "corpus": [
+    "scala:cats-effect@150files",
+    "java:clojure@150files"
+  ],
+  "results": [
+    {
+      "lang": "scala",
+      "symbol": "flatMap",
+      "independentSqlCount": 416,
+      "storedTargetCount": 416,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 416,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "scala",
+      "symbol": "real",
+      "independentSqlCount": 340,
+      "storedTargetCount": 340,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 340,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "scala",
+      "symbol": "ticked",
+      "independentSqlCount": 304,
+      "storedTargetCount": 304,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 304,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "scala",
+      "symbol": "map",
+      "independentSqlCount": 254,
+      "storedTargetCount": 254,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 254,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "scala",
+      "symbol": "acquireN",
+      "storedTargetCount": 19,
+      "negative": true,
+      "tool": {
+        "returnedEdges": 19,
+        "truncated": false,
+        "callersIfUncapped": null
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "java",
+      "symbol": "ret1",
+      "independentSqlCount": 3437,
+      "storedTargetCount": 3437,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 3437,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "java",
+      "symbol": "intern",
+      "independentSqlCount": 370,
+      "storedTargetCount": 370,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 370,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "java",
+      "symbol": "next",
+      "independentSqlCount": 347,
+      "storedTargetCount": 347,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 347,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "java",
+      "symbol": "first",
+      "independentSqlCount": 334,
+      "storedTargetCount": 334,
+      "tool": {
+        "returnedEdges": 200,
+        "truncated": true,
+        "truncationReason": "caller-site-limit",
+        "edgeLimit": 200,
+        "callersIfUncapped": 334,
+        "totalCallers": 200
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    },
+    {
+      "lang": "java",
+      "symbol": "ontoArrayPrepend",
+      "storedTargetCount": 20,
+      "negative": true,
+      "tool": {
+        "returnedEdges": 20,
+        "truncated": false,
+        "callersIfUncapped": null
+      },
+      "declaredTotalMatchesIndependent": true,
+      "floorNotPresentedAsTotal": true
+    }
+  ],
+  "allTotalsAgree": true,
+  "allFloorsLabelled": true
+}

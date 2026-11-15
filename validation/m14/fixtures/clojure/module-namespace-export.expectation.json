@@ -1,0 +1,17 @@
+{
+  "issue": "M60 relationship-ontology wave — CLJ-D60 (a namespace does not export a namespace)",
+  "note": "A MODULE symbol carries no `ownerName`, so the export pass pushed `undefined` into the array that indexes the `exports` edge's SOURCE and the edge pass resolved it with `?? currentNamespace` — the file's LAST namespace. Every file with two `ns`/`in-ns` forms therefore published one namespace exporting another. Measured 40 edges over 21 files of the 633-file corpus, e.g. `exports temp-ns -> clojure.test-clojure.ns-libs`. The fix attributes a module's export to the module's own NAME, which is the namespace it names, so the pass's existing `ns === e.name` rule refuses the edge exactly as it already refuses a Module row. A namespace is not lost: it reaches the graph as a SYMBOL, which is what `contains` and every traversal use.",
+  "expectRelationships": [
+    { "type": "exports", "from": "clj.fixture.two-ns-export.first", "target": "first-fn" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.second", "target": "second-fn" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.third", "target": "third-fn" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "clj.fixture.two-ns-export.second", "target": "clj.fixture.two-ns-export.first" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.third", "target": "clj.fixture.two-ns-export.first" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.third", "target": "clj.fixture.two-ns-export.second" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.first", "target": "clj.fixture.two-ns-export.first" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.second", "target": "clj.fixture.two-ns-export.second" },
+    { "type": "exports", "from": "clj.fixture.two-ns-export.third", "target": "clj.fixture.two-ns-export.third" }
+  ]
+}

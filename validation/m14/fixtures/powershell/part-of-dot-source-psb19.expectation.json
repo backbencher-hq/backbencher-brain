@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/part-of-dot-source-psb19.ps1",
+  "authoredFrom": "PS-B19 — THE DOT-SOURCE IS THE `part_of` POSITIVE TEST, AND THIS FIXTURE PINS IT APART FROM ITS TWO NEAR MISSES.\n\nTHE CONTRACT. `src/ast/types.ts:PartOf` says a `part_of` row is a library unit INCLUDING a part file: 'a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module'. PowerShell's DOT-SOURCE operator is that construct: `. ./lib.ps1` runs the sourced script in the CALLER's session scope, so the sourced file's functions and variables land in the caller's state — the file becomes part of the calling unit. The CALL operator `& ./run.ps1` runs a script in a CHILD scope of its own: an invocation, not an inclusion, and it stays `calls`. `Import-Module ./helpers.psm1` loads a module into its OWN scope: `imports` (already implemented, PS23), never `part_of`.\n\nTHE DISCRIMINATOR IS THE OPERATOR'S OWN TEXT — '.' vs '&' — read from the `command_invokation_operator` node, not a file name and not a path shape. That is why a relabel that widens to '&' mechanically fails the forbid rows below: the widen would have to change the very field the matcher reads.\n\nTHE 1:1 DISCIPLINE. The relabel MOVES a label; it does not add an edge. The three `.` sites emitted `calls` before this change and emit `part_of` after it, one label per site, at the same line and confidence; the `&` site and the `Import-Module` site do not move. The `forbidRelationships` rows assert the 'no edge gained' half: a `calls` edge to `lib.ps1`/`Wdu.psm1` would mean the relabel left the old row beside the new one, which is a double count wearing a relabel's name.\n\nTHE TARGET IS SYMBOL-SHAPED, NOT A PATH. A `part_of` target is resolved against SYMBOL names, and a PowerShell file's module symbol is its basename WITH the extension (PS1: 'The extension is kept: Build.psm1 and Build.ps1 are different files'). The cpp lane measured a path-target `part_of` resolving 0 of 4,612 rows for exactly this reason. So `. ./lib.ps1` publishes target `lib.ps1` — the symbol the sourced file itself declares — and the WRITTEN path lives in `metadata.partPath` (asserted on every row here, so a future change that drops it fails a row rather than silently changing the key a consumer reads).\n\nMEASURED BEFORE THE RELABEL over the whole admitted population (1,181 files / 30 repos, production parseFile, artifact validation/m14/measurements/powershell-dot-source-census-before.json): 153 invocation-operator edges — 38 dot-sourced (37 of them naming an admitted project file) and 115 call-operator. The fixture's three dot rows and one amp row are one instance of each shape the census found.",
+  "expectSymbols": [
+    {
+      "name": "part-of-dot-source-psb19.ps1",
+      "kind": "module",
+      "comment": "The file IS the module (PS1), so it is the `source` of every row below."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "part-of-dot-source-psb19.ps1",
+      "target": "lib.ps1",
+      "line_number": 12,
+      "confidenceMin": 0.9,
+      "confidenceMax": 0.9,
+      "meta.evidenceClass": "import_based",
+      "meta.invokationOperator": ".",
+      "meta.partRole": "library",
+      "meta.partPath": "./lib.ps1",
+      "comment": "THE ROW THIS FIXTURE EXISTS FOR. `. ./lib.ps1` shares the caller's scope, so the sourced file is a PART of this unit. Target `lib.ps1` is the sourced file's module-symbol name (basename, extension kept); the path survives in `meta.partPath`. `partRole:\"library\"` is MANDATORY on every part_of row (types.ts:170-183) and this file is the library side of the pair."
+    },
+    {
+      "type": "part_of",
+      "from": "part-of-dot-source-psb19.ps1",
+      "target": "Wdu.psm1",
+      "line_number": 13,
+      "meta.invokationOperator": ".",
+      "meta.partRole": "library",
+      "meta.partPath": ".\\modules\\Wdu.psm1",
+      "comment": "The BACKSLASH spelling, with a directory component: the basename is what makes the target symbol-shaped, and a Windows path separator is not a reason to miss the row."
+    },
+    {
+      "type": "part_of",
+      "from": "part-of-dot-source-psb19.ps1",
+      "target": "start.ps1",
+      "line_number": 14,
+      "meta.invokationOperator": ".",
+      "meta.partRole": "library",
+      "meta.partPath": "$PSScriptRoot\\tools\\start.ps1",
+      "comment": "THE QUOTED, RUNTIME-VARIABLE SPELLING — the one the PS19 comment says a naive `$`-first test classified as an invoked VARIABLE. The path-shape test runs first, so the dot-source is still an inclusion; the target is still the basename."
+    },
+    {
+      "type": "calls",
+      "from": "part-of-dot-source-psb19.ps1",
+      "target": "./run.ps1",
+      "line_number": 16,
+      "meta.invokationOperator": "&",
+      "comment": "THE FIRST NEAR MISS, PINNED POSITIVELY: the CALL operator runs in a child scope, so the edge is a CALL and stays a call. Its `meta.invokationOperator` is what the forbid rows below key on."
+    },
+    {
+      "type": "imports",
+      "from": "part-of-dot-source-psb19.ps1",
+      "target": "./helpers.psm1",
+      "line_number": 18,
+      "meta.via": "Import-Module",
+      "comment": "THE SECOND NEAR MISS, PINNED POSITIVELY: `Import-Module` loads a module into its own scope — the contract's NEGATIVE test for part_of — and stays `imports`."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "part_of",
+      "equals": 3,
+      "comment": "Exactly the three dot-sourced sites. A widened relabel scores 4 here; a missed dot scores 2."
+    },
+    {
+      "type": "calls",
+      "equals": 1,
+      "comment": "Exactly the one call-operator site."
+    },
+    {
+      "type": "imports",
+      "equals": 1,
+      "comment": "Exactly the one Import-Module site."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "target": "run.ps1",
+      "comment": "THE `&` NEAR MISS, NEGATIVELY: a call-operator target must NEVER be a part_of — it runs in its own child scope. If the relabel widens from '.' to '&', this row goes red. The stem form is forbidden beside the path form so the widen cannot hide behind the target spelling."
+    },
+    {
+      "type": "part_of",
+      "target": "./run.ps1",
+      "comment": "The same near miss in the path spelling: a widened relabel that kept the path target (instead of the symbol) must fail too."
+    },
+    {
+      "type": "part_of",
+      "target": "helpers.psm1",
+      "comment": "THE `Import-Module` NEAR MISS, NEGATIVELY: a module load has its own scope and is an `imports`, never a part_of. The contract's own negative test."
+    },
+    {
+      "type": "part_of",
+      "target": "./helpers.psm1",
+      "comment": "The same near miss in the path spelling."
+    },
+    {
+      "type": "calls",
+      "target": "lib.ps1",
+      "comment": "THE 1:1 HALF: the dot-sourced site MOVED from calls to part_of; it was not duplicated. A calls edge to the symbol-shaped name means the old label stayed beside the new one — an edge gained, not moved."
+    },
+    {
+      "type": "calls",
+      "target": "Wdu.psm1",
+      "comment": "The same no-duplication assertion for the second dot site."
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "fixtureId": "rust/fnptr-parameter-declares",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RUST-MR re-measured (2026-10-03). `declaration-position-reads` already pins the BARE `extern \"C\"` fn-pointer shape; what it did not cover is the shape the dropped `parenthesized_type` literal was written for, and that is the whole justification for dropping it. Every fn-pointer spelling below must reach the ONE live guard arm (`holder.type === \"function_type\"`), because the pinned tree-sitter-rust 0.24.0 grammar has neither `bare_function_type` (0 occurrences over 359 corpus files) nor `parenthesized_type` (0 occurrences), and the parentheses of `(fn(a: u32))` parse as a `tuple_type` around a `function_type` — measured on the pinned wasm by script/m14/rust-fnptr-grammar-probe.ts. Those two names were the analyzer's only UNKNOWN node-type literals (`audit-analyzer-grammar --lang rust`: refs=86 unknown=2; `verify-fixture-coverage`: deadLiterals=2) and were branches no input could reach. THE FIXTURE IS LOAD-BEARING BY CONSTRUCTION: each parameter name is `use`-imported, and a declaration-position name only publishes a read when it also RESOLVES, so with the guard deleted this file emits 4 extra `uses` edges (`global -> schema` @43, `global -> cb` @43, `global -> paren_schema` @46, `global -> name` @52) and every forbid row below flips. The positive control keeps the guard from passing by over-reaching.",
+  "expectRelationships": [
+    {
+      "comment": "THE CONTROL. A real function's parameter is excluded by the per-function bound-name set, not by this guard, so the same imported leaf read from a real function still publishes. Without this row the guard could be suppressing reads wholesale and the fixture would stay green.",
+      "type": "uses",
+      "from": "control",
+      "target": "name",
+      "line_number": 66
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "bare fn-pointer type alias: `schema` DECLARES, it does not read",
+      "type": "uses",
+      "target": "schema"
+    },
+    {
+      "comment": "same arm, second parameter of the same declaration",
+      "type": "uses",
+      "target": "cb"
+    },
+    {
+      "comment": "PARENTHESISED fn-pointer — `parameters <- function_type <- tuple_type`. This is the row that makes dropping `parenthesized_type` safe rather than merely tidy.",
+      "type": "uses",
+      "target": "paren_schema"
+    },
+    {
+      "comment": "the `extern \"C\"` shape RUST-MR was written for: `name` declares",
+      "type": "uses",
+      "from": "global",
+      "target": "name"
+    }
+  ]
+}

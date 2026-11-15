@@ -1,0 +1,64 @@
+type Query {
+  order(id: ID!): Order
+  ordersByCustomer(customerId: ID!, status: OrderStatus): [Order!]!
+  customers: [Customer!]!
+}
+
+type Mutation {
+  createOrder(input: CreateOrderInput!): Order!
+  cancelOrder(id: ID!): Order!
+}
+
+type Subscription {
+  orderUpdated: Order!
+}
+
+type Order {
+  id: ID!
+  customer: Customer!
+  items: [OrderItem!]!
+  total: Float!
+  status: OrderStatus!
+  createdAt: String!
+}
+
+type Customer {
+  id: ID!
+  name: String!
+  email: String!
+  orders: [Order!]!
+}
+
+type OrderItem {
+  productId: ID!
+  quantity: Int!
+  price: Float!
+}
+
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  CANCELLED
+}
+
+input CreateOrderInput {
+  customerId: ID!
+  items: [OrderItemInput!]!
+}
+
+input OrderItemInput {
+  productId: ID!
+  quantity: Int!
+}
+
+interface Node {
+  id: ID!
+}
+
+type Product implements Node {
+  id: ID!
+  name: String!
+  price: Float!
+}
+
+scalar DateTime

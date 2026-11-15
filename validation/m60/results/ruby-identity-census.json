@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-09-28T21:48:25.637Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories/mastodon",
+    "400"
+  ],
+  "files": 400,
+  "symbols": 1486,
+  "nonLeafNames": {
+    "count": 0,
+    "files": 0,
+    "examples": []
+  },
+  "dynamicTemplateNames": {
+    "count": 0,
+    "files": 0,
+    "examples": []
+  }
+}

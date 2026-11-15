@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.36",
+  "code": "P2",
+  "tool": "bb_patterns",
+  "title": "bb_patterns: remove or implement framework/anti-pattern stubs",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "static: no framework_pattern_stub anywhere in the engine [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stub present"
+    },
+    {
+      "name": "static: no anti_pattern_stub anywhere in the engine [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stub present"
+    },
+    {
+      "name": "static: rules engine computes from indexed tables",
+      "pass": true,
+      "detail": "not index-backed"
+    },
+    {
+      "name": "static: every rule emits confidence > 0",
+      "pass": true,
+      "detail": "zero-confidence rule present"
+    },
+    {
+      "name": "runtime: god-class rule fires on a 12-member class",
+      "pass": true,
+      "detail": "god-class,high-complexity-function,long-parameter-list,orphaned_function,orphaned_class,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function"
+    },
+    {
+      "name": "runtime: long-parameter-list rule fires on 9 params",
+      "pass": true,
+      "detail": "god-class,high-complexity-function,long-parameter-list,orphaned_function,orphaned_class,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function"
+    },
+    {
+      "name": "runtime: high-complexity rule fires on 20 nested ifs",
+      "pass": true,
+      "detail": "god-class,high-complexity-function,long-parameter-list,orphaned_function,orphaned_class,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function,orphaned_function"
+    },
+    {
+      "name": "runtime: no finding has zero confidence [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "zero-conf: "
+    },
+    {
+      "name": "runtime: every finding carries evidence or a real location",
+      "pass": true,
+      "detail": "evidence-less finding"
+    },
+    {
+      "name": "runtime: statistics match the emitted patterns",
+      "pass": true,
+      "detail": "stats=18 emitted=18"
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'god-class'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'high-complexity-function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'long-parameter-list'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_class'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all surfaces engine finding 'orphaned_function'",
+      "pass": true,
+      "detail": "patterns (19 found):\n  [warning] god-class @ src/a.ts:1 (80%)\n  [warning] high-complexity-function @ src/a.ts:16 (71%)\n  [warning] long-parameter-list @ src/a.ts:15 (70%)\n  [info] orphaned_function @ "
+    },
+    {
+      "name": "agreement: handler scope=all never surfaces a stub type [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stub in handler output"
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0
+  },
+  "decisions": {
+    "noStubs": "framework_pattern_stub / anti_pattern_stub are removed from the engine; a zero-confidence finding is a recorded failure",
+    "realRules": "rules are computed from indexed data (complexity, parameters JSON, owner member counts, framework_type) with evidence",
+    "agreement": "the handler (scope=all) and the engine (detectPatterns) return the same finding types"
+  },
+  "limitations": [
+    "Rules fire only when indexed data matches; fixtures are constructed to genuinely match."
+  ],
+  "generatedAt": "2026-11-05T04:16:03.246Z"
+}

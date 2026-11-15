@@ -1,0 +1,48 @@
+{
+  "fixtureId": "vue/js-default-export-delegate-row",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "F19 (vue ontology wave), the half that keeps the new edge from becoming a duplicate. `RealJavaScriptAnalyzer` emits `exports -> default` for a default export, so for a plain `<script>` block there is already a row and the seam's `!relationships.some(... target === 'default')` guard must leave it alone. Two rows would collapse at the store \u2014 `brain_relationship.id = projectId:rel:source:target:type:line` with `INSERT OR IGNORE` (the same collision F12 was written for) \u2014 so the loser is not a visible duplicate but a silently dropped one, and which of the two survives is decided by insertion order rather than by meaning. The fixture pins the survivor's shape: one `exports` row sourced at the component, `meta.isDefault` true, and NOT carrying the seam's `meta.sfcDefaultExport` marker, which is what proves the delegate's row is the one that survived rather than the seam's. Paired with vue/ts-default-export, which pins the same edge from the TypeScript-delegated side.",
+  "expectSymbols": [
+    {
+      "name": "PlainPanel",
+      "kind": "class"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "ownerName": "PlainPanel"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "PlainPanel",
+      "target": "default",
+      "confidenceMin": 1.0,
+      "line_number": 20,
+      "meta.isDefault": true
+    },
+    {
+      "type": "contains",
+      "from": "PlainPanel",
+      "target": "title"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "PlainPanel",
+      "target": "default",
+      "meta.sfcDefaultExport": true,
+      "comment": "the delegate already emitted this edge for a plain <script> block; a second seam row would collapse against it at the store's (source,target,type,line) identity and the marker would be the only trace that it happened"
+    },
+    {
+      "type": "exports",
+      "from": "js-default-export-delegate-row",
+      "target": "default",
+      "comment": "the delegate's row is sourced at the module identity the F8 sweep normalized to the declared name"
+    }
+  ],
+  "authoredNote": "Authored from the F19 contract; the line pin was then corrected against the FIXTURE'S OWN TEXT after the first run reported it unmatched \u2014 `export default defineComponent({` is written on line 20 of js-default-export-delegate-row.vue, and the pin said 8. Same correction, same reason; nothing else was taken from a run."
+}

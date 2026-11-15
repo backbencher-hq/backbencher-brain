@@ -1,0 +1,103 @@
+{
+  "fixtureId": "lua/stdlib-external",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-54, authored FROM THE RULE before the analyzer was run against this file, and every row re-read off the .lua rather than copied off a run. Cause C is the only lever on lua's incoming side that changes no edge count, which is what makes it cheap and also what makes it dangerous: a wrong `external` claim moves a name out of `unresolved` without moving anything toward truth, and the arbiter's PASS then means less than it did. So the seven forbid rows are the load-bearing half. The trap is that this analyzer publishes the FINAL SEGMENT of a member read (LUA-13), so `table.insert(x)` and a bare `insert(x)` both arrive with target `insert` and Lua 5.4 publishes no global named `insert`. A name-list rule marks both and was measured at 16,195 edges against this rule's population; rows D and F are what reject it.",
+  "authoringNote": "NOTE ON `expectUnmarkedRelationships`. The four pre-existing sections cannot say 'this edge IS published and carries NO mark', which is the assertion every guard case needs: `forbid`+`meta.external:\"true\"` collapses 'absent' and 'present but unmarked' into one outcome, and for a `contains` case \u2014 where there is no member edge at all \u2014 that collapse is the difference between testing the rule and not testing it. The section asserts the edge exists (so a guard that stopped guarding leaves the row vacuous and the runner says so) and that `metadata.external` is not true. The positives use the ordinary `expectRelationships` with `meta.external: \"true\"`, so both directions are pinned.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "format",
+      "line_number": 35,
+      "meta.external": true,
+      "meta.externalKind": "lua54-stdlib",
+      "meta.externalReceiver": "string",
+      "comment": "L35 case A, POSITIVE. `string.format` \u2014 the receiver is the identifier `string`, which this file does not declare at or before line 35. `externalReceiver` is published beside the flag so a consumer can re-derive WHY the edge is external rather than taking the boolean on trust."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "concat",
+      "line_number": 38,
+      "meta.external": true,
+      "meta.externalKind": "lua54-stdlib",
+      "meta.externalReceiver": "table",
+      "comment": "L38 case B, POSITIVE. The same rule on a different documented table, so the rule is a property of the receiver rather than of one table's name."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "open",
+      "line_number": 70,
+      "meta.external": true,
+      "meta.externalKind": "lua54-stdlib",
+      "meta.externalReceiver": "io",
+      "comment": "L70 case H, POSITIVE, and the case that shows the mark follows the NODE rather than the statement. `mine[io.open(...)]` puts a real standard-library call inside a computed subscript; the `io.open` edge is a documented read and is marked, while the enclosing `uses` on the subscript is not, because the subscript is a computed value and the name it denotes is not written in the tree."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "string",
+      "kind": "variable",
+      "comment": "L81. The declaration that arms the guard for L82/L83. It is declared AFTER the L35 read on purpose: Lua locals are visible from their declaration line and are not hoisted above it, so L35 still reads the global `string` and is marked while L82 does not."
+    }
+  ],
+  "whichRowsCarryTheWeight": "The nine `expectUnmarkedRelationships` rows. The three `expectRelationships` rows would pass against a rule that never fires at all if the unmarked rows were absent \u2014 L35, L38 and L70 are the same claim three times. The nine split into two independent conditions and the split is what makes the suite able to fail: GUARD cases (D L51, E L54, J L92, J L93) are all receivers this file declares, and RECEIVER-TEST cases (C L46 literal receiver, F L59 no receiver, G L63 bracket, I L75 chain, K L85 undeclared receiver) are all cases where the guard alone would mark the edge. Mutant LUA-54b \u2014 dropping the receiver test while keeping the guard \u2014 was caught only by K, and only once K existed; it survived the first version of this fixture.",
+  "expectUnmarkedRelationships": [
+    {
+      "type": "calls",
+      "target": "byte",
+      "line_number": 46,
+      "comment": "L46 case C. `(\"abc\"):byte(1)` is a `method_index_expression` and its `method` field IS the name-bearing node, so it is the shape the rule accepts \u2014 but the receiver is a parenthesized string and not an IDENTIFIER. A rule that tested for the presence of a field node rather than for the receiver's kind would claim this reaches the standard library, and `byte` is a documented field name so the name-list rule claims it too."
+    },
+    {
+      "type": "calls",
+      "target": "insert",
+      "line_number": 51,
+      "comment": "L51 case D. `mine.insert` is this file's own table, and `insert` is a documented standard FIELD name \u2014 so this row rejects the name-list rule as squarely as L59 does, while for a different reason (the receiver is local rather than absent)."
+    },
+    {
+      "type": "calls",
+      "target": "append",
+      "line_number": 54,
+      "comment": "L54 case E. A file-local receiver whose name shadows nothing, which is the case the receiver-is-identifier test plus the table list both exclude and neither of them excludes by accident."
+    },
+    {
+      "type": "calls",
+      "target": "sub",
+      "line_number": 59,
+      "comment": "L59 case F, and THE row the whole rule exists for. `sub(2)` has no receiver at all: it is an undefined GLOBAL named `sub`. `sub` is in the transcribed standard field list because `string.sub` is documented, so a name-list rule marks this edge \u2014 and the name-list rule was measured at 16,195 edges against this rule's population, 4.1x as many. This row is the difference between a mark that is a parse fact and a mark that is a guess about the author's intent."
+    },
+    {
+      "type": "references",
+      "target": "sorted",
+      "line_number": 63,
+      "comment": "L63 case G. `mine[\"sorted\"]` is a `bracket_index_expression` with a string key and no receiver identifier. The edge is real \u2014 a literal subscript IS a name (LUA-30) \u2014 and it is not a standard-library read, so the absence of the mark is the assertion."
+    },
+    {
+      "type": "calls",
+      "target": "len",
+      "line_number": 75,
+      "comment": "L75 case I. A chain: the outer access's receiver is a CALL, not an identifier, so `len` is not a standard field. Worth a row of its own because the chained form is where a `text`-based reading of the callee would see `string.format...len` and credit the chain a standard receiver it does not have."
+    },
+    {
+      "type": "calls",
+      "target": "char",
+      "line_number": 92,
+      "comment": "L92 case J, THE GUARD, and the row that makes L35's mark a claim rather than a constant. This file DECLARES `string` on line 81, so `string.char` reads the file's own table. Same receiver name and same field-naming rule as L35; opposite answer; decided by one line. A file-wide guard would get this right by accident and L35 wrong by accident, and this pair is what tells the two apart."
+    },
+    {
+      "type": "calls",
+      "target": "rep",
+      "line_number": 93,
+      "comment": "L93, the second row of the guard. One row would have caught a guard that dropped the FIRST declaration it saw; two rows separated by a line catch a guard that reads the last."
+    },
+    {
+      "type": "calls",
+      "target": "count",
+      "line_number": 85,
+      "comment": "L85 case K, the ISOLATION case, and the row added because mutant LUA-54b SURVIVED on the first run of this fixture. `undeclared_table` is neither one of the eight documented tables nor declared anywhere in this file, so there is no declaration for the shadowing guard to act on: with the guard alone this edge WOULD be marked. Only the receiver-name test excludes it, which makes this the single row in the suite that exercises the receiver test rather than the guard. Cases D and E do not \u2014 their receivers are file-local, so the guard alone withholds the mark and the receiver test is never reached."
+    }
+  ]
+}

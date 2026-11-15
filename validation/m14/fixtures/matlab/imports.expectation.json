@@ -1,0 +1,20 @@
+{
+  "fixtureId": "matlab/imports",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins `import` as the grammar's `command` production (command_name + command_argument), NOT as a call: `import mypkg.f` names a qualified symbol, `import mypkg.*` names a package, and `import helper` names a bare name. The raw wildcard spelling `mypkg.*` is never published as a target (a wildcard is not a symbol), and non-`import` commands (`clear all`) are not import directives. `clear all` also pins that a command statement is not published as a call while the analyzer's call surface is `function_call` only.",
+  "expectSymbols": [
+    { "name": "imports", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "imports", "target": "mypkg.f", "meta.importForm": "qualified_name" },
+    { "type": "imports", "from": "imports", "target": "mypkg", "meta.importForm": "package_wildcard" },
+    { "type": "imports", "from": "imports", "target": "helper", "meta.importForm": "name" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "mypkg.*" },
+    { "type": "imports", "target": "all" },
+    { "type": "calls", "target": "import" },
+    { "type": "calls", "target": "clear" }
+  ]
+}

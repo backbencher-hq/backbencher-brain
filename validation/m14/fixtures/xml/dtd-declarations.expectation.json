@@ -1,0 +1,262 @@
+{
+  "fixtureId": "xml/dtd-declarations",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding D3. The pre-fix analyzer had no branch at all for `GEDecl`, `PEDecl` or `NotationDecl`, so a DTD's entity and notation declarations produced nothing: measured over the lane's 7,975-file corpus, 590 general entities (16 published), 92 parameter entities (1), 5 notations (0), and 10 parameter entities carrying an external ID \u2014 a real import of another file \u2014 that produced no edge. `GEDecl`'s `NDATA` and a `NOTATION (a|b)` attribute type name a NOTATION, and `<!ELEMENT catalog (entry+)>` names `entry` in its content model; all three are declarations in the tree and all three were dropped, and each of them is a `contains` edge whose target must resolve to a symbol. Line discipline: the external-ID edge's target is the PATH, so the edge carries the line the path is written on and never the line of the `SYSTEM` keyword (M59.A7 / #825) \u2014 `shared.dtd` is on 3, `logo.png` on 4, `image/png` on 6, and `catalog.dtd` on 2. Lines are read off the file.",
+  "expectSymbols": [
+    {
+      "name": "catalog",
+      "kind": "type",
+      "meta.isDoctype": true
+    },
+    {
+      "name": "shared",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdEntityDeclaration": true,
+      "meta.isDtdParameterEntity": true
+    },
+    {
+      "name": "logo",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdEntityDeclaration": true,
+      "meta.isDtdParameterEntity": false
+    },
+    {
+      "name": "plain",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdEntityDeclaration": true
+    },
+    {
+      "name": "png",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdNotationDeclaration": true
+    },
+    {
+      "name": "catalog",
+      "kind": "type",
+      "ownerName": "catalog",
+      "meta.isDtdElementDeclaration": true
+    },
+    {
+      "name": "src",
+      "kind": "property",
+      "ownerName": "entry",
+      "meta.isDtdAttributeDeclaration": true,
+      "meta.attributeType": "NOTATION (png|jpg)",
+      "meta.defaultDeclaration": "#IMPLIED"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "catalog",
+      "target": "catalog.dtd",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "shared",
+      "line_number": 5
+    },
+    {
+      "type": "imports",
+      "from": "shared",
+      "target": "shared.dtd",
+      "line_number": 5
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "logo",
+      "line_number": 6
+    },
+    {
+      "type": "imports",
+      "from": "logo",
+      "target": "logo.png",
+      "line_number": 6
+    },
+    {
+      "type": "contains",
+      "from": "logo",
+      "target": "png",
+      "line_number": 6,
+      "note": "NDATA names the notation an unparsed entity points at"
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "plain",
+      "line_number": 7
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "png",
+      "line_number": 8
+    },
+    {
+      "type": "imports",
+      "from": "png",
+      "target": "image/png",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "catalog",
+      "line_number": 9
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "entry",
+      "line_number": 9,
+      "note": "X14: two RULES produce this one edge \u2014 `<!ELEMENT catalog (entry+)>` is a content-model reading (usage_contextual) and `<catalog><entry/></catalog>` is a nesting reading (structural) \u2014 and they are the same `contains catalog -> entry` pair. `evidenceClass` can only carry the primary role's tier, so the secondary role rode on `alsoRoles` with its tier UNRECORDED, which made the field present but not queryable. `alsoRoleTiers` pairs each role with its tier, as an ordered array so its order cannot disagree with `alsoRoles`.",
+      "meta.occurrences": 2,
+      "meta.lines": [
+        9,
+        12
+      ],
+      "meta.evidenceClass": "structural",
+      "meta.alsoRoles": [
+        "dtd_content_model"
+      ],
+      "meta.alsoRoleTiers": [
+        {
+          "role": "dtd_content_model",
+          "tier": "usage_contextual"
+        }
+      ]
+    },
+    {
+      "type": "contains",
+      "from": "entry",
+      "target": "src",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "entry",
+      "target": "png",
+      "line_number": 10,
+      "note": "a NOTATION attribute type declares a dependency on those notations"
+    },
+    {
+      "type": "contains",
+      "from": "entry",
+      "target": "jpg",
+      "line_number": 10,
+      "note": "the second notation of `NOTATION (png|jpg)` is a declaration too"
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "entry",
+      "line_number": 9,
+      "meta.evidenceClass": "structural",
+      "note": "X14: two RULES produce this one edge \u2014 `<!ELEMENT catalog (entry+)>` is a content-model reading (usage_contextual) and `<catalog><entry/></catalog>` is a nesting reading (structural) \u2014 and they are the same `contains catalog -> entry` pair. `evidenceClass` can only carry the primary role's tier, so the secondary role rode on `alsoRoles` with its tier UNRECORDED, which made the field present but not queryable. `alsoRoleTiers` pairs each role with its tier, as an ordered array so its order cannot disagree with `alsoRoles`.",
+      "meta.alsoRoles": [
+        "dtd_content_model"
+      ],
+      "meta.alsoRoleTiers": [
+        {
+          "role": "dtd_content_model",
+          "tier": "usage_contextual"
+        }
+      ]
+    },
+    {
+      "type": "contains",
+      "from": "entry",
+      "target": "png",
+      "line_number": 10,
+      "meta.evidenceClass": "usage_contextual",
+      "note": "a NOTATION attribute type: the same shape \u2014 the document stating an allowed value, not a containment."
+    },
+    {
+      "type": "imports",
+      "from": "shared",
+      "target": "shared.dtd",
+      "line_number": 5,
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "shared",
+      "line_number": 5,
+      "meta.evidenceClass": "structural",
+      "note": "a DTD containing a declaration it makes is structural: the containment is read straight off the tree."
+    }
+  ],
+  "expectImports": [
+    {
+      "path": "catalog.dtd",
+      "importType": "xml-doctype"
+    },
+    {
+      "path": "shared.dtd",
+      "importType": "xml-doctype"
+    },
+    {
+      "path": "logo.png",
+      "importType": "xml-doctype"
+    },
+    {
+      "path": "image/png",
+      "importType": "xml-doctype"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "catalog",
+      "target": "replacement",
+      "line_number": 5,
+      "note": "`<!ENTITY plain \"replacement\">` has an EntityValue, not an ExternalID; there is no file to import"
+    },
+    {
+      "type": "imports",
+      "from": "entry",
+      "target": "png",
+      "note": "a NOTATION reference is structural containment, not a file import"
+    },
+    {
+      "type": "imports",
+      "from": "catalog",
+      "target": "shared.dtd",
+      "line_number": 2,
+      "note": "the external ID is on the ENTITY (line 3), so the edge is shared -> shared.dtd; an implementation that stamps the whole doctypedecl's line fails here"
+    },
+    {
+      "type": "imports",
+      "from": "catalog",
+      "target": "catalog.dtd",
+      "line_number": 2,
+      "note": "the pre-fix line: `PUBLIC` is written on 2, the PATH the edge names is on 3. M59.A7/#825 \u2014 an edge points at the line its TARGET NAME is written on, and the target here is the path, not the keyword. This forbid is what makes the line mutant non-vacuous: with a single-line DOCTYPE the two lines coincide and any line rule passes."
+    },
+    {
+      "type": "contains",
+      "from": "catalog",
+      "target": "entry",
+      "line_number": 12,
+      "note": "the use site, not the declaration site: one edge for two writings of the name, and the line is the EARLIEST (9)"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "replacement",
+      "note": "an entity's replacement TEXT is not a declaration"
+    },
+    {
+      "name": "",
+      "note": "an empty name can never be published"
+    }
+  ]
+}

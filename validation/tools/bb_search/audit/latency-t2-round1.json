@@ -1,0 +1,12 @@
+{
+  "note": "T2 round 1, reconstructed from the recorded console output of the run described in LATENCY.json commands. Its raw payload file was overwritten when round 2 (matching queries) replaced it. Values are exactly what the harness printed at measurement time.",
+  "tier": "T2-reference",
+  "runtime": "compiled dist via node bin/bb mcp (node v22.22.1, better-sqlite3), BB_NO_AUTO_REFRESH=1, warm, 5 runs",
+  "calls": [
+    { "label": "symbols.default", "args": { "query": "handleRequest" }, "p50": 1792.14, "p95": 2675.83, "warmTextHead": "no results for \"handleRequest\" (symbol does not exist in this index)" },
+    { "label": "content.default", "args": { "mode": "content", "query": "serialize cache entry" }, "p50": 2258.97, "p95": 3313.55 },
+    { "label": "symbol.default", "args": { "mode": "symbol", "symbolName": "getProjectId" }, "p50": 38.76, "p95": 45.79 },
+    { "label": "file.default", "args": { "mode": "file", "filePath": "src/mcp/server.ts" }, "p50": 24.68, "p95": 25.94 },
+    { "label": "regex.option", "args": { "query": "^get.*Cache", "regex": true }, "p50": 2359.88, "p95": 2588.14, "warmTextHead": "no results for \"^get.*Cache\" / scan was cut short (scan-cap)" }
+  ]
+}

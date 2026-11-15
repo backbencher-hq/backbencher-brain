@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_impact",
+  "tier": "T2",
+  "subject": "workspace reference large index (.bb-data, 11,440 files, ~3.4 GB)",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-readonly.ts",
+  "openMode": "BrainDatabase.getRawInstance(projectId, { readonly: true }) — byte-read-only; the handler opens the same way",
+  "generatedAt": "2026-11-01T23:04:13.308Z",
+  "loadAverage": [
+    42.13,
+    25.94,
+    14.78
+  ],
+  "dbFiles": [
+    "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-wal",
+    "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db-shm"
+  ],
+  "before": {
+    "brain.db": "dfde822e5036b2d29468aacf30817b9dc4a17984794fe1744cdf50be8694b79e",
+    "brain.db-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "brain.db-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  "after": {
+    "brain.db": "dfde822e5036b2d29468aacf30817b9dc4a17984794fe1744cdf50be8694b79e",
+    "brain.db-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "brain.db-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  "sizesBefore": {
+    "brain.db": 3639963648,
+    "brain.db-wal": 0,
+    "brain.db-shm": 32768
+  },
+  "sizesAfter": {
+    "brain.db": 3639963648,
+    "brain.db-wal": 0,
+    "brain.db-shm": 32768
+  },
+  "dbUnchanged": true,
+  "changedFiles": [],
+  "rows": [
+    {
+      "label": "control-count-files",
+      "ms": 33.9,
+      "value": {
+        "n": 6452
+      }
+    },
+    {
+      "label": "control-name-equality",
+      "ms": 1.3,
+      "value": {
+        "n": 1
+      }
+    },
+    {
+      "label": "component-computeImpact-readonly",
+      "ms": 98.7,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false
+      }
+    },
+    {
+      "label": "handler-full-call-readonly",
+      "ms": 532.1,
+      "value": {
+        "shown": 7,
+        "total": 7,
+        "truncated": false,
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": null
+        }
+      }
+    }
+  ]
+}

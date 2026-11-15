@@ -1,0 +1,76 @@
+{
+ "fixtureId": "xml/xslt-call-source-through-inline-body",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A `calls` edge with a FABRICATED SOURCE, found by asking the `extends` question of `calls` and measured on the full admitted corpus: 495 of 548 `calls` edges — 90.3% — named an XSLT vocabulary tag or an HTML tag as the caller, leaving 53 whose source is a name the stylesheet declares. `calls` resolves at 100% at BOTH ENDS on every corpus draw, which is exactly why this survived: the analyzer mints a symbol for whatever name an edge needs, so a fabricated source resolves perfectly and no resolution metric can see it. The mechanism was `elementOwnerName`, which is the enclosing ELEMENT — so a call inside `<xsl:for-each>` was published as `xsl:for-each -> dumptext`, and inside `<xsl:if>` as `xsl:if -> dumptext`. The fix threads the nearest ancestor that DECLARES a name in a vocabulary (`nearestNamedDeclaration`), which `extends` had already been given for the same reason. xml/xslt-named-template-calls PASSED UNCHANGED against this defect and that is why this fixture exists: all three of its calls sit DIRECTLY inside `<xsl:template name=...>`, the one shape where 'the element one level out' already happened to be right. A fixture that cannot fail the defect is not coverage. FIVE callers, chosen so a rule that only handles one of them is caught: an unnamed inline instruction that is not a caller (1, 2), a variable body that is (3), the already-covered direct shape (4), and a call at stylesheet top level that XSLT 1.0 §2.4 does not permit and which therefore yields NO edge (5).",
+ "expectSymbols": [],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "loops",
+   "target": "xsl:stylesheet.target",
+   "line_number": 36,
+   "meta.evidenceClass": "reference_qualified",
+   "meta.resolvable": "in-document",
+   "note": "THROUGH AN UNNAMED INLINE INSTRUCTION, and the shape the corpus actually has: a call inside `<xsl:for-each>` at line 35. The caller is `loops`, the nearest enclosing NAMED template. Before the fix this edge's source was `xsl:for-each`, and `libxslt/doc/EXSLT/devhelp/html.xsl` publishes 57 `apply-templates` sites against that same fabricated caller. `reference_qualified` is the honest tier and is unchanged: the callee is named by a QName in an attribute value."
+  },
+  {
+   "type": "calls",
+   "from": "loops",
+   "target": "xsl:stylesheet.guarded",
+   "line_number": 39,
+   "meta.resolvable": "in-document",
+   "note": "through `<xsl:if>` instead, so a rule that walked exactly one level of nesting would pass the for-each row and fail this one."
+  },
+  {
+   "type": "calls",
+   "from": "seed",
+   "target": "xsl:stylesheet.fromVariable",
+   "line_number": 43,
+   "meta.resolvable": "in-document",
+   "note": "A VARIABLE IS A LEGITIMATE CALLER. `<xsl:variable name=\"seed\">` at top level holds an instruction sequence, and XSLT 1.0 §6 makes the sequence doing the calling, so the caller is `seed` and not `xsl:variable`. This row is the one that stops the fix being over-corrected into 'nearest enclosing TEMPLATE only': a template-only rule would drop this edge, and dropping a real call is the same class of error as fabricating one."
+  },
+  {
+   "type": "calls",
+   "from": "direct",
+   "target": "xsl:stylesheet.straight",
+   "line_number": 46,
+   "meta.resolvable": "in-document",
+   "note": "the shape xml/xslt-named-template-calls already covers, kept so that fixing the nesting case cannot regress the direct one."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "xsl:for-each",
+   "target": "target",
+   "note": "THE REGRESSION PIN. `xsl:for-each` is an XSLT vocabulary tag, not a caller: this file declares no template, variable or param by that name. This is the exact pair the corpus measured at scale — `xsl:for-each -> dumptext` and `xsl:template -> dumptext` in libxslt's devhelp stylesheets — and it is a forbid rather than an expectation because the wrong edge is the one that must never come back."
+  },
+  {
+   "type": "calls",
+   "from": "xsl:if",
+   "target": "guarded",
+   "note": "same, for the second unnamed inline instruction, so a rule special-casing `for-each` is caught."
+  },
+  {
+   "type": "calls",
+   "from": "xsl:variable",
+   "target": "fromVariable",
+   "note": "the vocabulary-tag form of the VARIABLE row above: the caller is `seed`, the variable's declared name, never `xsl:variable`."
+  },
+  {
+   "type": "calls",
+   "from": "xsl:stylesheet",
+   "target": "stray",
+   "note": "THE REFUSAL UNDER TEST. `<xsl:call-template name=\"stray\"/>` at line 48 sits at stylesheet top level, and XSLT 1.0 §2.4 says the children of xsl:stylesheet are templates, params, literal result elements, variables, strip-space, preserve-space, namespace declarations and whitespace — a call-template is none of those and is not executable there. There is no enclosing declaration to name as the caller, so no edge is emitted. Publishing `xsl:stylesheet -> stray` or `xsl:call-template -> stray` would put a caller in the graph that XSLT cannot execute; refusing is the reading per-file analysis can support, since an `xsl:include` could supply the surrounding template."
+  },
+  {
+   "type": "calls",
+   "from": "xsl:call-template",
+   "target": "target",
+   "note": "the instruction naming ITSELF as the caller, which is what `ownerName` would give and what `xml/xslt-named-template-calls` already forbids for the direct shape."
+  }
+ ],
+ "forbidSymbols": [],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

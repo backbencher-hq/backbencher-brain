@@ -1,0 +1,8223 @@
+{
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "ext": "sh",
+    "sample": 600,
+    "repos": 199,
+    "trackedBashFiles": 3748,
+    "corpusScanned": 3748,
+    "candidateFiles": 60,
+    "candidatesParsed": 37,
+    "candidatesFailed": 0,
+    "parsed": 600,
+    "failed": 0,
+    "degraded": 0,
+    "symbols": 2697,
+    "filesRead": 3354,
+    "filesUnreadable": 394,
+    "relationshipEdges": 12352,
+    "distinctTargets": 1578,
+    "analyzerDigest": "6d5542aa6d6640e2",
+    "expectedDigest": "6d5542aa6d6640e2"
+  },
+  "residue": {
+    "distinctTargets": 319,
+    "edges": 5084,
+    "byCategory": {
+      "EXTERNAL_BINARY": {
+        "targets": 132,
+        "edges": 3456,
+        "byType": {
+          "calls": 3456
+        }
+      },
+      "CROSS_FILE_CALL": {
+        "targets": 14,
+        "edges": 653,
+        "byType": {
+          "calls": 653
+        }
+      },
+      "ENV_VAR": {
+        "targets": 108,
+        "edges": 490,
+        "byType": {
+          "uses": 490
+        }
+      },
+      "NAME_COLLISION": {
+        "targets": 13,
+        "edges": 223,
+        "byType": {
+          "calls": 223
+        }
+      },
+      "FILE_PATH": {
+        "targets": 33,
+        "edges": 148,
+        "byType": {
+          "imports": 48,
+          "references": 48,
+          "calls": 52
+        }
+      },
+      "CROSS_FILE_READ": {
+        "targets": 14,
+        "edges": 101,
+        "byType": {
+          "uses": 101
+        }
+      },
+      "UNRESOLVED_READ": {
+        "targets": 5,
+        "edges": 11,
+        "byType": {
+          "uses": 11
+        }
+      },
+      "POSITIONAL_PARAM": {
+        "targets": 1,
+        "edges": 2,
+        "byType": {
+          "imports": 1,
+          "references": 1
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "target": "grep",
+      "edges": 745,
+      "types": {
+        "calls": 745
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 745
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/entry-point.sh",
+        "line": 15,
+        "source": "entry-point.sh"
+      },
+      "flags": {
+        "isExternalCommand": 745,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-playbook",
+      "edges": 690,
+      "types": {
+        "calls": 690
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 690
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-doc/runme.sh",
+        "line": 26,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 690,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.7,
+        1
+      ]
+    },
+    {
+      "target": "tee",
+      "edges": 216,
+      "types": {
+        "calls": 216
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 216
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-console/runme.sh",
+        "line": 12,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 216,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "upsert_config_entry",
+      "edges": 188,
+      "types": {
+        "calls": 188
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 188
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-header-match-invert/setup.sh",
+        "line": 11,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 188,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "gen_envoy_bootstrap",
+      "edges": 186,
+      "types": {
+        "calls": 186
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 186
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-header-match-invert/setup.sh",
+        "line": 106,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 186,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "rm",
+      "edges": 161,
+      "types": {
+        "calls": 161
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 161
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-doc/runme.sh",
+        "line": 290,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 161,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.7,
+        1
+      ]
+    },
+    {
+      "target": "snapshot_envoy_admin",
+      "edges": 119,
+      "types": {
+        "calls": 119
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 119
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-header-match-invert/capture.sh",
+        "line": 5,
+        "source": "capture.sh"
+      },
+      "flags": {
+        "isExternalCommand": 119,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "cat",
+      "edges": 117,
+      "types": {
+        "calls": 117
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 117
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/incidental/windows.sh",
+        "line": 24,
+        "source": "windows.sh"
+      },
+      "flags": {
+        "isExternalCommand": 117,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "OUTPUT_DIR",
+      "edges": 115,
+      "types": {
+        "uses": 115
+      },
+      "buckets": {
+        "ENV_VAR": 115
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/adhoc/runme.sh",
+        "line": 13,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ansible",
+      "edges": 108,
+      "types": {
+        "calls": 108
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 108
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/adhoc/runme.sh",
+        "line": 6,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 108,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "git",
+      "edges": 106,
+      "types": {
+        "calls": 106
+      },
+      "buckets": {
+        "NAME_COLLISION": 106
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kubernetes/hack/lib/version.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/run-tests.sh",
+        "line": 17,
+        "source": "run-tests.sh"
+      },
+      "flags": {
+        "isExternalCommand": 106,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-vault",
+      "edges": 93,
+      "types": {
+        "calls": 93
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 93
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-vault/runme.sh",
+        "line": 42,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 93,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sed",
+      "edges": 87,
+      "types": {
+        "calls": 87
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 87
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/entry-point.sh",
+        "line": 15,
+        "source": "entry-point.sh"
+      },
+      "flags": {
+        "isExternalCommand": 87,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-test",
+      "edges": 84,
+      "types": {
+        "calls": 84
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 84
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/cloud.sh",
+        "line": 18,
+        "source": "cloud.sh"
+      },
+      "flags": {
+        "isExternalCommand": 84,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "mkdir",
+      "edges": 79,
+      "types": {
+        "calls": 79
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 79
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/aggregate-coverage.sh",
+        "line": 10,
+        "source": "aggregate-coverage.sh"
+      },
+      "flags": {
+        "isExternalCommand": 79,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "register_services",
+      "edges": 77,
+      "types": {
+        "calls": 77
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 77
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-header-match-invert/setup.sh",
+        "line": 104,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 77,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "docker",
+      "edges": 72,
+      "types": {
+        "calls": 72
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 72
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/entry-point.sh",
+        "line": 12,
+        "source": "entry-point.sh"
+      },
+      "flags": {
+        "isExternalCommand": 72,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-doc",
+      "edges": 70,
+      "types": {
+        "calls": 70
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 70
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-doc/runme.sh",
+        "line": 29,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 70,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "../collection/setup.sh",
+      "edges": 68,
+      "types": {
+        "imports": 34,
+        "references": 34
+      },
+      "buckets": {
+        "FILE_PATH": 68
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-config-invalid/runme.sh",
+        "line": 6,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-galaxy",
+      "edges": 55,
+      "types": {
+        "calls": 55
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 55
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 24,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 55,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "HOME",
+      "edges": 48,
+      "types": {
+        "uses": 48
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 48
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/fsharp/eng/common/tools.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 116,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "awk",
+      "edges": 39,
+      "types": {
+        "calls": 39
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 39
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/no_log/runme.sh",
+        "line": 16,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 39,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "diff",
+      "edges": 39,
+      "types": {
+        "calls": 39
+      },
+      "buckets": {
+        "NAME_COLLISION": 39
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/compare-results.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-inventory/runme.sh",
+        "line": 11,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 39,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "consul",
+      "edges": 38,
+      "types": {
+        "calls": 36,
+        "uses": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 36,
+        "UNRESOLVED_READ": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/command/snapshot/decode/testdata/populate-all.sh",
+        "line": 15,
+        "source": "populate-all.sh"
+      },
+      "flags": {
+        "isExternalCommand": 36,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8,
+        1
+      ]
+    },
+    {
+      "target": "sleep",
+      "edges": 36,
+      "types": {
+        "calls": 36
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 36
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-timeout/ansible_collections/ns/col/tests/integration/targets/sleep/runme.sh",
+        "line": 5,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 36,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "DEFAULT_REQUIRED_SERVICES",
+      "edges": 32,
+      "types": {
+        "uses": 32
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 32
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/defaults.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-header-match-invert/vars.sh",
+        "line": 5,
+        "source": "vars.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "cp",
+      "edges": 31,
+      "types": {
+        "calls": 31
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 31
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible/module_common_regex_regression.sh",
+        "line": 12,
+        "source": "module_common_regex_regression.sh"
+      },
+      "flags": {
+        "isExternalCommand": 31,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "BASH_SOURCE",
+      "edges": 30,
+      "types": {
+        "uses": 30
+      },
+      "buckets": {
+        "ENV_VAR": 30
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/apollo-server/smoke-test/smoke-test.sh",
+        "line": 7,
+        "source": "smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "PWD",
+      "edges": 30,
+      "types": {
+        "uses": 30
+      },
+      "buckets": {
+        "ENV_VAR": 30
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/entry-point.sh",
+        "line": 21,
+        "source": "entry-point.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "find",
+      "edges": 30,
+      "types": {
+        "calls": 30
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 30
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible/runme.sh",
+        "line": 61,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 30,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-inventory",
+      "edges": 29,
+      "types": {
+        "calls": 29
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 29
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-inventory/runme.sh",
+        "line": 9,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 29,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "xargs",
+      "edges": 28,
+      "types": {
+        "calls": 28
+      },
+      "buckets": {
+        "NAME_COLLISION": 28
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/ohmyzsh/plugins/pip/pip.plugin.zsh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/handlers/runme.sh",
+        "line": 27,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 28,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "curl",
+      "edges": 27,
+      "types": {
+        "calls": 27
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 27
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/setup/bootstrap.sh",
+        "line": 87,
+        "source": "install_pip"
+      },
+      "flags": {
+        "isExternalCommand": 27,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "go",
+      "edges": 27,
+      "types": {
+        "calls": 27
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 27
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.github/scripts/set-test-package-matrix.sh",
+        "line": 5,
+        "source": "set-test-package-matrix.sh"
+      },
+      "flags": {
+        "isExternalCommand": 27,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "wc",
+      "edges": 27,
+      "types": {
+        "calls": 27
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 27
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-doc/runme.sh",
+        "line": 82,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 27,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "make",
+      "edges": 26,
+      "types": {
+        "calls": 26
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 26
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/make-release.sh",
+        "line": 8,
+        "source": "make-release.sh"
+      },
+      "flags": {
+        "isExternalCommand": 26,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "INVENTORY_PATH",
+      "edges": 24,
+      "types": {
+        "uses": 24
+      },
+      "buckets": {
+        "ENV_VAR": 24
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-coverage-windows/runme.sh",
+        "line": 6,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "jq",
+      "edges": 23,
+      "types": {
+        "calls": 23
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 23
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/scripts/test_e2e_env.sh",
+        "line": 34,
+        "source": "test_e2e_env.sh"
+      },
+      "flags": {
+        "isExternalCommand": 23,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ls",
+      "edges": 23,
+      "types": {
+        "calls": 23
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 23
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/ohmyzsh/lib/theme-and-appearance.zsh",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-installed/runme.sh",
+        "line": 12,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 23,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "mktemp",
+      "edges": 23,
+      "types": {
+        "calls": 23
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 23
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 448,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 23,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "cut",
+      "edges": 22,
+      "types": {
+        "calls": 22
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 22
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/blocks/runme.sh",
+        "line": 15,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 22,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-config",
+      "edges": 21,
+      "types": {
+        "calls": 21
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 21
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible/runme.sh",
+        "line": 11,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 21,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sort",
+      "edges": 21,
+      "types": {
+        "calls": 21
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 21
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-playbook-callbacks/runme.sh",
+        "line": 9,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 21,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "INSTALL_STDENV_DIR",
+      "edges": 20,
+      "types": {
+        "uses": 20
+      },
+      "buckets": {
+        "ENV_VAR": 20
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/clean-stdlib/install_no_profile.sh",
+        "line": 20,
+        "source": "install_no_profile.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "which",
+      "edges": 20,
+      "types": {
+        "calls": 20
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 20
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.github/scripts/schema-diff-hide-gh-comments.sh",
+        "line": 18,
+        "source": "schema-diff-hide-gh-comments.sh"
+      },
+      "flags": {
+        "isExternalCommand": 20,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "GITHUB_OUTPUT",
+      "edges": 18,
+      "types": {
+        "uses": 18
+      },
+      "buckets": {
+        "ENV_VAR": 18
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.github/scripts/set-test-package-matrix.sh",
+        "line": 7,
+        "source": "set-test-package-matrix.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "tar",
+      "edges": 18,
+      "types": {
+        "calls": 18
+      },
+      "buckets": {
+        "NAME_COLLISION": 18
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/util.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 215,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 18,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "tr",
+      "edges": 18,
+      "types": {
+        "calls": 18
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 18
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/setup/bootstrap.sh",
+        "line": 543,
+        "source": "bootstrap_remote"
+      },
+      "flags": {
+        "isExternalCommand": 18,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "${SCRIPT_DIR}/functions.sh",
+      "edges": 16,
+      "types": {
+        "imports": 8,
+        "references": 8
+      },
+      "buckets": {
+        "FILE_PATH": 16
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/build-date.sh",
+        "line": 10,
+        "source": "build-date.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "chmod",
+      "edges": 16,
+      "types": {
+        "calls": 16
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 16
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-sanity-shebang/runme.sh",
+        "line": 11,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 16,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.7,
+        1
+      ]
+    },
+    {
+      "target": "mv",
+      "edges": 16,
+      "types": {
+        "calls": 16
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 16
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 78,
+        "source": "f_ansible_galaxy_create_role_repo_post"
+      },
+      "flags": {
+        "isExternalCommand": 16,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pg_restore",
+      "edges": 15,
+      "types": {
+        "calls": 15
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 15
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/schema-diff.sh",
+        "line": 85,
+        "source": "extract"
+      },
+      "flags": {
+        "isExternalCommand": 15,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pip",
+      "edges": 15,
+      "types": {
+        "calls": 15
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 15
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/ohmyzsh/plugins/pip/pip.plugin.zsh",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/report-coverage.sh",
+        "line": 12,
+        "source": "report-coverage.sh"
+      },
+      "flags": {
+        "isExternalCommand": 15,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "uname",
+      "edges": 15,
+      "types": {
+        "calls": 15
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 15
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/delegate_to/runme.sh",
+        "line": 5,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 15,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "CI_PROJECT_DIR",
+      "edges": 14,
+      "types": {
+        "uses": 14
+      },
+      "buckets": {
+        "ENV_VAR": 14
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/brew.sh",
+        "line": 8,
+        "source": "brew.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "apt-get",
+      "edges": 14,
+      "types": {
+        "calls": 14
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 14
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/setup/bootstrap.sh",
+        "line": 511,
+        "source": "bootstrap_remote_ubuntu"
+      },
+      "flags": {
+        "isExternalCommand": 14,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "POSTGRES_USER",
+      "edges": 13,
+      "types": {
+        "uses": 13
+      },
+      "buckets": {
+        "ENV_VAR": 13
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/internal/db/sqltest/initdb.d/00_schema.sh",
+        "line": 24,
+        "source": "docker_process_sql"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "npm",
+      "edges": 13,
+      "types": {
+        "calls": 13
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 13
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/apollo-server/scripts/deprecate-old-versions.sh",
+        "line": 20,
+        "source": "with_replacement"
+      },
+      "flags": {
+        "isExternalCommand": 13,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sudo",
+      "edges": 13,
+      "types": {
+        "calls": 13
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 13
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/ghostty/src/shell-integration/bash/ghostty.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-vault/runme.sh",
+        "line": 565,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 13,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "CONSUL_BIND_INTERFACE",
+      "edges": 12,
+      "types": {
+        "uses": 12
+      },
+      "buckets": {
+        "ENV_VAR": 12
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.release/docker/docker-entrypoint.sh",
+        "line": 17,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_CLIENT_INTERFACE",
+      "edges": 12,
+      "types": {
+        "uses": 12
+      },
+      "buckets": {
+        "ENV_VAR": 12
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.release/docker/docker-entrypoint.sh",
+        "line": 33,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ln",
+      "edges": 12,
+      "types": {
+        "calls": 12
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 12
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 560,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 12,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "openssl",
+      "edges": 12,
+      "types": {
+        "calls": 12
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 12
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/ca/generate.sh",
+        "line": 7,
+        "source": "generate.sh"
+      },
+      "flags": {
+        "isExternalCommand": 12,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "tail",
+      "edges": 12,
+      "types": {
+        "calls": 12
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 12
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_results/runme.sh",
+        "line": 51,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 12,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "touch",
+      "edges": 12,
+      "types": {
+        "calls": 12
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 12
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 76,
+        "source": "f_ansible_galaxy_create_role_repo_post"
+      },
+      "flags": {
+        "isExternalCommand": 12,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "tput",
+      "edges": 12,
+      "types": {
+        "calls": 12
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 12
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/00-vars.sh",
+        "line": 12,
+        "source": "00-vars.sh"
+      },
+      "flags": {
+        "isExternalCommand": 12,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ansible-pull",
+      "edges": 11,
+      "types": {
+        "calls": 11
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 11
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-pull/runme.sh",
+        "line": 90,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 11,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "env",
+      "edges": 11,
+      "types": {
+        "calls": 11
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 11
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible/runme.sh",
+        "line": 34,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 11,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "gh",
+      "edges": 11,
+      "types": {
+        "calls": 11
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 11
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build-ui.sh",
+        "line": 48,
+        "source": "build-ui.sh"
+      },
+      "flags": {
+        "isExternalCommand": 11,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "python.py",
+      "edges": 11,
+      "types": {
+        "calls": 11
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 11
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-coverage/ansible_collections/ns/col/tests/integration/targets/hello/runme.sh",
+        "line": 5,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 11,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "uniq",
+      "edges": 11,
+      "types": {
+        "calls": 11
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 11
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-playbook-callbacks/runme.sh",
+        "line": 9,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 11,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "node",
+      "edges": 10,
+      "types": {
+        "calls": 10
+      },
+      "buckets": {
+        "NAME_COLLISION": 10
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/windows/smoke-test.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/apollo-server/smoke-test/smoke-test.sh",
+        "line": 9,
+        "source": "smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 10,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "psql",
+      "edges": 10,
+      "types": {
+        "calls": 10
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 10
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/testing/dbtest/docker/init-db.sh",
+        "line": 9,
+        "source": "init-db.sh"
+      },
+      "flags": {
+        "isExternalCommand": 10,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "wait_for_config_entry",
+      "edges": 10,
+      "types": {
+        "calls": 10
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 10
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-dc-failover-gateways-none/primary/setup.sh",
+        "line": 28,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 10,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./test.sh",
+      "edges": 9,
+      "types": {
+        "calls": 9
+      },
+      "buckets": {
+        "FILE_PATH": 9
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/binary_modules_posix/runme.sh",
+        "line": 6,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 9,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "UI_CLONE_DIR",
+      "edges": 9,
+      "types": {
+        "uses": 9
+      },
+      "buckets": {
+        "ENV_VAR": 9
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build-ui.sh",
+        "line": 8,
+        "source": "build-ui.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "retry_default",
+      "edges": 9,
+      "types": {
+        "calls": 9
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 9
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-dc-failover-gateways-none/secondary/setup.sh",
+        "line": 16,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 9,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "setsid",
+      "edges": 9,
+      "types": {
+        "calls": 9
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 9
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-vault/runme.sh",
+        "line": 91,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 9,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ANSIBLE_TEST_PYTHON_VERSION",
+      "edges": 8,
+      "types": {
+        "uses": 8
+      },
+      "buckets": {
+        "ENV_VAR": 8
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-config-invalid/runme.sh",
+        "line": 10,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "OPTARG",
+      "edges": 8,
+      "types": {
+        "uses": 8
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 8
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/bash-completion/startup-core/000_bash_completion_compat.bash",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/scripts/test_e2e_env.sh",
+        "line": 17,
+        "source": "test_e2e_env.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SERVICE_USER",
+      "edges": 8,
+      "types": {
+        "uses": 8
+      },
+      "buckets": {
+        "ENV_VAR": 8
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_boundary/scripts/create-dir.sh",
+        "line": 13,
+        "source": "create-dir.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "boundary",
+      "edges": 8,
+      "types": {
+        "calls": 8
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 8
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/create_worker.sh",
+        "line": 7,
+        "source": "create_worker.sh"
+      },
+      "flags": {
+        "isExternalCommand": 8,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "POSTGRES_DB",
+      "edges": 7,
+      "types": {
+        "uses": 7
+      },
+      "buckets": {
+        "ENV_VAR": 7
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/internal/db/sqltest/initdb.d/00_schema.sh",
+        "line": 25,
+        "source": "docker_process_sql"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ghc",
+      "edges": 7,
+      "types": {
+        "calls": 7
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 7
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/Cabal-tests/tests/hackage/check.sh",
+        "line": 11,
+        "source": "check.sh"
+      },
+      "flags": {
+        "isExternalCommand": 7,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "svn",
+      "edges": 7,
+      "types": {
+        "calls": 7
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 7
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/subversion/roles/subversion/files/create_repo.sh",
+        "line": 4,
+        "source": "create_repo.sh"
+      },
+      "flags": {
+        "isExternalCommand": 7,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "CABAL_INSTALL_VERSION",
+      "edges": 6,
+      "types": {
+        "uses": 6
+      },
+      "buckets": {
+        "ENV_VAR": 6
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 9,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_LOCAL_CONFIG",
+      "edges": 6,
+      "types": {
+        "uses": 6
+      },
+      "buckets": {
+        "ENV_VAR": 6
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.release/docker/docker-entrypoint.sh",
+        "line": 59,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GHC_VERSION",
+      "edges": 6,
+      "types": {
+        "uses": 6
+      },
+      "buckets": {
+        "ENV_VAR": 6
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 8,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "NEW_DIR",
+      "edges": 6,
+      "types": {
+        "uses": 6
+      },
+      "buckets": {
+        "ENV_VAR": 6
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_boundary/scripts/create-dir.sh",
+        "line": 12,
+        "source": "create-dir.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TMPDIR",
+      "edges": 6,
+      "types": {
+        "uses": 6
+      },
+      "buckets": {
+        "ENV_VAR": 6
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/almalinux9/install-packages.sh",
+        "line": 6,
+        "source": "install-packages.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "_filedir",
+      "edges": 6,
+      "types": {
+        "calls": 6
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 6
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/bash-completion/startup-core/000_bash_completion_compat.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/etc/cargo.bashcomp.sh",
+        "line": 110,
+        "source": "_cargo"
+      },
+      "flags": {
+        "isExternalCommand": 6,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "cargo",
+      "edges": 6,
+      "types": {
+        "calls": 6
+      },
+      "buckets": {
+        "NAME_COLLISION": 6
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kong/scripts/build-wasm-test-filters.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/fetch-smoke-test.sh",
+        "line": 24,
+        "source": "fetch-smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 6,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "dnf",
+      "edges": 6,
+      "types": {
+        "calls": 6
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 6
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/setup/bootstrap.sh",
+        "line": 263,
+        "source": "bootstrap_remote_fedora"
+      },
+      "flags": {
+        "isExternalCommand": 6,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ifconfig",
+      "edges": 6,
+      "types": {
+        "calls": 6
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 6
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/delegate_to/runme.sh",
+        "line": 9,
+        "source": "setup"
+      },
+      "flags": {
+        "isExternalCommand": 6,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ENT_MARKER_PATTERNS_FILE",
+      "edges": 5,
+      "types": {
+        "uses": 5
+      },
+      "buckets": {
+        "ENV_VAR": 5
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/check-ent-content-markers.sh",
+        "line": 124,
+        "source": "check-ent-content-markers.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GOTAGS",
+      "edges": 5,
+      "types": {
+        "uses": 5
+      },
+      "buckets": {
+        "ENV_VAR": 5
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/10-util.sh",
+        "line": 169,
+        "source": "parse_version"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "S",
+      "edges": 5,
+      "types": {
+        "uses": 5
+      },
+      "buckets": {
+        "ENV_VAR": 5
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/cloud.sh",
+        "line": 14,
+        "source": "cloud.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "npx",
+      "edges": 5,
+      "types": {
+        "calls": 5
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 5
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/apollo-server/smoke-test/smoke-test.sh",
+        "line": 19,
+        "source": "smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 5,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "readlink",
+      "edges": 5,
+      "types": {
+        "calls": 5
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 5
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/ci/goinstall.sh",
+        "line": 7,
+        "source": "goinstall.sh"
+      },
+      "flags": {
+        "isExternalCommand": 5,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "seq",
+      "edges": 5,
+      "types": {
+        "calls": 5
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 5
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/delegate_to/runme.sh",
+        "line": 84,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 5,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "vault_bin_path",
+      "edges": 5,
+      "types": {
+        "uses": 5
+      },
+      "buckets": {
+        "UNRESOLVED_READ": 5
+      },
+      "category": "UNRESOLVED_READ",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_vault/templates/create-kms-policy.sh",
+        "line": 65,
+        "source": "create-kms-policy.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "wget",
+      "edges": 5,
+      "types": {
+        "calls": 5
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 5
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/ci/goinstall.sh",
+        "line": 96,
+        "source": "goinstall.sh"
+      },
+      "flags": {
+        "isExternalCommand": 5,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./verify.py",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "FILE_PATH": 4
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/packaging_cli-doc/runme.sh",
+        "line": 19,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./warp-packer",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "FILE_PATH": 4
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/buckaroo/warp-bundle-linux.sh",
+        "line": 8,
+        "source": "warp-bundle-linux.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./windows.sh",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "FILE_PATH": 4
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/connection_windows_ssh/runme.sh",
+        "line": 26,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ANSIBLE_TEST_PYTHON_INTERPRETER",
+      "edges": 4,
+      "types": {
+        "uses": 4
+      },
+      "buckets": {
+        "ENV_VAR": 4
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/infra/runme.sh",
+        "line": 33,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BOUNDARY_INSTALL_DIR",
+      "edges": 4,
+      "types": {
+        "uses": 4
+      },
+      "buckets": {
+        "ENV_VAR": 4
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_boundary/scripts/set-up-login-shell-profile.sh",
+        "line": 12,
+        "source": "set-up-login-shell-profile.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "OTP",
+      "edges": 4,
+      "types": {
+        "uses": 4
+      },
+      "buckets": {
+        "ENV_VAR": 4
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/apollo-server/scripts/deprecate-old-versions.sh",
+        "line": 14,
+        "source": "deprecate-old-versions.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TARBALL_EXT",
+      "edges": 4,
+      "types": {
+        "uses": 4
+      },
+      "buckets": {
+        "ENV_VAR": 4
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 127,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "apk",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "NAME_COLLISION": 4
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/Fabulous/eng/ci/capture-maui-android-samples.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/setup/bootstrap.sh",
+        "line": 220,
+        "source": "bootstrap_remote_alpine"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "apt-file",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/debian10/install-packages.sh",
+        "line": 25,
+        "source": "install-packages.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "cabal",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 38,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "collection-tests/git-common.bash",
+      "edges": 4,
+      "types": {
+        "imports": 2,
+        "references": 2
+      },
+      "buckets": {
+        "FILE_PATH": 4
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-git/collection-tests/git-at-collection-base.sh",
+        "line": 10,
+        "source": "git-at-collection-base.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "deep-copy",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/agent/config/deep-copy.sh",
+        "line": 9,
+        "source": "deep-copy.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "dotnet",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Argu/build.sh",
+        "line": 5,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "dpkg",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/debian10/install-packages.sh",
+        "line": 9,
+        "source": "install-packages.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "gpg",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/scripts/release/download-gh-artifacts.sh",
+        "line": 29,
+        "source": "download-gh-artifacts.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pre-commit",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/devtools.sh",
+        "line": 213,
+        "source": "pre_commit_install"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "scp",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/connection_ssh/runme.sh",
+        "line": 51,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "zip",
+      "edges": 4,
+      "types": {
+        "calls": 4
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 4
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_boundary_docker_local/build.sh",
+        "line": 25,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 4,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "../../../../hacking/test-module.py",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "FILE_PATH": 3
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/infra/runme.sh",
+        "line": 30,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "../test_utils/scripts/timeout.py",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "FILE_PATH": 3
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/connection_ssh/runme.sh",
+        "line": 20,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./posix.sh",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "FILE_PATH": 3
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/connection_ssh/runme.sh",
+        "line": 69,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "BASH_REMATCH",
+      "edges": 3,
+      "types": {
+        "uses": 3
+      },
+      "buckets": {
+        "ENV_VAR": 3
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/etc/cargo.bashcomp.sh",
+        "line": 297,
+        "source": "_toolchains"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GRAPHQL_JS_VERSION",
+      "edges": 3,
+      "types": {
+        "uses": 3
+      },
+      "buckets": {
+        "ENV_VAR": 3
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/apollo-server/smoke-test/prepare.sh",
+        "line": 21,
+        "source": "prepare.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "OSTYPE",
+      "edges": 3,
+      "types": {
+        "uses": 3
+      },
+      "buckets": {
+        "ENV_VAR": 3
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/become_unprivileged/runme.sh",
+        "line": 38,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "P",
+      "edges": 3,
+      "types": {
+        "uses": 3
+      },
+      "buckets": {
+        "ENV_VAR": 3
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/incidental/windows.sh",
+        "line": 15,
+        "source": "windows.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "bash",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible/runme.sh",
+        "line": 86,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "brew",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/brew.sh",
+        "line": 26,
+        "source": "brew.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "chown",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.release/docker/docker-entrypoint.sh",
+        "line": 42,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "cygpath",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build.sh",
+        "line": 47,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "defaults",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 50,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "df",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/clean-test-output.sh",
+        "line": 6,
+        "source": "clean-test-output.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "mount",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/noexec/runme.sh",
+        "line": 8,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "realpath",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 12,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sbt",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cats-effect/example/test-js.sh",
+        "line": 10,
+        "source": "test-js.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "setcap",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.release/docker/docker-entrypoint.sh",
+        "line": 52,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "shasum",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "NAME_COLLISION": 3
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/util.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/10-util.sh",
+        "line": 590,
+        "source": "shasum_directory"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "stat",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "NAME_COLLISION": 3
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/AspNetCore/benchmarks/k6/run-and-collect.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.release/docker/docker-entrypoint.sh",
+        "line": 41,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "stty",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_default/runme.sh",
+        "line": 100,
+        "source": "cleanup"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "wait_for_agent_service_register",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 3
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-subset-onlypassing/setup.sh",
+        "line": 30,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "yum",
+      "edges": 3,
+      "types": {
+        "calls": 3
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 3
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/verify_rpm.sh",
+        "line": 63,
+        "source": "main"
+      },
+      "flags": {
+        "isExternalCommand": 3,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "$1",
+      "edges": 2,
+      "types": {
+        "imports": 1,
+        "references": 1
+      },
+      "buckets": {
+        "POSITIONAL_PARAM": 2
+      },
+      "category": "POSITIONAL_PARAM",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/old_style_modules_posix/library/helloworld.sh",
+        "line": 18,
+        "source": "helloworld.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "$CI_PROJECT_DIR/.gitlab/common.sh",
+      "edges": 2,
+      "types": {
+        "imports": 1,
+        "references": 1
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 5,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "$CI_PROJECT_DIR/.gitlab/ghcup.sh",
+      "edges": 2,
+      "types": {
+        "imports": 1,
+        "references": 1
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 51,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "$bundle_res/environment.sh",
+      "edges": 2,
+      "types": {
+        "imports": 1,
+        "references": 1
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 165,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "${OUTPUT_DIR}/venv/bin/activate",
+      "edges": 2,
+      "types": {
+        "imports": 1,
+        "references": 1
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/injector/virtualenv.sh",
+        "line": 13,
+        "source": "virtualenv.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./configure",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/make-release.sh",
+        "line": 5,
+        "source": "make-release.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./make.sh",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/clean-stdlib/install_no_profile.sh",
+        "line": 4,
+        "source": "install_no_profile.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./run-with-pty.py",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "FILE_PATH": 2
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-no-tty/runme.sh",
+        "line": 8,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ARTIFACT_PATH",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_boundary_docker_local/build.sh",
+        "line": 25,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BOUNDARY_PATH",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/templates/get-token.sh",
+        "line": 28,
+        "source": "get-token.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CLMFLAGS",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/clean-stdlib/make.sh",
+        "line": 15,
+        "source": "make.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CLMP",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/clean-stdlib/make.sh",
+        "line": 15,
+        "source": "make.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_IMAGE",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/consul_ui_testing_ci.sh",
+        "line": 12,
+        "source": "require_consul_image"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "DATE_FORMAT",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build.sh",
+        "line": 31,
+        "source": "build_date"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GITHUB_REPOSITORY",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/get_runner_classes.sh",
+        "line": 10,
+        "source": "get_runner_classes.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "IMAGE_NAME",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_boundary_docker_local/build.sh",
+        "line": 19,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "LOGIN_NAME",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/get_auth_token.sh",
+        "line": 8,
+        "source": "get_auth_token.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "LOG_FILE_PATH",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_vault/scripts/create_audit_log_dir.sh",
+        "line": 7,
+        "source": "create_audit_log_dir.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_CLIENT_IMAGE",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 8,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "RELEASE_UNSIGNED",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/30-release.sh",
+        "line": 45,
+        "source": "tag_release"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "RUNNER_TEMP",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/fetch-smoke-test.sh",
+        "line": 6,
+        "source": "fetch-smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SHELL",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 2
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/ohmyzsh/tools/install.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/ci/goinstall.sh",
+        "line": 49,
+        "source": "goinstall.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TARBALL_ARCHIVE_SUFFIX",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 129,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TEST_BOUNDARY_IMAGE",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 27,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TEST_NETWORK_NAME",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 25,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "UI_BUILD_OVERRIDE",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_boundary_docker_local/build.sh",
+        "line": 18,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "WORKER_NAME",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/get_worker_id.sh",
+        "line": 8,
+        "source": "get_worker_id.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "WORKER_TOKEN",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "ENV_VAR": 2
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/create_worker.sh",
+        "line": 8,
+        "source": "create_worker.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ansible-console",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-console/runme.sh",
+        "line": 10,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "apt",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/verify_deb.sh",
+        "line": 52,
+        "source": "main"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "autoreconf",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/make-release.sh",
+        "line": 4,
+        "source": "make-release.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "buf",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "NAME_COLLISION": 2
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/ohmyzsh/plugins/zsh-syntax-highlighting/highlighters/pattern/pattern-highlighter.zsh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/protobuf.sh",
+        "line": 57,
+        "source": "main"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "dscl",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/group/files/grouplist.sh",
+        "line": 17,
+        "source": "grouplist.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "egrep",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/changelog_checker.sh",
+        "line": 17,
+        "source": "changelog_checker.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "goimports",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/envoy-library-references.sh",
+        "line": 64,
+        "source": "envoy-library-references.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "gzip",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/plugins.sh",
+        "line": 29,
+        "source": "plugins.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "nproc",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/testing/dbtest/docker/restore-benchmark-dumps.sh",
+        "line": 15,
+        "source": "restore-benchmark-dumps.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "opt",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 2
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/bash-completion/completions-core/vncviewer.bash",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-doc/runme.sh",
+        "line": 13,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "perl",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cats-effect/scripts/make-site-pr.sh",
+        "line": 63,
+        "source": "make-site-pr.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pgrep",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/signal_propagation/runme.sh",
+        "line": 18,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pnpm",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build-ui.sh",
+        "line": 93,
+        "source": "build-ui.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "rmdir",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh",
+        "line": 552,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "rustc",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/fetch-smoke-test.sh",
+        "line": 19,
+        "source": "fetch-smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "rustup",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "NAME_COLLISION": 2
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/bash-completion/completions-fallback/cargo.bash",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/etc/cargo.bashcomp.sh",
+        "line": 281,
+        "source": "_get_targets"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "setup_upsert_l4_intention",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 2
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-badauthz/setup.sh",
+        "line": 9,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sh",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ghcup.sh",
+        "line": 31,
+        "source": "ghcup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sha256sum",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/scripts/release/create-release-metadata-for-ghcup.sh",
+        "line": 15,
+        "source": "get_sha"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "shell",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-pull/runme.sh",
+        "line": 7,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "srcdir",
+      "edges": 2,
+      "types": {
+        "uses": 2
+      },
+      "buckets": {
+        "UNRESOLVED_READ": 2
+      },
+      "category": "UNRESOLVED_READ",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/share/gtksourceview-2.0/language-specs/check-language.sh",
+        "line": 11,
+        "source": "check-language.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ssh-keygen",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/entrypoint.sh",
+        "line": 17,
+        "source": "entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sshpass",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/connection_delegation/runme.sh",
+        "line": 9,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "terraform",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/scripts/test_e2e_env.sh",
+        "line": 34,
+        "source": "test_e2e_env.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "unzip",
+      "edges": 2,
+      "types": {
+        "calls": 2
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 2
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build-ui.sh",
+        "line": 63,
+        "source": "build-ui.sh"
+      },
+      "flags": {
+        "isExternalCommand": 2,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "../playbook_output_validator/filter.py",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/data_tagging_controller/runme.sh",
+        "line": 11,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./ansible-var-precedence-check.py",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/var_precedence/runme.sh",
+        "line": 11,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./assert-no-tty.py",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-no-tty/ansible_collections/ns/col/tests/integration/targets/no-tty/runme.sh",
+        "line": 5,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./build-test-sds-server-image.sh",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/windows/build-consul-local-images.sh",
+        "line": 81,
+        "source": "build-consul-local-images.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./cats-effect-example",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cats-effect/example/test-native.sh",
+        "line": 18,
+        "source": "test-native.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./runme.py",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-container/runme.sh",
+        "line": 5,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./test_run_once.py",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/debugger/runme.sh",
+        "line": 9,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./test_task_resolved_plugin.sh",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections/runme.sh",
+        "line": 156,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./vars_plugin_tests.sh",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections/runme.sh",
+        "line": 154,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./warp/buckaroo-linux",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/buckaroo/warp-bundle-linux.sh",
+        "line": 16,
+        "source": "warp-bundle-linux.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "./warp/buckaroo-macos",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/buckaroo/warp-bundle-macos.sh",
+        "line": 14,
+        "source": "warp-bundle-macos.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "/bin/expr",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 169,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "/usr/bin/arch",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ghcup.sh",
+        "line": 26,
+        "source": "ghcup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "/usr/bin/env",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/pause/runme.sh",
+        "line": 11,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "/usr/bin/websocketd",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cloogle.org/stats/entrypoint.sh",
+        "line": 3,
+        "source": "entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ADD_CABAL_ARGS",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 114,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ALLOW_DIRTY_GIT",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/30-release.sh",
+        "line": 421,
+        "source": "build_release"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ANSIBLE_HOME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/stacktrace_dump/runme.sh",
+        "line": 6,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ANSIBLE_TEST_ANSIBLE_VERSION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-metadata/runme.sh",
+        "line": 9,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "ARTIFACT_NAME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_local/templates/build.sh",
+        "line": 18,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BASE.txt",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bulma/test/ruby-sass/ruby-sass.sh",
+        "line": 49,
+        "source": "check_keywords_inclusion"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "BASH_COMPLETION_VERSINFO",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/etc/cargo.bashcomp.sh",
+        "line": 179,
+        "source": "_cargo"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BOUNDARY_ADDR",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_helpers.bash",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 17,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BOUNDARY_INSTALL_BINARY",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build.sh",
+        "line": 91,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BOUNDARY_TOKEN",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 20,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BREW_VERSION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/brew.sh",
+        "line": 12,
+        "source": "brew.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BSD",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/entrypoint.sh",
+        "line": 4,
+        "source": "entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BUILD_REASON",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/run-tests.sh",
+        "line": 26,
+        "source": "run-tests.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BUILD_SOURCEBRANCHNAME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/run-tests.sh",
+        "line": 29,
+        "source": "run-tests.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "BUILD_TARGET",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kong/scripts/build-wasm-test-filters.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_local/templates/build.sh",
+        "line": 17,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CASE_DIR",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/run-tests.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-mesh-to-lambda/setup.sh",
+        "line": 9,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CLUSTER",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/run-tests.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-mesh-to-lambda/setup.sh",
+        "line": 9,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONFIG",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary/init.sh",
+        "line": 21,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_ALLOW_PRIVILEGED_PORTS",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.release/docker/docker-entrypoint.sh",
+        "line": 110,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_DEV",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/20-build.sh",
+        "line": 242,
+        "source": "build_consul"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_DISABLE_PERM_MGMT",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.release/docker/docker-entrypoint.sh",
+        "line": 88,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_MOD_VERIFY",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/10-util.sh",
+        "line": 660,
+        "source": "go_mod_assert"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_NO_WEBSITE_UPDATE",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/10-util.sh",
+        "line": 535,
+        "source": "set_release_mode"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_UI_TESTING_START_LOG_FILE",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/consul_ui_testing_ci.sh",
+        "line": 7,
+        "source": "consul_ui_testing_ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "CONSUL_UI_TESTING_START_PID_FILE",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/consul_ui_testing_ci.sh",
+        "line": 8,
+        "source": "consul_ui_testing_ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "DISCORD_WEBHOOK_URL",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cats-effect/scripts/post-release-discord.sh",
+        "line": 19,
+        "source": "post-release-discord.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "E2E_PASSWORD_ADMIN_LOGIN_NAME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 18,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "E2E_PASSWORD_ADMIN_PASSWORD",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 19,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GITHUB_BASE_REF",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/changelog_checker.sh",
+        "line": 10,
+        "source": "changelog_checker.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GITHUB_BRANCH_REF",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/goldenfile_checker.sh",
+        "line": 12,
+        "source": "goldenfile_checker.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GITHUB_REF_NAME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/verify_envoy_version.sh",
+        "line": 7,
+        "source": "verify_envoy_version.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GITHUB_RUN_ID",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/rerun_fails_report.sh",
+        "line": 17,
+        "source": "report"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GIT_COMMIT_YEAR",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/20-build.sh",
+        "line": 89,
+        "source": "build_ui"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GO111MODULE",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/kubernetes/hack/update-vendor.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/20-build.sh",
+        "line": 267,
+        "source": "build_consul"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GTK_DEBUG_GDB",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 7,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "GTK_DEBUG_LAUNCHER",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 3,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "JIRA_CHECK_PR_BODY",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/check-jira-ids.sh",
+        "line": 161,
+        "source": "check-jira-ids.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "METADATA_PRODUCT_VERSION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build.sh",
+        "line": 84,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "METHOD_ID",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/templates/get-token.sh",
+        "line": 31,
+        "source": "get-token.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_BUCKET_NAME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 17,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_REGION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 16,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_ROOT_PASSWORD",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 15,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_ROOT_USER",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 14,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_SERVER_CONTAINER_NAME",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 13,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_USER_ACCESS_KEY_ID",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 20,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_USER_ID",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 18,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_USER_PASSWORD",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 19,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "MINIO_USER_SECRET_ACCESS_KEY",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_minio/init.sh",
+        "line": 21,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "NUGET_KEY",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Argu/docker-build.sh",
+        "line": 17,
+        "source": "docker-build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "OPTION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/testing/dbtest/pgtap-docker/test.sh",
+        "line": 10,
+        "source": "test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "PIPESTATUS",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 178,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "PREFIX",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 124,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "PRERELEASE_PRODUCT_VERSION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build.sh",
+        "line": 83,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "PR_NUMBER",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/changelog_checker.sh",
+        "line": 12,
+        "source": "changelog_checker.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "PYTESTFLAGS",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/entrypoint.sh",
+        "line": 32,
+        "source": "entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SCRIPT",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary_cmd/script_runner.sh",
+        "line": 26,
+        "source": "script_runner.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SKIP_CHOWN",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/vault/.release/docker/ubi-docker-entrypoint.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.release/docker/docker-entrypoint.sh",
+        "line": 38,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SKIP_PLUGIN_BUILD",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/build.sh",
+        "line": 57,
+        "source": "build.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SKIP_SETCAP",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/vault/.release/docker/ubi-docker-entrypoint.sh",
+      "declaredKind": "constant",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/.release/docker/docker-entrypoint.sh",
+        "line": 49,
+        "source": "docker-entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SKIP_VERIFY_ENVOY_VERSION",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/verify_envoy_version.sh",
+        "line": 20,
+        "source": "verify_envoy_version.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "SYSTEM_PULLREQUEST_TARGETBRANCH",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/run-tests.sh",
+        "line": 15,
+        "source": "run-tests.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "T",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/functions/10-util.sh",
+        "line": 368,
+        "source": "update_git_env"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TEST_BOUNDARY_LICENSE",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary/init.sh",
+        "line": 18,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TEST_DATABASE_ADDRESS",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary/init.sh",
+        "line": 17,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TEST_DATABASE_NETWORK",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/docker_boundary/init.sh",
+        "line": 22,
+        "source": "init.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "TEST_DATABASE_UP_WITH_OP",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/testing/dbtest/docker/init-db.sh",
+        "line": 67,
+        "source": "init-db.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "UID",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-vault/runme.sh",
+        "line": 52,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "VAULT_BIN_PATH",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "ENV_VAR": 1
+      },
+      "category": "ENV_VAR",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_vault/scripts/enable_audit_logging.sh",
+        "line": 7,
+        "source": "enable_audit_logging.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "XDS_TARGET",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "CROSS_FILE_READ": 1
+      },
+      "category": "CROSS_FILE_READ",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/run-tests.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-dns-inline-resolver/vars.sh",
+        "line": 13,
+        "source": "vars.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "_comp_command_offset",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/etc/cargo.bashcomp.sh",
+        "line": 181,
+        "source": "_cargo"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "_get_comp_words_by_ref",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/etc/cargo.bashcomp.sh",
+        "line": 9,
+        "source": "_cargo"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "apt-add-repository",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/ubuntu14/install-packages.sh",
+        "line": 18,
+        "source": "install-packages.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "bats",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/test.sh",
+        "line": 64,
+        "source": "test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "bc",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/verify_envoy_version.sh",
+        "line": 163,
+        "source": "verify_envoy_version.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "cc",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "NAME_COLLISION": 1
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/bash-completion/completions-core/gcc.bash",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/debian10/install-packages.sh",
+        "line": 83,
+        "source": "install-packages.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "copywrite",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/copywrite-exceptions.sh",
+        "line": 14,
+        "source": "copywrite-exceptions.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "crt",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "UNRESOLVED_READ": 1
+      },
+      "category": "UNRESOLVED_READ",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.release/release-scripts/verify-release-image.sh",
+        "line": 49,
+        "source": "verify-release-image.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "debconf-set-selections",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/debian10/install-packages.sh",
+        "line": 52,
+        "source": "install-packages.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "dependencies",
+      "edges": 1,
+      "types": {
+        "uses": 1
+      },
+      "buckets": {
+        "UNRESOLVED_READ": 1
+      },
+      "category": "UNRESOLVED_READ",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_vault/templates/install-dependencies.sh",
+        "line": 7,
+        "source": "install-dependencies.sh"
+      },
+      "flags": {
+        "isExternalCommand": 0,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.8
+      ]
+    },
+    {
+      "target": "getconf",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh",
+        "line": 90,
+        "source": "ci.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "iconv",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cloogle.org/frontend/iconv.sh",
+        "line": 6,
+        "source": "iconv.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ldd",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/clj-kondo/script/check_glibc.sh",
+        "line": 8,
+        "source": "check_glibc.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "mvn",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/clojure/antsetup.sh",
+        "line": 3,
+        "source": "antsetup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "osascript",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh",
+        "line": 182,
+        "source": "launcher.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "patch",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cloogle.org/frontend/birthday.sh",
+        "line": 7,
+        "source": "birthday.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pg_dump",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/schema-diff.sh",
+        "line": 144,
+        "source": "dump"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pg_isready",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/scripts/schema-diff.sh",
+        "line": 133,
+        "source": "dump"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pg_prove",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/boundary/testing/dbtest/pgtap-docker/test.sh",
+        "line": 50,
+        "source": "test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pip3",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/devtools.sh",
+        "line": 225,
+        "source": "pre_commit_install"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "printenv",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/dump-environment.sh",
+        "line": 8,
+        "source": "dump-environment.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "ps",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/consul_ui_testing_ci.sh",
+        "line": 52,
+        "source": "start_servers"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "pwsh",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-sanity-validate-modules/runme.sh",
+        "line": 28,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "register_lambdas",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 1
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-mesh-to-lambda/setup.sh",
+        "line": 22,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "rg",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/command/snapshot/decode/testdata/populate-all.sh",
+        "line": 222,
+        "source": "populate-all.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "rpm",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/verify_rpm.sh",
+        "line": 66,
+        "source": "main"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sass",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bulma/test/ruby-sass/ruby-sass.sh",
+        "line": 21,
+        "source": "build_sass"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "service",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "NAME_COLLISION": 1
+      },
+      "category": "NAME_COLLISION",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/run-tests.sh",
+      "declaredKind": "variable",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/lib/ansible_test/_util/target/setup/bootstrap.sh",
+        "line": 345,
+        "source": "bootstrap_remote_freebsd"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "set_ttl_check_state",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "CROSS_FILE_CALL": 1
+      },
+      "category": "CROSS_FILE_CALL",
+      "declaredAt": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/helpers.bash",
+      "declaredKind": "function",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-subset-onlypassing/setup.sh",
+        "line": 35,
+        "source": "setup.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sftp",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cabal/scripts/release/upload-artifacts.sh",
+        "line": 12,
+        "source": "upload-artifacts.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "shuf",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/set_test_package_matrix.sh",
+        "line": 17,
+        "source": "set_test_package_matrix.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "svnadmin",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/subversion/roles/subversion/files/create_repo.sh",
+        "line": 3,
+        "source": "create_repo.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "sysctl",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/dump-environment.sh",
+        "line": 18,
+        "source": "dump-environment.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "system_profiler",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/dump-environment.sh",
+        "line": 17,
+        "source": "dump-environment.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "target/debug/cargo",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "FILE_PATH": 1
+      },
+      "category": "FILE_PATH",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/cargo/ci/fetch-smoke-test.sh",
+        "line": 26,
+        "source": "fetch-smoke-test.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "umount",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/noexec/runme.sh",
+        "line": 5,
+        "source": "runme.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        0.7
+      ]
+    },
+    {
+      "target": "unlink",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/plugin_loader/runme.sh",
+        "line": 6,
+        "source": "cleanup"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "xmllint",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/Aporia/share/gtksourceview-2.0/language-specs/check-language.sh",
+        "line": 29,
+        "source": "check-language.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "xvfb-run",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/bash-completion/test/docker/entrypoint.sh",
+        "line": 31,
+        "source": "entrypoint.sh"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    },
+    {
+      "target": "yarn",
+      "edges": 1,
+      "types": {
+        "calls": 1
+      },
+      "buckets": {
+        "EXTERNAL_BINARY": 1
+      },
+      "category": "EXTERNAL_BINARY",
+      "example": {
+        "file": "/home/ishaq2321/bb_tests/repositories/consul/.github/scripts/consul_ui_testing_ci.sh",
+        "line": 46,
+        "source": "start_servers"
+      },
+      "flags": {
+        "isExternalCommand": 1,
+        "isFunctionCall": 0,
+        "targetResolution": 0,
+        "errorRecovery": 0
+      },
+      "confidences": [
+        1
+      ]
+    }
+  ],
+  "markers": {
+    "marked": 5084,
+    "unmarked": 0,
+    "perBucket": {
+      "ENV_VAR": {
+        "marked": 490,
+        "unmarked": 0,
+        "kinds": {
+          "variableFlag=false": 490
+        }
+      },
+      "EXTERNAL_BINARY": {
+        "marked": 3456,
+        "unmarked": 0,
+        "kinds": {
+          "no-variableFlag": 3456
+        }
+      },
+      "CROSS_FILE_CALL": {
+        "marked": 653,
+        "unmarked": 0,
+        "kinds": {
+          "no-variableFlag": 653
+        }
+      },
+      "NAME_COLLISION": {
+        "marked": 223,
+        "unmarked": 0,
+        "kinds": {
+          "no-variableFlag": 223
+        }
+      },
+      "CROSS_FILE_READ": {
+        "marked": 101,
+        "unmarked": 0,
+        "kinds": {
+          "variableFlag=false": 101
+        }
+      },
+      "FILE_PATH": {
+        "marked": 148,
+        "unmarked": 0,
+        "kinds": {
+          "no-variableFlag": 148
+        }
+      },
+      "POSITIONAL_PARAM": {
+        "marked": 2,
+        "unmarked": 0,
+        "kinds": {
+          "no-variableFlag": 2
+        }
+      },
+      "UNRESOLVED_READ": {
+        "marked": 11,
+        "unmarked": 0,
+        "kinds": {
+          "variableFlag=false": 11
+        }
+      }
+    }
+  }
+}

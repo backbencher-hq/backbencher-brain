@@ -1,0 +1,14 @@
+{
+  "fixtureId": "scala/decorators",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Annotations were consumed only as pattern-flag substrings; symbols carried NO decorators while Java/Kotlin/Groovy all emit them. Class and method symbols must carry decorators with short annotation names.",
+  "expectSymbols": [
+    { "name": "LegacyService", "kind": "class" },
+    { "name": "commit" }
+  ],
+  "expectDecorators": [
+    { "symbol": "LegacyService", "contains": "Deprecated" },
+    { "symbol": "commit", "contains": "Transactional" }
+  ]
+}

@@ -1,0 +1,107 @@
+diff --git a/src/ast/parallel-indexer.ts b/src/ast/parallel-indexer.ts
+index 3e263fba6..6de78e506 100644
+--- a/src/ast/parallel-indexer.ts
++++ b/src/ast/parallel-indexer.ts
+@@ -4972,6 +4972,36 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
+     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
+     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
+ 
++    // ── OWN-FILE PREFERENCE (M14 clause 4). Both lookup tables below collapse every name
++    // and every dotted suffix to ONE global winner via `MIN(id)` — the lexicographically
++    // smallest symbol id in the PROJECT. File paths sort, so an edge written in
++    // `tests/docbook/html/admon.xsl` binds to the same-named template declared in the
++    // PARALLEL tree `tests/docbook/fo/admon.xsl`: measured on libxslt, 138 of 388 `calls`
++    // edges did exactly that, every one of them classified `in-document` by the analyzer
++    // (i.e. the declaration IS in the edge's own file). The two statements below run FIRST
++    // and bind only edges whose target is declared in the edge's OWN file; the project-wide
++    // statements that follow are untouched and still fire for every row they fired for
++    // before, because they require `target_symbol_id IS NULL`.
++    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname_own (qualified_name TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
++    rawDb.run(`DELETE FROM _res_qname_own`)
++    rawDb.prepare(
++      `INSERT INTO _res_qname_own (qualified_name, file_id, symbol_id)
++       SELECT qualified_name, file_id, MIN(id) FROM brain_symbol
++       WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualified_name, file_id`
++    ).run(projectId)
++    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qname_own_idx ON _res_qname_own(qualified_name, file_id)`)
++    const r0own = rawDb.run(`
++      UPDATE brain_relationship
++      SET target_symbol_id = _res_qname_own.symbol_id,
++          is_cross_file = 0
++      FROM _res_qname_own
++      WHERE brain_relationship.target_external = _res_qname_own.qualified_name
++        AND _res_qname_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
++        AND brain_relationship.target_symbol_id IS NULL
++        AND brain_relationship.target_external IS NOT NULL
++        AND brain_relationship.project_id = '${projectId}'
++    `)
++
+     // Strategy 1: Qualified name exact match (fast JOIN)
+     const r1 = rawDb.run(`
+       UPDATE brain_relationship
+@@ -5001,7 +5031,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
+         AND brain_relationship.project_id = '${projectId}'
+     `)
+ 
+-    const resolvedBeforeDotted = (r1?.changes || 0) + (r2?.changes || 0)
++    const resolvedBeforeDotted = (r0own?.changes || 0) + (r1?.changes || 0) + (r2?.changes || 0)
+ 
+     // Strategy 3 (M60 determinism fix): a DOTTED target, by SUFFIX on qualified_name.
+     //
+@@ -5042,6 +5072,41 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
+     )
+     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_idx ON _res_qsuffix(suffix)`)
+ 
++    // ── OWN-FILE PREFERENCE for the suffix table (see the note above strategy 1): the table
++    // above keeps ONE symbol per suffix for the whole project, so a caller in `html/` gets the
++    // `fo/` declaration. This per-(suffix, file) table keeps the own-file candidate reachable,
++    // and binds it first; the global statement below is unchanged.
++    rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qsuffix_own (suffix TEXT, file_id TEXT, symbol_id TEXT NOT NULL)`)
++    rawDb.run(`DELETE FROM _res_qsuffix_own`)
++    rawDb.run(
++      `
++      WITH RECURSIVE suffixes(suffix, rest, id, file_id) AS (
++        SELECT qualified_name, qualified_name, id, file_id
++        FROM brain_symbol
++        WHERE project_id = ? AND qualified_name IS NOT NULL
++        UNION ALL
++        SELECT substr(rest, instr(rest, '.') + 1), substr(rest, instr(rest, '.') + 1), id, file_id
++        FROM suffixes WHERE instr(rest, '.') > 0
++      )
++      INSERT INTO _res_qsuffix_own (suffix, file_id, symbol_id)
++      SELECT suffix, file_id, MIN(id) FROM suffixes WHERE instr(suffix, '.') > 0 GROUP BY suffix, file_id
++    `,
++      projectId,
++    )
++    rawDb.run(`CREATE INDEX IF NOT EXISTS _res_qsuffix_own_idx ON _res_qsuffix_own(suffix, file_id)`)
++    const r3own = rawDb.run(`
++      UPDATE brain_relationship
++      SET target_symbol_id = _res_qsuffix_own.symbol_id,
++          is_cross_file = 0
++      FROM _res_qsuffix_own
++      WHERE brain_relationship.target_external = _res_qsuffix_own.suffix
++        AND _res_qsuffix_own.file_id = (SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1)
++        AND brain_relationship.target_symbol_id IS NULL
++        AND brain_relationship.target_external IS NOT NULL
++        AND instr(brain_relationship.target_external, '.') > 0
++        AND brain_relationship.project_id = '${projectId}'
++    `)
++
+     const r3 = rawDb.run(`
+       UPDATE brain_relationship
+       SET target_symbol_id = _res_qsuffix.symbol_id,
+@@ -5169,12 +5234,13 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
+       resolvedByLeaf += r3c?.changes || 0
+     }
+ 
+-    const resolved = resolvedBeforeDotted + (r3?.changes || 0) + resolvedByLeaf
++    const resolved = resolvedBeforeDotted + (r3?.changes || 0) + (r3own?.changes || 0) + resolvedByLeaf
+     log.debug("relationship resolution completed", {
+       resolved,
+       resolvedByQualifiedExact: r1?.changes || 0,
+       resolvedByUniqueName: r2?.changes || 0,
+       resolvedByDottedSuffix: r3?.changes || 0,
++      resolvedByOwnFilePreference: (r0own?.changes || 0) + (r3own?.changes || 0),
+       resolvedByLeafFallback: resolvedByLeaf,
+       unresolved,
+     })

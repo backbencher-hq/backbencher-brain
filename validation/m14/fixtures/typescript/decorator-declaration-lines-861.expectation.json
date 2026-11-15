@@ -1,0 +1,116 @@
+{
+  "fixtureId": "typescript/decorator-declaration-lines-861",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #861 pre-declared contract (the M59 rule: the line belongs to the name). The numbers below were then read off the post-fix run; they are quoted here because they are exactly what the fixture's own text says (`@sealed` 38 / `export class Service` 39, `@inject(\"db\")` 40 / `private pool` 41, `@sealed` 43 / `method()` 44).",
+  "rationale": "M59 (#861). Contract 1 — a decorated declaration's node starts at its DECORATOR in this grammar (measured: export_statement [decorator@38, export@39, class_declaration@39]; public_field_definition [decorator@40, accessibility_modifier@41, ...]), so the symbol range and every edge derived from it named a line that contains `@sealed`, not the name `Service`. Fixed by skipping leading decorator children in nodeRange, the rule scala already uses (scala/declaration-lines-825). Method decorators are class_body SIBLINGS in this grammar, so `method` was already on 44 — pinned as the control that the defect is about the NODE, not about decorators. Contract 2 — a decorator is metadata on the symbol it decorates, not a call/reference by whoever lexically encloses it: `@inject(\"db\")` used to emit `calls Service -> inject` AND `references Service -> inject` from the CLASS, beside the correct `references pool -> inject`; the family rule (JVM annotations are metadata; the python oracle documents it as PYD1) leaves only the member-scoped rows. RELABEL (2026-10-18, vocabulary extension): the decorator rows below are `decorates`, not `references` — a decorator is applied TO a declaration rather than mentioned in its body, and the owner admitted the canonical value; source/target/line/one-row-per-decorator are unchanged, and `forbid` now also refuses the old `references` spelling so a partial relabel cannot pass.",
+  "expectSymbols": [
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Service"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "sealed",
+      "kind": "function"
+    },
+    {
+      "name": "inject",
+      "kind": "function"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Service",
+      "startLine": 39,
+      "comment": "the `class` keyword / name line; the decorator is on 38"
+    },
+    {
+      "symbol": "pool",
+      "startLine": 41,
+      "comment": "the name line; the decorator is on 40"
+    },
+    {
+      "symbol": "method",
+      "startLine": 44,
+      "comment": "control: this grammar puts method decorators in class_body, so 44 was always right"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "Service",
+      "line_number": 39,
+      "comment": "contract 1: the export names the line the class is written on"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "pool",
+      "line_number": 41
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "method",
+      "line_number": 44
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 38,
+      "comment": "the CLASS's own decorator, at the decorator's line"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 40,
+      "comment": "contract 2: the FIELD decorator is attributed to the field, not to the class"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 43,
+      "comment": "contract 2: same for the method decorator"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "Service",
+      "target": "inject",
+      "comment": "contract 2 pre-fix: the decorator invocation was emitted as a CALL by the class that carries it"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "inject",
+      "comment": "contract 2 pre-fix: the duplicate class-scoped reference beside the correct field-scoped one"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "pool",
+      "line_number": 40,
+      "comment": "contract 1 pre-fix: the decorator's line"
+    },
+    {
+      "type": "exports",
+      "target": "Service",
+      "line_number": 38,
+      "comment": "contract 1 pre-fix: `@sealed` is on 38, the class is not"
+    }
+  ]
+}

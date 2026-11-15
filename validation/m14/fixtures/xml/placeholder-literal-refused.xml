@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  M60 rule R7 under test. The document below is an XSLT result-tree fragment whose
+  first element is literally named `unknown` — the same string the project uses as
+  the placeholder for an endpoint it could not determine.
+-->
+<xsl:stylesheet version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:variable name="sort-order">
+    <unknown/>
+    <mandatory/>
+    <optional/>
+  </xsl:variable>
+  <xsl:template name="render" match="/">
+    <out>
+      <xsl:value-of select="$sort-order/unknown"/>
+    </out>
+  </xsl:template>
+</xsl:stylesheet>

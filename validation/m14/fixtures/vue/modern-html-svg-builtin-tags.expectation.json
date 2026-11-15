@@ -1,0 +1,47 @@
+{
+  "fixtureId": "vue/modern-html-svg-builtin-tags",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. M37.21 #611 builtin-drift contract: <search> (2023 HTML element) and camelCase SVG tags (linearGradient, clipPath, mask, pattern, marker, symbol) are NATIVE elements — the analyzer's HTML_BUILTIN_TAGS filters them; none may appear as component instantiates. The F5 oracle's ORACLE_HTML_TAGS must carry the identical list (pre-fix: oracle drift faked a MISSING instantiates->search in vue-element-admin Navbar.vue). FreshWidget pins that real components still emit.",
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "target": "FreshWidget",
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "target": "search"
+    },
+    {
+      "type": "renders",
+      "target": "linearGradient"
+    },
+    {
+      "type": "renders",
+      "target": "radialGradient"
+    },
+    {
+      "type": "renders",
+      "target": "clipPath"
+    },
+    {
+      "type": "renders",
+      "target": "mask"
+    },
+    {
+      "type": "renders",
+      "target": "pattern"
+    },
+    {
+      "type": "renders",
+      "target": "marker"
+    },
+    {
+      "type": "renders",
+      "target": "symbol"
+    }
+  ]
+}

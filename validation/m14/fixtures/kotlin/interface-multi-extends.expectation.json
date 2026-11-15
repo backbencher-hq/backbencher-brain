@@ -1,0 +1,13 @@
+{
+  "fixtureId": "kotlin/interface-multi-extends",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Interfaces extending interfaces use ':' too - ALL parents are inheritance, never implements (mirrors Java JLS 9.1.3 semantics).",
+  "expectRelationships": [
+    { "type": "extends", "from": "Channel", "targetEndsWith": "Readable" },
+    { "type": "extends", "from": "Channel", "targetEndsWith": "Writable" }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "from": "Channel" }
+  ]
+}

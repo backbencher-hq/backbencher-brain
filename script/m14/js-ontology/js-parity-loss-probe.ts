@@ -37,7 +37,7 @@ import { fileURLToPath } from "node:url"
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const FILES = Number(arg("files") ?? "12")
-const CORPUS = arg("corpus") ?? "$HOME/fixtures/repositories/svelte"
+const CORPUS = arg("corpus") ?? "/home/ishaq2321/bb_tests/repositories/svelte"
 const JS_EXTS = /\.(js|mjs|cjs)$/
 
 function admitted(): string[] {

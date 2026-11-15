@@ -1,0 +1,119 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/function-declared-in-damaged-span.sh",
+ "authoredFrom": "Round 13. `functionName` (real-bash-analyzer.ts:1424) reads the grammar's own `name:` field first and returns `named.text` if non-empty, with no condition on WHERE that field resolves. Limitation 33 of docs/analyzers/bash.md asserted 'a damaged region publishes no declaration', which invites a guard dropping a function whose name sits anywhere near a damaged region. Measured whole corpus (probe-bash-error-name-field.mts, 4,133 admitted / 462,809 scanned / 120 repos): 6,773 function_definition nodes, `name:` resolved on 6,773 (100%, always a `word`), 427 (6.3%) with the name node inside a tree-sitter ERROR span — 421 where the span starts BEFORE the definition (definition intact, damage is an earlier construct) and 6 where it starts AT the definition. Production parseFile publishes 427/427 and all 427 are REAL declarations. The smallest plain-BASH instance is hledger/docker/run.sh:4 (619 bytes): `function usage()` is called from a case arm written `*)usage; exit 1 ;;` with no space after the `*`, and the ERROR node's span then reaches back over the declarations before it. On this fixture ONE ERROR node spans rows 76-129 and all four functions sit inside it — four real declarations out of one damaged region, all four published. The one-byte control was measured on the construct in isolation: `*)usage; exit 1 ;;` produces an ERROR node and `*) usage; exit 1 ;;` produces none, so the span is a property of the grammar's recovery and not of the declaration. The mutant `bash/function-name-refused-in-damaged-file` is the guard limitation 33 invites; it would delete these four declarations and 427 corpus-wide while reading as care. NOT asserted, because the grammar does not produce it and asserting it would be wishful: `calls untouched_one`, `calls untouched_two` and `uses extra_args` are all inside the ERROR span, and the analyzer does not invent commands the grammar did not hand it. The file therefore ends with those invocations and does NOT claim they produce edges — that is the honest reading of a damaged region, and limitation 33's property is wrong about DECLARATIONS while being right about COMMANDS.",
+ "expectSymbols": [
+  {
+   "name": "function-declared-in-damaged-span.sh",
+   "kind": "module"
+  },
+  {
+   "name": "untouched_one",
+   "kind": "function",
+   "ownerName": "function-declared-in-damaged-span.sh",
+   "note": "Inside the ERROR span (row 76, the span's own first row) and PUBLISHED. A guard keyed on proximity would take this one first walking forward."
+  },
+  {
+   "name": "untouched_two",
+   "kind": "function",
+   "ownerName": "function-declared-in-damaged-span.sh",
+   "note": "Inside the ERROR span (row 80) and PUBLISHED. A fixture holding only one of untouched_one/untouched_two cannot distinguish a guard that drops the first damaged declaration from one that drops all of them."
+  },
+  {
+   "name": "spaced_usage",
+   "kind": "function",
+   "ownerName": "function-declared-in-damaged-span.sh",
+   "note": "The SPACED case arm — `*) spaced_usage ;;`. Measured in ISOLATION that this form produces no ERROR node at all, which is the one-byte control; inside this file it is nonetheless inside section 3's wider span, so it cannot serve as an in-file control and is asserted here rather than contrasted. PUBLISHED."
+  },
+  {
+   "name": "usage",
+   "kind": "function",
+   "ownerName": "function-declared-in-damaged-span.sh",
+   "note": "The corpus declaration, at row 106, inside the ERROR span, and PUBLISHED. It is also CALLED from the case arm at row 123, so the declaration is load-bearing rather than decoration: refusing it drops a function the file genuinely needs."
+  },
+  {
+   "name": "cmd2",
+   "kind": "variable",
+   "ownerName": "function-declared-in-damaged-span.sh"
+  },
+  {
+   "name": "extra_args",
+   "kind": "variable",
+   "ownerName": "function-declared-in-damaged-span.sh",
+   "note": "Assigned in two case arms and therefore one declaration, not two — the same deduplication round 4 pinned for COMPREPLY. Asserted once because the count is the fact."
+  },
+  {
+   "name": "journal",
+   "kind": "variable",
+   "ownerName": "function-declared-in-damaged-span.sh"
+  },
+  {
+   "name": "dir",
+   "kind": "variable",
+   "ownerName": "function-declared-in-damaged-span.sh"
+  },
+  {
+   "name": "file",
+   "kind": "variable",
+   "ownerName": "function-declared-in-damaged-span.sh"
+  },
+  {
+   "name": "cmd",
+   "kind": "variable",
+   "ownerName": "function-declared-in-damaged-span.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "usage",
+   "note": "The declaration half. All four functions sit inside one ERROR span and all four carry a `contains` edge, so the graph asserts the ownership rather than only listing the symbol."
+  },
+  {
+   "type": "contains",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "untouched_one"
+  },
+  {
+   "type": "contains",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "untouched_two"
+  },
+  {
+   "type": "contains",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "spaced_usage"
+  },
+  {
+   "type": "calls",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "usage",
+   "note": "The edge half, and the load-bearing assertion. `usage` is invoked from the case arm written `*)usage; exit 1 ;;` — the very construct that damages the tree — so the call and the declaration come out of the SAME damaged region and the graph still connects them. `isFunctionCall` is true, so the edge names a declaration rather than an external command."
+  },
+  {
+   "type": "calls",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "spaced_usage",
+   "note": "The spaced arm's call, also from inside the span."
+  },
+  {
+   "type": "calls",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "readlink",
+   "note": "An EXTERNAL command in the same damaged region, published as `isExternalCommand`. Asserted so the fixture holds both call identities in one file: a guard that confuses the two would satisfy the `usage` row and fail this one."
+  },
+  {
+   "type": "uses",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "function-declared-in-damaged-span.sh.journal",
+   "note": "Read three times and declared once — `journal=$(readlink -f \"$1\")`. Asserted as the dedup fact: three `uses` edges, one symbol."
+  },
+  {
+   "type": "uses",
+   "from": "function-declared-in-damaged-span.sh",
+   "target": "function-declared-in-damaged-span.sh.cmd"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

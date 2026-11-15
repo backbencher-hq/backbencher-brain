@@ -1,0 +1,126 @@
+{
+ "fixtureId": "markdown/table-structure",
+ "language": "markdown",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A GFM table publishes as a site, and its header cells are sites under the TABLE. The edge was shipped for every column of every table for a full review cycle while NO column symbol was ever declared, so every one of those edges named something the file did not contain. Measured over 120 scala3 markdown files, after the repeat-site fix: 31 relationship endpoints still named no symbol, and every remaining one was a table column. The comment above that loop said 'a column is a site too' — the intent was there and the symbol was not, which is the same half-shipped shape as the repeat-site defect one level up. Three properties are pinned here and they are easy to conflate, so the fixture states all three. (1) A column's endpoint is its OWN published name, addressed under the table's disambiguated id, so two same-header tables never share a column endpoint. (2) Two tables with the same header under DIFFERENT owners both publish the name `Name/Meaning` — deliberately. Per-OWNER site numbering means each is a first occurrence under its own owner, and the store keys a relationship by (source, type, target, LINE), so the line disambiguates them; renumbering per file would make 44% of this lane's symbols carry a suffix and would be a large, wrong change made to fix a problem the key already handles. (3) A single-column table is named after its only column, so `Reading -> Reading` is a real containment between two distinct sites and must survive the self-edge filter, which is why the filter asks about identity and not about strings. forbidSymbols pins the contract half: the qualified path is an internal id and must not surface as a published name.",
+ "expectSymbolCount": [
+  {
+   "name": "Name/Meaning",
+   "equals": 2
+  },
+  {
+   "name": "Name",
+   "equals": 2
+  },
+  {
+   "name": "Meaning",
+   "equals": 2
+  },
+  {
+   "name": "Reading",
+   "equals": 3
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "Name/Meaning",
+   "kind": "class",
+   "ownerName": "One table, two columns",
+   "meta.isMarkdownTable": true
+  },
+  {
+   "name": "Name",
+   "kind": "property",
+   "ownerName": "Name/Meaning",
+   "meta.isMarkdownTableColumn": true,
+   "meta.nodeType": "pipe_table_cell"
+  },
+  {
+   "name": "Meaning",
+   "kind": "property",
+   "ownerName": "Name/Meaning",
+   "meta.isMarkdownTableColumn": true
+  },
+  {
+   "name": "Name/Meaning",
+   "kind": "class",
+   "ownerName": "The same header twice under one heading",
+   "meta.isMarkdownTable": true
+  },
+  {
+   "name": "Reading",
+   "kind": "class",
+   "ownerName": "Reading",
+   "meta.isMarkdownTable": true
+  },
+  {
+   "name": "Reading",
+   "kind": "property",
+   "ownerName": "Reading",
+   "meta.isMarkdownTableColumn": true
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "One table, two columns",
+   "target": "Name/Meaning",
+   "meta.role": "table_under_heading",
+   "line_number": 5
+  },
+  {
+   "type": "contains",
+   "from": "Name/Meaning",
+   "target": "Name",
+   "meta.role": "table_column",
+   "line_number": 5
+  },
+  {
+   "type": "contains",
+   "from": "Name/Meaning",
+   "target": "Meaning",
+   "meta.role": "table_column",
+   "line_number": 5
+  },
+  {
+   "type": "contains",
+   "from": "The same header twice under one heading",
+   "target": "Name/Meaning",
+   "meta.role": "table_under_heading",
+   "line_number": 17
+  },
+  {
+   "type": "contains",
+   "from": "Reading",
+   "target": "Reading",
+   "meta.role": "table_column",
+   "line_number": 30
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "One table, two columns",
+   "target": "Meaning"
+  },
+  {
+   "from": "Name/Meaning",
+   "target": "Notes"
+  },
+  {
+   "from": "Reading",
+   "target": "Notes"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "Name/Meaning#2"
+  },
+  {
+   "name": "Reading/Notes"
+  }
+ ],
+ "_seamNote": {
+  "what": "A column is a site: it gets a symbol, an id qualified by the table's own disambiguated id, a kind (property), and the header cell's own range so a reader can navigate to it.",
+  "why": "The endpoint has to be a name the file declares. The alternative — emitting the edge and hoping the consumer resolves a bare word — is the shape that left 28.7% of this lane's relationships naming nothing, and the indexer does not reject such an endpoint: it keys a relationship by (source, type, target, line) and checks the target's name against a denylist, so an unsatisfiable name produces a row referencing a symbol id that no symbol row has, which is a dangling FK rather than a loud failure. That is why this class is invisible to a count and had to be found by resolving every endpoint against the file's own symbols."
+ }
+}

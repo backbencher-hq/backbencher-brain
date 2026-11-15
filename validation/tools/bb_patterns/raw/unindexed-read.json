@@ -1,0 +1,23 @@
+{
+  "door": "source handler (library/CLI path) on an unindexed project",
+  "projectDir": "/tmp/bb-patterns-unindexed-LKp6gA",
+  "projectId": "4158e6809f13815595a800f30fd6256e2a0eb534",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/unindexed/projects/4158e6809f13815595a800f30fd6256e2a0eb534/brain.db",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/unindexed",
+  "before": {
+    "dbExists": false,
+    "dataDirEntries": 0
+  },
+  "result": {
+    "isError": false,
+    "text": "patterns (0 found):\n  none\n[scan: 0 finding(s) across no rule(s); showing 0]",
+    "chars": 76
+  },
+  "after": {
+    "dbExists": true,
+    "dbBytes": 4096
+  },
+  "createdIndexOnRead": true,
+  "honestRefusal": false,
+  "generatedAt": "2026-11-01T23:58:54.659Z"
+}

@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-01T21:55:41.870Z",
+  "corpus": "/home/sano/ishaq/bb_tests/repositories",
+  "filesParsed": 2000,
+  "repeat": 2,
+  "analyzerOnly": true,
+  "parseIsolated": true,
+  "warmupPassesDiscarded": 1,
+  "statistic": "best-of-repeat per file",
+  "relationships": 158006,
+  "symbols": 18933,
+  "perFileMs": {
+    "mean": 4.8036,
+    "p50": 1.4685,
+    "p95": 18.3366,
+    "p99": 61.1053,
+    "max": 180.8622,
+    "total": 9607.25
+  },
+  "throughput": {
+    "filesPerSecond": 208.2,
+    "relationshipsPerSecond": 16447
+  },
+  "budget": {
+    "p95Ms": 40,
+    "maxMs": 4000,
+    "filesPerSecond": 150
+  },
+  "breaches": [],
+  "slowestFiles": [
+    {
+      "file": "rails/activerecord/test/cases/adapters/sqlite3/sqlite3_adapter_test.rb",
+      "ms": 180.862
+    },
+    {
+      "file": "rails/actionview/test/template/form_helper/form_with_test.rb",
+      "ms": 143.313
+    },
+    {
+      "file": "rails/actionpack/test/dispatch/cookies_test.rb",
+      "ms": 137.03
+    },
+    {
+      "file": "rails/activesupport/test/core_ext/hash_ext_test.rb",
+      "ms": 118.346
+    },
+    {
+      "file": "rails/activerecord/test/cases/fixtures_test.rb",
+      "ms": 107.613
+    }
+  ]
+}

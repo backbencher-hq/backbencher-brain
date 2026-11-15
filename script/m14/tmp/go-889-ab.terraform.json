@@ -1,0 +1,55 @@
+{
+ "repo": "/home/ishaq2321/bb_tests/repositories/terraform",
+ "files": 1993,
+ "filesChanged": 1853,
+ "symbolsAdded": 257,
+ "symbolsAddedByKind": {
+  "property": 257
+ },
+ "groupedFieldSymbolsAdded": 36,
+ "embeddedFieldSymbolsAdded": 221,
+ "symbolsRemoved": 0,
+ "relationshipsAdded": 36450,
+ "relationshipsRemoved": 36284,
+ "relAddedByLabel": {
+  "imports": 13120,
+  "references": 22944,
+  "contains": 293,
+  "extends": 93
+ },
+ "relRemovedByLabel": {
+  "references": 36191,
+  "extends": 93
+ },
+ "relAddedByRelationshipType": {
+  "imports/-": 13120,
+  "references/declared_type": 19708,
+  "references/return_type": 3236,
+  "contains/-": 293,
+  "extends/go_struct_embedding": 93
+ },
+ "relRemovedByRelationshipType": {
+  "references/-": 13120,
+  "references/declared_type": 19819,
+  "references/return_type": 3252,
+  "extends/go_struct_embedding": 93
+ },
+ "relAddedWithRawTarget": {
+  "imports": 8136
+ },
+ "relRemovedWithRawTarget": {
+  "references": 31192,
+  "extends": 93
+ },
+ "relAddedByClass": {
+  "imports/other": 13120,
+  "references/other": 22792,
+  "contains/newTarget": 286,
+  "extends/newTarget": 90,
+  "references/newTarget": 117,
+  "extends/newSource": 3,
+  "references/newSource": 35,
+  "contains/newSource": 6,
+  "contains/other": 1
+ }
+}

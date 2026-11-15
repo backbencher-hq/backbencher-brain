@@ -1,0 +1,323 @@
+{
+  "instrument": "css-grammar-ab",
+  "purpose": "Decide whether a candidate tree-sitter-css build is a net win: net error reduction, ZERO collateral, and a declared shape delta.",
+  "pinnedWasm": {
+    "path": "wasm/tree-sitter-css.wasm",
+    "sha256": "8a23977fe271357cce6f254ef88c9bebf3854602d8046605aef6a45c02135c59"
+  },
+  "candidateWasm": {
+    "path": "/tmp/opencode/css-grammar-ab/css-patched.wasm",
+    "sha256": "9175fb1215809f4056c814c049bf648b001b8f80c8fe5c43ad8f1ebd160f20d9"
+  },
+  "q1_netWin": {
+    "errFilesBefore": 80,
+    "errFilesAfter": 61,
+    "filesFixed": 19,
+    "filesRegressed": 0,
+    "repos": [
+      {
+        "repo": "svelte",
+        "files": 185,
+        "errBefore": 14,
+        "errAfter": 13,
+        "pctBefore": 7.57,
+        "pctAfter": 7.03,
+        "fixed": 1,
+        "regressed": 0,
+        "fixedSample": [
+          "svelte/packages/svelte/tests/css/samples/keyframes/expected.css"
+        ],
+        "regressedSample": []
+      },
+      {
+        "repo": "grails-core",
+        "files": 191,
+        "errBefore": 56,
+        "errAfter": 40,
+        "pctBefore": 29.32,
+        "pctAfter": 20.94,
+        "fixed": 16,
+        "regressed": 0,
+        "fixedSample": [
+          "grails-core/build-logic/docs-core/src/main/template/css/ref.css",
+          "grails-core/grails-data-docs/data-mapping-website/src/main/resources/stylesheets/screen.css",
+          "grails-core/grails-test-examples/demo33/grails-app/assets/stylesheets/grails.css",
+          "grails-core/grails-test-examples/geb-gebconfig/grails-app/assets/stylesheets/grails.css",
+          "grails-core/grails-test-examples/geb/grails-app/assets/stylesheets/grails.css",
+          "grails-core/grails-test-examples/gsp-layout/grails-app/assets/stylesheets/grails.css"
+        ],
+        "regressedSample": []
+      },
+      {
+        "repo": "scala3",
+        "files": 53,
+        "errBefore": 7,
+        "errAfter": 5,
+        "pctBefore": 13.21,
+        "pctAfter": 9.43,
+        "fixed": 2,
+        "regressed": 0,
+        "fixedSample": [
+          "scala3/scaladoc/resources/dotty_res/styles/theme/components/pill.css",
+          "scala3/scaladoc/resources/dotty_res/styles/theme/layout/footer.css"
+        ],
+        "regressedSample": []
+      },
+      {
+        "repo": "cython",
+        "files": 7,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "go-tools",
+        "files": 6,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "mojo",
+        "files": 5,
+        "errBefore": 2,
+        "errAfter": 2,
+        "pctBefore": 40,
+        "pctAfter": 40,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "zig",
+        "files": 2,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "cloogle.org",
+        "files": 3,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "element-plus",
+        "files": 1,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "vue-core",
+        "files": 1,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "cargo",
+        "files": 1,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "fsharp",
+        "files": 1,
+        "errBefore": 0,
+        "errAfter": 0,
+        "pctBefore": 0,
+        "pctAfter": 0,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      },
+      {
+        "repo": "graphql-js",
+        "files": 1,
+        "errBefore": 1,
+        "errAfter": 1,
+        "pctBefore": 100,
+        "pctAfter": 100,
+        "fixed": 0,
+        "regressed": 0,
+        "fixedSample": [],
+        "regressedSample": []
+      }
+    ]
+  },
+  "q2_collateral": {
+    "cleanBeforeStillClean": true,
+    "cleanBeforeNowErroring": 0,
+    "filesWithShapeDeltaButStillClean": 0,
+    "shapeDeltaSample": []
+  },
+  "q3_shapeDelta": {
+    "nodeTypeCountBefore": 151,
+    "nodeTypeCountAfter": 151,
+    "addedTypes": [],
+    "removedTypes": [],
+    "fieldCountBefore": 0,
+    "fieldCountAfter": 0
+  },
+  "classReproduction": [
+    {
+      "id": "url-relative-unquoted",
+      "src": ".a { background-image: url(../img/x.svg); }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "url-relative-dotslash",
+      "src": ".a { background-image: url(./img/x.svg); }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "url-plain",
+      "src": ".a { background-image: url(img.png); }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "url-quoted",
+      "src": ".a { background-image: url(\"../img/x.svg\"); }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "url-http",
+      "src": ".a { background-image: url(https://x/y.png); }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "url-deep-relative",
+      "src": ".a { background: url(../../a/b/c.woff2) no-repeat; }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "keyframes-int-pct",
+      "src": "@keyframes f { 0% { opacity: 0; } 100% { opacity: 1; } }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "keyframes-frac-pct",
+      "src": "@keyframes f { 33.3% { color: yellow } }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "keyframes-frac-noUnit",
+      "src": "@keyframes f { 0.5 { opacity: 0 } }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "keyframes-from-to",
+      "src": "@keyframes f { from { opacity: 0; } to { opacity: 1; } }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "keyframes-comma-steps",
+      "src": "@keyframes f { 0%, 50%, 100% { opacity: 0; } }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "keyframes-int-pct-negative",
+      "src": "@keyframes f { -10% { opacity: 0; } }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "keyframes-sci-notation",
+      "src": "@keyframes f { 1e2% { opacity: 0; } }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "float-value-still-parses",
+      "src": ".a { line-height: 1.5; opacity: .5; margin: -0.5px; }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "universal-selector-unaffected",
+      "src": "*, *::before { box-sizing: border-box; }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "comment-unaffected",
+      "src": "/* a.b.c */ .a { color: red; }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "float-in-declaration-unaffected",
+      "src": "@keyframes g { from { top: 0.5px; left: 1.25em; } }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+  <xsl:include href="lib/part.xsl"/>
+  <xsl:import href="base.xsl"/>
+  <xsl:include href="plain.xsl"/>
+  <include href="not-xslt.xsl"/>
+</xsl:stylesheet>

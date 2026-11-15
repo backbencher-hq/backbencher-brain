@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url=/redirected">
+  <meta http-equiv="REFRESH" content="3;URL=/upper-no-space">
+  <meta http-equiv="refresh" content="5">
+  <meta http-equiv="refresh" content="0; url=&quot;/entity-quoted&quot;">
+  <meta http-equiv="refresh" content="2; url=/after-a-bare-interval">
+  <meta http-equiv="refresh" content="0; url=/amp?x=1&amp;y=2">
+  <meta name="description" content="0; url=/NOT-a-refresh">
+</head>
+<body>
+  <!-- `ping` is whitespace-separated with no descriptor: one row PER url. -->
+  <a id="pinged" href="/orders" ping="/analytics/a /analytics/b">pinged</a>
+  <a id="ping-empty" href="/x" ping="">empty ping emits nothing</a>
+  <a id="ping-blank" href="/y" ping="   ">blank ping emits nothing</a>
+  <svg>
+    <script href="/svg-script.js"></script>
+    <feImage href="/filter.png"/>
+    <feImage xlink:href="/legacy-filter.png"/>
+  </svg>
+  <q id="quoted" cite="/sources/spec">a quotation</q>
+  <blockquote cite="/sources/other">a quotation</blockquote>
+  <del cite="/sources/removed">a deletion</del>
+  <ins cite="/sources/added">an insertion</ins>
+  <table background="/tile.png"><tr><td>c</td></tr></table>
+  <!-- The legacy `background` attribute has FOUR owners: body, table, td, th. Only
+       the first two were emitted until a carrier census found a real `td@background`
+       image in the corpus (FSharp.Data/…/MarketDepth.htm,
+       /bwx_drop_shadow_900_300.gif) that no table claimed. Both cells are pinned
+       here: `td` because it was the measured gap, `th` because it is the same
+       construct on the sibling cell, and a table naming one and not the other is
+       describing the corpus that happened to run rather than the spec. -->
+  <table>
+    <tr><td background="/cell.png">c</td><th background="/head.png">h</th></tr>
+  </table>
+</body>
+</html>

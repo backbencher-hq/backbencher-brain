@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-graphql-unrouted-population-price",
+  "generatedAt": "2026-10-12T19:09:53.671Z",
+  "producedBy": "validation/m14/fixtures/graphql/unrouted-population-price.mts",
+  "note": "A PRICE, not a ruling: arm A's fix is not this lane's to make, and arm A changes the arbiter's own file selection for this language. Arm B's rule was FIXED mid-session (1c530e78b) — see its `status`.",
+  "armA": {
+    "rule": "language-detection.ts routes no extension to the graphql analyzer for `.graphqls` (it maps `graphql` and `gql`)",
+    "fix": "one entry in that map",
+    "files": 97,
+    "parsed": 97,
+    "degraded": 0,
+    "symbols": 83371,
+    "relationships": 195108,
+    "byType": {
+      "contains": 69625,
+      "references": 70812,
+      "exports": 13746,
+      "uses": 18784,
+      "implements": 3979,
+      "overrides": 18162
+    },
+    "zeroYieldFiles": 0,
+    "failures": []
+  },
+  "armA2_routedCopy": {
+    "rule": "the same 97 files copied to a `.graphql` name and parsed again — what the analyzer yields once the extension is routed",
+    "caveat": "a temp-dir copy is not the real run: cross-file resolution, project-relative paths and the store all differ, so this is the analyzer's yield on the CONTENT, not the store's edge count",
+    "files": 97,
+    "parsed": 97,
+    "degraded": 0,
+    "symbols": 83371,
+    "relationships": 195108,
+    "byType": {
+      "contains": 69625,
+      "references": 70812,
+      "exports": 13746,
+      "uses": 18784,
+      "implements": 3979,
+      "overrides": 18162
+    },
+    "zeroYieldFiles": 0,
+    "failures": []
+  },
+  "armB": {
+    "rule": "built-in ignore glob `testData/` in discoverAndFilterFiles, matched case-insensitively by the `ignore` package so it swallowed lowercase `testdata/`",
+    "fix": "`ignorecase: false` at the four construction sites — LANDED as 1c530e78b while this lane was measuring, after this lane's 156-file measurement was published",
+    "status": "FIXED — the store probe's post-fix run admits these files (1,754 -> 1,909 files, 257,279 -> 261,745 relationship rows). The numbers below are what the analyzer yields on the CONTENT, which the fix does not change: they are the price that got it fixed, not a remaining refusal",
+    "files": 156,
+    "parsed": 156,
+    "degraded": 0,
+    "symbols": 1559,
+    "relationships": 3575,
+    "byType": {
+      "uses": 805,
+      "contains": 992,
+      "references": 1126,
+      "exports": 411,
+      "implements": 94,
+      "overrides": 147
+    },
+    "zeroYieldFiles": 8,
+    "failures": []
+  },
+  "control": {
+    "rule": "corpus `.graphql`/`.gql` files under NO test-shaped segment: the population production DOES read",
+    "sampled": 250,
+    "files": 250,
+    "parsed": 250,
+    "degraded": 0,
+    "symbols": 16719,
+    "relationships": 39563,
+    "byType": {
+      "uses": 2363,
+      "references": 15720,
+      "contains": 13685,
+      "implements": 1020,
+      "overrides": 3854,
+      "exports": 2921
+    },
+    "zeroYieldFiles": 1,
+    "failures": []
+  }
+}

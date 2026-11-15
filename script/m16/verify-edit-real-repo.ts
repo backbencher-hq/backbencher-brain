@@ -83,16 +83,16 @@ async function indexProject(root: string) {
 
 const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
-// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 // each repo path below resolved to a filesystem that does not exist here and the leg
 // measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 // candidates in order and names them all when none exists.
-// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 // each repo path below resolved to a filesystem that does not exist here and the leg
 // measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 // candidates in order and names them all when none exists.
 // Per-repo corpus paths were built on the literal foreign root
-// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
 // each repo path below resolved to a filesystem that does not exist here and the leg
 // measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 // candidates in order and names them all when none exists.

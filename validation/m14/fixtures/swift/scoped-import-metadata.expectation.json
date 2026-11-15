@@ -1,0 +1,67 @@
+{
+  "fixtureId": "swift/scoped-import-metadata",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ONTOLOGY follow-up. Pins the `imports` edge's metadata when one MODULE is imported SCOPED more than once — the case where a single-valued `scopedItem` copied from the first statement is partial and reads as though it named them all. Source lines are load-bearing: import statements at 37 (`import struct Single.Alpha`), 38 (`import struct Single.Beta`), 39 (`import let Pair.Gamma`), 40 (`import let Pair.Delta`), 41 (`import Solo`), 42 (`import struct Single.Epsilon`). The grammar shapes are probe-verified by script/m14/swift-grammar-shape-probe.ts; the population the rule answers is measured over the three swift corpora — 25 (file, module) pairs scope-import one module 2+ times, the largest being swift-nio's Sources/NIOCore/BSDSocketAPI.swift with 37 scoped WinSDK imports. PINS-FORBIDS authored from re-probed emission per M34 requirement 4: the forbids are the shapes a per-statement rule or a module rule with a partial field would produce.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Single",
+      "line_number": 37,
+      "meta.scopedItem": null,
+      "meta.scopedItemCount": 3,
+      "meta.scopedKind": "struct",
+      "meta.isScopedImport": true,
+      "meta.moduleSpecifier": "Single.Alpha",
+      "meta.module": "Single",
+      "meta.submodulePath": "Single.Alpha",
+      "meta.fileLevel": true,
+      "comment": "THE row this fixture exists for: three scoped imports of one module are ONE edge, so `scopedItem` is absent — publishing `Alpha` would name one of three and read as all of them. `scopedItemCount` states the size of what the edge does not enumerate. `scopedKind` and `moduleSpecifier` still describe the first statement and are true of it."
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Pair",
+      "line_number": 39,
+      "meta.scopedItem": null,
+      "meta.scopedItemCount": 2,
+      "meta.scopedKind": "let",
+      "meta.isScopedImport": true,
+      "meta.moduleSpecifier": "Pair.Gamma",
+      "comment": "the rule is about ANY module scoped 2+ times, not a particular count; the `let` scope kind proves the token read is the grammar's and not a substring of the path"
+    },
+    {
+      "type": "imports",
+      "source": "root",
+      "target": "Solo",
+      "line_number": 41,
+      "meta.scopedItem": null,
+      "meta.scopedItemCount": null,
+      "meta.isScopedImport": null,
+      "meta.moduleSpecifier": "Solo",
+      "comment": "an UNSCOPED import grows no count field and no scope kind — a rule that stamped `scopedItemCount` on every module would fail this row"
+    },
+    { "type": "references", "source": "root", "target": "Single.Alpha", "line_number": 37, "comment": "`references` is PER STATEMENT and names the SPELLED path; 6 statements produce 6 edges while only 3 modules are involved" },
+    { "type": "references", "source": "root", "target": "Single.Beta", "line_number": 38 },
+    { "type": "references", "source": "root", "target": "Pair.Gamma", "line_number": 39 },
+    { "type": "references", "source": "root", "target": "Pair.Delta", "line_number": 40 },
+    { "type": "references", "source": "root", "target": "Solo", "line_number": 41 },
+    { "type": "references", "source": "root", "target": "Single.Epsilon", "line_number": 42, "comment": "the third scoped import of `Single` adds a `references` edge and no second `imports` edge — the two labels are visibly different rules over one file" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "Single.Alpha", "comment": "the MODULE is the edge target; the spelled path lives in metadata.moduleSpecifier. A dotted target is the R10 failure go documents (`net/http`)." },
+    { "type": "imports", "target": "Pair.Gamma", "comment": "same, for the `let`-scoped form" },
+    { "type": "imports", "target": "Single", "meta.scopedItem": "Alpha", "comment": "THE pin for the rule: no `imports` edge may carry a single-valued `scopedItem` while its module is scoped more than once. Dropping `scopedItem` is the honest answer; publishing one of N is not." },
+    { "type": "imports", "target": "Pair", "meta.scopedItem": "Gamma", "comment": "same, for the 2-import module" },
+    { "type": "imports", "target": "Solo", "meta.scopedItemCount": 1, "comment": "no count field on an unscoped module — `equals`-style pins cannot say 'absent', so the absent case is pinned here" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "imports", "source": "root", "target": "Single", "equals": 1, "comment": "three statements, one MODULE, one edge" },
+    { "type": "imports", "source": "root", "target": "Pair", "equals": 1, "comment": "two statements, one module, one edge" },
+    { "type": "imports", "source": "root", "target": "Solo", "equals": 1 },
+    { "type": "imports", "source": "root", "equals": 3, "comment": "exactly 3 module edges in the file: Single, Pair, Solo. A per-statement rule would publish 6." },
+    { "type": "references", "source": "root", "target": "Single.Alpha", "equals": 1, "comment": "`references` stays per statement: 6 import statements yield 6 references edges naming 6 spelled paths" },
+    { "type": "references", "source": "root", "equals": 6, "comment": "the pair of totals (3 imports vs 6 references) is what says the two labels are not the same fact under two names" }
+  ]
+}

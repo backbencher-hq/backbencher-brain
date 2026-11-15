@@ -1,0 +1,483 @@
+{
+  "meta": {
+    "lang": "python",
+    "asked": "the whole-population declaration of python's 14-value vocabulary, measured over the WHOLE admitted population in ONE arm; this is not a sample",
+    "instrument": "script/m14/incoming-gate.ts, read by script/m14/completion-gate.ts",
+    "instrumentVersion": "2026-10-22 (eleven-term closure, five-bucket coarsening, causeRulings)",
+    "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+    "populationRule": "the ADMITTED set is the GIT-TRACKED set under the 1 MiB cap, NOT the disk: git ls-files per checkout under $PWD/.corpus, keeping .py/.pyi/.pyw, dropping paths absent on disk and paths over 1 MiB. MEASURED 2026-10-22: 14,093 tracked = 11,559 admitted + 2,533 absent + 1 over cap.",
+    "corpusRoot": "$PWD/.corpus",
+    "corpusTotal": 11559,
+    "parsed": 11559,
+    "sample": 11559,
+    "extension": "py,pyi,pyw",
+    "corpusRepos": 51,
+    "corpusReposNote": "51 is the GATE's own basis (one repository per admitted file group, script/m14/incoming-gate.ts:526). The corpus itself carries 202 checkouts, 52 of which hold any .py/.pyi/.pyw at all -- two different questions with two different answers, and both are stated.",
+    "arm": "no --index, the fail-closed control",
+    "armReason": "every cause ruling's count is read from THIS arm's TABLE 1, so the declaration and its rulings cannot disagree about which measurement they describe. The indexed arm is measured on the same population and published beside it.",
+    "edges": 1332030,
+    "closure": {
+      "formula": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges",
+      "thisArm": "1,332,030 = 579,258 + 368,213 + 209,162 + 13,217 + 0 + 0 + 133,044 + 29,136 + 0 + 0 + 0",
+      "residual": "residual = amb(decl) + unresolved",
+      "ambKind_AND_collRes_REPORTED_BESIDE": "amb(kind) is a SUBSET of amb(decl) and collRes a SUBSET of resolved; both are reported beside the closure and NEVER added to it"
+    },
+    "sourceCell": "validation/m14/measurements/python-cell-noindex-2026-10-21.txt:59-74",
+    "generated": "2026-10-22"
+  },
+  "types": {
+    "calls": {
+      "edges": 538198,
+      "resolved": 191510,
+      "ambiguous": 162044,
+      "otherUnresolved": 113041,
+      "external": 71603,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 191510,
+        "amb(decl)": 162044,
+        "unresolved": 99824,
+        "bindOK": 13217,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 55041,
+        "ext?": 16562,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 82682,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "uses": {
+      "edges": 391624,
+      "resolved": 133221,
+      "ambiguous": 187817,
+      "otherUnresolved": 49450,
+      "external": 21136,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 133221,
+        "amb(decl)": 187817,
+        "unresolved": 49450,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 17063,
+        "ext?": 4073,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 75650,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "contains": {
+      "edges": 136287,
+      "resolved": 136233,
+      "ambiguous": 0,
+      "otherUnresolved": 54,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 136233,
+        "amb(decl)": 0,
+        "unresolved": 54,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 95730,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "imports": {
+      "edges": 100237,
+      "resolved": 26476,
+      "ambiguous": 8814,
+      "otherUnresolved": 42424,
+      "external": 22523,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 26476,
+        "amb(decl)": 8814,
+        "unresolved": 42424,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 22453,
+        "ext?": 70,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 2891,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "references": {
+      "edges": 62316,
+      "resolved": 26557,
+      "ambiguous": 5968,
+      "otherUnresolved": 2033,
+      "external": 27758,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 26557,
+        "amb(decl)": 5968,
+        "unresolved": 2033,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 20896,
+        "ext?": 6862,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 2280,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "exports": {
+      "edges": 3043,
+      "resolved": 2751,
+      "ambiguous": 279,
+      "otherUnresolved": 13,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 2751,
+        "amb(decl)": 279,
+        "unresolved": 13,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 145,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "extends": {
+      "edges": 21004,
+      "resolved": 14132,
+      "ambiguous": 2640,
+      "otherUnresolved": 44,
+      "external": 4188,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 14132,
+        "amb(decl)": 2640,
+        "unresolved": 44,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 3859,
+        "ext?": 329,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 1000,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "implements": {
+      "edges": 334,
+      "resolved": 193,
+      "ambiguous": 0,
+      "otherUnresolved": 3,
+      "external": 138,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 193,
+        "amb(decl)": 0,
+        "unresolved": 3,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 42,
+        "ext?": 96,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "overrides": {
+      "edges": 33541,
+      "resolved": 33541,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 33541,
+        "amb(decl)": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "instantiates": {
+      "edges": 13175,
+      "resolved": 13175,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 13175,
+        "amb(decl)": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "decorates": {
+      "edges": 32271,
+      "resolved": 1469,
+      "ambiguous": 651,
+      "otherUnresolved": 15317,
+      "external": 14834,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 1469,
+        "amb(decl)": 651,
+        "unresolved": 15317,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 13690,
+        "ext?": 1144,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 596,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 0,
+        "amb(decl)": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 0,
+        "amb(decl)": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "external": 0,
+      "unclassed": 0,
+      "closure": {
+        "resolved": 0,
+        "amb(decl)": 0,
+        "unresolved": 0,
+        "bindOK": 0,
+        "bind?": 0,
+        "bindFAIL": 0,
+        "extOK": 0,
+        "ext?": 0,
+        "extFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      },
+      "reported_beside_never_added": {
+        "collRes": 0,
+        "amb(kind)": 0,
+        "_rule": "collRes and amb(kind) are SUBSETS of their parent buckets (collRes of resolved, amb(kind) of amb(decl)) and are reported BESIDE the closure and NEVER ADDED to it."
+      }
+    }
+  },
+  "causeRulings": {
+    "W1_runtime_receiver_typing": {
+      "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+      "count": 149274,
+      "countFrom": "TABLE 1 of this arm: calls.unresolved + uses.unresolved",
+      "disposition": "RULED UNDECIDABLE (python has no static receiver typing; the class of the object a call is made on is a RUNTIME fact, and no rung of the grammar ladder can add one)",
+      "from": "validation/m14/verification/PYTHON-D7-WALLS.md:59 (W1) + validation/m14/measurements/python-cell-noindex-2026-10-21.txt:60 (calls) and :61 (uses)",
+      "evidenceClass": "measured whole-population",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/python-type-census.ts --corpus --out /tmp/python-w1.json",
+        "wouldFail": "wouldFail: a row counted here whose RECEIVER's type is DECLARED IN ITS OWN FILE (a self.receiver or a local binding with a declared class) would refute the claim that the receiver's type is a runtime fact, and the gate would have to move it out of this cause and into a defect."
+      }
+    },
+    "W2_project_local_imports": {
+      "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+      "count": 42424,
+      "countFrom": "TABLE 1 of this arm: imports.unresolved",
+      "disposition": "RULED UNDECIDABLE (a module a project VENDORS or that lives outside the run's scope is not a declaration the run can reach; the import names a module, and no grammar change can make a module resolve to a file the run does not carry)",
+      "from": "validation/m14/verification/PYTHON-D7-WALLS.md:143 (W2) + validation/m14/measurements/python-cell-noindex-2026-10-21.txt:63 (imports)",
+      "evidenceClass": "measured whole-population",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/py-project-local-imports-census.ts --out /tmp/python-w2.json",
+        "wouldFail": "wouldFail: an import in this bucket whose target module IS a file of this run's own scope would refute the claim, because a reachable module that still does not resolve is an ANALYZER defect, not an undecidable."
+      }
+    },
+    "W3_external_unverified": {
+      "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+      "count": 29136,
+      "countFrom": "TABLE 1 of this arm: the ext? term summed over every type (the gate's TOTAL row reads 29,136)",
+      "disposition": "RULED UNDECIDABLE (the name is not declared in this run and IS claimed by a package the project does not carry; the arbiter can neither verify nor refute membership from bytes it does not have, and silence about a package is not evidence about its membership)",
+      "from": "validation/m14/verification/PYTHON-D7-WALLS.md:182 (W3) + validation/m14/measurements/python-cell-noindex-2026-10-21.txt:74 (TOTAL ext?)",
+      "evidenceClass": "measured whole-population",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/python-type-census.ts --corpus --out /tmp/python-w3.json",
+        "wouldFail": "wouldFail: an ext? row whose name IS declared inside this run's own scope would refute it (the run declares it, so the arbiter had the truth in hand and failed to use it)."
+      }
+    },
+    "W4_leaf_name_collisions": {
+      "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+      "count": 28726,
+      "countFrom": "the own-file tie-break's measured price: overrides 21,069 (100 %) + instantiates 7,657 (100 %) rows MOVED OUT of ambiguity by the tie-break, which is why this arm's overrides and instantiates ambiguous rows read 0",
+      "disposition": "RULED UNDECIDABLE, with a MEASURED FALSIFIER THAT WAS DISCHARGED: the claim is that an ambiguous row in these two types carries no owner or static receiver proof, and the measurement found 0 such rows",
+      "from": "validation/m14/verification/PYTHON-D7-WALLS.md:262 (W4) + validation/m14/measurements/python-tiebreak-price-2026-10-21.json (per-label price)",
+      "evidenceClass": "measured whole-population",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/py-tiebreak-price.ts --out /tmp/python-w4.json",
+        "wouldFail": "wouldFail: an ambiguity row of overrides or instantiates that CARRIES an owner proof or a statically declared receiver would refute the ruling. MEASURED: 0 such rows (the tie-break resolves all 28,726 of them by the row's OWN FILE, and the claim-free share equals the whole-class share, so the resolution is not buying a wrong pick)."
+      }
+    },
+    "W5_local_bindings": {
+      "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+      "count": 13217,
+      "countFrom": "TABLE 1 of this arm: calls.bindOK (bind? and bindFAIL are 0 in every row)",
+      "disposition": "CLAIMED, NOT RESOLVED: the arbiter binds these to a local binding with a declaration-level claim. A claim is not a resolution and is never folded into `resolved`; the gate counts it in its own bucket",
+      "from": "validation/m14/verification/PYTHON-D7-WALLS.md:275 (W5) + validation/m14/measurements/python-cell-noindex-2026-10-21.txt:60 (calls.bindOK)",
+      "evidenceClass": "measured whole-population",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/py-owner-absent-join.ts --out /tmp/python-w5.json",
+        "wouldFail": "wouldFail: a bindOK row whose bound owner is NOT a local binding of the row's own file would refute the claim, because a claim that cannot name its owner is not a claim."
+      }
+    },
+    "W12_decorates_direction": {
+      "population": "parsed=11559/11559 admitted=11559 exts=py,pyi,pyw index=no",
+      "count": 1469,
+      "countFrom": "TABLE 1 of this arm: decorates.resolved. THE WALL IS CLOSED: the 32,271 published rows are the DIRECTION THE FLEET ADOPTED (decorated declaration -> decorator), and this count is what that direction resolves",
+      "disposition": "RESOLVED BY THE ENUM CORRECTION (commit 5ecb97134), NOT BY A LANE EDIT: the shared vocabulary's doc comment was the outlier against three agreeing emitters, the fleet oracle and the proposal page, and it was corrected to the emitted direction. The lane moved no edge. The measured price of the REJECTED direction is the record: 31,602 of 32,251 rows (98.0 %) change class, and it would have left 31,484 unresolved",
+      "from": "validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md:1254 (W12) + src/ast/types.ts:120-135 (the corrected direction) + validation/m14/measurements/python-decorates-direction-2026-10-21.json",
+      "evidenceClass": "measured whole-population, both directions",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" bun run script/m14/python-decorates-direction.ts --out /tmp/python-w12.json",
+        "wouldFail": "wouldFail: if the REJECTED direction resolved a LARGER share than the adopted one, the correction would have been wrong. MEASURED: adopted resolves 27,385/32,251 (84.9 %); rejected resolves 748/32,251 (2.3 %). A relation that resolves 2.3 % is not a relation."
+      }
+    }
+  },
+  "resolution_caveats": [
+    "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ELEVEN-TERM CLOSURE, NOT THE ELEVEN TERMS: the gate has five buckets (resolved, external, ambiguous, otherUnresolved, unclassed) and the closure has eleven terms, so the binding* and cause* edges -- which the gate has no bucket of their own for -- are counted in otherUnresolved, and every row publishes the eleven terms themselves in `closure` so a reader can see exactly which edge is in which bucket.",
+    "amb(kind) AND collRes ARE REPORTED BESIDE EVERY ROW AND ARE NEVER ADDED TO ANY BUCKET OR TO THE CLOSURE: collRes is a subset of resolved and amb(kind) is a subset of amb(decl); the closure formula excludes both, and this declaration excludes both.",
+    "THE `unclassed` CEILING IS 0, ALWAYS, AND IT IS 0 IN EVERY ROW HERE: each row's five buckets sum to that row's `edges` exactly, and the generator REFUSES TO WRITE when a row does not close.",
+    "THIS LANE'S `resolved` MEANS: the arbiter found a declaration for the target and the edge was bound to it. IT DOES NOT MEAN THE PICK IS CORRECT. A wrong-but-declared pick is `resolved` in this instrument too, and no bucket here can distinguish a right pick from a wrong one. A reader must not compare this bucket to another lane's as if the two meant the same thing.",
+    "THE OWN-FILE TIE-BREAK IS ACTIVE IN THIS DECLARATION AND ITS PRICE IS PUBLISHED: an ambiguous row resolves when the row's OWN FILE declares the target. It moved 83,039 rows out of ambiguous into resolved (L-16 twin over the same key space with the same arbiter; the independent falsifier agreed; the instrument exits non-zero on disagreement and did not fire). The ceiling is the whole-class share and it EQUALS the measured price because the claim-carrying own-file count is 0 -- so the tie-break is not buying a wrong pick. The artifact is validation/m14/measurements/python-tiebreak-price-2026-10-21.json.",
+    "THE POPULATION IS THE GIT-TRACKED SET UNDER THE 1 MiB CAP, NOT THE DISK. Measured over $PWD/.corpus: 14,093 tracked .py/.pyi/.pyw = 11,559 admitted + 2,533 tracked-but-absent-on-disk + 1 over the 1 MiB cap, and the three add to the tracked count exactly. A DISK WALK IS A DIFFERENT POPULATION and its number is not comparable to this one.",
+    "THIS DECLARATION IS THE NO-INDEX ARM (`index=no`) ON PURPOSE, because every cause ruling's count is read from that arm's TABLE 1. The indexed (production) arm is measured on the SAME population and is published beside it in validation/m14/measurements/python-cell-indexed-2026-10-21.txt: its closure is 1,332,030 = 598,262 resolved + 353,408 amb(decl) + 199,036 unresolved + 24,276 bindOK + 142,750 extOK + 14,298 ext?. The difference between the two arms is the PROJECT INDEX's cross-file override pairing and nothing else: the context delta is exactly the `overrides` class (33,546 -> 12,514 = -21,032) and every other type moves 0."
+  ],
+  "notes": [
+    "EVERY NUMBER IN THIS DECLARATION CARRIES THE RULE THAT PRODUCED IT: the population carries its rule (git-tracked under the cap), the node-type counts elsewhere in this lane carry the grammar's digest (wasm/tree-sitter-python.wasm sha256 16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47, 274 node-type ids, 128 named ids, 32 fields, PLUS the universal ERROR and MISSING pair), and the closure carries its formula. A number that does not say which rule produced it cannot be compared.",
+    "n = 11 OF 11 FOR THIS LANE, AND ELEVEN IS NOT A SHRUNK DENOMINATOR: the ten canonical values plus `decorates` are IMPLEMENTED and measured on the whole population; `renders`, `mixes_in` and `part_of` are RULED UNDECIDABLE with the R1/R2/R3 rung named unavailable for each, and a payload of 0 edges is published for each IN THIS DECLARATION so the three are visible rather than absent. A type in GRAMMAR REMEDY PENDING would stay in this denominator; python has none, so nothing is in flight and nothing is excused.",
+    "THE THREE RULED VALUES ARE PRESENT IN `types` AS ZERO ROWS ON PURPOSE: a reader can see that they were measured and are not merely missing, and the coverage block in script/m14/spec/python-completeness.json carries their `excluded` entries with the grammar-absence evidence and the review doc's line numbers.",
+    "THE HERITAGE BLIND SPOT IS CLOSED AND IT IS CLOSED BY MEASUREMENT, NOT BY ASSERTION: the lane's own probe resolved the analyzer's private baseClassLeaf over the whole population and found 26,023 classes with 23,473 base clauses, of which 21,335 publish an edge and every one of the 1,889 remaining leaf-resolved clauses is the analyzer's OWN deliberate self-base suppression (class X(X)), and the 249 shape-misses are keyword arguments (TypedDict total=False, and metaclass= which is not an instance-MRO base), splats, calls and comments -- none of which is a base class. NO DEFECT IS PUBLISHED FOR THEM."
+  ]
+}

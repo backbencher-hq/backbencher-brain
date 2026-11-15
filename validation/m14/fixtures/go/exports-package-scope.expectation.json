@@ -1,0 +1,26 @@
+{
+  "fixtureId": "go/exports-package-scope",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCOPE of the `exports` edge: Go scopes an identifier to its PACKAGE (spec, Declarations and blocks / Exported identifiers), and a capitalised name declared inside a function, method or func-literal body is unreachable from any importer. The lane deliberately publishes a function-local `type` as a SYMBOL — the declared-type pass attributes that type's field types to it, so dropping the symbol would publish a `references` edge whose source names nothing — and such a symbol carries no `ownerName`, so the symbol table cannot tell line 62 from line 28. Measured over a 500-file stride sample of go-stdlib (validation/m14/go/go-mislabel-probe.ts): 4,165 `exports` edges published, 11 of them for a name declared inside a function body, across test/fixedbugs/bug285.go (8) and src/cmd/compile/internal/test/align_test.go (3). Every one carried `exportForm: \"capitalized_package_scope_name\"`, so the edge was labelled with the rule it broke. EXPECTED rows are package-scope declarations; FORBIDDEN rows are the body-local declarations plus the lane's declared scope decision on methods and package-scope vars, which is pinned here so it stays a decision.",
+  "expectRelationships": [
+    { "type": "exports", "from": "exportscope", "target": "Widget", "line_number": 28, "meta.relationshipType": "go_exported_identifier", "meta.symbolKind": "struct" },
+    { "type": "exports", "from": "exportscope", "target": "Sizer", "line_number": 30, "meta.relationshipType": "go_exported_identifier", "meta.symbolKind": "interface" },
+    { "type": "exports", "from": "exportscope", "target": "NewWidget", "line_number": 36, "meta.relationshipType": "go_exported_identifier", "meta.symbolKind": "function" },
+    { "type": "exports", "from": "exportscope", "target": "WidgetVersion", "line_number": 42, "meta.relationshipType": "go_exported_identifier", "meta.symbolKind": "constant" },
+    { "type": "exports", "from": "exportscope", "target": "WidgetAlias", "line_number": 48, "meta.relationshipType": "go_exported_identifier" },
+    { "type": "exports", "from": "exportscope", "target": "Widget", "confidenceMin": 1.0 }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "exportscope", "target": "InnerWidget" },
+    { "type": "exports", "from": "exportscope", "target": "InnerRegistry" },
+    { "type": "exports", "from": "exportscope", "target": "InnerVersion" },
+    { "type": "exports", "from": "exportscope", "target": "InnerLiteral" },
+    { "type": "exports", "from": "exportscope", "target": "ShadowedAlias" },
+    { "type": "exports", "from": "exportscope", "target": "widgetImpl" },
+    { "type": "exports", "from": "exportscope", "target": "newWidgetImpl" },
+    { "type": "exports", "from": "exportscope", "target": "exportscope" },
+    { "type": "exports", "from": "exportscope", "target": "Size" },
+    { "type": "exports", "from": "exportscope", "target": "WidgetRegistry" }
+  ]
+}

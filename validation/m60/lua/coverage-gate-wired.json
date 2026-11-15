@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_ontology_coverage_gate_wired",
+  "at": "2026-10-04",
+  "writtenBy": "script/m60/lua-ruled-proof.ts — parsed from the wired gate's own stdout. This file was hand-transcribed before this pass and no script could regenerate it.",
+  "how": "the two-line wiring is applied to a SCRATCH COPY of script/m14/ontology-coverage-gate.ts and the real gate is run. The shared gate was read-only throughout. Unwired, the gate exits 2 with \"no RULING TABLE for lua\".",
+  "gateExitCode": 0,
+  "summary": "emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0",
+  "coverageAsApplicable": "10/10 APPLICABLE — 9 EMITTED with counts, 1 RULED with an instrument, a probe, a measurement and a named falsification condition. Reported as applicable rather than as a flat 10; a denominator counting only what fires would misreport this as 9/10 broken.",
+  "corpus": "3250 admitted files",
+  "rows": [
+    {
+      "type": "calls",
+      "status": "EMITTED",
+      "detail": "57,394 edges in 4+ files, e.g. hledger/tools/pandoc-demote-headers.lua, hledger/tools/pandoc-drop-toc.lua"
+    },
+    {
+      "type": "uses",
+      "status": "EMITTED",
+      "detail": "54,829 edges in 4+ files, e.g. hledger/tools/pandoc-toc.lua, kong/.ci/luacov-stats-aggregator.lua"
+    },
+    {
+      "type": "contains",
+      "status": "EMITTED",
+      "detail": "55,199 edges in 4+ files, e.g. hledger/tools/pandoc-dedent-code-blocks.lua, hledger/tools/pandoc-toc.lua"
+    },
+    {
+      "type": "imports",
+      "status": "EMITTED",
+      "detail": "6,601 edges in 4+ files, e.g. kong/.ci/luacov-stats-aggregator.lua, kong/autodoc/pdk/generate.lua"
+    },
+    {
+      "type": "references",
+      "status": "EMITTED",
+      "detail": "40,014 edges in 4+ files, e.g. hledger/tools/pandoc-dedent-code-blocks.lua, hledger/tools/pandoc-toc.lua"
+    },
+    {
+      "type": "exports",
+      "status": "EMITTED",
+      "detail": "5,167 edges in 4+ files, e.g. kong/autodoc/cli/data.lua, kong/kong/admin_gui/init.lua"
+    },
+    {
+      "type": "extends",
+      "status": "EMITTED",
+      "detail": "171 edges in 4+ files, e.g. kong/kong/api/api_helpers.lua, kong/kong/cache/init.lua"
+    },
+    {
+      "type": "implements",
+      "status": "RULED-SOUND",
+      "detail": "NOT EMITTED; the grammar produced 128 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/spec/lua-completeness.json#BD-ontology"
+    },
+    {
+      "type": "overrides",
+      "status": "EMITTED",
+      "detail": "67 edges in 4+ files, e.g. kong/kong/observability/tracing/instrumentation.lua, kong/kong/pdk/log.lua"
+    },
+    {
+      "type": "instantiates",
+      "status": "EMITTED",
+      "detail": "122 edges in 4+ files, e.g. kong/kong/db/declarative/export.lua, kong/kong/db/schema/init.lua"
+    }
+  ],
+  "caveats": [
+    "The gate reports \"the grammar produced 128 distinct node types\" for implements. That is TREE-SITTER-BASH's count, not lua's: script/m14/ontology-coverage-gate.ts:240 resolves the wasm from differential.ts LANGS, which has no lua entry, and falls back to tree-sitter-bash.wasm. The RULED-SOUND verdict is unaffected (the six declaration node types are absent from bash's vocabulary too) but the detail string is another language's number. Lua's true count over the same draw is 100 — see validation/m60/lua/grammar-inventory.json. Shared machinery: reported, not fixed (R1).",
+    "The gate admits 3,250 files where the census admits 3,252: the gate filters on detectLanguageFromPath per file, the census on `git ls-files '*.lua'`. Two files are in one draw and not the other. Neither total is wrong; they are not interchangeable.",
+    "The four moving labels (calls, uses, contains, references) sit inside the parseFile nondeterminism floor of docs/analyzers/lua.md §5. The five stable ones (imports 6,601, exports 5,167, extends 171, overrides 67, instantiates 122) are the ones a count may be quoted from."
+  ]
+}

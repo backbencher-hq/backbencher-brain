@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-second-corpus-recall",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "OBSERVATION. A second, previously unused SQL corpus, and the recall measurement that came with it. This is the lane's largest known open gap.",
+  "date": "2026-09-27",
+  "whyThisCorpus": "The lane had been tuned against exactly one distribution: ProxiCall (441 files), which is application migrations. Real PostgreSQL DDL is a different distribution \u2014 extension authors' plpgsql, operator classes, domains, ALTER TYPE ... ADD VALUE \u2014 and the lane had never been measured on it. The corpus was already on this machine and had never been used.",
+  "corpora": [
+    {
+      "path": "/usr/share/postgresql/14/extension",
+      "kind": "696 PostgreSQL extension SQL files, written by extension authors (Debian postgresql-14 packaging)",
+      "note": "the single densest source of real-world PostgreSQL DDL on this box"
+    },
+    {
+      "path": "/usr/share/geary/sql",
+      "kind": "30 Geary ORM versioned migrations",
+      "note": "a second, independent migration dialect"
+    }
+  ],
+  "measurement": {
+    "files": 417,
+    "filesOverSizeCapSkipped": 309,
+    "sizeCapBytes": 400000,
+    "filesYieldingZeroSymbols": 73,
+    "groundTruthDefinition": "textual line-anchored counts of `CREATE <kind>`; a FLOOR, because it also counts occurrences inside dollar-quoted bodies and comments",
+    "kindMappingUsedForExtraction": "MEASURED, not assumed: on a ProxiCall file with known ground truth, 2 textual CREATE TABLE yield kind `class`, 6 CREATE INDEX yield kind `constant`, and functions yield kind `function`. An earlier run of this same probe mapped table->type and reported a FALSE 0.0% table recall; the mapping is the reason it is recorded here.",
+    "recall": {
+      "function": {
+        "textual": 11883,
+        "extracted": 2095,
+        "recall": "17.6%"
+      },
+      "table": {
+        "textual": 324,
+        "extracted": 26,
+        "recall": "8.0%"
+      },
+      "index": {
+        "textual": 249,
+        "extracted": 15,
+        "recall": "6.0%"
+      },
+      "combinedOverThose": {
+        "textual": 12456,
+        "extracted": 2136,
+        "recall": "17.1%"
+      },
+      "notInterpretable": {
+        "view": "236.4% \u2014 MAPPING ARTIFACT: views and tables both publish as kind `class`, so this row double-counts and is not a recall number.",
+        "type": "113.3% \u2014 the analyzer emits more `type` symbols than there are textual CREATE TYPE, i.e. it derives types from other shapes too. Over-extraction, not recall."
+      }
+    }
+  },
+  "cause": {
+    "summary": "PL/pgSQL procedural syntax, not DDL. The dominant error shapes across the corpus, clustered by the first two tokens of each ERROR span:",
+    "errorNodes": 89332,
+    "filesWithErrors": "383/696",
+    "shapes": [
+      {
+        "n": 32047,
+        "shape": "||",
+        "meaning": "string concatenation / operator expressions inside plpgsql bodies"
+      },
+      {
+        "n": 4220,
+        "shape": "$",
+        "meaning": "dollar-quote boundaries and positional parameters"
+      },
+      {
+        "n": 3276,
+        "shape": "REPLACE FUNCTION",
+        "meaning": "CREATE OR REPLACE FUNCTION headers"
+      },
+      {
+        "n": 2119,
+        "shape": "&",
+        "meaning": "bitwise AND"
+      },
+      {
+        "n": 1482,
+        "shape": ":",
+        "meaning": "named plpgsql parameters and `:=` assignment"
+      },
+      {
+        "n": 1092,
+        "shape": "; END",
+        "meaning": "IF / ELSIF / ELSE / END IF control flow"
+      },
+      {
+        "n": 1014,
+        "shape": "; RETREC.ID1",
+        "meaning": "RETURN record.field \u2014 record field access"
+      },
+      {
+        "n": 780,
+        "shape": "THEN RET",
+        "meaning": "RETURN inside a conditional"
+      },
+      {
+        "n": 624,
+        "shape": "AS $$",
+        "meaning": "function bodies entered through AS $$"
+      }
+    ],
+    "mechanism": "A plpgsql body the grammar cannot parse becomes an ERROR span; when the span is large relative to the file the analyzer's statement-level resync is supposed to recover it, and on this corpus the recovery frequently yields nothing. Files that parse cleanly extract correctly \u2014 one 663 KB / 8,432-line extension file with 3 CREATE TABLE and 0 analyzer errors yielded exactly 3 `class` symbols, so the extractor is right and the parser is the limit."
+  },
+  "whatThisChanges": [
+    "The lane is NOT complete. Its measured quality on application migrations does not transfer to general PostgreSQL DDL, and the two differ by roughly a factor of five in declaration recall.",
+    "The already-documented gap `SQL-G1` (a dollar-quoted body the grammar cannot parse yields no create_function symbol) is not a footnote on this corpus; it is the dominant cause, and it is 11,883 of the missing declarations.",
+    "Grammar work on plpgsql bodies is the highest-value remaining SQL action, and it is exactly the work the V3 candidate gestured at. The V3 rejection still stands \u2014 opaque `DO` bodies were measured to collapse 49 files' structure for zero product change \u2014 but `DO` is a small share of this; `CREATE FUNCTION ... AS $$ <plpgsql> $$` is the large share, and a fix there has not been attempted."
+  ],
+  "reproduce": [
+    "the 760 files are the entire set: `find /usr/share -iname '*.sql'`",
+    "recall probe: /tmp/opencode/recall2.mts (mapping-corrected)",
+    "error-shape clustering: /tmp/opencode/errshapes.mts",
+    "raw corpus sweep: /tmp/opencode/share-sweep.mts"
+  ],
+  "notClaimed": [
+    "17.1% is not a product defect rate. It is declaration recall against a textual floor, on a corpus the lane was never tuned for.",
+    "The 309 files skipped over the 400 KB cap are not represented; several are large extension scripts and would likely score worse.",
+    "The view and type rows are not recall numbers and are labelled as artifacts above rather than quietly dropped."
+  ],
+  "executeLiteralOpportunityCorrection": {
+    "date": "2026-09-27",
+    "whatWasWrong": "This file, and validation/m60/sql/v4-plpgsql-candidate.json, both reported ~1,326-1,358 declarations 'inside EXECUTE literals' as the recoverable prize. That number counted every CREATE keyword appearing anywhere inside an EXECUTE string. It is an UPPER BOUND and it is wrong by about 17x as a target.",
+    "measuredCorrection": "1,248 of the 1,326 (94%) are CONCATENATED FRAGMENTS, not statements: `EXECUTE 'CREATE SEQUENCE ' || quote_ident(toponame) || ' MINVALUE 1'`. The literal is the three words `CREATE SEQUENCE ` and the declaration's NAME is a runtime value. Only 78 of the literals contain a standalone, complete statement.",
+    "implication": "The honest ceiling for any EXECUTE-side work was ~78 declarations, not 1,326. The shipped pass (runExecuteScan) delivers +156 symbols and +234 relationships on the extension corpus, which is ABOVE the corrected standalone ceiling because a fragment still yields a kind-bearing symbol even when the name is unrecoverable. The kind is knowable; the name never is, and that bounds every future extension of this path \u2014 no amount of string-literal work can recover a name that is computed at run time.",
+    "whatStillHolds": "The structural claim is unchanged and is the important one: a tree-sitter grammar parses one language and cannot produce `statement` nodes for SQL that is text inside a string literal, which is why the V4 plpgsql grammar left product output byte-identical."
+  },
+  "recallMetricCorrection": {
+    "date": "2026-09-27",
+    "whatWasWrong": "Both this file and v6-plpgsql-shipped.json report recall as a COUNT ratio (declarations extracted / textual declarations) and both use that to name table recall \u2014 4.1% \u2014 as the 'sharpest remaining target'. That metric measures REPETITION, not coverage, and on the PostgreSQL extension corpus it is badly misleading.",
+    "evidence": "Recounted with a comment- and string-aware ground truth, the denominators barely move (11,883 functions, 314 tables), so the earlier ground truth was not itself inflated. The problem is the METRIC. Those 314 CREATE TABLE occurrences are only SIX DISTINCT NAMES, repeated across extension upgrade scripts, and 2 of the 6 are found: 33.3% by name. The functions are 924 of 1,170 DISTINCT NAMES = 79.0%, against the 37.0% the count ratio reports. Extension files re-declare the same function in every version script, so a count ratio understates distinct-name coverage by more than a factor of two.",
+    "aConcreteInstanceOfTheEarlierTrap": "isn--1.1.sql contributes 'CREATE TABLE test' to the raw count, and that text is inside `--   create table test ( id isbn );` \u2014 a documentation example. The file contains no table and the analyzer correctly emits zero `class` symbols for it. The comment-aware recount removes such cases, and they turned out to be a small share rather than a systematic inflation.",
+    "correctedTargets": {
+      "functions": "246 of 1,170 distinct function NAMES are still missing (79.0% found). This, not tables, is the sharpest remaining gap.",
+      "tables": "4 of 6 distinct table names missing, on a total population of 6. Small in absolute terms.",
+      "filesWithZeroSymbols": "56 of 387 unchanged.",
+      "consequence": "The count-ratio metric should be retired from this lane's reporting in favour of distinct-name recall, or reported alongside it, because on versioned extension corpora the two disagree by more than 2x and point at opposite priorities."
+    }
+  }
+}

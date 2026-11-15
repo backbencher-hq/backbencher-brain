@@ -1,0 +1,620 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_truth_oracle_differential",
+  "repo": "luarocks",
+  "sample": 200,
+  "filesDrawn": 162,
+  "parseErrorFiles": 0,
+  "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
+  "mirroredPolicy": [
+    {
+      "rule": "require/module is `imports`, not `calls`",
+      "why": "A policy about the label a require carries. The EDGE still has to be found, so a dropped require still shows as missing."
+    },
+    {
+      "rule": "pcall/xpcall wrapping require is `imports`, and the pcall call itself is not a `calls` edge",
+      "why": "The wrapper is transport, not a call target the user asked about. Measured rather than assumed: lua's pcall is a stdlib wrapper, and the analyzer's choice is visible in its own source."
+    },
+    {
+      "rule": "a global function is `global` as its `from`",
+      "why": "The scope name for top level. Structural, but the alternative (inventing a file scope) would fabricate a node that does not exist."
+    }
+  ],
+  "totals": {
+    "truthEdges": 12126,
+    "observedEdges": 20747,
+    "missing": 0,
+    "missingFromAnalyzer": [],
+    "exportsDirectPath": {
+      "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+      "filesProbed": 150,
+      "truth": 112,
+      "hit": 112,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 150,
+        "checks": 300
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 150,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 150,
+        "distinctValues": 4,
+        "values": [
+          70,
+          80,
+          85,
+          95
+        ],
+        "mean": 83.7,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 150,
+      "totalDisclosures": 7
+    },
+    "relationshipsDirectPath": {
+      "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+      "filesProbed": 150,
+      "truth": 10045,
+      "hit": 10045,
+      "missed": 0,
+      "spurious": 6806,
+      "loopCoincidenceExempted": 0,
+      "loopCoincidenceSample": [],
+      "recall": 1,
+      "precision": 0.596107,
+      "missedSample": [],
+      "spuriousSample": [
+        "references global -> \"run\"  spec/add_spec.lua",
+        "references global -> \"testing_paths\"  spec/add_spec.lua",
+        "uses global -> \"extra_rocks\"  spec/add_spec.lua",
+        "references global -> \"testing_server\"  spec/add_spec.lua",
+        "references global -> \"testrun_dir\"  spec/add_spec.lua",
+        "references global -> \"get_tmp_path\"  spec/build_spec.lua",
+        "references global -> \"run\"  spec/build_spec.lua",
+        "references global -> \"testing_paths\"  spec/build_spec.lua",
+        "references global -> \"write_file\"  spec/build_spec.lua",
+        "uses global -> \"extra_rocks\"  spec/build_spec.lua",
+        "references global -> \"testing_sys_rocks\"  spec/build_spec.lua",
+        "uses global -> \"finally\"  spec/build_spec.lua",
+        "references global -> \"fixtures_dir\"  spec/build_spec.lua",
+        "references global -> \"is\"  spec/build_spec.lua",
+        "references global -> \"TEST_TARGET_OS\"  spec/build_spec.lua",
+        "references global -> \"LUA_V\"  spec/build_spec.lua",
+        "references global -> \"LUAJIT_V\"  spec/build_spec.lua",
+        "references global -> \"no\"  spec/build_spec.lua",
+        "references global -> \"has\"  spec/build_spec.lua",
+        "uses global -> \"output\"  spec/build_spec.lua",
+        "references global -> \"TYPE_TEST_ENV\"  spec/build_spec.lua",
+        "references global -> \"testrun_dir\"  spec/build_spec.lua",
+        "uses global -> \"rockspec\"  spec/build_spec.lua",
+        "uses global -> \"tmpdir\"  spec/build_spec.lua",
+        "uses global -> \"c_module_source\"  spec/build_spec.lua"
+      ]
+    },
+    "pipelineDiscardEvidence": {
+      "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+      "filesProbed": 150,
+      "cap": 150,
+      "provenDiscarded": [],
+      "observedOnBothSides": [
+        "calls",
+        "contains",
+        "exports",
+        "extends",
+        "imports",
+        "instantiates",
+        "overrides",
+        "references",
+        "uses"
+      ]
+    },
+    "missingByPipelineDiscard": {
+      "total": 0,
+      "byLabel": [],
+      "labelsAbsentFromPipeline": []
+    },
+    "missingByPipelineNoiseFilter": 0,
+    "noiseTargetsHit": [],
+    "unexplained": 8621,
+    "lineChecked": 12126,
+    "lineExact": 12126,
+    "lineWrong": 0,
+    "lineAccuracy": 1
+  },
+  "byLabel": {
+    "calls": {
+      "truth": 5603,
+      "observed": 5603,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "contains": {
+      "truth": 5680,
+      "observed": 5680,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "extends": {
+      "truth": 16,
+      "observed": 16,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "instantiates": {
+      "truth": 1,
+      "observed": 1,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "imports": {
+      "truth": 701,
+      "observed": 701,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    },
+    "exports": {
+      "truth": 125,
+      "observed": 125,
+      "missing": 0,
+      "unexplained": 0,
+      "unexplainedSample": [],
+      "missingSample": [],
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "missingByShape": [],
+  "unexplainedByShape": [
+    {
+      "shape": "uses other",
+      "n": 6013
+    },
+    {
+      "shape": "references other",
+      "n": 2599
+    },
+    {
+      "shape": "overrides other",
+      "n": 9
+    }
+  ],
+  "analyzerAttributableSample": [],
+  "analyzerAttributableUnexplainedSample": [
+    {
+      "label": "references",
+      "from": "global",
+      "target": "run",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_paths",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "extra_rocks",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_server",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testrun_dir",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "get_tmp_path",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "run",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_paths",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "write_file",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "extra_rocks",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_sys_rocks",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "finally",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fixtures_dir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "is",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "TEST_TARGET_OS",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "LUA_V",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "LUAJIT_V",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "no",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "has",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "output",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "TYPE_TEST_ENV",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testrun_dir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "rockspec",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "tmpdir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "c_module_source",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "olddir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "lua_version",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "rocks_tree",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "config",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "rocks_path",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "foo_incdir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "git",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "run",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "output",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "finally",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "env",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "luadir",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_paths",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "lua_version",
+      "rel": "spec/cmd_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "tmpdir",
+      "rel": "spec/cmd_spec.lua"
+    }
+  ],
+  "missingSample": [],
+  "unexplainedSample": [
+    {
+      "label": "references",
+      "from": "global",
+      "target": "run",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_paths",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "extra_rocks",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_server",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testrun_dir",
+      "rel": "spec/add_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "get_tmp_path",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "run",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_paths",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "write_file",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "extra_rocks",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testing_sys_rocks",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "finally",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "fixtures_dir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "is",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "TEST_TARGET_OS",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "LUA_V",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "LUAJIT_V",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "no",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "has",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "output",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "TYPE_TEST_ENV",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "references",
+      "from": "global",
+      "target": "testrun_dir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "rockspec",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "tmpdir",
+      "rel": "spec/build_spec.lua"
+    },
+    {
+      "label": "uses",
+      "from": "global",
+      "target": "c_module_source",
+      "rel": "spec/build_spec.lua"
+    }
+  ],
+  "lineWrongSample": [],
+  "selftest": {
+    "ran": false
+  },
+  "hardFailures": true,
+  "status": "fail"
+}

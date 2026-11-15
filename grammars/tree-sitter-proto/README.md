@@ -98,8 +98,8 @@ tree-sitter build --wasm -o ../../wasm/tree-sitter-protobuf.wasm
 
 `tree-sitter build --wasm` needs emscripten; with only docker present it uses
 `emscripten/emsdk` through docker automatically. The CLI must be ≥ 0.25 for the
-ABI-15 path; the fixtures copy at
-`$HOME/fixtures/node_modules/tree-sitter-cli` is 0.25.1.
+ABI-15 path; the bb_tests copy at
+`/home/ishaq2321/bb_tests/node_modules/tree-sitter-cli` is 0.25.1.
 
 **After regenerating, re-run every gate** — the wasm hash is pinned, and a
 regeneration that changed nothing must not move the recorded digests.

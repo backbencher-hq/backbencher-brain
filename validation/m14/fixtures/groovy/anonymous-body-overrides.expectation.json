@@ -1,0 +1,75 @@
+{
+  "fixtureId": "groovy/anonymous-body-overrides",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 groovy lane (2026-09-25). The override pass reaches a method's parent through `classHierarchy`, keyed by the OWNER's FQN. handleObjectCreationExpression built an anonymous type's symbol, registered its symbolMap key and pushed its scope (with `parents: [superName]`) \u2014 but never wrote the hierarchy entry, so every override TASK inside an anonymous body found no parents at any of the three tiers and emitted nothing at all. Measured at full extent on the 4,014-file grails-core draw: the lane's only MISSING rows were `overrides anonymous_IdentityTypeDecoder.bsonType -> IdentityTypeDecoder.bsonType` (IdentityDecoder.groovy) and `overrides anonymous_TypeDecoder.bsonType -> TypeDecoder.bsonType` (SimpleDecoder.groovy). Note the differential's coverage match is LEAF-based (normTarget = lastSegment), so the sibling `anonymous_X.decode -> X.decode` truth rows were masked by a leaf collision with the analyzer's own superclass-resolution edge `IdentityDecoder.decode -> PropertyDecoder.decode` \u2014 the corpus count under-reported the defect by half, and this fixture pins the TARGET as well as the leaf so a leaf collision can never hide it again. The `Registry.bsonType -> BaseCodec.bsonType` row is the control: the ordinary named-subclass override must be untouched, and it is the shape a fix that repaired the anonymous case by breaking the named one would visibly move.",
+  "expectSymbols": [
+    {
+      "name": "anonymous_TypeCodec",
+      "kind": "class",
+      "ownerName": "Registry",
+      "comment": "the anonymous type is owned by the class whose initialiser constructs it (M49/M37 #867 contract)"
+    },
+    {
+      "name": "TypeCodec",
+      "kind": "interface"
+    },
+    {
+      "name": "BaseCodec",
+      "kind": "class"
+    },
+    {
+      "name": "Registry",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "anonymous_TypeCodec.bsonType",
+      "target": "bsonType",
+      "line_number": 23,
+      "confidenceMin": 0.9,
+      "comment": "the defect: the anonymous body's method overrides the CONSTRUCTED type's member. confidenceMin 0.9 is load-bearing \u2014 a fix that left the hierarchy entry out and relied on the tier-3 first-parent guess would emit this row at 0.5, and the pin must see the difference.",
+      "meta.overriddenOwner": "TypeCodec"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_TypeCodec",
+      "target": "bsonType",
+      "line_number": 23
+    },
+    {
+      "type": "overrides",
+      "from": "Registry.bsonType",
+      "target": "bsonType",
+      "line_number": 27,
+      "comment": "control: the named subclass's own override (same pass, same file) is unchanged",
+      "meta.overriddenOwner": "BaseCodec"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "anonymous_TypeCodec.bsonType",
+      "target": "bsonType",
+      "equals": 1,
+      "comment": "exactly one row per anonymous INSTANTIATION \u2014 the body is its own type and its override is emitted once, at its own line",
+      "meta.overriddenOwner": "TypeCodec"
+    },
+    {
+      "type": "overrides",
+      "equals": 2,
+      "comment": "and the file's total override count is exactly 2: the anonymous body's row plus the named control's"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Registry.bsonType",
+      "target": "bsonType",
+      "comment": "the FLATTENED shape: the anonymous body's method attributed to the enclosing class. Vacuous today (the anon scope owns the method), and pinned for the day the attribution moves \u2014 that shape is what the pre-fix silence would become if the missing hierarchy entry were 'fixed' by widening the owner to the enclosing type instead.",
+      "meta.overriddenOwner": "TypeCodec"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "issue": "M15.XR",
+  "code": "xr2",
+  "tool": "bb_security",
+  "verified": true,
+  "checks": 45,
+  "passed": 45,
+  "failed": 0,
+  "positives": 41,
+  "negatives": 4,
+  "negativePassed": 4,
+  "defect": "A1/A2",
+  "generatedAt": "2026-11-14T21:07:10.525Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-14T21:07:10.525Z",
+    "contentSha256": "cc36011769646d27c77136cd8c8057d45e4cf2d774d2198a0228ae42e23ebb3b"
+  }
+}

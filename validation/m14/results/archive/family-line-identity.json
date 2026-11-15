@@ -1,0 +1,48 @@
+{
+ "schemaVersion": 1,
+ "kind": "m60-family-line-identity",
+ "generatedAt": "2026-09-26T16:52:52.008Z",
+ "basis": "script/m14/tmp/family-line-identity.ts — one two-site snippet per lane (same callee, two lines, one caller). `per-site` means the line is part of the edge identity key (two edges, each with its own line); `per-set` means the key collapses them (the pre-M59.A7 shape). Complements M60.P1/LCM `lines` field-presence with the identity half.",
+ "rows": [
+  {
+   "lane": "erlang",
+   "edges": 2,
+   "lines": [
+    7,
+    8
+   ],
+   "verdict": "per-site",
+   "snippetLines": 10
+  },
+  {
+   "lane": "elixir",
+   "edges": 2,
+   "lines": [
+    5,
+    6
+   ],
+   "verdict": "per-site",
+   "snippetLines": 10
+  },
+  {
+   "lane": "clojure",
+   "edges": 2,
+   "lines": [
+    6,
+    7
+   ],
+   "verdict": "per-site",
+   "snippetLines": 9
+  },
+  {
+   "lane": "haskell",
+   "edges": 2,
+   "lines": [
+    8,
+    9
+   ],
+   "verdict": "per-site",
+   "snippetLines": 10
+  }
+ ]
+}

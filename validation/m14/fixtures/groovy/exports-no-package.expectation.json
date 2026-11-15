@@ -1,0 +1,22 @@
+{
+  "fixtureId": "groovy/exports-no-package",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The REFUSAL arm of the exports edge, pinned because a silent refusal is indistinguishable from a language that has no export surface. Expected values are read off the WRITTEN SOURCE above - no package declaration, one top-level class on line 1 - not off an analyzer run.\n\nA file with no package HAS an exportable unit (`Solo` is importable from the default package by any compilation unit) and has nothing truthful to name as the EXPORTER. `com.acme.exp` names a package that does not exist here. The alternatives are both worse: emitting no edge and saying nothing hides real surface, and emitting an edge sourced at the file stem fabricates a module name that the language does not declare. So the analyzer declines the edge and COUNTS the decline in `metadata.exportsWithNoPackage`, which this fixture pins to 1.\n\nThat counter is the only thing standing between this lane and the ontology gate's own failure mode: an edge type that is absent from a corpus because nothing was emitted, and nobody can say whether the language lacks the construct or the analyzer declined it. Over the measured corpus 266 of 2,825 files are package-less, so the refusal is a real population and not an edge case.\n\n`expectExports` pins that ParseResult.exports STILL carries Solo. The array is the analyzer's own record of the surface and other surfaces read it; the EDGE is a separate channel. A fix that dropped Solo from the array would satisfy `forbidRelationships` below and still lose information.",
+  "expectSymbols": [
+    { "name": "Solo", "kind": "class" },
+    { "name": "go" }
+  ],
+  "expectExports": [
+    { "name": "Solo", "note": "the surface is real and ParseResult.exports still carries it" }
+  ],
+  "forbidExports": [
+    { "name": "go" }
+  ],
+  "expectMetadata": [
+    { "exportsWithNoPackage": 1, "comment": "the declined count, so the absence of an exports edge is attributable" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "note": "nothing truthful names an exporter in a package-less file; a fabricated module name would be counted as fabrication and would poison bb_graph, bb_impact and bb_migrate" }
+  ]
+}

@@ -1,7 +1,7 @@
 # M24 Final Audit — bb_lsp, The Server (IDE Program v0)
 
 Date: 2026-09-02
-Issues: [#487](https://github.com/backbencher-hq/backbencher-brain/issues/487) – [#497](https://github.com/backbencher-hq/backbencher-brain/issues/497) — **all CLOSED**
+Issues: [#487](https://github.com/ishaq2321/backbencher-brain/issues/487) – [#497](https://github.com/ishaq2321/backbencher-brain/issues/497) — **all CLOSED**
 GitHub milestone: `24` — closed, 11/11 issues
 Governing contract: [IDE Honesty Contract](../IDE-HONESTY-CONTRACT.md)
 Program record: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md)

@@ -43,7 +43,7 @@ import { RelationshipType } from "../../../src/ast/types"
 import { collectAllGoFiles, splitTestAndNonTest, strideSample } from "./go-corpus-files"
 
 const WANT = Number(process.argv[2] || 400)
-const CORPUS_ROOT = process.argv[3] || "$HOME/fixtures/repositories/go-stdlib"
+const CORPUS_ROOT = process.argv[3] || "/home/ishaq2321/bb_tests/repositories/go-stdlib"
 const ENUM_VALUES: string[] = [...new Set(Object.values(RelationshipType))]
 const OFF_ENUM_IMPORTS = "imports"
 

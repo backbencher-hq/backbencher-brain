@@ -1,0 +1,78 @@
+{
+  "fixtureId": "objc/selector-attributes",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "OC-ONT-8. An Objective-C method ATTRIBUTE is not part of the selector: `- (instancetype)initWithConfig:(NSDictionary *)config NS_DESIGNATED_INITIALIZER;` declares the selector `initWithConfig:`. The pinned grammar puts `NS_DESIGNATED_INITIALIZER` and `NS_REFINED_FOR_SWIFT` at the TOP LEVEL of the method node as a bare `identifier`, in two positions — after the last `method_parameter`, and after a zero-argument selector — and the selector rule appended it. Measured over the 322 admitted corpus files (2,891 method nodes): 79 nodes in 29 files, 30 distinct polluted selector names (`NS_REFINED_FOR_SWIFT` 62, `NS_DESIGNATED_INITIALIZER` 15, `NS_SWIFT_NOTHROW` 2). A polluted name loses the real symbol, so every message send to the real selector stops resolving to it and `overrides`' first-parent branch can never match it. The fix is POSITIONAL — a selector keyword always owns the `method_parameter` that follows it, so with parameters every leftover top-level identifier is an attribute and with none the first leftover is the zero-argument selector — which means no attribute name is hardcoded: an unknown macro cannot leak and a selector spelled like a macro cannot be dropped. The two attribute spellings the grammar gave their own node type (`NS_UNAVAILABLE` -> availability_attribute_specifier, `__attribute__((...))` -> attribute_specifier) were already safe and are pinned here so a rule change cannot break them.",
+  "expectSymbols": [
+    { "name": "Store", "kind": "class" },
+    { "name": "initWithConfig:", "kind": "method", "ownerName": "Store", "comment": "keyword selector + trailing attribute: the attribute is not part of the name" },
+    { "name": "flushPending:", "kind": "method", "ownerName": "Store", "comment": "a DIFFERENT attribute name behaves identically — which is why no name is hardcoded" },
+    { "name": "purge", "kind": "method", "ownerName": "Store", "comment": "ZERO-ARGUMENT selector + trailing attribute: the first leftover is the selector, not the attribute" },
+    { "name": "cancel", "kind": "method", "ownerName": "Store", "comment": "NS_UNAVAILABLE is an availability_attribute_specifier node, already excluded before this wave" },
+    { "name": "compact", "kind": "method", "ownerName": "Store", "comment": "API_AVAILABLE(...) likewise" },
+    { "name": "describe", "kind": "method", "ownerName": "Store" }
+  ],
+  "forbidSymbols": [
+    { "name": "initWithConfig:NS_DESIGNATED_INITIALIZER", "kind": "method", "comment": "the pre-fix name: an attribute concatenated onto a keyword selector" },
+    { "name": "flushPending:NS_REFINED_FOR_SWIFT", "kind": "method", "comment": "same class, different macro" },
+    { "name": "purgeNS_DESIGNATED_INITIALIZER", "kind": "method", "comment": "the zero-argument form of the same defect" },
+    { "name": "cancelNS_UNAVAILABLE", "kind": "method", "comment": "would be a regression if a name-based rule ever replaced the positional one" },
+    { "name": "NS_DESIGNATED_INITIALIZER", "kind": "method", "comment": "the attribute is never a symbol" },
+    { "name": "NS_REFINED_FOR_SWIFT", "kind": "method", "comment": "same" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "flushPending:",
+      "target": "purge",
+      "line_number": 57,
+      "comment": "the send and the declaration agree on the CLEAN selector, so the symbol resolves — the property that was lost while the declaration was named `purgeNS_DESIGNATED_INITIALIZER`"
+    },
+    {
+      "type": "contains",
+      "source": "Store",
+      "target": "purge",
+      "comment": "the member edge names the real method, not `purgeNS_DESIGNATED_INITIALIZER`"
+    },
+    {
+      "type": "contains",
+      "source": "Store",
+      "target": "initWithConfig:",
+      "comment": "same"
+    },
+    {
+      "type": "calls",
+      "source": "describe",
+      "target": "stringWithFormat:",
+      "meta.reasonCode": "dynamic-dispatch-selector",
+      "comment": "OC-ONT-7's reason code is asserted here too, because the selector rule and the reason-code rule are both stamped in the same pass and a regression in one must not hide the other"
+    },
+    {
+      "type": "overrides",
+      "source": "LoudStore.purge",
+      "target": "Store.purge",
+      "meta.reasonCode": "verified-base-declared-in-file",
+      "comment": "the VERIFIED branch at 0.95: `Store` is declared in this file and declares `purge`. Honesty §4.1 wants a reason code per row, and one code for both branches would call a verification a guess"
+    },
+    {
+      "type": "overrides",
+      "source": "RemoteStore.removeAllObjects",
+      "target": "NSMutableArray.removeAllObjects",
+      "meta.reasonCode": "first-parent-guess",
+      "comment": "the GUESS branch at 0.5 — below the patterns.ts 0.7 threshold, so it is declared suspicion and not a fact. Same declaration shape as the row above, different evidence, so a different code"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "purgeNS_DESIGNATED_INITIALIZER",
+      "comment": "a contains edge carrying the polluted member name reaches the graph as a method that does not exist"
+    },
+    {
+      "type": "calls",
+      "target": "purgeNS_DESIGNATED_INITIALIZER",
+      "comment": "and a call target nothing can resolve"
+    }
+  ],
+  "expectNoParseErrors": true
+}

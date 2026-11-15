@@ -1,0 +1,188 @@
+{
+  "generated": "2026-10-21",
+  "label": "javascript · the PRODUCTION population (--index) · read at the tree that ships",
+  "form": "THE FLEET's COMMON FORM: edges, resolved, residual %, the VERIFIED class, THE JOIN's OWN PRICE, and THE VIEW",
+  "population": "12374 parsed of 12374 sampled (corpus has 12374 .js,mjs,cjs,jsx files across 95 repos; stride sample)",
+  "populationFiles": 12374,
+  "sampled": 12374,
+  "repos": 95,
+  "wholePopulation": true,
+  "edges": 1668129,
+  "resolved": 214262,
+  "residual": 613573,
+  "resolvedPct": 12.8445,
+  "residualPct": 36.7821,
+  "residualSplit": {
+    "ambDecl": 96820,
+    "ambKind": 42165,
+    "unresolved": 474588
+  },
+  "perType": {
+    "calls": [
+      749804,
+      104440
+    ],
+    "uses": [
+      797950,
+      55399
+    ],
+    "contains": [
+      28342,
+      28342
+    ],
+    "imports": [
+      43614,
+      6714
+    ],
+    "references": [
+      1574,
+      157
+    ],
+    "exports": [
+      15863,
+      7615
+    ],
+    "extends": [
+      1736,
+      468
+    ],
+    "implements": [
+      0,
+      0
+    ],
+    "overrides": [
+      4679,
+      4674
+    ],
+    "instantiates": [
+      17993,
+      4671
+    ]
+  },
+  "classSum": {
+    "resolved": 214262,
+    "ambDecl": 96820,
+    "ambKind": 42165,
+    "ambiguous": 96820,
+    "ambiguousKindSubset": 42165,
+    "unresolved": 474588,
+    "extOK": 124234,
+    "bindOK": 758225,
+    "sum": 1668129,
+    "exact": true,
+    "note": "amb(decl) INCLUDES amb(kind) ✓✓ — a row that is ambiguous BY KIND is also ambiguous BY DECLARATION ✓✓ ⇒ THE SUM COUNTS IT ONCE ✓✓."
+  },
+  "intentPartition": {
+    "edges": 1668129,
+    "intended": 33424,
+    "sameFileUnproven": 141293,
+    "arbitraryTwin": 550096,
+    "nothingAnywhere": 943316,
+    "noTarget": 0,
+    "sum": 1668129,
+    "exact": true,
+    "closureLine": "INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges."
+  },
+  "clause1": {
+    "status": "FAIL",
+    "ambiguous": 138985,
+    "unresolved": 474588,
+    "ambiguousOrUnresolved": 613573,
+    "ext": 0,
+    "bind": 0,
+    "refuted": 0
+  },
+  "clause4": {
+    "extFAIL": 0,
+    "bindFAIL": 0,
+    "causeFAIL": 0,
+    "status": "CLEAN"
+  },
+  "verifiedClass": {
+    "question": "A DIFFERENT QUESTION FROM `resolved` ✓✓ — THE CHARTER's §18.2 FORMULA ✓✓ — (resolved + extOK + bindOK) / edges ✓✓, AND this lane's OWN instrument: the D4's COVERED ROWS ✓✓ (the perl cell's own instrument) ✓✓.",
+    "formula": "§18.2 — (resolved + extOK + bindOK) / edges",
+    "value": 65.7456,
+    "components": {
+      "resolved": 214262,
+      "extOK": 124234,
+      "bindOK": 758225
+    },
+    "d4CoveredRows": {
+      "svelte": {
+        "files": 60,
+        "treeTruth": 1059,
+        "covered": 1059,
+        "coveredPct": 100,
+        "missing": 0,
+        "analyzerEdges": 1181,
+        "unexplained": 0,
+        "unexplainedPct": 0,
+        "heuristic": 0,
+        "hash": "b3f5ca3dabe585c8"
+      },
+      "lodash": {
+        "files": 55,
+        "treeTruth": 12819,
+        "covered": 12597,
+        "coveredPct": 98.3,
+        "missing": 222,
+        "analyzerEdges": 24035,
+        "unexplained": 0,
+        "unexplainedPct": 0,
+        "heuristic": 0,
+        "hash": "494e1b94766e8ade"
+      }
+    }
+  },
+  "joinPrice": {
+    "line": "qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 19646 row(s) asked · namespace branch: 0 of 0 row(s) asked (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)",
+    "rows": 0,
+    "why": "THE GATE PRINTED THE JOIN's OWN PRICE IN THIS ARM ✓✓ — AND THE JOIN's SHAPE TEST IS 'THE TARGET CONTAINS A `/`' ✓✓ ⇒ IT CAN REACH ANY PATH-SHAPED TARGET ✓✓, AND JAVASCRIPT PUBLISHES PACKAGE PATHS ✓✓ ⇒ THE PRICE BELOW IS MEASURED, NOT ASSUMED ✓✓."
+  },
+  "view": {
+    "analyzerSha1": "f0ed5629c3f9a88af19d4c0e72018f1681894459",
+    "gateSha1": "60ac928c8e9a194f41f312eb008163e17ce70a02",
+    "arbiterSha1": "dcd41b4c9b68bc4457613cdf181c7de09539a077",
+    "specSha1": "0da9c6cc81a07ac8145d56303d5e7d8a3704623e",
+    "digestsSource": "THE ARM's RUN-TIME VIEW ✓✓ (the digests the arm RAN at, read from the arm's own log) ✓✓",
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "population": "WHOLE POPULATION — 12374 files, 95 repos, NOT A DRAW ✓✓",
+    "projectIndex": "project index: USED — 95 repo index(es) (95 built, 0 from cache, 0 damaged) over 12374 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one).",
+    "commit": "8012ce66f7a84846ba1b27f69f5e62fbd0f3292b",
+    "armLog": "validation/m14/fixtures/javascript/arm-whole-joinprice-2026-10-21.log"
+  },
+  "readSet": {
+    "analyzer": "f0ed5629c3f9a88af19d4c0e72018f1681894459",
+    "gate": "60ac928c8e9a194f41f312eb008163e17ce70a02",
+    "arbiter": "dcd41b4c9b68bc4457613cdf181c7de09539a077",
+    "spec": "0da9c6cc81a07ac8145d56303d5e7d8a3704623e"
+  },
+  "treeDigestsNow": {
+    "analyzer": "0fc3b3a55c14a3cc4892434f768349e29a0d9480a32993b285df1a6c85412a96",
+    "gate": "7ef6b2bfe87435529f5360b2dbf0d8e0ae12bbaea2daf426f2b792215a682790",
+    "arbiter": "230ae242bb2fe67085a79b6cb94ad7ac371bd33f8384595c0a4a71090a8d9161",
+    "spec": "9e26f42be1b222bc7a943d740c77ba1fd689a5bb31417f8dcf0ff83df832cba6"
+  },
+  "alsoMeasured": {
+    "note": "THE NO-INDEX ARM (the D7 arm of record) — READ AT THE GATE BEFORE THE BRANCH SPLIT ✓✓ ⇒ A PRE-MOVE VIEW ✓✓; THE JOIN's PRICE IS 0 IN IT TOO ✓✓ ⇒ THE ARBITER's MOVES DID NOT MOVE JAVASCRIPT's NUMBERS ✓✓.",
+    "arm": "validation/m14/fixtures/javascript/arm-noindex-2026-10-21.log",
+    "noIndexArm": {
+      "edges": 1668129,
+      "resolved": 214262,
+      "unresolved": 494716,
+      "extOK": 104106,
+      "bindOK": 758225,
+      "extFAIL": 0,
+      "bindFAIL": 0,
+      "causeFAIL": 0,
+      "joinPrice": 0
+    }
+  },
+  "populationCensus": {
+    "note": "THE FLEET's DENOMINATOR IS THE CENSUS's COUNT AND THE CELL IS THE GATE's COUNT ✓✓ — THEY ARE MEASURED SEPARATELY, AND THE DIFFERENCE IS NAMED ✓✓.",
+    "onDiskFilesAtTheFarmRoot": 79718,
+    "onDiskMethod": "find -L .corpus -type f \\( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.jsx' \\) | wc -l — SYMLINKS FOLLOWED ✓✓ (the Lead's own census method, reproduced: the SAME 79,718 ✓✓)",
+    "admittedByTheGate": 12374,
+    "whyTheyDiffer": "THE GATE ADMITS A REPO's GIT-TRACKED FILES ✓✓ (incoming-gate.ts: 'Only real git checkouts are corpus' ✓✓ and `git ls-files` ✓✓) AND EXCLUDES node_modules ✓✓; THE CENSUS COUNTS EVERY FILE ON DISK ✓✓ ⇒ FOR JAVASCRIPT THE UNTRACKED AND VENDORED FILES ARE 67,344 OF 79,718 (84.5%) ✓✓ — A JAVASCRIPT REPO's UNTRACKED FILES ARE .js, WHEREAS A JAVA REPO's ARE .class ✓✓, WHICH IS WHY JAVA's GAP IS 1.8% AND JAVASCRIPT's IS 84.5% ✓✓."
+  }
+}

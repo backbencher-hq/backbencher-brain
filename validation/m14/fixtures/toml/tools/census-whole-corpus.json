@@ -1,0 +1,405 @@
+{
+  "command": "npx tsx validation/m14/fixtures/toml/tools/construct-census.ts",
+  "population": {
+    "parsed": 1485,
+    "failed": 0,
+    "walked": 1485,
+    "admitted": 1485,
+    "repos": 77,
+    "wholeCorpus": true
+  },
+  "positiveControl": {
+    "table headers": 4,
+    "pairs": 9,
+    "inline tables": 1,
+    "dotted keys": 5,
+    "arrays": 1,
+    "call-shaped nodes": 0
+  },
+  "vocabularyControl": {
+    "containsNodeTypes": [
+      "dotted_key",
+      "inline_table",
+      "inline_table_repeat1",
+      "pair",
+      "table",
+      "table_array_element"
+    ],
+    "plantedKeywords": {
+      "calls": 1,
+      "extends": 2,
+      "implements": 1,
+      "instantiates": 1,
+      "exports": 1
+    }
+  },
+  "constructs": {
+    "tableHeaders": 7737,
+    "pairs": 19486,
+    "inlineTables": 1341,
+    "dottedKeys": 6852,
+    "arrays": 2280,
+    "callShaped": 0,
+    "distinctNodeTypes": 20
+  },
+  "duplicateKeys": {
+    "documents": 0,
+    "keys": 0,
+    "examples": []
+  },
+  "workspaceInheritance": {
+    "sites": 1269,
+    "documents": 138,
+    "shape": "a pair whose leaf is `workspace` and whose value is the boolean true (`x.workspace = true`)",
+    "status": "OPEN \u2014 the analyzer's alias pass does not walk this shape, so these sites emit no `references` edge"
+  },
+  "relationshipTypes": [
+    {
+      "type": "calls",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    },
+    {
+      "type": "uses",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    },
+    {
+      "type": "contains",
+      "edges": 25033,
+      "files": 1474,
+      "distinctTargets": 7104,
+      "markers": [
+        [
+          "isKeyContainment+tomlSpecific",
+          17296
+        ],
+        [
+          "isArrayOfTables+isTableHeader+tomlSpecific",
+          5622
+        ],
+        [
+          "hasImpliedParents+isArrayOfTables+isTableHeader+tomlSpecific",
+          2115
+        ]
+      ]
+    },
+    {
+      "type": "imports",
+      "edges": 331,
+      "files": 153,
+      "distinctTargets": 137,
+      "markers": [
+        [
+          "dependencySection+isPathDependency+resolvedBy+tomlSpecific",
+          331
+        ]
+      ]
+    },
+    {
+      "type": "references",
+      "edges": 167,
+      "files": 5,
+      "distinctTargets": 84,
+      "markers": [
+        [
+          "aliasKeyPath+isAliasReference+resolvedBy+tomlSpecific",
+          167
+        ]
+      ]
+    },
+    {
+      "type": "exports",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    },
+    {
+      "type": "extends",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    },
+    {
+      "type": "implements",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    },
+    {
+      "type": "overrides",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    },
+    {
+      "type": "instantiates",
+      "edges": 0,
+      "files": 0,
+      "distinctTargets": 0,
+      "markers": []
+    }
+  ],
+  "vocabulary": {
+    "grammar": {
+      "slots": 66,
+      "distinct": 63,
+      "namedSlots": 20,
+      "namedDistinct": 19,
+      "namedDuplicateSlots": 1,
+      "names": [
+        "\"",
+        "\"\"\"",
+        "'",
+        "'''",
+        ",",
+        ".",
+        "=",
+        "[",
+        "[[",
+        "]",
+        "]]",
+        "_basic_string",
+        "_basic_string_repeat1",
+        "_basic_string_token1",
+        "_inline_pair",
+        "_inline_value",
+        "_key",
+        "_line_ending_or_eof",
+        "_literal_string",
+        "_literal_string_token1",
+        "_multiline_basic_string",
+        "_multiline_basic_string_content",
+        "_multiline_basic_string_end",
+        "_multiline_basic_string_repeat1",
+        "_multiline_basic_string_token1",
+        "_multiline_literal_string",
+        "_multiline_literal_string_content",
+        "_multiline_literal_string_end",
+        "_multiline_literal_string_repeat1",
+        "array",
+        "array_repeat1",
+        "array_repeat2",
+        "bare_key",
+        "boolean",
+        "comment",
+        "document",
+        "document_repeat1",
+        "document_repeat2",
+        "document_token1",
+        "dotted_key",
+        "end",
+        "escape_sequence",
+        "float",
+        "float_token1",
+        "float_token2",
+        "inline_table",
+        "inline_table_repeat1",
+        "integer",
+        "integer_token1",
+        "integer_token2",
+        "integer_token3",
+        "integer_token4",
+        "local_date",
+        "local_date_time",
+        "local_time",
+        "offset_date_time",
+        "pair",
+        "quoted_key",
+        "string",
+        "table",
+        "table_array_element",
+        "{",
+        "}"
+      ],
+      "namedNames": [
+        "array",
+        "bare_key",
+        "boolean",
+        "comment",
+        "document",
+        "dotted_key",
+        "escape_sequence",
+        "float",
+        "inline_table",
+        "integer",
+        "local_date",
+        "local_date_time",
+        "local_time",
+        "offset_date_time",
+        "pair",
+        "quoted_key",
+        "string",
+        "table",
+        "table_array_element"
+      ]
+    },
+    "corpus": {
+      "distinct": 20,
+      "names": [
+        "ERROR",
+        "array",
+        "bare_key",
+        "boolean",
+        "comment",
+        "document",
+        "dotted_key",
+        "escape_sequence",
+        "float",
+        "inline_table",
+        "integer",
+        "local_date",
+        "local_date_time",
+        "local_time",
+        "offset_date_time",
+        "pair",
+        "quoted_key",
+        "string",
+        "table",
+        "table_array_element"
+      ],
+      "notInGrammarPin": [
+        "ERROR"
+      ]
+    },
+    "perType": {
+      "contains": {
+        "question": "CONTROL \u2014 a containment production exists in this grammar (table/pair/inline_table/dotted_key)",
+        "grammarNodeTypesMatching": [
+          "dotted_key",
+          "inline_table",
+          "inline_table_repeat1",
+          "pair",
+          "table",
+          "table_array_element"
+        ],
+        "grammarNodeTypesMatchingCount": 6,
+        "corpusNodeTypesMatching": [
+          "dotted_key",
+          "inline_table",
+          "pair",
+          "table",
+          "table_array_element"
+        ],
+        "corpusNodeOccurrencesMatching": 35416,
+        "keySites": 0,
+        "stringValueSites": 0,
+        "referentSites": 0,
+        "keyExamples": []
+      },
+      "calls": {
+        "question": "does the grammar hold ANY node type that could express a call, or a callable to call?",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 1,
+        "stringValueSites": 1,
+        "referentSites": 0,
+        "keyExamples": [
+          "function"
+        ]
+      },
+      "uses": {
+        "question": "is there a TYPE-DECLARATION production \u2014 without one nothing carries a type to be used?",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 0,
+        "stringValueSites": 0,
+        "referentSites": 0,
+        "keyExamples": []
+      },
+      "exports": {
+        "question": "does any production PUBLISH a name to a consumer?",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 174,
+        "stringValueSites": 118,
+        "referentSites": 0,
+        "keyExamples": [
+          "exposed",
+          "module",
+          "publish",
+          "public",
+          "main",
+          "entrypoint"
+        ]
+      },
+      "extends": {
+        "question": "is there an IS-A production, and any corpus key whose string value names a declaration the document makes?",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 14,
+        "stringValueSites": 14,
+        "referentSites": 0,
+        "keyExamples": [
+          "base",
+          "parent",
+          "extend",
+          "template"
+        ]
+      },
+      "implements": {
+        "question": "is there an interface/conformance production, and any corpus key naming an interface?",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 0,
+        "stringValueSites": 0,
+        "referentSites": 0,
+        "keyExamples": []
+      },
+      "instantiates": {
+        "question": "is there a CONSTRUCTION production, and any corpus key naming a constructor?",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 0,
+        "stringValueSites": 0,
+        "referentSites": 0,
+        "keyExamples": []
+      },
+      "overrides": {
+        "question": "is there a RE-DECLARATION production that REPLACES? (the duplicate-key probe above counts the corpus side)",
+        "grammarNodeTypesMatching": [],
+        "grammarNodeTypesMatchingCount": 0,
+        "corpusNodeTypesMatching": [],
+        "corpusNodeOccurrencesMatching": 0,
+        "keySites": 0,
+        "stringValueSites": 0,
+        "referentSites": 0,
+        "keyExamples": []
+      }
+    }
+  },
+  "fired": [
+    "contains",
+    "imports",
+    "references"
+  ],
+  "silent": [
+    "calls",
+    "uses",
+    "exports",
+    "extends",
+    "implements",
+    "overrides",
+    "instantiates"
+  ]
+}

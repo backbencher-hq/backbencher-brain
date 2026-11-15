@@ -1,0 +1,222 @@
+{
+  "fixtureId": "groovy/interpolation-reads-g7",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M49 ledger G7, closed 2026-09-15. Groovy string interpolation was invisible to the graph: the grammar extends Java, so it inherited Java's `string_fragment` (`token.immediate(prec(1, /[^\"\\\\]+/))` — everything except `\"` and `\\`, which INCLUDES `$` and `{`) and Java's `string_interpolation` (`'\\{' … '}'`, Java's text-block form, which Groovy source never contains). No interpolated expression could reach the analyzer: `${user.name}` produced NO read, `${obj.method()}` NO call, and the raw-nested-quote subset did not even parse. Corpus size, source-matched over grails-core @ a83f8748 (7,701 groovy-surface files): 2,115 files (27.5%) contain interpolation, 13,830 sites, each contributing 0 relationships. MEASURED PRE/POST ON THIS EXACT FILE, identical instrument, only `wasm/tree-sitter-groovy.wasm` differing: PRE 8 symbols / 15 relationships, POST 9 / 22 — the missing symbol is `typeMap` (the parenthesised ARRAY-TYPE map key, also closed by this round) and the missing edges are the six pinned below. The fixture is one file so every control sits beside its claim: the CONTRACT is (a) a FREE name in interpolation is a READ, (b) a name the current callable BINDS is not a graph node and must NOT be read, (c) a member or call inside a string behaves EXACTLY as the same expression outside it (so `registry.lookup(\"G7\")` emits its `calls` edge and does NOT additionally leak a `uses` for its callee), and (d) SINGLE-quoted strings never interpolate. Both directions are asserted: expectRelationships catches a dropped branch, forbidRelationships catches a missing gate — which is what the naive fixes produce (reading `$count` where `count` is a parameter, or `$it` inside a closure, fabricates an edge for a name that has no symbol at all). `authoredBeforeAnalyzerRun` is false because the expectation is read off the corrected emission; the pre-fix measurement above is the provenance.",
+  "expectSymbols": [
+    {
+      "name": "Notifier",
+      "kind": "class"
+    },
+    {
+      "name": "templateField",
+      "kind": "property",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "style",
+      "kind": "property",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "control",
+      "kind": "method",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "nestedBinding",
+      "kind": "method",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "implicitIt",
+      "kind": "method",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "optionTag",
+      "kind": "method",
+      "ownerName": "Notifier"
+    },
+    {
+      "name": "typeMap",
+      "kind": "method",
+      "ownerName": "Notifier",
+      "note": "PRE-FIX this symbol did not exist: `[(Byte[]): v]` was an ERROR and the class body's tail was lost with it"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "templateField",
+      "line_number": 23,
+      "note": "the `${…}` long form: a free member name is a READ"
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "style",
+      "line_number": 23,
+      "note": "the `$name` short form in the SAME string — both syntaxes, one line, so they cannot diverge unnoticed"
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "name",
+      "line_number": 24,
+      "note": "`${user.name}`: the member is read by the field-access walk, whose line is the leaf's"
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "notify",
+      "line_number": 24,
+      "note": "`${user.notify()}`: the CALL is emitted by the call walk — the same edges inside a string as outside it"
+    },
+    {
+      "type": "uses",
+      "from": "nestedBinding",
+      "target": "templateField",
+      "line_number": 41,
+      "note": "a free read in a method that also contains a closure, so the binding climb cannot stop at the closure"
+    },
+    {
+      "type": "uses",
+      "from": "slashyFilter",
+      "target": "templateName",
+      "line_number": 76,
+      "note": "SLASHY: the `${templateName}` inside /…/ is the same read it would be inside \"…\" — one contract for every interpolating form, both syntaxes pinned on one line (shape copied from GspTagSourceMacro.groovy:70)"
+    },
+    {
+      "type": "calls",
+      "from": "optionTag",
+      "target": "lookup",
+      "line_number": 62,
+      "note": "the raw-nested-quote string (`selected=\"selected\"` inside the `${}` body) now parses, and its inner call is real"
+    },
+    {
+      "type": "calls",
+      "from": "slashyFilter",
+      "target": "isEmpty",
+      "line_number": 77,
+      "note": "CONTROL: the slashy method's ordinary call still comes from the call walk"
+    },
+    {
+      "type": "calls",
+      "from": "implicitIt",
+      "target": "collect",
+      "line_number": 48,
+      "note": "CONTROL: a call on the same line outside any interpolation, unchanged by the fix"
+    },
+    {
+      "type": "calls",
+      "from": "implicitIt",
+      "target": "join",
+      "line_number": 48
+    },
+    {
+      "type": "contains",
+      "from": "Notifier",
+      "target": "typeMap",
+      "line_number": 85,
+      "note": "the array-type map key parses, so the member survives — pre-fix the whole tail of the class was lost"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "local",
+      "note": "a name render BINDS with `def local` — a read here is the fabrication every `\"$local\"` in the corpus would produce"
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "count",
+      "note": "a parameter of render: bound, so not a graph node"
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "user",
+      "note": "a parameter again — the RECEIVER of `user.name` is not itself a read"
+    },
+    {
+      "type": "uses",
+      "from": "nestedBinding",
+      "target": "outerLocal",
+      "note": "bound by a `def` in the nested closure; the climb must pass through the closure AND still suppress it"
+    },
+    {
+      "type": "uses",
+      "from": "implicitIt",
+      "target": "it",
+      "note": "a closure's implicit `it` is bound without being written down — the single most common Groovy interpolation, and the one a naive fix turns into thousands of phantom edges"
+    },
+    {
+      "type": "uses",
+      "from": "optionTag",
+      "target": "label",
+      "note": "parameter"
+    },
+    {
+      "type": "uses",
+      "from": "optionTag",
+      "target": "selected",
+      "note": "parameter"
+    },
+    {
+      "type": "uses",
+      "from": "optionTag",
+      "target": "registry",
+      "note": "parameter / call receiver"
+    },
+    {
+      "type": "uses",
+      "from": "optionTag",
+      "target": "lookup",
+      "note": "a callee is not a read — java/kotlin/scala and the #852 ruling all suppress it"
+    },
+    {
+      "type": "uses",
+      "from": "slashyFilter",
+      "target": "end",
+      "note": "the slashy ANCHOR control: `/end$/` must stay literal — a read here means the fix interpolates regex end-anchors and would corrupt every /x$/ pattern in the corpus"
+    },
+    {
+      "type": "uses",
+      "from": "slashyFilter",
+      "target": "isEmpty",
+      "note": "the callee of `className.isEmpty()` is the call walk's, so it leaks no read"
+    },
+    {
+      "type": "uses",
+      "from": "slashyFilter",
+      "target": "className",
+      "note": "the BOUND slashy case: `className` is the method's own parameter, so a `$name` in a slashy string must not read it — the binding test governs both string forms"
+    },
+    {
+      "type": "uses",
+      "from": "control",
+      "target": "templateField",
+      "note": "NEGATIVE CONTROL: `'${templateField} $style'` is SINGLE-quoted, so Groovy never interpolates it — a read here means the fix reads the text of a plain string"
+    },
+    {
+      "type": "uses",
+      "from": "control",
+      "target": "style"
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "name",
+      "note": "a member read emitted as a CALL (the #851 class, re-asserted where a string is involved)"
+    }
+  ]
+}

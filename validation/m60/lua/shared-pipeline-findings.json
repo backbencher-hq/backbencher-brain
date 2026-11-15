@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "shared_pipeline_findings_for_owner_decision",
+  "at": "2026-09-26",
+  "from": "M60 lua lane",
+  "status": "AWAITING OWNER DECISION — deliberately not patched",
+  "whyNotPatched": "Both live in src/ast/pool-worker.ts, which is shared by every language lane and was observed modified in the working tree by a co-agent working another language throughout this work. A lane unilaterally patching the shared pipeline while other lanes are mid-flight is how lines get lost and how two lanes end up making contradictory edits to the same filter. These are written up with a measured impact, a proposed fix, and the blast radius, so the owner can decide rather than inherit a surprise.",
+  "theRuleBothViolate": "M60 Truth Rule 1 — a fact a reader cannot check is not a fact. Both findings are the same shape: a decision made in a shared filter that silently removes information a user would otherwise see, with no record of the removal and no signal downstream that anything was dropped.",
+
+  "findings": [
+    {
+      "id": "LUA-14",
+      "title": "Exports are computed by every analyzer and discarded at the worker boundary",
+      "severity": "critical",
+      "scope": "ALL LANGUAGES — not lua-specific",
+      "evidence": {
+        "contract": "src/ast/engine.ts:337 declares `exports?: ExportInfo[]` as part of ParseResult.",
+        "producer": "RealLuaAnalyzer fills ctx.exports and returns it in its ParseResult.",
+        "consumer": "src/ast/pool-worker.ts:499-504 and 636-641 build the worker's return object from success, language, framework, fileHash, sizeBytes, lastModified, symbols, imports, relationships, errors. `exports` is absent from both. The only occurrences of the string in the whole 754-line file are two comments (lines 510 and 523, the latter inside the JS_GLOBALS denylist).",
+        "measured_lua": "luvit 199 files: 31 of 31 export edges missing, recall 0.000. kong 400-file draw: 215 of 215 missing, recall 0.000."
+      },
+      "user_impact": "A Lua module publishes its API with `return M`, so this is the relationship kind a Lua user is most likely to navigate by, and none of it arrives. The same loss applies to every language whose analyzer populates exports.",
+      "proposed_fix": "Map `exports: parsed.exports ?? []` into the worker's return object alongside `imports`, and decide whether the store has a table for it. Two sub-decisions the owner should make explicitly rather than have a lane guess: (a) whether an absent exports array is a declared limitation or silently tolerated, and (b) whether exports should also become relationships (an `exports` edge kind) or remain a separate structure like imports.",
+      "risk_of_fixing": "Low mechanically, unknown in blast radius. The mapping itself is one line. The risk is that some consumer downstream currently compensates for the absence, and a consumer that was written against 'exports never arrive' may start double-counting once they do.",
+      "verification_if_fixed": "script/m60/lua-truth-oracle.ts already carries `exports` as a measured label and currently reports recall 0.0 with precision 1.0 — it will move to recall 1.0 and the gate needs no new instrument. A cross-language check should follow, since this is not a lua defect.",
+      "falsifier": "If some analyzer already routes exports by another path, this finding is wrong. Checked: grep for `exports` in pool-worker.ts returns only comments and the denylist, and the worker's own return object does not carry the key."
+    },
+    {
+      "id": "LUA-16",
+      "title": "The AST-noise denylist deletes real relationships, in every language",
+      "severity": "high",
+      "scope": "ALL LANGUAGES",
+      "evidence": {
+        "definition": "src/ast/pool-worker.ts:341-357 defines NOISE_TARGETS (32 entries) to stop tree-sitter AST internals leaking into relationship targets.",
+        "application": "Line 418, inside the general `rels.filter(...)` — so it applies to EVERY relationship type, not only `calls`.",
+        "collisions": "The set contains `type`, `text` and `parent`. `type` is a Lua BUILTIN. `text` is an extremely common identifier in real code. `parent` is common in OO code. The set cannot distinguish a tree-sitter Node property from a language identifier, because they are the same strings.",
+        "measured_lua": "luvit 199 files: 127 relationships dropped, targets hit `parent`, `text`, `type`. kong 400-file draw: 499 dropped, same three targets. 626 relationships across 599 files.",
+        "consequence_for_recall": "This single filter is the reason lua's calls recall reads 0.9477 on kong: 118 of luvit's 123 missing calls and 391 of kong's 413 are `type(...)` calls deleted here, not analyzer gaps."
+      },
+      "user_impact": "Every `type(x)` call — one of the most-used functions in Lua — is absent from the graph. Any `contains` edge for a variable named `type`, `text` or `parent` is absent too, so those symbols have no ownership edge. The same collision will hit any language with a builtin or common identifier named `type`.",
+      "proposed_fix": "Three options, in increasing order of work and decreasing order of risk. The owner should pick, because each has a different failure mode:",
+      "options": [
+        {
+          "id": "A",
+          "change": "Scope the denylist per language. Keep `type`/`text`/`parent` blocked where they are genuinely AST internals, unblocked where the language defines them.",
+          "pro": "Most precise. A `type` call in Lua survives; a leaked Node property still does not.",
+          "con": "Requires a per-language table, and someone must decide the membership for all 49 lanes. That is a large, opinionated surface — exactly what this lane was told not to settle unilaterally.",
+          "risk": "Getting a lane's membership wrong either lets noise through or blocks a real name."
+        },
+        {
+          "id": "B",
+          "change": "Keep the denylist but make it a POST-HOC check on the NODE the target came from, rather than on the string: a target is noise only if the analyzer read it off a Node's own property name.",
+          "pro": "Structural, so it is right for every language by construction and needs no per-language table.",
+          "con": "The relationship is already a string by the time it reaches the filter — the provenance is gone. This requires the marker to be set upstream where the node is still in hand, which is a real change across analyzers.",
+          "risk": "Analyzers that do not set the marker would be silently unfiltered, so noise returns for those lanes until they are updated."
+        },
+        {
+          "id": "C",
+          "change": "Narrow the set to entries that are not plausible identifiers in any supported language, and move the rest to a documented, measured residual.",
+          "pro": "Smallest change, immediately reversible, and it names what is being given up rather than hiding it.",
+          "con": "Still a judgement about which names are 'plausible' — a smaller judgement, but a judgement.",
+          "risk": "Low. Worst case a noisy name survives for one language."
+        }
+      ],
+      "recommendation": "C now, B as the structural fix, A only if a language actually needs per-language membership. C is honest because it converts a silent deletion into a recorded, revisitable one, which is what the contract asks for either way.",
+      "verification_if_fixed": "script/m60/lua-truth-oracle.ts already separates `missingByPipelineNoiseFilter` from `missingFromAnalyzer` and names the targets hit. After any fix, the noise-filter column must go to 0 and the analyzer-miss count must RISE by the same number — if the analyzer count does not rise, the edges were not restored and something else swallowed them. That arithmetic is the check.",
+      "falsifier": "If the 626 dropped edges are deliberate — a design decision that a `type` call is not worth recording — then this is not a defect but a declared limitation, and the honest fix is to record it as one with the measured count. Nothing in the codebase currently records it, which is the part that is certainly wrong."
+    }
+  ],
+
+  "whatTheLaneDidInstead": "Both were measured rather than argued, the measurements are in validation/m60/results/lua-truth-oracle-{luvit,kong-400}.json, and both are separated out of the analyzer's verdict so they cannot be mistaken for analyzer quality. The analyzer's own numbers are reported WITHOUT them: precision 1.000 on every label on both corpora, lines exact on 26,915 edges across 599 files, and 22 analyzer-attributable missing edges in kong's 400-file draw.",
+
+  "theOneAsymmetryWorthNoting": "The lua lane's own numbers now depend on these two fixes for their FINAL recall, but not for their validity. Precision 1.000 and line accuracy 1.000 are unaffected by either, because a dropped edge cannot be an unsupported one and cannot carry a wrong line. That is the useful property of reporting the pipeline's losses separately from the analyzer's: the analyzer's standing can be established without waiting on a shared-file decision."
+}

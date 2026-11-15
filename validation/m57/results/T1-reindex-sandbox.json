@@ -1,0 +1,28 @@
+{
+  "probe": "M57.T1-reindex-sandbox",
+  "issue": 789,
+  "milestone": "M57",
+  "at": "2026-09-12T21:45:04.077Z",
+  "commit": "",
+  "files": 3327,
+  "indexErrors": 1,
+  "before": {
+    "flaggedFiles": 30,
+    "allJson": true,
+    "classifiedEdges": 0,
+    "source": "validation/m50/results/A2-test-sources.json"
+  },
+  "after": {
+    "flaggedFiles": 0,
+    "flaggedByLanguage": [],
+    "nonCodeFlagged": 0,
+    "nonCodeSamples": [],
+    "classifiedEdgesFromFlagged": 0,
+    "samples": []
+  },
+  "verdict": {
+    "nonCodeFlaggedIsZero": true,
+    "corpusIsNonZero": false,
+    "evidenceEdgesExist": false
+  }
+}

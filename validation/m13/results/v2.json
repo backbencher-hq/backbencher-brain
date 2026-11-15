@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.45",
+  "code": "V2",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: node/link fidelity + no dropped edges + truncation",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "fidelity: no dangling links",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "fidelity: provenance names the stored rows it projects",
+      "pass": true,
+      "detail": "stored-symbol-and-relationship-rows"
+    },
+    {
+      "name": "fidelity: the node cut and the budget cut are separate counters",
+      "pass": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
+    },
+    {
+      "name": "fidelity: the misleading `omittedDanglingLinks` name is gone [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "source,indexedProject,linksOmittedWithNodeCut,linksOmittedByBudget"
+    },
+    {
+      "name": "fidelity: nothing is cut when every node is retained [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
+    },
+    {
+      "name": "truncation: nodes bounded",
+      "pass": true,
+      "detail": "2"
+    },
+    {
+      "name": "truncation: links bounded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "truncation: truncated=true",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "truncation: reason=output limits",
+      "pass": true,
+      "detail": "output limits"
+    },
+    {
+      "name": "truncation: orig>=shown",
+      "pass": true,
+      "detail": "4"
+    },
+    {
+      "name": "truncation: not truncated with large budget",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "truncation: never truncated when budget sufficient [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "false"
+    },
+    {
+      "name": "scope: module -> src/api",
+      "pass": true,
+      "detail": "src/api/handlers.ts"
+    },
+    {
+      "name": "scope: symbol -> parse",
+      "pass": true,
+      "detail": "parse"
+    },
+    {
+      "name": "scope: feature runs",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "scope: file -> engine.ts",
+      "pass": true,
+      "detail": "src/core/engine.ts"
+    },
+    {
+      "name": "node cut: the loss is attributed to the node cut",
+      "pass": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":1,\"linksOmittedByBudget\":0}"
+    },
+    {
+      "name": "node cut: `maxLinks` cut nothing, so the set is NOT reported truncated by it [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "truncated=false budget=0 maxLinks=5000"
+    },
+    {
+      "name": "budget cut: a link budget below the edge set IS reported as a relationship cut",
+      "pass": true,
+      "detail": "{\"provenance\":{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":4},\"truncated\":true}"
+    },
+    {
+      "name": "budget cut: the two counters are not the same number [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":4}"
+    },
+    {
+      "name": "node cut: the text does not blame maxLinks for the node cut [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "edges: 0 relationship(s) connect the selected symbols — complete for this node set; 1 more attached only to nodes the node cut removed"
+    },
+    {
+      "name": "node cut: the text names the cut it made",
+      "pass": true,
+      "detail": "edges: 0 relationship(s) connect the selected symbols — complete for this node set; 1 more attached only to nodes the node cut removed"
+    },
+    {
+      "name": "node cut: the text provenance line names both counters",
+      "pass": true,
+      "detail": "provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=1 links-omitted-by-budget=0"
+    },
+    {
+      "name": "budget cut: the text says maxLinks did it, with the count",
+      "pass": true,
+      "detail": "edges: 5 relationship(s) connect the selected symbols — complete for this node set, then cut by maxLinks (4 withdrawn)"
+    }
+  ],
+  "negativeCases": 6,
+  "summary": {
+    "total": 24,
+    "passed": 24,
+    "failed": 0
+  },
+  "decisions": {
+    "noDangling": "no link references a missing node",
+    "budgets": "maxNodes/maxLinks enforced, truncation truthful",
+    "scopes": "module/symbol/feature/file filter correctly"
+  },
+  "limitations": [
+    "Small fixture; large graphs bounded by LIMIT queries."
+  ],
+  "generatedAt": "2026-11-05T04:20:09.514Z"
+}

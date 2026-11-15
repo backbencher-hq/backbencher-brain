@@ -1,6 +1,6 @@
 {
   "analyzer": "clojure",
-  "corpus": "$HOME/fixtures/repositories/clojure",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/clojure",
   "corpusRepo": "clojure",
   "revision": "2cea69253b9ed27436e93632b9a27c2f99088a49",
   "extensions": [

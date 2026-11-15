@@ -1,0 +1,161 @@
+{
+  "checks": [
+    {
+      "description": "THIS lane's own analyzer and spec are this commit's",
+      "detail": "src/ast/real-scala-analyzer.ts, script/m14/spec/scala-completeness.json clean at head 51a8afc8a6",
+      "id": "differential-lane-code-inputs",
+      "status": "pass"
+    },
+    {
+      "description": "the SHARED oracle/harness that produced these rows is this commit's",
+      "detail": "shared harness clean at head 51a8afc8a6",
+      "id": "differential-harness-code-inputs",
+      "status": "pass"
+    },
+    {
+      "description": "scala: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=4008 tree-truth=331656 covered=331656 (100%) MISSING=0 | analyzer-edges=197804 unexplained=0 (0%) heuristic=4652 hash=0b6c7f829f2fc59c",
+      "id": "differential-scala",
+      "status": "pass"
+    },
+    {
+      "description": "cats-effect:scala: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=457 tree-truth=35930 covered=35930 (100%) MISSING=0 | analyzer-edges=20354 unexplained=0 (0%) heuristic=289 hash=c01e1ca71e3443ce",
+      "id": "differential-cats-effect:scala",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "51a8afc8a604ccf46ba7488a3b08acf6e8d1e596",
+  "committedAt": "2026-10-01T23:05:43-04:00",
+  "corpusPins": {
+    "cats-effect": "91c8115dbb4975a31a442979c74223b92c50edaa",
+    "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db"
+  },
+  "data": {
+    "codeInputs": {
+      "clean": true,
+      "dirty": [],
+      "head": "51a8afc8a604ccf46ba7488a3b08acf6e8d1e596",
+      "laneDirt": [],
+      "otherDirt": [],
+      "ownInputs": [
+        "src/ast/real-scala-analyzer.ts",
+        "script/m14/spec/scala-completeness.json"
+      ],
+      "sharedDirt": [],
+      "sharedInputs": [
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts"
+      ]
+    },
+    "report": {
+      "scala": {
+        "analyzerEdges": 197804,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 331656,
+        "explainableByTree": 193152,
+        "fabricationPct": 0,
+        "filesSampled": 4008,
+        "heuristicUnexplained": 4652,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 12,
+          "loadAvg1": 2.78,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 802.3,
+          "samplesTimed": 4008
+        },
+        "sampleSetHash": "0b6c7f829f2fc59c",
+        "samples": [],
+        "treeTruthEdges": 331656,
+        "unexplainedInAnalyzer": 0
+      }
+    },
+    "samplingRule": "seeded 4008 files/language, scoped to scala",
+    "scope": "scala",
+    "scoped": true,
+    "secondCorpus": {
+      "mapping": {
+        "c": "jq",
+        "clean": "clean-stdlib",
+        "clojure": "clj-kondo",
+        "cpp": "nlohmann-json",
+        "csharp": "fsharp",
+        "css": "grails-core",
+        "dart": "dart-http",
+        "elixir": "phoenix",
+        "erlang": "otp",
+        "go": "terraform",
+        "groovy": "geb",
+        "haskell": "hledger",
+        "html": "sqlite",
+        "java": "clojure",
+        "javascript": "lodash",
+        "kotlin": "kotlinx-coroutines",
+        "markdown": "kubernetes",
+        "objc": "afnetworking",
+        "php": "phpmyadmin",
+        "powershell": "ansible",
+        "python": "requests",
+        "ruby": "rack",
+        "rust": "cargo",
+        "scala": "cats-effect",
+        "svelte": "shadcn-svelte",
+        "swift": "alamofire",
+        "toml": "ripgrep",
+        "typescript": "element-plus",
+        "vue": "vue-element-admin",
+        "yaml": "ansible",
+        "zig": "zls"
+      },
+      "report": {
+        "cats-effect:scala": {
+          "analyzerEdges": 20354,
+          "coveragePct": 100,
+          "coveredByAnalyzer": 35930,
+          "explainableByTree": 20065,
+          "fabricationPct": 0,
+          "filesSampled": 457,
+          "heuristicUnexplained": 289,
+          "missingInAnalyzer": 0,
+          "perf": {
+            "avgMsPerFile": 11,
+            "loadAvg1": 2.76,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 209.6,
+            "samplesTimed": 457
+          },
+          "sampleSetHash": "c01e1ca71e3443ce",
+          "samples": [],
+          "treeTruthEdges": 35930,
+          "unexplainedInAnalyzer": 0
+        }
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5.scala",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "LANE-SCOPED artifact: this run measured 2 lane(s) (scala, cats-effect:scala), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane."
+    },
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "the code-input check is scoped to this lane's producers (src/ast/real-scala-analyzer.ts, script/m14/spec/scala-completeness.json, script/m14/differential.ts, script/m14/evidence-harness.ts); 0 OTHER measured input(s) are dirty in this checkout from other lanes () and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts"
+    }
+  ],
+  "regeneratedAt": "2026-10-02T03:08:14.224Z",
+  "regeneratedAtCommit": "51a8afc8a604ccf46ba7488a3b08acf6e8d1e596",
+  "runtime": "node v22.22.1",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness, LANE-SCOPED (scala: scala, cats-effect:scala) — NOT the canonical 43-language claim"
+}

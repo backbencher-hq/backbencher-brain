@@ -1,0 +1,136 @@
+{
+ "fixtureId": "scala/import-rename-clause",
+ "language": "scala",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "JOB 2's `imports` type, third measurement. The adjudicator (script/m14/tmp/scala-type-adjudicator.ts, an independent walker over the parse tree) reported `imports (file) -> treeBuilder.global.unit.global` and `-> treeBuilder.global.unit.unit` as ANALYZER-ONLY for `import treeBuilder.{global => _, unit => _}` (src/compiler/scala/reflect/quasiquotes/Parsers.scala:107). The cause is that handleImport pushed EVERY renamed segment into one module path, so two renames concatenated into `treeBuilder.global.unit`, reached three surfaces (the references target, ImportInfo.path, and the imports edges, where each selector was then appended again), and produced names no package has. Measured over the corpus: 63 clauses carry two or more renames and 103 selectors are the exclusion form `X => _`. An EXCLUSION is a name the import WITHHOLDS, so publishing it as a dependency asserts the opposite of what the statement says; the grammar spells its alias as a `wildcard` node, which is how the two forms are told apart. The single-rename form is deliberately unchanged because master-owned evidence pins it (ground-truth/scala.json + differential.ts importPathOf), and the two plain controls pin that the fix did not disturb them. The single-segment join was a second finding from the same instrument: the edge builder joined a selector onto the module path only when the path was already dotted, so the SHAPE of the import decided the precision of the edge. A third measurement from the same instrument: the dependency base is per GROUP of a Scala 3 multi-clause import, because `import sbt._, Keys._` is two dependencies and the single module path concatenates them into `sbt.Keys`. 149 multi-clause declarations on the corpus. One forbid row was RETIRED rather than fixed: `a selector list names the MEMBERS, not the bare package` stopped being assertable in this file once it also carried `import scala.collection.mutable, scala.collection.immutable`, where depending on the package IS the statement. Two rows in one fixture that contradict each other is the unassertable-expectation failure the runner warns about, and the fix is to drop the weaker one and say so.",
+ "expectSymbols": [
+  {
+   "name": "ImportRenames",
+   "kind": "module"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable.Field",
+   "note": "the first renamed name, under the package"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable.Method",
+   "note": "the second renamed name \u2014 a SEPARATE dependency, never the two concatenated (`scala.collection.mutable.Field.Method` is a package that does not exist)"
+  },
+  {
+   "type": "imports",
+   "target": "treeBuilder",
+   "note": "a clause of exclusions only: the dependency is the PACKAGE"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.immutable",
+   "note": "the single-rename form, unchanged \u2014 pinned by validation/m12/ground-truth/scala.json"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable.ListBuffer",
+   "note": "plain selector control"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable.ArrayBuffer",
+   "note": "plain selector control"
+  },
+  {
+   "type": "imports",
+   "target": "scala.concurrent.duration",
+   "note": "wildcard control: `_` is the whole package, never a name to append"
+  },
+  {
+   "type": "imports",
+   "target": "Scaladoc.Parser",
+   "note": "a single-segment module path joins exactly like a dotted one: the shape of the import must not decide the precision of the edge"
+  },
+  {
+   "type": "imports",
+   "target": "Scaladoc.Utils",
+   "note": "same clause, second member"
+  },
+  {
+   "type": "imports",
+   "target": "sbt",
+   "note": "multi-clause: the FIRST group is its own dependency"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.immutable",
+   "note": "multi-clause after a selector group: the trailing bare path is a dependency too (Global.scala:19)"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable.ArrayBuffer",
+   "note": "the trailing group's own path \u2014 Global.scala:19 imported `StandardCharsets.UTF_8` this way and the dependency edge was missing for the whole group"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.ListBuffer",
+   "note": "the second member of the first group \u2014 a selector list names MEMBERS, each one its own dependency"
+  },
+  {
+   "type": "imports",
+   "target": "mutable.ArrayBuffer",
+   "note": "the trailing group's own path, joined like any other single-segment group"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable",
+   "note": "the FIRST group of a two-path import \u2014 dropping it loses a dependency the statement states (CompilationUnits.scala:17)"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "scala.collection.mutable.Field.Method",
+   "note": "the concatenated path \u2014 the exact defect the adjudicator found"
+  },
+  {
+   "type": "imports",
+   "target": "treeBuilder.global",
+   "note": "an EXCLUDED name is not a dependency"
+  },
+  {
+   "type": "imports",
+   "target": "treeBuilder.unit",
+   "note": "ditto"
+  },
+  {
+   "type": "imports",
+   "target": "treeBuilder.global.unit",
+   "note": "the concatenated exclusion path"
+  },
+  {
+   "type": "imports",
+   "target": "treeBuilder.global.unit.global",
+   "note": "the doubled edge this statement published before the fix"
+  },
+  {
+   "type": "imports",
+   "target": "Parser",
+   "note": "the bare member name names no package \u2014 `Scaladoc.Parser` is the dependency"
+  },
+  {
+   "type": "imports",
+   "target": "Utils",
+   "note": "ditto"
+  },
+  {
+   "type": "imports",
+   "target": "sbt.Keys",
+   "note": "two wildcard clauses concatenated: `sbt.Keys` is a name no package has"
+  },
+  {
+   "type": "imports",
+   "target": "scala.collection.immutable.mutable.ArrayBuffer",
+   "note": "the same concatenation across a selector group and a trailing path"
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "nim_analyzer_phase_profile",
+  "note": "Attribution WITHIN the analyzer, measured with hrtime over a warmed run — not a CPU sample. A sampling profile of this analyzer mis-reports it as idle because tree-sitter's WASM work does not attribute to JS frames. This artifact is NOT the corpus throughput record (script/m12/nim-corpus-measure.ts is) and the two must not be conflated.",
+  "repo": "/home/ishaq2321/bb_tests/repositories/nim",
+  "files": 200,
+  "mib": 0.71,
+  "symbols": 2737,
+  "relationships": 6908,
+  "split": {
+    "parseMs": 1446,
+    "analyzeMs": 5035,
+    "parseSharePct": 22.3,
+    "parseMibPerSec": 0.49,
+    "analyzeMsPerFile": 25.18,
+    "analyzeSymbolsPerSec": 544
+  },
+  "phasesMs": {
+    "collectDocModulesAndComplexity": 750,
+    "collectDeclarations": 1637,
+    "collectCallsAndUses (calls+uses+instantiates+declaredTypeRefs)": 2444,
+    "makeDeclaredTypeRefHelpers (once per file, amortised)": 0,
+    "nimCyclomaticComplexity (per callable body)": 690,
+    "collectContainment": 3,
+    "collectInheritance+Overrides": 4
+  },
+  "phasePct": {
+    "collectDocModulesAndComplexity": 13.6,
+    "collectDeclarations": 29.6,
+    "collectCallsAndUses (calls+uses+instantiates+declaredTypeRefs)": 44.2,
+    "makeDeclaredTypeRefHelpers (once per file, amortised)": 0,
+    "nimCyclomaticComplexity (per callable body)": 12.5,
+    "collectContainment": 0.1,
+    "collectInheritance+Overrides": 0.1
+  },
+  "treeWalks": 3,
+  "treeWalkNote": "Every phase above except the symbol-table pair is a SEPARATE full-tree walk. Fusing them is the available speedup, and the walks are the cost."
+}

@@ -1,0 +1,91 @@
+{
+  "fixtureId": "swift/renders-view-body",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "renders (R3, no grammar change, landed 2026-10-23): a View type's `var body: some View` names the component the type renders \u2014 the dart lane's `build`-returns-`Widget` shape (real-dart-analyzer.ts:4274), copying its return-type host discriminator and its top-level-expression-only refusal. Both halves of the trigger are structural and measured over the whole admitted population (validation/m14/fixtures/swift/m14-swift-extended-census-output.txt): 85 `var body: some View` sites over 38 files, 72 View conformances over 38 files. Tier usage_contextual, matching all four existing renders lanes.",
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "source": "CardView",
+      "target": "VStack",
+      "line_number": 11,
+      "note": "the positive host: the body's TOP-LEVEL DSL call names the rendered component; line 11 is the VStack call site"
+    },
+    {
+      "type": "renders",
+      "source": "RowView",
+      "target": "NavigationLink",
+      "line_number": 22,
+      "note": "the top-level expression is NavigationLink \u2014 the rendered tree's root"
+    },
+    {
+      "type": "instantiates",
+      "source": "RowView",
+      "target": "DetailView",
+      "line_number": 22,
+      "comment": "THE ARGUMENT REFUSAL: DetailView() inside the argument list keeps its ordinary instantiates row \u2014 only the top-level expression is the render"
+    },
+    {
+      "type": "instantiates",
+      "source": "CardView",
+      "target": "Text",
+      "line_number": 12,
+      "comment": "a CHILD of the rendered tree stays its existing instantiates row"
+    },
+    {
+      "type": "renders",
+      "source": "HelperView",
+      "target": "Group",
+      "line_number": 43,
+      "note": "the real body fires; the `helper` member fires nothing (non-body refusal)"
+    },
+    {
+      "type": "renders",
+      "source": "ScalarView",
+      "target": "Text",
+      "line_number": 55,
+      "note": "the scalar-refusal host: the Int member is not a render site and the typed `var body: some View` still is \u2014 the two must-nots are pinned as forbids"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "source": "Builder",
+      "target": "VStack",
+      "comment": "THE NON-HOST REFUSAL: a `body` property on a type that does NOT conform to View is not a rendering host (the protobuf-builder impostor shape)"
+    },
+    {
+      "type": "renders",
+      "source": "HelperView",
+      "target": "VStack",
+      "comment": "THE NON-BODY REFUSAL: `var helper: some View` is not the type's rendering entry point; only `body` is"
+    },
+    {
+      "type": "renders",
+      "source": "RowView",
+      "target": "DetailView",
+      "comment": "an argument-position construction is never the rendered component \u2014 the dart 'not the returned expression' refusal"
+    },
+    {
+      "type": "renders",
+      "source": "CardView",
+      "target": "Text",
+      "comment": "a child of the rendered tree is not what the body renders"
+    },
+    {
+      "type": "renders",
+      "target": "Int",
+      "comment": "THE SCALAR REFUSAL: a member whose declared type is not `some View` (here `Int`) is never a rendered component \u2014 the target surface is view TYPES the body's top-level call names, not property types"
+    },
+    {
+      "type": "renders",
+      "source": "FunctionView",
+      "comment": "THE FUNCTION REFUSAL: `func makeView() -> some View` is not the type's rendering entry point; only the `body` PROPERTY is the structural render site"
+    },
+    {
+      "type": "renders",
+      "source": "GenericBox",
+      "comment": "THE GENERIC NON-HOST REFUSAL: a generic container that does not conform to View is not a rendering host, whatever its `body` property says"
+    }
+  ]
+}

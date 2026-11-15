@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:c",
+  "fixtureDir": "validation/m12/fixtures/c",
+  "corpusDir": "/home/ishaq2321/bb_tests/repositories/zig",
+  "corpusManifest": {
+    "corpusDir": "/home/ishaq2321/bb_tests/repositories/zig",
+    "fileCount": 400,
+    "extensions": [
+      ".c"
+    ],
+    "extensionFiltered": true,
+    "minBytes": 1024,
+    "maxBytes": 1048576,
+    "limit": 400,
+    "totalBytes": 2012891,
+    "avgBytes": 5032,
+    "maxFileBytes": 107701,
+    "setDigest": "07cb4b7f997b820c"
+  },
+  "nproc": 8,
+  "loadRule": "#909: a complexity row is only scorable with its load context and its file set. Each run records loadAvg1 after a bounded wait for load <= quietLoadTarget; loadQuiet=false means the box was busy and the throughput numbers are advisory. corpusManifest records the set digest, size distribution and extension filter, so a number can be re-derived instead of trusted. A row whose manifest.extensionFiltered is false measures EVERY file in the directory under this language's name.",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:c",
+        "wallTimeMs": 481.354023,
+        "userCpuMs": 400.872,
+        "systemCpuMs": 240.921,
+        "peakRssBytes": 253517824,
+        "rssDeltaBytes": 211378176,
+        "databaseBytes": null,
+        "files": 4,
+        "symbols": 49,
+        "relationships": 49,
+        "filesPerSecond": 8.30989211447808,
+        "symbolsPerSecond": 101.79617840235647,
+        "relationshipsPerSecond": 101.79617840235647,
+        "loadAvg1": 3.98,
+        "loadAvgRetried": true,
+        "loadWaitedMs": 10001,
+        "quietLoadTarget": 4,
+        "loadQuiet": true,
+        "userCpuMsPerFile": 100.218
+      },
+      "symbols": 49,
+      "relationships": 49
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:c",
+        "wallTimeMs": 6514.785911,
+        "userCpuMs": 10754.691,
+        "systemCpuMs": 837.781,
+        "peakRssBytes": 322580480,
+        "rssDeltaBytes": 61878272,
+        "databaseBytes": null,
+        "files": 400,
+        "symbols": 3205,
+        "relationships": 14214,
+        "filesPerSecond": 61.39879429109302,
+        "symbolsPerSecond": 491.9578392573828,
+        "relationshipsPerSecond": 2181.80615513399,
+        "loadAvg1": 3.9,
+        "loadAvgRetried": false,
+        "loadWaitedMs": 0,
+        "quietLoadTarget": 4,
+        "loadQuiet": true,
+        "userCpuMsPerFile": 26.886727500000003
+      },
+      "symbols": 3205,
+      "relationships": 14214
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-08T00:38:12.169Z",
+    "contentSha256": "45f3fcf2ba3f8e038675ccea6736ac4e6ed95c00ec28134505e2b8d6664f34e4"
+  }
+}

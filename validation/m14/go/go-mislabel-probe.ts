@@ -28,7 +28,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { collectAllGoFiles, splitTestAndNonTest, strideSample } from "./go-corpus-files"
 
 const WANT = Number(process.argv[2] || 600)
-const CORPUS_ROOT = process.argv[3] || "$HOME/fixtures/repositories/go-stdlib"
+const CORPUS_ROOT = process.argv[3] || "/home/ishaq2321/bb_tests/repositories/go-stdlib"
 
 function named(n: any): any[] {
   const out: any[] = []

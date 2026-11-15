@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/ontology-no-inheritance.erl",
+  "authoredFrom": "Erlang's own reference manual on behaviours and callbacks, and the corpus measurement in script/m60/erlang-construct-probe.ts over 3,939 admitted .erl/.hrl files (otp 36e371a4 + elixir 73b3325, one parse each, no sampling). Two ontology types are RULED here and this fixture is what stops the ruling from being prose. The workstream exists because `overrides` was missing from Bash for a whole wave behind a prose justification while the differential stayed green: the analyzer omitted it, the oracle was written after the ruling, and nothing agrees with nothing. So every construct a probe MEASURED as the nearest thing to the ruled types is written here, and every one of them must produce NO edge. The line numbers are read off the file; the claims are read off Erlang semantics, not off analyzer output — the positive rows below were each checked against what the language says before the analyzer was run.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "ontology_no_inheritance", "kind": "module", "note": "the file names itself; nothing is derived from the filename anywhere in this fixture" },
+    { "name": "own", "kind": "function", "meta.isCallback": true, "meta.definedHere": true, "meta.definitionLine": 59, "note": "ER-D30: `-callback own/0` at 48 AND `own/0` at 59 declare ONE identity, so there is ONE symbol and no second member for an edge to point at. `definitionLine` keeps the contract's line without moving the declaration's own." },
+    { "name": "needed", "kind": "function", "meta.isCallback": true, "meta.definedHere": true, "meta.definitionLine": 69, "note": "same merge, arity 1" },
+    { "name": "state", "kind": "type", "meta.arity": 0, "note": "`-type state/0`, a TYPE declaration" },
+    { "name": "impl", "kind": "function", "meta.arity": 1, "meta.clauseCount": 1 },
+    { "name": "alt", "kind": "function", "meta.arity": 0, "meta.clauseCount": 2, "note": "ONE symbol for two bodies in two `-ifdef`/`-else` branches. `clauseCount: 2` is where the multiplicity lives: exactly one body survives preprocessing, neither replaces the other, and there is no second member to point an edge at." }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "ontology_no_inheritance", "target": "sample_behaviour", "line_number": 42, "meta.behaviour": "sample_behaviour", "note": "the MODULE-level fact `-behaviour` states, at the behaviour atom's own line" },
+    { "type": "exports", "from": "ontology_no_inheritance", "target": "impl", "line_number": 44, "meta.exportForm": "export", "meta.arity": 1 },
+    { "type": "exports", "from": "ontology_no_inheritance", "target": "alt", "line_number": 44, "meta.exportForm": "export", "meta.arity": 0 },
+    { "type": "exports", "from": "ontology_no_inheritance", "target": "own", "line_number": 44, "meta.exportForm": "export", "meta.arity": 0 },
+    { "type": "exports", "from": "ontology_no_inheritance", "target": "state", "line_number": 46, "meta.exportForm": "export_type", "meta.isTypeExport": true, "note": "a published TYPE is a different declaration form from a published function" },
+    { "type": "references", "from": "needed", "target": "term", "line_number": 50, "meta.context": "type reference", "note": "a `-callback` SIGNATURE names types; this is a dependency of `needed`, not of the module" },
+    { "type": "references", "from": "state", "target": "term", "line_number": 52, "meta.context": "type reference", "note": "`-type state() :: {ok, term()} | error.` APPLIES term/0. Erlang type syntax is a DEPENDENCY graph: a bare atom there is an atom LITERAL (`error`), and only an applied name (`term()`) is a type use. This is the nearest thing Erlang has to a supertype clause and it is labelled `references`, never `extends`." },
+    { "type": "references", "from": "impl", "target": "term", "line_number": 65, "meta.context": "type reference", "note": "the `-spec` annotating `impl/1`" },
+    { "type": "calls", "from": "impl", "target": "needed", "line_number": 67, "meta.callArity": 1, "note": "a local call resolving against the file's declared name/arity set" },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "own", "line_number": 59, "note": "ER-D30: `contains` follows the DEFINITION (59), not the `-callback` contract (48)" },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "needed", "line_number": 69, "note": "ditto" },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "state", "line_number": 52 },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "impl", "line_number": 66 },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "alt", "line_number": 77, "note": "the FIRST branch's definition line; the symbol spans both" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "note": "RULED, and this fixture carries every construct a corpus probe measured as a candidate. A type-only forbid row is the strongest form of this assertion: NO edge of this label may exist in this file at all, whatever its endpoints." },
+    { "type": "extends", "note": "RULED. Instrument A: the pinned wasm's own table defines 137 named node types (132 distinct), 0 abstract supertype/subtype edges and 52 fields, and NONE of 23 inheritance-shaped node types and none of those 52 fields is in either. Instrument B: 0 inheritance-shaped attributes in 3,939 files." },
+    { "type": "instantiates", "note": "there is no `#record{}` anywhere in this file — `-type state() :: {ok, term()}` is a tuple, not a record — so the class has nothing to construct" },
+    { "type": "overrides", "from": "impl", "target": "needed", "note": "the behaviour-callback supply is REAL and MEASURED (378 `-callback` declarations, 572 `-behaviour` sites, 2,548 identities supplied by exact name AND arity) but it is not an `overrides` edge here: `sample_behaviour`'s callbacks live in another file, and the cross-file channels this repository ships carry bare NAMES, which cannot decide a name/arity identity" },
+    { "type": "overrides", "from": "own", "target": "own", "note": "a `-callback` merged with its own definition is ONE symbol (ER-D30), so this edge would be `own -> own`: a self-loop carrying no information" },
+    { "type": "overrides", "from": "alt", "target": "alt", "note": "two `-ifdef`/`-else` bodies are ALTERNATIVE implementations, not one replacing the other. Exactly one survives preprocessing. The multiplicity is already published as `meta.clauseCount: 2`." },
+    { "type": "extends", "from": "state", "target": "term", "note": "a type APPLYING another type is a dependency (`references`), never a subtype relation. Publishing it as `extends` is the fabricated edge the workstream warns about." },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "sample_behaviour", "note": "a behaviour is a CONTRACT, not a member: ER-D6 gives it the edge only and never a symbol" },
+    { "type": "contains", "from": "ontology_no_inheritance", "target": "term", "note": "a type from another file (or from the type vocabulary) is a reference, not a member of this module" }
+  ],
+  "forbidSymbols": [
+    { "name": "sample_behaviour", "note": "ER-D6: `-behaviour(B)` emits the edge and never a symbol — there is no interface declaration to own" },
+    { "name": "ontology-no-inheritance", "note": "no module name is synthesised from the filename; the file's own `-module` line names it" }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -31,7 +31,7 @@
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 3,\n      line = 16\n    },\n    start = {\n      character = 2,\n      line = 13\n    }\n  },\n  uri = \"file://$HOME",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 3,\n      line = 16\n    },\n    start = {\n      character = 2,\n      line = 13\n    }\n  },\n  uri = \"file:///home/is",
       "name": "S6: definition resolves",
       "ok": true
     },
@@ -65,7 +65,7 @@
           "line": 13
         }
       },
-      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig"
+      "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig"
     },
     "documentSymbol": [
       {
@@ -290,7 +290,7 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\npublic method greet(self: Greeter)\n```\n\ntype: unknown _(not resolved — the engine answered `void` at high confidence, but the tree shows no valueless return and no explicit void annotation — that answer means the grammar's return form was not recognized, so it is withheld)_\n\n**greet** — method, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.zig:22](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A4%2C%22character%22%3A27%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig:14](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D))_"
+        "value": "```\npublic method greet(self: Greeter)\n```\n\ntype: unknown _(not resolved — the engine answered `void` at high confidence, but the tree shows no valueless return and no explicit void annotation — that answer means the grammar's return form was not recognized, so it is withheld)_\n\n**greet** — method, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.zig:22](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A4%2C%22character%22%3A27%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig:14](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fzig%2Fmain.zig%22%2C%22line%22%3A13%2C%22character%22%3A2%7D%5D))_"
       },
       "data": {
         "provenance": {
@@ -317,7 +317,7 @@
             "structural",
             "usage_contextual"
           ],
-          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig",
           "freshnessStatus": "fresh",
           "indexedFileCount": 2,
           "lineEnd": 17,
@@ -390,7 +390,7 @@
             "line": 21
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig"
       },
       {
         "range": {
@@ -403,7 +403,7 @@
             "line": 13
           }
         },
-        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig"
+        "uri": "file:///home/ishaq2321/mcp/backbencher-brain/script/m29/wave-fixtures/zig/main.zig"
       }
     ],
     "workspaceAbsence": []

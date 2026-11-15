@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M60 X7: a reference into a namespace this document imports. The reference
+     precedes the import, which is the ordinary spelling. -->
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:lib="http://schemas.example.org/library"
+        targetNamespace="urn:example:reader">
+  <element name="entry" type="lib:CT_Entry"/>
+  <attribute ref="lib:sz"/>
+  <import namespace="http://schemas.example.org/library" schemaLocation="library.xsd"/>
+  <element name="lost" type="absent:CT_Nowhere"/>
+</schema>

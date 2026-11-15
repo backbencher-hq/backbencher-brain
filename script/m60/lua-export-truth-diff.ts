@@ -16,7 +16,7 @@ import { readFileSync, readdirSync } from "node:fs"
 // Derived from this file's own location. Hardcoding the main checkout made this
 // script unreadable from a lane worktree.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const REPOS = "$HOME/fixtures/repositories"
+const REPOS = "/home/ishaq2321/bb_tests/repositories"
 const CORPUS = process.argv.includes("--luvit") ? "luvit" : "kong"
 
 const { loadWebTreeSitter } = await import(REPO + "/src/util/wasm")

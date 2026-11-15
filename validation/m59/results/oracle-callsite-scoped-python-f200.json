@@ -1,0 +1,3279 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-22T01:25:06.291Z",
+  "atCommit": "5fdb568ca3af239e365221530138728c4271f840",
+  "treeModifiedInputs": 35,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 200,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "python:postgrest/nix/tools/generate_targets.py",
+    "token": "time",
+    "trueLine": 13,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "python": {
+      "files": 200,
+      "rels": 17781,
+      "withLine": 17781,
+      "noLine": 0,
+      "consistent": 17781,
+      "inconsistent": 0,
+      "notCheckable": 0
+    }
+  },
+  "sampleHash": {
+    "python": "6503f4f961f1"
+  },
+  "samplePins": {
+    "python": [
+      {
+        "file": "postgrest/nix/tools/generate_targets.py",
+        "contentSha": "e713a13d8d51"
+      },
+      {
+        "file": "postgrest/test/io/config.py",
+        "contentSha": "117e97c191c6"
+      },
+      {
+        "file": "postgrest/test/io/conftest.py",
+        "contentSha": "f11844a0901f"
+      },
+      {
+        "file": "postgrest/test/io/postgrest.py",
+        "contentSha": "7cc9cb21b723"
+      },
+      {
+        "file": "postgrest/test/io/test_admin.py",
+        "contentSha": "c09af8789bfd"
+      },
+      {
+        "file": "postgrest/test/io/test_big_schema.py",
+        "contentSha": "a8e44144ca10"
+      },
+      {
+        "file": "postgrest/test/io/test_cli.py",
+        "contentSha": "fed802a22713"
+      },
+      {
+        "file": "postgrest/test/io/test_config.py",
+        "contentSha": "a54b56a8541b"
+      },
+      {
+        "file": "postgrest/test/io/test_connection.py",
+        "contentSha": "be9b930eae05"
+      },
+      {
+        "file": "postgrest/test/io/test_graceful_shutdown.py",
+        "contentSha": "a3841144f085"
+      },
+      {
+        "file": "postgrest/test/io/test_log.py",
+        "contentSha": "1b96004668c7"
+      },
+      {
+        "file": "postgrest/test/io/test_pg_internal.py",
+        "contentSha": "57975efd9797"
+      },
+      {
+        "file": "postgrest/test/io/test_reloading.py",
+        "contentSha": "dbe2239eed0b"
+      },
+      {
+        "file": "postgrest/test/io/test_replica.py",
+        "contentSha": "c8fb6766a25e"
+      },
+      {
+        "file": "postgrest/test/io/test_sanity.py",
+        "contentSha": "b6eb74a9581e"
+      },
+      {
+        "file": "postgrest/test/io/test_settings.py",
+        "contentSha": "faf59c89ae57"
+      },
+      {
+        "file": "postgrest/test/io/test_zero_downtime.py",
+        "contentSha": "b8aa395185dd"
+      },
+      {
+        "file": "postgrest/test/io/util.py",
+        "contentSha": "c727349a0e49"
+      },
+      {
+        "file": "proxicall/.copilot-tools/brain_wrapper.py",
+        "contentSha": "0a6824cb8b47"
+      },
+      {
+        "file": "proxicall/.copilot-tools/business_god_level_fixer.py",
+        "contentSha": "deba22d683c5"
+      },
+      {
+        "file": "proxicall/.copilot-tools/find_row_violations.py",
+        "contentSha": "bf495441bd4a"
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_email_verification.py",
+        "contentSha": "dba1e3452632"
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_hardcoded_colors.py",
+        "contentSha": "e1cf73fe6c00"
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_l10n_todos.py",
+        "contentSha": "411c4f57cc0a"
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_text_maxlines.py",
+        "contentSha": "f7eefb71cd72"
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_text_maxlines_v2.py",
+        "contentSha": "1c70fa2542c1"
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_undefined_vars.py",
+        "contentSha": "bbfd19f9c2d0"
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_audit.py",
+        "contentSha": "3e32d1754510"
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_bulk_fix.py",
+        "contentSha": "d40e093102d0"
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_bulk_fix_v2.py",
+        "contentSha": "f93ed138b2f1"
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_guarantee.py",
+        "contentSha": "63d45e53348d"
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_v2.py",
+        "contentSha": "1739687c25e1"
+      },
+      {
+        "file": "proxicall/_dev/add_full_day_names.py",
+        "contentSha": "e5986afc7131"
+      },
+      {
+        "file": "proxicall/_dev/fix_day_short_translations.py",
+        "contentSha": "7605dd10543c"
+      },
+      {
+        "file": "proxicall/_dev/fix_discovery_l10n.py",
+        "contentSha": "71976b8470bb"
+      },
+      {
+        "file": "proxicall/_dev/generate_icon.py",
+        "contentSha": "5707c0260a93"
+      },
+      {
+        "file": "proxicall/_dev/generate_map_icons.py",
+        "contentSha": "f4a556e80ef6"
+      },
+      {
+        "file": "proxicall/_dev/m16_2819_evidence_summary.py",
+        "contentSha": "0b8e11d6c874"
+      },
+      {
+        "file": "proxicall/_dev/m17b_2873_dumpfields.py",
+        "contentSha": "6db2104f2219"
+      },
+      {
+        "file": "proxicall/_dev/m17b_2873_find_edittext.py",
+        "contentSha": "ca9e98b151b9"
+      },
+      {
+        "file": "proxicall/_dev/m17b_2873_find_node.py",
+        "contentSha": "4bb1547f2e6f"
+      },
+      {
+        "file": "proxicall/_dev/m17b_2874_mutation_proofs.py",
+        "contentSha": "406e5dc2a2c9"
+      },
+      {
+        "file": "proxicall/_dev/m17b_2928_mutation_proofs.py",
+        "contentSha": "0be3babfdfcf"
+      },
+      {
+        "file": "proxicall/_dev/m17b_3030_mutation_proofs.py",
+        "contentSha": "f7ee2cad5977"
+      },
+      {
+        "file": "proxicall/_dev/m17b_3030_update_hero_copy.py",
+        "contentSha": "c710886c03ce"
+      },
+      {
+        "file": "proxicall/_dev/m17b_3031_mutation_proofs.py",
+        "contentSha": "c21334ec8196"
+      },
+      {
+        "file": "proxicall/_dev/m17b_l10n_splice_new_keys.py",
+        "contentSha": "2a473ee2b7ec"
+      },
+      {
+        "file": "proxicall/_dev/m22_2927_channel_mute.py",
+        "contentSha": "83e04b20cc64"
+      },
+      {
+        "file": "proxicall/_dev/m22_2927_channel_probe.py",
+        "contentSha": "cb9c09768cf2"
+      },
+      {
+        "file": "proxicall/_dev/rewrite_about_pages.py",
+        "contentSha": "4ec2cfe8abb0"
+      },
+      {
+        "file": "proxicall/database/verify_fms_price_anchor_doc.py",
+        "contentSha": "47a259f4e696"
+      },
+      {
+        "file": "proxicall/database/verify_schema_snapshot.py",
+        "contentSha": "784854e8aa37"
+      },
+      {
+        "file": "proxicall/ios/Flutter/ephemeral/flutter_lldb_helper.py",
+        "contentSha": "05cfe3977fde"
+      },
+      {
+        "file": "proxicall/ml_models/test_model.py",
+        "contentSha": "88a6ea2d252f"
+      },
+      {
+        "file": "proxicall/ml_models/train_engagement_model.py",
+        "contentSha": "9b6c108ec84c"
+      },
+      {
+        "file": "proxicall/scripts/add_translations.py",
+        "contentSha": "395bcedb0d59"
+      },
+      {
+        "file": "proxicall/tools/brain/adaptive_learning_engine.py",
+        "contentSha": "aaf27d885837"
+      },
+      {
+        "file": "proxicall/tools/brain/adaptive_learning_wrapper.py",
+        "contentSha": "190298b30319"
+      },
+      {
+        "file": "proxicall/tools/brain/advanced_error_detector.py",
+        "contentSha": "b8b321ed71f7"
+      },
+      {
+        "file": "proxicall/tools/brain/advanced_error_wrapper.py",
+        "contentSha": "26c4a935f4cf"
+      },
+      {
+        "file": "proxicall/tools/brain/api_validator.py",
+        "contentSha": "310739aefd6e"
+      },
+      {
+        "file": "proxicall/tools/brain/architectural_impact_radar.py",
+        "contentSha": "b311b98e3158"
+      },
+      {
+        "file": "proxicall/tools/brain/architectural_radar_wrapper.py",
+        "contentSha": "197e7ae6f686"
+      },
+      {
+        "file": "proxicall/tools/brain/auth_gate_analyzer.py",
+        "contentSha": "530af093f1a0"
+      },
+      {
+        "file": "proxicall/tools/brain/brain_performance_integration.py",
+        "contentSha": "463984ba78ea"
+      },
+      {
+        "file": "proxicall/tools/brain/brain_performance_optimizer.py",
+        "contentSha": "768e898aeb3c"
+      },
+      {
+        "file": "proxicall/tools/brain/brain_session_manager.py",
+        "contentSha": "026af0ca945d"
+      },
+      {
+        "file": "proxicall/tools/brain/brain_session_wrapper.py",
+        "contentSha": "bbcde3288e1b"
+      },
+      {
+        "file": "proxicall/tools/brain/bridge_mapper.py",
+        "contentSha": "38473a08210e"
+      },
+      {
+        "file": "proxicall/tools/brain/brutal_stress_test.py",
+        "contentSha": "c62e5be7c61b"
+      },
+      {
+        "file": "proxicall/tools/brain/brutal_stress_test_context_ranker.py",
+        "contentSha": "3e428dc9c45e"
+      },
+      {
+        "file": "proxicall/tools/brain/commit_test_mapper.py",
+        "contentSha": "8a3af362f2be"
+      },
+      {
+        "file": "proxicall/tools/brain/complexity_tracker.py",
+        "contentSha": "8ab5f7758689"
+      },
+      {
+        "file": "proxicall/tools/brain/context_preload_wrapper.py",
+        "contentSha": "28c6ff700089"
+      },
+      {
+        "file": "proxicall/tools/brain/context_preloader.py",
+        "contentSha": "8db5e45345e5"
+      },
+      {
+        "file": "proxicall/tools/brain/context_ranker.py",
+        "contentSha": "51ecdc117126"
+      },
+      {
+        "file": "proxicall/tools/brain/coupling_analyzer.py",
+        "contentSha": "4f5d0d4b17cd"
+      },
+      {
+        "file": "proxicall/tools/brain/coverage_analyzer.py",
+        "contentSha": "0180e807bcf3"
+      },
+      {
+        "file": "proxicall/tools/brain/cross_system_understanding_engine.py",
+        "contentSha": "8df98e592b23"
+      },
+      {
+        "file": "proxicall/tools/brain/cross_system_wrapper.py",
+        "contentSha": "a2a6730506cb"
+      },
+      {
+        "file": "proxicall/tools/brain/cve_scanner.py",
+        "contentSha": "476ec11ee5a0"
+      },
+      {
+        "file": "proxicall/tools/brain/dart_deep_analyzer.py",
+        "contentSha": "fb91fa4651e5"
+      },
+      {
+        "file": "proxicall/tools/brain/dead_code_analyzer.py",
+        "contentSha": "c203a0acaf87"
+      },
+      {
+        "file": "proxicall/tools/brain/dead_flag_detector.py",
+        "contentSha": "aa11bd8f987f"
+      },
+      {
+        "file": "proxicall/tools/brain/debug_integration.py",
+        "contentSha": "cdbd0c3d0d12"
+      },
+      {
+        "file": "proxicall/tools/brain/development_pattern_learner.py",
+        "contentSha": "5755201d9c74"
+      },
+      {
+        "file": "proxicall/tools/brain/emily_pattern_analyzer.py",
+        "contentSha": "a0f60a995c18"
+      },
+      {
+        "file": "proxicall/tools/brain/emily_pattern_wrapper.py",
+        "contentSha": "845c0f807a67"
+      },
+      {
+        "file": "proxicall/tools/brain/enhanced_semantic_search.py",
+        "contentSha": "97a3db93bbc8"
+      },
+      {
+        "file": "proxicall/tools/brain/feature_flag_analyzer.py",
+        "contentSha": "49ea40b0bdf4"
+      },
+      {
+        "file": "proxicall/tools/brain/final_production_validation.py",
+        "contentSha": "5d58a0cd00b0"
+      },
+      {
+        "file": "proxicall/tools/brain/find_react_components.py",
+        "contentSha": "dda413efbf0e"
+      },
+      {
+        "file": "proxicall/tools/brain/firebase_puller.py",
+        "contentSha": "39cb650e0c0d"
+      },
+      {
+        "file": "proxicall/tools/brain/graph_query.py",
+        "contentSha": "1d769fea2178"
+      },
+      {
+        "file": "proxicall/tools/brain/impact_analyzer.py",
+        "contentSha": "de29dc2328e0"
+      },
+      {
+        "file": "proxicall/tools/brain/indexer.py",
+        "contentSha": "dabbaf54c298"
+      },
+      {
+        "file": "proxicall/tools/brain/indexer_guard.py",
+        "contentSha": "7dc4c0faee21"
+      },
+      {
+        "file": "proxicall/tools/brain/init_schema.py",
+        "contentSha": "18f8df259e0c"
+      },
+      {
+        "file": "proxicall/tools/brain/intelligent_context.py",
+        "contentSha": "09de059a7eb9"
+      },
+      {
+        "file": "proxicall/tools/brain/intelligent_context_tool.py",
+        "contentSha": "916b1c944ae9"
+      },
+      {
+        "file": "proxicall/tools/brain/js_usage_tracker.py",
+        "contentSha": "5b7ba410b428"
+      },
+      {
+        "file": "proxicall/tools/brain/l10n_enforcer.py",
+        "contentSha": "9a00ad49fe3c"
+      },
+      {
+        "file": "proxicall/tools/brain/l10n_purger.py",
+        "contentSha": "f43c4eb8b9a9"
+      },
+      {
+        "file": "proxicall/tools/brain/memory_guard.py",
+        "contentSha": "114adbf80494"
+      },
+      {
+        "file": "proxicall/tools/brain/migration_analyzer.py",
+        "contentSha": "938fd95c0420"
+      },
+      {
+        "file": "proxicall/tools/brain/multimodal_indexer.py",
+        "contentSha": "5e4f32ef07fe"
+      },
+      {
+        "file": "proxicall/tools/brain/multimodal_query.py",
+        "contentSha": "e0985965e7c1"
+      },
+      {
+        "file": "proxicall/tools/brain/n_plus_one_detector.py",
+        "contentSha": "90c88489d72c"
+      },
+      {
+        "file": "proxicall/tools/brain/performance_analyzer.py",
+        "contentSha": "eb2e8589b3fd"
+      },
+      {
+        "file": "proxicall/tools/brain/pii_tracker.py",
+        "contentSha": "f31718a3081f"
+      },
+      {
+        "file": "proxicall/tools/brain/predictive_engine_wrapper.py",
+        "contentSha": "fc6ffb40cad5"
+      },
+      {
+        "file": "proxicall/tools/brain/production_telemetry.py",
+        "contentSha": "ae58504ee44a"
+      },
+      {
+        "file": "proxicall/tools/brain/production_telemetry_wrapper.py",
+        "contentSha": "e897cd962482"
+      },
+      {
+        "file": "proxicall/tools/brain/qualify_calls.py",
+        "contentSha": "131241b7b174"
+      },
+      {
+        "file": "proxicall/tools/brain/query_optimizer.py",
+        "contentSha": "05255090e0b0"
+      },
+      {
+        "file": "proxicall/tools/brain/report_generator.py",
+        "contentSha": "d03eb907a1ad"
+      },
+      {
+        "file": "proxicall/tools/brain/sdk/python/brain_sdk.py",
+        "contentSha": "2e36d9ec8b1c"
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_embeddings.py",
+        "contentSha": "23eae8ca5a03"
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_quick_index.py",
+        "contentSha": "f3e9e80aec35"
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_search_tool.py",
+        "contentSha": "f0936b3036f6"
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_search_tool_backup.py",
+        "contentSha": "b38eec6952b1"
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_search_tool_working.py",
+        "contentSha": "fb4450b47e0f"
+      },
+      {
+        "file": "proxicall/tools/brain/sentinel.py",
+        "contentSha": "6e19656b8aa2"
+      },
+      {
+        "file": "proxicall/tools/brain/sentinel_v1_backup.py",
+        "contentSha": "3da6b72d32e5"
+      },
+      {
+        "file": "proxicall/tools/brain/sentry_puller.py",
+        "contentSha": "cb0851dd76ff"
+      },
+      {
+        "file": "proxicall/tools/brain/similarity_analyzer.py",
+        "contentSha": "3f76d3bf8d62"
+      },
+      {
+        "file": "proxicall/tools/brain/smart_test_generation_engine.py",
+        "contentSha": "84be61f3a4b0"
+      },
+      {
+        "file": "proxicall/tools/brain/smart_test_generator_wrapper.py",
+        "contentSha": "7281173fefe3"
+      },
+      {
+        "file": "proxicall/tools/brain/stripe_puller.py",
+        "contentSha": "6e8a80adf4fc"
+      },
+      {
+        "file": "proxicall/tools/brain/system_interaction_analyzer.py",
+        "contentSha": "238b94739689"
+      },
+      {
+        "file": "proxicall/tools/brain/system_interaction_wrapper.py",
+        "contentSha": "a80a875f9948"
+      },
+      {
+        "file": "proxicall/tools/brain/system_tiered_index.py",
+        "contentSha": "82a73c6369b9"
+      },
+      {
+        "file": "proxicall/tools/brain/taint_analyzer.py",
+        "contentSha": "b2b495e27a26"
+      },
+      {
+        "file": "proxicall/tools/brain/test_brain_performance_optimizer.py",
+        "contentSha": "a601257b49fb"
+      },
+      {
+        "file": "proxicall/tools/brain/test_context_ranker.py",
+        "contentSha": "2754ea59a261"
+      },
+      {
+        "file": "proxicall/tools/brain/test_context_ranker_simple.py",
+        "contentSha": "21c5acab37c0"
+      },
+      {
+        "file": "proxicall/tools/brain/test_cross_system_understanding_engine.py",
+        "contentSha": "c903054bcc65"
+      },
+      {
+        "file": "proxicall/tools/brain/test_edge_case_fix.py",
+        "contentSha": "9f8ea3d911c7"
+      },
+      {
+        "file": "proxicall/tools/brain/test_generator.py",
+        "contentSha": "135d2e092951"
+      },
+      {
+        "file": "proxicall/tools/brain/test_integration_context_ranker.py",
+        "contentSha": "e95d2a4c9684"
+      },
+      {
+        "file": "proxicall/tools/brain/test_intelligence_engine.py",
+        "contentSha": "86617e5f2233"
+      },
+      {
+        "file": "proxicall/tools/brain/test_intelligence_wrapper.py",
+        "contentSha": "e38ccb3be656"
+      },
+      {
+        "file": "proxicall/tools/brain/test_runner.py",
+        "contentSha": "9fc35226c646"
+      },
+      {
+        "file": "proxicall/tools/brain/test_smart_test_generation_engine.py",
+        "contentSha": "6df54f8c710b"
+      },
+      {
+        "file": "proxicall/tools/brain/test_system_tiered_index.py",
+        "contentSha": "dc8c1e173bef"
+      },
+      {
+        "file": "proxicall/tools/brain/trap_detector.py",
+        "contentSha": "1e7a09b8e992"
+      },
+      {
+        "file": "proxicall/tools/brain/tree_sitter_dart_analyzer.py",
+        "contentSha": "72f378c1ebaa"
+      },
+      {
+        "file": "proxicall/tools/brain/tree_sitter_ts_analyzer.py",
+        "contentSha": "2cb23d30e292"
+      },
+      {
+        "file": "proxicall/tools/brain/ultimate_brutal_stress_test_cross_system.py",
+        "contentSha": "2467bf1091db"
+      },
+      {
+        "file": "proxicall/tools/brain/ultimate_brutal_stress_test_v2.py",
+        "contentSha": "d9484ee66f90"
+      },
+      {
+        "file": "proxicall/tools/brain/update_schema_for_usages.py",
+        "contentSha": "5062dc29b401"
+      },
+      {
+        "file": "proxicall/tools/brain/watcher.py",
+        "contentSha": "c46c78d5fedc"
+      },
+      {
+        "file": "proxicall/tools/propagate_deletion_i18n.py",
+        "contentSha": "544b3eec6c1d"
+      },
+      {
+        "file": "proxicall/tools/sync_fms_i18n.py",
+        "contentSha": "c762b8abec1f"
+      },
+      {
+        "file": "proxicall/tools/sync_myBusinesses_i18n.py",
+        "contentSha": "2b154df04531"
+      },
+      {
+        "file": "proxicall/tools/translate_myBusinesses_i18n.py",
+        "contentSha": "3f875a7e60e3"
+      },
+      {
+        "file": "requests/docs/_themes/flask_theme_support.py",
+        "contentSha": "bba3677c6eeb"
+      },
+      {
+        "file": "requests/docs/conf.py",
+        "contentSha": "6ae03d28d23d"
+      },
+      {
+        "file": "requests/setup.py",
+        "contentSha": "1728c11af413"
+      },
+      {
+        "file": "requests/src/requests/__init__.py",
+        "contentSha": "80534322a1a3"
+      },
+      {
+        "file": "requests/src/requests/__version__.py",
+        "contentSha": "abba90670b03"
+      },
+      {
+        "file": "requests/src/requests/_internal_utils.py",
+        "contentSha": "4c7d8d132c98"
+      },
+      {
+        "file": "requests/src/requests/_types.py",
+        "contentSha": "84dec9789a8e"
+      },
+      {
+        "file": "requests/src/requests/adapters.py",
+        "contentSha": "cc9b1b02694f"
+      },
+      {
+        "file": "requests/src/requests/api.py",
+        "contentSha": "4d15480ac046"
+      },
+      {
+        "file": "requests/src/requests/auth.py",
+        "contentSha": "fdc8bb34a8a5"
+      },
+      {
+        "file": "requests/src/requests/certs.py",
+        "contentSha": "fd9c6b83359c"
+      },
+      {
+        "file": "requests/src/requests/compat.py",
+        "contentSha": "4a51c5ab07b0"
+      },
+      {
+        "file": "requests/src/requests/cookies.py",
+        "contentSha": "05d12b965c76"
+      },
+      {
+        "file": "requests/src/requests/exceptions.py",
+        "contentSha": "c5e18f335245"
+      },
+      {
+        "file": "requests/src/requests/help.py",
+        "contentSha": "e5845e93980b"
+      },
+      {
+        "file": "requests/src/requests/hooks.py",
+        "contentSha": "ebd8a02475d3"
+      },
+      {
+        "file": "requests/src/requests/models.py",
+        "contentSha": "a3351c3c12a8"
+      },
+      {
+        "file": "requests/src/requests/packages.py",
+        "contentSha": "fe0d2067af35"
+      },
+      {
+        "file": "requests/src/requests/sessions.py",
+        "contentSha": "3d2089736ced"
+      },
+      {
+        "file": "requests/src/requests/status_codes.py",
+        "contentSha": "1950f47c89cf"
+      },
+      {
+        "file": "requests/src/requests/structures.py",
+        "contentSha": "ba9460c39078"
+      },
+      {
+        "file": "requests/src/requests/utils.py",
+        "contentSha": "b879cb3f671c"
+      },
+      {
+        "file": "requests/tests/__init__.py",
+        "contentSha": "ac7f253daae0"
+      },
+      {
+        "file": "requests/tests/compat.py",
+        "contentSha": "d58ff5e3167d"
+      },
+      {
+        "file": "requests/tests/conftest.py",
+        "contentSha": "6d65ffb58251"
+      },
+      {
+        "file": "requests/tests/test_adapters.py",
+        "contentSha": "102494aa704f"
+      },
+      {
+        "file": "requests/tests/test_help.py",
+        "contentSha": "1c2ac8ca9f49"
+      },
+      {
+        "file": "requests/tests/test_hooks.py",
+        "contentSha": "a9e5163f5385"
+      },
+      {
+        "file": "requests/tests/test_lowlevel.py",
+        "contentSha": "db5fac7340c4"
+      },
+      {
+        "file": "requests/tests/test_packages.py",
+        "contentSha": "90875423db05"
+      },
+      {
+        "file": "requests/tests/test_requests.py",
+        "contentSha": "5eacf6341d23"
+      },
+      {
+        "file": "requests/tests/test_structures.py",
+        "contentSha": "f984b7fc68fb"
+      },
+      {
+        "file": "requests/tests/test_testserver.py",
+        "contentSha": "90ac39d6cb9c"
+      },
+      {
+        "file": "requests/tests/test_utils.py",
+        "contentSha": "00d027432443"
+      },
+      {
+        "file": "requests/tests/testserver/server.py",
+        "contentSha": "15a9092cc5ed"
+      },
+      {
+        "file": "requests/tests/utils.py",
+        "contentSha": "cfaec86690eb"
+      },
+      {
+        "file": "swift-nio/dev/stackdiff-dtrace.py",
+        "contentSha": "535b00c5a00d"
+      },
+      {
+        "file": "tree-sitter-clean/bindings/python/tree_sitter_clean/__init__.py",
+        "contentSha": "306b4b6964c2"
+      },
+      {
+        "file": "tree-sitter-clean/setup.py",
+        "contentSha": "ce409b39a031"
+      },
+      {
+        "file": "zig/tools/lldb_pretty_printers.py",
+        "contentSha": "f1a8fa8a6a82"
+      },
+      {
+        "file": "zig/tools/stage1_gdb_pretty_printers.py",
+        "contentSha": "24b6829bea12"
+      },
+      {
+        "file": "zig/tools/stage2_gdb_pretty_printers.py",
+        "contentSha": "2463492c8204"
+      },
+      {
+        "file": "zig/tools/std_gdb_pretty_printers.py",
+        "contentSha": "f064d13d70c7"
+      },
+      {
+        "file": "zig/tools/zig_gdb_pretty_printers.py",
+        "contentSha": "5c3fb9b000d0"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "python": {
+      "prev": "6503f4f961f1",
+      "now": "6503f4f961f1",
+      "same": true
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "python": [
+      {
+        "file": "postgrest/nix/tools/generate_targets.py",
+        "language": "python",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/config.py",
+        "language": "python",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/conftest.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/postgrest.py",
+        "language": "python",
+        "rels": 117,
+        "withLine": 117,
+        "noLine": 0,
+        "consistent": 117,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_admin.py",
+        "language": "python",
+        "rels": 89,
+        "withLine": 89,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_big_schema.py",
+        "language": "python",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_cli.py",
+        "language": "python",
+        "rels": 88,
+        "withLine": 88,
+        "noLine": 0,
+        "consistent": 88,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_config.py",
+        "language": "python",
+        "rels": 95,
+        "withLine": 95,
+        "noLine": 0,
+        "consistent": 95,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_connection.py",
+        "language": "python",
+        "rels": 97,
+        "withLine": 97,
+        "noLine": 0,
+        "consistent": 97,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_graceful_shutdown.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_log.py",
+        "language": "python",
+        "rels": 131,
+        "withLine": 131,
+        "noLine": 0,
+        "consistent": 131,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_pg_internal.py",
+        "language": "python",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_reloading.py",
+        "language": "python",
+        "rels": 150,
+        "withLine": 150,
+        "noLine": 0,
+        "consistent": 150,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_replica.py",
+        "language": "python",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_sanity.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_settings.py",
+        "language": "python",
+        "rels": 141,
+        "withLine": 141,
+        "noLine": 0,
+        "consistent": 141,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_zero_downtime.py",
+        "language": "python",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "postgrest/test/io/util.py",
+        "language": "python",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/brain_wrapper.py",
+        "language": "python",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/business_god_level_fixer.py",
+        "language": "python",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/find_row_violations.py",
+        "language": "python",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_email_verification.py",
+        "language": "python",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_hardcoded_colors.py",
+        "language": "python",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_l10n_todos.py",
+        "language": "python",
+        "rels": 79,
+        "withLine": 79,
+        "noLine": 0,
+        "consistent": 79,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_text_maxlines.py",
+        "language": "python",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_text_maxlines_v2.py",
+        "language": "python",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/fix_undefined_vars.py",
+        "language": "python",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_audit.py",
+        "language": "python",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_bulk_fix.py",
+        "language": "python",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_bulk_fix_v2.py",
+        "language": "python",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_guarantee.py",
+        "language": "python",
+        "rels": 238,
+        "withLine": 238,
+        "noLine": 0,
+        "consistent": 238,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/.copilot-tools/god_level_v2.py",
+        "language": "python",
+        "rels": 296,
+        "withLine": 296,
+        "noLine": 0,
+        "consistent": 296,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/add_full_day_names.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/fix_day_short_translations.py",
+        "language": "python",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/fix_discovery_l10n.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/generate_icon.py",
+        "language": "python",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/generate_map_icons.py",
+        "language": "python",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m16_2819_evidence_summary.py",
+        "language": "python",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_2873_dumpfields.py",
+        "language": "python",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_2873_find_edittext.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_2873_find_node.py",
+        "language": "python",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_2874_mutation_proofs.py",
+        "language": "python",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_2928_mutation_proofs.py",
+        "language": "python",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_3030_mutation_proofs.py",
+        "language": "python",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_3030_update_hero_copy.py",
+        "language": "python",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_3031_mutation_proofs.py",
+        "language": "python",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m17b_l10n_splice_new_keys.py",
+        "language": "python",
+        "rels": 66,
+        "withLine": 66,
+        "noLine": 0,
+        "consistent": 66,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m22_2927_channel_mute.py",
+        "language": "python",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/m22_2927_channel_probe.py",
+        "language": "python",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/_dev/rewrite_about_pages.py",
+        "language": "python",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/database/verify_fms_price_anchor_doc.py",
+        "language": "python",
+        "rels": 59,
+        "withLine": 59,
+        "noLine": 0,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/database/verify_schema_snapshot.py",
+        "language": "python",
+        "rels": 95,
+        "withLine": 95,
+        "noLine": 0,
+        "consistent": 95,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/ios/Flutter/ephemeral/flutter_lldb_helper.py",
+        "language": "python",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/ml_models/test_model.py",
+        "language": "python",
+        "rels": 208,
+        "withLine": 208,
+        "noLine": 0,
+        "consistent": 208,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/ml_models/train_engagement_model.py",
+        "language": "python",
+        "rels": 69,
+        "withLine": 69,
+        "noLine": 0,
+        "consistent": 69,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/scripts/add_translations.py",
+        "language": "python",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/adaptive_learning_engine.py",
+        "language": "python",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 45,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/adaptive_learning_wrapper.py",
+        "language": "python",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/advanced_error_detector.py",
+        "language": "python",
+        "rels": 156,
+        "withLine": 156,
+        "noLine": 0,
+        "consistent": 156,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/advanced_error_wrapper.py",
+        "language": "python",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/api_validator.py",
+        "language": "python",
+        "rels": 199,
+        "withLine": 199,
+        "noLine": 0,
+        "consistent": 199,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/architectural_impact_radar.py",
+        "language": "python",
+        "rels": 132,
+        "withLine": 132,
+        "noLine": 0,
+        "consistent": 132,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/architectural_radar_wrapper.py",
+        "language": "python",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/auth_gate_analyzer.py",
+        "language": "python",
+        "rels": 147,
+        "withLine": 147,
+        "noLine": 0,
+        "consistent": 147,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/brain_performance_integration.py",
+        "language": "python",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/brain_performance_optimizer.py",
+        "language": "python",
+        "rels": 327,
+        "withLine": 327,
+        "noLine": 0,
+        "consistent": 327,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/brain_session_manager.py",
+        "language": "python",
+        "rels": 92,
+        "withLine": 92,
+        "noLine": 0,
+        "consistent": 92,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/brain_session_wrapper.py",
+        "language": "python",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/bridge_mapper.py",
+        "language": "python",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/brutal_stress_test.py",
+        "language": "python",
+        "rels": 105,
+        "withLine": 105,
+        "noLine": 0,
+        "consistent": 105,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/brutal_stress_test_context_ranker.py",
+        "language": "python",
+        "rels": 103,
+        "withLine": 103,
+        "noLine": 0,
+        "consistent": 103,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/commit_test_mapper.py",
+        "language": "python",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/complexity_tracker.py",
+        "language": "python",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/context_preload_wrapper.py",
+        "language": "python",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/context_preloader.py",
+        "language": "python",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 56,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/context_ranker.py",
+        "language": "python",
+        "rels": 117,
+        "withLine": 117,
+        "noLine": 0,
+        "consistent": 117,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/coupling_analyzer.py",
+        "language": "python",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/coverage_analyzer.py",
+        "language": "python",
+        "rels": 70,
+        "withLine": 70,
+        "noLine": 0,
+        "consistent": 70,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/cross_system_understanding_engine.py",
+        "language": "python",
+        "rels": 186,
+        "withLine": 186,
+        "noLine": 0,
+        "consistent": 186,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/cross_system_wrapper.py",
+        "language": "python",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/cve_scanner.py",
+        "language": "python",
+        "rels": 86,
+        "withLine": 86,
+        "noLine": 0,
+        "consistent": 86,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/dart_deep_analyzer.py",
+        "language": "python",
+        "rels": 650,
+        "withLine": 650,
+        "noLine": 0,
+        "consistent": 650,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/dead_code_analyzer.py",
+        "language": "python",
+        "rels": 101,
+        "withLine": 101,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/dead_flag_detector.py",
+        "language": "python",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/debug_integration.py",
+        "language": "python",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/development_pattern_learner.py",
+        "language": "python",
+        "rels": 58,
+        "withLine": 58,
+        "noLine": 0,
+        "consistent": 58,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/emily_pattern_analyzer.py",
+        "language": "python",
+        "rels": 51,
+        "withLine": 51,
+        "noLine": 0,
+        "consistent": 51,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/emily_pattern_wrapper.py",
+        "language": "python",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/enhanced_semantic_search.py",
+        "language": "python",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/feature_flag_analyzer.py",
+        "language": "python",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/final_production_validation.py",
+        "language": "python",
+        "rels": 89,
+        "withLine": 89,
+        "noLine": 0,
+        "consistent": 89,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/find_react_components.py",
+        "language": "python",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/firebase_puller.py",
+        "language": "python",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/graph_query.py",
+        "language": "python",
+        "rels": 75,
+        "withLine": 75,
+        "noLine": 0,
+        "consistent": 75,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/impact_analyzer.py",
+        "language": "python",
+        "rels": 76,
+        "withLine": 76,
+        "noLine": 0,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/indexer.py",
+        "language": "python",
+        "rels": 458,
+        "withLine": 458,
+        "noLine": 0,
+        "consistent": 458,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/indexer_guard.py",
+        "language": "python",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/init_schema.py",
+        "language": "python",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/intelligent_context.py",
+        "language": "python",
+        "rels": 106,
+        "withLine": 106,
+        "noLine": 0,
+        "consistent": 106,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/intelligent_context_tool.py",
+        "language": "python",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/js_usage_tracker.py",
+        "language": "python",
+        "rels": 121,
+        "withLine": 121,
+        "noLine": 0,
+        "consistent": 121,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/l10n_enforcer.py",
+        "language": "python",
+        "rels": 93,
+        "withLine": 93,
+        "noLine": 0,
+        "consistent": 93,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/l10n_purger.py",
+        "language": "python",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/memory_guard.py",
+        "language": "python",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/migration_analyzer.py",
+        "language": "python",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 48,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/multimodal_indexer.py",
+        "language": "python",
+        "rels": 88,
+        "withLine": 88,
+        "noLine": 0,
+        "consistent": 88,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/multimodal_query.py",
+        "language": "python",
+        "rels": 52,
+        "withLine": 52,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/n_plus_one_detector.py",
+        "language": "python",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/performance_analyzer.py",
+        "language": "python",
+        "rels": 191,
+        "withLine": 191,
+        "noLine": 0,
+        "consistent": 191,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/pii_tracker.py",
+        "language": "python",
+        "rels": 115,
+        "withLine": 115,
+        "noLine": 0,
+        "consistent": 115,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/predictive_engine_wrapper.py",
+        "language": "python",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/production_telemetry.py",
+        "language": "python",
+        "rels": 41,
+        "withLine": 41,
+        "noLine": 0,
+        "consistent": 41,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/production_telemetry_wrapper.py",
+        "language": "python",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/qualify_calls.py",
+        "language": "python",
+        "rels": 234,
+        "withLine": 234,
+        "noLine": 0,
+        "consistent": 234,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/query_optimizer.py",
+        "language": "python",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/report_generator.py",
+        "language": "python",
+        "rels": 168,
+        "withLine": 168,
+        "noLine": 0,
+        "consistent": 168,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/sdk/python/brain_sdk.py",
+        "language": "python",
+        "rels": 221,
+        "withLine": 221,
+        "noLine": 0,
+        "consistent": 221,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_embeddings.py",
+        "language": "python",
+        "rels": 260,
+        "withLine": 260,
+        "noLine": 0,
+        "consistent": 260,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_quick_index.py",
+        "language": "python",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_search_tool.py",
+        "language": "python",
+        "rels": 59,
+        "withLine": 59,
+        "noLine": 0,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_search_tool_backup.py",
+        "language": "python",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/semantic_search_tool_working.py",
+        "language": "python",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/sentinel.py",
+        "language": "python",
+        "rels": 431,
+        "withLine": 431,
+        "noLine": 0,
+        "consistent": 431,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/sentinel_v1_backup.py",
+        "language": "python",
+        "rels": 180,
+        "withLine": 180,
+        "noLine": 0,
+        "consistent": 180,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/sentry_puller.py",
+        "language": "python",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/similarity_analyzer.py",
+        "language": "python",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/smart_test_generation_engine.py",
+        "language": "python",
+        "rels": 292,
+        "withLine": 292,
+        "noLine": 0,
+        "consistent": 292,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/smart_test_generator_wrapper.py",
+        "language": "python",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 29,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/stripe_puller.py",
+        "language": "python",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/system_interaction_analyzer.py",
+        "language": "python",
+        "rels": 210,
+        "withLine": 210,
+        "noLine": 0,
+        "consistent": 210,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/system_interaction_wrapper.py",
+        "language": "python",
+        "rels": 35,
+        "withLine": 35,
+        "noLine": 0,
+        "consistent": 35,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/system_tiered_index.py",
+        "language": "python",
+        "rels": 251,
+        "withLine": 251,
+        "noLine": 0,
+        "consistent": 251,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/taint_analyzer.py",
+        "language": "python",
+        "rels": 151,
+        "withLine": 151,
+        "noLine": 0,
+        "consistent": 151,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_brain_performance_optimizer.py",
+        "language": "python",
+        "rels": 108,
+        "withLine": 108,
+        "noLine": 0,
+        "consistent": 108,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_context_ranker.py",
+        "language": "python",
+        "rels": 88,
+        "withLine": 88,
+        "noLine": 0,
+        "consistent": 88,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_context_ranker_simple.py",
+        "language": "python",
+        "rels": 64,
+        "withLine": 64,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_cross_system_understanding_engine.py",
+        "language": "python",
+        "rels": 166,
+        "withLine": 166,
+        "noLine": 0,
+        "consistent": 166,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_edge_case_fix.py",
+        "language": "python",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_generator.py",
+        "language": "python",
+        "rels": 52,
+        "withLine": 52,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_integration_context_ranker.py",
+        "language": "python",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_intelligence_engine.py",
+        "language": "python",
+        "rels": 155,
+        "withLine": 155,
+        "noLine": 0,
+        "consistent": 155,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_intelligence_wrapper.py",
+        "language": "python",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_runner.py",
+        "language": "python",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_smart_test_generation_engine.py",
+        "language": "python",
+        "rels": 167,
+        "withLine": 167,
+        "noLine": 0,
+        "consistent": 167,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/test_system_tiered_index.py",
+        "language": "python",
+        "rels": 82,
+        "withLine": 82,
+        "noLine": 0,
+        "consistent": 82,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/trap_detector.py",
+        "language": "python",
+        "rels": 91,
+        "withLine": 91,
+        "noLine": 0,
+        "consistent": 91,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/tree_sitter_dart_analyzer.py",
+        "language": "python",
+        "rels": 378,
+        "withLine": 378,
+        "noLine": 0,
+        "consistent": 378,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/tree_sitter_ts_analyzer.py",
+        "language": "python",
+        "rels": 236,
+        "withLine": 236,
+        "noLine": 0,
+        "consistent": 236,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/ultimate_brutal_stress_test_cross_system.py",
+        "language": "python",
+        "rels": 142,
+        "withLine": 142,
+        "noLine": 0,
+        "consistent": 142,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/ultimate_brutal_stress_test_v2.py",
+        "language": "python",
+        "rels": 182,
+        "withLine": 182,
+        "noLine": 0,
+        "consistent": 182,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/update_schema_for_usages.py",
+        "language": "python",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/brain/watcher.py",
+        "language": "python",
+        "rels": 290,
+        "withLine": 290,
+        "noLine": 0,
+        "consistent": 290,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/propagate_deletion_i18n.py",
+        "language": "python",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/sync_fms_i18n.py",
+        "language": "python",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/sync_myBusinesses_i18n.py",
+        "language": "python",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "proxicall/tools/translate_myBusinesses_i18n.py",
+        "language": "python",
+        "rels": 18,
+        "withLine": 18,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/docs/_themes/flask_theme_support.py",
+        "language": "python",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/docs/conf.py",
+        "language": "python",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/setup.py",
+        "language": "python",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/__init__.py",
+        "language": "python",
+        "rels": 59,
+        "withLine": 59,
+        "noLine": 0,
+        "consistent": 59,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/__version__.py",
+        "language": "python",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/_internal_utils.py",
+        "language": "python",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/_types.py",
+        "language": "python",
+        "rels": 85,
+        "withLine": 85,
+        "noLine": 0,
+        "consistent": 85,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/adapters.py",
+        "language": "python",
+        "rels": 246,
+        "withLine": 246,
+        "noLine": 0,
+        "consistent": 246,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/api.py",
+        "language": "python",
+        "rels": 80,
+        "withLine": 80,
+        "noLine": 0,
+        "consistent": 80,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/auth.py",
+        "language": "python",
+        "rels": 148,
+        "withLine": 148,
+        "noLine": 0,
+        "consistent": 148,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/certs.py",
+        "language": "python",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/compat.py",
+        "language": "python",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/cookies.py",
+        "language": "python",
+        "rels": 283,
+        "withLine": 283,
+        "noLine": 0,
+        "consistent": 283,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/exceptions.py",
+        "language": "python",
+        "rels": 57,
+        "withLine": 57,
+        "noLine": 0,
+        "consistent": 57,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/help.py",
+        "language": "python",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/hooks.py",
+        "language": "python",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/models.py",
+        "language": "python",
+        "rels": 497,
+        "withLine": 497,
+        "noLine": 0,
+        "consistent": 497,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/packages.py",
+        "language": "python",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/sessions.py",
+        "language": "python",
+        "rels": 426,
+        "withLine": 426,
+        "noLine": 0,
+        "consistent": 426,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/status_codes.py",
+        "language": "python",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/structures.py",
+        "language": "python",
+        "rels": 91,
+        "withLine": 91,
+        "noLine": 0,
+        "consistent": 91,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/src/requests/utils.py",
+        "language": "python",
+        "rels": 283,
+        "withLine": 283,
+        "noLine": 0,
+        "consistent": 283,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/__init__.py",
+        "language": "python",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/compat.py",
+        "language": "python",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/conftest.py",
+        "language": "python",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_adapters.py",
+        "language": "python",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_help.py",
+        "language": "python",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_hooks.py",
+        "language": "python",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_lowlevel.py",
+        "language": "python",
+        "rels": 100,
+        "withLine": 100,
+        "noLine": 0,
+        "consistent": 100,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_packages.py",
+        "language": "python",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_requests.py",
+        "language": "python",
+        "rels": 1328,
+        "withLine": 1328,
+        "noLine": 0,
+        "consistent": 1328,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_structures.py",
+        "language": "python",
+        "rels": 43,
+        "withLine": 43,
+        "noLine": 0,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_testserver.py",
+        "language": "python",
+        "rels": 74,
+        "withLine": 74,
+        "noLine": 0,
+        "consistent": 74,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/test_utils.py",
+        "language": "python",
+        "rels": 212,
+        "withLine": 212,
+        "noLine": 0,
+        "consistent": 212,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/testserver/server.py",
+        "language": "python",
+        "rels": 101,
+        "withLine": 101,
+        "noLine": 0,
+        "consistent": 101,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "requests/tests/utils.py",
+        "language": "python",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "swift-nio/dev/stackdiff-dtrace.py",
+        "language": "python",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/python/tree_sitter_clean/__init__.py",
+        "language": "python",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "tree-sitter-clean/setup.py",
+        "language": "python",
+        "rels": 33,
+        "withLine": 33,
+        "noLine": 0,
+        "consistent": 33,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/lldb_pretty_printers.py",
+        "language": "python",
+        "rels": 361,
+        "withLine": 361,
+        "noLine": 0,
+        "consistent": 361,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/stage1_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/stage2_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/std_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 76,
+        "withLine": 76,
+        "noLine": 0,
+        "consistent": 76,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/zig_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 32,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

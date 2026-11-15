@@ -1,0 +1,16 @@
+{
+  "issue": "M49 W24 CLJ-MR3",
+  "note": "`^{:private true}` / `^:private` metadata IS the visibility contract (Clojure's canonical alternative to the defn- suffix) — only the NAME SUFFIX was read before, so meta-private vars and fns exported as public API. `defn-` and the default stay pinned; meta is still never WALKED as code (CLJ-D5).",
+  "expectSymbols": [
+    { "name": "secret", "visibility": "private" },
+    { "name": "hidden", "visibility": "private" },
+    { "name": "suffixed", "visibility": "private" },
+    { "name": "flagged", "visibility": "private" },
+    { "name": "public-fn", "visibility": "public" }
+  ],
+  "forbidSymbols": [
+    { "name": "secret", "visibility": "public" },
+    { "name": "hidden", "visibility": "public" },
+    { "name": "flagged", "visibility": "public" }
+  ]
+}

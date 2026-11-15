@@ -1,0 +1,45 @@
+{
+  "fixtureId": "swift/module-exports",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DERIV_EXPORTS_SWIFT. The `exports` verdict for Swift, pinned in both directions. MEASUREMENT behind the rule (400 tracked code-bearing .swift files of swift-corpus, pinned grammar, production path): 150 distinct node types produced, 0 of them naming an export declaration and 0 anonymous `export` tokens — so the export KEYWORD does not exist and any `exports` rule keyed on it would be dead code. The export CONSTRUCT does exist and is access control: 3777 `public` visibility_modifier tokens, of which 1381 sit on TOP-LEVEL declarations (543 nominal, 838 other) and 2326 on members; `open` is a separate token of the same class. `@_exported` (Swift's literal re-export attribute) occurs 2x in 400 files, too rare to be the rule. Therefore exports = top-level declaration whose access level is public or open, one edge per name. Family precedent for the relation itself: java derives JLS 7.6 'exported iff public' for top-level types, go derives capitalized package-scope names, python derives __all__. The FORBID half pins the three scope decisions (top-level only; never an extension; never a member; never the implicit `internal` default) so that widening any of them later breaks this fixture instead of passing it. SUPERSESSION (M14 swift lane, 2026-10-23) — THE SOURCE SPELLING ONLY; THE EXPORT SET IS UNCHANGED. This file pinned the exports SOURCE as the literal `root`. The standing ruling DERIV_EXPORTS_SWIFT4 makes the source the FILE'S LEAF NAME, and the SAME-CORPUS PASSING fixture swift/exports-visibility pins exactly that in BOTH directions: it EXPECTS `{\"type\":\"exports\",\"source\":\"exports-visibility\",\"target\":\"Shape\"}` and FORBIDS `{\"type\":\"exports\",\"source\":\"root\",\"target\":\"Shape\"}` with the measured reason '`root` is in parallel-indexer's SYMBOL_NAME_DENYLIST so an edge sourced there can never bind to a stored symbol'. The two spellings cannot both be right, and the passing fixture plus the corpus-wide count (81 leaf-name vs 27 root) decide it. The six exports rows keep their targets and add the ruled vocabulary (`exportForm`/`accessLevel`/`evidenceClass`) and the NAME-node line numbers read off this file's own source with `grep -n`; a generic forbid on ANY root-sourced `exports` edge is ADDED, so the old spelling can never quietly return. Nothing was relaxed: the forbid half keeps every row, one row was added to the negative half, and no expected target moved. Predecessor kept byte-identical as module-exports.expectation.superseded-9b44d71469a24b14.json (`sha256 9b44d71469a24b14…`); the byte-identical corpus-import twin module-exports.expectation.superseded-e7c9819f4.json is left in place. The corrected rows are derived from the ruling and this fixture's source; the analyzer output was read only to CHARACTERIZE the defect.",
+  "expectSymbols": [
+    { "name": "Repository", "kind": "struct" },
+    { "name": "BaseService", "kind": "class" },
+    { "name": "Resettable", "kind": "interface" },
+    { "name": "Handler", "kind": "type" },
+    { "name": "topLevelHelper", "kind": "function" },
+    { "name": "Service", "kind": "class" },
+    { "name": "InternalStore", "kind": "struct" },
+    { "name": "hidden", "kind": "function" },
+    { "name": "alsoHidden", "kind": "function" },
+    { "name": "explicitlyInternal", "kind": "function" },
+    { "name": "ImplicitInternal", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "source": "module-exports", "target": "Repository", "line_number": 37, "meta.exportForm": "visibility_modifier", "meta.accessLevel": "public", "meta.evidenceClass": "structural" },
+    { "type": "exports", "source": "module-exports", "target": "BaseService", "line_number": 42, "meta.exportForm": "visibility_modifier", "meta.accessLevel": "open", "meta.evidenceClass": "structural" },
+    { "type": "exports", "source": "module-exports", "target": "Resettable", "line_number": 46, "meta.exportForm": "visibility_modifier", "meta.accessLevel": "public", "meta.evidenceClass": "structural" },
+    { "type": "exports", "source": "module-exports", "target": "Handler", "line_number": 50, "meta.exportForm": "visibility_modifier", "meta.accessLevel": "public", "meta.evidenceClass": "structural" },
+    { "type": "exports", "source": "module-exports", "target": "topLevelHelper", "line_number": 52, "meta.exportForm": "visibility_modifier", "meta.accessLevel": "public", "meta.evidenceClass": "structural" },
+    { "type": "exports", "source": "module-exports", "target": "Service", "line_number": 55, "meta.exportForm": "visibility_modifier", "meta.accessLevel": "public", "meta.evidenceClass": "structural" },
+    { "type": "references", "source": "root", "target": "Foundation" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "counter" },
+    { "type": "exports", "target": "run" },
+    { "type": "exports", "target": "overridable" },
+    { "type": "exports", "target": "find" },
+    { "type": "exports", "target": "describe" },
+    { "type": "exports", "target": "reset" },
+    { "type": "exports", "target": "InternalStore" },
+    { "type": "exports", "target": "hidden" },
+    { "type": "exports", "target": "alsoHidden" },
+    { "type": "exports", "target": "explicitlyInternal" },
+    { "type": "exports", "target": "ImplicitInternal" },
+    { "type": "exports", "target": "encoded" },
+    { "type": "exports", "target": "touch" },
+    { "type": "exports", "target": "quietly" },
+    { "type": "exports", "source": "root", "comment": "ADDED by the supersession: the source of a file-scope export is this file's leaf name, never the `root` literal. `root` is in parallel-indexer's SYMBOL_NAME_DENYLIST, so an edge sourced there can never bind to a stored symbol — the same assertion swift/exports-visibility pins as `exports root -> Shape`." }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 2,
+  "tool": "bb_annotations",
+  "measuredAt": "2026-11-03T16:46:03.787Z",
+  "currentCommit": "ba597a3be78143151500b97846995f8ce83dbb03",
+  "rule": "every row is an EXIT CODE read from a command that was run from this working tree; a red row is named, never hidden",
+  "gates": [
+    {
+      "name": "m28-annotation-store",
+      "exitCode": 0,
+      "command": "npx tsx script/m28/verify-annotation-store.ts",
+      "status": "pass",
+      "note": "50/50 checks, 7/7 mutants (VERIFIED). The file is shared with the bb_annotate owner; ran as it stands.",
+      "log": "validation/tools/bb_annotations/gates/logs/m28-annotation-store.log"
+    },
+    {
+      "name": "m28-annotation-ui",
+      "exitCode": 0,
+      "command": "npx tsx script/m28/verify-annotation-ui.ts",
+      "status": "pass",
+      "note": "23/23 checks, 6/6 mutants, 0 blocked legs (VERIFIED).",
+      "log": "validation/tools/bb_annotations/gates/logs/m28-annotation-ui.log"
+    },
+    {
+      "name": "m28-mcp-tools",
+      "exitCode": 0,
+      "command": "npx tsx script/m28/verify-mcp-tools.ts",
+      "status": "pass",
+      "note": "26/26 checks, 2/2 mutants (VERIFIED).",
+      "log": "validation/tools/bb_annotations/gates/logs/m28-mcp-tools.log"
+    },
+    {
+      "name": "m28-mcp-surface",
+      "exitCode": 0,
+      "command": "npx tsx script/m28/verify-mcp-surface.ts",
+      "status": "pass",
+      "note": "13/13 checks, 2/2 mutants (VERIFIED).",
+      "log": "validation/tools/bb_annotations/gates/logs/m28-mcp-surface.log"
+    },
+    {
+      "name": "m28-union",
+      "exitCode": 0,
+      "command": "npx tsx script/m28/verify-union.ts",
+      "status": "pass",
+      "note": "30/30 checks, 6/6 mutants (VERIFIED).",
+      "log": "validation/tools/bb_annotations/gates/logs/m28-union.log"
+    },
+    {
+      "name": "docs-verify-only-bb_annotations",
+      "exitCode": 0,
+      "command": "npx tsx script/verify-tool-docs.ts --only bb_annotations",
+      "status": "pass",
+      "note": "the generated page matches the descriptor+curation it is generated from (--only, check mode).",
+      "log": "validation/tools/bb_annotations/gates/logs/docs-verify-only-bb_annotations.log"
+    },
+    {
+      "name": "m15-registry-handlers",
+      "exitCode": 0,
+      "command": "npx tsx script/m15/verify-registry-handlers.ts",
+      "status": "pass",
+      "note": "C2 VERIFIED 23/23 with 7 planted-defect controls.",
+      "log": "validation/tools/bb_annotations/gates/logs/m15-registry-handlers.log"
+    },
+    {
+      "name": "verify-tool-registry",
+      "exitCode": 0,
+      "command": "npx tsx script/verify-tool-registry.ts",
+      "status": "pass",
+      "note": "TOOL REGISTRY: PASS.",
+      "log": "validation/tools/bb_annotations/gates/logs/verify-tool-registry.log"
+    },
+    {
+      "name": "verify-public-surface",
+      "exitCode": 0,
+      "command": "npx tsx script/verify-public-surface.ts",
+      "status": "pass",
+      "note": "PUBLIC SURFACE: PASS.",
+      "log": "validation/tools/bb_annotations/gates/logs/verify-public-surface.log"
+    },
+    {
+      "name": "regex-policy",
+      "exitCode": 0,
+      "command": "npx tsx script/tools/verify-regex-policy.ts",
+      "status": "pass",
+      "note": "PASS — 14 allowlisted, 62 frozen debt, 0 new, 12 baseline rows paid; no allowlist row names this tool.",
+      "log": "validation/tools/bb_annotations/gates/logs/regex-policy.log"
+    },
+    {
+      "name": "verify-tool-page-claims",
+      "exitCode": 0,
+      "command": "npx tsx script/verify-tool-page-claims.ts",
+      "status": "pass",
+      "note": "PASS (34 passed, 0 failed, 15 negatives); the tool's machine-readable reply audited.",
+      "log": "validation/tools/bb_annotations/gates/logs/verify-tool-page-claims.log"
+    },
+    {
+      "name": "m48-p2-honesty",
+      "exitCode": 0,
+      "command": "npx tsx script/m48/verify-p2-honesty-fields.ts",
+      "status": "pass",
+      "note": "PASS (21 passed, 0 failed, 7 negatives) after the absence builder's bound fields were made dynamic.",
+      "log": "validation/tools/bb_annotations/gates/logs/m48-p2-honesty.log"
+    },
+    {
+      "name": "m48-d1-doc-truth",
+      "exitCode": 1,
+      "command": "npx tsx script/m48/verify-d1-doc-truth.ts",
+      "status": "red",
+      "note": "RED on shared artifacts only: docs/data/public-tools.json and website/src/data/tools.generated.ts are stale (Lead regenerates shared artifacts at integration).",
+      "log": "validation/tools/bb_annotations/gates/logs/m48-d1-doc-truth.log"
+    },
+    {
+      "name": "m48-c2-edge-mutations",
+      "exitCode": 0,
+      "command": "npx tsx script/m48/verify-c2-edge-mutations.ts",
+      "status": "pass",
+      "note": "PASS (73 passed, 0 failed, 3 negatives).",
+      "log": "validation/tools/bb_annotations/gates/logs/m48-c2-edge-mutations.log"
+    },
+    {
+      "name": "m50-param-aliases",
+      "exitCode": 1,
+      "command": "npx tsx script/m50/verify-a2-param-aliases.ts",
+      "status": "red",
+      "note": "RED for a reason outside this tool: the single failure is 'P4b the verbatim A1 guess (`direction` on bb_graph) is still refused, with the fix named'. Every bb_annotations alias check passes.",
+      "log": "validation/tools/bb_annotations/gates/logs/m50-param-aliases.log"
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "pass": 13,
+    "red": 2,
+    "redNames": [
+      "m48-d1-doc-truth",
+      "m50-param-aliases"
+    ]
+  },
+  "beforeAfter": {
+    "m28-annotation-store": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m28-annotation-ui": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m28-mcp-tools": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m28-mcp-surface": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m28-union": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "docs-verify-only-bb_annotations": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m15-registry-handlers": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "verify-tool-registry": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "verify-public-surface": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "regex-policy": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "verify-tool-page-claims": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m48-p2-honesty": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m48-d1-doc-truth": {
+      "exitCodeBefore": 1,
+      "exitCodeAfter": 1
+    },
+    "m48-c2-edge-mutations": {
+      "exitCodeBefore": 0,
+      "exitCodeAfter": 0
+    },
+    "m50-param-aliases": {
+      "exitCodeBefore": 1,
+      "exitCodeAfter": 1
+    }
+  },
+  "readDoorGate": {
+    "verifierCommand": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_annotations/verify-read-door.ts",
+    "status": "verified",
+    "checks": 40,
+    "passed": 40,
+    "failed": 0,
+    "mutants": "5/5",
+    "redProof": {
+      "namesMutant": {
+        "status": "failed",
+        "passed": 37,
+        "failed": 3,
+        "failures": [
+          "E read by simple name finds the qualified-name note",
+          "E read by qualified name finds the qualified-name note",
+          "E production resolver finds the qualified-name note from both spellings"
+        ]
+      },
+      "truncationMutant": {
+        "status": "failed",
+        "passed": 39,
+        "failed": 1,
+        "failures": [
+          "D at the declared cap the reason stops advising an impossible limit raise"
+        ]
+      }
+    }
+  }
+}

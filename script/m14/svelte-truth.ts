@@ -817,7 +817,7 @@ async function main(): Promise<void> {
   }
   const corpusName = (argv.find((a) => a.startsWith("corpus=")) ?? "corpus=shadcn-svelte").slice(7)
   const nFiles = Number((argv.find((a) => a.startsWith("files=")) ?? "files=200").slice(6))
-  const corpusRoot = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+  const corpusRoot = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
   const dir = path.join(corpusRoot, corpusName)
 
   const files: string[] = []

@@ -1,0 +1,124 @@
+{
+ "fixtureId": "xml/xslt-named-template-calls",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 XML ONTOLOGY CENSUS, verdict GAP for `calls`, implemented. The ten-type census over the whole admitted corpus (10,529 files) found the ontology type `calls` at ZERO edges while the language's own specification says in one sentence that the construct exists: XSLT 1.0 §6 Named Templates — 'An xsl:call-template element INVOKES A TEMPLATE BY NAME; it has a required name attribute that identifies the template to be invoked.' A named template is the only procedure the XML family has: it takes parameters (§11.6), it is invoked by name, and it returns a result tree fragment. The lane had been emitting `references` for that edge on the reasoning recorded in `script/m14/spec/xml-completeness.json` — 'The closest construct — an XSLT call-template — names a template DECLARATION, and it is emitted as references, which is what it is' — and that reasoning is wrong about the word INVOKES. It is the `Labelled` question failing in the open: the edge existed, was real, and carried the neighbouring type. Two things make this fixture non-vacuous, and each was found by writing it rather than by designing it up front. (1) THE CALLER, NOT THE CALL SITE. `extractAttribute` is handed the symbol of the element carrying the attribute, which for `<xsl:call-template>` is an instruction published under its own tag, so the first implementation emitted `calls xsl:call-template -> inner`: an edge naming the call SITE. In a stylesheet with forty call instructions that source is one name forty times over and a consumer asking 'what does this template call' gets nothing. The edge must be caller-to-callee like every other analyzer's, so the enclosing template is the source — which is why both calls here are between two NAMED templates and the assertions name templates, never the instruction tag. (2) RECURSION IS NOT A SELF-EDGE DEFECT. The obvious next move was to copy the reference pass's guard that refuses a construct referencing itself, and it would have dropped legitimate recursion: `libxslt/tests/XSLTMark/bottles.xsl` calls `bottles` from inside template `bottles` three times. XSLT 1.0 §6 makes TWO TEMPLATES of one name and import precedence the error ('It is an error if a stylesheet contains more than one template with the same name and same import precedence'), not a template calling one of them. So the two calls here are MUTUAL — outer calls inner and inner calls outer — and a third template, `loop`, invokes ITSELF. The self-call is the row that catches a copied guard: the mutual pair only survives a filter that drops `source === target` by luck of the shape, and the first version of this fixture had no self-call at all, so the mutant `xml/ontology-recursive-call-dropped` SURVIVED it and the harness said so. A fixture that cannot fail is not evidence, so `loop` is here because the measurement demanded it. The third call, to `elsewhere`, is REFUSED because this stylesheet declares no such template: it lives in an included or imported stylesheet, which a per-file analyzer cannot read, and 724 of libxslt's 1,446 call sites are in that position. The forbid half below pins that refusal, so a later change cannot turn a missing declaration into a dangling edge. The fourth line is the sibling that must NOT become a call: `xsl:apply-templates name=\"viaapply\"` keeps its `references` edge, because XSLT 1.0 §5.4 gives `xsl:apply-templates` no `name` attribute at all and §6 says the template's name 'does not affect whether the template is invoked by an xsl:apply-templates element'. Lines read off the file: outer 17, call-template/inner 18, apply-templates 19, call-template/elsewhere 20, inner 22, call-template/outer 24, viaapply 26, loop 28, call-template/loop 30.",
+ "expectSymbols": [
+  {
+   "name": "outer",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name",
+   "meta.tagName": "xsl:template"
+  },
+  {
+   "name": "inner",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "viaapply",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  },
+  {
+   "name": "loop",
+   "kind": "class",
+   "meta.isVocabDeclaration": true,
+   "meta.declaredByAttribute": "name"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "outer",
+   "target": "xsl:stylesheet.inner",
+   "line_number": 18,
+   "meta.evidenceClass": "reference_qualified",
+   "meta.resolvable": "in-document",
+   "note": "the caller is the enclosing TEMPLATE, not the instruction. `xslt:call-template` as a source would name the call site and lose which template made the call."
+  },
+  {
+   "type": "calls",
+   "from": "inner",
+   "target": "xsl:stylesheet.outer",
+   "line_number": 24,
+   "meta.evidenceClass": "reference_qualified",
+   "note": "MUTUAL RECURSION, and the edge a copied self-reference guard would have refused. The target is a real declaration in this file (`outer` on line 17); XSLT 1.0 §6 makes two templates of one name the error, not one template calling the other."
+  },
+  {
+   "type": "calls",
+   "from": "loop",
+   "target": "xsl:stylesheet.loop",
+   "line_number": 30,
+   "meta.resolvable": "in-document",
+   "note": "THE SELF-EDGE, and the reason the other two calls are mutual rather than a call plus a comment. A template invoking itself is ordinary XSLT — `libxslt/tests/XSLTMark/bottles.xsl` calls `bottles` from inside template `bottles` three times — and XSLT 1.0 s6 makes TWO TEMPLATES of one name and import precedence the error, not one template calling one of them. The obvious implementation move was to copy the reference pass's guard that refuses a construct referencing itself, and on this row that guard is visibly wrong: `calls loop -> loop` is true. Pinned so the guard cannot be added by a later reader who has not read s6."
+  },
+  {
+   "type": "references",
+   "from": "xsl:apply-templates",
+   "target": "xsl:stylesheet.viaapply",
+   "line_number": 19,
+   "meta.resolvable": "in-document",
+   "note": "the SIBLING that must stay a reference: XSLT 1.0 §5.4 gives xsl:apply-templates no name attribute, and §6 says the template's name 'does not affect whether the template is invoked by an xsl:apply-templates element'. A dispatch by pattern and mode is not a call. Its source is the instruction's own tag because that is this analyzer's pre-existing convention for a bare-name reference edge — the asymmetry with the `calls` source is deliberate and recorded as a limitation, not an oversight."
+  },
+  {
+   "type": "contains",
+   "from": "outer",
+   "target": "xsl:call-template",
+   "line_number": 18,
+   "note": "the call SITE is still published as an element and still contained by its template; `calls` is added beside `contains`, not in place of it."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "outer",
+   "target": "elsewhere",
+   "note": "the refusal under test. No template named `elsewhere` is declared in this stylesheet, so the target lives in an included or imported stylesheet — 724 of libxslt's 1,446 call sites. Publishing the edge would put a name in the graph that no file supports, which is the M60.R10 lie. It is reported as declared debt instead."
+  },
+  {
+   "type": "calls",
+   "from": "xsl:call-template",
+   "target": "inner",
+   "note": "the call SITE is not the caller. This is the defect the first implementation of this rule had, and the fixture has to be able to fail on it: an edge whose source is the instruction tag names no caller and collapses forty call sites in one stylesheet onto one source."
+  },
+  {
+   "type": "references",
+   "from": "outer",
+   "target": "inner",
+   "note": "the negative half of the relabel. `xsl:call-template` is a CALL (XSLT 1.0 §6, quoted above) and must not ALSO be a `references` edge: edge identity is source|type|target, so emitting both would carry one fact under two labels and make 'does this template call inner or merely mention it' unanswerable."
+  },
+  {
+   "type": "calls",
+   "from": "outer",
+   "target": "viaapply",
+   "note": "`viaapply` is reached by DISPATCH in this file, never invoked: nothing calls it, so a `calls` edge to it would be an edge the stylesheet does not contain. The `references` edge above is the whole claim."
+  },
+  {
+   "type": "calls",
+   "from": "xsl:stylesheet",
+   "target": "inner",
+   "note": "the stylesheet element does not call anything; a call's source is always the nearest enclosing template."
+  },
+  {
+   "type": "calls",
+   "from": "outer",
+   "target": "loop",
+   "note": "nothing in `outer` calls `loop`; only `loop` calls itself. An edge here would be a call the stylesheet does not contain, and it is the shape a rule that resolved calls by SEARCH rather than by reading the call site would produce."
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "elsewhere",
+   "note": "a called name is not a declared name. The document names `elsewhere` as a call target and declares no such template; publishing a symbol for it would be a phantom declaration, the same shape as the reference pass's refusal of an unresolvable QName."
+  },
+  {
+   "name": "inner.xsl:call-template",
+   "note": "no qualified form of an instruction is published: the call edge's source is the enclosing template, so nothing hangs off the instruction as an owner of a call."
+  }
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

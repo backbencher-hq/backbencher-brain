@@ -37,7 +37,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statS
 import * as path from "node:path"
 
 const ROOT = path.resolve(import.meta.dir, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const MEAS = path.join(ROOT, "validation", "m14", "measurements")
 const CHECKPOINT = path.join(MEAS, "walk-perl-truth.txt")
 const JSONL = path.join(MEAS, "perl-truth-run.jsonl")

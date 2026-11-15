@@ -1,0 +1,33 @@
+{
+  "issue": "M20.C2",
+  "code": "C2",
+  "milestone": "M20",
+  "status": "known-gap",
+  "checks": 20,
+  "passed": 19,
+  "failed": 1,
+  "negativeCases": 3,
+  "currentCommit": "2e88195ffc3cdd801d709d1ea504685d3afea9e7",
+  "sourceFingerprint": "116450a6177c98419c34bb8818d6db8cfa10aafa8f563941b57e5ea3696d0c4c",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-corpus-registry.ts",
+  "evidenceFile": "C2.json",
+  "generatedAt": "2026-11-04T04:03:47.424Z",
+  "registryFile": "C2-registry.json",
+  "corpusStatus": "known-gap",
+  "counts": {
+    "declared": 31,
+    "exactRevisionAndClean": 30,
+    "revisionMismatch": 0,
+    "dirty": 0,
+    "missing": 1,
+    "undeclaredLocalRepositories": 174
+  },
+  "deliberateMissingState": "missing",
+  "limitations": [
+    "This registry checks reproducible repository identity and availability; it does not parse every source file.",
+    "Syntax-error counts are imported only from exact path/revision M12 evidence; missing measurements remain null and not zero.",
+    "Dirty checkouts and revision mismatches are recorded as known gaps and are not evidence-eligible.",
+    "A clean project revision is required before this registry result can be closure evidence."
+  ]
+}

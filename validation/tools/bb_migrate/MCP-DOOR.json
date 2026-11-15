@@ -1,0 +1,809 @@
+{
+ "schemaVersion": 1,
+ "tool": "bb_migrate",
+ "currentCommit": "755157b7fa1ebb9606a6284699e5b3ff4ff3d060",
+ "generatedAt": "2026-11-03T04:06:30.989Z",
+ "door": "real MCP stdio session: `npx tsx src/mcp/server.ts --dir <fixture>` with BB_DATA_DIR forwarded explicitly and BB_NO_AUTO_REFRESH=1",
+ "protocol": {
+  "id": "tools-list",
+  "toolCount": 16,
+  "present": true,
+  "description": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks",
+  "params": [
+   "symbolName",
+   "symbolNames",
+   "paths",
+   "symbolIds",
+   "targetLanguage",
+   "format"
+  ],
+  "required": [
+   "targetLanguage"
+  ],
+  "formatEnum": [
+   "text",
+   "json"
+  ],
+  "serverInfo": {
+   "name": "backbencher-brain",
+   "version": "0.3.0"
+  }
+ },
+ "cases": [
+  {
+   "id": "success-single-text",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 239,
+   "errorOrHead": [
+    "migration target: python",
+    "dependency order: basePrice (partial)",
+    "methodology: base=4h relationships=2h missing-mappings=0h"
+   ]
+  },
+  {
+   "id": "success-single-json",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 22,
+   "errorOrHead": {
+    "plans": 1,
+    "unsupported": 0,
+    "unsupportedReasons": [],
+    "dependencyOrder": [
+     "basePrice"
+    ],
+    "orderingStatus": "partial",
+    "waves": [
+     [
+      "basePrice"
+     ]
+    ],
+    "truncation": {
+     "truncated": false,
+     "requested": 1,
+     "returned": 1
+    },
+    "freshness": {
+     "fresh": 1,
+     "stale": 0,
+     "missing": 0,
+     "mode": "complete"
+    },
+    "methodology": {
+     "baseHours": 4,
+     "relationshipHours": 2,
+     "missingMappingHours": 0,
+     "rates": {
+      "baseHoursPerComponent": 4,
+      "relationshipHoursPerEdge": 2,
+      "hoursPerUnmappedLibrary": 6
+     }
+    },
+    "effort": {
+     "totalHours": 6,
+     "perPlanSumHours": 6,
+     "sharedRelationshipHours": 0,
+     "reconciliation": "per-plan effort sums to the methodology total"
+    },
+    "planSymbols": [
+     {
+      "name": "basePrice",
+      "source": "javascript",
+      "target": "python",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "success-alias-symbolName",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 81,
+   "errorOrHead": [
+    "migration target: go",
+    "dependency order: basePrice (partial)",
+    "methodology: base=4h relationships=2h missing-mappings=0h"
+   ]
+  },
+  {
+   "id": "success-batch",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 78,
+   "errorOrHead": {
+    "plans": 2,
+    "unsupported": 0,
+    "unsupportedReasons": [],
+    "dependencyOrder": [
+     "applyDiscount",
+     "basePrice"
+    ],
+    "orderingStatus": "partial",
+    "waves": [
+     [
+      "applyDiscount",
+      "basePrice"
+     ]
+    ],
+    "truncation": {
+     "truncated": false,
+     "requested": 2,
+     "returned": 2
+    },
+    "freshness": {
+     "fresh": 1,
+     "stale": 0,
+     "missing": 0,
+     "mode": "complete"
+    },
+    "methodology": {
+     "baseHours": 8,
+     "relationshipHours": 4,
+     "missingMappingHours": 0,
+     "rates": {
+      "baseHoursPerComponent": 4,
+      "relationshipHoursPerEdge": 2,
+      "hoursPerUnmappedLibrary": 6
+     }
+    },
+    "effort": {
+     "totalHours": 12,
+     "perPlanSumHours": 12,
+     "sharedRelationshipHours": 0,
+     "reconciliation": "per-plan effort sums to the methodology total"
+    },
+    "planSymbols": [
+     {
+      "name": "basePrice",
+      "source": "javascript",
+      "target": "ruby",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     },
+     {
+      "name": "applyDiscount",
+      "source": "javascript",
+      "target": "ruby",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "success-union-name-and-path",
+   "expected": "success",
+   "outcome": "success",
+   "verdict": "PASS",
+   "ms": 148,
+   "errorOrHead": {
+    "plans": 2,
+    "unsupported": 0,
+    "unsupportedReasons": [],
+    "dependencyOrder": [
+     "applyDiscount",
+     "basePrice"
+    ],
+    "orderingStatus": "partial",
+    "waves": [
+     [
+      "applyDiscount",
+      "basePrice"
+     ]
+    ],
+    "truncation": {
+     "truncated": false,
+     "requested": 2,
+     "returned": 2
+    },
+    "freshness": {
+     "fresh": 1,
+     "stale": 0,
+     "missing": 0,
+     "mode": "complete"
+    },
+    "methodology": {
+     "baseHours": 8,
+     "relationshipHours": 4,
+     "missingMappingHours": 0,
+     "rates": {
+      "baseHoursPerComponent": 4,
+      "relationshipHoursPerEdge": 2,
+      "hoursPerUnmappedLibrary": 6
+     }
+    },
+    "effort": {
+     "totalHours": 12,
+     "perPlanSumHours": 12,
+     "sharedRelationshipHours": 0,
+     "reconciliation": "per-plan effort sums to the methodology total"
+    },
+    "planSymbols": [
+     {
+      "name": "basePrice",
+      "source": "javascript",
+      "target": "python",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     },
+     {
+      "name": "applyDiscount",
+      "source": "javascript",
+      "target": "python",
+      "file": "ts-js/src/pricing.js",
+      "stale": false,
+      "effort": 6
+     }
+    ]
+   }
+  },
+  {
+   "id": "refuse-missing-targetLanguage",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 21,
+   "errorOrHead": [
+    "error: bb_migrate: missing required option: targetLanguage"
+   ]
+  },
+  {
+   "id": "refuse-missing-subject",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 25,
+   "errorOrHead": [
+    "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+   ]
+  },
+  {
+   "id": "refuse-unknown-option",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 15,
+   "errorOrHead": [
+    "error: bb_migrate: unknown or irrelevant options: bogusOption — accepted options: symbolName, symbolNames, paths, symbolIds, targetLanguage, format"
+   ]
+  },
+  {
+   "id": "refuse-invalid-format-enum",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 12,
+   "errorOrHead": [
+    "error: bb_migrate: format must be one of: text, json"
+   ]
+  },
+  {
+   "id": "refuse-path-escapes-project",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 51,
+   "errorOrHead": [
+    "bb_migrate: no indexed file matches \"../outside\". Paths are project-relative; check the spelling against the project root."
+   ]
+  },
+  {
+   "id": "refuse-bogus-symbol-id",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 47,
+   "errorOrHead": [
+    "bb_migrate: no indexed symbol carries the id(s) \"sym_does_not_exist\". Ids come from an earlier result's plans or from an ambiguity refusal's candidates."
+   ]
+  },
+  {
+   "id": "refuse-blank-symbolName",
+   "expected": "refusal",
+   "outcome": "refusal",
+   "verdict": "PASS",
+   "ms": 13,
+   "errorOrHead": [
+    "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+   ]
+  },
+  {
+   "id": "refuse-same-language",
+   "expected": "refusal",
+   "outcome": "success",
+   "verdict": "FAIL",
+   "ms": 42,
+   "errorOrHead": [
+    "migration target: javascript",
+    "dependency order: none (no-edges)",
+    "methodology: base=0h relationships=0h missing-mappings=0h"
+   ]
+  },
+  {
+   "id": "edge-unknown-target-language",
+   "expected": "refusal",
+   "outcome": "success",
+   "verdict": "FAIL",
+   "ms": 46,
+   "errorOrHead": [
+    "migration target: cobol",
+    "dependency order: none (no-edges)",
+    "methodology: base=0h relationships=0h missing-mappings=0h"
+   ]
+  },
+  {
+   "id": "edge-blank-name-in-array",
+   "expected": "refusal",
+   "outcome": "success",
+   "verdict": "FAIL",
+   "ms": 25,
+   "errorOrHead": [
+    "migration target: python",
+    "dependency order: none (no-edges)",
+    "methodology: base=0h relationships=0h missing-mappings=0h"
+   ]
+  }
+ ],
+ "wireHygiene": {
+  "id": "wire-hygiene",
+  "nonJsonStdout": [],
+  "stderrTail": [
+   ""
+  ]
+ },
+ "edgeCases": [
+  {
+   "id": "same-language-json",
+   "isError": false,
+   "ms": 69,
+   "plans": 0,
+   "unsupported": [
+    "same-language"
+   ],
+   "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"basePrice\"). The cohort's language mix is 1 javascript; the 1 component(s) the cap let through were 1 javascript, so scope paths to the code you mean."
+  },
+  {
+   "id": "unknown-target-json",
+   "isError": false,
+   "ms": 25,
+   "plans": 0,
+   "unsupported": [
+    "unsupported-target"
+   ],
+   "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"basePrice\"). The cohort's language mix is 1 javascript; the 1 component(s) the cap let through were 1 javascript, so scope paths to the code you mean."
+  },
+  {
+   "id": "blank-name-json",
+   "isError": false,
+   "ms": 21,
+   "plans": 0,
+   "unsupported": [],
+   "statement": "0 plan(s) across 0 file(s)"
+  },
+  {
+   "id": "missing-name-json",
+   "isError": false,
+   "ms": 25,
+   "plans": 0,
+   "unsupported": [
+    "missing-symbol"
+   ],
+   "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"does_not_exist\"). The cohort's language mix is ; the 0 component(s) the cap let through were none, so scope paths to the code you mean."
+  },
+  {
+   "id": "blank-target-json",
+   "isError": true,
+   "ms": 7
+  },
+  {
+   "id": "blank-target-text",
+   "isError": false,
+   "ms": 19
+  },
+  {
+   "id": "wrong-type-symbolNames",
+   "isError": true,
+   "ms": 5
+  },
+  {
+   "id": "path-root-cohort",
+   "isError": false,
+   "ms": 96,
+   "plans": 11,
+   "unsupported": [
+    "unsupported-source",
+    "unsupported-source"
+   ],
+   "statement": "13 indexed symbol(s) under 1 path(s), covering 4 file(s) in the plans returned"
+  },
+  {
+   "id": "numeric-name",
+   "isError": true,
+   "ms": 4
+  },
+  {
+   "id": "path-and-name-union",
+   "isError": false,
+   "ms": 54,
+   "plans": 2,
+   "unsupported": [],
+   "statement": "2 indexed symbol(s) under 1 path(s), covering 1 file(s) in the plans returned"
+  }
+ ],
+ "extraCases": [
+  {
+   "id": "both-name-forms",
+   "args": {
+    "symbolName": "basePrice",
+    "symbolNames": [
+     "applyDiscount"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "isError": false,
+   "ms": 321,
+   "plans": [
+    "applyDiscount"
+   ],
+   "unsupported": [],
+   "truncation": {
+    "truncated": false,
+    "requested": 1,
+    "returned": 1,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "cohort": {
+    "symbolsResolved": 1,
+    "pathsRequested": [],
+    "pathsUnmatched": []
+   }
+  },
+  {
+   "id": "absolute-path-inside",
+   "args": {
+    "paths": [
+     "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot/ts-js/src/pricing.js"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "isError": false,
+   "ms": 183,
+   "plans": [
+    "basePrice",
+    "applyDiscount"
+   ],
+   "unsupported": [],
+   "truncation": {
+    "truncated": false,
+    "requested": 2,
+    "returned": 2,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 2,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "cohort": {
+    "symbolsResolved": 2,
+    "pathsRequested": [
+     "ts-js/src/pricing.js"
+    ],
+    "pathsUnmatched": []
+   }
+  },
+  {
+   "id": "blank-path-entry",
+   "args": {
+    "paths": [
+     ""
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "isError": false,
+   "ms": 68,
+   "plans": [],
+   "unsupported": [],
+   "truncation": {
+    "truncated": false,
+    "requested": 0,
+    "returned": 0,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "cohort": {
+    "symbolsResolved": 0,
+    "pathsRequested": [],
+    "pathsUnmatched": []
+   }
+  },
+  {
+   "id": "blank-path-plus-valid",
+   "args": {
+    "paths": [
+     "",
+     "ts-js/src/pricing.js"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "isError": false,
+   "ms": 38,
+   "plans": [
+    "basePrice",
+    "applyDiscount"
+   ],
+   "unsupported": [],
+   "truncation": {
+    "truncated": false,
+    "requested": 2,
+    "returned": 2,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 2,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "cohort": {
+    "symbolsResolved": 2,
+    "pathsRequested": [
+     "ts-js/src/pricing.js"
+    ],
+    "pathsUnmatched": []
+   }
+  },
+  {
+   "id": "blank-entries-mixed",
+   "args": {
+    "symbolNames": [
+     "basePrice",
+     "",
+     "  "
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "isError": false,
+   "ms": 26,
+   "plans": [
+    "basePrice"
+   ],
+   "unsupported": [],
+   "truncation": {
+    "truncated": false,
+    "requested": 1,
+    "returned": 1,
+    "deduplicated": 0,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "cohort": {
+    "symbolsResolved": 1,
+    "pathsRequested": [],
+    "pathsUnmatched": []
+   }
+  },
+  {
+   "id": "empty-arrays",
+   "args": {
+    "symbolNames": [],
+    "paths": [],
+    "symbolIds": [],
+    "targetLanguage": "python"
+   },
+   "isError": true,
+   "ms": 6,
+   "textHead": [
+    "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+   ]
+  },
+  {
+   "id": "duplicate-names",
+   "args": {
+    "symbolNames": [
+     "basePrice",
+     "basePrice"
+    ],
+    "targetLanguage": "python",
+    "format": "json"
+   },
+   "isError": false,
+   "ms": 21,
+   "plans": [
+    "basePrice",
+    "basePrice"
+   ],
+   "unsupported": [],
+   "truncation": {
+    "truncated": true,
+    "requested": 2,
+    "returned": 2,
+    "deduplicated": 1,
+    "capped": 0,
+    "pathSymbols": 0,
+    "selection": "first N resolved symbols by project-relative file path, then symbol name",
+    "cappedNames": []
+   },
+   "cohort": {
+    "symbolsResolved": 1,
+    "pathsRequested": [],
+    "pathsUnmatched": []
+   }
+  },
+  {
+   "id": "unindexed-door",
+   "isError": true,
+   "ms": 40,
+   "rpcError": null,
+   "textHead": [
+    "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project\"."
+   ],
+   "parsed": null
+  }
+ ],
+ "readPathMutation": {
+  "directHandler": [
+   {
+    "probe": "indexed-read",
+    "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-indexed/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+    "firstCall": {
+     "ms": 41,
+     "isError": false,
+     "textHead": [
+      "migration target: python",
+      "dependency order: basePrice (partial)"
+     ]
+    },
+    "before": {
+     "files": {
+      "db": {
+       "size": 589824,
+       "mtimeMs": 1793578559687
+      },
+      "-wal": null,
+      "-shm": null
+     },
+     "sha256": "0fd4ef5ecef28028faac5f524ecf3b1108de736d40d63b592cf69d44b84c2190",
+     "stat": {
+      "dev": 66307,
+      "mode": 33188,
+      "nlink": 1,
+      "uid": 1000,
+      "gid": 1000,
+      "rdev": 0,
+      "blksize": 4096,
+      "ino": 291261,
+      "size": 589824,
+      "blocks": 1152,
+      "atimeMs": 1793578559686.0242,
+      "mtimeMs": 1793578559687.0242,
+      "ctimeMs": 1793578559687.0242,
+      "birthtimeMs": 1793578559686.0242
+     }
+    },
+    "afterFirst": {
+     "files": {
+      "db": {
+       "size": 589824,
+       "mtimeMs": 1793578559687
+      },
+      "-wal": {
+       "size": 98912,
+       "mtimeMs": 1793578602475
+      },
+      "-shm": {
+       "size": 32768,
+       "mtimeMs": 1793578602454
+      }
+     },
+     "sha256": "0fd4ef5ecef28028faac5f524ecf3b1108de736d40d63b592cf69d44b84c2190"
+    },
+    "afterSecond": {
+     "files": {
+      "db": {
+       "size": 589824,
+       "mtimeMs": 1793578559687
+      },
+      "-wal": {
+       "size": 197792,
+       "mtimeMs": 1793578602485
+      },
+      "-shm": {
+       "size": 32768,
+       "mtimeMs": 1793578602454
+      }
+     },
+     "sha256": "0fd4ef5ecef28028faac5f524ecf3b1108de736d40d63b592cf69d44b84c2190"
+    },
+    "walAppearedOnFirstRead": true,
+    "dbBytesChangedInProcess": false,
+    "secondCallMs": 6
+   },
+   {
+    "probe": "unindexed-read",
+    "unindexedDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project",
+    "projectId": "0550d4a9e4fa42175c01e8c975658cb99da4a334",
+    "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-unindexed/projects/0550d4a9e4fa42175c01e8c975658cb99da4a334/brain.db",
+    "existedBefore": false,
+    "existsAfter": true,
+    "sizeAfter": 4096,
+    "dbCreatedByRead": true,
+    "outcome": {
+     "threw": false,
+     "isError": false,
+     "textHead": "migration target: python"
+    }
+   }
+  ],
+  "publicDoor": {
+   "call": {
+    "isError": false,
+    "ms": 820
+   },
+   "before": {
+    "files": {
+     "db": {
+      "size": 598016,
+      "mtimeMs": 1793667562214
+     },
+     "-wal": null,
+     "-shm": null
+    },
+    "sha256": "e5a360e7e3e01a457e77432db21ab8d919936285fccd737920b8274417ce2075"
+   },
+   "during": {
+    "files": {
+     "db": {
+      "size": 598016,
+      "mtimeMs": 1793667562214
+     },
+     "-wal": {
+      "size": 98912,
+      "mtimeMs": 1793667578381
+     },
+     "-shm": {
+      "size": 32768,
+      "mtimeMs": 1793667577876
+     }
+    },
+    "sha256": "e5a360e7e3e01a457e77432db21ab8d919936285fccd737920b8274417ce2075"
+   },
+   "after": {
+    "files": {
+     "db": {
+      "size": 598016,
+      "mtimeMs": 1793667579010
+     },
+     "-wal": null,
+     "-shm": null
+    },
+    "sha256": "60ff3fc76eeb9dc0d45ec8ab6ef829213a83d7d94848a8c1467f18dc2c777a60"
+   },
+   "walAppeared": true,
+   "dbBytesChanged": true
+  }
+ }
+}

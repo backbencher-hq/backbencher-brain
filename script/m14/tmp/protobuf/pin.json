@@ -1,0 +1,85 @@
+{
+  "lane": "protobuf",
+  "wired": {
+    "file": "wasm/tree-sitter-protobuf.wasm",
+    "sha256": "4624eb6d4b7830dd0ee7ba4d435935fe5f29f589ba9299944b70ad69ddf0a338",
+    "bytes": 81735
+  },
+  "baseline": {
+    "file": "/home/ishaq2321/bb_tests/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm",
+    "sha256": "dbbde8a8f047b6b661c113fb61fdb0d5aceff3956e11b7d5f58ac22ff02a473f",
+    "bytes": 72342,
+    "note": "amaanq/tree-sitter-proto as published, pre-patch; kept so the extraction A/B compares two different parsers"
+  },
+  "upstreamRevision": "e9f6b43f6844bd2189b50a422d4e2094313f6aa3",
+  "vendored": {
+    "dir": "grammars/tree-sitter-proto",
+    "fileCount": 14,
+    "digest": "ce9f50a911da377564049bc6e5538fa317642b09c66c57b96aba1fa54eeba3da",
+    "files": {
+      ".upstream-revision": {
+        "sha256": "e1d5f68f5c9429a63a14742608a607095ef3d90d71d57676aa75e943a2eb3215",
+        "bytes": 41
+      },
+      "LICENSE": {
+        "sha256": "8c04a7e702d454741b3fd014c51ca1912bdd6facc648d94c46cbcec4d8102610",
+        "bytes": 1075
+      },
+      "README.md": {
+        "sha256": "a44823ac31d356092e8ee1143e8ff77f98cf4bd93f63b3d6419733da66afe2dd",
+        "bytes": 7080
+      },
+      "grammar.js": {
+        "sha256": "bcde1895e600266f1f1a6003feb7ea38e078ce8398380305f7624a2baf23ef0d",
+        "bytes": 15760
+      },
+      "package.json": {
+        "sha256": "b30673b711ef66a6c1f0f5be5a8e8b135f20d83c549cb5f70f61b042d26261e9",
+        "bytes": 647
+      },
+      "queries/folds.scm": {
+        "sha256": "dddbc42f061ff7e36d1497c3ef204b9f0b8d4417719b9b6f413a877cbf0f66ae",
+        "bytes": 43
+      },
+      "queries/highlights.scm": {
+        "sha256": "6d5c47bdfeccf1f3c2c815151987674703c5b69a2fe6575650ac8c8939ea3b55",
+        "bytes": 430
+      },
+      "src/grammar.json": {
+        "sha256": "771e67bc143004a588a5f938f18ca41a1ae25d1f7d2ee6f893fc15e7cc4ea976",
+        "bytes": 53778
+      },
+      "src/node-types.json": {
+        "sha256": "4fc79b3d7cf16eaf6f7662ec3e60dec833516bb51e7eef5e6a2cbb184a8c832e",
+        "bytes": 18015
+      },
+      "src/parser.c": {
+        "sha256": "538dbfc506d4ab9d333d7dde7e5de73e17bef11c083f61b4790899e42fca157e",
+        "bytes": 305535
+      },
+      "src/tree_sitter/alloc.h": {
+        "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+        "bytes": 985
+      },
+      "src/tree_sitter/array.h": {
+        "sha256": "5bdf6ed1a78e3409fd443e085ca967a64c188a5d082aaf7f819bccd53a471c94",
+        "bytes": 10431
+      },
+      "src/tree_sitter/parser.h": {
+        "sha256": "11b654fbba7770b1c710cc14b169be2deb5d89c0f87233d4605037c26c1ff657",
+        "bytes": 7678
+      },
+      "tree-sitter.json": {
+        "sha256": "6847febfae696c978cd3ef01f027912da9381bc97bb67bdbf98b356d12bb53eb",
+        "bytes": 521
+      }
+    }
+  },
+  "surface": {
+    "nodeTypeCount": 132,
+    "namedTypeCount": 50,
+    "wasmNamedTypeCount": 50,
+    "fieldCount": 3
+  },
+  "writtenAt": "2026-09-29T06:55:00.359Z"
+}

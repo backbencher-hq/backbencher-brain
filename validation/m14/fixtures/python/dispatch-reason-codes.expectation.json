@@ -1,0 +1,103 @@
+{
+  "fixtureId": "python/dispatch-reason-codes",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "INCOMING_PY (ontology workstream), and the lane's own subject. Python resolves a callee at RUNTIME through the receiver's type and the MRO, so a method resolved at runtime has no static target \u2014 and this lane's job is to MEASURE that and report it rather than guess a target. The lane was already emitting the honest NAME (PY-11: dropping an uppercase callee lost 889 of 1,152 corpus edges, 77.2% of them for classes the file explicitly imports), but it emitted the name with nothing distinguishing the situations that produce it, and M14 \u00a74 requires every edge below 1.0 to carry a machine-readable reason code. Measured over the 679-file INCOMING_PY corpus before this change: 29,877 `calls` edges at 0.9, 0 with a reason code; 14,580 `uses` at 0.9, 0; 1,454 `instantiates` at 0.9, 0; 1,498 `references` at 0.95, 0; and 81 of 670 `overrides` below 1.0 with none. All five labels are pinned here, and the dispatch partition they express is the corpus measurement: 6,422 in-file-symbol / 3,312 dispatch-on-parameter / 73 dispatch-on-receiver / 873 dispatch-through-alias / 16,549 external-member / 2,648 bare-global over 29,877 `calls` edges, i.e. 4,258 (14.3%) with no statically-nameable target. Nothing is DROPPED \u2014 the name is what the source wrote, and dropping it loses the fact \u2014 so the honesty is in the field, and this fixture is what stops the three dispatch classes from being silently collapsed back into one.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "draw",
+      "target": "render",
+      "line_number": 55,
+      "meta.qualified": "self.render",
+      "meta.reasonCode": "dispatch-on-parameter",
+      "meta.evidenceClass": "usage_contextual",
+      "confidenceMax": 0.9,
+      "note": "THE HEADLINE. `Widget` does not declare `render`, so no symbol in this parse names it and the defining class is a fact about whoever constructed the instance."
+    },
+    {
+      "type": "calls",
+      "from": "draw",
+      "target": "save",
+      "line_number": 59,
+      "meta.qualified": "other.save",
+      "meta.reasonCode": "dispatch-on-receiver",
+      "note": "the receiver is a LOCAL, and its type is written down nowhere \u2014 `Store` is assigned to it in the same statement, which is an inference this lane does not make"
+    },
+    {
+      "type": "calls",
+      "from": "draw",
+      "target": "join",
+      "line_number": 63,
+      "meta.qualified": "os.path.join",
+      "meta.reasonCode": "external-member-call",
+      "note": "NOT the same fact as the row above. `os` is a module root this file imported, so `os.path.join` is reachable through the import edge; collapsing it into dispatch-on-receiver would teach a consumer to discard an edge it can follow."
+    },
+    {
+      "type": "calls",
+      "from": "__init__",
+      "target": "save",
+      "line_number": 74,
+      "meta.qualified": "self.store.save",
+      "meta.reasonCode": "dispatch-on-parameter",
+      "note": "the deepest receiver in a chain is still `self`; the receiver is the instance and the MRO decides"
+    },
+    {
+      "type": "instantiates",
+      "from": "__init__",
+      "target": "Store",
+      "line_number": 72,
+      "meta.reasonCode": "in-file-class-constructor",
+      "note": "`Store` is declared in THIS file, so this is a construction of a class the parse can see \u2014 which is the whole narrowing PY-11 kept, and the reason the claim is 0.9 rather than 1.0"
+    },
+    {
+      "type": "uses",
+      "from": "load",
+      "target": "stash",
+      "meta.reasonCode": "member-read",
+      "meta.qualified": "self.stash",
+      "meta.isMemberRead": true
+    },
+    {
+      "type": "uses",
+      "from": "draw",
+      "target": "path",
+      "meta.reasonCode": "member-read",
+      "meta.qualified": "os.path",
+      "note": "the RECEIVER of a member call is traversal, so the read is `path` and the edge carries the chain that names it"
+    },
+    {
+      "type": "overrides",
+      "from": "Derived.handle",
+      "target": "handle",
+      "meta.reasonCode": "mro-base-declares-method",
+      "meta.evidenceClass": "structural",
+      "note": "the 0.95 VERIFIED tier, and it is verified for a reason a consumer can read: the lane read `Base`'s body and found the method there"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "from": "draw",
+      "target": "render",
+      "meta.reasonCode": "external-member-call",
+      "note": "the dispatch classes must not collapse: `self.` is the implicit first parameter and can never be an import root"
+    },
+    {
+      "from": "draw",
+      "target": "join",
+      "meta.reasonCode": "dispatch-on-receiver",
+      "note": "and the converse \u2014 `os` IS an import root of this file, so asserting 'no static target' about it is the lie this separation exists to prevent"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "render",
+      "note": "a method the runtime dispatches to but this file never declares is NOT a symbol. Publishing one would invent a definition; the `calls` edge carries the call site and `reasonCode: dispatch-on-parameter` carries the uncertainty."
+    }
+  ],
+  "_seamNote": {
+    "what": "`reasonCode` on every relationship the lane emits below confidence 1.0, and `qualified` on the member-read and dispatch edges. `qualified` is the spelling the source wrote (`self.store.save`, `os.path.join`) and `target` is the leaf it names.",
+    "why": "M14 \u00a74 asks for a machine-readable reason code rather than a number because the number cannot be acted on. 0.9 on a `self.m()` and 0.9 on `os.path.join` mean opposite things \u2014 one has no reachable target and the other has one \u2014 and a consumer that had to infer which is which would have to re-derive the import vocabulary of every file. Putting the distinction on the edge makes 'how much of this graph is guesswork' (the \u00a74 third clause) a SQL query: `SELECT reason_code, count(*) FROM relationships WHERE language='python' GROUP BY 1`.",
+    "notDropped": "The edge is emitted in every dispatch case. PY-11 measured that dropping an unresolvable callee loses the fact rather than qualifying it, and that measurement has not been contradicted. What this change does is stop the lane from asserting a target it cannot justify WITHOUT SAYING SO."
+  }
+}

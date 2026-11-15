@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.35",
+  "code": "P1",
+  "tool": "bb_patterns",
+  "title": "bb_patterns: contract (orphaned vs all/quality/architecture)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "registry: scope enum is exactly [orphaned, all]",
+      "pass": true,
+      "detail": "[\"orphaned\",\"all\"]"
+    },
+    {
+      "name": "registry: quality and architecture are plannedModes",
+      "pass": true,
+      "detail": "[\"quality\",\"architecture\"]"
+    },
+    {
+      "name": "registry: no quality/architecture scope advertised as executable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "registry: description does not advertise quality/architecture as executable [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Detect orphaned code, framework patterns, and anti-patterns, ranked by confidence, with staleness markers when a finding's file changed afte"
+    },
+    {
+      "name": "validation: scope=orphaned accepted",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "validation: scope=all accepted",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "validation: scope=quality rejected as invalid enum [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_patterns: scope must be one of: orphaned, all"
+    },
+    {
+      "name": "CLI: scope=orphaned runs and returns a provenance-bearing report",
+      "pass": true,
+      "detail": "orphaned code (2 found):\n  orphaned_function used — src/app.ts:1 (70%)\n  orphaned_function orphanedFn — src/app.ts:2 (70%)\n[scan: 2 orphan candidate(s) (orphane"
+    },
+    {
+      "name": "CLI: scope=quality rejected as invalid enum [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_patterns: scope must be one of: orphaned, all\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_patterns -"
+    },
+    {
+      "name": "MCP: scope=all runs and returns a report",
+      "pass": true,
+      "detail": "patterns (2 found):\n  [info] orphaned_function @ src/app.ts:1 (70%)\n  [info] orphaned_function @ src/app.ts:2 (70%)\n[scan: 2 finding(s) across orphaned_function"
+    },
+    {
+      "name": "MCP: scope=quality rejected as invalid enum [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_patterns: scope must be one of: orphaned, all"
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "decisions": {
+    "scopes": "executable scopes are exactly [orphaned, all]; quality/architecture live in plannedModes and are rejected at the boundary",
+    "advertising": "the registry description must not advertise quality/architecture as executable"
+  },
+  "limitations": [
+    "Framework/anti-pattern internals are the subject of M13.36; this issue locks the mode contract only."
+  ],
+  "generatedAt": "2026-11-05T04:13:46.696Z"
+}

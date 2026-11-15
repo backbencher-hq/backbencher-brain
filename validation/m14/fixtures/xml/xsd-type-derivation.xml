@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSD 1.0 Part 1 s3.4.2 XML Representation of ComplexType Definitions, quoted in the
+  expectation file. Three derivations: one whose base is declared HERE, one whose base
+  is an XSD built-in, and one whose base this file cannot satisfy.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:acme"
+           targetNamespace="urn:acme">
+  <xs:complexType name="Base">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Derived">
+    <xs:complexContent>
+      <xs:extension base="tns:Base">
+        <xs:sequence>
+          <xs:element name="extra" type="xs:int"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:simpleType name="Code">
+    <xs:restriction base="xs:token"/>
+  </xs:simpleType>
+  <xs:complexType name="FromElsewhere">
+    <xs:complexContent>
+      <xs:extension base="tns:Absent">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:schema>

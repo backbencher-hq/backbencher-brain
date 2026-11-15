@@ -1,0 +1,13 @@
+{
+  "firstCallMs": 14771,
+  "warmMs": [
+    7431,
+    2480,
+    1626,
+    1803,
+    1719
+  ],
+  "p50Ms": 1803,
+  "p95Ms": 7431,
+  "thisCallLine": "this call: total=673ms (freshness=126ms aggregates=241ms)"
+}

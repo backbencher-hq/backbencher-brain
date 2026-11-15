@@ -1,0 +1,32 @@
+// A MIXIN THIS FILE DOES NOT DECLARE, INCLUDED HERE — the site class the old rule lost.
+//
+// Until 2026-10-23 the analyzer published an include row only when the callee resolved IN THIS
+// FILE, so an `@include` of a mixin that `@use`/`@import` brought in produced NOTHING. MEASURED on a
+// whole-population census: 1,995 of 2,205 clean `@include` sites name a mixin this file does not
+// declare — 90% of the construct's sites were invisible. The row is published now with the mixin's
+// written name in the lane's published spelling (`@mixin <name>`) and is UNRESOLVED rather than
+// absent; the arbiter resolves it through the project index the way it resolves an import specifier.
+//
+// THE LAST TWO BLOCKS PIN THE TWO FORMS A `hasError` TEST MISREAD AS BROKEN, which is what the
+// first cut of this instrument did: an EMPTY argument list carries a MISSING token inside
+// `arguments`, and a CONTENT-BLOCK include can inherit an error from a nested rule. Both are
+// complete statements and both must publish.
+@mixin local-only { color: red; }
+
+.from-elsewhere {
+  @include imported-mixin(2px);
+}
+
+.also-local {
+  @include local-only;
+}
+
+.empty-args {
+  @include imported-empty();
+}
+
+.with-content {
+  @include imported-content {
+    color: green;
+  }
+}

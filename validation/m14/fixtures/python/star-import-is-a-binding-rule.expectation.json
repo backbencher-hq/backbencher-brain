@@ -1,0 +1,55 @@
+{
+ "fixtureId": "python/star-import-is-a-binding-rule",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-D19 (round 10), the ANALYZER-SIDE half: the fact `from M import *` is a wildcard must SURVIVE to the verdict, and the name it can bind must NOT be invented as a symbol. Both halves are pinned here because they are the two ways this round could be wrong in opposite directions — a dropped fact excuses nothing, and an invented symbol claims a resolution python never made. WHY THE FACT NEEDS A HOME: `from M import *` and `import M` publish the same import-graph endpoint (`M:*`), and the store's per-item projection (`pool-worker`: `{name, path, type, isExternal, line}`) flattens both to `name: \"*\", type: \"namespace\"` — so the one difference that decides whether a bare name in this file can come from M's namespace is dropped one layer below the analyzer. It is stated on the edge the analyzer itself returned (`metadata.starImport`), where `python-endpoint-resolution.ts` reads it, exactly as PY-D13 states the bound alias of an aliased import on the same surface. WHAT IS NOT CLAIMED: `make_dataclass` gets NO symbol. The price for this mechanism (`.tmp-py/price-star-round9.py`) is 171 residual rows whose EVERY star module is out of view, and none of them is resolved — they are DECLARED external by the verdict's new axis, which is why the fixture also pins that the round does not smuggle in a declaration. `os.path.join` is the CONTRAST row: a member call through a module this file imported has a statically known route and keeps `external-member-call`, so the star machinery is not applied to shapes it does not own. Lines and reason codes are measured against the analyzer's own output (`.tmp-py/fixture-shapes-round10.mts`).",
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "star_import_is_a_binding_rule",
+   "target": "dataclasses:*",
+   "line_number": 7,
+   "confidence": 1,
+   "meta.starImport": true,
+   "note": "THE FACT THE ROUND ADDS. Without this key the verdict cannot tell a wildcard import from a namespace import, and the whole axis is unreachable — which is why the mutant that drops the key must fail here."
+  },
+  {
+   "type": "imports",
+   "from": "star_import_is_a_binding_rule",
+   "target": "os:*",
+   "line_number": 9,
+   "confidence": 1,
+   "note": "THE CONTROL. `import os` binds ONLY `os` and must keep publishing its bare row with no star marker — this row is what makes the star marker a statement about one construct rather than about imports in general."
+  },
+  {
+   "type": "calls",
+   "from": "build",
+   "target": "make_dataclass",
+   "line_number": 13,
+   "confidence": 0.9,
+   "meta.reasonCode": "bare-name-callee",
+   "note": "The corpus shape this axis was priced on (cython's deliberate `from dataclasses import *` test, `make_dataclass`/`astuple`/`asdict`). The analyzer keeps publishing the call with the honest 'a bare name I cannot bind' reason code; the VERDICT is where the wildcard route is declared, and this row pins that the division of labour did not move."
+  },
+  {
+   "type": "calls",
+   "from": "routed",
+   "target": "join",
+   "line_number": 17,
+   "confidence": 0.9,
+   "meta.reasonCode": "external-member-call",
+   "note": "The contrast: `os.path.join` is reachable through this file's own import edge, so it keeps its own declared-external code and must not acquire anything from the star axis."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "make_dataclass",
+   "equals": 0,
+   "note": "NOT CLAIMED. A wildcard-bound name is out-of-view material: the verdict declares it external, and a symbol here would be a resolution the source does not support."
+  },
+  {
+   "name": "os",
+   "equals": 0,
+   "note": "An import binds a module handle, not a declaration. Pinned so the round's dedupe reading (a name bound by an import gets no second declaration) is visible from the fixture side too."
+  }
+ ]
+}

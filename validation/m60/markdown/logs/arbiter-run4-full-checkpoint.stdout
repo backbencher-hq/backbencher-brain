@@ -1,0 +1,19 @@
+ontology coverage gate — markdown
+corpus: 17456 admitted files
+
+walk: 17456/17456 files (100.0%)  newly walked 0, resumed 17456
+
+type          status            detail
+------------------------------------------------------------------------------------------------------------------------
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+uses          RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+contains      RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/spec/markdown-completeness.json#MD-D7
+imports       RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+references    RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+exports       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+overrides     RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/markdown-ruled.ts (RULED_BY_LANG.markdown)
+------------------------------------------------------------------------------------------------------------------------
+emitted 0/10   ruled-sound 7   FALSIFIED 0   ruled-without-justification 3

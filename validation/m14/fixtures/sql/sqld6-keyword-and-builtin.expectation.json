@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld6-keyword-and-builtin.sql",
+  "authoredFrom": "SQLD6 (M60 SQL wave, 2026-09-26). Keyword targets and builtin leakage were measured together over the real corpus by bb_tests/sql/probe/corpus-sweep.mts: 49 edges whose target is a SQL reserved word (`calls global->USING`, `uses global->WITH`, `calls get_brand_network_stats->FILTER`), and bb_tests/sql/probe/edge-resolvability.mts showed the dominant unresolvable-edge causes to be `generate_series`, `jsonb_build_object`, `current_setting`, `set_config` and `cardinality` - all functions SQL provides, none of which were in the 37-entry builtin list.",
+  "comment": "The last expect row is the CONTROL: `d6_project_function` has the same shape as every suppressed builtin, so a fix that simply drops calls passes all the forbid rows and fails this one. Without it the fixture would reward over-suppression.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "d6_table"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "d6_project_function"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "COUNT"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "MAX"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "UPPER"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "COALESCE"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "generate_series"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "jsonb_build_object"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "current_setting"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "USING"
+    },
+    {
+      "type": "calls",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "FILTER"
+    },
+    {
+      "type": "uses",
+      "from": "sqld6-keyword-and-builtin.sql",
+      "target": "WITH"
+    }
+  ]
+}

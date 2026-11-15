@@ -1,0 +1,22 @@
+{
+  "comment": "DATA CONSTRUCTOR APPLICATION — the construct behind the `instantiates` kind, which the contract row names while no earlier clean fixture exercised it (section B's reverse check had a published kind no expectation pinned). A constructor DECLARED IN THIS FILE and applied in BODY position is an instantiation; the same constructor in PATTERN position is a match and is emitted as `uses` by `extractConstructorPattern`. The in-file rule is deliberate and measured: a constructor from another module cannot be PROVEN to be a constructor by a single-file analyzer, so those applications are declined and counted in `metadata.declinedInstantiations` (this fixture: 0 declined, 5 applications).",
+  "expectSymbols": [
+    { "name": "CtorInstantiation", "kind": "module" },
+    { "name": "Tree", "kind": "type" },
+    { "name": "Leaf", "kind": "constructor" },
+    { "name": "Node", "kind": "constructor" },
+    { "name": "mkLeaf", "kind": "function" },
+    { "name": "mkNode", "kind": "function" },
+    { "name": "weight", "kind": "function" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "instantiates", "equals": 2, "comment": "TWO, and the count is the pin: a constructor application in body position instantiates (mkLeaf = Leaf n / mkNode = Node l r), while the two PATTERN-position uses below must NOT be counted here — a rule that emitted instantiates per constructor OCCURRENCE would emit 4." }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "mkLeaf", "target": "Leaf", "line_number": 16, "meta.evidenceClass": "structural", "comment": "`mkLeaf n = Leaf n` — the BODY-position application of an in-file data constructor. Structural tier: the tree states both the declaration (data_constructor) and the application." },
+    { "type": "instantiates", "from": "mkNode", "target": "Node", "line_number": 19, "meta.evidenceClass": "structural", "comment": "`mkNode l r = Node l r` — the two-argument form." },
+    { "type": "uses", "from": "weight", "target": "Leaf", "line_number": 22, "meta.relationshipType": "pattern_match", "meta.evidenceClass": "structural", "comment": "`weight (Leaf n) = n` — PATTERN position is a MATCH, not an instantiation: the constructor is being decomposed, not built." },
+    { "type": "uses", "from": "weight", "target": "Node", "line_number": 23, "meta.relationshipType": "pattern_match", "meta.evidenceClass": "structural", "comment": "`weight (Node l r) = weight l + weight r` — same construct, two arguments." }
+  ],
+  "forbidErrors": [{}]
+}

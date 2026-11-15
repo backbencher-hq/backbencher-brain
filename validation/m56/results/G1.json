@@ -1,0 +1,31 @@
+{
+  "issue": "M56.G1",
+  "code": "G1",
+  "milestone": "M56",
+  "status": "failed",
+  "checks": 41,
+  "passed": 40,
+  "failed": 1,
+  "failures": [
+    "G1: every verified entry cites a commit that exists in this history — G1:818fe7ba, E1:ec0301ec, T1:ec0301ec, L1:ec0301ec, D1:ec0301ec, S1:ec0301ec, I1:ec0301ec, D2:b1807740, X1:a6d1b760"
+  ],
+  "negativeCases": 16,
+  "trackedFilesScanned": 4602,
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m56/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-11-15T04:27:27.464Z",
+  "limitations": [
+    "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design.",
+    "Key patterns match OpenRouter and NVIDIA shapes; a new provider format must be added to KEY_PATTERNS.",
+    "GitHub issue numbers are enforced exactly (milestone 56, issues 779-787); refiling requires updating REAL_ISSUE_NUMBERS, the plan and the ledger together.",
+    "G1's own ledger entry is excluded from the artifact comparison (this run replaces G1.json); its commit is still required to exist in history like every other entry.",
+    "Deploy-gate enforcement (Vercel wait-for-checks) is contractually declared here but proven end-to-end only in X1.",
+    "Verified issues with zero remaining verified peers (all planned) are accepted: the agreement checks are vacuously true until siblings produce artifacts, which the closure gate then requires."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-15T04:27:27.465Z",
+    "contentSha256": "f4b38a4a0dfb271a78285d4d43fd6411c46f8c829ddb8b744d5340bdf01156b5"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "fixtureId": "kotlin/nameless-declaration-expr-markup",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DERIV_EXPORTS_KOT4 R7 half 2, the same recovery through `<expr>…</expr>` around a FUNCTION name. Corpus origin: analysis/low-level-api-fir/testData/inBlockModification/memberPropertyWithTypeInDelegateScript.kts — measured there as one empty-named function symbol owned by `A`, plus three `references` edges whose SOURCE was the empty string (`-> doSmth`, `-> expr`, `-> String`), i.e. edges that name a type and name no declarer. Two things are pinned that the caret-markup fixture cannot show: the nameless local function does not steal its class's identity (it is a function-LOCAL declaration inside a `by lazy` block, so it is not published at all, and `A` keeps exactly the two members it really has), and the surviving sibling function `named` still publishes its own declared-type edge so the guard is not a blanket suppression.",
+  "expectSymbols": [
+    { "name": "A", "kind": "class" },
+    { "name": "x", "kind": "property", "ownerName": "A" },
+    { "name": "named", "kind": "method", "ownerName": "A" }
+  ],
+  "expectSymbolCount": [
+    { "name": "", "equals": 0 }
+  ],
+  "expectSymbolCountNote": "and the file publishes no duplicate of A's members: a nameless local function must not appear as an extra ownerless symbol",
+  "expectErrorCount": [
+    { "atLeast": 1, "comment": "the `<expr>` markup is reported as a warning ParseError" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "named", "target": "Int", "comment": "a named sibling declaration still publishes its declared-type edge — the nameless one does not suppress the pass" },
+    { "type": "contains", "from": "A", "target": "named" },
+    { "type": "contains", "from": "A", "target": "x" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "", "comment": "the measured pre-fix state on the corpus file: three declared_type edges with an empty source" },
+    { "type": "contains", "from": "A", "target": "", "comment": "and no containment edge may name an empty member either" }
+  ],
+  "forbidSymbols": [
+    { "name": "doSmth", "comment": "the real name inside the markup is not published: it is written inside a zero-length name node, and reading it out of the ERROR text would be a guess about intent (R7)" }
+  ]
+}

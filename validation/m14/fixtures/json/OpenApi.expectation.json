@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/OpenApi.json",
+  "authoredFrom": "BD-ontology: a `/`-prefixed key whose object declares an HTTP method is an API endpoint, and the `paths` object USES it. Derived from the OpenAPI document shape - a key beginning with `/` plus one of get/put/post/delete/options/head/patch/trace - and not from the analyzer's own predicate, so the two agreeing means something. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "openapi",
+      "kind": "property",
+      "ownerName": "OpenApi"
+    },
+    {
+      "name": "paths",
+      "kind": "class",
+      "ownerName": "OpenApi"
+    },
+    {
+      "name": "/api/v1",
+      "kind": "class",
+      "ownerName": "paths"
+    },
+    {
+      "name": "get",
+      "kind": "class",
+      "ownerName": "/api/v1"
+    },
+    {
+      "name": "responses",
+      "kind": "class",
+      "ownerName": "get"
+    },
+    {
+      "name": "200",
+      "kind": "class",
+      "ownerName": "responses"
+    },
+    {
+      "name": "description",
+      "kind": "property",
+      "ownerName": "200"
+    },
+    {
+      "name": "OpenApi",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "OpenApi",
+      "target": "OpenApi.openapi",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "OpenApi",
+      "target": "OpenApi.paths",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "OpenApi.paths",
+      "target": "OpenApi.paths./api/v1",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "OpenApi.paths./api/v1",
+      "target": "OpenApi.paths./api/v1.get",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "OpenApi.paths./api/v1.get",
+      "target": "OpenApi.paths./api/v1.get.responses",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "OpenApi.paths./api/v1.get.responses",
+      "target": "OpenApi.paths./api/v1.get.responses.200",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "OpenApi.paths./api/v1.get.responses.200",
+      "target": "OpenApi.paths./api/v1.get.responses.200.description",
+      "line_number": 3
+    },
+    {
+      "type": "uses",
+      "from": "OpenApi.paths",
+      "target": "OpenApi.paths./api/v1",
+      "line_number": 3,
+      "meta.reasonCode": "openapi_path_entry_declares_http_method",
+      "meta.endpoints": "qualified_path",
+      "meta.evidenceClass": "usage_contextual"
+    }
+  ]
+}

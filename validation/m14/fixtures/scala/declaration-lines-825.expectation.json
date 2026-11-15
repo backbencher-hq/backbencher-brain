@@ -1,0 +1,209 @@
+{
+  "fixtureId": "scala/declaration-lines-825",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off declaration-lines-825.scala. Three mechanisms put a relationship on a line its name is not written on, all three found by the M59 oracle over real scala3 sources, all three the same defect: the line belongs to the NAME, not to the construct containing it. (1) A definition with a leading annotation: tree-sitter-scala starts the definition node AT the annotation, so `contains Annotated -> countdown` landed on `@tailrec` (24) instead of `def countdown` (25), and the symbol's own range was wrong the same way. (2) A multi-line inheritance list: `with Mixin` / `with Product` were both stamped with the line the `extends` clause opened on (32). (3) A multi-line type expression: `List` and `Option` were stamped with the line the enclosing type expression opened on (39) instead of their own (40, 41). At the 300-file scala scale these three accounted for every remaining oracle failure (8 of 8). The forbidRelationships entries are the pre-fix behaviour, so a regression fails the gate instead of passing silently.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "interface"
+    },
+    {
+      "name": "Annotated",
+      "kind": "interface"
+    },
+    {
+      "name": "Long",
+      "kind": "class"
+    },
+    {
+      "name": "Types",
+      "kind": "module"
+    },
+    {
+      "name": "countdown",
+      "kind": "method",
+      "ownerName": "Annotated"
+    },
+    {
+      "name": "legacy",
+      "kind": "constant",
+      "ownerName": "Annotated"
+    },
+    {
+      "name": "Nested",
+      "kind": "type",
+      "ownerName": "Types"
+    },
+    {
+      "name": "Commented",
+      "kind": "interface"
+    },
+    {
+      "name": "withComment",
+      "kind": "constant",
+      "ownerName": "Commented"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Annotated",
+      "startLine": 23
+    },
+    {
+      "symbol": "countdown",
+      "ownerName": "Annotated",
+      "startLine": 25
+    },
+    {
+      "symbol": "legacy",
+      "ownerName": "Annotated",
+      "startLine": 29
+    },
+    {
+      "symbol": "Long",
+      "startLine": 32
+    },
+    {
+      "symbol": "Nested",
+      "ownerName": "Types",
+      "startLine": 39
+    },
+    {
+      "symbol": "Commented",
+      "startLine": 51
+    },
+    {
+      "symbol": "withComment",
+      "ownerName": "Commented",
+      "startLine": 53
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "countdown",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "legacy",
+      "line_number": 29
+    },
+    {
+      "type": "contains",
+      "from": "Base",
+      "target": "value",
+      "line_number": 18
+    },
+    {
+      "type": "extends",
+      "from": "Annotated",
+      "target": "Base",
+      "line_number": 23
+    },
+    {
+      "type": "extends",
+      "from": "Long",
+      "target": "Base",
+      "line_number": 32
+    },
+    {
+      "type": "mixes_in",
+      "from": "Long",
+      "target": "Mixin",
+      "line_number": 33,
+      "note": "FLEET MIXIN RULING (2026-10-19): with-clause composition is mixes_in, anchored on the parent's own line"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Long",
+      "target": "Product",
+      "line_number": 34,
+      "note": "FLEET MIXIN RULING (2026-10-19): with-clause composition is mixes_in, anchored on the parent's own line"
+    },
+    {
+      "type": "references",
+      "from": "Nested",
+      "target": "List",
+      "line_number": 40
+    },
+    {
+      "type": "references",
+      "from": "Nested",
+      "target": "Option",
+      "line_number": 41
+    },
+    {
+      "type": "references",
+      "from": "countdown",
+      "target": "Int",
+      "line_number": 25
+    },
+    {
+      "type": "contains",
+      "from": "Commented",
+      "target": "withComment",
+      "line_number": 53
+    },
+    {
+      "type": "extends",
+      "from": "Commented",
+      "target": "Base",
+      "line_number": 51
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "countdown",
+      "line_number": 24,
+      "note": "pre-fix: the `@tailrec` line, because the definition node starts at its leading annotation"
+    },
+    {
+      "type": "contains",
+      "from": "Annotated",
+      "target": "legacy",
+      "line_number": 28,
+      "note": "pre-fix: the `@deprecated` line"
+    },
+    {
+      "type": "implements",
+      "from": "Long",
+      "target": "Mixin",
+      "line_number": 32,
+      "note": "pre-fix: the line the `extends` clause opened on; `with Mixin` is written on 33"
+    },
+    {
+      "type": "implements",
+      "from": "Long",
+      "target": "Product",
+      "line_number": 32,
+      "note": "pre-fix: same clause-start line; `with Product` is written on 34"
+    },
+    {
+      "type": "references",
+      "from": "Nested",
+      "target": "List",
+      "line_number": 39,
+      "note": "pre-fix: the line the `type` alias opened on; `List[` is written on 40"
+    },
+    {
+      "type": "references",
+      "from": "Nested",
+      "target": "Option",
+      "line_number": 39,
+      "note": "pre-fix: same enclosing-expression line; `Option[T]` is written on 41"
+    },
+    {
+      "type": "contains",
+      "from": "Commented",
+      "target": "withComment",
+      "line_number": 52,
+      "note": "pre-fix: the `@deprecated(\"c\", \"1.0\")` line \u2014 selected because the trailing comment sits between the annotation and the declaration and was skipped only for annotations"
+    }
+  ]
+}

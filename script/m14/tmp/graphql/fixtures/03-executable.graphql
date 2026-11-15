@@ -1,0 +1,38 @@
+query GetUser($id: ID!, $withPosts: Boolean = false) @cached {
+  user(id: $id) {
+    ...UserFields
+    ... on Admin {
+      level
+    }
+    nick: name
+    posts(first: 3) @include(if: $withPosts) {
+      edges {
+        node {
+          id
+        }
+      }
+    }
+  }
+}
+
+mutation CreateUser($input: UserInput!) {
+  createUser(input: $input) {
+    id
+  }
+}
+
+subscription OnUserChanged {
+  userChanged {
+    id
+  }
+}
+
+fragment UserFields on User {
+  id
+  name
+  role
+}
+
+{
+  ping
+}

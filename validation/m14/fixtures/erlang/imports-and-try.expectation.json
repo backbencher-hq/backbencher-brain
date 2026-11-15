@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/imports-and-try.erl",
+  "authoredFrom": "F6 coverage enrolment, M60 functional-family round (2026-09-25). Enrolling erlang in verify-fixture-coverage.ts reported handled=37 fixtureTypes=93 uncovered=5 — import_attribute, wild_attribute, attr_name, try_expr, pp_include_lib — i.e. five node types the analyzer branches on and the spec declares handled, with no fixture exercising any of them. Expectations authored from the pinned grammar's own shapes (probe script/m14/tmp/erlang-er2-include-shapes.ts measured which wrapper the grammar emits per include form: -include -> pp_include + the include keyword, -include_lib -> pp_include_lib + include_lib) and from the analyzer's declared contract, not from observed output. The negative half is the point of the try: risky/1 and cleanup/0 are NOT declared in this module, so the declared name/ARITY gate must emit no call for either, and the `after` block is not an arm.",
+  "expectSymbols": [
+    {
+      "name": "imports_and_try",
+      "kind": "module"
+    },
+    {
+      "name": "nif_one",
+      "kind": "function",
+      "ownerName": "imports_and_try",
+      "meta.isNif": true,
+      "meta.arity": 0,
+      "comment": "-nifs([...]) is the ONLY declaration site for a NIF: it publishes one function symbol per entry (wild_attribute + attr_name pinned here)"
+    },
+    {
+      "name": "nif_two",
+      "kind": "function",
+      "ownerName": "imports_and_try",
+      "meta.isNif": true,
+      "meta.arity": 1
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "imports_and_try",
+      "meta.arity": 1
+    },
+    {
+      "name": "guarded",
+      "kind": "function",
+      "ownerName": "imports_and_try",
+      "meta.arity": 1
+    },
+    {
+      "name": "init",
+      "kind": "function",
+      "ownerName": "imports_and_try",
+      "meta.arity": 0
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "init",
+      "kind": "function",
+      "equals": 1,
+      "comment": "-on_load(init/0) NAMES a function the module already declares — a second symbol there would be two rows for one entity, so the attribute emits nothing"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "lists",
+      "comment": "-import(lists, [map/2, foldl/3]): the import entry carries the module and the item list; the items are never symbols of this file",
+      "items": [
+        "map",
+        "foldl"
+      ],
+      "note": "`-import(lists, [map/2, foldl/3])`: the entry carries the module and its item list, and the items are never symbols of this file. The field is `items`, which is the DECLARED field on ImportInfo (src/ast/types.ts:141) and the one 28 analyzers emit; `importedNames` is marked a legacy analyzer field in engine.ts and read by nothing, and `functions` is not an import field anywhere in the family. This row asserted a spelling, not a behaviour — the behaviour (module + items, no symbols for the items) is unchanged and still pinned."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "imports_and_try",
+      "target": "kernel/include/file.hrl",
+      "line_number": 14,
+      "meta.isLibInclude": true,
+      "meta.partRole": "library",
+      "meta.isFileInclusion": true,
+      "meta.evidenceClass": "import_based",
+      "comment": "ER-D46: the -include_lib path STRING's line (pp_include_lib) — a FILE INCLUSION row, and the same name-bearing-node contract callsite-lines-825 pins for -include"
+    },
+    {
+      "type": "references",
+      "from": "imports_and_try",
+      "target": "lists",
+      "line_number": 15,
+      "meta.isModuleImport": true,
+      "comment": "the -import module atom's line (import_attribute)"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "lists:map",
+      "meta.context": "remote function call",
+      "meta.callArity": 2,
+      "line_number": 21
+    },
+    {
+      "type": "contains",
+      "from": "imports_and_try",
+      "target": "nif_one",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "imports_and_try",
+      "target": "nif_two",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "imports_and_try",
+      "target": "run",
+      "line_number": 20
+    },
+    {
+      "type": "contains",
+      "from": "imports_and_try",
+      "target": "guarded",
+      "line_number": 23
+    },
+    {
+      "type": "contains",
+      "from": "imports_and_try",
+      "target": "init",
+      "line_number": 33
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "run",
+      "equals": 1
+    },
+    {
+      "symbol": "guarded",
+      "equals": 3,
+      "comment": "try_expr: base 1 + two catch arms; the `after` block is not an arm and the anonymous fun inside run is not one either"
+    },
+    {
+      "symbol": "init",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "imports_and_try",
+      "target": "kernel/include/file.hrl",
+      "comment": "ER-D46 negative half: the include_lib is a part_of row now, never a references row"
+    },
+    {
+      "type": "calls",
+      "from": "guarded",
+      "target": "risky",
+      "comment": "risky/1 is NOT declared in this module — the declared name/ARITY gate must emit nothing (the same gate that lets forward references through)"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "risky"
+    },
+    {
+      "type": "calls",
+      "from": "guarded",
+      "target": "cleanup",
+      "comment": "`after cleanup` is an atom expression, not an invocation — and cleanup/0 is undeclared"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "map",
+      "comment": "an imported ITEM is an import entry, never a symbol of the importing file"
+    },
+    {
+      "name": "foldl"
+    },
+    {
+      "name": "Reason",
+      "comment": "a catch-pattern binding is not a symbol"
+    },
+    {
+      "name": "Y"
+    },
+    {
+      "name": "cleanup"
+    }
+  ]
+}

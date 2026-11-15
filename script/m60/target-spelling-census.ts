@@ -101,7 +101,7 @@ import { LANGS, LANG_REPOS, SECOND_CORPUS } from "../m14/differential.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/target-spelling.json")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 
 const arg = (name: string): string | undefined => {
   const i = process.argv.indexOf(name)

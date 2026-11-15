@@ -1,0 +1,50 @@
+{
+  "files": 400,
+  "stdlibListSize": 300,
+  "bins": {
+    "namespace-star/stdlib": {
+      "count": 978,
+      "stdlib": 978,
+      "samples": [
+        "Fabulous/eng/monorepo/changelog.py argparse:*",
+        "Fabulous/eng/monorepo/changelog.py re:*",
+        "Fabulous/eng/monorepo/generate-api-reference.py argparse:*",
+        "Fabulous/eng/monorepo/generate-api-reference.py re:*",
+        "Fabulous/eng/monorepo/generate-api-reference.py sys:*"
+      ]
+    },
+    "from-item/stdlib": {
+      "count": 2576,
+      "stdlib": 2576,
+      "samples": [
+        "Fabulous/eng/monorepo/changelog.py pathlib:Path",
+        "Fabulous/eng/monorepo/generate-api-reference.py __future__:annotations",
+        "Fabulous/eng/monorepo/generate-api-reference.py pathlib:Path",
+        "Fabulous/eng/monorepo/prepare-templates.py pathlib:Path",
+        "Fabulous/eng/monorepo/validate-doc-links.py __future__:annotations"
+      ]
+    },
+    "namespace-star/other": {
+      "count": 7,
+      "stdlib": 0,
+      "samples": [
+        "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py torch:*",
+        "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py torch.nn:*",
+        "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py torch.nn.functional:*",
+        "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py datasets:*",
+        "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/api_client.py grace_generated_openapi_probe.models:*"
+      ]
+    },
+    "from-item/other": {
+      "count": 3100,
+      "stdlib": 0,
+      "samples": [
+        "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py torch.utils.data:DataLoader",
+        "Flux.jl/examples/resnet_tinyimagenet/pytorch/resnet_tinyimagenet.py datasets:load_dataset",
+        "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/__init__.py grace_generated_openapi_probe.api.approvals_api:ApprovalsApi",
+        "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/__init__.py grace_generated_openapi_probe.api.branches_api:BranchesApi",
+        "Grace/sdk/generated/matrix/openapi-generator/python/grace_generated_openapi_probe/__init__.py grace_generated_openapi_probe.api.cache_api:CacheApi"
+      ]
+    }
+  }
+}

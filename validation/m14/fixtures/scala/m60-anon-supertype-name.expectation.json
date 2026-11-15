@@ -1,0 +1,126 @@
+{
+  "fixtureId": "scala/m60-anon-supertype-name",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written from the M60/S3 ruling; spellings and lines recorded from the post-fix run. The two DEFECT shapes are pinned by what they must NOT publish, because both defects PUBLISHED an edge — an emission-only fixture cannot fail on either. A symbol constraint is matched field-for-field against the published symbol object, which carries `range` and not `line`, so no expectSymbols row may use `line` — the line is pinned on the RELATIONSHIP instead, where line_number is a real constraint. Relationship rows do carry line_number.",
+  "rationale": "M60/S3 — an anonymous class's name is synthetic, so it must be canonical (the analyzer's own rule, #924: 'a SYNTHETIC name must be canonical — never source text'). The head-type walk is STRUCTURAL and returns nothing for a shape with no reachable type_identifier, so the canonical `anonymous_object` fallback is reached. Measured on 400 files per corpus: cats-effect 20 of 291 anonymous symbols carried source text (`anonymous_(IO ~> F)` x18), scala3 15 of 191 (including two multiline names). After the walk: 0 and 0.",
+  "expectSymbols": [
+    {
+      "name": "Shapes",
+      "kind": "class"
+    },
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "Shapes",
+      "comment": "control: a plain type_identifier supertype still names"
+    },
+    {
+      "name": "anonymous_java.util.concurrent.Callable",
+      "kind": "class",
+      "ownerName": "Shapes",
+      "comment": "a QUALIFIED supertype keeps every segment; stable_identifier is RIGHT-NESTED, and a flat scan dropped `java.util`, publishing `anonymous_concurrent.Callable`"
+    },
+    {
+      "name": "anonymous_object",
+      "kind": "class",
+      "ownerName": "Shapes",
+      "comment": "THE DEFECT SHAPE 1: `new (Int ~> String) { ... }` — a natural-transformation supertype has no head type. Was published as `anonymous_(Int ~> String)`."
+    },
+    {
+      "name": "anonymous_object#2",
+      "kind": "class",
+      "ownerName": "Shapes",
+      "comment": "THE DEFECT SHAPE 2 (line 26), now DISAMBIGUATED: this is the second class in the file with no nameable supertype, so it takes #2 rather than colliding with the line-20 `anonymous_object`. M60: 402 scala3 files declared a duplicate anonymous name and two classes became one node."
+    },
+    {
+      "name": "apply",
+      "ownerName": "anonymous_object",
+      "comment": "the anonymous class still OWNS its members"
+    },
+    {
+      "name": "z",
+      "ownerName": "anonymous_object#2"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "anonymous_Runnable",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_Runnable",
+      "target": "run",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "anonymous_java.util.concurrent.Callable",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "anonymous_object",
+      "line_number": 20
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_object",
+      "target": "apply",
+      "line_number": 20
+    },
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "anonymous_object#2",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_object#2",
+      "target": "z",
+      "line_number": 26
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_object#2",
+      "target": "z",
+      "line_number": 26,
+      "comment": "the disambiguated class owns its own member, rather than the two same-named classes sharing one node"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "anonymous_concurrent.Callable",
+      "comment": "the flat-segment-scan defect: the qualified supertype lost `java.util`"
+    },
+    {
+      "name": "anonymous_(Int ~> String)",
+      "comment": "the source-text-as-name defect, natural-transformation shape"
+    },
+    {
+      "name": "anonymous_:",
+      "comment": "the source-text-as-name defect, no-supertype shape (its name began with the template body's own text)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Shapes",
+      "target": "anonymous_concurrent.Callable",
+      "comment": "both defects PUBLISHED an edge, so the negative half is the assertion that can fail on them"
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_object",
+      "target": "z",
+      "line_number": 26,
+      "comment": "THE COLLISION DEFECT: `z` belongs to the SECOND no-supertype class, so attributing it to the first is the merged-node bug. If this edge reappears the disambiguation regressed."
+    }
+  ]
+}

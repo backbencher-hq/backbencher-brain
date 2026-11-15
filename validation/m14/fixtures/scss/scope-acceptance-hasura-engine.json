@@ -1,0 +1,73 @@
+{
+  "repo": "hasura-engine",
+  "files": 90,
+  "partition": {
+    "before": {
+      "references": {
+        "unresolved": 38,
+        "resolved": 131,
+        "ambDeclOnly": 3,
+        "total": 172
+      },
+      "contains": {
+        "resolved": 1697,
+        "total": 1697
+      },
+      "calls": {
+        "resolved": 2,
+        "total": 2
+      },
+      "exports": {
+        "resolved": 6,
+        "ambDeclOnly": 34,
+        "total": 40
+      },
+      "uses": {
+        "resolved": 12,
+        "total": 12
+      },
+      "imports": {
+        "unresolved": 47,
+        "total": 47
+      }
+    },
+    "after": {
+      "references": {
+        "unresolved": 38,
+        "resolved": 134,
+        "total": 172
+      },
+      "contains": {
+        "resolved": 1697,
+        "total": 1697
+      },
+      "calls": {
+        "resolved": 2,
+        "total": 2
+      },
+      "exports": {
+        "resolved": 40,
+        "total": 40
+      },
+      "uses": {
+        "resolved": 12,
+        "total": 12
+      },
+      "imports": {
+        "unresolved": 47,
+        "total": 47
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 646,
+    "before": {
+      "ambDeclOnly": 37
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 1783,
+    "falseBindings": 0
+  }
+}

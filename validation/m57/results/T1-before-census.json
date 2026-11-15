@@ -1,0 +1,19 @@
+{
+  "probe": "M57.T1-before-census",
+  "milestone": "M57",
+  "issue": 789,
+  "at": "2026-09-13T00:04:30Z",
+  "db": "~/.bb (BB_DATA_DIR default)",
+  "projectId": "sha1(realpath(/home/ishaq2321/mcp/backbencher-brain))",
+  "files": 2867,
+  "flaggedIsTestFile": 30,
+  "flaggedNonCode": 30,
+  "flaggedCode": 0,
+  "convictedSample": [
+    "script/m14/spec/cpp-completeness.json",
+    "script/m14/spec/csharp-completeness.json",
+    "script/m14/spec/dart-completeness.json"
+  ],
+  "method": "Direct SQL over brain_file for the real project id, run with bun against src/ modules. Non-code vocabulary = test-classification.NON_CODE_TEST_LANGUAGES.",
+  "status": "verified"
+}

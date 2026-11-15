@@ -1,0 +1,223 @@
+{
+  "fixtureId": "perl/code-references",
+  "language": "perl",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Authored 2026-10-05 on analyzer/CORPUS_PERL3 from the source .pm above, with every line number transcribed from that file by reading it, and only then confirmed against one analyzer run. The two labels pinned here (`uses`, `references`) were both EMITTED-0 at handover and are both GAP verdicts; the counts that decided them are in script/m14/perl-construct-probe.mts over the derived 5,127-file population, and the reasoning for refusing each shape is in docs/analyzers/perl.md. Every REFUSED shape below is pinned as a forbid, because a refusal nothing tests is an oversight rather than a rule -- that is the same lesson the `overrides`-missing-from-Bash wave taught, and the same lesson this lane's own `use constant { ... }` dead branch taught twice. Lines 56 and 62 were added AFTER the first mutant run, because two of the guards they cover turned out to be untested: five mutants survived, three of them because a second guard on the same rule caught the input the forbid was written for. A forbid nothing exercises is an oversight, so the SOURCE grew the shapes its forbids were already asserting, rather than the forbids being deleted to make the suite green.",
+  "rationale": "Perl has two constructs that name a symbol WITHOUT invoking it, and the lane emitted 0 edges for either. Naming a symbol without invoking it is not `calls`: `my $cb = \\&helper;` runs nothing, and a graph that files it as a call says `helper` was executed.\n\nTHE SPLIT BETWEEN THE TWO LABELS, since `src/lsp/evidence_tier.ts` rule 3 puts `reference(s)` and `use(s)` in the SAME tier and therefore cannot choose between them:\n\n  uses        a symbol named in a VALUE position -- the thing the code uses.\n              bash files a `$VAR` read this way, ruby an `@ivar` read, python an\n              `obj.attr` read, php a `$this->x` read.\n  references  a name a QUERY tests against, invoking nothing: a class, a role, a\n              method. java files an import, python files `isinstance(x, T)`, php a\n              declared type. Perl's `->isa('C')` is python's isinstance under a\n              different name.\n\nEmitting both for one construct would ship the same edge under two labels, and bb_graph would count it twice.\n\nWHAT IS PINNED, AND WHY EACH LINE IS HERE:\n\n  17   \\&helper             uses run -> helper. A code reference: the name is\n                            written and nothing is invoked.\n  20   \\&Code::Ref::helper  the QUALIFIED spelling of line 17. It is ONE edge, not\n                            two: `addRelationship` keys on type+source+target, and\n                            two calls to one leaf are one edge everywhere else in this\n                            lane too. The package is not thrown away -- it is in\n                            `meta.qualifiedAs`, so a reader can ask for the qualified\n                            form without the graph carrying two nodes.\n  24   \\&helper()           the CALL is filed, the reference is not. The grammar\n                            types this child as `function_call_expression`, so the\n                            `uses` rule finds no `function` node under the refgen and\n                            cannot fire. This line is also the pin for the `&` defect\n                            it used to carry: the target was `&helper`, which is not a\n                            name the indexer stores, and the same defect was 93 edges\n                            in 36 corpus files before the strip landed.\n  26   \\&{ $self->{slot} }  REFUSED -- 3,618 corpus sites whose target is not\n                            written. Nothing in the file names a sub here.\n  29   \\&$plain             REFUSED -- the varname is `$plain`, and the written-name\n                            allowlist rejects a sigil.\n  31   \\@LIST               REFUSED -- a ref to an ARRAY, not to code: the refgen has\n                            no `function` child at all.\n  33   \\$TIMEOUT            REFUSED -- a scalar ref, same reason.\n  36   ->isa('Other::Class')  references run -> Class. `isa` IS invoked and `calls\n                            run -> isa` is CORRECT beside it; the class is not\n                            invoked, and that is the edge this label exists for.\n  38   ->isa($self->{cls})  REFUSED -- 175 corpus sites where the query's name is a\n                            variable. The file states no name, so an edge would name\n                            a symbol the source never mentions.\n  40   ->DOES('Some::Role')  references run -> Role. A role is named, not invoked.\n  42   ->can('later')       references run -> later. A METHOD named, not invoked.\n  44   ->can('run')         REFUSED -- self-reference by method. True of the source\n                            and useless in a graph, the same rule as the self-base\n                            guard on `extends`.\n  46   ->isa('Code::Ref')   REFUSED -- self-reference by package: the query asks\n                            about the package doing the asking.\n  48   ->isa(\"Other::$suffix\")  REFUSED -- an INTERPOLATED literal is not a name. Same\n                            rule `namesAClass` already applies to a receiver.\n  53   $TIMEOUT             FORBIDDEN as a `uses` edge. This is the measured gap and\n                            it is pinned as ABSENT so it cannot be mistaken for an\n                            oversight: reading a package global the file itself\n                            declares is 2 sites in 40 files on the probe's first pass,\n                            against 850 DECLARATION sites. Perl's package globals are\n                            written far more often than they are read, so a `uses`\n                            branch on them would be a large branch over almost nothing.\n                            Declared in the lane doc's limitations with its number.\n\nNO BRANCH EXISTS for two shapes with a measured ZERO, and their absence is the point:\n`UNIVERSAL::isa($x, 'C')` is 0 sites in 5,127 files and `bless $x, 'Class'` is 0 in\n5,127 (the idiom is `bless $self, $class`, 736 sites, where the class is a VARIABLE).\nA branch for a construct the corpus does not contain is dead code by this lane's own\nstandard, so the zero is a recorded ruling instead of an unreachable `if`.\n\nTWO LINES ADDED BECAUSE FIVE MUTANTS SURVIVED, and what that survival measured.\nThree of the surviving mutants removed a guard that a SECOND guard on the same\nrule already covered, which means those forbids were asserting something the\nanalyzer got right for a different reason than the one the code gives:\n\n  the `varname` lookup in the `uses` branch is redundant with\n  `isWrittenCalleeName` AND with `namedChildCount !== 1`. Remove any one of the\n  three and `\\&{ $self->{slot} }` is still refused by the other two. That is\n  defence in depth, and it is worth having -- but it is not something a single\n  guard's forbid can test.\n\n  `literalNameIn`'s node-type gate and its `$` test are each redundant with\n  `isWrittenCalleeName`, which rejects a sigil. Remove either and\n  `$self->isa($self->{cls})` and `$self->isa(\"Other::$suffix\")` are still\n  refused, because their text starts with `$` and a sigil is not a written name.\n\nSo the fixes are in the SOURCE and not in the expectation, because the forbids\nwere already asserting the right thing and only the analyzer had no shape that\nreached them:\n\n  56   \\&run               self-reference by CODE REFERENCE, inside `sub run`.\n                           REFUSED. Without line 56 the self-reference guard in\n                           the `uses` branch is untested -- this forbid could not\n                           fire on any line the fixture wrote.\n  62   ->render('Not::AClass')   a method call with a LITERAL argument that names\n                           nothing any query asks about. `render` is not\n                           isa/DOES/can, so no type is being named and there is\n                           no `references` edge. This is the control for the\n                           query-method gate: remove that gate and this line\n                           publishes a class named `Not::AClass`, which is the\n                           phantom-type defect class this lane has removed twice.\n\nThe mutation set that CANNOT die is not registered, and saying so is part of the\nresult: a mutant registered against a guard that a second guard already covers\ncannot fail, so registering it would be registering a claim the harness does not\nsupport. The redundant guards are declared here with the evidence that they are\nredundant, and the load-bearing ones each have a mutant that dies.",
+  "expectSymbols": [
+    {
+      "name": "Code::Ref",
+      "kind": "class"
+    },
+    {
+      "name": "TIMEOUT",
+      "kind": "constant"
+    },
+    {
+      "name": "build",
+      "kind": "method",
+      "ownerName": "Code::Ref"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "Code::Ref"
+    },
+    {
+      "name": "helper",
+      "kind": "method",
+      "ownerName": "Code::Ref"
+    },
+    {
+      "name": "later",
+      "kind": "method",
+      "ownerName": "Code::Ref"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Code::Ref",
+      "startLine": 1,
+      "endLine": 1
+    },
+    {
+      "symbol": "TIMEOUT",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "symbol": "build",
+      "startLine": 7,
+      "endLine": 11
+    },
+    {
+      "symbol": "run",
+      "startLine": 13,
+      "endLine": 71
+    },
+    {
+      "symbol": "helper",
+      "startLine": 73,
+      "endLine": 73
+    },
+    {
+      "symbol": "later",
+      "startLine": 74,
+      "endLine": 74
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "helper",
+      "line_number": 17,
+      "confidence": 0.9,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "code-reference",
+      "note": "a code reference NAMES the sub and invokes nothing. The line is the `varname`'s own line, which is where `helper` is written -- M59's rule that the edge carries the line that names it, not the line of the enclosing statement (line 16 is the comment, 17 is the code)."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "helper",
+      "line_number": 24,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "name-only-callee",
+      "note": "\\&helper() is a reference to a CALL. The call is real and is filed once, under `calls` -- and its target is `helper`, NOT `&helper`. Before the strip this row read `&helper`, a name no symbol carries; the same defect was 93 edges in 36 corpus files."
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "Class",
+      "line_number": 36,
+      "confidence": 0.9,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "type-query-literal",
+      "meta.query": "isa",
+      "note": "a class named in a query and not invoked. `Other::Class` leaf-qualifies to `Class`, the same convention `instantiates` already used for `Util.constructor`. The `calls run -> isa` edge beside it is correct and is pinned separately -- `isa` IS a method this line invokes."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "isa",
+      "line_number": 36,
+      "meta.evidenceClass": "usage_contextual",
+      "note": "the control for the row above. `$self->isa(...)` really does invoke a method named `isa`, so the `calls` edge is right and the two labels are about two different facts about one line."
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "Role",
+      "line_number": 40,
+      "confidence": 0.9,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "type-query-literal",
+      "meta.query": "DOES",
+      "note": "a role named in a query. `DOES` is perl's role-satisfaction test, so the target is a Trait when the file declares one and a name otherwise -- which is what the leaf convention already gives."
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "later",
+      "line_number": 42,
+      "confidence": 0.9,
+      "meta.evidenceClass": "usage_contextual",
+      "meta.reasonCode": "type-query-literal",
+      "meta.query": "can",
+      "note": "a METHOD named in a query. `later` is declared at line 59 in this same file, so this edge resolves at BOTH ends without leaving the file -- which is the bar `calls` deliberately does not claim and this label can."
+    },
+    {
+      "type": "contains",
+      "from": "Code::Ref",
+      "target": "run",
+      "line_number": 13
+    },
+    {
+      "type": "contains",
+      "from": "Code::Ref",
+      "target": "helper",
+      "line_number": 73
+    },
+    {
+      "type": "contains",
+      "from": "Code::Ref",
+      "target": "later",
+      "line_number": 74
+    },
+    {
+      "type": "contains",
+      "from": "Code::Ref",
+      "target": "TIMEOUT",
+      "line_number": 5
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run",
+      "note": "self-reference by method is refused (line 44). A self-edge is true of the source and useless in a graph; the same rule as the self-base guard on `extends`."
+    },
+    {
+      "type": "uses",
+      "target": "TIMEOUT",
+      "note": "THE MEASURED GAP, pinned as absent. `my $t = $TIMEOUT;` on line 53 reads a package global this file declares, and no `uses` edge is emitted for it: the probe measured 2 such reads in 40 files against 850 declaration sites. Declared in the lane doc's limitations with that number, so it reads as a decision rather than an oversight."
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "Ref",
+      "note": "self-reference by package is refused (line 46): `$self->isa('Code::Ref')` inside `package Code::Ref` asks the class whether it is itself."
+    },
+    {
+      "type": "references",
+      "from": "run",
+      "target": "suffix",
+      "note": "an INTERPOLATED literal is not a name (line 48). `\"Other::$suffix\"` is the same node type as `'Other::Class'` and only the `$` distinguishes them, so this forbid is what makes the allowlist positive rather than permissive."
+    },
+    {
+      "type": "references",
+      "target": "cls",
+      "note": "a VARIABLE passed to `isa` states no name (line 38). 175 corpus sites of this shape are refused."
+    },
+    {
+      "type": "uses",
+      "target": "slot",
+      "note": "\\&{ $self->{slot} } (line 26) is a refgen with a `code_deref_expression` child, not a `varname` -- nothing is written that names a sub. 3,618 corpus sites of non-written code-reference targets are refused on this rule, and a sigil-stripping emitter would have fabricated every one of them."
+    },
+    {
+      "type": "uses",
+      "target": "LIST",
+      "note": "\\@LIST (line 31) is a ref to an ARRAY. The refgen has no `function` child at all, so this cannot be reached even in principle -- pinned so the rule is asserted rather than assumed."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "&helper",
+      "note": "THE REGRESSION PIN for the `&` strip. This row was the analyzer's actual output before the fix, in 93 edges across 36 corpus files, and it could never resolve: the symbol the indexer stores is `helper`. Deleting the strip turns this forbid red."
+    },
+    {
+      "type": "references",
+      "target": "AClass",
+      "note": "line 62 is the control for the query-method gate. `render` is not isa/DOES/can, so the literal names nothing that is being QUERIED; without the gate this line publishes a type `Not::AClass`, leaf-qualified to `AClass` like every other target in this lane. That is the phantom-type defect class this lane has removed twice."
+    },
+    {
+      "type": "uses",
+      "from": "run",
+      "target": "run",
+      "note": "line 56 is the self-reference guard for the CODE-REFERENCE branch, the same rule the self-base guard applies to `extends`. This row could not fire before line 56 existed, which is why five mutants survived the first run."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "print",
+      "note": "line 68, `&print(\"hello\\n\")`. `print` is a PERL BUILTIN and the `&` is sigil, so the builtin probe has to see through it. The pre-review builtin list being 10 words short produced phantom call edges on mojo, and this is the same mechanism one level along: a probe handed `&print` misses the set. FORBIDDEN rather than expected, because the correct answer is that this line emits NOTHING."
+    },
+    {
+      "type": "uses",
+      "target": "$plain",
+      "note": "line 29, `\\&$plain`. If the name guards on the code-reference target are removed TOGETHER, the refgen's first named child is a `scalar` and the target becomes the variable's own text. Kept as a wildcard forbid (no `from`) so it holds whatever sub the edge is attributed to."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "mode": "cold",
+  "data": {
+    "tag": "element-plus",
+    "cold": true,
+    "embeddings": 0,
+    "flushCompleted": true,
+    "rows": [
+      {
+        "id": "ep-a1",
+        "query": "tree component data model",
+        "negative": false,
+        "gold": "TreeStore",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "data",
+          "tree-data",
+          "Tree data",
+          "data",
+          "data"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "ep-s1",
+        "query": "ElCheckboxButton",
+        "negative": false,
+        "gold": "ElCheckboxButton",
+        "hit": true,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "ElCheckboxButton"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "ep-n1",
+        "query": "quantum lattice simulation",
+        "negative": true,
+        "gold": null,
+        "hit": null,
+        "confidence": 0.1,
+        "evidenceClass": "unknown",
+        "sourceContexts": [],
+        "answerExcerpt": "I couldn't find a specific answer or matching code to your query in the brain database.",
+        "answersHasFallbackNote": false,
+        "answersHasExplicitUnknown": true
+      }
+    ]
+  },
+  "generatedAt": "2026-08-25T00:06:57.705Z"
+}

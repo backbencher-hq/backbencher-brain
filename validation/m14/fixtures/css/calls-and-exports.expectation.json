@@ -1,0 +1,21 @@
+{
+  "fixtureId": "css/calls-and-exports",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The two relationship types this lane could express only through optional/newer constructs, pinned in both directions in one file. `calls`: CSS Functions and Mixins Level 1 is the only place CSS DECLARES a callable — `@function --add(a, b) { … }` — and `--add(1px, 2px)` invokes it, so the edge's target is the DECLARATION and the edge exists only because this file declares that name. The four built-ins in the same rule (`rgba`, `calc`, `var`, `url`) are forbidden as targets: a built-in names no declaration anywhere, and the corpus measures them at 20,370 / 15,220 / 162,470 / 4,932 sites, so an edge to one would be a fabricated target at enormous scale rather than a rare mistake. `exports`: CSS Modules writes a module's published surface as a rule whose selector is `:export`, holding the names importers can bind; each declaration inside it publishes a symbol and an `exports` edge from the file's module symbol. A property declaration in an ORDINARY rule is forbidden as an export, which is the distinction the construct rests on. Both types occur 0 times in this lane's .css population (the 10 `@function` sites the census found are .sass utility files, which the exported-name check does not reach), so both are corpus-unexercised: implemented, counted once, with this fixture as the positive control that proves the emission fires.",
+  "expectRelationships": [
+    { "type": "calls", "from": ".card", "target": "@function --add(a, b)", "meta.isUserDefinedFunctionCall": true, "note": "the target is the DECLARED function, not the callable spelling" },
+    { "type": "exports", "from": "calls-and-exports.css", "target": "primary", "meta.exportForm": "css_modules_export_block", "note": "a `:export` block declaration is the module's published name" },
+    { "type": "exports", "from": "calls-and-exports.css", "target": "accent", "meta.exportForm": "css_modules_export_block" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "rgba", "note": "a built-in is not a call target — no declaration exists anywhere to name" },
+    { "type": "calls", "target": "calc", "note": "a built-in is not a call target" },
+    { "type": "calls", "target": "var", "note": "a built-in is not a call target" },
+    { "type": "calls", "target": "url", "note": "a built-in is not a call target" },
+    { "type": "exports", "target": "padding", "note": "an ordinary rule's property declaration is not an export" },
+    { "type": "exports", "target": "color", "note": "an ordinary rule's property declaration is not an export" },
+    { "type": "exports", "target": "width", "note": "an ordinary rule's property declaration is not an export" },
+    { "type": "calls", "from": ".card", "target": "--add", "note": "the target is the DECLARATION's symbol name, not the callable spelling — a spelling is not a symbol" }
+  ]
+}

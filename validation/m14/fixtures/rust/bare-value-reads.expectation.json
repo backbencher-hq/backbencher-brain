@@ -1,0 +1,122 @@
+{
+  "fixtureId": "rust/bare-value-reads",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R1 (#736 rust wave): the analyzer emitted NO bare-identifier edges at all while the oracle audited only calls/member reads. Every bare identifier naming a file-visible VALUE is now a Uses edge: file consts/statics (LIMIT/GLOBAL), callbacks as values (identity/target), same-module consts (C in get_c), qualified variant leaves (Color::Red in matcher patterns — the deliberate Rust difference from CPP), call arguments (LIMIT in takes_cb). Shadowing suppresses (param GLOBAL in shadowed). R8: the `where T: Clone` bound emits no references (verified by empty REFS alongside the relationship-kinds String:PartialEq pin, which is a real path bound and still emits).",
+  "expectSymbols": [
+    {
+      "name": "LIMIT",
+      "kind": "variable"
+    },
+    {
+      "name": "Point",
+      "kind": "struct"
+    },
+    {
+      "name": "matcher",
+      "kind": "function"
+    },
+    {
+      "name": "arm_binds",
+      "kind": "function"
+    },
+    {
+      "name": "closure_binds",
+      "kind": "function"
+    },
+    {
+      "name": "capped",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "GLOBAL"
+    },
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "LIMIT"
+    },
+    {
+      "type": "uses",
+      "from": "reader",
+      "target": "identity"
+    },
+    {
+      "type": "uses",
+      "from": "get_c",
+      "target": "C"
+    },
+    {
+      "type": "uses",
+      "from": "matcher",
+      "target": "Red"
+    },
+    {
+      "type": "uses",
+      "from": "takes_cb",
+      "target": "LIMIT"
+    },
+    {
+      "type": "calls",
+      "from": "reader",
+      "target": "takes_cb"
+    },
+    {
+      "type": "calls",
+      "from": "takes_cb",
+      "target": "cb"
+    },
+    {
+      "type": "uses",
+      "from": "arm_binds",
+      "target": "VAL",
+      "comment": "R9: uppercase resolvable arm pattern is a constant-pattern read"
+    },
+    {
+      "type": "uses",
+      "from": "closure_binds",
+      "target": "LIMIT",
+      "comment": "R10: the closure binds only its own body; the post-closure read resolves"
+    },
+    {
+      "type": "uses",
+      "from": "capped",
+      "target": "MAX",
+      "comment": "R11: scoped single-leaf use binds its leaf"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "shadowed",
+      "target": "GLOBAL"
+    },
+    {
+      "type": "references",
+      "from": "generic",
+      "target": "T"
+    },
+    {
+      "type": "uses",
+      "from": "arm_binds",
+      "target": "v",
+      "comment": "R9: bare arm pattern binds — neither the pattern site nor the body reads"
+    },
+    {
+      "type": "uses",
+      "from": "closure_binds",
+      "target": "VAL",
+      "comment": "R10: closure parameter shadows the file const in the closure body"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "_",
+      "comment": "R12: the blank identifier declares nothing"
+    }
+  ]
+}

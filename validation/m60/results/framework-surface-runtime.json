@@ -1,0 +1,426 @@
+{
+  "gate": "M60.R8",
+  "half": "runtime",
+  "at": "2026-09-24T19:29:18.096Z",
+  "method": "the emitted metadata of each OO analyzer is checked against five contract assertions (A1 array, A2 dedupe, A3 primary-presence, A4 patterns-subset, A5 single-name) over two corpora: an inline minimal framework trigger per language, and a real-file draw from the pinned corpora in /home/ishaq2321/bb_tests/repositories. Multiplicity cannot be decided statically, which is why this half exists.",
+  "assertions": [
+    "A1-array",
+    "A2-dedupe",
+    "A3-primary",
+    "A4-aligned",
+    "A5-one-name",
+    "A6-claim"
+  ],
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "perRepoCap": 150,
+  "totals": {
+    "files": 1653,
+    "withDetection": 407,
+    "findings": 0,
+    "casesOk": 25,
+    "casesTotal": 25,
+    "claimMisses": 0
+  },
+  "lanes": [
+    {
+      "lang": "ruby",
+      "cases": [
+        {
+          "name": "rails-model",
+          "detected": [
+            "Ruby on Rails"
+          ],
+          "primary": "Ruby on Rails",
+          "expected": "Ruby on Rails",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "rails-controller-render",
+          "detected": [
+            "Ruby on Rails"
+          ],
+          "primary": "Ruby on Rails",
+          "expected": "Ruby on Rails",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "rails-before-action",
+          "detected": [
+            "Ruby on Rails"
+          ],
+          "primary": "Ruby on Rails",
+          "expected": "Ruby on Rails",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "plain-ruby",
+          "detected": [],
+          "expected": null,
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "rails-require-and-leaf",
+          "detected": [
+            "Ruby on Rails"
+          ],
+          "primary": "Ruby on Rails",
+          "expected": "Ruby on Rails",
+          "ok": true,
+          "note": "was the #932 duplicate: the published list read [\"Ruby on Rails\",\"rails\"]",
+          "findings": []
+        },
+        {
+          "name": "plain-describe-minitest",
+          "detected": [],
+          "primary": "unknown",
+          "expected": null,
+          "ok": true,
+          "note": "was a live false positive: rack's 36 minitest/spec files published [\"rspec\"]",
+          "findings": [
+            {
+              "lang": "ruby",
+              "file": "case:plain-describe-minitest",
+              "assertion": "A3-primary",
+              "detail": "published primary \"unknown\" while detecting nothing"
+            }
+          ]
+        },
+        {
+          "name": "rspec-require-positive",
+          "detected": [
+            "rspec"
+          ],
+          "primary": "rspec",
+          "expected": "rspec",
+          "ok": true,
+          "note": "positive control: the require-level rspec trigger still fires after the bare-describe removal",
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 190,
+        "withDetection": 1,
+        "findings": [],
+        "byAssertion": {}
+      }
+    },
+    {
+      "lang": "python",
+      "cases": [
+        {
+          "name": "django-model",
+          "detected": [
+            "Django"
+          ],
+          "primary": "Django",
+          "expected": "Django",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "flask-app",
+          "detected": [
+            "Flask"
+          ],
+          "primary": "Flask",
+          "expected": "Flask",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "plain-python",
+          "detected": [],
+          "expected": null,
+          "ok": true,
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 187,
+        "withDetection": 7,
+        "findings": [],
+        "byAssertion": {}
+      }
+    },
+    {
+      "lang": "php",
+      "cases": [
+        {
+          "name": "laravel-illuminate",
+          "detected": [
+            "Laravel"
+          ],
+          "primary": "Laravel",
+          "expected": "Laravel",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "laravel-app-root-only",
+          "detected": [
+            "Laravel"
+          ],
+          "primary": "Laravel",
+          "expected": "Laravel",
+          "ok": true,
+          "note": "was a measured GAP until #931 (57df923f): the `App\\` root marker compared against a trailing backslash no namespace text carries",
+          "findings": []
+        },
+        {
+          "name": "phpunit-use-statement",
+          "detected": [
+            "PHPUnit"
+          ],
+          "primary": "PHPUnit",
+          "expected": "PHPUnit",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "phpunit-global-base",
+          "detected": [
+            "PHPUnit"
+          ],
+          "primary": "PHPUnit",
+          "expected": "PHPUnit",
+          "ok": true,
+          "note": "was a measured GAP until #931 (57df923f): the bare `TestCase` marker compared against the NAMESPACE text, which is empty here",
+          "findings": []
+        },
+        {
+          "name": "plain-php",
+          "detected": [],
+          "expected": null,
+          "ok": true,
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 425,
+        "withDetection": 50,
+        "findings": [],
+        "byAssertion": {}
+      }
+    },
+    {
+      "lang": "csharp",
+      "cases": [
+        {
+          "name": "aspnet-core-controller",
+          "detected": [
+            "ASP.NET Core"
+          ],
+          "primary": "ASP.NET Core",
+          "expected": "ASP.NET Core",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "xunit-test",
+          "detected": [
+            "xUnit"
+          ],
+          "primary": "xUnit",
+          "expected": "xUnit",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "plain-csharp",
+          "detected": [],
+          "expected": null,
+          "ok": true,
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 300,
+        "withDetection": 112,
+        "findings": [],
+        "byAssertion": {}
+      }
+    },
+    {
+      "lang": "objective-c",
+      "cases": [
+        {
+          "name": "uikit-view",
+          "detected": [
+            "UIKit"
+          ],
+          "primary": "UIKit",
+          "expected": "UIKit",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "plain-objc",
+          "detected": [],
+          "expected": null,
+          "ok": true,
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 153,
+        "withDetection": 7,
+        "findings": [],
+        "byAssertion": {}
+      }
+    },
+    {
+      "lang": "swift",
+      "cases": [
+        {
+          "name": "swiftui-view",
+          "detected": [
+            "SwiftUI"
+          ],
+          "primary": "SwiftUI",
+          "expected": "SwiftUI",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "uikit-view",
+          "detected": [
+            "UIKit"
+          ],
+          "primary": "UIKit",
+          "expected": "UIKit",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "plain-swift",
+          "detected": [],
+          "expected": null,
+          "ok": true,
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 248,
+        "withDetection": 81,
+        "findings": [],
+        "byAssertion": {}
+      }
+    },
+    {
+      "lang": "dart",
+      "cases": [
+        {
+          "name": "flutter-widget",
+          "detected": [
+            "Dart",
+            "Flutter"
+          ],
+          "primary": "Flutter",
+          "expected": "Flutter",
+          "ok": true,
+          "findings": []
+        },
+        {
+          "name": "plain-dart",
+          "detected": [
+            "Dart"
+          ],
+          "primary": "Dart",
+          "expected": "Dart",
+          "ok": true,
+          "findings": []
+        }
+      ],
+      "corpus": {
+        "files": 150,
+        "withDetection": 149,
+        "findings": [],
+        "byAssertion": {}
+      }
+    }
+  ],
+  "published": {
+    "method": "the same five assertions over the metadata `ASTEngine.parseFile` PUBLISHES (the analyzer sweep above calls each analyzer directly). Assertion ids are prefixed `P-` so a published finding can never be read as an analyzer finding. This half is where a post-processing layer's effect is visible at all: `enhanceWithFrameworkIntelligence` merges a second detector, re-promotes `framework`, and appends its own pattern objects to `frameworkPatterns`.",
+    "lanes": [
+      {
+        "lang": "ruby",
+        "corpus": {
+          "files": 190,
+          "withDetection": 1,
+          "defaultPrimary": 189,
+          "findings": [],
+          "byAssertion": {}
+        }
+      },
+      {
+        "lang": "python",
+        "corpus": {
+          "files": 185,
+          "withDetection": 54,
+          "defaultPrimary": 131,
+          "findings": [],
+          "byAssertion": {}
+        }
+      },
+      {
+        "lang": "php",
+        "corpus": {
+          "files": 425,
+          "withDetection": 50,
+          "defaultPrimary": 375,
+          "findings": [],
+          "byAssertion": {}
+        }
+      },
+      {
+        "lang": "csharp",
+        "corpus": {
+          "files": 300,
+          "withDetection": 124,
+          "defaultPrimary": 176,
+          "findings": [],
+          "byAssertion": {}
+        }
+      },
+      {
+        "lang": "objective-c",
+        "corpus": {
+          "files": 153,
+          "withDetection": 7,
+          "defaultPrimary": 146,
+          "findings": [],
+          "byAssertion": {}
+        }
+      },
+      {
+        "lang": "swift",
+        "corpus": {
+          "files": 248,
+          "withDetection": 168,
+          "defaultPrimary": 80,
+          "findings": [],
+          "byAssertion": {}
+        }
+      },
+      {
+        "lang": "dart",
+        "corpus": {
+          "files": 149,
+          "withDetection": 72,
+          "defaultPrimary": 77,
+          "findings": [],
+          "byAssertion": {}
+        }
+      }
+    ],
+    "totals": {
+      "files": 1650,
+      "withDetection": 476,
+      "findings": 0
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "repo": "nomad",
+  "files": 98,
+  "partition": {
+    "before": {
+      "imports": {
+        "unresolved": 99,
+        "total": 99
+      },
+      "contains": {
+        "resolved": 1200,
+        "total": 1200
+      },
+      "references": {
+        "ambDeclOnly": 89,
+        "resolved": 101,
+        "unresolved": 117,
+        "total": 307
+      },
+      "exports": {
+        "ambDeclOnly": 7,
+        "resolved": 133,
+        "total": 140
+      },
+      "calls": {
+        "resolved": 3,
+        "total": 3
+      },
+      "uses": {
+        "resolved": 14,
+        "total": 14
+      }
+    },
+    "after": {
+      "imports": {
+        "unresolved": 99,
+        "total": 99
+      },
+      "contains": {
+        "resolved": 1200,
+        "total": 1200
+      },
+      "references": {
+        "resolved": 190,
+        "unresolved": 117,
+        "total": 307
+      },
+      "exports": {
+        "resolved": 140,
+        "total": 140
+      },
+      "calls": {
+        "resolved": 3,
+        "total": 3
+      },
+      "uses": {
+        "resolved": 14,
+        "total": 14
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 16,
+    "before": {
+      "ambDeclOnly": 96
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 1550,
+    "falseBindings": 3
+  }
+}

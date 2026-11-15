@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua-nondeterminism-diff",
+  "drawDigestA": "c990daa339a9a3983d5a38770bbc8865315275cdeec0283981d3614d8b1858c0",
+  "drawDigestB": "c990daa339a9a3983d5a38770bbc8865315275cdeec0283981d3614d8b1858c0",
+  "drawIdentical": true,
+  "files": 3252,
+  "differingFiles": 12,
+  "differing": [
+    {
+      "file": "hledger/tools/pandoc-drop-html-blocks.lua",
+      "a": {
+        "s": 1,
+        "r": 4,
+        "fb": 0,
+        "byType": {
+          "references": 1,
+          "calls": 1,
+          "uses": 1,
+          "contains": 1
+        },
+        "d": "058487a09cf0045d"
+      },
+      "b": {
+        "s": 1,
+        "r": 1,
+        "fb": 1,
+        "byType": {
+          "calls": 1
+        },
+        "d": "f4e1df0d1fe13131"
+      }
+    },
+    {
+      "file": "hledger/tools/pandoc-drop-toc.lua",
+      "a": {
+        "s": 1,
+        "r": 1,
+        "fb": 1,
+        "byType": {
+          "calls": 1
+        },
+        "d": "f4e1df0d1fe13131"
+      },
+      "b": {
+        "s": 1,
+        "r": 6,
+        "fb": 0,
+        "byType": {
+          "references": 3,
+          "uses": 1,
+          "calls": 1,
+          "contains": 1
+        },
+        "d": "f38d63f4fac7efe0"
+      }
+    },
+    {
+      "file": "kong/spec/02-integration/05-proxy/31-stream_tls_spec.lua",
+      "a": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      },
+      "b": {
+        "s": 20,
+        "r": 47,
+        "fb": 0,
+        "byType": {
+          "imports": 1,
+          "calls": 22,
+          "uses": 6,
+          "references": 9,
+          "contains": 9
+        },
+        "d": "cbd236da4a2ce7af"
+      }
+    },
+    {
+      "file": "kong/spec/02-integration/05-proxy/32-query-params_spec.lua",
+      "a": {
+        "s": 10,
+        "r": 41,
+        "fb": 0,
+        "byType": {
+          "imports": 2,
+          "calls": 18,
+          "uses": 5,
+          "references": 7,
+          "contains": 9
+        },
+        "d": "04041614a8799e95"
+      },
+      "b": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      }
+    },
+    {
+      "file": "kong/spec/fixtures/custom_plugins/kong/plugins/tcp-trace-exporter/handler.lua",
+      "a": {
+        "s": 4,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "778f837b83aa5258"
+      },
+      "b": {
+        "s": 38,
+        "r": 126,
+        "fb": 0,
+        "byType": {
+          "imports": 3,
+          "uses": 27,
+          "references": 24,
+          "calls": 34,
+          "exports": 1,
+          "contains": 37
+        },
+        "d": "1682fc5856f8e0bd"
+      }
+    },
+    {
+      "file": "kong/spec/fixtures/custom_plugins/kong/plugins/tcp-trace-exporter/schema.lua",
+      "a": {
+        "s": 1,
+        "r": 6,
+        "fb": 0,
+        "byType": {
+          "imports": 1,
+          "exports": 2,
+          "calls": 2,
+          "contains": 1
+        },
+        "d": "10c3ec141c5a4320"
+      },
+      "b": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      }
+    },
+    {
+      "file": "luarocks/src/luarocks/fetch/git_file.lua",
+      "a": {
+        "s": 8,
+        "r": 27,
+        "fb": 0,
+        "byType": {
+          "calls": 4,
+          "uses": 10,
+          "imports": 2,
+          "references": 3,
+          "exports": 1,
+          "contains": 7
+        },
+        "d": "5ef53739081df035"
+      },
+      "b": {
+        "s": 1,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "9a6cd4f4f40c5ffd"
+      }
+    },
+    {
+      "file": "luarocks/src/luarocks/fetch/git_http.lua",
+      "a": {
+        "s": 1,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "9a6cd4f4f40c5ffd"
+      },
+      "b": {
+        "s": 8,
+        "r": 27,
+        "fb": 0,
+        "byType": {
+          "calls": 4,
+          "uses": 10,
+          "imports": 2,
+          "references": 3,
+          "exports": 1,
+          "contains": 7
+        },
+        "d": "5ef53739081df035"
+      }
+    },
+    {
+      "file": "nvim-lspconfig/lsp/earthlyls.lua",
+      "a": {
+        "s": 0,
+        "r": 3,
+        "fb": 0,
+        "byType": {
+          "exports": 3
+        },
+        "d": "f16f660949f8bf20"
+      },
+      "b": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      }
+    },
+    {
+      "file": "nvim-lspconfig/lsp/elixirls.lua",
+      "a": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      },
+      "b": {
+        "s": 5,
+        "r": 21,
+        "fb": 0,
+        "byType": {
+          "exports": 3,
+          "calls": 5,
+          "references": 2,
+          "uses": 6,
+          "contains": 5
+        },
+        "d": "4329e1694b833c20"
+      }
+    },
+    {
+      "file": "nvim-treesitter/tests/indent/lua/string.lua",
+      "a": {
+        "s": 1,
+        "r": 2,
+        "fb": 0,
+        "byType": {
+          "calls": 1,
+          "contains": 1
+        },
+        "d": "ee31f31592fb8c8a"
+      },
+      "b": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      }
+    },
+    {
+      "file": "nvim-treesitter/tests/indent/lua/table.lua",
+      "a": {
+        "s": 0,
+        "r": 0,
+        "fb": 1,
+        "byType": {},
+        "d": "0e51b88d4b5715b6"
+      },
+      "b": {
+        "s": 1,
+        "r": 1,
+        "fb": 0,
+        "byType": {
+          "contains": 1
+        },
+        "d": "e1f86d776442f38e"
+      }
+    }
+  ],
+  "totals": {
+    "a": 83380,
+    "b": 83428
+  }
+}

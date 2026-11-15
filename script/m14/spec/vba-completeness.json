@@ -221,8 +221,8 @@
   },
   "_shared_corpus_finding_2026_10_31": {
     "_measured": "2026-10-29",
-    "corpus_root": "$HOME/fixtures/repositories",
-    "command": "find $HOME/fixtures/repositories -type f \\( -iname '*.bas' -o -iname '*.cls' -o -iname '*.frm' -o -iname '*.vba' \\) | sort",
+    "corpus_root": "/home/ishaq2321/bb_tests/repositories",
+    "command": "find /home/ishaq2321/bb_tests/repositories -type f \\( -iname '*.bas' -o -iname '*.cls' -o -iname '*.frm' -o -iname '*.vba' \\) | sort",
     "candidates": 2,
     "by_extension": {
       "bas": 0,

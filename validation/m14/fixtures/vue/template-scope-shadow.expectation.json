@@ -1,0 +1,54 @@
+{
+  "fixtureId": "vue/template-scope-shadow",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "V4 (#419, post-wave review finding): template-LOCAL bindings shadow component members — v-for=\"item in items\" binds item locally (the member item is shadowed) and #default=\"{ row }\" binds row locally. Emitting uses to shadowed names is the TS T6 scope-blind bug class (false edges). Here: uses to items/index/rowClick are REAL (unshadowed); uses to item/row are FALSE (shadowed) and must not be emitted.",
+  "expectSymbols": [
+    {
+      "name": "item",
+      "kind": "constant"
+    },
+    {
+      "name": "row",
+      "kind": "constant"
+    },
+    {
+      "name": "items",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "template-scope-shadow",
+      "target": "items",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-scope-shadow",
+      "target": "index",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-scope-shadow",
+      "target": "rowClick",
+      "meta.isTemplateExpression": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "template-scope-shadow",
+      "target": "item",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-scope-shadow",
+      "target": "row",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

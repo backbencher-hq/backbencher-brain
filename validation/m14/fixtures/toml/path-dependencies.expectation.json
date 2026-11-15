@@ -1,0 +1,146 @@
+{
+  "comment": "TOML-PATH-DEPENDENCIES. `[dependencies] core = { path = \"../core\" }` says the manifest cannot be built without another unit, which is an import in the plainest sense. Measured on the corpus: 331 such sites, 318 reaching a directory that really holds a Cargo.toml / Project.toml, and 0 resolving to a unique symbol — a module symbol is its FILE STEM and the corpus holds 744 files named Cargo.toml. So the target is the path AS WRITTEN and the store keeps it as an external target; `traceCallees`'s unresolved arm reads it back as `ext:../core`. Four exclusions keep the type honest: `bin`/`lib` name this crate's OWN source, a `path` key outside a dependency section is ordinary data, and an ARRAY of inline tables is a list however its elements are spelled. WHAT THIS FIXTURE DOES **NOT** COVER, established by mutation rather than assumed: the universal identifier sanitizer runs in pool-worker.ts, and although toml is on this runner's `ASTEngine.parseFile` production-parity list, engine.ts does not apply that filter — so removing the toml path-target exemption leaves every expectation here GREEN. The sanitizer fix is verified separately by calling pool-worker's own `filterNoiseRelationships` (the function real indexing runs) over the analyzer's output: 4 of 4 imports survive on this fixture, 1 of 1 on a Julia `[sources]` document, 13 of 13 on cargo's root manifest. This is the same known-zeros gap bash recorded for its own imports (M14 #277).",
+  "expectSymbols": [
+    {
+      "name": "path-dependencies",
+      "kind": "module"
+    },
+    {
+      "name": "dependencies",
+      "kind": "namespace"
+    },
+    {
+      "name": "dependencies.core",
+      "kind": "property",
+      "comment": "a path dependency — the edge's SOURCE is this key, which is a published symbol"
+    },
+    {
+      "name": "dependencies.impl",
+      "kind": "property",
+      "comment": "a VERSION dependency with no path, so there is no import edge: the target would be a registry name the document does not carry"
+    },
+    {
+      "name": "dev-dependencies",
+      "kind": "namespace"
+    },
+    {
+      "name": "dev-dependencies.harness",
+      "kind": "property"
+    },
+    {
+      "name": "sources",
+      "kind": "namespace"
+    },
+    {
+      "name": "sources.Up",
+      "kind": "property",
+      "comment": "path `..` — the form the identifier sanitizer ate, whose leaf is the empty string"
+    },
+    {
+      "name": "sources.Higher",
+      "kind": "property"
+    },
+    {
+      "name": "lib",
+      "kind": "namespace"
+    },
+    {
+      "name": "lib.path",
+      "kind": "property",
+      "comment": "THIS crate's own source. An import edge here would assert the manifest needs something it already is."
+    },
+    {
+      "name": "bin",
+      "kind": "namespace"
+    },
+    {
+      "name": "bin.main",
+      "kind": "property"
+    },
+    {
+      "name": "lints.clippy",
+      "kind": "namespace"
+    },
+    {
+      "name": "lints.clippy.path",
+      "kind": "property",
+      "comment": "a `path` key outside any dependency section is ordinary data"
+    },
+    {
+      "name": "lints.clippy.disallowed",
+      "kind": "property",
+      "comment": "an ARRAY of inline tables is a LIST, however its elements are spelled"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "path-dependencies.dependencies.core",
+      "target": "../core",
+      "line_number": 27,
+      "meta.isPathDependency": true,
+      "meta.evidenceClass": "import_based",
+      "meta.dependencySection": "dependencies"
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.dev-dependencies.harness",
+      "target": "../harness",
+      "line_number": 31,
+      "meta.isPathDependency": true,
+      "meta.evidenceClass": "import_based",
+      "meta.dependencySection": "dev-dependencies"
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.sources.Up",
+      "target": "..",
+      "line_number": 38,
+      "meta.isPathDependency": true,
+      "meta.evidenceClass": "import_based",
+      "meta.dependencySection": "sources",
+      "comment": "`extractLeaf(\"..\")` is the empty string, so without the toml path-target exemption this edge is DELETED between analyze() and the index while the analyzer reports having emitted it. Note this row is NOT proof of that: removing the exemption leaves every expectation in this file green, because the sanitizer lives in the pool worker and engine.parseFile does not apply it. See the header."
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.sources.Higher",
+      "target": "../..",
+      "line_number": 39,
+      "meta.isPathDependency": true,
+      "meta.evidenceClass": "import_based",
+      "meta.dependencySection": "sources"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "path-dependencies.dependencies.impl",
+      "target": "1.0",
+      "comment": "a version dependency carries no path, so there is nothing local to depend ON."
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.lib.path",
+      "target": "src/lib.rs",
+      "comment": "THE EXCLUSION THAT MATTERS MOST: `lib` names this crate's own source. Emitting an import edge here would make every crate depend on itself."
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.bin.main",
+      "target": "src/main.rs",
+      "comment": "the same exclusion for a binary target."
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.lints.clippy.path",
+      "target": "not/a/dependency",
+      "comment": "a `path` key outside any dependency section is ordinary data. The exclusion is by SECTION, not by the key's name — keying on the name is what made clippy.toml report `path×15` redefinitions."
+    },
+    {
+      "type": "imports",
+      "from": "path-dependencies.lints.clippy.disallowed",
+      "target": "a::b",
+      "comment": "an array of inline tables is a LIST. Its elements are not dependencies."
+    }
+  ]
+}

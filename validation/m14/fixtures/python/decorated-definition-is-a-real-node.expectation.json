@@ -1,0 +1,49 @@
+{
+ "fixtureId": "python/decorated-definition-is-a-real-node",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "THE PROOF STANDARD FOR `decorates` (L-2026-10-21-14's proof, and the typescript lane's form of it): a remedy or an implementation is proven by a BEHAVIOURAL FIXTURE — a same-file causal edge that exists only when the construct reaches the analyzer as a REAL NODE rather than recovery text. THE MEASURED FACT THIS FIXTURE BUILDS ON: the production build's own node-type inventory (read from the production parser's Language object, not from a document) contains `decorated_definition`, `decorated_definition_repeat1` and `decorator`, and the analyzer's walk keys on `n.type === \"decorated_definition\"` (src/ast/real-python-analyzer.ts:6090) — so the construct is a node, and no grammar remedy is owed for it. WHAT THE THREE POSITIVE ROWS PIN: (1) a decorated FUNCTION — the edge's line is the DECORATOR's line (25), never the `def` line (26), and a text-recovery implementation gets that wrong in every row; (2) a decorated CLASS — the edge names the DOTTED chain `functools.cache` as written, because the route is what the import-evidence claim reads; (3) a decorated METHOD inside a class body — the decorator applies to the method, not to the class. WHAT THE THREE NEGATIVE ROWS PIN, and each is a row a TEXT implementation would publish: the `@also_not` inside a string literal is not a decorator (a text scan sees it); the `@tagged(\"local\")` on a def inside a function body publishes no row, because that def is a local on this family's contract (PY-28) and a decorator is part of the DECLARATION's identity, not a fact about the enclosing body; and the decorator's ARGUMENT (`\"row\"`) is not a second dependency — the `decorates` row names the decorator, and the argument belongs to the call the decorator performs, which is not this edge. THE DIRECTION PINNED HERE IS THE FLEET'S CURRENT CONVENTION (from = the decorated declaration, target = the decorator) — the vocabulary's own `Decorates` prose says the reverse, and that disagreement is measured and proposed in PYTHON-CLASSIFICATION-2026-10-21.md §6g (W12) and §8f, with the price of the swap measured by script/m14/python-decorates-direction.ts. THIS FIXTURE PINS WHAT THE FLEET DOES, so a change to either side is visible as a failing row rather than as a silent drift.",
+ "expectRelationships": [
+  {
+   "type": "decorates",
+   "from": "write_row",
+   "target": "tagged",
+   "line_number": 45,
+   "note": "THE LINE IS THE DISCRIMINATOR. The edge names the DECORATOR's own line (45), never the `def` line (46) — the analyzer's M59 contract. A recovery-text implementation gets this wrong in every row, so this number is the part of the fixture a text implementation cannot pass."
+  },
+  {
+   "type": "decorates",
+   "from": "Cache",
+   "target": "functools.cache",
+   "line_number": 50,
+   "note": "A decorated CLASS, and the DOTTED chain is named as written: `functools.cache`, not the leaf `cache` — the written route is what the import-evidence claim's route-bound shape reads, and `metadata.qualified` carries the chain beside it."
+  },
+  {
+   "type": "decorates",
+   "from": "method",
+   "target": "tagged",
+   "line_number": 56,
+   "note": "A decorated METHOD inside a class body: the decorator applies to the method, not to the class — so the source is the method's own name. A class-level implementation would publish `Holder -> tagged` instead, and this row would not match."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "decorates",
+   "from": "shadow",
+   "target": "also_not",
+   "note": "THE STRING-LITERAL DECOY. `@also_not` sits inside a module-level string; the grammar gives it to the analyzer as STRING CONTENT, never as a `decorator` node. A text-recovery implementation publishes this row — and this is the row that makes the fixture a proof rather than a description."
+  },
+  {
+   "type": "decorates",
+   "from": "local_row",
+   "target": "tagged",
+   "note": "A def inside a FUNCTION BODY is a local on this family's contract (PY-28) and publishes no symbol, so a decorator applied to it emits NO row — deliberately NOT re-attributed to the enclosing symbol, because a decorator is part of the decorated declaration's identity, not a fact about the body that contains it."
+  },
+  {
+   "type": "decorates",
+   "from": "write_row",
+   "target": "row",
+   "note": "THE ARGUMENT IS NOT A DEPENDENCY. `@tagged(\"row\")` decorates with `tagged`; the `\"row\"` is an argument of the call the decorator performs, not a second dependency of the decorated declaration."
+  }
+ ]
+}

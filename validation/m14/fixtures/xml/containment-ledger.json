@@ -1,0 +1,192 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/containment-ledger.mts",
+  "question": "does every emitted contains/imports edge have a real site behind it on the parse tree, and is any real site missing from the graph",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "admittedTotal": 11552,
+    "admitted": 11552,
+    "workers": 1,
+    "method": "git-tracked files only, 512 KiB cap, detectLanguageFromPath(abs, text) — the gate's own rule, so the population is the population the arbiter measured",
+    "fallbackFiles": 0,
+    "filesWithParseErrors": 57,
+    "unparsedByOwnParser": 0,
+    "unparsedExamples": [],
+    "sawFlatSymbolShape": true
+  },
+  "contains": {
+    "edges": 188224,
+    "files": 11335,
+    "confirmed": 188219,
+    "confirmedRate": 0.9999734359061544,
+    "byClass": {
+      "A-confirmed": {
+        "edges": 188219,
+        "files": 188219,
+        "examples": [
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng  grammar -contains-> a role=xml_namespace",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng  grammar -contains-> default role=xml_namespace",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng  grammar -contains-> datatypeLibrary role=xml_attribute",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng  grammar -contains-> boolean role=xml_element",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng  boolean -contains-> name role=xml_attribute",
+          "Aporia/share/gtksourceview-2.0/language-specs/language.rng  boolean -contains-> choice role=xml_element"
+        ]
+      },
+      "C-source-symbol-absent": {
+        "edges": 1,
+        "files": 1,
+        "examples": [
+          "libxslt/tests/general/bug-110.xml  elem -contains-> id role=dtd_attribute_declaration"
+        ]
+      },
+      "D-spans-disjoint": {
+        "edges": 3,
+        "files": 3,
+        "examples": [
+          "libxslt/tests/general/bug-21-.xml  test -contains-> JPEG role=dtd_ndata_notation (target JPEG@96-130 source test@131-174)",
+          "libxslt/tests/general/bug-52.xml  graphic -contains-> GIF role=dtd_ndata_notation (target GIF@16-44 source graphic@45-93)",
+          "libxslt/tests/numbers/format-number.xsl  special -contains-> decimal-separator role=xml_attribute (target decimal-separator@194-217 source special@176-192)"
+        ]
+      },
+      "G-spans-explainable-by-a-collision": {
+        "edges": 1,
+        "files": 1,
+        "examples": [
+          "libxslt/tests/numbers/format-number.xsl  special -contains-> name role=xml_attribute (target name source special share one span)"
+        ]
+      }
+    },
+    "byRole": {
+      "xml_namespace": {
+        "A-confirmed": 12743
+      },
+      "xml_attribute": {
+        "A-confirmed": 111058,
+        "G-spans-explainable-by-a-collision": 1,
+        "D-spans-disjoint": 1
+      },
+      "xml_element": {
+        "A-confirmed": 64173
+      },
+      "dtd_entity_declaration": {
+        "A-confirmed": 181
+      },
+      "processing_instruction": {
+        "A-confirmed": 25
+      },
+      "pseudo_attribute": {
+        "A-confirmed": 14
+      },
+      "dtd_attribute_declaration": {
+        "A-confirmed": 9,
+        "C-source-symbol-absent": 1
+      },
+      "dtd_element_declaration": {
+        "A-confirmed": 12
+      },
+      "dtd_ndata_notation": {
+        "A-confirmed": 2,
+        "D-spans-disjoint": 2
+      },
+      "dtd_notation_declaration": {
+        "A-confirmed": 2
+      }
+    },
+    "symbolsWithoutSpan": 0,
+    "spanCollisions": {
+      "note": "byte ranges held by TWO OR MORE distinct symbol names, over every file that published a symbol. Invisible to a nesting test and visible to every range-based consumer (LSP goto-definition resolves one span to one symbol).",
+      "population": "every file with at least one symbol, NOT only files carrying a contains edge — so this figure is comparable with declaration-span-before-after.mts",
+      "spans": 9,
+      "files": 5,
+      "byNameCombination": {
+        "match + xsl:template[match=*|mode=toc.for.section|priority=]#0": 2,
+        "match + xsl:template[match=*|mode=toc.for.section|priority=]#1": 2,
+        "match + xsl:template[match=/|mode=|priority=]#0": 1,
+        "match + xsl:template[match=/|mode=|priority=]#1": 1,
+        "name + special": 1,
+        "duration + name": 1,
+        "endTime + name": 1
+      }
+    }
+  },
+  "containsRecall": {
+    "note": "for each symbol, its IMMEDIATE enclosing symbol by span nesting, and whether a contains edge carries that (source, target) name pair. Deeper ancestors are not candidates: contains is parent-to-child by construction.",
+    "candidatePairs": 787972,
+    "pairsWithNoEdge": 20,
+    "topMissClasses": [
+      {
+        "sourceKind": "type",
+        "targetKind": "property",
+        "nearestTag": "<none>",
+        "pairs": 6
+      },
+      {
+        "sourceKind": "class",
+        "targetKind": "class",
+        "nearestTag": "xsl:template",
+        "pairs": 6
+      },
+      {
+        "sourceKind": "class",
+        "targetKind": "property",
+        "nearestTag": "attribute",
+        "pairs": 6
+      },
+      {
+        "sourceKind": "class",
+        "targetKind": "property",
+        "nearestTag": "xsl:decimal-format",
+        "pairs": 2
+      }
+    ],
+    "missExamples": [
+      "libxslt/tests/REC/stand-2.7-2.xml  xmp:moop(type) -contains-> id(property) under <none> tag=ok",
+      "libxslt/tests/REC/stand-2.7-3.xml  xmp:moop(type) -contains-> id(property) under <none> tag=ok",
+      "libxslt/tests/REC/test-5.2-10.xml  doc(type) -contains-> label(property) under <none> tag=ok",
+      "libxslt/tests/docbook/fo/toc.xsl  xsl:template(class) -contains-> xsl:template[match=*|mode=toc.for.section|priority=]#0(class) under <xsl:template> tag=ok",
+      "libxslt/tests/docbook/fo/toc.xsl  xsl:template(class) -contains-> xsl:template[match=*|mode=toc.for.section|priority=]#1(class) under <xsl:template> tag=ok",
+      "libxslt/tests/docbook/html/toc.xsl  xsl:template(class) -contains-> xsl:template[match=*|mode=toc.for.section|priority=]#0(class) under <xsl:template> tag=ok",
+      "libxslt/tests/docbook/html/toc.xsl  xsl:template(class) -contains-> xsl:template[match=*|mode=toc.for.section|priority=]#1(class) under <xsl:template> tag=ok",
+      "libxslt/tests/general/bug-110.xml  root(type) -contains-> id(property) under <none> tag=ok",
+      "libxslt/tests/general/bug-167.xsl  xsl:template(class) -contains-> xsl:template[match=/|mode=|priority=]#0(class) under <xsl:template> tag=ok",
+      "libxslt/tests/general/bug-167.xsl  xsl:template(class) -contains-> xsl:template[match=/|mode=|priority=]#1(class) under <xsl:template> tag=ok",
+      "libxslt/tests/general/bug-52.xml  doc(type) -contains-> entref(property) under <none> tag=ok",
+      "libxslt/tests/numbers/format-number.xsl  xsl:stylesheet(class) -contains-> name(property) under <xsl:decimal-format> tag=ok",
+      "libxslt/tests/numbers/format-number.xsl  xsl:stylesheet(class) -contains-> decimal-separator(property) under <xsl:decimal-format> tag=ok",
+      "otp/lib/xmerl/test/xmerl_SUITE_data/xpath/e1077.xml  root(type) -contains-> id(property) under <none> tag=ok",
+      "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/measCollec.xsd  complexType(class) -contains-> name(property) under <attribute> tag=ok",
+      "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/measCollec.xsd  complexType(class) -contains-> type(property) under <attribute> tag=ok",
+      "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/measCollec.xsd  complexType(class) -contains-> use(property) under <attribute> tag=ok",
+      "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/measCollec.xsd  complexType(class) -contains-> name(property) under <attribute> tag=ok",
+      "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/measCollec.xsd  complexType(class) -contains-> type(property) under <attribute> tag=ok",
+      "otp/lib/xmerl/test/xmerl_xsd_SUITE_data/measCollec.xsd  complexType(class) -contains-> use(property) under <attribute> tag=ok"
+    ]
+  },
+  "imports": {
+    "edges": 468,
+    "files": 332,
+    "sitesOnTree": 468,
+    "sitesWithAnEdge": 468,
+    "sitesWithNoEdge": 0,
+    "ofThoseWithAUriScheme": 0,
+    "sitesWithNoEdgeExamples": [],
+    "edgesWithNoSite": 0,
+    "edgesWithSite": 468,
+    "edgesWithNoSiteExamples": [],
+    "matchedByKind": {
+      "system": 298,
+      "schemaLocation": 156,
+      "xml-stylesheet": 14
+    },
+    "ownerAgreement": {
+      "note": "sites whose path matched an edge AND whose owner matched the edge's source name. A disagreement here is a NAMING difference between this probe and the analyzer (see `ownerNameFor`), not a defect in either: the census measures `imports` resolvedSource at 100 %, and the source is not what this instrument is for.",
+      "agrees": 262,
+      "differs": 206
+    }
+  },
+  "limitations": [
+    "This is a COVERAGE LEDGER, not an oracle: it proves each edge has a real nesting or a real path behind it. It does not prove the edge is the right LABEL or the right endpoint choice.",
+    "It is a second walker over the same tree-sitter-xml as the analyzer, so a grammar-level fault is invisible to both. script/m14/differential.ts has no xml entry in LANG_REPOS, so no independent oracle has adjudicated any XML edge.",
+    "Identity is taken from the analyzer's symbol set. A systematically mis-NAMED symbol is confirmed here; the check is on spans, not on names. Naming is covered by the source-authenticity ledger in derivation-accounting.mts.",
+    "The imports half re-derives the odd/even pairing rule for schemaLocation because it is a property of the token count. It deliberately does NOT re-derive isRemoteUri, so a refused remote URI shows up as a site with no edge for adjudication."
+  ]
+}

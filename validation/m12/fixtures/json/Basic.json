@@ -1,0 +1,9 @@
+{
+  "name": "basic",
+  "version": "1.0.0",
+  "nested": { "inner": "value" },
+  "list": [1, 2, 3],
+  "flag": true,
+  "count": 7,
+  "nothing": null
+}

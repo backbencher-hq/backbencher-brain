@@ -1,0 +1,1398 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R10",
+  "purpose": "A relationship target must be spelled the way the lane spells its own symbols. Every other gate in the family asks whether an edge that EXISTS is right; none asked whether the target is a NAME at all, and the differential oracle cannot ask it because its truth comes from the same rules the analyzer runs \u2014 when both sides fabricate the same spelling, they agree. The first measurement found whole expression surfaces published as targets (source text with comments, lambdas, test-description strings, generic type expressions, `$`-sigil values) in 12 of 24 lanes, all of it invisible to the differential by construction.",
+  "establishedAt": "2026-09-23",
+  "phase": "C2b \u2014 the whitespace-bearing operator member name is RULED a naming convention (owner decision 2026-09-23)",
+  "contract": {
+    "convicting": {
+      "literal": "the WHOLE target is a quoted string or a bare number \u2014 no language in the family declares such a symbol; needs no calibration and cannot false-positive",
+      "whitespace": "the target contains a space, tab or newline. CONVICTING, but SPLIT BY OWNER before it is acted on, because the rationale this class was first convicted on ('no identifier in any of these languages may contain whitespace') is REFUTED by the artifact \u2014 the same way the first draft of `separator` was refuted, and the retraction is recorded rather than quietly dropped. Measured (script/m14/tmp/r10-whitespace-split-probe.ts, on the real corpus files the artifact names): scala and groovy DO declare identifiers containing whitespace (scala's `` `popAll preserves iteration order` `` and groovy's `test entity with trait property` are quoted method names) and their lanes publish the very same string as a SYMBOL name, so the target is honest. `whitespaceSubclasses` on every lane pins the split exactly, and each subclass routes: `operatorMember` (the whole last dotted segment is `operator` + whitespace + a token) is the C2b member-NAMING question and not a spelling one \u2014 csharp's `operator ==` is its own symbol's name and the containment edge agrees; `payloadSigil` (the target begins with `@`) is a decorator/annotation payload or a sigil-quoted identifier published as if it were a name; `matchesOwnSymbol` means the lane is SELF-CONSISTENT \u2014 the string is one of the names that lane itself publishes, so no per-edge gate can adjudicate it (this holds for the honest quoted names AND for the lanes whose published name carries the quoting syntax, kotlin's `` `test char column read and write` `` and zig's `@\"zls env\"`, AND for a lane that publishes an EXPRESSION as a name, haskell's `M1 i c` and scala's `A, B` \u2014 three different owners, which is why it is routed and not excused); `sourceText` (the string is not a name the lane declares at all \u2014 a comment, a call expression, a type expression) is the only subclass R10 itself owns. Every subclass count is compared EXACTLY by the gate, so a target cannot be reclassified without re-running this writer. The routed halves are cited where they are owned: every lane whose split carries `matchesOwnSymbol` or `payloadSigil` counts now cites #924 (`M60 name surface`), and #924's definition of done requires exactly that citation, so a routed conviction is a handoff rather than an excuse.",
+      "delimiter": "the target contains `;`, `(`, `)`, `{`, `}` or `,` \u2014 statement and grouping syntax, never part of a name",
+      "whitespaceRuled_operatorMember": "RULED 2026-09-23 (owner decision, C2b): a whitespace-bearing OPERATOR MEMBER name (`operator ==`, `operator ?`, `operator <`, `operator()`, `implicit Box<Plain>`) is a NAMING CONVENTION of the lane's contract, not a fabrication, so it is measured and pinned but NOT convicted. The ruling is evidence-backed: (1) it is exactly what the declaration writes \u2014 the grammar spells an operator declaration `operator` + whitespace + the token, and the lane's containment edge agrees; (2) the lane already publishes a whitespace-bearing operator name BY DESIGN \u2014 csharp's conversion operators are `implicit Box<Plain>` (pinned in qualified-type-spelling.expectation.json, `implicit int` in payload-and-complexity) and using-alias-and-operators.expectation.json states in its own rationale that 'every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`), because the whole lane's expectations name these symbols' \u2014 convicting one half of the convention would contradict the half that is pinned and mutated; (3) 'referenceable' was never the test \u2014 no source in these languages references an operator member by name (operators are invoked, `a == b`, never named), so it does not distinguish a convention from a fabrication here. The ruled counts remain pinned in `whitespaceRuled` and inside `whitespaceSubclasses`, so a lane emitting a new operator-member shape fails the gate until the register is rewritten, and every ruled sub-class must carry a WRITTEN REASON in `subclassRulings` \u2014 an unreasoned ruling fails exactly as an unruled separator triple does. The class's other three mechanisms keep their convictions."
+    },
+    "reported": {
+      "separator": "the target carries a NON-ALPHANUMERIC character that occurs in NONE of the lane's own symbol names. Legitimate in qualified names (`io:format`, `clojure.string/join`, `UIKit/UIKit.h`, `@version`, `Class.member`), so RECORDED, NEVER CONVICTED \u2014 the first draft convicted this class and the measurement refuted it (21 of 24 lanes carry it). Quotes and brackets were removed from the convicting set for the same reason: erlang's `'tpl_prv':init` is a quoted atom, haskell's `structureHash'` is a name, ruby's own `Hash.[]` is spelled with brackets.",
+      "unseenAlnum": "a target carrying a letter or digit absent from this draw's symbols \u2014 sampling noise, reported and never convicted"
+    },
+    "measurement": "script/m60/target-spelling-census.ts \u2014 each lane's REAL analyzer through ASTEngine over a spread draw from LANG_REPOS + SECOND_CORPUS",
+    "censusCommand": "bun script/m60/target-spelling-census.ts",
+    "mechanism": "the gate compares the census to this register EXACTLY, per lane: conviction counts by class and the (relationshipType, char) separator set. A count that moves in EITHER direction fails until this writer is re-run, so a finding cannot be paid down by a rule change alone, and a new fabricated surface in any lane fails immediately. The `rulings` map is the only hand-written half: an UNRULED triple is `null` and is recorded as measured and owed, not blessed."
+  },
+  "ooTarget": {
+    "convictedLanes": 0,
+    "unruledSeparatorLanes": 5,
+    "note": "The seven OO lanes are the owner standard's zero target: no OO lane may publish a target no symbol can be named, and none may leave its separator vocabulary unruled. PAID DOWN 2026-09-23 by the C2b ruling: the whitespace-bearing operator member name is a naming convention, so csharp (2) and dart (2) leave the convicted set entirely and swift keeps 1 (a decorator payload, #924) \u2014 3 convicted lanes -> 1, and the stale unruled bound of 6 is re-measured to 5. Debt above these numbers fails G1; the bound may only move down, deliberately, with the reason recorded here. PAID DOWN AGAIN 2026-09-25: swift's last conviction (the #924 decorator payload) is closed, so the seven OO lanes carry ZERO fabricated-spelling convictions \u2014 the owner standard's zero target is MET for this rule. The unruled-separator bound stays 5 (dart, swift, objc, ruby, python)."
+  },
+  "baseline": {
+    "lanes": 24,
+    "clean": [
+      "java",
+      "rust",
+      "csharp",
+      "php"
+    ],
+    "convicted": [
+      "javascript",
+      "typescript",
+      "kotlin",
+      "scala",
+      "groovy",
+      "cpp",
+      "c",
+      "zig",
+      "haskell",
+      "elixir",
+      "erlang",
+      "clojure"
+    ],
+    "lanesWithUnruledSeparators": [
+      "javascript",
+      "typescript",
+      "kotlin",
+      "scala",
+      "vue",
+      "svelte",
+      "cpp",
+      "c",
+      "go",
+      "zig",
+      "dart",
+      "swift",
+      "objc",
+      "ruby",
+      "python",
+      "elixir",
+      "erlang",
+      "clojure"
+    ],
+    "samplePerDraw": 40,
+    "minSymbols": 250,
+    "note": "OO lanes that own a conviction or an unruled separator are the owner standard's target; `clean` here means 'this draw found no fabrication AND no separator outside the lane's own symbol alphabet' \u2014 it is a statement about the DRAW, and the register pins the drawn file set through the census's own artifact."
+  },
+  "lanes": {
+    "javascript": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "delimiter": 139,
+        "whitespace": 22
+      },
+      "convictionSamples": [
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "_.runInContext.convert(options)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "remove(isEven)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "lodash.remove(isEven)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "remove(isEvenIndex)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "remove(isEven)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "remove(value)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "add('2')"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "isArray()"
+        }
+      ],
+      "convictionSubclasses": {
+        "sourceText": 22
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.filter(['a', 3])",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.add(fp, 'b')",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.fill(fp, 2)(1, '*')",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.fill(fp, 2)",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.slice(fp, 2)(1)",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.slice(fp, 2)",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.add(ph, 'b')",
+          "file": "lodash/test/test-fp.js"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "fp.fill(ph, 2)(1, '*')",
+          "file": "lodash/test/test-fp.js"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "calls|$",
+        "imports|*",
+        "imports|-",
+        "imports|.",
+        "imports|/",
+        "imports|:",
+        "imports|@",
+        "uses|$"
+      ],
+      "rulings": {
+        "calls|$": null,
+        "imports|*": null,
+        "imports|-": null,
+        "imports|.": null,
+        "imports|/": null,
+        "imports|:": null,
+        "imports|@": null,
+        "uses|$": null
+      },
+      "note": "CONVICTED \u2014 an EXPRESSION published as a call target: `remove(isEven)`, `fp[methodName](args[0])`, `lodash.remove(isEven)`, `Function('return this')`. All are `calls` targets taken from source text, none is a callee name. Owner: web lane (the draw also leaves this lane's symbol alphabet too thin to adjudicate the separator class, disclosed in `baseline`)."
+    },
+    "typescript": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "whitespace": 3,
+        "delimiter": 3
+      },
+      "convictionSamples": [
+        {
+          "klass": "whitespace",
+          "type": "calls",
+          "target": "(transformAssetUrl as Function)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "(transformAssetUrl as Function)"
+        },
+        {
+          "klass": "whitespace",
+          "type": "calls",
+          "target": "Function('require', code)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "Function('require', code)"
+        },
+        {
+          "klass": "whitespace",
+          "type": "calls",
+          "target": "new Function('Vue', code)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "new Function('Vue', code)"
+        }
+      ],
+      "convictionSubclasses": {
+        "sourceText": 3
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "(transformAssetUrl as Function)",
+          "file": "vue-core/packages/compiler-sfc/src/template/transformAssetUrl.ts"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "Function('require', code)",
+          "file": "vue-core/packages/server-renderer/src/helpers/ssrCompile.ts"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "new Function('Vue', code)",
+          "file": "vue-core/packages/vue/__tests__/index.spec.ts"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "calls|!",
+        "implements|<",
+        "implements|>",
+        "imports|/",
+        "imports|:",
+        "imports|@",
+        "imports|~"
+      ],
+      "rulings": {
+        "calls|!": null,
+        "imports|/": null,
+        "imports|:": null,
+        "imports|@": null,
+        "imports|~": null,
+        "implements|<": null,
+        "implements|>": null
+      },
+      "note": "Separator vocabulary measured and UNRULED (recorded, not blessed): calls|!, imports|/, imports|:, imports|@, imports|~. Owed to this lane; a new spelling in it fails G1 immediately. CONVICTED (3), all `sourceText` and all R10's own class (an expression or description published as a target) \u2014 recorded here because the separator sentence above is not the whole reading for this lane. Separator vocabulary measured and UNRULED (recorded, not blessed): calls|!, imports|/, imports|:, imports|@, imports|~. Owed to this lane; a new spelling in it fails G1 immediately."
+    },
+    "kotlin": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "delimiter": 31,
+        "whitespace": 12
+      },
+      "convictionSamples": [
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "getMap(f)"
+        },
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "currentCoroutineContext()"
+        },
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "query.single()"
+        },
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "query.single()"
+        },
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "query.single()"
+        },
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "query.single()"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "`test char column read and write`"
+        },
+        {
+          "klass": "delimiter",
+          "type": "uses",
+          "target": "cityCount.single()"
+        }
+      ],
+      "convictionSubclasses": {
+        "matchesOwnSymbol": 5,
+        "sourceText": 7
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "`test char column read and write`",
+          "file": "Exposed/exposed-r2dbc-tests/src/test/kotlin/org/jetbrains/exposed/v1/r2dbc/sql/tests/shared/types/CharColumnType.kt"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "`test operator precedence of minus() plus() div() times()`",
+          "file": "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/ArithmeticTests.kt"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "`test big decimal division with scale and without`",
+          "file": "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/ArithmeticTests.kt"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "uses",
+          "target": "dest.selectAll().where { dest.id eq 1 }.single()",
+          "file": "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/MergeTableTest.kt"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "uses",
+          "target": "dest.selectAll().where { dest.id eq 2 }.single()",
+          "file": "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/MergeTableTest.kt"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "uses",
+          "target": "dest.selectAll().where { dest.key eq \"only-in-source-1\" }.first()",
+          "file": "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/MergeTableTest.kt"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "uses",
+          "target": "dest.selectAll().where { dest.key eq \"in-source-and-dest-1\" }.first()",
+          "file": "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/MergeTableTest.kt"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "uses",
+          "target": "Users.insert {\n            it[name] = user.name\n            it[age] = user.age\n ",
+          "file": "Exposed/samples/exposed-ktor/src/main/kotlin/plugins/UsersSchema.kt"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "extends|.",
+        "overrides|.",
+        "references|.",
+        "uses|*",
+        "uses|.",
+        "uses|<",
+        "uses|>",
+        "uses|?",
+        "uses|[",
+        "uses|]"
+      ],
+      "rulings": {
+        "overrides|.": null,
+        "references|.": null,
+        "uses|*": null,
+        "uses|.": null,
+        "uses|<": null,
+        "uses|>": null,
+        "uses|[": null,
+        "uses|]": null,
+        "extends|.": null,
+        "uses|?": null
+      },
+      "note": "CONVICTED \u2014 an EXPRESSION published as a `uses` target (`tester.selectAll().where { ... }.single()`, `inserted.single()`, `DMLTestsData.Cities.selectAll().last()`), plus backtick-quoted TEST NAMES with spaces as `contains` targets (`\\`test referenceOn works out of transaction\\``). Owner: jvm lane. SPLIT: 12 whitespace convictions = 5 `matchesOwnSymbol` (the published name CARRIES the backticks, so the name and its own range disagree) + 7 `sourceText`. The 5 are routed to #924; the 7 are R10's own class."
+    },
+    "scala": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "whitespace": 6,
+        "delimiter": 3
+      },
+      "convictionSamples": [
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "`popAll preserves iteration order`"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "`popWhile preserves iteration order`"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "`do-not-point-at ::`"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "A, B"
+        },
+        {
+          "klass": "delimiter",
+          "type": "contains",
+          "target": "A, B"
+        },
+        {
+          "klass": "whitespace",
+          "type": "instantiates",
+          "target": "ScalaRandom(Applicative.pure(new JavaSecureRandom())) with SecureRandom"
+        },
+        {
+          "klass": "delimiter",
+          "type": "instantiates",
+          "target": "ScalaRandom(Applicative.pure(new JavaSecureRandom())) with SecureRandom"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "anonymous_ScalaRandom(Applicative.pure(new JavaSecureRandom())) with SecureRando"
+        }
+      ],
+      "convictionSubclasses": {
+        "matchesOwnSymbol": 5,
+        "sourceText": 1
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "`popAll preserves iteration order`",
+          "file": "scala3/library/test/scala/collection/mutable/StackTest.scala"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "`popWhile preserves iteration order`",
+          "file": "scala3/library/test/scala/collection/mutable/StackTest.scala"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "`do-not-point-at ::`",
+          "file": "scala3/presentation-compiler/test/dotty/tools/pc/tests/definition/PcDefinitionSuite.scala"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "A, B",
+          "file": "scala3/sbt-test/scala2-compat/i24998/lib/EnumerationTests.scala"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "instantiates",
+          "target": "ScalaRandom(Applicative.pure(new JavaSecureRandom())) with SecureRandom",
+          "file": "cats-effect/std/native/src/main/scala/cats/effect/std/SecureRandomCompanionPlatform.scala"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "anonymous_ScalaRandom(Applicative.pure(new JavaSecureRandom())) with SecureRando",
+          "file": "cats-effect/std/native/src/main/scala/cats/effect/std/SecureRandomCompanionPlatform.scala"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "references|?"
+      ],
+      "rulings": {
+        "references|?": null
+      },
+      "note": "CONVICTED \u2014 a type DESCRIPTION published as a target (`ClassUnpickler(infoRef) with SymbolLoaders.SecondCompleter`, and `anonymous_...` variants of the same), backtick test names with spaces, and `A, B`. The `anonymous_*` shape is already ruled uncheckable by M59's oracle (it is never written in source); the composite `X(args) with Y` shape is this lane's own next item. Owner: jvm lane. SPLIT: 6 whitespace convictions = 5 `matchesOwnSymbol` (3 backticked names, `A, B`, the synthesised anonymous class) + 1 `sourceText`. The 5 are routed to #924; the 1 is R10's own class."
+    },
+    "java": {
+      "verdict": "clean",
+      "family": "other",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [],
+      "rulings": {},
+      "note": "PAID DOWN 2026-09-23, measured (R10 sibling sweep). The conviction was a DERIVATION defect, not a target-shape one, and it is why this lane's 3 rows looked like two different classes. An override endpoint is `${ownerFqn}.${name}${signature}`, so the label came from splitting a string that CONTAINS a parameter list, and the pre-fix rule (split on '.', keep the last two segments, cut each at '(') split the parameter list itself whenever a parameter TYPE was written with a dot: `handle.Criterion,StringBuilder,StringBuilder,String,int,List,ConversionService,boolean,boolean)` on both ends (grails-core JpaQueryBuilder.java:271, the anonymous QueryHandler) and `removeEldestEntry.Entry<String, Boolean>)` (GrailsResourceUtils.java:196/:203, the anonymous LinkedHashMap), where the honest keys are `anonymous_QueryHandler.handle` and `LinkedHashMap.removeEldestEntry`. LIVE IN THE DIFFERENTIAL, measured same-files rather than argued: at 300 files of grails-core the PRE-fix tree (bdce721a, hash 320384d592ae9cbb, 4,600 analyzer edges, 4,036 truth edges, heuristic 581) read MISSING=1 / unexplained=1, and the two rows were the same defect \u2014 `MISSING overrides anonymous_QueryHandler.handle -> QueryHandler.handle` and `UNEXPLAINED overrides handle.Criterion,\u2026,boolean) -> handle.Criterion,\u2026,boolean) (line 271)`; POST-fix on the identical file set the rows are MISSING=0 / unexplained=0 with every other number unchanged. The canonical 60-file draw never sampled that file, which is why the lane was green. FIX: one shared rule, `localEdgeLabel` in src/ast/override-context.ts (delete every balanced parenthesised group, then split on dots and keep the last two segments), now called by java, groovy AND csharp. The sibling half is measured, not assumed: groovy and csharp wore the MIRROR of the same class (`split('(')[0]` first \u2014 immune to the parameter-list split, but it truncates a paren-bearing OWNER chain to a wrong-but-name-shaped label, `Child.getInner().anonymous_Inner.foo` -> `Child.getInner`), and on the same-file-set draws their relabel moved NOTHING (grails-core groovy hash b1d93874cfcbfdee, powershell csharp hash d29d60a18c797e0f, both byte-identical before and after), which is the honest form of 'latent here, closed by construction'. PROOFS: script/m60/edge-label-rule-probe.ts (18-row shape table; negative proof \u2014 the superseded rules are wrong on 8/18 and 5/18 rows, so the table can fail), validation/m14/fixtures/java/override-key-parameter-lists.* plus the csharp and groovy siblings, and mutant `java/override-label-parameter-list` (CAUGHT, its new failure being the java fixture). Separator vocabulary: none \u2014 `overrides|.` was this lane's only ruled-owed triple and it is gone with the labels."
+    },
+    "groovy": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "whitespace": 31,
+        "literal": 2
+      },
+      "convictionSamples": [
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "environment resolves relaxed enum property values"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "test entity with trait property"
+        },
+        {
+          "klass": "literal",
+          "type": "calls",
+          "target": "0"
+        },
+        {
+          "klass": "literal",
+          "type": "calls",
+          "target": "0"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "test bindNaturalIdentifier calls NaturalId.createUniqueKey and handles result"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "test bindNaturalIdentifier when NaturalId returns empty result"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "test bindNaturalIdentifier when no identity is defined"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "Test a database per tenant multi tenancy"
+        }
+      ],
+      "convictionSubclasses": {
+        "matchesOwnSymbol": 31
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "environment resolves relaxed enum property values",
+          "file": "grails-core/grails-core/src/test/groovy/grails/boot/GrailsAppEnvironmentConversionSpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "test entity with trait property",
+          "file": "grails-core/grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/traits/TraitPropertySpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "test bindNaturalIdentifier calls NaturalId.createUniqueKey and handles result",
+          "file": "grails-core/grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/cfg/domainbinding/NaturalIdentifierBinderSpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "test bindNaturalIdentifier when NaturalId returns empty result",
+          "file": "grails-core/grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/cfg/domainbinding/NaturalIdentifierBinderSpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "test bindNaturalIdentifier when no identity is defined",
+          "file": "grails-core/grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/cfg/domainbinding/NaturalIdentifierBinderSpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "Test a database per tenant multi tenancy",
+          "file": "grails-core/grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/connections/SchemaMultiTenantSpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "Test that an entity can save and load native mongo types",
+          "file": "grails-core/grails-data-mongodb/core/src/test/groovy/org/grails/datastore/gorm/mongo/MongoTypesSpec.groovy"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "CharSequence conversions should be supported",
+          "file": "grails-core/grails-datastore-core/src/test/groovy/org/grails/datastore/mapping/model/types/conversion/DefaultConversionServiceSpec.groovy"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [],
+      "rulings": {},
+      "note": "CONVICTED \u2014 Spock test-description STRINGS published as `contains` targets (`should create a List and delegate to binder`), and string LITERALS published as `calls` targets (`calls '*'`, `calls \"/content/$controller/$action?/$id?\"`). Owner: jvm lane. SPLIT: all 31 whitespace convictions are `matchesOwnSymbol`, and they are NOT a defect \u2014 `test entity with trait property` is a legal quoted method name whose name IS that string; this measurement is what REFUTED the class's original rationale. #924 owns the fixture that pins the name as the inner text."
+    },
+    "vue": {
+      "verdict": "unruled-separators",
+      "family": "other",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "imports|*",
+        "imports|/",
+        "imports|:",
+        "imports|@",
+        "imports|~"
+      ],
+      "rulings": {
+        "imports|*": null,
+        "imports|/": null,
+        "imports|:": null,
+        "imports|@": null,
+        "imports|~": null
+      },
+      "note": "Separator vocabulary measured and UNRULED (recorded, not blessed): imports|!, imports|*, imports|., imports|/, imports|:, imports|@. Owed to this lane; a new spelling in it fails G1 immediately."
+    },
+    "svelte": {
+      "verdict": "underdetermined",
+      "family": "other",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "imports|$",
+        "imports|(",
+        "imports|)",
+        "imports|*",
+        "imports|.",
+        "imports|/",
+        "imports|:",
+        "imports|@",
+        "instantiates|.",
+        "references|."
+      ],
+      "rulings": {
+        "imports|$": null,
+        "imports|*": null,
+        "imports|.": null,
+        "imports|/": null,
+        "imports|:": null,
+        "imports|@": null,
+        "instantiates|.": null,
+        "references|.": null,
+        "imports|(": null,
+        "imports|)": null
+      },
+      "note": ""
+    },
+    "cpp": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "delimiter": 45
+      },
+      "convictionSamples": [
+        {
+          "klass": "delimiter",
+          "type": "contains",
+          "target": "operator()"
+        },
+        {
+          "klass": "delimiter",
+          "type": "calls",
+          "target": "operator()"
+        },
+        {
+          "klass": "delimiter",
+          "type": "contains",
+          "target": "operator <="
+        }
+      ],
+      "convictionSubclasses": {
+        "operatorMember": 2
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "[](UInt m) {\n    int num_digits = 0;\n    do {\n      ++num_digits;\n    } while ((",
+          "file": "fmt/include/fmt/format.h"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "width = to_unsigned(specs.width)",
+          "file": "fmt/include/fmt/format.h"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "system_error vwindows_error",
+          "file": "fmt/include/fmt/os.h"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "[&] { return cond; }",
+          "file": "nlohmann-json/tests/thirdparty/doctest/doctest.h"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "__FILE__ \":\" DOCTEST_TOSTR",
+          "file": "nlohmann-json/tests/thirdparty/doctest/doctest.h"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "end = sigs.begin() + count",
+          "file": "nlohmann-json/tests/thirdparty/doctest/doctest.h"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "calls",
+          "target": "nc & 0x3F",
+          "file": "nlohmann-json/tests/thirdparty/doctest/doctest.h"
+        }
+      ],
+      "whitespaceRuled": {
+        "operatorMember": 2
+      },
+      "whitespaceRuledSamples": [
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator char*",
+          "file": "fmt/include/fmt/base.h"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator const Char*",
+          "file": "fmt/include/fmt/color.h"
+        }
+      ],
+      "subclassRulings": {
+        "operatorMember": "RULED 2026-09-23 (owner decision, C2b). A whitespace-bearing operator member name is the lane's NAMING CONVENTION, not a fabricated spelling: (1) it is exactly what the declaration writes \u2014 the grammar spells an operator declaration `operator` + whitespace + the token, and the lane's own containment edge agrees with the published name; (2) the lane already publishes a whitespace-bearing operator name BY DESIGN \u2014 csharp's conversion operators are `implicit Box<Plain>` (pinned in qualified-type-spelling) and `implicit int` (payload-and-complexity), and using-alias-and-operators states in its own rationale that every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`) because the whole lane's expectations name these symbols \u2014 convicting one half of that convention would contradict the half that is pinned and mutated; (3) \"referenceable\" was never the operative test: no source in these languages references an operator member by name (operators are invoked, `a == b`, never named), so it cannot distinguish a convention from a fabrication here. The ruled counts stay pinned in `whitespaceRuled` and inside `whitespaceSubclasses` \u2014 a lane emitting a NEW operator-member shape fails the gate until this register is rewritten \u2014 and this reason is why an unreasoned ruling fails G1."
+      },
+      "separatorTriples": [
+        "calls|~",
+        "imports|.",
+        "overrides|.",
+        "references|.",
+        "references|/",
+        "references|:",
+        "uses|:"
+      ],
+      "rulings": {
+        "calls|~": null,
+        "imports|.": null,
+        "overrides|.": null,
+        "references|.": null,
+        "references|/": null,
+        "references|:": null,
+        "uses|:": null
+      },
+      "note": "RE-DERIVED 2026-09-25 (not paid down by this lane, and not a change in cpp's analyzer): the committed census row this entry was written from recorded 58 anomalies {\"delimiter\":49,\"whitespace\":7,\"literal\":2} and 5 separator triples. A fresh canonical run of the SAME census over the SAME tree reads 45 {\"delimiter\":45}, 2 sub-classes {\"operatorMember\":2}, and 7 triples \u2014 two of them NEW (\"references|:\", \"uses|:\"), which is a widened vocabulary, not a repayment. The census is deterministic (two consecutive runs byte-identical), src/ast/real-cpp-analyzer.ts is unmodified in the working tree at HEAD, and no file under fmt/ or nlohmann-json/ has been written since 2026-08-25 \u2014 so the committed row was produced from a DIFFERENT analyzer state (the dirty-derived-artifact class, #761). Both the two new triples and the 45 convictions are HEAD-true; the register follows the artifact because it must never be shrunk silently. Filed as a standing-rule finding: R8 and R10 both adjudicate a COMMITTED artifact rather than a live recomputation, so a dirty-derived artifact can pass its gate forever."
+    },
+    "c": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "literal": 1
+      },
+      "convictionSamples": [
+        {
+          "klass": "literal",
+          "type": "calls",
+          "target": "0"
+        }
+      ],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "imports|-",
+        "imports|.",
+        "imports|/"
+      ],
+      "rulings": {
+        "imports|.": null,
+        "imports|/": null,
+        "imports|-": null
+      },
+      "note": "Separator vocabulary measured and UNRULED (recorded, not blessed): imports|., imports|/. Owed to this lane; a new spelling in it fails G1 immediately."
+    },
+    "rust": {
+      "verdict": "clean",
+      "family": "other",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [],
+      "rulings": {},
+      "note": "CONVICTED AND PAID DOWN 2026-09-24 (rust #798, R10). This lane's `convictions` map was EMPTY, and its artifact row read `clean`, while the lane was in fact publishing source text as a target \u2014 the empty map was a statement about the DRAW, not about the lane. Measured: `bun script/m60/target-spelling-census.ts --lane rust --sample 667` on the pre-fix analyzer reported `anomalies=6 {\"whitespace\":6}`, all `references` targets, subclass `matchesOwnSymbol` \u2014 5x `references -> \"&mut ProcessBuilder\"` and 1x `references -> \"&mut Execs\"`, every one of them at cargo/crates/cargo-test-support/src/lib.rs. THE DRAW BLIND SPOT, MEASURED AND FILED: the census's canonical draw is 40 files per corpus (sorted, every k-th), and the violating file is ABSENT from cargo's draw at caps 40, 60, 240 and 700 while it is drawn at 400 and 1400 (script/m14/tmp/rust-798-draw-check.ts). At the canonical cap 40 this lane would therefore have read `clean` forever, and the register's `clean` was true about the sample and false about the lane. The class is one ROOT with three surfaces, and the census only measures one of them: `impl ChannelChangerCommandExt for &mut ProcessBuilder` published the impl SYMBOL under the name `&mut ProcessBuilder`, the same text as the `implements` edge's SOURCE and as each member's OWNER, and `Self` resolution inside the block made it a `references` TARGET (5 rows, plus `&mut Execs` x1). THE FIX (R10, this round): the implemented type's NOMINAL name is published \u2014 a reference/pointer/parenthesized wrapper is transparent, so `&mut ProcessBuilder` IS `ProcessBuilder`; a type with NO nominal name (a slice `[u8]`, a tuple `(T, U)`) takes the family's declared synthetic `anonymous_impl` on the impl SYMBOL with the source spelling kept in `metadata.implementedType`, while `Self` resolution takes ABSENCE (R7: the honest state is absence, not a placeholder, and the synthetic block name is never substituted for the type in a TARGET position). RE-MEASURED at full extent, not on a draw: `--lane rust --sample 2285` (ripgrep 110 + cargo 1241 files, 182,977 relationships) reads `clean` with `anomalies=0 sep=0 unruled=-`, and the F5 differential at the same files reports 0 missing / 0 unexplained against its independently-written oracle (6,309 and 41,793 truth edges). TWO ADJACENT FINDINGS this work surfaced, recorded here because they belong to the same root: (1) `calls -> \"Self\"` \u2014 the KEYWORD published as a callee name, 6 rows on cargo (`Ok(Self(name))` in cargo-util-schemas/src/manifest/mod.rs, `Self(ProcessEnv)` in build-rs/src/input.rs). Found by the F14 name-surface gate when it was extended to rust (this census cannot see it: `Self` is a well-SPELLED name, and R10's classes are about spelling); the callee now resolves to the enclosing impl type, exactly as `Name(..)` does, and a trait default body (no impl to resolve) omits the edge. (2) RAW IDENTIFIERS keep their `r#` prefix on the symbol AND everything that targets it (`r#try`, `r#async`) and are DECLARED by the F14 gate as the identifier's own spelling rather than tolerated: the prefix is the only way the identifier can be written in source, both sides carry it (so it resolves), and R2 of the gate REFUSES the stripped form by name, since `try`/`async` are keywords. Measured: ripgrep 1 symbol + 1 target, cargo 2 symbols + 11 targets."
+    },
+    "go": {
+      "verdict": "unruled-separators",
+      "family": "other",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "imports|-",
+        "imports|.",
+        "imports|/"
+      ],
+      "rulings": {
+        "imports|-": null,
+        "imports|.": null,
+        "imports|/": null
+      },
+      "note": "SPLIT AND MEASURED (#799 round, R10). Two mechanisms shared these triples at the start of the round, and only one of them was a convention. (1) The QUALIFIED TYPE USE was NOT a convention: `references/declared_type` and `references/return_type` published the USE spelling (`io.Writer`, `time.Time`, `types.Importer`), i.e. source text on a label whose whole contract is naming \u2014 the same class R10 was built for, and the same spelling question this round answered for struct/interface embedding's `extends` target (`io.Reader` -> `Reader`). Both surfaces now publish the LEAF the lane would declare for the type with the package-qualified form in `metadata.qualifiedType`, matching `uses`, which had always targeted selector leaves (`pkg.Fn` -> `Fn`); the lane's own `uses`/`references` asymmetry is gone. (2) The IMPORT PATH was never a spelling at all: a module specifier is a string literal naming a module, and it rode the `references` label only because the lane published its dependency edge there (with `isImport`+`isGoImportDep` markers). That surface moved to the family's first-class `imports` label \u2014 the direction #910 took for c, and go's own requiredKinds has named `imports` since the systems wave (completeness section B pins the kind from the marker, which is unchanged). MEASURED, full draw (`bun script/m60/target-spelling-census.ts --lane go --sample 2200`: go-tools 1931 + terraform 1320): separator targets 39,280 -> 11,933, `extends|.` retired, and every remaining separator sits on an `imports` edge; probes `script/m14/tmp/go-799-reftargets.ts` (references targets carrying a separator: 1,162 `declared_type` + 56 `return_type` before, 0 after) and `go-799-hyphen-targets.ts` (the hyphen belonged to module paths \u2014 `github.com/google/go-cmp/cmp` \u2014 in files the grammar parses cleanly, so it was never debris). The residue is the module-path vocabulary the family carries as owed in 17 other lanes (`c` records exactly these three triples, `imports|.`/`imports|/`/`imports|-`, as owed): a new spelling on the REFERENCES surface now fails G1 immediately instead of hiding behind a convention recorded for a different label. ARTIFACT PROVENANCE: the go row of validation/m60/results/target-spelling.json was taken from a fresh canonical run this round (`bun script/m60/target-spelling-census.ts`, draws go-tools:40+terraform:24, syms=510 rels=2985 sep=184) and transplanted into the committed artifact, because THAT SAME full run moves NINE other lanes' rows \u2014 typescript, java, groovy, cpp, scala, kotlin, vue, zig and svelte all measure a wider separator vocabulary than their recorded rows, and java's verdict moves from `clean` to `unruled-separators`. A family-wide re-pin is those lanes' to make: the drift is real and now measured, but committing it here would have re-pinned nine lanes from a go round, and R10 live refuses any lane whose register and artifact disagree \u2014 so the alternative was a silently stale gate for all of them. The go row alone is refreshed."
+    },
+    "zig": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "whitespace": 2
+      },
+      "convictionSamples": [
+        {
+          "klass": "whitespace",
+          "type": "calls",
+          "target": "@\"weird function name\""
+        },
+        {
+          "klass": "whitespace",
+          "type": "calls",
+          "target": "@\"zls env\""
+        }
+      ],
+      "convictionSubclasses": {
+        "payloadSigil": 2
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "payloadSigil",
+          "type": "calls",
+          "target": "@\"weird function name\"",
+          "file": "zig/test/behavior/fn.zig"
+        },
+        {
+          "subclass": "payloadSigil",
+          "type": "calls",
+          "target": "@\"zls env\"",
+          "file": "zls/src/main.zig"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "references|-",
+        "references|."
+      ],
+      "rulings": {
+        "references|-": null,
+        "references|.": null
+      },
+      "note": "SPLIT: 2 whitespace convictions, both `payloadSigil` \u2014 `@\"zls env\"` and `@\"weird function name\"`, sigil-quoted identifiers published WITH their sigil. Routed to #924. This lane is otherwise clean (no other conviction class, no separator outside its own alphabet)."
+    },
+    "csharp": {
+      "verdict": "clean",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {
+        "operatorMember": 2
+      },
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {
+        "operatorMember": 2
+      },
+      "whitespaceRuledSamples": [
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator ==",
+          "file": "fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator !=",
+          "file": "fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs"
+        }
+      ],
+      "subclassRulings": {
+        "operatorMember": "RULED 2026-09-23 (owner decision, C2b). A whitespace-bearing operator member name is the lane's NAMING CONVENTION, not a fabricated spelling: (1) it is exactly what the declaration writes \u2014 the grammar spells an operator declaration `operator` + whitespace + the token, and the lane's own containment edge agrees with the published name; (2) the lane already publishes a whitespace-bearing operator name BY DESIGN \u2014 csharp's conversion operators are `implicit Box<Plain>` (pinned in qualified-type-spelling) and `implicit int` (payload-and-complexity), and using-alias-and-operators states in its own rationale that every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`) because the whole lane's expectations name these symbols \u2014 convicting one half of that convention would contradict the half that is pinned and mutated; (3) \"referenceable\" was never the operative test: no source in these languages references an operator member by name (operators are invoked, `a == b`, never named), so it cannot distinguish a convention from a fabrication here. The ruled counts stay pinned in `whitespaceRuled` and inside `whitespaceSubclasses` \u2014 a lane emitting a NEW operator-member shape fails the gate until this register is rewritten \u2014 and this reason is why an unreasoned ruling fails G1."
+      },
+      "separatorTriples": [],
+      "rulings": {},
+      "note": "RE-DERIVED FROM THE ARTIFACT 2026-09-23 (the previous note was STALE prose: it described a `uses -> GenericUnion<int, string>` target that this draw does not contain, which is the class \u00a76.9 of the family plan records, a register describing a tree that no longer exists). Current reading: SEPARATOR VOCABULARY CLEAN (`sep=0` \u2014 the `instantiates|:` rule is gone from the artifact, ruled and fixed in a7eea492, see #922). CONVICTED (2), both `whitespace`, both on fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs: `contains -> \"operator ==\"` and `contains -> \"operator !=\"`. MEASURED SHAPE (script/m14/tmp/r10-whitespace-split-probe.ts): the target equals a symbol name this lane itself publishes (`name: \"operator ==\"`, kind=method) and the containment edge matches it \u2014 so the target is TRUTHFUL TO THE SYMBOL and this is not a spelling fabrication. The defect is the spelling of the MEMBER NAME itself: a name containing whitespace can never be referenced by source. FAMILY RULING, not this lane's to take alone (C2b): the identical shape is convicted in dart (`operator ?`, plus `overrides -> HttpHeaders.operator ?`) and swift (`operator ==`, `operator <`, `operator +`, `operator -`), so one decision covers four lanes' evidence."
+    },
+    "dart": {
+      "verdict": "unruled-separators",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {
+        "operatorMember": 2
+      },
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {
+        "operatorMember": 2
+      },
+      "whitespaceRuledSamples": [
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator ?",
+          "file": "dart-http/pkgs/http_multi_server/lib/src/multi_headers.dart"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "overrides",
+          "target": "HttpHeaders.operator ?",
+          "file": "dart-http/pkgs/http_multi_server/lib/src/multi_headers.dart"
+        }
+      ],
+      "subclassRulings": {
+        "operatorMember": "RULED 2026-09-23 (owner decision, C2b). A whitespace-bearing operator member name is the lane's NAMING CONVENTION, not a fabricated spelling: (1) it is exactly what the declaration writes \u2014 the grammar spells an operator declaration `operator` + whitespace + the token, and the lane's own containment edge agrees with the published name; (2) the lane already publishes a whitespace-bearing operator name BY DESIGN \u2014 csharp's conversion operators are `implicit Box<Plain>` (pinned in qualified-type-spelling) and `implicit int` (payload-and-complexity), and using-alias-and-operators states in its own rationale that every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`) because the whole lane's expectations name these symbols \u2014 convicting one half of that convention would contradict the half that is pinned and mutated; (3) \"referenceable\" was never the operative test: no source in these languages references an operator member by name (operators are invoked, `a == b`, never named), so it cannot distinguish a convention from a fabrication here. The ruled counts stay pinned in `whitespaceRuled` and inside `whitespaceSubclasses` \u2014 a lane emitting a NEW operator-member shape fails the gate until this register is rewritten \u2014 and this reason is why an unreasoned ruling fails G1."
+      },
+      "separatorTriples": [
+        "exports|.",
+        "exports|/",
+        "imports|*",
+        "imports|.",
+        "imports|/",
+        "imports|:",
+        "overrides|."
+      ],
+      "rulings": {
+        "exports|.": null,
+        "imports|*": null,
+        "imports|.": null,
+        "imports|/": null,
+        "imports|:": null,
+        "overrides|.": null,
+        "exports|/": null
+      },
+      "note": "CONVICTED (2) \u2014 an OPERATOR DECLARATION's source text published as a member name (`contains -> operator ?`, `overrides -> HttpHeaders.operator ?`). The same shape appears in swift, so the family needs ONE ruling on how an operator member is named (the declaration text with its keyword and space, or the operator token). Owner: dart lane (OO) \u2014 ruling candidate, NOT ruled: the register records it as a finding until the family decides. Separator vocabulary UNRULED: `imports|*`, `imports|.`, `imports|/`, `imports|:` (module paths) and `exports|.`, `overrides|.`. Module-path separators are a family-wide vocabulary that the family has not yet ruled lane by lane; the ruling is owed rather than assumed."
+    },
+    "swift": {
+      "verdict": "unruled-separators",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {
+        "operatorMember": 9
+      },
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {
+        "operatorMember": 9
+      },
+      "whitespaceRuledSamples": [
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator ==",
+          "file": "swift-nio/Sources/NIOCore/EventLoopFuture.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator ==",
+          "file": "swift-nio/Sources/NIOHTTP1/HTTPTypes.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator ==",
+          "file": "swift-nio/Sources/NIOHTTP1/HTTPTypes.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator <",
+          "file": "swift-nio/Sources/NIOHTTP1/HTTPTypes.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator ==",
+          "file": "swift-nio/Sources/NIOHTTP1/HTTPTypes.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator +",
+          "file": "swift-nio/Sources/_NIOFileSystem/ByteCount.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator -",
+          "file": "swift-nio/Sources/_NIOFileSystem/ByteCount.swift"
+        },
+        {
+          "subclass": "operatorMember",
+          "type": "contains",
+          "target": "operator <",
+          "file": "swift-nio/Sources/_NIOFileSystem/ByteCount.swift"
+        }
+      ],
+      "subclassRulings": {
+        "operatorMember": "RULED 2026-09-23 (owner decision, C2b). A whitespace-bearing operator member name is the lane's NAMING CONVENTION, not a fabricated spelling: (1) it is exactly what the declaration writes \u2014 the grammar spells an operator declaration `operator` + whitespace + the token, and the lane's own containment edge agrees with the published name; (2) the lane already publishes a whitespace-bearing operator name BY DESIGN \u2014 csharp's conversion operators are `implicit Box<Plain>` (pinned in qualified-type-spelling) and `implicit int` (payload-and-complexity), and using-alias-and-operators states in its own rationale that every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`) because the whole lane's expectations name these symbols \u2014 convicting one half of that convention would contradict the half that is pinned and mutated; (3) \"referenceable\" was never the operative test: no source in these languages references an operator member by name (operators are invoked, `a == b`, never named), so it cannot distinguish a convention from a fabrication here. The ruled counts stay pinned in `whitespaceRuled` and inside `whitespaceSubclasses` \u2014 a lane emitting a NEW operator-member shape fails the gate until this register is rewritten \u2014 and this reason is why an unreasoned ruling fails G1."
+      },
+      "separatorTriples": [
+        "overrides|.",
+        "references|."
+      ],
+      "rulings": {
+        "overrides|.": null,
+        "references|.": null
+      },
+      "note": "PAID DOWN 2026-09-25 (#924, swift half) \u2014 closed with a fixture and a reverting mutant, never by editing this register. The single `payloadSigil` conviction was `@available(*, deprecated, message: \"Cannot be thrown\")` published as a `contains` TARGET at swift-nio/Sources/NIOHTTP1/HTTPTypes.swift: an ATTRIBUTED enum case (`@available(...) case x`) put a `modifiers` node first and the member-name pick took the first named child \u2014 the decorator PAYLOAD \u2014 for all five cases, folding them into one `contains` whose name was a decorator. The name is now the identifier after `case` (modifiers are metadata) and the range node is that identifier, so a decorated declaration's line is its own. The same re-emit removed the other two name-surface classes the lane measured at full extent (keyword-escape backticks, tuple positions): 652 files, 23,212 symbols, 78,747 targets, name census CLEAN. Pinned by swift/attributed-enum-case + mutants swift/attributed-case-payload-name / swift/attributed-case-range-at-decorator. The separator vocabulary (`overrides|.`, `references|.`) is unchanged and still UNRULED \u2014 recorded and owed, not blessed."
+    },
+    "objc": {
+      "verdict": "unruled-separators",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "overrides|.",
+        "references|+",
+        "references|.",
+        "references|/"
+      ],
+      "rulings": {
+        "overrides|.": null,
+        "references|+": null,
+        "references|.": null,
+        "references|/": null
+      },
+      "note": "Separator vocabulary UNRULED: `overrides|.`, `references|.`, `references|/` (a `#import \"UIKit/UIKit.h\"` path) and `references|+` (a category `+` in a qualified name). Owed."
+    },
+    "php": {
+      "verdict": "clean",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "overrides|.",
+        "references|.",
+        "references|/"
+      ],
+      "rulings": {
+        "overrides|.": "DECLARED CONVENTION, from the lane's own code (src/ast/real-php-analyzer.ts resolveOverrides): every php override edge keys BOTH ends as a fully-qualified member \u2014 source `${owner}.${method}`, target `${base}.${method}` \u2014 so `.` is the lane's member qualifier, not a fabricated name, in both the verified (0.95) and the pass-3 first-parent-guess (0.5) arms. Scoped to `overrides` deliberately: a `.` in a `uses`, `calls` or `references` target is NOT covered and still fails.",
+        "references|.": "RULED 2026-09-23 (R10 sibling sweep), from measurement rather than taste. The triple exists on ONE edge set only: php's include/require `references` edges, whose target is a file PATH, not a symbol name \u2014 `phpStaticIncludePath` composes the operands' values, so `require_once __DIR__ . '/bootstrap/app.php';` publishes `__DIR__/bootstrap/app.php`. Measured over 300 files of the 4,096-file php corpus set: 409 `references` edges, and the only targets carrying a dot are the 4 include paths \u2014 every one of which also carries a slash \u2014 so `references|.` and `references|/` are the SAME edge set, and no `references` target outside a path carries a dot at all. The census's own doctrine already carves this out for `imports` (\"a module path is a path, not a name\", recorded for svelte's route groups); php names namespaces with a backslash, which is IN this lane's alphabet, so a dot here can only be a path.",
+        "references|/": "RULED 2026-09-23 (R10 sibling sweep), from measurement rather than taste. The triple exists on ONE edge set only: php's include/require `references` edges, whose target is a file PATH, not a symbol name \u2014 `phpStaticIncludePath` composes the operands' values, so `require_once __DIR__ . '/bootstrap/app.php';` publishes `__DIR__/bootstrap/app.php`. Measured over 300 files of the 4,096-file php corpus set: 409 `references` edges, and the only targets carrying a dot are the 4 include paths \u2014 every one of which also carries a slash \u2014 so `references|.` and `references|/` are the SAME edge set, and no `references` target outside a path carries a dot at all. The census's own doctrine already carves this out for `imports` (\"a module path is a path, not a name\", recorded for svelte's route groups); php names namespaces with a backslash, which is IN this lane's alphabet, so a dot here can only be a path."
+      },
+      "note": "R10's first pass found two live php defects, both now fixed (#835): an include path reconstructed from a concatenation with a runtime operand (`$this->baseDir.'revision-info.php'`, phpmyadmin src/Git.php:551) and a VALUE callee published as a callee NAME (`calls -> $controller`). Both were emitted IDENTICALLY by the differential oracle because its truth came from the same rules, so no per-edge gate could see either. After the fix this lane reads clean: 0 convictions, and the only separator left is the ruled `overrides|.` convention. R10 FOLLOW-UP (2026-09-23): the third triple, `references|'`, was NOT ruled and is gone from the measurement \u2014 it was a real fabrication of the same class as the include-path fix but at the STATIC end: the rule decided a fully static concatenation was a path (correct) and then published the source text of the concatenation, so `require __DIR__ . '/src/DeprecatedClass.php'` (phpunit tests/end-to-end/regression/6778/bootstrap.php) emitted `references -> __DIR__.'/src/DeprecatedClass.php'` \u2014 quotes and operator in a target, on both sides, invisible to every per-edge gate because the oracle calls the same function. Fixed by composing operand VALUES (`__DIR__/src/DeprecatedClass.php`); the fixture php/include-paths had pinned the old spelling as correct and was re-pinned with the reason recorded, plus a reverting mutant (`php/static-concat-as-source-text`, CAUGHT). Same-file-set differential before/after on 300 phpunit files: hash 6038d82a6947594e, 4,296 truth / 4,551 analyzer edges, 0 MISSING / 0 unexplained in BOTH states \u2014 the labels moved on both sides together, which is exactly why the census is the instrument that sees it."
+    },
+    "ruby": {
+      "verdict": "unruled-separators",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "overrides|.",
+        "references|.",
+        "references|/",
+        "uses|@"
+      ],
+      "rulings": {
+        "overrides|.": null,
+        "references|.": null,
+        "references|/": null,
+        "uses|@": null
+      },
+      "note": "Separator vocabulary UNRULED: `overrides|.`, `references|.`, `references|/` (a relative require path) and `uses|@` (an ivar read). Ruby's `@ivar` spelling is a language fact and should be ruled with a reason; the `.`/`/` occurrences need to be read before they are ruled. Owed."
+    },
+    "python": {
+      "verdict": "unruled-separators",
+      "family": "oo",
+      "convictions": {},
+      "convictionSamples": [],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "imports|*",
+        "imports|.",
+        "imports|:",
+        "overrides|."
+      ],
+      "rulings": {
+        "imports|*": null,
+        "imports|.": null,
+        "imports|:": null,
+        "overrides|.": null
+      },
+      "note": "Separator vocabulary UNRULED: `imports|*`, `imports|.`, `imports|:`, `overrides|.`. Owed."
+    },
+    "haskell": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "whitespace": 2
+      },
+      "convictionSamples": [
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "M1 i c"
+        },
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "K1 i"
+        }
+      ],
+      "convictionSubclasses": {
+        "matchesOwnSymbol": 2
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "M1 i c",
+          "file": "cabal/Cabal-QuickCheck/src/Test/QuickCheck/GenericArbitrary.hs"
+        },
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "K1 i",
+          "file": "cabal/Cabal-QuickCheck/src/Test/QuickCheck/GenericArbitrary.hs"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [],
+      "rulings": {},
+      "note": "CONVICTED \u2014 TYPE EXPRESSIONS published as targets (`M1 i c`, `K1 i`, `Either a` \u2014 metaprogramming/inline positions whose text is a type, not a name). Owner: haskell lane. SPLIT: 2 whitespace convictions, both `matchesOwnSymbol` \u2014 the lane publishes the type application itself as the name, so no per-edge gate can see it. Routed to #924."
+    },
+    "elixir": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "whitespace": 2,
+        "delimiter": 1
+      },
+      "convictionSamples": [
+        {
+          "klass": "whitespace",
+          "type": "contains",
+          "target": "# 7..13 is the range '\\a\\b\\t\\n\\v\\f\\r'. 32..126 are ASCII printables."
+        },
+        {
+          "klass": "whitespace",
+          "type": "references",
+          "target": "Module.Types.{Helpers, Descr}"
+        },
+        {
+          "klass": "delimiter",
+          "type": "references",
+          "target": "Module.Types.{Helpers, Descr}"
+        }
+      ],
+      "convictionSubclasses": {
+        "matchesOwnSymbol": 1,
+        "sourceText": 1
+      },
+      "convictionSubclassSamples": [
+        {
+          "subclass": "matchesOwnSymbol",
+          "type": "contains",
+          "target": "# 7..13 is the range '\\a\\b\\t\\n\\v\\f\\r'. 32..126 are ASCII printables.",
+          "file": "elixir/lib/elixir/lib/list.ex"
+        },
+        {
+          "subclass": "sourceText",
+          "type": "references",
+          "target": "Module.Types.{Helpers, Descr}",
+          "file": "elixir/lib/elixir/lib/module/types/pattern.ex"
+        }
+      ],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "calls|&",
+        "calls|:"
+      ],
+      "rulings": {
+        "calls|:": null,
+        "calls|&": null
+      },
+      "note": "CONVICTED \u2014 an ALIAS CLAUSE text published as a target (`:lists, as: MyList`, and the same text extended into a call target) and a struct EXPRESSION (`calls '%Point{}.foo_bar'`). Owner: elixir lane. SPLIT: 2 whitespace convictions = 1 `matchesOwnSymbol` (a COMMENT published as a symbol name AND as a `contains` target) + 1 `sourceText`. The comment is routed to #924; the 1 is R10's own class."
+    },
+    "erlang": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "literal": 13
+      },
+      "convictionSamples": [
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "'$handle_undefined_function'"
+        },
+        {
+          "klass": "literal",
+          "type": "instantiates",
+          "target": "'OTPCertificate'"
+        },
+        {
+          "klass": "literal",
+          "type": "instantiates",
+          "target": "'OTPTBSCertificate'"
+        },
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "'Signed'"
+        },
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "'$msg_name'"
+        },
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "'$msg'"
+        },
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "'lists_reverse'"
+        },
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "'erlang_++'"
+        }
+      ],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "calls|:",
+        "references|.",
+        "references|/"
+      ],
+      "rulings": {
+        "calls|:": null,
+        "references|.": null,
+        "references|/": null
+      },
+      "note": "Separator vocabulary measured and UNRULED (recorded, not blessed): calls|:, instantiates|?, references|-, references|., references|/. Owed to this lane; a new spelling in it fails G1 immediately."
+    },
+    "clojure": {
+      "verdict": "fabricated-spellings",
+      "family": "other",
+      "convictions": {
+        "literal": 5
+      },
+      "convictionSamples": [
+        {
+          "klass": "literal",
+          "type": "contains",
+          "target": "\"bad docstring\""
+        },
+        {
+          "klass": "literal",
+          "type": "references",
+          "target": "\"dayjs\""
+        },
+        {
+          "klass": "literal",
+          "type": "references",
+          "target": "\"dayjs/plugin/timezone\""
+        },
+        {
+          "klass": "literal",
+          "type": "references",
+          "target": "\"dayjs/plugin/utc\""
+        },
+        {
+          "klass": "literal",
+          "type": "references",
+          "target": "\"dayjs/plugin/utc2\""
+        }
+      ],
+      "convictionSubclasses": {},
+      "convictionSubclassSamples": [],
+      "whitespaceRuled": {},
+      "whitespaceRuledSamples": [],
+      "subclassRulings": {},
+      "separatorTriples": [
+        "calls|$",
+        "calls|%",
+        "implements|$",
+        "instantiates|$",
+        "references|$"
+      ],
+      "rulings": {
+        "calls|$": null,
+        "calls|%": null,
+        "implements|$": null,
+        "instantiates|$": null,
+        "references|$": null
+      },
+      "note": "Separator vocabulary measured and UNRULED (recorded, not blessed): calls|$, calls|%, calls|/, calls|=, implements|$, implements|/, instantiates|$, references|$. Owed to this lane; a new spelling in it fails G1 immediately."
+    }
+  }
+}

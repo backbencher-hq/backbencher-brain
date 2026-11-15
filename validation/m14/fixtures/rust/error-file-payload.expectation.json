@@ -1,0 +1,21 @@
+{
+  "fixtureId": "rust/error-file-payload",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RSD2 pin (2026-09-05): the old payload attach guarded on `!metadata.errors` — ANY parse error in the file wiped qualified_calls from EVERY function (4,620 functions across 519 error files in cargo+ripgrep). clean_caller shares a file with a deliberately broken fn (error at L15); its payload must still contain `helper`. Error recovery for a single bad token is precise enough that per-symbol direct attach never misattributes.",
+  "expectSymbols": [
+    { "name": "clean_caller", "kind": "function" },
+    { "name": "helper", "kind": "function" },
+    { "name": "broken", "kind": "function", "comment": "symbol still declared even though its body has a parse error" }
+  ],
+  "expectErrors": [
+    { "startLine": 15 }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "clean_caller",
+      "includes": ["helper"],
+      "comment": "RSD2: payload survives a parse error elsewhere in the file"
+    }
+  ]
+}

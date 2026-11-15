@@ -1,0 +1,49 @@
+{
+  "fixtureId": "scala/mixin-class-with",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "With-clause traits are MIXIN COMPOSITION: position 0 (Base) is extends, every further supertype (Serializable2, Comparable2) is mixes_in \u2014 NOT implements.",
+  "expectSymbols": [
+    {
+      "name": "Car"
+    },
+    {
+      "name": "Base"
+    },
+    {
+      "name": "Serializable2"
+    },
+    {
+      "name": "Comparable2"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Car",
+      "target": "Base"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Car",
+      "target": "Serializable2"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Car",
+      "target": "Comparable2"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "Car",
+      "target": "Serializable2"
+    },
+    {
+      "type": "implements",
+      "from": "Car",
+      "target": "Comparable2"
+    }
+  ]
+}

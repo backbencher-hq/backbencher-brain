@@ -1,6 +1,6 @@
 {
   "analyzer": "kotlin",
-  "corpus": "$HOME/intellij-community",
+  "corpus": "/home/ishaq2321/intellij-community",
   "corpusRepo": "intellij-community",
   "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
   "extensions": [

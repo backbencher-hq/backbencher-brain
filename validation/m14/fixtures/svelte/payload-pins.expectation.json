@@ -1,0 +1,24 @@
+{
+  "fixtureId": "svelte/payload-pins",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419-C payload matrix: JSDoc comments, per-symbol complexity and qualified_calls must survive the SFC sub-analyzer merge (family contract #383).",
+  "expectSymbols": [
+    {
+      "name": "increment"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "increment",
+      "equals": 2
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "increment",
+      "contains": "Increments the counter"
+    }
+  ],
+  "expectQualifiedCalls": []
+}

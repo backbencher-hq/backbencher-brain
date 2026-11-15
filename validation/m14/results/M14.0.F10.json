@@ -1,0 +1,5555 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "81d4960ff350d46ae28958a1ef12699a8a55acfa263fef762045b90828c77722",
+    "sealedAt": "2026-11-10T14:31:29.000Z"
+  },
+  "checks": [
+    {
+      "description": "parse-success floor for redis:make: 5.556% of 18 files carry an ERROR node or a MISSING token (floor 5.556)",
+      "detail": "files=18 ERROR=1 MISSING=0 either=1 damaged-lines median=1 max=1 digest=3b44404794209a06 verdict=pass",
+      "id": "M14.0.F10.redis:make",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for duckdb:sql: 33% of 400 files carry an ERROR node or a MISSING token (floor 33)",
+      "detail": "files=400 ERROR=132 MISSING=34 either=132 damaged-lines median=3 max=73 digest=bd726c6edb6de5bf verdict=pass",
+      "id": "M14.0.F10.duckdb:sql",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for dplyr:r: 0% of 195 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=195 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=706408d1f881d11d verdict=pass",
+      "id": "M14.0.F10.dplyr:r",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for nim:nim: 2.75% of 400 files carry an ERROR node or a MISSING token (floor 2.75)",
+      "detail": "files=400 ERROR=11 MISSING=2 either=11 damaged-lines median=1 max=14 digest=55ed59311cfc5ce1 verdict=pass",
+      "id": "M14.0.F10.nim:nim",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for kong:lua: 0.25% of 400 files carry an ERROR node or a MISSING token (floor 0.25)",
+      "detail": "files=400 ERROR=1 MISSING=0 either=1 damaged-lines median=1 max=1 digest=f1c79b529a3fbaf4 verdict=pass",
+      "id": "M14.0.F10.kong:lua",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for gql-graphql-platform:graphql: 7.5% of 400 files carry an ERROR node or a MISSING token (floor 7.5)",
+      "detail": "files=400 ERROR=29 MISSING=5 either=30 damaged-lines median=1 max=29 digest=2241dee74b9e2c31 verdict=pass",
+      "id": "M14.0.F10.gql-graphql-platform:graphql",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for pb-googleapis:protobuf: 0% of 128 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=128 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=8704429eb7c05392 verdict=pass",
+      "id": "M14.0.F10.pb-googleapis:protobuf",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for otp:bash: 5.063% of 79 files carry an ERROR node or a MISSING token (floor 5.063)",
+      "detail": "files=79 ERROR=3 MISSING=2 either=4 damaged-lines median=2 max=4 digest=211314411084e991 verdict=pass",
+      "id": "M14.0.F10.otp:bash",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for element-plus:scss: 32.353% of 170 files carry an ERROR node or a MISSING token (floor 32.353)",
+      "detail": "files=170 ERROR=48 MISSING=19 either=55 damaged-lines median=5 max=89 digest=5899ae70e7e66d27 verdict=pass",
+      "id": "M14.0.F10.element-plus:scss",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for grails-core:xml: 1.258% of 318 files carry an ERROR node or a MISSING token (floor 1.258)",
+      "detail": "files=318 ERROR=4 MISSING=0 either=4 damaged-lines median=90 max=155 digest=d0963ec655cd3edb verdict=pass",
+      "id": "M14.0.F10.grails-core:xml",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for grails-core:java: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=feca6354d1b4e062 verdict=pass",
+      "id": "M14.0.F10.grails-core:java",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for grails-core:groovy: 4.5% of 400 files carry an ERROR node or a MISSING token (floor 4.5)",
+      "detail": "files=400 ERROR=18 MISSING=0 either=18 damaged-lines median=1 max=2 digest=b132129551e11398 verdict=pass",
+      "id": "M14.0.F10.grails-core:groovy",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for Exposed:kotlin: 2% of 400 files carry an ERROR node or a MISSING token (floor 2)",
+      "detail": "files=400 ERROR=8 MISSING=1 either=8 damaged-lines median=2 max=2 digest=deb3c8c9d4072654 verdict=pass",
+      "id": "M14.0.F10.Exposed:kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for scala3:scala: 2.25% of 400 files carry an ERROR node or a MISSING token (floor 2.25)",
+      "detail": "files=400 ERROR=9 MISSING=2 either=9 damaged-lines median=1 max=5 digest=5761ab0defe84718 verdict=pass",
+      "id": "M14.0.F10.scala3:scala",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for vue-core:typescript: 0.25% of 400 files carry an ERROR node or a MISSING token (floor 0.25)",
+      "detail": "files=400 ERROR=1 MISSING=0 either=1 damaged-lines median=2 max=2 digest=bf91cc62697aea47 verdict=pass",
+      "id": "M14.0.F10.vue-core:typescript",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for svelte:javascript: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=c7ab89f52757cd96 verdict=pass",
+      "id": "M14.0.F10.svelte:javascript",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for element-plus:vue: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=8f9e218079fd3c66 verdict=pass",
+      "id": "M14.0.F10.element-plus:vue",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for svelte:svelte: 2.25% of 400 files carry an ERROR node or a MISSING token (floor 2.25)",
+      "detail": "files=400 ERROR=9 MISSING=2 either=9 damaged-lines median=1 max=4 digest=e2b94cef6c05def4 verdict=pass",
+      "id": "M14.0.F10.svelte:svelte",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for svelte:css: 6.452% of 186 files carry an ERROR node or a MISSING token (floor 6.452)",
+      "detail": "files=186 ERROR=12 MISSING=0 either=12 damaged-lines median=2 max=10 digest=3bf679c38a434d71 verdict=pass",
+      "id": "M14.0.F10.svelte:css",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for sqlite:c: 57.983% of 357 files carry an ERROR node or a MISSING token (floor 57.983)",
+      "detail": "files=357 ERROR=184 MISSING=131 either=207 damaged-lines median=3 max=429 digest=e85f31d73682080c verdict=pass",
+      "id": "M14.0.F10.sqlite:c",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for fmt:cpp: 52.778% of 72 files carry an ERROR node or a MISSING token (floor 52.778)",
+      "detail": "files=72 ERROR=34 MISSING=30 either=38 damaged-lines median=8 max=152 digest=6b5f10f785ea9b17 verdict=pass",
+      "id": "M14.0.F10.fmt:cpp",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for ripgrep:rust: 0% of 110 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=110 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=836585915a030f31 verdict=pass",
+      "id": "M14.0.F10.ripgrep:rust",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for go-tools:go: 2% of 400 files carry an ERROR node or a MISSING token (floor 2)",
+      "detail": "files=400 ERROR=8 MISSING=2 either=8 damaged-lines median=1 max=115 digest=25b3ce0a1d85aa8d verdict=pass",
+      "id": "M14.0.F10.go-tools:go",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for zig:zig: 4.75% of 400 files carry an ERROR node or a MISSING token (floor 4.75)",
+      "detail": "files=400 ERROR=18 MISSING=3 either=19 damaged-lines median=2 max=20 digest=ec02057183a4d010 verdict=pass",
+      "id": "M14.0.F10.zig:zig",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for powershell:csharp: 1.75% of 400 files carry an ERROR node or a MISSING token (floor 1.75)",
+      "detail": "files=400 ERROR=7 MISSING=2 either=7 damaged-lines median=1 max=16 digest=b17c20a2d3d97663 verdict=pass",
+      "id": "M14.0.F10.powershell:csharp",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for proxicall:dart: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=a0e1923e2720e578 verdict=pass",
+      "id": "M14.0.F10.proxicall:dart",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for swift-nio:swift: 11.5% of 400 files carry an ERROR node or a MISSING token (floor 11.5)",
+      "detail": "files=400 ERROR=46 MISSING=3 either=46 damaged-lines median=5 max=262 digest=ecde47461bd9dd9c verdict=pass",
+      "id": "M14.0.F10.swift-nio:swift",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for sdwebimage:objc: 6.878% of 189 files carry an ERROR node or a MISSING token (floor 6.878)",
+      "detail": "files=189 ERROR=7 MISSING=8 either=13 damaged-lines median=1 max=8 digest=362a8affab5f832a verdict=pass",
+      "id": "M14.0.F10.sdwebimage:objc",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for phpunit:php: 28% of 400 files carry an ERROR node or a MISSING token (floor 28)",
+      "detail": "files=400 ERROR=112 MISSING=8 either=112 damaged-lines median=6 max=46 digest=dcb1406dafb878c7 verdict=pass",
+      "id": "M14.0.F10.phpunit:php",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for rake:ruby: 0% of 97 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=97 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=003eb05123ba6b6e verdict=pass",
+      "id": "M14.0.F10.rake:ruby",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for cython:python: 2.75% of 400 files carry an ERROR node or a MISSING token (floor 2.75)",
+      "detail": "files=400 ERROR=11 MISSING=0 either=11 damaged-lines median=1 max=11 digest=3c259eba02a7b89e verdict=pass",
+      "id": "M14.0.F10.cython:python",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for cabal:haskell: 0.25% of 400 files carry an ERROR node or a MISSING token (floor 0.25)",
+      "detail": "files=400 ERROR=1 MISSING=1 either=1 damaged-lines median=27 max=27 digest=834e5dc03ef660a4 verdict=pass",
+      "id": "M14.0.F10.cabal:haskell",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for elixir:elixir: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=99c22e1c659cedf2 verdict=pass",
+      "id": "M14.0.F10.elixir:elixir",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for rebar3:erlang: 6.32% of 269 files carry an ERROR node or a MISSING token (floor 6.32)",
+      "detail": "files=269 ERROR=17 MISSING=1 either=17 damaged-lines median=2 max=8 digest=4cafee29b9017c8f verdict=pass",
+      "id": "M14.0.F10.rebar3:erlang",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for clojure:clojure: 0% of 142 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=142 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=7cf39fa3412b1a99 verdict=pass",
+      "id": "M14.0.F10.clojure:clojure",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for mojo:perl: 1.404% of 285 files carry an ERROR node or a MISSING token (floor 1.404)",
+      "detail": "files=285 ERROR=3 MISSING=1 either=4 damaged-lines median=1 max=2 digest=25bdd049fbc9ae95 verdict=pass",
+      "id": "M14.0.F10.mojo:perl",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for Clyde:clean: 14.679% of 109 files carry an ERROR node or a MISSING token (floor 14.679)",
+      "detail": "files=109 ERROR=15 MISSING=4 either=16 damaged-lines median=3 max=78 digest=5a098308ffd09f07 verdict=pass",
+      "id": "M14.0.F10.Clyde:clean",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for fsharp:fsharp: 19.25% of 400 files carry an ERROR node or a MISSING token (floor 19.25)",
+      "detail": "files=400 ERROR=67 MISSING=19 either=77 damaged-lines median=1 max=134 digest=d087c19c8326daea verdict=pass",
+      "id": "M14.0.F10.fsharp:fsharp",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for otp:html: 7.576% of 66 files carry an ERROR node or a MISSING token (floor 7.576)",
+      "detail": "files=66 ERROR=5 MISSING=0 either=5 damaged-lines median=1 max=4 digest=46970e12eaa7c1f1 verdict=pass",
+      "id": "M14.0.F10.otp:html",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for cargo:toml: 0.25% of 400 files carry an ERROR node or a MISSING token (floor 0.25)",
+      "detail": "files=400 ERROR=1 MISSING=0 either=1 damaged-lines median=1 max=1 digest=1fa96ef5673ea099 verdict=pass",
+      "id": "M14.0.F10.cargo:toml",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for terraform:json: 0.5% of 400 files carry an ERROR node or a MISSING token (floor 0.5)",
+      "detail": "files=400 ERROR=2 MISSING=0 either=2 damaged-lines median=1 max=1 digest=f6f6210d5c66c114 verdict=pass",
+      "id": "M14.0.F10.terraform:json",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for powershell:powershell: 19.75% of 400 files carry an ERROR node or a MISSING token (floor 19.75)",
+      "detail": "files=400 ERROR=64 MISSING=34 either=79 damaged-lines median=3 max=36 digest=ebea7bcd867a3443 verdict=pass",
+      "id": "M14.0.F10.powershell:powershell",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for solidity:solidity: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=13016f38b6d81f82 verdict=pass",
+      "id": "M14.0.F10.solidity:solidity",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for kubernetes:yaml: 0.25% of 400 files carry an ERROR node or a MISSING token (floor 0.25)",
+      "detail": "files=400 ERROR=1 MISSING=0 either=1 damaged-lines median=1 max=1 digest=b9ba7a4f2ca53800 verdict=pass",
+      "id": "M14.0.F10.kubernetes:yaml",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for scala3:markdown: 0.5% of 400 files carry an ERROR node or a MISSING token (floor 0.5)",
+      "detail": "files=400 ERROR=2 MISSING=0 either=2 damaged-lines median=3 max=5 digest=dabcccce4585ebf2 verdict=pass",
+      "id": "M14.0.F10.scala3:markdown",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for julia:julia: 21.5% of 400 files carry an ERROR node or a MISSING token (floor 21.5)",
+      "detail": "files=400 ERROR=80 MISSING=21 either=86 damaged-lines median=3 max=1085 digest=4a0a7da767b55c99 verdict=pass",
+      "id": "M14.0.F10.julia:julia",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for FSharp.Data:fsharp: 5.926% of 135 files carry an ERROR node or a MISSING token (floor 5.926)",
+      "detail": "files=135 ERROR=5 MISSING=7 either=8 damaged-lines median=14 max=57 digest=154691243550ab8b verdict=pass",
+      "id": "M14.0.F10.FSharp.Data:fsharp",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for consul:make: 0% of 5 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=5 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=f48c14a7b98e8c7d verdict=pass",
+      "id": "M14.0.F10.consul:make",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for nim-lang-nimble:nim: 0.25% of 400 files carry an ERROR node or a MISSING token (floor 0.25)",
+      "detail": "files=400 ERROR=1 MISSING=1 either=1 damaged-lines median=2 max=2 digest=713b41e6fb4349ec verdict=pass",
+      "id": "M14.0.F10.nim-lang-nimble:nim",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for sqlite:html: 4.762% of 21 files carry an ERROR node or a MISSING token (floor 4.762)",
+      "detail": "files=21 ERROR=0 MISSING=1 either=1 damaged-lines median=0 max=0 digest=271943dcd5290c64 verdict=pass",
+      "id": "M14.0.F10.sqlite:html",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for ripgrep:toml: 0% of 14 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=14 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=a83be8ee3eed1091 verdict=pass",
+      "id": "M14.0.F10.ripgrep:toml",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for clojure:java: 0% of 190 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=190 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=07e6bacf53dec5de verdict=pass",
+      "id": "M14.0.F10.clojure:java",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for ansible:powershell: 17.989% of 189 files carry an ERROR node or a MISSING token (floor 17.989)",
+      "detail": "files=189 ERROR=33 MISSING=4 either=34 damaged-lines median=1 max=11 digest=29e9ac5489c9d911 verdict=pass",
+      "id": "M14.0.F10.ansible:powershell",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for geb:groovy: 9% of 400 files carry an ERROR node or a MISSING token (floor 9)",
+      "detail": "files=400 ERROR=35 MISSING=4 either=36 damaged-lines median=1 max=98 digest=08920ab32a7e7ec2 verdict=pass",
+      "id": "M14.0.F10.geb:groovy",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for kotlinx-coroutines:kotlin: 1.5% of 400 files carry an ERROR node or a MISSING token (floor 1.5)",
+      "detail": "files=400 ERROR=6 MISSING=0 either=6 damaged-lines median=1 max=2 digest=457bb4cc6453e1f0 verdict=pass",
+      "id": "M14.0.F10.kotlinx-coroutines:kotlin",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for cats-effect:scala: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=15d7c01b2264014f verdict=pass",
+      "id": "M14.0.F10.cats-effect:scala",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for element-plus:typescript: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=34fea2472f57ae91 verdict=pass",
+      "id": "M14.0.F10.element-plus:typescript",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for lodash:javascript: 0% of 55 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=55 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=fcbeec6cb3a50f47 verdict=pass",
+      "id": "M14.0.F10.lodash:javascript",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for vue-element-admin:vue: 0% of 131 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=131 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=ffde66f520601c0f verdict=pass",
+      "id": "M14.0.F10.vue-element-admin:vue",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for shadcn-svelte:svelte: 1.25% of 400 files carry an ERROR node or a MISSING token (floor 1.25)",
+      "detail": "files=400 ERROR=5 MISSING=0 either=5 damaged-lines median=1 max=2 digest=ed582583ec0ccfc5 verdict=pass",
+      "id": "M14.0.F10.shadcn-svelte:svelte",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for grails-core:css: 1.571% of 191 files carry an ERROR node or a MISSING token (floor 1.571)",
+      "detail": "files=191 ERROR=3 MISSING=0 either=3 damaged-lines median=2 max=372 digest=b709bf9a3c9dd1a8 verdict=pass",
+      "id": "M14.0.F10.grails-core:css",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for jq:c: 35.065% of 77 files carry an ERROR node or a MISSING token (floor 35.065)",
+      "detail": "files=77 ERROR=20 MISSING=17 either=27 damaged-lines median=4 max=61 digest=b2dd48ebda7dd93e verdict=pass",
+      "id": "M14.0.F10.jq:c",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for nlohmann-json:cpp: 31.25% of 400 files carry an ERROR node or a MISSING token (floor 31.25)",
+      "detail": "files=400 ERROR=69 MISSING=116 either=125 damaged-lines median=6 max=1901 digest=bcfbce76355317f1 verdict=pass",
+      "id": "M14.0.F10.nlohmann-json:cpp",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for cargo:rust: 38.75% of 400 files carry an ERROR node or a MISSING token (floor 38.75)",
+      "detail": "files=400 ERROR=155 MISSING=9 either=155 damaged-lines median=1 max=151 digest=83cd6c6f6f0efaff verdict=pass",
+      "id": "M14.0.F10.cargo:rust",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for terraform:go: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=68774ed0b467f778 verdict=pass",
+      "id": "M14.0.F10.terraform:go",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for zls:zig: 2.222% of 90 files carry an ERROR node or a MISSING token (floor 2.222)",
+      "detail": "files=90 ERROR=2 MISSING=1 either=2 damaged-lines median=1 max=1 digest=46e1e908574a87ce verdict=pass",
+      "id": "M14.0.F10.zls:zig",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for fsharp:csharp: 2.469% of 243 files carry an ERROR node or a MISSING token (floor 2.469)",
+      "detail": "files=243 ERROR=4 MISSING=5 either=6 damaged-lines median=2 max=3 digest=58ebd52ad08b8ac2 verdict=pass",
+      "id": "M14.0.F10.fsharp:csharp",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for dart-http:dart: 0% of 335 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=335 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=17b5e411ab263e0a verdict=pass",
+      "id": "M14.0.F10.dart-http:dart",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for alamofire:swift: 6.122% of 98 files carry an ERROR node or a MISSING token (floor 6.122)",
+      "detail": "files=98 ERROR=6 MISSING=1 either=6 damaged-lines median=34 max=60 digest=8277aee5760936cf verdict=pass",
+      "id": "M14.0.F10.alamofire:swift",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for afnetworking:objc: 24% of 75 files carry an ERROR node or a MISSING token (floor 24)",
+      "detail": "files=75 ERROR=5 MISSING=17 either=18 damaged-lines median=3 max=53 digest=5aa9905a85f22840 verdict=pass",
+      "id": "M14.0.F10.afnetworking:objc",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for phpmyadmin:php: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=4ee9724e20139b93 verdict=pass",
+      "id": "M14.0.F10.phpmyadmin:php",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for rack:ruby: 0% of 97 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=97 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=2bbdc3c9e3ca847f verdict=pass",
+      "id": "M14.0.F10.rack:ruby",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for requests:python: 0% of 37 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=37 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=6fb2a27909eae00b verdict=pass",
+      "id": "M14.0.F10.requests:python",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for hledger:haskell: 3.191% of 188 files carry an ERROR node or a MISSING token (floor 3.191)",
+      "detail": "files=188 ERROR=5 MISSING=1 either=6 damaged-lines median=1 max=2 digest=863aace327f03d92 verdict=pass",
+      "id": "M14.0.F10.hledger:haskell",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for phoenix:elixir: 0% of 205 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=205 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=20e897c6f7e17c5b verdict=pass",
+      "id": "M14.0.F10.phoenix:elixir",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for otp:erlang: 3% of 400 files carry an ERROR node or a MISSING token (floor 3)",
+      "detail": "files=400 ERROR=12 MISSING=0 either=12 damaged-lines median=3 max=105 digest=690ece7d3f3696ac verdict=pass",
+      "id": "M14.0.F10.otp:erlang",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for clj-kondo:clojure: 0.5% of 400 files carry an ERROR node or a MISSING token (floor 0.5)",
+      "detail": "files=400 ERROR=2 MISSING=1 either=2 damaged-lines median=2 max=2 digest=9ab86757fbe05030 verdict=pass",
+      "id": "M14.0.F10.clj-kondo:clojure",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for clean-stdlib:clean: 1.351% of 74 files carry an ERROR node or a MISSING token (floor 1.351)",
+      "detail": "files=74 ERROR=1 MISSING=1 either=1 damaged-lines median=15 max=15 digest=191a8a3276090a11 verdict=pass",
+      "id": "M14.0.F10.clean-stdlib:clean",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for ansible:yaml: 0% of 400 files carry an ERROR node or a MISSING token (floor 0)",
+      "detail": "files=400 ERROR=0 MISSING=0 either=0 damaged-lines median=0 max=0 digest=3fbc184b2d8d71ff verdict=pass",
+      "id": "M14.0.F10.ansible:yaml",
+      "status": "pass"
+    },
+    {
+      "description": "parse-success floor for kubernetes:markdown: 0.5% of 400 files carry an ERROR node or a MISSING token (floor 0.5)",
+      "detail": "files=400 ERROR=2 MISSING=0 either=2 damaged-lines median=7 max=12 digest=5e10a9e8fdf98801 verdict=pass",
+      "id": "M14.0.F10.kubernetes:markdown",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "b50942051fdbb1ad269513b5f9aa04ad02252e39",
+  "committedAt": "2026-11-10T09:31:29-05:00",
+  "corpusPins": {
+    "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+    "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e",
+    "FSharp.Data": "d64045983ab5cda8eaab7542f52f948a372d4504",
+    "afnetworking": "d9f589cc2c1fe9d55eb5eea00558010afea7a41e",
+    "alamofire": "0455bfb650893e86ad07ace16e5f2d36dadf46f4",
+    "ansible": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+    "cabal": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+    "cargo": "94faf9175f010e171466841c77e38b47d9503ac8",
+    "cats-effect": "91c8115dbb4975a31a442979c74223b92c50edaa",
+    "clean-stdlib": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
+    "clj-kondo": "703a44ccdc8c4d1d0b52d1a887d7b077a87610c5",
+    "clojure": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+    "consul": "913703ef5dfdb325536820a30fb039a683fa0b21",
+    "cython": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+    "dart-http": "92b20d125ffc972d38ca2f790504297a3ca87443",
+    "dplyr": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
+    "duckdb": "fc9d6e93409a2dc412b658cade45b963371cd033",
+    "element-plus": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+    "elixir": "024beb1bfcca0a24e859b2586059dd803a086615",
+    "fmt": "e27cc20bd93a4e280fb9268d41cd131069a9c73f",
+    "fsharp": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "geb": "9c73494607825cd8900d51681919737e17c6fb12",
+    "go-tools": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
+    "gql-graphql-platform": "7b2a0b32edea84b3f8f04a29f279c4d18187896d",
+    "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+    "hledger": "64867d29b6c4b1faa230bebb7e0428f11f522dd0",
+    "jq": "41b8edfe5437fcd25a072081c05f9f770f9e9b85",
+    "julia": "63912639992190c6f56ad13286f292186513ab19",
+    "kong": "8927af6d5efa3e58a59101943ba61e0c1997e96b",
+    "kotlinx-coroutines": "7e8b5a405c834a5e50ee20e90449d0c492db8601",
+    "kubernetes": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+    "lodash": "a666ba591064c8011988275790ad7d625279f09c",
+    "mojo": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+    "nim": "3ab70cd006a6898efa53f2d9d31ca1da0ef3880f",
+    "nim-lang-nimble": "0918307745b03dabb622d92de7c6dd2d6ca4970d",
+    "nlohmann-json": "09b6b6b5ba0610851fba2a79d66fbd801452a107",
+    "otp": "9e84d463ac3d79520c1e972da89701178b587919",
+    "pb-googleapis": "9c085b2eb8a4c9996418d4268ade3fb9c708021d",
+    "phoenix": "0e02edbe0c6dfdc130fe2212fe34a2623cb6605b",
+    "phpmyadmin": "4061095a59e1769128776ad24154cc7058de51aa",
+    "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+    "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+    "proxicall": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+    "rack": "2c98a0385cca650774a4cabc3f4a112f76c3dacd",
+    "rake": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+    "rebar3": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
+    "redis": "b540ca49cba815f3fbe634363c3df68d4f4f127a",
+    "requests": "dae7ef63b4df6eded86637f251fc4e3a06c3b479",
+    "ripgrep": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+    "scala3": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+    "sdwebimage": "c3ad5e1a9bf55c9b76d4c362430b5fcded96c502",
+    "shadcn-svelte": "dabbd4c00fbca1feef29a2a155b2eecf6bb4ea7a",
+    "solidity": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
+    "sqlite": "86a15af2b148c655bfd352162d04c6756399f4ea",
+    "svelte": "26786e92985842a6d563c67049a43bc5857bf792",
+    "swift-nio": "ec51fff05fe1f0a55efa78fdbc6a0f380c3e841a",
+    "terraform": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+    "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5",
+    "vue-element-admin": "6858a9ad67483025f6a9432a926beb9327037be3",
+    "zig": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+    "zls": "3df042851351abdcfcdab9e133f3e144fe37b783"
+  },
+  "data": {
+    "atCommit": "b50942051fdbb1ad269513b5f9aa04ad02252e39",
+    "baseline": "validation/m14/parse-success-baseline.json",
+    "failures": 0,
+    "improved": 0,
+    "method": "files routed by the pipeline's detectLanguageFromPath, ordered by a hash of their relative path and capped deterministically; each lane parsed in its own child process with a fresh module; ERROR nodes and MISSING tokens counted separately; the rate compared against a pinned per-lane floor whose sample digest must match",
+    "rows": [
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "modules": {
+            "errorFiles": 1,
+            "files": 4
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 18,
+        "capped": false,
+        "eitherFiles": 1,
+        "eitherPct": 5.556,
+        "emptyFiles": 0,
+        "errPct": 5.556,
+        "errorFiles": 1,
+        "errorLines": 1,
+        "errorLinesMax": 1,
+        "errorLinesMedian": 1,
+        "exts": {
+          "deps/fpconv/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/hdr_histogram/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/hiredis/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/linenoise/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/lua/etc/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/lua/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/lua/src/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/tre/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "deps/xxhash/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "mk": {
+            "errorFiles": 1,
+            "files": 2
+          },
+          "modules/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "modules/vector-sets/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src/modules/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "tests/modules/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "files": 18,
+        "lane": "redis:make",
+        "lang": "make",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 5.556,
+        "repo": "redis",
+        "repoPin": "b540ca49cba815f3fbe634363c3df68d4f4f127a",
+        "sampleDigest": "3b44404794209a06",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "lane": "P3D-Legacy:vb",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      },
+      {
+        "buckets": {
+          "benchmark": {
+            "errorFiles": 89,
+            "files": 273
+          },
+          "data": {
+            "errorFiles": 2,
+            "files": 2
+          },
+          "extension": {
+            "errorFiles": 30,
+            "files": 100
+          },
+          "test": {
+            "errorFiles": 11,
+            "files": 25
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 132,
+        "eitherPct": 33,
+        "emptyFiles": 1,
+        "errPct": 33,
+        "errorFiles": 132,
+        "errorLines": 694,
+        "errorLinesMax": 73,
+        "errorLinesMedian": 3,
+        "exts": {
+          "sql": {
+            "errorFiles": 132,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "duckdb:sql",
+        "lang": "sql",
+        "missPct": 8.5,
+        "missingFiles": 34,
+        "pinnedEitherPct": 33,
+        "repo": "duckdb",
+        "repoPin": "fc9d6e93409a2dc412b658cade45b963371cd033",
+        "sampleDigest": "bd726c6edb6de5bf",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "R": {
+            "errorFiles": 0,
+            "files": 106
+          },
+          "data-raw": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 86
+          }
+        },
+        "candidateCount": 195,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "r": {
+            "errorFiles": 0,
+            "files": 195
+          }
+        },
+        "files": 195,
+        "lane": "dplyr:r",
+        "lang": "r",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "dplyr",
+        "repoPin": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
+        "sampleDigest": "706408d1f881d11d",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "compiler": {
+            "errorFiles": 1,
+            "files": 20
+          },
+          "doc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 38
+          },
+          "nimpretty": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "nimsuggest": {
+            "errorFiles": 4,
+            "files": 13
+          },
+          "testament": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "tests": {
+            "errorFiles": 6,
+            "files": 319
+          },
+          "tests_disabled": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "tools": {
+            "errorFiles": 0,
+            "files": 3
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 11,
+        "eitherPct": 2.75,
+        "emptyFiles": 2,
+        "errPct": 2.75,
+        "errorFiles": 11,
+        "errorLines": 28,
+        "errorLinesMax": 14,
+        "errorLinesMedian": 1,
+        "exts": {
+          "nim": {
+            "errorFiles": 11,
+            "files": 397
+          },
+          "nimble": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "nims": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "files": 400,
+        "lane": "nim:nim",
+        "lang": "nim",
+        "missPct": 0.5,
+        "missingFiles": 2,
+        "pinnedEitherPct": 2.75,
+        "repo": "nim",
+        "repoPin": "3ab70cd006a6898efa53f2d9d31ca1da0ef3880f",
+        "sampleDigest": "55ed59311cfc5ce1",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "autodoc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "kong": {
+            "errorFiles": 0,
+            "files": 192
+          },
+          "spec": {
+            "errorFiles": 1,
+            "files": 207
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 1,
+        "eitherPct": 0.25,
+        "emptyFiles": 0,
+        "errPct": 0.25,
+        "errorFiles": 1,
+        "errorLines": 1,
+        "errorLinesMax": 1,
+        "errorLinesMedian": 1,
+        "exts": {
+          "lua": {
+            "errorFiles": 1,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "kong:lua",
+        "lang": "lua",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.25,
+        "repo": "kong",
+        "repoPin": "8927af6d5efa3e58a59101943ba61e0c1997e96b",
+        "sampleDigest": "f1c79b529a3fbaf4",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "src": {
+            "errorFiles": 29,
+            "files": 400
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 30,
+        "eitherPct": 7.5,
+        "emptyFiles": 0,
+        "errPct": 7.25,
+        "errorFiles": 29,
+        "errorLines": 110,
+        "errorLinesMax": 29,
+        "errorLinesMedian": 1,
+        "exts": {
+          "graphql": {
+            "errorFiles": 29,
+            "files": 387
+          },
+          "graphqls": {
+            "errorFiles": 0,
+            "files": 13
+          }
+        },
+        "files": 400,
+        "lane": "gql-graphql-platform:graphql",
+        "lang": "graphql",
+        "missPct": 1.25,
+        "missingFiles": 5,
+        "pinnedEitherPct": 7.5,
+        "repo": "gql-graphql-platform",
+        "repoPin": "7b2a0b32edea84b3f8f04a29f279c4d18187896d",
+        "sampleDigest": "2241dee74b9e2c31",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "google": {
+            "errorFiles": 0,
+            "files": 128
+          }
+        },
+        "candidateCount": 128,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "proto": {
+            "errorFiles": 0,
+            "files": 128
+          }
+        },
+        "files": 128,
+        "lane": "pb-googleapis:protobuf",
+        "lang": "protobuf",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "pb-googleapis",
+        "repoPin": "9c085b2eb8a4c9996418d4268ade3fb9c708021d",
+        "sampleDigest": "8704429eb7c05392",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 0,
+            "files": 17
+          },
+          "erts": {
+            "errorFiles": 3,
+            "files": 48
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 9
+          },
+          "make": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "xcomp": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 79,
+        "capped": false,
+        "eitherFiles": 4,
+        "eitherPct": 5.063,
+        "emptyFiles": 0,
+        "errPct": 3.797,
+        "errorFiles": 3,
+        "errorLines": 7,
+        "errorLinesMax": 4,
+        "errorLinesMedian": 2,
+        "exts": {
+          "sh": {
+            "errorFiles": 3,
+            "files": 79
+          }
+        },
+        "files": 79,
+        "lane": "otp:bash",
+        "lang": "bash",
+        "missPct": 2.532,
+        "missingFiles": 2,
+        "pinnedEitherPct": 5.063,
+        "repo": "otp",
+        "repoPin": "9e84d463ac3d79520c1e972da89701178b587919",
+        "sampleDigest": "211314411084e991",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "docs": {
+            "errorFiles": 1,
+            "files": 23
+          },
+          "packages": {
+            "errorFiles": 47,
+            "files": 146
+          },
+          "play": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 170,
+        "capped": false,
+        "eitherFiles": 55,
+        "eitherPct": 32.353,
+        "emptyFiles": 10,
+        "errPct": 28.235,
+        "errorFiles": 48,
+        "errorLines": 516,
+        "errorLinesMax": 89,
+        "errorLinesMedian": 5,
+        "exts": {
+          "scss": {
+            "errorFiles": 48,
+            "files": 170
+          }
+        },
+        "files": 170,
+        "lane": "element-plus:scss",
+        "lang": "scss",
+        "missPct": 11.176,
+        "missingFiles": 19,
+        "pinnedEitherPct": 32.353,
+        "repo": "element-plus",
+        "repoPin": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+        "sampleDigest": "5899ae70e7e66d27",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".idea": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "build-logic": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "end-to-end": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-core": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-data-docs": {
+            "errorFiles": 0,
+            "files": 66
+          },
+          "grails-data-graphql": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-data-hibernate5": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-data-hibernate7": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "grails-data-neo4j": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-datamapping-core": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-forge": {
+            "errorFiles": 0,
+            "files": 15
+          },
+          "grails-gsp": {
+            "errorFiles": 4,
+            "files": 14
+          },
+          "grails-profiles": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "grails-redis": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-spring-security": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-test-examples": {
+            "errorFiles": 0,
+            "files": 171
+          },
+          "grails-test-suite-uber": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "media": {
+            "errorFiles": 0,
+            "files": 4
+          }
+        },
+        "candidateCount": 318,
+        "capped": false,
+        "eitherFiles": 4,
+        "eitherPct": 1.258,
+        "emptyFiles": 0,
+        "errPct": 1.258,
+        "errorFiles": 4,
+        "errorLines": 363,
+        "errorLinesMax": 155,
+        "errorLinesMedian": 90,
+        "exts": {
+          "dtd": {
+            "errorFiles": 4,
+            "files": 4
+          },
+          "svg": {
+            "errorFiles": 0,
+            "files": 160
+          },
+          "xml": {
+            "errorFiles": 0,
+            "files": 145
+          },
+          "xsd": {
+            "errorFiles": 0,
+            "files": 9
+          }
+        },
+        "files": 318,
+        "lane": "grails-core:xml",
+        "lang": "xml",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 1.258,
+        "repo": "grails-core",
+        "repoPin": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+        "sampleDigest": "d0963ec655cd3edb",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "grails-bootstrap": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "grails-cache": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-codecs": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-controllers": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-converters": {
+            "errorFiles": 0,
+            "files": 9
+          },
+          "grails-core": {
+            "errorFiles": 0,
+            "files": 36
+          },
+          "grails-data-hibernate5": {
+            "errorFiles": 0,
+            "files": 9
+          },
+          "grails-data-hibernate7": {
+            "errorFiles": 0,
+            "files": 56
+          },
+          "grails-data-mongodb": {
+            "errorFiles": 0,
+            "files": 16
+          },
+          "grails-data-neo4j": {
+            "errorFiles": 0,
+            "files": 7
+          },
+          "grails-databinding-core": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "grails-datamapping-core": {
+            "errorFiles": 0,
+            "files": 19
+          },
+          "grails-datamapping-rx": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-datamapping-support": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-datamapping-validation": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "grails-datastore-async": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-datastore-core": {
+            "errorFiles": 0,
+            "files": 45
+          },
+          "grails-encoder": {
+            "errorFiles": 0,
+            "files": 12
+          },
+          "grails-forge": {
+            "errorFiles": 0,
+            "files": 57
+          },
+          "grails-gradle": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-gsp": {
+            "errorFiles": 0,
+            "files": 31
+          },
+          "grails-mimetypes": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-shell-cli": {
+            "errorFiles": 0,
+            "files": 18
+          },
+          "grails-spring": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-spring-security": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-test-core": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-test-examples": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-test-suite-uber": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-test-suite-web": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-testing-support-web": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-undertow": {
+            "errorFiles": 0,
+            "files": 9
+          },
+          "grails-validation": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-web-common": {
+            "errorFiles": 0,
+            "files": 16
+          },
+          "grails-web-databinding": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-web-mvc": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-web-url-mappings": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-wrapper": {
+            "errorFiles": 0,
+            "files": 3
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "java": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "grails-core:java",
+        "lang": "java",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "grails-core",
+        "repoPin": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+        "sampleDigest": "feca6354d1b4e062",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".github": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "build-logic": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "etc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-async": {
+            "errorFiles": 1,
+            "files": 3
+          },
+          "grails-bootstrap": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-cache": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-controllers": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-converters": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-core": {
+            "errorFiles": 0,
+            "files": 11
+          },
+          "grails-data-docs": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          "grails-data-graphql": {
+            "errorFiles": 0,
+            "files": 15
+          },
+          "grails-data-hibernate5": {
+            "errorFiles": 0,
+            "files": 11
+          },
+          "grails-data-hibernate7": {
+            "errorFiles": 0,
+            "files": 23
+          },
+          "grails-data-mongodb": {
+            "errorFiles": 0,
+            "files": 17
+          },
+          "grails-data-neo4j": {
+            "errorFiles": 0,
+            "files": 21
+          },
+          "grails-databinding-core": {
+            "errorFiles": 1,
+            "files": 4
+          },
+          "grails-datamapping-async": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-datamapping-core": {
+            "errorFiles": 0,
+            "files": 14
+          },
+          "grails-datamapping-core-test": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "grails-datamapping-support": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-datamapping-tck": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "grails-datamapping-validation": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-datastore-core": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-datastore-web": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-dependencies": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          "grails-domain-class": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-events": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-fields": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "grails-forge": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "grails-geb": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          "grails-gradle": {
+            "errorFiles": 2,
+            "files": 13
+          },
+          "grails-gsp": {
+            "errorFiles": 0,
+            "files": 7
+          },
+          "grails-interceptors": {
+            "errorFiles": 1,
+            "files": 2
+          },
+          "grails-mail": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-micronaut": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-profiles": {
+            "errorFiles": 2,
+            "files": 5
+          },
+          "grails-rest-transforms": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-scaffolding": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-shell-cli": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-spring-security": {
+            "errorFiles": 4,
+            "files": 23
+          },
+          "grails-test-core": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-test-examples": {
+            "errorFiles": 4,
+            "files": 130
+          },
+          "grails-test-suite-persistence": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-test-suite-uber": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "grails-test-suite-web": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "grails-testing-support-core": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-testing-support-datamapping": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-testing-support-dbcleanup-h2": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-testing-support-dbcleanup-postgresql": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-testing-support-http-client": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-testing-support-web": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-views-gson": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "grails-web-common": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "grails-web-core": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-web-databinding": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "grails-web-mvc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-web-url-mappings": {
+            "errorFiles": 0,
+            "files": 3
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 18,
+        "eitherPct": 4.5,
+        "emptyFiles": 0,
+        "errPct": 4.5,
+        "errorFiles": 18,
+        "errorLines": 19,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 1,
+        "exts": {
+          "gradle": {
+            "errorFiles": 10,
+            "files": 27
+          },
+          "groovy": {
+            "errorFiles": 8,
+            "files": 373
+          }
+        },
+        "files": 400,
+        "lane": "grails-core:groovy",
+        "lang": "groovy",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 4.5,
+        "repo": "grails-core",
+        "repoPin": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+        "sampleDigest": "b132129551e11398",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "documentation-website": {
+            "errorFiles": 0,
+            "files": 71
+          },
+          "exposed-core": {
+            "errorFiles": 6,
+            "files": 48
+          },
+          "exposed-crypt": {
+            "errorFiles": 0,
+            "files": 14
+          },
+          "exposed-dao": {
+            "errorFiles": 0,
+            "files": 11
+          },
+          "exposed-gradle-plugin": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "exposed-java-time": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "exposed-jdbc": {
+            "errorFiles": 0,
+            "files": 20
+          },
+          "exposed-jdbc-r2dbc-tests": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "exposed-jodatime": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "exposed-json": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "exposed-kotlin-datetime": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "exposed-maven-plugin": {
+            "errorFiles": 2,
+            "files": 3
+          },
+          "exposed-migration-core": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "exposed-migration-jdbc": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "exposed-migration-r2dbc": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "exposed-money": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "exposed-plugin-core": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "exposed-r2dbc": {
+            "errorFiles": 0,
+            "files": 30
+          },
+          "exposed-r2dbc-tests": {
+            "errorFiles": 0,
+            "files": 60
+          },
+          "exposed-spring-boot-starter": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "exposed-spring-boot4-starter": {
+            "errorFiles": 0,
+            "files": 7
+          },
+          "exposed-tests": {
+            "errorFiles": 0,
+            "files": 49
+          },
+          "exposed-version-catalog": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "samples": {
+            "errorFiles": 0,
+            "files": 27
+          },
+          "spring-transaction": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "spring7-transaction": {
+            "errorFiles": 0,
+            "files": 8
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 8,
+        "eitherPct": 2,
+        "emptyFiles": 0,
+        "errPct": 2,
+        "errorFiles": 8,
+        "errorLines": 13,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 2,
+        "exts": {
+          "kt": {
+            "errorFiles": 8,
+            "files": 373
+          },
+          "kts": {
+            "errorFiles": 0,
+            "files": 27
+          }
+        },
+        "files": 400,
+        "lane": "Exposed:kotlin",
+        "lang": "kotlin",
+        "missPct": 0.25,
+        "missingFiles": 1,
+        "pinnedEitherPct": 2,
+        "repo": "Exposed",
+        "repoPin": "1be664715fc581cda0ec6141b2914908dabe184e",
+        "sampleDigest": "deb3c8c9d4072654",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "compiler": {
+            "errorFiles": 0,
+            "files": 20
+          },
+          "language-server": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "library": {
+            "errorFiles": 0,
+            "files": 18
+          },
+          "presentation-compiler": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "repl": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "sbt-bridge": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "sbt-test": {
+            "errorFiles": 0,
+            "files": 29
+          },
+          "scaladoc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "scaladoc-js": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "scaladoc-testcases": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "tests": {
+            "errorFiles": 9,
+            "files": 319
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 9,
+        "eitherPct": 2.25,
+        "emptyFiles": 0,
+        "errPct": 2.25,
+        "errorFiles": 9,
+        "errorLines": 17,
+        "errorLinesMax": 5,
+        "errorLinesMedian": 1,
+        "exts": {
+          "sbt": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "sc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "scala": {
+            "errorFiles": 9,
+            "files": 391
+          }
+        },
+        "files": 400,
+        "lane": "scala3:scala",
+        "lang": "scala",
+        "missPct": 0.5,
+        "missingFiles": 2,
+        "pinnedEitherPct": 2.25,
+        "repo": "scala3",
+        "repoPin": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+        "sampleDigest": "5761ab0defe84718",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "packages": {
+            "errorFiles": 1,
+            "files": 370
+          },
+          "packages-private": {
+            "errorFiles": 0,
+            "files": 28
+          },
+          "scripts": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 1,
+        "eitherPct": 0.25,
+        "emptyFiles": 0,
+        "errPct": 0.25,
+        "errorFiles": 1,
+        "errorLines": 2,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 2,
+        "exts": {
+          "mts": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "ts": {
+            "errorFiles": 1,
+            "files": 398
+          }
+        },
+        "files": 400,
+        "lane": "vue-core:typescript",
+        "lang": "typescript",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.25,
+        "repo": "vue-core",
+        "repoPin": "f8975657d7451d8e4291406427e6a8ae5e50c8d5",
+        "sampleDigest": "bf91cc62697aea47",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "benchmarking": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "packages": {
+            "errorFiles": 0,
+            "files": 392
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "js": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "svelte:javascript",
+        "lang": "javascript",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "svelte",
+        "repoPin": "26786e92985842a6d563c67049a43bc5857bf792",
+        "sampleDigest": "c7ab89f52757cd96",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "docs": {
+            "errorFiles": 0,
+            "files": 303
+          },
+          "packages": {
+            "errorFiles": 0,
+            "files": 66
+          },
+          "ssr-testing": {
+            "errorFiles": 0,
+            "files": 31
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "vue": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "element-plus:vue",
+        "lang": "vue",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "element-plus",
+        "repoPin": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+        "sampleDigest": "8f9e218079fd3c66",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "benchmarking": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "packages": {
+            "errorFiles": 9,
+            "files": 399
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 9,
+        "eitherPct": 2.25,
+        "emptyFiles": 0,
+        "errPct": 2.25,
+        "errorFiles": 9,
+        "errorLines": 14,
+        "errorLinesMax": 4,
+        "errorLinesMedian": 1,
+        "exts": {
+          "svelte": {
+            "errorFiles": 9,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "svelte:svelte",
+        "lang": "svelte",
+        "missPct": 0.5,
+        "missingFiles": 2,
+        "pinnedEitherPct": 2.25,
+        "repo": "svelte",
+        "repoPin": "26786e92985842a6d563c67049a43bc5857bf792",
+        "sampleDigest": "e2b94cef6c05def4",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "packages": {
+            "errorFiles": 12,
+            "files": 185
+          },
+          "playgrounds": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 186,
+        "capped": false,
+        "eitherFiles": 12,
+        "eitherPct": 6.452,
+        "emptyFiles": 1,
+        "errPct": 6.452,
+        "errorFiles": 12,
+        "errorLines": 38,
+        "errorLinesMax": 10,
+        "errorLinesMedian": 2,
+        "exts": {
+          "css": {
+            "errorFiles": 12,
+            "files": 186
+          }
+        },
+        "files": 186,
+        "lane": "svelte:css",
+        "lang": "css",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 6.452,
+        "repo": "svelte",
+        "repoPin": "26786e92985842a6d563c67049a43bc5857bf792",
+        "sampleDigest": "3bf679c38a434d71",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "autosetup": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          "ext": {
+            "errorFiles": 81,
+            "files": 136
+          },
+          "mptest": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          "src": {
+            "errorFiles": 90,
+            "files": 149
+          },
+          "test": {
+            "errorFiles": 7,
+            "files": 34
+          },
+          "tool": {
+            "errorFiles": 4,
+            "files": 36
+          }
+        },
+        "candidateCount": 357,
+        "capped": false,
+        "eitherFiles": 207,
+        "eitherPct": 57.983,
+        "emptyFiles": 0,
+        "errPct": 51.541,
+        "errorFiles": 184,
+        "errorLines": 2552,
+        "errorLinesMax": 429,
+        "errorLinesMedian": 3,
+        "exts": {
+          "c": {
+            "errorFiles": 181,
+            "files": 315
+          },
+          "h": {
+            "errorFiles": 3,
+            "files": 42
+          }
+        },
+        "files": 357,
+        "lane": "sqlite:c",
+        "lang": "c",
+        "missPct": 36.695,
+        "missingFiles": 131,
+        "pinnedEitherPct": 57.983,
+        "repo": "sqlite",
+        "repoPin": "86a15af2b148c655bfd352162d04c6756399f4ea",
+        "sampleDigest": "e85f31d73682080c",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "include": {
+            "errorFiles": 14,
+            "files": 14
+          },
+          "src": {
+            "errorFiles": 3,
+            "files": 4
+          },
+          "test": {
+            "errorFiles": 17,
+            "files": 54
+          }
+        },
+        "candidateCount": 72,
+        "capped": false,
+        "eitherFiles": 38,
+        "eitherPct": 52.778,
+        "emptyFiles": 0,
+        "errPct": 47.222,
+        "errorFiles": 34,
+        "errorLines": 725,
+        "errorLinesMax": 152,
+        "errorLinesMedian": 8,
+        "exts": {
+          "cc": {
+            "errorFiles": 16,
+            "files": 47
+          },
+          "cu": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "h": {
+            "errorFiles": 18,
+            "files": 24
+          }
+        },
+        "files": 72,
+        "lane": "fmt:cpp",
+        "lang": "cpp",
+        "missPct": 41.667,
+        "missingFiles": 30,
+        "pinnedEitherPct": 52.778,
+        "repo": "fmt",
+        "repoPin": "e27cc20bd93a4e280fb9268d41cd131069a9c73f",
+        "sampleDigest": "6b5f10f785ea9b17",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "crates": {
+            "errorFiles": 0,
+            "files": 95
+          },
+          "fuzz": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 13
+          }
+        },
+        "candidateCount": 110,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "rs": {
+            "errorFiles": 0,
+            "files": 110
+          }
+        },
+        "files": 110,
+        "lane": "ripgrep:rust",
+        "lang": "rust",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "ripgrep",
+        "repoPin": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+        "sampleDigest": "836585915a030f31",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "cmd": {
+            "errorFiles": 0,
+            "files": 31
+          },
+          "go": {
+            "errorFiles": 4,
+            "files": 145
+          },
+          "gopls": {
+            "errorFiles": 0,
+            "files": 141
+          },
+          "internal": {
+            "errorFiles": 4,
+            "files": 76
+          },
+          "present": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "refactor": {
+            "errorFiles": 0,
+            "files": 5
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 8,
+        "eitherPct": 2,
+        "emptyFiles": 0,
+        "errPct": 2,
+        "errorFiles": 8,
+        "errorLines": 209,
+        "errorLinesMax": 115,
+        "errorLinesMedian": 1,
+        "exts": {
+          "go": {
+            "errorFiles": 8,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "go-tools:go",
+        "lang": "go",
+        "missPct": 0.5,
+        "missingFiles": 2,
+        "pinnedEitherPct": 2,
+        "repo": "go-tools",
+        "repoPin": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
+        "sampleDigest": "25b3ce0a1d85aa8d",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "doc": {
+            "errorFiles": 1,
+            "files": 46
+          },
+          "lib": {
+            "errorFiles": 8,
+            "files": 136
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 22
+          },
+          "test": {
+            "errorFiles": 9,
+            "files": 191
+          },
+          "tools": {
+            "errorFiles": 0,
+            "files": 5
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 19,
+        "eitherPct": 4.75,
+        "emptyFiles": 0,
+        "errPct": 4.5,
+        "errorFiles": 18,
+        "errorLines": 76,
+        "errorLinesMax": 20,
+        "errorLinesMedian": 2,
+        "exts": {
+          "zig": {
+            "errorFiles": 18,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "zig:zig",
+        "lang": "zig",
+        "missPct": 0.75,
+        "missingFiles": 3,
+        "pinnedEitherPct": 4.75,
+        "repo": "zig",
+        "repoPin": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+        "sampleDigest": "ec02057183a4d010",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "docs": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src": {
+            "errorFiles": 7,
+            "files": 373
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 26
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 7,
+        "eitherPct": 1.75,
+        "emptyFiles": 0,
+        "errPct": 1.75,
+        "errorFiles": 7,
+        "errorLines": 33,
+        "errorLinesMax": 16,
+        "errorLinesMedian": 1,
+        "exts": {
+          "cs": {
+            "errorFiles": 7,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "powershell:csharp",
+        "lang": "csharp",
+        "missPct": 0.5,
+        "missingFiles": 2,
+        "pinnedEitherPct": 1.75,
+        "repo": "powershell",
+        "repoPin": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+        "sampleDigest": "b17c20a2d3d97663",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "_dev": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "_local": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "integration_test": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 223
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 163
+          },
+          "test_driver": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "dart": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "proxicall:dart",
+        "lang": "dart",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "proxicall",
+        "repoPin": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+        "sampleDigest": "a0e1923e2720e578",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "Benchmarks": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "IntegrationTests": {
+            "errorFiles": 0,
+            "files": 42
+          },
+          "Snippets": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          "Sources": {
+            "errorFiles": 25,
+            "files": 215
+          },
+          "Tests": {
+            "errorFiles": 15,
+            "files": 126
+          },
+          "dev": {
+            "errorFiles": 5,
+            "files": 11
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 46,
+        "eitherPct": 11.5,
+        "emptyFiles": 0,
+        "errPct": 11.5,
+        "errorFiles": 46,
+        "errorLines": 603,
+        "errorLinesMax": 262,
+        "errorLinesMedian": 5,
+        "exts": {
+          "swift": {
+            "errorFiles": 46,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "swift-nio:swift",
+        "lang": "swift",
+        "missPct": 0.75,
+        "missingFiles": 3,
+        "pinnedEitherPct": 11.5,
+        "repo": "swift-nio",
+        "repoPin": "ec51fff05fe1f0a55efa78fdbc6a0f380c3e841a",
+        "sampleDigest": "ecde47461bd9dd9c",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "Examples": {
+            "errorFiles": 0,
+            "files": 25
+          },
+          "SDWebImage": {
+            "errorFiles": 7,
+            "files": 138
+          },
+          "SDWebImageMapKit": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "Tests": {
+            "errorFiles": 0,
+            "files": 24
+          }
+        },
+        "candidateCount": 189,
+        "capped": false,
+        "eitherFiles": 13,
+        "eitherPct": 6.878,
+        "emptyFiles": 0,
+        "errPct": 3.704,
+        "errorFiles": 7,
+        "errorLines": 17,
+        "errorLinesMax": 8,
+        "errorLinesMedian": 1,
+        "exts": {
+          "h": {
+            "errorFiles": 3,
+            "files": 86
+          },
+          "m": {
+            "errorFiles": 4,
+            "files": 103
+          }
+        },
+        "files": 189,
+        "lane": "sdwebimage:objc",
+        "lang": "objc",
+        "missPct": 4.233,
+        "missingFiles": 8,
+        "pinnedEitherPct": 6.878,
+        "repo": "sdwebimage",
+        "repoPin": "c3ad5e1a9bf55c9b76d4c362430b5fcded96c502",
+        "sampleDigest": "362a8affab5f832a",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "build": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 109
+          },
+          "tests": {
+            "errorFiles": 112,
+            "files": 263
+          },
+          "tools": {
+            "errorFiles": 0,
+            "files": 25
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 112,
+        "eitherPct": 28,
+        "emptyFiles": 7,
+        "errPct": 28,
+        "errorFiles": 112,
+        "errorLines": 758,
+        "errorLinesMax": 46,
+        "errorLinesMedian": 6,
+        "exts": {
+          "php": {
+            "errorFiles": 1,
+            "files": 289
+          },
+          "phpt": {
+            "errorFiles": 111,
+            "files": 111
+          }
+        },
+        "files": 400,
+        "lane": "phpunit:php",
+        "lang": "php",
+        "missPct": 2,
+        "missingFiles": 8,
+        "pinnedEitherPct": 28,
+        "repo": "phpunit",
+        "repoPin": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+        "sampleDigest": "dcb1406dafb878c7",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "doc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 44
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 50
+          }
+        },
+        "candidateCount": 97,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "gemfile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "rakefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "rb": {
+            "errorFiles": 0,
+            "files": 95
+          }
+        },
+        "files": 97,
+        "lane": "rake:ruby",
+        "lang": "ruby",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "rake",
+        "repoPin": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+        "sampleDigest": "003eb05123ba6b6e",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "Cython": {
+            "errorFiles": 0,
+            "files": 108
+          },
+          "Demos": {
+            "errorFiles": 1,
+            "files": 36
+          },
+          "Doc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "Tools": {
+            "errorFiles": 0,
+            "files": 12
+          },
+          "docs": {
+            "errorFiles": 4,
+            "files": 136
+          },
+          "pyximport": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "tests": {
+            "errorFiles": 6,
+            "files": 97
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 11,
+        "eitherPct": 2.75,
+        "emptyFiles": 1,
+        "errPct": 2.75,
+        "errorFiles": 11,
+        "errorLines": 26,
+        "errorLinesMax": 11,
+        "errorLinesMedian": 1,
+        "exts": {
+          "py": {
+            "errorFiles": 11,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "cython:python",
+        "lang": "python",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 2.75,
+        "repo": "cython",
+        "repoPin": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+        "sampleDigest": "3c259eba02a7b89e",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "Cabal": {
+            "errorFiles": 0,
+            "files": 27
+          },
+          "Cabal-QuickCheck": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "Cabal-hooks": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "Cabal-syntax": {
+            "errorFiles": 0,
+            "files": 32
+          },
+          "Cabal-tests": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "Cabal-tree-diff": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "bootstrap": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "cabal-install": {
+            "errorFiles": 0,
+            "files": 41
+          },
+          "cabal-install-solver": {
+            "errorFiles": 0,
+            "files": 14
+          },
+          "cabal-testsuite": {
+            "errorFiles": 0,
+            "files": 271
+          },
+          "cabal-validate": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "hooks-exe": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "templates": {
+            "errorFiles": 1,
+            "files": 1
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 1,
+        "eitherPct": 0.25,
+        "emptyFiles": 7,
+        "errPct": 0.25,
+        "errorFiles": 1,
+        "errorLines": 27,
+        "errorLinesMax": 27,
+        "errorLinesMedian": 27,
+        "exts": {
+          "hs": {
+            "errorFiles": 1,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "cabal:haskell",
+        "lang": "haskell",
+        "missPct": 0.25,
+        "missingFiles": 1,
+        "pinnedEitherPct": 0.25,
+        "repo": "cabal",
+        "repoPin": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+        "sampleDigest": "834e5dc03ef660a4",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 398
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "ex": {
+            "errorFiles": 0,
+            "files": 205
+          },
+          "exs": {
+            "errorFiles": 0,
+            "files": 195
+          }
+        },
+        "files": 400,
+        "lane": "elixir:elixir",
+        "lang": "elixir",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "elixir",
+        "repoPin": "024beb1bfcca0a24e859b2586059dd803a086615",
+        "sampleDigest": "99c22e1c659cedf2",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "apps": {
+            "errorFiles": 15,
+            "files": 200
+          },
+          "systest": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "vendor": {
+            "errorFiles": 2,
+            "files": 64
+          }
+        },
+        "candidateCount": 269,
+        "capped": false,
+        "eitherFiles": 17,
+        "eitherPct": 6.32,
+        "emptyFiles": 0,
+        "errPct": 6.32,
+        "errorFiles": 17,
+        "errorLines": 51,
+        "errorLinesMax": 8,
+        "errorLinesMedian": 2,
+        "exts": {
+          "erl": {
+            "errorFiles": 15,
+            "files": 261
+          },
+          "hrl": {
+            "errorFiles": 2,
+            "files": 8
+          }
+        },
+        "files": 269,
+        "lane": "rebar3:erlang",
+        "lang": "erlang",
+        "missPct": 0.372,
+        "missingFiles": 1,
+        "pinnedEitherPct": 6.32,
+        "repo": "rebar3",
+        "repoPin": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
+        "sampleDigest": "4cafee29b9017c8f",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "codegen": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 51
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 88
+          }
+        },
+        "candidateCount": 142,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "clj": {
+            "errorFiles": 0,
+            "files": 141
+          },
+          "cljc": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "files": 142,
+        "lane": "clojure:clojure",
+        "lang": "clojure",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "clojure",
+        "repoPin": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+        "sampleDigest": "7cf39fa3412b1a99",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "examples": {
+            "errorFiles": 0,
+            "files": 13
+          },
+          "lib": {
+            "errorFiles": 1,
+            "files": 121
+          },
+          "t": {
+            "errorFiles": 2,
+            "files": 150
+          }
+        },
+        "candidateCount": 285,
+        "capped": false,
+        "eitherFiles": 4,
+        "eitherPct": 1.404,
+        "emptyFiles": 0,
+        "errPct": 1.053,
+        "errorFiles": 3,
+        "errorLines": 4,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 1,
+        "exts": {
+          "pl": {
+            "errorFiles": 0,
+            "files": 14
+          },
+          "pm": {
+            "errorFiles": 3,
+            "files": 151
+          },
+          "pod": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "t": {
+            "errorFiles": 0,
+            "files": 110
+          }
+        },
+        "files": 285,
+        "lane": "mojo:perl",
+        "lang": "perl",
+        "missPct": 0.351,
+        "missingFiles": 1,
+        "pinnedEitherPct": 1.404,
+        "repo": "mojo",
+        "repoPin": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+        "sampleDigest": "25bdd049fbc9ae95",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "Clyde": {
+            "errorFiles": 6,
+            "files": 36
+          },
+          "Cocoa": {
+            "errorFiles": 0,
+            "files": 22
+          },
+          "cleantools": {
+            "errorFiles": 9,
+            "files": 50
+          }
+        },
+        "candidateCount": 109,
+        "capped": false,
+        "eitherFiles": 16,
+        "eitherPct": 14.679,
+        "emptyFiles": 0,
+        "errPct": 13.761,
+        "errorFiles": 15,
+        "errorLines": 124,
+        "errorLinesMax": 78,
+        "errorLinesMedian": 3,
+        "exts": {
+          "dcl": {
+            "errorFiles": 1,
+            "files": 54
+          },
+          "icl": {
+            "errorFiles": 14,
+            "files": 55
+          }
+        },
+        "files": 109,
+        "lane": "Clyde:clean",
+        "lang": "clean",
+        "missPct": 3.67,
+        "missingFiles": 4,
+        "pinnedEitherPct": 14.679,
+        "repo": "Clyde",
+        "repoPin": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
+        "sampleDigest": "5a098308ffd09f07",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "lane": "tf-aws-components:hcl",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      },
+      {
+        "buckets": {
+          "buildtools": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src": {
+            "errorFiles": 10,
+            "files": 32
+          },
+          "tests": {
+            "errorFiles": 57,
+            "files": 354
+          },
+          "vsintegration": {
+            "errorFiles": 0,
+            "files": 13
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 77,
+        "eitherPct": 19.25,
+        "emptyFiles": 0,
+        "errPct": 16.75,
+        "errorFiles": 67,
+        "errorLines": 510,
+        "errorLinesMax": 134,
+        "errorLinesMedian": 1,
+        "exts": {
+          "fs": {
+            "errorFiles": 53,
+            "files": 334
+          },
+          "fsi": {
+            "errorFiles": 5,
+            "files": 22
+          },
+          "fsx": {
+            "errorFiles": 9,
+            "files": 44
+          }
+        },
+        "files": 400,
+        "lane": "fsharp:fsharp",
+        "lang": "fsharp",
+        "missPct": 4.75,
+        "missingFiles": 19,
+        "pinnedEitherPct": 19.25,
+        "repo": "fsharp",
+        "repoPin": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+        "sampleDigest": "d087c19c8326daea",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "erts": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "lib": {
+            "errorFiles": 5,
+            "files": 64
+          },
+          "system": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 66,
+        "capped": false,
+        "eitherFiles": 5,
+        "eitherPct": 7.576,
+        "emptyFiles": 1,
+        "errPct": 7.576,
+        "errorFiles": 5,
+        "errorLines": 8,
+        "errorLinesMax": 4,
+        "errorLinesMedian": 1,
+        "exts": {
+          "html": {
+            "errorFiles": 5,
+            "files": 66
+          }
+        },
+        "files": 66,
+        "lane": "otp:html",
+        "lang": "html",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 7.576,
+        "repo": "otp",
+        "repoPin": "9e84d463ac3d79520c1e972da89701178b587919",
+        "sampleDigest": "46970e12eaa7c1f1",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "crates": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "credential": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "doc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "tests": {
+            "errorFiles": 1,
+            "files": 384
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 1,
+        "eitherPct": 0.25,
+        "emptyFiles": 0,
+        "errPct": 0.25,
+        "errorFiles": 1,
+        "errorLines": 1,
+        "errorLinesMax": 1,
+        "errorLinesMedian": 1,
+        "exts": {
+          "toml": {
+            "errorFiles": 1,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "cargo:toml",
+        "lang": "toml",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.25,
+        "repo": "cargo",
+        "repoPin": "94faf9175f010e171466841c77e38b47d9503ac8",
+        "sampleDigest": "1fa96ef5673ea099",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "lane": "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab:matlab",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      },
+      {
+        "lane": "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web:vba",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      },
+      {
+        "buckets": {
+          "docs": {
+            "errorFiles": 1,
+            "files": 3
+          },
+          "internal": {
+            "errorFiles": 1,
+            "files": 142
+          },
+          "testing": {
+            "errorFiles": 0,
+            "files": 255
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 2,
+        "eitherPct": 0.5,
+        "emptyFiles": 1,
+        "errPct": 0.5,
+        "errorFiles": 2,
+        "errorLines": 2,
+        "errorLinesMax": 1,
+        "errorLinesMedian": 1,
+        "exts": {
+          "json": {
+            "errorFiles": 2,
+            "files": 395
+          },
+          "jsonlog": {
+            "errorFiles": 0,
+            "files": 5
+          }
+        },
+        "files": 400,
+        "lane": "terraform:json",
+        "lang": "json",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.5,
+        "repo": "terraform",
+        "repoPin": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+        "sampleDigest": "f6f6210d5c66c114",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 1,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 1,
+            "files": 3
+          },
+          ".pipelines": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 13
+          },
+          "test": {
+            "errorFiles": 59,
+            "files": 364
+          },
+          "tools": {
+            "errorFiles": 3,
+            "files": 18
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 79,
+        "eitherPct": 19.75,
+        "emptyFiles": 0,
+        "errPct": 16,
+        "errorFiles": 64,
+        "errorLines": 355,
+        "errorLinesMax": 36,
+        "errorLinesMedian": 3,
+        "exts": {
+          "ps1": {
+            "errorFiles": 61,
+            "files": 343
+          },
+          "psd1": {
+            "errorFiles": 0,
+            "files": 33
+          },
+          "psm1": {
+            "errorFiles": 3,
+            "files": 24
+          }
+        },
+        "files": 400,
+        "lane": "powershell:powershell",
+        "lang": "powershell",
+        "missPct": 8.5,
+        "missingFiles": 34,
+        "pinnedEitherPct": 19.75,
+        "repo": "powershell",
+        "repoPin": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
+        "sampleDigest": "ebea7bcd867a3443",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "contracts": {
+            "errorFiles": 0,
+            "files": 350
+          },
+          "fv": {
+            "errorFiles": 0,
+            "files": 20
+          },
+          "scripts": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 28
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "sol": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "solidity:solidity",
+        "lang": "solidity",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "solidity",
+        "repoPin": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
+        "sampleDigest": "13016f38b6d81f82",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "cluster": {
+            "errorFiles": 0,
+            "files": 7
+          },
+          "cmd": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "hack": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "plugin": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "staging": {
+            "errorFiles": 0,
+            "files": 362
+          },
+          "test": {
+            "errorFiles": 1,
+            "files": 20
+          },
+          "vendor": {
+            "errorFiles": 0,
+            "files": 3
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 1,
+        "eitherPct": 0.25,
+        "emptyFiles": 0,
+        "errPct": 0.25,
+        "errorFiles": 1,
+        "errorLines": 1,
+        "errorLinesMax": 1,
+        "errorLinesMedian": 1,
+        "exts": {
+          "yaml": {
+            "errorFiles": 1,
+            "files": 398
+          },
+          "yml": {
+            "errorFiles": 0,
+            "files": 2
+          }
+        },
+        "files": 400,
+        "lane": "kubernetes:yaml",
+        "lang": "yaml",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.25,
+        "repo": "kubernetes",
+        "repoPin": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+        "sampleDigest": "b9ba7a4f2ca53800",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          ".github": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "bench": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "changelogs": {
+            "errorFiles": 0,
+            "files": 24
+          },
+          "community-build": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "directives-parser": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "docs": {
+            "errorFiles": 2,
+            "files": 336
+          },
+          "pkgs": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "repl": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "scaladoc": {
+            "errorFiles": 0,
+            "files": 19
+          },
+          "scaladoc-testcases": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 5
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 2,
+        "eitherPct": 0.5,
+        "emptyFiles": 0,
+        "errPct": 0.5,
+        "errorFiles": 2,
+        "errorLines": 6,
+        "errorLinesMax": 5,
+        "errorLinesMedian": 3,
+        "exts": {
+          "md": {
+            "errorFiles": 2,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "scala3:markdown",
+        "lang": "markdown",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.5,
+        "repo": "scala3",
+        "repoPin": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+        "sampleDigest": "dabcccce4585ebf2",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "Compiler": {
+            "errorFiles": 8,
+            "files": 29
+          },
+          "JuliaLowering": {
+            "errorFiles": 16,
+            "files": 32
+          },
+          "JuliaSyntax": {
+            "errorFiles": 0,
+            "files": 16
+          },
+          "base": {
+            "errorFiles": 32,
+            "files": 87
+          },
+          "contrib": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "stdlib": {
+            "errorFiles": 8,
+            "files": 104
+          },
+          "test": {
+            "errorFiles": 16,
+            "files": 125
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 86,
+        "eitherPct": 21.5,
+        "emptyFiles": 1,
+        "errPct": 20,
+        "errorFiles": 80,
+        "errorLines": 3395,
+        "errorLinesMax": 1085,
+        "errorLinesMedian": 3,
+        "exts": {
+          "jl": {
+            "errorFiles": 80,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "julia:julia",
+        "lang": "julia",
+        "missPct": 5.25,
+        "missingFiles": 21,
+        "pinnedEitherPct": 21.5,
+        "repo": "julia",
+        "repoPin": "63912639992190c6f56ad13286f292186513ab19",
+        "sampleDigest": "4a0a7da767b55c99",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "primary"
+      },
+      {
+        "buckets": {
+          "build": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "docs": {
+            "errorFiles": 0,
+            "files": 15
+          },
+          "src": {
+            "errorFiles": 4,
+            "files": 58
+          },
+          "tests": {
+            "errorFiles": 1,
+            "files": 61
+          }
+        },
+        "candidateCount": 135,
+        "capped": false,
+        "eitherFiles": 8,
+        "eitherPct": 5.926,
+        "emptyFiles": 1,
+        "errPct": 3.704,
+        "errorFiles": 5,
+        "errorLines": 110,
+        "errorLinesMax": 57,
+        "errorLinesMedian": 14,
+        "exts": {
+          "fs": {
+            "errorFiles": 5,
+            "files": 120
+          },
+          "fsx": {
+            "errorFiles": 0,
+            "files": 15
+          }
+        },
+        "files": 135,
+        "lane": "FSharp.Data:fsharp",
+        "lang": "fsharp",
+        "missPct": 5.185,
+        "missingFiles": 7,
+        "pinnedEitherPct": 5.926,
+        "repo": "FSharp.Data",
+        "repoPin": "d64045983ab5cda8eaab7542f52f948a372d4504",
+        "sampleDigest": "154691243550ab8b",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "bench": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "test-integ": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ui": {
+            "errorFiles": 0,
+            "files": 2
+          }
+        },
+        "candidateCount": 5,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "bench/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "test-integ/makefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ui/gnumakefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ui/packages/consul-ui/gnumakefile": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "files": 5,
+        "lane": "consul:make",
+        "lang": "make",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "consul",
+        "repoPin": "913703ef5dfdb325536820a30fb039a683fa0b21",
+        "sampleDigest": "f48c14a7b98e8c7d",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "pubgrub": {
+            "errorFiles": 0,
+            "files": 19
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 45
+          },
+          "tests": {
+            "errorFiles": 1,
+            "files": 334
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 1,
+        "eitherPct": 0.25,
+        "emptyFiles": 20,
+        "errPct": 0.25,
+        "errorFiles": 1,
+        "errorLines": 2,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 2,
+        "exts": {
+          "nim": {
+            "errorFiles": 1,
+            "files": 262
+          },
+          "nimble": {
+            "errorFiles": 0,
+            "files": 132
+          },
+          "nims": {
+            "errorFiles": 0,
+            "files": 6
+          }
+        },
+        "files": 400,
+        "lane": "nim-lang-nimble:nim",
+        "lang": "nim",
+        "missPct": 0.25,
+        "missingFiles": 1,
+        "pinnedEitherPct": 0.25,
+        "repo": "nim-lang-nimble",
+        "repoPin": "0918307745b03dabb622d92de7c6dd2d6ca4970d",
+        "sampleDigest": "713b41e6fb4349ec",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "lane": "DISMTools:vb",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      },
+      {
+        "lane": "plack:perl",
+        "skipped": "corpus-absent",
+        "verdict": "skip"
+      },
+      {
+        "buckets": {
+          "doc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ext": {
+            "errorFiles": 0,
+            "files": 20
+          }
+        },
+        "candidateCount": 21,
+        "capped": false,
+        "eitherFiles": 1,
+        "eitherPct": 4.762,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "html": {
+            "errorFiles": 0,
+            "files": 21
+          }
+        },
+        "files": 21,
+        "lane": "sqlite:html",
+        "lang": "html",
+        "missPct": 4.762,
+        "missingFiles": 1,
+        "pinnedEitherPct": 4.762,
+        "repo": "sqlite",
+        "repoPin": "86a15af2b148c655bfd352162d04c6756399f4ea",
+        "sampleDigest": "271943dcd5290c64",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          ".cargo": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "crates": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "fuzz": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 14,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "toml": {
+            "errorFiles": 0,
+            "files": 14
+          }
+        },
+        "files": 14,
+        "lane": "ripgrep:toml",
+        "lang": "toml",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "ripgrep",
+        "repoPin": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+        "sampleDigest": "a83be8ee3eed1091",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "src": {
+            "errorFiles": 0,
+            "files": 178
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 12
+          }
+        },
+        "candidateCount": 190,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "java": {
+            "errorFiles": 0,
+            "files": 190
+          }
+        },
+        "files": 190,
+        "lane": "clojure:java",
+        "lang": "java",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "clojure",
+        "repoPin": "2cea69253b9ed27436e93632b9a27c2f99088a49",
+        "sampleDigest": "07e6bacf53dec5de",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "lib": {
+            "errorFiles": 10,
+            "files": 24
+          },
+          "test": {
+            "errorFiles": 23,
+            "files": 165
+          }
+        },
+        "candidateCount": 189,
+        "capped": false,
+        "eitherFiles": 34,
+        "eitherPct": 17.989,
+        "emptyFiles": 0,
+        "errPct": 17.46,
+        "errorFiles": 33,
+        "errorLines": 66,
+        "errorLinesMax": 11,
+        "errorLinesMedian": 1,
+        "exts": {
+          "ps1": {
+            "errorFiles": 31,
+            "files": 145
+          },
+          "psd1": {
+            "errorFiles": 0,
+            "files": 11
+          },
+          "psm1": {
+            "errorFiles": 2,
+            "files": 33
+          }
+        },
+        "files": 189,
+        "lane": "ansible:powershell",
+        "lang": "powershell",
+        "missPct": 2.116,
+        "missingFiles": 4,
+        "pinnedEitherPct": 17.989,
+        "repo": "ansible",
+        "repoPin": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+        "sampleDigest": "29e9ac5489c9d911",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "buildSrc": {
+            "errorFiles": 4,
+            "files": 11
+          },
+          "doc": {
+            "errorFiles": 7,
+            "files": 106
+          },
+          "gradle": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "integration": {
+            "errorFiles": 4,
+            "files": 44
+          },
+          "internal": {
+            "errorFiles": 2,
+            "files": 19
+          },
+          "module": {
+            "errorFiles": 18,
+            "files": 218
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 36,
+        "eitherPct": 9,
+        "emptyFiles": 0,
+        "errPct": 8.75,
+        "errorFiles": 35,
+        "errorLines": 188,
+        "errorLinesMax": 98,
+        "errorLinesMedian": 1,
+        "exts": {
+          "gradle": {
+            "errorFiles": 12,
+            "files": 20
+          },
+          "groovy": {
+            "errorFiles": 23,
+            "files": 380
+          }
+        },
+        "files": 400,
+        "lane": "geb:groovy",
+        "lang": "groovy",
+        "missPct": 1,
+        "missingFiles": 4,
+        "pinnedEitherPct": 9,
+        "repo": "geb",
+        "repoPin": "9c73494607825cd8900d51681919737e17c6fb12",
+        "sampleDigest": "08920ab32a7e7ec2",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "benchmarks": {
+            "errorFiles": 0,
+            "files": 11
+          },
+          "buildSrc": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "integration": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "integration-testing": {
+            "errorFiles": 0,
+            "files": 10
+          },
+          "kotlinx-coroutines-core": {
+            "errorFiles": 4,
+            "files": 255
+          },
+          "kotlinx-coroutines-debug": {
+            "errorFiles": 0,
+            "files": 19
+          },
+          "kotlinx-coroutines-test": {
+            "errorFiles": 0,
+            "files": 17
+          },
+          "reactive": {
+            "errorFiles": 2,
+            "files": 53
+          },
+          "test-utils": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "ui": {
+            "errorFiles": 0,
+            "files": 16
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 6,
+        "eitherPct": 1.5,
+        "emptyFiles": 0,
+        "errPct": 1.5,
+        "errorFiles": 6,
+        "errorLines": 7,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 1,
+        "exts": {
+          "kt": {
+            "errorFiles": 6,
+            "files": 389
+          },
+          "kts": {
+            "errorFiles": 0,
+            "files": 11
+          }
+        },
+        "files": 400,
+        "lane": "kotlinx-coroutines:kotlin",
+        "lang": "kotlin",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 1.5,
+        "repo": "kotlinx-coroutines",
+        "repoPin": "7e8b5a405c834a5e50ee20e90449d0c492db8601",
+        "sampleDigest": "457bb4cc6453e1f0",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "benchmarks": {
+            "errorFiles": 0,
+            "files": 24
+          },
+          "core": {
+            "errorFiles": 0,
+            "files": 120
+          },
+          "example": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "graalvm-example": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ioapp-tests": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "kernel": {
+            "errorFiles": 0,
+            "files": 41
+          },
+          "kernel-testkit": {
+            "errorFiles": 0,
+            "files": 7
+          },
+          "laws": {
+            "errorFiles": 0,
+            "files": 36
+          },
+          "project": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "scalafix": {
+            "errorFiles": 0,
+            "files": 18
+          },
+          "scripts": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "std": {
+            "errorFiles": 0,
+            "files": 41
+          },
+          "testkit": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 98
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "sbt": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "scala": {
+            "errorFiles": 0,
+            "files": 395
+          }
+        },
+        "files": 400,
+        "lane": "cats-effect:scala",
+        "lang": "scala",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "cats-effect",
+        "repoPin": "91c8115dbb4975a31a442979c74223b92c50edaa",
+        "sampleDigest": "15d7c01b2264014f",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "docs": {
+            "errorFiles": 0,
+            "files": 23
+          },
+          "internal": {
+            "errorFiles": 0,
+            "files": 12
+          },
+          "packages": {
+            "errorFiles": 0,
+            "files": 359
+          },
+          "scripts": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ssr-testing": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "typings": {
+            "errorFiles": 0,
+            "files": 2
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 1,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "mts": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "ts": {
+            "errorFiles": 0,
+            "files": 399
+          }
+        },
+        "files": 400,
+        "lane": "element-plus:typescript",
+        "lang": "typescript",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "element-plus",
+        "repoPin": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+        "sampleDigest": "34fea2472f57ae91",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "dist": {
+            "errorFiles": 0,
+            "files": 7
+          },
+          "fp": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 12
+          },
+          "perf": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "vendor": {
+            "errorFiles": 0,
+            "files": 21
+          }
+        },
+        "candidateCount": 55,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "js": {
+            "errorFiles": 0,
+            "files": 55
+          }
+        },
+        "files": 55,
+        "lane": "lodash:javascript",
+        "lang": "javascript",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "lodash",
+        "repoPin": "a666ba591064c8011988275790ad7d625279f09c",
+        "sampleDigest": "fcbeec6cb3a50f47",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "src": {
+            "errorFiles": 0,
+            "files": 131
+          }
+        },
+        "candidateCount": 131,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "vue": {
+            "errorFiles": 0,
+            "files": 131
+          }
+        },
+        "files": 131,
+        "lane": "vue-element-admin:vue",
+        "lang": "vue",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "vue-element-admin",
+        "repoPin": "6858a9ad67483025f6a9432a926beb9327037be3",
+        "sampleDigest": "ffde66f520601c0f",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "docs": {
+            "errorFiles": 5,
+            "files": 395
+          },
+          "sv-addons": {
+            "errorFiles": 0,
+            "files": 5
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 5,
+        "eitherPct": 1.25,
+        "emptyFiles": 0,
+        "errPct": 1.25,
+        "errorFiles": 5,
+        "errorLines": 7,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 1,
+        "exts": {
+          "svelte": {
+            "errorFiles": 5,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "shadcn-svelte:svelte",
+        "lang": "svelte",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 1.25,
+        "repo": "shadcn-svelte",
+        "repoPin": "dabbd4c00fbca1feef29a2a155b2eecf6bb4ea7a",
+        "sampleDigest": "ed582583ec0ccfc5",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "build-logic": {
+            "errorFiles": 3,
+            "files": 8
+          },
+          "grails-data-docs": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-data-neo4j": {
+            "errorFiles": 0,
+            "files": 8
+          },
+          "grails-doc": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "grails-forge": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-profiles": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "grails-test-examples": {
+            "errorFiles": 0,
+            "files": 165
+          }
+        },
+        "candidateCount": 191,
+        "capped": false,
+        "eitherFiles": 3,
+        "eitherPct": 1.571,
+        "emptyFiles": 0,
+        "errPct": 1.571,
+        "errorFiles": 3,
+        "errorLines": 375,
+        "errorLinesMax": 372,
+        "errorLinesMedian": 2,
+        "exts": {
+          "css": {
+            "errorFiles": 3,
+            "files": 191
+          }
+        },
+        "files": 191,
+        "lane": "grails-core:css",
+        "lang": "css",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 1.571,
+        "repo": "grails-core",
+        "repoPin": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+        "sampleDigest": "b709bf9a3c9dd1a8",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "src": {
+            "errorFiles": 16,
+            "files": 42
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "vendor": {
+            "errorFiles": 4,
+            "files": 30
+          }
+        },
+        "candidateCount": 77,
+        "capped": false,
+        "eitherFiles": 27,
+        "eitherPct": 35.065,
+        "emptyFiles": 0,
+        "errPct": 25.974,
+        "errorFiles": 20,
+        "errorLines": 190,
+        "errorLinesMax": 61,
+        "errorLinesMedian": 4,
+        "exts": {
+          "c": {
+            "errorFiles": 17,
+            "files": 45
+          },
+          "h": {
+            "errorFiles": 3,
+            "files": 32
+          }
+        },
+        "files": 77,
+        "lane": "jq:c",
+        "lang": "c",
+        "missPct": 22.078,
+        "missingFiles": 17,
+        "pinnedEitherPct": 35.065,
+        "repo": "jq",
+        "repoPin": "41b8edfe5437fcd25a072081c05f9f770f9e9b85",
+        "sampleDigest": "b2dd48ebda7dd93e",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "cmake": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "docs": {
+            "errorFiles": 2,
+            "files": 187
+          },
+          "include": {
+            "errorFiles": 20,
+            "files": 40
+          },
+          "single_include": {
+            "errorFiles": 2,
+            "files": 2
+          },
+          "tests": {
+            "errorFiles": 45,
+            "files": 169
+          },
+          "tools": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 125,
+        "eitherPct": 31.25,
+        "emptyFiles": 0,
+        "errPct": 17.25,
+        "errorFiles": 69,
+        "errorLines": 3931,
+        "errorLinesMax": 1901,
+        "errorLinesMedian": 6,
+        "exts": {
+          "cpp": {
+            "errorFiles": 42,
+            "files": 333
+          },
+          "cu": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "h": {
+            "errorFiles": 2,
+            "files": 16
+          },
+          "hpp": {
+            "errorFiles": 25,
+            "files": 50
+          }
+        },
+        "files": 400,
+        "lane": "nlohmann-json:cpp",
+        "lang": "cpp",
+        "missPct": 29,
+        "missingFiles": 116,
+        "pinnedEitherPct": 31.25,
+        "repo": "nlohmann-json",
+        "repoPin": "09b6b6b5ba0610851fba2a79d66fbd801452a107",
+        "sampleDigest": "bcfbce76355317f1",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "benches": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "crates": {
+            "errorFiles": 2,
+            "files": 25
+          },
+          "credential": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "src": {
+            "errorFiles": 1,
+            "files": 69
+          },
+          "tests": {
+            "errorFiles": 152,
+            "files": 301
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 155,
+        "eitherPct": 38.75,
+        "emptyFiles": 76,
+        "errPct": 38.75,
+        "errorFiles": 155,
+        "errorLines": 1255,
+        "errorLinesMax": 151,
+        "errorLinesMedian": 1,
+        "exts": {
+          "rs": {
+            "errorFiles": 155,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "cargo:rust",
+        "lang": "rust",
+        "missPct": 2.25,
+        "missingFiles": 9,
+        "pinnedEitherPct": 38.75,
+        "repo": "cargo",
+        "repoPin": "94faf9175f010e171466841c77e38b47d9503ac8",
+        "sampleDigest": "83cd6c6f6f0efaff",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "internal": {
+            "errorFiles": 0,
+            "files": 396
+          },
+          "tools": {
+            "errorFiles": 0,
+            "files": 1
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "go": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "terraform:go",
+        "lang": "go",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "terraform",
+        "repoPin": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+        "sampleDigest": "68774ed0b467f778",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "src": {
+            "errorFiles": 1,
+            "files": 40
+          },
+          "tests": {
+            "errorFiles": 1,
+            "files": 48
+          }
+        },
+        "candidateCount": 90,
+        "capped": false,
+        "eitherFiles": 2,
+        "eitherPct": 2.222,
+        "emptyFiles": 0,
+        "errPct": 2.222,
+        "errorFiles": 2,
+        "errorLines": 2,
+        "errorLinesMax": 1,
+        "errorLinesMedian": 1,
+        "exts": {
+          "zig": {
+            "errorFiles": 2,
+            "files": 90
+          }
+        },
+        "files": 90,
+        "lane": "zls:zig",
+        "lang": "zig",
+        "missPct": 1.111,
+        "missingFiles": 1,
+        "pinnedEitherPct": 2.222,
+        "repo": "zls",
+        "repoPin": "3df042851351abdcfcdab9e133f3e144fe37b783",
+        "sampleDigest": "46e1e908574a87ce",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "src": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 34
+          },
+          "vsintegration": {
+            "errorFiles": 4,
+            "files": 206
+          }
+        },
+        "candidateCount": 243,
+        "capped": false,
+        "eitherFiles": 6,
+        "eitherPct": 2.469,
+        "emptyFiles": 0,
+        "errPct": 1.646,
+        "errorFiles": 4,
+        "errorLines": 8,
+        "errorLinesMax": 3,
+        "errorLinesMedian": 2,
+        "exts": {
+          "cs": {
+            "errorFiles": 4,
+            "files": 243
+          }
+        },
+        "files": 243,
+        "lane": "fsharp:csharp",
+        "lang": "csharp",
+        "missPct": 2.058,
+        "missingFiles": 5,
+        "pinnedEitherPct": 2.469,
+        "repo": "fsharp",
+        "repoPin": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+        "sampleDigest": "58ebd52ad08b8ac2",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "pkgs": {
+            "errorFiles": 0,
+            "files": 335
+          }
+        },
+        "candidateCount": 335,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "dart": {
+            "errorFiles": 0,
+            "files": 335
+          }
+        },
+        "files": 335,
+        "lane": "dart-http:dart",
+        "lang": "dart",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "dart-http",
+        "repoPin": "92b20d125ffc972d38ca2f790504297a3ca87443",
+        "sampleDigest": "17b5e411ab263e0a",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "Example": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "Source": {
+            "errorFiles": 2,
+            "files": 43
+          },
+          "Tests": {
+            "errorFiles": 4,
+            "files": 44
+          },
+          "watchOS Example": {
+            "errorFiles": 0,
+            "files": 4
+          }
+        },
+        "candidateCount": 98,
+        "capped": false,
+        "eitherFiles": 6,
+        "eitherPct": 6.122,
+        "emptyFiles": 0,
+        "errPct": 6.122,
+        "errorFiles": 6,
+        "errorLines": 186,
+        "errorLinesMax": 60,
+        "errorLinesMedian": 34,
+        "exts": {
+          "swift": {
+            "errorFiles": 6,
+            "files": 98
+          }
+        },
+        "files": 98,
+        "lane": "alamofire:swift",
+        "lang": "swift",
+        "missPct": 1.02,
+        "missingFiles": 1,
+        "pinnedEitherPct": 6.122,
+        "repo": "alamofire",
+        "repoPin": "0455bfb650893e86ad07ace16e5f2d36dadf46f4",
+        "sampleDigest": "8277aee5760936cf",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "AFNetworking": {
+            "errorFiles": 3,
+            "files": 12
+          },
+          "Example": {
+            "errorFiles": 0,
+            "files": 22
+          },
+          "Tests": {
+            "errorFiles": 0,
+            "files": 23
+          },
+          "UIKit+AFNetworking": {
+            "errorFiles": 2,
+            "files": 18
+          }
+        },
+        "candidateCount": 75,
+        "capped": false,
+        "eitherFiles": 18,
+        "eitherPct": 24,
+        "emptyFiles": 0,
+        "errPct": 6.667,
+        "errorFiles": 5,
+        "errorLines": 62,
+        "errorLinesMax": 53,
+        "errorLinesMedian": 3,
+        "exts": {
+          "h": {
+            "errorFiles": 3,
+            "files": 26
+          },
+          "m": {
+            "errorFiles": 2,
+            "files": 49
+          }
+        },
+        "files": 75,
+        "lane": "afnetworking:objc",
+        "lang": "objc",
+        "missPct": 22.667,
+        "missingFiles": 17,
+        "pinnedEitherPct": 24,
+        "repo": "afnetworking",
+        "repoPin": "d9f589cc2c1fe9d55eb5eea00558010afea7a41e",
+        "sampleDigest": "5aa9905a85f22840",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "examples": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 248
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 149
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "php": {
+            "errorFiles": 0,
+            "files": 400
+          }
+        },
+        "files": 400,
+        "lane": "phpmyadmin:php",
+        "lang": "php",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "phpmyadmin",
+        "repoPin": "4061095a59e1769128776ad24154cc7058de51aa",
+        "sampleDigest": "4ee9724e20139b93",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 50
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 44
+          }
+        },
+        "candidateCount": 97,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "gemfile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "rakefile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "rb": {
+            "errorFiles": 0,
+            "files": 95
+          }
+        },
+        "files": 97,
+        "lane": "rack:ruby",
+        "lang": "ruby",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "rack",
+        "repoPin": "2c98a0385cca650774a4cabc3f4a112f76c3dacd",
+        "sampleDigest": "2bbdc3c9e3ca847f",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "docs": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 19
+          },
+          "tests": {
+            "errorFiles": 0,
+            "files": 15
+          }
+        },
+        "candidateCount": 37,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 1,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "py": {
+            "errorFiles": 0,
+            "files": 37
+          }
+        },
+        "files": 37,
+        "lane": "requests:python",
+        "lang": "python",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "requests",
+        "repoPin": "dae7ef63b4df6eded86637f251fc4e3a06c3b479",
+        "sampleDigest": "6fb2a27909eae00b",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "bin": {
+            "errorFiles": 1,
+            "files": 17
+          },
+          "examples": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "hledger": {
+            "errorFiles": 4,
+            "files": 51
+          },
+          "hledger-lib": {
+            "errorFiles": 0,
+            "files": 72
+          },
+          "hledger-ui": {
+            "errorFiles": 0,
+            "files": 18
+          },
+          "hledger-web": {
+            "errorFiles": 0,
+            "files": 21
+          },
+          "tools": {
+            "errorFiles": 0,
+            "files": 6
+          }
+        },
+        "candidateCount": 188,
+        "capped": false,
+        "eitherFiles": 6,
+        "eitherPct": 3.191,
+        "emptyFiles": 0,
+        "errPct": 2.66,
+        "errorFiles": 5,
+        "errorLines": 6,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 1,
+        "exts": {
+          "hs": {
+            "errorFiles": 3,
+            "files": 186
+          },
+          "lhs": {
+            "errorFiles": 2,
+            "files": 2
+          }
+        },
+        "files": 188,
+        "lane": "hledger:haskell",
+        "lang": "haskell",
+        "missPct": 0.532,
+        "missingFiles": 1,
+        "pinnedEitherPct": 3.191,
+        "repo": "hledger",
+        "repoPin": "64867d29b6c4b1faa230bebb7e0428f11f522dd0",
+        "sampleDigest": "863aace327f03d92",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "config": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "installer": {
+            "errorFiles": 0,
+            "files": 20
+          },
+          "integration_test": {
+            "errorFiles": 0,
+            "files": 38
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 75
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 69
+          }
+        },
+        "candidateCount": 205,
+        "capped": false,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 0,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "ex": {
+            "errorFiles": 0,
+            "files": 89
+          },
+          "exs": {
+            "errorFiles": 0,
+            "files": 116
+          }
+        },
+        "files": 205,
+        "lane": "phoenix:elixir",
+        "lang": "elixir",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "phoenix",
+        "repoPin": "0e02edbe0c6dfdc130fe2212fe34a2623cb6605b",
+        "sampleDigest": "20e897c6f7e17c5b",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          "erts": {
+            "errorFiles": 1,
+            "files": 18
+          },
+          "lib": {
+            "errorFiles": 11,
+            "files": 382
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 12,
+        "eitherPct": 3,
+        "emptyFiles": 0,
+        "errPct": 3,
+        "errorFiles": 12,
+        "errorLines": 239,
+        "errorLinesMax": 105,
+        "errorLinesMedian": 3,
+        "exts": {
+          "erl": {
+            "errorFiles": 11,
+            "files": 370
+          },
+          "hrl": {
+            "errorFiles": 1,
+            "files": 30
+          }
+        },
+        "files": 400,
+        "lane": "otp:erlang",
+        "lang": "erlang",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 3,
+        "repo": "otp",
+        "repoPin": "9e84d463ac3d79520c1e972da89701178b587919",
+        "sampleDigest": "690ece7d3f3696ac",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          ".carve": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          ".clj-kondo": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          ".sbx": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "analysis": {
+            "errorFiles": 0,
+            "files": 9
+          },
+          "benchmarks": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "corpus": {
+            "errorFiles": 2,
+            "files": 200
+          },
+          "extract": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "inlined": {
+            "errorFiles": 0,
+            "files": 12
+          },
+          "parser": {
+            "errorFiles": 0,
+            "files": 22
+          },
+          "pod-test": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "resources": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "script": {
+            "errorFiles": 0,
+            "files": 6
+          },
+          "src": {
+            "errorFiles": 0,
+            "files": 36
+          },
+          "src-profile": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 89
+          },
+          "test-regression": {
+            "errorFiles": 0,
+            "files": 7
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 2,
+        "eitherPct": 0.5,
+        "emptyFiles": 0,
+        "errPct": 0.5,
+        "errorFiles": 2,
+        "errorLines": 3,
+        "errorLinesMax": 2,
+        "errorLinesMedian": 2,
+        "exts": {
+          "clj": {
+            "errorFiles": 2,
+            "files": 318
+          },
+          "cljc": {
+            "errorFiles": 0,
+            "files": 16
+          },
+          "cljs": {
+            "errorFiles": 0,
+            "files": 20
+          },
+          "edn": {
+            "errorFiles": 0,
+            "files": 46
+          }
+        },
+        "files": 400,
+        "lane": "clj-kondo:clojure",
+        "lang": "clojure",
+        "missPct": 0.25,
+        "missingFiles": 1,
+        "pinnedEitherPct": 0.5,
+        "repo": "clj-kondo",
+        "repoPin": "703a44ccdc8c4d1d0b52d1a887d7b077a87610c5",
+        "sampleDigest": "9ab86757fbe05030",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 1,
+            "files": 65
+          },
+          "StdEnv 64 Changed Files": {
+            "errorFiles": 0,
+            "files": 9
+          }
+        },
+        "candidateCount": 74,
+        "capped": false,
+        "eitherFiles": 1,
+        "eitherPct": 1.351,
+        "emptyFiles": 3,
+        "errPct": 1.351,
+        "errorFiles": 1,
+        "errorLines": 15,
+        "errorLinesMax": 15,
+        "errorLinesMedian": 15,
+        "exts": {
+          "dcl": {
+            "errorFiles": 0,
+            "files": 38
+          },
+          "icl": {
+            "errorFiles": 1,
+            "files": 36
+          }
+        },
+        "files": 74,
+        "lane": "clean-stdlib:clean",
+        "lang": "clean",
+        "missPct": 1.351,
+        "missingFiles": 1,
+        "pinnedEitherPct": 1.351,
+        "repo": "clean-stdlib",
+        "repoPin": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
+        "sampleDigest": "191a8a3276090a11",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".azure-pipelines": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "changelogs": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "lib": {
+            "errorFiles": 0,
+            "files": 18
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 378
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 0,
+        "eitherPct": 0,
+        "emptyFiles": 1,
+        "errPct": 0,
+        "errorFiles": 0,
+        "errorLines": 0,
+        "errorLinesMax": 0,
+        "errorLinesMedian": 0,
+        "exts": {
+          "yaml": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "yml": {
+            "errorFiles": 0,
+            "files": 397
+          }
+        },
+        "files": 400,
+        "lane": "ansible:yaml",
+        "lang": "yaml",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0,
+        "repo": "ansible",
+        "repoPin": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+        "sampleDigest": "3fbc184b2d8d71ff",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      },
+      {
+        "buckets": {
+          ".": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          ".github": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "CHANGELOG": {
+            "errorFiles": 0,
+            "files": 24
+          },
+          "api": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "build": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "cluster": {
+            "errorFiles": 0,
+            "files": 9
+          },
+          "cmd": {
+            "errorFiles": 0,
+            "files": 3
+          },
+          "hack": {
+            "errorFiles": 0,
+            "files": 5
+          },
+          "logo": {
+            "errorFiles": 0,
+            "files": 2
+          },
+          "pkg": {
+            "errorFiles": 0,
+            "files": 4
+          },
+          "staging": {
+            "errorFiles": 1,
+            "files": 125
+          },
+          "test": {
+            "errorFiles": 0,
+            "files": 44
+          },
+          "vendor": {
+            "errorFiles": 1,
+            "files": 179
+          }
+        },
+        "candidateCount": 400,
+        "capped": true,
+        "eitherFiles": 2,
+        "eitherPct": 0.5,
+        "emptyFiles": 1,
+        "errPct": 0.5,
+        "errorFiles": 2,
+        "errorLines": 14,
+        "errorLinesMax": 12,
+        "errorLinesMedian": 7,
+        "exts": {
+          "markdown": {
+            "errorFiles": 0,
+            "files": 1
+          },
+          "md": {
+            "errorFiles": 2,
+            "files": 399
+          }
+        },
+        "files": 400,
+        "lane": "kubernetes:markdown",
+        "lang": "markdown",
+        "missPct": 0,
+        "missingFiles": 0,
+        "pinnedEitherPct": 0.5,
+        "repo": "kubernetes",
+        "repoPin": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+        "sampleDigest": "5e10a9e8fdf98801",
+        "sampleLimit": 400,
+        "verdict": "pass",
+        "which": "second"
+      }
+    ],
+    "sampleLimit": 400,
+    "treeModifiedInputs": 0,
+    "verdict": "pass"
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F10",
+  "layers": [
+    "corpus routing (the pipeline's own detectLanguageFromPath, including the .h sniff)",
+    "pinned grammar per lane (wasm), one fresh module per lane in its own child process",
+    "per-lane floors in validation/m14/parse-success-baseline.json, sample-digest pinned"
+  ],
+  "limitations": [
+    {
+      "description": "This measures the GRAMMAR's surface, not recovery quality: symbols flow through an ERROR region, so a high rate and a zero rate can both be 'no symbol loss' — that is why F5 stays green and why this gate exists separately."
+    },
+    {
+      "description": "The corpora are local checkouts; each lane records its repo pin so a moved corpus is visible beside its floor."
+    },
+    {
+      "description": "A lane whose candidate set changed reports sample-moved and is NOT compared — the honest state, not a pass. The gate exits 2 in that case."
+    },
+    {
+      "description": "The rate is the full production-routed surface, so the c figure includes plain C headers and the cpp figure includes the headers production sniffs as C++. The per-extension split is recorded beside every row so these reconcile with the .c-only census in reviews/m49-w17-parse-success-census.md."
+    }
+  ],
+  "regeneratedAt": "2026-11-10T09:31:29-05:00",
+  "regeneratedAtCommit": "b50942051fdbb1ad269513b5f9aa04ad02252e39",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "corpus parse-success floor — how much of each corpus the pinned grammar can parse"
+}

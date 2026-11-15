@@ -1,0 +1,4 @@
+{
+  "_planted": "CASE D — NO coverage field at all. Must render `not declared`, never `none` and never 0.",
+  "language": "fsharp"
+}

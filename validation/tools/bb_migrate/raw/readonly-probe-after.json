@@ -1,0 +1,91 @@
+{
+ "probe": "indexed-read",
+ "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+ "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-indexed/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
+ "firstCall": {
+  "ms": 1002,
+  "isError": false,
+  "textHead": [
+   "migration target: python",
+   "dependency order: basePrice (partial)"
+  ]
+ },
+ "before": {
+  "files": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793682915515
+   },
+   "-wal": null,
+   "-shm": null
+  },
+  "sha256": "866dee6d3e63ffc6130acf2351cb01492a9f043ee62fa1a85dd919682f5e4d4f",
+  "stat": {
+   "dev": 66307,
+   "mode": 33188,
+   "nlink": 1,
+   "uid": 1000,
+   "gid": 1000,
+   "rdev": 0,
+   "blksize": 4096,
+   "ino": 291260,
+   "size": 589824,
+   "blocks": 1152,
+   "atimeMs": 1793682915513.4915,
+   "mtimeMs": 1793682915514.844,
+   "ctimeMs": 1793682915514.844,
+   "birthtimeMs": 1793682915513.4915
+  }
+ },
+ "afterFirst": {
+  "files": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793682915515
+   },
+   "-wal": {
+    "size": 0,
+    "mtimeMs": 1793682935199
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793682935200
+   }
+  },
+  "sha256": "866dee6d3e63ffc6130acf2351cb01492a9f043ee62fa1a85dd919682f5e4d4f"
+ },
+ "afterSecond": {
+  "files": {
+   "db": {
+    "size": 589824,
+    "mtimeMs": 1793682915515
+   },
+   "-wal": {
+    "size": 0,
+    "mtimeMs": 1793682935199
+   },
+   "-shm": {
+    "size": 32768,
+    "mtimeMs": 1793682935200
+   }
+  },
+  "sha256": "866dee6d3e63ffc6130acf2351cb01492a9f043ee62fa1a85dd919682f5e4d4f"
+ },
+ "walAppearedOnFirstRead": true,
+ "dbBytesChangedInProcess": false,
+ "secondCallMs": 62
+}
+{
+ "probe": "unindexed-read",
+ "unindexedDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project",
+ "projectId": "0550d4a9e4fa42175c01e8c975658cb99da4a334",
+ "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-unindexed/projects/0550d4a9e4fa42175c01e8c975658cb99da4a334/brain.db",
+ "existedBefore": false,
+ "existsAfter": false,
+ "sizeAfter": 0,
+ "dbCreatedByRead": false,
+ "outcome": {
+  "threw": true,
+  "message": "Error: no index found for project 0550d4a9e4fa42175c01e8c975658cb99da4a334: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/probe-unindexed/projects/0550d4a9e4fa42175c01e8c975658cb99da4a334/brain.db — run: bb index <p"
+ }
+}

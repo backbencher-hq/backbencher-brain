@@ -1,0 +1,48 @@
+{
+  "probe": "M57.T1-after-census",
+  "milestone": "M57",
+  "issue": 789,
+  "at": "2026-09-13T00:31:00Z",
+  "db": "BB_DATA_DIR-resolved projects dir (this shell HOME=/home/ishaq2321/.khushal_file -> /home/ishaq2321/.khushal_file/.bb/projects/1d3d5710.../brain.db)",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "files": 3338,
+  "flaggedIsTestFile": 0,
+  "flaggedNonCode": 0,
+  "flaggedCode": 0,
+  "beforeAfter": {
+    "before": {
+      "files": 2867,
+      "flagged": 30,
+      "flaggedNonCode": 30,
+      "flaggedCode": 0,
+      "db": "/home/ishaq2321/.bb (pre-re-index DB, see T1-before-census.json)"
+    },
+    "after": {
+      "files": 3338,
+      "flagged": 0,
+      "flaggedNonCode": 0,
+      "flaggedCode": 0
+    }
+  },
+  "zeroCorpusJustification": "The repo has zero test-shaped CODE files (verified by find: no *.test.ts/*.spec.ts, no test/tests/__tests__/spec/e2e dirs under src/). Its suite is the script/mXX/verify-*.ts gates, which do not follow test naming. flagged=0 is therefore the CORRECT census, not a regression.",
+  "reindex": {
+    "command": "node bin/bb index <repo> --force",
+    "files": 3338,
+    "symbols": 180772,
+    "relationships": 189499,
+    "embeddings": 2441,
+    "errors": 0,
+    "durationSeconds": 746.8,
+    "derived": "full"
+  },
+  "method": "Direct SQL over brain_file for the real project id after the production re-index; predicate equality asserted per-row by verify-t1-classifier.ts C5c and verify-t5-predicate-unity.ts P5.",
+  "status": "verified",
+  "corpus": {
+    "files": 3338,
+    "symbols": 180772,
+    "relationships": 189499,
+    "flagged": 0,
+    "digest": "e3b0c44298fc1c14"
+  },
+  "classifierEpoch": "d1af1c1e4ba070dc"
+}

@@ -1,0 +1,23 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/overrides-probe.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "sampling": {
+    "perRepoCap": 400,
+    "totalCap": 2500,
+    "repositoriesAdmittingXml": 110,
+    "sampled": 2500
+  },
+  "construct": "two xsl:template in ONE stylesheet with the same match, mode and priority — XSLT 1.0 §5.5, where the later one replaces the earlier",
+  "instrument": "B:parse-tree-count",
+  "counts": {
+    "oldKeyOccurrences": 0,
+    "correctedKeyOccurrences": 0,
+    "namedOnlyTemplates": 9,
+    "competingTemplates": 119
+  },
+  "oldHitFiles": [],
+  "newHitFiles": [],
+  "newHitExamples": [],
+  "oldOnlyExamples": [],
+  "perFile": {}
+}

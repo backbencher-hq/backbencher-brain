@@ -1,0 +1,56 @@
+{
+ "fixtureId": "yaml/payload-lines-evidence",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Every relationship carries a 1-based line_number on its name-bearing node, per site, and an evidenceClass from the closed vocabulary. Both are asserted on EVERY edge by the lane's own census over 1,274 corpus files; this fixture pins the three classes that are not `structural` and the sub-1.0 confidence contract, so a regression that pushed a class back to a default would be visible here rather than only in a corpus count.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "payload-lines-evidence.use.$ref",
+   "target": "payload-lines-evidence.definitions.Thing",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 9
+  },
+  {
+   "type": "references",
+   "from": "payload-lines-evidence.missing.$ref",
+   "target": "#/definitions/Nope",
+   "confidenceMax": 0.95,
+   "meta.unresolvedReason": "pointer-not-declared-in-file",
+   "line_number": 11
+  },
+  {
+   "type": "references",
+   "from": "payload-lines-evidence.tagged",
+   "target": "str",
+   "meta.relationshipType": "declared_type",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 12
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "tagged",
+   "meta.declaredType": "str",
+   "meta.tagUri": "tag:yaml.org,2002:str",
+   "meta.valueType": "string"
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ],
+  "evidenceClasses": [
+   "reference_qualified",
+   "structural"
+  ]
+ }
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/record-ops.erl",
+  "authoredFrom": "Erlang semantics (docs/analyzers/erlang.md contract + pinned grammar probe 2026-09-17): -record emits a struct symbol owned by the module plus property symbols for each field owned by the record; #state{} in BODY position is instantiates; State#state{...} update and State#state.id field access emit NO instantiates; pattern-position records emit nothing.",
+  "expectSymbols": [
+    { "name": "record_ops", "kind": "module" },
+    { "name": "state", "kind": "struct", "ownerName": "record_ops" },
+    { "name": "id", "kind": "property", "ownerName": "state" },
+    { "name": "count", "kind": "property", "ownerName": "state" },
+    { "name": "label", "kind": "property", "ownerName": "state" },
+    { "name": "make", "kind": "function", "ownerName": "record_ops", "meta.arity": 0 },
+    { "name": "bump", "kind": "function", "ownerName": "record_ops", "meta.arity": 1 },
+    { "name": "read_id", "kind": "function", "ownerName": "record_ops", "meta.arity": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "record_ops", "target": "state" },
+    { "type": "contains", "from": "state", "target": "id" },
+    { "type": "contains", "from": "state", "target": "count" },
+    { "type": "contains", "from": "state", "target": "label" },
+    { "type": "contains", "from": "record_ops", "target": "make" },
+    { "type": "contains", "from": "record_ops", "target": "bump" },
+    { "type": "contains", "from": "record_ops", "target": "read_id" },
+    { "type": "instantiates", "from": "make", "target": "state" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "bump", "target": "state" },
+    { "type": "instantiates", "from": "read_id", "target": "state" }
+  ],
+  "forbidSymbols": [
+    { "name": "S" },
+    { "name": "new" }
+  ]
+}

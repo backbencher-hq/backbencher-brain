@@ -1,0 +1,16 @@
+{
+  "fixtureId": "java/fq-api-endpoint",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Fully-qualified annotations are valid Java (JLS 9.7.1) and common in generated/conflict-heavy code. The grammar serializes their name as a scoped_identifier child, not identifier. The analyzer must resolve the LAST dotted segment as the annotation short name; otherwise Spring MVC endpoints silently vanish. Class-level @RequestMapping base path must compose with the method route into apiContractPath.",
+  "expectSymbols": [
+    { "name": "FqApiController", "kind": "class" },
+    { "name": "users" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "target": "/users", "meta.isApiEndpoint": true }
+  ],
+  "expectApiContractPaths": [
+    { "symbol": "users", "equals": "/users" }
+  ]
+}

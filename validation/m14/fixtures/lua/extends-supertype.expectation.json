@@ -1,0 +1,69 @@
+{
+  "fixtureId": "lua/extends-supertype",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60 LUA-50 and LUA-51, the two `extends` defects this pass found by adversarial review of the label rather than by census. LUA-50 is a FABRICATED edge: the `extends` reader guarded the metatable node's TYPE but never compared its two argument NAMES, so `setmetatable(M, M)` — the lazy `__index` idiom, lazy.nvim/lua/lazy/state.lua:45 and trouble.nvim/lua/trouble/cache.lua:59 — published `extends M -> M`. A self-edge on a TYPE relation is not expressible in Lua at all, so it is the most expensive defect class this codebase has: a fake caller becomes wrong refactoring advice in bb_graph, bb_impact and bb_migrate. LUA-51 is a MISSED edge: `local Command = class({...}, {...}, Parser)` states a supertype in the THIRD argument, because luarocks declares `class(prototype, properties, parent)`, while middleclass's own form is `class(\"Name\", Super)` in the SECOND. The `extends` reader read only `setmetatable` and the `class` branch read only the class's own NAME, so both of argparse's inheritance clauses were invisible. The fix reads the supertype slot from the callee's OWN parameter list, so neither convention has to be hardcoded — the probe that found the gap is script/m60/lua-supertype-arg-probe.ts, 7 written supertype arguments across 5 files, of which the positional guess would have counted 0.",
+  "authoringNote": "authoredBeforeAnalyzerRun is false and is stated as false. The defects were found by measurement, the fixes were written, and these rows were then derived from the role contracts and checked against the fixed analyzer. What makes them non-vacuous is the FORBID half, which no over-publishing implementation can satisfy: four `parent`-named parameters in this file are ordinary tree-traversal arguments, and a rule keyed on the parameter name alone would publish four fabricated `extends` edges for them. The mutant at script/m60/mutate-lua-extends-supertype.ts reinstates each defect in turn and requires this suite to go red.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Middle",
+      "target": "Base",
+      "confidenceMin": 0.95,
+      "confidenceMax": 0.95,
+      "meta.relationshipType": "lua_factory_supertype",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "LUA-51 in THIRD-argument position, luarocks' convention. `class_third(prototype, properties, parent)` declares the parent in slot 3 and this call passes a NAME there, so the supertype clause is written in the file. 0.95 and `usage_contextual` — both endpoint names are written, which is what earns `extends` 1.0 elsewhere, but the ROLE is a convention: that a parameter named `parent` means the supertype. Same number and same reason as `overrides`' `lua_inherited_member` (0.95), which cites the same family precedent at real-objective-c-analyzer.ts:1020."
+    },
+    {
+      "type": "extends",
+      "from": "Leaf",
+      "target": "Middle",
+      "confidenceMin": 0.95,
+      "confidenceMax": 0.95,
+      "meta.relationshipType": "lua_factory_supertype",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "LUA-51 again, and the transitive case: `Leaf` is two hops from `Base`. Only the written clause is published — `extends` asserts what the file says, not the closure of the chain, so there is deliberately NO `Leaf -> Base` row."
+    },
+    {
+      "type": "extends",
+      "from": "Beta",
+      "target": "Alpha",
+      "confidenceMin": 0.95,
+      "confidenceMax": 0.95,
+      "meta.relationshipType": "lua_factory_supertype",
+      "meta.evidenceClass": "usage_contextual",
+      "comment": "LUA-51 in SECOND-argument position, middleclass's convention. This row is the load-bearing half of the 'read the slot, do not guess it' claim: a fixed index of 2 would publish this edge and MISS every third-position edge above, and a fixed index of 3 would do the reverse. The role vocabulary is matched against the callee's `parameters` node, so both positions are read from the file rather than from a constant."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "SelfMeta",
+      "target": "SelfMeta",
+      "comment": "LUA-50, the fabricated edge. `setmetatable(SelfMeta, SelfMeta)` makes SelfMeta its OWN metatable so that `SelfMeta.__index` runs on a miss; it inherits from nothing. A self-edge on a type relation is not expressible in Lua. Corpus: 2 occurrences in 2 files (lazy.nvim/lua/lazy/state.lua:45, trouble.nvim/lua/trouble/cache.lua:59), found by script/m60/lua-labelling-audit.ts's self-edge census."
+    },
+    {
+      "type": "extends",
+      "from": "SelfMeta2",
+      "target": "SelfMeta2",
+      "comment": "LUA-50 on the ASSIGNED form rather than the returned one — `local bound_self = setmetatable(SelfMeta2, SelfMeta2)`. Two shapes, one defect: the reader fires on the call, not on the surrounding statement, so pinning only the `return` shape would let this one through."
+    },
+    {
+      "type": "extends",
+      "from": "added",
+      "target": "walked",
+      "comment": "THE reason the rule also requires the factory to FOLD THE PARENT INTO A METAMETHOD. `add(item, parent)` is called at top level with a NAME in its `parent` slot, so a rule keyed on the parameter name — or on the call being bound to a top-level name — publishes this. `parent` here is a tree-traversal argument. The corpus carries five of these: snacks.nvim/lua/snacks/layout.lua:186 `_each(widget, parent)`, snacks.nvim/lua/snacks/picker/source/lsp/init.lua:379 and :387 `add(result, parent)`, snacks.nvim/lua/snacks/picker/source/treesitter.lua:185 `add(match, parent, depth)`. What excludes all five is that none of their bodies reads a `__`-prefixed field off the parent; luarocks' `class` does, at :41 — `parent.__prototype`."
+    },
+    {
+      "type": "extends",
+      "from": "walked",
+      "target": "walked",
+      "comment": "LUA-50's shape on a factory-derived name: `each(node, parent)` is called with its own first argument in the `parent` slot. Both names are the same, so it is a self-edge and inexpressible whatever the role."
+    }
+  ],
+  "expectEvidenceClassOnEveryRelationship": false,
+  "expectEvidenceClasses": {},
+  "expectEvidenceClassesNote": "DELIBERATELY EMPTY, and that is a finding about this fixture rather than an omission. `expectEvidenceClasses` is keyed by relationship TYPE (run-lua-fixtures.ts:151), and this fixture emits `extends` at TWO tiers on purpose: `lua_metatable` at 1.0/structural (nothing in this file overrides the existing shape's own fixture, lua/override-shapes) and `lua_factory_supertype` at 0.95/usage_contextual. A type-keyed map can only assert one tier per type, so asserting either would be false for the other. The tier is asserted per ROW instead, through the `meta.evidenceClass` constraint on each of the three expect rows above, which is the only place in the format that can distinguish two tiers of one type. A runner that grew a `meta.relationshipType`-keyed tier map would be the right place for this; see the report.",
+  "whichRowsCarryTheWeight": "The three forbid rows. A single extra guard anywhere in the `extends` reader — dropping the name comparison (LUA-50), or accepting a `parent` parameter without checking that the body folds it into a metamethod (LUA-51) — satisfies every expect row and fails one of them. The expect rows are satisfiable by an implementation that publishes every `parent` argument as a supertype; only the forbid rows are not."
+}

@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const DIR = process.env.BB_REPO_DIR ?? "$HOME/fixtures/repositories/vue-element-admin"
+const DIR = process.env.BB_REPO_DIR ?? "/home/ishaq2321/bb_tests/repositories/vue-element-admin"
 const files = process.argv.slice(2)
 const rows: string[] = []
 for (const rel of files) {

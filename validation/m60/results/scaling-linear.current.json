@@ -1,0 +1,102 @@
+{
+  "gate": "scaling-linear",
+  "claim": "cross-file relationship resolution cost per stored relationship does not grow superlinearly in file count",
+  "arm": "current",
+  "generatedAt": "2026-10-09T19:16:51.874Z",
+  "currentCommit": "b21f8d8adac0d5ad6ff1f91be2c19daee44e08a8",
+  "sourceFingerprint": "M src/ast/project-index.ts\n M src/ast/real-fsharp-analyzer.ts",
+  "verifierCommand": "npx tsx script/perf/verify-scaling-linear.ts --tiers 50,100,200 --repeat 3 --label current",
+  "evidenceFile": "validation/m60/results/scaling-linear.current.json",
+  "machine": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": "8",
+    "model": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
+    "node": "v22.22.1"
+  },
+  "bounds": {
+    "maxFanoutGrowth": 1.5,
+    "maxResolveMsPerRelGrowth": 2
+  },
+  "tiers": [
+    50,
+    100,
+    200
+  ],
+  "repeats": 3,
+  "arms": [
+    {
+      "tier": 50,
+      "files": 47,
+      "rels": 5653,
+      "syms": 1401,
+      "plan": "linear",
+      "largestIntermediate": 2870,
+      "indexJoinRows": 6887,
+      "fanout": 0.5076950291880418,
+      "resolveMs": 173,
+      "resolveMsPerRel": 0.03060321952945339,
+      "wallSecs": 14.542508546,
+      "load1": 5.01
+    },
+    {
+      "tier": 100,
+      "files": 97,
+      "rels": 16477,
+      "syms": 3510,
+      "plan": "linear",
+      "largestIntermediate": 8693,
+      "indexJoinRows": 28457,
+      "fanout": 0.5275839048370455,
+      "resolveMs": 610,
+      "resolveMsPerRel": 0.03702130242155732,
+      "wallSecs": 38.101164572,
+      "load1": 6.82
+    },
+    {
+      "tier": 200,
+      "files": 196,
+      "rels": 62085,
+      "syms": 10082,
+      "plan": "linear",
+      "largestIntermediate": 35104,
+      "indexJoinRows": 174815,
+      "fanout": 0.56541837803012,
+      "resolveMs": 2308,
+      "resolveMsPerRel": 0.03717484094386728,
+      "wallSecs": 141.558997071,
+      "load1": 9.6
+    }
+  ],
+  "passed": 2,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "resolution candidate fan-out stays bounded as files grow",
+      "ok": true,
+      "measured": 1.1136968958203024,
+      "bound": 1.5,
+      "detail": "plans linear → linear; rows in the largest intermediate per stored relationship: 0.51 at 47 files → 0.57 at 196 files (1.11× over 4× the files; bound 1.5×). Counted by the pass from the table it built, so no machine load enters this number."
+    },
+    {
+      "name": "resolution cost per stored relationship stays bounded as files grow",
+      "ok": true,
+      "measured": 1.2147362766224377,
+      "bound": 2,
+      "detail": "resolve ms per relationship: 0.0306 at 47 files → 0.0372 at 196 files (1.21×; bound 2×). Minimum over interleaved repeats; load1 was 5.01 (small tier) / 9.6 (large tier)."
+    }
+  ],
+  "negativeCases": [
+    "selftest: a linear arm is ACCEPTED by both checks (a bound so tight it rejects correct code would be unusable)",
+    "selftest: the PLANTED REGRESSION arm (fan-out 1.09→2.87, the measured shape of the unfixed name-resolution pass) is REJECTED by both checks",
+    "selftest: a fixture-density change (97 files/16,522 rels → 796 files/121,782 rels, a 7.4× change in relationships-per-file) is NOT rejected — proving the gate measures the indexer and not the pool's file density"
+  ],
+  "limitations": [
+    "Check 1's number is reported by the pass about itself, so it is instrumented rather than independent; a pass that claimed a plan it did not run would still have to survive the index cross-check and check 2's clock.",
+    "Bounds ONE stage: cross-file relationship resolution. Parse, the store phase, enrichment, gravity and taint are measured in the record but not gated.",
+    "The checks are ratios between the smallest and largest tier; a regression that costs a constant factor at every size passes.",
+    "Check 2 reads milliseconds, so it is load-sensitive by construction; the minimum over interleaved repeats bounds that sensitivity but does not remove it. Check 1 uses no clock.",
+    "Tier pools are copies of this repository's own source files, so the numbers describe TypeScript-in-TS. Other languages have different relationship densities.",
+    "This gate cannot see whether resolution attached the same target to the same edge. The relationship-multiset digests in script/perf/rel-digest.mjs carry that claim."
+  ]
+}

@@ -1,0 +1,117 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/arithmetic-operand-not-a-call.sh",
+ "authoredFrom": "M60 pass-2 adversarial probe, 2026-10-03. Authored from a corpus measurement, not from reading the analyzer. `validation/m14/fixtures/bash/adversarial-probes.ts` over the 400-file hash-ordered census sample cross-tabulated the analyzer's own `isExternalCommand` metadata against an independent parse-tree declaration walk and found 5 disagreements of the shape 'the analyzer says external, the walk found a declaration in this file'. Adjudicating all 5 by hand: 3 are correct calls the probe mis-classified (bash resolves command position against functions, builtins and PATH, never against shell variables, so `$(date +%B)` is `/usr/bin/date` even when the file has a local named `date`; and `declare -F _comp_cmd_cd` is an existence TEST that leaves a variable symbol behind, not a declaration), and 2 are fabrications. A second, independent detector — every `calls` edge whose target is a VARIABLE of the same file and not a function of it — returned the same 2: kubernetes/cluster/validate-cluster.sh:138 and kubernetes/third_party/gimme/gimme:551. Root cause is the pinned grammar, not the analyzer's logic: it models `$(( ))` correctly in the ordinary position (`z=$((a+1))` is arithmetic_expansion → binary_expression → variable_name) and misparses it in two shapes, handing the operand back as a `command` whose command_name is a variable. Both edges carried confidence 1.0 and evidenceClass 'structural', i.e. a misparse presented as a parse fact. Corpus shape census over the same 400 files: 2 occurrences of shape 1 (command_substitution whose text opens `$((`, containing subshell → command) and 1 of shape 2 (subshell whose text opens `((`, under `negated_command`). The guard keys on the enclosing node's own text, never on source scanning, and stops at the first `command_substitution` that opens `$(` rather than `$((` so that a real command substitution nested inside an arithmetic expansion keeps its edge — `v=$(( $(wc -l < f) + 1 ))` really does run wc. The five positive expectations are what an over-broad guard would delete; the over-refusing mutant bash/arithmetic-guard-over-refuses-cmd-substitution is caught by the wc expectation.",
+ "expectSymbols": [
+  {
+   "name": "arithmetic-operand-not-a-call.sh",
+   "kind": "module"
+  },
+  {
+   "name": "attempt",
+   "kind": "variable"
+  },
+  {
+   "name": "force_known_update",
+   "kind": "variable"
+  },
+  {
+   "name": "last_run",
+   "kind": "variable"
+  },
+  {
+   "name": "v",
+   "kind": "variable"
+  },
+  {
+   "name": "rel_date",
+   "kind": "variable"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "arithmetic-operand-not-a-call.sh.attempt",
+   "line_number": 33,
+   "confidenceMin": 0.8
+  },
+  {
+   "type": "uses",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "arithmetic-operand-not-a-call.sh.attempt",
+   "line_number": 34,
+   "confidenceMin": 0.8
+  },
+  {
+   "type": "calls",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "wc",
+   "line_number": 40,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "date",
+   "line_number": 44,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "mytool",
+   "line_number": 51,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "mytool",
+   "line_number": 52,
+   "confidenceMin": 1
+  },
+  {
+   "type": "calls",
+   "from": "arithmetic-operand-not-a-call.sh",
+   "target": "mytool",
+   "line_number": 53,
+   "confidenceMin": 1
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "target": "attempt"
+  },
+  {
+   "type": "calls",
+   "target": "force_known_update"
+  },
+  {
+   "type": "calls",
+   "target": "last_run"
+  },
+  {
+   "type": "calls",
+   "target": "ADDITIONAL_ITERATIONS"
+  },
+  {
+   "type": "calls",
+   "target": "attempt "
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

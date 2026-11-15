@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/modname-macro-er3.erl",
+  "authoredFrom": "ER-D34, from the FULL 4,326-file corpus draw (the 4,000-file stride sample had 0 missing, so this class was invisible until every file was run). otp/lib/kernel/test/file_SUITE.erl is the only file in the corpus that names itself through a macro, and it failed silently and totally: `-module(?FILE_SUITE).` parses as a module_attribute whose only named child is a macro_call_expr, and a reader that requires an `atom` emitted NO module symbol at all. The file then fell back to being owned by its PATH, so its ownership, its export matching and its cross-module identity were all wrong with no error anywhere. Common Test suites do this by convention. Lines read off this file.",
+  "expectSymbols": [
+    { "name": "modname_macro_er3", "kind": "module", "meta.nameFromMacro": "MODNAME", "meta.expandsTo": "modname_macro_er3", "note": "the module is named by what the macro EXPANDS TO, never by the macro's own name" },
+    { "name": "MODNAME", "kind": "constant", "meta.isMacro": true, "ownerName": "modname_macro_er3" },
+    { "name": "PREFIXED", "kind": "constant", "meta.isMacro": true, "ownerName": "modname_macro_er3" },
+    { "name": "owner", "kind": "function", "ownerName": "modname_macro_er3", "meta.arity": 0 }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "modname_macro_er3", "target": "MODNAME", "line_number": 15, "meta.isModuleNameMacro": true, "meta.moduleNameResolved": true, "note": "a macro use is a macro use wherever it appears — including in -module(...)" },
+    { "type": "references", "from": "owner", "target": "PREFIXED", "line_number": 22 },
+    { "type": "contains", "from": "modname_macro_er3", "target": "MODNAME", "line_number": 13 },
+    { "type": "contains", "from": "modname_macro_er3", "target": "PREFIXED", "line_number": 17 },
+    { "type": "contains", "from": "modname_macro_er3", "target": "owner", "line_number": 21 }
+  ]
+}

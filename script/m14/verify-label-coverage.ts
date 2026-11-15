@@ -56,7 +56,7 @@ import { LANGS, LANG_REPOS, LANG_REPOS_SECOND } from "./differential"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..")
 const SPEC_DIR = path.join(ROOT, "script/m14/spec")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 
 // ── the allowlist, EXTRACTED and EVALUATED, never copied ─────────────────────
 function extractAllowlistExpr(src: string): string {

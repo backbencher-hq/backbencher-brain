@@ -1,0 +1,42 @@
+{
+ "fixtureId": "yaml/dependency-marker-name",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "The dependency marker-name guard, pinned from both sides. `DEPENDS_ON_KEYS` fires on four loader spellings (Compose `depends_on`, GitHub `needs`, Azure `dependsOn`, CircleCI `requires`), and in every one of them the value names a DECLARATION the document carries -- except one measured position: kube-api-linter's config spells a rule-to-marker requirement `dependenttags.rules[].dependsOn: [\"k8s:optional\"]`, where the value is a kubebuilder MARKER (a Go-comment annotation `+k8s:optional`), not a key any analyzer publishes in any lane. The edge it produced (target `k8s:optional`, `isExternal: true`) was structurally unverifiable: no symbol named `k8s:optional` can exist in the key space. MEASURED whole admitted population, every `yaml_depends_on` target counted UNTRUNCATED (1,895 edges, .tmp-probe/yaml-depends-position-r16.txt): 1,892 carry no colon; the only colon-bearing, template-free targets are the 3 `k8s:optional` sites, all under `dependenttags.rules[]` -- zero collateral. The forbid row names the marker target; the three expect rows are the BOUNDARY: a template value at the same key still emits (a `${{ ... }}` edge is a RULED external claim, kept by the guard's `{{` exclusion), and the two real dependency shapes (compose sibling service, workflow job) still emit and resolve. authoredBeforeAnalyzerRun is FALSE and the reason is recorded the way this lane records it elsewhere: the fixture was authored AFTER the guard and its population price, from the measured class, which is a weaker form of independence than a pre-registered prediction and is not claimed as more.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "dependency-marker-name.stages[0].pipeline.jobs[0].deploy.dependsOn",
+   "target": "${{ parameters.dependsOn }}",
+   "meta.relationshipType": "yaml_depends_on",
+   "meta.isExternal": true,
+   "meta.resolved": false,
+   "note": "BOUNDARY 1: a template value at the same `dependsOn` key still emits -- the guard's `{{` exclusion is what keeps a ruled external claim out of the refusal."
+  },
+  {
+   "type": "references",
+   "from": "dependency-marker-name.services.web.depends_on",
+   "target": "dependency-marker-name.services.db",
+   "meta.relationshipType": "yaml_depends_on",
+   "meta.resolved": true,
+   "meta.referencedName": "db",
+   "note": "BOUNDARY 2: a compose sibling service still emits and resolves -- no-colon values are untouched."
+  },
+  {
+   "type": "references",
+   "from": "dependency-marker-name.jobs.test.needs",
+   "target": "dependency-marker-name.jobs.build",
+   "meta.relationshipType": "yaml_depends_on",
+   "meta.resolved": true,
+   "meta.referencedName": "build",
+   "note": "BOUNDARY 2: a workflow `needs:` still emits and resolves through the document-scoped identity."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "target": "k8s:optional",
+   "note": "THE GUARD: a dependency value naming a kubebuilder marker is not a reference into the document key space -- no analyzer publishes a symbol by that name, so the claim could never be confirmed."
+  }
+ ]
+}

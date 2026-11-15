@@ -1,0 +1,216 @@
+{
+  "fixtureId": "dart/constant-pattern-forms",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DARTGAP2 — the bare-identifier constant pattern and the null-check / null-assert / relational / collection pattern forms owe a `uses` read and emitted NOTHING. The qualified form (`case M.off:`) is the CLOSED half of the gap (3d4d7fa4) and is not re-opened here. The defect was the order of the identifier arms, not a missing rule: `isDeclaredMember` (no — a pattern test is not a member), `locals` (no — constant patterns do not name locals; bindings parse as `variable_pattern`), then `topLevelValues` (only for constants declared in this same file) — so an IMPORTED constant published nothing at all. This fixture pins the new `uses{isConstantPattern, isPatternTest}` row in eight probed shapes and, just as important, forbids a row for every BINDING the same patterns introduce. The local-const case pins the ordering that makes the two arms coexist: `if (x case local)` where `local` is a local const must take the family's BINDING spelling (`<callable>\\u0000local`), not the new bare pattern read — spelling a binding as a bare declaration name is the phantom link validation/m14/fixtures/dart/local-read-phantom.ts exists to prevent. The imported-constant case is the reason the branch exists at all.",
+  "expectSymbols": [
+    {
+      "name": "constant-pattern-forms",
+      "kind": "module"
+    },
+    {
+      "name": "kOne",
+      "kind": "constant"
+    },
+    {
+      "name": "kNested",
+      "kind": "constant"
+    },
+    {
+      "name": "Mode",
+      "kind": "enum"
+    },
+    {
+      "name": "switchBare",
+      "kind": "function"
+    },
+    {
+      "name": "ifBare",
+      "kind": "function"
+    },
+    {
+      "name": "ifNullCheck",
+      "kind": "function"
+    },
+    {
+      "name": "ifNullAssert",
+      "kind": "function"
+    },
+    {
+      "name": "ifRelational",
+      "kind": "function"
+    },
+    {
+      "name": "listPatternForm",
+      "kind": "function"
+    },
+    {
+      "name": "mapPatternForm",
+      "kind": "function"
+    },
+    {
+      "name": "recordPatternForm",
+      "kind": "function"
+    },
+    {
+      "name": "importedPattern",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "source": "switchBare",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isConstantPattern": true,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 1 — `case kOne:` in a switch. The constant is declared in THIS file, so before the fix this text reached the topLevelValues arm inside EXPRESSION positions — the pattern position, however, fell through every arm to silence. The metadata change (isGlobalRead -> isConstantPattern/isPatternTest) is deliberate: the row is a pattern test, and a consumer counting constant tests must be able to see that."
+    },
+    {
+      "type": "uses",
+      "source": "switchLogicalOr",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 2 — the first alternative of `case kOne || kNested`: the grammar emits two sibling constant_patterns (probed), so both must read."
+    },
+    {
+      "type": "uses",
+      "source": "switchLogicalOr",
+      "target": "kNested",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 3 — the second alternative. A rule that stopped after the first constant_pattern would pass POSITIVE 2 and drop this row."
+    },
+    {
+      "type": "uses",
+      "source": "ifBare",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 4 — the if-case form (the same constant_pattern shape, a different parent)."
+    },
+    {
+      "type": "uses",
+      "source": "ifNullCheck",
+      "target": "kNested",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 5 — `kNested?`: the null-CHECK pattern wraps the constant_pattern, so the read must descend through the wrapper."
+    },
+    {
+      "type": "uses",
+      "source": "ifNullAssert",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 6 — `kOne!`: the null-ASSERT wrapper."
+    },
+    {
+      "type": "uses",
+      "source": "ifRelational",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 7 — `x case >= kOne`. The relational operand gets NO wrapper node in this grammar (probed: `(if_statement (identifier) (relational_operator) (identifier))`), so this row is the one a wrapper-based rule cannot reach at all."
+    },
+    {
+      "type": "uses",
+      "source": "listPatternForm",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 8 — a COLLECTION pattern: `[kOne, 2]` carries the constant as a constant_pattern child of list_pattern."
+    },
+    {
+      "type": "uses",
+      "source": "mapPatternForm",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 9 — a MAP pattern: the key is a string_literal, the constant is a constant_pattern child."
+    },
+    {
+      "type": "uses",
+      "source": "recordPatternForm",
+      "target": "kOne",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 10 — a RECORD pattern."
+    },
+    {
+      "type": "uses",
+      "source": "importedPattern",
+      "target": "kImported",
+      "confidenceMin": 0.9,
+      "meta.isPatternTest": true,
+      "note": "POSITIVE 11 — THE GAP ITSELF: `kImported` is declared in NO file of this fixture (`import 'imported_constants.dart'` is parse-only), so the old arms could not emit it from ANY position. The edge is a real read; the project's resolver decides whether it binds, and the gate judges that — not this fixture."
+    },
+    {
+      "type": "uses",
+      "source": "localConstPattern",
+      "target": "localConstPattern\u0000local",
+      "confidenceMin": 0.9,
+      "meta.isLocalRead": true,
+      "meta.localBinding": true,
+      "note": "THE ORDERING PIN, positive side — `if (x case local)` where `local` is a LOCAL const. The read is of a binding, so it keeps the family's binding spelling and the localBinding claim; the new pattern arm must sit AFTER the `locals` arm or this row becomes a bare `local` target that the store could bind to an unrelated declaration."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "source": "localConstPattern",
+      "target": "local",
+      "note": "THE ORDERING PIN, negative side — the binding's name must never be published bare. If the pattern branch were inserted before the `locals` arm, this is exactly the row it would fabricate."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "n",
+      "note": "NO READ FOR A BINDING the pattern introduces (`if (x case int n)`): `n` is declared by the pattern, not read."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "first",
+      "note": "the list-pattern binding `[int first, ...rest]`."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "p",
+      "note": "the for-in record-pattern binding `(int p, int q)`."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "len",
+      "note": "the object-pattern binding `String(length: final len)` — the getter NAME `length` is a different token."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "f",
+      "note": "the destructuring declaration's binding `[int f, ...tail]`."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "rest",
+      "note": "`...rest` parses as `(rest_pattern (constant_pattern (identifier)))` — that identifier is the BINDING, and reading it would fabricate a use of the name being bound. This is the pin that made the predicate exclude rest_pattern."
+    },
+    {
+      "type": "uses",
+      "source": "bindingForms",
+      "target": "tail",
+      "note": "the same exclusion in a destructuring DECLARATION rather than an if-case — the two contexts reach the predicate with different ancestors."
+    },
+    {
+      "type": "uses",
+      "source": "mapPatternForm",
+      "target": "_",
+      "note": "THE WILDCARD. `{'b': _}` parses as `(constant_pattern (identifier \"_\"))` — probed — so a predicate that trusted the node type would publish a read of `_`, a name no declaration can have."
+    }
+  ]
+}

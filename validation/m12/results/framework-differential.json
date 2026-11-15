@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "name": "m12.46-framework-differential",
+  "fixtureCount": 30,
+  "families": [
+    "data",
+    "dotnet",
+    "dynamic",
+    "functional",
+    "jvm",
+    "systems",
+    "web"
+  ],
+  "passed": true,
+  "metrics": {
+    "expected": 65,
+    "observedResolved": 41,
+    "truePositive": 41,
+    "falsePositive": 0,
+    "falseNegative": 0,
+    "unknown": 24,
+    "unsupported": 0,
+    "correctlyClassifiedUnknown": 24,
+    "correctlyClassifiedUnsupported": 0,
+    "precision": 1,
+    "recall": 1,
+    "falsePositiveRate": 0,
+    "falseNegativeRate": 0,
+    "unknownRate": 0.36923076923076925
+  },
+  "crashes": [],
+  "fabricationFailures": 0,
+  "perFile": {
+    "dbt_model.sql": {
+      "framework": "dbt",
+      "detected": [
+        "dbt"
+      ]
+    },
+    "deploy.sh": {
+      "framework": "Bash Script",
+      "detected": []
+    },
+    "main.tf": {
+      "framework": "HCL/Terraform",
+      "detected": []
+    },
+    "schema.sql": {
+      "framework": "SQL",
+      "detected": []
+    },
+    "MathUtil.cs": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "OrdersController.cs": {
+      "framework": "aspnet-core",
+      "detected": [
+        "aspnet-core",
+        "entity-framework"
+      ]
+    },
+    "StringUtil.php": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "User.php": {
+      "framework": "Laravel",
+      "detected": [
+        "Laravel"
+      ]
+    },
+    "calc.rb": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "helpers.py": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "models.py": {
+      "framework": "django",
+      "detected": [
+        "django"
+      ]
+    },
+    "orders_controller.rb": {
+      "framework": "Ruby on Rails",
+      "detected": [
+        "Ruby on Rails"
+      ]
+    },
+    "api.ex": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "api.hs": {
+      "framework": "Servant",
+      "detected": [
+        "Servant"
+      ]
+    },
+    "core.clj": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "gen_server.erl": {
+      "framework": "otp",
+      "detected": [
+        "otp"
+      ]
+    },
+    "handler.clj": {
+      "framework": "Ring",
+      "detected": [
+        "Ring",
+        "Compojure"
+      ]
+    },
+    "math.hs": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "router.ex": {
+      "framework": "phoenix",
+      "detected": [
+        "phoenix"
+      ]
+    },
+    "utils.erl": {
+      "framework": "Erlang",
+      "detected": []
+    },
+    "OrderController.java": {
+      "framework": "spring",
+      "detected": [
+        "spring",
+        "spring-mvc",
+        "jpa"
+      ]
+    },
+    "Util.java": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "main.c": {
+      "framework": "Standard C Library",
+      "detected": []
+    },
+    "server.rs": {
+      "framework": "actix-web",
+      "detected": [
+        "actix-web",
+        "rayon"
+      ]
+    },
+    "util.rs": {
+      "framework": "unknown",
+      "detected": []
+    },
+    "widget.cpp": {
+      "framework": "boost",
+      "detected": [
+        "boost"
+      ]
+    },
+    "App.ts": {
+      "framework": "angular",
+      "detected": [
+        "angular"
+      ]
+    },
+    "Button.tsx": {
+      "framework": "react",
+      "detected": [
+        "react"
+      ]
+    },
+    "app.js": {
+      "framework": "express",
+      "detected": [
+        "express"
+      ]
+    },
+    "util.js": {
+      "framework": "JavaScript",
+      "detected": []
+    }
+  },
+  "truePositiveIds": [
+    "framework:App.ts:detected:angular",
+    "framework:App.ts:primary:angular",
+    "framework:Button.tsx:detected:react",
+    "framework:Button.tsx:primary:react",
+    "framework:OrderController.java:detected:jpa",
+    "framework:OrderController.java:detected:spring",
+    "framework:OrderController.java:detected:spring-mvc",
+    "framework:OrderController.java:primary:spring",
+    "framework:OrdersController.cs:detected:aspnet-core",
+    "framework:OrdersController.cs:detected:entity-framework",
+    "framework:OrdersController.cs:primary:aspnet-core",
+    "framework:User.php:detected:Laravel",
+    "framework:User.php:primary:Laravel",
+    "framework:api.hs:detected:Servant",
+    "framework:api.hs:primary:Servant",
+    "framework:app.js:detected:express",
+    "framework:app.js:primary:express",
+    "framework:dbt_model.sql:detected:dbt",
+    "framework:dbt_model.sql:primary:dbt",
+    "framework:deploy.sh:primary:Bash Script",
+    "framework:gen_server.erl:detected:otp",
+    "framework:gen_server.erl:primary:otp",
+    "framework:handler.clj:detected:Compojure",
+    "framework:handler.clj:detected:Ring",
+    "framework:handler.clj:primary:Ring",
+    "framework:main.c:primary:Standard C Library",
+    "framework:main.tf:primary:HCL/Terraform",
+    "framework:models.py:detected:django",
+    "framework:models.py:primary:django",
+    "framework:orders_controller.rb:detected:Ruby on Rails",
+    "framework:orders_controller.rb:primary:Ruby on Rails",
+    "framework:router.ex:detected:phoenix",
+    "framework:router.ex:primary:phoenix",
+    "framework:schema.sql:primary:SQL",
+    "framework:server.rs:detected:actix-web",
+    "framework:server.rs:detected:rayon",
+    "framework:server.rs:primary:actix-web",
+    "framework:util.js:primary:JavaScript",
+    "framework:utils.erl:primary:Erlang",
+    "framework:widget.cpp:detected:boost",
+    "framework:widget.cpp:primary:boost"
+  ],
+  "falsePositiveIds": [],
+  "falseNegativeIds": [],
+  "unknownIds": [
+    "framework:MathUtil.cs:detected:none",
+    "framework:MathUtil.cs:primary:unknown",
+    "framework:StringUtil.php:detected:none",
+    "framework:StringUtil.php:primary:unknown",
+    "framework:Util.java:detected:none",
+    "framework:Util.java:primary:unknown",
+    "framework:api.ex:detected:none",
+    "framework:api.ex:primary:unknown",
+    "framework:calc.rb:detected:none",
+    "framework:calc.rb:primary:unknown",
+    "framework:core.clj:detected:none",
+    "framework:core.clj:primary:unknown",
+    "framework:deploy.sh:detected:none",
+    "framework:helpers.py:detected:none",
+    "framework:helpers.py:primary:unknown",
+    "framework:main.c:detected:none",
+    "framework:main.tf:detected:none",
+    "framework:math.hs:detected:none",
+    "framework:math.hs:primary:unknown",
+    "framework:schema.sql:detected:none",
+    "framework:util.js:detected:none",
+    "framework:util.rs:detected:none",
+    "framework:util.rs:primary:unknown",
+    "framework:utils.erl:detected:none"
+  ],
+  "earliestFailingLayer": null,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.864Z",
+    "contentSha256": "c383df3bb9ecfe501dc864c7d82c83cf821a99fefdea42720c978f577aa6f72a"
+  }
+}

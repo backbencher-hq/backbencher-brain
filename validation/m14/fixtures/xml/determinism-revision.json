@@ -1,0 +1,104 @@
+{
+  "instrument": "xml determinism RATE \u2014 REVISION. The figure first published in docs/analyzers/history/xml-lane-notes.md (96 of 7,825 = 1.23%) is WITHDRAWN.",
+  "at": "2026-10-11T00:15:00-04:00",
+  "withdrawn": {
+    "figure": "96 differing of 7,825 rows = 1.23% (order churn)",
+    "publishedIn": "docs/analyzers/history/xml-lane-notes.md \u00a7 the store determinism finding; raw in store-determinism-run2.json / run3.json",
+    "draw": "libxslt, 300 files, three arms",
+    "whyItWasWrong": "It was measured on a store that still contained the DUPLICATED containment rows this lane later had fixed (commit 140be2f01, the child-only dedup repair). That draw held 7,649 `contains` rows for 300 files; the same draw on current code holds 4,369 \u2014 so 3,280 of the denominator were duplicate synthesized containment rows. Duplicated rows are stable across file order (they are synthesized per symbol, not bound by the eager resolver), so they DILUTED the rate by roughly 4.4x.",
+    "revisionNotCaveat": "the old number is withdrawn, not caveated: any reader quoting 1.23% is quoting a rate over a denominator the code no longer produces."
+  },
+  "remeasured": {
+    "sameDraw300SameInstrument": {
+      "old_documented": {
+        "rows": 7825,
+        "containsRows": 7649,
+        "unbound": 716,
+        "orderChurn": {
+          "compared": 7825,
+          "differing": 96,
+          "ratePct": 1.23,
+          "byType": {
+            "contains": 96
+          }
+        },
+        "eagerChurn": {
+          "compared": 7825,
+          "differing": 29,
+          "ratePct": 0.37,
+          "byType": {
+            "contains": 12,
+            "calls": 17
+          }
+        }
+      },
+      "currentCode": {
+        "rows": 4545,
+        "containsRows": 4369,
+        "unbound": 65,
+        "bound": 4480,
+        "orderChurn": {
+          "compared": 4545,
+          "differing": 248,
+          "ratePct": 5.46,
+          "byType": {
+            "contains": 248
+          }
+        },
+        "eagerChurn": {
+          "compared": 4545,
+          "differing": 34,
+          "ratePct": 0.75,
+          "byType": {
+            "contains": 17,
+            "calls": 17
+          }
+        }
+      },
+      "note": "same repository, same 300 files, same instrument, same three arms \u2014 ONLY the code differs. The contains row count on current code (4,369) matches the analyzer's emitted count for that draw (4,375, from emitted-vs-stored.mts), which is the independent confirmation that the duplicate rows are gone."
+    },
+    "rateStability": {
+      "350_files": {
+        "compared": 4596,
+        "differing": 215,
+        "ratePct": 4.68,
+        "byType": {
+          "contains": 215
+        }
+      },
+      "800_files": {
+        "compared": 18122,
+        "differing": 1189,
+        "ratePct": 6.56,
+        "byType": {
+          "contains": 1189
+        }
+      },
+      "300_files": {
+        "compared": 4545,
+        "differing": 248,
+        "ratePct": 5.46,
+        "byType": {
+          "contains": 248
+        }
+      },
+      "range": "4.68% \u2013 6.56% across a 2.7x range of draw sizes, all `contains`"
+    },
+    "eagerVsOrder": {
+      "order": "4.68 / 5.46 / 6.56 %",
+      "eager": "0.75 / 0.74 / 0.69 %",
+      "reading": "FILE ORDER moves bindings several times more than the eager arm at every draw, so the ORDER rate is the one to quote; the two must not be averaged or quoted as one number."
+    },
+    "independentConfirmation": "r-lane measured the same rate on its own instrument: 5.18 / 5.59 / 5.59 / 5.62 % (four runs, 350 and 800 files). Two lanes, two instruments, same order of magnitude \u2014 and r-lane's numbers also show the comparison repeated differs every time (238\u2192257, 1,013\u21921,018) while the RATE is stable."
+  },
+  "whatStands": [
+    "the outcome is order- AND run-dependent (eager 26 in run 2 vs 29 in run 3 on the old code; on current code 34)",
+    "eager vs deferred changes the graph, falsifying the in-code claim that BB_TEST_FORCE_EDGE_RESOLVE 'changes nothing about the final graph' \u2014 `calls` is 17 of those rows",
+    "aggregates are identical in every arm (on current code bound 4,480 / unbound 65 / rows 4,545), so only a per-row comparison sees any of it",
+    "row duplication is ruled out (duplicateIds 0)"
+  ],
+  "raw": [
+    "store-determinism-run3.json (old, withdrawn)",
+    "det-300-newcode.json / det-350.json / det-800.json (re-measured; scratch, preserved in the acceptance artifacts)"
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "tool": "powershell-grammar-ab",
+  "lane": "powershell",
+  "issue": "#278",
+  "generatedBy": "script/m60/powershell-grammar-ab.ts",
+  "candidate": {
+    "label": "G5c: null-conditional ?. and ?[ as member/element access (M60 #278)",
+    "path": "/tmp/opencode/ps-lane/cand-g5c.wasm",
+    "sha256": "c160c2f824a43dee81cb17365a51f4d412418cb3f837e8b65de1a3ad0a3f468f",
+    "bytes": 1111614
+  },
+  "wired": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-powershell.wasm",
+    "sha256": "41ab9ad7a8e885ba5e78228ef4d6353a4fd36e2598453b20feeec3965b751b0a",
+    "bytes": 1107173
+  },
+  "method": "Corpora: the production (non-test) tracked .ps1/.psm1/.psd1 files of powershell and ansible, drawn by a hash of `repo/relative-path` (unbiased, reproducible) with the digest recorded per repo so a re-run that drew a different set says so rather than being compared. `powershell`' test/ tree is excluded because it is parser-error TEST DATA, not a corpus. Damage is measured with a parser loaded directly from the wasm under test, so it is the GRAMMAR's number and no analyzer decision can move it. Q3 (no collateral) is the deciding question and is checked as a file SET, not a spot check. Q4 compares the node-type multiset over each corpus. Q5 is the id-order digest from M49 W19, because a rebuild's sha256 is not a function of its source across toolchain versions. --rebuild answers Q1: whether the vendored source reproduces the WIRED behaviour, without which no patch on that source is attributable to the wired grammar.",
+  "q4_shapeDelta": {
+    "candidateOnlyTypes": [
+      "?.",
+      "?["
+    ],
+    "wiredOnlyTypes": [],
+    "namedCandidateOnly": [],
+    "namedWiredOnly": [],
+    "fieldSetMatches": true,
+    "idOrderMatches": false,
+    "namedVocabularyUnchanged": true,
+    "corpusMultisetDelta": [
+      {
+        "repo": "powershell",
+        "deltas": [
+          {
+            "type": ".",
+            "wired": 3058,
+            "next": 3057
+          },
+          {
+            "type": "pipeline_chain",
+            "wired": 8403,
+            "next": 8404
+          },
+          {
+            "type": "assignment_expression",
+            "wired": 2529,
+            "next": 2528
+          },
+          {
+            "type": "left_assignment_expression",
+            "wired": 2531,
+            "next": 2530
+          },
+          {
+            "type": "assignement_operator",
+            "wired": 2533,
+            "next": 2532
+          },
+          {
+            "type": "integer_literal",
+            "wired": 494,
+            "next": 493
+          },
+          {
+            "type": "decimal_integer_literal",
+            "wired": 494,
+            "next": 493
+          },
+          {
+            "type": "hash_entry",
+            "wired": 718,
+            "next": 719
+          },
+          {
+            "type": "key_expression",
+            "wired": 718,
+            "next": 719
+          },
+          {
+            "type": "ERROR",
+            "wired": 113,
+            "next": 112
+          },
+          {
+            "type": "?",
+            "wired": 3,
+            "next": 2
+          },
+          {
+            "type": "?.",
+            "wired": 0,
+            "next": 1
+          }
+        ],
+        "deltaCount": 12
+      },
+      {
+        "repo": "ansible",
+        "deltas": [],
+        "deltaCount": 0
+      }
+    ]
+  },
+  "q2_netWin": [
+    {
+      "repo": "powershell",
+      "files": 49,
+      "drawDigest": "79bea463a8b4d0b1033847c522223d601ffbb191abe88107c46f6c425bf5b8b2",
+      "wired": {
+        "damaged": 15,
+        "err": 113,
+        "missing": 16
+      },
+      "candidate": {
+        "damaged": 14,
+        "err": 112,
+        "missing": 15
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    },
+    {
+      "repo": "ansible",
+      "files": 24,
+      "drawDigest": "9659980cd43799161f714a2db8b18542298b03c8394ef429c6eb9986c1bb76cf",
+      "wired": {
+        "damaged": 15,
+        "err": 98,
+        "missing": 23
+      },
+      "candidate": {
+        "damaged": 15,
+        "err": 98,
+        "missing": 23
+      },
+      "fixed": 0,
+      "broke": 0,
+      "fixedFiles": [],
+      "brokeFiles": []
+    }
+  ],
+  "q3_collateral": [
+    {
+      "repo": "powershell",
+      "brokeFiles": [],
+      "count": 0
+    },
+    {
+      "repo": "ansible",
+      "brokeFiles": [],
+      "count": 0
+    }
+  ],
+  "verdict": "no collateral; read q2_netWin for the net effect"
+}

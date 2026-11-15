@@ -1,0 +1,86 @@
+{
+ "fixtureId": "python/member-owner-channel",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "INCOMING_PY, the incoming half of the member channel. Every strategy the store runs to bind a NON-`contains` target is name-keyed: `_res_qname` (exact qualified name), `_res_name_unique` (the name is unique project-wide), and a dotted fallback. A member name is not identifying, so `_res_name_unique` declines every member and the remaining strategies fall to `resolveTargetStmt`, whose order is same-file-first then LEXICOGRAPHIC `s.id` (`${fileId}:${name}:${line}` compared as TEXT) — a tie-break, not a fact about python. `render` is a method on many classes at once; the row is then stored RESOLVED against whichever declaration sorts first, and nothing about it says the choice was arbitrary. That is the shape that makes an agent hallucinate instead of abstain. php closed it for its own lane (PHPD42) by publishing a relation-level `metadata.owner` and letting `resolveMemberTargetsByOwner` (`src/ast/member-owner-resolution.ts`) walk the receiver's class and its `super_types` ancestors; the pass is language-AGNOSTIC and scoped by the DATA (the presence of the key), not by a language switch, so python activates it by publishing the same fact. BEFORE this change python published no owner channel at all — measured: 0 `calls`/`uses` edges of the whole admitted corpus carried `metadata.owner` — which is why `store-heritage-seam.mts`'s owner row was REPORTED and not asserted. The disclosure this fixture makes is the BOUNDARY, not the presence: an owner is published ONLY when the receiver is EXACTLY the implicit first parameter, spelled `self` or `cls`, because the store's rule 0 answers that case by IDENTITY (the source method's own class) rather than by a possibly-colliding name. `self.store.save` is the load-bearing negative — `save` is a member of the VALUE of `self.store`, whose type this parse does not know, and publishing the ENCLOSING class for it would let the store bind `save` to a method of the outer class if the outer class had one, which is a confident wrong edge and the exact failure the channel exists to remove. `other.save()` (a local) and `self.thing()` inside a MODULE-LEVEL `def free(self)` carry no owner for the same reason: the receiver's class is either unknown or does not exist, so the honest answer is the absence of the key (reported as `meta.owner: null`, the convention run-fixtures.ts documents) rather than an invented one. The store-level half — that the pass actually resolves the owner-carrying rows and declines the rest — is `store-heritage-seam.mts`, which builds the real pipeline; this file pins the analyzer's SIGNAL so a later change that widens the boundary (e.g. publishing `self.store`'s class, or keying on the parameter spelling rather than the enclosing class) fails here rather than shipping.",
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "draw",
+   "target": "render",
+   "meta.reasonCode": "dispatch-on-parameter",
+   "meta.qualified": "self.render",
+   "meta.owner": "Widget",
+   "note": "POSITIVE, and the headline: the receiver IS the instance, so the enclosing class is its type and the store can walk `Widget` (and its ancestors) for `render` instead of ranking the bare name."
+  },
+  {
+   "type": "uses",
+   "from": "draw",
+   "target": "host",
+   "meta.reasonCode": "member-read",
+   "meta.qualified": "self.host",
+   "meta.isMemberRead": true,
+   "meta.owner": "Widget",
+   "note": "POSITIVE member READ. `host` is Widget's own instance attribute (a Property symbol whose ownerName is Widget, published by the assignment-LHS branch), so the owner channel binds the read to that declaration rather than to every `host` in the project."
+  },
+  {
+   "type": "uses",
+   "from": "draw",
+   "target": "store",
+   "meta.reasonCode": "member-read",
+   "meta.qualified": "self.store",
+   "meta.owner": "Widget",
+   "note": "POSITIVE: `self.store` is the receiver of `self.store.save(...)` and is itself a member of the instance, so it resolves to Widget's own `store` Property. Pinned beside the NEGATIVE call below so the two halves of one line are asserted together — the receiver is Widget's, the callee is not."
+  },
+  {
+   "type": "calls",
+   "from": "make",
+   "target": "text",
+   "meta.reasonCode": "dispatch-on-parameter",
+   "meta.qualified": "cls.text",
+   "meta.owner": "Builder",
+   "note": "POSITIVE for `cls`: a classmethod's implicit first parameter is the class, so `cls.text()` carries the same owner a method's `self.text()` would."
+  },
+  {
+   "type": "calls",
+   "from": "draw",
+   "target": "save",
+   "meta.reasonCode": "dispatch-on-parameter",
+   "meta.qualified": "self.store.save",
+   "meta.owner": null,
+   "note": "THE LOAD-BEARING NEGATIVE. Two dots: the receiver of the CALL is `self.store`, not `self`. `save` is a member of the VALUE of `self.store`, whose type nothing in this parse states — even though `self.store = Store()` sits four lines up, which is an inference this lane does not make. Publishing the enclosing class here would let the store bind `save` to `Widget.save` if Widget had one; `meta.owner: null` asserts the key is ABSENT, so a change that widened the boundary to any `self.`-rooted chain fails here."
+  },
+  {
+   "type": "calls",
+   "from": "free",
+   "target": "thing",
+   "meta.reasonCode": "dispatch-on-parameter",
+   "meta.qualified": "self.thing",
+   "meta.owner": null,
+   "note": "THE SPELLING NEGATIVE. `free` is a MODULE-LEVEL function and `self` is an ordinary parameter; there is no enclosing class to name, so no owner can honestly be published. This row stops the channel from keying on the parameter's spelling (`self`/`cls`) alone — the enclosing class must exist."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "draw",
+   "target": "save",
+   "meta.owner": "Widget",
+   "note": "The reverse of the negative above, spelled as a forbid for readability: the deep-chain call must never be labelled with the ENCLOSING class. (`meta.owner: null` in expectRelationships already pins the absence; this row states the wrong value explicitly so the intent survives a reader who misses the null convention.)"
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "host",
+   "kind": "property",
+   "ownerName": "Widget",
+   "note": "the instance attribute the `uses draw -> host` row resolves to; published by the assignment-LHS branch with ownerName Widget"
+  },
+  {
+   "name": "save",
+   "kind": "method",
+   "ownerName": "Store",
+   "note": "the method a WRONG owner would bind `self.store.save()` to; it belongs to Store, not to Widget"
+  }
+ ]
+}

@@ -763,3 +763,48 @@ The inheritance and alias regression gates also have a dedicated static check:
 `bunx tsc --noEmit -p validation/m14/tsconfig.alias-gates.json`. It includes all
 ten `.mts` gate and mutation-runner entry points, which the older script ratchet
 does not include. The dedicated check passes with zero diagnostics.
+
+### Container-content writes
+
+Possible alias origins now include explicit writes to lexical object/array
+containers. Ordinary and logical assignments, nested property paths, numeric
+indices, assignment patterns/defaults, captured writes and writes through simple
+identifier container aliases contribute origins. A dynamic write key may match
+any key at that path position. Static read paths retain their remaining suffix
+when the write replaces an ancestor object. Direct writes through a projected
+receiver (`box.held.item = value`, `box[0].item = value`) use the same scan.
+
+Container alias links are conservative and bidirectional. Rebinding retains
+possible earlier relationships; rest copies do not create links. Different keys,
+lexical scopes and parent objects remain distinct. Same-depth sibling projections
+can resolve without permitting recursively growing projection paths.
+
+The gate `verify-typescript-container-writes.mts` checks 52 exact call sites,
+25 executions, stored endpoints and fresh bb graph callers. Real workers verify
+changing a container's assigned origin, restoring it, then shifting/restoring
+source offsets. Eight source mutants are rejected. Both new gate entry points
+are included in `tsconfig.alias-gates.json` (12 entries total).
+
+This is possible-origin analysis, not a flow-sensitive heap model. It does not
+model array mutator calls, dynamic read indices, projected/conditional container
+alias identities, accessors/proxies, arbitrary call effects or cross-file writes.
+Explicit supported field annotations still describe static reference types.
+
+### Loop-produced aliases
+
+For-of aliases contribute possible array element origins to field invalidation.
+The loop target uses its actual lexical binding, including existing variables,
+repeated var loops and object/array assignment patterns. Literal, stored, spread
+and conditional arrays are traced; explicit array-slot writes participate.
+For-in keys do not become value aliases. Array iteration excludes named keys,
+noncanonical numeric strings such as `"01"`, and `4294967295`. Explicit access to
+those properties still follows known property writes. Cast wrappers retain a
+literal key instead of making it an unknown dynamic write.
+
+The iterated-alias gate verifies 40 exact call sites, 20 runtime scenarios and
+five source mutants, with storage, bb graph, real workers, iterable origin edits
+and source-offset restoration. Both entry points join the dedicated alias gate
+typecheck (14 entries). This does not establish arbitrary iterable, generator,
+custom iterator, asynchronous value, mutator-call or interprocedural behavior.
+Loop execution is not predicted; possible origins conservatively invalidate
+inferred fields even when a particular invocation skips a branch.

@@ -9,7 +9,7 @@ const refPattern = /(?:\.type|\btype)\s*===\s*"([a-z_]+)"/g
 let match: RegExpExecArray | null
 while ((match = refPattern.exec(analyzer))) refs.add(match[1])
 
-const root = process.argv[2] || "$HOME/fixtures/repositories/dplyr"
+const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/dplyr"
 const files = execFileSync("git", ["-C", root, "ls-files", "*.R", "*.r"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).map((f) => `${root}/${f}`)
 const parser = await ASTEngine.getParser("r")

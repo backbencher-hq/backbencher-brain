@@ -1,0 +1,91 @@
+{
+  "fixtureId": "java/jpms-module-exports",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the two relationship kinds java emitted ZERO of before INCOMING_JAVA, and the firing check named both as SILENT on 3,275 files. JLS 7.7 is a LITERAL keyword pair, not a convention: the grammar produces `module_declaration > module_body > exports_module_directive`, and guava's own corpus ships 3 module-info.java carrying 24 exports and 12 requires clauses that the analyzer read as nothing (script/incoming-java/probe.ts). EACH DIRECTIVE PRODUCES BOTH LABELS, which is the family rule rather than a local choice \u2014 erlang's analyzer states it for its own `-import` (\"Both labels stay: `imports` is the dependency, `references` is the mention\"), because the module-dependency pass reads one and the graph wants the other. THE SOURCE IS THE MODULE NAME, written in the file, so both endpoints are text the source contains and neither needs inference. `requires transitive` (line 3) is deliberately NOT asserted as a distinct edge: `transitive` is an unnamed token in this grammar, so distinguishing it would need a text match, and this lane bans one. It is present in the fixture so that a future implementation which DOES read it has to update this file rather than discover the omission. `opens` is FORBIDDEN because `opens_module_directive` is not a node type the pinned grammar produces \u2014 222 distinct node types across 3,275 corpus files and that is not one of them \u2014 so an exports edge for it would pin a shape the grammar cannot deliver. It is pinned absent on purpose: a future grammar that grows the node fails this fixture loudly instead of silently changing what the lane claims. LINE NUMBERS: the fixture file is pure code with no prose header, because a comment block shifts every line and would make the line assertions a statement about the comment rather than about the directive. All rationale lives in this file, which is where the contract wants it.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "com.acme.platform",
+      "target": "com.acme.platform.api",
+      "meta.relationshipType": "module_exports",
+      "meta.evidenceClass": "structural",
+      "line_number": 6,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.platform",
+      "target": "com.acme.platform.spi",
+      "meta.relationshipType": "module_exports",
+      "meta.evidenceClass": "structural",
+      "line_number": 7,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "references",
+      "from": "com.acme.platform",
+      "target": "com.acme.platform.api",
+      "meta.relationshipType": "module_exports_mention",
+      "meta.evidenceClass": "import_based",
+      "line_number": 6
+    },
+    {
+      "type": "imports",
+      "from": "com.acme.platform",
+      "target": "java.logging",
+      "meta.relationshipType": "module_requires",
+      "meta.evidenceClass": "import_based",
+      "line_number": 2,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "from": "com.acme.platform",
+      "target": "com.google.common",
+      "meta.relationshipType": "module_requires",
+      "meta.evidenceClass": "import_based",
+      "line_number": 3,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "from": "com.acme.platform",
+      "target": "java.sql",
+      "meta.relationshipType": "module_requires",
+      "meta.evidenceClass": "import_based",
+      "line_number": 4,
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "references",
+      "from": "com.acme.platform",
+      "target": "java.logging",
+      "meta.relationshipType": "module_requires_mention",
+      "meta.evidenceClass": "import_based",
+      "line_number": 2
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "java.logging",
+      "note": "`requires` is a DEPENDENCY (imports), never an export \u2014 `java.logging` is read, not published"
+    },
+    {
+      "type": "exports",
+      "target": "com.acme.platform",
+      "note": "the module's own name is not an exports target; only an `exports PACKAGE;` directive names one"
+    },
+    {
+      "type": "imports",
+      "target": "com.acme.platform.api",
+      "note": "`exports` publishes a package; it does not require it"
+    },
+    {
+      "type": "exports",
+      "target": "com.acme.platform.deep",
+      "note": "JLS 7.7.2 `opens` has NO node in the pinned grammar (measured: 222 distinct node types over 3,275 corpus files, `opens_module_directive` absent), so an exports edge naming a package that no `opens` directive names would be a fabrication"
+    }
+  ]
+}

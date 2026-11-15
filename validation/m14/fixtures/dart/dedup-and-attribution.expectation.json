@@ -1,0 +1,68 @@
+{
+  "fixtureId": "dart/dedup-and-attribution",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Gates the m37 dart wave findings that the differential cannot see: DARTD7 per-site duplicate relationship rows (4 IconData construction sites dedup to one per source; 2 make() sites to one calls edge), DARTD8 local functions are not symbols and fold into the enclosing function (topFn->helperCall, never from localHelper), DARTD9 class-member initializer attribution to the owning class (IconSet->IconData) with module source reserved for true top-level (dedup-and-attribution->TopWidget), DARTD10 top-level getters are Property symbols (activeKeys), and DARTD6 field dataType extraction for explicit-typed fields (acorn meta.dataType=IconData). Master-review wave 2 adds DARTD12-DARTD17: accessor pairs survive dedup (Counter.value x2), param types extracted (int/double/String + this-param field binding Pay), mixin on-clause heritage (Flow->Base), enhanced-enum heritage + in-file interface override (Poly implements Shape, Poly.area->Shape.area), annotation-gated external-base overrides (Banner.toString->Object.toString, external base retargeted onto the Object interface with firstHeritageParent=StatelessWidget; fields like Poly.sides never override), and the existing make() count pin doubles as the cascade/dedup regression guard.",
+  "expectSymbols": [
+    { "name": "IconData", "kind": "class" },
+    { "name": "IconSet", "kind": "class", "visibility": "public" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "IconSet" },
+    { "name": "acorn", "kind": "property", "ownerName": "IconSet", "meta.dataType": "IconData" },
+    { "name": "addressBook", "kind": "property", "ownerName": "IconSet", "meta.dataType": "IconData" },
+    { "name": "build", "kind": "method", "ownerName": "IconSet" },
+    { "name": "make", "kind": "method", "ownerName": "IconSet" },
+    { "name": "topIcon", "kind": "variable", "scope": "" },
+    { "name": "activeKeys", "kind": "property", "scope": "", "meta.isTopLevelAccessor": true },
+    { "name": "topFn", "kind": "function", "scope": "" },
+    { "name": "helperCall", "kind": "function", "scope": "" },
+    { "name": "Flow", "kind": "mixin", "note": "DARTD14" },
+    { "name": "Poly", "kind": "enum", "note": "DARTD15" },
+    { "name": "sides", "kind": "property", "ownerName": "Poly", "note": "DARTD15 enhanced-enum field" },
+    { "name": "area", "kind": "method", "ownerName": "Poly", "note": "DARTD15 enhanced-enum method" },
+    { "name": "toString", "kind": "method", "ownerName": "Banner", "note": "DARTD16 external-base override source" }
+  ],
+  "forbidSymbols": [
+    { "name": "localHelper" }
+  ],
+  "expectSymbolCount": [
+    { "name": "value", "kind": "property", "ownerName": "Counter", "equals": 2, "note": "DARTD12: getter+setter pair both survive (owner:name:kind dedup)" }
+  ],
+  "expectParameters": [
+    { "symbol": "constructor", "ownerName": "Pay", "parameters": [
+      { "name": "method", "type": "String", "note": "DARTD13: this-param field binding" },
+      { "name": "total", "type": "double", "note": "DARTD13: named typed param" }
+    ] },
+    { "symbol": "value", "ownerName": "Counter", "metadataKind": "isSetter", "parameters": [
+      { "name": "nv", "type": "int", "note": "DARTD13: setter param type" }
+    ] },
+    { "symbol": "constructor", "ownerName": "Poly", "parameters": [
+      { "name": "sides", "type": "int", "note": "DARTD13: this-param binds field type" }
+    ] }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "IconSet", "target": "Equatable", "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "IconSet", "target": "IconSet.acorn", "note": "2026-10-08: the member's PUBLISHED spelling (`Owner.member`), not its bare name" },
+    { "type": "instantiates", "from": "IconSet", "target": "IconData", "meta.evidenceClass": "structural" },
+    { "type": "instantiates", "from": "build", "target": "IconData" },
+    { "type": "calls", "from": "build", "target": "IconSet.make", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "from": "topFn", "target": "helperCall" },
+    { "type": "calls", "from": "topFn", "target": "localHelper" },
+    { "type": "instantiates", "from": "dedup-and-attribution", "target": "TopWidget" },
+    { "type": "references", "from": "Flow", "target": "Base", "meta.isMixinOn": true, "note": "DARTD14: mixin on-clause heritage — 2026-10-18 relabelled `references` (an `on` constraint is not inheritance), with isMixinOn kept" },
+    { "type": "implements", "from": "Flow", "target": "Marker", "note": "DARTD14" },
+    { "type": "implements", "from": "Poly", "target": "Shape", "note": "DARTD15: enhanced enum heritage" },
+    { "type": "overrides", "from": "Poly.area", "target": "Shape.area", "note": "DARTD15: in-file interface override" },
+    { "type": "overrides", "from": "Banner.toString", "target": "Object.toString", "meta.isExternalBase": true, "meta.isObjectInterfaceBase": true, "meta.firstHeritageParent": "StatelessWidget", "note": "DARTD16 annotation-gated external-base override, retargeted onto the Object interface. The base is deliberately undeclared here, so the edge is a genuine cross-file fallback rather than an in-file resolution; a local stub of StatelessWidget would make it the latter and refute nothing. `StatelessWidget` declares no `toString` of its own — every Dart class inherits that member from `Object` — so the pre-retarget target named a member that does not exist. Measured: 2,422 of 247,737 `overrides` rows had that shape. `firstHeritageParent` carries the name the pre-retarget rule would have used, so the retarget loses no information." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "instantiates", "from": "IconSet", "target": "IconData", "equals": 1 },
+    { "type": "calls", "from": "build", "target": "IconSet.make", "equals": 1 },
+    { "type": "instantiates", "from": "dedup-and-attribution", "target": "TopWidget", "equals": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "dedup-and-attribution", "target": "IconData" },
+    { "type": "calls", "from": "localHelper", "target": "helperCall" },
+    { "type": "overrides", "from": "Poly.sides", "target": "Shape.sides", "note": "DARTD16 gate: fields never override" },
+    { "type": "calls", "from": "build", "target": "value", "note": "getter read is not a call" }
+  ]
+}

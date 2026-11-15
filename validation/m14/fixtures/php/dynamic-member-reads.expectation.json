@@ -1,0 +1,112 @@
+{
+  "fixtureId": "php/dynamic-member-reads",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "variableReadSpelling": "VARIABLE-READ SPELLING (php, 2026-10-11). The `uses` targets in this file that name a `$variable` are BINDINGS, not declaration names: the analyzer spells a variable read as `<read source>\\u0000<binding>` with `metadata.localBinding`, because a local/param/superglobal is never a published symbol and the BARE name let the store bind the read to an unrelated same-named declaration in another file. The defect and its counterfactual are in validation/m14/fixtures/php/local-read-phantom.mts; the whole-population effect is in docs/analyzers/history/php-lane-notes.md. What each row PINS (which read, from where, and how many) did not move.",
+  "rationale": "M60 php lane — STATIC vs DYNAMIC member names. A property read names a member only when the name is a static `name` node; the old rule on BOTH sides was a proxy (the analyzer skipped a name whose text starts with `$`, the oracle pushed the raw name-field text), and the proxy is what the dynamic spellings break. Measured with script/m14/tmp/php-dynamic-member-shapes.ts before either side was touched: `$postParams->$param` (phpmyadmin src/Http/ServerRequest.php:233 — the lane's MISSING) had the analyzer emitting NOTHING while the oracle published `uses -> $param`; `$box->{'quoted'}` and `$box->{1}` published a STRING and an INTEGER LITERAL as symbol names, IDENTICALLY on both sides — invisible to the mirror by construction, which is why a fixture independent of the mirror is the only thing that can hold them. The discriminator is the anonymous `{` token the pinned grammar keeps around the name field, probe-verified: `$o->NAME` is [variable_name, ~->, name], `$o->{NAME}` is [variable_name, ~->, ~{, name, ~}]. A braced field is a dynamic selection — no member symbol exists for it in the static graph — and the field's own expression reads come from the ordinary rules (a `$var` through the frame chain, a file const, an inner `$this->x`), which is why `FIELD` and the inner `plain` ARE expected below.",
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "plain"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "touch"
+    },
+    {
+      "type": "uses",
+      "from": "touch",
+      "target": "touch\u0000arr"
+    },
+    {
+      "type": "uses",
+      "from": "touch",
+      "target": "FIELD",
+      "meta.isConstRead": true
+    },
+    {
+      "type": "uses",
+      "from": "touch",
+      "target": "touch\u0000key"
+    },
+    {
+      "type": "uses",
+      "from": "touch",
+      "target": "touch\u0000param",
+      "meta.isLocalRead": true
+    },
+    {
+      "type": "uses",
+      "from": "touch",
+      "target": "Box.plain",
+      "meta.isMemberRead": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "$param",
+      "note": "the raw name-field text: a `$`-prefixed target no other edge in this lane can spell (and the analyzer never emitted it — the lane read MISSING on phpmyadmin)"
+    },
+    {
+      "type": "uses",
+      "target": "$key",
+      "note": "same"
+    },
+    {
+      "type": "uses",
+      "target": "$key[0]",
+      "note": "same, braced subscript"
+    },
+    {
+      "type": "uses",
+      "target": "$this->plain",
+      "note": "same, inner member expression pushed verbatim"
+    },
+    {
+      "type": "uses",
+      "target": "'quoted'",
+      "note": "a STRING literal as a symbol name — fabrication on both sides"
+    },
+    {
+      "type": "uses",
+      "target": "7",
+      "note": "an INTEGER literal as a symbol name — fabrication on both sides"
+    },
+    {
+      "type": "uses",
+      "target": "quoted",
+      "note": "and not the unquoted spelling either: the literal is a value, not a member"
+    },
+    {
+      "type": "uses",
+      "target": "1"
+    },
+    {
+      "type": "uses",
+      "target": "2"
+    },
+    {
+      "type": "uses",
+      "target": "3"
+    },
+    {
+      "type": "uses",
+      "target": "void"
+    },
+    {
+      "type": "uses",
+      "target": "int"
+    },
+    {
+      "type": "uses",
+      "target": "string"
+    },
+    {
+      "type": "uses",
+      "target": "array"
+    }
+  ]
+}

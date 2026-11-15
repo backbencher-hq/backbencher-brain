@@ -1,0 +1,25 @@
+{
+  "fixtureId": "scala/anonymous-member-initializer-call",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first, expectation recorded from the post-fix analyzer run (script output quoted in the #855 report). The analyzer was NOT the broken layer, so this fixture is a REGRESSION pin rather than a red-to-green flip: it exists because the analyzer half must keep emitting the edge that the index layer now attributes.",
+  "rationale": "M59 (#855): a call made from an anonymous-class member INITIALISER (a `val` inside `new Runnable { ... }`) must be emitted from the ANONYMOUS TYPE symbol, not from the enclosing method and not dropped. The sibling fixture scala/anonymous-body-scope pins a call made from a *def* inside an anonymous body, whose source is that def's own storeable symbol (`run`) — a shape that structurally cannot catch a lost attribution, which is why cats-effect TimeT.scala:148 could go silent with every gate green. Here the edge source is `anonymous_Runnable`, a name the store's artifact filter refuses to persist (src/ast/analysis-exclusions.ts `/^(anonymous|anon|unnamed)[_-]/i`), so the analyzer's emission and the index's attribution are two distinct contracts and this fixture pins the first. The `mirrored` def is the control: same call, same anonymous body, but a storeable source.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "class" },
+    { "name": "build", "kind": "method" },
+    { "name": "anonymous_Runnable", "kind": "class" },
+    { "name": "mirrored", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "anonymous_Runnable", "target": "target", "line_number": 29, "comment": "the #855 shape: anonymous-member initialiser call" },
+    { "type": "calls", "from": "mirrored", "target": "target", "line_number": 32, "comment": "control: identical call from a storeable source in the same body" },
+    { "type": "instantiates", "from": "build", "target": "Runnable", "line_number": 27 },
+    { "type": "contains", "from": "build", "target": "anonymous_Runnable", "line_number": 27 },
+    { "type": "contains", "from": "anonymous_Runnable", "target": "mirrored", "line_number": 31 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "build", "target": "target", "comment": "the anonymous body's call must NOT be flattened onto the enclosing method by the ANALYZER (that flattening is the index layer's job, recorded in metadata.syntheticSource — never the emitter's)" },
+    { "type": "contains", "from": "Service", "target": "mirrored", "comment": "the M37.21 #610 JD18 leak direction: members of an anonymous body attribute to the anonymous type" },
+    { "type": "calls", "from": "anonymous_Runnable", "target": "target", "line_number": 28, "comment": "the call is on 29 (the call line), not on the `val`'s own line" }
+  ]
+}

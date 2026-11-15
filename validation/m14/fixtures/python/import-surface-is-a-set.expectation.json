@@ -1,0 +1,134 @@
+{
+ "fixtureId": "python/import-surface-is-a-set",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "ROUND 18: ONE FILE'S IMPORT SURFACE, READ AS A SET. Three defects each deleted a whole class of it, and the fixture pins the SOURCE-level facts all three destroyed, so whichever one is reverted turns a row here red by name. (1) `from __future__ import annotations, division` reached NO row and NO edge: tree-sitter-python gives that construct a node type of its own, `future_import_statement`, and hard-codes the module inside the rule — `__future__` is not a named child — so a walk that dispatches on `import_statement | import_from_statement` never walked it. Measured over the python population with `.tmp-py/price-import-surface-ast.py`: 1,286 statements, 1,298 items, every one reaching nothing; the dominant item is `annotations`, which is a real request that changes how the module's annotations are evaluated, so its absence is a fact about the file, not a detail. (2) `from datetime import UTC, datetime` published `UTC` and NOT `datetime`, because the item loop skipped the module BY TEXT (`c.text !== moduleName`) and an item that spells the module name is indistinguishable from it that way. `clock:clock` is the same defect in its irreducible form — module and item are the same word — so an edge pin on it cannot be satisfied by any text-based skip; the price names 158 such items with file and line. (3) `from models import marker_one as m1, marker_two` published a ROW for each item while the store's row id was per STATEMENT (`${fileId}:import:${moduleName}:${line}`, both fields shared by every item of the statement) and the insert is `INSERT OR REPLACE`, so only the LAST item survived and the aliased FIRST one was overwritten. Measured on the real projection over 2,000 stride-sampled corpus files: 11,903 item rows projected, 8,903 distinct ids written — 3,000 lost, 785 files, +33.70%. The row half of (3) is asserted by `import-bound-name-seam.mts` check F through `indexProjectParallel` (this fixture sees the analyzer, not the store), and `expectImports` above pins what the store's input must be for that to be possible. CONTROLS, because a fix that publishes everything and a fix that publishes nonsense both pass a one-directional pin: `os:*` keeps the plain namespace import reading exactly as before, `collections` pins that `items` keeps the IMPORTED names while the binding rides `itemBindings` (never the alias in `items`, which is what the `module:item` edge target spells), and `annotations` is pinned at ZERO symbols because a `__future__` item is a compiler directive and binds no name — publishing one would claim a binding python never makes.",
+ "expectImports": [
+  {
+   "module": "__future__",
+   "items": ["annotations", "division"],
+   "note": "DEFECT 1's falsifier. The module is stated by the analyzer because the grammar does not give it as a named child; the ITEMS are the ones the statement names, in source order. Drop the `future_import_statement` dispatch and this row disappears entirely."
+  },
+  {
+   "module": "datetime",
+   "items": ["UTC", "datetime"],
+   "note": "DEFECT 2's falsifier in its ordinary spelling. `UTC` is here as well, so the row cannot be satisfied by publishing only the item that is not the module — this pins that BOTH are named, which is the whole contract of a per-item row."
+  },
+  {
+   "module": "clock",
+   "items": ["clock"],
+   "note": "DEFECT 2 in its irreducible form: module and item are the same word, so a text-based skip drops it and a node-based skip keeps it. The matching `clock:clock` edge below is the same fact on the other channel."
+  },
+  {
+   "module": "collections",
+   "items": ["OrderedDict", "defaultdict"],
+   "itemBindings": [{"name": "OrderedDict", "as": "OD"}],
+   "note": "DEFECT 3 at the analyzer: the row is per ITEM and carries each item's own binding. Whole-array equality on `items` (the matcher compares sorted JSON) is deliberate — the store's row id addresses items, so an item missing here is an item the store can never hold."
+  },
+  {
+   "module": "models",
+   "items": ["marker_one", "marker_two"],
+   "itemBindings": [{"name": "marker_one", "as": "m1"}],
+   "note": "The shape the store's `INSERT OR REPLACE` used to truncate: an ALIASED first item and a plain second one. Before round 18 the store kept `marker_two` and lost `marker_one`/`m1` — the aliased item in FIRST position is exactly the direction the old id destroyed."
+  },
+  {
+   "module": "os",
+   "items": ["*"],
+   "note": "CONTROL. `import os` is unchanged by all three fixes: one item, the module itself, no binding."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "__future__:annotations",
+   "line_number": 27,
+   "confidence": 1,
+   "meta.module": "__future__",
+   "note": "DEFECT 1's falsifier on the EDGE channel: the edge names the module the grammar withholds. Its line is the statement's, because a `__future__` statement carries no module node whose own line could be read."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "__future__:division",
+   "line_number": 27,
+   "confidence": 1,
+   "note": "The second item of the same statement, so the pin cannot be satisfied by a handler that reads only the first child."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "datetime:datetime",
+   "line_number": 30,
+   "confidence": 1,
+   "note": "DEFECT 2's falsifier: the edge the text-based skip deleted. `datetime.date(...)` in a file that writes this statement names a name bound by nothing until this edge exists."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "clock:clock",
+   "line_number": 31,
+   "confidence": 1,
+   "note": "DEFECT 2, irreducible spelling — the module and the item are the same word, so only a node-identity skip keeps this edge."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "collections:OrderedDict",
+   "line_number": 29,
+   "confidence": 1,
+   "meta.importedAs": "OD",
+   "note": "The bound name of the FIRST item of a multi-item statement, on the edge channel (round 7's publication, unchanged by round 18 and pinned here so a future row-model edit cannot quietly move it)."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "models:marker_one",
+   "line_number": 32,
+   "confidence": 1,
+   "meta.importedAs": "m1",
+   "note": "The same fact for the statement whose FIRST item is the one the store used to lose."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "os:*",
+   "line_number": 33,
+   "confidence": 1,
+   "note": "CONTROL: a plain namespace import still emits its unchanged edge, so the three fixes are statements about four shapes and not a rewrite of import handling."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "clock:*",
+   "note": "THE WRONG-FIX DIRECTION, pinned by name: a handler that reads a `__future__`-style node's first child as the MODULE, or that falls back to the module when an item is skipped, would publish `clock:*` for `from clock import clock`. That is a wildcard the source does not write, and the correct edge is `clock:clock`."
+  },
+  {
+   "type": "imports",
+   "from": "import_surface_is_a_set",
+   "target": "collections:OD",
+   "note": "The loss direction: the edge names the IMPORTED name, never the bound alias — `OD` is not an attribute any module declares."
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "local_route",
+   "kind": "function",
+   "note": "The one declaration this file makes; pinned so the import surface is added BESIDE the file's symbols and not by inventing declarations for it."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "annotations",
+   "equals": 0,
+   "note": "A `__future__` item is a compiler directive and binds NO name. Publishing a symbol here would claim a binding the source does not make — the over-claim direction of fix 1, and the reason `addImportBoundNames` and `ctx.importRoots` deliberately keep ignoring this node type."
+  },
+  {
+   "name": "clock",
+   "equals": 0,
+   "note": "An import binds a module handle, not a declaration (the same reading `star-import-is-a-binding-rule` pins for `os`). Kept here because the identity-guard fix touches this row's items and a fix that promoted the item to a symbol would be visible only here."
+  }
+ ]
+}

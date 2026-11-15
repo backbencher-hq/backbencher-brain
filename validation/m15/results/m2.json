@@ -1,0 +1,12 @@
+{
+  "issue": "M15.M2",
+  "code": "M2",
+  "tool": "bb_migrate",
+  "title": "regex census + docs + bounded work",
+  "verified": true,
+  "checks": 6,
+  "passed": 7,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:27:20.312Z"
+}

@@ -1,0 +1,61 @@
+{
+  "repo": "vue-element-admin",
+  "files": 9,
+  "partition": {
+    "before": {
+      "imports": {
+        "resolved": 7,
+        "unresolved": 1,
+        "total": 8
+      },
+      "contains": {
+        "resolved": 128,
+        "total": 128
+      },
+      "calls": {
+        "resolved": 7,
+        "total": 7
+      },
+      "exports": {
+        "resolved": 22,
+        "total": 22
+      },
+      "references": {
+        "resolved": 23,
+        "total": 23
+      }
+    },
+    "after": {
+      "imports": {
+        "resolved": 7,
+        "unresolved": 1,
+        "total": 8
+      },
+      "contains": {
+        "resolved": 128,
+        "total": 128
+      },
+      "calls": {
+        "resolved": 7,
+        "total": 7
+      },
+      "exports": {
+        "resolved": 22,
+        "total": 22
+      },
+      "references": {
+        "resolved": 23,
+        "total": 23
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 3,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 187,
+    "falseBindings": 7
+  }
+}

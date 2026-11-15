@@ -1,0 +1,1 @@
+{"gate":"m13-patterns-contract","command":"bun run script/m13/verify-patterns-contract.ts","exitCode":0,"durationMs":3604,"log":"validation/tools/bb_patterns/gates/logs/m13-patterns-contract.log","recordedAt":"2026-11-03T17:17:02Z"}

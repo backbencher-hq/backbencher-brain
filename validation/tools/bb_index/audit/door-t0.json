@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "startedAt": "2026-11-02T04:34:21.215Z",
+  "cases": [
+    {
+      "label": "file: create new agent file",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"outcome\": \"indexed\",\n  \"derived\": {\n    \"pass\": \"bounded\",\n    \"phases\": [\n      {\n        \"name\": \"relationships\",\n        \"ms\": 17,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 8,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 32,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"enrichment\",\n        \"ms\": 76,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"gravity\",\n        \"ms\": 18,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"taint\",\n        \"ms\": 31,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"health\",\n        \"ms\": 64,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"integrity\",\n        \"ms\": 10,\n        \"outcome\": \"ok\"\n      }\n    ],\n    \"repairedInEdges\": 1,\n    \"touchedSymbols\": 1,\n    \"resolvedStoredEdges\": 1,\n    \"stillUnresolvedInEdges\": 1,\n    \"healedZeroLines\": 0,\n    \"importResolvedInEdges\": 0\n  }\n}",
+      "ms": 17643
+    },
+    {
+      "label": "file: repeat unchanged file (no-op reason truth)",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"outcome\": \"indexed\",\n  \"derived\": {\n    \"pass\": \"bounded\",\n    \"phases\": [\n      {\n        \"name\": \"relationships\",\n        \"ms\": 13,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 1,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 31,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"enrichment\",\n        \"ms\": 63,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"gravity\",\n        \"ms\": 22,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"taint\",\n        \"ms\": 32,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"health\",\n        \"ms\": 28,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"integrity\",\n        \"ms\": 15,\n        \"outcome\": \"ok\"\n      }\n    ],\n    \"repairedInEdges\": 1,\n    \"touchedSymbols\": 1,\n    \"resolvedStoredEdges\": 1,\n    \"stillUnresolvedInEdges\": 0,\n    \"healedZeroLines\": 0,\n    \"importResolvedInEdges\": 0\n  }\n}",
+      "ms": 11841
+    },
+    {
+      "label": "file: unsupported extension (binary) no-op reason truth",
+      "arguments": {
+        "path": "assets/data.bin"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"assets/data.bin\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"outcome\": \"no-op\",\n  \"skipped\": 0,\n  \"reason\": \"nothing changed: the file's content already matches the index\",\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 9
+    },
+    {
+      "label": "auto: file path resolves to file",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"outcome\": \"indexed\",\n  \"derived\": {\n    \"pass\": \"bounded\",\n    \"phases\": [\n      {\n        \"name\": \"relationships\",\n        \"ms\": 25,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 8,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 48,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"enrichment\",\n        \"ms\": 15,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"gravity\",\n        \"ms\": 16,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"taint\",\n        \"ms\": 79,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"health\",\n        \"ms\": 21,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"integrity\",\n        \"ms\": 14,\n        \"outcome\": \"ok\"\n      }\n    ],\n    \"repairedInEdges\": 1,\n    \"touchedSymbols\": 1,\n    \"resolvedStoredEdges\": 1,\n    \"stillUnresolvedInEdges\": 0,\n    \"healedZeroLines\": 0,\n    \"importResolvedInEdges\": 0\n  }\n}",
+      "ms": 12354
+    },
+    {
+      "label": "auto: dir path resolves to dir",
+      "arguments": {
+        "path": "src"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \"src\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true\n}",
+      "ms": 26
+    },
+    {
+      "label": "dir: settled tree unchanged",
+      "arguments": {
+        "path": "src",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \"src\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true\n}",
+      "ms": 24
+    },
+    {
+      "label": "dir: after edit, one candidate",
+      "arguments": {
+        "path": "src",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \"src\",\n  \"candidates\": 1,\n  \"processed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"skipped\": 0\n}",
+      "ms": 14168
+    },
+    {
+      "label": "post: path .",
+      "arguments": {
+        "path": ".",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \".\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 50,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 22,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 13,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 30,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 16,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 40,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 7,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 16,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 247,\n  \"integrityHealth\": 92\n}",
+      "ms": 259
+    },
+    {
+      "label": "REFUSE: blank path",
+      "arguments": {
+        "path": ""
+      },
+      "isError": true,
+      "text": "bb_index requires path",
+      "ms": 3
+    },
+    {
+      "label": "REFUSE: missing path (schema)",
+      "arguments": {},
+      "isError": true,
+      "text": "error: bb_index: missing required option: path",
+      "ms": 4
+    },
+    {
+      "label": "REFUSE: nonexistent path",
+      "arguments": {
+        "path": "src/does-not-exist.ts"
+      },
+      "isError": true,
+      "text": "bb_index: no such path: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot/src/does-not-exist.ts",
+      "ms": 1
+    },
+    {
+      "label": "REFUSE: ../ traversal",
+      "arguments": {
+        "path": "../outside.ts"
+      },
+      "isError": true,
+      "text": "bb_index: no such path: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/outside.ts",
+      "ms": 5
+    },
+    {
+      "label": "REFUSE: absolute path outside project",
+      "arguments": {
+        "path": "/etc/hostname"
+      },
+      "isError": true,
+      "text": "bb_index: refusing a path outside the project. \"/etc/hostname\" resolves to /etc/hostname, which is not inside /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.",
+      "ms": 2
+    },
+    {
+      "label": "REFUSE: symlink inside pointing outside",
+      "arguments": {
+        "path": "src/escape.ts"
+      },
+      "isError": true,
+      "text": "bb_index: refusing a path outside the project. \"src/escape.ts\" resolves to /etc/hostname, which is not inside /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.",
+      "ms": 2
+    },
+    {
+      "label": "REFUSE: mode=file on directory",
+      "arguments": {
+        "path": "src",
+        "mode": "file"
+      },
+      "isError": true,
+      "text": "bb_index mode=file requires a file path",
+      "ms": 2
+    },
+    {
+      "label": "REFUSE: mode=dir on file",
+      "arguments": {
+        "path": "src/agent-fresh.ts",
+        "mode": "dir"
+      },
+      "isError": true,
+      "text": "bb_index mode=dir requires a directory path",
+      "ms": 1
+    },
+    {
+      "label": "REFUSE: unknown mode",
+      "arguments": {
+        "path": "src",
+        "mode": "bogus"
+      },
+      "isError": true,
+      "text": "error: bb_index: mode must be one of: auto, file, dir, post",
+      "ms": 2
+    },
+    {
+      "label": "REFUSE: unknown option",
+      "arguments": {
+        "path": "src",
+        "mode": "dir",
+        "depth": 3
+      },
+      "isError": true,
+      "text": "error: bb_index: unknown or irrelevant options: depth — accepted options: path, mode",
+      "ms": 1
+    },
+    {
+      "label": "REFUSE: mode=post nonexistent path",
+      "arguments": {
+        "path": "no/such/path",
+        "mode": "post"
+      },
+      "isError": true,
+      "text": "bb_index mode=post: no such path: /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot/no/such/path — mode=post re-derives the phases of THIS project, and the required `path` must name it.",
+      "ms": 2
+    },
+    {
+      "label": "PROBE: mode=post with path outside project (documented as refused)",
+      "arguments": {
+        "path": "/etc",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \"/etc\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 43,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 12,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 7,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 18,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 6,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 10,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 5,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 19,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 124,\n  \"integrityHealth\": 92\n}",
+      "ms": 135
+    },
+    {
+      "label": "PROBE: mode=post with a FILE path (schema says project)",
+      "arguments": {
+        "path": "README.md",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \"README.md\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 20,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 10,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 13,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 18,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 10,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 17,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 5,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 8,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 102,\n  \"integrityHealth\": 92\n}",
+      "ms": 113
+    }
+  ],
+  "stderr": "[INFO] [23:34:49] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:34:56] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:34:57] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:34:58] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":85,\"techDebtScore\":100,\"codeQualityScore\":93,\"languages\":5,\"bottlenecks\":0}\n[INFO] [23:35:01] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:35:09] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:35:09] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:35:10] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":85,\"techDebtScore\":100,\"codeQualityScore\":93,\"languages\":5,\"bottlenecks\":0}\n[INFO] [23:35:13] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:35:21] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:35:22] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:35:22] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":85,\"techDebtScore\":100,\"codeQualityScore\":93,\"languages\":5,\"bottlenecks\":0}\n[INFO] [23:35:29] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:35:35] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:35:36] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:35:36] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":88,\"techDebtScore\":100,\"codeQualityScore\":94,\"languages\":5,\"bottlenecks\":0}\n[WARN] [23:35:36] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:35:36] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":88,\"techDebtScore\":100,\"codeQualityScore\":94,\"languages\":5,\"bottlenecks\":0}\n[WARN] [23:35:37] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:35:37] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":88,\"techDebtScore\":100,\"codeQualityScore\":94,\"languages\":5,\"bottlenecks\":0}\n[WARN] [23:35:37] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":9,\"totalRelationships\":28}\n[INFO] [23:35:37] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":94,\"maintainabilityScore\":88,\"techDebtScore\":100,\"codeQualityScore\":94,\"languages\":5,\"bottlenecks\":0}\nnpm notice\nnpm notice New minor version of npm available! 11.12.1 -> 11.21.1\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.1\nnpm notice To update run: npm ",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1227,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project whose derived phases should be re-run. REQUIRED in every mode, and for mode=post it is checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-02T04:35:37.332Z"
+}

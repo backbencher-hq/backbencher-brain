@@ -1,0 +1,173 @@
+[
+ {
+  "id": "both-name-forms",
+  "args": {
+   "symbolName": "basePrice",
+   "symbolNames": [
+    "applyDiscount"
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": false,
+  "ms": 175,
+  "plans": [
+   "applyDiscount",
+   "basePrice"
+  ],
+  "unsupported": [],
+  "truncation": {
+   "truncated": false,
+   "requested": 2,
+   "returned": 2,
+   "deduplicated": 0,
+   "capped": 0,
+   "pathSymbols": 0,
+   "selection": "first N resolved symbols by project-relative file path, then symbol name",
+   "cappedNames": []
+  },
+  "cohort": {
+   "symbolsResolved": 2,
+   "pathsRequested": [],
+   "pathsUnmatched": []
+  }
+ },
+ {
+  "id": "absolute-path-inside",
+  "args": {
+   "paths": [
+    "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot/ts-js/src/pricing.js"
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": false,
+  "ms": 21,
+  "plans": [
+   "basePrice",
+   "applyDiscount"
+  ],
+  "unsupported": [],
+  "truncation": {
+   "truncated": false,
+   "requested": 2,
+   "returned": 2,
+   "deduplicated": 0,
+   "capped": 0,
+   "pathSymbols": 2,
+   "selection": "first N resolved symbols by project-relative file path, then symbol name",
+   "cappedNames": []
+  },
+  "cohort": {
+   "symbolsResolved": 2,
+   "pathsRequested": [
+    "ts-js/src/pricing.js"
+   ],
+   "pathsUnmatched": []
+  }
+ },
+ {
+  "id": "blank-path-entry",
+  "args": {
+   "paths": [
+    ""
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": true,
+  "ms": 6,
+  "textHead": [
+   "bb_migrate: paths contains 1 blank entry (position 0) — a blank entry names no component and would silently narrow the request; remove it or pass the component you mean"
+  ]
+ },
+ {
+  "id": "blank-path-plus-valid",
+  "args": {
+   "paths": [
+    "",
+    "ts-js/src/pricing.js"
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": true,
+  "ms": 6,
+  "textHead": [
+   "bb_migrate: paths contains 1 blank entry (position 0) — a blank entry names no component and would silently narrow the request; remove it or pass the component you mean"
+  ]
+ },
+ {
+  "id": "blank-entries-mixed",
+  "args": {
+   "symbolNames": [
+    "basePrice",
+    "",
+    "  "
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": true,
+  "ms": 7,
+  "textHead": [
+   "bb_migrate: symbolNames contains 2 blank entries (positions 1, 2) — a blank entry names no component and would silently narrow the request; remove it or pass the component you mean"
+  ]
+ },
+ {
+  "id": "empty-arrays",
+  "args": {
+   "symbolNames": [],
+   "paths": [],
+   "symbolIds": [],
+   "targetLanguage": "python"
+  },
+  "isError": true,
+  "ms": 4,
+  "textHead": [
+   "bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage"
+  ]
+ },
+ {
+  "id": "duplicate-names",
+  "args": {
+   "symbolNames": [
+    "basePrice",
+    "basePrice"
+   ],
+   "targetLanguage": "python",
+   "format": "json"
+  },
+  "isError": false,
+  "ms": 24,
+  "plans": [
+   "basePrice"
+  ],
+  "unsupported": [],
+  "truncation": {
+   "truncated": false,
+   "requested": 1,
+   "returned": 1,
+   "deduplicated": 0,
+   "capped": 0,
+   "pathSymbols": 0,
+   "selection": "first N resolved symbols by project-relative file path, then symbol name",
+   "cappedNames": []
+  },
+  "cohort": {
+   "symbolsResolved": 1,
+   "pathsRequested": [],
+   "pathsUnmatched": []
+  }
+ },
+ {
+  "id": "unindexed-door",
+  "isError": true,
+  "ms": 20,
+  "rpcError": null,
+  "textHead": [
+   "No index found for /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project. Run: bb index \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_migrate/work/unindexed-project\"."
+  ],
+  "parsed": null
+ }
+]

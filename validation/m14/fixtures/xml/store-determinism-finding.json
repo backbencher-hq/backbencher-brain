@@ -1,0 +1,127 @@
+{
+  "instrument": "xml store determinism \u2014 the same file set indexed under three orders, bindings compared row by row",
+  "at": "2026-10-10T01:12:00-04:00",
+  "question": "The Lead asked for one hypothesis to be tested: is the EAGER insert-time resolver only as good as the table's state in its batch? If so the graph is NONDETERMINISTIC \u2014 the same corpus indexed in a different order writes different target_symbol_ids \u2014 and that outranks every lane's residual.",
+  "answer": "CONFIRMED. Binding is order-dependent, and it is also run-dependent. The aggreg- ate metrics every lane reports (bound / unbound / resolved share) are IDENTICAL across the arms, so no resolution rate can see it; only a per-row comparison can.",
+  "design": {
+    "probe": "validation/m14/fixtures/xml/store-determinism.mts",
+    "population": "300 files from one repository (libxslt), git-tracked, xml-family, <= 512 KiB, sorted then sliced",
+    "arms": {
+      "A": "indexed in sorted order (skipDiscovery + explicit file list, so the order is the probe's own choice)",
+      "B": "the SAME file set in reversed order",
+      "C": "sorted order with BB_TEST_FORCE_EDGE_RESOLVE=1 (the indexer's own A/B arm: eager resolution where the pool path defers it)"
+    },
+    "identity": "the row id minus every occurrence of the project prefix \u2014 it embeds the source file, the source symbol, the source line, the target, the type and the edge line, none of which depend on the store's row numbering. Endpoints are read from maps, NOT joined.",
+    "whyNotAJoin": "The first version of this probe joined brain_symbol twice to read the endpoints. That join FANNED OUT on duplicated symbol rows (2,087 joined rows for 1,831 distinct relationship ids on a 100-file arm) and produced 482 phantom 'differences' \u2014 every ambiguous key was the SAME relationship id repeated. The artifact is recorded because it is the exact failure mode this measurement had to survive: a probe that manufactures its own finding."
+  },
+  "runs": [
+    {
+      "run": 2,
+      "artifact": "validation/m14/fixtures/xml/store-determinism-run2.json",
+      "arms": {
+        "A": {
+          "storedRows": 7825,
+          "bound": 7109,
+          "unbound": 716
+        },
+        "B": {
+          "storedRows": 7825,
+          "bound": 7109,
+          "unbound": 716
+        },
+        "C": {
+          "storedRows": 7825,
+          "bound": 7109,
+          "unbound": 716
+        }
+      },
+      "compared": 7825,
+      "A_vs_B_order": {
+        "differing": 96,
+        "byType": {
+          "contains": 96
+        },
+        "onlyInOneArm": 0
+      },
+      "A_vs_C_eager_vs_deferred": {
+        "differing": 26,
+        "byType": {
+          "contains": 9,
+          "calls": 17
+        }
+      },
+      "B_vs_C": {
+        "differing": 111,
+        "byType": {
+          "contains": 94,
+          "calls": 17
+        }
+      }
+    },
+    {
+      "run": 3,
+      "artifact": "validation/m14/fixtures/xml/store-determinism-run3.json",
+      "arms": {
+        "A": {
+          "storedRows": 7825,
+          "bound": 7109,
+          "unbound": 716
+        },
+        "B": {
+          "storedRows": 7825,
+          "bound": 7109,
+          "unbound": 716
+        },
+        "C": {
+          "storedRows": 7825,
+          "bound": 7109,
+          "unbound": 716
+        }
+      },
+      "compared": 7825,
+      "A_vs_B_order": {
+        "differing": 96,
+        "byType": {
+          "contains": 96
+        },
+        "onlyInOneArm": 0
+      },
+      "A_vs_C_eager_vs_deferred": {
+        "differing": 29,
+        "byType": {
+          "contains": 12,
+          "calls": 17
+        }
+      },
+      "B_vs_C": {
+        "differing": 112,
+        "byType": {
+          "contains": 95,
+          "calls": 17
+        }
+      }
+    }
+  ],
+  "findings": {
+    "1_orderDependent": "WITHDRAWN 2026-10-11 \u2014 the rate below was measured on a store that still contained the duplicated `contains` rows fixed later in 140be2f01, and those duplicates are stable across file order, so they diluted the rate by ~4.4x. Re-measured on the SAME 300-file draw with current code: 248 of 4,545 = 5.46% order churn (eager 34 of 4,545 = 0.75%). See determinism-revision.json. Original text kept only as the historical record: Reversing the index order of the SAME 300 files changes 96 of 7,825 bindings (1.23%), every one of them `contains`. Example (run 2, A vs B): the edge `libxslt/tests/REC/test-10-1.xsl | li | contains | xsl:text | line 15` binds to `doc/EXSLT/devhelp/devhelp2.xsl | text` under sorted order and to `tests/REC2/svg.xsl | text` under reversed order. Same edge, same key, different row.",
+    "2_alsoRunDependent": "The eager-vs-deferred comparison printed 26 differing (9 contains + 17 calls) in run 2 and 29 (12 contains + 17 calls) in run 3 \u2014 same probe, same arms, same file set. So the outcome is not a function of (file set, order) alone; worker scheduling contributes. An earlier, unpreserved run of the order comparison printed 111 rather than 96; that number is recorded here as an observation WITHOUT an artifact and is not relied on.",
+    "3_eagerVsDeferredChangesTheGraph": "26-29 rows differ between the eager arm and the deferred arm, which FALSIFIES the in-code claim on `BB_TEST_FORCE_EDGE_RESOLVE` that it `changes nothing about the final graph (the pass resolves these rows either way) \u2014 it only decides WHERE they are resolved`.`calls` is 17 of those rows in both runs: a non-contains type, so the deferred pass and the eager statement do not agree.",
+    "4_invisibleToRateMetrics": "bound 7,109 / unbound 716 / storedRows 7,825 are IDENTICAL in every arm of every run. The existing metrics cannot see any of this; the defect is visible only by comparing target ids row by row.",
+    "5_rowDuplicationRuledOut": "duplicateIds = 0 and storedRows == joined rows == 7,825 in every arm. Candidate (c) from the earlier disclosure \u2014 row duplication in the stored set \u2014 is RULED OUT for this draw: every row id is unique."
+  },
+  "mechanism": {
+    "statement": "`contains` is resolved at INSERT time by `resolveContainsTargetStmt` (parallel-indexer.ts) against the symbol table AS IT STANDS WHEN THAT BATCH RUNS, and it is not re-resolved later (the resolution pass skips rows that already have target_symbol_id). The edge's own file is preferred, but when the own file has no declaration of the name on that line, `LIMIT 1` returns whichever candidate the ordering reaches \u2014 and WHICH CANDIDATES EXIST YET depends on file order and worker scheduling. The row is written once and never revisited, so the outcome is frozen at insert time.",
+    "whyTheTieBreakDoesNotSaveIt": "The documented ordering (`file, line, is_declaration, language, id`) is deterministic over a COMPLETE table. The measurement shows the table is not complete when the row is written."
+  },
+  "consequenceForThisLane": "The libxslt store run's `boundOtherFile` 8.5% (3,320 rows) and the gate's `twin 0` are two views of the same mechanism: the gate asks whether a same-file declaration EXISTS (it does, so no twin), while the eager resolver binds whichever row was visible at insert time (sometimes another file's). Both numbers are correct about different questions, and the 8.5% is a consequence of the order-dependence rather than a contradiction of the gate.",
+  "scopeAndLimits": "One repository, 300 files, three arms, two preserved runs. This is a reproducible falsification of determinism in this configuration, not a measurement of how far it reaches: other lanes, other file counts and other concurrency settings are not covered, and `contains` is the type where it shows because that is the type resolved eagerly. Three arms cannot prove determinism in general; here they falsify it.",
+  "raw": [
+    "validation/m14/fixtures/xml/store-determinism-run2.txt",
+    "validation/m14/fixtures/xml/store-determinism-run3.txt"
+  ],
+  "SUPERSEDED": {
+    "at": "2026-10-11T00:15:00-04:00",
+    "what": "Any rate in this artifact derived from the 7,825-row / 300-file draw is WITHDRAWN: that store contained the duplicated `contains` rows fixed later (140be2f01), which diluted the churn rate. The order-churn rate on the same draw with current code is 248 of 4,545 = 5.46%, not 96 of 7,825 = 1.23%.",
+    "seeInstead": "validation/m14/fixtures/xml/determinism-revision.json"
+  }
+}

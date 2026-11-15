@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/natspec-sol16.sol",
+  "authoredFrom": "SOL-16 — NatSpec. Authored 2026-09-30 from the analyzer's measured output. Before SOL-16 this lane read NO documentation: 5,254 `comment` nodes over the 389-file corpus, zero reaching a symbol, so `brain_symbol.docstring` was NULL for every Solidity symbol the index has ever produced. Solidity's `///` and slash-star forms are exactly what the TypeScript lane extracts from JSDoc, so this was the largest single depth gap between the two analyzers.",
+  "note": "Three comment FORMS, pinned separately, because a lane that reads documentation must be able to say which form it read: a stray `//` remark above a declaration is not documentation of it. `natspec-line` is `///`, `natspec-block` is the slash-star form, `line` is a plain remark. TWO bugs surfaced only because this fixture was written, and neither was visible on the corpus: (1) attachment read `nextNamedSibling` per COMMENT, but only the LAST comment of a run has the declaration as its next sibling — so `library Docs` came out documented as `@author Someone` with the `@title` and `@notice` above it silently dropped, i.e. 1 line kept out of every 3; (2) the run anchor was never reset after a flush, so a TRAILING run at the end of a parent reused the previous declaration and published the file's closing remark as part of `IThing`'s docstring. The gap between `commentsRead` and `commentsAttached` on the corpus is real and is not a defect: a comment before an expression, or a trailing remark, documents nothing.",
+  "expectSymbols": [
+    { "name": "Docs", "kind": "class", "docstringKind": "natspec-line", "docstring": "@title A documented library\n@notice Does documented things.\n@author Someone", "docTags": ["@title", "@notice", "@author"] },
+    { "name": "SLOT", "kind": "property", "ownerName": "Docs", "docstringKind": "natspec-line", "docstring": "@notice Storage slot 0.\n@dev Written by hand.", "docTags": ["@notice", "@dev"] },
+    { "name": "read", "kind": "method", "ownerName": "Docs", "docstringKind": "natspec-block", "docTags": ["@notice", "@param", "@return"] },
+    { "name": "other", "kind": "property", "ownerName": "Docs", "docstringKind": "line", "comment": "A plain line comment, NOT NatSpec. Pinned because Solidity has three comment\nforms and a lane that reads documentation should be able to say which one it\nread — a stray remark above a declaration is not documentation of it." },
+    { "name": "IThing", "kind": "interface", "docstringKind": "natspec-line", "docstring": "@notice A documented interface.", "docTags": ["@notice"] },
+    { "name": "ping", "kind": "method", "ownerName": "IThing", "docstringKind": "natspec-line", "docstring": "@notice Ping it.", "docTags": ["@notice"] }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "natspec-sol16.sol",
+      "docstring": "not null",
+      "comment": "The module symbol carries NO docstring. The SPDX comment is followed by `pragma solidity`, whose node type is `pragma_directive` — not a declaration — so the run has no declaration to land on. Publishing the licence as the file's docstring would be a different feature (licence detection), and it is named here as absent rather than quietly half-done."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "source": "Docs",
+      "target": "trailing",
+      "comment": "Structural guard that the trailing run published nothing: the file's closing remark must not become a symbol or an edge. This is the failure the anchor-reset fix addresses, and it is pinned as a relationship rule as well as through `IThing`'s exact docstring so a regression shows up in whichever direction it first appears."
+    }
+  ]
+}

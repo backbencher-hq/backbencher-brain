@@ -1,0 +1,58 @@
+// Resolution through the PACKAGE'S ANCESTORS, and the one condition that stops it.
+//
+// This is the rule the previous fixture cannot see. `absolute-and-scope-resolution`
+// has NO `import` statement, so for it every dotted name falls back as written and
+// the question of which directory a candidate's package maps to never arises. A
+// regression that removed the ancestor scopes entirely would still pass that file.
+//
+// protobuf's rule is C++ name lookup: a relative name is looked for in EVERY
+// enclosing scope, innermost first. The scopes enclosing a member of
+// `corp.api.resources.accounts.v1.Account` are the message, the package, and each
+// ANCESTOR of the package — `corp.api.resources`, `corp.api`, `corp`, and the root.
+// So `resources.scopes.v1.ScopeInfo` is found at `corp.api` and the declaration is
+// `corp.api.resources.scopes.v1.ScopeInfo`. Emitting the name as written named a
+// file that exists in no repository.
+//
+// Measured on the corpus before the fix: 431 `uses` targets named an id no file
+// publishes, of which 379 became uniquely bound once the ancestors were walked.
+syntax = "proto3";
+
+package corp.api.resources.accounts.v1;
+
+// The import is what makes the resolution checkable from THIS file alone:
+// `protoc` searches the imported descriptors, and this file knows which
+// descriptors it imported. One import does not follow from the reference — the
+// reference is what follows from the import.
+import "corp/api/resources/scopes/v1/scope.proto";
+import "google/protobuf/timestamp.proto";
+import "types/platform.proto";
+
+message Account {
+  // THE row. Relative, dotted, and rooted BELOW the file's own package, so only
+  // an ancestor scope can reach it. Target: corp.api.resources.scopes.v1.ScopeInfo.
+  resources.scopes.v1.ScopeInfo scope = 1;
+
+  // An absolute-in-practice dotted name. The guard below declines this one —
+  // `google/protobuf` IS an imported directory, but it is also a proper suffix of
+  // `corp/api/google/protobuf`, a MORE SPECIFIC candidate — so the walk declines
+  // and the name falls back as written. Declining is harmless here precisely
+  // because the name was already fully qualified; the `Shifted` message below is
+  // where declining costs something.
+  google.protobuf.Timestamp created = 2;
+}
+
+message Shifted {
+  // THE row that decides the guard. `types` IS an imported directory
+  // (`types/platform.proto`), so the directory test alone would answer
+  // `types.Platform` and claim it. The declaration a reader would find is
+  // `corp.types.Platform` in a file this one does not import: docker vendors
+  // containerd the same way, where `api/types/platform.proto` declares
+  // `package containerd.types;` and is imported as `types/platform.proto`. That
+  // was MEASURED at 7 wrong corpus edges before the guard existed.
+  //
+  // So the walk checks whether the matched directory is a proper SUFFIX of a more
+  // specific candidate's directory — `corp/types` and `corp/api/types` both are —
+  // and declines. The cost is that this reference is left pointing at a name no
+  // file publishes, which is where it pointed before the ancestor walk existed.
+  types.Platform platform = 1;
+}

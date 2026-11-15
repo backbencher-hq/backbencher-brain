@@ -1,0 +1,63 @@
+{
+ "fixtureId": "python/dunder-all-expression-list",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "INCOMING_PY (ontology workstream). PY-14 added the TUPLE spelling of `__all__` and left the third one: the grammar gives a bare comma-separated RHS its own node, `expression_list`, so `__all__ = \"a\", \"b\"` was neither the `list` nor the `tuple` the allowlist read and published NOTHING. The language HAS the declaration \u2014 `from mod import *` honours it identically \u2014 so by the workstream's own table this is a GAP and not a RULED verdict. Falsifiable measurement: `script/m60/python-construct-probe.ts` counts 238 `__all__` assignments in CPython 3.10's stdlib and 9 of them use this spelling (3.8%); on the pinned bb_tests corpus the count is 0, reported as 0. `dunderAllForm` is pinned because that is the field that lets this revert be expressed as a SHAPE (`expression_list` out of the allowlist) rather than as a list of fixture strings. The two forbid rows are the boundaries that remain: a concatenation and a comprehension both need an expression evaluated, and this lane does no data flow \u2014 pinning the absence means closing either one later has to update this file deliberately.",
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "dunder_all_expression_list",
+   "target": "coroutine",
+   "line_number": 42,
+   "meta.dunderAllForm": "expression_list",
+   "meta.evidenceClass": "structural",
+   "note": "THE GAP. `expression_list` is the spelling the allowlist did not read"
+  },
+  {
+   "type": "exports",
+   "from": "dunder_all_expression_list",
+   "target": "iscoroutinefunction",
+   "line_number": 42,
+   "meta.dunderAllForm": "expression_list"
+  },
+  {
+   "type": "exports",
+   "from": "dunder_all_expression_list",
+   "target": "_Hidden",
+   "line_number": 42,
+   "meta.dunderAllForm": "expression_list",
+   "note": "a LEADING UNDERSCORE IS NOT A FILTER \u2014 the author put it in `__all__`, so it is exported. Same rule the list/tuple fixture pins"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "dunder_all_expression_list",
+   "target": "collections",
+   "note": "DECLARED BOUNDARY: the concatenation `__all__ = \"coroutine\" + (...)` is a binary expression, not a literal. Evaluating it is a data-flow question"
+  },
+  {
+   "from": "dunder_all_expression_list",
+   "target": "name",
+   "note": "DECLARED BOUNDARY: a list comprehension has no statically knowable member list, and `name` is its loop variable rather than a declared export either"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "coroutine",
+   "equals": 1
+  },
+  {
+   "name": "iscoroutinefunction",
+   "equals": 1
+  },
+  {
+   "name": "_Hidden",
+   "equals": 1
+  }
+ ],
+ "_seamNote": {
+  "what": "exports are derived SYNTACTICALLY from a `list`, `tuple` or `expression_list` literal assigned directly to `__all__` at module scope. All three spellings reach `from mod import *` identically, which is why they are one relation and not three.",
+  "why": "Adding the third spelling adds no new KIND of claim: the set of names is read off a literal either way, and the shape that decides it is answerable from the grammar rather than by evaluating anything. `dunderAllForm` records which spelling declared a name because a module may declare its surface twice in two forms, and a reader triaging the surface wants to see that.",
+  "evidenceClass": "structural \u2014 the link between a module and a name it declares is read from the module's own AST, not inferred across a boundary."
+ }
+}

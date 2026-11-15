@@ -1,0 +1,296 @@
+{
+  "fixtureId": "csharp/bare-value-reads",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CS-R1 (csharp review): bare-identifier value reads \u2014 the analyzer emitted none at all while the oracle audits only calls/instantiates (CONV-CS-1, same both-sides-blind class as pre-review CP1/R1). Every bare identifier naming a class member VALUE (fields, consts, properties) is a Uses edge: static/instance reads (Get), shadowing suppression (Shadowed param), pattern bindings (is-pattern p, switch-arm q, colliders p/q/x/y/v/w/a/b deliberately collide with members so reverts leak), lambda params + query vars (Flow, with post-binding LIMIT/Max reads proving no over-suppression), out-var and deconstruction bindings (Guards), designators that never read (with/subpattern/anontype/attribute-named), nameof/typeof silence (NameOf), setter-`value` skip with getter member read (WithProps), inheritance + nested-class reads (Shared), member/enumerator initializers (Holder/Level), top-level calls to global (CS-B1), file-scoped types private + unexported (CS-B4), catch_clause complexity on both catch forms (CS-B3).",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "Get",
+      "kind": "method"
+    },
+    {
+      "name": "Holder",
+      "kind": "class"
+    },
+    {
+      "name": "Hidden",
+      "kind": "class",
+      "visibility": "private"
+    },
+    {
+      "name": "Shapes",
+      "kind": "class"
+    },
+    {
+      "name": "Point",
+      "kind": "class"
+    },
+    {
+      "name": "Make",
+      "kind": "method"
+    },
+    {
+      "name": "Deconstruct",
+      "kind": "method"
+    },
+    {
+      "name": "Build",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "Get",
+      "target": "Max",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "from": "Get",
+      "target": "count",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "from": "Get",
+      "target": "Step",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "from": "Flow",
+      "target": "Max",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "lambda bodies resolve outward past their params"
+    },
+    {
+      "type": "uses",
+      "from": "Holder",
+      "target": "Limit",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "member initializer reads"
+    },
+    {
+      "type": "uses",
+      "from": "P",
+      "target": "value",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "getter reads the member; the setter value is skipped (same pair, unobservable separately)"
+    },
+    {
+      "type": "uses",
+      "from": "M",
+      "target": "Shared",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "inherited member reads"
+    },
+    {
+      "type": "uses",
+      "from": "N",
+      "target": "Shared",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "nested class reads outer members"
+    },
+    {
+      "type": "uses",
+      "from": "Sized",
+      "target": "Plain",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "WriteLine",
+      "comment": "CS-B1: top-level statement calls attribute to global"
+    },
+    {
+      "type": "uses",
+      "from": "Make",
+      "target": "G",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "anontype shorthand reads; X/Y designate"
+    },
+    {
+      "type": "uses",
+      "from": "Deconstruct",
+      "target": "X",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "from": "Deconstruct",
+      "target": "Y",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "uses",
+      "from": "Annotated",
+      "target": "Other",
+      "comment": "positional attribute args read (const); class-scope reads attribute to the class"
+    },
+    {
+      "type": "uses",
+      "from": "Build",
+      "target": "G",
+      "meta.relationshipType": "identifier_usage",
+      "comment": "object-initializer values read; X/Y designate"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "Shadowed",
+      "target": "Max",
+      "comment": "param shadows the static"
+    },
+    {
+      "type": "uses",
+      "from": "Check",
+      "target": "p",
+      "comment": "is-pattern binds (pattern site must not read)"
+    },
+    {
+      "type": "uses",
+      "from": "Arm",
+      "target": "q",
+      "comment": "switch-arm pattern binds"
+    },
+    {
+      "type": "uses",
+      "from": "Flow",
+      "target": "x",
+      "comment": "foreach binds"
+    },
+    {
+      "type": "uses",
+      "from": "Flow",
+      "target": "y",
+      "comment": "query range var binds"
+    },
+    {
+      "type": "uses",
+      "from": "Flow",
+      "target": "p",
+      "comment": "lambda param binds"
+    },
+    {
+      "type": "uses",
+      "from": "Guards",
+      "target": "v",
+      "comment": "out-var binds"
+    },
+    {
+      "type": "uses",
+      "from": "Guards",
+      "target": "w",
+      "comment": "out-var binds"
+    },
+    {
+      "type": "uses",
+      "from": "Guards",
+      "target": "a",
+      "comment": "typed deconstruction binds"
+    },
+    {
+      "type": "uses",
+      "from": "Guards",
+      "target": "b",
+      "comment": "typed deconstruction binds"
+    },
+    {
+      "type": "uses",
+      "from": "NameOf",
+      "target": "Max",
+      "comment": "nameof names, never reads"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "topmark",
+      "comment": "top-level locals bind in the file frame"
+    },
+    {
+      "type": "calls",
+      "from": "NameOf",
+      "target": "nameof",
+      "comment": "CS-B2: nameof is an operator, never a callee"
+    },
+    {
+      "type": "uses",
+      "from": "Make",
+      "target": "X",
+      "comment": "with-initializer designates"
+    },
+    {
+      "type": "uses",
+      "from": "Make",
+      "target": "Y",
+      "comment": "anontype designator designates"
+    },
+    {
+      "type": "uses",
+      "from": "Sub",
+      "target": "X",
+      "comment": "subpattern name designates"
+    },
+    {
+      "type": "uses",
+      "from": "Sub",
+      "target": "Y",
+      "comment": "subpattern name designates"
+    },
+    {
+      "type": "uses",
+      "from": "Pos",
+      "target": "y",
+      "comment": "positional-pattern var binds"
+    },
+    {
+      "type": "uses",
+      "from": "Annotated",
+      "target": "Size",
+      "comment": "named attribute args designate, never read"
+    },
+    {
+      "type": "calls",
+      "from": "Pos",
+      "target": "Point",
+      "comment": "CS-B5: positional-pattern heads are patterns, never calls"
+    },
+    {
+      "type": "uses",
+      "from": "Build",
+      "target": "X",
+      "comment": "object-initializer designates, never reads"
+    },
+    {
+      "type": "uses",
+      "from": "Build",
+      "target": "Y",
+      "comment": "object-initializer designates, never reads"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "Hidden",
+      "comment": "CS-B4: file-scoped types never export"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "Errors",
+      "equals": 2,
+      "comment": "CS-B3: bare catch counts"
+    },
+    {
+      "symbol": "ErrorsTyped",
+      "equals": 2,
+      "comment": "CS-B3: typed catch counts (was already counted; guards the swap)"
+    }
+  ]
+}

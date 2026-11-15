@@ -1,0 +1,91 @@
+{
+ "fixtureId": "perl/ontology-exports",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "PERL-ONTOLOGY. The two `qw(...)` arrays are one `quoted_word_list` node each, so BOTH names on a line claim that line and neither claims the next — that is the rule the lane already applies to `extends` (PERL-MR12) and it is what `lineOfNameWithin` exists for. The `%EXPORT_TAGS` row is the one shape where the fat-comma KEY is the export: `all` and `some` are the tag names a caller passes to `import`, and the backslash-reference and the arrayref beside them are payload and are NOT exported names. Line numbers are read off the numbered source, which carries a six-line header comment.",
+ "rationale": "The `exports` LABEL did not exist for perl; the lane had 2,170 export NAMES as `ExportInfo` payload and zero edges, so a module's exported API was in the store and in no graph — and `bb_graph --mode usages` reads `relationship_type IN ('imports','exports')`. All three Exporter surfaces are here in one file so they cannot be fixed one at a time. The `exports` EDGE is 0.9 and not 1.0 because the array only TAKES EFFECT when `Exporter` is reachable from this package's `@ISA` — a fact this file does not always write — so the reason code says so rather than the edge pretending otherwise. Note `use Exporter 'import'` on line 5 makes it effective HERE, and that is the control beside the pinned rows: the analyzer does not need to see it to be right, and must not claim it resolved it. NOTE ON THE SOURCE: the subs are at FILE SCOPE, not in a `package`, and that is deliberate. A perl `sub` inside a package becomes a `method` owned by it, and the harness's export invariant resolves an export against top-level symbols only — so a package-scoped Exporter fixture would be asserting a harness rule rather than an analyzer rule. The real shape is exercised by `imports-and-exports.pm`; this file isolates the three Exporter SURFACES and the edge they produce.",
+ "expectSymbols": [
+  {
+   "name": "alpha",
+   "kind": "function"
+  },
+  {
+   "name": "epsilon",
+   "kind": "function"
+  }
+ ],
+ "expectExports": [
+  {
+   "name": "alpha"
+  },
+  {
+   "name": "beta"
+  },
+  {
+   "name": "gamma"
+  },
+  {
+   "name": "delta"
+  },
+  {
+   "name": "all"
+  },
+  {
+   "name": "some"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "alpha",
+   "line_number": 12,
+   "meta.exportArray": "EXPORT",
+   "meta.reasonCode": "exporter-array-declaration",
+   "meta.evidenceClass": "import_based",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "beta",
+   "line_number": 12,
+   "note": "BOTH words of one `qw(...)` node claim the line the node is on. Reading only the first would lose half of every Exporter array in a corpus."
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "gamma",
+   "line_number": 13,
+   "meta.exportArray": "EXPORT_OK",
+   "note": "the OPTIONAL half. Reading only `@EXPORT` lost it: exports across seven corpora went from 795 to 2,170."
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "all",
+   "line_number": 14,
+   "meta.exportTag": "EXPORT_TAGS",
+   "note": "a `%EXPORT_TAGS` KEY is an exported TAG name, and it is the fat-comma key rather than the payload"
+  },
+  {
+   "type": "exports",
+   "from": "global",
+   "target": "some",
+   "line_number": 14,
+   "meta.exportTag": "EXPORT_TAGS"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "target": "EXPORT_OK",
+   "note": "the payload of a tag is a backslash-reference to an array, not an exported name"
+  },
+  {
+   "type": "exports",
+   "target": "epsilon",
+   "note": "`[qw(epsilon)]` is a tag's PAYLOAD — the names it pulls in, which the module exports only when that tag is requested. Reading it here would claim an unconditional export."
+  }
+ ]
+}

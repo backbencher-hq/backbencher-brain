@@ -1,0 +1,216 @@
+{
+  "instrument": "markdown oracle census (validation/m14/fixtures/markdown/oracle-census.ts)",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "repos": {
+    "kubernetes": {
+      "markdownFiles": 596,
+      "filesCompared": 596,
+      "parseFailures": 0,
+      "truthRows": 38255,
+      "analyzerEdges": 90938,
+      "byLabel": {
+        "contains": {
+          "truth": 5760,
+          "edges": 22446,
+          "missing": 158,
+          "unexplained": 0
+        },
+        "references": {
+          "truth": 3557,
+          "edges": 10055,
+          "missing": 74,
+          "unexplained": 0
+        },
+        "uses": {
+          "truth": 28938,
+          "edges": 58437,
+          "missing": 62,
+          "unexplained": 0
+        }
+      },
+      "missingBySharedSanitizerRule": {
+        "leaf-starts-with-space": 117,
+        "leaf-longer-than-80": 86,
+        "leaf-carries-brace-angle-or-backtick": 74,
+        "leaf-empty": 12,
+        "target-longer-than-200-or-has-newline": 5
+      },
+      "missingByRuleExamples": {
+        "leaf-longer-than-80": [
+          "kubernetes/CHANGELOG/CHANGELOG-1.10.md: uses -> io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/#categories",
+          "kubernetes/CHANGELOG/CHANGELOG-1.11.md: uses -> io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/#marking-pod-as",
+          "kubernetes/CHANGELOG/CHANGELOG-1.11.md: uses -> io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins",
+          "kubernetes/CHANGELOG/CHANGELOG-1.13.md: uses -> io/docs/concepts/overview/working-with-objects/object-management/#how-to-create-objects"
+        ],
+        "leaf-starts-with-space": [
+          "kubernetes/CHANGELOG/CHANGELOG-1.19.md: contains -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+          "kubernetes/CHANGELOG/CHANGELOG-1.19.md: contains -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+          "kubernetes/CHANGELOG/CHANGELOG-1.19.md: references -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+          "kubernetes/CHANGELOG/CHANGELOG-1.19.md: references -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields"
+        ],
+        "leaf-carries-brace-angle-or-backtick": [
+          "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> Introducing `RootCAConfigMap`",
+          "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> `kubectl debug` graduates to Beta",
+          "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> `TokenRequest` / `TokenRequestProjection` graduates to General Availability",
+          "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> Introducing `RootCAConfigMap`"
+        ],
+        "leaf-empty": [
+          "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> RuntimeClass feature graduates to General Availability",
+          "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> RuntimeClass feature graduates to General Availability",
+          "kubernetes/CHANGELOG/CHANGELOG-1.23.md: contains -> :",
+          "kubernetes/CHANGELOG/CHANGELOG-1.27.md: contains -> :"
+        ],
+        "target-longer-than-200-or-has-newline": [
+          "kubernetes/cluster/README.md: contains ->  Deployments in this directory will continue to be maintained and supported at their curre",
+          "kubernetes/test/integration/scheduler_perf/README.md: uses -> io/#/?jobname=scheduler-perf-benchmark&metriccategoryname=Scheduler&metricname=BenchmarkPe",
+          "kubernetes/vendor/github.com/go-openapi/jsonpointer/SECURITY.md: uses -> com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-abo",
+          "kubernetes/vendor/github.com/go-openapi/jsonreference/SECURITY.md: uses -> com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-abo"
+        ]
+      },
+      "missingSamples": [
+        "kubernetes/CHANGELOG/CHANGELOG-1.10.md: uses -> io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/#categories",
+        "kubernetes/CHANGELOG/CHANGELOG-1.11.md: uses -> io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/#marking-pod-as-critical-when-priorites-are-enabled",
+        "kubernetes/CHANGELOG/CHANGELOG-1.11.md: uses -> io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins",
+        "kubernetes/CHANGELOG/CHANGELOG-1.13.md: uses -> io/docs/concepts/overview/working-with-objects/object-management/#how-to-create-objects",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: contains -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: contains -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> io/docs/reference/access-authn-authz/extensible-admission-controllers/#admissionreview-response-warning",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/#version-deprecation",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> com/kubernetes/enhancements/tree/master/keps/sig-storage/1472-storage-capacity-tracking",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> com/kubernetes/enhancements/tree/master/keps/sig-storage/1698-generic-ephemeral-volumes",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#cri-containerd",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> com/windowsexperience/2020/01/28/announcing-windows-server-vnext-insider-preview-build-19551/",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: uses -> com/kubernetes/enhancements/tree/master/keps/sig-node/135-seccomp#version-skew-strategy",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: references -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+        "kubernetes/CHANGELOG/CHANGELOG-1.19.md: references -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> Introducing `RootCAConfigMap`",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> `kubectl debug` graduates to Beta",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> `TokenRequest` / `TokenRequestProjection` graduates to General Availability",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: contains -> RuntimeClass feature graduates to General Availability",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: uses -> io/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> Introducing `RootCAConfigMap`",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> `kubectl debug` graduates to Beta",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> `TokenRequest` / `TokenRequestProjection` graduates to General Availability",
+        "kubernetes/CHANGELOG/CHANGELOG-1.20.md: references -> RuntimeClass feature graduates to General Availability",
+        "kubernetes/CHANGELOG/CHANGELOG-1.18.md: contains -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+        "kubernetes/CHANGELOG/CHANGELOG-1.18.md: references -> CVE-2021-25735: Validating Admission Webhook does not observe some previous fields",
+        "kubernetes/CHANGELOG/CHANGELOG-1.2.md: uses -> md#a-records-and-hostname-based-on-pod-annotations---a-beta-feature-in-kubernetes-v12",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: contains -> CVE-2022-3162: Unauthorized read of Custom Resources",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: contains -> CVE-2022-3294: Node address isn't always verified when proxying",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: contains -> CVE-2022-3172: Aggregated API server can cause clients to be redirected (SSRF)",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: contains -> CVE-2021-25749: `runAsNonRoot` logic bypass for Windows containers",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: contains -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: uses -> io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: uses -> io/docs/reference/access-authn-authz/service-accounts-admin/#bound-service-account-token-volume",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: uses -> io/docs/tutorials/clusters/seccomp/#enable-the-use-of-runtimedefault-as-the-default-seccomp-profile-for-all-workloads",
+        "kubernetes/CHANGELOG/CHANGELOG-1.22.md: contains -> CPU and Memory manager are not working correctly for Guaranteed Pods with multiple containers"
+      ],
+      "unexplainedSamples": []
+    },
+    "scala3": {
+      "markdownFiles": 738,
+      "filesCompared": 738,
+      "parseFailures": 0,
+      "truthRows": 9072,
+      "analyzerEdges": 11382,
+      "byLabel": {
+        "contains": {
+          "truth": 4335,
+          "edges": 6380,
+          "missing": 153,
+          "unexplained": 0
+        },
+        "imports": {
+          "truth": 1,
+          "edges": 1,
+          "missing": 0,
+          "unexplained": 0
+        },
+        "references": {
+          "truth": 86,
+          "edges": 117,
+          "missing": 4,
+          "unexplained": 0
+        },
+        "uses": {
+          "truth": 4650,
+          "edges": 4884,
+          "missing": 7,
+          "unexplained": 0
+        }
+      },
+      "missingBySharedSanitizerRule": {
+        "leaf-carries-brace-angle-or-backtick": 87,
+        "leaf-starts-with-space": 70,
+        "leaf-longer-than-80": 7
+      },
+      "missingByRuleExamples": {
+        "leaf-starts-with-space": [
+          "scala3/changelogs/3.4.0-RC1.md: contains -> Experimental: Capture Checking",
+          "scala3/changelogs/3.4.0.md: contains -> Experimental: Capture Checking",
+          "scala3/changelogs/3.4.2-RC1.md: contains -> Experimental: Capture Checking",
+          "scala3/changelogs/3.4.2.md: contains -> Experimental: Capture Checking"
+        ],
+        "leaf-longer-than-80": [
+          "scala3/docs/_blog/_posts/2019-04-15-14th-dotty-milestone-release.md: uses -> com/scala/scala3/commit/af2a0e66eb4b1204eac5dcb1d979486b92ef93d7#diff-156dc405d9f228bbc0fe",
+          "scala3/docs/_blog/_posts/2020-12-18-scala3-m3.md: uses -> com/forms/d/e/1FAIpQLSflVmTu9lhrtnSTh2tKAjUGrt3WvEgwlDqZg66O3EVSXd1aJg/viewform?usp=sf_lin",
+          "scala3/docs/_blog/_posts/2021-02-17-scala3-rc1.md: uses -> com/scala/scala3/pulls?q=is%3Apr+is%3Aclosed+closed%3A%3E2020-12-02+sort%3Acomments-desc",
+          "scala3/docs/_docs/contributing/sending-in-a-pr.md: uses -> com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-"
+        ],
+        "leaf-carries-brace-angle-or-backtick": [
+          "scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md: contains -> `lazy val`s are now thread-safe by default",
+          "scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md: contains -> Introducing `for` clauses for importing delegate imports by type",
+          "scala3/docs/_blog/_posts/2019-05-23-15th-dotty-milestone-release.md: contains -> `given` clause comes last",
+          "scala3/docs/_blog/_posts/2019-08-30-18th-dotty-milestone-release.md: contains -> `@main` functions"
+        ]
+      },
+      "missingSamples": [
+        "scala3/changelogs/3.4.0-RC1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.4.0.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.4.2-RC1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.4.2.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.6.3-RC1.md: contains -> Experimental: Explicit Nulls",
+        "scala3/changelogs/3.6.3-RC1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.6.3.md: contains -> Experimental: Explicit Nulls",
+        "scala3/changelogs/3.6.3.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.6.4-RC1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.6.4-RC1.md: contains -> Experimental: Global Initialization",
+        "scala3/changelogs/3.6.4-RC1.md: contains -> Experimental: Named Tuples",
+        "scala3/changelogs/3.6.4-RC1.md: contains -> Metaprogramming: Compile-time",
+        "scala3/changelogs/3.6.4.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.6.4.md: contains -> Experimental: Global Initialization",
+        "scala3/changelogs/3.6.4.md: contains -> Experimental: Named Tuples",
+        "scala3/changelogs/3.6.4.md: contains -> Metaprogramming: Compile-time",
+        "scala3/changelogs/3.7.0-RC1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.7.0-RC1.md: contains -> Experimental: Modularity",
+        "scala3/changelogs/3.7.0-RC1.md: contains -> Experimental: Global Initialization Checker",
+        "scala3/changelogs/3.7.0.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.7.0.md: contains -> Experimental: Modularity",
+        "scala3/changelogs/3.7.0.md: contains -> Experimental: Global Initialization Checker",
+        "scala3/changelogs/3.7.1-RC1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.7.1-RC1.md: contains -> Experimental: Unroll",
+        "scala3/changelogs/3.7.1-RC1.md: contains -> Experimental: Referencable Package Objects",
+        "scala3/changelogs/3.7.1-RC1.md: contains -> Metaprogramming: Compile-time",
+        "scala3/changelogs/3.7.1.md: contains -> Experimental: Capture Checking",
+        "scala3/changelogs/3.7.1.md: contains -> Experimental: Unroll",
+        "scala3/changelogs/3.7.1.md: contains -> Experimental: Referencable Package Objects",
+        "scala3/changelogs/3.7.1.md: contains -> Metaprogramming: Compile-time",
+        "scala3/docs/_blog/_posts/2017-05-31-first-dotty-milestone-release.md: contains -> Library authors: Join our community build",
+        "scala3/docs/_blog/_posts/2018-10-10-10th-dotty-milestone-release.md: contains -> Type-level programming: Match Types",
+        "scala3/docs/_blog/_posts/2019-03-05-13th-dotty-milestone-release.md: contains ->  implied",
+        "scala3/docs/_blog/_posts/2019-03-05-13th-dotty-milestone-release.md: contains -> Library authors: Join our community build",
+        "scala3/docs/_blog/_posts/2019-04-15-14th-dotty-milestone-release.md: uses -> com/scala/scala3/commit/af2a0e66eb4b1204eac5dcb1d979486b92ef93d7#diff-156dc405d9f228bbc0fe406dfba63f65",
+        "scala3/docs/_blog/_posts/2019-04-15-14th-dotty-milestone-release.md: contains -> Library authors: Join our community build",
+        "scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md: contains -> Syntax Change: Type Lambdas",
+        "scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md: contains -> Syntax Change: Wildcard Arguments in Types",
+        "scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md: contains -> Syntax Change: Contextual Abstractions",
+        "scala3/docs/_blog/_posts/2019-06-11-16th-dotty-milestone-release.md: contains -> `lazy val`s are now thread-safe by default"
+      ],
+      "unexplainedSamples": []
+    }
+  }
+}

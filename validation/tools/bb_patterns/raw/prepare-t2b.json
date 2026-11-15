@@ -1,0 +1,12 @@
+{
+  "projectDir": ".",
+  "before": {},
+  "after": {},
+  "checkpointMs": 64.17,
+  "analyzeMs": 51179.83,
+  "statsTables": [
+    "sqlite_stat1",
+    "sqlite_stat4"
+  ],
+  "generatedAt": "2026-11-03T17:12:05.894Z"
+}

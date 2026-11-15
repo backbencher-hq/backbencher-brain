@@ -17,7 +17,7 @@
     "planned": 8
   },
   "fixture": {
-    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h1-fixture",
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.tools/m42-h1-fixture",
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,

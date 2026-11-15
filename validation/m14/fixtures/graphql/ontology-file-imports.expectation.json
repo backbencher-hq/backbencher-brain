@@ -1,0 +1,152 @@
+{
+  "fixtureId": "graphql/ontology-file-imports",
+  "language": "graphql",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "`imports` — the `#import \"<file>\"` convention of `graphql-import-node` and `graphql-tools`. GraphQL's specification has NO import syntax and the first measurement said so: `A:import_node: 0` across 882,672 nodes and 98 distinct node types on 1,905 admitted corpus files. That is not a reason to RULE the type, and it is the reasoning the coverage gate's own header records as json's wrong `exports` ruling — a grammar cannot see a convention. So the convention is measured on the tree (the grammar DOES produce `comment` nodes: 4,510 across 269 files) and EMITTED. Corpus: 170 directives across 131 files, 158 well-formed, 144 of those naming a file that exists on disk in the same repository (script/m14/tmp/graphql/out/imports-and-calls.json). Every row below was derived by reading the fixture source line by line; the analyzer's output was not consulted. Line 8 is the bare form, 10 the single-binding form, 12 the `*` form, and 14 the COMMA-SEPARATED binding list — `# import First, Second from \"...\"` — which is 12 of the corpus's 170 directives and which the first measuring probe reported as unrecognised, because it stopped at the first name. The forbid rows are the point of the fixture: lines 20-33 are comments that a keyword match without a negative case reads as imports, and the probe that made that mistake counted all 4,510 comments in the corpus as imports.",
+  "expectSymbols": [
+    {
+      "name": "Query",
+      "kind": "class",
+      "startLine": 16
+    },
+    {
+      "name": "me",
+      "kind": "property",
+      "startLine": 17
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "target": "./fragments/user.gql",
+      "line_number": 8,
+      "confidenceMin": 0.7,
+      "meta.importForm": "bare",
+      "meta.evidenceClass": "import_based",
+      "note": "the bare form. `importBindings` is ABSENT, not empty: an empty array and no array are different claims about a directive that binds the document as a whole, and the absence is what says so."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "target": "./fragments/user-fields.gql",
+      "line_number": 10,
+      "confidenceMin": 0.7,
+      "meta.importForm": "from_binding",
+      "meta.importBindings": [
+        "UserFields"
+      ],
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "target": "./fragments/all.gql",
+      "line_number": 12,
+      "confidenceMin": 0.7,
+      "meta.importForm": "from_binding",
+      "meta.importBindings": [
+        "*"
+      ],
+      "meta.evidenceClass": "import_based",
+      "note": "`import * from` is the whole-module form and occurs verbatim in the corpus (gql-graphql-tools/packages/import/tests/schema/fixtures/circular/a.graphql)."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "target": "./fragments/pair.gql",
+      "line_number": 14,
+      "confidenceMin": 0.7,
+      "meta.importForm": "from_binding",
+      "meta.importBindings": [
+        "First",
+        "Second"
+      ],
+      "meta.evidenceClass": "import_based",
+      "note": "the comma-separated binding list. This is the row the measuring probe could not produce."
+    },
+    {
+      "type": "contains",
+      "from": "Query",
+      "target": "Query.me",
+      "line_number": 17,
+      "note": "the edge is ADDITIVE. 14,649 non-import relationships sat in the same 119 production files this edge was measured in, and this fixture pins the ordinary ones too so a change that swaps `imports` in for something else fails here."
+    },
+    {
+      "type": "references",
+      "from": "Query.me",
+      "target": "User",
+      "line_number": 17,
+      "meta.relationshipType": "declared_type",
+      "note": "ledger rule R9: a declaration that WRITES a type name names the type it writes. `User` is undeclared in this fixture on purpose — the edge is still correct, and its resolution rate is reported per type rather than assumed."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "(file)",
+      "note": "the source must be the importing FILE'S OWN NAME. This file's `exports` edges use the literal \"(file)\", and CSS moved its `imports` off that literal for exactly this reason (real-css-analyzer.ts:2029-2038: a magic source names no symbol in any document, so every edge was unjoinable). A per-file analyzer can name the file it is reading without inventing a symbol."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 26,
+      "note": "`#   # this document imports nothing at all` — the first word after `#` is not `import`."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 27,
+      "note": "`#   # the loader imports every fragment eagerly` — the keyword appears mid-sentence, not as the first word."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 28,
+      "note": "`# important:` — `import` is a PREFIX of the first word. A boundary check is what separates this from line 8, and dropping it is the mutation this row catches."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 29,
+      "note": "`#import` alone — the keyword with no quoted path after it."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 30,
+      "note": "`#import \"./unterminated.graphql` — the opening quote is never closed, so there is no path. Reading to end-of-line instead of to the closing quote invents a target here."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 31,
+      "note": "`#import ./no-quotes.graphql` — an unquoted path is not a form this convention defines."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 32,
+      "note": "`# imported, # imports, # importer` — three ordinary words that all begin with `import`."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "line_number": 33,
+      "note": "`# import NoTargetFrom from` — the `from` keyword with no quoted path after it."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "target": "",
+      "note": "no `imports` edge may carry an empty target, in any line."
+    },
+    {
+      "type": "imports",
+      "from": "ontology-file-imports.graphql",
+      "target": "unknown",
+      "note": "and none may carry the literal `unknown` the honesty contract names as a fabricated endpoint."
+    }
+  ],
+  "forbidSymbols": []
+}

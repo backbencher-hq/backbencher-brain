@@ -1,0 +1,40 @@
+// A placeholder selector: a rule that emits NOTHING on its own and becomes a real
+// selector only where something extends it. It is a declaration with consumers, so it
+// is published as a symbol.
+%badge {
+  display: inline-block;
+  padding: 2px 6px;
+}
+
+.card {
+  @extend %badge;
+  color: red;
+}
+
+// A bare element selector is a `plain_value` in this grammar — `type_selector` does not
+// exist — and this one extends an element, not a class.
+%row {
+  display: block;
+}
+
+%col {
+  display: table-cell;
+}
+
+.grid {
+  @extend %row;
+}
+
+.grid-cell {
+  @extend %col;
+}
+
+// The interpolated form is NOT an edge: `%responsive-#{$bp}` parses its placeholder as a
+// PREFIX under an ERROR node, and a prefix names no selector.
+%responsive-#{$bp} {
+  width: 100%;
+}
+
+.responsive {
+  @extend %responsive-#{$bp};
+}

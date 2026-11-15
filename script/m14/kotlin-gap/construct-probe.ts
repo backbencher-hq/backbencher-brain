@@ -38,7 +38,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { getParser } from "../../../src/ast/engine"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const repoIdx = argv.indexOf("--repo")
 const REPO_DIR = repoIdx >= 0 ? argv[repoIdx + 1] : "kotlin"

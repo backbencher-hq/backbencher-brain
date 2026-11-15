@@ -15,10 +15,10 @@
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "$HOME/mcp/backbencher-brain"
+const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
 const arg = (k: string, d: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const REPO_NAME = arg("--repo", "grails-core")
-const CORPUS = `$HOME/fixtures/repositories/${REPO_NAME}`
+const CORPUS = `/home/ishaq2321/bb_tests/repositories/${REPO_NAME}`
 const LIMIT = parseInt(arg("--limit", "2000"))
 const EXTS = [".groovy", ".gradle", ".gsp"]
 const SKIP = new Set([".git", "node_modules", "build", "target", ".gradle", "out", "dist"])

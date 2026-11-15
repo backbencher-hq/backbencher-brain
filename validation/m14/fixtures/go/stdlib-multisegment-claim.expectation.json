@@ -1,0 +1,75 @@
+{
+ "fixtureId": "go/stdlib-multisegment-claim",
+ "language": "go",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "TWO-DIRECTION pin for the Lead-ruled stdlib multi-segment import claim (task-38, 2026-10-19, Option A-modified: opt-in slash separator). POSITIVE side: the multi-segment stdlib modules `encoding/json`, `net/http`, `net/url` (dot-aliased) and `crypto/sha256` (blank-aliased) each carry meta.languageNamespace = [first segment], meta.languageNamespacePolicy = \"strict-absent\", meta.languageNamespaceSlash = true and meta.stdlibModule = the full module path; the aliased forms are pinned because the claim must read the MODULE FROM THE IMPORT LITERAL, not from the local binding or the target's shape. NEGATIVE side: `fmt` is the single-segment stdlib control (it keeps the pre-existing meta.isStdlib claim and must NOT carry the slash marker — the two claim families never meet on one edge); `github.com/google/go-cmp/cmp` is the third-party control; `example.com/project/internal/util` is the project-internal path control; neither third-party nor project path may carry the namespace/slash/stdlibModule claim, which is the fixture-level expression of the forbidden shape heuristic (`no dot ⇒ stdlib`, which would also claim a project-local `internal/util`). The wrong-root REFUTATION half is arbiter behaviour, exercised by script/m14/go-stdlib-multisegment-census.ts --verify: a listed root that does not match the target's first segment must read externalRefuted (fail-closed), and an unclaimed multi-segment stdlib import must remain unresolved.",
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "stdlibclaim",
+   "target": "encoding/json",
+   "meta.isGoImportDep": true,
+   "meta.languageNamespace": ["encoding"],
+   "meta.languageNamespacePolicy": "strict-absent",
+   "meta.languageNamespaceSlash": true,
+   "meta.stdlibModule": "encoding/json"
+  },
+  {
+   "type": "imports",
+   "from": "stdlibclaim",
+   "target": "net/http",
+   "meta.languageNamespace": ["net"],
+   "meta.languageNamespaceSlash": true,
+   "meta.stdlibModule": "net/http"
+  },
+  {
+   "type": "imports",
+   "from": "stdlibclaim",
+   "target": "net/url",
+   "meta.languageNamespace": ["net"],
+   "meta.languageNamespaceSlash": true,
+   "meta.stdlibModule": "net/url"
+  },
+  {
+   "type": "imports",
+   "from": "stdlibclaim",
+   "target": "crypto/sha256",
+   "meta.languageNamespace": ["crypto"],
+   "meta.languageNamespaceSlash": true,
+   "meta.stdlibModule": "crypto/sha256"
+  },
+  {
+   "type": "imports",
+   "from": "stdlibclaim",
+   "target": "fmt",
+   "meta.isStdlib": true
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "github.com/google/go-cmp/cmp",
+   "meta.languageNamespaceSlash": true
+  },
+  {
+   "type": "imports",
+   "target": "example.com/project/internal/util",
+   "meta.languageNamespaceSlash": true
+  },
+  {
+   "type": "imports",
+   "target": "github.com/google/go-cmp/cmp",
+   "meta.stdlibModule": "github.com/google/go-cmp/cmp"
+  },
+  {
+   "type": "imports",
+   "target": "example.com/project/internal/util",
+   "meta.stdlibModule": "example.com/project/internal/util"
+  },
+  {
+   "type": "imports",
+   "target": "fmt",
+   "meta.languageNamespaceSlash": true
+  }
+ ]
+}

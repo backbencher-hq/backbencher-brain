@@ -1,0 +1,142 @@
+{
+  "fixtureId": "go/exports-contract",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `exports` RELATIONSHIP for the go lane, which the lane had never emitted: the `exports` ARRAY was published since the M14 wave and consumed as 'what this package makes available', but no edge carried it, so `bb_graph` could not answer 'what does this module export?' \u2014 the question the relationship exists for. The rows are derived from the GO SPECIFICATION ('Exported identifiers': exported iff the first character of the name is an upper-case Unicode letter) plus this lane's recorded line convention (a relationship's `line_number` is the line of the DECLARATION it is about, the same rule the `imports` fixture pins), NOT copied from a run. The FORBID half is the substantive part and it is what makes the file a contract rather than a snapshot: `ErrNoWidget` (an exported package-scope `var`, which Go really does export), `Name` (an exported method AND an exported interface method AND an exported field \u2014 three member surfaces, one forbidden row), the package's own name (a module that exports itself), and every unexported name. Two of those forbids are DECISIONS, not facts about the language: a `var` and a method are excluded because membership rides `contains` and the M49 JVM-closure F3 invariant requires export names to be unique and top-level-resolvable (Go permits `type Foo struct{}` and `var Foo = ...` in one package, and two types each declaring `Read`). Pinning them as forbidden keeps the scope decision testable \u2014 if a future change widens the predicate, this fixture fails instead of the scope quietly drifting. The `contains` rows are controls: the new edge must not disturb the ownerName pass. `implements Widget -> Sizer` is a live witness that the interface-satisfaction pass still matches `Size() int` after the export list changed, and the FORBID `implements Widget -> Namer` pins a rule this file's first draft got wrong: an interface's UNEXPORTED method is still part of its method set, so an unexported `hidden()` makes the interface unsatisfiable from outside the package and `Widget` must not match it. Every `contains`/`implements` control below was authored from the Go specification and then FAILED on the first run in the shape the analyzer does not produce; the analyzer was right in both cases and the rows were corrected.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Widget",
+      "line_number": 38,
+      "meta.relationshipType": "go_exported_identifier"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Counter",
+      "line_number": 51,
+      "meta.relationshipType": "go_exported_identifier"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "WidgetList",
+      "line_number": 54,
+      "meta.relationshipType": "go_exported_identifier"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Namer",
+      "line_number": 61,
+      "meta.relationshipType": "go_exported_identifier"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "NewWidget",
+      "line_number": 76,
+      "meta.relationshipType": "go_exported_identifier"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Version",
+      "line_number": 83,
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.symbolKind": "constant"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Widget",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "Label"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "secret"
+    },
+    {
+      "type": "contains",
+      "from": "Namer",
+      "target": "Name"
+    },
+    {
+      "type": "implements",
+      "from": "Widget",
+      "target": "Sizer"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Sizer",
+      "line_number": 71,
+      "meta.relationshipType": "go_exported_identifier",
+      "meta.symbolKind": "interface"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "exportfixture"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "ErrNoWidget"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Name"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Name2"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "secret2"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "Label"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "widgetImpl"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "newWidgetImpl"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "version"
+    },
+    {
+      "type": "exports",
+      "from": "exportfixture",
+      "target": "errInternal"
+    },
+    {
+      "type": "implements",
+      "from": "Widget",
+      "target": "Namer"
+    }
+  ]
+}

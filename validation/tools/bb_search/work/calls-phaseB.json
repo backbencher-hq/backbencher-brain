@@ -1,0 +1,9 @@
+[
+ {"label":"symbols.footer.limit1","args":{"query":"pagedSymbol","limit":1}},
+ {"label":"symbols.footer.nolimit","args":{"query":"handleRequest","limit":1}},
+ {"label":"symbols.footer.trunc","args":{"query":"pagedSymbol","limit":0}},
+ {"label":"symbols.exactRegexConflict","args":{"query":"^handle.*","regex":true,"exact":true}},
+ {"label":"symbols.limitCeiling","args":{"query":"handleRequest","limit":5000}},
+ {"label":"file.staleManualOnly","args":{"mode":"file","filePath":"src/stale.ts"}},
+ {"label":"symbol.missingFound","args":{"mode":"symbol","symbolName":"zzzNoSuch"}}
+]

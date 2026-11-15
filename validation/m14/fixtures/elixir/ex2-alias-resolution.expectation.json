@@ -1,0 +1,58 @@
+{
+  "expectSymbols": [
+    {
+      "name": "MyApp.OrderBook",
+      "kind": "module"
+    },
+    {
+      "name": "MyApp.Thing",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "AliasCases.build/0",
+      "target": "MyApp.OrderBook"
+    },
+    {
+      "type": "implements",
+      "from": "AliasCases",
+      "target": "MyApp.Audit"
+    },
+    {
+      "type": "implements",
+      "from": "AliasDerive",
+      "target": "MyApp.Encodable"
+    },
+    {
+      "type": "implements",
+      "from": "MyApp.Thing",
+      "target": "MyApp.Encodable"
+    },
+    {
+      "type": "references",
+      "from": "AliasUse",
+      "target": "MyApp.Audit"
+    },
+    {
+      "type": "calls",
+      "from": "AliasCases.build/0",
+      "target": "MyApp.OrderBook.build"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "target": "OrderBook"
+    },
+    {
+      "type": "implements",
+      "target": "Audit"
+    },
+    {
+      "type": "implements",
+      "target": "Encodable"
+    }
+  ]
+}

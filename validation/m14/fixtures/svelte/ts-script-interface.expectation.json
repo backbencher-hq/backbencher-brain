@@ -1,0 +1,16 @@
+{
+  "fixtureId": "svelte/ts-script-interface",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "lang=ts blocks were routed through the JS analyzer even though the engine pre-parses them with the TS grammar - TS-only declarations (interfaces) silently dropped. Blocks now dispatch per lang attribute.",
+  "expectSymbols": [
+    {
+      "name": "Props",
+      "kind": "interface"
+    },
+    {
+      "name": "label",
+      "kind": "property"
+    }
+  ]
+}

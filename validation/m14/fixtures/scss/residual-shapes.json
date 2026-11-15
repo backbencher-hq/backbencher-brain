@@ -1,0 +1,311 @@
+{
+  "instrument": "scss residual shapes — the gate's own residual names split by target shape",
+  "source": ".tmp-scss/gate-full.json",
+  "population": {
+    "sampled": 4433,
+    "parsed": 4433,
+    "failed": 0,
+    "corpusTotal": 4433,
+    "repos": 25,
+    "degraded": 0,
+    "degradedFiles": [],
+    "qualifiedNameAliases": 34732,
+    "excluded": {
+      "absent": 0,
+      "overCap": 2,
+      "overCapLargest": 10000000,
+      "sizeCapBytes": 1048576
+    }
+  },
+  "verdict": "FAIL",
+  "reason": "2563 ambiguous + 452 unresolved of 30427 edges, resolved against the file's OWN PROJECT (production's scope)",
+  "totalsByShape": {
+    "unresolved": {
+      "MODULE-PATH": 37,
+      "URL": 1,
+      "BARE-IDENT": 12
+    },
+    "ambiguous": {
+      "BARE-IDENT": 116
+    }
+  },
+  "perType": {
+    "calls": {
+      "unresolved": {},
+      "ambiguous": {
+        "BARE-IDENT": 25
+      },
+      "unresolvedExamples": {},
+      "ambiguousTop": [
+        {
+          "name": "@function divide",
+          "count": 20
+        },
+        {
+          "name": "@mixin set-color-mix-level",
+          "count": 4
+        },
+        {
+          "name": "@mixin mixed-input-border",
+          "count": 1
+        }
+      ]
+    },
+    "uses": {
+      "unresolved": {},
+      "ambiguous": {},
+      "unresolvedExamples": {},
+      "ambiguousTop": []
+    },
+    "contains": {
+      "unresolved": {},
+      "ambiguous": {},
+      "unresolvedExamples": {},
+      "ambiguousTop": []
+    },
+    "imports": {
+      "unresolved": {
+        "MODULE-PATH": 24,
+        "URL": 1
+      },
+      "ambiguous": {},
+      "unresolvedExamples": {
+        "MODULE-PATH": [
+          "bulma/utilities/all",
+          "assets/html/scss/bulma/base/minireset::minireset.sass",
+          "bulma/helpers/all",
+          "assets/html/scss/bulma/base/generic::generic.sass"
+        ],
+        "URL": [
+          "https://fonts.googleapis.com/css?family=Lato:400,700,400italic&display=swap"
+        ]
+      },
+      "ambiguousTop": []
+    },
+    "references": {
+      "unresolved": {},
+      "ambiguous": {
+        "BARE-IDENT": 25
+      },
+      "unresolvedExamples": {},
+      "ambiguousTop": [
+        {
+          "name": "$themename",
+          "count": 4
+        },
+        {
+          "name": "$text",
+          "count": 3
+        },
+        {
+          "name": "$grey-dark",
+          "count": 2
+        },
+        {
+          "name": "$background",
+          "count": 2
+        },
+        {
+          "name": "$grey-light",
+          "count": 2
+        },
+        {
+          "name": "$link",
+          "count": 2
+        },
+        {
+          "name": "$todo",
+          "count": 1
+        },
+        {
+          "name": "$compat",
+          "count": 1
+        },
+        {
+          "name": "$danger",
+          "count": 1
+        },
+        {
+          "name": "$warning",
+          "count": 1
+        }
+      ]
+    },
+    "exports": {
+      "unresolved": {},
+      "ambiguous": {
+        "BARE-IDENT": 25
+      },
+      "unresolvedExamples": {},
+      "ambiguousTop": [
+        {
+          "name": "$themename",
+          "count": 1
+        },
+        {
+          "name": "$bulmaswatch-import-font",
+          "count": 1
+        },
+        {
+          "name": "$body-size",
+          "count": 1
+        },
+        {
+          "name": "$size-6",
+          "count": 1
+        },
+        {
+          "name": "$size-7",
+          "count": 1
+        },
+        {
+          "name": "$documenter-is-dark-theme",
+          "count": 1
+        },
+        {
+          "name": "$family-monospace",
+          "count": 1
+        },
+        {
+          "name": "$primary",
+          "count": 1
+        },
+        {
+          "name": "$red",
+          "count": 1
+        },
+        {
+          "name": "$orange",
+          "count": 1
+        }
+      ]
+    },
+    "extends": {
+      "unresolved": {
+        "MODULE-PATH": 13,
+        "BARE-IDENT": 12
+      },
+      "ambiguous": {
+        "BARE-IDENT": 25
+      },
+      "unresolvedExamples": {
+        "MODULE-PATH": [
+          ".is-dark",
+          ".is-primary",
+          ".is-size-7",
+          ".image"
+        ],
+        "BARE-IDENT": [
+          "%block",
+          "h1",
+          "h2",
+          "h3"
+        ]
+      },
+      "ambiguousTop": [
+        {
+          "name": "%fa-icon",
+          "count": 3
+        },
+        {
+          "name": "%list-row",
+          "count": 2
+        },
+        {
+          "name": "%menu-panel",
+          "count": 2
+        },
+        {
+          "name": "%form-element-label",
+          "count": 2
+        },
+        {
+          "name": "%app-view-title",
+          "count": 1
+        },
+        {
+          "name": "%composite-row-header",
+          "count": 1
+        },
+        {
+          "name": "%confirmation-dialog-inline",
+          "count": 1
+        },
+        {
+          "name": "%copy-button",
+          "count": 1
+        },
+        {
+          "name": "%card",
+          "count": 1
+        },
+        {
+          "name": "%healthcheck-output",
+          "count": 1
+        }
+      ]
+    },
+    "implements": {
+      "unresolved": {},
+      "ambiguous": {},
+      "unresolvedExamples": {},
+      "ambiguousTop": []
+    },
+    "overrides": {
+      "unresolved": {},
+      "ambiguous": {
+        "BARE-IDENT": 16
+      },
+      "unresolvedExamples": {},
+      "ambiguousTop": [
+        {
+          "name": "$enable-shadows",
+          "count": 3
+        },
+        {
+          "name": "$colors",
+          "count": 3
+        },
+        {
+          "name": "$admonition-header-background",
+          "count": 1
+        },
+        {
+          "name": "$admonition-header-color",
+          "count": 1
+        },
+        {
+          "name": "$admonition-border-color",
+          "count": 1
+        },
+        {
+          "name": "$admonition-background",
+          "count": 1
+        },
+        {
+          "name": "$admonition-body-color",
+          "count": 1
+        },
+        {
+          "name": "$color-mode-type",
+          "count": 1
+        },
+        {
+          "name": "$utilities",
+          "count": 1
+        },
+        {
+          "name": "$border-color",
+          "count": 1
+        }
+      ]
+    },
+    "instantiates": {
+      "unresolved": {},
+      "ambiguous": {},
+      "unresolvedExamples": {},
+      "ambiguousTop": []
+    }
+  },
+  "reading": "shape decides ownership: MODULE-PATH/URL are specifiers with no referent by construction; FRAGMENT names a node; CUSTOM-PROP has a live counterfactual (the css delegate publishes custom properties); BARE-IDENT is the only shape whose referent would be a plain declaration."
+}

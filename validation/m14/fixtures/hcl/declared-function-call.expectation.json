@@ -1,0 +1,31 @@
+{
+  "fixtureId": "hcl/declared-function-call",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "line_number values transcribed from a measured run of the production entry (parseFile) and checked against the numbered source: `double(21)` is on line 34, `double(length(local.merged))` on 42 and `double(2)` on 46, each being the line the CALLEE IDENTIFIER is written on (the same convention every other edge in this analyzer uses — the site, not the declaration start). The `references` rows on lines 38 and 42 are the address read INSIDE a call, and the fact that line 42 carries both a `calls` and a `references` edge is the point of the nested line. The `calls` forbids were authored BEFORE the run from the source: merge(…) and length(…) are written in the fixture and are Terraform globals, so before this change a rule keyed on 'any function_call' would have published them.",
+  "rationale": "HCL has no function-declaration production: a function is a block, and the ecosystem layers the declaration on top of the container grammar. docker-bake spells that `function \"name\" { … }` and Terraform 1.8+ spells it `func \"name\" { … }`; both parse as an ordinary one-label block, which is why a block-driven walker reaches them with no grammar support. Measured over 9,329 corpus files / 2,035,319 nodes: exactly ONE declaration of the shape exists — `function \"bindir\"` at docker/docker-bake.hcl:56 — with 4 call sites (lines 101, 106, 137, 151), and `func` occurs 0 times. Everything else is a global: 12,968 unqualified `function_call` nodes over 139 distinct callees plus 20 namespaced `provider::` calls over 9 callees, none of which any file declares. So `calls` is emitted ONLY where the same file declares the callee, which is what keeps every `calls` edge resolvable and stops a fake caller becoming wrong advice in bb_graph and bb_impact. The target is the declaration's index identity (`function.double`), not the bare name the file writes, because that is the string the index can bind; the call-site spelling rides along in metadata.hclCallee so nothing is lost.",
+  "expectSymbols": [
+    { "name": "function.double", "kind": "class", "meta.hclFunctionDecl": true, "note": "the declaration is an ordinary nested block — the `function` spelling is a dialect convention, not a grammar production — so `class` stays and `hclFunctionDecl` is what tells a consumer this block is callable" },
+    { "name": "function.unused", "kind": "class", "meta.hclFunctionDecl": true, "note": "declared and never called. An uncalled declaration is still a declaration, and dropping it would make the symbol set depend on call sites." },
+    { "name": "params", "kind": "property", "meta.hclValueKind": "collection_value", "note": "`params = [n]` is a collection_value wrapping a tuple; `hclValueKind` names the node that describes the value and only unwraps `operation`, so this is the honest spelling" },
+    { "name": "result", "kind": "property", "meta.hclValueKind": "binary_operation", "note": "`n * 2`: the `operation` wrapper is unwrapped so a comparison or an arithmetic expression is reported as the operation it is" },
+    { "name": "doubled", "kind": "property", "meta.hclValueKind": "function_call" },
+    { "name": "aws_instance.web", "kind": "class" },
+    { "name": "count", "kind": "property", "scope": "aws_instance.web" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "locals", "target": "function.double", "line_number": 34, "meta.evidenceClass": "structural", "meta.hclCallee": "double", "note": "the only shape that becomes a call edge: a callee a `function` block in this same file declares. The target is the declaration's index identity, which is what resolves; the call-site spelling is kept in hclCallee." },
+    { "type": "calls", "from": "locals", "target": "function.double", "line_number": 42, "meta.evidenceClass": "structural", "meta.hclCallee": "double", "note": "a declared function NESTED inside a global call — `double(length(local.merged))`. The callee of the outer call declares nothing, the callee of the inner one does, and the two are different facts on the same line." },
+    { "type": "calls", "from": "aws_instance.web", "target": "function.double", "line_number": 46, "meta.evidenceClass": "structural", "meta.hclCallee": "double", "note": "a call from a resource block: the SOURCE is the enclosing block's qualified path, the same convention every other relationship in this analyzer uses." },
+    { "type": "references", "from": "locals", "target": "local.merged", "line_number": 42, "meta.evidenceClass": "reference_qualified", "note": "the reference read INSIDE the call is still published. Calling a function and reading an address are different facts and the analyzer keeps both straight." },
+    { "type": "references", "from": "locals", "target": "local.merged", "line_number": 38, "meta.evidenceClass": "reference_qualified" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "merge", "note": "THE FABRICATION THIS FIXTURE EXISTS FOR. `merge(…)` is written on line 37 and no file declares it: it is a Terraform global. A `calls` edge to it dangles, and a dangling caller becomes wrong refactoring advice in bb_impact. 12,968 corpus call nodes are this shape." },
+    { "type": "calls", "target": "length", "note": "same, on line 38 and again nested inside line 42's call" },
+    { "type": "calls", "target": "function.unused", "from": "locals", "note": "a declaration is not automatically called. This row fails if a rule ever connects every declaration to every call site, which is the shape a name-only match produces." },
+    { "type": "calls", "target": "double", "note": "the call-site spelling is NOT the target. `double` is not a declared name — `function.double` is — so an edge to `double` would dangle while the correct edge exists. The spelling is preserved in metadata.hclCallee instead." },
+    { "type": "references", "target": "double", "note": "a bare single-identifier path is a function name or a type keyword, never a Terraform reference, which is always qualified" },
+    { "type": "uses", "target": "function.double", "note": "the INVERSE error: a declared project symbol published as `uses` claims it is a global" }
+  ]
+}

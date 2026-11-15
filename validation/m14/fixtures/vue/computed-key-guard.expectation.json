@@ -1,0 +1,60 @@
+{
+  "fixtureId": "vue/computed-key-guard",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F6 (master review 2026-09-30): the M2/VSD15 ruling \u2014 a bracket-led computed key names a variable, statically unknowable, so skip it \u2014 was implemented in `emitObjectMembers` and NOWHERE ELSE. Sites that turn an object key into a symbol name: `emitObjectMembers` (methods/computed/watch, GUARDED), `emitDataKeys` (data keys), `propEntries` (props/emits) and `genericMacroEntries` (inline type literals) \u2014 the last of which ALSO walked index signatures as if they were members. Measured on the restored corpus the only real phantom was `Property \"[key]\"` at panel-date-pick.vue:846; the other three shapes are legal Vue that no corpus file happens to write, which is exactly why the ruling was never applied to them. It is not cosmetic: the store's symbol key is name+line, so a phantom can also DISPLACE a real member. The `plain`/`plainProp`/`save`/`plainInline` CONTROLS are what a guard aimed at the whole bracket instead of the key POSITION would lose, so the fixture separates the two implementations as well as pinning the defect. SCOPE NOTE, because it is a cross-lane fact and not this lane's to change: an index signature in a STANDALONE `interface` in the script is the TypeScript delegate's OWN deliberately-marked emission (metadata.isIndexSignature + indexParameter, real-typescript-analyzer.ts:3610), not a vue defect \u2014 the vue fix is the INLINE type-literal path above, which vue does own.",
+  "expectSymbols": [
+    {
+      "name": "dyn",
+      "kind": "constant"
+    },
+    {
+      "name": "ComputedKeyGuard",
+      "kind": "class"
+    },
+    {
+      "name": "plain",
+      "kind": "property",
+      "meta.isDataKey": true
+    },
+    {
+      "name": "plainProp",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "save",
+      "kind": "method"
+    },
+    {
+      "name": "props",
+      "kind": "constant"
+    },
+    {
+      "name": "plainInline",
+      "kind": "property",
+      "meta.isProp": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "plain-event",
+      "kind": "event",
+      "meta.isEmit": true,
+      "meta.isScriptSetup": true
+    },
+    {
+      "name": "bare-event",
+      "kind": "event",
+      "meta.isEmit": true,
+      "meta.isScriptSetup": true
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "[dyn]"
+    },
+    {
+      "name": "[key]"
+    }
+  ]
+}

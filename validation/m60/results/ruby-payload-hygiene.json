@@ -1,0 +1,107 @@
+{
+  "generatedAt": "2026-10-01T21:51:42.438Z",
+  "corpus": [
+    "/home/sano/ishaq/bb_tests/repositories"
+  ],
+  "files": 8528,
+  "symbols": 81861,
+  "relationships": 702932,
+  "errors": 0,
+  "classes": [
+    {
+      "id": "empty",
+      "why": "a symbol whose name carries no token",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "sentinel-global-as-name",
+      "why": "the declared file-scope owner is a graph node, never a symbol name",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "template-fragment",
+      "why": "an interpolation template is not a name",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "non-leaf-path",
+      "why": "a class/module name should be a leaf; `::` means the split failed",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "raw-colon-prefix",
+      "why": "a symbol literal whose colon was not stripped",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "raw-quote",
+      "why": "a quoted string whose quotes were not stripped",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "whitespace-inside",
+      "why": "a name carrying whitespace is a phrase, not a name",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "dotted",
+      "why": "a call target that is an expression, not a method name",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "path-fragment",
+      "why": "a path where a method name belongs",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    },
+    {
+      "id": "paren-in-name",
+      "why": "a name carrying call syntax",
+      "count": 0,
+      "asSymbol": 0,
+      "asRelationshipTarget": 0,
+      "files": 0,
+      "samples": []
+    }
+  ],
+  "summary": {
+    "classesFound": 0,
+    "occurrences": 0,
+    "rawMapSum": 0
+  }
+}

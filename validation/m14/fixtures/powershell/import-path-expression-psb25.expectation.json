@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/import-path-expression-psb25.ps1",
+  "authoredFrom": "PS-B25 — a quoted module path is a PATH EXPRESSION, not the first variable inside it. Authored 2026-10-27 from the whole-population reconciliation (validation/m14/fixtures/powershell/reconcile-f5.mts), where the class measured 209 `imports` + 203 `references` rows: `Import-Module \"$PSScriptRoot/../../tools/ci.psm1\"` published the variable `PSScriptRoot` as the module, while the unquoted spelling of the same path was published whole. The grammar wraps every quoted argument as `array_literal_expression > unary_expression > string_literal`, so the argument reader's first-variable search answered before the string was read as a string. The fix keeps the variable handoff ONLY when the whole quoted value is that variable (`\"$t\"`, the PS29 case, where the value must stay the bare name because a `$`-prefixed uses target is the F9 defect) and otherwise publishes the path text with its sigils. The four forbid rows are the pre-fix shape (`here`, `PSScriptRoot`) and the dynamic-name family (`dynamic`): `Import-Module $m` names no module the graph can join.",
+  "expectSymbols": [
+    { "name": "import-path-expression-psb25.ps1", "kind": "module" },
+    { "name": "here", "kind": "variable", "ownerName": "import-path-expression-psb25.ps1" },
+    { "name": "dynamic", "kind": "variable", "ownerName": "import-path-expression-psb25.ps1" },
+    { "name": "Get-Setting", "kind": "function", "ownerName": "import-path-expression-psb25.ps1" },
+    { "name": "Name", "kind": "variable", "ownerName": "Get-Setting", "comment": "a function parameter is declared as a VARIABLE in this lane (the analyzer has no Parameter kind for it); the containment is what makes the owner explicit" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "import-path-expression-psb25.ps1", "target": "Get-Setting", "line_number": 25 },
+    { "type": "contains", "from": "Get-Setting", "target": "Name", "line_number": 26 },
+
+    { "type": "imports", "from": "import-path-expression-psb25.ps1", "target": "$here/../helpers.psm1", "line_number": 18, "meta.via": "Import-Module", "meta.evidenceClass": "import_based", "comment": "the QUOTED path expression: the module is the whole path, sigil included. Pre-fix this row was `imports -> here`." },
+    { "type": "imports", "from": "import-path-expression-psb25.ps1", "target": "$PSScriptRoot/./local.psm1", "line_number": 19, "meta.via": "Import-Module", "comment": "quoted, with an AUTOMATIC variable: the path is still the path. Pre-fix this row was `imports -> PSScriptRoot`." },
+    { "type": "imports", "from": "import-path-expression-psb25.ps1", "target": "$PSScriptRoot/plain.psm1", "line_number": 20, "meta.via": "Import-Module", "comment": "the UNQUOTED control: a `generic_token` was always published whole, so this row is what the two quoted forms had to be made to agree with." },
+
+    { "type": "references", "from": "import-path-expression-psb25.ps1", "target": "$here/../helpers.psm1", "line_number": 18, "meta.via": "Import-Module", "comment": "PS23 keeps BOTH labels for one load: `imports` is the dependency and `references` the name resolution. Both carry the same target, so the two rows cannot describe different facts." },
+    { "type": "references", "from": "import-path-expression-psb25.ps1", "target": "$PSScriptRoot/./local.psm1", "line_number": 19, "meta.via": "Import-Module" },
+    { "type": "references", "from": "import-path-expression-psb25.ps1", "target": "$PSScriptRoot/plain.psm1", "line_number": 20, "meta.via": "Import-Module" },
+
+    { "type": "uses", "from": "import-path-expression-psb25.ps1", "target": "import-path-expression-psb25.ps1.dynamic", "line_number": 23, "meta.isVariableReference": true, "meta.isArgumentReference": true, "comment": "`Import-Module $dynamic` names no module; what the file does is READ the variable. That read is the honest edge, and it is why the forbid rows below refuse an import to it. The import branch `break`s before the command branch's generic argument read, so this row was published by nothing at all before the fix — the same defect class the F9 argument-read note records, on the one branch that skipped that pass." },
+    { "type": "uses", "from": "import-path-expression-psb25.ps1", "target": "import-path-expression-psb25.ps1.here", "line_number": 18, "meta.isArgumentReference": true, "comment": "the PATH EXPRESSION also READS the variable inside it: the module is the path, and `$here` is read to build it. Both facts are true and they are different edges — this is why the fix could not be \"publish the text instead of the variable\": it has to publish the text AND keep the read." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "imports", "equals": 3, "comment": "exactly the three path expressions. A reader that published the first variable instead would also read 3 — which is why the forbid rows exist; a reader that also published the dynamic name would read 4." },
+    { "type": "references", "equals": 3 }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "here", "comment": "PRE-FIX SHAPE (line 19): the variable inside `\"$here/../helpers.psm1\"` published as the module name." },
+    { "type": "imports", "target": "PSScriptRoot", "comment": "PRE-FIX SHAPE (line 20): the automatic variable inside the quoted path published as the module name." },
+    { "type": "references", "target": "here", "comment": "PRE-FIX SHAPE: PS23 emits `references` from the same reader, so the variable leaked onto both channels at once." },
+    { "type": "references", "target": "PSScriptRoot" },
+    { "type": "imports", "target": "dynamic", "comment": "A DYNAMIC MODULE NAME IS NOT A MODULE NAME: `Import-Module $dynamic` names no module the graph can join, and the variable read is already published as `uses`." },
+    { "type": "imports", "target": "$dynamic" },
+    { "type": "references", "target": "$dynamic" }
+  ]
+}

@@ -1,0 +1,3034 @@
+{
+ "findings": [
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 153,
+    "symbol": "analyze"
+   },
+   "description": "Function 'analyze' has complexity 447 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=447 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 2017,
+    "symbol": "extractExpressionRelationships"
+   },
+   "description": "Function 'extractExpressionRelationships' has complexity 272 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=272 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0065_health-provider.ts",
+    "line": 343,
+    "symbol": "getUnifiedHealth"
+   },
+   "description": "Function 'getUnifiedHealth' has complexity 134 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=134 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 558,
+    "symbol": "analyze"
+   },
+   "description": "Function 'analyze' has complexity 119 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=119 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0019_impact.ts",
+    "line": 764,
+    "symbol": "computeImpact"
+   },
+   "description": "Function 'computeImpact' has complexity 118 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=118 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0076_graph-engine.ts",
+    "line": 402,
+    "symbol": "traverseGraph"
+   },
+   "description": "Function 'traverseGraph' has complexity 114 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=114 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0067_migration-engine.ts",
+    "line": 474,
+    "symbol": "generateMigrationPlans"
+   },
+   "description": "Function 'generateMigrationPlans' has complexity 111 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=111 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0069_orphans.ts",
+    "line": 247,
+    "symbol": "detectOrphans"
+   },
+   "description": "Function 'detectOrphans' has complexity 109 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=109 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0014_call_hierarchy.ts",
+    "line": 1101,
+    "symbol": "expandCalls"
+   },
+   "description": "Function 'expandCalls' has complexity 94 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=94 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 3020,
+    "symbol": "extractDeclaredTypeRefs"
+   },
+   "description": "Function 'extractDeclaredTypeRefs' has complexity 91 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=91 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0062_edit-engine.ts",
+    "line": 661,
+    "symbol": "planEdit"
+   },
+   "description": "Function 'planEdit' has complexity 90 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=90 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0094_brain-relationship-enrichment.ts",
+    "line": 180,
+    "symbol": "enrichRelationships"
+   },
+   "description": "Function 'enrichRelationships' has complexity 88 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=88 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 1646,
+    "symbol": "extractOverrideRelationships"
+   },
+   "description": "Function 'extractOverrideRelationships' has complexity 77 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=77 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0058_quick-answer.ts",
+    "line": 272,
+    "symbol": "quickAnswer"
+   },
+   "description": "Function 'quickAnswer' has complexity 76 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=76 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0061_taint.ts",
+    "line": 102,
+    "symbol": "analyzeTaintFlows"
+   },
+   "description": "Function 'analyzeTaintFlows' has complexity 69 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=69 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1578,
+    "symbol": "generateDocumentation"
+   },
+   "description": "Function 'generateDocumentation' has complexity 66 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=66 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0065_health-provider.ts",
+    "line": 1164,
+    "symbol": "formatUnifiedHealth"
+   },
+   "description": "Function 'formatUnifiedHealth' has complexity 61 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=61 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0067_migration-engine.ts",
+    "line": 928,
+    "symbol": "formatMigrationPlans"
+   },
+   "description": "Function 'formatMigrationPlans' has complexity 54 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=54 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 858,
+    "symbol": "addSymbolFacts"
+   },
+   "description": "Function 'addSymbolFacts' has complexity 51 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=51 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0075_quality.ts",
+    "line": 58,
+    "symbol": "testQuality"
+   },
+   "description": "Function 'testQuality' has complexity 50 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=50 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0012_server.ts",
+    "line": 1024,
+    "symbol": "wireFeatures"
+   },
+   "description": "Function 'wireFeatures' has complexity 47 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=47 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0006_graph_request.ts",
+    "line": 177,
+    "symbol": "handleGraphRequest"
+   },
+   "description": "Function 'handleGraphRequest' has complexity 45 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=45 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0049_run-history.ts",
+    "line": 132,
+    "symbol": "completeAnalysisRun"
+   },
+   "description": "Function 'completeAnalysisRun' has complexity 44 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=44 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0079_visualization-engine.ts",
+    "line": 362,
+    "symbol": "visualizeProject"
+   },
+   "description": "Function 'visualizeProject' has complexity 44 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=44 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0017_freshness.ts",
+    "line": 71,
+    "symbol": "createFreshnessMonitor"
+   },
+   "description": "Function 'createFreshnessMonitor' has complexity 42 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=42 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.88,
+   "location": {
+    "file": "t0018_hub_protocol.ts",
+    "line": 91,
+    "symbol": "validateHubMessage"
+   },
+   "description": "Function 'validateHubMessage' has complexity 38 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=38 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.88,
+   "location": {
+    "file": "t0094_brain-relationship-enrichment.ts",
+    "line": 764,
+    "symbol": "inferPattern"
+   },
+   "description": "Function 'inferPattern' has complexity 38 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=38 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.86,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1083,
+    "symbol": "addRelationshipFacts"
+   },
+   "description": "Function 'addRelationshipFacts' has complexity 36 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=36 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.8400000000000001,
+   "location": {
+    "file": "t0047_dependencies.ts",
+    "line": 187,
+    "symbol": "getFileDependencies"
+   },
+   "description": "Function 'getFileDependencies' has complexity 34 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=34 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.8300000000000001,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 2343,
+    "symbol": "formatDocumentation"
+   },
+   "description": "Function 'formatDocumentation' has complexity 33 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=33 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.8200000000000001,
+   "location": {
+    "file": "t0000_document_highlight.ts",
+    "line": 99,
+    "symbol": "documentHighlight"
+   },
+   "description": "Function 'documentHighlight' has complexity 32 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=32 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.8200000000000001,
+   "location": {
+    "file": "t0010_hover.ts",
+    "line": 531,
+    "symbol": "hover"
+   },
+   "description": "Function 'hover' has complexity 32 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=32 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.8200000000000001,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1961,
+    "symbol": "makeResult"
+   },
+   "description": "Function 'makeResult' has complexity 32 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=32 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.81,
+   "location": {
+    "file": "t0037_doctor.ts",
+    "line": 218,
+    "symbol": "runDoctorChecks"
+   },
+   "description": "Function 'runDoctorChecks' has complexity 31 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=31 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.81,
+   "location": {
+    "file": "t0048_complexity.ts",
+    "line": 63,
+    "symbol": "analyzeComplexity"
+   },
+   "description": "Function 'analyzeComplexity' has complexity 31 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=31 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.81,
+   "location": {
+    "file": "t0054_regex-search.ts",
+    "line": 92,
+    "symbol": "searchRegex"
+   },
+   "description": "Function 'searchRegex' has complexity 31 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=31 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.81,
+   "location": {
+    "file": "t0088_vector-binary.ts",
+    "line": 88,
+    "symbol": "scanJsonVectorInto"
+   },
+   "description": "Function 'scanJsonVectorInto' has complexity 31 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=31 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.8,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 4147,
+    "symbol": "extractParameters"
+   },
+   "description": "Function 'extractParameters' has complexity 30 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=30 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.79,
+   "location": {
+    "file": "t0019_impact.ts",
+    "line": 535,
+    "symbol": "countImpactDependents"
+   },
+   "description": "Function 'countImpactDependents' has complexity 29 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=29 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.79,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1203,
+    "symbol": "addFindingFacts"
+   },
+   "description": "Function 'addFindingFacts' has complexity 29 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=29 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.78,
+   "location": {
+    "file": "t0012_server.ts",
+    "line": 705,
+    "symbol": "handleMessage"
+   },
+   "description": "Function 'handleMessage' has complexity 28 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=28 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.78,
+   "location": {
+    "file": "t0053_content-search.ts",
+    "line": 702,
+    "symbol": "matchContentRows"
+   },
+   "description": "Function 'matchContentRows' has complexity 28 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=28 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.78,
+   "location": {
+    "file": "t0073_suggestions.ts",
+    "line": 60,
+    "symbol": "testSuggestions"
+   },
+   "description": "Function 'testSuggestions' has complexity 28 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=28 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.77,
+   "location": {
+    "file": "t0093_openai-embed.ts",
+    "line": 300,
+    "symbol": "attemptRequest"
+   },
+   "description": "Function 'attemptRequest' has complexity 27 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=27 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.76,
+   "location": {
+    "file": "t0004_type_inference_surface.ts",
+    "line": 492,
+    "symbol": "inferWithWitness"
+   },
+   "description": "Function 'inferWithWitness' has complexity 26 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=26 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.76,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 4396,
+    "symbol": "methodComplexity"
+   },
+   "description": "Function 'methodComplexity' has complexity 26 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=26 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.75,
+   "location": {
+    "file": "t0008_rich_hover.ts",
+    "line": 418,
+    "symbol": "richSitesForSymbol"
+   },
+   "description": "Function 'richSitesForSymbol' has complexity 25 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=25 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.75,
+   "location": {
+    "file": "t0055_semantic-search.ts",
+    "line": 124,
+    "symbol": "semanticVectorSearch"
+   },
+   "description": "Function 'semanticVectorSearch' has complexity 25 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=25 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.75,
+   "location": {
+    "file": "t0079_visualization-engine.ts",
+    "line": 205,
+    "symbol": "renderClassDiagram"
+   },
+   "description": "Function 'renderClassDiagram' has complexity 25 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=25 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.75,
+   "location": {
+    "file": "t0094_brain-relationship-enrichment.ts",
+    "line": 874,
+    "symbol": "formatEnrichedRelationship"
+   },
+   "description": "Function 'formatEnrichedRelationship' has complexity 25 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=25 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.75,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 3719,
+    "symbol": "collectDartLocals"
+   },
+   "description": "Function 'collectDartLocals' has complexity 25 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=25 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.75,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 1480,
+    "symbol": "processImportExport"
+   },
+   "description": "Function 'processImportExport' has complexity 25 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=25 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.74,
+   "location": {
+    "file": "t0011_navigation.ts",
+    "line": 424,
+    "symbol": "findNamedSymbolAtPosition"
+   },
+   "description": "Function 'findNamedSymbolAtPosition' has complexity 24 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=24 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.74,
+   "location": {
+    "file": "t0057_symbol-search.ts",
+    "line": 104,
+    "symbol": "searchSymbols"
+   },
+   "description": "Function 'searchSymbols' has complexity 24 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=24 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.74,
+   "location": {
+    "file": "t0066_migration-source.ts",
+    "line": 401,
+    "symbol": "loadMigrationContextForSymbols"
+   },
+   "description": "Function 'loadMigrationContextForSymbols' has complexity 24 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=24 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.74,
+   "location": {
+    "file": "t0067_migration-engine.ts",
+    "line": 362,
+    "symbol": "computeDependencyOrder"
+   },
+   "description": "Function 'computeDependencyOrder' has complexity 24 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=24 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.73,
+   "location": {
+    "file": "t0082_brain-index-health.ts",
+    "line": 603,
+    "symbol": "checkHashDrift"
+   },
+   "description": "Function 'checkHashDrift' has complexity 23 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=23 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.72,
+   "location": {
+    "file": "t0039_setup-wizard.ts",
+    "line": 441,
+    "symbol": "runSetupWizard"
+   },
+   "description": "Function 'runSetupWizard' has complexity 22 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=22 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.72,
+   "location": {
+    "file": "t0039_setup-wizard.ts",
+    "line": 208,
+    "symbol": "validateKey"
+   },
+   "description": "Function 'validateKey' has complexity 22 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=22 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.72,
+   "location": {
+    "file": "t0062_edit-engine.ts",
+    "line": 314,
+    "symbol": "isBindingParentType"
+   },
+   "description": "Function 'isBindingParentType' has complexity 22 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=22 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.72,
+   "location": {
+    "file": "t0082_brain-index-health.ts",
+    "line": 287,
+    "symbol": "checkIndexCompleteness"
+   },
+   "description": "Function 'checkIndexCompleteness' has complexity 22 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=22 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.71,
+   "location": {
+    "file": "t0010_hover.ts",
+    "line": 434,
+    "symbol": "formatHoverMarkdown"
+   },
+   "description": "Function 'formatHoverMarkdown' has complexity 21 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=21 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.71,
+   "location": {
+    "file": "t0092_embedding-config.ts",
+    "line": 250,
+    "symbol": "describeEmbeddingSetup"
+   },
+   "description": "Function 'describeEmbeddingSetup' has complexity 21 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=21 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.71,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 3343,
+    "symbol": "classifyEvidenceTier"
+   },
+   "description": "Function 'classifyEvidenceTier' has complexity 21 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=21 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.71,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 3586,
+    "symbol": "isDartDeclNameParent"
+   },
+   "description": "Function 'isDartDeclNameParent' has complexity 21 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=21 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0013_signature.ts",
+    "line": 92,
+    "symbol": "parseParameters"
+   },
+   "description": "Function 'parseParameters' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0013_signature.ts",
+    "line": 149,
+    "symbol": "renderParameter"
+   },
+   "description": "Function 'renderParameter' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0062_edit-engine.ts",
+    "line": 1009,
+    "symbol": "executeEdit"
+   },
+   "description": "Function 'executeEdit' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0067_migration-engine.ts",
+    "line": 231,
+    "symbol": "calculateMigrationMethodology"
+   },
+   "description": "Function 'calculateMigrationMethodology' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0082_brain-index-health.ts",
+    "line": 719,
+    "symbol": "checkMissingFiles"
+   },
+   "description": "Function 'checkMissingFiles' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0091_embedding-diagnosis.ts",
+    "line": 153,
+    "symbol": "buildEmbeddingChain"
+   },
+   "description": "Function 'buildEmbeddingChain' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 2882,
+    "symbol": "collectFileScope"
+   },
+   "description": "Function 'collectFileScope' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 1387,
+    "symbol": "processFieldOrVariable"
+   },
+   "description": "Function 'processFieldOrVariable' has complexity 20 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=20 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0006_graph_request.ts",
+    "line": 108,
+    "symbol": "resolveTraversalRoot"
+   },
+   "description": "Function 'resolveTraversalRoot' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0022_enrichment.ts",
+    "line": 55,
+    "symbol": "parseEnrichment"
+   },
+   "description": "Function 'parseEnrichment' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0038_setup-show.ts",
+    "line": 168,
+    "symbol": "renderSetupShow"
+   },
+   "description": "Function 'renderSetupShow' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0047_dependencies.ts",
+    "line": 80,
+    "symbol": "resolveInternalSpecifier"
+   },
+   "description": "Function 'resolveInternalSpecifier' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0082_brain-index-health.ts",
+    "line": 1107,
+    "symbol": "formatHealthReport"
+   },
+   "description": "Function 'formatHealthReport' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0085_freshness.ts",
+    "line": 194,
+    "symbol": "selectSampleFiles"
+   },
+   "description": "Function 'selectSampleFiles' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0086_database.ts",
+    "line": 307,
+    "symbol": "updateIndexStatus"
+   },
+   "description": "Function 'updateIndexStatus' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0094_brain-relationship-enrichment.ts",
+    "line": 833,
+    "symbol": "inferRole"
+   },
+   "description": "Function 'inferRole' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 3535,
+    "symbol": "typeNameNodeOf"
+   },
+   "description": "Function 'typeNameNodeOf' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 55,
+    "symbol": "isDottedIdentifier"
+   },
+   "description": "Function 'isDottedIdentifier' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 1236,
+    "symbol": "processFunctionOrMethod"
+   },
+   "description": "Function 'processFunctionOrMethod' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.69,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 28,
+    "symbol": "stripWhitespace"
+   },
+   "description": "Function 'stripWhitespace' has complexity 19 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=19 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0020_impact_request.ts",
+    "line": 61,
+    "symbol": "handleImpactRequest"
+   },
+   "description": "Function 'handleImpactRequest' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0037_doctor.ts",
+    "line": 485,
+    "symbol": "summarizePool"
+   },
+   "description": "Function 'summarizePool' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1438,
+    "symbol": "unsupportedFacts"
+   },
+   "description": "Function 'unsupportedFacts' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0071_rules.ts",
+    "line": 48,
+    "symbol": "detectIndexRules"
+   },
+   "description": "Function 'detectIndexRules' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0090_engine.ts",
+    "line": 76,
+    "symbol": "getEmbeddingModel"
+   },
+   "description": "Function 'getEmbeddingModel' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 2597,
+    "symbol": "declaredBindingName"
+   },
+   "description": "Function 'declaredBindingName' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.6799999999999999,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 3218,
+    "symbol": "extractClassHeritage"
+   },
+   "description": "Function 'extractClassHeritage' has complexity 18 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=18 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0011_navigation.ts",
+    "line": 750,
+    "symbol": "resolveReferences"
+   },
+   "description": "Function 'resolveReferences' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0014_call_hierarchy.ts",
+    "line": 673,
+    "symbol": "expandStaleness"
+   },
+   "description": "Function 'expandStaleness' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0051_impact.ts",
+    "line": 21,
+    "symbol": "analyzeImpact"
+   },
+   "description": "Function 'analyzeImpact' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0053_content-search.ts",
+    "line": 329,
+    "symbol": "searchContentBounded"
+   },
+   "description": "Function 'searchContentBounded' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0074_test-intel.ts",
+    "line": 307,
+    "symbol": "testGaps"
+   },
+   "description": "Function 'testGaps' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 1148,
+    "symbol": "processConstructor"
+   },
+   "description": "Function 'processConstructor' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.67,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 3561,
+    "symbol": "selectorIsLhsWrite"
+   },
+   "description": "Function 'selectorIsLhsWrite' has complexity 17 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=17 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0014_call_hierarchy.ts",
+    "line": 807,
+    "symbol": "resolveInvocations"
+   },
+   "description": "Function 'resolveInvocations' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0016_symbols.ts",
+    "line": 531,
+    "symbol": "workspaceSymbols"
+   },
+   "description": "Function 'workspaceSymbols' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0037_doctor.ts",
+    "line": 552,
+    "symbol": "renderDoctorReport"
+   },
+   "description": "Function 'renderDoctorReport' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0038_setup-show.ts",
+    "line": 89,
+    "symbol": "completeTier"
+   },
+   "description": "Function 'completeTier' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0039_setup-wizard.ts",
+    "line": 360,
+    "symbol": "hiddenQuestion"
+   },
+   "description": "Function 'hiddenQuestion' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0055_semantic-search.ts",
+    "line": 322,
+    "symbol": "resolveEntities"
+   },
+   "description": "Function 'resolveEntities' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1019,
+    "symbol": "addEndpointFacts"
+   },
+   "description": "Function 'addEndpointFacts' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1166,
+    "symbol": "addImportFacts"
+   },
+   "description": "Function 'addImportFacts' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1852,
+    "symbol": "coverageCitation"
+   },
+   "description": "Function 'coverageCitation' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0085_freshness.ts",
+    "line": 386,
+    "symbol": "resolveRowsFreshnessDetailed"
+   },
+   "description": "Function 'resolveRowsFreshnessDetailed' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0090_engine.ts",
+    "line": 295,
+    "symbol": "embedMany"
+   },
+   "description": "Function 'embedMany' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0093_openai-embed.ts",
+    "line": 479,
+    "symbol": "embedOpenAICompatible"
+   },
+   "description": "Function 'embedOpenAICompatible' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.66,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 2371,
+    "symbol": "isTypeQueryPosition"
+   },
+   "description": "Function 'isTypeQueryPosition' has complexity 16 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=16 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0012_server.ts",
+    "line": 847,
+    "symbol": "run"
+   },
+   "description": "Function 'run' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0015_cross_language_hover.ts",
+    "line": 554,
+    "symbol": "storedCrossLanguageFactsByName"
+   },
+   "description": "Function 'storedCrossLanguageFactsByName' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0016_symbols.ts",
+    "line": 390,
+    "symbol": "documentSymbols"
+   },
+   "description": "Function 'documentSymbols' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0053_content-search.ts",
+    "line": 590,
+    "symbol": "rankWithFts5"
+   },
+   "description": "Function 'rankWithFts5' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 434,
+    "symbol": "docstring"
+   },
+   "description": "Function 'docstring' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0079_visualization-engine.ts",
+    "line": 547,
+    "symbol": "formatVisualization"
+   },
+   "description": "Function 'formatVisualization' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0090_engine.ts",
+    "line": 203,
+    "symbol": "embed"
+   },
+   "description": "Function 'embed' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 2433,
+    "symbol": "objectExpressionInterface"
+   },
+   "description": "Function 'objectExpressionInterface' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "high-complexity-function",
+   "confidence": 0.65,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 438,
+    "symbol": "dartPubspecName"
+   },
+   "description": "Function 'dartPubspecName' has complexity 15 (threshold 15).",
+   "severity": "warning",
+   "suggestion": "Split the function into smaller units and reduce nesting depth.",
+   "evidence": [
+    {
+     "type": "indexed-complexity",
+     "description": "complexity=15 (from brain_symbol.complexity)"
+    }
+   ]
+  },
+  {
+   "type": "long-parameter-list",
+   "confidence": 0.7,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 858,
+    "symbol": "addSymbolFacts"
+   },
+   "description": "Function 'addSymbolFacts' has 9 parameters (threshold 7).",
+   "severity": "warning",
+   "suggestion": "Group related parameters into a single options/configuration object.",
+   "evidence": [
+    {
+     "type": "indexed-parameters",
+     "description": "parameters=[object Object], [object Object], [object Object], [object Object], [object Object], [object Object], [object Object], [object Object], [object Object]"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0099_real-dart-analyzer.ts",
+    "line": 557,
+    "symbol": "RealDartAnalyzer"
+   },
+   "description": "Type 'RealDartAnalyzer' has 75 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=75 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0098_real-fsharp-analyzer.ts",
+    "line": 152,
+    "symbol": "RealFsharpAnalyzer"
+   },
+   "description": "Type 'RealFsharpAnalyzer' has 31 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=31 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0012_server.ts",
+    "line": 536,
+    "symbol": "BbLspServer"
+   },
+   "description": "Type 'BbLspServer' has 23 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=23 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0010_hover.ts",
+    "line": 95,
+    "symbol": "SymbolHoverData"
+   },
+   "description": "Type 'SymbolHoverData' has 22 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=22 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 18,
+    "symbol": "FunctionInfo"
+   },
+   "description": "Type 'FunctionInfo' has 22 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=22 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0065_health-provider.ts",
+    "line": 38,
+    "symbol": "UnifiedHealthReport"
+   },
+   "description": "Type 'UnifiedHealthReport' has 22 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=22 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0035_cross-language-security.ts",
+    "line": 8,
+    "symbol": "SecurityFinding"
+   },
+   "description": "Type 'SecurityFinding' has 21 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=21 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 1024,
+    "symbol": "AnalysisFindingRecord"
+   },
+   "description": "Type 'AnalysisFindingRecord' has 21 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=21 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0019_impact.ts",
+    "line": 294,
+    "symbol": "ImpactDependent"
+   },
+   "description": "Type 'ImpactDependent' has 20 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=20 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 721,
+    "symbol": "SecurityFindingV2"
+   },
+   "description": "Type 'SecurityFindingV2' has 19 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=19 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 1929,
+    "symbol": "MakeResultArgs"
+   },
+   "description": "Type 'MakeResultArgs' has 17 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=17 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0094_brain-relationship-enrichment.ts",
+    "line": 123,
+    "symbol": "EnrichRelationshipsResult"
+   },
+   "description": "Type 'EnrichRelationshipsResult' has 17 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=17 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0011_navigation.ts",
+    "line": 247,
+    "symbol": "EdgeRow"
+   },
+   "description": "Type 'EdgeRow' has 16 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=16 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.9,
+   "location": {
+    "file": "t0015_cross_language_hover.ts",
+    "line": 277,
+    "symbol": "AgentFactRow"
+   },
+   "description": "Type 'AgentFactRow' has 16 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=16 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.875,
+   "location": {
+    "file": "t0014_call_hierarchy.ts",
+    "line": 406,
+    "symbol": "ExpandResult"
+   },
+   "description": "Type 'ExpandResult' has 15 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=15 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.875,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 179,
+    "symbol": "ProjectStats"
+   },
+   "description": "Type 'ProjectStats' has 15 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=15 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.85,
+   "location": {
+    "file": "t0008_rich_hover.ts",
+    "line": 52,
+    "symbol": "RichSite"
+   },
+   "description": "Type 'RichSite' has 14 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=14 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.85,
+   "location": {
+    "file": "t0019_impact.ts",
+    "line": 150,
+    "symbol": "ImpactResult"
+   },
+   "description": "Type 'ImpactResult' has 14 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=14 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.85,
+   "location": {
+    "file": "t0035_cross-language-security.ts",
+    "line": 50,
+    "symbol": "SecuritySummary"
+   },
+   "description": "Type 'SecuritySummary' has 14 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=14 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.825,
+   "location": {
+    "file": "t0015_cross_language_hover.ts",
+    "line": 237,
+    "symbol": "CrossLanguageNameResult"
+   },
+   "description": "Type 'CrossLanguageNameResult' has 13 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=13 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.825,
+   "location": {
+    "file": "t0016_symbols.ts",
+    "line": 289,
+    "symbol": "SymbolRow"
+   },
+   "description": "Type 'SymbolRow' has 13 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=13 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.825,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 327,
+    "symbol": "GraphEdge"
+   },
+   "description": "Type 'GraphEdge' has 13 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=13 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.825,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 56,
+    "symbol": "SearchResult"
+   },
+   "description": "Type 'SearchResult' has 13 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=13 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.825,
+   "location": {
+    "file": "t0079_visualization-engine.ts",
+    "line": 30,
+    "symbol": "VisualizationResult"
+   },
+   "description": "Type 'VisualizationResult' has 13 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=13 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.8,
+   "location": {
+    "file": "t0010_hover.ts",
+    "line": 186,
+    "symbol": "SymbolRow"
+   },
+   "description": "Type 'SymbolRow' has 12 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=12 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.8,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 1073,
+    "symbol": "AnalysisFindingInput"
+   },
+   "description": "Type 'AnalysisFindingInput' has 12 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=12 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.8,
+   "location": {
+    "file": "t0063_doc-engine.ts",
+    "line": 109,
+    "symbol": "DocReferenceMetadata"
+   },
+   "description": "Type 'DocReferenceMetadata' has 12 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=12 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.8,
+   "location": {
+    "file": "t0067_migration-engine.ts",
+    "line": 88,
+    "symbol": "MigrationPlanResult"
+   },
+   "description": "Type 'MigrationPlanResult' has 12 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=12 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0009_graph_usages.ts",
+    "line": 72,
+    "symbol": "GroupedRow"
+   },
+   "description": "Type 'GroupedRow' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0011_navigation.ts",
+    "line": 233,
+    "symbol": "SymbolRow"
+   },
+   "description": "Type 'SymbolRow' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0014_call_hierarchy.ts",
+    "line": 372,
+    "symbol": "AddressCrossCheck"
+   },
+   "description": "Type 'AddressCrossCheck' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0015_cross_language_hover.ts",
+    "line": 190,
+    "symbol": "CrossLanguageAgentFact"
+   },
+   "description": "Type 'CrossLanguageAgentFact' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0023_positions.ts",
+    "line": 141,
+    "symbol": "PositionMapper"
+   },
+   "description": "Type 'PositionMapper' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 1051,
+    "symbol": "AnalysisFindingOccurrence"
+   },
+   "description": "Type 'AnalysisFindingOccurrence' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 550,
+    "symbol": "FileDependency"
+   },
+   "description": "Type 'FileDependency' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0059_contracts.ts",
+    "line": 628,
+    "symbol": "ImpactReport"
+   },
+   "description": "Type 'ImpactReport' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0065_health-provider.ts",
+    "line": 15,
+    "symbol": "UnifiedHealthOptions"
+   },
+   "description": "Type 'UnifiedHealthOptions' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "god-class",
+   "confidence": 0.775,
+   "location": {
+    "file": "t0066_migration-source.ts",
+    "line": 89,
+    "symbol": "MigrationRelationship"
+   },
+   "description": "Type 'MigrationRelationship' has 11 direct members (threshold 10).",
+   "severity": "warning",
+   "suggestion": "Split the type by responsibility; extract cohesive subsets into focused types.",
+   "evidence": [
+    {
+     "type": "indexed-members",
+     "description": "direct members=11 (via owner_symbol_id)"
+    }
+   ]
+  },
+  {
+   "type": "framework-detected",
+   "confidence": 0.6,
+   "location": {
+    "file": "t0020_impact_request.ts",
+    "line": 0
+   },
+   "description": "Framework 'drizzle' detected in 44 indexed file(s).",
+   "severity": "info",
+   "suggestion": "Framework usage is static index evidence; verify actual runtime wiring before drawing conclusions.",
+   "evidence": [
+    {
+     "type": "indexed-file",
+     "description": "t0020_impact_request.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0043_project.sql.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0000_document_highlight.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0003_doc_comment.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0023_positions.ts"
+    }
+   ]
+  },
+  {
+   "type": "framework-detected",
+   "confidence": 0.6,
+   "location": {
+    "file": "t0035_cross-language-security.ts",
+    "line": 0
+   },
+   "description": "Framework 'zustand' detected in 10 indexed file(s).",
+   "severity": "info",
+   "suggestion": "Framework usage is static index evidence; verify actual runtime wiring before drawing conclusions.",
+   "evidence": [
+    {
+     "type": "indexed-file",
+     "description": "t0035_cross-language-security.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0024_bb-data-dir.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0011_navigation.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0093_openai-embed.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0086_database.ts"
+    }
+   ]
+  },
+  {
+   "type": "framework-detected",
+   "confidence": 0.6,
+   "location": {
+    "file": "t0021_launch_languages.ts",
+    "line": 0
+   },
+   "description": "Framework 'react' detected in 7 indexed file(s).",
+   "severity": "info",
+   "suggestion": "Framework usage is static index evidence; verify actual runtime wiring before drawing conclusions.",
+   "evidence": [
+    {
+     "type": "indexed-file",
+     "description": "t0021_launch_languages.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0047_dependencies.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0037_doctor.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0029_project-id.ts"
+    },
+    {
+     "type": "indexed-file",
+     "description": "t0012_server.ts"
+    }
+   ]
+  },
+  {
+   "type": "framework-detected",
+   "confidence": 0.6,
+   "location": {
+    "file": "t0039_setup-wizard.ts",
+    "line": 0
+   },
+   "description": "Framework 'express' detected in 1 indexed file(s).",
+   "severity": "info",
+   "suggestion": "Framework usage is static index evidence; verify actual runtime wiring before drawing conclusions.",
+   "evidence": [
+    {
+     "type": "indexed-file",
+     "description": "t0039_setup-wizard.ts"
+    }
+   ]
+  },
+  {
+   "type": "framework-detected",
+   "confidence": 0.6,
+   "location": {
+    "file": "t0075_quality.ts",
+    "line": 0
+   },
+   "description": "Framework 'vitest' detected in 1 indexed file(s).",
+   "severity": "info",
+   "suggestion": "Framework usage is static index evidence; verify actual runtime wiring before drawing conclusions.",
+   "evidence": [
+    {
+     "type": "indexed-file",
+     "description": "t0075_quality.ts"
+    }
+   ]
+  },
+  {
+   "type": "framework-detected",
+   "confidence": 0.6,
+   "location": {
+    "file": "t0017_freshness.ts",
+    "line": 0
+   },
+   "description": "Framework 'vue' detected in 1 indexed file(s).",
+   "severity": "info",
+   "suggestion": "Framework usage is static index evidence; verify actual runtime wiring before drawing conclusions.",
+   "evidence": [
+    {
+     "type": "indexed-file",
+     "description": "t0017_freshness.ts"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+  "fixtureId": "python/builtin-type-name-is-still-a-reference",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the OTHER side of the primitive filter, which `type-usage-graph` pins for container builtins (dict/list). The analyzer's rule is: of the names written in a TYPE POSITION, only the 11 scalars (`str int float complex bool bytes object None Any self cls`) are dropped — every other name is the type the code NAMES, and an interpreter builtin is not an exception to that. This fixture fixes the boundary at the exception hierarchy and at `type`, which `python-endpoint-defects.ts` class D2 counted as unspecified: `slot: Exception` (annotation), `isinstance(stream, Exception)` (runtime check), `-> BaseException | None` (annotation + union) and `-> type` all emit `references`; the scalars `None` (in the union and the return) stay filtered. `builtin-type-name-is-not-a-control-flow-edge` pins the other direction — an `except Exception` clause is NOT a type position and emits nothing — so the two fixtures together say where the edge comes from instead of only that it exists.",
+  "expectRelationships": [
+    { "type": "references", "target": "Exception", "meta.relationshipType": "declared_type" },
+    { "type": "references", "target": "Exception", "meta.relationshipType": "instanceof_check" },
+    { "type": "references", "target": "BaseException", "meta.relationshipType": "return_type" },
+    { "type": "references", "target": "type", "meta.relationshipType": "return_type" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "None" },
+    { "type": "references", "target": "str" },
+    { "type": "references", "target": "int" }
+  ]
+}

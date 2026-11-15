@@ -1,0 +1,309 @@
+{
+  "runtime": null,
+  "core": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter.wasm",
+  "results": {
+    "dart.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 527
+    },
+    "tree-sitter-bash.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 280
+    },
+    "tree-sitter-c.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 366
+    },
+    "tree-sitter-c_sharp.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 533
+    },
+    "tree-sitter-clean.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 280
+    },
+    "tree-sitter-clojure.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 73
+    },
+    "tree-sitter-core_schema.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 7
+    },
+    "tree-sitter-cpp.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 547
+    },
+    "tree-sitter-css.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 151
+    },
+    "tree-sitter-dart.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 527
+    },
+    "tree-sitter-elisp.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 83
+    },
+    "tree-sitter-elixir.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 235
+    },
+    "tree-sitter-elm.wasm": {
+      "ok": false,
+      "error": "Out of bounds memory access (evaluating 'C._ts_language_field_name_for_id(this[0], i2)')"
+    },
+    "tree-sitter-embedded_template.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 26
+    },
+    "tree-sitter-erlang.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 338
+    },
+    "tree-sitter-fsharp.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 544
+    },
+    "tree-sitter-fsharp_signature.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 413
+    },
+    "tree-sitter-go.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 216
+    },
+    "tree-sitter-graphql.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 143
+    },
+    "tree-sitter-groovy.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 384
+    },
+    "tree-sitter-haskell.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 552
+    },
+    "tree-sitter-hcl.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 121
+    },
+    "tree-sitter-html.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 41
+    },
+    "tree-sitter-java.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 322
+    },
+    "tree-sitter-javascript.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 271
+    },
+    "tree-sitter-json.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 26
+    },
+    "tree-sitter-json_schema.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 6
+    },
+    "tree-sitter-kotlin.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 378
+    },
+    "tree-sitter-lua.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 137
+    },
+    "tree-sitter-make.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 188
+    },
+    "tree-sitter-markdown.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 207
+    },
+    "tree-sitter-markdown_inline.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 153
+    },
+    "tree-sitter-objc.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 590
+    },
+    "tree-sitter-ocaml.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 427
+    },
+    "tree-sitter-perl.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 595
+    },
+    "tree-sitter-php.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 432
+    },
+    "tree-sitter-php_only.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 427
+    },
+    "tree-sitter-powershell.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 415
+    },
+    "tree-sitter-python.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 274
+    },
+    "tree-sitter-ql.wasm": {
+      "ok": false,
+      "error": "Out of bounds memory access (evaluating 'C._ts_language_field_name_for_id(this[0], i2)')"
+    },
+    "tree-sitter-r.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 137
+    },
+    "tree-sitter-rescript.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 326
+    },
+    "tree-sitter-ruby.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 353
+    },
+    "tree-sitter-rust.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 355
+    },
+    "tree-sitter-scala.wasm": {
+      "ok": true,
+      "abi": 15,
+      "nodeTypes": 455
+    },
+    "tree-sitter-solidity.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 512
+    },
+    "tree-sitter-sql.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 729
+    },
+    "tree-sitter-svelte.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 118
+    },
+    "tree-sitter-swift.wasm": {
+      "ok": true,
+      "abi": 13,
+      "nodeTypes": 540
+    },
+    "tree-sitter-systemrdl.wasm": {
+      "ok": true,
+      "abi": 13,
+      "nodeTypes": 226
+    },
+    "tree-sitter-terraform.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 121
+    },
+    "tree-sitter-tlaplus.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 662
+    },
+    "tree-sitter-toml.wasm": {
+      "ok": true,
+      "abi": 13,
+      "nodeTypes": 66
+    },
+    "tree-sitter-tsx.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 405
+    },
+    "tree-sitter-typescript.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 385
+    },
+    "tree-sitter-vue.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 59
+    },
+    "tree-sitter-xml.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 143
+    },
+    "tree-sitter-yaml.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 301
+    },
+    "tree-sitter-zig.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 274
+    },
+    "tsx.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 400
+    },
+    "typescript.wasm": {
+      "ok": true,
+      "abi": 14,
+      "nodeTypes": 383
+    }
+  }
+}

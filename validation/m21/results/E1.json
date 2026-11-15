@@ -1,0 +1,45 @@
+{
+  "issue": "M21.E1",
+  "code": "E1",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 9,
+  "passed": 9,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-embedding-separation.ts",
+  "evidenceFile": "E1.json",
+  "generatedAt": "2026-09-01T13:56:34.410Z",
+  "corpus": {
+    "kind": "temporary-fixture",
+    "files": 1,
+    "revision": null
+  },
+  "timings": {
+    "structuralIndexMs": 6637.3798289999995,
+    "embeddingFlushMs": 544.6069449999995,
+    "totalObservedMs": 7181.986773999999
+  },
+  "counts": {
+    "symbols": 3,
+    "embeddingsBeforeFlush": 0,
+    "embeddingsAfterFlush": 3
+  },
+  "embeddingMode": {
+    "explicitApiConfigured": false,
+    "actualPersistedModel": "local-word-vectors",
+    "localFallbackExpected": true,
+    "providerDiscoveryMaySelectModel": true
+  },
+  "limitations": [
+    "This proves phase separation on a controlled fixture using local vectors; provider/API latency is E3 scope.",
+    "The verifier does not claim the production indexer's full post-processing duration; skipPostProcessing is intentional for phase isolation."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.382Z",
+    "contentSha256": "767c07d9d935673f9891330ea00881b8073c5406b5ceff65d718705c4e783537"
+  }
+}

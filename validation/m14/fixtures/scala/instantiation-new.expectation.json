@@ -1,0 +1,9 @@
+{
+  "fixtureId": "scala/instantiation-new",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "new Engine() must yield instantiates -> Engine from the initializing scope.",
+  "expectRelationships": [
+    { "type": "instantiates", "targetEndsWith": "Engine" }
+  ]
+}

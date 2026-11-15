@@ -1,0 +1,116 @@
+{
+  "instrument": "validation/m14/fixtures/hcl/tools/store-binding-truth.mts \u2014 TWIN SPLIT pass, one store run per repository",
+  "reposBanked": [
+    "boundary",
+    "consul",
+    "docker",
+    "hasura-engine",
+    "kong",
+    "nomad",
+    "nvim-treesitter",
+    "packer",
+    "tflint",
+    "tfsec",
+    "vault",
+    "waypoint",
+    "yq"
+  ],
+  "reposAttempted": 16,
+  "notYetBanked": "the pass was still running when this artifact was written; the loop is resumable and writes one JSON per repo",
+  "indexerEligibleFiles": 1575,
+  "twinSplit": {
+    "twinExistsSomewhere": 1407,
+    "noCandidateAnywhere": 12054
+  },
+  "leverPrice": {
+    "scopedWouldMove": 2310,
+    "ofThoseLeafReduced": 391,
+    "alreadyRight": 80604
+  },
+  "perType": {
+    "contains": {
+      "edges": 74517,
+      "bound": 74490,
+      "targetUnbound": 27,
+      "boundOtherFile": 1091,
+      "boundNeedsLeafReduction": 32581,
+      "scopedWouldMove": 1091,
+      "scopedWouldMoveLeafReduced": 371,
+      "scopedAlreadyRight": 73399,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    },
+    "references": {
+      "edges": 15527,
+      "bound": 14296,
+      "targetUnbound": 1231,
+      "boundOtherFile": 7670,
+      "boundNeedsLeafReduction": 11695,
+      "scopedWouldMove": 606,
+      "scopedWouldMoveLeafReduced": 20,
+      "scopedAlreadyRight": 755,
+      "twinExists": 1375,
+      "noCandidateAnywhere": 11560
+    },
+    "exports": {
+      "edges": 7009,
+      "bound": 7006,
+      "targetUnbound": 3,
+      "boundOtherFile": 589,
+      "boundNeedsLeafReduction": 0,
+      "scopedWouldMove": 589,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 6417,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    },
+    "uses": {
+      "edges": 688,
+      "bound": 519,
+      "targetUnbound": 169,
+      "boundOtherFile": 484,
+      "boundNeedsLeafReduction": 487,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 0,
+      "twinExists": 32,
+      "noCandidateAnywhere": 487
+    },
+    "imports": {
+      "edges": 288,
+      "bound": 7,
+      "targetUnbound": 281,
+      "boundOtherFile": 0,
+      "boundNeedsLeafReduction": 7,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 0,
+      "twinExists": 0,
+      "noCandidateAnywhere": 7
+    },
+    "extends": {
+      "edges": 53,
+      "bound": 53,
+      "targetUnbound": 0,
+      "boundOtherFile": 24,
+      "boundNeedsLeafReduction": 0,
+      "scopedWouldMove": 24,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 29,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    },
+    "calls": {
+      "edges": 4,
+      "bound": 4,
+      "targetUnbound": 0,
+      "boundOtherFile": 0,
+      "boundNeedsLeafReduction": 0,
+      "scopedWouldMove": 0,
+      "scopedWouldMoveLeafReduced": 0,
+      "scopedAlreadyRight": 4,
+      "twinExists": 0,
+      "noCandidateAnywhere": 0
+    }
+  }
+}

@@ -1,0 +1,3 @@
+[INFO] [20:53:40] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [20:53:40] [ast-engine] language grammar allocated {"language":"clojure"}
+[INFO] [20:53:40] [ast-engine] language parser loaded {"language":"clojure","wasmPath":"/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm_4_2pgqqzs"}

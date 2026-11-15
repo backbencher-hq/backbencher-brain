@@ -1,0 +1,39 @@
+{
+  "status": "verified",
+  "milestone": "M32",
+  "issue": "S1",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m32/verify-setup-show.ts",
+  "evidenceFile": "S1.json",
+  "generatedAt": "2026-11-15T04:11:04.227Z",
+  "passed": 32,
+  "failed": 0,
+  "negativeCases": 5,
+  "mutants": [
+    {
+      "name": "winner order broken (project outranks env)",
+      "caught": true
+    },
+    {
+      "name": "incomplete tier allowed to win",
+      "caught": true
+    },
+    {
+      "name": "full key leaked into state",
+      "caught": true
+    },
+    {
+      "name": "corrupt config crashes show",
+      "caught": true
+    },
+    {
+      "name": "mode warning removed from render",
+      "caught": true
+    }
+  ],
+  "limitations": [
+    "describeEmbeddingConfig reads local files/env only; it never contacts providers, so no live-key state is asserted here.",
+    "Project-tier bb.json rendering is covered at function level; the binary section exercises env and global tiers end-to-end.",
+    "Exit-code contract (1 when unconfigured) is asserted via the built binary; script-side process.exitCode behavior is out of scope for a pure-function suite."
+  ]
+}

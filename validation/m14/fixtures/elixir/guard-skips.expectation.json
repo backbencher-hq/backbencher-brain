@@ -1,0 +1,63 @@
+{
+  "issue": "M49 CC1",
+  "note": "CC1-b guard-skip pin: `when` guard expressions are captured as text for pattern metadata and the guard subtree is NEVER walked \u2014 `guarded`/`multi_guard`/`is_big` emit no call edges for is_integer/is_big (analyzer + oracle agree; declared 'def signature heads' exclusion). The forbid entries ARE the pin: if a future refactor walks guards, these calls appear and the fixture fails. Falsifier: mutant elixir/guard-call-emitted. defguard defines a MACRO (is_big), pinned by kind. EX-PAYLOAD pins (2026-09-28): the guard TEXT this note already claimed for is now asserted (meta.guards + meta.hasPatternMatching), together with the symbol `scope` field \u2014 all three were mutant-survivors (elixir/guard-list-dropped, elixir/symbol-scope-dropped), i.e. the claim had no gate behind it.",
+  "expectSymbols": [
+    {
+      "name": "Cc1.Guards",
+      "kind": "module"
+    },
+    {
+      "name": "guarded",
+      "kind": "function",
+      "ownerName": "Cc1.Guards"
+    },
+    {
+      "name": "multi_guard",
+      "kind": "function",
+      "ownerName": "Cc1.Guards"
+    },
+    {
+      "name": "is_big",
+      "kind": "macro",
+      "ownerName": "Cc1.Guards"
+    },
+    {
+      "name": "guarded",
+      "kind": "function",
+      "ownerName": "Cc1.Guards",
+      "scope": "Cc1.Guards",
+      "visibility": "public",
+      "meta.guards": [
+        "is_integer(x)"
+      ],
+      "meta.hasPatternMatching": true
+    },
+    {
+      "name": "multi_guard",
+      "kind": "function",
+      "ownerName": "Cc1.Guards",
+      "meta.guards": [
+        "is_integer(x) and is_big(x)"
+      ],
+      "meta.hasPatternMatching": true
+    },
+    {
+      "name": "is_big",
+      "kind": "macro",
+      "ownerName": "Cc1.Guards",
+      "meta.guards": [
+        "is_integer(x) and x > 2"
+      ]
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "is_integer"
+    },
+    {
+      "type": "calls",
+      "target": "is_big"
+    }
+  ]
+}

@@ -1,0 +1,1039 @@
+{
+  "schemaVersion": 1,
+  "pass": true,
+  "samples": [
+    {
+      "repo": "vue_core",
+      "file": "packages/compiler-core/src/options.ts",
+      "language": "typescript",
+      "framework": "vue",
+      "detected": [
+        "vue",
+        "nextjs"
+      ],
+      "expected": [
+        "vue"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "vue_core",
+      "file": "packages/compiler-core/src/transforms/transformExpression.ts",
+      "language": "typescript",
+      "framework": "vue",
+      "detected": [
+        "vue",
+        "zustand",
+        "drizzle"
+      ],
+      "expected": [
+        "vue"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "vue_core",
+      "file": "packages/compiler-core/src/transforms/vModel.ts",
+      "language": "typescript",
+      "framework": "vue",
+      "detected": [
+        "vue",
+        "drizzle"
+      ],
+      "expected": [
+        "vue"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "vue_core",
+      "file": "packages/compiler-sfc/src/compileScript.ts",
+      "language": "typescript",
+      "framework": "vue",
+      "detected": [
+        "vue",
+        "zustand",
+        "drizzle"
+      ],
+      "expected": [
+        "vue"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "vue_core",
+      "file": "packages/reactivity/src/computed.ts",
+      "language": "typescript",
+      "framework": "vue",
+      "detected": [
+        "vue",
+        "drizzle"
+      ],
+      "expected": [
+        "vue"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "vue_core",
+      "file": "packages/reactivity/src/reactive.ts",
+      "language": "typescript",
+      "framework": "vue",
+      "detected": [
+        "vue",
+        "zustand"
+      ],
+      "expected": [
+        "vue"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "svelte",
+      "file": "packages/svelte/src/internal/client/types.d.ts",
+      "language": "typescript",
+      "framework": "svelte",
+      "detected": [
+        "svelte",
+        "solid",
+        "react"
+      ],
+      "expected": [
+        "svelte"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "elixir",
+      "file": "lib/elixir/lib/config.ex",
+      "language": "elixir",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "phoenix",
+        "ecto",
+        "plug"
+      ],
+      "status": "default",
+      "detail": "expected one of [phoenix, ecto, plug] but got language default unknown"
+    },
+    {
+      "repo": "elixir",
+      "file": "lib/iex/lib/iex/helpers.ex",
+      "language": "elixir",
+      "framework": "phoenix",
+      "detected": [
+        "phoenix",
+        "ecto"
+      ],
+      "expected": [
+        "phoenix",
+        "ecto",
+        "plug"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "terraform",
+      "file": "internal/backend/local/testdata/apply-check/main.tf",
+      "language": "hcl",
+      "framework": "HCL/Terraform",
+      "detected": [],
+      "expected": [
+        "HCL/Terraform"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "terraform",
+      "file": "internal/backend/local/testdata/apply-error/main.tf",
+      "language": "hcl",
+      "framework": "HCL/Terraform",
+      "detected": [],
+      "expected": [
+        "HCL/Terraform"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "terraform",
+      "file": "internal/backend/local/testdata/apply/main.tf",
+      "language": "hcl",
+      "framework": "HCL/Terraform",
+      "detected": [],
+      "expected": [
+        "HCL/Terraform"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "terraform",
+      "file": "internal/backend/local/testdata/destroy-with-ds/main.tf",
+      "language": "hcl",
+      "framework": "HCL/Terraform",
+      "detected": [],
+      "expected": [
+        "HCL/Terraform"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "terraform",
+      "file": "internal/backend/local/testdata/plan-cbd/main.tf",
+      "language": "hcl",
+      "framework": "HCL/Terraform",
+      "detected": [],
+      "expected": [
+        "HCL/Terraform"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "terraform",
+      "file": "internal/backend/local/testdata/plan/main.tf",
+      "language": "hcl",
+      "framework": "HCL/Terraform",
+      "detected": [],
+      "expected": [
+        "HCL/Terraform"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "dplyr",
+      "file": "R/reexport-magrittr.R",
+      "language": "r",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "Tidyverse",
+        "dplyr"
+      ],
+      "status": "default",
+      "detail": "expected one of [Tidyverse, dplyr] but got language default unknown"
+    },
+    {
+      "repo": "dplyr",
+      "file": "R/zzz.R",
+      "language": "r",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "Tidyverse",
+        "dplyr"
+      ],
+      "status": "default",
+      "detail": "expected one of [Tidyverse, dplyr] but got language default unknown"
+    },
+    {
+      "repo": "dplyr",
+      "file": "data-raw/band_members.R",
+      "language": "r",
+      "framework": "Tidyverse",
+      "detected": [
+        "Tidyverse"
+      ],
+      "expected": [
+        "Tidyverse",
+        "dplyr"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "dplyr",
+      "file": "data-raw/starwars.R",
+      "language": "r",
+      "framework": "Tidyverse",
+      "detected": [
+        "Tidyverse"
+      ],
+      "expected": [
+        "Tidyverse",
+        "dplyr"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "dplyr",
+      "file": "data-raw/storms.R",
+      "language": "r",
+      "framework": "Tidyverse",
+      "detected": [
+        "Tidyverse"
+      ],
+      "expected": [
+        "Tidyverse",
+        "dplyr"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "dplyr",
+      "file": "tests/testthat.R",
+      "language": "r",
+      "framework": "Tidyverse",
+      "detected": [
+        "Tidyverse"
+      ],
+      "expected": [
+        "Tidyverse",
+        "dplyr"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "fsharp",
+      "file": ".github/skills/fsharp-diagnostics/server/DesignTimeBuild.fs",
+      "language": "fsharp",
+      "framework": "F#",
+      "detected": [],
+      "expected": [
+        "F#"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "fsharp",
+      "file": ".github/skills/fsharp-diagnostics/server/DiagnosticsFormatter.fs",
+      "language": "fsharp",
+      "framework": "F#",
+      "detected": [],
+      "expected": [
+        "F#"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "fsharp",
+      "file": ".github/skills/fsharp-diagnostics/server/Program.fs",
+      "language": "fsharp",
+      "framework": "F#",
+      "detected": [],
+      "expected": [
+        "F#"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "fsharp",
+      "file": ".github/skills/fsharp-diagnostics/server/ProjectManager.fs",
+      "language": "fsharp",
+      "framework": "F#",
+      "detected": [],
+      "expected": [
+        "F#"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "fsharp",
+      "file": ".github/skills/fsharp-diagnostics/server/Server.fs",
+      "language": "fsharp",
+      "framework": "F#",
+      "detected": [],
+      "expected": [
+        "F#"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "fsharp",
+      "file": "buildtools/fslex/Arg.fs",
+      "language": "fsharp",
+      "framework": "F#",
+      "detected": [],
+      "expected": [
+        "F#"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "scala3",
+      "file": "community-build/src/scala/dotty/communitybuild/projects.scala",
+      "language": "scala",
+      "framework": "scalatest",
+      "detected": [
+        "scalatest"
+      ],
+      "expected": [
+        "play",
+        "akka",
+        "spark",
+        "scalatest"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "scala3",
+      "file": "community-build/test/scala/dotty/communitybuild/CommunityBuildTest.scala",
+      "language": "scala",
+      "framework": "scalatest",
+      "detected": [
+        "scalatest"
+      ],
+      "expected": [
+        "play",
+        "akka",
+        "spark",
+        "scalatest"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "scala3",
+      "file": "sbt-test/scala2-compat/akka/i3100.scala",
+      "language": "scala",
+      "framework": "Akka",
+      "detected": [
+        "Akka",
+        "akka-http"
+      ],
+      "expected": [
+        "play",
+        "akka",
+        "spark",
+        "scalatest"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "scala3",
+      "file": "sbt-test/scala2-compat/i19421/S3SnapshotStoreSpec.scala",
+      "language": "scala",
+      "framework": "Akka",
+      "detected": [
+        "Akka"
+      ],
+      "expected": [
+        "play",
+        "akka",
+        "spark",
+        "scalatest"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "scala3",
+      "file": "tests/neg-macros/i5547.scala",
+      "language": "scala",
+      "framework": "scalatest",
+      "detected": [
+        "scalatest"
+      ],
+      "expected": [
+        "play",
+        "akka",
+        "spark",
+        "scalatest"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "scala3",
+      "file": "tests/pos-macros/i5547.scala",
+      "language": "scala",
+      "framework": "scalatest",
+      "detected": [
+        "scalatest"
+      ],
+      "expected": [
+        "play",
+        "akka",
+        "spark",
+        "scalatest"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "swift_nio",
+      "file": "Benchmarks/Benchmarks/NIOCoreBenchmarks/Benchmarks.swift",
+      "language": "swift",
+      "framework": "swift-nio",
+      "detected": [
+        "swift-nio"
+      ],
+      "expected": [
+        "swift-nio",
+        "NIO"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "swift_nio",
+      "file": "Benchmarks/Benchmarks/NIOPosixBenchmarks/Benchmarks.swift",
+      "language": "swift",
+      "framework": "swift-nio",
+      "detected": [
+        "swift-nio"
+      ],
+      "expected": [
+        "swift-nio",
+        "NIO"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "swift_nio",
+      "file": "Benchmarks/Benchmarks/NIOPosixBenchmarks/NIOThreadPoolBenchmark.swift",
+      "language": "swift",
+      "framework": "swift-nio",
+      "detected": [
+        "swift-nio"
+      ],
+      "expected": [
+        "swift-nio",
+        "NIO"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "swift_nio",
+      "file": "Benchmarks/Benchmarks/NIOPosixBenchmarks/TCPEcho.swift",
+      "language": "swift",
+      "framework": "swift-nio",
+      "detected": [
+        "swift-nio"
+      ],
+      "expected": [
+        "swift-nio",
+        "NIO"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "swift_nio",
+      "file": "Benchmarks/Benchmarks/NIOPosixBenchmarks/TCPEchoAsyncChannel.swift",
+      "language": "swift",
+      "framework": "swift-nio",
+      "detected": [
+        "swift-nio"
+      ],
+      "expected": [
+        "swift-nio",
+        "NIO"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "swift_nio",
+      "file": "Benchmarks/Benchmarks/NIOPosixBenchmarks/UDPEcho.swift",
+      "language": "swift",
+      "framework": "swift-nio",
+      "detected": [
+        "swift-nio"
+      ],
+      "expected": [
+        "swift-nio",
+        "NIO"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "cargo",
+      "file": "crates/cargo-test-support/src/registry.rs",
+      "language": "rust",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "tokio",
+        "serde",
+        "clap"
+      ],
+      "status": "default",
+      "detail": "expected one of [tokio, serde, clap] but got language default unknown"
+    },
+    {
+      "repo": "cargo",
+      "file": "crates/cargo-util-schemas/src/core/package_id_spec.rs",
+      "language": "rust",
+      "framework": "serde",
+      "detected": [
+        "serde"
+      ],
+      "expected": [
+        "tokio",
+        "serde",
+        "clap"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "cargo",
+      "file": "crates/cargo-util-schemas/src/core/partial_version.rs",
+      "language": "rust",
+      "framework": "serde",
+      "detected": [
+        "serde"
+      ],
+      "expected": [
+        "tokio",
+        "serde",
+        "clap"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "cargo",
+      "file": "crates/cargo-util-schemas/src/index.rs",
+      "language": "rust",
+      "framework": "serde",
+      "detected": [
+        "serde"
+      ],
+      "expected": [
+        "tokio",
+        "serde",
+        "clap"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "cargo",
+      "file": "crates/cargo-util-schemas/src/lockfile.rs",
+      "language": "rust",
+      "framework": "serde",
+      "detected": [
+        "serde"
+      ],
+      "expected": [
+        "tokio",
+        "serde",
+        "clap"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "cargo",
+      "file": "crates/cargo-util-schemas/src/manifest/mod.rs",
+      "language": "rust",
+      "framework": "serde",
+      "detected": [
+        "serde"
+      ],
+      "expected": [
+        "tokio",
+        "serde",
+        "clap"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "phpunit",
+      "file": "src/Event/Events/Test/CustomTestMethodInvocationUsed.php",
+      "language": "php",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "PHPUnit"
+      ],
+      "status": "default",
+      "detail": "expected one of [PHPUnit] but got language default unknown"
+    },
+    {
+      "repo": "phpunit",
+      "file": "src/Event/Events/Test/HookMethod/AfterLastTestMethodCalled.php",
+      "language": "php",
+      "framework": "PHPUnit",
+      "detected": [
+        "PHPUnit"
+      ],
+      "expected": [
+        "PHPUnit"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "phpunit",
+      "file": "src/Event/Events/Test/HookMethod/AfterLastTestMethodErrored.php",
+      "language": "php",
+      "framework": "PHPUnit",
+      "detected": [
+        "PHPUnit"
+      ],
+      "expected": [
+        "PHPUnit"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "phpunit",
+      "file": "src/Event/Events/Test/HookMethod/AfterLastTestMethodFailed.php",
+      "language": "php",
+      "framework": "PHPUnit",
+      "detected": [
+        "PHPUnit"
+      ],
+      "expected": [
+        "PHPUnit"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "phpunit",
+      "file": "src/Event/Events/Test/HookMethod/AfterLastTestMethodFinished.php",
+      "language": "php",
+      "framework": "PHPUnit",
+      "detected": [
+        "PHPUnit"
+      ],
+      "expected": [
+        "PHPUnit"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "phpunit",
+      "file": "src/Event/Events/Test/HookMethod/AfterTestMethodCalled.php",
+      "language": "php",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "PHPUnit"
+      ],
+      "status": "default",
+      "detail": "expected one of [PHPUnit] but got language default unknown"
+    },
+    {
+      "repo": "powershell",
+      "file": ".github/actions/infrastructure/markdownlinks/Parse-MarkdownLink.ps1",
+      "language": "powershell",
+      "framework": "PowerShell",
+      "detected": [
+        "PowerShell"
+      ],
+      "expected": [
+        "PowerShell"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "powershell",
+      "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+      "language": "powershell",
+      "framework": "PowerShell",
+      "detected": [
+        "PowerShell"
+      ],
+      "expected": [
+        "PowerShell"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "powershell",
+      "file": ".github/actions/test/process-pester-results/process-pester-results.ps1",
+      "language": "powershell",
+      "framework": "PowerShell",
+      "detected": [
+        "PowerShell"
+      ],
+      "expected": [
+        "PowerShell"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "powershell",
+      "file": ".github/skills/analyze-pester-failures/scripts/analyze-pr-test-failures.ps1",
+      "language": "powershell",
+      "framework": "PowerShell",
+      "detected": [
+        "PowerShell"
+      ],
+      "expected": [
+        "PowerShell"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "powershell",
+      "file": ".pipelines/EV2Specs/ServiceGroupRoot/Shell/Run/Run.ps1",
+      "language": "powershell",
+      "framework": "PowerShell",
+      "detected": [
+        "PowerShell"
+      ],
+      "expected": [
+        "PowerShell"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "powershell",
+      "file": "assets/GroupPolicy/InstallPSCorePolicyDefinitions.ps1",
+      "language": "powershell",
+      "framework": "PowerShell",
+      "detected": [
+        "PowerShell"
+      ],
+      "expected": [
+        "PowerShell"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "rake",
+      "file": "doc/example/a.c",
+      "language": "c",
+      "framework": "Standard C Library",
+      "detected": [],
+      "expected": [
+        "Ruby on Rails"
+      ],
+      "status": "default"
+    },
+    {
+      "repo": "rake",
+      "file": "doc/example/b.c",
+      "language": "c",
+      "framework": "Standard C Library",
+      "detected": [],
+      "expected": [
+        "Ruby on Rails"
+      ],
+      "status": "default"
+    },
+    {
+      "repo": "rake",
+      "file": "doc/example/main.c",
+      "language": "c",
+      "framework": "Standard C Library",
+      "detected": [],
+      "expected": [
+        "Ruby on Rails"
+      ],
+      "status": "default"
+    },
+    {
+      "repo": "gh_workflow",
+      "file": ".github/workflows/coverage.yml",
+      "language": "yaml",
+      "framework": "GitHub Actions",
+      "detected": [
+        "GitHub Actions"
+      ],
+      "expected": [
+        "GitHub Actions"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "gh_workflow",
+      "file": ".github/workflows/dependabot_automerge.yml",
+      "language": "yaml",
+      "framework": "GitHub Actions",
+      "detected": [
+        "GitHub Actions"
+      ],
+      "expected": [
+        "GitHub Actions"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "gh_workflow",
+      "file": ".github/workflows/gh-pages.yml",
+      "language": "yaml",
+      "framework": "GitHub Actions",
+      "detected": [
+        "GitHub Actions"
+      ],
+      "expected": [
+        "GitHub Actions"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "gh_workflow",
+      "file": ".github/workflows/lint.yml",
+      "language": "yaml",
+      "framework": "GitHub Actions",
+      "detected": [
+        "GitHub Actions"
+      ],
+      "expected": [
+        "GitHub Actions"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "gh_workflow",
+      "file": ".github/workflows/push_gem.yml",
+      "language": "yaml",
+      "framework": "GitHub Actions",
+      "detected": [
+        "GitHub Actions"
+      ],
+      "expected": [
+        "GitHub Actions"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "gh_workflow",
+      "file": ".github/workflows/test.yml",
+      "language": "yaml",
+      "framework": "GitHub Actions",
+      "detected": [
+        "GitHub Actions"
+      ],
+      "expected": [
+        "GitHub Actions"
+      ],
+      "status": "match"
+    },
+    {
+      "repo": "graphql_js",
+      "file": "benchmark/GraphQLSchema-benchmark.js",
+      "language": "javascript",
+      "framework": "JavaScript",
+      "detected": [],
+      "expected": [
+        "GraphQL"
+      ],
+      "status": "default",
+      "detail": "expected one of [GraphQL] but got language default JavaScript"
+    },
+    {
+      "repo": "graphql_js",
+      "file": "benchmark/buildASTSchema-benchmark.js",
+      "language": "javascript",
+      "framework": "JavaScript",
+      "detected": [],
+      "expected": [
+        "GraphQL"
+      ],
+      "status": "default",
+      "detail": "expected one of [GraphQL] but got language default JavaScript"
+    },
+    {
+      "repo": "graphql_js",
+      "file": "benchmark/buildClientSchema-benchmark.js",
+      "language": "javascript",
+      "framework": "JavaScript",
+      "detected": [],
+      "expected": [
+        "GraphQL"
+      ],
+      "status": "default",
+      "detail": "expected one of [GraphQL] but got language default JavaScript"
+    },
+    {
+      "repo": "graphql_js",
+      "file": "benchmark/fixtures.js",
+      "language": "javascript",
+      "framework": "JavaScript",
+      "detected": [],
+      "expected": [
+        "GraphQL"
+      ],
+      "status": "default",
+      "detail": "expected one of [GraphQL] but got language default JavaScript"
+    },
+    {
+      "repo": "graphql_js",
+      "file": "benchmark/introspectionFromSchema-benchmark.js",
+      "language": "javascript",
+      "framework": "JavaScript",
+      "detected": [],
+      "expected": [
+        "GraphQL"
+      ],
+      "status": "default",
+      "detail": "expected one of [GraphQL] but got language default JavaScript"
+    },
+    {
+      "repo": "graphql_js",
+      "file": "benchmark/list-async-benchmark.js",
+      "language": "javascript",
+      "framework": "JavaScript",
+      "detected": [],
+      "expected": [
+        "GraphQL"
+      ],
+      "status": "default",
+      "detail": "expected one of [GraphQL] but got language default JavaScript"
+    },
+    {
+      "repo": "go_tools",
+      "file": "cmd/benchcmp/benchcmp.go",
+      "language": "go",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "go"
+      ],
+      "status": "default",
+      "detail": "expected one of [go] but got language default unknown"
+    },
+    {
+      "repo": "go_tools",
+      "file": "cmd/benchcmp/benchcmp_test.go",
+      "language": "go",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "go"
+      ],
+      "status": "default",
+      "detail": "expected one of [go] but got language default unknown"
+    },
+    {
+      "repo": "go_tools",
+      "file": "cmd/benchcmp/compare.go",
+      "language": "go",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "go"
+      ],
+      "status": "default",
+      "detail": "expected one of [go] but got language default unknown"
+    },
+    {
+      "repo": "go_tools",
+      "file": "cmd/benchcmp/compare_test.go",
+      "language": "go",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "go"
+      ],
+      "status": "default",
+      "detail": "expected one of [go] but got language default unknown"
+    },
+    {
+      "repo": "go_tools",
+      "file": "cmd/benchcmp/doc.go",
+      "language": "go",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "go"
+      ],
+      "status": "default",
+      "detail": "expected one of [go] but got language default unknown"
+    },
+    {
+      "repo": "go_tools",
+      "file": "cmd/bisect/go120.go",
+      "language": "go",
+      "framework": "unknown",
+      "detected": [],
+      "expected": [
+        "go"
+      ],
+      "status": "default",
+      "detail": "expected one of [go] but got language default unknown"
+    }
+  ],
+  "matches": 57,
+  "defaults": 21,
+  "mismatches": 0,
+  "errors": 0,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.861Z",
+    "contentSha256": "503cf1d37b7cb8d1faa6d68fd87c6ba245140cc3492d78271244816a20d9ce87"
+  }
+}

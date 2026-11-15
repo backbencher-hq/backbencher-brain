@@ -1,6 +1,6 @@
 {
   "analyzer": "hcl",
-  "corpus": "$HOME/fixtures/repositories/terraform",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/terraform",
   "revision": "db4eef44f5bbd39a115f939304279caee7cf9b12",
   "extensions": [
     "*.tf",

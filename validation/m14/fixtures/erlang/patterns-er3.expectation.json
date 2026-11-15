@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/patterns-er3.erl",
+  "authoredFrom": "Erlang semantics + the pinned grammar's generator shape, before this fixture's F3 run. Four pattern-position classes, each of which decided a different defect the corpus dual lens found: a `when` GUARD computes (`X#r.f > 0` is a member READ); a comprehension GENERATOR's left side binds whatever expression holds the comprehension (`[N || #r{f = N} <- L]` is a match, and the `<-` sits inside a `generator` node — both the analyzer and the independent oracle first missed that and agreed on the wrong answer, which is the case a mirror cannot see); a case arm's `Y = #r{}` is a pattern even though the record is on the match's VALUE side; and a body match `A = #r{}` IS a construction. Complexity is 1 + arms: gen and comp carry one comprehension each, arm carries two cr_clauses. Lines are read off the fixture text.",
+  "expectSymbols": [
+    { "name": "patterns_er3", "kind": "module" },
+    { "name": "r", "kind": "struct", "ownerName": "patterns_er3" },
+    { "name": "f", "kind": "property", "ownerName": "r" },
+    { "name": "g", "kind": "property", "ownerName": "r" },
+    { "name": "guard_read", "kind": "function", "ownerName": "patterns_er3", "meta.arity": 1 },
+    { "name": "gen", "kind": "function", "ownerName": "patterns_er3", "meta.arity": 1 },
+    { "name": "arm", "kind": "function", "ownerName": "patterns_er3", "meta.arity": 1 },
+    { "name": "body", "kind": "function", "ownerName": "patterns_er3", "meta.arity": 0 },
+    { "name": "comp", "kind": "function", "ownerName": "patterns_er3", "meta.arity": 0 }
+  ],
+  "expectSymbolCount": [
+    { "name": "r", "kind": "struct", "equals": 1 }
+  ],
+  "expectComplexity": [
+    { "symbol": "guard_read", "equals": 1 },
+    { "symbol": "gen", "equals": 2, "note": "base 1 + one list comprehension (ER-D18, elixir-for parity)" },
+    { "symbol": "arm", "equals": 3, "note": "base 1 + two case arms" },
+    { "symbol": "body", "equals": 1 },
+    { "symbol": "comp", "equals": 2 }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "guard_read", "target": "r", "meta.context": "record member read", "line_number": 10, "note": "a GUARD computes: the nearest boundary is the guard, not the clause head" },
+    { "type": "uses", "from": "guard_read", "target": "f", "meta.context": "record member read", "line_number": 10 },
+    { "type": "instantiates", "from": "body", "target": "r", "line_number": 23, "note": "A = #r{} in a body IS a construction" },
+    { "type": "uses", "from": "body", "target": "r", "meta.context": "record field update", "line_number": 24 },
+    { "type": "uses", "from": "body", "target": "g", "meta.context": "record field update", "line_number": 24 },
+    { "type": "uses", "from": "body", "target": "r", "meta.context": "record member read", "line_number": 25, "note": "the index read #r.f — a per-SITE edge, distinct from the update on 24" },
+    { "type": "uses", "from": "body", "target": "f", "meta.context": "record member read", "line_number": 25 },
+    { "type": "contains", "from": "patterns_er3", "target": "r", "line_number": 8 },
+    { "type": "contains", "from": "r", "target": "f", "line_number": 8 },
+    { "type": "contains", "from": "r", "target": "g", "line_number": 8 }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "from": "gen", "target": "r", "note": "a generator's left side BINDS - the record is a match, whatever expression holds the comprehension" },
+    { "type": "uses", "from": "gen", "target": "r" },
+    { "type": "instantiates", "from": "arm", "target": "r", "note": "a case arm's `Y = #r{}` is a pattern: the record is on the match's value side, but the match sits in an arm head" },
+    { "type": "uses", "from": "arm", "target": "r" },
+    { "type": "instantiates", "from": "guard_read", "target": "r", "note": "nothing in a guard constructs" },
+    { "type": "instantiates", "from": "comp", "target": "r", "note": "a comprehension's result expression is not a record here" }
+  ],
+  "forbidSymbols": [{ "name": "N" }, { "name": "Y" }, { "name": "A" }, { "name": "B" }, { "name": "X" }],
+  "expectPatterns": ["Comprehensions", "Pattern Matching"]
+}

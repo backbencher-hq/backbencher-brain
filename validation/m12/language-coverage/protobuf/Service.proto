@@ -1,0 +1,18 @@
+// Minimal Protocol Buffers fixture for the M12 language-coverage gate.
+//
+// `protobuf` is a routed language (`.proto` -> protobuf) whose grammar had to be
+// vendored and patched, and validation/m12/fixtures/ had no protobuf/ directory.
+// A message (type) and a service/rpc (function-shaped declaration).
+
+syntax = "proto3";
+
+package langcov;
+
+message CoveragePoint {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+service CoverageService {
+  rpc Add(CoveragePoint) returns (CoveragePoint);
+}

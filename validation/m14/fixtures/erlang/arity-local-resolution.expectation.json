@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/arity-local-resolution.erl",
+  "authoredFrom": "Erlang semantics and OTP's own compiler, authored BEFORE the analyzer was run on this file. Erlang function identity is (name, arity) — ER-D2, and `erlc` itself: a file that declares `get/2` and writes `get(D)` is calling the AUTO-IMPORTED `erlang:get/1`, not its own function, and `setelement/3` is a BIF whether or not the file declares any `setelement`. `otp/lib/compiler/src/rec_env.erl` is the real instance: it declares `get/2` and calls `get(new_key_calls)` at lines 65-67, and the analyzer published `calls -> get` for all three. The positive rows are read off Erlang's resolution rule; the forbidden rows are the two auto-imports, which no compiler can bind to a local function.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "arity_local_resolution", "kind": "module" },
+    { "name": "go", "kind": "function", "ownerName": "arity_local_resolution", "meta.arity": 1 },
+    { "name": "get", "kind": "function", "ownerName": "arity_local_resolution", "meta.arity": 2 },
+    { "name": "emit", "kind": "function", "ownerName": "arity_local_resolution", "meta.arity": 4 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "go", "target": "get", "line_number": 10, "meta.context": "local function call", "meta.callArity": 2, "note": "`get(key, D)` — arity 2 IS declared here, so this is the file's own function. This is the ONLY `calls -> get` edge the file may carry." },
+    { "type": "calls", "from": "go", "target": "emit", "line_number": 14, "meta.context": "local function call", "meta.callArity": 4, "note": "`emit(G, T, Def, V)` — arity 4 is the declared one." },
+    { "type": "contains", "from": "arity_local_resolution", "target": "go" },
+    { "type": "contains", "from": "arity_local_resolution", "target": "get" },
+    { "type": "contains", "from": "arity_local_resolution", "target": "emit" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "go", "target": "get", "line_number": 11, "note": "ER-D45: `get(D)` is arity 1. The file declares `get/2`, so this is the auto-imported process-dictionary BIF `erlang:get/1` and it names no local function. A name-only gate published this edge in 618 places over the corpus (100 of them `get/1`); the shared oracle gates on name/arity, which is why these rows sat in `unexplained` with no explanation." },
+    { "type": "calls", "from": "go", "target": "setelement", "line_number": 12, "note": "a BIF whose name is not declared here at all — the case the original bare-name gate already handled, pinned so the arity-exact gate keeps handling it" },
+    { "type": "calls", "from": "go", "target": "emit", "line_number": 13, "note": "`emit(\"x\")` is arity 1; the file declares `emit/4`. Nothing local binds it. The same shape as `get/1`, and the class OTP actually contains: `otp/lib/asn1/src/asn1ct_gen_check.erl` declares `emit/4` and calls `emit(\" case \")`." }
+  ]
+}

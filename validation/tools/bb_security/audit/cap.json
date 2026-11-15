@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-02T04:12:36.922Z",
+  "currentCommit": "81771412ee8ce06e91c9f5f35b04970553d89cd1",
+  "command": "BB_DATA_DIR=… BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_security/work/probe-cap.ts",
+  "project": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/cap600",
+    "projectId": "071b03ef3df604c90e1e1e874795263f69633a82",
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/cap600",
+    "files": 60,
+    "taintRows": 1200
+  },
+  "live": {
+    "isError": false,
+    "durationMs": 28383,
+    "payloadBytes": 1921,
+    "census": {
+      "scannedFlows": 1200,
+      "deduplicatedFlows": 600,
+      "capAt": null,
+      "findingsExist": null,
+      "notExamined": null,
+      "recordedCount": null
+    },
+    "text": "security: 500 critical / 0 high / 0 medium / 0 low (500 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (f0_0) @ src/mod0.ts:3 <- database_read -> database_write\n  [critical] SQL injection (f0_1) @ src/mod0.ts:7 <- database_read -> database_write\n  [critical] SQL injection (f0_2) @ src/mod0.ts:11 <- database_read -> database_write\n  [critical] SQL injection (f0_3) @ src/mod0.ts:15 <- database_read -> database_write\n  [critical] SQL injection (f0_4) @ src/mod0.ts:19 <- database_read -> database_write\n  [critical] SQL injection (f0_5) @ src/mod0.ts:23 <- database_read -> database_write\n  [critical] SQL injection (f0_6) @ src/mod0.ts:27 <- database_read -> database_write\n  [critical] SQL injection (f0_7) @ src/mod0.ts:31 <- database_read -> database_write\n  [critical] SQL injection (f0_8) @ src/mod0.ts:35 <- database_read -> database_write\n  [critical] SQL injection (f0_9) @ src/mod0.ts:39 <- database_read -> database_write\n  [critical] SQL injection (f1_0) @ src/mod1.ts:3 <- database_read -> database_write\n  [critical] SQL injection (f1_1) @ src/mod1.ts:7 <- database_read -> database_write\n  [critical] SQL injection (f1_2) @ src/mod1.ts:11 <- database_read -> database_write\n  [critical] SQL injection (f1_3) @ src/mod1.ts:15 <- database_read -> database_write\n  [critical] SQL injection (f1_4) @ src/mod1.ts:19 <- database_read -> database_write\n  [critical] SQL injection (f1_5) @ src/mod1.ts:23 <- database_read -> database_write\n  [critical] SQL injection (f1_6) @ src/mod1.ts:27 <- database_read -> database_write\n  [critical] SQL injection (f1_7) @ src/mod1.ts:31 <- database_read -> database_write\n  [critical] SQL injection (f1_8) @ src/mod1.ts:35 <- database_read -> database_write\n  [critical] SQL injection (f1_9) @ src/mod1.ts:39 <- database_read -> database_write\n[scan: 1200 taint flow(s) indexed → 600 finding(s) (100 beyond the cap); showing 20 finding(s)]"
+  },
+  "recordRun": {
+    "isError": false,
+    "durationMs": 12918,
+    "payloadBytes": 2003,
+    "census": {
+      "scannedFlows": 1200,
+      "deduplicatedFlows": 600,
+      "capAt": null,
+      "findingsExist": null,
+      "notExamined": null,
+      "recordedCount": 600
+    },
+    "text": "security: 600 critical / 0 high / 0 medium / 0 low (600 resolved flows, 0 unvalidated sources, 0 mitigated)\nrecorded run: b6c12ed3-7d51-4daf-a33a-e314570189af\nnew=600 repeated=0 resolved=0\n600 findings recorded\n  [critical] SQL injection (f0_0) @ src/mod0.ts:3 <- database_read -> database_write\n  [critical] SQL injection (f0_1) @ src/mod0.ts:7 <- database_read -> database_write\n  [critical] SQL injection (f0_2) @ src/mod0.ts:11 <- database_read -> database_write\n  [critical] SQL injection (f0_3) @ src/mod0.ts:15 <- database_read -> database_write\n  [critical] SQL injection (f0_4) @ src/mod0.ts:19 <- database_read -> database_write\n  [critical] SQL injection (f0_5) @ src/mod0.ts:23 <- database_read -> database_write\n  [critical] SQL injection (f0_6) @ src/mod0.ts:27 <- database_read -> database_write\n  [critical] SQL injection (f0_7) @ src/mod0.ts:31 <- database_read -> database_write\n  [critical] SQL injection (f0_8) @ src/mod0.ts:35 <- database_read -> database_write\n  [critical] SQL injection (f0_9) @ src/mod0.ts:39 <- database_read -> database_write\n  [critical] SQL injection (f1_0) @ src/mod1.ts:3 <- database_read -> database_write\n  [critical] SQL injection (f1_1) @ src/mod1.ts:7 <- database_read -> database_write\n  [critical] SQL injection (f1_2) @ src/mod1.ts:11 <- database_read -> database_write\n  [critical] SQL injection (f1_3) @ src/mod1.ts:15 <- database_read -> database_write\n  [critical] SQL injection (f1_4) @ src/mod1.ts:19 <- database_read -> database_write\n  [critical] SQL injection (f1_5) @ src/mod1.ts:23 <- database_read -> database_write\n  [critical] SQL injection (f1_6) @ src/mod1.ts:27 <- database_read -> database_write\n  [critical] SQL injection (f1_7) @ src/mod1.ts:31 <- database_read -> database_write\n  [critical] SQL injection (f1_8) @ src/mod1.ts:35 <- database_read -> database_write\n  [critical] SQL injection (f1_9) @ src/mod1.ts:39 <- database_read -> database_write\n[scan: 1200 taint flow(s) indexed → 600 finding(s); showing 20 finding(s)"
+  },
+  "historyAll": {
+    "isError": false,
+    "durationMs": 19464,
+    "payloadBytes": 590549,
+    "runs": 1,
+    "findings": 600,
+    "runFindingCounts": [
+      600
+    ]
+  },
+  "historyLimit1": {
+    "isError": false,
+    "payloadBytes": 590549,
+    "runs": 1,
+    "findings": 600
+  }
+}

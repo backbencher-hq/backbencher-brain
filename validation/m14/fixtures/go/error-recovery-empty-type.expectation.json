@@ -1,0 +1,22 @@
+{
+  "fixtureId": "go/error-recovery-empty-type",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS RULE R7's EMPTY-NAME half, found by the census endpoint count rather than by reading: 1 edge with an empty target in 500 corpus files, and it was the only empty endpoint in any of the ten types (measured over the 2,000-file draw: `references` 1, every other type 0). The shape is `src/cmd/compile/internal/syntax/testdata/tparams.go` verbatim — `func f[ /* ERROR empty type parameter list */ ]()`. The pinned grammar types that hole as a `type_identifier` whose `text` is the empty string; the declared-type collector took it like any other type name and published `references f -> \"\"`, an endpoint no declaration can resolve and no consumer can navigate to. The guard refuses a nameless node INSIDE the collector rather than at the push site, because the collector is the only place that can tell a recovered hole from a written name. THE FILE DOES NOT COMPILE and is a file of its own for that reason: a recovery fixture sharing a file with compilable pins would weaken them, which is why the lane's round-5 fixture moved its two recovery shapes into a probe. The EXPECT rows are the over-application control — `Recovered`'s damaged list still publishes its two surviving type parameters, and `WithMethods -> Recovered` still publishes, so a guard that dropped the whole list instead of the empty name fails here. The `target: \"\"` forbid row is a lane-wide statement of the invariant rather than of this one shape, which is deliberate: it is the only row in the fixture format that can say 'no edge of this type may have an empty endpoint'.",
+  "expectRelationships": [
+    { "type": "references", "from": "Recovered", "target": "a", "line_number": 24, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Recovered", "target": "b", "line_number": 24, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "WithMethods", "target": "Recovered", "line_number": 29, "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Uses", "target": "WithMethods", "line_number": 36, "meta.relationshipType": "declared_type" },
+    { "type": "contains", "from": "WithMethods", "target": "Field" },
+    { "type": "exports", "from": "recoveryfixture", "target": "Generic", "line_number": 34 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "" },
+    { "type": "references", "from": "Generic" },
+    { "type": "references", "target": "int" },
+    { "type": "references", "target": "string" },
+    { "type": "references", "target": "any" },
+    { "type": "references", "target": "comparable" }
+  ]
+}

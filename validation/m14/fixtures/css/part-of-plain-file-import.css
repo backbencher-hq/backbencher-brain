@@ -1,0 +1,20 @@
+/* The `part_of` split for `@import`, pinned in BOTH directions in ONE file.
+
+   Sass and Less fold a plain-file import in at compile time: the imported source becomes part of
+   this stylesheet, so the edge is an inclusion (`part_of`, library side marked) and NOT a
+   stylesheet load. Every other form of `@import` is a load and keeps `imports`. The grammar tells
+   the two apart by SHAPE, so each line below is one shape:
+
+   L8  plain file form   -> part_of     (the only named child is a string_value, no .css suffix)
+   L9  .css specifier    -> imports     (a stylesheet load, whatever it says)
+   L10 url(...)          -> imports     (the child is a call_expression, not a string_value)
+   L11 media query       -> imports     (a SECOND named child: the query)
+   L12 protocol URL      -> imports     (a network stylesheet, never inlined)
+   L13 sass: built-in    -> imports     (the module system, not a file)
+*/
+@import "components/base";
+@import "print.css";
+@import url("icons.css");
+@import "screen-only.css" screen and (min-width: 40em);
+@import "https://cdn.example.com/normalize.css";
+@import "sass:math";

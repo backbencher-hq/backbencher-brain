@@ -1,0 +1,151 @@
+{
+  "comment": "The three node types the 2026-09-29 grammar wave added, pinned as ANALYZER behaviour rather than as a new analyzer feature. All three were unreadable at grammar v1.2.7, and all three were found by measuring parse health over the 2,179-file union corpus (1,526 parse-clean files / 70.0% -> 1,656 / 76.0%), not by reading a language spec. `foreign_code_import` + `foreign_code_item`: an FCI names OBJECT FILES and LIBRARIES, not a Clean module, so there is no module to bind and the analyzer emits NO `imports` edge for it \u2014 the three FCIs below are counted in metadata and nothing else, and the `forbidExports`/`expectRelationshipCount` rows are what make 'no edge' a pinned decision rather than an absence nobody would notice. `let_group`: `let { (BoxP p) = gtk } in p` is a GROUP of bindings, not a record pattern (its members are ordinary patterns, which is why `(BoxP p)` is legal there and illegal as a record-pattern field), and it is the shape the entire Gtk FFI layer is built from \u2014 53 corpus files. `record_binding`: the record-pattern binding, split out of `local_binding` by the same wave so that a brace inside a `let` is unambiguously the group. TWO findings this fixture pins, both caught by writing it rather than by design: (1) the FCI's name is on the ITEM's `object` field, not the import's, so reading `object` off the import yields nothing and the counter would publish a count with no evidence behind it \u2014 caught because the first run reported `foreignCodeImports: 3, foreignCodeObjects: []`; (2) the group and record-pattern BINDERS are not published as symbols, and that is a PRE-EXISTING boundary, not a regression \u2014 `callableDeclaredName` resolves declaration nodes, and a pattern node is not one, so `where {x, y} = e` was never published either. The 13,665 corpus `local_binding` sites yield 12,026 published locals, and that 1,639-site remainder is exactly this class. Widening name resolution from declarations to patterns is a separate change touching all of them, so it is recorded here rather than smuggled in with a grammar commit.",
+  "expectSymbols": [
+    {
+      "name": "CleanGrammarWave",
+      "kind": "module"
+    },
+    {
+      "name": "Point",
+      "kind": "type",
+      "ownerName": "CleanGrammarWave"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "y",
+      "kind": "property",
+      "ownerName": "Point"
+    },
+    {
+      "name": "BoxP",
+      "kind": "type",
+      "ownerName": "CleanGrammarWave"
+    },
+    {
+      "name": "toDevicePoint",
+      "kind": "function",
+      "ownerName": "CleanGrammarWave"
+    },
+    {
+      "name": "unwrapBox",
+      "kind": "function",
+      "ownerName": "CleanGrammarWave"
+    },
+    {
+      "name": "sizeOf",
+      "kind": "function",
+      "ownerName": "CleanGrammarWave"
+    },
+    {
+      "name": "withGroup",
+      "kind": "function",
+      "ownerName": "CleanGrammarWave"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Point",
+      "kind": "type"
+    },
+    {
+      "name": "BoxP",
+      "kind": "type"
+    },
+    {
+      "name": "toDevicePoint",
+      "kind": "function"
+    },
+    {
+      "name": "unwrapBox",
+      "kind": "function"
+    },
+    {
+      "name": "sizeOf",
+      "kind": "function"
+    },
+    {
+      "name": "withGroup",
+      "kind": "function"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "widget.o",
+      "kind": "string",
+      "comment": "An FCI names a linker input, not a module, so it must not reach the export surface. Before the wave these lines did not parse at all and the 30 corpus files that carry one were published with their surrounding declarations lost; now the declaration parses and the FCI is still not a module. The object names live in `metadata.foreignCodeObjects` instead, and the fixture's metadata rows below are the evidence that they are counted."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "CleanGrammarWave",
+      "target": "StdEnv:*",
+      "comment": "the ordinary module import still emits its edge; the FCIs below it do not, and the absence is the pinned decision"
+    },
+    {
+      "type": "references",
+      "from": "BoxP",
+      "target": "Point",
+      "comment": "`:: BoxP =: BoxP Point` \u2014 a derived newtype over `Point`. The RHS type is read, so the type reference survives."
+    },
+    {
+      "type": "calls",
+      "from": "sizeOf",
+      "target": "toDevicePoint",
+      "comment": "the call inside `sizeOf`'s `where` block. It resolves through the record_binding's value side, which is the half of `record_binding` the analyzer reads today."
+    },
+    {
+      "type": "uses",
+      "from": "toDevicePoint",
+      "target": "x",
+      "comment": "field access inside the FCI-bearing module; a plain sanity row that the wave did not disturb ordinary field reads"
+    },
+    {
+      "type": "uses",
+      "from": "withGroup",
+      "target": "x",
+      "comment": "`let { a = s.x; b = s.y } in a + b` \u2014 the `;`-separated multi-member group. A walk that treated the group's right-hand sides as binders would publish a symbol for each; none appears, per the count row above."
+    },
+    {
+      "type": "contains",
+      "from": "Point",
+      "target": "x",
+      "comment": "the record field is contained by its type"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "imports",
+      "from": "CleanGrammarWave",
+      "target": "StdEnv:*",
+      "equals": 1,
+      "comment": "EXACTLY ONE import edge, from the one real module import. The three FCIs contribute zero, which is the decision this fixture exists to pin: an `imports` edge with an empty target would resolve to nothing, so the lane counts them in metadata instead."
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0,
+      "comment": "Zero parse errors across the whole fixture. This is the row that would have failed before the wave: `foreign_code_import`, `let_group` and `record_binding` were all unreadable at v1.2.7, and each of the three constructs below is the one whose absence this count would have caught. It is also why this fixture's value is not the symbols it publishes but the ERROR count it no longer has to carry."
+    }
+  ],
+  "expectMetadata": [
+    {
+      "foreignCodeImports": 3,
+      "comment": "three FCI declarations: `import code from \"widget.o\"`, `import code from library \"CleanSerial_library\"`, and the four-item `import code from \"SUBSERVER.OBJ\", library \"KERNEL32.TXT\", library \"USER32.TXT\"`. Counted because 'no edge' is a decision and an uncounted decision is indistinguishable from a gap \u2014 the same reasoning the lane already applies to `operatorImports`."
+    },
+    {
+      "foreignCodeObjects": [
+        "widget.o",
+        "CleanSerial_library",
+        "SUBSERVER.OBJ",
+        "KERNEL32.TXT",
+        "USER32.TXT"
+      ],
+      "comment": "five DISTINCT object names across those three declarations, quotes dropped. This row exists because the first implementation read `object` off the IMPORT rather than off each ITEM and published a count of 3 alongside an empty list \u2014 a number with nothing behind it, which is the failure mode the metadata rows are supposed to make impossible. The channel compares by JSON equality, so the exact list is pinned rather than a length \u2014 a length would pass with the WRONG five names in it, and the names are the whole point of the row."
+    }
+  ]
+}

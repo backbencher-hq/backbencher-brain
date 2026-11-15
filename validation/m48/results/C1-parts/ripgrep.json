@@ -1,0 +1,256 @@
+{
+  "repo": "ripgrep",
+  "indexSeconds": 25.123,
+  "fileCount": 161,
+  "negatives": 1,
+  "perTool": {
+    "bb_search": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"mode\":\"file\",\"filePath\":\"crates/index/src/literal.rs\",\"query\":\"crates/index/src/literal.rs\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"crates/index/src/literal.rs\",\"fileId\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs\",\"language\":\"rust\",\"con"
+    },
+    "bb_health": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 23,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/ripgrep\\nprojectId: a65e53f2a2b3113027192b7bd846d8b5ca38a33a\\nfiles=161 symbols=6476 relationships=34075 imports"
+    },
+    "bb_ask": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 222,
+      "args": "{\"query\":\"what does unwrap do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within the same margin of the best. The similarity numbers below se"
+    },
+    "bb_patterns": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 417,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (1847 found):\\n  orphaned_function _rg_color_specs — crates/core/flags/complete/rg.zsh:373 (70%)\\n  orphaned_class RipgrepBin — pkg/brew/ripgrep-"
+    },
+    "bb_security": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 28,
+      "args": "{}",
+      "outHead": "\"security: 52 critical / 74 high / 0 medium / 0 low / 90 unknown (32 resolved flows, 184 unvalidated sources, 0 mitigated)\\n  [critical] Command injection (Deco"
+    },
+    "bb_visualize": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 50,
+      "args": "{\"scope\":\"symbol\",\"target\":\"unwrap\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"unwrap\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/"
+    },
+    "bb_migrate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 89,
+      "args": "{\"symbolName\":\"unwrap\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"unwrap\",\"symbolId\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"sourceFil"
+    },
+    "bb_analyze": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 25,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":161,\"linesOfCode\":59884,\"avgFileSize\":13658.72049689441,\"avgFileSizeUnit\":\"bytes\",\"symbols\":6476,\"symbolsWithComplexity\":6476,\"avgComplexity\":1.5542001"
+    },
+    "bb_doc": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 47,
+      "args": "{\"mode\":\"symbol\",\"target\":\"unwrap\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: unwrap\\n\\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 33 source(s).\\n\\n## API\\n\\n1 claim, 1 read directly from the"
+    },
+    "bb_edit": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 237,
+      "args": "{\"mode\":\"update\",\"filePath\":\"crates/index/src/literal.rs\",\"symbolName\":\"unwrap\",\"newContent\":\"export function unwrap(): void { /* m48 c1 dry-run */ }\",\"dryRun\":true,\"format\":false}",
+      "outHead": "{\"mode\":\"update\",\"dryRun\":true,\"changes\":[{\"path\":\"/home/ishaq2321/bb_tests/repositories/ripgrep/crates/index/src/literal.rs\",\"before\":\"// This module is curren"
+    },
+    "bb_index": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 13,
+      "args": "{\"path\":\"crates/index/src/literal.rs\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"crates/index/src/literal.rs\",\"indexed\":0,\"deleted\":0,\"errors\":0,\"unchanged\":1,\"declined\":0,\"skipped\":0,\"outcome\":\"no-op\",\"reason\":\"nothin"
+    },
+    "bb_graph": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1014,
+      "args": "{\"symbol\":\"unwrap\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"unwrap\",\"root\":{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"name\":\"unwrap\",\"symbolType\":\"method\",\"file\":\"c"
+    },
+    "bb_impact": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 107,
+      "args": "{\"symbol\":\"unwrap\"}",
+      "outHead": "{\"symbol\":\"unwrap\",\"root\":{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"name\":\"unwrap\",\"file\":\"crates/index/src/litera"
+    },
+    "bb_cross_language": {
+      "ok": true,
+      "declaredAbsent": true,
+      "ms": 3,
+      "args": "{\"symbol\":\"unwrap\"}",
+      "outHead": "{\"symbol\":\"unwrap\",\"language\":\"rust\",\"languages\":[\"rust\"],\"copies\":[{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"symb"
+    },
+    "bb_annotate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"parse_low_raw\",\"body\":\"m48 c1 corpus note (ripgrep)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-a31a596ebcb2cc45a3f195c6290d6a2bcb9f8a68e8fb88e887e7d71fc6030bff\",\"symbol_name\":\"parse_low_raw\",\"symbol_path\":null,\"aut"
+    },
+    "bb_annotations": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 14,
+      "args": "{\"symbol\":\"parse_low_raw\"}",
+      "outHead": "{\"symbol\":\"parse_low_raw\",\"path\":null,\"includeNameLevel\":false,\"nameLevelIncluded\":true,\"storeAbsent\":false,\"symbolIndexed\":true,\"annotations\":[{\"id\":\"bbann-a31"
+    }
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_search",
+      "repo": "ripgrep",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "unwrap [method] crates/index/src/literal.rs:57 (rust)\nunwrap_literal [method] crates/index/src/liter rows=0"
+    },
+    {
+      "tool": "bb_search",
+      "repo": "ripgrep",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"crates/index/src/literal.rs\",\n  \"fileId\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a"
+    },
+    {
+      "tool": "bb_health",
+      "repo": "ripgrep",
+      "label": "health.files == SQL count (161)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/ripgrep\nprojectId: a65e53f2a2b3113027192b7bd846d8b5ca38a33a\nfiles=161 sym"
+    },
+    {
+      "tool": "bb_ask",
+      "repo": "ripgrep",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within t"
+    },
+    {
+      "tool": "bb_patterns",
+      "repo": "ripgrep",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (1847 found):\n  orphaned_function _rg_color_specs — crates/core/flags/complete/rg.zsh:"
+    },
+    {
+      "tool": "bb_security",
+      "repo": "ripgrep",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 52 critical / 74 high / 0 medium / 0 low / 90 unknown (32 resolved flows, 184 unvalidated "
+    },
+    {
+      "tool": "bb_visualize",
+      "repo": "ripgrep",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"unwrap\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n"
+    },
+    {
+      "tool": "bb_migrate",
+      "repo": "ripgrep",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"unwrap\",\n      \"symbolId\": \"a"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "ripgrep",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "ripgrep",
+      "label": "analyze stats.files == SQL count (161)",
+      "pass": true,
+      "detail": "out files=161 sql=161"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "ripgrep",
+      "label": "analyze stats.symbols == SQL count (6476)",
+      "pass": true,
+      "detail": "out symbols=6476 sql=6476"
+    },
+    {
+      "tool": "bb_doc",
+      "repo": "ripgrep",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: unwrap\n\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 33 "
+    },
+    {
+      "tool": "bb_edit",
+      "repo": "ripgrep",
+      "label": "dry-run leaves file untouched",
+      "pass": true,
+      "detail": "before=98d3a96a after=98d3a96a"
+    },
+    {
+      "tool": "bb_index",
+      "repo": "ripgrep",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"crates/index/src/literal.rs\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged"
+    },
+    {
+      "tool": "bb_graph",
+      "repo": "ripgrep",
+      "label": "graph root == unwrap",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"unwrap\",\n  \"root\": {\n    \"id\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwr"
+    },
+    {
+      "tool": "bb_impact",
+      "repo": "ripgrep",
+      "label": "impact root == unwrap",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"unwrap\",\n  \"root\": {\n    \"id\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwr"
+    },
+    {
+      "tool": "bb_cross_language",
+      "repo": "ripgrep",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"unwrap\",\n  \"language\": \"rust\",\n  \"languages\": [\n    \"rust\"\n  ],\n  \"copies\": [\n    {\n "
+    },
+    {
+      "tool": "bb_annotate",
+      "repo": "ripgrep",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-a98c84313dd6734ebd4eeb67c8ea49b5dd5baf4a3ef5b"
+    },
+    {
+      "tool": "bb_annotations",
+      "repo": "ripgrep",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"parse_low_raw\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\""
+    }
+  ],
+  "failures": []
+}

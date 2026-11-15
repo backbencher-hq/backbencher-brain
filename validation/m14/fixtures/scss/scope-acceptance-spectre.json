@@ -1,0 +1,80 @@
+{
+  "repo": "spectre",
+  "files": 76,
+  "partition": {
+    "before": {
+      "imports": {
+        "unresolved": 81,
+        "resolved": 1,
+        "total": 82
+      },
+      "contains": {
+        "resolved": 861,
+        "total": 861
+      },
+      "uses": {
+        "resolved": 5,
+        "total": 5
+      },
+      "exports": {
+        "ambDeclOnly": 2,
+        "resolved": 116,
+        "total": 118
+      },
+      "references": {
+        "resolved": 87,
+        "total": 87
+      },
+      "extends": {
+        "resolved": 4,
+        "total": 4
+      },
+      "calls": {
+        "resolved": 5,
+        "total": 5
+      }
+    },
+    "after": {
+      "imports": {
+        "unresolved": 81,
+        "resolved": 1,
+        "total": 82
+      },
+      "contains": {
+        "resolved": 861,
+        "total": 861
+      },
+      "uses": {
+        "resolved": 5,
+        "total": 5
+      },
+      "exports": {
+        "resolved": 118,
+        "total": 118
+      },
+      "references": {
+        "resolved": 87,
+        "total": 87
+      },
+      "extends": {
+        "resolved": 4,
+        "total": 4
+      },
+      "calls": {
+        "resolved": 5,
+        "total": 5
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 13,
+    "before": {
+      "ambDeclOnly": 2
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 1081,
+    "falseBindings": 5
+  }
+}

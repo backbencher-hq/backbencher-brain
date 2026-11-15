@@ -38,8 +38,8 @@ const DOC = "docs/analyzers/history/vb-lane-notes.md"
 const ANALYZER_DOC = "docs/analyzers/vb.md"
 const REVIEW = "reviews/vb/master-review.md"
 const PIN = "validation/m14/grammar-pins.json"
-const PROBE = "$HOME/fixtures/probes/vb-linecheck.ts"
-const CORPUS = "$HOME/fixtures/vb-corpus/p3d"
+const PROBE = "/home/ishaq2321/bb_tests/probes/vb-linecheck.ts"
+const CORPUS = "/home/ishaq2321/bb_tests/vb-corpus/p3d"
 
 type Row = { n: number; name: string; ok: boolean; detail: string; blocking: boolean }
 const rows: Row[] = []

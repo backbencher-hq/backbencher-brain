@@ -9,7 +9,7 @@ import path from "path"
 import { getProjectId } from "../src/cli/index"
 import { BrainDatabase } from "../src/brain/database"
 
-const project = "$HOME/mcp/backbencher-brain"
+const project = "/home/ishaq2321/mcp/backbencher-brain"
 const dataDir = path.join(project, ".bb-data")
 const pid = getProjectId(project)
 const dbPath = BrainDatabase.getDbPath(pid)

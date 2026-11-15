@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-02T00:13:58.327Z",
+  "currentCommit": "a9e4c1a62446de960214df3a4db16897e0b348ee",
+  "command": "BB_DATA_DIR=… BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_security/work/probe-history-policy.ts",
+  "project": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/work/fixtures/history-policy",
+    "projectId": "50db4a8a77d2669dbaa3ef2ee5026e054e6ab769",
+    "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/history-policy"
+  },
+  "injected": {
+    "collisionPair": {
+      "id": "fp-collide-mitigated",
+      "state": "mitigated",
+      "fingerprintClaim": "taint:sql_injection:database_write:src/api.ts:3",
+      "collidesWith": "the analyzer's confirmed flow on the same sink"
+    },
+    "unknownGrade": {
+      "id": "unknown-grade-mitigated",
+      "storedSeverity": "info",
+      "normalizedSeverity": "unknown",
+      "state": "mitigated",
+      "file": "src/api.ts",
+      "line": 11
+    }
+  },
+  "recordRun": {
+    "isError": false,
+    "liveHead": "security: 2 critical / 1 high / 0 medium / 0 low / 1 unknown (4 resolved flows, 0 unvalidated sources, 2 mitigated)",
+    "recordedCountInResponse": 4,
+    "recordedRunFindingCount": 3,
+    "textHead": "security: 2 critical / 1 high / 0 medium / 0 low / 1 unknown (4 resolved flows, 0 unvalidated sources, 2 mitigated)\nrecorded run: e99eb342-a89a-4b06-a01f-880a4024fc54\nnew=3 repeated=0 resolved=0\n4 findings recorded\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n  [critical] SQL injection (touched) @ src/api.ts:7 <- database_read -> database_write\n  [high] SQL injection (search) @ src/api.ts:3 <- http_input -> database_write [mitigated]\n  [unknown] SQL injection (pure) @ src/api.ts:11 <- http_input -> database_write [mitigated]\n[scan: 5 taint flow(s) indexed → 4 finding(s); showing 4 finding(s)]"
+  },
+  "history": {
+    "runs": 1,
+    "persistedFindings": 3,
+    "persistedSeverities": [
+      "critical",
+      "unknown"
+    ],
+    "persistedRules": [
+      "sql_injection"
+    ],
+    "persistedLocations": [
+      "src/api.ts:3 state=open",
+      "src/api.ts:7 state=open",
+      "src/api.ts:11 state=mitigated"
+    ],
+    "persistedUnknownSeverityRow": {
+      "id": "ce470980-4de6-4b82-a8b5-7e7f8d2e69ef",
+      "projectId": "50db4a8a77d2669dbaa3ef2ee5026e054e6ab769",
+      "kind": "security",
+      "fingerprint": "taint:sql_injection:database_write:src/api.ts:11",
+      "rule": "sql_injection",
+      "title": "SQL injection",
+      "severity": "unknown",
+      "state": "mitigated",
+      "confidence": 0.3,
+      "evidence": [
+        {
+          "kind": "taint_flow",
+          "description": "http_input -> database_write taint flow (mitigated)"
+        }
+      ],
+      "location": "src/api.ts:11",
+      "limitations": [
+        "Flows are indexer heuristics; parameterized/escaped sinks may still be reported."
+      ],
+      "evidenceClass": "static_finding",
+      "engine": "taint@intelligence",
+      "engineVersion": "m10.04",
+      "firstSeenAt": 1793578436638,
+      "lastSeenAt": 1793578436638,
+      "resolvedAt": null,
+      "suppressedAt": null,
+      "mitigatedAt": null,
+      "occurrenceCount": 1
+    },
+    "findingCountEqualsPersisted": true
+  },
+  "verdict": {
+    "responseOverstatesPersistedSet": true,
+    "historyContainsUnknownSeverity": true,
+    "collisionDroppedOneFlow": true
+  }
+}

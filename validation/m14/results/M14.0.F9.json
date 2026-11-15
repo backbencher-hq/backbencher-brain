@@ -1,0 +1,339 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "88c972317c8f5343228d2d6d634b1b4d4b3d0e3baaf3337a7feee13ad9cc61bd",
+    "sealedAt": "2026-11-12T20:31:27.000Z"
+  },
+  "checks": [
+    {
+      "description": "HTML-IDENTITY: an element is a symbol because it is ADDRESSABLE — `id`, or `name` with no `id`. A `class` is a shared styling hook and never an identity, on either side.",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HTML-IDENTITY",
+      "status": "pass"
+    },
+    {
+      "description": "SCHEME CONTRACT: all five javascript: spellings are recognised, including the two entity-obfuscated forms an HTML parser sees as identical to `javascript:` — and a cross-origin or non-resource hyperlink is NOT a code dependency on either side.",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HTML-SCHEME",
+      "status": "pass"
+    },
+    {
+      "description": "M59.O2 / R6: every edge names the 1-based line it is written on, and a fragment reference resolves to the SYMBOL rather than to the written `#text`.",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HTML-LINE",
+      "status": "pass"
+    },
+    {
+      "description": "RESOURCE TABLE: the carriers the pre-fix branch chain had no arm for — object[data], embed[src], track[src], input[src], iframe[src], source[srcset], SVG use/image href — are derivable truth, not just analyzer output.",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HTML-CARRIERS",
+      "status": "pass"
+    },
+    {
+      "description": "SCOPE BARRIER: a `<template>`/`<slot>` fragment's element is a containment target of its nearest LIVE ancestor, and a bare barrier's name never becomes a target. Source attribution is pinned by the fixture and CC1 — this channel's key is target-only.",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HTML-BARRIER",
+      "status": "pass"
+    },
+    {
+      "description": "assignment-form `_f = new();` emits instantiates via member-type map; declarator + property forms unchanged",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-CSD11",
+      "status": "pass"
+    },
+    {
+      "description": "interface-only external base list emits implements, never a fabricated extends",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-CSD12a",
+      "status": "pass"
+    },
+    {
+      "description": "struct bases are implements (structs cannot inherit), non-I-named external class base keeps extends (first-base rule)",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-CSD12b",
+      "status": "pass"
+    },
+    {
+      "description": "standalone deriving instance (bare + qualified class heads) emits implements",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HSD12",
+      "status": "pass"
+    },
+    {
+      "description": "pattern-position constructors (case alternative, pattern guard, record pattern in head) never fabricate instantiates",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HSD14",
+      "status": "pass"
+    },
+    {
+      "description": "body-position qualified constructor APPLICATION emits instantiates (HSD16 contract)",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HSD16",
+      "status": "pass"
+    },
+    {
+      "description": "HS-D2 boundary: bare constructor VALUES bind function values, not instances — silent in both qualified and unqualified forms (applications emit, per HSD16)",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-HSD2-BAREVALUE",
+      "status": "pass"
+    },
+    {
+      "description": "backtick-infix definition heads become function symbols without self-call fabrication; calls in body resolve",
+      "detail": "ok",
+      "id": "F9-PROBE-HSD19",
+      "status": "pass"
+    },
+    {
+      "description": "#924 kotlin half (analyzer surface): a quoted identifier's quoting syntax is not part of the name — a backticked DECLARATION is contained as `in`, and `Parameters.`in`(1)` calls `in`, never the source spelling",
+      "detail": "ok",
+      "id": "F9-PROBE-KT-QUOTED-NAME-924",
+      "status": "pass"
+    },
+    {
+      "description": "#924 kotlin half (LOCKSTEP): the kotlin calls oracle strips the same quoting — its truth spells the backticked selector `in`, so a repair that publishes the bare name is an agreement rather than a mask (this is the assertion the shipped half-dead strip would have failed: `oracle colludes` on calls -> `in`)",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-KT-QUOTED-NAME-924-ORACLE",
+      "status": "pass"
+    },
+    {
+      "description": "new self/static resolve to the class; the degenerate ternary class cannot reappear (F7 also guards)",
+      "detail": "ok",
+      "id": "F9-PROBE-PHP-RS",
+      "status": "pass"
+    },
+    {
+      "description": "explicit constructor invocation emits calls with this/super literal targets (G2 ruling); array reads attribute to owner (implicit-this)",
+      "detail": "ok",
+      "id": "F9-PROBE-JAVA-CTOR",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (M12.PHP-OVERRIDE-AUDIT: the unverified cross-file guess is REFUSED — publishing one fails this probe)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-PHP",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (M37.10 fix)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-RUBY",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (M37.10 fix)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-PYTHON",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (M37.10 fix)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-JAVASCRIPT",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (M37.10 fix)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-PERL",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (M37.10 fix)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-SWIFT",
+      "status": "pass"
+    },
+    {
+      "description": "external-base override emits Pass-3 guess @0.5/inferred; in-file verified @0.95 (Pass-3 already in place; guards regressions)",
+      "detail": "ok",
+      "id": "F9-PROBE-M3710-JAVA",
+      "status": "pass"
+    },
+    {
+      "description": "binding positions emit no read edge (import bindings, parameters, catch params, destructuring targets, export aliases); pattern-default RHS still reads; oracle must not derive the forbidden names",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-JSD-BINDINGS",
+      "status": "pass"
+    },
+    {
+      "description": "bare external, in-file and DOTTED heritage bases all derive `extends` on the analyzer AND the oracle (the JS class_heritage shape the TS-clause-matching oracle missed)",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-JS-HERITAGE-EXTERNAL",
+      "status": "pass"
+    },
+    {
+      "description": "a decorator is METADATA on the symbol it decorates on BOTH sides: no `calls` edge for the decorator name, no `uses` for its name or its argument — while an ordinary call in the same class (`make()` in the field initializer) still derives",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-JSD-DECORATOR-POSITION",
+      "status": "pass"
+    },
+    {
+      "description": "the oracle derives RENDERS for an import-bound <svelte:component this={X}/> target and does NOT for a non-import (member) target — the analyzer's own gate, so the mirror cannot fabricate",
+      "detail": "imported=[renders:Widget] local=[]",
+      "id": "F9-PROBE-SVELTE-DYNAMIC-COMPONENT",
+      "status": "pass"
+    },
+    {
+      "description": "bare-`private` base member seeds no override pair (not inherited); qualified `private[pkg]` still pairs",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-SCAD11",
+      "status": "pass"
+    },
+    {
+      "description": "a reference link resolves to the destination its own `link_reference_definition` declares",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD1",
+      "status": "pass"
+    },
+    {
+      "description": "an UNDEFINED reference link is literal text, not a link — and the oracle must refuse it too",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD1b",
+      "status": "pass"
+    },
+    {
+      "description": "two code blocks of one language under one heading are two SITES, not one symbol",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD2",
+      "status": "pass"
+    },
+    {
+      "description": "a heading hierarchy edge is `structural`, and a link edge is `reference_qualified`",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD3",
+      "status": "pass"
+    },
+    {
+      "description": "a link inside a code span or a closed fence is not a link; a real one beside it is",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD6",
+      "status": "pass"
+    },
+    {
+      "description": "an empty ATX heading publishes ABSENCE, never a symbol named after its marker",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD9",
+      "status": "pass"
+    },
+    {
+      "description": "an ATX closing run is not part of the heading's name; a `#` with no space before it is",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-MD10",
+      "status": "pass"
+    },
+    {
+      "description": "`<script lang=\"tsx\" setup>` truth parses as tsx: real script-setup calls derived, no keyword callees invented",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-VUED11",
+      "status": "pass"
+    },
+    {
+      "description": "an embedded INSTANTIATED GENERIC names the LEAF of its base type on the analyzer AND the oracle (ResourceIndexer, ClientWithListAndApply) under the struct half's `mixes_in` label, and the truth never derives a TYPE ARGUMENT as the embedded type's name (Example])",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-GO-EMBED-GENERIC",
+      "status": "pass"
+    },
+    {
+      "description": "a bare callee resolves to a DECLARED function or method only: an interface-method name is not callable (package-scope and body sites alike), and a type never implements itself — the same rule the F5 oracle already applies",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-GO-BARE-CALLABLE-SET",
+      "status": "pass"
+    },
+    {
+      "description": "implements compares Go METHOD SETS: variadic interface params, receiver-only implementors, alias interfaces and diamond embedding all derive on BOTH sides, and a same-name/different-signature pair derives on NEITHER",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-GO-IMPL-SIGNATURE",
+      "status": "pass"
+    },
+    {
+      "description": "M60 (#D): a block-pointer/function-pointer PARAMETER's declared name is never a read — neither the analyzer nor the oracle publishes `uses runBlock -> handler` from the declaration, while BOTH publish the call where it is invoked and the argument read",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-OBJC-PARAM-DECL",
+      "status": "pass"
+    },
+    {
+      "description": "M60 (#B): pool-worker's production entry keeps a keyword-selector target that ends in ':' (calls saveUser: -> addObject:, contains UserService -> saveUser:)",
+      "detail": "ok (production entry preserves trailing-colon selector targets)",
+      "id": "F9-PROBE-OBJC-PRODUCTION-SELECTOR",
+      "status": "pass"
+    },
+    {
+      "description": "a template-wrapped declarator's NAME is a DECLARATION on both sides: no `uses -> bits_of` from `template <> constexpr auto bits_of<long>() -> int` on the analyzer OR in the bare-uses truth, while the genuine reads in the same file (an array-size read of a namespace constant and a bare value read) stay on both sides",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-CPP-TEMPLATE-DECL-NAME",
+      "status": "pass"
+    },
+    {
+      "description": "the controls that keep the declaration gate narrow: a CALL of the same template is still a call on both sides (the callee leaf belongs to the calls branch), and the size-expression read of a namespace-scope constant is still a read — so the rule cannot be satisfied by silencing the name",
+      "detail": "ok (oracle agrees)",
+      "id": "F9-PROBE-CPP-TEMPLATE-CALL",
+      "status": "pass"
+    },
+    {
+      "description": "a wrapped declarator name (`bool (acceptParenthesized)(…)`) still publishes its method and opens a function scope, so its parameter's read never escapes to the file-scope enumerator — on the analyzer OR in the bare-uses truth — while a genuine read in the same snippet stays on both sides",
+      "detail": "ok (oracle agrees, no collusion on the forbidden set)",
+      "id": "F9-PROBE-CPP-WRAPPED-DECLARATOR-SCOPE",
+      "status": "pass"
+    },
+    {
+      "description": "a definition module's declared interface publishes a symbol per `signature_name` shape AND exports it (identifier, constructor-as-function, parenthesized_operator, parenthesized_name), each marked as a declaration",
+      "detail": "4 shapes published and exported, 4 marked isDeclaration",
+      "id": "F9-PROBE-CLEAN-DCL-INTERFACE",
+      "status": "pass"
+    },
+    {
+      "description": "cyclomaticComplexity counts FUNCTION guards (`guard_equation`) — three guard equations raise it by at least three over the same file without them — and a list-comprehension `guard` remains a counted decision point of its own",
+      "detail": "guards add 5 (6 -> 11)",
+      "id": "F9-PROBE-CLEAN-GUARD-COMPLEXITY",
+      "status": "pass"
+    },
+    {
+      "description": "an operator definition's body attributes its call to the operator, and the attribution is RELEASED when its scope ends — a later module-level application keeps its own source instead of being swallowed by the operator",
+      "detail": "ok (oracle agrees, source-aware: no collusion on the forbidden set)",
+      "id": "F9-PROBE-CLEAN-OPERATOR-SCOPE",
+      "status": "pass"
+    },
+    {
+      "description": "a constructor in a function HEAD pattern is never an `instantiates` (pattern territory is everything before the body FIELD — the pre-fix gate tested for an `operator` child with text `=`, which this grammar cannot produce), while the same constructor in a BODY is — under the lane's in-file rule: the snippet declares `JustI`, so the pair discriminates HEAD from BODY without asserting an edge the lane refuses",
+      "detail": "ok (oracle agrees, source-aware: no collusion on the forbidden set)",
+      "id": "F9-PROBE-CLEAN-HEAD-PATTERN",
+      "status": "pass"
+    },
+    {
+      "description": "every relationship carries the SITE LINE it happened on — 1-based, positive, never a fabricated 0, on the name-bearing node — and the line is part of the dedupe key: a function called from three lines is three edges at those three lines, while a `contains` edge carries the child's own naming line (the #921 anchor the store resolves with)",
+      "detail": "ok (17 edges, all with a line; calls f at lines 6,8,10; contains f at the definition's line; import at L2)",
+      "id": "F9-PROBE-CLEAN-EDGE-LINE",
+      "status": "pass"
+    },
+    {
+      "description": "hygiene detectors flag historical shapes, skip nested ternary",
+      "detail": "got 3 findings: noop-ternary,noop-ternary,write-only-flag",
+      "id": "F9-SELFTEST-F7",
+      "status": "pass"
+    },
+    {
+      "description": "census classifier reads all spec ruling formats",
+      "detail": "classifier format coverage",
+      "id": "F9-SELFTEST-F8",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L2",
+  "commit": "9b542f2c5d60a79eb8644f6c38f375a48bd14db6",
+  "committedAt": "2026-11-12T15:31:27-05:00",
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F9",
+  "layers": [
+    "probes"
+  ],
+  "limitations": [
+    {
+      "description": "Probe snippets are minimal shapes per defect class, not full programs; cross-file resolution classes remain covered by the differential corpora (F5)"
+    }
+  ],
+  "regeneratedAt": "2026-11-12T15:31:27-05:00",
+  "regeneratedAtCommit": "9b542f2c5d60a79eb8644f6c38f375a48bd14db6",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Defect-class probe battery: historical defect classes asserted on analyzer AND oracle, plus gate self-tests"
+}

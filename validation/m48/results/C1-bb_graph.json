@@ -1,0 +1,95 @@
+{
+  "status": "verified",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
+  "evidenceFile": "C1-bb_graph.json",
+  "generatedAt": "2026-11-04T05:55:38.533Z",
+  "tools": [
+    "bb_graph"
+  ],
+  "repos": [
+    {
+      "repo": "rake",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 207,
+      "args": "{\"symbol\":\"join\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"join\",\"root\":{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"name\":\"join\",\"symbolType\":\"method\",\"file\":\"lib/rake/th"
+    },
+    {
+      "repo": "ripgrep",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1014,
+      "args": "{\"symbol\":\"unwrap\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"unwrap\",\"root\":{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"name\":\"unwrap\",\"symbolType\":\"method\",\"file\":\"c"
+    },
+    {
+      "repo": "graphql-js",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 464,
+      "args": "{\"symbol\":\"toDeepEqual\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"toDeepEqual\",\"root\":{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSON.ts:toDeepEqual:36\",\"name\":\"toDeepEqual\",\"symbolType\""
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 153,
+      "args": "{\"symbol\":\"is_newline\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"is_newline\",\"root\":{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"name\":\"is_newline\",\"symbolType\":\"function\",\"file\":\""
+    },
+    {
+      "repo": "lodash",
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 91,
+      "args": "{\"symbol\":\"map\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"map\",\"root\":{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"name\":\"map\",\"symbolType\":\"function\",\"file\":\"lodash.js\",\"line\":9651,\""
+    }
+  ],
+  "crossChecks": [
+    {
+      "repo": "rake",
+      "label": "graph root == join",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"join\",\n  \"root\": {\n    \"id\": \"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\n"
+    },
+    {
+      "repo": "ripgrep",
+      "label": "graph root == unwrap",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"unwrap\",\n  \"root\": {\n    \"id\": \"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwr"
+    },
+    {
+      "repo": "graphql-js",
+      "label": "graph root == toDeepEqual",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"toDeepEqual\",\n  \"root\": {\n    \"id\": \"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
+    },
+    {
+      "repo": "tree-sitter-clean",
+      "label": "graph root == is_newline",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"is_newline\",\n  \"root\": {\n    \"id\": \"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171"
+    },
+    {
+      "repo": "lodash",
+      "label": "graph root == map",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"map\",\n  \"root\": {\n    \"id\": \"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\n    \"name\": \"m"
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "summary": {
+    "realReposSuccessful": 5,
+    "tools": [
+      "bb_graph"
+    ]
+  }
+}

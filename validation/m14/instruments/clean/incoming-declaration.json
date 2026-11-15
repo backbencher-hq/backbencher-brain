@@ -6,7 +6,7 @@
   "_what_this_is": "The `clean` lane's WHOLE-POPULATION declaration, rebuilt 2026-10-29 from a live arm. IT WAS REBUILT AGAIN BECAUSE THE 2026-10-28 VERSION PUBLISHED A CLAIM THE ARM REFUTES: it recorded `imports` as 1,932 answered with `extFAIL 0`, and the same arm reads **extFAIL 1,177** — the 1,177 `importProjectFile` claims had been read from the REFUTED column as if they were the verified one (the verified total was 755 = 438 projectFile + 317 moduleNamespace). The claim is fixed at its source (a file claim is now emitted only where the guard confirms a file), imports read 891 verified + 1,041 unclaimed, and extFAIL is 0. The residual is now partitioned by a census (`validation/m14/fixtures/clean/residual-cause-census.mts`, control PASS) into 11 named causes whose counts sum to the ambiguous + unresolved column exactly.",
   "_arm": {
     "instrument": "bun run script/m14/incoming-gate.ts clean icl,dcl 0 --binding-collapse (also via script/m14/residual-gate.ts --lane clean)",
-    "corpusRoot": "$HOME/fixtures/repositories",
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
     "population": "312 admitted files, 312 parsed, 0 parse failures, 0 degraded; 5 repositories",
     "repos": [
       "clean-stdlib",

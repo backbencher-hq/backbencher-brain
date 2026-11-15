@@ -1,0 +1,12 @@
+{
+  "fixtureId": "typescript/enum-types",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "enum + const enum both yield enum symbols with members.",
+  "expectSymbols": [
+    { "name": "Color", "kind": "enum" },
+    { "name": "Red" },
+    { "name": "Green" },
+    { "name": "Fast" }
+  ]
+}

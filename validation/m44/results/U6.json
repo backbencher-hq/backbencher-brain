@@ -28,7 +28,7 @@
   "evidenceFile": "U6.json",
   "generatedAt": "2026-11-09T09:06:55.398Z",
   "fixture": {
-    "root": "$HOME/mcp/backbencher-brain/.tools/m44-u6-fixture",
+    "root": "/home/ishaq2321/mcp/backbencher-brain/.tools/m44-u6-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Extra1.java",

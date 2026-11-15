@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "gate": "verify-lua-published-claims",
+  "title": "M60 lua LUA-02/04/10/11 — every published figure is derived from the analysed file, or absent",
+  "at": "2026-10-04T00:47:45.992Z",
+  "analyzer": "src/ast/real-lua-analyzer.ts",
+  "rationale": "Four defects of one class: a value that reaches the consumer as a measurement and is not one. Truth Rule 1 — a fact a reader cannot check is not a fact, and a constant shaped like a measurement is worse than an absent field because it cannot be told apart from a real one.",
+  "fixture": {
+    "innocent.lua": "local use = 1\nlocal setup = 2\nlocal GetTime = 3\nlocal function run()\n  return use + setup + GetTime\nend\nreturn run()\n",
+    "coros.lua": "local co = coroutine.create(function() return 1 end)\nlocal w = coroutine.wrap(function() return 2 end)\nreturn co, w\n",
+    "realinit.lua": "local ok = vim.api.nvim_get_mode()\nreturn ok\n"
+  },
+  "observed": {
+    "innocent": {
+      "metadata": {
+        "unpublishedSurface": [
+          {
+            "shape": "call-result",
+            "detail": "run",
+            "line": 7,
+            "why": "the result of a call is statically unknowable"
+          }
+        ],
+        "complexity": 12,
+        "linesOfCode": 8,
+        "cyclomaticComplexity": 1,
+        "patterns": [],
+        "detectedFrameworks": [],
+        "frameworkPatterns": [],
+        "architecturalInsights": [],
+        "architecturalScore": 80,
+        "codeQuality": "good",
+        "hasTypeInference": false,
+        "relationshipDensity": 80,
+        "retainedRowKb": 4,
+        "coroutineUsage": 0,
+        "analysisVersion": "4.0.0-lua-m12.32"
+      },
+      "detectedFrameworks": []
+    },
+    "coros": {
+      "coroutineUsage": 2
+    },
+    "realinit": {
+      "detectedFrameworks": [
+        "Neovim Configuration"
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "no field named as a performance/efficiency judgement is published at all",
+      "pass": true,
+      "detail": "renamed to a structural figure"
+    },
+    {
+      "name": "every published figure is derived (varies with the file) or absent",
+      "pass": true,
+      "detail": "derived-and-varying: relationshipDensity, retainedRowKb; absent: none"
+    },
+    {
+      "name": "coroutineUsage is not a structural zero",
+      "pass": true,
+      "detail": "innocent=0 coros=2"
+    },
+    {
+      "name": "coroutineUsage is REAL where coroutines are used",
+      "pass": true,
+      "detail": "coros.lua coroutineUsage=2 — a fix that deletes the field would fail here"
+    },
+    {
+      "name": "a file with variables named use/setup/GetTime is not labelled a framework",
+      "pass": true,
+      "detail": "no framework claimed"
+    },
+    {
+      "name": "a file that really uses vim. IS still labelled Neovim",
+      "pass": true,
+      "detail": "Neovim Configuration"
+    },
+    {
+      "name": "architecturalScore is not derived from an unreachable pattern branch",
+      "pass": true,
+      "detail": "innocent score=80"
+    },
+    {
+      "name": "codeQuality is consistent with the score it thresholds on",
+      "pass": true,
+      "detail": "innocent codeQuality=\"good\""
+    },
+    {
+      "name": "the pipeline does not synthesise a metadata block that was never mapped",
+      "pass": true,
+      "detail": "all 17 pipeline keys are the analyzer's own or structural"
+    },
+    {
+      "name": "the unmutated analyzer passes every expectation",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "every planted regression is caught",
+      "pass": true,
+      "detail": "4/4"
+    }
+  ],
+  "mutants": {
+    "caught": 4,
+    "total": 4,
+    "detail": [
+      {
+        "name": "LUA-11 again: performanceScore and memoryEfficiency are 85",
+        "caught": true,
+        "failures": [
+          "efficiency/score field still published: performanceScore",
+          "efficiency/score field still published: memoryEfficiency"
+        ]
+      },
+      {
+        "name": "LUA-02 again: coroutineUsage is 0 everywhere",
+        "caught": true,
+        "failures": [
+          "coroutineUsage not positive where coroutines are used"
+        ]
+      },
+      {
+        "name": "LUA-04 again: a bare name labels a framework",
+        "caught": true,
+        "failures": [
+          "bare name labelled a framework"
+        ]
+      },
+      {
+        "name": "the converse: real vim. usage is no longer detected",
+        "caught": true,
+        "failures": [
+          "real vim. usage not detected"
+        ]
+      }
+    ]
+  },
+  "passed": true,
+  "status": "pass",
+  "limitations": [
+    "The metadata block does not survive the worker boundary (LUA-03), so this gate drives the analyzer DIRECTLY. Reading these fields through parseFile would report every one of them absent and the gate would pass vacuously — which is why the direct path is a separate instrument rather than an inline helper.",
+    "The framework rule asserted here is deliberately narrow: a bare identifier must not name a framework, and a real `vim.` usage must. A wider framework matrix is not asserted, so a fix that keeps only the `vim.` rule would pass while dropping the other eight."
+  ]
+}

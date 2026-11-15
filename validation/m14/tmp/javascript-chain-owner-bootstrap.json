@@ -1,0 +1,29 @@
+{
+  "at": "2026-11-13T02:49:25.554Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/bootstrap",
+  "tag": "bootstrap",
+  "admittedFiles": 125,
+  "sampledFiles": 125,
+  "parseCleanFiles": 124,
+  "totals": {
+    "files": 124,
+    "chains": 711,
+    "typedChains": 136,
+    "segments": 1449,
+    "overAttributed": 143,
+    "resolvableWrong": 1,
+    "declaredElsewhere": 0
+  },
+  "note": "overAttributed = segments at index >= 1 of a chain whose ROOT identifier the file types with `new T()`. collectFieldAccessUses publishes owner=<root type> on EVERY segment of the chain (cur/head are taken from the root, outside the segment loop), but only index 0's receiver IS the typed root. resolvableWrong = those segments whose name the root's own type DECLARES in the same file, which is the exact condition under which the store's owner pass (resolveMemberTargetsByOwner) binds the edge to a declaration the receiver is not. declaredElsewhere = the name exists on a different class in the file, so the owner pass declines instead of binding.",
+  "examples": [
+    {
+      "file": "js/tests/unit/util/config.spec.js",
+      "line": 131,
+      "chain": "obj.constructor.NAME",
+      "root": "obj",
+      "rootType": "DummyConfigClass",
+      "segment": "NAME",
+      "outcome": "BINDS-TO-WRONG-DECLARATION"
+    }
+  ]
+}

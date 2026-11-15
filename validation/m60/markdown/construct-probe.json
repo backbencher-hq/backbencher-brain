@@ -1,6 +1,6 @@
 {
   "instrument": "markdown construct probe (validation/m14/fixtures/markdown/construct-probe.ts)",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "seed": "markdown-construct-probe-v1",
   "admittedMarkdownFiles": 12729,
   "reposWithMarkdown": [

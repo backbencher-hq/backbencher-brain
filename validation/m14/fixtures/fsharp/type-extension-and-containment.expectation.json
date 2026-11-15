@@ -1,0 +1,259 @@
+{
+  "fixtureId": "fsharp/type-extension-and-containment",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FS-D2 + FS-D3 (fsharp lane, 2026-09-28). The lane's two containment defects, each sized on the pinned corpus FIRST (script/m14/tmp/fs012-self-containment.ts, 400 files of dotnet/fsharp): 54 duplicate type symbols and 57 `contains X -> X` self-edges out of 368 self-edges in total once every source is counted. Expectations are the analyzer's own post-fix output, dumped through the production walk (script/m14/tmp/fs004-dump.ts --raw); every row below was read off that dump, not derived from theory. The FORBID half is what gives the fixture teeth: on the pre-fix analyzer this file emits the six forbidden self-edges, and on a first draft of the fix it also lost the `Surface` definition (see item 7). (1) `type Foo with` is not a declaration of Foo \u2014 pinned: ONE Foo, and both the extension's and the declaration's members owned by it. (2) An extension WRITTEN BEFORE its own declaration (4 of the corpus's 68 extensions do) must not win \u2014 pinned by the `Later` pair, where the surviving declaration-shaped symbol sits on line 55 and the extension's own members own `Later` on line 53. (3) A member-only type, legal in F# and the only way a type can exist with no `type X =` body, must still publish once \u2014 `Solo`. (4) Two extensions of an undeclared type must publish ONE type, not two \u2014 `Twice`. (5) A DU case named after its OWN type is a real and common F# spelling (`TypeProviderDesignation = TypeProviderDesignation of string` in the compiler corpus; 305 such self-edges per 400 files) \u2014 the CASE is a symbol, and the name must not contain itself. (6) A member named after its own type (3 corpus sites: `E.E`, `MatchClause.Pattern`, `Map.Map`) \u2014 same refusal, different node. (7) The `.fsi` forward-declaration pair `type Surface` / `type Surface =` must BOTH survive: a first draft of the publication rule collapsed them, which script/m14/tmp/fs018-compare-dumps.ts reported as 30 dropped `type_definition` symbols across 15 corpus files before the rule shipped, so a blanket one-symbol-per-name rule is forbidden here.",
+  "expectSymbols": [
+    {
+      "name": "Fixture.Extensions",
+      "kind": "namespace"
+    },
+    {
+      "name": "Foo",
+      "kind": "class"
+    },
+    {
+      "name": "A",
+      "kind": "property"
+    },
+    {
+      "name": "Double",
+      "kind": "method"
+    },
+    {
+      "name": "B",
+      "kind": "property"
+    },
+    {
+      "name": "Triple",
+      "kind": "method"
+    },
+    {
+      "name": "Later",
+      "kind": "class"
+    },
+    {
+      "name": "FromExtension",
+      "kind": "property"
+    },
+    {
+      "name": "FromDeclaration",
+      "kind": "property"
+    },
+    {
+      "name": "Solo",
+      "kind": "class"
+    },
+    {
+      "name": "Only",
+      "kind": "property"
+    },
+    {
+      "name": "Twice",
+      "kind": "class"
+    },
+    {
+      "name": "First",
+      "kind": "property"
+    },
+    {
+      "name": "Second",
+      "kind": "property"
+    },
+    {
+      "name": "SelfNamed",
+      "kind": "enum"
+    },
+    {
+      "name": "SelfNamed",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Loop",
+      "kind": "class"
+    },
+    {
+      "name": "Loop",
+      "kind": "property"
+    },
+    {
+      "name": "Surface",
+      "kind": "class"
+    },
+    {
+      "name": "Real",
+      "kind": "property"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Foo",
+      "line_number": 44,
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "ownerless-unit",
+      "meta.evidenceClass": "structural",
+      "note": "CONTAINMENT \u2014 tier structural: the parse tree states that Foo is declared inside this module; no inference is involved. Pinned 2026-10-17 with the #419-D tier pass."
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Foo",
+      "target": "Foo.A",
+      "line_number": 45,
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "in-file-declaration"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Foo",
+      "target": "Foo.Double",
+      "line_number": 46
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Foo",
+      "target": "Foo.B",
+      "line_number": 49
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Foo",
+      "target": "Foo.Triple",
+      "line_number": 50
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Later",
+      "target": "Later.FromExtension",
+      "line_number": 53
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Later",
+      "line_number": 55
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Later",
+      "target": "Later.FromDeclaration",
+      "line_number": 56
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Solo",
+      "line_number": 58
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Solo",
+      "target": "Solo.Only",
+      "line_number": 59
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Twice",
+      "line_number": 61
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Twice",
+      "target": "Twice.First",
+      "line_number": 62
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Twice",
+      "target": "Twice.Second",
+      "line_number": 65
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.SelfNamed",
+      "line_number": 67
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Loop",
+      "line_number": 69
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Surface",
+      "line_number": 72
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions",
+      "target": "Fixture.Extensions.Surface",
+      "line_number": 74
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.Extensions.Surface",
+      "target": "Surface.Real",
+      "line_number": 75
+    },
+    {
+      "type": "contains",
+      "from": "Same",
+      "target": "Same.A",
+      "line_number": 83,
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "ambiguous-owner-name",
+      "note": "FS-P7-1, the SOURCE half of a containment edge. `First.Same` and `Second.Same` are two declarations with ONE name and TWO identities, which is exactly the case `fqnByName` nulls \u2014 so the source is the bare name (`Same`) and the edge says why. This class is 30.4% of the draw's 58,298 `contains` edges, and the first draft of the classification mislabelled every top-level module as this; see `override-target`'s `ownerless-unit` row for the correction."
+    },
+    {
+      "type": "contains",
+      "from": "Same",
+      "target": "Same.B",
+      "line_number": 86,
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "ambiguous-owner-name"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Foo",
+      "target": "Foo",
+      "note": "FS-D2: a `type Foo with` is not a declaration of Foo. Pre-fix this fixture emits 4 self-edges here (Foo, Later, Solo, Twice) \u2014 57 per 400 corpus files."
+    },
+    {
+      "type": "contains",
+      "from": "Later",
+      "target": "Later",
+      "note": "FS-D2, extension-before-declaration order: the extension must not become a self-edge either."
+    },
+    {
+      "type": "contains",
+      "from": "Solo",
+      "target": "Solo",
+      "note": "FS-D2, member-only type: the ONE publishing extension must not also emit a self-edge."
+    },
+    {
+      "type": "contains",
+      "from": "Twice",
+      "target": "Twice",
+      "note": "FS-D2, two extensions of an undeclared type: whichever publishes, neither self-edges."
+    },
+    {
+      "type": "contains",
+      "from": "SelfNamed",
+      "target": "SelfNamed",
+      "note": "FS-D3: a DU case named after its own type is a real F# spelling, but the name still cannot contain itself. 305 such edges per 400 corpus files."
+    },
+    {
+      "type": "contains",
+      "from": "Loop",
+      "target": "Loop",
+      "note": "FS-D3: a member named after its own type (3 corpus sites). The member IS published; the self-edge is not."
+    }
+  ]
+}

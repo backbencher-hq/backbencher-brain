@@ -1,0 +1,36 @@
+{
+  "fixtureId": "java/multi-interface-extends",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JLS: an interface extends ALL interfaces in its extends clause; interfaces never implement. Grammar: interface_declaration > extends_interfaces > type_list holds every parent. JAD3 (M37 java wave): the implicit-public interface method fetch is pinned as an EXPORT \u2014 the pre-fix exports filter (ownerKind === Class only, visibility=undefined for unmodified interface members) silently excluded the most intentional API surface in Java. M49 JVM-closure exports ruling: exports are importable units \u2014 the interface type Repository is the export; member fetch rides Contains. (JAD3 member half reversed, probe-pinned: bare member names cannot identify their provider across overloads.)",
+  "expectSymbols": [
+    {
+      "name": "Repository",
+      "kind": "interface"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Repository",
+      "target": "Serializable"
+    },
+    {
+      "type": "extends",
+      "from": "Repository",
+      "target": "Cloneable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "Repository"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Repository",
+      "kind": "interface"
+    }
+  ]
+}

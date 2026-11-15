@@ -1,0 +1,21 @@
+{
+  "fixtureId": "go/closure-channel-read",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS GOD9 in BOTH directions. The channel-op pass gated on `containingFunction &&`, and findContainingGoFunction returns undefined for a FUNC LITERAL, so a channel read inside a package-scope closure was DISCARDED while the selector/identifier read passes published the same physical read as `global -> c`. The analyzer contradicted itself on one read, and the corpus lane could not see it because the round-6 uses truth was written to mirror the drop: a derivation that copies a defect reports agreement. The two rows it cost are real and unambiguous — `var _ = func() int { <-c; c <- 1 }` in go/analysis/passes/unreachable/testdata/src/a/a.go at lines 1611 and 1621, where `c` is a package var — and both are now published, which is what took the channel sub-surface to 157/157 on go-tools and 0 MISSING on all five corpora. The fix is the `global` fallback the read passes already use, NOT a new naming scheme. The FORBID half is the other side of the same contract and is the part a future editor would break by 'tidying' the gate back into a truthiness check: a receive of a CALL RESULT (`<-make(chan int)`, `<-chanOf()`) names no symbol, a `for range ch` is a range clause rather than a send/receive, and LocalsAreNotSymbols keeps a local or parameter channel (`local`, `l`, `ch`) out of the graph entirely. Every line number and value below was read back from live emission with script/m14/tmp/god9-dump.ts after the fix, never predicted.",
+  "expectRelationships": [
+    { "type": "uses", "source": "global", "target": "c", "meta.relationshipType": "go_channel_operation", "meta.operationType": "receive", "line_number": 12 },
+    { "type": "uses", "source": "global", "target": "c", "meta.relationshipType": "go_channel_operation", "meta.operationType": "send", "line_number": 13 },
+    { "type": "uses", "source": "sendsAndReceives", "target": "c", "meta.relationshipType": "go_channel_operation", "meta.operationType": "receive", "line_number": 18 },
+    { "type": "uses", "source": "sendsAndReceives", "target": "c", "meta.relationshipType": "go_channel_operation", "meta.operationType": "send", "line_number": 19 },
+    { "type": "uses", "source": "closureInsideFunction", "target": "c", "meta.relationshipType": "go_channel_operation", "meta.operationType": "receive", "line_number": 24 },
+    { "type": "uses", "source": "rangingIsNotAnOperation", "target": "c", "meta.relationshipType": "identifier_usage", "line_number": 51 }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "localsAreNotChannels", "target": "local", "meta.relationshipType": "go_channel_operation" },
+    { "type": "uses", "source": "localsAreNotChannels", "target": "l", "meta.relationshipType": "go_channel_operation" },
+    { "type": "uses", "source": "localsAreNotChannels", "target": "ch", "meta.relationshipType": "go_channel_operation" },
+    { "type": "uses", "source": "resultIsNotAChannel", "meta.relationshipType": "go_channel_operation" },
+    { "type": "uses", "source": "rangingIsNotAnOperation", "target": "c", "meta.relationshipType": "go_channel_operation" }
+  ]
+}

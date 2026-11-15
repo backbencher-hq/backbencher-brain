@@ -1,0 +1,128 @@
+{
+  "fixtureId": "cpp/macro-declared-body-919",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#919: a macro-declared body comes in TWO grammar spellings, and both used to source every read at `global`. (1) `TEST(my_case, keeps_its_locals) {…}` parses as a `function_definition` whose declarator name is the macro and whose params are the macro's arguments (CP2 suppressed the symbol and pushed an ANONYMOUS scope, so `calls global -> real_fn` came out of the body). (2) `TEST_CASE(\"sectioned body\") {…}` parses as an `expression_statement` with a MISSING `;` whose block is a SIBLING — no scope at all, so the body's locals (`case_local`, `section_local`) published as file-scope symbols and its reads were attributed to `global`. Measured on the two cpp corpora before the fix: 3,003 expression-statement bodies (5,680 leaked symbols, 27k global-sourced edges) and 716 function_definition bodies (93 such edges). The fix publishes the definition the heading WRITES as the scope name — the heading text itself, never an invented identifier (`TEST(format_test, enum)` generates `format_test_enum_Test::TestBody()`, which is written nowhere) — flagged `expandedFrom: macro-heading`, and excludes it from exports (every macro writing this shape generates an internally-linked function). The control `control_fn` is an ordinary `function_definition` and must be untouched; `real_fn`'s own read keeps its own scope.",
+  "expectSymbols": [
+    {
+      "name": "file_value",
+      "kind": "variable"
+    },
+    {
+      "name": "real_fn",
+      "kind": "function"
+    },
+    {
+      "name": "control_fn",
+      "kind": "function"
+    },
+    {
+      "name": "TEST(my_case, keeps_its_locals)",
+      "kind": "function",
+      "meta.expandedFrom": "macro-heading",
+      "meta.macroName": "TEST"
+    },
+    {
+      "name": "TEST_CASE(\"sectioned body\")",
+      "kind": "function",
+      "meta.expandedFrom": "macro-heading",
+      "meta.macroName": "TEST_CASE"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "local_tmp",
+      "equals": 0
+    },
+    {
+      "name": "check",
+      "equals": 0
+    },
+    {
+      "name": "case_local",
+      "equals": 0
+    },
+    {
+      "name": "section_local",
+      "equals": 0
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "file_value",
+      "from": "TEST(my_case, keeps_its_locals)"
+    },
+    {
+      "type": "calls",
+      "target": "real_fn",
+      "from": "TEST(my_case, keeps_its_locals)"
+    },
+    {
+      "type": "uses",
+      "target": "file_value",
+      "from": "TEST_CASE(\"sectioned body\")"
+    },
+    {
+      "type": "calls",
+      "target": "real_fn",
+      "from": "TEST_CASE(\"sectioned body\")"
+    },
+    {
+      "type": "uses",
+      "target": "file_value",
+      "from": "control_fn"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "target": "file_value",
+      "from": "TEST_CASE(\"sectioned body\")",
+      "equals": 1
+    },
+    {
+      "type": "uses",
+      "target": "file_value",
+      "from": "control_fn",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "file_value",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "real_fn",
+      "from": "global"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "local_tmp"
+    },
+    {
+      "name": "check"
+    },
+    {
+      "name": "case_local"
+    },
+    {
+      "name": "section_local"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "TEST(my_case, keeps_its_locals)"
+    },
+    {
+      "name": "TEST_CASE(\"sectioned body\")"
+    },
+    {
+      "name": "local_tmp"
+    }
+  ]
+}

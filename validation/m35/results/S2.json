@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
+  "evidenceFile": "S2.json",
+  "generatedAt": "2026-09-04T01:50:16.315Z",
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 5,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.480Z",
+    "contentSha256": "00cb08c67ca7e26ad1d5fef84349e6c252005a98f8a4bc508f5fe17bc4c0ed17"
+  }
+}

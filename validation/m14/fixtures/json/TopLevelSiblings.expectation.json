@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/TopLevelSiblings.json",
+  "authoredFrom": "A document holding SEVERAL top-level values — the shape `comment+object` is not, and the distinction is the whole fixture. Concatenated JSON is real input: cargo/rustfix's recorded compiler-diagnostic fixtures are 2 to 5 top-level objects per file, FSharp.Data's TwitterSample.json holds 22, TwitterStream.json 96 and theaters.json 1,564. This grammar parses that as ONE `document` node with N named children, and `pushNamedChildren` gave every one of them the SAME parent path, so all N published `TopLevelSiblings.<key>` and the qualified name stopped identifying anything. Measured before the fix, on the real rustfix file: four symbols named `code` under one qualified path at lines 3, 73, 143 and 213, the last of them `property` where the other three were `class` — so the shared arbiter counts it AMBIGUOUS and the reverse walk picks a winner that is simply the wrong line. This fixture asserts the two top-level objects get DISTINCT positions and that every key inside each one is published under its own position. The position is the spelling `arrayItemName` already gives a top-level array's elements: a concatenated document is the same shape written without brackets, so one convention serves both and `afterModuleImpl` already handles the `[` boundary. The rule is CONDITIONAL on there being more than one VALUE, because a `comment` is a named child of `document` in this grammar and `comment+object` is the commonest multi-child shape in the corpus at 24 files. 13,835 of 13,951 admitted documents hold exactly one value and 13,477 hold exactly one named child; those keep `<module>` as their parent path unchanged, which is what the other 16 json fixtures assert. Measured population of documents this changes: 45 (`top-level-value-positions.ts`). The forbid entries are the regression guard and name the PRE-FIX spellings, so reverting `pushTopLevelValues` to `pushNamedChildren` fails this fixture instead of passing quietly.",
+  "expectSymbols": [
+    { "name": "TopLevelSiblings", "kind": "module" },
+    { "name": "TopLevelSiblings[0]", "kind": "class", "ownerName": "TopLevelSiblings" },
+    { "name": "message", "kind": "property", "ownerName": "TopLevelSiblings[0]" },
+    { "name": "code", "kind": "class", "ownerName": "TopLevelSiblings[0]" },
+    { "name": "TopLevelSiblings[1]", "kind": "class", "ownerName": "TopLevelSiblings" },
+    { "name": "message", "kind": "property", "ownerName": "TopLevelSiblings[1]" },
+    { "name": "code", "kind": "class", "ownerName": "TopLevelSiblings[1]" }
+  ],
+  "forbidSymbols": [
+    { "name": "TopLevelSiblings.message" },
+    { "name": "TopLevelSiblings.code" },
+    { "name": "TopLevelSiblings[0].message[0]" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "TopLevelSiblings", "target": "TopLevelSiblings[0]" },
+    { "type": "contains", "from": "TopLevelSiblings[0]", "target": "TopLevelSiblings[0].message" },
+    { "type": "contains", "from": "TopLevelSiblings[0]", "target": "TopLevelSiblings[0].code" },
+    { "type": "contains", "from": "TopLevelSiblings", "target": "TopLevelSiblings[1]" },
+    { "type": "contains", "from": "TopLevelSiblings[1]", "target": "TopLevelSiblings[1].message" },
+    { "type": "contains", "from": "TopLevelSiblings[1]", "target": "TopLevelSiblings[1].code" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "TopLevelSiblings[0]", "target": "TopLevelSiblings[1].message" },
+    { "type": "contains", "from": "TopLevelSiblings", "target": "TopLevelSiblings.message" }
+  ]
+}

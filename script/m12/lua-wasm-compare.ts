@@ -11,8 +11,8 @@
 //
 // Usage:
 //   npx tsx script/m12/lua-wasm-compare.ts \
-//     --repo kong --new $HOME/fixtures/grammars/npm-0.4.1.wasm \
-//     --out $HOME/fixtures/out/lua-grammar-ab.json
+//     --repo kong --new /home/ishaq2321/bb_tests/grammars/npm-0.4.1.wasm \
+//     --out /home/ishaq2321/bb_tests/out/lua-grammar-ab.json
 //   npx tsx script/m12/lua-wasm-compare.ts --repo kong --list subset.txt --out ...
 //
 // `--list` restricts the run to an explicit repo-relative file list, one per
@@ -56,13 +56,13 @@ const arg = (k: string, d: string): string => {
   }
   return v
 }
-const REPOS = "$HOME/fixtures/repositories"
+const REPOS = "/home/ishaq2321/bb_tests/repositories"
 const REPO = arg("--repo", "kong")
 const ROOT = join(REPOS, REPO)
-const NEW_WASM = arg("--new", "$HOME/fixtures/grammars/npm-0.4.1.wasm")
+const NEW_WASM = arg("--new", "/home/ishaq2321/bb_tests/grammars/npm-0.4.1.wasm")
 const CHECKOUT = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const OLD_WASM = arg("--old", join(CHECKOUT, "wasm", "tree-sitter-lua.wasm"))
-const OUT = arg("--out", "$HOME/fixtures/out/lua-grammar-ab.json")
+const OUT = arg("--out", "/home/ishaq2321/bb_tests/out/lua-grammar-ab.json")
 const LIST = arg("--list", "")
 
 const sha = (p: string): string => createHash("sha256").update(readFileSync(p)).digest("hex")

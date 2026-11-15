@@ -1,0 +1,80 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/external-command-name-collision.sh",
+ "authoredFrom": "Authored 2026-10-05 from the MEASUREMENT in validation/m14/fixtures/bash/probe-bash-unresolved-edges.mts --all, taken with the corpus facts in validation/m14/fixtures/bash/probe-bash-published-resolvability.mts --all (4185 bash files / 127 repos, production parseFile, 0 parse failures).\n\nTHE QUESTION. A whole-corpus pass left 5 `calls` edges bare ambiguous: several published declarations of the target name, nothing published to choose between them. Two were `ohmyzsh/plugins/pip/pip.plugin.zsh:107` and `:115`, both `-[calls]-> xargs`, against `variable@106` and `variable@114`. The branch that skipped them carried the comment \"an external binary names nothing local\", and that comment is false for a name the file also declares. The `xargs` at 107/115 is /usr/bin/xargs, so the EDGE was right and the SILENCE was wrong: a consumer resolving reverse edges by target found two variables and no way to choose.\n\nTHE FIX, and why it publishes a KIND and not a LINE. Command position resolves to a function or to a PATH lookup, never to a variable, so there is no declaration at the call line that the call denotes. Publishing one of 106 or 114 would be the invented attribution the previous rounds refused elsewhere. So the edges publish `targetResolution: \"commandNameIsExternal\"` plus `collidesWithLocalDeclaration: true` — together, enough for a consumer to DISCARD the variable candidates rather than pick among them.\n\nWHAT IS ASSERTED. That the label reaches an edge with TWO declarations (the `xargs` pair, the corpus shape) and with ONE (the `ripgrep` row: one local declaration leaves the candidate set at 1, so the edge was never in the ambiguous table and never appeared in any bare-edge count, yet a within-file consumer still needs to discard it). That a name declared as a FUNCTION is not labelled, because `isFunctionCall` is true and the edge is resolved against function declarations by bash's own rule instead. That a command with no local declaration publishes nothing, which is the payload constraint over 56,217 `calls` edges.\n\nAND THE BOUNDARY, which is the half that is easy to get wrong. The same pass reaches `calls -> key` (Paket/completion/paket-completion.zsh:1486) and `calls -> name` twice (kubernetes/cluster/gce/util.sh:3829/:4057): a word from the middle of a statement the grammar could not close became the command name of a node sitting INSIDE an ERROR subtree. `key` IS declared locally in this fixture, so the collision test passes and the label would be published, telling a consumer that wreckage reaches an external binary. So the analyzer publishes a position flag, `commandInErrorRecovery`, and consults it first. The `key` row below is the only one in this file that can be right for the wrong reason without it.\n\nADJACENCY IS THE TRICK and it was measured, not assumed. `local key` / `local x=$( (` / `key` with nothing between puts the command node inside the ERROR subtree and the flag fires. Insert a blank line OR a comment between the damage and the command and the ERROR span CLOSES: the flag goes false, the collision test passes on `key`'s variable, and the edge is published as `commandNameIsExternal`. That is the false claim the flag prevents, so it is asserted as a FORBID row rather than left to the reader.\n\nTHE GUARD THAT WOULD HAVE REMOVED THEM WAS MEASURED AND REJECTED, so the residual stays. Over EVERY published `calls` edge at whole corpus: clean 53,271, errorDescendant 2,891, errorSiblingBefore 36, both 19. Suppressing the 2,891 + 19 would delete real `setopt`, `print`, `echoti`, `autoload`, `emulate`, `title`, `terminal-notifier`, `notify-send` work, overwhelmingly zsh, to remove 3. The flag is published as a position fact and no guard is built on it; these 3 edges are recorded as residuals in the lane doc rather than deleted along with 2,910 correct ones.",
+ "expectSymbols": [
+  {
+   "name": "external-command-name-collision.sh",
+   "kind": "module"
+  },
+  {
+   "name": "xargs",
+   "kind": "variable",
+   "ownerName": "external-command-name-collision.sh"
+  },
+  {
+   "name": "ripgrep",
+   "kind": "variable",
+   "ownerName": "external-command-name-collision.sh"
+  },
+  {
+   "name": "greet",
+   "kind": "function",
+   "ownerName": "external-command-name-collision.sh"
+  },
+  {
+   "name": "key",
+   "kind": "variable",
+   "ownerName": "external-command-name-collision.sh"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "external-command-name-collision.sh",
+   "target": "xargs",
+   "meta.targetResolution": "commandNameIsExternal",
+   "meta.collidesWithLocalDeclaration": true,
+   "note": "THE row for this change: the corpus shape, minimal. The name is declared as a variable twice and RUN as a command, so the edge is right about a binary and the published symbol table offers two variables a consumer could mistake it for. This is the pair at ohmyzsh/plugins/pip/pip.plugin.zsh:107/115, and the whole point is that BOTH the resolution and the collision flag must be present — resolution alone still leaves a consumer free to pick variable@106, and the collision flag alone says the name is taken without saying that this edge does not denote what took it."
+  },
+  {
+   "type": "calls",
+   "from": "external-command-name-collision.sh",
+   "target": "ripgrep",
+   "meta.targetResolution": "commandNameIsExternal",
+   "meta.collidesWithLocalDeclaration": true,
+   "note": "THE row a count of bare edges would have missed. One local declaration leaves the candidate set at 1, so this edge was never ambiguous and never appeared in the 5 the probe found — but a consumer resolving within the file still meets `ripgrep` as a variable, and the label is what tells it to discard that candidate. Publishing only when the candidate set exceeds 1 measures the problem as 'ambiguity' when the actual failure is 'a name-matching consumer cannot tell which kind of declaration the edge denotes', and the one-declaration case is the commoner of the two."
+  },
+  {
+   "type": "calls",
+   "from": "external-command-name-collision.sh",
+   "target": "key",
+   "meta.commandInErrorRecovery": true,
+   "note": "THE BOUNDARY ROW, and the only row here that can pass for the wrong reason. `local key` is a real declaration, so the collision test succeeds; the command node for the last `key` sits inside an ERROR subtree left by the unbalanced `local x=$( (`, so the edge names no program the file runs. Asserting the FLAG is what pins the order of the two checks: a `key` row with NO targetResolution is the correct outcome and a `key` row with `commandNameIsExternal` is the false claim. A mutant that drops the flag, or that checks the collision before the position, produces a well-formed wrong row here rather than a missing one."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "external-command-name-collision.sh",
+   "target": "greet",
+   "meta.targetResolution": "commandNameIsExternal",
+   "note": "THE mutual-exclusion row. `greet` is declared as a FUNCTION and called, so `isFunctionCall` is true and the edge is resolved against function declarations by bash's own rule — the latest definition at or before the call, published under its own targetResolution. It must NOT also read `commandNameIsExternal`: the two labels answer opposite questions, and a file can declare one name as both a variable and a function, where the function wins in command position. An implementation that published the collision on every external command regardless of `isFunctionCall` fails here, and this row is what distinguishes 'the label is published' from 'the label is published wherever a local name exists'."
+  },
+  {
+   "type": "calls",
+   "from": "external-command-name-collision.sh",
+   "target": "curl",
+   "meta.targetResolution": "commandNameIsExternal",
+   "note": "THE payload row. `curl` is an ordinary external command with no local declaration of that name, so there is nothing to collide with and the edge must carry no targetResolution and no collision flag. 56,217 `calls` edges at whole corpus: an implementation that published the label on every external command would attach two keys to the overwhelming majority of them in order to say what the edge's target already said, and bb_graph's un-narrowed default is measured at 2.5-4.8x a kind-filtered one. A row that asserts only the presence of the label cannot catch this; forbidding it on the one edge with no collision can."
+  },
+  {
+   "type": "calls",
+   "from": "external-command-name-collision.sh",
+   "target": "key",
+   "meta.targetResolution": "commandNameIsExternal",
+   "note": "THE false claim, forbidden by value. The `key` command node is inside an ERROR subtree, so this edge names no program the source runs; publishing `commandNameIsExternal` on it asserts that it reaches an external binary. This row exists because the same adjacency that makes the flag fire also makes the label wrong, and a blanket 'publish the collision whenever a local declaration shares the name' rule passes every other row in this file. The measured falsifier: inserting a blank line or a comment between `local x=$( (` and `key` closes the ERROR span, the flag goes false, and this edge is then CORRECTLY labelled — which is why the fixture keeps the three lines adjacent and the mutants below depend on that."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

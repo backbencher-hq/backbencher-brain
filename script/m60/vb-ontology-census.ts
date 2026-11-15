@@ -35,7 +35,7 @@ import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (process.env.BB_VB_REPOS ?? "roslyn-vb,vbnet-samples").split(",").filter(Boolean)
 const LIMIT = Number(process.env.BB_VB_LIMIT ?? 0)
 /**

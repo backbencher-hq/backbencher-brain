@@ -1,0 +1,33 @@
+{
+  "issue": "ELX-EXPORTS D6/D7/D8",
+  "note": "The last three endpoint-spelling defects. D6: a definition whose NAME cannot be read is a placeholder — the symbol stays (the declaration is real; Elixir generates a function named at runtime) and is marked metadata.unresolvedName, and NO EDGE is published, because `contains Mod -> Unknown` names nothing. Measured on 559 corpus files: 19 symbols named `Unknown`, each with a `contains -> Unknown` endpoint; all 19 are genuinely dynamic (`def unquote(name)(byte)`). The LOWERCASE `unknown` is a real function name (eex_test.exs:29 is `def unknown do`) and keeps its edge. D7: EX-A15's operator-name fix was DEAD — three lines sat OUTSIDE its `if` and overwrote the name with the first NON-NAMED child, which for `arguments > block > operator_identifier` is the opening `(`; measured on elixir's own kernel.ex:4347 (`defmacro (..)` published a macro named `(`, a `contains -> \"(\"` edge and a call edge sourced at `Kernel.(/3`). This lane's fixture paren-operator-forms has been FAILING since a7368a806 (2026-09-27) while fixture-baseline.json records 0 failures. D8: a receiver that is a STRUCT or MAP EXPRESSION is a value, not a module — measured 3 sites (`%Point{}.foo_bar`, module/types/expr_test.exs:1595; `%URI{uri | path: \"/bar\"}.path`, ex_unit/assertions_test.exs:259, 263). The test is `{` and `}` ONLY: Elixir function names may be quoted atoms and `||`, `|||`, `&&` are real remote callees, and a broader test deleted `:erlang.\"=<\"` (4 sites), `Inspect.OthersTest.\"weirdly named/fun-\"` (2) and `TypeSample.\"?\"` (1). Falsifier: mutant elixir/r7-unknown-edge-published, elixir/r7-operator-name-overwritten, elixir/r7-struct-receiver-target.",
+  "expectSymbols": [
+    { "name": "R7EndpointNames", "kind": "module" },
+    { "name": "Unknown", "kind": "function", "ownerName": "R7EndpointNames", "meta.unresolvedName": true },
+    { "name": "unknown", "kind": "function", "ownerName": "R7EndpointNames" },
+    { "name": "..", "kind": "macro", "ownerName": "R7EndpointNames" },
+    { "name": "--", "kind": "function", "ownerName": "R7EndpointNames" },
+    { "name": "quoted_callee", "kind": "function", "ownerName": "R7EndpointNames" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "R7EndpointNames", "target": "unknown", "line_number": 19 },
+    { "type": "contains", "from": "R7EndpointNames", "target": "..", "line_number": 28 },
+    { "type": "contains", "from": "R7EndpointNames", "target": "--", "line_number": 37 },
+    { "type": "exports", "from": "R7EndpointNames", "target": "..", "line_number": 28, "meta.exportForm": "macro" },
+    { "type": "exports", "from": "R7EndpointNames", "target": "quoted_callee", "line_number": 57 },
+    { "type": "calls", "from": "R7EndpointNames.quoted_callee/1", "target": "Enum.\"count\"", "line_number": 57 },
+    { "type": "instantiates", "from": "R7EndpointNames.read_after_struct_literal/0", "target": "R7EndpointNames.Helper", "line_number": 45 },
+    { "type": "instantiates", "from": "R7EndpointNames.call_after_struct_literal/0", "target": "R7EndpointNames.Helper", "line_number": 48 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "Unknown" },
+    { "type": "exports", "target": "Unknown" },
+    { "type": "contains", "target": "(" },
+    { "type": "contains", "target": ")" },
+    { "type": "calls", "source": "Kernel.(/3" },
+    { "type": "calls", "target": "R7EndpointNames.Helper{}.helper_field" },
+    { "type": "calls", "target": "%Helper{}.helper_fun" },
+    { "type": "calls", "target": "%R7EndpointNames.Helper{}" },
+    { "type": "calls", "target": "R7EndpointNames.Helper.helper_fun" }
+  ]
+}

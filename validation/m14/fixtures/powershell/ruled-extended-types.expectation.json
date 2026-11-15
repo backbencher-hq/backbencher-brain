@@ -1,0 +1,147 @@
+{
+  "fixtureId": "powershell/ruled-extended-types",
+  "language": "powershell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS THE TWO RULED EXTENDED TYPES (`renders`, `mixes_in`) BESIDE THE CONSTRUCTS THAT MAKE EACH RULING TRUE, so neither ruling rests on an absence. EVIDENCE (whole admitted population, 1,181 .ps1/.psm1/.psd1 files over 30 repositories, script/m14/powershell-extended-census.ts -> validation/m14/measurements/powershell-extended-census.json, control PASSED): `renders` has 15 ConvertTo-Html sites in 1 file, 0 Out-GridView, 0 Show-Command and 1 XamlReader mention, against a vocabulary with 0 component symbol kinds among its 32 SymbolKinds — a serializer of objects to HTML TEXT renders no component and its target is data, not a component symbol. `mixes_in` has 273 class statements whose 50 base-list entries ARE conformance (pinned here as extends + implements), and 326 runtime member-attachment sites whose member-set argument is ALWAYS inline (script block 25, array-wrapped script block 33, string 61); the only 3 declaration-shaped hits are -Name arguments (a member's own name; Add-Type naming the type it compiles), which are not member sets. FORBID (A) is the render negative: ConvertTo-Html and [Windows.Markup.XamlReader]::Parse are the two render-sounding constructs the language actually has, and a rule keyed on the words 'html'/'markup' or on a static [T]::Parse call would emit `renders` here. FORBID (B) is the mixin negative: Add-Member and Update-TypeData attach a member to a VALUE or a TYPE NAME at runtime with the member set inline, which is mutation of an object rather than a declaration composing a named member set into a type. FIRE rows are the same conformance constructors the ruling leans on, so a lane that silenced them would fail this fixture.",
+  "expectSymbols": [
+    { "name": "ruled-extended-types.ps1", "kind": "module", "comment": "the file scope every containment and external-call row is sourced from" },
+    { "name": "Widget", "kind": "class", "comment": "the class whose base list is the conformance construct" },
+    { "name": "Name", "kind": "property", "ownerName": "Widget", "comment": "a class member — containment, not composition" },
+    { "name": "Describe", "kind": "method", "ownerName": "Widget", "comment": "the class method whose NAME the attached member deliberately reuses" },
+    { "name": "Get-WidgetLabel", "kind": "function", "comment": "the param-block function; its call is the realistic control" },
+    { "name": "Format-Label", "kind": "function", "comment": "the declared callee" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Widget",
+      "target": "BaseWidget",
+      "line_number": 45,
+      "comment": "FIRE (1) — the FIRST name in the base list is the superclass. This is the construct a mixes_in reading would have to steal, and it is `extends`."
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "IWidget",
+      "line_number": 45,
+      "comment": "FIRE (1) — the remaining names in the base list are interfaces: conformance declared, which is exactly what a mixin does NOT do."
+    },
+    {
+      "type": "calls",
+      "source": "ruled-extended-types.ps1",
+      "target": "ConvertTo-Html",
+      "line_number": 76,
+      "comment": "FORBID (A) read the RIGHT way — a serializer INVOCATION is a call. It turns objects into HTML text; it renders no component."
+    },
+    {
+      "type": "calls",
+      "source": "ruled-extended-types.ps1",
+      "target": "Windows.Markup.XamlReader.Parse",
+      "line_number": 81,
+      "comment": "FORBID (A) read the RIGHT way — a static [T]::Parse call constructs UI from XAML TEXT. The thing rendered is a document, not a declared component."
+    },
+    {
+      "type": "calls",
+      "source": "ruled-extended-types.ps1",
+      "target": "Add-Member",
+      "line_number": 85,
+      "comment": "FORBID (B) read the RIGHT way — attaching a member to an object VALUE is a cmdlet call, not a declaration composing a member set."
+    },
+    {
+      "type": "calls",
+      "source": "ruled-extended-types.ps1",
+      "target": "Update-TypeData",
+      "line_number": 91,
+      "comment": "FORBID (B) read the RIGHT way — attaching a member to a TYPE NAME at runtime is a cmdlet call; the object it extends is not a declaration that composes anything."
+    },
+    {
+      "type": "calls",
+      "source": "Get-WidgetLabel",
+      "target": "Format-Label",
+      "line_number": 61,
+      "comment": "FIRE (2) — the ordinary declared-callee call the file's other edges hang from"
+    },
+    {
+      "type": "contains",
+      "source": "ruled-extended-types.ps1",
+      "target": "Widget",
+      "comment": "containment invariant for the conformance subject"
+    },
+    {
+      "type": "contains",
+      "source": "Widget",
+      "target": "Describe",
+      "comment": "the class member is CONTAINED by its class — the distinction from a composed member set, which would not be a containment"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "renders",
+      "equals": 0,
+      "comment": "THE RULING, PINNED AS A COUNT. This file contains both render-sounding constructs the language has (an object-to-HTML serializer and a XAML reader that constructs UI elements). Neither target is a component symbol, and the vocabulary has no component symbol kind. A rule keyed on a command name, on 'markup'/'html', or on a static [T]::Parse call would fire here."
+    },
+    {
+      "type": "mixes_in",
+      "equals": 0,
+      "comment": "THE SECOND RULING, PINNED AS A COUNT. This file contains both member-attachment cmdlets (Add-Member against a value, Update-TypeData against a type name) plus a class base list. The base list is conformance (extends/implements above) and the attachments are runtime mutation with inline script blocks; no declaration composes a named member set into a type."
+    },
+    {
+      "type": "extends",
+      "equals": 1,
+      "comment": "EXACTLY one — the first base-list name. A rule that read every base-list entry as a superclass would make this 2 and delete the interfaces distinction."
+    },
+    {
+      "type": "implements",
+      "equals": 1,
+      "comment": "EXACTLY one — the interface entry. Together with the extends count this pins the positional split the class header forces."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "comment": "FORBID (A) — no renders at all, from any endpoint. A corpus-zero ruling must not be reachable by a shape the language really has, and this file carries the two shapes that look closest."
+    },
+    {
+      "type": "renders",
+      "source": "ruled-extended-types.ps1",
+      "target": "Widget",
+      "comment": "the specific wrong edge a 'command produces HTML, target is the object' rule would emit: the target is a class, not a component the renderer constructs"
+    },
+    {
+      "type": "renders",
+      "source": "ruled-extended-types.ps1",
+      "target": "Windows.Markup.XamlReader.Parse",
+      "comment": "a static [T]::Parse call is a CALL — the analyzer emits it as such; it is not a render of the thing it parses"
+    },
+    {
+      "type": "mixes_in",
+      "comment": "FORBID (B) — no mixes_in at all, from any endpoint. Member attachment at runtime is not a declaration-level composition."
+    },
+    {
+      "type": "mixes_in",
+      "source": "Widget",
+      "target": "Describe",
+      "comment": "the specific wrong edge Update-TypeData invites: Widget is the HOST the member is attached to, and the member set is an inline script block, not the class method Describe"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Widget",
+      "target": "BaseWidget",
+      "comment": "the conformance relation restated as a mixin — the exact relabel this fixture refuses; it is `extends`"
+    },
+    {
+      "type": "mixes_in",
+      "source": "Widget",
+      "target": "IWidget",
+      "comment": "as above for the interface: it is `implements`"
+    }
+  ],
+  "forbidSymbols": [
+    { "name": "BaseWidget", "comment": "the superclass is declared elsewhere; an `extends` target must not be minted as a symbol of this file" },
+    { "name": "IWidget", "comment": "the interface is declared elsewhere; an `implements` target must not be minted as a symbol of this file" },
+    { "name": "ConvertTo-Html", "comment": "a cmdlet is not a declaration of this file" },
+    { "name": "Add-Member", "comment": "as above" },
+    { "name": "Update-TypeData", "comment": "as above" },
+    { "name": "Windows.Markup.XamlReader", "comment": "a .NET type is not a declaration of this file" }
+  ]
+}

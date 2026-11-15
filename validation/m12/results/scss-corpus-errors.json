@@ -1,6 +1,6 @@
 {
   "analyzer": "scss",
-  "corpus": "$HOME/fixtures/repositories/element-plus",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/element-plus",
   "corpusRepo": "element-plus",
   "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
   "dirty": false,

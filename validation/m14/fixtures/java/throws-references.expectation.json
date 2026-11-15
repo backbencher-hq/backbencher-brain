@@ -1,0 +1,30 @@
+{
+  "fixtureId": "java/throws-references",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THROWS CLAUSE COVERAGE (owner ruling 2026-10-18 item 2: a declared throws clause is a true type mention). The emission EXISTS at HEAD (references, conf 0.95, relationshipType throws_type, source = the declaring member, target = the written type) but NO fixture covered it, so the shapes it must handle were unpinned: this fixture pins the constructor form (JLS 8.8.5: both a no-arg and a parameterized constructor throwing), the multi-type method clause (`throws IOException, IllegalArgumentException` — one edge PER exception type, not one for the clause), the fully-qualified spelling (`throws java.sql.SQLException` must stay the written path, never a leaf), the interface method clause, and a generic throws type variable (`<E extends Exception> void generic() throws E` — the type variable is the written name; whether a type VARIABLE is a resolvable relationship is a separate owner ruling, recorded in the lane's classification, and this fixture pins that the spelling is not silently dropped). One shape was REMOVED from this fixture after measuring the pinned grammar: an annotation type element's `throws` clause (JLS 9.6.1 permits it) is NOT parseable by the pinned tree-sitter-java wasm — probe: `@interface Ann { Class<?> value() throws ClassNotFoundException; }` yields one MISSING node and recovery invents a constant named `ClassNotFoundException`, so no emission can be correct until the grammar moves. That is a grammar-version limitation recorded rather than a fixture pinning error recovery.",
+  "expectSymbols": [
+    { "name": "ThrowsReferences", "kind": "class" },
+    { "name": "method" },
+    { "name": "fq" },
+    { "name": "generic" },
+    { "name": "Callback", "kind": "interface" },
+    { "name": "call" },
+    { "name": "Ann" },
+    { "name": "value" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "ThrowsReferences", "target": "IOException", "meta.relationshipType": "throws_type", "line_number": 6, "confidenceMin": 0.95 },
+    { "type": "references", "source": "ThrowsReferences", "target": "Exception", "meta.relationshipType": "throws_type", "line_number": 9, "confidenceMin": 0.95 },
+    { "type": "references", "source": "method", "target": "IOException", "meta.relationshipType": "throws_type", "line_number": 12, "confidenceMin": 0.95 },
+    { "type": "references", "source": "method", "target": "IllegalArgumentException", "meta.relationshipType": "throws_type", "line_number": 12, "confidenceMin": 0.95 },
+    { "type": "references", "source": "fq", "target": "java.sql.SQLException", "meta.relationshipType": "throws_type", "line_number": 15, "confidenceMin": 0.95 },
+    { "type": "references", "source": "generic", "target": "E", "meta.relationshipType": "throws_type", "line_number": 18, "confidenceMin": 0.95 },
+    { "type": "references", "source": "call", "target": "java.util.concurrent.TimeoutException", "meta.relationshipType": "throws_type", "line_number": 22, "confidenceMin": 0.95 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "source": "fq", "target": "SQLException", "meta.relationshipType": "throws_type", "comment": "the file wrote java.sql.SQLException: a leaf here is the truncation that would make the edge join a different name" },
+    { "type": "references", "target": "throws", "comment": "`throws` is a keyword, not a type; a target spelled with it is the error-recovery shape the removed annotation-element probe produced" },
+    { "type": "references", "source": "method", "target": "IOException, IllegalArgumentException", "comment": "one edge PER exception type — the clause text is not a type name" }
+  ]
+}

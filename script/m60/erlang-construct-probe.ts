@@ -77,7 +77,7 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : undefined
 const REPOS = (argv.includes("--repos") ? argv[argv.indexOf("--repos") + 1] : "otp,elixir").split(",").map((s) => s.trim()).filter(Boolean)

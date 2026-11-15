@@ -1,0 +1,16 @@
+{
+  "status": "verified",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m35/verify-docs-staleness.ts",
+  "evidenceFile": "D1.json",
+  "generatedAt": "2026-09-04T01:50:21.358Z",
+  "passed": 71,
+  "failed": 0,
+  "negativeCases": 16,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.478Z",
+    "contentSha256": "ce50a0e9b33e194bdf364f791d7c24ca61a17e8019d43ea7f556e0579002eb0f"
+  }
+}

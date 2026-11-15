@@ -1,0 +1,273 @@
+{
+  "fixtureId": "haskell/exports-and-ffi",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The module-surface and FFI shapes the 2026-10-03 ontology census measured on the whole corpus (14,066 admitted .hs files, production parseFile). Three defects, each pinned here, each with a corpus number in the analyzer's source comments: (1) 392 of 54,830 `exports` edges carried a KEYWORD or keyword phrase as the exported name \u2014 100 `type`, 32 `data`, 8 `pattern`, the rest `pattern <Ctor>` / `type <Ty>`; (2) 1,040 of 1,153 `foreign_import` entity texts are QUOTED string literals and the quotes were published, so `references c_keepCAFsForGHCi -> \"keepCAFsForGHCi\"`; (3) 409 `module_export` re-export nodes were dropped entirely by `if (expNode.type !== \"export\") continue`. Plus one adjudication: a self-named superclass (`class Recursive a => Recursive a`, legal under UndecidableSuperClasses, present in GHC's own testsuite at T11254.hs:12) is not published, because a self-named edge is a self-loop in symbol-ID space \u2014 the same rule the `contains` post-loop already applies \u2014 and it was the only `extends` row the F5 oracle disagreed on. The fixture covers every export SHAPE the pinned grammar produces (31,892 export nodes: 6,697 with a name child, 24,515 a bare variable, 43 a bare keyword whose name sits in a sibling ERROR), so it pins the case rather than one instance of it.",
+  "expectSymbols": [
+    {
+      "name": "Data.Surface",
+      "kind": "module"
+    },
+    {
+      "name": "WidgetId",
+      "kind": "type"
+    },
+    {
+      "name": "&&",
+      "kind": "function"
+    },
+    {
+      "name": "Gadget",
+      "kind": "type"
+    },
+    {
+      "name": "Gadget",
+      "kind": "constructor"
+    },
+    {
+      "name": "Surface",
+      "kind": "interface"
+    },
+    {
+      "name": "surfaceName",
+      "kind": "method"
+    },
+    {
+      "name": "Widget",
+      "kind": "type"
+    },
+    {
+      "name": "Widget",
+      "kind": "constructor"
+    },
+    {
+      "name": "widgetLabel",
+      "kind": "property"
+    },
+    {
+      "name": "widgetParts",
+      "kind": "property"
+    },
+    {
+      "name": "render",
+      "kind": "function"
+    },
+    {
+      "name": "plainName",
+      "kind": "function"
+    },
+    {
+      "name": "c_widgetAlloc",
+      "kind": "function"
+    },
+    {
+      "name": "c_widgetVersion",
+      "kind": "function"
+    },
+    {
+      "name": "c_doubleAlloc",
+      "kind": "function"
+    },
+    {
+      "name": "c_tripleAlloc",
+      "kind": "function"
+    },
+    {
+      "name": "Recursive",
+      "kind": "interface"
+    },
+    {
+      "name": "depthOf",
+      "kind": "method"
+    },
+    {
+      "name": ":|",
+      "kind": "constructor"
+    },
+    {
+      "name": "Recursive",
+      "kind": "interface"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "Widget",
+      "line_number": 41,
+      "comment": "the ordinary `Widget(..)` form: the TYPE is what the module exports; the constructor list is a visibility detail, not a second name"
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "render",
+      "line_number": 42,
+      "comment": "export -> variable: a plain lowercase name"
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "plainName",
+      "line_number": 43
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "WidgetId",
+      "line_number": 44,
+      "comment": "`type WidgetId` \u2014 the KEYWORD is in a `namespace` child and the name in a `name` child. Published as `type WidgetId` before this fix: a target no source file declares."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "&&",
+      "line_number": 45,
+      "comment": "`type (&&)` \u2014 prefix_id -> operator. Published as `type` before this fix (the text cut at the first paren). The operator spelling is what the module exports."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": ":|",
+      "line_number": 46,
+      "comment": "`pattern (:|)` \u2014 prefix_id -> constructor_operator, the pattern-synonym form."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "Gadget",
+      "line_number": 47,
+      "comment": "`data Gadget` \u2014 the grammar mis-parses this entry so the export node's only named child is the keyword `variable(\"data\")` and `Gadget` lands in the sibling ERROR. Recovered."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "Surface",
+      "line_number": 48,
+      "comment": "`class Surface` \u2014 same mis-parse, same recovery."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "Data.Gadget",
+      "line_number": 49,
+      "meta.isReExport": true,
+      "comment": "`module Data.Gadget` \u2014 a RE-EXPORT, its own grammar node type (`module_export`), and 409 of them corpus-wide were DROPPED because the reader only accepted `export`."
+    },
+    {
+      "type": "references",
+      "source": "c_widgetAlloc",
+      "target": "widget_alloc",
+      "line_number": 108,
+      "comment": "the C entity is a string LITERAL, so the grammar's entity text is `\"widget_alloc\"` WITH its quotes. 1,040 of 1,153 corpus FFI entities are quoted literals and the quotes were the published endpoint."
+    },
+    {
+      "type": "contains",
+      "source": "Data.Surface",
+      "target": "c_widgetAlloc",
+      "line_number": 108,
+      "meta.isForeignImport": true
+    },
+    {
+      "type": "calls",
+      "source": "c_doubleAlloc",
+      "target": "c_widgetAlloc",
+      "line_number": 122
+    },
+    {
+      "type": "calls",
+      "source": "c_tripleAlloc",
+      "target": "c_widgetAlloc",
+      "line_number": 125,
+      "comment": "the same callee from TWO sites. The site line is part of the dedupe key, so these are two edges at two lines \u2014 the pair is pinned so a per-set regression cannot collapse them unnoticed."
+    },
+    {
+      "type": "extends",
+      "source": "Recursive",
+      "target": "Surface",
+      "line_number": 138,
+      "comment": "a NON-self superclass: the positive half of the rule the next forbid pins from the other side."
+    },
+    {
+      "type": "implements",
+      "source": "Widget",
+      "target": "Surface",
+      "line_number": 78
+    },
+    {
+      "type": "contains",
+      "source": "Data.Surface",
+      "target": ":|",
+      "line_number": 65,
+      "comment": "a PATTERN SYNDICOME publishes a constructor-shaped symbol owned by the module, so the `exports Data.Surface -> :|` row above has a target. The M14 runner caught the gap: `export(s) [\":|\"] do not resolve to a top-level symbol`. Corpus: 1,094 pattern_synonym nodes over 261 files, 94 export entries naming one."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "type",
+      "comment": "the KEYWORD, not a name. 100 corpus-wide."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "pattern",
+      "comment": "the KEYWORD, not a name. 8 corpus-wide."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "data",
+      "comment": "the KEYWORD, not a name. 32 corpus-wide."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "class",
+      "comment": "the KEYWORD, not a name."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "type WidgetId",
+      "comment": "the keyword PHRASE. The name is WidgetId; the qualifier is not part of it."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "pattern Just",
+      "comment": "the keyword PHRASE. ~250 of the corpus's 392 keyword targets are `pattern <Ctor>`."
+    },
+    {
+      "type": "exports",
+      "source": "Data.Surface",
+      "target": "-- * docs",
+      "comment": "a Haddock comment in an export list is not a name (the M60-HK class: 39 such edges corpus-wide)"
+    },
+    {
+      "type": "references",
+      "source": "c_widgetAlloc",
+      "target": "\"widget_alloc\"",
+      "comment": "the QUOTED literal. The spelling a reader greps for in the C header is widget_alloc."
+    },
+    {
+      "type": "references",
+      "source": "c_widgetVersion",
+      "target": "\"libwidget.h\"",
+      "comment": "the quoted header name in the shape-C FFI form"
+    },
+    {
+      "type": "extends",
+      "source": "Recursive",
+      "target": "Recursive",
+      "comment": "a self-named superclass is legal Haskell (UndecidableSuperClasses; GHC's own testsuite/tests/typecheck/should_compile/T11254.hs:12) but a self-loop in symbol-ID space is not an edge, and it was the ONLY extends row the F5 oracle disagreed on \u2014 1 UNEXPLAINED of 98 over a 1,200-file stride draw."
+    },
+    {
+      "type": "contains",
+      "source": "Data.Surface",
+      "target": ":|",
+      "line_number": 66,
+      "comment": "the signature half and the equation half are ONE declaration. Two contains edges at two lines for one name would be the multi-clause-function defect `processFunction` already collapses; the O(1) index does the same here."
+    }
+  ]
+}

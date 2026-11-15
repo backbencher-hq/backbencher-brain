@@ -1,0 +1,108 @@
+{
+ "fixtureId": "xml/type-graph",
+ "language": "xml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "M60 XML deep review, finding X2. An XSD is a GRAPH OF FILES and the edges are written as attribute VALUES: `schemaLocation` is a W3C-defined list of namespace/URI pairs whose URIs are file paths, and `type`/`base`/`ref` name declarations. The pre-fix analyzer emitted no edge for either class: measured over the 7,975-file corpus, 2,237 distinct QName attribute values across 11,948 occurrences in 511 files and 323 distinct `schemaLocation` targets, with recall 0.000. Three properties make the new edges honest rather than a flood. (1) The target of a `references` edge is the LOCAL NAME — the name a declaration carries — and the prefix rides in metadata, because a prefix in the target is a VALUE where a NAME belongs (M60.R10). (2) An edge is emitted only when the target RESOLVES in this document or is a known specification built-in; a value naming nothing this document declares is refused, so the graph never gains a name no file supports. (3) `schemaLocation`'s pairing is decided by its token COUNT: an even count is namespace/URI pairs, an odd count is one bare URI — so `xs:import` (a pair, line 5) and `xs:include` (a bare URI, line 6) both work and neither imports the other half. Lines are read off the file.",
+ "expectSymbols": [
+  {
+   "name": "catalog",
+   "kind": "class",
+   "meta.declaredName": "catalog",
+   "meta.declarationKind": "element"
+  },
+  {
+   "name": "CatalogType",
+   "kind": "class",
+   "meta.declaredName": "CatalogType",
+   "meta.declarationKind": "complexType"
+  },
+  {
+   "name": "label",
+   "kind": "class",
+   "ownerName": "xs:sequence"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "from": "xs:import",
+   "target": "shared.xsd",
+   "line_number": 5
+  },
+  {
+   "type": "imports",
+   "from": "xs:include",
+   "target": "types.xsd",
+   "line_number": 6
+  },
+  {
+   "type": "references",
+   "from": "catalog",
+   "target": "xs:schema.CatalogType",
+   "line_number": 7
+  },
+  {
+   "type": "references",
+   "from": "label",
+   "target": "string",
+   "line_number": 10
+  },
+  {
+   "type": "imports",
+   "from": "xs:import",
+   "target": "shared.xsd",
+   "line_number": 5,
+   "meta.evidenceClass": "import_based",
+   "note": "a FILE, written by the document: schemaLocation's URI. The tier is import_based, not structural, because the fact is about another FILE."
+  },
+  {
+   "type": "references",
+   "from": "catalog",
+   "target": "xs:schema.CatalogType",
+   "line_number": 7,
+   "meta.evidenceClass": "reference_qualified",
+   "note": "a NAME reached through the declared prefix tns, so the edge is qualified: the namespace is what makes the name resolvable, and metadata carries both the prefix and the URI."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "from": "xs:import",
+   "target": "urn:acme:shared",
+   "line_number": 5,
+   "note": "the namespace half of a schemaLocation pair is a namespace URI, not a file"
+  },
+  {
+   "type": "imports",
+   "from": "xs:include",
+   "target": "urn:acme:shared",
+   "note": "an ODD token count is one bare URI; a pairing rule that assumed pairs would import the namespace of a neighbouring element"
+  },
+  {
+   "type": "references",
+   "from": "catalog",
+   "target": "tns:CatalogType",
+   "note": "the prefix must never reach the target"
+  },
+  {
+   "type": "references",
+   "from": "label",
+   "target": "xs:string",
+   "note": "same: the local name is the declaration's name"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "tns:CatalogType",
+   "note": "a reference value published as a symbol; the declaration's name is `CatalogType`"
+  },
+  {
+   "name": "xs:string",
+   "note": "same: the written value, not the local name"
+  }
+ ],
+ "expectComplexity": [
+  39
+ ],
+ "_targetSpelling": "THE SAME-FILE TIER (2026-10-12): a target this file declares under EXACTLY ONE owner is emitted as `Owner.name` — the two-part identity the analyzer already computes (`qualifiedName = ownerName + '.' + name`) and which `parallel-indexer.ts:3435-3437` already looks up — so the store binds it without a store change. The bare name stays in `metadata.bareTarget`. A target the file declares under ZERO or 2+ owners is left exactly as it was."
+}

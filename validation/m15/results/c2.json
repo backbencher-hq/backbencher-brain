@@ -1,0 +1,13 @@
+{
+  "issue": "M15.C2",
+  "code": "C2",
+  "tool": "registry+handlers",
+  "label": "registry + handlers + validation",
+  "verified": true,
+  "toolCount": 16,
+  "checks": 23,
+  "passed": 23,
+  "failed": 0,
+  "negatives": 7,
+  "generatedAt": "2026-11-05T04:25:35.971Z"
+}

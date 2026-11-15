@@ -39,7 +39,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
 
 /** Every NSObject creation/copy spelling a selector can carry. `alloc` and `new` are what
  *  the analyzer reads; the rest are measured here so the set is not asserted. */

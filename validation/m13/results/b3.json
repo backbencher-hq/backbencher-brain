@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.03",
+  "code": "B3",
+  "tool": "baseline",
+  "title": "Shared adversarial test harness (unit/integration/e2e, negative fixtures)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "positive-only harness is capped at partial",
+      "pass": true,
+      "detail": "partial"
+    },
+    {
+      "name": "harness with a negative case reaches verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "failing harness reports known-gap",
+      "pass": true,
+      "detail": "known-gap"
+    },
+    {
+      "name": "verified with zero negatives rejected [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "verified claim has zero negative cases"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "decisions": {
+    "invariant": "verifiedState=verified requires summary.failed===0 AND negativeCases>=1",
+    "positiveOnly": "a suite with zero negative cases is capped at partial, never verified"
+  },
+  "limitations": [
+    "The e2e layer (real MCP stdio + compiled CLI) is exercised by each tool's own e2e issue (E9/S2/…), not by the harness itself."
+  ],
+  "generatedAt": "2026-11-05T04:12:44.155Z"
+}

@@ -1,0 +1,48 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+"""
+A user in the system.
+"""
+type User implements Node {
+  id: ID!
+  name: String!
+  friends(first: Int): [User]
+}
+
+interface Node {
+  id: ID!
+}
+
+union SearchResult = User | Product
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+scalar DateTime
+
+input CreateUserInput {
+  name: String!
+  email: String
+}
+
+directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION
+
+type Product implements Node {
+  id: ID!
+  title: String!
+  price: Float
+}
+
+type Query {
+  user(id: ID!): User
+  search(text: String): [SearchResult!]!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User
+}

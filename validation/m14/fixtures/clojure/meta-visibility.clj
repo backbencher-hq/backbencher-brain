@@ -1,0 +1,6 @@
+(ns clj.fixture.metavis)
+(def ^{:private true} secret 1)
+(defn ^:private hidden [] 1)
+(defn- suffixed [] 2)
+(defn ^:private flagged [] 3)
+(defn public-fn [] 4)

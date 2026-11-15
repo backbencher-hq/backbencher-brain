@@ -1,0 +1,26 @@
+{
+  "gate": "M54.P1",
+  "issue": 727,
+  "milestone": "M54",
+  "at": "2026-10-15T06:56:59.359Z",
+  "commit": "f6af04875c05dae44f3b43bcb150ae8bf09cef4f",
+  "checks": 15,
+  "passed": 14,
+  "failed": 1,
+  "verifierCommand": "bun run script/m54/verify-p1-fk.ts",
+  "status": "known-gap",
+  "policy": {
+    "fkOnAtOpen": true,
+    "runtimes": [
+      "bun",
+      "node"
+    ],
+    "readonlyUniform": true,
+    "escapeHatch": "BB_FK_ENFORCE=0"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T14:52:14.736Z",
+    "contentSha256": "c816ca3d5ec17bb4a94c1a82d3b7ac1facdb31d73eed0a5738d8234ead7cbcba"
+  }
+}

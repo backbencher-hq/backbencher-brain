@@ -1,0 +1,96 @@
+{
+ "fixtureId": "python/lambda-scope-is-not-class-scope",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A LAMBDA IS A FUNCTION SCOPE, so a name bound inside one is a local of that function and not a member of the class that encloses it. This is the second genuine ANALYZER defect the independent oracle found, and the worse of the two because it FABRICATED a member rather than missing one: in cython/tests/run/extra_walrus.py a class body holds `x1 = (lambda y_global: (y_global := y_global + 1) + y_global)(2) + y_global`, and the walrus target \u2014 a lambda PARAMETER \u2014 was published as a class member. `C.y_global` does not resolve in Python. A graph that overstates a surface is worse than one that understates it, because an overstatement sends a reader to a name that cannot be resolved while an understatement is visible as a gap. The ground truth is not a matter of convention: every row here was read out of CPython with `vars()` on the imported module \u2014 C is ['from_comprehension', 'via_lambda', 'walrus_direct', 'walrus_in_lambda'], D is ['comp', 'meth'], Holder is ['Nested', 'make']. Note what that list contains: `walrus_direct` IS a member, because a named expression written directly in a class body genuinely does create a class attribute. So the rule cannot be 'no walrus in a class body', and a fix written that way would pass the forbid row below while silently dropping three real members \u2014 which is why the positives here are as numerous as the forbids. The guard is a SCOPE test rather than a syntax test for exactly that reason, and it covers comprehensions as well as lambdas because Python binds a comprehension's named expression in the enclosing scope, which in a class body would bind into the class. The class-body comprehension case is in a separate fixture, `lambda-scope-rejects-comprehension-walrus`, because CPython refuses to compile it and a fixture whose ground truth cannot be read out of the interpreter is a fixture asserting an opinion.",
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "walrus_direct",
+   "line_number": 40,
+   "note": "a named expression written DIRECTLY in a class body genuinely creates a class attribute in python \u2014 verified with `vars()`. This row is what stops a fix from reading the rule as 'no walrus in a class body', which would pass the forbid below and drop this"
+  },
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "via_lambda",
+   "line_number": 42,
+   "note": "the lambda is called here; the lambda's own parameter is NOT a member, which the forbid row pins"
+  },
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "walrus_in_lambda",
+   "line_number": 43,
+   "note": "the walrus is written in the class body but INSIDE a lambda, so it binds in the lambda. CPython agrees: it is in `vars(C)`"
+  },
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "from_comprehension",
+   "line_number": 44
+  },
+  {
+   "type": "contains",
+   "from": "D",
+   "target": "meth",
+   "line_number": 48
+  },
+  {
+   "type": "contains",
+   "from": "D",
+   "target": "comp",
+   "line_number": 52
+  },
+  {
+   "type": "contains",
+   "from": "Holder",
+   "target": "Nested",
+   "line_number": 58,
+   "note": "crosses over to nested-class-containment: a class in a class body IS a member, so the two fixtures agree on where the line is rather than each asserting half of it"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "q",
+   "note": "THE DEFECT. `q` is a lambda parameter. `C.q` does not resolve, and publishing it puts a name on the class's surface that the language does not give it"
+  },
+  {
+   "type": "contains",
+   "from": "C",
+   "target": "p",
+   "note": "a second lambda parameter, for the same reason and to show the forbid is not pinned to one identifier"
+  },
+  {
+   "type": "contains",
+   "from": "D",
+   "target": "walrus_in_method",
+   "note": "a walrus inside a METHOD is a local of the method. `vars(D)` is ['comp', 'meth']"
+  },
+  {
+   "type": "contains",
+   "from": "D",
+   "target": "from_comp",
+   "note": "a walrus inside a comprehension is a local of the comprehension, even though python binds a comprehension's named expression in the ENCLOSING scope \u2014 which in a class body would bind into the class, and is why the guard covers comprehensions too"
+  },
+  {
+   "type": "contains",
+   "from": "D",
+   "target": "i",
+   "note": "the comprehension's own loop variable is never a member of anything"
+  },
+  {
+   "type": "contains",
+   "from": "Holder",
+   "target": "Local",
+   "note": "a class in a METHOD is a local of the method, consistent with the forbid in nested-class-containment"
+  }
+ ],
+ "_seamNote": {
+  "what": "A name bound inside a lambda or a comprehension belongs to that function, not to the class whose body encloses it. A named expression written directly in a class body does belong to the class.",
+  "why": "Both constructs introduce an implicit function, and Python's name resolution inside a function does not consult the enclosing class namespace \u2014 which is the whole reason a class body is not a closure over its own attributes. The alternative reading, that the walk should treat any walrus in a class body as a member, is what the defect did, and `vars()` disagrees with it on the interpreter's own authority rather than on a convention. The guard asks whether a binding scope encloses the node instead of what the node looks like, because the two halves of the rule point in opposite syntactic directions and no syntax test distinguishes them: `(x := 1)` in a class body is a member and `(x := (lambda y: y)(1))` is not, and both are walruses in a class body."
+ }
+}

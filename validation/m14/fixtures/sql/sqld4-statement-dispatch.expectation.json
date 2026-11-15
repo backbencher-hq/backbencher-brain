@@ -1,0 +1,64 @@
+{
+ "schemaVersion": 1,
+ "fixture": "sql/sqld4-statement-dispatch.sql",
+ "authoredFrom": "SQLD4 (M60 SQL wave, 2026-09-26). Arm-by-arm reachability measured with bb_tests/sql/probe/reachability.mts, which runs one probe per claimed switch arm and records whether the pattern or symbol the arm promises is ever emitted. Before: set_statement, reset_statement and comment_statement were unreachable (the grammar produces all three \u2014 probe/grammar-gaps.mts shows set_statement/reset_statement/comment_statement trees), grant/revoke named node types absent from all 321, and merge/truncate had no node type because their rules are hidden (`_merge_statement`, `_truncate_statement` inline into `statement`).",
+ "comment": "This fixture is the pin on the whole dead-arm class: it is the only place in the repo where 'every arm is reachable' is asserted rather than assumed.",
+ "expectPatterns": [
+  "Session Configuration",
+  "SQL Documentation",
+  "MERGE Statements",
+  "TRUNCATE Statements",
+  "Permissions (GRANT/REVOKE)"
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "d4_merge_target"
+  },
+  {
+   "type": "uses",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "d4_merge_source"
+  },
+  {
+   "type": "uses",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "d4_truncate_target"
+  },
+  {
+   "type": "references",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "d4_doc_target"
+  },
+  {
+   "type": "references",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "d4_grant_target"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "some_role"
+  },
+  {
+   "type": "uses",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "TO"
+  },
+  {
+   "type": "uses",
+   "from": "sqld4-statement-dispatch.sql",
+   "target": "FROM"
+  },
+  {
+   "type": "uses",
+   "from": "global",
+   "target": "some_role",
+   "comment": "a REVOKE ... FROM role privilege name is a ROLE, not a table a query reads; the pre-fix keyword-as-target defect published this row"
+  }
+ ],
+ "note": "`forbidRelationships` on `some_role` is the phantom-role pin: `REVOKE SELECT ON t FROM joe` put the ROLE name in a from clause and the analyzer reported `uses global->joe` \u2014 a role claimed as a table. The grammar half of the fix keeps grantees out of the reference space entirely; this is the analyzer-side assertion that it stayed fixed."
+}

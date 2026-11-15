@@ -150,7 +150,7 @@ async function makeFixture(): Promise<{
 
   // M63.T1 — the three shapes the OLD flat COUNT could not tell apart, seeded
   // on their own roots so the rootFn differential above stays untouched. The
-  // corpus lane (fixtures/impact) found the real defects; these make the
+  // corpus lane (bb_tests/impact) found the real defects; these make the
   // in-repo gate able to see them too:
   //   hub2      a TRANSITIVE dependent (other → hub2mid → hub2): a depth-0
   //             count answers 1 where the set is 2

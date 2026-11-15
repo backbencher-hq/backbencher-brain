@@ -1,0 +1,25 @@
+{
+  "fixtureId": "java/anonymous-field-member",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49/M37 #866: a FIELD member declared inside an anonymous class body (new Runnable() { int field = target(); }) is a symbol owned by the ANONYMOUS type, and the call made from its initialiser is attributed to that type. java already honoured this (it is the reference for the family convention); the fixture is added so the contract is pinned for the language that defines it, not only for the two that violated it. The `local` control pins the OTHER half of the same boundary: a method-local is not a project symbol, so a future fix that widened the boundary past the anonymous body is caught here. Call lines are pinned because the `local` call in build() is legitimately attributed to build — without the line pin a forbid on `build -> target` could never pass.",
+  "expectSymbols": [
+    { "name": "AnonField", "kind": "class" },
+    { "name": "anonymous_Runnable", "kind": "class" },
+    { "name": "field", "kind": "property", "ownerName": "anonymous_Runnable", "comment": "#866 contract 1: the anon body's field is a symbol owned by the anon type" },
+    { "name": "run", "kind": "method", "ownerName": "anonymous_Runnable" }
+  ],
+  "forbidSymbols": [
+    { "name": "local", "comment": "#866 control: a method-local is not a project symbol" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "anonymous_Runnable", "target": "field", "line_number": 14 },
+    { "type": "contains", "from": "anonymous_Runnable", "target": "run", "line_number": 15 },
+    { "type": "calls", "from": "anonymous_Runnable", "target": "target", "line_number": 14, "comment": "#866 contract 2: the initialiser call belongs to the anon type, at the call's own line" },
+    { "type": "calls", "from": "build", "target": "target", "line_number": 12, "comment": "control: the method-LOCAL's call IS attributed to build" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "build", "target": "target", "line_number": 14, "comment": "the field initialiser's call must NOT flatten onto the enclosing method" },
+    { "type": "contains", "from": "AnonField", "target": "field", "comment": "JD18 leak direction: members of an anonymous body never attribute to the enclosing type" }
+  ]
+}

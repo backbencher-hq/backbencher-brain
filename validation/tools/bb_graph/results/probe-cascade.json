@@ -1,0 +1,266 @@
+{
+  "probe": "bb_graph door",
+  "section": "cascade",
+  "at": "2026-11-01T20:28:30.559Z",
+  "project": "/home/ishaq2321/mcp/backbencher-brain",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "dbBefore": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564893499
+  },
+  "cascade": [
+    {
+      "symbol": "FreshnessResolver",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/intelligence/documentation/doc-engine.ts:FreshnessResolver:311",
+        "name": "FreshnessResolver",
+        "symbolType": "class",
+        "file": "src/intelligence/documentation/doc-engine.ts",
+        "line": 311,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/intelligence/documentation/doc-engine.ts",
+        "candidates": 1,
+        "match": "exact"
+      },
+      "returnedCallers": 25,
+      "exactCallers": 15,
+      "cascadedCallers": 10,
+      "deeperCallers": 0,
+      "partition": true,
+      "cascadeEdgesCarryMember": [
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "of",
+            "file": "src/intelligence/documentation/doc-engine.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "of",
+            "file": "src/intelligence/documentation/doc-engine.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "of",
+            "file": "src/intelligence/documentation/doc-engine.ts"
+          }
+        }
+      ],
+      "cascadeEdgesMissingMember": 0,
+      "candidateNameMatches": 1,
+      "edgesByType": {
+        "calls": 5,
+        "instantiates": 1,
+        "uses": 15,
+        "references": 1,
+        "contains": 3
+      }
+    },
+    {
+      "symbol": "VisitContext",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/ast/real-yaml-analyzer.ts:VisitContext:300",
+        "name": "VisitContext",
+        "symbolType": "interface",
+        "file": "src/ast/real-yaml-analyzer.ts",
+        "line": 300,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/ast/real-yaml-analyzer.ts",
+        "candidates": 1,
+        "match": "exact"
+      },
+      "returnedCallers": 63,
+      "exactCallers": 14,
+      "cascadedCallers": 49,
+      "deeperCallers": 0,
+      "partition": true,
+      "cascadeEdgesCarryMember": [
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "depth",
+            "file": "src/ast/real-yaml-analyzer.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "sequenceItem",
+            "file": "src/ast/real-yaml-analyzer.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "sequenceIndex",
+            "file": "src/ast/real-yaml-analyzer.ts"
+          }
+        }
+      ],
+      "cascadeEdgesMissingMember": 0,
+      "candidateNameMatches": 1,
+      "edgesByType": {
+        "uses": 53,
+        "contains": 10
+      }
+    },
+    {
+      "symbol": "Scope",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:src/ast/real-clean-analyzer.ts:Scope:127",
+        "name": "Scope",
+        "symbolType": "interface",
+        "file": "src/ast/real-clean-analyzer.ts",
+        "line": 127,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/src/ast/real-clean-analyzer.ts",
+        "candidates": 10,
+        "match": "exact"
+      },
+      "returnedCallers": 71,
+      "exactCallers": 15,
+      "cascadedCallers": 56,
+      "deeperCallers": 0,
+      "partition": true,
+      "cascadeEdgesCarryMember": [
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "name",
+            "file": "src/ast/real-clean-analyzer.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "node",
+            "file": "src/ast/real-clean-analyzer.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "name",
+            "file": "src/ast/real-clean-analyzer.ts"
+          }
+        }
+      ],
+      "cascadeEdgesMissingMember": 0,
+      "candidateNameMatches": 10,
+      "edgesByType": {
+        "uses": 57,
+        "contains": 14
+      }
+    },
+    {
+      "symbol": "Query",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:script/m14/tmp/graphql/fixtures-constructs/10-every-family.graphql:Query:12",
+        "name": "Query",
+        "symbolType": "class",
+        "file": "script/m14/tmp/graphql/fixtures-constructs/10-every-family.graphql",
+        "line": 12,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m14/tmp/graphql/fixtures-constructs/10-every-family.graphql",
+        "candidates": 15,
+        "match": "exact"
+      },
+      "returnedCallers": 4,
+      "exactCallers": 1,
+      "cascadedCallers": 3,
+      "deeperCallers": 0,
+      "partition": true,
+      "cascadeEdgesCarryMember": [
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "search",
+            "file": "script/m14/tmp/graphql/fixtures-constructs/10-every-family.graphql"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "id",
+            "file": "script/m14/tmp/graphql/fixtures-constructs/10-every-family.graphql"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "extra",
+            "file": "script/m14/tmp/graphql/fixtures-constructs/10-every-family.graphql"
+          }
+        }
+      ],
+      "cascadeEdgesMissingMember": 0,
+      "candidateNameMatches": 15,
+      "edgesByType": {
+        "uses": 2,
+        "contains": 2
+      }
+    },
+    {
+      "symbol": "EvidenceInput",
+      "ok": true,
+      "root": {
+        "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:script/m14/evidence-harness.ts:EvidenceInput:67",
+        "name": "EvidenceInput",
+        "symbolType": "interface",
+        "file": "script/m14/evidence-harness.ts",
+        "line": 67,
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/script/m14/evidence-harness.ts",
+        "candidates": 1,
+        "match": "exact"
+      },
+      "returnedCallers": 47,
+      "exactCallers": 7,
+      "cascadedCallers": 40,
+      "deeperCallers": 0,
+      "partition": true,
+      "cascadeEdgesCarryMember": [
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "title",
+            "file": "script/m14/evidence-harness.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "checks",
+            "file": "script/m14/evidence-harness.ts"
+          }
+        },
+        {
+          "match": "owner-cascade",
+          "matchedMember": {
+            "name": "limitations",
+            "file": "script/m14/evidence-harness.ts"
+          }
+        }
+      ],
+      "cascadeEdgesMissingMember": 0,
+      "candidateNameMatches": 1,
+      "edgesByType": {
+        "uses": 35,
+        "references": 2,
+        "contains": 10
+      }
+    }
+  ],
+  "dbAfter": {
+    "db": 1793564403175,
+    "-wal": 1793564598547,
+    "-shm": 1793564910573
+  },
+  "dbUnchanged": false
+}

@@ -1,0 +1,198 @@
+{
+  "instrument": "xml store determinism — same file set, three index orders, bindings compared structurally",
+  "repo": "libxslt",
+  "filesRequested": 800,
+  "filesUsed": 800,
+  "admission": "git-tracked, xml-family suffix, <= 512 KiB, sorted; arms B and C use the SAME set",
+  "arms": [
+    {
+      "arm": "A",
+      "order": "sorted",
+      "projectId": "f00a22fe568a",
+      "files": 800,
+      "indexMs": 185691,
+      "rows": 18122,
+      "bound": 17908,
+      "unbound": 214,
+      "distinctRowKeys": 18122,
+      "storedRows": 18122,
+      "distinctRowIds": 18122,
+      "duplicateKeysWithDifferentValue": 0,
+      "duplicateIds": 0,
+      "ambiguousExamples": [],
+      "byType": {
+        "contains": {
+          "rows": 17296,
+          "bound": 17293,
+          "unbound": 3
+        },
+        "imports": {
+          "rows": 90,
+          "bound": 33,
+          "unbound": 57
+        },
+        "references": {
+          "rows": 347,
+          "bound": 193,
+          "unbound": 154
+        },
+        "calls": {
+          "rows": 387,
+          "bound": 387,
+          "unbound": 0
+        },
+        "overrides": {
+          "rows": 2,
+          "bound": 2,
+          "unbound": 0
+        }
+      }
+    },
+    {
+      "arm": "B",
+      "order": "reversed",
+      "projectId": "f4193ce87e7e",
+      "files": 800,
+      "indexMs": 123794,
+      "rows": 18122,
+      "bound": 17908,
+      "unbound": 214,
+      "distinctRowKeys": 18122,
+      "storedRows": 18122,
+      "distinctRowIds": 18122,
+      "duplicateKeysWithDifferentValue": 0,
+      "duplicateIds": 0,
+      "ambiguousExamples": [],
+      "byType": {
+        "contains": {
+          "rows": 17296,
+          "bound": 17293,
+          "unbound": 3
+        },
+        "imports": {
+          "rows": 90,
+          "bound": 33,
+          "unbound": 57
+        },
+        "calls": {
+          "rows": 387,
+          "bound": 387,
+          "unbound": 0
+        },
+        "references": {
+          "rows": 347,
+          "bound": 193,
+          "unbound": 154
+        },
+        "overrides": {
+          "rows": 2,
+          "bound": 2,
+          "unbound": 0
+        }
+      }
+    },
+    {
+      "arm": "C",
+      "order": "sorted+FORCE_EAGER",
+      "projectId": "7a099bb65fed",
+      "files": 800,
+      "indexMs": 128325,
+      "rows": 18122,
+      "bound": 17908,
+      "unbound": 214,
+      "distinctRowKeys": 18122,
+      "storedRows": 18122,
+      "distinctRowIds": 18122,
+      "duplicateKeysWithDifferentValue": 0,
+      "duplicateIds": 0,
+      "ambiguousExamples": [],
+      "byType": {
+        "contains": {
+          "rows": 17296,
+          "bound": 17293,
+          "unbound": 3
+        },
+        "references": {
+          "rows": 347,
+          "bound": 193,
+          "unbound": 154
+        },
+        "imports": {
+          "rows": 90,
+          "bound": 33,
+          "unbound": 57
+        },
+        "calls": {
+          "rows": 387,
+          "bound": 387,
+          "unbound": 0
+        },
+        "overrides": {
+          "rows": 2,
+          "bound": 2,
+          "unbound": 0
+        }
+      }
+    }
+  ],
+  "comparisons": {
+    "A_vs_B_sorted_vs_reversed": {
+      "compared": 18122,
+      "differing": 1189,
+      "differingByType": {
+        "contains": 1189
+      },
+      "onlyInX": 0,
+      "onlyInY": 0,
+      "examples": [
+        "rel:libxslt/tests/REC/test-11.2-3.xsl:xsl:stylesheet:1:xsl:template:contains:7   A=tests/REC/test-11.2-3.xsl | xsl:template   B=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/REC/test-11.2-4.xsl:xsl:stylesheet:1:xsl:template:contains:7   A=tests/REC/test-11.2-4.xsl | xsl:template   B=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/REC/test-11.2-5.xsl:xsl:stylesheet:1:xsl:template:contains:7   A=tests/REC/test-11.2-5.xsl | xsl:template   B=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/REC/test-11.2-6.xsl:xsl:stylesheet:1:xsl:template:contains:6   A=tests/REC/test-11.2-6.xsl | xsl:template   B=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/python/tests/test.xsl:xsl:stylesheet:1:xsl:template:contains:4   A=python/tests/test.xsl | xsl:template   B=tests/docbook/common/ca.xml | template"
+      ]
+    },
+    "A_vs_C_eager_vs_deferred": {
+      "compared": 18122,
+      "differing": 125,
+      "differingByType": {
+        "contains": 45,
+        "calls": 72,
+        "references": 8
+      },
+      "onlyInX": 0,
+      "onlyInY": 0,
+      "examples": [
+        "rel:libxslt/tests/REC/test-10-1.xsl:li:13:xsl:text:contains:15   A=tests/REC/test-10-1.xsl | xsl:text   C=doc/EXSLT/devhelp/devhelp2.xsl | text",
+        "rel:libxslt/tests/REC/test-10-2.xsl:li:13:xsl:text:contains:15   A=tests/REC/test-10-2.xsl | xsl:text   C=doc/EXSLT/devhelp/devhelp2.xsl | text",
+        "rel:libxslt/tests/REC/stand-2.7-1.xsl:xsl:template:4:xsl:text:contains:5   A=tests/REC/stand-2.7-1.xsl | xsl:text   C=doc/EXSLT/devhelp/devhelp2.xsl | text",
+        "rel:libxslt/tests/REC/test-10-3.xsl:li:13:xsl:text:contains:15   A=tests/REC/test-12.4-1.xml | text   C=doc/EXSLT/devhelp/devhelp2.xsl | text",
+        "rel:libxslt/tests/REC/test-5.4-1.xsl:xsl:template:4:fo:block:contains:5   A=tests/REC/test-7.1.1.xml | block   C=tests/REC/test-5.4-1.xsl | fo:block"
+      ]
+    },
+    "B_vs_C": {
+      "compared": 18122,
+      "differing": 1270,
+      "differingByType": {
+        "contains": 1190,
+        "calls": 72,
+        "references": 8
+      },
+      "onlyInX": 0,
+      "onlyInY": 0,
+      "examples": [
+        "rel:libxslt/tests/general/bug-130.xsl:xsl:stylesheet:2:xsl:template:contains:15   B=tests/general/bug-130.xsl | xsl:template   C=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/general/bug-121.xsl:xsl:stylesheet:2:xsl:template:contains:5   B=tests/general/bug-121.xsl | xsl:template   C=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/general/bug-13-.xsl:xsl:stylesheet:1:xsl:template:contains:4   B=tests/general/bug-13-.xsl | xsl:template   C=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/general/bug-126.xsl:xsl:stylesheet:2:xsl:template:contains:6   B=tests/general/bug-126.xsl | xsl:template   C=tests/docbook/common/ca.xml | template",
+        "rel:libxslt/tests/general/bug-126.xsl:xsl:template:6:xsl:text:contains:7   B=tests/general/bug-126.xsl | xsl:text   C=doc/EXSLT/devhelp/devhelp2.xsl | text"
+      ]
+    }
+  },
+  "reading": {
+    "determinism": "differing === 0 and onlyInX === 0 and onlyInY === 0 means the same file set produced the same bindings under this order change — order-independent for these three arms, which is the test the hypothesis needed. Any non-zero `differing` is a store determinism defect and outranks every lane's residual.",
+    "identity": "the comparison key is the row id minus the project prefix (it embeds the source file and symbol, the line, the target and the type), and the endpoints are read from maps, NOT joined — the join fanned out on duplicated symbol rows and manufactured 482 phantom differences in the first version of this probe. `duplicateIds` reports rows sharing an id inside one arm if that ever happens.",
+    "unboundIsNotDeterminism": "A row that is unbound in one arm and bound in another counts as `differing` here, so the two questions are not confused."
+  },
+  "limits": "Three arms cannot prove determinism; they can fail to falsify it. Different concurrency, a different file set, or a partially-populated store are NOT covered."
+}

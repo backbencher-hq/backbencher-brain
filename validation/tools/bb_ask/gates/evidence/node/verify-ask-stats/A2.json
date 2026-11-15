@@ -1,0 +1,12 @@
+{
+  "issue": "M16.A2 (classes/symbols/files/language counts)",
+  "code": "A2",
+  "tool": "bb_ask",
+  "title": "A2",
+  "verified": true,
+  "checks": 4,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-03T20:25:49.513Z"
+}

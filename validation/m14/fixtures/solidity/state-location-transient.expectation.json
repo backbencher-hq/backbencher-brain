@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/state-location-transient.sol",
+  "authoredFrom": "Data location on a state variable. Authored 2026-09-30 from the analyzer's measured output.",
+  "note": "THE CORPUS CANNOT TEST THIS, and a zero in the census is not a broken path. This grammar reports `transient` through the state-variable declaration's `location:` FIELD, not as a `layout_specifier` node — `layout_specifier` is the CONTRACT-level `layout at 0x100` clause, which is a different construct entirely. Measured across all 389 production files: zero state variables declare a data location, because no OpenZeppelin contract at this revision uses `transient` storage. So this fixture is the only place the read can be gated, which is exactly why it exists: without it, a rule that stopped reading the field would be invisible to every corpus-level gate.",
+  "expectSymbols": [
+    { "name": "counter", "kind": "property", "ownerName": "T", "stateLocation": "transient",
+      "comment": "The one that matters. `transient` storage is cleared at the end of each transaction, so a storage-layout consumer needs it and cannot infer it." },
+    { "name": "SLOT", "kind": "property", "ownerName": "T", "stateLocation": null,
+      "comment": "An ordinary constant with no location qualifier. The ABSENT case is pinned, because a rule that defaulted every state variable to `storage` would be wrong here and plausible-looking." }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "fixtureId": "java/inner-class-instantiation",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Instantiating a qualified inner class (Outer.Inner via imported name) must yield an instantiates edge to the innermost segment - found missing in grails-core differential (6 occurrences in 150-file probe).",
+  "expectSymbols": [
+    { "name": "Stack", "kind": "class" },
+    { "name": "Builder", "kind": "class" },
+    { "name": "make" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "targetEndsWith": "Builder" }
+  ]
+}

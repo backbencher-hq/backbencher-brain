@@ -1,0 +1,133 @@
+{
+  "fixtureId": "zig/target-scope",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "Z65, from the incoming-edge audit. A zig relationship carries six keys and BOTH endpoints are name strings; src/lsp/impact.ts obtains inbound edges by scanning outgoing edges and matching targets, so an edge's name is all a reverse walk has. Measured over the whole 3,834-file zig corpus through production parseFile (draw sha256:2f3545f9..., 392,550 edges): 265,887 edges (67.73%) name a target 2+ published symbols share, and 151,004 of those (56.79%) have a candidate in the edge's OWN file. This fixture pins the annotation that makes the second group resolvable without a cross-file guess, and pins the two cases where no per-file rule may be applied at all. Every row is a place where a plausible implementation would guess: the file-local kind, the in-file name collision, the external name, and the import path. The forbid rows are the ones that matter most, because the failure mode is a confident wrong answer rather than a missing one. Z66 amendment: the `ArrayList` rows changed SPELLING, not verdict — the same text is still external, and `meta.targetScope` is still `file-external`. What changed is that the edge now carries the receiver (`std.ArrayList`), so the two forbid rows pin the old leaf.",
+  "expectSymbols": [
+    {
+      "name": "Local",
+      "kind": "struct",
+      "note": "the file publishes this name, so an edge naming it is file-local"
+    },
+    {
+      "name": "Collide",
+      "kind": "struct",
+      "note": "TWO kinds under one name in one file: a struct at :19 and a function at :21"
+    },
+    {
+      "name": "Collide",
+      "kind": "function",
+      "note": "the second kind under the same name — this is what makes targetKind undecidable"
+    },
+    {
+      "name": "make",
+      "kind": "method",
+      "note": "published, so `calls local -> make` is file-local with kind=method"
+    },
+    {
+      "name": "field",
+      "kind": "property",
+      "note": "published, so `uses local -> field` is file-local with kind=property"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "ArrayList",
+      "note": "an external std container used in a type position is not a declaration of this file and must never be minted as one"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "Local",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "struct",
+      "note": "a declared type the file publishes: file-local, and the kind is decidable here"
+    },
+    {
+      "type": "calls",
+      "source": "local",
+      "target": "make",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "method",
+      "note": "a call to an in-file method. This is one of the 151,004 edges a per-file rule resolves soundly"
+    },
+    {
+      "type": "uses",
+      "source": "local",
+      "target": "field",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "property",
+      "note": "a field read of an in-file member"
+    },
+    {
+      "type": "calls",
+      "source": "local",
+      "target": "Collide",
+      "meta.targetScope": "file-local",
+      "meta.targetKindCount": 2,
+      "note": "THE COLLISION, and the strong form of the assertion. `Collide` is a struct at :19 AND a function at :21, so the edge resolves file-locally but its KIND is undecidable. `meta.targetKind: null` means this edge must NOT carry a targetKind AT ALL, so the row fails for any kind the implementation might emit — including a third the fixture never heard of. The two forbid rows below pin the two kinds a plausible implementation would actually reach for, because `meta.x: null` in a FORBID has the opposite polarity: it forbids the ABSENCE of the key, which is why this assertion lives here and not there.",
+      "meta.targetKind": null
+    },
+    {
+      "type": "calls",
+      "source": "external",
+      "target": "std.ArrayList",
+      "meta.targetScope": "file-external",
+      "note": "nothing in this file declares ArrayList, and the edge still SAYS the target is not a per-file binding (`meta.targetScope: file-external`) and still names the receiver (`std.ArrayList`) with its module. The `zigExternalRef` claim is correctly absent: it means \"the target's OWNER is not published\", and this target's owner is `std` — the file's own `const std = @import(\"std\")`, which Z35 publishes as a constant. THE MARKER IS CORRECTLY ABSENT, and that is the point of this row (measured 2026-10-10, `validation/m14/fixtures/zig/external-claim-audit.ts` on the gate's 60-file stride): the arbiter reads `zigExternalRef` as an OWNER claim and verifies it by looking the owner up, and this target's owner IS the alias the source wrote (`std.ArrayList` -> owner `std`). Z35 publishes `const std = @import(\"std\")` as a `constant` named `std`, so the claim was refuted on every one of the 259 such edges in the run and satisfied nothing. What the row still pins is the RECEIVER: the target is the qualified path and `zigImportAlias`/`zigImportModule` name the module, so a consumer can still exclude the edge by rule. The deep-path rows (`std.debug.assert`, `std.io.getStdOut`, `g.Object.new`) keep `zigExternalRef: true`, so a rule that dropped the key EVERYWHERE fails this fixture.",
+      "meta.zigExternalRef": null
+    },
+    {
+      "type": "imports",
+      "source": "(global)",
+      "target": "./other.zig",
+      "meta.targetScope": "file-external",
+      "note": "an import PATH. It can never be a symbol, so it is external by construction"
+    },
+    {
+      "type": "contains",
+      "source": "Local",
+      "target": "Local.make",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "method",
+      "note": "containment is the strongest local case: the owner and the member are in one file by construction"
+    },
+    {
+      "type": "imports",
+      "source": "(global)",
+      "target": "std",
+      "meta.targetScope": "file-local",
+      "meta.targetKind": "constant",
+      "note": "The row mutant M5 exists to kill, and the row whose ABSENCE let it survive the first run. `const std = @import(\"std\")` publishes a `std` constant in this file, so an edge naming `std` IS file-local. A forbid row alone was not enough: the mutant flips std to `file-external`, which SATISFIES a forbid that says std must not be external while satisfying nothing that says it must be local. A negative assertion with no positive counterpart is satisfied by any behaviour, which is what a surviving mutant looks like from the fixture side."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "local",
+      "target": "Collide",
+      "meta.targetKind": "function",
+      "note": "the in-file name collision must NOT be resolved to one kind. `Collide` names a struct at :19 and a function at :21; publishing either is a guess, and a confident guess is the expensive failure"
+    },
+    {
+      "type": "calls",
+      "source": "local",
+      "target": "Collide",
+      "meta.targetKind": "struct",
+      "note": "the other half of the same collision — a forbid per candidate kind, because one forbid cannot fail for both"
+    },
+    {
+      "type": "calls",
+      "source": "external",
+      "target": "ArrayList",
+      "note": "THE PRE-Z66 SPELLING. `std.ArrayList(u8)` is a generic type application and the analyzer used to publish its leaf alone, which is indistinguishable from a call to a local `ArrayList`. A regression to the leaf would still satisfy every positive row above except this one, so the negative row is what makes the fixture falsifiable against it."
+    },
+    {
+      "type": "references",
+      "source": "(declared-type)",
+      "target": "ArrayList",
+      "note": "the declared-type twin of the same read. The declared-type pass qualifies through the same alias map, and a regression that fixed only the `calls` site would leave this row passing."
+    }
+  ]
+}

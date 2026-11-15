@@ -1,0 +1,10 @@
+{
+  "fixtureId": "vue/script-error-offset",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave H2 fix: sub-analyzer errors are shifted to SFC coordinates (the syntax error sits on SFC line 5, script line 2) — previously pushed raw, pointing at script lines while symbols pointed at SFC lines.",
+  "expectSymbols": [],
+  "expectErrors": [
+    { "startLine": 5 }
+  ]
+}

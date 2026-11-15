@@ -1,0 +1,396 @@
+{
+  "fixtureId": "dart/untyped-method-is-method",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Written after the fix, from a measured run of production `parseFile` (validation/m14/fixtures/dart/_dump.mts), then each claim checked against the source text of the line it names. Every `expectSymbolCount` is a POPULATION pin, not a presence pin: the whole defect is that a count was wrong, and a `>= 1` assertion would pass unchanged on the old analyzer for every symbol row except the two the fix exists to create.",
+  "correction_2026_10_08": "The three `calls` rows moved from the bare leaf to the qualified name: `helper()` and `other()` are called from inside class `Caller`, which DECLARES both, so the targets are `Caller.helper` and `Caller.other`. This is the fix's own scenario (K) — a call inside an untyped method — and it is now determinate as well as attributed.",
+  "rationale": "DARTD22 \u2014 `tree-sitter-dart` has no node for a method declared WITHOUT a return type, so `noRetType() { }` inside a class body parses as `method_signature > constructor_signature > identifier, formal_parameter_list`, which is structurally identical to a real constructor `Owner()`. The analyzer dispatched on the node TYPE, so every untyped method was published as a `constructor` symbol named `constructor`: the method's own name was never published, and N untyped methods in one class collapsed onto ONE published name. Measured over a 600-file stride sample of a 35,090-file corpus (validation/m14/fixtures/dart/untyped-method-census.ts): 1,197 constructor-shaped signatures, 521 of them (43.5%) untyped methods, in 56 files; `dart-sdk/pkg/analyzer/test/src/summary/elements/type_inference_test.dart` alone holds 91, all collapsed onto `TypeInferenceElementTest.constructor`. Two independent defects, and the fixture pins both because fixing either alone leaves the other visible. (1) The constructor dispatch and `resolveCurrent`, which named the SOURCE of every edge in an untyped method's body the literal string `constructor`. (2) `isDartDeclNameParent`, which listed `function_signature`/`method_signature`/`getter_signature`/`setter_signature` but NOT the four constructor node types \u2014 so a signature's own name identifier was published as a bare read of itself (`uses untypedMethod -> untypedMethod` at 0.6). Defect (2) was INVISIBLE before the fix precisely because both ends were wrong in different ways and cancelled: the symbol was named `constructor` while the read targeted the method's real name. That cancellation is why this reached the corpus at all, and it is why the two rows must move together. The discriminator is Dart's own naming rule \u2014 a constructor is named after its class, the unnamed one is spelled `.new`, and a member may not share its class's name \u2014 NOT the wrapper node, which the census cross-tab shows misclassifies 559 real constructors in the same sample. Cases: (A,B) real constructors including the `.new` spelling must survive, so the fix cannot take the shape away from constructors; a name-equality test without the `new` clause deletes them. (C) the population: three untyped methods in one class, all published under their own names. (D) typed methods unchanged, so the fix is not swallowing real methods. (E) a `static` untyped method, which the grammar wraps differently. (F) the same method name in two classes, so the fix reads the OWNER and not just the name. (G) a member named after its own class, which Dart forbids, so it can refute neither branch; asserted here so a broader version is not silently accepted. (H,I,J) extension, mixin and enum: a mixin's name is a direct `identifier` child with no `name` field, so an owner lookup reading only the field resolves none and routes the whole body past the fix. (K) a call INSIDE an untyped method \u2014 the case the fix exists for that is not a symbol-shape assertion: before it, the enclosing method was published as `constructor` and the call had no method to attribute to.",
+  "expectSymbols": [
+    {
+      "name": "RealOwner",
+      "kind": "class"
+    },
+    {
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "RealOwner"
+    },
+    {
+      "name": "Untyped",
+      "kind": "class"
+    },
+    {
+      "name": "untypedMethod",
+      "kind": "method",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "untypedAsync",
+      "kind": "method",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "untypedWithArgs",
+      "kind": "method",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "typedMethod",
+      "kind": "method",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "typedWithReturn",
+      "kind": "method",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "staticUntyped",
+      "kind": "method",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "First",
+      "kind": "class"
+    },
+    {
+      "name": "Second",
+      "kind": "class"
+    },
+    {
+      "name": "sharedName",
+      "kind": "method",
+      "ownerName": "First"
+    },
+    {
+      "name": "sharedName",
+      "kind": "method",
+      "ownerName": "Second"
+    },
+    {
+      "name": "Ext",
+      "kind": "extension"
+    },
+    {
+      "name": "untypedInExtension",
+      "kind": "method",
+      "ownerName": "Ext"
+    },
+    {
+      "name": "typedInExtension",
+      "kind": "method",
+      "ownerName": "Ext"
+    },
+    {
+      "name": "UntypedMixin",
+      "kind": "mixin"
+    },
+    {
+      "name": "untypedInMixin",
+      "kind": "method",
+      "ownerName": "UntypedMixin"
+    },
+    {
+      "name": "typedInMixin",
+      "kind": "method",
+      "ownerName": "UntypedMixin"
+    },
+    {
+      "name": "UntypedEnum",
+      "kind": "enum"
+    },
+    {
+      "name": "untypedInEnum",
+      "kind": "method",
+      "ownerName": "UntypedEnum"
+    },
+    {
+      "name": "typedInEnum",
+      "kind": "method",
+      "ownerName": "UntypedEnum"
+    },
+    {
+      "name": "untypedCaller",
+      "kind": "method",
+      "ownerName": "Caller"
+    },
+    {
+      "name": "typedCaller",
+      "kind": "method",
+      "ownerName": "Caller"
+    },
+    {
+      "name": "helper",
+      "kind": "method",
+      "ownerName": "Caller"
+    },
+    {
+      "name": "other",
+      "kind": "method",
+      "ownerName": "Caller"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "comment": "RealOwner declares five constructors \u2014 `RealOwner()`, `RealOwner.named(int)`, the redirecting factory, `const RealOwner.constant()`, and `new()`. The `.new` spelling is a REAL constructor: `new` is not the owner name, so a name-equality test without the `new` clause deletes a constructor the corpus really contains (ServerSetClientCapabilitiesHandler.new, SuggestionCollector.new, LoadedLibrariesImpl.new).",
+      "name": "constructor",
+      "kind": "constructor",
+      "ownerName": "RealOwner",
+      "equals": 5
+    },
+    {
+      "comment": "Six constructors in total: RealOwner's five plus G's. The population is what the defect moved \u2014 before DARTD22 this file published 10 constructor symbols, five of which were untyped methods.",
+      "name": "constructor",
+      "kind": "constructor",
+      "equals": 6
+    },
+    {
+      "name": "constructor",
+      "kind": "method",
+      "equals": 0
+    },
+    {
+      "name": "sharedName",
+      "kind": "method",
+      "equals": 2
+    },
+    {
+      "name": "untypedMethod",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "untypedAsync",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "untypedWithArgs",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "staticUntyped",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "untypedInExtension",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "untypedInMixin",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "untypedInEnum",
+      "kind": "method",
+      "equals": 1
+    },
+    {
+      "name": "untypedCaller",
+      "kind": "method",
+      "equals": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "constructor",
+      "ownerName": "Untyped"
+    },
+    {
+      "name": "constructor",
+      "ownerName": "Caller"
+    },
+    {
+      "name": "constructor",
+      "ownerName": "Ext"
+    },
+    {
+      "name": "constructor",
+      "ownerName": "UntypedMixin"
+    },
+    {
+      "name": "constructor",
+      "ownerName": "UntypedEnum"
+    },
+    {
+      "name": "constructor",
+      "ownerName": "First"
+    },
+    {
+      "name": "constructor",
+      "ownerName": "Second"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Untyped",
+      "target": "Untyped.untypedMethod",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Untyped",
+      "target": "Untyped.untypedAsync",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Untyped",
+      "target": "Untyped.untypedWithArgs",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Untyped",
+      "target": "Untyped.staticUntyped",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Untyped",
+      "target": "Untyped.typedMethod",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Untyped",
+      "target": "Untyped.typedWithReturn",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "RealOwner",
+      "target": "RealOwner.constructor",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Ext",
+      "target": "Ext.untypedInExtension",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "UntypedMixin",
+      "target": "UntypedMixin.untypedInMixin",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "UntypedEnum",
+      "target": "UntypedEnum.untypedInEnum",
+      "confidenceMin": 1
+    },
+    {
+      "type": "contains",
+      "from": "Caller",
+      "target": "Caller.untypedCaller",
+      "confidenceMin": 1
+    },
+    {
+      "type": "calls",
+      "from": "untypedCaller",
+      "target": "Caller.helper",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "calls",
+      "from": "untypedCaller",
+      "target": "Caller.other",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "calls",
+      "from": "typedCaller",
+      "target": "Caller.helper",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "instantiates",
+      "from": "RealOwner",
+      "target": "RealOwner",
+      "confidenceMin": 0.95
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "helper"
+    },
+    {
+      "type": "calls",
+      "from": "constructor",
+      "target": "other"
+    },
+    {
+      "type": "uses",
+      "from": "constructor"
+    },
+    {
+      "type": "uses",
+      "from": "untypedMethod",
+      "target": "untypedMethod"
+    },
+    {
+      "type": "uses",
+      "from": "untypedAsync",
+      "target": "untypedAsync"
+    },
+    {
+      "type": "uses",
+      "from": "untypedWithArgs",
+      "target": "untypedWithArgs"
+    },
+    {
+      "type": "uses",
+      "from": "staticUntyped",
+      "target": "staticUntyped"
+    },
+    {
+      "type": "uses",
+      "from": "untypedInExtension",
+      "target": "untypedInExtension"
+    },
+    {
+      "type": "uses",
+      "from": "untypedInMixin",
+      "target": "untypedInMixin"
+    },
+    {
+      "type": "uses",
+      "from": "untypedInEnum",
+      "target": "untypedInEnum"
+    },
+    {
+      "type": "uses",
+      "from": "untypedCaller",
+      "target": "untypedCaller"
+    },
+    {
+      "type": "uses",
+      "from": "sharedName",
+      "target": "sharedName"
+    },
+    {
+      "type": "calls",
+      "from": "untypedCaller",
+      "target": "typedCaller"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "equals": 3
+    },
+    {
+      "type": "uses",
+      "equals": 0
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "expectSymbols": [
+    {
+      "name": "defstruct",
+      "kind": "macro",
+      "ownerName": "MacroHead"
+    },
+    {
+      "name": "RealStruct",
+      "kind": "struct",
+      "ownerName": "RealStruct"
+    },
+    {
+      "name": "title",
+      "kind": "property",
+      "ownerName": "RealStruct"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "defstruct",
+      "kind": "macro",
+      "ownerName": "MacroHead",
+      "equals": 1
+    },
+    {
+      "name": "RealStruct",
+      "kind": "struct",
+      "equals": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "defstruct",
+      "kind": "struct"
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "MacroHead",
+      "kind": "module"
+    },
+    {
+      "name": "RealStruct",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "MacroHead",
+      "target": "defstruct"
+    },
+    {
+      "type": "contains",
+      "from": "RealStruct",
+      "target": "title"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "MacroHead.defstruct",
+      "target": "defstruct"
+    }
+  ]
+}

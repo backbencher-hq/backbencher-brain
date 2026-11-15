@@ -1,0 +1,169 @@
+{
+  "fixtureId": "cpp/exports-marker-910",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "ONTOLOGY `exports`, plus the `returnType` defect that shares its nodes. C++ before C++20 has no `export` keyword, so the construct that means 'this declaration is part of the library's public ABI' is a CONVENTION written as a macro in the declaration-specifier position. The rule reads an underscore-delimited COMPONENT of the macro's name (EXPORT / EXPORTS / EXPORTABLE / API / DLLEXPORT / VISIBILITY / PUBLIC_API), which is what CMake's generate_export_header, autotools and abseil's ABSL_EXPORT all produce; it is deliberately NOT 'some all-caps macro in type position', because over the two pinned C++ corpora that would have fired on 118 sites and been wrong on 43 (BENCHMARK_ALWAYS_INLINE 17, BENCHMARK_UNUSED 4, HANDLE 3, DWORD 3, BENCHMARK_NORETURN 2, WORD 2, \u2026). An `exports` edge pointing at LIB_ALWAYS_INLINE asserts an ABI fact that is false, and a fabricated edge is counted as unexplained and poisons bb_graph. WHAT THE EDGE ASSERTS is the syntactic fact: source = the DECLARED name, target = the macro AS WRITTEN, `metadata.exportMacro` = the same spelling, `relationshipType = module_export`, confidence 1.0 \u2014 the C lane's shape (`real-c-analyzer.ts`, #963). Four head shapes are pinned because the first cut of the reader handled one and silently mis-named the other three: A1 (bare sibling is the name), A2 (the ERROR holds `Name : access` and the bare sibling is the BASE), A3 (`ERROR(\"final\")` is a KEYWORD, not a name), A4 (a second head marker before the name, so `ERROR(\"Thing\")` is the name). Two `returnType` rows are pinned for the same nodes: the marker is the declaration's `type` field, so publishing the node's whole text gave ONE C++ function two different return types in one index (87 rows over the two pinned corpora) \u2014 and `returnType` is an overload-resolution input, not a display field.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "Shutdown",
+      "target": "LIB_EXPORT",
+      "meta.relationshipType": "module_export",
+      "meta.exportMacro": "LIB_EXPORT",
+      "meta.reasonCode": "export-marker-in-specifier",
+      "note": "shape B: the marker is the declaration's SPECIFIER and the source is the DECLARED name \u2014 never the marker, or the row would say LIB_EXPORT exports LIB_EXPORT."
+    },
+    {
+      "type": "exports",
+      "from": "Base",
+      "target": "LIB_EXPORT",
+      "meta.relationshipType": "module_export",
+      "note": "shape A1: the macro on a class head. The source is the CLASS's real name, which on this shape is a bare sibling of the specifier."
+    },
+    {
+      "type": "exports",
+      "from": "Reporter",
+      "target": "LIB_EXPORT",
+      "note": "shape A2: `class LIB_EXPORT Reporter : public LIB_EXPORT Base`. The class must be published under ITS OWN name \u2014 pre-fix it was published as `Base` \u2014 and the base clause must be read."
+    },
+    {
+      "type": "extends",
+      "from": "Reporter",
+      "target": "Base",
+      "note": "and the base clause on that same shape becomes a real `extends` edge. It did not exist before: the grammar puts `Name : access` in an ERROR node, so `base_class_clause` is never produced, and the class's `classBases` entry \u2014 which is what makes an override resolvable \u2014 was never written."
+    },
+    {
+      "type": "exports",
+      "from": "Sealed",
+      "target": "LIB_EXPORT",
+      "note": "shape A3: `final` is a KEYWORD in the ERROR, not a name. Reading the ERROR's first named child as the name published the class as `final`."
+    },
+    {
+      "type": "exports",
+      "from": "Thing",
+      "target": "LIB_EXPORT",
+      "note": "shape A4: a SECOND head marker before the name, so `ERROR(\"Thing\")` is the name and the bare sibling is the marker. Reading the sibling as the name published the class as `ALIGNED`."
+    },
+    {
+      "type": "overrides",
+      "from": "Reporter::compute",
+      "target": "compute",
+      "note": "the consequence of the base clause: a `classBases` entry is what makes an override resolvable at all, and pre-fix this pair did not resolve.",
+      "meta.overriddenOwner": "Base"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "join",
+      "target": "LIB_ALWAYS_INLINE",
+      "note": "THE FABRICATION THIS FIXTURE EXISTS FOR. `LIB_ALWAYS_INLINE` is `inline __attribute__((always_inline))` \u2014 a DECORATION. An `exports` edge here asserts the declaration is part of the library's public ABI, which is false, and the marker name carries no export component. This is the whole reason the rule is a component test and not an all-caps test."
+    },
+    {
+      "type": "exports",
+      "from": "Hidden",
+      "target": "LIB_INTERNAL",
+      "note": "`LIB_INTERNAL` is `visibility(\"hidden\")` \u2014 the exact OPPOSITE of an export. Naming it an export would be the most damaging possible error in this family: the edge would publish a private symbol as public."
+    },
+    {
+      "type": "exports",
+      "from": "Plain",
+      "target": "void",
+      "note": "a function with no marker at all. No edge, and specifically not one keyed on the return type."
+    },
+    {
+      "type": "exports",
+      "from": "LIB_EXPORT",
+      "target": "Shutdown",
+      "note": "the reversed edge. The source is the DECLARED name and the target is the MARKER; the other way round says the macro exports the function, which is the shape every consumer would read backwards."
+    },
+    {
+      "type": "exports",
+      "from": "Sealed",
+      "target": "final",
+      "note": "on shape A3 the ERROR holds a keyword. An edge keyed on the ERROR's content would name a keyword, and a name spelled with a keyword resolves to nothing for any consumer."
+    },
+    {
+      "type": "exports",
+      "from": "Thing",
+      "target": "ALIGNED",
+      "note": "on shape A4 the bare sibling is the second MARKER, not the class. Keying on it would name a macro as the class's own name."
+    },
+    {
+      "type": "extends",
+      "from": "Reporter",
+      "target": "LIB_EXPORT",
+      "note": "the base clause's macro is not a base. `extendsTargetName` cleans a qualified/templated base to its leaf; a bare all-caps marker is not a base class and must not become one."
+    },
+    {
+      "type": "exports",
+      "from": "HANDLE",
+      "target": "HANDLE",
+      "note": "`HANDLE` is an all-caps TYPEDEF. The spelling alone cannot tell it from a marker; the rule's component test is what keeps it out."
+    },
+    {"type": "exports", "from": "lib::Hidden", "target": "LIB_INTERNAL", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "exports", "from": "lib::Sealed", "target": "final", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "exports", "from": "lib::Thing", "target": "ALIGNED", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "extends", "from": "lib::Reporter", "target": "LIB_EXPORT", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ],
+  "expectReturnType": [
+    {
+      "symbol": "Shutdown",
+      "returnType": "void",
+      "note": "D17: the marker is peeled off the specifier. Pre-fix this row was `LIB_EXPORT void` \u2014 a name that resolves to nothing, published as a C++ return type, while the same function's out-of-line definition in the .cpp published `void`. One function, two return types, in one index."
+    },
+    {
+      "symbol": "Plain",
+      "returnType": "std::string",
+      "note": "CONTROL: a declaration with no marker keeps its declared type verbatim."
+    },
+    {
+      "symbol": "Counter",
+      "returnType": "unsigned long long",
+      "note": "D27. The marker is peeled off and the declared type is rebuilt from the specifier's non-macro children, so the whitespace of a type written across lines (`unsigned   long   long`) is normalised. This is the ONLY assertion in the suite that can fail if that normalisation is dropped: with it gone the field reads `unsigned   long   long`, which is not a spelling of any C++ type a compiler would accept, and the pre-fix rule `text.replace(/\\s+/g, \" \").trim()` that it replaced was itself a regex literal in this analyzer's source \u2014 the lane's D6 contract, which the batch that added `exports`/`imports` reported as holding while it did not."
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "Reporter",
+      "kind": "class",
+      "ownerName": "lib",
+      "note": "A2: published under its OWN name, inside its namespace. Pre-fix: published as `Base`, so the real class was absent from the graph and three classes collided on one name."
+    },
+    {
+      "name": "Sealed",
+      "kind": "class",
+      "ownerName": "lib",
+      "note": "A3: `final` is a keyword and is not a class name."
+    },
+    {
+      "name": "Thing",
+      "kind": "class",
+      "ownerName": "lib",
+      "note": "A4: the name is in the ERROR; the bare sibling is the second marker."
+    },
+    {
+      "name": "Hidden",
+      "kind": "class",
+      "ownerName": "lib",
+      "note": "CONTROL: a macro that is NOT an export marker still publishes the class \u2014 the rule gates the EDGE, never the symbol."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "final",
+      "kind": "class",
+      "note": "a keyword is not a class name; publishing it would anchor a subgraph on a name nothing can resolve (the D1 family)."
+    },
+    {
+      "name": "ALIGNED",
+      "kind": "class",
+      "note": "the second head marker is not the class's name."
+    },
+    {
+      "name": "LIB_EXPORT",
+      "kind": "class",
+      "note": "the specifier's `name` field holds the MACRO on this shape family. A reader that took it at face value published every decorated class under one macro name."
+    }
+  ]
+}

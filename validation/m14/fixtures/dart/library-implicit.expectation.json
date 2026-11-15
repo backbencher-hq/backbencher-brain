@@ -1,0 +1,13 @@
+{
+  "fixtureId": "dart/library-implicit",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the implicit library form, which is 96.1% of the corpus (2,882 of 3,000 sampled files): no directive at all, so the Dart spec names the library after the file stem. This is the case where the published stem is a fact rather than a convention, and it is the case that dominates. The fixture also pins that the Module node does not require the file to import anything to exist — it does import one thing, so the reverse case (a library with no imports at all) is what the analyzer's unconditional publication is really claiming, and `dedup-and-attribution` covers the no-directive node existing without directives.",
+  "expectSymbols": [
+    { "name": "library-implicit", "kind": "module" },
+    { "name": "Implicit", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "library-implicit", "target": "package:meta/meta.dart:*", "meta.evidenceClass": "import_based" }
+  ]
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="OrderApp" xmlns="http://example.com/app">
+  <description>Order processing service</description>
+
+  <properties>
+    <property name="app.version" value="1.2.0"/>
+    <property name="db.url" value="jdbc:postgresql://localhost/orders"/>
+  </properties>
+
+  <dependencies>
+    <dependency groupId="org.example" artifactId="core" version="2.1"/>
+    <dependency groupId="org.example" artifactId="utils" version="2.1"/>
+  </dependencies>
+
+  <modules>
+    <module name="api">
+      <plugins>
+        <plugin name="compiler" version="3.8"/>
+      </plugins>
+    </module>
+    <module name="worker">
+      <handlers>
+        <handler type="order-create" class="com.example.OrderCreateHandler"/>
+        <handler type="order-cancel" class="com.example.OrderCancelHandler"/>
+      </handlers>
+    </module>
+  </modules>
+
+  <targets>
+    <target name="build" depends="compile,test">
+      <task name="jar"/>
+    </target>
+    <target name="compile">
+      <task name="javac"/>
+    </target>
+  </targets>
+</project>

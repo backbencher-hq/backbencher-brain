@@ -1,0 +1,115 @@
+{
+  "at": "2026-11-13T02:56:31.392Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/lodash",
+  "tag": "lodash",
+  "admittedFiles": 51,
+  "sampledFiles": 51,
+  "parseCleanFiles": 51,
+  "totals": {
+    "files": 51,
+    "fieldsWritten": 133,
+    "fieldsWithTwoClasses": 0,
+    "fieldsWithTwoTypes": 1,
+    "crossClassReads": 12,
+    "readsWithNoWriter": 0
+  },
+  "note": "A tree-only census: it never asks the analyzer for the field->type map, so it cannot inherit the defect it is measuring. crossClassReads = `this.<f>` member reads sitting in a class that never writes `<f>`, while another class in the same file does. collectLocalReceiverTypes keys fieldTypes by FIELD NAME alone, so every such read is published with the WRITING class's type as metadata.owner. If that type declares the member, the store binds the edge to it.",
+  "examples": [
+    {
+      "file": "dist/lodash.min.js",
+      "line": 29,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 29,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 29,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 29,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 29,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 29,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 28,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "dist/lodash.min.js",
+      "line": 28,
+      "field": "__data__",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "hr|or"
+    },
+    {
+      "file": "vendor/backbone/test/collection.js",
+      "line": 1542,
+      "field": "subItems",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "Collection"
+    },
+    {
+      "file": "vendor/backbone/test/collection.js",
+      "line": 1542,
+      "field": "subItems",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "Collection"
+    },
+    {
+      "file": "vendor/backbone/test/collection.js",
+      "line": 1531,
+      "field": "items",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "Items"
+    },
+    {
+      "file": "vendor/backbone/test/collection.js",
+      "line": 1531,
+      "field": "items",
+      "readIn": "(module)",
+      "writtenIn": [],
+      "type": "Items"
+    }
+  ]
+}

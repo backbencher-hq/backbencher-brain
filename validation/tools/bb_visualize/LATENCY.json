@@ -1,0 +1,405 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "status": "verified",
+  "currentCommit": "0b33d8021b3ac8858fa2a2a41f46ade645e1e5c7",
+  "verifierCommand": "BB_DATA_DIR=<tier> npx tsx validation/tools/bb_visualize/latency.ts t0|t1|t2 && npx tsx validation/tools/bb_visualize/consolidate.ts",
+  "generatedAt": "2026-11-03T16:38:45.381Z",
+  "budgets": {
+    "t0DefaultP95Ms": 250,
+    "t1DefaultP95Ms": 1000,
+    "t2DefaultP95Ms": 5000,
+    "clientTimeoutMs": 30000
+  },
+  "tiers": [
+    {
+      "tier": "t0-tiny-polyglot-like",
+      "environment": {
+        "runtime": "v22.22.1 (node --import tsx)",
+        "host": "pop-os",
+        "loadAverageAtMeasurement": [
+          29.4,
+          24.86,
+          16.6
+        ],
+        "memory": "325 MB rss in-process",
+        "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for the whole sweep; no indexer, no write tool",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata",
+        "measurement": "in-process handler calls after one warm call per shape; five measured warm runs per shape"
+      },
+      "referenceIndex": {
+        "projectId": "085fcfa3ba00e3cf974d244acf3aac993aba52d9",
+        "projectPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/work/fixture",
+        "files": 11,
+        "symbols": 39,
+        "relationships": 53,
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/085fcfa3ba00e3cf974d244acf3aac993aba52d9/brain.db",
+        "db": {
+          "path": "brain.db",
+          "exists": true,
+          "size": 946176,
+          "mtimeMs": 1793667527067.0713,
+          "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+        },
+        "wal": {
+          "path": "brain.db-wal",
+          "exists": true,
+          "size": 0,
+          "mtimeMs": 1793667617838.0667,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "source": "COUNT(*) on brain_file / brain_symbol / brain_relationship through a read-only handle"
+      },
+      "summary": [
+        {
+          "variant": "default-text",
+          "args": {},
+          "p50": 19,
+          "p95": 35,
+          "min": 8,
+          "max": 35,
+          "nodes": 38,
+          "links": 18,
+          "bytes": 1336,
+          "truncated": false
+        },
+        {
+          "variant": "json",
+          "args": {
+            "format": "json"
+          },
+          "p50": 19,
+          "p95": 53,
+          "min": 9,
+          "max": 53,
+          "nodes": 38,
+          "links": 18,
+          "bytes": 30051,
+          "truncated": false
+        },
+        {
+          "variant": "html",
+          "args": {
+            "format": "html"
+          },
+          "p50": 18,
+          "p95": 82,
+          "min": 10,
+          "max": 82,
+          "nodes": 0,
+          "links": 0,
+          "bytes": 153690,
+          "truncated": false
+        },
+        {
+          "variant": "max-budget-json",
+          "args": {
+            "format": "json",
+            "maxNodes": 2000,
+            "maxLinks": 20000
+          },
+          "p50": 11,
+          "p95": 74,
+          "min": 7,
+          "max": 74,
+          "nodes": 38,
+          "links": 18,
+          "bytes": 30054,
+          "truncated": false
+        },
+        {
+          "variant": "symbol-text",
+          "args": {
+            "scope": "symbol",
+            "target": "deep_lookup",
+            "format": "text"
+          },
+          "p50": 4,
+          "p95": 20,
+          "min": 3,
+          "max": 20,
+          "nodes": 1,
+          "links": 1,
+          "bytes": 1230,
+          "truncated": false
+        }
+      ],
+      "defaultP95WithinBudget": true,
+      "coldFirstCallMs": 53,
+      "coldWithinClientTimeout": true,
+      "readPath": null
+    },
+    {
+      "tier": "t1-synthetic-n100",
+      "environment": {
+        "runtime": "v22.22.1 (node --import tsx)",
+        "host": "pop-os",
+        "loadAverageAtMeasurement": [
+          28.98,
+          24.11,
+          13.92
+        ],
+        "memory": "467 MB rss in-process",
+        "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for the whole sweep; no indexer, no write tool",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata",
+        "measurement": "in-process handler calls after one warm call per shape; five measured warm runs per shape"
+      },
+      "referenceIndex": {
+        "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+        "projectPath": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+        "files": 97,
+        "symbols": 3512,
+        "relationships": 17068,
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
+        "db": {
+          "path": "brain.db",
+          "exists": true,
+          "size": 41250816,
+          "mtimeMs": 1793578676610.7363,
+          "sha256": "4ec36d60cad72bb6ee1708081954d0e9d8eb5b90dbff37eae58caa927a1c86cd"
+        },
+        "wal": {
+          "path": "brain.db-wal",
+          "exists": true,
+          "size": 15025672,
+          "mtimeMs": 1793578679821.7834,
+          "sha256": "e20822241b2711ec5ca4e71311d03e930522264273530f0e8874133977bbf865"
+        },
+        "source": "COUNT(*) on brain_file / brain_symbol / brain_relationship through a read-only handle"
+      },
+      "summary": [
+        {
+          "variant": "default-text",
+          "args": {},
+          "p50": 186,
+          "p95": 353,
+          "min": 138,
+          "max": 353,
+          "nodes": 200,
+          "links": 465,
+          "bytes": 1676,
+          "truncated": true
+        },
+        {
+          "variant": "json",
+          "args": {
+            "format": "json"
+          },
+          "p50": 318,
+          "p95": 433,
+          "min": 128,
+          "max": 433,
+          "nodes": 200,
+          "links": 465,
+          "bytes": 565892,
+          "truncated": true
+        },
+        {
+          "variant": "html",
+          "args": {
+            "format": "html"
+          },
+          "p50": 327,
+          "p95": 583,
+          "min": 129,
+          "max": 583,
+          "nodes": 0,
+          "links": 0,
+          "bytes": 632599,
+          "truncated": false
+        },
+        {
+          "variant": "max-budget-json",
+          "args": {
+            "format": "json",
+            "maxNodes": 2000,
+            "maxLinks": 20000
+          },
+          "p50": 4231,
+          "p95": 7247,
+          "min": 2081,
+          "max": 7247,
+          "nodes": 2000,
+          "links": 6070,
+          "bytes": 5786369,
+          "truncated": true
+        },
+        {
+          "variant": "symbol-text",
+          "args": {
+            "scope": "symbol",
+            "target": "deep_lookup",
+            "format": "text"
+          },
+          "p50": 3,
+          "p95": 25,
+          "min": 3,
+          "max": 25,
+          "nodes": 0,
+          "links": 0,
+          "bytes": 1123,
+          "truncated": false
+        }
+      ],
+      "defaultP95WithinBudget": true,
+      "coldFirstCallMs": 358,
+      "coldWithinClientTimeout": true,
+      "readPath": null
+    },
+    {
+      "tier": "t2-reference-large",
+      "environment": {
+        "runtime": "v22.22.1 (node --import tsx)",
+        "host": "pop-os",
+        "loadAverageAtMeasurement": [
+          49.89,
+          36.9,
+          25.18
+        ],
+        "memory": "58 MB rss in-process",
+        "readOnlyRules": "BB_NO_AUTO_REFRESH=1 for the whole sweep; no indexer, no write tool",
+        "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.bb-data",
+        "measurement": "in-process handler calls after one warm call per shape; five measured warm runs per shape"
+      },
+      "referenceIndex": {
+        "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+        "projectPath": "/home/ishaq2321/mcp/backbencher-brain",
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "db": {
+          "path": "brain.db",
+          "exists": true,
+          "size": 3639963648,
+          "mtimeMs": 1793593795820.0583,
+          "sha256": "2160e33de24025bec5500eb7633231c5393afa411d62cf647ce5ea3c67ba8e36"
+        },
+        "wal": {
+          "path": "brain.db-wal",
+          "exists": true,
+          "size": 0,
+          "mtimeMs": 1793595035552.992,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "source": "COUNT(*) on brain_file / brain_symbol / brain_relationship through a read-only handle"
+      },
+      "summary": [
+        {
+          "variant": "default-text",
+          "args": {},
+          "p50": 372,
+          "p95": 496,
+          "min": 312,
+          "max": 496,
+          "nodes": 200,
+          "links": 452,
+          "bytes": 2046,
+          "truncated": true
+        },
+        {
+          "variant": "json",
+          "args": {
+            "format": "json"
+          },
+          "p50": 380,
+          "p95": 392,
+          "min": 338,
+          "max": 392,
+          "nodes": 200,
+          "links": 452,
+          "bytes": 777366,
+          "truncated": true
+        },
+        {
+          "variant": "html",
+          "args": {
+            "format": "html"
+          },
+          "p50": 357,
+          "p95": 373,
+          "min": 327,
+          "max": 373,
+          "nodes": 0,
+          "links": 0,
+          "bytes": 837953,
+          "truncated": false
+        },
+        {
+          "variant": "max-budget-json",
+          "args": {
+            "format": "json",
+            "maxNodes": 2000,
+            "maxLinks": 20000
+          },
+          "p50": 4412,
+          "p95": 5678,
+          "min": 3950,
+          "max": 5678,
+          "nodes": 2000,
+          "links": 12627,
+          "bytes": 15932907,
+          "truncated": true
+        },
+        {
+          "variant": "symbol-text",
+          "args": {
+            "scope": "symbol",
+            "target": "graphTraversal",
+            "format": "text"
+          },
+          "p50": 13,
+          "p95": 15,
+          "min": 11,
+          "max": 15,
+          "nodes": 3,
+          "links": 0,
+          "bytes": 1503,
+          "truncated": false
+        }
+      ],
+      "defaultP95WithinBudget": true,
+      "coldFirstCallMs": 723,
+      "coldWithinClientTimeout": true,
+      "readPath": {
+        "before": {
+          "db": {
+            "path": "brain.db",
+            "exists": true,
+            "size": 3639963648,
+            "mtimeMs": 1793593795820.0583,
+            "sha256": "2160e33de24025bec5500eb7633231c5393afa411d62cf647ce5ea3c67ba8e36"
+          },
+          "wal": {
+            "path": "brain.db-wal",
+            "exists": true,
+            "size": 0,
+            "mtimeMs": 1793595035552.992,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "after": {
+          "db": {
+            "path": "brain.db",
+            "exists": true,
+            "size": 3639963648,
+            "mtimeMs": 1793593795820.0583,
+            "sha256": "2160e33de24025bec5500eb7633231c5393afa411d62cf647ce5ea3c67ba8e36"
+          },
+          "wal": {
+            "path": "brain.db-wal",
+            "exists": true,
+            "size": 0,
+            "mtimeMs": 1793595035552.992,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "dbUnchanged": true
+      }
+    }
+  ],
+  "campaignStartSample": {
+    "source": "docs/tools-campaign/CHARTER.md appendix A / LEAD-FINDINGS §A",
+    "note": "the T2 population is the index as measured; every tier row records its own counts and mtime"
+  }
+}

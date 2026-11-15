@@ -1,0 +1,31 @@
+{
+  "fixtureId": "vba/adversarial",
+  "language": "vba",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Covers VBA user-defined types, enum members, events, API declarations, Implements, property accessors, typed parameters, event raising, and qualified member calls.",
+  "expectSymbols": [
+    { "name": "Point", "kind": "type" },
+    { "name": "X", "kind": "variable", "ownerName": "Point" },
+    { "name": "Y", "kind": "variable", "ownerName": "Point" },
+    { "name": "Color", "kind": "enum" },
+    { "name": "Red", "kind": "enum_member", "ownerName": "Color" },
+    { "name": "Blue", "kind": "enum_member", "ownerName": "Color" },
+    { "name": "Changed", "kind": "event" },
+    { "name": "GetTickCount", "kind": "function" },
+    { "name": "CurrentColor", "kind": "property" },
+    { "name": "Execute", "kind": "method" },
+    { "name": "color", "kind": "variable", "ownerName": "Execute" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "root", "target": "IWorker" },
+    { "type": "references", "from": "CurrentColor", "target": "Color" },
+    { "type": "references", "from": "Execute", "target": "Point" },
+    { "type": "references", "from": "Execute", "target": "Color" },
+    { "type": "calls", "from": "CurrentColor", "target": "Changed" },
+    { "type": "calls", "from": "Execute", "target": "Work" },
+    { "type": "uses", "from": "Execute", "target": "X" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "root", "target": "IWorker" }
+  ]
+}

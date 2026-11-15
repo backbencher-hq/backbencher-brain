@@ -1,0 +1,29 @@
+{
+  "fixtureId": "scala/aux-ctor-is-not-a-symbol",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The R7 defect JOB 1 measured on the full corpus, pinned on the smallest input that reproduces every part of it. `def this(name: String, retries: Int) = this(name)` is an AUXILIARY CONSTRUCTOR; the pinned grammar fills the node's `name:` field with the keyword, so before the fix the analyzer published a method symbol named `this` and then published 1,336 endpoints across 209 files that named a member no file declares: `contains Service -> this`, `calls this -> this`, `instantiates this -> <arg type>`, and every declared-type reference inside the auxiliary's parameter list sourced at `this`. The fix models the construct as what it IS — a constructor of the class, which already owns a `constructor` symbol — so there is no new symbol, the parameters fold into that payload, the body's edges source at `Service` (a real symbol), and `this(...)` publishes no call edge at all because constructor DELEGATION is not a call to a member named `this`. The second half is class C of the same census: a KEYWORD LITERAL interpolated (`s\"$null\"`) parses as interpolation > identifier, identically to `s\"$name\"`, so a read emitter that does not ask whether the child is a reference publishes `uses Probe -> null` for a constant. Measured 7 endpoints, all in scala3 test/files/neg/t5856.scala. The `${...}` block form is pinned as the positive control: it is an expression, not an identifier, and it has never emitted — so its ABSENCE is what makes the two rows above a defect of the `$name` form specifically rather than of interpolation handling in general.",
+  "expectSymbols": [
+    { "name": "Service", "kind": "class" },
+    { "name": "name", "kind": "property", "ownerName": "Service" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Service" },
+    { "name": "healthy", "kind": "method", "ownerName": "Service" },
+    { "name": "Probe", "kind": "module" },
+    { "name": "nameOf", "kind": "method", "ownerName": "Probe" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Service", "target": "healthy", "note": "the ordinary member, the positive control for the contains row below" },
+    { "type": "contains", "from": "Service", "target": "constructor", "note": "the class owns exactly ONE constructor symbol; the auxiliary folds into it rather than publishing a second" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "this", "note": "R7: no file declares a member called `this`. This is the exact shape of the defect — 648 target endpoints over 209 corpus files." },
+    { "type": "calls", "target": "this", "note": "`this(...)` is constructor DELEGATION, not a call to a member (648 of the corpus rows were sources, 136 targets)" },
+    { "type": "calls", "from": "this", "note": "and it is never a SOURCE either — the auxiliary's body belongs to the class" },
+    { "type": "references", "from": "this", "note": "the parameter types the auxiliary declares are referenced by the CLASS (688 source endpoints on the corpus)" },
+    { "type": "instantiates", "from": "this", "note": "same" },
+    { "type": "uses", "from": "this", "note": "same" },
+    { "type": "uses", "target": "null", "note": "R7 class C: `null` is a constant, not a declaration" },
+    { "type": "uses", "target": "true", "note": "same" },
+    { "type": "uses", "from": "Probe", "target": "nameOf", "note": "the `${...}` block form is an EXPRESSION and this lane emits no expression-level use for it (D1/D3); pinning it as forbidden makes the two keyword rows above attributable to the `$name` form specifically" }
+  ]
+}

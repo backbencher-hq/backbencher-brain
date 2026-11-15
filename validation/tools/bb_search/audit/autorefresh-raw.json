@@ -1,0 +1,218 @@
+{
+  "calls": [
+    {
+      "label": "__init__",
+      "projectId": "82a42b87206708afbb4230b4d2d784b2ff204c00",
+      "projectDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project"
+    },
+    {
+      "label": "content.refreshFalseOnStale",
+      "args": {
+        "mode": "content",
+        "query": "staleTwoHost",
+        "refresh": false
+      },
+      "isError": false,
+      "ms": 147.99,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"staleTwoHost\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 1,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 1,\n    \"missing\": 0,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/stale2.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts\",\n      \"line\": 1,\n      \"column\": 0,\n      \"context\": \"function: staleTwoHost\",\n      \"symbolName\": \"staleTwoHost\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function staleTwoHost(): number { return 2 }\",\n      \"complexity\": 1,\n      \"_relevance\": 1,\n      \"stale\": true\n    }\n  ],\n  \"autoRefresh\": \"auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)\"\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "staleTwoHost",
+        "total": 1,
+        "returned": 1,
+        "staleCount": 1,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+        },
+        "results": [
+          {
+            "file": "src/stale2.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts",
+            "line": 1,
+            "column": 0,
+            "context": "function: staleTwoHost",
+            "symbolName": "staleTwoHost",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function staleTwoHost(): number { return 2 }",
+            "complexity": 1,
+            "_relevance": 1,
+            "stale": true
+          }
+        ],
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    },
+    {
+      "label": "file.staleNoAutoRefresh",
+      "args": {
+        "mode": "file",
+        "filePath": "src/stale2.ts"
+      },
+      "isError": false,
+      "ms": 41.85,
+      "text": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/stale2.ts\",\n  \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"export function staleTwoHost(): number { return 2 }\\n// changed after indexing\\nexport function staleTwoHostB(): number { return 3 }\\n\",\n  \"contentLength\": 131,\n  \"truncated\": false,\n  \"totalMatches\": 1,\n  \"stale\": true,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 1,\n    \"missing\": 0,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale in this file — reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index \\\"src/stale2.ts\\\" (or the bb_index tool with that file path)\"\n  }\n}",
+      "parsed": {
+        "searchMode": "file",
+        "file": "src/stale2.ts",
+        "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts",
+        "language": "typescript",
+        "content": "export function staleTwoHost(): number { return 2 }\n// changed after indexing\nexport function staleTwoHostB(): number { return 3 }\n",
+        "contentLength": 131,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": true,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale in this file — reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index \"src/stale2.ts\" (or the bb_index tool with that file path)"
+        }
+      }
+    },
+    {
+      "label": "symbol.refreshFalseOnStale",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "staleTwoHost",
+        "refresh": false
+      },
+      "isError": false,
+      "ms": 126.74,
+      "text": "{\n  \"matches\": [\n    {\n      \"id\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts:staleTwoHost:1\",\n      \"fileId\": \"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/stale2.ts\",\n      \"name\": \"staleTwoHost\",\n      \"symbolType\": \"function\",\n      \"lineStart\": 1,\n      \"byteStart\": 0,\n      \"byteEnd\": 51,\n      \"language\": \"typescript\",\n      \"stale\": true\n    }\n  ],\n  \"totalMatches\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 1,\n    \"missing\": 0,\n    \"staleRatio\": 1,\n    \"mode\": \"complete\",\n    \"remediation\": \"1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)\"\n  },\n  \"autoRefresh\": \"auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)\"\n}",
+      "parsed": {
+        "matches": [
+          {
+            "id": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts:staleTwoHost:1",
+            "fileId": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project/src/stale2.ts",
+            "name": "staleTwoHost",
+            "symbolType": "function",
+            "lineStart": 1,
+            "byteStart": 0,
+            "byteEnd": 51,
+            "language": "typescript",
+            "stale": true
+          }
+        ],
+        "totalMatches": 1,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 1,
+          "missing": 0,
+          "staleRatio": 1,
+          "mode": "complete",
+          "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+        },
+        "autoRefresh": "auto-refresh disabled (BB_NO_AUTO_REFRESH or refresh=false)"
+      }
+    },
+    {
+      "label": "symbols.defaultAutoRefresh",
+      "args": {
+        "query": "staleTwoHost"
+      },
+      "isError": false,
+      "ms": 2193.39,
+      "text": "staleTwoHost [function] src/stale2.ts:1 (typescript)\nstaleTwoHostB [function] src/stale2.ts:3 (typescript)\nauto-refreshed 1 file in 2136ms (derived pass: bounded)",
+      "parsed": null
+    },
+    {
+      "label": "content.defaultAfterRefresh",
+      "args": {
+        "mode": "content",
+        "query": "staleTwoHost"
+      },
+      "isError": false,
+      "ms": 16.74,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"staleTwoHost\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"freshCount\": 2,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": [\n    {\n      \"file\": \"src/stale2.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts\",\n      \"line\": 1,\n      \"column\": 0,\n      \"context\": \"function: staleTwoHost\",\n      \"symbolName\": \"staleTwoHost\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function staleTwoHost(): number { return 2 }\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    },\n    {\n      \"file\": \"src/stale2.ts\",\n      \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts\",\n      \"line\": 3,\n      \"column\": 0,\n      \"context\": \"function: staleTwoHostB\",\n      \"symbolName\": \"staleTwoHostB\",\n      \"symbolType\": \"function\",\n      \"language\": \"typescript\",\n      \"matchType\": \"content\",\n      \"snippet\": \"export function staleTwoHostB(): number { return 3 }\",\n      \"complexity\": 1,\n      \"_relevance\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "staleTwoHost",
+        "total": 2,
+        "returned": 2,
+        "staleCount": 0,
+        "freshCount": 2,
+        "truncated": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": [
+          {
+            "file": "src/stale2.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts",
+            "line": 1,
+            "column": 0,
+            "context": "function: staleTwoHost",
+            "symbolName": "staleTwoHost",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function staleTwoHost(): number { return 2 }",
+            "complexity": 1,
+            "_relevance": 1
+          },
+          {
+            "file": "src/stale2.ts",
+            "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts",
+            "line": 3,
+            "column": 0,
+            "context": "function: staleTwoHostB",
+            "symbolName": "staleTwoHostB",
+            "symbolType": "function",
+            "language": "typescript",
+            "matchType": "content",
+            "snippet": "export function staleTwoHostB(): number { return 3 }",
+            "complexity": 1,
+            "_relevance": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "file.afterRefresh",
+      "args": {
+        "mode": "file",
+        "filePath": "src/stale2.ts"
+      },
+      "isError": false,
+      "ms": 16.18,
+      "text": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/stale2.ts\",\n  \"fileId\": \"82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"export function staleTwoHost(): number { return 2 }\\n// changed after indexing\\nexport function staleTwoHostB(): number { return 3 }\\n\",\n  \"contentLength\": 131,\n  \"truncated\": false,\n  \"totalMatches\": 1,\n  \"stale\": false,\n  \"freshness\": {\n    \"fresh\": 1,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  }\n}",
+      "parsed": {
+        "searchMode": "file",
+        "file": "src/stale2.ts",
+        "fileId": "82a42b87206708afbb4230b4d2d784b2ff204c00:src/stale2.ts",
+        "language": "typescript",
+        "content": "export function staleTwoHost(): number { return 2 }\n// changed after indexing\nexport function staleTwoHostB(): number { return 3 }\n",
+        "contentLength": 131,
+        "truncated": false,
+        "totalMatches": 1,
+        "stale": false,
+        "freshness": {
+          "fresh": 1,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        }
+      }
+    }
+  ],
+  "serverStderr": "[INFO] [13:37:16] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [13:37:17] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [13:37:18] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"82a42b87\",\"danglingSources\":40,\"totalRelationships\":42}\n[INFO] [13:37:18] [project-health] project health computed {\"projectId\":\"82a42b87206708afbb4230b4d2d784b2ff204c00\",\"complexityScore\":95,\"maintainabilityScore\":0,\"techDebtScore\":100,\"codeQualityScore\":65,\"languages\":2,\"bottlenecks\":0}\n"
+}

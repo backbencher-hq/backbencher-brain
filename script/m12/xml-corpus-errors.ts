@@ -7,11 +7,11 @@ import { parseFile } from "../../src/ast/pool-worker"
  * from the failure count while still being reported. Excluding a file by a glob
  * nobody reads hides the gap; naming it, measuring it, and writing down WHY it is
  * negative keeps the gap visible and the claim honest. The manifest is
- * `fixtures/xml/repositories/MANIFEST.json` (the same shape the lua lane
+ * `bb_tests/xml/repositories/MANIFEST.json` (the same shape the lua lane
  * established), and an entry whose `verdict` is not a string is a hard error
  * rather than a silent pass.
  */
-const corpusPath = process.argv[2] || process.env.XML_CORPUS || "$HOME/fixtures/xml/repos/grails-core"
+const corpusPath = process.argv[2] || process.env.XML_CORPUS || "/home/ishaq2321/bb_tests/xml/repos/grails-core"
 const corpus = corpusPath
 
 /** Every tracked file of a corpus matching a glob, so a declared control can be a PATTERN. */
@@ -21,7 +21,7 @@ function listOfCorpusFiles(dir: string, pattern: string): string[] {
       .split("\n").filter(Boolean)
   } catch { return [] }
 }
-const MANIFEST = process.env.XML_MANIFEST || "$HOME/fixtures/xml/repositories/MANIFEST.json"
+const MANIFEST = process.env.XML_MANIFEST || "/home/ishaq2321/bb_tests/xml/repositories/MANIFEST.json"
 let negativeControls = new Map<string, { file: string; measured: string; verdict: string; why: string }>()
 if (existsSync(MANIFEST)) {
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"))
@@ -69,7 +69,7 @@ const result = {
   manifest: MANIFEST,
   manifestPresent: existsSync(MANIFEST),
   passed: errors.length === 0 && crashes.length === 0,
-  policy: "Tracked XML-family documents (every file type the wired grammar's tree-sitter.json declares, plus the routed `dtd`) from a revision-pinned repository. A file whose errors are EXPECTED is declared in the manifest with a verdict and a measurement, and is reported here rather than excluded by a glob; `script/m12/xml-node-types-compare.ts` is what proves the declared vocabulary, and `fixtures/xml/out/grammar-corpus-ab.json` is what measures the grammar.",
+  policy: "Tracked XML-family documents (every file type the wired grammar's tree-sitter.json declares, plus the routed `dtd`) from a revision-pinned repository. A file whose errors are EXPECTED is declared in the manifest with a verdict and a measurement, and is reported here rather than excluded by a glob; `script/m12/xml-node-types-compare.ts` is what proves the declared vocabulary, and `bb_tests/xml/out/grammar-corpus-ab.json` is what measures the grammar.",
 }
 writeFileSync("validation/m12/results/xml-corpus-errors.json", JSON.stringify(result, null, 2) + "\n")
 console.log(JSON.stringify(result, null, 2))

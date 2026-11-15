@@ -1,0 +1,15 @@
+{
+  "fixtureId": "groovy/trait-implements",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Traits are Groovy's mixin mechanism: trait declaration yields an interface-like symbol; class implementing trait gets implements edge; method call inside run reaches log.",
+  "expectSymbols": [
+    { "name": "Loggable" },
+    { "name": "log" },
+    { "name": "Job", "kind": "class" },
+    { "name": "run" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Job", "target": "Loggable" }
+  ]
+}

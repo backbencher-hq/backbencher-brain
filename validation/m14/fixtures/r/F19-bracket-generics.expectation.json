@@ -1,0 +1,117 @@
+{
+  "_notes": [
+    "R names its replacement functions with angle brackets: `$<-`, `[[<-`, `[<-`, `names<-`.",
+    "The analyzer emits `implements` for each by the ordinary `generic.class` convention.",
+    "src/ast/pool-worker.ts:652 deletes any target leaf matching /[{}`<>\\n\\r\\t]/, so all four",
+    "bracket-named edges are correct edges lost one stage downstream. Measured over the corpus:",
+    "129 relationships deleted by that rule, 53 of them `implements`. Each is pinned below as a",
+    "three-way assertion (in analyze(), not in parseFile(), rule named), so a fix to the shared",
+    "filter makes this file FAIL and name the entry to move."
+  ],
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "$<-.AC",
+      "kind": "method"
+    },
+    {
+      "name": "[[<-.AC",
+      "kind": "method"
+    },
+    {
+      "name": "[<-.AC",
+      "kind": "method"
+    },
+    {
+      "name": "names<-.AC",
+      "kind": "method"
+    },
+    {
+      "name": "$.AC",
+      "kind": "method"
+    },
+    {
+      "name": "[[.AC",
+      "kind": "method"
+    },
+    {
+      "name": "diag<-",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "$.AC",
+      "target": "$",
+      "confidence": 0.8
+    },
+    {
+      "type": "implements",
+      "from": "[[.AC",
+      "target": "[[",
+      "confidence": 0.8
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "$<-.AC",
+      "target": "$"
+    }
+  ],
+  "knownProductionLoss": [
+    {
+      "relationship": {
+        "type": "implements",
+        "from": "$<-.AC",
+        "target": "$<-",
+        "confidence": 0.8
+      },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:652 \u2014 filterNoiseRelationships drops any target leaf matching /[{}`<>\\n\\r\\t]/; `$<-` is a base R function name"
+    },
+    {
+      "relationship": {
+        "type": "implements",
+        "from": "[[<-.AC",
+        "target": "[[<-",
+        "confidence": 0.8
+      },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:652 \u2014 filterNoiseRelationships drops any target leaf matching /[{}`<>\\n\\r\\t]/; `[[<-` is a base R function name"
+    },
+    {
+      "relationship": {
+        "type": "implements",
+        "from": "[<-.AC",
+        "target": "[<-",
+        "confidence": 0.8
+      },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:652 \u2014 filterNoiseRelationships drops any target leaf matching /[{}`<>\\n\\r\\t]/; `[<-` is a base R function name"
+    },
+    {
+      "relationship": {
+        "type": "implements",
+        "from": "names<-.AC",
+        "target": "names<-",
+        "confidence": 0.8
+      },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:652 \u2014 filterNoiseRelationships drops any target leaf matching /[{}`<>\\n\\r\\t]/; `names<-` is a base R function name"
+    },
+    {
+      "relationship": {
+        "type": "contains",
+        "from": "global",
+        "target": "diag<-"
+      },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:652 \u2014 filterNoiseRelationships drops any target leaf matching /[{}`<>\\n\\r\\t]/; Matrix/R/index.R defines and calls `diag<-`"
+    },
+    {
+      "relationship": {
+        "type": "calls",
+        "from": "assign_or_replace",
+        "target": "diag<-"
+      },
+      "sharedMachineryRef": "src/ast/pool-worker.ts:652 \u2014 filterNoiseRelationships drops any target leaf matching /[{}`<>\\n\\r\\t]/"
+    }
+  ]
+}

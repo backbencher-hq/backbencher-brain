@@ -1,0 +1,68 @@
+{
+  "comment": "NIM `decorates` fixture \u2014 the pragma-TEMPLATE class at rung R3 (2026-10-23), pinned in BOTH directions. THE POSITIVE HALF: a declaration carrying a pragma that names a FILE-LOCAL `{.pragma.}` template is an APPLIED CALLABLE in a pragma position, and the dictionary's decorator is exactly that (src/ast/types.ts:131-144, direction decorated declaration -> decorator). THE NEGATIVE HALF is the point of the fixture: a BUILTIN DIRECTIVE pragma (`{.inline.}`, `{.cdecl.}`, `{.raises.}`) is passive compiler metadata and must NEVER become a row \u2014 without this half, a partial implementation that swept all 33,266 pragma name sites into `decorates` would pass. The census that made this cell IMPLEMENTED rather than RULED is validation/m14/measurements/nim-extended-census.json: it measured the falsifier of the intended ontological ruling (294 applied callables in pragma positions, 0.9 % of the pragma population) and the ruling was WITHDRAWN BY ITS OWN FALSIFIER.",
+  "expectSymbols": [
+    {
+      "name": "myMarker",
+      "kind": "macro",
+      "meta.nimCallableKind": "template",
+      "comment": "`template myMarker() {.pragma.}` is the template that makes a pragma name a callable"
+    },
+    {
+      "name": "decorated",
+      "kind": "function",
+      "meta.nimCallableKind": "proc",
+      "comment": "the decorated declaration is a published symbol, which is the contract's precondition for any row"
+    },
+    {
+      "name": "directiveOnly",
+      "kind": "function",
+      "meta.nimCallableKind": "proc",
+      "comment": "the negative twin: a declaration whose only pragma is a BUILTIN directive"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "decorated",
+      "target": "myMarker",
+      "line_number": 22,
+      "meta.relationshipType": "nim_pragma_template",
+      "meta.decoratorConstruct": "pragma_template",
+      "meta.isDecorator": true,
+      "meta.evidenceClass": "structural",
+      "comment": "THE POSITIVE HALF. Source is the decorated declaration's published spelling, target is the file-local pragma template, and the line is the PRAGMA NAME's own line (the naming node), not the declaration's. `decoratorConstruct` is what tells a consumer this row is the applied-callable class rather than an annotation sweep"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "target": "inline",
+      "comment": "THE NEGATIVE HALF, ON THE TARGET: `{.inline.}` is a compiler directive \u2014 passive metadata, not an applied callable \u2014 and it must never become a decorates row. A partial fix that emits every pragma name fails here"
+    },
+    {
+      "type": "decorates",
+      "from": "directiveOnly",
+      "comment": "THE NEGATIVE HALF, ON THE SOURCE: the declaration whose only pragma is a directive carries NO decorates row at all"
+    },
+    {
+      "type": "decorates",
+      "from": "myMarker",
+      "comment": "the pragma template's OWN declaration carries `{.pragma.}` \u2014 the marker that DEFINES a pragma template, not an application to it \u2014 so it must not decorate itself"
+    }
+  ],
+  "expectDecorators": [
+    {
+      "symbol": "decorated",
+      "contains": "myMarker",
+      "comment": "the pragma NAME stays on the symbol's decorators payload as well: it is the evidence, and the row above says what it MEANS (an applied callable), not that the name is deleted from metadata"
+    },
+    {
+      "symbol": "directiveOnly",
+      "contains": "inline",
+      "comment": "a directive pragma is symbol metadata and only that"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

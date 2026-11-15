@@ -1,0 +1,410 @@
+{
+  "instrument": "xml emitted-vs-stored — the 1.83x question, isolated by parsing the same files before AND after the index",
+  "repo": "dbeaver",
+  "files": 300,
+  "root": "/tmp/bb-xml-evs-ujRy3w",
+  "projectId": "70f6bfe58a6a3698f4b4b091ce3fee8e7db259ba",
+  "indexMs": 204307,
+  "parsePasses": {
+    "before": {
+      "parsed": 300,
+      "failed": 0,
+      "degraded": 0
+    },
+    "after": {
+      "parsed": 300,
+      "failed": 0,
+      "degraded": 0
+    }
+  },
+  "table": [
+    {
+      "type": "contains",
+      "emittedBefore": 23742,
+      "emittedBeforeDistinctKeys": 18431,
+      "stored": 23742,
+      "storedDistinctIds": 23742,
+      "emittedAfter": 23742,
+      "emittedAfterDistinctKeys": 18431,
+      "storedOverEmittedBefore": 1,
+      "storedOverEmittedAfter": 1
+    },
+    {
+      "type": "extends",
+      "emittedBefore": 557,
+      "emittedBeforeDistinctKeys": 511,
+      "stored": 557,
+      "storedDistinctIds": 557,
+      "emittedAfter": 557,
+      "emittedAfterDistinctKeys": 511,
+      "storedOverEmittedBefore": 1,
+      "storedOverEmittedAfter": 1
+    },
+    {
+      "type": "references",
+      "emittedBefore": 2948,
+      "emittedBeforeDistinctKeys": 2591,
+      "stored": 2948,
+      "storedDistinctIds": 2948,
+      "emittedAfter": 2948,
+      "emittedAfterDistinctKeys": 2591,
+      "storedOverEmittedBefore": 1,
+      "storedOverEmittedAfter": 1
+    }
+  ],
+  "inflationDiagnosis": {
+    "storedContainsSrcAggregate": {
+      "rows": 23742,
+      "srcIds": 7541,
+      "triples": 23742,
+      "targets": 1006,
+      "nullSource": 0
+    },
+    "heaviestFiles": [
+      {
+        "fid": "70f6bfe58a6a3698f4b4b091ce3fee8e7db259ba:dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2017/showplanxml.xsd",
+        "rows": 2159,
+        "srcIds": 660,
+        "targets": 574,
+        "lines": 795
+      },
+      {
+        "fid": "70f6bfe58a6a3698f4b4b091ce3fee8e7db259ba:dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2016sp1/showplanxml.xsd",
+        "rows": 2082,
+        "srcIds": 643,
+        "targets": 556,
+        "lines": 769
+      },
+      {
+        "fid": "70f6bfe58a6a3698f4b4b091ce3fee8e7db259ba:dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2016/showplanxml.xsd",
+        "rows": 1977,
+        "srcIds": 615,
+        "targets": 531,
+        "lines": 729
+      }
+    ],
+    "repeatedSourceTargetLine": [
+      {
+        "src": "project",
+        "tgt": "schemaLocation",
+        "line": 2,
+        "rows": 105,
+        "srcIds": 105
+      },
+      {
+        "src": "project",
+        "tgt": "default",
+        "line": 2,
+        "rows": 90,
+        "srcIds": 90
+      },
+      {
+        "src": "project",
+        "tgt": "packaging",
+        "line": 13,
+        "rows": 90,
+        "srcIds": 90
+      },
+      {
+        "src": "project",
+        "tgt": "xsi",
+        "line": 3,
+        "rows": 90,
+        "srcIds": 90
+      },
+      {
+        "src": "parent",
+        "tgt": "artifactId",
+        "line": 7,
+        "rows": 87,
+        "srcIds": 87
+      },
+      {
+        "src": "parent",
+        "tgt": "groupId",
+        "line": 6,
+        "rows": 87,
+        "srcIds": 87
+      },
+      {
+        "src": "parent",
+        "tgt": "relativePath",
+        "line": 9,
+        "rows": 87,
+        "srcIds": 87
+      },
+      {
+        "src": "parent",
+        "tgt": "version",
+        "line": 8,
+        "rows": 87,
+        "srcIds": 87
+      }
+    ],
+    "sideBySideHeaviestFile": {
+      "file": "dbeaver/plugins/org.jkiss.dbeaver.ext.mssql/schemas/schemas/sql2017/showplanxml.xsd",
+      "storeRowsForFile": 2159,
+      "storeDistinctSrcIds": 660,
+      "storeSample": [
+        {
+          "src": "xsd:schema",
+          "tgt": "attributeFormDefault",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "blockDefault",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "elementFormDefault",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "shp",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "targetNamespace",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "version",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "xsd",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "xsd:annotation",
+          "line": 3
+        },
+        {
+          "src": "xsd:annotation",
+          "tgt": "xsd:documentation",
+          "line": 4
+        },
+        {
+          "src": "ShowPlanXML",
+          "tgt": "name",
+          "line": 34
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "ShowPlanXML",
+          "line": 34
+        },
+        {
+          "src": "ShowPlanXML",
+          "tgt": "xsd:complexType",
+          "line": 35
+        },
+        {
+          "src": "xsd:complexType",
+          "tgt": "xsd:annotation",
+          "line": 36
+        },
+        {
+          "src": "xsd:complexType",
+          "tgt": "xsd:sequence",
+          "line": 39
+        },
+        {
+          "src": "BatchSequence",
+          "tgt": "name",
+          "line": 40
+        },
+        {
+          "src": "xsd:sequence",
+          "tgt": "BatchSequence",
+          "line": 40
+        },
+        {
+          "src": "BatchSequence",
+          "tgt": "xsd:complexType",
+          "line": 41
+        },
+        {
+          "src": "Batch",
+          "tgt": "maxOccurs",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "minOccurs",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "name",
+          "line": 43
+        },
+        {
+          "src": "xsd:sequence",
+          "tgt": "Batch",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "xsd:complexType",
+          "line": 44
+        },
+        {
+          "src": "Statements",
+          "tgt": "maxOccurs",
+          "line": 46
+        },
+        {
+          "src": "Statements",
+          "tgt": "minOccurs",
+          "line": 46
+        },
+        {
+          "src": "Statements",
+          "tgt": "name",
+          "line": 46
+        }
+      ],
+      "emittedSample": [
+        {
+          "src": "xsd:schema",
+          "tgt": "targetNamespace",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "shp",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "xsd",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "elementFormDefault",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "attributeFormDefault",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "version",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "blockDefault",
+          "line": 2
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "xsd:annotation",
+          "line": 3
+        },
+        {
+          "src": "xsd:annotation",
+          "tgt": "xsd:documentation",
+          "line": 4
+        },
+        {
+          "src": "xsd:schema",
+          "tgt": "ShowPlanXML",
+          "line": 34
+        },
+        {
+          "src": "ShowPlanXML",
+          "tgt": "name",
+          "line": 34
+        },
+        {
+          "src": "ShowPlanXML",
+          "tgt": "xsd:complexType",
+          "line": 35
+        },
+        {
+          "src": "xsd:complexType",
+          "tgt": "xsd:annotation",
+          "line": 36
+        },
+        {
+          "src": "xsd:complexType",
+          "tgt": "xsd:sequence",
+          "line": 39
+        },
+        {
+          "src": "xsd:sequence",
+          "tgt": "BatchSequence",
+          "line": 40
+        },
+        {
+          "src": "BatchSequence",
+          "tgt": "name",
+          "line": 40
+        },
+        {
+          "src": "BatchSequence",
+          "tgt": "xsd:complexType",
+          "line": 41
+        },
+        {
+          "src": "xsd:sequence",
+          "tgt": "Batch",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "name",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "minOccurs",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "maxOccurs",
+          "line": 43
+        },
+        {
+          "src": "Batch",
+          "tgt": "xsd:complexType",
+          "line": 44
+        },
+        {
+          "src": "xsd:sequence",
+          "tgt": "Statements",
+          "line": 46
+        },
+        {
+          "src": "Statements",
+          "tgt": "name",
+          "line": 46
+        },
+        {
+          "src": "Statements",
+          "tgt": "type",
+          "line": 46
+        }
+      ],
+      "emittedSampleSize": 25
+    }
+  },
+  "reading": {
+    "noAnomaly": "stored == emittedBefore == emittedAfter",
+    "instrumentOrdering": "stored ~= emittedBefore but emittedAfter is materially lower: the emitted column of the ORIGINAL probe is an undercount caused by parsing after a heavy index in one process",
+    "storeWritesMore": "emittedBefore == emittedAfter < stored: the store really holds more rows than the analyzer emits, and the cause is in the indexer, not in the probe"
+  }
+}

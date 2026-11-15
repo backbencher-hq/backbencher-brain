@@ -1,0 +1,516 @@
+{
+  "instrument": "validation/m14/fixtures/sql/adversarial-probe.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedFilesTotal": 1945,
+  "sampledFiles": 1945,
+  "sampling": "all admitted files",
+  "excluded": [
+    "duckdb/extension/tpcds/dsdgen/queries/83.sql"
+  ],
+  "probes": {
+    "A1-contains-member-outside-owner": {
+      "count": 11252,
+      "files": 371,
+      "fileList": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/src/main/resources/schema.sql",
+        "boundary/internal/clientcache/internal/db/schema.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/duplicate-versions/0/01_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/duplicate-versions/0/01_initial_also.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/major-version-not-int/major/01_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/minor-version-invalid-separator/0/01-initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/no-major-version/01_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/minor-version-not-int/0/minor_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/two/0/01_add_table.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/no-minor-version/0/initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/one/0/01_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/three/0/01_initial.up.sql"
+      ],
+      "examples": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/src/main/resources/schema.sql: messages(2-2) contains id(3-3)",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/src/main/resources/schema.sql: messages(2-2) contains text(4-4)",
+        "boundary/internal/clientcache/internal/db/schema.sql: schema_version(7-7) contains version(8-8)",
+        "boundary/internal/clientcache/internal/db/schema.sql: schema_version(7-7) contains create_time(9-9)",
+        "boundary/internal/clientcache/internal/db/schema.sql: schema_version(7-7) contains update_time(10-10)"
+      ]
+    },
+    "A1-contains-member-resolved-by-ownerName": {
+      "count": 11785,
+      "files": 639,
+      "fileList": [
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/h2/V20260720132157__CREATE_TABLE_CITIES.sql",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-spring/src/main/resources/schema.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-gradle-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/h2/V20260720132158__CREATE_TABLE_USERS.sql",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135257__CREATE_TABLE_CITIES.sql",
+        "boundary/internal/clientcache/internal/db/schema.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/duplicate-versions/0/01_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/duplicate-versions/0/01_initial_also.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/major-version-not-int/major/01_initial.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/invalid/minor-version-invalid-separator/0/01-initial.up.sql"
+      ],
+      "examples": [
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/h2/V20260720132157__CREATE_TABLE_CITIES.sql: CITIES->ID",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/h2/V20260720132157__CREATE_TABLE_CITIES.sql: CITIES->name",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql: users->id",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql: users->name",
+        "Exposed/exposed-maven-plugin/src/test/resources/template/migrations/pg/V20260720135258__CREATE_TABLE_USERS.sql: users->email"
+      ]
+    },
+    "A10-contains-target-has-no-symbol-in-this-file": {
+      "count": 1,
+      "files": 1,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql: recording_channel_ssh_session_channel->program"
+      ]
+    },
+    "A11-PARTITION-BY-parsed-cleanly": {
+      "count": 5,
+      "files": 1,
+      "fileList": [
+        "postgrest/test/spec/fixtures/schema.sql"
+      ],
+      "examples": [
+        "postgrest/test/spec/fixtures/schema.sql: partition by range (quantity)",
+        "postgrest/test/spec/fixtures/schema.sql: partition by list (city)",
+        "postgrest/test/spec/fixtures/schema.sql: partition of test.car_model_sales for values from ('2021-01-01')",
+        "postgrest/test/spec/fixtures/schema.sql: partition by range (date)",
+        "postgrest/test/spec/fixtures/schema.sql: partition by list (year)"
+      ]
+    },
+    "A14-file-has-a-CTE-subtree-containing-an-ERROR": {
+      "count": 100,
+      "files": 100,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/7/03_job.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql",
+        "duckdb/benchmark/aoc24/queries/day01.sql",
+        "duckdb/benchmark/aoc24/queries/day02.sql",
+        "duckdb/benchmark/aoc24/queries/day03.sql",
+        "duckdb/benchmark/aoc24/queries/day04.sql",
+        "duckdb/benchmark/aoc24/queries/day05.sql",
+        "duckdb/benchmark/aoc24/queries/day06.sql",
+        "duckdb/benchmark/aoc24/queries/day07.sql",
+        "duckdb/benchmark/aoc24/queries/day11.sql",
+        "duckdb/benchmark/aoc24/queries/day08.sql",
+        "duckdb/benchmark/aoc24/queries/day09.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/7/03_job.up.sql: 1 unqualified references inside an error-bearing CTE: job",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql: 2 unqualified references inside an error-bearing CTE: wh_auth_token_accumulating_fact, monthly_range",
+        "duckdb/benchmark/aoc24/queries/day01.sql: 2 unqualified references inside an error-bearing CTE: lines, aoc1_input",
+        "duckdb/benchmark/aoc24/queries/day02.sql: 6 unqualified references inside an error-bearing CTE: input, w, lateral, widths, lines",
+        "duckdb/benchmark/aoc24/queries/day03.sql: 3 unqualified references inside an error-bearing CTE: rawcommands, lines, aoc3_input"
+      ]
+    },
+    "A14-uses-edge-from-inside-an-error-bearing-CTE": {
+      "count": 91,
+      "files": 56,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/7/03_job.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql",
+        "duckdb/benchmark/aoc24/queries/day02.sql",
+        "duckdb/benchmark/aoc24/queries/day18.sql",
+        "duckdb/benchmark/aoc24/queries/day21.sql",
+        "duckdb/benchmark/aoc24/queries/day24.sql",
+        "duckdb/benchmark/ldbc/queries/bi-2.sql",
+        "duckdb/benchmark/ldbc/queries/bi-5.sql",
+        "duckdb/benchmark/realnest/hep/queries/q06_1.sql",
+        "duckdb/benchmark/realnest/hep/queries/q06_2.sql",
+        "duckdb/benchmark/realnest/hep/queries/q07.sql",
+        "duckdb/benchmark/recursive_cte/queries/ldbc/dvr.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/7/03_job.up.sql: uses job_jobs_to_run->job",
+        "boundary/internal/db/schema/migrations/oss/postgres/7/03_job.up.sql: uses global->job",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql: uses hcp_billing_monthly_active_users_last_2_months->wh_auth_token_accumulating_fact",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql: uses hcp_billing_monthly_active_users_all->wh_auth_token_accumulating_fact",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql: uses global->wh_auth_token_accumulating_fact"
+      ]
+    },
+    "A2-contains-target-name-is-ambiguous-in-this-file": {
+      "count": 4087,
+      "files": 141,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/08_servers.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/12_auth_password.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/13_auth_password_argon.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/22_static_host.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/20_host.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/31_keys.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/41_targets.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/50_session.up.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: db_test_user->id has 4 same-named symbols",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: db_test_user->create_time has 4 same-named symbols",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: db_test_user->update_time has 4 same-named symbols",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: db_test_user->public_id has 3 same-named symbols",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: db_test_user->name has 4 same-named symbols"
+      ]
+    },
+    "A2-contains-target-ownerName-mismatch": {
+      "count": 1,
+      "files": 1,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql: recording_channel_ssh_session_channel->program, candidates' ownerName=(no candidate)"
+      ]
+    },
+    "A3-qualified-invocation-EMITTED": {
+      "count": 448,
+      "files": 85,
+      "fileList": [
+        "hasura-engine/server/src-rsr/citus_table_metadata.sql",
+        "hasura-engine/server/src-rsr/cockroach_table_metadata.sql",
+        "hasura-engine/server/src-rsr/init_pg_source.sql",
+        "hasura-engine/server/src-rsr/initialise.sql",
+        "hasura-engine/server/src-rsr/migrations/28_to_29.sql",
+        "hasura-engine/server/src-rsr/migrations/43_to_42.sql",
+        "hasura-engine/server/src-rsr/pg_source_migrations/2_to_3.sql",
+        "hasura-engine/server/src-rsr/pg_table_metadata.sql",
+        "postgrest/test/io/fixtures/big_schema.sql",
+        "postgrest/test/io/fixtures/db_config.sql",
+        "postgrest/test/spec/fixtures/jsonschema.sql",
+        "postgrest/test/spec/fixtures/jwt.sql"
+      ],
+      "examples": [
+        "hasura-engine/server/src-rsr/citus_table_metadata.sql: pg_catalog.pg_relation_is_updatable(...)",
+        "hasura-engine/server/src-rsr/citus_table_metadata.sql: pg_catalog.pg_relation_is_updatable(...)",
+        "hasura-engine/server/src-rsr/citus_table_metadata.sql: pg_catalog.pg_relation_is_updatable(...)",
+        "hasura-engine/server/src-rsr/cockroach_table_metadata.sql: pg_catalog.pg_relation_is_updatable(...)",
+        "hasura-engine/server/src-rsr/cockroach_table_metadata.sql: pg_catalog.pg_relation_is_updatable(...)"
+      ]
+    },
+    "A3-qualified-invocation-NOT-emitted-for-another-reason": {
+      "count": 196,
+      "files": 11,
+      "fileList": [
+        "hasura-engine/server/src-rsr/migrations/41_to_42.sql",
+        "hasura-engine/server/src-rsr/pg_source_migrations/0_to_1.sql",
+        "proxicall/_dev/m17b_2980_gallery_limit_proof.sql",
+        "postgrest/test/spec/fixtures/schema.sql",
+        "proxicall/database/migrations/20260613_coms_p13_4_data_retention.sql",
+        "proxicall/database/verify_m14_3041_ad_counter_hardening.sql",
+        "proxicall/database/verify_m14_v17_exchange_probes.sql",
+        "proxicall/database/verify_m95_2996_message_velocity.sql",
+        "proxicall/database/verify_m95_2998_realtime.sql",
+        "proxicall/database/verify_m95_2997_outbox.sql",
+        "proxicall/database/verify_m95_3043_coms_rls_hardening.sql"
+      ],
+      "examples": [
+        "hasura-engine/server/src-rsr/migrations/41_to_42.sql: hdb_catalog.gen_hasura_uuid(...)",
+        "hasura-engine/server/src-rsr/migrations/41_to_42.sql: hdb_catalog.gen_hasura_uuid(...)",
+        "hasura-engine/server/src-rsr/migrations/41_to_42.sql: hdb_catalog.gen_hasura_uuid(...)",
+        "hasura-engine/server/src-rsr/migrations/41_to_42.sql: hdb_catalog.gen_hasura_uuid(...)",
+        "hasura-engine/server/src-rsr/migrations/41_to_42.sql: hdb_catalog.gen_hasura_uuid(...)"
+      ]
+    },
+    "A3-qualified-invocation-suppressed-as-keyword-or-builtin": {
+      "count": 52,
+      "files": 27,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/81/01_deleted_tables_and_triggers.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/91/05_deletion_tables_view.up.sql",
+        "boundary/internal/db/sqltest/tests/history/history_table_tests.sql",
+        "hasura-engine/cli/pkg/deploy/testdata/projectV2/seeds/1671025092483_tag_seed.sql",
+        "hasura-engine/cli/pkg/deploy/testdata/projectV2/seeds/1671025082513_article_seed.sql",
+        "hasura-engine/cli/pkg/deploy/testdata/projectV3/seeds/pg2/1671022122207_article_seed.sql",
+        "hasura-engine/cli/pkg/deploy/testdata/projectV3/seeds/pg2/1671022133414_tag_seed.sql",
+        "hasura-engine/server/src-rsr/citus_table_metadata.sql",
+        "hasura-engine/server/src-rsr/migrations/28_to_29.sql",
+        "hasura-engine/server/src-rsr/migrations/43_to_42.sql",
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql",
+        "hasura-engine/server/src-rsr/pg_table_metadata.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/81/01_deleted_tables_and_triggers.up.sql: pg_catalog.pg_table_is_visible(...)",
+        "boundary/internal/db/schema/migrations/oss/postgres/91/05_deletion_tables_view.up.sql: pg_catalog.pg_table_is_visible(...)",
+        "boundary/internal/db/sqltest/tests/history/history_table_tests.sql: pg_catalog.pg_table_is_visible(...)",
+        "boundary/internal/db/sqltest/tests/history/history_table_tests.sql: pg_catalog.format_type(...)",
+        "boundary/internal/db/sqltest/tests/history/history_table_tests.sql: pg_catalog.pg_table_is_visible(...)"
+      ]
+    },
+    "A3-tier-AGREES-with-the-metadata": {
+      "count": 3827,
+      "files": 622,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/01_domain_types.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/08_servers.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/11_auth_token.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/12_auth_password.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/13_auth_password_argon.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/22_static_host.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/20_host.up.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql: calls version_column->log_migration_version qualified=(none) tier=usage_contextual",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: calls update_time_column->update_time_column qualified=(none) tier=usage_contextual",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: calls immutable_columns->immutable_columns qualified=(none) tier=usage_contextual",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: calls default_create_time_column->default_create_time qualified=(none) tier=usage_contextual",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/03_db.up.sql: calls update_version_column->update_version_column qualified=(none) tier=usage_contextual"
+      ]
+    },
+    "A4-qualified-table-reference-on-tree": {
+      "count": 1648,
+      "files": 151,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/81/01_deleted_tables_and_triggers.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/91/05_deletion_tables_view.up.sql",
+        "boundary/internal/db/sqltest/tests/history/history_table_tests.sql",
+        "duckdb/benchmark/aoc24/queries/day05.sql",
+        "duckdb/benchmark/aoc24/queries/day20.sql",
+        "duckdb/benchmark/realnest/micro/load.sql",
+        "duckdb/benchmark/recursive_cte/queries/ldbc/dvr.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12_using_key.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql: information_schema.key_column_usage in relation",
+        "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql: information_schema.referential_constraints in relation",
+        "boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql: information_schema.constraint_column_usage in relation",
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql: pg_catalog.pg_attribute in relation",
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql: pg_catalog.pg_attribute in relation"
+      ]
+    },
+    "A4-qualified-table-reference-without-a-uses-edge": {
+      "count": 63,
+      "files": 26,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql",
+        "duckdb/benchmark/aoc24/queries/day05.sql",
+        "duckdb/benchmark/realnest/micro/load.sql",
+        "duckdb/benchmark/recursive_cte/queries/smoke/bfs.sql",
+        "hasura-engine/server/src-rsr/migrations/39_to_40.sql",
+        "hasura-engine/server/src-rsr/migrations/41_to_40.sql",
+        "hasura-engine/server/src-rsr/mssql/mssql_source_migrations/2_to_3.sql",
+        "proxicall/_dev/m17b_2980_gallery_limit_proof.sql",
+        "proxicall/database/archive/2025/20251211_content_system_overhaul.sql",
+        "proxicall/database/archive/2026/20260204_add_ad_tracking_events.sql",
+        "proxicall/database/archive/202607/20260717_inventory_rls_cascade.sql",
+        "proxicall/database/migrations/20260309_rls_coms_subtypes.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql: pg_catalog.pg_attribute in relation",
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql: pg_catalog.pg_attribute in relation",
+        "boundary/internal/db/schema/migrations/oss/postgres/69/01_rename_constraints.up.sql: pg_catalog.pg_attribute in relation",
+        "duckdb/benchmark/aoc24/queries/day05.sql: c2.y in relation",
+        "duckdb/benchmark/realnest/micro/load.sql: tw.twitter in relation"
+      ]
+    },
+    "A4-tier-AGREES-with-the-metadata": {
+      "count": 9017,
+      "files": 1518,
+      "fileList": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-gradle-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-migrations/src/main/kotlin/org/example/migrations/V2__Add_primary_key.sql",
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql",
+        "boundary/internal/clientcache/internal/db/schema_reset.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/three/1/01_add_table.up.sql",
+        "boundary/internal/db/schema/internal/edition/testdata/two/0/02_initial.up.sql",
+        "boundary/internal/db/schema/migrations/base/postgres/02_log_migration.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/06_iam.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/02_oplog.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/11_auth_token.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/0/12_auth_password.up.sql"
+      ],
+      "examples": [
+        "Exposed/documentation-website/Writerside/snippets/exposed-gradle-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql: uses global->USERS qualified=(none) tier=usage_contextual",
+        "Exposed/documentation-website/Writerside/snippets/exposed-migrations/src/main/kotlin/org/example/migrations/V2__Add_primary_key.sql: uses global->USERS qualified=(none) tier=usage_contextual",
+        "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/src/main/resources/db/V0__CREATE_TABLE_USERS.sql: uses global->USERS qualified=(none) tier=usage_contextual",
+        "boundary/internal/clientcache/internal/db/schema_reset.sql: uses global->sqlite_master qualified=(none) tier=usage_contextual",
+        "boundary/internal/db/schema/internal/edition/testdata/three/1/01_add_table.up.sql: uses global->tree qualified=(none) tier=usage_contextual"
+      ]
+    },
+    "A5-cross-kind-name-collision": {
+      "count": 3,
+      "files": 2,
+      "fileList": [
+        "boundary/internal/db/schema/migrations/oss/postgres/70/03_hcp_billing_monthly.up.sql",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/schema/migrations/oss/postgres/70/03_hcp_billing_monthly.up.sql: hcp_billing_monthly_sessions_all: create_function@L76 then create_view@L8",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql: hcp_billing_monthly_active_users_all: create_function@L85 then create_view@L36",
+        "boundary/internal/db/schema/migrations/oss/postgres/84/08_hcp_user_billing_view.up.sql: hcp_billing_monthly_active_users_last_2_months: create_function@L68 then create_view@L5"
+      ]
+    },
+    "A5-or-replace-name-seen-before": {
+      "count": 27,
+      "files": 3,
+      "fileList": [
+        "postgrest/test/io/fixtures/schema.sql",
+        "postgrest/test/spec/fixtures/schema.sql",
+        "proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql"
+      ],
+      "examples": [
+        "postgrest/test/io/fixtures/schema.sql: mult_them kind=create_function",
+        "postgrest/test/spec/fixtures/schema.sql: geo2json_trans kind=create_function",
+        "postgrest/test/spec/fixtures/schema.sql: monetary kind=create_function",
+        "postgrest/test/spec/fixtures/schema.sql: json kind=create_function",
+        "postgrest/test/spec/fixtures/schema.sql: unixtz kind=create_function"
+      ]
+    },
+    "A6-construction-cast-OUTSIDE-query": {
+      "count": 17,
+      "files": 1,
+      "fileList": [
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql"
+      ],
+      "examples": [
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql: ::institution_songs from a invocation node; emitted=true",
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql: ::staff from a invocation node; emitted=true",
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql: ::pet from a list node; emitted=true",
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql: ::pet from a list node; emitted=true",
+        "hasura-engine/v3/crates/engine/tests/db_definition.sql: ::staff from a invocation node; emitted=true"
+      ]
+    },
+    "A6-construction-cast-inside-query": {
+      "count": 19,
+      "files": 9,
+      "fileList": [
+        "boundary/internal/db/sqltest/tests/wh/auth_token/update.sql",
+        "boundary/internal/db/sqltest/tests/wh/auth_token/insert.sql",
+        "boundary/internal/db/sqltest/tests/wh/credential_dimension_views/source.sql",
+        "boundary/internal/db/sqltest/tests/wh/credential_dimension_views/target.sql",
+        "boundary/internal/db/sqltest/tests/wh/host_dimension_views/source.sql",
+        "boundary/internal/db/sqltest/tests/wh/host_dimension_views/target.sql",
+        "boundary/internal/db/sqltest/tests/wh/user_dimension_views/source.sql",
+        "boundary/internal/db/sqltest/tests/wh/user_dimension_views/target.sql",
+        "postgrest/test/spec/fixtures/schema.sql"
+      ],
+      "examples": [
+        "boundary/internal/db/sqltest/tests/wh/auth_token/update.sql: ::wh_auth_token_accumulating_fact from a invocation node; emitted=true",
+        "boundary/internal/db/sqltest/tests/wh/auth_token/insert.sql: ::wh_auth_token_accumulating_fact from a invocation node; emitted=true",
+        "boundary/internal/db/sqltest/tests/wh/credential_dimension_views/source.sql: ::whx_credential_dimension_source from a invocation node; emitted=true",
+        "boundary/internal/db/sqltest/tests/wh/credential_dimension_views/target.sql: ::whx_credential_dimension_target from a invocation node; emitted=true",
+        "boundary/internal/db/sqltest/tests/wh/host_dimension_views/source.sql: ::whx_host_dimension_source from a invocation node; emitted=true"
+      ]
+    },
+    "A7-psql-include-target-exists-after-join": {
+      "count": 22,
+      "files": 6,
+      "fileList": [
+        "postgrest/test/io/fixtures/big_schema.sql",
+        "postgrest/test/io/fixtures/load.sql",
+        "postgrest/test/load/fixtures.sql",
+        "postgrest/test/observability/fixtures/load.sql",
+        "postgrest/test/pgbench/fixtures.sql",
+        "postgrest/test/spec/fixtures/load.sql"
+      ],
+      "examples": [
+        "postgrest/test/io/fixtures/big_schema.sql: ../../orioledb.sql -> test/orioledb.sql",
+        "postgrest/test/io/fixtures/load.sql: ../../orioledb.sql -> test/orioledb.sql",
+        "postgrest/test/io/fixtures/load.sql: database.sql -> test/io/fixtures/database.sql",
+        "postgrest/test/io/fixtures/load.sql: db_config.sql -> test/io/fixtures/db_config.sql",
+        "postgrest/test/io/fixtures/load.sql: roles.sql -> test/io/fixtures/roles.sql"
+      ]
+    },
+    "A8-CTE-named-edge-also-reached-by-a-QUALIFIED-reference": {
+      "count": 16,
+      "files": 16,
+      "fileList": [
+        "duckdb/benchmark/recursive_cte/queries/ldbc/dvr.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12_using_key.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/connected_components.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/direct_probe_dense.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/direct_probe_sparse.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/flummi_k_core_using_key.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/kmeans.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/partial_probe_sparse.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/partial_probe_single_epoch.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/partial_probe_five_epochs.sql"
+      ],
+      "examples": [
+        "duckdb/benchmark/recursive_cte/queries/ldbc/dvr.sql: uses global->dvr",
+        "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12_using_key.sql: uses global->path_finding",
+        "duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql: uses global->hops",
+        "duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql: uses global->parse",
+        "duckdb/benchmark/recursive_cte/queries/performance/connected_components.sql: uses global->cc"
+      ]
+    },
+    "A8-CTE-named-edge-with-no-qualified-reach": {
+      "count": 19,
+      "files": 11,
+      "fileList": [
+        "duckdb/benchmark/aoc24/queries/day15.sql",
+        "duckdb/benchmark/aoc24/queries/day21.sql",
+        "duckdb/benchmark/aoc24/queries/day24.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/flummi_life.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/flummi_generations.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql",
+        "duckdb/benchmark/recursive_cte/queries/performance/kmeans.sql",
+        "duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql",
+        "duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql"
+      ],
+      "examples": [
+        "duckdb/benchmark/aoc24/queries/day15.sql: uses global->state",
+        "duckdb/benchmark/aoc24/queries/day15.sql: uses global->shift",
+        "duckdb/benchmark/aoc24/queries/day15.sql: uses global->tmp",
+        "duckdb/benchmark/aoc24/queries/day15.sql: uses global->canmove",
+        "duckdb/benchmark/aoc24/queries/day21.sql: uses global->numvalues"
+      ]
+    }
+  },
+  "capabilityTests": [
+    {
+      "construct": "CREATE TABLE ... INHERITS (p)",
+      "sql": "CREATE TABLE c (id int) INHERITS (p);",
+      "shape": "(program (statement (create_table (keyword_create) (keyword_table) (object_reference name: (identifier)) (column_definitions (column_definition name: (identifier) type: (int (keyword_int)))))) (ERROR (identifier)))",
+      "verdict": "NOT EXPRESSIBLE — the clause does not survive the parse"
+    },
+    {
+      "construct": "CREATE TABLE c PARTITION OF p FOR VALUES ...",
+      "sql": "CREATE TABLE c PARTITION OF p FOR VALUES FROM (1) TO (10);",
+      "shape": "(program (ERROR (keyword_create) (keyword_table) (object_reference name: (identifier)) (table_partition (keyword_partition) (ERROR (keyword_for) (keyword_values) (keyword_from)) (ERROR)) (identifier)))",
+      "verdict": "NOT EXPRESSIBLE — OF is absorbed by an ERROR node"
+    },
+    {
+      "construct": "CREATE TABLE c PARTITION BY RANGE (x)",
+      "sql": "CREATE TABLE p (ts timestamptz) PARTITION BY RANGE (ts);",
+      "shape": "(program (statement (create_table (keyword_create) (keyword_table) (object_reference name: (identifier)) (column_definitions (column_definition name: (identifier) type: (keyword_timestamptz))) (table_partition (keyword_partition) (keyword_by) (keyword_range) (identifier)))))",
+      "verdict": "EXPRESSIBLE — `table_partition` is the PARTITION BY form, which names no parent"
+    },
+    {
+      "construct": "ALTER TABLE c ATTACH PARTITION c2 FOR VALUES ...",
+      "sql": "ALTER TABLE p ATTACH PARTITION c FOR VALUES FROM (1) TO (10);",
+      "shape": "(program (statement (alter_table (keyword_alter) (keyword_table) (object_reference name: (identifier)) (add_column (column_definition name: (identifier) custom_type: (object_reference name: (identifier)))))) (ERROR (keyword_for) (keyword_values) (keyword_from) (keyword_to)))",
+      "verdict": "NOT EXPRESSIBLE"
+    },
+    {
+      "construct": "CREATE TABLE c (LIKE p)",
+      "sql": "CREATE TABLE c (LIKE p);",
+      "shape": "(program (statement (create_table (keyword_create) (keyword_table) (object_reference name: (identifier)) (column_definitions (column_definition name: (identifier) custom_type: (object_reference name: (identifier)))))))",
+      "verdict": "NOT EXPRESSIBLE"
+    },
+    {
+      "construct": "CREATE TABLE c (LIKE p INCLUDING ALL)",
+      "sql": "CREATE TABLE c (LIKE p INCLUDING ALL);",
+      "shape": "(program (statement (create_table (keyword_create) (keyword_table) (object_reference name: (identifier)) (column_definitions (column_definition name: (identifier) custom_type: (object_reference name: (identifier))) (ERROR (keyword_all))))))",
+      "verdict": "PARTIALLY EXPRESSIBLE — LIKE survives, INCLUDING ALL lands in an ERROR node"
+    }
+  ]
+}

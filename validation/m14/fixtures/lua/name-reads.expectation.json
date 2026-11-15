@@ -1,0 +1,84 @@
+{
+  "fixtureId": "lua/name-reads",
+  "language": "lua",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 LUA-40 (`uses`) and LUA-41 (`references`), authored from the two role contracts rather than from the analyzer's output. A `uses` edge is an identifier the tree puts in a VALUE position; a `references` edge is the FIELD of a qualified read whose receiver is not read on its own account. The negative half carries the weight here: an implementation that emitted a `uses` for every identifier in the file would satisfy every positive row below while publishing 9 wrong edges on this 15-line file, so each forbid row is a line where a name is PRESENT and must NOT be published. `config` and `limit` are declarations (already `contains`); `helper` is the receiver of a qualified name in both of its occurrences, and publishing it as a `uses` would state one access twice under two labels; `record` is a call's callee and belongs to `calls`. Line numbers were derived by reading the committed file, not copied from a run.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "apply",
+      "target": "limit",
+      "line_number": 23,
+      "comment": "`limit + 1` — the LHS operand is a read"
+    },
+    {
+      "type": "uses",
+      "from": "apply",
+      "target": "name",
+      "line_number": 24,
+      "comment": "`name` as a call ARGUMENT is a read"
+    },
+    {
+      "type": "uses",
+      "from": "apply",
+      "target": "total",
+      "line_number": 24,
+      "comment": "`total` as a call ARGUMENT is a read. This is the FIRST site, and the edge's line is this one."
+    },
+    {
+      "type": "references",
+      "from": "apply",
+      "target": "retries",
+      "line_number": 22,
+      "comment": "`config.retries` read without calling it"
+    },
+    {
+      "type": "references",
+      "from": "never",
+      "target": "missing",
+      "line_number": 29,
+      "comment": "a member read that resolves to no declaration anywhere — still a `references` edge, because the READ is written in the file and the binding is not"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "total",
+      "line_number": 25,
+      "comment": "DEDUPE, pinned rather than assumed: `total` is read at L24 (argument) and again at L25 (`return total`). `addRelationship` keys observed edges on type+source+target (LUA-01), so only the FIRST site survives and its line_number is 24. This row is the reason a second `uses apply -> total` is absent — an implementation without the dedupe would pass every positive row here and publish the L25 copy too, which is a duplicate of one fact, not a second fact."
+    },
+    {
+      "type": "uses",
+      "target": "config",
+      "comment": "L18 DECLARATION: `local config = …` publishes `contains`, not `uses`. The LHS of a declaration is a write that introduces the name."
+    },
+    {
+      "type": "uses",
+      "target": "limit",
+      "line_number": 22,
+      "comment": "L22 DECLARATION: `local limit = …` is a `variable_list` child. The read of `limit` on L23 is a `uses`; the binding on L22 is not. This row is what separates the two."
+    },
+    {
+      "type": "uses",
+      "target": "helper",
+      "comment": "RECEIVER, both occurrences (L24 and L29): in `helper.record` and `helper.missing` the head of the qualified name is not read on its own account. Publishing it would state the same access twice under two labels."
+    },
+    {
+      "type": "uses",
+      "target": "config",
+      "line_number": 22,
+      "comment": "RECEIVER at L22: `config` heads `config.retries`. The declaration exclusion alone would not catch this row — it needs the receiver rule as well, which is why both are pinned."
+    },
+    {
+      "type": "references",
+      "target": "record",
+      "comment": "CALLEE: `helper.record(name, total)` is a call, and its member is a `calls` edge. Publishing it as `references` as well would double-count one call."
+    },
+    {
+      "type": "references",
+      "target": "retries",
+      "line_number": 18,
+      "comment": "L18 is the table LITERAL `{ retries = 3 }`: `retries` is a table key there, which is a declaration site, not a read of an existing member."
+    }
+  ]
+}

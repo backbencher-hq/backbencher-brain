@@ -1,0 +1,33 @@
+{
+  "fixtureId": "xml/dtd-self-named-external-id",
+  "language": "xml",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 XML deep review, finding X6. A self-loop guard read `if (type === References || type === Imports) { if (source === target) return }`, on the reasoning that a thing cannot reference or import itself. Sound for a REFERENCE, where source and target are both component names and equality really is a cycle in the document. Unsound for an IMPORT, because the two ends are DIFFERENT KINDS OF THING: `source` is a symbol name and `target` is a path read out of a SYSTEM identifier. `<!ENTITY cover.gif SYSTEM \"cover.gif\" NDATA gif>` names a real file called cover.gif, and the guard discarded the edge. It discarded it ASYMMETRICALLY, which is what makes it a defect rather than a policy: `extractExternalId` had already pushed the ImportInfo a few lines earlier, so the file was present in the analyzer's `imports` array and absent from its relationship graph — the analyzer contradicting itself inside a single call, with the graph the part consumers read. 46 such edges in the corpus (libxslt's docbook and general suites are full of `<!NOTATION GIF SYSTEM \"GIF\">`). Nothing is lost by narrowing the guard: there is no meaningless self-import for it to prevent, since a file named after the declaration that names it is still a second thing. Lines read off the file: cover 3, cover.gif 4, jpeg 5, plain 6. The `plain` entity is the control: its name and path differ, so it was already emitted, and pinning it proves the fixture is not merely asserting the new behaviour. `cover` and `cover.gif` differ by a dot and nothing else, so a normaliser that stripped path punctuation would collapse them and quietly pass a broken analyzer.",
+  "expectSymbols": [
+    { "name": "album", "kind": "type", "meta.isDoctype": true },
+    { "name": "cover", "kind": "type", "meta.isDtdEntityDeclaration": true, "ownerName": "album" },
+    { "name": "cover.gif", "kind": "type", "meta.isDtdEntityDeclaration": true, "ownerName": "album" },
+    { "name": "jpeg", "kind": "type", "meta.isDtdNotationDeclaration": true, "ownerName": "album" },
+    { "name": "plain", "kind": "type", "meta.isDtdEntityDeclaration": true, "ownerName": "album" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "cover", "target": "cover.jpg", "line_number": 3 },
+    { "type": "imports", "from": "cover.gif", "target": "cover.gif", "line_number": 4 },
+    { "type": "imports", "from": "jpeg", "target": "image/jpeg", "line_number": 5 },
+    { "type": "imports", "from": "plain", "target": "notes.ent", "line_number": 6 }
+  ],
+  "expectImports": [
+    { "path": "cover.jpg", "importType": "xml-doctype" },
+    { "path": "cover.gif", "importType": "xml-doctype" },
+    { "path": "image/jpeg", "importType": "xml-doctype" },
+    { "path": "notes.ent", "importType": "xml-doctype" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "cover.gif",
+      "target": "cover.jpg",
+      "note": "each entity imports its OWN system id; cover.gif importing cover.jpg would be a file crossed between two declarations, and the two differ only by a dot"
+    }
+  ]
+}

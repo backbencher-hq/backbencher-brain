@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/commonjs-module",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CommonJS duality: require() yields an import; module.exports assignment exports the class.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "fs" }
+  ],
+  "expectRelationships": [
+    { "type": "exports", "targetEndsWith": "Widget" }
+  ]
+}

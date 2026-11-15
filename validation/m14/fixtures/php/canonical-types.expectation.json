@@ -1,0 +1,31 @@
+{
+  "fixtureId": "php/canonical-types",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Canonical namespaces distinguish global and namespaced declarations of the same leaf. Namespace-relative construction and type references retain canonical identities. Late static binding remains inferred. Native and stored-symbol counterparts are checked in verify-php-type-identities.mts.",
+  "expectSymbols": [
+    { "name": "Builder", "kind": "class", "meta.baseIdentity": "shared" },
+    { "name": "Local", "kind": "class", "meta.fqn": "Fixture\\Canonical\\Local" }
+  ],
+  "expectImports": [
+    { "module": "Shared", "items": ["ParentAlias"] }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "source": "Builder", "target": "ParentAlias", "meta.targetIdentity": "shared" },
+    { "type": "extends", "source": "Shared", "target": "Shared", "meta.targetIdentity": "shared" },
+    { "type": "extends", "source": "Contract", "target": "Contract", "meta.targetIdentity": "contract" },
+    { "type": "implements", "source": "Builder", "target": "Contract", "meta.targetIdentity": "contract" },
+    { "type": "instantiates", "source": "relative", "target": "Local", "meta.targetIdentity": "fixture\\canonical\\local" },
+    { "type": "instantiates", "source": "make", "target": "Builder", "meta.lateStaticBinding": true, "meta.evidenceClass": "inferred" },
+    { "type": "references", "source": "make", "target": "Builder", "meta.lateStaticBinding": true },
+    { "type": "references", "source": "relative", "target": "Local", "meta.targetIdentity": "fixture\\canonical\\local" },
+    { "type": "references", "source": "parentType", "target": "ParentAlias", "meta.targetIdentity": "shared" }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "source": "make", "meta.targetIdentity": "fixture\\canonical\\builder" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "instantiates", "equals": 2 },
+    { "type": "references", "equals": 3 }
+  ]
+}

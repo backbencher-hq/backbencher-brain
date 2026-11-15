@@ -1,0 +1,68 @@
+{
+  "fixtureId": "svelte/declaration-tag-shadow",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Expectations written from the Svelte 5.36 declaration-tag rule (`{let x = …}` / `{const x = …}` bind a template-local for the rest of the enclosing block, exactly as `{@const}` already did) and from the grammar's own shape, probed: the pinned tree-sitter-svelte gives these NO node type — they come back as a plain `expression` whose `svelte_raw_text` is the whole `let x = …`, which is precisely why the generic mustache branch was reading the declared name. Line pins read off the post-fix run and checked against the fixture's text. The graph contract is ONE edge per `type|source|target`, so the SHADOW assertions are carried by the exact `meta.templateReadLines` arrays: `counter` is `[38]` — line 38 is ABOVE the declaration tag on line 41 and line 44 is BELOW it, so `[38]` proves both that the pre-declaration read still publishes and that the post-declaration one does not. A `line_number` forbid could not have proved either.",
+  "rationale": "JOB 2 of the svelte ontology pass. 40 declaration-tag sites in 20 of the 6,439 corpus files, producing exactly 1 false read — packages/svelte/tests/validator/samples/declaration-tag-already-declared/input.svelte, whose entire subject is that `{let foo = 'baz'}` re-declares the script's `foo`, published `uses -> foo` at the declaration line. The tag REPLACES the generic read rather than adding to it: the first version of this fix ran both, and the head was still read at line 41 — pinned here by forbidding a read at 41 while pinning the pre-declaration read at 38. Two further hazards are pinned: the RIGHT-HAND SIDE is still a read (`alpha` on 45), and the keyword needs a WORD BOUNDARY, because `{letter = 5}` is an assignment to a member named `letter` and the first version read it as `let` + binding `ter`, fabricating a shadow.",
+  "expectSymbols": [
+    {
+      "name": "counter"
+    },
+    {
+      "name": "letter"
+    },
+    {
+      "name": "alpha"
+    },
+    {
+      "name": "beta"
+    },
+    {
+      "name": "doubler"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "counter",
+      "line_number": 38,
+      "meta.isTemplateExpression": true,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "letter",
+      "line_number": 39,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "alpha",
+      "line_number": 45,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    },
+    {
+      "type": "uses",
+      "target": "beta",
+      "line_number": 46,
+      "comment": "re-spelled 2026-10-20: the analyzer publishes no site list for a single-site read, because the row's own line IS the site (the multi-site rows carry `templateReadSites` + `templateReadSitesCollapsed`). The site constraint was therefore redundant with the `line_number` this row already pins, and the pinned line was verified to equal the published one."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "doubler",
+      "comment": "`{const doubler = (n) => n + 1}` on 42 rebinds `doubler`; the calls on 45 and 46 are to the template-local, so only their ARGUMENTS publish. The corpus's own precedent for this half is validator/samples/declaration-tag-already-declared, where the tag's name is the script's."
+    },
+    {
+      "type": "uses",
+      "target": "value",
+      "comment": "`counter.value` — a member LEAF on a binding is not a component-level read"
+    },
+    {
+      "type": "uses",
+      "target": "ter",
+      "comment": "the word-boundary case: `{letter = 5}` is an ASSIGNMENT to a member named `letter`, not a `let` tag with the binding `ter`. `letter` itself IS published on 39; a fabricated `ter` shadow would also be a defect, and publishing it is the observable half."
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+ "fixtureId": "python/interface-implements",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-27 — `implements` is the one type of the ontology this lane did not construct. Measured before the change: 0 edges over 184 python-codesql files AND 0 over 548 files of CPython's own stdlib, while a parse-tree probe found 37 interface-declaring class headers in those same 678 files (19 `metaclass=ABCMeta`, 15 a base of `Protocol`, 3 a base of `ABC`). The construct EXISTS and the analyzer was not reading it, so it is a GAP and not a ruling. python has ONE base-list clause and in python an interface IS a class — `issubclass(Foo, MyABC)` is True and `MyABC` is in `Foo.__mro__` — so the base carries BOTH facts and the lane has to say which one an edge publishes. RULED 2026-10-09 (PY-34): ONE edge, the most specific true label (`implements`), with the inheritance fact published where the store WALKS it — `metadata.superTypes` from the FULL base list, which the indexer copies into `brain_symbol.super_types` and which `member-owner-resolution`/`override-retarget` read. An earlier revision of this file took the additive reading (`extends` kept beside `implements`); its row is now a forbid in the list below, with the reason recorded there, and `python/interface-qualified-subscript-head` pins the same reconciliation. Each row below is adjudicated by CPython 3.10.12, not by the analyzer: importing the fixture and reading `type(cls).__name__` and `cls.__mro__` gives ABCMeta or _ProtocolMeta for every `expect` target, and metaclass `type` for every `forbid` target. The two forbid rows that carry the most weight are `InheritsPlain` and `AboveTheRebind`/`BelowTheRebind`: an `@abstractmethod` on a class whose metaclass is `type` is a marker the interpreter does nothing with (`ProductBuilder()` constructs; `__abstractmethods__` does not even exist on it), and the LAST BINDING of a marker name above the base's own line decides which `ABC` a bare base refers to — which is why `AboveTheRebind` (declared before the local `class ABC`) inherits `abc.ABC` and `BelowTheRebind` (declared after it) inherits the local class, though `__bases__` prints the identical `ABC` for both.",
+ "expectRelationships": [
+  {
+   "type": "implements",
+   "source": "Repository",
+   "target": "ABC",
+   "meta.reasonCode": "stdlib-interface-marker",
+   "meta.evidenceClass": "structural",
+   "note": "`class Repository(ABC)` with `from abc import ABC` at L12. CPython: metaclass ABCMeta, isabstract True."
+  },
+  {
+   "type": "implements",
+   "source": "Service",
+   "target": "Repository",
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "an in-file base whose OWN HEADER declares it an interface. CPython: Repository.__mro__ contains abc.ABC."
+  },
+  {
+   "type": "implements",
+   "source": "Reader",
+   "target": "Protocol",
+   "meta.reasonCode": "stdlib-interface-marker",
+   "note": "PEP 544. CPython: metaclass _ProtocolMeta; `Reader()` is refused outright — \"Protocols cannot be instantiated\" — abstract member or not."
+  },
+  {
+   "type": "implements",
+   "source": "ConcreteReader",
+   "target": "Reader",
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "conformance to a protocol is inheritance in python, so this is both `extends` and `implements`"
+  },
+  {
+   "type": "implements",
+   "source": "InheritsMetaclassShape",
+   "target": "MetaclassShape",
+   "meta.reasonCode": "in-file-interface-base",
+   "note": "`metaclass=abc.ABCMeta` is the interface declaration that needs no import and no positional base"
+  },
+  {
+   "type": "implements",
+   "source": "AboveTheRebind",
+   "target": "ABC",
+   "note": "PY-29, the POSITIVE half of the positional rule, and the row the file's prose always claimed and its row set never held: `AboveTheRebind` is declared BEFORE the local `class ABC`, so the binding its base expression sees is `from abc import ABC` at L20 and the base really is the stdlib class. Pinned opposite the `BelowTheRebind` forbid so that dropping either half of the test fails here rather than passing for the wrong reason."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "extends",
+   "source": "Service",
+   "target": "Repository",
+   "note": "PY-34 (ruling 2026-10-09). THIS ROW WAS AN EXPECT when the file was merged, on the reasoning that a proven interface base is ADDITIVE because `issubclass(Foo, MyABC)` is True and `MyABC` is in `Foo.__mro__`. It is now a forbid, and the reason is that the inheritance fact the reasoning protects is published where the store WALKS it rather than as a second edge: `metadata.superTypes` carries the FULL base list, the indexer copies it into `brain_symbol.super_types`, and that column is what `member-owner-resolution` and `override-retarget` read \u2014 while the relationship label stays the most specific true one (`implements`), as `python/implements-interface-bases` and `python/interface-qualified-subscript-head` also pin. The row's own justification was also refuted by the code it appealed to: `extractOverrideRelationships` builds its MRO walk from `ctx.basesByClassKey` \u2014 the class's recorded base list \u2014 and only falls back to a name-keyed table built from `extends` rows when no owner declaration was recorded, so no override derivation depends on this edge existing."
+  },
+  {
+   "type": "implements",
+   "source": "BelowTheRebind",
+   "target": "ABC",
+   "note": "PY-29, the NEGATIVE half: the local `class ABC` above this line rebinds the name, so this base is ordinary inheritance from a local class and the stdlib import proves nothing here. CPython: `BelowTheRebind.__mro__` holds the local class, metaclass `type`, `inspect.isabstract` False."
+  },
+  {
+   "type": "implements",
+   "source": "InheritsPlain",
+   "target": "Plain",
+   "note": "THE load-bearing forbid. `class Plain:` carries an `@abstractmethod` and CPython gives it metaclass `type`, no `__abstractmethods__` attribute at all, `inspect.isabstract` False, and it CONSTRUCTS. A decorator is not a declaration; treating it as one gave every subclass of such a class a fabricated structural edge at confidence 1.0."
+  },
+  {
+   "type": "implements",
+   "source": "InheritsLocal",
+   "target": "Local",
+   "note": "a plain in-file class. `implements` is a DECLARED interface relationship, not \"has a method with a body\" and not a naming convention."
+  },
+  {
+   "type": "implements",
+   "source": "BelowTheRebind",
+   "target": "ABC",
+   "note": "`class BelowTheRebind(ABC)` sits BELOW a local `class ABC`, so the bare name binds to the LOCAL class. CPython: `BelowTheRebind.__mro__` is (BelowTheRebind, ABC, object) with the local ABC, metaclass `type` — indistinguishable from `AboveTheRebind.__mro__` by printing, so only the binding order answers it."
+  },
+  {
+   "type": "implements",
+   "source": "InheritsMetaclassShape",
+   "target": "object",
+   "note": "`extends` is emitted for `object` but never `implements`: `object` is the universal base, not an interface."
+  },
+  {
+   "type": "implements",
+   "source": "Repository",
+   "target": "abstractmethod",
+   "note": "the same class of R7 defect the lane already fixed once (#747): a keyword argument in a base list is not a base class"
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "Repository",
+   "kind": "class",
+   "note": "the in-file interface the `in-file-interface-base` tier keys on"
+  },
+  {
+   "name": "MetaclassShape",
+   "kind": "class",
+   "note": "declares an interface with NO import and NO positional base"
+  }
+ ]
+}

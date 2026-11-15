@@ -47,7 +47,7 @@ let files = 0, classes = 0, classesWithBase = 0, methods = 0
 
 // ---- PASS 1: parse everything, merge the companion, remember each class -------
 for (const repo of ["phpunit", "phpmyadmin"]) {
-  const dir = path.join("$HOME/fixtures/repositories", repo)
+  const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
   for (const f of execSync(`git ls-files -z -- '*.php'`, { cwd: dir, maxBuffer: 1 << 28 }).toString().split("\0").filter(Boolean).sort()) {
     if (files >= CAP) break
     let src: string, res: any

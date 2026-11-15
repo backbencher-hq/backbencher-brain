@@ -1,0 +1,79 @@
+{
+  "fixtureId": "go/type-usage-graph",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the declared-type reference graph: struct fields attribute to the struct, params/receivers/returns to the method; builtins (int, error) excluded. QUALIFIED TYPE SPELLING, revised this round (#799, R10): a qualified type USE is published under the name the lane would publish for that type as a symbol — `io.Writer` declares `Writer` — so the target is the LEAF and the package-qualified spelling rides in metadata.qualifiedType. The pre-round expectation pinned the raw dotted form (`io.Writer`), which made this surface the last place in the lane publishing source text as a target while `uses` targeted selector leaves (`pkg.Fn` -> `Fn`) and the round's own `extends` fix published the embedded type's leaf; `references|.` was one of the four triples the R10 census reported unruled for go (script/m60/target-spelling-census.ts --lane go: sep=39280, unruled=extends|.,references|-,references|.,references|/). The census measures separators in TARGETS against the characters the lane's own SYMBOLS use, and no Go declaration contains `.`.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "Writer",
+      "meta.relationshipType": "declared_type",
+      "meta.qualifiedType": "io.Writer"
+    },
+    {
+      "type": "references",
+      "target": "TypeGraph",
+      "meta.relationshipType": "declared_type"
+    },
+    {
+      "type": "references",
+      "target": "TypeGraph",
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "uses",
+      "source": "worker",
+      "target": "jobs",
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "send"
+    },
+    {
+      "type": "uses",
+      "source": "worker",
+      "target": "jobs",
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "receive"
+    },
+    {
+      "type": "uses",
+      "source": "worker",
+      "target": "doneAll",
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "receive"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "target": "error"
+    },
+    {
+      "type": "uses",
+      "source": "pump",
+      "target": "ch",
+      "meta.relationshipType": "go_channel_operation"
+    },
+    {
+      "type": "uses",
+      "source": "pump",
+      "target": "done",
+      "meta.relationshipType": "go_channel_operation"
+    },
+    {
+      "type": "uses",
+      "source": "worker",
+      "target": "h.jobs",
+      "meta.relationshipType": "go_channel_operation"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "pump",
+      "equals": 4
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "fixtureId": "scss/error-recovery-is-reported",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A MAP LITERAL in an `@each` list is unreadable by the pinned grammar \u2014 `@each $k in (a, b)` parses and `@each $k, $v in (a: 1)` does not, because the list rule accepts values and a map is `key: value` PAIRS. The pin is `atLeast: 1` and deliberately NOT the measured count, because an exact number fails the moment the grammar learns map literals, and a fixture that breaks when the lane improves is a fixture that gets deleted instead of fixed. The form occurs ZERO times in 40,521 lines of corpus and is DECLARED in the grammar header rather than patched; what this fixture guarantees is that the failure stays VISIBLE, which is the property the CSS lane's own `error-recovery-is-reported` fixture was added for after every CSS fixture asserted zero errors and an empty array satisfies that.",
+  "expectErrorCount": [
+    {
+      "atLeast": 1
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+ "fixtureId": "python/module-rebinding-is-not-an-import-binding",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "The import-evidence claim rests on a name being bound by a module-level import. `import os` followed by `os = build_client()` leaves the import statement in the file and the name bound to a VALUE — so `os.getenv(...)` is a member call on the client object, not on the module, and certifying it external would be a false statement about where the member lives. The same fact makes `Path = partial(Path)` (the partial-application idiom) stop being pathlib's Path for every later annotation. This fixture pins BOTH refusals: the route-root rebinding (a module-level assignment subtracts the name from the import map) and the target rebinding (the assignment publishes a module Variable symbol, so the declared-name guard refuses it). The two positive rows are the control that keeps the fixture from passing vacuously: `loads` is imported and NEVER rebound, so its two calls keep the claim — a guard that simply disabled the whole certifier would fail them.",
+ "expectRelationships": [
+  {
+   "type": "calls",
+   "from": "parse",
+   "target": "loads",
+   "line_number": 32,
+   "meta.reasonCode": "bare-name-callee",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "json",
+   "note": "POSITIVE CONTROL: `from json import loads` binds the name and nothing in this file rebinds it, so the call names json's function."
+  },
+  {
+   "type": "calls",
+   "from": "positive",
+   "target": "loads",
+   "line_number": 37,
+   "meta.reasonCode": "bare-name-callee",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "json",
+   "note": "The second positive row exists so a guard that keys on a FUNCTION (rather than on the name) is caught too."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "use",
+   "target": "getenv",
+   "line_number": 24,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: `os = build_client()` at module scope rebinds the imported module name. The route `os.getenv` starts with `os`, but `os` is the client object by the time `use()` runs; the claim must be refused. This is the row a rule that reads only the import statement would certify."
+  },
+  {
+   "type": "references",
+   "from": "build",
+   "target": "Path",
+   "line_number": 27,
+   "meta.isExternalTarget": true,
+   "note": "NEGATIVE: `Path = partial(Path)` rebinds the imported class at module scope, and the assignment publishes a module Variable symbol — so the annotation names this file's binding, not pathlib's."
+  }
+ ]
+}

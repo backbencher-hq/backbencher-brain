@@ -1,0 +1,52 @@
+{
+  "fixtureId": "cpp/friend-owner-name-recovery",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D13/D1, UPDATED by the CP3 loss-audit pass — the two ENDPOINT FABRICATIONS the C++ lane still shipped at HEAD, both pinned from the same source file. THE UPDATE: the friend DEFINITIONS this file contains are now PUBLISHED (42 friend definitions corpus-wide had no symbol at all, so every edge naming one was unresolvable), so CONTROL 1's assertion moved from the read's `from` field to the SYMBOL's `ownerName`: the body's read is now owned by the friend itself (`uses operator!= -> size_`, the discipline every member function gets), while the friend's OWNER must still be the published namespace `clean_ns` — a rule that answered `global` everywhere now fails on `{ name: operator!=, ownerName: clean_ns }` instead of on a `uses` row, which is a stronger place to state it because it is the symbol's own claim rather than an edge's source. The damaged case's friend is published too, with NO owner at all (`ownerName: null`): the recovery left the namespace unpublished, so the honest owner is the file-scope sentinel, and the forbid below pins that no fabricated text took its place. Both friends are pinned as ONE symbol each — the arm's first cut also published the friend DECLARATION of the out-of-line `operator<` shape whenever any body existed above it, which is pinned in cpp/friend-definition-published. THE ORIGINAL PIN. MEASURED, HEAD analyzer vs the fixed one, on THIS EXACT FILE (the HEAD artifacts were produced by running the fixture through `git show HEAD:src/ast/real-cpp-analyzer.ts` side by side with the working tree, same harness, same grammar): HEAD emits 8 relationships, the fix emits 7, and the two that disappear are the fabrications — `uses namespace detail -> m_it` (line 45) and `instantiates manufactured -> T` (line 66). (1) THE OWNER FABRICATION. `NLOHMANN_JSON_NAMESPACE_BEGIN` is a bare macro (deliberately NOT defined here); the grammar swallows the macro AND the following `namespace detail {` head into one `function_definition` whose declarator TEXT is the two words `namespace detail`, and a walk that re-derives an enclosing scope's name from node fields published that text as the SOURCE of a member read. The text is not a name: it is two tokens, it is a symbol in no translation unit, no store can resolve it, and no consumer can distinguish it from a real source. The keyword set cannot catch it — `namespace detail` is not IN CPP_KEYWORDS, it merely CONTAINS a keyword — which is why the fix is structural rather than another spelling test: the owner now comes off the walk's OWN scope stack (`friendBodyOwner`), which holds only scopes whose symbols were published, so a recovery that published nothing leaves the file scope and the honest answer is the declared `global` sentinel. CONTROL 1 IS THE DISCRIMINATOR for that rule and it is why `uses clean_ns -> size_` is a POSITIVE assertion: a `namespace … {` the grammar parses normally IS published, so the friend body's owner must be `clean_ns` and not `global` — a fix that answered `global` everywhere (or dropped the re-own path) fails here. The damaged case's own row is pinned for EXISTENCE only (`uses -> m_it`, owner left free on purpose): if a later round recovers `detail` out of the ERROR region, the owner becomes a real name, the forbid below still holds, and this pin does not have to be weakened to let that improvement through. (2) THE PARAMETER FABRICATION. `new T()` inside `template <typename T> T* manufactured()` constructs a TYPE PARAMETER, not a class, so HEAD published `instantiates manufactured -> T` — a target no TU can declare. The guarded target is the ordinary shape (a real `template_declaration` node); the sibling shape where the whole file is one ERROR region and the parameter list is displaced to a preceding `< … >` frame (doctest.h:2104, `instantiates -> Reporter`) is NOT reproducible in a small fixture — it needs the 7,142-line header that triggers the whole-file ERROR — so that half is measured on the corpus (the row is gone; 20 `instantiates` rows corpus-wide before, 19 after, with `DebugOutputWindowReporter` the only remaining Reporter and a real class) rather than pinned here. CONTROL 2's positive half is `instantiates make_gadget -> gadget` in the same file, so a guard that refused every `new` inside a template fails, and `manufactured` must produce NO instantiation at all.",
+  "expectSymbols": [
+    { "name": "clean_ns", "kind": "namespace" },
+    { "name": "widget", "kind": "class", "ownerName": "clean_ns" },
+    { "name": "size_", "kind": "property", "ownerName": "widget" },
+    { "name": "operator!=", "kind": "function", "ownerName": "clean_ns", "meta.isCppFriendDefinition": true },
+    { "name": "primitive_iterator_t", "kind": "class" },
+    { "name": "m_it", "kind": "property", "ownerName": "primitive_iterator_t" },
+    { "name": "operator==", "kind": "function", "ownerName": null, "meta.isCppFriendDefinition": true },
+    { "name": "gadget", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "gadget" },
+    { "name": "manufactured", "kind": "function" },
+    { "name": "make_gadget", "kind": "function" }
+  ],
+  "expectSymbolCount": [
+    { "name": "clean_ns", "equals": 1 },
+    { "name": "widget", "equals": 1 },
+    { "name": "primitive_iterator_t", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "operator!=", "target": "size_", "meta.relationshipType": "field_access" },
+    { "type": "contains", "from": "clean_ns", "target": "operator!=" },
+    { "type": "uses", "target": "m_it", "meta.relationshipType": "field_access" },
+    { "type": "contains", "from": "clean_ns", "target": "widget" },
+    { "type": "contains", "from": "primitive_iterator_t", "target": "m_it" },
+    { "type": "contains", "from": "gadget", "target": "constructor" },
+    { "type": "instantiates", "from": "make_gadget", "target": "gadget" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "namespace detail" },
+    { "type": "uses", "from": "namespace detail", "target": "m_it" },
+    { "type": "instantiates", "from": "manufactured" },
+    { "type": "instantiates", "target": "T" },
+    { "type": "uses", "from": "global", "target": "size_" },
+    { "type": "uses", "from": "widget", "target": "size_" },
+    { "type": "uses", "from": "clean_ns", "target": "size_" },
+    {"type": "uses", "from": "namespace detail", "target": "primitive_iterator_t::m_it", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "global", "target": "widget::size_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "widget", "target": "widget::size_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "clean_ns::widget", "target": "size_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "clean_ns", "target": "widget::size_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"uses","from":"clean_ns::widget","target":"widget::size_","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ],
+  "forbidSymbols": [
+    { "name": "operator!=", "ownerName": "widget" },
+    { "name": "operator==", "ownerName": "primitive_iterator_t" }
+  ]
+}

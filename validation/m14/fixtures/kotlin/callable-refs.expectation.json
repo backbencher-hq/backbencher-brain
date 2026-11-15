@@ -1,0 +1,14 @@
+{
+  "fixtureId": "kotlin/callable-refs",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the K3 gap: Foo::bar callable references reference the type Foo. Semantics: a callable reference is a first-class handle to a member of Foo, so apply() references Foo. Previously only the map() call was emitted — the type reference was silently absent.",
+  "expectSymbols": [
+    { "name": "Foo", "kind": "class" },
+    { "name": "RefUser", "kind": "class" },
+    { "name": "apply", "ownerName": "RefUser" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "apply", "target": "Foo", "meta.relationshipType": "callable_reference" }
+  ]
+}

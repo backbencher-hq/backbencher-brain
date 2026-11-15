@@ -1,0 +1,24 @@
+{
+  "fixtureId": "typescript/async-arrow-and-iface-overrides",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 #757/#759 (TS self-audit + svelte-wave verification). #757: async expression-bodied arrows reported returnType 'void' — TS semantics: async ALWAYS returns a Promise; expression bodies infer via inferFromInitializer (number/string/...), block bodies via the return walker, explicit annotations authoritative and never re-wrapped. #757-2: bracket-form req['body'] produced no taint source (dotted-only matching); same receiver-leaf contract now covers subscript_expression with a string-literal index. #759: interface-heritage members emitted ZERO overrides — the class-only metadata.isOverride pass required a Class parent; structural-tier in-file BFS over metadata.extends now mirrors the oracle's truth walk (transitive depth-10, overload-abstaining).",
+  "expectSymbols": [
+    { "name": "f1", "kind": "function", "returnType": "Promise<number>", "note": "async expr arrow (pre-fix: void)" },
+    { "name": "f2", "kind": "function", "returnType": "number", "note": "sync expr arrow (T3 precedent now real)" },
+    { "name": "f3", "kind": "function", "returnType": "Promise<string>", "note": "async block arrow" },
+    { "name": "f4", "kind": "function", "returnType": "Promise<number>", "note": "explicit annotation, never double-wrapped" },
+    { "name": "f5", "kind": "function", "returnType": "string", "note": "explicit sync annotation untouched" }
+  ],
+  "expectTaintSources": [
+    { "symbol": "b1", "includes": ["req['body']"], "note": "bracket form now visible (pre-fix: none)" },
+    { "symbol": "b2", "includes": ["req.body"], "note": "dotted control unchanged" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "Spring.subscribe", "target": "Readable.subscribe", "confidenceMin": 0.95, "note": "#759: interface-heritage structural override" }
+  ],
+  "forbidRelationships": [
+    { "type": "overrides", "target": "Unrelated.distinct", "note": "no heritage link, no edge" },
+    { "type": "overrides", "from": "Spring.distinct", "note": "member not declared in Spring: no pairing" }
+  ]
+}

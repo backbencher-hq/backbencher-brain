@@ -1,0 +1,47 @@
+{
+  "comment": "NIM `part_of` fixture — the R3 relabel of the `include` row, pinned in BOTH directions. `include helpers` is a TEXTUAL scope-sharing inclusion (the included file's declarations join THIS module's single declaration space; no module is created and nothing can `import` what was included), which is the `part_of` contract (src/ast/types.ts:164-190). The relabel is 1:1: same source `(global)`, same target `helpers` (the analyzer's normalized MODULE NAME), same line, same confidence, same `metadata.relationshipType: \"nim_include\"` marker. Two metadata fields are the contract's: `partRole: \"library\"` — nim has only the host role of Dart's two, because an included file does not know it is included — and `targetResolution: \"module-name\"`, which RECORDS the divergence from fsharp/php (they emit project-relative paths) rather than flattening it. The forbid half is what stops a half-relabel: a row emitted under BOTH labels would double-count in the closure, and the old label would still be published.",
+  "expectSymbols": [
+    {
+      "name": "usesHelper",
+      "kind": "function",
+      "meta.nimCallableKind": "proc",
+      "comment": "a proc in the INCLUDING file, beside the included declarations"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "(global)",
+      "target": "helpers",
+      "meta.relationshipType": "nim_include",
+      "meta.partRole": "library",
+      "meta.targetResolution": "module-name",
+      "meta.evidenceClass": "import_based",
+      "comment": "the relabel: `include helpers` is a part_of row from the file carrying the directive to the module name it names, with the mandatory partRole and the recorded target rule"
+    },
+    {
+      "type": "calls",
+      "from": "usesHelper",
+      "target": "helper",
+      "comment": "the included declaration is callable from the including module — the scope-sharing half of the part_of semantics, and the reason `include` is not `imports`"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "helpers",
+      "comment": "THE NEGATIVE HALF: the `include` row must no longer be published as `imports`. A relabel that emits both labels double-counts the construct and keeps the old spelling alive"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "helpers",
+      "meta.nimInclude": true,
+      "comment": "the ImportInfo payload STAYS: it is the parsed directive list (persisted into brain_import by src/ast/parallel-indexer.ts), not a relationship, so a consumer reading the file's directive list loses nothing when the relationship's label moves"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

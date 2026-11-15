@@ -1,0 +1,188 @@
+{
+  "fixtureId": "c/macro-generated-enumerator",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "An enumerator the analyzer cannot NAME must not be published from a macro invocation's ARGUMENTS. curl declares its option table with `#define CURLOPT(id, type, num) CURLOPT_##id = num` in enumerator position, which the pinned grammar reads as an enumerator_list of ERROR fragments (the macro's punctuation) with bare `enumerator(identifier)` fragments between them -- one per argument. The extractor read every enumerator as real, so each invocation published its ARGUMENTS as enum members: measured `CURLOPTTYPE_CBPOINT` twenty-one times under `CURLoption` in curl/include/curl/curl.h, with `CURLOPT_WRITEDATA` beside it and a `contains` edge onto each. The corpus consequence is visible as duplicate member names -- 41 in curl, 41 in libgit2, 19 in redis -- two phantoms per invocation colliding under one owner. The real name is derivable only AFTER token pasting, so it is C-D2 territory and silence is the honest result. The two controls are the readings a whole-list rejection would destroy, and they are the reason the rule is positional rather than a blunt 'this list is damaged': `PLAIN_MEMBER` sits BETWEEN two invocations in the same damaged list and is a clean enumerator, and `REAL_AFTER` follows one. The libgit2/redis duplicate members are the same class -- a tag redeclared in mutually exclusive preprocessor arms, plus these argument phantoms -- which is why duplicate member names are a REPORTED dimension and not a gate (see the gate's P8 note).",
+  "expectSymbols": [
+    {
+      "name": "CURLOPT",
+      "kind": "macro"
+    },
+    {
+      "name": "CURLOPTTYPE_CBPOINT",
+      "kind": "constant"
+    },
+    {
+      "name": "CURLoption",
+      "kind": "enum"
+    },
+    {
+      "name": "PLAIN_MEMBER",
+      "kind": "enum_member",
+      "ownerName": "CURLoption",
+      "note": "CONTROL: a real enumerator BETWEEN two macro invocations in the same damaged list"
+    },
+    {
+      "name": "ANOTHER_PLAIN",
+      "kind": "enum_member",
+      "ownerName": "CURLoption"
+    },
+    {
+      "name": "plain_enum",
+      "kind": "enum"
+    },
+    {
+      "name": "ONE",
+      "kind": "enum_member",
+      "ownerName": "plain_enum",
+      "note": "CONTROL: an undamaged list"
+    },
+    {
+      "name": "TWO",
+      "kind": "enum_member",
+      "ownerName": "plain_enum"
+    },
+    {
+      "name": "single_invocation",
+      "kind": "enum"
+    },
+    {
+      "name": "REAL_AFTER",
+      "kind": "enum_member",
+      "ownerName": "single_invocation",
+      "note": "CONTROL: a real enumerator following one invocation"
+    },
+    {
+      "name": "FN_LIKE_MACRO",
+      "kind": "macro"
+    },
+    {
+      "name": "OBJ_LIKE_MACRO",
+      "kind": "constant"
+    },
+    {
+      "name": "function_like_is_real",
+      "kind": "enum"
+    },
+    {
+      "name": "FN_LIKE_MACRO",
+      "kind": "enum_member",
+      "ownerName": "function_like_is_real",
+      "note": "CONTROL: a FUNCTION-like macro name as an enumerator is REAL -- no `(` follows it, so the preprocessor leaves it alone"
+    },
+    {
+      "name": "REAL_AFTER_FN",
+      "kind": "enum_member",
+      "ownerName": "function_like_is_real"
+    },
+    {
+      "name": "object_like_is_not",
+      "kind": "enum"
+    },
+    {
+      "name": "REAL_AFTER_OBJ",
+      "kind": "enum_member",
+      "ownerName": "object_like_is_not"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "CURLOPT_WRITEDATA",
+      "kind": "enum_member",
+      "note": "THE DEFECT: the macro invocation's FIRST argument read as an enumerator"
+    },
+    {
+      "name": "CURLOPT_URL",
+      "kind": "enum_member",
+      "note": "THE DEFECT: the same, second invocation"
+    },
+    {
+      "name": "CURLOPT_ONLY_ONE",
+      "kind": "enum_member",
+      "note": "THE DEFECT: the single-invocation spelling"
+    },
+    {
+      "name": "CURLOPTTYPE_CBPOINT",
+      "kind": "enum_member",
+      "note": "THE DEFECT: the macro invocation's SECOND argument, which is also a macro in this file -- the C-D12 principle in the enum position"
+    },
+    {
+      "name": "OBJ_LIKE_MACRO",
+      "kind": "enum_member",
+      "note": "THE DEFECT, object-like half: an object-like macro IS replaced wherever the name appears, so this is a macro use, not an enumerator"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "CURLoption",
+      "target": "PLAIN_MEMBER"
+    },
+    {
+      "type": "contains",
+      "from": "CURLoption",
+      "target": "ANOTHER_PLAIN"
+    },
+    {
+      "type": "contains",
+      "from": "plain_enum",
+      "target": "ONE",
+      "note": "CONTROL: an undamaged list keeps every member"
+    },
+    {
+      "type": "contains",
+      "from": "plain_enum",
+      "target": "TWO"
+    },
+    {
+      "type": "contains",
+      "from": "single_invocation",
+      "target": "REAL_AFTER",
+      "note": "CONTROL: a real enumerator after the invocation"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "CURLOPT",
+      "note": "the macro invocation IS a use of the macro -- that edge is the documented macro-is-a-use ruling and must survive"
+    },
+    {
+      "type": "contains",
+      "from": "function_like_is_real",
+      "target": "FN_LIKE_MACRO",
+      "note": "CONTROL: the function-like member keeps its containment"
+    },
+    {
+      "type": "contains",
+      "from": "object_like_is_not",
+      "target": "REAL_AFTER_OBJ"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "target": "CURLOPT_WRITEDATA",
+      "note": "THE DEFECT: containment onto a macro argument"
+    },
+    {
+      "type": "contains",
+      "target": "CURLOPT_URL",
+      "note": "THE DEFECT: containment onto a macro argument"
+    },
+    {
+      "type": "contains",
+      "target": "CURLOPT_ONLY_ONE",
+      "note": "THE DEFECT: containment onto a macro argument"
+    },
+    {
+      "type": "contains",
+      "target": "CURLOPTTYPE_CBPOINT",
+      "note": "THE DEFECT: containment onto a macro argument"
+    },
+    {
+      "type": "contains",
+      "target": "OBJ_LIKE_MACRO",
+      "note": "THE DEFECT, object-like half"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m43/verify-a2-cli-auto-refresh.ts",
+  "evidenceFile": "A2.json",
+  "generatedAt": "2026-11-05T04:30:36.672Z",
+  "passed": 18,
+  "failed": 0,
+  "negativeCases": 5,
+  "negativesDescription": "no-auto-refresh-not-refresh, parity-no-stale, disabled-not-refresh, disabled-differs-from-control, status-never-reindexes"
+}

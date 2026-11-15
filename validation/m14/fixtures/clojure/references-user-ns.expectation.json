@@ -1,0 +1,36 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the derived calls oracle while closing `references`: `nsAt` returns \"\" for a file with no `ns` form, so 70 dependency edges across the corpus were published as `references||\u2026` - a relationship with only one end, which is exactly what the 'all extracted, resolved and emitted' contract exists to prevent. The analyzer attributes those to Clojure's default namespace, `user`. CLJ-D47 taught exactly this fallback to the `calls` derivation; the two halves having drifted apart is the same lesson as the alias tables, where one language fact was re-derived in four places and each copy drifted differently. Pinned with no `ns` form at all, because that is the smallest instance and is not contrived - scratch files and REPL pastes routinely omit one.",
+  "expectSymbols": [
+    {
+      "name": "shout",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "user",
+      "target": "clojure.string",
+      "line_number": 11
+    },
+    {
+      "type": "references",
+      "from": "user",
+      "target": "clojure.string",
+      "line_number": 13
+    },
+    {
+      "type": "calls",
+      "from": "shout",
+      "target": "clojure.string/upper-case",
+      "line_number": 13
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": ""
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.63",
+  "code": "V9",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: the exclusions, the freshness text and the first paint say what is true",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "attribution: the fixture excludes the vendored symbol",
+      "pass": true,
+      "detail": "{\"symbols\":1,\"byPattern\":{\"vendor\":1},\"byRule\":{},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"],\"includesTestFiles\":true}"
+    },
+    {
+      "name": "attribution: every dropped symbol is attributed to a named rule",
+      "pass": true,
+      "detail": "attributed=1 symbols=1 byPattern={\"vendor\":1} byRule={}"
+    },
+    {
+      "name": "attribution: the segment rule is still named for what it removed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"vendor\":1}"
+    },
+    {
+      "name": "attribution: and the suffix list is DECLARED in the reply",
+      "pass": true,
+      "detail": "[\".d.ts\",\".min.js\",\".map\"]"
+    },
+    {
+      "name": "attribution: the test rule has a name of its own",
+      "pass": true,
+      "detail": "{\"test-sources\":1}"
+    },
+    {
+      "name": "attribution: and the count grew with the rule that caused it",
+      "pass": true,
+      "detail": "1 -> 2"
+    },
+    {
+      "name": "attribution: the larger exclusion set is still fully attributed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "attributed=2 symbols=2"
+    },
+    {
+      "name": "unit attribution: five crafted symbols are dropped",
+      "pass": true,
+      "detail": "{\"symbols\":5,\"byPattern\":{\"vendor\":1},\"byRule\":{\"build-suffix .d.ts\":1,\"build-suffix .min.js\":1,\"build-suffix .map\":1,\"test-sources\":1},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"],\"includesTestFiles\":false}"
+    },
+    {
+      "name": "unit attribution: every one is attributed (the old block attributed ONE)",
+      "pass": true,
+      "detail": "attributed=5 symbols=5 byPattern={\"vendor\":1} byRule={\"build-suffix .d.ts\":1,\"build-suffix .min.js\":1,\"build-suffix .map\":1,\"test-sources\":1}"
+    },
+    {
+      "name": "unit attribution: the three suffixes are counted under the suffix rule",
+      "pass": true,
+      "detail": "{\"build-suffix .d.ts\":1,\"build-suffix .min.js\":1,\"build-suffix .map\":1,\"test-sources\":1}"
+    },
+    {
+      "name": "unit attribution: the test rule is counted under its own name",
+      "pass": true,
+      "detail": "{\"build-suffix .d.ts\":1,\"build-suffix .min.js\":1,\"build-suffix .map\":1,\"test-sources\":1}"
+    },
+    {
+      "name": "unit attribution: the segment rule still names the segment",
+      "pass": true,
+      "detail": "{\"vendor\":1}"
+    },
+    {
+      "name": "unit attribution: with tests included the test rule does not fire [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"symbols\":4,\"byPattern\":{\"vendor\":1},\"byRule\":{\"build-suffix .d.ts\":1,\"build-suffix .min.js\":1,\"build-suffix .map\":1},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"],\"includesTestFiles\":true}"
+    },
+    {
+      "name": "attribution: the test rule appears in `byRule` rather than being folded into nothing",
+      "pass": true,
+      "detail": "{\"symbols\":2,\"byPattern\":{\"vendor\":1},\"byRule\":{\"test-sources\":1},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"],\"includesTestFiles\":false}"
+    },
+    {
+      "name": "freshness: a stale file produces a remediation",
+      "pass": true,
+      "detail": "{\"fresh\":0,\"stale\":1,\"missing\":0,\"staleRatio\":1,\"mode\":\"complete\",\"remediation\":\"1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \\\"src/api/handlers.ts\\\" (or the bb_index tool with that file path)\"}"
+    },
+    {
+      "name": "freshness: the remediation names the manual reindex interface",
+      "pass": true,
+      "detail": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/api/handlers.ts\" (or the bb_index tool with that file path)"
+    },
+    {
+      "name": "freshness: it does not claim this read auto-refreshes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/api/handlers.ts\" (or the bb_index tool with that file path)"
+    },
+    {
+      "name": "freshness: it does not name `refresh=false`, an option the schema does not publish [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/api/handlers.ts\" (or the bb_index tool with that file path)"
+    },
+    {
+      "name": "freshness: file scope gets the FILE remediation, naming this file",
+      "pass": true,
+      "detail": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/api/handlers.ts\" (or the bb_index tool with that file path)"
+    },
+    {
+      "name": "freshness: and not the directory remediation for a single file [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/api/handlers.ts\" (or the bb_index tool with that file path)"
+    },
+    {
+      "name": "freshness: project scope gets the directory remediation",
+      "pass": true,
+      "detail": "1 stale/missing — this read does NOT auto-refresh — the rows describe the index as it stands; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+    },
+    {
+      "name": "freshness: the schema publishes no `refresh` option for the text to name [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "scope,target,maxNodes,maxLinks,offset,relationshipTypes,symbolKinds,languages,excludePatterns,includeTests,view,layout,format"
+    },
+    {
+      "name": "freshness: and passing `refresh` is refused by validation rather than ignored [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown or irrelevant options: refresh — accepted options: scope, target, maxNodes, maxLinks, offset, relationshipTypes, symbolKinds, languages, e"
+    },
+    {
+      "name": "freshness: the generated page says this tool does not auto-refresh",
+      "pass": true,
+      "detail": "Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-node and per-link `stale` flags (links inherit worst-of-e"
+    },
+    {
+      "name": "freshness: and the page does not quote the auto-refresh remediation [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fre"
+    },
+    {
+      "name": "freshness: the page names the manual interface for both scopes",
+      "pass": true,
+      "detail": "Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fre"
+    },
+    {
+      "name": "first paint: the graph document declares its layout",
+      "pass": true,
+      "detail": "no data-bb-layout on <html>"
+    },
+    {
+      "name": "first paint: the graph still ships its save control",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "first paint: the picked-item box hides until something is selected",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 9,
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0
+  },
+  "decisions": {
+    "attribution": "every dropped symbol is attributed to exactly one named rule, so `symbols` reconciles with `byPattern` + `byRule`",
+    "freshness": "the remediation is the manual interface, because this read path does not auto-refresh and publishes no `refresh` option",
+    "firstPaint": "the emitted graph document is asserted structurally (it declares its layout, ships its save control, hides the picked-item box until something is picked)"
+  },
+  "limitations": [
+    "No DOM in this repository's dev dependencies, so the renderer assertions are structural (load-path order, CSS rules present) and the pixels come from the out-of-band screenshots.",
+    "One stale-file case for the freshness wording; the sampled-coverage mode is not exercised here."
+  ],
+  "generatedAt": "2026-11-05T04:20:11.318Z"
+}

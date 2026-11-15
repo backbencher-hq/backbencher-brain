@@ -1,0 +1,8 @@
+[
+  {"label":"file: unchanged file is an honest no-op","arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file: changed file parses and checkpoints the WAL","setup":{"write":{"path":"src/agent-fresh.ts","content":"export function AGENT_FRESH_SYM(x: number): number { return x * 5 }\nexport function AGENT_FRESH_SYM3(): string { return \"post-fix\" }\n"}},"arguments":{"path":"src/agent-fresh.ts"}},
+  {"label":"file: unsupported extension is declined, not called unchanged","setup":{"write":{"path":"assets/data.bin","content":"not source code at all"}},"arguments":{"path":"assets/data.bin"}},
+  {"label":"REFUSE: mode=post path outside project","arguments":{"path":"/etc","mode":"post"}},
+  {"label":"REFUSE: mode=post with a file path","arguments":{"path":"README.md","mode":"post"}},
+  {"label":"post: documented project-path form (.）","arguments":{"path":".","mode":"post"}}
+]

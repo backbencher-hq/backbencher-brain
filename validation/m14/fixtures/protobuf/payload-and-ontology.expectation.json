@@ -1,0 +1,298 @@
+{
+  "fixtureId": "protobuf/payload-and-ontology",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS protobuf's whole symbol and relationship contract \u2014 the FP-family surface every consumer of this analyzer depends on \u2014 against a source file that exercises each construct the language has, and asserts the NEGATIVE controls as carefully as the positive ones. Expectations are derived by reading this file and the protobuf declaration forms, not from an analyzer run. The specific claims under test, each of which is a place a protobuf analyzer can plausibly go wrong: (1) a message is a `class`, an enum is an `enum`, a service is an `interface` and an rpc is a `method` \u2014 protobuf has no class/interface/inheritance, so these are MAPPINGS and a reader who assumed the native names would read the wrong shapes; (2) a field's type produces a `uses` edge to a type THIS package declares, and a SCALAR produces none, because `string` is a keyword rather than a declaration; (3) a fully qualified reference with no leading dot still resolves absolutely, so `google.protobuf.Timestamp` lands on itself and not on `demo.v1.google.protobuf.Timestamp` \u2014 a dotted name is written fully qualified in practice, and prefixing the package yields a type that exists in no file; (4) a map's VALUE is a reference but a scalar map value is not, and the map's key type is never a reference; (5) a oneof's fields stay members of the MESSAGE and carry `metadata.oneof`, because a field number lives in the message's own space and `msg.field` is how every protobuf tool names it \u2014 the oneof itself is a `union` reached from the message, and there is deliberately no second `contains` edge from the oneof to its fields; (6) an rpc's request and response BOTH produce uses edges, and the grammar gives them the same node type with no field name, so they are told apart by position; (7) a file-level `import` is an import, and `import option` \u2014 the editions feature-import \u2014 is one too, because the pinned grammar had to be patched to accept it.",
+  "expectSymbols": [
+    {
+      "name": "demo.v1",
+      "kind": "namespace",
+      "note": "the package is a namespace, and top-level declarations are owned by it"
+    },
+    {
+      "name": "User",
+      "kind": "class",
+      "note": "a message maps to `class`, not to a protobuf-native name"
+    },
+    {
+      "name": "name",
+      "kind": "property"
+    },
+    {
+      "name": "role",
+      "kind": "property"
+    },
+    {
+      "name": "created",
+      "kind": "property"
+    },
+    {
+      "name": "labels",
+      "kind": "property",
+      "note": "a map field is a property like any other"
+    },
+    {
+      "name": "contact",
+      "kind": "union",
+      "note": "a oneof maps to `union`: it is a discriminated union of its fields"
+    },
+    {
+      "name": "email",
+      "kind": "property",
+      "note": "owned by the MESSAGE, not by the oneof"
+    },
+    {
+      "name": "phone",
+      "kind": "property"
+    },
+    {
+      "name": "Role",
+      "kind": "enum"
+    },
+    {
+      "name": "USER",
+      "kind": "enum_member"
+    },
+    {
+      "name": "ADMIN",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Auth",
+      "kind": "interface",
+      "note": "a service is a contract of operations; `interface` is the closest kind and `Service` is a legacy alias of `class`, so `class` would have been wrong as well as misleading"
+    },
+    {
+      "name": "Login",
+      "kind": "method"
+    },
+    {
+      "name": "Watch",
+      "kind": "method"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "User",
+      "startLine": 10,
+      "note": "the `message User` line, not the doc comment on 9"
+    },
+    {
+      "symbol": "contact",
+      "startLine": 15,
+      "note": "the `oneof contact` line"
+    },
+    {
+      "symbol": "email",
+      "startLine": 16,
+      "note": "the field's OWN line, one inside the oneof body \u2014 a reader that attributed a oneof field to the oneof's line would pass a one-field oneof and fail here"
+    },
+    {
+      "symbol": "Auth",
+      "startLine": 23
+    },
+    {
+      "symbol": "Login",
+      "startLine": 24
+    },
+    {
+      "symbol": "Watch",
+      "startLine": 25
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "demo.v1",
+      "target": "demo.v1.User",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.name",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.role",
+      "line_number": 12
+    },
+    {
+      "type": "references",
+      "from": "demo.v1.User.role",
+      "target": "demo.v1.Role",
+      "line_number": 12,
+      "note": "an unqualified reference to a type this file's package declares"
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.created",
+      "line_number": 13
+    },
+    {
+      "type": "references",
+      "from": "demo.v1.User.created",
+      "target": "google.protobuf.Timestamp",
+      "line_number": 13,
+      "note": "a DOTTED name with no leading dot still resolves absolutely. Prefix the package and this becomes demo.v1.google.protobuf.Timestamp, a type that exists in no file."
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.labels",
+      "line_number": 14
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.contact",
+      "line_number": 15,
+      "note": "the oneof is a union reached from the message"
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.email",
+      "line_number": 16,
+      "note": "the oneof's field is a member of the MESSAGE"
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.User",
+      "target": "demo.v1.User.phone",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1",
+      "target": "demo.v1.Role",
+      "line_number": 21
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.Role",
+      "target": "demo.v1.Role.USER",
+      "line_number": 21
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.Role",
+      "target": "demo.v1.Role.ADMIN",
+      "line_number": 21
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1",
+      "target": "demo.v1.Auth",
+      "line_number": 23
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.Auth",
+      "target": "demo.v1.Auth.Login",
+      "line_number": 24
+    },
+    {
+      "type": "references",
+      "from": "demo.v1.Auth.Login",
+      "target": "demo.v1.User",
+      "line_number": 24,
+      "note": "the rpc's REQUEST type"
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1.Auth",
+      "target": "demo.v1.Auth.Watch",
+      "line_number": 25
+    },
+    {
+      "type": "references",
+      "from": "demo.v1.Auth.Watch",
+      "target": "demo.v1.User",
+      "line_number": 25,
+      "note": "the request type again; the response is also User, on the same line, and the two are told apart by POSITION because the grammar gives both the same node type"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "references",
+      "from": "demo.v1.Auth.Login",
+      "target": "demo.v1.User",
+      "equals": 2,
+      "note": "request AND response, both User. Exactly two: a reader that emitted one per rpc, or one per distinct type, would report 1 and be wrong in opposite directions."
+    },
+    {
+      "type": "contains",
+      "from": "demo.v1",
+      "target": "demo.v1.User",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "demo.v1.User.contact",
+      "target": "demo.v1.User.email",
+      "note": "DELIBERATELY absent. A oneof's fields are members of the message, and the oneof is reached FROM the message; there is no second contains edge from the oneof to its fields. Membership and grouping are different relations, and overloading `contains` to mean both would make one edge mean two things. The grouping is recorded as `metadata.oneof` on each field instead."
+    },
+    {
+      "type": "references",
+      "from": "demo.v1.User.name",
+      "target": "string",
+      "note": "`string` is a scalar KEYWORD. There is no `string` declaration to point at, so a uses edge here would reference something that does not exist."
+    },
+    {
+      "type": "references",
+      "from": "demo.v1.User.labels",
+      "target": "string",
+      "note": "the map's VALUE is `string`, a scalar, so the map field produces no uses edge. The key type is a scalar by specification and is never a reference."
+    },
+    {
+      "type": "implements",
+      "from": "demo.v1.User",
+      "target": "demo.v1.Role",
+      "note": "protobuf has NO inheritance. A field of type Role is a reference (`uses`), not an implementation of an interface, and an `implements` edge here would invent a language feature that does not exist."
+    },
+    {
+      "type": "uses",
+      "from": "demo.v1.User.role",
+      "target": "demo.v1.Role",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "demo.v1.User.created",
+      "target": "google.protobuf.Timestamp",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "demo.v1.Auth.Login",
+      "target": "demo.v1.User",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "demo.v1.Auth.Watch",
+      "target": "demo.v1.User",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Timestamp",
+      "note": "an imported type is a reference target, not a declaration. `import \"google/protobuf/timestamp.proto\"` makes the type reachable; it does not make this file the place it is declared, and publishing it as a symbol would duplicate the declaration that lives in the imported file."
+    },
+    {
+      "name": "google.protobuf.Timestamp",
+      "note": "same reason, at the qualified spelling. The reference is the RELATIONSHIP's target, not a symbol of this file."
+    },
+    {
+      "name": "java_package",
+      "note": "a file-level option is file METADATA, not a declaration. It is a directive about code generation, not a type, a message or a field."
+    }
+  ]
+}

@@ -6446,29 +6446,120 @@ class TypeScriptAnalysisRunner {
         aliasDeclarations.set(aliasKey, declarations)
       }
     }
+    const aliasLoops = new Map<string, Node[]>()
+    for (const loop of pendingForIn) {
+      // `for-in` produces property keys, not the values stored in an array.
+      if (!loop.children.some(child => child?.type === "of")) continue
+      const declaration = loop.children.some(child => child && ["const", "let", "var"].includes(child.type))
+      for (const name of declarationBindingNames(loop.childForFieldName("left"))) {
+        const scope = declaration ? this.scopeIdOf(loop, loop.children.some(child => child?.type === "var")) : bindingScope(loop, name)
+        if (scope === undefined) continue
+        const key = bindingKey(scope, name)
+        const loops = aliasLoops.get(key) ?? []
+        loops.push(loop)
+        aliasLoops.set(key, loops)
+      }
+    }
+    // A symbol cannot collide with a real user-written object key or array index.
+    const iteratedElement = Symbol("iterated array element")
+    type OriginPath = (string | typeof iteratedElement)[]
+    const isArrayIndex = (key: string): boolean => /^(0|[1-9]\d*)$/.test(key) && Number(key) < 0xffffffff
+    const literalKey = (node: Node | null): string | null => {
+      if (!node) return null
+      if (["property_identifier", "identifier", "shorthand_property_identifier", "shorthand_property_identifier_pattern"].includes(node.type)) return node.text
+      if (node.type === "number" && /^\d+$/.test(node.text)) return node.text
+      if (node.type === "string" && /^(['"])([^\\\r\n]*)\1$/.test(node.text)) return node.text.slice(1, -1)
+      if (node.type === "computed_property_name") {
+        const value = node.namedChild(0)
+        return value && ["string", "number"].includes(value.type) ? literalKey(value) : null
+      }
+      return null
+    }
+    const unwrapAliasValue = (node: Node | null): Node | null => {
+      while (node && ["parenthesized_expression", "as_expression", "satisfies_expression", "non_null_expression"].includes(node.type)) node = node.namedChild(0)
+      return node
+    }
+    // Container aliases are may-alias links between lexical bindings. Rebinding
+    // does not erase a possible earlier relationship; rest copies are not links.
+    const containerAliases = new Map<string, Set<string>>()
+    const linkContainer = (left: Node | null, right: Node | null): void => {
+      left = unwrapAliasValue(left)
+      right = unwrapAliasValue(right)
+      if (left?.type !== "identifier" || right?.type !== "identifier") return
+      const leftScope = bindingScope(left, left.text)
+      const rightScope = bindingScope(right, right.text)
+      if (leftScope === undefined || rightScope === undefined) return
+      const a = bindingKey(leftScope, left.text)
+      const b = bindingKey(rightScope, right.text)
+      for (const [from, to] of [[a, b], [b, a]]) {
+        const aliases = containerAliases.get(from) ?? new Set<string>()
+        aliases.add(to)
+        containerAliases.set(from, aliases)
+      }
+    }
+    for (const declaration of pendingDeclarators) linkContainer(declaration.childForFieldName("name"), declaration.childForFieldName("value"))
+    type ContainerWrite = { path: (string | null)[]; value: Node; sourcePath: string[] }
+    const containerWrites = new Map<string, ContainerWrite[]>()
+    const collectContainerWrites = (target: Node | null, value: Node, sourcePath: string[]): void => {
+      target = unwrapAliasValue(target)
+      if (!target) return
+      if (target.type === "pair_pattern") {
+        const key = literalKey(target.childForFieldName("key"))
+        if (key !== null) collectContainerWrites(target.childForFieldName("value"), value, [...sourcePath, key])
+      } else if (["assignment_pattern", "object_assignment_pattern"].includes(target.type)) {
+        collectContainerWrites(target.childForFieldName("left"), value, sourcePath)
+        const fallback = target.childForFieldName("right")
+        if (fallback) collectContainerWrites(target.childForFieldName("left"), fallback, [])
+      } else if (target.type === "object_pattern") {
+        for (const child of target.namedChildren) collectContainerWrites(child, value, sourcePath)
+      } else if (target.type === "array_pattern") {
+        let index = 0
+        for (const child of target.children) {
+          if (!child) continue
+          if (child.type === ",") index++
+          else if (child.isNamed) collectContainerWrites(child, value, [...sourcePath, String(index)])
+        }
+      } else if (target.type === "member_expression" || target.type === "subscript_expression") {
+        const path: (string | null)[] = []
+        let base: Node | null = target
+        while (base && ["member_expression", "subscript_expression"].includes(base.type)) {
+          const property = unwrapAliasValue(base.childForFieldName("property") ?? base.childForFieldName("index"))
+          path.unshift(base.type === "subscript_expression" && property?.type === "identifier" ? null : literalKey(property))
+          base = unwrapAliasValue(base.childForFieldName("object"))
+        }
+        if (base?.type !== "identifier") return
+        const scope = bindingScope(base, base.text)
+        if (scope === undefined) return
+        const key = bindingKey(scope, base.text)
+        const writes = containerWrites.get(key) ?? []
+        writes.push({path, value, sourcePath})
+        containerWrites.set(key, writes)
+      }
+    }
+    for (const write of pendingAssignments) {
+      const left = write.childForFieldName("left")
+      const right = write.childForFieldName("right")
+      if (!left || !right || !(write.type === "assignment_expression" ||
+          (write.type === "augmented_assignment_expression" && ["&&=", "||=", "??="].includes(write.childForFieldName("operator")?.text ?? "")))) continue
+      linkContainer(left, right)
+      collectContainerWrites(left, right, [])
+    }
     const aliasFieldOwners = (receiver: Node): Set<string> => {
       const owners = new Set<string>()
       let root = receiver
       while (["parenthesized_expression", "as_expression", "satisfies_expression", "non_null_expression"].includes(root.type) && root.namedChild(0)) {
         root = root.namedChild(0)!
       }
-      if (root.type !== "identifier" || bindingScope(root, root.text) === undefined) return owners
-      const seen = new Set<string>()
-      const active = new Set<string>()
-      const literalKey = (node: Node | null): string | null => {
-        if (!node) return null
-        if (["property_identifier", "identifier", "shorthand_property_identifier", "shorthand_property_identifier_pattern"].includes(node.type)) return node.text
-        if (node.type === "number" && /^\d+$/.test(node.text)) return node.text
-        if (node.type === "string" && /^(['"])([^\\\r\n]*)\1$/.test(node.text)) return node.text.slice(1, -1)
-        if (node.type === "computed_property_name") {
-          const value = node.namedChild(0)
-          return value && ["string", "number"].includes(value.type) ? literalKey(value) : null
-        }
-        return null
+      let base: Node | null = root
+      while (base && ["member_expression", "subscript_expression"].includes(base.type)) {
+        base = unwrapAliasValue(base.childForFieldName("object"))
       }
+      if (base?.type !== "identifier" || bindingScope(base, base.text) === undefined) return owners
+      const seen = new Set<string>()
+      const active = new Map<string, number>()
       // Project only the binding selected by the pattern. Rest constructs create
       // copies; treating the copy itself as its source would invalidate unrelated fields.
-      const visitPattern = (pattern: Node | null, source: Node | null, target: string, path: string[], tail: string[]): void => {
+      const visitPattern = (pattern: Node | null, source: Node | null, target: string, path: OriginPath, tail: OriginPath): void => {
         if (!pattern) return
         if (["identifier", "shorthand_property_identifier_pattern"].includes(pattern.type)) {
           if (pattern.text === target) visitOrigin(source, [...path, ...tail])
@@ -6495,7 +6586,7 @@ class TypeScriptAnalysisRunner {
           }
         }
       }
-      const visitOrigin = (value: Node | null, path: string[] = []): void => {
+      const visitOrigin = (value: Node | null, path: OriginPath = []): void => {
         if (!value) return
         if (["parenthesized_expression", "as_expression", "satisfies_expression", "non_null_expression"].includes(value.type)) {
           visitOrigin(value.namedChild(0), path)
@@ -6522,7 +6613,7 @@ class TypeScriptAnalysisRunner {
           return
         }
         if (value.type === "member_expression" || value.type === "subscript_expression") {
-          const property = value.childForFieldName("property") ?? value.childForFieldName("index")
+          const property = unwrapAliasValue(value.childForFieldName("property") ?? value.childForFieldName("index"))
           const key = value.type === "subscript_expression" && property?.type === "identifier" ? null : literalKey(property)
           if (key !== null) visitOrigin(value.childForFieldName("object"), [key, ...path])
           return
@@ -6540,6 +6631,15 @@ class TypeScriptAnalysisRunner {
           return
         }
         if (value.type === "array" && path.length > 0) {
+          if (path[0] === iteratedElement) {
+            for (const member of value.namedChildren) {
+              if (!member) continue
+              if (member.type === "spread_element") visitOrigin(member.namedChild(0), path)
+              else visitOrigin(member, path.slice(1))
+            }
+            return
+          }
+          if (typeof path[0] !== "string" || !isArrayIndex(path[0])) return
           // A spread has unknown length; subsequent source positions are not proven.
           if (value.namedChildren.some(child => child?.type === "spread_element")) return
           let index = 0
@@ -6572,9 +6672,25 @@ class TypeScriptAnalysisRunner {
         }
         const key = bindingKey(scope, value.text)
         const projection = `${key}:${JSON.stringify(path)}`
-        if (active.has(key) || seen.has(projection)) return
+        const activeLength = active.get(key)
+        if ((activeLength !== undefined && path.length > activeLength) || seen.has(projection)) return
         seen.add(projection)
-        active.add(key)
+        active.set(key, path.length)
+        if (path.length > 0) {
+          const pending = [key]
+          const containers = new Set<string>()
+          while (pending.length > 0) {
+            const container = pending.pop()!
+            if (containers.has(container)) continue
+            containers.add(container)
+            pending.push(...(containerAliases.get(container) ?? []))
+            for (const write of containerWrites.get(container) ?? []) {
+              if (write.path.length <= path.length && write.path.every((part, index) => part === null || part === path[index] || (path[index] === iteratedElement && isArrayIndex(part)))) {
+                visitOrigin(write.value, [...write.sourcePath, ...path.slice(write.path.length)])
+              }
+            }
+          }
+        }
         // The direct identifier receiver is handled by the ordinary owner path.
         const hint = value === receiver ? null : lookupLocalInScope(scopedFacts, scope, value.text, value.startIndex)
         const owner = hint ? topLevelClasses.get(hint.type) : null
@@ -6586,6 +6702,9 @@ class TypeScriptAnalysisRunner {
             visitPattern(declaration?.childForFieldName("name") ?? null, declaration?.childForFieldName("value") ?? null, value.text, [], path)
           }
         }
+        for (const loop of aliasLoops.get(key) ?? []) {
+          visitPattern(loop.childForFieldName("left"), loop.childForFieldName("right"), value.text, [iteratedElement], path)
+        }
         for (const write of writeSites.get(key) ?? []) {
           if ((write.type === "assignment_expression" ||
               (write.type === "augmented_assignment_expression" && ["&&=", "||=", "??="].includes(write.childForFieldName("operator")?.text ?? ""))) &&
@@ -6593,7 +6712,8 @@ class TypeScriptAnalysisRunner {
             visitPattern(write.childForFieldName("left"), write.childForFieldName("right"), value.text, [], path)
           }
         }
-        active.delete(key)
+        if (activeLength === undefined) active.delete(key)
+        else active.set(key, activeLength)
       }
       visitOrigin(root)
       return owners

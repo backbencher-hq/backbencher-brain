@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-10-09T21:30:07.743Z",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "admitted": 5094,
+    "parsed": 5094,
+    "typeDeclarations": 4940
+  },
+  "control": {
+    "oracleSameFileEdges": 2,
+    "thisWalkerSameFileEdges": 2,
+    "match": true
+  },
+  "directBaseClauses": 3114,
+  "sameFileOverrideEdges": 2,
+  "crossFileOverrideEdges": 1233,
+  "crossFileUnambiguousBaseEdges": 781,
+  "crossFileAmbiguousBaseEdges": 452,
+  "externalBaseClauses": 68,
+  "pairs": {
+    "crossFile": 755,
+    "ambiguousBase": 382,
+    "external": 68
+  },
+  "crossFileFiles": 755,
+  "crossKindMix": {
+    "class_declaration": 1232,
+    "interface_declaration": 1
+  },
+  "sameFileDetail": [
+    "tests/query/highlights/php/keywords.php: B.foo -> A.foo",
+    "tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NoParamTypeRemovalRule/Fixture/SkipConstruct.php: SkipConstruct.__construct -> ParentConstructorClass.__construct"
+  ],
+  "examples": [
+    "examples/01-blog/Blog/Type/CommentType.php: CommentType extends ObjectType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/Enum/ContentFormatType.php: ContentFormatType extends EnumType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/Enum/ImageSizeType.php: ImageSizeType extends EnumType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/Enum/StoryAffordancesType.php: StoryAffordancesType extends EnumType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/ImageType.php: ImageType extends ObjectType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/NodeType.php: NodeType extends InterfaceType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/QueryType.php: QueryType extends ObjectType (declared in 1 file(s)) -> 1 edge(s)",
+    "examples/01-blog/Blog/Type/SearchResultType.php: SearchResultType extends UnionType (declared in 1 file(s)) -> 1 edge(s)"
+  ]
+}

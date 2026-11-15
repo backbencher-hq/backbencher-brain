@@ -1,0 +1,178 @@
+{
+  "_label": "sql whole-corpus typing \u2014 BOTH scopes, one run each, 2026-10-11",
+  "_unit": "edges published through the production parseFile path, classified by script/m14/incoming-rule.ts at the PER-PROJECT scope production resolves in. WHOLE = every admitted .sql file in /home/ishaq2321/bb_tests/repositories (1,964 of 1,970 tracked; 6 over the 1 MB cap). PINNED = the duckdb subset the firing instrument is wired to (594 files).",
+  "_commands": {
+    "whole": "npx tsx script/m14/incoming-gate.ts sql sql 0",
+    "pinned": "BB_PICK_CAP=2000 NFILES=1000 bun script/m14/firing-check.mjs SQL",
+    "raw": "validation/m14/fixtures/sql/whole-corpus-typing.txt"
+  },
+  "_population": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "repos_with_sql": 20,
+    "tracked": 1970,
+    "admitted": 1964,
+    "over_cap": 6,
+    "over_cap_largest_bytes": 3926506,
+    "tracked_list_sha256": "3dd1e6c0ff88189d947c06dd7f4adbaf7d42fdb86db4bd10b92d84170ea852dd",
+    "admitted_list_sha256": "80837faeb4f15882ee10ac4319829e6ca2a49eb0723a5f9889032946f4c20af3",
+    "parse_failures": 0,
+    "degraded_regex_fallback": 0
+  },
+  "whole_corpus_table1": {
+    "calls": {
+      "edges": 3908,
+      "resolved": 484,
+      "collRes": 0,
+      "amb": 2411,
+      "unres": 1007,
+      "extOK": 6,
+      "extFAIL": 0
+    },
+    "uses": {
+      "edges": 9160,
+      "resolved": 4560,
+      "collRes": 0,
+      "amb": 3582,
+      "unres": 734,
+      "extOK": 284,
+      "extFAIL": 0
+    },
+    "contains": {
+      "edges": 12132,
+      "resolved": 12132,
+      "collRes": 424,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "imports": {
+      "edges": 53,
+      "resolved": 16,
+      "collRes": 0,
+      "amb": 31,
+      "unres": 6,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "references": {
+      "edges": 6015,
+      "resolved": 2346,
+      "collRes": 0,
+      "amb": 3598,
+      "unres": 71,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "exports": {
+      "edges": 0,
+      "resolved": 0,
+      "collRes": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "extends": {
+      "edges": 0,
+      "resolved": 0,
+      "collRes": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "implements": {
+      "edges": 0,
+      "resolved": 0,
+      "collRes": 0,
+      "amb": 0,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "overrides": {
+      "edges": 8,
+      "resolved": 0,
+      "collRes": 0,
+      "amb": 8,
+      "unres": 0,
+      "extOK": 0,
+      "extFAIL": 0
+    },
+    "instantiates": {
+      "edges": 21,
+      "resolved": 11,
+      "collRes": 0,
+      "amb": 8,
+      "unres": 2,
+      "extOK": 0,
+      "extFAIL": 0
+    }
+  },
+  "whole_corpus_total": {
+    "edges": 31297,
+    "resolved": 19549,
+    "collRes": 424,
+    "amb": 9638,
+    "unres": 1820,
+    "extOK": 290,
+    "extFAIL": 0
+  },
+  "whole_corpus_verdict": "FAIL \u2014 9638 ambiguous + 1820 unresolved of 31297 edges, resolved against the file's OWN PROJECT (production's scope)",
+  "pinned_duckdb_firing_edges": {
+    "calls": 189,
+    "uses": 2296,
+    "contains": 1076,
+    "references": 1,
+    "imports": 0,
+    "overrides": 0,
+    "instantiates": 0,
+    "extends": 0,
+    "implements": 0,
+    "exports": 0
+  },
+  "zero_claim_sites": {
+    "_population": "all 1,970 git-tracked .sql files over the 20 repositories",
+    "extends_inherits_call_files": 0,
+    "implements_token_files": 0,
+    "export_token_files": 14,
+    "export_token_note": "duckdb 4 are the real statement `EXPORT DATABASE 'x' (FORMAT PARQUET);`; the other 10 are comments and column names. SQL-D16's Instrument B cites '0 occurrences of an EXPORT token' \u2014 the TOKEN count is corrected here; the class stays in the DENOMINATOR.",
+    "control_create_files_duckdb": 132
+  },
+  "grammar_inventory": {
+    "_source": "wasm/tree-sitter-sql.wasm via web-tree-sitter Language.nodeTypeCount/nodeTypeForId, probe: validation/m14/fixtures/sql/grammar-node-inventory.mts",
+    "node_types": 820,
+    "inherit": 0,
+    "implement": 0,
+    "export": 0,
+    "interface": 0,
+    "super": 0,
+    "control_create": 31,
+    "control_table": 26,
+    "note": "SQL-D16 and EXPORTS-CONTAINS-RULING.md cite 465/480 node types; the pinned wasm enumerates 820 today. The export-family count is 0 in both readings."
+  },
+  "analyzer_emission_sites": {
+    "_source": "grep -o 'RelationshipType\\.[A-Za-z]*' src/ast/real-sql-analyzer.ts",
+    "References": 9,
+    "Contains": 8,
+    "Uses": 7,
+    "Imports": 3,
+    "Calls": 3,
+    "Overrides": 2,
+    "Instantiates": 2,
+    "Implements": 1,
+    "Extends": 1,
+    "Exports": 1,
+    "note": "the single Implements/Extends/Exports occurrences are the evidenceClassFor SWITCH, not emission sites"
+  },
+  "fixtures": {
+    "cmd": "npx tsx script/m14/run-fixtures.ts --lang sql",
+    "summary": {
+      "sql": {
+        "pass": 17,
+        "fail": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/arrow-data",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the deeper-review D2 fix (arrow half): expression-bodied data factories carry the object as the direct body — keys surface via the direct-object rule (ancestors limited to parens/arrow/function). The pair-function form shares the return-statement rule with method factories.",
+  "expectSymbols": [
+    { "name": "count", "kind": "property", "ownerName": "arrow-data" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "arrow-data", "target": "count" }
+  ]
+}

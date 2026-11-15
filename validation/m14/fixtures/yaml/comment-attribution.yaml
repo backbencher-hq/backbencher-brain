@@ -1,0 +1,10 @@
+# A file banner. It documents the FILE, and it must not be stolen by whichever
+# declaration happens to come first — that was the powershell docstring bug class.
+# the port to bind
+port: 8080
+# the host name
+host: localhost
+# a leading note at the top of a nested block
+db:
+  # the database port
+  port: 5432  # the trailing note

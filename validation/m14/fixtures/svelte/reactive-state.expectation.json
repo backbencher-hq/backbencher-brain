@@ -1,0 +1,17 @@
+{
+  "fixtureId": "svelte/reactive-state",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS svelte SFC extraction through production parseFile pipeline: script-setup symbols, imports (svelte/store + relative), template component usage.",
+  "expectSymbols": [
+    { "name": "increment" },
+    { "name": "count" }
+  ],
+  "expectImports": [
+    { "module": "svelte/store" },
+    { "module": "./api" }
+  ],
+  "expectRelationships": [
+    { "type": "renders", "targetEndsWith": "ChildList" }
+  ]
+}

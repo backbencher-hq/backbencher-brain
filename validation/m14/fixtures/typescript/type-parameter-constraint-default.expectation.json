@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/type-parameter-constraint-default",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "A type_parameter's payload must keep its constraint and default (the pinned tsx/typescript grammar exposes fields `constraint` and `value`; the analyzer read `extends`/`default`, which do not exist — so the text was silently dropped for years while the F1 field oracle captured no field literals at all). Pins are EXACT lists, not substrings: a substring pin cannot see appended or duplicated text, which is how the near-miss mutant typescript/type-parameter-names-only-positional survived an includes-only pin. Values are the live emission of the fixed analyzer (field names verified against the pinned wasm 2026-09-16).",
+  "expectSymbols": [
+    { "name": "Repo", "kind": "class" },
+    { "name": "pick", "kind": "function" },
+    { "name": "Mapper", "kind": "type" }
+  ],
+  "expectTypeParameters": [
+    { "symbol": "Repo", "exact": ["T extends HasId = HasId", "U extends string = \"a\""] },
+    { "symbol": "pick", "exact": ["T extends object = {}"] },
+    { "symbol": "Mapper", "exact": ["In extends object = {}", "Out = string"] }
+  ]
+}

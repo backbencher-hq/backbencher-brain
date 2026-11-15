@@ -1,0 +1,25 @@
+{
+  "issue": "M56.S1 — Support Consolidation (#784)",
+  "code": "S1",
+  "milestone": "m56",
+  "status": "verified",
+  "checks": 38,
+  "passed": 38,
+  "failed": 0,
+  "negativeCases": 7,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m56/verify-support-page.ts",
+  "evidenceFile": "S1.json",
+  "generatedAt": "2026-11-09T14:45:23.853Z",
+  "source": "website/faq.md",
+  "generatedData": "website/src/data/support.generated.ts",
+  "surfaces": [
+    "/support (FAQ + still-have-questions)",
+    "/faq -> /support (redirect)",
+    "/contact -> /support (redirect)",
+    "retired paths carry no rendered link (M56.I1 widened the scan)"
+  ],
+  "questions": 21,
+  "sections": 5,
+  "details": []
+}

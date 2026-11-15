@@ -1,0 +1,17 @@
+{
+  "_what": "THE RULING'S INPUT: per lane, how many imports resolve under NO ANCESTOR of the importing file but DO resolve under the project's file list. The Lead's falsifier for the 68-edge boundary ruling: if TWO OR MORE other lanes show this shape in the THOUSANDS, the trade flips (a shared interface change plus a path set riding every serialized index into every worker).",
+  "_instrument": "npx tsx validation/m14/fixtures/protobuf/tools/sibling-root-census.mts --files=200",
+  "_populationLabel": "BOUNDED STRIDE SAMPLE per lane (200 files per repo); protobuf's 847 files are below that per repo and are FULLY measured. A rate is what the question needs — orders of magnitude, not a count to the edge.",
+  "validLanes": [
+    { "lane": "protobuf", "files": "847/847 (full)", "pathShapedEdges": 1574, "file": 0, "root": 286, "ancestor": 707, "SIBLING": 68, "siblingShare": "4.3%", "neither": 513 },
+    { "lane": "graphql", "files": "1145/1911", "pathShapedEdges": 141, "file": 0, "root": 0, "ancestor": 48, "SIBLING": 0, "siblingShare": "0.0%", "neither": 93 },
+    { "lane": "zig", "files": "491/3844", "pathShapedEdges": 3003, "file": 0, "root": 8, "ancestor": 1294, "SIBLING": 0, "siblingShare": "0.0%", "neither": 1701 }
+  ],
+  "excludedLanes": {
+    "toml": "reads 0 reached / 239 neither, and THAT ZERO IS AN ARTEFACT: toml's claim is a MANIFEST inside the named directory (posix/Cargo.toml), which this census does not implement.",
+    "php": "reads 0 reached / 21 neither, same artefact: php's claim substitutes __DIR__/__FILE__, which this census does not implement.",
+    "json": "not measured — the run hit its bounded timeout on the json lane, and the answer did not need it."
+  },
+  "ANSWER": "THE RULING DOES NOT FLIP. Of the three lanes whose arithmetic this instrument actually implements — protobuf, graphql, zig, together 4,718 path-shaped edges — the SIBLING shape appears on ONE lane and 68 times. Two other lanes show it ZERO times, which is the opposite of 'two or more lanes in the thousands'.",
+  "IF_IT_IS_EVER_BUILT": "THE AMBIGUOUS CASES ARE REFUSED, NOT TIE-BROKEN. 772 imports have exactly ONE admitted suffix match and 3 have MORE THAN ONE (`movie.proto` matches three vendored copies). A rule that picks one of three copies re-introduces the arbitrary pick this programme measured at 37,318 of 49,729 collision-bound selections going to the WRONG symbol. A refusal in 0.4% of cases is cheap; a guess is not. A future builder may not add a tie-break without a measurement of its own."
+}

@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/relative-path-psb18.ps1",
+  "authoredFrom": "PS-B18 — the SECOND refuted claim, and the rule that closes its class.\n\nTHE FLEET'S FIRST REFUTED-CLAIM INCIDENT WAS POWERSHELL. Two claims the analyzer published about files the project OWNS were refuted by the arbiter's own case-1 path check, and the lane was the fleet's first clause-4 red. The fix (8cd43c988) added ONE predicate — `isRelativeScriptPath` — and that predicate read 'a relative path ending in .ps1'. The ARBITER asks a different question: 'is this path one of the PROJECT's admitted files?' (pathTargetInProject, script/m14/incoming-rule.ts). The two disagree on three axes, and this fixture is a row per axis.\n\nAXIS 1, THE EXTENSION. The gate's own map admits `powershell: \"ps1,psm1,psd1\"` (script/m14/incoming-gate.ts:134), so a project owns .psm1 and .psd1 files exactly as it owns .ps1 ones, and pathTargetInProject matches the admitted list by SUFFIX — the extension is irrelevant to the arbiter and decisive to the old predicate. MEASURED on the whole population (1,181 files / 30 repos, production parseFile, root /home/ishaq2321/bb_tests/repositories and the .corpus symlink farm, which admit the SAME multiset of (repo, relative path) because the farm's three local checkouts — pixie, plack, tf-aws-components — carry ZERO powershell files): TWO rows — powershell/test/powershell/Modules/Microsoft.PowerShell.Security/FileCatalog.Tests.ps1:365 and :366 — published `uses -> DSCResources\\UserConfigProviderModVersion1\\UserConfigProviderModVersion1.psm1` with `externalTarget: true`, and that file IS in the project. The arbiter's own verifyExternalClaim answers `externalRefuted` on both. The lane's extFAIL column read 0 anyway, because PS38 withholds the arbiter-readable key on a bare owner and the spelling the analyzer DOES publish (`externalTarget`) is not in EXTERNAL_KEYS — so the false claim was published AND INVISIBLE. That is the second refuted claim, and the first incident's fix is what made it hard to see: the fix answered the wrong question.\n\nAXIS 2, THE SEPARATOR. The old predicate also required a path separator, so a BARE `Helper.psm1` was marked. The arbiter's suffix match does not need one: `nf.endsWith(\"/\" + norm)` matches a bare `Helper.psm1` against ANY admitted file with that basename.\n\nAXIS 3, THE ABSOLUTE CASE — which the old predicate got wrong the OTHER way. An ABSOLUTE path can never be refuted by the path branch, because the gate's project facts are REPO-RELATIVE (path.relative(repoRoot, abs), incoming-gate.ts:577) and no admitted path ends with `/` plus an absolute norm. The old predicate withheld the claim on `/usr/lib/Helper.ps1` — a TRUE claim thrown away, for a shape the arbiter can check and answer. Rows 4, 5 and 6 pin that the claim is KEPT for the three shapes that name something outside any project: /unix-rooted, C:\\drive, and a URI scheme.\n\nTHE SHAPE IS THE PRODUCTION SHAPE. The two population rows are a CONSTANT-KEY ELEMENT ACCESS — `$result.CatalogItems[\"DSCResources\\...\\UserConfigProviderModVersion1.psm1\"]` — and this analyzer publishes such a key as a `uses` target, UNQUOTED. That matters: a QUOTED target is excluded from the qualified reading by the leading-QUOTE rule (PS-B16), so only the unquoted element-access key reaches the path reading, and a fixture written with dot-sources alone would not have exercised the production shape at all. Rows 8 and 9 keep the two OPERATOR shapes, because the first incident was about the dot-source operator and a rule that only read the element-access shape would pass rows 1-7 and fail only there.\n\nTHE A/B, run on this file against the analyzer at HEAD and against the fixed analyzer: EIGHT of the nine path rows FLIP and the ninth is a control that does not. Row 1 claimed external at HEAD and does not now; row 2 claimed external at HEAD and does not now; row 3 claimed external at HEAD and does not now; row 4 did NOT claim at HEAD and DOES now; row 5 did NOT claim at HEAD and DOES now; row 6 did NOT claim at HEAD and DOES now; row 7 claimed at HEAD and claims now (the control); row 8 claimed external at HEAD and does not now; row 9 claimed external at HEAD and does not now. A fixture whose rows do not move when the rule is removed is a comment, so this is the measurement that makes the fixture a test.",
+  "expectSymbols": [
+    {
+      "name": "relative-path-psb18.ps1",
+      "kind": "module",
+      "comment": "The FILE IS THE MODULE (PS1): a .ps1 IS the module, and the analyzer publishes the file's own basename as a module symbol. It is the source of every `from` below."
+    },
+    {
+      "name": "a",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1",
+      "comment": "Row 1's binding. The variable is ordinary; what matters is the CONSTANT KEY it is indexed by, which the analyzer publishes as a `uses` target in its own right."
+    },
+    {
+      "name": "b",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1"
+    },
+    {
+      "name": "c",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1",
+      "comment": "Row 3's binding — the BARE spelling, which is the AXIS-2 row: no directory component at all, and the arbiter's suffix match does not need one."
+    },
+    {
+      "name": "d",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1"
+    },
+    {
+      "name": "e",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1"
+    },
+    {
+      "name": "f",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1"
+    },
+    {
+      "name": "g",
+      "kind": "variable",
+      "ownerName": "relative-path-psb18.ps1",
+      "comment": "Row 7's binding — THE CONTROL. Its key names no file the project can own, so the claim FIRES. A rule that withheld every relative path would pass rows 1-6 and fail only here."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "DSCResources\\UserConfigProviderModVersion1\\UserConfigProviderModVersion1.psm1",
+      "line_number": 58,
+      "meta.externalTarget": null,
+      "meta.externalVia": null,
+      "meta.noDeclarationInFile": true,
+      "comment": "THE PRODUCTION ROW, verbatim in shape. This is the target the corpus publishes at powershell/test/powershell/Modules/Microsoft.PowerShell.Security/FileCatalog.Tests.ps1:365 and :366, where the file IS in the project and the arbiter's own verifyExternalClaim answers `externalRefuted`. At HEAD this row carried `externalTarget: true` — a claim the project itself answers false, published and invisible (the readable key is withheld by PS38 and `externalTarget` is not in EXTERNAL_KEYS). `meta.noDeclarationInFile: true` is asserted beside the negative because the two keys PARTITION one fact: the reading did not fire, and the file still declares no such name."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "DSCResources\\scriptdsc\\scriptdsc.psd1",
+      "line_number": 62,
+      "meta.externalTarget": null,
+      "meta.externalVia": null,
+      "meta.noDeclarationInFile": true,
+      "comment": "THE LANE'S THIRD ADMITTED SPELLING. `.psd1` is a manifest, and the gate admits it exactly as it admits `.ps1` and `.psm1` (`powershell: \"ps1,psm1,psd1\"`, incoming-gate.ts:134), so a project owns it exactly as it owns the other two. At HEAD this row carried `externalTarget: true`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "Helper.psm1",
+      "line_number": 67,
+      "meta.externalTarget": null,
+      "meta.externalVia": null,
+      "meta.noDeclarationInFile": true,
+      "comment": "THE BARE SPELLING — AXIS 2. No directory component, and the arbiter's suffix match does not need one: `nf.endsWith(\"/\" + norm)` matches a bare `Helper.psm1` against ANY admitted file with that basename. At HEAD this row carried `externalTarget: true`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "/usr/lib/Helper.ps1",
+      "line_number": 72,
+      "meta.externalTarget": true,
+      "meta.externalVia": "qualified",
+      "comment": "A UNIX-ROOTED PATH — AXIS 3, and the row the old predicate got wrong the other way. It names something outside any project, and the gate's project facts are REPO-RELATIVE, so no admitted path can answer it: the claim is TRUE and checkable, and at HEAD it was WITHHELD — a true claim thrown away. This row is why the fix is not simply 'widen the suffix list'."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "C:\\lib\\Helper.ps1",
+      "line_number": 75,
+      "meta.externalTarget": true,
+      "meta.externalVia": "qualified",
+      "comment": "A WINDOWS DRIVE PATH. A drive letter names a MACHINE, not a project, so no admitted file can answer it and the claim is KEPT. At HEAD it was withheld."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "https://example.com/Helper.ps1",
+      "line_number": 79,
+      "meta.externalTarget": true,
+      "meta.externalVia": "qualified",
+      "comment": "A URI WITH A SCHEME. It names a HOST. The old predicate withheld it (it ends in `.ps1` and carries a separator), so this row is also a widening in the other direction — and it is the shape a bash-lane rule calls out by name ('kept only for /unix-rooted and C:\\ drive')."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": ".\\lib\\Helper",
+      "line_number": 85,
+      "meta.externalTarget": true,
+      "meta.externalVia": "qualified",
+      "comment": "THE CONTROL BESIDE THE EXCLUSION, and the row that keeps a fix from over-reaching. `\\.\\lib\\Helper` names no file the project can own, because every admitted file ends in `.ps1`, `.psm1` or `.psd1` — so the arbiter's path branch can NEVER refute a claim about it, and the claim is KEPT. This row does not move between HEAD and the fix, which is exactly what a control is for."
+    },
+    {
+      "type": "part_of",
+      "from": "relative-path-psb18.ps1",
+      "target": "Helper.psm1",
+      "line_number": 91,
+      "meta.invokationOperator": ".",
+      "meta.partRole": "library",
+      "meta.partPath": ".\\lib\\Helper.psm1",
+      "meta.externalTarget": null,
+      "meta.externalVia": null,
+      "comment": "THE DOT-SOURCE OPERATOR — the shape the FIRST incident was about, on the spelling the first fix missed — and since PS-B19 it is a `part_of` row, not a `calls` row: the dot-source shares the caller's scope, so the sourced file is a PART of this unit. The EXTERNALITY assertion is unchanged and is the reason this row exists: at HEAD it carried `externalTarget: true, externalVia: \"qualified\"`; a rule that only read the element-access shape would pass rows 1-7 and fail only here. The target moved from the written path to the sourced file's module-symbol name (`Helper.psm1`) because a path target resolves 0 rows; the written path survives in `meta.partPath`. There is NO `meta.noDeclarationInFile` here because the analyzer partitions that key onto `calls`/`uses` rows only, and this row is now neither."
+    },
+    {
+      "type": "calls",
+      "from": "relative-path-psb18.ps1",
+      "target": ".\\lib\\Helper.psm1",
+      "line_number": 95,
+      "meta.externalTarget": null,
+      "meta.externalVia": null,
+      "meta.noDeclarationInFile": true,
+      "comment": "THE INVOCATION OPERATOR. `&` is the other way a path reaches a call, and the reading must not depend on WHICH operator carried it. At HEAD this row carried `externalTarget: true, externalVia: \"qualified\"`. UNLIKE line 91 this row KEEPS its `calls` label: `&` runs in a child scope, which is an invocation and not an inclusion — the dot half's relabel must not widen to it (PS-B19's fixture forbids exactly that)."
+    },
+    {
+      "type": "imports",
+      "from": "relative-path-psb18.ps1",
+      "target": "$PSScriptRoot\\..\\..\\Helper.psm1",
+      "line_number": 109,
+      "meta.externalTarget": null,
+      "meta.externalVia": null,
+      "comment": "THE RUNTIME-VARIABLE ROW, AND THE PRICE OF THE RULE, PINNED. A path that begins with a runtime VARIABLE is resolved at RUN TIME, against a directory the project does not know, so this file cannot judge whether the project owns it — and the measurement says dropping the claim on that shape removes 37 FALSE claims and loses 18 TRUE ones, while the verified class and the total wall are IDENTICAL either way. So the claim is DROPPED here too: a published false claim is a lie, and a lost true claim is a missed opportunity. Catches `powershell/relative-path-psb18-escape-narrowed-runtime`. (The `noDeclarationInFile` key is NOT asserted on this row, and that is not an oversight: the analyzer publishes it on `calls` and `uses` rows only — a name READ — and this row is an `imports` row, where the same partition is expressed by the absent reading alone.)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "DSCResources\\UserConfigProviderModVersion1\\UserConfigProviderModVersion1.psm1",
+      "line_number": 58,
+      "meta.externalTarget": true,
+      "comment": "THE FORBID IS THE POSITIVE ROW'S TWIN, and it is the only vocabulary that can say a KEY carries a value it must not. This is exactly what the analyzer emitted at HEAD on the production row — a claim the project itself answers false, published and invisible to the arbiter because PS38 withholds the readable key and `externalTarget` is not in EXTERNAL_KEYS. Catches `powershell/relative-path-psb18-escape-narrowed`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "DSCResources\\scriptdsc\\scriptdsc.psd1",
+      "line_number": 62,
+      "meta.externalTarget": true,
+      "comment": "The `.psd1` twin of the forbid above. Catches `powershell/relative-path-psb18-escape-narrowed`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "Helper.psm1",
+      "line_number": 67,
+      "meta.externalTarget": true,
+      "comment": "The BARE-SPELLING forbid — the axis the separator requirement covered wrongly. Catches `powershell/relative-path-psb18-escape-narrowed`."
+    },
+    {
+      "type": "calls",
+      "from": "relative-path-psb18.ps1",
+      "target": ".\\lib\\Helper.psm1",
+      "line_number": 91,
+      "meta.externalTarget": true,
+      "comment": "The dot-source forbid. Catches `powershell/relative-path-psb18-escape-narrowed`."
+    },
+    {
+      "type": "calls",
+      "from": "relative-path-psb18.ps1",
+      "target": ".\\lib\\Helper.psm1",
+      "line_number": 95,
+      "meta.externalTarget": true,
+      "comment": "The invocation-operator forbid. Catches `powershell/relative-path-psb18-escape-narrowed`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "/usr/lib/Helper.ps1",
+      "line_number": 72,
+      "meta.externalTarget": null,
+      "comment": "THE FORBID THAT PINS AXIS 3 FROM THE OTHER SIDE: a rule that withheld EVERY path ending in an admitted spelling — the over-broad reading of this fix — would mark nothing here and would fail only this row, this one and the next. Catches `powershell/relative-path-psb18-escape-widened`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "C:\\lib\\Helper.ps1",
+      "line_number": 75,
+      "meta.externalTarget": null,
+      "comment": "The Windows-drive forbid. Catches `powershell/relative-path-psb18-escape-widened`."
+    },
+    {
+      "type": "uses",
+      "from": "relative-path-psb18.ps1",
+      "target": "https://example.com/Helper.ps1",
+      "line_number": 79,
+      "meta.externalTarget": null,
+      "comment": "The URI forbid. Catches `powershell/relative-path-psb18-escape-widened`."
+    },
+    {
+      "type": "imports",
+      "from": "relative-path-psb18.ps1",
+      "target": "$PSScriptRoot\\..\\..\\Helper.psm1",
+      "line_number": 109,
+      "meta.externalTarget": true,
+      "comment": "THE FORBID FOR THE PRICE. A rule that KEPT the claim on a runtime-variable path — the narrowing this lane measured and rejected, because it publishes 37 false claims to save 18 true ones — would mark it, and would fail only this row. Catches `powershell/relative-path-psb18-escape-narrowed-runtime`."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "equals": 7,
+      "comment": "Seven element-access rows, ONE edge each: the CONSTANT KEY the analyzer publishes in its own right. THIS ROW READ 14 UNTIL 2026-10-28 and the second edge was the RECEIVER (`x`), published only from an assignment's right-hand side — the analysis pass stopped at `variable` nodes and so walked PAST the `element_access` guard, handing the receiver to the read pass one node at a time. PS9's ruling is that the receiver is not a read target, and `member-reads-psb5` forbids it BY NAME in command position; the same construct therefore published `uses settings['Label']` as `Label` there and `uses x` here. The assignment pass now stops at the element access and the two contexts agree. The count is what makes the population independent of the metadata — a change that marked more or fewer edges would leave the rows above in place, which is why this fixture's verification is metadata rows and mutants rather than a count alone."
+    },
+    {
+      "type": "calls",
+      "equals": 1,
+      "comment": "The INVOCATION operator only (line 95). The dot-source at line 91 moved from `calls` to `part_of` when PS-B19 relabelled the inclusion — one label per site, nothing gained or lost."
+    },
+    {
+      "type": "part_of",
+      "equals": 1,
+      "comment": "The DOT-SOURCE operator (line 91), now a `part_of`: a 1:1 relabel of the inclusion half. The `&` row at line 95 did NOT move, which is why this is 1 and not 2."
+    },
+    {
+      "type": "contains",
+      "equals": 7,
+      "comment": "One per variable: a, b, c, d, e, f, g. The `$x` receiver is not a declaration of this file, so it is a `uses` row, not a symbol."
+    },
+    {
+      "type": "imports",
+      "equals": 1,
+      "comment": "Row 10's import. One import, and the rule is the same rule as rows 1-9."
+    },
+    {
+      "type": "references",
+      "equals": 1,
+      "comment": "Row 10's reference twin — the module-surface pass publishes the same target as a `references` row, and it carries the same reading, which is why the narrowing has to hold on BOTH rows of the pair."
+    }
+  ]
+}

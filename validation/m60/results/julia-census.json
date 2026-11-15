@@ -1,0 +1,1829 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "Julia grammar health over the corpus, before any analyzer exists",
+  "generatedAt": "2026-10-01T00:35:15.026Z",
+  "why": "every lane in this repo was written first and measured afterwards, and the measurement is what found the defects — the Objective-C lane was CLOSED over an instrument reading 7 of 329 files whose '0 grammar errors' was 49 crashes counted as 49 clean parses. This tool exists before the analyzer does, so the analyzer is written against a MEASURED grammar instead of inheriting its defects and debugging itself for a day.",
+  "provenance": {
+    "wasm": "wasm/tree-sitter-julia.wasm",
+    "bytes": 5892544,
+    "sha256": "583519521e5136d804d81d8a82d56e66aca4308eac5e32a8fc2a1a771a98d115",
+    "package": "tree-sitter-julia@0.23.1",
+    "kind": "byte-identical-to-npm-tarball",
+    "note": "the tarball ships its OWN wasm, and src/grammar.json + src/node-types.json + scanner.c, so this lane is pinnable from pristine published bytes with nothing patched — the strongest provenance kind in the registry, and unlike objective-c there is no local rebuild to justify"
+  },
+  "repos": [
+    "julia",
+    "json_jl"
+  ],
+  "files": [
+    {
+      "repo": "julia",
+      "rev": "63912639992190c6f56ad13286f292186513ab19",
+      "role": "the language itself — stdlib, Compiler, base, test",
+      "files": 941,
+      "bytes": 18289108,
+      "errorFiles": 177,
+      "errorNodes": 1947,
+      "missingNodes": 0,
+      "irDumpFiles": 17,
+      "dirs": {
+        "JuliaLowering/test": {
+          "files": 44,
+          "errorFiles": 23,
+          "errorNodes": 10361,
+          "irDumpFiles": 17
+        },
+        "JuliaLowering/src": {
+          "files": 18,
+          "errorFiles": 10,
+          "errorNodes": 502,
+          "irDumpFiles": 0
+        },
+        "base": {
+          "files": 161,
+          "errorFiles": 61,
+          "errorNodes": 440,
+          "irDumpFiles": 0
+        },
+        "test": {
+          "files": 141,
+          "errorFiles": 34,
+          "errorNodes": 324,
+          "irDumpFiles": 0
+        },
+        "Compiler/src": {
+          "files": 41,
+          "errorFiles": 9,
+          "errorNodes": 184,
+          "irDumpFiles": 0
+        },
+        "Compiler/test": {
+          "files": 26,
+          "errorFiles": 7,
+          "errorNodes": 117,
+          "irDumpFiles": 0
+        },
+        "JuliaSyntax/test": {
+          "files": 22,
+          "errorFiles": 4,
+          "errorNodes": 62,
+          "irDumpFiles": 0
+        },
+        "base/ryu": {
+          "files": 5,
+          "errorFiles": 2,
+          "errorNodes": 32,
+          "irDumpFiles": 0
+        },
+        "stdlib/Random": {
+          "files": 10,
+          "errorFiles": 4,
+          "errorNodes": 30,
+          "irDumpFiles": 0
+        },
+        "stdlib/FileWatching": {
+          "files": 4,
+          "errorFiles": 2,
+          "errorNodes": 28,
+          "irDumpFiles": 0
+        },
+        "base/strings": {
+          "files": 13,
+          "errorFiles": 5,
+          "errorNodes": 26,
+          "irDumpFiles": 0
+        },
+        "stdlib/Dates": {
+          "files": 24,
+          "errorFiles": 1,
+          "errorNodes": 26,
+          "irDumpFiles": 0
+        },
+        "stdlib/InteractiveUtils": {
+          "files": 7,
+          "errorFiles": 2,
+          "errorNodes": 18,
+          "irDumpFiles": 0
+        },
+        "stdlib/Test": {
+          "files": 6,
+          "errorFiles": 1,
+          "errorNodes": 18,
+          "irDumpFiles": 0
+        },
+        "JuliaSyntax/src": {
+          "files": 18,
+          "errorFiles": 1,
+          "errorNodes": 17,
+          "irDumpFiles": 0
+        },
+        "base/docs": {
+          "files": 6,
+          "errorFiles": 2,
+          "errorNodes": 16,
+          "irDumpFiles": 0
+        },
+        "stdlib/REPL": {
+          "files": 42,
+          "errorFiles": 6,
+          "errorNodes": 15,
+          "irDumpFiles": 0
+        },
+        "base/special": {
+          "files": 8,
+          "errorFiles": 5,
+          "errorNodes": 12,
+          "irDumpFiles": 0
+        },
+        "stdlib/Serialization": {
+          "files": 2,
+          "errorFiles": 1,
+          "errorNodes": 7,
+          "irDumpFiles": 0
+        },
+        "test/strings": {
+          "files": 7,
+          "errorFiles": 2,
+          "errorNodes": 6,
+          "irDumpFiles": 0
+        },
+        "stdlib/Base64": {
+          "files": 5,
+          "errorFiles": 1,
+          "errorNodes": 3,
+          "irDumpFiles": 0
+        },
+        "base/toml": {
+          "files": 3,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "contrib/asan": {
+          "files": 1,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "doc": {
+          "files": 2,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/LibGit2": {
+          "files": 32,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/Logging": {
+          "files": 3,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/Markdown": {
+          "files": 29,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/Mmap": {
+          "files": 2,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/Profile": {
+          "files": 7,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/Sockets": {
+          "files": 6,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "stdlib/Unicode": {
+          "files": 2,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "test/testhelpers": {
+          "files": 32,
+          "errorFiles": 1,
+          "errorNodes": 1,
+          "irDumpFiles": 0
+        },
+        "Compiler/extras": {
+          "files": 3,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "JuliaSyntax/docs": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "JuliaSyntax/prototypes": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "JuliaSyntax/sysimage": {
+          "files": 4,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "JuliaSyntax/tools": {
+          "files": 4,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "base/logging": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "contrib": {
+          "files": 7,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "contrib/ci-timing": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "etc": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "src": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/Artifacts": {
+          "files": 3,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/CRC32c": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/CompilerSupportLibraries_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/Future": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/GMP_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LLD_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LLVMLibUnwind_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LibCURL_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LibGit2_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LibSSH2_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LibUV_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/LibUnwind_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/Libdl": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/MPFR_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/MozillaCACerts_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/OpenBLAS_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/OpenLibm_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/OpenSSL_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/PCRE2_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/Printf": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/SharedArrays": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/SuiteSparse_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/TOML": {
+          "files": 14,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/UUIDs": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/Zlib_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/Zstd_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/dSFMT_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/libLLVM_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/libblastrampoline_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/nghttp2_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "stdlib/p7zip_jll": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/RelocationTestPkg1": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/RelocationTestPkg2": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/RelocationTestPkg3": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/RelocationTestPkg4": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/TestPkg": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/depot": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/embedding": {
+          "files": 3,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/gc": {
+          "files": 5,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/gcext": {
+          "files": 5,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/llvmpasses": {
+          "files": 17,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/netload": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/project": {
+          "files": 58,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/trim": {
+          "files": 14,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test/unicode": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        }
+      }
+    },
+    {
+      "repo": "json_jl",
+      "rev": "a69c082",
+      "role": "a real downstream package, for a second opinion",
+      "files": 25,
+      "bytes": 326891,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "missingNodes": 0,
+      "irDumpFiles": 0,
+      "dirs": {
+        "benchmarks": {
+          "files": 3,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "docs": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "ext": {
+          "files": 1,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "src": {
+          "files": 6,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "test": {
+          "files": 12,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        },
+        "vendor": {
+          "files": 2,
+          "errorFiles": 0,
+          "errorNodes": 0,
+          "irDumpFiles": 0
+        }
+      }
+    }
+  ],
+  "nonJuliaIRDumpFiles": 17,
+  "corpusNote": "the headline grammar-health figures EXCLUDE the measured non-Julia IR test dumps, identified by CONTENT (numbered steps in an s-expression notation) rather than by directory name, because a name-based exclusion is cherry-picking and would hide a real defect if the grammar broke on a file that happened to sit there. The excluded count and its error nodes are stated, not dropped.",
+  "scanned": 966,
+  "parseFailed": 0,
+  "skippedBig": 0,
+  "totalBytes": 18615999,
+  "grammarHealth": {
+    "errorNodes": 1947,
+    "missingNodes": 0,
+    "errorFiles": 177,
+    "filesConsidered": 949,
+    "irDumpFilesExcluded": 17,
+    "excludedAsNonJulia": {
+      "files": 17,
+      "errorNodes": 10308,
+      "missingNodes": 0
+    },
+    "errorFilePct": 18.32,
+    "topErrorShapes": [
+      {
+        "shape": "%",
+        "errorFiles": 22,
+        "files": 22,
+        "example": "base/abstractarray.jl:753"
+      },
+      {
+        "shape": "=",
+        "errorFiles": 10,
+        "files": 10,
+        "example": "base/accumulate.jl:298"
+      },
+      {
+        "shape": ",",
+        "errorFiles": 9,
+        "files": 9,
+        "example": "JuliaLowering/src/compat.jl:25"
+      },
+      {
+        "shape": ">",
+        "errorFiles": 8,
+        "files": 8,
+        "example": "Compiler/src/ssair/slot2ssa.jl:153"
+      },
+      {
+        "shape": ";",
+        "errorFiles": 4,
+        "files": 4,
+        "example": "base/strings/search.jl:653"
+      },
+      {
+        "shape": "@",
+        "errorFiles": 3,
+        "files": 3,
+        "example": "JuliaLowering/test/scopes.jl:642"
+      },
+      {
+        "shape": "*%",
+        "errorFiles": 3,
+        "files": 3,
+        "example": "base/docs/basedocs.jl:3518"
+      },
+      {
+        "shape": "h",
+        "errorFiles": 3,
+        "files": 3,
+        "example": "base/hashing.jl:56"
+      },
+      {
+        "shape": "a",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "Compiler/src/sort.jl:58"
+      },
+      {
+        "shape": "for",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "JuliaLowering/test/misc.jl:154"
+      },
+      {
+        "shape": "offset",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "base/bitset.jl:16"
+      },
+      {
+        "shape": "$",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "base/experimental.jl:500"
+      },
+      {
+        "shape": "T",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "base/weakdict.jl:6"
+      },
+      {
+        "shape": "(region of 379 lines)",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "stdlib/FileWatching/src/pidfile.jl:1"
+      },
+      {
+        "shape": "break",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "stdlib/REPL/src/REPL.jl:1790"
+      },
+      {
+        "shape": "im",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "test/complex.jl:46"
+      },
+      {
+        "shape": "..",
+        "errorFiles": 2,
+        "files": 2,
+        "example": "test/errorshow.jl:357"
+      },
+      {
+        "shape": "(region of 5213 lines)",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/src/abstractinterpretation.jl:1"
+      },
+      {
+        "shape": "count",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/src/inferencestate.jl:78"
+      },
+      {
+        "shape": "(region of 2026 lines)",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/src/optimize.jl:1"
+      },
+      {
+        "shape": "(region of 1420 lines)",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/src/ssair/EscapeAnalysis.jl:1"
+      },
+      {
+        "shape": "(item, Union{InliningTodo, InvokeCase, ConstantCase})",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/src/ssair/inlining.jl:49"
+      },
+      {
+        "shape": "(region of 729 lines)",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/src/types.jl:1"
+      },
+      {
+        "shape": "(region of 360 lines)",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/test/EAUtils.jl:1"
+      },
+      {
+        "shape": "do @nospecialize x",
+        "errorFiles": 1,
+        "files": 1,
+        "example": "Compiler/test/EscapeAnalysis.jl:1373"
+      }
+    ]
+  },
+  "surface": {
+    "declaredNamedTypes": 91,
+    "declaredSupertypes": [
+      "_definition",
+      "_expression",
+      "_statement"
+    ],
+    "declaredSupertypesNeverNamed": [
+      "_definition",
+      "_expression",
+      "_statement"
+    ],
+    "note": "a declared SUPERTYPE is never produced by design — it names a category, not a node — and ERROR/MISSING are tree-sitter built-ins rather than grammar declarations. Both are excluded from the findings and listed separately so the exclusion is visible.",
+    "producedNamedTypes": 89,
+    "declaredNotProduced": [],
+    "producedNotDeclared": [],
+    "typesThatNeverFire": [],
+    "rows": [
+      {
+        "type": "identifier",
+        "occurrences": 1105194,
+        "files": 961,
+        "declared": true
+      },
+      {
+        "type": "operator",
+        "occurrences": 277216,
+        "files": 917,
+        "declared": true
+      },
+      {
+        "type": "argument_list",
+        "occurrences": 265035,
+        "files": 919,
+        "declared": true
+      },
+      {
+        "type": "call_expression",
+        "occurrences": 255614,
+        "files": 919,
+        "declared": true
+      },
+      {
+        "type": "integer_literal",
+        "occurrences": 138646,
+        "files": 757,
+        "declared": true
+      },
+      {
+        "type": "binary_expression",
+        "occurrences": 133541,
+        "files": 823,
+        "declared": true
+      },
+      {
+        "type": "content",
+        "occurrences": 104127,
+        "files": 880,
+        "declared": true
+      },
+      {
+        "type": "assignment",
+        "occurrences": 87108,
+        "files": 883,
+        "declared": true
+      },
+      {
+        "type": "macro_identifier",
+        "occurrences": 82132,
+        "files": 776,
+        "declared": true
+      },
+      {
+        "type": "macrocall_expression",
+        "occurrences": 81761,
+        "files": 766,
+        "declared": true
+      },
+      {
+        "type": "field_expression",
+        "occurrences": 81116,
+        "files": 821,
+        "declared": true
+      },
+      {
+        "type": "string_literal",
+        "occurrences": 76730,
+        "files": 875,
+        "declared": true
+      },
+      {
+        "type": "macro_argument_list",
+        "occurrences": 74247,
+        "files": 711,
+        "declared": true
+      },
+      {
+        "type": "line_comment",
+        "occurrences": 51722,
+        "files": 911,
+        "declared": true
+      },
+      {
+        "type": "typed_expression",
+        "occurrences": 40761,
+        "files": 654,
+        "declared": true
+      },
+      {
+        "type": "curly_expression",
+        "occurrences": 40438,
+        "files": 630,
+        "declared": true
+      },
+      {
+        "type": "parametrized_type_expression",
+        "occurrences": 37358,
+        "files": 626,
+        "declared": true
+      },
+      {
+        "type": "escape_sequence",
+        "occurrences": 35921,
+        "files": 360,
+        "declared": true
+      },
+      {
+        "type": "vector_expression",
+        "occurrences": 31682,
+        "files": 698,
+        "declared": true
+      },
+      {
+        "type": "quote_expression",
+        "occurrences": 31484,
+        "files": 619,
+        "declared": true
+      },
+      {
+        "type": "index_expression",
+        "occurrences": 24393,
+        "files": 650,
+        "declared": true
+      },
+      {
+        "type": "tuple_expression",
+        "occurrences": 21802,
+        "files": 648,
+        "declared": true
+      },
+      {
+        "type": "named_argument",
+        "occurrences": 17916,
+        "files": 597,
+        "declared": true
+      },
+      {
+        "type": "parenthesized_expression",
+        "occurrences": 16397,
+        "files": 601,
+        "declared": true
+      },
+      {
+        "type": "unary_expression",
+        "occurrences": 16086,
+        "files": 587,
+        "declared": true
+      },
+      {
+        "type": "boolean_literal",
+        "occurrences": 15949,
+        "files": 634,
+        "declared": true
+      },
+      {
+        "type": "return_statement",
+        "occurrences": 14692,
+        "files": 589,
+        "declared": true
+      },
+      {
+        "type": "float_literal",
+        "occurrences": 13232,
+        "files": 225,
+        "declared": true
+      },
+      {
+        "type": "if_statement",
+        "occurrences": 12625,
+        "files": 614,
+        "declared": true
+      },
+      {
+        "type": "ERROR",
+        "occurrences": 12255,
+        "files": 194,
+        "declared": false
+      },
+      {
+        "type": "signature",
+        "occurrences": 12248,
+        "files": 689,
+        "declared": true
+      },
+      {
+        "type": "range_expression",
+        "occurrences": 11785,
+        "files": 466,
+        "declared": true
+      },
+      {
+        "type": "matrix_row",
+        "occurrences": 11698,
+        "files": 147,
+        "declared": true
+      },
+      {
+        "type": "function_definition",
+        "occurrences": 11690,
+        "files": 682,
+        "declared": true
+      },
+      {
+        "type": "prefixed_string_literal",
+        "occurrences": 8642,
+        "files": 288,
+        "declared": true
+      },
+      {
+        "type": "for_binding",
+        "occurrences": 8015,
+        "files": 576,
+        "declared": true
+      },
+      {
+        "type": "string_interpolation",
+        "occurrences": 6980,
+        "files": 424,
+        "declared": true
+      },
+      {
+        "type": "juxtaposition_expression",
+        "occurrences": 6807,
+        "files": 202,
+        "declared": true
+      },
+      {
+        "type": "for_statement",
+        "occurrences": 6127,
+        "files": 556,
+        "declared": true
+      },
+      {
+        "type": "splat_expression",
+        "occurrences": 5651,
+        "files": 400,
+        "declared": true
+      },
+      {
+        "type": "compound_statement",
+        "occurrences": 5575,
+        "files": 429,
+        "declared": true
+      },
+      {
+        "type": "character_literal",
+        "occurrences": 5428,
+        "files": 272,
+        "declared": true
+      },
+      {
+        "type": "where_expression",
+        "occurrences": 5297,
+        "files": 302,
+        "declared": true
+      },
+      {
+        "type": "unary_typed_expression",
+        "occurrences": 4896,
+        "files": 351,
+        "declared": true
+      },
+      {
+        "type": "open_tuple",
+        "occurrences": 4292,
+        "files": 401,
+        "declared": true
+      },
+      {
+        "type": "else_clause",
+        "occurrences": 4098,
+        "files": 502,
+        "declared": true
+      },
+      {
+        "type": "ternary_expression",
+        "occurrences": 3957,
+        "files": 468,
+        "declared": true
+      },
+      {
+        "type": "interpolation_expression",
+        "occurrences": 3729,
+        "files": 233,
+        "declared": true
+      },
+      {
+        "type": "elseif_clause",
+        "occurrences": 3603,
+        "files": 352,
+        "declared": true
+      },
+      {
+        "type": "let_binding",
+        "occurrences": 3523,
+        "files": 249,
+        "declared": true
+      },
+      {
+        "type": "let_statement",
+        "occurrences": 3442,
+        "files": 279,
+        "declared": true
+      },
+      {
+        "type": "matrix_expression",
+        "occurrences": 3231,
+        "files": 135,
+        "declared": true
+      },
+      {
+        "type": "arrow_function_expression",
+        "occurrences": 3002,
+        "files": 348,
+        "declared": true
+      },
+      {
+        "type": "compound_assignment_expression",
+        "occurrences": 2846,
+        "files": 351,
+        "declared": true
+      },
+      {
+        "type": "const_statement",
+        "occurrences": 2795,
+        "files": 405,
+        "declared": true
+      },
+      {
+        "type": "type_head",
+        "occurrences": 2725,
+        "files": 401,
+        "declared": true
+      },
+      {
+        "type": "do_clause",
+        "occurrences": 2423,
+        "files": 276,
+        "declared": true
+      },
+      {
+        "type": "struct_definition",
+        "occurrences": 2422,
+        "files": 395,
+        "declared": true
+      },
+      {
+        "type": "named_field",
+        "occurrences": 1682,
+        "files": 96,
+        "declared": true
+      },
+      {
+        "type": "for_clause",
+        "occurrences": 1389,
+        "files": 249,
+        "declared": true
+      },
+      {
+        "type": "using_statement",
+        "occurrences": 1262,
+        "files": 432,
+        "declared": true
+      },
+      {
+        "type": "try_statement",
+        "occurrences": 1234,
+        "files": 226,
+        "declared": true
+      },
+      {
+        "type": "while_statement",
+        "occurrences": 1137,
+        "files": 271,
+        "declared": true
+      },
+      {
+        "type": "command_literal",
+        "occurrences": 965,
+        "files": 100,
+        "declared": true
+      },
+      {
+        "type": "source_file",
+        "occurrences": 914,
+        "files": 912,
+        "declared": true
+      },
+      {
+        "type": "continue_statement",
+        "occurrences": 886,
+        "files": 192,
+        "declared": true
+      },
+      {
+        "type": "comprehension_expression",
+        "occurrences": 841,
+        "files": 208,
+        "declared": true
+      },
+      {
+        "type": "catch_clause",
+        "occurrences": 816,
+        "files": 184,
+        "declared": true
+      },
+      {
+        "type": "module_definition",
+        "occurrences": 775,
+        "files": 302,
+        "declared": true
+      },
+      {
+        "type": "break_statement",
+        "occurrences": 761,
+        "files": 200,
+        "declared": true
+      },
+      {
+        "type": "broadcast_call_expression",
+        "occurrences": 727,
+        "files": 129,
+        "declared": true
+      },
+      {
+        "type": "global_statement",
+        "occurrences": 681,
+        "files": 138,
+        "declared": true
+      },
+      {
+        "type": "local_statement",
+        "occurrences": 624,
+        "files": 157,
+        "declared": true
+      },
+      {
+        "type": "block_comment",
+        "occurrences": 589,
+        "files": 90,
+        "declared": true
+      },
+      {
+        "type": "selected_import",
+        "occurrences": 585,
+        "files": 257,
+        "declared": true
+      },
+      {
+        "type": "macro_definition",
+        "occurrences": 535,
+        "files": 122,
+        "declared": true
+      },
+      {
+        "type": "import_path",
+        "occurrences": 467,
+        "files": 145,
+        "declared": true
+      },
+      {
+        "type": "finally_clause",
+        "occurrences": 466,
+        "files": 120,
+        "declared": true
+      },
+      {
+        "type": "import_statement",
+        "occurrences": 413,
+        "files": 193,
+        "declared": true
+      },
+      {
+        "type": "scoped_identifier",
+        "occurrences": 401,
+        "files": 186,
+        "declared": true
+      },
+      {
+        "type": "quote_statement",
+        "occurrences": 319,
+        "files": 100,
+        "declared": true
+      },
+      {
+        "type": "export_statement",
+        "occurrences": 265,
+        "files": 146,
+        "declared": true
+      },
+      {
+        "type": "abstract_definition",
+        "occurrences": 212,
+        "files": 74,
+        "declared": true
+      },
+      {
+        "type": "if_clause",
+        "occurrences": 176,
+        "files": 49,
+        "declared": true
+      },
+      {
+        "type": "adjoint_expression",
+        "occurrences": 132,
+        "files": 45,
+        "declared": true
+      },
+      {
+        "type": "primitive_definition",
+        "occurrences": 83,
+        "files": 25,
+        "declared": true
+      },
+      {
+        "type": "public_statement",
+        "occurrences": 43,
+        "files": 33,
+        "declared": true
+      },
+      {
+        "type": "import_alias",
+        "occurrences": 31,
+        "files": 13,
+        "declared": true
+      },
+      {
+        "type": "prefixed_command_literal",
+        "occurrences": 9,
+        "files": 4,
+        "declared": true
+      }
+    ]
+  },
+  "externalScanner": {
+    "scannerSource": "grammars/tree-sitter-julia/src/scanner.c",
+    "declaredExternals": [
+      "BLOCK_COMMENT_REST",
+      "CONTENT_CMD_1",
+      "CONTENT_CMD_1_RAW",
+      "CONTENT_CMD_3",
+      "CONTENT_CMD_3_RAW",
+      "CONTENT_STR_1",
+      "CONTENT_STR_1_RAW",
+      "CONTENT_STR_3",
+      "CONTENT_STR_3_RAW",
+      "END_CMD",
+      "END_STR",
+      "IMMEDIATE_BRACE",
+      "IMMEDIATE_BRACKET",
+      "IMMEDIATE_COMMAND_START",
+      "IMMEDIATE_PAREN",
+      "IMMEDIATE_STRING_START"
+    ],
+    "observed": [],
+    "neverObserved": [
+      "BLOCK_COMMENT_REST",
+      "CONTENT_CMD_1",
+      "CONTENT_CMD_1_RAW",
+      "CONTENT_CMD_3",
+      "CONTENT_CMD_3_RAW",
+      "CONTENT_STR_1",
+      "CONTENT_STR_1_RAW",
+      "CONTENT_STR_3",
+      "CONTENT_STR_3_RAW",
+      "END_CMD",
+      "END_STR",
+      "IMMEDIATE_BRACE",
+      "IMMEDIATE_BRACKET",
+      "IMMEDIATE_COMMAND_START",
+      "IMMEDIATE_PAREN",
+      "IMMEDIATE_STRING_START"
+    ],
+    "functionalProbe": {
+      "constructs": [
+        {
+          "construct": "string interpolation",
+          "clean": true,
+          "errorNodes": 0
+        },
+        {
+          "construct": "nested quotes in interpolation",
+          "clean": true,
+          "errorNodes": 0
+        },
+        {
+          "construct": "command literal",
+          "clean": true,
+          "errorNodes": 0
+        },
+        {
+          "construct": "block comment",
+          "clean": true,
+          "errorNodes": 0
+        },
+        {
+          "construct": "char literal",
+          "clean": true,
+          "errorNodes": 0
+        },
+        {
+          "construct": "triple-quoted string",
+          "clean": true,
+          "errorNodes": 0
+        }
+      ],
+      "allClean": true
+    },
+    "note": "Julia's grammar has an external scanner (string interpolation and lexical states a context-free grammar cannot decide). Its 16 declared tokens are INTERNAL and never appear as tree nodes, so the tree census cannot see them and `neverObserved` is expected rather than alarming; `functionalProbe` is the check that actually bears on the scanner, asking whether the constructs that require a scanner parse cleanly. Two earlier versions of this instrument were wrong in OPPOSITE directions — one reported `declaredExternals: []` (wrong path, so 'Julia has no scanner') and one reported all 16 `neverObserved` (wrong node scope, so 'the scanner never fires'). Both mistook the instrument's blindness for a fact about the grammar."
+  },
+  "errorFileRows": [
+    {
+      "file": "JuliaLowering/src/validation.jl",
+      "repo": "julia",
+      "bytes": 58347,
+      "errorNodes": 261,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/src/ssair/EscapeAnalysis.jl",
+      "repo": "julia",
+      "bytes": 53572,
+      "errorNodes": 75,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/test/inference.jl",
+      "repo": "julia",
+      "bytes": 334105,
+      "errorNodes": 73,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/syntax.jl",
+      "repo": "julia",
+      "bytes": 145857,
+      "errorNodes": 71,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/desugaring.jl",
+      "repo": "julia",
+      "bytes": 171413,
+      "errorNodes": 63,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/compat.jl",
+      "repo": "julia",
+      "bytes": 34097,
+      "errorNodes": 62,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/show.jl",
+      "repo": "julia",
+      "bytes": 127683,
+      "errorNodes": 59,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/src/abstractinterpretation.jl",
+      "repo": "julia",
+      "bytes": 243117,
+      "errorNodes": 41,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/show.jl",
+      "repo": "julia",
+      "bytes": 123014,
+      "errorNodes": 41,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/loading.jl",
+      "repo": "julia",
+      "bytes": 211002,
+      "errorNodes": 36,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/core.jl",
+      "repo": "julia",
+      "bytes": 265582,
+      "errorNodes": 36,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaSyntax/test/syntax.jl",
+      "repo": "julia",
+      "bytes": 17921,
+      "errorNodes": 34,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/int.jl",
+      "repo": "julia",
+      "bytes": 31940,
+      "errorNodes": 32,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/libc.jl",
+      "repo": "julia",
+      "bytes": 19251,
+      "errorNodes": 29,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/test/scopes.jl",
+      "repo": "julia",
+      "bytes": 55441,
+      "errorNodes": 28,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/stream.jl",
+      "repo": "julia",
+      "bytes": 89744,
+      "errorNodes": 28,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/multinverses.jl",
+      "repo": "julia",
+      "bytes": 5960,
+      "errorNodes": 27,
+      "missingNodes": 0
+    },
+    {
+      "file": "stdlib/Dates/src/parse.jl",
+      "repo": "julia",
+      "bytes": 12139,
+      "errorNodes": 26,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/scope_analysis.jl",
+      "repo": "julia",
+      "bytes": 39229,
+      "errorNodes": 25,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/goto.jl",
+      "repo": "julia",
+      "bytes": 16070,
+      "errorNodes": 25,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/src/inferencestate.jl",
+      "repo": "julia",
+      "bytes": 64151,
+      "errorNodes": 24,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/bindings.jl",
+      "repo": "julia",
+      "bytes": 8009,
+      "errorNodes": 23,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/ryu/shortest.jl",
+      "repo": "julia",
+      "bytes": 15447,
+      "errorNodes": 23,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/broadcast.jl",
+      "repo": "julia",
+      "bytes": 65141,
+      "errorNodes": 22,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/linear_ir.jl",
+      "repo": "julia",
+      "bytes": 51435,
+      "errorNodes": 21,
+      "missingNodes": 0
+    },
+    {
+      "file": "stdlib/FileWatching/src/FileWatching.jl",
+      "repo": "julia",
+      "bytes": 40962,
+      "errorNodes": 20,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/subarray.jl",
+      "repo": "julia",
+      "bytes": 43720,
+      "errorNodes": 20,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/src/optimize.jl",
+      "repo": "julia",
+      "bytes": 85268,
+      "errorNodes": 19,
+      "missingNodes": 0
+    },
+    {
+      "file": "stdlib/Test/src/Test.jl",
+      "repo": "julia",
+      "bytes": 117805,
+      "errorNodes": 18,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/src/types.jl",
+      "repo": "julia",
+      "bytes": 31182,
+      "errorNodes": 17,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/test/inline.jl",
+      "repo": "julia",
+      "bytes": 86761,
+      "errorNodes": 17,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaSyntax/src/porcelain/syntax.jl",
+      "repo": "julia",
+      "bytes": 52948,
+      "errorNodes": 17,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/strings/io.jl",
+      "repo": "julia",
+      "bytes": 25577,
+      "errorNodes": 17,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/closure_conversion.jl",
+      "repo": "julia",
+      "bytes": 28389,
+      "errorNodes": 16,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaSyntax/test/test_utils.jl",
+      "repo": "julia",
+      "bytes": 16126,
+      "errorNodes": 16,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/docs/Docs.jl",
+      "repo": "julia",
+      "bytes": 32396,
+      "errorNodes": 15,
+      "missingNodes": 0
+    },
+    {
+      "file": "stdlib/InteractiveUtils/src/macros.jl",
+      "repo": "julia",
+      "bytes": 40805,
+      "errorNodes": 15,
+      "missingNodes": 0
+    },
+    {
+      "file": "stdlib/Random/src/Xoshiro.jl",
+      "repo": "julia",
+      "bytes": 9979,
+      "errorNodes": 15,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/typegroup.jl",
+      "repo": "julia",
+      "bytes": 34266,
+      "errorNodes": 15,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/binding_analysis.jl",
+      "repo": "julia",
+      "bytes": 13631,
+      "errorNodes": 14,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/libdl.jl",
+      "repo": "julia",
+      "bytes": 17645,
+      "errorNodes": 14,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/threadingconstructs.jl",
+      "repo": "julia",
+      "bytes": 34251,
+      "errorNodes": 14,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/intfuncs.jl",
+      "repo": "julia",
+      "bytes": 43393,
+      "errorNodes": 13,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/weakdict.jl",
+      "repo": "julia",
+      "bytes": 13235,
+      "errorNodes": 12,
+      "missingNodes": 0
+    },
+    {
+      "file": "Compiler/test/EAUtils.jl",
+      "repo": "julia",
+      "bytes": 13947,
+      "errorNodes": 11,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaSyntax/test/expr.jl",
+      "repo": "julia",
+      "bytes": 37792,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/precompilation.jl",
+      "repo": "julia",
+      "bytes": 147362,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/sort.jl",
+      "repo": "julia",
+      "bytes": 89228,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/docs.jl",
+      "repo": "julia",
+      "bytes": 38415,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/loading.jl",
+      "repo": "julia",
+      "bytes": 103476,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/numbers.jl",
+      "repo": "julia",
+      "bytes": 131218,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/ranges.jl",
+      "repo": "julia",
+      "bytes": 114290,
+      "errorNodes": 10,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/eval.jl",
+      "repo": "julia",
+      "bytes": 33378,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/test/decls.jl",
+      "repo": "julia",
+      "bytes": 47186,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/gmp.jl",
+      "repo": "julia",
+      "bytes": 40908,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/lock.jl",
+      "repo": "julia",
+      "bytes": 35186,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "base/ryu/utils.jl",
+      "repo": "julia",
+      "bytes": 10119,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "stdlib/Random/src/MersenneTwister.jl",
+      "repo": "julia",
+      "bytes": 20907,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "test/iterators.jl",
+      "repo": "julia",
+      "bytes": 48787,
+      "errorNodes": 9,
+      "missingNodes": 0
+    },
+    {
+      "file": "JuliaLowering/src/syntax_macros.jl",
+      "repo": "julia",
+      "bytes": 14785,
+      "errorNodes": 8,
+      "missingNodes": 0
+    }
+  ],
+  "verdict": "177 of 966 files carry ERROR/MISSING nodes: 1947 ERROR, 0 MISSING (18.32% of files). 89 named types produced; 0 declared but never produced; 0 produced but undeclared."
+}

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.44",
+  "code": "V1",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: contract mode cleanup (scope vs format)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "viz: bb_visualize is in the registry",
+      "pass": true,
+      "detail": "missing"
+    },
+    {
+      "name": "viz: modes are exactly the five scopes",
+      "pass": true,
+      "detail": "got [\"project\",\"file\",\"module\",\"symbol\",\"feature\"]"
+    },
+    {
+      "name": "viz: scope enum is exactly the five scopes",
+      "pass": true,
+      "detail": "got [\"project\",\"file\",\"module\",\"symbol\",\"feature\"]"
+    },
+    {
+      "name": "viz: format enum is exactly text/json/html",
+      "pass": true,
+      "detail": "got [\"text\",\"json\",\"html\"]"
+    },
+    {
+      "name": "viz: format values are NOT in modes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "modes=[\"project\",\"file\",\"module\",\"symbol\",\"feature\"]"
+    },
+    {
+      "name": "viz: scope values are NOT in the format enum [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "formatEnum=[\"text\",\"json\",\"html\"]"
+    },
+    {
+      "name": "viz: defaults carry scope",
+      "pass": true,
+      "detail": "scope=project"
+    },
+    {
+      "name": "viz: defaults carry format",
+      "pass": true,
+      "detail": "format=text"
+    },
+    {
+      "name": "viz: handler validates scope independently",
+      "pass": true,
+      "detail": "scope routing missing"
+    },
+    {
+      "name": "viz: handler validates format independently",
+      "pass": true,
+      "detail": "format routing missing"
+    },
+    {
+      "name": "viz: handler does not treat format as a mode [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "format treated as scope"
+    },
+    {
+      "name": "viz: docs modes line = scopes only",
+      "pass": true,
+      "detail": "mode line mismatch"
+    },
+    {
+      "name": "viz: docs has separate format property",
+      "pass": true,
+      "detail": "format property missing"
+    },
+    {
+      "name": "viz: docs does not list format values under Modes [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "format leaked into modes line"
+    },
+    {
+      "name": "viz: generator verify mode passes (bb_visualize.md byte-fresh)",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0
+  },
+  "decisions": {
+    "scopeEnum": "project, file, module, symbol, feature (exactly these in modes)",
+    "formatEnum": "text, json, html (separate `format` input property, NOT in modes)",
+    "noDrift": "registry.modes, inputSchema, docs, and handler all agree"
+  },
+  "limitations": [
+    "This verifies the contract boundary only; graph output fidelity is verified in later V issues."
+  ],
+  "generatedAt": "2026-11-05T04:18:37.645Z"
+}

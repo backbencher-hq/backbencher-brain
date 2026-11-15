@@ -1,0 +1,26 @@
+{
+  "fixtureId": "dart/import-resolution",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the four import-target rules, because the lane's import/export edges were unresolvable BY CONSTRUCTION before them: `processImportExport` wrote the specifier itself into the target, and no resolver can bind a specifier to a symbol. Measured on the admitted corpus population (validation/m14/fixtures/dart/import-target-paths.ts, 33,738 files, 110,957 directives): 86,196 directives (77.7%) name a file in the same checkout, and 44,296 of those name a target whose bare file STEM is not unique, so only a project-relative path can address them. A note on the two path pins below: the harness passes `analyze()` the synthetic path `fixtures/dart/<name>.dart` (it does not hand the analyzer the real on-disk path), so the project-relative identity it derives is anchored at the checkout containing that synthetic path — which is the repo root when the suite runs from it. The corpus runs pass real paths, and the rule is the same one; validation/m14/fixtures/dart/import-identity-pairing.ts checks the two ends meet on REAL paths.",
+  "theClaim": "The two `meta.importOutsideProject` pins are the EXTERNAL CLAIM, and the two `forbidRelationships` rows that carry the same key are the honest half of it, which is the half a mutation breaks: a RESOLVED in-repo target must not claim to be outside anything, and neither must a DANGLING internal reference (`import-resolution-missing.dart`) — the checkout can see that a path it owns is missing, which is a defect to report, not a dependency to excuse. Only a `package:` the checkout does not declare and a `dart:` library in a checkout with no SDK carry the claim, and the incoming gate verifies each one against the project's OWN pubspec files and admitted file list (`projectFactsForDart`), never against this analyzer's opinion of them — a claim whose evidence is its author's is a restatement.",
+  "expectSymbols": [
+    { "name": "import-resolution", "kind": "module" },
+    { "name": "ImportResolution", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "import-resolution", "target": "fixtures/dart/import-resolution-sibling.dart", "meta.evidenceClass": "import_based" },
+    { "type": "imports", "from": "import-resolution", "target": "fixtures/dart/import-resolution-missing.dart", "meta.evidenceClass": "import_based" },
+    { "type": "imports", "from": "import-resolution", "target": "package:not_declared_in_this_checkout/x.dart:*", "meta.evidenceClass": "import_based", "meta.importOutsideProject": true },
+    { "type": "imports", "from": "import-resolution", "target": "dart:async:*", "meta.evidenceClass": "import_based", "meta.importOutsideProject": true },
+    { "type": "imports", "from": "import-resolution", "target": "dart:io:*", "meta.evidenceClass": "import_based", "meta.importOutsideProject": true },
+    { "type": "contains", "source": "ImportResolution", "target": "ImportResolution.label", "meta.evidenceClass": "structural", "note": "2026-10-08: the member's PUBLISHED spelling (`Owner.member`), not its bare name" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "import-resolution-sibling.dart:*" },
+    { "type": "imports", "target": "import-resolution-missing.dart:*" },
+    { "type": "imports", "target": "fixtures/dart/async.dart:*" },
+    { "type": "imports", "target": "fixtures/dart/import-resolution-sibling.dart", "meta.importOutsideProject": true },
+    { "type": "imports", "target": "fixtures/dart/import-resolution-missing.dart", "meta.importOutsideProject": true }
+  ]
+}

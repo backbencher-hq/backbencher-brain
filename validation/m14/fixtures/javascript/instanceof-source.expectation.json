@@ -1,0 +1,17 @@
+{
+  "fixtureId": "javascript/instanceof-source",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS instanceof reference source attribution (gap J6, TS same-wave fix). A top-level const r = x instanceof T attributes the reference to r (the enclosing declaration), not the 'global' placeholder. Pre-fix: resolveSource lacked variable_declarator.",
+  "expectSymbols": [
+    { "name": "isWidget", "kind": "constant" },
+    { "name": "check", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "isWidget", "target": "Widget", "meta.relationshipType": "instanceof_check" },
+    { "type": "references", "from": "check", "target": "Date", "meta.relationshipType": "instanceof_check" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "global", "target": "Widget" }
+  ]
+}

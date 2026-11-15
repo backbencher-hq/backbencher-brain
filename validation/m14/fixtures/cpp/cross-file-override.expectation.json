@@ -1,0 +1,90 @@
+{
+  "fixtureId": "cpp/cross-file-override",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "crossFileOverride": [
+    "cross-file-override-base"
+  ],
+  "rationale": "CROSS-FILE `overrides` for cpp \u2014 the half of the label that had no CHANNEL, which is a different defect from having no pin.\n\n`analyze()` declared three parameters, so the engine's fourth (`AnalyzeContext.overrideCompanion`) never reached this analyzer at all, and the resolver read `classBases`, a per-file map. `override-context.ts` names this exact failure for python: 'Python's `analyze()` had stopped at three parameters, so the engine's fourth never reached it ... The rule was written, wired to a channel, shipped, and had never run.' cpp's case was one step quieter, because no rule had been written yet, so nothing turned red \u2014 the kind of absence no gate reports. Measured cost of the per-file-only answer: 735 `override`-keyword sites in the corpus against 185 `overrides` edges emitted; the keyword is the author's own assertion and it was read for the `decorators` payload only.\n\nWHY THE COMPANION IS NOT TRUSTED ALONE. It carries owner -> declared METHOD NAMES and no signatures, and a name alone cannot tell an override from C++ NAME HIDING \u2014 which is the confusion the M37.9 differential round recorded when it excluded cpp overrides from the oracle ('same-name across a base chain conflates C++ NAME-HIDING with virtual override ... different arity hides, it does not override'). PERL-MR15 measured 75.6% of its companion-only edges FALSE and withdrew them. So the two are combined: the companion proves the base DECLARES the method, the `override`/`final` keyword proves the method OVERRIDES one. Confidence is 0.95 rather than 1.0 because 'the first ancestor in declaration order that declares the method' is still a choice; the machine-readable `reasonCode` records which pair of facts established it, per M14-HONESTY-CONTRACT \u00a74.\n\n`ExternalDerived::probe` IS THE ROW THAT MATTERS MOST, and it is a RECALL LOSS rather than a suppressed falsehood \u2014 which is the distinction the whole design turns on. `ExternalInterface::probe` is `virtual void probe(int)` and the redeclaration matches it exactly, so in real C++ this IS an override; the analyzer does not publish the edge, because the evidence available across a file boundary (a NAME in the companion) cannot tell it from `tune` just below it, which is a name HIDE with a mismatched signature. Two candidate errors are available here \u2014 publish the hide as an override, or decline the override \u2014 and they are indistinguishable on this evidence. Declining is chosen because a false edge poisons bb_graph, bb_impact and bb_migrate in a way that a missing one does not, and because the population that IS provable (the keyword arm) is 735 corpus sites rather than the whole cross-file population. The cost is counted, not argued. `ExternalDerived::tune` is the same shape and is pinned the same way, so neither arm can move without the other.\n\nA fix that widened the companion path until these rows moved would look like an improvement and be a regression: PERL-MR15 measured exactly that widening at 75.6% false.\n\nThe `LocalBase`/`LocalDerived` arm is the CONTROL: with the base visible in the same file the in-file signature check applies and the companion is irrelevant, so `act` gets the 1.0 `override-keyword+signature-match` edge and `hide` is refused. Without this arm a change that routed EVERY resolution through the companion would still pass the three cross-file rows and nothing would notice.",
+  "expectSymbols": [
+    {
+      "name": "ExternalDerived",
+      "kind": "class"
+    },
+    {
+      "name": "step",
+      "kind": "method",
+      "ownerName": "ExternalDerived"
+    },
+    {
+      "name": "LocalBase",
+      "kind": "class"
+    },
+    {
+      "name": "LocalDerived",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "ExternalDerived",
+      "target": "ExternalInterface",
+      "note": "the cross-file heritage edge, which is what makes an override resolvable at all."
+    },
+    {
+      "type": "overrides",
+      "fromEndsWith": "ExternalDerived::step",
+      "target": "step",
+      "meta.reasonCode": "override-keyword+companion-declares-method",
+      "meta.overrideSpecifier": "override",
+      "confidenceMin": 0.9,
+      "note": "THE POSITION. `ExternalInterface` is declared in a different compilation unit and is visible ONLY through the companion, so without `crossFileOverride` this file emits nothing for it. Two independent facts establish the edge: the keyword (the author asserts an override) and the companion (the base declares the method).",
+      "meta.overriddenOwner": "ExternalInterface"
+    },
+    {
+      "type": "overrides",
+      "fromEndsWith": "LocalDerived::act",
+      "target": "act",
+      "meta.reasonCode": "override-keyword+signature-match",
+      "confidenceMin": 1,
+      "note": "THE CONTROL, in-file base: the signature check applies, the companion is irrelevant, and with the keyword the edge is a FACT at 1.0 rather than a 0.9 inference.",
+      "meta.overriddenOwner": "LocalBase"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "fromEndsWith": "ExternalDerived::probe",
+      "target": "probe",
+      "note": "THE ROW THAT MATTERS MOST, and a deliberate RECALL LOSS rather than a suppressed falsehood. `ExternalInterface::probe` is `virtual void probe(int)` and `ExternalDerived::probe(int)` matches it exactly, so in real C++ this IS an override \u2014 and no edge is published, because a name-only companion cannot tell it from the `tune` hide. This is the PERL-MR15 ruling applied rather than re-derived, and it is the row that would fail first if someone \"closed the gap\" by trusting names.",
+      "meta.overriddenOwner": "ExternalInterface"
+    },
+    {
+      "type": "overrides",
+      "fromEndsWith": "LocalDerived::hide",
+      "target": "hide",
+      "note": "C++ NAME HIDING, cross-file: `ExternalInterface::tune(int)` and `ExternalDerived::tune(const char*)` are the same name and different signatures, so the derived one HIDES rather than overrides. `ExternalDerived` also declares no `override` keyword on it \u2014 writing one would not compile \u2014 so the companion's name-only entry cannot support an edge. Declining it costs nothing, because it is not an override; `probe` immediately below is where declining costs something, and both are pinned.",
+      "meta.overriddenOwner": "LocalBase"
+    },
+    {
+      "type": "overrides",
+      "fromEndsWith": "LocalDerived::act",
+      "target": "act",
+      "note": "a base NOT in the local class's base list can never be the overrider, however the companion is consulted. `LocalDerived` inherits `LocalBase` only.",
+      "meta.overriddenOwner": "ExternalInterface"
+    },
+    {
+      "type": "overrides",
+      "fromEndsWith": "ExternalDerived::inheritedOnly",
+      "target": "inheritedOnly",
+      "note": "NOT EVEN PRESENT: `ExternalDerived` declares no method of that name, so there is nothing to override. A companion lookup that fired on the BASE's members rather than the DERIVED's would produce this edge.",
+      "meta.overriddenOwner": "ExternalInterface"
+    },
+    {"type": "overrides", "target": "ExternalDerived::probe", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "target": "LocalBase::hide", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "target": "LocalDerived::hide", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "target": "LocalBase::act", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "overrides", "target": "LocalDerived::act", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

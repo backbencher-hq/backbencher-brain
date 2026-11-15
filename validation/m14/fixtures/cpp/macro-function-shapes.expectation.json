@@ -1,0 +1,50 @@
+{
+  "fixtureId": "cpp/macro-function-shapes",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CP2 (#736 cpp wave): `TEST(a, b) {...}`, `TEST_F(a, b) {...}` and `BOOST_AUTO_TEST_CASE(x) {...}` parse as function_definitions whose params are bare macro paste-tokens — minting `TEST`/`TEST_F` Function symbols per site (11 in one corpus file) and resolving reads against preprocessor fiction (C-D2). Suppressed: no symbols, no resolution names — but bodies still walk in an anonymous scope (locals bind for shadowing and never leak as file-scope symbols; calls still emit with global source). Real ALL-CAPS functions with typed params are kept (not exercised here by design — the corpus has none).",
+  "expectSymbols": [
+    {
+      "name": "real_fn",
+      "kind": "function"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "TEST",
+      "equals": 0
+    },
+    {
+      "name": "TEST_F",
+      "equals": 0
+    },
+    {
+      "name": "BOOST_AUTO_TEST_CASE",
+      "equals": 0
+    },
+    {
+      "name": "local_tmp",
+      "equals": 0
+    },
+    {
+      "name": "check",
+      "equals": 0
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "real_fn"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "TEST"
+    },
+    {
+      "type": "uses",
+      "target": "TEST_F"
+    }
+  ]
+}

@@ -1,0 +1,1285 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-21T22:53:44.892Z",
+  "atCommit": "4dec5c773da20d7e9d7337580f81d4b374ac95a4",
+  "treeModifiedInputs": 38,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 40,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "cpp:zig/lib/libtsan/tsan_debugging.cpp",
+    "token": "h",
+    "trueLine": 13,
+    "trueLineConsistent": true,
+    "mutatedLine": 1,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "cpp": {
+      "files": 40,
+      "rels": 9713,
+      "withLine": 9713,
+      "noLine": 0,
+      "consistent": 9560,
+      "inconsistent": 41,
+      "notCheckable": 112
+    }
+  },
+  "sampleHash": {
+    "cpp": "3ab3b859d8de"
+  },
+  "samplePins": {
+    "cpp": [
+      {
+        "file": "zig/lib/libtsan/tsan_debugging.cpp",
+        "contentSha": "a46ac90ef90d"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_external.cpp",
+        "contentSha": "c2ccfad16adf"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_fd.cpp",
+        "contentSha": "67d48d612601"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_flags.cpp",
+        "contentSha": "11f877207ca4"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_ignoreset.cpp",
+        "contentSha": "6d9c4cae07be"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_mac.cpp",
+        "contentSha": "dd3189dbd75e"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_mach_vm.cpp",
+        "contentSha": "cf4bacbac6d3"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_memintrinsics.cpp",
+        "contentSha": "51a23f3c8b45"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_posix.cpp",
+        "contentSha": "c2ff44f9a626"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface.cpp",
+        "contentSha": "ca6eacd5af0a"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface_ann.cpp",
+        "contentSha": "6e74450f252b"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface_atomic.cpp",
+        "contentSha": "ed6ca2356cda"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface_java.cpp",
+        "contentSha": "7a9cef5f1aaf"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_malloc_mac.cpp",
+        "contentSha": "c4718dbe0961"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_md5.cpp",
+        "contentSha": "39b772002908"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_mman.cpp",
+        "contentSha": "d8a4e582a135"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_mutexset.cpp",
+        "contentSha": "7395f1c72e53"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_new_delete.cpp",
+        "contentSha": "a8bff68ace79"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_platform_linux.cpp",
+        "contentSha": "60905ab6c48c"
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_platform_mac.cpp",
+        "contentSha": "d696667e925c"
+      },
+      {
+        "file": "zig/lib/libunwind/src/AddressSpace.hpp",
+        "contentSha": "c12382512621"
+      },
+      {
+        "file": "zig/lib/libunwind/src/CompactUnwinder.hpp",
+        "contentSha": "438d320fb650"
+      },
+      {
+        "file": "zig/lib/libunwind/src/DwarfInstructions.hpp",
+        "contentSha": "39766cd4ef99"
+      },
+      {
+        "file": "zig/lib/libunwind/src/DwarfParser.hpp",
+        "contentSha": "72fbc2438420"
+      },
+      {
+        "file": "zig/lib/libunwind/src/EHHeaderParser.hpp",
+        "contentSha": "31c22a99d0a0"
+      },
+      {
+        "file": "zig/lib/libunwind/src/FrameHeaderCache.hpp",
+        "contentSha": "ba9d7a8ae3c9"
+      },
+      {
+        "file": "zig/lib/libunwind/src/RWMutex.hpp",
+        "contentSha": "3d6f718c4994"
+      },
+      {
+        "file": "zig/lib/libunwind/src/Registers.hpp",
+        "contentSha": "9b39bf413a66"
+      },
+      {
+        "file": "zig/lib/libunwind/src/Unwind-EHABI.cpp",
+        "contentSha": "352ab8ec8eaa"
+      },
+      {
+        "file": "zig/lib/libunwind/src/Unwind-seh.cpp",
+        "contentSha": "6255fc0d176d"
+      },
+      {
+        "file": "zig/lib/libunwind/src/UnwindCursor.hpp",
+        "contentSha": "521ed0459bcc"
+      },
+      {
+        "file": "zig/lib/libunwind/src/libunwind.cpp",
+        "contentSha": "0be28214f509"
+      },
+      {
+        "file": "zig/src/zig_clang_cc1_main.cpp",
+        "contentSha": "66f2c46a579d"
+      },
+      {
+        "file": "zig/src/zig_clang_cc1as_main.cpp",
+        "contentSha": "ce79ba2aabbe"
+      },
+      {
+        "file": "zig/src/zig_clang_driver.cpp",
+        "contentSha": "26a8152eeab6"
+      },
+      {
+        "file": "zig/src/zig_llvm-ar.cpp",
+        "contentSha": "19318b353deb"
+      },
+      {
+        "file": "zig/src/zig_llvm.cpp",
+        "contentSha": "4d7634c46868"
+      },
+      {
+        "file": "zig/test/standalone/c_compiler/test.cpp",
+        "contentSha": "6c78f5f879ef"
+      },
+      {
+        "file": "zig/test/standalone/libcxx/mt_doit.cpp",
+        "contentSha": "ae743f9b62bb"
+      },
+      {
+        "file": "zig/test/standalone/libcxx/st_doit.cpp",
+        "contentSha": "5e87ce479ea0"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "cpp": {
+      "prev": null,
+      "now": "3ab3b859d8de",
+      "same": false
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "cpp": [
+      {
+        "file": "zig/lib/libtsan/tsan_debugging.cpp",
+        "language": "cpp",
+        "rels": 127,
+        "withLine": 127,
+        "noLine": 0,
+        "consistent": 127,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_external.cpp",
+        "language": "cpp",
+        "rels": 72,
+        "withLine": 72,
+        "noLine": 0,
+        "consistent": 67,
+        "inconsistent": 5,
+        "notCheckable": 0,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "__tsan_external_register_tag",
+            "claimedLine": 83,
+            "sourceLine": "SANITIZER_INTERFACE_ATTRIBUTE"
+          },
+          {
+            "type": "contains",
+            "callee": "__tsan_external_register_header",
+            "claimedLine": 94,
+            "sourceLine": "SANITIZER_INTERFACE_ATTRIBUTE"
+          },
+          {
+            "type": "contains",
+            "callee": "__tsan_external_assign_tag",
+            "claimedLine": 106,
+            "sourceLine": "SANITIZER_INTERFACE_ATTRIBUTE"
+          },
+          {
+            "type": "contains",
+            "callee": "__tsan_external_read",
+            "claimedLine": 120,
+            "sourceLine": "SANITIZER_INTERFACE_ATTRIBUTE"
+          },
+          {
+            "type": "contains",
+            "callee": "__tsan_external_write",
+            "claimedLine": 125,
+            "sourceLine": "SANITIZER_INTERFACE_ATTRIBUTE"
+          }
+        ],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_fd.cpp",
+        "language": "cpp",
+        "rels": 245,
+        "withLine": 245,
+        "noLine": 0,
+        "consistent": 245,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_flags.cpp",
+        "language": "cpp",
+        "rels": 45,
+        "withLine": 45,
+        "noLine": 0,
+        "consistent": 44,
+        "inconsistent": 1,
+        "notCheckable": 0,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "__tsan_default_options",
+            "claimedLine": 29,
+            "sourceLine": "SANITIZER_WEAK_DEFAULT_IMPL"
+          }
+        ],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_ignoreset.cpp",
+        "language": "cpp",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 18,
+            "sourceLine": "IgnoreSet::IgnoreSet()",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_mac.cpp",
+        "language": "cpp",
+        "rels": 204,
+        "withLine": 204,
+        "noLine": 0,
+        "consistent": 204,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_mach_vm.cpp",
+        "language": "cpp",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_memintrinsics.cpp",
+        "language": "cpp",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interceptors_posix.cpp",
+        "language": "cpp",
+        "rels": 1297,
+        "withLine": 1297,
+        "noLine": 0,
+        "consistent": 1285,
+        "inconsistent": 2,
+        "notCheckable": 10,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "EnableIgnoresImpl",
+            "claimedLine": 320,
+            "sourceLine": "NOINLINE"
+          },
+          {
+            "type": "contains",
+            "callee": "DisableIgnoresImpl",
+            "claimedLine": 331,
+            "sourceLine": "NOINLINE"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 437,
+            "sourceLine": "((void(*)())ctx->f)();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 447,
+            "sourceLine": "((void(*)(void *arg))ctx->f)(ctx->arg);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 513,
+            "sourceLine": "((void(*)(int status, void *arg))ctx->f)(status, ctx->arg);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 1285,
+            "sourceLine": "si->~ScopedInterceptor();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 1682,
+            "sourceLine": "(*f)();",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface.cpp",
+        "language": "cpp",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface_ann.cpp",
+        "language": "cpp",
+        "rels": 244,
+        "withLine": 244,
+        "noLine": 0,
+        "consistent": 240,
+        "inconsistent": 2,
+        "notCheckable": 2,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "AnnotateMemoryIsInitialized",
+            "claimedLine": 343,
+            "sourceLine": "void INTERFACE_ATTRIBUTE"
+          },
+          {
+            "type": "contains",
+            "callee": "AnnotateMemoryIsUninitialized",
+            "claimedLine": 345,
+            "sourceLine": "void INTERFACE_ATTRIBUTE"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 32,
+            "sourceLine": "ScopedAnnotation(ThreadState *thr, const char *aname, uptr pc)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 75,
+            "sourceLine": "DynamicAnnContext() : mtx(MutexTypeAnnotations) {}",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface_atomic.cpp",
+        "language": "cpp",
+        "rels": 339,
+        "withLine": 339,
+        "noLine": 0,
+        "consistent": 339,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_interface_java.cpp",
+        "language": "cpp",
+        "rels": 218,
+        "withLine": 218,
+        "noLine": 0,
+        "consistent": 217,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 31,
+            "sourceLine": "JavaContext(jptr heap_begin, jptr heap_size)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_malloc_mac.cpp",
+        "language": "cpp",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_md5.cpp",
+        "language": "cpp",
+        "rels": 168,
+        "withLine": 168,
+        "noLine": 0,
+        "consistent": 166,
+        "inconsistent": 1,
+        "notCheckable": 1,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "MD5_CTX",
+            "claimedLine": 34,
+            "sourceLine": "typedef struct {"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 34,
+            "sourceLine": "typedef struct {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_mman.cpp",
+        "language": "cpp",
+        "rels": 316,
+        "withLine": 316,
+        "noLine": 0,
+        "consistent": 314,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 72,
+            "sourceLine": "GlobalProc()",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 88,
+            "sourceLine": "ScopedGlobalProcessor::ScopedGlobalProcessor() {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_mutexset.cpp",
+        "language": "cpp",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 19,
+            "sourceLine": "MutexSet::MutexSet() {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 77,
+            "sourceLine": "DynamicMutexSet::DynamicMutexSet() : ptr_(New<MutexSet>()) {}",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_new_delete.cpp",
+        "language": "cpp",
+        "rels": 31,
+        "withLine": 31,
+        "noLine": 0,
+        "consistent": 31,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_platform_linux.cpp",
+        "language": "cpp",
+        "rels": 274,
+        "withLine": 274,
+        "noLine": 0,
+        "consistent": 273,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 92,
+            "sourceLine": "enum {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libtsan/tsan_platform_mac.cpp",
+        "language": "cpp",
+        "rels": 161,
+        "withLine": 161,
+        "noLine": 0,
+        "consistent": 161,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libunwind/src/AddressSpace.hpp",
+        "language": "cpp",
+        "rels": 178,
+        "withLine": 178,
+        "noLine": 0,
+        "consistent": 177,
+        "inconsistent": 1,
+        "notCheckable": 0,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "getEncodedP",
+            "claimedLine": 270,
+            "sourceLine": "inline LocalAddressSpace::pint_t"
+          }
+        ],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libunwind/src/CompactUnwinder.hpp",
+        "language": "cpp",
+        "rels": 225,
+        "withLine": 225,
+        "noLine": 0,
+        "consistent": 222,
+        "inconsistent": 3,
+        "notCheckable": 0,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "stepWithCompactEncodingEBPFrame",
+            "claimedLine": 47,
+            "sourceLine": "static int"
+          },
+          {
+            "type": "contains",
+            "callee": "stepWithCompactEncodingRBPFrame",
+            "claimedLine": 278,
+            "sourceLine": "static int"
+          },
+          {
+            "type": "contains",
+            "callee": "stepWithCompactEncodingFrame",
+            "claimedLine": 507,
+            "sourceLine": "static int"
+          }
+        ],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libunwind/src/DwarfInstructions.hpp",
+        "language": "cpp",
+        "rels": 231,
+        "withLine": 231,
+        "noLine": 0,
+        "consistent": 228,
+        "inconsistent": 1,
+        "notCheckable": 2,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "evaluateExpression",
+            "claimedLine": 415,
+            "sourceLine": "typename A::pint_t"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 42,
+            "sourceLine": "enum {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 46,
+            "sourceLine": "enum {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libunwind/src/DwarfParser.hpp",
+        "language": "cpp",
+        "rels": 302,
+        "withLine": 302,
+        "noLine": 0,
+        "consistent": 298,
+        "inconsistent": 0,
+        "notCheckable": 4,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 68,
+            "sourceLine": "enum {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 100,
+            "sourceLine": "PrologInfo(InitializeTime IT = InitializeTime::kNormal) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 134,
+            "sourceLine": "PrologInfoStackEntry(PrologInfoStackEntry *n, const PrologInfo &i)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 142,
+            "sourceLine": "RememberStack() : entry(nullptr) {}",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libunwind/src/EHHeaderParser.hpp",
+        "language": "cpp",
+        "rels": 43,
+        "withLine": 43,
+        "noLine": 0,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libunwind/src/FrameHeaderCache.hpp",
+        "language": "cpp",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libunwind/src/RWMutex.hpp",
+        "language": "cpp",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 4,
+        "notCheckable": 0,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "pthread_create",
+            "claimedLine": 77,
+            "sourceLine": "extern \"C\" int __attribute__((weak))"
+          },
+          {
+            "type": "contains",
+            "callee": "pthread_rwlock_rdlock",
+            "claimedLine": 80,
+            "sourceLine": "extern \"C\" int __attribute__((weak))"
+          },
+          {
+            "type": "contains",
+            "callee": "pthread_rwlock_wrlock",
+            "claimedLine": 82,
+            "sourceLine": "extern \"C\" int __attribute__((weak))"
+          },
+          {
+            "type": "contains",
+            "callee": "pthread_rwlock_unlock",
+            "claimedLine": 84,
+            "sourceLine": "extern \"C\" int __attribute__((weak))"
+          }
+        ],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/lib/libunwind/src/Registers.hpp",
+        "language": "cpp",
+        "rels": 1135,
+        "withLine": 1135,
+        "noLine": 0,
+        "consistent": 1102,
+        "inconsistent": 1,
+        "notCheckable": 32,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "asfloat",
+            "claimedLine": 1241,
+            "sourceLine": "struct asfloat_s {"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 27,
+            "sourceLine": "enum {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 119,
+            "sourceLine": "inline Registers_x86::Registers_x86(const void *registers) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 125,
+            "sourceLine": "inline Registers_x86::Registers_x86() {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 347,
+            "sourceLine": "inline Registers_x86_64::Registers_x86_64(const void *registers) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 353,
+            "sourceLine": "inline Registers_x86_64::Registers_x86_64() {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libunwind/src/Unwind-EHABI.cpp",
+        "language": "cpp",
+        "rels": 299,
+        "withLine": 299,
+        "noLine": 0,
+        "consistent": 278,
+        "inconsistent": 13,
+        "notCheckable": 8,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "Format",
+            "claimedLine": 55,
+            "sourceLine": "typedef enum {"
+          },
+          {
+            "type": "contains",
+            "callee": "Kind",
+            "claimedLine": 65,
+            "sourceLine": "typedef enum {"
+          },
+          {
+            "type": "contains",
+            "callee": "_Unwind_VRS_Interpret",
+            "claimedLine": 259,
+            "sourceLine": "_LIBUNWIND_EXPORT _Unwind_Reason_Code"
+          },
+          {
+            "type": "contains",
+            "callee": "__aeabi_unwind_cpp_pr0",
+            "claimedLine": 446,
+            "sourceLine": "extern \"C\" _LIBUNWIND_EXPORT _Unwind_Reason_Code"
+          },
+          {
+            "type": "contains",
+            "callee": "__aeabi_unwind_cpp_pr1",
+            "claimedLine": 452,
+            "sourceLine": "extern \"C\" _LIBUNWIND_EXPORT _Unwind_Reason_Code"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 523,
+            "sourceLine": "(*p)(_US_VIRTUAL_UNWIND_FRAME, exception_object, context);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 638,
+            "sourceLine": "(*p)(state, exception_object, context);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 740,
+            "sourceLine": "(*stop)(1, action, exception_object->exception_class, exception_object,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 763,
+            "sourceLine": "(*p)(_US_FORCE_UNWIND | _US_UNWIND_FRAME_STARTING, exception_object,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 807,
+            "sourceLine": "(*stop)(1, lastAction, exception_object->exception_class, exception_object,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libunwind/src/Unwind-seh.cpp",
+        "language": "cpp",
+        "rels": 148,
+        "withLine": 148,
+        "noLine": 0,
+        "consistent": 138,
+        "inconsistent": 5,
+        "notCheckable": 5,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "_GCC_specific_handler",
+            "claimedLine": 84,
+            "sourceLine": "_LIBUNWIND_EXPORT EXCEPTION_DISPOSITION"
+          },
+          {
+            "type": "contains",
+            "callee": "_Unwind_RaiseException",
+            "claimedLine": 393,
+            "sourceLine": "_LIBUNWIND_EXPORT _Unwind_Reason_Code"
+          },
+          {
+            "type": "contains",
+            "callee": "_Unwind_ForcedUnwind",
+            "claimedLine": 461,
+            "sourceLine": "_LIBUNWIND_EXPORT _Unwind_Reason_Code"
+          },
+          {
+            "type": "contains",
+            "callee": "_Unwind_GetLanguageSpecificData",
+            "claimedLine": 479,
+            "sourceLine": "_LIBUNWIND_EXPORT uintptr_t"
+          },
+          {
+            "type": "contains",
+            "callee": "_Unwind_GetRegionStart",
+            "claimedLine": 491,
+            "sourceLine": "_LIBUNWIND_EXPORT uintptr_t"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 320,
+            "sourceLine": "(*stop)(1, action, exception_object->exception_class, exception_object,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 340,
+            "sourceLine": "(*p)(1, action, exception_object->exception_class, exception_object,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 384,
+            "sourceLine": "(*stop)(1, lastAction, exception_object->exception_class, exception_object,",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 63,
+            "sourceLine": "struct {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 73,
+            "sourceLine": "struct {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libunwind/src/UnwindCursor.hpp",
+        "language": "cpp",
+        "rels": 1220,
+        "withLine": 1220,
+        "noLine": 0,
+        "consistent": 1184,
+        "inconsistent": 2,
+        "notCheckable": 34,
+        "inconsistentSample": [
+          {
+            "type": "contains",
+            "callee": "_initialBuffer",
+            "claimedLine": 153,
+            "sourceLine": "typename DwarfFDECache<A>::entry *"
+          },
+          {
+            "type": "contains",
+            "callee": "_initialBuffer",
+            "claimedLine": 157,
+            "sourceLine": "typename DwarfFDECache<A>::entry *"
+          }
+        ],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 250,
+            "sourceLine": "(*func)(p->ip_start, p->ip_end, p->fde, p->mh);",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "anonymous",
+            "claimedLine": 96,
+            "sourceLine": "struct {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 262,
+            "sourceLine": "UnwindSectionHeader(A &addressSpace, typename A::pint_t addr)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 302,
+            "sourceLine": "UnwindSectionIndexArray(A &addressSpace, typename A::pint_t addr)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 328,
+            "sourceLine": "UnwindSectionRegularPageHeader(A &addressSpace, typename A::pint_t addr)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/lib/libunwind/src/libunwind.cpp",
+        "language": "cpp",
+        "rels": 157,
+        "withLine": 157,
+        "noLine": 0,
+        "consistent": 156,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "calls",
+            "callee": "",
+            "claimedLine": 367,
+            "sourceLine": "if (dynamicUnwindSectionsFinders[i]((unw_word_t)addr, info)) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/src/zig_clang_cc1_main.cpp",
+        "language": "cpp",
+        "rels": 184,
+        "withLine": 184,
+        "noLine": 0,
+        "consistent": 184,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/src/zig_clang_cc1as_main.cpp",
+        "language": "cpp",
+        "rels": 406,
+        "withLine": 406,
+        "noLine": 0,
+        "consistent": 405,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 196,
+            "sourceLine": "AssemblerInvocation() {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/src/zig_clang_driver.cpp",
+        "language": "cpp",
+        "rels": 213,
+        "withLine": 213,
+        "noLine": 0,
+        "consistent": 212,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "references",
+            "callee": "",
+            "claimedLine": 32,
+            "sourceLine": "#include \"llvm/Config/llvm-config.h\" // for LLVM_ON_UNIX",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/src/zig_llvm-ar.cpp",
+        "language": "cpp",
+        "rels": 797,
+        "withLine": 797,
+        "noLine": 0,
+        "consistent": 797,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/src/zig_llvm.cpp",
+        "language": "cpp",
+        "rels": 219,
+        "withLine": 219,
+        "noLine": 0,
+        "consistent": 217,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 176,
+            "sourceLine": "TimeTracerRAII(StringRef ProgramName, StringRef OF)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 448,
+            "sourceLine": "ZigDiagnosticHandler() : BrokenDebugInfo(false) {}",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/test/standalone/c_compiler/test.cpp",
+        "language": "cpp",
+        "rels": 32,
+        "withLine": 32,
+        "noLine": 0,
+        "consistent": 30,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 22,
+            "sourceLine": "CTest(int val) : m_val(val) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "constructor",
+            "claimedLine": 35,
+            "sourceLine": "GlobalConstructorTest(int val) : m_val(val) {};",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "zig/test/standalone/libcxx/mt_doit.cpp",
+        "language": "cpp",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/libcxx/st_doit.cpp",
+        "language": "cpp",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

@@ -1,0 +1,225 @@
+{
+  "meta": {
+    "lang": "sql",
+    "asked": "the fleet's incoming gate, whole population, no stride sample",
+    "instrument": "script/m14/incoming-gate.ts (the fleet gate) over the lane's analyzer, plus script/m14/sql-resolution-causes.ts for the causes",
+    "parsed": 2125,
+    "sample": 2125,
+    "corpusTotal": 2125,
+    "population": "parsed=2125/2125 admitted=2125 exts=.sql index=no",
+    "populationRule": "THE WHOLE ADMITTED SET, NOT A STRIDE SAMPLE: every .sql file of the corpus that the repository TRACKS, at or under the 1,048,576-byte cap, over 21 repositories; 0 tracked-but-absent, 6 over the cap, 0 parse failures. **THE POPULATION IS `git ls-files` \u2014 THE FILES THE REPOSITORY TRACKS \u2014 AND NOT THE FILES ON DISK**, and that is the GATE'S OWN RULE, which this lane's instruments now apply, so 2,125 is this declaration's own measurement and not a quotation of the gate's. The walk FOLLOWS symlinked directories (381 of them: 199 top-level checkouts + 182 inside repos; 439 .sql files in this corpus live behind one) \u2014 the fleet's rule, because a walk that does not follow them silently loses them.",
+    "reposCarryingAdmittedFiles": 21,
+    "reposRule": "a repository counts when it carries at least one ADMITTED file; the corpus holds 202 git checkouts, 199 of them symlinked, 181 with no .sql file at all",
+    "symlinkedDirsFollowed": 381,
+    "symlinkedDirsCorpusWide": 137,
+    "analyzer": "src/ast/real-sql-analyzer.ts",
+    "grammarServedDigest": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819",
+    "grammarNamedTypes": 596,
+    "grammarTotalIds": 825,
+    "grammarInventoryArtifact": "validation/m14/measurements/sql-grammar-nodes.json",
+    "generated": "2026-10-22",
+    "symlinkedDirsFollowedInsideRepos": 182,
+    "symlinkedTopLevelEntries": 199,
+    "symlinkedDirsRule": "THE TOTAL, with its rule: 381 symlinked directories followed = 199 top-level symlinked checkouts (the corpus's own 202 checkouts, 199 of them symlinked) + 381 symlinked directories INSIDE a repository. **THE FIRST VERSION OF THIS DECLARATION SAID 182, WHICH WAS THE INSIDE-REPOS NUMBER ONLY** \u2014 the repo loop took the corpus's own symlinked checkouts as REPOS and never counted them as symlinked directories, so the number the fleet's rule asks for was UNDERCOUNTED by exactly 199. **\u21d2\u21d2\u21d2 A COUNT THAT DOES NOT SAY WHICH RULE PRODUCED IT CANNOT BE COMPARED WITH ANOTHER LANE'S COUNT**, and the three numbers are now printed separately by every instrument in this lane (script/m14/sql-extends-sites.ts, script/m14/sql-ruling-census.ts, script/m14/sql-resolution-causes.ts).",
+    "symlinkedDirsCorpusWideOtherRule": "the Lead's fleet-wide figure is 137; the whole-tree count for THIS corpus root is 381 (199 top-level checkouts + 182 inside repos). **THE TWO CANNOT BOTH COUNT THE SAME SET** \u2014 one of us applies a rule the other does not (a different corpus root, or only the symlinked directories that carry a TRACKED file \u2014 the gate's population is the tracked files, so a symlinked directory holding only untracked files contributes no population at all). **THE DISCREPANCY IS REPORTED TO THE LEAD AND IS NOT RESOLVED HERE** \u2014 and it is now NARROWED to that rule, not left open.",
+    "populationDeltaCLOSED": "**CLOSED, WITH ITS RULE, 2026-10-22.** My instruments admitted 2,126 and the gate 2,125 \u2014 ONE file apart \u2014 and the cause is the GATE'S OWN POPULATION RULE: it is `git ls-files`, the files the repository TRACKS, and my instruments walked the DISK. **MEASURED EXACTLY: 2,132 `.sql` paths on disk; 2,131 TRACKED (6 of them over the 1 MiB cap \u21d2 2,125 admitted); and exactly ONE on-disk `.sql` file that git does not track \u2014 `proxicall/_dev/rls_isolation_proof.sql`, 4,457 bytes.** \u21d2 \u21d2\u21d2\u21d2 A DISK WALK ADMITS 2,126 AND THE GATE ADMITS 2,125, AND THE DIFFERENCE IS THAT FILE. **\u21d2\u21d2\u21d2\u21d2\u21d2\u21d2\u21d2 THE THREE INSTRUMENTS IN THIS LANE NOW ADMIT EXACTLY WHAT THE GATE ADMITS** (script/m14/sql-extends-sites.ts, script/m14/sql-ruling-census.ts, script/m14/sql-resolution-causes.ts), so the population string in this declaration is TRUE for this lane's own measurements. **THE NEAR-MISS COUNTS AND THE CAUSE COUNTS ARE UNCHANGED BY THE RULE** (part_of 50/29, renders 755/141, decorates 1,398/343, mixes_in 2,357/301, implements 28/11, exports 2,515/301; ambiguous 3,960 + 342, unresolved 854 + 139, case-folded 135) \u2014 the untracked file carried no site and no affected edge.",
+    "grammarNamedTypesRule": "THE FLEET'S RULE (2026-10-22): the grammar's own named node types, as nodeTypeForId reports them, PLUS the universal ERROR/MISSING pair, because every parser produces those two and every analyzer consults them. For sql on the wired bytes that is 594 + 2 = 596. The 592 is NOT a third number: it is this number minus the four duplicate spellings (cast, dollar_quote, field, from), because the completeness gate dedups and the fleet's rule does not -- 590 distinct named types + the same pair = 592, published as the DECOMPOSITION under validation/m14/measurements/sql-grammar-nodes-fork.json, named as such."
+  },
+  "causeRulings": {
+    "ambiguous-declaration-name": {
+      "population": "parsed=2125/2125 admitted=2125 exts=.sql index=no",
+      "count": 3960,
+      "files": 787,
+      "ruling": "the target's BARE name is declared MORE THAN ONCE in the edge's OWN PROJECT, so production's `_res_name.cnt = 1` rule cannot pick a row. The analyzer publishes the target BARE: 0 of 3,960 of these targets carry any qualifier, so a name collision is the whole reason they did not resolve. The declaration multiplicity in the project is 2 for 2,400 of them, 3 for 446, 4 for 807, 10 for 54 and up to 173; ONE edge (1) has multiplicity 1 and is the single row where the collision explanation does not hold.",
+      "fix": "the analyzer must publish a QUALIFIED target for these edges (the `contains` targets are already qualified after the same-name fix of 2026-10-21; calls/uses/references/instantiates/imports are not)",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" BB_DUMP_LIMIT=40000 bun run script/m14/incoming-gate.ts sql .sql 0 --dump | awk -F'\\t' '$1==\"DUMP\" && $3==\"ambDeclOnly\" && $4 ~ /::|\\./' | wc -l",
+        "wouldFail": "a NON-ZERO count of ambDeclOnly rows whose target carries a qualifier \u2014 MEASURED 0 of 3,960 \u2014 because a QUALIFIED target cannot be lost to a name collision, so one of them would refute the ruling's premise"
+      }
+    },
+    "ambiguous-declaration-name-and-kind": {
+      "population": "parsed=2125/2125 admitted=2125 exts=.sql index=no",
+      "count": 342,
+      "files": 173,
+      "ruling": "as above, and the colliding declarations are of DIFFERENT KINDS, so even a kind-filtered lookup would not pick one. The minimum multiplicity here is 2 (52 edges at 2, 96 at 3, 115 at 4, 55 at 6, 18 at 83).",
+      "fix": "the same qualification, and the kind must be part of the published scope",
+      "falsifier": {
+        "run": "BB_CORPUS_ROOT=\"$PWD/.corpus\" BB_DUMP_LIMIT=40000 bun run script/m14/incoming-gate.ts sql .sql 0 --dump | awk -F'\\t' '$1==\"DUMP\" && $3==\"ambBoth\"' | wc -l",
+        "wouldFail": "a count of ambBoth rows that DISAGREES with the gate's own `amb(kind)` column (342 in TABLE 1) \u2014 the two views of the same edges are then not the same edges \u2014 or any ambBoth row whose target is declared exactly once in its project (MEASURED: the minimum multiplicity is 2, so none)"
+      }
+    },
+    "unresolved-undeclared-name": {
+      "population": "parsed=2125/2125 admitted=2125 exts=.sql index=no",
+      "count": 854,
+      "files": 300,
+      "ruling": "the target names NOTHING in the edge's own project's declaration set (854 of 854 have multiplicity 0) and its spelling is neither a path nor a SQL builtin. **135 of the 854 MATCH a declaration under SQL's case folding**, so 135 of them are a SPELLING mismatch \u2014 the analyzer publishes the target with the case it saw and the declaration key space holds the folded form \u2014 and 719 name an object the corpus does not declare at all.",
+      "fix": "the 135 case-folded rows are a folding bug in the published target and are fixable; the remaining 719 are references to objects this corpus does not define",
+      "falsifier": {
+        "run": "bun script/m14/sql-resolution-causes.ts --json validation/m14/measurements/sql-resolution-causes.json",
+        "wouldFail": "a row of this class whose target IS declared in its own project \u2014 MEASURED 0 of 854 by the project's own declaration set \u2014 or a caseFoldedMatch count that is no longer 135, which would mean the spelling-mismatch sub-population moved"
+      }
+    },
+    "unresolved-path-target": {
+      "population": "parsed=2125/2125 admitted=2125 exts=.sql index=no",
+      "count": 139,
+      "files": 20,
+      "ruling": "the target names NOTHING in the key space and its spelling is a PATH \u2014 a psql `\\i` include of a relative path. 133 are `uses` and 6 are `imports`. The path is not a declaration in the corpus, so no lookup can resolve it.",
+      "fix": "a path target is a FILE reference, and the file it names is outside the corpus (the corpus holds .sql files, and the include points at a sibling path in a repository the corpus does not hold)",
+      "falsifier": {
+        "run": "bun script/m14/sql-resolution-causes.ts --json validation/m14/measurements/sql-resolution-causes.json",
+        "wouldFail": "a row of this class whose target IS a declared name in its project \u2014 MEASURED 0 of 139 \u2014 which would make it an ordinary undeclared name and not a path target"
+      }
+    }
+  },
+  "types": {
+    "calls": {
+      "edges": 3929,
+      "resolved": 1818,
+      "external": 864,
+      "ambiguous": 1081,
+      "otherUnresolved": 166,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 21
+    },
+    "uses": {
+      "edges": 9273,
+      "resolved": 6084,
+      "external": 284,
+      "ambiguous": 2157,
+      "otherUnresolved": 748,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 310
+    },
+    "contains": {
+      "edges": 12238,
+      "resolved": 12238,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 424,
+      "ambKind": 0
+    },
+    "imports": {
+      "edges": 63,
+      "resolved": 33,
+      "external": 0,
+      "ambiguous": 24,
+      "otherUnresolved": 6,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "references": {
+      "edges": 6040,
+      "resolved": 4935,
+      "external": 0,
+      "ambiguous": 1034,
+      "otherUnresolved": 71,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 11
+    },
+    "overrides": {
+      "edges": 8,
+      "resolved": 8,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "instantiates": {
+      "edges": 21,
+      "resolved": 13,
+      "external": 0,
+      "ambiguous": 6,
+      "otherUnresolved": 2,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "exports": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "extends": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "implements": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "decorates": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "collRes": 0,
+      "ambKind": 0
+    }
+  },
+  "resolution_caveats": {
+    "caveat": "A CLOSURE IS A PARTITION, NOT A CORRECTNESS PROPERTY. These buckets say where every edge went; they do not say the edge points at the RIGHT declaration. That question is differential.ts's, and it is not answered here.",
+    "wholePopulationRun": "This closure comes from ONE run over the WHOLE admitted set, not from chunks. That matters: the EDGE buckets are the population's, because every admitted file is measured exactly once, but the RESOLUTION buckets of a CHUNKED measurement are BIASED UP \u2014 a name collision in the half of the population outside the slice is invisible there, so the name reads unique and the edge resolves. This lane's `resolved` and `ambiguous` are therefore the UNBIASED ones, and they are the numbers a chunked lane would have to correct before comparing.",
+    "subsets": "`amb(kind)` (342) is a SUBSET of `amb(decl)` (4,302) and `collRes` (424) is a SUBSET of `resolved` \u2014 REPORTED BESIDE the buckets and NEVER ADDED to them. The sum that must hold is resolved + external + ambiguous + otherUnresolved + unclassed = edges = 31,572, and it does: 25,129 + 1,148 + 4,302 + 993 + 0.",
+    "scope": "The resolution scope is PER PROJECT, which is production's scope: a name that collides with a declaration in ANOTHER project is not ambiguous to production. Under the pooled corpus key space the same edges read 10,109 ambiguous + 860 unresolved, and that number is about the CORPUS's collisions, not about resolution as production performs it.",
+    "residual": "5,295 of 31,572 edges (4,302 ambiguous + 993 unresolved) did not resolve. They are NAMED, COUNTED and RULED above, and the four rulings carry a population and a falsifier with a run. They are NOT disposed of: the ambiguity is a real defect in the published target and its fix is not yet made, so the honest statement is that this lane is 7/7 on the TYPES and 5,295 edges short on the RESOLUTION.",
+    "notMeasured": "The causes are counted over the population; they are not yet FIXED. The measurement says 0 of 3,960 ambiguous targets are qualified and 135 of 854 unresolved targets are case-fold mismatches, and the fix for each is named above \u2014 but no fix is claimed here that has not been made and re-measured.",
+    "populationRule": "**THIS DECLARATION'S POPULATION IS THE GATE'S POPULATION, MEASURED BY THIS LANE'S OWN INSTRUMENTS: the files the repositories TRACK (`git ls-files`), at or under the 1 MiB cap \u2014 2,125 of them over 21 repositories. A walk of the DISK would find 2,132 `.sql` paths and admit 2,126; the ONE file that separates them is `proxicall/_dev/rls_isolation_proof.sql`, which no repository tracks. \u21d2\u21d2\u21d2\u21d2 A COUNT IS ONLY AS GOOD AS THE RULE THAT TRAVELS WITH IT, and the rule travels here: `git ls-files`, not the disk."
+  }
+}

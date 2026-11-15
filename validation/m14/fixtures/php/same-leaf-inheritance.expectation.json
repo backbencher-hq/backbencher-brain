@@ -1,0 +1,87 @@
+{
+  "fixtureId": "php/same-leaf-inheritance",
+  "language": "php",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Same-leaf class names can identify different declarations in different namespaces. Preserve the declared dependency and its canonical targetIdentity. The global InvalidArgumentException is distinct from the namespaced subclass. Native PHP checks in verify-php-type-identities.mts validate this behavior; a display-name equality is not a resolved-symbol self-loop.",
+  "expectSymbols": [
+    {
+      "name": "Forms\\Setup",
+      "kind": "namespace"
+    },
+    {
+      "name": "LocalWidget",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method",
+      "ownerName": "LocalWidget"
+    },
+    {
+      "name": "Forms\\Setup\\Derived",
+      "kind": "namespace"
+    },
+    {
+      "name": "FeaturesForm",
+      "kind": "class"
+    },
+    {
+      "name": "getForms",
+      "kind": "method",
+      "ownerName": "FeaturesForm"
+    },
+    {
+      "name": "InvalidArgumentException",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "FeaturesForm",
+      "target": "Forms\\User\\FeaturesForm",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "run",
+      "target": "FeaturesForm"
+    },
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "getName"
+    },
+    {
+      "type": "extends",
+      "source": "InvalidArgumentException",
+      "target": "InvalidArgumentException",
+      "meta.targetIdentity": "invalidargumentexception",
+      "meta.external": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "FeaturesForm",
+      "target": "FeaturesForm"
+    },
+    {
+      "type": "overrides",
+      "source": "FeaturesForm.getForms",
+      "target": "FeaturesForm.getForms"
+    },
+    {
+      "type": "overrides",
+      "source": "FeaturesForm.getForms",
+      "target": "Forms\\User\\FeaturesForm.getForms"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "extends",
+      "from": "FeaturesForm",
+      "equals": 1
+    }
+  ]
+}

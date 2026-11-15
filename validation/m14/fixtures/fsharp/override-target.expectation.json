@@ -1,0 +1,220 @@
+{
+  "fixtureId": "fsharp/override-target",
+  "language": "fsharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 ontology lane, fsharp pass 2 (2026-10-03) \u2014 the one `overrides` defect pass 2 found by asking what the strongest wrong-label argument is, and finding it satisfied. `override` is not a statement about a BASE CLASS: F# has no separate keyword for an interface member, so `interface I with override this.M() = \u2026` IMPLEMENTS `I.M`, and the lane's rule read the `override` TOKEN alone. Measured before the fix over the whole 6,619-file corpus (validation/m14/fixtures/fsharp/ontology-probe.ts, probes A1 and A2), and the pre-fix behaviour on the two shapes below was: a member inside `interface I with` in a type with no `inherit` published `overrides Owner.M -> M`, i.e. a member that OVERRIDES ITSELF, and in a type that also has `inherit Base()` published `overrides Owner.M -> Base.M`, attributing an interface implementation to a base-class member that need not exist. `Guarded` is the case that makes it unambiguous rather than academic: `Animal` really does declare both `Speak` and `Dispose`, so the pre-fix rule resolved to a name that EXISTS and the wrong edge was indistinguishable downstream from the right one \u2014 the same failure mode the lane recorded for the `and`-clause naming bug and the object-expression name bug. THE FIX follows the family precedent rather than inventing one: csharp's `resolveInterfaceImplementations` (C923) emits `overrides M -> I.m` with `metadata.relationshipType = \"interface_member_implementation\"`, measured the same in java, kotlin, typescript, dart and python. So the label stays `overrides` \u2014 the member does satisfy a declaration above it \u2014 and the TARGET is read from the interface clause the tree writes, which wins over the base list because the member is written inside that clause. WITH NEITHER AN INTERFACE NOR A BASE THERE IS NO TARGET AND NOTHING IS EMITTED: the type-level `implements` edge already carries the fact, and a member-level edge naming nothing is the fabrication the workstream forbids. The three forbid rows below are the regression net for each of those three answers. Trees were read first (the `interface_implementation` node carries the interface as a direct `simple_type` child, and `override` is an unnamed token on the `member_defn`), so nothing here was authored by observing analyzer output. THE OBJECT-EXPRESSION ROWS (lines 22-25) were added after the corpus dump of vsintegration/tests/Salsa/VsMocks.fs, and are authored from that corpus file's source text plus the tree shape read from the wired grammar \u2014 not from this fixture's analyzer output. Every other row in this file was authored before the analyzer was run on it, and the two line-number corrections this file needed were ARITHMETIC on my part (the analyzer was right about all eight), which is recorded because a fixture that is quietly re-authored to match output is the failure mode the honesty contract's `authoredBeforeAnalyzerRun` field exists to prevent.",
+  "expectSymbols": [
+    {
+      "name": "Fixture.OverrideTarget",
+      "kind": "module"
+    },
+    {
+      "name": "Animal",
+      "kind": "class"
+    },
+    {
+      "name": "Dog",
+      "kind": "class"
+    },
+    {
+      "name": "Resource",
+      "kind": "class"
+    },
+    {
+      "name": "Guarded",
+      "kind": "class"
+    },
+    {
+      "name": "new System.IDisposable",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Fixture.OverrideTarget.Dog",
+      "target": "Animal",
+      "line_number": 8,
+      "meta.nodeType": "class_inherits_decl",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "overrides",
+      "from": "Dog.Speak",
+      "target": "Animal.Speak",
+      "line_number": 9,
+      "meta.isOverride": true,
+      "meta.targetResolution": "base-member",
+      "meta.evidenceClass": "reference_qualified",
+      "note": "AN OVERRIDE \u2014 tier reference_qualified: `Dog.Speak -> Animal.Speak` is the compiler-enforced override pair, and the spelling is qualified by the base type. Pinned 2026-10-17 with the #419-D tier pass."
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.OverrideTarget.Resource",
+      "target": "IDisposable",
+      "line_number": 12,
+      "meta.nodeType": "interface_implementation",
+      "meta.targetResolution": "external-type",
+      "meta.qualifiedType": "System.IDisposable"
+    },
+    {
+      "type": "overrides",
+      "from": "Resource.Dispose",
+      "target": "IDisposable.Dispose",
+      "line_number": 13,
+      "meta.relationshipType": "interface_member_implementation",
+      "meta.isInterfaceMemberImplementation": true,
+      "meta.targetResolution": "interface-member-external"
+    },
+    {
+      "type": "extends",
+      "from": "Fixture.OverrideTarget.Guarded",
+      "target": "Animal",
+      "line_number": 17,
+      "meta.nodeType": "class_inherits_decl",
+      "meta.targetResolution": "in-file-declaration"
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.OverrideTarget.Guarded",
+      "target": "IDisposable",
+      "line_number": 18,
+      "meta.nodeType": "interface_implementation",
+      "meta.targetResolution": "external-type"
+    },
+    {
+      "type": "overrides",
+      "from": "Guarded.Dispose",
+      "target": "IDisposable.Dispose",
+      "line_number": 19,
+      "meta.relationshipType": "interface_member_implementation",
+      "meta.isInterfaceMemberImplementation": true,
+      "meta.targetResolution": "interface-member-external"
+    },
+    {
+      "type": "overrides",
+      "from": "Guarded.Speak",
+      "target": "IDisposable.Speak",
+      "line_number": 20,
+      "meta.relationshipType": "interface_member_implementation",
+      "meta.isInterfaceMemberImplementation": true,
+      "meta.targetResolution": "interface-member-external"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.OverrideTarget.Resource",
+      "target": "Resource.Dispose",
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "in-file-declaration"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.OverrideTarget.Guarded",
+      "target": "Guarded.Speak",
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "in-file-declaration"
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.OverrideTarget",
+      "target": "IDisposable",
+      "line_number": 23,
+      "meta.nodeType": "object_expression",
+      "meta.targetResolution": "external-type",
+      "meta.qualifiedType": "System.IDisposable"
+    },
+    {
+      "type": "overrides",
+      "from": "new System.IDisposable.Dispose",
+      "target": "IDisposable.Dispose",
+      "line_number": 24,
+      "meta.relationshipType": "interface_member_implementation",
+      "meta.isInterfaceMemberImplementation": true,
+      "meta.targetResolution": "interface-member-external"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.OverrideTarget.new System.IDisposable",
+      "target": "new System.IDisposable.Dispose",
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "in-file-declaration"
+    },
+    {
+      "type": "contains",
+      "from": "Fixture.OverrideTarget",
+      "target": "Fixture.OverrideTarget.Animal",
+      "meta.targetResolution": "published-identity",
+      "meta.sourceResolution": "ownerless-unit",
+      "note": "FS-P7-1, and the row exists because the first draft of the source class was WRONG: `publish` mints `metadata.fqn` only for an OWNED symbol, so a top-level module has no fqn, `fqnByName` held null for it, and every module-scoped containment was labelled `ambiguous-owner-name` \u2014 a claim that two declarations share the name, which is false. A unit with no owner IS its own name; `ownerless-unit` is that fact, and `ambiguous-owner-name` is reserved for two symbols with one name and different identities (pinned by `type-extension-and-containment`'s `First.Same`/`Second.Same`)."
+    },
+    {
+      "type": "implements",
+      "from": "Fixture.OverrideTarget.Tagged",
+      "target": "ITagged",
+      "line_number": 37,
+      "meta.nodeType": "interface_implementation",
+      "meta.targetResolution": "in-file-declaration",
+      "note": "FS-P7-1: `Tagged` implements an interface THIS FILE declares, so the member row below is `interface-member` and not `interface-member-external`. Written as the mirror of the `Resource`/`Guarded` rows above, which is what makes the pair a test: the two rows differ only in whether the interface is the file's, and the class has to say which."
+    },
+    {
+      "type": "overrides",
+      "from": "Tagged.Tag",
+      "target": "ITagged.Tag",
+      "line_number": 38,
+      "meta.relationshipType": "interface_member_implementation",
+      "meta.isInterfaceMemberImplementation": true,
+      "meta.targetResolution": "interface-member",
+      "note": "FS-P7-1: the LOCAL-interface half of the `overrides` reason split. Unpinned until now, which meant the two classes that say WHICH declaration the member satisfies could be swapped, renamed or dropped without failing a gate \u2014 the same shape of hole the pass was opened to close."
+    },
+    {
+      "type": "extends",
+      "from": "Fixture.OverrideTarget.Buffer",
+      "target": "MemoryStream",
+      "line_number": 41,
+      "meta.nodeType": "class_inherits_decl",
+      "meta.targetResolution": "external-type",
+      "meta.qualifiedType": "System.IO.MemoryStream"
+    },
+    {
+      "type": "overrides",
+      "from": "Buffer.Flush",
+      "target": "System.IO.MemoryStream.Flush",
+      "line_number": 42,
+      "meta.isOverride": true,
+      "meta.targetResolution": "base-member-external",
+      "meta.targetWritten": "System.IO.MemoryStream",
+      "note": "FS-P7-1: the external-base half of the same split, and it pins the spelling the emission site deliberately keeps: the target is the base AS WRITTEN, three segments, which the store's strategy 3 turns into `IO.MemoryStream.Flush` \u2014 a name no symbol has, so the edge is UNATTACHED rather than attached to the wrong thing. The leaf form was priced on the shipped arm (`.tmp-probe/fs-p7-base.py`): of 542 `base-member-external` rows only 6 carry a dotted base, and respelling those moves +3 determinate / \u22120 while converting 3 unattached edges into ARBITRARY attachments (`none -> ambiguous`), which is not a gain under this lane's accounting. Declined with the number recorded rather than left as a TODO."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Resource.Dispose",
+      "target": "Dispose",
+      "note": "the pre-fix answer for an `override` inside `interface I with` in a type with NO `inherit`: the base list is empty, so the target fell back to the member's own name and the edge said a member overrides itself. A target that names no other declaration binds to nothing a consumer can follow, which is the shape of a fabricated edge"
+    },
+    {
+      "type": "overrides",
+      "from": "Guarded.Dispose",
+      "target": "Animal.Dispose",
+      "note": "the pre-fix answer when the type ALSO has `inherit Animal()`: an interface implementation attributed to a base-class member. The member is written inside the `interface IDisposable with` clause, so the base list is not where its declaration lives"
+    },
+    {
+      "type": "overrides",
+      "from": "Guarded.Speak",
+      "target": "Animal.Speak",
+      "note": "the sharp form of the same wrong answer, and the reason this fixture exists: `Animal` really does declare `Speak`, so the wrong edge resolved to a real symbol and nothing downstream could tell it from `Dog.Speak -> Animal.Speak` on line 9, which is correct. Two same-shaped edges where one is right and one is wrong is invisible to a name-keyed consumer"
+    },
+    {
+      "type": "overrides",
+      "target": "unknown",
+      "note": "ledger R7: no relationship endpoint may be the literal `unknown`"
+    },
+    {
+      "type": "overrides",
+      "from": "new System.IDisposable.Dispose",
+      "target": "Dispose",
+      "note": "the object-expression form of the same wrong answer, and the reason the fix has a second arm: `{ new IFoo with override x.M() }` has NO interface_implementation node at all \u2014 the grammar puts the interface directly on the object_expression as its own long_identifier_or_op child \u2014 so a walk that stops at interface_implementation answers 'no interface' for every mock in the corpus. Measured on the corpus file vsintegration/tests/Salsa/VsMocks.fs: 6 members across 4 object expressions, all published pre-fix as `overrides new IFoo.M -> M`. The interface is read through the same objectExpressionInterface the symbol and the implements edge use, so the three edges about one object expression cannot spell its interface differently"
+    }
+  ]
+}

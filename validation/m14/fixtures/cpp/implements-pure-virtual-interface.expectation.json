@@ -1,0 +1,147 @@
+{
+  "fixtureId": "cpp/implements-pure-virtual-interface",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M14 ONTOLOGY (2026-10-04), the `implements` type, and the replacement for a RULING THAT WAS PROSE. The doc said: 'C++ has no separate interface construct: interface satisfaction IS inheritance, and inheritance is emitted as extends. There is no `implements` keyword, no `implements` clause, and no distinct base-class list to read.' Two of those three sentences are true and the conclusion is wrong. There is indeed ONE base-class list — but a base with at least one PURE VIRTUAL member (`virtual int read(char*, int) = 0;`) IS C++'s interface (Core Guidelines C.120, 'prefer using abstract interfaces as NVI'), and `implements` names WHICH base is a contract and which carries state, which `extends` does not. Corpus measurement, from `script/cpp-review/ontology-census.ts`: 127 pure-virtual members across 26 files, 28 classes declaring at least one, 171 (derived -> contract) pairs, 12 of them in this lane's own cpp-example corpus. So the ruling is FALSIFIED by the corpus, which is precisely the failure mode `ontology-coverage-gate.ts` was written for — `overrides` was ruled on prose for a whole wave and the differential stayed green because the oracle was written after the ruling.\n\nFour negative arms, each a shape that a looser rule would swallow, and each measured on the pinned grammar rather than guessed:\n  - a virtual WITH A BODY (`virtual int read(...) { return 0; }`) is not pure: `Derived2 : ReaderLike` gets `extends` and NO `implements`.\n  - a DEFAULTED ARGUMENT (`virtual int width(int n = 0)`) puts its `=` inside the `parameter_list`, not on the declaration, so `UsesDefaulted : Defaulted` is not a contract. The same argument on a method DECLARATION (`virtual int width(int n = 0);`, a `field_declaration`) is a second, separate arm: `UsesDeclaredDefaulted : DeclaredDefaulted`. It is here because the mutation run needed it — the first version of `cpp/ontology-pure-virtual-subtree-scan` SURVIVED against the definition form alone, because `isPureVirtualDeclaration` refuses a `function_definition` before it looks at any children. A negative arm that cannot fail is documentation, and the run said so.\n  - a MEMBER INITIALIZER (`int counter = 0;`) is a `field_declaration` with an `init_declarator` and no function declarator at all, so `Derived3 : WithInit` is not a contract.\n  - `Plain` has no base, so there is nothing to implement.\n\nAnd the ordering arm, which is the whole of the rule's correctness rather than a detail: `ForwardDerived` is written BEFORE the `LaterInterface` it implements. A rule that emitted at the base-clause node would resolve nothing yet, so the candidate is RECORDED there and ADJUDICATED after the walk from the whole-file pure-virtual registry. `cpp/ontology-implements-order-dependent` is the mutant that moves the emission back to the base-clause node, and it must die on THIS row alone: the other three positive pairs have their bases declared ABOVE them and stay green under the mutation.\n\nONE ARM OF THE PURE-SPECIFIER READ IS REDUNDANT, and the mutation run said so rather than leaving it as an apparent gate. `isPureVirtualDeclaration` requires a `function_declarator` child, but it is reached only from the class-scope METHOD branch, so a member initializer (`int counter = 0;`, which on the pinned grammar IS a `field_declaration` carrying an unnamed `=` and a `number_literal 0` — the same two nodes a pure specifier has) never arrives at it. A mutant removing that requirement therefore SURVIVED. It is kept as defence in depth and its rationale says what would be required to break it; the mutant that does bite is `cpp/ontology-pure-virtual-subtree-scan`, which attacks the load-bearing half (the `=` must be a DIRECT child, so a defaulted argument inside a `parameter_list` cannot qualify).\n\nWHY `extends` AND `implements` BOTH fire for `Concrete -> Reader`: the family rule that forbids a duplicate row is about one FACT stated twice (containment, an include dependency). These are two facts about the same base clause — 'inherits from' and 'implements this contract' — and only the second tells a consumer that `Reader` carries no state it could inherit. Emitting one and calling it coverage would be the prose ruling again.",
+  "expectSymbols": [
+    {
+      "name": "Reader",
+      "kind": "class"
+    },
+    {
+      "name": "Writer",
+      "kind": "class"
+    },
+    {
+      "name": "Concrete",
+      "kind": "class"
+    },
+    {
+      "name": "Both",
+      "kind": "class"
+    },
+    {
+      "name": "Derived2",
+      "kind": "class"
+    },
+    {
+      "name": "UsesDefaulted",
+      "kind": "class"
+    },
+    {
+      "name": "Derived3",
+      "kind": "class"
+    },
+    {
+      "name": "ForwardDerived",
+      "kind": "class"
+    },
+    {
+      "name": "LaterInterface",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Concrete",
+      "target": "Reader",
+      "line_number": 24,
+      "confidence": 1,
+      "meta.reasonCode": "pure-virtual-base",
+      "meta.pureVirtuals": [
+        "read"
+      ],
+      "note": "the contract base: `read` is pure, `seek` is virtual-with-a-body, and `fd` is state — only the pure member makes it an interface, and the edge records WHICH one so a consumer can re-derive the verdict."
+    },
+    {
+      "type": "implements",
+      "from": "Both",
+      "target": "Reader",
+      "line_number": 29,
+      "confidence": 1,
+      "meta.reasonCode": "pure-virtual-base"
+    },
+    {
+      "type": "implements",
+      "from": "Both",
+      "target": "Writer",
+      "line_number": 29,
+      "confidence": 1,
+      "meta.reasonCode": "pure-virtual-base",
+      "note": "one edge per (derived, base) PAIR: `Both` implements two contracts and that is two facts, not one edge with two targets."
+    },
+    {
+      "type": "implements",
+      "from": "ForwardDerived",
+      "target": "LaterInterface",
+      "line_number": 106,
+      "confidence": 1,
+      "meta.reasonCode": "pure-virtual-base",
+      "meta.pureVirtuals": [
+        "ping"
+      ],
+      "note": "THE ORDERING ARM. The base is declared 24 lines BELOW the derived class, so at the moment the base clause is read the registry does not yet know `LaterInterface` is a contract. Recorded-then-adjudicated, not emitted-there. This row is the ONLY one that dies under `cpp/ontology-implements-order-dependent`, which is why it is here and not implied by the other three."
+    },
+    {
+      "type": "extends",
+      "from": "Concrete",
+      "target": "Reader",
+      "meta.evidenceClass": "structural",
+      "note": "`extends` is NOT withdrawn for a contract base. Both labels describe one base clause and answer different questions; see the rationale."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "implements",
+      "from": "Both",
+      "target": "Reader",
+      "equals": 1,
+      "note": "one edge per pair, as an EXACT count — `expectRelationships` means '>= 1 match', so only `equals` can fail on a duplicate."
+    },
+    {
+      "type": "implements",
+      "from": "Concrete",
+      "target": "Reader",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "Derived2",
+      "target": "ReaderLike",
+      "note": "NEGATIVE ARM: `ReaderLike::read` is virtual WITH a body, so the base is a base class and not a contract. Emitting here is the over-firing direction, and it is the direction that makes `implements` mean nothing."
+    },
+    {
+      "type": "implements",
+      "from": "UsesDefaulted",
+      "target": "Defaulted",
+      "note": "NEGATIVE ARM: a DEFAULTED ARGUMENT is not a pure specifier. `virtual int width(int n = 0)` has no `= 0` on the declaration, and reading it as one would make every defaulted-int function a contract member."
+    },
+    {
+      "type": "implements",
+      "from": "Derived3",
+      "target": "WithInit",
+      "note": "NEGATIVE ARM: a MEMBER INITIALIZER is not a pure specifier. `int counter = 0;` has no function declarator."
+    },
+    {
+      "type": "implements",
+      "from": "Plain",
+      "target": "Reader",
+      "note": "NEGATIVE ARM: `Plain` declares NO base, so there is nothing to implement and no such edge may exist."
+    },
+    {
+      "type": "implements",
+      "from": "Reader",
+      "target": "Reader",
+      "note": "a class cannot implement itself — the D2 self-base refusal carries to the new label, and a self-edge here would be the same fabrication D2 measured at 49 rows."
+    },
+    {
+      "type": "implements",
+      "from": "UsesDeclaredDefaulted",
+      "target": "DeclaredDefaulted",
+      "note": "NEGATIVE ARM, the one the mutation run needed: a DEFAULTED ARGUMENT on a class-scope method DECLARATION. `virtual int width(int n = 0);` is a `field_declaration` whose `function_declarator` holds an `optional_parameter_declaration`, and the `=` + `0` sit INSIDE that parameter_list — a `= 0` two levels down, which is what a subtree scan finds. The definition form above cannot catch this, because that node is a `function_definition` and the predicate refuses it first; that is why BOTH arms exist and why the subtree-scan mutant dies on this row and not the other."
+    }
+  ]
+}

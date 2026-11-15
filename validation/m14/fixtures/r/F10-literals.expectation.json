@@ -1,0 +1,79 @@
+{
+  "fixtureId": "r/F10-literals",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "A parser that cannot read a literal drops the DECLARATION that holds it, and a parser that mis-reads one invents a name. This file is the acceptance test for R's numeric and string grammar and every line is a form a plausible lexer gets wrong: C99 hex floats in three shapes (`0x1p+53`, `0x1.8p+3`, `0xff`), a decimal exponent with no sign (`1e5`), one WITH a sign and a capital E (`1E-5`), the integer suffix (`42L`), the imaginary suffix (`1i`), and R 4.0's RAW string `r\"(raw \\n string)\"` whose body contains a backslash-n that must NOT become a newline and must NOT close the literal. The default argument `function(a, b = 2, ...)` is here because `...` is a `dots` node rather than an identifier: a parameter reader that requires `identifier` drops the rest argument, and S3 methods are declared with it. `a` and `b` are FORBIDDEN as file-level bindings -- they are parameters, they exist only for the duration of a call, and a graph that lists them as declarations sends a refactoring tool to rename a parameter as if it were a top-level name. The `expectSymbols` list is the file's real assertion: ten names in, ten symbols out, with nothing extra.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "hex_int",
+      "kind": "variable"
+    },
+    {
+      "name": "hex_exp",
+      "kind": "variable"
+    },
+    {
+      "name": "hex_frac",
+      "kind": "variable"
+    },
+    {
+      "name": "dec",
+      "kind": "variable"
+    },
+    {
+      "name": "dec2",
+      "kind": "variable"
+    },
+    {
+      "name": "lng",
+      "kind": "variable"
+    },
+    {
+      "name": "cplx",
+      "kind": "variable"
+    },
+    {
+      "name": "chr",
+      "kind": "variable"
+    },
+    {
+      "name": "raw",
+      "kind": "variable"
+    },
+    {
+      "name": "missing_default",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "hex_frac"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "raw"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "missing_default"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "b",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "a"
+    }
+  ]
+}

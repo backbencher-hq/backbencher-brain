@@ -1,0 +1,96 @@
+{
+ "fixtureId": "python/parser-error-region-is-not-a-type",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-D17. `def garbled(d: double[:], o: Optional[double[:]])` published `references garbled -> o` — a PARAMETER claimed to be a type. `double[:]` is VALID CPython (an annotation is an arbitrary expression; `double[:]` is a slice of the name `double`), and tree-sitter's python grammar rejects it, so the whole parameter list collapsed into ONE `typed_parameter` whose `type` clause swallowed `, o: Optional[...]` and presented `o` inside a `constrained_type`. That is the same class of defect as PY-D11 (a keyword argument's NAME published as a type) and as the empty-identifier guard this collector already carries, and it is worse in kind than a miss: it is a confidently-wrong edge, which the arc's own rule puts below an honest NULL. The fix is the parser's own verdict rather than a heuristic about names — a type clause whose subtree CONTAINS an error (`hasError`) names no type at all. The cost is DECLARED, not hidden: the well-formed-looking `double` and `Optional` inside that same garbled clause are refused WITH it, and the forbid rows below pin that loss so a later round cannot silently reintroduce the fabrication by narrowing the guard to just the bad identifier. The other half of the fixture is the over-correction direction: three ordinary annotations whose clauses parse cleanly must keep every name they name, and `slice_alone_keeps_its_type` in particular must KEEP `double` — in its tree the clause is `(type (identifier))` and the ERROR is a SIBLING of it, so the clause is honest and `double` really is the type written at that position. A fix that refused every clause in a file containing an error would fail those rows. NOT pinned here, and deliberately: `x: \"Sequence[str]\"` publishes nothing because a STRING annotation is not walked (a pre-existing, separately documented rule about forward references), so it is not evidence for or against this round.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "clean_subscript",
+   "target": "Optional",
+   "line_number": 31,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "KEPT. A clean clause is still read: `Optional[list[int]]` parses without errors, so both names survive the guard. This row is what makes the refusal a statement about ONE malformed clause rather than about annotations."
+  },
+  {
+   "type": "references",
+   "from": "clean_subscript",
+   "target": "list",
+   "line_number": 31,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "KEPT, and the contrast with the refused clause is exact: the generic argument here is a well-formed `type`, where in `garbled` the same position held a `constrained_type` synthesised from the next parameter."
+  },
+  {
+   "type": "references",
+   "from": "clean_union",
+   "target": "Mapping",
+   "line_number": 36,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "KEPT. A second independent clean shape (two qualified parameters on one def), so the guard cannot be satisfied by leaving exactly one clause alive per file."
+  },
+  {
+   "type": "references",
+   "from": "clean_union",
+   "target": "dict",
+   "line_number": 36,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "KEPT. `dict` is a builtin but not in the lane's SCALAR filter (only str/int/float/complex/bool/bytes/object/None/Any/self/cls are), so it is a real type-position name and stays. A guard that widened the PRIMITIVES set instead of reading the parse would have dropped it."
+  },
+  {
+   "type": "references",
+   "from": "slice_alone_keeps_its_type",
+   "target": "double",
+   "line_number": 41,
+   "confidence": 0.95,
+   "meta.reasonCode": "annotation-type",
+   "note": "KEPT, and this is the row that defines the guard's boundary: the file DOES contain errors here, the type clause does NOT, and `double` is literally the name written after the colon. Refusing it would trade a fabrication for a silent loss."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "garbled",
+   "target": "o",
+   "note": "THE FABRICATION. `o` is the SECOND PARAMETER of the same def; it is not a type and is not written at a type position in any reading of the source. This is the row the round exists for."
+  },
+  {
+   "type": "references",
+   "from": "garbled",
+   "target": "double",
+   "note": "THE DECLARED COST, pinned so it stays visible. `double` appears in the garbled clause and is refused with it, because the clause's boundaries do not match the source (it swallowed the next parameter). Presenting this as a loss is the point: the alternative is publishing from a structure the parser got wrong."
+  },
+  {
+   "type": "references",
+   "from": "garbled",
+   "target": "Optional",
+   "note": "The same declared cost on the other well-formed-looking name, and the row that stops a future round from keeping names it happened to like while refusing the one that embarrassed it."
+  },
+  {
+   "type": "calls",
+   "from": "parser_error_region_is_not_a_type",
+   "target": "SIZE",
+   "note": "THE CALL SIDE, and the minimized form of the ASN.1 corpus shape (`otp/lib/asn1/test/asn1_SUITE_data/BitStr.py` published `calls BitStr -> SIZE` and `-> sunday` out of a document that is not python at all). The module-level call follows a malformed annotated assignment, so it lands inside a region tree-sitter could not read; without the guard the analyzer published `calls parser_error_region_is_not_a_type -> SIZE` and this row catches it. The source is the MODULE, because the file stem names the module scope for a call with no enclosing def — the same rule the `module.py` note in `processCall` records."
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "garbled",
+   "equals": 1,
+   "note": "the def itself is still a symbol — this round refuses TYPE NAMES read out of a malformed clause, not the declarations around it"
+  },
+  {
+   "name": "o",
+   "equals": 0,
+   "note": "a parameter is not a symbol, which is exactly why the fabricated edge could never have resolved and why refusing it beats publishing it"
+  },
+  {
+   "name": "double",
+   "equals": 0,
+   "note": "nor is an annotated type, so no symbol was ever going to absorb either forbidden edge"
+  }
+ ]
+}

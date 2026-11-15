@@ -1,0 +1,14 @@
+{
+  "fixtureId": "java/pure-field-chain",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANTI-SKIP GUARANTEE for pure field chains (nested field_access nodes): every segment (server, host) must appear as an edge target - verified behavior 2026-08-23, pinned so it cannot regress. Root-anchored topology is the documented chain-fidelity limitation.",
+  "expectSymbols": [
+    { "name": "Render", "kind": "class" },
+    { "name": "label" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "targetEndsWith": "server" },
+    { "type": "uses", "targetEndsWith": "host" }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "fixtureId": "r/F24-r5-statement-form",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R5 reference classes are DECLARED by evaluating `setRefClass(\"Name\", ...)`; the assignment is a convenience binding, not the declaration. The corpus proves it — r-Rcpp/R/00_classes.R:27,37,58 declare `C++Field`, `C++OverloadedMethods` and `C++Constructor` as bare file-level statements — and the analyzer read only the assignment spelling, so every statement-form class, its fields and its `contains=` relation were invisible. THE FIRE HALF pins the statement form on BOTH class-carrying surfaces (bare and `methods::`-qualified) plus its `fields=` members and its `contains=` edges. THE DEDUPE HALF is the reason the counts are EXACT rather than `>= 1`: adding a statement path while the assignment path also runs would publish each assigned class twice (symbol twice, `contains` edge twice), and a presence-only pin cannot see a duplicate — the first version of this fix DID double-publish, because tree-sitter hands out a fresh JS wrapper per node access and the `===` guard silently failed; the fix is `sameNode`, and these counts are what make a regression to `===` go red. THE NEGATIVE HALF: `factory <- function(Class) setRefClass(Class, ...)` computes the class name at RUNTIME, so no symbol or edge may be invented for it — a fabricated `Class` declaration is worse than a missing one. `BareChild`/`BareComposed` also pin the composition split (single base -> extends, list -> mixes_in) on the statement spelling.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "BareField", "kind": "class" },
+    { "name": "pointer", "kind": "property", "ownerName": "BareField" },
+    { "name": "size", "kind": "property", "ownerName": "BareField" },
+    { "name": "BareChild", "kind": "class" },
+    { "name": "BareComposed", "kind": "class" },
+    { "name": "QualifiedField", "kind": "class" },
+    { "name": "y", "kind": "property", "ownerName": "QualifiedField" },
+    { "name": "AssignedField", "kind": "class" },
+    { "name": "AssignedChild", "kind": "class" },
+    { "name": "factory", "kind": "function" }
+  ],
+  "expectSymbolCount": [
+    { "name": "BareField", "equals": 1 },
+    { "name": "BareChild", "equals": 1 },
+    { "name": "BareComposed", "equals": 1 },
+    { "name": "QualifiedField", "equals": 1 },
+    { "name": "AssignedField", "equals": 1 },
+    { "name": "AssignedChild", "equals": 1 },
+    { "name": "pointer", "ownerName": "BareField", "equals": 1 },
+    { "name": "AssignedField", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "BareChild", "target": "BareField", "confidence": 1 },
+    { "type": "mixes_in", "from": "BareComposed", "target": "SlotProviderA", "confidence": 1 },
+    { "type": "mixes_in", "from": "BareComposed", "target": "SlotProviderB", "confidence": 1 },
+    { "type": "extends", "from": "AssignedChild", "target": "AssignedField", "confidence": 1 },
+    { "type": "contains", "from": "BareField", "target": "pointer" },
+    { "type": "contains", "from": "QualifiedField", "target": "y" },
+    { "type": "contains", "from": "AssignedField", "target": "x" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "from": "BareField", "target": "pointer", "equals": 1 },
+    { "type": "contains", "from": "BareField", "target": "size", "equals": 1 },
+    { "type": "extends", "from": "BareChild", "target": "BareField", "equals": 1 },
+    { "type": "mixes_in", "from": "BareComposed", "target": "SlotProviderA", "equals": 1 },
+    { "type": "mixes_in", "from": "BareComposed", "target": "SlotProviderB", "equals": 1 },
+    { "type": "contains", "from": "AssignedField", "target": "x", "equals": 1 },
+    { "type": "extends", "from": "AssignedChild", "target": "AssignedField", "equals": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "BareComposed", "target": "SlotProviderA" },
+    { "type": "mixes_in", "from": "BareChild", "target": "BareField" },
+    { "type": "contains", "from": "factory", "target": "Class" },
+    { "type": "contains", "from": "global", "target": "Class" }
+  ],
+  "forbidSymbols": [
+    { "name": "Class", "kind": "class" }
+  ]
+}

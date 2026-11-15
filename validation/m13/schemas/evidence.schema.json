@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://backbencher-brain.dev/validation/m13/evidence.schema.json",
+  "title": "M13 Evidence Document",
+  "description": "Machine-readable verification evidence for a single M13 issue. A document may only claim verifiedState=verified when summary.failed=0 AND negativeCases>=1. Enforced by script/m13/verify-evidence.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "milestone",
+    "issue",
+    "code",
+    "tool",
+    "title",
+    "verifiedState",
+    "layers",
+    "checks",
+    "negativeCases",
+    "summary",
+    "decisions",
+    "limitations",
+    "generatedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "milestone": { "const": "M13" },
+    "issue": { "type": "string", "pattern": "^M13\\.\\d+$" },
+    "code": { "type": "string", "minLength": 1 },
+    "tool": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "verifiedState": { "enum": ["verified", "partial", "known-gap", "untested"] },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "enum": ["unit", "integration", "e2e", "corpus"] }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "pass"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "pass": { "type": "boolean" },
+          "negative": { "type": "boolean" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "negativeCases": { "type": "integer", "minimum": 0 },
+    "summary": {
+      "type": "object",
+      "required": ["total", "passed", "failed"],
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer", "minimum": 1 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "decisions": { "type": "object" },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "generatedAt": { "type": "string", "minLength": 1 }
+  }
+}

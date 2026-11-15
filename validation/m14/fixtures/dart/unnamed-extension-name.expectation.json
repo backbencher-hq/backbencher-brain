@@ -1,0 +1,99 @@
+{
+  "fixtureId": "dart/unnamed-extension-name",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Every row below was TRANSCRIBED from a measured run of the fixed analyzer (validation/m14/fixtures/dart/dump-symbols.mts unnamed-extension-name.dart): 9 symbols / 6 relationships, and the symbol dump printed the two synthesized names and the three member owners exactly as the `expectSymbols` rows state them. The six relationship rows are the whole emitted set, in the emitted order. The forbid rows are the PRE-FIX shapes the price instrument measured, and each was checked to be FIRABLE rather than inert (matchConstraints requires every key it is given, so `{name, kind}` fires on the extension and not on the class of the same name, and the two `references` forbids name the synthesized source the fix introduced — a bare-`Local` forbid left behind would have stopped firing the moment the source moved).",
+  "rationale": "AN UNNAMED EXTENSION HAS NO NAME, and publishing it under its TARGET TYPE's is a name-keyed lie. `extension on Object? { ... }` made the project declare a symbol named `Object` that is not `Object`, so every consumer that decides BY NAME read the wrong answer. Priced before the fix over whole projects through the pool (validation/m14/fixtures/dart/unnamed-extension-price.ts): riverpod 41 unnamed extensions, 19 colliding with a real declaration of the same project; proxicall 1; dart-http 2, neither colliding. The measured harm is the `Object` row — with an index the analyzer retargets `Object.hashCode` / `Object.operator ==` / `Object.toString` to the dart:core interface and marks the claim `isExternalBase`, and the arbiter verifies an external claim by looking the OWNER up, so it found the ANONYMOUS EXTENSION and refused 31 claims that are true (/tmp/dartgate/gate-riverpod-index.log: `extFAIL 31`, counted against the lane by the gate's verdict). The fix publishes `unnamed_extension_<target>` (family spelling for a declaration the source never named: java's `anonymous_Comparator`, rust's `anonymous_impl`; fallback `unnamed_extension`, mirroring java's `anonymous_class`), and the prefix is load-bearing a second time — `isIndexArtifactName` (src/ast/analysis-exclusions.ts) drops `^(anonymous|anon|unnamed)[_-]`, so the synthesized symbol never reaches the index by construction, which is the honest state for a declaration with no name to jump to. `metadata.targetType` still carries the subject. THE TRUTH INSTRUMENT MOVED WITH IT: script/m14/oracles/dart-references.ts derives the same spelling independently (that file's rule is \"shared: nothing\") and skips the same subject mention; the two are held together by script/m14/verify-dart-references.ts, not by an import.",
+  "expectSymbols": [
+    { "name": "unnamed-extension-name", "kind": "module" },
+    { "name": "Local", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "Local" },
+    { "name": "LocalUtil", "kind": "extension", "meta.isExtension": true, "meta.targetType": "Local", "meta.isUnnamedExtension": false },
+    { "name": "nothing", "kind": "property", "ownerName": "LocalUtil" },
+    { "name": "unnamed_extension_Local", "kind": "extension", "meta.isExtension": true, "meta.targetType": "Local", "meta.isUnnamedExtension": true },
+    { "name": "localish", "kind": "property", "ownerName": "unnamed_extension_Local" },
+    { "name": "unnamed_extension_Object", "kind": "extension", "meta.isExtension": true, "meta.targetType": "Object", "meta.isUnnamedExtension": true },
+    { "name": "isAbsent", "kind": "property", "ownerName": "unnamed_extension_Object" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Local",
+      "target": "Local.constructor",
+      "line_number": 35,
+      "comment": "the control: an ordinary class is untouched by this fix, and its member still qualifies to its own published spelling"
+    },
+    {
+      "type": "contains",
+      "from": "LocalUtil",
+      "target": "LocalUtil.nothing",
+      "line_number": 40,
+      "comment": "a NAMED extension is published under its own name and owns its members under it"
+    },
+    {
+      "type": "contains",
+      "from": "unnamed_extension_Local",
+      "target": "unnamed_extension_Local.localish",
+      "line_number": 45,
+      "comment": "the UNNAMED extension's member, owned by the SYNTHESIZED name — the same spelling the symbol was published under, because both come from extensionPublishedName"
+    },
+    {
+      "type": "contains",
+      "from": "unnamed_extension_Object",
+      "target": "unnamed_extension_Object.isAbsent",
+      "line_number": 52,
+      "comment": "and the row that cost the gate 31 true claims: the target is dart:core's `Object`, which this project does not declare, so the extension may not occupy the name `Object`"
+    },
+    {
+      "type": "references",
+      "from": "LocalUtil",
+      "target": "Local",
+      "line_number": 39,
+      "comment": "a NAMED extension's `on` clause IS a type mention — pinned independently in script/m14/verify-dart-references.ts (\"a NAMED extension's target\"), and the half of this rule that must NOT be over-applied"
+    },
+    {
+      "type": "references",
+      "from": "nothing",
+      "target": "Local",
+      "line_number": 40,
+      "comment": "the named extension's member mentions the type in its return position; the member is the source, not the container"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Object",
+      "kind": "extension",
+      "comment": "THE PRE-FIX SHAPE, and the whole reason this fixture exists: an extension symbol NAMED `Object`, published because an unnamed extension took its target type's name. It made 31 true `isExternalBase` claims about dart:core's `Object` refutable. MEASURED by the price instrument on riverpod before the fix; a fixture that only asserted the new spelling would not catch a regression that reintroduced the old one alongside it."
+    },
+    {
+      "name": "Local",
+      "kind": "extension",
+      "comment": "the same pre-fix shape for a target THIS file declares, where it is also visible as a duplicate declaration: the project then publishes two symbols called `Local`, and the anonymous one published the ambiguous member target `Local.localish`. `kind` is part of the match, so the CLASS `Local` is not caught by this row."
+    },
+    {
+      "name": "Local",
+      "kind": "property",
+      "comment": "the pre-fix MEMBER spelling, as its own symbol: the unnamed extension's getter leaked under the bare target-type name rather than an owner of its own"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "unnamed_extension_Local",
+      "target": "Local",
+      "note": "THE SUBJECT IS NOT A MENTION ITS BODY MAKES. The published name is DERIVED from the `on` type, so this edge would name a source the store does not keep (`isIndexArtifactName` drops the synthesized prefix) — an edge that reads resolved in the gate and resolves to nothing in the index. Firable only since the rename: before it the source was `Local` itself."
+    },
+    {
+      "type": "references",
+      "from": "unnamed_extension_Object",
+      "target": "Object",
+      "note": "the same guard on the row that cost the gate 31 true claims"
+    },
+    {
+      "type": "contains",
+      "from": "Local",
+      "target": "Local.localish",
+      "note": "the pre-fix member target: owned by the real class's name, and indistinguishable from a member of `Local` itself"
+    }
+  ]
+}

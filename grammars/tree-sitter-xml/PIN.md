@@ -41,12 +41,12 @@ The pre-repair wired wasm's enumerable surface, read through web-tree-sitter's
 wasm built from upstream HEAD (v0.7.0, `5000ae8f`) has **exactly the same
 surface, with a zero set difference in both directions**. Its behaviour is
 identical on all 29 constructs of the A/B battery
-(`fixtures/xml/out/grammar-ab.json`). The pre-repair bytes were therefore an
+(`bb_tests/xml/out/grammar-ab.json`). The pre-repair bytes were therefore an
 **unmodified, current upstream build**.
 
 So the two defects this lane repairs are **upstream's**, and no upgrade fixes
 them. Measured on builds of v0.5.0, v0.6.4 and v0.7.0: all three fail both
-(`fixtures/xml/out/grammar-corpus-ab.json`, `fixtures/xml/out/pi-rootcause.json`).
+(`bb_tests/xml/out/grammar-corpus-ab.json`, `bb_tests/xml/out/pi-rootcause.json`).
 
 Upstream's own test corpus never exercises either: `grep -rn 'PITarget'
 test/corpus/` returns nothing, and the only PI-adjacent tests are
@@ -86,7 +86,7 @@ complete and the parser wrapped the whole construct in an `ERROR` node. With no
 `XMLDecl` present the enclosing `prolog` node was destroyed as well, taking any
 `<!DOCTYPE …>` in the same prolog with it. The 19-shape battery isolates it to
 the byte: the construct parses **iff** the byte after `?>` is `\n`
-(`fixtures/xml/out/pi-rootcause.json`).
+(`bb_tests/xml/out/pi-rootcause.json`).
 
 The repair is one new macro and one changed call site:
 
@@ -111,7 +111,7 @@ version measured:
 The failure was destructive and produced a **published lie**: `<![INCLUDE[…]]>`
 wrapped the `doctypedecl` in an `ERROR`, the parser then took a *later* `Name` as
 the DTD's name, and the analyzer published a `Type` symbol literally named
-`INCLUDE`. See `fixtures/xml/out/tree-shapes.txt` (`dtdConditional`).
+`INCLUDE`. See `bb_tests/xml/out/tree-shapes.txt` (`dtdConditional`).
 
 ```js
 _intSubsetItem: $ => choice($._markupdecl, $.conditionalSect, $._DeclSep),
@@ -131,7 +131,7 @@ either fail generation or add a wrapper node to `node-types.json`.
 ## Corpus evidence for admissibility
 
 8,888 files / 33.6 MB / **6.69 M nodes** across 6 pinned repos, ERROR and MISSING
-counted per file (`fixtures/xml/out/grammar-corpus-ab.json`):
+counted per file (`bb_tests/xml/out/grammar-corpus-ab.json`):
 
 | | pre-repair | this build |
 | --- | --- | --- |
@@ -141,7 +141,7 @@ counted per file (`fixtures/xml/out/grammar-corpus-ab.json`):
 | files repaired / moved / unchanged | — | **31 / 2 / 8,855** |
 
 Both movements are adjudicated by measurement, not argument
-(`fixtures/xml/out/regression-adjudication.json`):
+(`bb_tests/xml/out/regression-adjudication.json`):
 
 1. **`libxml2/test/valid/dtds/cond_sect2.dtd`** is a **standalone DTD**. Its root
    node type is `ERROR` under the wired grammar, under this build, and under

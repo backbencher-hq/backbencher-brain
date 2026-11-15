@@ -1,0 +1,13 @@
+{
+  "fixtureId": "scala/qualified-calls-payload",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b qualified_calls payload for scala (#383): call expressions attach to the enclosing method symbol.",
+  "expectSymbols": [
+    { "name": "Svc" },
+    { "name": "work" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "work", "includes": ["getUserById"] }
+  ]
+}

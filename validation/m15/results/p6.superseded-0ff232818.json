@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P6",
+  "code": "P6",
+  "tool": "bb_patterns",
+  "title": "docs honesty",
+  "verified": true,
+  "checks": 9,
+  "passed": 9,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-08-23T17:18:50.627Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.340Z",
+    "contentSha256": "34a6a1ab333532b385a3e8504320e681d5e1dfb37043b75499b8c8fab914807f"
+  }
+}

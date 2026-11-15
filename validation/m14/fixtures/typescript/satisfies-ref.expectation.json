@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/satisfies-ref",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the satisfies_expression target reference (gap T5). TS 4.9 semantics: x satisfies T checks x against T without changing x's type — the expression reads the type T, so a reference to Config is required. Pre-fix: only the const annotation's Config ref existed; the satisfies clause emitted nothing.",
+  "expectSymbols": [
+    { "name": "Config", "kind": "interface" },
+    { "name": "cfg", "kind": "constant" },
+    { "name": "ok", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "ok", "target": "Config", "meta.relationshipType": "satisfies_target" }
+  ]
+}

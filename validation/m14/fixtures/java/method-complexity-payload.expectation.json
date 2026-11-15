@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/method-complexity-payload",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b per-symbol complexity: doEverything has if+for+while => cyclomatic 4; only has none => 1. Previously ALL java method symbols stored complexity=1 (file-level counter only).",
+  "expectSymbols": [
+    { "name": "GodClass" },
+    { "name": "doEverything" },
+    { "name": "only" }
+  ],
+  "expectComplexity": [
+    { "symbol": "doEverything", "min": 4, "max": 6 },
+    { "symbol": "only", "equals": 1 }
+  ]
+}

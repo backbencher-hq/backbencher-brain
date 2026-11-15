@@ -1,0 +1,57 @@
+{
+ "fixtureId": "yaml/schema-composition-allof",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "JSON SCHEMA COMPOSITION, as `extends`. `allOf` means 'must satisfy ALL of these' — a superset-of relationship, and the only schema keyword that means one. `anyOf` and `oneOf` are ALTERNATIVES, which have no ontology type, so their `$ref`s correctly contribute only the `references` they already produce. THIS IS THE JSON LANE'S OWN SETTLED RULING (`script/m14/spec/json-completeness.json`, `BD-allof-extends`; the JSON analyzer emits it over 1,432 edges) applied to the same construct in the YAML spelling: a JSON Schema or an OpenAPI document is routinely written as YAML, and this lane already reads those documents. MEASURED over the admitted population, `allOf` appears 974 times against `anyOf` 446 and `oneOf` 154 — composition common, alternatives rare. THE SOURCE IS THE SCHEMA THAT COMPOSES, not the `allOf` array that records the composition: `allOf` is a keyword shared by every schema in the file, so an edge whose source were the array would bind a consumer resolving by name to an arbitrary one of them. THE RULE IS THE PATH'S TAIL and it is exact on purpose: the `$ref` must be a DIRECT member of an `allOf` item. TWO CASES ARE PINNED — a LOCAL pointer, which resolves to a symbol in this file at confidence 1, and a SIBLING-FILE pointer, whose target is a file this document composes with — and ONE CASE IS FORBIDDEN, because it looks like a composition and is not: a `$ref` under `properties:` INSIDE an `allOf` member is a property reference, and `allOf[2]` carries no direct `$ref`, so neither the member nor the property may produce an `extends` edge. `authoredBeforeAnalyzerRun` is false because the expectation was written from that corpus measurement and from the analyzer's output on the same construct.",
+ "expectSymbols": [
+  {
+   "name": "Request",
+   "kind": "class"
+  },
+  {
+   "name": "allOf",
+   "kind": "variable"
+  },
+  {
+   "name": "Base",
+   "kind": "class"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "extends",
+   "from": "schema-composition-allof.components.schemas.Request",
+   "target": "schema-composition-allof.components.schemas.Base",
+   "meta.relationshipType": "yaml_schema_composition",
+   "meta.compositionOperator": "allOf",
+   "meta.evidenceClass": "structural",
+   "meta.resolved": true,
+   "line_number": 47
+  },
+  {
+   "type": "extends",
+   "from": "schema-composition-allof.components.schemas.Other",
+   "target": "../shared.yaml#/components/schemas/Common",
+   "meta.relationshipType": "yaml_schema_composition",
+   "meta.compositionOperator": "allOf",
+   "meta.evidenceClass": "structural",
+   "meta.resolved": false,
+   "line_number": 57
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "extends",
+   "from": "schema-composition-allof.components.schemas.Request.allOf[2]"
+  },
+  {
+   "type": "extends",
+   "from": "schema-composition-allof.components.schemas.Request.allOf[2].properties.owner"
+  },
+  {
+   "type": "extends",
+   "from": "schema-composition-allof.components.schemas.Request.allOf[0]"
+  }
+ ],
+ "_theFalsifier": "A corpus site where an `allOf` member's `$ref` is NOT a composition — a constraint that must be satisfied ALONGSIDE the others rather than a base the others are added to. JSON Schema's `allOf` is a conjunction of constraints, and every corpus site reads as 'this schema is a base plus more', so the falsifier is a site where the member is an alternative wearing the `allOf` spelling. The two alternatives keywords, `anyOf` and `oneOf` (446 and 154 sites), are exactly what that would look like, and they are spelled differently on purpose."
+}

@@ -1,0 +1,72 @@
+{
+ "fixtureId": "vue/tag-namespace-and-dotted",
+ "language": "vue",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` \u2014 the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. F9 (master review 2026-09-30) \\u2014 LATENT on both restored corpora: 0 occurrences of a namespaced builtin tag and 0 dotted tags across 1,139 .vue files, so there is no corpus count to quote and the defect is proven by probe, not by frequency. Probed directly against production ASTEngine.parseFile: `<svg:circle/>` produced `instantiates -> svg:circle` and `<Form.Input/>` produced `instantiates -> Form`. (a) The vue grammar's `tag_name` node spells a namespaced tag in full (`svg:circle`), and neither builtin set contains a colon, so the filter missed it. A known builtin namespace means the tag is markup, not a component. (b) `tag_name` spells only the ROOT segment of a dotted tag, so the usage targeted `Form` and dropped `.Input` \\u2014 the record said the whole component was instantiated for a template that uses one sub-component. Target stays `Form` because that is what the components registry holds and what a resolver must match; the leaf is recorded in metadata, which is lossless without inventing an unresolvable `Form.Input` symbol. `Ui.Table` and `el-button` are the controls: the former must survive with its leaf, the latter must still be a plain component usage. F31 (2026-10-12) extends (b)'s OWN stated rule to the kebab spelling that (b) left as written: `<el-button/>` published `instantiates -> el-button` while the corpus declares `ElButton`, so the target is now the name the registry holds (`ElButton`) with the written spelling in `metadata.tagAsWritten`. (b) is what rules this: the target is \"what a resolver must match\", and 1,409 of the lane's 2,267 `instantiates` edges (62.2%) named a corpus declaration the written spelling does not equal \\u2014 the `CASING` row the construct census (script/m14/vue-instantiates-targets.mts) rules on in its own header. `vue/kebab-registry-name` is the fixture that measures the rule; this one keeps the two tag shapes apart and pins that a kebab component is still a component usage.",
+ "expectRelationships": [
+  {
+   "source": "TagNamespaced",
+   "target": "Form",
+   "type": "renders",
+   "meta.member": "Input",
+   "meta.componentPath": "Form.Input",
+   "note": "dotted tag: the member and path the fix records; the leaf-drop mutant removes them"
+  },
+  {
+   "source": "TagNamespaced",
+   "target": "Ui",
+   "type": "renders",
+   "meta.member": "Table",
+   "meta.componentPath": "Ui.Table"
+  },
+  {
+   "source": "TagNamespaced",
+   "target": "ElButton",
+   "type": "renders",
+   "meta.resolution": "registry-name",
+   "meta.tagAsWritten": "el-button",
+   "meta.componentNameNormalized": true,
+   "meta.componentNameCandidates": [
+    "el-button",
+    "elButton",
+    "ElButton"
+   ]
+  },
+  {
+   "source": "TagNamespaced",
+   "target": "ElButton",
+   "type": "renders",
+   "meta.isComponentUsage": true
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "target": "svg:circle"
+  },
+  {
+   "target": "math:mi"
+  },
+  {
+   "target": "svg",
+   "note": "the namespace prefix of a builtin is not a component"
+  },
+  {
+   "target": "Form.Input",
+   "note": "no registry holds this name; the leaf lives in metadata"
+  },
+  {
+   "target": "el-button",
+   "note": "F31: the written spelling is not the registry name; it is carried as metadata.tagAsWritten, and the registry name is what a resolver matches"
+  },
+  {
+   "type": "renders",
+   "target": "svg",
+   "comment": "a namespaced builtin FALSE POSITIVE: `svg` alone is markup/namespace, not a component"
+  },
+  {
+   "type": "renders",
+   "target": "svg:circle",
+   "comment": "`svg:circle` is an SVG element, never a component"
+  }
+ ]
+}

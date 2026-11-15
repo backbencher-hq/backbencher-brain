@@ -1,0 +1,198 @@
+{
+  "generatedAt": "2026-11-03T17:23:29.683Z",
+  "protocol": "in-process handler calls, 1 warm-up + 3 measured, BB_NO_AUTO_REFRESH=1, byte-read-only",
+  "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-hub-breakdown.ts",
+  "symbol": "getRawInstance",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "loadAverage": [
+    7.98,
+    6.12,
+    6.95
+  ],
+  "dbBefore": {
+    "bytes": 3885883392,
+    "mtimeMs": 1793725551029.1978
+  },
+  "dbAfter": {
+    "bytes": 3885883392,
+    "mtimeMs": 1793725551029.1978
+  },
+  "dbUnchanged": true,
+  "handlerRunsMs": [
+    2916.7,
+    2913.1,
+    2972.7
+  ],
+  "handlerP50Ms": 2916.7,
+  "handlerP95Ms": 2972.7,
+  "outputBytes": 164670,
+  "payload": {
+    "shownCount": 174,
+    "totalCountIfKnown": 406,
+    "directCount": 272,
+    "truncated": true,
+    "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+    "depthReached": 1,
+    "engineTruncated": true,
+    "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+    "countVerification": {
+      "ran": true,
+      "skipped": false,
+      "timedOut": false,
+      "boundarySuspect": false,
+      "complete": false
+    },
+    "budget": {
+      "maxNodes": 200,
+      "maxDepth": 5,
+      "totalScanCeiling": 50000,
+      "totalExpansionCeiling": 2000,
+      "totalTimeCeilingMs": 1980,
+      "walkTimeCeilingMs": 2000,
+      "callDeadlineMs": 4200
+    },
+    "reproducible": false,
+    "cascade": {
+      "exact": 174,
+      "member": 0,
+      "rangeFolded": 0
+    },
+    "impactRows": 174
+  },
+  "rows": [
+    {
+      "label": "engine-walk-warm",
+      "ms": 2212.8,
+      "value": {
+        "callers": 213,
+        "truncated": true,
+        "reason": "caller-site-limit+caller-budget-exhausted",
+        "timeBudgetExhausted": false,
+        "totalCallers": 213,
+        "callersIfUncapped": 326
+      }
+    },
+    {
+      "label": "engine-walk-1",
+      "ms": 2197.9,
+      "value": {
+        "callers": 213,
+        "truncated": true,
+        "reason": "caller-site-limit+caller-budget-exhausted"
+      }
+    },
+    {
+      "label": "engine-walk-2",
+      "ms": 2114.7,
+      "value": {
+        "callers": 213,
+        "truncated": true,
+        "reason": "caller-site-limit+caller-budget-exhausted"
+      }
+    },
+    {
+      "label": "engine-walk-3",
+      "ms": 2122.1,
+      "value": {
+        "callers": 213,
+        "truncated": true,
+        "reason": "caller-site-limit+caller-budget-exhausted"
+      }
+    },
+    {
+      "label": "count-walk-warm",
+      "ms": 727.9,
+      "value": {
+        "error": "countImpactDependents(...).then is not a function"
+      }
+    },
+    {
+      "label": "count-walk-1",
+      "ms": 688.9,
+      "value": {
+        "error": "countImpactDependents(...).then is not a function"
+      }
+    },
+    {
+      "label": "count-walk-2",
+      "ms": 735.1,
+      "value": {
+        "error": "countImpactDependents(...).then is not a function"
+      }
+    },
+    {
+      "label": "count-walk-3",
+      "ms": 704.3,
+      "value": {
+        "error": "countImpactDependents(...).then is not a function"
+      }
+    },
+    {
+      "label": "computeImpact-warm",
+      "ms": 3048.3,
+      "value": {
+        "shownCount": 174,
+        "totalCountIfKnown": 406,
+        "directCount": 272,
+        "truncated": true,
+        "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted — this answer is not reproducible)",
+        "depthReached": 1,
+        "engineTruncated": true,
+        "engineTruncationReason": "caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted",
+        "countVerification": {
+          "ran": true,
+          "skipped": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": false
+        },
+        "budget": {
+          "maxNodes": 200,
+          "maxDepth": 5,
+          "totalScanCeiling": 50000,
+          "totalExpansionCeiling": 2000,
+          "totalTimeCeilingMs": 1958,
+          "walkTimeCeilingMs": 2000,
+          "callDeadlineMs": 4200
+        },
+        "reproducible": false,
+        "cascade": {
+          "exact": 174,
+          "member": 0,
+          "rangeFolded": 0
+        },
+        "impactRows": 174
+      }
+    },
+    {
+      "label": "computeImpact-1",
+      "ms": 2895.2,
+      "value": {
+        "shown": 174,
+        "truncated": true
+      }
+    },
+    {
+      "label": "computeImpact-2",
+      "ms": 2793.4,
+      "value": {
+        "shown": 174,
+        "truncated": true
+      }
+    },
+    {
+      "label": "computeImpact-3",
+      "ms": 2750.7,
+      "value": {
+        "shown": 174,
+        "truncated": true
+      }
+    },
+    {
+      "label": "manual-json-stringify",
+      "ms": 1.1,
+      "value": 130993
+    }
+  ]
+}

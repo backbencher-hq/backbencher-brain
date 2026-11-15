@@ -1,0 +1,80 @@
+{
+  "fixtureId": "javascript/chain-root-and-bare-reads",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 #744 (web fix wave, java #739 family contract): (1) the member-chain ROOT identifier is a read — config.inner.deeper.leaf emits uses config + inner + deeper + leaf (pre-fix: root dropped); (2) BARE identifier reads (return config, if (flag)) emit uses (pre-fix: only member chains scanned); (3) gates hold: assignment LHS is a WRITE (config.inner = 1 emits no read of inner), declaration names are not reads (no self-read artifact), call callees stay calls-only. The F5 JS oracle mirrors every gate in lockstep and the javascript lane now audits uses (pre-fix the lane's filter compared only calls — the whole surface was differential-invisible).",
+  "expectSymbols": [
+    {
+      "name": "read",
+      "kind": "function"
+    },
+    {
+      "name": "bare",
+      "kind": "function"
+    },
+    {
+      "name": "gated",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "read",
+      "target": "config",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "uses",
+      "from": "read",
+      "target": "inner",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "uses",
+      "from": "read",
+      "target": "deeper",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "uses",
+      "from": "read",
+      "target": "leaf",
+      "meta.isFieldAccess": true
+    },
+    {
+      "type": "uses",
+      "from": "bare",
+      "target": "config",
+      "meta.bareRead": true
+    },
+    {
+      "type": "uses",
+      "from": "gated",
+      "target": "gated\u0000flag",
+      "meta.bareRead": true
+    },
+    {
+      "type": "uses",
+      "from": "gated",
+      "target": "config"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "gated",
+      "target": "inner"
+    },
+    {
+      "type": "uses",
+      "from": "read",
+      "target": "read"
+    },
+    {
+      "type": "uses",
+      "from": "bare",
+      "target": "bare"
+    }
+  ]
+}

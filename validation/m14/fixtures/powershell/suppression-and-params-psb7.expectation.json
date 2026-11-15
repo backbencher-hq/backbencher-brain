@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "fixture": "powershell/suppression-and-params-psb7.ps1",
+  "authoredFrom": "PS8 (a suppression filter must not eat a real declaration) + PS10 (every parameter form must be read). Authored 2026-09-26. PS8 has TWO halves and both were measured. (a) The pre-wave `AUTOMATIC_VARIABLES` set carried `foreach` and `switch` — LANGUAGE KEYWORDS, not automatic variables; reproduced as 6 of 9 top-level assignments silently dropped. (b) Every suppression compared CASE-SENSITIVELY while PowerShell identifiers are case-insensitive: measured on `ansible@7ec731b`, `exec_wrapper.ps1` published `null` as a variable FIVE times, and `$Script:AnsibleClrFacadeSet` was published as a variable named `Script:AnsibleClrFacadeSet`. The ledger's standing rule names this class — \"every language's fixtures MUST include identifiers that collide with stdlib/builtin words, because suppression filters are invisible to output-diff tests otherwise\" — and this lane had no fixtures, so nothing pinned it. PS10: `function G($x, $y)` published ZERO parameters. The grammar's real shape, measured, is `function_statement > function_parameter_declaration > parameter_list > script_parameter` — the wrapper is named `function_parameter_declaration` and the ITEMS are `script_parameter`; a first fix that assumed the items were the wrapper matched nothing and the fixture caught it.",
+  "expectSymbols": [
+    {
+      "name": "suppression-and-params-psb7.ps1",
+      "kind": "module"
+    },
+    {
+      "name": "switch",
+      "kind": "variable",
+      "ownerName": "suppression-and-params-psb7.ps1",
+      "comment": "PS8 (a): `switch` is a KEYWORD, not an automatic variable. `$switch = …` is a legal declaration and the pre-wave set ate it."
+    },
+    {
+      "name": "foreach",
+      "kind": "variable",
+      "ownerName": "suppression-and-params-psb7.ps1",
+      "comment": "PS8 (a): same, for `foreach`"
+    },
+    {
+      "name": "With-ParamBlock",
+      "kind": "function",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "Inline-Params",
+      "kind": "function",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "No-Params",
+      "kind": "function",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "Shared",
+      "kind": "variable",
+      "ownerName": "suppression-and-params-psb7.ps1",
+      "meta.scopeQualifier": "global",
+      "comment": "PSD18: `$global:Shared` declares `Shared` in the global scope — a scope a file writes into."
+    },
+    {
+      "name": "Upper",
+      "kind": "variable",
+      "ownerName": "suppression-and-params-psb7.ps1",
+      "meta.scopeQualifier": "script",
+      "comment": "PSD18: `$Script:Upper` declares `Upper`; the case-insensitive prefix match (PS8 (b)) is unchanged."
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "With-ParamBlock",
+      "comment": "PS10, the `param()`-block form",
+      "parameters": [
+        {
+          "name": "Name",
+          "type": "string",
+          "isOptional": false
+        },
+        {
+          "name": "Count",
+          "type": "int",
+          "isOptional": true
+        }
+      ]
+    },
+    {
+      "symbol": "Inline-Params",
+      "comment": "PS10, the INLINE form — the row the mutant powershell/drop-inline-parameters found missing. It transformed the result correctly and the suite did not notice, because nothing asserted this symbol's parameters: the suppression fixture pinned the SYMBOL and payload-psb11 pinned only Get-Report. A mutant that fires and changes nothing is a coverage gap the mutant found, which is the whole reason the lane needed one.",
+      "parameters": [
+        {
+          "name": "First",
+          "type": "untyped",
+          "isOptional": false
+        },
+        {
+          "name": "Second",
+          "type": "string",
+          "isOptional": true
+        },
+        {
+          "name": "Third",
+          "type": "untyped",
+          "isOptional": false
+        }
+      ]
+    },
+    {
+      "symbol": "No-Params",
+      "comment": "a function with no parameters at all",
+      "parameters": []
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "Inline-Params",
+      "types": [
+        "any"
+      ],
+      "comment": "the placeholder the pre-wave reader emitted for a parameter whose type it could not read"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "switch",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "foreach",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "With-ParamBlock",
+      "line_number": 43
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "Inline-Params",
+      "line_number": 48
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "No-Params",
+      "line_number": 52
+    },
+    {
+      "type": "calls",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "Write-Host",
+      "line_number": 56
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "null",
+      "comment": "PS8 (b): `$null` is the automatic null variable in every casing. The pre-wave set listed `Null` and compared case-sensitively, so `$null` was published as a project declaration — five times in one ansible file."
+    },
+    {
+      "name": "Null"
+    },
+    {
+      "name": "error"
+    },
+    {
+      "name": "args"
+    },
+    {
+      "name": "input"
+    },
+    {
+      "name": "psitem"
+    },
+    {
+      "name": "PATH",
+      "comment": "`$env:PATH` is an ENVIRONMENT binding"
+    },
+    {
+      "name": "Name",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "Count",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "First",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "Second",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    },
+    {
+      "name": "Third",
+      "comment": "a parameter is a member of its function, not a file-scope variable",
+      "ownerName": "suppression-and-params-psb7.ps1"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "null",
+      "line_number": 33,
+      "note": "PRE-FIX SHAPE, PS8 (b): a `contains` edge for the automatic null variable"
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "Script:Upper",
+      "line_number": 40,
+      "note": "PRE-FIX SHAPE, PS8 (b): the scope-qualified name published as a variable name"
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "First"
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "Second"
+    },
+    {
+      "type": "contains",
+      "from": "suppression-and-params-psb7.ps1",
+      "target": "Third"
+    },
+    {
+      "type": "calls",
+      "from": "global"
+    },
+    {
+      "type": "contains",
+      "from": "global"
+    },
+    {
+      "type": "references",
+      "from": "global"
+    },
+    {
+      "type": "exports",
+      "from": "global"
+    },
+    {
+      "type": "calls",
+      "target": "global"
+    }
+  ],
+  "note": "PARAMETER PAYLOAD is asserted in the sibling fixture `payload-psb11`, which pins the `type`/`isOptional`/`defaultValue` of all three forms. This fixture pins WHICH symbols exist and which must not, so a suppression regression and a payload regression fail in different places."
+}

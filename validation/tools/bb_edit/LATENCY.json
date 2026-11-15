@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_edit",
+  "tiers": {
+    "T0": {
+      "subject": "test/fixtures/polyglot (copied to a lane work dir)",
+      "root": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_edit/work/run/tiers/t0-polyglot",
+      "note": "T0: symbol total (ts-js/src/checkout.ts)"
+    },
+    "T1": {
+      "subject": ".perf-fixtures/bb-scale/n100 (copied to a lane work dir)",
+      "root": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_edit/work/run/tiers/t1-n100",
+      "note": "T1: symbol absenceWith (t0016_symbols.ts)"
+    },
+    "T2": {
+      "subject": "not measured",
+      "reason": "bb_edit mutates source and reindexes; the shared reference index is read-only for this tool lane. Its cost is bounded by the TOUCHED file, not the project size, which is what T0/T1 exercise."
+    }
+  },
+  "environment": {
+    "node": "v22.22.1",
+    "runs": 5,
+    "warm": "one excluded warm-up run per operation; the fixture index is built once before measurement",
+    "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_edit/bbdata",
+    "bbNoAutoRefresh": "1",
+    "indexSeconds": {
+      "T0": 3.15,
+      "T1": 17.29
+    },
+    "command": "BB_DATA_DIR=$PWD/validation/tools/bb_edit/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_edit/work/measure-latency.ts",
+    "skipped": "refactor is not timed: it is not a default-argument call (requires newName) and its cost is proportional to the symbol's imported/called graph, which the fixture tiers do not represent"
+  },
+  "budgets": {
+    "T0": 250,
+    "T1": 1000,
+    "source": "docs/tools-campaign/CHARTER.md §6 — T0 default calls < 250 ms, T1 < 1 s (p95)"
+  },
+  "operations": [
+    {
+      "tier": "T0",
+      "operation": "update dryRun",
+      "runsMs": [
+        9.9,
+        11.8,
+        11.7,
+        9.9,
+        11.5
+      ],
+      "p50": 11.5,
+      "p95": 11.8,
+      "withinBudget": true
+    },
+    {
+      "tier": "T0",
+      "operation": "update commit",
+      "runsMs": [
+        2062.9,
+        1916.6,
+        1801.5,
+        1647.1,
+        1493
+      ],
+      "p50": 1801.5,
+      "p95": 2062.9,
+      "withinBudget": false,
+      "note": "timed region is executeEdit only: plan + write + format check + validate + reindex; the fixture restore between runs is outside it"
+    },
+    {
+      "tier": "T0",
+      "operation": "insert inside-top commit",
+      "runsMs": [
+        1702.1,
+        1554.7,
+        1540.2,
+        1551.5,
+        1599.7
+      ],
+      "p50": 1554.7,
+      "p95": 1702.1,
+      "withinBudget": false
+    },
+    {
+      "tier": "T0",
+      "operation": "write create commit",
+      "runsMs": [
+        1879.6,
+        1463.3,
+        1708,
+        2027.7,
+        3070.6
+      ],
+      "p50": 1879.6,
+      "p95": 3070.6,
+      "withinBudget": false
+    },
+    {
+      "tier": "T0",
+      "operation": "delete dryRun (force)",
+      "runsMs": [
+        32,
+        26.1,
+        23,
+        24.3,
+        28
+      ],
+      "p50": 26.1,
+      "p95": 32,
+      "withinBudget": true
+    },
+    {
+      "tier": "T0",
+      "operation": "batch dryRun (2 write entries)",
+      "runsMs": [
+        0.7,
+        0.9,
+        0.9,
+        0.6,
+        0.5
+      ],
+      "p50": 0.7,
+      "p95": 0.9,
+      "withinBudget": true
+    },
+    {
+      "tier": "T1",
+      "operation": "update dryRun",
+      "runsMs": [
+        76.8,
+        62.9,
+        65.6,
+        71,
+        72.8
+      ],
+      "p50": 71,
+      "p95": 76.8,
+      "withinBudget": true
+    },
+    {
+      "tier": "T1",
+      "operation": "update commit",
+      "runsMs": [
+        5273.4,
+        7052.3,
+        4500.7,
+        2891,
+        3524.9
+      ],
+      "p50": 4500.7,
+      "p95": 7052.3,
+      "withinBudget": false,
+      "note": "timed region is executeEdit only: plan + write + format check + validate + reindex; the fixture restore between runs is outside it"
+    },
+    {
+      "tier": "T1",
+      "operation": "insert inside-top commit",
+      "runsMs": [
+        4614.7,
+        4103.5,
+        6967.1,
+        6975.9,
+        3139.8
+      ],
+      "p50": 4614.7,
+      "p95": 6975.9,
+      "withinBudget": false
+    },
+    {
+      "tier": "T1",
+      "operation": "write create commit",
+      "runsMs": [
+        2161.1,
+        2419.8,
+        2238.2,
+        3722.9,
+        2388.1
+      ],
+      "p50": 2388.1,
+      "p95": 3722.9,
+      "withinBudget": false
+    },
+    {
+      "tier": "T1",
+      "operation": "delete dryRun (force)",
+      "runsMs": [
+        260.7,
+        258,
+        234.6,
+        278.7,
+        300.4
+      ],
+      "p50": 260.7,
+      "p95": 300.4,
+      "withinBudget": true
+    },
+    {
+      "tier": "T1",
+      "operation": "batch dryRun (2 write entries)",
+      "runsMs": [
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "p50": 0.5,
+      "p95": 0.5,
+      "withinBudget": true
+    }
+  ],
+  "generatedAt": "2026-11-01T20:17:06.996Z"
+}

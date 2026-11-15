@@ -1,0 +1,11 @@
+{
+  "issue": "ELX-ADV X11",
+  "note": "complexityNodes is a null-prototype record: a function named `toString` (Object.prototype name) no longer inflates cyclomatic complexity on its call sites — the A/B pair must be identical (1).",
+  "expectComplexity": [
+    { "symbol": "run", "ownerName": "EPC", "equals": 1 },
+    { "symbol": "run", "ownerName": "EPC2", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "EPC.run/0", "target": "toString", "line_number": 5, "meta.callArity": 1 }
+  ]
+}

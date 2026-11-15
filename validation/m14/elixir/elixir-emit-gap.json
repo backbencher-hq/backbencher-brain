@@ -1,0 +1,222 @@
+{
+  "tool": "validation/m14/elixir/elixir-emit-gap.ts",
+  "lane": "ELIXIR_FIX2",
+  "subject": "src/ast/real-elixir-analyzer.ts",
+  "subjectCommit": "590023910b47b051677697e2cde63304462cd0ae",
+  "subjectSha256_16": "53f7825c5119fec0",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "corpusDirs": [
+      "elixir",
+      "otp"
+    ],
+    "extensions": [
+      ".ex",
+      ".exs"
+    ],
+    "derived": true,
+    "allFilesFound": 601,
+    "filesRun": 601,
+    "sampling": "WHOLE corpus"
+  },
+  "productionPath": "ASTEngine.parseFile -> getParser(elixir) -> parse -> getAnalyzer(elixir) -> analyze; the probe re-parses the same bytes for the tree",
+  "result": {
+    "filesParsed": 601,
+    "filesCrashed": 0,
+    "wallMs": 65571,
+    "uses": {
+      "constructSites": 2244,
+      "constructFiles": 182,
+      "sitesInsideComments": 0,
+      "sitesInExecutablePosition": 2244,
+      "sitesExecutableNonQuoted": 2230,
+      "emittedEdges": 2117,
+      "emittedFiles": 180,
+      "published": 2164,
+      "recallVsConstruct": 0.9643,
+      "edgesMinusSites": -127,
+      "gapByReason": [
+        {
+          "reason": "pattern-position",
+          "count": 31,
+          "samples": [
+            "erts/doc/docs.exs:27 md.kind",
+            "erts/doc/docs.exs:27 md.name",
+            "erts/doc/docs.exs:27 md.arity",
+            "erts/doc/docs.exs:31 md.kind"
+          ]
+        },
+        {
+          "reason": "def-signature-head",
+          "count": 31,
+          "samples": [
+            "lib/elixir/lib/code/formatter.ex:260 comment.previous_eol_count",
+            "lib/elixir/lib/inspect/algebra.ex:585 opts.limit",
+            "lib/elixir/lib/macro.ex:2044 env.context",
+            "lib/elixir/lib/macro.ex:2050 env.context"
+          ]
+        },
+        {
+          "reason": "quoted-code",
+          "count": 14,
+          "samples": [
+            "lib/elixir/lib/kernel.ex:5706 exception.message",
+            "lib/elixir/test/elixir/code_normalizer/quoted_ast_test.exs:63 foo.bar",
+            "lib/elixir/test/elixir/kernel/expansion_test.exs:288 unquote(Macro.escape(env)).unknown",
+            "lib/elixir/test/elixir/kernel/expansion_test.exs:1231 foo().bar"
+          ]
+        },
+        {
+          "reason": "r7-placeholder-literal",
+          "count": 4,
+          "samples": [
+            "lib/elixir/test/elixir/kernel_test.exs:950 users.unknown",
+            "lib/elixir/test/elixir/kernel_test.exs:993 users[\"meg\"].unknown",
+            "lib/elixir/test/elixir/kernel_test.exs:1031 users[\"meg\"].unknown",
+            "lib/elixir/test/elixir/kernel_test.exs:1069 users[\"meg\"].unknown"
+          ]
+        }
+      ]
+    },
+    "exports": {
+      "publicFormSitesByForm": [
+        {
+          "form": "def",
+          "sites": 5144,
+          "files": 404
+        },
+        {
+          "form": "defmodule",
+          "sites": 1200,
+          "files": 526
+        },
+        {
+          "form": "@type",
+          "sites": 627,
+          "files": 113
+        },
+        {
+          "form": "defmacro",
+          "sites": 343,
+          "files": 77
+        },
+        {
+          "form": "@callback",
+          "sites": 158,
+          "files": 29
+        },
+        {
+          "form": "defstruct",
+          "sites": 125,
+          "files": 64
+        },
+        {
+          "form": "defimpl",
+          "sites": 118,
+          "files": 35
+        },
+        {
+          "form": "defdelegate",
+          "sites": 94,
+          "files": 22
+        },
+        {
+          "form": "defguard",
+          "sites": 65,
+          "files": 12
+        },
+        {
+          "form": "defprotocol",
+          "sites": 24,
+          "files": 16
+        },
+        {
+          "form": "@macrocallback",
+          "sites": 19,
+          "files": 8
+        },
+        {
+          "form": "@opaque",
+          "sites": 14,
+          "files": 8
+        }
+      ],
+      "emittedEdges": 5076,
+      "emittedFiles": 420,
+      "edgesMinusSites": -2855,
+      "sitesWithNoExportEdgeOnLineByForm": [
+        {
+          "form": "def",
+          "count": 1685
+        },
+        {
+          "form": "defmodule",
+          "count": 715
+        },
+        {
+          "form": "defstruct",
+          "count": 123
+        },
+        {
+          "form": "@type",
+          "count": 120
+        },
+        {
+          "form": "defimpl",
+          "count": 106
+        },
+        {
+          "form": "defmacro",
+          "count": 50
+        },
+        {
+          "form": "@callback",
+          "count": 18
+        },
+        {
+          "form": "defprotocol",
+          "count": 12
+        },
+        {
+          "form": "defguard",
+          "count": 8
+        },
+        {
+          "form": "@macrocallback",
+          "count": 6
+        },
+        {
+          "form": "defdelegate",
+          "count": 1
+        }
+      ],
+      "gapByReason": [
+        {
+          "reason": "merged-multi-clause (EX-D16: one symbol, start line of the FIRST clause)",
+          "count": 2082,
+          "samples": [
+            "lib/eex/lib/eex.ex:163 def ",
+            "lib/eex/lib/eex.ex:208 def ",
+            "lib/eex/lib/eex/compiler.ex:20 def ",
+            "lib/eex/lib/eex/engine.ex:84 def init"
+          ]
+        },
+        {
+          "reason": "declaration-symbol-is-ownerless (nothing to publish it under)",
+          "count": 762,
+          "samples": [
+            "lib/compiler/scripts/smoke-mix.exs:21 defmodule Smoke.MixProject",
+            "lib/eex/lib/eex.ex:5 defmodule EEx.SyntaxError",
+            "lib/eex/lib/eex.ex:17 defmodule EEx",
+            "lib/eex/lib/eex/compiler.ex:5 defmodule EEx.Compiler"
+          ]
+        }
+      ],
+      "privateControl": {
+        "sites": 7959,
+        "files": 348,
+        "note": "defp/defmacrop/defguardp/@typep — the falsifier: an is-it-a-function rule would publish these"
+      }
+    }
+  }
+}

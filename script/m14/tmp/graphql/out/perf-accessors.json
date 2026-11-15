@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-10-05T10:05:42.883Z",
+  "file": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js/benchmark/github-schema.graphql",
+  "lines": 20368,
+  "facts": 10673,
+  "counts": {
+    "namedChildCount": 0,
+    "namedChild": 3311,
+    "child": 6373,
+    "childCount": 0,
+    "type": 41558,
+    "endPosition": 6484,
+    "endIndex": 21422,
+    "text": 18180,
+    "namedChildren": 54160
+  },
+  "baselineCounts": {
+    "namedChildCount": 93956,
+    "namedChild": 92276,
+    "child": 6373,
+    "childCount": 0,
+    "type": 99735,
+    "endPosition": 6484,
+    "endIndex": 21425,
+    "text": 18183,
+    "namedChildren": 0
+  },
+  "namedChildCountCalls": 0,
+  "namedChildCalls": 3311,
+  "namedChildrenCalls": 54160,
+  "totalAccessorCalls": 151488,
+  "baselineTotalAccessorCalls": 338432
+}

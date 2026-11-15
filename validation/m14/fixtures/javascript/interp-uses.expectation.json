@@ -1,0 +1,26 @@
+{
+  "fixtureId": "javascript/interp-uses",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS template-literal interpolation Uses (gap J3, TS T3 / kotlin K4 / scala G4 analog). `hi ${name} x${count + 1}` reads name and count inside greet — expression-level Uses. Pre-fix: no Uses edges for interpolated identifiers.",
+  "expectSymbols": [
+    {
+      "name": "greet",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "greet\u0000name",
+      "meta.isTemplateInterpolation": true
+    },
+    {
+      "type": "uses",
+      "from": "greet",
+      "target": "greet\u0000count",
+      "meta.isTemplateInterpolation": true
+    }
+  ]
+}

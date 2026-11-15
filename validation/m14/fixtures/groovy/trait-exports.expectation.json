@@ -1,0 +1,16 @@
+{
+  "fixtureId": "groovy/trait-exports",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the M49 JVM-closure exports ruling (importable units only; G3 member half REVERSED — see reviews/jvm-closure-audit.md): only the top-level trait Greeter exports; the member greet rides Contains, never exports. (Supersedes the JAD3-parity revision of this fixture.)",
+  "expectSymbols": [
+    { "name": "Greeter", "kind": "interface" },
+    { "name": "greet", "kind": "method", "ownerName": "Greeter" }
+  ],
+  "expectExports": [
+    { "name": "Greeter" }
+  ],
+  "forbidExports": [
+    { "name": "greet" }
+  ]
+}

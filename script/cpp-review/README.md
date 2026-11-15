@@ -5,7 +5,7 @@ one of these. They are probes, not gates: they are how a claim was measured, kep
 claim can be re-measured rather than taken on trust. A finding nobody can re-run is a
 claim.
 
-All of them honour `BB_CORPUS_ROOT` (default `$HOME/ishaq/fixtures/repositories`) and
+All of them honour `BB_CORPUS_ROOT` (default `/home/sano/ishaq/bb_tests/repositories`) and
 `CPP_REPOS` (default `fmt,nlohmann-json,catch2,abseil-cpp,spdlog,zig` — 1,722 C++ files).
 
 | probe | what it answers |

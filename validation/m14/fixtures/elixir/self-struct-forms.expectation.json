@@ -1,0 +1,135 @@
+{
+  "expectSymbols": [
+    {
+      "name": "SelfStruct",
+      "kind": "module"
+    },
+    {
+      "name": "SelfStruct",
+      "kind": "struct",
+      "ownerName": "SelfStruct"
+    },
+    {
+      "name": "name",
+      "kind": "property",
+      "ownerName": "SelfStruct"
+    },
+    {
+      "name": "build",
+      "kind": "function",
+      "ownerName": "SelfStruct"
+    },
+    {
+      "name": "Outer",
+      "kind": "module"
+    },
+    {
+      "name": "Outer.Inner",
+      "kind": "module"
+    },
+    {
+      "name": "Outer.Inner",
+      "kind": "struct",
+      "ownerName": "Outer.Inner"
+    },
+    {
+      "name": "v",
+      "kind": "property",
+      "ownerName": "Outer.Inner"
+    },
+    {
+      "name": "make",
+      "kind": "function",
+      "ownerName": "Outer.Inner"
+    },
+    {
+      "name": "SelfTestScope",
+      "kind": "module"
+    },
+    {
+      "name": "SelfTestScope",
+      "kind": "struct",
+      "ownerName": "SelfTestScope"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "SelfTestScope"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "SelfStruct",
+      "kind": "struct",
+      "equals": 1
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "SelfStruct",
+      "kind": "module"
+    },
+    {
+      "name": "Outer",
+      "kind": "module"
+    },
+    {
+      "name": "Outer.Inner",
+      "kind": "module"
+    },
+    {
+      "name": "SelfTestScope",
+      "kind": "module"
+    }
+  ],
+  "forbidExports": [
+    {
+      "name": "SelfStruct",
+      "kind": "struct"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "from": "SelfStruct.build/0",
+      "target": "SelfStruct"
+    },
+    {
+      "type": "instantiates",
+      "from": "Outer.Inner.make/0",
+      "target": "Outer.Inner"
+    },
+    {
+      "type": "instantiates",
+      "from": "SelfTestScope",
+      "target": "Other"
+    },
+    {
+      "type": "contains",
+      "from": "SelfStruct",
+      "target": "name"
+    },
+    {
+      "type": "contains",
+      "from": "Outer.Inner",
+      "target": "v"
+    },
+    {
+      "type": "contains",
+      "from": "SelfTestScope",
+      "target": "id"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "Inner.make",
+      "target": "Outer"
+    },
+    {
+      "type": "instantiates",
+      "from": "SelfTestScope",
+      "target": "SelfTestScope"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "fixtureId": "groovy/pure-field-chain",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANTI-SKIP GUARANTEE for pure field chains: every segment must appear as a target. Verified behavior 2026-08-23; text-split vs grammar-fields rewrite remains open hardening.",
+  "expectSymbols": [
+    { "name": "Render", "kind": "class" },
+    { "name": "label" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "targetEndsWith": "server" },
+    { "type": "uses", "targetEndsWith": "host" }
+  ]
+}

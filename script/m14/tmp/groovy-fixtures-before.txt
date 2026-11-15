@@ -1,0 +1,154 @@
+
+SCOPED run (groovy of 48 lanes): results are printed here and NO evidence is written — the canonical validation/m14/results/M14.0.F3.json is NOT touched, and --update-baseline is refused, because either would shrink the milestone's claim to the lanes this run covered.
+PASS  groovy/annotation-type
+PASS  groovy/anon-exports
+FAIL  groovy/anonymous-body-overrides
+      - expected relationship not found: {"type":"overrides","from":"anonymous_TypeCodec.bsonType","target":"bsonType","line_number":23,"confidenceMin":0.9,"comment":"the defect: the anonymous body's method overrides the CONSTRUCTED type's member. confidenceMin 0.9 is load-bearing — a fix that left the hierarchy entry out and relied on the tier-3 first-parent guess would emit this row at 0.5, and the pin must see the difference.","meta.overriddenOwner":"TypeCodec"}
+      - expected relationship not found: {"type":"contains","from":"anonymous_TypeCodec","target":"bsonType","line_number":23}
+      - expected relationship not found: {"type":"overrides","from":"Registry.bsonType","target":"bsonType","line_number":27,"comment":"control: the named subclass's own override (same pass, same file) is unchanged","meta.overriddenOwner":"BaseCodec"}
+PASS  groovy/anonymous-field-member
+PASS  groovy/anonymous-type-owner
+PASS  groovy/array-access-uses
+FAIL  groovy/as-cast
+      - expected relationship not found: {"type":"references","from":"run","target":"String","meta.relationshipType":"cast_type"}
+      - expected relationship not found: {"type":"references","from":"run","target":"Set","meta.relationshipType":"cast_type"}
+PASS  groovy/assert-comma-841
+FAIL  groovy/attribution-visibility
+      - expected relationship not found: {"type":"references","source":"Svc","target":"Cfg","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","source":"greet","target":"String","meta.relationshipType":"return_type"}
+FAIL  groovy/cast-types
+      - expected relationship not found: {"type":"references","from":"run","target":"String","meta.relationshipType":"cast_type"}
+      - expected relationship not found: {"type":"references","from":"run","target":"List","meta.relationshipType":"cast_type"}
+PASS  groovy/chained-field-access
+FAIL  groovy/class-body-dot-continuation-841
+      - expected relationship not found: {"type":"references","from":"Cfg","target":"Path","line_number":9,"meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","from":"Cfg","target":"Builder","line_number":17,"meta.relationshipType":"declared_type","note":"PRE-FIX this edge existed but with source `(script)` and meta.declaredOn `local_variable_declaration` — a field read as a local"}
+PASS  groovy/class-decorators
+PASS  groovy/closure-and-typedef
+PASS  groovy/complexity-parity
+PASS  groovy/contains-edges
+PASS  groovy/continuation-shapes-851
+PASS  groovy/ctor-delegation
+FAIL  groovy/ctor-field-split-lines
+      - expected symbol not found: {"name":"Split","kind":"constructor","ownerName":"Split"}
+      - expected relationship not found: {"type":"contains","from":"Split","target":"Split","line_number":19,"meta.isContained":true}
+FAIL  groovy/ctor-identity
+      - expected symbol not found: {"name":"Alpha","kind":"constructor","ownerName":"Alpha"}
+      - expected symbol not found: {"name":"Beta","kind":"constructor","ownerName":"Beta"}
+      - forbidden symbol present: {"name":"constructor"} (found constructor:constructor)
+PASS  groovy/default-package-unit
+PASS  groovy/degraded-class-recovery-841
+FAIL  groovy/duplicate-parse-field
+      - expected symbol not found: {"name":"Split","kind":"constructor","ownerName":"Split"}
+      - expected relationship not found: {"type":"contains","from":"Split","target":"Split","line_number":24,"meta.isContained":true}
+PASS  groovy/empty-name-refusal
+PASS  groovy/enum-constants
+PASS  groovy/exports-no-package
+PASS  groovy/exports-publication-edge
+FAIL  groovy/exports-publication
+      - expected export not found: {"name":"scriptHelper"}
+      - expected export not found: {"name":"otherHelper"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"Publisher","meta.relationshipType":"exported_type","meta.kind":"class","meta.evidenceClass":"structural","confidenceMin":1}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"Greeter","meta.relationshipType":"exported_type","meta.kind":"interface"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"Shade","meta.relationshipType":"exported_type","meta.kind":"enum"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"scriptHelper","meta.relationshipType":"exported_function","meta.dottedName":"com.acme.pub.scriptHelper"}
+      - expected relationship not found: {"type":"exports","source":"com.acme.pub","target":"otherHelper","meta.relationshipType":"exported_function"}
+      - forbidden relationship present: {"type":"exports","target":"Hidden"} (found exports[com.acme.pub->Hidden]@0.6)
+      - forbidden relationship present: {"type":"exports","target":"Shielded"} (found exports[com.acme.pub->Shielded]@0.6)
+PASS  groovy/field-decorators
+FAIL  groovy/fq-annotations
+      - expected relationship not found: {"type":"overrides","from":"FqService.render","targetEndsWith":"Base.render"}
+PASS  groovy/fqn-extends
+PASS  groovy/fqn-implements
+PASS  groovy/fqn-instantiation
+PASS  groovy/framework-annotations-only
+PASS  groovy/framework-imports
+PASS  groovy/generic-visibility-payload
+FAIL  groovy/grammar-rebuild-constructs
+      - expected relationship not found: {"type":"calls","from":"Rebuilt","target":"super"}
+      - expected relationship not found: {"type":"references","from":"convert","target":"String","meta.relationshipType":"cast_type"}
+PASS  groovy/grammar-residuals-841
+PASS  groovy/grammar-round3-841
+PASS  groovy/groovydoc-payload
+PASS  groovy/gstring-interpolation
+PASS  groovy/heritage-typeargs-strip
+PASS  groovy/identity-operators-841
+PASS  groovy/implicit-override
+PASS  groovy/import-edges
+FAIL  groovy/imports-dependency-edge
+      - expected relationship not found: {"type":"imports","source":"com.acme.dep","target":"java.util.List","line_number":3,"meta.relationshipType":"single_type_import","meta.fileLevel":true,"meta.isGroovyImport":true,"meta.isStatic":false,"meta.isWildcard":false,"meta.evidenceClass":"import_based","confidenceMin":1}
+      - expected relationship not found: {"type":"imports","source":"com.acme.dep","target":"java.util.Map","line_number":4,"meta.relationshipType":"type_on_demand_import","meta.fileLevel":true,"meta.isWildcard":true,"meta.isStatic":false,"meta.evidenceClass":"import_based"}
+      - expected relationship not found: {"type":"imports","source":"com.acme.dep","target":"java.util.Collections.sort","line_number":5,"meta.relationshipType":"static_member_import","meta.fileLevel":true,"meta.isWildcard":false,"meta.isStatic":true,"meta.evidenceClass":"import_based"}
+      - expected relationship not found: {"type":"imports","source":"com.acme.dep","target":"groovy.transform.CompileStatic","line_number":6,"meta.relationshipType":"single_type_import","meta.fileLevel":true,"meta.isWildcard":false,"meta.isStatic":false,"meta.evidenceClass":"import_based"}
+      - forbidden relationship present: {"type":"imports","source":"Dep","note":"sourcing the dependency at the primary type resolves source_symbol_id, so parallel-indexer never writes source_external and bb_graph's file-level dependencies query cannot return it"} (found imports[Dep->java.util.List]@0.9)
+PASS  groovy/imports-dependency
+PASS  groovy/indexing-write-gate
+PASS  groovy/interface-multi-extends
+PASS  groovy/interpolation-reads-g7
+PASS  groovy/keyword-named-args-841
+FAIL  groovy/lambda-expression
+      - expected relationship not found: {"type":"references","from":"run","target":"String","line_number":25,"comment":"the lambda's typed parameter is a reference at the lambda's line"}
+PASS  groovy/line-continuation-841
+FAIL  groovy/lines-825
+      - expected Wrapped range startLine=19; got 18 (full: {"startLine":18,"startColumn":1,"endLine":32,"endColumn":2,"startIndex":185,"endIndex":436})
+      - expected relationship not found: {"type":"contains","from":"Wrapped","target":"use","line_number":26}
+      - expected relationship not found: {"type":"overrides","from":"Wrapped.use","target":"use","line_number":26,"meta.overriddenOwner":"Plain"}
+      - expected relationship not found: {"type":"references","from":"Wrapped","target":"String","line_number":23}
+      - forbidden relationship present: {"type":"contains","from":"Wrapped","target":"use","line_number":25,"note":"pre-fix: the `@Deprecated` line; the method is written on 26"} (found contains[Wrapped->use]@1)
+      - forbidden relationship present: {"type":"overrides","from":"Wrapped.use","target":"use","line_number":25,"note":"pre-fix: the override attributed to its `@Deprecated` annotation","meta.overriddenOwner":"Plain"} (found overrides[Wrapped.use->use]@1)
+FAIL  groovy/method-refs
+      - expected relationship not found: {"type":"references","from":"run","target":"Foo","meta.relationshipType":"method_reference"}
+FAIL  groovy/multicatch-and-varargs
+      - expected relationship not found: {"type":"references","target":"IOException","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","target":"SQLException","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","target":"Exception","meta.relationshipType":"declared_type"}
+PASS  groovy/multihop-override-resolution
+PASS  groovy/multiple-assignment-841
+PASS  groovy/numeric-suffixes-841
+PASS  groovy/override-fallback-confidence
+PASS  groovy/override-key-parameter-lists
+PASS  groovy/overrides
+FAIL  groovy/parameters-payload
+      - expectParameters: symbol Holder in Holder not found
+FAIL  groovy/pattern-refs
+      - expected relationship not found: {"type":"references","from":"describe","target":"Point","meta.relationshipType":"instanceof_expression"}
+      - expected relationship not found: {"type":"references","from":"describe","target":"String","meta.relationshipType":"instanceof_expression"}
+      - expected relationship not found: {"type":"references","from":"pick","target":"Point","meta.relationshipType":"case_pattern"}
+PASS  groovy/pure-field-chain
+PASS  groovy/qualified-call-path
+PASS  groovy/qualified-calls-payload
+PASS  groovy/quoted-callee-paren-call-841
+PASS  groovy/receiver-not-a-name
+PASS  groovy/record-symbol
+PASS  groovy/reserved-key-map-items-850
+PASS  groovy/safe-nav-chain
+FAIL  groovy/scoped-type-recovery-refusal
+      - expected relationship not found: {"type":"references","source":"(script)","target":"Integer","line_number":8,"meta.relationshipType":"declared_type","meta.declaredOn":"formal_parameter","note":"the ONE type actually written in the file, still published — the refusal must not take a well-formed name with it"}
+FAIL  groovy/scoped-type-references
+      - expected relationship not found: {"type":"references","source":"Fields","target":"String","line_number":10,"meta.relationshipType":"declared_type","note":"type ARGUMENTS are types in their own right and must keep being emitted"}
+      - expected relationship not found: {"type":"references","source":"Fields","target":"Boolean","line_number":10,"meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","source":"make","target":"Outer.Criterion","line_number":12,"meta.relationshipType":"return_type"}
+      - expected relationship not found: {"type":"references","source":"make","target":"Outer.Criterion","line_number":12,"meta.relationshipType":"declared_type","meta.declaredOn":"formal_parameter"}
+      - expected relationship not found: {"type":"references","source":"make","target":"Outer.Criterion","line_number":13,"meta.relationshipType":"declared_type","meta.declaredOn":"local_variable_declaration"}
+      - expected relationship not found: {"type":"references","source":"make","target":"Outer.Projection","line_number":14,"meta.relationshipType":"cast_type","meta.declaredOn":"binary_expression","note":"`as` coercion: the as-type node is reached through the same collector. declaredOn is the NODE KIND the type is declared on — groovy's as-coercion IS a binary_expression in the pinned grammar (probe-verified: binary_expression{left: identifier, operator: `as`, type: scoped_type_identifier}) — matching how the field/local positions report field_declaration / local_variable_declaration. AUTHORING CORRECTION: this want first said `as_cast`, which is the marker the lane's inert PRE-#742-rebuild branch emits (that branch is kept only for an older wasm and never runs against the shipped grammar). The analyzer was right and the expectation was wrong; the measured value is pinned instead, so the fixture records the live node kind rather than a marker from dead code."}
+PASS  groovy/script-methods
+PASS  groovy/static-import-flag
+PASS  groovy/trait-exports
+PASS  groovy/trait-implements
+FAIL  groovy/type-usage-graph
+      - expected relationship not found: {"type":"references","target":"List","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","target":"String","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","from":"m2","target":"Map","meta.relationshipType":"return_type","comment":"KAD6: return-type refs carry return_type (pre-fix: declared_type mislabel) and source to m2 (pre-fix: TypeGraph)"}
+      - expected relationship not found: {"type":"references","target":"Integer","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","target":"IOException","meta.relationshipType":"throws_type"}
+      - expected relationship not found: {"type":"references","target":"Set","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","target":"Number","meta.relationshipType":"declared_type"}
+      - expected relationship not found: {"type":"references","target":"List","meta.relationshipType":"instanceof_expression"}
+PASS  groovy/typed-closure-params-841
+PASS  groovy/value-position-types-841
+
+summary: {"groovy":{"pass":60,"fail":21}}
+(baseline gate covers only the 1 lane(s) this scoped run selected; a full run is the milestone's gate)
+fixture baseline gate: no regressions
+
+21 fixture(s) FAIL — these are honest defect findings, not harness errors

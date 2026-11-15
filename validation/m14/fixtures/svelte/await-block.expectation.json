@@ -1,0 +1,7 @@
+{
+  "fixtureId": "svelte/await-block",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "{#await} block with then/catch must not crash or produce garbage symbols.",
+  "expectSymbols": []
+}

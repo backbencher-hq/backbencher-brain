@@ -1,0 +1,51 @@
+{
+  "expectSymbols": [
+    {
+      "name": "Documented",
+      "kind": "module",
+      "docstring": "Module docs."
+    },
+    {
+      "name": "add",
+      "kind": "function",
+      "ownerName": "Documented",
+      "docstring": "Adds things."
+    },
+    {
+      "name": "hidden",
+      "kind": "function",
+      "ownerName": "Documented"
+    },
+    {
+      "name": "multi",
+      "kind": "function",
+      "ownerName": "Documented",
+      "docstring": "First."
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "Documented",
+      "contains": "Module docs."
+    },
+    {
+      "symbol": "add",
+      "contains": "Adds things."
+    },
+    {
+      "symbol": "hidden",
+      "notContains": "Stale?"
+    },
+    {
+      "symbol": "multi",
+      "contains": "First."
+    }
+  ],
+  "expectExports": [
+    {
+      "name": "Documented",
+      "kind": "module"
+    }
+  ],
+  "note": " EX-PAYLOAD pin (2026-09-28): the ruled `docstring` channel is asserted alongside `comments` (mutant elixir/docstring-channel-dropped survived before this) \u2014 the M60 doc channel is a payload, not a comment alias, and only one of the two was held."
+}

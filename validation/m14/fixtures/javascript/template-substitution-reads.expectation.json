@@ -1,0 +1,73 @@
+{
+  "fixtureId": "javascript/template-substitution-reads",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W4 (ledger J6, rotated-sample finding), HALF REVERSED by X1 on 2026-09-27. The original ruling forbade BOTH `uses fn` and `uses obj` for `${fn(source)}` / `${obj.m(source)}`, citing five corpus edges the F5 truth refused, and justifying the receiver half with 'a receiver belongs to that callee'. The bare-callee half STANDS: `uses fn` is correctly forbidden, because `calls fn` names it and the template walk's callee gate is sound. The receiver half is REVERSED. Its only evidence was the oracle's refusal, and X1 established that the refusal is a SHARED PREMISE, not a verdict: both sides implemented 'a receiver belongs to that callee', so the differential agreed with itself and reported 100% while naming no receiver at all. A receiver is a read in its own right - `obj.m(x)` cannot execute without reading `obj` - and `calls` names only the leaf, so with the receiver forbid in force the edge was named by NOTHING. The oracle now derives the receiver on the callee branch (script/m14/differential.ts, the `else if (isCallee && !isWrite)` branch), and the two implementations now agree on the receiver for the same reason they previously agreed on omitting it. No `meta.isTemplateInterpolation` is expected on `uses obj`: that flag marks a SUBSTITUTED identifier, and the receiver is read by the member chain, not substituted. `uses label` must remain exactly ONE edge (TS TSD28: 'Uses only, singular'). Two mutants: javascript/template-callee-uses (re-adds the bare-callee fabrication), javascript/template-read-duplicate (re-adds the pre-TSD28 double emission).",
+  "expectSymbols": [
+    {
+      "name": "fn",
+      "kind": "function"
+    },
+    {
+      "name": "render",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "render\u0000label",
+      "meta.isTemplateInterpolation": true
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "render\u0000source",
+      "meta.isTemplateInterpolation": true
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "b"
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "fn"
+    },
+    {
+      "type": "calls",
+      "from": "render",
+      "target": "m"
+    },
+    {
+      "type": "uses",
+      "from": "render",
+      "target": "obj"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "fn"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "target": "render\u0000label",
+      "equals": 1
+    },
+    {
+      "type": "uses",
+      "target": "fn",
+      "equals": 0
+    },
+    {
+      "type": "uses",
+      "target": "obj",
+      "equals": 1
+    }
+  ]
+}

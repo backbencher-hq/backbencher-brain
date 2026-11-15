@@ -37,7 +37,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 import { deriveErlangExportsTruth, ERLANG_ORACLE_LABELS } from "./oracles/erlang-exports-imports"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 // Overloads: a flag read WITH a default always yields a string, and the single
 // `string | undefined` signature could not say so — `--repos` then had to be treated as

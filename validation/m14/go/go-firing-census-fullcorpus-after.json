@@ -4,7 +4,7 @@
   "subject": "src/ast/real-go-analyzer.ts",
   "subjectCommit": "unrecorded",
   "corpus": {
-    "root": "$HOME/fixtures/repositories/go-stdlib",
+    "root": "/home/ishaq2321/bb_tests/repositories/go-stdlib",
     "allGoFiles": 9447,
     "libraryGoFiles": 7578,
     "testGoFiles": 1869,
@@ -14,7 +14,7 @@
   "firedCheckScriptUsed": "reimplemented; script/m14/firing-check.mjs hardcodes the main checkout path and samples 12 files",
   "result": {
     "label": "go-stdlib stride sample",
-    "corpusRoot": "$HOME/fixtures/repositories/go-stdlib",
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories/go-stdlib",
     "wanted": 12000,
     "filesOffered": 9447,
     "filesParsed": 9447,

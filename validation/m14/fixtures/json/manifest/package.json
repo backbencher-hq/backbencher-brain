@@ -1,0 +1,26 @@
+{
+  "name": "fixture-manifest",
+  "version": "0.0.0",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./sub": "./sub.js"
+  },
+  "bin": {
+    "fixture-bin": "./cli.js"
+  },
+  "dependencies": {
+    "left-pad": "^1.3.0"
+  },
+  "scripts": {
+    "pretest": "npm run compile",
+    "compile": "tsc -p .",
+    "lint": "eslint .",
+    "test:smoke": "npm run compile && npm run lint",
+    "external": "npm run not-declared-here",
+    "selfref": "npm run selfref",
+    "quoted": "npm run \"compile\"",
+    "notarunner": "npx run compile",
+    "pathrunner": "./scripts/npm run compile"
+  }
+}

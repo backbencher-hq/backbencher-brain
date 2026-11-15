@@ -1,0 +1,1 @@
+{"gate":"m20-parameter-scan","command":"bun run script/m20/verify-patterns-parameter-scan.ts","exitCode":0,"durationMs":4803,"logSha256":"0bfdcadc91319770e1b8e0d2ff0ad1a706189ae8908fec475f3a5b2ff7f6585a","log":"validation/tools/bb_patterns/gates/logs/m20-parameter-scan.log","recordedAt":"2026-11-03T04:19:49Z"}

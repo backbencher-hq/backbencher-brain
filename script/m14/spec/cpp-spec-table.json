@@ -2089,9 +2089,9 @@
          "unresolved": 239368,
          "ambiguous": 374713,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:33: free [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:39: malloc [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:40: memcpy [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:33: free [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:39: malloc [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:40: memcpy [unresolved]"
          ]
         },
         {
@@ -2100,9 +2100,9 @@
          "unresolved": 83070,
          "ambiguous": 30250,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/main.cc:5: G_APPLICATION [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:15: G_DEFINE_TYPE [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:19: MY_APPLICATION [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/main.cc:5: G_APPLICATION [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:15: G_DEFINE_TYPE [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:19: MY_APPLICATION [unresolved]"
          ]
         },
         {
@@ -2111,9 +2111,9 @@
          "unresolved": 105,
          "ambiguous": 4,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/heap/marker.cc:1108: ~GCMarker [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:414: ~STATE [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/include/core_functions/aggregate/quantile_state.hpp:79: ~STATE [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/heap/marker.cc:1108: ~GCMarker [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:414: ~STATE [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/include/core_functions/aggregate/quantile_state.hpp:79: ~STATE [unresolved]"
          ]
         },
         {
@@ -2122,9 +2122,9 @@
          "unresolved": 2,
          "ambiguous": 2,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/ska_sort/ska_sort.hpp:119: int32_t [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/ska_sort/ska_sort.hpp:129: int64_t [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/docs/mkdocs/docs/examples/value__return_type.cpp:12: uint64_t [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/third_party/ska_sort/ska_sort.hpp:119: int32_t [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/third_party/ska_sort/ska_sort.hpp:129: int64_t [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/nlohmann-json/docs/mkdocs/docs/examples/value__return_type.cpp:12: uint64_t [unresolved]"
          ]
         }
        ]
@@ -2139,9 +2139,9 @@
          "unresolved": 22441,
          "ambiguous": 58883,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:33: second [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:46: second [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:65: first [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:33: second [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:46: second [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:65: first [unresolved]"
          ]
         },
         {
@@ -2150,9 +2150,9 @@
          "unresolved": 345,
          "ambiguous": 672,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:472: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:486: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:511: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:472: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:486: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/main_options.cc:511: DEFAULT_VM_SERVICE_SERVER_IP [ambDeclOnly]"
          ]
         },
         {
@@ -2161,9 +2161,9 @@
          "unresolved": 2,
          "ambiguous": 26,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/parquet/read_single_parquet_file.cpp:414: operator_metrics [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/common/multi_file/table_function_multi_file.cpp:752: operator_metrics [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/execution/operator/set/physical_recursive_cte_state.cpp:300: operator_type [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/parquet/read_single_parquet_file.cpp:414: operator_metrics [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/common/multi_file/table_function_multi_file.cpp:752: operator_metrics [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/execution/operator/set/physical_recursive_cte_state.cpp:300: operator_type [ambDeclOnly]"
          ]
         },
         {
@@ -2172,9 +2172,9 @@
          "unresolved": 2,
          "ambiguous": 2,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/vector/vector_writer.hpp:378: ~VectorWriter [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/vector/vector_writer.hpp:395: ~VectorWriter [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/pb-reference/src/google/protobuf/dynamic_message.cc:715: ~RepeatedField [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/vector/vector_writer.hpp:378: ~VectorWriter [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/vector/vector_writer.hpp:395: ~VectorWriter [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/pb-reference/src/google/protobuf/dynamic_message.cc:715: ~RepeatedField [unresolved]"
          ]
         },
         {
@@ -2183,7 +2183,7 @@
          "unresolved": 1,
          "ambiguous": 0,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/pb-reference/src/google/protobuf/repeated_field_unittest.cc:186: Robber::soo_rep_ [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/pb-reference/src/google/protobuf/repeated_field_unittest.cc:186: Robber::soo_rep_ [unresolved]"
          ]
         }
        ]
@@ -2198,9 +2198,9 @@
          "unresolved": 39291,
          "ambiguous": 0,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/cython/Cython/Utility/CppSupport.cpp:91: boost/optional.hpp [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:3: flutter_linux/flutter_linux.h [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:5: gdk/gdkx.h [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cython/Cython/Utility/CppSupport.cpp:91: boost/optional.hpp [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:3: flutter_linux/flutter_linux.h [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-http/pkgs/flutter_http_example/linux/my_application.cc:5: gdk/gdkx.h [unresolved]"
          ]
         },
         {
@@ -2209,9 +2209,9 @@
          "unresolved": 11085,
          "ambiguous": 539,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Communicator/Communicator.cxx:1: Communicator.h [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:1: cstdlib [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:2: iostream [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Communicator/Communicator.cxx:1: Communicator.h [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:1: cstdlib [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:2: iostream [unresolved]"
          ]
         }
        ]
@@ -2226,9 +2226,9 @@
          "unresolved": 2770,
          "ambiguous": 0,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/elf_loader.cc:422: dart::bin::elf [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:546: dart::bin::mach_o [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/platform_win.cc:30: Microsoft::WRL::ComPtr [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/elf_loader.cc:422: dart::bin::elf [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:546: dart::bin::mach_o [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/platform_win.cc:30: Microsoft::WRL::ComPtr [unresolved]"
          ]
         },
         {
@@ -2237,9 +2237,9 @@
          "unresolved": 32,
          "ambiguous": 292,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Communicator/Communicator.cxx:3: std [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:5: std [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/regexp/regexp-compiler-tonode.cc:21: regexp_compiler_constants [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Communicator/Communicator.cxx:3: std [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/Fake/src/legacy/Samples/CMakeSupport/Advanced/Hello/main.cxx:5: std [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/regexp/regexp-compiler-tonode.cc:21: regexp_compiler_constants [unresolved]"
          ]
         },
         {
@@ -2248,9 +2248,9 @@
          "unresolved": 1,
          "ambiguous": 47,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/catch/catch.hpp:3422: Matchers [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/r-Rcpp/inst/examples/Attributes/Depends.cpp:6: Rcpp [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/r-Rcpp/inst/examples/Attributes/Export.cpp:4: Rcpp [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/third_party/catch/catch.hpp:3422: Matchers [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/r-Rcpp/inst/examples/Attributes/Depends.cpp:6: Rcpp [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/r-Rcpp/inst/examples/Attributes/Export.cpp:4: Rcpp [ambDeclOnly]"
          ]
         }
        ]
@@ -2265,9 +2265,9 @@
          "unresolved": 55,
          "ambiguous": 780,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/elf_loader.cc:487: DART_EXPORT [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/entrypoints_verification_test.cc:177: DART_EXPORT [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_dynamic_library.cc:17: DART_EXPORT [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/elf_loader.cc:487: DART_EXPORT [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/entrypoints_verification_test.cc:177: DART_EXPORT [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_dynamic_library.cc:17: DART_EXPORT [ambDeclOnly]"
          ]
         }
        ]
@@ -2282,9 +2282,9 @@
          "unresolved": 1284,
          "ambiguous": 510,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:28: ValueObject [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:57: ValueObject [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/platform_macos.cc:300: ValueObject [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:28: ValueObject [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/macho_loader.cc:57: ValueObject [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/platform_macos.cc:300: ValueObject [unresolved]"
          ]
         },
         {
@@ -2293,9 +2293,9 @@
          "unresolved": 67,
          "ambiguous": 112,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/cython/Cython/Utility/CppSupport.cpp:107: __Pyx_Optional_BaseType [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/function/window/window_boundaries_state.cpp:179: function [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/compatible_with_ipp.hpp:21: is_same [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cython/Cython/Utility/CppSupport.cpp:107: __Pyx_Optional_BaseType [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/function/window/window_boundaries_state.cpp:179: function [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/compatible_with_ipp.hpp:21: is_same [unresolved]"
          ]
         },
         {
@@ -2304,9 +2304,9 @@
          "unresolved": 41,
          "ambiguous": 3,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/distributive/sum.cpp:48: BASE [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/parallel/scan_read_ahead.hpp:86: JOB_STATE [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/meta/type_traits.hpp:280: B [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/distributive/sum.cpp:48: BASE [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/parallel/scan_read_ahead.hpp:86: JOB_STATE [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/meta/type_traits.hpp:280: B [ambDeclOnly]"
          ]
         }
        ]
@@ -2321,9 +2321,9 @@
          "unresolved": 0,
          "ambiguous": 71,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1079: DeserializationCluster [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1265: DeserializationCluster [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1418: DeserializationCluster [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1079: DeserializationCluster [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1265: DeserializationCluster [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1418: DeserializationCluster [ambDeclOnly]"
          ]
         },
         {
@@ -2332,9 +2332,9 @@
          "unresolved": 0,
          "ambiguous": 9,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:49: output_adapter_protocol [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:74: output_adapter_protocol [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:99: output_adapter_protocol [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:49: output_adapter_protocol [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:74: output_adapter_protocol [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/nlohmann-json/include/nlohmann/detail/output/output_adapters.hpp:99: output_adapter_protocol [ambDeclOnly]"
          ]
         }
        ]
@@ -2349,9 +2349,9 @@
          "unresolved": 0,
          "ambiguous": 1845,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1008: Trace [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1021: WriteAlloc [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1030: WriteFill [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1008: Trace [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1021: WriteAlloc [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/vm/app_snapshot.cc:1030: WriteFill [ambDeclOnly]"
          ]
         },
         {
@@ -2360,9 +2360,9 @@
          "unresolved": 0,
          "ambiguous": 39,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/extra_type_info.hpp:171: operator= [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/third_party/catch/catch.hpp:5553: operator= [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/tools/cpp/duckdb_cpp.hpp:354: operator= [ambBoth]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/src/include/duckdb/common/extra_type_info.hpp:171: operator= [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/third_party/catch/catch.hpp:5553: operator= [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/tools/cpp/duckdb_cpp.hpp:354: operator= [ambBoth]"
          ]
         }
        ]
@@ -2377,9 +2377,9 @@
          "unresolved": 1519,
          "ambiguous": 552,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:18: CostMatrix [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/analyze_snapshot.cc:196: IsolateGroupData [unresolved]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/dartdev.cc:146: IsolateData [unresolved]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/cabal/cabal-testsuite/PackageTests/Regression/T5309/memoized-tcm/costMatrix.cpp:18: CostMatrix [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/analyze_snapshot.cc:196: IsolateGroupData [unresolved]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/dartdev.cc:146: IsolateData [unresolved]"
          ]
         },
         {
@@ -2388,9 +2388,9 @@
          "unresolved": 240,
          "ambiguous": 40,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:155: thread [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:592: thread [ambBoth]",
-          "$HOME/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:593: thread [ambBoth]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:155: thread [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:592: thread [ambBoth]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/dart-sdk/runtime/bin/ffi_test/ffi_test_functions_vmspecific.cc:593: thread [ambBoth]"
          ]
         },
         {
@@ -2399,9 +2399,9 @@
          "unresolved": 13,
          "ambiguous": 4,
          "examples": [
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:110: MAP_TYPE [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:113: MAP_TYPE [ambDeclOnly]",
-          "$HOME/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:139: MAP_TYPE [ambDeclOnly]"
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:110: MAP_TYPE [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:113: MAP_TYPE [ambDeclOnly]",
+          "/home/ishaq2321/mcp/backbencher-brain/.corpus/duckdb/extension/core_functions/aggregate/holistic/mode.cpp:139: MAP_TYPE [ambDeclOnly]"
          ]
         }
        ]

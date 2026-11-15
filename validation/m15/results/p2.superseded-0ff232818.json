@@ -1,0 +1,17 @@
+{
+  "issue": "M15.P2",
+  "code": "P2",
+  "tool": "bb_patterns",
+  "title": "regex census",
+  "verified": true,
+  "checks": 1,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-08-23T17:16:42.659Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.339Z",
+    "contentSha256": "be473d80a061db7c1f8d2ed7a139e35c3d68da0b9d656c3dbe2156faf8862ca8"
+  }
+}

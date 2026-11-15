@@ -1,0 +1,63 @@
+{
+ "fixtureId": "python/literal-versus-computed",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-30/PY-32 \u2014 one rule read three ways, and every row was found by a MEASUREMENT rather than by an opinion. (1) An enum member's NAME is a declaration whatever its VALUE is: the analyzer filtered on the value's node type, so `pstats.SortKey` published 5 of its 9 members and lost 4 `contains` edges the independent oracle reported as supported by the tree \u2014 CPython's `pstats.SortKey.__members__` lists all nine, so `SortKey.CALLS` resolves and `contains SortKey -> CALLS` is a fact. The value here is an `expression_list`, not a `tuple`, and that is read off the tree: a bare comma-separated value with no parentheses is a different node. (2) `__all__ = 'a', 'b'` is the same declaration to `from mod import *` as the list spelling, and 9 of the 19 module-scope `__all__` sites across 678 corpus files used it and published nothing (`asyncio/coroutines.py`, `asyncio/subprocess.py`, and 7 more). (3) The other 10 declined sites are computed name sets \u2014 `+` concatenation, `+=` accumulation from another module's `__all__`, a parenthesized concatenation, and comprehensions over `dir()`/`globals()` \u2014 and the analyzer declines them rather than publish half a set. `forbid` on the computed shapes is the pin that keeps rule (3) from being widened by a later reader who sees (1) and (2) and assumes punctuation is all that separates them.",
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "source": "Colour",
+   "target": "SHADED",
+   "note": "the PY-30 row: the member's value is an `expression_list` and the member is still a declaration. CPython: `Colour.SHADED` resolves."
+  },
+  {
+   "type": "contains",
+   "source": "Colour",
+   "target": "PAIRED",
+   "note": "a list-valued enum member, same rule"
+  },
+  {
+   "type": "contains",
+   "source": "Colour",
+   "target": "BARE",
+   "note": "a bare comma-separated value, the exact shape pstats.SortKey uses"
+  },
+  {
+   "type": "contains",
+   "source": "Colour",
+   "target": "RED",
+   "note": "the shape that already worked, pinned so the widening cannot be mistaken for a replacement"
+  },
+  {
+   "type": "exports",
+   "source": "literal_versus_computed",
+   "target": "bare_one",
+   "note": "PY-32: `__all__` written without parentheses. `from literal_versus_computed import *` binds both names."
+  },
+  {
+   "type": "exports",
+   "source": "literal_versus_computed",
+   "target": "bare_two"
+  },
+  {
+   "type": "exports",
+   "source": "literal_versus_computed",
+   "target": "added_later",
+   "note": "`__all__ += [...]` \u2014 an augmented assignment over a LITERAL list of real names, published. This is how a module extends its own surface over several statements and every name in it is written in the source, so there is nothing computed to decline. Kept as an expect after the forbid that used to sit here was refuted by this fixture run itself."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "exports",
+   "source": "literal_versus_computed",
+   "target": "computed_from_another_name",
+   "note": "__all__ = list(__all__) + [\"...\"] \u2014 a `+` concatenation. The name set is COMPUTED at run time, so the analyzer declines it. This row was originally written against `__all__ += [\"added_later\"]` on the reasoning that an accumulation is a boundary; the fixture run refuted that in thirty seconds, because the analyzer DOES publish an augmented assignment (and the lane's own oracle handles it too). The forbid belongs on the concatenation, and the `+=` row is now an expect. A fixture that pins a boundary nobody checked is a boundary nobody checked."
+  },
+  {
+   "type": "exports",
+   "source": "literal_versus_computed",
+   "target": "declared_but_never_published",
+   "note": "__all__ = list(__all__) + [...] \u2014 a `+` concatenation, so the name set is COMPUTED at run time and the analyzer declines it. This row was originally written against `__all__ += [\"added_later\"]` on the reasoning that an accumulation is a boundary; the fixture run refuted that in thirty seconds, because the analyzer DOES publish an augmented assignment and the lane's own oracle handles it too. The forbid belongs on the concatenation and the `+=` row is now an expect. A fixture that pins a boundary nobody checked is a boundary nobody checked \u2014 including, on this run, one I wrote."
+  }
+ ]
+}

@@ -1,0 +1,205 @@
+{
+  "instrument": "xml resolvable-class census — the analyzer's own classes cross-tabulated against the GATE'S OWN RULE (classifyEdge imported from script/m14/incoming-rule.ts)",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "admittedExtensions": [
+      "xml",
+      "xsd",
+      "dtd",
+      "svg",
+      "xsl",
+      "xslt",
+      "rng"
+    ],
+    "admitted": 11552,
+    "walked": 11552,
+    "limit": 0,
+    "parsed": 11552,
+    "failed": 0,
+    "degraded": 0,
+    "admission": "git-tracked, <= 512 KiB, detectLanguageFromPath === 'xml'"
+  },
+  "control": {
+    "rule": "the no-claim column must reproduce script/m14/incoming-gate.ts's per-type table on this population (resolved / ambDecl / unresolved); a mismatch means this walk is not the gate's walk",
+    "baseline": {
+      "contains": {
+        "resolved": 188224,
+        "ambDeclOnly": 0,
+        "ambBoth": 0,
+        "unresolved": 0,
+        "externalVerified": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingUnverified": 0,
+        "bindingRefuted": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0
+      },
+      "references": {
+        "resolved": 997,
+        "ambDeclOnly": 7103,
+        "ambBoth": 479,
+        "unresolved": 2529,
+        "externalVerified": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingUnverified": 0,
+        "bindingRefuted": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0
+      },
+      "imports": {
+        "resolved": 2,
+        "ambDeclOnly": 0,
+        "ambBoth": 0,
+        "unresolved": 466,
+        "externalVerified": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingUnverified": 0,
+        "bindingRefuted": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0
+      }
+    },
+    "table": {
+      "contains": {
+        "edges": 188224,
+        "resolved": 188224,
+        "ambDecl": 0,
+        "unresolved": 0,
+        "externalVerified": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0
+      },
+      "references": {
+        "edges": 11108,
+        "resolved": 997,
+        "ambDecl": 7582,
+        "unresolved": 2529,
+        "externalVerified": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0
+      },
+      "imports": {
+        "edges": 468,
+        "resolved": 2,
+        "ambDecl": 0,
+        "unresolved": 466,
+        "externalVerified": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0
+      }
+    }
+  },
+  "crossTab": {
+    "contains": {
+      "(none)": {
+        "resolved": 188224
+      }
+    },
+    "references": {
+      "in-document": {
+        "ambDeclOnly": 4023,
+        "resolved": 787,
+        "ambBoth": 157
+      },
+      "unresolved": {
+        "ambDeclOnly": 15,
+        "unresolved": 12,
+        "ambBoth": 3
+      },
+      "builtin": {
+        "unresolved": 2517,
+        "ambBoth": 11,
+        "ambDeclOnly": 2816,
+        "resolved": 28
+      },
+      "external": {
+        "ambBoth": 308,
+        "ambDeclOnly": 249,
+        "resolved": 182
+      }
+    },
+    "imports": {
+      "external": {
+        "unresolved": 201
+      },
+      "file": {
+        "unresolved": 262,
+        "resolved": 2
+      },
+      "in-document": {
+        "unresolved": 3
+      }
+    }
+  },
+  "whatIf": {
+    "contains": {
+      "resolved": 5106,
+      "ambDeclOnly": 130384,
+      "ambBoth": 52734,
+      "unresolved": 0,
+      "externalVerified": 0,
+      "externalUnverified": 0,
+      "externalRefuted": 0,
+      "bindingVerified": 0,
+      "bindingUnverified": 0,
+      "bindingRefuted": 0,
+      "causeDeclared": 0,
+      "causeRefuted": 0
+    },
+    "references": {
+      "resolved": 997,
+      "ambDeclOnly": 7103,
+      "ambBoth": 479,
+      "unresolved": 12,
+      "externalVerified": 2517,
+      "externalUnverified": 0,
+      "externalRefuted": 0,
+      "bindingVerified": 0,
+      "bindingUnverified": 0,
+      "bindingRefuted": 0,
+      "causeDeclared": 0,
+      "causeRefuted": 0
+    },
+    "imports": {
+      "resolved": 2,
+      "ambDeclOnly": 0,
+      "ambBoth": 0,
+      "unresolved": 266,
+      "externalVerified": 0,
+      "externalUnverified": 200,
+      "externalRefuted": 0,
+      "bindingVerified": 0,
+      "bindingUnverified": 0,
+      "bindingRefuted": 0,
+      "causeDeclared": 0,
+      "causeRefuted": 0
+    }
+  },
+  "examples": {
+    "imports|external|externalUnverified": [
+      "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd",
+      "https://resources.jetbrains.com/writerside/1.0/build-script.dtd",
+      "https://helpserver.labs.jb.gg/help/schemas/mvp/redirection-rules.dtd",
+      "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd",
+      "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"
+    ]
+  },
+  "fileClaimProbe": {
+    "file_class_candidates_admitted": 205,
+    "file_class_candidates_absent": 59,
+    "file_class_no_candidate": 0,
+    "note": "priced only; an unadmitted candidate REFUTES a file claim, and extFAIL must be 0"
+  },
+  "mappingProposed": {
+    "references_builtin_external": "isExternalTarget (owner claim) — identifier targets, verified when undeclared, never refuted for path-like spellings",
+    "references_unresolved": "no claim: the analyzer's own X13 class states the file does not satisfy the reference; marking it external would assert a fact about the population that the analyzer did not measure",
+    "imports_remote": "isExternalTarget (owner claim) — a URI is path-like, so the honest outcome is externalUnverified, never a false verification",
+    "imports_file": "no claim unless the candidate is an admitted file — priced in fileClaimProbe"
+  }
+}

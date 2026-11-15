@@ -13,16 +13,16 @@
     "pinHonored": false
   },
   "bundle": {
-    "vsix": "$HOME/backbencher-brain/ide/vscode/bb-lsp-vscode-0.1.0.vsix",
+    "vsix": "/home/ishaq2321/backbencher-brain/ide/vscode/bb-lsp-vscode-0.1.0.vsix",
     "installedAt": "2026-09-13T21:44:23.013Z",
-    "bundlePath": "$HOME/backbencher-brain/validation/m55/profile/extensions/backbencher.bb-lsp-vscode-0.1.0/dist/extension.js",
+    "bundlePath": "/home/ishaq2321/backbencher-brain/validation/m55/profile/extensions/backbencher.bb-lsp-vscode-0.1.0/dist/extension.js",
     "bundleSha256": "5a8dae3125e54b42517ac1d04fd7297f236256d47b18a9fa94609a9b98fd31e3"
   },
   "fixture": {
-    "workspace": "$HOME/bb-demo-hub",
+    "workspace": "/home/ishaq2321/bb-demo-hub",
     "present": true,
     "contentHash": "68ec1d0c93256542eaf913fca7e585145d9468a019f6b1779f1be3980db02a3f",
-    "indexedProjectDir": "$HOME/.bb/projects/693ac0d258eee9282c48710e76362d6ba159c7af"
+    "indexedProjectDir": "/home/ishaq2321/.bb/projects/693ac0d258eee9282c48710e76362d6ba159c7af"
   },
   "flows": [
     {

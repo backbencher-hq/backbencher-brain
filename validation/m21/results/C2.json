@@ -1,0 +1,135 @@
+{
+  "issue": "M21.C2",
+  "code": "C2",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 51,
+  "passed": 51,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-corpus.ts",
+  "evidenceFile": "C2.json",
+  "generatedAt": "2026-09-01T13:56:25.170Z",
+  "registryFile": "validation/m21/results/corpus-registry.json",
+  "observations": [
+    {
+      "id": "rake",
+      "state": "clean",
+      "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+      "trackedFiles": 127,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "rebar3",
+      "state": "clean",
+      "revision": "0c947d3b86c5b21e4986e136fe14f9171c8cfe77",
+      "trackedFiles": 456,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "element-plus",
+      "state": "clean",
+      "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+      "trackedFiles": 2704,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "svelte",
+      "state": "clean",
+      "revision": "26786e92985842a6d563c67049a43bc5857bf792",
+      "trackedFiles": 8981,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "scala3",
+      "state": "clean",
+      "revision": "18df09c05fa48fbb5bf5cd4b3728e9b7a0b3f6db",
+      "trackedFiles": 25945,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "zig",
+      "state": "clean",
+      "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+      "trackedFiles": 20545,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "typescript",
+      "state": "clean",
+      "revision": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+      "trackedFiles": 81368,
+      "dirtyEntries": 0,
+      "exists": true,
+      "evidenceEligible": true
+    },
+    {
+      "id": "intellij-community",
+      "state": "dirty",
+      "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+      "trackedFiles": 273600,
+      "dirtyEntries": 24,
+      "exists": true,
+      "evidenceEligible": false
+    },
+    {
+      "id": "aspnetcore",
+      "state": "dirty",
+      "revision": "ab2bf32a9eb59e8aae2b907d499d70da263f5251",
+      "trackedFiles": 16901,
+      "dirtyEntries": 2,
+      "exists": true,
+      "evidenceEligible": false
+    },
+    {
+      "id": "openclaw",
+      "state": "dirty",
+      "revision": "4924b10dcee35b9235319681a491d5e9028aacaf",
+      "trackedFiles": 19639,
+      "dirtyEntries": 2,
+      "exists": true,
+      "evidenceEligible": false
+    },
+    {
+      "id": "paperclip",
+      "state": "dirty",
+      "revision": "bfaa4b4bdc36370b4063137edbfe4049a128ab41",
+      "trackedFiles": 993,
+      "dirtyEntries": 1,
+      "exists": true,
+      "evidenceEligible": false
+    },
+    {
+      "id": "missing-example",
+      "state": "missing",
+      "revision": null,
+      "trackedFiles": null,
+      "dirtyEntries": null,
+      "exists": false,
+      "evidenceEligible": false
+    }
+  ],
+  "limitations": [
+    "Registry identity and checkout state are verified; this issue does not parse source files or prove indexing correctness.",
+    "Dirty and missing repositories are intentionally retained as visible non-eligible states."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.380Z",
+    "contentSha256": "4ece1118150b7d4cd170e7c079895e5e4c5a0c8f7437579e1a9f2f09ddc64b7c"
+  }
+}

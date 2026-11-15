@@ -1,6 +1,6 @@
 {
   "analyzer": "xml",
-  "corpus": "$HOME/fixtures/xml/repos/grails-core",
+  "corpus": "/home/ishaq2321/bb_tests/xml/repos/grails-core",
   "revision": "334007a8b5622a3c428c009ef1e19569ce9135d9",
   "extensions": [
     "*.xml",
@@ -39,8 +39,8 @@
       "verdict": "same"
     }
   ],
-  "manifest": "$HOME/fixtures/xml/repositories/MANIFEST.json",
+  "manifest": "/home/ishaq2321/bb_tests/xml/repositories/MANIFEST.json",
   "manifestPresent": true,
   "passed": true,
-  "policy": "Tracked XML-family documents (every file type the wired grammar's tree-sitter.json declares, plus the routed `dtd`) from a revision-pinned repository. A file whose errors are EXPECTED is declared in the manifest with a verdict and a measurement, and is reported here rather than excluded by a glob; `script/m12/xml-node-types-compare.ts` is what proves the declared vocabulary, and `fixtures/xml/out/grammar-corpus-ab.json` is what measures the grammar."
+  "policy": "Tracked XML-family documents (every file type the wired grammar's tree-sitter.json declares, plus the routed `dtd`) from a revision-pinned repository. A file whose errors are EXPECTED is declared in the manifest with a verdict and a measurement, and is reported here rather than excluded by a glob; `script/m12/xml-node-types-compare.ts` is what proves the declared vocabulary, and `bb_tests/xml/out/grammar-corpus-ab.json` is what measures the grammar."
 }

@@ -1,0 +1,15 @@
+{
+  "fixtureId": "typescript/type-assertion",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS angle-bracket type assertions (gap T8). TS semantics: <Foo>x and x as Foo are the same cast — both reference Foo. Pre-fix: only as_expression emitted cast_target; the type_assertion form was unhandled.",
+  "expectSymbols": [
+    { "name": "Foo", "kind": "class" },
+    { "name": "a", "kind": "constant" },
+    { "name": "b", "kind": "constant" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "a", "target": "Foo", "meta.relationshipType": "cast_target" },
+    { "type": "references", "from": "b", "target": "Foo", "meta.relationshipType": "cast_target" }
+  ]
+}

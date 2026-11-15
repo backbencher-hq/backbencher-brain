@@ -1,0 +1,663 @@
+{
+  "tool": "validation/m14/elixir/elixir-construct-census.ts",
+  "lane": "ELIXIR_FIX2",
+  "subject": "src/ast/real-elixir-analyzer.ts",
+  "subjectCommit": "a31c9de368a8f2cc43679eb3618954ac38e464ac",
+  "subjectSha256_16": "a34a01e86bb5372c",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "corpusDirs": [
+      "elixir",
+      "otp"
+    ],
+    "extensions": [
+      ".ex",
+      ".exs"
+    ],
+    "derived": true,
+    "allFilesFound": 601,
+    "filesRun": 601,
+    "sampling": "WHOLE corpus"
+  },
+  "instrumentA": {
+    "grammarFile": "grammars/tree-sitter-elixir/grammar.js",
+    "grammarDeclaredWordCounts": {
+      "extends": 0,
+      "extend": 0,
+      "superclass": 0,
+      "super_class": 0,
+      "inherit": 0,
+      "inherits": 0,
+      "implements": 0,
+      "interface": 0,
+      "abstract_class": 0,
+      "class": 0,
+      "export": 1,
+      "exports": 1,
+      "override": 0,
+      "overrides": 0,
+      "defoverridable": 0,
+      "require": 0,
+      "include": 0
+    },
+    "note": "substring counts over the GRAMMAR DECLARATION, never over project source; a word appearing here means the grammar defines a rule with that name, which is the question being asked",
+    "emittedNodeTypeCount": 45,
+    "emittedNodeTypes": [
+      "access_call",
+      "after_block",
+      "alias",
+      "anonymous_function",
+      "arguments",
+      "atom",
+      "binary_operator",
+      "bitstring",
+      "block",
+      "body",
+      "boolean",
+      "call",
+      "catch_block",
+      "char",
+      "charlist",
+      "comment",
+      "do_block",
+      "dot",
+      "else_block",
+      "escape_sequence",
+      "float",
+      "identifier",
+      "integer",
+      "interpolation",
+      "keyword",
+      "keywords",
+      "list",
+      "map",
+      "map_content",
+      "nil",
+      "operator_identifier",
+      "pair",
+      "quoted_atom",
+      "quoted_content",
+      "quoted_keyword",
+      "rescue_block",
+      "sigil",
+      "sigil_modifiers",
+      "sigil_name",
+      "source",
+      "stab_clause",
+      "string",
+      "struct",
+      "tuple",
+      "unary_operator"
+    ]
+  },
+  "instrumentB": {
+    "filesParsed": 601,
+    "filesCrashed": 0,
+    "wallMs": 60198,
+    "probes": [
+      {
+        "type": "extends",
+        "probe": "A1 defmodule with a DOTTED name (Elixir namespace nesting)",
+        "count": 1754,
+        "files": 534,
+        "samples": [
+          "lib/compiler/scripts/smoke-mix.exs:21 defmodule Smoke.MixProject do",
+          "lib/compiler/scripts/smoke-mix.exs:21 Smoke.MixProject",
+          "lib/eex/lib/eex.ex:5 defmodule EEx.SyntaxError do",
+          "lib/eex/lib/eex.ex:5 EEx.SyntaxError",
+          "lib/eex/lib/eex.ex:17 defmodule EEx do",
+          "lib/eex/lib/eex/compiler.ex:5 defmodule EEx.Compiler do",
+          "lib/eex/lib/eex/compiler.ex:5 EEx.Compiler",
+          "lib/eex/lib/eex/engine.ex:5 defmodule EEx.Engine do"
+        ]
+      },
+      {
+        "type": "extends",
+        "probe": "A2 defmodule name REPEATED inside one file (module reopening)",
+        "count": 24,
+        "files": 16,
+        "samples": [
+          "lib/elixir/lib/kernel.ex:0  x5",
+          "lib/elixir/lib/protocol.ex:0  x2",
+          "lib/elixir/test/elixir/kernel/alias_test.exs:0 Nested x2",
+          "lib/elixir/test/elixir/kernel/defaults_test.exs:0 Kernel.ErrorsTest.ClauseWithDefaults x4",
+          "lib/elixir/test/elixir/kernel/docs_test.exs:0 AtSyntaxDocAttributesFormat x2",
+          "lib/elixir/test/elixir/kernel/docs_test.exs:0 SampleBehaviour x2",
+          "lib/elixir/test/elixir/kernel/guard_test.exs:0 OverriddenFunUsage x2",
+          "lib/elixir/test/elixir/kernel/guard_test.exs:0 OverriddenPrivateFunUsage x4"
+        ]
+      },
+      {
+        "type": "extends",
+        "probe": "A3 defexception sites (an exception type: does it have a parent?)",
+        "count": 56,
+        "files": 19,
+        "samples": [
+          "lib/eex/lib/eex.ex:6 defexception",
+          "lib/elixir/lib/exception.ex:1062 defexception",
+          "lib/elixir/lib/exception.ex:1082 defexception",
+          "lib/elixir/lib/exception.ex:1095 defexception",
+          "lib/elixir/lib/exception.ex:1144 defexception",
+          "lib/elixir/lib/exception.ex:1171 defexception",
+          "lib/elixir/lib/exception.ex:1242 defexception",
+          "lib/elixir/lib/exception.ex:1304 defexception"
+        ]
+      },
+      {
+        "type": "extends",
+        "probe": "A4 defimpl sites (protocol impl: dispatch, not inheritance)",
+        "count": 118,
+        "files": 35,
+        "samples": [
+          "lib/elixir/lib/calendar/date.ex:1171 String.Chars",
+          "lib/elixir/lib/calendar/date.ex:1177 Inspect",
+          "lib/elixir/lib/calendar/date_range.ex:33 Enumerable",
+          "lib/elixir/lib/calendar/date_range.ex:198 Inspect",
+          "lib/elixir/lib/calendar/datetime.ex:2086 String.Chars",
+          "lib/elixir/lib/calendar/datetime.ex:2119 Inspect",
+          "lib/elixir/lib/calendar/naive_datetime.ex:1465 String.Chars",
+          "lib/elixir/lib/calendar/naive_datetime.ex:1482 Inspect"
+        ]
+      },
+      {
+        "type": "extends",
+        "probe": "A5 @behaviour / @behavior attributes (conformance mechanism)",
+        "count": 60,
+        "files": 39,
+        "samples": [
+          "lib/eex/lib/eex/engine.ex:82 @behaviour",
+          "lib/eex/lib/eex/smart_engine.ex:40 @behaviour",
+          "lib/eex/test/eex_test.exs:974 @behaviour",
+          "lib/elixir/lib/application.ex:409 @behaviour",
+          "lib/elixir/lib/calendar/iso.ex:138 @behaviour",
+          "lib/elixir/lib/calendar/time_zone_database.ex:87 @behaviour",
+          "lib/elixir/lib/config/reader.ex:47 @behaviour",
+          "lib/elixir/lib/dynamic_supervisor.ex:142 @behaviour"
+        ]
+      },
+      {
+        "type": "extends",
+        "probe": "A6 any call whose identifier is an inheritance keyword",
+        "count": 0,
+        "files": 0,
+        "samples": []
+      },
+      {
+        "type": "uses",
+        "probe": "B1 use directive (the language's own 'use' keyword)",
+        "count": 510,
+        "files": 325,
+        "samples": [
+          "lib/compiler/scripts/smoke-mix.exs:22 use Mix.Project",
+          "lib/eex/mix.exs:6 use Mix.Project",
+          "lib/eex/test/eex/smart_engine_test.exs:8 use ExUnit.Case, async: true",
+          "lib/eex/test/eex/tokenizer_test.exs:8 use ExUnit.Case, async: true",
+          "lib/eex/test/eex_test.exs:51 use ExUnit.Case, async: true",
+          "lib/elixir/lib/agent/server.ex:8 use GenServer",
+          "lib/elixir/lib/hash_dict.ex:14 use Dict",
+          "lib/elixir/lib/kernel.ex:6136 use(module, opts \\\\ [])"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B2 dot member READ: dot node with NO arguments child",
+        "count": 65,
+        "files": 22,
+        "samples": [
+          "lib/elixir/lib/module/types.ex:7 Module.Types.{Apply, Descr, Expr, Helpers, Pattern}",
+          "lib/elixir/lib/module/types/apply.ex:11 Module.Types.{Helpers, Descr}",
+          "lib/elixir/lib/module/types/expr.ex:8 Module.Types.{Apply, Of, Pattern}",
+          "lib/elixir/lib/module/types/expr.ex:9 Module.Types.{Helpers, Descr}",
+          "lib/elixir/lib/module/types/of.ex:9 Module.Types.{Helpers, Descr}",
+          "lib/elixir/lib/module/types/pattern.ex:8 Module.Types.{Apply, Of}",
+          "lib/elixir/lib/module/types/pattern.ex:9 Module.Types.{Helpers, Descr}",
+          "lib/elixir/test/elixir/application_test.exs:176 __MODULE__.Unknown"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B2b member field READ: call whose target is a dot, no arguments, LOWERCASE root (the `uses` candidate)",
+        "count": 2244,
+        "files": 182,
+        "samples": [
+          ".github/workflows/notify.exs:59 resp.status",
+          ".github/workflows/notify.exs:59 resp.body",
+          ".github/workflows/notify.exs:78 resp.status",
+          ".github/workflows/notify.exs:78 resp.body",
+          "erts/doc/docs.exs:27 md.kind",
+          "erts/doc/docs.exs:27 md.name",
+          "erts/doc/docs.exs:27 md.arity",
+          "erts/doc/docs.exs:28 md.name"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B2c zero-arity REMOTE reference: call whose target is a dot, no arguments, CAPITALIZED root",
+        "count": 724,
+        "files": 172,
+        "samples": [
+          ".github/workflows/notify.exs:26 Req.get!(asset[\"browser_download_url\"]).body",
+          "lib/eex/lib/eex.ex:158 __ENV__.file",
+          "lib/eex/lib/eex.ex:158 __ENV__.line",
+          "lib/eex/lib/eex/smart_engine.ex:59 EEx.Engine.handle_assign",
+          "lib/eex/test/eex/smart_engine_test.exs:51 __ENV__.file",
+          "lib/eex/test/eex_test.exs:11 __ENV__.line",
+          "lib/eex/test/eex_test.exs:25 __ENV__.line",
+          "lib/eex/test/eex_test.exs:30 __ENV__.line"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B6 Access read: access_call node (recv[:key])",
+        "count": 1378,
+        "files": 184,
+        "samples": [
+          ".github/workflows/notify.exs:16 release[\"draft\"]",
+          ".github/workflows/notify.exs:23 release[\"assets\"]",
+          ".github/workflows/notify.exs:24 asset[\"name\"]",
+          ".github/workflows/notify.exs:26 asset[\"browser_download_url\"]",
+          ".github/workflows/notify.exs:66 release[\"body\"]",
+          "erts/doc/docs.exs:24 md[:module]",
+          "erts/doc/docs.exs:52 a[:category]",
+          "erts/doc/docs.exs:56 a[:category]"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B3 module attribute READ: @name with no arguments",
+        "count": 2195,
+        "files": 209,
+        "samples": [
+          "lib/eex/lib/eex/compiler.ex:266 h_spaces",
+          "lib/eex/lib/eex/compiler.ex:308 h_spaces",
+          "lib/eex/lib/eex/compiler.ex:322 default_engine",
+          "lib/eex/lib/eex/compiler.ex:456 h_spaces",
+          "lib/eex/lib/eex/compiler.ex:499 all_spaces",
+          "lib/eex/test/eex/tokenizer_test.exs:13 opts",
+          "lib/eex/test/eex/tokenizer_test.exs:18 opts",
+          "lib/eex/test/eex/tokenizer_test.exs:23 opts"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B3a module attribute READ, DECLARATION attribute (must stay silent)",
+        "count": 14,
+        "files": 2,
+        "samples": [
+          "lib/elixir/test/elixir/kernel/docs_test.exs:24 moduledoc",
+          "lib/elixir/test/elixir/kernel/docs_test.exs:28 typedoc",
+          "lib/elixir/test/elixir/kernel/docs_test.exs:33 doc",
+          "lib/elixir/test/elixir/typespec_test.exs:1058 type",
+          "lib/elixir/test/elixir/typespec_test.exs:1059 opaque",
+          "lib/elixir/test/elixir/typespec_test.exs:1060 typep",
+          "lib/elixir/test/elixir/typespec_test.exs:1068 type",
+          "lib/elixir/test/elixir/typespec_test.exs:1069 opaque"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B3b module attribute READ, code-valued attribute (a `uses` candidate)",
+        "count": 2181,
+        "files": 209,
+        "samples": [
+          "lib/eex/lib/eex/compiler.ex:266 h_spaces",
+          "lib/eex/lib/eex/compiler.ex:308 h_spaces",
+          "lib/eex/lib/eex/compiler.ex:322 default_engine",
+          "lib/eex/lib/eex/compiler.ex:456 h_spaces",
+          "lib/eex/lib/eex/compiler.ex:499 all_spaces",
+          "lib/eex/test/eex/tokenizer_test.exs:13 opts",
+          "lib/eex/test/eex/tokenizer_test.exs:18 opts",
+          "lib/eex/test/eex/tokenizer_test.exs:23 opts"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "E8 use N where N is declared in the SAME file and marks defoverridable",
+        "count": 0,
+        "files": 0,
+        "samples": []
+      },
+      {
+        "type": "overrides",
+        "probe": "F1 defoverridable NOT inside any def*/defmacro body (the shape that could credit the mark to a module scope)",
+        "count": 10,
+        "files": 3,
+        "samples": [
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:52 defoverridable sample: 0,",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:123 defoverridable multiple_overrides: 0",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:137 defoverridable overridable_macro: 1",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:151 defoverridable private_macro: 1",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:169 defoverridable with_default: 2",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:208 defoverridable process_url: 1, not_private: 1",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:229 defoverridable fun: 1, fun: 2, macro: 1, macro: 2",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:490 defoverridable Elixir.Kernel.OverridableExampleBehaviour"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "F2 defoverridable credited to a MODULE scope (no enclosing def body)",
+        "count": 10,
+        "files": 3,
+        "samples": [
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:52 defoverridable sample: 0,",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:123 defoverridable multiple_overrides: 0",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:137 defoverridable overridable_macro: 1",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:151 defoverridable private_macro: 1",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:169 defoverridable with_default: 2",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:208 defoverridable process_url: 1, not_private: 1",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:229 defoverridable fun: 1, fun: 2, macro: 1, macro: 2",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:490 defoverridable Elixir.Kernel.OverridableExampleBehaviour"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "F3 defoverridable inside a quote AND credited to a module scope (the ONLY shape the walk quote gate can change)",
+        "count": 0,
+        "files": 0,
+        "samples": []
+      },
+      {
+        "type": "uses",
+        "probe": "B4 dot member CALL: dot node WITH an arguments child",
+        "count": 37888,
+        "files": 526,
+        "samples": [
+          ".github/workflows/notify.exs:6 System.argv",
+          ".github/workflows/notify.exs:8 Mix.install",
+          ".github/workflows/notify.exs:14 Req.get!",
+          ".github/workflows/notify.exs:26 Req.get!(asset[\"browser_download_url\"]).body",
+          ".github/workflows/notify.exs:26 Req.get!",
+          ".github/workflows/notify.exs:29 Enum.sort",
+          ".github/workflows/notify.exs:30 String.split",
+          ".github/workflows/notify.exs:31 Path.rootname"
+        ]
+      },
+      {
+        "type": "uses",
+        "probe": "B5 Access/bracket read: node types that carry [] indexing",
+        "count": 1378,
+        "files": 184,
+        "samples": [
+          ".github/workflows/notify.exs:16 release[\"draft\"]",
+          ".github/workflows/notify.exs:23 release[\"assets\"]",
+          ".github/workflows/notify.exs:24 asset[\"name\"]",
+          ".github/workflows/notify.exs:26 asset[\"browser_download_url\"]",
+          ".github/workflows/notify.exs:66 release[\"body\"]",
+          "erts/doc/docs.exs:24 md[:module]",
+          "erts/doc/docs.exs:52 a[:category]",
+          "erts/doc/docs.exs:56 a[:category]"
+        ]
+      },
+      {
+        "type": "imports",
+        "probe": "C1 import directive",
+        "count": 315,
+        "files": 164,
+        "samples": [
+          "lib/elixir/lib/base.ex:6 import Bitwise",
+          "lib/elixir/lib/behaviour.ex:125 import unquote(__MODULE__)",
+          "lib/elixir/lib/bitwise.ex:44 import Bitwise, except: unquote(except)",
+          "lib/elixir/lib/calendar/date_range.ex:199 import Kernel, except: [inspect: 2]",
+          "lib/elixir/lib/calendar/iso.ex:140 import Bitwise, only: [band: 2, >>>: 2, <<<: 2]",
+          "lib/elixir/lib/code/formatter.ex:7 import Inspect.Algebra, except: [format: 2, surround: 3, surround: 4]",
+          "lib/elixir/lib/dict.ex:27 import Kernel, except: [size: 1]",
+          "lib/elixir/lib/dict.ex:127 import Kernel, except: [size: 1]"
+        ]
+      },
+      {
+        "type": "imports",
+        "probe": "C2 alias directive (a RENAME, not an import)",
+        "count": 94,
+        "files": 50,
+        "samples": [
+          "lib/elixir/lib/inspect.ex:8 alias Code.Identifier",
+          "lib/elixir/lib/kernel/special_forms.ex:550 alias(module, opts)",
+          "lib/elixir/lib/macro.ex:70 alias Code.Identifier",
+          "lib/elixir/lib/module/types.ex:7 alias Module.Types.{Apply, Descr, Expr, Helpers, Pattern}",
+          "lib/elixir/lib/module/types/apply.ex:10 alias Module.ParallelChecker",
+          "lib/elixir/lib/module/types/apply.ex:2506 alias Inspect.Algebra, as: IA",
+          "lib/elixir/lib/module/types/expr.ex:8 alias Module.Types.{Apply, Of, Pattern}",
+          "lib/elixir/lib/module/types/pattern.ex:8 alias Module.Types.{Apply, Of}"
+        ]
+      },
+      {
+        "type": "imports",
+        "probe": "C3 require directive",
+        "count": 63,
+        "files": 39,
+        "samples": [
+          "lib/eex/test/eex_test.exs:7 require EEx",
+          "lib/elixir/lib/enum.ex:316 require Stream.Reducers, as: R",
+          "lib/elixir/lib/file/stat.ex:5 require Record",
+          "lib/elixir/lib/gen_event.ex:321 require Record",
+          "lib/elixir/lib/inspect.ex:738 require Protocol",
+          "lib/elixir/lib/kernel.ex:5970 require Kernel.Utils",
+          "lib/elixir/lib/kernel.ex:6141 require unquote(expanded)",
+          "lib/elixir/lib/kernel/parallel_compiler.ex:278 require([Path.t()], require_opts())"
+        ]
+      },
+      {
+        "type": "imports",
+        "probe": "C4 use directive (repeat: it invokes a macro, it does not import)",
+        "count": 510,
+        "files": 325,
+        "samples": [
+          "lib/compiler/scripts/smoke-mix.exs:22 use Mix.Project",
+          "lib/eex/mix.exs:6 use Mix.Project",
+          "lib/eex/test/eex/smart_engine_test.exs:8 use ExUnit.Case, async: true",
+          "lib/eex/test/eex/tokenizer_test.exs:8 use ExUnit.Case, async: true",
+          "lib/eex/test/eex_test.exs:51 use ExUnit.Case, async: true",
+          "lib/elixir/lib/agent/server.ex:8 use GenServer",
+          "lib/elixir/lib/hash_dict.ex:14 use Dict",
+          "lib/elixir/lib/kernel.ex:6136 use(module, opts \\\\ [])"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D1 public def/defdelegate/defguard/defprotocol-callback",
+        "count": 5303,
+        "files": 404,
+        "samples": [
+          "lib/compiler/scripts/smoke-mix.exs:24 def project do",
+          "lib/compiler/scripts/smoke-mix.exs:35 def application do",
+          "lib/eex/lib/eex.ex:9 def message(exception) do",
+          "lib/eex/lib/eex.ex:163 def unquote(name)(unquote_splicing(args)), do: unquote(compiled)",
+          "lib/eex/lib/eex.ex:208 def unquote(name)(unquote_splicing(args)), do: unquote(compiled)",
+          "lib/eex/lib/eex.ex:238 def compile_string(source, options \\\\ []) when is_binary(source) and i",
+          "lib/eex/lib/eex.ex:279 def compile_file(filename, options \\\\ []) when is_list(options) do",
+          "lib/eex/lib/eex.ex:297 def eval_string(source, bindings \\\\ [], options \\\\ [])"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D2 public defmacro",
+        "count": 343,
+        "files": 77,
+        "samples": [
+          "lib/eex/lib/eex.ex:156 defmacro function_from_string(kind, name, template, args \\\\ [], option",
+          "lib/eex/lib/eex.ex:199 defmacro function_from_file(kind, name, file, args \\\\ [], options \\\\ [",
+          "lib/eex/lib/eex/engine.ex:80 defmacro __using__(_) do",
+          "lib/eex/test/eex_test.exs:43 defmacro defclause(expr, block) do",
+          "lib/eex/test/eex_test.exs:1076 defmacro switching_macro(list, a, do: block) do",
+          "lib/elixir/lib/agent.ex:212 defmacro __using__(opts) do",
+          "lib/elixir/lib/application.ex:407 defmacro __using__(_) do",
+          "lib/elixir/lib/application.ex:570 defmacro compile_env(app, key_or_path, default \\\\ nil) do"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D3 public @type / @opaque",
+        "count": 652,
+        "files": 119,
+        "samples": [
+          "lib/eex/lib/eex.ex:111 @type",
+          "lib/eex/lib/eex.ex:112 @type",
+          "lib/eex/lib/eex.ex:113 @type",
+          "lib/eex/lib/eex.ex:114 @type",
+          "lib/eex/lib/eex.ex:115 @type",
+          "lib/eex/lib/eex.ex:121 @type",
+          "lib/eex/lib/eex.ex:128 @type",
+          "lib/eex/lib/eex/engine.ex:15 @type"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D4 public @callback / @macrocallback",
+        "count": 177,
+        "files": 30,
+        "samples": [
+          "lib/eex/lib/eex/engine.ex:26 @callback",
+          "lib/eex/lib/eex/engine.ex:33 @callback",
+          "lib/eex/lib/eex/engine.ex:40 @callback",
+          "lib/eex/lib/eex/engine.ex:61 @callback",
+          "lib/eex/lib/eex/engine.ex:69 @callback",
+          "lib/eex/lib/eex/engine.ex:76 @callback",
+          "lib/elixir/lib/access.ex:162 @callback",
+          "lib/elixir/lib/access.ex:187 @callback"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D5 PRIVATE defp/defmacrop/defguardp (must NOT export)",
+        "count": 7918,
+        "files": 347,
+        "samples": [
+          "lib/compiler/scripts/smoke-mix.exs:42 defp deps do",
+          "lib/compiler/scripts/smoke-mix.exs:93 defp build_scalaris do",
+          "lib/compiler/scripts/smoke-mix.exs:112 defp build_wings do",
+          "lib/eex/lib/eex.ex:164 defp unquote(name)(unquote_splicing(args)), do: unquote(compiled)",
+          "lib/eex/lib/eex.ex:209 defp unquote(name)(unquote_splicing(args)), do: unquote(compiled)",
+          "lib/eex/lib/eex.ex:367 defp do_eval(compiled, bindings, options) do",
+          "lib/eex/lib/eex/compiler.ex:39 defp tokenize(~c\"<%%\" ++ t, line, column, state, buffer, acc) do",
+          "lib/eex/lib/eex/compiler.ex:43 defp tokenize(~c\"<%!--\" ++ t, line, column, state, buffer, acc) do"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D6 PRIVATE @typep",
+        "count": 41,
+        "files": 12,
+        "samples": [
+          "lib/elixir/lib/calendar/date_range.ex:28 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:284 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:289 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:294 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:299 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:304 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:309 @typep",
+          "lib/elixir/lib/inspect/algebra.ex:314 @typep"
+        ]
+      },
+      {
+        "type": "exports",
+        "probe": "D7 private field on a non-Module owner (defp owner)",
+        "count": 0,
+        "files": 0,
+        "samples": []
+      },
+      {
+        "type": "overrides",
+        "probe": "E1 defoverridable sites (the language's override-point marker)",
+        "count": 26,
+        "files": 14,
+        "samples": [
+          "lib/eex/lib/eex/engine.ex:108 defoverridable EEx.Engine",
+          "lib/elixir/lib/agent.ex:231 defoverridable child_spec: 1",
+          "lib/elixir/lib/application.ex:416 defoverridable Application",
+          "lib/elixir/lib/dict.ex:218 defoverridable merge: 2,",
+          "lib/elixir/lib/dynamic_supervisor.ex:247 defoverridable child_spec: 1",
+          "lib/elixir/lib/gen_event.ex:146 defoverridable init: 1,",
+          "lib/elixir/lib/gen_server.ex:920 defoverridable child_spec: 1",
+          "lib/elixir/lib/gen_server.ex:998 defoverridable code_change: 3, terminate: 2, handle_info: 2, handle_ca"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "E2 super(...) call sites",
+        "count": 17,
+        "files": 4,
+        "samples": [
+          "lib/elixir/lib/kernel/special_forms.ex:1893 super(args)",
+          "lib/elixir/test/elixir/kernel/guard_test.exs:397 super(bar)",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:74 super()",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:84 super(x, y * 2)",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:88 super(&1)",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:92 super(&1)",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:100 super(0)",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:100 super(1)"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "E3a defoverridable + a LATER def of the marked name/arity, both at module level (a real override)",
+        "count": 17,
+        "files": 3,
+        "samples": [
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:83 Kernel.Overridable.super_with_multiple_args/-1 @52 -> def @83",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:87 Kernel.Overridable.capture_super/-1 @52 -> def @87",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:91 Kernel.Overridable.capture_super_macro/-1 @52 -> def @91",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:95 Kernel.Overridable.many_clauses/-1 @52 -> def @95",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:99 Kernel.Overridable.many_clauses/-1 @52 -> def @99",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:103 Kernel.Overridable.many_clauses/-1 @52 -> def @103",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:139 Kernel.Overridable.overridable_macro/-1 @137 -> def @139",
+          "lib/elixir/test/elixir/kernel/overridable_test.exs:153 Kernel.Overridable.private_macro/-1 @151 -> def @153"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "E3b defoverridable + later def, BOTH inside the same quote (a __using__ template)",
+        "count": 1,
+        "files": 1,
+        "samples": [
+          "lib/ex_unit/lib/ex_unit/case_template.ex:155 ExUnit.CaseTemplate.__using__/-1 @82 -> def @155 [quote]"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "E4 defimpl declared twice for the same protocol+type in one file",
+        "count": 0,
+        "files": 0,
+        "samples": []
+      },
+      {
+        "type": "overrides",
+        "probe": "E5 two defimpl for the same protocol with different for: types",
+        "count": 0,
+        "files": 0,
+        "samples": []
+      },
+      {
+        "type": "overrides",
+        "probe": "E6 @impl attributes (Elixir's callback-conformance marker)",
+        "count": 285,
+        "files": 96,
+        "samples": [
+          "lib/eex/lib/eex.ex:8 @impl",
+          "lib/eex/lib/eex/smart_engine.ex:42 @impl",
+          "lib/eex/lib/eex/smart_engine.ex:45 @impl",
+          "lib/eex/lib/eex/smart_engine.ex:48 @impl",
+          "lib/eex/lib/eex/smart_engine.ex:51 @impl",
+          "lib/eex/lib/eex/smart_engine.ex:54 @impl",
+          "lib/eex/lib/eex/smart_engine.ex:57 @impl",
+          "lib/elixir/lib/calendar/iso.ex:335 @impl"
+        ]
+      },
+      {
+        "type": "overrides",
+        "probe": "E7 a def whose name matches a def in an EARLIER defmodule in the same file",
+        "count": 21,
+        "files": 9,
+        "samples": [
+          "lib/elixir/lib/registry.ex:1779 Registry.Supervisor.start_link",
+          "lib/elixir/lib/registry.ex:1846 Registry.Partition.start_link",
+          "lib/elixir/lib/version.ex:171 Version.Requirement.match?",
+          "lib/elixir/lib/version.ex:220 Version.Requirement.compare",
+          "lib/elixir/test/elixir/exception_test.exs:36 ExceptionTest.BadException.message",
+          "lib/elixir/test/elixir/kernel/docs_test.exs:236 Kernel.DocsTest.SampleDocs.baz",
+          "lib/elixir/test/elixir/kernel/docs_test.exs:410 Kernel.DocsTest.Docs.baz",
+          "lib/elixir/test/elixir/module_test.exs:19 ModuleTest.ToBeUsed.__before_compile__"
+        ]
+      }
+    ]
+  }
+}

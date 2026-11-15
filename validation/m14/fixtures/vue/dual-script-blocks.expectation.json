@@ -1,0 +1,20 @@
+{
+  "fixtureId": "vue/dual-script-blocks",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Vue 3's standard layout is a plain <script> PLUS <script setup>. Only sfcScriptTrees[0] was processed - the ENTIRE setup block (imports, state, functions) vanished from the index.",
+  "expectSymbols": [
+    {
+      "name": "BaseCard",
+      "kind": "class"
+    },
+    {
+      "name": "count",
+      "kind": "constant"
+    },
+    {
+      "name": "bump",
+      "kind": "function"
+    }
+  ]
+}

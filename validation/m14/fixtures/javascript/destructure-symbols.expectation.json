@@ -1,0 +1,14 @@
+{
+  "fixtureId": "javascript/destructure-symbols",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS module-level destructured bindings as symbols (gap J7, TS parity — probe-verified TS emits const { a } = obj as a [constant]). Object patterns (shorthand, nested, default, renamed) and array patterns (head, rest) bind real module-scope names. Pre-fix: they emitted NO symbols.",
+  "expectSymbols": [
+    { "name": "first", "kind": "constant" },
+    { "name": "deep", "kind": "constant" },
+    { "name": "a", "kind": "constant" },
+    { "name": "renamed", "kind": "constant" },
+    { "name": "head", "kind": "constant" },
+    { "name": "tail", "kind": "constant" }
+  ]
+}

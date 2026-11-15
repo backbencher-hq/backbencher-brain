@@ -1,0 +1,134 @@
+{
+  "instrument": "m60-solidity-unexplained-adjudication",
+  "question": "F5 reports `unexplained: N`. Which of those are analyzer DEFECTS and which are labels the ORACLE declines to derive? A count cannot say, and the two have opposite fixes.",
+  "draw": {
+    "sample": 60,
+    "order": "hash of repo/relative-path ascending",
+    "digest": "28c15798",
+    "corpus": "solidity@32b5b8c4"
+  },
+  "totals": {
+    "truthRows": 2661,
+    "analyzerEdges": 3563,
+    "unexplained": 88,
+    "unexplainedPct": 2.47,
+    "missing": 8,
+    "missingPct": 0.3
+  },
+  "perLabel": {
+    "contains": {
+      "truth": 739,
+      "analyzer": 739,
+      "unexplained": 0,
+      "missing": 0
+    },
+    "extends": {
+      "truth": 84,
+      "analyzer": 84,
+      "unexplained": 0,
+      "missing": 0
+    },
+    "uses": {
+      "truth": 1054,
+      "analyzer": 1835,
+      "unexplained": 86,
+      "missing": 8
+    },
+    "overrides": {
+      "truth": 76,
+      "analyzer": 76,
+      "unexplained": 0,
+      "missing": 0
+    },
+    "exports": {
+      "truth": 71,
+      "analyzer": 71,
+      "unexplained": 0,
+      "missing": 0
+    },
+    "references": {
+      "truth": 180,
+      "analyzer": 207,
+      "unexplained": 0,
+      "missing": 0
+    },
+    "calls": {
+      "truth": 457,
+      "analyzer": 551,
+      "unexplained": 2,
+      "missing": 0
+    }
+  },
+  "classes": [
+    {
+      "direction": "analyzer-not-in-truth",
+      "class": "evm-member-call",
+      "why": "`calls` to a MEMBER of a built-in type or of an EVM struct: `transfer`, `call`, `encode`, `balance`, `returndatasize`, `toUint`. The target is a real call site in the source and the target names an EVM or ABI member, which Solidity has no syntax to distinguish from a user-defined member access. 1,786 such rows over the full 389-file corpus, reported by the surface measure as `unresolvedCallTargets`. SUPPRESSING them would lose real edges — this is the #910 trap in its purest form: the oracle declines to derive them because deriving them would mean inventing a name for an EVM member.",
+      "count": 2,
+      "samples": [
+        "contracts/utils/Create2.sol:40 calls deploy -> InsufficientBalance",
+        "contracts/utils/Create2.sol:50 calls deploy -> FailedDeployment"
+      ]
+    },
+    {
+      "direction": "analyzer-not-in-truth",
+      "class": "target-is-an-external-contract",
+      "why": "`calls` or `uses` naming a type or function declared in ANOTHER file. A per-file differential cannot resolve it and an oracle that resolved it project-wide would be measuring the store rather than the tree. Measured on the full corpus: 386 of 394 override candidates and 507 heritage edges are cross-file. The oracle's rule is the same as the analyzer's — an edge to something this file does not declare is outside a per-file comparison — so these rows are a SCOPE limit, declared rather than counted as wrong.",
+      "count": 0,
+      "samples": []
+    },
+    {
+      "direction": "analyzer-not-in-truth",
+      "class": "member-read-or-builtin-primitive",
+      "why": "`uses` naming something the analyzer read but the oracle declines to name as a project reference: a member of a built-in type (`length`, `sender`, `balance`, `max`, `creationCode`), a PRIMITIVE type token reached outside the `isTypeReference` path, or a type name that resolves to a declaration in another file. The analyzer reads the property of every `member_expression` whose object is not a global (SOL-7) and reads every declared user-defined type (SOL-2); a member of `bytes`/`address`/the meta type is not a project member — but Solidity offers NO syntax that separates the two, so suppressing the class in the analyzer would lose every real struct-field read in the language. This is the #910 trap: the oracle is silent because deriving the row would mean inventing a name the tree does not state.",
+      "count": 86,
+      "samples": [
+        "contracts/token/ERC1155/ERC1155.sol:402 uses _asSingletonArrays -> array1",
+        "contracts/token/ERC1155/ERC1155.sol:404 uses _asSingletonArrays -> array1",
+        "contracts/token/ERC1155/ERC1155.sol:406 uses _asSingletonArrays -> array1",
+        "contracts/token/ERC1155/ERC1155.sol:406 uses _asSingletonArrays -> element1",
+        "contracts/token/ERC1155/ERC1155.sol:409 uses _asSingletonArrays -> array2",
+        "contracts/token/ERC1155/ERC1155.sol:409 uses _asSingletonArrays -> array1",
+        "contracts/token/ERC1155/ERC1155.sol:410 uses _asSingletonArrays -> array2",
+        "contracts/token/ERC1155/ERC1155.sol:411 uses _asSingletonArrays -> array2"
+      ]
+    },
+    {
+      "direction": "analyzer-not-in-truth",
+      "class": "unclassifiable",
+      "why": "No predicate applied. Reported rather than folded into a convenient bucket: an adjudication that cannot say 'I do not know' is a guess wearing a table's clothes. A non-zero count here is the finding.",
+      "count": 0,
+      "samples": []
+    }
+  ],
+  "missingClasses": [
+    {
+      "direction": "truth-not-in-analyzer",
+      "class": "meta-type-mention-of-a-cross-file-type",
+      "why": "`type(IFoo).interfaceId` where `IFoo` is declared in ANOTHER file. The analyzer's meta-type branch requires the name to be declared IN THIS FILE before it emits a `references` edge — the same in-file rule SOL-5's `implements`/`extends` split uses, and the same limit the surface measure reports as `implementsCrossFileUnresolved`. A per-file analyzer cannot see a cross-file declaration, so the edge is genuinely unavailable to it rather than dropped; the oracle has no such guard on this path and derives it. RESIDUE, 2 rows on the measured draw: the two sides disagree on whether a cross-file type mention is an edge at all, and the disagreement is a SCOPE question about per-file analysis, not a defect in either derivation. Both readings are defensible; the analyzer's is the conservative one, and the count is published so a reader can see the gap rather than infer it from a percentage.",
+      "count": 8,
+      "samples": [
+        "contracts/utils/introspection/ERC165Checker.sol uses supportsERC165 -> IERC165",
+        "contracts/token/ERC6909/extensions/ERC6909ContentURI.sol uses supportsInterface -> IERC6909ContentURI",
+        "contracts/token/ERC1155/ERC1155.sol uses supportsInterface -> IERC1155MetadataURI",
+        "contracts/token/ERC1155/ERC1155.sol uses supportsInterface -> IERC1155",
+        "contracts/account/utils/ERC4337Utils.sol uses verificationGasLimit -> accountGasLimits",
+        "contracts/account/utils/ERC4337Utils.sol uses callGasLimit -> accountGasLimits",
+        "contracts/account/utils/ERC4337Utils.sol uses maxPriorityFeePerGas -> gasFees",
+        "contracts/account/utils/ERC4337Utils.sol uses maxFeePerGas -> gasFees"
+      ]
+    },
+    {
+      "direction": "truth-not-in-analyzer",
+      "class": "unclassifiable-missing",
+      "why": "No predicate applied. Reported rather than folded into a convenient bucket.",
+      "count": 0,
+      "samples": []
+    }
+  ],
+  "limits": [
+    "The adjudication is by EXAMINED PREDICATE over the edge's own label and target, not by reading each of the 134 rows. A class whose predicate is coarse will lump rows together; the samples are printed so the lumping is visible, and a predicate that cannot be evaluated lands in `unclassifiable` rather than in a convenient bucket.",
+    "`evm-member-call` and `member-read-of-a-builtin-member` are SCOPE classes, not verdicts. They say the oracle declines to derive the row because deriving it would mean inventing a name for an EVM or ABI member that Solidity's syntax cannot distinguish from a user-defined one. Suppressing them in the ANALYZER would lose real edges, and this artifact is the evidence for that judgement rather than a substitute for it.",
+    "This does NOT re-derive F5's coverage. Coverage, MISSING and the label-truth gaps come from script/m14/differential.ts; this script exists because that harness reports a count and a count is not a finding."
+  ]
+}

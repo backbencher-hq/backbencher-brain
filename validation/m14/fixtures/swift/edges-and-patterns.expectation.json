@@ -1,0 +1,62 @@
+{
+  "fixtureId": "swift/edges-and-patterns",
+  "language": "swift",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the rare swift shapes probe-verified against the pinned tree-sitter-swift grammar during the #266 wave: operator overloads (binary_operator token, no simple_identifier), protocol property declarations, closure/lambda literals, optional chaining + guard binding, do/catch + throw + defer (defer parses as a call_expression — must NOT emit a calls edge), conditional-compilation imports (#if -> import still emitted), subscript declarations (not symbols; subscript READS `entries[key]` are property accesses, never calls), and per-symbol complexity on guard/if/throw.",
+  "expectSymbols": [
+    { "name": "Vector", "kind": "struct", "visibility": "internal" },
+    { "name": "operator +", "kind": "method", "ownerName": "Vector" },
+    { "name": "operator ==", "kind": "method", "ownerName": "Vector" },
+    { "name": "x", "kind": "property", "ownerName": "Vector" },
+    { "name": "Shape", "kind": "interface", "visibility": "internal" },
+    { "name": "area", "kind": "property", "ownerName": "Shape" },
+    { "name": "describe", "kind": "method", "ownerName": "Shape" },
+    { "name": "Circle", "kind": "class", "visibility": "internal" },
+    { "name": "describe", "kind": "method", "ownerName": "Circle" },
+    { "name": "Calculator", "kind": "class", "visibility": "internal" },
+    { "name": "history", "kind": "property", "ownerName": "Calculator", "visibility": "private" },
+    { "name": "apply", "kind": "method", "ownerName": "Calculator" },
+    { "name": "doubleAll", "kind": "method", "ownerName": "Calculator" },
+    { "name": "ParseError", "kind": "enum", "visibility": "internal" },
+    { "name": "invalid", "kind": "enum_member", "ownerName": "ParseError" },
+    { "name": "parse", "kind": "function" },
+    { "name": "Registry", "kind": "class", "visibility": "internal" },
+    { "name": "entries", "kind": "property", "ownerName": "Registry", "visibility": "private" },
+    { "name": "lookup", "kind": "method", "ownerName": "Registry" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "root", "target": "UIKit", "meta.evidenceClass": "import_based" },
+    { "type": "references", "source": "root", "target": "Foundation", "meta.evidenceClass": "import_based" },
+    { "type": "references", "source": "root", "target": "Combine", "meta.evidenceClass": "import_based" },
+    { "type": "instantiates", "source": "operator +", "target": "Vector", "meta.evidenceClass": "structural" },
+    { "type": "calls", "source": "apply", "target": "fn", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "apply", "target": "append", "meta.evidenceClass": "usage_contextual" },
+    { "type": "uses", "source": "apply", "target": "history", "meta.isFieldAccess": true, "meta.evidenceClass": "usage_contextual", "note": "M49 W15 #814: source is the enclosing METHOD (`apply`), not the type" },
+    { "type": "calls", "source": "doubleAll", "target": "map", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "parse", "target": "cleanup", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "parse", "target": "trimmingCharacters", "meta.evidenceClass": "usage_contextual" },
+    { "type": "contains", "source": "Vector", "target": "operator +", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "Vector", "target": "operator ==", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "Shape", "target": "area", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "Calculator", "target": "apply", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "ParseError", "target": "invalid", "meta.evidenceClass": "structural" },
+    { "type": "contains", "source": "Registry", "target": "lookup", "meta.evidenceClass": "structural" },
+    { "type": "implements", "source": "Circle", "target": "Shape", "meta.isImplements": true, "meta.evidenceClass": "structural" }
+  ],
+  "expectComplexity": [
+    { "symbol": "parse", "min": 3, "max": 4 },
+    { "symbol": "operator ==", "min": 2, "max": 3 },
+    { "symbol": "lookup", "equals": 1 }
+  ],
+  "expectVisibility": [
+    { "symbol": "history", "visibility": "private" },
+    { "symbol": "entries", "visibility": "private" },
+    { "symbol": "Vector", "visibility": "internal" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "defer" },
+    { "type": "calls", "source": "Registry", "target": "entries" },
+    { "type": "calls", "target": "print" },
+    { "type": "extends", "source": "Circle", "target": "Shape" }
+  ]
+}

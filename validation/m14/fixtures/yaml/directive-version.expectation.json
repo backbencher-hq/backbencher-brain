@@ -1,0 +1,29 @@
+{
+ "fixtureId": "yaml/directive-version",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "%YAML declares the version the document resolves under, and 1.1 and 1.2 genuinely disagree on yes/no/on/off, octal and sexagesimal. It was dropped entirely. Recording it also makes the lane's declared limitation visible instead of silent: the wired grammar is the 1.2 core-schema build, so a file declaring 1.1 is still resolved with 1.2 rules here (design_decision YAML-D6).",
+ "expectMetadata": [
+  {
+   "yamlVersion": "1.1"
+  }
+ ],
+ "expectPatterns": [
+  "YAML Version Directive"
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "a",
+   "equals": 1
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   7
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

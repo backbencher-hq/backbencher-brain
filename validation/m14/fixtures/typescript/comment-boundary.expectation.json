@@ -1,0 +1,17 @@
+{
+  "fixtureId": "typescript/comment-boundary",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Leading-comment collection walked previousSibling with NO boundary: a comment AFTER a blank line following the previous declaration (a trailing remark about A) was stolen into B's comments. Comments must be contiguous with their declaration - a blank-line gap stops the walk.",
+  "expectSymbols": [
+    { "name": "A", "kind": "class" },
+    { "name": "B", "kind": "class" }
+  ],
+  "expectComments": [
+    { "symbol": "A", "contains": "Doc for A" },
+    { "symbol": "A", "notContains": "trailing remark" },
+    { "symbol": "B", "contains": "Doc for B" },
+    { "symbol": "B", "notContains": "trailing remark" }
+  ],
+  "forbidSymbols": []
+}

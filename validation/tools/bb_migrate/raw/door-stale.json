@@ -1,0 +1,83 @@
+[
+ {
+  "id": "before-edit-json",
+  "isError": false,
+  "ms": 176,
+  "summary": {
+   "plans": [
+    {
+     "name": "basePrice",
+     "file": "ts-js/src/pricing.js",
+     "stale": false
+    }
+   ],
+   "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+   }
+  }
+ },
+ {
+  "id": "after-edit-json",
+  "isError": false,
+  "ms": 42,
+  "summary": {
+   "plans": [
+    {
+     "name": "basePrice",
+     "file": "ts-js/src/pricing.js",
+     "stale": true
+    }
+   ],
+   "freshness": {
+    "fresh": 0,
+    "stale": 1,
+    "missing": 0,
+    "staleRatio": 1,
+    "mode": "complete",
+    "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+   }
+  }
+ },
+ {
+  "id": "after-edit-text",
+  "isError": false,
+  "ms": 21,
+  "summary": {
+   "text": [
+    "⚠ 1 of 1 plans reference files changed since the last index — reindex before acting on these plans.",
+    "",
+    "migration target: python",
+    "dependency order: basePrice (partial)",
+    "methodology: base=4h relationships=2h missing-mappings=0h",
+    "  charged edges by kind (one flat 2h rate, uncalibrated): calls 1=2h (100%)"
+   ]
+  }
+ },
+ {
+  "id": "after-delete-json",
+  "isError": false,
+  "ms": 22,
+  "summary": {
+   "plans": [
+    {
+     "name": "basePrice",
+     "file": "ts-js/src/pricing.js",
+     "stale": true
+    }
+   ],
+   "freshness": {
+    "fresh": 0,
+    "stale": 1,
+    "missing": 0,
+    "staleRatio": 1,
+    "mode": "complete",
+    "remediation": "1 stale/missing — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+   }
+  }
+ }
+]

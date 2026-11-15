@@ -1,0 +1,17 @@
+{
+  "issue": "M15.E6",
+  "code": "E6",
+  "tool": "bb_edit",
+  "title": "real-repo e2e",
+  "verified": true,
+  "checks": 8,
+  "passed": 13,
+  "failed": 0,
+  "negatives": 5,
+  "generatedAt": "2026-08-23T18:29:00.923Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.335Z",
+    "contentSha256": "cd30be8ae690e0fa2fe133e7a77e98ee95cd05ad42fc3f591a39a13a801fd898"
+  }
+}

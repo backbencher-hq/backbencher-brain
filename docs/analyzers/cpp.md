@@ -83,12 +83,12 @@ handled. Seven gated classes, all at **0**:
 | **D7** | a specifier's name arrives as a `qualified_identifier`, so the class publishes as `anonymous` | 48 | **0** |
 | **D8** | a trailing annotation macro decorates the declaration before it and declares nothing; the grammar recovers it as a second `function_definition` whose BODY is the real declaration's, so publishing it invents a member AND misattributes the body's reads to a macro. A test-macro `TEST(Suite, Name) { body }` heading is the opposite case and is **not** this defect | 20 | **0** |
 
-Issues: [#957](https://github.com/backbencher-hq/backbencher-brain/issues/957) (D1),
-[#958](https://github.com/backbencher-hq/backbencher-brain/issues/958) (D2),
-[#959](https://github.com/backbencher-hq/backbencher-brain/issues/959) (D3),
-[#960](https://github.com/backbencher-hq/backbencher-brain/issues/960) (D4),
-[#961](https://github.com/backbencher-hq/backbencher-brain/issues/961) (D5),
-[#962](https://github.com/backbencher-hq/backbencher-brain/issues/962) (D7).
+Issues: [#957](https://github.com/ishaq2321/backbencher-brain/issues/957) (D1),
+[#958](https://github.com/ishaq2321/backbencher-brain/issues/958) (D2),
+[#959](https://github.com/ishaq2321/backbencher-brain/issues/959) (D3),
+[#960](https://github.com/ishaq2321/backbencher-brain/issues/960) (D4),
+[#961](https://github.com/ishaq2321/backbencher-brain/issues/961) (D5),
+[#962](https://github.com/ishaq2321/backbencher-brain/issues/962) (D7).
 Registered before worked, per M60 R3.
 
 ## What the gate does NOT cover, and one class that used to be invisible
@@ -268,7 +268,7 @@ every published name whether it is a declaration's name *and* not a macro's.
 | uses | **EMITTED** | two sites: a bare value READ (`identifier_usage`, 1.0) and a FIELD access (`field.text`, 0.9). Source is the enclosing owner, target the identifier text | `1.0` read / `0.9` field; class `usage_contextual` (`:6213`) |
 | contains | **EMITTED** | owner -> member, emitted POST-LOOP from the completed symbol table, so a member declared before its owner is still contained | `1.0`; class `structural` (`:6198`) |
 | imports | **EMITTED** | `preproc_include` whose written form is ANGLE-BRACKET `<x.h>`: target = the specifier AS WRITTEN (another module's header scope), `metadata.relationshipType="include_dependency"`, `isSystem` from the form. ALSO published on the import-SITE channel as `ImportInfo[]` | `1.0`; class `import_based` (`:6205`) |
-| part_of | **EMITTED** | THE SAME `preproc_include` CONSTRUCT AS `imports`, DISTINGUISHED BY THE WRITTEN FORM: a QUOTED `"x.h"` is the unit's own FRAGMENT (it shares the including unit's single scope, imports nothing, cannot be resolved as a separate module), so it is `part_of`, not `imports`. Source = the including unit (file scope); target = the part's MODULE SYMBOL (its file stem) — NOT the specifier and NOT the path; `metadata.partRole="part"`, `relationshipType="part_of_directive"`, `isImport=false`; the written form is kept as `specifier` and the joined path as `partPath`, both as EVIDENCE, neither as the target | `1.0`; class `structural`. The target is a SYMBOL because the arbiter resolves target strings against symbol NAMES and has no space for a path: MEASURED, a path target resolved 0 of 4,612 `part_of` rows and the symbol target resolved 383 of the same 4,612 |
+| part_of | **EMITTED** | THE SAME `preproc_include` CONSTRUCT AS `imports`, DISTINGUISHED BY THE WRITTEN FORM: a QUOTED `"x.h"` is the unit's own FRAGMENT (it shares the including unit's single scope, imports nothing, cannot be resolved as a separate module), so it is `part_of`, not `imports`. Source = the including unit (file scope); target = the part's MODULE SYMBOL (its file stem) — NOT the specifier and NOT the path; `metadata.partRole="part"`, `relationshipType="part_of_directive"`, `isImport=false`; the written form is kept as `specifier` and the joined path as `partPath`, both as EVIDENCE, neither as the target | `1.0`; **class `usage_contextual`, NOT `structural` — this cell said `structural` and the code has never agreed with it (M65)**. `classifyEvidenceTier` (`real-cpp-analyzer.ts:6288-6303`) has arms for `contains`/`exports`, `imports`, `references`, `extends`/`implements`/`overrides` and `instantiates` and **no arm for `part_of`**, so every row falls through to the final `usage_contextual` default at `:6303`. Measured at whole population: **365 of 365 `part_of` rows carry `usage_contextual` and 0 carry `structural`** (`validation/cpp-audit/census.json`). That is the wrong tier for a row read off a NAMED grammar node whose discriminator is the written form, and it is a one-line fix — but until it lands, this cell states what the code does. |
 | references | **EMITTED** | `using`-dependencies only (the includes moved to `imports` in the ontology round); target = the used name | `0.9`; class `import_based` when `isImport`, else `reference_qualified` (`:6206`) |
 | exports | **EMITTED** | three sites, all `module_export`: an export-marker macro in the function SPECIFIER (`:4307`), the same in a class HEAD (`:3602`), and a file-scope marker (`:5481`) | `1.0`; class `structural` (`:6198`) |
 | extends | **EMITTED** | the `base_class_clause`'s children, which are FLAT (`type_identifier`, `qualified_identifier`, `template_type`), plus the ERROR-node clause of a MACRO-DECORATED head (`:3584`) | `1.0`; class `structural` |
@@ -296,7 +296,7 @@ The table below is the count table the earlier rounds produced; it counts the te
 | references | **EMITTED** | 27 | 7 | 21 | `using`-dependencies only (the includes moved to `imports`) |
 | instantiates | **EMITTED** | 21 | 14 | 20 | `new_expression` -> constructed type |
 | overrides | **EMITTED** | 9 | 2 | 9 | base-class virtuals, transitive, signature-aware |
-| implements | **EMITTED** | 0 | 0 | 0 | measured on four legs below |
+| implements | **EMITTED** | 0 | 0 | 0 | measured on four legs below. **NOT ZERO IN GENERAL — the 0 is this corpus, not the type (M65).** A re-measurement on a different two-repo corpus reads **34 rows over 9 files / 28 distinct pairs** (`validation/cpp-audit/census.json`), which agrees with this lane's own population census (`CPP-D2.md`: 375 at 7,435 files). The "0" here means *this 128-file corpus declares no derived class whose base it also declares*, which is a fact about the corpus's contents and not about `implements`' status — a reader who takes this cell for the type's status will conclude the emission is dead when it is live. |
 
 Totals after the CPP3 round: **6,060 symbols and 10,339 relationships** over the 128
 admitted files (from 6,197 and 10,636 at the ontology round's HEAD). The delta is
@@ -546,6 +546,11 @@ which is the machine-readable answer to "which declaration did the resolver inte
 wants to bind them uniquely can read that field; the analyzer cannot make two same-named member
 symbols one. Fixtures: cpp went from 42 pass / 9 fail to **50 pass / 1 fail** (§ the remaining
 failure is `friend-definition-body-owner`, a stale pin discussed in `CPP-STATE.md`).
+**CLOSED IN M65: that pin now PASSES.** `bun run script/m14/run-fixtures.ts --lang cpp` reports
+**57 pass / 0 fail**, so the "42/9 → 50/1, with one recorded conflict remaining" state this paragraph
+describes is history — the fixture was reconciled to the landed friend-definition behaviour and the
+conflict is gone. The 1-fail figure is retained here only because the sections below record the run
+that produced it; it is not the current state.
 
 **Whole-population AFTER (same command, one run, rc=0, 2026-10-17):** `overrides` = **1,875 edges ·
 0 resolved · 0 collRes · 1,875 amb(decl) · 0 unresolved · 0 noDecl** (was 1,875 unresolved), and the
@@ -1244,7 +1249,18 @@ red — measured, 10 mutant runs): `calls` 19 fixtures red · `uses` 17 · `cont
 **RULED NOT APPLICABLE, with grammar-absence evidence:** `decorates` (no decorator/annotation
 production; `attribute_specifier` exists but is adjudicated as exports + metadata, the same
 ruling java made for annotations), `renders` (no JSX production), `mixes_in` (no mixin/with
-production), `part_of` (no part directive — `#include` is `imports`).
+production).
+
+**`part_of` WAS RULED HERE AND THE RULING WAS WRONG — CORRECTED IN M65.** This paragraph used to
+list `part_of` as "no part directive — `#include` is `imports`", which contradicted the row the
+same document carries two hundred lines above it (`part_of` **EMITTED**, from a QUOTED
+`#include`) and contradicted the analyzer. The ruling was right about the *grammar* and wrong about
+the *mapping*: C++ has no `part`/`part of` directive, and the construct that carries the relation is
+the quoted include, which shares the including unit's single scope and imports nothing — the
+contract's own test for `part_of`. It is emitted today at **365 rows over 174 files** on a corpus
+the lane has never measured (`validation/cpp-audit/census.json`), and the live coverage artifact
+records it as the **only** cpp type the differential does not audit (`part_of` is the single
+`DERIVATION` finding for `cpp` in `validation/m60/results/rel-type-coverage.json`).
 
 **THE C++ RULINGS the programme asked to be proved rather than assumed** (full text in the
 spec table's `rulings` block, IDs CPP-R1–R4):
@@ -1331,7 +1347,8 @@ synthetic positive+negative cases and a self-test that proves the matcher can fa
 `validation/m14/verification/CPP-D4-AUDIT.md` (+ `CPP-D4-ORACLE.md` for the inventory/wiring patch).
 
 **D5 — permissions.** Fixtures **51 pass / 1 fail** (the recorded `friend-definition-body-owner` contract
-conflict, unchanged from baseline; exit 0, "no regressions"); completeness inventory 212 types, lane-pass 8/8;
+conflict, unchanged from baseline; exit 0, "no regressions" — **superseded in M65: the suite is now
+57 pass / 0 fail, so both the count and the conflict are out of date here**); completeness inventory 212 types, lane-pass 8/8;
 **no-regex CLEAN** at the AST level (`script/m14/cpp-no-regex-census.ts`: RegExpLiteral 0 · new RegExp 0 ·
 regex argument 0; 9 allowed STRING arguments to split/replace, i.e. the character scans); perf row measured on
 the differential's fmt extension universe, 60-file draw — mean **146 ms/file**, median 31.14, p90 491.05, max
@@ -1357,7 +1374,8 @@ script or this analyzer** (other lanes' pre-existing errors are not this lane's 
 no external claims, and the gate's own claim block reads a MEASURED zero of 469,395 ambiguous rows); every
 number above travels with its command and scope; negative results written down (indexed arm structurally
 inert, `contains/global`-owner contract question, shared-oracle over-derivations where the ANALYZER is the
-deciding side, the `.h`-by-content population boundary, the `friend-definition-body-owner` stale pin).
+deciding side, the `.h`-by-content population boundary, the `friend-definition-body-owner` stale pin
+(now closed — 57/0 — but kept in this list because it is what the D6 run actually recorded).
 
 ## Differential ground truth
 
@@ -1391,14 +1409,24 @@ deciding side, the `.h`-by-content population boundary, the `friend-definition-b
   wrote evidence — the harness says so itself ("a scoped run is for inspecting
   lanes, and writing it here would replace that claim with a smaller one"), so
   `validation/m14/results/*` is **not** regenerated by this round.
-- **The differential cannot audit 5 of the 9 types this lane emits.** Its
-  compared-label set for `cpp` is `calls, extends, implements, instantiates, uses`.
-  `contains`, `overrides`, `references`, `imports` and `exports` are therefore
-  **DERIVATION findings** in `validation/m60/results/rel-type-coverage.json` — "the
-  type is stored and compared against nothing" — and `implements` is in the audited
-  set while the analyzer emits 0 of it, which is the mirror-image waste. This round
-  closed the lane's half of that with `script/cpp-review/ontology-oracle.ts`; see
-  the oracle section for its agreement numbers and for the limit both sides share.
+- **The differential cannot audit 1 of the 10 types this lane emits — `part_of`. IT AUDITS THE OTHER NINE.**
+  This bullet used to say "cannot audit 5 of the 9" and name `contains`, `overrides`, `references`,
+  `imports`, `exports` as DERIVATION findings. **That is history, not the current state.** The five were
+  wired in on 2026-10-18 (`differential.ts:26130` adds
+  `contains, references, imports, exports, overrides` to cpp's compared set; `:26061` adds
+  `extends`/`implements`/`instantiates`; `:26094` adds `calls`/`uses`; and `cpp-truth.ts:831
+  deriveCppUnadmittedTruth` pushes all five with cpp's own derivers), so the compared set is now
+  `["calls","contains","exports","extends","implements","imports","instantiates","overrides","references","uses"]`.
+  The **live artifact says the same thing** — `validation/m60/results/rel-type-coverage.json`
+  (2026-10-23) records exactly **one** `DERIVATION` finding for cpp:
+  `emits \`part_of\` but the differential audits [the nine above] — the type is stored and compared against
+  nothing`. **That is the real gap**, and it is why this round's `part_of` work is a proposal rather than a
+  claim: the newest emitted type has **no second opinion at all** — no cpp `part_of` truth exists in
+  `cpp-truth.ts`, in `differential.ts`, or in any lane oracle (dart, php, erlang and rust each have a
+  lane-owned `part_of` oracle; cpp has none). A `deriveCppPartOfTruth` is the missing instrument, and it is
+  the one that would have caught both `part_of` defects recorded below. This round closed the lane's half of
+  the *previous* five with `script/cpp-review/ontology-oracle.ts`; see the oracle section for its agreement
+  numbers and for the limit both sides share.
 - **Truth SHRANK while coverage stayed at 100%** — `fmt:cpp` truth 4,600 → ~4,500
   — and that is the point: the oracle was deriving the same fabrications the
   analyzer was, and both sides agreed. Fixing the analyzer without sharing the
@@ -1411,9 +1439,13 @@ deciding side, the `.h`-by-content population boundary, the `friend-definition-b
   specialization — 18 rows, measured.
 ## Fixtures and mutants
 
-**39 cpp fixture suites; the harness reports `{"cpp":{"pass":39,"fail":0}}`**
-(`bun run script/m14/run-fixtures.ts --lang cpp`, run at this commit — the harness
-emits that verdict, this document does not). **Two are new in the CPP2 round** and
+**57 cpp fixture suites; the harness reports `{"cpp":{"pass":57,"fail":0}}`**
+(`bun run script/m14/run-fixtures.ts --lang cpp`, re-run at M65 — the harness emits
+that verdict, this document does not). **This cell said 39** through the CPP3 round
+and was 18 suites out of date; the 57 is measured, and the **1-fail state that every
+earlier round records is gone** — `cpp/friend-definition-body-owner`, the standing
+contract conflict named in the D4/D5/§I1 sections above, now passes.
+**Two are new in the CPP2 round** and
 **one is new in the CPP3 round** (`cpp/class-scope-constructor`), each proved to FAIL
 against a deliberately broken analyzer by `script/cpp-review/cpp2-source-mutants.ts`
 (**7 of 9 mutants caught, 2 disclosed survivors** — see below), and **two pre-existing
@@ -1615,7 +1647,7 @@ branch fire", and because a ruling with no measurement is a defect.
 | `script/cpp-review/pure-virtual-census.ts` | pure-virtual sites by grammar shape, and whether each is published | 7 sites, 7 published, 0 missed |
 | `script/cpp-review/macro-decorated-head-census.ts` | the four decorated-head shapes, and what the analyzer published for each | D16/D17/D18 at 0 |
 | `script/cpp-review/perf-interleaved.ts` | payload (rows + bytes, per type) and interleaved latency | ontology→CPP2: −288 rows, −1.85% bytes, ratio 1.121 median / 0.877 best. CPP2→CPP3: −9 rows, −2,023 bytes (−0.08%), ratio 1.108 median / 0.982 best, spreads overlapping |
-| `script/cpp-review/source-integrity.ts` | **D24 and D27.** Three assertions on the analyzer's own BYTES: zero C0 control bytes, D6's regex-literal algorithm re-counted, and zero ERROR/MISSING nodes under tree-sitter-typescript (the condition `audit-analyzer-grammar.ts` only warns about). Carries a **self-test that injects each defect separately** and asserts the EXPECTED outcome per arm, including the two arms that document D6's blind spots rather than hiding them | **PASS, 0 findings, 0 blind assertions, 7 self-test arms** — 0 NUL bytes, 0 D6 findings, 0 TS parse errors |
+| `script/cpp-review/source-integrity.ts` | **D24 and D27.** Three assertions on the analyzer's own BYTES: zero C0 control bytes, D6's regex-literal algorithm re-counted, and zero ERROR/MISSING nodes under tree-sitter-typescript (the condition `audit-analyzer-grammar.ts` only warns about). Carries a **self-test that injects each defect separately** and asserts the EXPECTED outcome per arm, including the two arms that document D6's blind spots rather than hiding them | **RED AT M65 — the cell said "PASS, 0 findings, 0 blind assertions, 7 self-test arms" and it is now `FAIL — 3 finding(s), 1 blind assertion(s)`, exit 1.** Measured on the unmodified analyzer at HEAD: `bytes 388180 · NUL bytes 0 · findings 3`, the three being `/hpp/` (line 1), `/[*&\s]+/g` (line 114) and `/** ONE CHARACTER SWAPPED…` (line 197) — **all three are comment prose, not code**. The cause is in the gate, not the analyzer: `source-integrity.ts:96-115` splits the file into lines and matches on **every line including comments**, while the D6 it says it restates (`defect-register.ts:879-918`) **strips block comments, line comments and string literals first**. Both algorithms were run over the same bytes: the register's D6 reads **0** (so the analyzer's zero-regex claim is TRUE and independent of this lane), the restatement reads **3**. The self-test's `expectedFound=false` arm asserts the mutated file reports **0** findings against a baseline that is now 3, so it can never pass until the scanner learns to strip comments. Reported, not fixed here: the gate is lane-owned but the fix is a scanner change, and `script/m14/**` is master-owned. |
 
 `script/cpp-review/relationship-ontology.ts` is the lane's ontology GATE and runs three
 checks: every engine value is documented; the doc's verdict matches the analyzer's push
@@ -1642,7 +1674,7 @@ run say so and say why.
 | grammar audit | `bun run script/m14/audit-analyzer-grammar.ts` | cpp **PASS** `refs=88 unknown=0 unknownFields=0`. **Read this with the caveat below** — cpp reported `FAIL unknown=2` at the ontology HEAD and the flip is an ARTIFACT, see the next paragraph. The gate as a whole exits 3 on `rust` (2 unregistered literals) |
 | typecheck | `npx tsc --noEmit -p tsconfig.json` | no errors |
 | shared differential, cpp | `bun run script/m14/differential.ts --lang cpp` / `--repo fmt` | **CANNOT RUN HERE** — the pinned cpp corpora (`fmt`, `nlohmann-json`) are absent from this machine, and the harness refuses a corpus it was not pinned to (`corpus repo missing`). The lane oracle is the substitute and it is stated as such everywhere it is quoted |
-| shared ontology coverage gate | `bun run script/m14/ontology-coverage-gate.ts cpp` | **exits 2 — `no RULING TABLE for cpp`**. The gate's own refusal is correct: with an empty table it would call every un-emitted type RULED-UNJUSTIFIED, which is a verdict about the table. `script/m14/**` is master-owned; the four-leg ruling above is written to be pasted into that table |
+| shared ontology coverage gate | `bun run script/m14/ontology-coverage-gate.ts cpp` | **exits 2 — `no RULING SOURCE for cpp`.** (The cell said `no RULING TABLE`; the gate's current wording is "no RULING SOURCE" and the exit code is still 2.) The gate's own refusal is correct: with an empty table it would call every un-emitted type RULED-UNJUSTIFIED, which is a verdict about the table. **Verified at M65: `RULED_BY_LANG` (`ontology-coverage-gate.ts:544-575`) holds 26 languages and `cpp` is not one of them** — bash, json, lua, toml, fsharp, nim, protobuf, zig, julia, css, xml, php, sql, scss, markdown, clean, r, graphql, dart, powershell, python, html, javascript, svelte. `script/m14/**` is master-owned; the four-leg ruling above is written to be pasted into that table |
 | payload matrix (M60.P1) | `npx tsx script/m60/payload-matrix.ts` | cpp **12 dead emit cells**, unchanged from the ontology round — this round moved no payload field. Two of the twelve are the stale needles the doc already names (`isStatic` looked for as a key, `qualified_calls` looked for in a `key:` form) |
 | grammar pins | `bun run script/m14/verify-grammar-pins.ts` | **RED for every language on this machine, and RED at HEAD too** (69 failures in the root worktree, 77 in this one). The cpp rows are `vendored file removed: src/parser.c`, `src/grammar.json`, `src/node-types.json`, `src/tree_sitter/*.h` — those paths are **gitignored** (`grammars/tree-sitter-*/src/*`), so a fresh clone never has them and the gate is measuring the checkout, not the grammar. Pre-existing, not caused by this round |
 | honesty gate | `bun run script/m14/verify-honesty.ts` | **21 failures, all of them evidence FRESHNESS** (F2–F9: "N declared input(s) changed since <sha> — regenerate"). **The same 21 fail at the ontology HEAD with my analyzer change stashed**, so the analyzer change adds to the count rather than causing it. The artifacts are master-owned (`validation/m14/results/*.json`) and need regeneration on a machine holding the full 41-language corpus |
@@ -1670,7 +1702,7 @@ rewritten by its own last writer.
 | fixtures | `bun run script/m14/run-fixtures.ts --lang cpp` | **39 pass / 0 fail**; baseline gate `no regressions` |
 | fixtures, pre-fix | the D25 guard reverted in place | **38 pass / 1 fail**, `cpp/class-scope-constructor` the only failure |
 | source mutation (this lane) | `bun run script/cpp-review/cpp2-source-mutants.ts` | **7 of 9 caught, 2 disclosed survivors**, exit 0. New: `cpp3/d25-class-scope-ctor-self-call`, `cpp3/d25-overfires-on-method-self-call`, `cpp3/d27-whitespace-not-collapsed` caught; `cpp3/d24-nul-separator-restored` a disclosed survivor |
-| source integrity (this lane) | `bun run script/cpp-review/source-integrity.ts` | **PASS** — 0 NUL bytes, 0 D6 findings, 0 TS parse errors; **7 self-test arms, 0 blind assertions**, including the two that pin D6's blind spots |
+| source integrity (this lane) | `bun run script/cpp-review/source-integrity.ts` | **RED at M65 — this row said "PASS — 0 NUL bytes, 0 D6 findings, 0 TS parse errors; 7 self-test arms, 0 blind assertions". Measured now: `FAIL — 3 finding(s), 1 blind assertion(s)`, exit 1.** All three findings are comment prose flagged by a scanner that does not strip comments, and the self-test cannot pass because its zero-baseline arm is written against a clean file. The analyzer is correct (D6 proper reads 0); the gate is what is wrong. See the instrument table above |
 | shared mutation | `BB_MUTANT_ONLY="cpp/" bun run script/m14/mutate-analyzer.ts` | **all 55 mutants caught** (1,483 → 55) |
 | lane ontology gate | `bun run script/cpp-review/relationship-ontology.ts` | **PASS** — engine values 10, analyzer emits 9, `implements` silent and documented as ruled |
 | lane oracle | `BB_CORPUS_ROOT=… CPP_REPOS=sqlite,cpp-sample bun run script/cpp-review/ontology-oracle.ts` | **100% on all five**: `imports` 169/169, `exports` 61/61, `extends` 26/26, `overrides` 9/9, `contains` **3,535/3,535** |
@@ -1717,23 +1749,25 @@ rewritten by its own last writer.
 
 ## The DERIVATION findings, and the lane oracle that answers them
 
-`validation/m60/results/rel-type-coverage.json` records five DERIVATION findings for
-`cpp` — the analyzer emits a type that the M14 differential never compares against
-anything:
+**UPDATED IN M65 — there is now ONE finding for cpp, not five.**
+`validation/m60/results/rel-type-coverage.json` (at `2026-10-23T20:21:54Z`) records a single
+`DERIVATION` row for this lane — the analyzer emits a type that the M14 differential never
+compares against anything:
 
 ```
-DERIVATION|cpp|emits `contains`   but the differential audits ["calls","extends","implements","instantiates","uses"]
-DERIVATION|cpp|emits `overrides`  …
-DERIVATION|cpp|emits `references` …
-DERIVATION|cpp|emits `imports`    …     (new in this round)
-DERIVATION|cpp|emits `exports`    …     (new in this round)
+DERIVATION|cpp|emits `part_of` but the differential audits
+  ["calls","contains","exports","extends","implements","imports","instantiates","overrides","references","uses"]
+  — the type is stored and compared against nothing
 ```
 
-"Stored and compared against nothing" is worth as much as adding anything, because
-an unverified edge ships a bug invisibly — and this round is the argument: the
-`overrides` branch was live, correct, and had produced **zero** edges on this corpus
-for a whole wave, and `references` was mislabelled for the same period. Neither fact
-is derivable from the source.
+The five findings this section used to list are **closed**. They were
+`contains`, `overrides`, `references`, `imports` and `exports`, and the analyzer emitted every
+one of them while the shared gate compared none — the exact condition "stored and compared
+against nothing". The wiring landed on 2026-10-18 (`differential.ts:26130`,
+`cpp-truth.ts:831`), so the audited set is the nine labels above and the `DERIVATION` list is
+down to `part_of` alone. The historical five are kept in the paragraph below because the argument
+they carried still holds, and because a `DERIVATION` finding is worth as much as an emission:
+an unverified edge ships a bug invisibly.
 
 `script/cpp-review/ontology-oracle.ts` is the lane's answer: a second walker over
 the same grammar, re-deriving `imports`, `exports`, `extends`, `overrides` and
@@ -1771,7 +1805,7 @@ made. Each item states the measurement that makes the need specific.
 
 | # | file | the need | the measurement that motivates it |
 |---|---|---|---|
-| 1 | `script/m14/ontology-coverage-gate.ts` | **add a `cpp` RULING TABLE.** The gate exits 2 for this lane with `no RULING TABLE for cpp`, and its own header says a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED — a verdict about the table, not the lane. The entry is the four-leg `implements` ruling above: instrument A = `concept_definition` / `requires_clause` / `pure_virtual_clause`, plus the grammar-token count (0 `'implements'`, 0 `'interface'`). The other 9 types are EMITTED and need no table entry | the gate refuses to report for cpp at all today |
+| 1 | `script/m14/ontology-coverage-gate.ts` | **add a `cpp` RULING TABLE.** The gate exits 2 for this lane with `no RULING SOURCE for cpp`, and its own header says a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED — a verdict about the table, not the lane. **Re-verified at M65: `RULED_BY_LANG` still has 26 keys and `cpp` is not among them, so this need is still open.** The entry is the four-leg `implements` ruling above: instrument A = `concept_definition` / `requires_clause` / `pure_virtual_clause`, plus the grammar-token count (0 `'implements'`, 0 `'interface'`). The other 10 types are EMITTED and need no table entry — and `part_of` must be added to the EMITTED side, because the ruling table this lane would paste is the instrument that would have flagged `part_of`'s missing evidence-class arm | the gate refuses to report for cpp at all today |
 | 2 | `script/m14/differential.ts` | add the **ERROR-node base-clause arm** to the shared cpp oracle | 3 of the corpus's 42 `extends` edges come from a `base_class_clause` the grammar parks in an `ERROR` node; 1 falls in a 60-file draw and is counted unexplained (0.1%) |
 | 3 | `script/m14/differential.ts` | add `contains`, `overrides`, `references`, `imports`, `exports` to the **compared-label set** for cpp | cpp sits on the DERIVATION list with 5 findings; the lane's own oracle measures 100% agreement on all five, but the shared gate is what `validation/m60/rel-type-coverage-baseline.json` reads, so this lane cannot leave that list no matter what the lane oracle says |
 | 4 | `script/m14/mutate-analyzer.ts` | `cpp/d3-duplicate-contains-and-references` now duplicates the **wrong kind** — the include edges it de-duplicates moved to `imports`. Add `imports` to its filter. Then add result-level mutants for the CPP2 rules where one is derivable: the `exports` marker rule, the `returnType` strip, the decorated-head four-arm reader, `init_declarator` in the declarator-wrapper list | the mutant's own description is now false; it asserts a `references` duplication that moved |
@@ -1859,9 +1893,12 @@ made. Each item states the measurement that makes the need specific.
   so one row per 60-file draw counts as `unexplained`. Named and explained above;
   the fix is one arm in `script/m14/differential.ts`, which is master-owned.
 - **`script/m14/differential.ts` needs a cpp ruling table** for
-  `script/m14/ontology-coverage-gate.ts`: the gate's `RULED_BY_LANG` has `bash` and
-  `json` and nothing else, so running it for `cpp` exits 2 with "no RULING TABLE for
-  cpp" — it refuses to report rather than calling every un-emitted type
+  `script/m14/ontology-coverage-gate.ts`: the gate's `RULED_BY_LANG` has **26 languages**
+  (as of M65: bash, json, lua, toml, fsharp, nim, protobuf, zig, julia, css, xml, php, sql,
+  scss, markdown, clean, r, graphql, dart, powershell, python, html, javascript, svelte)
+  and **`cpp` is not one of them** — this bullet said "`bash` and `json` and nothing else",
+  which was already out of date when it was written. Running it for `cpp` exits 2 with
+  "no RULING SOURCE for cpp" — it refuses to report rather than calling every un-emitted type
   RULED-UNJUSTIFIED, which is correct behaviour and still means the one gate whose
   header explains this whole workstream cannot be run for this lane. What it needs
   is this lane's `implements` row (instrument A, `concept_definition` /
@@ -1914,3 +1951,128 @@ made. Each item states the measurement that makes the need specific.
   shared across four lanes.
 
 - **C8 (2026-10-18): a macro-decorated class WITH a base clause is named by its real sibling identifier, not by its base.** `class GTEST_API_ Derived : public Base {…}` parses as `class_specifier` (name field = the MACRO) + a bare `identifier` sibling (the real name) + an `ERROR` holding `": public Base"`. Arm 1 used to fire on any ERROR holding an identifier and a colon, so it named the class after its BASE and lost the class and its `extends` edge. `colonFirst` now decides: the colon before the identifier means the ERROR is the base clause, arm 3 reads the sibling name, and the ERROR's identifiers are collected as bases. Verified on the C8 shape and on A2/A1 controls (`.tmp-f48/probes/c8-verify.mts`).
+
+## M65 — re-measured on a corpus this lane has never seen, and the documentation corrected against it
+
+**Why this round exists.** Every number above was measured on a corpus that is **not on this machine**.
+This document says so itself in three places (the defect register "all five corpora absent", the
+differential "CANNOT RUN HERE", the honesty gate "needs a machine holding the full corpus"), and every
+one of those gates re-run today still refuses. So the claims could be *read* but not *checked*. This
+round checked them: a two-repo corpus was cloned (fmt `10.2.1`, nlohmann-json `v3.11.3`), and a new
+instrument — `script/cpp-audit/census.ts` — measured **523 C++ files · 17,597 symbols · 78,093
+relationship rows · 0 parse failures** through the production entry (`ASTEngine.parseFile`, the call
+`engine.ts` itself makes, never `analyze()`). Raw evidence: `validation/cpp-audit/census.json`.
+The audit page: `docs/m65-cpp/C++-ANALYZER-AUDIT.md`.
+
+**The headline is favourable and it is measured, not assumed.** The fabrication classes this lane built
+gates for hold on a corpus it has never run: D1 keyword targets **0 / 64,136 rows** (against an
+independently derived ISO keyword list, not `CPP_KEYWORDS`), D1 keyword symbol names **0 / 17,597**,
+D2 self-extends **0 / 478**, duplicate `(source,target)` in one file **0** for `contains`/`references`/
+`imports`, V3 unpublished-shape names **0 / 17,597**, R7 placeholder endpoints **0**. The zero-regex
+claim is **independently confirmed**: D6's own algorithm, which strips comments and strings, reads
+**0** regex literals in the analyzer source. All eleven relationship types emit.
+
+**What this round corrected in THIS document** — each cell was re-run before it was changed, and the old
+text is quoted in place rather than deleted, because a lane's history is not its last writer's:
+
+| # | the claim this document carried | measured now | verdict |
+|---|---|---|---|
+| 1 | "39 cpp fixture suites; `{"cpp":{"pass":39,"fail":0}}`" | **`{"cpp":{"pass":57,"fail":0}}`** | 18 suites stale |
+| 2 | `friend-definition-body-owner` is "the recorded contract conflict", the standing 1 fail (named in D4, D5, §I1 and the CPP3 gate table) | **it PASSES.** The suite is 0 fail, so the conflict is closed and was never recorded as closed | safe direction |
+| 3 | "the differential cannot audit 5 of the 9 types"; five DERIVATION findings (`contains`, `overrides`, `references`, `imports`, `exports`) | **all five are wired.** The live artifact records **one** finding for cpp — `part_of` — against a nine-label audited set | gap **closed**, finding list never updated |
+| 4 | `source-integrity.ts` "**PASS**, 0 findings, 0 blind assertions" | **`FAIL — 3 findings, 1 blind assertion`, exit 1** | **unsafe** — a red gate documented green |
+| 5 | `part_of` row: evidence class **`structural`** | **`usage_contextual`, 365 of 365 rows** | code and doc contradicted each other |
+| 6 | `part_of` listed BOTH as "RULED NOT APPLICABLE" (applicable-set section) and as **EMITTED** (ontology table) | emitted — **365 rows / 174 files** | the ruling was wrong; corrected |
+| 7 | `implements` count table: **0 rows**, "measured on four legs below" | **34 rows / 9 files** on this corpus, 375 at this lane's own population | the 0 is the 128-file corpus, not the type |
+| 8 | `RULED_BY_LANG` "has `bash` and `json` and nothing else" | **26 languages**, `cpp` still absent → gate still exits 2 | stale, need still open |
+
+**Two defects this round found in the analyzer's behaviour, both in `part_of`** — the one emitted type
+with **no oracle at all** (no cpp `part_of` truth exists in `cpp-truth.ts`, in `differential.ts`, or in
+any lane oracle; dart, php, erlang and rust each have one). They were reported first and then **fixed in
+the same round**, because the emit surface was the point of the round:
+
+1. **`evidenceClass` was `usage_contextual` on 365 of 365 rows — NOW `structural`, MEASURED.** 
+   `classifyEvidenceTier` had arms for `contains`/`exports`, `imports`, `references`,
+   `extends`/`implements`/`overrides` and `instantiates`, and **no arm for `part_of`**, so every row
+   fell through to the final default. **FIXED**: a `part_of` arm was added beside the `imports` one
+   (same argument — a dependency row whose evidence is a directive is a module dependency, not a usage),
+   and the unreachable duplicate `if (t === "imports")` arm two lines below it was removed in the same
+   edit. Re-measured: **360 of 360 rows now carry `structural`** and 0 carry `usage_contextual`.
+2. **`part_of` de-duplicated on the PATH while emitting under the STEM.** The guard read
+   `referencesSeen.has(includePath)` (`"fmt/format.h"`) while the row emitted `cppPartSymbol(includePath)`
+   (`"format"`). Two quoted includes sharing a stem therefore emitted two identical rows — the
+   `one edge per pair` contract, broken. **Measured 5 rows**: `fmt/src/fmt.cc` twice
+   (`"fmt/format.h"`+`"format.cc"`, `"fmt/os.h"`+`"os.cc"`), and three nlohmann Fuzzer files
+   (`"FuzzerExtFunctions.h"`+`"FuzzerExtFunctions.def"`). **FIXED**: the key is now the emitted target
+   **scoped by relationship type** (`${type} NUL ${target}`), and the row reads the same value.
+   Re-measured: **`part_of` 365 → 360 (−5), and those 5 are exactly the duplicates**; every other type is
+   unchanged.
+   **The type scoping is load-bearing, and it was learned by measurement.** A first cut keyed the shared
+   set on the target alone, which suppressed 5 *real* `imports` rows: `part_of` (QUOTED) and `imports`
+   (ANGLE) are two relationship types that can name the same string — `"fmt/ranges.h"`→`part_of: ranges`
+   and `<ranges>`→`imports: ranges`; `"absl/types/any.h"`→`any` and `<any>`→`any`. The census's
+   before/after row counts caught it; the code read as correct. `imports` is back to **1968, identical to
+   before this round**, which is the assertion that the fix is a dedup and not a loss.
+
+**One defect found in a lane gate — FIXED, AND IT IS THE REASON THE GATE WAS RED.** `source-integrity.ts`
+was red at HEAD (row 4 above). Its scanner (`:96-115`) matched on every line **including comments**; the
+D6 it says it restates (`defect-register.ts:879-918`) **strips comments and strings first** — its own
+comment says "COMMENTS ARE NOT CODE". Both algorithms run over the same bytes: the register's D6 reads
+**0** (so the analyzer's zero-regex claim is true), the restatement read **3**, all comment prose
+(`/hpp/` line 1, the removed-regex documentation at line 114, and a one-line doc comment at line 197).
+**FIXED**: the register's own character walk was copied in (strip block comments, strip line comments,
+copy string literals verbatim), and the self-test's `expectedFound: false` arm was changed from an
+absolute **zero** baseline to a **delta** over the file's own findings — an assertion about the baseline
+can never pass on a file that already has one. The gate now reports **`PASS — 0 findings, 0 blind
+assertions`, exit 0**, with all 7 arms PASS and each positive arm adding +1/+2 (so it can still fail).
+The two blind-spot arms were inverted to *pin the strip* rather than the blind spot, which is what the
+register's rule actually does.
+
+**One vocabulary hazard, measured and deliberately not called a defect.** `calls … -> global` occurs 6
+times, all `metadata.qualified = "std::locale::global"`. The rows are **correct** — `std::locale::global`
+is a real standard-library function and its callee leaf is `global` — but `global` is also this lane's
+file-scope **SOURCE** sentinel, so a consumer filtering the sentinel loses a real call, and the R7 "0
+placeholder targets" rule cannot flag it without flagging a real edge. `global` is a legal C++ identifier,
+so this is a vocabulary collision rather than a fabrication. It is the `anonymous` class of defect, and
+`anonymous` cannot be fixed the way D21 fixed it (by declining to publish) because this is a source
+sentinel, not a symbol.
+
+**What was deliberately NOT done.** The 1,282,777-row whole-population census (needs the 31-repo
+corpus), the defect register's D1–D8 over its 1,722-file corpus (five corpora still absent), and the
+`.h` admission question (a property of `incoming-gate.ts:314`, already measured as "the fix landed but
+the residual gate's population did not move"). Re-measuring through the wrong gate would have produced a
+confident zero.
+
+**The `overrides` SOURCE defect, corrected — and it is not what this round first said.** This round's audit
+page initially reported the dot-spelled source (`real-cpp-analyzer.ts:5473` wrote
+`` `${pend.cls}.${pend.method}` ``) as "0 of 134 rows unresolvable". **That was wrong, and the correction
+matters more than the original claim.** The resolver's own `extractLeaf` (`pool-worker.ts:879`) splits on
+**both** `:` and `.`, so a dot-spelled source still reaches its LEAF and still binds — every one of the 134
+rows resolved. What it bound to was a **NAME, not a declaration**: measured over this corpus, **134 of 134
+sources landed on an AMBIGUOUS key**, because the method leaf is declared more than once in every file
+(`no_grouping.do_decimal_point` and `special_grouping.do_decimal_point` become indistinguishable once the
+class is dropped; in fmt's `xchar-test.cc` the leaf `do_decimal_point` is declared 4×). Changing the spelling
+to `::` resolves **134 of 134 as well, but 120 of them EXACTLY and unambiguously, leaving 14** — and those
+14 are genuine C++ (one declaration plus one out-of-line definition of the same method, e.g. `Mutex::Lock` at
+two lines), not a spelling defect. **FIXED**: the source is now `${pend.cls}::${pend.method}`, the same
+spelling the analyzer publishes for members in the L-W4 block below it, and the internal dedup key was
+changed to match. Measured after: **0 dot-spelled sources**, 134/134 resolved.
+
+**What was deliberately NOT done.** The 1,282,777-row whole-population census (needs the 31-repo
+corpus), the defect register's D1–D8 over its 1,722-file corpus (five corpora still absent), and the
+`.h` admission question (a property of `incoming-gate.ts:314`, already measured as "the fix landed but
+the residual gate's population did not move"). Re-measuring through the wrong gate would have produced a
+confident zero.
+
+**All four defects are now fixed and gated.** (1) `overrides` SOURCE → `::` spelling, 134/134 rows,
+ambiguity 134 → 14 (the remainder genuine). (2) `part_of` evidence class → `structural`, 360/360 rows.
+(3) `part_of` dedup → keyed on the type-scoped emitted target, 5 duplicates removed and `imports`
+unchanged at 1,968. (4) `source-integrity.ts` → strips comments, self-test is baseline-relative, gate
+**PASS 0/0**. Eight fixtures updated to the `::` spelling (with every semantic assertion preserved), one
+fixture added (`cpp/part-of-stem-dedup-965`, proven to FAIL against the pre-fix analyzer and to pass after),
+suite **58 pass / 0 fail**, grammar audit **PASS refs=106 unknown=0**, fixture coverage **PASS
+handled=44 uncovered=0 deadLiterals=0**.
+
+**What is left, and it is one instrument.** Add `deriveCppPartOfTruth` — cpp is the only lane with a
+`part_of` emission and no `part_of` truth, and defects (2) and (3) are exactly what a second opinion would
+have caught. Everything else this round found is fixed, measured, or named above as out of scope.

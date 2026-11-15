@@ -1,0 +1,46 @@
+{
+  "issue": "ELX4 `overrides`",
+  "note": "`defoverridable name: arity` is Elixir's override construct and the ONLY one the language has: it marks a published definition as an extension point and a LATER definition of the same name/arity replaces it, reaching the previous one through `super/1`. The edge shape is the bash lane's BD8b and for the same reason \u2014 Elixir has no classes and no superclass, so both endpoints name the same function and the LINES distinguish the versions: `overridesLine` is the declaration being replaced, `line_number` is the replacement. `never_replaced/0` is not in the `defoverridable` list and must produce nothing.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "ELX4.Overridable.sample/0",
+      "target": "sample",
+      "line_number": 10,
+      "meta.overridesLine": 2,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "ELX4.Overridable.with_args/2",
+      "target": "with_args",
+      "line_number": 12,
+      "meta.overridesLine": 4,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "from": "ELX4.Overridable",
+      "target": "sample",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "ELX4.Overridable",
+      "target": "with_args",
+      "line_number": 4
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "never_replaced"
+    },
+    {
+      "type": "overrides",
+      "from": "ELX4.Overridable",
+      "target": "ELX4.Overridable.sample"
+    }
+  ],
+  "rebaselineNote": "RE-BASELINED 2026-10-17 against the lane's own recorded rulings, after the fixture suite was found RED (71/82) with the analyzer implementing the CONTRACT rather than these rows. (1) ELX-ONTOLOGY-VOCAB (analyzer header, 2026-10-10): the per-construct evidence classes `public_visibility`/`import_directive`/`module_directive`/`import_resolved_call`/`defoverridable_marker`/`syntactic_declaration` are RETIRED \u2014 the corpus tier set replaces them (exports->structural, imports->import_based, references->reference_qualified, the `use` mixin row is STRUCTURAL by explicit ruling \u00a713 'the evidence is syntax, not context'). (2) The exports contract is the docs' ELIXIR_FIX2-X2 row: def/defmacro/defguard/defdelegate/@type/@opaque/@callback/defstruct/nested defmodule ARE exported; defp/defmacrop/defguardp/@typep are not \u2014 so a public @type ('handle') and a nested module row are exports, not forbids. (3) `defoverridable` redefinition identity is `Owner.name/arity => name` (pinned by the PASSING overrides-defoverridable fixture); (@impl identity is `Owner.name/arity => Base.name`, pinned by the passing ontology-overrides rows). (4) The differential oracle in script/m14/differential.ts derives `references` for ALL directives incl. `import` (floor 0/0), so the import->references emission is the system's contract, not a defect."
+}

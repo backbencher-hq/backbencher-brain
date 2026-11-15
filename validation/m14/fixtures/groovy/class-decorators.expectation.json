@@ -1,0 +1,16 @@
+{
+  "fixtureId": "groovy/class-decorators",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Method-level annotations (bare and FQ) must surface on method symbols; previously ONLY methods got annotations and classes never did. Pins bare @Deprecated and FQ @javax.annotation.PostConstruct both resolving to short names.",
+  "expectSymbols": [
+    { "name": "PlainService", "kind": "class" },
+    { "name": "oldWay" },
+    { "name": "init" }
+  ],
+  "expectDecorators": [
+    { "symbol": "PlainService", "contains": "Deprecated" },
+    { "symbol": "oldWay", "contains": "Deprecated" },
+    { "symbol": "init", "contains": "PostConstruct" }
+  ]
+}

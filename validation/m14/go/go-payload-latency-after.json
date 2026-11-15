@@ -1,7 +1,7 @@
 {
   "label": "after-fixes",
   "analyzerCommit": "1c06fcf9464e9f474567c3b9333abf09d800de0e",
-  "corpusRoot": "$HOME/fixtures/repositories/go-stdlib",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories/go-stdlib",
   "files": 400,
   "failed": 0,
   "relationships": 32519,

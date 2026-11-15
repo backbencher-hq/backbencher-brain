@@ -17,7 +17,7 @@
   "committedAt": "2026-11-04T18:46:59-05:00",
   "data": {
     "admitted": 2378,
-    "corpusRoot": "$HOME/mcp/backbencher-brain/.corpus",
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
     "drawn": 2378,
     "engineBombMs": 120000,
     "fallbackFileCount": 0,

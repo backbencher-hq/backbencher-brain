@@ -1,0 +1,61 @@
+{
+  "issue": "M21.D3",
+  "code": "D3",
+  "milestone": "M21",
+  "status": "verified",
+  "checks": 10,
+  "passed": 10,
+  "failed": 0,
+  "negativeCases": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m21/verify-sqlite-batch-throughput.ts",
+  "evidenceFile": "D3.json",
+  "generatedAt": "2026-09-01T13:56:26.575Z",
+  "corpus": {
+    "kind": "isolated-temporary-database",
+    "path": "temporary-only",
+    "revision": null
+  },
+  "timings": [
+    {
+      "size": 10,
+      "elapsedMs": 0.2994470000000007,
+      "rowsAfterCommit": 10
+    },
+    {
+      "size": 100,
+      "elapsedMs": 1.3963250000000045,
+      "rowsAfterCommit": 110
+    },
+    {
+      "size": 1000,
+      "elapsedMs": 7.432172000000001,
+      "rowsAfterCommit": 1110
+    },
+    {
+      "size": 5000,
+      "elapsedMs": 23.83724000000001,
+      "rowsAfterCommit": 6110
+    }
+  ],
+  "counts": {
+    "committedRows": 6110,
+    "rolledBackRows": 0,
+    "attemptedRollbackRows": 1
+  },
+  "rollback": {
+    "observed": true,
+    "before": 6110,
+    "after": 6110
+  },
+  "limitations": [
+    "This measures isolated Bun bun:sqlite transactions, not the production indexer's schema or workload.",
+    "Node better-sqlite3 throughput remains unmeasured because D2 Node runtime parity is unavailable."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.382Z",
+    "contentSha256": "7549fd55c6d4f495a6ad5c181ce6f0d6606ebb0f9e65d520bb3a6b33b234529f"
+  }
+}

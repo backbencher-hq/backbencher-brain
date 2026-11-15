@@ -1,0 +1,19 @@
+# Real indexes this lane measures against. Regenerable by running the indexer,
+# never committed.
+#
+#   _data/          the pre-merge corpus, kept only for before/after diffs
+#   _data2/         the re-indexed backbencher-brain corpus
+#   _data2_poly/    the eight re-indexed repositories from the first matrix
+#   _data_lang/     the second language matrix (Solidity, Go, Python, Rust,
+#                   Haskell, Lua, CUE, Haxe, PureScript, Starlark, Jsonnet, V)
+#
+# The list is a GLOB rather than an enumeration because an enumeration is what
+# let `_data_lang` get committed: a new data dir was added, the ignore file named
+# the old ones, and 2.3 GB of SQLite went into a commit. Anything that looks like
+# an index is ignored by default, which is the direction that fails safely.
+_data*/
+
+# Harness output and scratch.
+out/
+*.log
+!harness/*.log

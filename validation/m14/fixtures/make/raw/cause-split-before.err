@@ -1,0 +1,4 @@
+discovery: 400 of 683 admitted (66 absent, 0 over cap) (stride)
+[INFO] [21:10:11] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [21:10:11] [ast-engine] language grammar allocated {"language":"make"}
+[INFO] [21:10:11] [ast-engine] language parser loaded {"language":"make","wasmPath":"/tmp/bb-wasm_tree-sitter-make_tree-sitter-make.wasm_3_2csjdaw"}

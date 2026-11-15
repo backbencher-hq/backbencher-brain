@@ -1,0 +1,65 @@
+{
+ "fixtureId": "yaml/directive-tag-handle",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A %TAG directive declares a HANDLE, and a tag that uses it resolves THROUGH that declaration. This is the third of the four tag forms and the only one a document-model parser and a syntax parser both have to reason about to agree. The shape-safety gate found the gap rather than a review: `tag_directive` was named by the analyzer and present in the grammar, and no fixture exercised it, so the branch was unproven -- which is the F3 rule catching a lane that had renamed and re-typed every tag but had never run a %TAG directive. Pinned: the handle lands in metadata, `!e!thing` expands to `tag:example.com,2000:thing`, and all three forms (local `!!`, handle, verbatim `!<...>`) produce a declared_type edge.",
+ "expectPatterns": [
+  "YAML Tag Directive"
+ ],
+ "expectMetadata": [
+  {
+   "yamlVersion": null
+  },
+  {
+   "tagHandles": [
+    "!e! -> tag:example.com,2000:"
+   ]
+  }
+ ],
+ "expectSymbols": [
+  {
+   "name": "local",
+   "meta.declaredType": "str",
+   "meta.tagUri": "tag:yaml.org,2002:str",
+   "meta.valueType": "string"
+  },
+  {
+   "name": "global",
+   "meta.declaredType": "thing",
+   "meta.tagUri": "tag:example.com,2000:thing"
+  },
+  {
+   "name": "verbatim",
+   "meta.declaredType": "str",
+   "meta.tagUri": "tag:example.com,2000:str"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "directive-tag-handle.global",
+   "target": "thing",
+   "meta.relationshipType": "declared_type",
+   "meta.tagUri": "tag:example.com,2000:thing",
+   "meta.evidenceClass": "reference_qualified",
+   "line_number": 9
+  }
+ ],
+ "expectErrorCount": [
+  {
+   "equals": 0
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   8,
+   9,
+   10
+  ],
+  "evidenceClasses": [
+   "reference_qualified",
+   "structural"
+  ]
+ }
+}

@@ -60,7 +60,7 @@ function flag(name: string): string | undefined {
   const i = argv.indexOf(name)
   return i >= 0 ? argv[i + 1] : undefined
 }
-const CR = flag("--corpus") ?? "$HOME/fixtures/repositories"
+const CR = flag("--corpus") ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO_DIR = flag("--repo") ?? path.join(CR, "kotlin")
 const LIMIT = Number(flag("--limit") ?? 400)
 const STRIDE = Number(flag("--stride") ?? 1)

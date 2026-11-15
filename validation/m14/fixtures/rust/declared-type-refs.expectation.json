@@ -1,0 +1,27 @@
+{
+  "fixtureId": "rust/declared-type-refs",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R13 (rust extreme review): rust emitted NO declared-type references at all (only where-bounds) — the one family-standard surface it lacked. Parameter types, return types, struct field types, enum variant field types (tuple and struct forms), const types and alias right-hand sides each emit `references` to every named type mentioned (generic outer AND inner leaves; primitives never appear since they are primitive_type nodes, not type_identifier). `Self` resolves to the enclosing impl type (D2 rule) and is otherwise skipped — a bare Self edge could never resolve. Generic parameter names are locally bound, never deps (the R8 forbid on generic->T in bare-value-reads guards the same name from the other side).",
+  "expectSymbols": [
+    { "name": "Point", "kind": "struct" },
+    { "name": "Holder", "kind": "struct" },
+    { "name": "Shape", "kind": "enum" },
+    { "name": "make", "kind": "function" },
+    { "name": "dup", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Holder", "target": "Point", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Holder", "target": "Vec", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Shape", "target": "Point", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Alias", "target": "Option", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "Alias", "target": "Point", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "ORIGIN", "target": "Point", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "make", "target": "Point", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "make", "target": "Vec", "meta.relationshipType": "declared_type" },
+    { "type": "references", "from": "dup", "target": "Point", "meta.relationshipType": "declared_type", "comment": "Self resolved to the enclosing impl type" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "plain", "target": "u32", "comment": "primitives are primitive_type nodes, never type_identifier leaves" }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "fixtureId": "scss/identically-named-scopes-are-distinct",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two `@each` loops with IDENTICAL text are two constructs, not one. The identity rule is `(kind, resolved name)`, which is right for a `$variable` \u2014 a Sass variable is one thing assigned in several places \u2014 and wrong for a scope: two `@each $size in (large, small)` in two nesting contexts iterate the same values and are nonetheless two scopes at two places in the file. Collapsing them loses the second scope, and with it the owner of everything inside it, so every `$var` read in the second loop emitted no edge. Measured on `element-plus/packages/theme-chalk/src/checkbox.scss`: TWO `each_statement`s (L76 and L266) with identical text collapsed into one, and the differential reported 7 MISSING rows that were the ANALYZER losing information rather than the truth being wrong. The disambiguated name follows the convention the dart lane already uses (`root.child` / `root.child#2`): the first occurrence keeps the plain name and a collision in a different scope gets `#2`. This fixture pins BOTH names, so the plain name cannot quietly absorb both scopes again.",
+  "expectSymbols": [
+    {
+      "name": "@each $size in (large, small)",
+      "kind": "interface"
+    },
+    {
+      "name": "@each $size in (large, small)#2",
+      "kind": "interface"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "@each $size in (large, small)",
+      "equals": 1,
+      "kind": "interface"
+    },
+    {
+      "name": "@each $size in (large, small)#2",
+      "equals": 1,
+      "kind": "interface"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "@each $size in (large, small)#3"
+    }
+  ]
+}

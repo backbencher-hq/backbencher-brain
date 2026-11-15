@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/callsite-lines-825.erl",
+  "authoredFrom": "M59 (#825) line contract, ER1 wave. Every expected line is read off the fixture's own text and the values were then checked against live emission before commit. The contract is inherited from the scala/web reference: the line belongs to the NAME-BEARING node, never to the construct that contains it - the include path STRING is on 9 while the -include keyword is on 8; the gen_server ATOM is on 12 while -behaviour( is on 11; the record NAME is on 29 (the #state{ line) while its fields wrap onto 30-31; each target() site is its own edge (lines 22/23/24/25 - erlang emits per-site like java/web since the M59 round); the remote callee leaf (reply) is on 26, the call's opening line. The forbid entries are exactly the pre-fix answers: the keyword/construct line instead of the name's line, and the BIF self() which is excluded from local calls by the declared-function gate.",
+  "expectSymbols": [
+    {
+      "name": "callsite_lines",
+      "kind": "module"
+    },
+    {
+      "name": "run",
+      "kind": "function",
+      "ownerName": "callsite_lines",
+      "meta.arity": 0
+    },
+    {
+      "name": "target",
+      "kind": "function",
+      "ownerName": "callsite_lines",
+      "meta.arity": 0
+    },
+    {
+      "name": "handle_call",
+      "kind": "function",
+      "ownerName": "callsite_lines",
+      "meta.arity": 3
+    },
+    {
+      "name": "state",
+      "kind": "struct",
+      "ownerName": "callsite_lines"
+    },
+    {
+      "name": "count",
+      "kind": "property",
+      "ownerName": "state"
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "ownerName": "state"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "callsite_lines",
+      "target": "path.hrl",
+      "meta.partRole": "library",
+      "meta.isFileInclusion": true,
+      "line_number": 9,
+      "note": "ER-D46: the include is a file inclusion (`part_of`), and the line is the include path STRING's line; the -include keyword is on 8"
+    },
+    {
+      "type": "implements",
+      "from": "callsite_lines",
+      "target": "gen_server",
+      "line_number": 12,
+      "note": "the behaviour ATOM's line; -behaviour( opens on 11"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "target",
+      "meta.callArity": 0,
+      "line_number": 22,
+      "note": "site 1 of 4 - per-site edges since the M59 round"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "target",
+      "meta.callArity": 0,
+      "line_number": 23,
+      "note": "site 2 of 4"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "target",
+      "meta.callArity": 0,
+      "line_number": 24,
+      "note": "site 3 of 4"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "target",
+      "meta.callArity": 0,
+      "line_number": 25,
+      "note": "site 4 of 4"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "gen_server:reply",
+      "meta.callArity": 2,
+      "line_number": 26,
+      "note": "the remote callee LEAF (reply) - qualified target per ER-D1"
+    },
+    {
+      "type": "instantiates",
+      "from": "run",
+      "target": "state",
+      "line_number": 29,
+      "note": "the record NAME's line (#state{), not the fields' lines"
+    },
+    {
+      "type": "contains",
+      "from": "callsite_lines",
+      "target": "run",
+      "line_number": 21,
+      "note": "symbol lines pinned through contains (web-round convention)"
+    },
+    {
+      "type": "contains",
+      "from": "callsite_lines",
+      "target": "target",
+      "line_number": 35
+    },
+    {
+      "type": "contains",
+      "from": "callsite_lines",
+      "target": "handle_call",
+      "line_number": 37
+    },
+    {
+      "type": "contains",
+      "from": "callsite_lines",
+      "target": "state",
+      "line_number": 16
+    },
+    {
+      "type": "contains",
+      "from": "state",
+      "target": "count",
+      "line_number": 17
+    },
+    {
+      "type": "contains",
+      "from": "state",
+      "target": "label",
+      "line_number": 18
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "self",
+      "note": "self/0 is a BIF - the declared-function gate excludes it"
+    },
+    {
+      "type": "part_of",
+      "from": "callsite_lines",
+      "target": "path.hrl",
+      "line_number": 8,
+      "note": "the -include KEYWORD's line is the construct, not the name - the pre-fix answer; ER-D46 keeps the part_of line contract, so this negative control still has a row to reject"
+    },
+    {
+      "type": "references",
+      "from": "callsite_lines",
+      "target": "path.hrl",
+      "note": "ER-D46 negative half: the include is no longer a `references` row at any line"
+    },
+    {
+      "type": "implements",
+      "from": "callsite_lines",
+      "target": "gen_server",
+      "line_number": 11,
+      "note": "the -behaviour( keyword's line, not the atom's"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "status": "verified",
+  "milestone": "M32",
+  "issue": "G1",
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "verifierCommand": "npx tsx script/m32/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-11-15T04:10:28.617Z",
+  "passed": 27,
+  "failed": 0,
+  "negativeCases": 10,
+  "trackedFilesScanned": 4602,
+  "keyPatternsChecked": [
+    "openrouter",
+    "nvidia"
+  ],
+  "limitations": [
+    "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design (.env.local is gitignored).",
+    "Key patterns match OpenRouter (sk-or-v1-…) and NVIDIA (nvapi-…) shapes; a provider with a different key format must be added to KEY_PATTERNS.",
+    "Banned-vocabulary lint covers M32 docs and the ledger, not arbitrary source comments.",
+    "GitHub issue numbers are enforced exactly (milestone 32, issues 561–567); refiling on GitHub requires updating REAL_ISSUE_NUMBERS and the ledger together."
+  ]
+}

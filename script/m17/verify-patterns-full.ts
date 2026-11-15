@@ -45,7 +45,7 @@ async function main() {
   }
 
   console.log("── P1.2  real-repo e2e: rake with limit=20 ──")
-  const src = "$HOME/fixtures/repositories/rake"
+  const src = "/home/ishaq2321/bb_tests/repositories/rake"
   let found = 0, recorded = 0, persistedDb = 0
   if (!existsSync(src)) {
     ck("P1: rake corpus present", false, "MISSING " + src + " (reported, not skipped)")

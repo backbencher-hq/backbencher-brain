@@ -1,0 +1,91 @@
+{
+  "comment": "THE MODULE IS A SYMBOL. Before this pass a `.nim` file published no node for itself, so every `imports` edge named a module that existed nowhere in the symbol set and could never bind. MEASURED over the 6,063-file corpus with production `parseFile` (validation/m14/fixtures/nim/census.ts): `imports` resolved on 37.1% of 13,364 edges, and the unresolved population was the module path as written \u2014 `std/assertions`(823) `std/syncio`(671) `std/strutils`(386). Not a resolution failure: there was no candidate to fail to find. After: 92.0% of 13,365. The store cannot rescue it either \u2014 its insert-time resolver matches `brain_symbol.name` (parallel-indexer.ts:2239), its three post-pass strategies match a bare name, a `qualified_name`, or everything after the first `.` of a dotted target (:3755-3774), and `std/assertions` is none of those; the fourth, `resolveImportTargets`, is scoped to the `<module>:<item>` form javascript/typescript/python emit and nim never reaches it.\n\nTHE TWO SPELLINGS MUST BE ONE FUNCTION. The symbol is named by the file's basename and the edge target by the last path segment, and both go through `moduleNameOfPath` so they cannot drift. The `forbidRelationships` rows below are what stop this regressing to the written path, which is the shape that has no candidate.\n\nAND THE WRITTEN PATH IS MARKED WHEN IT NAMES THE STANDARD LIBRARY. `meta.nimStdlibModule` is cause C, sized by measurement: of the 485 corpus `imports` edges declared nowhere in the corpus, 66 (13.6%) carry a `std/` prefix, which Nim defines as its standard-library root \u2014 the only stdlib form Nim writes with a path prefix, so the only one a per-file rule can identify. The other 419 are bare names (309), other paths (103) and `../` (8), and a bare `import re` is per-file indistinguishable from a local module, from `lib/pure`, and from a typo; marking those external would assert a local module is not local. The `meta.nimStdlibModule: null` row below is the negative pin \u2014 without it, an implementation that marked EVERY import would pass.  TWO BRANCHES OF THE MARKER PREDICATE HAD NO FIXTURE AND WERE ADDED HERE; one of the three mutations aimed at them is CAUGHT by this file and two SURVIVE, recorded rather than hidden -- see the doc's limitation 42 for which is which and why the survivors are not a green this file can fix.",
+  "expectSymbols": [
+    {
+      "name": "module-target",
+      "kind": "module",
+      "comment": "the module THIS file defines. It is a declaration site like any other: it has a name, it is what `import` names, and it is what `export` publishes from. The name is the basename \u2014 Nim's own rule for the name a file has. `module Foo` inside `bar.nim` renames it and the pinned grammar has NO node for that declaration (grammars/tree-sitter-nim/grammar.js mentions `module` twice and neither is a declaration), so a renamed module gets a symbol no import will name. That is a real inaccuracy and it is stated in the doc as a limitation rather than hidden here"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "os",
+      "meta.relationshipType": "nim_import",
+      "meta.nimModulePath": "std/os",
+      "comment": "a module LIST yields one edge per element and the `std/` prefix is a DIRECTORY, not part of the module's name. Nim binds this to the module `os`, so the target is `os`. `meta.nimModulePath` keeps the path as written \u2014 nothing is discarded, and `imports[].module` (which feeds `brain_import` and the file-dependency engine) is untouched `meta.nimStdlibModule` is TRUE: the written path carries the `std/` prefix, which is Nim's standard-library root by the language's own rule, so the marker is a fact about the PATH rather than a guess about where the declaration lives. It is deliberately NOT the family key `isExternalTarget` \u2014 in the 15 analyzers that write it, it means \"not declared in this file\", which is vacuously true of every `imports` edge and would carry no information here.",
+      "meta.evidenceClass": "import_based",
+      "meta.nimStdlibModule": true
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "strutils",
+      "meta.nimModulePath": "std/strutils",
+      "comment": "the second element of the same list. Two rows rather than one because a reader checking the list case has to see that BOTH elements produce an edge and that neither keeps its prefix `meta.nimStdlibModule` is TRUE: the written path carries the `std/` prefix, which is Nim's standard-library root by the language's own rule, so the marker is a fact about the PATH rather than a guess about where the declaration lives. It is deliberately NOT the family key `isExternalTarget` \u2014 in the 15 analyzers that write it, it means \"not declared in this file\", which is vacuously true of every `imports` edge and would carry no information here.",
+      "meta.evidenceClass": "import_based",
+      "meta.nimStdlibModule": true
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "globs",
+      "meta.nimModulePath": "std/private/globs",
+      "comment": "a nested path is still one module name at its last segment. The row above and this one are the rule; a path that stopped at the first segment would leave `private` as a module that does not exist `meta.nimStdlibModule` is TRUE: the written path carries the `std/` prefix, which is Nim's standard-library root by the language's own rule, so the marker is a fact about the PATH rather than a guess about where the declaration lives. It is deliberately NOT the family key `isExternalTarget` \u2014 in the 15 analyzers that write it, it means \"not declared in this file\", which is vacuously true of every `imports` edge and would carry no information here.",
+      "meta.evidenceClass": "import_based",
+      "meta.nimStdlibModule": true
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "shared",
+      "meta.nimModulePath": "../shared",
+      "comment": "a parent-relative import is one edge, not dropped for having no `/` segment, and it is named by its last segment like every other module `meta.nimStdlibModule` is pinned ABSENT, not false: `null` is the runner's spelling for \"must not carry this key\". This is the negative half of the marker, and it is what stops a rule that marks every import from passing \u2014 309 of the 485 unbindable corpus edges are bare names, and calling a local `../shared` external is the fabricated-edge failure.",
+      "meta.evidenceClass": "import_based",
+      "meta.nimStdlibModule": null
+    },
+    {
+      "type": "part_of",
+      "from": "(global)",
+      "target": "prelude",
+      "meta.relationshipType": "nim_include",
+      "meta.nimModulePath": "std/prelude",
+      "meta.evidenceClass": "import_based",
+      "meta.nimStdlibModule": true,
+      "comment": "THE QUOTED-SPELLING BRANCH, ON THE `part_of` LABEL SINCE THE 2026-10-23 R3 RELABEL. An `include` path is a string literal, so the written form is `include \"std/prelude\"` and the marker predicate has to accept a LEADING QUOTE to see the `std/` prefix at all. No earlier fixture in this lane contained an `include`, so the branch was carried by a regex that no fixture exercised -- a scan that dropped it would have passed every fixture here. The row is the only one whose `meta.relationshipType` is `nim_include` rather than `nim_import`, and it now pins the two subkinds apart BY TYPE as well as by marker: an include is NOT an import \u2014 it is a textual scope-sharing inclusion, `part_of`, with `partRole: \"library\"` (nim has only the host role) and `targetResolution: \"module-name\"` (the recorded divergence from fsharp/php, which emit project-relative paths).",
+      "meta.partRole": "library",
+      "meta.targetResolution": "module-name"
+    },
+    {
+      "type": "imports",
+      "from": "(global)",
+      "target": "monotimes",
+      "meta.relationshipType": "nim_import",
+      "meta.nimModulePath": "std / monotimes",
+      "meta.evidenceClass": "import_based",
+      "meta.nimStdlibModule": true,
+      "comment": "THE SPACED-SPELLING BRANCH. Nim's path syntax permits whitespace around the separator and UPSTREAM WRITES IT: nim/tools/grammar_nanny.nim:4 `import std / [strutils, sets]`, nim/tools/atlas/parse_requires.nim:4 `import std / strutils`, plus 15 further corpus files. So a predicate that required `std/` with no space would mark real upstream source as a local module and inflate the unresolved population this marker exists to describe. `meta.nimModulePath` keeps the path EXACTLY as written, spaces included -- the normaliser strips the prefix for the target and does not rewrite what the author wrote, which is the same discipline the three rows above follow."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "std/os",
+      "comment": "THE REGRESSION THIS FIXTURE EXISTS FOR. An `imports` target that keeps the written path names a module the graph cannot bind: the store matches `brain_symbol.name`, no symbol carries `std/os`, and 8,404 of 13,364 corpus edges sat there. This forbid is what makes the old behaviour a test failure instead of a number nobody re-reads."
+    },
+    {
+      "type": "imports",
+      "target": "std/private/globs",
+      "comment": "the same rule on a path with more than two segments, so an implementation that strips exactly one prefix still fails"
+    },
+    {
+      "type": "imports",
+      "target": "../shared",
+      "comment": "and on a relative path, which is the shape the written-path contract got 'right' for the wrong reason \u2014 it looked resolvable because the corpus happened to contain that spelling"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

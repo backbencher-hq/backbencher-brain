@@ -1,0 +1,14 @@
+{
+  "issue": "CLJ-ADV F9",
+  "note": "`definterface` mirrors defprotocol: the interface is a symbol, each signature list a method definition — no `calls definterface`/`calls size`/`calls run` fabrications (33 corpus lines).",
+  "expectSymbols": [
+    { "name": "IFoo", "kind": "interface" },
+    { "name": "size", "kind": "function" },
+    { "name": "run", "kind": "function" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "definterface" },
+    { "type": "calls", "target": "size" },
+    { "type": "calls", "target": "run" }
+  ]
+}

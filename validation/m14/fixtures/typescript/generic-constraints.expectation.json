@@ -1,0 +1,17 @@
+{
+  "fixtureId": "typescript/generic-constraints",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Constrained generics must not corrupt symbol names nor create phantom supertype edges to T/HasId.",
+  "expectSymbols": [
+    { "name": "Store" },
+    { "name": "items" },
+    { "name": "put" }
+  ],
+  "expectTypeParameters": [
+    { "symbol": "Store", "includes": ["T"] }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "targetEndsWith": "HasId" }
+  ]
+}

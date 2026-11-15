@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "what": "Release battery — all sixteen public tools through the real MCP stdio door on the real multi-language release workspace.",
+  "generatedAt": "2026-11-04T03:13:08.898Z",
+  "head": "ref: re",
+  "door": "node bin/bb mcp --dir validation/release/workspace (compiled entry)",
+  "workspace": {
+    "path": "validation/release/workspace",
+    "corpora": [
+      "graphql-js/src (TS/JS)",
+      "rake/lib (Ruby)",
+      "rebar3/apps (Erlang)"
+    ]
+  },
+  "registeredTools": [
+    "bb_analyze",
+    "bb_annotate",
+    "bb_annotations",
+    "bb_ask",
+    "bb_cross_language",
+    "bb_doc",
+    "bb_edit",
+    "bb_graph",
+    "bb_health",
+    "bb_impact",
+    "bb_index",
+    "bb_migrate",
+    "bb_patterns",
+    "bb_search",
+    "bb_security",
+    "bb_visualize"
+  ],
+  "registeredToolCount": 16,
+  "expectedToolCount": 16,
+  "calls": [
+    {
+      "tool": "bb_health",
+      "kind": "read",
+      "note": null,
+      "args": {},
+      "ms": 59,
+      "isError": false,
+      "assertError": false,
+      "bytes": 966,
+      "head": "project: /home/ishaq2321/mcp/backbencher-brain/validation/release/workspace\nprojectId: 6623498ebe135a8cab4c46270ea6737f1d4526e3\nfiles=829 symbols=18234 relationships=101492 imports=4843 syntaxErrors=30\nfreshness: 200 fresh / 0 of 200 sample"
+    },
+    {
+      "tool": "bb_search",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "query": "pipeline",
+        "limit": 5
+      },
+      "ms": 18,
+      "isError": false,
+      "assertError": false,
+      "bytes": 111,
+      "head": "no results for \"pipeline\"\n[match-set] searchMode=symbols totalMatches=0 returned=0 truncated=false staleCount=0"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "query": "how are types defined"
+      },
+      "ms": 468,
+      "isError": false,
+      "assertError": false,
+      "bytes": 6526,
+      "head": "answer: Note: this ranking does not distinguish its top results — 25 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so "
+    },
+    {
+      "tool": "bb_analyze",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "mode": "stats"
+      },
+      "ms": 114,
+      "isError": false,
+      "assertError": false,
+      "bytes": 2081,
+      "head": "{\n  \"files\": 829,\n  \"linesOfCode\": 228887,\n  \"avgFileSize\": 9724.821471652593,\n  \"avgFileSizeUnit\": \"bytes\",\n  \"symbols\": 18234,\n  \"symbolsWithComplexity\": 18234,\n  \"avgComplexity\": 52.5893385982231,\n  \"relationships\": 101492,\n  \"callEdges\""
+    },
+    {
+      "tool": "bb_patterns",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "scope": "orphaned",
+        "limit": 5
+      },
+      "ms": 807,
+      "isError": false,
+      "assertError": false,
+      "bytes": 871,
+      "head": "orphaned code (2016 found):\n  orphaned_class PackageTask — rake/rake/packagetask.rb:45 (70%)\n  orphaned_class TestTask — rake/rake/testtask.rb:35 (70%)\n  orphaned_class EarlyTime — rake/rake/early_time.rb:5 (70%)\n  orphaned_function EnumVal"
+    },
+    {
+      "tool": "bb_security",
+      "kind": "read",
+      "note": null,
+      "args": {},
+      "ms": 45,
+      "isError": false,
+      "assertError": false,
+      "bytes": 3740,
+      "head": "security: 254 critical / 218 high / 0 medium / 0 low / 28 unknown (214 resolved flows, 286 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (executeQuery) @ graphql-js/execution/__tests__/abstract-test.ts:27 <- database_read -> "
+    },
+    {
+      "tool": "bb_visualize",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "scope": "module",
+        "target": "graphql-js"
+      },
+      "ms": 31,
+      "isError": false,
+      "assertError": false,
+      "bytes": 1643,
+      "head": "graph: 200 nodes, 179 links\nscope: module (graphql-js)\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchor"
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "symbolName": "buildSchema",
+        "targetLanguage": "python"
+      },
+      "ms": 31,
+      "isError": false,
+      "assertError": false,
+      "bytes": 1972,
+      "head": "migration target: python\ndependency order: buildSchema (partial)\nmethodology: base=4h relationships=34h missing-mappings=0h\n  charged edges by kind (one flat 2h rate, uncalibrated): calls 11=22h (65%), references 4=8h (24%), uses 2=4h (12%)"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "mode": "module",
+        "target": "graphql-js"
+      },
+      "ms": 121,
+      "isError": false,
+      "assertError": false,
+      "bytes": 11830,
+      "head": "# module: graphql-js\n\n100 file(s) and 40 symbol(s) in scope, 71 cited claim(s) across 4 section(s) from 1058 source(s).\n\n## Purpose\n\n10 claims, 10 read directly from the index, resting on 10 sources (1 file).\n\n-  _(100%)_ graphql-js/README."
+    },
+    {
+      "tool": "bb_graph",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "symbol": "GraphQLSchema",
+        "maxDepth": 2,
+        "maxEdges": 50
+      },
+      "ms": 40,
+      "isError": false,
+      "assertError": false,
+      "bytes": 64252,
+      "head": "{\n  \"symbol\": \"GraphQLSchema\",\n  \"root\": {\n    \"id\": \"6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189\",\n    \"name\": \"GraphQLSchema\",\n    \"symbolType\": \"class\",\n    \"file\": \"graphql-js/type/schema.ts\",\n  "
+    },
+    {
+      "tool": "bb_impact",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "symbol": "buildSchema"
+      },
+      "ms": 9,
+      "isError": false,
+      "assertError": false,
+      "bytes": 8740,
+      "head": "{\n  \"symbol\": \"buildSchema\",\n  \"root\": {\n    \"id\": \"6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150\",\n    \"name\": \"buildSchema\",\n    \"file\": \"graphql-js/utilities/buildASTSchema.ts\",\n    \"file"
+    },
+    {
+      "tool": "bb_cross_language",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "symbol": "GraphQLSchema"
+      },
+      "ms": 5,
+      "isError": false,
+      "assertError": false,
+      "bytes": 4189,
+      "head": "{\n  \"symbol\": \"GraphQLSchema\",\n  \"language\": \"typescript\",\n  \"languages\": [\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189\",\n      \"symbol\": \"Graph"
+    },
+    {
+      "tool": "bb_annotations",
+      "kind": "read",
+      "note": null,
+      "args": {
+        "limit": 5
+      },
+      "ms": 1,
+      "isError": false,
+      "assertError": false,
+      "bytes": 691,
+      "head": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-6a035b3df0acdf194ede60219f310457e54bd4302eefbdce0158"
+    },
+    {
+      "tool": "bb_annotate",
+      "kind": "write",
+      "note": null,
+      "args": {
+        "symbol": "GraphQLSchema",
+        "body": "release battery note — stored through the real MCP door"
+      },
+      "ms": 14,
+      "isError": false,
+      "assertError": false,
+      "bytes": 1004,
+      "head": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-6a035b3df0acdf194ede60219f310457e54bd4302eefbdce0158c5bb5f08003c\",\n    \"symbol_name\": \"GraphQLSchema\",\n    \"symbol_path\": null,\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_ann"
+    },
+    {
+      "tool": "bb_index",
+      "kind": "write",
+      "note": "settled workspace: expected no-op/unchanged",
+      "args": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "ms": 118,
+      "isError": false,
+      "assertError": false,
+      "bytes": 280,
+      "head": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true,\n  \"outcome\": \"no-op\",\n  \"reason\": \"no change detected under the requested directory (mtime+size comparison; the walk "
+    },
+    {
+      "tool": "bb_edit",
+      "kind": "write",
+      "note": "dryRun: plans only, writes nothing",
+      "args": {
+        "mode": "write",
+        "filePath": "src/__release_probe__.ts",
+        "content": "export const releaseProbe = 1\n",
+        "dryRun": true
+      },
+      "ms": 2,
+      "isError": false,
+      "assertError": false,
+      "bytes": 677,
+      "head": "{\n  \"mode\": \"write\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/src/__release_probe__.ts\",\n      \"before\": \"\",\n      \"after\": \"export const releaseProbe = 1\\n\"\n  "
+    },
+    {
+      "tool": "bb_search",
+      "kind": "read",
+      "note": "limit above max refused by exact sentence",
+      "args": {
+        "query": "x",
+        "limit": 2001
+      },
+      "ms": 1,
+      "isError": true,
+      "assertError": true,
+      "refusalAsExpected": true,
+      "bytes": 132,
+      "head": "error: bb_search: limit must be between 0 and 2000 — refused rather than clamped, so a returned page always means the page asked for"
+    },
+    {
+      "tool": "bb_ask",
+      "kind": "read",
+      "note": "limit 0 refused, not answered empty",
+      "args": {
+        "query": "x",
+        "limit": 0
+      },
+      "ms": 0,
+      "isError": true,
+      "assertError": true,
+      "refusalAsExpected": true,
+      "bytes": 211,
+      "head": "error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refused rather than clamped."
+    },
+    {
+      "tool": "bb_migrate",
+      "kind": "read",
+      "note": "unknown option named",
+      "args": {
+        "symbolName": "buildSchema",
+        "targetLanguage": "python",
+        "bogusOption": true
+      },
+      "ms": 0,
+      "isError": true,
+      "assertError": true,
+      "refusalAsExpected": true,
+      "bytes": 147,
+      "head": "error: bb_migrate: unknown or irrelevant options: bogusOption — accepted options: symbolName, symbolNames, paths, symbolIds, targetLanguage, format"
+    },
+    {
+      "tool": "bb_doc",
+      "kind": "read",
+      "note": "limit above range refused",
+      "args": {
+        "mode": "module",
+        "target": "graphql-js",
+        "limit": 101
+      },
+      "ms": 1,
+      "isError": true,
+      "assertError": true,
+      "refusalAsExpected": true,
+      "bytes": 164,
+      "head": "bb_doc limit must be a whole number between 1 and 100 (default 20) — got 101. It is refused rather than clamped because the document would not be the one requested."
+    }
+  ],
+  "readOnlyProof": {
+    "dbBytesBefore": 352378880,
+    "dbBytesAfter": 352378880,
+    "dbMtimeUnchanged": true,
+    "readToolsThatMovedTheIndex": [],
+    "note": "write-tool calls follow the read phase; the read phase is what this proof covers"
+  },
+  "verdict": {
+    "allRegistered": true,
+    "everyToolAnswered": true,
+    "refusalsAsExpected": true,
+    "readPhaseUntouched": true
+  }
+}

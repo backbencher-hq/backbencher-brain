@@ -1,0 +1,18 @@
+{
+  "fixtureId": "matlab/class-surface",
+  "language": "matlab",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins class-section visibility, events, enumeration members, and method attributes.",
+  "expectSymbols": [
+    { "name": "Surface", "kind": "class" },
+    { "name": "Value", "kind": "property", "ownerName": "Surface", "visibility": "private" },
+    { "name": "Changed", "kind": "event", "ownerName": "Surface" },
+    { "name": "Ready", "kind": "enum_member", "ownerName": "Surface" },
+    { "name": "helper", "kind": "method", "ownerName": "Surface", "visibility": "private" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Surface", "target": "Changed" },
+    { "type": "contains", "from": "Surface", "target": "Ready" },
+    { "type": "contains", "from": "Surface", "target": "helper" }
+  ]
+}

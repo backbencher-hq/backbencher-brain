@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-03T17:45:40.040Z",
+  "currentCommit": "5eae556d3974e84fdb45ac57f5d1827deb8c845d",
+  "command": "npx tsx validation/tools/bb_security/work/probe-mutants.ts",
+  "method": "apply one mutation to the owned source, run the gate (expect non-zero), restore, run the same gate (expect zero)",
+  "mutants": [
+    {
+      "id": "handler-read-not-readonly",
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "gate": "script/m13/verify-security-contract.ts",
+      "expects": "the handler's read-only open assertion",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 2302,
+        "evidence": [
+          "  FAIL: sec: every handler open is read-only [negative] getRawInstance(projectId)"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 1889
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "engine-read-not-readonly",
+      "file": "src/intelligence/security/taint.ts",
+      "gate": "script/m13/verify-security-contract.ts",
+      "expects": "the engine's read-only open assertion",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 1931,
+        "evidence": [
+          "  FAIL: sec: every engine open is read-only [negative] getRawInstance(projectId)"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 1958
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "engine-resolve-project-filter",
+      "file": "src/intelligence/security/taint.ts",
+      "gate": "script/verify-security.ts",
+      "expects": "the keyed symbol-resolution assertion",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 5673,
+        "evidence": [
+          "  FAIL: [53] symbol resolution queries by primary key — the keyed lookup is missing its WHERE s.id IN clause",
+          "  FAIL: [55] symbol resolution does not filter project_id inside the indexed predicate — project_id in the indexed predicate makes the planner scan the whole project per chunk",
+          "SECURITY: 2 FAILURES (50/52 checks, 4/5 negatives)"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 4377
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "live-cap-note-dropped",
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "gate": "script/m13/verify-security-handler.ts",
+      "expects": "the live CAPPED sentence",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 17009,
+        "evidence": [
+          "  FAIL: bounds: the live read publishes the explicit CAPPED sentence missing CAPPED sentence"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 16697
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "history-page-cap-removed",
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "gate": "script/m13/verify-security-handler.ts",
+      "expects": "the declared history page cap",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 16973,
+        "evidence": [
+          "  FAIL: bounds: history page is capped at the declared 200 findings {\"shown\":510,\"total\":510,\"truncated\":0}",
+          "  FAIL: bounds: history census object names the page {\"runsTotal\":1,\"runLimit\":20,\"findingsTotal\":510,\"findingsShown\":510,\"findingsBeyondCap\":0}",
+          "  FAIL: history: the read-only page is the shared reader's ordered prefix handler=510 oraclePrefix=200"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 17326
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "history-fingerprint-drops-state",
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "gate": "script/m20/verify-security-history.ts",
+      "expects": "the distinct-identity assertion for two findings at one sink",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 10123,
+        "evidence": [
+          "  FAIL: [9] history: findingCount equals the resolved findings only (2), not the 4-row matrix — count=1",
+          "  FAIL: [10] history: both resolved findings persisted from a 4-row matrix — n=1",
+          "  FAIL: [11] history: the two findings at ONE sink have distinct identities — [{\"id\":\"a5d7d7ac-1946-4d62-bbf9-e670f629d62a\",\"state\":\"open\",\"severity\":\"high\"}]"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 9890
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "library-door-creates-index",
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "gate": "script/m13/verify-security-handler.ts",
+      "expects": "the library-door unindexed-project refusal",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 16745,
+        "evidence": [
+          "  FAIL: library-door: an unindexed project is refused by name",
+          "  FAIL: library-door: the refused call did not create an index [negative] created /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/projects/cecf38f275e46eb8a1574c9974922d4155839d71/brain.db"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 15976
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "descriptor-advertises-planned-mode",
+      "file": "src/mcp/tools/bb_security/descriptor.ts",
+      "gate": "script/m13/verify-security-contract.ts",
+      "expects": "the executable-modes contract",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 601,
+        "evidence": []
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 2057
+      },
+      "falsifiable": true
+    },
+    {
+      "id": "docs-description-drift",
+      "file": "docs/tools/bb_security.md",
+      "gate": "script/m13/verify-security-docs.ts",
+      "expects": "the page-description-vs-registry check",
+      "mutantApplied": true,
+      "restored": true,
+      "red": {
+        "exit": 1,
+        "durationMs": 2100,
+        "evidence": [
+          "  FAIL: docs: description matches registry \"Security scan over the indexed source-to-sink flows: SQL injection, XSS, command injection, path tra\"",
+          "FAIL: docs/tools/bb_security.md is missing or stale; run npm run docs:generate",
+          "  FAIL: docs: generator verify mode passes for this tool (page byte-fresh) exit=1"
+        ]
+      },
+      "green": {
+        "exit": 0,
+        "durationMs": 1557
+      },
+      "falsifiable": true
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "falsifiable": 9,
+    "allRestored": true
+  }
+}

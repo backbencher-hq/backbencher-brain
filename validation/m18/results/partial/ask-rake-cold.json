@@ -1,0 +1,118 @@
+{
+  "mode": "cold",
+  "data": {
+    "tag": "rake",
+    "cold": true,
+    "embeddings": 0,
+    "flushCompleted": true,
+    "rows": [
+      {
+        "id": "rake-a1",
+        "query": "how do I define a new task",
+        "negative": false,
+        "gold": "task",
+        "hit": true,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "define_task",
+          "define_task",
+          "to_i",
+          "new_scope",
+          "define"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "rake-a2",
+        "query": "the main application entry point of rake",
+        "negative": false,
+        "gold": "Application",
+        "hit": true,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "main",
+          "Application",
+          "application",
+          "application=",
+          "application"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "rake-a3",
+        "query": "arguments passed to a task",
+        "negative": false,
+        "gold": "TaskArguments",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "to_a",
+          "to_a",
+          "a",
+          "a",
+          "is_a?"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "rake-s1",
+        "query": "TaskArguments",
+        "negative": false,
+        "gold": "TaskArguments",
+        "hit": true,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "TaskArguments"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "rake-s2",
+        "query": "FileTask",
+        "negative": false,
+        "gold": "FileTask",
+        "hit": true,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "FileTask"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "rake-n1",
+        "query": "render html to canvas",
+        "negative": true,
+        "gold": null,
+        "hit": null,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "to_s",
+          "to_i",
+          "to_s",
+          "to_s",
+          "to_s"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      }
+    ]
+  },
+  "generatedAt": "2026-08-25T00:13:30.434Z"
+}

@@ -1,0 +1,12 @@
+{
+  "fixtureId": "typescript/ambient-global",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "declare global { ... } is a NAMELESS ambient wrapper: ambient_declaration has no name FIELD at all. The old bail (no name -> return false) combined with the container no-descent list silently dropped the ENTIRE subtree - every global-augmentation declaration (Window, JSX namespace, module augmentations) vanished. Contents must be extracted.",
+  "expectSymbols": [
+    { "name": "Window", "kind": "interface" },
+    { "name": "Holder", "kind": "class" }
+  ],
+  "expectRelationships": [],
+  "forbidRelationships": []
+}

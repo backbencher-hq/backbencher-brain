@@ -1,0 +1,131 @@
+{
+ "fixtureId": "vb/attributes-as-decorations",
+ "language": "vb",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "`decorates` was the vb lane's missing type: the grammar makes an attribute list a DECLARATION's child (field(\"attributes\", $.attribute_list) on every declaration production), and the analyzer suppressed attribute-position names from `references` after a differential finding, so 202 attribute sites over the 58-file admitted population published NOTHING \u2014 neither an edge nor a count. The emission added for this fixture publishes `decorates <declaration> -> <attribute leaf>` from pushSymbol, which is the one place every published symbol passes through, so no visitor can forget it. THE TARGET IS THE LEAF ON PURPOSE: the arbiter binds by name against the project's declarations, so `System.Serializable` is unresolvable by construction while `Serializable` resolves exactly when the project declares its own attribute type; rust's ruling for this type, applied to this grammar. THE FIELD CASE IS THE LOAD-BEARING ONE: `_a, _b As Integer` is ONE field_declaration with TWO declarators, and the symbol for each is published from the DECLARATOR \u2014 so the attribute holder is resolved by climbing to the declaration, bounded to field_declaration/declaration_statement so a member can never inherit its enclosing type's attributes.",
+ "expectSymbols": [
+  {
+   "name": "Legacy",
+   "kind": "class"
+  },
+  {
+   "name": "Store",
+   "kind": "class"
+  },
+  {
+   "name": "Hidden",
+   "kind": "method",
+   "ownerName": "Legacy"
+  },
+  {
+   "name": "Tag",
+   "kind": "property",
+   "ownerName": "Legacy"
+  },
+  {
+   "name": "_a",
+   "kind": "variable",
+   "ownerName": "Legacy"
+  },
+  {
+   "name": "_b",
+   "kind": "variable",
+   "ownerName": "Legacy"
+  },
+  {
+   "name": "QualifiedChain"
+  },
+  {
+   "name": "Keep"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "comment": "A type attribute with an argument. The source is the DECLARATION it decorates, and the target is the leaf (`Obsolete`, never `System.Obsolete`) so the arbiter can bind it.",
+   "type": "decorates",
+   "from": "Legacy",
+   "target": "Obsolete"
+  },
+  {
+   "comment": "THE DECLARATOR CLIMB. `_a` and `_b` are two symbols published from two variable_declarators of ONE field_declaration, and the attribute list lives on the declaration. Both rows are required: an emission that read only the declarator would publish neither, and one that emitted once per declaration would publish only the first.",
+   "type": "decorates",
+   "from": "_a",
+   "target": "NonSerialized"
+  },
+  {
+   "comment": "The second declarator of the same field, for the reason above.",
+   "type": "decorates",
+   "from": "_b",
+   "target": "NonSerialized"
+  },
+  {
+   "comment": "A method attribute whose ARGUMENT is itself a qualified name (`EditorBrowsableState.Never`). The argument must not be read as a second attribute \u2014 see the forbid row below.",
+   "type": "decorates",
+   "from": "Hidden",
+   "target": "EditorBrowsable"
+  },
+  {
+   "comment": "A property attribute with NO argument list. The bare `<Obsolete>` form is the one an argument-count assumption would drop.",
+   "type": "decorates",
+   "from": "Tag",
+   "target": "Obsolete"
+  },
+  {
+   "comment": "A QUALIFIED attribute name: the written spelling is `System.Serializable` and the published target is its leaf. This is the row that fails if the emission keeps the full spelling as the target.",
+   "type": "decorates",
+   "from": "Store",
+   "target": "Serializable"
+  },
+  {
+   "type": "decorates",
+   "from": "QualifiedChain",
+   "target": "EditorBrowsableAttribute",
+   "comment": "the QUALIFIED-GLOBAL attribute name still decorates the declaration; the written spelling lives in metadata.attributeName"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "comment": "THE ARGUMENT IS NOT AN ATTRIBUTE. `EditorBrowsableState.Never` is the attribute's ARGUMENT; publishing it as a decoration would make one syntactic event two edges and put a type-use name where an applied attribute belongs.",
+   "type": "decorates",
+   "from": "Hidden",
+   "target": "EditorBrowsableState"
+  },
+  {
+   "comment": "THE SUPPRESSION THIS FIXTURE MUST NOT UNDO. Attribute-position names are deliberately absent from `references` (the lane's differential reported them as unexplained rows, and `inAttributePosition` is that ruling). `decorates` publishes the construct; re-enabling the value read would double-count the same site on a second edge type.",
+   "type": "references",
+   "from": "Legacy",
+   "target": "Obsolete"
+  },
+  {
+   "comment": "THE UNBOUNDED-CLIMB DEFECT. `Keep` is a member of `Store`, which is decorated; if the holder climb were unbounded, `Keep` would inherit `<System.Serializable()>` from its enclosing type. The bounded climb exists for exactly this row.",
+   "type": "decorates",
+   "from": "Keep",
+   "target": "Serializable"
+  },
+  {
+   "type": "uses",
+   "target": "Advanced",
+   "comment": "THE QUALIFIED-CHAIN ARGUMENT IS NOT A READ. `Global.System.ComponentModel.EditorBrowsableState.Advanced` is an attribute ARGUMENT: the compiler reads it, the decorated declaration does not. Measured on DISMTools' generated Settings.Designer.vb:31, where the old inAttributePosition climb stopped at the first member_access_expression and published this row (3 unexplained uses per 60-file draw)."
+  },
+  {
+   "type": "uses",
+   "target": "EditorBrowsableState",
+   "comment": "same shape, the qualified type half of the argument"
+  },
+  {
+   "type": "uses",
+   "target": "ComponentModel",
+   "comment": "same shape, the namespace half of the argument"
+  },
+  {
+   "type": "uses",
+   "target": "System",
+   "comment": "same shape, after `Global`"
+  },
+  {
+   "type": "references",
+   "target": "Advanced",
+   "comment": "an attribute argument is not a type reference either \u2014 the same ruling the bare-argument forbid above records"
+  }
+ ]
+}

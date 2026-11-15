@@ -1,0 +1,80 @@
+{
+  "fixtureId": "scss/functions-return-and-undeclared-uses",
+  "language": "scss",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Two rulings pinned by the same fixture because they are the same mistake in opposite directions. (1) A `@return` emits NO EDGE. The first version emitted `contains` from the function to ITSELF, and a self-edge makes a relationship count look like evidence while connecting nothing — `contains` between a thing and itself is not a claim any consumer can use. A `@return` names no entity, so it is recorded as `scssReturns` on the function symbol, which is where a fact about a function belongs. (2) An `@include` of a mixin this file does NOT declare gets NO EDGE. It may legitimately come from another stylesheet, and inventing an endpoint for it is the `global` phantom the CSS lane removed once. The second pin is the negative half and matters more than the first: a lane that only pins what it emits cannot be distinguished from one that emits everything. Every relationship here also pins its LINE, and that is not decoration: the `line-numbers-dropped` mutant removes `line_number` from every edge, which changes no symbol and no edge COUNT, and it SURVIVED until these pins existed. Line provenance is the one class a counting gate cannot see, so it has to be asserted directly (M59/#855). The forbid list names BOTH spellings of the phantom target — the bare `not-declared-here` and the `@mixin not-declared-here` an analyzer that published a symbol per `@include` would have used — because the first version of the forbid list named only the bare form, the `undeclared-include-edge` mutant SURVIVED against it, and a negative assertion that only forbids one spelling of a name is a assertion about a spelling. The `@return` is pinned as a container, and the CALL SITE is pinned as an edge: a function that is declared and never called is a graph that cannot answer 'who calls double'. The M12 independent hand audit of validation/m12/fixtures/scss/Theme.scss found exactly that gap — 9 facts expected, 8 observed, recall 0.889, the single false negative being `uses .panel -> @function double`. The edge is `uses`, the same type `@include` uses, because both are calls.",
+  "expectSymbols": [
+    {
+      "name": "@function double",
+      "kind": "function",
+      "meta.scssReturns": true
+    },
+    {
+      "name": "@mixin outer",
+      "kind": "function"
+    },
+    {
+      "name": ".a",
+      "kind": "class"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "@function double",
+      "parameters": [
+        {
+          "name": "$n"
+        }
+      ]
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "@function double",
+      "target": "fixtures/scss/functions-return-and-undeclared-uses::@function double"
+    },
+    {
+      "type": "uses",
+      "target": "not-declared-here"
+    },
+    {
+      "type": "calls",
+      "target": "not-declared-here"
+    },
+    {
+      "type": "uses",
+      "from": "not-declared-here"
+    },
+    {
+      "type": "calls",
+      "from": "not-declared-here"
+    },
+    {
+      "type": "uses",
+      "target": "@mixin not-declared-here"
+    },
+    {
+      "type": "calls",
+      "target": "@mixin not-declared-here"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": ".a",
+      "target": "fixtures/scss/functions-return-and-undeclared-uses::@function double",
+      "meta.evidenceClass": "usage_contextual",
+      "meta.isScssFunctionCall": true,
+      "line_number": 11
+    }
+  ],
+  "expectBuiltinCallsAreSilent": [
+    "M12 hand audit of validation/m12/fixtures/scss/Theme.scss found the lane emitting no edge for a user function CALLED in a value, while emitting one for a `$var` read on the line above. Fixed: `width: double(4px)` now resolves to `@function double`. The BOTH-ends-resolve rule is the guard that keeps this from becoming a phantom factory, and it is asserted here rather than only in prose: the same declaration, in the same fixture, also calls nothing built-in, so this fixture cannot by itself prove builtins stay silent."
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "fixtureId": "typescript/interp-local-binding",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS WHICH names a template substitution reads, in both directions, because the two halves are easy to get wrong oppositely and `interp-uses` already pins only the positive half. TS/TSD2 + R12 + R13: a PARAMETER read publishes (`readsParameter -> param`, the same shape `interp-uses` pins as `greet -> name`); a LOOP VARIABLE read publishes (`suppressesLoopVariable -> item`, the R13 ruling that `locals` deliberately excludes loop variables because suppressing them deletes a true edge); a LOCAL DECLARATOR read does NOT publish, including from a SIBLING STATEMENT of the declarator (`suppressesSiblingLocal`), including when the local SHADOWS a module symbol of the same name (`suppressesShadowingModuleSymbol` reads the local, not `topLevel`), and including a DESTRUCTURED local (`destructuresThenReads`). The sibling case is the one a per-subtree binding test misses — `console.log(...)` is a sibling of `const local = ...`, not a descendant — and it is the shape that produced 884 truth rows the analyzer did not publish when the `uses` oracle was first written. BINDING SPELLING (2026-10-18): the parameter-target row is now spelled `readsParameter\\u0000param` with meta.localBinding — the family spelling for a name no declaration owns (a parameter read in a template still publishes, which is this fixture's point). The LOOP VARIABLE row stays BARE: this grammar's `for (const item of ...)` binds the loop variable without a variable_declarator, so it is not in the binding set, and the fixture's expectation of a bare target is the honest current state rather than a spelling to be forced. REVERTED 2026-10-18: the target is the WRITTEN name again (`param`, `name`, `n`), not the binding spelling — the differential counts a NUL-spelling as MISSING against a truth that derives the written name, so the spelling HID the row from the audit; the gate classifies the bare row honestly. UPDATED 2026-10-19 (D7 local-binding claim restored): published binding reads now carry the spelling + metadata.localBinding (verified by spelling -> bindOK), while the rows the template rule SUPPRESSES (local declarator, sibling local, shadowing module symbol, destructured local) still publish NOTHING — pinned by forbids in BOTH spellings so the claim pass cannot re-introduce a suppressed row.",
+  "expectSymbols": [
+    {
+      "name": "readsParameter"
+    },
+    {
+      "name": "suppressesLocal"
+    },
+    {
+      "name": "suppressesSiblingLocal"
+    },
+    {
+      "name": "suppressesShadowingModuleSymbol"
+    },
+    {
+      "name": "suppressesLoopVariable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "readsParameter",
+      "target": "readsParameter\u0000param",
+      "line_number": 22,
+      "meta.isTemplateInterpolation": true,
+      "note": "parameter read: binding spelling; the claim is verified from the spelling, and the row is still a USE (nothing resolved)"
+    },
+    {
+      "type": "uses",
+      "from": "suppressesLoopVariable",
+      "target": "suppressesLoopVariable\u0000item",
+      "line_number": 42,
+      "meta.isTemplateInterpolation": true,
+      "note": "loop binding in a template: same claim class (metadata.bindingKind=loop_binding)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "suppressesLocal",
+      "target": "local"
+    },
+    {
+      "type": "uses",
+      "from": "suppressesLocal",
+      "target": "suppressesLocal\u0000local",
+      "note": "a LOCAL DECLARATOR read is not published at all: the fix must not turn a suppressed row into a claimed one"
+    },
+    {
+      "type": "uses",
+      "from": "suppressesSiblingLocal",
+      "target": "local"
+    },
+    {
+      "type": "uses",
+      "from": "suppressesSiblingLocal",
+      "target": "suppressesSiblingLocal\u0000local"
+    },
+    {
+      "type": "uses",
+      "from": "suppressesShadowingModuleSymbol",
+      "target": "topLevel"
+    },
+    {
+      "type": "uses",
+      "from": "destructuresThenReads",
+      "target": "name"
+    },
+    {
+      "type": "uses",
+      "from": "destructuresThenReads",
+      "target": "size"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "uses",
+      "from": "readsParameter",
+      "target": "readsParameter\u0000param",
+      "equals": 1
+    }
+  ]
+}

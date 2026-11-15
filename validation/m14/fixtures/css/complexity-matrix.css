@@ -1,0 +1,32 @@
+.plain {
+  color: red;
+}
+
+.one-class {
+  color: red;
+}
+
+div > p {
+  color: red;
+}
+
+a:hover {
+  color: red;
+}
+
+a[href] {
+  color: red;
+}
+
+li:not(.skip) {
+  color: red;
+}
+
+.a,
+.b {
+  color: red;
+}
+
+main > section:where(.wide) ul li {
+  color: red;
+}

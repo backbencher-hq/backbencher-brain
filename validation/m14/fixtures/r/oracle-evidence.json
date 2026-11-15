@@ -1,0 +1,236 @@
+{
+  "lang": "r",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "sampling": "git-tracked files routed to \"r\", first 5000 per repo, git ls-files order",
+  "repos": [
+    "Matrix",
+    "R6",
+    "S7",
+    "dplyr",
+    "ggplot2",
+    "nvim-treesitter",
+    "r-Rcpp",
+    "r-air",
+    "r-cli",
+    "r-pkgdown",
+    "r-rlang",
+    "r-scales",
+    "r-testthat",
+    "r-vctrs",
+    "r-withr",
+    "usethis"
+  ],
+  "filesSampled": 2184,
+  "filesOracleParsed": 2184,
+  "filesCompared": 2184,
+  "ruleCoupled": {
+    "calls": "source attribution = nearest enclosing named binding",
+    "uses": "member read = extract_operator/subset2-string outside callee position",
+    "overrides": "base must be declared in the same file",
+    "contains": "file-scope bindings, but the analyzer nests them and this oracle does not"
+  },
+  "types": [
+    {
+      "type": "calls",
+      "ruleCoupled": true,
+      "oraclePairs": 44931,
+      "emittedPairs": 48210,
+      "missing": 3548,
+      "unexplained": 6827,
+      "missingExamples": [
+        "Matrix/R/Auxiliaries.R Matrix.getOption -[?]-> getOption",
+        "Matrix/R/Auxiliaries.R Matrix.getOption -[?]-> paste0",
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> .Call",
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> length",
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> switch",
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> endsWith"
+      ],
+      "unexplainedExamples": [
+        "Matrix/R/Auxiliaries.R .drop0 -[?]-> return",
+        "Matrix/R/Auxiliaries.R drop0 -[?]-> return",
+        "Matrix/R/Auxiliaries.R non0ind -[?]-> return",
+        "Matrix/R/Auxiliaries.R complementInd -[?]-> return",
+        "Matrix/R/BunchKaufman.R BunchKaufman -[?]-> .Call",
+        "Matrix/R/BunchKaufman.R BunchKaufman -[?]-> as.logical"
+      ]
+    },
+    {
+      "type": "uses",
+      "ruleCoupled": true,
+      "oraclePairs": 3814,
+      "emittedPairs": 4805,
+      "missing": 104,
+      "unexplained": 1095,
+      "missingExamples": [
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> uplo",
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> Dim",
+        "Matrix/R/BunchKaufman.R .def.packed -[?]-> Dimnames",
+        "Matrix/R/00_Class.R .initialize -[?]-> Dimnames",
+        "Matrix/R/00_Class.R .new -[?]-> prototype",
+        "Matrix/R/00_Class.R .new -[?]-> className"
+      ],
+      "unexplainedExamples": [
+        "Matrix/R/Auxiliaries.R Matrix.verbose -[?]-> verbose",
+        "Matrix/R/Auxiliaries.R Matrix.warn -[?]-> warn",
+        "Matrix/R/00_Class.R initialize -[?]-> ix",
+        "Matrix/R/00_Class.R initialize -[?]-> x",
+        "Matrix/R/Cholesky.R chol -[?]-> Dimnames",
+        "Matrix/R/Cholesky.R chol -[?]-> uplo"
+      ]
+    },
+    {
+      "type": "contains",
+      "ruleCoupled": true,
+      "oraclePairs": 10573,
+      "emittedPairs": 17633,
+      "missing": 146,
+      "unexplained": 7206,
+      "missingExamples": [
+        "Matrix/R/BunchKaufman.R global -[?]-> .def.unpacked",
+        "Matrix/R/00_Class.R global -[?]-> .initialize",
+        "Matrix/R/00_Class.R global -[?]-> .new",
+        "Matrix/R/Cholesky.R global -[?]-> .def.unpacked",
+        "Matrix/R/Ops.R global -[?]-> .Ops.via.x",
+        "Matrix/R/Ops.R global -[?]-> Cmp.Mat.atomic"
+      ],
+      "unexplainedExamples": [
+        "Matrix/R/BunchKaufman.R global -[?]-> BunchKaufman",
+        "Matrix/R/BunchKaufman.R global -[?]-> expand1",
+        "Matrix/R/BunchKaufman.R global -[?]-> expand2",
+        "Matrix/R/HBMM.R global -[?]-> writeMM",
+        "Matrix/R/00_Class.R global -[?]-> Matrix",
+        "Matrix/R/00_Class.R Matrix -[?]-> Dim"
+      ]
+    },
+    {
+      "type": "imports",
+      "ruleCoupled": false,
+      "oraclePairs": 2192,
+      "emittedPairs": 2095,
+      "missing": 97,
+      "unexplained": 0,
+      "missingExamples": [
+        "R6/R/new.R global -[?]-> base",
+        "R6/tests/manual/test-inheritance.R global -[?]-> R6testA",
+        "R6/tests/manual/test-inheritance.R global -[?]-> pkgA",
+        "S7/R/compatibility.R global -[?]-> base",
+        "S7/R/generic-spec.R global -[?]-> methods",
+        "S7/inst/doc/classes-objects.R global -[?]-> knitr"
+      ],
+      "unexplainedExamples": []
+    },
+    {
+      "type": "references",
+      "ruleCoupled": false,
+      "oraclePairs": 2214,
+      "emittedPairs": 2137,
+      "missing": 98,
+      "unexplained": 21,
+      "missingExamples": [
+        "R6/R/new.R global -[?]-> base",
+        "R6/tests/manual/test-inheritance.R global -[?]-> R6testA",
+        "R6/tests/manual/test-inheritance.R global -[?]-> pkgA",
+        "S7/R/compatibility.R global -[?]-> base",
+        "S7/R/generic-spec.R global -[?]-> methods",
+        "S7/inst/doc/classes-objects.R global -[?]-> knitr"
+      ],
+      "unexplainedExamples": [
+        "S7/tests/testthat/test-S4.R Foo -[?]-> Foo",
+        "S7/tests/testthat/test-class.R parentS4 -[?]-> parentS4",
+        "S7/tests/testthat/test-method-dispatch.R my_S4 -[?]-> my_S4",
+        "S7/tests/testthat/test-method-dispatch.R Foo -[?]-> Foo",
+        "S7/tests/testthat/test-property.R class_S4 -[?]-> class_S4",
+        "S7/tests/testthat/test-union.R S4_union -[?]-> S4_union"
+      ]
+    },
+    {
+      "type": "exports",
+      "ruleCoupled": false,
+      "oraclePairs": 3616,
+      "emittedPairs": 3591,
+      "missing": 25,
+      "unexplained": 0,
+      "missingExamples": [
+        "R6/R/r6_class.R global -[?]-> .DollarNames.R6",
+        "S7/R/data.R global -[?]-> S7_data<-",
+        "S7/R/property.R global -[?]-> prop<-",
+        "S7/R/property.R global -[?]-> props<-",
+        "S7/R/method-register.R global -[?]-> method<-",
+        "ggplot2/R/plot-construction.R global -[?]-> %+%"
+      ],
+      "unexplainedExamples": []
+    },
+    {
+      "type": "extends",
+      "ruleCoupled": false,
+      "oraclePairs": 363,
+      "emittedPairs": 351,
+      "missing": 24,
+      "unexplained": 12,
+      "missingExamples": [
+        "Matrix/R/00_Class.R idenseMatrix -[?]-> VIRTUAL",
+        "Matrix/R/00_Class.R idenseMatrix -[?]-> iMatrix",
+        "Matrix/R/00_Class.R idenseMatrix -[?]-> denseMatrix",
+        "Matrix/R/00_Class.R zdenseMatrix -[?]-> VIRTUAL",
+        "Matrix/R/00_Class.R zdenseMatrix -[?]-> zMatrix",
+        "Matrix/R/00_Class.R zdenseMatrix -[?]-> denseMatrix"
+      ],
+      "unexplainedExamples": [
+        "R6/tests/manual/test-inheritance.R BC -[?]-> AC",
+        "S7/inst/doc/compatibility.R rle -[?]-> class_list",
+        "S7/tests/testthat/test-S4.R Foo3 -[?]-> Foo1b",
+        "S7/tests/testthat/test-S4.R Foo3 -[?]-> Foo2b",
+        "S7/tests/testthat/test-S4.R Foo1 -[?]-> character",
+        "S7/tests/testthat/test-S4.R Foo2 -[?]-> Soo1"
+      ]
+    },
+    {
+      "type": "implements",
+      "ruleCoupled": false,
+      "oraclePairs": 1671,
+      "emittedPairs": 1133,
+      "missing": 538,
+      "unexplained": 0,
+      "missingExamples": [
+        "Matrix/R/Auxiliaries.R Matrix.getOption -[?]-> Matrix",
+        "Matrix/R/Auxiliaries.R x.x -[?]-> x",
+        "Matrix/R/Auxiliaries.R dim.x -[?]-> dim",
+        "Matrix/R/00_Class.R has.x -[?]-> has",
+        "Matrix/R/00_Class.R i.uns -[?]-> i",
+        "Matrix/R/Cholesky.R min.y -[?]-> min"
+      ],
+      "unexplainedExamples": []
+    },
+    {
+      "type": "overrides",
+      "ruleCoupled": true,
+      "oraclePairs": 96,
+      "emittedPairs": 95,
+      "missing": 2,
+      "unexplained": 1,
+      "missingExamples": [
+        "R6/tests/testthat/test-clone.R C -[?]-> getx_super",
+        "R6/tests/testthat/test-clone.R C -[?]-> gety_super"
+      ],
+      "unexplainedExamples": [
+        "S7/inst/doc/S7.R Dog -[?]-> describe"
+      ]
+    },
+    {
+      "type": "instantiates",
+      "ruleCoupled": false,
+      "oraclePairs": 3,
+      "emittedPairs": 3,
+      "missing": 2,
+      "unexplained": 2,
+      "missingExamples": [
+        "dplyr/R/progress.R progress_estimated -[?]-> Progress",
+        "r-testthat/R/parallel.R queue_task -[?]-> SubprocessReporter"
+      ],
+      "unexplainedExamples": [
+        "R6/tests/testthat/test-clone.R initialize -[?]-> AC",
+        "R6/tests/testthat/test-clone.R initialize -[?]-> BC"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "fixtureId": "kotlin/safe-nav-chain",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANTI-SKIP GUARANTEE: safe-nav chain segments (account, owner, label) must each appear as an edge target from probe. Chain-fidelity root-anchoring is the documented limitation.",
+  "expectSymbols": [
+    { "name": "Guard", "kind": "class" },
+    { "name": "probe" }
+  ],
+  "expectRelationships": [
+    { "targetEndsWith": "account" },
+    { "targetEndsWith": "owner" },
+    { "targetEndsWith": "label" }
+  ]
+}

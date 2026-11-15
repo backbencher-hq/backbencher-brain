@@ -1,0 +1,139 @@
+{
+  "tier": "T2-LIVE",
+  "projectDir": ".",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dataDir": ".bb-data",
+  "route": "handler (source door): createToolHandlers().bb_patterns — the same handler src/mcp/server.ts calls",
+  "env": {
+    "BB_DATA_DIR": ".bb-data",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "protocol": "warm: one excluded warmup per shape, then five measured calls; p50/p95 over the five; BB_NO_AUTO_REFRESH=1",
+  "indexBefore": {
+    "db": {
+      "bytes": 3885883392,
+      "mtime": "2026-11-03T17:05:51.029Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-03T17:11:25.737Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-03T17:14:25.705Z"
+    }
+  },
+  "shapes": [
+    {
+      "shape": "default-all",
+      "args": {},
+      "warmupMs": 6088.3,
+      "warmupChars": 2141,
+      "runs": [
+        {
+          "ms": 5915.32,
+          "cpuMs": 6096,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 4968.18,
+          "cpuMs": 5090,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 4583.32,
+          "cpuMs": 4688,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 4242.39,
+          "cpuMs": 4445,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        },
+        {
+          "ms": 4178.69,
+          "cpuMs": 4335,
+          "isError": false,
+          "facts": {
+            "censusHeader": "13237",
+            "scan": "13237 finding(s) across orphaned_file=5213 orphaned_function=4720 high-complexity-function=2867 god-class=255 orphaned_class=93 framework-detected=50 long-parameter-list=39; showing 20 — raise `limit` to see more (maximum 500)",
+            "displayRows": 20,
+            "chars": 2141,
+            "lines": 23
+          },
+          "dbUnchanged": true
+        }
+      ],
+      "p50Ms": 4583.32,
+      "p95Ms": 5915.32,
+      "maxMs": 5915.32,
+      "minMs": 4178.69,
+      "medianOfRuns": [
+        4178.69,
+        4242.39,
+        4583.32,
+        4968.18,
+        5915.32
+      ],
+      "isError": false
+    }
+  ],
+  "generatedAt": "2026-11-03T17:15:26.990Z",
+  "indexAfter": {
+    "db": {
+      "bytes": 3885883392,
+      "mtime": "2026-11-03T17:05:51.029Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-03T17:11:25.737Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-03T17:14:25.705Z"
+    }
+  },
+  "readMovedIndex": false,
+  "shmMoved": false,
+  "cpuMs": {
+    "default-all": [
+      6096,
+      5090,
+      4688,
+      4445,
+      4335
+    ]
+  }
+}

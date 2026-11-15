@@ -1,0 +1,166 @@
+{
+ "fixtureId": "python/imported-name-project-collision",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "THE `importedName` CLAIM \u2014 the bare imported name the PROJECT cannot verify. The claim is `metadata.importedName = {specifier, name}`: 'this file's import of SPECIFIER binds the name NAME', verified by the ARBITER from the run's own import evidence, read only where the name model has nothing, and never a resolution. The claim exists for ONE class: a bare imported name whose SPECIFIER's root the project itself ships \u2014 the arbiter's project-absolute refiner DEMOTES such a row from a verified external claim to an UNVERIFIABLE one, because 'the project might ship this module' is not a question the symbol key space can answer. THE PARKED ARM MEASURED THE CLAIM WITHOUT THAT GATE and found extOK \u221216,025, ext? \u22127,540, bindOK +23,204 and bindFAIL 361, which the Lead ruled an INSTRUMENT GAP: 'the lane cannot prove the evidence shape from marker metadata alone, and narrowing to rows with NO external marker would target an empty class'. THE REBUILD replaces the lane-maintained vocabulary gate with the PROJECT'S OWN ANSWER \u2014 the complete project index's locality verdict, whose 'unknown' IS the arbiter's demotion condition \u2014 so the claim lands exactly on the class it exists for and nowhere else, and the erosion is removed by construction. THE EMISSION IS FAIL-CLOSED ON A COMPLETE INDEX: this fixture is read by the fixture runner with NO index, so what it pins is the claim's ABSENCE (the fail-closed half) together with the import-evidence markers that are the claim's PRECONDITION; the claim's own directions (the positive, the erosion guard, the alias and namespace-import evidence shapes (the namespace root is now PUBLISHED by the analyzer, so the map can hold it and the lane's own shape guard withholds the claim), the decoy guard) are pinned by the executable probe `imported-name-project-collision.mts`, which builds the project index the fixture runner does not have. WHY THE FAIL-CLOSED HALF IS WORTH PINNING: a claim that is emitted without a project key space would displace a verified external claim on rows the project could have checked, and the fleet's rule is that a claim is never merged into a resolution and never displaces a verified answer. THE FORBID ROWS STATE THE CLAIM'S PAYLOAD, because the runner's `meta.x: null` convention means 'this edge must not carry x' on an EXPECT row and 'the actual must have x absent' on a MATCH \u2014 so a forbid row that states the payload is the row that FIRES if the claim ever appears with that payload.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "from": "read_optional",
+   "target": "Optional",
+   "line_number": 48,
+   "meta.reasonCode": "annotation-type",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "typing",
+   "note": "THE CLAIM'S PRECONDITION, on the PARAMETER annotation: `from typing import Optional` binds this name, so the import-evidence marker is published with the specifier that named it. The claim itself is ABSENT here because this run has no project index \u2014 see the forbid rows and the probe."
+  },
+  {
+   "type": "references",
+   "from": "read_optional",
+   "target": "Optional",
+   "line_number": 48,
+   "meta.reasonCode": "return-annotation",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "typing",
+   "note": "The RETURN annotation is its own edge (the lane's position codes), and it carries the same precondition."
+  },
+  {
+   "type": "references",
+   "from": "read_decoder",
+   "target": "JSONDecoder",
+   "line_number": 53,
+   "meta.reasonCode": "annotation-type",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "json",
+   "note": "THE EROSION GUARD'S ROW, precondition side: the same shape as the claim's positive, and the claim does NOT land on it because the project ships no module named `json` \u2014 the generic external marker VERIFIES this row (extOK) and a claim here would displace a verified answer."
+  },
+  {
+   "type": "references",
+   "from": "read_decoder",
+   "target": "JSONDecoder",
+   "line_number": 53,
+   "meta.reasonCode": "return-annotation",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "json",
+   "note": "The return annotation is its own edge, and it is outside the claim's class for the same reason."
+  },
+  {
+   "type": "references",
+   "from": "aliased_name",
+   "target": "os_path",
+   "line_number": 63,
+   "meta.reasonCode": "annotation-type",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "os",
+   "note": "THE ALIAS SHAPE, precondition side: `from os import path as os_path` binds the ALIAS `os_path`, and this annotation names the alias. The claim is withheld on this shape because the gate's import-evidence map holds the IMPORTED ITEM (`path`), not the alias \u2014 a claim on it would be REFUTED, which is the parked arm's bindFAIL class."
+  },
+  {
+   "type": "references",
+   "from": "namespace_name",
+   "target": "xml",
+   "line_number": 73,
+   "meta.reasonCode": "annotation-type",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-name",
+   "meta.externalSpecifier": "xml.etree",
+   "note": "THE NAMESPACE-IMPORT SHAPE, precondition side: `import xml.etree` binds the module ROOT `xml`, and the import edge's target is `xml.etree:*` \u2014 whose `*` item the gate's evidence map skips, so the map has no entry for that specifier at all and a claim on it would be REFUTED too."
+  },
+  {
+   "type": "calls",
+   "from": "aliased",
+   "target": "join",
+   "line_number": 60,
+   "meta.qualified": "os_path.join",
+   "meta.reasonCode": "dispatch-on-receiver",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "os",
+   "note": "THE ROUTE-BOUND SHAPE, pinned so the claim's scope is stated: the target is the member LEAF and the route root is the alias, so this row is a member access and not an imported NAME at all."
+  },
+  {
+   "type": "uses",
+   "from": "namespaced",
+   "target": "etree",
+   "line_number": 70,
+   "meta.qualified": "xml.etree",
+   "meta.reasonCode": "member-read",
+   "meta.isExternalTarget": true,
+   "meta.externalReason": "imported-module-member",
+   "meta.externalSpecifier": "xml.etree",
+   "note": "The route-bound member read of a namespace import \u2014 the same shape, for the same reason."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "from": "read_optional",
+   "target": "Optional",
+   "line_number": 48,
+   "meta.importedName": {
+    "specifier": "typing",
+    "name": "Optional"
+   },
+   "note": "FAIL-CLOSED, no index: the claim must NOT be emitted without a COMPLETE project index. The forbid row states the claim's PAYLOAD, so it fires if the claim ever appears with that payload."
+  },
+  {
+   "type": "references",
+   "from": "read_decoder",
+   "target": "JSONDecoder",
+   "line_number": 53,
+   "meta.importedName": {
+    "specifier": "json",
+    "name": "JSONDecoder"
+   },
+   "note": "The EROSION GUARD, on the row the generic external marker verifies: even WITH an index this row carries no claim, because the project ships no module named `json`. Here the claim is also absent for the fail-closed reason."
+  },
+  {
+   "type": "references",
+   "from": "aliased_name",
+   "target": "os_path",
+   "line_number": 63,
+   "meta.importedName": {
+    "specifier": "os",
+    "name": "os_path"
+   },
+   "note": "THE ALIAS GUARD: the gate's import-evidence map holds the item (`path`), not the alias, so this claim would be REFUTED and is withheld."
+  },
+  {
+   "type": "references",
+   "from": "namespace_name",
+   "target": "xml",
+   "line_number": 73,
+   "meta.importedName": {
+    "specifier": "xml.etree",
+    "name": "xml"
+   },
+   "note": "THE NAMESPACE-IMPORT SHAPE GUARD. The analyzer now PUBLISHES THE ROOT a namespace import binds (`metadata.importedBindings` \u2014 the contract java/typescript/kotlin already use), so the gate's import-evidence map CAN hold the root for this specifier; the claim is withheld by the LANE's OWN SHAPE GUARD (only an `item` binding is claimed), not by the map's blindness. The forbid row states the claim's PAYLOAD, so it fires if the claim ever appears with that payload."
+  },
+  {
+   "type": "calls",
+   "from": "aliased",
+   "target": "join",
+   "line_number": 60,
+   "meta.importedName": {
+    "specifier": "os",
+    "name": "join"
+   },
+   "note": "THE ROUTE-BOUND SHAPE: a member leaf is not an imported name, so no claim may ride it."
+  },
+  {
+   "type": "uses",
+   "from": "namespaced",
+   "target": "etree",
+   "line_number": 70,
+   "meta.importedName": {
+    "specifier": "xml.etree",
+    "name": "etree"
+   },
+   "note": "The same, on the member read of a namespace import."
+  }
+ ]
+}

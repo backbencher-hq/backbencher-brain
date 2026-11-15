@@ -13,7 +13,7 @@
   "measured": [
     {
       "id": "rake",
-      "path": "$HOME/fixtures/repositories/rake",
+      "path": "/home/ishaq2321/bb_tests/repositories/rake",
       "sampleFiles": 0,
       "before": {
         "files": 0,
@@ -52,7 +52,7 @@
     },
     {
       "id": "intellij-community",
-      "path": "$HOME/intellij-community",
+      "path": "/home/ishaq2321/intellij-community",
       "sampleFiles": 12,
       "before": {
         "files": 69509,
@@ -78,7 +78,7 @@
     },
     {
       "id": "aspnetcore",
-      "path": "$HOME/aspnetcore",
+      "path": "/home/ishaq2321/aspnetcore",
       "sampleFiles": 12,
       "before": {
         "files": 10431,

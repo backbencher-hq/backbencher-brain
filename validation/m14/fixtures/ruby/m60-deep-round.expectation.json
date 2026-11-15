@@ -1,0 +1,347 @@
+{
+  "fixtureId": "ruby/m60-deep-round",
+  "language": "ruby",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60 deep round (2026-09-28), measured on three heavy Rails corpora this lane had never been run against (rails 3,468 / rubocop 1,780 / mastodon 3,266 .rb files; 4,024,840 named nodes) via script/m14/tmp/rb-corpus-census.ts. SIG-A: Ruby evaluates a parameter DEFAULT in the method's own scope, so a name a default ASSIGNS is a local of the method. walkParamDefaults walked default values (RB-B) but the bound names never reached walkBody's local set, so every read of one was published as a fabricated bare call \u2014 rails activerecord/lib/active_record/scoping/named.rb:23 emitted `calls all -> all_queries_not_set` for a name line 22's own signature binds. The two forbids on `seen` and `marker` are the load-bearing half and are proven able to fail: reverting the fix restores both edges. The expect on `build_lock` is the other half, because the wrong fix (suppress calls in defaults) would satisfy the forbids by deleting a real call site. SIG-B: `anon = Class.new(Base) do ... end` binds a LOCAL, so the block's members belong to an unnamed class and an edge written against the enclosing named class is a misattribution (24 association edges in rails activerecord/test/cases/associations alone). The owner is deliberately NOT reparented \u2014 a local has no symbol, so that would trade a false edge for a dangling one, and the differential has no truth for an anonymous scope to check against. The binding is declared on the member instead. The fixture carries BOTH reaching paths (class-body frame, and walkBody for the method-body form that rails actually uses) and a NESTED pair, because a resolution that took the outermost or the first-registered binding mis-declares one of them \u2014 the exact shape at rails activerecord/test/cases/associations/has_many_associations_test.rb:138-146. `K` is the control: a CONSTANT factory is a real class, so it carries a real Class symbol and no marker, and a fix that marked every `Class.new` block fails here. FIX-4: a BARE `private`/`protected`/`public` is a visibility directive, not a call. The symbol-list form was always handled by processCall and the top-level walk has always skipped the bare keyword, but pushBareCall \u2014 which serves METHOD bodies \u2014 never carried the rule, so a bare `private` inside a method published `calls <method> -> private` (3 occurrences in a 1,200-file stride sample: rails activerecord/test/cases/timestamp_test.rb:229, rails activesupport/test/core_ext/object/try_test.rb:80, mastodon spec/requests/api/v1/csp_spec.rb:33). The differential oracle already filtered these via `isVisibilityDirective`, so the analyzer was the only side that published them, which is why no F5 run had ever reported them as fabrications. FIX-5: `|(head, *body)|` binds `body`, but a splat wraps the bound name and the destructured_parameter branch of the local pre-scan read DIRECT children only, so every use of a splat-bound block parameter became a fabricated bare call (measured: rubocop lib/rubocop/cop/cop_documentation.rb:65, `calls tagged_sections -> body`). The generic form-recursion the sibling branch uses is now shared by both. FIX-6: a write target is not a read. `isRubyInstanceVariableWrite` is ONE predicate shared by the two analyzer sites that each carried their own copy of the test; the multiple-assignment form escaped both because a target's parent is the `left_assignment_list`, never the `assignment`, while compound assignment was already gated under SCD1. Measured 66 false reads per 1,200 files (rails 59, rubocop 3, mastodon 4) -> 0. The three receiver/compound shapes are pinned POSITIVELY and are the check on the fix: you cannot assign through a receiver without reading it, so `@cfg.limit = x` and `@list[i] = v` are real reads and a fix that swept them in would over-count the defect 7x (review \u00a79a). The write-side negatives are pinned on `@ghost` / `@phantom`, which are written and NEVER read \u2014 because `multiple` reads @height/@width on a LATER line, a forbid keyed on that target alone would be wrong (the read is real), and the fixture's relationship matcher has no line to key on. Written-and-never-read is what makes 'no uses edge exists' the exact statement the matcher can make. `written_through` is the pin that makes the receiver rule load-bearing: it assigns THROUGH @sink and never reads it on another line, so a predicate that wrongly treats a receiver as a write drops the edge and the expect fails. `attribute` cannot do that job \u2014 it reads @cfg again on the next line, so its expect passes either way. The first version of this fixture was caught surviving two mutants for exactly that reason. FIX-7: a reopen is one identity with the nested spelling at EVERY depth. `class Admin::Announcements::DistributionsController` split on the FIRST `::` gave a symbol named `Announcements::DistributionsController` owned by `Admin`, while the nested spelling gives name `DistributionsController` under Admin > Announcements, so the two spellings never unified \u2014 the exact failure RUBD13 was filed to prevent, which held by accident because first == last for a two-segment reopen. 58 non-leaf names per 1,200 files. FIX-8: a define_method name containing interpolation is a template, not a name \u2014 `define_method(\"\\#{sym}?\")` published a symbol literally called `#{sym}?` resolving to no method; 7 per 1,200. Both fixes make the analyzer agree with its OWN `leafName` helper, which already split on lastIndexOf. Two of the three FIX-7/FIX-8 mutants SURVIVED the first version of this pin, which is why it was rewritten. (i) The reopen fixture was two-segment, where the first and last `::` coincide \u2014 the exact coincidence that let RUBD13 fail \u2014 so it could not tell the mutation it was written for. `Alpha::Beta::Gamma` is three-segment and is added for that reason. (ii) The FIX-8 forbid key was written as \"\\#{sym}?\" with a stray backslash, so it compared against a name no analyzer ever produces and passed against a broken fix; a pin whose key can never match is decoration. FIX-9: an interpolated require/autoload path is a template, not a path \u2014 217 sites (rails 208, rubocop 9), and the autoload branch's own comment claimed the rule already existed. FIX-10: an expression receiver constructs an ANONYMOUS class; the guard existed but sat BELOW the emit and `target` falls back to `owner`, so it was unreachable for any capitalized class \u2014 `Class.new(Foo).new` published `instantiates <Enclosing> -> <Enclosing>`, claiming the class constructs itself on a line that does not name it. 118 inconsistent `instantiates` on 3,000 files. `self.new` is the control: `self` is a NAMED node in this grammar, so it must be excluded from the expression-receiver set explicitly or a legitimate enclosing-class construction is lost with the anonymous ones. FIX-11: a macro member's RANGE is its argument, not the wrapping call \u2014 a multi-line `attr_accessor` gave every property the call's line, so `contains -> third_attribute` claimed a line that does not contain it. 49 inconsistent `contains` in 4 files. All four macro member kinds are fixed together, because a fix covering only the one the sample contained would leave the same defect in `has_many`, `scope` and `define_method`. FIX-12: the require family is RECEIVERLESS, and BOTH a named and an expression receiver must be excluded \u2014 an expression receiver leaves the analyzer's `receiver` unset, so a receiver-only guard still let `serializer(x).load(\"\")` publish a `references` edge with an EMPTY target. The branch matched on the method NAME alone, so `coder.load(payload)` \u2014 a YAML/serializer method in real rails code \u2014 published a reference naming a document fragment. The control is the same method called receiverlessly, which must still load. The autoload branch carries the SAME receiver rule and needed its OWN pin: the first version of this fixture exercised only the load branch, and a mutant that reverted the autoload guard passed \u2014 the same 'one mutant, half a fix' shape as earlier in the round.",
+  "expectSymbols": [
+    {
+      "name": "scoped",
+      "kind": "function"
+    },
+    {
+      "name": "Factory",
+      "kind": "class"
+    },
+    {
+      "name": "K",
+      "kind": "class",
+      "meta.definedBy": "classFactory"
+    },
+    {
+      "name": "ping",
+      "kind": "method",
+      "ownerName": "Factory",
+      "meta.anonymousScopeBinding": "at_body"
+    },
+    {
+      "name": "widget",
+      "kind": "property",
+      "meta.anonymousScopeBinding": "anon"
+    },
+    {
+      "name": "parts",
+      "kind": "property",
+      "meta.anonymousScopeBinding": "anon"
+    },
+    {
+      "name": "deep_thing",
+      "kind": "property",
+      "meta.anonymousScopeBinding": "inner"
+    },
+    {
+      "name": "reveal",
+      "kind": "method",
+      "ownerName": "Guard"
+    },
+    {
+      "name": "sections",
+      "kind": "method",
+      "ownerName": "Sectioner"
+    },
+    {
+      "name": "AssignmentShapes",
+      "kind": "class"
+    },
+    {
+      "name": "multiple",
+      "kind": "method",
+      "ownerName": "AssignmentShapes"
+    },
+    {
+      "name": "splatted",
+      "kind": "method",
+      "ownerName": "AssignmentShapes"
+    },
+    {
+      "name": "never_read",
+      "kind": "method",
+      "ownerName": "AssignmentShapes"
+    },
+    {
+      "name": "written_through",
+      "kind": "method",
+      "ownerName": "AssignmentShapes"
+    },
+    {
+      "name": "DistributionsController",
+      "kind": "class",
+      "ownerName": "Admin::Announcements"
+    },
+    {
+      "name": "Deep",
+      "kind": "module",
+      "ownerName": "Outer::Inner"
+    },
+    {
+      "name": "real_one",
+      "kind": "method",
+      "ownerName": "DynamicName"
+    },
+    {
+      "name": "Gamma",
+      "kind": "class",
+      "ownerName": "Alpha::Beta"
+    },
+    {
+      "name": "WrappingMacro",
+      "kind": "class"
+    },
+    {
+      "name": "third_attribute",
+      "kind": "property",
+      "ownerName": "WrappingMacro"
+    },
+    {
+      "name": "rebuild",
+      "kind": "method",
+      "ownerName": "AnonymousConstruction"
+    },
+    {
+      "name": "account",
+      "kind": "property",
+      "ownerName": "DynamicAssociationName"
+    },
+    {
+      "name": "parts",
+      "kind": "property",
+      "ownerName": "DynamicAssociationName"
+    },
+    {
+      "name": "author",
+      "kind": "property",
+      "ownerName": "DynamicAssociationName"
+    },
+    {
+      "name": "via_receiver",
+      "kind": "property",
+      "ownerName": "DynamicAssociationName",
+      "note": "a receiver does not change the rule: `self.belongs_to :via_receiver` is still a literal name"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "scoped",
+      "target": "build_lock",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "target": "widget",
+      "meta.anonymousScopeBinding": "anon"
+    },
+    {
+      "type": "uses",
+      "target": "parts",
+      "meta.anonymousScopeBinding": "anon"
+    },
+    {
+      "type": "uses",
+      "target": "deep_thing",
+      "meta.anonymousScopeBinding": "inner"
+    },
+    {
+      "type": "uses",
+      "target": "outer_thing",
+      "meta.anonymousScopeBinding": "at_body"
+    },
+    {
+      "type": "uses",
+      "source": "attribute",
+      "target": "@cfg"
+    },
+    {
+      "type": "uses",
+      "source": "element",
+      "target": "@list"
+    },
+    {
+      "type": "uses",
+      "source": "compound",
+      "target": "@mode"
+    },
+    {
+      "type": "uses",
+      "source": "splatted",
+      "target": "@department"
+    },
+    {
+      "type": "uses",
+      "source": "written_through",
+      "target": "@sink"
+    },
+    {
+      "type": "instantiates",
+      "source": "rebuild",
+      "target": "AnonymousConstruction",
+      "meta.resolvedTarget": "enclosing-class"
+    },
+    {
+      "type": "contains",
+      "source": "WrappingMacro",
+      "target": "third_attribute",
+      "line_number": 242
+    },
+    {
+      "type": "instantiates",
+      "source": "build",
+      "target": "Class"
+    },
+    {
+      "type": "contains",
+      "source": "WrappingMacro",
+      "target": "wrapped_scope",
+      "line_number": 250
+    },
+    {
+      "type": "references",
+      "target": "real/require/path"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "account",
+      "type": "uses"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "parts",
+      "type": "uses"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "author",
+      "type": "uses"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "via_receiver",
+      "type": "uses"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "seen"
+    },
+    {
+      "type": "calls",
+      "target": "marker"
+    },
+    {
+      "type": "calls",
+      "target": "private"
+    },
+    {
+      "type": "calls",
+      "target": "body"
+    },
+    {
+      "type": "uses",
+      "target": "@ghost"
+    },
+    {
+      "type": "uses",
+      "target": "@phantom"
+    },
+    {
+      "type": "instantiates",
+      "source": "build",
+      "target": "AnonymousConstruction"
+    },
+    {
+      "type": "references",
+      "target": "#{__dir__}/widget"
+    },
+    {
+      "type": "references",
+      "target": "#{__dir__}/dynamic_helper"
+    },
+    {
+      "type": "references",
+      "target": ""
+    },
+    {
+      "type": "references",
+      "target": "some/autoload/path"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "role",
+      "type": "uses",
+      "note": "FIX-13: `belongs_to role` \u2014 role is a parameter, the association is unknowable"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "name",
+      "type": "uses",
+      "note": "FIX-13: `has_many name` \u2014 name is a parameter"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "scope",
+      "type": "uses",
+      "note": "FIX-13: `has_many name, scope` \u2014 scope is a parameter"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "role",
+      "type": "contains",
+      "note": "FIX-13: a class does not CONTAIN its own parameter"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "name",
+      "type": "contains",
+      "note": "FIX-13: same"
+    },
+    {
+      "source": "DynamicAssociationName",
+      "target": "scope",
+      "type": "contains",
+      "note": "FIX-13: same"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "K",
+      "meta.anonymousScopeBinding": "at_body"
+    },
+    {
+      "name": "Announcements::DistributionsController"
+    },
+    {
+      "name": "Inner::Deep"
+    },
+    {
+      "name": "#{sym}?"
+    },
+    {
+      "name": "Beta::Gamma"
+    },
+    {
+      "name": "#{__dir__}/widget"
+    },
+    {
+      "name": "role",
+      "kind": "Property",
+      "ownerName": "DynamicAssociationName",
+      "note": "FIX-13: a macro argument that is a VARIABLE is not an association name; a Property symbol named after a local is a fabrication"
+    },
+    {
+      "name": "name",
+      "kind": "Property",
+      "ownerName": "DynamicAssociationName",
+      "note": "FIX-13: same, for a bare identifier argument"
+    }
+  ]
+}

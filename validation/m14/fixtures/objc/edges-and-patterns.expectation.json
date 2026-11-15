@@ -1,0 +1,316 @@
+{
+  "fixtureId": "objc/edges-and-patterns",
+  "language": "objc",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the objective-c analyzer's edge-case handling \u2014 the rare shapes the F1 grammar audit probed against the pinned tree-sitter-objc wasm: category detection (Extension symbol via the anonymous `(` token, methods owned by the EXTENDED class, never a duplicate class), protocol-only classes (implements, never extends), class methods (+), nested [[Foo alloc] init] (instantiates the receiver leaf) and [Foo new] (instantiates), block literals (NO symbol \u2014 anonymous, but their body calls are still captured), C functions at file scope with per-symbol complexity, for-in loops counted, and imports as references.",
+  "expectSymbols": [
+    {
+      "name": "Renderable",
+      "kind": "interface"
+    },
+    {
+      "name": "Animatable",
+      "kind": "interface"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "Renderable"
+    },
+    {
+      "name": "UIView",
+      "kind": "extension",
+      "meta.categoryName": "RoundedCorner"
+    },
+    {
+      "name": "applyRoundedCornerRadius:",
+      "kind": "method",
+      "ownerName": "UIView"
+    },
+    {
+      "name": "animate",
+      "kind": "method",
+      "ownerName": "UIView"
+    },
+    {
+      "name": "CustomView",
+      "kind": "class"
+    },
+    {
+      "name": "render",
+      "kind": "method",
+      "ownerName": "CustomView"
+    },
+    {
+      "name": "makeWithView:",
+      "kind": "method",
+      "ownerName": "CustomView",
+      "meta.isClassMethod": true
+    },
+    {
+      "name": "Log",
+      "kind": "function"
+    },
+    {
+      "name": "renderAll",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "CustomView",
+      "target": "Renderable",
+      "meta.isProtocol": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "instantiates",
+      "source": "makeWithView:",
+      "target": "CustomView",
+      "meta.isObjCAlloc": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "setHidden:",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "applyRoundedCornerRadius:",
+      "target": "setCornerRadius:",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "uses",
+      "source": "animate",
+      "target": "hidden",
+      "meta.isFieldRead": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "renderAll",
+      "target": "render",
+      "meta.isMessageExpression": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "calls",
+      "source": "Log",
+      "target": "printf",
+      "meta.isCFunctionCall": true,
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "contains",
+      "source": "CustomView",
+      "target": "render",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "CustomView",
+      "target": "makeWithView:",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "contains",
+      "source": "UIView",
+      "target": "applyRoundedCornerRadius:",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "Foundation/Foundation.h",
+      "line_number": 9,
+      "note": "M59.A7: the import's own line (the name is the path inside the brackets)"
+    },
+    {
+      "type": "references",
+      "source": "root",
+      "target": "UIKit/UIKit.h",
+      "line_number": 10,
+      "note": "M59.A7: second import, its own line"
+    },
+    {
+      "type": "extends",
+      "source": "Renderable",
+      "target": "NSObject",
+      "line_number": 12,
+      "note": "M59.A7: `@protocol Renderable <NSObject>` \u2014 the inherited name's line"
+    },
+    {
+      "type": "extends",
+      "source": "Animatable",
+      "target": "Renderable",
+      "line_number": 16,
+      "note": "M59.A7: protocol inheritance, the declared line"
+    },
+    {
+      "type": "implements",
+      "source": "UIView",
+      "target": "Animatable",
+      "line_number": 20,
+      "note": "M59.A7: category protocol adoption on the category's own line"
+    },
+    {
+      "type": "extends",
+      "source": "CustomView",
+      "target": "UIView",
+      "line_number": 38,
+      "note": "M59.A7: `@interface CustomView : UIView <Renderable>`"
+    },
+    {
+      "type": "contains",
+      "source": "Renderable",
+      "target": "render",
+      "line_number": 13,
+      "note": "M59.A7: the MEMBER's declaration line, not the container's (12)"
+    },
+    {
+      "type": "contains",
+      "source": "Counter",
+      "target": "_count",
+      "line_number": 73,
+      "note": "M59.A7: the ivar's own declaration line inside the braces"
+    },
+    {
+      "type": "contains",
+      "source": "Counter",
+      "target": "countAll:",
+      "line_number": 79,
+      "note": "M59.A7: a METHOD's owner row names its IMPLEMENTATION line \u2014 an @interface method DECLARATION is not symbolized in this lane (measured: Counter at 78 owns only _count@73 and countAll:@79; protocols are the exception and are symbolized at their declaration). The forbid below pins the distinction."
+    },
+    {
+      "type": "instantiates",
+      "source": "render",
+      "target": "UIView",
+      "line_number": 43,
+      "note": "M59.A7: the `[UIView alloc]` receiver's line"
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "initWithFrame:",
+      "line_number": 43,
+      "note": "M59.A7: the message's first keyword sits on 43"
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "addSubview:",
+      "line_number": 44,
+      "note": "M59.A7: a DIFFERENT site from the nested construction on 43"
+    },
+    {
+      "type": "calls",
+      "source": "makeWithView:",
+      "target": "addSubview:",
+      "line_number": 50,
+      "note": "M59.A7: same selector, second call site \u2014 the line distinguishes them"
+    },
+    {
+      "type": "uses",
+      "source": "applyRoundedCornerRadius:",
+      "target": "layer",
+      "line_number": 26,
+      "note": "M59.A7: the read's own site (`[self.layer setCornerRadius:]`), not the method's declaration (25)"
+    },
+    {
+      "type": "uses",
+      "source": "animate",
+      "target": "superview",
+      "line_number": 30,
+      "note": "M59.A7: SC-A read on its assignment line"
+    },
+    {
+      "type": "calls",
+      "source": "animate",
+      "target": "setHidden:",
+      "line_number": 32,
+      "note": "M59.A7: the call inside the `if` body, not the condition's line (31)"
+    },
+    {
+      "type": "calls",
+      "source": "renderAll",
+      "target": "Log",
+      "line_number": 61,
+      "note": "M59.A7: C function call inside the for-in body (the loop header is 60)"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "render",
+      "ownerName": "CustomView",
+      "equals": 1
+    },
+    {
+      "symbol": "makeWithView:",
+      "ownerName": "CustomView",
+      "equals": 1
+    },
+    {
+      "symbol": "renderAll",
+      "equals": 2
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "UIView"
+    },
+    {
+      "type": "calls",
+      "target": "CustomView"
+    },
+    {
+      "type": "implements",
+      "source": "CustomView",
+      "target": "UIView"
+    },
+    {
+      "type": "uses",
+      "source": "animate",
+      "target": "clipsToBounds"
+    },
+    {
+      "type": "calls",
+      "target": "initWithFrame"
+    },
+    {
+      "type": "calls",
+      "target": "setHidden"
+    },
+    {
+      "type": "calls",
+      "target": "addSubview"
+    },
+    {
+      "type": "uses",
+      "source": "applyRoundedCornerRadius:",
+      "target": "layer",
+      "line_number": 25,
+      "comment": "M59.A7 near-miss: 25 is the enclosing DECLARATION (`- (void)applyRoundedCornerRadius:`), not the read site (26) \u2014 an edge whose line is its declaration's is not checkable against the source"
+    },
+    {
+      "type": "calls",
+      "source": "render",
+      "target": "addSubview:",
+      "line_number": 43,
+      "comment": "M59.A7 near-miss: the construction's line, one above the call's own (44)"
+    },
+    {
+      "type": "contains",
+      "source": "Counter",
+      "target": "countAll:",
+      "line_number": 72,
+      "comment": "M59.A7 near-miss: the CONTAINER's line (`@interface Counter`)"
+    }
+  ]
+}

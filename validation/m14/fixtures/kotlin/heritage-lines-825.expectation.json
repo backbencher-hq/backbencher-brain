@@ -1,0 +1,29 @@
+{
+  "fixtureId": "kotlin/heritage-lines-825",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825). Every line below is read off heritage-lines-825.kt. A kotlin supertype list wraps across lines, so the class header names only the FIRST entry: `Wrapped` opens on 9 and its list is written on 11-12, so all three heritage edges belong to 12 (`Base(x)` extends, `Marker`/`Second` implement). Live on kotlinx-coroutines TestScope.kt this is the shape `internal class TestScopeImpl(context: CoroutineContext) :` (183) / `AbstractCoroutine<Unit>(...), TestScope {` (184) — attributing to the header would send a tool to the class keyword for every wrapped parent. `Inline` pins the same-line case (no regression: 16 stays 16), and `Third` pins the interface rule (EVERY supertype of an interface is an extends, JLS-analogue of Kotlin's single ':' list). The forbid entries are the pre-fix positions: the class node's own line and the ':' line.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Marker", "kind": "interface" },
+    { "name": "Second", "kind": "interface" },
+    { "name": "Wrapped", "kind": "class" },
+    { "name": "Inline", "kind": "class" },
+    { "name": "Third", "kind": "interface" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Wrapped", "targetEndsWith": "Base", "line_number": 12 },
+    { "type": "implements", "from": "Wrapped", "targetEndsWith": "Marker", "line_number": 12 },
+    { "type": "implements", "from": "Wrapped", "targetEndsWith": "Second", "line_number": 12 },
+    { "type": "extends", "from": "Inline", "targetEndsWith": "Base", "line_number": 16 },
+    { "type": "implements", "from": "Inline", "targetEndsWith": "Marker", "line_number": 16 },
+    { "type": "extends", "from": "Third", "targetEndsWith": "Marker", "line_number": 21 },
+    { "type": "extends", "from": "Third", "targetEndsWith": "Second", "line_number": 21 }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "Wrapped", "targetEndsWith": "Base", "line_number": 9, "note": "pre-fix: the class node starts at `class`, but `Base(x)` is written on 12" },
+    { "type": "implements", "from": "Wrapped", "targetEndsWith": "Marker", "line_number": 11, "note": "pre-fix: the `:` of the clause, but `Marker` is written on 12" },
+    { "type": "implements", "from": "Wrapped", "targetEndsWith": "Second", "line_number": 11, "note": "same clause-start mechanism" },
+    { "type": "extends", "from": "Third", "targetEndsWith": "Marker", "line_number": 20, "note": "pre-fix: the interface header, but `Marker` is written on 21" }
+  ]
+}

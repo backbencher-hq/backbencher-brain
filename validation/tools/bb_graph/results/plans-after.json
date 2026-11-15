@@ -1,0 +1,60 @@
+{
+  "openMs": 19.57,
+  "ownerIndexesPresent": [
+    "brain_symbol_owner_idx",
+    "brain_symbol_project_owner_idx"
+  ],
+  "ownerIndexUsed": "brain_symbol_project_owner_idx",
+  "readonlyQueryOnly": {
+    "query_only": 0
+  },
+  "timings": {
+    "cascadeIds": {
+      "ms": 0.83,
+      "rowCount": 1,
+      "plan": [
+        "COMPOUND QUERY",
+        "LEFT-MOST SUBQUERY",
+        "SCAN CONSTANT ROW",
+        "UNION ALL",
+        "SEARCH m USING INDEX brain_symbol_project_owner_idx (project_id=? AND owner_symbol_id>? AND owner_symbol_id<?)"
+      ]
+    },
+    "callerArm": {
+      "label": "callerArm",
+      "ms": 9.02,
+      "rowCount": 2,
+      "plan": [
+        "CO-ROUTINE casc",
+        "SCAN CONSTANT ROW",
+        "SCAN casc",
+        "SEARCH r USING INDEX brain_rel_proj_type_target_idx (project_id=? AND relationship_type=? AND target_symbol_id=?)",
+        "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)",
+        "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ]
+    },
+    "unattributedCallers": {
+      "label": "unattributedCallers",
+      "ms": 0.49,
+      "rowCount": 1,
+      "plan": [
+        "CO-ROUTINE casc",
+        "SCAN CONSTANT ROW",
+        "SCAN casc",
+        "SEARCH r USING INDEX brain_rel_proj_type_target_idx (project_id=? AND relationship_type=? AND target_symbol_id=?)"
+      ]
+    },
+    "rootExactNameIndexed": {
+      "label": "rootExactNameIndexed",
+      "ms": 1.23,
+      "rowCount": 1,
+      "plan": [
+        "SEARCH s USING INDEX brain_sym_proj_name_idx (project_id=? AND name=?)",
+        "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ]
+    }
+  },
+  "cascadeIds": 1
+}

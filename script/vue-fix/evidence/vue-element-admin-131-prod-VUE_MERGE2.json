@@ -3,7 +3,7 @@
   "lane": "VUE_MERGE2",
   "mode": "prod",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "repo": "vue-element-admin",
     "tracked": 131,
     "admitted": 131,

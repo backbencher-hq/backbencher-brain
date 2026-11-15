@@ -1,0 +1,58 @@
+{
+  "instrument": "xml contains intent \u2014 the EXACT test behind the `ofWhich` upper bound, read off the gate's own position classifier",
+  "at": "2026-10-10T00:56:00-04:00",
+  "question": "contains read `189,310 resolved` with `183,888 ofWhich` (resolved among a collision). `ofWhich` is an UPPER BOUND on arbitrary bindings because both resolvers put the edge's own file second in their ORDER BY. Is xml's largest type actually clean, or is its 0.0% residual hiding tie-break picks?",
+  "instrumentDetail": {
+    "command": "npx tsx script/m14/residual-gate.ts --lane xml  (guarded by .bb-heavy-v3.lock)",
+    "population": "11,562 files, 126 repos, production scope, 0 degraded",
+    "classifier": "script/m14/incoming-gate.ts classifyIntent() \u2014 `LINE_IS_TARGET_LINE = {contains, exports}` because those are the types the analyzer writes on the TARGET SYMBOL'S OWN LINE, which is what makes the line test exact rather than a read-site approximation",
+    "classes": {
+      "intended": "a declaration in the EDGE'S OWN FILE, ON the edge's own line, answers to the target",
+      "sameFileUnproven": "a declaration in the own file but NOT on the edge's line (derivable as edges - intended - twin - noDecl)",
+      "twin": "nothing in the edge's own file answers, but a declaration in ANOTHER file does \u2014 the wrong-edge class",
+      "noDecl": "nothing in the project answers \u2014 the unresolved class"
+    }
+  },
+  "answer": {
+    "contains": {
+      "edges": 189310,
+      "resolved": 189310,
+      "ofWhich_collisionBound": 183888,
+      "intended": 189305,
+      "twin": 0,
+      "noDecl": 0,
+      "sameFileUnproven_derived": 5,
+      "determinateShare": 0.999974
+    },
+    "verdict": "CLEAN, and now exactly so. 189,305 of 189,310 containment edges bind to a declaration in the edge's OWN FILE ON the edge's own line \u2014 the tie-break never ran for them. `twin` is 0: not one containment edge is a wrong-file binding. `noDecl` is 0. The 183,888 `ofWhich` is therefore not 183,888 arbitrary bindings; it is 183,888 collisions that the own line settles uniquely.",
+    "theFiveRemaining": "5 edges are same-file but off-line (derived: edges - intended - twin - noDecl). Not enough to move anything, and they are named here rather than rounded away."
+  },
+  "whatThisDoesToTheBoardRow": "`contains 0.0% residual` is genuine and may be quoted: 99.997% of the type's edges are determinate by (own file, own line), with 0 wrong-file bindings and 0 unresolved. The upper bound warned that it COULD have been otherwise; the exact test says it is not.",
+  "theOneCaveatKept": {
+    "theModelsLimit": "`twin` is defined as 'NOTHING in the edge's own file answers to the name' \u2014 a weaker condition than 'the store bound it to another file'. A store binding that went cross-file while the own file DOES declare the name is invisible to this class by construction. So `twin: 0` says the tie-break was never the only option; it does not by itself say which row the store wrote.",
+    "whatTheStoreSaid": "On libxslt (one project, 1,143 files) the store probe measured contains bound 95.4%, boundSameFile 87.0%, boundOtherFile 8.5% (3,320 rows). That cross-file share is the one number this intent table cannot confirm or refute.",
+    "whyTheyCanDisagree": "Three candidates, none of them tested here: (a) the store run's rows exceed the analyzer's own emission by 1.83x on `contains` (39,293 stored vs 21,486 emitted \u2014 disclosed since 93dfde286, unexplained, in an instrument this lane does not own); (b) the eager resolver runs at INSERT time per batch, so its own-file preference is only as good as what is in the table when the edge is stored; (c) `boundOtherFile` counts rows, and a duplicated row set would inflate it. The honest statement is that the gate's exact test and the store probe disagree on 8.5% of one repository's containment edges, and the disagreement is NOT resolvable from this lane."
+  },
+  "nextCauses_measuredHere": {
+    "extends": {
+      "edges": 1429,
+      "intended": 0,
+      "twin": 645,
+      "noDecl": 125,
+      "residualPct": 94.1,
+      "note": "twin 645 is the wrong-edge class on 1,429 edges \u2014 the largest measured wrongness left on this lane, and the approved next cause. `references` also carries twin 4,137."
+    },
+    "calls": {
+      "edges": 402,
+      "twin": 0,
+      "note": "279 ambiguous of 402 and no twins \u2014 small enough to enumerate and name edge by edge."
+    },
+    "references": {
+      "edges": 11108,
+      "twin": 4137,
+      "noDecl": 1476,
+      "residualPct": 68.4
+    }
+  },
+  "raw": "validation/m14/fixtures/xml/contains-intent.txt"
+}

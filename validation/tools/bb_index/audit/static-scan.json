@@ -1,0 +1,407 @@
+{
+ "files": [
+  {
+   "file": "src/mcp/tools/bb_index/handler.ts",
+   "lines": 214,
+   "regexUses": [],
+   "bannedHits": [
+    {
+     "line": 38,
+     "kind": "milestone-narrative",
+     "match": "M28.T1"
+    },
+    {
+     "line": 38,
+     "kind": "issue-number",
+     "match": "issue #624"
+    },
+    {
+     "line": 40,
+     "kind": "milestone-narrative",
+     "match": "M48.P1"
+    },
+    {
+     "line": 40,
+     "kind": "issue-number",
+     "match": "#696"
+    },
+    {
+     "line": 43,
+     "kind": "milestone-narrative",
+     "match": "M55.T5"
+    },
+    {
+     "line": 56,
+     "kind": "milestone-narrative",
+     "match": "M22.E1"
+    },
+    {
+     "line": 63,
+     "kind": "milestone-narrative",
+     "match": "M48.C2"
+    },
+    {
+     "line": 63,
+     "kind": "issue-number",
+     "match": "#700"
+    },
+    {
+     "line": 67,
+     "kind": "milestone-narrative",
+     "match": "M40.A1"
+    },
+    {
+     "line": 139,
+     "kind": "milestone-narrative",
+     "match": "M40.A3"
+    },
+    {
+     "line": 179,
+     "kind": "milestone-narrative",
+     "match": "M43.P1"
+    },
+    {
+     "line": 184,
+     "kind": "milestone-narrative",
+     "match": "M48.C2"
+    },
+    {
+     "line": 184,
+     "kind": "issue-number",
+     "match": "#700"
+    }
+   ]
+  },
+  {
+   "file": "src/mcp/tools/bb_index/descriptor.ts",
+   "lines": 29,
+   "regexUses": [],
+   "bannedHits": [
+    {
+     "line": 15,
+     "kind": "milestone-narrative",
+     "match": "M22.E1"
+    }
+   ]
+  },
+  {
+   "file": "src/ast/index-lock.ts",
+   "lines": 531,
+   "regexUses": [
+    {
+     "line": 257,
+     "literal": "/\\s+/"
+    }
+   ],
+   "bannedHits": [
+    {
+     "line": 1,
+     "kind": "milestone-narrative",
+     "match": "M43.P1"
+    },
+    {
+     "line": 1,
+     "kind": "issue-number",
+     "match": "#656"
+    },
+    {
+     "line": 398,
+     "kind": "milestone-narrative",
+     "match": "M43.A8"
+    }
+   ]
+  },
+  {
+   "file": "src/ast/index-space.ts",
+   "lines": 175,
+   "regexUses": [],
+   "bannedHits": []
+  },
+  {
+   "file": "src/ast/index-status.ts",
+   "lines": 417,
+   "regexUses": [],
+   "bannedHits": [
+    {
+     "line": 1,
+     "kind": "milestone-narrative",
+     "match": "M22.V2"
+    },
+    {
+     "line": 388,
+     "kind": "milestone-narrative",
+     "match": "M22.V3"
+    }
+   ]
+  },
+  {
+   "file": "src/ast/auto-refresh.ts",
+   "lines": 207,
+   "regexUses": [],
+   "bannedHits": [
+    {
+     "line": 1,
+     "kind": "milestone-narrative",
+     "match": "M43.A1"
+    },
+    {
+     "line": 1,
+     "kind": "issue-number",
+     "match": "#657"
+    },
+    {
+     "line": 12,
+     "kind": "milestone-narrative",
+     "match": "M40.A3"
+    },
+    {
+     "line": 50,
+     "kind": "milestone-narrative",
+     "match": "M43.A3"
+    },
+    {
+     "line": 50,
+     "kind": "issue-number",
+     "match": "#659"
+    }
+   ]
+  },
+  {
+   "file": "src/ast/project-index.ts",
+   "lines": 2295,
+   "regexUses": [
+    {
+     "line": 314,
+     "literal": "/^[A-Za-z_$][\\w$]*$/"
+    },
+    {
+     "line": 322,
+     "literal": "/^[*&~\\s]+/"
+    },
+    {
+     "line": 843,
+     "literal": "/operator\\s*([^\\s(]+)/"
+    },
+    {
+     "line": 1028,
+     "literal": "/\\bAbstractClass\\b/"
+    },
+    {
+     "line": 1388,
+     "literal": "/[<(].*$/"
+    },
+    {
+     "line": 1679,
+     "literal": "/[\\\\/]/"
+    },
+    {
+     "line": 1687,
+     "literal": "/[\\\\/]/"
+    },
+    {
+     "line": 1856,
+     "literal": "/[\\\\/]/"
+    },
+    {
+     "line": 1859,
+     "literal": "/\\.[^.]+$/"
+    },
+    {
+     "line": 1954,
+     "literal": "/[\\\\/]/"
+    },
+    {
+     "line": 1957,
+     "literal": "/\\.[^.]+$/"
+    }
+   ],
+   "bannedHits": [
+    {
+     "line": 6,
+     "kind": "milestone-narrative",
+     "match": "M37.10"
+    },
+    {
+     "line": 15,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 301,
+     "kind": "lead-narrative",
+     "match": "The Lead"
+    },
+    {
+     "line": 305,
+     "kind": "lane-narrative",
+     "match": "this lane"
+    },
+    {
+     "line": 410,
+     "kind": "lane-narrative",
+     "match": "the fleet"
+    },
+    {
+     "line": 432,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 479,
+     "kind": "lead-narrative",
+     "match": "the Lead"
+    },
+    {
+     "line": 630,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 638,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 916,
+     "kind": "lane-narrative",
+     "match": "this lane"
+    },
+    {
+     "line": 970,
+     "kind": "lane-narrative",
+     "match": "The lane"
+    },
+    {
+     "line": 972,
+     "kind": "lane-narrative",
+     "match": "this lane"
+    },
+    {
+     "line": 1260,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 1424,
+     "kind": "lane-narrative",
+     "match": "this lane"
+    },
+    {
+     "line": 1425,
+     "kind": "lead-narrative",
+     "match": "THE LEAD"
+    },
+    {
+     "line": 1426,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 1427,
+     "kind": "lead-narrative",
+     "match": "The Lead"
+    },
+    {
+     "line": 1428,
+     "kind": "lead-narrative",
+     "match": "the Lead"
+    },
+    {
+     "line": 1444,
+     "kind": "lane-narrative",
+     "match": "this lane"
+    },
+    {
+     "line": 1464,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    },
+    {
+     "line": 1465,
+     "kind": "lane-narrative",
+     "match": "the lane"
+    }
+   ]
+  },
+  {
+   "file": "script/verify-index.ts",
+   "lines": 145,
+   "regexUses": [],
+   "bannedHits": [
+    {
+     "line": 60,
+     "kind": "issue-number",
+     "match": "#816"
+    },
+    {
+     "line": 111,
+     "kind": "issue-number",
+     "match": "#816"
+    },
+    {
+     "line": 115,
+     "kind": "issue-number",
+     "match": "#816"
+    },
+    {
+     "line": 120,
+     "kind": "issue-number",
+     "match": "#816"
+    },
+    {
+     "line": 128,
+     "kind": "issue-number",
+     "match": "#816"
+    },
+    {
+     "line": 135,
+     "kind": "issue-number",
+     "match": "#816"
+    }
+   ]
+  },
+  {
+   "file": "script/m43/verify-p1-index-lock.ts",
+   "lines": 305,
+   "regexUses": [
+    {
+     "line": 236,
+     "literal": "/\\s+/"
+    }
+   ],
+   "bannedHits": [
+    {
+     "line": 1,
+     "kind": "milestone-narrative",
+     "match": "M43.P1"
+    },
+    {
+     "line": 1,
+     "kind": "issue-number",
+     "match": "#656"
+    },
+    {
+     "line": 22,
+     "kind": "milestone-narrative",
+     "match": "M43.A8"
+    },
+    {
+     "line": 222,
+     "kind": "measured-date",
+     "match": "MEASURED 2026-10-20"
+    },
+    {
+     "line": 279,
+     "kind": "milestone-narrative",
+     "match": "M43.X1"
+    }
+   ]
+  },
+  {
+   "file": "script/tool-docs/curation/bb_index.ts",
+   "lines": 43,
+   "regexUses": [],
+   "bannedHits": []
+  }
+ ]
+}

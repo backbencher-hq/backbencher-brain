@@ -1,0 +1,22 @@
+{
+  "fixtureId": "groovy/attribution-visibility",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "GAD1/GAD3/GAD5/GAD6 pins (M37 #599), authored from probe-verified emission. GAD1 (JAD2 contract): field reads attribute to the enclosing METHOD (cap->limit), never the receiver variable. GAD3: visibility is AST-only — leak() contains the literal 'this is private data' and must stay public. GAD6: keyword modifiers are ANONYMOUS children — hidden()=private, guard()=protected must survive. GAD5: public String greet() keeps its return_type ref (modifiers no longer terminate the type scan).",
+  "expectSymbols": [
+    { "name": "Svc", "kind": "class" },
+    { "name": "cap", "kind": "method", "ownerName": "Svc", "visibility": "public" },
+    { "name": "leak", "kind": "method", "ownerName": "Svc", "visibility": "public" },
+    { "name": "hidden", "kind": "method", "ownerName": "Svc", "visibility": "private" },
+    { "name": "guard", "kind": "method", "ownerName": "Svc", "visibility": "protected" },
+    { "name": "greet", "kind": "method", "ownerName": "Svc", "visibility": "public" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "source": "cap", "target": "limit", "meta.isFieldAccess": true },
+    { "type": "references", "source": "Svc", "target": "Cfg", "meta.relationshipType": "declared_type" },
+    { "type": "references", "source": "greet", "target": "String", "meta.relationshipType": "return_type" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "source": "cfg", "target": "limit" }
+  ]
+}

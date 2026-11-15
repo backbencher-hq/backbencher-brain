@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/modname-unresolvable-er3.erl",
+  "authoredFrom": "The negative half of ER-D34, and the half that is easy to get wrong in the OTHER direction. `-define(BAD, atom_to_list(nope)).` does not expand to an atom, so resolving it needs the preprocessor, which the analyzer does not run. The module name therefore stays UNKNOWN, and the honest representation of an unknown module name is NO module symbol at all — with the file owned by its path, per ER-D32. Synthesising a module name from the filename would put a module in the store that no compile of this file can produce. The macro USE is still recorded, sourced to the file and tagged moduleNameResolved:false, because the use really happened; only the name is unknown.",
+  "expectSymbols": [
+    {
+      "name": "BAD",
+      "kind": "constant",
+      "meta.isMacro": true,
+      "note": "pinned as a CONSTANT, which is the substantive claim: the macro name exists, and it is not in the module slot. (The harness's forbidSymbols matches on name alone, so asserting 'BAD is not a module' there would collide with the macro itself and mean nothing.)"
+    },
+    {
+      "name": "helper",
+      "kind": "function",
+      "meta.arity": 0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "modname_unresolvable_er3",
+      "note": "no module is fabricated from the filename"
+    },
+    {
+      "name": "modname-unresolvable-er3",
+      "note": "ditto, hyphenated form"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "target": "BAD",
+      "line_number": 10,
+      "meta.isModuleNameMacro": true,
+      "meta.moduleNameResolved": false,
+      "note": "sourced to the file: the module name is unknown, and the use itself is still real"
+    },
+    {
+      "type": "contains",
+      "target": "BAD",
+      "line_number": 8
+    },
+    {
+      "type": "contains",
+      "target": "helper",
+      "line_number": 14
+    }
+  ]
+}

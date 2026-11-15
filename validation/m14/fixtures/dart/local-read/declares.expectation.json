@@ -1,0 +1,21 @@
+{
+  "fixtureId": "dart/local-read/declares",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Transcribed from a measured run (script/m14/tmp/dt-fixture-dump.ts) against this file. The DECLARING half of the two-file local-read fixture; see `reads.expectation.json` for the property the pair exists for. Its content is deliberately the most ordinary shape available — one class, one int field, a common English name — because the defect the pair pins needs no unusual input: it needs only that some declaration in the project happens to carry the local's name exactly once.",
+  "rationale": "Exists so the collision is REAL. The reading file's local is named `counter`; this file declares a `counter` field on an unrelated class in an unrelated file. Under the bare-name rule that was the entire requirement for the store to bind a function's own local to this field — one declaration of that name in the project, in any file, meaning anything. The pair is what makes `reads.expectation.json`'s forbid row a statement about a measurable collision instead of a hypothetical one, and it is why the two files live in one sub-directory (the harness treats a sub-directory as one project). The pins here are the ordinary ones a class fixture carries; the interesting row is in the sibling.",
+  "expectSymbols": [
+    { "name": "declares", "kind": "module" },
+    { "name": "Telemetry", "kind": "class" },
+    { "name": "counter", "kind": "property", "ownerName": "Telemetry" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Telemetry",
+      "target": "Telemetry.counter",
+      "line_number": 10,
+      "comment": "the field's own name line — the declaration the bare spelling of the sibling's local read would have bound to"
+    }
+  ]
+}

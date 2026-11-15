@@ -1,0 +1,14 @@
+{
+  "fixtureId": "typescript/taint-leaf",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave T9 fix plus the first taint payload coverage family-wide: receiver-leaf matching flags req.body but never myreq.body (the old substring flagged any *req.body suffix). Requires the expectTaintSources gate.",
+  "expectSymbols": [
+    { "name": "read", "kind": "function" },
+    { "name": "readOther", "kind": "function" }
+  ],
+  "expectTaintSources": [
+    { "symbol": "read", "includes": ["req.body"] },
+    { "symbol": "readOther", "notIncludes": ["myreq.body"] }
+  ]
+}

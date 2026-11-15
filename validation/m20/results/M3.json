@@ -1,0 +1,20 @@
+{
+  "issue": "M20.M3",
+  "code": "M3",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 15,
+  "passed": 15,
+  "failed": 0,
+  "negativeCases": 5,
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "d9af2cb69e86855ea284f18a36f745ec608e5bea885e9a1571c86367618055f2",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-migration-mappings.ts",
+  "evidenceFile": "M3.json",
+  "generatedAt": "2026-11-05T04:28:28.116Z",
+  "limitations": [
+    "Mappings are advisory equivalence guidance, not translated source or proof of semantic compatibility.",
+    "Only fixture-level mapping boundaries are measured here; real-repository coverage remains a later M20 item."
+  ]
+}

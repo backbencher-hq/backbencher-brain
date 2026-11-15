@@ -1,0 +1,21 @@
+{
+  "expectSymbols": [
+    { "name": "KernelCalls", "kind": "module" },
+    { "name": "check", "kind": "function", "ownerName": "KernelCalls" },
+    { "name": "piped", "kind": "function", "ownerName": "KernelCalls" }
+  ],
+  "expectExports": [
+    { "name": "KernelCalls", "kind": "module" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "KernelCalls", "target": "check" },
+    { "type": "contains", "from": "KernelCalls", "target": "piped" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "match?" },
+    { "type": "calls", "target": "is_nil" },
+    { "type": "calls", "target": "tap" },
+    { "type": "calls", "target": "then" },
+    { "type": "calls", "target": "dbg" }
+  ]
+}

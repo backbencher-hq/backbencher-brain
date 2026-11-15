@@ -1,0 +1,770 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.08",
+  "code": "E3",
+  "tool": "bb_edit",
+  "title": "bb_edit: per-language comment/string masking",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "typescript: language detected as typescript",
+      "pass": true,
+      "detail": "got typescript"
+    },
+    {
+      "name": "typescript: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "typescript: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "typescript: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "javascript: language detected as javascript",
+      "pass": true,
+      "detail": "got javascript"
+    },
+    {
+      "name": "javascript: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "javascript: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "javascript: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "html: language detected as html",
+      "pass": true,
+      "detail": "got html"
+    },
+    {
+      "name": "html: \"zzzC\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "css: language detected as css",
+      "pass": true,
+      "detail": "got css"
+    },
+    {
+      "name": "css: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "json: language detected as json",
+      "pass": true,
+      "detail": "got json"
+    },
+    {
+      "name": "json: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "yaml: language detected as yaml",
+      "pass": true,
+      "detail": "got yaml"
+    },
+    {
+      "name": "yaml: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "yaml: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "c: language detected as c",
+      "pass": true,
+      "detail": "got c"
+    },
+    {
+      "name": "c: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "c: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "cpp: language detected as cpp",
+      "pass": true,
+      "detail": "got cpp"
+    },
+    {
+      "name": "cpp: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "cpp: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "rust: language detected as rust",
+      "pass": true,
+      "detail": "got rust"
+    },
+    {
+      "name": "rust: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "rust: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "go: language detected as go",
+      "pass": true,
+      "detail": "got go"
+    },
+    {
+      "name": "go: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "go: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "zig: language detected as zig",
+      "pass": true,
+      "detail": "got zig"
+    },
+    {
+      "name": "zig: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "java: language detected as java",
+      "pass": true,
+      "detail": "got java"
+    },
+    {
+      "name": "java: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "java: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "kotlin: language detected as kotlin",
+      "pass": true,
+      "detail": "got kotlin"
+    },
+    {
+      "name": "kotlin: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "kotlin: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "scala: language detected as scala",
+      "pass": true,
+      "detail": "got scala"
+    },
+    {
+      "name": "scala: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "scala: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "groovy: language detected as groovy",
+      "pass": true,
+      "detail": "got groovy"
+    },
+    {
+      "name": "groovy: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "groovy: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "python: language detected as python",
+      "pass": true,
+      "detail": "got python"
+    },
+    {
+      "name": "python: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "python: \"zzzT\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "python: \"zzzU\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "python: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "ruby: language detected as ruby",
+      "pass": true,
+      "detail": "got ruby"
+    },
+    {
+      "name": "ruby: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "ruby: \"zzzH\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "ruby: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "php: language detected as php",
+      "pass": true,
+      "detail": "got php"
+    },
+    {
+      "name": "php: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "php: \"zzzH\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "php: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "php: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "lua: language detected as lua",
+      "pass": true,
+      "detail": "got lua"
+    },
+    {
+      "name": "lua: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "lua: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "lua: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "perl: language detected as perl",
+      "pass": true,
+      "detail": "got perl"
+    },
+    {
+      "name": "perl: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "perl: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "elixir: language detected as elixir",
+      "pass": true,
+      "detail": "got elixir"
+    },
+    {
+      "name": "elixir: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "elixir: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "erlang: language detected as erlang",
+      "pass": true,
+      "detail": "got erlang"
+    },
+    {
+      "name": "erlang: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "erlang: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "haskell: language detected as haskell",
+      "pass": true,
+      "detail": "got haskell"
+    },
+    {
+      "name": "haskell: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "haskell: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "haskell: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "clojure: language detected as clojure",
+      "pass": true,
+      "detail": "got clojure"
+    },
+    {
+      "name": "clojure: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "clojure: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "swift: language detected as swift",
+      "pass": true,
+      "detail": "got swift"
+    },
+    {
+      "name": "swift: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "swift: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "swift: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "dart: language detected as dart",
+      "pass": true,
+      "detail": "got dart"
+    },
+    {
+      "name": "dart: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "dart: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "dart: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "csharp: language detected as csharp",
+      "pass": true,
+      "detail": "got csharp"
+    },
+    {
+      "name": "csharp: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "csharp: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "csharp: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "fsharp: language detected as fsharp",
+      "pass": true,
+      "detail": "got fsharp"
+    },
+    {
+      "name": "fsharp: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "fsharp: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "fsharp: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "r: language detected as r",
+      "pass": true,
+      "detail": "got r"
+    },
+    {
+      "name": "r: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "r: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "sql: language detected as sql",
+      "pass": true,
+      "detail": "got sql"
+    },
+    {
+      "name": "sql: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "sql: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "sql: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "bash: language detected as bash",
+      "pass": true,
+      "detail": "got bash"
+    },
+    {
+      "name": "bash: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "bash: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "bash: \"zzzH\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "powershell: language detected as powershell",
+      "pass": true,
+      "detail": "got powershell"
+    },
+    {
+      "name": "powershell: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "powershell: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "powershell: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "hcl: language detected as hcl",
+      "pass": true,
+      "detail": "got hcl"
+    },
+    {
+      "name": "hcl: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "hcl: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "hcl: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "objective-c: language detected as objective-c",
+      "pass": true,
+      "detail": "got objective-c"
+    },
+    {
+      "name": "objective-c: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "objective-c: \"zzzB\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "objective-c: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "toml: language detected as toml",
+      "pass": true,
+      "detail": "got toml"
+    },
+    {
+      "name": "toml: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "toml: \"zzzS\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "xml: language detected as xml",
+      "pass": true,
+      "detail": "got xml"
+    },
+    {
+      "name": "xml: \"zzzC\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "make: language detected as make",
+      "pass": true,
+      "detail": "got make"
+    },
+    {
+      "name": "make: \"zzzL\" is masked and not a reference site [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "vue: script content is opaque raw_text (documented limitation)",
+      "pass": true,
+      "detail": "script occurrences=0"
+    },
+    {
+      "name": "markdown: html_block comment is not parsed (documented limitation)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "insert inside-bottom lands at the real body close (not a string/comment brace)",
+      "pass": true,
+      "detail": " 1 } }\n  return 1\n  const atEnd = true\n}\n"
+    },
+    {
+      "name": "refactor renames the declaration",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor renames the reference",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor does NOT rewrite a triple-quoted docstring identifier [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor does NOT rewrite a # comment identifier [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 88,
+  "summary": {
+    "total": 130,
+    "passed": 130,
+    "failed": 0
+  },
+  "decisions": {
+    "maskingSource": "tree-sitter grammar comment/string nodes via parseForSafety.mask (the JS/C-only codeMask is deleted)",
+    "bodyDetection": "bodyOffsets consumes the per-language mask so braces inside comments/strings are not body delimiters",
+    "sqlBlockComment": "tree-sitter-sql names /* */ blocks 'marginalia'; isCommentNodeType now recognizes it",
+    "retireCodeMask": "no character-scanning mask remains in the edit path"
+  },
+  "limitations": [
+    "Vue/Svelte embedded <script> content is an opaque raw_text node (the JS grammar is not injected in the bundled WASM), so // comments inside it are not masked — but no identifiers or braces are parsed there either, so bb_edit rename/insert are unaffected. Tracked as analyzer completeness.",
+    "Markdown HTML comments (<!-- -->) parse as html_block, not comment, and are not masked — markdown has no identifiers or brace bodies, so bb_edit is unaffected."
+  ],
+  "generatedAt": "2026-11-05T04:12:09.399Z"
+}

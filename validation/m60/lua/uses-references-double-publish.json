@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua-uses-references-double-publish",
+  "claim": "a qualified member access is published BOTH as `references -> field` and as `uses -> field`, because emitNameRead excludes only the receiver (namedChild(0)) and not the field identifier.",
+  "fixture": {
+    "one-level-read": {
+      "source": "local tbl = {} \\n local value = tbl.member \\n ",
+      "edges": [
+        "references:global->member@L2",
+        "contains:global->tbl@L1",
+        "contains:global->value@L2"
+      ]
+    },
+    "two-level-read": {
+      "source": "local tbl = {} \\n local value = tbl.inner.member \\n ",
+      "edges": [
+        "references:global->member@L2",
+        "references:global->inner@L2",
+        "contains:global->tbl@L1",
+        "contains:global->value@L2"
+      ]
+    },
+    "method-read": {
+      "source": "local tbl = {} \\n local value = tbl:method() \\n ",
+      "edges": [
+        "calls:global->method@L2",
+        "contains:global->tbl@L1",
+        "contains:global->value@L2"
+      ]
+    },
+    "bracket-read": {
+      "source": "local tbl = {} \\n local value = tbl[\"member\"] \\n ",
+      "edges": [
+        "references:global->member@L2",
+        "contains:global->tbl@L1",
+        "contains:global->value@L2"
+      ]
+    },
+    "call-of-member": {
+      "source": "local tbl = {} \\n tbl.member() \\n ",
+      "edges": [
+        "calls:global->member@L2",
+        "contains:global->tbl@L1"
+      ]
+    },
+    "bare-read": {
+      "source": "local name = \"x\" \\n local other = name \\n ",
+      "edges": [
+        "uses:global->name@L2",
+        "contains:global->name@L1",
+        "contains:global->other@L2"
+      ]
+    }
+  },
+  "corpus": {
+    "filesScanned": 60,
+    "memberEdgesTotal": 3158,
+    "pairedOnSameMemberAndLine": 3,
+    "usesOnly": 1892,
+    "referencesOnly": 1260,
+    "pairedPctOfMemberEdges": 0.09,
+    "filesWithPairs": 1,
+    "pairsByRepo": {
+      "kong": 3
+    },
+    "examples": [
+      "kong/kong/api/api_helpers.lua: on_error @L443",
+      "kong/kong/api/init.lua: schema @L65",
+      "kong/kong/clustering/rpc/socket.lua: node_id @L476"
+    ]
+  }
+}

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M13",
   "generatedAt": "2026-10-11T19:05:00.519Z",
-  "corpusRoot": "$HOME/Documents/Default Project/ishaq/fixtures/repositories",
+  "corpusRoot": "/Users/sano/Documents/Default Project/ishaq/bb_tests/repositories",
   "repositoryCount": 48,
   "totalFiles": 418252,
   "languageFamilies": {

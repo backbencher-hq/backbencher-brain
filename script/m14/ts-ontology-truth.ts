@@ -117,7 +117,7 @@ const argOf = (flag: string): string | undefined => {
 const hasFlag = (flag: string): boolean => argv.includes(flag)
 const OUT = argOf("--out")
 const LANG = argOf("--lang") ?? "typescript"
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 // Default to the lane's assigned corpus. Drawn from every repo in the tree
 // instead, `.ts` files in `csharp-sample`'s agent scripts and `vuejs` get mixed
 // in and the sample stops being a typescript measurement.
@@ -147,7 +147,7 @@ const PLACEHOLDER_LITERALS = new Set([
  * The inherited PLACEHOLDER_LITERALS set contains `name`, `value`, `target`,
  * `source`, `object`, `string`, `number`, `any`, `symbol`, `foo`, `bar`, `baz` —
  * words that are placeholders in the ABSTRACT and completely ordinary identifiers
- * in real code. Measured on 300 tracked files of fixtures/repositories/typescript
+ * in real code. Measured on 300 tracked files of bb_tests/repositories/typescript
  * with the word-only test: 1,251 sites, of which the largest were
  * `references -> Symbol` (206, and TypeScript's own API declares `class Symbol`),
  * `uses -> name` (171, an interface property), `uses -> None` (94, a real enum
@@ -298,7 +298,7 @@ const INTRINSIC_CTORS = new Set([
   // intrinsic, constructed here — and the oracle list was the incomplete side.
   "FinalizationRegistry",
   // NOTE: `Disposable` and `Symbol` were briefly in this list and had to come out
-  // again. `fixtures/repositories/typescript/packages/vscode-typescript/src/*.ts`
+  // again. `bb_tests/repositories/typescript/packages/vscode-typescript/src/*.ts`
   // DECLARES both — `class Disposable`, `class Symbol` in TypeScript's own API —
   // so treating them as intrinsics made the oracle MISS two real `instantiates`
   // the analyzer published. An intrinsic list is only as good as the corpus it was

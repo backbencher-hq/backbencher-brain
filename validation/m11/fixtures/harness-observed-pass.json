@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "producer": "independent-harness-fixture",
+  "facts": [
+    {"id":"file","layer":"source_discovery","kind":"file","file":"validation/m11/fixtures/harness-source.ts","state":"resolved"},
+    {"id":"base","layer":"ast_extraction","kind":"class","file":"validation/m11/fixtures/harness-source.ts","line":1,"attributes":{"name":"BaseService"},"state":"resolved"},
+    {"id":"user","layer":"ast_extraction","kind":"class","file":"validation/m11/fixtures/harness-source.ts","line":5,"attributes":{"name":"UserService"},"state":"resolved"},
+    {"id":"extends","layer":"relationships","kind":"extends","file":"validation/m11/fixtures/harness-source.ts","line":5,"sourceId":"UserService","targetId":"BaseService","state":"resolved"},
+    {"id":"instantiates","layer":"relationships","kind":"instantiates","file":"validation/m11/fixtures/harness-source.ts","line":12,"sourceId":"run","targetId":"UserService","state":"resolved"},
+    {"id":"calls","layer":"relationships","kind":"calls","file":"validation/m11/fixtures/harness-source.ts","line":13,"sourceId":"run","targetId":"UserService.save","state":"resolved"},
+    {"id":"dynamic-call","layer":"relationships","kind":"calls","file":"validation/m11/fixtures/harness-source.ts","line":17,"sourceId":"invokeDynamic","targetId":"dynamic-key","state":"unknown"}
+  ]
+}

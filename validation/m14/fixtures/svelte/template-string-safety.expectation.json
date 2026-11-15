@@ -1,0 +1,50 @@
+{
+  "fixtureId": "svelte/template-string-safety",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Sv1 review wave M2/M3: the flat identifier regex read string contents (f(\"a=b\") -> Uses(a), Uses(b)) and chain leaves (user.name -> member `name`) as member reads. ADVERSARIAL: same-named members a, b, name EXIST — the char-walk tokenizer (quote states + receiver-only emission, Vue D1/M1 contract) must keep them silent while the real reads f and user still emit.",
+  "expectSymbols": [
+    {
+      "name": "f",
+      "kind": "function"
+    },
+    {
+      "name": "user",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "template-string-safety",
+      "target": "f",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-string-safety",
+      "target": "user",
+      "meta.isTemplateExpression": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "template-string-safety",
+      "target": "a",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-string-safety",
+      "target": "b",
+      "meta.isTemplateExpression": true
+    },
+    {
+      "type": "uses",
+      "from": "template-string-safety",
+      "target": "name",
+      "meta.isTemplateExpression": true
+    }
+  ]
+}

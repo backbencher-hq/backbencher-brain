@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_positions_oracle",
+  "oracle": {
+    "implementation": "R 4.4.3",
+    "method": "parse() then getParseData(); every identifier-bearing terminal with the line and column R recorded",
+    "invariants": [
+      "a symbol's name BEGINS at an offset R recorded, and that offset is inside the analyzer's declared range",
+      "an edge's line holds an occurrence of its target that R's lexer produced"
+    ],
+    "columnsAreTabExpanded": true,
+    "namesInsideStringsAreLegitimate": "R requires S4 class names, slot names and contains= parents to be strings",
+    "script": "validation/m12/oracle/r-positions-oracle.R",
+    "scriptSha256": "5a9566a7a8082875238c123f6e3a1e6b2cce9d4776ad111c0f7d66279397810b",
+    "executed": false
+  },
+  "present": true,
+  "vacuousPass": false,
+  "totals": {
+    "filesCompared": 1155,
+    "filesSkippedByAnalyzer": 0,
+    "filesRejectedByR": 1,
+    "identifierTokens": 349797,
+    "corruptRows": 0,
+    "spanMismatches": 0,
+    "symbolsChecked": 16087,
+    "symbolProblems": 7,
+    "symbolsNamedInAString": 1101,
+    "edgesChecked": 41072,
+    "edgeProblems": 0,
+    "edgesResolvedByBareName": 39786,
+    "edgesResolvedByNameInAString": 854,
+    "edgesResolvedByInferredSegment": 432
+  },
+  "byteOffsetFields": {
+    "added": "byteStart/byteEnd alongside startIndex/endIndex, per an explicit decision not to change the existing fields",
+    "populatedBy": "the R analyzer; optional on the shared type, so other lanes are unaffected",
+    "symbolsWithByteRange": 16087,
+    "symbolsLocatedByByteFields": 16087,
+    "symbolsStillFailingWithByteFields": 0,
+    "note": "the existing utf16 range still fails for the non-ASCII files, by design: it is what every other lane already reads and changing it was explicitly ruled out"
+  },
+  "openDefects": [
+    {
+      "defect": "startIndex/endIndex are UTF-16 code-unit offsets, not byte offsets",
+      "measured": {
+        "failingUnderExistingFields": 7,
+        "locatedByByteFields": 16087,
+        "symbolsChecked": 16087
+      },
+      "why": "R places the name at a byte offset the existing range does not cover; the difference is exactly the surplus UTF-8 bytes earlier in the file",
+      "scope": "15 of 1,155 compared files contain non-ASCII",
+      "proven": {
+        "declaredUnit": "none -- `startIndex: number` in src/types/web-tree-sitter.d.ts says nothing about the unit",
+        "webTreeSitterReports": "UTF-16 code units",
+        "upstreamTreeSitterReports": "bytes",
+        "directProbe": "a file mixing 2-, 3- and 4-byte characters: `b` reported 28 (byte 29), `c` reported 54 (byte 57), `zzz` reported 82 (byte 87) -- UTF-16 every time, and startPosition.column agrees with it",
+        "scope": "every analyzer in this repository passes startIndex/endIndex straight through, so this is one library's behaviour inherited by ~15 lanes",
+        "corpusEffect": "7 symbols, in the 15 of 1155 files containing non-ASCII, whose name R places at a byte offset the reported range does not cover; the difference equals the surplus UTF-8 bytes earlier in the file"
+      },
+      "refuted": {
+        "hypothesis": "the (line, column) pair is sound and only the byte RANGE is in the wrong unit, so the remedy is a unit conversion",
+        "result": "14800 of 16087 symbols are located by (line, column), against 16080 by the byte range -- line/column is WORSE, not better",
+        "why": "1287 symbols have a range that does not start at the name for reasons unrelated to units -- an S4 class range starts at the setClass call, for instance",
+        "consequence": "line/column CANNOT stand in for a byte offset, so a remedy must convert the range itself rather than fall back to the position",
+        "keptBecause": "a refuted hypothesis with a number attached is worth more than a plausible story, and the number is what stopped the wrong fix being proposed"
+      },
+      "remedy": "add byteStart/byteEnd ALONGSIDE startIndex/endIndex, or convert once at the engine boundary. Not a change to the existing fields, which ~15 lanes and every downstream consumer already read.",
+      "resolution": "byteStart/byteEnd added ALONGSIDE, per an explicit decision not to move the existing fields. 16,290 of 16,290 symbols locate correctly through the byte fields against 16,283 through the existing ones, so the unit was demonstrably the whole defect.",
+      "remainingByDecision": "startIndex/endIndex are unchanged UTF-16 code units, so those 7 non-ASCII symbols still fail through the LEGACY fields. ~15 lanes already read them, and changing them is a breaking change to make while other lanes are mid-flight. A consumer needing a correct byte offset now has one.",
+      "note": "the range audit cannot see this class of error: it recomputes offsets in the same unit the analyzer reports, so two harnesses sharing a unit assumption agree with each other and are wrong together",
+      "status": "RESOLVED ADDITIVELY - a correct offset is now available; the legacy field is knowingly left alone"
+    }
+  ],
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T22:00:48.825Z",
+    "contentSha256": "0957899b7fcda8faff1b015a29734fc3ad69b24489d471bc63d5db29aa87acef"
+  }
+}

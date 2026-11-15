@@ -1,0 +1,1155 @@
+{
+  "at": "2026-09-23T22:26:28.289Z",
+  "lane": "csharp",
+  "wasm": "tree-sitter-c_sharp.wasm",
+  "draws": {
+    "powershell": {
+      "repo": "powershell",
+      "files": 40,
+      "explicit": {
+        "count": 0,
+        "parents": {},
+        "byKind": {},
+        "resolution": {
+          "in-file": 0,
+          "cross-file": 0,
+          "external": 0
+        },
+        "inInterfaceDeclarations": 0
+      },
+      "implicit": {
+        "types": 2,
+        "locallyResolved": 1,
+        "crossFileOnly": 1,
+        "noEdge": 557,
+        "byKind": {
+          "method": 1,
+          "property": 1
+        },
+        "typesWithAnyBase": 54,
+        "typesWithLocalContract": 1,
+        "typesWithCrossContractOnly": 1,
+        "typesExternalOnly": 52,
+        "externalContracts": 57
+      },
+      "samples": {
+        "explicit": [],
+        "locallyResolved": [
+          {
+            "repo": "powershell",
+            "file": "src/System.Management.Automation/engine/CommandCompletion/ExtensibleCompletion.cs",
+            "line": 167,
+            "member": "ArgumentCompleterFactoryAttribute.Create",
+            "via": "IArgumentCompleterFactory",
+            "text": "public abstract IArgumentCompleter Create();"
+          }
+        ],
+        "crossFileOnly": [
+          {
+            "repo": "powershell",
+            "file": "src/System.Management.Automation/help/HelpNotFoundException.cs",
+            "line": 75,
+            "member": "HelpNotFoundException.ErrorRecord",
+            "via": "IContainsErrorRecord",
+            "text": "public ErrorRecord ErrorRecord"
+          }
+        ]
+      }
+    },
+    "fsharp": {
+      "repo": "fsharp",
+      "files": 24,
+      "explicit": {
+        "count": 3,
+        "parents": {
+          "method": 3
+        },
+        "byKind": {
+          "method": 3
+        },
+        "resolution": {
+          "in-file": 0,
+          "cross-file": 0,
+          "external": 3
+        },
+        "inInterfaceDeclarations": 0
+      },
+      "implicit": {
+        "types": 0,
+        "locallyResolved": 0,
+        "crossFileOnly": 0,
+        "noEdge": 330,
+        "byKind": {},
+        "typesWithAnyBase": 21,
+        "typesWithLocalContract": 0,
+        "typesWithCrossContractOnly": 0,
+        "typesExternalOnly": 21,
+        "externalContracts": 31
+      },
+      "samples": {
+        "explicit": [
+          {
+            "repo": "fsharp",
+            "file": "vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs",
+            "line": 1406,
+            "iface": "IVsProjectFlavorCfg",
+            "resolution": "external",
+            "text": "int IVsProjectFlavorCfg.get_CfgType(ref Guid iidCfg, out IntPtr ppCfg)"
+          },
+          {
+            "repo": "fsharp",
+            "file": "vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs",
+            "line": 1390,
+            "iface": "IVsProjectFlavorCfg",
+            "resolution": "external",
+            "text": "int IVsProjectFlavorCfg.Close()"
+          },
+          {
+            "repo": "fsharp",
+            "file": "vsintegration/tests/MockTypeProviders/DefinitionLocationAttributeLineDoesnotExist/TypeProviderInCSharp.cs",
+            "line": 67,
+            "iface": "IDisposable",
+            "resolution": "external",
+            "text": "void IDisposable.Dispose()"
+          }
+        ],
+        "locallyResolved": [],
+        "crossFileOnly": []
+      }
+    }
+  },
+  "combined": {
+    "files": 64,
+    "explicit": {
+      "count": 3,
+      "parents": {
+        "method": 3
+      },
+      "byKind": {
+        "method": 3
+      },
+      "resolution": {
+        "in-file": 0,
+        "cross-file": 0,
+        "external": 3
+      },
+      "inInterfaceDeclarations": 0
+    },
+    "implicit": {
+      "types": 2,
+      "locallyResolved": 1,
+      "crossFileOnly": 1,
+      "noEdge": 887,
+      "byKind": {
+        "method": 1,
+        "property": 1
+      },
+      "typesWithAnyBase": 75,
+      "typesWithLocalContract": 1,
+      "typesWithCrossContractOnly": 1,
+      "typesExternalOnly": 73,
+      "externalContracts": 88
+    },
+    "samples": {
+      "explicit": [
+        {
+          "repo": "fsharp",
+          "file": "vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs",
+          "line": 1406,
+          "iface": "IVsProjectFlavorCfg",
+          "resolution": "external",
+          "text": "int IVsProjectFlavorCfg.get_CfgType(ref Guid iidCfg, out IntPtr ppCfg)"
+        },
+        {
+          "repo": "fsharp",
+          "file": "vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs",
+          "line": 1390,
+          "iface": "IVsProjectFlavorCfg",
+          "resolution": "external",
+          "text": "int IVsProjectFlavorCfg.Close()"
+        },
+        {
+          "repo": "fsharp",
+          "file": "vsintegration/tests/MockTypeProviders/DefinitionLocationAttributeLineDoesnotExist/TypeProviderInCSharp.cs",
+          "line": 67,
+          "iface": "IDisposable",
+          "resolution": "external",
+          "text": "void IDisposable.Dispose()"
+        }
+      ],
+      "locallyResolved": [
+        {
+          "repo": "powershell",
+          "file": "src/System.Management.Automation/engine/CommandCompletion/ExtensibleCompletion.cs",
+          "line": 167,
+          "member": "ArgumentCompleterFactoryAttribute.Create",
+          "via": "IArgumentCompleterFactory",
+          "text": "public abstract IArgumentCompleter Create();"
+        }
+      ],
+      "crossFileOnly": [
+        {
+          "repo": "powershell",
+          "file": "src/System.Management.Automation/help/HelpNotFoundException.cs",
+          "line": 75,
+          "member": "HelpNotFoundException.ErrorRecord",
+          "via": "IContainsErrorRecord",
+          "text": "public ErrorRecord ErrorRecord"
+        }
+      ]
+    }
+  },
+  "selfTests": {
+    "total": 12,
+    "passed": 12,
+    "failed": []
+  },
+  "fullExtent": {
+    "draws": {
+      "powershell": {
+        "repo": "powershell",
+        "files": 1275,
+        "explicit": {
+          "count": 210,
+          "parents": {
+            "method": 167,
+            "property": 40,
+            "indexer": 3
+          },
+          "byKind": {
+            "method": 167,
+            "property": 40,
+            "indexer": 3
+          },
+          "resolution": {
+            "in-file": 53,
+            "cross-file": 80,
+            "external": 77
+          },
+          "inInterfaceDeclarations": 3
+        },
+        "implicit": {
+          "types": 146,
+          "locallyResolved": 228,
+          "crossFileOnly": 221,
+          "noEdge": 13897,
+          "byKind": {
+            "method": 312,
+            "property": 132,
+            "event": 5
+          },
+          "typesWithAnyBase": 1983,
+          "typesWithLocalContract": 47,
+          "typesWithCrossContractOnly": 99,
+          "typesExternalOnly": 1837,
+          "externalContracts": 2010
+        },
+        "samples": {
+          "explicit": [
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/CommonControls/ExpanderButtonAutomationPeer.cs",
+              "line": 102,
+              "iface": "IExpandCollapseProvider",
+              "resolution": "external",
+              "text": "void IExpandCollapseProvider.Collapse()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/CommonControls/ExpanderButtonAutomationPeer.cs",
+              "line": 89,
+              "iface": "IExpandCollapseProvider",
+              "resolution": "external",
+              "text": "void IExpandCollapseProvider.Expand()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/CommonControls/ExpanderButtonAutomationPeer.cs",
+              "line": 71,
+              "iface": "IExpandCollapseProvider",
+              "resolution": "external",
+              "text": "ExpandCollapseState IExpandCollapseProvider.ExpandCollapseState"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Management/cimSupport/cmdletization/cim/cimQuery.cs",
+              "line": 352,
+              "iface": "ISessionBoundQueryBuilder",
+              "resolution": "cross-file",
+              "text": "CimSession ISessionBoundQueryBuilder<CimSession>.GetTargetSession()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Management/cimSupport/cmdletization/cim/cimWrapper.cs",
+              "line": 386,
+              "iface": "IDynamicParameters",
+              "resolution": "cross-file",
+              "text": "object IDynamicParameters.GetDynamicParameters()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/GetCultureCommand.cs",
+              "line": 112,
+              "iface": "IValidateSetValuesGenerator",
+              "resolution": "cross-file",
+              "text": "string[] IValidateSetValuesGenerator.GetValidValues()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 2090,
+              "iface": "IValidateSetValuesGenerator",
+              "resolution": "cross-file",
+              "text": "string[] IValidateSetValuesGenerator.GetValidValues()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1063,
+              "iface": "IContextTracker",
+              "resolution": "in-file",
+              "text": "void IContextTracker.TrackEOF()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1061,
+              "iface": "IContextTracker",
+              "resolution": "in-file",
+              "text": "void IContextTracker.TrackMatch(MatchInfo match) => _matches.Add(match);"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1057,
+              "iface": "IContextTracker",
+              "resolution": "in-file",
+              "text": "void IContextTracker.TrackLine(string line)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1055,
+              "iface": "IContextTracker",
+              "resolution": "in-file",
+              "text": "IList<MatchInfo> IContextTracker.EmitQueue => _matches;"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 479,
+              "iface": "IEnumerable",
+              "resolution": "external",
+              "text": "IEnumerator IEnumerable.GetEnumerator()"
+            }
+          ],
+          "locallyResolved": [
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1016,
+              "member": "ContextTracker.TrackEOF",
+              "via": "IContextTracker",
+              "text": "public void TrackEOF()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1009,
+              "member": "ContextTracker.TrackMatch",
+              "via": "IContextTracker",
+              "text": "public void TrackMatch(MatchInfo match)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1002,
+              "member": "ContextTracker.TrackLine",
+              "via": "IContextTracker",
+              "text": "public void TrackLine(string line)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 1000,
+              "member": "ContextTracker.EmitQueue",
+              "via": "IContextTracker",
+              "text": "public IList<MatchInfo> EmitQueue { get; }"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 856,
+              "member": "LogicalContextTracker.TrackEOF",
+              "via": "IContextTracker",
+              "text": "public void TrackEOF()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 849,
+              "member": "LogicalContextTracker.TrackMatch",
+              "via": "IContextTracker",
+              "text": "public void TrackMatch(MatchInfo match)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 842,
+              "member": "LogicalContextTracker.TrackLine",
+              "via": "IContextTracker",
+              "text": "public void TrackLine(string line)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 838,
+              "member": "LogicalContextTracker.EmitQueue",
+              "via": "IContextTracker",
+              "text": "public IList<MatchInfo> EmitQueue => _emitQueue;"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 717,
+              "member": "DisplayContextTracker.TrackEOF",
+              "via": "IContextTracker",
+              "text": "public void TrackEOF()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 690,
+              "member": "DisplayContextTracker.TrackMatch",
+              "via": "IContextTracker",
+              "text": "public void TrackMatch(MatchInfo match)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 666,
+              "member": "DisplayContextTracker.TrackLine",
+              "via": "IContextTracker",
+              "text": "public void TrackLine(string line)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+              "line": 661,
+              "member": "DisplayContextTracker.EmitQueue",
+              "via": "IContextTracker",
+              "text": "public IList<MatchInfo> EmitQueue => _emitQueue;"
+            }
+          ],
+          "crossFileOnly": [
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.Infrastructure.CimCmdlets/CimGetInstance.cs",
+              "line": 33,
+              "member": "FormatPartialCimInstance.Process",
+              "via": "IObjectPreProcess",
+              "text": "public object Process(object resultObject)"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/Common/ReadOnlyObservableAsyncCollection.cs",
+              "line": 83,
+              "member": "ReadOnlyObservableAsyncCollection.OperationError",
+              "via": "IAsyncProgress",
+              "text": "public Exception OperationError"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/Common/ReadOnlyObservableAsyncCollection.cs",
+              "line": 64,
+              "member": "ReadOnlyObservableAsyncCollection.OperationInProgress",
+              "via": "IAsyncProgress",
+              "text": "public bool OperationInProgress"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterEvaluator.cs",
+              "line": 197,
+              "member": "FilterEvaluator.FilterExpressionChanged",
+              "via": "IFilterExpressionProvider",
+              "text": "public event EventHandler FilterExpressionChanged;"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterEvaluator.cs",
+              "line": 122,
+              "member": "FilterEvaluator.FilterExpression",
+              "via": "IFilterExpressionProvider",
+              "text": "public FilterExpressionNode FilterExpression"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterEvaluator.cs",
+              "line": 77,
+              "member": "FilterEvaluator.HasFilterExpression",
+              "via": "IFilterExpressionProvider",
+              "text": "public bool HasFilterExpression"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterExpressionNodes/FilterExpressionNode.cs",
+              "line": 29,
+              "member": "FilterExpressionNode.Evaluate",
+              "via": "IEvaluate",
+              "text": "public abstract bool Evaluate(object item);"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterRules/FilterRule.cs",
+              "line": 64,
+              "member": "FilterRule.Evaluate",
+              "via": "IEvaluate,IDeepCloneable",
+              "text": "public abstract bool Evaluate(object item);"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterRules/FilterRule.cs",
+              "line": 53,
+              "member": "FilterRule.DeepClone",
+              "via": "IEvaluate,IDeepCloneable",
+              "text": "public object DeepClone()"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/ValidatingValueBase.cs",
+              "line": 151,
+              "member": "ValidatingValueBase.DeepClone",
+              "via": "IDeepCloneable",
+              "text": "public abstract object DeepClone();"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/ValidationRules/DataErrorInfoValidationRule.cs",
+              "line": 29,
+              "member": "DataErrorInfoValidationRule.DeepClone",
+              "via": "IDeepCloneable",
+              "text": "public abstract object DeepClone();"
+            },
+            {
+              "repo": "powershell",
+              "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterProviders/FilterRulePanel.cs",
+              "line": 123,
+              "member": "FilterRulePanel.FilterExpressionChanged",
+              "via": "IFilterExpressionProvider",
+              "text": "public event EventHandler FilterExpressionChanged;"
+            }
+          ]
+        }
+      },
+      "fsharp": {
+        "repo": "fsharp",
+        "files": 243,
+        "explicit": {
+          "count": 146,
+          "parents": {
+            "method": 106,
+            "property": 39,
+            "event": 1
+          },
+          "byKind": {
+            "method": 106,
+            "property": 39,
+            "event": 1
+          },
+          "resolution": {
+            "in-file": 3,
+            "cross-file": 5,
+            "external": 138
+          },
+          "inInterfaceDeclarations": 0
+        },
+        "implicit": {
+          "types": 8,
+          "locallyResolved": 3,
+          "crossFileOnly": 59,
+          "noEdge": 3677,
+          "byKind": {
+            "event": 3,
+            "property": 13,
+            "method": 46
+          },
+          "typesWithAnyBase": 278,
+          "typesWithLocalContract": 1,
+          "typesWithCrossContractOnly": 7,
+          "typesExternalOnly": 270,
+          "externalContracts": 358
+        },
+        "samples": {
+          "explicit": [
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/globalNamespace/globalNamespaceTP.cs",
+              "line": 63,
+              "iface": "IDisposable",
+              "resolution": "external",
+              "text": "void System.IDisposable.Dispose() { }"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/globalNamespace/globalNamespaceTP.cs",
+              "line": 46,
+              "iface": "ITypeProvider",
+              "resolution": "external",
+              "text": "Microsoft.FSharp.Quotations.FSharpExpr ITypeProvider.GetInvokerExpression(MethodBase syntheticMethodBase, Microsoft.FSha"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 45,
+              "iface": "ITypeProvider",
+              "resolution": "external",
+              "text": "Microsoft.FSharp.Quotations.FSharpExpr ITypeProvider.GetInvokerExpression(MethodBase syntheticMethodBase, Microsoft.FSha"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 43,
+              "iface": "ITypeProvider",
+              "resolution": "external",
+              "text": "Type ITypeProvider.ApplyStaticArguments(Type typeWithoutArguments, string[] typeNameWithArguments, object[] staticArgume"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 41,
+              "iface": "ITypeProvider",
+              "resolution": "external",
+              "text": "ParameterInfo[] ITypeProvider.GetStaticParameters(Type typeWithoutArguments) { return new ParameterInfo[] { }; }"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 39,
+              "iface": "IProvidedNamespace",
+              "resolution": "external",
+              "text": "IProvidedNamespace[] IProvidedNamespace.GetNestedNamespaces() { return new IProvidedNamespace[] { }; }"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 37,
+              "iface": "ITypeProvider",
+              "resolution": "external",
+              "text": "IProvidedNamespace[] ITypeProvider.GetNamespaces() { return new IProvidedNamespace[] { this }; }"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 35,
+              "iface": "IProvidedNamespace",
+              "resolution": "external",
+              "text": "Type IProvidedNamespace.ResolveTypeName(string typeBaseName) { if (typeBaseName == \"HelloWorldType\") return helloWorldTy"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 33,
+              "iface": "IProvidedNamespace",
+              "resolution": "external",
+              "text": "Type[] IProvidedNamespace.GetTypes() { return new Type[] { helloWorldType }; }"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 31,
+              "iface": "IProvidedNamespace",
+              "resolution": "external",
+              "text": "string IProvidedNamespace.NamespaceName { get { return \"FSharp.HelloWorld\"; } }"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+              "line": 15,
+              "iface": "IDisposable",
+              "resolution": "external",
+              "text": "void IDisposable.Dispose()"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/service/data/CSharp_Analysis/CSharpClass.cs",
+              "line": 124,
+              "iface": "ICSharpExplicitInterface",
+              "resolution": "in-file",
+              "text": "event EventHandler ICSharpExplicitInterface.ExplicitEvent"
+            }
+          ],
+          "locallyResolved": [
+            {
+              "repo": "fsharp",
+              "file": "tests/service/data/CSharp_Analysis/CSharpClass.cs",
+              "line": 112,
+              "member": "CSharpClass.InterfaceEvent",
+              "via": "ICSharpInterface,ICSharpExplicitInterface",
+              "text": "public event EventHandler InterfaceEvent;"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/service/data/CSharp_Analysis/CSharpClass.cs",
+              "line": 107,
+              "member": "CSharpClass.InterfaceProperty",
+              "via": "ICSharpInterface,ICSharpExplicitInterface",
+              "text": "public bool InterfaceProperty"
+            },
+            {
+              "repo": "fsharp",
+              "file": "tests/service/data/CSharp_Analysis/CSharpClass.cs",
+              "line": 102,
+              "member": "CSharpClass.InterfaceMethod",
+              "via": "ICSharpInterface,ICSharpExplicitInterface",
+              "text": "public int InterfaceMethod(string parameter)"
+            }
+          ],
+          "crossFileOnly": [
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1733,
+              "member": "FSharpSourceBase_DEPRECATED.OutliningEnabled",
+              "via": "ISource",
+              "text": "public bool OutliningEnabled"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1713,
+              "member": "FSharpSourceBase_DEPRECATED.GetHiddenTextSession",
+              "via": "ISource",
+              "text": "public IVsHiddenTextSession GetHiddenTextSession()"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1706,
+              "member": "FSharpSourceBase_DEPRECATED.DisableOutlining",
+              "via": "ISource",
+              "text": "public void DisableOutlining()"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1684,
+              "member": "FSharpSourceBase_DEPRECATED.ToggleRegions",
+              "via": "ISource",
+              "text": "public void ToggleRegions()"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1592,
+              "member": "FSharpSourceBase_DEPRECATED.HandleUntypedParseOrFullTypeCheckResponse",
+              "via": "ISource",
+              "text": "public void HandleUntypedParseOrFullTypeCheckResponse(BackgroundRequest_DEPRECATED req)"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1497,
+              "member": "FSharpSourceBase_DEPRECATED.BeginBackgroundRequest",
+              "via": "ISource",
+              "text": "public BackgroundRequest_DEPRECATED BeginBackgroundRequest(int line, int idx, TokenInfo info, BackgroundRequestReason re"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1411,
+              "member": "FSharpSourceBase_DEPRECATED.GetPairExtents",
+              "via": "ISource",
+              "text": "private bool GetPairExtents(IVsTextView textView, int line, int col, out TextSpan startBraceSpan, out TextSpan endBraceS"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1396,
+              "member": "FSharpSourceBase_DEPRECATED.GetPairExtents",
+              "via": "ISource",
+              "text": "public void GetPairExtents(IVsTextView textView, int line, int col, out TextSpan span)"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1217,
+              "member": "FSharpSourceBase_DEPRECATED.MethodTip",
+              "via": "ISource",
+              "text": "public void MethodTip(IVsTextView textView, int line, int index, TokenInfo info, MethodTipMiscellany_DEPRECATED methodTi"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1183,
+              "member": "FSharpSourceBase_DEPRECATED.Completion",
+              "via": "ISource",
+              "text": "public abstract void Completion(IVsTextView textView, TokenInfo info, BackgroundRequestReason reason, RequireFreshResult"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 1035,
+              "member": "FSharpSourceBase_DEPRECATED.GetWordExtent",
+              "via": "ISource",
+              "text": "public bool GetWordExtent(int line, int idx, WORDEXTFLAGS flags, out int startIdx, out int endIdx)"
+            },
+            {
+              "repo": "fsharp",
+              "file": "vsintegration/src/FSharp.LanguageService.Base/Source.cs",
+              "line": 951,
+              "member": "FSharpSourceBase_DEPRECATED.OnCommand",
+              "via": "ISource",
+              "text": "public void OnCommand(IVsTextView textView, VsCommands2K command, char ch)"
+            }
+          ]
+        }
+      }
+    },
+    "combined": {
+      "files": 1518,
+      "explicit": {
+        "count": 356,
+        "parents": {
+          "method": 273,
+          "property": 79,
+          "indexer": 3,
+          "event": 1
+        },
+        "byKind": {
+          "method": 273,
+          "property": 79,
+          "indexer": 3,
+          "event": 1
+        },
+        "resolution": {
+          "in-file": 56,
+          "cross-file": 85,
+          "external": 215
+        },
+        "inInterfaceDeclarations": 3
+      },
+      "implicit": {
+        "types": 154,
+        "locallyResolved": 231,
+        "crossFileOnly": 280,
+        "noEdge": 17574,
+        "byKind": {
+          "method": 358,
+          "property": 145,
+          "event": 8
+        },
+        "typesWithAnyBase": 2261,
+        "typesWithLocalContract": 48,
+        "typesWithCrossContractOnly": 106,
+        "typesExternalOnly": 2107,
+        "externalContracts": 2368
+      },
+      "samples": {
+        "explicit": [
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/CommonControls/ExpanderButtonAutomationPeer.cs",
+            "line": 102,
+            "iface": "IExpandCollapseProvider",
+            "resolution": "external",
+            "text": "void IExpandCollapseProvider.Collapse()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/CommonControls/ExpanderButtonAutomationPeer.cs",
+            "line": 89,
+            "iface": "IExpandCollapseProvider",
+            "resolution": "external",
+            "text": "void IExpandCollapseProvider.Expand()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/CommonControls/ExpanderButtonAutomationPeer.cs",
+            "line": 71,
+            "iface": "IExpandCollapseProvider",
+            "resolution": "external",
+            "text": "ExpandCollapseState IExpandCollapseProvider.ExpandCollapseState"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Management/cimSupport/cmdletization/cim/cimQuery.cs",
+            "line": 352,
+            "iface": "ISessionBoundQueryBuilder",
+            "resolution": "cross-file",
+            "text": "CimSession ISessionBoundQueryBuilder<CimSession>.GetTargetSession()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Management/cimSupport/cmdletization/cim/cimWrapper.cs",
+            "line": 386,
+            "iface": "IDynamicParameters",
+            "resolution": "cross-file",
+            "text": "object IDynamicParameters.GetDynamicParameters()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/GetCultureCommand.cs",
+            "line": 112,
+            "iface": "IValidateSetValuesGenerator",
+            "resolution": "cross-file",
+            "text": "string[] IValidateSetValuesGenerator.GetValidValues()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 2090,
+            "iface": "IValidateSetValuesGenerator",
+            "resolution": "cross-file",
+            "text": "string[] IValidateSetValuesGenerator.GetValidValues()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1063,
+            "iface": "IContextTracker",
+            "resolution": "in-file",
+            "text": "void IContextTracker.TrackEOF()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1061,
+            "iface": "IContextTracker",
+            "resolution": "in-file",
+            "text": "void IContextTracker.TrackMatch(MatchInfo match) => _matches.Add(match);"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1057,
+            "iface": "IContextTracker",
+            "resolution": "in-file",
+            "text": "void IContextTracker.TrackLine(string line)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1055,
+            "iface": "IContextTracker",
+            "resolution": "in-file",
+            "text": "IList<MatchInfo> IContextTracker.EmitQueue => _matches;"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 479,
+            "iface": "IEnumerable",
+            "resolution": "external",
+            "text": "IEnumerator IEnumerable.GetEnumerator()"
+          }
+        ],
+        "locallyResolved": [
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1016,
+            "member": "ContextTracker.TrackEOF",
+            "via": "IContextTracker",
+            "text": "public void TrackEOF()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1009,
+            "member": "ContextTracker.TrackMatch",
+            "via": "IContextTracker",
+            "text": "public void TrackMatch(MatchInfo match)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1002,
+            "member": "ContextTracker.TrackLine",
+            "via": "IContextTracker",
+            "text": "public void TrackLine(string line)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 1000,
+            "member": "ContextTracker.EmitQueue",
+            "via": "IContextTracker",
+            "text": "public IList<MatchInfo> EmitQueue { get; }"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 856,
+            "member": "LogicalContextTracker.TrackEOF",
+            "via": "IContextTracker",
+            "text": "public void TrackEOF()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 849,
+            "member": "LogicalContextTracker.TrackMatch",
+            "via": "IContextTracker",
+            "text": "public void TrackMatch(MatchInfo match)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 842,
+            "member": "LogicalContextTracker.TrackLine",
+            "via": "IContextTracker",
+            "text": "public void TrackLine(string line)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 838,
+            "member": "LogicalContextTracker.EmitQueue",
+            "via": "IContextTracker",
+            "text": "public IList<MatchInfo> EmitQueue => _emitQueue;"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 717,
+            "member": "DisplayContextTracker.TrackEOF",
+            "via": "IContextTracker",
+            "text": "public void TrackEOF()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 690,
+            "member": "DisplayContextTracker.TrackMatch",
+            "via": "IContextTracker",
+            "text": "public void TrackMatch(MatchInfo match)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 666,
+            "member": "DisplayContextTracker.TrackLine",
+            "via": "IContextTracker",
+            "text": "public void TrackLine(string line)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.PowerShell.Commands.Utility/commands/utility/MatchString.cs",
+            "line": 661,
+            "member": "DisplayContextTracker.EmitQueue",
+            "via": "IContextTracker",
+            "text": "public IList<MatchInfo> EmitQueue => _emitQueue;"
+          }
+        ],
+        "crossFileOnly": [
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.Infrastructure.CimCmdlets/CimGetInstance.cs",
+            "line": 33,
+            "member": "FormatPartialCimInstance.Process",
+            "via": "IObjectPreProcess",
+            "text": "public object Process(object resultObject)"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/Common/ReadOnlyObservableAsyncCollection.cs",
+            "line": 83,
+            "member": "ReadOnlyObservableAsyncCollection.OperationError",
+            "via": "IAsyncProgress",
+            "text": "public Exception OperationError"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/Common/ReadOnlyObservableAsyncCollection.cs",
+            "line": 64,
+            "member": "ReadOnlyObservableAsyncCollection.OperationInProgress",
+            "via": "IAsyncProgress",
+            "text": "public bool OperationInProgress"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterEvaluator.cs",
+            "line": 197,
+            "member": "FilterEvaluator.FilterExpressionChanged",
+            "via": "IFilterExpressionProvider",
+            "text": "public event EventHandler FilterExpressionChanged;"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterEvaluator.cs",
+            "line": 122,
+            "member": "FilterEvaluator.FilterExpression",
+            "via": "IFilterExpressionProvider",
+            "text": "public FilterExpressionNode FilterExpression"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterEvaluator.cs",
+            "line": 77,
+            "member": "FilterEvaluator.HasFilterExpression",
+            "via": "IFilterExpressionProvider",
+            "text": "public bool HasFilterExpression"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterExpressionNodes/FilterExpressionNode.cs",
+            "line": 29,
+            "member": "FilterExpressionNode.Evaluate",
+            "via": "IEvaluate",
+            "text": "public abstract bool Evaluate(object item);"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterRules/FilterRule.cs",
+            "line": 64,
+            "member": "FilterRule.Evaluate",
+            "via": "IEvaluate,IDeepCloneable",
+            "text": "public abstract bool Evaluate(object item);"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/FilterRules/FilterRule.cs",
+            "line": 53,
+            "member": "FilterRule.DeepClone",
+            "via": "IEvaluate,IDeepCloneable",
+            "text": "public object DeepClone()"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/ValidatingValueBase.cs",
+            "line": 151,
+            "member": "ValidatingValueBase.DeepClone",
+            "via": "IDeepCloneable",
+            "text": "public abstract object DeepClone();"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterCore/ValidationRules/DataErrorInfoValidationRule.cs",
+            "line": 29,
+            "member": "DataErrorInfoValidationRule.DeepClone",
+            "via": "IDeepCloneable",
+            "text": "public abstract object DeepClone();"
+          },
+          {
+            "repo": "powershell",
+            "file": "src/Microsoft.Management.UI.Internal/ManagementList/FilterProviders/FilterRulePanel.cs",
+            "line": 123,
+            "member": "FilterRulePanel.FilterExpressionChanged",
+            "via": "IFilterExpressionProvider",
+            "text": "public event EventHandler FilterExpressionChanged;"
+          }
+        ]
+      }
+    },
+    "filesPerRepo": [
+      {
+        "repo": "powershell",
+        "files": 1275
+      },
+      {
+        "repo": "fsharp",
+        "files": 243
+      }
+    ]
+  }
+}

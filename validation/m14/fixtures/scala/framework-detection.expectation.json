@@ -1,0 +1,28 @@
+{
+  "fixtureId": "scala/framework-detection",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Fixture source was written before the analyzer fix, but this expectation's framework set was recorded from the post-fix run; the pre-fix run is evidence instead (script/m14/tmp/sc-frameworks-probe.ts measured detectedFrameworks=[] at HEAD). Stated explicitly so the 'authored before' claim is not merely asserted.",
+  "rationale": "PINS the M49 #741 fix (CONV-S-1): scala's detectFrameworks had no Spring entry, so a Spring Boot Scala file reported detectedFrameworks=[] while java (\"spring\"), kotlin (\"Spring Boot\"/\"Spring Framework\") and groovy (\"spring\") all detected it — the only JVM language blind to the dominant enterprise ecosystem. Detection is root-prefix only, so the fixture also pins the NEGATIVE direction via forbidFrameworks: `com.mycompany.springframework.internal.Thing`, `mycats.Custom` and `org.springlike.other.Widget` are user code containing framework roots as substrings and must produce nothing. Framework truth is differential-invisible (the oracle derives none), so fixtures are the only gate — the go framework-detection fixture records the same reasoning. Names follow kotlin's for the same ecosystem and scala's own Title-Case list style; java/groovy use the lowercase key \"spring\", a family divergence recorded in the spec as D21 rather than silently resolved here.",
+  "expectFrameworks": [
+    "Spring Boot",
+    "Spring Framework",
+    "Jackson",
+    "jsoniter-scala",
+    "sttp"
+  ],
+  "forbidFrameworks": [
+    "Play Framework",
+    "Akka",
+    "Apache Spark",
+    "Cats Effect",
+    "ZIO",
+    "http4s",
+    "Slick",
+    "FS2",
+    "ScalaTest"
+  ],
+  "expectSymbols": [
+    { "name": "App", "kind": "class" }
+  ]
+}

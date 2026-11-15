@@ -1,0 +1,567 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-23T22:10:22.877Z",
+  "atCommit": "af857c94892c436fdec7f13ef27f8f0d6247cbf8",
+  "treeModifiedInputs": 46,
+  "corpus": "/home/ishaq2321/bb_tests/repositories",
+  "filesPerLang": 30,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    },
+    "resolutionSelfTest": {
+      "selfNewIsUncheckable": true,
+      "selfClassNewIsUncheckable": true,
+      "bareNewIsUncheckable": true,
+      "wrongLineStillFails": true,
+      "unmarkedClaimIsNotExcused": true,
+      "writtenReceiverIsNotExcused": true
+    }
+  },
+  "mutation": {
+    "file": "c:zig/bootstrap.c",
+    "token": "h",
+    "trueLine": 1,
+    "trueLineConsistent": true,
+    "mutatedLine": 5,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "c": {
+      "files": 30,
+      "rels": 350,
+      "withLine": 350,
+      "noLine": 0,
+      "consistent": 350,
+      "inconsistent": 0,
+      "notCheckable": 0
+    }
+  },
+  "sampleHash": {
+    "c": "684ee2f57c0b"
+  },
+  "samplePins": {
+    "c": [
+      {
+        "file": "zig/bootstrap.c",
+        "contentSha": "681e595ba00d"
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_config.h",
+        "contentSha": "09da6df28f26"
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_sigil.h",
+        "contentSha": "b93dafa27076"
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_stack.h",
+        "contentSha": "107b21b167b9"
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_wrapper.h",
+        "contentSha": "3beb997a004e"
+      },
+      {
+        "file": "zig/test/standalone/coff_dwarf/shared_lib.c",
+        "contentSha": "d083140d3076"
+      },
+      {
+        "file": "zig/test/standalone/compiler_rt_panic/main.c",
+        "contentSha": "c09ece600c98"
+      },
+      {
+        "file": "zig/test/standalone/config_header/config.h",
+        "contentSha": "d2690260e1f4"
+      },
+      {
+        "file": "zig/test/standalone/dep_lazypath/inc/foo.h",
+        "contentSha": "ef6353b5e97f"
+      },
+      {
+        "file": "zig/test/standalone/extern/shared.c",
+        "contentSha": "57c33edddc14"
+      },
+      {
+        "file": "zig/test/standalone/glibc_compat/glibc_runtime_check.c",
+        "contentSha": "166ca0ee4354"
+      },
+      {
+        "file": "zig/test/standalone/glibc_compat/main.c",
+        "contentSha": "fab894d89850"
+      },
+      {
+        "file": "zig/test/standalone/install_headers/include/a.h",
+        "contentSha": "9f759b02a338"
+      },
+      {
+        "file": "zig/test/standalone/install_headers/include/sub_dir/b.h",
+        "contentSha": "93f292cdeac3"
+      },
+      {
+        "file": "zig/test/standalone/install_headers/include/sub_dir/c.ignore_me.h",
+        "contentSha": "1600c93b14c4"
+      },
+      {
+        "file": "zig/test/standalone/issue_11595/test.c",
+        "contentSha": "9f1dd85d6e83"
+      },
+      {
+        "file": "zig/test/standalone/issue_12706/test.c",
+        "contentSha": "8d828d808ac7"
+      },
+      {
+        "file": "zig/test/standalone/issue_794/a_directory/foo.h",
+        "contentSha": "4b774280422b"
+      },
+      {
+        "file": "zig/test/standalone/mix_c_files/test.c",
+        "contentSha": "1d6187e2e50c"
+      },
+      {
+        "file": "zig/test/standalone/mix_o_files/test.c",
+        "contentSha": "9300d2c88a8e"
+      },
+      {
+        "file": "zig/test/standalone/shared_library/test.c",
+        "contentSha": "018d4c515bfd"
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/foo.c",
+        "contentSha": "eca250cff4f2"
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/foo.h",
+        "contentSha": "52bb7ccab923"
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/lib.h",
+        "contentSha": "2447ffa79003"
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/verify.c",
+        "contentSha": "cbcf3be7ae33"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.c",
+        "contentSha": "b577a6bc86e7"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/winmain.c",
+        "contentSha": "4ced0e7ce706"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wmain.c",
+        "contentSha": "f4c22a61a3ed"
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wwinmain.c",
+        "contentSha": "0354c71a7753"
+      },
+      {
+        "file": "zig/tools/macos-headers.c",
+        "contentSha": "08347aa58dcb"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "c": {
+      "prev": null,
+      "now": "684ee2f57c0b",
+      "same": false
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "c": [
+      {
+        "file": "zig/bootstrap.c",
+        "language": "c",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_config.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_sigil.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_stack.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/cmakedefine/expected_wrapper.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/coff_dwarf/shared_lib.c",
+        "language": "c",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/compiler_rt_panic/main.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/config_header/config.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/dep_lazypath/inc/foo.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/extern/shared.c",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/glibc_compat/glibc_runtime_check.c",
+        "language": "c",
+        "rels": 57,
+        "withLine": 57,
+        "noLine": 0,
+        "consistent": 57,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/glibc_compat/main.c",
+        "language": "c",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/install_headers/include/a.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/install_headers/include/sub_dir/b.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/install_headers/include/sub_dir/c.ignore_me.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/issue_11595/test.c",
+        "language": "c",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/issue_12706/test.c",
+        "language": "c",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/issue_794/a_directory/foo.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/mix_c_files/test.c",
+        "language": "c",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/mix_o_files/test.c",
+        "language": "c",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/shared_library/test.c",
+        "language": "c",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/foo.c",
+        "language": "c",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/static_c_lib/foo.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/lib.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_argv/verify.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.c",
+        "language": "c",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/winmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/wwinmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "zig/tools/macos-headers.c",
+        "language": "c",
+        "rels": 181,
+        "withLine": 181,
+        "noLine": 0,
+        "consistent": 181,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ]
+  },
+  "skipped": []
+}

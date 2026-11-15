@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "fixture": "solidity/sol25/sol25-lib.sol",
+  "authoredFrom": "SOL-25 — the declarer half of the member-resolution fixture. Authored 2026-10-28 from the analyzer's measured symbols on this directory.",
+  "note": "The two colliding member names must be DECLARED TWICE with distinct owners, and both declarations must be published with their OWNER — that is the fact the resolution pass reads. If either `shared` or `inherited` were published once, the rest of the fixture would prove nothing about collisions.",
+  "expectSymbols": [
+    { "name": "Lib", "kind": "class" },
+    { "name": "Lib2", "kind": "class" },
+    { "name": "shared", "kind": "method", "ownerName": "Lib" },
+    { "name": "shared", "kind": "method", "ownerName": "Lib2" },
+    { "name": "only", "kind": "method", "ownerName": "Lib" },
+    { "name": "BaseA", "kind": "class" },
+    { "name": "BaseZ", "kind": "class" },
+    { "name": "inherited", "kind": "method", "ownerName": "BaseA" },
+    { "name": "inherited", "kind": "method", "ownerName": "BaseZ" },
+    { "name": "unique", "kind": "method", "ownerName": "BaseA" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "source": "Lib",
+      "target": "shared",
+      "comment": "The declaration the receiver-typed row must point at, by qualified name."
+    },
+    {
+      "type": "contains",
+      "source": "Lib2",
+      "target": "shared",
+      "comment": "The OTHER declaration of the same member name — the collision the pass has to see."
+    },
+    {
+      "type": "contains",
+      "source": "BaseA",
+      "target": "inherited",
+      "comment": "The declaration the implicit-`this` row must point at."
+    },
+    {
+      "type": "contains",
+      "source": "BaseZ",
+      "target": "inherited",
+      "comment": "…and its collision partner."
+    }
+  ]
+}

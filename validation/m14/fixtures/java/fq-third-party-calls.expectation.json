@@ -1,0 +1,15 @@
+{
+  "fixtureId": "java/fq-third-party-calls",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49.J3 reviewer wave: 'org' and 'com' are NOT meaningful stdlib roots — com.sun (JDK) vs com.mycompany (user) differ completely — so fully-qualified third-party calls like org.apache.commons.io.FileUtils.readFile(...) MUST emit user-call edges (the C5 root-only mechanism kept the bare org/com roots, silently dropping every FQ third-party call). True stdlib roots (java.*, System) stay filtered, and the oracle JAVA_STDLIB_ROOTS set is mirrored lockstep in differential.ts.",
+  "expectRelationships": [
+    { "type": "calls", "from": "run", "target": "doWork", "comment": "com.acme user service — unqualified, but pins the user-call path" },
+    { "type": "calls", "from": "run", "target": "readFile", "meta.javaCallExpression": "org.apache.commons.io.FileUtils.readFile", "comment": "FQ third-party call — was silently dropped by bare 'org' root pre-J3" },
+    { "type": "calls", "from": "run", "target": "getLogger", "meta.javaCallExpression": "org.slf4j.LoggerFactory.getLogger", "comment": "FQ slf4j call — bare 'org' root also dropped this pre-J3" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "println", "comment": "System.out.println stays stdlib-filtered (control)" },
+    { "type": "calls", "target": "exists", "meta.javaCallExpression": "java.nio.file.Files.exists", "comment": "java.* root stays filtered" }
+  ]
+}

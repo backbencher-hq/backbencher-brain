@@ -1,0 +1,17 @@
+{
+  "fixtureId": "scala/given-refs",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCD12 gap (M37 #598): Scala 3 given definitions reference the type they PROVIDE. `given Ordering[Int] with {}` previously emitted ZERO type references — the given's type clause (generic_type/type_identifier child) was never walked by collectDeclaredTypeRefs, so the contextual-abstraction graph was invisible. The provided type (Ordering/Codec) and its type arguments (Int) must both emit given_type refs sourced to the enclosing declaration; the given's own name (intCodec) is the named identifier child, not a type.",
+  "expectSymbols": [
+    { "name": "Ord", "kind": "interface" },
+    { "name": "Codec", "kind": "interface" },
+    { "name": "Registry", "kind": "class" },
+    { "name": "intCodec", "kind": "constant", "ownerName": "Registry" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Registry", "target": "Ordering", "meta.relationshipType": "given_type" },
+    { "type": "references", "from": "Registry", "target": "Int", "meta.relationshipType": "given_type" },
+    { "type": "references", "from": "Registry", "target": "Codec", "meta.relationshipType": "given_type" }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "fixtureId": "typescript/dupkey-last-wins",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 dup-key ruling Option A (#746): TS emitted BOTH object-literal duplicate members (keep-both) including the phantom first body's calls edges, while JS executes the LAST same-key declaration (JS J3 contract is last-wins). Family contract after the ruling: one symbol per key keyed to the LAST declaration, phantom body edges dropped; class-body overloads and get/set pairs untouched. Mutant typescript/dupkey-keep-both re-emits the phantom and dies here.",
+  "expectSymbols": [
+    {
+      "name": "save",
+      "kind": "method",
+      "note": "exactly ONE object-literal save symbol (dup-key collapsed)"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "lastHelper",
+      "note": "the surviving (LAST) body's call"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "firstHelper",
+      "from": "save",
+      "note": "the phantom first body's call must be dropped (keep-both revert caught here)"
+    }
+  ]
+}

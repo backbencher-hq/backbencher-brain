@@ -79,7 +79,7 @@ import { join, relative } from "node:path"
 import { getParser } from "../../../src/ast/engine"
 import { RealJavaAnalyzer } from "../../../src/ast/real-java-analyzer"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO_DIR = process.env.BB_REPO ?? "java-lib"
 const WANT = Number(process.env.LANE_NFILES ?? 0)
 const CONC = Number(process.env.LANE_CONC ?? 8)

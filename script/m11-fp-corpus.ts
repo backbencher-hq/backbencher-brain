@@ -8,9 +8,9 @@
 process.env.BB_EMBEDDING_BATCH_LIMIT = "0"
 
 const repositories = [
-  { id: "elixir", path: "$HOME/fixtures/repositories/elixir", extensions: [".ex", ".exs", ".erl", ".hrl"] },
-  { id: "rebar3", path: "$HOME/fixtures/repositories/rebar3", extensions: [".erl", ".hrl"] },
-  { id: "cabal", path: "$HOME/fixtures/repositories/cabal", extensions: [".hs", ".lhs"] },
+  { id: "elixir", path: "/home/ishaq2321/bb_tests/repositories/elixir", extensions: [".ex", ".exs", ".erl", ".hrl"] },
+  { id: "rebar3", path: "/home/ishaq2321/bb_tests/repositories/rebar3", extensions: [".erl", ".hrl"] },
+  { id: "cabal", path: "/home/ishaq2321/bb_tests/repositories/cabal", extensions: [".hs", ".lhs"] },
 ]
 
 // Optional CLI arg: `bun script/m11-fp-corpus.ts cabal` runs one repo,

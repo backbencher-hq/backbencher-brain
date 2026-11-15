@@ -1,0 +1,317 @@
+{
+  "fixtureId": "graphql/declaration-lines-and-extensions",
+  "language": "graphql",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825, #861) + the M12.38/#177 deep review. graphql had NO fixture lane at all, so nothing pinned any of the four contracts below, and all four were broken. (1) The symbol range started on the leading `Description`, so `type A` reported line 1 (its docstring) instead of line 2 and `f` reported 3 instead of 4 \u2014 measured at 3,131 of 3,332 symbols on the GitHub public schema, 94% of the file's symbols pointing at a line that does not contain the name they are named for. This is the M59/#861 rule (a decorated declaration's line belongs to the name, not to its decorator) with a different decorator, already applied to scala, typescript and javascript. (2) `extend type A { g }` produced NO member at all \u2014 0 of 7 across the corpus sample, and 12 of 12 after the fix. A reader that emitted a symbol for the extension of an already-declared type published a SECOND `class A` with the same identity, which the `forbidSymbols` count below is sized to catch. (3) `implements I1 & I2 & I3` and `union U = M1 | M2 | M3` are LEFT-RECURSIVE rules, so tree-sitter nests them and a direct-children reader keeps only the LAST clause \u2014 496 relationships lost across 47 corpus files, including every multi-interface type in the GitHub public schema. (4) Every relationship carries a `line_number` read off the AST node that NAMES the fact, because the store's relationship identity is (source, target, type, line) and a line-less edge collapses two genuine facts into one row: `f(x: Int): Int` has a return type and an argument type of `Int`, on one line, under two different roles. The `implements` forbids pin the pre-fix line attribution as well as the pre-fix clause loss. `expectSymbolCount` pins the de-duplication half: an `extend` of a type the same file also declares must contribute MEMBERS and NOT a second symbol for the type, because two `class A` rows of one identity is a duplicate in the index. The pre-fix `topLevelDefinitions` read `Definition` straight off `source_file` and found none, which silently disabled the de-duplication for every extension in the file. The symbol LINES are pinned through `expectSymbolRanges`, which is this runner's channel for a symbol's position; `expectSymbols` matches identity (name/kind/ownerName) only, so a line stated there would be a silently unmatched constraint rather than a failing one \u2014 measured, and the reason the first version of this fixture failed on every row. Ledger rule R9 applies here too: three declared-type positions in this fixture are `references` + metadata.relationshipType='declared_type', and a `forbidRelationships` row pins the old `uses` label for one of them. The union members (`U -> M1..M4`) stay `uses`: a union member is a NAME in a member list, not a `Type` node in a declaration, which is exactly the line the rule draws.",
+  "expectSymbols": [
+    {
+      "name": "A",
+      "kind": "class",
+      "note": "the keyword's line; the Description is on 1"
+    },
+    {
+      "name": "f",
+      "kind": "property",
+      "ownerName": "A",
+      "note": "the field's own line; the field's Description is on 3"
+    },
+    {
+      "name": "B",
+      "kind": "class"
+    },
+    {
+      "name": "x",
+      "kind": "property",
+      "ownerName": "B"
+    },
+    {
+      "name": "I1",
+      "kind": "interface"
+    },
+    {
+      "name": "I2",
+      "kind": "interface"
+    },
+    {
+      "name": "I3",
+      "kind": "interface"
+    },
+    {
+      "name": "U",
+      "kind": "type"
+    },
+    {
+      "name": "M1",
+      "kind": "class"
+    },
+    {
+      "name": "M2",
+      "kind": "class"
+    },
+    {
+      "name": "M3",
+      "kind": "class"
+    },
+    {
+      "name": "M4",
+      "kind": "class"
+    },
+    {
+      "name": "g",
+      "kind": "property",
+      "ownerName": "A",
+      "note": "a member contributed by `extend type A` \u2014 owned by A, and the pre-fix analyzer emitted nothing at all for it"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "A",
+      "kind": "class",
+      "equals": 1,
+      "note": "`extend type A` must NOT publish a second `class A` \u2014 two symbols of the same identity is a duplicate row in the index"
+    },
+    {
+      "name": "U",
+      "kind": "type",
+      "equals": 1,
+      "note": "same, for `extend union U = M4`"
+    },
+    {
+      "name": "g",
+      "kind": "property",
+      "ownerName": "A",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "A",
+      "target": "A.f",
+      "line_number": 4
+    },
+    {
+      "type": "references",
+      "from": "A.f",
+      "target": "Int",
+      "line_number": 4,
+      "meta.relationshipType": "declared_type",
+      "note": "R9: a field's RETURN type is a declared-type `references` edge, not `uses` \u2014 the family label java/kotlin/scala/csharp/go/typescript/rust all use, and none of them duplicates it under `uses`."
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I1",
+      "line_number": 8
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I2",
+      "line_number": 9
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I3",
+      "line_number": 10
+    },
+    {
+      "type": "contains",
+      "from": "B",
+      "target": "B.x",
+      "line_number": 12
+    },
+    {
+      "type": "references",
+      "from": "B.x",
+      "target": "Int",
+      "line_number": 12,
+      "meta.relationshipType": "declared_type",
+      "note": "R9: a field's RETURN type is a declared-type `references` edge, not `uses` \u2014 the family label java/kotlin/scala/csharp/go/typescript/rust all use, and none of them duplicates it under `uses`."
+    },
+    {
+      "type": "contains",
+      "from": "I1",
+      "target": "I1.a",
+      "line_number": 15
+    },
+    {
+      "type": "uses",
+      "from": "U",
+      "target": "M1",
+      "line_number": 19
+    },
+    {
+      "type": "uses",
+      "from": "U",
+      "target": "M2",
+      "line_number": 19
+    },
+    {
+      "type": "uses",
+      "from": "U",
+      "target": "M3",
+      "line_number": 19
+    },
+    {
+      "type": "uses",
+      "from": "U",
+      "target": "M4",
+      "line_number": 28,
+      "note": "written by `extend union U = M4` on 28 \u2014 the extension's OWN line, not the declaration's"
+    },
+    {
+      "type": "contains",
+      "from": "A",
+      "target": "A.g",
+      "line_number": 25
+    },
+    {
+      "type": "references",
+      "from": "A.g",
+      "target": "String",
+      "line_number": 25,
+      "meta.relationshipType": "declared_type",
+      "note": "R9: a field's RETURN type is a declared-type `references` edge, not `uses` \u2014 the family label java/kotlin/scala/csharp/go/typescript/rust all use, and none of them duplicates it under `uses`."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I1",
+      "line_number": 10,
+      "note": "the LAST clause's line. A direct-children reader of the nested ImplementsInterfaces attributes every interface to the outermost node, so all three land on 10 \u2014 this forbid separates 'all three found' from 'all three attributed to the wrong line'"
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I2",
+      "line_number": 10,
+      "note": "same failure, same wrong line"
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I1",
+      "line_number": 7,
+      "note": "the declaration's own line rather than the clause's \u2014 a reader that stamped the edge with its enclosing definition's line"
+    },
+    {
+      "type": "uses",
+      "from": "U",
+      "target": "M1",
+      "line_number": 28,
+      "note": "the extension's line: `M1` is written on 19, not on the `extend union` line"
+    },
+    {
+      "type": "uses",
+      "from": "A.f",
+      "target": "Int",
+      "line_number": 4,
+      "note": "the pre-R9 label for the same fact: a `Type` node in a declaration is `references` + declared_type, and the sibling lanes that satisfy R9 emit no `uses` for it."
+    },
+    {
+      "type": "uses",
+      "from": "A.f",
+      "target": "Int",
+      "line_number": 4,
+      "note": "the pre-R9 label for the same fact. Two labels for one fact is the divergence class R10 exists to catch."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Anonymous_query_2"
+    },
+    {
+      "name": "Anonymous_query_1"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I1",
+      "equals": 1
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I2",
+      "equals": 1
+    },
+    {
+      "type": "implements",
+      "from": "B",
+      "target": "I3",
+      "equals": 1
+    },
+    {
+      "type": "uses",
+      "from": "U",
+      "target": "M1",
+      "equals": 1
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "A",
+      "startLine": 2,
+      "note": "the KEYWORD's line; the Description is written on 1. The pre-fix range started on the description, so this was 1."
+    },
+    {
+      "symbol": "f",
+      "ownerName": "A",
+      "startLine": 4,
+      "note": "the field's own line; its Description is on 3. Pre-fix: 3."
+    },
+    {
+      "symbol": "B",
+      "startLine": 7
+    },
+    {
+      "symbol": "x",
+      "ownerName": "B",
+      "startLine": 12
+    },
+    {
+      "symbol": "I1",
+      "startLine": 15
+    },
+    {
+      "symbol": "I2",
+      "startLine": 16
+    },
+    {
+      "symbol": "I3",
+      "startLine": 17
+    },
+    {
+      "symbol": "U",
+      "startLine": 19
+    },
+    {
+      "symbol": "M1",
+      "startLine": 20
+    },
+    {
+      "symbol": "M2",
+      "startLine": 21
+    },
+    {
+      "symbol": "M3",
+      "startLine": 22
+    },
+    {
+      "symbol": "M4",
+      "startLine": 29
+    },
+    {
+      "symbol": "g",
+      "ownerName": "A",
+      "startLine": 25,
+      "note": "a member contributed by `extend type A` \u2014 the pre-fix analyzer emitted no symbol for it at all"
+    }
+  ]
+}

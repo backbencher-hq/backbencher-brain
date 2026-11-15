@@ -1,0 +1,15 @@
+{
+  "fixtureId": "scala/type-alias-refs",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the G7 gap: the alias's own definition references its RHS types — type Fn = (Int) => String makes Fn depend on Int and String. The Fn symbol was already emitted (handleTypeAlias); the RHS references were missing (kotlin K5 analog). The alias's own type parameters (type Fn[T] = List[T]) are bindings, not references — excluded.",
+  "expectSymbols": [
+    { "name": "Fn", "kind": "type" },
+    { "name": "U", "kind": "module" },
+    { "name": "apply", "ownerName": "U" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Fn", "target": "Int", "meta.relationshipType": "type_alias" },
+    { "type": "references", "from": "Fn", "target": "String", "meta.relationshipType": "type_alias" }
+  ]
+}

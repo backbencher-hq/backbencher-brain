@@ -1,0 +1,14 @@
+{
+  "fixtureId": "groovy/closure-and-typedef",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Closure field + typed method parameters must extract; collect() call edge from apply.",
+  "expectSymbols": [
+    { "name": "Transformer", "kind": "class" },
+    { "name": "strategy" },
+    { "name": "apply" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "apply", "target": "collect" }
+  ]
+}

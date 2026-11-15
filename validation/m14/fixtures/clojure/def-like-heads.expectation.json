@@ -1,0 +1,19 @@
+{
+  "issue": "CLJ-D30",
+  "note": "A def-like head in DEF POSITION DEFINES A NAME. The rule is general rather than a list: any def-like head (`def`, optionally followed by `-`/`_`) whose first argument is a symbol defines that symbol. All three shapes here produced NO symbol, NO `contains` edge and NO export before the fix — 1,136 top-level definitions across the four corpora. (1) `defcurried` is a real clojure.core macro and all eight of its definitions in clojure/core/reducers.clj recorded nothing, though that file defines `map`, `mapcat`, `filter`, `remove`, `take`, `take-while`, `drop` and `flatten` this way. (2) A LOCAL macro defined in the same file is the shape a per-file analyzer can never have been taught, and accounts for 1,043 of the sites (metabase's `defsetting`, `defenterprise`, `defclause`, `deferror`, `defspec`, `defroutes`; clojure's own `def-aset`, `definline`, `defblockingop`, `deftest-both`). (3) A CORE-NAMED definition macro: `definline` is a clojure.core macro (core.clj:5461) so it IS in the derived core list, and the first version of the fix excluded core-named heads — which threw away `(definline booleans …)` at core.clj:5580 and six siblings. F1's node-type census is structurally blind to this class: an unrecognized def form parses as an ordinary `list_lit`, i.e. a CALL. A def-like NAME in argument position is still not a definition — `(val 1)` calls the macro's parameter.",
+  "expectRelationships": [
+    { "type": "contains", "from": "clj.fixture.deflike", "target": "curried-map", "line_number": 17 },
+    { "type": "contains", "from": "clj.fixture.deflike", "target": "local-alias", "line_number": 31 },
+    { "type": "contains", "from": "clj.fixture.deflike", "target": "inline-only", "line_number": 37 },
+    { "type": "contains", "from": "clj.fixture.deflike", "target": "plain-value", "line_number": 42 },
+    { "type": "calls", "from": "wrapper2", "target": "val", "line_number": 46 },
+    { "type": "calls", "from": "clj.fixture.deflike", "target": "wrapper2", "line_number": 47 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "defcurried" },
+    { "type": "calls", "target": "def-alias2" },
+    { "type": "calls", "target": "definline" },
+    { "type": "calls", "target": "curried-map" },
+    { "type": "calls", "target": "inline-only" }
+  ]
+}

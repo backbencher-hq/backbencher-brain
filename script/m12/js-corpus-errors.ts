@@ -3,12 +3,12 @@
 // single-long-lived-parser memory exhaustion that causes spurious Abort()s.
 // Usage: bun script/m12/js-corpus-errors.ts
 // Reads:  validation/m12/results/javascript-corpus-sample.txt (relative paths
-//         into the pinned svelte repo at $HOME/fixtures/repositories/svelte)
+//         into the pinned svelte repo at /home/ishaq2321/bb_tests/repositories/svelte)
 // Prints: per-file error stats + aggregate (errFiles / errNodes / crashes)
 import { readFileSync } from "fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO = "$HOME/fixtures/repositories/svelte"
+const REPO = "/home/ishaq2321/bb_tests/repositories/svelte"
 const SAMPLE = "validation/m12/results/javascript-corpus-sample.txt"
 
 async function main() {

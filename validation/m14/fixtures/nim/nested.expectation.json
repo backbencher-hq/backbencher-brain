@@ -1,0 +1,157 @@
+{
+  "comment": "The nested-routine and doc-example families, pinned in both directions. POSITIVE: a named nested routine is published with `scope` set to its parent and is the far end of a `contains` edge, so the `calls` edges the analyzer already emitted have a symbol to land on; a `runnableExamples` block's TYPE declarations are published and yield real `extends` edges. NEGATIVE: an unnamed nested routine stays suppressed (it is the anonymous inner body entity the family rule is about), a doc example's VALUE declarations stay suppressed (they are locals of the example, not of the module \u2014 `LocalsAreNotSymbols`), and a doc example must not leak a `contains` edge from the routine that documents it. The `contains` forbid is the half that catches a 'helpful' fix which routed the nested routine through `ownerName`, because the owner here is a FUNCTION and `ownerName` is the family field for a class owner.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "Node",
+      "kind": "class"
+    },
+    {
+      "name": "closeTab",
+      "kind": "function"
+    },
+    {
+      "name": "recentlyOpenedAdd",
+      "kind": "function",
+      "scope": "closeTab",
+      "visibility": "private"
+    },
+    {
+      "name": "hostWithAnonClosure",
+      "kind": "function"
+    },
+    {
+      "name": "describe",
+      "kind": "function"
+    },
+    {
+      "name": "Shape",
+      "kind": "class"
+    },
+    {
+      "name": "Circle",
+      "kind": "class"
+    },
+    {
+      "name": "moduleLevelCounter",
+      "kind": "variable"
+    },
+    {
+      "name": "moduleLevelLimit",
+      "kind": "constant"
+    },
+    {
+      "name": "strip",
+      "kind": "function"
+    },
+    {
+      "name": "trimmed",
+      "kind": "function",
+      "scope": "strip",
+      "visibility": "private"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "closeTab",
+      "target": "recentlyOpenedAdd",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_contains",
+      "meta.nimNestedRoutine": true,
+      "comment": "the lexical containment of a named nested routine. Read off `metadata.nimNestedIn` and NOT from `ownerName`, because the owner is a function here and `ownerName` is the family field for a class or module owner"
+    },
+    {
+      "type": "calls",
+      "from": "closeTab",
+      "target": "recentlyOpenedAdd",
+      "comment": "the parent calling the closure by name \u2014 the edge that used to have no symbol at its far end"
+    },
+    {
+      "type": "extends",
+      "from": "Circle",
+      "target": "Shape",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_object_inheritance",
+      "comment": "a `runnableExamples` block's type declaration is a declaration the Nim compiler type-checks, so it yields the same edge as a module-scope one"
+    },
+    {
+      "type": "contains",
+      "from": "Node",
+      "target": "payload",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_contains",
+      "comment": "an object FIELD is contained by its owner \u2014 published the same way whether the object is module-scope or inside a doc example, which is the control for the example's own members"
+    },
+    {
+      "type": "contains",
+      "from": "strip",
+      "target": "trimmed",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_contains",
+      "meta.nimNestedRoutine": true,
+      "comment": "the second named nested routine, so the family is pinned by two independent sites rather than one"
+    },
+    {
+      "type": "calls",
+      "from": "strip",
+      "target": "trimmed",
+      "confidenceMin": 0.9,
+      "meta.relationshipType": "nim_ufcs_member_call",
+      "comment": "PARENLESS UFCS of a NESTED routine: `s.trimmed` invokes `trimmed(s)` with no parentheses and no call node. Confidence 0.9 because the dispatch is inferred from a member read plus a declaration, not written as a call"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "s",
+      "comment": "a doc example's `var s = Circle()` is a local of the EXAMPLE \u2014 LocalsAreNotSymbols, the same rule as a `var` in a routine body"
+    },
+    {
+      "name": "label",
+      "comment": "a doc example's `var label` \u2014 a local of the example unit, not of the module"
+    },
+    {
+      "name": "q",
+      "comment": "an UNNAMED nested routine's parameter set publishes no symbol; the routine itself has no name to publish"
+    },
+    {
+      "name": "exampleOnlyLocal",
+      "comment": "declared NOWHERE else in the fixture, so this forbid is a real assertion rather than a name collision: a doc example's `var` is a local of the example unit, and publishing it as a module symbol is `LocalsAreNotSymbols` violated"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "describe",
+      "target": "Shape",
+      "comment": "a doc example is NOT contained in the routine that documents it \u2014 it is a separate compilation unit, and a `contains` edge here would put a doc example inside the API surface of the proc"
+    },
+    {
+      "type": "contains",
+      "from": "closeTab",
+      "target": "closeTab",
+      "comment": "a self-containment edge is not a containment"
+    },
+    {
+      "type": "extends",
+      "from": "Circle",
+      "target": "RootObj",
+      "comment": "`of RootObj` is the compiler's own root and is deliberately not published, so `extends` never points at a name with no referent"
+    },
+    {
+      "type": "calls",
+      "from": "describe",
+      "target": "runnableExamples",
+      "comment": "`runnableExamples:` is a doc-comment PRAGMA, not a call. The grammar parses the whole example as the call's argument_list, so without the shape test this published an edge to a name no Nim program can call"
+    },
+    {
+      "type": "uses",
+      "from": "strip",
+      "target": "trimmed",
+      "comment": "DELIBERATE co-existence is NOT wanted here, unlike `extends`+`references`: `s.trimmed` is a CALL and not a read, so publishing both would be the double-count. The oracle's own comment records that emitting both was a real defect it once had"
+    }
+  ]
+}

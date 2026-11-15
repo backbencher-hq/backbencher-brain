@@ -1,0 +1,17 @@
+{
+  "issue": "ELX-ADV X14/X15 (round-2 analyzer defects)",
+  "note": "A capture placeholder's field/member access and a special-variable field read are not calls, and an operator after the Kernel qualifier is not a callable name. At HEAD the analyzer published `calls -> &1.status`, `&1.fetch!`, `__ENV__.lexical_tracker`, `Kernel.<>` and `Kernel.||` (19 elixir + 8 phoenix rows on the draws). The REAL call surface beside them must stay: an Enum call, an erlang atom remote, and a capture of a NAMED function.",
+  "expectRelationships": [
+    { "type": "calls", "from": "ELX14.CaptureAndOperators.capture_field/1", "target": "Enum.map" },
+    { "type": "calls", "from": "ELX14.CaptureAndOperators.atom_remote/1", "target": ":lists.reverse" },
+    { "type": "calls", "from": "ELX14.CaptureAndOperators.genuine_capture/1", "target": "String.trim" },
+    { "type": "overrides", "from": "ELX14.CaptureAndOperators.init/1", "target": "ELX14.Contract.init" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "&1.status" },
+    { "type": "calls", "target": "&1.fetch!" },
+    { "type": "calls", "target": "__ENV__.lexical_tracker" },
+    { "type": "calls", "target": "Kernel.<>" },
+    { "type": "calls", "target": "Kernel.||" }
+  ]
+}

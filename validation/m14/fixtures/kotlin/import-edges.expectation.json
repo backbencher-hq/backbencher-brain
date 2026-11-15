@@ -1,0 +1,17 @@
+{
+  "fixtureId": "kotlin/import-edges",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the K8 gap (confirmed finding from java's pass): kotlin import edges carry isImportDep=true but the tier classifier only recognized isImport, so every import edge was mislabeled reference_qualified instead of import_based. Single imports carry the full dotted target (java.util.List); wildcard imports the module (java.util.concurrent, never '.*' — the identifier text excludes it).",
+  "expectSymbols": [
+    { "name": "Importer", "kind": "class" }
+  ],
+  "expectImports": [
+    { "module": "java.util.List", "isNamespaceImport": false },
+    { "module": "java.util.concurrent", "isNamespaceImport": true }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Importer", "target": "java.util.List", "meta.isImportDep": true, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 },
+    { "type": "references", "from": "Importer", "target": "java.util.concurrent", "meta.isImportDep": true, "meta.evidenceClass": "import_based", "confidenceMin": 0.9 }
+  ]
+}

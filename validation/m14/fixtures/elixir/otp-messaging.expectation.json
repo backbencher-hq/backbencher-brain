@@ -1,0 +1,80 @@
+{
+  "issue": "EX-PAYLOAD/EX-A13",
+  "note": "The message-passing and process-spawning surface had NO fixture at all, which is how two different things went unnoticed: (1) the `isMessagePass`/`isSend` edge markers were a DEAD STORE \u2014 `send`/`send_after`/`spawn`/`spawn_link`/`spawn_monitor` are Kernel auto-imports, so the EX-D2 exclusion drops them before an edge is built, and no edge could ever carry those flags (measured, not assumed: `send(pid, :hi)` emits ZERO relationships in this fixture, while the qualified `Task.async/1` and `Agent.start_link/1` do emit edges); (2) the surviving, reachable signal \u2014 the file-level `Message Passing` / `Process Spawning` / `Actor Model (OTP)` idiom flags and the `isProcessSpawn` edge marker \u2014 was unpinned, so mutant elixir/otp-send-spawn-markers-dropped survived. The dead store is deleted (real-elixir-analyzer.ts, EX-A13) and the reachable signal is pinned here. The Kernel exclusion itself is pinned in the FORBID half: `send`/`spawn_link` emit no calls edge. The docstring CHANNEL itself is pinned exactly (single-line) in doc-forms; here the comment channel uses `contains`, because matchConstraints compares docstring by equality and a heredoc is not a reasonable exact pin.",
+  "expectSymbols": [
+    {
+      "name": "notify",
+      "kind": "function",
+      "ownerName": "Otp.Messaging"
+    },
+    {
+      "name": "in_parallel",
+      "kind": "function",
+      "ownerName": "Otp.Messaging"
+    },
+    {
+      "name": "supervised",
+      "kind": "function",
+      "ownerName": "Otp.Messaging"
+    },
+    {
+      "name": "spawned",
+      "kind": "function",
+      "ownerName": "Otp.Messaging"
+    }
+  ],
+  "expectPatterns": [
+    "Message Passing",
+    "Process Spawning",
+    "Actor Model (OTP)",
+    "Documentation"
+  ],
+  "forbidPatterns": [
+    "Supervision Trees"
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "Otp.Messaging.in_parallel/1",
+      "target": "Task.async",
+      "line_number": 15,
+      "meta.isProcessSpawn": true,
+      "meta.callArity": 1
+    },
+    {
+      "type": "calls",
+      "from": "Otp.Messaging.supervised/0",
+      "target": "Agent.start_link",
+      "line_number": 19,
+      "meta.isProcessSpawn": true,
+      "meta.callArity": 1
+    },
+    {
+      "type": "calls",
+      "from": "Otp.Messaging.notify/1",
+      "target": "System.monotonic_time",
+      "line_number": 10
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "send"
+    },
+    {
+      "type": "calls",
+      "target": "spawn_link"
+    },
+    {
+      "type": "calls",
+      "from": "Otp.Messaging.spawned/0",
+      "target": "Otp.Messaging.spawned"
+    }
+  ],
+  "expectComments": [
+    {
+      "symbol": "Otp.Messaging",
+      "contains": "Message passing and process spawning."
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 // script/m13/corpus-map.ts — M13.05 (B5) corpus mapping.
 //
-// Maps the pinned repositories under ~/fixtures/repositories to the 41 analyzer
+// Maps the pinned repositories under ~/bb_tests/repositories to the 41 analyzer
 // languages by file extension, and records an explicit gap register: languages
 // with ZERO real-repo coverage and languages with only thin (<50 files) coverage
 // are both flagged. Files with unknown extensions are recorded, never silently
@@ -14,8 +14,8 @@ import path from "node:path"
 import { Harness } from "./harness"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
-// WAS: the literal "$HOME/fixtures/repositories" — the OTHER laptop's home
-// directory. This file's own header (line 3) says "~/fixtures/repositories", which is
+// WAS: the literal "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home
+// directory. This file's own header (line 3) says "~/bb_tests/repositories", which is
 // what it always meant; the literal contradicted it and made B5 report
 // "corpus directory exists … missing" on every machine but that one, so the whole
 // 41-language corpus map was derived from zero directories.

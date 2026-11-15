@@ -1,0 +1,1793 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-14T03:02:32.570Z",
+  "symbols": [
+    {
+      "file": "schema.sql",
+      "name": "users",
+      "kind": "class",
+      "start_line": 1
+    },
+    {
+      "file": "schema.sql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 2
+    },
+    {
+      "file": "schema.sql",
+      "name": "email",
+      "kind": "property",
+      "start_line": 3
+    },
+    {
+      "file": "schema.sql",
+      "name": "created_at",
+      "kind": "property",
+      "start_line": 4
+    },
+    {
+      "file": "schema.sql",
+      "name": "orders",
+      "kind": "class",
+      "start_line": 7
+    },
+    {
+      "file": "schema.sql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "schema.sql",
+      "name": "user_id",
+      "kind": "property",
+      "start_line": 9
+    },
+    {
+      "file": "schema.sql",
+      "name": "total",
+      "kind": "property",
+      "start_line": 10
+    },
+    {
+      "file": "schema.sql",
+      "name": "status",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "schema.sql",
+      "name": "idx_orders_user",
+      "kind": "constant",
+      "start_line": 14
+    },
+    {
+      "file": "schema.sql",
+      "name": "idx_orders_status",
+      "kind": "constant",
+      "start_line": 15
+    },
+    {
+      "file": "schema.sql",
+      "name": "order_items",
+      "kind": "class",
+      "start_line": 17
+    },
+    {
+      "file": "schema.sql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "schema.sql",
+      "name": "order_id",
+      "kind": "property",
+      "start_line": 19
+    },
+    {
+      "file": "schema.sql",
+      "name": "product",
+      "kind": "property",
+      "start_line": 20
+    },
+    {
+      "file": "schema.sql",
+      "name": "quantity",
+      "kind": "property",
+      "start_line": 21
+    },
+    {
+      "file": "schema.xml",
+      "name": "project",
+      "kind": "class",
+      "start_line": 2
+    },
+    {
+      "file": "schema.xml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 2
+    },
+    {
+      "file": "schema.xml",
+      "name": "description",
+      "kind": "class",
+      "start_line": 3
+    },
+    {
+      "file": "schema.xml",
+      "name": "properties",
+      "kind": "class",
+      "start_line": 5
+    },
+    {
+      "file": "schema.xml",
+      "name": "property",
+      "kind": "class",
+      "start_line": 6
+    },
+    {
+      "file": "schema.xml",
+      "name": "property",
+      "kind": "class",
+      "start_line": 7
+    },
+    {
+      "file": "schema.xml",
+      "name": "dependencies",
+      "kind": "class",
+      "start_line": 10
+    },
+    {
+      "file": "schema.xml",
+      "name": "dependency",
+      "kind": "class",
+      "start_line": 11
+    },
+    {
+      "file": "schema.xml",
+      "name": "dependency",
+      "kind": "class",
+      "start_line": 12
+    },
+    {
+      "file": "schema.xml",
+      "name": "modules",
+      "kind": "class",
+      "start_line": 15
+    },
+    {
+      "file": "schema.xml",
+      "name": "module",
+      "kind": "class",
+      "start_line": 16
+    },
+    {
+      "file": "schema.xml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 16
+    },
+    {
+      "file": "schema.xml",
+      "name": "plugins",
+      "kind": "class",
+      "start_line": 17
+    },
+    {
+      "file": "schema.xml",
+      "name": "plugin",
+      "kind": "class",
+      "start_line": 18
+    },
+    {
+      "file": "schema.xml",
+      "name": "module",
+      "kind": "class",
+      "start_line": 21
+    },
+    {
+      "file": "schema.xml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 21
+    },
+    {
+      "file": "schema.xml",
+      "name": "handlers",
+      "kind": "class",
+      "start_line": 22
+    },
+    {
+      "file": "schema.xml",
+      "name": "handler",
+      "kind": "class",
+      "start_line": 23
+    },
+    {
+      "file": "schema.xml",
+      "name": "handler",
+      "kind": "class",
+      "start_line": 24
+    },
+    {
+      "file": "schema.xml",
+      "name": "targets",
+      "kind": "class",
+      "start_line": 29
+    },
+    {
+      "file": "schema.xml",
+      "name": "target",
+      "kind": "class",
+      "start_line": 30
+    },
+    {
+      "file": "schema.xml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 30
+    },
+    {
+      "file": "schema.xml",
+      "name": "depends",
+      "kind": "property",
+      "start_line": 30
+    },
+    {
+      "file": "schema.xml",
+      "name": "task",
+      "kind": "class",
+      "start_line": 31
+    },
+    {
+      "file": "schema.xml",
+      "name": "target",
+      "kind": "class",
+      "start_line": 33
+    },
+    {
+      "file": "schema.xml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 33
+    },
+    {
+      "file": "schema.xml",
+      "name": "task",
+      "kind": "class",
+      "start_line": 34
+    },
+    {
+      "file": "index.html",
+      "name": "site-header",
+      "kind": "class",
+      "start_line": 10
+    },
+    {
+      "file": "index.html",
+      "name": "content",
+      "kind": "class",
+      "start_line": 22
+    },
+    {
+      "file": "index.html",
+      "name": "order-list",
+      "kind": "class",
+      "start_line": 23
+    },
+    {
+      "file": "index.html",
+      "name": "orders-table",
+      "kind": "class",
+      "start_line": 25
+    },
+    {
+      "file": "index.html",
+      "name": "sidebar",
+      "kind": "class",
+      "start_line": 36
+    },
+    {
+      "file": "index.html",
+      "name": "search-form",
+      "kind": "class",
+      "start_line": 37
+    },
+    {
+      "file": "styles.css",
+      "name": ":root",
+      "kind": "class",
+      "start_line": 1
+    },
+    {
+      "file": "styles.css",
+      "name": "--primary",
+      "kind": "variable",
+      "start_line": 2
+    },
+    {
+      "file": "styles.css",
+      "name": "--danger",
+      "kind": "variable",
+      "start_line": 3
+    },
+    {
+      "file": "styles.css",
+      "name": "--spacing",
+      "kind": "variable",
+      "start_line": 4
+    },
+    {
+      "file": "styles.css",
+      "name": "body",
+      "kind": "type",
+      "start_line": 13
+    },
+    {
+      "file": "styles.css",
+      "name": ".header",
+      "kind": "class",
+      "start_line": 20
+    },
+    {
+      "file": "styles.css",
+      "name": "#site-header h1",
+      "kind": "class",
+      "start_line": 27
+    },
+    {
+      "file": "styles.css",
+      "name": ".panel",
+      "kind": "class",
+      "start_line": 32
+    },
+    {
+      "file": "styles.css",
+      "name": "#orders-table",
+      "kind": "interface",
+      "start_line": 38
+    },
+    {
+      "file": "styles.css",
+      "name": "#orders-table th, #orders-table td",
+      "kind": "class",
+      "start_line": 43
+    },
+    {
+      "file": "styles.css",
+      "name": "tr[data-order=\"1001\"]",
+      "kind": "class",
+      "start_line": 49
+    },
+    {
+      "file": "styles.css",
+      "name": "a:hover",
+      "kind": "class",
+      "start_line": 53
+    },
+    {
+      "file": "styles.css",
+      "name": "#sidebar",
+      "kind": "interface",
+      "start_line": 58
+    },
+    {
+      "file": "styles.css",
+      "name": "fade-in",
+      "kind": "function",
+      "start_line": 63
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Query",
+      "kind": "class",
+      "start_line": 1
+    },
+    {
+      "file": "orders.graphql",
+      "name": "order",
+      "kind": "property",
+      "start_line": 2
+    },
+    {
+      "file": "orders.graphql",
+      "name": "ordersByCustomer",
+      "kind": "property",
+      "start_line": 3
+    },
+    {
+      "file": "orders.graphql",
+      "name": "customers",
+      "kind": "property",
+      "start_line": 4
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Mutation",
+      "kind": "class",
+      "start_line": 7
+    },
+    {
+      "file": "orders.graphql",
+      "name": "createOrder",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "orders.graphql",
+      "name": "cancelOrder",
+      "kind": "property",
+      "start_line": 9
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Subscription",
+      "kind": "class",
+      "start_line": 12
+    },
+    {
+      "file": "orders.graphql",
+      "name": "orderUpdated",
+      "kind": "property",
+      "start_line": 13
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Order",
+      "kind": "class",
+      "start_line": 16
+    },
+    {
+      "file": "orders.graphql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 17
+    },
+    {
+      "file": "orders.graphql",
+      "name": "customer",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "orders.graphql",
+      "name": "items",
+      "kind": "property",
+      "start_line": 19
+    },
+    {
+      "file": "orders.graphql",
+      "name": "total",
+      "kind": "property",
+      "start_line": 20
+    },
+    {
+      "file": "orders.graphql",
+      "name": "status",
+      "kind": "property",
+      "start_line": 21
+    },
+    {
+      "file": "orders.graphql",
+      "name": "createdAt",
+      "kind": "property",
+      "start_line": 22
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Customer",
+      "kind": "class",
+      "start_line": 25
+    },
+    {
+      "file": "orders.graphql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 26
+    },
+    {
+      "file": "orders.graphql",
+      "name": "name",
+      "kind": "property",
+      "start_line": 27
+    },
+    {
+      "file": "orders.graphql",
+      "name": "email",
+      "kind": "property",
+      "start_line": 28
+    },
+    {
+      "file": "orders.graphql",
+      "name": "orders",
+      "kind": "property",
+      "start_line": 29
+    },
+    {
+      "file": "orders.graphql",
+      "name": "OrderItem",
+      "kind": "class",
+      "start_line": 32
+    },
+    {
+      "file": "orders.graphql",
+      "name": "productId",
+      "kind": "property",
+      "start_line": 33
+    },
+    {
+      "file": "orders.graphql",
+      "name": "quantity",
+      "kind": "property",
+      "start_line": 34
+    },
+    {
+      "file": "orders.graphql",
+      "name": "price",
+      "kind": "property",
+      "start_line": 35
+    },
+    {
+      "file": "orders.graphql",
+      "name": "OrderStatus",
+      "kind": "class",
+      "start_line": 38
+    },
+    {
+      "file": "orders.graphql",
+      "name": "PENDING",
+      "kind": "property",
+      "start_line": 39
+    },
+    {
+      "file": "orders.graphql",
+      "name": "SHIPPED",
+      "kind": "property",
+      "start_line": 40
+    },
+    {
+      "file": "orders.graphql",
+      "name": "CANCELLED",
+      "kind": "property",
+      "start_line": 41
+    },
+    {
+      "file": "orders.graphql",
+      "name": "CreateOrderInput",
+      "kind": "class",
+      "start_line": 44
+    },
+    {
+      "file": "orders.graphql",
+      "name": "customerId",
+      "kind": "property",
+      "start_line": 45
+    },
+    {
+      "file": "orders.graphql",
+      "name": "items",
+      "kind": "property",
+      "start_line": 46
+    },
+    {
+      "file": "orders.graphql",
+      "name": "OrderItemInput",
+      "kind": "class",
+      "start_line": 49
+    },
+    {
+      "file": "orders.graphql",
+      "name": "productId",
+      "kind": "property",
+      "start_line": 50
+    },
+    {
+      "file": "orders.graphql",
+      "name": "quantity",
+      "kind": "property",
+      "start_line": 51
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Node",
+      "kind": "class",
+      "start_line": 54
+    },
+    {
+      "file": "orders.graphql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 55
+    },
+    {
+      "file": "orders.graphql",
+      "name": "Product",
+      "kind": "class",
+      "start_line": 58
+    },
+    {
+      "file": "orders.graphql",
+      "name": "id",
+      "kind": "property",
+      "start_line": 59
+    },
+    {
+      "file": "orders.graphql",
+      "name": "name",
+      "kind": "property",
+      "start_line": 60
+    },
+    {
+      "file": "orders.graphql",
+      "name": "price",
+      "kind": "property",
+      "start_line": 61
+    },
+    {
+      "file": "orders.graphql",
+      "name": "DateTime",
+      "kind": "class",
+      "start_line": 64
+    },
+    {
+      "file": "config.yaml",
+      "name": "config",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "config.yaml",
+      "name": "service",
+      "kind": "property",
+      "start_line": 1
+    },
+    {
+      "file": "config.yaml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 2
+    },
+    {
+      "file": "config.yaml",
+      "name": "port",
+      "kind": "property",
+      "start_line": 3
+    },
+    {
+      "file": "config.yaml",
+      "name": "replicas",
+      "kind": "property",
+      "start_line": 4
+    },
+    {
+      "file": "config.yaml",
+      "name": "env",
+      "kind": "property",
+      "start_line": 5
+    },
+    {
+      "file": "config.yaml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 6
+    },
+    {
+      "file": "config.yaml",
+      "name": "value",
+      "kind": "property",
+      "start_line": 7
+    },
+    {
+      "file": "config.yaml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "config.yaml",
+      "name": "value",
+      "kind": "property",
+      "start_line": 9
+    },
+    {
+      "file": "config.yaml",
+      "name": "database",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "config.yaml",
+      "name": "host",
+      "kind": "property",
+      "start_line": 12
+    },
+    {
+      "file": "config.yaml",
+      "name": "port",
+      "kind": "property",
+      "start_line": 13
+    },
+    {
+      "file": "config.yaml",
+      "name": "credentials",
+      "kind": "property",
+      "start_line": 14
+    },
+    {
+      "file": "config.yaml",
+      "name": "user",
+      "kind": "property",
+      "start_line": 15
+    },
+    {
+      "file": "config.yaml",
+      "name": "password",
+      "kind": "property",
+      "start_line": 16
+    },
+    {
+      "file": "config.yaml",
+      "name": "pool",
+      "kind": "property",
+      "start_line": 17
+    },
+    {
+      "file": "config.yaml",
+      "name": "max",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "config.yaml",
+      "name": "min",
+      "kind": "property",
+      "start_line": 19
+    },
+    {
+      "file": "config.yaml",
+      "name": "features",
+      "kind": "property",
+      "start_line": 21
+    },
+    {
+      "file": "config.yaml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 22
+    },
+    {
+      "file": "config.yaml",
+      "name": "enabled",
+      "kind": "property",
+      "start_line": 23
+    },
+    {
+      "file": "config.yaml",
+      "name": "timeout_seconds",
+      "kind": "property",
+      "start_line": 24
+    },
+    {
+      "file": "config.yaml",
+      "name": "name",
+      "kind": "property",
+      "start_line": 25
+    },
+    {
+      "file": "config.yaml",
+      "name": "enabled",
+      "kind": "property",
+      "start_line": 26
+    },
+    {
+      "file": "config.yaml",
+      "name": "logging",
+      "kind": "property",
+      "start_line": 28
+    },
+    {
+      "file": "config.yaml",
+      "name": "level",
+      "kind": "property",
+      "start_line": 29
+    },
+    {
+      "file": "config.yaml",
+      "name": "format",
+      "kind": "property",
+      "start_line": 30
+    },
+    {
+      "file": "config.yaml",
+      "name": "outputs",
+      "kind": "property",
+      "start_line": 31
+    },
+    {
+      "file": "config.yaml",
+      "name": "file",
+      "kind": "property",
+      "start_line": 33
+    },
+    {
+      "file": "config.yaml",
+      "name": "metrics",
+      "kind": "property",
+      "start_line": 35
+    },
+    {
+      "file": "config.yaml",
+      "name": "enabled",
+      "kind": "property",
+      "start_line": 36
+    },
+    {
+      "file": "config.yaml",
+      "name": "interval",
+      "kind": "property",
+      "start_line": 37
+    },
+    {
+      "file": "infra.tf",
+      "name": "terraform",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "infra.tf",
+      "name": "required_version",
+      "kind": "property",
+      "start_line": 2
+    },
+    {
+      "file": "infra.tf",
+      "name": "required_providers",
+      "kind": "class",
+      "start_line": 3
+    },
+    {
+      "file": "infra.tf",
+      "name": "aws",
+      "kind": "property",
+      "start_line": 4
+    },
+    {
+      "file": "infra.tf",
+      "name": "region",
+      "kind": "variable",
+      "start_line": 11
+    },
+    {
+      "file": "infra.tf",
+      "name": "type",
+      "kind": "property",
+      "start_line": 12
+    },
+    {
+      "file": "infra.tf",
+      "name": "default",
+      "kind": "property",
+      "start_line": 13
+    },
+    {
+      "file": "infra.tf",
+      "name": "instance_count",
+      "kind": "variable",
+      "start_line": 16
+    },
+    {
+      "file": "infra.tf",
+      "name": "type",
+      "kind": "property",
+      "start_line": 17
+    },
+    {
+      "file": "infra.tf",
+      "name": "default",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "infra.tf",
+      "name": "locals",
+      "kind": "module",
+      "start_line": 21
+    },
+    {
+      "file": "infra.tf",
+      "name": "environment",
+      "kind": "property",
+      "start_line": 22
+    },
+    {
+      "file": "infra.tf",
+      "name": "tags",
+      "kind": "property",
+      "start_line": 23
+    },
+    {
+      "file": "infra.tf",
+      "name": "aws",
+      "kind": "module",
+      "start_line": 29
+    },
+    {
+      "file": "infra.tf",
+      "name": "region",
+      "kind": "property",
+      "start_line": 30
+    },
+    {
+      "file": "infra.tf",
+      "name": "aws_vpc_main",
+      "kind": "class",
+      "start_line": 33
+    },
+    {
+      "file": "infra.tf",
+      "name": "cidr_block",
+      "kind": "property",
+      "start_line": 34
+    },
+    {
+      "file": "infra.tf",
+      "name": "tags",
+      "kind": "property",
+      "start_line": 35
+    },
+    {
+      "file": "infra.tf",
+      "name": "aws_subnet_public",
+      "kind": "class",
+      "start_line": 38
+    },
+    {
+      "file": "infra.tf",
+      "name": "count",
+      "kind": "property",
+      "start_line": 39
+    },
+    {
+      "file": "infra.tf",
+      "name": "vpc_id",
+      "kind": "property",
+      "start_line": 40
+    },
+    {
+      "file": "infra.tf",
+      "name": "cidr_block",
+      "kind": "property",
+      "start_line": 41
+    },
+    {
+      "file": "infra.tf",
+      "name": "map_public_ip_on_launch",
+      "kind": "property",
+      "start_line": 42
+    },
+    {
+      "file": "infra.tf",
+      "name": "aws_instance_web",
+      "kind": "class",
+      "start_line": 45
+    },
+    {
+      "file": "infra.tf",
+      "name": "count",
+      "kind": "property",
+      "start_line": 46
+    },
+    {
+      "file": "infra.tf",
+      "name": "ami",
+      "kind": "property",
+      "start_line": 47
+    },
+    {
+      "file": "infra.tf",
+      "name": "instance_type",
+      "kind": "property",
+      "start_line": 48
+    },
+    {
+      "file": "infra.tf",
+      "name": "subnet_id",
+      "kind": "property",
+      "start_line": 49
+    },
+    {
+      "file": "infra.tf",
+      "name": "tags",
+      "kind": "property",
+      "start_line": 50
+    },
+    {
+      "file": "infra.tf",
+      "name": "aws_ami_ubuntu",
+      "kind": "class",
+      "start_line": 55
+    },
+    {
+      "file": "infra.tf",
+      "name": "most_recent",
+      "kind": "property",
+      "start_line": 56
+    },
+    {
+      "file": "infra.tf",
+      "name": "filter",
+      "kind": "class",
+      "start_line": 57
+    },
+    {
+      "file": "infra.tf",
+      "name": "name",
+      "kind": "property",
+      "start_line": 58
+    },
+    {
+      "file": "infra.tf",
+      "name": "values",
+      "kind": "property",
+      "start_line": 59
+    },
+    {
+      "file": "infra.tf",
+      "name": "vpc_id",
+      "kind": "variable",
+      "start_line": 63
+    },
+    {
+      "file": "infra.tf",
+      "name": "value",
+      "kind": "property",
+      "start_line": 64
+    },
+    {
+      "file": "infra.tf",
+      "name": "web_ips",
+      "kind": "variable",
+      "start_line": 67
+    },
+    {
+      "file": "infra.tf",
+      "name": "value",
+      "kind": "property",
+      "start_line": 68
+    },
+    {
+      "file": "infra.tf",
+      "name": "database",
+      "kind": "module",
+      "start_line": 71
+    },
+    {
+      "file": "infra.tf",
+      "name": "source",
+      "kind": "property",
+      "start_line": 72
+    },
+    {
+      "file": "infra.tf",
+      "name": "version",
+      "kind": "property",
+      "start_line": 73
+    },
+    {
+      "file": "infra.tf",
+      "name": "name",
+      "kind": "property",
+      "start_line": 74
+    },
+    {
+      "file": "deploy.sh",
+      "name": "usage",
+      "kind": "function",
+      "start_line": 7
+    },
+    {
+      "file": "deploy.sh",
+      "name": "build_image",
+      "kind": "function",
+      "start_line": 11
+    },
+    {
+      "file": "deploy.sh",
+      "name": "image",
+      "kind": "variable",
+      "start_line": 12
+    },
+    {
+      "file": "deploy.sh",
+      "name": "run_tests",
+      "kind": "function",
+      "start_line": 16
+    },
+    {
+      "file": "deploy.sh",
+      "name": "env",
+      "kind": "variable",
+      "start_line": 17
+    },
+    {
+      "file": "deploy.sh",
+      "name": "deploy",
+      "kind": "function",
+      "start_line": 25
+    },
+    {
+      "file": "deploy.sh",
+      "name": "env",
+      "kind": "variable",
+      "start_line": 26
+    },
+    {
+      "file": "deploy.sh",
+      "name": "port",
+      "kind": "variable",
+      "start_line": 27
+    },
+    {
+      "file": "deploy.sh",
+      "name": "main",
+      "kind": "function",
+      "start_line": 39
+    },
+    {
+      "file": "deploy.sh",
+      "name": "env",
+      "kind": "variable",
+      "start_line": 40
+    },
+    {
+      "file": "deploy.sh",
+      "name": "port",
+      "kind": "variable",
+      "start_line": 41
+    },
+    {
+      "file": "deploy.sh",
+      "name": "env",
+      "kind": "variable",
+      "start_line": 45
+    },
+    {
+      "file": "deploy.sh",
+      "name": "port",
+      "kind": "variable",
+      "start_line": 46
+    },
+    {
+      "file": "deploy.ps1",
+      "name": "Get-Config",
+      "kind": "function",
+      "start_line": 6
+    },
+    {
+      "file": "deploy.ps1",
+      "name": "Start-App",
+      "kind": "function",
+      "start_line": 18
+    },
+    {
+      "file": "deploy.ps1",
+      "name": "Stop-App",
+      "kind": "function",
+      "start_line": 36
+    },
+    {
+      "file": "deploy.ps1",
+      "name": "Deployment",
+      "kind": "class",
+      "start_line": 43
+    },
+    {
+      "file": "deploy.ps1",
+      "name": "Deployment",
+      "kind": "constructor",
+      "start_line": 47
+    },
+    {
+      "file": "deploy.ps1",
+      "name": "Status",
+      "kind": "method",
+      "start_line": 52
+    },
+    {
+      "file": "Documentation.php",
+      "name": "App\\Orders",
+      "kind": "namespace",
+      "start_line": 3
+    },
+    {
+      "file": "Documentation.php",
+      "name": "OrderService",
+      "kind": "class",
+      "start_line": 11
+    },
+    {
+      "file": "Documentation.php",
+      "name": "DEFAULT_STATUS",
+      "kind": "constant",
+      "start_line": 13
+    },
+    {
+      "file": "Documentation.php",
+      "name": "dispatcher",
+      "kind": "property",
+      "start_line": 16
+    },
+    {
+      "file": "Documentation.php",
+      "name": "instances",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "Documentation.php",
+      "name": "__construct",
+      "kind": "method",
+      "start_line": 20
+    },
+    {
+      "file": "Documentation.php",
+      "name": "create",
+      "kind": "method",
+      "start_line": 25
+    },
+    {
+      "file": "Documentation.php",
+      "name": "$order",
+      "kind": "variable",
+      "start_line": 27
+    },
+    {
+      "file": "Documentation.php",
+      "name": "find",
+      "kind": "method",
+      "start_line": 33
+    },
+    {
+      "file": "Documentation.php",
+      "name": "cancel",
+      "kind": "method",
+      "start_line": 38
+    },
+    {
+      "file": "Documentation.php",
+      "name": "Order",
+      "kind": "class",
+      "start_line": 45
+    },
+    {
+      "file": "Documentation.php",
+      "name": "id",
+      "kind": "property",
+      "start_line": 47
+    },
+    {
+      "file": "Documentation.php",
+      "name": "status",
+      "kind": "property",
+      "start_line": 48
+    },
+    {
+      "file": "Documentation.php",
+      "name": "__construct",
+      "kind": "method",
+      "start_line": 50
+    },
+    {
+      "file": "Documentation.php",
+      "name": "setStatus",
+      "kind": "method",
+      "start_line": 56
+    },
+    {
+      "file": "Documentation.php",
+      "name": "find",
+      "kind": "method",
+      "start_line": 61
+    },
+    {
+      "file": "Documentation.php",
+      "name": "order_total",
+      "kind": "function",
+      "start_line": 67
+    },
+    {
+      "file": "Documentation.php",
+      "name": "$total",
+      "kind": "variable",
+      "start_line": 69
+    },
+    {
+      "file": "Orders.pm",
+      "name": "Orders",
+      "kind": "class",
+      "start_line": 1
+    },
+    {
+      "file": "Orders.pm",
+      "name": "VERSION",
+      "kind": "constant",
+      "start_line": 8
+    },
+    {
+      "file": "Orders.pm",
+      "name": "name",
+      "kind": "property",
+      "start_line": 10
+    },
+    {
+      "file": "Orders.pm",
+      "name": "items",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "Orders.pm",
+      "name": "add_item",
+      "kind": "method",
+      "start_line": 13
+    },
+    {
+      "file": "Orders.pm",
+      "name": "item",
+      "kind": "variable",
+      "start_line": 14
+    },
+    {
+      "file": "Orders.pm",
+      "name": "total",
+      "kind": "method",
+      "start_line": 19
+    },
+    {
+      "file": "Orders.pm",
+      "name": "sum",
+      "kind": "variable",
+      "start_line": 21
+    },
+    {
+      "file": "Orders.pm",
+      "name": "as_string",
+      "kind": "method",
+      "start_line": 28
+    },
+    {
+      "file": "Orders.pm",
+      "name": "_normalize",
+      "kind": "method",
+      "start_line": 33
+    },
+    {
+      "file": "Orders.pm",
+      "name": "item",
+      "kind": "variable",
+      "start_line": 34
+    },
+    {
+      "file": "Orders.pm",
+      "name": "import_legacy",
+      "kind": "method",
+      "start_line": 39
+    },
+    {
+      "file": "Orders.pm",
+      "name": "class",
+      "kind": "variable",
+      "start_line": 40
+    },
+    {
+      "file": "Orders.pm",
+      "name": "file",
+      "kind": "variable",
+      "start_line": 40
+    },
+    {
+      "file": "Orders.pm",
+      "name": "fh",
+      "kind": "variable",
+      "start_line": 41
+    },
+    {
+      "file": "Orders.pm",
+      "name": "rows",
+      "kind": "variable",
+      "start_line": 42
+    },
+    {
+      "file": "app.lua",
+      "name": "config",
+      "kind": "variable",
+      "start_line": 1
+    },
+    {
+      "file": "app.lua",
+      "name": "Order",
+      "kind": "variable",
+      "start_line": 3
+    },
+    {
+      "file": "app.lua",
+      "name": "Order.new",
+      "kind": "method",
+      "start_line": 6
+    },
+    {
+      "file": "app.lua",
+      "name": "Order:add_item",
+      "kind": "method",
+      "start_line": 14
+    },
+    {
+      "file": "app.lua",
+      "name": "Order:total",
+      "kind": "method",
+      "start_line": 18
+    },
+    {
+      "file": "app.lua",
+      "name": "sum",
+      "kind": "variable",
+      "start_line": 19
+    },
+    {
+      "file": "app.lua",
+      "name": "OrderBook",
+      "kind": "variable",
+      "start_line": 26
+    },
+    {
+      "file": "app.lua",
+      "name": "OrderBook.new",
+      "kind": "method",
+      "start_line": 29
+    },
+    {
+      "file": "app.lua",
+      "name": "OrderBook:submit",
+      "kind": "method",
+      "start_line": 33
+    },
+    {
+      "file": "app.lua",
+      "name": "OrderBook:find_by_customer",
+      "kind": "method",
+      "start_line": 39
+    },
+    {
+      "file": "app.lua",
+      "name": "M",
+      "kind": "variable",
+      "start_line": 48
+    },
+    {
+      "file": "app.lua",
+      "name": "M.process",
+      "kind": "method",
+      "start_line": 54
+    },
+    {
+      "file": "app.lua",
+      "name": "book",
+      "kind": "variable",
+      "start_line": 55
+    },
+    {
+      "file": "analysis.R",
+      "name": "GLOBAL_BATCH_SIZE",
+      "kind": "constant",
+      "start_line": 6
+    },
+    {
+      "file": "analysis.R",
+      "name": "order_total",
+      "kind": "function",
+      "start_line": 9
+    },
+    {
+      "file": "analysis.R",
+      "name": "OrderBook",
+      "kind": "class",
+      "start_line": 13
+    },
+    {
+      "file": "analysis.R",
+      "name": "initialize",
+      "kind": "method",
+      "start_line": 17
+    },
+    {
+      "file": "analysis.R",
+      "name": "add_order",
+      "kind": "method",
+      "start_line": 24
+    },
+    {
+      "file": "analysis.R",
+      "name": "summary",
+      "kind": "method",
+      "start_line": 27
+    },
+    {
+      "file": "analysis.R",
+      "name": "analyze",
+      "kind": "function",
+      "start_line": 35
+    },
+    {
+      "file": "analysis.R",
+      "name": "plot_orders",
+      "kind": "function",
+      "start_line": 42
+    },
+    {
+      "file": "analysis.R",
+      "name": "p",
+      "kind": "variable",
+      "start_line": 43
+    },
+    {
+      "file": "analysis.R",
+      "name": "compute_metrics",
+      "kind": "function",
+      "start_line": 48
+    },
+    {
+      "file": "analysis.R",
+      "name": "summary.OrderBook",
+      "kind": "method",
+      "start_line": 57
+    },
+    {
+      "file": "analysis.R",
+      "name": "model",
+      "kind": "variable",
+      "start_line": 61
+    },
+    {
+      "file": "appsettings.json",
+      "name": "name",
+      "kind": "property",
+      "start_line": 2
+    },
+    {
+      "file": "appsettings.json",
+      "name": "version",
+      "kind": "property",
+      "start_line": 3
+    },
+    {
+      "file": "appsettings.json",
+      "name": "port",
+      "kind": "property",
+      "start_line": 4
+    },
+    {
+      "file": "appsettings.json",
+      "name": "debug",
+      "kind": "property",
+      "start_line": 5
+    },
+    {
+      "file": "appsettings.json",
+      "name": "environments",
+      "kind": "class",
+      "start_line": 6
+    },
+    {
+      "file": "appsettings.json",
+      "name": "dev",
+      "kind": "class",
+      "start_line": 7
+    },
+    {
+      "file": "appsettings.json",
+      "name": "url",
+      "kind": "property",
+      "start_line": 7
+    },
+    {
+      "file": "appsettings.json",
+      "name": "logLevel",
+      "kind": "property",
+      "start_line": 7
+    },
+    {
+      "file": "appsettings.json",
+      "name": "prod",
+      "kind": "class",
+      "start_line": 8
+    },
+    {
+      "file": "appsettings.json",
+      "name": "url",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "appsettings.json",
+      "name": "logLevel",
+      "kind": "property",
+      "start_line": 8
+    },
+    {
+      "file": "appsettings.json",
+      "name": "database",
+      "kind": "class",
+      "start_line": 10
+    },
+    {
+      "file": "appsettings.json",
+      "name": "host",
+      "kind": "property",
+      "start_line": 11
+    },
+    {
+      "file": "appsettings.json",
+      "name": "pool",
+      "kind": "class",
+      "start_line": 12
+    },
+    {
+      "file": "appsettings.json",
+      "name": "maxConnections",
+      "kind": "property",
+      "start_line": 13
+    },
+    {
+      "file": "appsettings.json",
+      "name": "minConnections",
+      "kind": "property",
+      "start_line": 14
+    },
+    {
+      "file": "appsettings.json",
+      "name": "features",
+      "kind": "variable",
+      "start_line": 17
+    },
+    {
+      "file": "appsettings.json",
+      "name": "name",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "appsettings.json",
+      "name": "enabled",
+      "kind": "property",
+      "start_line": 18
+    },
+    {
+      "file": "appsettings.json",
+      "name": "name",
+      "kind": "property",
+      "start_line": 19
+    },
+    {
+      "file": "appsettings.json",
+      "name": "enabled",
+      "kind": "property",
+      "start_line": 19
+    },
+    {
+      "file": "appsettings.json",
+      "name": "appsettings",
+      "kind": "module",
+      "start_line": 1
+    },
+    {
+      "file": "README.md",
+      "name": "Order API",
+      "kind": "type",
+      "start_line": 1
+    },
+    {
+      "file": "README.md",
+      "name": "Installation",
+      "kind": "type",
+      "start_line": 5
+    },
+    {
+      "file": "README.md",
+      "name": "Usage",
+      "kind": "type",
+      "start_line": 12
+    },
+    {
+      "file": "README.md",
+      "name": "API Reference",
+      "kind": "type",
+      "start_line": 21
+    },
+    {
+      "file": "README.md",
+      "name": "createOrder(input)",
+      "kind": "type",
+      "start_line": 23
+    },
+    {
+      "file": "README.md",
+      "name": "Configuration",
+      "kind": "type",
+      "start_line": 32
+    },
+    {
+      "file": "README.md",
+      "name": "Contributing",
+      "kind": "type",
+      "start_line": 36
+    },
+    {
+      "file": "Makefile",
+      "name": "CC",
+      "kind": "constant",
+      "start_line": 1
+    },
+    {
+      "file": "Makefile",
+      "name": "CFLAGS",
+      "kind": "constant",
+      "start_line": 2
+    },
+    {
+      "file": "Makefile",
+      "name": "APP",
+      "kind": "constant",
+      "start_line": 3
+    },
+    {
+      "file": "Makefile",
+      "name": "SRCS",
+      "kind": "constant",
+      "start_line": 4
+    },
+    {
+      "file": "Makefile",
+      "name": "all",
+      "kind": "function",
+      "start_line": 8
+    },
+    {
+      "file": "Makefile",
+      "name": "$(APP)",
+      "kind": "function",
+      "start_line": 10
+    },
+    {
+      "file": "Makefile",
+      "name": "build",
+      "kind": "function",
+      "start_line": 13
+    },
+    {
+      "file": "Makefile",
+      "name": "test",
+      "kind": "function",
+      "start_line": 15
+    },
+    {
+      "file": "Makefile",
+      "name": "clean",
+      "kind": "function",
+      "start_line": 18
+    },
+    {
+      "file": "Makefile",
+      "name": "install",
+      "kind": "function",
+      "start_line": 21
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.827Z",
+    "contentSha256": "1fba274baea3a43ffa7884163175365d44a9bbbf6168f6fb3599c9c2cb87dac0"
+  }
+}

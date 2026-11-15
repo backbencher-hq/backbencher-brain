@@ -73,7 +73,7 @@ const check = (name: string, ok: boolean, detail: string) => {
 // of the checkpoint, not of the content. Corpus files are used anyway so the number of
 // edges in run 1 is non-zero and the reader can see the tally vanish rather than merely
 // start absent.
-const corpusRoot = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const corpusRoot = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const samples = [
   "kong/kong/pdk/log.lua",
   "kong/kong/tools/table.lua",

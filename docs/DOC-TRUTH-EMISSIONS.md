@@ -88,14 +88,14 @@ None.
 | elixir | `calls implements uses imports exports contains references overrides instantiates mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 10 rows |
 | erlang | `calls implements uses imports exports contains references instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 71, 14 rows |
 | fsharp | `calls extends implements uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 53, 11 rows |
-| go | `calls extends implements uses imports exports contains references overrides instantiates renders mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 728, 12 rows |
+| go | `calls extends implements uses imports exports contains references overrides instantiates renders mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 963, 12 rows |
 | graphql | `extends implements uses imports exports contains references overrides` | export-site: ExportInfo[] | line 79, 14 rows |
 | groovy | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 136, 11 rows |
 | haskell | `calls extends implements uses imports exports contains references overrides instantiates decorates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 14 rows |
 | hcl | `calls extends uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 14 rows |
 | html | `extends uses imports contains references overrides` | import-site: ImportInfo[], export-site: ExportInfo[] | line 184, 14 rows |
 | java | `calls extends implements uses imports exports contains references overrides instantiates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 12 rows |
-| javascript | `calls extends uses imports exports contains references overrides instantiates decorates renders mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 13 rows |
+| javascript | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 13 rows |
 | json | `calls extends implements uses imports exports contains references overrides` | import-site: ImportInfo[], export-site: ExportInfo[] | line 70, 10 rows |
 | julia | `calls extends uses imports exports contains references overrides instantiates decorates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 45, 14 rows |
 | kotlin | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 11 rows |
@@ -106,7 +106,7 @@ None.
 | nim | `calls extends implements uses imports exports contains references overrides instantiates decorates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 694, 12 rows |
 | objective-c | `calls extends implements uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 91, 11 rows |
 | perl | `calls extends implements uses imports exports contains references overrides instantiates mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 61, 14 rows |
-| php | `calls extends implements uses imports exports contains references overrides instantiates mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 60, 14 rows |
+| php | `calls extends implements uses imports exports contains references overrides instantiates mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 157, 14 rows |
 | powershell | `calls extends implements uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 90, 14 rows |
 | protobuf | `imports exports contains references overrides` | import-site: ImportInfo[] | line 182, 16 rows |
 | python | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 14 rows |
@@ -120,7 +120,7 @@ None.
 | svelte | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 14 rows |
 | swift | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 11 rows |
 | toml | `imports exports contains references` | — | line 142, 14 rows |
-| typescript | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 14 rows |
+| typescript | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 60, 14 rows |
 | vb | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[] | line 158, 14 rows |
 | vba | `calls implements uses imports exports contains references instantiates decorates` | — | line 100, 14 rows |
 | vue | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 91, 14 rows |

@@ -1,7 +1,7 @@
 {
   "probe": "M59.MTX",
   "at": "2026-09-19T02:29:17.489Z",
-  "command": "$HOME/.nvm/versions/node/v22.22.1/bin/node $HOME/mcp/backbencher-brain/script/m59/matrix-tool-language.ts --langs=vue,svelte,xml --files=150 --out=validation/m59/results/matrix-tool-language.web2.json",
+  "command": "/home/ishaq2321/.nvm/versions/node/v22.22.1/bin/node /home/ishaq2321/mcp/backbencher-brain/script/m59/matrix-tool-language.ts --langs=vue,svelte,xml --files=150 --out=validation/m59/results/matrix-tool-language.web2.json",
   "commit": "e024766d02ad8c10e2552f3147e189dde5402520",
   "scope": "bb_graph driven through the REAL MCP handler, on 150-file slices of real corpus repos; bb_analyze cells recorded as output-shape notes; predicate is a NECESSARY condition (lower bound), so \"consistent\" is never proof of correctness",
   "predicateSelfTest": {

@@ -1,0 +1,7 @@
+{
+  "fixtureId": "typescript/mapped-type-flag",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the isMappedType fix: mapped_type_clause descendant detection with negative control.",
+  "forbidRelationships": []
+}

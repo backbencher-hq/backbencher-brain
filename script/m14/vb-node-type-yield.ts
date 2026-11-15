@@ -50,7 +50,7 @@ const GRAMMAR = process.env.BB_LANG_GRAMMAR ?? "grammars/tree-sitter-vbnet/gramm
 const ANALYZER = process.env.BB_LANG_ANALYZER ?? "src/ast/real-vb-analyzer.ts"
 const WASM = process.env.BB_VB_WASM ?? "wasm/tree-sitter-vbnet.wasm"
 const CORE = process.env.BB_TS_CORE ?? "wasm/tree-sitter.wasm"
-const ROOTS = (process.env.BB_VB_ROOTS ?? "$HOME/fixtures/vb-corpus").split(",").filter(Boolean)
+const ROOTS = (process.env.BB_VB_ROOTS ?? "/home/ishaq2321/bb_tests/vb-corpus").split(",").filter(Boolean)
 /** Cap so a full-corpus run stays a few minutes; the sample is deterministic. */
 const LIMIT = parseInt(process.env.BB_VB_YIELD_LIMIT ?? "600", 10)
 

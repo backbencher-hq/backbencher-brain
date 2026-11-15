@@ -1,0 +1,53 @@
+{
+  "issue": "RUST-MR — a macro invocation's NAME is a callee, not a read",
+  "note": "Pre-fix, a USE-IMPORTED macro invoked by name published two edges for one name at one line: `calls -> bail` (RUST-D2 owns the invocation) AND `uses -> bail` (R1's read sweep had no callee guard for `macro_invocation`, only for `call_expression`). Measured 269 sites over a 550-file slice of five real corpora. The F5 `uses` oracle mirrored the same over-reach, so F5 agreed with the fabrication and could not see it. The FORBID rows are the load-bearing half: an expectation cannot assert an edge's absence, so the defect is pinned negatively, while the `calls` rows keep the invocation itself published. R7_AUDIT_FLEET (2026-10-05) adds `confidenceMax: 0.69` and the two metadata keys to the `LIMIT` row. The decision this file records -- that a macro's arguments are reads and keep publishing `uses` -- is KEPT. What was wrong was the PRICE: the edge published confidence 1.0, which claims the macro's expansion is known, and it is not. tree-sitter-rust parses a macro invocation's argument as an opaque `token_tree` precisely because whether a token becomes a read depends on the expansion, which this analyzer does not perform. Honesty contract §4 requires any edge under 1.0 to carry a machine-readable reason code and to be countable, so it now carries both: `macroArgument: true`, `reasonCode: unexpanded-macro-argument`, and 0.6. Measured on the lane corpus: 36 of 29,660 edges (0.12%), reported per file as `metadata.macroArgumentReads`. A pin that only said 'the edge exists' would have let 1.0 through forever, which is the same hole as the `calls`-confidence mutant this lane already caught once (see rust/trait-override, rationale 6).",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "do_thing",
+      "line_number": 21
+    },
+    {
+      "type": "calls",
+      "from": "go",
+      "target": "bail",
+      "line_number": 24
+    },
+    {
+      "type": "calls",
+      "from": "arg_reads",
+      "target": "sum_all"
+    },
+    {
+      "type": "uses",
+      "from": "arg_reads",
+      "target": "LIMIT",
+      "confidenceMax": 0.69,
+      "meta.macroArgument": true,
+      "meta.reasonCode": "unexpanded-macro-argument"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "go",
+      "target": "bail",
+      "line_number": 24
+    },
+    {
+      "type": "uses",
+      "target": "bail"
+    },
+    {
+      "type": "uses",
+      "from": "go",
+      "target": "do_thing"
+    },
+    {
+      "type": "uses",
+      "from": "arg_reads",
+      "target": "sum_all"
+    }
+  ]
+}

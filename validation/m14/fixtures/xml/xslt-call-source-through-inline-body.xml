@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSLT 1.0 §6, quoted verbatim in the expectation file:
+
+    "An xsl:call-template element invokes a template by name; it has a required
+     name attribute that identifies the template to be invoked."
+
+  and §2.4 on what a stylesheet's top level may contain:
+
+    "the children of the xsl:stylesheet element consist of xsl:template elements,
+     xsl:param elements, xsl:literal-result-element elements, and xsl:variable,
+     xsl:strip-space, xsl:preserve-space elements, and any namespace declaration
+     or whitespace."
+
+  FIVE CALLERS, because xml/xslt-named-template-calls already pins the easy shape — a
+  call sitting DIRECTLY inside a named xsl:template, where "the element one level out"
+  happens to already be the right answer. That fixture passed unchanged against the
+  defect this file exists to catch, which is the reason this file exists at all.
+
+  A caller is the nearest enclosing NAMED template, or a variable when the call sits
+  in a variable's body, because a variable body is an instruction sequence and
+  XSLT 1.0 §6 makes the sequence doing the calling. An UNNAMED inline instruction —
+  xsl:for-each, xsl:if — is not a caller and must never be published as one.
+
+  1. through an xsl:for-each      the 90.3%-shaped case in the corpus
+  2. through an xsl:if            a second unnamed inline instruction
+  3. in a variable body at top level   a variable IS a legitimate caller
+  4. directly in a named template     the shape the older fixture already covers, kept
+                                   so a rule that ONLY handles nesting regresses here
+  5. at stylesheet top level       not executable per §2.4, and therefore no edge at all
+-->
+<xsl:stylesheet version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:template name="loops">
+    <xsl:for-each select="item">
+      <xsl:call-template name="target"/>
+    </xsl:for-each>
+    <xsl:if test="count(item) &gt; 1">
+      <xsl:call-template name="guarded"/>
+    </xsl:if>
+  </xsl:template>
+  <xsl:variable name="seed">
+    <xsl:call-template name="fromVariable"/>
+  </xsl:variable>
+  <xsl:template name="direct">
+    <xsl:call-template name="straight"/>
+  </xsl:template>
+  <xsl:call-template name="stray"/>
+  <xsl:template name="target">
+    <p>target</p>
+  </xsl:template>
+  <xsl:template name="guarded">
+    <p>guarded</p>
+  </xsl:template>
+  <xsl:template name="fromVariable">
+    <p>fromVariable</p>
+  </xsl:template>
+  <xsl:template name="straight">
+    <p>straight</p>
+  </xsl:template>
+</xsl:stylesheet>

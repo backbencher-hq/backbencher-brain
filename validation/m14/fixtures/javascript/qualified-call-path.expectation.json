@@ -1,0 +1,21 @@
+{
+  "fixtureId": "javascript/qualified-call-path",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "FAMILY CONTRACT (#383): symbol-level qualified_calls = dotted call paths WITHOUT argument text, attached to the enclosing function. The JS analyzer emitted NO qualified_calls at all - the only family member missing the payload.",
+  "expectSymbols": [
+    {
+      "name": "h",
+      "kind": "function"
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "h",
+      "includes": [
+        "service.save",
+        "db.list.map"
+      ]
+    }
+  ]
+}

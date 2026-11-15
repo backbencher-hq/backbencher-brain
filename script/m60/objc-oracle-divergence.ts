@@ -47,7 +47,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { deriveObjcEdges } from "../m14/differential"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
 
 /** The two classes of disagreement, and which side is right in each. Stated as data so
  *  the report is generated from the classification rather than from prose. */

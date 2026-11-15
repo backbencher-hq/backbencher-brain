@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-13T03:04:37.893Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/nomad",
+  "tag": "nomad",
+  "admittedFiles": 967,
+  "sampledFiles": 150,
+  "parseCleanFiles": 149,
+  "totals": {
+    "files": 149,
+    "writes": 1,
+    "readsInClasses": 364,
+    "correct": 0,
+    "crossClass": 0,
+    "noWriter": 364,
+    "conflictFields": 0
+  },
+  "note": "Class-scoped and tree-only. crossClass = a `this.<f>.<m>` read inside class C where exactly one OTHER class D writes `this.<f> = new T()`. The analyzer keys fieldTypes by FIELD NAME alone (collectLocalReceiverTypes), so C's read is published with owner=T — a class C has no relationship with. If T declares `m`, the store's owner pass binds C's edge to T.m.",
+  "examples": []
+}

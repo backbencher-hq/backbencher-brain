@@ -1,0 +1,25 @@
+{
+  "fixtureId": "go/r7-empty-endpoints",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "R7 forbids an EMPTY edge endpoint, and `script/m14/go-endpoint-defects.ts` found 4 `references` edges with an empty TARGET on go-stdlib (11,788 files through the production parseFile) — every one a compiler-rejection fixture where the pinned grammar produced an ERROR or MISSING node where a type was expected, so the name read off it was empty: syntax/testdata/tparams.go (`func f[ /* ERROR empty type parameter list */ ]()`), internal/types/testdata/check/vardecl.go, internal/types/testdata/examples/functions.go, internal/types/testdata/fixedbugs/issue45635.go. The fix is ONE gate at a choke point rather than four guards at push sites, because each emitter reads a name from a node it believes is well formed and the grammar does not always deliver one — and a guard per site is exactly how the PHASE-3b import guard was bypassed by a raw-string spelling (see go/imports-empty-path). THE EXPECTATIONS CARRY THE SHAPE, because the gate must not be implemented as 'drop the file' or 'stop after the first error': the malformed generic must cost EXACTLY one edge, the well-formed generics either side of it must still emit their `references` and `contains` edges, and a declaration AFTER the malformed one must still be exported and contained. Every row below is authored from a re-probed emission (script/m14/tmp/go-fixture-rels.mts), not predicted.",
+  "expectRelationships": [
+    { "type": "references", "source": "Pair", "target": "A", "line_number": 42 },
+    { "type": "references", "source": "Pair", "target": "B", "line_number": 43 },
+    { "type": "references", "source": "MakePair", "target": "A", "line_number": 47 },
+    { "type": "references", "source": "MakePair", "target": "B", "line_number": 47 },
+    { "type": "contains", "source": "Pair", "target": "First", "line_number": 42 },
+    { "type": "contains", "source": "Pair", "target": "Second", "line_number": 43 },
+    { "type": "contains", "source": "After", "target": "N", "line_number": 60, "comment": "AFTER the malformed declaration. Go is not C: a syntax error upstream does not silence a declaration downstream, and a guard that stopped emitting at the first error would drop this row." },
+    { "type": "exports", "source": "gofixture", "target": "Broken", "line_number": 54, "comment": "the malformed declaration is still a package-scope declaration with an exported name, so the SYMBOL is published even though its unreadable type produced no edge" },
+    { "type": "exports", "source": "gofixture", "target": "After", "line_number": 59 }
+  ],
+  "expectMetadata": [
+    { "r7DroppedEdges": 1, "comment": "exactly the one `references` edge whose type name was unreadable" },
+    { "invalidImportPathCount": 0, "comment": "the control: a VALID file must drop nothing, and a gate that drops rows on good input is indistinguishable from one that is too aggressive" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "", "comment": "R7: the empty endpoint this fixture exists to forbid" },
+    { "type": "references", "source": "", "comment": "R7: an empty SOURCE is the same violation in the other direction" }
+  ]
+}

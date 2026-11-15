@@ -1,0 +1,87 @@
+{
+  "fixtureId": "typescript/imported-binding-claim",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Lines read off `nl -ba` of this file: imports 9-11 (external item, namespace, relative item), externalHelper.run() 20, ns.readFileSync 21, localThing.run 25, d.run 29. The claim marker is an OBJECT (not pinnable by reference); the analyzer publishes scalar mirrors for fixtures and the object for the arbiter: `meta.importedBindingSpecifier` / `meta.importedBindingName`, plus the imports-edge evidence as an ARRAY (`meta.importedBindings`).",
+  "rationale": "PINS THE IMPORTED-BINDING CLAIM IN BOTH DIRECTIONS. Positive: a call through a binding imported from an EXTERNAL package (`externalHelper.run()`) and through a NAMESPACE binding of a node builtin (`ns.readFileSync`) carry `metadata.importedBinding` with the specifier and the receiver-root binding — the rows the name model cannot resolve and the index-side external claims cannot reach (namespace imports and shadowed packages have no `module:item` spelling to claim from). The imports edges publish the evidence the arbiter verifies against: `meta.importedBindings` (array of local names) with `meta.module` (the specifier as written). Negative A: `localThing` is imported from a RELATIVE module — project-local, so the claim is withheld (claiming it would launder a resolvable edge as a binding). Negative B: `d.run()` has a receiver whose type the file declares — not an imported binding, so no marker. This pair is what makes the claim falsifiable from both sides. RE-EXPORT EXCLUSION (2026-10-19, whole-population defect round): an export-from edge is a module dependency whose item is the name asked for, not a local binding — the first emission was publishing it as import evidence and could fabricate claims from a barrel file. The edge carries `metadata.isReExport: true` and NO `importedBindings`, pinned positive+forbid.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "useExternal",
+      "target": "run",
+      "line_number": 20,
+      "meta.importedBindingSpecifier": "some-external-pkg",
+      "meta.importedBindingName": "externalHelper"
+    },
+    {
+      "type": "calls",
+      "from": "useExternal",
+      "target": "readFileSync",
+      "line_number": 21,
+      "meta.importedBindingSpecifier": "node:fs",
+      "meta.importedBindingName": "ns"
+    },
+    {
+      "type": "calls",
+      "from": "useLocalImport",
+      "target": "run",
+      "line_number": 25,
+      "meta.importedBindingSpecifier": null,
+      "meta.importedBindingName": null
+    },
+    {
+      "type": "imports",
+      "from": "imported-binding-claim",
+      "target": "some-external-pkg:helper",
+      "line_number": 11,
+      "meta.module": "some-external-pkg",
+      "meta.importedBindings": [
+        "externalHelper"
+      ]
+    },
+    {
+      "type": "imports",
+      "from": "imported-binding-claim",
+      "target": "localThing",
+      "line_number": 13,
+      "meta.module": "./local-module",
+      "meta.importedBindings": [
+        "localThing"
+      ]
+    },
+    {
+      "type": "imports",
+      "from": "imported-binding-claim",
+      "target": "some-external-pkg:reExported",
+      "line_number": 34,
+      "meta.module": "some-external-pkg",
+      "meta.isReExport": true,
+      "note": "RE-EXPORT DEPENDENCY: metadata.isReExport true and NO importedBindings key — this edge binds no local name, so it is not import evidence (the pre-fix evidence pass published [reExported] here and could fabricate claims)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "useLocalImport",
+      "target": "run",
+      "meta.importedBindingSpecifier": "some-external-pkg",
+      "note": "a project-local import must never be claimed as an external binding"
+    },
+    {
+      "type": "calls",
+      "from": "useDeclaredReceiver",
+      "target": "run",
+      "meta.importedBindingName": "d",
+      "note": "a receiver the file declares is not an imported binding"
+    },
+    {
+      "type": "imports",
+      "from": "imported-binding-claim",
+      "target": "some-external-pkg:reExported",
+      "meta.importedBindings": [
+        "reExported"
+      ],
+      "note": "a re-export item is the name ASKED FOR, never a local binding"
+    }
+  ]
+}

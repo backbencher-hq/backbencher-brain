@@ -1,0 +1,14 @@
+{
+  "fixtureId": "java/chained-field-access",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Method invocation on a chain: the call target is the FINAL segment (name). Intermediate segments are separate invocations/fields and must not be collapsed or skipped.",
+  "expectSymbols": [
+    { "name": "Report", "kind": "class" },
+    { "name": "render" },
+    { "name": "config" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "render", "target": "name" }
+  ]
+}

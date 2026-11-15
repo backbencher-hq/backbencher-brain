@@ -1,0 +1,60 @@
+{
+  "fixtureId": "rust/scoped-and-turbofish",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the four defect classes found in the ripgrep differential residuals (2026-08-28): (1) scoped enum-variant struct literals (MatchStrategy::Suffix { .. }) must emit instantiates to the VARIANT LEAF (Suffix), not silently drop; (2) bare tuple-struct constructors (Hasher(0)) must emit instantiates Hasher; (3) ::new receivers emit instantiates of the receiver TYPE; (4) turbofish calls (x.parse::<u32>()) must target the callee LEAF (parse), never the whole base text. A regression on any of these fails this fixture.",
+  "expectSymbols": [
+    {
+      "name": "MatchStrategy",
+      "kind": "enum"
+    },
+    {
+      "name": "Suffix",
+      "kind": "enum_member"
+    },
+    {
+      "name": "Hasher",
+      "kind": "struct"
+    },
+    {
+      "name": "new",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "instantiates",
+      "target": "Suffix"
+    },
+    {
+      "type": "instantiates",
+      "target": "Literal"
+    },
+    {
+      "type": "instantiates",
+      "target": "Hasher"
+    },
+    {
+      "type": "calls",
+      "target": "parse"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "cap.parse"
+    },
+    {
+      "type": "calls",
+      "target": "x.parse::<u32>"
+    },
+    {
+      "type": "calls",
+      "target": "(self.0)"
+    },
+    {
+      "type": "instantiates",
+      "target": "MatchStrategy"
+    }
+  ]
+}

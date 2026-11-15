@@ -1,0 +1,4317 @@
+{
+  "population": {
+    "parsed": 400,
+    "files": 400,
+    "edges": 9412
+  },
+  "outcome": {
+    "contains": {
+      "resolved": 5753
+    },
+    "exports": {
+      "resolved": 542,
+      "ambBoth": 294,
+      "ambDeclOnly": 363
+    },
+    "references": {
+      "unresolved": 1817,
+      "resolved": 256,
+      "ambDeclOnly": 190
+    },
+    "uses": {
+      "externalVerified": 104
+    },
+    "imports": {
+      "unresolved": 81,
+      "ambBoth": 1
+    },
+    "overrides": {
+      "unresolved": 10,
+      "ambDeclOnly": 1
+    }
+  },
+  "intent": {
+    "contains": {
+      "intended": 5753
+    },
+    "exports": {
+      "intended": 1199
+    },
+    "references": {
+      "noDeclaration": 1786,
+      "arbitraryTwin": 118,
+      "sameFileUnproven": 359
+    },
+    "uses": {
+      "noDeclaration": 104
+    },
+    "imports": {
+      "noDeclaration": 81,
+      "sameFileUnproven": 1
+    },
+    "overrides": {
+      "noDeclaration": 10,
+      "arbitraryTwin": 1
+    }
+  },
+  "unresolvedBuckets": {
+    "other root (terraform_cli)": 2,
+    "provider address (provider.<name>[.<alias>])": 22,
+    "variable address (var.<name>)": 295,
+    "module address (module.<name>[.<output>])": 278,
+    "locals address (local.<name>)": 355,
+    "other root (step)": 296,
+    "other root (matrix)": 169,
+    "resource address (<type>.<name>[.<attr>])": 40,
+    "data source address (data.<type>.<name>)": 30,
+    "other root (aws_instance)": 4,
+    "other root (enos_local_exec)": 1,
+    "other root (aws_iam_instance_profile)": 2,
+    "other root (equinix_metal_device)": 6,
+    "module-source: relative path (./ or ../)": 53,
+    "other root (attr)": 3,
+    "module-source: remote URL": 5,
+    "module-source: other": 2,
+    "other root (aws_route53_zone)": 1,
+    "other root (aws_ssm_parameter)": 9,
+    "other root (aws_iam_policy)": 3,
+    "module-source: registry address (ns/name/provider)": 21,
+    "other root (aws_cloudwatch_log_group)": 2,
+    "other root (aws_iam_role)": 2,
+    "other root (kubernetes_manifest)": 1,
+    "other root (spacelift_worker_pool)": 2,
+    "other root (outputs)": 3,
+    "other root (aws_redshiftserverless_endpoint_access)": 7,
+    "other root (aws_redshiftserverless_namespace)": 3,
+    "other root (aws_redshiftserverless_workgroup)": 4,
+    "override target: no declaration anywhere in the project": 10,
+    "other root (foo)": 1,
+    "other root (test_resource)": 2,
+    "other root (testing_resource)": 1,
+    "other root (stack)": 2,
+    "other root (component)": 3,
+    "other root (include)": 2,
+    "other root (dependency)": 14,
+    "other root (values)": 7,
+    "other root (global)": 103,
+    "other root (quality)": 142
+  },
+  "price": {
+    "wouldAnswer": 321,
+    "sameFile": 166,
+    "crossFile": 3,
+    "ambiguous": 152,
+    "none": 1496,
+    "byConstruct": {
+      "other root (terraform_cli)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "provider address (provider.<name>[.<alias>])": {
+        "n": 22,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "variable address (var.<name>)": {
+        "n": 295,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "module address (module.<name>[.<output>])": {
+        "n": 278,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "locals address (local.<name>)": {
+        "n": 355,
+        "same": 166,
+        "cross": 3,
+        "amb": 152
+      },
+      "other root (step)": {
+        "n": 296,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (matrix)": {
+        "n": 169,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "resource address (<type>.<name>[.<attr>])": {
+        "n": 40,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "data source address (data.<type>.<name>)": {
+        "n": 30,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_instance)": {
+        "n": 4,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (enos_local_exec)": {
+        "n": 1,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_iam_instance_profile)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (equinix_metal_device)": {
+        "n": 6,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (attr)": {
+        "n": 3,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_route53_zone)": {
+        "n": 1,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_ssm_parameter)": {
+        "n": 9,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_iam_policy)": {
+        "n": 3,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_cloudwatch_log_group)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_iam_role)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (kubernetes_manifest)": {
+        "n": 1,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (spacelift_worker_pool)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (outputs)": {
+        "n": 3,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_redshiftserverless_endpoint_access)": {
+        "n": 7,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_redshiftserverless_namespace)": {
+        "n": 3,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (aws_redshiftserverless_workgroup)": {
+        "n": 4,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (foo)": {
+        "n": 1,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (test_resource)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (testing_resource)": {
+        "n": 1,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (stack)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (component)": {
+        "n": 3,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (include)": {
+        "n": 2,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (dependency)": {
+        "n": 14,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (values)": {
+        "n": 7,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (global)": {
+        "n": 103,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      },
+      "other root (quality)": {
+        "n": 142,
+        "same": 0,
+        "cross": 0,
+        "amb": 0
+      }
+    }
+  },
+  "addressCensus": {
+    "locals-attribute-address": 152,
+    "output-address": 221,
+    "resource-address": 114,
+    "data-address": 30,
+    "variable-address": 354,
+    "provider-address": 74,
+    "module-address": 87
+  },
+  "resolvedReferences": [
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 83,
+      "target": "step.find_azs",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 68
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 114,
+      "target": "step.build_boundary_linux",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 101
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 131,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 132,
+      "target": "step.build_boundary_windows",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 110
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 159,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 160,
+      "target": "step.generate_ssh_key",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 189,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 203,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 204,
+      "target": "step.create_db_password",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 182
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 205,
+      "target": "step.build_boundary_linux",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 101
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 206,
+      "target": "step.create_windows_client",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 127
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 207,
+      "target": "step.create_vault_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 156
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 208,
+      "target": "step.read_boundary_license",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 146
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 209,
+      "target": "step.generate_ssh_key",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 250,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 251,
+      "target": "step.create_test_id",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 240
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 263,
+      "target": "step.create_boundary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 200
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 275,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 276,
+      "target": "step.create_rdp_domain_controller",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 277,
+      "target": "step.build_boundary_windows",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 110
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 278,
+      "target": "step.create_boundary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 200
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 304,
+      "target": "step.create_base_infra",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 305,
+      "target": "step.create_rdp_domain_controller",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 326,
+      "target": "step.create_boundary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 200
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 327,
+      "target": "step.create_rdp_domain_controller",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 328,
+      "target": "step.create_rdp_member_server",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 301
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 329,
+      "target": "step.create_windows_worker",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 272
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 330,
+      "target": "step.create_bucket",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 260
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 80,
+      "target": "aws_subnet.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 152,
+      "target": "aws_subnet.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 182,
+      "target": "aws_instance.worker",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 182,
+      "target": "aws_route_table_association.worker_rta",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 78
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 199,
+      "target": "enos_bundle_install.worker",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 222,
+      "target": "enos_bundle_install.worker",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 250,
+      "target": "enos_file.worker_config",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 221
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 251,
+      "target": "aws_vpc_security_group_ingress_rule.worker_to_controller",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 138
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 268,
+      "target": "enos_boundary_start.worker_start",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 248
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 53,
+      "target": "var.image_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 59,
+      "target": "var.container_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 62,
+      "target": "var.database_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 63,
+      "target": "var.user",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 64,
+      "target": "var.password",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 73,
+      "target": "var.port",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 74,
+      "target": "var.port",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 77,
+      "target": "var.user",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 77,
+      "target": "var.database_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 86,
+      "target": "var.network_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 22
+        },
+        {
+          "file": "enos/modules/docker_network/main.tf",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 95,
+      "target": "docker_container.postgres",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 98,
+      "target": "var.container_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 102,
+      "target": "var.user",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 102,
+      "target": "var.password",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 102,
+      "target": "var.container_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 102,
+      "target": "var.database_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 106,
+      "target": "var.user",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 110,
+      "target": "var.password",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 114,
+      "target": "var.database_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 118,
+      "target": "var.port",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_postgres/main.tf",
+      "line": 122,
+      "target": "var.container_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "file": "demo/digitalocean/terraform/main.tf",
+      "line": 15,
+      "target": "var.ssh_keys",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "demo/digitalocean/terraform/main.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "demo/digitalocean/terraform/main.tf",
+      "line": 22,
+      "target": "var.ssh_keys",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "demo/digitalocean/terraform/main.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "demo/digitalocean/terraform/main.tf",
+      "line": 32,
+      "target": "var.ssh_keys",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "demo/digitalocean/terraform/main.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "demo/digitalocean/terraform/main.tf",
+      "line": 41,
+      "target": "var.ssh_keys",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "demo/digitalocean/terraform/main.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "demo/digitalocean/terraform/main.tf",
+      "line": 50,
+      "target": "var.ssh_keys",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "demo/digitalocean/terraform/main.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "demo/digitalocean/terraform/main.tf",
+      "line": 59,
+      "target": "var.ssh_keys",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "demo/digitalocean/terraform/main.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "hcl2template/testdata/hcp_par/top-level-variable-for-bucket-name.pkr.hcl",
+      "line": 7,
+      "target": "var.bucket",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "hcl2template/testdata/hcp_par/top-level-variable-for-bucket-name.pkr.hcl",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "packer_test/core_tests/templates/locals_duplicate.pkr.hcl",
+      "line": 10,
+      "target": "local.test",
+      "construct": "locals address (local.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "packer_test/core_tests/templates/locals_duplicate.pkr.hcl",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 76,
+      "target": "var.elasticsearch_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 78,
+      "target": "var.elasticsearch_permitted_nodes",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 82,
+      "target": "var.elasticsearch_version",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 83,
+      "target": "var.elasticsearch_instance_type",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 84,
+      "target": "var.elasticsearch_instance_count",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 85,
+      "target": "var.elasticsearch_permitted_nodes",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 86,
+      "target": "var.elasticsearch_iam_actions",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 88,
+      "target": "var.elasticsearch_ebs_volume_size",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 89,
+      "target": "var.elasticsearch_encrypt_at_rest_enabled",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 90,
+      "target": "var.elasticsearch_enabled",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/ecs/acm.tf",
+      "line": 14,
+      "target": "var.domain_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/ecs/acm.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/ecs/acm.tf",
+      "line": 18,
+      "target": "var.subject_alternative_names",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/ecs/acm.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 13,
+      "target": "var.github_organization",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "modules/github-webhook/variables.tf",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 17,
+      "target": "var.github_organization",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "modules/github-webhook/variables.tf",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 92,
+      "target": "data.aws_iam_policy_document.ecr_user_policy_doc",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/aws/github-org-ecr/main.tf",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "file": "deprecated/github-actions-runner/providers.tf",
+      "line": 44,
+      "target": "data.aws_eks_cluster.kubernetes",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/github-actions-runner/providers.tf",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "file": "deprecated/github-actions-runner/providers.tf",
+      "line": 45,
+      "target": "data.aws_eks_cluster_auth.kubernetes",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/github-actions-runner/providers.tf",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "file": "deprecated/github-actions-runner/providers.tf",
+      "line": 46,
+      "target": "data.aws_eks_cluster.kubernetes",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/github-actions-runner/providers.tf",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "file": "deprecated/iam-delegated-roles/main.tf",
+      "line": 86,
+      "target": "module.assume_role",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/iam-delegated-roles/main.tf",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "file": "deprecated/iam-delegated-roles/main.tf",
+      "line": 87,
+      "target": "data.aws_iam_policy_document.saml_provider_assume",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/iam-delegated-roles/main.tf",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "file": "deprecated/iam-delegated-roles/main.tf",
+      "line": 95,
+      "target": "data.aws_iam_policy_document.assume_role_aggregated",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/iam-delegated-roles/main.tf",
+          "line": 83
+        }
+      ]
+    },
+    {
+      "file": "deprecated/iam-delegated-roles/main.tf",
+      "line": 103,
+      "target": "aws_iam_role.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "deprecated/iam-delegated-roles/main.tf",
+          "line": 90
+        }
+      ]
+    },
+    {
+      "file": "modules/account-map/modules/roles-to-principals/main.tf",
+      "line": 16,
+      "target": "var.privileged",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "deprecated/securityhub/securityhub/common/variables.tf",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "file": "modules/aws-inspector2/remote-state.tf",
+      "line": 6,
+      "target": "var.account_map_tenant",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "deprecated/securityhub/securityhub/common/variables.tf",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "file": "modules/aws-inspector2/remote-state.tf",
+      "line": 7,
+      "target": "var.root_account_stage",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "deprecated/securityhub/securityhub/common/variables.tf",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "file": "modules/aws-inspector2/remote-state.tf",
+      "line": 8,
+      "target": "var.global_environment",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "deprecated/securityhub/securityhub/common/variables.tf",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "file": "modules/aws-inspector2/remote-state.tf",
+      "line": 9,
+      "target": "var.privileged",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "deprecated/securityhub/securityhub/common/variables.tf",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "file": "modules/bastion/main.tf",
+      "line": 99,
+      "target": "data.aws_ami.bastion_image",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/bastion/main.tf",
+          "line": 77
+        }
+      ]
+    },
+    {
+      "file": "modules/bastion/main.tf",
+      "line": 108,
+      "target": "data.cloudinit_config.config",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/bastion/main.tf",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "file": "modules/ec2-client-vpn/variables.tf",
+      "line": 24,
+      "target": "var.authentication_type",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/ec2-client-vpn/variables.tf",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "modules/ec2-client-vpn/variables.tf",
+      "line": 101,
+      "target": "var.saml_provider_arn",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/ec2-client-vpn/variables.tf",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "file": "modules/ec2-client-vpn/variables.tf",
+      "line": 104,
+      "target": "var.saml_provider_arn",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/ec2-client-vpn/variables.tf",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "file": "modules/ec2-client-vpn/variables.tf",
+      "line": 117,
+      "target": "var.dns_servers",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/ec2-client-vpn/variables.tf",
+          "line": 111
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/cluster/modules/node_group_by_az/main.tf",
+      "line": 27,
+      "target": "data.aws_subnets.private",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/cluster/modules/node_group_by_az/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/external-secrets-operator/remote-state.tf",
+      "line": 5,
+      "target": "var.eks_component_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "modules/eks/tailscale/variables.tf",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/keda/remote-state.tf",
+      "line": 5,
+      "target": "var.eks_component_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "modules/eks/tailscale/variables.tf",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+      "line": 75,
+      "target": "kubernetes_role_v1.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+      "line": 81,
+      "target": "kubernetes_service_account_v1.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+      "line": 210,
+      "target": "kubernetes_secret.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+      "line": 211,
+      "target": "kubernetes_service_account_v1.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+      "line": 212,
+      "target": "kubernetes_role_v1.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+      "line": 213,
+      "target": "kubernetes_role_binding_v1.default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/eks/spacelift-worker-pool/k8s.tf",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 29,
+      "target": "data.aws_iam_policy_document.lambda_cicd_policy",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 31,
+      "target": "module.s3_artifacts_bucket",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 35,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 40,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 41,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 42,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 43,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 52,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 67,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 84,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+      "line": 101,
+      "target": "var.lambda_cicd_policy_configuration",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/github-oidc-role/policy_lambda-cicd.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 20,
+      "target": "var.sqs_notifications",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 35,
+      "target": "var.sqs_notifications",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 47,
+      "target": "module.sqs_queue",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 55,
+      "target": "var.sqs_notifications",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 58,
+      "target": "module.sqs_iam_policy",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 62,
+      "target": "var.sqs_notifications",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 64,
+      "target": "module.sqs_queue",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "modules/lambda/triggers_sqs_queue.tf",
+      "line": 80,
+      "target": "aws_iam_role_policy_attachment.sqs_default",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/lambda/triggers_sqs_queue.tf",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "file": "modules/msk/main.tf",
+      "line": 55,
+      "target": "var.associated_security_group_ids",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "modules/ec2-client-vpn/variables.tf",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "file": "modules/opsgenie-team/datadog-integration.tf",
+      "line": 8,
+      "target": "var.datadog_integration_enabled",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/opsgenie-team/datadog-integration.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/opsgenie-team/datadog-integration.tf",
+      "line": 15,
+      "target": "var.datadog_integration_enabled",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/opsgenie-team/datadog-integration.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "modules/opsgenie-team/datadog-integration.tf",
+      "line": 17,
+      "target": "data.aws_ssm_parameter.opsgenie_team_api_key",
+      "construct": "data source address (data.<type>.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/opsgenie-team/datadog-integration.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "modules/spacelift/spaces/main.tf",
+      "line": 4,
+      "target": "module.space",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/spacelift/spaces/main.tf",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "file": "modules/spacelift/spaces/main.tf",
+      "line": 14,
+      "target": "module.policy",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/spacelift/spaces/main.tf",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "file": "modules/spacelift/spaces/main.tf",
+      "line": 31,
+      "target": "module.space",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "modules/spacelift/spaces/main.tf",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "file": "internal/command/e2etest/testdata/full-workflow-null/main.tf",
+      "line": 21,
+      "target": "null_resource.test.triggers",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/command/e2etest/testdata/full-workflow-null/main.tf",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "file": "internal/command/testdata/dynamic-module-sources/local-source-with-local-value/main.tf",
+      "line": 7,
+      "target": "var.module_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/command/testdata/dynamic-module-sources/local-source-with-local-value/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/command/testdata/plan-import-config-gen/main.tf",
+      "line": 3,
+      "target": "test_instance.foo",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "internal/command/testdata/graph/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/command/testdata/query/duplicate-variables/query.tfquery.hcl",
+      "line": 13,
+      "target": "var.instance_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/command/testdata/query/duplicate-variables/query.tfquery.hcl",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "internal/command/testdata/query/with-variables-in-tf/query.tfquery.hcl",
+      "line": 6,
+      "target": "var.instance_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "internal/command/testdata/query/duplicate-variables/query.tfquery.hcl",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "internal/command/testdata/test/null_value_in_assert/main.tf",
+      "line": 12,
+      "target": "var.interesting_input",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/command/testdata/test/null_value_in_assert/main.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "internal/command/testdata/test/null_value_in_assert/main.tf",
+      "line": 16,
+      "target": "var.null_input",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/command/testdata/test/null_value_in_assert/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "internal/configs/testdata/valid-modules/with-tests-module/main.tf",
+      "line": 7,
+      "target": "var.managed_id",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/configs/testdata/valid-modules/with-tests-module/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "internal/refactoring/testdata/remove-statements/child/main.tf",
+      "line": 19,
+      "target": "module.grandchild",
+      "construct": "module address (module.<name>[.<output>])",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/apply-module-grandchild-provider-inherit/child/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/rpcapi/testdata/sourcebundle/moved/moved.tf",
+      "line": 12,
+      "target": "testing_resource.after",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/rpcapi/testdata/sourcebundle/moved/moved.tf",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "file": "internal/stacks/stackruntime/testdata/mainbundle/test/deferred-action/deferred-action.tfcomponent.hcl",
+      "line": 26,
+      "target": "var.id",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/stacks/stackruntime/testdata/mainbundle/test/deferred-action/deferred-action.tfcomponent.hcl",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "file": "internal/stacks/stackruntime/testdata/mainbundle/test/deferred-action/deferred-action.tfcomponent.hcl",
+      "line": 27,
+      "target": "var.defer",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/stacks/stackruntime/testdata/mainbundle/test/deferred-action/deferred-action.tfcomponent.hcl",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "file": "internal/stacks/stackruntime/testdata/mainbundle/test/with-single-input/deferred-component-for-each/deferred-component-for-each.tfcomponent.hcl",
+      "line": 25,
+      "target": "var.components",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/stacks/stackruntime/testdata/mainbundle/test/with-single-input/deferred-component-for-each/deferred-component-for-each.tfcomponent.hcl",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "file": "internal/terraform/testdata/apply-destroy-module-with-attrs/child/main.tf",
+      "line": 4,
+      "target": "var.vpc_id",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/apply-destroy-module-with-attrs/child/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/terraform/testdata/apply-multi-depose-create-before-destroy/main.tf",
+      "line": 8,
+      "target": "var.require_new",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/apply-multi-depose-create-before-destroy/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/terraform/testdata/import-id-variable/main.tf",
+      "line": 7,
+      "target": "var.the_id",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/import-id-variable/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/terraform/testdata/import-id-variable/main.tf",
+      "line": 19,
+      "target": "var.the_id",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/import-id-variable/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "internal/terraform/testdata/transform-destroy-edge-module/child/main.tf",
+      "line": 6,
+      "target": "test_object.b.test_string",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/transform-destroy-edge-module/child/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-2-refactoring/catalog/modules/s3/main.tf",
+      "line": 4,
+      "target": "var.force_destroy",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/catalog/modules/best_cat/vars-optional.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/catalog/modules/iam/main.tf",
+      "line": 84,
+      "target": "aws_iam_role.lambda_role.name",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/catalog/modules/iam/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/catalog/modules/iam/main.tf",
+      "line": 89,
+      "target": "aws_iam_role.lambda_role.name",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/catalog/modules/iam/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/catalog/modules/iam/main.tf",
+      "line": 94,
+      "target": "aws_iam_role.lambda_role.name",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-3-adding-dev/catalog/modules/iam/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-4-breaking-the-terralith/catalog/modules/best_cat/main.tf",
+      "line": 6,
+      "target": "var.force_destroy",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-5-adding-terragrunt/catalog/modules/best_cat/vars-optional.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-6-breaking-the-terralith-further/live/prod/ddb/moved.tf",
+      "line": 3,
+      "target": "aws_dynamodb_table.asset_metadata",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "docs/src/fixtures/terralith-to-terragrunt/walkthrough/step-1-starting-the-terralith/live/ddb.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/engine/opentofu-engine/main.tf",
+      "line": 14,
+      "target": "var.value",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/terraform/testdata/refresh-module-var-module/bar/main.tf",
+          "line": 1
+        },
+        {
+          "file": "test/fixtures/engine/opentofu-engine/main.tf",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/env-vars-block/main.tf",
+      "line": 6,
+      "target": "var.custom_var",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/env-vars-block/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/get-output/mock-outputs-merge-strategy-with-state/merge-strategy-with-state-compat-conflict/modules/child/main.tf",
+      "line": 6,
+      "target": "var.test_input1",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/get-output/mock-outputs-merge-strategy-with-state/merge-strategy-with-state-compat-conflict/modules/child/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/get-output/mock-outputs-merge-strategy-with-state/merge-strategy-with-state-compat-conflict/modules/child/main.tf",
+      "line": 14,
+      "target": "var.test_input_map_map_string",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/get-output/mock-outputs-merge-strategy-with-state/merge-strategy-with-state-compat-conflict/modules/child/main.tf",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/get-output/mock-outputs-merge-strategy-with-state/merge-strategy-with-state-compat-conflict/modules/child/main.tf",
+      "line": 22,
+      "target": "var.test_input_list_string",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/get-output/mock-outputs-merge-strategy-with-state/merge-strategy-with-state-compat-conflict/modules/child/main.tf",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/output-from-remote-state-gcs/consumer/main.tf",
+      "line": 10,
+      "target": "var.producer_value",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/output-from-remote-state-gcs/consumer/main.tf",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/run-cmd-flags/module-global-cache-b/main.tf",
+      "line": 6,
+      "target": "var.cached_value",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/run-cmd-flags/module-global-cache-b/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-deps-dep-mock-merge/live/terragrunt.stack.hcl",
+      "line": 12,
+      "target": "unit.x.path",
+      "construct": "other root (unit)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/stacks/stack-deps-dep-mock-merge/live/terragrunt.stack.hcl",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-deps-mock-local/live/terragrunt.stack.hcl",
+      "line": 20,
+      "target": "unit.account.path",
+      "construct": "other root (unit)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/stacks/stack-deps-mock-local/live/terragrunt.stack.hcl",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-deps-stack-autoinclude-dep-values/units/extra/main.tf",
+      "line": 7,
+      "target": "var.v",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "internal/initwd/testdata/local-module-from-test/setup/main.tf",
+          "line": 1
+        },
+        {
+          "file": "test/fixtures/stacks/stack-deps-stack-autoinclude-dep-values/units/extra/main.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+      "line": 26,
+      "target": "var.project",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+      "line": 26,
+      "target": "var.data",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+      "line": 40,
+      "target": "var.project",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+      "line": 50,
+      "target": "var.data",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/fixtures/stacks/stack-values/units/app/main.tf",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "file": "integrationtest/inspection/dynblock/template.tf",
+      "line": 24,
+      "target": "var.force_disable",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "integrationtest/inspection/dynblock/template.tf",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "file": "integrationtest/inspection/map-attribute/template.tf",
+      "line": 11,
+      "target": "var.sensitive",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "integrationtest/inspection/map-attribute/template.tf",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "file": "integrationtest/inspection/provider-config/template.tf",
+      "line": 8,
+      "target": "var.annotation",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "integrationtest/inspection/provider-config/template.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+      "line": 10,
+      "target": "var.override",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+      "line": 11,
+      "target": "var.no_default",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+      "line": 12,
+      "target": "var.unknown",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "tflint/test-fixtures/nested_modules/.terraform/modules/07be448a6067a2bba065bff4beea229d/module.tf",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "file": "test/testdata/tfvars/tf/main.tf",
+      "line": 7,
+      "target": "var.bucket_count",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "test/testdata/tfvars/tf/main.tf",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 135,
+      "target": "var.vault_product_version",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "enos/modules/k8s_vault_verify_version/variables.tf",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 182,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 198,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 215,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 236,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 256,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 275,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 293,
+      "target": "step.create_vpc",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 312,
+      "target": "step.create_external_integration_target",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 212
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 331,
+      "target": "step.create_primary_cluster_backend_targets",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 252
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 371,
+      "target": "step.create_primary_backend_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 327
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 372,
+      "target": "step.build_vault",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 122
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 373,
+      "target": "step.create_primary_cluster_targets",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 232
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 374,
+      "target": "step.set_up_external_integration_target",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 308
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 449,
+      "target": "step.create_primary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 367
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 474,
+      "target": "step.create_secondary_cluster_backend_targets",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 290
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 496,
+      "target": "step.create_secondary_backend_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 470
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 497,
+      "target": "step.build_vault",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 122
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 498,
+      "target": "step.create_secondary_cluster_targets",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 272
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 549,
+      "target": "step.create_secondary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 493
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 574,
+      "target": "step.create_primary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 367
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 575,
+      "target": "step.wait_for_primary_cluster_leader",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 446
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 600,
+      "target": "step.create_secondary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 493
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 601,
+      "target": "step.wait_for_secondary_cluster_leader",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 546
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 625,
+      "target": "step.verify_that_vault_primary_cluster_is_unsealed",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 570
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 649,
+      "target": "step.verify_that_vault_secondary_cluster_is_unsealed",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 596
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 676,
+      "target": "step.get_primary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 622
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 697,
+      "target": "var.vault_product_version",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "enos/modules/k8s_vault_verify_version/variables.tf",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 699,
+      "target": "var.vault_build_date",
+      "construct": "variable address (var.<name>)",
+      "sameFile": false,
+      "declarations": [
+        {
+          "file": "enos/modules/k8s_vault_verify_version/variables.tf",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 707,
+      "target": "step.get_primary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 622
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 730,
+      "target": "step.get_primary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 622
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 779,
+      "target": "step.get_primary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 622
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 820,
+      "target": "step.get_primary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 622
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 821,
+      "target": "step.get_secondary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 646
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 822,
+      "target": "step.run_verify_blackbox_tests",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 670
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 823,
+      "target": "step.verify_ui",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 704
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 824,
+      "target": "step.verify_secrets_engines_on_primary",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 726
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 854,
+      "target": "step.configure_dr_replication_primary",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 812
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 875,
+      "target": "step.generate_secondary_token",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 847
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 893,
+      "target": "step.wait_for_primary_seal_rewrap",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 872
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 916,
+      "target": "step.wait_for_secondary_seal_rewrap",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 890
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 917,
+      "target": "step.generate_secondary_token",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 847
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 950,
+      "target": "step.configure_dr_replication_secondary",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 909
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 970,
+      "target": "step.unseal_secondary_followers",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 941
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 998,
+      "target": "step.configure_dr_replication_secondary",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 909
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 999,
+      "target": "step.unseal_secondary_followers",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 941
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1000,
+      "target": "step.verify_secondary_cluster_is_unsealed_after_enabling_replication",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 966
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1041,
+      "target": "step.verify_dr_replication",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 991
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1064,
+      "target": "step.generate_batch_dr_operation_token",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1036
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1083,
+      "target": "step.vault_failover_promote_dr_secondary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1057
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1111,
+      "target": "step.wait_for_promoted_cluster_leader",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1080
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1129,
+      "target": "step.vault_failover_demote_dr_primary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1104
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1154,
+      "target": "step.wait_for_demoted_cluster_leader",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1126
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1180,
+      "target": "step.wait_for_demoted_cluster_leader",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1126
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1181,
+      "target": "step.verify_new_primary_cluster_unsealed",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1150
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1221,
+      "target": "step.verify_replicated_data_during_failover",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1176
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1246,
+      "target": "step.generate_demoted_secondary_public_key",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1213
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1270,
+      "target": "step.generate_demoted_secondary_token",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1239
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1271,
+      "target": "step.vault_failover_demote_dr_primary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1104
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1295,
+      "target": "step.vault_failover_update_dr_primary_cluster",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1264
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1324,
+      "target": "step.verify_dr_replication",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 991
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1325,
+      "target": "step.get_secondary_cluster_ips",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 646
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1326,
+      "target": "step.verify_secrets_engines_on_primary",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 726
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1327,
+      "target": "step.verify_failover_dr_replication",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1289
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1367,
+      "target": "step.verify_secrets_engines_on_primary",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 726
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-dr-replication.hcl",
+      "line": 1368,
+      "target": "step.verify_failover_replicated_data",
+      "construct": "other root (step)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-dr-replication.hcl",
+          "line": 1320
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_network/main.tf",
+      "line": 20,
+      "target": "var.network_name",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_postgres/main.tf",
+          "line": 22
+        },
+        {
+          "file": "enos/modules/docker_network/main.tf",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/docker_network/main.tf",
+      "line": 29,
+      "target": "docker_network.cluster.name",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/docker_network/main.tf",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/start_vault/variables.tf",
+      "line": 13,
+      "target": "var.retry_join_method",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/start_vault/variables.tf",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/start_vault/variables.tf",
+      "line": 46,
+      "target": "var.config_mode",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/start_vault/variables.tf",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/start_vault/variables.tf",
+      "line": 176,
+      "target": "var.seal_type",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/start_vault/variables.tf",
+          "line": 170
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/start_vault/variables.tf",
+      "line": 187,
+      "target": "var.seal_type_secondary",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/start_vault/variables.tf",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/start_vault/variables.tf",
+      "line": 204,
+      "target": "var.storage_backend",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/start_vault/variables.tf",
+          "line": 198
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/vault_proxy/main.tf",
+      "line": 61,
+      "target": "var.vault_proxy_port",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/vault_proxy/main.tf",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/vault_proxy/main.tf",
+      "line": 69,
+      "target": "var.vault_proxy_pidfile",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/vault_proxy/main.tf",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/vault_proxy/main.tf",
+      "line": 85,
+      "target": "var.vault_proxy_pidfile",
+      "construct": "variable address (var.<name>)",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/vault_proxy/main.tf",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/vault_proxy/main.tf",
+      "line": 98,
+      "target": "enos_remote_exec.set_up_approle_auth_and_proxy",
+      "construct": "resource address (<type>.<name>[.<attr>])",
+      "sameFile": true,
+      "declarations": [
+        {
+          "file": "enos/modules/vault_proxy/main.tf",
+          "line": 64
+        }
+      ]
+    }
+  ],
+  "worked": [
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 56,
+      "target": "local.local_boundary_dir",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 28,
+          "name": "local_boundary_dir",
+          "qname": "scenario.e2e_aws_rdp_base.locals.local_boundary_dir",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 80,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 88,
+      "target": "local.tags",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 42,
+          "name": "tags",
+          "qname": "scenario.e2e_aws_rdp_base.locals.tags",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 96,
+      "target": "local.aws_ssh_private_key_path",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 26,
+          "name": "aws_ssh_private_key_path",
+          "qname": "scenario.e2e_aws_rdp_base.locals.aws_ssh_private_key_path",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 105,
+      "target": "local.build_path_linux",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 32,
+          "name": "build_path_linux",
+          "qname": "scenario.e2e_aws_rdp_base.locals.build_path_linux",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 118,
+      "target": "local.build_path_windows",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 37,
+          "name": "build_path_windows",
+          "qname": "scenario.e2e_aws_rdp_base.locals.build_path_windows",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 141,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 150,
+      "target": "local.boundary_license_path",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 29,
+          "name": "boundary_license_path",
+          "qname": "scenario.e2e_aws_rdp_base.locals.boundary_license_path",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 171,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 195,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 214,
+      "target": "local.boundary_install_dir",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 27,
+          "name": "boundary_install_dir",
+          "qname": "scenario.e2e_aws_rdp_base.locals.boundary_install_dir",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 216,
+      "target": "local.tags",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 42,
+          "name": "tags",
+          "qname": "scenario.e2e_aws_rdp_base.locals.tags",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 231,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 296,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 318,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 339,
+      "target": "local.local_boundary_dir",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 28,
+          "name": "local_boundary_dir",
+          "qname": "scenario.e2e_aws_rdp_base.locals.local_boundary_dir",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 348,
+      "target": "local.collocated_tag",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 48,
+          "name": "collocated_tag",
+          "qname": "scenario.e2e_aws_rdp_base.locals.collocated_tag",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 351,
+      "target": "local.ip_version",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 30,
+          "name": "ip_version",
+          "qname": "scenario.e2e_aws_rdp_base.locals.ip_version",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 415,
+      "target": "local.local_boundary_dir",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 28,
+          "name": "local_boundary_dir",
+          "qname": "scenario.e2e_aws_rdp_base.locals.local_boundary_dir",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+      "line": 535,
+      "target": "local.collocated_tag",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/enos-scenario-e2e-aws-rdp-base.hcl",
+          "line": 48,
+          "name": "collocated_tag",
+          "qname": "scenario.e2e_aws_rdp_base.locals.collocated_tag",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_boundary/main.tf",
+      "line": 21,
+      "target": "local.default_boundary_db_name",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_boundary/main.tf",
+          "line": 20,
+          "name": "default_boundary_db_name",
+          "qname": "locals.default_boundary_db_name",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 40,
+      "target": "local.selected_az",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 16,
+          "name": "selected_az",
+          "qname": "locals.selected_az",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 70,
+      "target": "local.selected_az",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 16,
+          "name": "selected_az",
+          "qname": "locals.selected_az",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 72,
+      "target": "local.common_tags",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_boundary/main.tf",
+          "line": 22,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        },
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 17,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 129,
+      "target": "local.common_tags",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_boundary/main.tf",
+          "line": 22,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        },
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 17,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 164,
+      "target": "local.common_tags",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_boundary/main.tf",
+          "line": 22,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        },
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 17,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "enos/modules/aws_worker/main.tf",
+      "line": 169,
+      "target": "local.common_tags",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "enos/modules/aws_boundary/main.tf",
+          "line": 22,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        },
+        {
+          "file": "enos/modules/aws_worker/main.tf",
+          "line": 17,
+          "name": "common_tags",
+          "qname": "locals.common_tags",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "datasource/hcp-packer-iteration/test-fixtures/template.pkr.hcl",
+      "line": 29,
+      "target": "local.foo",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "datasource/hcp-packer-iteration/test-fixtures/template.pkr.hcl",
+          "line": 18,
+          "name": "foo",
+          "qname": "locals.foo",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "datasource/hcp-packer-iteration/test-fixtures/template.pkr.hcl",
+      "line": 30,
+      "target": "local.bar",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "datasource/hcp-packer-iteration/test-fixtures/template.pkr.hcl",
+          "line": 19,
+          "name": "bar",
+          "qname": "locals.bar",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 78,
+      "target": "local.security_groups",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 64,
+          "name": "security_groups",
+          "qname": "locals.security_groups",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/backing-services/elasticsearch.tf",
+      "line": 85,
+      "target": "local.role_arns",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/backing-services/elasticsearch.tf",
+          "line": 57,
+          "name": "role_arns",
+          "qname": "locals.role_arns",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/ecs/acm.tf",
+      "line": 19,
+      "target": "local.domain_name",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/ecs/acm.tf",
+          "line": 14,
+          "name": "domain_name",
+          "qname": "locals.domain_name",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/ecs/acm.tf",
+      "line": 26,
+      "target": "local.domain_name",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/ecs/acm.tf",
+          "line": 14,
+          "name": "domain_name",
+          "qname": "locals.domain_name",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/ecs/acm.tf",
+      "line": 28,
+      "target": "local.subject_alternative_names",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/ecs/acm.tf",
+          "line": 16,
+          "name": "subject_alternative_names",
+          "qname": "locals.subject_alternative_names",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 23,
+      "target": "local.cache_repo_list",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/github-org-ecr/main.tf",
+          "line": 21,
+          "name": "cache_repo_list",
+          "qname": "locals.cache_repo_list",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 23,
+      "target": "local.lower_org_names",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/github-org-ecr/main.tf",
+          "line": 22,
+          "name": "lower_org_names",
+          "qname": "locals.lower_org_names",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 35,
+      "target": "local.repos_to_create",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/github-org-ecr/main.tf",
+          "line": 23,
+          "name": "repos_to_create",
+          "qname": "locals.repos_to_create",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 56,
+      "target": "local.ecr_user",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/github-org-ecr/main.tf",
+          "line": 24,
+          "name": "ecr_user",
+          "qname": "locals.ecr_user",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/aws/github-org-ecr/main.tf",
+      "line": 91,
+      "target": "local.ecr_user",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/aws/github-org-ecr/main.tf",
+          "line": 24,
+          "name": "ecr_user",
+          "qname": "locals.ecr_user",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    },
+    {
+      "file": "deprecated/eks/ebs-controller/provider-helm.tf",
+      "line": 94,
+      "target": "local.kubeconfig_file_enabled",
+      "construct": "locals address (local.<name>)",
+      "declarations": [
+        {
+          "file": "deprecated/eks/ebs-controller/provider-helm.tf",
+          "line": 93,
+          "name": "kubeconfig_file_enabled",
+          "qname": "locals.kubeconfig_file_enabled",
+          "construct": "locals-attribute-address"
+        },
+        {
+          "file": "modules/eks/alb-controller/provider-helm.tf",
+          "line": 118,
+          "name": "kubeconfig_file_enabled",
+          "qname": "locals.kubeconfig_file_enabled",
+          "construct": "locals-attribute-address"
+        },
+        {
+          "file": "modules/eks/redis/provider-helm.tf",
+          "line": 118,
+          "name": "kubeconfig_file_enabled",
+          "qname": "locals.kubeconfig_file_enabled",
+          "construct": "locals-attribute-address"
+        }
+      ]
+    }
+  ]
+}

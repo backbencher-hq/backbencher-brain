@@ -50,7 +50,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { deriveCppTruth, deriveCppShared, CPP_ORACLE_LABELS, type CppTruthEdge } from "../m14/cpp-truth"
 import { normTarget } from "../m14/differential"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
   if (i !== -1 && i + 1 < process.argv.length) return process.argv[i + 1]

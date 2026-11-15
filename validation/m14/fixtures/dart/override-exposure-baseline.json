@@ -1,0 +1,103 @@
+{
+  "note": "recorded by override-exposure-watchdog.ts --write-baseline",
+  "capturedAt": "2026-10-12T14:33:59.315Z",
+  "analyzerSha256": "8f97cc2711922b78e15cec139ebc684671943c252afc8c5abda5ddb73978eb86",
+  "population": {
+    "repos": [
+      "pb-reference",
+      "nvim-treesitter",
+      "dart-http",
+      "riverpod",
+      "proxicall",
+      "flutter-packages",
+      "dart-sdk"
+    ],
+    "rows": 316120
+  },
+  "projects": {
+    "pb-reference": {
+      "rows": 0,
+      "objectOk": 0,
+      "objectFabricated": 0,
+      "inFileChecked": 0,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 0,
+      "undecidableExtension": 0,
+      "undecidableKind": 0,
+      "beyondEvidence": 0,
+      "unowned": 0
+    },
+    "nvim-treesitter": {
+      "rows": 0,
+      "objectOk": 0,
+      "objectFabricated": 0,
+      "inFileChecked": 0,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 0,
+      "undecidableExtension": 0,
+      "undecidableKind": 0,
+      "beyondEvidence": 0,
+      "unowned": 0
+    },
+    "dart-http": {
+      "rows": 326,
+      "objectOk": 17,
+      "objectFabricated": 0,
+      "inFileChecked": 21,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 7,
+      "undecidableExtension": 0,
+      "undecidableKind": 11,
+      "beyondEvidence": 270,
+      "unowned": 0
+    },
+    "riverpod": {
+      "rows": 7903,
+      "objectOk": 871,
+      "objectFabricated": 0,
+      "inFileChecked": 131,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 181,
+      "undecidableExtension": 16,
+      "undecidableKind": 0,
+      "beyondEvidence": 6704,
+      "unowned": 0
+    },
+    "proxicall": {
+      "rows": 230442,
+      "objectOk": 185,
+      "objectFabricated": 0,
+      "inFileChecked": 263,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 306,
+      "undecidableExtension": 1,
+      "undecidableKind": 0,
+      "beyondEvidence": 229687,
+      "unowned": 0
+    },
+    "flutter-packages": {
+      "rows": 19377,
+      "objectOk": 295,
+      "objectFabricated": 0,
+      "inFileChecked": 736,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 890,
+      "undecidableExtension": 0,
+      "undecidableKind": 3,
+      "beyondEvidence": 17453,
+      "unowned": 0
+    },
+    "dart-sdk": {
+      "rows": 58072,
+      "objectOk": 1986,
+      "objectFabricated": 0,
+      "inFileChecked": 14766,
+      "inFileFabricated": 0,
+      "undecidableHeritage": 10101,
+      "undecidableExtension": 71,
+      "undecidableKind": 204,
+      "beyondEvidence": 30944,
+      "unowned": 0
+    }
+  }
+}

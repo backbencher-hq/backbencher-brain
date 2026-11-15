@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The SEMICOLON guard on a parameter-entity reference, which no committed fixture
+  pinned before this one.
+
+  `xml/xsd-parameter-entity-refs` pins the OTHER guard — it forbids a `references`
+  edge to `zz` for the value form `% zz '&#60;'`, so a rule that accepted any
+  `%...;` would be caught there. The semicolon test had no pin at all, and that is
+  the guard a tree-walk removes.
+
+  ## Why the guard exists at all
+
+  `grammars/tree-sitter-xml/xml/src/grammar.json` defines
+
+      PEReference = SEQ[STRING "%", SYMBOL Name, STRING ";"]
+
+  so a well-formed `PEReference` always ends in `;`. But `<!ELEMENT %pe EMPTY>` —
+  a parameter entity reference missing its semicolon, which is what a hand-edited or
+  truncated DTD looks like — still yields a `PEReference` node whose only named
+  child is a `Name`, and that node's text is `%pe` with no `;` in it.
+
+  Measured by `validation/m14/fixtures/xml/pereference-shape-probe.mts` on that exact
+  shape: reading the `Name` child publishes a use of `pe`, while the shipped
+  predicate publishes nothing. The document never wrote `%pe;`, so the edge would be
+  invented. This fixture is what makes that difference observable.
+
+  ## The four rows
+
+    1. `%declared;` as a direct child of the internal subset -> PUBLISHED, owned by
+       the DOCTYPE, and it RESOLVES because row 0 declares `declared`. The positive
+       case: without it, a rule that published nothing at all would satisfy every
+       forbid below.
+    2. `<!ELEMENT %unterminated EMPTY>` — the reference form with the semicolon
+       MISSING -> NOT published, even though `unterminated` IS declared by row 0b.
+       So the forbid cannot be satisfied by a rule that simply refuses undeclared
+       names, and cannot be satisfied by a rule that ignores this position.
+    3. `% zz '&#60;` — the parameter-entity VALUE form, a DECLARATION of `zz` and not
+       a use of it -> NOT published. Already pinned in xml/xsd-parameter-entity-refs
+       for the replacement-text position; repeated here in the bare internal-subset
+       position because that is a different parse shape — children `ERROR,Name,ERROR`
+       against a clean `Name` — and the probe measured the two shapes reaching the
+       same guard by different routes.
+
+  ## Why the two references use DIFFERENT names
+
+  The obvious design puts both references on one name, so that only the semicolon
+  separates them. It does not work here: edge identity in this store is
+  source|type|target, so a broken rule publishing `references root -> pe` twice
+  produces ONE edge and the forbid row cannot see the second one. Two names make the
+  defect a NEW edge, which is observable. The trade is that the fixture no longer
+  proves the semicolon is the only difference — the probe's per-shape table does
+  that, and it is committed beside this file.
+-->
+<!DOCTYPE root [
+  <!ENTITY % declared "declared-value">
+  <!ENTITY % unterminated "unterminated-value">
+  %declared;
+  <!ELEMENT %unterminated EMPTY>
+  % zz '&#60;'
+]>
+<root>text</root>

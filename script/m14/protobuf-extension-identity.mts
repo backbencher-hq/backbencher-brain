@@ -63,7 +63,7 @@ import * as path from "node:path"
 import { execFileSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const PROTOC = process.env.PB_PROTOC ?? "/tmp/opencode/protoc-36/bin/protoc"
 /** protoc's own bundled well-known-types root, derived from PROTOC so the two cannot drift. */
 const PROTOC_INCLUDE = path.join(path.dirname(path.dirname(PROTOC)), "include")

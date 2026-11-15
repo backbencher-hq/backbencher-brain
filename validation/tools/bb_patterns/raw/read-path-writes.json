@@ -1,0 +1,182 @@
+{
+  "tier": "read-path",
+  "projectId": "42df07863d6b26abbac9186481c338fe5b24e835",
+  "projectDir": "/tmp/bb-patterns-rw-R2sORi",
+  "dbPath": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/projects/42df07863d6b26abbac9186481c338fe5b24e835/brain.db",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata",
+  "route": "createToolHandlers().bb_patterns; a fresh handle generation per call (closeAll + wait)",
+  "baseline": {
+    "db": {
+      "bytes": 643072,
+      "mtime": "2026-11-01T23:21:10.459Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "observations": [
+    {
+      "label": "scope-orphaned",
+      "args": {
+        "scope": "orphaned",
+        "limit": 5
+      },
+      "ms": 79.96,
+      "chars": 497,
+      "isError": false,
+      "before": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:10.459Z"
+        },
+        "wal": null,
+        "shm": null
+      },
+      "after": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:10.459Z"
+        },
+        "wal": {
+          "bytes": 65952,
+          "mtime": "2026-11-01T23:21:11.044Z"
+        },
+        "shm": {
+          "bytes": 32768,
+          "mtime": "2026-11-01T23:21:11.028Z"
+        }
+      },
+      "walCreated": true,
+      "walBytesDelta": 65952,
+      "walMtimeMoved": true,
+      "shmCreated": true,
+      "dbMtimeMoved": false,
+      "dbBytesDelta": 0
+    },
+    {
+      "label": "scope-all-default",
+      "args": {},
+      "ms": 103.62,
+      "chars": 1052,
+      "isError": false,
+      "before": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:11.354Z"
+        },
+        "wal": null,
+        "shm": null
+      },
+      "after": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:11.354Z"
+        },
+        "wal": {
+          "bytes": 98912,
+          "mtime": "2026-11-01T23:21:11.707Z"
+        },
+        "shm": {
+          "bytes": 32768,
+          "mtime": "2026-11-01T23:21:11.632Z"
+        }
+      },
+      "walCreated": true,
+      "walBytesDelta": 98912,
+      "walMtimeMoved": true,
+      "shmCreated": true,
+      "dbMtimeMoved": false,
+      "dbBytesDelta": 0
+    },
+    {
+      "label": "history-read",
+      "args": {
+        "history": true,
+        "limit": 5
+      },
+      "ms": 78.12,
+      "chars": 163,
+      "isError": false,
+      "before": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:11.972Z"
+        },
+        "wal": null,
+        "shm": null
+      },
+      "after": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:11.972Z"
+        },
+        "wal": {
+          "bytes": 107152,
+          "mtime": "2026-11-01T23:21:12.303Z"
+        },
+        "shm": {
+          "bytes": 32768,
+          "mtime": "2026-11-01T23:21:12.260Z"
+        }
+      },
+      "walCreated": true,
+      "walBytesDelta": 107152,
+      "walMtimeMoved": true,
+      "shmCreated": true,
+      "dbMtimeMoved": false,
+      "dbBytesDelta": 0
+    },
+    {
+      "label": "recordRun-explicit-write",
+      "args": {
+        "scope": "all",
+        "limit": 5,
+        "recordRun": true
+      },
+      "ms": 165.42,
+      "chars": 460,
+      "isError": false,
+      "before": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:12.575Z"
+        },
+        "wal": null,
+        "shm": null
+      },
+      "after": {
+        "db": {
+          "bytes": 643072,
+          "mtime": "2026-11-01T23:21:12.575Z"
+        },
+        "wal": {
+          "bytes": 358472,
+          "mtime": "2026-11-01T23:21:12.995Z"
+        },
+        "shm": {
+          "bytes": 32768,
+          "mtime": "2026-11-01T23:21:12.844Z"
+        }
+      },
+      "walCreated": true,
+      "walBytesDelta": 358472,
+      "walMtimeMoved": true,
+      "shmCreated": true,
+      "dbMtimeMoved": false,
+      "dbBytesDelta": 0
+    }
+  ],
+  "final": {
+    "db": {
+      "bytes": 704512,
+      "mtime": "2026-11-01T23:21:13.259Z"
+    },
+    "wal": null,
+    "shm": null
+  },
+  "conclusions": {
+    "readPathsOpenReadWrite": true,
+    "historySurfaceWritesSchema": true,
+    "recordRunIsAnExplicitWrite": true
+  },
+  "generatedAt": "2026-11-01T23:21:13.514Z"
+}

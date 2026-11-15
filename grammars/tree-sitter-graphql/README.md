@@ -38,14 +38,14 @@ to the vendored wasm's own `language.nodeTypeForId` table, with `source_file`,
 exposed for them.
 
 **Upstream's `main` is not a drop-in.** The A/B is in
-`fixtures/graphql/out/extraction-ab.json`; the measured result of a
+`bb_tests/graphql/out/extraction-ab.json`; the measured result of a
 PascalCase-only port is that the analyzer's whole string-literal contract
 becomes dead. That is why this is a *patched port* and not an upgrade.
 
 ## Divergence 2 — four specification constructs upstream rejects
 
 Each FIX in `port.py` is anchored to a row in the 113-construct battery
-(`fixtures/graphql/probe/grammar-gaps.mts`) and each was measured, not reasoned.
+(`bb_tests/graphql/probe/grammar-gaps.mts`) and each was measured, not reasoned.
 
 | # | construct | specification | what upstream's rule does | the patch |
 |---|---|---|---|---|
@@ -75,21 +75,21 @@ tree-sitter build --wasm -o ../../wasm/tree-sitter-graphql.wasm
 
 `tree-sitter build --wasm` needs emscripten; with only docker present it uses
 `emscripten/emsdk` through docker automatically. The CLI must be ≥ 0.25 for the
-`tree-sitter.json`/ABI-15 path; the fixtures copy at
-`$HOME/fixtures/node_modules/tree-sitter-cli` is 0.25.1.
+`tree-sitter.json`/ABI-15 path; the bb_tests copy at
+`/home/ishaq2321/bb_tests/node_modules/tree-sitter-cli` is 0.25.1.
 
 **After regenerating, re-run every gate** — the wasm hash is pinned and the
 extraction changes:
 
 ```sh
-$HOME/fixtures/graphql/run-all.sh --corpus
-cd $HOME/backbencher-brain && bun script/m14/verify-grammar-pins.ts --write
+/home/ishaq2321/bb_tests/graphql/run-all.sh --corpus
+cd /home/ishaq2321/backbencher-brain && bun script/m14/verify-grammar-pins.ts --write
 ```
 
 ## What the patch bought, measured
 
 47 real `.graphql` files across four repositories, the same analyzer under both
-grammars (`fixtures/graphql/out/extraction-ab.json`):
+grammars (`bb_tests/graphql/out/extraction-ab.json`):
 
 | | previous wasm | wired wasm | delta |
 |---|---|---|---|

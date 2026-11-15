@@ -1,6 +1,6 @@
 {
  "analyzer": "yaml",
- "corpus": "$HOME/fixtures/repositories",
+ "corpus": "/home/ishaq2321/bb_tests/repositories",
  "repositories": [
   {
    "repo": "grails-core",

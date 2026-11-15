@@ -1,0 +1,64 @@
+{
+  "fixtureId": "typescript/type-only-import-marker",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS that a type-only import edge says so. `import type { T } from 'm'` is ERASED by the compiler, so it is a type dependency and not a runtime one. Measured on element-plus, 400 admitted files, production parseFile: 655 `import_statement` nodes carry the `type` modifier across 279 files; 982 type-only specifiers against 2,058 value specifiers, i.e. 32% of the import surface. All 271 files with a type-only import already emitted an `imports` edge, and 0 of those edges carried any type-only marker, so the graph asserted a runtime dependency the compiler denies and a consumer could not tell the two apart. The `forbid` entries are the half that carries the meaning: an analyzer that set the marker unconditionally would assert every import is erased, which is the opposite error.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "Config",
+      "meta.isTypeOnly": true
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "type-only-import-marker\u0000./ns:*", "meta.localBinding": true,
+      "meta.isTypeOnly": true
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "def",
+      "meta.isTypeOnly": false
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "Only",
+      "meta.isTypeOnly": true
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "value",
+      "meta.isTypeOnly": false
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "helper",
+      "meta.isTypeOnly": false
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "helper",
+      "meta.isTypeOnly": true
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "Config",
+      "meta.isTypeOnly": false
+    },
+    {
+      "type": "imports",
+      "from": "type-only-import-marker",
+      "target": "value",
+      "meta.isTypeOnly": true
+    }
+  ]
+}

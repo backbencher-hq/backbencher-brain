@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.54",
+  "code": "An4",
+  "tool": "bb_analyze",
+  "title": "bb_analyze: docs truth, generated-page parity, and no unrunnable verification claims",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "generated page exists",
+      "pass": true,
+      "detail": "len=17689"
+    },
+    {
+      "name": "generated page carries the author header",
+      "pass": true,
+      "detail": "<!--\nAuthor: Muhammad Ishaq Khan\n\nWHAT THIS DOCUMENT IS — th"
+    },
+    {
+      "name": "page description matches the descriptor",
+      "pass": true,
+      "detail": "Unified evidence-backed analysis over graph relationships, d"
+    },
+    {
+      "name": "page lists all 11 modes",
+      "pass": true,
+      "detail": "missing mode"
+    },
+    {
+      "name": "page carries the real per-mode limit defaults",
+      "pass": true,
+      "detail": "{\"limit\":\"25 edges per direction (callers/callees/trace); 20 files (dependencies); 50 entries (test_mapping/test_gaps); 50 files (test_quali"
+    },
+    {
+      "name": "page cites no unrunnable bb_tests path [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "curation cites no unrunnable bb_tests path [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "page documents the test_impact declared bound",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page documents that test_quality limit bounds rows",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page documents the complexity breakdown bound",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page documents the missing-file stale rule",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page names no phantom tool (bb_test_quality/bb_test_suggestions) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "docs: single-tool generator check passes",
+      "pass": true,
+      "detail": "TOOL DOCS: PASS (16 public tools, 1 artifacts)\nnpm notice\nnpm notice New minor version of npm available! 11.12.1 -> 11.21.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.2\nnpm notice To update run: npm install -g npm@"
+    },
+    {
+      "name": "evidence: an1.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: an2.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "evidence: an3.json verified",
+      "pass": true,
+      "detail": "verified"
+    },
+    {
+      "name": "gate: B3 evidence is wired into the quality gate [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "self-check"
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0
+  },
+  "decisions": {
+    "docsAuthority": "registry + curation + verify-tool-docs",
+    "evidenceInputs": "an1, an2, an3 verified"
+  },
+  "limitations": [
+    "Covers bb_analyze only."
+  ],
+  "generatedAt": "2026-11-05T04:03:05.869Z"
+}

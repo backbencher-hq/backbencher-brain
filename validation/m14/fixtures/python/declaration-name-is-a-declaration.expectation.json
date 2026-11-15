@@ -1,0 +1,33 @@
+{
+  "fixtureId": "python/declaration-name-is-a-declaration",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "VERIFY_PY10. DENYLISTED_SYMBOL_NAMES gated a `def`/`class` name, which is the one position where the gate could not help: if the grammar produced the node, the name IS a declaration. `super` is a legal method name — django's BlockNode has one at django/template/loader_tags.py:71 and `{{ block.super }}` is its documented template API — and the gate skipped the whole function_definition branch, so not only the symbol but also `ctx.currentFunction` and the exit frame that restores it. The walk then descended into the method with currentFunction undefined and currentClass set, which is the shape of a class body, and four things followed: the method symbol was lost, its method LOCAL was published as a class member, `extractMemberUses` (a second walk, no denylist) emitted `uses` edges naming a symbol that was never published, and `calls` edges were sourced to the class instead of the method. Measured blast radius over all 5,364 code-bearing corpus files: exactly one declaration in the whole corpus is named anything in that set, and it is this `super`. The controls `direct`, `cls`, `self` and `this` are ordinary identifiers that were in the removed set and must still publish — a fixture pinning only the defect is satisfiable by refusing every removed name, which is the over-correction this one is written against. `None`, `True` and `False` are deliberately ABSENT: they are python keywords, so `def None(self)` and `def True(self)` are SyntaxErrors per CPython's own `ast`, the grammar returned an ERROR node with no identifier for both, and the denylist probe independently measured 0 declarations with those names across all 5,364 corpus files. Two drafts of this fixture declared one of them and were corrected by the parser both times.",
+  "expectSymbols": [
+    { "name": "Holder", "kind": "class" },
+    { "name": "direct", "kind": "method", "ownerName": "Holder" },
+    { "name": "cls", "kind": "method", "ownerName": "Holder" },
+    { "name": "self", "kind": "method", "ownerName": "Holder" },
+    { "name": "this", "kind": "method", "ownerName": "Holder" },
+    { "name": "super", "kind": "method", "ownerName": "Holder" },
+    { "name": "helper", "kind": "method", "ownerName": "Holder" },
+    { "name": "other", "kind": "method", "ownerName": "Holder" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Holder", "target": "super", "comment": "the LOSS: django's BlockNode.super had no symbol, so it had no containment either" },
+    { "type": "contains", "from": "Holder", "target": "cls", "comment": "control: a method named `cls` is an ordinary declaration" },
+    { "type": "contains", "from": "Holder", "target": "self", "comment": "control: `def self(self)` is legal — `self` is not a keyword, and the grammar parses it as an ordinary function_definition" },
+    { "type": "contains", "from": "Holder", "target": "this", "comment": "control: `this` is a JS-ism but a legal python identifier, and a legal method name" },
+    { "type": "contains", "from": "Holder", "target": "direct", "comment": "control: the ordinary case the gate was never about" },
+    { "type": "calls", "from": "super", "target": "helper", "comment": "the MISATTRIBUTION: this call is in `super`'s body, so `super` is the source. Pre-fix it was sourced to the class `Holder`" },
+    { "type": "calls", "from": "super", "target": "other", "comment": "and the DANGLING half: `uses super -> scratch` named a symbol that did not exist, because the local was published as a member while the method was not" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Holder", "target": "scratch", "comment": "the FABRICATION: `scratch` is a local of `super`, not a member of Holder. A mis-scoped method body reaches the class-body Property branch and publishes its locals as members" },
+    { "type": "calls", "from": "Holder", "target": "helper", "comment": "the MISATTRIBUTION, forbidden form: with `super` unpublished the body walked at class scope, so the call was sourced to the CLASS" },
+    { "type": "calls", "from": "Holder", "target": "other", "comment": "same, second site — two sites so a fix that re-attributes only the first cannot pass" }
+  ],
+  "forbidSymbols": [
+    { "name": "scratch", "comment": "a method local is never a symbol, and certainly never a class member" }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "gate": "m60-script-typecheck",
+  "checkedAt": "2026-09-29T05:44:57.163Z",
+  "why": "tsconfig includes only src/**/*.ts, so `tsc --noEmit` has never typechecked a single file under script/. Two live bugs lived in that gap: a ReferenceError on a rarely-taken branch, and an assertion that could never fire.",
+  "scope": {
+    "checked": [
+      "script/m60/grammar-lanes-source.ts",
+      "script/m60/build-grammar-survey.ts",
+      "script/m60/verify-grammar-consistency.ts",
+      "script/m60/selftest-grammar-consistency.ts",
+      "script/m60/find-grammar-provenance.ts",
+      "script/m60/measure-runtime-stragglers.ts",
+      "script/m60/verify-runtime-migration-preflight.ts",
+      "script/m60/verify-local-rebuilds.ts",
+      "script/m60/compare-grammar-surface.ts"
+    ],
+    "notChecked": [],
+    "note": "this gate deliberately covers the grammar-governance instruments ONLY. Adding script/ to tsconfig would sweep in ~50 scripts owned by several agents, and that is not this gate's call to make.",
+    "mainTypecheckCovers": {
+      "files": 800,
+      "scriptFiles": 0
+    },
+    "mainTypecheckGap": "CONFIRMED: `tsc --noEmit` covers 0 files under script/. Every 'tsc 0 errors' in this milestone's history has been true and has not covered these instruments."
+  },
+  "ran": true,
+  "compiler": "node_modules/typescript/bin/tsc",
+  "compilerRule": "resolved by absolute path, never via npx: `npx tsc` can resolve the unrelated `tsc` package, which prints 'This is not the tsc command you are looking for' and exits 0, and a missing node_modules fails to launch at all. Both produce a grep for 'error TS' that finds nothing, and both read as a clean typecheck.",
+  "errors": [],
+  "errorsByFile": {},
+  "hardFailures": [],
+  "passed": true
+}

@@ -1,0 +1,29 @@
+{
+  "fixtureId": "scala/self-type-implements",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE SELF-TYPE IS SCALA'S CONFORMANCE-WITHOUT-COMPOSITION, AND IT IS THE `implements` ROW. The fleet MIXIN RULING (2026-10-19, option (b)) ruled `implements` NOT-APPLICABLE for scala on the falsifier 'a Scala construct that declares conformance WITH NO COMPOSITION semantics', naming the self-type `this: T =>` in the same sentence but never MEASURING it. Measured over the whole admitted population (script/m14/scala-construct-census.ts -> validation/m14/measurements/scala-construct-census.json): 1,017 self_type sites in 636 files, 671 of them carrying a required type after the ':'. The construct is ALREADY EXPRESSIBLE in the wired grammar - `self_type` is a NAMED node type of the pinned build (sha256 393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917, 189 named of 455 ids; validation/m14/measurements/scala-grammar-inventory.json) - so this is rung R3 of the remedy ladder and NO grammar change is taken. EACH ASSERTION BELOW IS A SAME-FILE CAUSAL EDGE THAT EXISTS ONLY WHEN THE CONSTRUCT REACHES THE ANALYZER AS A REAL NODE: the `implements` row is published from the self_type node's ':' child, so it cannot be produced by a text match, and it cannot be produced at all without the emission site. The RED PROOF is script/m14/scala-implements-red-proof.ts, which runs the PRE-EMISSION analyzer over this same file and prints 0 `implements` rows against these 6.",
+  "expectSymbols": [
+    { "name": "Service" },
+    { "name": "Logging" },
+    { "name": "Named" },
+    { "name": "Pure" },
+    { "name": "NeedsModule" },
+    { "name": "NeedsQualified" },
+    { "name": "NeedsGeneric" },
+    { "name": "NeedsEither" }
+  ],
+  "expectRelationships": [
+    { "type": "implements", "from": "Service", "target": "Logging" },
+    { "type": "implements", "from": "NeedsModule", "target": "acme.Module" },
+    { "type": "implements", "from": "NeedsQualified", "target": "acme.Logging" },
+    { "type": "implements", "from": "NeedsGeneric", "target": "List" },
+    { "type": "implements", "from": "NeedsEither", "target": "Logging" },
+    { "type": "implements", "from": "NeedsEither", "target": "acme.Other" }
+  ],
+  "forbidRelationships": [
+    { "type": "implements", "from": "Named" },
+    { "type": "implements", "from": "Pure" },
+    { "type": "implements", "from": "NeedsGeneric", "target": "Int" }
+  ]
+}

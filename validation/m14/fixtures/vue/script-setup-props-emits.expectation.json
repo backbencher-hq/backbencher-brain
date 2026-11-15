@@ -1,0 +1,28 @@
+{
+  "fixtureId": "vue/script-setup-props-emits",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Script-setup compiler macros carry the component public contract just like Options-API props/emits - but only the binding Constant survived (const props = ...), so script-setup components lost their prop and event declarations entirely. defineProps/defineEmits arguments now yield Property/Event symbols owned by the component.",
+  "expectSymbols": [
+    {
+      "name": "size",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "label",
+      "kind": "property",
+      "meta.isProp": true
+    },
+    {
+      "name": "change",
+      "kind": "event",
+      "meta.isEmit": true
+    },
+    {
+      "name": "close",
+      "kind": "event",
+      "meta.isEmit": true
+    }
+  ]
+}
